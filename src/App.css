@@ -1,0 +1,366 @@
+.app-shell {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 56px 0;
+}
+
+.intro-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
+  gap: 44px;
+  align-items: center;
+  min-height: calc(100svh - 112px);
+}
+
+.intro-copy {
+  text-align: left;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin: 0 0 18px;
+  padding: 8px 12px;
+  border: 1px solid rgba(47, 111, 79, 0.24);
+  border-radius: 999px;
+  color: var(--green);
+  background: rgba(47, 111, 79, 0.08);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.intro-copy h1 {
+  max-width: 620px;
+  margin: 0;
+}
+
+.intro-description {
+  max-width: 590px;
+  margin: 24px 0 0;
+  color: var(--text);
+  font-size: 1.08rem;
+}
+
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 34px;
+}
+
+.primary-action,
+.secondary-action {
+  min-height: 48px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 20px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.primary-action {
+  color: #fffaf0;
+  background: var(--tomato);
+  box-shadow: 0 14px 28px rgba(208, 75, 49, 0.25);
+}
+
+.secondary-action {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(37, 42, 52, 0.12);
+}
+
+.primary-action:hover,
+.secondary-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(37, 42, 52, 0.14);
+}
+
+.primary-action:focus-visible,
+.secondary-action:focus-visible {
+  outline: 3px solid rgba(241, 181, 63, 0.65);
+  outline-offset: 3px;
+}
+
+.map-panel {
+  position: relative;
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid rgba(70, 151, 190, 0.18);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(244, 252, 255, 0.72), rgba(209, 235, 247, 0.78)),
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.7), transparent 24%),
+    radial-gradient(circle at 82% 24%, rgba(107, 183, 218, 0.22), transparent 28%),
+    #cfeaf6;
+  box-shadow: 0 28px 70px rgba(57, 118, 150, 0.16);
+}
+
+.map-panel::before {
+  position: absolute;
+  inset: 26px;
+  content: '';
+  border: 1px solid rgba(70, 151, 190, 0.14);
+  border-radius: 8px;
+  background-image:
+    linear-gradient(rgba(70, 151, 190, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(70, 151, 190, 0.12) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: radial-gradient(circle, #000 38%, transparent 73%);
+}
+
+.world-map {
+  position: absolute;
+  inset: 0;
+}
+
+.continent {
+  position: absolute;
+  display: block;
+  background: rgba(92, 151, 98, 0.28);
+  filter: blur(0.2px);
+}
+
+.continent-americas {
+  left: 8%;
+  top: 22%;
+  width: 25%;
+  height: 52%;
+  border-radius: 58% 34% 48% 42%;
+  transform: rotate(-18deg);
+  clip-path: polygon(38% 0, 75% 8%, 92% 28%, 73% 43%, 82% 62%, 54% 100%, 35% 83%, 22% 58%, 4% 42%, 20% 18%);
+}
+
+.continent-europe-africa {
+  left: 39%;
+  top: 25%;
+  width: 21%;
+  height: 48%;
+  border-radius: 48% 54% 58% 44%;
+  transform: rotate(8deg);
+  clip-path: polygon(28% 2%, 62% 0, 88% 20%, 70% 42%, 82% 64%, 58% 100%, 35% 82%, 16% 56%, 5% 24%);
+}
+
+.continent-asia {
+  right: 9%;
+  top: 21%;
+  width: 35%;
+  height: 42%;
+  border-radius: 46% 56% 42% 48%;
+  transform: rotate(-5deg);
+  clip-path: polygon(8% 25%, 28% 6%, 72% 0, 96% 20%, 88% 48%, 68% 55%, 62% 82%, 35% 72%, 8% 58%);
+}
+
+.continent-australia {
+  right: 18%;
+  bottom: 19%;
+  width: 13%;
+  height: 14%;
+  border-radius: 50% 48% 44% 58%;
+  transform: rotate(12deg);
+}
+
+.food-marker {
+  position: absolute;
+  display: inline-grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  animation: float-marker 3.6s ease-in-out infinite;
+}
+
+.food-marker:nth-of-type(odd) {
+  animation-delay: -1.2s;
+}
+
+.pin {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--tomato);
+  box-shadow:
+    0 0 0 8px rgba(208, 75, 49, 0.14),
+    0 0 0 15px rgba(208, 75, 49, 0.06);
+}
+
+.pin::after {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  width: 12px;
+  height: 12px;
+  content: '';
+  background: var(--tomato);
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 0 0 3px;
+}
+
+.emoji {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: #fffaf0;
+  font-size: 1.35rem;
+  box-shadow: 0 12px 24px rgba(37, 42, 52, 0.16);
+}
+
+.marker-east-asia {
+  right: 18%;
+  top: 34%;
+}
+
+.marker-japan {
+  right: 10%;
+  top: 38%;
+}
+
+.marker-europe {
+  left: 48%;
+  top: 33%;
+}
+
+.marker-mexico {
+  left: 20%;
+  top: 44%;
+}
+
+.marker-south-asia {
+  right: 29%;
+  top: 52%;
+}
+
+.marker-west-europe {
+  left: 43%;
+  top: 29%;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.feature-card {
+  min-height: 184px;
+  padding: 26px;
+  border: 1px solid rgba(37, 42, 52, 0.09);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  text-align: left;
+  box-shadow: 0 16px 36px rgba(37, 42, 52, 0.07);
+}
+
+.feature-card h2 {
+  margin-bottom: 14px;
+}
+
+.feature-card p {
+  color: var(--text);
+}
+
+@keyframes float-marker {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@media (max-width: 920px) {
+  .app-shell {
+    width: min(100% - 28px, 720px);
+    padding: 34px 0;
+  }
+
+  .intro-section {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    min-height: auto;
+  }
+
+  .intro-copy {
+    text-align: center;
+  }
+
+  .eyebrow,
+  .intro-copy h1,
+  .intro-description {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .cta-row {
+    justify-content: center;
+  }
+
+  .map-panel {
+    min-height: 390px;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-shell {
+    width: min(100% - 22px, 420px);
+    padding: 24px 0;
+  }
+
+  .intro-description {
+    font-size: 1rem;
+  }
+
+  .cta-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .primary-action,
+  .secondary-action {
+    width: 100%;
+  }
+
+  .map-panel {
+    min-height: 320px;
+  }
+
+  .food-marker {
+    width: 46px;
+    height: 46px;
+  }
+
+  .pin {
+    width: 17px;
+    height: 17px;
+  }
+
+  .emoji {
+    width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
+  }
+
+  .feature-card {
+    min-height: auto;
+    padding: 22px;
+  }
+}
