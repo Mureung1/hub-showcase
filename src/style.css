@@ -31,20 +31,6 @@ body {
   padding: 48px 0;
 }
 
-.brand-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 0 28px;
-  border-bottom: 1px solid var(--line);
-}
-
-.brand-header img {
-  display: block;
-  width: min(280px, 62vw);
-  height: auto;
-}
-
 .intro {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
@@ -76,6 +62,17 @@ h1 {
   font-size: clamp(3rem, 8vw, 6.4rem);
   font-weight: 900;
   line-height: 0.9;
+}
+
+.hero-logo {
+  max-width: 560px;
+  line-height: 1;
+}
+
+.hero-logo img {
+  display: block;
+  width: min(520px, 100%);
+  height: auto;
 }
 
 h2 {

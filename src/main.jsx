@@ -35,14 +35,12 @@ function ProjectTopic() {
 
   return (
     <main className="page">
-      <header className="brand-header" aria-label="PtoP 브랜드">
-        <img src={logoUrl} alt="PtoP Project to Portfolio 로고" />
-      </header>
-
       <section className="intro">
         <div>
           <p className="eyebrow">대학생이 겪는 문제 해결</p>
-          <h1>PtoP</h1>
+          <h1 className="hero-logo">
+            <img src={logoUrl} alt="PtoP Project to Portfolio 로고" />
+          </h1>
         </div>
         <p className="summary">
           Project to Portfolio.
