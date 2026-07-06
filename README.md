@@ -20,12 +20,3 @@ pnpm dev
 ```bash
 pnpm build
 ```
-
-## GitHub push 준비
-
-이 폴더에서 GitHub 저장소 주소를 remote로 연결한 뒤 push하면 됩니다.
-
-```bash
-git remote add origin <your-github-repository-url>
-git push -u origin main
-```
