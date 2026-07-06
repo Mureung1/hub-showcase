@@ -1,4 +1,3 @@
-```markdown
 # Newssist 📰
 
 > 키워드 기반 뉴스 큐레이션, AI 즉시 해설, 개인화 뉴스 흐름 분석을 결합한 스마트 뉴스 소비 플랫폼
@@ -46,4 +45,3 @@ TV, 인터넷, 라디오, 유튜브 등으로 세분화된 뉴스를 한 곳에�
 | AI 해설 | GPT-4o API |
 | 임베딩 | OpenAI Embeddings, KoSBERT |
 | 클러스터링 및 시각화 | K-Means, UMAP |
-```
