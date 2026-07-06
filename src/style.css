@@ -1,15 +1,22 @@
 :root {
   --ink: #111111;
-  --paper: #ffffff;
-  --soft-paper: #f7f7f5;
-  --muted: #565656;
   --line: #151515;
   --mint: #62d6a5;
+  --mint-dark: #26a875;
+  --mint-line: #a8d9c3;
   --mint-soft: #e6fbf2;
-  color: #111111;
-  background: var(--soft-paper);
+  --muted: #565656;
+  --paper: #ffffff;
+
+  color: var(--ink);
+  background: var(--paper);
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
     sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -25,54 +32,10 @@ body {
   margin: 0;
 }
 
-.page {
-  width: min(1080px, calc(100% - 40px));
-  margin: 0 auto;
-  padding: 48px 0;
-}
-
-.intro {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
-  gap: 36px;
-  align-items: end;
-  padding: 40px 0 34px;
-  border-bottom: 2px solid var(--line);
-}
-
-.eyebrow,
-.section-label {
-  display: block;
-  margin: 0 0 12px;
-  color: var(--ink);
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
 h1,
 h2,
 p {
   margin: 0;
-}
-
-h1 {
-  max-width: 720px;
-  font-size: clamp(3rem, 8vw, 6.4rem);
-  font-weight: 900;
-  line-height: 0.9;
-}
-
-.hero-logo {
-  max-width: 560px;
-  line-height: 1;
-}
-
-.hero-logo img {
-  display: block;
-  width: min(520px, 100%);
-  height: auto;
 }
 
 h2 {
@@ -82,20 +45,38 @@ h2 {
   line-height: 1.22;
 }
 
-.summary {
-  color: #333333;
-  font-size: 1.05rem;
-  line-height: 1.75;
+.page {
+  width: min(1080px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
 }
 
-.summary::first-line {
-  color: var(--ink);
+.intro {
+  display: grid;
+  align-items: center;
+  padding: 36px 0 34px;
+  border-bottom: 2px solid var(--line);
+}
+
+.hero-logo {
+  max-width: 430px;
+  line-height: 1;
+}
+
+.hero-logo img {
+  display: block;
+  width: min(430px, 100%);
+  height: auto;
+}
+
+.section-label {
+  display: block;
+  margin: 0 0 12px;
+  color: var(--mint-dark);
+  font-size: 0.78rem;
   font-weight: 800;
-}
-
-.feature-section .section-label,
-.overview-item span {
-  color: #26a875;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .overview {
@@ -140,7 +121,7 @@ h2 {
 .panel,
 .feature-section,
 .closing {
-  border: 1px solid #111111;
+  border: 1px solid var(--line);
   background: var(--paper);
 }
 
@@ -157,10 +138,6 @@ h2 {
   line-height: 1.75;
 }
 
-.problem-panel {
-  background: var(--paper);
-}
-
 .solution-panel {
   background: var(--mint-soft);
 }
@@ -173,7 +150,6 @@ h2 {
 .core-section {
   margin-top: 0;
   border-width: 2px;
-  background: #ffffff;
 }
 
 .core-section .section-heading {
@@ -192,7 +168,7 @@ h2 {
 }
 
 .future-section .section-heading {
-  border-bottom-color: #a8d9c3;
+  border-bottom-color: var(--mint-line);
 }
 
 .future-section h2 {
@@ -232,6 +208,17 @@ h2 {
   line-height: 1.52;
 }
 
+.feature-list li::before {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  color: var(--mint-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+  counter-increment: feature;
+  content: counter(feature, decimal-leading-zero);
+}
+
 .feature-title {
   display: block;
   color: var(--ink);
@@ -253,30 +240,10 @@ h2 {
   padding-top: 22px;
 }
 
-.feature-list li::before {
-  position: absolute;
-  top: 18px;
-  left: 18px;
-  color: #26a875;
-  font-size: 0.78rem;
-  font-weight: 800;
-  counter-increment: feature;
-  content: counter(feature, decimal-leading-zero);
-}
-
-.feature-list.compact {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .feature-list.compact li {
   min-height: 112px;
-  color: var(--ink);
   background: rgba(255, 255, 255, 0.82);
-  border-color: #a8d9c3;
-}
-
-.feature-list.compact li::before {
-  color: #26a875;
+  border-color: var(--mint-line);
 }
 
 .closing {
@@ -284,7 +251,6 @@ h2 {
   gap: 14px;
   margin-top: 18px;
   padding: 28px;
-  background: var(--paper);
   border-width: 2px;
 }
 
@@ -298,7 +264,6 @@ h2 {
 }
 
 @media (max-width: 860px) {
-  .intro,
   .content-grid,
   .feature-list {
     grid-template-columns: 1fr;
@@ -324,7 +289,6 @@ h2 {
   }
 
   .intro {
-    gap: 22px;
     padding-top: 20px;
   }
 
