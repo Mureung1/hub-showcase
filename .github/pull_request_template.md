@@ -20,9 +20,28 @@
 -->
 
 ## 주요 작업 리스트
+- 기능성 식품 추천 플랫폼 프로젝트 소개 페이지 제작
+- HTML과 CSS를 활용한 랜딩 페이지 형태 구성
+- 프로젝트 소개 / 핵심 기능 / 기대 효과 섹션 구성
+- 카드 UI 및 반응형 레이아웃 적용
+- 소상공인 판매장(약국, 건강식품 매장 등) 연결 서비스 방향 반영
+<img width="931" height="905" alt="day1" src="https://github.com/user-attachments/assets/c1adfef9-5f2b-48cd-88a2-135551d490f0" />
 
 ## 내가 설명할 수 있는 부분
 
+- 기능별 내용을 깔끔하게 분리해서 보여주기 위해서 카드 UI를 grid 방식으로 구성하였습니다.
+- `repeat(auto-fit, minmax())`를 사용하여 화면 크기에 따라 카드 개수가 자동으로 조정되도록 구현했습니다.
+
+```css
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 28px;
+}
+```
 ## 아직 이해 못 한 부분
+- CSS의 box-shadow 값이 각각 어떤 역할을 하는지 아직 완전히 이해하지 못했습니다.
 
 ## 새로 알게 된 것
+- grid를 사용하면 카드 형태 레이아웃을 훨씬 쉽게 만들 수 있다는 점을 배웠습니다.
+- auto-fit, minmax()를 사용하면 반응형 UI를 편하게 구현할 수 있다는 것을 알게 되었습니다.
