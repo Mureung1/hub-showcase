@@ -1,16 +1,23 @@
-# React + Vite
+## 서비스
+전 세계의 레시피를 따라 요리하고, 완성한 음식을 사진·별점·후기와 함께 기록하는 미식 여권(?) 서비스
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 주요 작업 리스트
+- [x] 서비스 구상하기 : 번역 익스텐션, 요리 기록
+- [x] 서비스 구체화하기
+- [x] react 환경 설정하기 
+- [x] plan mode로 게획 및 요구사항 정리하기
+    - 서비스 개요
+    - 세계 지도, 음식 이모지 등의 스타일
+- [x] 서비스 소개 페이지 구현하기
 
-Currently, two official plugins are available:
+## 내가 설명할 수 있는 부분
+평소 다양한 나라의 음식을 직접 요리해보고 먹는 것을 좋아합니다. 하지만 진짜 현지 레시피를 따라하기엔 언어의 장벽이 존재합니다. 그래서 레시피를 정리해주거나 추천도 해주고, 나의 요리를 기록할 수 있는 서비스를 고안했습니다. 요리를 시작해보고 싶은 사람, 나만의 레시피를 공유하고 싶은 사람, 요리 레시피 영상을 한국어와 한국에서 사용하는 계량법으로 정리하고 싶은 사람 모두 사용 가능합니다. 그래서 이 서비스를 미식 여권으로 비유해보았습니다. 
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+리액트의 동작이나 환경 설정과 함께 생성된 파일들의 용도를 설명할 수 있습니다.
 
-## React Compiler
+## 아직 이해 못 한 부분
+소개 페이지에서 어떻게 세계지도 느낌의 스타일을 구현했는지(대륙 부분)를 아직 이해하지 못했습니다. ai agent를 사용하면서 커밋을 어떻게 나누어서 만드는지 알아보려고 합니다. 
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 새로 알게 된 것
+- 현재 폴더에 react 프로젝트를 만들기 위해서는 현재 위치를 의미하는 `.`를 사용하면 됩니다.
+- 좋은 아이디어라고 생각했지만 구체화를 하다 보면 처음 목적이 흐려지기도 하고 추가 하고 싶은 것들이 눈덩이처럼 늘어나기도 합니다. 마스터로부터 배웠던 우선순위를 잘 정립해야할 것 같습니다.  
