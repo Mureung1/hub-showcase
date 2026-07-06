@@ -93,7 +93,7 @@ h2 {
   font-weight: 800;
 }
 
-.feature-section:not(.muted) .section-label,
+.feature-section .section-label,
 .overview-item span {
   color: #26a875;
 }
@@ -185,14 +185,18 @@ h2 {
   font-size: clamp(1.6rem, 3.4vw, 2.5rem);
 }
 
-.feature-section.muted {
-  background: var(--ink);
-  color: var(--paper);
+.future-section {
+  background:
+    linear-gradient(90deg, rgba(98, 214, 165, 0.15), rgba(255, 255, 255, 0) 44%),
+    var(--paper);
 }
 
-.feature-section.muted h2,
-.feature-section.muted .section-label {
-  color: #ffffff;
+.future-section .section-heading {
+  border-bottom-color: #a8d9c3;
+}
+
+.future-section h2 {
+  max-width: 560px;
 }
 
 .section-heading {
@@ -208,31 +212,45 @@ h2 {
 .feature-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
+  gap: 10px;
   padding: 0;
   margin: 0;
-  border-top: 1px solid var(--line);
-  border-left: 1px solid var(--line);
   list-style: none;
   counter-reset: feature;
 }
 
 .feature-list li {
   position: relative;
+  display: grid;
+  align-content: start;
+  gap: 8px;
   min-height: 76px;
-  padding: 18px 18px 18px 56px;
+  padding: 18px 18px 18px 54px;
   color: var(--ink);
   background: var(--paper);
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  line-height: 1.48;
+  border: 1px solid var(--line);
+  line-height: 1.52;
+}
+
+.feature-title {
+  display: block;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.feature-desc {
+  display: block;
+  color: #4b4b4b;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  word-break: keep-all;
 }
 
 .core-section .feature-list li {
-  min-height: 104px;
+  min-height: 118px;
   padding-top: 22px;
-  font-size: 1.02rem;
-  font-weight: 750;
 }
 
 .feature-list li::before {
@@ -247,17 +265,18 @@ h2 {
 }
 
 .feature-list.compact {
-  border-color: var(--paper);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .feature-list.compact li {
-  color: var(--paper);
-  background: var(--ink);
-  border-color: var(--paper);
+  min-height: 112px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.82);
+  border-color: #a8d9c3;
 }
 
 .feature-list.compact li::before {
-  color: var(--mint);
+  color: #26a875;
 }
 
 .closing {
