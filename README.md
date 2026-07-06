@@ -1,1 +1,82 @@
-# hub
+# NoticePilot
+
+NoticePilot은 대학생이 긴 공지, 과제 지침, 장학금 안내, 공모전 공지, 채용 공고를 실행 가능한 체크리스트와 캘린더 일정 후보로 바꿀 수 있게 돕는 MVP 웹앱입니다.
+
+현재 버전은 **React + Vite 기반 UI skeleton**입니다. 실제 AI API, Express 백엔드, 파일 파싱은 아직 연결하지 않았고, 샘플 데이터로 사용자 흐름을 먼저 검증합니다.
+
+## 핵심 아이디어
+
+```text
+긴 공지 → 구조화된 분석 결과 → 사용자 검토/수정 → 체크리스트 export
+```
+
+NoticePilot은 단순 요약 앱이 아니라 공지에서 다음 정보를 추출하는 것을 목표로 합니다.
+
+- 마감일
+- 해야 할 일
+- 필수 제출물
+- 지원 조건
+- 주의사항
+- 캘린더 일정 후보
+- 각 항목의 원문 근거
+
+## 현재 구현 범위
+
+- React + Vite 프로젝트 구성
+- English / 한국어 UI 전환
+- 프로젝트 소개 섹션
+- 공지 제목 및 본문 입력 UI
+- 샘플 공지 분석 버튼
+- mock 분석 dashboard
+- 항목 수정 / 삭제
+- 할 일 완료 체크
+- 캘린더 일정 선택 토글
+- 원문 근거 패널
+- Markdown 체크리스트 다운로드
+- `.ics` export placeholder
+
+## 아직 구현하지 않은 범위
+
+- Express 백엔드
+- 실제 AI API 호출
+- 파일 업로드 및 텍스트 추출
+- PDF / HWP / OCR 파싱
+- 실제 `.ics` 파일 생성
+- 로그인 / DB / Google Calendar API 연동
+
+## 실행 방법
+
+```bash
+npm install
+npm run dev
+```
+
+개발 서버 주소는 `npm run dev` 실행 후 터미널에 표시됩니다.
+
+```text
+Vite 기본값은 보통 http://localhost:5173/ 입니다.
+```
+
+프로덕션 빌드 확인:
+
+```bash
+npm run build
+```
+
+## 데모 흐름
+
+1. 앱을 실행합니다.
+2. 상단에서 `English` 또는 `한국어`를 선택합니다.
+3. `Analyze mock notice` 또는 `샘플 공지 분석` 버튼을 누릅니다.
+4. 샘플 장학금 공지의 분석 결과를 확인합니다.
+5. 추출된 항목을 수정하거나 삭제합니다.
+6. `Evidence` / `근거 보기`로 원문 근거를 확인합니다.
+7. Markdown 체크리스트를 다운로드합니다.
+
+## 다음 단계
+
+1. TXT / MD 파일 업로드 UI 추가
+2. 업로드 파일명은 메타데이터로만 보관하고, 제목은 사용자 입력 / AI 판정 / 본문 첫 줄 우선순위로 결정
+3. Express 서버와 `/api/analyze` 연결
+4. AI 응답 JSON 검증 로직 추가
+5. 실제 `.ics` calendar export 구현
