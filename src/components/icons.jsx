@@ -1,0 +1,83 @@
+export function HistoryIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+      <circle cx="20" cy="20" r="15" stroke="currentColor" strokeWidth="2.5" />
+      <path d="M20 11v9l6 4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function TargetIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+      <circle cx="20" cy="20" r="15" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="20" cy="20" r="8.5" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="20" cy="20" r="2.5" fill="currentColor" />
+    </svg>
+  )
+}
+
+export function SparkIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+      <path
+        d="M20 6l3.2 9.3L32 18.5l-8.8 3.2L20 31l-3.2-9.3L8 18.5l8.8-3.2L20 6z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+
+export function BookIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+      <path
+        d="M9 9c3-2 8-2 11 0v22c-3-2-8-2-11 0V9z"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M31 9c-3-2-8-2-11 0v22c3-2 8-2 11 0V9z"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function GrowthIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+      <path d="M7 27l7-8 6 5 11-13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M24 11h7v7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function NetworkIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+      <circle cx="20" cy="9" r="4" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="9" cy="30" r="4" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="31" cy="30" r="4" stroke="currentColor" strokeWidth="2.5" />
+      <path d="M17 12.5L11.5 26.5M23 12.5L28.5 26.5M13 30h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function TrophyIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+      <path
+        d="M13 8h14v8a7 7 0 0 1-14 0V8z"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+      />
+      <path d="M13 10H8v3a5 5 0 0 0 5 5M27 10h5v3a5 5 0 0 1-5 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M20 23v5M15 32h10M16.5 28h7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  )
+}
