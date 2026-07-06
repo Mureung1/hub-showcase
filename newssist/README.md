@@ -1,70 +1,49 @@
-# Getting Started with Create React App
+```markdown
+# Newssist 📰
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> 키워드 기반 뉴스 큐레이션, AI 즉시 해설, 개인화 뉴스 흐름 분석을 결합한 스마트 뉴스 소비 플랫폼
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🎯 타겟층
 
-### `npm start`
+- **취준생** — 면접 전 해당 분야 시사 흐름을 빠르게 파악해야 하는 사람
+- **개발자 및 직장인** — 매일 직종 관련 이슈를 확인해야 하는 현직자
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🔍 문제점
 
-### `npm test`
+TV, 인터넷, 라디오, 유튜브 등으로 세분화된 뉴스를 한 곳에서 모아보고, AI가 즉시 해설해주는 서비스가 없음
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## 🏆 기존 경쟁 서비스
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+| 기능 | 서비스 |
+|------|--------|
+| 키워드 뉴스 수집 | 네이버 뉴스, Google Alerts |
+| AI 해설 | LilysAI |
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## ✨ 기능
 
-### `npm run eject`
+- **개인화 분석** — 읽은 기사들을 임베딩(벡터화)해서 클러스터링하고 뉴스 소비 흐름을 시각화
+- **편향도 분석** — 특정 관점의 뉴스만 소비하고 있을 때 경고
+- **뉴스 요약 난이도 조절** — 입문자부터 전문가 수준까지 조절 가능
+- **다양한 매체 시각 비교** — 같은 사건을 여러 매체가 어떻게 다루는지 비교
+- **키워드 트렌드 그래프** — 특정 토픽이 언제부터 급상승했는지 확인
+- **주간 뉴스 리포트** — 한 주간 뉴스 소비 패턴 자동 요약
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🛠️ 기술 스택
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+| 영역 | 스택 |
+|------|------|
+| 뉴스 수집 | NewsAPI, 네이버 뉴스 API |
+| AI 해설 | GPT-4o API |
+| 임베딩 | OpenAI Embeddings, KoSBERT |
+| 클러스터링 및 시각화 | K-Means, UMAP |
+```
