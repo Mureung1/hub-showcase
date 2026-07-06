@@ -1,0 +1,102 @@
+.intro {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 40px 24px 56px;
+  color: #1f2933;
+  font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
+  line-height: 1.65;
+  text-align: left;
+}
+
+.intro__eyebrow {
+  font-size: 0.8rem;
+  color: #6b7280;
+  letter-spacing: 0.02em;
+  margin: 0 0 6px;
+}
+.intro__resolve {
+  font-size: 1.9rem;
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.intro__project {
+  margin-top: 28px;
+  padding: 20px;
+  background: #f7f8fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+}
+.intro__project h2 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+  color: #2563eb;
+}
+.intro__problem,
+.intro__solution {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+.intro__solution {
+  margin-bottom: 0;
+}
+
+.intro__demo {
+  margin-top: 28px;
+}
+.intro__demo-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 18px 0 8px;
+}
+.intro__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  padding: 6px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #fff;
+  color: #374151;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chip:hover {
+  border-color: #2563eb;
+}
+.chip--on {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.intro__results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.intro__results li {
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.intro__results li span {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+.intro__results li.empty {
+  color: #9ca3af;
+  justify-content: center;
+}
