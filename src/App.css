@@ -1,0 +1,9 @@
+#root {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  text-align: left;
+  border: none;
+  min-height: 100svh;
+  background: #f9fafb;
+}
