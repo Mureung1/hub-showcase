@@ -31,8 +31,3 @@ One-Step은 도전을 **아주 작은 퀘스트**로 쪼개고, 완료할 때마
 
 - **Flutter** (iOS · Android)
 - **Firebase** (Authentication · Firestore · Storage · Cloud Messaging)
-
-
-## 팀
-
-전북대학교 2조 · AI 커리어 부트캠프
