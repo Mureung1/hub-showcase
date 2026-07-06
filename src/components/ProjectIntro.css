@@ -1,0 +1,41 @@
+body {
+    margin: 0;
+    background: #fff0f5;
+    font-family: Arial, sans-serif;
+}
+
+.project-card {
+    max-width: 760px;
+    margin: 60px auto;
+    padding: 40px;
+    background: white;
+    border-radius: 28px;
+    box-shadow: 0 16px 40px rgba(244, 143, 177, 0.3);
+}
+
+.project-card h1 {
+    color: #f48fb1;
+    font-size: 36px;
+}
+
+.subtitle {
+    color: #666;
+    font-size: 18px;
+}
+
+.project-card h2 {
+    margin-top: 32px;
+    color: #f06292;
+}
+
+.project-card p,
+.project-card li {
+    font-size: 17px;
+    line-height: 1.8;
+}
+
+.chat-box {
+    background: #fff7fa;
+    padding: 20px;
+    border-radius: 18px;
+}
