@@ -25,6 +25,8 @@ No test framework or coverage threshold is configured yet. For now, run `npm run
 
 Recent commits use short, imperative subjects such as `Add auto-merge workflow for pull requests`. Keep commits focused and describe the behavior changed. PRs should follow `.github/pull_request_template.md`: summarize the work, include screenshots for UI changes, explain one implementation choice, note anything still unclear, and list what you learned. Use the requested PR title pattern, for example `[N100_Name] Add health status UI`, and link related issues when applicable.
 
+For this participant, implementation work must stay on the existing `N180_하성욱` branch. Do not create `main` or another working branch, and do not switch away from `N180_하성욱` for normal task work. The upstream `origin` repository is read-only for this contributor, so publish changes by pushing `N180_하성욱` to the personal fork remote (`fork`) and opening a PR from `swh3467:N180_하성욱` into `connect-AIAgentChallenge-26-1/hub:N180_하성욱`. Do not target `main`; the auto-merge workflow explicitly skips PRs whose base branch is `main`.
+
 ## Security & Configuration Tips
 
 Keep secrets in local `.env` files and out of git. The server reads `PORT` through `dotenv` and defaults to `3000`; the client should call relative `/api/...` paths so Vite can proxy them during development.
