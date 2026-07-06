@@ -1,0 +1,32 @@
+body{
+    margin:0;
+    background:#f3f5f7;
+}
+
+.container{
+
+    width:700px;
+
+    margin:50px auto;
+
+    background:white;
+
+    padding:30px;
+
+    border-radius:10px;
+
+    box-shadow:0 0 10px rgba(0,0,0,.15);
+
+}
+
+h1{
+
+    color:#2c3e50;
+
+}
+
+p{
+
+    font-size:18px;
+
+}
