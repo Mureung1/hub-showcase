@@ -1,0 +1,152 @@
+[
+  {
+    "term": "beat expectations",
+    "meaningKr": "시장 예상치를 상회하다",
+    "example": "Nvidia beat earnings expectations but issued weaker-than-expected guidance."
+  },
+  {
+    "term": "miss expectations",
+    "meaningKr": "시장 예상치에 못 미치다",
+    "example": "The retailer missed expectations for the third straight quarter."
+  },
+  {
+    "term": "guidance",
+    "meaningKr": "기업이 제시하는 향후 실적 전망치",
+    "example": "The company issued weaker-than-expected guidance for the current quarter."
+  },
+  {
+    "term": "headwinds",
+    "meaningKr": "사업에 부정적 영향을 주는 요인(역풍)",
+    "example": "The firm faces macroeconomic headwinds heading into next year."
+  },
+  {
+    "term": "tailwinds",
+    "meaningKr": "사업에 긍정적 영향을 주는 요인(순풍)",
+    "example": "Strong demand from data centers is a tailwind for the sector."
+  },
+  {
+    "term": "sell-off",
+    "meaningKr": "투자자들이 대량으로 매도하며 가격이 급락하는 현상",
+    "example": "Shares fell sharply amid a broad market sell-off."
+  },
+  {
+    "term": "rally",
+    "meaningKr": "주가가 큰 폭으로 상승하는 것",
+    "example": "Tech stocks staged a rally after the rate decision."
+  },
+  {
+    "term": "market cap",
+    "meaningKr": "시가총액",
+    "example": "The company's market cap surpassed $1 trillion."
+  },
+  {
+    "term": "revenue",
+    "meaningKr": "매출",
+    "example": "Quarterly revenue rose 12% year over year."
+  },
+  {
+    "term": "earnings per share",
+    "meaningKr": "주당순이익(EPS)",
+    "example": "Earnings per share came in at $2.10, above estimates."
+  },
+  {
+    "term": "outlook",
+    "meaningKr": "향후 전망",
+    "example": "Management raised its full-year outlook."
+  },
+  {
+    "term": "volatility",
+    "meaningKr": "가격 변동성",
+    "example": "Volatility increased ahead of the earnings report."
+  },
+  {
+    "term": "supply chain",
+    "meaningKr": "공급망",
+    "example": "Supply chain disruptions weighed on shipments."
+  },
+  {
+    "term": "interest rate",
+    "meaningKr": "금리",
+    "example": "Higher interest rates pressured growth stocks."
+  },
+  {
+    "term": "valuation",
+    "meaningKr": "기업가치 평가, 밸류에이션",
+    "example": "Analysts questioned the stock's rich valuation."
+  },
+  {
+    "term": "downgrade",
+    "meaningKr": "투자의견 하향 조정",
+    "example": "The bank downgraded the stock to neutral."
+  },
+  {
+    "term": "upgrade",
+    "meaningKr": "투자의견 상향 조정",
+    "example": "The analyst upgraded the stock to buy."
+  },
+  {
+    "term": "price target",
+    "meaningKr": "목표주가",
+    "example": "The firm raised its price target to $150."
+  },
+  {
+    "term": "layoffs",
+    "meaningKr": "정리해고, 감원",
+    "example": "The company announced layoffs affecting 5% of staff."
+  },
+  {
+    "term": "chip",
+    "meaningKr": "반도체(칩)",
+    "example": "Demand for AI chips remains strong."
+  },
+  {
+    "term": "data center",
+    "meaningKr": "데이터센터",
+    "example": "Cloud providers are expanding data center capacity."
+  },
+  {
+    "term": "quarter",
+    "meaningKr": "분기",
+    "example": "Revenue grew in the third quarter."
+  },
+  {
+    "term": "IPO",
+    "meaningKr": "기업공개(신규상장)",
+    "example": "The startup is preparing for an IPO next year."
+  },
+  {
+    "term": "buyback",
+    "meaningKr": "자사주 매입",
+    "example": "The board approved a $10 billion share buyback."
+  },
+  {
+    "term": "dividend",
+    "meaningKr": "배당금",
+    "example": "The company raised its quarterly dividend."
+  },
+  {
+    "term": "recession",
+    "meaningKr": "경기 침체",
+    "example": "Investors are pricing in a higher chance of recession."
+  },
+  {
+    "term": "inflation",
+    "meaningKr": "물가 상승, 인플레이션",
+    "example": "Inflation data came in hotter than expected."
+  },
+  {
+    "term": "antitrust",
+    "meaningKr": "반독점(규제)",
+    "example": "The company faces an antitrust investigation."
+  },
+  {
+    "term": "merger",
+    "meaningKr": "인수합병(합병)",
+    "example": "The two firms announced a merger agreement."
+  },
+  {
+    "term": "acquisition",
+    "meaningKr": "인수",
+    "example": "The acquisition is expected to close next quarter."
+  }
+]
