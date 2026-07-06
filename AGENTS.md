@@ -28,3 +28,17 @@ Recent commits use short, imperative subjects such as `Add auto-merge workflow f
 ## Security & Configuration Tips
 
 Keep secrets in local `.env` files and out of git. The server reads `PORT` through `dotenv` and defaults to `3000`; the client should call relative `/api/...` paths so Vite can proxy them during development.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub, and pull requests are also a request/triage surface for this repo. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Triage state is recorded in PR/issue body markers, not GitHub labels, because contributors may not have label permissions. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repo uses a single-context domain docs layout. See `docs/agents/domain.md`.
