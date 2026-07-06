@@ -27,6 +27,8 @@ Recent commits use short, imperative subjects such as `Add auto-merge workflow f
 
 For this participant, implementation work must stay on the existing `N180_하성욱` branch. Do not create `main` or another working branch, and do not switch away from `N180_하성욱` for normal task work. The upstream `origin` repository is read-only for this contributor, so publish changes by pushing `N180_하성욱` to the personal fork remote (`fork`) and opening a PR from `swh3467:N180_하성욱` into `connect-AIAgentChallenge-26-1/hub:N180_하성욱`. Do not target `main`; the auto-merge workflow explicitly skips PRs whose base branch is `main`.
 
+The PR template in `.github/pull_request_template.md` is the camp submission template. Use its sections (`주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, `새로 알게 된 것`) for camp-facing PRs only. When a Matt Pocock skill refers to PRs as an issue-tracker or triage surface, follow the agent workflow in `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md` instead; do not treat the camp reflection sections as the skill's triage state or PRD format.
+
 ## Security & Configuration Tips
 
 Keep secrets in local `.env` files and out of git. The server reads `PORT` through `dotenv` and defaults to `3000`; the client should call relative `/api/...` paths so Vite can proxy them during development.
