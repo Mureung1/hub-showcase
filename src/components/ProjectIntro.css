@@ -1,0 +1,216 @@
+.intro {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+/* ---------- Hero ---------- */
+.intro__hero {
+  text-align: center;
+  padding: 40px 0 48px;
+}
+
+.intro__badge {
+  display: inline-block;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: #7dd3fc;
+  background: rgba(125, 211, 252, 0.1);
+  border: 1px solid rgba(125, 211, 252, 0.25);
+  border-radius: 999px;
+  padding: 6px 14px;
+  margin-bottom: 20px;
+}
+
+.intro__title {
+  font-size: clamp(40px, 8vw, 64px);
+  font-weight: 800;
+  margin: 0 0 20px;
+  letter-spacing: -0.02em;
+}
+
+.intro__title-accent {
+  background: linear-gradient(120deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.intro__tagline {
+  font-size: 18px;
+  color: #c3c9d5;
+  max-width: 640px;
+  margin: 0 auto 28px;
+}
+
+.intro__tagline strong {
+  color: #e6e9ef;
+}
+
+.intro__positioning {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  font-size: 15px;
+}
+
+.intro__no {
+  color: #8b93a3;
+}
+
+.intro__yes {
+  color: #86efac;
+  font-weight: 600;
+}
+
+/* ---------- Sections ---------- */
+.intro__section {
+  margin-top: 56px;
+}
+
+.intro__heading {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Pillars ---------- */
+.intro__pillars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.pillar {
+  background: #131722;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 24px 20px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.pillar:hover {
+  transform: translateY(-3px);
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
+.pillar__icon {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+
+.pillar__title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.pillar__problem {
+  font-size: 14px;
+  color: #f0968a;
+  margin: 0 0 8px;
+}
+
+.pillar__problem::before {
+  content: '문제 · ';
+  color: #8b93a3;
+}
+
+.pillar__solution {
+  font-size: 14px;
+  color: #c3c9d5;
+  margin: 0;
+}
+
+/* ---------- Pipeline ---------- */
+.intro__pipeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  counter-reset: none;
+}
+
+.pipeline__item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #131722;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-left: 3px solid #38bdf8;
+  border-radius: 0 12px 12px 0;
+  padding: 16px 20px;
+}
+
+.pipeline__step {
+  font-weight: 700;
+  font-size: 15px;
+  color: #7dd3fc;
+}
+
+.pipeline__desc {
+  font-size: 14px;
+  color: #c3c9d5;
+}
+
+/* ---------- Walls ---------- */
+.intro__walls {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.wall {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  font-size: 15px;
+  color: #c3c9d5;
+  padding: 4px 0;
+}
+
+.wall__num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(129, 140, 248, 0.15);
+  color: #a5b4fc;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ---------- Footer ---------- */
+.intro__footer {
+  margin-top: 64px;
+  text-align: center;
+  padding: 28px;
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.06), rgba(129, 140, 248, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+
+.intro__footer p {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #d5dae4;
+}
+
+.intro__footer strong {
+  color: #fff;
+}
+
+.intro__footer-sub {
+  font-size: 13px !important;
+  color: #8b93a3 !important;
+}
