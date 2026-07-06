@@ -1,0 +1,76 @@
+.intro-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  padding: 40px 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(76, 175, 80, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.intro-content {
+  text-align: center;
+  max-width: 600px;
+  background-color: #ffffff;
+  padding: 40px 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 14px;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+
+.title {
+  color: #1b5e20;
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.description {
+  color: #666666;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  word-break: keep-all;
+}
+
+/* 새로 추가된 기능 리스트 스타일 */
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+  text-align: left;
+  background-color: #f1f8e9; /* 아주 옅은 초록색 배경으로 영역 구분 */
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.feature-icon {
+  font-size: 1.2rem;
+}
+
+.feature-text {
+  color: #33691e;
+  font-weight: 600;
+  font-size: 1rem;
+}
