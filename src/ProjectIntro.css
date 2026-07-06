@@ -1,0 +1,104 @@
+.intro {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #1a1a1a;
+}
+
+.intro-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.intro-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 0.75rem;
+}
+
+.intro-header h1 {
+  font-size: 2rem;
+  line-height: 1.3;
+  margin: 0 0 1rem;
+}
+
+.intro-tagline {
+  font-size: 1.05rem;
+  color: #4b5563;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.intro-problem,
+.intro-features {
+  margin-bottom: 2.5rem;
+}
+
+.intro h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.75rem;
+}
+
+.intro-problem p {
+  line-height: 1.7;
+  color: #374151;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.feature-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.feature-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.feature-card p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.intro-footer {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #9ca3af;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .intro {
+    color: #e5e7eb;
+  }
+  .intro-eyebrow {
+    color: #9ca3af;
+  }
+  .intro-tagline,
+  .intro-problem p {
+    color: #cbd5e1;
+  }
+  .feature-card {
+    border-color: #374151;
+  }
+  .feature-card p {
+    color: #cbd5e1;
+  }
+  .intro-footer {
+    border-top-color: #374151;
+    color: #6b7280;
+  }
+}
