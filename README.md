@@ -11,6 +11,7 @@
 ## 📄 기획서
 
 - [상세 기획서 (docs/plan.md)](./docs/plan.md)
+- [Wiki 페이지](https://github.com/minsss42/hub/wiki)
 
 ## 🛠 기술 스택
 
