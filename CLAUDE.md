@@ -28,4 +28,11 @@
 
 # 참고 문서
 - 서비스 배경/요구사항: docs/PRD.md
-- 화면/컴포넌트 설계: docs/DESIGN.md
+- 디자인 토큰(색/타이포/간격): docs/DESIGN.md
+- 화면/상태/컴포넌트 설계: docs/SCREENS.md
+- MVP 범위 (In/Out 판단 기준): docs/MVP.md
+- 엣지케이스 대응: docs/EDGE_CASES.md
+- 3주 구현 계획: docs/PLAN.md
+- 구현 스펙 (데이터/API 계약/프롬프트/시드/검수 기준): docs/SPEC.md
+- 기능 개발 체크리스트 (의존성 순서 — 완료 체크의 단일 기준): docs/CHECKLIST.md
+- UX 지침 (대기/선택/복사 패턴 조사·결정): docs/UX.md
