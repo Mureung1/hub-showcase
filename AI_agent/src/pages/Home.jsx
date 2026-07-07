@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from "react";
+import Header from "../components/layout/Header";
 
 const features = [
   {
@@ -19,8 +20,6 @@ const features = [
   },
 ];
 
-const steps = ["스펙 등록", "AI 분석", "미션 수행", "피드백", "포트폴리오"];
-
 function Home() {
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
   const activeFeature = features[activeFeatureIndex];
@@ -38,18 +37,7 @@ function Home() {
   return (
     <main style={styles.container}>
       <style>{animations}</style>
-      <nav style={styles.navbar}>
-        <div style={styles.navInner}>
-          <strong style={styles.brand}>Career Mission AI</strong>
-          <div style={styles.navMenu}>
-            {steps.map((step) => (
-              <span key={step} style={styles.navItem}>
-                {step}
-              </span>
-            ))}
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       <section style={styles.hero}>
         <div style={styles.copyStack}>
@@ -109,16 +97,15 @@ function Home() {
       </section>
 
       <section style={styles.featureSlider}>
-        <div style={styles.sliderLabel}>Core Feature</div>
         <div style={styles.sliderWindow}>
           <article key={activeFeature.title} style={styles.featureCard}>
-          <span style={styles.featureAccent}></span>
-          <p style={styles.featureCount}>
-            {activeFeatureIndex + 1} / {features.length}
-          </p>
-          <h2 style={styles.featureTitle}>{activeFeature.title}</h2>
-          <p style={styles.featureText}>{activeFeature.text}</p>
-        </article>
+            <span style={styles.featureAccent}></span>
+            <p style={styles.featureCount}>
+              {activeFeatureIndex + 1} / {features.length}
+            </p>
+            <h2 style={styles.featureTitle}>{activeFeature.title}</h2>
+            <p style={styles.featureText}>{activeFeature.text}</p>
+          </article>
         </div>
 
         <div style={styles.indicatorList}>
@@ -138,14 +125,6 @@ function Home() {
         </div>
       </section>
 
-      <section style={styles.goalSection}>
-        <h2 style={styles.darkSectionTitle}>서비스 목표</h2>
-        <p style={styles.goalText}>
-          단순히 더 많은 스펙을 쌓게 하는 것이 아니라, 대학생이 실무 경험을
-          만들고 포트폴리오로 연결하며, 지치지 않고 취업 준비를 이어갈 수
-          있도록 돕는 것이 목표입니다.
-        </p>
-      </section>
     </main>
   );
 }
@@ -170,58 +149,16 @@ const styles = {
     minHeight: "100vh",
     background:
       "radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.2), transparent 28%), radial-gradient(circle at 88% 12%, rgba(6, 182, 212, 0.22), transparent 26%), radial-gradient(circle at 52% 92%, rgba(124, 58, 237, 0.12), transparent 30%), linear-gradient(135deg, #f8fafc 0%, #eef6ff 48%, #f8fbff 100%)",
-    padding: "0 20px 56px",
+    padding: "0 0 56px",
     fontFamily: "Arial, sans-serif",
     color: "#0f172a",
   },
-  navbar: {
-    width: "calc(100% + 40px)",
-    margin: "0 -20px 34px",
-    backgroundColor: "#0f172a",
-    border: "none",
-    boxShadow: "0 16px 34px rgba(15, 23, 42, 0.18)",
-  },
-  navInner: {
-    width: "100%",
-    maxWidth: "1120px",
-    margin: "0 auto",
-    padding: "18px 20px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "18px",
-    boxSizing: "border-box",
-  },
-  brand: {
-    color: "#ffffff",
-    fontSize: "17px",
-    whiteSpace: "nowrap",
-    flexShrink: 0,
-  },
-  navMenu: {
-    minWidth: 0,
-    display: "flex",
-    justifyContent: "flex-end",
-    flexWrap: "wrap",
-    gap: "8px",
-    overflow: "hidden",
-  },
-  navItem: {
-    padding: "8px 10px",
-    borderRadius: "999px",
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    color: "#e2e8f0",
-    fontSize: "13px",
-    fontWeight: "bold",
-    border: "1px solid rgba(255, 255, 255, 0.1)",
-  },
   hero: {
-    width: "100%",
-    maxWidth: "1120px",
+    width: "min(1120px, calc(100% - 32px))",
     margin: "0 auto",
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1.35fr) minmax(280px, 0.65fr)",
-    gap: "28px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+    gap: "clamp(18px, 3vw, 28px)",
     alignItems: "stretch",
     perspective: "1200px",
   },
@@ -240,7 +177,7 @@ const styles = {
   copyArea: {
     position: "relative",
     minHeight: "100%",
-    padding: "44px",
+    padding: "clamp(26px, 5vw, 44px)",
     borderRadius: "28px",
     background: "linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(239, 246, 255, 0.4))",
     border: "1px solid rgba(255, 255, 255, 0.86)",
@@ -263,7 +200,7 @@ const styles = {
   },
   title: {
     maxWidth: "780px",
-    fontSize: "46px",
+    fontSize: "clamp(30px, 5vw, 46px)",
     lineHeight: "1.16",
     color: "#0f172a",
     margin: "0 0 22px",
@@ -271,7 +208,7 @@ const styles = {
   },
   description: {
     maxWidth: "720px",
-    fontSize: "18px",
+    fontSize: "clamp(16px, 2vw, 18px)",
     lineHeight: "1.8",
     color: "#475569",
     margin: "0 0 30px",
@@ -314,7 +251,7 @@ const styles = {
   aiPanel: {
     position: "relative",
     minHeight: "100%",
-    padding: "26px",
+    padding: "clamp(22px, 4vw, 26px)",
     borderRadius: "28px",
     background:
       "linear-gradient(155deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.78)), radial-gradient(circle at top right, rgba(6, 182, 212, 0.28), transparent 36%)",
@@ -359,7 +296,7 @@ const styles = {
   },
   score: {
     color: "#ffffff",
-    fontSize: "46px",
+    fontSize: "clamp(30px, 5vw, 46px)",
   },
   scoreTrack: {
     height: "8px",
@@ -393,23 +330,11 @@ const styles = {
     boxShadow: "0 12px 22px rgba(2, 6, 23, 0.16)",
   },
   featureSlider: {
-    maxWidth: "560px",
+    width: "min(560px, calc(100% - 32px))",
     margin: "34px auto 0",
     display: "grid",
     gap: "16px",
     perspective: "1000px",
-  },
-  sliderLabel: {
-    justifySelf: "center",
-    padding: "8px 13px",
-    borderRadius: "999px",
-    background: "rgba(255, 255, 255, 0.58)",
-    color: "#2563eb",
-    fontSize: "13px",
-    fontWeight: "bold",
-    border: "1px solid rgba(37, 99, 235, 0.12)",
-    boxShadow: "0 10px 18px rgba(37, 99, 235, 0.08)",
-    backdropFilter: "blur(14px)",
   },
   sliderWindow: {
     overflow: "hidden",
@@ -419,7 +344,7 @@ const styles = {
   featureCard: {
     position: "relative",
     minHeight: "190px",
-    padding: "30px",
+    padding: "clamp(24px, 5vw, 30px)",
     borderRadius: "20px",
     background: "linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(239, 246, 255, 0.36))",
     border: "1px solid rgba(255, 255, 255, 0.76)",
@@ -477,69 +402,8 @@ const styles = {
     width: "32px",
     background: "linear-gradient(90deg, #2563eb, #06b6d4)",
   },
-  flowSection: {
-    maxWidth: "1120px",
-    margin: "44px auto 0",
-    padding: "28px",
-    borderRadius: "24px",
-    background: "linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(238, 242, 255, 0.36))",
-    border: "1px solid rgba(255, 255, 255, 0.72)",
-    boxShadow: "0 24px 50px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.68)",
-    backdropFilter: "blur(18px) saturate(140%)",
-  },
-  sectionTitle: {
-    margin: "0 0 16px",
-    color: "#0f172a",
-    fontSize: "22px",
-  },
-  darkSectionTitle: {
-    margin: "0 0 16px",
-    color: "#ffffff",
-    fontSize: "22px",
-  },
-  stepList: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "10px",
-  },
-  stepItem: {
-    padding: "11px 14px",
-    borderRadius: "999px",
-    background: "linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(6, 182, 212, 0.09))",
-    color: "#2563eb",
-    fontSize: "14px",
-    fontWeight: "bold",
-    border: "1px solid rgba(37, 99, 235, 0.14)",
-    boxShadow: "0 10px 18px rgba(37, 99, 235, 0.08)",
-  },
-  goalSection: {
-    maxWidth: "1120px",
-    margin: "28px auto 0",
-    padding: "30px",
-    borderRadius: "24px",
-    background:
-      "linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.88)), radial-gradient(circle at top left, rgba(37, 99, 235, 0.22), transparent 34%)",
-    color: "#ffffff",
-    border: "1px solid rgba(226, 232, 240, 0.12)",
-    boxShadow: "0 28px 68px rgba(15, 23, 42, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08)",
-  },
-  goalText: {
-    maxWidth: "860px",
-    margin: 0,
-    color: "#cbd5e1",
-    fontSize: "17px",
-    lineHeight: "1.8",
-  },
 };
 
 export default Home;
-
-
-
-
-
-
-
-
 
 
