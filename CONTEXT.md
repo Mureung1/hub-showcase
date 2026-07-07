@@ -88,6 +88,14 @@ _Avoid_: Source of truth, raw material
 A user-accepted output produced after AgentModeling and UserCorrection, such as a trusted SemesterModel update or MarkdownProjection.
 _Avoid_: First draft, raw agent output
 
+**WorkspaceHistory**:
+The app-managed history layer, likely backed by Git, that records meaningful SemesterOps checkpoints while presenting them to students as history, diff, and rollback instead of Git.
+_Avoid_: User-facing Git workflow, manual commit flow
+
+**HistoryCheckpoint**:
+A meaningful snapshot in WorkspaceHistory created by the app after events such as UserConfirmation, ModelingRun completion, or MarkdownProjection regeneration.
+_Avoid_: Arbitrary autosave, raw Git commit
+
 **WorkspaceQuery**:
 The stage where a student asks questions against the SemesterModel and linked RawMaterial to understand what matters now.
 _Avoid_: Generic chat, search box, Q&A bot

@@ -127,6 +127,7 @@ MVP의 source of truth는 SQLite와 원본 RawMaterial이다. Markdown은 사람
 | 구조화 상태 | `.semesterops/semester.sqlite` | RawState, DraftState, ReviewState, TrustedState, ArtifactState를 저장한다. |
 | Agent context | `.semesterops/agent-context/` | Agent turn에 주입할 snapshot, source manifest, recent patch log를 둔다. |
 | Agent run 기록 | `.semesterops/runs/*` | ModelingRun의 prompt, logs, script output, evidence를 보존한다. |
+| WorkspaceHistory | `.semesterops/history.git` 후보 | UserConfirmation, ModelingRun, Projection 갱신의 의미 있는 checkpoint를 기록한다. |
 | built-in Skills | `.semesterops/skills/`, `.agents/skills/semesterops-*` | Agent workflow 매뉴얼을 제공한다. |
 | local scripts | `.semesterops/scripts/` 또는 package 내부 scripts | PDF, OCR, HWP/HWPX, projection rendering 같은 deterministic 처리를 담당한다. |
 | MarkdownProjection | `semester-overview.md`, `courses/*/overview.md`, `review-queue.md` | 사람이 읽는 artifact다. |
@@ -146,6 +147,7 @@ semester-workspace/
       overview.md
   .semesterops/
     semester.sqlite
+    history.git/
     agent-context/
       semester-snapshot.json
       source-manifest.json
@@ -160,6 +162,27 @@ semester-workspace/
 ```
 
 사용자가 직접 이 구조를 만들 필요는 없다. 앱이 Init에서 workspace를 만들고, MaterialIntake에서 RawMaterial을 보존하며, Review 이후 Projection과 TrustedState를 갱신한다.
+
+## WorkspaceHistory
+
+SemesterOps는 Git을 사용자-facing 기능으로 노출하지 않는다. Git은 내부 history layer의 구현 후보이며, 사용자는 기록, 변경 비교, 되돌리기 같은 친숙한 개념으로 경험한다.
+
+| 원칙 | 설명 |
+| --- | --- |
+| App-managed history | 앱이 checkpoint와 rollback을 소유하고, Agent가 raw Git 명령으로 상태를 확정하지 않는다. |
+| Friendly UX | UI에서는 Git, commit, branch보다 변경 기록, 비교, 되돌리기 표현을 쓴다. |
+| Meaningful checkpoint | 모든 autosave가 아니라 UserConfirmation, ModelingRun 완료, Projection 갱신 같은 의미 있는 순간을 기록한다. |
+| Diffable projection | SQLite 자체 diff에 의존하지 않고 JSON export, MarkdownProjection, StatePatch summary를 함께 보여준다. |
+| RawMaterial safety | 원본은 보존하되, binary 파일을 Git history에 어떻게 포함할지는 별도 정책으로 결정한다. |
+
+MVP에서는 `.semesterops/history.git` 같은 app-managed Git repository를 후보로 둔다. 이 방식은 workspace root에 사용자-facing `.git`을 만들지 않고, 기존 사용자의 Git repository와 충돌할 가능성을 줄인다.
+
+| HistoryCheckpoint trigger | 기록할 내용 |
+| --- | --- |
+| UserConfirmation | accepted/edited/rejected StatePatch와 TrustedState 변화 |
+| ModelingRun 완료 | run summary, sourceIds, output artifact reference |
+| MarkdownProjection 갱신 | 이전/이후 projection diff |
+| 사용자의 수동 snapshot | 사용자가 되돌아가고 싶은 명시적 시점 |
 
 ## MarkdownProjection
 
@@ -253,6 +276,7 @@ SemesterOps의 기능 확장은 built-in Skills와 local scripts를 늘리는 �
 | 포함 | DraftState/ReviewState/TrustedState | 상태 계층 분리 |
 | 포함 | StatePatch + RecommendedChoice | 사용자 확인 단위의 추천 변경 묶음 |
 | 포함 | UserCorrection/UserConfirmation | 사용자가 정정하고 trusted 여부를 결정 |
+| 포함 | WorkspaceHistory | UserConfirmation과 Projection 변경을 app-managed history로 기록 |
 | 포함 | MarkdownProjection 3종 | `semester-overview.md`, `courses/*/overview.md`, `review-queue.md` |
 | 포함 | ChatSidecar | GUI와 같은 상태를 다루는 대화 표면 |
 | 포함 | `app.request_user_decision` MCP startpoint | Agent가 live 사용자 판단을 요청 |
@@ -266,6 +290,7 @@ SemesterOps의 기능 확장은 built-in Skills와 local scripts를 늘리는 �
 | 제외 | 외부 캘린더 자동 업로드 | 필요 시 `calendar.ics` projection 이후 검토 |
 | 제외 | 주간 위험 브리핑/study packet 보장 | WorkspaceQuery 위의 후속 use case 후보 |
 | 제외 | custom Markdown template | MVP 이후 확장 |
+| 제외 | 사용자-facing Git workflow | Git은 내부 history layer로만 사용 |
 
 ## 보안과 프라이버시
 
@@ -275,6 +300,7 @@ SemesterOps의 기능 확장은 built-in Skills와 local scripts를 늘리는 �
 - Agent가 처리한 결과는 DraftState, ReviewState, StatePatch, run artifact로 남긴다.
 - TrustedState는 UserConfirmation을 통해서만 확정된다.
 - RawMaterial 원본은 자동 수정하거나 삭제하지 않는다.
+- WorkspaceHistory는 앱이 소유하며, Agent가 직접 Git history를 확정하지 않는다.
 - 파일 대량 변경, 삭제, 외부 공유, 외부 연동은 별도 confirmation이 필요하다.
 
 ## Academic Integrity
@@ -319,6 +345,8 @@ SemesterOps는 학습과 운영을 보조하는 도구다.
 | Agent 자유도 과잉 | 결과가 흔들리거나 사용자가 불신할 수 있다. | ProcessingGuardrail, schema validator, StatePatch evidence를 둔다. |
 | Markdown state 오염 | 자유 Markdown을 source of truth로 쓰면 깨지기 쉽다. | SQLite를 source of truth로 두고 MarkdownProjection은 artifact로 둔다. |
 | RawMaterial 자동 정리 위험 | 잘못된 이동/삭제가 신뢰를 깬다. | 원본은 보존하고 정리는 Review 이후 artifact/projection으로만 한다. |
+| Git history bloat | PDF, PPTX, HWP/HWPX 같은 binary를 무작정 versioning하면 저장소가 커진다. | raw binary 추적 정책을 별도로 정하고, manifest/export/projection 중심 diff를 제공한다. |
+| 기존 Git repo와 충돌 | 사용자가 이미 Git repo 안에서 workspace를 만들 수 있다. | workspace root `.git` 대신 `.semesterops/history.git` 같은 app-managed repo를 후보로 둔다. |
 | UI 확정 과속 | early layout decision이 제품을 좁힐 수 있다. | UIPrototypeSpike에서 NotebookLM, Obsidian, VS Code를 비교한다. |
 | 로컬 앱 설치 장벽 | npm 기반 시작은 일반 학생에게 부담일 수 있다. | MVP는 one-command, 중장기적으로 macOS desktop app을 검토한다. |
 
@@ -328,6 +356,7 @@ SemesterOps는 학습과 운영을 보조하는 도구다.
 | --- | --- |
 | `.semesterops/semester.sqlite`의 실제 table schema는 어떻게 둘 것인가? | 정보 모델을 구현 가능한 DB schema로 내려야 한다. |
 | `sources/`와 `.semesterops/` 사이의 raw file 위치를 최종적으로 어떻게 나눌 것인가? | 사용자가 원본을 직접 볼 수 있는 정도와 앱 관리 안정성의 균형이다. |
+| WorkspaceHistory가 어떤 파일을 실제 Git object로 추적해야 하는가? | binary bloat, rollback 완전성, diff UX의 균형을 정해야 한다. |
 | `app.request_user_decision`의 UI와 protocol은 어떻게 설계할 것인가? | Agent 중간 질문이 사용자 피로가 아니라 마법 같은 UX로 느껴져야 한다. |
 | StatePatch의 RecommendedChoice와 alternatives 표현은 어떤 UX가 좋은가? | 선택 피로를 줄이면서 사용자 통제감을 보장해야 한다. |
 | ChatSidecar와 main workspace layout은 어떻게 배치할 것인가? | NotebookLM, Obsidian, VS Code 참고를 거쳐 UIPrototypeSpike에서 결정한다. |
