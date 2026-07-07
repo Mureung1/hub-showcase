@@ -9,9 +9,9 @@ function RecipeCard({ id, rank, name, image, emoji, totalCost }) {
     <li>
       <Link
         to={`/recipe/${id}`}
-        className="relative flex flex-col items-center gap-1 rounded-xl border border-orange-100 bg-white p-3 text-center shadow-sm transition hover:border-orange-300 hover:shadow-md"
+        className="relative flex flex-col overflow-hidden rounded-xl border border-orange-100 bg-white shadow-sm transition hover:border-orange-300 hover:shadow-md"
       >
-        <span className="absolute left-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-orange-100 text-xs font-semibold text-orange-600">
+        <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs font-semibold text-orange-600 shadow">
           {rank}
         </span>
         {showImage ? (
@@ -19,17 +19,22 @@ function RecipeCard({ id, rank, name, image, emoji, totalCost }) {
             src={image}
             alt={name}
             onError={() => setImageFailed(true)}
-            className="h-16 w-16 rounded-lg object-cover"
+            className="aspect-square w-full object-cover"
           />
         ) : (
-          <span className="text-2xl" aria-hidden="true">
+          <span
+            className="flex aspect-square w-full items-center justify-center bg-orange-50 text-4xl"
+            aria-hidden="true"
+          >
             {emoji}
           </span>
         )}
-        <p className="w-full truncate text-sm font-medium text-gray-800">{name}</p>
-        <p className="text-sm font-bold text-orange-600">
-          {totalCost.toLocaleString()}원
-        </p>
+        <div className="p-3">
+          <p className="truncate text-sm font-medium text-gray-700">{name}</p>
+          <p className="mt-1 text-lg font-extrabold text-orange-600">
+            {totalCost.toLocaleString()}원
+          </p>
+        </div>
       </Link>
     </li>
   )

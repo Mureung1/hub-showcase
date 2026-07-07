@@ -9,24 +9,29 @@ function CategoryCard({ id, name, emoji, cheapestRecipe }) {
     <li>
       <Link
         to={`/category/${id}`}
-        className="relative flex flex-col items-center gap-1 rounded-xl border border-orange-100 bg-white p-3 text-center shadow-sm transition hover:border-orange-300 hover:shadow-md"
+        className="flex flex-col overflow-hidden rounded-xl border border-orange-100 bg-white shadow-sm transition hover:border-orange-300 hover:shadow-md"
       >
         {showImage ? (
           <img
             src={cheapestRecipe.image}
             alt={name}
             onError={() => setImageFailed(true)}
-            className="h-16 w-16 rounded-lg object-cover"
+            className="aspect-square w-full object-cover"
           />
         ) : (
-          <span className="text-2xl" aria-hidden="true">
+          <span
+            className="flex aspect-square w-full items-center justify-center bg-orange-50 text-4xl"
+            aria-hidden="true"
+          >
             {emoji}
           </span>
         )}
-        <p className="w-full truncate text-sm font-medium text-gray-800">{name}</p>
-        <p className="text-sm font-bold text-orange-600">
-          {cheapestRecipe.totalCost.toLocaleString()}원부터
-        </p>
+        <div className="p-3">
+          <p className="truncate text-sm font-medium text-gray-700">{name}</p>
+          <p className="mt-1 text-lg font-extrabold text-orange-600">
+            {cheapestRecipe.totalCost.toLocaleString()}원부터
+          </p>
+        </div>
       </Link>
     </li>
   )
