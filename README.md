@@ -2,7 +2,7 @@
 
 NoticePilot은 대학생이 긴 공지, 과제 지침, 장학금 안내, 공모전 공지, 채용 공고를 실행 가능한 체크리스트와 캘린더 일정 후보로 바꿀 수 있게 돕는 MVP 웹앱입니다.
 
-현재 버전은 **React + Vite 기반 MVP UI + Express mock analyze API**입니다. 실제 AI API는 아직 연결하지 않았고, client-side mock과 server mock 분석으로 사용자 검토/수정/export 흐름을 검증합니다.
+현재 기준선은 **React + Vite 기반 frontend MVP + Express mock analyze API + frontend-server mock wiring 완료 상태**입니다. 실제 AI API는 아직 연결하지 않았고, client-side mock과 server mock 분석으로 사용자 검토/수정/export 흐름을 검증합니다. 수동 텍스트 붙여넣기만으로도 사용할 수 있으며, 서버 mock 분석은 Express 서버를 함께 실행했을 때 사용할 수 있습니다.
 
 ## 핵심 아이디어
 
@@ -49,7 +49,7 @@ NoticePilot은 단순 요약 앱이 아니라 공지에서 다음 정보를 추�
 ## 아직 구현하지 않은 범위
 
 - 실제 AI API 호출
-- AI prompt / schema hardening
+- AI prompt / schema hardening의 runtime 적용
 - PDF / HWP / HWPX / OCR 파싱
 - 고급 상대 날짜 해석
 - 학교별 공지 parsing
@@ -59,6 +59,8 @@ NoticePilot은 단순 요약 앱이 아니라 공지에서 다음 정보를 추�
 - 로그인 / DB / Google Calendar API 연동
 
 ## 실행 방법
+
+프론트엔드 MVP와 client-side mock 분석만 확인할 때:
 
 ```bash
 npm install
@@ -70,6 +72,18 @@ npm run dev
 ```text
 Vite 기본값은 보통 http://localhost:5173/ 입니다.
 ```
+
+서버 mock 분석까지 확인할 때는 터미널 2개를 사용합니다.
+
+```bash
+npm run dev:server
+```
+
+```bash
+npm run dev
+```
+
+Express analyze API 기본 주소는 `http://127.0.0.1:3001/`이며, Vite 개발 서버는 `/api` 요청을 이 서버로 proxy합니다.
 
 프로덕션 빌드 확인:
 
@@ -89,10 +103,47 @@ npm run build
 8. 필요하면 전체 근거 검토 모드를 열어 모든 항목의 evidence를 한 번에 확인합니다.
 9. Markdown 체크리스트 또는 선택한 캘린더 일정의 `.ics` 파일을 다운로드합니다.
 
+## 프로젝트 문서
+
+상세 아키텍처, 구현 계획, 리뷰 포인트는 GitHub Wiki에서 관리합니다.
+
+- [GitHub Wiki](../../wiki)
+- [Architecture Overview](../../wiki/01_Architecture_Overview)
+- [Implementation Plan](../../wiki/02_Implementation_Plan)
+- [Review Points](../../wiki/03_Review_Points)
+
+Phase 4 이후의 AI 연동 계약, 테스트 corpus, batch calendar export 로드맵은 repository 문서로 추가할 예정입니다.
+
 ## 다음 단계
 
-1. 실제 AI API 호출 구현
-2. AI prompt / schema hardening 및 응답 JSON 검증 강화
-3. PDF / HWP / HWPX / OCR 추출 경로 추가
-4. 상대 날짜 해석 고도화
-5. 학교별 공지 parsing 및 batch / subscription calendar export 검토
+1. **Phase 4-A: Planning / Contract Documentation**
+   - 현재 구현 기준선 정리
+   - AI raw schema와 app schema mapping 문서화
+   - prompt contract 문서화
+   - 테스트 corpus 계획 수립
+   - batch calendar export 로드맵 정리
+
+2. **Phase 4-B: Test Corpus Scaffold**
+   - 공개 URL과 수동 추출 텍스트 중심으로 실제 공지 corpus 구축
+   - 필요한 공개 첨부파일만 선별적으로 보관
+   - 공지 유형별 expected result 작성
+
+3. **Phase 4-C: Real AI API Integration**
+   - Express `mode: "ai"` 구현
+   - AI API key는 server-only 환경변수로 관리
+   - AI raw response를 server에서 normalize / validate 후 현재 app schema로 변환
+
+4. **Phase 4-D: Corpus-based AI QA**
+   - 실제 공지 corpus 기준으로 AI 추출 결과 평가
+   - prompt / schema / validation backlog 정리
+
+5. **Phase 4-E: Date Resolution v1**
+   - 1차는 absolute date 중심
+   - reference date가 명확한 relative date만 제한적으로 처리
+   - 장기적으로 server-side date resolver로 확장
+
+6. **Phase 5 이후**
+   - PDF / HWP / HWPX / OCR extraction
+   - 학교별 공지 parsing
+   - checkbox 기반 batch `.ics` export
+   - subscription calendar feed
