@@ -56,6 +56,7 @@ flowchart TD
 
 - [기획서](docs/plan.md)
 - [작업 체크리스트](docs/checklist.md)
+- [Wiki](https://github.com/joo-hyun/hub/wiki)
 
 ## 프로젝트 구조
 
