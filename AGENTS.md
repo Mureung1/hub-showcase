@@ -29,14 +29,14 @@ No test framework or coverage threshold is configured yet. For now, run `npm run
 
 Recent commits use short, imperative subjects such as `Add auto-merge workflow for pull requests`. Keep commits focused and describe the behavior changed. Camp-facing PRs should follow `.github/pull_request_template.md`: summarize the work, include screenshots for UI changes, explain one implementation choice, note anything still unclear, and list what you learned. Use the requested PR title pattern, for example `[N100_Name] Add health status UI`, and link related issues when applicable.
 
-For this participant, do not use `main` as a working branch or PR target. `N180_하성욱` is the camp-facing personal integration branch, and feature/spike branches should flow toward it through the personal fork before anything is submitted upstream.
+For this participant, do not use `main` as a working branch or PR target. The default working branch is the current daily branch, named `codex/MMDD` such as `codex/0707`. `N180_하성욱` is the camp-facing personal integration branch, not a normal working branch.
 
 In PRs, `base` is the destination branch that will receive changes, and `head` is the source branch that contains the changes. Use this branch model:
 
 | Branch level | Example | Role |
 | --- | --- | --- |
-| Individual work branch | `codex/runtime-ownership-spike-poc` | One feature, spike, fix, or document change. |
-| Daily aggregation branch | `codex/0707` | Collects several individual work branches for one day or one focused batch. |
+| Daily work branch | `codex/0707` | Default branch for the day's implementation, docs, spikes, and internal merges. |
+| Individual work branch | `codex/runtime-ownership-spike-poc` | Optional branch for one feature, spike, fix, or document change before merging back to `codex/MMDD`. |
 | Camp-facing personal branch | `N180_하성욱` | The participant's official branch for camp submission. |
 | Upstream target branch | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | The final upstream branch that receives submitted work. |
 
@@ -45,13 +45,12 @@ Use this PR flow:
 | Purpose | Base | Head |
 | --- | --- | --- |
 | Work-scoped review | `swh3467:codex/MMDD` | `swh3467:codex/<work>` |
-| Small work without a daily branch | `swh3467:N180_하성욱` | `swh3467:codex/<work>` |
-| Daily aggregation into the personal branch | `swh3467:N180_하성욱` | `swh3467:codex/MMDD` |
+| Camp daily PR | `swh3467:N180_하성욱` | `swh3467:codex/MMDD` |
 | Camp-facing submission | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | `swh3467:N180_하성욱` |
 
-The upstream `origin` repository is read-only for this contributor, so publish branches by pushing to the personal fork remote (`fork`). Open upstream PRs only for camp-facing aggregation/submission, not for every work-in-progress feature branch. Do not target `main`; the auto-merge workflow explicitly skips PRs whose base branch is `main`.
+The upstream `origin` repository is read-only for this contributor, so publish branches by pushing to the personal fork remote (`fork`). Open upstream PRs only for camp-facing submission, not for every work-in-progress feature branch. Do not target `main`; the auto-merge workflow explicitly skips PRs whose base branch is `main`.
 
-The PR template in `.github/pull_request_template.md` is the camp submission template. Use its sections (`주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, `새로 알게 된 것`) for camp-facing PRs only. Internal work PRs do not use a separate GitHub PR template; link the source PRD, issue, agent brief, spike report, or handoff document instead. When a Matt Pocock skill refers to a template, treat it as the skill's own PRD, issue, agent brief, or review artifact shape, not as `.github/pull_request_template.md`. When a Matt Pocock skill refers to PRs as an issue-tracker or triage surface, follow the agent workflow in `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md` instead; do not treat the camp reflection sections as the skill's triage state or PRD format.
+The PR template in `.github/pull_request_template.md` is the camp submission template. Use its sections (`주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, `새로 알게 된 것`) for camp-facing daily PRs only. Internal work PRs do not use a separate GitHub PR template; link the source PRD, issue, agent brief, spike report, or handoff document instead. Create a `codex/MMDD` to `N180_하성욱` daily PR only when the user invokes `/camp-daily-pr`; that skill interviews the user section by section, creates the PR, and does not merge it. When a Matt Pocock skill refers to a template, treat it as the skill's own PRD, issue, agent brief, or review artifact shape, not as `.github/pull_request_template.md`. When a Matt Pocock skill refers to PRs as an issue-tracker or triage surface, follow the agent workflow in `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md` instead; do not treat the camp reflection sections as the skill's triage state or PRD format.
 
 ## Security & Configuration Tips
 
@@ -61,7 +60,21 @@ Keep secrets in local `.env` files and out of git. The server reads `PORT` throu
 
 ### Issue tracker
 
-Issues and PRDs are tracked in GitHub Issues. External PRs, or PRs explicitly named for triage, can be treated as a request surface; collaborator in-flight PRs are review or aggregation artifacts. See `docs/agents/issue-tracker.md`.
+Issues and PRDs are tracked in GitHub Issues. External PRs, or PRs explicitly named for triage, can be treated as a request surface; collaborator in-flight PRs are review artifacts, and camp daily PRs are created through `/camp-daily-pr`. See `docs/agents/issue-tracker.md`.
+
+### Matt skill operation alerts
+
+Matt Pocock skills use generic GitHub terms such as issue tracker, PR, label, publish, fetch, current branch, and merge. In this repo, translate those terms through the repo-specific rules before acting:
+
+| Generic skill instruction | Repo-specific rule |
+| --- | --- |
+| Publish a PRD or issue to the issue tracker | Prefer GitHub Issues if permissions allow; otherwise use the PR body or a PR comment with the marker format in `docs/agents/triage-labels.md`. |
+| Apply or read a triage label | Use the body/comment marker state in `docs/agents/triage-labels.md`; do not assume GitHub label permissions. |
+| Treat PRs as request or triage surface | Only external PRs, or PRs explicitly named by the user, are triage input. Collaborator work PRs and camp daily PRs are not triage queues. |
+| Commit to the current branch | The default current branch should be `codex/MMDD`; optional `codex/<work>` branches must merge back to `codex/MMDD`. Do not commit normal work on `N180_하성욱` or `main`. |
+| Use a GitHub PR template | `.github/pull_request_template.md` is only for `/camp-daily-pr` camp daily PRs. Matt skill templates are their own PRD, issue, agent brief, or review artifact shapes. |
+| Merge a PR | Do not merge a camp daily PR created by `/camp-daily-pr`; stop after creating or updating it unless the user gives a separate explicit merge instruction. |
+| Run `/setup-matt-pocock-skills` | This repo is already configured. Do not regenerate `docs/agents/**` unless the user explicitly asks; preserve the `codex/MMDD`, `/camp-daily-pr`, marker-based triage, and fork-based PR rules. |
 
 ### Triage labels
 
