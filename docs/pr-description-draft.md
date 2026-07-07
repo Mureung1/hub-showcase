@@ -11,9 +11,9 @@
 
 ## 시각화 자료
 
-![TeamFlow Agent 사용자 흐름](docs/images/user-flow.svg)
+![TeamFlow Agent 사용자 흐름](https://raw.githubusercontent.com/tjwnsdhfz/hub/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/images/user-flow.svg)
 
-![TeamFlow Agent 화면 와이어프레임](docs/images/wireframe.svg)
+![TeamFlow Agent 화면 와이어프레임](https://raw.githubusercontent.com/tjwnsdhfz/hub/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/images/wireframe.svg)
 
 ## 내가 설명할 수 있는 부분
 
