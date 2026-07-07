@@ -8,8 +8,8 @@ const features = [
   },
   {
     icon: '🤝',
-    title: 'AI 매칭',
-    desc: '편지 내용을 카테고리로 분류한 뒤, 작성자의 선호 카테고리와 맞는 수신자를 연결합니다.',
+    title: '이음',
+    desc: '글과 글, 생각과 생각 사이에 다리를 놓습니다. AI가 비슷하거나 반대되는 시선을 가진 편지를 연결합니다.',
   },
   {
     icon: '✍️',
@@ -21,7 +21,7 @@ const features = [
 const flow = [
   { step: '01', title: '편지 작성', desc: '오늘 하루를 담아 한 통의 편지를 씁니다.' },
   { step: '02', title: '모음소 대기', desc: '편지가 모음소(대기열)에서 하룻밤을 기다립니다.' },
-  { step: '03', title: 'AI 매칭', desc: '다음 날 AI가 편지 내용 기반으로 어울리는 수신자를 연결합니다.' },
+  { step: '03', title: '이음', desc: '다음 날 AI가 글과 글 사이에 다리를 놓아 어울리는 편지를 연결합니다.' },
   { step: '04', title: '답장 또는 새 편지', desc: '받은 편지에 답장하거나, 새로운 연결을 시작합니다.' },
 ]
 
@@ -41,12 +41,12 @@ function ProjectIntro() {
         <h2 className="pi-section-title">문제 정의</h2>
         <div className="pi-problem">
           <p className="pi-problem-main">
-            SNS 사용자가 <strong>빠르게 소비되는 콘텐츠</strong>에 지쳐 진지한 연결을 맺지 못한다.
+            빠르게 소비되는 SNS에서 사람들은 <strong>자신만의 글을 처음부터 끝까지 쓰고</strong>, 다른 생각과 느슨하게 연결될 여유를 잃어가고 있다.
           </p>
           <ul className="pi-problem-list">
-            <li>좋아요·댓글은 많지만 깊은 대화는 없다</li>
-            <li>피드는 빠르게 흘러가고, 관계는 얕아진다</li>
-            <li>진심을 담아 쓸 공간이 없다</li>
+            <li>피드는 빠르게 흘러가고, 내 글이 머무를 자리가 없다</li>
+            <li>완전한 공개도, 완전한 사적 대화도 아닌 — 그 사이 어딘가의 공간이 없다</li>
+            <li>나의 글이 누군가의 생각과 닿을 수 있다는 경험이 없다</li>
           </ul>
         </div>
       </section>
