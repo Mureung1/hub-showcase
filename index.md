@@ -30,11 +30,11 @@ status: active
 | Metric | Count |
 |--------|-------|
 | Raw Sources | 3 |
-| Wiki Pages | 24 |
+| Wiki Pages | 25 |
 | Concepts | 13 |
 | Entities | 5 |
 | Guides | 4 |
-| MOCs | 2 |
+| MOCs | 3 |
 | Queries | 1 |
 
 > *Stats 는 `/ingest` 실행 시 자동 갱신됩니다. 본인 컨텐츠를 채워나가면서 업데이트.*
@@ -82,6 +82,7 @@ status: active
 
 - [[MOC-Knowledge Management]] — 지식 관리 개념, 패턴, 역사 종합
 - [[MOC-LLM Wiki Guide]] — 이 볼트 사용 온보딩 가이드
+- [[MOC-Portfolio]] — 취업 포트폴리오 Evidence Wiki 운영 허브
 
 ---
 

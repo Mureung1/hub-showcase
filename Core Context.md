@@ -3,7 +3,7 @@ type: core-context
 aliases:
   - User Context
   - 핵심 맥락
-description: The user's active standalone LLM Wiki context. LLM must read this before ingest, query, or lint so operations align with the user's purpose, not just structure.
+description: The user's active standalone LLM Wiki context for portfolio evidence management, learning, and knowledge compilation. LLM must read this before ingest, query, or lint so operations align with the user's purpose, not just structure.
 author:
   - "[[김규태]]"
 date created: 2026-07-07
@@ -46,7 +46,7 @@ status: active
 
 **미래의 나에게 보내는 편지**: "이 소스가 아래 어느 축에 재활용될지" 를 수집 시점에 명시하지 못하면 수집하지 않는다.
 
-현재 기본 재활용 축은 AGENTS.md의 Codex ingest gate와 맞춘다.
+현재 기본 재활용 축은 AGENTS.md의 Codex ingest gate를 유지하되, 취업 포트폴리오 관리를 최우선 실사용 축으로 추가한다.
 
 1. **PhD**: 학위, 연구 질문, 논문 아이디어
 2. **학술**: 논문 읽기, 연구 동향, 개념 정리
@@ -55,6 +55,7 @@ status: active
 5. **CMDS 시스템**: 지식관리, LLM Wiki, agent harness 개선
 6. **에세이**: 블로그, 긴 글, 개인 관점 정리
 7. **제품**: 소프트웨어, 기능 설계, 프로토타입
+8. **취업/포트폴리오**: 프로젝트 증거, 이력서 bullet, 자기소개서, 면접 답변, GitHub 포트폴리오 스토리
 
 ---
 
@@ -92,6 +93,14 @@ Mode A로 단독 운영한다. 별도 mothership vault는 연결하지 않는다
 
 1. 답변이 §2 7 재활용 축 중 어느 축에 연결되는지 명시.
 2. Mode A에서는 이 vault 내부 Wiki / Raw Source / Query 결과만 참조한다.
+
+### Portfolio 운영 시
+
+1. 이 vault는 취업 포트폴리오 Evidence Wiki로 사용한다.
+2. 프로젝트 자료를 ingest할 때는 "내가 한 판단", "에이전트에게 맡긴 것", "검증 방법", "수치/결과", "면접에서 말할 한 문장"을 분리한다.
+3. 현재 포트폴리오 spine은 `financial-order-latency-lab -> cuee -> harness`로 유지한다. 사용자가 바꾸기 전까지 새 자료는 이 spine을 강화하는 방향으로 정리한다.
+4. Raw Source에는 README, 설계 문서, 트러블슈팅 로그, 성능 측정, 회고, 발표자료, 자기소개서 초안, 면접 답변 초안을 증거로 보존한다.
+5. Query 결과는 이력서 bullet, STAR 답변, 프로젝트 2분 설명, 약한 증거 보강 목록처럼 바로 재사용 가능한 형태로 저장한다.
 
 ### Lint 시
 

@@ -74,3 +74,11 @@ status: active
 - Source pages: [[LLM Wiki Pattern]], [[RAG vs Compiled Wiki]], [[3-Layer Architecture]], [[Ingest-Query-Lint Cycle]], [[LLM Wiki as Learning Base]], [[Agent-Readable Metadata]], [[Human-AI Knowledge Boundary]], [[Idea Generation Pipeline]], [[Track Classification and Research Gap Detection]], [[Obsidian Tooling for LLM Wiki]]
 - Durable gap captured: [[Citation Manager Integration for LLM Wiki]] guide stub created
 - Reuse axis: PhD / 학술 / CMDS 시스템
+
+## [2026-07-07] update | Portfolio Evidence Wiki setup
+
+- Updated: [[Core Context]]
+- Created: [[MOC-Portfolio]]
+- Purpose: 이 vault를 취업 포트폴리오 관리용 Evidence Wiki로 운영하기 위한 재활용 축, 프로젝트 spine, ingest/query 기준 정렬
+- Portfolio spine: `financial-order-latency-lab -> cuee -> harness`
+- Reuse axis: 취업/포트폴리오
