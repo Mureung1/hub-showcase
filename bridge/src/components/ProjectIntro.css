@@ -177,3 +177,76 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (prefers-color-scheme: dark) {
+  .pi-wrap {
+    color: #f0e6d8;
+  }
+
+  .pi-badge {
+    background: #3a2e22;
+    color: #c9a880;
+  }
+
+  .pi-title {
+    color: #f5ede3 !important;
+  }
+
+  .pi-tagline {
+    color: #c9a880;
+  }
+
+  .pi-section-title {
+    color: #f0e6d8 !important;
+    border-bottom-color: #3a2e22;
+  }
+
+  .pi-problem {
+    background: #231c15;
+    border-color: #3a2e22;
+  }
+
+  .pi-problem-main {
+    color: #f0e6d8;
+  }
+
+  .pi-problem-list {
+    color: #c9a880;
+  }
+
+  .pi-flow-item {
+    background: #231c15;
+    border-color: #3a2e22;
+  }
+
+  .pi-flow-step {
+    background: #3a2e22;
+    color: #c9a880;
+  }
+
+  .pi-flow-body strong {
+    color: #f0e6d8;
+  }
+
+  .pi-flow-body p {
+    color: #c9a880;
+  }
+
+  .pi-feature-card {
+    background: #231c15;
+    border-color: #3a2e22;
+  }
+
+  .pi-feature-card h3 {
+    color: #f0e6d8;
+  }
+
+  .pi-feature-card p {
+    color: #c9a880;
+  }
+
+  .pi-quote blockquote {
+    background: #231c15;
+    color: #c9a880;
+  }
+}
