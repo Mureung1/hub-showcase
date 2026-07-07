@@ -6,6 +6,14 @@ StockMate Agent는 판매 데이터와 현재 재고를 기반으로 상품별 �
 
 ---
 
+## 시각 브리프
+
+![StockMate Agent MVP Brief](docs/assets/stockmate-mvp-brief.svg)
+
+![StockMate Agent Roadmap Brief](docs/assets/stockmate-roadmap-brief.svg)
+
+---
+
 ## 프로젝트 소개
 
 소규모 스마트스토어 셀러는 별도의 재고관리 시스템 없이 엑셀, 스마트스토어 관리자 화면, 감에 의존해 재고를 관리하는 경우가 많습니다.

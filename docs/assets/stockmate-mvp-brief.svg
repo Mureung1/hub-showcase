@@ -1,0 +1,131 @@
+<svg width="1600" height="2300" viewBox="0 0 1600 2300" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">StockMate Agent MVP Brief</title>
+  <desc id="desc">StockMate Agent의 문제 정의, 이해관계자, MVP 스코프, 예측 모델, 개발 워크스트림, 4주 로드맵, 리스크를 요약한 시각 자료</desc>
+  <style>
+    .bg { fill: #f7f8f5; }
+    .ink { fill: #18212d; }
+    .muted { fill: #586476; }
+    .line { stroke: #d7ddd6; stroke-width: 2; }
+    .card { fill: #ffffff; stroke: #dce2dc; stroke-width: 2; filter: url(#shadow); }
+    .soft { fill: #eef4f0; }
+    .green { fill: #1f5c53; }
+    .green-stroke { stroke: #1f5c53; }
+    .blue { fill: #456fa8; }
+    .orange { fill: #df8b2e; }
+    .red { fill: #c74d4d; }
+    .pill-blue { fill: #e4ecf8; }
+    .pill-green { fill: #dceee9; }
+    .pill-orange { fill: #f8ead7; }
+    .pill-red { fill: #f7e1e4; }
+    .h1 { font: 800 64px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; letter-spacing: -1px; }
+    .h2 { font: 800 36px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    .h3 { font: 800 26px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    .label { font: 800 20px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; letter-spacing: 2px; }
+    .body { font: 500 25px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    .body-sm { font: 500 21px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    .body-xs { font: 500 18px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    .strong { font: 800 25px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    .mono { font: 700 24px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  </style>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#19251f" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2 L10 6 L2 10" fill="none" stroke="#1f5c53" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1600" height="2300"/>
+  <line class="line" x1="84" y1="96" x2="1516" y2="96"/>
+  <text class="label green" x="84" y="168">PRODUCT BRIEF · V0.1</text>
+  <text class="h1 ink" x="84" y="260">StockMate Agent</text>
+  <text class="h1 ink" x="84" y="340">재고가 비기 전에, 셀러가 먼저 알게 한다</text>
+  <text class="body muted" x="84" y="420">
+    <tspan x="84" dy="0">소규모 스마트스토어 셀러의 판매 데이터와 현재 재고를 분석해</tspan>
+    <tspan x="84" dy="42">상품별 소진 시점, 발주 필요 여부, 오늘 확인할 상품을 브리핑하는 4주 MVP</tspan>
+  </text>
+  <line class="line" x1="84" y1="500" x2="1516" y2="500"/>
+
+  <text class="h2 ink" x="84" y="590">문제 정의</text>
+  <text class="body muted" x="1140" y="590">재고표가 아니라, 오늘의 판단이 필요하다</text>
+  <rect class="card" x="84" y="630" width="1432" height="230" rx="24"/>
+  <circle class="green" cx="132" cy="690" r="9"/>
+  <text class="h3 ink" x="160" y="700">소규모 셀러는 모든 상품의 판매량과 재고를 매일 확인하기 어렵다.</text>
+  <text class="body muted" x="160" y="760">
+    <tspan x="160" dy="0">그 결과 잘 팔리는 상품은 갑자기 품절되고, 느리게 팔리는 상품은 과잉재고로 묶인다.</tspan>
+    <tspan x="160" dy="42">StockMate는 판매 속도와 리드타임을 계산해 “지금 확인해야 할 상품”을 먼저 보여준다.</tspan>
+  </text>
+
+  <text class="h2 ink" x="84" y="960">이해관계자</text>
+  <text class="body muted" x="1064" y="960">누구의 문제를 풀고, 어떤 데이터가 흐르는가</text>
+  <rect class="card" x="84" y="1000" width="444" height="250" rx="22"/>
+  <text class="label green" x="120" y="1060">핵심 사용자</text>
+  <text class="h3 ink" x="120" y="1110">소규모 스마트스토어 셀러</text>
+  <text class="body-sm muted" x="120" y="1162">
+    <tspan x="120" dy="0">엑셀과 감으로 발주를 결정하는</tspan>
+    <tspan x="120" dy="34">1인 또는 소수 인원 판매자</tspan>
+  </text>
+  <text class="strong ink" x="120" y="1228">니즈</text>
+  <text class="body-sm muted" x="188" y="1228">품절과 과잉재고를 미리 피하기</text>
+
+  <rect class="card" x="578" y="1000" width="444" height="250" rx="22"/>
+  <text class="label green" x="614" y="1060">데이터 원천</text>
+  <text class="h3 ink" x="614" y="1110">더미 데이터 · CSV</text>
+  <text class="body-sm muted" x="614" y="1162">
+    <tspan x="614" dy="0">MVP에서는 API 연동 대신</tspan>
+    <tspan x="614" dy="34">가상 판매 이력으로 검증</tspan>
+  </text>
+  <text class="strong ink" x="614" y="1228">이유</text>
+  <text class="body-sm muted" x="682" y="1228">승인·권한 리스크를 MVP에서 제외</text>
+
+  <rect class="card" x="1072" y="1000" width="444" height="250" rx="22"/>
+  <text class="label green" x="1108" y="1060">공급망</text>
+  <text class="h3 ink" x="1108" y="1110">공급업체 · 리드타임</text>
+  <text class="body-sm muted" x="1108" y="1162">
+    <tspan x="1108" dy="0">발주 후 입고까지 걸리는 기간이</tspan>
+    <tspan x="1108" dy="34">알림 시점의 기준이 됨</tspan>
+  </text>
+  <text class="strong ink" x="1108" y="1228">영향</text>
+  <text class="body-sm muted" x="1176" y="1228">리드타임이 길수록 더 빨리 경고</text>
+
+  <text class="h2 ink" x="84" y="1360">MVP 예측 모델</text>
+  <text class="body muted" x="1000" y="1360">복잡한 ML보다 설명 가능한 규칙부터</text>
+  <path d="M148 1630 A190 190 0 0 1 254 1294" stroke="#c74d4d" stroke-width="44" stroke-linecap="butt"/>
+  <path d="M254 1294 A190 190 0 0 1 442 1294" stroke="#df8b2e" stroke-width="44" stroke-linecap="butt"/>
+  <path d="M442 1294 A190 190 0 0 1 548 1630" stroke="#3b8d59" stroke-width="44" stroke-linecap="butt"/>
+  <line x1="348" y1="1630" x2="318" y2="1450" stroke="#18212d" stroke-width="18" stroke-linecap="round"/>
+  <circle class="ink" cx="348" cy="1630" r="18"/>
+  <text class="body-sm muted" x="114" y="1696">재고 상태 게이지 · 품절위험 · 발주시점 · 안전재고 · 과잉재고</text>
+
+  <rect class="card" x="650" y="1420" width="866" height="360" rx="24"/>
+  <text class="mono ink" x="704" y="1498">소진예상일 = 현재 재고 ÷ 최근 14일 일평균 판매량</text>
+  <line class="line" x1="704" y1="1540" x2="1468" y2="1540"/>
+  <text class="mono ink" x="704" y="1608">발주필요 = 소진예상일 ≤ 리드타임 + 안전마진</text>
+  <line class="line" x1="704" y1="1650" x2="1468" y2="1650"/>
+  <text class="strong ink" x="704" y="1720">데이터 부족 처리</text>
+  <text class="body-sm muted" x="704" y="1762">판매 이력 7일 미만 상품은 예측 대신 “데이터 수집 중”으로 표시</text>
+
+  <text class="h2 ink" x="84" y="1910">MVP 스코프</text>
+  <rect class="soft" x="84" y="1950" width="686" height="250" rx="18"/>
+  <rect class="green" x="84" y="1950" width="8" height="250" rx="4"/>
+  <text class="h3 green" x="124" y="2018">이번 MVP에 포함</text>
+  <text class="body-sm ink" x="124" y="2076">
+    <tspan x="124" dy="0">· 더미 데이터 / CSV 업로드</tspan>
+    <tspan x="124" dy="36">· 상품별 소진 예상일 계산</tspan>
+    <tspan x="124" dy="36">· 품절 위험, 발주 필요, 과잉재고 상태 분류</tspan>
+    <tspan x="124" dy="36">· 오늘의 재고 브리핑과 대시보드</tspan>
+  </text>
+
+  <rect class="soft" x="830" y="1950" width="686" height="250" rx="18"/>
+  <rect fill="#d7ddd6" x="830" y="1950" width="8" height="250" rx="4"/>
+  <text class="h3 muted" x="870" y="2018">다음 단계로 이연</text>
+  <text class="body-sm muted" x="870" y="2076">
+    <tspan x="870" dy="0">· 네이버 커머스 API 자동 연동</tspan>
+    <tspan x="870" dy="36">· 카카오톡 / 이메일 실제 발송</tspan>
+    <tspan x="870" dy="36">· 자동 발주와 결제</tspan>
+    <tspan x="870" dy="36">· 머신러닝 기반 수요 예측</tspan>
+  </text>
+
+  <line class="line" x1="84" y1="2250" x2="1516" y2="2250"/>
+</svg>
