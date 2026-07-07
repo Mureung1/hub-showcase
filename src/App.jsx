@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AnalysisDashboard from './components/AnalysisDashboard.jsx'
+import ConfirmationModal from './components/ConfirmationModal.jsx'
 import EmptyState from './components/EmptyState.jsx'
 import ExportPanel from './components/ExportPanel.jsx'
 import Header from './components/Header.jsx'
@@ -19,31 +20,127 @@ import {
   getMockNotice,
 } from './data/mockAnalysisResult.js'
 import { localizedContent } from './data/localizedContent.js'
+import {
+  deleteSectionItem,
+  toggleCalendarEventSelected,
+  toggleTaskCompleted,
+  updateCalendarEventField,
+  updateSectionItem,
+} from './utils/analysisHandlers.js'
+import { detectPrivacyPatterns } from './utils/privacyPatterns.js'
+import {
+  clearNoticePilotState,
+  loadNoticePilotState,
+  saveNoticePilotState,
+} from './utils/storage.js'
+import { validateAnalysisResult } from './utils/validateAnalysisResult.js'
 
-function updateItemInCollection(items, itemId, updates) {
-  return items.map((item) =>
-    item.id === itemId ? { ...item, ...updates } : item,
-  )
-}
-
-function deleteItemFromCollection(items, itemId) {
-  return items.filter((item) => item.id !== itemId)
-}
+const maxUploadSizeBytes = 1024 * 1024
+const acceptedTextExtensions = ['.txt', '.md']
 
 export default function App() {
-  const [language, setLanguage] = useState('en')
-  const [noticeTitle, setNoticeTitle] = useState('')
-  const [sourceText, setSourceText] = useState('')
-  const [analysisResult, setAnalysisResult] = useState(null)
+  const [savedState] = useState(() => loadNoticePilotState() || {})
+  const initialLanguage = savedState.language || 'en'
+  const [language, setLanguage] = useState(initialLanguage)
+  const [noticeTitle, setNoticeTitle] = useState(savedState.noticeTitle || '')
+  const [extractedText, setExtractedText] = useState(
+    savedState.extractedText || savedState.sourceText || '',
+  )
+  const [uploadedFileName, setUploadedFileName] = useState(
+    savedState.uploadedFileName || '',
+  )
+  const [userSelectedNoticeType, setUserSelectedNoticeType] = useState(
+    savedState.userSelectedNoticeType || '',
+  )
+  const [noticePublicationDate, setNoticePublicationDate] = useState(
+    savedState.noticePublicationDate || '',
+  )
+  const [analysisResult, setAnalysisResult] = useState(() =>
+    savedState.analysisResult
+      ? validateAnalysisResult(
+          savedState.analysisResult,
+          localizedContent[initialLanguage].validationWarnings,
+        )
+      : null,
+  )
   const [activeEvidence, setActiveEvidence] = useState(null)
+  const [inputWarnings, setInputWarnings] = useState([])
+  const [error, setError] = useState(null)
+  const [confirmationType, setConfirmationType] = useState(null)
   const copy = localizedContent[language]
+
+  useEffect(() => {
+    saveNoticePilotState({
+      language,
+      noticeTitle,
+      sourceText: extractedText,
+      extractedText,
+      uploadedFileName,
+      userSelectedNoticeType,
+      noticePublicationDate,
+      analysisResult,
+    })
+  }, [
+    language,
+    noticeTitle,
+    extractedText,
+    uploadedFileName,
+    userSelectedNoticeType,
+    noticePublicationDate,
+    analysisResult,
+  ])
+
+  function prepareAnalysisResult(rawResult, nextLanguage = language) {
+    return validateAnalysisResult(
+      {
+        ...rawResult,
+        userSelectedNoticeType: userSelectedNoticeType || 'unknown',
+        noticePublicationDate,
+        uploadedFileName,
+        detectedNoticeType: rawResult.detectedNoticeType || '',
+      },
+      localizedContent[nextLanguage].validationWarnings,
+    )
+  }
+
+  function setBlockingError(nextError) {
+    setError(nextError)
+  }
+
+  function clearErrorType(type) {
+    setError((currentError) => (currentError?.type === type ? null : currentError))
+  }
+
+  function executeMockAnalysis(nextLanguage = language) {
+    const mockNotice = getMockNotice(nextLanguage)
+    const mockResult = prepareAnalysisResult(
+      createMockAnalysisResult(nextLanguage),
+      nextLanguage,
+    )
+
+    setNoticeTitle((currentTitle) => currentTitle || mockNotice.noticeTitle)
+    setExtractedText((currentText) => currentText || mockNotice.noticeText)
+    setAnalysisResult(mockResult)
+    setInputWarnings([])
+    setError(null)
+    setActiveEvidence({
+      type: localizedContent[nextLanguage].collectionLabels.deadlines,
+      item: mockResult.deadlines[0],
+    })
+  }
 
   function loadMockForLanguage(nextLanguage) {
     const mockNotice = getMockNotice(nextLanguage)
-    const mockResult = createMockAnalysisResult(nextLanguage)
+    const mockResult = prepareAnalysisResult(
+      createMockAnalysisResult(nextLanguage),
+      nextLanguage,
+    )
     setNoticeTitle(mockNotice.noticeTitle)
-    setSourceText(mockNotice.noticeText)
+    setExtractedText(mockNotice.noticeText)
+    setUploadedFileName('')
     setAnalysisResult(mockResult)
+    setInputWarnings([])
+    setError(null)
     setActiveEvidence({
       type: localizedContent[nextLanguage].collectionLabels.deadlines,
       item: mockResult.deadlines[0],
@@ -52,6 +149,8 @@ export default function App() {
 
   function handleLanguageChange(nextLanguage) {
     setLanguage(nextLanguage)
+    setInputWarnings([])
+    setError(null)
 
     if (analysisResult) {
       loadMockForLanguage(nextLanguage)
@@ -61,23 +160,125 @@ export default function App() {
     setActiveEvidence(null)
   }
 
+  function requestMockAnalysis({ skipOverwrite = false, skipPrivacy = false } = {}) {
+    if (analysisResult && !skipOverwrite) {
+      setConfirmationType('overwrite')
+      return
+    }
+
+    const privacyMatches = detectPrivacyPatterns(extractedText)
+
+    if (privacyMatches.length && !skipPrivacy) {
+      setInputWarnings([
+        {
+          type: 'privacy_patterns_detected',
+          message: copy.warnings.privacyPatternsDetected(privacyMatches),
+        },
+      ])
+      setConfirmationType('privacy')
+      return
+    }
+
+    executeMockAnalysis()
+  }
+
   function handleAnalyzeMockNotice() {
-    const mockNotice = getMockNotice(language)
-    setNoticeTitle((currentTitle) => currentTitle || mockNotice.noticeTitle)
-    setSourceText((currentText) => currentText || mockNotice.noticeText)
-    const mockResult = createMockAnalysisResult(language)
-    setAnalysisResult(mockResult)
-    setActiveEvidence({
-      type: copy.collectionLabels.deadlines,
-      item: mockResult.deadlines[0],
+    requestMockAnalysis()
+  }
+
+  function handleConfirmAction() {
+    const currentConfirmation = confirmationType
+    setConfirmationType(null)
+
+    if (currentConfirmation === 'overwrite') {
+      requestMockAnalysis({ skipOverwrite: true })
+      return
+    }
+
+    if (currentConfirmation === 'privacy') {
+      executeMockAnalysis()
+    }
+  }
+
+  function handleCancelConfirmation() {
+    setConfirmationType(null)
+  }
+
+  function handleAnalysisMetadataChange(updates) {
+    setAnalysisResult((currentResult) => {
+      if (!currentResult) {
+        return currentResult
+      }
+
+      return {
+        ...currentResult,
+        ...updates,
+      }
     })
   }
 
   function handleClearNotice() {
     setNoticeTitle('')
-    setSourceText('')
+    setExtractedText('')
+    setUploadedFileName('')
+    setUserSelectedNoticeType('')
+    setNoticePublicationDate('')
     setAnalysisResult(null)
     setActiveEvidence(null)
+    setInputWarnings([])
+    setError(null)
+    clearNoticePilotState()
+  }
+
+  function handleNoticeFileUpload(file) {
+    if (!file) {
+      return
+    }
+
+    const fileName = file.name
+    const lowerFileName = fileName.toLowerCase()
+    const hasAcceptedExtension = acceptedTextExtensions.some((extension) =>
+      lowerFileName.endsWith(extension),
+    )
+
+    if (!hasAcceptedExtension) {
+      setBlockingError({
+        type: 'upload_error',
+        title: copy.errors.fileErrorTitle,
+        message: copy.errors.unsupportedFile,
+        location: 'input',
+      })
+      return
+    }
+
+    if (file.size > maxUploadSizeBytes) {
+      setBlockingError({
+        type: 'upload_error',
+        title: copy.errors.fileErrorTitle,
+        message: copy.errors.fileTooLarge,
+        location: 'input',
+      })
+      return
+    }
+
+    const reader = new FileReader()
+
+    reader.onload = (event) => {
+      setExtractedText(String(event.target.result || ''))
+      setUploadedFileName(fileName)
+      clearErrorType('upload_error')
+    }
+
+    reader.onerror = () => {
+      setBlockingError({
+        type: 'upload_error',
+        title: copy.errors.fileErrorTitle,
+        message: copy.errors.fileReadFailed,
+        location: 'input',
+      })
+    }
+
+    reader.readAsText(file)
   }
 
   function handleItemUpdate(collectionName, itemId, updates) {
@@ -86,14 +287,19 @@ export default function App() {
         return currentResult
       }
 
-      return {
-        ...currentResult,
-        [collectionName]: updateItemInCollection(
-          currentResult[collectionName],
-          itemId,
-          updates,
-        ),
+      if (collectionName === 'tasks' && 'completed' in updates) {
+        return toggleTaskCompleted(currentResult, itemId, updates.completed)
       }
+
+      if (collectionName === 'calendarEvents' && 'selected' in updates) {
+        return toggleCalendarEventSelected(currentResult, itemId, updates.selected)
+      }
+
+      if (collectionName === 'calendarEvents') {
+        return updateCalendarEventField(currentResult, itemId, updates)
+      }
+
+      return updateSectionItem(currentResult, collectionName, itemId, updates)
     })
   }
 
@@ -103,13 +309,7 @@ export default function App() {
         return currentResult
       }
 
-      return {
-        ...currentResult,
-        [collectionName]: deleteItemFromCollection(
-          currentResult[collectionName],
-          itemId,
-        ),
-      }
+      return deleteSectionItem(currentResult, collectionName, itemId)
     })
 
     setActiveEvidence((currentEvidence) =>
@@ -156,9 +356,25 @@ export default function App() {
               <NoticeInput
                 copy={copy.noticeInput}
                 noticeTitle={noticeTitle}
-                sourceText={sourceText}
+                extractedText={extractedText}
+                uploadedFileName={uploadedFileName}
+                userSelectedNoticeType={userSelectedNoticeType}
+                noticePublicationDate={noticePublicationDate}
+                warnings={inputWarnings}
+                error={error}
                 onTitleChange={setNoticeTitle}
-                onSourceTextChange={setSourceText}
+                onExtractedTextChange={setExtractedText}
+                onNoticeTypeChange={(value) => {
+                  setUserSelectedNoticeType(value)
+                  handleAnalysisMetadataChange({
+                    userSelectedNoticeType: value || 'unknown',
+                  })
+                }}
+                onPublicationDateChange={(value) => {
+                  setNoticePublicationDate(value)
+                  handleAnalysisMetadataChange({ noticePublicationDate: value })
+                }}
+                onFileUpload={handleNoticeFileUpload}
                 onAnalyzeMock={handleAnalyzeMockNotice}
                 onClear={handleClearNotice}
               />
@@ -187,11 +403,25 @@ export default function App() {
                 copy={copy.exportPanel}
                 markdownCopy={copy.markdown}
                 analysisResult={analysisResult}
+                error={error}
+                onError={setBlockingError}
+                onClearError={clearErrorType}
               />
             </aside>
           </div>
         </section>
       </main>
+
+      {confirmationType ? (
+        <ConfirmationModal
+          title={copy.confirmations[confirmationType].title}
+          message={copy.confirmations[confirmationType].message}
+          confirmLabel={copy.confirmations[confirmationType].confirm}
+          cancelLabel={copy.confirmations[confirmationType].cancel}
+          onConfirm={handleConfirmAction}
+          onCancel={handleCancelConfirmation}
+        />
+      ) : null}
     </div>
   )
 }
