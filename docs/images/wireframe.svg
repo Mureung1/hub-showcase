@@ -17,82 +17,83 @@
   <rect width="1280" height="900" fill="#fbfbf9"/>
 
   <g transform="translate(64 46)">
-    <text class="title" x="0" y="48">TeamFlow Agent Wireframe</text>
-    <text class="subtitle" x="2" y="84">입력 화면과 분석 결과 화면을 먼저 만들고, 실제 AI 연동은 다음 단계로 분리한다.</text>
-    <rect x="1030" y="10" width="106" height="40" rx="16" fill="#e60023"/>
-    <text class="button" x="1058" y="35">MVP UI</text>
+    <text class="title" x="0" y="48">모두의 뇌 와이어프레임</text>
+    <text class="subtitle" x="2" y="84">입력 화면과 지식맵 결과 화면을 먼저 만들고, 실제 AI 연동은 다음 단계로 분리한다.</text>
+    <rect x="1015" y="10" width="122" height="40" rx="16" fill="#e60023"/>
+    <text class="button" x="1047" y="35">MVP UI</text>
   </g>
 
-  <g transform="translate(72 150)">
-    <rect x="0" y="0" width="530" height="650" rx="32" fill="#ffffff" stroke="#dadad3"/>
-    <rect x="38" y="32" width="454" height="586" rx="32" fill="#f6f6f3" stroke="#dadad3"/>
-    <rect x="208" y="58" width="114" height="8" rx="4" fill="#262622"/>
+  <g transform="translate(64 150)">
+    <rect x="0" y="0" width="544" height="662" rx="32" fill="#ffffff" stroke="#dadad3"/>
+    <text class="heading" x="36" y="52">1. 프로젝트 자료 입력</text>
+    <text class="muted" x="36" y="82">회의록, 연구 메모, 설계 피드백을 붙여넣는 화면</text>
 
-    <text class="heading" x="72" y="112">회의록 입력</text>
-    <text class="muted" x="72" y="140">회의록, 카카오톡 공지, 공모전 준비 메모를 붙여넣으세요.</text>
+    <g transform="translate(36 120)">
+      <rect x="0" y="0" width="472" height="52" rx="16" fill="#f6f6f3" stroke="#e5e5e0"/>
+      <text class="muted" x="20" y="31">프로젝트명</text>
+      <text class="body" x="132" y="31">공학설계 공모전 구조 검토</text>
+    </g>
 
-    <rect x="72" y="172" width="384" height="254" rx="16" fill="#ffffff" stroke="#c8c8c1"/>
-    <text class="body" x="94" y="206">오늘 회의에서 서준은 발표 자료 첫 장과</text>
-    <text class="body" x="94" y="232">문제 정의를 수요일까지 정리하기로 했다.</text>
-    <text class="body" x="94" y="268">민지는 사용자 시나리오와 화면 흐름도를</text>
-    <text class="body" x="94" y="294">목요일까지 만들기로 했다.</text>
-    <text class="body" x="94" y="330">아직 최종 발표 대본 담당자는 정하지 못했다.</text>
+    <g transform="translate(36 194)">
+      <text class="section" x="0" y="0">입력 자료</text>
+      <rect x="0" y="20" width="472" height="270" rx="16" fill="#f6f6f3" stroke="#e5e5e0"/>
+      <text class="body" x="22" y="58">교수님 피드백: 보이드 공간은 유지하되</text>
+      <text class="body" x="22" y="90">구조 보강 방식과 동선 근거를 다시 설명해야 함.</text>
+      <text class="body" x="22" y="134">구조팀: 장스팬 구간 보강 필요.</text>
+      <text class="body" x="22" y="166">설비팀: 천장고와 덕트 경로 충돌 가능.</text>
+      <text class="body" x="22" y="210">아직 합의 안 된 질문: 보이드 우선인가,</text>
+      <text class="body" x="22" y="242">시공 가능성 우선인가?</text>
+    </g>
 
-    <rect x="72" y="454" width="144" height="44" rx="16" fill="#e5e5e0"/>
-    <text class="chip" x="105" y="481">예시 입력</text>
+    <g transform="translate(36 522)">
+      <rect x="0" y="0" width="472" height="54" rx="16" fill="#e60023"/>
+      <text class="button" x="177" y="34">맥락 지식맵 만들기</text>
+    </g>
 
-    <rect x="230" y="454" width="226" height="44" rx="16" fill="#e60023"/>
-    <text class="button" x="304" y="481">AI 분석하기</text>
-
-    <rect x="72" y="532" width="384" height="56" rx="16" fill="#ffffff" stroke="#dadad3"/>
-    <circle cx="98" cy="560" r="8" fill="#e60023"/>
-    <text class="muted" x="118" y="565">입력 없음, 분석 중, 분석 완료 상태를 분리한다.</text>
+    <g transform="translate(36 600)">
+      <text class="muted" x="0" y="0">MVP에서는 사용자가 직접 붙여넣은 텍스트를 분석한다.</text>
+    </g>
   </g>
 
-  <g transform="translate(678 150)">
-    <rect x="0" y="0" width="530" height="650" rx="32" fill="#ffffff" stroke="#dadad3"/>
-    <rect x="38" y="32" width="454" height="586" rx="32" fill="#f6f6f3" stroke="#dadad3"/>
-    <rect x="208" y="58" width="114" height="8" rx="4" fill="#262622"/>
+  <g transform="translate(672 150)">
+    <rect x="0" y="0" width="544" height="662" rx="32" fill="#ffffff" stroke="#dadad3"/>
+    <text class="heading" x="36" y="52">2. 공유 지식맵 결과</text>
+    <text class="muted" x="36" y="82">주제, 사람, 분야, 결정, 질문을 관계로 보여주는 화면</text>
 
-    <text class="heading" x="72" y="112">분석 결과</text>
-    <text class="muted" x="72" y="140">팀원별 할 일, 마감일, 미결 이슈를 한 화면에서 확인합니다.</text>
+    <g transform="translate(36 120)">
+      <rect x="0" y="0" width="472" height="250" rx="16" fill="#262622"/>
+      <circle cx="236" cy="126" r="48" fill="#e60023"/>
+      <text class="on-dark" x="205" y="132">보이드</text>
 
-    <g transform="translate(72 174)">
-      <rect x="0" y="0" width="384" height="62" rx="16" fill="#ffffff" stroke="#dadad3"/>
-      <rect x="16" y="18" width="48" height="26" rx="13" fill="#000000"/>
-      <text class="button" x="28" y="36">서준</text>
-      <text class="body" x="82" y="26">발표 자료 첫 장, 문제 정의 정리</text>
-      <text class="muted" x="82" y="48">마감: 수요일 · 상태: 진행 중</text>
+      <circle cx="102" cy="72" r="36" fill="#ffffff"/>
+      <text class="chip" x="78" y="77">구조팀</text>
+      <line x1="136" y1="85" x2="194" y2="111" stroke="#dadad3" stroke-width="2"/>
+
+      <circle cx="370" cy="72" r="36" fill="#ffffff"/>
+      <text class="chip" x="346" y="77">설비팀</text>
+      <line x1="336" y1="85" x2="278" y2="111" stroke="#dadad3" stroke-width="2"/>
+
+      <circle cx="112" cy="190" r="40" fill="#ffffff"/>
+      <text class="chip" x="85" y="195">동선 근거</text>
+      <line x1="150" y1="178" x2="194" y2="145" stroke="#dadad3" stroke-width="2"/>
+
+      <circle cx="370" cy="190" r="40" fill="#ffffff"/>
+      <text class="chip" x="342" y="195">미결 질문</text>
+      <line x1="335" y1="178" x2="278" y2="145" stroke="#dadad3" stroke-width="2"/>
     </g>
 
-    <g transform="translate(72 250)">
-      <rect x="0" y="0" width="384" height="62" rx="16" fill="#ffffff" stroke="#dadad3"/>
-      <rect x="16" y="18" width="48" height="26" rx="13" fill="#000000"/>
-      <text class="button" x="28" y="36">민지</text>
-      <text class="body" x="82" y="26">사용자 시나리오, 화면 흐름도</text>
-      <text class="muted" x="82" y="48">마감: 목요일 · 상태: 진행 중</text>
+    <g transform="translate(36 402)">
+      <text class="section" x="0" y="0">관점 차이 요약</text>
+      <rect x="0" y="22" width="472" height="76" rx="16" fill="#f6f6f3" stroke="#e5e5e0"/>
+      <text class="body" x="20" y="54">건축팀은 공간 경험을 우선하고, 구조팀은 장스팬</text>
+      <text class="body" x="20" y="80">보강 가능성을 먼저 확인해야 한다.</text>
     </g>
 
-    <g transform="translate(72 326)">
-      <rect x="0" y="0" width="384" height="62" rx="16" fill="#ffffff" stroke="#dadad3"/>
-      <rect x="16" y="18" width="48" height="26" rx="13" fill="#e60023"/>
-      <text class="button" x="28" y="36">미정</text>
-      <text class="body" x="82" y="26">최종 발표 대본 작성</text>
-      <text class="muted" x="82" y="48">담당자 불명확 · 지정 필요</text>
+    <g transform="translate(36 526)">
+      <text class="section" x="0" y="0">다음 질문</text>
+      <rect x="0" y="22" width="472" height="92" rx="16" fill="#f6f6f3" stroke="#e5e5e0"/>
+      <text class="body" x="20" y="56">1. 보이드 크기를 줄이지 않고 보강할 수 있는가?</text>
+      <text class="body" x="20" y="84">2. 설비 경로와 구조 보강안이 충돌하지 않는가?</text>
     </g>
-
-    <rect x="72" y="430" width="384" height="142" rx="16" fill="#262622"/>
-    <text class="on-dark" x="96" y="464">다음 회의 체크리스트</text>
-    <circle cx="102" cy="492" r="5" fill="#e60023"/>
-    <text class="on-dark-muted" x="116" y="497">화면 흐름도 확인</text>
-    <circle cx="102" cy="522" r="5" fill="#e60023"/>
-    <text class="on-dark-muted" x="116" y="527">핵심 기능 2개 재확인</text>
-    <circle cx="102" cy="552" r="5" fill="#e60023"/>
-    <text class="on-dark-muted" x="116" y="557">발표 대본 담당자 지정</text>
-  </g>
-
-  <g transform="translate(96 828)">
-    <rect x="0" y="0" width="1088" height="42" rx="16" fill="#ffffff" stroke="#dadad3"/>
-    <text class="muted" x="24" y="27">Design note: warm cream surfaces, 16px rounded controls, one red primary CTA, quiet monochrome chrome.</text>
   </g>
 </svg>
