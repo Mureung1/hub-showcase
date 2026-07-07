@@ -1,0 +1,129 @@
+.problem-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.problem-heading {
+  font-size: 32px;
+  text-align: center;
+  margin-top: 24px;
+}
+
+.problem-sub {
+  color: var(--text-soft);
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.problem-cards {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  max-width: 1080px;
+  position: relative;
+}
+
+.problem-card {
+  flex: 1;
+  border-radius: 28px;
+  padding: 32px 28px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.meeting-card {
+  background: linear-gradient(160deg, #fff1e6 0%, #ffd8be 100%);
+  border: 3px solid #ffb694;
+}
+
+.roommate-card {
+  background: linear-gradient(160deg, #fff0f4 0%, #ffd6e0 100%);
+  border: 3px solid #ffb3c6;
+}
+
+.problem-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.card-icon-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.card-icon {
+  font-size: 30px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-soft);
+}
+
+.problem-card h2 {
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+
+.card-points {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.card-points li {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.card-solution {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.solution-badge {
+  display: inline-block;
+  font-family: var(--heading);
+  font-size: 13px;
+  color: #fff;
+  background: var(--coral-deep);
+  border-radius: 999px;
+  padding: 4px 12px;
+  margin-bottom: 8px;
+}
+
+.card-solution p {
+  font-size: 14.5px;
+  color: var(--text-h);
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .problem-cards {
+    flex-direction: column;
+  }
+  .problem-divider {
+    width: auto;
+    padding: 4px 0;
+  }
+}
