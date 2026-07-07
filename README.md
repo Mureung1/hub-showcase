@@ -37,9 +37,14 @@ npm run dev                  # http://localhost:3000
 
 ## 시각 자료 (Figma)
 
-- 유저 플로우 (FigJam): _링크 추가_
-- 화면 목록 IA (FigJam): _링크 추가_
-- 와이어프레임: https://www.figma.com/design/8Tjc7ZZecZhw5N9ng56kY6
+- 유저 플로우 (FigJam)
+![유저 플로우](docs/images/Briefy-User-Flow.png)
+
+- 화면 목록 IA (FigJam):
+![화면 목록 IA](docs/images/Briefy-IA.png)
+
+- 와이어프레임
+![와이어프레임](docs/images/Briefy-Wireframe.png)
 
 ## 프로젝트 정보
 
