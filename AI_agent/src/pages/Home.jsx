@@ -1,33 +1,13 @@
 ﻿import { useEffect, useState } from "react";
 import Header from "../components/layout/Header";
-
-const features = [
-  {
-    title: "AI 역량 분석",
-    text: "목표 직무와 현재 스펙의 차이를 분석해 우선 보완할 역량을 보여줍니다.",
-  },
-  {
-    title: "맞춤 미션 생성",
-    text: "포트폴리오로 연결할 수 있는 실무형 미션을 개인 상태에 맞게 추천합니다.",
-  },
-  {
-    title: "AI 피드백",
-    text: "제출한 결과물의 강점과 개선점을 정리해 다음 행동으로 이어지게 합니다.",
-  },
-  {
-    title: "번아웃 케어",
-    text: "컨디션 체크를 통해 무리한 취업 준비를 줄이고 적절한 휴식을 제안합니다.",
-  },
-];
+import { homeFeatures } from "../data/homeFeatures";
 
 function Home() {
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
-  const activeFeature = features[activeFeatureIndex];
-
   useEffect(() => {
     const timerId = setInterval(() => {
       setActiveFeatureIndex((currentIndex) =>
-        currentIndex === features.length - 1 ? 0 : currentIndex + 1
+        currentIndex === homeFeatures.length - 1 ? 0 : currentIndex + 1
       );
     }, 3000);
 
@@ -110,18 +90,73 @@ function Home() {
 
       <section style={styles.featureSlider}>
         <div style={styles.sliderWindow}>
-          <article key={activeFeature.title} style={styles.featureCard}>
-            <span style={styles.featureAccent}></span>
-            <p style={styles.featureCount}>
-              {activeFeatureIndex + 1} / {features.length}
-            </p>
-            <h2 style={styles.featureTitle}>{activeFeature.title}</h2>
-            <p style={styles.featureText}>{activeFeature.text}</p>
-          </article>
+          <div
+            style={{
+              ...styles.sliderTrack,
+              transform: `translateX(-${activeFeatureIndex * 100}%)`,
+            }}
+          >
+            {homeFeatures.map((feature, slideIndex) => (
+              <article key={feature.title} style={styles.radarCard}>
+                <div style={styles.radarHeader}>
+                  <div>
+                    <p style={styles.radarEyebrow}>Career Radar</p>
+                    <h2 style={styles.featureTitle}>{feature.title}</h2>
+                  </div>
+                  <div style={styles.scanStatus}>
+                    <span style={styles.scanDot}></span>
+                    {feature.status}
+                  </div>
+                </div>
+
+                <div className="radar-body" style={styles.radarBody}>
+                  <div style={styles.radarVisual}>
+                    <div style={styles.radarRing}>
+                      <span style={styles.radarSweep}></span>
+                      <strong style={styles.radarScore}>{feature.scoreValue}</strong>
+                      <span style={styles.radarScoreLabel}>
+                        {feature.scoreLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={styles.radarContent}>
+                    <p style={styles.featureCount}>
+                      0{slideIndex + 1} / 0{homeFeatures.length}
+                    </p>
+                    <p style={styles.featureText}>{feature.text}</p>
+                    <div style={styles.progressTrack}>
+                      <span
+                        style={{
+                          ...styles.progressFill,
+                          width: feature.progress,
+                        }}
+                      ></span>
+                    </div>
+                    <p style={styles.radarInsight}>{feature.insight}</p>
+                  </div>
+                </div>
+
+                <div className="radar-metric-grid" style={styles.metricGrid}>
+                  {feature.metrics.map(([label, value]) => (
+                    <div key={label} style={styles.radarMetric}>
+                      <span>{label}</span>
+                      <strong>{value}</strong>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="next-action" style={styles.nextAction}>
+                  <span>다음 추천 행동</span>
+                  <strong>{feature.action}</strong>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
 
         <div style={styles.indicatorList}>
-          {features.map((feature, index) => (
+          {homeFeatures.map((feature, index) => (
             <button
               key={feature.title}
               type="button"
@@ -147,19 +182,6 @@ function Home() {
 }
 
 const animations = `
-@keyframes featureSlideIn {
-  0% {
-    opacity: 0;
-    transform: translateX(34px) scale(0.985) rotateX(3deg) rotateY(-3deg);
-    filter: blur(4px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0) scale(1) rotateX(2deg) rotateY(-2deg);
-    filter: blur(0);
-  }
-}
-
 .hero-action {
   border: 0;
   cursor: pointer;
@@ -212,6 +234,30 @@ const animations = `
 .feature-indicator:active {
   background: #1d4ed8 !important;
   transform: scale(0.9);
+}
+
+@keyframes radarSweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .radar-body {
+    grid-template-columns: 1fr !important;
+  }
+
+  .radar-metric-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .next-action {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
 }
 `;
 
@@ -402,62 +448,186 @@ const styles = {
     boxShadow: "0 12px 22px rgba(2, 6, 23, 0.16)",
   },
   featureSlider: {
-    width: "min(720px, calc(100% - clamp(32px, 6vw, 96px)))",
-    margin: "clamp(28px, 4vw, 44px) auto 0",
+    width: "min(680px, calc(100% - clamp(32px, 6vw, 96px)))",
+    margin: "clamp(90px, 10vw, 130px) auto 0",
     display: "grid",
-    gap: "16px",
-    perspective: "1000px",
+    gap: "12px",
   },
   sliderWindow: {
     overflow: "hidden",
-    borderRadius: "24px",
-    padding: "4px",
+    borderRadius: "22px",
+    padding: 0,
+    background: "rgba(255, 255, 255, 0.62)",
+    boxShadow: "0 20px 44px rgba(15, 23, 42, 0.1), 0 6px 18px rgba(37, 99, 235, 0.08)",
   },
-  featureCard: {
+  sliderTrack: {
+    display: "flex",
+    transition: "transform 1200ms cubic-bezier(0.22, 1, 0.36, 1)",
+    willChange: "transform",
+  },
+  radarCard: {
     position: "relative",
-    minHeight: "190px",
-    padding: "clamp(24px, 5vw, 30px)",
-    borderRadius: "20px",
-    background: "linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(239, 246, 255, 0.36))",
-    border: "1px solid rgba(255, 255, 255, 0.76)",
-    boxShadow:
-      "0 22px 42px rgba(15, 23, 42, 0.1), 0 6px 16px rgba(37, 99, 235, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7)",
+    flex: "0 0 100%",
+    width: "100%",
+    boxSizing: "border-box",
+    minHeight: "250px",
+    padding: "clamp(16px, 2.5vw, 22px)",
+    borderRadius: 0,
+    background:
+      "linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(239, 246, 255, 0.44)), radial-gradient(circle at 18% 18%, rgba(37, 99, 235, 0.16), transparent 34%), radial-gradient(circle at 90% 22%, rgba(6, 182, 212, 0.18), transparent 30%)",
+    border: 0,
+    boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.76)",
     backdropFilter: "blur(18px) saturate(140%)",
-    transform: "rotateX(2deg) rotateY(-2deg)",
-    animation: "featureSlideIn 900ms cubic-bezier(0.22, 1, 0.36, 1) both",
   },
-  featureAccent: {
-    display: "block",
-    width: "38px",
-    height: "5px",
-    borderRadius: "999px",
-    background: "linear-gradient(90deg, #2563eb, #06b6d4)",
-    marginBottom: "16px",
-    boxShadow: "0 8px 18px rgba(37, 99, 235, 0.22)",
+  radarHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "18px",
+    alignItems: "flex-start",
+    marginBottom: "14px",
   },
-  featureCount: {
-    position: "absolute",
-    top: "24px",
-    right: "26px",
-    margin: 0,
+  radarEyebrow: {
+    margin: "0 0 8px",
     color: "#2563eb",
     fontSize: "13px",
+    fontWeight: "bold",
+    letterSpacing: "0",
+  },
+  scanStatus: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "7px 10px",
+    borderRadius: "999px",
+    background: "rgba(15, 23, 42, 0.06)",
+    color: "#334155",
+    fontSize: "12px",
+    fontWeight: "bold",
+    whiteSpace: "nowrap",
+  },
+  scanDot: {
+    width: "8px",
+    height: "8px",
+    borderRadius: "50%",
+    background: "#22c55e",
+    boxShadow: "0 0 14px rgba(34, 197, 94, 0.8)",
+  },
+  radarBody: {
+    display: "grid",
+    gridTemplateColumns: "minmax(120px, 160px) 1fr",
+    gap: "clamp(14px, 2.5vw, 22px)",
+    alignItems: "center",
+  },
+  radarVisual: {
+    display: "grid",
+    placeItems: "center",
+  },
+  radarRing: {
+    position: "relative",
+    width: "min(138px, 48vw)",
+    aspectRatio: "1",
+    display: "grid",
+    placeItems: "center",
+    overflow: "hidden",
+    borderRadius: "50%",
+    background:
+      "repeating-radial-gradient(circle, rgba(37, 99, 235, 0.08) 0 1px, transparent 1px 26px), conic-gradient(from 120deg, rgba(37, 99, 235, 0.2), rgba(6, 182, 212, 0.58), rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.2))",
+    border: "1px solid rgba(37, 99, 235, 0.18)",
+    boxShadow: "inset 0 0 34px rgba(37, 99, 235, 0.12), 0 20px 34px rgba(15, 23, 42, 0.1)",
+  },
+  radarSweep: {
+    position: "absolute",
+    inset: "50% 50% 0 0",
+    transformOrigin: "100% 0",
+    background: "linear-gradient(90deg, rgba(34, 211, 238, 0.58), transparent)",
+    animation: "radarSweep 4s linear infinite",
+  },
+  radarScore: {
+    position: "relative",
+    color: "#0f172a",
+    fontSize: "clamp(30px, 5vw, 42px)",
+    lineHeight: "1",
+  },
+  radarScoreLabel: {
+    position: "absolute",
+    bottom: "31px",
+    color: "#475569",
+    fontSize: "10px",
+    fontWeight: "bold",
+  },
+  radarContent: {
+    minWidth: 0,
+  },
+  featureCount: {
+    margin: 0,
+    color: "#2563eb",
+    fontSize: "12px",
     fontWeight: "bold",
   },
   featureTitle: {
     margin: "0 0 10px",
     color: "#0f172a",
-    fontSize: "18px",
+    fontSize: "clamp(18px, 2.6vw, 22px)",
+    lineHeight: "1.2",
   },
   featureText: {
-    margin: 0,
+    margin: "6px 0 10px",
     color: "#475569",
-    fontSize: "15px",
-    lineHeight: "1.7",
+    fontSize: "clamp(14px, 1.8vw, 15px)",
+    lineHeight: "1.55",
+  },
+  progressTrack: {
+    height: "8px",
+    borderRadius: "999px",
+    background: "rgba(37, 99, 235, 0.12)",
+    overflow: "hidden",
+    marginBottom: "10px",
+  },
+  progressFill: {
+    display: "block",
+    height: "100%",
+    borderRadius: "999px",
+    background: "linear-gradient(90deg, #2563eb, #06b6d4)",
+    boxShadow: "0 0 18px rgba(6, 182, 212, 0.34)",
+  },
+  radarInsight: {
+    margin: 0,
+    color: "#334155",
+    fontSize: "13px",
+    lineHeight: "1.55",
+  },
+  metricGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: "8px",
+    marginTop: "14px",
+  },
+  radarMetric: {
+    display: "grid",
+    gap: "4px",
+    padding: "9px 10px",
+    borderRadius: "12px",
+    background: "rgba(255, 255, 255, 0.62)",
+    border: "1px solid rgba(226, 232, 240, 0.9)",
+    color: "#64748b",
+    fontSize: "12px",
+    boxShadow: "0 12px 22px rgba(15, 23, 42, 0.06)",
+  },
+  nextAction: {
+    marginTop: "8px",
+    padding: "10px 12px",
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "14px",
+    borderRadius: "13px",
+    background: "linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.86))",
+    color: "#cbd5e1",
+    fontSize: "13px",
   },
   indicatorList: {
     display: "flex",
     justifyContent: "center",
+    flexWrap: "wrap",
     gap: "9px",
   },
   indicator: {
@@ -477,5 +647,3 @@ const styles = {
 };
 
 export default Home;
-
-
