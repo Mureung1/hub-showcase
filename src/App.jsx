@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Stepper from "./components/Stepper.jsx";
 import CvUpload from "./features/cvUpload/CvUpload.jsx";
 import { parseCv } from "./features/cvUpload/parseCv.js";
 import DesignSelect from "./features/designSelect/DesignSelect.jsx";
 import { THEMES, DEFAULT_THEME, getTheme } from "./features/designSelect/themes.js";
+import Generating from "./features/generate/Generating.jsx";
 
 const BUILTIN_SAMPLE = `# 김지수
 Frontend Engineer
@@ -37,10 +38,21 @@ export default function App() {
   const [step, setStep] = useState("upload");
   const [cvText, setCvText] = useState("");
   const [designSlug, setDesignSlug] = useState(DEFAULT_THEME.slug);
+  const [html, setHtml] = useState("");
 
   const parsed = useMemo(() => parseCv(cvText), [cvText]);
   const cvReady = cvText.trim().length > 0;
   const theme = getTheme(designSlug);
+
+  const handleGenerated = useCallback((generatedHtml) => {
+    setHtml(generatedHtml);
+    setStep("result");
+  }, []);
+
+  function restart() {
+    setHtml("");
+    setStep("upload");
+  }
 
   return (
     <div className="app">
@@ -96,14 +108,25 @@ export default function App() {
         )}
 
         {step === "generate" && (
-          <div className="placeholder">
-            <p className="placeholder-emoji">✨</p>
-            <p>
-              생성 단계 — 다음 커밋에서 추가됩니다. (선택: <b>{theme.name}</b>)
-            </p>
+          <Generating cv={parsed} theme={theme} onDone={handleGenerated} />
+        )}
+
+        {step === "result" && (
+          <div>
+            <iframe
+              title="portfolio preview"
+              srcDoc={html}
+              style={{
+                width: "100%",
+                height: "560px",
+                border: "1px solid var(--line)",
+                borderRadius: "10px",
+                background: "#fff",
+              }}
+            />
             <div className="stage-nav">
-              <button className="btn" onClick={() => setStep("design")}>
-                ← 이전
+              <button className="btn" onClick={restart}>
+                ↺ 새로 만들기
               </button>
               <span />
             </div>
