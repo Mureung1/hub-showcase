@@ -5,6 +5,7 @@ import { parseCv } from "./features/cvUpload/parseCv.js";
 import DesignSelect from "./features/designSelect/DesignSelect.jsx";
 import { THEMES, DEFAULT_THEME, getTheme } from "./features/designSelect/themes.js";
 import Generating from "./features/generate/Generating.jsx";
+import ResultView from "./features/result/ResultView.jsx";
 
 const BUILTIN_SAMPLE = `# 김지수
 Frontend Engineer
@@ -112,25 +113,7 @@ export default function App() {
         )}
 
         {step === "result" && (
-          <div>
-            <iframe
-              title="portfolio preview"
-              srcDoc={html}
-              style={{
-                width: "100%",
-                height: "560px",
-                border: "1px solid var(--line)",
-                borderRadius: "10px",
-                background: "#fff",
-              }}
-            />
-            <div className="stage-nav">
-              <button className="btn" onClick={restart}>
-                ↺ 새로 만들기
-              </button>
-              <span />
-            </div>
-          </div>
+          <ResultView html={html} cv={parsed} theme={theme} onRestart={restart} />
         )}
       </main>
     </div>
