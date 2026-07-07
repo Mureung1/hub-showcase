@@ -11,33 +11,164 @@
   --neutral: #9AA0A6;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   background: var(--bg);
   font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Malgun Gothic', sans-serif;
   color: var(--text-main);
-  padding: 32px 16px 80px;
 }
 
 .container {
   max-width: 720px;
   margin: 0 auto;
+  padding: 0 16px 80px;
 }
 
-header {
-  text-align: center;
-  margin-bottom: 28px;
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(255, 248, 243, 0.9);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
 }
 
-header h1 {
-  font-size: 26px;
-  margin: 0 0 6px;
+.nav-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-header p {
+.nav-logo {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-main);
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.nav-links a {
   color: var(--text-sub);
+  text-decoration: none;
   font-size: 14px;
-  margin: 0;
+}
+
+.nav-links a:hover {
+  color: var(--text-main);
+}
+
+.nav-cta {
+  background: var(--accent);
+  color: white !important;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.nav-cta:hover {
+  background: var(--accent-dark);
+}
+
+.hero {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 56px 16px 40px;
+}
+
+.hero h1 {
+  font-size: 32px;
+  line-height: 1.35;
+  margin: 0 0 14px;
+}
+
+.hero p {
+  color: var(--text-sub);
+  font-size: 15px;
+  margin: 0 0 24px;
+}
+
+.hero-cta {
+  display: inline-block;
+  background: var(--accent);
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px 28px;
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+
+.hero-cta:hover {
+  background: var(--accent-dark);
+}
+
+.how-it-works {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+
+.how-it-works h2 {
+  text-align: center;
+  font-size: 20px;
+  margin: 0 0 24px;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.step {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 20px 16px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+.site-footer {
+  text-align: center;
+  padding: 32px 16px 48px;
+  color: var(--text-sub);
+  font-size: 13px;
 }
 
 .input-card {
@@ -196,6 +327,102 @@ textarea:focus {
   background: var(--positive);
   color: white;
   border-color: var(--positive);
+}
+
+.solution-box {
+  background: #FFF3EC;
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.solution-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-dark);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.recurring-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--negative);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+}
+
+.recurring-panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.recurring-panel h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--negative);
+}
+
+.recurring-scope {
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.reset-history-btn {
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 12px;
+}
+
+.reset-history-btn:hover {
+  color: var(--negative);
+}
+
+.recurring-issue-item {
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.recurring-issue-item:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.recurring-issue-item .meta-row {
+  margin-bottom: 6px;
+}
+
+.issue-keyword {
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  background: var(--negative);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.issue-count {
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.issue-solution {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-main);
 }
 
 .empty-state {
