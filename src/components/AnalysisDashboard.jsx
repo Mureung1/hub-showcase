@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import CalendarEventList from './CalendarEventList.jsx'
 import CautionList from './CautionList.jsx'
 import DeadlineList from './DeadlineList.jsx'
+import EvidenceReview from './EvidenceReview.jsx'
 import RequirementList from './RequirementList.jsx'
 import SubmissionList from './SubmissionList.jsx'
 import TaskList from './TaskList.jsx'
+import WarningBanner from './WarningBanner.jsx'
 
 export default function AnalysisDashboard({
   analysisResult,
@@ -14,6 +17,8 @@ export default function AnalysisDashboard({
   onItemDelete,
   onShowEvidence,
 }) {
+  const [showEvidenceReview, setShowEvidenceReview] = useState(false)
+
   return (
     <section className="dashboard">
       <div className="section-heading">
@@ -21,6 +26,28 @@ export default function AnalysisDashboard({
         <h2>{analysisResult.title}</h2>
         <p>{analysisResult.summary}</p>
       </div>
+
+      <WarningBanner title={copy.warningTitle} warnings={analysisResult.warnings} />
+
+      <div className="dashboard-toolbar">
+        <button
+          className="ghost-button"
+          type="button"
+          onClick={() => setShowEvidenceReview((currentValue) => !currentValue)}
+        >
+          {showEvidenceReview
+            ? copy.hideEvidenceReview
+            : copy.showEvidenceReview}
+        </button>
+      </div>
+
+      {showEvidenceReview ? (
+        <EvidenceReview
+          analysisResult={analysisResult}
+          collectionLabels={collectionLabels}
+          copy={copy.evidenceReview}
+        />
+      ) : null}
 
       <div className="dashboard-grid">
         <DeadlineList

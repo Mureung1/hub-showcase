@@ -24,7 +24,10 @@ export default function EditableItemCard({
   return (
     <article className="item-card">
       <div className="item-card-header">
-        <span className="type-pill">{typeLabel || type}</span>
+        <div className="item-card-labels">
+          <span className="type-pill">{typeLabel || type}</span>
+          {item.edited ? <span className="edited-pill">{copy.edited}</span> : null}
+        </div>
         <div className="item-card-actions">
           <button type="button" onClick={() => onShowEvidence(item)}>
             {copy.evidence}
