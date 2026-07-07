@@ -5,7 +5,7 @@ function ProjectIntro() {
     <main className="intro">
       <header className="intro-header">
         <p className="intro-eyebrow">AI Agent Challenge</p>
-        <h1>대학생 투자자를 위한 리서치 검증 Agent</h1>
+        <h1>대학생 투자자를 위한 근거 검증 Agent</h1>
         <p className="intro-tagline">
           종목을 추천하지 않습니다. 이미 내린 매수 판단이 실제 데이터로
           뒷받침되는지 검증합니다.
@@ -15,10 +15,12 @@ function ProjectIntro() {
       <section className="intro-problem">
         <h2>왜 필요한가</h2>
         <p>
-          대학생 소액 투자자는 재무제표를 읽을 줄 모르고, 매수 근거가 대부분
-          &lsquo;감&rsquo;이거나 커뮤니티에서 들은 얘기입니다. 문제는 정보
-          부족이 아니라, <strong>판단 근거를 검증할 수단이 없다는 것</strong>
-          입니다.
+          <strong>
+            대학생 소액 투자자가 매수 판단의 근거를 검증할 수단이 없어 같은
+            실수를 반복합니다.
+          </strong>{' '}
+          재무제표를 읽을 줄 모르고, 매수 근거가 대부분 &lsquo;감&rsquo;이거나
+          커뮤니티에서 들은 얘기이기 때문입니다.
         </p>
       </section>
 
