@@ -1,45 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
-type RecentItem = {
-  id: string;
-  title: string;
-  source: string;
-  savedAt: string;
-  category: string;
+type Item = {
+  id: number;
+  title: string | null;
+  original_url: string | null;
+  source_platform: string | null;
+  category_main: string | null;
+  created_at: string;
 };
 
-const MOCK_RECENT: RecentItem[] = [
-  {
-    id: "1",
-    title: "가벼운 러닝화 추천 TOP5",
-    source: "youtube · 오늘",
-    savedAt: "오늘",
-    category: "영상",
-  },
-  {
-    id: "2",
-    title: "데일리 쿠션 파운데이션",
-    source: "naver · 오늘",
-    savedAt: "오늘",
-    category: "뷰티",
-  },
-];
+function isUrl(text: string) {
+  try {
+    new URL(text.trim());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function guessSourcePlatform(url: string) {
+  if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
+  if (url.includes("instagram.com")) return "instagram";
+  if (url.includes("twitter.com") || url.includes("x.com")) return "twitter";
+  if (url.includes("naver.com")) return "naver";
+  return "web";
+}
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function fetchItems() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("items")
+      .select(
+        "id, title, original_url, source_platform, category_main, created_at"
+      )
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.error(error);
+    } else {
+      setItems(data ?? []);
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
 
   async function handleSave() {
     if (!input.trim()) return;
     setSaving(true);
 
-    // TODO: Supabase에 저장 + 자동분류 로직 연결
-    // const { data, error } = await supabase.from("items").insert({ raw_input: input });
+    const trimmed = input.trim();
+    const urlDetected = isUrl(trimmed);
 
-    await new Promise((r) => setTimeout(r, 500));
-    setInput("");
+    const { error } = await supabase.from("items").insert({
+      type: urlDetected ? "link" : "text",
+      original_url: urlDetected ? trimmed : null,
+      title: urlDetected ? trimmed : trimmed.slice(0, 50),
+      source_platform: urlDetected ? guessSourcePlatform(trimmed) : "manual",
+      status: "unread",
+    });
+
+    if (error) {
+      console.error(error);
+      alert("저장에 실패했어요. 콘솔을 확인해주세요.");
+    } else {
+      setInput("");
+      await fetchItems();
+    }
     setSaving(false);
   }
 
@@ -94,18 +133,32 @@ export default function Home() {
       {/* 최근 저장 */}
       <section>
         <h2 className="text-sm font-medium text-muted mb-3">최근 저장</h2>
+
+        {loading && <p className="text-sm text-muted">불러오는 중...</p>}
+
+        {!loading && items.length === 0 && (
+          <p className="text-sm text-muted">
+            아직 저장한 게 없어요. 위 입력창에 링크나 텍스트를 붙여넣어보세요.
+          </p>
+        )}
+
         <ul className="space-y-3">
-          {MOCK_RECENT.map((item) => (
+          {items.map((item) => (
             <li
               key={item.id}
               className="flex items-center justify-between bg-white/60 rounded-xl px-3 py-3"
             >
-              <div>
-                <p className="text-sm text-ink font-medium">{item.title}</p>
-                <p className="text-xs text-muted">{item.source}</p>
+              <div className="min-w-0">
+                <p className="text-sm text-ink font-medium truncate">
+                  {item.title || "(제목 없음)"}
+                </p>
+                <p className="text-xs text-muted">
+                  {item.source_platform ?? "manual"} ·{" "}
+                  {new Date(item.created_at).toLocaleDateString("ko-KR")}
+                </p>
               </div>
-              <span className="text-xs text-accentDark bg-accent/10 rounded-full px-2 py-1">
-                {item.category}
+              <span className="text-xs text-accentDark bg-accent/10 rounded-full px-2 py-1 shrink-0 ml-2">
+                {item.category_main ?? "미분류"}
               </span>
             </li>
           ))}
