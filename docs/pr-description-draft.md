@@ -3,6 +3,9 @@
 ## 주요 작업 리스트
 
 - `docs/plan.md`에 협업 맥락 공유 AI 에이전트 기획을 정리했습니다.
+- `docs/prd.md`에 제품 요구사항을 정리했습니다.
+- `docs/trd.md`에 기술 요구사항과 데이터 구조를 정리했습니다.
+- `docs/prompt-design.md`에 LLM 프롬프트 구조와 JSON 출력 스키마를 정리했습니다.
 - `docs/market-research.md`에 시장 조사와 경쟁 분석을 정리했습니다.
 - `docs/design-assets.md`에 Canva/Figma 디자인 산출물 링크를 정리했습니다.
 - `README.md`에서 기획서, 시장 조사, 체크리스트, 대표 이미지에 바로 접근할 수 있도록 구성했습니다.

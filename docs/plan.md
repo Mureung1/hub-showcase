@@ -172,7 +172,13 @@ flowchart TD
 - Canva 편집 디자인: `https://www.canva.com/d/vv5pLSUhq50coma`
 - Figma FigJam 흐름도: `https://www.figma.com/board/V5Jke4dsqaoMUOiTEg57tM`
 
-## 14. React 컴포넌트 개발
+## 14. 세부 기획 문서
+
+- [PRD](prd.md): 제품 요구사항, 목표 사용자, MVP 범위, 성공 기준
+- [TRD](trd.md): 기술 구조, 타입 정의, 컴포넌트 구조, 테스트 계획
+- [프롬프트 디자인](prompt-design.md): LLM 프롬프트, JSON 스키마, 검증 기준
+
+## 15. React 컴포넌트 개발
 
 시장 조사와 관련 사례를 보여주는 카드 UI를 만들기 위해 `NewsCard` 컴포넌트를 추가한다.
 
@@ -194,7 +200,7 @@ flowchart TD
 }
 ```
 
-## 15. 개발 작업 분해
+## 16. 개발 작업 분해
 
 - 기획서 제목과 문제 정의를 모두의 뇌 방향으로 정리
 - 시장 조사 및 경쟁 분석 문서 작성
@@ -208,7 +214,7 @@ flowchart TD
 - `npm run build`로 타입/빌드 검증
 - `npm run dev` 확인 시나리오 정리
 
-## 16. 완료 기준
+## 17. 완료 기준
 
 - 기존 회의 요약/업무표 에이전트와 다른 차별점이 분명하다.
 - 문제 정의가 협업 맥락 손실과 노동력 낭비를 직접 다룬다.
@@ -217,6 +223,6 @@ flowchart TD
 - `NewsCard` 컴포넌트가 TypeScript props 기준에 맞게 동작한다.
 - `npm run build`가 성공한다.
 
-## 17. 최종 요약
+## 18. 최종 요약
 
 모두의 뇌는 팀 전체가 함께 쓰는 두 번째 뇌를 만드는 협업 맥락 AI 에이전트이다. 회의록과 문서를 단순히 요약하는 것이 아니라, 프로젝트 안의 사람, 역할, 용어, 결정사항, 미결 질문을 연결해 모두가 같은 맥락을 이해하도록 돕는다.

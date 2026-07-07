@@ -9,6 +9,9 @@
 ## 문서
 
 - [기초 개발 기획서](docs/plan.md)
+- [PRD](docs/prd.md)
+- [TRD](docs/trd.md)
+- [프롬프트 디자인](docs/prompt-design.md)
 - [시장 조사 및 경쟁 분석](docs/market-research.md)
 - [디자인 산출물 링크](docs/design-assets.md)
 - [작업 분해 체크리스트](docs/checklist.md)
@@ -32,7 +35,7 @@
 ## MVP 핵심 기능
 
 - 회의록/연구 메모/팀 피드백에서 주제, 용어, 결정사항, 미결 질문 추출
-- 사람/분야/업체/주제를 연결한 공유 지식맵과 맥락 요약 생성
+- 사람/역할/주제를 연결한 공유 지식맵과 맥락 요약 생성
 
 ## React 확인 컴포넌트
 
