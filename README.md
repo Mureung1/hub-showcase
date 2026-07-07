@@ -31,5 +31,6 @@ AI 기반 졸업 플래너는 복잡한 졸업요건을 가진 대학생이 자�
 - 수강신청 전 안정적인 학업 계획 수립
 - 졸업 직전 요건 미충족 위험 감소
 
-# 기획서 링크
-https://www.figma.com/make/1NPfTNkS2et79zArWZtfEp/Modern-Presentation-Landing-Page?code-node-id=0-9&p=f&t=OhCwTzlQFRKqBMPo-0&fullscreen=1
+# 📄 문서 모음
+- 📘 [프로젝트 기획서 (Wiki)](https://github.com/zlnzzaro/hub/wiki/AI-%EA%B8%B0%EB%B0%98-%EC%A1%B8%EC%97%85-%ED%94%8C%EB%9E%98%EB%84%88-%EA%B8%B0%ED%9A%8D%EC%84%9C)
+- 🎨 [Figma로 디자인한 기획서](https://www.figma.com/make/1NPfTNkS2et79zArWZtfEp/Modern-Presentation-Landing-Page?code-node-id=0-9&p=f&t=b8ilbpssH4uMvK8p-0&fullscreen=1)
