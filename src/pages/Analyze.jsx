@@ -1,14 +1,36 @@
 import { useState } from 'react'
 import PhotoUpload from '../components/PhotoUpload.jsx'
+import NutritionCard from '../components/NutritionCard.jsx'
+import { useUser } from '../context/UserContext.jsx'
+import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
+import { isMealAnalysis } from '../lib/nutrition.js'
+
+function buildPrompt(menuName, brand) {
+  const hints = []
+  if (menuName) hints.push(`메뉴명 힌트: ${menuName}`)
+  if (brand) hints.push(`브랜드 힌트: ${brand}`)
+  const hintText = hints.length ? `\n${hints.join('\n')}` : ''
+
+  return `이 음식 사진을 분석해줘. 프랜차이즈로 식별되면 공식 영양표 기준, 아니면 표준 조리법 기반으로 추정해줘.${hintText}
+
+설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 MealAnalysis JSON만 반환해:
+{
+  "items": [
+    { "name": "메뉴명", "brand": "브랜드명(없으면 생략)", "nutrients": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0 } }
+  ],
+  "total": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0 }
+}`
+}
 
 export default function Analyze() {
+  const { setTodayMeal, todayMeal } = useUser()
   const [photo, setPhoto] = useState(null) // { base64, mimeType, dataUrl, width, height }
   const [menuName, setMenuName] = useState('')
   const [brand, setBrand] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  function handleAnalyze() {
+  async function handleAnalyze() {
     setError('')
 
     if (!photo) {
@@ -16,13 +38,23 @@ export default function Analyze() {
       return
     }
 
-    console.log('base64 preview:', photo.base64.slice(0, 50))
-    console.log('menuName:', menuName)
-    console.log('brand:', brand)
-
-    // TODO: 다음 단계(F3)에서 geminiComplete 호출로 교체. 지금은 로딩 상태 자리만 확인.
     setLoading(true)
-    setTimeout(() => setLoading(false), 400)
+    try {
+      const prompt = buildPrompt(menuName, brand)
+      const text = await geminiComplete({ prompt, imageBase64: photo.base64, mimeType: photo.mimeType })
+      const parsed = parseJsonLoose(text)
+
+      if (!isMealAnalysis(parsed)) {
+        throw new Error('분석 결과 형식이 올바르지 않습니다.')
+      }
+
+      setTodayMeal(parsed)
+    } catch (err) {
+      console.error('meal analysis failed:', err)
+      setError('분석에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -55,8 +87,14 @@ export default function Analyze() {
         {loading ? '분석 중...' : '분석하기'}
       </button>
 
-      {loading && <p style={{ marginTop: 12 }}>분석 중입니다...</p>}
-      {error && <p style={{ color: 'red', marginTop: 12 }}>{error}</p>}
+      {loading && <p style={{ marginTop: 12 }}>분석 중입니다... (수 초 정도 걸릴 수 있어요)</p>}
+      {error && (
+        <p style={{ color: 'red', marginTop: 12 }}>
+          {error} 다시 시도하려면 분석하기 버튼을 눌러주세요.
+        </p>
+      )}
+
+      <NutritionCard analysis={todayMeal} />
     </div>
   )
 }

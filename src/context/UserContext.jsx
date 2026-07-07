@@ -9,6 +9,7 @@ const SESSION_KEY = 'currentUserId'
 export function UserProvider({ children }) {
   const [users, setUsers] = useState(() => get(USERS_KEY, []))
   const [currentUserId, setCurrentUserId] = useState(() => get(SESSION_KEY, null))
+  const [todayMeal, setTodayMeal] = useState(null) // MealAnalysis, /analyze -> /result 전달용(메모리만)
 
   useEffect(() => {
     set(USERS_KEY, users)
@@ -65,8 +66,8 @@ export function UserProvider({ children }) {
   )
 
   const value = useMemo(
-    () => ({ user, signup, login, logout, updateUser }),
-    [user, signup, login, logout, updateUser],
+    () => ({ user, signup, login, logout, updateUser, todayMeal, setTodayMeal }),
+    [user, signup, login, logout, updateUser, todayMeal],
   )
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>

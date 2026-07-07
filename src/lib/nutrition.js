@@ -25,6 +25,21 @@ const FIBER_G = {
 
 const SODIUM_LIMIT_MG = 2000
 
+const NUTRIENT_KEYS = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium']
+
+export function isNutrientSet(value) {
+  return Boolean(value) && typeof value === 'object' && NUTRIENT_KEYS.every((key) => typeof value[key] === 'number')
+}
+
+export function isMealAnalysis(value) {
+  return (
+    Boolean(value) &&
+    Array.isArray(value.items) &&
+    value.items.every((item) => item && typeof item.name === 'string' && isNutrientSet(item.nutrients)) &&
+    isNutrientSet(value.total)
+  )
+}
+
 export function calcBMR({ sex, weightKg, heightCm, age }) {
   const base = 10 * weightKg + 6.25 * heightCm - 5 * age
   return sex === 'male' ? base + 5 : base - 161
