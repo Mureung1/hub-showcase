@@ -1,7 +1,7 @@
 const details = [
-  "React application entry is wired through src/main.jsx.",
-  "Vite provides the local dev server and production build.",
-  "No routing, styling framework, or state library is included.",
+  'React application entry is wired through src/main.jsx.',
+  'Vite provides the local dev server and production build.',
+  'No routing, styling framework, or state library is included.',
 ];
 
 export default function App() {
