@@ -1,16 +1,24 @@
-# React + Vite
+# AI 운동 루틴 적응 코치
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+사용자의 운동 기록과 컨디션 피드백을 누적 추적하고, 예외 상황(통증·시간 부족·스킵)이 발생하면 하드 제약(통증 부위 제외, 인접 세션 부위 중복 금지) 안에서 루틴을 재편성하는 Agent.
 
-Currently, two official plugins are available:
+- 참가자: N001_강민구
+- 프로그램: AI Agent Challenge (네이버 커넥트재단 + 서울대, 코드스쿼드 운영)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 문서
 
-## React Compiler
+- [기획서 (Wiki)](../../wiki) — 문제정의, 사용자 시나리오, 핵심 기능
+- [경쟁사 분석](docs/경쟁사분석.md) — 유사 서비스 기능 조사 및 채택/미채택 근거
+- [사용자 흐름 다이어그램](docs/diagrams/user-flow.html) — 화면·동작 플로우차트 (다운로드 후 브라우저로 열람)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 개발 환경
 
-## Expanding the ESLint configuration
+React + Vite 프로젝트다.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+npm run dev      # 개발 서버
+npm run build    # 프로덕션 빌드
+npm run lint     # ESLint
+npm run preview  # 빌드 결과 미리보기
+```

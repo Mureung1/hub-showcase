@@ -1,0 +1,589 @@
+<title>사용자 흐름 — AI 운동 루틴 적응 코치</title>
+<style>
+  :root {
+    --bg: #f3f5f9;
+    --surface: #ffffff;
+    --surface-2: #eaeef4;
+    --border: #dde2ea;
+    --ink: #1c2330;
+    --ink-soft: #5b6472;
+    --ink-faint: #8892a0;
+
+    --accent: #2f5d8a;
+    --accent-ink: #1d3d5c;
+    --accent-soft: #e8f0f8;
+    --accent-border: #b9d0e5;
+
+    --infra: #6b7280;
+    --infra-soft: #eef0f3;
+    --infra-border: #d7dbe1;
+
+    --stretch: #a8791f;
+    --stretch-soft: #faf1de;
+    --stretch-border: #e6cf9e;
+
+    --hub-fill: #1f3350;
+    --hub-ink: #f2f6fb;
+    --hub-sub: #b7c6dc;
+
+    --shadow: 0 1px 2px rgba(20, 30, 50, 0.06), 0 6px 16px rgba(20, 30, 50, 0.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #10141b;
+      --surface: #1a212b;
+      --surface-2: #212a35;
+      --border: #2c3644;
+      --ink: #e8ecf3;
+      --ink-soft: #9aa4b3;
+      --ink-faint: #6d7686;
+
+      --accent: #7fb1e0;
+      --accent-ink: #dcebf8;
+      --accent-soft: #16283b;
+      --accent-border: #2c4c6c;
+
+      --infra: #9aa4b3;
+      --infra-soft: #1b222b;
+      --infra-border: #333d49;
+
+      --stretch: #e4b962;
+      --stretch-soft: #2a2314;
+      --stretch-border: #55461f;
+
+      --hub-fill: #0c2138;
+      --hub-ink: #f2f6fb;
+      --hub-sub: #8fa9c6;
+
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #10141b;
+    --surface: #1a212b;
+    --surface-2: #212a35;
+    --border: #2c3644;
+    --ink: #e8ecf3;
+    --ink-soft: #9aa4b3;
+    --ink-faint: #6d7686;
+    --accent: #7fb1e0;
+    --accent-ink: #dcebf8;
+    --accent-soft: #16283b;
+    --accent-border: #2c4c6c;
+    --infra: #9aa4b3;
+    --infra-soft: #1b222b;
+    --infra-border: #333d49;
+    --stretch: #e4b962;
+    --stretch-soft: #2a2314;
+    --stretch-border: #55461f;
+    --hub-fill: #0c2138;
+    --hub-ink: #f2f6fb;
+    --hub-sub: #8fa9c6;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  :root[data-theme="light"] {
+    --bg: #f3f5f9;
+    --surface: #ffffff;
+    --surface-2: #eaeef4;
+    --border: #dde2ea;
+    --ink: #1c2330;
+    --ink-soft: #5b6472;
+    --ink-faint: #8892a0;
+    --accent: #2f5d8a;
+    --accent-ink: #1d3d5c;
+    --accent-soft: #e8f0f8;
+    --accent-border: #b9d0e5;
+    --infra: #6b7280;
+    --infra-soft: #eef0f3;
+    --infra-border: #d7dbe1;
+    --stretch: #a8791f;
+    --stretch-soft: #faf1de;
+    --stretch-border: #e6cf9e;
+    --hub-fill: #1f3350;
+    --hub-ink: #f2f6fb;
+    --hub-sub: #b7c6dc;
+    --shadow: 0 1px 2px rgba(20, 30, 50, 0.06), 0 6px 16px rgba(20, 30, 50, 0.06);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Pretendard", -apple-system,
+      BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 24px 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  header.head {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .subtitle {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  .swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    flex: none;
+  }
+
+  .swatch--hub { background: var(--hub-fill); }
+  .swatch--core { background: var(--surface); border: 2px solid var(--accent); }
+  .swatch--infra { background: var(--surface); border: 2px solid var(--infra); }
+  .swatch--stretch { background: var(--surface); border: 2px dashed var(--stretch); }
+
+  .lanes {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .lane {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .lane-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .lane-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .lane--core .lane-tag {
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+  }
+
+  .lane--infra .lane-tag {
+    color: var(--ink-soft);
+    background: var(--infra-soft);
+    border: 1px solid var(--infra-border);
+  }
+
+  .lane-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .lane-note {
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+  }
+
+  .scroller {
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .flow-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    min-width: max-content;
+  }
+
+  .card {
+    width: 176px;
+    flex: none;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 14px 16px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .card--core { border-color: var(--accent-border); }
+  .card--infra { border-color: var(--infra-border); }
+  .card--stretch {
+    border-style: dashed;
+    border-color: var(--stretch-border);
+    background: var(--stretch-soft);
+  }
+
+  .card--hub {
+    background: var(--hub-fill);
+    border-color: var(--hub-fill);
+    color: var(--hub-ink);
+  }
+
+  .card-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .card--hub .card-title { color: var(--hub-ink); }
+
+  .card-line {
+    height: 6px;
+    border-radius: 4px;
+    background: var(--surface-2);
+  }
+
+  .card--hub .card-line { background: rgba(255, 255, 255, 0.18); }
+  .card--stretch .card-line { background: rgba(168, 121, 31, 0.16); }
+
+  .card-line--w70 { width: 70%; }
+  .card-line--w90 { width: 90%; }
+  .card-line--w55 { width: 55%; }
+
+  .card-tag {
+    align-self: flex-start;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    color: var(--stretch);
+    background: rgba(168, 121, 31, 0.12);
+  }
+
+  .connector {
+    flex: none;
+    width: 96px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+  }
+
+  .connector-label {
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .connector-arrow {
+    font-size: 1.3rem;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .lane--infra .connector-arrow { color: var(--infra); }
+  .lane--mixed .connector-arrow { color: var(--accent); }
+
+  .connector--dashed .connector-arrow { color: var(--stretch); }
+  .connector--dashed .connector-label {
+    border-style: dashed;
+    border-color: var(--stretch-border);
+    color: var(--stretch);
+  }
+
+  /* lane 4: branch + merge junction */
+  .branch {
+    flex: none;
+    width: 230px;
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    position: relative;
+  }
+
+  .branch svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+  .branch-label {
+    position: absolute;
+    font-size: 0.7rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .branch-label--top {
+    top: 6px;
+    left: 46px;
+    border-style: dashed;
+    border-color: var(--stretch-border);
+    color: var(--stretch);
+  }
+
+  .branch-label--bottom {
+    bottom: 6px;
+    left: 46px;
+  }
+
+  .branch-node {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translate(-50%, 0);
+  }
+
+  footer.foot {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+
+  footer.foot a { color: var(--ink-soft); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card { transition: transform 0.15s ease; }
+  }
+</style>
+
+<div class="page">
+  <header class="head">
+    <span class="eyebrow">User Flow · docs/기획서.md 시나리오 1~4</span>
+    <h1>사용자 흐름 — AI 운동 루틴 적응 코치</h1>
+    <p class="subtitle">
+      화면을 박스로, 동작을 화살표로 그리면 "이 다음 화면은?"이 저절로 보인다.
+      허브 화면인 <strong>오늘의 루틴</strong>에서 출발해 다시 그 화면으로 돌아오는 4개 흐름을 정리했다.
+      로그인 화면은 없다 — 4주 범위에서는 핵심 기능에 집중하기로 했다.
+    </p>
+    <div class="legend">
+      <div class="legend-item"><span class="swatch swatch--hub"></span>오늘의 루틴 (반복 등장하는 허브 화면)</div>
+      <div class="legend-item"><span class="swatch swatch--core"></span>핵심 기능 화면 (통증 · 스킵 재편성)</div>
+      <div class="legend-item"><span class="swatch swatch--infra"></span>지원 인프라 화면</div>
+    </div>
+  </header>
+
+  <div class="lanes">
+    <!-- Lane 1: Onboarding -->
+    <section class="lane lane--infra">
+      <div class="lane-head">
+        <span class="lane-tag">지원 인프라 · 최초 1회</span>
+        <h2 class="lane-title">온보딩 &amp; 분할 추천</h2>
+      </div>
+      <div class="scroller">
+        <div class="flow-row">
+          <div class="card card--infra">
+            <div class="card-title">앱 최초 진입</div>
+            <div class="card-line card-line--w70"></div>
+            <div class="card-line card-line--w55"></div>
+          </div>
+          <div class="connector">
+            <span class="connector-label">가능일수 입력</span>
+            <span class="connector-arrow">→</span>
+          </div>
+          <div class="card card--infra">
+            <div class="card-title">온보딩</div>
+            <div class="card-line card-line--w90"></div>
+            <div class="card-line card-line--w55"></div>
+          </div>
+          <div class="connector">
+            <span class="connector-label">프리셋 추천</span>
+            <span class="connector-arrow">→</span>
+          </div>
+          <div class="card card--infra">
+            <div class="card-title">분할 추천</div>
+            <div class="card-line card-line--w90"></div>
+            <div class="card-line card-line--w70"></div>
+          </div>
+          <div class="connector">
+            <span class="connector-label">확인 / 수정</span>
+            <span class="connector-arrow">→</span>
+          </div>
+          <div class="card card--hub">
+            <div class="card-title">오늘의 루틴</div>
+            <div class="card-line card-line--w70"></div>
+            <div class="card-line card-line--w55"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lane 2: Pain exception -->
+    <section class="lane lane--core">
+      <div class="lane-head">
+        <span class="lane-tag">핵심 기능 1</span>
+        <h2 class="lane-title">통증 예외 재편성</h2>
+      </div>
+      <div class="scroller">
+        <div class="flow-row">
+          <div class="card card--hub">
+            <div class="card-title">오늘의 루틴</div>
+            <div class="card-line card-line--w70"></div>
+            <div class="card-line card-line--w55"></div>
+          </div>
+          <div class="connector">
+            <span class="connector-label">통증 보고</span>
+            <span class="connector-arrow">→</span>
+          </div>
+          <div class="card card--core">
+            <div class="card-title">신체부위 선택</div>
+            <div class="card-line card-line--w90"></div>
+            <div class="card-line card-line--w70"></div>
+          </div>
+          <div class="connector">
+            <span class="connector-label">부위 선택</span>
+            <span class="connector-arrow">→</span>
+          </div>
+          <div class="card card--core">
+            <div class="card-title">재편성 결과</div>
+            <div class="card-line card-line--w90"></div>
+            <div class="card-line card-line--w70"></div>
+            <div class="card-line card-line--w55"></div>
+          </div>
+          <div class="connector">
+            <span class="connector-label">확인</span>
+            <span class="connector-arrow">→</span>
+          </div>
+          <div class="card card--hub">
+            <div class="card-title">오늘의 루틴 (갱신)</div>
+            <div class="card-line card-line--w70"></div>
+            <div class="card-line card-line--w55"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lane 3: Skip exception -->
+    <section class="lane lane--core">
+      <div class="lane-head">
+        <span class="lane-tag">핵심 기능 2</span>
+        <h2 class="lane-title">스킵 / 시간부족 예외 재편성</h2>
+      </div>
+      <div class="scroller">
+        <div class="flow-row">
+          <div class="card card--hub">
+            <div class="card-title">오늘의 루틴</div>
+            <div class="card-line card-line--w70"></div>
+            <div class="card-line card-line--w55"></div>
+          </div>
+          <div class="connector">
+            <span class="connector-label">세션 스킵</span>
+            <span class="connector-arrow">→</span>
+          </div>
+          <div class="card card--core">
+            <div class="card-title">재편성 결과</div>
+            <div class="card-line card-line--w90"></div>
+            <div class="card-line card-line--w70"></div>
+            <div class="card-line card-line--w55"></div>
+          </div>
+          <div class="connector">
+            <span class="connector-label">확인</span>
+            <span class="connector-arrow">→</span>
+          </div>
+          <div class="card card--hub">
+            <div class="card-title">오늘의 루틴 (갱신)</div>
+            <div class="card-line card-line--w70"></div>
+            <div class="card-line card-line--w55"></div>
+          </div>
+        </div>
+      </div>
+      <p class="lane-note">판단(이번 주 누적 스킵 횟수 → shift/snap-back)은 화면 없이 내부 로직으로 처리하고, 사용자에게는 결과 화면만 보인다.</p>
+    </section>
+
+    <!-- Lane 4: Logging -->
+    <section class="lane lane--infra">
+      <div class="lane-head">
+        <span class="lane-tag">지원 인프라</span>
+        <h2 class="lane-title">운동 기록</h2>
+      </div>
+      <div class="scroller">
+        <div class="flow-row">
+          <div class="card card--hub">
+            <div class="card-title">오늘의 루틴</div>
+            <div class="card-line card-line--w70"></div>
+            <div class="card-line card-line--w55"></div>
+          </div>
+          <div class="connector">
+            <span class="connector-label">운동 시작</span>
+            <span class="connector-arrow">→</span>
+          </div>
+          <div class="card card--infra">
+            <div class="card-title">세트 기록</div>
+            <div class="card-line card-line--w90"></div>
+            <div class="card-line card-line--w70"></div>
+          </div>
+          <div class="connector">
+            <span class="connector-label">세션 완료</span>
+            <span class="connector-arrow">→</span>
+          </div>
+          <div class="card card--hub">
+            <div class="card-title">오늘의 루틴 (갱신)</div>
+            <div class="card-line card-line--w70"></div>
+            <div class="card-line card-line--w55"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="foot">
+    화면목록(IA)과 와이어프레임은 이 흐름이 확정된 뒤 별도 문서로 이어서 작성한다. 근거 문서: docs/기획서.md, docs/경쟁사분석.md
+  </footer>
+</div>
