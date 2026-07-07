@@ -42,3 +42,4 @@ flowchart TD
     G --> H
 ```
 
+![화면 흐름](images/plan.png)
