@@ -1,5 +1,9 @@
 # fiTArchive
 
+## 문서
+
+- [fiTArchive 기획서](docs/planning.md)
+
 ## 프로젝트 소개
 
 fiTArchive는 사용자가 매일 입은 코디를 사진과 태그로 기록하는 개인 패션 아카이브 서비스입니다.
