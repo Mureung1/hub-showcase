@@ -2,6 +2,21 @@
 import Header from "../components/layout/Header";
 import { homeFeatures } from "../data/homeFeatures";
 
+const workflowSteps = [
+  {
+    title: "스펙 등록",
+    text: "현재 상태 입력",
+  },
+  {
+    title: "AI 분석",
+    text: "부족 역량 확인",
+  },
+  {
+    title: "미션 수행",
+    text: "포트폴리오 결과물 생성",
+  },
+];
+
 function Home() {
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
   useEffect(() => {
@@ -86,9 +101,23 @@ function Home() {
             </div>
           </aside>
         </div>
-      </section>
 
-      <section style={styles.featureSlider}>
+        <section style={styles.workflowPanel} aria-label="서비스 사용 흐름">
+          {workflowSteps.map((step, index) => (
+            <div key={step.title} style={styles.workflowStep}>
+              <span style={styles.workflowNumber}>0{index + 1}</span>
+              <div style={styles.workflowText}>
+                <strong style={styles.workflowTitle}>{step.title}</strong>
+                <span style={styles.workflowDescription}>{step.text}</span>
+              </div>
+              {index < workflowSteps.length - 1 && (
+                <span style={styles.workflowArrow}>→</span>
+              )}
+            </div>
+          ))}
+        </section>
+
+        <section style={styles.featureSlider}>
         <div style={styles.sliderWindow}>
           <div
             style={{
@@ -175,6 +204,7 @@ function Home() {
             />
           ))}
         </div>
+        </section>
       </section>
 
     </main>
@@ -263,31 +293,39 @@ const animations = `
 
 const styles = {
   container: {
-    minHeight: "100vh",
+    height: "100vh",
     background:
       "radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.2), transparent 28%), radial-gradient(circle at 88% 12%, rgba(6, 182, 212, 0.22), transparent 26%), radial-gradient(circle at 52% 92%, rgba(124, 58, 237, 0.12), transparent 30%), linear-gradient(135deg, #f8fafc 0%, #eef6ff 48%, #f8fbff 100%)",
-    padding: "0 0 56px",
+    padding: 0,
     fontFamily: "Arial, sans-serif",
     color: "#0f172a",
-    overflowX: "hidden",
+    overflow: "hidden",
   },
   hero: {
     width: "min(1440px, calc(100% - clamp(32px, 6vw, 96px)))",
+    height: "calc(100vh - 58px)",
     margin: "0 auto",
+    padding: "clamp(14px, 2.2vw, 24px) 0 clamp(12px, 2vw, 20px)",
+    boxSizing: "border-box",
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
-    gap: "clamp(18px, 3vw, 40px)",
-    alignItems: "stretch",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gridTemplateRows: "auto auto auto",
+    gap: "clamp(12px, 2.2vh, 18px) clamp(14px, 2vw, 24px)",
+    alignContent: "center",
+    alignItems: "start",
     perspective: "1200px",
   },
   copyStack: {
     position: "relative",
+    minHeight: 0,
+    maxHeight: "none",
+    transform: "translateY(-44px)",
     transformStyle: "preserve-3d",
   },
   backPlate: {
     position: "absolute",
-    inset: "18px -12px -14px 18px",
-    borderRadius: "30px",
+    inset: "12px -8px -10px 14px",
+    borderRadius: "24px",
     background: "linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(6, 182, 212, 0.12))",
     filter: "blur(2px)",
     transform: "translateZ(-42px)",
@@ -295,6 +333,7 @@ const styles = {
   copyArea: {
     position: "relative",
     minHeight: "100%",
+    height: "clamp(300px, 34vh, 380px)",
     padding: "clamp(26px, 5vw, 44px)",
     borderRadius: "28px",
     background: "linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(239, 246, 255, 0.4))",
@@ -303,6 +342,7 @@ const styles = {
       "0 34px 80px rgba(15, 23, 42, 0.16), 0 8px 22px rgba(37, 99, 235, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.78)",
     backdropFilter: "blur(22px) saturate(150%)",
     transform: "rotateX(1deg) rotateY(-2deg)",
+    overflow: "hidden",
   },
   badge: {
     display: "inline-block",
@@ -356,12 +396,15 @@ const styles = {
   },
   panelStack: {
     position: "relative",
+    minHeight: 0,
+    maxHeight: "none",
+    transform: "translateY(-44px)",
     transformStyle: "preserve-3d",
   },
   panelPlate: {
     position: "absolute",
-    inset: "22px 16px -18px -10px",
-    borderRadius: "30px",
+    inset: "14px 10px -12px -8px",
+    borderRadius: "24px",
     background: "linear-gradient(145deg, rgba(37, 99, 235, 0.28), rgba(124, 58, 237, 0.2))",
     filter: "blur(1px)",
     transform: "translateZ(-46px)",
@@ -369,6 +412,7 @@ const styles = {
   aiPanel: {
     position: "relative",
     minHeight: "100%",
+    height: "clamp(300px, 34vh, 380px)",
     padding: "clamp(22px, 4vw, 26px)",
     borderRadius: "28px",
     background:
@@ -379,6 +423,7 @@ const styles = {
     border: "1px solid rgba(226, 232, 240, 0.16)",
     backdropFilter: "blur(18px)",
     transform: "rotateX(2deg) rotateY(4deg) translateY(-10px)",
+    overflow: "hidden",
   },
   panelHeader: {
     display: "flex",
@@ -408,7 +453,7 @@ const styles = {
     boxShadow: "0 20px 36px rgba(2, 6, 23, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
   },
   scoreLabel: {
-    margin: "0 0 12px",
+    margin: "0 0 8px",
     color: "#cbd5e1",
     fontSize: "14px",
   },
@@ -418,7 +463,7 @@ const styles = {
   },
   scoreTrack: {
     height: "8px",
-    marginTop: "16px",
+    marginTop: "12px",
     borderRadius: "999px",
     backgroundColor: "rgba(255, 255, 255, 0.12)",
     overflow: "hidden",
@@ -447,18 +492,84 @@ const styles = {
     fontSize: "14px",
     boxShadow: "0 12px 22px rgba(2, 6, 23, 0.16)",
   },
-  featureSlider: {
-    width: "min(680px, calc(100% - clamp(32px, 6vw, 96px)))",
-    margin: "clamp(90px, 10vw, 130px) auto 0",
+  workflowPanel: {
+    gridColumn: "1 / -1",
+    width: "min(900px, 100%)",
+    margin: "0 auto",
+    padding: "10px 12px",
     display: "grid",
-    gap: "12px",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: "8px",
+    borderRadius: "18px",
+    background: "linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(239, 246, 255, 0.34))",
+    border: "1px solid rgba(255, 255, 255, 0.78)",
+    boxShadow: "0 16px 34px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.72)",
+    backdropFilter: "blur(16px) saturate(140%)",
+  },
+  workflowStep: {
+    position: "relative",
+    minWidth: 0,
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    padding: "8px 12px",
+    borderRadius: "14px",
+    background: "rgba(255, 255, 255, 0.52)",
+    border: "1px solid rgba(226, 232, 240, 0.82)",
+  },
+  workflowNumber: {
+    flex: "0 0 auto",
+    width: "30px",
+    height: "30px",
+    display: "grid",
+    placeItems: "center",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg, #2563eb, #06b6d4)",
+    color: "#ffffff",
+    fontSize: "12px",
+    fontWeight: "bold",
+    boxShadow: "0 10px 18px rgba(37, 99, 235, 0.22)",
+  },
+  workflowText: {
+    minWidth: 0,
+    display: "grid",
+    gap: "2px",
+    color: "#475569",
+    fontSize: "12px",
+    lineHeight: "1.35",
+  },
+  workflowTitle: {
+    color: "#0f172a",
+    fontSize: "14px",
+  },
+  workflowDescription: {
+    color: "#64748b",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  workflowArrow: {
+    position: "absolute",
+    right: "-12px",
+    zIndex: 1,
+    color: "#2563eb",
+    fontWeight: "bold",
+    fontSize: "16px",
+  },
+  featureSlider: {
+    width: "min(760px, 100%)",
+    gridColumn: "1 / -1",
+    margin: "0 auto",
+    display: "grid",
+    gap: "8px",
+    minHeight: 0,
   },
   sliderWindow: {
     overflow: "hidden",
-    borderRadius: "22px",
+    borderRadius: "18px",
     padding: 0,
     background: "rgba(255, 255, 255, 0.62)",
-    boxShadow: "0 20px 44px rgba(15, 23, 42, 0.1), 0 6px 18px rgba(37, 99, 235, 0.08)",
+    boxShadow: "0 16px 34px rgba(15, 23, 42, 0.1), 0 5px 14px rgba(37, 99, 235, 0.08)",
   },
   sliderTrack: {
     display: "flex",
@@ -470,8 +581,8 @@ const styles = {
     flex: "0 0 100%",
     width: "100%",
     boxSizing: "border-box",
-    minHeight: "250px",
-    padding: "clamp(16px, 2.5vw, 22px)",
+    minHeight: "230px",
+    padding: "clamp(16px, 2vw, 22px)",
     borderRadius: 0,
     background:
       "linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(239, 246, 255, 0.44)), radial-gradient(circle at 18% 18%, rgba(37, 99, 235, 0.16), transparent 34%), radial-gradient(circle at 90% 22%, rgba(6, 182, 212, 0.18), transparent 30%)",
@@ -484,12 +595,12 @@ const styles = {
     justifyContent: "space-between",
     gap: "18px",
     alignItems: "flex-start",
-    marginBottom: "14px",
+    marginBottom: "7px",
   },
   radarEyebrow: {
-    margin: "0 0 8px",
+    margin: "0 0 5px",
     color: "#2563eb",
-    fontSize: "13px",
+    fontSize: "12px",
     fontWeight: "bold",
     letterSpacing: "0",
   },
@@ -497,7 +608,7 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     gap: "8px",
-    padding: "7px 10px",
+    padding: "5px 8px",
     borderRadius: "999px",
     background: "rgba(15, 23, 42, 0.06)",
     color: "#334155",
@@ -514,8 +625,8 @@ const styles = {
   },
   radarBody: {
     display: "grid",
-    gridTemplateColumns: "minmax(120px, 160px) 1fr",
-    gap: "clamp(14px, 2.5vw, 22px)",
+    gridTemplateColumns: "minmax(90px, 110px) 1fr",
+    gap: "clamp(10px, 1.8vw, 14px)",
     alignItems: "center",
   },
   radarVisual: {
@@ -524,7 +635,7 @@ const styles = {
   },
   radarRing: {
     position: "relative",
-    width: "min(138px, 48vw)",
+    width: "min(92px, 40vw)",
     aspectRatio: "1",
     display: "grid",
     placeItems: "center",
@@ -545,14 +656,14 @@ const styles = {
   radarScore: {
     position: "relative",
     color: "#0f172a",
-    fontSize: "clamp(30px, 5vw, 42px)",
+    fontSize: "clamp(23px, 4vw, 30px)",
     lineHeight: "1",
   },
   radarScoreLabel: {
     position: "absolute",
-    bottom: "31px",
+    bottom: "19px",
     color: "#475569",
-    fontSize: "10px",
+    fontSize: "9px",
     fontWeight: "bold",
   },
   radarContent: {
@@ -565,23 +676,23 @@ const styles = {
     fontWeight: "bold",
   },
   featureTitle: {
-    margin: "0 0 10px",
+    margin: "0 0 5px",
     color: "#0f172a",
-    fontSize: "clamp(18px, 2.6vw, 22px)",
+    fontSize: "clamp(15px, 2.2vw, 18px)",
     lineHeight: "1.2",
   },
   featureText: {
-    margin: "6px 0 10px",
+    margin: "4px 0 7px",
     color: "#475569",
-    fontSize: "clamp(14px, 1.8vw, 15px)",
-    lineHeight: "1.55",
+    fontSize: "12px",
+    lineHeight: "1.38",
   },
   progressTrack: {
-    height: "8px",
+    height: "7px",
     borderRadius: "999px",
     background: "rgba(37, 99, 235, 0.12)",
     overflow: "hidden",
-    marginBottom: "10px",
+    marginBottom: "7px",
   },
   progressFill: {
     display: "block",
@@ -593,36 +704,36 @@ const styles = {
   radarInsight: {
     margin: 0,
     color: "#334155",
-    fontSize: "13px",
-    lineHeight: "1.55",
+    fontSize: "12px",
+    lineHeight: "1.38",
   },
   metricGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: "8px",
-    marginTop: "14px",
+    gap: "6px",
+    marginTop: "6px",
   },
   radarMetric: {
     display: "grid",
     gap: "4px",
-    padding: "9px 10px",
-    borderRadius: "12px",
+    padding: "5px 7px",
+    borderRadius: "10px",
     background: "rgba(255, 255, 255, 0.62)",
     border: "1px solid rgba(226, 232, 240, 0.9)",
     color: "#64748b",
-    fontSize: "12px",
+    fontSize: "11px",
     boxShadow: "0 12px 22px rgba(15, 23, 42, 0.06)",
   },
   nextAction: {
-    marginTop: "8px",
-    padding: "10px 12px",
+    marginTop: "5px",
+    padding: "7px 9px",
     display: "flex",
     justifyContent: "space-between",
     gap: "14px",
     borderRadius: "13px",
     background: "linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.86))",
     color: "#cbd5e1",
-    fontSize: "13px",
+    fontSize: "12px",
   },
   indicatorList: {
     display: "flex",

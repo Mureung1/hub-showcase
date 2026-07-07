@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 
-const menuItems = ["스펙 등록", "AI 분석", "미션 수행", "피드백", "포트폴리오"];
+import { menuItems } from "../../data/menuItems";
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -35,8 +35,8 @@ function Header() {
             {isMenuOpen && (
               <div className="submenu">
                 {menuItems.map((item) => (
-                  <button key={item} type="button" className="submenu-item">
-                    {item}
+                  <button key={item.path} type="button" className="submenu-item">
+                    {item.label}
                   </button>
                 ))}
               </div>
@@ -61,7 +61,7 @@ function Header() {
 const styles = `
 .app-header {
   width: 100%;
-  margin: 0 0 34px;
+  margin: 0;
   background: #0f172a;
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.18);
 }
@@ -69,7 +69,7 @@ const styles = `
 .header-inner {
   width: min(1440px, 100%);
   margin: 0 auto;
-  padding: 16px clamp(16px, 4vw, 28px);
+  padding: 11px clamp(16px, 4vw, 28px);
   display: flex;
   align-items: center;
   justify-content: space-between;
