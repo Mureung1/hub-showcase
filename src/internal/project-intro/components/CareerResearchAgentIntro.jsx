@@ -5,8 +5,8 @@ function CareerResearchAgentIntro() {
         <p className="eyebrow">AI Agent Project</p>
         <h1>채용공고 기반 대학생 진로탐색 리서치 에이전트</h1>
         <p className="hero-description">
-          관심 직무의 채용공고를 분석해 현재 시장이 요구하는 역량과 준비
-          방향을 정리하고, 대학생의 진로 탐색을 더 구체적으로 돕는 서비스입니다.
+          관심 직무의 채용공고를 분석해 현재 시장에서 요구하는 역량과 준비 방향을
+          정리하고, 대학생의 진로 탐색을 구체적으로 돕는 서비스입니다.
         </p>
       </section>
 
@@ -23,8 +23,7 @@ function CareerResearchAgentIntro() {
             수많은 채용공고를 직접 찾아보고 비교하는 데 많은 시간이 듭니다.
           </li>
           <li className="info-card">
-            요구 기술, 프로젝트 경험, 우대사항, 시장 흐름을 혼자 정리하기
-            어렵습니다.
+            요구 기술, 프로젝트 경험, 우대사항, 시장 흐름을 혼자 정리하기 어렵습니다.
           </li>
         </ul>
       </section>
@@ -79,10 +78,11 @@ function CareerResearchAgentIntro() {
 
       <section className="scope-section">
         <p className="section-label">Today Scope</p>
-        <h2>오늘 구현 범위</h2>
+        <h2>현재 구현 범위</h2>
         <p>
           이번 화면은 프로젝트 주제를 소개하는 정적 React 컴포넌트입니다. 실제
-          AI Agent 기능, 입력창, API 호출, 백엔드 연동은 포함하지 않습니다.
+          AI Agent 기능, 입력창, API 호출, 백엔드 연동은 이후 프로토타입과 실제
+          서비스 구현 단계에서 추가합니다.
         </p>
       </section>
     </main>
