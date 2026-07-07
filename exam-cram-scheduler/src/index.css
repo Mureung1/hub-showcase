@@ -1,0 +1,250 @@
+:root {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color-scheme: light;
+  background: #eef0f3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #eef0f3;
+  color: #222;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #d7dbe0;
+  flex-wrap: wrap;
+}
+
+.top-nav .brand {
+  font-weight: 700;
+  margin-right: 16px;
+  color: #1f2937;
+}
+
+.top-nav a {
+  text-decoration: none;
+  color: #4b5563;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.top-nav a.active,
+.top-nav a:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.stage {
+  flex: 1;
+  padding: 32px 24px 64px;
+  display: flex;
+  justify-content: center;
+}
+
+.phone-frame {
+  width: 380px;
+  background: #ffffff;
+  border: 2px solid #b9bfc7;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.06);
+  height: fit-content;
+}
+
+.wf-box {
+  border: 1.5px dashed #9aa1ab;
+  background: #f6f7f9;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.wf-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9aa1ab;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.wf-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 16px;
+}
+
+.wf-btn {
+  display: inline-block;
+  border: 1.5px solid #4b5563;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #1f2937;
+  background: #fff;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+
+.wf-btn.primary {
+  background: #1f2937;
+  color: #fff;
+  border-color: #1f2937;
+}
+
+.wf-btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.wf-graph {
+  height: 140px;
+  border: 1.5px dashed #9aa1ab;
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(to top, transparent, transparent 19px, #e2e5e9 20px),
+    linear-gradient(135deg, #f6f7f9 0%, #eef0f3 60%, #f6f7f9 100%);
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.wf-graph::after {
+  content: "각성도 곡선 (그래프 영역)";
+  position: absolute;
+  bottom: 8px;
+  left: 10px;
+  font-size: 11px;
+  color: #9aa1ab;
+}
+
+.wf-timeline {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.wf-timeline .slot {
+  flex: 1;
+  height: 28px;
+  border: 1px dashed #b9bfc7;
+  border-radius: 6px;
+  background: #f6f7f9;
+}
+
+.wf-timeline .slot.sleep { background: #dbe4f0; border-color: #9db4d6; }
+.wf-timeline .slot.study { background: #fbe8d3; border-color: #e0b077; }
+.wf-timeline .slot.caffeine { background: #f0d9db; border-color: #d19aa0; }
+
+.legend {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.legend .dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.dot.sleep { background: #9db4d6; }
+.dot.study { background: #e0b077; }
+.dot.caffeine { background: #d19aa0; }
+
+.screen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  max-width: 1100px;
+  width: 100%;
+}
+
+.screen-card {
+  background: #fff;
+  border: 1px solid #d7dbe0;
+  border-radius: 12px;
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.screen-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.screen-card .num {
+  font-size: 11px;
+  color: #9aa1ab;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.screen-card h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: #1f2937;
+}
+
+.screen-card p {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.page-header {
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto 24px;
+}
+
+.page-header h1 {
+  font-size: 22px;
+  color: #1f2937;
+  margin: 0 0 6px;
+}
+
+.page-header p {
+  color: #6b7280;
+  font-size: 13px;
+  margin: 0;
+}
+
+.page-col {
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
