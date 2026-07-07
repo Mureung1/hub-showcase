@@ -3,6 +3,19 @@
 이력서(CV)를 업로드하고 원하는 **DESIGN.md** 테마를 고르면, 그 디자인으로 완성된
 **독립 실행형 포트폴리오 HTML**을 만들어 주는 웹앱입니다. (React only, Vite)
 
+## 미리보기
+
+샘플 개발자 CV(`samples/kim-jiwoo-frontend.md`)를 각 테마로 생성한 실제 결과입니다.
+전체 HTML은 [`examples/`](examples) 폴더에서 열어볼 수 있습니다.
+
+| Minimal Clean · 기본 | Terminal Dark |
+|:--:|:--:|
+| ![Minimal Clean](examples/minimal-clean.png) | ![Terminal Dark](examples/terminal-dark.png) |
+| **Pro Sidebar** | **Editorial Serif** |
+| ![Pro Sidebar](examples/pro-sidebar.png) | ![Editorial Serif](examples/editorial-serif.png) |
+| **Creative Gradient** | |
+| ![Creative Gradient](examples/creative-gradient.png) | |
+
 ## 사용자 흐름
 
 ```
