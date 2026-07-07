@@ -30,48 +30,103 @@ function normalizeBoolean(value, fallback = false) {
   return typeof value === 'boolean' ? value : fallback
 }
 
-function normalizeItem(item, sectionName, index) {
-  const normalizedItem = {
-    ...item,
-    id: normalizeString(item.id) || `${sectionName}-${index + 1}`,
-    evidence: normalizeString(item.evidence),
-    edited: normalizeBoolean(item.edited),
-  }
+function normalizePlainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+}
 
-  if ('title' in normalizedItem) {
-    normalizedItem.title = normalizeString(normalizedItem.title)
+function normalizeBaseItem(rawItem, sectionName, index) {
+  return {
+    id: normalizeString(rawItem.id) || `${sectionName}-${index + 1}`,
+    evidence: normalizeString(rawItem.evidence),
+    edited: normalizeBoolean(rawItem.edited),
   }
+}
 
-  if ('text' in normalizedItem) {
-    normalizedItem.text = normalizeString(normalizedItem.text)
+function normalizeTitleOrText(rawItem) {
+  return normalizeString(rawItem.title) || normalizeString(rawItem.text)
+}
+
+function normalizeDeadline(item, sectionName, index) {
+  const rawItem = normalizePlainObject(item)
+
+  return {
+    ...normalizeBaseItem(rawItem, sectionName, index),
+    title: normalizeString(rawItem.title),
+    date: normalizeString(rawItem.date),
+    time: normalizeString(rawItem.time),
+    description: normalizeString(rawItem.description),
   }
+}
 
-  if ('description' in normalizedItem) {
-    normalizedItem.description = normalizeString(normalizedItem.description)
+function normalizeTask(item, sectionName, index) {
+  const rawItem = normalizePlainObject(item)
+
+  return {
+    ...normalizeBaseItem(rawItem, sectionName, index),
+    title: normalizeString(rawItem.title),
+    dueDate: normalizeString(rawItem.dueDate),
+    completed: normalizeBoolean(rawItem.completed),
+    description: normalizeString(rawItem.description),
   }
+}
 
-  if ('completed' in normalizedItem || sectionName === 'tasks') {
-    normalizedItem.completed = normalizeBoolean(normalizedItem.completed)
+function normalizeSubmission(item, sectionName, index) {
+  const rawItem = normalizePlainObject(item)
+
+  return {
+    ...normalizeBaseItem(rawItem, sectionName, index),
+    title: normalizeString(rawItem.title),
+    description: normalizeString(rawItem.description),
   }
+}
 
-  if (sectionName === 'calendarEvents') {
-    normalizedItem.title = normalizeString(normalizedItem.title)
-    normalizedItem.startDate = normalizeString(normalizedItem.startDate)
-    normalizedItem.endDate = normalizeString(normalizedItem.endDate)
-    normalizedItem.time = normalizeString(normalizedItem.time)
-    normalizedItem.description = normalizeString(normalizedItem.description)
-    normalizedItem.selected = normalizeBoolean(normalizedItem.selected)
-    normalizedItem.allDay = normalizeBoolean(normalizedItem.allDay, true)
-    normalizedItem.reviewRequired = normalizeBoolean(normalizedItem.reviewRequired)
-    normalizedItem.dateConfidence = normalizeString(normalizedItem.dateConfidence)
-    normalizedItem.dateSource = normalizeString(normalizedItem.dateSource)
-    normalizedItem.referenceDate = normalizeString(normalizedItem.referenceDate)
-    normalizedItem.originalDateExpression = normalizeString(
-      normalizedItem.originalDateExpression,
-    )
+function normalizeRequirement(item, sectionName, index) {
+  const rawItem = normalizePlainObject(item)
+
+  return {
+    ...normalizeBaseItem(rawItem, sectionName, index),
+    title: normalizeTitleOrText(rawItem),
+    description: normalizeString(rawItem.description),
   }
+}
 
-  return normalizedItem
+function normalizeCaution(item, sectionName, index) {
+  const rawItem = normalizePlainObject(item)
+
+  return {
+    ...normalizeBaseItem(rawItem, sectionName, index),
+    title: normalizeTitleOrText(rawItem),
+    description: normalizeString(rawItem.description),
+  }
+}
+
+function normalizeCalendarEvent(item, sectionName, index) {
+  const rawItem = normalizePlainObject(item)
+
+  return {
+    ...normalizeBaseItem(rawItem, sectionName, index),
+    title: normalizeString(rawItem.title),
+    startDate: normalizeString(rawItem.startDate),
+    endDate: normalizeString(rawItem.endDate),
+    time: normalizeString(rawItem.time),
+    description: normalizeString(rawItem.description),
+    selected: normalizeBoolean(rawItem.selected),
+    allDay: normalizeBoolean(rawItem.allDay, true),
+    reviewRequired: normalizeBoolean(rawItem.reviewRequired),
+    dateConfidence: normalizeString(rawItem.dateConfidence),
+    dateSource: normalizeString(rawItem.dateSource),
+    referenceDate: normalizeString(rawItem.referenceDate),
+    originalDateExpression: normalizeString(rawItem.originalDateExpression),
+  }
+}
+
+const itemNormalizers = {
+  deadlines: normalizeDeadline,
+  tasks: normalizeTask,
+  submissions: normalizeSubmission,
+  requirements: normalizeRequirement,
+  cautions: normalizeCaution,
+  calendarEvents: normalizeCalendarEvent,
 }
 
 function normalizeSection(rawSection, sectionName, warnings, copy) {
@@ -80,8 +135,9 @@ function normalizeSection(rawSection, sectionName, warnings, copy) {
     return []
   }
 
+  const normalizeItem = itemNormalizers[sectionName]
   const normalizedItems = rawSection.map((item, index) =>
-    normalizeItem(item || {}, sectionName, index),
+    normalizeItem(item, sectionName, index),
   )
 
   if (normalizedItems.length <= SECTION_LIMITS[sectionName]) {
