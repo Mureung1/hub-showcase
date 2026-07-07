@@ -89,11 +89,11 @@ A user-accepted output produced after AgentModeling and UserCorrection, such as 
 _Avoid_: First draft, raw agent output
 
 **WorkspaceHistory**:
-The local-only app-managed history layer, likely backed by Git, that records RawMaterial and meaningful SemesterOps checkpoints while presenting them to students as history, diff, and rollback instead of Git.
-_Avoid_: User-facing Git workflow, manual commit flow
+The local-only app-managed history layer, likely backed by Git, that records user-meaningful checkpoints while presenting them to students as history, diff, and rollback instead of Git.
+_Avoid_: User-facing Git workflow, manual commit flow, internal event log
 
 **HistoryCheckpoint**:
-A meaningful snapshot in WorkspaceHistory created by the app after events such as UserConfirmation, ModelingRun completion, or MarkdownProjection regeneration.
+A user-meaningful snapshot in WorkspaceHistory created by the app at clear branch points such as MaterialIntake, UserConfirmation, MarkdownProjection regeneration, or a manual snapshot.
 _Avoid_: Arbitrary autosave, raw Git commit
 
 **WorkspaceQuery**:

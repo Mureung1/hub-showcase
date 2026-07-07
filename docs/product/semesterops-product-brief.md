@@ -171,7 +171,8 @@ SemesterOps는 Git을 사용자-facing 기능으로 노출하지 않는다. Git�
 | --- | --- |
 | App-managed history | 앱이 checkpoint와 rollback을 소유하고, Agent가 raw Git 명령으로 상태를 확정하지 않는다. |
 | Friendly UX | UI에서는 Git, commit, branch보다 변경 기록, 비교, 되돌리기 표현을 쓴다. |
-| Meaningful checkpoint | 모든 autosave가 아니라 UserConfirmation, ModelingRun 완료, Projection 갱신 같은 의미 있는 순간을 기록한다. |
+| Meaningful checkpoint | 모든 autosave가 아니라 UserConfirmation, 의미 있는 ModelingRun 결과, Projection 갱신 같은 순간을 기록한다. |
+| Not an event log | 내부 실행 로그, draft, event stream은 Git history가 아니라 SQLite, events log, `.semesterops/runs/*`에서 관리한다. |
 | Diffable projection | SQLite 자체 diff에 의존하지 않고 JSON export, MarkdownProjection, StatePatch summary를 함께 보여준다. |
 | RawMaterial safety | RawMaterial binary도 local history에 포함해 원본 복구와 provenance를 강화한다. |
 
@@ -181,7 +182,7 @@ MVP에서는 `.semesterops/history.git` 같은 app-managed Git repository를 후
 | --- | --- |
 | MaterialIntake | RawMaterial binary, source manifest, provenance |
 | UserConfirmation | accepted/edited/rejected StatePatch와 TrustedState 변화 |
-| ModelingRun 완료 | run summary, sourceIds, output artifact reference |
+| 사용자에게 의미 있는 ModelingRun 결과 | run summary, sourceIds, output artifact reference |
 | MarkdownProjection 갱신 | 이전/이후 projection diff |
 | 사용자의 수동 snapshot | 사용자가 되돌아가고 싶은 명시적 시점 |
 
