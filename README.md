@@ -12,6 +12,12 @@ TeamFlow Agent는 프로젝트 문서와 회의 내용을 분석해 `누가`, `�
 - [작업 분해 체크리스트](docs/checklist.md)
 - [PR 설명 초안](docs/pr-description-draft.md)
 
+## 기획 시각화
+
+![TeamFlow Agent 사용자 흐름](docs/images/user-flow.svg)
+
+![TeamFlow Agent 화면 와이어프레임](docs/images/wireframe.svg)
+
 ## 현재 개발 방향
 
 오늘 단계에서는 실제 AI API나 외부 서비스 연동보다, 기획서와 작업 분해를 먼저 정리합니다.

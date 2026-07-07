@@ -7,6 +7,13 @@
 - Mermaid를 이용해 사용자 흐름을 시각화했습니다.
 - `docs/checklist.md`에 MVP 개발을 위한 작업 분해 체크리스트를 작성했습니다.
 - README에서 기획서와 체크리스트에 바로 접근할 수 있도록 링크를 추가했습니다.
+- `DESIGN-pinterest.md`의 따뜻한 크림 배경, 레드 CTA, 라운드 카드 스타일을 참고해 사용자 흐름과 와이어프레임 SVG를 추가했습니다.
+
+## 시각화 자료
+
+![TeamFlow Agent 사용자 흐름](docs/images/user-flow.svg)
+
+![TeamFlow Agent 화면 와이어프레임](docs/images/wireframe.svg)
 
 ## 내가 설명할 수 있는 부분
 

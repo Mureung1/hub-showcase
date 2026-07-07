@@ -1,0 +1,98 @@
+<svg width="1280" height="900" viewBox="0 0 1280 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: 700 44px "Inter", "Segoe UI", "Malgun Gothic", sans-serif; fill: #000000; }
+      .subtitle { font: 400 18px "Inter", "Segoe UI", "Malgun Gothic", sans-serif; fill: #33332e; }
+      .heading { font: 700 24px "Inter", "Segoe UI", "Malgun Gothic", sans-serif; fill: #000000; }
+      .section { font: 700 18px "Inter", "Segoe UI", "Malgun Gothic", sans-serif; fill: #000000; }
+      .body { font: 500 15px "Inter", "Segoe UI", "Malgun Gothic", sans-serif; fill: #33332e; }
+      .muted { font: 500 13px "Inter", "Segoe UI", "Malgun Gothic", sans-serif; fill: #62625b; }
+      .button { font: 700 14px "Inter", "Segoe UI", "Malgun Gothic", sans-serif; fill: #ffffff; }
+      .chip { font: 700 12px "Inter", "Segoe UI", "Malgun Gothic", sans-serif; fill: #000000; }
+      .on-dark { font: 700 18px "Inter", "Segoe UI", "Malgun Gothic", sans-serif; fill: #ffffff; }
+      .on-dark-muted { font: 500 13px "Inter", "Segoe UI", "Malgun Gothic", sans-serif; fill: rgba(255,255,255,0.78); }
+    </style>
+  </defs>
+
+  <rect width="1280" height="900" fill="#fbfbf9"/>
+
+  <g transform="translate(64 46)">
+    <text class="title" x="0" y="48">TeamFlow Agent Wireframe</text>
+    <text class="subtitle" x="2" y="84">입력 화면과 분석 결과 화면을 먼저 만들고, 실제 AI 연동은 다음 단계로 분리한다.</text>
+    <rect x="1030" y="10" width="106" height="40" rx="16" fill="#e60023"/>
+    <text class="button" x="1058" y="35">MVP UI</text>
+  </g>
+
+  <g transform="translate(72 150)">
+    <rect x="0" y="0" width="530" height="650" rx="32" fill="#ffffff" stroke="#dadad3"/>
+    <rect x="38" y="32" width="454" height="586" rx="32" fill="#f6f6f3" stroke="#dadad3"/>
+    <rect x="208" y="58" width="114" height="8" rx="4" fill="#262622"/>
+
+    <text class="heading" x="72" y="112">회의록 입력</text>
+    <text class="muted" x="72" y="140">회의록, 카카오톡 공지, 공모전 준비 메모를 붙여넣으세요.</text>
+
+    <rect x="72" y="172" width="384" height="254" rx="16" fill="#ffffff" stroke="#c8c8c1"/>
+    <text class="body" x="94" y="206">오늘 회의에서 서준은 발표 자료 첫 장과</text>
+    <text class="body" x="94" y="232">문제 정의를 수요일까지 정리하기로 했다.</text>
+    <text class="body" x="94" y="268">민지는 사용자 시나리오와 화면 흐름도를</text>
+    <text class="body" x="94" y="294">목요일까지 만들기로 했다.</text>
+    <text class="body" x="94" y="330">아직 최종 발표 대본 담당자는 정하지 못했다.</text>
+
+    <rect x="72" y="454" width="144" height="44" rx="16" fill="#e5e5e0"/>
+    <text class="chip" x="105" y="481">예시 입력</text>
+
+    <rect x="230" y="454" width="226" height="44" rx="16" fill="#e60023"/>
+    <text class="button" x="304" y="481">AI 분석하기</text>
+
+    <rect x="72" y="532" width="384" height="56" rx="16" fill="#ffffff" stroke="#dadad3"/>
+    <circle cx="98" cy="560" r="8" fill="#e60023"/>
+    <text class="muted" x="118" y="565">입력 없음, 분석 중, 분석 완료 상태를 분리한다.</text>
+  </g>
+
+  <g transform="translate(678 150)">
+    <rect x="0" y="0" width="530" height="650" rx="32" fill="#ffffff" stroke="#dadad3"/>
+    <rect x="38" y="32" width="454" height="586" rx="32" fill="#f6f6f3" stroke="#dadad3"/>
+    <rect x="208" y="58" width="114" height="8" rx="4" fill="#262622"/>
+
+    <text class="heading" x="72" y="112">분석 결과</text>
+    <text class="muted" x="72" y="140">팀원별 할 일, 마감일, 미결 이슈를 한 화면에서 확인합니다.</text>
+
+    <g transform="translate(72 174)">
+      <rect x="0" y="0" width="384" height="62" rx="16" fill="#ffffff" stroke="#dadad3"/>
+      <rect x="16" y="18" width="48" height="26" rx="13" fill="#000000"/>
+      <text class="button" x="28" y="36">서준</text>
+      <text class="body" x="82" y="26">발표 자료 첫 장, 문제 정의 정리</text>
+      <text class="muted" x="82" y="48">마감: 수요일 · 상태: 진행 중</text>
+    </g>
+
+    <g transform="translate(72 250)">
+      <rect x="0" y="0" width="384" height="62" rx="16" fill="#ffffff" stroke="#dadad3"/>
+      <rect x="16" y="18" width="48" height="26" rx="13" fill="#000000"/>
+      <text class="button" x="28" y="36">민지</text>
+      <text class="body" x="82" y="26">사용자 시나리오, 화면 흐름도</text>
+      <text class="muted" x="82" y="48">마감: 목요일 · 상태: 진행 중</text>
+    </g>
+
+    <g transform="translate(72 326)">
+      <rect x="0" y="0" width="384" height="62" rx="16" fill="#ffffff" stroke="#dadad3"/>
+      <rect x="16" y="18" width="48" height="26" rx="13" fill="#e60023"/>
+      <text class="button" x="28" y="36">미정</text>
+      <text class="body" x="82" y="26">최종 발표 대본 작성</text>
+      <text class="muted" x="82" y="48">담당자 불명확 · 지정 필요</text>
+    </g>
+
+    <rect x="72" y="430" width="384" height="142" rx="16" fill="#262622"/>
+    <text class="on-dark" x="96" y="464">다음 회의 체크리스트</text>
+    <circle cx="102" cy="492" r="5" fill="#e60023"/>
+    <text class="on-dark-muted" x="116" y="497">화면 흐름도 확인</text>
+    <circle cx="102" cy="522" r="5" fill="#e60023"/>
+    <text class="on-dark-muted" x="116" y="527">핵심 기능 2개 재확인</text>
+    <circle cx="102" cy="552" r="5" fill="#e60023"/>
+    <text class="on-dark-muted" x="116" y="557">발표 대본 담당자 지정</text>
+  </g>
+
+  <g transform="translate(96 828)">
+    <rect x="0" y="0" width="1088" height="42" rx="16" fill="#ffffff" stroke="#dadad3"/>
+    <text class="muted" x="24" y="27">Design note: warm cream surfaces, 16px rounded controls, one red primary CTA, quiet monochrome chrome.</text>
+  </g>
+</svg>
