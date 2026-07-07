@@ -23,11 +23,12 @@ Use different body conventions for the two PRs:
 
 Read `AGENTS.md` and `docs/agents/issue-tracker.md`. Read `.github/pull_request_template.md` only before preparing or updating the upstream camp submission PR.
 
-Confirm the daily branch:
+Determine the daily branch without asking for confirmation:
 
 - Prefer the current branch when it matches `codex/MMDD`.
 - Otherwise use the branch the user named.
-- If neither is available, infer the most likely local `codex/MMDD` branch and confirm before continuing.
+- If neither is available, infer the most likely local `codex/MMDD` branch.
+- If multiple branches are equally likely, stop and report the ambiguity instead of guessing.
 
 Stop before PR work if:
 
@@ -61,24 +62,20 @@ Use this structure:
 
 Link source material rather than forcing camp reflection content into the daily PR. If important context is genuinely missing, make a conservative assumption and note it under `Risks / Follow-ups`.
 
-### 4. Confirm the final PR body
+### 4. Create or update the daily PR
 
-Show the complete daily PR title and body. Ask for a single approval before creating or updating the daily PR. The user may revise the draft, but do not run an interview for the daily PR.
-
-Completion criterion: the user has approved the full daily PR body.
-
-### 5. Create or update the daily PR
+Do not ask the user to approve the daily PR body. The daily PR is an agent-written internal integration artifact.
 
 Push the daily branch to `fork`.
 
 Check for an existing open PR from `swh3467:codex/MMDD` to `swh3467:N180_하성욱`.
 
-- If one exists, ask whether to update that PR body.
+- If one exists, update its title and body with the agent-written daily PR content.
 - If none exists, create a PR with base `N180_하성욱` and head `codex/MMDD`.
 
 After the PR exists, keep its URL for the final report. Do not treat this fork PR as the final camp submission.
 
-### 6. Ensure the upstream submission PR
+### 5. Ensure the upstream submission PR
 
 Fetch `fork` and `origin`, then check whether the daily branch is already contained in `fork/N180_하성욱`.
 
@@ -100,7 +97,7 @@ Before creating or updating the upstream PR, read `.github/pull_request_template
 4. `아직 이해 못 한 부분`
 5. `새로 알게 된 것`
 
-- If an upstream PR exists, confirm whether its title and body should be updated to the approved camp submission title and body.
-- If none exists, create it with base `N180_하성욱`, head `swh3467:N180_하성욱`, and the approved camp submission title and body.
+- If an upstream PR exists, update its title and body with the interview-confirmed camp submission content.
+- If none exists, create it with base `N180_하성욱`, head `swh3467:N180_하성욱`, and the interview-confirmed camp submission content.
 
 Report both PR URLs when finished. The daily PR URL alone is not enough for camp submission.
