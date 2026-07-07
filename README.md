@@ -4,26 +4,25 @@
 
 ## 서비스 한 줄 설명
 
-모두의 뇌는 회의록, 연구 메모, 설계 피드백, 보고서에 흩어진 프로젝트 맥락을 연결해 팀 전체가 함께 쓰는 두 번째 뇌를 만들어주는 AI 에이전트입니다.
+모두의 뇌는 회의록, 연구 메모, 팀 피드백, 보고서에 흩어진 프로젝트 맥락을 연결해 팀 전체가 함께 쓰는 두 번째 뇌를 만들어주는 AI 에이전트입니다.
 
 ## 문서
 
 - [기초 개발 기획서](docs/plan.md)
 - [시장 조사 및 경쟁 분석](docs/market-research.md)
+- [디자인 산출물 링크](docs/design-assets.md)
 - [작업 분해 체크리스트](docs/checklist.md)
 - [PR 설명 초안](docs/pr-description-draft.md)
 
 ## 기획 시각화
 
-GitHub에서 SVG 이미지가 깨질 수 있어 HTML 기반 시각화 페이지를 함께 제공합니다.
+![모두의 뇌 기획 대표 이미지](docs/images/modu-brain-cover.png)
 
-- [HTML 시각화 페이지](docs/visualization.html)
-- [사용자 흐름 SVG 원본](docs/images/user-flow.svg)
-- [화면 와이어프레임 SVG 원본](docs/images/wireframe.svg)
+- [HTML 상세 보기](docs/visualization.html)
 
 ## 현재 개발 방향
 
-오늘 단계에서는 회의 요약 도구와 구분되는 기획 방향을 명확히 하기 위해, `할 일 정리`보다 `맥락 공유`를 핵심 문제로 재정의합니다.
+오늘 단계에서는 회의 요약 도구와 구분되는 기획 방향을 명확히 하기 위해, `할 일 정리`보다 `맥락 공유`를 핵심 문제로 둡니다.
 
 1. 문제 정의를 협업 맥락 손실 문제로 바꿉니다.
 2. 핵심 기능을 프로젝트 맥락 추출과 공유 지식맵 생성으로 좁힙니다.
@@ -32,7 +31,7 @@ GitHub에서 SVG 이미지가 깨질 수 있어 HTML 기반 시각화 페이지�
 
 ## MVP 핵심 기능
 
-- 회의록/연구 메모/설계 피드백에서 주제, 용어, 결정사항, 미결 질문 추출
+- 회의록/연구 메모/팀 피드백에서 주제, 용어, 결정사항, 미결 질문 추출
 - 사람/분야/업체/주제를 연결한 공유 지식맵과 맥락 요약 생성
 
 ## React 확인 컴포넌트
@@ -51,9 +50,9 @@ npm run dev
 
 ```tsx
 <NewsCard
-  title="프로젝트 데이터와 커뮤니케이션 문제가 재작업 비용으로 이어진다"
-  source="Autodesk + FMI"
-  thumbnail="/images/research-construction.svg"
+  title="업데이트 확인과 도구 전환이 실제 작업 시간을 잠식한다"
+  source="Asana Anatomy of Work"
+  thumbnail="/images/research-work.svg"
 />
 ```
 

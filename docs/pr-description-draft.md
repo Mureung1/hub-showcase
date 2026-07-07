@@ -1,28 +1,28 @@
-# PR 설명 초안
+# 모두의 뇌 기획서 및 기초 개발
 
 ## 주요 작업 리스트
 
-- 기존 TeamFlow Agent 방향을 `모두의 뇌`로 수정했습니다.
-- 단순 회의 요약/업무 정리 에이전트와 차별화하기 위해 문제 정의를 협업 맥락 손실 문제로 재정의했습니다.
-- `docs/plan.md`에 문제 정의, 사용자 시나리오, 핵심 기능, MVP 범위, 예시 입출력을 다시 작성했습니다.
-- `docs/market-research.md`에 시장 조사와 경쟁 분석을 추가했습니다.
-- 사용자 흐름과 와이어프레임 SVG를 모두의 뇌 방향으로 수정했습니다.
-- GitHub에서 SVG 이미지가 깨질 때를 대비해 HTML 기반 시각화 페이지를 추가했습니다.
+- `docs/plan.md`에 협업 맥락 공유 AI 에이전트 기획을 정리했습니다.
+- `docs/market-research.md`에 시장 조사와 경쟁 분석을 정리했습니다.
+- `docs/design-assets.md`에 Canva/Figma 디자인 산출물 링크를 정리했습니다.
+- `README.md`에서 기획서, 시장 조사, 체크리스트, 대표 이미지에 바로 접근할 수 있도록 구성했습니다.
 - React + TypeScript 기반 `NewsCard` 컴포넌트를 추가했습니다.
 - CSS Modules로 카드 스타일을 분리했고, 샘플 시장 조사 카드 3개를 앱에서 렌더링하도록 구성했습니다.
 - `npm run build`로 TypeScript와 Vite 빌드를 검증했습니다.
 
-## 시각화 자료
+## 기획 대표 이미지
 
-GitHub PR 본문에서 SVG 이미지가 깨지는 경우가 있어, HTML로 직접 볼 수 있는 시각화 페이지를 추가했습니다.
+![모두의 뇌 기획 대표 이미지](https://raw.githubusercontent.com/tjwnsdhfz/hub/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/images/modu-brain-cover.png)
 
-- [HTML 시각화 페이지](https://htmlpreview.github.io/?https://github.com/tjwnsdhfz/hub/blob/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/visualization.html)
-- [사용자 흐름 SVG 원본](https://github.com/tjwnsdhfz/hub/blob/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/images/user-flow.svg)
-- [화면 와이어프레임 SVG 원본](https://github.com/tjwnsdhfz/hub/blob/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/images/wireframe.svg)
+## 디자인 산출물
+
+- Canva 편집 디자인: https://www.canva.com/d/vv5pLSUhq50coma
+- Figma FigJam 흐름도: https://www.figma.com/board/V5Jke4dsqaoMUOiTEg57tM
+- 벡터 원본: `docs/images/modu-brain-cover.svg`
 
 ## 내가 설명할 수 있는 부분
 
-이번 수정의 핵심은 `할 일 정리`에서 `맥락 공유`로 기획 중심을 바꾼 것입니다.
+기획의 핵심은 `할 일 정리`가 아니라 `맥락 공유`입니다.
 
 회의 요약 에이전트는 회의 내용을 짧게 정리하거나 액션아이템을 뽑는 데 강하지만, 여러 분야 사람이 같은 프로젝트를 진행하면서 서로의 판단 근거와 배경 맥락을 이해하지 못하는 문제까지 해결하기는 어렵습니다.
 
@@ -32,15 +32,15 @@ GitHub PR 본문에서 SVG 이미지가 깨지는 경우가 있어, HTML로 직�
 
 - 실제 AI API를 붙였을 때 문서에서 결정 배경과 관점 차이를 안정적으로 추출하는 방법은 더 공부가 필요합니다.
 - 지식맵을 실제 그래프 UI로 구현할 때 어떤 데이터 구조가 가장 적절한지 더 실험이 필요합니다.
-- 산업 현장 문서에는 보안과 책임 문제가 있으므로 MVP에서는 대학생/연구 프로젝트 수준으로 먼저 검증해야 합니다.
+- 실제 팀 문서에 적용할 때 개인정보와 권한 관리는 더 공부가 필요합니다.
 
 ## 렌더 확인 props
 
 ```tsx
 <NewsCard
-  title="프로젝트 데이터와 커뮤니케이션 문제가 재작업 비용으로 이어진다"
-  source="Autodesk + FMI"
-  thumbnail="/images/research-construction.svg"
+  title="업데이트 확인과 도구 전환이 실제 작업 시간을 잠식한다"
+  source="Asana Anatomy of Work"
+  thumbnail="/images/research-work.svg"
 />
 ```
 
