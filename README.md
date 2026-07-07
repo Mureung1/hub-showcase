@@ -18,7 +18,7 @@
 |---|---|
 | Frontend | React (Vite), Tailwind CSS v4 |
 | Backend | FastAPI, Python |
-| AI | LangChain, Google Gemini (gemini-1.5-flash) <!-- 실제 사용 모델명 확인 후 수정 --> |
+| AI | LangChain, Google Gemini (gemini-2.5-flash)
 | Database | SQLite (MVP 단계) → MySQL 전환 예정 <!-- 현재 사용 DB 확인 후 수정 --> |
 | ORM | SQLAlchemy |
 

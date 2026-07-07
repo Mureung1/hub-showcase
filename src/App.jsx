@@ -1,71 +1,271 @@
-import React from 'react';
+// Dashboard.jsx — 네이버 그린 · 라이트 · 미니멀 스타일
+// Tailwind CSS 세팅된 React 프로젝트에서 그대로 교체 사용
+import { useState } from "react";
 
-function App() {
+const API_BASE = "http://localhost:8000";
+const GREEN = "#03C75A";
+const GREEN_DARK = "#00A344";
+
+// 긍정 비율 도넛 게이지
+function SentimentDonut({ positive, negative }) {
+  const total = positive + negative || 1;
+  const ratio = positive / total;
+  const R = 52;
+  const C = 2 * Math.PI * R;
   return (
-    <div style={{ padding: '40px', fontFamily: 'sans-serif', maxWidth: '750px', margin: '40px auto', border: '1px solid #eee', borderRadius: '16px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', backgroundColor: '#fff' }}>
-      
-      {/* 상단 헤더 영역 */}
-      <div style={{ marginBottom: '30px' }}>
-        <span style={{ backgroundColor: '#e2fbe8', color: '#00c73c', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>
-          💡 본 과정 프로젝트 기획 (임시)
+    <div className="relative mx-auto h-40 w-40">
+      <svg viewBox="0 0 128 128" className="h-full w-full -rotate-90">
+        <circle cx="64" cy="64" r={R} fill="none" stroke="#F1F3F5" strokeWidth="13" />
+        <circle
+          cx="64" cy="64" r={R} fill="none"
+          stroke={GREEN} strokeWidth="13" strokeLinecap="round"
+          strokeDasharray={`${C * ratio} ${C}`}
+          className="transition-all duration-700"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-3xl font-bold text-gray-900">
+          {Math.round(ratio * 100)}%
         </span>
-        <h1 style={{ color: '#0f172a', fontSize: '1.9rem', marginTop: '15px', marginBottom: '10px', lineHeight: '1.4' }}>
-          실시간 날씨 및 상권 데이터 연동 기반<br />
-          <span style={{ color: '#00c73c' }}>소상공인 마케팅 자동화 AI 에이전트 서비스</span>
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '1.05rem', marginTop: '0', lineHeight: '1.5' }}>
-          기상청 날씨 API와 지역 데이터를 활용한 소상공인 매장 마케팅 생산성 향상 플랫폼
-        </p>
+        <span className="mt-0.5 text-xs font-semibold" style={{ color: GREEN_DARK }}>
+          긍정 리뷰
+        </span>
       </div>
-
-      <hr style={{ border: '0', height: '1px', background: '#f1f5f9', margin: '24px 0' }} />
-
-      {/* 서비스 개요 */}
-      <section style={{ marginBottom: '30px' }}>
-        <h2 style={{ color: '#0f172a', fontSize: '1.3rem', borderLeft: '4px solid #00c73c', paddingLeft: '10px', marginBottom: '12px' }}>
-          🎯 서비스 개요
-        </h2>
-        <p style={{ lineHeight: '1.7', color: '#334155', fontSize: '1rem', margin: '0' }}>
-          기상청 날씨 API와 지역/시간 데이터를 AI 에이전트가 스스로 실시간으로 수집(**Function Calling**)하고 분석합니다. 
-          이를 통해 날씨 변화와 상권 특성에 맞춰 소상공인의 배달앱 공지사항 및 SNS 마케팅 카피라이팅을 자동으로 생성하고 최적화해 주는 스마트 생산성 인프라입니다.
-        </p>
-      </section>
-
-      {/* 핵심 테크 메커니즘 */}
-      <section style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px', marginBottom: '35px' }}>
-        <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#0f172a' }}>
-          ⚙️ AI 에이전트 핵심 작동 방식
-        </h3>
-        <div style={{ display: 'grid', gap: '15px' }}>
-          <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <strong style={{ color: '#0f172a', display: 'block', marginBottom: '5px' }}>1. 동적 데이터 수집 (Function Calling)</strong>
-            <span style={{ fontSize: '0.9rem', color: '#475569', lineHeight: '1.5' }}>
-              LLM이 현재 기상 변수(강수량, 기온, 습도 등)가 필요하다고 판단하면, 실시간으로 외부 기상청 API를 동적 호출하여 필요한 정형 데이터를 스스로 확보합니다.
-            </span>
-          </div>
-          <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <strong style={{ color: '#0f172a', display: 'block', marginBottom: '5px' }}>2. 상황 맞춤형 컨텐츠 최적화 자동화</strong>
-            <span style={{ fontSize: '0.9rem', color: '#475569', lineHeight: '1.5' }}>
-              분석된 로컬 데이터를 기반으로 "비 오는 금요일 저녁 배달 수요 급증 시점"에 최적화된 배달앱 이벤트 공지 문구 및 인스타그램 마케팅 카피를 AI가 즉시 자동 발행합니다.
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* 4주간 개발 목표 */}
-      <section>
-        <h2 style={{ color: '#0f172a', fontSize: '1.3rem', borderLeft: '4px solid #00c73c', paddingLeft: '10px', marginBottom: '12px' }}>
-          🚀 향후 개발 태스크
-        </h2>
-        <ul style={{ paddingLeft: '20px', margin: '0', lineHeight: '1.8', color: '#334155' }}>
-          <li>Vite + React 기반의 소상공인용 실시간 대시보드 모니터링 UI 구축</li>
-          <li>기상청 공공데이터 API 및 LLM 오케스트레이션 프레임워크 연동</li>
-          <li>상황별 맞춤 프롬프트 엔지니어링 및 백엔드 데이터 분석 레이어 설계</li>
-        </ul>
-      </section>
-
     </div>
   );
 }
 
-export default App;
+export default function Dashboard() {
+  const [storeName, setStoreName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [data, setData] = useState(null);
+
+  const handleAnalyze = async () => {
+    if (!storeName.trim() || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ store_name: storeName.trim() }),
+      });
+      if (!res.ok) throw new Error(`분석 요청 실패 (${res.status})`);
+      setData(await res.json());
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const maxKeyword = data?.keyword_ranking?.[0]?.count || 1;
+
+  return (
+    <div className="min-h-screen bg-[#F5F6F8] text-gray-900">
+      <style>{`
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+        body, .font-pretendard { font-family: 'Pretendard', -apple-system, 'Noto Sans KR', sans-serif; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+      `}</style>
+
+      <div className="font-pretendard mx-auto max-w-3xl px-6 py-16">
+        {/* ── 인트로 헤더 (중앙 정렬) ── */}
+        <header className="rounded-3xl bg-white px-8 py-12 text-center shadow-sm">
+          <p
+            className="text-xs font-bold tracking-[0.25em]"
+            style={{ color: GREEN_DARK }}
+          >
+            AI MYSTERY SHOPPER
+          </p>
+          <h1 className="mt-4 text-3xl font-bold leading-snug sm:text-4xl">
+            소상공인을 위한
+            <br />
+            경쟁업체 리뷰 분석 AI 에이전트
+          </h1>
+          <p className="mx-auto mt-5 max-w-md leading-7 text-gray-600">
+            바쁜 사장님을 대신해 경쟁 가게의 리뷰를 수집·분석하고, 우리 가게가
+            취할 전략까지 제안하는 마케팅 파트너입니다.
+          </p>
+
+          {/* 검색 */}
+          <div className="mx-auto mt-8 flex max-w-md gap-2">
+            <input
+              value={storeName}
+              onChange={(e) => setStoreName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+              placeholder="분석할 경쟁업체 이름 (예: 보노베리)"
+              className="flex-1 rounded-xl border border-gray-200 bg-[#F8F9FA] px-4 py-3.5 text-sm outline-none transition placeholder:text-gray-400 focus:border-[#03C75A] focus:bg-white"
+            />
+            <button
+              onClick={handleAnalyze}
+              disabled={loading || !storeName.trim()}
+              className="rounded-xl px-6 py-3.5 text-sm font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40"
+              style={{ backgroundColor: GREEN }}
+            >
+              {loading ? "분석 중..." : "분석 시작"}
+            </button>
+          </div>
+          {error && (
+            <p className="mx-auto mt-4 max-w-md rounded-xl bg-red-50 px-4 py-3 text-sm text-red-500">
+              {error} — 백엔드 서버(8000번 포트) 실행 여부를 확인하세요.
+            </p>
+          )}
+
+          {/* 초기 상태: 기능 소개 (좌측 그린 바) */}
+          {!data && !loading && (
+            <div className="mx-auto mt-10 max-w-md space-y-6 text-left">
+              {[
+                ["리뷰 감성 분석", "리뷰 하나하나를 긍정·부정으로 자동 분류해요."],
+                ["키워드 순위", "손님들이 자주 말하는 포인트를 순위로 보여줘요."],
+                ["AI 전략 리포트", "벤치마킹할 강점과 공략할 약점을 정리해줘요."],
+              ].map(([title, desc]) => (
+                <div
+                  key={title}
+                  className="border-l-4 pl-5 text-center sm:text-left"
+                  style={{ borderColor: GREEN }}
+                >
+                  <p className="font-bold">{title}</p>
+                  <p className="mt-1 text-sm text-gray-500">{desc}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {loading && (
+            <p className="mt-8 text-sm text-gray-500">
+              Gemini가 리뷰 5건을 분석하고 있습니다...
+            </p>
+          )}
+        </header>
+
+        {data && !loading && (
+          <main className="mt-6 space-y-6">
+            {/* ── 감성 분석 결과 ── */}
+            <section className="rounded-3xl bg-white p-8 text-center shadow-sm">
+              <p
+                className="text-xs font-bold tracking-[0.2em]"
+                style={{ color: GREEN_DARK }}
+              >
+                SENTIMENT
+              </p>
+              <h2 className="mt-2 text-xl font-bold">
+                &lsquo;{data.store_name}&rsquo; 리뷰 감성 분석
+              </h2>
+              <div className="mt-6">
+                <SentimentDonut positive={data.positive} negative={data.negative} />
+              </div>
+              <div className="mx-auto mt-6 grid max-w-sm grid-cols-3 gap-3">
+                {[
+                  ["총 리뷰", `${data.total_reviews}건`, "text-gray-900"],
+                  ["긍정", `${data.positive}건`, "text-[#00A344]"],
+                  ["부정", `${data.negative}건`, "text-red-500"],
+                ].map(([label, value, color]) => (
+                  <div key={label} className="rounded-2xl bg-[#F8F9FA] py-4">
+                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className={`mt-1 text-lg font-bold ${color}`}>{value}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* ── AI 전략 리포트 (민트 박스) ── */}
+            <section className="rounded-3xl bg-[#E9F9F0] p-8 text-center">
+              <p
+                className="text-sm font-bold"
+                style={{ color: GREEN_DARK }}
+              >
+                AI 전략 리포트
+              </p>
+              <p className="mx-auto mt-4 max-w-xl whitespace-pre-line text-left leading-8 text-gray-700 sm:text-center">
+                {data.consulting_report}
+              </p>
+            </section>
+
+            {/* ── 키워드 순위 ── */}
+            <section className="rounded-3xl bg-white p-8 shadow-sm">
+              <div className="text-center">
+                <p
+                  className="text-xs font-bold tracking-[0.2em]"
+                  style={{ color: GREEN_DARK }}
+                >
+                  KEYWORDS
+                </p>
+                <h2 className="mt-2 text-xl font-bold">언급 키워드 순위</h2>
+              </div>
+              <ul className="mx-auto mt-6 max-w-md space-y-4">
+                {data.keyword_ranking.map((k, i) => (
+                  <li key={k.keyword}>
+                    <div className="mb-1.5 flex items-center justify-between text-sm">
+                      <span className="font-semibold">
+                        <span className="mr-2 text-gray-400">{i + 1}</span>
+                        {k.keyword}
+                      </span>
+                      <span className="text-gray-400">{k.count}회</span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-[#F1F3F5]">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${(k.count / maxKeyword) * 100}%`,
+                          backgroundColor: GREEN,
+                        }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {/* ── 리뷰 목록 ── */}
+            <section className="rounded-3xl bg-white p-8 shadow-sm">
+              <div className="text-center">
+                <p
+                  className="text-xs font-bold tracking-[0.2em]"
+                  style={{ color: GREEN_DARK }}
+                >
+                  REVIEWS
+                </p>
+                <h2 className="mt-2 text-xl font-bold">분석된 리뷰</h2>
+              </div>
+              <ul className="mt-6 space-y-4">
+                {data.reviews.map((r, i) => (
+                  <li key={i} className="rounded-2xl bg-[#F8F9FA] p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          r.sentiment === "긍정"
+                            ? "bg-[#E9F9F0] text-[#00A344]"
+                            : "bg-red-50 text-red-500"
+                        }`}
+                      >
+                        {r.sentiment}
+                      </span>
+                      {r.keywords?.map((k) => (
+                        <span
+                          key={k}
+                          className="rounded-full bg-white px-3 py-1 text-xs text-gray-500"
+                        >
+                          #{k}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-sm leading-7 text-gray-700">
+                      {r.content}
+                    </p>
+                    <p className="mt-2 text-xs text-gray-400">요약 · {r.summary}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </main>
+        )}
+
+        <footer className="py-10 text-center text-xs text-gray-400">
+          AI Mystery Shopper · FastAPI + React + Gemini
+        </footer>
+      </div>
+    </div>
+  );
+}
