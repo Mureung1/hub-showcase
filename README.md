@@ -11,3 +11,14 @@
 ## Repository
 
 - Project Folder: `smartff-agent`
+
+## Project Overview
+
+SmartFF Agent는
+
+판매 데이터,
+발주 데이터,
+폐기 데이터를 분석하여
+
+GS25 점주의 발주 의사결정을 지원하는
+관리회계 기반 AI Decision Support System(DSS)입니다.
