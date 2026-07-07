@@ -1,109 +1,370 @@
-﻿const opportunityTypes = ["장학금", "공모전", "대외활동", "인턴십", "교육 프로그램"];
+﻿import { useEffect, useMemo, useState } from "react";
+import {
+  SAMPLE_KNOWN_URLS,
+  SAMPLE_NOTICE_SITE,
+  buildKnownLinkKey,
+  findNewPostLinks,
+  resolveTargetUrl,
+  runNoticeLinkScan,
+  sampleNoticeHtml,
+} from "./agents/noticeLinkAgent.js";
 
-const workflow = [
-  {
-    label: "탐색",
-    title: "여러 출처의 기회를 한 번에 수집",
-    copy: "학교 공지, 기관 페이지, 공모전 플랫폼에 흩어진 정보를 주제와 마감일 기준으로 모읍니다.",
-  },
-  {
-    label: "분류",
-    title: "나에게 맞는 조건만 정리",
-    copy: "지원 자격, 분야, 지역, 일정, 혜택을 비교해서 우선순위를 자동으로 잡습니다.",
-  },
-  {
-    label: "요약",
-    title: "지원에 필요한 핵심만 제공",
-    copy: "마감일, 제출 서류, 신청 링크, 준비 체크리스트를 보기 쉬운 형태로 요약합니다.",
-  },
+const sourceOptions = [
+  { id: "sample", label: "샘플 HTML" },
+  { id: "live", label: "실제 웹페이지" },
 ];
 
-const highlights = [
-  "마감 임박 일정 알림",
-  "관심 분야별 자동 태깅",
-  "지원 조건 비교",
-  "개인별 추천 목록",
-];
+const statusLabels = {
+  idle: "준비",
+  running: "스캔 중",
+  complete: "완료",
+  error: "확인 필요",
+};
 
-export default function OpportunityAgentIntro() {
+const timeFormatter = new Intl.DateTimeFormat("ko-KR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+function defaultKnownLinks(targetUrl) {
+  return resolveTargetUrl(targetUrl) === SAMPLE_NOTICE_SITE.url ? SAMPLE_KNOWN_URLS : [];
+}
+
+function readKnownLinks(targetUrl) {
+  try {
+    const rawValue = window.localStorage.getItem(buildKnownLinkKey(targetUrl));
+
+    if (!rawValue) {
+      return defaultKnownLinks(targetUrl);
+    }
+
+    const parsedValue = JSON.parse(rawValue);
+    return Array.isArray(parsedValue) ? parsedValue : defaultKnownLinks(targetUrl);
+  } catch {
+    return defaultKnownLinks(targetUrl);
+  }
+}
+
+function saveKnownLinks(targetUrl, urls) {
+  try {
+    window.localStorage.setItem(buildKnownLinkKey(targetUrl), JSON.stringify(urls));
+  } catch {
+    // Local storage is best-effort in this prototype.
+  }
+}
+
+function formatScanTime(value) {
+  if (!value) {
+    return "아직 없음";
+  }
+
+  return timeFormatter.format(new Date(value));
+}
+
+function getErrorMessage(error) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "스캔 중 오류가 발생했습니다.";
+}
+
+export default function OpportunityAgentWorkbench() {
+  const [targetUrl, setTargetUrl] = useState(SAMPLE_NOTICE_SITE.url);
+  const [linkSelector, setLinkSelector] = useState(SAMPLE_NOTICE_SITE.linkSelector);
+  const [sourceMode, setSourceMode] = useState("sample");
+  const [htmlSource, setHtmlSource] = useState(sampleNoticeHtml);
+  const [knownLinks, setKnownLinks] = useState(() => readKnownLinks(SAMPLE_NOTICE_SITE.url));
+  const [scan, setScan] = useState(null);
+  const [status, setStatus] = useState("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const resolvedTargetUrl = resolveTargetUrl(targetUrl);
+  const isRunning = status === "running";
+
+  const pipelineSteps = useMemo(
+    () => [
+      {
+        copy: resolvedTargetUrl || "URL 대기",
+        state: resolvedTargetUrl ? "done" : "idle",
+        title: "대상 확인",
+      },
+      {
+        copy: sourceMode === "live" ? "웹페이지 HTML 요청" : "로컬 HTML 사용",
+        state: isRunning ? "active" : scan ? "done" : "idle",
+        title: "HTML 수집",
+      },
+      {
+        copy: `${scan?.allLinks.length ?? 0}개 발견`,
+        state: scan ? "done" : "idle",
+        title: "링크 추출",
+      },
+      {
+        copy: `${scan?.newLinks.length ?? 0}개 남김`,
+        state: scan ? "done" : "idle",
+        title: "신규 필터",
+      },
+      {
+        copy: "공지 요약 확장 슬롯",
+        state: "queued",
+        title: "요약 대기",
+      },
+    ],
+    [isRunning, resolvedTargetUrl, scan, sourceMode],
+  );
+
+  const metrics = useMemo(
+    () => [
+      { label: "추출 링크", value: scan?.allLinks.length ?? 0 },
+      { label: "새 링크", value: scan?.newLinks.length ?? 0 },
+      { label: "기존 기록", value: knownLinks.length },
+      { label: "마지막 스캔", value: formatScanTime(scan?.fetchedAt) },
+    ],
+    [knownLinks.length, scan],
+  );
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function runInitialScan() {
+      setStatus("running");
+
+      try {
+        const result = await runNoticeLinkScan({
+          html: sampleNoticeHtml,
+          knownUrls: readKnownLinks(SAMPLE_NOTICE_SITE.url),
+          linkSelector: SAMPLE_NOTICE_SITE.linkSelector,
+          sourceMode: "sample",
+          targetUrl: SAMPLE_NOTICE_SITE.url,
+        });
+
+        if (!isCancelled) {
+          setScan(result);
+          setStatus("complete");
+          setErrorMessage("");
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setStatus("error");
+          setErrorMessage(getErrorMessage(error));
+        }
+      }
+    }
+
+    runInitialScan();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    setKnownLinks(readKnownLinks(targetUrl));
+  }, [targetUrl]);
+
+  async function handleRunScan(event) {
+    event.preventDefault();
+    setStatus("running");
+    setErrorMessage("");
+
+    try {
+      const result = await runNoticeLinkScan({
+        html: htmlSource,
+        knownUrls: knownLinks,
+        linkSelector,
+        sourceMode,
+        targetUrl,
+      });
+
+      setScan(result);
+      setStatus("complete");
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(getErrorMessage(error));
+    }
+  }
+
+  function handleSaveCurrentLinks() {
+    if (!scan) {
+      return;
+    }
+
+    const nextKnownLinks = Array.from(
+      new Set([...knownLinks, ...scan.allLinks.map((link) => link.url)]),
+    );
+
+    saveKnownLinks(scan.targetUrl, nextKnownLinks);
+    setKnownLinks(nextKnownLinks);
+    setScan({
+      ...scan,
+      knownCount: nextKnownLinks.length,
+      newLinks: findNewPostLinks(scan.allLinks, nextKnownLinks, scan.targetUrl),
+    });
+  }
+
+  function handleResetKnownLinks() {
+    saveKnownLinks(targetUrl, []);
+    setKnownLinks([]);
+
+    if (scan && scan.targetUrl === resolvedTargetUrl) {
+      setScan({
+        ...scan,
+        knownCount: 0,
+        newLinks: scan.allLinks,
+      });
+    }
+  }
+
   return (
-    <main className="intro-page">
-      <section className="hero-section" aria-labelledby="project-title">
-        <div className="hero-copy">
-          <p className="eyebrow">AI Agent Project</p>
-          <h1 id="project-title">Opportunity Agent</h1>
-          <p className="lead">
-            장학금, 공모전, 대외활동 정보를 검색하고 정리해 지원자가 놓치기 쉬운 기회를
-            빠르게 발견하도록 돕는 에이전트입니다.
-          </p>
+    <main className="agent-page">
+      <section className="workspace" aria-labelledby="agent-title">
+        <header className="workspace-header">
+          <div>
+            <p className="eyebrow">Opportunity Agent</p>
+            <h1 id="agent-title">공지 링크 수집 에이전트</h1>
+          </div>
+          <span className={`status-pill status-${status}`}>{statusLabels[status]}</span>
+        </header>
 
-          <div className="category-list" aria-label="검색 대상">
-            {opportunityTypes.map((type) => (
-              <span key={type}>{type}</span>
+        <section className="tool-grid" aria-label="스캔 설정">
+          <form className="scan-panel" onSubmit={handleRunScan}>
+            <div className="field-row">
+              <label className="field field-wide">
+                <span>대상 웹사이트</span>
+                <input
+                  type="url"
+                  value={targetUrl}
+                  onChange={(event) => setTargetUrl(event.target.value)}
+                  placeholder="https://example.ac.kr/notice"
+                />
+              </label>
+
+              <label className="field">
+                <span>링크 선택자</span>
+                <input
+                  type="text"
+                  value={linkSelector}
+                  onChange={(event) => setLinkSelector(event.target.value)}
+                  placeholder="a[href]"
+                />
+              </label>
+            </div>
+
+            <div className="segmented-control" role="group" aria-label="소스 선택">
+              {sourceOptions.map((option) => (
+                <button
+                  type="button"
+                  key={option.id}
+                  className={sourceMode === option.id ? "is-active" : ""}
+                  onClick={() => setSourceMode(option.id)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            <label className="field html-field">
+              <span>HTML 소스</span>
+              <textarea
+                value={htmlSource}
+                disabled={sourceMode === "live"}
+                onChange={(event) => setHtmlSource(event.target.value)}
+                spellCheck="false"
+              />
+            </label>
+
+            <div className="action-row">
+              <button className="primary-button" type="submit" disabled={isRunning}>
+                {isRunning ? "스캔 중" : "스캔 실행"}
+              </button>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={handleSaveCurrentLinks}
+                disabled={!scan || isRunning}
+              >
+                현재 결과 저장
+              </button>
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={handleResetKnownLinks}
+                disabled={isRunning}
+              >
+                기록 초기화
+              </button>
+            </div>
+
+            {errorMessage ? (
+              <p className="error-message" role="alert">
+                {errorMessage}
+              </p>
+            ) : null}
+          </form>
+
+          <aside className="pipeline-panel" aria-label="에이전트 처리 흐름">
+            <div className="panel-heading">
+              <p className="eyebrow">Agent Flow</p>
+              <h2>처리 흐름</h2>
+            </div>
+            <ol className="pipeline-list">
+              {pipelineSteps.map((step, index) => (
+                <li key={step.title} className={`pipeline-step step-${step.state}`}>
+                  <span>{index + 1}</span>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <p>{step.copy}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </aside>
+        </section>
+
+        <section className="result-section" aria-label="스캔 결과">
+          <div className="metrics-row">
+            {metrics.map((metric) => (
+              <div className="metric" key={metric.label}>
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+              </div>
             ))}
           </div>
 
-          <div className="summary-strip" aria-label="프로젝트 핵심 지표">
-            <div>
-              <strong>5+</strong>
-              <span>기회 유형</span>
-            </div>
-            <div>
-              <strong>3단계</strong>
-              <span>검색 흐름</span>
-            </div>
-            <div>
-              <strong>1곳</strong>
-              <span>정리된 대시보드</span>
-            </div>
-          </div>
-        </div>
+          <div className="result-table">
+            <header className="result-header">
+              <div>
+                <p className="eyebrow">New Links</p>
+                <h2>새 글 링크</h2>
+              </div>
+              <span>{scan?.newLinks.length ?? 0}개</span>
+            </header>
 
-        <div className="agent-board" aria-label="에이전트 검색 결과 예시">
-          <div className="board-topbar">
-            <span className="status-dot" />
-            <span>실시간 기회 정리</span>
-          </div>
-
-          <div className="search-preview">
-            <span>관심 키워드</span>
-            <strong>AI, 데이터, 대학생, 서울</strong>
-          </div>
-
-          <div className="match-card">
-            <p className="match-label">추천 1순위</p>
-            <h2>청년 데이터 분석 장학 프로그램</h2>
-            <p>지원 자격과 관심 분야가 높게 일치합니다.</p>
-            <div className="match-meta">
-              <span>마감 D-9</span>
-              <span>서류 2종</span>
-              <span>장학금</span>
+            <div className="link-list">
+              {scan?.newLinks.length ? (
+                scan.newLinks.map((link, index) => (
+                  <a
+                    className="link-row"
+                    href={link.url}
+                    key={link.id}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <span className="row-index">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="link-copy">
+                      <strong>{link.title}</strong>
+                      <small>{link.url}</small>
+                    </span>
+                    <span className="link-host">{link.hostname}</span>
+                  </a>
+                ))
+              ) : (
+                <div className="empty-state">새 글 링크가 없습니다.</div>
+              )}
             </div>
           </div>
-
-          <ul className="insight-list">
-            {highlights.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="workflow-section" aria-labelledby="workflow-title">
-        <div className="section-heading">
-          <p className="eyebrow">How It Works</p>
-          <h2 id="workflow-title">흩어진 기회를 지원 가능한 목록으로 바꿉니다</h2>
-        </div>
-
-        <div className="workflow-grid">
-          {workflow.map((step) => (
-            <article key={step.label} className="workflow-card">
-              <span>{step.label}</span>
-              <h3>{step.title}</h3>
-              <p>{step.copy}</p>
-            </article>
-          ))}
-        </div>
+        </section>
       </section>
     </main>
   );
