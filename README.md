@@ -4,7 +4,8 @@
 
 ## 문서
 
-- [프로젝트 기획서](./project-plan.md)
+- [프로젝트 기획서 (Wiki, 최신 버전)](https://github.com/geulcho/hub/wiki/Core-Loop-Builder-기획서)
+- [프로젝트 기획서 (저장소 내 기록용 사본)](./project-plan.md)
 
 ## 실행 방법
 
