@@ -1,7 +1,7 @@
 # SemesterOps Runtime Ownership Spike Plan
 
-작성일: 2026-07-07  
-상태: Draft  
+작성일: 2026-07-07
+상태: Draft
 브랜치: `codex/runtime-ownership-spike-plan`
 
 ## 목적
