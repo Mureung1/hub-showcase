@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(git -C \"C:/WorkSpace_2026/NaverConnect2\" remote -v)"
-    ]
-  }
-}

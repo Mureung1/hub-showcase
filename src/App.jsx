@@ -6,32 +6,13 @@ import DesignSelect from "./features/designSelect/DesignSelect.jsx";
 import { THEMES, DEFAULT_THEME, getTheme } from "./features/designSelect/themes.js";
 import Generating from "./features/generate/Generating.jsx";
 import ResultView from "./features/result/ResultView.jsx";
+import frontendSample from "../samples/kim-jiwoo-frontend.md?raw";
+import designerSample from "../samples/kim-seoyeon-designer.md?raw";
 
-const BUILTIN_SAMPLE = `# 김지수
-Frontend Engineer
-jisu.kim@example.com · github.com/jisu-dev · 서울
-
-## Summary
-사용자 경험을 중시하는 3년차 프론트엔드 개발자입니다. React와 TypeScript로 대시보드와 커머스 서비스를 만들었습니다.
-
-## Skills
-React, TypeScript, Next.js, Vite, Zustand, Testing Library, Figma
-
-## Experience
-### 토스랩 — Frontend Engineer (2022.03 - 현재)
-- 잔디 웹 대시보드 리뉴얼, 초기 렌더 40% 단축
-- 디자인 시스템 컴포넌트 60여 개 구축
-
-### 스타트업 A — 프론트엔드 (2021.01 - 2022.02)
-- 커머스 상품 페이지 개발, 전환율 12% 개선
-
-## Projects
-### 오픈소스 차트 라이브러리
-- 주간 다운로드 3천 건, GitHub 스타 400+
-
-## Education
-- 한국대학교 컴퓨터공학 학사 (2017 - 2021)
-`;
+const SAMPLES = [
+  { label: "🧑‍💻 개발자 샘플", md: frontendSample },
+  { label: "🎨 디자이너 샘플", md: designerSample },
+];
 
 // 앱 전체 흐름을 관리하는 오케스트레이터.
 // 단계: upload → design → generate → result
@@ -75,7 +56,7 @@ export default function App() {
               text={cvText}
               onText={setCvText}
               parsed={parsed}
-              samples={[{ label: "🙋 샘플 CV 불러오기", md: BUILTIN_SAMPLE }]}
+              samples={SAMPLES}
             />
             <div className="stage-nav">
               <span />
