@@ -1,6 +1,6 @@
 import Reveal from "./Reveal";
 import DemoCard from "./DemoCard";
-import { LeafIcon, ArrowRight } from "./Icons";
+import { MountainIcon, ArrowRight } from "./Icons";
 
 export default function Hero() {
   return (
@@ -8,18 +8,18 @@ export default function Hero() {
       <div className="container hero-grid">
         <Reveal>
           <span className="eyebrow">
-            <LeafIcon size={14} /> 마트 재고 · 유통기한 관리 서비스
+            <MountainIcon size={14} /> 바코드 스캔 재고·유통기한 관리
           </span>
 
           <h1>
-            유통기한, <br />
-            <span className="accent">놓치지 마세요</span>
+            찍기만 하세요, <br />
+            <span className="accent">나머지는 셰르파가</span>
           </h1>
 
           <p className="hero-lead">
-            매대를 일일이 확인하지 않아도 됩니다. 상품을 등록하면 남은 날짜를
-            스스로 계산해, 임박·만료 상품을 먼저 알려줘요. 버려지는 상품을 줄이는
-            가장 쉬운 방법.
+            바코드를 찍으면 등록할지 조회할지 알아서 정해요. 입고할 때마다
+            수량과 유통기한만 더하면, 먼저 빼야 할 상품을 색으로 알려줍니다.
+            설치도 서버도 없이 브라우저 하나로.
           </p>
 
           <div className="hero-actions">

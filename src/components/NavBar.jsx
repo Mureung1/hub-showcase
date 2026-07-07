@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BRAND } from "../config";
-import { LeafIcon } from "./Icons";
+import { MountainIcon } from "./Icons";
 
 const LINKS = [
   { href: "#problem", label: "왜 필요한가" },
@@ -24,7 +24,7 @@ export default function NavBar() {
       <div className="container nav-inner">
         <a className="brand" href="#top" aria-label={`${BRAND.nameKo} 홈`}>
           <span className="brand-logo" aria-hidden="true">
-            <LeafIcon size={20} />
+            <MountainIcon size={20} />
           </span>
           <span>
             <span className="brand-name">{BRAND.nameKo}</span>{" "}

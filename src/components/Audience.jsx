@@ -7,10 +7,10 @@ export default function Audience() {
       <div className="container">
         <Reveal className="audience">
           <span className="eyebrow">이런 곳에 맞습니다</span>
-          <h2>유통기한이 있는 상품을 파는 모든 매장에</h2>
+          <h2>매뉴얼 없이 쓰는 소규모 마트 사장님을 위해</h2>
           <p className="audience-lead">
-            신선식품이 많을수록, 매대가 다양할수록 효과가 큽니다. 규모가 작아도
-            종이 장부 대신 화면 하나로 재고를 챙길 수 있어요.
+            POS 교육을 따로 받지 않아도 됩니다. 가끔 재고를 정리하는 가족 운영
+            매장일수록, 복잡한 설정보다 “찍으면 알아서 되는” 단순함이 필요해요.
           </p>
 
           <ul className="chips" aria-label="적합한 매장 유형">

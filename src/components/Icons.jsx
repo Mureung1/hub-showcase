@@ -1,6 +1,7 @@
 // 의존성 없이 쓰는 작은 인라인 SVG 아이콘 (장식용 → aria-hidden)
 
-export function LeafIcon({ size = 18 }) {
+export function MountainIcon({ size = 18 }) {
+  // 셰르파 모티프 — 눈 덮인 봉우리
   return (
     <svg
       width={size}
@@ -10,9 +11,15 @@ export function LeafIcon({ size = 18 }) {
       aria-hidden="true"
     >
       <path
-        d="M5 18c0-6 5-11 14-12-1 8-6 13-12 13-.6 0-1 0-1.3-.1C6 17 7 15.5 8.5 14.5"
+        d="M3 19h18L14.5 7l-3.2 5.4-2-2.6L3 19z"
         stroke="currentColor"
         strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12.7 12l1.8-2.2 1.7 2.9"
+        stroke="currentColor"
+        strokeWidth="1.4"
         strokeLinecap="round"
         strokeLinejoin="round"
       />

@@ -9,10 +9,11 @@ export default function HowItWorks() {
         <Reveal className="section-head center">
           <span className="eyebrow">작동 방식</span>
           <h2 className="section-title" style={{ marginTop: 16 }}>
-            딱 3단계면 충분합니다
+            스캔하면, 알아서 흘러갑니다
           </h2>
           <p className="section-desc">
-            복잡한 설정 없이, 등록만 하면 나머지는 서비스가 알아서 챙깁니다.
+            복잡한 설정도 모드 전환도 없습니다. 바코드만 찍으면 나머지는 셰르파가
+            챙겨요.
           </p>
         </Reveal>
 

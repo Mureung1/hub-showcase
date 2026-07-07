@@ -1,5 +1,5 @@
 /* ============================================================
-   신선지기 · FreshKeep — 랜딩 스타일
+   셰르파 · Sherpa — 랜딩 스타일
    ============================================================ */
 
 :root {
@@ -200,12 +200,19 @@ ul {
   font-variant-numeric: tabular-nums;
   opacity: 0.85;
 }
-.badge--신선 {
+.badge--정상 {
   background: var(--mint);
   color: var(--freshDeep);
 }
-.badge--신선 .dot {
+.badge--정상 .dot {
   background: var(--fresh);
+}
+.badge--주의 {
+  background: rgba(232, 195, 58, 0.2);
+  color: #8a6d0f;
+}
+.badge--주의 .dot {
+  background: #e8c33a;
 }
 .badge--임박 {
   background: rgba(224, 145, 42, 0.16);

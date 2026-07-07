@@ -1,5 +1,5 @@
 import { BRAND } from "../config";
-import { LeafIcon } from "./Icons";
+import { MountainIcon } from "./Icons";
 
 export default function Footer() {
   return (
@@ -8,7 +8,7 @@ export default function Footer() {
         <div>
           <span className="brand">
             <span className="brand-logo" aria-hidden="true">
-              <LeafIcon size={20} />
+              <MountainIcon size={20} />
             </span>
             <span>
               <span className="brand-name">{BRAND.nameKo}</span>{" "}
@@ -16,8 +16,9 @@ export default function Footer() {
             </span>
           </span>
           <p>
-            마트 재고·유통기한 관리 프로젝트. 임박한 상품을 놓치지 않고,
-            폐기 손실을 줄입니다.
+            바코드 스캔 재고·유통기한 관리 프로젝트. 히말라야에서 짐을 대신
+            짊어지고 길을 안내하는 셰르파처럼, 사장님의 재고 관리 부담을 대신
+            짊어집니다.
           </p>
         </div>
 
