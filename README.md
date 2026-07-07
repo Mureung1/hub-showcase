@@ -20,7 +20,7 @@
 
 ## MVP 범위
 
-사용자 시나리오 중 **S1(아침 데일리 브리핑) 하나에 집중**해 1~2주 내 동작하는 최소 제품을 만든다. 자세한 내용은 **[spec/mvp-plan.md](./spec/mvp-plan.md)** 참고.
+사용자 시나리오 중 **S1(아침 데일리 브리핑) 하나에 집중**해 1~2주 내 동작하는 최소 제품을 만든다. 자세한 내용은 **[docs/spec/mvp-plan.md](./docs/spec/mvp-plan.md)** 참고.
 
 ### 핵심 기능 (F1~F4)
 
@@ -33,7 +33,7 @@
 
 ### 화면 (와이어프레임)
 
-최소 화면 3종 — **① 브리핑 피드 · ② 논문 상세 · ③ 저장 목록**. 로우파이 인터랙티브 시안은 **[spec/wireframes/s1-wireframe.html](./spec/wireframes/s1-wireframe.html)** (브라우저로 열기).
+최소 화면 3종 — **① 브리핑 피드 · ② 논문 상세 · ③ 저장 목록**. 로우파이 인터랙티브 시안은 **[docs/spec/wireframes/s1-wireframe.html](./docs/spec/wireframes/s1-wireframe.html)** (브라우저로 열기).
 
 ```
 ① 오늘의 브리핑 피드            ② 논문 상세                ③ 저장 목록
@@ -65,10 +65,11 @@
 
 | 문서 | 내용 |
 |------|------|
-| [spec/plan.md](./spec/plan.md) | 전체 기획서 (목적·타겟·기능·스택·로드맵·향후 확장) |
-| [spec/user-scenarios.md](./spec/user-scenarios.md) | 사용자 시나리오 4종 (넓은 범위) |
-| [spec/mvp-plan.md](./spec/mvp-plan.md) | MVP 기획 (문제정의 → S1 흐름 → 핵심 기능 → 화면 설계) |
-| [spec/wireframes/s1-wireframe.html](./spec/wireframes/s1-wireframe.html) | 인터랙티브 와이어프레임 (피드·상세·저장) |
+| [docs/plan.md](./docs/plan.md) | 전체 기획서 (목적·타겟·기능·스택·로드맵·향후 확장) |
+| [docs/user-scenarios.md](./docs/user-scenarios.md) | 사용자 시나리오 4종 (넓은 범위) |
+| [docs/spec/mvp-plan.md](./docs/spec/mvp-plan.md) | MVP 기획 (문제정의 → S1 흐름 → 핵심 기능 → 화면 설계) |
+| [docs/spec/checklist.md](./docs/spec/checklist.md) | 작업 분해 체크리스트 (F1~F4 + 파이프라인) |
+| [docs/spec/wireframes/s1-wireframe.html](./docs/spec/wireframes/s1-wireframe.html) | 인터랙티브 와이어프레임 (피드·상세·저장) |
 | [docs/skill.md](./docs/skill.md) | 기획 구체화 방법론 (재사용 가능한 절차) |
 
 ## 로드맵 (MVP)
@@ -78,4 +79,4 @@
 3. **정적 프론트** — 오늘의 브리핑 피드 + 논문 상세
 4. **자동화** — GitHub Actions cron + GitHub Pages 배포
 
-전체 로드맵·향후 확장(검색·트렌드·카테고리 분류·공유 등)은 [spec/plan.md](./spec/plan.md) 참고.
+전체 로드맵·향후 확장(검색·트렌드·카테고리 분류·공유 등)은 [docs/plan.md](./docs/plan.md) 참고.
