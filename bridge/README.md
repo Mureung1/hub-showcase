@@ -1,16 +1,38 @@
-# React + Vite
+# Bridge
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> 편지를 매개로 사람과 연결되는 플랫폼
 
-Currently, two official plugins are available:
+빠르게 소비되는 SNS와 달리, 천천히 쓰고 기다리는 편지 감성을 디지털로 구현합니다.  
+네이버 AI Agent Challenge 출품작.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 서비스 소개
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+하루 한 통의 편지를 쓰면, 다음 날 AI가 관심사가 맞는 낯선 사람에게 전달합니다.  
+즉각적인 반응 대신 하룻밤의 기다림이 대화를 더 진심 있게 만듭니다.
 
-## Expanding the ESLint configuration
+### 핵심 제약
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- 하루 편지 1통 제한 (답장은 카운트 제외)
+- 붙여넣기 비활성화 — 직접 타이핑만 허용
+- AI가 편지 내용을 분류 → 관심사 기반으로 수신자 매칭
+
+### 사용자 플로우
+
+```
+편지 작성 → 모음소(대기열) → 다음 날 AI 매칭 → 상대방에게 전달 → 답장
+```
+
+---
+
+## 기획 문서
+
+- [서비스 기획안](docs/plan.md) — 문제 정의, 사용자 시나리오, 핵심 기능, 진행 계획
+
+---
+
+## 기술 스택
+
+- React 19 + Vite 8
+- 백엔드 미정
