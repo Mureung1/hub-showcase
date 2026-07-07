@@ -1,0 +1,76 @@
+<svg viewBox="0 0 1000 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">동행자 매칭 서비스 와이어프레임</title>
+  <desc id="desc">로그인, 출발/도착 등록, 매칭 후보 리스트, 그룹 채팅방, 완료 및 평가 5개 화면의 대략적인 레이아웃</desc>
+
+  <rect x="0" y="0" width="1000" height="360" fill="#FFFFFF"/>
+
+  <!-- 1. 로그인 -->
+  <text x="100" y="25" font-size="13" fill="#2C2C2A" text-anchor="middle">1. 로그인</text>
+  <rect x="20" y="40" width="160" height="300" rx="16" fill="#FFFFFF" stroke="#888780" stroke-width="2"/>
+  <circle cx="100" cy="90" r="24" fill="#F1EFE8" stroke="#B4B2A9"/>
+  <rect x="36" y="140" width="128" height="28" rx="6" fill="#FFFFFF" stroke="#B4B2A9"/>
+  <text x="44" y="158" font-size="11" fill="#5F5E5A">학교 이메일</text>
+  <rect x="36" y="180" width="128" height="28" rx="6" fill="#2C2C2A"/>
+  <text x="100" y="198" font-size="11" fill="#FFFFFF" text-anchor="middle">인증 메일 받기</text>
+
+  <!-- 2. 출발/도착 등록 -->
+  <text x="300" y="25" font-size="13" fill="#2C2C2A" text-anchor="middle">2. 출발/도착 등록</text>
+  <rect x="220" y="40" width="160" height="300" rx="16" fill="#FFFFFF" stroke="#888780" stroke-width="2"/>
+  <rect x="232" y="80" width="136" height="26" rx="6" fill="#FFFFFF" stroke="#B4B2A9"/>
+  <text x="240" y="97" font-size="10.5" fill="#5F5E5A">출발 거점: 정문</text>
+  <rect x="232" y="114" width="136" height="26" rx="6" fill="#FFFFFF" stroke="#B4B2A9"/>
+  <text x="240" y="131" font-size="10.5" fill="#5F5E5A">목적지: 대구역</text>
+  <rect x="232" y="148" width="136" height="26" rx="6" fill="#FFFFFF" stroke="#B4B2A9"/>
+  <text x="240" y="165" font-size="10.5" fill="#5F5E5A">희망 시간: 21:30</text>
+  <rect x="232" y="182" width="136" height="26" rx="6" fill="#FFFFFF" stroke="#B4B2A9"/>
+  <text x="240" y="199" font-size="10.5" fill="#5F5E5A">도착 소요: 5분 이내</text>
+  <rect x="232" y="220" width="136" height="28" rx="6" fill="#2C2C2A"/>
+  <text x="300" y="238" font-size="11" fill="#FFFFFF" text-anchor="middle">등록하기</text>
+
+  <!-- 3. 매칭 후보 리스트 -->
+  <text x="500" y="25" font-size="13" fill="#2C2C2A" text-anchor="middle">3. 매칭 후보 리스트</text>
+  <rect x="420" y="40" width="160" height="300" rx="16" fill="#FFFFFF" stroke="#888780" stroke-width="2"/>
+
+  <text x="436" y="88" font-size="11" fill="#2C2C2A">익명A · 대구역</text>
+  <text x="436" y="104" font-size="10" fill="#5F5E5A">21:25 출발</text>
+  <rect x="524" y="83" width="40" height="22" rx="4" fill="#FFFFFF" stroke="#888780"/>
+  <text x="544" y="98" font-size="10" fill="#2C2C2A" text-anchor="middle">신청</text>
+  <line x1="432" y1="120" x2="568" y2="120" stroke="#D3D1C7"/>
+
+  <text x="436" y="143" font-size="11" fill="#2C2C2A">익명B · 대구역</text>
+  <text x="436" y="159" font-size="10" fill="#5F5E5A">21:35 출발</text>
+  <rect x="524" y="138" width="40" height="22" rx="4" fill="#FFFFFF" stroke="#888780"/>
+  <text x="544" y="153" font-size="10" fill="#2C2C2A" text-anchor="middle">신청</text>
+  <line x1="432" y1="175" x2="568" y2="175" stroke="#D3D1C7"/>
+
+  <text x="436" y="198" font-size="11" fill="#2C2C2A">익명C · 동대구역</text>
+  <text x="436" y="214" font-size="10" fill="#5F5E5A">21:30 출발</text>
+  <rect x="524" y="193" width="40" height="22" rx="4" fill="#FFFFFF" stroke="#888780"/>
+  <text x="544" y="208" font-size="10" fill="#2C2C2A" text-anchor="middle">신청</text>
+
+  <!-- 4. 그룹 채팅방 -->
+  <text x="700" y="25" font-size="13" fill="#2C2C2A" text-anchor="middle">4. 그룹 채팅방</text>
+  <rect x="620" y="40" width="160" height="300" rx="16" fill="#FFFFFF" stroke="#888780" stroke-width="2"/>
+  <rect x="636" y="70" width="100" height="26" rx="8" fill="#F1EFE8"/>
+  <text x="644" y="87" font-size="10.5" fill="#2C2C2A">정문에서 만나요</text>
+  <rect x="664" y="104" width="100" height="26" rx="8" fill="#B5D4F4"/>
+  <text x="672" y="121" font-size="10.5" fill="#0C447C">네 5분 뒤 도착</text>
+  <rect x="636" y="150" width="128" height="30" rx="6" fill="#FFFFFF" stroke="#B4B2A9"/>
+  <text x="644" y="169" font-size="10" fill="#5F5E5A">예상 요금: 1인당 4,000원</text>
+  <rect x="636" y="270" width="128" height="28" rx="6" fill="#2C2C2A"/>
+  <text x="700" y="288" font-size="11" fill="#FFFFFF" text-anchor="middle">탑승 확인</text>
+
+  <!-- 5. 완료 및 평가 -->
+  <text x="900" y="25" font-size="13" fill="#2C2C2A" text-anchor="middle">5. 완료 및 평가</text>
+  <rect x="820" y="40" width="160" height="300" rx="16" fill="#FFFFFF" stroke="#888780" stroke-width="2"/>
+  <text x="900" y="85" font-size="11" fill="#5F5E5A" text-anchor="middle">이동이 끝났어요</text>
+  <text x="860" y="120" font-size="20" fill="#BA7517" text-anchor="middle" dominant-baseline="middle">★</text>
+  <text x="880" y="120" font-size="20" fill="#BA7517" text-anchor="middle" dominant-baseline="middle">★</text>
+  <text x="900" y="120" font-size="20" fill="#BA7517" text-anchor="middle" dominant-baseline="middle">★</text>
+  <text x="920" y="120" font-size="20" fill="#B4B2A9" text-anchor="middle" dominant-baseline="middle">☆</text>
+  <text x="940" y="120" font-size="20" fill="#B4B2A9" text-anchor="middle" dominant-baseline="middle">☆</text>
+  <rect x="836" y="150" width="16" height="16" rx="3" fill="#FFFFFF" stroke="#888780"/>
+  <text x="860" y="162" font-size="11" fill="#5F5E5A">노쇼 신고</text>
+  <rect x="836" y="190" width="128" height="28" rx="6" fill="#2C2C2A"/>
+  <text x="900" y="208" font-size="11" fill="#FFFFFF" text-anchor="middle">완료</text>
+</svg>
