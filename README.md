@@ -2,7 +2,7 @@
 
 ## 문서
 
-- [fiTArchive 기획서](docs/planning.md)
+- [fiTArchive 기획서](https://github.com/fine1031/fiTArchive/wiki/Planning)
 
 ## 프로젝트 소개
 
