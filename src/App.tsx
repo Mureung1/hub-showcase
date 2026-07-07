@@ -1,5 +1,5 @@
 const details = [
-  'React application entry is wired through src/main.jsx.',
+  'React application entry is wired through src/main.tsx.',
   'Vite provides the local dev server and production build.',
   'No routing, styling framework, or state library is included.',
 ];
