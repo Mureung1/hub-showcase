@@ -1,7 +1,7 @@
 import { categories } from '../data/categories'
 import { mockRecipes } from '../data/mockRecipes'
 import { getCategoriesWithCheapest } from '../data/selectors'
-import CategoryCard from '../components/CategoryCard'
+import MenuCard from '../components/MenuCard'
 
 const ROWS = [
   { type: 'main', title: '메인음식' },
@@ -25,7 +25,16 @@ function Home() {
                 <h2 className="mb-2 text-sm font-semibold text-gray-600">{row.title}</h2>
                 <ol className="flex gap-3 overflow-x-auto pb-2">
                   {rowCategories.map((category) => (
-                    <CategoryCard key={category.id} {...category} />
+                    <MenuCard
+                      key={category.id}
+                      to={`/category/${category.id}`}
+                      image={category.cheapestRecipe.image}
+                      emoji={category.emoji}
+                      name={category.name}
+                      price={category.cheapestRecipe.totalCost}
+                      priceSuffix="원부터"
+                      width="w-32 shrink-0 sm:w-40"
+                    />
                   ))}
                 </ol>
               </section>

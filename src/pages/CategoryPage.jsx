@@ -2,13 +2,21 @@ import { Link, useParams } from 'react-router-dom'
 import { categories } from '../data/categories'
 import { mockRecipes } from '../data/mockRecipes'
 import { getRecipesByCategory, getRecipesBySubgroups } from '../data/selectors'
-import RecipeCard from '../components/RecipeCard'
+import MenuCard from '../components/MenuCard'
 
 function RecipeList({ recipes }) {
   return (
     <ol className="mt-3 flex flex-col gap-3">
       {recipes.map((recipe, index) => (
-        <RecipeCard key={recipe.id} rank={index + 1} {...recipe} />
+        <MenuCard
+          key={recipe.id}
+          to={`/recipe/${recipe.id}`}
+          rank={index + 1}
+          image={recipe.image}
+          emoji={recipe.emoji}
+          name={recipe.name}
+          price={recipe.totalCost}
+        />
       ))}
     </ol>
   )

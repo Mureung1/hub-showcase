@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { mockRecipes } from '../data/mockRecipes'
 import IngredientList from '../components/IngredientList'
 import PurchaseLinkPanel from '../components/PurchaseLinkPanel'
+import Thumbnail from '../components/Thumbnail'
 
 function RecipeDetailPage() {
   const { recipeId } = useParams()
@@ -29,20 +30,12 @@ function RecipeDetailPage() {
 
         <div className="mt-4 flex flex-col gap-6 md:flex-row md:items-start">
           <div className="flex-1">
-            {recipe.image ? (
-              <img
-                src={recipe.image}
-                alt={recipe.name}
-                className="aspect-video w-full rounded-xl object-cover"
-              />
-            ) : (
-              <span
-                className="flex aspect-video w-full items-center justify-center rounded-xl bg-orange-50 text-6xl"
-                aria-hidden="true"
-              >
-                {recipe.emoji}
-              </span>
-            )}
+            <Thumbnail
+              image={recipe.image}
+              emoji={recipe.emoji}
+              alt={recipe.name}
+              className="aspect-video w-full rounded-xl text-6xl"
+            />
             <div className="mt-4 flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{recipe.name}</h1>
