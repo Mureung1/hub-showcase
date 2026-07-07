@@ -12,7 +12,7 @@
 
 ## 기획 대표 이미지
 
-![모두의 뇌 기획 대표 이미지](https://raw.githubusercontent.com/tjwnsdhfz/hub/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/images/modu-brain-cover.png)
+![모두의 뇌 기획 대표 이미지](https://github.com/tjwnsdhfz/hub/blob/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/images/modu-brain-cover.png?raw=true)
 
 ## 디자인 산출물
 
