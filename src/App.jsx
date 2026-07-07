@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import Stepper from "./components/Stepper.jsx";
 import CvUpload from "./features/cvUpload/CvUpload.jsx";
 import { parseCv } from "./features/cvUpload/parseCv.js";
+import DesignSelect from "./features/designSelect/DesignSelect.jsx";
+import { THEMES, DEFAULT_THEME, getTheme } from "./features/designSelect/themes.js";
 
 const BUILTIN_SAMPLE = `# 김지수
 Frontend Engineer
@@ -34,9 +36,11 @@ React, TypeScript, Next.js, Vite, Zustand, Testing Library, Figma
 export default function App() {
   const [step, setStep] = useState("upload");
   const [cvText, setCvText] = useState("");
+  const [designSlug, setDesignSlug] = useState(DEFAULT_THEME.slug);
 
   const parsed = useMemo(() => parseCv(cvText), [cvText]);
   const cvReady = cvText.trim().length > 0;
+  const theme = getTheme(designSlug);
 
   return (
     <div className="app">
@@ -74,11 +78,31 @@ export default function App() {
         )}
 
         {step === "design" && (
-          <div className="placeholder">
-            <p className="placeholder-emoji">🎨</p>
-            <p>디자인 선택 단계 — 다음 커밋에서 추가됩니다.</p>
+          <>
+            <DesignSelect
+              themes={THEMES}
+              selected={designSlug}
+              onSelect={setDesignSlug}
+            />
             <div className="stage-nav">
               <button className="btn" onClick={() => setStep("upload")}>
+                ← 이전
+              </button>
+              <button className="btn primary" onClick={() => setStep("generate")}>
+                이 디자인으로 생성 →
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === "generate" && (
+          <div className="placeholder">
+            <p className="placeholder-emoji">✨</p>
+            <p>
+              생성 단계 — 다음 커밋에서 추가됩니다. (선택: <b>{theme.name}</b>)
+            </p>
+            <div className="stage-nav">
+              <button className="btn" onClick={() => setStep("design")}>
                 ← 이전
               </button>
               <span />
