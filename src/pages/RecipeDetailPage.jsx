@@ -11,7 +11,7 @@ function RecipeDetailPage() {
 
   if (!recipe) {
     return (
-      <main className="min-h-screen bg-orange-50 px-4 py-10 text-center text-gray-500">
+      <main className="min-h-screen bg-white px-4 py-10 text-center text-gray-500">
         요리를 찾을 수 없어요.{' '}
         <Link to="/" className="text-orange-600 underline">
           홈으로
@@ -21,7 +21,7 @@ function RecipeDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-orange-50 px-4 py-10">
+    <main className="min-h-screen bg-white px-4 py-10">
       <div className="mx-auto max-w-2xl">
         <Link to={`/category/${recipe.categoryId}`} className="text-sm text-gray-500 hover:text-orange-600">
           ← 목록으로

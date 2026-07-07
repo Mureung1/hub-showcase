@@ -22,7 +22,7 @@ function CategoryPage() {
   const subgroups = hasSubgroups ? getRecipesBySubgroups(mockRecipes, category) : []
 
   return (
-    <main className="min-h-screen bg-orange-50 px-4 py-10">
+    <main className="min-h-screen bg-white px-4 py-10">
       <div className="mx-auto max-w-xl">
         <Link to="/" className="text-sm text-gray-500 hover:text-orange-600">
           ← 홈으로
