@@ -170,7 +170,7 @@ npx semesterops
 
 ## Runtime 전략
 
-Codex runtime 격리, 설치, 상태 분리의 세부 정책은 [Codex Runtime Isolation Technical Note](./codex-runtime-isolation-note.md)를 따른다.
+Codex runtime 격리, 설치, 상태 분리의 세부 정책은 [Codex Runtime Isolation Technical Note](../architecture/codex-runtime-isolation.md)를 따른다.
 
 | 단계 | Runtime | 인증/구독 | SemesterOps 역할 | 비고 |
 | --- | --- | --- | --- | --- |

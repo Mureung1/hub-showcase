@@ -3,6 +3,7 @@
 작성일: 2026-07-07
 상태: Draft
 브랜치: `codex/runtime-ownership-spike-plan`
+실행 산출물: [Runtime Ownership Spike Report](../../../spikes/codex-runtime-ownership/spike-report.md)
 
 ## 목적
 
@@ -139,6 +140,6 @@ spikes/
 | --- | --- |
 | 1 | 이 계획을 기준으로 `/handoff`를 만든다. |
 | 2 | 별도 prototype 세션에서 `spikes/codex-runtime-ownership/`을 구현한다. |
-| 3 | spike 실행 후 한국어 `spike-report.md`를 작성한다. |
+| 3 | spike 실행 후 한국어 [`spike-report.md`](../../../spikes/codex-runtime-ownership/spike-report.md)를 작성한다. |
 | 4 | 결과를 본 기획 세션으로 handoff back한다. |
 | 5 | 성공 시 SemesterOps runtime adapter PRD로 넘어간다. 실패 시 Codex SDK, CLI wrapper, Claude Code adapter 등 대안을 검토한다. |

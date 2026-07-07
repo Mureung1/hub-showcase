@@ -2,7 +2,7 @@
 
 작성일: 2026-07-07  
 상태: Draft  
-관련 문서: [SemesterOps Product Brief](./semesterops-product-brief.md)
+관련 문서: [SemesterOps Product Brief](../product/semesterops-product-brief.md)
 
 ## 목적
 

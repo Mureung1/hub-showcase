@@ -19,7 +19,7 @@ Use TypeScript ESM throughout. Match the existing style: two-space indentation, 
 
 ## Documentation Style
 
-When writing Markdown planning, technical, or product documents, prefer tables for structured information and bullet points for scannable lists. Use prose for context and decisions, but model comparable items, options, tradeoffs, risks, and open questions in tables when practical.
+When writing Markdown planning, technical, or product documents, prefer tables for structured information and bullet points for scannable lists. Use prose for context and decisions, but model comparable items, options, tradeoffs, risks, and open questions in tables when practical. Follow `docs/README.md` for formal project document placement, and update the root `README.md` whenever adding or moving a formal project document under `docs/`.
 
 ## Testing Guidelines
 
@@ -27,7 +27,7 @@ No test framework or coverage threshold is configured yet. For now, run `npm run
 
 ## Commit & Pull Request Guidelines
 
-Recent commits use short, imperative subjects such as `Add auto-merge workflow for pull requests`. Keep commits focused and describe the behavior changed. Camp-facing PRs should follow `.github/pull_request_template.md`: summarize the work, include screenshots for UI changes, explain one implementation choice, note anything still unclear, and list what you learned. Use the requested PR title pattern, for example `[N100_Name] Add health status UI`, and link related issues when applicable.
+Create commits frequently at natural checkpoints so work is easy to review and recover. Use focused Conventional Commit-style prefixes such as `docs:`, `chore:`, `feat:`, `fix:`, `test:`, `refactor:`, and `build:`. Keep the subject short, imperative, and behavior-focused, for example `docs: organize project documentation`. Camp-facing PRs should follow `.github/pull_request_template.md`: summarize the work, include screenshots for UI changes, explain one implementation choice, note anything still unclear, and list what you learned. Use the requested PR title pattern, for example `[N100_Name] Add health status UI`, and link related issues when applicable.
 
 For this participant, do not use `main` as a working branch or PR target. The default working branch is the current daily branch, named `codex/MMDD` such as `codex/0707`. `N180_하성욱` is the camp-facing personal integration branch, not a normal working branch.
 
