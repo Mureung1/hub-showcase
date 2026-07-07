@@ -56,8 +56,20 @@ function Home() {
             </p>
 
             <div style={styles.actions}>
-              <span style={styles.primaryAction}>AI 커리어 분석</span>
-              <span style={styles.secondaryAction}>맞춤 미션 추천</span>
+              <button
+                type="button"
+                className="hero-action primary"
+                style={styles.primaryAction}
+              >
+                AI 커리어 분석
+              </button>
+              <button
+                type="button"
+                className="hero-action secondary"
+                style={styles.secondaryAction}
+              >
+                맞춤 미션 추천
+              </button>
             </div>
           </div>
         </div>
@@ -113,6 +125,11 @@ function Home() {
             <button
               key={feature.title}
               type="button"
+              className={
+                index === activeFeatureIndex
+                  ? "feature-indicator active"
+                  : "feature-indicator"
+              }
               aria-label={`${feature.title} 보기`}
               style={
                 index === activeFeatureIndex
@@ -142,6 +159,60 @@ const animations = `
     filter: blur(0);
   }
 }
+
+.hero-action {
+  border: 0;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.hero-action.primary:hover {
+  background: linear-gradient(135deg, #1d4ed8, #0891b2) !important;
+  box-shadow: 0 18px 34px rgba(29, 78, 216, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+.hero-action.primary:active {
+  background: linear-gradient(135deg, #1e40af, #0e7490) !important;
+  transform: translateY(0) scale(0.98) !important;
+}
+
+.hero-action.secondary:hover {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border-color: rgba(37, 99, 235, 0.34) !important;
+  color: #1d4ed8 !important;
+}
+
+.hero-action.secondary:active {
+  background: rgba(37, 99, 235, 0.18) !important;
+  transform: scale(0.98);
+}
+
+.feature-indicator {
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    width 180ms ease;
+}
+
+.feature-indicator:hover {
+  background: rgba(37, 99, 235, 0.42) !important;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.22) !important;
+}
+
+.feature-indicator.active:hover {
+  background: linear-gradient(90deg, #1d4ed8, #0891b2) !important;
+}
+
+.feature-indicator:active {
+  background: #1d4ed8 !important;
+  transform: scale(0.9);
+}
 `;
 
 const styles = {
@@ -152,13 +223,14 @@ const styles = {
     padding: "0 0 56px",
     fontFamily: "Arial, sans-serif",
     color: "#0f172a",
+    overflowX: "hidden",
   },
   hero: {
-    width: "min(1120px, calc(100% - 32px))",
+    width: "min(1440px, calc(100% - clamp(32px, 6vw, 96px)))",
     margin: "0 auto",
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
-    gap: "clamp(18px, 3vw, 28px)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
+    gap: "clamp(18px, 3vw, 40px)",
     alignItems: "stretch",
     perspective: "1200px",
   },
@@ -330,8 +402,8 @@ const styles = {
     boxShadow: "0 12px 22px rgba(2, 6, 23, 0.16)",
   },
   featureSlider: {
-    width: "min(560px, calc(100% - 32px))",
-    margin: "34px auto 0",
+    width: "min(720px, calc(100% - clamp(32px, 6vw, 96px)))",
+    margin: "clamp(28px, 4vw, 44px) auto 0",
     display: "grid",
     gap: "16px",
     perspective: "1000px",
