@@ -1,16 +1,146 @@
-# React + Vite
+# 팀플, 이지! (Team Project, Easy!)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> AI 기반 팀 프로젝트 관리 서비스 — 계획 수립부터 역할 배정, 모니터링까지
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 📌 프로젝트 개요
 
-## React Compiler
+**팀플, 이지!**는 단순한 일정 관리 도구가 아니라, AI 에이전트를 활용하여 팀 프로젝트를 **능동적으로 관리**하는 서비스입니다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+주제와 마감일만 입력하면 AI가 계획을 수립하고, 팀원의 작업 스타일에 맞춰 역할을 배정하며, 진행 상황을 실시간으로 모니터링합니다.
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## 🤖 핵심 AI 에이전트 3종
+
+### 1. 플래너 에이전트 (Planner Agent)
+- 주제와 마감일을 입력하면 **마일스톤과 태스크를 자동 분해**하여 제안합니다.
+- 팀은 제안된 계획을 수정·승인한 뒤 프로젝트를 진행합니다.
+- **주요 기능**: 주제·마감일 입력 → 마일스톤 자동 분해 → 태스크 단위 제안 및 수정 → 팀 승인 후 진행
+
+### 2. 역할 배정 에이전트 (Role Assignment Agent)
+- 각 팀원이 **비공개로 제출한 작업 스타일 설문**을 기반으로 최적의 역할을 매칭합니다.
+- 왜 그렇게 배정했는지 **이유를 투명하게 설명**합니다.
+- **주요 기능**: 비공개 설문 수집 → AI 기반 역할 매칭 → 배정 근거 제공
+
+### 3. 모니터링 에이전트 (Monitoring Agent)
+- 프로젝트 진행 상황을 **실시간으로 추적**합니다.
+- 일정이 밀리면 **재계획을 자동 제안**하고, 정체된 팀원에게 **조용히 리마인드**를 보냅니다.
+- **주요 기능**: 실시간 진행 추적 → 지연 시 재계획 제안 → 정체 팀원 리마인드
+
+---
+
+## 🔄 Agent 작동 루프
+
+```
+계획 수립  →  역할 배정  →  모니터링
+  (Plan)       (Assign)     (Monitor)
+    ↑                          │
+    └──────── 재계획 ──────────┘
+```
+
+1. **계획 수립**: 주제와 마감일에 따른 프로젝트 계획을 제안합니다.
+2. **역할 배정**: 사전 조사한 설문을 기반으로 팀원에게 역할을 배정합니다.
+3. **모니터링**: 진행 상황을 지켜보며 재계획, 리마인드, 역할 재조정을 제안합니다.
+
+---
+
+## 🛠️ 기술 스택
+
+| 구분 | 기술 | 버전 |
+|------|------|------|
+| **프레임워크** | React | ^19.2.7 |
+| **빌드 도구** | Vite | ^8.1.1 |
+| **언어** | JavaScript (ES Module) | — |
+| **린터** | Oxlint | ^1.71.0 |
+| **React 플러그인** | @vitejs/plugin-react | ^6.0.3 |
+
+---
+
+## 📁 프로젝트 구조
+
+```
+hub/
+├── public/                  # 정적 파일
+├── src/
+│   ├── assets/              # 이미지 등 정적 에셋
+│   ├── main.jsx             # 앱 진입점 (React DOM 마운트)
+│   ├── App.jsx              # 최상위 컴포넌트
+│   ├── App.css              # App 컴포넌트 스타일
+│   ├── index.css            # 글로벌 스타일
+│   ├── ProjectIntro.jsx     # 서비스 소개 랜딩 페이지 (핵심 컴포넌트)
+│   └── ProjectIntro.css     # 소개 페이지 스타일링
+├── index.html               # HTML 템플릿
+├── vite.config.js            # Vite 설정 파일
+├── package.json              # 의존성 및 스크립트 정의
+└── README.md                 # 프로젝트 설명 (현재 파일)
+```
+
+---
+
+## 🚀 실행 방법
+
+### 사전 요구사항
+- **Node.js** (v18 이상 권장)
+- **npm** (Node.js와 함께 설치됨)
+
+### 설치 및 실행
+
+```bash
+# 1. 의존성 설치
+npm install
+
+# 2. 개발 서버 실행
+npm run dev
+```
+
+실행 후 브라우저에서 **http://localhost:5173** 으로 접속합니다.
+
+### 기타 명령어
+
+```bash
+# 코드 린트 검사
+npm run lint
+
+# 프로덕션 빌드
+npm run build
+
+# 빌드 결과물 미리보기
+npm run preview
+```
+
+---
+
+## 📝 현재 작업 진행 상황
+
+### ✅ 완료된 작업
+- [x] React + Vite 프로젝트 초기 환경 세팅
+- [x] 서비스 소개 랜딩 페이지 (`ProjectIntro`) 구현
+  - [x] Hero 섹션: 서비스명, 소개 문구, 키워드 뱃지
+  - [x] Agent 작동 방식 섹션: 3단계 루프 시각화 (계획 → 배정 → 모니터링)
+  - [x] 주요 기능 상세 섹션: 3개 AI 에이전트 풀너비 카드 설명
+- [x] SVG 아이콘 컴포넌트 직접 구현 (외부 라이브러리 미사용)
+- [x] 페이드인 진입 애니메이션 구현
+- [x] CSS 스타일링 완료
+
+### 🔲 향후 작업 예정
+- [ ] 실제 서비스 페이지 구현 (라우팅 추가)
+- [ ] 플래너 에이전트 기능 개발
+- [ ] 역할 배정 에이전트 기능 개발
+- [ ] 모니터링 에이전트 기능 개발
+- [ ] 사용자 인증 (로그인/회원가입) 구현
+- [ ] 백엔드 API 연동
+- [ ] 팀 프로젝트 생성 및 관리 UI 개발
+
+---
+
+## 👥 팀 정보
+
+AI 팀 프로젝트 관리 서비스 개발팀
+
+---
+
+## 📄 라이선스
+
+이 프로젝트는 비공개 프로젝트입니다.

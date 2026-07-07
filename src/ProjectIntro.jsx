@@ -136,10 +136,10 @@ export default function ProjectIntro() {
           <span>AI TEAM PROJECT MANAGEMENT</span>
         </div>
 
-        <h1 className="hero-title">팀플이지</h1>
+        <h1 className="hero-title">팀플, 이지!</h1>
 
         <p className="hero-subtitle">
-          팀플이지는 단순한 일정 관리 도구가 아니라,<br />
+          팀플, 이지!는 단순한 일정 관리 도구가 아니라,<br />
           <strong>계획 수립 → 역할 배정 → 모니터링</strong>을 통해<br />
           팀 프로젝트를 능동적으로 관리하는 서비스입니다.
         </p>
