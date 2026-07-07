@@ -21,11 +21,11 @@ Career Mission AI는 사용자의 목표 직무와 현재 역량을 바탕으로
 
 ## 개발한 컴포넌트
 
-- `src/ProjectIntro.jsx`
+- `src/pages/Home.jsx`
 
 프로젝트 주제를 소개하는 React 컴포넌트입니다. 인라인 스타일을 사용하여 카드형 소개 화면을 구성했습니다.
 
-`src/App.jsx`에서는 `ProjectIntro` 컴포넌트만 렌더링합니다.
+`src/App.jsx`에서는 `Home` 컴포넌트만 렌더링합니다.
 
 ## 실행 방법
 
@@ -45,3 +45,4 @@ http://localhost:5173
 ```bash
 npm run build
 ```
+

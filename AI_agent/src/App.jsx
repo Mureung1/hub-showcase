@@ -1,7 +1,7 @@
-﻿import ProjectIntro from "./ProjectIntro";
+﻿import Home from "./pages/Home";
 
 function App() {
-  return <ProjectIntro />;
+  return <Home />;
 }
 
 export default App;

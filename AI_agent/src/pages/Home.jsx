@@ -21,7 +21,7 @@ const features = [
 
 const steps = ["스펙 등록", "AI 분석", "미션 수행", "피드백", "포트폴리오"];
 
-function ProjectIntro() {
+function Home() {
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
   const activeFeature = features[activeFeatureIndex];
 
@@ -532,7 +532,8 @@ const styles = {
   },
 };
 
-export default ProjectIntro;
+export default Home;
+
 
 
 
