@@ -1,7 +1,9 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import DeficiencyBar from '../components/DeficiencyBar.jsx'
+import MenuRecommendation from '../components/MenuRecommendation.jsx'
+import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 
 const NUTRIENT_LABELS = [
   { key: 'calories', label: '칼로리', unit: 'kcal' },
@@ -11,6 +13,30 @@ const NUTRIENT_LABELS = [
   { key: 'fiber', label: '식이섬유', unit: 'g' },
   { key: 'sodium', label: '나트륨', unit: 'mg' },
 ]
+
+function buildRecommendationPrompt(deficientRows) {
+  const nutrientText = deficientRows.map((row) => `${row.label} 약 ${row.deficiency}${row.unit} 부족`).join(', ')
+
+  return `대학생이 밖에서 사먹기 쉬운 저녁 메뉴 2~3개를 추천해줘.
+오늘 부족한 영양소: ${nutrientText}.
+각 메뉴가 어떤 부족 영양소를 채우는지 한 줄 이유를 포함해줘.
+
+설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
+{
+  "recommendations": [
+    { "name": "메뉴명", "reason": "이 메뉴가 부족 영양소를 채우는 한 줄 이유" }
+  ]
+}`
+}
+
+function isMenuRecommendationList(value) {
+  return (
+    Boolean(value) &&
+    Array.isArray(value.recommendations) &&
+    value.recommendations.length > 0 &&
+    value.recommendations.every((r) => r && typeof r.name === 'string' && typeof r.reason === 'string')
+  )
+}
 
 export default function Result() {
   const { user, todayMeal } = useUser()
@@ -29,13 +55,48 @@ export default function Result() {
     }))
   }, [recommended, todayTotal])
 
-  const top3DeficientKeys = useMemo(() => {
-    return rows
-      .filter((row) => row.deficiency > 0)
-      .sort((a, b) => b.deficiency - a.deficiency)
-      .slice(0, 3)
-      .map((row) => row.key)
-  }, [rows])
+  const top3Rows = useMemo(
+    () =>
+      [...rows]
+        .filter((row) => row.deficiency > 0)
+        .sort((a, b) => b.deficiency - a.deficiency)
+        .slice(0, 3),
+    [rows],
+  )
+  const top3DeficientKeys = useMemo(() => top3Rows.map((row) => row.key), [top3Rows])
+
+  const [recommendations, setRecommendations] = useState(null)
+  const [recLoading, setRecLoading] = useState(false)
+  const [recError, setRecError] = useState('')
+  const triedRef = useRef(false)
+
+  async function fetchRecommendations() {
+    setRecLoading(true)
+    setRecError('')
+    try {
+      const prompt = buildRecommendationPrompt(top3Rows)
+      const text = await geminiComplete({ prompt })
+      const parsed = parseJsonLoose(text)
+
+      if (!isMenuRecommendationList(parsed)) {
+        throw new Error('추천 결과 형식이 올바르지 않습니다.')
+      }
+
+      setRecommendations(parsed.recommendations)
+    } catch (err) {
+      console.error('menu recommendation failed:', err)
+      setRecError('메뉴 추천을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setRecLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (top3Rows.length > 0 && !triedRef.current) {
+      triedRef.current = true
+      fetchRecommendations()
+    }
+  }, [top3Rows])
 
   if (!recommended) {
     return (
@@ -58,9 +119,23 @@ export default function Result() {
   return (
     <div style={{ maxWidth: 420, margin: '40px auto', padding: 24 }}>
       <h1>오늘의 부족 영양소</h1>
-      {rows.map((row) => (
-        <DeficiencyBar key={row.key} {...row} highlighted={top3DeficientKeys.includes(row.key)} />
+      {rows.map(({ key, ...row }) => (
+        <DeficiencyBar key={key} {...row} highlighted={top3DeficientKeys.includes(key)} />
       ))}
+
+      <div style={{ marginTop: 32 }}>
+        <h2>오늘 저녁 추천 메뉴</h2>
+        {recLoading && <p>추천 메뉴를 불러오는 중입니다...</p>}
+        {recError && (
+          <div>
+            <p style={{ color: 'red' }}>{recError}</p>
+            <button type="button" onClick={fetchRecommendations}>
+              다시 시도
+            </button>
+          </div>
+        )}
+        {!recLoading && !recError && <MenuRecommendation recommendations={recommendations} />}
+      </div>
     </div>
   )
 }
