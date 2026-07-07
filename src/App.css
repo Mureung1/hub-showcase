@@ -94,27 +94,25 @@
   position: relative;
   min-height: 520px;
   overflow: hidden;
-  border: 1px solid rgba(70, 151, 190, 0.18);
+  border: 1px solid rgba(118, 75, 43, 0.13);
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(244, 252, 255, 0.72), rgba(209, 235, 247, 0.78)),
-    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.7), transparent 24%),
-    radial-gradient(circle at 82% 24%, rgba(107, 183, 218, 0.22), transparent 28%),
-    #cfeaf6;
-  box-shadow: 0 28px 70px rgba(57, 118, 150, 0.16);
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.74), transparent 24%),
+    radial-gradient(circle at 84% 28%, rgba(241, 181, 63, 0.22), transparent 28%),
+    linear-gradient(135deg, rgba(255, 250, 240, 0.9), rgba(238, 211, 168, 0.72)),
+    #efd8ad;
+  box-shadow: 0 28px 70px rgba(118, 75, 43, 0.16);
 }
 
 .map-panel::before {
   position: absolute;
-  inset: 26px;
+  inset: 36px 28px 30px;
   content: '';
-  border: 1px solid rgba(70, 151, 190, 0.14);
-  border-radius: 8px;
+  border-radius: 8px 8px 18px 18px;
   background-image:
-    linear-gradient(rgba(70, 151, 190, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(70, 151, 190, 0.12) 1px, transparent 1px);
-  background-size: 54px 54px;
-  mask-image: radial-gradient(circle, #000 38%, transparent 73%);
+    linear-gradient(90deg, rgba(118, 75, 43, 0.08), transparent 18%, transparent 82%, rgba(118, 75, 43, 0.08)),
+    linear-gradient(rgba(255, 255, 255, 0.35), rgba(118, 75, 43, 0.08));
+  box-shadow: 0 24px 42px rgba(118, 75, 43, 0.16);
 }
 
 .world-map {
@@ -122,54 +120,122 @@
   inset: 0;
 }
 
-.continent {
+.recipe-book {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
+  padding: 58px 48px 54px;
+  perspective: 900px;
+}
+
+.book-page {
   position: absolute;
   display: block;
-  background: rgba(92, 151, 98, 0.28);
-  filter: blur(0.2px);
+  top: 58px;
+  bottom: 54px;
+  width: calc(50% - 46px);
+  padding: 58px 42px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 29px, rgba(47, 111, 79, 0.11) 30px 31px),
+    linear-gradient(135deg, #fffdf6, var(--paper));
+  box-shadow: inset 0 0 34px rgba(118, 75, 43, 0.08);
 }
 
-.continent-americas {
-  left: 8%;
-  top: 22%;
-  width: 25%;
-  height: 52%;
-  border-radius: 58% 34% 48% 42%;
-  transform: rotate(-18deg);
-  clip-path: polygon(38% 0, 75% 8%, 92% 28%, 73% 43%, 82% 62%, 54% 100%, 35% 83%, 22% 58%, 4% 42%, 20% 18%);
+.book-page-left {
+  left: 48px;
+  border-radius: 18px 4px 4px 18px;
+  transform: rotateY(5deg);
+  transform-origin: right center;
 }
 
-.continent-europe-africa {
-  left: 39%;
-  top: 25%;
-  width: 21%;
-  height: 48%;
-  border-radius: 48% 54% 58% 44%;
-  transform: rotate(8deg);
-  clip-path: polygon(28% 2%, 62% 0, 88% 20%, 70% 42%, 82% 64%, 58% 100%, 35% 82%, 16% 56%, 5% 24%);
+.book-page-right {
+  right: 48px;
+  border-radius: 4px 18px 18px 4px;
+  transform: rotateY(-5deg);
+  transform-origin: left center;
 }
 
-.continent-asia {
-  right: 9%;
-  top: 21%;
-  width: 35%;
-  height: 42%;
-  border-radius: 46% 56% 42% 48%;
-  transform: rotate(-5deg);
-  clip-path: polygon(8% 25%, 28% 6%, 72% 0, 96% 20%, 88% 48%, 68% 55%, 62% 82%, 35% 72%, 8% 58%);
+.book-spine {
+  position: absolute;
+  top: 58px;
+  bottom: 54px;
+  left: calc(50% - 9px);
+  width: 18px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(118, 75, 43, 0.18), rgba(255, 255, 255, 0.48), rgba(118, 75, 43, 0.16)),
+    #f1dec1;
+  box-shadow:
+    -14px 0 22px rgba(118, 75, 43, 0.1),
+    14px 0 22px rgba(118, 75, 43, 0.1);
 }
 
-.continent-australia {
-  right: 18%;
-  bottom: 19%;
-  width: 13%;
-  height: 14%;
-  border-radius: 50% 48% 44% 58%;
-  transform: rotate(12deg);
+.recipe-heading,
+.recipe-line,
+.recipe-note,
+.recipe-step {
+  position: relative;
+  display: block;
+  border-radius: 999px;
+}
+
+.recipe-heading {
+  width: 48%;
+  height: 12px;
+  margin-bottom: 34px;
+  background: rgba(208, 75, 49, 0.48);
+}
+
+.recipe-line {
+  width: 64%;
+  height: 7px;
+  margin-top: 18px;
+  background: rgba(37, 42, 52, 0.13);
+}
+
+.line-wide {
+  width: 82%;
+}
+
+.line-short {
+  width: 46%;
+}
+
+.recipe-note {
+  width: 62px;
+  height: 62px;
+  margin-top: 42px;
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(241, 181, 63, 0.74), rgba(208, 75, 49, 0.18)),
+    #f4cf72;
+  transform: rotate(-7deg);
+}
+
+.recipe-step {
+  width: 22px;
+  height: 22px;
+  margin-top: 20px;
+  border: 2px solid rgba(47, 111, 79, 0.42);
+  border-radius: 50%;
+}
+
+.recipe-step::after {
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 7px;
+  height: 12px;
+  content: '';
+  border: solid var(--green);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .food-marker {
   position: absolute;
+  z-index: 2;
   display: inline-grid;
   place-items: center;
   width: 58px;
@@ -218,33 +284,33 @@
 }
 
 .marker-east-asia {
-  right: 18%;
-  top: 34%;
+  right: 16%;
+  top: 28%;
 }
 
 .marker-japan {
-  right: 10%;
-  top: 38%;
+  right: 26%;
+  top: 58%;
 }
 
 .marker-europe {
-  left: 48%;
-  top: 33%;
+  left: 45%;
+  top: 31%;
 }
 
 .marker-mexico {
-  left: 20%;
-  top: 44%;
+  left: 16%;
+  top: 42%;
 }
 
 .marker-south-asia {
-  right: 29%;
-  top: 52%;
+  right: 12%;
+  top: 44%;
 }
 
 .marker-west-europe {
-  left: 43%;
-  top: 29%;
+  left: 30%;
+  top: 61%;
 }
 
 .feature-grid {

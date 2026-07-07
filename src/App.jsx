@@ -1,29 +1,29 @@
 import './App.css'
 
 const mapMarkers = [
-  { label: '동아시아 면 요리', emoji: '🍜', className: 'marker-east-asia' },
-  { label: '일본 스시', emoji: '🍣', className: 'marker-japan' },
-  { label: '이탈리아 파스타', emoji: '🍝', className: 'marker-europe' },
-  { label: '멕시코 타코', emoji: '🌮', className: 'marker-mexico' },
-  { label: '인도 커리', emoji: '🍛', className: 'marker-south-asia' },
-  { label: '서유럽 베이커리', emoji: '🥐', className: 'marker-west-europe' },
+  { label: '직접 작성한 레시피', emoji: '✍️', className: 'marker-east-asia' },
+  { label: '엄마에게 받은 레시피', emoji: '💌', className: 'marker-japan' },
+  { label: '영상에서 가져온 레시피', emoji: '🎬', className: 'marker-europe' },
+  { label: '텍스트로 정리한 레시피', emoji: '📝', className: 'marker-mexico' },
+  { label: '할머니에게 배운 레시피', emoji: '👵', className: 'marker-south-asia' },
+  { label: '가족에게 전한 레시피', emoji: '🤝', className: 'marker-west-europe' },
 ]
 
 const featureCards = [
   {
-    title: '레시피 찾기',
+    title: '레시피 모으기',
     description:
-      '제공되는 레시피를 선택하거나, 원하는 해외 레시피를 가져오면 보기 쉽게 정리해줘요.',
+      '내가 알고 있는 요리법을 직접 작성하거나, 영상 URL과 레시피 텍스트를 가져와 한곳에 저장해요.',
   },
   {
-    title: '따라 요리하기',
+    title: 'AI로 정리하기',
     description:
-      '재료와 조리 과정을 단계별로 확인하면서 내 주방에서 완성해요.',
+      '형식 없이 흩어진 내용을 AI가 음식 이름, 재료, 수량, 조리 과정으로 정리해 다시 요리하기 쉽게 만들어줘요.',
   },
   {
-    title: '기록 모아보고 공유하기',
+    title: '추억와 함께 전하기',
     description:
-      '사진, 별점, 텍스트로 남긴 요리 기록을 지역, 스타일, 별점 기준으로 다시 살펴봐요. 맛있던 레시피, 아쉬웠던 레시피 모두 다시 확인할 수 있어요. 나만의 레시피도 공유해요!',
+      '내가 직접 등록한 레시피를 가족이나 가까운 사람에게 전해요. 받은 레시피에는 전해준 사람과 날짜가 함께 남아요.',
   },
 ]
 
@@ -32,29 +32,42 @@ function App() {
     <main className="app-shell">
       <section className="intro-section" aria-labelledby="service-title">
         <div className="intro-copy">
-          <p className="eyebrow">🌎Recipe Passport</p>
-          <h1 id="service-title">요리로 채우는 나만의 <br />미식 여권</h1>
+          <p className="eyebrow">Recipe Book</p>
+          <h1 id="service-title">흩어진 레시피를 모아 나만의 레시피북으로</h1>
           <p className="intro-description">
-            전 세계 레시피를 따라 만들고, 완성한 음식을 사진, 별점, 후기로
-            기록하며 나의 미식 여행을 지역과 스타일별로 모아보는 서비스예요.
+            직접 알고 있는 요리법부터 영상과 글에서 발견한 레시피까지,
+            AI가 다시 요리하기 좋은 형태로 정리해 줘요. 가족에게 전해 받은
+            소중한 레시피는 사람과의 추억까지 함께 간직할 수 있어요.
           </p>
 
           <div className="cta-row" aria-label="서비스 주요 행동">
             <button type="button" className="primary-action">
-              레시피 시작하기
+              레시피 추가하기
             </button>
             <button type="button" className="secondary-action">
-              내 기록 보기
+              내 레시피북 보기
             </button>
           </div>
         </div>
 
         <div className="map-panel" aria-label="세계 음식 지도">
-          <div className="world-map" aria-hidden="true">
-            <span className="continent continent-americas"></span>
-            <span className="continent continent-europe-africa"></span>
-            <span className="continent continent-asia"></span>
-            <span className="continent continent-australia"></span>
+          <div className="world-map recipe-book" aria-hidden="true">
+            <span className="book-page book-page-left">
+              <span className="recipe-heading"></span>
+              <span className="recipe-line line-wide"></span>
+              <span className="recipe-line"></span>
+              <span className="recipe-line line-short"></span>
+              <span className="recipe-note"></span>
+            </span>
+            <span className="book-spine"></span>
+            <span className="book-page book-page-right">
+              <span className="recipe-heading"></span>
+              <span className="recipe-step"></span>
+              <span className="recipe-line line-wide"></span>
+              <span className="recipe-step"></span>
+              <span className="recipe-line"></span>
+              <span className="recipe-note"></span>
+            </span>
 
             {mapMarkers.map((marker) => (
               <span
