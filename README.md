@@ -1,16 +1,49 @@
-# React + Vite
+# SpecFit
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> 취업 준비생이 자신의 스펙과 채용공고를 비교하여 지원 가능성을 분석하고 부족한 역량을 시각적으로 확인할 수 있는 서비스입니다. :contentReference[oaicite:0]{index=0}
 
-Currently, two official plugins are available:
+## 📖 프로젝트 소개
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+기존 취업 플랫폼은 채용공고를 추천하거나 검색하는 기능에 집중되어 있습니다.
 
-## React Compiler
+SpecFit은 사용자의 학력, 경력, 자격증, 전공, 외국어 등의 정보를 기반으로 채용공고와 비교하여 현재 지원 가능한 공고 비율을 분석하고 어떤 역량을 보완하면 더 많은 공고에 지원할 수 있는지를 시각적으로 제공합니다. :contentReference[oaicite:1]{index=1}
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## ✨ 주요 기능
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- 채용공고 조건 검색 및 필터링
+- 사용자 스펙 입력
+- 지원 가능 공고 비율 분석
+- 부족한 역량 분석 및 시각화
+- 공고별 충족/미충족 항목 확인 :contentReference[oaicite:2]{index=2}
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- React
+- Vite
+- Recharts
+
+### Backend
+- Node.js / Express (예정)
+- 또는 Python / FastAPI
+
+### Database
+- SQLite
+
+### Deployment
+- Vercel
+- Render 또는 Railway :contentReference[oaicite:3]{index=3}
+
+---
+
+## 📄 기획서
+
+프로젝트 기획서는 아래 링크에서 확인할 수 있습니다.
+
+👉 **[기획서 보기](https://github.com/minnnnju/hub/wiki/프로젝트-기획서)**
+
+
