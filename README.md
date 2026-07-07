@@ -1,74 +1,97 @@
-# Getting Started with Create React App
+# StockMate Agent
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> 소규모 스마트스토어 셀러를 위한 **재고소진 예측 및 발주 타이밍 브리핑 에이전트**
 
-## Available Scripts
+StockMate Agent는 판매 데이터와 현재 재고를 기반으로 상품별 재고 소진 시점을 예측하고, 오늘 발주하거나 확인해야 할 상품을 알려주는 재고관리 에이전트 MVP입니다.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 프로젝트 소개
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+소규모 스마트스토어 셀러는 별도의 재고관리 시스템 없이 엑셀, 스마트스토어 관리자 화면, 감에 의존해 재고를 관리하는 경우가 많습니다.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+상품 수가 늘어나면 모든 상품의 판매량과 재고를 매일 직접 확인하기 어려워지고, 그 결과 잘 팔리는 상품은 품절되고 잘 팔리지 않는 상품은 과잉재고로 쌓이는 문제가 반복됩니다.
 
-### `npm test`
+StockMate Agent는 이런 문제를 해결하기 위해 상품별 판매 속도, 현재 재고, 리드타임을 분석하고 **오늘 확인해야 할 상품과 추천 행동**을 브리핑합니다.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## 해결하고자 하는 문제
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+**소규모 스마트스토어 셀러가 여러 상품의 판매량과 재고를 매일 직접 확인하지 못하는 상황에서, 어떤 상품이 곧 품절되거나 과잉재고가 되는지 제때 판단하지 못하는 불편을 겪는다.**
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 핵심 기능
 
-### `npm run eject`
+### 1. 재고 소진 예측 및 상태 분류
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+상품별 판매량과 현재 재고를 바탕으로 소진 예상일을 계산하고, 상품 상태를 자동으로 분류합니다.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- 품절 위험
+- 발주 필요
+- 정상
+- 과잉재고
+- 판매 급증
+- 데이터 수집 중
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### 2. 오늘의 재고 브리핑
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+전체 상품 중 오늘 확인해야 할 상품 3~5개를 우선순위로 골라 문장형 브리핑을 제공합니다.
 
-## Learn More
+브리핑에는 다음 정보가 포함됩니다.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- 왜 이 상품을 확인해야 하는지
+- 예상 소진 시점
+- 추천 발주 수량
+- 추천 행동
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
+## MVP 범위
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+| 구분 | 포함 여부 | 설명 |
+|---|---:|---|
+| 더미 데이터 사용 | 포함 | API 없이 데모 가능 |
+| CSV 데이터 업로드 | 포함 | 판매 데이터를 업로드해 분석 |
+| 재고 소진 예측 | 포함 | 최근 판매량 기반으로 소진 예상일 계산 |
+| 상품 상태 분류 | 포함 | 품절 위험, 발주 필요, 과잉재고 등 분류 |
+| 오늘의 브리핑 | 포함 | 우선 확인 상품과 추천 행동 제공 |
+| 네이버 커머스 API | 제외 | 승인 및 권한 문제로 MVP 제외 |
+| 자동 발주 | 제외 | 사용자가 최종 결정 |
+| 머신러닝 예측 | 제외 | 규칙 기반 예측으로 시작 |
 
-### Analyzing the Bundle Size
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## 사용자 흐름
 
-### Making a Progressive Web App
+```mermaid
+flowchart TD
+    A[서비스 접속] --> B{데이터 입력 방식 선택}
+    B --> C[더미 데이터 불러오기]
+    B --> D[CSV 파일 업로드]
+    C --> E[판매 데이터 분석]
+    D --> E
+    E --> F[상품별 소진 예상일 계산]
+    F --> G[상품 상태 분류]
+    G --> H[대시보드 확인]
+    H --> I[오늘의 재고 브리핑 확인]
+    I --> J[발주 여부 직접 결정]
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
 
 ## 기획 문서
 
-- [MVP 기획서](docs/plan.md)
+- [MVP 기획서 보기](docs/plan.md)
+
+---
+
+## 개발 기간
+
+4주 MVP 개발을 목표로 합니다.
+
+1. 기획 확정 및 데이터 준비
+2. 예측 로직 구현
+3. 화면 구현
+4. 통합 및 데모 준비
