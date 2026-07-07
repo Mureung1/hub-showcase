@@ -1,16 +1,35 @@
-# React + Vite
+# 👗 Pick My Clothes
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+AI Agent를 활용하여 사용자의 상황, 날씨, 선호 스타일, 보유한 옷을 분석하여
+가장 적합한 코디를 추천하는 서비스입니다.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ 주요 기능
 
-## React Compiler
+- 🌤️ 날씨 기반 코디 추천
+- 📅 일정(학교, 데이트, 발표 등) 기반 코디 추천
+- 👕 보유한 옷 사진 업로드 및 AI 옷장 생성
+- 🤖 AI와 대화를 통한 맞춤형 코디 추천
+- 🛍️ 새로운 옷을 포함한 코디 추천 및 구매 링크 제공
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## 📄 프로젝트 문서
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- [프로젝트 기획서](https://github.com/kyungminnn999/hub/wiki/%EC%98%A4%EB%8A%98%EC%9D%98-%EC%98%B7-%EC%BD%94%EB%94%94%EB%A5%BC-%EC%B6%94%EC%B2%9C-%ED%95%B4%EC%A3%BC%EB%8A%94-AI-Agent-%EA%B8%B0%ED%9A%8D%EC%84%9C_Pick-My-Clothes)
+
+---
+
+## 🛠️ 기술 스택
+
+- React
+- Vite
+- JavaScript
+- CSS
+
+---
+
+## 👤 개발자
+
+- 김경민
