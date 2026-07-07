@@ -227,3 +227,111 @@ code {
     min-height: 300px;
   }
 }
+
+.curriculum-form {
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid #d3dce8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.curriculum-form label {
+  display: block;
+  margin-bottom: 10px;
+  color: #243047;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.curriculum-form__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.curriculum-form input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #c8d2df;
+  border-radius: 8px;
+  padding: 12px 13px;
+  color: #111827;
+  background: #f8fafc;
+  outline: none;
+}
+
+.curriculum-form input:focus {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 3px rgb(20 184 166 / 16%);
+}
+
+.curriculum-form button,
+.curriculum-list button {
+  cursor: pointer;
+}
+
+.curriculum-form button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0 16px;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.curriculum-form p {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.curriculum-list {
+  display: grid;
+  gap: 8px;
+}
+
+.curriculum-list button {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  border: 1px solid #d7e1ed;
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+  color: #334155;
+  text-align: left;
+  font-weight: 800;
+}
+
+.curriculum-list button span {
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.curriculum-list button.is-active {
+  border-color: #14b8a6;
+  background: #ecfdf9;
+  box-shadow: inset 4px 0 0 #14b8a6;
+}
+
+.curriculum-list button:focus-visible,
+.curriculum-form button:focus-visible,
+.preview-toolbar button:focus-visible {
+  outline: 3px solid rgb(20 184 166 / 30%);
+  outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  .curriculum-form__row {
+    grid-template-columns: 1fr;
+  }
+
+  .curriculum-form button {
+    min-height: 44px;
+  }
+}
