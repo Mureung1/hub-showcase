@@ -82,7 +82,7 @@ async function main() {
 
     if (command === 'report') {
       writeReport(readLastResult())
-      console.log(`Report written: ${reportPath}`)
+      console.log(`Report written: ${displaySpikePath(reportPath)}`)
       return
     }
 
@@ -145,8 +145,8 @@ function runLogin(deviceAuth: boolean) {
   const codexBin = getCodexBinPath()
   const args = deviceAuth ? ['login', '--device-auth'] : ['login']
 
-  console.log(`Running local pinned Codex login: ${codexBin}`)
-  console.log(`CODEX_HOME: ${codexHome}`)
+  console.log(`Running local pinned Codex login: ${displaySpikePath(codexBin)}`)
+  console.log(`CODEX_HOME: ${displaySpikePath(codexHome)}`)
   console.log('The runner does not store login output, OAuth URLs, or credential contents.')
 
   const result = spawnSyncInherit(codexBin, args)
@@ -512,9 +512,9 @@ function writeReport(result: VerifyResult | null) {
     `| Node | ${escapeTable(result.nodeVersion)} |`,
     `| @openai/codex pin | ${escapeTable(result.packagePin)} |`,
     `| local Codex version | ${escapeTable(result.codexVersionOutput)} |`,
-    `| local Codex binary | \`${escapeTable(result.localCodexBin)}\` |`,
-    `| CODEX_HOME | \`${escapeTable(result.codexHome)}\` |`,
-    `| CODEX_SQLITE_HOME | \`${escapeTable(result.codexSqliteHome)}\` |`,
+    `| local Codex binary | \`${escapeTable(displaySpikePath(result.localCodexBin))}\` |`,
+    `| CODEX_HOME | \`${escapeTable(displaySpikePath(result.codexHome))}\` |`,
+    `| CODEX_SQLITE_HOME | \`${escapeTable(displaySpikePath(result.codexSqliteHome))}\` |`,
     `| 실행 명령 | ${escapeTable(result.command)} |`,
     '',
     '## 결과 요약',
@@ -571,7 +571,7 @@ function printSummary(result: VerifyResult) {
   console.log(`- isolated auth.json: ${result.authJsonExists.ok ? 'present' : 'missing'}`)
   console.log(`- app-server initialize: ${result.appServerInitialize.ok ? 'ok' : 'failed'}`)
   console.log(`- global ~/.codex changed: ${result.globalChanged ? 'yes' : 'no'}`)
-  console.log(`- report: ${reportPath}`)
+  console.log(`- report: ${displaySpikePath(reportPath)}`)
 }
 
 function mark(ok: boolean) {
@@ -580,6 +580,16 @@ function mark(ok: boolean) {
 
 function escapeTable(value: string) {
   return value.replaceAll('|', '\\|').replaceAll('\n', ' ')
+}
+
+function displaySpikePath(pathValue: string) {
+  const relativePath = relative(packageRoot, pathValue)
+
+  if (!relativePath.startsWith('..') && relativePath !== '') {
+    return `<spike-root>/${relativePath}`
+  }
+
+  return pathValue.replace(homedir(), '<user-home>')
 }
 
 function formatKoreanDate(iso: string) {

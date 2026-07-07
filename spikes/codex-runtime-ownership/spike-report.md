@@ -1,6 +1,6 @@
 # SemesterOps Runtime Ownership Spike Report
 
-작성일: 2026. 7. 7. PM 2:59:13  
+작성일: 2026. 7. 7. PM 3:02:38  
 상태: 성공
 
 ## 실행 환경
@@ -11,9 +11,9 @@
 | Node | v22.22.3 |
 | @openai/codex pin | 0.142.5 |
 | local Codex version | codex-cli 0.142.5 |
-| local Codex binary | `/Users/swh/Desktop/code/ai-agent-challenge/hub/spikes/codex-runtime-ownership/node_modules/.bin/codex` |
-| CODEX_HOME | `/Users/swh/Desktop/code/ai-agent-challenge/hub/spikes/codex-runtime-ownership/runtime/codex-home` |
-| CODEX_SQLITE_HOME | `/Users/swh/Desktop/code/ai-agent-challenge/hub/spikes/codex-runtime-ownership/runtime/sqlite` |
+| local Codex binary | `<spike-root>/node_modules/.bin/codex` |
+| CODEX_HOME | `<spike-root>/runtime/codex-home` |
+| CODEX_SQLITE_HOME | `<spike-root>/runtime/sqlite` |
 | 실행 명령 | spike |
 
 ## 결과 요약
@@ -26,14 +26,14 @@
 | Subscription auth proof | PASS | auth.json exists in app-managed CODEX_HOME |
 | App-server lifecycle | PASS | initialize succeeded; result keys: codexHome, platformFamily, platformOs, userAgent |
 | Global operation safety | PASS | 전역 `~/.codex`에 rename/delete/chmod/reset 수행 없음 |
-| Global snapshot comparison | NO_CHANGE | 변화 없음 |
+| Global snapshot comparison | OBSERVED_CHANGE | 변화 감지됨. 현재 Codex 세션 등 외부 요인 가능성이 있어 원인 단정 안 함 |
 
 ## 전역 상태 확인
 
 | 구분 | exists | item count | skipped | hash | newest mtime |
 | --- | --- | ---: | ---: | --- | --- |
-| before | true | 18011 | 0 | cc4cd6b9601d0b02 | 2026-07-07T05:59:13.322Z |
-| after | true | 18011 | 0 | cc4cd6b9601d0b02 | 2026-07-07T05:59:13.322Z |
+| before | true | 18011 | 0 | 87262d29ac4e6179 | 2026-07-07T06:02:37.545Z |
+| after | true | 18011 | 0 | bb58a08ff11bcff9 | 2026-07-07T06:02:37.884Z |
 
 전역 `~/.codex`는 rename, delete, chmod, reset하지 않았고 파일 내용도 읽지 않았다. Snapshot은 파일명/크기/mtime 기반 aggregate hash만 사용했다.
 
