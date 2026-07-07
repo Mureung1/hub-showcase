@@ -84,6 +84,7 @@ flowchart TD
 ## 기획 문서
 
 - [MVP 기획서 보기](docs/plan.md)
+- [개발 작업 흐름 보기](docs/plan.md#15-개발-작업-흐름)
 
 ---
 
