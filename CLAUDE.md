@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**잔소리봇 (Nagging-bot)** — an "AI Agent Challenge" project. It's an execution-inducing agent for college students who procrastinate: instead of waiting to be asked (like a normal chatbot) or just blocking distractions (like Do Not Disturb), it observes assignment/exam deadlines and a user's procrastination pattern, then proactively intervenes with escalating nudges before the deadline hits.
+**잔소리봇 (Nagging-bot)** — an "AI Agent Challenge" project. College students procrastinate on starting tasks for different reasons — not knowing where to start, not feeling like it, wanting to keep playing — but existing reminder apps only fire a generic "it's time" notification and can't offer a solution tailored to *why* the user is stuck, so the same avoidance repeats.
+
+The core idea is **tailored intervention matched to the specific reason for avoidance**: the agent detects why the user hasn't started and proposes a fitting first action (a microtask) to help them actually begin. This is not just "reminder + AI + character" — the differentiator is diagnosing the avoidance reason and responding to it specifically, not merely delivering nudges in a chat-like UI.
 
 The repo is currently at the scaffold stage: a Vite + React landing/pitch page (`src/components/ProjectIntro.jsx`) presents the concept (problem statement, service flow timeline, feature groups). No backend, agent logic, or data persistence exists yet.
 
@@ -27,10 +29,3 @@ There is no test suite configured in this repo yet.
 - Icons are hand-written inline SVG components (no icon library dependency) — keep new icons consistent with this (viewBox 24x24, stroke-based, `aria-hidden`/`focusable="false"`).
 - Styling is plain CSS per component (`ComponentName.css` colocated with `ComponentName.jsx`), imported directly into the component file — no CSS-in-JS or Tailwind.
 - Linting uses `oxlint` (not ESLint) — config in `.oxlintrc.json`, with the `react` and `oxc` plugins enabled (`react/rules-of-hooks` is an error).
-
-## Repository conventions
-
-- Korean is the working language for commit messages, PR content, and in-app copy.
-- PR title format (from `.github/pull_request_template.md`): `[루카스아이디_실명] - 한 줄 요약`, e.g. `[N100_윤솔빈] 주문정보 페이지 개발`.
-- PRs are expected to include: a task list (with screenshots), a section explaining one chosen piece of code in the author's own words, a section on what isn't yet understood, and a section on newly learned concepts.
-- `.github/workflows/auto-merge.yml` runs daily and auto-merges open PRs unless: they target `main`, they carry a `review` label, the latest review is `CHANGES_REQUESTED`, or they have merge conflicts (conflicting PRs get auto-closed with a comment). Be aware of this when leaving PRs open — they will attempt to merge on schedule.
