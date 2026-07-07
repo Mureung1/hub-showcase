@@ -89,8 +89,8 @@ Applications for the 2026 fall semester scholarship must be submitted online by 
           title: 'Scholarship application deadline',
           startDate: '2026-07-20',
           endDate: '2026-07-21',
-          time: '18:00',
-          allDay: false,
+          time: '',
+          allDay: true,
           description: 'Submit transcript and personal statement online.',
           selected: true,
           evidence:
@@ -186,8 +186,8 @@ Applications for the 2026 fall semester scholarship must be submitted online by 
           title: '장학금 신청 마감',
           startDate: '2026-07-20',
           endDate: '2026-07-21',
-          time: '18:00',
-          allDay: false,
+          time: '',
+          allDay: true,
           description: '성적증명서와 자기소개서를 온라인으로 제출합니다.',
           selected: true,
           evidence:

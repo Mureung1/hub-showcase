@@ -37,6 +37,14 @@ import { validateAnalysisResult } from './utils/validateAnalysisResult.js'
 
 const maxUploadSizeBytes = 1024 * 1024
 const acceptedTextExtensions = ['.txt', '.md']
+const analysisSections = [
+  'deadlines',
+  'tasks',
+  'submissions',
+  'requirements',
+  'cautions',
+  'calendarEvents',
+]
 
 export default function App() {
   const [savedState] = useState(() => loadNoticePilotState() || {})
@@ -129,35 +137,31 @@ export default function App() {
     })
   }
 
-  function loadMockForLanguage(nextLanguage) {
-    const mockNotice = getMockNotice(nextLanguage)
-    const mockResult = prepareAnalysisResult(
-      createMockAnalysisResult(nextLanguage),
-      nextLanguage,
-    )
-    setNoticeTitle(mockNotice.noticeTitle)
-    setExtractedText(mockNotice.noticeText)
-    setUploadedFileName('')
-    setAnalysisResult(mockResult)
-    setInputWarnings([])
-    setError(null)
-    setActiveEvidence({
-      type: localizedContent[nextLanguage].collectionLabels.deadlines,
-      item: mockResult.deadlines[0],
-    })
-  }
-
   function handleLanguageChange(nextLanguage) {
     setLanguage(nextLanguage)
     setInputWarnings([])
     setError(null)
 
-    if (analysisResult) {
-      loadMockForLanguage(nextLanguage)
-      return
-    }
+    setActiveEvidence((currentEvidence) => {
+      if (!currentEvidence || !analysisResult) {
+        return null
+      }
 
-    setActiveEvidence(null)
+      const collectionName = analysisSections.find((sectionName) =>
+        analysisResult[sectionName].some(
+          (item) => item.id === currentEvidence.item.id,
+        ),
+      )
+
+      if (!collectionName) {
+        return currentEvidence
+      }
+
+      return {
+        ...currentEvidence,
+        type: localizedContent[nextLanguage].collectionLabels[collectionName],
+      }
+    })
   }
 
   function requestMockAnalysis({ skipOverwrite = false, skipPrivacy = false } = {}) {
