@@ -1,7 +1,5 @@
-import ProjectIntro from './components/ProjectIntro'
-
 function App() {
-  return <ProjectIntro />
+  return null
 }
 
 export default App
