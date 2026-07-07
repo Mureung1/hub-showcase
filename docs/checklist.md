@@ -6,15 +6,15 @@ PtoP의 핵심 흐름인 "Git Repository 분석 방법 학습 → 프로젝트 �
 
 ## 사전 학습: Git Repository 분석 방법
 
-- [ ] Git Repository에서 분석할 수 있는 정보 종류 정리하기
-- [ ] README에서 추출할 수 있는 정보 정리하기
-- [ ] 폴더 구조에서 추론할 수 있는 정보 정리하기
-- [ ] package.json 같은 설정 파일에서 기술 스택을 찾는 방법 정리하기
-- [ ] 주요 코드 파일을 선별하는 기준 정리하기
-- [ ] commit log에서 사용자의 작업 흐름을 파악하는 방법 정리하기
-- [ ] PR, Issue, commit message를 분석하면 얻을 수 있는 정보 정리하기
-- [ ] 분석 결과를 프로젝트 목적, 기술 스택, 핵심 기능, 역할 후보로 나누는 기준 정리하기
-- [ ] 학습 내용을 docs/repo-analysis-study.md에 정리하기
+- [x] Git Repository에서 분석할 수 있는 정보 종류 정리하기
+- [x] README에서 추출할 수 있는 정보 정리하기
+- [x] 폴더 구조에서 추론할 수 있는 정보 정리하기
+- [x] package.json 같은 설정 파일에서 기술 스택을 찾는 방법 정리하기
+- [x] 주요 코드 파일을 선별하는 기준 정리하기
+- [x] commit log에서 사용자의 작업 흐름을 파악하는 방법 정리하기
+- [x] PR, Issue, commit message를 분석하면 얻을 수 있는 정보 정리하기
+- [x] 분석 결과를 프로젝트 목적, 기술 스택, 핵심 기능, 역할 후보로 나누는 기준 정리하기
+- [x] 학습 내용을 docs/repo-analysis-study.md에 정리하기
 
 ## 핵심 기능 1: 프로젝트 분석 기능
 
@@ -58,16 +58,16 @@ PtoP의 핵심 흐름인 "Git Repository 분석 방법 학습 → 프로젝트 �
 
 ## 테스트 케이스 작성
 
-- [ ] 정상 GitHub Repository URL 입력 케이스 작성하기
-- [ ] 빈 URL 입력 케이스 작성하기
-- [ ] GitHub 형식이 아닌 URL 입력 케이스 작성하기
-- [ ] README가 있는 프로젝트 분석 케이스 작성하기
-- [ ] README가 없는 프로젝트 분석 케이스 작성하기
-- [ ] package.json이 있는 프로젝트 기술 스택 분석 케이스 작성하기
-- [ ] commit log가 부족한 프로젝트 분석 케이스 작성하기
-- [ ] 분석 결과에서 회고 초안을 생성하는 케이스 작성하기
-- [ ] Markdown 복사 케이스 작성하기
-- [ ] 테스트 케이스를 docs/test-cases.md에 정리하기
+- [x] 정상 GitHub Repository URL 입력 케이스 작성하기
+- [x] 빈 URL 입력 케이스 작성하기
+- [x] GitHub 형식이 아닌 URL 입력 케이스 작성하기
+- [x] README가 있는 프로젝트 분석 케이스 작성하기
+- [x] README가 없는 프로젝트 분석 케이스 작성하기
+- [x] package.json이 있는 프로젝트 기술 스택 분석 케이스 작성하기
+- [x] commit log가 부족한 프로젝트 분석 케이스 작성하기
+- [x] 분석 결과에서 회고 초안을 생성하는 케이스 작성하기
+- [x] Markdown 복사 케이스 작성하기
+- [x] 테스트 케이스를 docs/test-cases.md에 정리하기
 
 ## 검증 체크리스트
 
