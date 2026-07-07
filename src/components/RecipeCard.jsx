@@ -1,14 +1,14 @@
 function RecipeCard({ rank, name, emoji, totalCost }) {
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-900 p-3 transition hover:border-purple-500">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-500/10 text-sm font-semibold text-purple-400">
+    <li className="relative flex flex-col items-center gap-1 rounded-xl border border-orange-100 bg-white p-3 text-center shadow-sm transition hover:border-orange-300 hover:shadow-md">
+      <span className="absolute left-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-orange-100 text-xs font-semibold text-orange-600">
         {rank}
       </span>
-      <span className="shrink-0 text-2xl" aria-hidden="true">
+      <span className="text-2xl" aria-hidden="true">
         {emoji}
       </span>
-      <p className="min-w-0 flex-1 truncate font-medium text-gray-100">{name}</p>
-      <p className="shrink-0 whitespace-nowrap font-semibold text-gray-100">
+      <p className="w-full truncate text-sm font-medium text-gray-800">{name}</p>
+      <p className="text-sm font-bold text-orange-600">
         {totalCost.toLocaleString()}원
       </p>
     </li>
