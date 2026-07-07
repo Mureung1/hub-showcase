@@ -93,6 +93,21 @@ export const mockRecipes = [
     ],
   },
   {
+    id: 'budae-jjigae',
+    name: '부대찌개',
+    emoji: '🍲',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/4/48/Budae_jjigae_indonesia.jpg',
+    categoryId: 'jjigae',
+    servings: 1,
+    totalCost: 4000,
+    ingredients: [
+      { name: '스팸', amount: '100g' },
+      { name: '소시지', amount: '100g' },
+      { name: '신김치', amount: '1컵' },
+      { name: '라면사리', amount: '1개' },
+    ],
+  },
+  {
     id: 'chamchi-mayo-deopbap',
     name: '참치마요덮밥',
     emoji: '🍱',
