@@ -7,7 +7,7 @@ const ProjectInfo = () => {
       id: 1,
       icon: '📋',
       title: '구독 서비스 현황 확인',
-      description: '이용 중인 구독 서비스를 수동으로 등록하면, 함께 쓰는 인원수를 기반으로 실제 분담 금액이 자동으로 계산됩니다.'
+      description: '이용 중인 구독 서비스를 등록하면, 함께 쓰는 인원수를 기반으로 실제 분담 금액이 자동으로 계산됩니다.'
     },
     {
       id: 2,
@@ -24,8 +24,8 @@ const ProjectInfo = () => {
   ];
 
   const userScenario = [
-    '사용자가 가입 후 이용 중인 구독 서비스를 등록한다. (함께 쓰는 인원수도 입력)',
-    '사용자가 구독 중인 서비스 현황과 한 달 소비 금액을 한눈에 확인한다.',
+    '가입 후 이용 중인 구독 서비스를 등록한다.',
+    '구독 중인 서비스 현황과 한 달 소비 금액을 한눈에 확인한다.',
     '결제 금액이 아닌 실제 분담 금액으로 본인의 정확한 소비 현황을 확인한다.',
     '여러 명이 함께 쓰는 서비스는 멤버들과 그룹을 만든다.',
     '매달 자동으로 정산 요청 알림을 받고, 카카오페이/토스 송금으로 연동되어 정산한다.',
@@ -44,9 +44,10 @@ const ProjectInfo = () => {
       </header>
 
       <section className="problem-section">
-        <h2 className="section-label">문제 정의</h2>
         <p className="problem-text">
-          여러 구독 서비스를 이용하는 사람은 매달 어떤 서비스에 얼마를 쓰는지 한눈에 파악하기 어렵고, 일일이 정산하는 것이 번거롭습니다.
+          여러 유료 서비스를 이용하는 당신!<br>
+          </br>서비스 구독 현황을 한눈에 보고 싶지 않으신가요?<br>
+          </br>다른 사람과 함께 쓰는 서비스, 일일이 정산하는 것이 번거롭지 않으신가요?
         </p>
       </section>
 
@@ -66,7 +67,7 @@ const ProjectInfo = () => {
       </section>
 
       <section className="sub-features-section">
-        <h2 className="section-label">서브 기능</h2>
+        <h2 className="section-label">추가 기능</h2>
         <ul className="sub-features-list">
           {subFeatures.map((item, idx) => (
             <li key={idx} className="sub-feature-item">
@@ -78,7 +79,7 @@ const ProjectInfo = () => {
       </section>
 
       <section className="scenario-section">
-        <h2 className="section-label">사용자 시나리오</h2>
+        <h2 className="section-label">이용 방법</h2>
         <ol className="scenario-list">
           {userScenario.map((step, idx) => (
             <li key={idx} className="scenario-item">
