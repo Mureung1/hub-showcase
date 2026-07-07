@@ -7,15 +7,18 @@
 - `docs/plan.md`에 문제 정의, 사용자 시나리오, 핵심 기능, MVP 범위, 예시 입출력을 다시 작성했습니다.
 - `docs/market-research.md`에 시장 조사와 경쟁 분석을 추가했습니다.
 - 사용자 흐름과 와이어프레임 SVG를 모두의 뇌 방향으로 수정했습니다.
+- GitHub에서 SVG 이미지가 깨질 때를 대비해 HTML 기반 시각화 페이지를 추가했습니다.
 - React + TypeScript 기반 `NewsCard` 컴포넌트를 추가했습니다.
 - CSS Modules로 카드 스타일을 분리했고, 샘플 시장 조사 카드 3개를 앱에서 렌더링하도록 구성했습니다.
 - `npm run build`로 TypeScript와 Vite 빌드를 검증했습니다.
 
 ## 시각화 자료
 
-![모두의 뇌 사용자 흐름](https://raw.githubusercontent.com/tjwnsdhfz/hub/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/images/user-flow.svg)
+GitHub PR 본문에서 SVG 이미지가 깨지는 경우가 있어, HTML로 직접 볼 수 있는 시각화 페이지를 추가했습니다.
 
-![모두의 뇌 화면 와이어프레임](https://raw.githubusercontent.com/tjwnsdhfz/hub/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/images/wireframe.svg)
+- [HTML 시각화 페이지](https://htmlpreview.github.io/?https://github.com/tjwnsdhfz/hub/blob/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/visualization.html)
+- [사용자 흐름 SVG 원본](https://github.com/tjwnsdhfz/hub/blob/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/images/user-flow.svg)
+- [화면 와이어프레임 SVG 원본](https://github.com/tjwnsdhfz/hub/blob/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/images/wireframe.svg)
 
 ## 내가 설명할 수 있는 부분
 

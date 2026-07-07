@@ -15,9 +15,11 @@
 
 ## 기획 시각화
 
-![모두의 뇌 사용자 흐름](docs/images/user-flow.svg)
+GitHub에서 SVG 이미지가 깨질 수 있어 HTML 기반 시각화 페이지를 함께 제공합니다.
 
-![모두의 뇌 화면 와이어프레임](docs/images/wireframe.svg)
+- [HTML 시각화 페이지](docs/visualization.html)
+- [사용자 흐름 SVG 원본](docs/images/user-flow.svg)
+- [화면 와이어프레임 SVG 원본](docs/images/wireframe.svg)
 
 ## 현재 개발 방향
 

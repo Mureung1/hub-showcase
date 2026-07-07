@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>모두의 뇌 시각화</title>
+    <style>
+      :root {
+        --primary: #e60023;
+        --ink: #000000;
+        --body: #33332e;
+        --mute: #62625b;
+        --line: #dadad3;
+        --soft-line: #e5e5e0;
+        --canvas: #fbfbf9;
+        --card: #ffffff;
+        --soft: #f6f6f3;
+        --dark: #262622;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--canvas);
+        font-family: Inter, "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
+      }
+
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 52px 0 72px;
+      }
+
+      .hero {
+        display: flex;
+        justify-content: space-between;
+        gap: 32px;
+        align-items: start;
+        padding-bottom: 36px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-size: 52px;
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+
+      .hero p {
+        max-width: 720px;
+        margin: 16px 0 0;
+        color: var(--body);
+        font-size: 18px;
+        line-height: 1.65;
+      }
+
+      .badge {
+        display: inline-flex;
+        min-width: max-content;
+        padding: 10px 16px;
+        border-radius: 999px;
+        color: #ffffff;
+        background: var(--primary);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .section {
+        margin-top: 40px;
+        padding: 30px;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: var(--card);
+      }
+
+      .section h2 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+
+      .section > p {
+        margin: 0 0 24px;
+        color: var(--mute);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .flow-card {
+        position: relative;
+        min-height: 166px;
+        padding: 20px;
+        border: 1px solid var(--soft-line);
+        border-radius: 18px;
+        background: var(--soft);
+      }
+
+      .flow-card:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: -10px;
+        width: 18px;
+        height: 18px;
+        border-top: 3px solid var(--primary);
+        border-right: 3px solid var(--primary);
+        transform: translateY(-50%) rotate(45deg);
+        background: var(--card);
+      }
+
+      .flow-card.is-dark {
+        color: #ffffff;
+        background: var(--dark);
+        border-color: var(--dark);
+      }
+
+      .flow-card.is-primary {
+        color: #ffffff;
+        background: var(--primary);
+        border-color: var(--primary);
+      }
+
+      .step {
+        display: inline-flex;
+        width: 34px;
+        height: 34px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: #ffffff;
+        background: var(--primary);
+        font-weight: 800;
+      }
+
+      .is-primary .step {
+        color: var(--primary);
+        background: #ffffff;
+      }
+
+      .flow-card h3 {
+        margin: 18px 0 10px;
+        font-size: 19px;
+        line-height: 1.3;
+      }
+
+      .flow-card p,
+      .flow-card li {
+        margin: 0;
+        color: inherit;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .flow-card ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .wireframes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      .screen {
+        min-height: 560px;
+        padding: 26px;
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        background: #ffffff;
+      }
+
+      .screen-title {
+        margin: 0 0 6px;
+        font-size: 23px;
+        line-height: 1.3;
+      }
+
+      .screen-desc {
+        margin: 0 0 24px;
+        color: var(--mute);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .field,
+      .text-box,
+      .result-box {
+        border: 1px solid var(--soft-line);
+        border-radius: 16px;
+        background: var(--soft);
+      }
+
+      .field {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 14px;
+        align-items: center;
+        min-height: 54px;
+        padding: 0 18px;
+        margin-bottom: 18px;
+      }
+
+      .label {
+        color: var(--mute);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .value {
+        color: var(--body);
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .text-box {
+        min-height: 250px;
+        padding: 20px;
+        color: var(--body);
+        font-size: 15px;
+        line-height: 1.65;
+      }
+
+      .button {
+        display: flex;
+        height: 54px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 20px;
+        border-radius: 16px;
+        color: #ffffff;
+        background: var(--primary);
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .map {
+        position: relative;
+        height: 250px;
+        margin-bottom: 22px;
+        border-radius: 20px;
+        background: var(--dark);
+      }
+
+      .node {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 13px;
+        font-weight: 800;
+        text-align: center;
+      }
+
+      .node.main {
+        top: 82px;
+        left: calc(50% - 50px);
+        width: 100px;
+        height: 100px;
+        color: #ffffff;
+        background: var(--primary);
+      }
+
+      .node.sub {
+        width: 76px;
+        height: 76px;
+        color: var(--ink);
+        background: #ffffff;
+      }
+
+      .node.a {
+        top: 38px;
+        left: 54px;
+      }
+
+      .node.b {
+        top: 38px;
+        right: 54px;
+      }
+
+      .node.c {
+        bottom: 34px;
+        left: 62px;
+      }
+
+      .node.d {
+        right: 62px;
+        bottom: 34px;
+      }
+
+      .line {
+        position: absolute;
+        height: 3px;
+        background: var(--line);
+        transform-origin: left center;
+      }
+
+      .line.l1 {
+        top: 84px;
+        left: 124px;
+        width: 154px;
+        transform: rotate(22deg);
+      }
+
+      .line.l2 {
+        top: 84px;
+        right: 124px;
+        width: 154px;
+        transform: rotate(158deg);
+      }
+
+      .line.l3 {
+        left: 132px;
+        bottom: 96px;
+        width: 150px;
+        transform: rotate(-25deg);
+      }
+
+      .line.l4 {
+        right: 132px;
+        bottom: 96px;
+        width: 150px;
+        transform: rotate(205deg);
+      }
+
+      .result-box {
+        padding: 18px;
+        margin-top: 14px;
+      }
+
+      .result-box h3 {
+        margin: 0 0 8px;
+        font-size: 17px;
+        line-height: 1.35;
+      }
+
+      .result-box p {
+        margin: 0;
+        color: var(--body);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      @media (max-width: 980px) {
+        .hero,
+        .wireframes {
+          display: block;
+        }
+
+        .badge {
+          margin-top: 20px;
+        }
+
+        .flow {
+          grid-template-columns: 1fr;
+        }
+
+        .flow-card:not(:last-child)::after {
+          display: none;
+        }
+
+        .screen + .screen {
+          margin-top: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <div>
+          <h1>모두의 뇌</h1>
+          <p>
+            여러 사람이 하나의 프로젝트를 함께 진행할 때 흩어진 회의록,
+            연구 메모, 설계 피드백을 연결해 팀 전체가 같은 맥락을 이해하도록
+            돕는 협업 맥락 공유 AI 에이전트입니다.
+          </p>
+        </div>
+        <span class="badge">HTML Visualization</span>
+      </header>
+
+      <section class="section">
+        <h2>사용자 흐름</h2>
+        <p>회의 요약이 아니라 주제, 용어, 결정 배경, 관점 차이, 미결 질문을 연결하는 흐름입니다.</p>
+        <div class="flow">
+          <article class="flow-card">
+            <span class="step">1</span>
+            <h3>자료 입력</h3>
+            <ul>
+              <li>회의록</li>
+              <li>연구 메모</li>
+              <li>설계 피드백</li>
+            </ul>
+          </article>
+          <article class="flow-card is-dark">
+            <span class="step">2</span>
+            <h3>AI 맥락 추출</h3>
+            <p>주제, 용어, 결정사항, 판단 근거, 미결 질문을 뽑아냅니다.</p>
+          </article>
+          <article class="flow-card">
+            <span class="step">3</span>
+            <h3>관점 연결</h3>
+            <p>건축, 구조, 설비, 연구자, 업체의 관점 차이를 정리합니다.</p>
+          </article>
+          <article class="flow-card">
+            <span class="step">4</span>
+            <h3>공유 지식맵</h3>
+            <p>사람, 분야, 주제, 질문 사이의 관계를 하나의 맥락으로 보여줍니다.</p>
+          </article>
+          <article class="flow-card is-primary">
+            <span class="step">5</span>
+            <h3>빠른 이해</h3>
+            <p>새 참여자도 지금까지의 흐름과 남은 질문을 빠르게 파악합니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>핵심 화면 와이어프레임</h2>
+        <p>기초 개발 단계에서는 입력 화면과 공유 지식맵 결과 화면을 먼저 구현합니다.</p>
+        <div class="wireframes">
+          <article class="screen">
+            <h3 class="screen-title">1. 프로젝트 자료 입력</h3>
+            <p class="screen-desc">사용자가 회의록, 연구 메모, 설계 피드백을 붙여넣는 화면입니다.</p>
+            <div class="field">
+              <span class="label">프로젝트명</span>
+              <span class="value">공학설계 공모전 구조 검토</span>
+            </div>
+            <div class="text-box">
+              교수님 피드백: 보이드 공간은 유지하되 구조 보강 방식과 동선 근거를 다시 설명해야 함.<br /><br />
+              구조팀: 장스팬 구간 보강 필요.<br />
+              설비팀: 천장고와 덕트 경로 충돌 가능.<br /><br />
+              미결 질문: 보이드 우선인가, 시공 가능성 우선인가?
+            </div>
+            <div class="button">맥락 지식맵 만들기</div>
+          </article>
+
+          <article class="screen">
+            <h3 class="screen-title">2. 공유 지식맵 결과</h3>
+            <p class="screen-desc">주제, 사람, 분야, 결정, 질문을 관계로 보여주는 화면입니다.</p>
+            <div class="map" aria-label="공유 지식맵 예시">
+              <span class="line l1"></span>
+              <span class="line l2"></span>
+              <span class="line l3"></span>
+              <span class="line l4"></span>
+              <span class="node main">보이드</span>
+              <span class="node sub a">구조팀</span>
+              <span class="node sub b">설비팀</span>
+              <span class="node sub c">동선 근거</span>
+              <span class="node sub d">미결 질문</span>
+            </div>
+            <div class="result-box">
+              <h3>관점 차이 요약</h3>
+              <p>건축팀은 공간 경험을 우선하고, 구조팀은 장스팬 보강 가능성을 먼저 확인해야 합니다.</p>
+            </div>
+            <div class="result-box">
+              <h3>다음 질문</h3>
+              <p>보이드 크기를 유지하면서 구조 보강과 설비 경로를 동시에 만족할 수 있는지 확인해야 합니다.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
