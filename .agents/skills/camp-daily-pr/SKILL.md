@@ -1,6 +1,6 @@
 ---
 name: camp-daily-pr
-description: Create a local daily integration PR from codex/MMDD to N180_하성욱, then verify or create the camp submission PR that uses .github/pull_request_template.md.
+description: Create an agent-written local daily integration PR from codex/MMDD to N180_하성욱, then interview only for the camp submission PR that uses .github/pull_request_template.md.
 disable-model-invocation: true
 ---
 
@@ -47,11 +47,11 @@ Inspect the daily branch against `N180_하성욱`:
 
 Use this material to draft candidate PR content, but do not create the PR yet.
 
-### 3. Interview for the daily PR body
+### 3. Draft the daily PR body
 
-Use the local daily integration convention. Ask exactly one question at a time and wait for the user before moving on. For each question, provide a recommended answer based on the gathered material.
+Use the local daily integration convention. The agent writes this PR body directly from the gathered material; do not interview section by section for the daily PR.
 
-Ask in this order:
+Use this structure:
 
 1. PR title
 2. `Summary`
@@ -59,13 +59,13 @@ Ask in this order:
 4. `Verification`
 5. `Risks / Follow-ups`
 
-Preserve the user's wording when they revise a section. Link source material rather than forcing camp reflection content into the daily PR.
+Link source material rather than forcing camp reflection content into the daily PR. If important context is genuinely missing, make a conservative assumption and note it under `Risks / Follow-ups`.
 
 ### 4. Confirm the final PR body
 
-Show the complete PR title and body. Do not create or update the PR until the user explicitly approves the final body.
+Show the complete daily PR title and body. Ask for a single approval before creating or updating the daily PR. The user may revise the draft, but do not run an interview for the daily PR.
 
-Completion criterion: the user has approved every daily PR section and the full daily PR body.
+Completion criterion: the user has approved the full daily PR body.
 
 ### 5. Create or update the daily PR
 
@@ -92,7 +92,7 @@ If the daily branch is not contained in `fork/N180_하성욱`, do not claim that
 
 If the daily branch is contained in `fork/N180_하성욱`, check for an open upstream PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱`.
 
-Before creating or updating the upstream PR, read `.github/pull_request_template.md` and prepare a separate camp submission body. Ask one question at a time for any missing or uncertain template section:
+Before creating or updating the upstream PR, read `.github/pull_request_template.md` and prepare a separate camp submission body. This is the only interview-based PR flow in this skill. Ask one question at a time for any missing or uncertain template section:
 
 1. Upstream PR title
 2. `주요 작업 리스트`
