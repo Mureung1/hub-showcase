@@ -473,7 +473,7 @@ function writeReport(result: VerifyResult | null) {
     writeFileSync(reportPath, [
       '# SemesterOps Runtime Ownership Spike Report',
       '',
-      '작성일: 2026-07-07  ',
+      '작성일: 2026-07-07',
       '상태: 미실행',
       '',
       '## 결과 요약',
@@ -501,7 +501,7 @@ function writeReport(result: VerifyResult | null) {
   const lines = [
     '# SemesterOps Runtime Ownership Spike Report',
     '',
-    `작성일: ${formatKoreanDate(result.generatedAt)}  `,
+    `작성일: ${formatKoreanDate(result.generatedAt)}`,
     `상태: ${status}`,
     '',
     '## 실행 환경',

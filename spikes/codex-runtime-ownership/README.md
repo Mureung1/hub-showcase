@@ -40,4 +40,3 @@ npm run spike
 - `runtime/`은 git에 올리지 않습니다.
 - `auth.json` 내용, access token, refresh token, OAuth URL, raw login log는 저장하거나 보고서에 쓰지 않습니다.
 - 전역 `~/.codex`는 rename, delete, chmod, reset하지 않고 metadata snapshot만 관찰합니다.
-
