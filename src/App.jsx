@@ -1,8 +1,8 @@
-import CareerResearchAgentIntro from './components/CareerResearchAgentIntro'
+import ProjectIntroPage from './internal/project-intro/ProjectIntroPage'
 import './App.css'
 
 function App() {
-  return <CareerResearchAgentIntro />
+  return <ProjectIntroPage />
 }
 
 export default App
