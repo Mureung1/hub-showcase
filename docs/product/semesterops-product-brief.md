@@ -1,315 +1,281 @@
 # SemesterOps Product Brief
 
-작성일: 2026-07-07  
+작성일: 2026-07-07
 상태: Draft
 
 ## 한 줄 요약
 
-**SemesterOps는 사용자의 컴퓨터에 학기 작업환경을 만들고, 웹앱에서 시간표·자료·과제·AI 상호작용을 관리하면 그 결과가 실제 로컬 파일로 남는 local-first academic agent harness다.**
+**SemesterOps는 학생이 한 학기 자료를 정리하지 않고 넣으면, 로컬 Codex agent runtime이 자료를 해석하고 사용자와 대화하며 과목·공지·자료·일정·task 후보로 모델링해주는 local-first academic agent app이다.**
 
-사용자는 웹앱에서 시간표를 조작하고, 강의자료를 업로드하고, 에이전트와 대화한다. 내부에서는 로컬 companion 서버가 사용자 컴퓨터의 학기 작업환경과 Codex app-server를 연결한다. 목표는 Codex를 단순히 GUI로 감싸는 것이 아니라, 학기별 자료와 장기기억을 사용자의 디바이스에 보존하면서 AI가 실제 workspace를 읽고, 일정과 자료를 연결하고, 다음 행동을 제안하는 개인 학업 운영 창구를 만드는 것이다.
+SemesterOps의 핵심은 캘린더 앱이나 AI 채팅창이 아니라, 더러운 학기 RawMaterial을 사용자 컴퓨터 안에서 SemesterModel로 바꾸는 AgentLedProcessing 경험이다. 사용자는 GUI와 ChatSidecar를 함께 쓰며 자료를 넣고, 처리할 source를 선택하고, Agent가 만든 StatePatch를 확인·수정·승인한다. 앱은 사용자의 UserConfirmation을 trusted state의 기준으로 삼고, MarkdownProjection과 WorkspaceQuery를 통해 정리된 학기 상태를 보여준다.
 
 ## 배경
 
-대학생의 학기 관리는 캘린더 앱 하나로 해결되지 않는다. 실제 자료는 강의계획서 PDF, LMS 공지, 과제 안내, 주차별 강의자료, 시험범위 메모, 요약 노트, 발표자료, 제출 마감 정보처럼 흩어진다.
+대학생의 학기 관리는 일정 등록 문제만이 아니다. 실제 학기 자료는 LMS 공지, 강의계획서, PDF, PPTX, HWP/HWPX, 이미지, 메모, 과제 안내, 시험 범위, 보강 안내처럼 포맷과 품질이 제각각인 자료로 흩어진다.
 
-실제 대학생의 한 학기 자료 묶음에는 다음이 함께 존재한다.
+학생이 실제로 겪는 문제는 다음과 같다.
 
 | 자료 유형 | 예시 | 사용자가 겪는 문제 |
 | --- | --- | --- |
-| 학기 메타데이터 | 시간표, 과목명, 학점, 교수명, 강의실 | 여러 앱과 파일에 흩어져 최신 상태를 알기 어렵다. |
-| 일정 메모 | 시험일, 과제 마감, 보강, 출석 예외 | 캘린더에 직접 옮기지 않으면 놓치기 쉽다. |
-| 과목별 자료 | 강의계획서, 주차별 PDF/PPT, 시험 대비 자료 | 자료는 있지만 시험 범위나 task와 연결되지 않는다. |
-| 과제 자료 | 과제 안내, 제출 양식, 참고 자료, 마감 공지 | 마감과 준비물이 자료 속에 묻혀 있다. |
-| 학습 산출물 | 요약 노트, 예상문제, 발표자료, 제출 준비 메모 | 결과물이 쌓이지만 다음 행동으로 이어지지 않는다. |
+| 확정 과목 정보 | 과목명, 교수명, 학점, 수업 시간 | 학기 초에 한 번 정리해도 이후 자료와 연결되지 않는다. |
+| LMS 공지 | 휴강, 보강, 과제, 시험 안내 | 과목과 일정, task로 옮기지 않으면 묻힌다. |
+| 강의계획서 | 평가 방식, 주차별 계획, 시험 일정 | 중요한 운영 정보가 긴 문서 안에 숨어 있다. |
+| 수업 자료 | PDF, PPTX, HWP/HWPX, 이미지 | 저장은 했지만 과목·주차·시험 범위와 연결되지 않는다. |
+| 개인 메모 | 시험 범위, 교수님 강조점, 제출 조건 | 원본 자료와 함께 해석되지 않으면 다시 찾기 어렵다. |
 
-SemesterOps는 사용자가 이런 구조를 직접 설계하고 유지한다고 가정하지 않는다. 앱이 먼저 로컬 학기 작업환경을 스캐폴딩하고, 사용자는 웹앱을 통해 자료를 넣고, 확인하고, 에이전트에게 일을 맡긴다. 문제는 학기 자료가 시간이 갈수록 흩어지고, 중요한 일정과 자료 상태를 사용자가 계속 수동으로 추적해야 한다는 점이다.
+SemesterOps는 사용자가 처음부터 파일을 깔끔하게 분류한다고 가정하지 않는다. 먼저 RawMaterial을 보존하고, 사용자가 고른 SourceSelection에 대해 Agent가 built-in Skills, local scripts, 파일 접근, 대화, 필요 시 UserDecisionRequest를 사용해 처리 전략을 선택한다.
 
 ## 문제 정의
 
-**학기 관리는 일정 등록 문제가 아니라, 흩어진 학업 자료를 계속 운영 가능한 상태로 유지하는 문제다.**
+**학기 관리는 흩어진 RawMaterial을 사용자가 신뢰할 수 있는 SemesterModel로 바꾸는 문제다.**
 
-학생이 실제로 겪는 고통은 다음에 가깝다.
+현재 학생은 자료를 저장한 뒤, 필요한 정보를 직접 해석하고, 캘린더·메모·할 일 앱에 다시 옮긴다. 이 과정은 반복적이고, 포맷별 예외가 많고, 누락이 잘 생긴다.
 
-| 문제 | 현재 사용자의 행동 | SemesterOps가 해결해야 할 것 |
+SemesterOps가 해결해야 할 문제는 다음과 같다.
+
+| 문제 | 현재 행동 | SemesterOps의 역할 |
 | --- | --- | --- |
-| 일정 최신성 불명확 | 강의계획서, 공지, 노트를 직접 비교한다. | 일정 후보와 충돌을 찾아 사용자에게 확인받는다. |
-| 자료와 일정의 단절 | 자료를 저장만 하고 시험/과제와 따로 관리한다. | 자료를 과목, 주차, 시험 범위, task와 연결한다. |
-| 위험 이벤트 누락 | 과제 마감, 시험, 출석 필요일을 수동으로 기억한다. | 이번 주 위험 일정과 준비물을 자동으로 브리핑한다. |
-| AI 결과가 상태로 남지 않음 | AI 답변을 따로 복사해 일정/노트에 반영한다. | 승인된 AI 결과를 task, calendar, note로 반영한다. |
-
-SemesterOps는 이 문제를 **학기 workspace 운영 문제**로 정의한다.
+| 자료가 너무 더럽고 다양함 | 파일을 저장한 뒤 사람이 다시 읽고 분류한다. | Agent가 runtime에서 적절한 Skill/script를 선택해 해석한다. |
+| 앱이 처리 방식을 미리 다 알 수 없음 | 지원 안 되는 포맷이나 특이한 공지는 수동 처리한다. | AgentLedProcessing으로 사용자 요구와 자료 맥락에 맞게 처리한다. |
+| AI 결과를 믿기 어려움 | AI 답변을 복사해 직접 정리한다. | StatePatch, evidence, RecommendedChoice, ReviewState로 검토 가능하게 만든다. |
+| GUI와 AI가 분리됨 | 앱에서는 상태를 보고, 채팅에서는 별도 맥락으로 질문한다. | CoControl과 LiveStateSync로 GUI 조작과 Agent 대화가 같은 상태를 다룬다. |
+| 정리 결과가 상태로 남지 않음 | 대화 결과가 실제 학기 운영 상태와 분리된다. | UserConfirmation 이후 TrustedState와 MarkdownProjection으로 남긴다. |
 
 ## 제품 테제
 
-**SemesterOps는 사용자의 컴퓨터에 학기 작업환경을 만들고 그 위에 GUI와 AI 에이전트를 얹는 앱이다.**
+**SemesterOps는 한 학기 자료를 먹고, 학생과 대화하며, 앱이 다룰 수 있는 학기 상태를 만들어내는 로컬 에이전트 하네스다.**
 
-SemesterOps의 핵심은 파일 관리 자체가 아니라 agentic operation이다. 사용자가 GUI에서 시간표를 수정하면 로컬 파일이 바뀌고, 사용자가 강의자료를 업로드하면 학기 작업환경에 저장되며, AI가 일정이나 과제 위험을 발견하면 승인 후 task, calendar, note, course index가 갱신된다.
+앱은 파일 타입별 처리 로직을 모두 하드코딩하지 않는다. 대신 RawMaterial 보존, state contract, built-in Skills, local scripts, Review UX, UserConfirmation 경계를 제공한다. Agent는 이 경계 안에서 자료를 읽고, 필요한 도구를 실행하고, 사용자에게 묻고, DraftState와 ReviewState를 만든다.
 
-제품의 중심은 클라우드 DB가 아니라 사용자 컴퓨터에 만들어지는 학기 작업환경이다.
+## MVP 약속
 
-## 핵심 원칙
+> 학생이 한 학기 자료를 넣고 처리할 source를 명시적으로 선택하면, SemesterOps는 Agent와 함께 이를 과목·자료·공지·일정·task 후보로 모델링하고, 사용자가 확인한 trusted state와 읽기 좋은 MarkdownProjection으로 남긴다.
 
-| 원칙 | 의미 | 제품에서의 표현 |
+MVP는 과제 해결이나 자동 제출을 목표로 하지 않는다. 목표는 학기 자료를 앱이 이해할 수 있는 상태로 바꾸고, 사용자가 그 상태를 신뢰할 수 있게 만드는 것이다.
+
+## 핵심 루프
+
+| 단계 | 사용자 행동 | 앱/Agent 행동 | 결과 |
+| --- | --- | --- | --- |
+| Init | 이번 학기에 들을 확정 과목을 입력한다. | 학기 workspace와 초기 SemesterModel을 만든다. | 빈 학기 모델과 과목 기준선 |
+| MaterialIntake | LMS 공지, PDF, PPTX, HWP/HWPX, 이미지, 메모를 넣는다. | 원본 RawMaterial을 보존하고 SourceList에 표시한다. | RawState와 source manifest |
+| SourceSelection | 처리할 source를 GUI나 ChatSidecar에서 선택한다. | 선택된 RawMaterial 묶음을 ModelingRun 입력으로 준비한다. | 명시적 처리 대상 |
+| ModelingRun | 버튼이나 대화로 AgentModeling을 시작한다. | Agent가 Skills/scripts/files를 사용해 처리 전략을 선택한다. | DraftState, ReviewState, StatePatch |
+| UserDecisionRequest | Agent가 혼자 확정하기 어려운 질문에 답한다. | GUI를 통해 사용자 판단을 받고 작업을 이어간다. | 추가 UserCorrection |
+| Review | 추천안을 확인하고 승인·수정·거절한다. | StatePatch를 검증하고 UserConfirmation을 기록한다. | TrustedState |
+| MarkdownProjection | 정리된 결과를 읽는다. | built-in heading template으로 Markdown을 렌더링한다. | 사람이 읽는 FinalArtifact |
+| WorkspaceQuery | 정리된 상태에 질문한다. | TrustedState와 RawMaterial 근거를 함께 사용한다. | 학기 상태 기반 답변 |
+
+## 정보 모델
+
+MVP 산출물은 직접적인 DB schema의 출발점이다. 다만 이 문서는 최종 schema가 아니라 도메인 정보 모델을 정의한다.
+
+| 개체 | 의미 | 상태 계층 |
 | --- | --- | --- |
-| 학기 자료는 사용자 컴퓨터에 남는다 | 앱의 핵심 상태는 사용자 컴퓨터에 남아야 한다. | 앱을 지워도 학기 자료, 일정, 노트, task, 작업 이력은 의미 있게 보존된다. |
-| 웹앱 조작은 실제 작업환경을 바꾼다 | UI 조작은 임시 상태가 아니라 실제 파일 변경으로 이어진다. | 시간표 편집, 자료 업로드, task 완료, 일정 수정은 workspace 파일을 갱신한다. |
-| AI 상호작용은 학기 상태로 남는다 | AI 답변은 채팅창에만 남지 않는다. | 승인된 study plan, task, calendar event, course note, 준비물 체크리스트가 실제 파일로 반영된다. |
-| 사용자가 가진 에이전트 런타임을 쓴다 | SemesterOps는 모델 접근을 판매하지 않는다. | MVP는 사용자의 로컬 Codex 환경과 ChatGPT/Codex subscription을 사용한다. |
-| 장기적으로 런타임 중립성을 확보한다 | 특정 agent runtime에 제품 전체를 묶지 않는다. | MVP는 Codex app-server에 집중하되, Claude Code와 오픈소스 런타임 어댑터 경계를 둔다. |
-| 기본 업무 흐름은 Skill로 제공한다 | 하드코딩된 프롬프트 대신 agent가 읽는 매뉴얼을 제공한다. | built-in Skills가 학업 운영 workflow, 승인 지점, 산출물 형식을 안내한다. |
-| 학업 윤리를 제품 원칙으로 둔다 | 과제 정답 대행이 아니라 학업 운영을 보조한다. | 일정 운영, 자료 정리, 마감 관리, 시험 준비 계획 생성에 집중한다. |
+| `Course` | Init에서 확정한 이번 학기 과목 | TrustedState |
+| `RawMaterial` | 원본 파일, 공지, 메모, 이미지 | RawState |
+| `Material` | 해석된 수업 자료 | DraftState 또는 TrustedState |
+| `Notice` | 공지나 안내사항 | DraftState 또는 TrustedState |
+| `ScheduleItem` | 수업, 시험, 마감, 보강 등 시간 정보 | DraftState 또는 TrustedState |
+| `TaskCandidate` | 과제, 준비물, 복습 등 할 일 후보 | ReviewState |
+| `Uncertainty` | Agent가 확신하지 못한 지점 | ReviewState |
+| `StatePatch` | 사용자 확인 단위의 구조화 변경 제안 | ReviewState |
+| `UserDecisionRequest` | Agent가 GUI로 요청하는 live 사용자 판단 | ReviewState |
+| `MarkdownProjection` | SemesterModel에서 렌더링된 사람이 읽는 문서 | ArtifactState |
 
-## 제품 포지셔닝
+## 상태 계층
 
-> SemesterOps는 사용자의 컴퓨터에 학기 작업환경을 만들고, 시간표·자료·과제·시험 준비를 AI와 함께 운영하는 로컬 우선 학업 에이전트 앱이다.
-
-## 대상 사용자
-
-| 사용자군 | 겪는 문제 | 기대하는 경험 |
+| 계층 | 역할 | 권한 |
 | --- | --- | --- |
-| 학기 일정관리에 어려움을 겪는 대학생 | 여러 과목의 수업, 과제, 시험, 보강, 출석 정보를 한눈에 관리하기 어렵다. | 캘린더에 직접 옮기지 않아도 이번 주 해야 할 일이 정리된다. |
-| 강의자료와 과제 파일이 계속 쌓이는 학생 | PDF, PPT, 과제 안내, 마감 정보, 시험 범위 메모가 과목별로 쌓인다. | 자료를 업로드하면 과목, 주차, 과제, 시험과 연결된다. |
-| AI를 학업 관리에 쓰고 싶지만 정리가 어려운 학생 | AI 답변을 실제 일정이나 계획으로 옮기는 과정이 번거롭다. | AI와 대화한 결과가 task, calendar, study plan으로 남는다. |
+| RawState | 원본 RawMaterial과 provenance 보존 | 앱이 저장하고 사용자가 소유 |
+| DraftState | AgentModeling의 초기 해석 | Agent가 제안하고 앱이 검증 |
+| ReviewState | 확인·정정·거절이 필요한 후보 | 사용자와 Agent가 함께 다룸 |
+| TrustedState | UserConfirmation을 거친 신뢰 상태 | 사용자가 결정권을 가짐 |
+| ArtifactState | MarkdownProjection 등 생성 산출물 기록 | 앱이 생성하고 사용자가 확인 |
 
-## 사용자 경험
+TrustedState의 SSOT는 Agent가 아니라 UserConfirmation이다. Agent는 TrustedState를 입력으로 받아 작업하고, 변경은 StatePatch로 제안한다.
 
-### MVP 앱 시작
+## StatePatch
 
-```bash
-npx semesterops
-```
+StatePatch는 사용자가 이해 가능한 변화 묶음이다. 선택 피로를 줄이기 위해 Agent는 RecommendedChoice를 제공하고, 사용자는 추천안을 승인·수정·거절한다.
 
-시작하면:
-
-- 로컬 companion 서버가 뜬다.
-- 브라우저에서 `http://localhost:<port>` GUI가 열린다.
-- 선택한 위치에 학기 작업환경이 생성되거나 기존 상태를 읽는다.
-- Codex app-server adapter가 사용자의 로컬 Codex 환경을 통해 준비된다.
-
-MVP는 npm 기반 로컬 웹앱으로 배포한다. 중장기적으로는 설치형 데스크톱 앱으로 제공하며, 첫 지원 대상은 macOS로 잡는다. 데스크톱 앱에서도 원칙은 같다. 사용자의 학기 자료와 장기기억은 사용자 컴퓨터에 남고, 앱은 그 위에 GUI와 agent harness를 제공한다.
-
-### 기본 화면
-
-| 화면 | 보여주는 정보 | 사용자가 하는 일 |
+| 필드 | 주 생성자 | 설명 |
 | --- | --- | --- |
-| 학기 대시보드 | 이번 주 수업, 과제, 시험, 위험 일정 | 오늘/이번 주 우선순위를 확인한다. |
-| 시간표 | 수업 시간, 강의실, 보강/휴강 후보 | 수업 시간을 GUI로 편집한다. |
-| 과목별 홈 | 자료, 과제, 시험 범위, 최근 AI 작업 | 과목 자료를 업로드하고 상태를 확인한다. |
-| Task board | 과제, 복습, 마감 준비, 확인 필요 항목 | task 완료/보류/승인을 처리한다. |
-| Calendar view | 수업, 시험, 마감, AI가 제안한 공부 블록 | 일정과 공부 계획을 조정한다. |
-| Agent timeline | AI가 읽은 자료, 생성한 일정/task 후보, 승인 요청 | 에이전트 작업을 추적하고 승인한다. |
+| `id` | App | 추적용 식별자 |
+| `sourceIds` | App | 연결된 RawMaterial |
+| `createdAt` | App | 생성 시각 |
+| `runId` | App | ModelingRun 연결 |
+| `patchType` | App 또는 Agent | 변경 유형 |
+| `summary` | Agent | 사용자가 이해할 한 줄 설명 |
+| `recommendedChoice` | Agent | 추천 기본 선택 |
+| `changes` | Agent draft, App validate | 실제 반영될 구조화 변경 |
+| `evidence` | Agent draft, App attach/validate | RawMaterial 또는 TrustedState 근거 |
+| `alternatives` | Agent | 다른 처리 가능성 |
+| `riskLevel` | App + Agent | low, medium, high |
+| `requiresConfirmation` | App | trusted 반영 전 확인 필요 여부 |
+| `status` | App/User | pending, accepted, edited, rejected |
+
+## Source of Truth 전략
+
+MVP의 source of truth는 SQLite와 원본 RawMaterial이다. Markdown은 사람이 읽는 projection이며 앱의 상태 기준이 아니다.
+
+`sources/`는 사용자가 볼 수 있는 raw store다. 앱은 RawMaterial을 자동으로 이동하거나 삭제하지 않고, `.semesterops/semester.sqlite`에 manifest와 provenance를 기록한다.
+
+| 범주 | 저장 위치 | 역할 |
+| --- | --- | --- |
+| 원본 자료 | `sources/` | 사용자가 넣은 RawMaterial 원본을 보존한다. |
+| 구조화 상태 | `.semesterops/semester.sqlite` | RawState, DraftState, ReviewState, TrustedState, ArtifactState를 저장한다. |
+| Agent context | `.semesterops/agent-context/` | Agent turn에 주입할 snapshot, source manifest, recent patch log를 둔다. |
+| Agent run 기록 | `.semesterops/runs/*` | ModelingRun의 prompt, logs, script output, evidence를 보존한다. |
+| built-in Skills | `.semesterops/skills/`, `.agents/skills/semesterops-*` | Agent workflow 매뉴얼을 제공한다. |
+| local scripts | `.semesterops/scripts/` 또는 package 내부 scripts | PDF, OCR, HWP/HWPX, projection rendering 같은 deterministic 처리를 담당한다. |
+| MarkdownProjection | `semester-overview.md`, `courses/*/overview.md`, `review-queue.md` | 사람이 읽는 artifact다. |
 
 ## Workspace 모델
 
-사용자에게는 "학기 작업환경"으로 보이지만, 내부적으로는 다음과 같은 로컬 파일 구조를 만든다.
-
 ```text
-semester-folder/
+semester-workspace/
+  sources/
+    inbox/
   semester-overview.md
-  notes.md
+  review-queue.md
   courses/
     course-001/
       overview.md
-      syllabus.pdf
-      materials/
-      deadlines/
-      exams/
     course-002/
       overview.md
-      materials/
   .semesterops/
-    semester.json
-    course-index.json
-    tasks.json
-    calendar.ics
-    memory.sqlite
-    events.jsonl
+    semester.sqlite
+    agent-context/
+      semester-snapshot.json
+      source-manifest.json
+      recent-patches.json
     skills/
+    scripts/
     runs/
       run_<id>/
         prompt.md
         events.jsonl
         outputs/
-  .agents/
-    skills/
-      semesterops-*/
 ```
 
-사용자가 직접 이 구조를 만들 필요는 없다. 앱이 새 학기 작업환경을 스캐폴딩하고, 사용자가 웹앱에서 자료를 업로드하면 적절한 위치에 저장한다. 이미 가지고 있는 자료 폴더가 있으면 가져오기 흐름으로 연결하되, 기존 파일을 강제로 재배치하지 않는다. 정리 작업은 사용자 승인 후 수행한다.
+사용자가 직접 이 구조를 만들 필요는 없다. 앱이 Init에서 workspace를 만들고, MaterialIntake에서 RawMaterial을 보존하며, Review 이후 Projection과 TrustedState를 갱신한다.
 
-## Source of Truth 전략
+## MarkdownProjection
 
-SemesterOps는 Markdown만 파싱해서 모든 상태를 관리하지 않는다. 사람이 읽는 파일과 앱이 안정적으로 조작하는 파일을 나눈다.
+MVP의 MarkdownProjection은 세 개만 보장한다.
 
-| 정보 범주 | 저장 위치 | 주 사용자 | 역할 |
-| --- | --- | --- | --- |
-| 사람이 읽는 학기 문서 | `semester-overview.md`, `notes.md`, 과목별 Markdown 문서 | 학생 | 학기 상태를 사람이 읽기 좋은 형태로 보여준다. |
-| 구조화된 학기 상태 | `.semesterops/semester.json` | 앱, 에이전트 | 학기, 과목, 시간표, 기본 설정의 기준 데이터다. |
-| 자료 색인 | `.semesterops/course-index.json` | 앱, 에이전트 | 업로드 자료와 과목/주차/자료 유형 연결을 저장한다. |
-| Task 상태 | `.semesterops/tasks.json` | 앱, 에이전트 | 과제, 복습, 시험 준비, 확인 필요 항목을 관리한다. |
-| 캘린더 연동 | `.semesterops/calendar.ics` | 캘린더 앱, 학생 | 수업, 시험, 마감, 공부 블록을 외부 캘린더로 내보낸다. |
-| 장기기억 | `.semesterops/memory.sqlite` 또는 `memory.md` | 에이전트 | 사용자 선호, 반복 실수, 과목별 운영 규칙을 저장한다. |
-| 작업 이력 | `.semesterops/events.jsonl`, `.semesterops/runs/*` | 앱, 에이전트, 학생 | AI 작업, 승인, 생성된 계획, 변경 이력을 남긴다. |
+| Projection | 목적 |
+| --- | --- |
+| `semester-overview.md` | 학기 전체 요약, 과목 목록, 주요 일정, 확인 필요 항목 |
+| `courses/<course>/overview.md` | 과목별 자료, 공지, 일정, task 후보 요약 |
+| `review-queue.md` | AgentModeling 결과 중 사용자가 확인해야 하는 항목 |
 
-Markdown은 사람이 읽고 변경 내역을 확인할 수 있는 문서다. JSON/SQLite는 앱이 안정적으로 업데이트하는 운영 상태다.
+MarkdownProjection 원칙:
 
-## 배포 전략
+- source of truth가 아니다.
+- Agent가 자유롭게 원본 Markdown state를 작성하지 않는다.
+- 앱이 built-in heading template을 제공한다.
+- heading 내부 표현은 Agent가 table, bullet, Mermaid, HTML 등으로 선택할 수 있다.
+- MVP에서는 custom template를 지원하지 않는다.
 
-MVP는 빠른 제품 확인을 위해 npm 기반 로컬 웹앱으로 시작한다.
+## CoControl UX
 
-```bash
-npx semesterops
-```
+사용자는 GUI만 쓰거나 채팅만 쓰는 것이 아니다. GUI 조작과 ChatSidecar 대화가 같은 live SemesterModel을 조작해야 한다.
 
-| 단계 | 배포 형태 | 사용자 경험 | 목적 |
-| --- | --- | --- | --- |
-| MVP | npm 기반 로컬 웹앱 | 시작 명령 후 브라우저에서 새 학기 작업환경을 만들고 자료를 업로드한다. | 초기 오픈소스 배포와 빠른 반복 개발 |
-| 중장기 | macOS 데스크톱 앱 | 앱을 열어 학기 작업환경을 만들고, 자료를 드래그앤드롭하고, AI 에이전트와 상호작용한다. | 일반 대학생도 터미널 없이 사용할 수 있는 제품 경험 |
-| 이후 | Windows 등 추가 플랫폼 | 동일한 local-first 경험을 다른 OS로 확장한다. | 사용자 기반 확장 |
+| 표면 | 역할 |
+| --- | --- |
+| GUI | source 선택, ModelingRun 시작, Review, UserConfirmation, Projection 확인 |
+| ChatSidecar | 현재 SourceSelection, ModelingRun, ReviewState, Projection 맥락에서 Agent와 대화 |
+| LiveStateSync | GUI 결정은 Agent-visible context로, Agent 작업은 GUI-visible state로 동기화 |
+| UserDecisionRequest | Agent가 처리 중 막힌 질문을 GUI로 요청 |
 
-## Runtime 전략
+필수 UX capability는 확정하지만, 화면 레이아웃은 아직 확정하지 않는다.
+
+| Capability | 상태 |
+| --- | --- |
+| ChatSidecar | MVP 필수 |
+| SourceList | MVP 필수 |
+| SourceSelection | MVP 필수 |
+| ModelingRun start control | MVP 필수 |
+| Review surface | MVP 필수 |
+| MarkdownProjection view | MVP 필수 |
+| 최종 화면 배치 | UIPrototypeSpike에서 결정 |
+
+UIPrototypeSpike에서는 NotebookLM의 source-grounded workflow, Obsidian의 local-first workspace 감각, VS Code의 side panel과 co-control 패턴을 참고하되, 일반 대학생에게 과한 개발자 UI를 그대로 가져오지 않는다.
+
+## Agent Runtime 전략
 
 Codex runtime 격리, 설치, 상태 분리의 세부 정책은 [Codex Runtime Isolation Technical Note](../architecture/codex-runtime-isolation.md)를 따른다.
 
-| 단계 | Runtime | 인증/구독 | SemesterOps 역할 | 비고 |
-| --- | --- | --- | --- | --- |
-| MVP | Codex app-server | 사용자의 로컬 Codex 환경과 ChatGPT/Codex subscription | `codex app-server`를 stdio transport로 실행하고 local companion 서버가 bridge 역할을 한다. | 폴더 기반 workspace, 승인 흐름, 파일 반영, 장기 작업 이력과 잘 맞는다. |
-| Later | Claude Code adapter | 사용자의 Anthropic Claude Code subscription 또는 로컬 Claude Code 환경 | 같은 workspace와 UI 위에서 Claude Code runtime을 선택 가능하게 한다. | Codex 전용 제품으로 잠기지 않기 위한 확장 경로다. |
-| Future | Open-source local runtime | Ollama, LM Studio, vLLM 등 사용자 환경 | experimental runtime으로 연결한다. | 에이전트 작업 품질과 로컬 도구 연동 품질 차이를 명확히 표시한다. |
-
-브라우저 UI는 runtime에 직접 연결하지 않는다. app-server 이벤트와 각 runtime의 이벤트는 SemesterOps의 제품 이벤트로 정규화한다.
-
-## Runtime Adapter 초안
-
-```ts
-interface AgentRuntime {
-  initialize(workspace: SemesterWorkspace): Promise<void>
-  startThread(options: StartThreadOptions): Promise<ThreadRef>
-  startTurn(threadId: string, input: AgentInput): AsyncIterable<AgentEvent>
-  steerTurn(threadId: string, input: AgentInput): Promise<void>
-  interruptTurn(threadId: string): Promise<void>
-}
-```
-
-SemesterOps 내부 제품 이벤트:
-
-| 이벤트 | 의미 |
+| 레이어 | MVP 방침 |
 | --- | --- |
-| `agent.started` | 에이전트 작업이 시작됐다. |
-| `agent.message.delta` | 에이전트 응답이 스트리밍되고 있다. |
-| `file.changed` | 로컬 학기 작업환경의 파일 변경이 발생했다. |
-| `approval.requested` | 사용자 승인 필요한 행동이 감지됐다. |
-| `material.uploaded` | 사용자가 과목 자료를 업로드했다. |
-| `schedule.updated` | 시간표나 일정 후보가 갱신됐다. |
-| `task.extracted` | 자료나 대화에서 task 후보가 추출됐다. |
-| `calendar.updated` | 일정 또는 캘린더 파일이 갱신됐다. |
-| `plan.created` | study packet, 준비물 체크리스트, 주간 브리핑 같은 학기 운영 문서가 생성됐다. |
-| `agent.completed` | 에이전트 작업이 완료됐다. |
-| `agent.failed` | 에이전트 작업이 실패했다. |
+| AgentRuntimeAdapter | Codex app-server를 app-owned runtime으로 실행하고 protocol/transport를 감싼다. |
+| Agent workflow | built-in Skills가 처리 전략과 산출물 형식을 안내한다. |
+| RawMaterial 접근 | Codex의 workspace file access와 source manifest를 사용한다. |
+| Deterministic processing | PDF text extraction, OCR, HWP/HWPX parsing, projection rendering은 local script로 제공한다. |
+| Agent context | turn 시작 또는 재개 시 snapshot files를 주입한다. |
+| MCP | MVP startpoint는 `app.request_user_decision`만 둔다. |
+| GUI sync | server events, DB subscription, hooks로 처리한다. |
+
+MCP는 모든 앱 기능의 기본 추상화가 아니다. 파일 계약, Skills, scripts, hooks, server events로 해결하기 어려운 live app-mediated interaction에만 사용한다.
 
 ## Built-in Skills 전략
 
-SemesterOps는 기본 workflow를 built-in Skills로 제공한다. 이 Skills는 "에이전트가 학기 workspace에서 어떻게 행동해야 하는지"를 알려주는 매뉴얼이다. 앱 서버가 모든 절차를 코드로 강제하지 않고, Codex가 상황에 맞게 Skill을 읽고 workspace를 탐색하도록 한다.
+SemesterOps의 기능 확장은 built-in Skills와 local scripts를 늘리는 방식으로 스케일한다. 앱은 모든 케이스를 하드코딩하지 않고, Agent가 runtime에서 적절한 처리 전략을 선택할 수 있게 한다.
 
-역할 분리는 다음과 같다.
-
-| 구성 요소 | 책임 |
-| --- | --- |
-| Built-in Skills | 학기 운영 workflow, 읽을 파일, 산출물 형식, 승인 지점을 설명한다. |
-| Local companion | 파일 읽기/쓰기, 업로드 저장, 구조화 상태 갱신, Codex app-server bridge, 변경 미리보기/승인 UX를 제공한다. |
-| Codex runtime | Skill을 읽고 자료를 탐색하며 일정/task 후보, 학습 계획, 변경 제안을 생성한다. |
-| GUI | 사용자가 결과, 변경 미리보기, 승인 요청, task/calendar 변화를 이해하고 조작하는 화면이다. |
-
-### Skill 배포 방식
-
-npm 패키지는 SemesterOps 기본 Skill들을 함께 포함한다.
-
-초기 시작 시:
-
-| 단계 | 동작 | 목적 |
+| Skill 후보 | 트리거 | 주요 산출물 |
 | --- | --- | --- |
-| 1 | 패키지 내부의 built-in Skill들을 `.semesterops/skills/`에 버전과 함께 기록한다. | 앱이 제공하는 기본 매뉴얼을 로컬에 남긴다. |
-| 2 | Codex adapter는 Codex가 발견할 수 있도록 `.agents/skills/semesterops-*`에 Skill projection을 만든다. | Codex가 학기 운영 매뉴얼을 읽을 수 있게 한다. |
-| 3 | projection은 package-managed 영역임을 명시하고, 사용자 작성 Skill을 덮어쓰지 않는다. | 앱 기본 Skill과 사용자 커스텀 Skill을 분리한다. |
-| 4 | 사용자나 과목별 커스텀 Skill은 별도 이름으로 추가할 수 있다. | 고급 사용자와 과목별 예외를 수용한다. |
+| `semesterops-init` | 새 학기 workspace 생성 | Course 기준선, 초기 SQLite 상태 |
+| `material-intake` | RawMaterial이 SourceList에 들어옴 | source manifest 확인, 처리 전 점검 |
+| `agent-modeling` | SourceSelection으로 ModelingRun 시작 | DraftState, ReviewState, StatePatch |
+| `user-correction` | 사용자가 대화나 GUI로 정정 | 수정된 DraftState 또는 StatePatch |
+| `projection-rendering` | TrustedState 또는 ReviewState 갱신 | MarkdownProjection |
+| `workspace-query` | 사용자가 정리된 상태에 질문 | 근거 기반 답변 또는 추가 StatePatch |
 
-이 방식은 built-in manual을 로컬 workspace에 남기므로, 사용자가 원하면 Skill 내용과 변경 내역을 확인할 수 있다.
-
-### MVP built-in Skills 후보
-
-| Skill | 트리거 | 주요 산출물 | 승인 지점 |
-| --- | --- | --- | --- |
-| `semesterops-onboarding` | 새 학기 작업환경 생성 또는 기존 자료 가져오기 | `semester.json`, `course-index.json`, `tasks.json` 초안 | 과목명, 시간표, 주요 일정 확정 |
-| `course-material-indexer` | PDF/PPTX/Markdown/이미지 파일 업로드 | 자료 분류, 주차 후보, 과제/시험 범위 후보 | 자료 분류와 연결 task 반영 |
-| `schedule-reconciler` | 일정 후보 추출 또는 일정 충돌 감지 | 시간표/시험/마감/출석 충돌 리포트 | 충돌 해결안 반영 |
-| `weekly-risk-brief` | 주간 브리핑 요청 | 이번 주 위험 일정, 준비물, 우선순위 | task 우선순위와 일정 반영 |
-| `study-packet-builder` | 특정 시험/과목의 시험 대비 요청 | `study-plan.md`, `review-checklist.md`, 부족 자료 목록 | 학습 계획과 공부 블록 반영 |
-| `memory-curator` | 반복 선호/실수/규칙 감지 | 장기기억 후보 | memory 저장 |
-| `workspace-maintainer` | 자료 정리 요청 또는 중복/혼란 감지 | 정리 계획, 파일 이동/이름 변경 후보 | 파일 이동, 이름 변경, 중복 제거 |
-
-### Skill 품질 원칙
-
-| 원칙 | 설명 |
+| Script 후보 | 역할 |
 | --- | --- |
-| 단일 workflow 집중 | Skill은 한 가지 학업 운영 workflow에 집중한다. |
-| 입력/산출물 명시 | 어떤 파일을 먼저 읽을지, 어떤 산출물을 만들지 명시한다. |
-| 승인 지점 명시 | 파일 변경, 일정 반영, 메모리 저장 등 사용자 확인이 필요한 행동을 구분한다. |
-| helper script는 상태 정리용 | deterministic하게 처리할 수 있는 파싱, 변환, 스키마 확인을 담당한다. |
-| evidence 보존 | Skill 결과는 `.semesterops/runs/`에 근거와 함께 남긴다. |
-
-## 핵심 사용자 플로우
-
-| 플로우 | 사용자 입력 | 앱/에이전트 행동 | 로컬 상태 변화 | 승인 지점 |
-| --- | --- | --- | --- | --- |
-| 새 학기 작업환경 만들기 | "새 학기 만들기", 시간표, 강의계획서, 공지, 기존 자료 | 과목 후보, 일정 후보, 과제 후보를 추출한다. | `.semesterops/semester.json`, `course-index.json`, `tasks.json` 초안 생성 | 과목명, 학점, 시간표, 주요 일정 확정 |
-| 시간표 GUI 편집 | 웹앱에서 수업 시간 수정 | 시간표 변경을 구조화 상태와 캘린더에 반영한다. | `semester.json`, `calendar.ics`, `events.jsonl` 갱신 | 요약 문서 갱신 여부 |
-| 강의자료 업로드 | 과목 홈에 PDF/PPTX/이미지/문서 파일 업로드 | 파일을 저장하고 과목, 주차, 자료 종류, task 후보를 추출한다. | 과목 폴더, `course-index.json`, 필요 시 `tasks.json` 갱신 | 자료 분류와 task 반영 |
-| 이번 주 위험 일정 브리핑 | "이번 주 뭐가 위험해?" 요청 | 시험, 과제, 출석 필요일, 준비물, 자료 누락을 정리한다. | 주간 계획, task 우선순위 후보 생성 | task/calendar 반영 |
-| 시험 대비 study packet 생성 | 과목 또는 시험 선택 | 시험 범위, 강의자료, 요약, 예상문제, 학습 앱 상태를 확인한다. | `study-plan.md`, `study-tasks.md`, `.semesterops/runs/*` 생성 | 공부 블록과 계획 반영 |
+| PDF text extraction | PDF 텍스트 추출 |
+| OCR | 이미지와 스캔본 텍스트 추출 |
+| HWP/HWPX parsing | HWP/HWPX 문서 구조와 텍스트 추출 |
+| projection renderer | SQLite state를 built-in heading template로 렌더링 |
+| schema validator | Agent output과 StatePatch schema 검증 |
 
 ## MVP 범위
 
 | 범위 | 항목 | 설명 |
 | --- | --- | --- |
-| 포함 | MVP 한정 `npx semesterops`로 로컬 웹앱 시작 | 초기 오픈소스 확인용 시작 방식 |
-| 포함 | 새 학기 작업환경 생성 | 사용자가 직접 폴더 구조를 만들지 않아도 시작 가능 |
-| 포함 | 기존 자료 폴더 가져오기 | 이미 가진 자료를 새 작업환경과 연결 |
-| 포함 | 과목/시간표/기본 task 구조화 | 학기 운영의 기본 상태 생성 |
-| 포함 | GUI 기반 시간표 편집과 로컬 파일 반영 | 웹앱 조작이 실제 작업환경에 반영됨 |
-| 포함 | 과목별 파일 업로드와 로컬 저장 | 자료 업로드를 과목 폴더와 색인에 반영 |
-| 포함 | `.semesterops/` 상태 파일 생성 | 구조화 상태, 캘린더, 작업 이력 저장 |
-| 포함 | built-in SemesterOps Skills 설치 또는 projection | 에이전트가 읽을 학업 운영 매뉴얼 제공 |
+| 포함 | `npx semesterops` 기반 로컬 웹앱 시작 | 초기 오픈소스 MVP 배포 방식 |
+| 포함 | Init | 확정 과목과 workspace 생성 |
+| 포함 | MaterialIntake | RawMaterial 원본 보존과 SourceList 표시 |
+| 포함 | SourceSelection | 사용자가 처리할 source를 명시적으로 선택 |
+| 포함 | ModelingRun | 선택한 source에 대한 AgentLedProcessing 실행 |
+| 포함 | DraftState/ReviewState/TrustedState | 상태 계층 분리 |
+| 포함 | StatePatch + RecommendedChoice | 사용자 확인 단위의 추천 변경 묶음 |
+| 포함 | UserCorrection/UserConfirmation | 사용자가 정정하고 trusted 여부를 결정 |
+| 포함 | MarkdownProjection 3종 | `semester-overview.md`, `courses/*/overview.md`, `review-queue.md` |
+| 포함 | ChatSidecar | GUI와 같은 상태를 다루는 대화 표면 |
+| 포함 | `app.request_user_decision` MCP startpoint | Agent가 live 사용자 판단을 요청 |
+| 포함 | built-in Skills와 local scripts | AgentLedProcessing의 가이드와 deterministic 처리 |
 | 포함 | Codex app-server adapter | MVP agent runtime |
-| 포함 | agent event timeline | AI 작업 흐름과 승인 요청 표시 |
-| 포함 | AI 기반 일정/task 추출 초안 | 사용자가 승인하기 전 후보로 제시 |
-| 포함 | 사용자 승인 후 task/calendar/note 반영 | AI 제안이 실제 학기 상태로 남음 |
-| 포함 | 주간 위험 브리핑 | 이번 주 우선순위와 누락 위험 정리 |
-| 포함 | 한 과목에 대한 study packet 생성 | MVP wow moment 후보 |
-| 제외 | 클라우드 계정/동기화 | local-first MVP 범위 밖 |
-| 제외 | 멀티 사용자 협업 | 개인 학기 관리에 집중 |
-| 제외 | LMS 로그인 자동화 | 보안/정책 리스크 때문에 제외 |
-| 제외 | 외부 캘린더 자동 업로드 | MVP는 `calendar.ics` 생성까지만 |
-| 제외 | 코딩/실습 과제 해결 또는 실행 검수 | 한 학기 일정관리 MVP 이후 확장 후보 |
 | 제외 | 과제 정답 대행 | 학업 윤리상 제외 |
+| 제외 | 코딩/실습 과제 해결 | MVP 이후 확장 후보 |
+| 제외 | LMS 로그인 자동화 | 보안/정책 리스크 때문에 제외 |
+| 제외 | 클라우드 계정/동기화 | local-first MVP 범위 밖 |
 | 제외 | 자동 제출 | 사용자 최종 확인을 유지 |
-| 제외 | 모든 대학/학과 포맷의 완전 자동 인식 | 초기에는 가져오기/수정 가능한 초안 제공 |
-
-## MVP 이후 확장 후보
-
-| 후보 | 현재 범위에서 제외하는 이유 | 다시 검토할 조건 |
-| --- | --- | --- |
-| 코딩/실습 과제 실행 검수 | 특정 전공과 과목에 강하게 의존하며, MVP의 한 학기 일정관리 메시지를 흐릴 수 있다. | 일정관리 MVP가 안정되고, 과제 유형별 안전 정책과 승인 UX가 정리된 뒤 검토한다. |
-| 과제 제출 패키지 점검 | 파일명, 누락 파일, 제출 조건 확인은 유용하지만 자동 제출/정답 생성으로 오해될 수 있다. | 학업 윤리 정책과 학교별 제출 규칙을 명확히 분리할 수 있을 때 검토한다. |
-| 전공별 특화 Skill | 과목별 차이가 커서 초기 제품 복잡도가 높아진다. | 일반 학기 운영 Skill이 충분히 쓰인 뒤 선택형 확장으로 제공한다. |
+| 제외 | 외부 캘린더 자동 업로드 | 필요 시 `calendar.ics` projection 이후 검토 |
+| 제외 | 주간 위험 브리핑/study packet 보장 | WorkspaceQuery 위의 후속 use case 후보 |
+| 제외 | custom Markdown template | MVP 이후 확장 |
 
 ## 보안과 프라이버시
 
-- 기본 상태와 장기기억은 사용자 디바이스의 학기 작업환경에 저장한다.
-- 브라우저 UI는 localhost에서만 접근한다.
-- 브라우저가 직접 파일시스템이나 Codex app-server에 접근하지 않고, local companion 서버가 중재한다.
-- 외부로 나가는 행동, 파일 대량 수정, 삭제, 외부 공유나 연동은 승인 지점으로 분리한다.
-- AI가 변경한 파일은 변경 미리보기로 확인 가능해야 한다.
+- RawMaterial과 SemesterModel은 사용자 컴퓨터의 workspace에 저장한다.
+- 브라우저 UI는 localhost에서 접근한다.
+- 브라우저가 직접 파일시스템이나 Codex app-server에 접근하지 않고 local companion 서버가 중재한다.
+- Agent가 처리한 결과는 DraftState, ReviewState, StatePatch, run artifact로 남긴다.
+- TrustedState는 UserConfirmation을 통해서만 확정된다.
+- RawMaterial 원본은 자동 수정하거나 삭제하지 않는다.
+- 파일 대량 변경, 삭제, 외부 공유, 외부 연동은 별도 confirmation이 필요하다.
 
 ## Academic Integrity
 
@@ -317,12 +283,12 @@ SemesterOps는 학습과 운영을 보조하는 도구다.
 
 | 구분 | 행동 | 정책 |
 | --- | --- | --- |
-| 허용 | 강의자료 정리 | 자료를 과목/주차/task와 연결한다. |
-| 허용 | 일정과 마감 추출 | 사용자가 확인한 뒤 calendar/task에 반영한다. |
-| 허용 | 시험 범위 기반 학습 계획 | study packet과 공부 블록을 만든다. |
-| 허용 | 과제 마감 준비 정리 | 준비물, 마감일, 참고 자료를 task로 정리한다. |
-| 허용 | 자료 누락 확인 | 시험이나 과제 준비에 필요한 자료가 빠졌는지 알려준다. |
-| MVP 이후 검토 | 코딩/실습 과제 실행 검수 | 일정관리 MVP 이후 별도 안전 정책과 함께 검토한다. |
+| 허용 | 강의자료 정리 | 자료를 과목, 공지, 일정, task 후보와 연결한다. |
+| 허용 | 일정과 마감 후보 추출 | 사용자가 확인한 뒤 TrustedState에 반영한다. |
+| 허용 | 자료 근거 기반 질문 | RawMaterial과 TrustedState를 근거로 답한다. |
+| 허용 | 과제 마감 준비 정리 | 준비물, 마감일, 참고 자료를 task 후보로 정리한다. |
+| MVP 이후 검토 | 시험 대비 study packet | core modeling 이후 WorkspaceQuery 확장으로 검토한다. |
+| MVP 이후 검토 | 코딩/실습 과제 실행 검수 | 별도 안전 정책과 함께 검토한다. |
 | 제한 | 과제 정답 생성 | 제품 목적 밖으로 둔다. |
 | 제한 | 시험 답안 대행 | 학업 윤리상 금지한다. |
 | 제한 | 자동 제출 | 사용자가 최종 제출을 직접 수행한다. |
@@ -334,33 +300,36 @@ SemesterOps는 학습과 운영을 보조하는 도구다.
 
 | 지표 | 의미 |
 | --- | --- |
-| 첫 시작 후 학기 작업환경 생성 성공률 | 사용자가 막히지 않고 첫 workspace를 만들 수 있는가 |
-| 과목/시간표 초안 정확도 | 사용자가 수동 수정 없이 쓸 수 있는 초기 구조를 만들었는가 |
-| 업로드 자료 연결 비율 | 자료가 올바른 과목/주차/task로 연결되는가 |
-| 주간 브리핑 task 채택률 | 브리핑이 실제 행동으로 이어지는가 |
-| AI 제안의 파일 반영률 | AI 상호작용이 실제 학기 상태 변화로 이어지는가 |
-| workspace 재방문 빈도 | 한 학기 동안 계속 쓰이는가 |
+| Init 완료율 | 사용자가 학기 workspace와 Course 기준선을 만들 수 있는가 |
+| MaterialIntake 성공률 | 다양한 RawMaterial을 원본 손상 없이 넣을 수 있는가 |
+| SourceSelection 이후 ModelingRun 완료율 | 사용자가 명시적으로 선택한 source를 처리할 수 있는가 |
+| StatePatch 채택률 | Agent 추천이 실제 UserConfirmation으로 이어지는가 |
+| UserCorrection 횟수와 난이도 | 사용자가 정정을 쉽게 할 수 있는가 |
+| ReviewState 해소율 | 확인 필요 항목이 trusted 또는 rejected 상태로 이동하는가 |
+| MarkdownProjection 유용성 | 사용자가 projection을 읽고 학기 상태를 이해하는가 |
+| 재방문 빈도 | 한 학기 동안 계속 쓰이는가 |
 
 ## 리스크
 
 | 리스크 | 왜 문제인가 | 대응 |
 | --- | --- | --- |
-| 단순 캘린더 앱처럼 보일 위험 | 일정 UI만 보이면 Codex runtime의 이유가 약해진다. | workspace operation, 자료 상태, AI 작업 이력, 파일 반영을 전면에 둔다. |
-| Codex GUI wrapper로 보일 위험 | Codex를 단순히 웹으로 보여주는 앱처럼 보일 수 있다. | app-server event를 학기 도메인 이벤트와 파일 상태 변화로 정규화한다. |
-| Markdown 파싱 취약성 | 사람이 읽는 문서를 앱 상태로만 쓰면 안정성이 떨어진다. | 구조화 상태는 JSON/SQLite에 저장하고, Markdown은 사람이 읽는 projection으로 둔다. |
-| 런타임 추상화 과설계 | 여러 runtime을 처음부터 추상화하면 MVP가 느려진다. | MVP는 Codex adapter만 깊게 구현하고, adapter interface는 최소화한다. |
-| Skill drift | built-in Skill과 사용자 커스텀 Skill이 섞이면 예측 가능성이 낮아진다. | built-in Skills에 버전과 changelog를 두고, package-managed projection과 사용자 커스텀 Skill을 분리한다. |
-| 학업 윤리 리스크 | 정답 대행 도구로 오해받을 수 있다. | 일정 운영, 자료 정리, 마감 관리, 시험 준비 계획에 집중한다. |
-| 로컬 앱 설치 장벽 | npm 기반 시작은 일반 학생에게 부담이 될 수 있다. | MVP는 npm one-command로 시작하되, 중장기적으로 macOS 데스크톱 앱에서 터미널 없이 시작하게 한다. |
+| 단순 파일 분류기로 보일 위험 | Agent runtime의 이유가 약해진다. | AgentLedProcessing, UserCorrection, ReviewState, CoControl을 전면에 둔다. |
+| NotebookLM과 겹쳐 보일 위험 | source-grounded chat만으로 보일 수 있다. | SemesterModel, TrustedState, StatePatch, Projection으로 앱 상태화를 강조한다. |
+| MCP 과사용 | context bloat와 tool selection noise가 생긴다. | MVP MCP는 `app.request_user_decision` startpoint로 제한한다. |
+| Agent 자유도 과잉 | 결과가 흔들리거나 사용자가 불신할 수 있다. | ProcessingGuardrail, schema validator, StatePatch evidence를 둔다. |
+| Markdown state 오염 | 자유 Markdown을 source of truth로 쓰면 깨지기 쉽다. | SQLite를 source of truth로 두고 MarkdownProjection은 artifact로 둔다. |
+| RawMaterial 자동 정리 위험 | 잘못된 이동/삭제가 신뢰를 깬다. | 원본은 보존하고 정리는 Review 이후 artifact/projection으로만 한다. |
+| UI 확정 과속 | early layout decision이 제품을 좁힐 수 있다. | UIPrototypeSpike에서 NotebookLM, Obsidian, VS Code를 비교한다. |
+| 로컬 앱 설치 장벽 | npm 기반 시작은 일반 학생에게 부담일 수 있다. | MVP는 one-command, 중장기적으로 macOS desktop app을 검토한다. |
 
 ## 열린 질문
 
 | 질문 | 결정이 필요한 이유 |
 | --- | --- |
-| `.semesterops/`의 최소 상태 파일은 어디까지 필요한가? | 초기 구현 범위와 마이그레이션 부담을 결정한다. |
-| 기존 자료 폴더를 어느 정도까지 자동 재구성해야 하는가? | 사용자의 기존 파일을 존중하면서도 앱 경험을 깔끔하게 만들어야 한다. |
-| Markdown projection을 자동 갱신할 때 사용자 변경 미리보기를 항상 요구할 것인가? | 자동화 편의성과 사용자의 파일 통제감 사이의 균형이다. |
-| Codex app-server approval 이벤트를 SemesterOps 승인 UX와 어떻게 맞출 것인가? | 에이전트 승인과 앱 승인 경험이 중복되거나 충돌할 수 있다. |
-| 주간 위험 브리핑과 시험 대비 study packet 사이에서 MVP의 첫 wow moment를 어디에 둘 것인가? | 데모와 초기 사용자 가치를 어디에 집중할지 결정한다. |
-| 오픈소스 프로젝트명은 `SemesterOps`로 확정할 것인가? | 문서, 패키지명, 브랜딩의 기준이 된다. |
-| built-in Skills를 `.agents/skills/`에 projection할지, Codex 작업용 임시 workspace에만 주입할지 결정해야 하는가? | 사용자가 볼 수 있는 로컬 매뉴얼과 runtime 격리 방식의 선택이다. |
+| `.semesterops/semester.sqlite`의 실제 table schema는 어떻게 둘 것인가? | 정보 모델을 구현 가능한 DB schema로 내려야 한다. |
+| `sources/`와 `.semesterops/` 사이의 raw file 위치를 최종적으로 어떻게 나눌 것인가? | 사용자가 원본을 직접 볼 수 있는 정도와 앱 관리 안정성의 균형이다. |
+| `app.request_user_decision`의 UI와 protocol은 어떻게 설계할 것인가? | Agent 중간 질문이 사용자 피로가 아니라 마법 같은 UX로 느껴져야 한다. |
+| StatePatch의 RecommendedChoice와 alternatives 표현은 어떤 UX가 좋은가? | 선택 피로를 줄이면서 사용자 통제감을 보장해야 한다. |
+| ChatSidecar와 main workspace layout은 어떻게 배치할 것인가? | NotebookLM, Obsidian, VS Code 참고를 거쳐 UIPrototypeSpike에서 결정한다. |
+| built-in Skills를 workspace에 projection할지 runtime context에 주입할지 어디까지 노출할 것인가? | 사용자가 로컬 매뉴얼을 볼 수 있는 정도와 runtime 격리 방식의 선택이다. |
+| WorkspaceQuery의 첫 대표 use case는 무엇으로 둘 것인가? | core modeling 이후 데모와 사용자 가치를 보여줄 entry point가 필요하다. |
