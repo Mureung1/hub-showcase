@@ -1,5 +1,6 @@
 // TODO: KAMIS/네이버·쿠팡 연동 전까지 사용하는 임시 목업 데이터. checklist.md 1주차 항목 완료 후 실데이터로 교체.
 // categoryId: src/data/categories.js 참고.
+// subGroupId: 카테고리에 subgroups가 있을 때만 사용 (예: 라면 카테고리의 'cup'/'bag').
 // image: 위키미디어 커먼즈(무료 라이선스 이미지)에서 가져온 참고용 사진. 없으면 emoji로 대체 표시됨 (신규 레시피는 사진 찾는 작업 후속 진행 예정).
 // ingredients: 재료 상세 화면에서 쓰는 대략적인 재료 목록 (실제 시세 연동 전까지는 참고용).
 export const mockRecipes = [
@@ -405,6 +406,127 @@ export const mockRecipes = [
       { name: '물', amount: '1컵' },
       { name: '소금', amount: '약간' },
       { name: '대파', amount: '약간' },
+    ],
+  },
+
+  {
+    id: 'yukgaejang-sabalmyeon',
+    name: '육개장사발면',
+    emoji: '🍜',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/1/1f/Cup_Ramyeon_inside.jpg',
+    categoryId: 'ramyeon',
+    subGroupId: 'cup',
+    servings: 1,
+    totalCost: 1500,
+    ingredients: [{ name: '육개장사발면', amount: '1개' }],
+  },
+  {
+    id: 'shin-ramyeon',
+    name: '신라면',
+    emoji: '🍜',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/3/30/Nongshim_Shin_Ramyun_20210529_001.jpg',
+    categoryId: 'ramyeon',
+    subGroupId: 'bag',
+    servings: 1,
+    totalCost: 1200,
+    ingredients: [
+      { name: '신라면', amount: '1개' },
+      { name: '계란', amount: '1개' },
+      { name: '대파', amount: '약간' },
+    ],
+  },
+  {
+    id: 'jjapaguri',
+    name: '짜파구리',
+    emoji: '🍜',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Chapaguri_1.jpg',
+    categoryId: 'ramyeon',
+    subGroupId: 'bag',
+    servings: 1,
+    totalCost: 2400,
+    ingredients: [
+      { name: '짜파게티', amount: '1개' },
+      { name: '너구리', amount: '1개' },
+    ],
+  },
+
+  {
+    id: 'instant-rice',
+    name: '즉석밥',
+    emoji: '🍙',
+    categoryId: 'rice',
+    servings: 1,
+    totalCost: 1300,
+    ingredients: [{ name: '즉석밥', amount: '1개' }],
+  },
+  {
+    id: 'plain-rice',
+    name: '흰쌀밥',
+    emoji: '🍚',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/7/77/Steamed_rice_in_bowl_01.jpg',
+    categoryId: 'rice',
+    servings: 1,
+    totalCost: 500,
+    ingredients: [{ name: '쌀', amount: '1공기 분량' }],
+  },
+
+  {
+    id: 'ham-cheese-toast',
+    name: '햄치즈토스트',
+    emoji: '🍞',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/7/72/Ham_%26_cheese_toasted_sandwich_-_Potatoast_2026-05-02.jpg',
+    categoryId: 'toast',
+    servings: 1,
+    totalCost: 2500,
+    ingredients: [
+      { name: '식빵', amount: '2장' },
+      { name: '햄', amount: '2장' },
+      { name: '치즈', amount: '1장' },
+      { name: '계란', amount: '1개' },
+    ],
+  },
+  {
+    id: 'gyeran-toast',
+    name: '계란토스트',
+    emoji: '🍞',
+    categoryId: 'toast',
+    servings: 1,
+    totalCost: 2000,
+    ingredients: [
+      { name: '식빵', amount: '2장' },
+      { name: '계란', amount: '2개' },
+      { name: '설탕', amount: '약간' },
+    ],
+  },
+
+  {
+    id: 'tuna-sandwich',
+    name: '참치샌드위치',
+    emoji: '🥪',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/9/9e/Tuna_sandwich.jpg',
+    categoryId: 'sandwich',
+    servings: 1,
+    totalCost: 3000,
+    ingredients: [
+      { name: '식빵', amount: '2장' },
+      { name: '참치캔', amount: '1개' },
+      { name: '마요네즈', amount: '2큰술' },
+      { name: '양상추', amount: '약간' },
+    ],
+  },
+  {
+    id: 'vegetable-sandwich',
+    name: '야채샌드위치',
+    emoji: '🥪',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/8/8d/Egg_Sandwich_with_Vegetables%2C_Mar_2026.jpg',
+    categoryId: 'sandwich',
+    servings: 1,
+    totalCost: 2500,
+    ingredients: [
+      { name: '식빵', amount: '2장' },
+      { name: '계란', amount: '2개' },
+      { name: '양상추', amount: '약간' },
+      { name: '토마토', amount: '1/2개' },
     ],
   },
 ]
