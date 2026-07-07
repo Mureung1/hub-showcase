@@ -1,0 +1,87 @@
+:root {
+  --apricot: #ffd8be;
+  --apricot-deep: #ffb694;
+  --coral: #ff9a76;
+  --coral-deep: #ff8163;
+  --pink: #ffd6e0;
+  --pink-deep: #ffb3c6;
+  --cream: #fff8f2;
+  --text: #6b4a3f;
+  --text-soft: #8a6a5d;
+  --text-h: #5a3a2f;
+  --white: #ffffff;
+  --shadow: 0 10px 24px rgba(255, 129, 99, 0.18);
+  --shadow-soft: 0 4px 12px rgba(255, 129, 99, 0.12);
+
+  --heading: 'Jua', 'Gaegu', sans-serif;
+  --body: 'Gaegu', 'Jua', sans-serif;
+
+  font: 18px/1.6 var(--body);
+  color: var(--text);
+  background: var(--cream);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--cream);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--heading);
+  color: var(--text-h);
+  margin: 0 0 12px;
+}
+
+p {
+  margin: 0 0 8px;
+}
+
+button {
+  font-family: var(--body);
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--coral-deep);
+  font-family: var(--heading);
+  font-size: 16px;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.back-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.page {
+  min-height: 100vh;
+  width: 100%;
+  padding: 40px 6vw 64px;
+  background: linear-gradient(160deg, var(--apricot) 0%, var(--pink) 100%);
+}
