@@ -16,6 +16,8 @@ export default function NoticeInput({
   onPublicationDateChange,
   onFileUpload,
   onAnalyzeMock,
+  onAnalyzeServerMock,
+  isServerAnalyzing,
   onClear,
 }) {
   function handleFileChange(event) {
@@ -103,6 +105,16 @@ export default function NoticeInput({
       <div className="action-row">
         <button className="primary-button" type="button" onClick={onAnalyzeMock}>
           {copy.analyzeButton}
+        </button>
+        <button
+          className="ghost-button"
+          type="button"
+          onClick={onAnalyzeServerMock}
+          disabled={isServerAnalyzing}
+        >
+          {isServerAnalyzing
+            ? copy.serverAnalyzeLoading
+            : copy.analyzeServerButton}
         </button>
         <button className="ghost-button" type="button" onClick={onClear}>
           {copy.clearButton}

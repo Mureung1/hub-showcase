@@ -20,6 +20,7 @@ import {
   getMockNotice,
 } from './data/mockAnalysisResult.js'
 import { localizedContent } from './data/localizedContent.js'
+import { analyzeNoticeWithServerMock } from './utils/analyzeApi.js'
 import {
   deleteSectionItem,
   toggleCalendarEventSelected,
@@ -45,6 +46,10 @@ const analysisSections = [
   'cautions',
   'calendarEvents',
 ]
+const analysisSources = {
+  clientMock: 'clientMock',
+  serverMock: 'serverMock',
+}
 
 export default function App() {
   const [savedState] = useState(() => loadNoticePilotState() || {})
@@ -75,6 +80,8 @@ export default function App() {
   const [inputWarnings, setInputWarnings] = useState([])
   const [error, setError] = useState(null)
   const [confirmationType, setConfirmationType] = useState(null)
+  const [pendingAnalysisSource, setPendingAnalysisSource] = useState(null)
+  const [isServerAnalyzing, setIsServerAnalyzing] = useState(false)
   const copy = localizedContent[language]
 
   useEffect(() => {
@@ -119,6 +126,44 @@ export default function App() {
     setError((currentError) => (currentError?.type === type ? null : currentError))
   }
 
+  function getInputErrorFromAnalyzeApiError(apiError) {
+    const errorMessages = copy.errors.serverAnalyze
+    const messageByType = {
+      network_error: errorMessages.network,
+      unsupported_mode: errorMessages.unsupportedMode,
+      ai_not_implemented: errorMessages.aiNotImplemented,
+      empty_response: errorMessages.invalidResponse,
+      invalid_response: errorMessages.invalidResponse,
+      server_error: errorMessages.generic,
+    }
+
+    return {
+      type: 'server_analyze_error',
+      title: errorMessages.title,
+      message:
+        apiError.serverMessage ||
+        messageByType[apiError.type] ||
+        errorMessages.generic,
+      location: 'input',
+    }
+  }
+
+  function setFirstEvidenceItem(nextResult, nextLanguage = language) {
+    const collectionName = analysisSections.find(
+      (sectionName) => nextResult[sectionName]?.length,
+    )
+
+    if (!collectionName) {
+      setActiveEvidence(null)
+      return
+    }
+
+    setActiveEvidence({
+      type: localizedContent[nextLanguage].collectionLabels[collectionName],
+      item: nextResult[collectionName][0],
+    })
+  }
+
   function executeMockAnalysis(nextLanguage = language) {
     const mockNotice = getMockNotice(nextLanguage)
     const mockResult = prepareAnalysisResult(
@@ -131,10 +176,34 @@ export default function App() {
     setAnalysisResult(mockResult)
     setInputWarnings([])
     setError(null)
-    setActiveEvidence({
-      type: localizedContent[nextLanguage].collectionLabels.deadlines,
-      item: mockResult.deadlines[0],
-    })
+    setPendingAnalysisSource(null)
+    setFirstEvidenceItem(mockResult, nextLanguage)
+  }
+
+  async function executeServerMockAnalysis(nextLanguage = language) {
+    setIsServerAnalyzing(true)
+    setError(null)
+    setInputWarnings([])
+
+    try {
+      const serverResult = await analyzeNoticeWithServerMock({
+        language: nextLanguage,
+        noticeTitle,
+        extractedText,
+        userSelectedNoticeType,
+        noticePublicationDate,
+        uploadedFileName,
+      })
+      const validatedResult = prepareAnalysisResult(serverResult, nextLanguage)
+
+      setAnalysisResult(validatedResult)
+      setPendingAnalysisSource(null)
+      setFirstEvidenceItem(validatedResult, nextLanguage)
+    } catch (apiError) {
+      setBlockingError(getInputErrorFromAnalyzeApiError(apiError))
+    } finally {
+      setIsServerAnalyzing(false)
+    }
   }
 
   function handleLanguageChange(nextLanguage) {
@@ -164,8 +233,21 @@ export default function App() {
     })
   }
 
-  function requestMockAnalysis({ skipOverwrite = false, skipPrivacy = false } = {}) {
+  function executeAnalysisSource(nextSource) {
+    if (nextSource === analysisSources.serverMock) {
+      executeServerMockAnalysis()
+      return
+    }
+
+    executeMockAnalysis()
+  }
+
+  function requestAnalysis(
+    nextSource,
+    { skipOverwrite = false, skipPrivacy = false } = {},
+  ) {
     if (analysisResult && !skipOverwrite) {
+      setPendingAnalysisSource(nextSource)
       setConfirmationType('overwrite')
       return
     }
@@ -179,33 +261,49 @@ export default function App() {
           message: copy.warnings.privacyPatternsDetected(privacyMatches),
         },
       ])
+      setPendingAnalysisSource(nextSource)
       setConfirmationType('privacy')
       return
     }
 
-    executeMockAnalysis()
+    executeAnalysisSource(nextSource)
+  }
+
+  function requestMockAnalysis(options) {
+    requestAnalysis(analysisSources.clientMock, options)
+  }
+
+  function requestServerMockAnalysis(options) {
+    requestAnalysis(analysisSources.serverMock, options)
   }
 
   function handleAnalyzeMockNotice() {
     requestMockAnalysis()
   }
 
+  function handleAnalyzeServerMockNotice() {
+    requestServerMockAnalysis()
+  }
+
   function handleConfirmAction() {
     const currentConfirmation = confirmationType
+    const currentAnalysisSource =
+      pendingAnalysisSource || analysisSources.clientMock
     setConfirmationType(null)
 
     if (currentConfirmation === 'overwrite') {
-      requestMockAnalysis({ skipOverwrite: true })
+      requestAnalysis(currentAnalysisSource, { skipOverwrite: true })
       return
     }
 
     if (currentConfirmation === 'privacy') {
-      executeMockAnalysis()
+      executeAnalysisSource(currentAnalysisSource)
     }
   }
 
   function handleCancelConfirmation() {
     setConfirmationType(null)
+    setPendingAnalysisSource(null)
   }
 
   function handleAnalysisMetadataChange(updates) {
@@ -380,6 +478,8 @@ export default function App() {
                 }}
                 onFileUpload={handleNoticeFileUpload}
                 onAnalyzeMock={handleAnalyzeMockNotice}
+                onAnalyzeServerMock={handleAnalyzeServerMockNotice}
+                isServerAnalyzing={isServerAnalyzing}
                 onClear={handleClearNotice}
               />
 

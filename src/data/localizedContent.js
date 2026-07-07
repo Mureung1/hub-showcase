@@ -46,6 +46,8 @@ export const localizedContent = {
       textPlaceholder:
         'Paste a university notice, assignment guideline, scholarship announcement, competition notice, or job posting here.',
       analyzeButton: 'Analyze mock notice',
+      analyzeServerButton: 'Analyze via server mock',
+      serverAnalyzeLoading: 'Analyzing via server...',
       clearButton: 'Clear',
     },
     emptyState: {
@@ -127,6 +129,19 @@ export const localizedContent = {
       unsupportedFile: 'Only .txt and .md files are supported for this MVP.',
       fileTooLarge: 'File is too large. Please upload a TXT or MD file under 1MB.',
       fileReadFailed: 'The file could not be read. Please try another TXT or MD file.',
+      serverAnalyze: {
+        title: 'Server mock analysis failed',
+        network:
+          'The local analyze server is unavailable. Start it with npm run dev:server and try again.',
+        generic:
+          'The server mock analysis could not be completed. Please try again.',
+        unsupportedMode:
+          'The analyze server rejected the requested analysis mode.',
+        aiNotImplemented:
+          'Real AI analysis is not enabled in this MVP. Use mock analysis instead.',
+        invalidResponse:
+          'The analyze server returned an invalid or empty response.',
+      },
     },
     warnings: {
       privacyPatternsDetected: (types) =>
@@ -323,6 +338,8 @@ export const localizedContent = {
       textPlaceholder:
         '대학 공지, 과제 지침, 장학금 안내, 공모전 공지, 채용 공고를 여기에 붙여넣으세요.',
       analyzeButton: '샘플 공지 분석',
+      analyzeServerButton: '서버 mock 분석',
+      serverAnalyzeLoading: '서버 mock 분석 중...',
       clearButton: '초기화',
     },
     emptyState: {
@@ -404,6 +421,16 @@ export const localizedContent = {
       unsupportedFile: '이번 MVP에서는 .txt와 .md 파일만 지원합니다.',
       fileTooLarge: '파일이 너무 큽니다. 1MB 이하의 TXT 또는 MD 파일을 업로드하세요.',
       fileReadFailed: '파일을 읽을 수 없습니다. 다른 TXT 또는 MD 파일을 다시 시도하세요.',
+      serverAnalyze: {
+        title: '서버 mock 분석 실패',
+        network:
+          '로컬 분석 서버에 연결할 수 없습니다. npm run dev:server로 서버를 실행한 뒤 다시 시도하세요.',
+        generic: '서버 mock 분석을 완료할 수 없습니다. 다시 시도하세요.',
+        unsupportedMode: '분석 서버가 요청한 분석 모드를 거부했습니다.',
+        aiNotImplemented:
+          '이번 MVP에서는 실제 AI 분석이 활성화되어 있지 않습니다. mock 분석을 사용하세요.',
+        invalidResponse: '분석 서버가 비어 있거나 올바르지 않은 응답을 반환했습니다.',
+      },
     },
     warnings: {
       privacyPatternsDetected: (types) =>
