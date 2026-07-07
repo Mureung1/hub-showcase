@@ -1,5 +1,11 @@
 // type: 'main'(밥과 함께 한 끼가 되는 메인 요리) | 'side'(여러 끼 나눠 먹는 밑반찬) | 'snack'(간단한 간식류)
 // subgroups: 카테고리 안을 한 번 더 나눌 때만 사용 (예: 라면 → 컵라면/봉지라면). 없으면 그냥 가격순 목록으로 표시.
+export const TYPE_LABELS = {
+  main: '메인음식',
+  side: '반찬',
+  snack: '간식',
+}
+
 export const categories = [
   { id: 'bokkeumbap', name: '볶음밥', type: 'main', emoji: '🍳' },
   { id: 'jjigae', name: '찌개', type: 'main', emoji: '🍲' },
