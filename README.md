@@ -1,26 +1,18 @@
-# React + Vite
+# 전공 시각화 학습실
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+각 대학 전공 수업 자료를 시각적으로 보여주는 학습 플랫폼입니다. React + TypeScript + Vite + Tailwind CSS 기반이며, 다크 IDE 스타일 레이아웃(상단 네비게이션 + 사이드바 + 메인 패널)을 사용합니다.
 
-Currently, two official plugins are available:
+## 구현된 모듈
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **컴퓨터공학과 / 정렬**: 배열을 "칸(cell)" 형태로 시각화해 버블 정렬 과정을 애니메이션으로 보여줍니다. 실제 의사코드가 함께 표시되며, 현재 비교/스왑 중인 코드 라인이 하이라이트됩니다.
+- **화학과 / 일반화학 (분자 뷰어)**: SMILES 표기법 또는 분자 이름을 입력하면 2D 골격구조식과 3D 구조를 보여줍니다 (PubChem API 연동).
+- **화학과 / 유기화학 (반응 멘토)**: SN2 치환, 알켄 첨가반응(마르코니코프), Fischer 에스테르화(아스피린 합성), E2 제거반응 4가지 반응의 전자쌍 이동 화살표(curly arrow)를 단계별 애니메이션으로 보여줍니다.
 
-## React Compiler
+무기화학/물리화학, 컴퓨터공학과의 스택/큐/트리는 향후 확장 예정입니다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 실행 방법
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-
-## 프로젝트 주제
-
-**화학식 계산 시각화**
-
-- 화학 반응식이나 화학식을 입력하면 원소별 개수, 분자량 등을 계산하고
-  이를 시각적으로 보여주는 웹 애플리케이션입니다.
-- 예: H2O 입력 시 → 수소 2개, 산소 1개, 분자량 계산 및 구조 시각화
-
-> ⚠️ 주제는 추후 변경될 수 있습니다.
+```bash
+npm install
+npm run dev
+```
