@@ -1,16 +1,35 @@
-# React + Vite
+# AI 기반 졸업 플래너
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AI 기반 졸업 플래너는 복잡한 졸업요건을 가진 대학생이 자신의 졸업 가능 여부를 쉽게 확인하고, 남은 학기 동안의 수강 계획을 세울 수 있도록 돕는 서비스입니다.
 
-Currently, two official plugins are available:
+## 문제 정의
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+저희 과(컴퓨터학부 글로벌SW융합전공)를 졸업하기 위해서는 전공, 교양, 다중전공, 창업교과목, 현장실습, 해외대학 인정학점, 종합설계 등 다양한 졸업요건을 충족해야 합니다. 이 과정이 복잡해 학생들은 현재 이수 현황, 부족 학점, 필수 과목 이수 여부를 한눈에 파악하기 어렵습니다.
 
-## React Compiler
+## 주요 기능
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- 졸업요건 충족 현황 대시보드
+- 과목 수강 바구니
+- 부족 학점 자동 계산
+- AI 기반 수강 계획 추천
+- 미래 학기 수강 계획 시뮬레이션
 
-## Expanding the ESLint configuration
+## 대상 사용자
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- 졸업요건을 점검해야 하는 3, 4학년 학생
+- 복수전공, 부전공, 다중전공을 이수 중인 학생
+- 수강신청 전 졸업 가능 여부를 미리 확인하고 싶은 학생
+
+## MVP 범위
+
+초기 버전에서는 컴퓨터학부 단일 전공 기준으로 사용자의 이수 과목을 입력받아 졸업요건 충족 여부를 계산합니다. 또한 수강 후보 과목을 바구니에 담고, 미래 학기 계획을 시뮬레이션하며, 부족 요건을 기반으로 간단한 AI 추천을 제공합니다.
+
+## 기대 효과
+
+- 졸업 가능 여부를 빠르게 확인
+- 부족한 학점과 필수 과목을 명확히 파악
+- 수강신청 전 안정적인 학업 계획 수립
+- 졸업 직전 요건 미충족 위험 감소
+
+# 기획서 링크
+https://www.figma.com/make/1NPfTNkS2et79zArWZtfEp/Modern-Presentation-Landing-Page?code-node-id=0-9&p=f&t=OhCwTzlQFRKqBMPo-0&fullscreen=1
