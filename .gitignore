@@ -1,0 +1,29 @@
+# 1. 에이전트 및 환경 변수 관련 (보안)
+.claude/settings.local.json
+.env
+.env.*
+*.log
+
+# 2. 시스템 및 IDE 캐시 (개인 설정)
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# 3. 백엔드 (Gradle & Java Build)
+backend/.gradle/
+backend/build/
+backend/out/
+!backend/gradle/wrapper/gradle-wrapper.jar
+
+# 4. 프론트엔드 (Node & Vite Build)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# 5. OS 임시 파일
+*.tmp
+*.bak
