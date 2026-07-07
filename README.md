@@ -1,32 +1,46 @@
-# React + TypeScript + Vite
+# 소상공인 폐업 도우미 서비스
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+폐업을 준비하는 소상공인에게 흩어진 정보를 모아, **내 상황에 맞는 절차만 추려서 보여주고 진행 상태를 추적**하게 해주는 무료 셀프가이드 서비스입니다.
 
-Currently, two official plugins are available:
+## 문제 정의
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+폐업 시 필요한 정보(폐업신고 절차, 세무 신고, 정부 지원금)는 홈택스, 정부24, bizinfo.go.kr, 소상공인시장진흥공단 등 여러 공식 사이트에 흩어져 있습니다. 게다가 업종·직원 유무·임대 여부에 따라 실제로 필요한 절차가 달라, 사용자가 스스로 뭐가 해당되는지 판단하기 어렵고 세무 신고 같은 마감기한도 놓치기 쉽습니다.
 
-## React Compiler
+이 서비스는 상황을 한 번 입력하면 그에 맞는 절차·일정·지원금만 추려서 보여주고, 마감이 임박한 순서대로 무엇을 먼저 해야 하는지 안내하며, 지금까지 얼마나 처리했는지 한 곳에서 확인할 수 있게 합니다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 핵심 기능
 
-## Expanding the Oxlint configuration
+1. **상황 진단 온보딩** — 업종 / 개인·법인 여부 / 직원 유무 / 임대 여부 4문항으로 프로필 생성
+2. **폐업 신고 절차 안내** — 프로필에 맞는 신고 항목만 필터링(예: 직원 있으면 4대보험 상실신고 추가)
+3. **세무 신고 일정 안내** — 부가세·종합소득세 신고 일정 안내 (구체 세율·금액은 홈택스 공식 링크로 위임)
+4. **지원금 및 재기 지원** — 희망리턴패키지 등 조건에 맞는 정부 지원사업과 근거를 함께 제공
+5. **맞춤 체크리스트 대시보드** — 마감(D-day) 임박 순 정렬 + 전체 진행률 + "왜 나에게 해당되는지" 근거 표시
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## 차별점
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+기존 서비스(희망리턴패키지, 폐업119 등)는 "신청 → 전문가 배정/매칭"의 유료·중개형 흐름입니다. 이 서비스는 중개·거래 없이 **무료로 자가진단하고 스스로 진행 상태를 추적**하는 셀프서비스형 도구로 차별화합니다.
+
+## 법적 고지
+
+본 서비스는 세무·법률 대리 업무를 수행하지 않으며, 절차 안내와 공식 출처 링크만 제공합니다. 정확한 세율·금액·기한 등은 반드시 관할 기관(세무서, 홈택스, 정부24 등)에서 확인하세요.
+
+## 기술 스택
+
+| 영역 | 선택 |
+|---|---|
+| 프론트엔드 | React + Vite + TypeScript |
+| 백엔드 | Express (Node.js/TypeScript) |
+| ORM / DB | Prisma + SQLite |
+| 사용자 구분 | 쿠키 기반 익명 세션 ID (로그인 없음) |
+
+## 실행 방법
+
+```bash
+npm i          # 의존성 설치
+npm run dev    # 개발 서버 실행 (http://localhost:5173)
+npm run build  # 프로덕션 빌드
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## 더 자세한 내용
+
+전체 기획서(문제 정의, 유사 서비스 분석, Use Case, 사용자 시나리오, 법적 검토 등)는 [프로젝트 기획서](https://github.com/maeumum/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%B0%ED%9A%8D%EC%84%9C)에서 확인할 수 있습니다.
