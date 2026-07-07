@@ -4,6 +4,14 @@ import { menuItems } from "../../data/menuItems";
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isLoggedIn = false;
+
+  const handleMyPageClick = () => {
+    if (!isLoggedIn) {
+      alert("마이페이지를 이용하려면 로그인 또는 회원가입을 먼저 진행해 주세요.");
+      return;
+    }
+  };
 
   return (
     <header className="app-header">
@@ -43,13 +51,25 @@ function Header() {
             )}
           </div>
 
-          <button type="button" className="auth-button secondary">
-            로그인
-          </button>
-          <button type="button" className="auth-button secondary">
-            회원가입
-          </button>
-          <button type="button" className="auth-button mypage">
+          {isLoggedIn ? (
+            <button type="button" className="auth-button secondary">
+              로그아웃
+            </button>
+          ) : (
+            <>
+              <button type="button" className="auth-button secondary">
+                로그인
+              </button>
+              <button type="button" className="auth-button secondary">
+                회원가입
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            className="auth-button mypage"
+            onClick={handleMyPageClick}
+          >
             마이페이지
           </button>
         </div>
