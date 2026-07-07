@@ -29,24 +29,37 @@ function RecipeDetailPage() {
 
         <div className="mt-4 flex flex-col gap-6 md:flex-row md:items-start">
           <div className="flex-1">
-            <div className="flex items-center gap-3">
-              {recipe.image ? (
-                <img
-                  src={recipe.image}
-                  alt={recipe.name}
-                  className="h-20 w-20 rounded-xl object-cover"
-                />
-              ) : (
-                <span className="text-4xl" aria-hidden="true">
-                  {recipe.emoji}
-                </span>
-              )}
+            {recipe.image ? (
+              <img
+                src={recipe.image}
+                alt={recipe.name}
+                className="aspect-video w-full rounded-xl object-cover"
+              />
+            ) : (
+              <span
+                className="flex aspect-video w-full items-center justify-center rounded-xl bg-orange-50 text-6xl"
+                aria-hidden="true"
+              >
+                {recipe.emoji}
+              </span>
+            )}
+            <div className="mt-4 flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{recipe.name}</h1>
-                <p className="text-sm font-semibold text-orange-600">
+                <p className="text-lg font-extrabold text-orange-600">
                   1인분 · {recipe.totalCost.toLocaleString()}원
                 </p>
               </div>
+              {recipe.youtubeId && (
+                <a
+                  href={`https://www.youtube.com/watch?v=${recipe.youtubeId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 transition hover:bg-orange-100"
+                >
+                  ▶ 만드는 법 보기
+                </a>
+              )}
             </div>
 
             <h2 className="mt-6 mb-2 text-sm font-semibold text-gray-600">재료</h2>
