@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import PhotoUpload from '../components/PhotoUpload.jsx'
 import NutritionCard from '../components/NutritionCard.jsx'
 import { useUser } from '../context/UserContext.jsx'
@@ -24,6 +25,7 @@ function buildPrompt(menuName, brand) {
 
 export default function Analyze() {
   const { setTodayMeal, todayMeal } = useUser()
+  const navigate = useNavigate()
   const [photo, setPhoto] = useState(null) // { base64, mimeType, dataUrl, width, height }
   const [menuName, setMenuName] = useState('')
   const [brand, setBrand] = useState('')
@@ -49,6 +51,7 @@ export default function Analyze() {
       }
 
       setTodayMeal(parsed)
+      navigate('/result')
     } catch (err) {
       console.error('meal analysis failed:', err)
       setError('분석에 실패했습니다. 잠시 후 다시 시도해주세요.')
