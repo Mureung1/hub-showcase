@@ -1,0 +1,25 @@
+﻿{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node-terminal",
+      "request": "launch",
+      "name": "Career Mission AI 실행",
+      "command": "npm run dev -- --host 127.0.0.1",
+      "cwd": "${workspaceFolder}/AI_agent",
+      "serverReadyAction": {
+        "pattern": "Local:\\s+(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "type": "msedge",
+      "request": "launch",
+      "name": "브라우저만 열기",
+      "url": "http://127.0.0.1:5173",
+      "webRoot": "${workspaceFolder}/AI_agent/src",
+      "runtimeExecutable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    }
+  ]
+}
