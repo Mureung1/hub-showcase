@@ -1,4 +1,6 @@
-﻿const features = [
+﻿import { useEffect, useState } from "react";
+
+const features = [
   {
     title: "AI 역량 분석",
     text: "목표 직무와 현재 스펙의 차이를 분석해 우선 보완할 역량을 보여줍니다.",
@@ -20,78 +22,124 @@
 const steps = ["스펙 등록", "AI 분석", "미션 수행", "피드백", "포트폴리오"];
 
 function ProjectIntro() {
+  const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
+  const activeFeature = features[activeFeatureIndex];
+
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      setActiveFeatureIndex((currentIndex) =>
+        currentIndex === features.length - 1 ? 0 : currentIndex + 1
+      );
+    }, 3000);
+
+    return () => clearInterval(timerId);
+  }, []);
+
   return (
     <main style={styles.container}>
+      <style>{animations}</style>
+      <nav style={styles.navbar}>
+        <div style={styles.navInner}>
+          <strong style={styles.brand}>Career Mission AI</strong>
+          <div style={styles.navMenu}>
+            {steps.map((step) => (
+              <span key={step} style={styles.navItem}>
+                {step}
+              </span>
+            ))}
+          </div>
+        </div>
+      </nav>
+
       <section style={styles.hero}>
-        <div style={styles.copyArea}>
-          <p style={styles.badge}>AI Career Manager</p>
+        <div style={styles.copyStack}>
+          <div style={styles.backPlate}></div>
+          <div style={styles.copyArea}>
+            <p style={styles.badge}>AI Career Manager</p>
 
-          <h1 style={styles.title}>
-            스펙을 실무 경험으로 바꾸는 AI 커리어 매니저
-          </h1>
+            <h1 style={styles.title}>
+              스펙을 실무 경험으로 바꾸는 AI 커리어 매니저
+            </h1>
 
-          <p style={styles.description}>
-            Career Mission AI는 취업 준비에 어려움을 겪는 대학생을 위해 목표
-            직무와 현재 역량을 분석하고, 포트폴리오로 연결되는 맞춤형 실무
-            미션을 제안하는 서비스입니다.
-          </p>
+            <p style={styles.description}>
+              Career Mission AI는 취업 준비에 어려움을 겪는 대학생을 위해 목표
+              직무와 현재 역량을 분석하고, 포트폴리오로 연결되는 맞춤형 실무
+              미션을 제안하는 서비스입니다.
+            </p>
 
-          <div style={styles.actions}>
-            <span style={styles.primaryAction}>AI 커리어 분석</span>
-            <span style={styles.secondaryAction}>맞춤 미션 추천</span>
+            <div style={styles.actions}>
+              <span style={styles.primaryAction}>AI 커리어 분석</span>
+              <span style={styles.secondaryAction}>맞춤 미션 추천</span>
+            </div>
           </div>
         </div>
 
-        <aside style={styles.aiPanel}>
-          <div style={styles.panelHeader}>
-            <span style={styles.statusDot}></span>
-            <span style={styles.panelLabel}>Live Career Scan</span>
-          </div>
+        <div style={styles.panelStack}>
+          <div style={styles.panelPlate}></div>
+          <aside style={styles.aiPanel}>
+            <div style={styles.panelHeader}>
+              <span style={styles.statusDot}></span>
+              <span style={styles.panelLabel}>Live Career Scan</span>
+            </div>
 
-          <div style={styles.scoreBox}>
-            <p style={styles.scoreLabel}>Career Readiness</p>
-            <strong style={styles.score}>78%</strong>
-          </div>
+            <div style={styles.scoreBox}>
+              <p style={styles.scoreLabel}>Career Readiness</p>
+              <strong style={styles.score}>78%</strong>
+              <div style={styles.scoreTrack}>
+                <span style={styles.scoreFill}></span>
+              </div>
+            </div>
 
-          <div style={styles.metricList}>
-            <div style={styles.metricItem}>
-              <span>직무 적합도</span>
-              <strong>High</strong>
+            <div style={styles.metricList}>
+              <div style={styles.metricItem}>
+                <span>직무 적합도</span>
+                <strong>High</strong>
+              </div>
+              <div style={styles.metricItem}>
+                <span>포트폴리오 준비도</span>
+                <strong>Medium</strong>
+              </div>
+              <div style={styles.metricItem}>
+                <span>번아웃 위험도</span>
+                <strong>Low</strong>
+              </div>
             </div>
-            <div style={styles.metricItem}>
-              <span>포트폴리오 준비도</span>
-              <strong>Medium</strong>
-            </div>
-            <div style={styles.metricItem}>
-              <span>번아웃 위험도</span>
-              <strong>Low</strong>
-            </div>
-          </div>
-        </aside>
+          </aside>
+        </div>
       </section>
 
-      <section style={styles.featureGrid}>
-        {features.map((feature) => (
-          <article key={feature.title} style={styles.featureCard}>
-            <h2 style={styles.featureTitle}>{feature.title}</h2>
-            <p style={styles.featureText}>{feature.text}</p>
-          </article>
-        ))}
-      </section>
+      <section style={styles.featureSlider}>
+        <div style={styles.sliderLabel}>Core Feature</div>
+        <div style={styles.sliderWindow}>
+          <article key={activeFeature.title} style={styles.featureCard}>
+          <span style={styles.featureAccent}></span>
+          <p style={styles.featureCount}>
+            {activeFeatureIndex + 1} / {features.length}
+          </p>
+          <h2 style={styles.featureTitle}>{activeFeature.title}</h2>
+          <p style={styles.featureText}>{activeFeature.text}</p>
+        </article>
+        </div>
 
-      <section style={styles.flowSection}>
-        <h2 style={styles.sectionTitle}>서비스 흐름</h2>
-        <div style={styles.stepList}>
-          {steps.map((step) => (
-            <span key={step} style={styles.stepItem}>
-              {step}
-            </span>
+        <div style={styles.indicatorList}>
+          {features.map((feature, index) => (
+            <button
+              key={feature.title}
+              type="button"
+              aria-label={`${feature.title} 보기`}
+              style={
+                index === activeFeatureIndex
+                  ? { ...styles.indicator, ...styles.activeIndicator }
+                  : styles.indicator
+              }
+              onClick={() => setActiveFeatureIndex(index)}
+            />
           ))}
         </div>
       </section>
 
       <section style={styles.goalSection}>
-        <h2 style={styles.sectionTitle}>서비스 목표</h2>
+        <h2 style={styles.darkSectionTitle}>서비스 목표</h2>
         <p style={styles.goalText}>
           단순히 더 많은 스펙을 쌓게 하는 것이 아니라, 대학생이 실무 경험을
           만들고 포트폴리오로 연결하며, 지치지 않고 취업 준비를 이어갈 수
@@ -102,14 +150,70 @@ function ProjectIntro() {
   );
 }
 
+const animations = `
+@keyframes featureSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(34px) scale(0.985) rotateX(3deg) rotateY(-3deg);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotateX(2deg) rotateY(-2deg);
+    filter: blur(0);
+  }
+}
+`;
+
 const styles = {
   container: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 30%), radial-gradient(circle at top right, rgba(6, 182, 212, 0.2), transparent 28%), #f8fafc",
-    padding: "56px 20px",
+      "radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.2), transparent 28%), radial-gradient(circle at 88% 12%, rgba(6, 182, 212, 0.22), transparent 26%), radial-gradient(circle at 52% 92%, rgba(124, 58, 237, 0.12), transparent 30%), linear-gradient(135deg, #f8fafc 0%, #eef6ff 48%, #f8fbff 100%)",
+    padding: "0 20px 56px",
     fontFamily: "Arial, sans-serif",
     color: "#0f172a",
+  },
+  navbar: {
+    width: "calc(100% + 40px)",
+    margin: "0 -20px 34px",
+    backgroundColor: "#0f172a",
+    border: "none",
+    boxShadow: "0 16px 34px rgba(15, 23, 42, 0.18)",
+  },
+  navInner: {
+    width: "100%",
+    maxWidth: "1120px",
+    margin: "0 auto",
+    padding: "18px 20px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "18px",
+    boxSizing: "border-box",
+  },
+  brand: {
+    color: "#ffffff",
+    fontSize: "17px",
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+  },
+  navMenu: {
+    minWidth: 0,
+    display: "flex",
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
+    gap: "8px",
+    overflow: "hidden",
+  },
+  navItem: {
+    padding: "8px 10px",
+    borderRadius: "999px",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    color: "#e2e8f0",
+    fontSize: "13px",
+    fontWeight: "bold",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
   },
   hero: {
     width: "100%",
@@ -119,14 +223,31 @@ const styles = {
     gridTemplateColumns: "minmax(0, 1.35fr) minmax(280px, 0.65fr)",
     gap: "28px",
     alignItems: "stretch",
+    perspective: "1200px",
+  },
+  copyStack: {
+    position: "relative",
+    transformStyle: "preserve-3d",
+  },
+  backPlate: {
+    position: "absolute",
+    inset: "18px -12px -14px 18px",
+    borderRadius: "30px",
+    background: "linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(6, 182, 212, 0.12))",
+    filter: "blur(2px)",
+    transform: "translateZ(-42px)",
   },
   copyArea: {
+    position: "relative",
+    minHeight: "100%",
     padding: "44px",
     borderRadius: "28px",
-    backgroundColor: "rgba(255, 255, 255, 0.78)",
-    border: "1px solid rgba(226, 232, 240, 0.9)",
-    boxShadow: "0 24px 70px rgba(15, 23, 42, 0.12)",
-    backdropFilter: "blur(16px)",
+    background: "linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(239, 246, 255, 0.4))",
+    border: "1px solid rgba(255, 255, 255, 0.86)",
+    boxShadow:
+      "0 34px 80px rgba(15, 23, 42, 0.16), 0 8px 22px rgba(37, 99, 235, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.78)",
+    backdropFilter: "blur(22px) saturate(150%)",
+    transform: "rotateX(1deg) rotateY(-2deg)",
   },
   badge: {
     display: "inline-block",
@@ -138,6 +259,7 @@ const styles = {
     fontSize: "14px",
     marginBottom: "22px",
     border: "1px solid rgba(37, 99, 235, 0.18)",
+    boxShadow: "0 10px 22px rgba(37, 99, 235, 0.12)",
   },
   title: {
     maxWidth: "780px",
@@ -145,6 +267,7 @@ const styles = {
     lineHeight: "1.16",
     color: "#0f172a",
     margin: "0 0 22px",
+    textShadow: "0 1px 0 rgba(255, 255, 255, 0.8)",
   },
   description: {
     maxWidth: "720px",
@@ -164,23 +287,43 @@ const styles = {
     background: "linear-gradient(135deg, #2563eb, #06b6d4)",
     color: "#ffffff",
     fontWeight: "bold",
-    boxShadow: "0 12px 28px rgba(37, 99, 235, 0.28)",
+    boxShadow: "0 16px 30px rgba(37, 99, 235, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.28)",
+    transform: "translateY(-2px)",
   },
   secondaryAction: {
     padding: "14px 18px",
     borderRadius: "14px",
-    backgroundColor: "#ffffff",
+    background: "rgba(255, 255, 255, 0.56)",
     color: "#334155",
     fontWeight: "bold",
-    border: "1px solid #e2e8f0",
+    border: "1px solid rgba(226, 232, 240, 0.9)",
+    boxShadow: "0 12px 24px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.72)",
+  },
+  panelStack: {
+    position: "relative",
+    transformStyle: "preserve-3d",
+  },
+  panelPlate: {
+    position: "absolute",
+    inset: "22px 16px -18px -10px",
+    borderRadius: "30px",
+    background: "linear-gradient(145deg, rgba(37, 99, 235, 0.28), rgba(124, 58, 237, 0.2))",
+    filter: "blur(1px)",
+    transform: "translateZ(-46px)",
   },
   aiPanel: {
+    position: "relative",
+    minHeight: "100%",
     padding: "26px",
     borderRadius: "28px",
-    backgroundColor: "rgba(15, 23, 42, 0.92)",
+    background:
+      "linear-gradient(155deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.78)), radial-gradient(circle at top right, rgba(6, 182, 212, 0.28), transparent 36%)",
     color: "#e2e8f0",
-    boxShadow: "0 24px 70px rgba(15, 23, 42, 0.22)",
-    border: "1px solid rgba(148, 163, 184, 0.22)",
+    boxShadow:
+      "0 34px 90px rgba(15, 23, 42, 0.34), 0 14px 34px rgba(37, 99, 235, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+    border: "1px solid rgba(226, 232, 240, 0.16)",
+    backdropFilter: "blur(18px)",
+    transform: "rotateX(2deg) rotateY(4deg) translateY(-10px)",
   },
   panelHeader: {
     display: "flex",
@@ -203,9 +346,11 @@ const styles = {
   scoreBox: {
     padding: "22px",
     borderRadius: "20px",
-    background: "linear-gradient(135deg, rgba(37, 99, 235, 0.28), rgba(6, 182, 212, 0.18))",
+    background:
+      "linear-gradient(135deg, rgba(37, 99, 235, 0.34), rgba(6, 182, 212, 0.16), rgba(124, 58, 237, 0.18))",
     border: "1px solid rgba(148, 163, 184, 0.22)",
     marginBottom: "18px",
+    boxShadow: "0 20px 36px rgba(2, 6, 23, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
   },
   scoreLabel: {
     margin: "0 0 12px",
@@ -215,6 +360,21 @@ const styles = {
   score: {
     color: "#ffffff",
     fontSize: "46px",
+  },
+  scoreTrack: {
+    height: "8px",
+    marginTop: "16px",
+    borderRadius: "999px",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    overflow: "hidden",
+  },
+  scoreFill: {
+    display: "block",
+    width: "78%",
+    height: "100%",
+    borderRadius: "999px",
+    background: "linear-gradient(90deg, #60a5fa, #22d3ee)",
+    boxShadow: "0 0 18px rgba(34, 211, 238, 0.5)",
   },
   metricList: {
     display: "grid",
@@ -226,23 +386,66 @@ const styles = {
     gap: "12px",
     padding: "13px 14px",
     borderRadius: "14px",
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    background: "linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.035))",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
     color: "#cbd5e1",
     fontSize: "14px",
+    boxShadow: "0 12px 22px rgba(2, 6, 23, 0.16)",
   },
-  featureGrid: {
-    maxWidth: "1120px",
-    margin: "28px auto 0",
+  featureSlider: {
+    maxWidth: "560px",
+    margin: "34px auto 0",
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: "16px",
+    perspective: "1000px",
+  },
+  sliderLabel: {
+    justifySelf: "center",
+    padding: "8px 13px",
+    borderRadius: "999px",
+    background: "rgba(255, 255, 255, 0.58)",
+    color: "#2563eb",
+    fontSize: "13px",
+    fontWeight: "bold",
+    border: "1px solid rgba(37, 99, 235, 0.12)",
+    boxShadow: "0 10px 18px rgba(37, 99, 235, 0.08)",
+    backdropFilter: "blur(14px)",
+  },
+  sliderWindow: {
+    overflow: "hidden",
+    borderRadius: "24px",
+    padding: "4px",
   },
   featureCard: {
-    padding: "22px",
+    position: "relative",
+    minHeight: "190px",
+    padding: "30px",
     borderRadius: "20px",
-    backgroundColor: "rgba(255, 255, 255, 0.82)",
-    border: "1px solid #e2e8f0",
-    boxShadow: "0 14px 34px rgba(15, 23, 42, 0.08)",
+    background: "linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(239, 246, 255, 0.36))",
+    border: "1px solid rgba(255, 255, 255, 0.76)",
+    boxShadow:
+      "0 22px 42px rgba(15, 23, 42, 0.1), 0 6px 16px rgba(37, 99, 235, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7)",
+    backdropFilter: "blur(18px) saturate(140%)",
+    transform: "rotateX(2deg) rotateY(-2deg)",
+    animation: "featureSlideIn 900ms cubic-bezier(0.22, 1, 0.36, 1) both",
+  },
+  featureAccent: {
+    display: "block",
+    width: "38px",
+    height: "5px",
+    borderRadius: "999px",
+    background: "linear-gradient(90deg, #2563eb, #06b6d4)",
+    marginBottom: "16px",
+    boxShadow: "0 8px 18px rgba(37, 99, 235, 0.22)",
+  },
+  featureCount: {
+    position: "absolute",
+    top: "24px",
+    right: "26px",
+    margin: 0,
+    color: "#2563eb",
+    fontSize: "13px",
+    fontWeight: "bold",
   },
   featureTitle: {
     margin: "0 0 10px",
@@ -255,17 +458,43 @@ const styles = {
     fontSize: "15px",
     lineHeight: "1.7",
   },
+  indicatorList: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "9px",
+  },
+  indicator: {
+    width: "10px",
+    height: "10px",
+    padding: 0,
+    border: "none",
+    borderRadius: "999px",
+    backgroundColor: "rgba(37, 99, 235, 0.18)",
+    cursor: "pointer",
+    boxShadow: "0 6px 14px rgba(37, 99, 235, 0.12)",
+  },
+  activeIndicator: {
+    width: "32px",
+    background: "linear-gradient(90deg, #2563eb, #06b6d4)",
+  },
   flowSection: {
     maxWidth: "1120px",
-    margin: "28px auto 0",
+    margin: "44px auto 0",
     padding: "28px",
     borderRadius: "24px",
-    backgroundColor: "rgba(255, 255, 255, 0.72)",
-    border: "1px solid #e2e8f0",
+    background: "linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(238, 242, 255, 0.36))",
+    border: "1px solid rgba(255, 255, 255, 0.72)",
+    boxShadow: "0 24px 50px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.68)",
+    backdropFilter: "blur(18px) saturate(140%)",
   },
   sectionTitle: {
     margin: "0 0 16px",
     color: "#0f172a",
+    fontSize: "22px",
+  },
+  darkSectionTitle: {
+    margin: "0 0 16px",
+    color: "#ffffff",
     fontSize: "22px",
   },
   stepList: {
@@ -276,19 +505,23 @@ const styles = {
   stepItem: {
     padding: "11px 14px",
     borderRadius: "999px",
-    backgroundColor: "#eff6ff",
+    background: "linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(6, 182, 212, 0.09))",
     color: "#2563eb",
     fontSize: "14px",
     fontWeight: "bold",
     border: "1px solid rgba(37, 99, 235, 0.14)",
+    boxShadow: "0 10px 18px rgba(37, 99, 235, 0.08)",
   },
   goalSection: {
     maxWidth: "1120px",
     margin: "28px auto 0",
     padding: "30px",
     borderRadius: "24px",
-    backgroundColor: "#0f172a",
+    background:
+      "linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.88)), radial-gradient(circle at top left, rgba(37, 99, 235, 0.22), transparent 34%)",
     color: "#ffffff",
+    border: "1px solid rgba(226, 232, 240, 0.12)",
+    boxShadow: "0 28px 68px rgba(15, 23, 42, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08)",
   },
   goalText: {
     maxWidth: "860px",
@@ -300,3 +533,12 @@ const styles = {
 };
 
 export default ProjectIntro;
+
+
+
+
+
+
+
+
+
