@@ -156,3 +156,121 @@ body {
   padding-top: 20px;
   border-top: 1px solid var(--line);
 }
+.btn.ghost {
+  border-style: dashed;
+  color: var(--brand);
+}
+
+/* ── CV 업로드 ── */
+.cv-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+}
+.cv-input {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cv-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cv-textarea {
+  width: 100%;
+  min-height: 340px;
+  resize: vertical;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fcfcfd;
+  color: var(--ink);
+}
+.cv-textarea:focus {
+  outline: 2px solid var(--brand-soft);
+  border-color: var(--brand);
+}
+.cv-preview {
+  background: var(--brand-soft);
+  border: 1px solid #dfe3ff;
+  border-radius: 12px;
+  padding: 16px;
+  align-self: start;
+}
+.cv-preview h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+.parsed-name {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+.parsed-title {
+  color: var(--muted);
+  margin: 2px 0 10px;
+  font-size: 13.5px;
+}
+.parsed-contacts {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  word-break: break-all;
+}
+.chip {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--brand);
+  background: #fff;
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-right: 4px;
+}
+.parsed-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.parsed-stats div {
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 4px;
+  text-align: center;
+}
+.parsed-stats dt {
+  font-size: 11px;
+  color: var(--muted);
+}
+.parsed-stats dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--brand);
+}
+.parsed-summary {
+  font-size: 12.5px;
+  color: var(--ink);
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid #dfe3ff;
+}
+
+@media (max-width: 720px) {
+  .cv-grid {
+    grid-template-columns: 1fr;
+  }
+}
