@@ -29,13 +29,13 @@ Internal work PRs should follow the branch flow in `AGENTS.md`:
 | --- | --- | --- |
 | Work-scoped review | `swh3467:codex/MMDD` | `swh3467:codex/<work>` |
 | Camp daily PR | `swh3467:N180_하성욱` | `swh3467:codex/MMDD` |
-| Camp-facing submission | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | `swh3467:N180_하성욱` |
+| Camp-facing submission PR | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | `swh3467:N180_하성욱` |
 
 When triaging PRs, read the PR body, comments, and diff. Use `gh pr view <number> --comments` and `gh pr diff <number>`.
 
 The workflow `.github/workflows/auto-merge.yml` is template-provided but active in the repo. It attempts scheduled PR merges, skips PRs targeting `main`, skips PRs with the GitHub `review` label, defers changes-requested PRs, and closes conflicting PRs. Treat the GitHub `review` label as an auto-merge control, not as an agent triage state.
 
-The PR template in `.github/pull_request_template.md` is the camp-facing daily PR template only. Create a `codex/MMDD` to `N180_하성욱` daily PR only through `/camp-daily-pr`; that skill interviews the user section by section, creates the PR, and does not merge it. Matt Pocock skill templates are the PRD, issue, agent brief, and two-axis review artifact shapes described by the skills; they are not GitHub PR templates.
+The PR template in `.github/pull_request_template.md` is the camp-facing daily PR template only. Create a `codex/MMDD` to `N180_하성욱` daily PR only through `/camp-daily-pr`; that skill interviews the user section by section and creates or updates the fork PR. The fork daily PR is not the final submission surface. `/camp-daily-pr` must also verify or create the upstream submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` when `fork/N180_하성욱` contains the daily work, or clearly report that the latest daily work is not yet present in the submission branch. Matt Pocock skill templates are the PRD, issue, agent brief, and two-axis review artifact shapes described by the skills; they are not GitHub PR templates.
 
 ## When a skill says "publish to the issue tracker"
 

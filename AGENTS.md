@@ -46,11 +46,11 @@ Use this PR flow:
 | --- | --- | --- |
 | Work-scoped review | `swh3467:codex/MMDD` | `swh3467:codex/<work>` |
 | Camp daily PR | `swh3467:N180_하성욱` | `swh3467:codex/MMDD` |
-| Camp-facing submission | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | `swh3467:N180_하성욱` |
+| Camp-facing submission PR | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | `swh3467:N180_하성욱` |
 
 The upstream `origin` repository is read-only for this contributor, so publish branches by pushing to the personal fork remote (`fork`). Open upstream PRs only for camp-facing submission, not for every work-in-progress feature branch. Do not target `main`; the auto-merge workflow explicitly skips PRs whose base branch is `main`.
 
-The PR template in `.github/pull_request_template.md` is the camp submission template. Use its sections (`주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, `새로 알게 된 것`) for camp-facing daily PRs only. Internal work PRs do not use a separate GitHub PR template; link the source PRD, issue, agent brief, spike report, or handoff document instead. Create a `codex/MMDD` to `N180_하성욱` daily PR only when the user invokes `/camp-daily-pr`; that skill interviews the user section by section, creates the PR, and does not merge it. When a Matt Pocock skill refers to a template, treat it as the skill's own PRD, issue, agent brief, or review artifact shape, not as `.github/pull_request_template.md`. When a Matt Pocock skill refers to PRs as an issue-tracker or triage surface, follow the agent workflow in `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md` instead; do not treat the camp reflection sections as the skill's triage state or PRD format.
+The PR template in `.github/pull_request_template.md` is the camp submission template. Use its sections (`주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, `새로 알게 된 것`) for camp-facing daily PRs only. Internal work PRs do not use a separate GitHub PR template; link the source PRD, issue, agent brief, spike report, or handoff document instead. Create a `codex/MMDD` to `N180_하성욱` daily PR only when the user invokes `/camp-daily-pr`; that skill interviews the user section by section and creates or updates the fork PR. The fork daily PR is not the final submission surface. `/camp-daily-pr` must also verify or create the upstream submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` when `fork/N180_하성욱` contains the daily work, or clearly report that the latest daily work is not yet present in the submission branch. When a Matt Pocock skill refers to a template, treat it as the skill's own PRD, issue, agent brief, or review artifact shape, not as `.github/pull_request_template.md`. When a Matt Pocock skill refers to PRs as an issue-tracker or triage surface, follow the agent workflow in `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md` instead; do not treat the camp reflection sections as the skill's triage state or PRD format.
 
 ## Security & Configuration Tips
 
@@ -73,7 +73,7 @@ Matt Pocock skills use generic GitHub terms such as issue tracker, PR, label, pu
 | Treat PRs as request or triage surface | Only external PRs, or PRs explicitly named by the user, are triage input. Collaborator work PRs and camp daily PRs are not triage queues. |
 | Commit to the current branch | The default current branch should be `codex/MMDD`; optional `codex/<work>` branches must merge back to `codex/MMDD`. Do not commit normal work on `N180_하성욱` or `main`. |
 | Use a GitHub PR template | `.github/pull_request_template.md` is only for `/camp-daily-pr` camp daily PRs. Matt skill templates are their own PRD, issue, agent brief, or review artifact shapes. |
-| Merge a PR | Do not merge a camp daily PR created by `/camp-daily-pr`; stop after creating or updating it unless the user gives a separate explicit merge instruction. |
+| Merge a PR | Do not merge PRs created or checked by `/camp-daily-pr` unless the user gives a separate explicit merge instruction. |
 | Run `/setup-matt-pocock-skills` | This repo is already configured. Do not regenerate `docs/agents/**` unless the user explicitly asks; preserve the `codex/MMDD`, `/camp-daily-pr`, marker-based triage, and fork-based PR rules. |
 
 ### Triage labels
