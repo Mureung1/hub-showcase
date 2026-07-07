@@ -100,8 +100,9 @@ flowchart TD
 2. **되묻기·응답 UI** — 입력 바 위에 말풍선/선택지 버튼으로 표시 (별도 화면 아님, 채팅형 인터랙션)
 
 시각자료:
-- 유저 플로우 (FigJam): [링크 추가]
-- 와이어프레임 (Figma): https://www.figma.com/design/TUtUH2mKAznZdPoFp1AI3W
+![유저 플로우](docs/images/Briefy-User-Flow.png)
+![화면 목록 IA](docs/images/Briefy-IA.png)
+![와이어프레임](docs/images/Briefy-Wireframe.png)
 
 ## 플랫폼 전략
 
