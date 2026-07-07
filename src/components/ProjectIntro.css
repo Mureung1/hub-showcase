@@ -1,0 +1,288 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+
+.intro-page {
+  min-height: 100vh;
+  background: #f7f5f0;
+  color: #17182b;
+  font-family:
+    "Pretendard",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Apple SD Gothic Neo",
+    "Malgun Gothic",
+    sans-serif;
+  padding: 3.5rem 1.5rem 5rem;
+  display: flex;
+  justify-content: center;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.intro-wrap {
+  width: 100%;
+  max-width: 920px;
+}
+
+.intro-hero {
+  background: #ffffff;
+  border: 1px solid #e4e1d8;
+  border-radius: 20px;
+  padding: 2.6rem 2.8rem;
+  margin-bottom: 2rem;
+}
+
+.intro-hero-text {
+  min-width: 0;
+}
+
+.intro-eyebrow {
+  font-family:
+    ui-monospace, "SFMono-Regular", "Consolas", "Malgun Gothic", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  color: #8b8fa8;
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+}
+
+.intro-title {
+  font-size: 3.2rem;
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0 0 0.9rem;
+  letter-spacing: -0.02em;
+  color: #1a1f3d;
+}
+
+.intro-tagline {
+  font-size: 1.2rem;
+  color: #ff6b4a;
+  font-weight: 700;
+  margin: 0 0 1.3rem;
+}
+
+.intro-subtitle {
+  color: #3b3e56;
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1.7;
+  margin-bottom: 1.4rem;
+}
+
+.hero-hook {
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  background: #fff1ec;
+  border: 1px solid #ffd9cc;
+  color: #c1502b;
+}
+
+.intro-section {
+  margin-bottom: 1.6rem;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.9rem 0.2rem;
+}
+
+.section-head .bar {
+  width: 3px;
+  height: 1.05rem;
+  background: #ff6b4a;
+  border-radius: 2px;
+}
+
+.section-head h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  color: #1a1f3d;
+}
+
+.bridge-line {
+  font-size: 0.92rem;
+  color: #1a1f3d;
+  font-weight: 600;
+  text-align: center;
+  margin: 1.6rem 0;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.9rem;
+}
+
+.info-card {
+  background: #ffffff;
+  border: 1px solid #e4e1d8;
+  border-radius: 14px;
+  padding: 1.2rem 1.3rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #3b3e56;
+  text-align: left;
+}
+
+.info-card .icon {
+  display: block;
+  width: 26px;
+  height: 26px;
+  margin-bottom: 0.7rem;
+  color: #1a1f3d;
+}
+
+.info-card .tag {
+  display: inline-block;
+  font-family:
+    ui-monospace, "SFMono-Regular", "Consolas", "Malgun Gothic", monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  color: #ffffff;
+  background: #1a1f3d;
+  border-radius: 8px;
+  padding: 0.15rem 0.45rem;
+  margin-bottom: 0.6rem;
+}
+
+.timeline-card {
+  background: #ffffff;
+  border: 1px solid #e4e1d8;
+  border-radius: 14px;
+  padding: 1.5rem 1.6rem;
+}
+
+.timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.timeline li {
+  display: grid;
+  grid-template-columns: 22px 64px 1fr;
+  align-items: start;
+  column-gap: 0.7rem;
+  position: relative;
+  padding-bottom: 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #3b3e56;
+  line-height: 1.5;
+}
+
+.timeline li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 20px;
+  bottom: -2px;
+  width: 2px;
+  background: #e4e1d8;
+}
+
+.timeline li:last-child {
+  padding-bottom: 0;
+}
+
+.timeline .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 0.3rem;
+  background: #ffffff;
+  border: 2px solid var(--dot-color, #1a1f3d);
+}
+
+.timeline .day {
+  font-family:
+    ui-monospace, "SFMono-Regular", "Consolas", "Malgun Gothic", monospace;
+  color: var(--dot-color, #1a1f3d);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.feature-groups {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+
+.feature-group {
+  border-radius: 16px;
+  padding: 1.1rem;
+}
+.feature-group.observe {
+  background: #eaebf2;
+  border: 1px solid #d7d9e8;
+}
+.feature-group.act {
+  background: #fff1ec;
+  border: 1px solid #ffd9cc;
+}
+
+.feature-group-label {
+  font-family:
+    ui-monospace, "SFMono-Regular", "Consolas", "Malgun Gothic", monospace;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+  font-weight: 700;
+}
+
+.feature-group.observe .feature-group-label {
+  color: #1a1f3d;
+}
+.feature-group.act .feature-group-label {
+  color: #ff6b4a;
+}
+
+.feature-group .info-card {
+  margin-bottom: 0.6rem;
+}
+.feature-group .info-card:last-child {
+  margin-bottom: 0;
+}
+
+.feature-group .info-card .tag {
+  color: #ffffff;
+  border-radius: 8px;
+}
+
+.feature-group.observe .info-card .tag {
+  background: #1a1f3d;
+}
+
+.feature-group.act .info-card .tag {
+  background: #ff6b4a;
+}
+
+.intro-footer {
+  text-align: center;
+  font-size: 0.82rem;
+  color: #8b8fa8;
+  margin-top: 1.4rem;
+}
+
+@media (max-width: 720px) {
+  .card-grid,
+  .feature-groups {
+    grid-template-columns: 1fr;
+  }
+  .intro-hero {
+    padding: 2rem 1.6rem;
+  }
+  .intro-title {
+    font-size: 2.4rem;
+  }
+  .timeline li {
+    grid-template-columns: 22px 56px 1fr;
+  }
+}
