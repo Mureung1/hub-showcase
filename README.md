@@ -1,16 +1,19 @@
-# React + Vite
+# AI 소비 코치
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+기록하는 가계부가 아니라, 소비 습관을 바꿔주는 AI 코치입니다.
+영수증을 찍으면 자취생 특화 카테고리로 분석하고, 현재 소비 속도로 생활비가 언제 바닥나는지 예측해 알려줍니다.
 
-Currently, two official plugins are available:
+## 주요 기능
+- 영수증 OCR 자동 인식 및 카테고리 분류
+- 생활비 소진일 예측 + 월말 생존 모드
+- AI 소비 코치 Agent: 소비 상황을 종합 판단해 레시피 추천 / 최저가 비교를 스스로 선택·실행
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 기술 스택
+- **Backend**: Spring Boot (Java)
+- **Frontend**: React
+- **AI**: Claude API (Tool Use)
+- **OCR**: 네이버 클로바 OCR
+- **DB**: PostgreSQL
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 프로젝트 문서
+- [기획서 보기](./docs/plan.md)
