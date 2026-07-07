@@ -24,7 +24,7 @@ SemesterOps가 Codex app-server를 MVP의 built-in local agent engine으로 사�
 
 | 항목 | 확인 내용 |
 | --- | --- |
-| 현재 로컬 Codex | `codex-cli 0.142.5`, `/Users/swh/.asdf/shims/codex` |
+| 현재 로컬 Codex | 조사 시점의 전역 Codex는 `codex-cli 0.142.5`였고, 사용자 홈 아래의 전역 shim을 통해 실행되고 있었다. |
 | 현재 npm package metadata | `@openai/codex@0.142.5`, `bin.codex = bin/codex.js` |
 | native package 구조 | optional dependency로 OS/architecture별 `@openai/codex-*-*` package를 사용한다. |
 | 공식 manual 상태 | `openai-docs` helper 기준 local manual이 current 상태였다. |

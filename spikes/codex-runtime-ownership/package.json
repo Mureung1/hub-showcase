@@ -1,0 +1,20 @@
+{
+  "name": "codex-runtime-ownership-spike",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare-runtime": "tsx src/run-spike.ts prepare-runtime",
+    "login": "tsx src/run-spike.ts login",
+    "login:device": "tsx src/run-spike.ts login --device-auth",
+    "verify": "tsx src/run-spike.ts verify",
+    "report": "tsx src/run-spike.ts report",
+    "spike": "tsx src/run-spike.ts spike"
+  },
+  "dependencies": {
+    "@openai/codex": "0.142.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6"
+  }
+}
