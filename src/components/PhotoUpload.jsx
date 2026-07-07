@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { radius, spacing, styles } from '../styles/theme.js'
 
 // 이미지를 긴 변 기준 maxSize(px)로 리사이즈해 base64로 변환.
 // Gemini inline_data용으로 "data:image/...;base64," 접두어는 제거한 순수 데이터를 반환.
@@ -60,10 +61,10 @@ export default function PhotoUpload({ onChange, maxSize = 1024 }) {
         <img
           src={previewUrl}
           alt="업로드한 사진 미리보기"
-          style={{ maxWidth: '100%', marginTop: 8, borderRadius: 8 }}
+          style={{ maxWidth: '100%', marginTop: spacing.sm, borderRadius: radius.md, display: 'block' }}
         />
       )}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p style={styles.errorText}>{error}</p>}
     </div>
   )
 }

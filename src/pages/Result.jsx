@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import DeficiencyBar from '../components/DeficiencyBar.jsx'
 import MenuRecommendation from '../components/MenuRecommendation.jsx'
+import Spinner from '../components/Spinner.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
+import { spacing, styles } from '../styles/theme.js'
 
 const NUTRIENT_LABELS = [
   { key: 'calories', label: '칼로리', unit: 'kcal' },
@@ -100,42 +102,60 @@ export default function Result() {
 
   if (!recommended) {
     return (
-      <div style={{ maxWidth: 420, margin: '80px auto', padding: 24, textAlign: 'center' }}>
-        <p>신체정보가 없습니다. 먼저 프로필을 입력해주세요.</p>
-        <Link to="/profile">프로필 입력하러 가기</Link>
+      <div style={styles.page}>
+        <div style={{ ...styles.card, textAlign: 'center' }}>
+          <p>신체정보가 없습니다. 먼저 프로필을 입력해주세요.</p>
+          <Link to="/profile" style={{ ...styles.buttonPrimary, display: 'block', marginTop: spacing.lg, textDecoration: 'none' }}>
+            프로필 입력하러 가기
+          </Link>
+        </div>
       </div>
     )
   }
 
   if (!todayTotal) {
     return (
-      <div style={{ maxWidth: 420, margin: '80px auto', padding: 24, textAlign: 'center' }}>
-        <p>오늘 분석한 식사 기록이 없습니다. 먼저 사진을 분석해주세요.</p>
-        <Link to="/analyze">사진 분석하러 가기</Link>
+      <div style={styles.page}>
+        <div style={{ ...styles.card, textAlign: 'center' }}>
+          <p>오늘 분석한 식사 기록이 없습니다. 먼저 사진을 분석해주세요.</p>
+          <Link to="/analyze" style={{ ...styles.buttonPrimary, display: 'block', marginTop: spacing.lg, textDecoration: 'none' }}>
+            사진 분석하러 가기
+          </Link>
+        </div>
       </div>
     )
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: '40px auto', padding: 24 }}>
+    <div style={styles.page}>
       <h1>오늘의 부족 영양소</h1>
       {rows.map(({ key, ...row }) => (
         <DeficiencyBar key={key} {...row} highlighted={top3DeficientKeys.includes(key)} />
       ))}
 
-      <div style={{ marginTop: 32 }}>
-        <h2>오늘 저녁 추천 메뉴</h2>
-        {recLoading && <p>추천 메뉴를 불러오는 중입니다...</p>}
-        {recError && (
-          <div>
-            <p style={{ color: 'red' }}>{recError}</p>
-            <button type="button" onClick={fetchRecommendations}>
-              다시 시도
-            </button>
-          </div>
-        )}
-        {!recLoading && !recError && <MenuRecommendation recommendations={recommendations} />}
-      </div>
+      <h2 style={{ marginTop: spacing.xl }}>오늘 저녁 추천 메뉴</h2>
+      {recLoading && (
+        <div style={{ ...styles.card, display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+          <Spinner size={16} />
+          <span style={styles.helperText}>추천 메뉴를 불러오는 중입니다...</span>
+        </div>
+      )}
+      {recError && (
+        <div style={styles.card}>
+          <p style={{ ...styles.errorText, margin: 0 }}>{recError}</p>
+          <button type="button" onClick={fetchRecommendations} style={{ ...styles.buttonSecondary, marginTop: spacing.sm }}>
+            다시 시도
+          </button>
+        </div>
+      )}
+      {!recLoading && !recError && <MenuRecommendation recommendations={recommendations} />}
+
+      <Link
+        to="/analyze"
+        style={{ ...styles.linkButton, display: 'block', textAlign: 'center', marginTop: spacing.xl, textDecoration: 'none' }}
+      >
+        다른 음식 다시 분석하기
+      </Link>
     </div>
   )
 }

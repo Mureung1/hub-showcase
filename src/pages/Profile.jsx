@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import { calcRecommendedNutrients } from '../lib/nutrition.js'
+import { colors, spacing, styles } from '../styles/theme.js'
 
 const CONDITION_OPTIONS = [
   { key: 'diabetes', label: '당뇨' },
@@ -76,104 +77,110 @@ export default function Profile() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: '40px auto', padding: 24 }}>
+    <div style={styles.page}>
       <h1>신체정보 입력</h1>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 12 }}>
-          <label htmlFor="age">나이</label>
-          <input
-            id="age"
-            type="number"
-            min="1"
-            value={form.age}
-            onChange={(e) => updateField('age', e.target.value)}
-            required
-            style={{ width: '100%', display: 'block' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <label htmlFor="heightCm">키 (cm)</label>
-          <input
-            id="heightCm"
-            type="number"
-            min="1"
-            value={form.heightCm}
-            onChange={(e) => updateField('heightCm', e.target.value)}
-            required
-            style={{ width: '100%', display: 'block' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <label htmlFor="weightKg">몸무게 (kg)</label>
-          <input
-            id="weightKg"
-            type="number"
-            min="1"
-            value={form.weightKg}
-            onChange={(e) => updateField('weightKg', e.target.value)}
-            required
-            style={{ width: '100%', display: 'block' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <label htmlFor="sex">성별</label>
-          <select
-            id="sex"
-            value={form.sex}
-            onChange={(e) => updateField('sex', e.target.value)}
-            style={{ width: '100%', display: 'block' }}
-          >
-            <option value="male">남성</option>
-            <option value="female">여성</option>
-          </select>
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <label htmlFor="activity">활동량</label>
-          <select
-            id="activity"
-            value={form.activity}
-            onChange={(e) => updateField('activity', e.target.value)}
-            style={{ width: '100%', display: 'block' }}
-          >
-            <option value="low">낮음</option>
-            <option value="moderate">보통</option>
-            <option value="high">높음</option>
-          </select>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <span style={{ display: 'block', marginBottom: 4 }}>기저질환 (해당 시 선택)</span>
-          {CONDITION_OPTIONS.map((opt) => (
-            <label key={opt.key} style={{ marginRight: 12 }}>
-              <input
-                type="checkbox"
-                checked={form.conditions.includes(opt.key)}
-                onChange={() => toggleCondition(opt.key)}
-              />{' '}
-              {opt.label}
+      <div style={styles.card}>
+        <form onSubmit={handleSubmit}>
+          <div style={styles.field}>
+            <label htmlFor="age" style={styles.label}>
+              나이
             </label>
-          ))}
-        </div>
+            <input
+              id="age"
+              type="number"
+              min="1"
+              value={form.age}
+              onChange={(e) => updateField('age', e.target.value)}
+              required
+              style={styles.input}
+            />
+          </div>
 
-        <button type="submit" disabled={!preview} style={{ width: '100%' }}>
-          저장하고 분석하러 가기
-        </button>
-      </form>
+          <div style={styles.field}>
+            <label htmlFor="heightCm" style={styles.label}>
+              키 (cm)
+            </label>
+            <input
+              id="heightCm"
+              type="number"
+              min="1"
+              value={form.heightCm}
+              onChange={(e) => updateField('heightCm', e.target.value)}
+              required
+              style={styles.input}
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label htmlFor="weightKg" style={styles.label}>
+              몸무게 (kg)
+            </label>
+            <input
+              id="weightKg"
+              type="number"
+              min="1"
+              value={form.weightKg}
+              onChange={(e) => updateField('weightKg', e.target.value)}
+              required
+              style={styles.input}
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label htmlFor="sex" style={styles.label}>
+              성별
+            </label>
+            <select id="sex" value={form.sex} onChange={(e) => updateField('sex', e.target.value)} style={styles.input}>
+              <option value="male">남성</option>
+              <option value="female">여성</option>
+            </select>
+          </div>
+
+          <div style={styles.field}>
+            <label htmlFor="activity" style={styles.label}>
+              활동량
+            </label>
+            <select
+              id="activity"
+              value={form.activity}
+              onChange={(e) => updateField('activity', e.target.value)}
+              style={styles.input}
+            >
+              <option value="low">낮음</option>
+              <option value="moderate">보통</option>
+              <option value="high">높음</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: spacing.lg }}>
+            <span style={styles.label}>기저질환 (해당 시 선택)</span>
+            <div style={{ display: 'flex', gap: spacing.md, flexWrap: 'wrap' }}>
+              {CONDITION_OPTIONS.map((opt) => (
+                <label key={opt.key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14 }}>
+                  <input
+                    type="checkbox"
+                    checked={form.conditions.includes(opt.key)}
+                    onChange={() => toggleCondition(opt.key)}
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={!preview}
+            style={{ ...styles.buttonPrimary, opacity: preview ? 1 : 0.5, cursor: preview ? 'pointer' : 'not-allowed' }}
+          >
+            저장하고 분석하러 가기
+          </button>
+        </form>
+      </div>
 
       {preview && (
-        <div
-          style={{
-            marginTop: 24,
-            padding: 16,
-            border: '1px solid #e0e0e0',
-            borderRadius: 8,
-          }}
-        >
-          <h2 style={{ marginTop: 0 }}>하루 권장 섭취량</h2>
+        <div style={{ ...styles.card, borderColor: colors.primary }}>
+          <h2>하루 권장 섭취량</h2>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {NUTRIENT_LABELS.map(({ key, label, unit }) => (
               <li key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>

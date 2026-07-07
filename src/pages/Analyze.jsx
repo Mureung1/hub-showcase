@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PhotoUpload from '../components/PhotoUpload.jsx'
 import NutritionCard from '../components/NutritionCard.jsx'
+import Spinner from '../components/Spinner.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { isMealAnalysis } from '../lib/nutrition.js'
+import { spacing, styles } from '../styles/theme.js'
 
 function buildPrompt(menuName, brand) {
   const hints = []
@@ -61,41 +63,41 @@ export default function Analyze() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: '40px auto', padding: 24 }}>
+    <div style={styles.page}>
       <h1>사진 분석</h1>
 
-      <PhotoUpload onChange={setPhoto} />
+      <div style={styles.card}>
+        <PhotoUpload onChange={setPhoto} />
 
-      <div style={{ marginTop: 16, marginBottom: 12 }}>
-        <label htmlFor="menuName">메뉴명 (선택)</label>
-        <input
-          id="menuName"
-          value={menuName}
-          onChange={(e) => setMenuName(e.target.value)}
-          style={{ width: '100%', display: 'block' }}
-        />
+        <div style={{ ...styles.field, marginTop: spacing.lg }}>
+          <label htmlFor="menuName" style={styles.label}>
+            메뉴명 (선택)
+          </label>
+          <input id="menuName" value={menuName} onChange={(e) => setMenuName(e.target.value)} style={styles.input} />
+        </div>
+
+        <div style={styles.field}>
+          <label htmlFor="brand" style={styles.label}>
+            브랜드 (선택)
+          </label>
+          <input id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} style={styles.input} />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleAnalyze}
+          disabled={loading}
+          style={{ ...styles.buttonPrimary, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
+        >
+          {loading && <Spinner size={16} />}
+          {loading ? '분석 중...' : error ? '다시 시도' : '분석하기'}
+        </button>
+
+        {loading && (
+          <p style={{ ...styles.helperText, marginTop: spacing.sm }}>사진을 분석하고 있어요. 수 초 정도 걸릴 수 있어요.</p>
+        )}
+        {error && <p style={styles.errorText}>{error}</p>}
       </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <label htmlFor="brand">브랜드 (선택)</label>
-        <input
-          id="brand"
-          value={brand}
-          onChange={(e) => setBrand(e.target.value)}
-          style={{ width: '100%', display: 'block' }}
-        />
-      </div>
-
-      <button type="button" onClick={handleAnalyze} disabled={loading} style={{ width: '100%' }}>
-        {loading ? '분석 중...' : '분석하기'}
-      </button>
-
-      {loading && <p style={{ marginTop: 12 }}>분석 중입니다... (수 초 정도 걸릴 수 있어요)</p>}
-      {error && (
-        <p style={{ color: 'red', marginTop: 12 }}>
-          {error} 다시 시도하려면 분석하기 버튼을 눌러주세요.
-        </p>
-      )}
 
       <NutritionCard analysis={todayMeal} />
     </div>

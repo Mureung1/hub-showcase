@@ -1,3 +1,5 @@
+import { colors, spacing, styles } from '../styles/theme.js'
+
 const NUTRIENT_LABELS = [
   { key: 'calories', label: '칼로리', unit: 'kcal' },
   { key: 'protein', label: '단백질', unit: 'g' },
@@ -26,10 +28,10 @@ export default function NutritionCard({ analysis }) {
   if (!analysis) return null
 
   return (
-    <div style={{ marginTop: 24 }}>
+    <div style={{ marginTop: spacing.lg }}>
       {analysis.items.map((item, i) => (
-        <div key={i} style={{ padding: 16, border: '1px solid #e0e0e0', borderRadius: 8, marginBottom: 12 }}>
-          <h3 style={{ marginTop: 0 }}>
+        <div key={i} style={styles.card}>
+          <h3>
             {item.name}
             {item.brand ? ` (${item.brand})` : ''}
           </h3>
@@ -37,8 +39,8 @@ export default function NutritionCard({ analysis }) {
         </div>
       ))}
 
-      <div style={{ padding: 16, border: '2px solid #2e7d32', borderRadius: 8 }}>
-        <h3 style={{ marginTop: 0 }}>합계</h3>
+      <div style={{ ...styles.card, border: `2px solid ${colors.primary}` }}>
+        <h3>합계</h3>
         <NutrientList nutrients={analysis.total} />
       </div>
     </div>

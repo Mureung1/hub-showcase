@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
+import { colors, spacing, font, styles } from '../styles/theme.js'
 
 export default function Header() {
   const { user, logout } = useUser()
@@ -18,14 +19,18 @@ export default function Header() {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '12px 16px',
-        borderBottom: '1px solid #e0e0e0',
+        padding: `${spacing.md}px ${spacing.lg}px`,
+        borderBottom: `1px solid ${colors.border}`,
+        background: colors.surface,
       }}
     >
-      <span>{user.id}님</span>
-      <button type="button" onClick={handleLogout}>
-        로그아웃
-      </button>
+      <span style={{ fontWeight: 700, color: colors.primary }}>CJMT</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+        <span style={{ fontSize: font.size.sm, color: colors.textMuted }}>{user.id}님</span>
+        <button type="button" onClick={handleLogout} style={styles.buttonSecondary}>
+          로그아웃
+        </button>
+      </div>
     </header>
   )
 }
