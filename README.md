@@ -2,7 +2,7 @@
 
 NoticePilot은 대학생이 긴 공지, 과제 지침, 장학금 안내, 공모전 공지, 채용 공고를 실행 가능한 체크리스트와 캘린더 일정 후보로 바꿀 수 있게 돕는 MVP 웹앱입니다.
 
-현재 버전은 **React + Vite 기반 MVP UI**입니다. 실제 AI API와 Express 백엔드는 아직 연결하지 않았고, 샘플 데이터로 사용자 검토/수정/export 흐름을 먼저 검증합니다.
+현재 버전은 **React + Vite 기반 MVP UI + Express mock analyze API**입니다. 실제 AI API는 아직 연결하지 않았고, client-side mock과 server mock 분석으로 사용자 검토/수정/export 흐름을 검증합니다.
 
 ## 핵심 아이디어
 
@@ -23,10 +23,14 @@ NoticePilot은 단순 요약 앱이 아니라 공지에서 다음 정보를 추�
 ## 현재 구현 범위
 
 - React + Vite 프로젝트 구성
+- Express analyze API skeleton
+- `GET /api/health`
+- `POST /api/analyze` mock mode
 - English / 한국어 UI 전환
 - 프로젝트 소개 섹션
 - 공지 제목 및 본문 입력 UI
 - 샘플 공지 분석 버튼
+- 서버 mock 분석 버튼
 - mock 분석 dashboard
 - 항목 수정 / 삭제
 - 할 일 완료 체크
@@ -37,13 +41,20 @@ NoticePilot은 단순 요약 앱이 아니라 공지에서 다음 정보를 추�
 - TXT / MD 파일 업로드 및 추출 텍스트 확인
 - 공지 유형 / 게시일 메타데이터 입력
 - 분석 경고, 에러 메시지, 덮어쓰기 확인 모달
+- privacy-like pattern 감지 및 확인 모달
+- server unavailable / invalid response 오류 표시
 - localStorage 기반 단일 분석 세션 복원
+- Vite `/api` dev proxy를 통한 frontend ↔ server mock wiring
 
 ## 아직 구현하지 않은 범위
 
-- Express 백엔드
 - 실제 AI API 호출
-- PDF / HWP / OCR 파싱
+- AI prompt / schema hardening
+- PDF / HWP / HWPX / OCR 파싱
+- 고급 상대 날짜 해석
+- 학교별 공지 parsing
+- checkbox 기반 batch `.ics` export
+- subscription calendar feed
 - 여러 공지 프로젝트 저장
 - 로그인 / DB / Google Calendar API 연동
 
@@ -70,17 +81,18 @@ npm run build
 
 1. 앱을 실행합니다.
 2. 상단에서 `English` 또는 `한국어`를 선택합니다.
-3. `Analyze mock notice` 또는 `샘플 공지 분석` 버튼을 누릅니다.
-4. 샘플 장학금 공지의 분석 결과를 확인합니다.
-5. 추출된 항목을 수정하거나 삭제합니다.
-6. `Evidence` / `근거 보기`로 원문 근거를 확인합니다.
-7. 필요하면 전체 근거 검토 모드를 열어 모든 항목의 evidence를 한 번에 확인합니다.
-8. Markdown 체크리스트 또는 선택한 캘린더 일정의 `.ics` 파일을 다운로드합니다.
+3. `Analyze mock notice` 또는 `샘플 공지 분석` 버튼으로 기존 client-side mock 분석을 실행합니다.
+4. Express 서버를 함께 실행한 경우 `Analyze via server mock` 또는 `서버 mock 분석` 버튼으로 server mock 분석을 실행합니다.
+5. 분석 결과와 warning을 확인합니다. server mock은 실제 AI 호출 없이 `/api/analyze` mock mode를 검증합니다.
+6. 추출된 항목을 수정하거나 삭제합니다.
+7. `Evidence` / `근거 보기`로 원문 근거를 확인합니다.
+8. 필요하면 전체 근거 검토 모드를 열어 모든 항목의 evidence를 한 번에 확인합니다.
+9. Markdown 체크리스트 또는 선택한 캘린더 일정의 `.ics` 파일을 다운로드합니다.
 
 ## 다음 단계
 
-1. Express 서버와 `/api/analyze` 연결
-2. 실제 AI API 호출 및 응답 JSON 검증 강화
-3. PDF / HWP / OCR 추출 경로 추가
+1. 실제 AI API 호출 구현
+2. AI prompt / schema hardening 및 응답 JSON 검증 강화
+3. PDF / HWP / HWPX / OCR 추출 경로 추가
 4. 상대 날짜 해석 고도화
-5. 여러 공지 프로젝트 저장 기능 검토
+5. 학교별 공지 parsing 및 batch / subscription calendar export 검토
