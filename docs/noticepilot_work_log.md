@@ -61,7 +61,7 @@ npm run dev -- --host 127.0.0.1
 - Markdown export
 - manual text paste flow
 
-명시적으로 추가하지 않은 항목:
+Frontend MVP 1차 구현 당시 명시적으로 추가하지 않은 항목:
 
 - 인증
 - 데이터베이스
@@ -531,29 +531,35 @@ const SECTION_LIMITS = {
 
 ### 17. Express /api/analyze Skeleton
 
-상태: 보류
+상태: 완료
 
-사유:
+구현 내용:
 
-- 원 지시서에 “Add an Express server only if this task scope includes backend work”라고 되어 있음
-- 현재 작업 범위에서는 backend 제외로 판단
+- Express dependency 추가
+- `npm run dev:server`, `npm run start:server` script 추가
+- `server/src/index.js` 추가
+- `GET /api/health` endpoint 추가
+- `POST /api/analyze` endpoint 추가
+- mock analysis service와 AI service stub 분리
+- `mode=mock` 기본 응답 지원
+- `mode=ai`는 아직 실제 AI 호출 없이 `501 ai_not_implemented`로 차단
+- unsupported mode는 `400 unsupported_mode`로 처리
+- server response에도 `validateAnalysisResult` 적용
+- section limit, duplicate calendar event 제거, missing field normalize 적용
 
-남은 작업:
+관련 태그:
 
-- `server/src/index.js`
-- `server/src/routes/analyzeRoutes.js`
-- `server/src/services/mockAnalysisService.js`
-- `server/src/services/aiAnalysisService.js`
-- `server/src/utils/validateAnalysisResult.js`
-- `POST /api/analyze`
+- 초기 구현 태그: `express-analyze-skeleton-v1`
+- QA fix 포함 태그: `express-analyze-skeleton-qa-v1`
 
 ### 18. Manual AI Response Validation
 
-상태: 부분 완료
+상태: 부분 완료 / backend mock response validation 완료
 
 현재 구현:
 
 - frontend utility로 `src/utils/validateAnalysisResult.js` 구현
+- backend utility로 `server/src/utils/validateAnalysisResult.js` 구현
 - missing arrays normalize
 - missing strings normalize
 - booleans normalize
@@ -561,11 +567,14 @@ const SECTION_LIMITS = {
 - duplicate calendar events 제거
 - section limits 적용
 - warnings 생성
+- server validation warning message 안정화
+- invalid 또는 누락된 nested object를 안전하게 normalize
 
 남은 작업:
 
-- backend scope 진입 시 server utility로 이동 또는 공유 구조 정리
-- AI API response validation과 연결
+- frontend/server validation utility 공유 구조 검토
+- 실제 AI API response validation과 연결
+- AI prompt/schema hardening
 - Zod 도입 여부는 추후 결정
 
 ### 19. Date Resolution
@@ -621,23 +630,24 @@ const SECTION_LIMITS = {
 
 참고:
 
-- `npm install`은 실행하지 않았습니다.
-- 의존성 변경이 없어 `package.json`, `package-lock.json`은 수정하지 않았습니다.
+- Frontend MVP 1차 구현 당시에는 `npm install`을 실행하지 않았습니다.
+- Frontend MVP 1차 구현 당시에는 의존성 변경이 없어 `package.json`, `package-lock.json`을 수정하지 않았습니다.
+- 이후 Express Analyze API Skeleton 단계에서 Express dependency와 server scripts가 추가되었습니다.
 - `npm run dev`는 sandbox port binding 제한으로 최초 실패했고, 승인 실행으로 정상 기동을 확인했습니다.
 
 ## 5. 현재 남은 핵심 작업
 
-### 5.1 Backend scope
+### 5.1 Frontend ↔ Server mock analyze wiring
 
 아직 구현하지 않았습니다.
 
 해야 할 일:
 
-- Express server skeleton 추가
-- `/api/analyze` endpoint 추가
-- mock analysis service와 real AI service stub 분리
-- frontend mock analysis flow 유지
-- validation을 server response에도 적용
+- 현재 `App.jsx`의 client-side mock analysis flow를 보존
+- 선택적으로 `POST /api/analyze` mock mode를 호출하는 wiring 추가
+- server error/loading/empty state를 frontend에 연결
+- manual text paste flow 유지
+- 기존 frontend QA 기준선 regression 확인
 
 ### 5.2 Real AI integration
 
@@ -647,6 +657,7 @@ const SECTION_LIMITS = {
 
 - AI API key는 browser에 노출하지 않음
 - Express endpoint를 통해 AI call 수행
+- AI prompt/schema hardening
 - AI JSON response validation
 - invalid JSON/error handling
 
@@ -672,6 +683,26 @@ const SECTION_LIMITS = {
 - relative date expression 계산
 - reference date confidence 적용
 - reviewRequired event UX 정리
+
+### 5.5 School-level notice parsing
+
+아직 구현하지 않았습니다.
+
+해야 할 일:
+
+- 학교별 공지 형식 차이 정리
+- school-level notice parsing heuristic 또는 prompt rule 추가
+- 공지 유형별 field confidence와 reviewRequired 기준 정리
+
+### 5.6 Batch and subscription calendar export
+
+아직 구현하지 않았습니다.
+
+해야 할 일:
+
+- checkbox 기반 batch `.ics` export
+- subscription calendar feed 설계
+- Google Calendar API 연동 여부는 별도 phase에서 결정
 
 ## 6. 주요 파일 역할
 
@@ -800,11 +831,169 @@ Local: http://127.0.0.1:5173/
 
 ## 9. 주의 사항
 
-- 현재 구현은 frontend MVP 범위입니다.
-- Express backend는 아직 없습니다.
+- 현재 구현은 frontend MVP와 Express analyze API skeleton을 포함합니다.
+- Express backend skeleton은 존재하지만 frontend는 아직 server mock analyze endpoint에 연결되어 있지 않습니다.
 - 실제 AI 분석은 아직 없습니다.
 - mock analysis flow는 의도적으로 유지되어 있습니다.
 - `.ics` export는 all-day selected event만 지원합니다.
 - time-specific event와 timezone handling은 아직 없습니다.
 - Google Calendar API integration은 없습니다.
 - localStorage에는 file object를 저장하지 않고 metadata만 저장합니다.
+
+## 10. Frontend MVP QA 결과
+
+상태: 완료
+
+태그:
+
+```text
+frontend-mvp-followup-v1
+```
+
+관련 커밋:
+
+```text
+78f5b09 Fix major frontend MVP QA issues
+```
+
+QA 문서:
+
+- `docs/qa/frontend-mvp-regression-checklist.md`
+- `docs/qa/frontend-mvp-qa-backlog.md`
+
+정리:
+
+- Frontend MVP follow-up v1은 QA 기준선으로 태그 처리했습니다.
+- major frontend QA issue는 `78f5b09`에서 수정했습니다.
+- 기존 mock analysis flow, manual text paste flow, English/Korean UI, edit/delete/toggle/export 흐름은 유지했습니다.
+- minor backlog는 별도 QA backlog 문서에 남겨두었습니다.
+
+## 11. Express Analyze API Skeleton 구현
+
+상태: 완료
+
+초기 태그:
+
+```text
+express-analyze-skeleton-v1
+```
+
+관련 커밋:
+
+```text
+3ec0079 Add Express analyze API skeleton
+```
+
+구현 파일:
+
+- `server/src/index.js`
+- `server/src/routes/analyzeRoutes.js`
+- `server/src/services/mockAnalysisService.js`
+- `server/src/services/aiAnalysisService.js`
+- `server/src/utils/validateAnalysisResult.js`
+- `package.json`
+- `package-lock.json`
+
+구현 내용:
+
+- Express server skeleton 추가
+- `GET /api/health` 추가
+- `POST /api/analyze` 추가
+- mock analysis service 추가
+- AI service stub 추가
+- server-side analysis result validation 추가
+- `npm run dev:server`, `npm run start:server` script 추가
+
+범위 제한:
+
+- 실제 AI API 호출은 아직 구현하지 않았습니다.
+- frontend는 아직 server endpoint를 호출하지 않습니다.
+- 기존 frontend mock analysis flow는 유지했습니다.
+
+## 12. Backend QA 및 major issue 수정 결과
+
+상태: 완료
+
+QA fix 포함 태그:
+
+```text
+express-analyze-skeleton-qa-v1
+```
+
+현재 HEAD 기준:
+
+```text
+8f4207b Fix backend analyze API QA issues
+```
+
+QA 문서:
+
+- `docs/qa/backend-analyze-api-checklist.md`
+
+수정 내용:
+
+- backend analyze route에서 `mock` / `ai` mode만 허용하도록 정리했습니다.
+- unsupported mode는 `400 unsupported_mode`로 응답합니다.
+- `mode=ai`는 실제 AI 미구현 상태를 명확히 `501 ai_not_implemented`로 응답합니다.
+- server validation utility가 누락/비정상 field를 더 안전하게 normalize하도록 수정했습니다.
+- warning은 `{ type, message }` 구조를 유지합니다.
+- section limit과 duplicate calendar event 제거가 server response에도 적용됩니다.
+
+## 13. 태그 기준선
+
+현재 기준선:
+
+```text
+frontend-mvp-followup-v1
+express-analyze-skeleton-v1
+express-analyze-skeleton-qa-v1
+```
+
+현재 HEAD:
+
+```text
+8f4207b Fix backend analyze API QA issues
+```
+
+의미:
+
+- `frontend-mvp-followup-v1`: Frontend MVP follow-up QA 완료 기준선
+- `express-analyze-skeleton-v1`: Express `/api/analyze` skeleton 초기 구현 기준선
+- `express-analyze-skeleton-qa-v1`: backend QA major issue 수정 완료 기준선
+
+## 14. 현재 남은 작업
+
+현재 남은 핵심 작업:
+
+- Frontend ↔ Server mock analyze wiring
+- Real AI API integration
+- AI prompt/schema hardening
+- Advanced file extraction: PDF / HWP / HWPX / OCR
+- Advanced date resolution
+- School-level notice parsing
+- Checkbox-based batch `.ics` export
+- Subscription calendar feed
+
+제거된 이전 남은 작업:
+
+- Express `/api/analyze` skeleton
+
+사유:
+
+- Express Analyze API Skeleton은 `express-analyze-skeleton-v1`에서 구현 완료했습니다.
+- backend QA major issue는 `express-analyze-skeleton-qa-v1`에서 수정 완료했습니다.
+
+## 15. 다음 단계: Frontend ↔ Server Mock Analyze Wiring
+
+권장 다음 작업:
+
+1. `App.jsx`의 기존 mock analysis flow를 보존합니다.
+2. `POST /api/analyze` mock mode 호출 경로를 추가합니다.
+3. server unavailable, invalid response, loading state를 frontend에 연결합니다.
+4. manual text paste와 TXT / MD upload flow를 계속 유지합니다.
+5. frontend regression checklist와 backend analyze API checklist를 함께 재확인합니다.
+
+주의:
+
+- 실제 AI API integration은 이 다음 phase로 분리하는 것이 안전합니다.
+- 인증, DB, 결제, Google Calendar API는 아직 scope에 포함하지 않습니다.
