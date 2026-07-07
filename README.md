@@ -112,7 +112,14 @@ npm run build
 - [Implementation Plan](../../wiki/02_Implementation_Plan)
 - [Review Points](../../wiki/03_Review_Points)
 
-Phase 4 이후의 AI 연동 계약, 테스트 corpus, batch calendar export 로드맵은 repository 문서로 추가할 예정입니다.
+Phase 4 이후의 AI 연동 계약, 테스트 corpus, batch calendar export 로드맵은 repository 문서로 관리합니다.
+
+- [Current Implementation Summary](docs/project/current-implementation-summary.md)
+- [Phase 4 Plan](docs/roadmap/phase-4-plan.md)
+- [AI Output Schema](docs/ai/ai-output-schema.md)
+- [Prompt Contract](docs/ai/prompt-contract.md)
+- [Test Corpus Plan](docs/qa/test-corpus-plan.md)
+- [Batch Calendar Export Roadmap](docs/roadmap/batch-calendar-export.md)
 
 ## 다음 단계
 
