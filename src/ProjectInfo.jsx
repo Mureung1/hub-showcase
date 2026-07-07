@@ -5,26 +5,50 @@ const ProjectInfo = () => {
   const coreFeatures = [
     {
       id: 1,
-      icon: '✓',
-      title: '구독 서비스 통합 관리',
-      description: '현재 이용 중인 다양한 구독 서비스를 한 곳에서 모아보고, 월별 지출 내역을 체계적으로 관리합니다.'
+      icon: '📋',
+      title: '구독 서비스 현황 확인',
+      description: '이용 중인 구독 서비스를 수동으로 등록하면, 함께 쓰는 인원수를 기반으로 실제 분담 금액이 자동으로 계산됩니다.'
     },
     {
       id: 2,
       icon: '₩',
-      title: '스마트한 N인 정산',
-      description: '계정을 공유하는 멤버들과의 정산 일정을 놓치지 않도록 알림을 제공하며, 간편하게 이체 및 납부 현황을 확인합니다.'
+      title: '그룹 정산',
+      description: '멤버들과 그룹을 만들어 관리하고, 매달 자동으로 정산 요청 알림을 받아 카카오페이·토스 송금으로 간편하게 정산할 수 있습니다.'
     }
+  ];
+
+  const subFeatures = [
+    '구독을 해지하고 싶을 때 해당 앱/웹으로 바로 이동',
+    '그룹 인원이 바뀌면 구독 해지, 요금제 변경 안내',
+    '한 달에 한 번 이용 정도를 자가 체크하면 규칙 기반으로 해지 추천'
+  ];
+
+  const userScenario = [
+    '사용자가 가입 후 이용 중인 구독 서비스를 등록한다. (함께 쓰는 인원수도 입력)',
+    '사용자가 구독 중인 서비스 현황과 한 달 소비 금액을 한눈에 확인한다.',
+    '결제 금액이 아닌 실제 분담 금액으로 본인의 정확한 소비 현황을 확인한다.',
+    '여러 명이 함께 쓰는 서비스는 멤버들과 그룹을 만든다.',
+    '매달 자동으로 정산 요청 알림을 받고, 카카오페이/토스 송금으로 연동되어 정산한다.',
+    '그룹 인원이 바뀌면 구독 해지, 요금제 변경을 안내받는다.',
+    '한 달에 한 번 서비스 이용 정도를 간단히 체크하면, 덜 쓰는 서비스는 해지를 제안받는다.',
+    '구독을 해지하고 싶을 때 해당 앱/웹으로 이동한다.'
   ];
 
   return (
     <div className="project-intro-container">
       <header className="intro-header">
-        <h1 className="intro-title">구독 관리 서비스 (가제)</h1>
+        <h1 className="intro-title">SUBZIP</h1>
         <p className="intro-subtitle">
-          복잡한 구독 내역을 한눈에 확인하고 정산까지 한번에 해결하는 서비스
+          구독 중인 서비스를 한눈에 파악하고, 그룹원들과 정산하는 서비스
         </p>
       </header>
+
+      <section className="problem-section">
+        <h2 className="section-label">문제 정의</h2>
+        <p className="problem-text">
+          여러 구독 서비스를 이용하는 사람은 매달 어떤 서비스에 얼마를 쓰는지 한눈에 파악하기 어렵고, 일일이 정산하는 것이 번거롭습니다.
+        </p>
+      </section>
 
       <section className="features-section">
         <h2 className="section-label">핵심 기능</h2>
@@ -41,34 +65,28 @@ const ProjectInfo = () => {
         </div>
       </section>
 
-      <section className="differentiation-section">
-        <h2 className="section-label">해당 서비스만의 특별함</h2>
-        <div className="diff-card">
-          <h3 className="diff-title">왜곡 없는 정확한 지출 기록</h3>
-          <div className="diff-content">
-            <div className="diff-item problem">
-              <span className="diff-badge gray">기존 방식</span>
-              <p className="diff-text">
-                멤버 대표는 실제 부담금보다 많은 전체 요금이 지출로 잡히고, 멤버는 단순 이체로 기록되어 정확한 구독료 파악이 어려웠습니다.
-              </p>
-            </div>
-            <div className="diff-item solution">
-              <span className="diff-badge green">해당 서비스</span>
-              <p className="diff-text">
-                정산 시스템을 연동하여 멤버 대표와 멤버 모두 <strong>자신이 실제로 부담하는 구독료</strong>만 정확하게 개인 지출 내역으로 관리할 수 있습니다.
-              </p>
-            </div>
-          </div>
-        </div>
+      <section className="sub-features-section">
+        <h2 className="section-label">서브 기능</h2>
+        <ul className="sub-features-list">
+          {subFeatures.map((item, idx) => (
+            <li key={idx} className="sub-feature-item">
+              <span className="sub-feature-dot" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
       </section>
 
-      <section className="roadmap-section">
-        <div className="roadmap-content">
-          <h3 className="roadmap-title">Next Step: 구독 커뮤니티</h3>
-          <p className="roadmap-desc">
-            핵심 기능 안정화 후, OTT 등 특정 서비스를 함께 구독할 멤버를 안전하게 모집하고 매칭할 수 있는 커뮤니티 기능이 도입될 예정입니다.
-          </p>
-        </div>
+      <section className="scenario-section">
+        <h2 className="section-label">사용자 시나리오</h2>
+        <ol className="scenario-list">
+          {userScenario.map((step, idx) => (
+            <li key={idx} className="scenario-item">
+              <span className="scenario-number">{idx + 1}</span>
+              <p className="scenario-text">{step}</p>
+            </li>
+          ))}
+        </ol>
       </section>
     </div>
   );
