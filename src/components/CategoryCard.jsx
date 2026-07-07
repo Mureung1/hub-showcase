@@ -6,7 +6,7 @@ function CategoryCard({ id, name, emoji, cheapestRecipe }) {
   const showImage = Boolean(cheapestRecipe.image) && !imageFailed
 
   return (
-    <li>
+    <li className="w-32 shrink-0 sm:w-40">
       <Link
         to={`/category/${id}`}
         className="flex flex-col overflow-hidden rounded-xl border border-orange-100 bg-white shadow-sm transition hover:border-orange-300 hover:shadow-md"
