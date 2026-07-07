@@ -24,6 +24,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -381,6 +382,7 @@ a {
 }
 
 .field input,
+.field select,
 .field textarea,
 .compact-field input,
 .compact-field textarea {
@@ -399,11 +401,70 @@ a {
 }
 
 .field input:focus,
+.field select:focus,
 .field textarea:focus,
 .compact-field input:focus,
 .compact-field textarea:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.field input[type="file"] {
+  background: #f8fafc;
+}
+
+.notice-metadata {
+  margin-top: 16px;
+}
+
+.extract-preview,
+.privacy-notice,
+.warning-banner,
+.error-message {
+  margin-top: 14px;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.extract-preview,
+.privacy-notice {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.extract-preview strong,
+.privacy-notice strong,
+.warning-banner strong,
+.error-message strong {
+  display: block;
+}
+
+.extract-preview p,
+.privacy-notice p,
+.error-message p {
+  margin: 6px 0 0;
+}
+
+.warning-banner {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+  font-weight: 700;
+}
+
+.warning-banner ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.error-message {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 700;
 }
 
 .action-row,
@@ -451,6 +512,12 @@ a {
   gap: 16px;
 }
 
+.dashboard-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 16px 0;
+}
+
 .result-section {
   display: grid;
   gap: 12px;
@@ -478,6 +545,7 @@ a {
 
 .item-card-header,
 .item-card-actions,
+.item-card-labels,
 .inline-check,
 .field-pair {
   display: flex;
@@ -506,6 +574,16 @@ a {
   text-transform: uppercase;
 }
 
+.edited-pill {
+  border-radius: 999px;
+  background: #dcfce7;
+  padding: 4px 9px;
+  color: #166534;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .inline-check {
   color: #475569;
   font-size: 0.92rem;
@@ -520,6 +598,10 @@ a {
   flex: 1;
 }
 
+.field-pair .field + .field {
+  margin-top: 0;
+}
+
 .evidence-box {
   display: grid;
   gap: 12px;
@@ -531,6 +613,67 @@ a {
   background: #f8fafc;
   padding: 12px 14px;
   color: #334155;
+}
+
+.evidence-review {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+  border: 1px solid #dfe5ef;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 16px;
+}
+
+.evidence-review h3 {
+  margin: 0;
+}
+
+.evidence-review-list {
+  display: grid;
+  gap: 10px;
+}
+
+.evidence-review-item {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #dfe5ef;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.evidence-review-item blockquote {
+  margin: 0;
+  color: #475569;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.42);
+  padding: 20px;
+}
+
+.confirmation-modal {
+  width: min(440px, 100%);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 22px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.confirmation-modal h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.confirmation-modal p {
+  margin: 12px 0 0;
+  color: #475569;
 }
 
 .export-actions {

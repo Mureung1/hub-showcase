@@ -11,6 +11,14 @@ function formatTitleOrText(item) {
   return `- ${item.title || item.text}`
 }
 
+function withEvidence(line, item, markdownCopy, includeEvidence) {
+  if (!includeEvidence || !item.evidence) {
+    return [line]
+  }
+
+  return [line, `  - ${markdownCopy.evidence}: ${item.evidence}`]
+}
+
 const defaultMarkdownCopy = {
   fallbackTitle: 'NoticePilot Checklist',
   unavailable: '# NoticePilot Checklist\n\nNo analysis result is available yet.\n',
@@ -24,12 +32,19 @@ const defaultMarkdownCopy = {
   noSubmissions: 'No submissions extracted.',
   noRequirements: 'No requirements extracted.',
   noCautions: 'No cautions extracted.',
+  evidence: 'Evidence',
 }
 
-export function generateMarkdown(analysisResult, markdownCopy = defaultMarkdownCopy) {
+export function generateMarkdown(
+  analysisResult,
+  markdownCopy = defaultMarkdownCopy,
+  options = {},
+) {
   if (!analysisResult) {
     return markdownCopy.unavailable
   }
+
+  const includeEvidence = Boolean(options.includeEvidence)
 
   return [
     `# ${analysisResult.title || markdownCopy.fallbackTitle}`,
@@ -38,27 +53,37 @@ export function generateMarkdown(analysisResult, markdownCopy = defaultMarkdownC
     '',
     `## ${markdownCopy.deadlines}`,
     ...(analysisResult.deadlines.length
-      ? analysisResult.deadlines.map(formatDeadline)
+      ? analysisResult.deadlines.flatMap((item) =>
+          withEvidence(formatDeadline(item), item, markdownCopy, includeEvidence),
+        )
       : [`- ${markdownCopy.noDeadlines}`]),
     '',
     `## ${markdownCopy.tasks}`,
     ...(analysisResult.tasks.length
-      ? analysisResult.tasks.map(formatTask)
+      ? analysisResult.tasks.flatMap((item) =>
+          withEvidence(formatTask(item), item, markdownCopy, includeEvidence),
+        )
       : [`- [ ] ${markdownCopy.noTasks}`]),
     '',
     `## ${markdownCopy.submissions}`,
     ...(analysisResult.submissions.length
-      ? analysisResult.submissions.map(formatTitleOrText)
+      ? analysisResult.submissions.flatMap((item) =>
+          withEvidence(formatTitleOrText(item), item, markdownCopy, includeEvidence),
+        )
       : [`- ${markdownCopy.noSubmissions}`]),
     '',
     `## ${markdownCopy.requirements}`,
     ...(analysisResult.requirements.length
-      ? analysisResult.requirements.map(formatTitleOrText)
+      ? analysisResult.requirements.flatMap((item) =>
+          withEvidence(formatTitleOrText(item), item, markdownCopy, includeEvidence),
+        )
       : [`- ${markdownCopy.noRequirements}`]),
     '',
     `## ${markdownCopy.cautions}`,
     ...(analysisResult.cautions.length
-      ? analysisResult.cautions.map(formatTitleOrText)
+      ? analysisResult.cautions.flatMap((item) =>
+          withEvidence(formatTitleOrText(item), item, markdownCopy, includeEvidence),
+        )
       : [`- ${markdownCopy.noCautions}`]),
     '',
   ]

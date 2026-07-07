@@ -18,13 +18,36 @@ export const localizedContent = {
       eyebrow: 'Manual input',
       title: 'Paste a notice',
       description:
-        'First-pass MVP uses mock analysis only. Paste text or load the sample notice, then review editable extracted items below.',
+        'Paste text, upload a TXT / MD file, or load the sample notice. Confirm or edit the extracted text before analysis.',
+      fileUploadLabel: 'Upload TXT / MD file',
+      extractPreviewTitle: 'Extract preview',
+      uploadedFileName: (fileName) => `Loaded file: ${fileName}`,
+      noUploadedFile: 'No file loaded. Manual paste is still available.',
+      extractPreviewHint:
+        'Uploaded text stays in the editable notice text field and is not analyzed automatically.',
+      privacyNoticeTitle: 'Privacy check',
+      privacyNoticeBody:
+        'Do not paste or upload notices that contain sensitive personal information. NoticePilot only flags simple patterns in the browser and does not mask text automatically.',
+      warningTitle: 'Review before analysis',
       titleLabel: 'Notice title',
       titlePlaceholder: 'Scholarship notice, assignment guideline, job posting...',
+      noticeTypeLabel: 'Notice type (optional)',
+      noticeTypePlaceholder: 'Select notice type',
+      noticeTypeOptions: [
+        { value: 'school_notice', label: 'School notice' },
+        { value: 'assignment', label: 'Assignment' },
+        { value: 'scholarship', label: 'Scholarship' },
+        { value: 'competition', label: 'Competition' },
+        { value: 'job_posting', label: 'Job posting' },
+        { value: 'other', label: 'Other' },
+      ],
+      publicationDateLabel: 'Publication date (optional)',
       textLabel: 'Notice text',
       textPlaceholder:
         'Paste a university notice, assignment guideline, scholarship announcement, competition notice, or job posting here.',
       analyzeButton: 'Analyze mock notice',
+      analyzeServerButton: 'Analyze via server mock',
+      serverAnalyzeLoading: 'Analyzing via server...',
       clearButton: 'Clear',
     },
     emptyState: {
@@ -34,6 +57,13 @@ export const localizedContent = {
     },
     dashboard: {
       eyebrow: 'Mock analysis',
+      warningTitle: 'Warnings to review',
+      showEvidenceReview: 'Review all evidence',
+      hideEvidenceReview: 'Hide evidence review',
+      evidenceReview: {
+        title: 'Evidence review',
+        fallback: 'No evidence provided.',
+      },
       sections: {
         deadlines: 'Deadlines',
         tasks: 'Tasks',
@@ -57,6 +87,7 @@ export const localizedContent = {
       startDate: 'Start date',
       allDay: 'All-day event',
       description: 'Description',
+      edited: 'Edited',
     },
     evidencePanel: {
       eyebrow: 'Source evidence',
@@ -69,9 +100,14 @@ export const localizedContent = {
       eyebrow: 'Export',
       title: 'Checklist output',
       markdownButton: 'Download Markdown',
-      icsButton: '.ics export next pass',
-      note: 'Markdown export is active for this UI skeleton. Calendar export is intentionally left as a first-pass placeholder.',
+      icsButton: 'Download .ics',
+      includeEvidence: 'Include evidence in Markdown',
+      exportErrorTitle: 'Export blocked',
+      note: 'Markdown export includes the reviewed checklist. Calendar export downloads selected all-day events with valid start dates.',
       fileName: 'noticepilot-checklist.md',
+      icsFileName: 'noticepilot-calendar.ics',
+      noValidEvents:
+        'Select at least one calendar event with a valid start date before downloading .ics.',
     },
     markdown: {
       fallbackTitle: 'NoticePilot Checklist',
@@ -86,6 +122,54 @@ export const localizedContent = {
       noSubmissions: 'No submissions extracted.',
       noRequirements: 'No requirements extracted.',
       noCautions: 'No cautions extracted.',
+      evidence: 'Evidence',
+    },
+    errors: {
+      fileErrorTitle: 'File cannot be used',
+      unsupportedFile: 'Only .txt and .md files are supported for this MVP.',
+      fileTooLarge: 'File is too large. Please upload a TXT or MD file under 1MB.',
+      fileReadFailed: 'The file could not be read. Please try another TXT or MD file.',
+      serverAnalyze: {
+        title: 'Server mock analysis failed',
+        network:
+          'The local analyze server is unavailable. Start it with npm run dev:server and try again.',
+        generic:
+          'The server mock analysis could not be completed. Please try again.',
+        unsupportedMode:
+          'The analyze server rejected the requested analysis mode.',
+        aiNotImplemented:
+          'Real AI analysis is not enabled in this MVP. Use mock analysis instead.',
+        invalidResponse:
+          'The analyze server returned an invalid or empty response.',
+      },
+    },
+    warnings: {
+      privacyPatternsDetected: (types) =>
+        `Possible sensitive personal information detected (${types.join(', ')}). Review the text before continuing.`,
+    },
+    validationWarnings: {
+      normalizedFields: (sectionName) =>
+        `${sectionName} was missing or invalid and was normalized.`,
+      sectionLimitApplied: (sectionName, limit) =>
+        `${sectionName} was trimmed to the MVP limit of ${limit} items.`,
+      duplicatesRemoved: (count) =>
+        `${count} duplicate calendar event${count === 1 ? '' : 's'} removed.`,
+    },
+    confirmations: {
+      overwrite: {
+        title: 'Replace current analysis?',
+        message:
+          'A notice analysis is already active. Loading a new mock analysis will replace the current result and calendar selection state.',
+        confirm: 'Replace',
+        cancel: 'Cancel',
+      },
+      privacy: {
+        title: 'Continue with possible personal information?',
+        message:
+          'NoticePilot detected possible email, phone, or resident-registration-number-like text. Review the notice before continuing.',
+        confirm: 'Continue',
+        cancel: 'Cancel',
+      },
     },
     intro: {
       overview: {
@@ -180,7 +264,7 @@ export const localizedContent = {
         items: [
           'Frontend: React + Vite',
           'Backend: Express',
-          'State: React useState / useReducer',
+          'State: React useState',
           'Persistence: localStorage',
           'Export: Client-side .ics and Markdown generation',
           'AI: Server-side AI API call through Express',
@@ -226,13 +310,36 @@ export const localizedContent = {
       eyebrow: '수동 입력',
       title: '공지 붙여넣기',
       description:
-        '첫 번째 MVP는 샘플 분석만 사용합니다. 공지 텍스트를 붙여넣거나 샘플을 불러온 뒤, 아래에서 추출 항목을 검토하고 수정합니다.',
+        '공지 텍스트를 붙여넣거나 TXT / MD 파일을 업로드하거나 샘플을 불러오세요. 분석 전 추출된 텍스트를 확인하고 수정합니다.',
+      fileUploadLabel: 'TXT / MD 파일 업로드',
+      extractPreviewTitle: '추출 미리보기',
+      uploadedFileName: (fileName) => `불러온 파일: ${fileName}`,
+      noUploadedFile: '불러온 파일이 없습니다. 직접 붙여넣기도 사용할 수 있습니다.',
+      extractPreviewHint:
+        '업로드한 텍스트는 수정 가능한 공지 본문 입력란에 표시되며 자동으로 분석되지 않습니다.',
+      privacyNoticeTitle: '개인정보 확인',
+      privacyNoticeBody:
+        '민감한 개인정보가 포함된 문서는 붙여넣거나 업로드하지 마세요. NoticePilot은 브라우저에서 단순 패턴만 감지하며 텍스트를 자동으로 마스킹하지 않습니다.',
+      warningTitle: '분석 전 확인',
       titleLabel: '공지 제목',
       titlePlaceholder: '장학금 공지, 과제 안내, 채용 공고...',
+      noticeTypeLabel: '공지 유형 (선택)',
+      noticeTypePlaceholder: '공지 유형 선택',
+      noticeTypeOptions: [
+        { value: 'school_notice', label: '학사 공지' },
+        { value: 'assignment', label: '과제' },
+        { value: 'scholarship', label: '장학금' },
+        { value: 'competition', label: '공모전' },
+        { value: 'job_posting', label: '채용 공고' },
+        { value: 'other', label: '기타' },
+      ],
+      publicationDateLabel: '공지 게시일 (선택)',
       textLabel: '공지 본문',
       textPlaceholder:
         '대학 공지, 과제 지침, 장학금 안내, 공모전 공지, 채용 공고를 여기에 붙여넣으세요.',
       analyzeButton: '샘플 공지 분석',
+      analyzeServerButton: '서버 mock 분석',
+      serverAnalyzeLoading: '서버 mock 분석 중...',
       clearButton: '초기화',
     },
     emptyState: {
@@ -242,6 +349,13 @@ export const localizedContent = {
     },
     dashboard: {
       eyebrow: '샘플 분석',
+      warningTitle: '확인할 경고',
+      showEvidenceReview: '전체 근거 검토',
+      hideEvidenceReview: '근거 검토 닫기',
+      evidenceReview: {
+        title: '전체 근거 검토',
+        fallback: '제공된 근거가 없습니다.',
+      },
       sections: {
         deadlines: '마감일',
         tasks: '할 일',
@@ -265,6 +379,7 @@ export const localizedContent = {
       startDate: '시작일',
       allDay: '종일 일정',
       description: '설명',
+      edited: '수정됨',
     },
     evidencePanel: {
       eyebrow: '원문 근거',
@@ -277,9 +392,14 @@ export const localizedContent = {
       eyebrow: '내보내기',
       title: '체크리스트 출력',
       markdownButton: 'Markdown 다운로드',
-      icsButton: '.ics 내보내기는 다음 단계',
-      note: '이번 UI skeleton에서는 Markdown 내보내기만 활성화했습니다. 캘린더 내보내기는 의도적으로 placeholder로 남겨두었습니다.',
+      icsButton: '.ics 다운로드',
+      includeEvidence: 'Markdown에 근거 포함',
+      exportErrorTitle: '내보내기 차단',
+      note: 'Markdown은 검토한 체크리스트를 내려받습니다. 캘린더 내보내기는 선택된 종일 일정 중 시작일이 유효한 항목만 포함합니다.',
       fileName: 'noticepilot-checklist-ko.md',
+      icsFileName: 'noticepilot-calendar-ko.ics',
+      noValidEvents:
+        '.ics를 다운로드하려면 시작일이 유효한 캘린더 일정을 하나 이상 선택하세요.',
     },
     markdown: {
       fallbackTitle: 'NoticePilot 체크리스트',
@@ -294,6 +414,50 @@ export const localizedContent = {
       noSubmissions: '추출된 제출물이 없습니다.',
       noRequirements: '추출된 지원 조건이 없습니다.',
       noCautions: '추출된 주의사항이 없습니다.',
+      evidence: '근거',
+    },
+    errors: {
+      fileErrorTitle: '파일을 사용할 수 없습니다',
+      unsupportedFile: '이번 MVP에서는 .txt와 .md 파일만 지원합니다.',
+      fileTooLarge: '파일이 너무 큽니다. 1MB 이하의 TXT 또는 MD 파일을 업로드하세요.',
+      fileReadFailed: '파일을 읽을 수 없습니다. 다른 TXT 또는 MD 파일을 다시 시도하세요.',
+      serverAnalyze: {
+        title: '서버 mock 분석 실패',
+        network:
+          '로컬 분석 서버에 연결할 수 없습니다. npm run dev:server로 서버를 실행한 뒤 다시 시도하세요.',
+        generic: '서버 mock 분석을 완료할 수 없습니다. 다시 시도하세요.',
+        unsupportedMode: '분석 서버가 요청한 분석 모드를 거부했습니다.',
+        aiNotImplemented:
+          '이번 MVP에서는 실제 AI 분석이 활성화되어 있지 않습니다. mock 분석을 사용하세요.',
+        invalidResponse: '분석 서버가 비어 있거나 올바르지 않은 응답을 반환했습니다.',
+      },
+    },
+    warnings: {
+      privacyPatternsDetected: (types) =>
+        `민감한 개인정보로 보일 수 있는 패턴이 감지되었습니다(${types.join(', ')}). 계속하기 전에 본문을 확인하세요.`,
+    },
+    validationWarnings: {
+      normalizedFields: (sectionName) =>
+        `${sectionName} 섹션이 없거나 올바르지 않아 기본값으로 정리했습니다.`,
+      sectionLimitApplied: (sectionName, limit) =>
+        `${sectionName} 섹션을 MVP 제한인 ${limit}개 항목으로 줄였습니다.`,
+      duplicatesRemoved: (count) => `중복 캘린더 일정 ${count}개를 제거했습니다.`,
+    },
+    confirmations: {
+      overwrite: {
+        title: '현재 분석 결과를 교체할까요?',
+        message:
+          '이미 활성화된 공지 분석 결과가 있습니다. 새 샘플 분석을 불러오면 현재 결과와 캘린더 선택 상태가 교체됩니다.',
+        confirm: '교체',
+        cancel: '취소',
+      },
+      privacy: {
+        title: '개인정보 가능성이 있는 본문으로 계속할까요?',
+        message:
+          '이메일, 전화번호 또는 주민등록번호와 유사한 텍스트가 감지되었습니다. 계속하기 전에 공지 본문을 확인하세요.',
+        confirm: '계속',
+        cancel: '취소',
+      },
     },
     intro: {
       overview: {
@@ -387,7 +551,7 @@ export const localizedContent = {
         items: [
           'Frontend: React + Vite',
           'Backend: Express',
-          'State: React useState / useReducer',
+          'State: React useState',
           'Persistence: localStorage',
           'Export: 클라이언트 측 .ics 및 Markdown 생성',
           'AI: Express 서버를 통한 서버 측 AI API 호출',
