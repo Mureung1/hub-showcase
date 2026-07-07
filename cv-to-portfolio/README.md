@@ -3,6 +3,13 @@
 이력서(CV)를 업로드하고 원하는 **DESIGN.md** 테마를 고르면, 그 디자인으로 완성된
 **독립 실행형 포트폴리오 HTML**을 만들어 주는 웹앱입니다. (React only, Vite)
 
+## 문서
+
+- 📄 **[기획서](docs/기획서.md)** — 문제 정의 · 사용자 시나리오 · 핵심 기능
+- 🎨 [디자인 명세 (DESIGN.md 5종)](designs)
+- 🖼️ [예시 결과 + 스크린샷](examples)
+- 🔀 [Pull Request #1](https://github.com/dolphin1404/NaverConnect_wm/pull/1)
+
 ## 미리보기
 
 샘플 개발자 CV(`samples/kim-jiwoo-frontend.md`)를 각 테마로 생성한 실제 결과입니다.
