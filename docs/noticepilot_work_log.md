@@ -251,7 +251,7 @@ Frontend MVP 1차 구현 당시 명시적으로 추가하지 않은 항목:
 - TXT / MD upload 반영
 - 실제 `.ics` export 반영
 - localStorage 복원 반영
-- 다음 단계에서 Express/AI/PDF/HWP/OCR 등을 남은 작업으로 정리
+- 당시 다음 단계로 Express/AI/PDF/HWP/OCR 등을 남은 작업으로 정리
 
 관련 지시서 항목:
 
@@ -637,19 +637,7 @@ const SECTION_LIMITS = {
 
 ## 5. 현재 남은 핵심 작업
 
-### 5.1 Frontend ↔ Server mock analyze wiring
-
-아직 구현하지 않았습니다.
-
-해야 할 일:
-
-- 현재 `App.jsx`의 client-side mock analysis flow를 보존
-- 선택적으로 `POST /api/analyze` mock mode를 호출하는 wiring 추가
-- server error/loading/empty state를 frontend에 연결
-- manual text paste flow 유지
-- 기존 frontend QA 기준선 regression 확인
-
-### 5.2 Real AI integration
+### 5.1 Real AI integration
 
 아직 구현하지 않았습니다.
 
@@ -661,7 +649,7 @@ const SECTION_LIMITS = {
 - AI JSON response validation
 - invalid JSON/error handling
 
-### 5.3 Advanced extraction
+### 5.2 Advanced extraction
 
 아직 구현하지 않았습니다.
 
@@ -673,7 +661,7 @@ const SECTION_LIMITS = {
 - scanned PDF OCR
 - 추후 `/api/extract` routing
 
-### 5.4 Date resolution
+### 5.3 Date resolution
 
 부분 준비 상태입니다.
 
@@ -684,7 +672,7 @@ const SECTION_LIMITS = {
 - reference date confidence 적용
 - reviewRequired event UX 정리
 
-### 5.5 School-level notice parsing
+### 5.4 School-level notice parsing
 
 아직 구현하지 않았습니다.
 
@@ -694,7 +682,7 @@ const SECTION_LIMITS = {
 - school-level notice parsing heuristic 또는 prompt rule 추가
 - 공지 유형별 field confidence와 reviewRequired 기준 정리
 
-### 5.6 Batch and subscription calendar export
+### 5.5 Batch and subscription calendar export
 
 아직 구현하지 않았습니다.
 
@@ -712,6 +700,7 @@ const SECTION_LIMITS = {
 - `useState` 중심 구조 유지
 - localStorage 저장/복원 연결
 - mock analysis 실행
+- server mock analysis 실행
 - overwrite confirmation
 - privacy confirmation
 - file upload handling
@@ -728,6 +717,14 @@ const SECTION_LIMITS = {
 - publication date input
 - warning/error display
 - mock analysis button
+- server mock analysis button
+
+### `src/utils/analyzeApi.js`
+
+- frontend server mock analyze API client
+- `POST /api/analyze` 호출
+- `mode: "mock"` request body 구성
+- network / non-2xx / invalid response error normalization
 
 ### `src/components/AnalysisDashboard.jsx`
 
@@ -775,7 +772,7 @@ const SECTION_LIMITS = {
 
 ## 7. 검증 로그
 
-마지막 확인된 build:
+Frontend MVP 1차 마지막 확인 build:
 
 ```text
 npm run build
@@ -808,6 +805,10 @@ VITE v8.1.3 ready
 Local: http://127.0.0.1:5173/
 ```
 
+참고:
+
+- 최신 Phase 3 검증 결과는 16장에 별도로 정리했습니다.
+
 ## 8. 커밋 순서
 
 현재 follow-up 작업 커밋:
@@ -831,8 +832,9 @@ Local: http://127.0.0.1:5173/
 
 ## 9. 주의 사항
 
-- 현재 구현은 frontend MVP와 Express analyze API skeleton을 포함합니다.
-- Express backend skeleton은 존재하지만 frontend는 아직 server mock analyze endpoint에 연결되어 있지 않습니다.
+- 현재 구현은 frontend MVP, Express analyze API skeleton, Frontend ↔ Server mock analyze wiring을 포함합니다.
+- frontend에는 기존 client-side mock analysis 버튼과 별도 server mock analysis 버튼이 함께 존재합니다.
+- server mock analysis는 Vite `/api` proxy를 통해 Express `POST /api/analyze` mock mode를 호출합니다.
 - 실제 AI 분석은 아직 없습니다.
 - mock analysis flow는 의도적으로 유지되어 있습니다.
 - `.ics` export는 all-day selected event만 지원합니다.
@@ -907,7 +909,7 @@ express-analyze-skeleton-v1
 범위 제한:
 
 - 실제 AI API 호출은 아직 구현하지 않았습니다.
-- frontend는 아직 server endpoint를 호출하지 않습니다.
+- frontend는 이후 Phase 3에서 server mock endpoint 호출 경로가 추가되었습니다.
 - 기존 frontend mock analysis flow는 유지했습니다.
 
 ## 12. Backend QA 및 major issue 수정 결과
@@ -920,7 +922,7 @@ QA fix 포함 태그:
 express-analyze-skeleton-qa-v1
 ```
 
-현재 HEAD 기준:
+Backend QA 단계 기준:
 
 ```text
 8f4207b Fix backend analyze API QA issues
@@ -947,12 +949,13 @@ QA 문서:
 frontend-mvp-followup-v1
 express-analyze-skeleton-v1
 express-analyze-skeleton-qa-v1
+fe70e46 Wire frontend server mock analysis
 ```
 
 현재 HEAD:
 
 ```text
-8f4207b Fix backend analyze API QA issues
+fe70e46 Wire frontend server mock analysis
 ```
 
 의미:
@@ -960,12 +963,16 @@ express-analyze-skeleton-qa-v1
 - `frontend-mvp-followup-v1`: Frontend MVP follow-up QA 완료 기준선
 - `express-analyze-skeleton-v1`: Express `/api/analyze` skeleton 초기 구현 기준선
 - `express-analyze-skeleton-qa-v1`: backend QA major issue 수정 완료 기준선
+- `fe70e46`: Frontend ↔ Server mock analyze wiring 완료 커밋 기준선
+
+참고:
+
+- Phase 3 wiring에는 아직 별도 태그를 만들지 않았습니다.
 
 ## 14. 현재 남은 작업
 
 현재 남은 핵심 작업:
 
-- Frontend ↔ Server mock analyze wiring
 - Real AI API integration
 - AI prompt/schema hardening
 - Advanced file extraction: PDF / HWP / HWPX / OCR
@@ -977,23 +984,104 @@ express-analyze-skeleton-qa-v1
 제거된 이전 남은 작업:
 
 - Express `/api/analyze` skeleton
+- Frontend ↔ Server mock analyze wiring
 
 사유:
 
 - Express Analyze API Skeleton은 `express-analyze-skeleton-v1`에서 구현 완료했습니다.
 - backend QA major issue는 `express-analyze-skeleton-qa-v1`에서 수정 완료했습니다.
+- Frontend ↔ Server mock analyze wiring은 `fe70e46`에서 구현 및 QA 완료했습니다.
 
-## 15. 다음 단계: Frontend ↔ Server Mock Analyze Wiring
+## 15. Frontend ↔ Server Mock Analyze Wiring 구현
+
+상태: 완료
+
+관련 커밋:
+
+```text
+fe70e46 Wire frontend server mock analysis
+```
+
+구현 파일:
+
+- `src/App.jsx`
+- `src/components/NoticeInput.jsx`
+- `src/data/localizedContent.js`
+- `src/utils/analyzeApi.js`
+- `vite.config.js`
+
+구현 내용:
+
+- 기존 `Analyze mock notice` / `샘플 공지 분석` client-side mock flow를 유지했습니다.
+- 별도 `Analyze via server mock` / `서버 mock 분석` 버튼을 추가했습니다.
+- `src/utils/analyzeApi.js`에서 `POST /api/analyze` 호출 유틸을 추가했습니다.
+- request body에는 `mode: "mock"`, `language`, `noticeTitle`, `noticeText`, `extractedText`, `userSelectedNoticeType`, `noticePublicationDate`, `uploadedFileName`을 포함합니다.
+- Vite dev proxy로 `/api` 요청을 `http://127.0.0.1:3001`에 전달합니다.
+- server mock 분석에도 기존 overwrite confirmation을 적용했습니다.
+- server mock 분석에도 privacy pattern confirmation을 적용했습니다.
+- server response는 frontend `validateAnalysisResult` 경로를 통과한 뒤 `analysisResult`에 저장합니다.
+- server warning과 frontend validation warning은 `analysisResult.warnings[]`에 보존합니다.
+- server unavailable, non-2xx, unsupported mode, AI not implemented, invalid/empty response에 대한 input error copy를 추가했습니다.
+- server mock loading state를 추가하고 server mock 버튼만 loading 중 disabled 처리합니다.
+
+범위 제한:
+
+- 실제 AI API 호출은 추가하지 않았습니다.
+- `mode: "ai"`는 일반 사용자 UI로 노출하지 않았습니다.
+- PDF / HWP / HWPX / OCR, DB, 로그인, Google Calendar API는 추가하지 않았습니다.
+- `.ics` export 범위는 변경하지 않았습니다.
+
+## 16. Phase 3 QA 결과
+
+검증 명령:
+
+```text
+npm run build
+git diff --check
+npm run dev:server
+npm run dev
+```
+
+확인 결과:
+
+- `npm run build` 통과
+- `git diff --check` 통과
+- backend `GET /api/health` 정상 응답 확인
+- backend `POST /api/analyze` mock mode 정상 응답 확인
+- backend `mode: "ai"`는 기존대로 `501 ai_not_implemented` 유지
+- backend unknown explicit mode는 기존대로 `400 unsupported_mode` 유지
+- Vite `/api` proxy가 Express server로 요청을 전달하는 것 확인
+- 기존 client-side mock analysis 버튼이 계속 동작하는 것 확인
+- server mock analysis 버튼이 server mock result와 warning을 렌더링하는 것 확인
+- server mock analysis에서 overwrite confirmation 동작 확인
+- server mock analysis에서 privacy confirmation 동작 확인
+- server unavailable 시 input error가 표시되고 결과가 생성되지 않는 것 확인
+- server mock result 이후 edit/delete/task toggle/export 버튼 상태 확인
+- English/Korean server mock button label 확인
+
+## 17. 현재 남은 작업
+
+현재 남은 핵심 작업:
+
+- Real AI API integration
+- AI prompt/schema hardening
+- Advanced file extraction: PDF / HWP / HWPX / OCR
+- Advanced date resolution
+- School-level notice parsing
+- Checkbox-based batch `.ics` export
+- Subscription calendar feed
+
+## 18. 다음 단계: Real AI API Integration / Prompt Schema Hardening
 
 권장 다음 작업:
 
-1. `App.jsx`의 기존 mock analysis flow를 보존합니다.
-2. `POST /api/analyze` mock mode 호출 경로를 추가합니다.
-3. server unavailable, invalid response, loading state를 frontend에 연결합니다.
-4. manual text paste와 TXT / MD upload flow를 계속 유지합니다.
-5. frontend regression checklist와 backend analyze API checklist를 함께 재확인합니다.
+1. Express `mode: "ai"` 구현 범위와 provider 선택을 별도 phase로 확정합니다.
+2. AI API key는 browser에 노출하지 않고 server-only env var로 처리합니다.
+3. prompt output schema와 frontend/backend validation contract를 정리합니다.
+4. invalid JSON, schema mismatch, provider failure, timeout 정책을 정합니다.
+5. 기존 client-side mock과 server mock path는 regression 기준선으로 유지합니다.
 
 주의:
 
-- 실제 AI API integration은 이 다음 phase로 분리하는 것이 안전합니다.
+- 실제 AI API integration은 server mock wiring과 분리된 다음 phase로 진행하는 것이 안전합니다.
 - 인증, DB, 결제, Google Calendar API는 아직 scope에 포함하지 않습니다.
