@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 서비스 목적
-자취생·1인 가구가 재료 최저가를 찾느라 시간을 쓰지 않도록, 공공데이터포털(KAMIS) 시세를 기반으로 가성비 좋은 요리를 추천하고 네이버/쿠팡 구매 링크를 바로 제공한다. 상세 기획은 `plan.md`, 작업 순서는 `checklist.md` 참고.
+"식비구조대" — 자취생·1인 가구가 재료 최저가를 찾느라 시간을 쓰지 않도록, 공공데이터포털(KAMIS) 시세를 기반으로 가성비 좋은 요리를 추천하고 네이버/쿠팡 구매 링크를 바로 제공한다. 상세 기획은 `plan.md`, 작업 순서는 `checklist.md` 참고.
 
 ## 자주 쓰는 명령어
 - `npm install` — 의존성 설치
