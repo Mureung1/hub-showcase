@@ -1,21 +1,16 @@
-# hub
+# React + Vite
 
-# 대학생 취업 준비를 위한 스펙-공고 갭 분석 서비스
- 
-## 소개
- 
-기존 취업 플랫폼은 채용공고를 추천하는 데 집중하지만 이 서비스는 사용자의 현재 스펙과 채용공고의 요구사항을 비교하여 부족한 역량을 분석하고 어떤 스펙을 보완하면 더 많은 공고에 지원할 수 있는지 시각적으로 제공하는 취업 준비 지원 서비스입니다.
- 
-"추천"이 아닌 **자기 진단 + 액션 플랜**
- 
-| 구분 | 기존 취업 플랫폼 | 스펙핏 |
-|---|---|---|
-| 핵심 기능 | 공고 검색 + 추천 | 스펙 vs 요구사항 갭 분석 |
-| 결과물 | 공고 리스트 | 부족 역량 리스트 + 보완 우선순위 시각화 |
- 
-## 주요 기능
- 
-- **스펙 입력**: 학력, 경력, 자격증/면허, 전공, 외국어 성적 등
-- **조건 필터링**: 직종, 근무지역, 고용형태, 희망 급여
-- **갭 분석 엔진**: 현재 스펙으로 지원 가능한 공고 비율 계산 + 부족 역량 보완 시 지원 가능 공고 증가량 시뮬레이션
-- **시각화**: 지원 가능 비율(도넛 차트), 부족 역량 랭킹(막대 그래프), 공고별 충족/미충족 체크리스트
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the Oxlint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
