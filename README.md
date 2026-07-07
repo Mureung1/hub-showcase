@@ -1,16 +1,50 @@
-# React + Vite
+# 개인 카페 스탬프 통합 서비스
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+개인 카페 스탬프 통합 서비스는 손님이 여러 개인 카페의 스탬프를 하나의 웹 서비스에서 관리할 수 있도록 돕는 무료 MVP 프로젝트입니다.
 
-Currently, two official plugins are available:
+## 목표
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- 종이 쿠폰 분실과 미소지로 인해 스탬프 혜택을 놓치는 문제를 줄입니다.
+- 손님이 결제 시 웹 화면의 본인 QR 코드를 제시하고, 카페가 이를 스캔해 스탬프를 즉시 적립할 수 있게 합니다.
+- 카페 사장님 또는 직원이 웹 브라우저에서 손님 QR을 스캔해 적립을 처리할 수 있게 합니다.
+- 결제나 POS 연동 없이 개인 카페가 가볍게 사용할 수 있는 웹 기반 디지털 스탬프 경험을 검증합니다.
 
-## React Compiler
+## 주요 사용자
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- 카페 손님: 여러 개인 카페의 스탬프를 한곳에서 모으고 확인하려는 사용자
+- 카페 사장님/직원: 종이 쿠폰 대신 손님 QR 스캔 기반 스탬프를 운영하려는 개인 카페 운영자
 
-## Expanding the Oxlint configuration
+## MVP 범위
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- 반응형 웹 서비스
+- 임시 테스트 로그인
+- 사장님 또는 직원용 테스트 카페 선택
+- 카페별 자유 스탬프 규칙 설정
+- 손님 QR 제시와 매장 웹 스캔 기반 즉시 적립
+- 손님용 카페별 스탬프 카드
+- 보상 조건 충족 시 쿠폰 자동 발급
+- 적립 내역과 쿠폰 목록 확인
+
+## 주요 사용자 흐름
+
+1. 손님 또는 직원이 웹 서비스에 접속해 테스트 로그인합니다.
+2. 직원은 매장용 화면에서 테스트 카페를 선택합니다.
+3. 손님은 결제 시 웹 화면의 본인 적립용 QR 코드를 엽니다.
+4. 카페 직원은 매장용 웹 스캔 화면에서 손님의 QR 코드를 스캔합니다.
+5. 스탬프가 즉시 적립되고, 처음 방문한 카페는 손님의 목록에 추가됩니다.
+6. 스탬프 조건을 채우면 쿠폰이 자동으로 발급됩니다.
+
+## 이번 프로젝트에서 제외하는 기능
+
+- 결제/POS 연동
+- 지도 기반 카페 탐색
+- 앱 내 카페 검색
+- 쿠폰 실제 사용 승인
+- 부정 적립 방지
+- 네이티브 모바일 앱
+- 카카오 로그인 필수 구현
+- 유료 구독, 광고, 프로모션 수익화
+
+## 상세 기획
+
+상세한 서비스 기획은 [docs/service-plan.md](docs/service-plan.md)를 기준으로 합니다.
