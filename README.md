@@ -1,16 +1,26 @@
-# React + Vite
+## 프로젝트 기획
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+### 문제 정의
+목적지 근처에서 열리는 축제 등 이벤트로 대중교통 노선이 변경되거나 도로가 통제될 때, 그 사실을 미리 알지 못하는 이용자가 이동 중 갑작스러운 지연과 불편을 겪는다.
 
-Currently, two official plugins are available:
+### 사용자 시나리오
+1. 사용자가 '대전역'을 목적지로 검색한다.
+2. 에이전트가 경로 주변의 이벤트·공지를 수집해, 경로 결과에 반영한다.
+3. 세 개의 경로 후보 중 '42분' 경로가 이벤트 반경이 가장 적어 추천으로 표시되고, 나머지 경로에는 "0시축제 구간 통과" 같은 배지가 함께 표시된다.
+4. 추천 경로를 선택하면 상세 화면에서 "0시축제로 612번 버스가 우회 운행 중이며 약 8분 추가 예상"이라는 지연 안내를 확인할 수 있다.
+5. 만약 그 시간대의 모든 경로가 이벤트 영향권에 있다면, "회피가 어렵다"는 안내와 함께 예상 추가 지연(약 15분)을 보여주고 출발 시간을 조정할지, 그래도 이동할지 선택하게 한다.
+6. 사용자는 이 정보를 참고해 경로와 출발 시간을 최종 결정한다.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 사용자 흐름
 
-## React Compiler
+<img width="1874" height="1564" alt="image" src="https://github.com/user-attachments/assets/e06735b2-b4ba-4c3a-be55-f071bde1be16" />
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Expanding the Oxlint configuration
+### 핵심 기능 (2개)
+- **기능 A — 이벤트/공지 자동 수집 에이전트**: 스포츠 경기, 학교·지역 축제, 대중교통 노선 변경 공지 등을 여러 소스에서 주기적으로 크롤링·수집
+- **기능 B — 이벤트 반경 기반 경로 재정렬 추천**: 기존 경로 후보 중 이벤트 반경에서 가장 먼 경로를 우선 추천하고, 모든 경로가 영향권일 경우 회피 불가 사실과 예상 지연을 안내
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## 문서
+프로젝트 기획·설계 문서는 저장소 위키에서 확인할 수 있다.
+- [기획서 (plan)](../../wiki/plan) — 문제 정의, 리프레임 근거, 통계·경쟁 분석, 구현 아키텍처, 로드맵
+- [작업 체크리스트 (checklist)](../../wiki/checklist) — 4주 개발 작업 단위 체크리스트
