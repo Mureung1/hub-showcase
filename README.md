@@ -4,11 +4,17 @@ NoticePilot은 대학생이 긴 공지, 과제 지침, 장학금 안내, 공모�
 
 현재 기준선은 **React + Vite 기반 frontend MVP + Express mock analyze API + frontend-server mock wiring 완료 상태**입니다. 실제 AI API는 아직 연결하지 않았고, client-side mock과 server mock 분석으로 사용자 검토/수정/export 흐름을 검증합니다. 수동 텍스트 붙여넣기만으로도 사용할 수 있으며, 서버 mock 분석은 Express 서버를 함께 실행했을 때 사용할 수 있습니다.
 
+## 제품 스냅샷
+
+![NoticePilot landing screen](docs/assets/wiki/noticepilot-story-appendix-v3-5/a00_landing_actual_crop.png)
+
 ## 핵심 아이디어
 
 ```text
 긴 공지 → 구조화된 분석 결과 → 사용자 검토/수정 → 체크리스트 및 캘린더 export
 ```
+
+![NoticePilot overview map](docs/assets/wiki/noticepilot-story-appendix-v3-5/noticepilot_story_00_overview_v3_5.png)
 
 NoticePilot은 단순 요약 앱이 아니라 공지에서 다음 정보를 추출하는 것을 목표로 합니다.
 
@@ -111,6 +117,7 @@ npm run build
 - [Architecture Overview](../../wiki/01_Architecture_Overview)
 - [Implementation Plan](../../wiki/02_Implementation_Plan)
 - [Review Points](../../wiki/03_Review_Points)
+- [NoticePilot Story Appendix v3.5](docs/wiki/NoticePilot-Story-Appendix-v3.5.md) — 현재 MVP 흐름과 future scope를 이미지로 정리한 repository copy
 
 Phase 4 이후의 AI 연동 계약, 테스트 corpus, batch calendar export 로드맵은 repository 문서로 관리합니다.
 
