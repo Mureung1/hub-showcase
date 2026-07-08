@@ -18,6 +18,8 @@
   <body>
     <input class="control" type="radio" name="workspace-tab" id="tab-notice" checked>
     <input class="control" type="radio" name="workspace-tab" id="tab-syllabus">
+    <input class="control" type="radio" name="workspace-mode" id="mode-preview" checked>
+    <input class="control" type="radio" name="workspace-mode" id="mode-edit">
 
     <div class="workspace-frame state-accepted">
       <header class="workspace-header">
@@ -145,16 +147,24 @@
 
           <div class="editor-toolbar">
             <span>문제해결글쓰기 › 선택한 원본 자료 2개</span>
-            <span class="toolbar-state">자료 해석 입력 · 과제 반영됨</span>
+            <div class="editor-toolbar-right">
+              <span class="toolbar-state">자료 해석 입력 · 과제 반영됨</span>
+              <div class="view-switch" aria-label="자료 보기 모드">
+                <label for="mode-edit">편집하기</label>
+                <label for="mode-preview">프리뷰 보기</label>
+              </div>
+            </div>
           </div>
 
           <section class="tab-panels">
             <article class="tab-panel notice-tab source-preview-panel" aria-label="lms-outline-notice.txt 미리보기">
-              <iframe class="source-preview-frame" title="lms-outline-notice.txt 미리보기" src="previews/lms-outline-notice.html"></iframe>
+              <iframe class="source-preview-frame source-frame-preview" title="lms-outline-notice.txt 프리뷰" src="previews/lms-outline-notice.html"></iframe>
+              <iframe class="source-preview-frame source-frame-edit" title="lms-outline-notice.txt 편집" src="previews/lms-outline-notice-edit.html"></iframe>
             </article>
 
             <article class="tab-panel syllabus-tab source-preview-panel" aria-label="problem-solving-syllabus.pdf 미리보기">
-              <iframe class="source-preview-frame" title="problem-solving-syllabus.pdf 미리보기" src="previews/problem-solving-syllabus.html"></iframe>
+              <iframe class="source-preview-frame source-frame-preview" title="problem-solving-syllabus.pdf 프리뷰" src="previews/problem-solving-syllabus.html"></iframe>
+              <iframe class="source-preview-frame source-frame-edit" title="problem-solving-syllabus.pdf 추출본 편집" src="previews/problem-solving-syllabus-edit.html"></iframe>
             </article>
           </section>
         </main>

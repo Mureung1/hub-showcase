@@ -394,7 +394,7 @@ body {
 
 .editor-area {
   display: grid;
-  grid-template-rows: 44px 34px minmax(0, 1fr);
+  grid-template-rows: 44px 42px minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   background: var(--editor);
@@ -445,9 +445,50 @@ body {
   font-size: 12px;
 }
 
+.editor-toolbar > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-toolbar-right {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 12px;
+}
+
 .toolbar-state {
   color: var(--teal);
   white-space: nowrap;
+}
+
+.view-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+}
+
+.view-switch label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+#mode-edit:checked ~ .workspace-frame label[for="mode-edit"],
+#mode-preview:checked ~ .workspace-frame label[for="mode-preview"] {
+  background: #dff5f0;
+  color: #13645d;
 }
 
 .tab-panels {
@@ -472,11 +513,16 @@ body {
 }
 
 .source-preview-frame {
-  display: block;
+  display: none;
   width: 100%;
   height: 100%;
   border: 0;
   background: var(--editor);
+}
+
+#mode-preview:checked ~ .workspace-frame .source-frame-preview,
+#mode-edit:checked ~ .workspace-frame .source-frame-edit {
+  display: block;
 }
 
 .preview-document {
@@ -489,6 +535,40 @@ body {
 
 .preview-document .markdown-preview {
   min-height: 100vh;
+}
+
+.raw-file-preview {
+  max-width: 980px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 38px 44px 80px;
+  color: var(--text);
+}
+
+.file-preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.file-preview-bar strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 820;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-preview-bar span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 680;
 }
 
 .markdown-preview {
@@ -648,77 +728,111 @@ body {
   border-color: rgba(60, 120, 216, 0.28);
 }
 
-.preview-toggle-input {
-  position: fixed;
-  inline-size: 1px;
-  block-size: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.preview-doc-header {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.preview-doc-header div:first-child {
-  min-width: 0;
-}
-
-.preview-switch {
-  display: inline-flex;
-  flex: 0 0 auto;
-  gap: 4px;
-  padding: 4px;
+.plain-text-editor,
+.markdown-editor-textarea {
+  display: block;
+  width: 100%;
+  min-height: 390px;
+  margin-top: 18px;
+  padding: 18px 20px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 8px;
+  background: var(--paper-warm);
+  color: #23323a;
+  font: 14px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace;
+  resize: none;
+}
+
+.markdown-editor-textarea {
+  min-height: 320px;
+}
+
+.rendered-markdown-document {
+  margin-top: 24px;
+  padding: 28px 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   background: var(--paper);
 }
 
-.preview-switch label {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0 13px;
-  border-radius: 999px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 760;
-  cursor: pointer;
+.rendered-markdown-document h1 {
+  margin: 0 0 22px;
+  color: var(--text);
+  font-size: 30px;
+  line-height: 1.18;
 }
 
-#syllabus-edit:checked ~ .preview-doc-header label[for="syllabus-edit"],
-#syllabus-preview:checked ~ .preview-doc-header label[for="syllabus-preview"] {
-  background: #dff5f0;
-  color: #13645d;
+.rendered-markdown-document h2 {
+  margin: 0 0 12px;
+  color: var(--text);
+  font-size: 22px;
 }
 
-.markdown-mode-panels {
-  min-height: 270px;
+.rendered-markdown-document ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
 }
 
-.markdown-edit-panel,
-.markdown-rendered-panel {
-  display: none;
+.rendered-markdown-document li {
+  color: #33444c;
+  font-size: 16px;
 }
 
-#syllabus-edit:checked ~ .markdown-mode-panels .markdown-edit-panel,
-#syllabus-preview:checked ~ .markdown-mode-panels .markdown-rendered-panel {
-  display: block;
+.source-evidence-summary {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid rgba(69, 183, 167, 0.28);
+  border-radius: 8px;
+  background: #f2fbf7;
 }
 
-.markdown-editor-head {
+.source-evidence-summary header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--line);
-  background: #f4eadb;
+}
+
+.source-evidence-summary strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.source-evidence-summary span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 740;
+  font-weight: 720;
+}
+
+.source-evidence-summary p {
+  margin: 0;
+  color: #33444c;
+}
+
+.source-evidence-summary dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.source-evidence-summary div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.source-evidence-summary dt,
+.source-evidence-summary dd {
+  margin: 0;
+  color: #33444c;
+}
+
+.source-evidence-summary dt {
+  font-weight: 760;
 }
 
 .audio-player-mock {

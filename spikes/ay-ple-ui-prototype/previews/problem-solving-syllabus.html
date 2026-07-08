@@ -7,64 +7,38 @@
     <link rel="stylesheet" href="../styles.css">
   </head>
   <body class="preview-document">
-    <article class="markdown-preview file-preview markdown-file-preview">
-      <input class="preview-toggle-input" type="radio" name="syllabus-mode" id="syllabus-preview" checked>
-      <input class="preview-toggle-input" type="radio" name="syllabus-mode" id="syllabus-edit">
-
-      <header class="doc-header preview-doc-header">
-        <div>
-          <h1>problem-solving-syllabus.pdf</h1>
-          <p>PDF에서 추출한 Markdown · 강의계획서 · 문제해결글쓰기 · 2026 여름학기</p>
-        </div>
-        <div class="preview-switch" aria-label="markdown 보기 전환">
-          <label for="syllabus-edit">편집하기</label>
-          <label for="syllabus-preview">프리뷰 보기</label>
-        </div>
+    <article class="raw-file-preview markdown-render-preview">
+      <header class="file-preview-bar">
+        <strong>problem-solving-syllabus.pdf</strong>
+        <span>PDF에서 추출한 Markdown · 프리뷰</span>
       </header>
 
-      <section class="markdown-mode-panels">
-        <div class="markdown-source-view markdown-edit-panel" aria-label="markdown 편집 화면 preview">
-          <div class="markdown-editor-head">
-            <span>Markdown</span>
-            <span>자동 저장됨</span>
-          </div>
-          <pre># 문제해결글쓰기 강의계획서
-
-## 개요 과제
-- 중간 산출물로 평가에 포함
-- 제출 방식: LMS 업로드
-- 평가 기준: 논점, 근거, 문단 흐름</pre>
-        </div>
-
-        <div class="markdown-rendered-panel" aria-label="markdown 렌더링 preview">
-          <h2>개요 과제</h2>
-          <ul class="preview-list">
-            <li><strong>평가 포함</strong><span>중간 산출물로 평가에 포함</span></li>
-            <li><strong>제출 방식</strong><span>LMS 업로드를 원칙으로 함</span></li>
-            <li><strong>평가 기준</strong><span>논점, 근거, 문단 흐름을 함께 봄</span></li>
-          </ul>
-        </div>
+      <section class="rendered-markdown-document" aria-label="markdown preview">
+        <h1>문제해결글쓰기 강의계획서</h1>
+        <h2>개요 과제</h2>
+        <ul>
+          <li>중간 산출물로 평가에 포함</li>
+          <li>제출 방식: LMS 업로드</li>
+          <li>평가 기준: 논점, 근거, 문단 흐름</li>
+        </ul>
       </section>
 
-      <h2>모델링에 쓰는 근거</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>필드</th>
-            <th>값</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>제출 방식</td>
-            <td>LMS 업로드</td>
-          </tr>
-          <tr>
-            <td>평가 요소</td>
-            <td>논점 명확성, 근거 연결, 구성</td>
-          </tr>
-        </tbody>
-      </table>
+      <section class="source-evidence-summary" aria-label="모델링에 쓰는 근거">
+        <header>
+          <strong>AY가 참고한 항목</strong>
+          <span>강의계획서</span>
+        </header>
+        <dl>
+          <div>
+            <dt>제출 방식</dt>
+            <dd>LMS 업로드</dd>
+          </div>
+          <div>
+            <dt>평가 요소</dt>
+            <dd>논점 명확성, 근거 연결, 구성</dd>
+          </div>
+        </dl>
+      </section>
     </article>
   </body>
 </html>

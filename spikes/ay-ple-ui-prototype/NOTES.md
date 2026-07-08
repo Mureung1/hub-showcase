@@ -34,9 +34,11 @@ User feedback on 2026-07-08: the original ChatSidecar felt too far from an actua
 
 User feedback on 2026-07-08: the original prototype file was too large as a single file. The prototype now keeps shared CSS in `styles.css`, uses `index.html` for 검토 대기, and uses `state-accepted.html` for 반영됨. This keeps the prototype pure HTML/CSS while avoiding inline partials or JavaScript includes.
 
-User feedback on 2026-07-08: preview bodies should not be encoded inside the main workspace shell. The four selected source previews now live as separate HTML files under `previews/`, and the two state shells import them with iframe panels.
+User feedback on 2026-07-08: preview bodies should not be encoded inside the main workspace shell. The selected source previews now live as separate HTML files under `previews/`, and the two state shells import them with iframe panels.
 
-User feedback on 2026-07-08: `mp3` and `png` selected sources made the preview feel broader than the assignment scenario. The source explorer still shows the surrounding materials and other courses, but only `lms-outline-notice.txt` and `problem-solving-syllabus.pdf` are selected and opened as preview tabs. The txt preview looks like a plain text file, while the syllabus preview shows Markdown extracted from the PDF with CSS-only `편집하기` / `프리뷰 보기` controls.
+User feedback on 2026-07-08: `mp3` and `png` selected sources made the preview feel broader than the assignment scenario. The source explorer still shows the surrounding materials and other courses, but only `lms-outline-notice.txt` and `problem-solving-syllabus.pdf` are selected and opened as preview tabs. The txt preview looks like a plain text file, while the syllabus preview uses Markdown extracted from the PDF.
+
+User feedback on 2026-07-08: file previews should not put editing controls inside the PDF content, and txt files should not look like Markdown pages. The prototype now moves the `편집하기` / `프리뷰 보기` control to the editor toolbar, similar to Obsidian's editing/reading mode switch. The selected txt source renders as a plain text file in both modes, and the syllabus PDF renders as either extracted Markdown source or a Markdown preview.
 
 User feedback on 2026-07-08: generated image mockups were making the app spec and HTML/CSS prototype diverge. Standalone screen mockup images were removed; the remaining generated images are narrow brand assets wired directly into the HTML/CSS prototype.
 
