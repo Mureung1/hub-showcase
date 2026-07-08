@@ -11,21 +11,31 @@
 /* 헤더 영역 */
 .intro-header {
   text-align: center;
-  margin-bottom: 56px;
+  margin-bottom: 40px;
 }
 
 .intro-title {
-  font-size: 32px;
-  font-weight: 700;
-  color: #16a34a; 
-  margin-bottom: 12px;
-  letter-spacing: -0.5px;
+  font-size: 40px;
+  font-weight: 800;
+  color: #16a34a;
+  margin: 0 0 16px;
+  letter-spacing: -1px;
 }
 
 .intro-subtitle {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 10px;
+  word-break: keep-all;
+}
+
+.intro-description {
+  font-size: 15px;
+  font-weight: 500;
   color: #4b5563;
+  margin: 0;
+  word-break: keep-all;
 }
 
 /* 공통 라벨 */
@@ -35,6 +45,96 @@
   color: #16a34a;
   text-align: center;
   margin-bottom: 28px;
+}
+
+.section-label--light {
+  color: #ffffff;
+}
+
+/* 후킹 문구 영역 */
+.hook-section {
+  margin-bottom: 56px;
+}
+
+.hook-quote {
+  background: #f8fafc;
+  border-left: 4px solid #16a34a;
+  border-radius: 0 12px 12px 0;
+  padding: 24px 28px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #374151;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.hook-quote strong {
+  color: #16a34a;
+}
+
+/* 문제 정의 영역 */
+.problem-section {
+  margin-bottom: 56px;
+}
+
+.problem-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.problem-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px 22px;
+  text-align: left;
+}
+
+.problem-number {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  color: #16a34a;
+  margin-bottom: 10px;
+}
+
+.problem-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 10px;
+  letter-spacing: -0.3px;
+}
+
+.problem-desc {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+  word-break: keep-all;
+}
+
+/* 핵심 타겟 영역 */
+.target-section {
+  margin-bottom: 56px;
+}
+
+.target-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.target-badge {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 999px;
+  word-break: keep-all;
 }
 
 /* 기능 소개 영역 */
@@ -63,32 +163,23 @@
   border-color: #16a34a;
 }
 
-.feature-card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.feature-icon {
-  width: 36px;
-  height: 36px;
-  background: #dcfce7; 
+.feature-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
   color: #16a34a;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: bold;
-  flex-shrink: 0;
+  background: #dcfce7;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 14px;
 }
 
 .feature-title {
   font-size: 19px;
   font-weight: 700;
   color: #111827;
-  margin: 0; 
+  margin: 0 0 12px;
   letter-spacing: -0.3px;
 }
 
@@ -100,58 +191,42 @@
   word-break: keep-all;
 }
 
-/* 문제 정의 영역 */
-.problem-section {
+/* 차별점(AI) 강조 영역 */
+.highlight-section {
+  background: #14532d;
+  border-radius: 20px;
+  padding: 48px 32px;
   margin-bottom: 56px;
 }
 
-.problem-text {
-  background: #f8fafc;
-  border-left: 4px solid #16a34a;
-  border-radius: 0 12px 12px 0;
-  padding: 20px 24px;
+.highlight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.highlight-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 20px 18px;
+  text-align: left;
+}
+
+.highlight-title {
   font-size: 15px;
-  font-weight: bold;
-  color: #374151;
-  line-height: 1.6;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px;
   word-break: keep-all;
 }
 
-/* 서브 기능 영역 */
-.sub-features-section {
-  margin-bottom: 56px;
-}
-
-.sub-features-list {
-  list-style: none;
+.highlight-desc {
+  font-size: 13px;
+  color: #bbf7d0;
+  line-height: 1.5;
   margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sub-feature-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 14px 18px;
-  font-size: 15px;
-  color: #374151;
-  line-height: 1.6;
   word-break: keep-all;
-}
-
-.sub-feature-dot {
-  width: 8px;
-  height: 8px;
-  margin-top: 8px;
-  border-radius: 50%;
-  background: #16a34a;
-  flex-shrink: 0;
 }
 
 /* 사용자 시나리오 영역 */
@@ -196,5 +271,20 @@
   font-size: 15px;
   color: #1f2937;
   line-height: 1.6;
+  word-break: keep-all;
+}
+
+/* 클로징 영역 */
+.closing-section {
+  text-align: center;
+  padding: 32px 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.closing-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #16a34a;
+  margin: 0;
   word-break: keep-all;
 }
