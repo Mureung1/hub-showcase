@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>나만의 레시피북 프로토타입</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header class="board-header">
+    <div>
+      <p class="eyebrow">Recipe Book Prototype</p>
+      <h1>나만의 레시피북</h1>
+      <p class="board-copy">레시피가 추가되기 전과 후의 메인 화면 변화를 시나리오별로 비교하는 정적 프로토타입</p>
+    </div>
+    <nav aria-label="프로토타입 화면 이동">
+      <a href="#direct-scenario">직접 추가</a>
+      <a href="#code-scenario">코드 입력</a>
+    </nav>
+  </header>
+
+  <main class="prototype-board">
+    <section class="scenario-section" id="direct-scenario" aria-labelledby="direct-title">
+      <div class="scenario-header">
+        <p class="eyebrow">Scenario A</p>
+        <h2 id="direct-title">직접 추가</h2>
+        <p>알고 있거나 URL로 찾은 카치오 에 페페 레시피를 AI가 조리하기 좋은 형태로 정리하고 저장하는 흐름입니다.</p>
+      </div>
+
+      <div class="scenario-row">
+        <section class="phone-screen" aria-labelledby="direct-home-before-title">
+          <header class="app-top">
+            <div>
+              <p class="screen-kicker">추가 전 메인</p>
+              <h3 id="direct-home-before-title">XX님의 레시피북</h3>
+            </div>
+            <button class="round-icon" type="button" aria-label="검색">⌕</button>
+          </header>
+
+          <div class="quick-actions" aria-label="레시피 추가 진입점">
+            <a class="action-card primary-action" href="#add-cacio">
+              <span class="action-icon">+</span>
+              <strong>새 레시피 추가</strong>
+              <small>URL 또는 직접 입력</small>
+            </a>
+            <a class="action-card" href="#code-scenario">
+              <span class="action-icon code-icon">#</span>
+              <strong>공유 코드 입력</strong>
+              <small>가족에게 받은 레시피</small>
+            </a>
+          </div>
+
+          <section class="content-section" aria-labelledby="direct-before-list-title">
+            <div class="section-heading">
+              <h4 id="direct-before-list-title">내 레시피 목록</h4>
+              <span>최신순</span>
+            </div>
+
+            <article class="recipe-row">
+              <div class="image-placeholder neutral">
+                <img src="public/sesame_oil_noodle.jpg" alt="들기름 막국수" />
+              </div>
+              <div>
+                <h5>들기름 막국수</h5>
+                <p>영상 URL에서 정리</p>
+              </div>
+              <button class="text-button" type="button">공유</button>
+            </article>
+          </section>
+        </section>
+
+        <section class="phone-screen" id="add-cacio" aria-labelledby="add-cacio-title">
+          <header class="app-top">
+            <div>
+              <p class="screen-kicker">원하는 레시피 url, 텍스트 입력</p>
+              <h3 id="add-cacio-title">새 레시피 추가</h3>
+            </div>
+            <span class="status-pill">입력 중</span>
+          </header>
+
+          <div class="flow-note">
+            <strong>URL과 메모를 함께 입력</strong>
+            <p>링크에서 찾은 내용과 내가 알고 있는 조리 팁을 한 번에 정리합니다.</p>
+          </div>
+
+          <form class="stacked-form">
+            <label>
+              URL
+              <input type="url" value="https://example.com/cacio-e-pepe" />
+            </label>
+
+            <label>
+              직접 입력
+              <textarea>스파게티를 삶고 면수는 꼭 남겨둔다. 팬에 버터 없이 후추를 먼저 볶아 향을 내고, 페코리노 로마노 치즈와 면수를 섞어서 크림처럼 만든다. 치즈가 뭉치지 않게 불을 끈 상태에서 빠르게 섞기.</textarea>
+            </label>
+          </form>
+
+          <a class="bottom-cta" href="#review-cacio">AI 정리 요청</a>
+        </section>
+
+        <section class="phone-screen" id="review-cacio" aria-labelledby="review-cacio-title">
+          <header class="app-top">
+            <div>
+              <p class="screen-kicker">AI 정리 결과</p>
+              <h3 id="review-cacio-title">새 레시피 추가</h3>
+            </div>
+            <span class="status-pill">수정 가능</span>
+          </header>
+
+          <form class="stacked-form compact-form">
+            <label>
+              음식 이름
+              <input type="text" value="카치오 에 페페" />
+            </label>
+
+            <label>
+              재료
+              <textarea>스파게티 160g, 페코리노 로마노 치즈 70g, 통후추 1큰술, 면수 1컵, 소금 약간</textarea>
+            </label>
+
+            <label>
+              조리 순서
+              <textarea class="tall-textarea">1. 스파게티를 소금물에 삶고 면수 1컵을 따로 남깁니다.
+2. 팬에 굵게 간 후추를 약한 불에서 볶아 향을 냅니다.
+3. 불을 끄고 면수와 치즈를 조금씩 섞어 소스를 만듭니다.
+4. 면을 넣고 빠르게 섞어 크리미하게 마무리합니다.</textarea>
+            </label>
+          </form>
+
+          <a class="bottom-cta save-cta" href="#direct-home-after">수정 및 저장</a>
+        </section>
+
+        <section class="phone-screen" id="direct-home-after" aria-labelledby="direct-home-after-title">
+          <header class="app-top">
+            <div>
+              <p class="screen-kicker">추가 후 메인</p>
+              <h3 id="direct-home-after-title">카치오 에 페페가 추가됨</h3>
+            </div>
+            <span class="status-pill">2개</span>
+          </header>
+
+          <section class="content-section added-section">
+            <div class="section-heading">
+              <h4>내 레시피 목록</h4>
+              <span>방금 저장</span>
+            </div>
+
+            <article class="recipe-row highlighted-row">
+              <div class="image-placeholder cacio">
+                <img src="public/caccio_e_pepe.jpg" alt="카치오 에 페페" />
+              </div>
+              <div>
+                <h5>카치오 에 페페</h5>
+                <p>직접 입력 및 URL 참고 · 방금 저장</p>
+              </div>
+              <button class="text-button" type="button">공유</button>
+            </article>
+
+            <article class="recipe-row">
+              <div class="image-placeholder neutral">
+                <img src="public/sesame_oil_noodle.jpg" alt="들기름 막국수" />
+              </div>
+              <div>
+                <h5>들기름 막국수</h5>
+                <p>영상 URL에서 정리</p>
+              </div>
+              <button class="text-button" type="button">공유</button>
+            </article>
+          </section>
+
+          <div class="completion-card">
+            <strong>새 메뉴가 목록에 생겼어요</strong>
+            <p>저장한 카치오 에 페페를 이제 메인 화면에서 바로 다시 열 수 있습니다.</p>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="scenario-section" id="code-scenario" aria-labelledby="code-title">
+      <div class="scenario-header">
+        <p class="eyebrow">Scenario B</p>
+        <h2 id="code-title">코드 입력</h2>
+        <p>엄마에게 받은 김치찌개 공유 코드를 입력해 내 레시피북에 관계 정보와 함께 저장하는 흐름입니다.</p>
+      </div>
+
+      <div class="scenario-row">
+        <section class="phone-screen" aria-labelledby="code-home-before-title">
+          <header class="app-top">
+            <div>
+              <p class="screen-kicker">추가 전 메인</p>
+              <h3 id="code-home-before-title">XX님의 레시피북</h3>
+            </div>
+            <button class="round-icon" type="button" aria-label="검색">⌕</button>
+          </header>
+
+          <div class="quick-actions" aria-label="레시피 추가 진입점">
+            <a class="action-card" href="#direct-scenario">
+              <span class="action-icon">+</span>
+              <strong>새 레시피 추가</strong>
+              <small>URL 또는 직접 입력</small>
+            </a>
+            <a class="action-card primary-action" href="#share-code">
+              <span class="action-icon code-icon">#</span>
+              <strong>공유 코드 입력</strong>
+              <small>가족에게 받은 레시피</small>
+            </a>
+          </div>
+
+          <section class="content-section" aria-labelledby="code-before-list-title">
+            <div class="section-heading">
+              <h4 id="code-before-list-title">내 레시피 목록</h4>
+              <span>2개</span>
+            </div>
+
+            <article class="recipe-row">
+              <div class="image-placeholder cacio">
+                <img src="public/caccio_e_pepe.jpg" alt="카치오 에 페페" />
+              </div>
+              <div>
+                <h5>카치오 에 페페</h5>
+                <p>직접 입력 · 저장됨</p>
+              </div>
+              <button class="text-button" type="button">공유</button>
+            </article>
+
+            <article class="recipe-row">
+              <div class="image-placeholder neutral">
+                <img src="public/sesame_oil_noodle.jpg" alt="들기름 막국수" />
+              </div>
+              <div>
+                <h5>들기름 막국수</h5>
+                <p>영상 URL에서 정리</p>
+              </div>
+              <button class="text-button" type="button">공유</button>
+            </article>
+          </section>
+        </section>
+
+        <section class="phone-screen" id="share-code" aria-labelledby="share-code-title">
+          <header class="app-top">
+            <div>
+              <p class="screen-kicker">공유 코드</p>
+              <h3 id="share-code-title">레시피 코드 입력</h3>
+            </div>
+            <span class="status-pill">확인 중</span>
+          </header>
+
+          <div class="flow-note family-note">
+            <strong>엄마에게 받은 코드</strong>
+            <p>전달받은 코드를 입력하면 레시피와 보낸 사람 정보가 함께 확인됩니다.</p>
+          </div>
+
+          <form class="code-form">
+            <label>
+              공유 코드
+              <input type="text" value="MOM-KIMCHI-2407" />
+            </label>
+          </form>
+
+          <a class="bottom-cta save-cta" href="#confirm-kimchi">코드 확인</a>
+        </section>
+
+        <section class="phone-screen" id="confirm-kimchi" aria-labelledby="confirm-kimchi-title">
+          <header class="app-top">
+            <div>
+              <p class="screen-kicker">코드 확인</p>
+              <h3 id="confirm-kimchi-title">김치찌개를 찾았어요</h3>
+            </div>
+            <span class="status-pill">저장 가능</span>
+          </header>
+
+          <div class="code-result-card">
+            <div class="image-placeholder hero-image kimchi">
+              <img src="public/kimchi_stew.jpg" alt="엄마표 김치찌개" />
+            </div>
+            <span>확인된 레시피</span>
+            <strong>엄마표 김치찌개</strong>
+            <p>보낸 사람: 엄마 · 전달일: 2026.07.08</p>
+          </div>
+
+          <article class="info-block compact-info">
+            <h4>포함된 정보</h4>
+            <ul>
+              <li>김치, 돼지고기, 두부, 대파 재료 정보</li>
+              <li>엄마가 알려준 볶는 순서와 간 맞추는 팁</li>
+              <li>공유 코드와 전달 날짜</li>
+            </ul>
+          </article>
+
+          <a class="bottom-cta save-cta" href="#code-home-after">내 레시피에 추가</a>
+        </section>
+
+        <section class="phone-screen" id="code-home-after" aria-labelledby="code-home-after-title">
+          <header class="app-top">
+            <div>
+              <p class="screen-kicker">추가 후 메인</p>
+              <h3 id="code-home-after-title">김치찌개가 추가됨</h3>
+            </div>
+            <span class="status-pill">3개</span>
+          </header>
+
+          <section class="content-section added-section">
+            <div class="section-heading">
+              <h4>내 레시피 목록</h4>
+              <span>방금 추가</span>
+            </div>
+
+            <article class="recipe-row highlighted-row">
+              <div class="image-placeholder kimchi">
+                <img src="public/kimchi_stew.jpg" alt="엄마표 김치찌개" />
+              </div>
+              <div>
+                <h5>엄마표 김치찌개</h5>
+                <p>엄마에게 받은 공유 코드</p>
+              </div>
+              <button class="text-button" type="button">공유</button>
+            </article>
+
+            <article class="recipe-row">
+              <div class="image-placeholder cacio">
+                <img src="public/caccio_e_pepe.jpg" alt="카치오 에 페페" />
+              </div>
+              <div>
+                <h5>카치오 에 페페</h5>
+                <p>직접 입력 · 저장됨</p>
+              </div>
+              <button class="text-button" type="button">공유</button>
+            </article>
+
+            <article class="recipe-row">
+              <div class="image-placeholder neutral">
+                <img src="public/sesame_oil_noodle.jpg" alt="들기름 막국수" />
+              </div>
+              <div>
+                <h5>들기름 막국수</h5>
+                <p>영상 URL에서 정리</p>
+              </div>
+              <button class="text-button" type="button">공유</button>
+            </article>
+          </section>
+
+          <div class="completion-card">
+            <strong>관계 정보가 함께 저장됐어요</strong>
+            <p>나중에 목록에서 누가 전해준 레시피인지 바로 확인할 수 있습니다.</p>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+</body>
+
+</html>
