@@ -1,0 +1,309 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Pretendard", Arial, sans-serif;
+}
+
+body{
+    background:#F8F9F5;
+    color:#333;
+}
+
+/* ================= Header ================= */
+
+header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:20px 8%;
+    background:white;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+    position:sticky;
+    top:0;
+    z-index:100;
+}
+
+.logo{
+    font-size:30px;
+    font-weight:bold;
+    color:#4CAF50;
+}
+
+.icons{
+    font-size:18px;
+    font-weight:600;
+}
+
+/* ================= Hero ================= */
+
+.hero{
+    text-align:center;
+    padding:70px 20px;
+}
+
+.hero h1{
+    font-size:42px;
+    margin-bottom:18px;
+    line-height:1.3;
+}
+
+.hero p{
+    color:#666;
+    font-size:18px;
+    margin-bottom:35px;
+}
+
+/* ================= Search ================= */
+
+.search{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    margin-bottom:25px;
+}
+
+.search input{
+    width:450px;
+    padding:15px;
+    border:2px solid #ddd;
+    border-radius:12px;
+    font-size:16px;
+    transition:.25s;
+}
+
+.search input:focus{
+    outline:none;
+    border-color:#4CAF50;
+}
+
+.search button{
+    background:#4CAF50;
+    color:white;
+    border:none;
+    padding:15px 24px;
+    border-radius:12px;
+    cursor:pointer;
+    transition:.25s;
+}
+
+.search button:hover{
+    background:#43a047;
+}
+
+/* ================= 실시간 ================= */
+
+.live{
+    background:white;
+    width:fit-content;
+    margin:0 auto;
+    padding:12px 22px;
+    border-radius:30px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+.dot{
+    width:10px;
+    height:10px;
+    background:red;
+    border-radius:50%;
+    display:inline-block;
+    margin-right:6px;
+}
+
+.rank{
+    margin-top:8px;
+    color:#555;
+}
+
+/* ================= Tags ================= */
+
+.tags{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:20px;
+}
+
+.tags span{
+    background:white;
+    padding:8px 16px;
+    border-radius:20px;
+    box-shadow:0 2px 6px rgba(0,0,0,.08);
+    font-size:14px;
+}
+
+/* ================= AI ================= */
+
+.ai-card{
+    width:90%;
+    max-width:1000px;
+    margin:45px auto;
+    background:#E8F5E9;
+    border-left:7px solid #4CAF50;
+    padding:35px;
+    border-radius:18px;
+}
+
+.badge{
+    display:inline-block;
+    background:#4CAF50;
+    color:white;
+    padding:6px 14px;
+    border-radius:30px;
+    margin-bottom:20px;
+    font-size:14px;
+}
+
+.ai-card h2{
+    margin-bottom:15px;
+}
+
+.ai-card h3{
+    margin:18px 0;
+}
+
+.ai-card strong{
+    color:#4CAF50;
+    font-size:30px;
+}
+
+.ai-card button{
+    margin-top:20px;
+    background:#4CAF50;
+    color:white;
+    border:none;
+    padding:14px 28px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:.25s;
+}
+
+.ai-card button:hover{
+    background:#43a047;
+}
+
+/* ================= Product ================= */
+
+.products{
+    width:90%;
+    max-width:1000px;
+    margin:60px auto;
+}
+
+.products h2{
+    margin-bottom:25px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:25px;
+}
+
+.card{
+    background:white;
+    padding:25px;
+    border-radius:15px;
+    box-shadow:0 3px 12px rgba(0,0,0,.08);
+    transition:.25s;
+}
+
+.card:hover{
+    transform:translateY(-5px);
+}
+
+.card h3{
+    margin-bottom:15px;
+}
+
+.card p{
+    color:#666;
+}
+
+.card span{
+    display:inline-block;
+    margin:15px 0;
+    background:#FFF3CD;
+    padding:6px 12px;
+    border-radius:20px;
+    font-size:14px;
+}
+
+.card button{
+    width:100%;
+    padding:12px;
+    background:#4CAF50;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.card button:hover{
+    background:#43a047;
+}
+
+/* ================= Location ================= */
+
+.location{
+    width:90%;
+    max-width:1000px;
+    margin:60px auto;
+}
+
+.location-card{
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 3px 12px rgba(0,0,0,.08);
+}
+
+.location-card ul{
+    margin:18px 0 25px 20px;
+    color:#555;
+}
+
+.map{
+    margin-top:20px;
+    height:220px;
+    background:#EEF3F8;
+    border:2px dashed #4CAF50;
+    border-radius:14px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+
+    font-size:20px;
+    line-height:2;
+}
+
+.pin{
+    font-weight:bold;
+    color:#2E7D32;
+}
+
+/* ================= Footer ================= */
+
+footer{
+    text-align:center;
+    margin:70px 0;
+}
+
+.create{
+    background:#FF9800;
+    color:white;
+    border:none;
+    padding:18px 40px;
+    border-radius:10px;
+    font-size:17px;
+    cursor:pointer;
+    transition:.25s;
+}
+
+.create:hover{
+    background:#FB8C00;
+}
