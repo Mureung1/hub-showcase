@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CalMe Prototype</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar hidden" id="sidebar">
+      <div class="brand">CalMe</div>
+      <p class="tagline">AI 일정 비서</p>
+      <button onclick="showPage('dashboard')">메인 대시보드</button>
+      <button onclick="showPage('register')">일정 등록</button>
+      <button onclick="showPage('calendar')">캘린더</button>
+      <button class="logout" onclick="logout()">로그아웃</button>
+    </aside>
+
+    <main class="main">
+      <section id="login" class="page active login-page">
+        <div class="login-card">
+          <h1>CalMe</h1>
+          <p>Call Me, I'll handle your schedule.</p>
+          <input id="email" type="email" placeholder="이메일 아무거나 입력" />
+          <input id="password" type="password" placeholder="비밀번호 아무거나 입력" />
+          <button onclick="login()">로그인</button>
+          <span>※ 프로토타입이라 아무 값이나 입력해도 로그인됩니다.</span>
+        </div>
+      </section>
+
+      <section id="dashboard" class="page">
+        <div class="header">
+          <div>
+            <h2>메인 대시보드</h2>
+            <p>다가오는 마감 일정과 오늘 일정을 한눈에 확인합니다.</p>
+          </div>
+          <button onclick="showPage('register')">+ 일정 등록</button>
+        </div>
+
+        <div class="grid two">
+          <div class="card urgent">
+            <h3>🔥 마감 임박</h3>
+            <div id="urgentList"></div>
+          </div>
+          <div class="card">
+            <h3>📌 오늘 일정</h3>
+            <p class="empty">오늘 선택된 일정이 없습니다.</p>
+          </div>
+        </div>
+
+      </section>
+
+      <section id="register" class="page">
+        <h2>일정 등록</h2>
+        <p>URL, PDF, 이미지 중 하나를 등록하면 AI 분석 결과 예시가 나타납니다.</p>
+
+        <div class="card form-card">
+          <label>공지 URL</label>
+          <input id="urlInput" placeholder="https://example.com/notice" />
+
+          <label>PDF 업로드</label>
+          <input type="file" accept=".pdf" />
+
+          <label>이미지 업로드</label>
+          <input type="file" accept=".jpg,.jpeg,.png" />
+
+          <button onclick="fakeAnalyze()">AI 분석하기</button>
+        </div>
+      </section>
+
+      <section id="analysis" class="page">
+        <h2>AI 분석 결과</h2>
+        <p>실제 AI 분석 대신 예시 데이터를 보여주는 프로토타입입니다.</p>
+
+        <div class="card summary">
+          <h3>AI 요약</h3>
+          <p>이 공지는 대학생 대상 공모전 안내문입니다. 신청 기간, OT 일정, 서류 제출 마감일이 포함되어 있습니다.</p>
+          <span class="confidence">AI 신뢰도: 높음</span>
+        </div>
+
+        <div class="card">
+          <h3>추출된 일정</h3>
+          <div class="event-edit">
+            <input id="eventTitle" value="A 공모전 - 서류 제출" />
+            <input id="eventDate" type="date" value="2026-07-20" />
+            <select id="eventCategory">
+              <option>공모전</option>
+              <option>과제</option>
+              <option>시험</option>
+              <option>팀플</option>
+            </select>
+            <textarea id="eventMemo">제출물: 기획서 PDF</textarea>
+          </div>
+          <button onclick="addToCalendar()">캘린더에 등록</button>
+        </div>
+      </section>
+
+      <section id="calendar" class="page">
+        <h2>캘린더</h2>
+        <p>등록된 일정이 달력에 표시됩니다.</p>
+        <div class="calendar-wrap">
+          <div class="calendar-title">2026년 7월</div>
+          <div class="calendar">
+            <div class="day muted">일</div><div class="day muted">월</div><div class="day muted">화</div><div class="day muted">수</div><div class="day muted">목</div><div class="day muted">금</div><div class="day muted">토</div>
+            <div class="date blank"></div><div class="date blank"></div><div class="date blank"></div><div class="date">1</div><div class="date">2</div><div class="date">3</div><div class="date">4</div>
+            <div class="date">5</div><div class="date">6</div><div class="date">7</div><div class="date">8</div><div class="date">9</div><div class="date">10</div><div class="date">11</div>
+            <div class="date">12</div><div class="date">13</div><div class="date">14</div><div class="date">15</div><div class="date">16</div><div class="date">17</div><div class="date">18</div>
+            <div class="date">19</div><div class="date active-date" onclick="showPage('detail')">20<span id="calendarEvent">A 공모전</span></div><div class="date">21</div><div class="date">22</div><div class="date">23</div><div class="date">24</div><div class="date">25</div>
+            <div class="date">26</div><div class="date">27</div><div class="date">28</div><div class="date">29</div><div class="date">30</div><div class="date">31</div><div class="date blank"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="detail" class="page">
+        <h2>일정 상세</h2>
+        <div class="card detail-card">
+          <h3 id="detailTitle">A 공모전 - 서류 제출</h3>
+          <p><strong>날짜:</strong> <span id="detailDate">2026-07-20</span></p>
+          <p><strong>분류:</strong> <span id="detailCategory">공모전</span></p>
+          <p><strong>AI 요약:</strong> 대학생 대상 공모전이며, 기획서 PDF 제출이 필요합니다.</p>
+          <p><strong>메모:</strong> <span id="detailMemo">제출물: 기획서 PDF</span></p>
+          <p><strong>원본 공지:</strong> example.com/notice</p>
+          <button onclick="showPage('analysis')">수정하기</button>
+          <button class="danger" onclick="deleteEvent()">삭제하기</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
