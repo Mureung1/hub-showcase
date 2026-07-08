@@ -1,6 +1,12 @@
 ﻿import { useEffect, useState } from "react";
 import Header from "../components/layout/Header";
 import { homeFeatures } from "../data/homeFeatures";
+import { getSession, getUser } from "../features/auth/authStorage";
+import {
+  getCareerAnalysis,
+  getCareerSpec,
+  isCareerSpecComplete,
+} from "../features/career/careerStorage";
 import { navigate, routes } from "../router";
 
 const workflowSteps = [
@@ -24,6 +30,41 @@ function Home() {
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
   const [sampleReadiness, setSampleReadiness] = useState(78);
   const [displayReadiness, setDisplayReadiness] = useState(78);
+  const session = getSession();
+  const user = getUser();
+  const currentUser = session && user?.id === session.id ? user : null;
+  const spec = getCareerSpec(currentUser?.id);
+  const analysis = getCareerAnalysis(currentUser?.id);
+  const hasCompleteSpec = isCareerSpecComplete(spec);
+  const targetReadiness = analysis?.readiness || sampleReadiness;
+  const readinessLabel = analysis
+    ? "확정 준비도"
+    : hasCompleteSpec
+      ? "분석 대기 준비도"
+      : "예시 준비도";
+  const primaryActionLabel = analysis
+    ? "분석 결과 보기"
+    : hasCompleteSpec
+      ? "분석하기"
+      : "스펙 등록하고 분석 받기";
+  const primaryActionPath = hasCompleteSpec || analysis ? routes.analysis : routes.specs;
+  const panelMetrics = analysis
+    ? [
+        ["직무 적합도", analysis.fitLevel],
+        ["포트폴리오 준비도", analysis.portfolioLevel],
+        ["번아웃 위험도", analysis.burnoutLevel],
+      ]
+    : hasCompleteSpec
+    ? [
+        ["직무 적합도", "분석하기 필요"],
+        ["포트폴리오 준비도", "분석하기 필요"],
+        ["번아웃 위험도", "분석하기 필요"],
+      ]
+    : [
+        ["직무 적합도", "스펙 등록 후 분석"],
+        ["포트폴리오 준비도", "프로젝트 등록 후 제공"],
+        ["번아웃 위험도", "학습/활동 정보 등록 후 분석"],
+      ];
 
   useEffect(() => {
     const timerId = setInterval(() => {
@@ -36,32 +77,36 @@ function Home() {
   }, []);
 
   useEffect(() => {
+    if (analysis) {
+      return undefined;
+    }
+
     const timerId = setInterval(() => {
       setSampleReadiness(getRandomReadiness());
     }, 5000);
 
     return () => clearInterval(timerId);
-  }, []);
+  }, [analysis]);
 
   useEffect(() => {
-    if (displayReadiness === sampleReadiness) {
+    if (displayReadiness === targetReadiness) {
       return undefined;
     }
 
-    const step = displayReadiness < sampleReadiness ? 1 : -1;
+    const step = displayReadiness < targetReadiness ? 1 : -1;
     const timerId = setInterval(() => {
       setDisplayReadiness((currentValue) => {
-        if (currentValue === sampleReadiness) {
+        if (currentValue === targetReadiness) {
           clearInterval(timerId);
           return currentValue;
         }
 
         const nextValue = currentValue + step;
         if (
-          (step > 0 && nextValue > sampleReadiness) ||
-          (step < 0 && nextValue < sampleReadiness)
+          (step > 0 && nextValue > targetReadiness) ||
+          (step < 0 && nextValue < targetReadiness)
         ) {
-          return sampleReadiness;
+          return targetReadiness;
         }
 
         return nextValue;
@@ -69,7 +114,7 @@ function Home() {
     }, 28);
 
     return () => clearInterval(timerId);
-  }, [displayReadiness, sampleReadiness]);
+  }, [displayReadiness, targetReadiness]);
 
   return (
     <main style={styles.container}>
@@ -99,9 +144,9 @@ function Home() {
                 type="button"
                 className="hero-action primary"
                 style={styles.primaryAction}
-                onClick={() => navigate(routes.analysis)}
+                onClick={() => navigate(primaryActionPath)}
               >
-                AI 커리어 분석
+                {primaryActionLabel}
               </button>
               <button
                 type="button"
@@ -124,7 +169,7 @@ function Home() {
             </div>
 
             <div style={styles.scoreBox}>
-              <p style={styles.scoreLabel}>예시 준비도</p>
+              <p style={styles.scoreLabel}>{readinessLabel}</p>
               <strong style={styles.score}>{displayReadiness}%</strong>
               <div style={styles.scoreTrack}>
                 <span
@@ -137,18 +182,12 @@ function Home() {
             </div>
 
             <div style={styles.metricList}>
-              <div style={styles.metricItem}>
-                <span>직무 적합도</span>
-                <strong>로그인 후 분석</strong>
-              </div>
-              <div style={styles.metricItem}>
-                <span>포트폴리오 준비도</span>
-                <strong>스펙 등록 후 제공</strong>
-              </div>
-              <div style={styles.metricItem}>
-                <span>번아웃 위험도</span>
-                <strong>로그인 후 분석</strong>
-              </div>
+              {panelMetrics.map(([label, value]) => (
+                <div key={label} style={styles.metricItem}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
             </div>
           </aside>
         </div>
