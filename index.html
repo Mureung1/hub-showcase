@@ -1,13 +1,294 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>hub</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PM 인터뷰 분석 도구</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Screen Controls (Radio Hack for Navigation) -->
+    <input type="radio" name="screen" id="nav-input" class="screen-control" checked>
+    <input type="radio" name="screen" id="nav-dashboard" class="screen-control">
+    <input type="radio" name="screen" id="nav-detail" class="screen-control">
+    <input type="radio" name="screen" id="nav-revise" class="screen-control">
+
+    <!-- Drawer Control (Checkbox Hack) -->
+    <input type="checkbox" id="drawer-toggle" class="drawer-control">
+    
+    <!-- Refine Modal Control (Checkbox Hack) -->
+    <input type="checkbox" id="refine-toggle" class="refine-control">
+
+    <!-- App Container -->
+    <div class="app-container">
+        
+        <!-- Screen 1: 가설 입력 -->
+        <section class="screen" id="screen-input">
+            <header>
+                <div class="breadcrumbs">STEP 1</div>
+                <h1>가설 입력</h1>
+            </header>
+            <div class="card">
+                <div class="card-header">
+                    <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <h2>가설 입력 화면</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>문제정의</label>
+                        <textarea rows="3" placeholder="(예시) OOO 분야에서 OOO타겟의 이탈률 상승.">배달 앱 홈 화면 개편 이후, 핵심 타겟인 2030 직장인의 재주문율 하락</textarea>
+                    </div>
+                    
+                    <div class="hypothesis-block">
+                        <div class="form-group">
+                            <label>가설 1</label>
+                            <input type="text" value="~하면, 재주문율이 증가할 것이다." class="h-summary" readonly>
+                        </div>
+                        <div class="h-split">
+                            <div class="form-group">
+                                <label>원인</label>
+                                <input type="text" value="추천 메뉴 영역 위치 상향">
+                            </div>
+                            <div class="arrow">하면 &rarr;</div>
+                            <div class="form-group">
+                                <label>결과</label>
+                                <input type="text" value="재주문율 증가">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-outline btn-add">+ 다른 가설 추가</button>
+                    
+                    <div class="form-group mt-30">
+                        <label>추가로 고려해야 할 사항</label>
+                        <textarea rows="2" placeholder="정성/정량 데이터, 인터뷰 대상 특성 등">최근 1개월 내 이탈한 유저 위주의 인터뷰 데이터 참고</textarea>
+                    </div>
+                    
+                    <div class="actions right mt-30">
+                        <!-- Navigation to Dashboard -->
+                        <label for="nav-dashboard" class="btn-primary btn-large">분석 시작</label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 2: 대시보드 -->
+        <section class="screen" id="screen-dashboard">
+            <header>
+                <div class="breadcrumbs">STEP 2</div>
+                <h1>대시보드</h1>
+            </header>
+            <div class="card">
+                <div class="card-header">
+                    <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <h2>분석 결과 대시보드</h2>
+                </div>
+                <div class="card-body">
+                    <div class="dashboard-top">
+                        <h3>가설 분석이 완료되었습니다</h3>
+                        <div class="filter-actions">
+                            <button class="btn-outline active">가설 유지</button>
+                            <button class="btn-outline">가설 수정</button>
+                            <button class="btn-outline">가설 폐기</button>
+                        </div>
+                    </div>
+                    
+                    <div class="hypothesis-list">
+                        <!-- Item 1 -->
+                        <div class="h-item status-strong">
+                            <label class="custom-checkbox">
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                            </label>
+                            <div class="h-item-content">
+                                <span class="badge badge-green">유지</span>
+                                <!-- Navigation to Detail -->
+                                <label for="nav-detail" class="h-item-title clickable">가설 1</label>
+                                <span class="h-item-status">유력함</span>
+                            </div>
+                        </div>
+                        <!-- Item 2 -->
+                        <div class="h-item status-weak">
+                            <label class="custom-checkbox">
+                                <input type="checkbox">
+                                <span class="checkmark"></span>
+                            </label>
+                            <div class="h-item-content">
+                                <span class="badge badge-red">폐기</span>
+                                <span class="h-item-title">가설 2</span>
+                                <span class="h-item-status">전사문 근거 부족함</span>
+                            </div>
+                        </div>
+                        <!-- Item 3 -->
+                        <div class="h-item status-review">
+                            <label class="custom-checkbox">
+                                <input type="checkbox">
+                                <span class="checkmark"></span>
+                            </label>
+                            <div class="h-item-content">
+                                <span class="badge badge-gray">검토 전</span>
+                                <span class="h-item-title">가설 3</span>
+                                <span class="h-item-status">결론은 맞지만 원인 수정 필요</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="actions center mt-40">
+                        <button class="btn-outline">결과 공유하기</button>
+                        <button class="btn-outline">임시 저장</button>
+                        <button class="btn-primary">저장하기</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 3: 상세 분석 -->
+        <section class="screen" id="screen-detail">
+            <header>
+                <div class="breadcrumbs">STEP 3</div>
+                <h1>상세 분석</h1>
+            </header>
+            <div class="card">
+                <div class="card-header">
+                    <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <h2>가설 상세 화면</h2>
+                </div>
+                <div class="card-body">
+                    <div class="dashboard-top">
+                        <!-- Navigation back to Dashboard -->
+                        <label for="nav-dashboard" class="btn-text">&lsaquo; 대시보드로</label>
+                        <div class="filter-actions">
+                            <button class="btn-outline active">가설 유지</button>
+                            <label for="nav-revise" class="btn-outline clickable-btn">가설 수정</label>
+                            <button class="btn-outline">가설 폐기</button>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-content">
+                        <h3>검증결과</h3>
+                        <div class="result-box">
+                            <h4>가설 1은 <strong>유지</strong>되어야 합니다.</h4>
+                            <p class="result-text">
+                                인터뷰이들은 앱 홈 화면 구조에 대해 불편하다고 말하면서도
+                                <!-- Trigger Drawer -->
+                                <label for="drawer-toggle" class="ref-link" title="근거 보기">(1)</label>, 정량 데이터 및 인터뷰에서 보듯 
+                                <span class="ref-link">(2)(3)</span> 코어 구매자의 구매 전환은 일어나고 있습니다.
+                            </p>
+                            <p class="result-text mt-10">
+                                따라서 실질적인 병목은 
+                                <!-- Trigger Refine Modal -->
+                                <label for="refine-toggle" class="highlight-trigger">UI 구조 변경보다, 홈 화면의 로딩 속도</label>
+                                입니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 5: 가설 수정 -->
+        <section class="screen" id="screen-revise">
+            <header>
+                <div class="breadcrumbs">STEP 5</div>
+                <h1>가설 수정</h1>
+            </header>
+            <div class="card">
+                <div class="card-header">
+                    <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <h2>가설 수정 & 버전 히스토리</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>가설 1 (기존)</label>
+                        <input type="text" value="추천 메뉴 영역의 위치를 상단으로 올리면, 재주문율이 증가할 것이다." disabled class="input-disabled">
+                    </div>
+                    
+                    <div class="form-group mt-20">
+                        <label>가설 1 수정안</label>
+                        <div class="input-with-button">
+                            <input type="text" value="홈 화면의 로딩 속도를 최적화하면, 재주문율이 증가할 것이다.">
+                            <button class="btn-primary">확인</button>
+                        </div>
+                    </div>
+                    
+                    <div class="version-history mt-40">
+                        <h3>버전 히스토리</h3>
+                        <div class="timeline">
+                            <div class="timeline-item old">
+                                <div class="node"></div>
+                                <div class="content">v1 · 원본</div>
+                            </div>
+                            <div class="timeline-item current">
+                                <div class="node"></div>
+                                <div class="content">v2 · 수정 (현재)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="actions space-between mt-40">
+                        <div class="left-actions">
+                            <button class="btn-outline active">가설 유지</button>
+                            <button class="btn-outline">가설 폐기</button>
+                        </div>
+                        <label for="nav-dashboard" class="btn-primary btn-large">재분석 시작</label>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+    </div>
+
+    <!-- Side Drawer & Overlay -->
+    <label for="drawer-toggle" class="drawer-overlay-bg"></label>
+    <aside class="drawer">
+        <div class="drawer-header">
+            <h3>근거 (1) · 태그 1. 구조가 불편함</h3>
+            <label for="drawer-toggle" class="close-btn">&times;</label>
+        </div>
+        <div class="drawer-body">
+            <div class="transcript-item">
+                <span class="speaker">인터뷰이 A:</span>
+                <p>"이 부분이 확실히 불편하더라구요. 메뉴 찾기가 힘들어요."</p>
+            </div>
+            <div class="transcript-item">
+                <span class="speaker">인터뷰이 K:</span>
+                <p>"특히 이 부분에서 별로 이용하고 싶지 않았어요. 눈에 잘 안 들어오거든요."</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Refine Modal & Overlay -->
+    <label for="refine-toggle" class="refine-overlay-bg"></label>
+    <div class="refine-modal">
+        <div class="refine-header">
+            <h3 class="step-title">STEP 4. 반박 · 리파인</h3>
+            <label for="refine-toggle" class="close-btn">&times;</label>
+        </div>
+        <div class="refine-body">
+            <div class="chat-message user">
+                <div class="bubble">근데 이건 홈 화면 로딩 속도 문제가 아니라, 메뉴 추천 알고리즘 문제 관점에서 봐야하지 않아?</div>
+            </div>
+            <div class="chat-message ai">
+                <div class="bubble">좋은 생각입니다. 그럼 이 부분은 추천 알고리즘 관점으로 바꿀까요?</div>
+            </div>
+            <div class="chat-message user">
+                <div class="bubble">그래, 추천 알고리즘 관점으로 수정안 보내.</div>
+            </div>
+            
+            <div class="suggestion-box mt-20">
+                <h4>변경안</h4>
+                <div class="diff">
+                    <p class="old-text"><del>UI 구조 변경보다, 홈 화면의 로딩 속도</del></p>
+                    <p class="new-text">UI 구조 변경보다, <strong>개인화된 메뉴 추천 알고리즘의 정확도</strong></p>
+                </div>
+                <label for="refine-toggle" class="btn-primary btn-full mt-15">적용하기</label>
+            </div>
+        </div>
+        <div class="refine-footer">
+            <input type="text" placeholder="메시지를 입력하세요...">
+            <button class="btn-primary">전송</button>
+        </div>
+    </div>
+</body>
 </html>
