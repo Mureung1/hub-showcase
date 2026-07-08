@@ -1,0 +1,138 @@
+.intro {
+  text-align: left;
+  padding: 48px 64px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  flex-grow: 1;
+
+  @media (max-width: 1024px) {
+    padding: 32px 20px 0;
+    gap: 36px;
+  }
+}
+
+.intro-hero {
+  text-align: center;
+  padding: 32px 0;
+  border-bottom: 1px solid var(--border);
+
+  h1 {
+    margin: 0 0 12px;
+  }
+
+  .tagline {
+    font-size: 20px;
+    @media (max-width: 1024px) {
+      font-size: 17px;
+    }
+  }
+}
+
+.intro-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.scenario-grid {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.scenario-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--social-bg);
+
+  strong {
+    color: var(--text-h);
+  }
+
+  span {
+    font-size: 15px;
+    color: var(--accent);
+  }
+}
+
+.flow-list {
+  list-style: none;
+  counter-reset: flow;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  li {
+    counter-increment: flow;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 6px;
+    padding: 6px 12px;
+    background: var(--accent-bg);
+    color: var(--text-h);
+    font-size: 16px;
+
+    &::before {
+      content: counter(flow);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+  }
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+
+  li {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    strong {
+      color: var(--text-h);
+    }
+
+    span {
+      font-size: 15px;
+    }
+  }
+}
+
+.intro-footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 0 48px;
+  text-align: center;
+  font-size: 15px;
+}
