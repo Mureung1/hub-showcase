@@ -1,13 +1,1139 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>띵동 (ThingDong) — 웹 프로토타입</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>project</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css"
+    />
+    <style>
+      :root {
+        --bg-page: #f1f2f5;
+        --surface: #ffffff;
+        --surface-muted: #f6f7f9;
+        --border: #e7e8ec;
+        --text-primary: #1b1d22;
+        --text-secondary: #6b6e76;
+        --text-muted: #9a9ca5;
+        --accent: #3182f6;
+        --accent-bg: #eaf2ff;
+        --danger: #f04452;
+        --danger-bg: #fdeaec;
+        --warning: #f5a623;
+        --warning-bg: #fef3e2;
+        --success: #1aae68;
+        --success-bg: #e8f8f0;
+        --radius: 10px;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        background: var(--bg-page);
+        font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", sans-serif;
+        color: var(--text-primary);
+      }
+      body { padding-bottom: 0; min-height: 100vh; }
+      button, input, select, textarea { font-family: inherit; }
+      p { margin: 0; }
+      .muted { color: var(--text-muted); }
+      .secondary { color: var(--text-secondary); }
+
+      /* ---------- Top GNB ---------- */
+      .gnb {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        padding: 14px 28px;
+        border-bottom: 0.5px solid var(--border);
+        background: var(--surface);
+        position: sticky;
+        top: 0;
+        z-index: 30;
+      }
+      .gnb .logo {
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: -0.2px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: var(--text-primary);
+        padding: 0;
+      }
+      .gnb .logo .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+      .gnb-links { display: flex; gap: 20px; font-size: 13px; color: var(--text-secondary); }
+      .gnb-links button {
+        cursor: pointer; padding-bottom: 2px; border: none; background: none;
+        font-size: 13px; color: var(--text-secondary); font-family: inherit;
+      }
+      .gnb-links button.active { color: var(--text-primary); font-weight: 700; }
+      .gnb-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+      .gnb-right button { border: none; background: none; cursor: pointer; padding: 0; display: flex; align-items: center; }
+      .gnb-right i { font-size: 18px; color: var(--text-secondary); }
+      .bell-wrap { position: relative; }
+      .unread-dot {
+        position: absolute; top: -3px; right: -3px; width: 8px; height: 8px;
+        border-radius: 50%; background: var(--danger); border: 1.5px solid var(--surface);
+      }
+      .gnb-create-btn {
+        background: var(--text-primary); color: #fff; font-size: 12.5px; font-weight: 600;
+        border-radius: 8px; padding: 8px 14px; display: flex; align-items: center; gap: 5px;
+        border: none; cursor: pointer;
+      }
+      .gnb-avatar {
+        width: 28px; height: 28px; border-radius: 50%; background: var(--accent-bg); color: var(--accent);
+        font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; border: none;
+      }
+
+      /* ---------- Bottom nav (mobile) ---------- */
+      .bottom-nav {
+        display: none;
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+        background: var(--surface); border-top: 0.5px solid var(--border);
+        padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+        align-items: center; justify-content: space-around;
+      }
+      .bottom-nav button {
+        border: none; background: none; display: flex; flex-direction: column; align-items: center;
+        gap: 3px; font-size: 10px; color: var(--text-muted); cursor: pointer; position: relative; padding: 2px 10px;
+      }
+      .bottom-nav button i { font-size: 20px; }
+      .bottom-nav button.active { color: var(--accent); }
+      .bottom-nav .nav-unread-dot {
+        position: absolute; top: 0px; right: 6px; width: 7px; height: 7px;
+        border-radius: 50%; background: var(--danger); border: 1.5px solid var(--surface);
+      }
+
+      main#app { max-width: 1180px; margin: 0 auto; padding: 28px 32px 60px; width: 100%; }
+
+      /* ---------- Toast ---------- */
+      #toast-root { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
+        display: flex; flex-direction: column; gap: 8px; align-items: center; }
+      .toast {
+        background: var(--text-primary); color: #fff; font-size: 13px; padding: 11px 18px;
+        border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.18); display: flex; align-items: center; gap: 8px;
+        animation: toast-in .18s ease-out;
+      }
+      .toast i { color: var(--success); font-size: 15px; }
+      @keyframes toast-in { from { opacity:0; transform: translateY(-8px);} to {opacity:1; transform: translateY(0);} }
+
+      .page-title-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 18px; }
+      .page-title-row h2 { font-size: 19px; font-weight: 700; margin: 0; }
+      .page-title-row p.location-tag { margin: 2px 0 0; }
+      .location-tag { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text-muted); }
+
+      /* ---------- Feed screen ---------- */
+      .filter-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+      .chip-row { display: flex; gap: 8px; }
+      .chip { font-size: 12.5px; padding: 7px 14px; border-radius: 20px; white-space: nowrap; border: none; cursor: pointer; font-family: inherit; }
+      .chip.active { background: var(--text-primary); color: #fff; }
+      .chip.inactive { border: 0.5px solid var(--border); color: var(--text-secondary); background: var(--surface); }
+      .sort-tabs { display: flex; gap: 16px; margin-left: auto; font-size: 12.5px; }
+      .sort-tabs button {
+        color: var(--text-muted); display: flex; align-items: center; gap: 5px; border: none; background: none;
+        cursor: pointer; font-family: inherit; font-size: 12.5px; padding: 0;
+      }
+      .sort-tabs button.active { color: var(--text-primary); font-weight: 700; }
+
+      .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .card {
+        background: var(--surface); border: 0.5px solid var(--border); border-radius: 14px; padding: 16px;
+        display: flex; flex-direction: column; gap: 10px; cursor: pointer; text-align: left;
+        transition: box-shadow .15s, transform .15s;
+      }
+      .card:hover { box-shadow: 0 8px 22px rgba(20,22,30,.08); transform: translateY(-2px); }
+      .card .thumb { width: 100%; height: 96px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; }
+      .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+      .card-title { font-size: 14px; font-weight: 700; line-height: 1.35; }
+      .badge { font-size: 10.5px; padding: 3px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+      .badge.danger { background: var(--danger-bg); color: var(--danger); }
+      .badge.warning { background: var(--warning-bg); color: #b9770e; }
+      .badge.muted { background: var(--surface-muted); color: var(--text-muted); }
+      .badge.accentb { background: var(--accent-bg); color: var(--accent); }
+      .progress { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+      .progress-fill { height: 100%; background: var(--accent); }
+      .meta-row { font-size: 11.5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+      .card-footer { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; }
+      .empty-state { text-align: center; padding: 80px 20px; color: var(--text-muted); }
+      .empty-state i { font-size: 34px; margin-bottom: 10px; display: block; }
+
+      /* ---------- Detail screen ---------- */
+      .detail-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 32px; align-items: start; }
+      .breadcrumb {
+        font-size: 12px; color: var(--text-muted); margin-bottom: 14px; display: flex; align-items: center;
+        gap: 6px; cursor: pointer; border: none; background: none; padding: 0; font-family: inherit;
+      }
+      .price-grid { display: flex; gap: 12px; margin: 16px 0; }
+      .price-box { flex: 1; border-radius: 12px; padding: 14px 16px; }
+      .price-box.total { background: var(--surface-muted); }
+      .price-box.per { background: var(--accent-bg); }
+      .price-box .label { font-size: 11.5px; margin-bottom: 4px; }
+      .price-box.total .label { color: var(--text-muted); }
+      .price-box.per .label { color: var(--accent); }
+      .price-box .value { font-size: 19px; font-weight: 700; }
+      .price-box.per .value { color: var(--accent); }
+      .section-title { font-size: 13px; font-weight: 700; margin: 22px 0 10px; display: flex; align-items: center; gap: 6px; }
+      .stepper { display: flex; align-items: flex-start; margin: 14px 0; }
+      .step { flex: 1; text-align: center; }
+      .step-dot {
+        width: 22px; height: 22px; border-radius: 50%; margin: 0 auto 5px; font-size: 11px;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .step-dot.done { background: var(--accent); color: #fff; }
+      .step-dot.current { background: var(--text-primary); color: #fff; }
+      .step-dot.todo { border: 1px solid var(--border); color: var(--text-muted); }
+      .step-line { flex: 1; height: 2px; background: var(--border); margin-top: 11px; }
+      .step-line.done { background: var(--accent); }
+      .step-label { font-size: 10.5px; color: var(--text-muted); }
+      .step-label.done { color: var(--text-primary); font-weight: 600; }
+
+      .side-panel { position: sticky; top: 78px; border: 0.5px solid var(--border); border-radius: 14px; padding: 18px; background: var(--surface); }
+      .map-box {
+        height: 160px; border-radius: 10px; border: 0.5px solid var(--border); position: relative; margin-bottom: 10px;
+        background: linear-gradient(var(--border) 0.5px, transparent 0.5px) 0 0/22px 22px,
+          linear-gradient(90deg, var(--border) 0.5px, transparent 0.5px) 0 0/22px 22px, var(--surface-muted);
+      }
+      .map-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); font-size: 28px; color: var(--danger); }
+      .host-row { display: flex; align-items: center; gap: 10px; background: var(--surface-muted); border-radius: 10px; padding: 12px; margin: 14px 0; }
+      .avatar {
+        width: 34px; height: 34px; border-radius: 50%; background: var(--accent-bg); color: var(--accent);
+        display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; flex-shrink: 0;
+      }
+      .btn-primary {
+        width: 100%; height: 46px; background: var(--text-primary); color: #fff; border: none; border-radius: 10px;
+        font-size: 13.5px; font-weight: 700; cursor: pointer;
+      }
+      .btn-primary:disabled { background: var(--text-muted); cursor: default; }
+      .btn-secondary {
+        width: 100%; height: 46px; background: #fff; color: var(--text-primary); border: 0.5px solid var(--border);
+        border-radius: 10px; font-size: 13.5px; font-weight: 700; cursor: pointer;
+      }
+      .info-box { background: var(--surface-muted); border-radius: 10px; padding: 12px 14px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin: 10px 0; }
+      .share-row { display: flex; gap: 8px; margin-top: 10px; }
+      .share-btn {
+        flex: 1; height: 38px; border-radius: 8px; border: 0.5px solid var(--border); background: var(--surface-muted);
+        font-size: 11.5px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center;
+        gap: 5px; cursor: pointer; font-family: inherit;
+      }
+      .star-row { display: flex; gap: 6px; margin: 10px 0; }
+      .star-row i { font-size: 24px; color: var(--border); cursor: pointer; }
+      .star-row i.filled { color: var(--warning); }
+
+      /* ---------- Form screen ---------- */
+      .content-narrow { max-width: 480px; margin: 0 auto; width: 100%; padding: 6px 0 40px; }
+      .form-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+      .form-card-head h2 { font-size: 18px; font-weight: 700; margin: 0; }
+      .field-label { font-size: 12.5px; font-weight: 600; margin: 16px 0 6px; }
+      .field-label:first-child { margin-top: 0; }
+      .field-input {
+        width: 100%; height: 42px; border-radius: 9px; border: 0.5px solid var(--border); background: var(--surface-muted);
+        padding: 0 12px; font-size: 13px; color: var(--text-primary);
+      }
+      textarea.field-input { height: auto; padding: 10px 12px; resize: vertical; min-height: 64px; }
+      .field-row { display: flex; gap: 12px; }
+      .field-row > div { flex: 1; }
+      .calc-box {
+        margin-top: 16px; background: var(--accent-bg); border-radius: 10px; padding: 14px;
+        display: flex; justify-content: space-between; align-items: center;
+      }
+      .calc-box .label { font-size: 12.5px; color: var(--accent); }
+      .calc-box .value { font-size: 19px; font-weight: 700; color: var(--accent); }
+      .map-select {
+        height: 96px; border-radius: 9px; border: 0.5px dashed var(--border); background: var(--surface-muted);
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; margin-top: 6px;
+        cursor: pointer; width: 100%; font-family: inherit;
+      }
+      .map-select.selected { border-style: solid; border-color: var(--accent); background: var(--accent-bg); }
+      .map-select i { font-size: 20px; color: var(--text-muted); }
+      .map-select.selected i { color: var(--accent); }
+      .map-select span { font-size: 12px; color: var(--text-muted); }
+      .map-select.selected span { color: var(--accent); font-weight: 600; }
+      .form-actions { display: flex; gap: 10px; margin-top: 24px; }
+      .form-actions .btn-secondary, .form-actions .btn-primary { width: auto; flex: 1; }
+
+      /* ---------- Applicant / pickup management ---------- */
+      .summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+      .summary-card { border: 0.5px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--surface-muted); }
+      .summary-card .label { font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; }
+      .summary-card .big { font-size: 21px; font-weight: 700; }
+      .applicant-table-head {
+        display: grid; grid-template-columns: 2fr 1.4fr 1fr; font-size: 11.5px; color: var(--text-muted);
+        padding: 0 4px 8px; border-bottom: 0.5px solid var(--border);
+      }
+      .applicant-row {
+        display: grid; grid-template-columns: 2fr 1.4fr 1fr; align-items: center;
+        border-bottom: 0.5px solid var(--border); padding: 14px 4px;
+      }
+      .applicant-row:last-child { border-bottom: none; }
+      .applicant-name-cell { display: flex; align-items: center; gap: 10px; }
+      .applicant-name { font-size: 13px; font-weight: 600; }
+      .applicant-meta { font-size: 11px; color: var(--text-muted); }
+      .warn-tag {
+        display: inline-flex; align-items: center; gap: 3px; background: var(--warning-bg); color: #b9770e;
+        font-size: 10px; padding: 2px 7px; border-radius: 8px; margin-left: 6px;
+      }
+      .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+      .btn-approve, .btn-reject, .btn-mini {
+        min-width: 64px; height: 32px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; padding: 0 10px;
+      }
+      .btn-approve { background: var(--success-bg); color: var(--success); }
+      .btn-reject { background: var(--surface-muted); color: var(--text-secondary); }
+      .btn-mini.warn { background: var(--danger-bg); color: var(--danger); }
+      .btn-mini.neutral { background: var(--surface-muted); color: var(--text-secondary); }
+      .cta-banner {
+        background: var(--accent-bg); color: var(--accent); border-radius: 12px; padding: 14px 16px; font-size: 13px;
+        font-weight: 600; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 10px;
+      }
+      .cta-banner button {
+        background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 14px; font-size: 12.5px;
+        font-weight: 700; cursor: pointer; flex-shrink: 0; font-family: inherit;
+      }
+
+      /* ---------- Settlement ---------- */
+      .account-box { background: var(--surface-muted); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+      .account-box .bank { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+      .account-box .number { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
+      .account-box .holder { font-size: 12.5px; color: var(--text-secondary); }
+      .settle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
+      .settle-row:last-child { border-bottom: none; }
+      .settle-name { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+      .paid-badge { font-size: 11.5px; padding: 4px 10px; border-radius: 8px; border: none; cursor: pointer; font-family: inherit; }
+      .paid-badge.done { background: var(--success-bg); color: var(--success); }
+      .paid-badge.pending { background: var(--surface-muted); color: var(--text-muted); }
+
+      /* ---------- My page ---------- */
+      .mypage-head { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; }
+      .mypage-head .avatar { width: 52px; height: 52px; font-size: 18px; }
+      .mypage-head h2 { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
+      .mini-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 30px; }
+      .mini-row {
+        display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface);
+        border: 0.5px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left;
+      }
+      .mini-row .t { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+      .mini-row .s { font-size: 11.5px; color: var(--text-muted); }
+      .notif-row { display: flex; align-items: flex-start; gap: 10px; padding: 12px 4px; border-bottom: 0.5px solid var(--border); }
+      .notif-row:last-child { border-bottom: none; }
+      .notif-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex-shrink: 0; }
+      .notif-dot.read { background: var(--border); }
+      .notif-row .msg { font-size: 13px; line-height: 1.5; }
+      .notif-row .time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+      .section-heading { font-size: 14.5px; font-weight: 700; margin: 0 0 12px; display: flex; align-items: center; gap: 6px; }
+
+      @media (max-width: 860px) {
+        .card-grid { grid-template-columns: repeat(2, 1fr); }
+        .detail-layout { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 768px) {
+        .gnb-links { display: none; }
+        .gnb-create-btn span.label { display: none; }
+        .bottom-nav { display: flex; }
+        body { padding-bottom: 62px; }
+        main#app { padding: 20px 16px 40px; }
+      }
+      @media (max-width: 480px) {
+        .card-grid { grid-template-columns: 1fr; }
+        .summary-cards { grid-template-columns: 1fr; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <div id="toast-root"></div>
+
+    <header class="gnb">
+      <button class="logo" onclick="nav('home')"><span class="dot"></span>띵동</button>
+      <div class="gnb-links">
+        <button data-view="home" onclick="nav('home')">홈</button>
+        <button onclick="toast('지도 화면은 이 프로토타입에서는 준비 중이에요')">지도</button>
+        <button data-view="create" onclick="nav('create')">공구 개설</button>
+        <button onclick="toast('채팅 화면은 이 프로토타입에서는 준비 중이에요')">채팅</button>
+        <button data-view="mypage" onclick="nav('mypage')">마이페이지</button>
+      </div>
+      <div class="gnb-right">
+        <button onclick="toast('검색 기능은 이 프로토타입에서는 준비 중이에요')"><i class="ti ti-search"></i></button>
+        <button class="bell-wrap" onclick="nav('mypage')">
+          <i class="ti ti-bell"></i>
+          <span id="gnb-unread-dot" class="unread-dot" style="display:none"></span>
+        </button>
+        <button class="gnb-create-btn" onclick="nav('create')"><i class="ti ti-plus" style="font-size:13px"></i><span class="label">공구 개설</span></button>
+        <button class="gnb-avatar" onclick="nav('mypage')">지</button>
+      </div>
+    </header>
+
+    <main id="app"></main>
+
+    <nav class="bottom-nav">
+      <button data-view="home" onclick="nav('home')"><i class="ti ti-home"></i>홈</button>
+      <button onclick="toast('지도 화면은 이 프로토타입에서는 준비 중이에요')"><i class="ti ti-map-2"></i>지도</button>
+      <button data-view="create" onclick="nav('create')"><i class="ti ti-square-rounded-plus"></i>개설</button>
+      <button onclick="toast('채팅 화면은 이 프로토타입에서는 준비 중이에요')"><i class="ti ti-message-circle"></i>채팅</button>
+      <button data-view="mypage" onclick="nav('mypage')" style="position:relative">
+        <i class="ti ti-user"></i>마이
+        <span id="nav-unread-dot" class="nav-unread-dot" style="display:none"></span>
+      </button>
+    </nav>
+
+    <script>
+      /* =========================================================
+         데이터 (mock DB) — 실제로는 4.3/4.4/5장의 JPA 엔티티에 대응
+      ========================================================= */
+      const CURRENT_USER = { id: 'u_me', name: '김지민', avatar: '지', manner: 38.2, noShow: 0 };
+      const USERS = {
+        u_me:    CURRENT_USER,
+        u_hyun:  { id: 'u_hyun',  name: '현우', avatar: '현', manner: 37.8, noShow: 0 },
+        u_som:   { id: 'u_som',   name: '소연', avatar: '소', manner: 39.1, noShow: 0 },
+        u_minji: { id: 'u_minji', name: '민지', avatar: '민', manner: 34.1, noShow: 2 },
+        u_p1:    { id: 'u_p1',    name: '서준', avatar: '서', manner: 36.8, noShow: 0 },
+        u_p2:    { id: 'u_p2',    name: '하은', avatar: '하', manner: 37.0, noShow: 0 },
+        u_p3:    { id: 'u_p3',    name: '지훈', avatar: '지', manner: 36.5, noShow: 0 },
+        u_p4:    { id: 'u_p4',    name: '다은', avatar: '다', manner: 36.9, noShow: 0 },
+        u_p5:    { id: 'u_p5',    name: '예은', avatar: '예', manner: 36.5, noShow: 0 },
+      };
+
+      const now = Date.now();
+      let seq = 1;
+
+      let GPS = [
+        {
+          id: 'gp1', title: '양파 5kg 한 망 나눠요', category: '식자재', hostId: 'u_me',
+          totalPrice: 17500, target: 5, status: 'RECRUITING', deadlineHoursLeft: 20,
+          distance: 480, walk: 8, createdAt: now - 5 * 3600e3,
+          description: '산지 직송 양파 5kg를 1/5씩 소분해서 나눠요. 픽업 시 개인 용기나 비닐 지참해주세요.',
+          pickupAddress: '대명동 행정복지센터 앞', pickupTime: '평일 저녁 7~9시',
+          thumbIcon: 'ti-carrot', thumbBg: 'var(--warning-bg)', thumbColor: '#b9770e',
+          account: { bank: '카카오뱅크', number: '3333-01-1234567', holder: '김지민' },
+          applicants: [
+            { userId: 'u_som',   status: 'approved' },
+            { userId: 'u_p1',    status: 'approved' },
+            { userId: 'u_p2',    status: 'approved' },
+            { userId: 'u_minji', status: 'pending' },
+            { userId: 'u_hyun',  status: 'pending' },
+          ],
+        },
+        {
+          id: 'gp2', title: '국내산 대파 3kg 나눠요', category: '식자재', hostId: 'u_hyun',
+          totalPrice: 12000, target: 4, status: 'RECRUITING', deadlineHoursLeft: 68,
+          distance: 650, walk: 10, createdAt: now - 1 * 3600e3,
+          description: '대파 3kg 소분합니다. 향이 강한 편이니 밀폐 용기를 추천드려요.',
+          pickupAddress: '월배로 공원 입구', pickupTime: '주말 오후 2~4시',
+          thumbIcon: 'ti-carrot', thumbBg: 'var(--warning-bg)', thumbColor: '#b9770e',
+          account: { bank: '신한은행', number: '110-482-991234', holder: '현우' },
+          applicants: [
+            { userId: 'u_p1', status: 'approved' },
+            { userId: 'u_p3', status: 'approved' },
+          ],
+        },
+        {
+          id: 'gp3', title: '프리미엄 세탁세제 3L 나눠요', category: '생필품', hostId: 'u_som',
+          totalPrice: 24000, target: 6, status: 'RECRUITING', deadlineHoursLeft: 44,
+          distance: 300, walk: 5, createdAt: now - 9 * 3600e3,
+          description: '대용량 세탁세제 3L을 소분합니다. 담아가실 페트병을 지참해 주세요.',
+          pickupAddress: '대명동 원룸촌 편의점 앞', pickupTime: '평일 저녁 8시',
+          thumbIcon: 'ti-droplet', thumbBg: 'var(--accent-bg)', thumbColor: 'var(--accent)',
+          account: { bank: '토스뱅크', number: '1000-2345-6789', holder: '소연' },
+          applicants: [
+            { userId: 'u_me', status: 'approved' },
+            { userId: 'u_p1', status: 'approved' },
+            { userId: 'u_p2', status: 'approved' },
+            { userId: 'u_p3', status: 'approved' },
+            { userId: 'u_p4', status: 'approved' },
+          ],
+        },
+        {
+          id: 'gp4', title: '3겹 화장지 30롤 나눠요', category: '생필품', hostId: 'u_som',
+          totalPrice: 16400, target: 4, status: 'COMPLETED',
+          distance: 520, walk: 9, createdAt: now - 30 * 3600e3,
+          description: '30롤 묶음을 4명이서 소분해요. 정산 확인 후 바로 주문할게요!',
+          pickupAddress: '대명동 3길 소통관', pickupTime: '주중 저녁',
+          thumbIcon: 'ti-toilet-paper', thumbBg: 'var(--surface-muted)', thumbColor: 'var(--text-muted)',
+          account: { bank: '토스뱅크', number: '1000-2345-6789', holder: '소연' },
+          applicants: [
+            { userId: 'u_me',    status: 'approved', is_paid: false },
+            { userId: 'u_hyun',  status: 'approved', is_paid: true },
+            { userId: 'u_p1',    status: 'approved', is_paid: true },
+            { userId: 'u_minji', status: 'approved', is_paid: false },
+          ],
+        },
+        {
+          id: 'gp5', title: '유기농 계란 30구 나눠요', category: '식자재', hostId: 'u_hyun',
+          totalPrice: 13500, target: 5, status: 'ORDERED',
+          distance: 400, walk: 7, createdAt: now - 50 * 3600e3,
+          description: '유정란 30구를 소분해요. 각자 10개씩 픽업하시면 돼요.',
+          pickupAddress: '상인동 놀이터 앞', pickupTime: '평일 저녁 7시',
+          thumbIcon: 'ti-egg', thumbBg: 'var(--warning-bg)', thumbColor: '#b9770e',
+          trackingNumber: 'CJ1234567890',
+          account: { bank: '신한은행', number: '110-482-991234', holder: '현우' },
+          applicants: [
+            { userId: 'u_me',   status: 'approved', is_paid: true },
+            { userId: 'u_p1',   status: 'approved', is_paid: true },
+            { userId: 'u_p2',   status: 'approved', is_paid: true },
+            { userId: 'u_p3',   status: 'approved', is_paid: true },
+            { userId: 'u_som',  status: 'approved', is_paid: true },
+          ],
+        },
+        {
+          id: 'gp6', title: '캡슐커피 100개입 나눠요', category: '기타', hostId: 'u_me',
+          totalPrice: 48000, target: 8, status: 'WAITING_PICKUP',
+          distance: 700, walk: 12, createdAt: now - 70 * 3600e3,
+          description: '캡슐커피 100개를 소분해요. 각자 12~13개씩 픽업해 주세요.',
+          pickupAddress: '대명동 행정복지센터 앞', pickupTime: '평일 저녁 7~9시',
+          thumbIcon: 'ti-coffee', thumbBg: 'var(--surface-muted)', thumbColor: 'var(--text-muted)',
+          account: { bank: '카카오뱅크', number: '3333-01-1234567', holder: '김지민' },
+          applicants: [
+            { userId: 'u_hyun',  status: 'approved', is_paid: true, is_received: true },
+            { userId: 'u_som',   status: 'approved', is_paid: true, is_received: true },
+            { userId: 'u_minji', status: 'approved', is_paid: true, is_received: false },
+            { userId: 'u_p1',    status: 'approved', is_paid: true, is_received: true },
+            { userId: 'u_p2',    status: 'approved', is_paid: true, is_received: false },
+            { userId: 'u_p3',    status: 'approved', is_paid: true, is_received: true },
+            { userId: 'u_p4',    status: 'approved', is_paid: true, is_received: false },
+            { userId: 'u_p5',    status: 'approved', is_paid: true, is_received: false },
+          ],
+        },
+        {
+          id: 'gp7', title: '물티슈 특대형 나눠요', category: '생필품', hostId: 'u_som',
+          totalPrice: 9000, target: 3, status: 'FINISHED',
+          distance: 350, walk: 6, createdAt: now - 200 * 3600e3,
+          description: '대용량 물티슈 소분 완료했어요. 다들 참여해주셔서 감사합니다!',
+          pickupAddress: '상인역 2번 출구', pickupTime: '지난 주 완료',
+          thumbIcon: 'ti-bath', thumbBg: 'var(--surface-muted)', thumbColor: 'var(--text-muted)',
+          account: { bank: '토스뱅크', number: '1000-2345-6789', holder: '소연' },
+          myRating: null,
+          applicants: [
+            { userId: 'u_me', status: 'approved', is_paid: true, is_received: true },
+            { userId: 'u_p1', status: 'approved', is_paid: true, is_received: true },
+            { userId: 'u_p2', status: 'approved', is_paid: true, is_received: true },
+          ],
+        },
+      ];
+
+      let notifications = [
+        { id: 'n0', msg: '띵동에 오신 걸 환영해요! 주변 공구를 둘러보세요.', time: '어제', read: true },
+      ];
+
+      let state = { view: 'home', activeId: null, filterCategory: '전체', sortBy: 'distance', createPickupSet: false };
+
+      /* =========================================================
+         유틸
+      ========================================================= */
+      function fmtWon(n) { return n.toLocaleString('ko-KR') + '원'; }
+      function approvedCount(gp) { return gp.applicants.filter(a => a.status === 'approved').length; }
+      function pendingList(gp) { return gp.applicants.filter(a => a.status === 'pending'); }
+      function perPerson(gp) { return Math.round(gp.totalPrice / gp.target); }
+      function ddayLabel(hours) {
+        if (hours <= 24) return 'D-1 마감';
+        return 'D-' + Math.ceil(hours / 24) + ' 마감';
+      }
+      function statusMeta(status) {
+        return {
+          RECRUITING:     { label: '모집중',   cls: 'accentb' },
+          COMPLETED:      { label: '모집완료', cls: 'muted' },
+          ORDERED:        { label: '배송중',   cls: 'warning' },
+          WAITING_PICKUP: { label: '픽업대기', cls: 'warning' },
+          FINISHED:       { label: '종료',     cls: 'muted' },
+        }[status];
+      }
+      function stepIndex(status) {
+        return { RECRUITING: 1, COMPLETED: 2, ORDERED: 3, WAITING_PICKUP: 4, FINISHED: 5 }[status];
+      }
+
+      function toast(msg) {
+        const root = document.getElementById('toast-root');
+        const el = document.createElement('div');
+        el.className = 'toast';
+        el.innerHTML = '<i class="ti ti-circle-check-filled"></i>' + msg;
+        root.appendChild(el);
+        setTimeout(() => el.remove(), 2600);
+      }
+      function addNotification(msg) {
+        notifications.unshift({ id: 'n' + (seq++), msg, time: '방금', read: false });
+        renderNavBadges();
+      }
+      function unreadCount() { return notifications.filter(n => !n.read).length; }
+      function renderNavBadges() {
+        const c = unreadCount();
+        document.getElementById('gnb-unread-dot').style.display = c ? 'block' : 'none';
+        document.getElementById('nav-unread-dot').style.display = c ? 'block' : 'none';
+      }
+
+      function nav(view, id) {
+        state.view = view;
+        state.activeId = id || null;
+        if (view === 'mypage') notifications.forEach(n => (n.read = true));
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        render();
+      }
+
+      /* =========================================================
+         카드 컴포넌트 (홈 피드)
+      ========================================================= */
+      function cardTemplate(gp) {
+        const meta = statusMeta(gp.status);
+        const badgeHtml = gp.status === 'RECRUITING'
+          ? `<span class="badge danger">${ddayLabel(gp.deadlineHoursLeft)}</span>`
+          : `<span class="badge ${meta.cls}">${meta.label}</span>`;
+        const cur = approvedCount(gp);
+        const pct = Math.round((cur / gp.target) * 100);
+        return `
+          <div class="card" onclick="nav('detail','${gp.id}')">
+            <div class="thumb" style="background:${gp.thumbBg}"><i class="ti ${gp.thumbIcon}" style="color:${gp.thumbColor}"></i></div>
+            <div class="card-top">
+              <p class="card-title">${gp.title}</p>
+              ${badgeHtml}
+            </div>
+            <p class="secondary" style="font-size:12.5px">인당 ${fmtWon(perPerson(gp))} · ${cur}/${gp.target}명</p>
+            <div class="progress"><div class="progress-fill" style="width:${pct}%; ${gp.status !== 'RECRUITING' ? 'background:var(--text-muted)' : ''}"></div></div>
+            <div class="card-footer">
+              <span class="meta-row"><i class="ti ti-walk" style="font-size:12px"></i> 도보 ${gp.walk}분 · ${gp.distance}m</span>
+              <span class="muted">${gp.category}</span>
+            </div>
+          </div>`;
+      }
+
+      function renderHome() {
+        let list = GPS.slice();
+        if (state.filterCategory !== '전체') list = list.filter(g => g.category === state.filterCategory);
+        if (state.sortBy === 'distance') list.sort((a, b) => a.distance - b.distance);
+        else if (state.sortBy === 'deadline') {
+          list.sort((a, b) => {
+            const ah = a.status === 'RECRUITING' ? a.deadlineHoursLeft : Infinity;
+            const bh = b.status === 'RECRUITING' ? b.deadlineHoursLeft : Infinity;
+            return ah - bh;
+          });
+        } else list.sort((a, b) => b.createdAt - a.createdAt);
+
+        const chips = ['전체', '식자재', '생필품', '기타'].map(c =>
+          `<button class="chip ${state.filterCategory === c ? 'active' : 'inactive'}" onclick="setFilter('${c}')">${c}</button>`
+        ).join('');
+
+        const cards = list.length
+          ? `<div class="card-grid">${list.map(cardTemplate).join('')}</div>`
+          : `<div class="empty-state"><i class="ti ti-mood-empty"></i>해당 카테고리의 공구가 아직 없어요</div>`;
+
+        return `
+          <div class="page-title-row">
+            <div>
+              <p class="location-tag"><i class="ti ti-map-pin" style="font-size:12px"></i> 대명동 원룸촌</p>
+              <h2>내 주변 공구</h2>
+            </div>
+          </div>
+          <div class="filter-bar">
+            <div class="chip-row">${chips}</div>
+            <div class="sort-tabs">
+              <button class="${state.sortBy === 'distance' ? 'active' : ''}" onclick="setSort('distance')"><i class="ti ti-map-2" style="font-size:13px"></i> 거리순</button>
+              <button class="${state.sortBy === 'deadline' ? 'active' : ''}" onclick="setSort('deadline')"><i class="ti ti-clock" style="font-size:13px"></i> 마감임박순</button>
+              <button class="${state.sortBy === 'recent' ? 'active' : ''}" onclick="setSort('recent')">최신순</button>
+            </div>
+          </div>
+          ${cards}`;
+      }
+      function setFilter(c) { state.filterCategory = c; render(); }
+      function setSort(s) { state.sortBy = s; render(); }
+
+      /* =========================================================
+         공구 상세
+      ========================================================= */
+      function renderDetail(id) {
+        const gp = GPS.find(g => g.id === id);
+        if (!gp) return `<div class="empty-state"><i class="ti ti-alert-circle"></i>공구를 찾을 수 없어요</div>`;
+        const meta = statusMeta(gp.status);
+        const idx = stepIndex(gp.status);
+        const steps = ['모집중', '모집완료', '배송중', '픽업대기', '종료'];
+        const stepperHtml = steps.map((label, i) => {
+          const n = i + 1;
+          const dotCls = n < idx ? 'done' : n === idx ? 'current' : 'todo';
+          const lineCls = n < idx ? 'done' : '';
+          return `<div class="step"><div class="step-dot ${dotCls}">${n < idx ? '<i class=\"ti ti-check\" style=\"font-size:11px\"></i>' : n}</div><p class="step-label ${n <= idx ? 'done' : ''}">${label}</p></div>` + (i < steps.length - 1 ? `<div class="step-line ${lineCls}"></div>` : '');
+        }).join('');
+        const cur = approvedCount(gp);
+        const pct = Math.round((cur / gp.target) * 100);
+        const host = USERS[gp.hostId];
+        const isHost = gp.hostId === CURRENT_USER.id;
+        const myApp = gp.applicants.find(a => a.userId === CURRENT_USER.id);
+
+        return `
+          <button class="breadcrumb" onclick="nav('home')"><i class="ti ti-arrow-left" style="font-size:13px"></i> 홈 피드로 돌아가기</button>
+          <div class="detail-layout">
+            <div>
+              <div class="card-top" style="margin-bottom:4px">
+                <p style="font-size:20px; font-weight:700">${gp.title}</p>
+                ${gp.status === 'RECRUITING' ? `<span class="badge danger">${ddayLabel(gp.deadlineHoursLeft)}</span>` : `<span class="badge ${meta.cls}">${meta.label}</span>`}
+              </div>
+              <p class="muted" style="font-size:12px">${gp.category}</p>
+
+              <div class="price-grid">
+                <div class="price-box total"><p class="label">총 가격</p><p class="value">${fmtWon(gp.totalPrice)}</p></div>
+                <div class="price-box per"><p class="label">인당 분할 금액</p><p class="value">${fmtWon(perPerson(gp))}</p></div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px">
+                <span style="font-weight:700">모집 현황</span><span class="secondary">${cur} / ${gp.target}명</span>
+              </div>
+              <div class="progress" style="height:6px"><div class="progress-fill" style="width:${pct}%"></div></div>
+
+              <p class="section-title">진행 상태</p>
+              <div class="stepper">${stepperHtml}</div>
+
+              ${gp.status === 'ORDERED' && gp.trackingNumber ? `<div class="info-box"><i class="ti ti-truck" style="margin-right:4px"></i>송장번호: ${gp.trackingNumber}</div>` : ''}
+
+              <p class="section-title"><i class="ti ti-info-circle" style="font-size:13px"></i> 상세 설명</p>
+              <p class="secondary" style="font-size:13px; line-height:1.6">${gp.description}</p>
+            </div>
+
+            <div class="side-panel">
+              <p class="section-title" style="margin-top:0"><i class="ti ti-map-pin" style="font-size:13px"></i> 픽업 위치</p>
+              <div class="map-box"><div class="map-pin"><i class="ti ti-map-pin-filled"></i></div></div>
+              <p class="muted" style="font-size:11.5px">${gp.pickupAddress} · 도보 ${gp.walk}분 · ${gp.pickupTime}</p>
+
+              <div class="host-row">
+                <div class="avatar">${host.avatar}</div>
+                <div style="flex:1">
+                  <p style="font-size:12.5px; font-weight:700">${host.name}${isHost ? ' (나)' : ''}님이 방장이에요</p>
+                  <p class="muted" style="font-size:11px">매너 온도 ${host.manner.toFixed(1)}°C · 노쇼 ${host.noShow}회</p>
+                </div>
+              </div>
+
+              ${renderDetailCTA(gp, isHost, myApp)}
+
+              <div class="share-row">
+                <button class="share-btn" onclick="copyLink('${gp.id}')"><i class="ti ti-link" style="font-size:13px"></i> 링크 복사</button>
+                <button class="share-btn" onclick="toast('카카오톡 공유는 이 프로토타입에서는 준비 중이에요')"><i class="ti ti-message-circle" style="font-size:13px"></i> 카톡 공유</button>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      function renderDetailCTA(gp, isHost, myApp) {
+        if (isHost) {
+          if (gp.status === 'RECRUITING') {
+            const pend = pendingList(gp).length;
+            return `<button class="btn-primary" onclick="nav('applicants','${gp.id}')">신청자 관리하기${pend ? ' (' + pend + '건 대기)' : ''}</button>`;
+          }
+          if (gp.status === 'COMPLETED') {
+            return `<button class="btn-primary" onclick="nav('settlement','${gp.id}')">정산 확인하기</button>`;
+          }
+          if (gp.status === 'ORDERED') {
+            return `<button class="btn-primary" onclick="transitionToWaitingPickup('${gp.id}')">픽업 대기로 전환하기</button>`;
+          }
+          if (gp.status === 'WAITING_PICKUP') {
+            const notReceived = gp.applicants.filter(a => a.status === 'approved' && !a.is_received).length;
+            return `<button class="btn-primary" onclick="nav('pickup','${gp.id}')">수령 체크리스트 보기${notReceived ? ' (' + notReceived + '명 대기)' : ''}</button>`;
+          }
+          return `<div class="info-box" style="margin-top:0">종료된 공구예요. 모두 수고하셨어요 🎉</div>`;
+        }
+
+        // participant view
+        if (!myApp) {
+          if (gp.status === 'RECRUITING') return `<button class="btn-primary" onclick="applyToJoin('${gp.id}')">참여 신청하기</button>`;
+          return `<div class="info-box" style="margin-top:0">이미 모집이 마감된 공구예요.</div>`;
+        }
+        if (myApp.status === 'pending') return `<button class="btn-primary" disabled>승인 대기중</button>`;
+        if (myApp.status === 'rejected') return `<div class="info-box" style="margin-top:0">아쉽지만 이번 공구는 참여가 거절됐어요.</div>`;
+
+        // approved
+        if (gp.status === 'RECRUITING') return `<div class="info-box" style="margin-top:0"><i class="ti ti-circle-check" style="color:var(--success); margin-right:4px"></i>참여가 확정됐어요. 정원이 차면 정산 안내를 드릴게요.</div>`;
+        if (gp.status === 'COMPLETED') {
+          if (myApp.is_paid) return `<div class="info-box" style="margin-top:0">입금 확인 완료! 방장이 주문하면 알려드릴게요.</div>`;
+          return `<div>
+            <div class="account-box" style="margin-bottom:10px">
+              <p class="bank">${gp.account.bank}</p>
+              <p class="number">${gp.account.number}</p>
+              <p class="holder">예금주 ${gp.account.holder} · 입금액 ${fmtWon(perPerson(gp))}</p>
+            </div>
+            <button class="btn-primary" onclick="markMyPayment('${gp.id}')">입금 완료 눌렀어요</button>
+          </div>`;
+        }
+        if (gp.status === 'ORDERED') return `<div class="info-box" style="margin-top:0"><i class="ti ti-truck" style="margin-right:4px"></i>방장이 주문했어요. 배송을 기다려주세요.</div>`;
+        if (gp.status === 'WAITING_PICKUP') {
+          if (myApp.is_received) return `<div class="info-box" style="margin-top:0">수령 완료로 표시했어요. 곧 공구가 종료돼요.</div>`;
+          return `<button class="btn-primary" onclick="markMyReceived('${gp.id}')">수령 확인하기</button>`;
+        }
+        if (gp.status === 'FINISHED') {
+          const stars = [1,2,3,4,5].map(n => `<i class="ti ti-star-filled ${gp.myRating && n <= gp.myRating ? 'filled' : ''}" onclick="rateManner('${gp.id}',${n})"></i>`).join('');
+          return `<p class="muted" style="font-size:12px; margin-bottom:2px">방장 매너 평가</p><div class="star-row">${stars}</div>${gp.myRating ? '<p class="muted" style="font-size:11.5px">평가해 주셔서 감사해요!</p>' : ''}`;
+        }
+        return '';
+      }
+
+      function copyLink(id) {
+        const url = 'https://thingdong.app/group-purchases/' + id;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(() => toast('링크를 복사했어요')).catch(() => toast(url));
+        } else toast(url);
+      }
+
+      function applyToJoin(id) {
+        const gp = GPS.find(g => g.id === id);
+        gp.applicants.push({ userId: CURRENT_USER.id, status: 'pending' });
+        addNotification(`"${gp.title}" 공구에 참여를 신청했어요. 방장 승인을 기다려주세요.`);
+        toast('참여 신청을 보냈어요');
+        render();
+      }
+      function markMyPayment(id) {
+        const gp = GPS.find(g => g.id === id);
+        const app = gp.applicants.find(a => a.userId === CURRENT_USER.id);
+        app.is_paid = true;
+        addNotification(`"${gp.title}" 입금 완료를 방장에게 알렸어요.`);
+        toast('입금 완료로 표시했어요');
+        render();
+      }
+      function markMyReceived(id) {
+        const gp = GPS.find(g => g.id === id);
+        const app = gp.applicants.find(a => a.userId === CURRENT_USER.id);
+        app.is_received = true;
+        addNotification(`"${gp.title}" 수령을 확인했어요.`);
+        toast('수령 확인 완료!');
+        render();
+      }
+      function rateManner(id, n) {
+        const gp = GPS.find(g => g.id === id);
+        gp.myRating = n;
+        addNotification(`"${gp.title}" 방장에게 매너 평가(${n}점)를 남겼어요.`);
+        render();
+      }
+
+      /* =========================================================
+         참여자 승인 관리 (방장)
+      ========================================================= */
+      function renderApplicants(id) {
+        const gp = GPS.find(g => g.id === id);
+        const pending = pendingList(gp);
+        const approved = gp.applicants.filter(a => a.status === 'approved');
+        const cur = approved.length;
+        const rows = pending.map(a => {
+          const u = USERS[a.userId];
+          const warn = u.noShow > 0 ? `<span class="warn-tag"><i class="ti ti-alert-triangle" style="font-size:9px"></i>노쇼 ${u.noShow}회</span>` : '';
+          return `
+            <div class="applicant-row">
+              <div class="applicant-name-cell"><div class="avatar">${u.avatar}</div><div><p class="applicant-name">${u.name}${warn}</p></div></div>
+              <p class="applicant-meta">매너 온도 ${u.manner.toFixed(1)}°C · 도보 ${5 + (u.name.length % 5)}분 거리</p>
+              <div class="btn-row">
+                <button class="btn-reject" onclick="rejectApplicant('${gp.id}','${a.userId}')">거절</button>
+                <button class="btn-approve" onclick="approveApplicant('${gp.id}','${a.userId}')">승인</button>
+              </div>
+            </div>`;
+        }).join('');
+        const approvedRows = approved.map(a => {
+          const u = USERS[a.userId];
+          return `
+            <div class="applicant-row" style="opacity:.55">
+              <div class="applicant-name-cell"><div class="avatar" style="background:var(--success-bg); color:var(--success)">${u.avatar}</div><p class="applicant-name">${u.name}</p></div>
+              <p class="applicant-meta">이미 승인됨</p>
+              <div class="btn-row" style="justify-content:flex-end"><span class="badge" style="background:var(--success-bg); color:var(--success)">승인 완료</span></div>
+            </div>`;
+        }).join('');
+
+        const cta = cur === gp.target
+          ? `<div class="cta-banner"><span><i class="ti ti-confetti" style="margin-right:6px"></i>정원이 모두 찼어요! 정산 단계로 넘어가세요.</span><button onclick="transitionToCompleted('${gp.id}')">정산 단계로 전환</button></div>`
+          : '';
+
+        return `
+          <button class="breadcrumb" onclick="nav('detail','${gp.id}')"><i class="ti ti-arrow-left" style="font-size:13px"></i> ${gp.title} · 참여 신청 관리</button>
+          ${cta}
+          <div class="summary-cards">
+            <div class="summary-card"><p class="label">확정 인원</p><p class="big">${cur} / ${gp.target}명</p></div>
+            <div class="summary-card"><p class="label">대기 중인 신청</p><p class="big">${pending.length}건</p></div>
+            <div class="summary-card"><p class="label">모집 마감까지</p><p class="big" style="color:var(--danger)">${gp.status === 'RECRUITING' ? ddayLabel(gp.deadlineHoursLeft) : '-'}</p></div>
+          </div>
+          <div class="applicant-table-head"><span>신청자</span><span>정보</span><span style="text-align:right">처리</span></div>
+          ${rows || '<p class="muted" style="padding:16px 4px; font-size:12.5px">대기 중인 신청이 없어요</p>'}
+          ${approvedRows}`;
+      }
+      function approveApplicant(gpId, userId) {
+        const gp = GPS.find(g => g.id === gpId);
+        const a = gp.applicants.find(x => x.userId === userId && x.status === 'pending');
+        a.status = 'approved';
+        addNotification(`${USERS[userId].name}님의 참여를 승인했어요.`);
+        toast(`${USERS[userId].name}님을 승인했어요`);
+        render();
+      }
+      function rejectApplicant(gpId, userId) {
+        const gp = GPS.find(g => g.id === gpId);
+        const a = gp.applicants.find(x => x.userId === userId && x.status === 'pending');
+        a.status = 'rejected';
+        addNotification(`${USERS[userId].name}님의 참여 신청을 거절했어요.`);
+        toast(`${USERS[userId].name}님을 거절했어요`);
+        render();
+      }
+      function transitionToCompleted(gpId) {
+        const gp = GPS.find(g => g.id === gpId);
+        gp.status = 'COMPLETED';
+        addNotification(`"${gp.title}" 정원이 충족되어 정산 단계로 전환됐어요.`);
+        toast('정산 단계로 전환했어요');
+        nav('settlement', gpId);
+      }
+
+      /* =========================================================
+         정산 화면
+      ========================================================= */
+      function renderSettlement(id) {
+        const gp = GPS.find(g => g.id === id);
+        const approved = gp.applicants.filter(a => a.status === 'approved');
+        const allPaid = approved.every(a => a.is_paid);
+        const rows = approved.map(a => {
+          const u = USERS[a.userId];
+          return `
+            <div class="settle-row">
+              <div class="settle-name"><div class="avatar" style="width:26px; height:26px; font-size:10px">${u.avatar}</div>${u.name}${u.id === CURRENT_USER.id ? ' (나)' : ''}</div>
+              <button class="paid-badge ${a.is_paid ? 'done' : 'pending'}" onclick="togglePaid('${gp.id}','${u.id}')">${a.is_paid ? '<i class=\"ti ti-check\" style=\"font-size:10px\"></i> 입금완료' : '확인 대기'}</button>
+            </div>`;
+        }).join('');
+
+        return `
+          <div class="content-narrow">
+            <button class="breadcrumb" onclick="nav('detail','${gp.id}')"><i class="ti ti-arrow-left" style="font-size:13px"></i> ${gp.title} · 정산</button>
+            <div class="form-card-head" style="margin-top:10px"><h2>정산 안내</h2></div>
+            <p class="section-title" style="margin-top:0"><i class="ti ti-building-bank" style="font-size:13px"></i> 입금 계좌</p>
+            <div class="account-box">
+              <p class="bank">${gp.account.bank}</p>
+              <p class="number">${gp.account.number}</p>
+              <p class="holder">예금주 ${gp.account.holder} · 입금액 ${fmtWon(perPerson(gp))}</p>
+            </div>
+            <p class="section-title">참여자별 입금 현황</p>
+            ${rows}
+            <div class="form-actions" style="flex-direction:column">
+              ${allPaid
+                ? `<button class="btn-primary" style="margin-bottom:8px" onclick="transitionToOrdered('${gp.id}')">전원 입금 확인 → 주문/배송 전환</button>`
+                : `<button class="btn-secondary" onclick="remindUnpaid('${gp.id}')">미입금자에게 알림 보내기 (이메일/웹 푸시)</button>`}
+            </div>
+          </div>`;
+      }
+      function togglePaid(gpId, userId) {
+        const gp = GPS.find(g => g.id === gpId);
+        const a = gp.applicants.find(x => x.userId === userId);
+        a.is_paid = !a.is_paid;
+        if (a.is_paid) addNotification(`${USERS[userId].name}님의 입금을 확인했어요.`);
+        render();
+      }
+      function remindUnpaid(gpId) {
+        const gp = GPS.find(g => g.id === gpId);
+        const names = gp.applicants.filter(a => a.status === 'approved' && !a.is_paid).map(a => USERS[a.userId].name);
+        toast(names.length ? names.join(', ') + '님에게 알림을 보냈어요' : '모두 입금을 완료했어요');
+      }
+      function transitionToOrdered(gpId) {
+        const gp = GPS.find(g => g.id === gpId);
+        gp.status = 'ORDERED';
+        addNotification(`"${gp.title}" 전원 입금이 확인되어 주문/배송 단계로 전환됐어요.`);
+        toast('주문/배송 단계로 전환했어요');
+        nav('detail', gpId);
+      }
+      function transitionToWaitingPickup(gpId) {
+        const gp = GPS.find(g => g.id === gpId);
+        gp.status = 'WAITING_PICKUP';
+        addNotification(`"${gp.title}" 물품이 도착해 픽업 대기 단계로 전환됐어요.`);
+        toast('픽업 대기 단계로 전환했어요');
+        render();
+      }
+
+      /* =========================================================
+         픽업 체크리스트 (방장)
+      ========================================================= */
+      function renderPickup(id) {
+        const gp = GPS.find(g => g.id === id);
+        const approved = gp.applicants.filter(a => a.status === 'approved');
+        const allReceived = approved.every(a => a.is_received);
+        const rows = approved.map(a => {
+          const u = USERS[a.userId];
+          return `
+            <div class="applicant-row">
+              <div class="applicant-name-cell"><div class="avatar">${u.avatar}</div><p class="applicant-name">${u.name}${a.is_no_show ? '<span class="warn-tag"><i class="ti ti-alert-triangle" style="font-size:9px"></i>노쇼 신고됨</span>' : ''}</p></div>
+              <p class="applicant-meta">${a.is_received ? '수령 완료' : '아직 수령 전'}</p>
+              <div class="btn-row">
+                ${a.is_received
+                  ? `<span class="badge" style="background:var(--success-bg); color:var(--success)">수령 완료</span>`
+                  : `<button class="btn-mini neutral" onclick="markReceived('${gp.id}','${u.id}')">수령 확인</button><button class="btn-mini warn" onclick="reportNoShow('${gp.id}','${u.id}')" ${a.is_no_show ? 'disabled' : ''}>노쇼 신고</button>`}
+              </div>
+            </div>`;
+        }).join('');
+
+        return `
+          <button class="breadcrumb" onclick="nav('detail','${gp.id}')"><i class="ti ti-arrow-left" style="font-size:13px"></i> ${gp.title} · 수령 체크리스트</button>
+          ${allReceived ? `<div class="cta-banner"><span><i class="ti ti-confetti" style="margin-right:6px"></i>전원 수령을 확인했어요. 공구를 종료할까요?</span><button onclick="transitionToFinished('${gp.id}')">공구 종료하기</button></div>` : ''}
+          <div class="applicant-table-head"><span>참여자</span><span>상태</span><span style="text-align:right">처리</span></div>
+          ${rows}`;
+      }
+      function markReceived(gpId, userId) {
+        const gp = GPS.find(g => g.id === gpId);
+        const a = gp.applicants.find(x => x.userId === userId);
+        a.is_received = true;
+        addNotification(`${USERS[userId].name}님의 수령을 확인 처리했어요.`);
+        render();
+      }
+      function reportNoShow(gpId, userId) {
+        const gp = GPS.find(g => g.id === gpId);
+        const a = gp.applicants.find(x => x.userId === userId);
+        a.is_no_show = true;
+        const u = USERS[userId];
+        u.noShow += 1;
+        u.manner = Math.max(0, +(u.manner - 1.5).toFixed(1));
+        addNotification(`${u.name}님을 노쇼로 신고했어요. 매너 온도가 반영됐어요.`);
+        toast('노쇼를 신고했어요');
+        render();
+      }
+      function transitionToFinished(gpId) {
+        const gp = GPS.find(g => g.id === gpId);
+        gp.status = 'FINISHED';
+        addNotification(`"${gp.title}" 공구가 종료됐어요. 수고하셨어요!`);
+        toast('공구를 종료했어요');
+        nav('detail', gpId);
+      }
+
+      /* =========================================================
+         공구 개설 폼
+      ========================================================= */
+      function renderCreate() {
+        state.createPickupSet = state.createPickupSet || false;
+        return `
+          <div class="content-narrow">
+            <div class="form-card-head"><h2>공구 만들기</h2></div>
+
+            <p class="field-label">물품명</p>
+            <input id="f-title" class="field-input" placeholder="예) 양파 5kg 한 망" />
+
+            <p class="field-label">물품 URL</p>
+            <input id="f-url" class="field-input" placeholder="https://shop.example.com/..." />
+
+            <p class="field-label">카테고리</p>
+            <select id="f-category" class="field-input">
+              <option>식자재</option><option>생필품</option><option>기타</option>
+            </select>
+
+            <div class="field-row">
+              <div><p class="field-label">총 가격 (원)</p><input id="f-price" class="field-input" type="number" placeholder="17500" oninput="updateCalc()" /></div>
+              <div><p class="field-label">목표 인원</p><input id="f-target" class="field-input" type="number" placeholder="5" oninput="updateCalc()" /></div>
+            </div>
+
+            <div class="calc-box"><span class="label">인당 분할 금액 (자동 계산)</span><span class="value" id="f-calc">0원</span></div>
+
+            <p class="field-label">픽업 위치</p>
+            <button id="f-map" class="map-select" onclick="pickMapLocation()">
+              <i class="ti ti-map-pin-plus"></i><span>지도에서 픽업 장소 지정하기</span>
+            </button>
+
+            <p class="field-label">픽업 가능 시간대</p>
+            <input id="f-time" class="field-input" placeholder="예) 평일 저녁 7시 ~ 9시" />
+
+            <p class="field-label">상세 설명</p>
+            <textarea id="f-desc" class="field-input" placeholder="소분 방식, 준비물 등을 적어주세요"></textarea>
+
+            <div class="form-actions">
+              <button class="btn-secondary" onclick="nav('home')">취소</button>
+              <button class="btn-primary" onclick="submitCreate()">공구 등록하기</button>
+            </div>
+          </div>`;
+      }
+      function updateCalc() {
+        const price = +document.getElementById('f-price').value || 0;
+        const target = +document.getElementById('f-target').value || 0;
+        const per = target > 0 ? Math.round(price / target) : 0;
+        document.getElementById('f-calc').textContent = fmtWon(per);
+      }
+      function pickMapLocation() {
+        state.createPickupSet = true;
+        const btn = document.getElementById('f-map');
+        btn.classList.add('selected');
+        btn.innerHTML = '<i class="ti ti-map-pin-check"></i><span>대명동 행정복지센터 앞 (지정 완료)</span>';
+      }
+      function submitCreate() {
+        const title = document.getElementById('f-title').value.trim();
+        const price = +document.getElementById('f-price').value || 0;
+        const target = +document.getElementById('f-target').value || 0;
+        const time = document.getElementById('f-time').value.trim();
+        const category = document.getElementById('f-category').value;
+        const desc = document.getElementById('f-desc').value.trim();
+        if (!title || !price || !target) { toast('물품명 · 총 가격 · 목표 인원을 입력해 주세요'); return; }
+        if (!state.createPickupSet) { toast('픽업 위치는 필수 항목이에요'); return; }
+
+        const id = 'gp' + (seq++);
+        const newGp = {
+          id, title, category, hostId: CURRENT_USER.id, totalPrice: price, target, status: 'RECRUITING',
+          deadlineHoursLeft: 72, distance: 300 + Math.floor(Math.random() * 400), walk: 4 + Math.floor(Math.random() * 8),
+          createdAt: Date.now(), description: desc || '상세 설명이 아직 없어요.',
+          pickupAddress: '대명동 행정복지센터 앞', pickupTime: time || '방장과 협의',
+          thumbIcon: 'ti-package', thumbBg: 'var(--accent-bg)', thumbColor: 'var(--accent)',
+          account: { bank: '카카오뱅크', number: '3333-01-1234567', holder: CURRENT_USER.name },
+          applicants: [],
+        };
+        GPS.unshift(newGp);
+        state.createPickupSet = false;
+        addNotification(`"${title}" 공구를 새로 열었어요.`);
+        toast('공구를 등록했어요');
+        nav('detail', id);
+      }
+
+      /* =========================================================
+         마이페이지
+      ========================================================= */
+      function myStatusLabel(gp) {
+        const a = gp.applicants.find(x => x.userId === CURRENT_USER.id);
+        if (!a) return '';
+        if (a.status === 'pending') return '승인 대기중';
+        if (a.status === 'rejected') return '참여 거절됨';
+        if (gp.status === 'COMPLETED') return a.is_paid ? '입금 완료' : '입금 대기중';
+        if (gp.status === 'ORDERED') return '배송 중';
+        if (gp.status === 'WAITING_PICKUP') return a.is_received ? '수령 완료' : '픽업 대기중';
+        if (gp.status === 'FINISHED') return '종료됨';
+        return '참여 확정';
+      }
+      function renderMyPage() {
+        const hosted = GPS.filter(g => g.hostId === CURRENT_USER.id);
+        const joined = GPS.filter(g => g.hostId !== CURRENT_USER.id && g.applicants.some(a => a.userId === CURRENT_USER.id));
+
+        const hostedRows = hosted.map(g => {
+          const meta = statusMeta(g.status);
+          return `<div class="mini-row" onclick="nav('detail','${g.id}')"><div><p class="t">${g.title}</p><p class="s">${approvedCount(g)}/${g.target}명 · ${g.category}</p></div><span class="badge ${meta.cls}">${meta.label}</span></div>`;
+        }).join('') || '<p class="muted" style="font-size:12.5px; padding:4px">아직 개설한 공구가 없어요</p>';
+
+        const joinedRows = joined.map(g => {
+          return `<div class="mini-row" onclick="nav('detail','${g.id}')"><div><p class="t">${g.title}</p><p class="s">${USERS[g.hostId].name}님 방 · ${g.category}</p></div><span class="badge accentb">${myStatusLabel(g)}</span></div>`;
+        }).join('') || '<p class="muted" style="font-size:12.5px; padding:4px">아직 참여한 공구가 없어요</p>';
+
+        const notifRows = notifications.map(n => `
+          <div class="notif-row">
+            <div class="notif-dot ${n.read ? 'read' : ''}"></div>
+            <div><p class="msg">${n.msg}</p><p class="time">${n.time}</p></div>
+          </div>`).join('') || '<p class="muted" style="font-size:12.5px">알림이 없어요</p>';
+
+        return `
+          <div class="mypage-head">
+            <div class="avatar">${CURRENT_USER.avatar}</div>
+            <div><h2>${CURRENT_USER.name}</h2><p class="muted" style="font-size:12px">매너 온도 ${CURRENT_USER.manner.toFixed(1)}°C · 노쇼 ${CURRENT_USER.noShow}회</p></div>
+          </div>
+          <p class="section-heading"><i class="ti ti-crown" style="font-size:14px"></i> 내가 연 공구</p>
+          <div class="mini-list">${hostedRows}</div>
+          <p class="section-heading"><i class="ti ti-users" style="font-size:14px"></i> 내가 참여한 공구</p>
+          <div class="mini-list">${joinedRows}</div>
+          <p class="section-heading"><i class="ti ti-bell" style="font-size:14px"></i> 알림함</p>
+          <div>${notifRows}</div>`;
+      }
+
+      /* =========================================================
+         라우터
+      ========================================================= */
+      function render() {
+        const app = document.getElementById('app');
+        let html = '';
+        if (state.view === 'home') html = renderHome();
+        else if (state.view === 'detail') html = renderDetail(state.activeId);
+        else if (state.view === 'create') html = renderCreate();
+        else if (state.view === 'applicants') html = renderApplicants(state.activeId);
+        else if (state.view === 'settlement') html = renderSettlement(state.activeId);
+        else if (state.view === 'pickup') html = renderPickup(state.activeId);
+        else if (state.view === 'mypage') html = renderMyPage();
+        app.innerHTML = html;
+
+        document.querySelectorAll('.gnb-links button[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
+        document.querySelectorAll('.bottom-nav button[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
+        renderNavBadges();
+      }
+
+      render();
+    </script>
   </body>
 </html>
