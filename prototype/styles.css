@@ -1,0 +1,589 @@
+/* ==========================================================================
+   Letter&Co — 공통 디자인 시스템
+   무드: 빈티지 · 코티지 · 모리걸 / 씨앗(초대)에서 수확(결산)까지의 정원 여정
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root {
+  /* --- 색상: 하드코딩 헥스값을 그대로 변수로 선언 --- */
+  --paper: #F3EFE6;
+  --wedgwood: #8CA3C2;
+  --wedgwood-pale: #E4EBF2;
+  --wedgwood-deep: #4F6B8C;
+  --lemon: #F2D774;
+  --lemon-pale: #FBF3D6;
+  --lemon-deep: #8C6A1B;
+  --ink: #4A4438;
+  --ink-soft: #837A67;
+  --line: #D6CCB4;
+  --cream: #FBF9F3;
+
+  /* --- 타이포그래피 --- */
+  --font-hand: 'Dancing Script', cursive;
+  --font-title: 'Gowun Batang', serif;
+  --font-body: 'Gowun Dodum', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* , *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--paper);
+  min-height: 100vh;
+  padding: 36px 16px 56px;
+  position: relative;
+  isolation: isolate;
+}
+
+/* 종이 그레인 텍스처 — 은은한 노이즈 오버레이 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.05;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+a { color: inherit; text-decoration: none; }
+
+button, input, textarea { font-family: inherit; }
+
+/* ==========================================================================
+   프레임 (모바일 카드 컨테이너, 데스크톱에서는 중앙 정렬)
+   ========================================================================== */
+
+.lc-frame {
+  max-width: 400px;
+  margin: 0 auto;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  border-radius: 30px;
+  padding: 30px 22px 34px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 0 var(--line), 0 22px 44px rgba(74, 68, 56, 0.14);
+}
+
+.lc-frame__inner { position: relative; z-index: 2; }
+
+/* 모서리 라인아트 꽃 장식 */
+.lc-corner {
+  position: absolute;
+  width: 76px;
+  height: 76px;
+  opacity: 0.4;
+  z-index: 1;
+  pointer-events: none;
+}
+.lc-corner--tl { top: -8px; left: -8px; }
+.lc-corner--br { bottom: -8px; right: -8px; transform: rotate(180deg); }
+
+/* ==========================================================================
+   헤더
+   ========================================================================== */
+
+.lc-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wedgwood-deep);
+  margin: 0 0 6px;
+  text-align: center;
+}
+
+.lc-hand-title {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 32px;
+  text-align: center;
+  color: var(--ink);
+  margin: 0 0 2px;
+}
+
+.lc-heading {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 16px;
+  text-align: center;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+
+.lc-subtitle {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  text-align: center;
+  line-height: 1.6;
+  margin: 0 0 22px;
+}
+
+/* ==========================================================================
+   여정 표시 (씨앗 → 수확, 시그니처 요소)
+   ========================================================================== */
+
+.lc-journey {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin: 0 0 26px;
+  padding: 0 2px;
+}
+
+.lc-journey::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 16px;
+  right: 16px;
+  height: 0;
+  border-top: 1.5px dashed var(--line);
+  z-index: 0;
+}
+
+.lc-journey-step {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+}
+
+.lc-journey-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 1.5px solid var(--line);
+}
+
+.lc-journey-step.is-done .lc-journey-dot {
+  background: var(--wedgwood-deep);
+  border-color: var(--wedgwood-deep);
+}
+
+.lc-journey-step.is-current .lc-journey-dot {
+  width: 15px;
+  height: 15px;
+  background: var(--lemon-deep);
+  border-color: var(--lemon-deep);
+  box-shadow: 0 0 0 3px var(--lemon-pale);
+}
+
+.lc-journey-label {
+  font-family: var(--font-title);
+  font-size: 9px;
+  color: var(--ink-soft);
+}
+
+.lc-journey-step.is-done .lc-journey-label { color: var(--wedgwood-deep); }
+.lc-journey-step.is-current .lc-journey-label { color: var(--ink); font-weight: 700; }
+
+/* ==========================================================================
+   섹션 / 라벨
+   ========================================================================== */
+
+.lc-section { margin-bottom: 20px; }
+.lc-section:last-child { margin-bottom: 0; }
+
+.lc-label {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--ink);
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lc-hint {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   초대장 디자인 선택 카드 (SCR0)
+   ========================================================================== */
+
+.lc-invite-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.lc-invite-card {
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 6px 8px;
+  text-align: center;
+  background: #fff;
+  position: relative;
+}
+
+.lc-invite-card.is-selected {
+  border-color: var(--wedgwood-deep);
+  background: var(--wedgwood-pale);
+}
+
+.lc-invite-swatch {
+  width: 100%;
+  height: 34px;
+  border-radius: 7px;
+  margin-bottom: 6px;
+  border: 1px solid var(--line);
+}
+
+.lc-invite-card span {
+  font-size: 9.5px;
+  color: var(--ink-soft);
+}
+
+.lc-invite-card.is-selected span { color: var(--wedgwood-deep); font-weight: 600; }
+
+.lc-check-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--wedgwood-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==========================================================================
+   입력 요소
+   ========================================================================== */
+
+.lc-textarea, .lc-input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink);
+  padding: 12px 13px;
+  border-radius: 12px;
+  border: 1.3px solid var(--line);
+  background: #fff;
+  resize: none;
+}
+
+.lc-textarea::placeholder, .lc-input::placeholder { color: #B5AB92; }
+
+/* ==========================================================================
+   버튼
+   ========================================================================== */
+
+.lc-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px;
+  border-radius: 999px;
+  background: var(--wedgwood-deep);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+}
+
+.lc-btn.lemon { background: var(--lemon-deep); }
+
+.lc-btn.outline {
+  background: transparent;
+  color: var(--wedgwood-deep);
+  border: 1.3px solid var(--wedgwood);
+}
+
+.lc-caption {
+  font-size: 10px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin-top: 9px;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   주간 캘린더 (SCR1)
+   ========================================================================== */
+
+.lc-weekgrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.lc-day {
+  text-align: center;
+  font-size: 10.5px;
+  padding: 9px 0;
+  border-radius: 8px;
+  background: #fff;
+  border: 1.3px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.lc-day.is-selected {
+  background: var(--wedgwood-pale);
+  border-color: var(--wedgwood-deep);
+  color: var(--wedgwood-deep);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   장소 후보 카드 (SCR1)
+   ========================================================================== */
+
+.lc-place-card {
+  border: 1.3px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 12px;
+  margin-bottom: 8px;
+  background: #fff;
+}
+
+.lc-place-card.is-leading { border-color: var(--lemon-deep); background: var(--lemon-pale); }
+
+.lc-place-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.lc-place-name {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.lc-vote {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-soft);
+}
+
+.lc-vote-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--wedgwood-pale); border: 1.3px solid var(--wedgwood-deep); }
+.lc-place-card.is-leading .lc-vote-dot { background: var(--lemon); border-color: var(--lemon-deep); }
+
+.lc-place-why {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   주제 익명 투표 (SCR2)
+   ========================================================================== */
+
+.lc-topic-row {
+  border: 1.3px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin-bottom: 7px;
+  background: #fff;
+}
+
+.lc-topic-row.is-leading { border-color: var(--wedgwood-deep); }
+
+.lc-topic-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  margin-bottom: 6px;
+}
+
+.lc-topic-top b { font-weight: 700; }
+.lc-topic-top span { color: var(--ink-soft); font-family: var(--font-mono); font-size: 10px; }
+
+.lc-topic-bar { height: 5px; border-radius: 999px; background: var(--wedgwood-pale); overflow: hidden; }
+.lc-topic-bar-fill { height: 100%; border-radius: 999px; background: var(--wedgwood); }
+.lc-topic-row.is-leading .lc-topic-bar-fill { background: var(--wedgwood-deep); }
+
+/* ==========================================================================
+   역할 카드 (SCR2)
+   ========================================================================== */
+
+.lc-role-card {
+  border: 1.3px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 13px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.lc-role-head { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+
+.lc-avatar {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--wedgwood-pale); border: 1.3px solid var(--wedgwood);
+  flex-shrink: 0;
+}
+
+.lc-role-name { font-family: var(--font-title); font-weight: 700; font-size: 12.5px; }
+
+.lc-task-list { list-style: none; margin: 0; padding: 0; }
+
+.lc-task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  padding: 6px 0;
+  border-top: 1px dotted var(--line);
+}
+
+.lc-task-item:first-child { border-top: none; }
+
+.lc-badge-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--lemon-deep);
+  background: var(--lemon-pale);
+  border: 1px solid var(--lemon);
+  border-radius: 999px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   엽서형 요약 카드 (SCR3)
+   ========================================================================== */
+
+.lc-postcard {
+  border: 1.5px dashed var(--wedgwood);
+  border-radius: 14px;
+  padding: 16px 15px;
+  background: #fff;
+  margin-bottom: 16px;
+}
+
+.lc-postcard-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dotted var(--line);
+}
+
+.lc-postcard-row:last-child { border-bottom: none; }
+.lc-postcard-label { color: var(--ink-soft); display: flex; align-items: center; gap: 5px; }
+.lc-postcard-row b { font-weight: 700; }
+
+/* ==========================================================================
+   진행 상황 스와이프 카드 (SCR4)
+   ========================================================================== */
+
+.lc-swipe-card {
+  border: 1.3px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 15px;
+  background: #fff;
+  margin-bottom: 12px;
+}
+
+.lc-swipe-role { font-family: var(--font-title); font-weight: 700; font-size: 13.5px; margin: 0 0 12px; text-align: center; }
+
+.lc-check-row { display: flex; align-items: center; gap: 9px; font-size: 12px; padding: 7px 0; }
+
+.lc-check {
+  width: 16px; height: 16px; border-radius: 5px;
+  border: 1.4px solid var(--line);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--paper);
+}
+
+.lc-check-row.is-done .lc-check { background: var(--wedgwood-deep); border-color: var(--wedgwood-deep); }
+.lc-check-row.is-done span { color: var(--ink); font-weight: 600; }
+.lc-check-row:not(.is-done) span { color: #C7BFA9; }
+
+.lc-swipe-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.lc-chevron { color: var(--line); flex-shrink: 0; }
+
+.lc-dots { display: flex; gap: 5px; }
+.lc-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
+.lc-dot.is-active { background: var(--wedgwood-deep); width: 15px; border-radius: 3px; }
+
+/* ==========================================================================
+   결산 leaf 평가 (SCR5)
+   ========================================================================== */
+
+.lc-rate-block { margin-bottom: 14px; }
+.lc-rate-block:last-of-type { margin-bottom: 0; }
+
+.lc-rate-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.lc-rate-label { font-family: var(--font-title); font-size: 12px; font-weight: 700; }
+.lc-rate-desc { font-size: 9.5px; color: var(--ink-soft); }
+
+.lc-leaves { display: flex; gap: 4px; }
+
+/* ==========================================================================
+   상단/하단 내비게이션
+   ========================================================================== */
+
+.lc-top-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: var(--wedgwood-deep);
+  margin-bottom: 16px;
+}
+
+.lc-footer-nav { margin-top: 22px; }
+
+.lc-footer-note {
+  text-align: center;
+  font-size: 10px;
+  color: var(--ink-soft);
+  margin-top: 10px;
+  line-height: 1.6;
+}
+
+/* 데스크톱에서도 어색하지 않도록 */
+@media (min-width: 640px) {
+  body { padding-top: 56px; }
+}

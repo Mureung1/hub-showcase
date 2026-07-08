@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Letter&amp;Co · 인터랙티브 프로토타입</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+/* ==========================================================================
+   Letter&Co — 단일 파일 인터랙티브 프로토타입
+   빈티지 · 코티지 · 모리걸 / 씨앗(초대)에서 수확(결산)까지
+   모든 "에이전트 응답"은 미리 준비된 목업 데이터로 재생됩니다.
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root {
+  --paper: #F3EFE6;
+  --wedgwood: #8CA3C2;
+  --wedgwood-pale: #E4EBF2;
+  --wedgwood-deep: #4F6B8C;
+  --lemon: #F2D774;
+  --lemon-pale: #FBF3D6;
+  --lemon-deep: #8C6A1B;
+  --ink: #4A4438;
+  --ink-soft: #837A67;
+  --line: #D6CCB4;
+  --cream: #FBF9F3;
+
+  --font-hand: 'Dancing Script', cursive;
+  --font-title: 'Gowun Batang', serif;
+  --font-body: 'Gowun Dodum', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --ease-soft: cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--paper);
+  min-height: 100vh;
+  padding: 36px 16px 56px;
+  position: relative;
+  isolation: isolate;
+}
+
+/* 종이 그레인 */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  opacity: 0.05; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+button { font-family: inherit; cursor: pointer; }
+textarea, input { font-family: inherit; }
+
+/* ==========================================================================
+   프레임
+   ========================================================================== */
+.lc-frame {
+  max-width: 400px;
+  margin: 0 auto;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  border-radius: 30px;
+  padding: 30px 22px 34px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 0 var(--line), 0 22px 44px rgba(74, 68, 56, 0.14);
+}
+.lc-frame__inner { position: relative; z-index: 2; }
+
+.lc-corner {
+  position: absolute; width: 76px; height: 76px;
+  opacity: 0.4; z-index: 1; pointer-events: none;
+}
+.lc-corner--tl { top: -8px; left: -8px; }
+.lc-corner--br { bottom: -8px; right: -8px; transform: rotate(180deg); }
+
+/* ==========================================================================
+   여정 내비게이션 (공용, 클릭으로 지나온 화면 이동 가능)
+   ========================================================================== */
+.lc-journey {
+  display: flex; justify-content: space-between; position: relative;
+  margin: 0 0 8px; padding: 0 2px;
+}
+.lc-journey::before {
+  content: ''; position: absolute; top: 6px; left: 16px; right: 16px;
+  border-top: 1.5px dashed var(--line); z-index: 0;
+}
+/* 지나온 길은 덩굴이 실선으로 자람 */
+.lc-journey-vine {
+  position: absolute; top: 6px; left: 16px; height: 0;
+  border-top: 1.5px solid var(--wedgwood);
+  z-index: 0; width: 0;
+  transition: width 0.7s var(--ease-soft);
+}
+.lc-journey-step {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  flex: 1; background: none; border: none; padding: 0;
+  cursor: default;
+}
+.lc-journey-step.is-done { cursor: pointer; }
+.lc-journey-dot {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--cream); border: 1.5px solid var(--line);
+  transition: all 0.35s var(--ease-soft);
+}
+.lc-journey-step.is-done .lc-journey-dot { background: var(--wedgwood-deep); border-color: var(--wedgwood-deep); }
+.lc-journey-step.is-current .lc-journey-dot {
+  width: 15px; height: 15px;
+  background: var(--lemon-deep); border-color: var(--lemon-deep);
+  box-shadow: 0 0 0 3px var(--lemon-pale);
+}
+.lc-journey-label { font-family: var(--font-title); font-size: 9px; color: var(--ink-soft); transition: color 0.3s; }
+.lc-journey-step.is-done .lc-journey-label { color: var(--wedgwood-deep); }
+.lc-journey-step.is-current .lc-journey-label { color: var(--ink); font-weight: 700; }
+.lc-journey-step.is-done:hover .lc-journey-dot { transform: scale(1.25); }
+
+/* ==========================================================================
+   화면 전환
+   ========================================================================== */
+.screen { display: none; }
+.screen.active { display: block; animation: screenIn 0.55s var(--ease-soft); }
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   헤더 텍스트
+   ========================================================================== */
+.lc-eyebrow {
+  font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--wedgwood-deep); margin: 14px 0 6px; text-align: center;
+}
+.lc-hand-title {
+  font-family: var(--font-hand); font-weight: 700; font-size: 34px;
+  text-align: center; color: var(--ink); margin: 0 0 2px; line-height: 1.15;
+}
+.lc-heading {
+  font-family: var(--font-title); font-weight: 700; font-size: 16px;
+  text-align: center; color: var(--ink); margin: 0 0 6px;
+}
+.lc-subtitle {
+  font-size: 12.5px; color: var(--ink-soft); text-align: center;
+  line-height: 1.65; margin: 0 0 22px;
+}
+
+.lc-section { margin-bottom: 20px; }
+.lc-label {
+  font-family: var(--font-title); font-weight: 700; font-size: 12.5px;
+  margin: 0 0 10px; display: flex; align-items: center; gap: 6px;
+}
+.lc-hint { font-size: 10.5px; color: var(--ink-soft); margin: 8px 0 0; line-height: 1.55; }
+.lc-caption { font-size: 10px; color: var(--ink-soft); text-align: center; margin-top: 9px; line-height: 1.6; }
+
+/* ==========================================================================
+   버튼
+   ========================================================================== */
+.lc-btn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px; border-radius: 999px;
+  background: var(--wedgwood-deep); color: #fff;
+  font-size: 13px; font-weight: 500; border: none;
+  transition: transform 0.15s var(--ease-soft), box-shadow 0.15s var(--ease-soft), opacity 0.2s;
+  box-shadow: 0 3px 0 rgba(74, 68, 56, 0.18);
+}
+.lc-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 0 rgba(74, 68, 56, 0.18); }
+.lc-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(74, 68, 56, 0.18); }
+.lc-btn.lemon { background: var(--lemon-deep); }
+.lc-btn.outline {
+  background: transparent; color: var(--wedgwood-deep);
+  border: 1.3px solid var(--wedgwood); box-shadow: none;
+}
+.lc-btn:disabled {
+  opacity: 0.45; cursor: not-allowed;
+  transform: none; box-shadow: 0 3px 0 rgba(74, 68, 56, 0.1);
+}
+
+/* ==========================================================================
+   SCR0 — 초대장
+   ========================================================================== */
+.lc-invite-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.lc-invite-card {
+  border: 1.5px solid var(--line); border-radius: 12px;
+  padding: 10px 6px 8px; text-align: center; background: #fff;
+  position: relative; width: 100%;
+  transition: border-color 0.25s, background 0.25s, transform 0.2s var(--ease-soft);
+}
+.lc-invite-card:hover { transform: translateY(-2px); }
+.lc-invite-card.is-selected { border-color: var(--wedgwood-deep); background: var(--wedgwood-pale); }
+.lc-invite-swatch {
+  width: 100%; height: 38px; border-radius: 7px; margin-bottom: 6px;
+  border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+}
+.lc-invite-card span { font-size: 9.5px; color: var(--ink-soft); }
+.lc-invite-card.is-selected span { color: var(--wedgwood-deep); font-weight: 600; }
+.lc-check-badge {
+  position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+  border-radius: 50%; background: var(--wedgwood-deep);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: scale(0.4);
+  transition: opacity 0.25s, transform 0.25s var(--ease-soft);
+}
+.lc-invite-card.is-selected .lc-check-badge { opacity: 1; transform: scale(1); }
+
+.lc-textarea {
+  width: 100%; font-size: 12.5px; color: var(--ink);
+  padding: 12px 13px; border-radius: 12px;
+  border: 1.3px solid var(--line); background: #fff; resize: none;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.lc-textarea:focus { outline: none; border-color: var(--wedgwood); box-shadow: 0 0 0 3px var(--wedgwood-pale); }
+.lc-textarea::placeholder { color: #B5AB92; }
+
+/* ==========================================================================
+   SCR1 — 조율
+   ========================================================================== */
+.lc-weekgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; }
+.lc-day {
+  text-align: center; font-size: 10.5px; padding: 9px 0; border-radius: 8px;
+  background: #fff; border: 1.3px solid var(--line); color: var(--ink-soft);
+  transition: all 0.2s var(--ease-soft); width: 100%;
+}
+.lc-day:hover { border-color: var(--wedgwood); }
+.lc-day.is-selected {
+  background: var(--wedgwood-pale); border-color: var(--wedgwood-deep);
+  color: var(--wedgwood-deep); font-weight: 700;
+}
+
+/* 에이전트 코멘트 말풍선 — 목업 응답임을 보여주는 장치 */
+.lc-agent-note {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: var(--lemon-pale); border: 1px solid var(--lemon);
+  border-radius: 12px; padding: 9px 12px; margin-top: 10px;
+  font-size: 10.5px; line-height: 1.55; color: var(--lemon-deep);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity 0.5s var(--ease-soft), transform 0.5s var(--ease-soft);
+}
+.lc-agent-note.show { opacity: 1; transform: translateY(0); }
+.lc-agent-note svg { flex-shrink: 0; margin-top: 1px; }
+
+.lc-place-card {
+  border: 1.3px solid var(--line); border-radius: 12px;
+  padding: 11px 12px; margin-bottom: 8px; background: #fff;
+  width: 100%; text-align: left;
+  transition: border-color 0.25s, background 0.25s, transform 0.2s var(--ease-soft);
+}
+.lc-place-card:hover { transform: translateY(-1px); }
+.lc-place-card.is-voted { border-color: var(--lemon-deep); background: var(--lemon-pale); }
+.lc-place-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.lc-place-name { font-family: var(--font-title); font-weight: 700; font-size: 12.5px; }
+.lc-vote { display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); }
+.lc-vote-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--wedgwood-pale); border: 1.3px solid var(--wedgwood-deep);
+  transition: background 0.25s;
+}
+.lc-place-card.is-voted .lc-vote-dot { background: var(--lemon); border-color: var(--lemon-deep); }
+.lc-place-why { font-size: 10.5px; color: var(--ink-soft); line-height: 1.5; display: flex; align-items: flex-start; gap: 4px; margin: 0; }
+.lc-my-vote-tag {
+  font-family: var(--font-mono); font-size: 8.5px; color: var(--lemon-deep);
+  border: 1px solid var(--lemon); border-radius: 999px; padding: 1px 6px;
+  margin-left: 5px; opacity: 0; transition: opacity 0.25s;
+}
+.lc-place-card.is-voted .lc-my-vote-tag { opacity: 1; }
+
+/* ==========================================================================
+   SCR2 — 배정
+   ========================================================================== */
+.lc-topic-row {
+  border: 1.3px solid var(--line); border-radius: 10px;
+  padding: 9px 12px; margin-bottom: 7px; background: #fff;
+  width: 100%; text-align: left;
+  transition: border-color 0.25s, transform 0.2s var(--ease-soft);
+}
+.lc-topic-row:hover { transform: translateY(-1px); }
+.lc-topic-row.is-voted { border-color: var(--wedgwood-deep); }
+.lc-topic-top { display: flex; justify-content: space-between; font-size: 11.5px; margin-bottom: 6px; }
+.lc-topic-top b { font-weight: 700; }
+.lc-topic-top span { color: var(--ink-soft); font-family: var(--font-mono); font-size: 10px; }
+.lc-topic-bar { height: 5px; border-radius: 999px; background: var(--wedgwood-pale); overflow: hidden; }
+.lc-topic-bar-fill {
+  height: 100%; border-radius: 999px; background: var(--wedgwood);
+  transition: width 0.6s var(--ease-soft), background 0.3s;
+}
+.lc-topic-row.is-voted .lc-topic-bar-fill { background: var(--wedgwood-deep); }
+
+.lc-role-card {
+  border: 1.3px solid var(--line); border-radius: 12px;
+  padding: 12px 13px; margin-bottom: 10px; background: #fff;
+}
+.lc-role-head { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.lc-avatar {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--wedgwood-pale); border: 1.3px solid var(--wedgwood);
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+}
+.lc-role-name { font-family: var(--font-title); font-weight: 700; font-size: 12.5px; }
+.lc-task-list { list-style: none; margin: 0; padding: 0; }
+.lc-task-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 11px; padding: 6px 0; border-top: 1px dotted var(--line);
+}
+.lc-task-item:first-child { border-top: none; }
+.lc-badge-ai {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-family: var(--font-mono);
+  color: var(--lemon-deep); background: var(--lemon-pale);
+  border: 1px solid var(--lemon); border-radius: 999px; padding: 2px 7px;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   SCR3 — 확정 엽서
+   ========================================================================== */
+.lc-postcard {
+  border: 1.5px dashed var(--wedgwood); border-radius: 14px;
+  padding: 16px 15px; background: #fff; margin-bottom: 16px;
+  position: relative;
+}
+/* 우표 장식 */
+.lc-stamp {
+  position: absolute; top: 10px; right: 10px;
+  width: 34px; height: 40px; border: 1.5px dashed var(--lemon-deep);
+  border-radius: 4px; background: var(--lemon-pale);
+  display: flex; align-items: center; justify-content: center;
+  transform: rotate(4deg);
+}
+.lc-postcard-row {
+  display: flex; justify-content: space-between; font-size: 12px;
+  padding: 8px 0; border-bottom: 1px dotted var(--line);
+}
+.lc-postcard-row:last-child { border-bottom: none; }
+.lc-postcard-label { color: var(--ink-soft); }
+.lc-postcard-row b { font-weight: 700; }
+
+/* ==========================================================================
+   SCR4 — 진행 캐러셀
+   ========================================================================== */
+.lc-top-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; color: var(--wedgwood-deep);
+  background: none; border: none; padding: 0; margin-bottom: 4px;
+}
+.lc-carousel { overflow: hidden; margin-bottom: 4px; }
+.lc-carousel-track {
+  display: flex;
+  transition: transform 0.45s var(--ease-soft);
+}
+.lc-swipe-card {
+  flex: 0 0 100%;
+  border: 1.3px solid var(--line); border-radius: 14px;
+  padding: 16px 15px; background: #fff;
+}
+.lc-carousel-track .lc-swipe-card { margin-right: 0; border: none; }
+.lc-swipe-inner {
+  border: 1.3px solid var(--line); border-radius: 14px;
+  padding: 16px 15px; background: #fff; margin: 0 3px;
+}
+.lc-swipe-role { font-family: var(--font-title); font-weight: 700; font-size: 13.5px; margin: 0 0 3px; text-align: center; }
+.lc-swipe-progress {
+  font-family: var(--font-mono); font-size: 9.5px; color: var(--wedgwood-deep);
+  text-align: center; margin: 0 0 12px;
+}
+.lc-check-row { display: flex; align-items: center; gap: 9px; font-size: 12px; padding: 7px 0; }
+.lc-check {
+  width: 16px; height: 16px; border-radius: 5px;
+  border: 1.4px solid var(--line); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--paper);
+  transition: background 0.3s, border-color 0.3s;
+}
+.lc-check-row.is-done .lc-check { background: var(--wedgwood-deep); border-color: var(--wedgwood-deep); }
+.lc-check-row.is-done span:last-child { color: var(--ink); font-weight: 600; }
+.lc-check-row:not(.is-done) span:last-child { color: #C7BFA9; }
+
+.lc-swipe-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 12px; }
+.lc-chev-btn {
+  background: none; border: 1.3px solid var(--line); border-radius: 50%;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  color: var(--wedgwood-deep); transition: border-color 0.2s, background 0.2s;
+}
+.lc-chev-btn:hover { border-color: var(--wedgwood-deep); background: var(--wedgwood-pale); }
+.lc-dots { display: flex; gap: 5px; }
+.lc-dot {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--line);
+  transition: all 0.3s var(--ease-soft);
+}
+.lc-dot.is-active { background: var(--wedgwood-deep); width: 15px; border-radius: 3px; }
+
+/* ==========================================================================
+   SCR5 — 결산 leaf
+   ========================================================================== */
+.lc-rate-block { margin-bottom: 16px; }
+.lc-rate-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+.lc-rate-label { font-family: var(--font-title); font-size: 12px; font-weight: 700; }
+.lc-rate-desc { font-size: 9.5px; color: var(--ink-soft); }
+.lc-leaves { display: flex; gap: 6px; }
+.lc-leaf-btn {
+  background: none; border: none; padding: 2px;
+  transition: transform 0.15s var(--ease-soft);
+}
+.lc-leaf-btn:hover { transform: scale(1.2) rotate(-6deg); }
+.lc-leaf-btn svg path { transition: fill 0.25s, stroke 0.25s; }
+.lc-leaf-btn.on svg path { fill: #8C6A1B; stroke: #8C6A1B; }
+.lc-leaf-btn.pop { animation: leafPop 0.35s var(--ease-soft); }
+@keyframes leafPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35) rotate(-8deg); }
+  100% { transform: scale(1); }
+}
+
+/* 결산 완료 패널 */
+#harvest-done { display: none; text-align: center; }
+#harvest-done.show { display: block; animation: screenIn 0.6s var(--ease-soft); }
+.lc-done-seal {
+  width: 74px; height: 74px; margin: 8px auto 14px;
+  border-radius: 50%; background: var(--lemon-pale);
+  border: 1.5px dashed var(--lemon-deep);
+  display: flex; align-items: center; justify-content: center;
+  animation: sealIn 0.7s var(--ease-soft);
+}
+@keyframes sealIn {
+  0% { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+  70% { transform: scale(1.1) rotate(3deg); }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* ==========================================================================
+   우편함 발송 애니메이션 오버레이
+   ========================================================================== */
+#mail-overlay {
+  position: absolute; inset: 0; z-index: 20;
+  background: var(--cream);
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: 27px;
+}
+#mail-overlay.show { display: flex; }
+.mail-stage { position: relative; width: 160px; height: 190px; }
+.mail-envelope {
+  position: absolute; left: 50%; top: 0;
+  transform: translateX(-50%);
+  animation: envDrop 1.3s var(--ease-soft) forwards;
+}
+@keyframes envDrop {
+  0%   { top: -10px; opacity: 0; transform: translateX(-50%) rotate(-8deg) scale(1); }
+  25%  { opacity: 1; }
+  60%  { top: 68px; transform: translateX(-50%) rotate(3deg) scale(1); }
+  100% { top: 96px; opacity: 0; transform: translateX(-50%) rotate(0deg) scale(0.45); }
+}
+.mail-box { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); }
+.mail-flag { transform-origin: 44px 60px; animation: flagUp 0.5s 1.25s var(--ease-soft) forwards; }
+@keyframes flagUp { from { transform: rotate(0); } to { transform: rotate(-55deg); } }
+.mail-msg {
+  font-family: var(--font-hand); font-size: 26px; font-weight: 700;
+  color: var(--wedgwood-deep); margin-top: 18px;
+  opacity: 0; animation: fadeUp 0.5s 1.4s var(--ease-soft) forwards;
+}
+.mail-sub {
+  font-size: 11px; color: var(--ink-soft); margin-top: 4px;
+  opacity: 0; animation: fadeUp 0.5s 1.55s var(--ease-soft) forwards;
+}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ==========================================================================
+   토스트
+   ========================================================================== */
+#toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+  background: var(--ink); color: var(--cream);
+  font-size: 11.5px; padding: 10px 18px; border-radius: 999px;
+  opacity: 0; pointer-events: none; z-index: 50;
+  transition: opacity 0.35s var(--ease-soft), transform 0.35s var(--ease-soft);
+  box-shadow: 0 8px 20px rgba(74, 68, 56, 0.3);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (min-width: 640px) { body { padding-top: 56px; } }
+</style>
+</head>
+<body>
+
+<main class="lc-frame">
+
+  <!-- 모서리 라인아트 꽃 -->
+  <svg class="lc-corner lc-corner--tl" viewBox="0 0 76 76" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M4 70C10 48 16 36 34 30" stroke="#8CA3C2" stroke-width="1.4"/>
+    <path d="M14 44C19 39 26 39 28 46" stroke="#8CA3C2" stroke-width="1.2"/>
+    <path d="M21 57C26 52 32 52 33 59" stroke="#8CA3C2" stroke-width="1.2"/>
+    <circle cx="36" cy="26" r="4.5" fill="#F2D774" stroke="#8C6A1B" stroke-width="1"/>
+    <g stroke="#4F6B8C" stroke-width="1.2">
+      <path d="M36 26L43 19"/><path d="M36 26L45 26"/><path d="M36 26L43 34"/><path d="M36 26L29 19"/><path d="M36 26L27 26"/>
+    </g>
+  </svg>
+  <svg class="lc-corner lc-corner--br" viewBox="0 0 76 76" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M4 70C10 48 16 36 34 30" stroke="#8CA3C2" stroke-width="1.4"/>
+    <path d="M14 44C19 39 26 39 28 46" stroke="#8CA3C2" stroke-width="1.2"/>
+    <path d="M21 57C26 52 32 52 33 59" stroke="#8CA3C2" stroke-width="1.2"/>
+    <circle cx="36" cy="26" r="4.5" fill="#F2D774" stroke="#8C6A1B" stroke-width="1"/>
+    <g stroke="#4F6B8C" stroke-width="1.2">
+      <path d="M36 26L43 19"/><path d="M36 26L45 26"/><path d="M36 26L43 34"/><path d="M36 26L29 19"/><path d="M36 26L27 26"/>
+    </g>
+  </svg>
+
+  <!-- 우편함 발송 애니메이션 -->
+  <div id="mail-overlay" aria-hidden="true">
+    <div class="mail-stage">
+      <svg class="mail-envelope" width="72" height="48" viewBox="0 0 72 48" fill="none">
+        <rect x="1.5" y="1.5" width="69" height="45" rx="6" fill="#fff" stroke="#4A4438" stroke-width="2"/>
+        <path d="M3 6L36 28L69 6" stroke="#4F6B8C" stroke-width="2" fill="none" stroke-linejoin="round"/>
+        <circle cx="36" cy="34" r="4" fill="#F2D774" stroke="#8C6A1B" stroke-width="1.2"/>
+      </svg>
+      <svg class="mail-box" width="110" height="104" viewBox="0 0 110 104" fill="none">
+        <rect x="20" y="30" width="70" height="46" rx="14" fill="#8CA3C2" stroke="#4A4438" stroke-width="2.5"/>
+        <rect x="34" y="42" width="42" height="7" rx="3.5" fill="#F3EFE6" stroke="#4A4438" stroke-width="1.8"/>
+        <rect x="50" y="76" width="10" height="26" fill="#4A4438" rx="2"/>
+        <g class="mail-flag">
+          <rect x="42" y="34" width="4" height="26" rx="2" fill="#8C6A1B" transform="rotate(0 44 60)"/>
+          <path d="M46 34L62 39L46 44Z" fill="#F2D774" stroke="#8C6A1B" stroke-width="1.2"/>
+        </g>
+      </svg>
+    </div>
+    <p class="mail-msg">Sent with love</p>
+    <p class="mail-sub">참여자들에게 링크가 전해지고 있어요</p>
+  </div>
+
+  <div class="lc-frame__inner">
+
+    <!-- 공용 여정 내비게이션 -->
+    <nav class="lc-journey" aria-label="진행 단계" id="journey">
+      <span class="lc-journey-vine" id="journey-vine"></span>
+      <button class="lc-journey-step" data-goto="0"><span class="lc-journey-dot"></span><span class="lc-journey-label">초대</span></button>
+      <button class="lc-journey-step" data-goto="1"><span class="lc-journey-dot"></span><span class="lc-journey-label">조율</span></button>
+      <button class="lc-journey-step" data-goto="2"><span class="lc-journey-dot"></span><span class="lc-journey-label">배정</span></button>
+      <button class="lc-journey-step" data-goto="3"><span class="lc-journey-dot"></span><span class="lc-journey-label">확정</span></button>
+      <button class="lc-journey-step" data-goto="4"><span class="lc-journey-dot"></span><span class="lc-journey-label">공유</span></button>
+      <button class="lc-journey-step" data-goto="5"><span class="lc-journey-dot"></span><span class="lc-journey-label">결산</span></button>
+    </nav>
+
+    <!-- ================= SCR0 초대 ================= -->
+    <section class="screen" id="scr-0">
+      <p class="lc-eyebrow">Step 1 of 6 · 초대장 만들기</p>
+      <h1 class="lc-hand-title">Invite</h1>
+      <h2 class="lc-heading">정원에 초대해요</h2>
+      <p class="lc-subtitle">로그인 없이, 링크 하나로<br>모두를 이 여정에 초대할 수 있어요.</p>
+
+      <div class="lc-section">
+        <p class="lc-label">초대장 디자인 고르기</p>
+        <div class="lc-invite-grid" id="invite-grid">
+          <button class="lc-invite-card" data-design="담쟁이">
+            <span class="lc-check-badge"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="lc-invite-swatch" style="background:#F3EFE6;">🌿</span>
+            <span>담쟁이</span>
+          </button>
+          <button class="lc-invite-card is-selected" data-design="웨지우드">
+            <span class="lc-check-badge"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="lc-invite-swatch" style="background:#E4EBF2;">🕊️</span>
+            <span>웨지우드</span>
+          </button>
+          <button class="lc-invite-card" data-design="레몬정원">
+            <span class="lc-check-badge"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="lc-invite-swatch" style="background:#FBF3D6;">🍋</span>
+            <span>레몬정원</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="lc-section">
+        <p class="lc-label">초대 문구</p>
+        <textarea class="lc-textarea" id="invite-msg" rows="3" placeholder="다가오는 모임에 초대해요. 시간과 장소는 함께 정해요 🌿"></textarea>
+      </div>
+
+      <div class="lc-section">
+        <button class="lc-btn" id="btn-send">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M1.5 4.5h13v8h-13z" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>
+            <path d="M1.5 4.5L8 9.5L14.5 4.5" stroke="#fff" stroke-width="1.3" stroke-linejoin="round" fill="none"/>
+          </svg>
+          보내기
+        </button>
+        <p class="lc-caption">참여자는 링크로 바로 입장해요</p>
+      </div>
+    </section>
+
+    <!-- ================= SCR1 조율 ================= -->
+    <section class="screen" id="scr-1">
+      <p class="lc-eyebrow">Step 2 of 6 · 시간·장소 조율</p>
+      <h1 class="lc-hand-title">Gather</h1>
+      <h2 class="lc-heading">시간과 장소를 모아요</h2>
+      <p class="lc-subtitle">모두가 표시한 가능 시간을 모으고,<br>위치를 기반으로 장소를 추천해요.</p>
+
+      <div class="lc-section">
+        <p class="lc-label">가능한 요일 선택</p>
+        <div class="lc-weekgrid" id="weekgrid">
+          <button class="lc-day" data-day="월">월</button>
+          <button class="lc-day" data-day="화">화</button>
+          <button class="lc-day" data-day="수">수</button>
+          <button class="lc-day" data-day="목">목</button>
+          <button class="lc-day" data-day="금">금</button>
+          <button class="lc-day" data-day="토">토</button>
+          <button class="lc-day" data-day="일">일</button>
+        </div>
+        <div class="lc-agent-note" id="time-note">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1L7 4.2H10.4L7.7 6.2L8.7 9.5L6 7.5L3.3 9.5L4.3 6.2L1.6 4.2H5Z" stroke="#8C6A1B" stroke-width="0.9"/></svg>
+          <span id="time-note-text"></span>
+        </div>
+      </div>
+
+      <div class="lc-section">
+        <p class="lc-label">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M6.5 1C4 1 2 3 2 5.5C2 8.5 6.5 12 6.5 12C6.5 12 11 8.5 11 5.5C11 3 9 1 6.5 1Z" stroke="#4F6B8C" stroke-width="1.2"/><circle cx="6.5" cy="5.5" r="1.6" stroke="#4F6B8C" stroke-width="1.1"/></svg>
+          장소 후보 · 익명 투표
+        </p>
+        <button class="lc-place-card" data-place="OO 카페" data-base="3">
+          <span class="lc-place-top">
+            <span class="lc-place-name">🌿 OO 카페<span class="lc-my-vote-tag">내 투표</span></span>
+            <span class="lc-vote"><span class="lc-vote-dot"></span><span class="vote-count">3표</span></span>
+          </span>
+          <p class="lc-place-why">
+            <svg width="11" height="11" viewBox="0 0 11 11" style="flex-shrink:0;margin-top:1px" fill="none"><path d="M5.5 1L6.5 4.2L10 4.2L7.2 6.2L8.2 9.5L5.5 7.5L2.8 9.5L3.8 6.2L1 4.2L4.5 4.2Z" stroke="#8C6A1B" stroke-width="0.9"/></svg>
+            모두에게 이동 거리가 가장 짧아요
+          </p>
+        </button>
+        <button class="lc-place-card" data-place="숲속 스터디룸" data-base="2">
+          <span class="lc-place-top">
+            <span class="lc-place-name">🌿 숲속 스터디룸<span class="lc-my-vote-tag">내 투표</span></span>
+            <span class="lc-vote"><span class="lc-vote-dot"></span><span class="vote-count">2표</span></span>
+          </span>
+          <p class="lc-place-why">
+            <svg width="11" height="11" viewBox="0 0 11 11" style="flex-shrink:0;margin-top:1px" fill="none"><path d="M5.5 1L6.5 4.2L10 4.2L7.2 6.2L8.2 9.5L5.5 7.5L2.8 9.5L3.8 6.2L1 4.2L4.5 4.2Z" stroke="#8C6A1B" stroke-width="0.9"/></svg>
+            조용히 이야기 나누기 좋아요
+          </p>
+        </button>
+        <p class="lc-hint">추천 근거는 참여자들의 위치·이동 시간에서 계산돼요</p>
+      </div>
+
+      <div class="lc-section">
+        <button class="lc-btn" id="btn-gather" disabled>투표 완료</button>
+        <p class="lc-caption" id="gather-caption">요일을 선택하고 장소에 투표해 주세요</p>
+      </div>
+    </section>
+
+    <!-- ================= SCR2 배정 ================= -->
+    <section class="screen" id="scr-2">
+      <p class="lc-eyebrow">Step 3 of 6 · 주제·역할 조율</p>
+      <h1 class="lc-hand-title">Assign</h1>
+      <h2 class="lc-heading">주제와 역할을 정해요</h2>
+      <p class="lc-subtitle">주제는 익명 투표로, 업무는<br>에이전트의 추천을 참고해 함께 정해요.</p>
+
+      <div class="lc-section">
+        <p class="lc-label">이번 주제 · 익명 투표</p>
+        <button class="lc-topic-row" data-topic="발표 자료 준비" data-base="4">
+          <span class="lc-topic-top"><b>발표 자료 준비</b><span class="topic-count">4표</span></span>
+          <span class="lc-topic-bar"><span class="lc-topic-bar-fill" style="width:57%"></span></span>
+        </button>
+        <button class="lc-topic-row" data-topic="스터디 자료 정리" data-base="2">
+          <span class="lc-topic-top"><b>스터디 자료 정리</b><span class="topic-count">2표</span></span>
+          <span class="lc-topic-bar"><span class="lc-topic-bar-fill" style="width:29%"></span></span>
+        </button>
+        <p class="lc-hint">동점이면 자동으로 재투표가 열려요</p>
+      </div>
+
+      <div class="lc-section">
+        <p class="lc-label">역할별 추천 업무</p>
+        <div class="lc-role-card">
+          <div class="lc-role-head"><span class="lc-avatar">📖</span><span class="lc-role-name">자료 조사</span></div>
+          <ul class="lc-task-list">
+            <li class="lc-task-item"><span>선행 사례 3개 정리</span><span class="lc-badge-ai">✦ 추천됨</span></li>
+            <li class="lc-task-item"><span>레퍼런스 수집</span><span class="lc-badge-ai">✦ 추천됨</span></li>
+          </ul>
+        </div>
+        <div class="lc-role-card">
+          <div class="lc-role-head"><span class="lc-avatar">🎨</span><span class="lc-role-name">발표 자료 제작</span></div>
+          <ul class="lc-task-list">
+            <li class="lc-task-item"><span>슬라이드 초안 작성</span><span class="lc-badge-ai">✦ 추천됨</span></li>
+            <li class="lc-task-item"><span>발표 스크립트 정리</span><span class="lc-badge-ai">✦ 추천됨</span></li>
+          </ul>
+        </div>
+        <div class="lc-role-card">
+          <div class="lc-role-head"><span class="lc-avatar">🗂️</span><span class="lc-role-name">일정·정리</span></div>
+          <ul class="lc-task-list">
+            <li class="lc-task-item"><span>회의록 작성</span><span class="lc-badge-ai">✦ 추천됨</span></li>
+            <li class="lc-task-item"><span>최종본 취합</span><span class="lc-badge-ai">✦ 추천됨</span></li>
+          </ul>
+        </div>
+        <p class="lc-hint">담당자와 업무는 확정 전 자유롭게 바꿀 수 있어요 · 추천은 성향 조사를 바탕으로 해요</p>
+      </div>
+
+      <div class="lc-section">
+        <button class="lc-btn lemon" id="btn-assign" disabled>역할 확정</button>
+        <p class="lc-caption" id="assign-caption">주제에 투표하면 확정할 수 있어요</p>
+      </div>
+    </section>
+
+    <!-- ================= SCR3 확정 ================= -->
+    <section class="screen" id="scr-3">
+      <p class="lc-eyebrow">Step 4 of 6 · 확정 안내</p>
+      <h1 class="lc-hand-title">Confirm</h1>
+      <h2 class="lc-heading">모든 게 정해졌어요</h2>
+      <p class="lc-subtitle">엽서에 담아 정리했어요.<br>저장해서 참여자들과 나눠보세요.</p>
+
+      <div class="lc-section">
+        <div class="lc-postcard" id="postcard">
+          <span class="lc-stamp">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="#8C6A1B"><path d="M8 1.5C8 1.5 13.5 3.5 13.5 9C13.5 12 11 14.5 8 14.5C5 14.5 2.5 12 2.5 9C2.5 3.5 8 1.5 8 1.5Z"/></svg>
+          </span>
+          <div class="lc-postcard-row"><span class="lc-postcard-label">🗓 일시</span><b id="pc-date">토요일 14:00</b></div>
+          <div class="lc-postcard-row"><span class="lc-postcard-label">📍 장소</span><b id="pc-place">OO 카페</b></div>
+          <div class="lc-postcard-row"><span class="lc-postcard-label">🌿 주제</span><b id="pc-topic">발표 자료 준비</b></div>
+          <div class="lc-postcard-row"><span class="lc-postcard-label">🧺 역할</span><b>3개 역할 배정 완료</b></div>
+        </div>
+      </div>
+
+      <div class="lc-section">
+        <button class="lc-btn" id="btn-save-img">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+            <path d="M7.5 2V10M7.5 10L4.5 7M7.5 10L10.5 7" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2.5 12.5H12.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          이미지로 저장
+        </button>
+      </div>
+
+      <div class="lc-section">
+        <button class="lc-btn lemon" id="btn-to-bloom">진행 상황 보러가기</button>
+      </div>
+    </section>
+
+    <!-- ================= SCR4 공유 ================= -->
+    <section class="screen" id="scr-4">
+      <button class="lc-top-link" id="btn-back-invite">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L3 6L8 10" stroke="#4F6B8C" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        다시 초대장으로
+      </button>
+      <p class="lc-eyebrow">Step 5 of 6 · 진행 상황 공유</p>
+      <h1 class="lc-hand-title">Bloom</h1>
+      <h2 class="lc-heading">역할이 자라나고 있어요</h2>
+      <p class="lc-subtitle">사람이 아니라 역할·업무 단위로 봐요.<br>완료된 것만 조용히 쌓여요.</p>
+
+      <div class="lc-section">
+        <div class="lc-carousel" id="carousel">
+          <div class="lc-carousel-track" id="carousel-track">
+            <!-- 카드 JS 렌더 -->
+          </div>
+        </div>
+        <div class="lc-swipe-nav">
+          <button class="lc-chev-btn" id="btn-prev" aria-label="이전 역할">
+            <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="lc-dots" id="carousel-dots"></div>
+          <button class="lc-chev-btn" id="btn-next" aria-label="다음 역할">
+            <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1L6 6L1 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <p class="lc-caption">좌우로 스와이프하거나 화살표로 다른 역할을 볼 수 있어요</p>
+      </div>
+
+      <div class="lc-section">
+        <button class="lc-btn lemon" id="btn-to-harvest">모임이 끝나면 결산으로</button>
+      </div>
+    </section>
+
+    <!-- ================= SCR5 결산 ================= -->
+    <section class="screen" id="scr-5">
+      <p class="lc-eyebrow">Step 6 of 6 · 결과 결산</p>
+      <h1 class="lc-hand-title">Harvest</h1>
+
+      <div id="harvest-form">
+        <h2 class="lc-heading">이 과정은 어땠나요?</h2>
+        <p class="lc-subtitle">사람이 아니라 과정에 대한 이야기예요.<br>구성원 개인에 대한 평가는 다루지 않아요.</p>
+
+        <div class="lc-section" id="rate-area">
+          <div class="lc-rate-block" data-q="time">
+            <div class="lc-rate-top">
+              <span class="lc-rate-label">시간 조율</span>
+              <span class="lc-rate-desc">일정 맞추기 수월했나요</span>
+            </div>
+            <div class="lc-leaves"></div>
+          </div>
+          <div class="lc-rate-block" data-q="place">
+            <div class="lc-rate-top">
+              <span class="lc-rate-label">장소 적절성</span>
+              <span class="lc-rate-desc">모이기 좋은 장소였나요</span>
+            </div>
+            <div class="lc-leaves"></div>
+          </div>
+          <div class="lc-rate-block" data-q="role">
+            <div class="lc-rate-top">
+              <span class="lc-rate-label">역할 배분</span>
+              <span class="lc-rate-desc">업무가 고르게 나뉘었나요</span>
+            </div>
+            <div class="lc-leaves"></div>
+          </div>
+        </div>
+
+        <p class="lc-hint" style="text-align:center; margin-bottom:20px;">행동 기반 기여도 문항은 4인 이상 그룹에만 표시돼요<br>극단적인 응답은 자동으로 완충돼요</p>
+
+        <div class="lc-section">
+          <button class="lc-btn lemon" id="btn-submit" disabled>제출하기</button>
+          <p class="lc-caption" id="harvest-caption">세 과정 모두 잎을 남겨주세요</p>
+        </div>
+      </div>
+
+      <div id="harvest-done">
+        <div class="lc-done-seal">
+          <svg width="34" height="34" viewBox="0 0 16 16" fill="#8C6A1B"><path d="M8 1.5C8 1.5 13.5 3.5 13.5 9C13.5 12 11 14.5 8 14.5C5 14.5 2.5 12 2.5 9C2.5 3.5 8 1.5 8 1.5Z"/></svg>
+        </div>
+        <h2 class="lc-heading">수확이 끝났어요</h2>
+        <p class="lc-subtitle">남겨주신 잎은 팀 전체 지표로만 모여요.<br>다음 모임의 조율이 조금 더 수월해질 거예요.</p>
+        <div class="lc-section">
+          <button class="lc-btn outline" id="btn-restart">새로운 모임 시작하기</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div id="toast" role="status"></div>
+
+<script>
+/* ==========================================================================
+   상태 — 모든 "에이전트 응답"은 목업 데이터. 실제 계산·통신 없음.
+   ========================================================================== */
+const state = {
+  design: '웨지우드',
+  days: new Set(),
+  placeVote: null,   // 내가 투표한 장소
+  topicVote: null,   // 내가 투표한 주제
+  ratings: { time: 0, place: 0, role: 0 },
+  visited: new Set([0]),
+  screen: 0,
+};
+
+/* 목업: Bloom 역할 카드 데이터 (사람이 아닌 역할 단위) */
+const ROLES = [
+  { name: '자료 조사 역할', tasks: [
+    { label: '선행 사례 정리', done: true },
+    { label: '레퍼런스 수집', done: true },
+    { label: '요약 문서 작성', done: false },
+  ]},
+  { name: '발표 자료 제작 역할', tasks: [
+    { label: '슬라이드 초안 작성', done: true },
+    { label: '발표 스크립트 정리', done: false },
+    { label: '디자인 다듬기', done: false },
+  ]},
+  { name: '일정·정리 역할', tasks: [
+    { label: '회의록 작성', done: true },
+    { label: '중간 점검 공유', done: true },
+    { label: '최종본 취합', done: false },
+  ]},
+];
+
+/* 목업: 요일 선택에 대한 에이전트 코멘트 */
+const TIME_NOTES = {
+  none: '',
+  few: '겹치는 시간을 모으는 중이에요 · 지금까지 3명이 응답했어요',
+  ok: '토요일 오후가 모두 겹쳐요 — 이 시간을 추천할게요',
+};
+
+/* ==========================================================================
+   유틸
+   ========================================================================== */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => [...document.querySelectorAll(sel)];
+
+let toastTimer;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ==========================================================================
+   화면 전환 + 여정 덩굴
+   ========================================================================== */
+function goTo(n) {
+  state.screen = n;
+  state.visited.add(n);
+  $$('.screen').forEach((s, i) => s.classList.toggle('active', i === n));
+  const steps = $$('#journey .lc-journey-step');
+  steps.forEach((step, i) => {
+    step.classList.toggle('is-current', i === n);
+    step.classList.toggle('is-done', i < n || (state.visited.has(i) && i !== n));
+  });
+  /* 덩굴이 현재 단계까지 자람 */
+  const vine = $('#journey-vine');
+  const pct = n / (steps.length - 1);
+  vine.style.width = `calc((100% - 32px) * ${pct})`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* 여정 점 클릭 → 지나온 화면으로만 이동 가능 */
+$$('#journey .lc-journey-step').forEach((step) => {
+  step.addEventListener('click', () => {
+    const n = Number(step.dataset.goto);
+    if (state.visited.has(n)) goTo(n);
+  });
+});
+
+/* ==========================================================================
+   SCR0 — 초대장
+   ========================================================================== */
+$$('#invite-grid .lc-invite-card').forEach((card) => {
+  card.addEventListener('click', () => {
+    $$('#invite-grid .lc-invite-card').forEach((c) => c.classList.remove('is-selected'));
+    card.classList.add('is-selected');
+    state.design = card.dataset.design;
+  });
+});
+
+$('#btn-send').addEventListener('click', () => {
+  const overlay = $('#mail-overlay');
+  overlay.classList.add('show');
+  /* 애니메이션 재생 시간 후 다음 화면으로 */
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    goTo(1);
+    toast(`'${state.design}' 초대장이 발송됐어요 ✉️`);
+  }, 2400);
+});
+
+/* ==========================================================================
+   SCR1 — 조율
+   ========================================================================== */
+function updateGatherState() {
+  const ready = state.days.size > 0 && state.placeVote !== null;
+  $('#btn-gather').disabled = !ready;
+  $('#gather-caption').textContent = ready
+    ? '투표는 익명으로 집계돼요 · 확정은 참여자 전원의 클릭으로 마무리돼요'
+    : '요일을 선택하고 장소에 투표해 주세요';
+
+  /* 목업 에이전트 코멘트 */
+  const note = $('#time-note');
+  const text = $('#time-note-text');
+  if (state.days.size === 0) {
+    note.classList.remove('show');
+  } else if (state.days.has('토') || state.days.has('일')) {
+    text.textContent = TIME_NOTES.ok;
+    note.classList.add('show');
+  } else {
+    text.textContent = TIME_NOTES.few;
+    note.classList.add('show');
+  }
+}
+
+$$('#weekgrid .lc-day').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const d = btn.dataset.day;
+    btn.classList.toggle('is-selected');
+    state.days.has(d) ? state.days.delete(d) : state.days.add(d);
+    updateGatherState();
+  });
+});
+
+$$('#scr-1 .lc-place-card').forEach((card) => {
+  card.addEventListener('click', () => {
+    const name = card.dataset.place;
+    state.placeVote = state.placeVote === name ? null : name;
+    /* 표 수 갱신: 기본 표 + 내 표 */
+    $$('#scr-1 .lc-place-card').forEach((c) => {
+      const mine = c.dataset.place === state.placeVote;
+      c.classList.toggle('is-voted', mine);
+      c.querySelector('.vote-count').textContent =
+        (Number(c.dataset.base) + (mine ? 1 : 0)) + '표';
+    });
+    updateGatherState();
+  });
+});
+
+$('#btn-gather').addEventListener('click', () => {
+  goTo(2);
+  toast('시간과 장소가 모아졌어요 🌿');
+});
+
+/* ==========================================================================
+   SCR2 — 배정
+   ========================================================================== */
+$$('#scr-2 .lc-topic-row').forEach((row) => {
+  row.addEventListener('click', () => {
+    const t = row.dataset.topic;
+    state.topicVote = state.topicVote === t ? null : t;
+    const rows = $$('#scr-2 .lc-topic-row');
+    const counts = rows.map((r) =>
+      Number(r.dataset.base) + (r.dataset.topic === state.topicVote ? 1 : 0));
+    const total = counts.reduce((a, b) => a + b, 0);
+    rows.forEach((r, i) => {
+      r.classList.toggle('is-voted', r.dataset.topic === state.topicVote);
+      r.querySelector('.topic-count').textContent = counts[i] + '표';
+      r.querySelector('.lc-topic-bar-fill').style.width =
+        Math.round((counts[i] / total) * 100) + '%';
+    });
+    $('#btn-assign').disabled = state.topicVote === null;
+    $('#assign-caption').textContent = state.topicVote === null
+      ? '주제에 투표하면 확정할 수 있어요'
+      : '확정 버튼을 눌러야 다음 단계로 넘어가요';
+  });
+});
+
+$('#btn-assign').addEventListener('click', () => {
+  /* 확정 엽서에 내 선택 반영 (목업 규칙: 요일 중 첫 선택 + 14:00) */
+  const order = ['월','화','수','목','금','토','일'];
+  const day = order.find((d) => state.days.has(d)) || '토';
+  $('#pc-date').textContent = `${day}요일 14:00`;
+  $('#pc-place').textContent = state.placeVote || 'OO 카페';
+  $('#pc-topic').textContent = state.topicVote || '발표 자료 준비';
+  goTo(3);
+  toast('역할이 확정됐어요 · 엽서를 확인해 보세요 💌');
+});
+
+/* ==========================================================================
+   SCR3 — 확정
+   ========================================================================== */
+$('#btn-save-img').addEventListener('click', () => {
+  toast('엽서를 이미지로 저장했어요 (프로토타입 목업)');
+});
+$('#btn-to-bloom').addEventListener('click', () => goTo(4));
+
+/* ==========================================================================
+   SCR4 — 공유 캐러셀 (스와이프 + 화살표 + 도트)
+   ========================================================================== */
+let slide = 0;
+
+function renderCarousel() {
+  const track = $('#carousel-track');
+  track.innerHTML = ROLES.map((role) => {
+    const done = role.tasks.filter((t) => t.done).length;
+    const rows = role.tasks.map((t) => `
+      <div class="lc-check-row ${t.done ? 'is-done' : ''}">
+        <span class="lc-check">${t.done
+          ? '<svg width="9" height="9" viewBox="0 0 9 9"><path d="M1 4.5L3.3 6.8L8 2" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+          : ''}</span>
+        <span>${t.label}</span>
+      </div>`).join('');
+    return `
+      <div class="lc-swipe-card">
+        <div class="lc-swipe-inner">
+          <p class="lc-swipe-role">${role.name}</p>
+          <p class="lc-swipe-progress">${done}/${role.tasks.length} 진행 중</p>
+          ${rows}
+        </div>
+      </div>`;
+  }).join('');
+
+  $('#carousel-dots').innerHTML = ROLES
+    .map((_, i) => `<span class="lc-dot ${i === slide ? 'is-active' : ''}"></span>`)
+    .join('');
+}
+
+function moveSlide(n) {
+  slide = Math.max(0, Math.min(ROLES.length - 1, n));
+  $('#carousel-track').style.transform = `translateX(-${slide * 100}%)`;
+  $$('#carousel-dots .lc-dot').forEach((d, i) => d.classList.toggle('is-active', i === slide));
+}
+
+$('#btn-prev').addEventListener('click', () => moveSlide(slide - 1));
+$('#btn-next').addEventListener('click', () => moveSlide(slide + 1));
+
+/* 터치 스와이프 */
+let touchX = null;
+$('#carousel').addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+$('#carousel').addEventListener('touchend', (e) => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 40) moveSlide(slide + (dx < 0 ? 1 : -1));
+  touchX = null;
+}, { passive: true });
+
+$('#btn-back-invite').addEventListener('click', () => goTo(0));
+$('#btn-to-harvest').addEventListener('click', () => goTo(5));
+
+/* ==========================================================================
+   SCR5 — 결산 leaf 평가
+   ========================================================================== */
+const LEAF_SVG = `<svg width="19" height="19" viewBox="0 0 16 16">
+  <path d="M8 1.5C8 1.5 13.5 3.5 13.5 9C13.5 12 11 14.5 8 14.5C5 14.5 2.5 12 2.5 9C2.5 3.5 8 1.5 8 1.5Z"
+        fill="#FBF9F3" stroke="#D6CCB4" stroke-width="0.9"/></svg>`;
+
+function renderLeaves() {
+  $$('#rate-area .lc-rate-block').forEach((block) => {
+    const q = block.dataset.q;
+    const wrap = block.querySelector('.lc-leaves');
+    wrap.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'lc-leaf-btn';
+      btn.setAttribute('aria-label', `${i}개 잎`);
+      btn.innerHTML = LEAF_SVG;
+      btn.addEventListener('click', () => {
+        state.ratings[q] = i;
+        wrap.querySelectorAll('.lc-leaf-btn').forEach((b, j) => {
+          b.classList.toggle('on', j < i);
+          b.classList.remove('pop');
+          if (j === i - 1) { void b.offsetWidth; b.classList.add('pop'); }
+        });
+        const allRated = Object.values(state.ratings).every((v) => v > 0);
+        $('#btn-submit').disabled = !allRated;
+        $('#harvest-caption').textContent = allRated
+          ? '제출은 참여자 각자의 클릭으로 완료돼요'
+          : '세 과정 모두 잎을 남겨주세요';
+      });
+      wrap.appendChild(btn);
+    }
+  });
+}
+
+$('#btn-submit').addEventListener('click', () => {
+  $('#harvest-form').style.display = 'none';
+  $('#harvest-done').classList.add('show');
+});
+
+$('#btn-restart').addEventListener('click', () => {
+  /* 상태 초기화 후 처음으로 — 새 모임의 씨앗 */
+  location.reload();
+});
+
+/* ==========================================================================
+   초기화
+   ========================================================================== */
+renderCarousel();
+renderLeaves();
+goTo(0);
+</script>
+</body>
+</html>
