@@ -658,9 +658,7 @@ body {
 }
 
 .plain-text-view,
-.markdown-source-view,
-.audio-player-mock,
-.image-canvas {
+.markdown-source-view {
   margin: 22px 0;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -833,123 +831,6 @@ body {
 
 .source-evidence-summary dt {
   font-weight: 760;
-}
-
-.audio-player-mock {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-  padding: 14px;
-}
-
-.audio-player-mock button {
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(69, 183, 167, 0.5);
-  border-radius: 50%;
-  background: #dff5f0;
-  color: #13645d;
-  font: inherit;
-}
-
-.waveform {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(10px, 1fr));
-  align-items: center;
-  gap: 5px;
-  height: 42px;
-}
-
-.waveform span {
-  display: block;
-  height: 12px;
-  border-radius: 999px;
-  background: var(--teal);
-}
-
-.waveform span:nth-child(2),
-.waveform span:nth-child(6) {
-  height: 28px;
-}
-
-.waveform span:nth-child(3),
-.waveform span:nth-child(5),
-.waveform span:nth-child(8) {
-  height: 20px;
-}
-
-.audio-player-mock time {
-  color: var(--muted);
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-.transcript-list {
-  display: grid;
-  gap: 8px;
-  margin: 12px 0 20px;
-  padding: 0;
-  list-style: none;
-}
-
-.transcript-list li {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--paper);
-}
-
-.transcript-list time {
-  color: var(--teal);
-  font-weight: 760;
-}
-
-.image-canvas {
-  display: grid;
-  gap: 12px;
-  place-items: center;
-  padding: 24px;
-  background:
-    linear-gradient(45deg, rgba(45, 73, 64, 0.04) 25%, transparent 25% 75%, rgba(45, 73, 64, 0.04) 75%),
-    linear-gradient(45deg, rgba(45, 73, 64, 0.04) 25%, transparent 25% 75%, rgba(45, 73, 64, 0.04) 75%),
-    #fbf8f0;
-  background-position: 0 0, 12px 12px;
-  background-size: 24px 24px;
-}
-
-.rubric-sheet {
-  display: grid;
-  gap: 12px;
-  width: min(520px, 100%);
-  padding: 28px;
-  border: 1px solid #d5dbe7;
-  border-radius: 4px;
-  background: #f8fafc;
-  color: #111827;
-  box-shadow: 0 16px 32px rgba(63, 47, 30, 0.16);
-}
-
-.rubric-sheet strong {
-  padding-bottom: 10px;
-  border-bottom: 2px solid #111827;
-  font-size: 22px;
-}
-
-.rubric-sheet span {
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  background: #ffffff;
-  font-weight: 720;
-}
-
-.image-canvas figcaption {
-  color: var(--muted);
-  font-size: 13px;
 }
 
 .chat-dock {
