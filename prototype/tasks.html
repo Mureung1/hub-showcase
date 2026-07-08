@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>할 일</title>
+<style>
+  :root {
+    --toss-blue: #3182f6;
+    --toss-blue-light: #eef4ff;
+    --toss-green: #1faa59;
+    --toss-green-light: #e6f9f0;
+    --toss-gray-900: #191f28;
+    --toss-gray-600: #4e5968;
+    --toss-gray-400: #8b95a1;
+    --toss-gray-200: #e5e8eb;
+    --toss-gray-100: #f2f4f6;
+    --toss-bg: #f9fafb;
+    --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.05);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: var(--toss-bg);
+    color: var(--toss-gray-900);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+
+  .page {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .header {
+    padding: 8px 4px 28px;
+  }
+
+  .header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    font-size: 15px;
+    color: var(--toss-gray-600);
+    line-height: 1.5;
+  }
+
+  .card {
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: var(--shadow-soft);
+    padding: 28px 24px 32px;
+  }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--toss-gray-900);
+    margin-bottom: 4px;
+  }
+
+  .card-subtitle {
+    font-size: 13px;
+    color: var(--toss-gray-400);
+    margin-bottom: 20px;
+  }
+
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: var(--toss-gray-100);
+    border-radius: 16px;
+  }
+
+  .checkbox {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    border: 2px solid var(--toss-gray-200);
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .checkbox.checked {
+    background: var(--toss-green);
+    border-color: var(--toss-green);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .task-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .task-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--toss-gray-900);
+  }
+
+  .task-item.done .task-title {
+    color: var(--toss-gray-400);
+    text-decoration: line-through;
+  }
+
+  .task-meta {
+    font-size: 13px;
+    color: var(--toss-gray-400);
+    margin-top: 4px;
+  }
+
+  .status-badge {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .status-badge.status-wait {
+    background: var(--toss-gray-200);
+    color: var(--toss-gray-600);
+  }
+
+  .status-badge.status-progress {
+    background: var(--toss-blue-light);
+    color: var(--toss-blue);
+  }
+
+  .status-badge.status-done {
+    background: var(--toss-green-light);
+    color: var(--toss-green);
+  }
+
+  .footer-note {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--toss-gray-400);
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <h1>할 일</h1>
+      <p>오늘 처리해야 할 업무를 한눈에 확인해보세요.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">전체 할 일</div>
+      <div class="card-subtitle">총 4개 중 1개 완료</div>
+
+      <div class="task-list">
+        <div class="task-item">
+          <div class="checkbox"></div>
+          <div class="task-info">
+            <div class="task-title">회의시간 매칭 화면 디자인 리뷰</div>
+            <div class="task-meta">지훈 · 마감 7월 10일</div>
+          </div>
+          <div class="status-badge status-progress">진행</div>
+        </div>
+
+        <div class="task-item">
+          <div class="checkbox"></div>
+          <div class="task-info">
+            <div class="task-title">팀원 가능시간 데이터 연동</div>
+            <div class="task-meta">서연 · 마감 7월 12일</div>
+          </div>
+          <div class="status-badge status-wait">대기</div>
+        </div>
+
+        <div class="task-item done">
+          <div class="checkbox checked">&#10003;</div>
+          <div class="task-info">
+            <div class="task-title">추천 로직 QA 테스트</div>
+            <div class="task-meta">민준 · 마감 7월 9일</div>
+          </div>
+          <div class="status-badge status-done">완료</div>
+        </div>
+
+        <div class="task-item">
+          <div class="checkbox"></div>
+          <div class="task-info">
+            <div class="task-title">반응형 레이아웃 점검</div>
+            <div class="task-meta">하은 · 마감 7월 15일</div>
+          </div>
+          <div class="status-badge status-wait">대기</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">클릭 기능은 다음 단계에서 추가될 예정이에요</div>
+  </div>
+</body>
+</html>
