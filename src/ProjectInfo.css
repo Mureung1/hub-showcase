@@ -1,0 +1,200 @@
+/* 전체 컨테이너 설정 */
+.project-intro-container {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  color: #1f2937;
+  line-height: 1.6;
+}
+
+/* 헤더 영역 */
+.intro-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.intro-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #16a34a; 
+  margin-bottom: 12px;
+  letter-spacing: -0.5px;
+}
+
+.intro-subtitle {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4b5563;
+}
+
+/* 공통 라벨 */
+.section-label {
+  font-size: 22px;
+  font-weight: 700;
+  color: #16a34a;
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+/* 기능 소개 영역 */
+.features-section {
+  margin-bottom: 56px;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.feature-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 32px 28px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  text-align: left;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  border-color: #16a34a;
+}
+
+.feature-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.feature-icon {
+  width: 36px;
+  height: 36px;
+  background: #dcfce7; 
+  color: #16a34a;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.feature-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0; 
+  letter-spacing: -0.3px;
+}
+
+.feature-desc {
+  font-size: 15px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+  word-break: keep-all;
+}
+
+/* 문제 정의 영역 */
+.problem-section {
+  margin-bottom: 56px;
+}
+
+.problem-text {
+  background: #f8fafc;
+  border-left: 4px solid #16a34a;
+  border-radius: 0 12px 12px 0;
+  padding: 20px 24px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #374151;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+/* 서브 기능 영역 */
+.sub-features-section {
+  margin-bottom: 56px;
+}
+
+.sub-features-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sub-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 15px;
+  color: #374151;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.sub-feature-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  flex-shrink: 0;
+}
+
+/* 사용자 시나리오 영역 */
+.scenario-section {
+  margin-bottom: 56px;
+}
+
+.scenario-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.scenario-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #dcfce7;
+  border-radius: 8px;
+}
+
+.scenario-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.scenario-text {
+  margin: 0;
+  font-size: 15px;
+  color: #1f2937;
+  line-height: 1.6;
+  word-break: keep-all;
+}
