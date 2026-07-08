@@ -2,6 +2,13 @@
 
 LocalTwin Wiki는 프로젝트 기획, 기능 정의, 개발 운영 문서를 연결하는 진입점이다.
 
+## Knowledge Graph
+
+- [Interactive Knowledge Graph](./knowledge-graph.html)
+
+문서 간 핵심 개념, 기능, 데이터, 개발 운영 기준의 연결을 Node & Edge 형식으로 확인한다.
+노드를 클릭하면 관련 문서로 이동하고, 검색과 그룹 필터로 필요한 문서를 좁혀볼 수 있다.
+
 ## Product Planning
 
 - [제품 기획서: 문제 정의, 사용자 시나리오, 기능 구성](./localtwin-product-plan.md)
