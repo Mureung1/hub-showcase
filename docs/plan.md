@@ -84,3 +84,11 @@
 ## 5. 화면 흐름도 (User Flow)
 
 ![사용자 맞춤형 논문 큐레이션 서비스 흐름](/assets/user_flow.png)
+
+---
+
+## 6. 프로토타입 UI 구조 미리보기 (Prototype Preview)
+
+기획서의 레이아웃 스타일 가이드(상단 행 40%, 하단 행 60% 비중)를 바탕으로 구현된 순수 HTML/CSS 정적 프로토타입의 실제 구동 화면: 
+
+![Scholar-Sync AI 프로토타입 구현 화면](/assets/prototype.png)
