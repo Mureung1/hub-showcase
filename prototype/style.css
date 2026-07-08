@@ -1,0 +1,58 @@
+/* Reset basic styling */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f8f9fa;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* CSS Grid layout implementation based on the 2x2 asymmetric structure */
+.grid-container {
+    display: grid;
+    /* Top row is 40vh, bottom row is 60vh. We use a 4fr to 6fr ratio within the screen height minus margins. */
+    grid-template-rows: 4fr 6fr;
+    /* 3:1 column ratio for Profile vs Curation */
+    grid-template-columns: 3fr 1fr;
+    height: calc(100vh - 32px); /* 100vh minus margins (16px top + 16px bottom) */
+    gap: 16px;
+    margin: 16px;
+}
+
+/* Base grid item styling with light border and gray backgrounds */
+.grid-item {
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+/* Specific background tones to distinguish sections visually */
+.profile {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+    background-color: #e9ecef; /* Light gray */
+}
+
+.curation {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+    background-color: #f1f3f5; /* Sightly different light gray */
+}
+
+.insights-library {
+    grid-column: 1 / -1; /* Spans full width */
+    grid-row: 2 / 3;
+    background-color: #e9ecef; /* Light gray */
+}
+
+/* Hover effects for interactive feel */
+.grid-item:hover {
+    border-color: #adb5bd;
+    background-color: #e2e6ea;
+}
