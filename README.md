@@ -117,7 +117,7 @@ npm run build
 - [Architecture Overview](../../wiki/01_Architecture_Overview)
 - [Implementation Plan](../../wiki/02_Implementation_Plan)
 - [Review Points](../../wiki/03_Review_Points)
-- [NoticePilot Story Appendix v3.5](docs/wiki/NoticePilot-Story-Appendix-v3.5.md) — 현재 MVP 흐름과 future scope를 이미지로 정리한 repository copy
+- [NoticePilot Story Appendix v3.5](../../wiki/NoticePilot-Story-Appendix-v3.5) — 현재 MVP 흐름과 future scope를 이미지로 정리한 GitHub Wiki 페이지
 
 Phase 4 이후의 AI 연동 계약, 테스트 corpus, batch calendar export 로드맵은 repository 문서로 관리합니다.
 
