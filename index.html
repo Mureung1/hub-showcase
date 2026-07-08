@@ -1,0 +1,85 @@
+<link rel="stylesheet" href="style.css" />
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>시험 우선순위 계산기</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <section id="start" class="screen">
+    <div class="card">
+      <h1>시험 우선순위 계산기</h1>
+      <p>
+        여러 과목을 동시에 준비해야 할 때,<br />
+        어떤 과목부터 공부해야 할지 추천해주는 서비스입니다.
+      </p>
+      <a href="#input" class="button">과목 입력하기</a>
+    </div>
+  </section>
+
+  <section id="input" class="screen">
+    <div class="card">
+      <h2>과목 정보 입력</h2>
+
+      <label>과목명</label>
+      <input type="text" placeholder="예: 병리학" />
+
+      <label>시험 날짜</label>
+      <input type="date" />
+
+      <label>시험 범위량</label>
+      <select>
+        <option>적음</option>
+        <option>보통</option>
+        <option>많음</option>
+      </select>
+
+      <label>현재 이해도</label>
+      <select>
+        <option>낮음</option>
+        <option>보통</option>
+        <option>높음</option>
+      </select>
+
+      <label>과목 중요도</label>
+      <select>
+        <option>낮음</option>
+        <option>보통</option>
+        <option>높음</option>
+      </select>
+
+      <label>이전 시험 성적</label>
+      <input type="number" placeholder="예: 70" />
+
+      <a href="#result" class="button">우선순위 확인하기</a>
+    </div>
+  </section>
+
+  <section id="result" class="screen">
+    <div class="card">
+      <h2>우선순위 결과</h2>
+
+      <div class="result-box first">
+        <h3>1순위 병리학</h3>
+        <p>시험이 가깝고, 범위가 많으며, 현재 이해도가 낮아 가장 먼저 공부해야 합니다.</p>
+      </div>
+
+      <div class="result-box">
+        <h3>2순위 본초학</h3>
+        <p>과목 중요도가 높고 이전 성적이 낮아 보완이 필요합니다.</p>
+      </div>
+
+      <div class="result-box">
+        <h3>3순위 생리학</h3>
+        <p>시험까지 시간이 비교적 남아 있어 우선순위가 낮게 계산되었습니다.</p>
+      </div>
+
+      <a href="#input" class="button">다시 입력하기</a>
+    </div>
+  </section>
+
+</body>
+</html>
