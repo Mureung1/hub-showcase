@@ -1,0 +1,667 @@
+/* ---------- Reset ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ---------- Design tokens ---------- */
+:root {
+  --primary: #2f6feD;
+  --primary-dark: #2456c0;
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --text: #1a1d29;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --danger: #ef4444;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 8px;
+}
+
+body {
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Malgun Gothic", sans-serif;
+  background: #edeef2;
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  padding: 40px 16px;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ---------- Phone frame ---------- */
+.phone-frame {
+  position: relative;
+  width: 375px;
+  min-height: 812px;
+  background: var(--surface);
+  border-radius: 40px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 0 0 10px #111318;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* ---------- Top navigation bar ---------- */
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.top-nav .nav-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text);
+  border-radius: 50%;
+}
+
+.top-nav .nav-icon:hover {
+  background: var(--bg);
+}
+
+.top-nav .nav-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.top-nav .nav-icon--placeholder {
+  visibility: hidden;
+}
+
+/* ---------- Progress bar (6 steps) ---------- */
+.progress-bar {
+  display: flex;
+  gap: 4px;
+  padding: 10px 20px 0;
+  flex-shrink: 0;
+}
+
+.progress-bar span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.progress-bar[data-step="1"] span:nth-child(1),
+.progress-bar[data-step="2"] span:nth-child(-n + 2),
+.progress-bar[data-step="3"] span:nth-child(-n + 3),
+.progress-bar[data-step="4"] span:nth-child(-n + 4),
+.progress-bar[data-step="5"] span:nth-child(-n + 5),
+.progress-bar[data-step="6"] span:nth-child(-n + 6) {
+  background: var(--primary);
+}
+
+/* ---------- Bottom CTA button ---------- */
+.bottom-cta {
+  flex-shrink: 0;
+  padding: 12px 20px 24px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.btn-cta {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  text-align: center;
+  background: var(--primary);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-cta:hover {
+  background: var(--primary-dark);
+}
+
+.btn-cta--secondary {
+  background: var(--surface);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.btn-cta--secondary:hover {
+  background: #eef3ff;
+}
+
+/* ---------- Home screen ---------- */
+.home-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+
+.home-topbar .logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.home-topbar .logo-icon {
+  font-size: 20px;
+}
+
+.home-topbar .profile-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg);
+  font-size: 18px;
+}
+
+.briefing-card {
+  position: relative;
+  margin-top: 8px;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary) 0%, #1e3fb8 100%);
+  color: #fff;
+}
+
+.briefing-card .badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 12px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 3px var(--surface);
+}
+
+.briefing-card .briefing-label {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-bottom: 12px;
+}
+
+.briefing-card .briefing-ticker {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.briefing-card .briefing-date {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.streak-box {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+}
+
+.streak-box .streak-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.streak-bars {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 64px;
+  gap: 10px;
+}
+
+.streak-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 8px;
+}
+
+.streak-bar .bar {
+  width: 100%;
+  border-radius: 6px;
+  background: var(--border);
+}
+
+.streak-bar.completed .bar {
+  background: var(--primary);
+}
+
+.streak-bar.today .bar {
+  background: var(--primary-dark);
+}
+
+.streak-bar label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.streak-box .streak-count {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ---------- Briefing entry screen ---------- */
+.stock-tag {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #eaf1ff;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.headline-block {
+  margin-top: 20px;
+}
+
+.headline-block h1 {
+  font-size: 21px;
+  line-height: 1.45;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.source-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.source-info .source-logo {
+  font-weight: 700;
+  color: #6001d2;
+}
+
+.scroll-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 60px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.scroll-hint .arrow {
+  font-size: 20px;
+  animation: scroll-bounce 1.6s infinite;
+}
+
+@keyframes scroll-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+/* ---------- Summary screen ---------- */
+.section-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+
+.summary-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.summary-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.summary-list .num {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.summary-list p {
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.metric-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.metric-card {
+  flex: 1;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  text-align: center;
+}
+
+.metric-card .metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.metric-card .metric-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ---------- Source link screen ---------- */
+.source-card {
+  margin-top: 8px;
+}
+
+.thumbnail-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #9ca3af;
+}
+
+.source-card-title {
+  margin-top: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.link-btn {
+  margin-top: 24px;
+}
+
+.hint-text {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ---------- Sentence & expression screen ---------- */
+.card-radio,
+.level-radio {
+  display: none;
+}
+
+.level-toggle-group {
+  margin-top: 4px;
+  margin-bottom: 20px;
+}
+
+.level-toggle-group .level-toggle-label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.level-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.level-btn {
+  flex: 1;
+  text-align: center;
+  padding: 8px 0;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#lv-basic:checked ~ .screen-content .level-toggle label[for="lv-basic"],
+#lv-mid:checked ~ .screen-content .level-toggle label[for="lv-mid"],
+#lv-high:checked ~ .screen-content .level-toggle label[for="lv-high"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.card-indicator-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.card-indicator {
+  display: flex;
+  gap: 6px;
+}
+
+.card-indicator .dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#c1:checked ~ .screen-content .card-indicator label[for="c1"],
+#c2:checked ~ .screen-content .card-indicator label[for="c2"],
+#c3:checked ~ .screen-content .card-indicator label[for="c3"] {
+  width: 20px;
+  border-radius: 4px;
+  background: var(--primary);
+}
+
+.card-fraction {
+  display: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+#c1:checked ~ .screen-content .card-fraction.frac-1,
+#c2:checked ~ .screen-content .card-fraction.frac-2,
+#c3:checked ~ .screen-content .card-fraction.frac-3 {
+  display: inline;
+}
+
+.sentence-card {
+  display: none;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+#c1:checked ~ .screen-content .card-1,
+#c2:checked ~ .screen-content .card-2,
+#c3:checked ~ .screen-content .card-3 {
+  display: block;
+}
+
+.sentence-card .en-text {
+  font-size: 16px;
+  line-height: 1.65;
+  font-weight: 600;
+}
+
+.sentence-card .kr-text {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.highlight {
+  background: #fff1a8;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.sentence-card details {
+  display: none;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+#lv-basic:checked ~ .screen-content .expr-basic,
+#lv-mid:checked ~ .screen-content .expr-mid,
+#lv-high:checked ~ .screen-content .expr-high {
+  display: block;
+}
+
+.sentence-card summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.sentence-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.sentence-card summary::after {
+  content: "⌄";
+  transition: transform 0.2s ease;
+}
+
+.sentence-card details[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.expr-body {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text);
+  background: var(--bg);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.next-sentence-btn {
+  display: none;
+}
+
+#c1:checked ~ .bottom-cta .next-1,
+#c2:checked ~ .bottom-cta .next-2,
+#c3:checked ~ .bottom-cta .next-3 {
+  display: block;
+}
+
+/* ---------- Investment terms screen ---------- */
+.term-card {
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.term-card:first-of-type {
+  margin-top: 4px;
+}
+
+.term-card .term-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.term-card .term-definition {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.term-card .term-context {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
