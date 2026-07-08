@@ -1,21 +1,65 @@
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-
 # hub
+
+# 1일차 - PlaceSync React 프로젝트
+
+PlaceSync의 화면을 구현한 React 프로젝트입니다.
+
+## 실행 방법
+
+React 프로젝트 폴더로 이동합니다.
+
+```bash
+cd react
+```
+
+필요한 패키지를 설치합니다.
+
+```bash
+npm install
+```
+
+개발 서버를 실행합니다.
+
+```bash
+npm run dev
+```
+
+PowerShell에서 실행 정책 오류가 발생하는 경우 다음 명령을 사용합니다.
+
+```bash
+npm.cmd install
+npm.cmd run dev
+```
+
+개발 서버가 실행되면 브라우저에서 아래 주소로 접속합니다.
+
+```text
+http://localhost:5173
+```
+
+## 주요 구현 내용
+
+* Vite 기반 React 개발 환경 구성
+* 프로젝트 주제 소개 화면 구현
+* `ProjectIntro` React 컴포넌트 작성
+* 실시간 기상 변화 알림 서비스 아이디어 소개
+* 택시 동승자 매칭 서비스 아이디어 소개
+
+## 주요 파일
+
+```text
+react/ 
+├─ src/
+│ ├─ components/
+│ │ └─ ProjectIntro.jsx
+│ ├─ App.jsx 
+│ └─ main.jsx 
+├─ index.html 
+├─ package.json 
+└─ vite.config.js
+```
+
+# 2일차 - 주제 선정 및 기획 시작
 
 ## 프로젝트 문서
 
@@ -26,3 +70,115 @@ If you are developing a production application, we recommend using TypeScript wi
 * [보조 자료](./docs/feature-spec.md)
 
 * [개발 작업 체크리스트](./docs/checklist.md)
+
+# 3일차 - HTML/CSS 프로토타입 구현
+
+PlaceSync의 핵심 기능과 사용자 흐름을 확인하기 위해 순수 HTML과 CSS를 사용한 정적 프로토타입을 구현했습니다.
+
+## 실행 방법
+
+프로토타입 폴더로 이동합니다.
+
+```bash
+cd prototype
+```
+
+`index.html` 파일을 브라우저에서 실행합니다.
+
+별도의 패키지 설치나 개발 서버 실행 없이 파일을 직접 열어 확인할 수 있습니다.
+
+## 화면 구성
+
+```text
+prototype/
+├─ index.html
+├─ edit.html
+├─ preview.html
+├─ result.html
+├─ manual.html
+├─ styles.css
+└─ README.md
+```
+
+## 주요 구현 내용
+
+* 매장 정보와 플랫폼 연결 상태를 확인하는 대시보드 구현
+* 영업시간, 휴무일, 메뉴 가격 및 공지를 수정하는 통합 편집 화면 구현
+* 플랫폼별 가격 차이와 메뉴별 가격 예외 설정 화면 구현
+* 메뉴 카테고리별 노출 플랫폼 선택 기능 구현
+* 플랫폼별 최종 적용 가격 미리보기 화면 구현
+* 변경 전 정보와 변경 후 정보 비교 화면 구현
+* 플랫폼별 반영 완료, 검토 중, 실패 상태 표시
+* 자동 반영 실패 시 수동 수정 내용을 제공하는 화면 구현
+* 데스크톱, 태블릿, 모바일 반응형 디자인 적용
+* 공통 CSS 클래스를 활용해 카드, 버튼, 상태 배지 디자인 통일
+
+## 프로토타입 화면 흐름
+
+```text
+대시보드
+→ 매장 정보 수정
+→ 플랫폼별 적용값 확인
+→ 업데이트 결과 확인
+→ 실패 플랫폼 수동 수정
+```
+
+## 주요 기능
+
+### 대시보드
+
+* 연결된 플랫폼 수 확인
+* 플랫폼별 연결 상태 확인
+* 현재 매장 정보 요약
+* 가격 정보 불일치 알림 표시
+* 매장 정보 수정 화면 이동
+
+### 통합 정보 편집
+
+* 영구 변경과 임시 변경 선택
+* 영업 시작 및 종료 시간 수정
+* 정기휴무와 브레이크타임 설정
+* 메뉴별 기존 가격과 변경 가격 입력
+* 플랫폼별 가격 차이 설정
+* 메뉴 카테고리별 노출 플랫폼 선택
+* 공지 제목과 내용 입력
+
+### 플랫폼별 적용값 미리보기
+
+* 네이버 플레이스, 카카오맵, 배달앱별 적용 가격 확인
+* 플랫폼별 가격 정책 적용 결과 확인
+* 변경 전 정보와 변경 후 정보 비교
+* 변경 내용 최종 승인
+
+### 업데이트 결과
+
+* 반영 완료 상태 표시
+* 플랫폼 검토 중 상태 표시
+* 반영 실패 상태 표시
+* 실패 원인과 재시도 횟수 표시
+* 실패 플랫폼 수동 수정 화면 이동
+
+### 수동 수정 안내
+
+* 플랫폼에 입력할 메뉴 가격 제공
+* 고객 안내 공지 제공
+* 수정 작업 체크리스트 제공
+* 결과 화면과 대시보드 이동 기능 제공
+
+## 사용 기술
+
+* HTML5
+* CSS3
+* CSS Grid
+* Flexbox
+* Media Query
+* 시맨틱 HTML
+* 접근성 속성
+
+## 현재 구현 범위
+
+현재 프로토타입은 PlaceSync의 핵심 기능과 사용자 흐름을 확인하기 위한 정적 화면입니다.
+
+입력창, 라디오 버튼, 체크박스는 직접 조작할 수 있지만 입력한 정보는 실제로 저장되지 않습니다. 또한 가격 자동 계산, 실제 플랫폼 API 연동, 로그인, AI 공지 변환, 수정 이력 저장 기능은 아직 구현되지 않았습니다.
+
+
