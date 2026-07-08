@@ -17,4 +17,9 @@ python scripts/check_docs_index.py
 Write-Host "== Docs HTML check =="
 python scripts/check_docs_html.py
 
+if (Get-Command node -ErrorAction SilentlyContinue) {
+  Write-Host "== Doc viewer URL normalization check =="
+  node scripts/check_doc_viewer_normalization.js
+}
+
 Write-Host "== Harness check passed =="
