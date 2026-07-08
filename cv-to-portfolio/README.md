@@ -5,12 +5,10 @@
 
 ## 문서
 
-- 📄 **[기획서](docs/기획서.md)** — 문제 정의 · 사용자 시나리오 · 핵심 기능
+- 📄 **[기획서 (Wiki)](https://github.com/dolphin1404/NaverConnect_wm/wiki/기획서)** — 문제 정의 · 사용자 시나리오 · 화면 구조 · 핵심 기능 (스크린샷 포함 최신본)
+- 📄 [기획서 (repo 사본)](docs/기획서.md)
 - 🎨 [디자인 명세 (DESIGN.md 6종)](designs)
 - 🖼️ [예시 결과 + 스크린샷](examples)
-- 
-## wiki
-![계획서](https://github.com/dolphin1404/NaverConnect_wm/wiki/%EA%B8%B0%ED%9A%8D%EC%84%9C)
 
 ## 미리보기
 
