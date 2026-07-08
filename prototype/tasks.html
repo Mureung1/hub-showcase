@@ -195,6 +195,115 @@
     font-size: 13px;
     color: var(--toss-gray-400);
   }
+
+  .add-task-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px;
+    background: transparent;
+    border: 1.5px dashed var(--toss-gray-200);
+    border-radius: 16px;
+    color: var(--toss-blue);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .add-task-btn:hover {
+    background: var(--toss-blue-light);
+    border-color: var(--toss-blue);
+  }
+
+  .add-task-form {
+    margin-top: 12px;
+    padding: 16px;
+    background: var(--toss-gray-100);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .add-task-form[hidden] {
+    display: none;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-row .field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .field-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--toss-gray-400);
+    padding-left: 2px;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 11px 12px;
+    background: #ffffff;
+    border: 1px solid var(--toss-gray-200);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--toss-gray-900);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--toss-blue);
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-secondary {
+    background: #ffffff;
+    color: var(--toss-gray-600);
+    border: 1px solid var(--toss-gray-200);
+  }
+
+  .btn-secondary:hover {
+    background: var(--toss-gray-200);
+  }
+
+  .btn-primary {
+    background: var(--toss-blue);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover {
+    background: #2272eb;
+  }
 </style>
 </head>
 <body>
@@ -249,6 +358,29 @@
           <div class="status-badge status-wait">대기</div>
         </div>
       </div>
+
+      <button type="button" class="add-task-btn" id="addTaskBtn">+ 할 일 추가</button>
+
+      <div class="add-task-form" id="addTaskForm" hidden>
+        <div class="field">
+          <label class="field-label" for="newTaskTitle">할 일 제목</label>
+          <input type="text" class="form-input" id="newTaskTitle" placeholder="예: 디자인 리뷰" />
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label" for="newTaskAssignee">담당자</label>
+            <input type="text" class="form-input" id="newTaskAssignee" placeholder="이름 입력" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="newTaskDue">마감기한</label>
+            <input type="date" class="form-input" id="newTaskDue" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancelAddBtn">취소</button>
+          <button type="button" class="btn btn-primary" id="confirmAddBtn">추가</button>
+        </div>
+      </div>
     </div>
 
     <div class="footer-note">체크박스를 눌러 할 일을 완료해보세요</div>
@@ -256,9 +388,17 @@
 
   <script>
     var STATUS_LABEL = { wait: "대기", progress: "진행" };
-    var taskItems = Array.prototype.slice.call(document.querySelectorAll("#taskList .task-item"));
+    var taskListEl = document.getElementById("taskList");
     var progressFill = document.getElementById("progressFill");
     var taskSummary = document.getElementById("taskSummary");
+
+    var addTaskBtn = document.getElementById("addTaskBtn");
+    var addTaskForm = document.getElementById("addTaskForm");
+    var cancelAddBtn = document.getElementById("cancelAddBtn");
+    var confirmAddBtn = document.getElementById("confirmAddBtn");
+    var newTaskTitle = document.getElementById("newTaskTitle");
+    var newTaskAssignee = document.getElementById("newTaskAssignee");
+    var newTaskDue = document.getElementById("newTaskDue");
 
     function setBadge(item, isDone) {
       var badge = item.querySelector(".status-badge");
@@ -273,26 +413,87 @@
     }
 
     function updateProgress() {
-      var total = taskItems.length;
-      var doneCount = taskItems.filter(function (item) {
-        return item.classList.contains("done");
-      }).length;
+      var items = taskListEl.querySelectorAll(".task-item");
+      var total = items.length;
+      var doneCount = taskListEl.querySelectorAll(".task-item.done").length;
       var percent = total === 0 ? 0 : Math.round((doneCount / total) * 100);
 
       progressFill.style.width = percent + "%";
       taskSummary.textContent = "총 " + total + "개 중 " + doneCount + "개 완료 (" + percent + "%)";
     }
 
-    taskItems.forEach(function (item) {
-      var checkbox = item.querySelector(".checkbox");
-      checkbox.addEventListener("click", function () {
-        var isDone = !item.classList.contains("done");
-        item.classList.toggle("done", isDone);
-        checkbox.classList.toggle("checked", isDone);
-        checkbox.innerHTML = isDone ? "&#10003;" : "";
-        setBadge(item, isDone);
-        updateProgress();
-      });
+    // 체크박스는 위임 방식으로 처리해서, 나중에 새로 추가되는 할 일에도 그대로 동작해요
+    taskListEl.addEventListener("click", function (e) {
+      var checkbox = e.target.closest(".checkbox");
+      if (!checkbox) return;
+      var item = checkbox.closest(".task-item");
+
+      var isDone = !item.classList.contains("done");
+      item.classList.toggle("done", isDone);
+      checkbox.classList.toggle("checked", isDone);
+      checkbox.innerHTML = isDone ? "&#10003;" : "";
+      setBadge(item, isDone);
+      updateProgress();
+    });
+
+    function formatDue(value) {
+      var parts = value.split("-");
+      if (parts.length !== 3) return "";
+      var month = parseInt(parts[1], 10);
+      var day = parseInt(parts[2], 10);
+      return month + "월 " + day + "일";
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function openAddForm() {
+      addTaskForm.hidden = false;
+      addTaskBtn.hidden = true;
+      newTaskTitle.focus();
+    }
+
+    function closeAddForm() {
+      addTaskForm.hidden = true;
+      addTaskBtn.hidden = false;
+      newTaskTitle.value = "";
+      newTaskAssignee.value = "";
+      newTaskDue.value = "";
+    }
+
+    function addTask() {
+      var title = newTaskTitle.value.trim();
+      if (!title) {
+        newTaskTitle.focus();
+        return;
+      }
+      var assignee = newTaskAssignee.value.trim() || "담당자 미정";
+      var dueText = formatDue(newTaskDue.value) || "마감일 미정";
+
+      var item = document.createElement("div");
+      item.className = "task-item";
+      item.setAttribute("data-status", "wait");
+      item.innerHTML =
+        '<div class="checkbox"></div>' +
+        '<div class="task-info">' +
+        '<div class="task-title">' + escapeHtml(title) + "</div>" +
+        '<div class="task-meta">' + escapeHtml(assignee) + " · 마감 " + dueText + "</div>" +
+        "</div>" +
+        '<div class="status-badge status-wait">대기</div>';
+
+      taskListEl.appendChild(item);
+      updateProgress();
+      closeAddForm();
+    }
+
+    addTaskBtn.addEventListener("click", openAddForm);
+    cancelAddBtn.addEventListener("click", closeAddForm);
+    confirmAddBtn.addEventListener("click", addTask);
+    newTaskTitle.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") addTask();
     });
 
     updateProgress();
