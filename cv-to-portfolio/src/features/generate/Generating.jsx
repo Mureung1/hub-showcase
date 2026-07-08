@@ -33,7 +33,7 @@ export default function Generating({ cv, theme, onDone }) {
   }, [cv, theme, onDone]);
 
   return (
-    <div className="generating">
+    <div className="generating" role="status" aria-live="polite">
       <div className="spinner" aria-hidden="true" />
       <p className="gen-title">
         ✨ <b>{theme.name}</b> 스타일로 포트폴리오 생성 중

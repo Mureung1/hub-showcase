@@ -47,7 +47,7 @@ export default function App() {
         </p>
       </header>
 
-      <Stepper current={step} />
+      <Stepper current={step} onStep={setStep} />
 
       <main className="stage">
         {step === "upload" && (
@@ -94,7 +94,13 @@ export default function App() {
         )}
 
         {step === "result" && (
-          <ResultView html={html} cv={parsed} theme={theme} onRestart={restart} />
+          <ResultView
+            html={html}
+            cv={parsed}
+            theme={theme}
+            onRestart={restart}
+            onChangeDesign={() => setStep("design")}
+          />
         )}
       </main>
     </div>

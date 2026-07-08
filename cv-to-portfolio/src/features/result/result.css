@@ -68,3 +68,8 @@
   padding: 1px 6px;
   border-radius: 5px;
 }
+.result-nav-left {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
