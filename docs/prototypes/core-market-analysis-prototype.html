@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LocalTwin Core Market Analysis Prototype</title>
+    <style>
+      :root {
+        color: #14211b;
+        background: #edf3ef;
+        font-family:
+          Inter, Pretendard, "Apple SD Gothic Neo", system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        --green: #03c75a;
+        --green-dark: #08703a;
+        --blue: #2563eb;
+        --red: #dc2626;
+        --yellow: #f59e0b;
+        --ink: #14211b;
+        --muted: #65766d;
+        --line: rgba(15, 23, 42, 0.13);
+        --panel: rgba(255, 255, 255, 0.94);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        background: #edf3ef;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      a {
+        color: var(--green-dark);
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      a:hover,
+      a:focus-visible {
+        text-decoration: underline;
+      }
+
+      .doc-nav {
+        position: fixed;
+        top: 10px;
+        left: 12px;
+        z-index: 30;
+        display: flex;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+        padding: 8px 12px;
+        font-size: 0.78rem;
+        backdrop-filter: blur(14px);
+      }
+
+      .app {
+        display: grid;
+        grid-template-rows: 64px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .topbar {
+        position: relative;
+        z-index: 20;
+        display: grid;
+        grid-template-columns: 270px minmax(280px, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        padding: 10px 16px 10px 190px;
+      }
+
+      .brand strong {
+        display: block;
+        color: #07120d;
+        font-size: 1rem;
+      }
+
+      .brand span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .searchbox {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        overflow: hidden;
+        border: 2px solid var(--green);
+        border-radius: 12px;
+        background: #ffffff;
+      }
+
+      .searchbox input {
+        min-width: 0;
+        border: 0;
+        outline: none;
+        padding: 0 14px;
+      }
+
+      .searchbox button {
+        min-height: 40px;
+        border: 0;
+        background: var(--green);
+        color: #ffffff;
+        font-weight: 900;
+        padding: 0 16px;
+      }
+
+      .top-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .chip {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #ffffff;
+        color: #26382f;
+        font-weight: 900;
+        padding: 0 12px;
+      }
+
+      .chip.is-active {
+        border-color: rgba(3, 199, 90, 0.45);
+        background: #e8fff2;
+        color: #075f32;
+      }
+
+      .workspace {
+        position: relative;
+        display: grid;
+        grid-template-columns: 330px minmax(0, 1fr) 340px;
+        min-height: 0;
+      }
+
+      .sidebar,
+      .inspector {
+        position: relative;
+        z-index: 10;
+        overflow-y: auto;
+        border-right: 1px solid var(--line);
+        background: var(--panel);
+        padding: 16px;
+      }
+
+      .inspector {
+        border-right: 0;
+        border-left: 1px solid var(--line);
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .section-title h1,
+      .section-title h2 {
+        margin: 0;
+        color: #07120d;
+        font-size: 1.05rem;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        border-radius: 999px;
+        background: #eef7f2;
+        color: var(--green-dark);
+        font-size: 0.74rem;
+        font-weight: 900;
+        padding: 0 9px;
+      }
+
+      .filter-stack,
+      .result-list,
+      .metric-grid,
+      .time-bars,
+      .report-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .filter-row {
+        display: grid;
+        gap: 6px;
+      }
+
+      .filter-row label {
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .filter-row select,
+      .filter-row .segmented {
+        width: 100%;
+      }
+
+      .segmented {
+        display: grid;
+        grid-auto-columns: 1fr;
+        grid-auto-flow: column;
+        gap: 4px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #f5f8f6;
+        padding: 4px;
+      }
+
+      .segmented button {
+        min-height: 34px;
+        border: 0;
+        border-radius: 9px;
+        background: transparent;
+        color: #304139;
+        font-weight: 900;
+      }
+
+      .segmented button.is-active {
+        background: #07120d;
+        color: #ffffff;
+      }
+
+      select {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #ffffff;
+        color: #26382f;
+        font-weight: 800;
+        padding: 0 10px;
+      }
+
+      .result-card,
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #ffffff;
+        padding: 12px;
+      }
+
+      .result-card {
+        display: grid;
+        gap: 8px;
+      }
+
+      .result-card.is-selected {
+        border-color: rgba(3, 199, 90, 0.48);
+        box-shadow: 0 12px 26px rgba(3, 199, 90, 0.12);
+      }
+
+      .result-card strong {
+        color: #07120d;
+      }
+
+      .result-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+
+      .map-shell {
+        position: relative;
+        overflow: hidden;
+        min-height: calc(100vh - 64px);
+        background: #d8e7dd;
+      }
+
+      .tile-grid {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        opacity: 0.94;
+      }
+
+      .tile-grid img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .map-overlay {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 30%),
+          radial-gradient(circle at 52% 48%, rgba(3, 199, 90, 0.18), transparent 26%);
+        pointer-events: none;
+      }
+
+      .radius {
+        position: absolute;
+        top: 48%;
+        left: 52%;
+        border: 2px solid rgba(3, 199, 90, 0.68);
+        border-radius: 50%;
+        background: rgba(3, 199, 90, 0.1);
+        transform: translate(-50%, -50%);
+      }
+
+      .radius.r100 {
+        width: 160px;
+        height: 160px;
+      }
+
+      .radius.r300 {
+        width: 290px;
+        height: 290px;
+      }
+
+      .radius.r500 {
+        width: 430px;
+        height: 430px;
+      }
+
+      .marker {
+        position: absolute;
+        display: grid;
+        min-width: 38px;
+        height: 38px;
+        place-items: center;
+        border: 3px solid #ffffff;
+        border-radius: 999px;
+        background: var(--blue);
+        color: #ffffff;
+        font-size: 0.78rem;
+        font-weight: 900;
+        padding: 0 9px;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.25);
+      }
+
+      .marker.center {
+        top: 48%;
+        left: 52%;
+        min-width: 54px;
+        height: 54px;
+        background: var(--green);
+        transform: translate(-50%, -50%);
+      }
+
+      .marker.m1 {
+        top: 32%;
+        left: 60%;
+      }
+
+      .marker.m2 {
+        top: 55%;
+        left: 39%;
+      }
+
+      .marker.m3 {
+        top: 65%;
+        left: 64%;
+      }
+
+      .marker.m4 {
+        top: 38%;
+        left: 34%;
+      }
+
+      .map-tools {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .map-tool {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.96);
+        color: #07120d;
+        font-weight: 900;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+      }
+
+      .scale-card {
+        position: absolute;
+        right: 16px;
+        bottom: 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.96);
+        color: #304139;
+        font-size: 0.76rem;
+        font-weight: 900;
+        padding: 9px 12px;
+      }
+
+      .score-panel {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .score {
+        display: grid;
+        width: 96px;
+        height: 96px;
+        place-items: center;
+        border: 10px solid #dff8ea;
+        border-top-color: var(--green);
+        border-right-color: var(--green);
+        border-radius: 50%;
+        color: #07120d;
+        font-size: 1.75rem;
+        font-weight: 900;
+      }
+
+      .panel h3 {
+        margin: 0 0 8px;
+        color: #07120d;
+        font-size: 0.98rem;
+      }
+
+      .panel p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.55;
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #f8fbf9;
+        padding: 10px;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.74rem;
+        font-weight: 900;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 5px;
+        color: #07120d;
+        font-size: 1.1rem;
+      }
+
+      .bar-row {
+        display: grid;
+        grid-template-columns: 42px 1fr 38px;
+        gap: 8px;
+        align-items: center;
+        color: #34443c;
+        font-size: 0.8rem;
+        font-weight: 900;
+      }
+
+      .bar-track {
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #edf2ef;
+      }
+
+      .bar {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--green), var(--blue));
+      }
+
+      .report-item {
+        border-left: 4px solid var(--green);
+        border-radius: 10px;
+        background: #f5fbf7;
+        padding: 10px 12px;
+      }
+
+      .report-item strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #07120d;
+      }
+
+      @media (max-width: 1120px) {
+        .topbar {
+          grid-template-columns: 1fr;
+          padding-left: 16px;
+        }
+
+        .workspace {
+          grid-template-columns: 300px minmax(0, 1fr);
+        }
+
+        .inspector {
+          grid-column: 1 / -1;
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+      }
+
+      @media (max-width: 780px) {
+        .doc-nav {
+          position: static;
+          margin: 8px;
+          width: fit-content;
+        }
+
+        .app {
+          grid-template-rows: auto minmax(0, 1fr);
+        }
+
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar,
+        .inspector {
+          max-height: none;
+          border-right: 0;
+        }
+
+        .map-shell {
+          min-height: 560px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="doc-nav" aria-label="문서 링크">
+      <a href="../wiki/doc-viewer.html?doc=localtwin-project-proposal.md">Project Proposal</a>
+      <a href="../wiki/knowledge-graph.html">Knowledge Graph</a>
+    </nav>
+
+    <main class="app" aria-label="LocalTwin 핵심 상권 분석 지도형 프로토타입">
+      <header class="topbar">
+        <div class="brand">
+          <strong>LocalTwin Market Map</strong>
+          <span>공공데이터 기반 상권 분석 프로토타입</span>
+        </div>
+        <div class="searchbox" role="search">
+          <input value="후보 상권 A 카페 입지" aria-label="상권 검색" />
+          <button type="button">검색</button>
+        </div>
+        <div class="top-actions">
+          <button class="chip is-active" type="button">상권 분석</button>
+          <button class="chip" type="button">3D 보조 탐색</button>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <aside class="sidebar" aria-label="상권 조건과 점포 목록">
+          <div class="section-title">
+            <h1>분석 조건</h1>
+            <span class="badge">v0.1</span>
+          </div>
+
+          <div class="filter-stack">
+            <div class="filter-row">
+              <label for="market">상권</label>
+              <select id="market">
+                <option>후보 상권 A</option>
+                <option>후보 상권 B</option>
+                <option>촬영 데모 상권</option>
+              </select>
+            </div>
+            <div class="filter-row">
+              <label>업종</label>
+              <div class="segmented" data-control="category">
+                <button class="is-active" type="button" data-category="cafe">카페</button>
+                <button type="button" data-category="food">음식점</button>
+              </div>
+            </div>
+            <div class="filter-row">
+              <label>분석 반경</label>
+              <div class="segmented" data-control="radius">
+                <button type="button" data-radius="r100">100m</button>
+                <button class="is-active" type="button" data-radius="r300">300m</button>
+                <button type="button" data-radius="r500">500m</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-title" style="margin-top: 18px">
+            <h2>반경 내 점포</h2>
+            <span id="store-count" class="badge">24곳</span>
+          </div>
+
+          <div class="result-list">
+            <article class="result-card is-selected">
+              <strong>분석 중심 후보지</strong>
+              <p>중심 좌표 기준 반경 분석. 지도 위 초록 마커로 표시됩니다.</p>
+            </article>
+            <article class="result-card">
+              <strong>동일 업종 밀집 구간</strong>
+              <p>북동쪽 블록에 동일 업종 점포가 가장 많이 모여 있습니다.</p>
+            </article>
+            <article class="result-card">
+              <strong>관찰 후보 지점</strong>
+              <p>3D 보조 탐색은 실제 촬영 가능한 짧은 거리 구간으로 제한합니다.</p>
+            </article>
+          </div>
+        </aside>
+
+        <section class="map-shell" aria-label="지도 기반 상권 분석 화면">
+          <div class="tile-grid" aria-hidden="true">
+            <img src="https://tile.openstreetmap.org/16/55873/25381.png" alt="" />
+            <img src="https://tile.openstreetmap.org/16/55874/25381.png" alt="" />
+            <img src="https://tile.openstreetmap.org/16/55875/25381.png" alt="" />
+            <img src="https://tile.openstreetmap.org/16/55873/25382.png" alt="" />
+            <img src="https://tile.openstreetmap.org/16/55874/25382.png" alt="" />
+            <img src="https://tile.openstreetmap.org/16/55875/25382.png" alt="" />
+          </div>
+          <div class="map-overlay"></div>
+          <div id="radius" class="radius r300"></div>
+
+          <button class="marker center" type="button">중심</button>
+          <button class="marker m1" type="button">12</button>
+          <button class="marker m2" type="button">8</button>
+          <button class="marker m3" type="button">5</button>
+          <button class="marker m4" type="button">3</button>
+
+          <div class="map-tools" aria-label="지도 도구">
+            <button class="map-tool" type="button" aria-label="확대">+</button>
+            <button class="map-tool" type="button" aria-label="축소">-</button>
+            <button class="map-tool" type="button" aria-label="레이어">L</button>
+          </div>
+          <div id="scale" class="scale-card">카페 · 300m 반경</div>
+        </section>
+
+        <aside class="inspector" aria-label="상권 분석 결과">
+          <div class="section-title">
+            <h2>입지 판단</h2>
+            <span id="risk-badge" class="badge">경쟁 높음</span>
+          </div>
+
+          <section class="panel score-panel">
+            <div id="score" class="score">72</div>
+            <div>
+              <h3>입지 점수</h3>
+              <p id="score-copy">수요는 안정적이지만 동일 업종 경쟁이 높아 차별화 전략이 필요합니다.</p>
+            </div>
+          </section>
+
+          <section class="panel" style="margin-top: 12px">
+            <h3>요약 지표</h3>
+            <div class="metric-grid">
+              <div class="metric">
+                <span>동일 업종</span>
+                <strong id="same-stores">24</strong>
+              </div>
+              <div class="metric">
+                <span>경쟁 강도</span>
+                <strong id="competition">높음</strong>
+              </div>
+              <div class="metric">
+                <span>최근 개업</span>
+                <strong id="openings">+7</strong>
+              </div>
+              <div class="metric">
+                <span>최근 폐업</span>
+                <strong id="closures">-3</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" style="margin-top: 12px">
+            <h3>시간대별 수요</h3>
+            <div class="time-bars">
+              <div class="bar-row"><span>10시</span><div class="bar-track"><div class="bar" style="width: 42%"></div></div><strong>42</strong></div>
+              <div class="bar-row"><span>13시</span><div class="bar-track"><div class="bar" style="width: 78%"></div></div><strong>78</strong></div>
+              <div class="bar-row"><span>15시</span><div class="bar-track"><div class="bar" style="width: 68%"></div></div><strong>68</strong></div>
+              <div class="bar-row"><span>18시</span><div class="bar-track"><div class="bar" style="width: 54%"></div></div><strong>54</strong></div>
+            </div>
+          </section>
+
+          <section class="panel report-list" style="margin-top: 12px">
+            <h3>해석 리포트</h3>
+            <div class="report-item">
+              <strong>기회 요인</strong>
+              <p id="opportunity">점심과 오후 수요가 모두 살아 있어 회전형 카페 운영에 적합합니다.</p>
+            </div>
+            <div class="report-item">
+              <strong>위험 요인</strong>
+              <p id="risk">동일 업종 밀도가 높아 메뉴, 가격, 체류 경험의 차별화가 필요합니다.</p>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const data = {
+        cafe: {
+          label: "카페",
+          score: 72,
+          stores: 24,
+          competition: "높음",
+          openings: "+7",
+          closures: "-3",
+          riskBadge: "경쟁 높음",
+          scoreCopy: "수요는 안정적이지만 동일 업종 경쟁이 높아 차별화 전략이 필요합니다.",
+          opportunity: "점심과 오후 수요가 모두 살아 있어 회전형 카페 운영에 적합합니다.",
+          risk: "동일 업종 밀도가 높아 메뉴, 가격, 체류 경험의 차별화가 필요합니다.",
+        },
+        food: {
+          label: "음식점",
+          score: 67,
+          stores: 31,
+          competition: "높음",
+          openings: "+5",
+          closures: "-6",
+          riskBadge: "폐업 확인",
+          scoreCopy: "수요는 있지만 폐업 흐름과 경쟁 강도가 함께 높아 운영 리스크가 있습니다.",
+          opportunity: "저녁 시간대 수요를 겨냥한 빠른 회전 메뉴가 유리합니다.",
+          risk: "폐업 수가 개업 수와 비슷해 임대료와 객단가 가정을 보수적으로 잡아야 합니다.",
+        },
+      };
+
+      const radiusLabel = { r100: "100m", r300: "300m", r500: "500m" };
+      let activeCategory = "cafe";
+      let activeRadius = "r300";
+
+      function render() {
+        const current = data[activeCategory];
+        document.querySelector("#score").textContent = current.score;
+        document.querySelector("#same-stores").textContent = current.stores;
+        document.querySelector("#competition").textContent = current.competition;
+        document.querySelector("#openings").textContent = current.openings;
+        document.querySelector("#closures").textContent = current.closures;
+        document.querySelector("#score-copy").textContent = current.scoreCopy;
+        document.querySelector("#opportunity").textContent = current.opportunity;
+        document.querySelector("#risk").textContent = current.risk;
+        document.querySelector("#risk-badge").textContent = current.riskBadge;
+        document.querySelector("#store-count").textContent = `${current.stores}곳`;
+        document.querySelector("#scale").textContent = `${current.label} · ${radiusLabel[activeRadius]} 반경`;
+        document.querySelector("#radius").className = `radius ${activeRadius}`;
+      }
+
+      document.querySelectorAll("[data-category]").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeCategory = button.dataset.category;
+          document.querySelectorAll("[data-category]").forEach((item) => {
+            item.classList.toggle("is-active", item === button);
+          });
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-radius]").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeRadius = button.dataset.radius;
+          document.querySelectorAll("[data-radius]").forEach((item) => {
+            item.classList.toggle("is-active", item === button);
+          });
+          render();
+        });
+      });
+
+      render();
+    </script>
+  </body>
+</html>

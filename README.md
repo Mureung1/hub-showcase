@@ -7,9 +7,15 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 
 기획서, 개발문서, 기능 스펙, 운영 규칙은 아래 링크에서 접근한다.
 
+공개 문서사이트:
+[https://hub-localtwin-docs-vercel.vercel.app](https://hub-localtwin-docs-vercel.vercel.app)
+
 ### Wiki용 기획 문서
 
-- [Wiki Home](docs/wiki/Home.md)
+- [Wiki Home](docs/wiki/doc-viewer.html?doc=Home.md)
+- [Interactive Knowledge Graph](docs/wiki/knowledge-graph.html)
+- [Document Viewer](docs/wiki/doc-viewer.html?doc=Home.md)
+- [프로젝트 기획서: 화면 구조와 핵심 기능](docs/wiki/localtwin-project-proposal.md)
 - [제품 기획서: 문제 정의, 사용자 시나리오, 기능 구성](docs/wiki/localtwin-product-plan.md)
 - [LocalTwin v0.1 전체 실행 계획](docs/wiki/localtwin-v0.1-execution-plan.md)
 
@@ -18,6 +24,12 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 - [전체 개발문서](docs/development/overview.md)
 - [전체 개발 체크리스트](docs/development/checklist.md)
 - [Git 작업 규칙](docs/development/git-workflow.md)
+- [LocalTwin Dev Harness](docs/development/harness.md)
+- [검증 가이드](docs/development/validation.md)
+
+### 데이터 문서
+
+- [LocalTwin v0.1 데이터 소스 매핑](docs/data/data-source-mapping.md)
 
 ### 기능 스펙
 
@@ -29,9 +41,12 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 
 - [LocalTwin v0.1 구현 범위 고정 명세](docs/module-notes/localtwin-v0.1-scope.md)
 
-### 소개 페이지
+### 평가 문서
 
-- [Intro Page README](intro-page/README.md)
+- [Agent Evaluation Rubric](docs/evaluation/agent-rubric.md)
+- [Evaluation Log](docs/evaluation/evaluation-log.md)
+- [Failure Log](docs/evaluation/failure-log.md)
+- [Meta-Evaluation](docs/evaluation/meta-evaluation.md)
 
 ## v0.1 우선순위
 
