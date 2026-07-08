@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Briefy — 프로토타입</title>
+<style>
+/* ═══════════════════════════════════════════
+   0. RESET & BASE
+   ═══════════════════════════════════════════ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  background: #f0f0f2;
+  color: #1a1a1a;
+  line-height: 1.5;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0 40px;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ═══════════════════════════════════════════
+   1. SCREEN SWITCHING  (:target)
+   ═══════════════════════════════════════════
+   HTML 순서: #typed → #saved → #ambiguous → #done → #home
+   #home은 항상 마지막이어야 ~ 결합자가 작동함              */
+
+.screen {
+  display: none;
+}
+
+/* 기본 상태: hash 없으면 #home 표시 */
+#home {
+  display: flex;
+}
+
+/* :target 된 화면 표시 */
+.screen:target {
+  display: flex;
+}
+
+/* :target이 있으면 #home 숨김 */
+.screen:target ~ #home {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════
+   2. PHONE FRAME (모바일 컨테이너)
+   ═══════════════════════════════════════════ */
+.screen {
+  flex-direction: column;
+  width: 100%;
+  max-width: 390px;
+  min-height: 780px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 2px 24px rgba(0,0,0,.08);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+/* 안내 캡션 — 화면 밖 상단 */
+.guide {
+  display: none;
+  width: 100%;
+  max-width: 390px;
+  text-align: center;
+  font-size: 13px;
+  color: #888;
+  padding: 0 0 8px;
+}
+
+/* guide 표시: target된 screen 바로 앞의 guide */
+.screen:target {
+  display: flex;
+}
+
+/* guide는 screen 앞에 놓고, 해당 screen이 :target이면 보이도록.
+   guide에 id를 매칭하는 방식 대신, screen 직전의 guide를 보이게 하기 위해
+   각 guide에 별도 class를 부여 */
+.guide-home,
+.guide-typed,
+.guide-saved,
+.guide-ambiguous,
+.guide-done {
+  display: none;
+}
+
+/* 기본 상태 (hash 없음): home 가이드만 표시 */
+.guide-home { display: block; }
+
+/* :target으로 가이드 제어 — 각 screen의 id에 연동 */
+#typed:target ~ .guides .guide-typed,
+#saved:target ~ .guides .guide-saved,
+#ambiguous:target ~ .guides .guide-ambiguous,
+#done:target ~ .guides .guide-done {
+  display: block;
+}
+
+#typed:target ~ .guides .guide-home,
+#saved:target ~ .guides .guide-home,
+#ambiguous:target ~ .guides .guide-home,
+#done:target ~ .guides .guide-home {
+  display: none;
+}
+
+/* ─── 가이드를 screen 위에 별도 블록으로 배치 ─── */
+/* 실제로는 각 screen 바로 위에 가이드 텍스트를 ::before로 표현 */
+.screen::before {
+  content: attr(data-guide);
+  display: block;
+  position: absolute;
+  top: -28px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 13px;
+  color: #888;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   3. HEADER
+   ═══════════════════════════════════════════ */
+.header {
+  padding: 20px 20px 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.header-logo {
+  font-size: 22px;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: -0.5px;
+}
+
+.header-date {
+  font-size: 14px;
+  color: #888;
+}
+
+/* ═══════════════════════════════════════════
+   4. SECTION
+   ═══════════════════════════════════════════ */
+.section {
+  padding: 0 20px;
+  margin-top: 16px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+/* ═══════════════════════════════════════════
+   5. CARD (항목 카드)
+   ═══════════════════════════════════════════ */
+.card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.card-check {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-check.checked {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.card-check.checked::after {
+  content: "✓";
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.card-meta {
+  font-size: 13px;
+  color: #999;
+  margin-top: 2px;
+}
+
+/* 완료 상태 */
+.card.done {
+  opacity: 0.5;
+}
+
+.card.done .card-title {
+  text-decoration: line-through;
+}
+
+/* 아이콘 접두사 (식단용) */
+.card-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* 메모 dot */
+.card-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ccc;
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+
+/* 신규 추가 항목 강조 */
+.card.new-item {
+  border-color: #2563eb;
+  border-width: 2px;
+  background: #eff6ff;
+}
+
+/* ═══════════════════════════════════════════
+   6. INPUT BAR (하단 고정)
+   ═══════════════════════════════════════════ */
+.input-bar-wrap {
+  margin-top: auto;
+  padding: 12px 16px 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.input-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 24px;
+  padding: 10px 10px 10px 16px;
+  min-height: 48px;
+}
+
+.input-text {
+  flex: 1;
+  font-size: 14px;
+  color: #aaa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.input-text.filled {
+  color: #1a1a1a;
+}
+
+.input-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.btn-mic {
+  background: #333;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: -0.5px;
+}
+
+.btn-send {
+  background: #333;
+  color: #fff;
+  font-size: 12px;
+}
+
+.btn-send.active {
+  background: #2563eb;
+}
+
+/* 입력 바 전체를 링크로 감쌀 때 */
+.input-bar-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ═══════════════════════════════════════════
+   7. TOAST
+   ═══════════════════════════════════════════ */
+.toast {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  right: 20px;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideUp 0.4s ease-out both;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+}
+
+.toast-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   8. CLARIFY CARD (되묻기)
+   ═══════════════════════════════════════════ */
+.clarify-wrap {
+  padding: 0 16px 8px;
+}
+
+.clarify-card {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.clarify-question {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.clarify-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.clarify-btn {
+  display: inline-block;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  transition: background 0.15s;
+  cursor: pointer;
+}
+
+.clarify-btn:hover {
+  background: #f0f0f0;
+}
+
+.clarify-btn.primary {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.clarify-btn.primary:hover {
+  background: #1d4ed8;
+}
+
+/* ═══════════════════════════════════════════
+   9. SCROLLABLE CONTENT
+   ═══════════════════════════════════════════ */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+/* ═══════════════════════════════════════════
+   10. GUIDE CAPTION (화면 위 안내문)
+   ═══════════════════════════════════════════ */
+.screen-guide {
+  position: relative;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(0,0,0,.55);
+  padding: 6px 12px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 1: #typed — 입력됨
+     ═══════════════════════════════════════════════════ -->
+<section id="typed" class="screen" data-guide="">
+  <div class="screen-guide">💡 전송 버튼을 눌러보세요</div>
+
+  <div class="header">
+    <span class="header-logo">Briefy</span>
+    <span class="header-date">7월 7일 (화)</span>
+  </div>
+
+  <div class="content">
+    <!-- 오늘의 일정 -->
+    <div class="section">
+      <div class="section-title">오늘의 일정</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">치과 · 15:00</div>
+          <div class="card-meta">리마인더 전날</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 루틴 -->
+    <div class="section">
+      <div class="section-title">루틴</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">운동 A · 20:00~22:00</div>
+          <div class="card-meta">200 push-up, 300 squat</div>
+        </div>
+      </div>
+      <div class="card done">
+        <div class="card-check checked"></div>
+        <div class="card-body">
+          <div class="card-title">영어 공부 · 08:00~09:00 · 완료</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오늘 식단 -->
+    <div class="section">
+      <div class="section-title">오늘 식단</div>
+      <div class="card">
+        <span class="card-icon">🍽</span>
+        <div class="card-body">
+          <div class="card-title">점심: 잡곡밥과 닭가슴살</div>
+          <div class="card-meta">저녁: 삶은 달걀 3개와 샐러드</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 마감 임박 과제 -->
+    <div class="section">
+      <div class="section-title">마감 임박 과제 Top 5 (마감 빠른 순)</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">팀플 발표자료 · 오늘 마감</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">정처기 실기 신청 · 7/10</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">교양 레포트 · 7/14</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 메모 -->
+    <div class="section">
+      <div class="section-title">메모 (마감 없음)</div>
+      <div class="card">
+        <div class="card-dot"></div>
+        <div class="card-body">
+          <div class="card-title">운동화 새로 알아보기</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 하단 입력 바 -->
+  <div class="input-bar-wrap">
+    <div class="input-bar">
+      <span class="input-text filled">금요일까지 팀플 자료 만들기</span>
+      <span class="input-btn btn-mic">MIC</span>
+      <a href="#saved" class="input-btn btn-send active">전송</a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 2: #saved — 저장 확인
+     ═══════════════════════════════════════════════════ -->
+<section id="saved" class="screen">
+  <div class="screen-guide">💡 입력 바를 눌러 '운동'을 입력해보세요</div>
+
+  <div class="header">
+    <span class="header-logo">Briefy</span>
+    <span class="header-date">7월 7일 (화)</span>
+  </div>
+
+  <div class="content">
+    <!-- 오늘의 일정 -->
+    <div class="section">
+      <div class="section-title">오늘의 일정</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">치과 · 15:00</div>
+          <div class="card-meta">리마인더 전날</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 루틴 -->
+    <div class="section">
+      <div class="section-title">루틴</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">운동 A · 20:00~22:00</div>
+          <div class="card-meta">200 push-up, 300 squat</div>
+        </div>
+      </div>
+      <div class="card done">
+        <div class="card-check checked"></div>
+        <div class="card-body">
+          <div class="card-title">영어 공부 · 08:00~09:00 · 완료</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오늘 식단 -->
+    <div class="section">
+      <div class="section-title">오늘 식단</div>
+      <div class="card">
+        <span class="card-icon">🍽</span>
+        <div class="card-body">
+          <div class="card-title">점심: 잡곡밥과 닭가슴살</div>
+          <div class="card-meta">저녁: 삶은 달걀 3개와 샐러드</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 마감 임박 과제 — 신규 항목 추가됨 -->
+    <div class="section">
+      <div class="section-title">마감 임박 과제 Top 5 (마감 빠른 순)</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">팀플 발표자료 · 오늘 마감</div>
+        </div>
+      </div>
+      <div class="card new-item">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">팀플 자료 만들기 · 7/10(금)</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">정처기 실기 신청 · 7/10</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">교양 레포트 · 7/14</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 메모 -->
+    <div class="section">
+      <div class="section-title">메모 (마감 없음)</div>
+      <div class="card">
+        <div class="card-dot"></div>
+        <div class="card-body">
+          <div class="card-title">운동화 새로 알아보기</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 -->
+  <div class="toast">
+    <span class="toast-icon">✅</span>
+    과제로 저장했어요
+  </div>
+
+  <!-- 하단 입력 바 -->
+  <div class="input-bar-wrap">
+    <a href="#ambiguous" class="input-bar">
+      <span class="input-text">말하듯 한 줄로 적어보세요...</span>
+      <span class="input-btn btn-mic">MIC</span>
+      <span class="input-btn btn-send">전송</span>
+    </a>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 3: #ambiguous — 되묻기
+     ═══════════════════════════════════════════════════ -->
+<section id="ambiguous" class="screen">
+  <div class="screen-guide">💡 '오늘 운동 완료 기록'을 눌러보세요</div>
+
+  <div class="header">
+    <span class="header-logo">Briefy</span>
+    <span class="header-date">7월 7일 (화)</span>
+  </div>
+
+  <div class="content">
+    <!-- 오늘의 일정 -->
+    <div class="section">
+      <div class="section-title">오늘의 일정</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">치과 · 15:00</div>
+          <div class="card-meta">리마인더 전날</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 루틴 -->
+    <div class="section">
+      <div class="section-title">루틴</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">운동 A · 20:00~22:00</div>
+          <div class="card-meta">200 push-up, 300 squat</div>
+        </div>
+      </div>
+      <div class="card done">
+        <div class="card-check checked"></div>
+        <div class="card-body">
+          <div class="card-title">영어 공부 · 08:00~09:00 · 완료</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오늘 식단 -->
+    <div class="section">
+      <div class="section-title">오늘 식단</div>
+      <div class="card">
+        <span class="card-icon">🍽</span>
+        <div class="card-body">
+          <div class="card-title">점심: 잡곡밥과 닭가슴살</div>
+          <div class="card-meta">저녁: 삶은 달걀 3개와 샐러드</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 마감 임박 과제 -->
+    <div class="section">
+      <div class="section-title">마감 임박 과제 Top 5 (마감 빠른 순)</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">팀플 발표자료 · 오늘 마감</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">정처기 실기 신청 · 7/10</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">교양 레포트 · 7/14</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 메모 -->
+    <div class="section">
+      <div class="section-title">메모 (마감 없음)</div>
+      <div class="card">
+        <div class="card-dot"></div>
+        <div class="card-body">
+          <div class="card-title">운동화 새로 알아보기</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 되묻기 카드 -->
+  <div class="clarify-wrap">
+    <div class="clarify-card">
+      <div class="clarify-question">"운동" — 어떤 의미인가요?</div>
+      <div class="clarify-options">
+        <a href="#done" class="clarify-btn primary">오늘 운동 완료 기록</a>
+        <a href="#home" class="clarify-btn">할 일 추가</a>
+        <a href="#home" class="clarify-btn">루틴 수정</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 하단 입력 바 -->
+  <div class="input-bar-wrap">
+    <div class="input-bar">
+      <span class="input-text filled">운동</span>
+      <span class="input-btn btn-mic">MIC</span>
+      <span class="input-btn btn-send active">전송</span>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 4: #done — 운동 완료 (보너스)
+     ═══════════════════════════════════════════════════ -->
+<section id="done" class="screen">
+  <div class="screen-guide">🎉 시연 완료! 아래 입력 바를 눌러 처음으로 돌아가기</div>
+
+  <div class="header">
+    <span class="header-logo">Briefy</span>
+    <span class="header-date">7월 7일 (화)</span>
+  </div>
+
+  <div class="content">
+    <!-- 오늘의 일정 -->
+    <div class="section">
+      <div class="section-title">오늘의 일정</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">치과 · 15:00</div>
+          <div class="card-meta">리마인더 전날</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 루틴 — 운동 A 완료됨 -->
+    <div class="section">
+      <div class="section-title">루틴</div>
+      <div class="card done">
+        <div class="card-check checked"></div>
+        <div class="card-body">
+          <div class="card-title">운동 A · 20:00~22:00 · 완료</div>
+          <div class="card-meta">200 push-up, 300 squat</div>
+        </div>
+      </div>
+      <div class="card done">
+        <div class="card-check checked"></div>
+        <div class="card-body">
+          <div class="card-title">영어 공부 · 08:00~09:00 · 완료</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오늘 식단 -->
+    <div class="section">
+      <div class="section-title">오늘 식단</div>
+      <div class="card">
+        <span class="card-icon">🍽</span>
+        <div class="card-body">
+          <div class="card-title">점심: 잡곡밥과 닭가슴살</div>
+          <div class="card-meta">저녁: 삶은 달걀 3개와 샐러드</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 마감 임박 과제 -->
+    <div class="section">
+      <div class="section-title">마감 임박 과제 Top 5 (마감 빠른 순)</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">팀플 발표자료 · 오늘 마감</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">정처기 실기 신청 · 7/10</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">교양 레포트 · 7/14</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 메모 -->
+    <div class="section">
+      <div class="section-title">메모 (마감 없음)</div>
+      <div class="card">
+        <div class="card-dot"></div>
+        <div class="card-body">
+          <div class="card-title">운동화 새로 알아보기</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 -->
+  <div class="toast">
+    <span class="toast-icon">✅</span>
+    운동 A를 완료 처리했어요
+  </div>
+
+  <!-- 하단 입력 바 -->
+  <div class="input-bar-wrap">
+    <a href="#home" class="input-bar">
+      <span class="input-text">말하듯 한 줄로 적어보세요...</span>
+      <span class="input-btn btn-mic">MIC</span>
+      <span class="input-btn btn-send">전송</span>
+    </a>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 5: #home — 오늘 화면 (기본, 맨 마지막)
+     ═══════════════════════════════════════════════════ -->
+<section id="home" class="screen">
+  <div class="screen-guide">💡 입력 바를 눌러보세요</div>
+
+  <div class="header">
+    <span class="header-logo">Briefy</span>
+    <span class="header-date">7월 7일 (화)</span>
+  </div>
+
+  <div class="content">
+    <!-- 오늘의 일정 -->
+    <div class="section">
+      <div class="section-title">오늘의 일정</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">치과 · 15:00</div>
+          <div class="card-meta">리마인더 전날</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 루틴 -->
+    <div class="section">
+      <div class="section-title">루틴</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">운동 A · 20:00~22:00</div>
+          <div class="card-meta">200 push-up, 300 squat</div>
+        </div>
+      </div>
+      <div class="card done">
+        <div class="card-check checked"></div>
+        <div class="card-body">
+          <div class="card-title">영어 공부 · 08:00~09:00 · 완료</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오늘 식단 -->
+    <div class="section">
+      <div class="section-title">오늘 식단</div>
+      <div class="card">
+        <span class="card-icon">🍽</span>
+        <div class="card-body">
+          <div class="card-title">점심: 잡곡밥과 닭가슴살</div>
+          <div class="card-meta">저녁: 삶은 달걀 3개와 샐러드</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 마감 임박 과제 -->
+    <div class="section">
+      <div class="section-title">마감 임박 과제 Top 5 (마감 빠른 순)</div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">팀플 발표자료 · 오늘 마감</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">정처기 실기 신청 · 7/10</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-check"></div>
+        <div class="card-body">
+          <div class="card-title">교양 레포트 · 7/14</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 메모 -->
+    <div class="section">
+      <div class="section-title">메모 (마감 없음)</div>
+      <div class="card">
+        <div class="card-dot"></div>
+        <div class="card-body">
+          <div class="card-title">운동화 새로 알아보기</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 하단 입력 바 -->
+  <div class="input-bar-wrap">
+    <a href="#typed" class="input-bar">
+      <span class="input-text">말하듯 한 줄로 적어보세요...</span>
+      <span class="input-btn btn-mic">MIC</span>
+      <span class="input-btn btn-send">전송</span>
+    </a>
+  </div>
+</section>
+
+</body>
+</html>
