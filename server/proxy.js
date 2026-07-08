@@ -37,7 +37,7 @@ app.post('/api/gemini', async (req, res) => {
     return res.status(500).json({ error: 'OPENROUTER_API_KEY is not configured on the server' })
   }
 
-  const { prompt, imageBase64, mimeType } = req.body || {}
+  const { prompt, system, imageBase64, mimeType } = req.body || {}
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'prompt is required' })
   }
@@ -49,6 +49,12 @@ app.post('/api/gemini', async (req, res) => {
       ]
     : prompt
 
+  const messages = []
+  if (system && typeof system === 'string') {
+    messages.push({ role: 'system', content: system })
+  }
+  messages.push({ role: 'user', content })
+
   try {
     const openRouterRes = await fetchWithRetry(OPENROUTER_URL, {
       method: 'POST',
@@ -58,7 +64,7 @@ app.post('/api/gemini', async (req, res) => {
         'HTTP-Referer': APP_REFERER,
         'X-Title': APP_TITLE,
       },
-      body: JSON.stringify({ model: MODEL, messages: [{ role: 'user', content }] }),
+      body: JSON.stringify({ model: MODEL, messages }),
     })
 
     const data = await openRouterRes.json()

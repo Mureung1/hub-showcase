@@ -1,6 +1,6 @@
 // geminiComplete() 공통 헬퍼 (프록시 /api/gemini 경유), parseJsonLoose() 응답 JSON 파싱 헬퍼
 
-export async function geminiComplete({ prompt, imageBase64, mimeType } = {}) {
+export async function geminiComplete({ prompt, system, imageBase64, mimeType } = {}) {
   if (!prompt || typeof prompt !== 'string') {
     throw new Error('prompt is required')
   }
@@ -8,7 +8,7 @@ export async function geminiComplete({ prompt, imageBase64, mimeType } = {}) {
   const res = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, imageBase64, mimeType }),
+    body: JSON.stringify({ prompt, system, imageBase64, mimeType }),
   })
 
   const data = await res.json().catch(() => null)

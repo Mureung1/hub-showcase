@@ -13,16 +13,24 @@ import { calcAchievementPercent, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
 function buildRecommendationPrompt(deficientRows) {
-  const nutrientText = deficientRows.map((row) => `${row.label} 약 ${row.deficiency}${row.unit} 부족`).join(', ')
+  const nutrientText = deficientRows.map((row) => `${row.label}(${row.key}) 약 ${row.deficiency}${row.unit} 부족`).join(', ')
+  const deficientKeys = deficientRows.map((row) => `"${row.key}"`).join(', ')
 
   return `대학생이 밖에서 사먹기 쉬운 저녁 메뉴 2~3개를 추천해줘.
 오늘 부족한 영양소: ${nutrientText}.
-각 메뉴가 어떤 부족 영양소를 채우는지 한 줄 이유를 포함해줘.
+
+조건:
+1. 각 메뉴는 부족한 영양소를 실제로 잘 채울 수 있는 메뉴여야 하고, 어떤 부족 영양소를 채우는지 한 줄 이유(reason)를 포함해라.
+2. 각 메뉴마다, 그 메뉴의 "한국 표준 1인분"을 먹었을 때 예상되는 주요 영양 섭취량을 expected 객체로 함께 계산해라.
+   - 수치는 식품의약품안전처 한국식품영양성분 데이터베이스(국가표준식품성분표) 수준의 표준값 기준으로 계산해라. (URL 조회가 아니라 네가 아는 그 DB 수준의 기준값이라는 의미다.)
+   - 과대추정 금지: 그 메뉴의 통상적인 1인분 현실 범위를 벗어나는 값이 나오면 스스로 재검토하고 보수적인 값으로 고쳐라.
+   - expected에는 부족한 영양소 키(${deficientKeys})를 반드시 포함하고, 필요하면 calories도 포함해도 된다.
+   - 사용할 수 있는 키와 단위: calories(kcal), protein(g), carbs(g), fat(g), fiber(g), sodium(mg). 값은 숫자만.
 
 설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
 {
   "recommendations": [
-    { "name": "메뉴명", "reason": "이 메뉴가 부족 영양소를 채우는 한 줄 이유" }
+    { "name": "메뉴명", "reason": "이 메뉴가 부족 영양소를 채우는 한 줄 이유", "expected": { "protein": 0, "fiber": 0 } }
   ]
 }`
 }
