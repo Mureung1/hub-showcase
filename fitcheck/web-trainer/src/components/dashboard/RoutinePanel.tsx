@@ -1,5 +1,6 @@
 import { Zap, Copy } from 'lucide-react';
 import { useAppStore } from '../../hooks/useAppStore';
+import RoutineRecommendation from '../routine/RoutineRecommendation';
 import './RoutinePanel.css';
 
 export default function RoutinePanel() {
@@ -37,7 +38,7 @@ export default function RoutinePanel() {
           </h2>
           <p>지난 세션 복사 &amp; 점진적 과부하로 초고속 가이드 전송</p>
         </div>
-        {hasDraft && <span className="draft-badge">매크로 적용됨</span>}
+        {hasDraft && <span className="draft-badge">변경 적용됨</span>}
       </div>
 
       <div className="routine-member-select">
@@ -90,6 +91,8 @@ export default function RoutinePanel() {
           </button>
         </div>
       </div>
+
+      <RoutineRecommendation compact />
 
       <div className="routine-preview">
         <h3>{selectedMember.name} — 루틴 미리보기</h3>

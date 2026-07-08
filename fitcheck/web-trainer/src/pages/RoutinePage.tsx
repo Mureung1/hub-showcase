@@ -1,6 +1,7 @@
 import { useAppStore } from '../hooks/useAppStore';
 import type { Exercise } from '../types';
 import { formatRoutineText } from '../utils/routine';
+import RoutineRecommendation from '../components/routine/RoutineRecommendation';
 import './RoutinePage.css';
 
 export default function RoutinePage() {
@@ -219,6 +220,8 @@ export default function RoutinePage() {
         </section>
 
         <aside className="routine-sidebar">
+          <RoutineRecommendation />
+
           <div className="preview-card">
             <h3>가이드 미리보기</h3>
             {exercises.length === 0 ? (

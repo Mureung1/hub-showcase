@@ -37,6 +37,7 @@ interface AppStoreContextValue {
   markContactComplete: (memberId: string) => void;
   copySession: (memberId: string) => Promise<void>;
   applyMacroToRoutine: (memberId: string, macro: MacroType) => void;
+  applyRecommendedRoutine: (memberId: string, exercises: Exercise[]) => void;
   sendGuide: (memberId: string) => void;
   submitFeedback: (mealId: string, feedback: string) => void;
   updateRoutine: (memberId: string, exercises: Exercise[]) => void;
@@ -220,6 +221,23 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     [getMemberRoutine, setDraftRoutine, showToast],
   );
 
+  const applyRecommendedRoutine = useCallback(
+    (memberId: string, exercises: Exercise[]) => {
+      const cloned = exercises.map((ex) => ({ ...ex, id: generateId() }));
+      setData((prev) => ({
+        ...prev,
+        routines: { ...prev.routines, [memberId]: cloned },
+      }));
+      setDraftRoutines((prev) => {
+        const next = { ...prev };
+        delete next[memberId];
+        return next;
+      });
+      showToast('추천 루틴이 적용되었습니다. 확인 후 가이드를 전송하세요.');
+    },
+    [showToast],
+  );
+
   const sendGuide = useCallback(
     (memberId: string) => {
       const member = data.members.find((m) => m.id === memberId);
@@ -393,6 +411,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     markContactComplete,
     copySession,
     applyMacroToRoutine,
+    applyRecommendedRoutine,
     sendGuide,
     submitFeedback,
     updateRoutine,
