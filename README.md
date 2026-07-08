@@ -93,6 +93,8 @@ flowchart TD
 
 - [MVP 기획서 보기](docs/plan.md)
 - [개발 작업 흐름 보기](docs/plan.md#15-개발-작업-흐름)
+- [기획 덱 보기](docs/stockmate-planning-deck.html)
+- [프로토타입 보기](docs/stockmate-prototype.html)
 
 ---
 

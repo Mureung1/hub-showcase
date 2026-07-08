@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockMate Agent — 모닝루틴 재고 브리핑</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F5EFE4;
+    --paper-deep:#EEE4D2;
+    --ink:#241C14;
+    --ink-soft:#5C5040;
+    --line:#DBCFB8;
+    --gold:#A8722E;
+    --gold-soft:#EFDFC2;
+    --danger:#9C3B2E;
+    --danger-soft:#F3DAD3;
+    --amber:#C0902E;
+    --amber-soft:#F5E6C3;
+    --sage:#4F6B52;
+    --sage-soft:#DEE8DA;
+    --plum:#6E5B7B;
+    --plum-soft:#E7E0ED;
+    --gray:#8B8378;
+    --gray-soft:#E7E2D8;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Work Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{font-family:'Fraunces',serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- Top nav ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:22px 40px;
+    border-bottom:1px solid var(--line);
+    background:var(--paper);
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:50%;
+    background:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--paper);font-family:'Fraunces',serif;font-weight:600;font-size:16px;
+  }
+  .brand-name{font-family:'Fraunces',serif;font-weight:600;font-size:19px;letter-spacing:-0.01em;}
+  .brand-sub{font-size:11px;color:var(--ink-soft);letter-spacing:.06em;text-transform:uppercase;margin-top:-2px;}
+
+  .tabs{display:flex;gap:4px;background:var(--paper-deep);padding:4px;border-radius:999px;}
+  .tab{
+    border:none;background:transparent;
+    font-family:'Work Sans',sans-serif;font-weight:600;font-size:13.5px;
+    padding:9px 18px;border-radius:999px;cursor:pointer;color:var(--ink-soft);
+    transition:background .18s ease,color .18s ease;
+  }
+  .tab.active{background:var(--ink);color:var(--paper);}
+  .store-chip{
+    font-size:12px;color:var(--ink-soft);
+    display:flex;align-items:center;gap:8px;
+  }
+  .store-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--sage);}
+
+  main{max-width:1080px;margin:0 auto;padding:44px 40px 100px;}
+
+  /* ---------- Screens ---------- */
+  .screen{display:none;}
+  .screen.active{display:block;animation:rise .35s ease;}
+  @keyframes rise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  /* ---------- Dashboard header ---------- */
+  .page-head{margin-bottom:30px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+  .page-title{font-family:'Fraunces',serif;font-size:32px;font-weight:600;letter-spacing:-0.01em;margin:0 0 8px;}
+  .page-desc{color:var(--ink-soft);font-size:14.5px;max-width:520px;line-height:1.6;}
+
+  .stat-strip{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+    margin:28px 0 34px;background:#fff;
+  }
+  .stat{padding:20px 22px;border-right:1px solid var(--line);}
+  .stat:last-child{border-right:none;}
+  .stat-num{font-family:'Fraunces',serif;font-size:30px;font-weight:600;line-height:1;}
+  .stat-label{font-size:12px;color:var(--ink-soft);margin-top:8px;}
+  .stat.danger .stat-num{color:var(--danger);}
+  .stat.amber .stat-num{color:var(--amber);}
+  .stat.plum .stat-num{color:var(--plum);}
+
+  .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;}
+  .filter-chip{
+    font-size:12.5px;font-weight:600;border:1px solid var(--line);
+    background:#fff;color:var(--ink-soft);padding:7px 13px;border-radius:999px;cursor:pointer;
+  }
+  .filter-chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .upload-btn{
+    font-size:12.5px;font-weight:600;border:1px solid var(--ink);background:var(--ink);color:var(--paper);
+    padding:9px 16px;border-radius:999px;cursor:pointer;
+  }
+
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);}
+  thead th{
+    text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-soft);padding:12px 16px;border-bottom:1px solid var(--line);font-weight:600;
+  }
+  tbody td{padding:14px 16px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--paper-deep);}
+  .prod-name{font-weight:600;}
+  .prod-cat{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .num-cell{font-family:'IBM Plex Mono',monospace;font-size:13px;}
+  .tag{
+    display:inline-block;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;
+    white-space:nowrap;
+  }
+  .tag.danger{background:var(--danger-soft);color:var(--danger);}
+  .tag.amber{background:var(--amber-soft);color:var(--amber);}
+  .tag.sage{background:var(--sage-soft);color:var(--sage);}
+  .tag.plum{background:var(--plum-soft);color:var(--plum);}
+  .tag.gray{background:var(--gray-soft);color:var(--gray);}
+
+  /* ---------- Briefing screen (receipt ticket look) ---------- */
+  .briefing-head{margin-bottom:28px;}
+  .briefing-date{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-bottom:6px;}
+  .ticket-list{display:flex;flex-direction:column;gap:22px;}
+
+  .ticket{
+    position:relative;background:#fff;border:1px solid var(--line);
+    border-radius:var(--radius);padding:26px 28px 22px;
+  }
+  .ticket::before{
+    content:"";position:absolute;top:-1px;left:0;right:0;height:10px;
+    background-image:radial-gradient(circle at 12px 0, transparent 6px, var(--paper) 6.5px);
+    background-size:24px 12px;background-repeat:repeat-x;background-position:top;
+  }
+  .ticket-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+  .ticket-rank{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:.08em;
+  }
+  .ticket-name{font-family:'Fraunces',serif;font-size:21px;font-weight:600;margin:4px 0 0;}
+  .ticket-cat{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+
+  .ticket-reason{
+    font-size:14px;line-height:1.65;color:var(--ink);
+    padding:14px 16px;background:var(--paper);border-left:3px solid var(--gold);margin:12px 0 16px;
+  }
+
+  .ticket-meta{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:0;
+    border-top:1px dashed var(--line);padding-top:14px;
+  }
+  .meta-item{padding:0 14px;border-right:1px dashed var(--line);}
+  .meta-item:first-child{padding-left:0;}
+  .meta-item:last-child{border-right:none;padding-right:0;}
+  .meta-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:5px;}
+  .meta-value{font-family:'IBM Plex Mono',monospace;font-size:14.5px;font-weight:600;}
+
+  .ticket-action{
+    margin-top:16px;display:flex;align-items:center;justify-content:space-between;
+    background:var(--gold-soft);padding:12px 16px;border-radius:var(--radius);
+  }
+  .action-label{font-size:12.5px;font-weight:600;color:var(--gold);}
+  .action-btn{
+    font-size:12px;font-weight:600;background:var(--ink);color:var(--paper);
+    border:none;padding:8px 14px;border-radius:999px;cursor:pointer;
+  }
+
+  footer.note{
+    margin-top:40px;font-size:12px;color:var(--ink-soft);text-align:center;
+  }
+
+  @media (max-width:720px){
+    .topbar{padding:16px 20px;flex-wrap:wrap;gap:12px;}
+    main{padding:28px 20px 80px;}
+    .stat-strip{grid-template-columns:repeat(2,1fr);}
+    .stat{border-bottom:1px solid var(--line);}
+    table{display:block;overflow-x:auto;}
+    .ticket-meta{grid-template-columns:1fr;gap:10px;}
+    .meta-item{border-right:none;border-bottom:1px dashed var(--line);padding:0 0 10px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">SM</div>
+    <div>
+      <div class="brand-name">StockMate Agent</div>
+      <div class="brand-sub">모닝루틴 재고 브리핑</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-target="dashboard">대시보드</button>
+    <button class="tab" data-target="briefing">오늘의 브리핑</button>
+  </div>
+  <div class="store-chip"><span class="dot"></span>모닝루틴 · 40개 SKU 연결됨</div>
+</div>
+
+<main>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <section class="screen active" id="dashboard">
+    <div class="page-head">
+      <div class="eyebrow">Dashboard</div>
+      <h1 class="page-title">오늘 재고, 한눈에</h1>
+      <p class="page-desc">전체 40개 상품의 판매 속도와 재고를 분석했어요. 지금 바로 조치가 필요한 상품부터 보여드릴게요.</p>
+    </div>
+
+    <div class="stat-strip">
+      <div class="stat"><div class="stat-num mono">40</div><div class="stat-label">전체 상품</div></div>
+      <div class="stat danger"><div class="stat-num mono">3</div><div class="stat-label">품절 위험</div></div>
+      <div class="stat amber"><div class="stat-num mono">5</div><div class="stat-label">발주 필요</div></div>
+      <div class="stat plum"><div class="stat-num mono">4</div><div class="stat-label">과잉재고</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="filters">
+        <button class="filter-chip active">전체</button>
+        <button class="filter-chip">품절 위험</button>
+        <button class="filter-chip">발주 필요</button>
+        <button class="filter-chip">과잉재고</button>
+        <button class="filter-chip">판매 급증</button>
+        <button class="filter-chip">데이터 수집 중</button>
+      </div>
+      <button class="upload-btn">CSV 업로드</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>상품</th>
+          <th>현재 재고</th>
+          <th>일평균 판매</th>
+          <th>소진 예상일</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="prod-name">콜롬비아 원두 250g</div><div class="prod-cat">가공식품 · 원두</div></td>
+          <td class="num-cell">18개</td>
+          <td class="num-cell">4.5개/일</td>
+          <td class="num-cell">4일 뒤</td>
+          <td><span class="tag danger">품절 위험</span></td>
+        </tr>
+        <tr>
+          <td><div class="prod-name">디카페인 드립백 10입</div><div class="prod-cat">가공식품 · 드립백</div></td>
+          <td class="num-cell">32개</td>
+          <td class="num-cell">3.1개/일</td>
+          <td class="num-cell">10일 뒤</td>
+          <td><span class="tag amber">발주 필요</span></td>
+        </tr>
+        <tr>
+          <td><div class="prod-name">얼그레이 티백 20입</div><div class="prod-cat">가공식품 · 티백</div></td>
+          <td class="num-cell">64개</td>
+          <td class="num-cell">1.2개/일</td>
+          <td class="num-cell">53일 뒤</td>
+          <td><span class="tag plum">과잉재고</span></td>
+        </tr>
+        <tr>
+          <td><div class="prod-name">세라믹 드리퍼 1~2인용</div><div class="prod-cat">생활잡화 · 드리퍼</div></td>
+          <td class="num-cell">21개</td>
+          <td class="num-cell">2.8개/일</td>
+          <td class="num-cell">8일 뒤</td>
+          <td><span class="tag amber">발주 필요</span></td>
+        </tr>
+        <tr>
+          <td><div class="prod-name">모닝루틴 시그니처 머그컵</div><div class="prod-cat">생활잡화 · 머그컵</div></td>
+          <td class="num-cell">45개</td>
+          <td class="num-cell">1.8개/일</td>
+          <td class="num-cell">25일 뒤</td>
+          <td><span class="tag sage">정상</span></td>
+        </tr>
+        <tr>
+          <td><div class="prod-name">과테말라 원두 250g</div><div class="prod-cat">가공식품 · 원두</div></td>
+          <td class="num-cell">12개</td>
+          <td class="num-cell">5.4개/일</td>
+          <td class="num-cell">2일 뒤</td>
+          <td><span class="tag danger">품절 위험</span></td>
+        </tr>
+        <tr>
+          <td><div class="prod-name">여름 콜드브루 원액 500ml</div><div class="prod-cat">가공식품 · 원두</div></td>
+          <td class="num-cell">28개</td>
+          <td class="num-cell">6.2개/일</td>
+          <td class="num-cell">4.5일 뒤</td>
+          <td><span class="tag plum" style="background:var(--sage-soft);color:var(--sage);">판매 급증</span></td>
+        </tr>
+        <tr>
+          <td><div class="prod-name">스테인리스 텀블러 400ml</div><div class="prod-cat">생활잡화 · 텀블러</div></td>
+          <td class="num-cell">6개</td>
+          <td class="num-cell">—</td>
+          <td class="num-cell">—</td>
+          <td><span class="tag gray">데이터 수집 중</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===================== BRIEFING ===================== -->
+  <section class="screen" id="briefing">
+    <div class="page-head briefing-head">
+      <div class="eyebrow">Today's Briefing</div>
+      <h1 class="page-title">오늘의 재고 브리핑</h1>
+      <div class="briefing-date mono">2026. 07. 08. TUE · 모닝루틴</div>
+      <p class="page-desc">오늘 가장 먼저 확인해야 할 상품 3개를 우선순위로 정리했어요.</p>
+    </div>
+
+    <div class="ticket-list">
+
+      <div class="ticket">
+        <div class="ticket-top">
+          <div>
+            <div class="ticket-rank">PRIORITY 01</div>
+            <div class="ticket-name">과테말라 원두 250g</div>
+            <div class="ticket-cat">가공식품 · 원두</div>
+          </div>
+          <span class="tag danger">품절 위험</span>
+        </div>
+        <div class="ticket-reason">
+          최근 7일 판매량이 평소보다 늘었고, 현재 재고 기준 2일 뒤 품절이 예상돼요. 공급 리드타임이 5일이라 오늘 발주하지 않으면 3일간 품절 상태가 이어질 수 있어요.
+        </div>
+        <div class="ticket-meta">
+          <div class="meta-item"><div class="meta-label">현재 재고</div><div class="meta-value">12개</div></div>
+          <div class="meta-item"><div class="meta-label">예상 소진</div><div class="meta-value">2일 뒤</div></div>
+          <div class="meta-item"><div class="meta-label">추천 발주</div><div class="meta-value">40개</div></div>
+        </div>
+        <div class="ticket-action">
+          <span class="action-label">지금 발주하지 않으면 3일간 품절 위험</span>
+          <button class="action-btn">발주 확인하기</button>
+        </div>
+      </div>
+
+      <div class="ticket">
+        <div class="ticket-top">
+          <div>
+            <div class="ticket-rank">PRIORITY 02</div>
+            <div class="ticket-name">콜롬비아 원두 250g</div>
+            <div class="ticket-cat">가공식품 · 원두</div>
+          </div>
+          <span class="tag danger">품절 위험</span>
+        </div>
+        <div class="ticket-reason">
+          최근 7일 판매량이 평소보다 60% 증가했고, 현재 재고 기준 4일 뒤 품절이 예상돼요. 공급 리드타임이 5일이므로 오늘 발주하지 않으면 품절 가능성이 높아요.
+        </div>
+        <div class="ticket-meta">
+          <div class="meta-item"><div class="meta-label">현재 재고</div><div class="meta-value">18개</div></div>
+          <div class="meta-item"><div class="meta-label">예상 소진</div><div class="meta-value">4일 뒤</div></div>
+          <div class="meta-item"><div class="meta-label">추천 발주</div><div class="meta-value">30개</div></div>
+        </div>
+        <div class="ticket-action">
+          <span class="action-label">리드타임 대비 발주 시점 임박</span>
+          <button class="action-btn">발주 확인하기</button>
+        </div>
+      </div>
+
+      <div class="ticket">
+        <div class="ticket-top">
+          <div>
+            <div class="ticket-rank">PRIORITY 03</div>
+            <div class="ticket-name">얼그레이 티백 20입</div>
+            <div class="ticket-cat">가공식품 · 티백</div>
+          </div>
+          <span class="tag plum">과잉재고</span>
+        </div>
+        <div class="ticket-reason">
+          최근 30일 판매량이 5개 이하인데 현재 재고는 64개예요. 재고가 오래 쌓이고 있으니 프로모션이나 묶음 판매를 검토해보는 걸 추천해요.
+        </div>
+        <div class="ticket-meta">
+          <div class="meta-item"><div class="meta-label">현재 재고</div><div class="meta-value">64개</div></div>
+          <div class="meta-item"><div class="meta-label">최근 30일 판매</div><div class="meta-value">4개</div></div>
+          <div class="meta-item"><div class="meta-label">추천 행동</div><div class="meta-value" style="font-size:13px;">묶음 판매</div></div>
+        </div>
+        <div class="ticket-action" style="background:var(--plum-soft);">
+          <span class="action-label" style="color:var(--plum);">재고 회전이 느려지고 있어요</span>
+          <button class="action-btn">프로모션 검토</button>
+        </div>
+      </div>
+
+    </div>
+
+    <footer class="note">더미 데이터 기준 브리핑입니다 · 실제 발주 여부는 사용자가 최종 결정합니다</footer>
+  </section>
+
+</main>
+
+<script>
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.target).classList.add('active');
+    });
+  });
+  document.querySelectorAll('.filter-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
