@@ -94,4 +94,4 @@ AI 요약은 제공하지 않는다. 요약만 보고 원문을 안 읽는 문�
 4. [사용자 시나리오 및 화면 구조](04-scenario-ia.md) — 사용자 시나리오, 화면 흐름(IA)
 5. [사용 기술](05-tech-stack.md) — 프론트엔드, 백엔드, 데이터베이스, 콘텐츠 수집
 
-- 전체 기획 문서: [노션 기획 문서](https://thorn-nation-e97.notion.site/AI-396a6f69fbb380bc9ac3e6b80ad755b7?source=copy_link)
+- 전체 기획 문서: [노션 기획 문서](https://thorn-nation-e97.notion.site/AI-397a6f69fbb38093a749fec41db4ceec?source=copy_link)
