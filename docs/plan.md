@@ -36,3 +36,5 @@ flowchart LR
 - 하단: 공고 리스트 — 공고별 지원 가능/미충족 사유 태그
 
 ---
+
+👉 **[prototype 보기](https://github.com/minnnnju/hub/wiki/Prototype)**
