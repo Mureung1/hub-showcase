@@ -4,9 +4,9 @@ Make the first prototype a **review-first academic workspace**, not a dashboard.
 
 The student should immediately understand this rule:
 
-> “SemesterOps found an academic object. You confirm it once. Then timeline and tasks are generated from it.”
+> “AY-PLE found an academic object. You confirm it once. Then timeline and tasks are generated from it.”
 
-That maps directly to the product brief: SemesterOps is not mainly a calendar or chat app; it turns messy RawMaterial into SemesterModel through AgentModeling, StatePatch review, UserConfirmation, TrustedState, and projection surfaces. 
+That maps directly to the product brief: AY-PLE is not mainly a calendar or chat app; it turns messy RawMaterial into SemesterModel through AgentModeling, StatePatch review, UserConfirmation, TrustedState, and projection surfaces. 
 
 ---
 
@@ -22,7 +22,7 @@ Use a 3-column layout:
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
-│ Top bar: SemesterOps · 2026 Summer · Local workspace · Run status          │
+│ Top bar: AY-PLE · 2026 Summer · Local workspace · Run status          │
 ├───────────────┬──────────────────────────────────────┬────────────────────┤
 │ Left rail     │ Main academic object canvas           │ Right review rail  │
 │               │                                      │                    │
@@ -65,7 +65,7 @@ Do not build more than these two states today.
 
 ## A. Left rail: Course + Source context
 
-Purpose: show that SemesterOps starts from messy material, not from manual calendar entry.
+Purpose: show that AY-PLE starts from messy material, not from manual calendar entry.
 
 Show:
 

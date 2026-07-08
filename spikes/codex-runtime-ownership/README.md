@@ -1,6 +1,6 @@
 # Codex Runtime Ownership Spike
 
-이 디렉터리는 SemesterOps가 Codex 실행환경을 전역 설치와 분리해서 소유할 수 있는지 확인하는 throwaway PoC입니다.
+이 디렉터리는 AY-PLE가 Codex 실행환경을 전역 설치와 분리해서 소유할 수 있는지 확인하는 throwaway PoC입니다.
 
 ## 실행
 

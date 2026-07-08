@@ -1,9 +1,9 @@
-You are helping design the domain model for SemesterOps, a local-first academic agent app.
+You are helping design the domain model for AY-PLE, a local-first academic agent app.
 
 I attached the current product brief and glossary. Please read them first, but do not assume the current model is correct. I want you to challenge the model and propose a cleaner one.
 
 Context:
-SemesterOps takes messy semester materials from a student, such as syllabus text, LMS notices, PDFs, notes, and images. An AI agent interprets those materials and proposes structured academic state. The user reviews, corrects, and confirms the proposed changes before they become trusted app state.
+AY-PLE takes messy semester materials from a student, such as syllabus text, LMS notices, PDFs, notes, and images. AY interprets those materials and proposes structured academic state. The user reviews, corrects, and confirms the proposed changes before they become trusted app state.
 
 The modeling problem:
 We are struggling with the relationship between these concepts:

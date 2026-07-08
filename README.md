@@ -1,8 +1,8 @@
-# SemesterOps
+# AY-PLE
 
 AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입니다.
 
-현재 프로젝트 아이템은 **SemesterOps**입니다. SemesterOps는 사용자의 컴퓨터에 학기 작업환경을 만들고, 시간표·자료·과제·시험 준비를 AI와 함께 운영하는 local-first 학업 에이전트 앱을 목표로 합니다.
+현재 프로젝트 아이템은 **AY-PLE(에이플)**입니다. AY-PLE는 사용자의 컴퓨터에 학기 작업환경을 만들고, 시간표·자료·과제·시험 준비를 AY와 함께 운영하는 local-first 학업 에이전트 앱을 목표로 합니다.
 
 ## 문서
 
@@ -11,8 +11,8 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 | 구분 | 문서 | 용도 |
 | --- | --- | --- |
 | 문서 컨벤션 | [docs/README.md](docs/README.md) | 프로젝트 문서 위치와 관리 규칙 |
-| 제품 기획 | [SemesterOps Product Brief](docs/product/semesterops-product-brief.md) | 문제 정의, 제품 테제, MVP 방향 |
-| 제품 기획 | [Review Workspace Scenario](docs/product/semesterops-review-workspace-scenario.md) | 사용자 시나리오와 화면 단위 prototype 구조 |
+| 제품 기획 | [AY-PLE Product Brief](docs/product/ay-ple-product-brief.md) | 문제 정의, 제품 테제, MVP 방향 |
+| 제품 기획 | [Review Workspace Scenario](docs/product/ay-ple-review-workspace-scenario.md) | 사용자 시나리오와 화면 단위 prototype 구조 |
 | 기술 구조 | [Codex Runtime Isolation](docs/architecture/codex-runtime-isolation.md) | Codex runtime 격리와 실행 경계 |
 | Spike 계획 | [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | Codex 실행환경 소유권 PoC 계획 |
 | ADR | [0001. Use file auth store for runtime spike](docs/adr/0001-use-file-auth-store-for-runtime-spike.md) | runtime spike의 인증 저장소 결정 |
@@ -21,7 +21,7 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 | Agent 운영 | [Triage Labels](docs/agents/triage-labels.md) | triage 상태 마커 규칙 |
 | Agent 운영 | [Domain Docs](docs/agents/domain.md) | domain docs와 ADR 위치 규칙 |
 | Root companion | [AGENTS.md](AGENTS.md) | Codex 작업 규칙과 브랜치/PR 컨벤션 |
-| Root companion | [CONTEXT.md](CONTEXT.md) | SemesterOps 핵심 용어와 피해야 할 표현 |
+| Root companion | [CONTEXT.md](CONTEXT.md) | AY-PLE 핵심 용어와 피해야 할 표현 |
 
 ## 문서 구조
 

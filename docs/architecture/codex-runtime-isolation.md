@@ -2,11 +2,11 @@
 
 작성일: 2026-07-07  
 상태: Draft  
-관련 문서: [SemesterOps Product Brief](../product/semesterops-product-brief.md)
+관련 문서: [AY-PLE Product Brief](../product/ay-ple-product-brief.md)
 
 ## 목적
 
-SemesterOps가 Codex app-server를 MVP의 built-in local agent engine으로 사용할 때, 사용자의 전역 Codex 설치와 설정을 오염시키지 않는 실행 구조를 정리한다.
+AY-PLE가 Codex app-server를 MVP의 built-in local agent engine으로 사용할 때, 사용자의 전역 Codex 설치와 설정을 오염시키지 않는 실행 구조를 정리한다.
 
 이 문서는 제품 기획 문서가 아니라 기술 조사/결정 메모다. 제품 기획서에는 "Codex app-server를 MVP runtime으로 사용한다" 정도만 남기고, 설치 방식, 상태 격리, sandbox, 인증 저장소, 패키징 리스크는 이 문서에서 관리한다.
 
@@ -36,9 +36,9 @@ SemesterOps가 Codex app-server를 MVP의 built-in local agent engine으로 사�
 | Binary/version | 앱 dependency의 `@openai/codex` exact pin, 명시적 bin path spawn | 사용자의 전역 `codex` 버전 변화와 분리 | Codex 상태, 인증, 세션 분리 | 필수 |
 | Codex state root | `CODEX_HOME` | `config.toml`, `auth.json`, logs, sessions, skills, package metadata 분리 | OS process/file 권한 격리 | 필수 |
 | SQLite state | `CODEX_SQLITE_HOME` 또는 `sqlite_home` config | SQLite-backed state 위치 분리 | 일반 파일 로그/인증 분리 | 필요 시 `CODEX_HOME` 하위로 고정 |
-| Workspace | app-server turn의 `cwd`, SemesterOps workspace path | 에이전트가 읽고 바꿀 학기 작업환경 지정 | 인증/앱 설정 저장소 격리 | 학기 폴더와 runtime home을 분리 |
+| Workspace | app-server turn의 `cwd`, AY-PLE workspace path | 에이전트가 읽고 바꿀 학기 작업환경 지정 | 인증/앱 설정 저장소 격리 | 학기 폴더와 runtime home을 분리 |
 | Project config | workspace의 `.codex/config.toml` | 과목/workspace별 sandbox, MCP, skill 설정 일부 조정 | provider/auth/profile 같은 민감 설정 override | 고급 옵션으로 제한 |
-| Skills | `.semesterops/skills/`, `.agents/skills/semesterops-*` projection | SemesterOps 업무 매뉴얼을 Codex가 읽게 함 | 인증/권한 격리 | 앱이 생성하고 관리 |
+| Skills | `.ay-ple/skills/`, `.agents/skills/ay-ple-*` projection | AY-PLE 업무 매뉴얼을 Codex가 읽게 함 | 인증/권한 격리 | 앱이 생성하고 관리 |
 | Sandbox/approval | `workspace-write`, `read-only`, `on-request` 등 | Codex가 실행하는 명령과 파일 변경 경계 설정 | 악성 workspace에 대한 OS 수준 격리 | 기본은 `workspace-write + on-request` 검토 |
 | Transport | `stdio://` app-server | 외부 포트 없이 local companion과 통신 | protocol 변경 리스크 | MVP 기본값 |
 | OS/process 격리 | container, VM, 별도 OS user, 제한된 `HOME`/`PATH` | multi-user 또는 untrusted workspace의 강한 격리 | 제품 UX와 배포 복잡도 | MVP 범위 밖, cloud 전환 시 재검토 |
@@ -49,7 +49,7 @@ MVP npm 기반 로컬 웹앱에서는 사용자가 선택한 학기 폴더와 �
 
 ```text
 user-app-data/
-  semesterops/
+  ay-ple/
     codex-home/
       config.toml
       auth.json
@@ -63,7 +63,7 @@ semester-workspace/
   semester-overview.md
   notes.md
   courses/
-  .semesterops/
+  .ay-ple/
     semester.json
     course-index.json
     tasks.json
@@ -71,7 +71,7 @@ semester-workspace/
     runs/
   .agents/
     skills/
-      semesterops-*/
+      ay-ple-*/
 ```
 
 중요한 원칙:
@@ -79,7 +79,7 @@ semester-workspace/
 | 원칙 | 이유 |
 | --- | --- |
 | `CODEX_HOME`은 학기 workspace 밖에 둔다. | `auth.json`과 세션 로그가 사용자가 백업/공유하는 학기 자료에 섞이지 않게 한다. |
-| 학기 workspace는 사용자가 이해할 수 있는 자료와 상태만 담는다. | SemesterOps를 삭제해도 학기 자료가 의미 있게 남아야 한다. |
+| 학기 workspace는 사용자가 이해할 수 있는 자료와 상태만 담는다. | AY-PLE를 삭제해도 학기 자료가 의미 있게 남아야 한다. |
 | 앱이 Codex bin path를 직접 계산한다. | 전역 `PATH`의 `codex`가 우연히 호출되는 일을 막는다. |
 | Codex config는 app-managed 영역과 user-editable 영역을 나눈다. | 사용자가 고급 설정을 바꾸더라도 인증/provider 설정이 섞이지 않게 한다. |
 
@@ -95,8 +95,8 @@ const codexBin = process.platform === 'win32'
   ? path.join(appRoot, 'node_modules', '.bin', 'codex.cmd')
   : path.join(appRoot, 'node_modules', '.bin', 'codex')
 
-const codexHome = path.join(process.env.HOME ?? appRoot, '.semesterops', 'codex-home')
-const codexSqliteHome = path.join(process.env.HOME ?? appRoot, '.semesterops', 'codex-sqlite')
+const codexHome = path.join(process.env.HOME ?? appRoot, '.ay-ple', 'codex-home')
+const codexSqliteHome = path.join(process.env.HOME ?? appRoot, '.ay-ple', 'codex-sqlite')
 
 mkdirSync(codexHome, { recursive: true })
 mkdirSync(codexSqliteHome, { recursive: true })
@@ -112,7 +112,7 @@ const child = spawn(codexBin, ['app-server', '--listen', 'stdio://'], {
 })
 ```
 
-실제 구현에서는 `process.cwd()` 대신 패키지 내부의 Codex binary 위치를 안정적으로 찾는 resolver가 필요하다. `npx semesterops` 환경에서는 실행 위치와 패키지 설치 위치가 다를 수 있기 때문이다.
+실제 구현에서는 `process.cwd()` 대신 패키지 내부의 Codex binary 위치를 안정적으로 찾는 resolver가 필요하다. `npx ay-ple` 환경에서는 실행 위치와 패키지 설치 위치가 다를 수 있기 때문이다.
 
 ## Runtime policy 초안
 
@@ -151,7 +151,7 @@ const child = spawn(codexBin, ['app-server', '--listen', 'stdio://'], {
 
 | 우선순위 | 과제 | 산출물 |
 | --- | --- | --- |
-| P0 | package-owned Codex binary resolver 검증 | `npx semesterops` 환경에서 전역 `codex`를 호출하지 않는 proof |
+| P0 | package-owned Codex binary resolver 검증 | `npx ay-ple` 환경에서 전역 `codex`를 호출하지 않는 proof |
 | P0 | app-managed `CODEX_HOME` 로그인/세션 UX 확인 | 전역 `~/.codex`와 분리된 로그인 플로우 |
 | P0 | app-server stdio smoke test | `initialize`, `thread/start`, `turn/start` 최소 왕복 테스트 |
 | P1 | pinned version schema generation | generated schema와 runtime adapter type |

@@ -1,4 +1,4 @@
-# SemesterOps Runtime Ownership Spike Plan
+# AY-PLE Runtime Ownership Spike Plan
 
 작성일: 2026-07-07
 상태: Draft
@@ -7,7 +7,7 @@
 
 ## 목적
 
-이번 spike는 SemesterOps의 학기관리 기능을 검증하지 않는다. 목표는 **SemesterOps가 Codex 실행환경을 전역 설치와 분리해서 소유할 수 있는지** 확인하는 것이다.
+이번 spike는 AY-PLE의 학기관리 기능을 검증하지 않는다. 목표는 **AY-PLE가 Codex 실행환경을 전역 설치와 분리해서 소유할 수 있는지** 확인하는 것이다.
 
 핵심 질문:
 
@@ -142,4 +142,4 @@ spikes/
 | 2 | 별도 prototype 세션에서 `spikes/codex-runtime-ownership/`을 구현한다. |
 | 3 | spike 실행 후 한국어 [`spike-report.md`](../../../spikes/codex-runtime-ownership/spike-report.md)를 작성한다. |
 | 4 | 결과를 본 기획 세션으로 handoff back한다. |
-| 5 | 성공 시 SemesterOps runtime adapter PRD로 넘어간다. 실패 시 Codex SDK, CLI wrapper, Claude Code adapter 등 대안을 검토한다. |
+| 5 | 성공 시 AY-PLE runtime adapter PRD로 넘어간다. 실패 시 Codex SDK, CLI wrapper, Claude Code adapter 등 대안을 검토한다. |

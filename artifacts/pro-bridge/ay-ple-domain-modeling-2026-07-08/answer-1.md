@@ -2,7 +2,7 @@
 
 The conceptual confusion is that the current model mixes **academic meaning**, **student operations**, and **calendar projection** into peer objects.
 
-SemesterOps’ own brief says the core job is not to be a calendar app or AI chat surface, but to turn messy RawMaterial into a trusted SemesterModel through StatePatch review and UserConfirmation.  The glossary also already hints at the right split: `Assignment` and `Exam` are first-class academic objects, while `TaskCandidate` is a proposed student action and `ScheduleItem` is a time-based event or deadline representation.  The problem is that `ScheduleItem` is currently too broad: it is acting both as a canonical event record and as a calendar row derived from assignments/exams.
+AY-PLE's own brief says the core job is not to be a calendar app or AI chat surface, but to turn messy RawMaterial into a trusted SemesterModel through StatePatch review and UserConfirmation.  The glossary also already hints at the right split: `Assignment` and `Exam` are first-class academic objects, while `TaskCandidate` is a proposed student action and `ScheduleItem` is a time-based event or deadline representation.  The problem is that `ScheduleItem` is currently too broad: it is acting both as a canonical event record and as a calendar row derived from assignments/exams.
 
 The clean distinction should be:
 
@@ -762,7 +762,7 @@ That one rename will remove much of the confusion.
 
 The product model then becomes easy to explain to students:
 
-> “SemesterOps found an assignment. It has a deadline. That deadline appears on your calendar. SemesterOps also suggests actions you may want to take before the deadline.”
+> “AY-PLE found an assignment. It has a deadline. That deadline appears on your calendar. AY-PLE also suggests actions you may want to take before the deadline.”
 
 That sentence maps cleanly to:
 

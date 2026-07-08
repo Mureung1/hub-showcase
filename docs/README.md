@@ -1,12 +1,12 @@
 # Project Documentation
 
-이 디렉터리는 SemesterOps의 제품 기획, 기술 구조, 의사결정, agent 운영 문서를 보관합니다. 캠프 제출 조건에 맞춰 기획서를 포함한 formal project docs는 루트 [README.md](../README.md)에서도 링크로 접근 가능해야 합니다.
+이 디렉터리는 AY-PLE의 제품 기획, 기술 구조, 의사결정, agent 운영 문서를 보관합니다. 캠프 제출 조건에 맞춰 기획서를 포함한 formal project docs는 루트 [README.md](../README.md)에서도 링크로 접근 가능해야 합니다.
 
 ## 디렉터리 컨벤션
 
 | 위치 | 역할 | 예시 |
 | --- | --- | --- |
-| `docs/product/` | 제품 문제정의, 사용자, MVP 범위, UX 원칙 | `semesterops-product-brief.md` |
+| `docs/product/` | 제품 문제정의, 사용자, MVP 범위, UX 원칙 | `ay-ple-product-brief.md` |
 | `docs/architecture/` | 오래 유지될 기술 구조와 시스템 경계 | `codex-runtime-isolation.md` |
 | `docs/spikes/<slug>/` | spike 계획, 질문, 성공 기준, handoff 가능한 조사 기록 | `codex-runtime-ownership/plan.md` |
 | `docs/adr/` | 되돌리기 어려운 기술/제품 결정 | `0001-use-file-auth-store-for-runtime-spike.md` |
@@ -38,14 +38,14 @@ Root companion docs:
 | 문서 | 역할 |
 | --- | --- |
 | [../AGENTS.md](../AGENTS.md) | Codex 작업 규칙과 브랜치/PR 컨벤션 |
-| [../CONTEXT.md](../CONTEXT.md) | SemesterOps 핵심 용어와 피해야 할 표현 |
+| [../CONTEXT.md](../CONTEXT.md) | AY-PLE 핵심 용어와 피해야 할 표현 |
 
 ## 현재 문서
 
 | 문서 | 위치 | 상태 |
 | --- | --- | --- |
-| SemesterOps Product Brief | [product/semesterops-product-brief.md](product/semesterops-product-brief.md) | Draft |
-| SemesterOps Review Workspace Scenario | [product/semesterops-review-workspace-scenario.md](product/semesterops-review-workspace-scenario.md) | Draft |
+| AY-PLE Product Brief | [product/ay-ple-product-brief.md](product/ay-ple-product-brief.md) | Draft |
+| AY-PLE Review Workspace Scenario | [product/ay-ple-review-workspace-scenario.md](product/ay-ple-review-workspace-scenario.md) | Draft |
 | Codex Runtime Isolation | [architecture/codex-runtime-isolation.md](architecture/codex-runtime-isolation.md) | Draft |
 | Runtime Ownership Spike Plan | [spikes/codex-runtime-ownership/plan.md](spikes/codex-runtime-ownership/plan.md) | Draft |
 | Runtime auth ADR | [adr/0001-use-file-auth-store-for-runtime-spike.md](adr/0001-use-file-auth-store-for-runtime-spike.md) | Accepted |

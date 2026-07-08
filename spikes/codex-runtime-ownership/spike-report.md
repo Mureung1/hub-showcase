@@ -1,4 +1,4 @@
-# SemesterOps Runtime Ownership Spike Report
+# AY-PLE Runtime Ownership Spike Report
 
 작성일: 2026. 7. 7. PM 3:02:38
 상태: 성공
@@ -55,5 +55,5 @@
 
 ## 다음 단계
 
-- 성공 결과를 바탕으로 SemesterOps runtime adapter 인터페이스를 설계한다.
+- 성공 결과를 바탕으로 AY-PLE runtime adapter 인터페이스를 설계한다.
 - 다음 spike에서는 실제 학기 task가 아니라 `thread/start`와 취소/approval 흐름 같은 runtime lifecycle만 확장 검증한다.
