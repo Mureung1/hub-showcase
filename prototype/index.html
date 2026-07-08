@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알바노트 메인페이지 프로토타입</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="알바노트 홈">
+      <span class="brand-mark">A</span>
+      <span>알바노트</span>
+    </a>
+
+    <nav class="main-nav" aria-label="주요 메뉴">
+      <a href="#">근무표</a>
+      <a href="#">대타 요청</a>
+      <a href="#">알바생 관리</a>
+      <a href="#">알림</a>
+    </nav>
+
+    <div class="auth-actions">
+      <a class="text-link" href="#">회원가입</a>
+      <a class="login-button" href="./worker-main.html">로그인</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero-section" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">알바 근무 관리 웹 서비스</p>
+        <h1 id="hero-title">근무표와 대타 요청을 한곳에서 관리하세요</h1>
+        <p class="hero-description">
+          알바노트는 사장님과 알바생이 근무표, 대타 요청, 근무 시간, 시급 정보를
+          한 화면에서 확인하고 관리할 수 있도록 돕는 서비스입니다.
+        </p>
+        <div class="hero-actions">
+          <a class="primary-button" href="#">회원가입</a>
+          <a class="secondary-button" href="./worker-main.html">로그인</a>
+        </div>
+      </div>
+
+      <aside class="schedule-preview" aria-label="근무표 미리보기">
+        <div class="preview-header">
+          <div>
+            <p class="preview-label">이번 달 근무표</p>
+            <h2>2026년 7월</h2>
+          </div>
+          <span class="store-chip">연남점</span>
+        </div>
+
+        <div class="calendar-grid" aria-label="월간 근무표 예시">
+          <span class="weekday">월</span>
+          <span class="weekday">화</span>
+          <span class="weekday">수</span>
+          <span class="weekday">목</span>
+          <span class="weekday">금</span>
+          <span class="weekday">토</span>
+          <span class="weekday">일</span>
+
+          <div class="day muted">29</div>
+          <div class="day muted">30</div>
+          <div class="day has-shift">
+            <strong>1</strong>
+            <span>2명 근무</span>
+          </div>
+          <div class="day">
+            <strong>2</strong>
+          </div>
+          <div class="day has-shift">
+            <strong>3</strong>
+            <span>3명 근무</span>
+          </div>
+          <div class="day">
+            <strong>4</strong>
+          </div>
+          <div class="day">
+            <strong>5</strong>
+          </div>
+
+          <div class="day has-shift">
+            <strong>6</strong>
+            <span>오후 근무</span>
+          </div>
+          <div class="day selected">
+            <strong>7</strong>
+            <span>대타 가능 2명</span>
+          </div>
+          <div class="day has-shift">
+            <strong>8</strong>
+            <span>4명 근무</span>
+          </div>
+          <div class="day">
+            <strong>9</strong>
+          </div>
+          <div class="day has-shift">
+            <strong>10</strong>
+            <span>마감 근무</span>
+          </div>
+          <div class="day">
+            <strong>11</strong>
+          </div>
+          <div class="day">
+            <strong>12</strong>
+          </div>
+        </div>
+
+        <div class="daily-summary">
+          <div>
+            <p>7월 7일 근무 상세</p>
+            <strong>18:00 - 22:00</strong>
+          </div>
+          <div class="worker-list">
+            <span>민지</span>
+            <span>서준</span>
+            <span class="available">대타 가능</span>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="feature-section" aria-labelledby="feature-title">
+      <div class="section-heading">
+        <p class="eyebrow">주요 기능</p>
+        <h2 id="feature-title">매장 근무를 더 쉽게 정리합니다</h2>
+      </div>
+
+      <div class="feature-grid">
+        <article class="feature-card">
+          <span class="feature-number">01</span>
+          <h3>달력형 근무표</h3>
+          <p>월간 근무표를 확인하고 날짜별 상세 근무 시간을 한눈에 파악합니다.</p>
+        </article>
+
+        <article class="feature-card">
+          <span class="feature-number">02</span>
+          <h3>대타 요청 관리</h3>
+          <p>대타 후보를 선택해 요청하고 수락, 거절, 사장님 승인 상태를 확인합니다.</p>
+        </article>
+
+        <article class="feature-card">
+          <span class="feature-number">03</span>
+          <h3>알바생 정보 관리</h3>
+          <p>매장별 시급, 고정 근무 시간, 대타 가능 여부를 함께 관리합니다.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
