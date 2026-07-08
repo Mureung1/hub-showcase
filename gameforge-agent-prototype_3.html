@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GameForge Agent — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-page:#161618;
+    --panel:#1e1e21;
+    --panel-2:#242428;
+    --panel-3:#2b2b30;
+    --border:#38383e;
+    --border-strong:#4a4a52;
+    --text:#e9e9ec;
+    --text-dim:#9c9ca4;
+    --text-mute:#6c6c74;
+    --teal:#3ecf9a;
+    --teal-bg:rgba(62,207,154,0.12);
+    --amber:#f0a942;
+    --amber-bg:rgba(240,169,66,0.12);
+    --red:#e5615f;
+    --red-bg:rgba(229,97,95,0.12);
+    --radius:8px;
+    --mono:'JetBrains Mono', ui-monospace, monospace;
+    --sans:'Inter', -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg-page);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:14px;
+    line-height:1.5;
+    min-height:100vh;
+  }
+  input, select, button, textarea{ font-family:inherit; font-size:13px; }
+  input[type=text], select{
+    width:100%; background:var(--panel-3); border:1px solid var(--border);
+    border-radius:6px; padding:9px 10px; color:var(--text); outline:none;
+  }
+  input[type=text]:focus, select:focus{ border-color:var(--border-strong); }
+  button{
+    background:transparent; border:1px solid var(--border-strong); color:var(--text);
+    border-radius:6px; padding:9px 16px; cursor:pointer; transition:background .12s;
+  }
+  button:hover{ background:var(--panel-3); }
+  button.primary{ border-color:var(--teal); color:var(--teal); }
+  button.primary:hover{ background:var(--teal-bg); }
+  button:active{ transform:scale(0.98); }
+  button:disabled, select:disabled{ opacity:0.4; cursor:not-allowed; pointer-events:none; }
+  select:disabled{ background:var(--panel-2); }
+
+  /* top app bar */
+  .appbar{
+    height:48px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 18px; border-bottom:1px solid var(--border); background:var(--panel);
+  }
+  .brand{ display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px; }
+  .brand .dot{ width:8px; height:8px; border-radius:50%; background:var(--teal); }
+  .tabs{ display:flex; gap:2px; background:var(--panel-3); border-radius:8px; padding:3px; }
+  .tabs button{ border:none; padding:6px 14px; font-size:12.5px; border-radius:6px; color:var(--text-dim); }
+  .tabs button.active{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
+  .tabs button:hover{ color:var(--text); }
+
+  .screen{ display:none; padding:32px 24px; max-width:1080px; margin:0 auto; }
+  .screen.active{ display:block; }
+
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .card-head{ padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .card-body{ padding:18px; }
+  .card-foot{ padding:14px 18px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; }
+
+  .label-mono{ font-family:var(--mono); font-size:11px; color:var(--text-mute); letter-spacing:.03em; display:block; margin-bottom:6px; }
+  .field{ margin-bottom:16px; }
+
+  .badge{ font-size:11px; padding:3px 9px; border-radius:5px; }
+  .badge.success{ background:var(--teal-bg); color:var(--teal); }
+  .badge.warning{ background:var(--amber-bg); color:var(--amber); }
+  .badge.danger{ background:var(--red-bg); color:var(--red); }
+
+  /* preset selector */
+  .preset{ display:flex; align-items:center; gap:10px; padding:11px 12px; border:1px solid var(--border); border-radius:8px; cursor:pointer; margin-bottom:8px; }
+  .preset.selected{ border-color:var(--teal); background:var(--teal-bg); }
+  .preset input{ margin:0; accent-color:var(--teal); }
+  .preset .name{ font-weight:500; font-size:13px; }
+  .preset .desc{ font-size:12px; color:var(--text-dim); }
+  .preset .tag{ font-size:10.5px; color:var(--teal); margin-left:6px; }
+
+  /* stat grid */
+  .stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+  .stat{ background:var(--panel-2); border-radius:8px; padding:12px 14px; }
+  .stat .n{ font-size:22px; font-weight:600; margin-top:4px; }
+
+  pre.code{
+    font-family:var(--mono); font-size:12px; line-height:1.7; background:var(--panel-2);
+    border:1px solid var(--border); border-radius:8px; padding:14px; color:var(--text-dim);
+    white-space:pre-wrap; overflow-x:auto;
+  }
+
+  /* workspace layout */
+  .workspace{ display:flex; border:1px solid var(--border); border-radius:12px; overflow:hidden; min-height:560px; }
+  .sidebar{ width:230px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--border); }
+  .sidebar-head{ padding:14px; border-bottom:1px solid var(--border); }
+  .sidebar-head .repo{ display:flex; align-items:center; gap:6px; margin-top:4px; font-size:13px; font-weight:500; }
+  .steps{ padding:8px 6px; }
+  .step-row{ display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:6px; cursor:default; }
+  .step-row.active{ background:var(--panel-3); }
+  .step-n{ font-family:var(--mono); font-size:11px; width:18px; }
+  .step-label{ flex:1; font-size:12.5px; }
+  .step-pct{ font-family:var(--mono); font-size:11px; }
+  .step-row.done .step-n, .step-row.done .step-pct{ color:var(--teal); }
+  .step-row.active .step-n, .step-row.active .step-pct{ color:var(--amber); }
+  .step-row.pending .step-n, .step-row.pending .step-pct, .step-row.pending .step-label{ color:var(--text-mute); }
+  .step-row.active-selected{ outline:1px solid var(--border-strong); background:var(--panel-3); }
+  .step-row:hover:not(.pending){ background:var(--panel-3); }
+
+  .ws-main{ flex:1; padding:22px 26px; background:var(--panel-2); display:flex; flex-direction:column; gap:16px; }
+  .ws-top{ display:flex; align-items:center; justify-content:space-between; }
+  .ws-eyebrow{ font-family:var(--mono); font-size:11px; color:var(--teal); }
+  .ws-title{ font-size:16px; font-weight:600; margin-top:2px; }
+  .qa-box{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .qa-count{ font-size:12.5px; color:var(--text-dim); }
+  .qa-question{ font-size:15px; }
+  .qa-options{ display:flex; gap:8px; flex-wrap:wrap; }
+  .qa-options button.picked{ border-color:var(--teal); color:var(--teal); }
+  .md-preview-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .md-preview-head .path{ font-family:var(--mono); font-size:11px; color:var(--text-mute); }
+
+  @media (max-width:720px){
+    .stat-grid{ grid-template-columns:1fr; }
+    .workspace{ flex-direction:column; }
+    .sidebar{ width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="brand"><span class="dot"></span>GameForge Agent</div>
+  <div class="tabs">
+    <button class="tab-btn active" data-target="screen-connect">01 Repo 연결</button>
+    <button class="tab-btn" data-target="screen-report">02 분석 리포트</button>
+    <button class="tab-btn" data-target="screen-workspace">03 Agent 워크스페이스</button>
+  </div>
+</div>
+
+<!-- SCREEN 1: Repo Connect -->
+<section class="screen active" id="screen-connect">
+  <div class="card" style="max-width:520px; margin:0 auto;">
+    <div class="card-head">
+      <span style="font-weight:500;">Repository 연결</span>
+    </div>
+    <div class="card-body">
+      <div class="field">
+        <label class="label-mono">REPOSITORY URL</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="repoUrl" value="https://github.com/team/unity-rpg-core" style="flex:1;">
+          <button id="verifyBtn" onclick="verifyRepo()">저장소 확인</button>
+        </div>
+        <div id="verifyStatus" style="font-size:12px; color:var(--text-mute); margin-top:6px;">URL을 확인하면 이 저장소의 Branch 목록을 가져옵니다.</div>
+      </div>
+      <div class="field">
+        <label class="label-mono">BRANCH</label>
+        <select id="branchSelect" disabled>
+          <option>저장소 확인 후 선택 가능</option>
+        </select>
+      </div>
+      <div id="presetSection" style="border-top:1px solid var(--border); padding-top:14px; margin-top:4px; opacity:0.4; pointer-events:none;">
+        <label class="label-mono" style="margin-bottom:8px;">분석 범위 프리셋</label>
+        <label class="preset">
+          <input type="radio" name="preset">
+          <span>⚡</span>
+          <div><div class="name">빠름</div><div class="desc">핵심 의존성 구조만 스캔 · 약 30초</div></div>
+        </label>
+        <label class="preset selected">
+          <input type="radio" name="preset" checked>
+          <span>⚙</span>
+          <div><div class="name">기본 <span class="tag">권장</span></div><div class="desc">의존성 + 중복 코드 탐지 · 약 2분</div></div>
+        </label>
+        <label class="preset">
+          <input type="radio" name="preset">
+          <span>🔍</span>
+          <div><div class="name">상세</div><div class="desc">Prefab 구조 + 리팩토링 대상까지 전수 분석 · 약 5분+</div></div>
+        </label>
+      </div>
+    </div> <!-- /presetSection -->
+    <div class="card-foot">
+      <button class="primary" id="startBtn" disabled onclick="goTo('screen-report')">연결 및 분석 시작 →</button>
+    </div>
+  </div>
+</section>
+
+<!-- SCREEN 2: Analysis Report -->
+<section class="screen" id="screen-report">
+  <div class="card" style="max-width:620px; margin:0 auto;">
+    <div class="card-head">
+      <span class="label-mono" style="margin:0;">00_Analysis_Report.md</span>
+      <span class="badge success">분석 완료</span>
+    </div>
+    <div class="card-body">
+      <div class="stat-grid">
+        <div class="stat"><div style="font-size:12px; color:var(--text-dim);">클래스 의존성</div><div class="n">128</div></div>
+        <div class="stat"><div style="font-size:12px; color:var(--text-dim);">중복 코드 블록</div><div class="n" style="color:var(--amber);">14</div></div>
+        <div class="stat"><div style="font-size:12px; color:var(--text-dim);">리팩토링 대상</div><div class="n" style="color:var(--red);">6</div></div>
+      </div>
+      <pre class="code"># Analysis Report
+
+## Duplicate code
+- PlayerController.Move() ~ EnemyController.Move()
+- InventoryUI.Refresh() x3 locations
+
+## Refactor targets
+- [ ] GameManager (God Class, 42 methods)
+- [ ] SaveSystem (tight coupling to UI)</pre>
+    </div>
+    <div class="card-foot" style="justify-content:space-between;">
+      <button>✎ 원문 수정</button>
+      <button class="primary" onclick="goTo('screen-workspace')">Approve하고 Requirements Agent로 →</button>
+    </div>
+  </div>
+</section>
+
+<!-- SCREEN 3: Agent Workspace -->
+<section class="screen" id="screen-workspace">
+  <div class="workspace">
+    <div class="sidebar">
+      <div class="sidebar-head">
+        <label class="label-mono" style="margin:0;">REPOSITORY</label>
+        <div class="repo">🐙 unity-rpg-core</div>
+        <div class="label-mono" style="margin:2px 0 0;">branch: develop</div>
+      </div>
+      <div class="steps" id="stepsList"></div>
+    </div>
+    <div class="ws-main">
+      <div class="ws-top">
+        <div>
+          <div class="ws-eyebrow" id="wsEyebrow">STEP 02 / 16 · PLANNING AGENT</div>
+          <div class="ws-title" id="wsTitle">게임 기획 — 질문지</div>
+        </div>
+        <span class="badge warning" id="wsBadge">진행 중</span>
+      </div>
+
+      <div class="qa-box" id="qaBox">
+        <div class="qa-count">질문 3 / 8</div>
+        <div class="qa-question">대시 이동 시 무적 프레임을 적용할까요?</div>
+        <div class="qa-options">
+          <button class="picked">적용한다</button>
+          <button>적용하지 않는다</button>
+          <button>쿨다운에 따라 다르게</button>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border); padding-top:14px;">
+        <div class="md-preview-head">
+          <span class="path" id="mdPath">02_Game_Design.md — PREVIEW</span>
+          <span style="color:var(--text-dim); cursor:pointer;">✎</span>
+        </div>
+        <pre class="code" id="mdContent"># Game Design
+
+## Core Gameplay
+- [x] Player Movement
+- [x] Jump
+- [ ] Dash</pre>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:auto;" id="wsActions">
+        <button>반려</button>
+        <button class="primary">Approve ✓</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // per-step mock content shown when a sidebar step is clicked
+  const stepDetails = {
+    1: {
+      eyebrow: "STEP 01 / 16 · REQUIREMENTS AGENT",
+      title: "요구사항 분석 — 문서",
+      badgeText: "완료", badgeClass: "success",
+      showQA: false,
+      mdPath: "01_Requirements.md — PREVIEW",
+      md: `# Requirements
+
+## Core Gameplay
+- [x] Player Movement
+- [x] Jump
+- [x] Dash
+
+## UI
+- [x] Main Menu`,
+      actions: `<button>다시 열기</button><button class="primary">✓ 승인됨</button>`
+    },
+    2: {
+      eyebrow: "STEP 02 / 16 · PLANNING AGENT",
+      title: "게임 기획 — 질문지",
+      badgeText: "진행 중", badgeClass: "warning",
+      showQA: true,
+      mdPath: "02_Game_Design.md — PREVIEW",
+      md: `# Game Design
+
+## Core Gameplay
+- [x] Player Movement
+- [x] Jump
+- [ ] Dash`,
+      actions: `<button>반려</button><button class="primary">Approve ✓</button>`
+    }
+  };
+
+  function openStep(n){
+    const detail = stepDetails[n];
+    if(!detail) return; // pending steps have no content yet
+
+    document.getElementById('wsEyebrow').textContent = detail.eyebrow;
+    document.getElementById('wsTitle').textContent = detail.title;
+
+    const badge = document.getElementById('wsBadge');
+    badge.textContent = detail.badgeText;
+    badge.className = `badge ${detail.badgeClass}`;
+
+    document.getElementById('qaBox').style.display = detail.showQA ? 'flex' : 'none';
+    document.getElementById('mdPath').textContent = detail.mdPath;
+    document.getElementById('mdContent').textContent = detail.md;
+    document.getElementById('wsActions').innerHTML = detail.actions;
+
+    // sync sidebar highlight
+    document.querySelectorAll('.step-row').forEach(row => {
+      row.classList.toggle('active-selected', Number(row.dataset.n) === n);
+    });
+  }
+
+  // repo verification -> unlocks branch select, presets, start button
+  function verifyRepo(){
+    const btn = document.getElementById('verifyBtn');
+    const status = document.getElementById('verifyStatus');
+    const branchSelect = document.getElementById('branchSelect');
+    const presetSection = document.getElementById('presetSection');
+    const startBtn = document.getElementById('startBtn');
+
+    btn.disabled = true;
+    btn.textContent = '확인 중…';
+    status.textContent = 'GitHub에 접근해서 저장소와 Branch 목록을 가져오는 중입니다.';
+    status.style.color = 'var(--text-mute)';
+
+    setTimeout(() => {
+      branchSelect.disabled = false;
+      branchSelect.innerHTML = `
+        <option>develop</option>
+        <option>main</option>
+        <option>feature/dash</option>
+      `;
+      presetSection.style.opacity = '1';
+      presetSection.style.pointerEvents = 'auto';
+      startBtn.disabled = false;
+
+      btn.disabled = false;
+      btn.textContent = '다시 확인';
+      status.textContent = '저장소 확인 완료 · Branch 3개를 가져왔습니다.';
+      status.style.color = 'var(--teal)';
+    }, 900);
+  }
+
+  // tab navigation
+  const tabs = document.querySelectorAll('.tab-btn');
+  const screens = document.querySelectorAll('.screen');
+  function goTo(id){
+    screens.forEach(s => s.classList.toggle('active', s.id === id));
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.target === id));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => goTo(t.dataset.target)));
+
+  // sidebar step list (16 steps per plan)
+  const steps = [
+    {n:1, label:"요구사항 분석", pct:100, status:"done"},
+    {n:2, label:"게임 기획", pct:40, status:"active"},
+    {n:3, label:"게임 시스템 설계", pct:0, status:"pending"},
+    {n:4, label:"클래스 설계 (UML)", pct:0, status:"pending"},
+    {n:5, label:"프로젝트 구조 설계", pct:0, status:"pending"},
+    {n:6, label:"ScriptableObject 설계", pct:0, status:"pending"},
+    {n:7, label:"코드 생성", pct:0, status:"pending"},
+    {n:8, label:"리팩토링 및 코드 리뷰", pct:0, status:"pending"},
+    {n:9, label:"문서화", pct:0, status:"pending"},
+  ];
+  const list = document.getElementById('stepsList');
+  steps.forEach(s => {
+    const row = document.createElement('div');
+    row.className = `step-row ${s.status}`;
+    row.dataset.n = s.n;
+    const clickable = s.status === 'done' || s.status === 'active';
+    row.style.cursor = clickable ? 'pointer' : 'not-allowed';
+    row.title = clickable ? '클릭해서 이 단계 보기' : '이전 단계를 먼저 완료해야 볼 수 있어요';
+    row.innerHTML = `
+      <span class="step-n">${String(s.n).padStart(2,'0')}</span>
+      <span class="step-label">${s.label}</span>
+      <span class="step-pct">${s.pct}%</span>
+    `;
+    if (clickable){
+      row.addEventListener('click', () => openStep(s.n));
+    }
+    list.appendChild(row);
+  });
+  openStep(2); // default view matches the initially active step
+</script>
+
+</body>
+</html>
