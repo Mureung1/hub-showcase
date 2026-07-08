@@ -695,13 +695,13 @@
         // 지원하기 버튼
         document.querySelectorAll('.btn-apply').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                alert('자소서 작성 페이지로 이동합니다!');
+                window.location.href = 'prototype_resume_draft.html';
             });
         });
 
         // 프로필 수정 버튼
         document.querySelector('.edit-btn').addEventListener('click', () => {
-            alert('프로필 수정 페이지로 이동합니다.');
+            window.location.href = 'prototype_profile.html';
         });
 
         // 페이지네이션

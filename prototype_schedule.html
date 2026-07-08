@@ -44,6 +44,27 @@
             color: #999;
         }
 
+        .header-nav {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .nav-btn:hover {
+            background: #e8e8e8;
+        }
+
         /* 통계 섹션 */
         .stats-grid {
             display: grid;
@@ -380,6 +401,10 @@
         <div class="header">
             <div class="header-title">📅 일정 관리</div>
             <div class="header-subtitle">지원 공고와 면접 일정을 한눈에 관리하세요</div>
+            <div class="header-nav">
+                <button class="nav-btn" onclick="window.location.href='prototype_interview_prep.html'">← 뒤로가기</button>
+                <button class="nav-btn" onclick="window.location.href='index.html'">🏠 메인으로</button>
+            </div>
 
             <!-- 통계 -->
             <div class="stats-grid">

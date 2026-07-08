@@ -573,8 +573,7 @@
                 alert('자소서는 최소 100자 이상이어야 합니다.');
                 return;
             }
-            alert('자소서가 제출되었습니다! 면접 준비 페이지로 이동합니다.');
-            // window.location.href = 'prototype_interview_prep.html';
+            window.location.href = 'prototype_interview_prep.html';
         }
 
         // 복사 버튼
@@ -586,7 +585,7 @@
 
         // 뒤로 버튼
         document.querySelector('.btn-small:nth-child(2)').addEventListener('click', () => {
-            alert('이전 페이지로 돌아갑니다.');
+            window.location.href = 'prototype_resume_draft.html';
         });
     </script>
 </body>
