@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>캘린더 · 챌린지로그 프로토타입</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="screen">
+  <header class="topbar">
+    <p class="brand">Prototype</p>
+    <h1>캘린더</h1>
+  </header>
+
+  <main class="content">
+    <div class="month-nav">
+      <a href="#" aria-label="이전 달">‹</a>
+      <span>2026년 7월</span>
+      <a href="#" aria-label="다음 달">›</a>
+    </div>
+
+    <div class="weekdays">
+      <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+    </div>
+
+    <div class="days">
+      <div class="day empty"></div>
+      <div class="day empty"></div>
+      <div class="day empty"></div>
+      <div class="day recorded" style="background-image: url('https://picsum.photos/seed/clog-1/160/160')"><span class="date-num">1</span></div>
+      <div class="day recorded" style="background-image: url('https://picsum.photos/seed/clog-2/160/160')"><span class="date-num">2</span></div>
+      <div class="day recorded" style="background-image: url('https://picsum.photos/seed/clog-3/160/160')"><span class="date-num">3</span></div>
+      <div class="day">4</div>
+      <div class="day recorded" style="background-image: url('https://picsum.photos/seed/clog-5/160/160')"><span class="date-num">5</span></div>
+      <div class="day">6</div>
+      <div class="day">7</div>
+      <div class="day recorded today" style="background-image: url('https://picsum.photos/seed/clog-8/160/160')"><span class="date-num">8</span></div>
+      <div class="day">9</div>
+      <div class="day">10</div>
+      <div class="day">11</div>
+      <div class="day">12</div>
+      <div class="day">13</div>
+      <div class="day">14</div>
+      <div class="day">15</div>
+      <div class="day">16</div>
+      <div class="day">17</div>
+      <div class="day">18</div>
+      <div class="day">19</div>
+      <div class="day">20</div>
+      <div class="day">21</div>
+      <div class="day">22</div>
+      <div class="day">23</div>
+      <div class="day">24</div>
+      <div class="day">25</div>
+      <div class="day">26</div>
+      <div class="day">27</div>
+      <div class="day">28</div>
+      <div class="day">29</div>
+      <div class="day">30</div>
+      <div class="day">31</div>
+      <div class="day empty"></div>
+    </div>
+
+    <p class="notice" style="margin-top: 16px">기록한 날에만 썸네일이 표시돼요. 본인의 기록만 볼 수 있어요.</p>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="index.html"><span class="icon">🏠</span>홈</a>
+    <a href="record.html"><span class="icon">📷</span>기록</a>
+    <a href="calendar.html" aria-current="page"><span class="icon">📅</span>캘린더</a>
+    <a href="rooms.html"><span class="icon">👥</span>친구 방</a>
+    <a href="settings.html"><span class="icon">⚙️</span>설정</a>
+  </nav>
+</div>
+</body>
+</html>

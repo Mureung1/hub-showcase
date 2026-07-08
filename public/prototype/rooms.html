@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>친구 방 목록 · 챌린지로그 프로토타입</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="screen">
+  <header class="topbar">
+    <p class="brand">Prototype</p>
+    <h1>친구 방</h1>
+  </header>
+
+  <main class="content">
+    <div class="action-row">
+      <a class="btn-primary" href="#">새 방 만들기</a>
+      <a class="btn-secondary" href="#">초대코드로 참여</a>
+    </div>
+
+    <section class="card" style="padding: 0">
+      <a class="room-card" href="room.html">
+        <div class="room-card-info">
+          <span class="room-avatar">🌤️</span>
+          <div>
+            <div class="room-card-name">우리들의 기록방</div>
+            <div class="room-card-meta">멤버 4명 · 오늘 기록 완료</div>
+          </div>
+        </div>
+        <span class="room-card-arrow">›</span>
+      </a>
+
+      <a class="room-card" href="room2.html">
+        <div class="room-card-info">
+          <span class="room-avatar">🌱</span>
+          <div>
+            <div class="room-card-name">아침 습관방</div>
+            <div class="room-card-meta">멤버 3명 · 오늘 기록 전</div>
+          </div>
+        </div>
+        <span class="room-card-arrow">›</span>
+      </a>
+    </section>
+
+    <p class="notice" style="margin-top: 16px">방을 눌러 들어가면 멤버들의 오늘 완료 여부와 기록(사진·메모), 초대코드를 볼 수 있어요.</p>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="index.html"><span class="icon">🏠</span>홈</a>
+    <a href="record.html"><span class="icon">📷</span>기록</a>
+    <a href="calendar.html"><span class="icon">📅</span>캘린더</a>
+    <a href="rooms.html" aria-current="page"><span class="icon">👥</span>친구 방</a>
+    <a href="settings.html"><span class="icon">⚙️</span>설정</a>
+  </nav>
+</div>
+</body>
+</html>

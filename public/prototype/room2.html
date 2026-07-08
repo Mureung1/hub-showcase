@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>아침 습관방 · 챌린지로그 프로토타입</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="screen">
+  <header class="topbar">
+    <a class="back-link" href="rooms.html">‹ 친구 방 목록</a>
+    <p class="brand">Prototype</p>
+    <h1>아침 습관방</h1>
+  </header>
+
+  <main class="content">
+    <p class="notice">오늘 완료 여부와 함께, 기록을 남긴 멤버의 사진·한 줄 메모를 볼 수 있어요. 기록 개수나 순위는 표시되지 않아요.</p>
+
+    <section class="card">
+      <h2 style="margin-bottom: 12px">오늘의 완료 현황</h2>
+
+      <div class="member-row">
+        <div class="member-info">
+          <span class="avatar">지</span>
+          <span class="member-name">지현 (나)</span>
+        </div>
+        <span class="status-badge pending">X</span>
+      </div>
+
+      <div class="member-row">
+        <div class="member-info">
+          <span class="avatar">연</span>
+          <span class="member-name">연우</span>
+        </div>
+        <span class="status-badge pending">X</span>
+      </div>
+
+      <div class="member-row">
+        <div class="member-info">
+          <span class="avatar">도</span>
+          <span class="member-name">도윤</span>
+        </div>
+        <span class="status-badge pending">X</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>초대코드</h2>
+      <p style="margin-top: 6px">CHAL-9M4T</p>
+      <div style="margin-top: 12px">
+        <a class="btn-secondary" href="#">초대코드 복사</a>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="index.html"><span class="icon">🏠</span>홈</a>
+    <a href="record.html"><span class="icon">📷</span>기록</a>
+    <a href="calendar.html"><span class="icon">📅</span>캘린더</a>
+    <a href="rooms.html" aria-current="page"><span class="icon">👥</span>친구 방</a>
+    <a href="settings.html"><span class="icon">⚙️</span>설정</a>
+  </nav>
+</div>
+</body>
+</html>

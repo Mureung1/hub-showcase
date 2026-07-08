@@ -58,6 +58,21 @@ function ProjectIntro() {
           ))}
         </ul>
       </section>
+
+      <section className="mt-12 rounded-xl border border-border bg-card p-6">
+        <h3 className="mb-2 text-[17px] text-heading">프로토타입 보기</h3>
+        <p className="mx-auto max-w-sm text-[15px]">
+          순수 HTML·CSS로 만든 5개 화면 프로토타입에서 핵심 흐름을 직접 확인해보세요.
+        </p>
+        <a
+          className="mt-5 inline-block rounded-full bg-accent px-5 py-2.5 text-[14px] font-semibold text-white"
+          href="/prototype/index.html"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          프로토타입 열기
+        </a>
+      </section>
     </main>
   )
 }
