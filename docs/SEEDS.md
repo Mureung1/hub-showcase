@@ -1,164 +1,168 @@
 # 시드 예시 24개 (few-shot 원본)
 
-> **상태: 초안 작성 완료 (2026-07-08) — 검수 전.** 상황 8개는 2026-07-08 사용자 확정. 스키마·작성 기준은 SPEC 4장, 작성·검수 절차는 `/seed` 스킬.
+> **상태: 2차 개정 반영 재작성 (2026-07-08) — 블라인드 정렬·전송 가능성 검수 전.** 상황 8개는 2026-07-08 사용자 확정. 스키마·작성 기준은 SPEC 4장, 작성·검수 절차는 `/seed` 스킬.
+> 2차 개정 반영 사항: ① 전 시드에 `purpose` 태그, ② 톤 공통 라벨(toneLevel 1=기본, 2=더 부드럽게, 3=더 분명하게), ③ 사실 근거 규칙 — message의 모든 구체 사실(요일·시간)은 situationNote에 근거를 둠.
 > T19(프롬프트 구성) 시점에 프록시 상수로 이관한다. 이관 전까지 이 문서가 원본.
 
 ## 검수 현황
 
 | 단계 | 상태 |
 |---|---|
-| 자체 스크리닝 (금지 항목·세트 내 내용 동일성·톤 정합) | ✅ 2026-07-08 통과 |
+| 자체 스크리닝 (금지 항목·세트 내 내용 동일성·톤 정합·사실 근거) | ✅ 2026-07-08 통과 (2차 개정 기준 재수행) |
 | 블라인드 정렬 (제3자 — docs/SEEDS_REVIEW.md 검수지 사용) | ⬜ 대기 |
 | 전송 가능성 판정 (24개 전수) | ⬜ 대기 |
 
-시드의 사유·사건은 모두 "실제 사실"을 가정한다 (몸살, 시스템 오류 등) — 허위 사유 생성 금지 원칙(EDGE_CASES 6-1)에 따라 시드 자체에 지어낸 사유를 넣지 않는다.
+목적 커버리지: ask 1세트 / suggest 3 / question 1 / apologize 1 / other 2 / **decline 0 — 거절 시드는 이후 보강 후보** (목적은 프롬프트 지시로도 전달되므로 MVP 동작에는 지장 없음).
+
+시드의 사유·사건은 모두 "실제 사실"을 가정한다 (몸살, 시스템 오류 등) — 허위 사유 생성 금지 원칙(EDGE_CASES 6-1).
 
 ---
 
-## 1. 팀플·조모임 (`groupwork`) — 부드럽게 / 기본 / 단호하게
+## 1. 팀플·조모임 (`groupwork`)
 
-### 세트 G-A. 무임승차 팀원의 변명에 답장
+### 세트 G-A. 무임승차 팀원의 변명에 답장 — 목적: 부탁하기(`ask`)
 
 ```jsonc
 // 공통
-// situationNote: "과제 분담 후 마감 이틀 전인데 팀원이 맡은 파트를 시작도 안 함. 이번이 처음이 아님"
+// situationNote: "과제 분담 후 마감(이번 주 금요일) 이틀 전인데 팀원이 맡은 파트를 시작도 안 함. 취합·정리 시간을 생각하면 목요일까지는 받아야 함. 이번이 처음이 아님"
 // receivedMessage: "미안 나 이번 주 진짜 바빠서 ㅠ 다음 주에 몰아서 할게"
 [
-  { "scenarioId": "groupwork", "toneLevel": 1, "source": "team",
-    "message": "바쁜 건 알겠어! 근데 마감이 이번 주 금요일이라 다음 주면 늦을 것 같아 ㅠ 맡은 파트 어디까지 가능할지 오늘 알려줄 수 있어?" },
-  { "scenarioId": "groupwork", "toneLevel": 2, "source": "team",
+  { "scenarioId": "groupwork", "purpose": "ask", "toneLevel": 1, "source": "team",
     "message": "바쁜 건 알겠는데 마감이 금요일이라 다음 주는 늦어. 맡은 파트 어디까지 할 수 있는지 오늘 중으로 알려줘, 그래야 나머지 계획을 잡을 수 있어." },
-  { "scenarioId": "groupwork", "toneLevel": 3, "source": "team",
+  { "scenarioId": "groupwork", "purpose": "ask", "toneLevel": 2, "source": "team",
+    "message": "바쁜 건 알겠어! 근데 마감이 이번 주 금요일이라 다음 주면 늦을 것 같아 ㅠ 맡은 파트 어디까지 가능할지 오늘 알려줄 수 있어?" },
+  { "scenarioId": "groupwork", "purpose": "ask", "toneLevel": 3, "source": "team",
     "message": "마감이 금요일이라 다음 주는 안 돼. 맡은 파트는 목요일까지 끝내줘야 하고, 어려우면 지금 말해줘. 오늘 중으로 답 부탁해." }
 ]
 ```
 
-### 세트 G-B. 회의가 안 잡혀서 먼저 일정 제안 (먼저 보내기)
+### 세트 G-B. 회의가 안 잡혀서 먼저 일정 제안 (먼저 보내기) — 목적: 제안·확인하기(`suggest`)
 
 ```jsonc
 // 공통
-// situationNote: "발표 2주 전인데 첫 회의가 아직 안 잡힘. 단톡방이 조용한 상태에서 먼저 일정을 제안"
+// situationNote: "발표 2주 전인데 첫 회의가 아직 안 잡힘. 내가 가능한 시간은 목요일 저녁과 금요일 오후. 단톡방이 조용한 상태에서 먼저 일정을 제안"
 // receivedMessage: 없음
 [
-  { "scenarioId": "groupwork", "toneLevel": 1, "source": "team",
-    "message": "얘들아 안녕! 발표가 2주밖에 안 남아서 슬슬 시작하면 좋을 것 같아 ㅎㅎ 혹시 목요일 저녁이나 금요일 오후 중에 다들 시간 어때?" },
-  { "scenarioId": "groupwork", "toneLevel": 2, "source": "team",
+  { "scenarioId": "groupwork", "purpose": "suggest", "toneLevel": 1, "source": "team",
     "message": "얘들아, 발표까지 2주 남아서 이번 주에는 첫 회의를 해야 할 것 같아. 목요일 저녁이랑 금요일 오후 중에 되는 시간 답해줘!" },
-  { "scenarioId": "groupwork", "toneLevel": 3, "source": "team",
+  { "scenarioId": "groupwork", "purpose": "suggest", "toneLevel": 2, "source": "team",
+    "message": "얘들아 안녕! 발표가 2주밖에 안 남아서 슬슬 시작하면 좋을 것 같아 ㅎㅎ 혹시 목요일 저녁이나 금요일 오후 중에 다들 시간 어때?" },
+  { "scenarioId": "groupwork", "purpose": "suggest", "toneLevel": 3, "source": "team",
     "message": "발표까지 2주라 더 미루면 힘들어. 첫 회의는 목요일 저녁으로 잡을게. 안 되는 사람은 오늘까지 말해줘, 없으면 목요일로 확정할게." }
 ]
 ```
 
-## 2. 교수님·조교님 (`professor`) — 간결하게 / 기본 / 격식 갖춰서
+## 2. 교수님·조교님 (`professor`)
 
-### 세트 P-A. "과제 제출 미확인" 메일에 답장
+### 세트 P-A. "과제 제출 미확인" 메일에 답장 — 목적: 제안·확인하기(`suggest`)
 
 ```jsonc
 // 공통
 // situationNote: "LMS 오류로 과제가 제출되지 않았고 조교에게 미확인 메일을 받음. 과제 파일은 기한 내 완성해 둔 상태"
 // receivedMessage: "이번 주 과제 제출이 확인되지 않습니다. 확인 부탁드립니다."
 [
-  { "scenarioId": "professor", "toneLevel": 1, "source": "team",
-    "message": "안녕하세요 조교님. 과제는 기한 내에 완성했으나 업로드 과정에서 오류가 있었던 것 같습니다. 완성본을 첨부드리니 확인 부탁드립니다. 감사합니다." },
-  { "scenarioId": "professor", "toneLevel": 2, "source": "team",
+  { "scenarioId": "professor", "purpose": "suggest", "toneLevel": 1, "source": "team",
     "message": "안녕하세요 조교님, 연락 감사합니다. 기한 내에 과제를 업로드했는데 시스템 오류로 제출이 완료되지 않았던 것 같습니다. 완성해 둔 파일을 첨부해 드리니 제출로 인정될 수 있을지 확인 부탁드립니다. 감사합니다." },
-  { "scenarioId": "professor", "toneLevel": 3, "source": "team",
-    "message": "안녕하세요 조교님, 알려주셔서 감사합니다. 확인해 보니 기한 내 과제를 업로드하는 과정에서 시스템 오류가 있었던 것으로 보입니다. 완성해 두었던 과제 파일을 본 메일에 첨부하오니 검토해 주시면 감사하겠습니다. 번거롭게 해드려 죄송하며, 필요한 절차가 있다면 안내해 주시기 바랍니다. 감사합니다." }
+  { "scenarioId": "professor", "purpose": "suggest", "toneLevel": 2, "source": "team",
+    "message": "안녕하세요 조교님, 알려주셔서 감사합니다. 확인해 보니 기한 내 과제를 업로드하는 과정에서 시스템 오류가 있었던 것으로 보입니다. 완성해 두었던 과제 파일을 본 메일에 첨부하오니 검토해 주시면 감사하겠습니다. 번거롭게 해드려 죄송하며, 필요한 절차가 있다면 안내해 주시기 바랍니다. 감사합니다." },
+  { "scenarioId": "professor", "purpose": "suggest", "toneLevel": 3, "source": "team",
+    "message": "안녕하세요 조교님. 과제는 기한 내에 완성했으나 업로드 과정에서 오류가 있었던 것 같습니다. 완성본을 첨부드리니 확인 부탁드립니다. 감사합니다." }
 ]
 ```
 
-### 세트 P-B. 몸살 결석을 수업 전에 미리 알림 (먼저 보내기)
+### 세트 P-B. 몸살 결석을 수업 전에 미리 알림 (먼저 보내기) — 목적: 기타(`other`)
 
 ```jsonc
 // 공통
 // situationNote: "몸살이 심해 내일 수업에 못 갈 것 같아 미리 알림. 병원 진료 후 진료확인서 제출 예정"
 // receivedMessage: 없음
 [
-  { "scenarioId": "professor", "toneLevel": 1, "source": "team",
-    "message": "교수님 안녕하세요. 몸살이 심해 내일 수업에 참석이 어려울 것 같아 미리 말씀드립니다. 진료확인서는 다음 수업 때 제출하겠습니다. 감사합니다." },
-  { "scenarioId": "professor", "toneLevel": 2, "source": "team",
+  { "scenarioId": "professor", "purpose": "other", "toneLevel": 1, "source": "team",
     "message": "교수님 안녕하세요. 어제부터 몸살 기운이 심해져 내일 수업에 참석하기 어려울 것 같아 미리 연락드립니다. 병원 진료 후 진료확인서를 다음 수업 시간에 제출하겠습니다. 수업 내용은 자료로 보충하겠습니다. 감사합니다." },
-  { "scenarioId": "professor", "toneLevel": 3, "source": "team",
-    "message": "교수님 안녕하세요. 다름이 아니라 몸살 증세가 심해져 부득이하게 내일 수업에 참석하지 못할 것 같아 미리 말씀드리고자 메일 드립니다. 병원 진료 후 진료확인서를 발급받아 다음 수업 시간에 제출하도록 하겠습니다. 수업 내용은 자료와 필기를 통해 충실히 보충하겠습니다. 감사합니다." }
+  { "scenarioId": "professor", "purpose": "other", "toneLevel": 2, "source": "team",
+    "message": "교수님 안녕하세요. 다름이 아니라 몸살 증세가 심해져 부득이하게 내일 수업에 참석하지 못할 것 같아 미리 말씀드리고자 메일 드립니다. 병원 진료 후 진료확인서를 발급받아 다음 수업 시간에 제출하도록 하겠습니다. 수업 내용은 자료와 필기를 통해 충실히 보충하겠습니다. 감사합니다." },
+  { "scenarioId": "professor", "purpose": "other", "toneLevel": 3, "source": "team",
+    "message": "교수님 안녕하세요. 몸살이 심해 내일 수업에 참석이 어려울 것 같아 미리 말씀드립니다. 진료확인서는 다음 수업 때 제출하겠습니다. 감사합니다." }
 ]
 ```
 
-## 3. 선배·동기 (`senior`) — 깍듯하게 / 기본 / 친근하게
+## 3. 선배·동기 (`senior`)
 
-### 세트 S-A. 선배의 "밥 한번 먹자"에 답장
+### 세트 S-A. 선배의 "밥 한번 먹자"에 답장 — 목적: 기타(`other` — 수락)
 
 ```jsonc
 // 공통
-// situationNote: "학과 행사에서 두어 번 본 선배가 밥을 먹자고 먼저 연락. 반갑지만 아직 어려운 사이라 존댓말 수위가 애매함"
+// situationNote: "학과 행사에서 두어 번 본 선배가 밥을 먹자고 먼저 연락. 나는 수요일과 금요일 점심이 가능. 반갑지만 아직 어려운 사이라 존댓말 수위가 애매함"
 // receivedMessage: "우리 조만간 밥 한번 먹자~ 시간 될 때 알려줘!"
 [
-  { "scenarioId": "senior", "toneLevel": 1, "source": "team",
-    "message": "네 선배님, 먼저 연락 주셔서 감사합니다! 저는 수요일이나 금요일 점심이 괜찮은데, 선배님 편하신 시간에 맞추겠습니다." },
-  { "scenarioId": "senior", "toneLevel": 2, "source": "team",
+  { "scenarioId": "senior", "purpose": "other", "toneLevel": 1, "source": "team",
     "message": "네 선배! 연락 주셔서 감사해요 ㅎㅎ 저는 수요일이나 금요일 점심 괜찮은데, 선배는 언제가 편하세요?" },
-  { "scenarioId": "senior", "toneLevel": 3, "source": "team",
-    "message": "오 좋아요 선배 ㅎㅎ 저 수요일이랑 금요일 점심 비어요! 선배 되는 날로 골라요~" }
+  { "scenarioId": "senior", "purpose": "other", "toneLevel": 2, "source": "team",
+    "message": "네 선배님, 먼저 연락 주셔서 감사합니다! 저는 수요일이나 금요일 점심이 괜찮은데, 선배님 편하신 시간에 맞추겠습니다." },
+  { "scenarioId": "senior", "purpose": "other", "toneLevel": 3, "source": "team",
+    "message": "좋아요 선배! 저는 수요일이나 금요일 점심 가능해요. 되시는 날 알려주시면 그날로 확정할게요." }
 ]
 ```
 
-### 세트 S-B. 안면만 있는 선배에게 수강 조언을 먼저 부탁 (먼저 보내기)
+### 세트 S-B. 안면만 있는 선배에게 수강 조언을 먼저 부탁 (먼저 보내기) — 목적: 질문하기(`question`)
 
 ```jsonc
 // 공통
-// situationNote: "다음 학기 수강신청 전에, 그 과목을 들었던 같은 전공 선배에게 난이도와 팁을 먼저 물어봄. 인사만 해 본 사이"
+// situationNote: "다음 학기 수강신청 전에, 그 과목을 들었던 같은 전공 선배에게 과제량과 난이도를 먼저 물어봄. 인사만 해 본 사이"
 // receivedMessage: 없음
 [
-  { "scenarioId": "senior", "toneLevel": 1, "source": "team",
-    "message": "선배님 안녕하세요, 같은 과 후배입니다. 다음 학기 전공 수강을 고민 중인데 그 과목을 들으셨다고 들어서 여쭤보고 싶습니다. 시간 괜찮으실 때 과제량이나 난이도가 어땠는지 알려주실 수 있을까요? 감사합니다!" },
-  { "scenarioId": "senior", "toneLevel": 2, "source": "team",
+  { "scenarioId": "senior", "purpose": "question", "toneLevel": 1, "source": "team",
     "message": "선배 안녕하세요! 다음 학기 수강신청 준비하다가 여쭤보고 싶어서 연락드렸어요. 그 과목 들으셨다고 들었는데 과제량이나 난이도 어땠는지 알려주실 수 있나요? 감사합니다 ㅎㅎ" },
-  { "scenarioId": "senior", "toneLevel": 3, "source": "team",
-    "message": "선배 안녕하세요 ㅎㅎ 저 다음 학기 수강신청 고민 중인데 선배가 그 과목 들었다길래 연락했어요! 과제 많아요? 꿀팁 있으면 알려주세요~" }
+  { "scenarioId": "senior", "purpose": "question", "toneLevel": 2, "source": "team",
+    "message": "선배님 안녕하세요, 같은 과 후배입니다. 다음 학기 전공 수강을 고민 중인데 그 과목을 들으셨다고 들어서 여쭤보고 싶습니다. 시간 괜찮으실 때 과제량이나 난이도가 어땠는지 알려주실 수 있을까요? 감사합니다!" },
+  { "scenarioId": "senior", "purpose": "question", "toneLevel": 3, "source": "team",
+    "message": "선배님 안녕하세요, 다음 학기에 그 과목 수강을 고민 중이라 여쭤봅니다. 과제량이랑 시험 난이도 두 가지만 알려주실 수 있을까요? 답변 주시면 결정에 큰 도움이 됩니다!" }
 ]
 ```
 
-## 4. 친구·연인 (`friend`) — 조심스럽게 / 기본 / 적극적으로
+## 4. 친구·연인 (`friend`)
 
-### 세트 F-A. "너 요즘 나한테 무심한 것 같아"에 답장
+### 세트 F-A. "너 요즘 나한테 무심한 것 같아"에 답장 — 목적: 사과하기(`apologize`)
 
 ```jsonc
 // 공통
-// situationNote: "취준·과제로 바빠 연락이 뜸했더니 친한 친구가 서운함을 표현함. 관계를 회복하고 싶음"
+// situationNote: "취준·과제로 바빠 연락이 뜸했더니 친한 친구가 서운함을 표현함. 관계를 회복하고 싶고, 이번 주말에 만나서 풀고 싶음"
 // receivedMessage: "너 요즘 나한테 좀 무심한 것 같아. 서운해"
 [
-  { "scenarioId": "friend", "toneLevel": 1, "source": "team",
-    "message": "미안해… 요즘 과제에 치여서 연락을 잘 못 했어. 서운하게 할 생각은 없었는데 네가 그렇게 느꼈다면 정말 미안해. 조만간 얼굴 보고 얘기하자." },
-  { "scenarioId": "friend", "toneLevel": 2, "source": "team",
+  { "scenarioId": "friend", "purpose": "apologize", "toneLevel": 1, "source": "team",
     "message": "말해줘서 고마워. 요즘 너무 정신없어서 연락 못 했는데 서운했겠다, 미안해. 이번 주말에 보면서 얘기하자!" },
-  { "scenarioId": "friend", "toneLevel": 3, "source": "team",
+  { "scenarioId": "friend", "purpose": "apologize", "toneLevel": 2, "source": "team",
+    "message": "미안해… 요즘 과제에 치여서 연락을 잘 못 했어. 서운하게 할 생각은 없었는데 네가 그렇게 느꼈다면 정말 미안해. 괜찮으면 이번 주말에 얼굴 보고 얘기하자." },
+  { "scenarioId": "friend", "purpose": "apologize", "toneLevel": 3, "source": "team",
     "message": "서운하게 해서 미안해! 정신없다는 핑계로 소홀했던 거 맞아. 너 나한테 진짜 소중한 친구야. 이번 주말에 내가 밥 살 테니까 시간 비워줘!" }
 ]
 ```
 
-### 세트 F-B. 행사에서 만난 상대에게 먼저 다시 만나자고 제안 (먼저 보내기)
+### 세트 F-B. 행사에서 만난 상대에게 먼저 다시 만나자고 제안 (먼저 보내기) — 목적: 제안·확인하기(`suggest`)
 
 ```jsonc
 // 공통
-// situationNote: "과 행사에서 만나 번호를 교환한 상대가 마음에 들어서, 다음 날 먼저 연락해 다시 만나자고 제안"
+// situationNote: "과 행사에서 만나 번호를 교환한 상대가 마음에 들어서, 다음 날 먼저 연락해 이번 주(가능하면 금요일)에 만나자고 제안"
 // receivedMessage: 없음
 [
-  { "scenarioId": "friend", "toneLevel": 1, "source": "team",
-    "message": "안녕하세요! 어제 행사에서 인사했던 사람이에요 ㅎㅎ 어제 얘기 재밌었어요. 혹시 괜찮으시면 다음에 커피 한잔해요!" },
-  { "scenarioId": "friend", "toneLevel": 2, "source": "team",
+  { "scenarioId": "friend", "purpose": "suggest", "toneLevel": 1, "source": "team",
     "message": "안녕하세요, 어제 행사에서 봤던 사람이에요 ㅎㅎ 얘기 나눠서 즐거웠어요! 괜찮으면 이번 주에 커피 한잔 어때요?" },
-  { "scenarioId": "friend", "toneLevel": 3, "source": "team",
+  { "scenarioId": "friend", "purpose": "suggest", "toneLevel": 2, "source": "team",
+    "message": "안녕하세요! 어제 행사에서 인사했던 사람이에요 ㅎㅎ 어제 얘기 재밌었어요. 혹시 괜찮으시면 다음에 커피 한잔해요!" },
+  { "scenarioId": "friend", "purpose": "suggest", "toneLevel": 3, "source": "team",
     "message": "안녕하세요! 어제 얘기가 너무 즐거워서 연락 안 할 수가 없었어요 ㅎㅎ 이번 주 금요일에 커피 한잔해요, 제가 괜찮은 데 알아둘게요!" }
 ]
 ```
 
 ---
 
-## 자체 스크리닝 기록 (2026-07-08)
+## 자체 스크리닝 기록 (2026-07-08, 2차 개정 기준 재수행)
 
-- 플레이스홀더(`[...]`, `OO`) 잔존: **0건** (전수 스캔)
+- 플레이스홀더(`[...]`, `OO`) 잔존: **0건** — 시드는 상황노트로 사실을 충분히 제공하므로 자리 표시자 불필요 (SPEC 4장 사실 근거 규칙)
+- **사실 근거**: message의 모든 구체 사실(금요일 마감, 목·금 후보 시간, 수·금 점심, 주말, 금요일 제안)이 situationNote에 근거함 — 전수 확인
 - 실명·학과·식별 정보: **0건** — 호칭은 "교수님/조교님/선배/얘들아" 등 일반 호칭만 사용
 - 허위 사유: **0건** — 몸살·시스템 오류는 상황이 가정하는 실제 사실
 - 세트 내 내용 동일성: 8세트 전부 "전달 내용 동일, 태도만 상이" 확인
+- 톤 정합: toneLevel 2·3이 SPEC 1장 시나리오별 해석 지침(교수님: 부드럽게=격식·완곡, 분명하게=간결·직접 등)과 일치
 - 길이·형식: 카톡 시나리오 1~3문장 구어체, 메일 시나리오 인사–용건–맺음 구조 준수
-- 정중함 하한선: toneLevel 3(단호하게/적극적으로)도 요구·제안일 뿐 비난·압박 표현 없음
-그럼
+- 정중함 하한선: toneLevel 3(더 분명하게)도 요구·제안일 뿐 비난·압박 표현 없음
