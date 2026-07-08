@@ -13,6 +13,14 @@
 ## Figma
 
 - FigJam 흐름도: https://www.figma.com/board/V5Jke4dsqaoMUOiTEg57tM
+- 웹 프로토타입 디자인: https://www.figma.com/design/0XXQwlwMjFsVB8wreJpDkf?node-id=1-2
+
+> 참고: 최신 React 탭 화면을 Figma에 재캡처하려고 했으나, 현재 Figma Starter 플랜의 MCP 호출 한도에 걸려 자동 재캡처 검증은 중단되었습니다. 아래 PNG는 최신 로컬 구현을 기준으로 저장한 웹디자인 고정 산출물입니다.
+
+## 최신 웹 프로토타입 캡처
+
+- 데스크톱: `docs/images/modu-brain-web-desktop.png`
+- 모바일: `docs/images/modu-brain-web-mobile.png`
 
 ## 디자인 방향
 

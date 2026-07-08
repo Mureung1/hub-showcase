@@ -22,25 +22,34 @@
 ![모두의 뇌 기획 대표 이미지](docs/images/modu-brain-cover.png)
 
 - [HTML 상세 보기](docs/visualization.html)
+- [최신 데스크톱 웹 캡처](docs/images/modu-brain-web-desktop.png)
+- [최신 모바일 웹 캡처](docs/images/modu-brain-web-mobile.png)
 
 ## 현재 개발 방향
 
-오늘 단계에서는 회의 요약 도구와 구분되는 기획 방향을 명확히 하기 위해, `할 일 정리`보다 `맥락 공유`를 핵심 문제로 둡니다.
+오늘 단계에서는 회의 요약 도구와 구분되는 기획 방향을 명확히 하기 위해, `할 일 정리`보다 `맥락 공유`를 핵심 문제로 둡니다. 첨부 개발 패키지의 PRD/TRD/화면설계를 기준으로 React 프로토타입을 구성했습니다.
 
 1. 문제 정의를 협업 맥락 손실 문제로 바꿉니다.
 2. 핵심 기능을 프로젝트 맥락 추출과 공유 지식맵 생성으로 좁힙니다.
 3. 시장 조사와 경쟁 분석으로 기획 타당성을 보강합니다.
 4. 기초 화면 개발을 위해 React + TypeScript 컴포넌트를 추가합니다.
+5. 결과 화면은 `개요 / 지식맵 / 온보딩 요약` 탭으로 나눠 보여줍니다.
 
 ## MVP 핵심 기능
 
 - 회의록/연구 메모/팀 피드백에서 주제, 용어, 결정사항, 미결 질문 추출
 - 사람/역할/주제를 연결한 공유 지식맵과 맥락 요약 생성
 
-## React 확인 컴포넌트
+## React 프로토타입 구성
 
-- [NewsCard 컴포넌트](src/components/NewsCard.tsx)
-- CSS Modules: [NewsCard.module.css](src/components/NewsCard.module.css)
+- 입력: [ContextInput](src/components/ContextInput.tsx)
+- 요약: [SummaryPanel](src/components/SummaryPanel.tsx)
+- 관점 표: [PerspectiveTable](src/components/PerspectiveTable.tsx)
+- 미결 질문: [QuestionList](src/components/QuestionList.tsx)
+- 결정사항: [DecisionList](src/components/DecisionList.tsx)
+- 핵심 용어: [KeyTerms](src/components/KeyTerms.tsx)
+- 지식맵: [KnowledgeMap](src/components/KnowledgeMap.tsx)
+- 온보딩 요약: [OnboardingSummary](src/components/OnboardingSummary.tsx)
 
 ## 로컬 실행
 
@@ -49,18 +58,10 @@ npm install
 npm run dev
 ```
 
-## NewsCard 렌더 확인 props
-
-```tsx
-<NewsCard
-  title="업데이트 확인과 도구 전환이 실제 작업 시간을 잠식한다"
-  source="Asana Anatomy of Work"
-  thumbnail="/images/research-work.svg"
-/>
-```
-
 ## npm run dev 확인 시나리오
 
-1. 홈 화면에서 `모두의 뇌` 제목과 기획 근거 카드 3개가 보이는지 확인합니다.
-2. 각 카드에 `title`, `source`, `thumbnail`이 모두 렌더링되는지 확인합니다.
-3. 브라우저 폭을 줄였을 때 카드가 한 줄 세로 목록으로 바뀌고 긴 제목이 깨지지 않는지 확인합니다.
+1. 홈 화면에서 `팀의 흩어진 맥락을 하나의 뇌로.` 제목이 보이는지 확인합니다.
+2. `예시 불러오기`를 누르면 입력창이 채워지고 `맥락 분석하기` 버튼이 활성화되는지 확인합니다.
+3. 결과 화면의 `개요 / 지식맵 / 온보딩 요약` 탭이 전환되는지 확인합니다.
+4. 개요 탭에서 `참여자별 관점 차이 → 다음 회의 질문 → 결정사항 → 핵심 용어` 순서로 보이는지 확인합니다.
+5. 모바일 폭에서도 텍스트와 카드가 가로로 넘치지 않는지 확인합니다.
