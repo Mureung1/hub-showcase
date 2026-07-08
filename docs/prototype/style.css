@@ -1,0 +1,472 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f5f7fb;
+  font-family: system-ui, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+}
+
+/* 상단 4단계 네비게이션 */
+.steps {
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  margin: 0 0 32px;
+  padding: 0;
+}
+
+.steps li {
+  flex: 1;
+}
+
+.steps a {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  color: #6b7280;
+  font-size: 13px;
+  padding: 10px 4px;
+  border-bottom: 3px solid #e5e7eb;
+}
+
+.steps a .num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.steps a:hover {
+  color: #4f46e5;
+}
+
+.steps a.active {
+  color: #4f46e5;
+  font-weight: 700;
+  border-bottom-color: #4f46e5;
+}
+
+.steps a.active .num {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+/* 카드 */
+.card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 36px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+.label {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.35;
+  color: #111827;
+}
+
+.subtitle {
+  margin: 0 0 28px;
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.note {
+  margin: -18px 0 28px;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.section:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+h2 {
+  margin: 0 0 12px;
+  font-size: 17px;
+  color: #1f2937;
+}
+
+/* 폼 요소 */
+.field {
+  margin-bottom: 18px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.field .hint {
+  font-weight: 400;
+  color: #9ca3af;
+  margin-left: 4px;
+}
+
+.field input[type="text"],
+.field input[type="number"],
+.field textarea {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  color: #111827;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.field-error input {
+  border-color: #ef4444;
+}
+
+.error-text {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #ef4444;
+}
+
+.field-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.field-row input {
+  flex: 1;
+}
+
+.add-more {
+  display: inline-block;
+  font-size: 13px;
+  color: #4f46e5;
+  border: 1px dashed #c7d2fe;
+  border-radius: 8px;
+  padding: 6px 12px;
+  background: #eef2ff;
+}
+
+/* 버튼 */
+.btn {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.btn-block {
+  display: block;
+  width: 100%;
+}
+
+.btn-secondary {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.btn-link {
+  color: #6b7280;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.btn-link:hover {
+  color: #4f46e5;
+}
+
+.actions {
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 공고 카드 목록 */
+.job-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.job-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.job-card:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.12);
+}
+
+.job-card .org {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.job-card h3 {
+  margin: 4px 0 8px;
+  font-size: 17px;
+  color: #111827;
+}
+
+.job-card .deadline {
+  font-size: 13px;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #4f46e5;
+  background: #eef2ff;
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+/* 상세 화면 */
+.meta-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.meta-list li {
+  padding: 6px 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.meta-list li:last-child {
+  border-bottom: none;
+}
+
+ul.condition-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+ul.condition-list li + li {
+  margin-top: 6px;
+}
+
+/* 자소서 초안 화면 */
+.question-block {
+  margin-bottom: 24px;
+}
+
+.question-block h3 {
+  font-size: 15px;
+  color: #111827;
+  margin: 0 0 6px;
+}
+
+.analysis {
+  font-size: 13px;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+/* 다크 모드 */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #16171d;
+    color: #d1d5db;
+  }
+
+  .card {
+    background: #1f2028;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .label {
+    color: #a5b4fc;
+  }
+
+  h1 {
+    color: #f3f4f6;
+  }
+
+  .subtitle {
+    color: #9ca3af;
+  }
+
+  .note {
+    color: #6b7280;
+  }
+
+  .section {
+    border-top-color: #2e303a;
+  }
+
+  h2 {
+    color: #e5e7eb;
+  }
+
+  .field label {
+    color: #e5e7eb;
+  }
+
+  .field input[type="text"],
+  .field input[type="number"],
+  .field textarea {
+    background: #14151a;
+    border-color: #3a3c46;
+    color: #f3f4f6;
+  }
+
+  .field .hint {
+    color: #6b7280;
+  }
+
+  .field-error input {
+    border-color: #f87171;
+  }
+
+  .error-text {
+    color: #f87171;
+  }
+
+  .add-more {
+    background: #1e2340;
+    border-color: #3730a3;
+    color: #a5b4fc;
+  }
+
+  .steps a {
+    color: #9ca3af;
+    border-bottom-color: #2e303a;
+  }
+
+  .steps a .num {
+    background: #2e303a;
+    color: #d1d5db;
+  }
+
+  .steps a.active {
+    color: #a5b4fc;
+    border-bottom-color: #818cf8;
+  }
+
+  .steps a.active .num {
+    background: #818cf8;
+    color: #14151a;
+  }
+
+  .btn-secondary {
+    background: #1e2340;
+    color: #a5b4fc;
+  }
+
+  .btn-link {
+    color: #9ca3af;
+  }
+
+  .btn-link:hover {
+    color: #a5b4fc;
+  }
+
+  .job-card {
+    background: #1f2028;
+    border-color: #2e303a;
+  }
+
+  .job-card:hover {
+    border-color: #4338ca;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  .job-card .org {
+    color: #9ca3af;
+  }
+
+  .job-card h3 {
+    color: #f3f4f6;
+  }
+
+  .job-card .deadline {
+    color: #f87171;
+  }
+
+  .badge {
+    background: #1e2340;
+    color: #a5b4fc;
+  }
+
+  .meta-list {
+    color: #9ca3af;
+  }
+
+  .meta-list li {
+    border-bottom-color: #2e303a;
+  }
+
+  .analysis {
+    background: #14151a;
+    color: #9ca3af;
+  }
+}
