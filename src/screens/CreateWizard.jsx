@@ -1,22 +1,14 @@
 import { useState } from 'react';
 import { useProject } from '../store';
 import { PROJECT_TYPES, getRolesForType } from '../data/templates';
+import { toDateInputValue, addDays } from '../utils/dates';
 import './CreateWizard.css';
 
 const MIN_MEMBERS = 3;
 const MAX_MEMBERS = 8;
 
-function toDateInputValue(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 function defaultDeadline() {
-  const d = new Date();
-  d.setDate(d.getDate() + 28); // 데모 시나리오 기본값: 마감 4주 뒤
-  return toDateInputValue(d);
+  return toDateInputValue(addDays(new Date(), 28)); // 데모 시나리오 기본값: 마감 4주 뒤
 }
 
 export default function CreateWizard() {

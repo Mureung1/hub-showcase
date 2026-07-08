@@ -23,6 +23,46 @@ export function reducer(state, action) {
   switch (action.type) {
     case 'CREATE_PROJECT':
       return { ...initialState, project: action.project, step: 'plan' };
+    case 'SET_PLAN':
+      return { ...state, plan: action.plan };
+    case 'UPDATE_TASK':
+      return {
+        ...state,
+        plan: {
+          ...state.plan,
+          tasks: state.plan.tasks.map((t) =>
+            t.id === action.taskId ? { ...t, ...action.patch } : t,
+          ),
+        },
+      };
+    case 'ADD_TASK':
+      return {
+        ...state,
+        plan: {
+          ...state.plan,
+          nextTaskId: state.plan.nextTaskId + 1,
+          tasks: [
+            ...state.plan.tasks,
+            {
+              id: `t${state.plan.nextTaskId}`,
+              milestoneId: action.milestoneId,
+              title: action.title,
+              roleId: action.roleId ?? null,
+              status: 'todo',
+            },
+          ],
+        },
+      };
+    case 'DELETE_TASK':
+      return {
+        ...state,
+        plan: {
+          ...state.plan,
+          tasks: state.plan.tasks.filter((t) => t.id !== action.taskId),
+        },
+      };
+    case 'CONFIRM_PLAN':
+      return { ...state, step: 'survey' };
     case 'GO_TO_STEP':
       return { ...state, step: action.step };
     case 'RESET':

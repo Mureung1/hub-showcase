@@ -1,6 +1,7 @@
 import { useProject, STEPS } from './store';
 import ProjectProvider from './StoreProvider';
 import CreateWizard from './screens/CreateWizard';
+import PlanReview from './screens/PlanReview';
 import Placeholder from './screens/Placeholder';
 import './App.css';
 
@@ -29,7 +30,7 @@ function Screen() {
     case 'wizard':
       return <CreateWizard />;
     case 'plan':
-      return <Placeholder stage={2} />;
+      return <PlanReview />;
     case 'survey':
       return <Placeholder stage={3} />;
     case 'assignment':
