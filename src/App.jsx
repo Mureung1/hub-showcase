@@ -1,5 +1,5 @@
-import MaterialsOrchestratorIntro from "./MaterialsOrchestratorIntro";
+import ProjectIntro from "./ProjectIntro";
 
 export default function App() {
-  return <MaterialsOrchestratorIntro />;
+  return <ProjectIntro />;
 }
