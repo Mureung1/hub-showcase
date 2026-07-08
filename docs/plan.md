@@ -281,4 +281,5 @@ flowchart TD
 
 ## 12. 프로토타입 링크
 
-- 프로토타입 링크: TODO
+- 프로토타입 링크: `prototype/index.html`
+- TODO: 1주차 정적 HTML/CSS 프로토타입 구현 후 README의 폴더 역할 설명과 함께 최신 상태로 유지합니다.

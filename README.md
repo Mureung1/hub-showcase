@@ -46,13 +46,18 @@ hub/
   docs/
     architecture.md
     checklist.md
+    design-concept.md
     plan.md
     images/
+
+  prototype/
+    index.html
+    style.css
+    assets/
 
   src/
     internal/
       project-intro/
-      prototype/
 
     product/
       components/
@@ -70,6 +75,12 @@ hub/
     index.css
     main.jsx
 ```
+
+## 폴더 역할 TODO
+
+- `src/internal/project-intro/`: 프로젝트 소개용 React 화면을 유지합니다.
+- `prototype/index.html`: 1주차 HTML/CSS 정적 프로토타입 위치입니다.
+- `src/product/`: 이후 실제 서비스 React 구현이 들어갈 위치입니다.
 
 ## 현재 구현 상태
 
