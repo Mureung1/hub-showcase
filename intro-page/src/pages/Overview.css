@@ -19,45 +19,52 @@
   font-size: 20px;
   color: var(--text-h);
   margin-bottom: 16px;
+  font-family: var(--font-desc);
 }
 
 .overview-lead-sub {
   font-size: 17px;
   color: var(--text-soft);
+  font-family: var(--font-desc);
 }
 
 .overview-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(240px, 1fr));
-  gap: 20px;
+  gap: 24px;
   width: 100%;
-  max-width: 800px;
+  max-width: 1160px;
   margin-bottom: 36px;
 }
 
 .overview-card {
   background: rgba(255, 255, 255, 0.85);
-  border-radius: 22px;
-  padding: 24px;
+  border-radius: 26px;
+  padding: 40px 36px;
+  min-height: 220px;
   box-shadow: var(--shadow-soft);
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .overview-card-emoji {
-  font-size: 30px;
+  font-size: 36px;
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .overview-card h3 {
-  font-size: 18px;
-  margin-bottom: 8px;
+  font-size: 21px;
+  margin-bottom: 12px;
 }
 
 .overview-card p {
-  font-size: 15px;
+  font-size: 16px;
   color: var(--text-soft);
   margin: 0;
+  font-family: var(--font-desc);
 }
 
 .overview-footer {
@@ -71,6 +78,7 @@
 .overview-footer p {
   font-size: 15px;
   color: var(--text-soft);
+  font-family: var(--font-desc);
 }
 
 @media (max-width: 640px) {

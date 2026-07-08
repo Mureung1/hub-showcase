@@ -5,6 +5,10 @@
   --coral-deep: #ff8163;
   --pink: #ffd6e0;
   --pink-deep: #ffb3c6;
+  --pink-track-light: #ffdfe8;
+  --mint: #a8e6cf;
+  --mint-deep: #3fae82;
+  --mint-light: #c9f0e0;
   --cream: #fff8f2;
   --text: #6b4a3f;
   --text-soft: #8a6a5d;
@@ -15,6 +19,7 @@
 
   --heading: 'Jua', 'Gaegu', sans-serif;
   --body: 'Gaegu', 'Jua', sans-serif;
+  --font-desc: 'Gowun Dodum', 'Gaegu', sans-serif;
 
   font: 18px/1.6 var(--body);
   color: var(--text);

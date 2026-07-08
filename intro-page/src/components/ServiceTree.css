@@ -1,0 +1,197 @@
+.service-tree {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tree-common-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+}
+
+.tree-common-group + .tree-common-group {
+  margin-top: 22px;
+}
+
+.tree-common-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(160deg, #f6f1e7 0%, #e9e1d2 100%);
+  border: 2px solid #d9cdb8;
+  border-radius: 999px;
+  padding: 14px 28px;
+  box-shadow: var(--shadow-soft);
+  z-index: 2;
+}
+
+.tree-common-icon {
+  font-size: 24px;
+}
+
+.tree-common-card h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.tree-common-desc {
+  margin: 8px 0 0;
+  max-width: 380px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-soft);
+  font-family: var(--font-desc);
+  text-align: center;
+}
+
+.tree-wrap {
+  position: relative;
+  width: 100%;
+  margin-top: -1px;
+}
+
+.tree-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tree-path-trunk {
+  fill: none;
+  stroke: #d9cdb8;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.tree-path-track {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tree-path-roommate {
+  stroke: var(--mint-light);
+}
+
+.tree-path-meeting {
+  stroke: var(--pink-track-light);
+}
+
+.tree-path-divider {
+  fill: none;
+  stroke: var(--pink-deep);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 9;
+  opacity: 0.35;
+}
+
+.tree-track-title {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: var(--heading);
+  font-size: 17px;
+  color: var(--text-h);
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  padding: 4px 14px;
+  z-index: 2;
+}
+
+.tree-step {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.tree-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid var(--coral);
+  color: var(--text-h);
+  font-family: var(--heading);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-soft);
+  z-index: 3;
+}
+
+.tree-dot-roommate {
+  border-color: var(--mint-deep);
+}
+
+.tree-dot-meeting {
+  border-color: var(--coral-deep);
+}
+
+.tree-label {
+  position: absolute;
+  top: 0;
+  width: 190px;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 14px;
+  padding: 10px 14px;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  z-index: 2;
+}
+
+.tree-label strong {
+  font-family: var(--heading);
+  font-size: 14.5px;
+  color: var(--text-h);
+}
+
+.tree-label span {
+  font-size: 12.5px;
+  color: var(--text-soft);
+  line-height: 1.45;
+  font-family: var(--font-desc);
+}
+
+.tree-label-left {
+  right: 30px;
+  text-align: right;
+}
+
+.tree-label-right {
+  left: 30px;
+  text-align: left;
+}
+
+@media (max-width: 760px) {
+  .tree-label {
+    width: 140px;
+    font-size: 12px;
+  }
+
+  .tree-track-title {
+    font-size: 14px;
+    padding: 3px 10px;
+  }
+
+  .tree-dot {
+    width: 38px;
+    height: 38px;
+    font-size: 15px;
+  }
+}
