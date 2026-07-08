@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>방결정 | 대학생 자취방 의사결정 도우미</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">방</span>
+      <div>
+        <strong>방결정</strong>
+        <span>대학생 자취방 의사결정 도우미</span>
+      </div>
+    </div>
+    <nav class="nav-links" aria-label="주요 메뉴">
+      <a href="#input">정보 입력</a>
+      <a href="#report">분석 리포트</a>
+      <a href="#checklist">체크리스트</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">AI rental decision copilot</p>
+        <h1>계약해도 괜찮은 자취방인지 먼저 판단하세요.</h1>
+        <p>
+          학교, 예산, 매물 조건을 입력하면 가격, 통학, 생활 편의성, 계약 리스크를 한 화면에서 비교할 수 있습니다.
+        </p>
+      </div>
+      <div class="hero-panel" aria-label="요약 점수">
+        <span>종합 적합도</span>
+        <strong>82</strong>
+        <p>예산과 통학 조건은 양호하지만 관리비 세부 항목 확인이 필요합니다.</p>
+      </div>
+    </section>
+
+    <section class="workspace" id="input">
+      <form class="input-panel">
+        <div class="section-heading">
+          <p>Step 1</p>
+          <h2>사용자 정보</h2>
+        </div>
+
+        <label>
+          학교
+          <input type="text" value="연세대학교 신촌캠퍼스">
+        </label>
+
+        <div class="form-grid">
+          <label>
+            월 예산
+            <input type="text" value="70만원">
+          </label>
+          <label>
+            주당 등교 횟수
+            <input type="text" value="4회">
+          </label>
+        </div>
+
+        <label>
+          주 귀가 시간
+          <select>
+            <option>22시 이후</option>
+            <option>20시 이전</option>
+            <option>24시 이후</option>
+          </select>
+        </label>
+
+        <div class="section-heading compact">
+          <p>Step 2</p>
+          <h2>매물 정보</h2>
+        </div>
+
+        <label>
+          주소
+          <input type="text" value="서울 서대문구 창천동">
+        </label>
+
+        <div class="form-grid">
+          <label>
+            보증금
+            <input type="text" value="1000만원">
+          </label>
+          <label>
+            월세
+            <input type="text" value="58만원">
+          </label>
+          <label>
+            관리비
+            <input type="text" value="9만원">
+          </label>
+          <label>
+            면적
+            <input type="text" value="18㎡">
+          </label>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            층수
+            <select>
+              <option>3층 / 5층</option>
+              <option>반지하</option>
+              <option>옥탑</option>
+            </select>
+          </label>
+          <label>
+            방 타입
+            <select>
+              <option>원룸</option>
+              <option>오피스텔</option>
+              <option>쉐어하우스</option>
+            </select>
+          </label>
+        </div>
+
+        <fieldset>
+          <legend>옵션</legend>
+          <label><input type="checkbox" checked> 에어컨</label>
+          <label><input type="checkbox" checked> 세탁기</label>
+          <label><input type="checkbox"> 침대</label>
+          <label><input type="checkbox" checked> 냉장고</label>
+        </fieldset>
+
+        <button type="button">AI 분석 리포트 생성</button>
+      </form>
+
+      <section class="report-panel" id="report" aria-label="AI 분석 결과">
+        <div class="report-header">
+          <div>
+            <p>AI 분석 결과</p>
+            <h2>창천동 원룸 검토 리포트</h2>
+          </div>
+          <span class="status">검토 필요</span>
+        </div>
+
+        <div class="score-row">
+          <article>
+            <span>가격</span>
+            <strong>적정</strong>
+            <p>주변 시세 대비 월 부담액이 크게 벗어나지 않습니다.</p>
+          </article>
+          <article>
+            <span>통학</span>
+            <strong>우수</strong>
+            <p>도보와 대중교통 모두 부담이 낮은 구간입니다.</p>
+          </article>
+          <article>
+            <span>리스크</span>
+            <strong>주의</strong>
+            <p>관리비 포함 항목과 등기부 확인이 필요합니다.</p>
+          </article>
+        </div>
+
+        <div class="analysis-list">
+          <article>
+            <div class="icon">₩</div>
+            <div>
+              <h3>가격 적정성</h3>
+              <p>보증금 1000만원, 월세 58만원, 관리비 9만원 기준 월 고정비는 67만원입니다. 입력한 예산 70만원 안에 들어오지만 공과금 별도 여부를 확인해야 합니다.</p>
+            </div>
+          </article>
+
+          <article>
+            <div class="icon">↔</div>
+            <div>
+              <h3>통학시간 및 교통비</h3>
+              <p>예상 통학시간은 편도 18분입니다. 주 4회 등교 기준 월 교통비는 약 2만 4천원 수준으로 예산 압박은 낮습니다.</p>
+            </div>
+          </article>
+
+          <article>
+            <div class="icon">⌂</div>
+            <div>
+              <h3>생활 편의성</h3>
+              <p>편의점, 약국, 카페 접근성이 좋고 늦은 귀가에도 대로변 동선이 확보됩니다. 단, 야간 소음 가능성은 현장 방문 때 확인하세요.</p>
+            </div>
+          </article>
+
+          <article>
+            <div class="icon">!</div>
+            <div>
+              <h3>허위매물 의심 요소</h3>
+              <p>가격과 면적 조합은 과도하게 낮지 않습니다. 사진 수가 적거나 즉시 계약을 유도한다면 동일 주소의 다른 매물과 비교가 필요합니다.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </section>
+
+    <section class="bottom-grid" id="checklist">
+      <article class="checklist">
+        <div class="section-heading">
+          <p>Before contract</p>
+          <h2>계약 전 체크리스트</h2>
+        </div>
+        <label><input type="checkbox"> 등기부등본의 소유자와 계약자가 일치하는지 확인</label>
+        <label><input type="checkbox"> 관리비 포함 항목과 별도 공과금 확인</label>
+        <label><input type="checkbox"> 누수, 곰팡이, 수압, 콘센트 상태 현장 확인</label>
+        <label><input type="checkbox"> 중도해지 조건과 원상복구 범위 확인</label>
+      </article>
+
+      <article class="opinion">
+        <p>AI 종합 의견</p>
+        <h2>계약 후보로 유지하되, 관리비와 권리관계 확인 후 결정하는 것이 좋습니다.</h2>
+        <span>추천 액션: 같은 가격대 매물 2개와 추가 비교</span>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
