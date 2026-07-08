@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Bell, Search, Settings, Home, BookOpen, 
-  CheckCircle, Clock, AlertCircle, ChevronRight, GraduationCap, Flame, AlertTriangle
+  CheckCircle, Clock, AlertCircle, ChevronRight, GraduationCap, Flame, AlertTriangle, Calendar as CalendarIcon
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ActionItem {
   id: number;
@@ -20,6 +21,7 @@ interface RawInfo {
   title: string;
   sourceType: string;
   createdAt: string;
+  url?: string;
 }
 
 const Dashboard: React.FC = () => {
@@ -27,6 +29,7 @@ const Dashboard: React.FC = () => {
   const [rawInfos, setRawInfos] = useState<RawInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const navigate = useNavigate();
 
   const fetchData = async () => {
     try {
@@ -120,6 +123,7 @@ const Dashboard: React.FC = () => {
         <nav className="flex-1 px-6 py-4 space-y-3">
           {[
             { icon: Home, label: 'Dashboard', bg: 'bg-pastel-blue border-brand-blue/30', color: 'text-brand-blue' },
+            { icon: CalendarIcon, label: 'Calendar', bg: 'hover:bg-slate-50', color: 'text-slate-400' },
             { icon: CheckCircle, label: 'Action Items', bg: 'hover:bg-slate-50', color: 'text-slate-400' },
             { icon: BookOpen, label: 'Raw Info', bg: 'hover:bg-slate-50', color: 'text-slate-400' },
             { icon: Settings, label: 'Settings', bg: 'hover:bg-slate-50', color: 'text-slate-400' },
@@ -128,7 +132,13 @@ const Dashboard: React.FC = () => {
             return (
               <button
                 key={idx}
-                onClick={() => setActiveTab(item.label)}
+                onClick={() => {
+                  if (item.label === 'Calendar') {
+                    navigate('/calendar');
+                  } else {
+                    setActiveTab(item.label);
+                  }
+                }}
                 className={`w-full flex items-center space-x-4 px-5 py-4 rounded-2xl font-bold transition-all duration-200 border-2 border-transparent ${
                   isActive 
                     ? 'bg-pastel-blue border-brand-blue/30 text-dark-blue' 
