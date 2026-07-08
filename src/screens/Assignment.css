@@ -1,0 +1,141 @@
+.assignment {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* AI 설명 불릿 (.ai-note 기본 스타일은 PlanReview.css 공용) */
+.ai-points {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.ai-points li {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding-left: 14px;
+  position: relative;
+}
+
+.ai-points li::before {
+  content: '•';
+  position: absolute;
+  left: 2px;
+  color: var(--text-accent);
+}
+
+/* 타협안 카드 */
+.compromise-card {
+  padding: 14px 16px;
+  background: #fff8e8;
+  border: 1px solid #ecd9a8;
+  border-radius: var(--radius-md);
+}
+
+.compromise-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #8a6d1a;
+  margin-bottom: 6px;
+}
+
+.compromise-text {
+  font-size: 0.84rem;
+  color: #6d5713;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+/* 팀원 카드 */
+.member-cards {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.member-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  text-align: left;
+  transition: border-color var(--transition-fast);
+}
+
+.member-card:disabled {
+  cursor: default;
+  color: inherit;
+  opacity: 1;
+}
+
+.member-card.pickable {
+  cursor: pointer;
+  border-style: dashed;
+  border-color: var(--border-color);
+}
+
+.member-card.pickable:hover {
+  border-color: var(--bg-accent-dark);
+}
+
+.member-card.picked {
+  border-style: solid;
+  border-color: var(--bg-accent-dark);
+  background: var(--bg-accent);
+}
+
+.member-card-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.member-card-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.member-card-tasks {
+  font-size: 0.74rem;
+  color: var(--text-tertiary);
+}
+
+/* 스왑 */
+.swap-guide {
+  font-size: 0.86rem;
+  color: var(--text-accent);
+  font-weight: 600;
+  text-align: center;
+}
+
+.assign-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.assign-actions .btn-primary {
+  flex: 1;
+}
+
+.assign-actions .btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.swap-note {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  text-align: center;
+}

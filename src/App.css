@@ -1,5 +1,116 @@
-/* App wrapper */
+/* 앱 셸 — 모바일 우선(~400px 기준), 데스크톱에서는 중앙 정렬 컨테이너 */
 .app {
   width: 100%;
+  max-width: 480px;
   min-height: 100vh;
+  padding: 16px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-accent);
+}
+
+/* 진행 단계 표시 */
+.steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  color: var(--text-tertiary);
+}
+
+.step.current .step-num {
+  background: var(--bg-accent-dark);
+  border-color: var(--bg-accent-dark);
+  color: var(--text-white);
+}
+
+.step.done .step-num {
+  background: var(--bg-accent);
+  border-color: var(--text-accent);
+  color: var(--text-accent);
+}
+
+.step-label {
+  font-size: 0.66rem;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.step.current .step-label {
+  color: var(--text-accent);
+  font-weight: 700;
+}
+
+.app-main {
+  flex: 1;
+}
+
+/* 공용 버튼 */
+.btn-primary {
+  padding: 14px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--bg-accent-dark);
+  color: var(--text-white);
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn-ghost {
+  padding: 14px 20px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.btn-reset {
+  padding: 8px 14px;
+  font-size: 0.82rem;
+}
+
