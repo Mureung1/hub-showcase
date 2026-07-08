@@ -6,6 +6,9 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 
 기획서, 개발문서, 기능 스펙, 운영 규칙은 아래 링크에서 접근한다.
 
+공개 문서사이트:
+[https://hub-localtwin-docs-vercel.vercel.app](https://hub-localtwin-docs-vercel.vercel.app)
+
 ### Wiki용 기획 문서
 
 - [Wiki Home](docs/wiki/doc-viewer.html?doc=Home.md)
