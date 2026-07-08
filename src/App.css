@@ -326,12 +326,20 @@ a:focus-visible {
 }
 
 .board-heading h2,
-.retrieve-command h2,
+.retrieve-hero h2,
 .save-card h2 {
   color: var(--color-text);
   font-size: 24px;
   font-weight: 700;
   line-height: 32px;
+}
+
+.retrieve-hero h2 {
+  max-width: 760px;
+  font-size: 40px;
+  line-height: 48px;
+  overflow-wrap: break-word;
+  text-align: center;
 }
 
 .board-heading span {
@@ -485,7 +493,6 @@ a:focus-visible {
   justify-content: center;
 }
 
-.retrieve-command,
 .save-card,
 .save-followup {
   display: grid;
@@ -496,7 +503,7 @@ a:focus-visible {
   background: var(--color-surface);
 }
 
-.retrieve-form,
+.retrieve-search,
 .save-form,
 .save-followup {
   display: grid;
@@ -510,10 +517,73 @@ label {
   line-height: 20px;
 }
 
-.retrieve-row {
+.retrieve-search-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
+}
+
+.home-board {
+  gap: 28px;
+}
+
+.retrieve-hero {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  width: min(820px, 100%);
+  margin: 26px auto 4px;
+  text-align: center;
+}
+
+.retrieve-hero > p:not(.hero-badge) {
+  max-width: 620px;
+  color: var(--color-muted);
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-primary);
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 18px;
+}
+
+.retrieve-search {
+  width: min(720px, 100%);
+  margin-top: 6px;
+  text-align: left;
+}
+
+.situation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: min(720px, 100%);
+}
+
+.situation-grid .suggestion-chip {
+  width: 100%;
+  min-height: 40px;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.situation-grid .suggestion-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.retrieve-results-heading {
+  padding-top: 6px;
 }
 
 .suggestion-chip {
@@ -668,8 +738,42 @@ label {
   }
 
   .insight-grid,
-  .retrieve-row {
+  .retrieve-search-row {
     grid-template-columns: 1fr;
+  }
+
+  .retrieve-hero {
+    align-items: stretch;
+    justify-items: start;
+    gap: 14px;
+    margin-top: 18px;
+    text-align: left;
+  }
+
+  .retrieve-hero h2 {
+    width: min(100%, 360px);
+    font-size: 28px;
+    line-height: 36px;
+    text-align: left;
+  }
+
+  .retrieve-hero > p:not(.hero-badge),
+  .retrieve-search,
+  .situation-grid {
+    width: min(100%, 360px);
+  }
+
+  .hero-badge {
+    justify-self: start;
+  }
+
+  .situation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .retrieve-search-row button[type='submit'] {
+    width: 100%;
   }
 
   .empty-state {

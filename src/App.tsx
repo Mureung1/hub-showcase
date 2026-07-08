@@ -129,10 +129,12 @@ const tabs = [
 ] satisfies Array<{ id: Tab; label: string; icon: typeof IconFolder }>;
 
 const suggestedSituations = [
-  '팀 프로젝트 앱 디자인 참고',
-  '개발 공부 정리',
-  '온보딩 화면 만들기',
-  '취업 포트폴리오 준비',
+  { label: '팀 프로젝트', query: '팀 프로젝트 앱 디자인 참고' },
+  { label: '개발 공부', query: '개발 공부 정리' },
+  { label: 'UI 레퍼런스', query: 'UI 레퍼런스 찾기' },
+  { label: '포트폴리오', query: '취업 포트폴리오 준비' },
+  { label: '과제 자료', query: '과제 자료 정리' },
+  { label: '온보딩 화면', query: '온보딩 화면 만들기' },
 ];
 
 const suggestedCategories: Category[] = [
@@ -143,14 +145,15 @@ const suggestedCategories: Category[] = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('library');
+  const [activeTab, setActiveTab] = useState<Tab>('home');
   const [insights, setInsights] = useState(initialInsights);
   const [activeCategory, setActiveCategory] = useState('All');
   const [globalQuery, setGlobalQuery] = useState('');
-  const [retrieveQuery, setRetrieveQuery] =
-    useState('팀 프로젝트 앱 디자인 참고');
+  const [retrieveQuery, setRetrieveQuery] = useState(
+    suggestedSituations[0].query
+  );
   const [selectedSituation, setSelectedSituation] = useState(
-    suggestedSituations[0]
+    suggestedSituations[0].query
   );
   const [saveUrl, setSaveUrl] = useState('');
   const [saveComplete, setSaveComplete] = useState(false);
@@ -160,13 +163,20 @@ export default function App() {
   }, [activeCategory, globalQuery, insights]);
 
   const retrieveResults = useMemo(() => {
-    const query = `${retrieveQuery} ${selectedSituation}`.trim();
-    return filterInsights(insights, 'All', query).slice(0, 6);
-  }, [insights, retrieveQuery, selectedSituation]);
+    return filterInsights(insights, 'All', retrieveQuery).slice(0, 6);
+  }, [insights, retrieveQuery]);
 
-  function handleSituationClick(situation: string) {
-    setSelectedSituation(situation);
-    setRetrieveQuery(situation);
+  function handleSituationClick(situation: { label: string; query: string }) {
+    setSelectedSituation(situation.query);
+    setRetrieveQuery(situation.query);
+  }
+
+  function handleRetrieveQueryChange(value: string) {
+    setRetrieveQuery(value);
+
+    if (value !== selectedSituation) {
+      setSelectedSituation('');
+    }
   }
 
   function handleRetrieve(event: FormEvent<HTMLFormElement>) {
@@ -213,25 +223,33 @@ export default function App() {
         </button>
       </header>
 
-      <CategoryRail
-        activeCategory={activeCategory}
-        setActiveCategory={setActiveCategory}
-      />
+      {activeTab === 'library' ? (
+        <>
+          <CategoryRail
+            activeCategory={activeCategory}
+            setActiveCategory={setActiveCategory}
+          />
 
-      <SearchBand
-        query={globalQuery}
-        setQuery={setGlobalQuery}
-        activeTab={activeTab}
-      />
+          <SearchBand
+            query={globalQuery}
+            setQuery={setGlobalQuery}
+            activeTab={activeTab}
+          />
+        </>
+      ) : null}
 
-      <TipBanner activeTab={activeTab} activeCategory={activeCategory} />
+      {activeTab !== 'home' ? (
+        <TipBanner activeTab={activeTab} activeCategory={activeCategory} />
+      ) : null}
 
       <main className="board" aria-label={`${getScreenTitle(activeTab)} 화면`}>
-        <div className="board-action">
-          <button className="share-button" type="button">
-            공유
-          </button>
-        </div>
+        {activeTab === 'library' ? (
+          <div className="board-action">
+            <button className="share-button" type="button">
+              공유
+            </button>
+          </div>
+        ) : null}
 
         {activeTab === 'library' && (
           <LibraryBoard
@@ -247,7 +265,8 @@ export default function App() {
             query={retrieveQuery}
             results={retrieveResults}
             selectedSituation={selectedSituation}
-            setQuery={setRetrieveQuery}
+            setQuery={handleRetrieveQueryChange}
+            setActiveTab={setActiveTab}
             onRetrieve={handleRetrieve}
             onSituationClick={handleSituationClick}
           />
@@ -437,6 +456,7 @@ function HomeBoard({
   query,
   results,
   selectedSituation,
+  setActiveTab,
   setQuery,
   onRetrieve,
   onSituationClick,
@@ -444,56 +464,63 @@ function HomeBoard({
   query: string;
   results: Insight[];
   selectedSituation: string;
+  setActiveTab: (tab: Tab) => void;
   setQuery: (value: string) => void;
   onRetrieve: (event: FormEvent<HTMLFormElement>) => void;
-  onSituationClick: (situation: string) => void;
+  onSituationClick: (situation: { label: string; query: string }) => void;
 }) {
   return (
     <section className="home-board" aria-labelledby="retrieve-title">
-      <div className="retrieve-command">
-        <div>
-          <p className="eyebrow">꺼내보기</p>
-          <h2 id="retrieve-title">지금 하려는 일에 맞는 인사이트를 찾아요</h2>
-        </div>
+      <div className="retrieve-hero">
+        <p className="hero-badge">꺼내보기</p>
+        <h2 id="retrieve-title">지금 필요한 인사이트를 다시 꺼내보세요</h2>
+        <p>
+          아맞다는 저장해둔 링크와 메모를 현재 상황에 맞춰 다시 찾게 해주는 개인
+          인사이트 저장소입니다.
+        </p>
 
-        <form className="retrieve-form" onSubmit={onRetrieve}>
-          <label htmlFor="retrieve-query">현재 상황</label>
-          <div className="retrieve-row">
+        <form className="retrieve-search" onSubmit={onRetrieve}>
+          <label htmlFor="retrieve-query">지금 꺼내보고 싶은 상황</label>
+          <div className="retrieve-search-row">
             <TextField
+              height={52}
               id="retrieve-query"
               onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder="예: 팀 프로젝트 앱 디자인 참고"
               value={query}
               width="100%"
             />
-            <Button color="primary" size="medium" type="submit" variant="solid">
+            <Button color="primary" size="large" type="submit" variant="solid">
               꺼내보기
             </Button>
           </div>
         </form>
 
-        <div className="situation-row" aria-label="추천 상황">
+        <div className="situation-grid" aria-label="추천 상황">
           {suggestedSituations.map((situation) => (
             <Chip
-              active={selectedSituation === situation}
-              aria-pressed={selectedSituation === situation}
+              active={selectedSituation === situation.query}
+              aria-label={`${situation.label} 상황으로 꺼내보기`}
+              aria-pressed={selectedSituation === situation.query}
               className="suggestion-chip"
-              key={situation}
+              key={situation.query}
               onClick={() => onSituationClick(situation)}
               size="medium"
               type="button"
-              variant={selectedSituation === situation ? 'solid' : 'outlined'}
+              variant={
+                selectedSituation === situation.query ? 'solid' : 'outlined'
+              }
             >
-              {situation}
+              {situation.label}
             </Chip>
           ))}
         </div>
       </div>
 
-      <div className="board-heading">
+      <div className="board-heading retrieve-results-heading">
         <div>
           <p className="eyebrow">추천 결과</p>
-          <h2>다시 볼 만한 인사이트</h2>
+          <h2>지금 다시 볼 만한 인사이트</h2>
         </div>
         <span>{results.length}개</span>
       </div>
@@ -505,6 +532,7 @@ function HomeBoard({
           actionLabel="보관함 보기"
           description="먼저 인사이트를 저장하면 현재 상황에 맞춰 다시 꺼내볼 수 있습니다."
           title="꺼내볼 인사이트가 아직 없어요"
+          onAction={() => setActiveTab('library')}
         />
       )}
     </section>
