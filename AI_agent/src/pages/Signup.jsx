@@ -23,6 +23,12 @@ const isValidUsername = (username) =>
   /[A-Za-z]/.test(username) &&
   /\d/.test(username);
 
+const isValidPassword = (password) =>
+  password.length >= 6 &&
+  /[A-Za-z]/.test(password) &&
+  /\d/.test(password) &&
+  /[^A-Za-z0-9]/.test(password);
+
 const createVerificationToken = () => {
   if (window.crypto?.randomUUID) {
     return window.crypto.randomUUID();
@@ -187,8 +193,10 @@ function Signup() {
       return;
     }
 
-    if (form.password.length < 6) {
-      setErrorMessage("비밀번호는 6자 이상 입력해 주세요.");
+    if (!isValidPassword(form.password)) {
+      setErrorMessage(
+        "비밀번호는 6자 이상이며 영문, 숫자, 특수문자를 모두 포함해야 합니다."
+      );
       return;
     }
 
@@ -398,7 +406,7 @@ function Signup() {
                 value={form.password}
                 onChange={handleChange}
                 style={styles.input}
-                placeholder="6자 이상"
+                placeholder="영문, 숫자, 특수문자 포함"
               />
             </label>
 
