@@ -1,14 +1,15 @@
 import { motion } from 'framer-motion'
-import { BUBBLE_SORT_PSEUDOCODE } from '../data/pseudocode'
+import type { PseudocodeLine } from '../data/algorithms'
 
 interface CodePanelProps {
+  lines: PseudocodeLine[]
   activeLine: number | null
 }
 
-export default function CodePanel({ activeLine }: CodePanelProps) {
+export default function CodePanel({ lines, activeLine }: CodePanelProps) {
   return (
     <div className="rounded-lg bg-zinc-950 p-3 font-mono text-sm">
-      {BUBBLE_SORT_PSEUDOCODE.map((line, index) => (
+      {lines.map((line, index) => (
         <div key={index} className="relative">
           {activeLine === index && (
             <motion.div

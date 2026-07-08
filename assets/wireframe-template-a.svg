@@ -1,0 +1,28 @@
+<svg viewBox="0 0 700 480" xmlns="http://www.w3.org/2000/svg">
+  <rect width="700" height="480" fill="#18181b"/>
+
+  <rect x="10" y="10" width="680" height="44" fill="none" stroke="#3f3f46"/>
+  <text x="22" y="36" fill="#a1a1aa" font-family="monospace" font-size="13">[ 페이지 제목 ] 정렬 시각화 / 트리 시각화 · 한 줄 설명</text>
+
+  <rect x="10" y="64" width="680" height="150" fill="none" stroke="#2dd4bf"/>
+  <text x="22" y="86" fill="#a1a1aa" font-family="monospace" font-size="12">[ 시각화 영역 ] 정렬: 배열 막대 / 트리: 노드-엣지 구조</text>
+  <rect x="22" y="96" width="656" height="100" fill="none" stroke="#52525b"/>
+  <text x="350" y="150" fill="#a1a1aa" font-family="monospace" font-size="12" text-anchor="middle">과목별 자동 재생 시각화 컴포넌트</text>
+
+  <rect x="10" y="224" width="680" height="50" fill="none" stroke="#3f3f46"/>
+  <rect x="22" y="236" width="60" height="26" fill="none" stroke="#52525b"/>
+  <text x="52" y="253" fill="#e4e4e7" font-family="monospace" font-size="11" text-anchor="middle">재생</text>
+  <rect x="92" y="236" width="70" height="26" fill="none" stroke="#52525b"/>
+  <text x="127" y="253" fill="#e4e4e7" font-family="monospace" font-size="11" text-anchor="middle">한 단계</text>
+  <rect x="172" y="236" width="80" height="26" fill="none" stroke="#52525b"/>
+  <text x="212" y="253" fill="#e4e4e7" font-family="monospace" font-size="11" text-anchor="middle">처음부터</text>
+  <text x="500" y="253" fill="#a1a1aa" font-family="monospace" font-size="11" text-anchor="middle">[ 속도 슬라이더 ]  [ 크기/옵션 슬라이더 ]</text>
+
+  <rect x="10" y="284" width="680" height="90" fill="none" stroke="#3f3f46"/>
+  <text x="22" y="306" fill="#a1a1aa" font-family="monospace" font-size="12">[ 코드 하이라이트 카드 ] 현재 실행 라인 강조</text>
+  <rect x="22" y="316" width="656" height="48" fill="none" stroke="#52525b"/>
+
+  <rect x="10" y="384" width="680" height="86" fill="none" stroke="#3f3f46"/>
+  <text x="22" y="406" fill="#a1a1aa" font-family="monospace" font-size="12">[ 설명 카드 ] 알고리즘/개념 설명, 현재 단계 해설</text>
+  <rect x="22" y="416" width="656" height="44" fill="none" stroke="#52525b"/>
+</svg>

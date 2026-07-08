@@ -3,8 +3,16 @@ export interface SortCell {
   value: number
 }
 
+interface StepMeta {
+  cells: SortCell[]
+  /** Pseudocode line this step corresponds to, tagged by the algorithm itself. */
+  line?: number
+  /** Quick sort only — highlights the current pivot cell. */
+  pivotIndex?: number
+}
+
 export type SortStep =
-  | { type: 'compare'; indices: [number, number]; cells: SortCell[] }
-  | { type: 'swap'; indices: [number, number]; cells: SortCell[] }
-  | { type: 'mark-sorted'; index: number; cells: SortCell[] }
-  | { type: 'done'; cells: SortCell[] }
+  | (StepMeta & { type: 'compare'; indices: [number, number] })
+  | (StepMeta & { type: 'swap'; indices: [number, number] })
+  | (StepMeta & { type: 'mark-sorted'; index: number })
+  | (StepMeta & { type: 'done' })

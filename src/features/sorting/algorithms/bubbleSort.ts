@@ -11,11 +11,11 @@ export function bubbleSort(initial: SortCell[]): SortStep[] {
   for (let i = 0; i < n - 1; i++) {
     let swapped = false
     for (let j = 0; j < n - 1 - i; j++) {
-      steps.push({ type: 'compare', indices: [j, j + 1], cells: snapshot() })
+      steps.push({ type: 'compare', indices: [j, j + 1], cells: snapshot(), line: 2 })
       if (cells[j].value > cells[j + 1].value) {
         ;[cells[j], cells[j + 1]] = [cells[j + 1], cells[j]]
         swapped = true
-        steps.push({ type: 'swap', indices: [j, j + 1], cells: snapshot() })
+        steps.push({ type: 'swap', indices: [j, j + 1], cells: snapshot(), line: 3 })
       }
     }
     sorted.add(n - 1 - i)

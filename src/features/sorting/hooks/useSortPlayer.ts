@@ -40,6 +40,8 @@ export function useSortPlayer(steps: SortStep[]) {
     comparingIndices: step?.type === 'compare' ? step.indices : [],
     swappingIndices: step?.type === 'swap' ? step.indices : [],
     sortedIndices,
+    pivotIndex: step?.pivotIndex,
+    activeLine: step?.line ?? null,
     isDone: step?.type === 'done',
     playing,
     stepIndex,
