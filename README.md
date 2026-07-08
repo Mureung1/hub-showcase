@@ -18,3 +18,4 @@ If you are developing a production application, we recommend using TypeScript wi
 ## 프로젝트 문서
 
 - [기획서](./docs/plan.md)
+- [프로토타입](./prototype/index.html)
