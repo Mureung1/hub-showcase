@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PREFER — AI 해석 결과 확인</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page">
+  <div class="container-wide">
+    <div class="screen-label">08. AI 해석 결과 확인 화면</div>
+    <h1 id="vote-heading" class="hub-title">AI 해석 결과 확인</h1>
+    <p id="vote-sub" class="hub-sub"></p>
+
+    <div class="card"><div id="vote-grid"></div></div>
+
+    <div class="btn-row">
+      <button type="button" id="vote-submit" class="btn btn-primary btn-grow">투표 완료</button>
+      <button type="button" id="vote-back" class="btn btn-secondary">허브로 돌아가기</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/mock-data.js"></script>
+<script src="js/components.js"></script>
+<script src="js/main.js"></script>
+<script>
+  const __dateAxis = buildDateAxis(mockMeeting.startDate, mockMeeting.endDate);
+  const __timeAxis = buildTimeAxis(mockMeeting.startTime, mockMeeting.endTime);
+  const __prefill = buildPrefillRanges(__dateAxis, __timeAxis, [
+    { date: "2026-07-14", from: "09:00", to: "12:00", status: "unavailable" },
+    { date: "2026-07-15", from: "13:00", to: "15:00", status: "undesired" },
+    { date: "2026-07-16", from: "18:00", to: "19:00", status: "preferred" },
+  ]);
+  initVotePage({ withChat: false, prefill: __prefill, nextPage: PAGE.voteDone });
+</script>
+</body>
+</html>

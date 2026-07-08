@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PREFER — 추천 결과</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page">
+  <div class="container-wide">
+    <div class="screen-label">11. 추천 결과 화면</div>
+    <h1 class="hub-title">추천 결과</h1>
+    <p class="hub-sub">참석 가능 인원이 가장 많은 시간을 우선으로, 선호도가 높고 비선호가 적은 순서로 최대 5순위까지 색으로 보여드려요. 색칠된 칸을 눌러 자세히 볼 수 있어요.</p>
+
+    <div class="card">
+      <div id="results-grid"></div>
+      <p id="results-caption" class="form-hint" hidden>최종 시간 확정은 약속 생성자만 할 수 있어요.</p>
+    </div>
+
+    <div class="btn-row">
+      <button type="button" id="results-back" class="btn btn-secondary btn-grow">허브로 돌아가기</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/mock-data.js"></script>
+<script src="js/components.js"></script>
+<script src="js/main.js"></script>
+<script>initResultsPage();</script>
+</body>
+</html>

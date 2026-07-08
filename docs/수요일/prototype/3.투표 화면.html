@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PREFER — 약속 투표</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page">
+  <div class="container-wide">
+    <div class="screen-label">07. 약속 투표 화면</div>
+    <h1 id="vote-heading" class="hub-title"></h1>
+    <p id="vote-sub" class="hub-sub"></p>
+    <p style="font-size:13px; color:var(--color-text-muted); margin:-8px 0 0;">
+      💡 선호는 <strong>+1점</strong>, 비선호는 <strong>-1점</strong>으로 계산돼요. 모든 참여자의 선호·비선호를 종합해서 가장 좋은 시간을 추천해드려요.
+    </p>
+
+    <div class="vote-layout">
+      <div id="vote-chat"></div>
+      <div class="card"><div id="vote-grid"></div></div>
+    </div>
+
+    <div class="btn-row">
+      <button type="button" id="vote-submit" class="btn btn-primary btn-grow">투표 완료</button>
+      <button type="button" id="vote-back" class="btn btn-secondary">허브로 돌아가기</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/mock-data.js"></script>
+<script src="js/components.js"></script>
+<script src="js/main.js"></script>
+<script>
+  initVotePage({ withChat: true, prefill: null, nextPage: PAGE.voteConfirm });
+</script>
+</body>
+</html>
