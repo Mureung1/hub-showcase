@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Core Loop Builder Prototype</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="prototype">
+      <input class="stage-switch" type="radio" name="stage" id="stage-input" checked />
+      <input class="stage-switch" type="radio" name="stage" id="stage-analyze" />
+      <input class="stage-switch" type="radio" name="stage" id="stage-candidates" />
+      <input class="stage-switch" type="radio" name="stage" id="stage-loop" />
+      <input class="stage-switch" type="radio" name="stage" id="stage-draft" />
+      <input class="stage-switch" type="radio" name="stage" id="stage-feedback" />
+
+      <section class="shell" aria-label="Core Loop Builder 프로토타입">
+        <header class="hero">
+          <div>
+            <p class="eyebrow">HTML/CSS Prototype</p>
+            <h1>Core Loop Builder</h1>
+            <p class="lead">
+              장르와 참고 게임을 입력하면 AI Agent가 코어 루프 후보를 만들고,
+              선택한 루프를 기획 초안과 피드백으로 정리하는 핵심 흐름입니다.
+            </p>
+          </div>
+          <aside class="status-panel" aria-label="현재 프로토타입 범위">
+            <strong>MVP 흐름</strong>
+            <span>Input</span>
+            <span>Analyze</span>
+            <span>Brainstorm</span>
+            <span>Visualize</span>
+            <span>Draft</span>
+            <span>Review</span>
+          </aside>
+        </header>
+
+        <nav class="stage-nav" aria-label="프로토타입 단계">
+          <label for="stage-input" class="stage-tab stage-tab-input">
+            <span>01</span>
+            입력
+          </label>
+          <label for="stage-analyze" class="stage-tab stage-tab-analyze">
+            <span>02</span>
+            분석
+          </label>
+          <label for="stage-candidates" class="stage-tab stage-tab-candidates">
+            <span>03</span>
+            후보
+          </label>
+          <label for="stage-loop" class="stage-tab stage-tab-loop">
+            <span>04</span>
+            루프
+          </label>
+          <label for="stage-draft" class="stage-tab stage-tab-draft">
+            <span>05</span>
+            초안
+          </label>
+          <label for="stage-feedback" class="stage-tab stage-tab-feedback">
+            <span>06</span>
+            피드백
+          </label>
+        </nav>
+
+        <section class="panels" aria-live="polite">
+          <article class="stage-panel" id="panel-input">
+            <div class="panel-heading">
+              <p class="kicker">Input Agent</p>
+              <h2>막연한 게임 아이디어를 분석 가능한 입력값으로 정리</h2>
+            </div>
+
+            <div class="input-grid">
+              <label>
+                <span>게임 장르</span>
+                <input type="text" value="로그라이크 덱빌딩 RPG" readonly />
+              </label>
+              <label>
+                <span>참고 게임</span>
+                <input type="text" value="Slay the Spire, Hades" readonly />
+              </label>
+              <label class="wide-field">
+                <span>원하는 플레이 경험</span>
+                <textarea readonly>전투마다 선택이 달라지고, 보상이 다음 전략을 바꾸는 긴장감 있는 플레이</textarea>
+              </label>
+            </div>
+
+            <div class="note-strip">
+              <span>정리된 의도</span>
+              <p>플레이어가 매 전투에서 선택하고, 보상으로 덱을 바꾸며, 다음 도전을 준비하는 반복 구조가 필요합니다.</p>
+            </div>
+
+            <label for="stage-analyze" class="next-action">분석 결과 보기</label>
+          </article>
+
+          <article class="stage-panel" id="panel-analyze">
+            <div class="panel-heading">
+              <p class="kicker">Reference Analysis Agent</p>
+              <h2>장르와 참고 게임에서 반복 구조를 추출</h2>
+            </div>
+
+            <div class="analysis-layout">
+              <section class="analysis-block">
+                <h3>장르 기본 루프</h3>
+                <ol class="mini-flow">
+                  <li>전투 진입</li>
+                  <li>전술 선택</li>
+                  <li>보상 획득</li>
+                  <li>덱 성장</li>
+                  <li>더 어려운 전투</li>
+                </ol>
+              </section>
+              <section class="analysis-block">
+                <h3>참고 포인트</h3>
+                <ul class="bullet-list">
+                  <li>Slay the Spire: 보상 선택이 다음 전투 전략을 바꿈</li>
+                  <li>Hades: 실패해도 성장 자원이 남아 재도전 동기를 만듦</li>
+                  <li>두 게임 모두 짧은 반복 안에 선택, 보상, 위험을 배치함</li>
+                </ul>
+              </section>
+            </div>
+
+            <label for="stage-candidates" class="next-action">루프 후보 보기</label>
+          </article>
+
+          <article class="stage-panel" id="panel-candidates">
+            <div class="panel-heading">
+              <p class="kicker">Brainstorming Agent</p>
+              <h2>서로 다른 재미를 가진 코어 루프 후보 3개 제안</h2>
+            </div>
+
+            <div class="candidate-grid">
+              <section class="candidate">
+                <p class="candidate-label">후보 A</p>
+                <h3>전략 덱 성장 루프</h3>
+                <p>전투 선택과 보상 선택이 덱의 방향을 바꾸며, 다음 전투의 해법을 새로 만듭니다.</p>
+                <strong>추천도 92</strong>
+              </section>
+              <section class="candidate selected">
+                <p class="candidate-label">후보 B 선택됨</p>
+                <h3>위험 보상 탐험 루프</h3>
+                <p>안전한 보상과 위험한 보상 사이의 선택이 다음 경로와 전투 난도를 결정합니다.</p>
+                <strong>추천도 96</strong>
+              </section>
+              <section class="candidate">
+                <p class="candidate-label">후보 C</p>
+                <h3>캐릭터 시너지 루프</h3>
+                <p>동료 조합과 카드 효과가 이어지며 매 회차 다른 전투 리듬을 만듭니다.</p>
+                <strong>추천도 88</strong>
+              </section>
+            </div>
+
+            <label for="stage-loop" class="next-action">선택된 루프 시각화</label>
+          </article>
+
+          <article class="stage-panel" id="panel-loop">
+            <div class="panel-heading">
+              <p class="kicker">Loop Visualizer Agent</p>
+              <h2>선택된 코어 루프를 플레이 흐름으로 시각화</h2>
+            </div>
+
+            <div class="loop-stage">
+              <ol class="loop-diagram" aria-label="위험 보상 탐험 루프">
+                <li>
+                  <span>행동</span>
+                  위험 지역 선택
+                </li>
+                <li>
+                  <span>보상</span>
+                  카드와 유물 획득
+                </li>
+                <li>
+                  <span>성장</span>
+                  덱 방향 강화
+                </li>
+                <li>
+                  <span>도전</span>
+                  강화된 적과 조우
+                </li>
+                <li>
+                  <span>반복</span>
+                  다음 경로 재선택
+                </li>
+              </ol>
+            </div>
+
+            <div class="insight-row">
+              <p><strong>핵심 재미</strong> 안전한 선택과 위험한 선택 사이에서 덱의 미래를 직접 설계하는 긴장감</p>
+              <p><strong>반복 동기</strong> 매 회차 보상 조합이 달라져 다음 선택을 다시 시험하고 싶어짐</p>
+            </div>
+
+            <label for="stage-draft" class="next-action">기획 초안 보기</label>
+          </article>
+
+          <article class="stage-panel" id="panel-draft">
+            <div class="panel-heading">
+              <p class="kicker">Portfolio Writer Agent</p>
+              <h2>포트폴리오에 붙일 수 있는 기획 초안 생성</h2>
+            </div>
+
+            <section class="draft-document">
+              <h3>게임 콘셉트</h3>
+              <p>플레이어는 붕괴된 마법 도서관을 탐험하며 위험한 방을 선택하고, 전투 보상으로 덱을 성장시키는 로그라이크 덱빌딩 RPG를 경험합니다.</p>
+
+              <h3>기획 의도</h3>
+              <p>매 전투 이후 주어지는 보상 선택이 다음 경로의 위험도와 전투 전략을 바꾸도록 설계해, 짧은 반복 안에서도 의미 있는 선택을 느끼게 합니다.</p>
+
+              <h3>주요 시스템</h3>
+              <ul class="bullet-list">
+                <li>경로 선택: 안전한 방, 위험한 방, 희귀 보상 방 중 하나를 선택</li>
+                <li>덱 성장: 카드, 유물, 일회성 주문으로 다음 전투의 전략 변화</li>
+                <li>위험 누적: 강한 보상을 고를수록 다음 전투에 추가 조건 발생</li>
+              </ul>
+            </section>
+
+            <label for="stage-feedback" class="next-action">AI 피드백 보기</label>
+          </article>
+
+          <article class="stage-panel" id="panel-feedback">
+            <div class="panel-heading">
+              <p class="kicker">Critic Agent</p>
+              <h2>루프의 약점과 개선 방향 피드백</h2>
+            </div>
+
+            <div class="feedback-grid">
+              <section class="feedback-item strong">
+                <h3>강점</h3>
+                <p>보상 선택이 다음 전투와 경로 선택에 영향을 주기 때문에 반복 동기가 분명합니다.</p>
+              </section>
+              <section class="feedback-item">
+                <h3>주의점</h3>
+                <p>위험 선택이 항상 정답처럼 느껴지면 전략이 단조로워질 수 있습니다.</p>
+              </section>
+              <section class="feedback-item">
+                <h3>개선 제안</h3>
+                <p>안전한 선택에도 장기 성장 보너스를 넣어, 위험과 안정 사이의 판단을 더 어렵게 만듭니다.</p>
+              </section>
+            </div>
+
+            <div class="completion-strip">
+              <strong>프로토타입 결론</strong>
+              <p>Core Loop Builder의 핵심은 결과 문서가 아니라, 입력된 아이디어를 반복 가능한 플레이 구조로 바꾸는 사고 과정을 보여주는 것입니다.</p>
+            </div>
+
+            <label for="stage-input" class="next-action secondary">처음으로 돌아가기</label>
+          </article>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
