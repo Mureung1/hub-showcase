@@ -10,7 +10,39 @@
     <div class="grid-container">
         <!-- 상단 좌측: Profile (3/4 너비 차지) -->
         <section class="grid-item profile">
-            <!-- Profile Area Skeleton -->
+            <div class="profile-header">
+                <h2>연구 프로필</h2>
+                <div class="academic-identity">
+                    <span class="label">소속/전공</span>
+                    <span class="value">컴퓨터공학부 / 인공지능 전공</span>
+                </div>
+            </div>
+            
+            <div class="profile-section">
+                <h3>학술 채널 모니터링</h3>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" data-channel="arxiv">arXiv</button>
+                    <button class="toggle-btn active" data-channel="ieee">IEEE</button>
+                    <button class="toggle-btn" data-channel="neurips">NeurIPS</button>
+                    <button class="toggle-btn" data-channel="cvpr">CVPR</button>
+                    <button class="toggle-btn" data-channel="acl">ACL</button>
+                </div>
+            </div>
+            
+            <div class="profile-section">
+                <h3>연구 키워드</h3>
+                <div class="keyword-container">
+                    <div class="keyword-list" id="keyword-list">
+                        <span class="keyword-badge">Large Language Models <button class="keyword-delete" aria-label="삭제">&times;</button></span>
+                        <span class="keyword-badge">RAG <button class="keyword-delete" aria-label="삭제">&times;</button></span>
+                        <span class="keyword-badge">Information Retrieval <button class="keyword-delete" aria-label="삭제">&times;</button></span>
+                    </div>
+                    <form class="keyword-form" id="keyword-form" onsubmit="event.preventDefault();">
+                        <input type="text" id="keyword-input" placeholder="새 연구 키워드 입력..." aria-label="새 키워드 입력">
+                        <button type="submit" class="btn-add-keyword">추가</button>
+                    </form>
+                </div>
+            </div>
         </section>
         
         <!-- 상단 우측: Curation (1/4 너비 차지) -->
