@@ -237,6 +237,79 @@
     font-size: 13px;
     color: var(--toss-gray-400);
   }
+
+  .recommend-card {
+    margin-top: 16px;
+  }
+
+  .recommend-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .recommend-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--toss-gray-100);
+    border-radius: 16px;
+  }
+
+  .recommend-rank {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--toss-blue-light);
+    color: var(--toss-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .recommend-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .recommend-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--toss-gray-900);
+  }
+
+  .recommend-sub {
+    font-size: 13px;
+    color: var(--toss-gray-400);
+    margin-top: 2px;
+  }
+
+  .recommend-badge {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--level-1);
+    color: #3b6fc4;
+  }
+
+  .recommend-badge.level-1 { background: var(--level-1); color: #3b6fc4; }
+  .recommend-badge.level-2 { background: var(--level-2); color: #1f4fa8; }
+  .recommend-badge.level-3 { background: var(--level-3); color: #0d3f96; }
+  .recommend-badge.level-4 { background: var(--level-4); color: #ffffff; }
+  .recommend-badge.level-5 { background: var(--level-5); color: #ffffff; }
+
+  .recommend-empty {
+    padding: 20px 4px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--toss-gray-400);
+  }
 </style>
 </head>
 <body>
@@ -325,6 +398,12 @@
       </div>
     </div>
 
+    <div class="card recommend-card">
+      <div class="card-title">✨ 추천 회의 시간</div>
+      <div class="card-subtitle">가장 많은 팀원이 가능한 시간이에요</div>
+      <div class="recommend-list" id="recommendList"></div>
+    </div>
+
     <div class="footer-note">칸을 클릭해서 내 가능한 시간을 선택해보세요</div>
   </div>
 
@@ -338,7 +417,18 @@
     ];
 
     var slotEls = Array.prototype.slice.call(document.querySelectorAll("#grid .slot"));
+    var recommendListEl = document.getElementById("recommendList");
     var mySelected = new Set();
+    var TOTAL_PEOPLE = teammates.length + 1; // 팀원 + 나
+
+    var dayNames = ["월요일", "화요일", "수요일", "목요일", "금요일"];
+    var timeNames = ["오전 10시", "오후 12시", "오후 2시", "오후 4시"];
+
+    function slotLabel(index) {
+      var dayIdx = index % 5;
+      var timeIdx = Math.floor(index / 5);
+      return dayNames[dayIdx] + " " + timeNames[timeIdx];
+    }
 
     function teammateCount(index) {
       return teammates.filter(function (t) {
@@ -346,11 +436,54 @@
       }).length;
     }
 
+    function updateRecommendation(counts) {
+      var topIndices = counts
+        .map(function (count, index) {
+          return index;
+        })
+        .filter(function (index) {
+          return counts[index] > 0;
+        })
+        .sort(function (a, b) {
+          if (counts[b] !== counts[a]) return counts[b] - counts[a];
+          return a - b;
+        })
+        .slice(0, 3);
+
+      recommendListEl.innerHTML = "";
+
+      if (topIndices.length === 0) {
+        recommendListEl.innerHTML =
+          '<div class="recommend-empty">아직 겹치는 시간이 없어요. 가능한 시간을 선택해보세요!</div>';
+        return;
+      }
+
+      topIndices.forEach(function (index, rank) {
+        var count = counts[index];
+        var subText = count === TOTAL_PEOPLE ? count + "명 모두 가능" : count + "명 가능";
+
+        var item = document.createElement("div");
+        item.className = "recommend-item";
+        item.innerHTML =
+          '<div class="recommend-rank">' + (rank + 1) + "</div>" +
+          '<div class="recommend-info">' +
+          '<div class="recommend-time">' + slotLabel(index) + "</div>" +
+          '<div class="recommend-sub">' + subText + "</div>" +
+          "</div>" +
+          '<div class="recommend-badge level-' + count + '">' + count + "명</div>";
+        recommendListEl.appendChild(item);
+      });
+    }
+
     function render() {
-      slotEls.forEach(function (slot, index) {
-        var baseCount = teammateCount(index);
+      var counts = slotEls.map(function (_, index) {
         var iAmIn = mySelected.has(index);
-        var total = baseCount + (iAmIn ? 1 : 0);
+        return teammateCount(index) + (iAmIn ? 1 : 0);
+      });
+
+      slotEls.forEach(function (slot, index) {
+        var total = counts[index];
+        var iAmIn = mySelected.has(index);
 
         slot.className = "slot level-" + total;
         slot.classList.toggle("mine", iAmIn);
@@ -366,6 +499,8 @@
 
         slot.title = total === 0 ? "가능한 사람이 없어요" : total + "명 가능 (" + names.join(", ") + ")";
       });
+
+      updateRecommendation(counts);
     }
 
     slotEls.forEach(function (slot, index) {
