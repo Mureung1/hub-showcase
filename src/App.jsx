@@ -4,7 +4,7 @@ import CreateWizard from './screens/CreateWizard';
 import PlanReview from './screens/PlanReview';
 import Survey from './screens/Survey';
 import Assignment from './screens/Assignment';
-import Placeholder from './screens/Placeholder';
+import Dashboard from './screens/Dashboard';
 import './App.css';
 
 function StepIndicator() {
@@ -38,7 +38,7 @@ function Screen() {
     case 'assignment':
       return <Assignment />;
     case 'dashboard':
-      return <Placeholder stage={5} />;
+      return <Dashboard />;
     default:
       return <CreateWizard />;
   }
