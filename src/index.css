@@ -1,0 +1,46 @@
+@import url("https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css");
+
+:root {
+  --dark-green: #0a3323;
+  --moss-green: #839958;
+  --beige: #f7f4d5;
+  --rosy-brown: #d3968c;
+  --midnight-green: #105666;
+
+  --text: #f7f4d5;
+  --text-muted: #d8d6b8;
+  --bg: #061f1a;
+  --card-bg: #0a3323;
+  --card-soft: rgba(247, 244, 213, 0.08);
+  --border: rgba(247, 244, 213, 0.22);
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+
+  font-family: "Pretendard", system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(211, 150, 140, 0.24), transparent 30%),
+    radial-gradient(circle at 85% 20%, rgba(131, 153, 88, 0.28), transparent 34%),
+    linear-gradient(135deg, #061f1a 0%, #0a3323 52%, #105666 100%);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
