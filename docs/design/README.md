@@ -9,6 +9,11 @@ This folder contains the Product Design outputs for DevChat.
 3. [screen-spec.md](./screen-spec.md)
 4. [figma-handoff.md](./figma-handoff.md)
 
+## Feature Specs
+
+- [Today Learning Hub](../features/today-learning.md)
+- [Learning Workspace IDE](../features/learning-workspace.md)
+
 ## Selected Direction
 
 The selected direction is a combination of:

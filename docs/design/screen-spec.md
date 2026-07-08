@@ -1,5 +1,12 @@
 # DevChat Screen Spec
 
+## Product Name
+
+- Desktop app name: `ICU`
+- Full meaning: `I CODE U`
+- Use `ICU` in app chrome, title bars, onboarding, and user-facing copy.
+- Keep `DevChat` only as the repository/planning name until a full rename is scheduled.
+
 ## Global Shell
 
 ### Left Navigation
@@ -197,6 +204,13 @@ Passed state should include:
 - Short feedback
 - Code review action
 - Next step action
+
+## Theme Notes
+
+- Support light mode and dark mode from the first product UI implementation.
+- The Figma `색감` layer should guide brand accents: warm orange, soft pink, bright cyan, and deep blue.
+- Dense workspace panels should stay calm and readable; do not use large gradients behind editor or text-heavy panels.
+- Dark mode should use navy/charcoal surfaces, high-contrast text, and the same semantic status labels as light mode.
 
 ## Accessibility Notes
 

@@ -2,7 +2,7 @@
 
 ## Product
 
-DevChat is an AI coding tutor desktop app for beginner and intermediate developers. It helps users decide what to learn today, follow a curriculum, practice in a code editor, run code, receive feedback, and keep a review history.
+ICU is an AI coding tutor desktop app for beginner and intermediate developers. ICU means "I CODE U". DevChat remains the project and planning name in this repository. It helps users decide what to learn today, follow a curriculum, practice in a code editor, run code, receive feedback, and keep a review history.
 
 ## Selected Direction
 
@@ -31,16 +31,18 @@ Users do not only need more learning material. They need a clear learning flow:
 - Clear current step: every screen should make the current learning step obvious.
 - Trust through sources: AI explanations should show official documentation references when available.
 - Beginner-safe density: keep the tool efficient, but avoid overwhelming panels and unclear labels.
+- Theme-ready UI: design all core surfaces with light and dark mode tokens from the first React implementation.
 
 ## Visual Direction
 
-- Base: light neutral app surface.
-- Surfaces: white or very light gray grouped panels.
-- Accent: teal for progress, active state, and primary action.
-- Editor: dark code area inspired by VS Code.
+- Base: light neutral app surface for light mode, deep navy/charcoal app surface for dark mode.
+- Surfaces: white or very light gray grouped panels in light mode; near-navy grouped panels in dark mode.
+- Brand mood: harmonize with the Figma `색감` layer, which uses warm orange, soft pink, bright cyan, and deep blue.
+- Accent: use cyan/deep-blue as primary product accents, with warm orange as a selective highlight for moments like progress, completion, or onboarding.
+- Editor: dark code area inspired by VS Code in both themes.
 - Radius: 8px or less.
 - Typography: Inter or system sans for UI, monospace for code.
-- Avoid: decorative hero layouts, gradients, nested cards, oversized marketing sections, and purely ornamental images.
+- Avoid: decorative hero layouts, gradients inside dense work panels, nested cards, oversized marketing sections, and purely ornamental images.
 
 ## Key Screens
 
