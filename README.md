@@ -33,7 +33,7 @@
 
 ### 화면 (와이어프레임)
 
-최소 화면 3종 — **① 브리핑 피드 · ② 논문 상세 · ③ 저장 목록**. 로우파이 인터랙티브 시안은 **[docs/spec/wireframes/s1-wireframe.html](./docs/spec/wireframes/s1-wireframe.html)** (브라우저로 열기).
+최소 화면 3종 — **① 브리핑 피드 · ② 논문 상세 · ③ 저장 목록**. 로우파이 인터랙티브 시안은 **[실물 보기 (GitHub Pages)](https://leekwanhak.github.io/hub/docs/spec/wireframes/s1-wireframe.html)** — 소스는 [repo 파일](./docs/spec/wireframes/s1-wireframe.html).
 
 ```
 ① 오늘의 브리핑 피드            ② 논문 상세                ③ 저장 목록
@@ -63,14 +63,16 @@
 
 ## 문서
 
+정본(canonical) 기획 문서는 저장소 `docs/`에서 관리합니다. 사람이 보기 좋은 **시각 요약본은 [프로젝트 Wiki](https://github.com/leekwanhak/hub/wiki)** 를 참고하세요.
+
 | 문서 | 내용 |
 |------|------|
 | [docs/plan.md](./docs/plan.md) | 전체 기획서 (목적·타겟·기능·스택·로드맵·향후 확장) |
 | [docs/user-scenarios.md](./docs/user-scenarios.md) | 사용자 시나리오 4종 (넓은 범위) |
 | [docs/spec/mvp-plan.md](./docs/spec/mvp-plan.md) | MVP 기획 (문제정의 → S1 흐름 → 핵심 기능 → 화면 설계) |
 | [docs/spec/checklist.md](./docs/spec/checklist.md) | 작업 분해 체크리스트 (F1~F4 + 파이프라인) |
-| [docs/spec/wireframes/s1-wireframe.html](./docs/spec/wireframes/s1-wireframe.html) | 인터랙티브 와이어프레임 (피드·상세·저장) |
 | [docs/skill.md](./docs/skill.md) | 기획 구체화 방법론 (재사용 가능한 절차) |
+| [와이어프레임 (실물)](https://leekwanhak.github.io/hub/docs/spec/wireframes/s1-wireframe.html) | 인터랙티브 시안 (피드·상세·저장) · [소스](./docs/spec/wireframes/s1-wireframe.html) |
 
 ## 로드맵 (MVP)
 
