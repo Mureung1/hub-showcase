@@ -57,7 +57,7 @@ app = FastAPI(title="AI 미스터리 쇼퍼")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=["http://localhost", "http://localhost:3000", "http://localhost:5173", "http://127.0.0.1"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -142,7 +142,7 @@ def analyze(req: AnalyzeRequest, db: Session = Depends(get_db)):
         db.refresh(competitor)
 
     # 2) 수집: 네이버 블로그 검색 API (키 없으면 더미 데이터)
-    collected = fetch_reviews(name, count=20)
+    collected = fetch_reviews(name, count=5)
 
     # 3) 분석 및 저장
     saved = []
