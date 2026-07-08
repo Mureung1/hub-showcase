@@ -40,6 +40,13 @@ export function isMealAnalysis(value) {
   )
 }
 
+// 영양소별 (실제/권장) 비율을 1로 캡핑해 평균낸 하루 목표 달성률(%). Result.jsx의 계산과 동일한 정의.
+export function calcAchievementPercent(recommended, total) {
+  if (!isNutrientSet(recommended) || !isNutrientSet(total)) return 0
+  const sum = NUTRIENT_KEYS.reduce((acc, key) => acc + Math.min(1, recommended[key] > 0 ? total[key] / recommended[key] : 0), 0)
+  return Math.round((sum / NUTRIENT_KEYS.length) * 100)
+}
+
 export function calcBMR({ sex, weightKg, heightCm, age }) {
   const base = 10 * weightKg + 6.25 * heightCm - 5 * age
   return sex === 'male' ? base + 5 : base - 161

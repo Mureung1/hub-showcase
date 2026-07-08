@@ -10,7 +10,8 @@ import ScreenHeader from '../components/ScreenHeader.jsx'
 import TextField from '../components/TextField.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
-import { isMealAnalysis } from '../lib/nutrition.js'
+import { calcAchievementPercent, isMealAnalysis } from '../lib/nutrition.js'
+import { saveRecord, toDateKey } from '../lib/records.js'
 import { radius, spacing, styles } from '../styles/theme.js'
 
 function buildPrompt(menuName, brand) {
@@ -84,6 +85,17 @@ export default function Analyze() {
       }
 
       setTodayMeal(parsed)
+
+      if (user) {
+        const achievementPercent = calcAchievementPercent(user.recommended, parsed.total)
+        saveRecord(user.id, toDateKey(new Date()), {
+          items: parsed.items,
+          total: parsed.total,
+          achievementPercent,
+          savedAt: new Date().toISOString(),
+        })
+      }
+
       navigate('/result')
     } catch (err) {
       console.error('meal analysis failed:', err)
