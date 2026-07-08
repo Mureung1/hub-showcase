@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>탑히어 — 프로토타입</title>
+<link
+  rel="stylesheet"
+  as="style"
+  crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css"
+/>
+<style>
+  :root {
+    --ink: #16181d;
+    --ink-mid: #5b6270;
+    --ink-faint: #9aa1ad;
+    --line: #e7e9ee;
+    --bg-body: #eef0f4;
+    --panel: #ffffff;
+    --accent: #5b5ff0;
+    --accent-light: #ecebff;
+    --green: #16c78a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: var(--bg-body);
+    color: var(--ink);
+  }
+  .page-wrap {
+    padding: 28px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .page-note {
+    max-width: 1440px;
+    width: 100%;
+    font-size: 13px;
+    color: var(--ink-faint);
+    padding: 0 4px;
+  }
+  .page-note strong { color: var(--ink-mid); }
+
+  .app-scroll {
+    width: 100%;
+    max-width: 1440px;
+    overflow-x: auto;
+  }
+
+  /* all interactive state is driven by these hidden inputs via ~ combinators */
+  .state-input { position: absolute; opacity: 0; pointer-events: none; }
+
+  .app {
+    position: relative;
+    width: 100%;
+    min-width: 1040px;
+    aspect-ratio: 1440 / 1024;
+    display: flex;
+    background: var(--panel);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px -20px rgba(20, 20, 40, 0.25);
+    border: 1px solid var(--line);
+  }
+
+  /* ---------- rail ---------- */
+  .rail {
+    flex: 0 0 7.22%;
+    background: #fff;
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 22px 0;
+    gap: 26px;
+  }
+  .rail-logo {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--accent);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .rail-icon {
+    width: 38px; height: 38px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-faint);
+    font-size: 16px;
+  }
+  .rail-icon.active { background: var(--accent); color: #fff; }
+
+  /* ---------- list panel ---------- */
+  .panel {
+    flex: 0 0 32.85%;
+    border-right: 1px solid var(--line);
+    padding: 22px 20px 20px;
+    overflow-y: auto;
+  }
+  .search-row { display: flex; gap: 10px; margin-bottom: 6px; }
+  .search-box {
+    flex: 1;
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--line);
+    background: var(--bg-body);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--ink-mid);
+  }
+  .filter-btn {
+    flex: 0 0 40px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--ink-mid);
+    background: #fff;
+  }
+  #toggle-filter:checked ~ .app .panel .filter-btn { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .filter-panel {
+    display: none;
+    margin: 14px 0 18px;
+    padding: 16px;
+    background: var(--bg-body);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  #toggle-filter:checked ~ .app .panel .filter-panel { display: block; }
+  .slider-row { display: grid; grid-template-columns: 84px 1fr 48px; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .slider-row:last-child { margin-bottom: 0; }
+  .slider-row label { font-size: 12.5px; font-weight: 700; color: var(--ink-mid); }
+  .slider-row input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .slider-row .val { font-size: 12px; text-align: right; color: var(--accent); font-weight: 700; }
+
+  .panel h2 { font-size: 16px; margin: 18px 0 12px; }
+
+  .cards { display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    display: block;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    background: #fff;
+  }
+  .card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .rank {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--bg-body); color: var(--ink-mid);
+    font-size: 11.5px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .card-name { font-weight: 800; font-size: 14.5px; flex: 1; }
+  .card-score { font-size: 12.5px; font-weight: 700; color: var(--ink-faint); }
+  .card-stats { display: flex; gap: 14px; font-size: 12px; color: var(--ink-mid); }
+  .card-stats span b { color: var(--ink); font-weight: 700; }
+
+  /* ---------- map panel ---------- */
+  .map {
+    position: relative;
+    flex: 1;
+    background-image: url("../public/prototype-map-bg.png");
+    background-size: cover;
+    background-position: center;
+  }
+  .zoom-controls {
+    position: absolute; right: 18px; bottom: 24px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .zoom-controls span {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: #fff; border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: var(--ink-mid);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  }
+
+  .pin { position: absolute; transform: translate(-50%, -50%); }
+  .dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  .pin.school .dot { background: var(--green); }
+  .pin-badge {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 800; color: #fff;
+  }
+
+  .mini-label {
+    position: absolute;
+    bottom: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    background: var(--ink);
+    color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 4px 8px; border-radius: 6px;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.15s;
+    pointer-events: none;
+  }
+  .pin:hover .mini-label { opacity: 1; visibility: visible; }
+
+  .popup {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 230px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 16px 34px -12px rgba(20,20,40,0.35);
+    padding: 16px 18px;
+    z-index: 5;
+  }
+  .popup-school {
+    display: flex; align-items: center; gap: 10px;
+    width: auto; white-space: nowrap; padding: 10px 16px;
+  }
+  .popup-school .dot { position: static; transform: none; }
+  .popup-school b { font-size: 13.5px; }
+
+  .popup-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .popup-head b { font-size: 15px; }
+  .popup-head span { font-size: 12px; color: var(--accent); font-weight: 700; }
+  .popup-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-mid); padding: 5px 0; border-bottom: 1px dashed var(--line); }
+  .popup-row b { color: var(--ink); font-weight: 700; }
+  .popup-note { font-size: 12px; color: var(--ink-mid); margin: 10px 0 12px; line-height: 1.5; font-style: italic; }
+  .popup-link {
+    display: block; text-align: center;
+    background: var(--accent); color: #fff;
+    font-size: 12.5px; font-weight: 700;
+    padding: 9px 0; border-radius: 8px;
+    text-decoration: none;
+  }
+
+  /* selection wiring: region-N radio drives card highlight + pin/popup visibility */
+  #region-1:checked ~ .app .card-1,
+  #region-2:checked ~ .app .card-2,
+  #region-3:checked ~ .app .card-3,
+  #region-4:checked ~ .app .card-4,
+  #region-5:checked ~ .app .card-5 {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+  #region-1:checked ~ .app .pin-1 .popup,
+  #region-2:checked ~ .app .pin-2 .popup,
+  #region-3:checked ~ .app .pin-3 .popup,
+  #region-4:checked ~ .app .pin-4 .popup,
+  #region-5:checked ~ .app .pin-5 .popup {
+    display: block;
+  }
+  #region-1:checked ~ .app .pin-1 .dot,
+  #region-2:checked ~ .app .pin-2 .dot,
+  #region-3:checked ~ .app .pin-3 .dot,
+  #region-4:checked ~ .app .pin-4 .dot,
+  #region-5:checked ~ .app .pin-5 .dot {
+    width: 18px; height: 18px;
+    box-shadow: 0 0 0 6px rgba(91, 95, 240, 0.25), 0 2px 6px rgba(0,0,0,0.25);
+  }
+</style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="page-note">
+      <strong>탑히어 프로토타입</strong> · 순수 HTML/CSS로 제작 (자바스크립트 없음) · 왼쪽 TOP5 카드 또는 지도 위 핀을 클릭하면 해당 지역 정보가 강조됩니다.
+    </div>
+    <div class="app-scroll">
+
+      <!-- state: filter panel toggle -->
+      <input type="checkbox" id="toggle-filter" class="state-input" />
+      <!-- state: selected region (drives card + map popup) -->
+      <input type="radio" name="region" id="region-1" class="state-input" checked />
+      <input type="radio" name="region" id="region-2" class="state-input" />
+      <input type="radio" name="region" id="region-3" class="state-input" />
+      <input type="radio" name="region" id="region-4" class="state-input" />
+      <input type="radio" name="region" id="region-5" class="state-input" />
+
+      <div class="app">
+        <aside class="rail">
+          <div class="rail-logo">T</div>
+          <div class="rail-icon">⌂</div>
+          <div class="rail-icon active">◈</div>
+          <div class="rail-icon">☆</div>
+          <div class="rail-icon">◎</div>
+        </aside>
+
+        <section class="panel">
+          <div class="search-row">
+            <div class="search-box">건국대학교</div>
+            <label class="filter-btn" for="toggle-filter">⚙</label>
+          </div>
+
+          <div class="filter-panel">
+            <div class="slider-row">
+              <label>월세 상한</label>
+              <input type="range" min="20" max="150" value="60" />
+              <span class="val">60만</span>
+            </div>
+            <div class="slider-row">
+              <label>통학 허용</label>
+              <input type="range" min="5" max="60" value="20" />
+              <span class="val">20분</span>
+            </div>
+            <div class="slider-row">
+              <label>치안 중요도</label>
+              <input type="range" min="0" max="10" value="7" />
+              <span class="val">높음</span>
+            </div>
+            <div class="slider-row">
+              <label>편의 중요도</label>
+              <input type="range" min="0" max="10" value="5" />
+              <span class="val">보통</span>
+            </div>
+          </div>
+
+          <h2>TOP5 지역 추천</h2>
+          <div class="cards">
+            <label class="card card-1" for="region-1">
+              <div class="card-top"><span class="rank">1</span><span class="card-name">자양동</span><span class="card-score">91점</span></div>
+              <div class="card-stats"><span>통학 <b>22분</b></span><span>월세 <b>58만</b></span><span>치안 <b>80</b></span></div>
+            </label>
+            <label class="card card-2" for="region-2">
+              <div class="card-top"><span class="rank">2</span><span class="card-name">화양동</span><span class="card-score">87점</span></div>
+              <div class="card-stats"><span>통학 <b>15분</b></span><span>월세 <b>62만</b></span><span>치안 <b>74</b></span></div>
+            </label>
+            <label class="card card-3" for="region-3">
+              <div class="card-top"><span class="rank">3</span><span class="card-name">군자동</span><span class="card-score">82점</span></div>
+              <div class="card-stats"><span>통학 <b>25분</b></span><span>월세 <b>54만</b></span><span>치안 <b>85</b></span></div>
+            </label>
+            <label class="card card-4" for="region-4">
+              <div class="card-top"><span class="rank">4</span><span class="card-name">성수동</span><span class="card-score">76점</span></div>
+              <div class="card-stats"><span>통학 <b>30분</b></span><span>월세 <b>70만</b></span><span>치안 <b>78</b></span></div>
+            </label>
+            <label class="card card-5" for="region-5">
+              <div class="card-top"><span class="rank">5</span><span class="card-name">중곡동</span><span class="card-score">71점</span></div>
+              <div class="card-stats"><span>통학 <b>28분</b></span><span>월세 <b>49만</b></span><span>치안 <b>72</b></span></div>
+            </label>
+          </div>
+        </section>
+
+        <section class="map">
+          <div class="pin school" style="left:59.9%; top:46.8%;">
+            <div class="dot"></div>
+            <div class="popup popup-school"><div class="dot"></div><b>건국대학교</b></div>
+          </div>
+
+          <div class="pin pin-1" style="left:82.3%; top:81.2%;">
+            <div class="dot"></div>
+            <div class="mini-label">자양동</div>
+            <div class="popup">
+              <div class="popup-head"><b>자양동</b><span>종합 91 · 1위</span></div>
+              <div class="popup-row"><span>통학시간</span><b>22분</b></div>
+              <div class="popup-row"><span>예상 월세</span><b>58만원</b></div>
+              <div class="popup-row"><span>치안 점수</span><b>80 / 100</b></div>
+              <div class="popup-row"><span>편의시설 점수</span><b>78 / 100</b></div>
+              <div class="popup-row"><span>교통 점수</span><b>85 / 100</b></div>
+              <p class="popup-note">"통학은 조금 늘어나지만 월세·교통에서 앞선다"</p>
+              <a class="popup-link" href="https://new.land.naver.com/" target="_blank" rel="noopener">네이버 부동산에서 보기 ↗</a>
+            </div>
+          </div>
+
+          <div class="pin pin-2" style="left:23.2%; top:39.1%;">
+            <div class="dot"></div>
+            <div class="mini-label">화양동</div>
+            <div class="popup">
+              <div class="popup-head"><b>화양동</b><span>종합 87 · 2위</span></div>
+              <div class="popup-row"><span>통학시간</span><b>15분</b></div>
+              <div class="popup-row"><span>예상 월세</span><b>62만원</b></div>
+              <div class="popup-row"><span>치안 점수</span><b>74 / 100</b></div>
+              <div class="popup-row"><span>편의시설 점수</span><b>93 / 100</b></div>
+              <div class="popup-row"><span>교통 점수</span><b>90 / 100</b></div>
+              <p class="popup-note">"학교에서 가장 가깝고 편의시설이 풍부하다"</p>
+              <a class="popup-link" href="https://new.land.naver.com/" target="_blank" rel="noopener">네이버 부동산에서 보기 ↗</a>
+            </div>
+          </div>
+
+          <div class="pin pin-3" style="left:40.6%; top:53.7%;">
+            <div class="dot"></div>
+            <div class="mini-label">군자동</div>
+            <div class="popup">
+              <div class="popup-head"><b>군자동</b><span>종합 82 · 3위</span></div>
+              <div class="popup-row"><span>통학시간</span><b>25분</b></div>
+              <div class="popup-row"><span>예상 월세</span><b>54만원</b></div>
+              <div class="popup-row"><span>치안 점수</span><b>85 / 100</b></div>
+              <div class="popup-row"><span>편의시설 점수</span><b>70 / 100</b></div>
+              <div class="popup-row"><span>교통 점수</span><b>78 / 100</b></div>
+              <p class="popup-note">"월세는 낮지만 통학 시간이 가장 길다"</p>
+              <a class="popup-link" href="https://new.land.naver.com/" target="_blank" rel="noopener">네이버 부동산에서 보기 ↗</a>
+            </div>
+          </div>
+
+          <div class="pin pin-4" style="left:69.5%; top:63.5%;">
+            <div class="dot"></div>
+            <div class="mini-label">성수동</div>
+            <div class="popup">
+              <div class="popup-head"><b>성수동</b><span>종합 76 · 4위</span></div>
+              <div class="popup-row"><span>통학시간</span><b>30분</b></div>
+              <div class="popup-row"><span>예상 월세</span><b>70만원</b></div>
+              <div class="popup-row"><span>치안 점수</span><b>78 / 100</b></div>
+              <div class="popup-row"><span>편의시설 점수</span><b>95 / 100</b></div>
+              <div class="popup-row"><span>교통 점수</span><b>88 / 100</b></div>
+              <p class="popup-note">"편의시설과 교통은 좋지만 월세가 가장 높다"</p>
+              <a class="popup-link" href="https://new.land.naver.com/" target="_blank" rel="noopener">네이버 부동산에서 보기 ↗</a>
+            </div>
+          </div>
+
+          <div class="pin pin-5" style="left:17.4%; top:73.2%;">
+            <div class="dot"></div>
+            <div class="mini-label">중곡동</div>
+            <div class="popup">
+              <div class="popup-head"><b>중곡동</b><span>종합 71 · 5위</span></div>
+              <div class="popup-row"><span>통학시간</span><b>28분</b></div>
+              <div class="popup-row"><span>예상 월세</span><b>49만원</b></div>
+              <div class="popup-row"><span>치안 점수</span><b>72 / 100</b></div>
+              <div class="popup-row"><span>편의시설 점수</span><b>68 / 100</b></div>
+              <div class="popup-row"><span>교통 점수</span><b>75 / 100</b></div>
+              <p class="popup-note">"월세는 가장 저렴하지만 다른 항목은 평균 수준이다"</p>
+              <a class="popup-link" href="https://new.land.naver.com/" target="_blank" rel="noopener">네이버 부동산에서 보기 ↗</a>
+            </div>
+          </div>
+
+          <div class="zoom-controls"><span>+</span><span>−</span></div>
+        </section>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
