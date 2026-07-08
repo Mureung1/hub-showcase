@@ -1,0 +1,158 @@
+<svg width="1600" height="1980" viewBox="0 0 1600 1980" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">StockMate Agent Execution Roadmap</title>
+  <desc id="desc">StockMate Agent의 개발 워크스트림, 4주 로드맵, 주차별 작업, 리스크와 대응 방안을 요약한 시각 자료</desc>
+  <style>
+    .bg { fill: #f7f8f5; }
+    .ink { fill: #18212d; }
+    .muted { fill: #586476; }
+    .line { stroke: #d7ddd6; stroke-width: 2; }
+    .card { fill: #ffffff; stroke: #dce2dc; stroke-width: 2; filter: url(#shadow); }
+    .soft { fill: #eef4f0; }
+    .green { fill: #1f5c53; }
+    .blue { fill: #456fa8; }
+    .orange { fill: #df8b2e; }
+    .red { fill: #c74d4d; }
+    .pill-blue { fill: #e4ecf8; }
+    .pill-green { fill: #dceee9; }
+    .pill-orange { fill: #f8ead7; }
+    .pill-red { fill: #f7e1e4; }
+    .h1 { font: 800 58px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; letter-spacing: -1px; }
+    .h2 { font: 800 36px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    .h3 { font: 800 25px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    .label { font: 800 19px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; letter-spacing: 2px; }
+    .body { font: 500 24px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    .body-sm { font: 500 20px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    .body-xs { font: 500 17px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    .strong { font: 800 22px -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+  </style>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#19251f" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2 L10 6 L2 10" fill="none" stroke="#1f5c53" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1600" height="1980"/>
+  <line class="line" x1="84" y1="96" x2="1516" y2="96"/>
+  <text class="label green" x="84" y="168">EXECUTION PLAN · 4 WEEK MVP</text>
+  <text class="h1 ink" x="84" y="250">어떻게 만들 것인가</text>
+  <text class="body muted" x="84" y="318">
+    <tspan x="84" dy="0">데이터를 먼저 만들고, 설명 가능한 예측 로직을 검증한 뒤,</tspan>
+    <tspan x="84" dy="40">셀러가 바로 이해할 수 있는 브리핑 화면으로 연결한다.</tspan>
+  </text>
+  <line class="line" x1="84" y1="402" x2="1516" y2="402"/>
+
+  <text class="h2 ink" x="84" y="492">개발 워크스트림</text>
+  <text class="body muted" x="1000" y="492">데이터에서 화면까지 이어지는 구현 흐름</text>
+
+  <rect class="card" x="84" y="540" width="260" height="180" rx="22"/>
+  <text class="label green" x="124" y="602">01</text>
+  <text class="h3 ink" x="124" y="652">데이터 준비</text>
+  <text class="body-xs muted" x="124" y="692">40개 SKU · 60일 판매 이력</text>
+  <line x1="344" y1="630" x2="430" y2="630" stroke="#1f5c53" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect class="card" x="430" y="540" width="260" height="180" rx="22"/>
+  <text class="label green" x="470" y="602">02</text>
+  <text class="h3 ink" x="470" y="652">예측 로직</text>
+  <text class="body-xs muted" x="470" y="692">판매량 집계 · 소진일 계산</text>
+  <line x1="690" y1="630" x2="776" y2="630" stroke="#1f5c53" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect class="card" x="776" y="540" width="260" height="180" rx="22"/>
+  <text class="label green" x="816" y="602">03</text>
+  <text class="h3 ink" x="816" y="652">브리핑 생성</text>
+  <text class="body-xs muted" x="816" y="692">우선순위 · 추천 행동</text>
+  <line x1="1036" y1="630" x2="1122" y2="630" stroke="#1f5c53" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect class="card" x="1122" y="540" width="260" height="180" rx="22"/>
+  <text class="label green" x="1162" y="602">04</text>
+  <text class="h3 ink" x="1162" y="652">화면 연결</text>
+  <text class="body-xs muted" x="1162" y="692">대시보드 · 상세 · 브리핑</text>
+
+  <text class="h2 ink" x="84" y="830">4주 로드맵</text>
+  <text class="body muted" x="1062" y="830">주차별 목표와 워크스트림별 진행 상태</text>
+
+  <rect class="card" x="84" y="880" width="330" height="260" rx="22"/>
+  <text class="label green" x="124" y="940">WEEK 1</text>
+  <text class="h3 ink" x="124" y="996">기획 · 데이터</text>
+  <text class="body-sm muted" x="124" y="1052">
+    <tspan x="124" dy="0">· 문제 정의와 페르소나 확정</tspan>
+    <tspan x="124" dy="34">· 더미 상품 40개 설계</tspan>
+    <tspan x="124" dy="34">· CSV 컬럼 구조 정리</tspan>
+  </text>
+
+  <rect class="card" x="454" y="880" width="330" height="260" rx="22"/>
+  <text class="label green" x="494" y="940">WEEK 2</text>
+  <text class="h3 ink" x="494" y="996">예측 엔진</text>
+  <text class="body-sm muted" x="494" y="1052">
+    <tspan x="494" dy="0">· 7/14/30일 판매량 집계</tspan>
+    <tspan x="494" dy="34">· 소진 예상일 계산</tspan>
+    <tspan x="494" dy="34">· 상품 상태 분류</tspan>
+  </text>
+
+  <rect class="card" x="824" y="880" width="330" height="260" rx="22"/>
+  <text class="label green" x="864" y="940">WEEK 3</text>
+  <text class="h3 ink" x="864" y="996">화면 구현</text>
+  <text class="body-sm muted" x="864" y="1052">
+    <tspan x="864" dy="0">· 홈과 대시보드 구현</tspan>
+    <tspan x="864" dy="34">· 오늘의 브리핑 연결</tspan>
+    <tspan x="864" dy="34">· 상품 상세 화면 구현</tspan>
+  </text>
+
+  <rect class="card" x="1194" y="880" width="330" height="260" rx="22"/>
+  <text class="label green" x="1234" y="940">WEEK 4</text>
+  <text class="h3 ink" x="1234" y="996">통합 · 데모</text>
+  <text class="body-sm muted" x="1234" y="1052">
+    <tspan x="1234" dy="0">· 예외 처리</tspan>
+    <tspan x="1234" dy="34">· UI 문구 정리</tspan>
+    <tspan x="1234" dy="34">· README와 데모 시나리오</tspan>
+  </text>
+
+  <rect x="84" y="1220" width="1432" height="430" rx="22" fill="#ffffff" stroke="#dce2dc" stroke-width="2"/>
+  <text class="strong ink" x="120" y="1282">워크스트림</text>
+  <text class="strong muted" x="500" y="1282">WEEK 1</text>
+  <text class="strong muted" x="790" y="1282">WEEK 2</text>
+  <text class="strong muted" x="1080" y="1282">WEEK 3</text>
+  <text class="strong muted" x="1360" y="1282">WEEK 4</text>
+  <line class="line" x1="120" y1="1320" x2="1480" y2="1320"/>
+
+  <text class="strong ink" x="120" y="1384">데이터</text>
+  <rect class="pill-blue" x="450" y="1346" width="210" height="54" rx="12"/>
+  <text class="body-xs blue" x="520" y="1380">설계</text>
+  <rect class="pill-green" x="740" y="1346" width="210" height="54" rx="12"/>
+  <text class="body-xs green" x="806" y="1380">마무리</text>
+  <text class="body-xs muted" x="1124" y="1380">유지</text>
+  <text class="body-xs muted" x="1404" y="1380">유지</text>
+
+  <line class="line" x1="120" y1="1432" x2="1480" y2="1432"/>
+  <text class="strong ink" x="120" y="1496">예측 엔진</text>
+  <rect class="pill-blue" x="450" y="1458" width="210" height="54" rx="12"/>
+  <text class="body-xs blue" x="520" y="1492">설계</text>
+  <rect class="pill-green" x="740" y="1458" width="210" height="54" rx="12"/>
+  <text class="body-xs green" x="792" y="1492">핵심 구현</text>
+  <rect class="pill-orange" x="1030" y="1458" width="210" height="54" rx="12"/>
+  <text class="body-xs orange" x="1102" y="1492">튜닝</text>
+  <text class="body-xs muted" x="1410" y="1492">-</text>
+
+  <line class="line" x1="120" y1="1544" x2="1480" y2="1544"/>
+  <text class="strong ink" x="120" y="1608">브리핑</text>
+  <text class="body-xs muted" x="542" y="1604">-</text>
+  <rect class="pill-blue" x="740" y="1570" width="210" height="54" rx="12"/>
+  <text class="body-xs blue" x="806" y="1604">설계</text>
+  <rect class="pill-green" x="1030" y="1570" width="210" height="54" rx="12"/>
+  <text class="body-xs green" x="1082" y="1604">핵심 구현</text>
+  <rect class="pill-orange" x="1320" y="1570" width="160" height="54" rx="12"/>
+  <text class="body-xs orange" x="1368" y="1604">정리</text>
+
+  <text class="h2 ink" x="84" y="1748">리스크 &amp; 대응</text>
+  <rect class="pill-red" x="84" y="1790" width="132" height="54" rx="12"/>
+  <text class="strong red" x="126" y="1825">높음</text>
+  <text class="strong ink" x="250" y="1825">CSV 컬럼 누락 또는 판매량 0개</text>
+  <text class="body-sm muted" x="760" y="1825">필수 컬럼 검증, 판매량 0개는 별도 상태로 처리</text>
+
+  <rect class="pill-orange" x="84" y="1862" width="132" height="54" rx="12"/>
+  <text class="strong orange" x="126" y="1897">중간</text>
+  <text class="strong ink" x="250" y="1897">판매 이력 부족 상품의 예측 오차</text>
+  <text class="body-sm muted" x="760" y="1897">7일 미만 상품은 “데이터 수집 중”으로 표시</text>
+</svg>
