@@ -1,0 +1,84 @@
+<h2 class="sr-only">소상공인 정부지원금 큐레이터 홈 화면 와이어프레임 — 상단 프로필 요약, 필터 칩, 맞춤 지원금 카드 리스트, 하단 탭바로 구성</h2>
+<div style="display:flex; justify-content:center; padding:1rem 0;">
+<div style="width:360px; background:var(--surface-2); border:0.5px solid var(--border); border-radius:20px; overflow:hidden;">
+
+  <!-- Top bar -->
+  <div style="padding:16px 16px 12px; border-bottom:0.5px solid var(--border);">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <p style="font-size:15px; font-weight:500; margin:0;">안녕하세요, 사장님</p>
+        <p style="font-size:12px; color:var(--text-secondary); margin:2px 0 0;">마포구 · 음식점 · 직원 3인</p>
+      </div>
+      <i class="ti ti-bell" style="font-size:20px; color:var(--text-secondary);" aria-hidden="true"></i>
+    </div>
+  </div>
+
+  <!-- Filter chips -->
+  <div style="display:flex; gap:8px; padding:12px 16px; overflow-x:auto;">
+    <span style="font-size:12px; padding:6px 12px; border-radius:999px; background:var(--bg-accent); color:var(--text-accent); white-space:nowrap;">전체</span>
+    <span style="font-size:12px; padding:6px 12px; border-radius:999px; border:0.5px solid var(--border); color:var(--text-secondary); white-space:nowrap;">마감임박순</span>
+    <span style="font-size:12px; padding:6px 12px; border-radius:999px; border:0.5px solid var(--border); color:var(--text-secondary); white-space:nowrap;">지원금액순</span>
+  </div>
+
+  <!-- List label -->
+  <div style="padding:4px 16px 8px;">
+    <p style="font-size:13px; color:var(--text-secondary); margin:0;">내 조건에 맞는 지원금 12건</p>
+  </div>
+
+  <!-- Card 1 -->
+  <div style="margin:0 16px 12px; padding:14px; background:var(--surface-1); border-radius:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <p style="font-size:14px; font-weight:500; margin:0; max-width:220px;">청년 창업 임대료 지원</p>
+      <span style="font-size:11px; padding:3px 8px; border-radius:6px; background:var(--bg-danger); color:var(--text-danger); white-space:nowrap;">D-3</span>
+    </div>
+    <p style="font-size:12px; color:var(--text-secondary); margin:6px 0 0;">서울시 · 최대 300만원</p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+      <span style="font-size:11px; color:var(--text-accent);">매칭도 92%</span>
+      <i class="ti ti-chevron-right" style="font-size:16px; color:var(--text-muted);" aria-hidden="true"></i>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div style="margin:0 16px 12px; padding:14px; background:var(--surface-1); border-radius:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <p style="font-size:14px; font-weight:500; margin:0; max-width:220px;">소상공인 방역물품 지원</p>
+      <span style="font-size:11px; padding:3px 8px; border-radius:6px; background:var(--bg-warning); color:var(--text-warning); white-space:nowrap;">D-11</span>
+    </div>
+    <p style="font-size:12px; color:var(--text-secondary); margin:6px 0 0;">마포구청 · 최대 50만원</p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+      <span style="font-size:11px; color:var(--text-accent);">매칭도 85%</span>
+      <i class="ti ti-chevron-right" style="font-size:16px; color:var(--text-muted);" aria-hidden="true"></i>
+    </div>
+  </div>
+
+  <!-- Card 3 -->
+  <div style="margin:0 16px 12px; padding:14px; background:var(--surface-1); border-radius:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <p style="font-size:14px; font-weight:500; margin:0; max-width:220px;">소상공인 스마트오더 지원</p>
+      <span style="font-size:11px; padding:3px 8px; border-radius:6px; border:0.5px solid var(--border); color:var(--text-secondary); white-space:nowrap;">D-24</span>
+    </div>
+    <p style="font-size:12px; color:var(--text-secondary); margin:6px 0 0;">중소벤처기업부 · 최대 200만원</p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+      <span style="font-size:11px; color:var(--text-accent);">매칭도 78%</span>
+      <i class="ti ti-chevron-right" style="font-size:16px; color:var(--text-muted);" aria-hidden="true"></i>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div style="display:flex; border-top:0.5px solid var(--border); padding:10px 0 14px;">
+    <div style="flex:1; text-align:center;">
+      <i class="ti ti-home" style="font-size:20px; color:var(--text-accent);" aria-hidden="true"></i>
+      <p style="font-size:11px; margin:2px 0 0; color:var(--text-accent);">홈</p>
+    </div>
+    <div style="flex:1; text-align:center;">
+      <i class="ti ti-clock" style="font-size:20px; color:var(--text-muted);" aria-hidden="true"></i>
+      <p style="font-size:11px; margin:2px 0 0; color:var(--text-muted);">지난 기록</p>
+    </div>
+    <div style="flex:1; text-align:center;">
+      <i class="ti ti-user" style="font-size:20px; color:var(--text-muted);" aria-hidden="true"></i>
+      <p style="font-size:11px; margin:2px 0 0; color:var(--text-muted);">마이</p>
+    </div>
+  </div>
+
+</div>
+</div>
