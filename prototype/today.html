@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>깸 · 오늘의 깸</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <header class="screen-header">
+    <h1>오늘의 깸</h1>
+    <button class="icon-btn" type="button" aria-label="설정">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.5 1.5M18.3 18.3l1.5 1.5M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.5-1.5M18.3 5.7l1.5-1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </header>
+
+  <main class="screen-main">
+    <p class="today-date">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6.5c3-1.5 6-1.5 8 0 2-1.5 5-1.5 8 0v12c-3-1.5-6-1.5-8 0-2-1.5-5-1.5-8 0v-12z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      2026.07.08 · 오늘의 글
+    </p>
+
+    <a class="card today-feature-card" href="read.html" style="display:block; text-decoration:none; color:inherit;">
+      <p class="card-meta">요즘IT <span class="dot"></span> 칼럼 <span class="topic-tag">IT/기술</span></p>
+      <h2 class="card-title">숏폼 시대, 우리는 정말 더 많이 이해하고 있을까</h2>
+      <p class="card-body">틱톡과 릴스 같은 숏폼 콘텐츠는 15초 안에 결론부터 보여주도록 설계되어 있다. 덕분에 우리는 어떤 정보든 빠르게 훑을 수 있게 됐지만, 끝까지 읽지 않아도 다 안 것 같은 착각도 함께 커진다.</p>
+      <div class="card-footer">
+        <span>약 4분 · 원문 그대로</span>
+        <span class="card-link">읽고 미션 받기
+          <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+    </a>
+
+    <p class="today-section-label">이런 글도 있어요</p>
+    <div class="today-more-list">
+      <div class="card">
+        <p class="card-meta">폴인 <span class="dot"></span> 뉴스레터 <span class="topic-tag">커리어</span></p>
+        <h3 class="card-title" style="font-size:16px; margin-bottom:0;">주니어가 AI에게 일을 맡길 때 잃는 것</h3>
+      </div>
+      <div class="card">
+        <p class="card-meta">브런치 <span class="dot"></span> 에세이 <span class="topic-tag">심리</span></p>
+        <h3 class="card-title" style="font-size:16px; margin-bottom:0;">이해하지 않고도 이해한 척하는 법</h3>
+      </div>
+    </div>
+  </main>
+
+  <footer class="screen-footer">
+    <nav class="bottom-tabbar">
+      <a class="bottom-tab active" href="today.html">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6.5c3-1.5 6-1.5 8 0 2-1.5 5-1.5 8 0v12c-3-1.5-6-1.5-8 0-2-1.5-5-1.5-8 0v-12z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        오늘의 글
+      </a>
+      <a class="bottom-tab" href="my.html">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="4" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M9 4v16M5 8h4M5 12h4M5 16h4" stroke="currentColor" stroke-width="1.4"/></svg>
+        나의 깸
+      </a>
+    </nav>
+  </footer>
+</div>
+</body>
+</html>
