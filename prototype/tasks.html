@@ -75,7 +75,23 @@
   .card-subtitle {
     font-size: 13px;
     color: var(--toss-gray-400);
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+  }
+
+  .progress-track {
+    height: 8px;
+    background: var(--toss-gray-200);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--toss-blue);
+    border-radius: 999px;
+    transition: width 0.3s ease;
   }
 
   .task-list {
@@ -103,6 +119,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .checkbox:hover {
+    border-color: var(--toss-blue);
+  }
+
+  .checkbox:active {
+    transform: scale(0.9);
   }
 
   .checkbox.checked {
@@ -111,6 +137,10 @@
     color: #ffffff;
     font-size: 13px;
     font-weight: 700;
+  }
+
+  .checkbox.checked:hover {
+    border-color: var(--toss-green);
   }
 
   .task-info {
@@ -176,10 +206,14 @@
 
     <div class="card">
       <div class="card-title">전체 할 일</div>
-      <div class="card-subtitle">총 4개 중 1개 완료</div>
+      <div class="card-subtitle" id="taskSummary">총 4개 중 1개 완료 (25%)</div>
 
-      <div class="task-list">
-        <div class="task-item">
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="task-list" id="taskList">
+        <div class="task-item" data-status="progress">
           <div class="checkbox"></div>
           <div class="task-info">
             <div class="task-title">회의시간 매칭 화면 디자인 리뷰</div>
@@ -188,7 +222,7 @@
           <div class="status-badge status-progress">진행</div>
         </div>
 
-        <div class="task-item">
+        <div class="task-item" data-status="wait">
           <div class="checkbox"></div>
           <div class="task-info">
             <div class="task-title">팀원 가능시간 데이터 연동</div>
@@ -197,7 +231,7 @@
           <div class="status-badge status-wait">대기</div>
         </div>
 
-        <div class="task-item done">
+        <div class="task-item done" data-status="progress">
           <div class="checkbox checked">&#10003;</div>
           <div class="task-info">
             <div class="task-title">추천 로직 QA 테스트</div>
@@ -206,7 +240,7 @@
           <div class="status-badge status-done">완료</div>
         </div>
 
-        <div class="task-item">
+        <div class="task-item" data-status="wait">
           <div class="checkbox"></div>
           <div class="task-info">
             <div class="task-title">반응형 레이아웃 점검</div>
@@ -217,7 +251,51 @@
       </div>
     </div>
 
-    <div class="footer-note">클릭 기능은 다음 단계에서 추가될 예정이에요</div>
+    <div class="footer-note">체크박스를 눌러 할 일을 완료해보세요</div>
   </div>
+
+  <script>
+    var STATUS_LABEL = { wait: "대기", progress: "진행" };
+    var taskItems = Array.prototype.slice.call(document.querySelectorAll("#taskList .task-item"));
+    var progressFill = document.getElementById("progressFill");
+    var taskSummary = document.getElementById("taskSummary");
+
+    function setBadge(item, isDone) {
+      var badge = item.querySelector(".status-badge");
+      if (isDone) {
+        badge.className = "status-badge status-done";
+        badge.textContent = "완료";
+      } else {
+        var status = item.getAttribute("data-status") || "wait";
+        badge.className = "status-badge status-" + status;
+        badge.textContent = STATUS_LABEL[status];
+      }
+    }
+
+    function updateProgress() {
+      var total = taskItems.length;
+      var doneCount = taskItems.filter(function (item) {
+        return item.classList.contains("done");
+      }).length;
+      var percent = total === 0 ? 0 : Math.round((doneCount / total) * 100);
+
+      progressFill.style.width = percent + "%";
+      taskSummary.textContent = "총 " + total + "개 중 " + doneCount + "개 완료 (" + percent + "%)";
+    }
+
+    taskItems.forEach(function (item) {
+      var checkbox = item.querySelector(".checkbox");
+      checkbox.addEventListener("click", function () {
+        var isDone = !item.classList.contains("done");
+        item.classList.toggle("done", isDone);
+        checkbox.classList.toggle("checked", isDone);
+        checkbox.innerHTML = isDone ? "&#10003;" : "";
+        setBadge(item, isDone);
+        updateProgress();
+      });
+    });
+
+    updateProgress();
+  </script>
 </body>
 </html>
