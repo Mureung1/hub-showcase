@@ -1,7 +1,40 @@
-import ServiceIntro from './components/ServiceIntro'
+import { useState } from 'react'
+import { useLocalStorage } from './hooks/useLocalStorage'
+import type { Profile } from './types'
+import OnboardingForm from './components/OnboardingForm'
+import Dashboard from './components/Dashboard'
 
 function App() {
-  return <ServiceIntro />
+  const [profile, setProfile] = useLocalStorage<Profile | null>('profile', null)
+  const [progress, setProgress] = useLocalStorage<Record<string, boolean>>('progress', {})
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+
+  function handleToggle(taskId: string) {
+    setProgress((prev) => ({ ...prev, [taskId]: !prev[taskId] }))
+  }
+
+  function handleComplete(newProfile: Profile) {
+    setProfile(newProfile)
+    setIsEditingProfile(false)
+  }
+
+  function handleResetProgress() {
+    setProgress({})
+  }
+
+  if (!profile || isEditingProfile) {
+    return <OnboardingForm onComplete={handleComplete} initialProfile={profile} />
+  }
+
+  return (
+    <Dashboard
+      profile={profile}
+      progress={progress}
+      onToggle={handleToggle}
+      onEditProfile={() => setIsEditingProfile(true)}
+      onResetProgress={handleResetProgress}
+    />
+  )
 }
 
 export default App

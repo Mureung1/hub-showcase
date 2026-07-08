@@ -1,0 +1,78 @@
+.onboarding {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+  color: #111827;
+  background: #ffffff;
+  text-align: left;
+}
+
+.onboarding h1 {
+  font-size: 2rem;
+  margin: 0 0 0.75rem;
+  text-align: center;
+  color: #111827;
+}
+
+.onboarding__lead {
+  text-align: center;
+  color: #4b5563;
+  font-size: 1.05rem;
+  margin: 0 0 2.5rem;
+}
+
+.onboarding__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.onboarding__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #111827;
+  border: none;
+  padding: 0;
+}
+
+.onboarding__field select,
+.onboarding__field input[type='date'] {
+  font-weight: 400;
+  padding: 0.75rem 0.9rem;
+  border: 2px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  color: #111827;
+  background: #ffffff;
+}
+
+.onboarding__field--checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.onboarding__field--checkbox input {
+  width: 1.3rem;
+  height: 1.3rem;
+  accent-color: #2563eb;
+}
+
+.onboarding__submit {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.onboarding__submit:hover {
+  background: #1d4ed8;
+}

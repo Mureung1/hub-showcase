@@ -1,0 +1,77 @@
+.task-card {
+  display: flex;
+  gap: 0.9rem;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 1.4rem;
+}
+
+.task-card--checked {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.task-card__checkbox input {
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-top: 0.2rem;
+  accent-color: #2563eb;
+}
+
+.task-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.task-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.task-card__header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #111827;
+}
+
+.task-card__dday {
+  flex-shrink: 0;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+}
+
+.task-card__reason {
+  margin: 0;
+  color: #1d4ed8;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.task-card__description {
+  margin: 0;
+  color: #374151;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.task-card__source {
+  font-size: 1rem;
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.task-card__updated {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
