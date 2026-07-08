@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import DeficiencyBar from '../components/DeficiencyBar.jsx'
 import MenuRecommendation from '../components/MenuRecommendation.jsx'
+import PlaceList from '../components/PlaceList.jsx'
 import Skeleton from '../components/Skeleton.jsx'
+import Spinner from '../components/Spinner.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
+import { getCurrentPosition } from '../lib/geolocation.js'
+import { searchPlaces } from '../lib/kakao.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
 const NUTRIENT_LABELS = [
@@ -143,6 +147,35 @@ export default function Result() {
     }
   }, [top3Rows])
 
+  const [places, setPlaces] = useState(null)
+  const [nearbyLoading, setNearbyLoading] = useState(false)
+  const [nearbyError, setNearbyError] = useState('')
+
+  async function handleFindNearby() {
+    setNearbyLoading(true)
+    setNearbyError('')
+    setPlaces(null)
+    try {
+      const { x, y } = await getCurrentPosition()
+
+      // TODO: 다음 단계에서 top3Rows(부족 상위 영양소) 기반으로 AI가 검색 키워드를 생성하도록 교체 예정.
+      // 지금은 1단계라 임시로 고정 키워드를 사용한다.
+      const keyword = '백반'
+
+      const results = await searchPlaces({ x, y, keyword, radius: 3000 })
+      if (results.length === 0) {
+        setNearbyError('주변에서 추천할 식당을 찾지 못했어요. 잠시 후 다시 시도해주세요.')
+        return
+      }
+      setPlaces(results)
+    } catch (err) {
+      console.error('nearby search failed:', err)
+      setNearbyError(err.message || '주변 식당을 찾지 못했습니다.')
+    } finally {
+      setNearbyLoading(false)
+    }
+  }
+
   if (!recommended) {
     return (
       <div style={styles.page}>
@@ -220,6 +253,34 @@ export default function Result() {
         </div>
       )}
       {!recLoading && !recError && <MenuRecommendation recommendations={recommendations} />}
+
+      <h2 style={{ marginTop: spacing.xl }}>주변 추천 식당</h2>
+      <div style={styles.card}>
+        <button
+          type="button"
+          className="tds-press"
+          onClick={handleFindNearby}
+          disabled={nearbyLoading}
+          style={{ ...styles.buttonPrimary, opacity: nearbyLoading ? 0.7 : 1, cursor: nearbyLoading ? 'not-allowed' : 'pointer' }}
+        >
+          {nearbyLoading && <Spinner size={16} />}
+          {nearbyLoading ? '찾는 중...' : '내 주변에서 찾기'}
+        </button>
+        {nearbyError && <p style={styles.errorText}>{nearbyError}</p>}
+      </div>
+
+      {nearbyLoading && (
+        <>
+          {[0, 1].map((i) => (
+            <div key={i} style={styles.card}>
+              <Skeleton height={18} width="45%" style={{ marginBottom: spacing.sm }} />
+              <Skeleton height={14} width="70%" style={{ marginBottom: spacing.sm }} />
+              <Skeleton height={14} width="55%" />
+            </div>
+          ))}
+        </>
+      )}
+      {!nearbyLoading && places && <PlaceList places={places} />}
 
       <Link
         to="/analyze"

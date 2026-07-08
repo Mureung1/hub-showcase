@@ -7,6 +7,7 @@ const MODEL = 'google/gemini-3-flash-preview'
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const APP_TITLE = 'CJMT'
 const APP_REFERER = process.env.APP_URL || 'http://localhost:5173'
+const KAKAO_KEYWORD_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
 
 const RETRY_DELAYS_MS = [1000, 2000, 4000]
 const RETRYABLE_STATUS = new Set([429, 503])
@@ -71,6 +72,56 @@ app.post('/api/gemini', async (req, res) => {
     res.json({ text })
   } catch (err) {
     console.error('OpenRouter proxy request failed:', err)
+    res.status(500).json({ error: 'Internal proxy error' })
+  }
+})
+
+// POST /api/places - 카카오 키워드 장소 검색 프록시 (KAKAO_REST_API_KEY는 서버에서만 사용)
+app.post('/api/places', async (req, res) => {
+  const apiKey = process.env.KAKAO_REST_API_KEY
+  if (!apiKey) {
+    return res.status(500).json({ error: 'KAKAO_REST_API_KEY is not configured on the server' })
+  }
+
+  const { x, y, keyword, radius = 3000 } = req.body || {}
+  if (!x || !y || !keyword || typeof keyword !== 'string') {
+    return res.status(400).json({ error: 'x, y, keyword are required' })
+  }
+
+  const url = new URL(KAKAO_KEYWORD_SEARCH_URL)
+  url.searchParams.set('query', keyword)
+  url.searchParams.set('x', x)
+  url.searchParams.set('y', y)
+  url.searchParams.set('radius', radius)
+  url.searchParams.set('sort', 'distance')
+  url.searchParams.set('size', '5')
+
+  try {
+    const kakaoRes = await fetch(url, {
+      headers: { Authorization: `KakaoAK ${apiKey}` },
+    })
+
+    const data = await kakaoRes.json()
+
+    if (!kakaoRes.ok) {
+      console.error('Kakao API error:', data)
+      return res.status(kakaoRes.status).json({ error: data?.message || 'Kakao API error' })
+    }
+
+    const places = (data?.documents || []).map((doc) => ({
+      place_name: doc.place_name,
+      road_address_name: doc.road_address_name || doc.address_name,
+      distance: doc.distance,
+      phone: doc.phone,
+      place_url: doc.place_url,
+      category_name: doc.category_name,
+      x: doc.x,
+      y: doc.y,
+    }))
+
+    res.json(places)
+  } catch (err) {
+    console.error('Kakao proxy request failed:', err)
     res.status(500).json({ error: 'Internal proxy error' })
   }
 })
