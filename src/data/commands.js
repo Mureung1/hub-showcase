@@ -316,6 +316,35 @@ export const commands = [
     ],
   },
   {
+    id: 'unix-sudo',
+    category: 'unix',
+    name: 'sudo',
+    summary: '다른 사용자(기본값 root) 권한으로 명령어 하나를 실행한다',
+    description:
+      'Substitute User DO의 약자로, 현재 사용자 계정을 유지한 채 딱 그 명령어 한 번만 관리자(root) 권한으로 실행한다. 실행 전 본인 계정 비밀번호를 확인하며, 시스템 설정 변경이나 패키지 설치처럼 일반 권한으로는 안 되는 작업에 쓴다.',
+    options: [
+      { flag: '-u <user>', desc: 'root가 아닌 다른 사용자 권한으로 실행' },
+      { flag: '-i', desc: '지정한 사용자(기본 root)의 로그인 셸을 그대로 시작' },
+    ],
+    examples: [
+      { command: 'sudo apt update', desc: '관리자 권한으로 패키지 목록 갱신' },
+      { command: 'sudo -u www-data whoami', desc: 'www-data 사용자 권한으로 whoami 실행' },
+    ],
+  },
+  {
+    id: 'unix-su',
+    category: 'unix',
+    name: 'su',
+    summary: '다른 사용자 계정으로 전환해 새 셸을 시작한다',
+    description:
+      'Switch User의 약자로, 인자 없이 실행하면 root로, 사용자명을 지정하면 해당 계정으로 전환된 새 셸 세션을 연다. sudo와 달리 전환한 계정으로 계속 머무르며 exit으로 원래 계정에 돌아온다.',
+    options: [{ flag: '-', desc: '환경 변수까지 대상 사용자의 로그인 환경과 동일하게 초기화하며 전환 (su -l과 동일)' }],
+    examples: [
+      { command: 'su', desc: 'root 비밀번호를 입력해 root 계정으로 전환' },
+      { command: 'su - student', desc: 'student 계정의 로그인 환경으로 전환' },
+    ],
+  },
+  {
     id: 'unix-df',
     category: 'unix',
     name: 'df',
