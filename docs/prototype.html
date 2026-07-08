@@ -1,0 +1,1453 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>잔소리봇</title>
+    <style>
+      :root {
+        --bg: #f7f5f1;
+        --ink: #1e2a3a;
+        --ink-soft: #4b5a6b;
+        --line: #e1dcd2;
+        --panel-bg: #ffffff;
+        --idle: #9aa3ad;
+        --lv1: #4a6fa5;
+        --lv2: #6b5b95;
+        --lv3: #c24e5b;
+        --lv4: #d9822b;
+        --done: #3f8c5d;
+        --badge-bg: #eef1f6;
+        --coral: #e8694f;
+
+        --notif-bg: #1b2340;
+        --notif-bg-soft: #262e52;
+        --notif-text: #e9ecf5;
+        --notif-text-soft: #a7afc9;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Pretendard",
+          "Apple SD Gothic Neo", "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+        line-height: 1.5;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      /* 상단 네비게이션 */
+      .navbar {
+        background: var(--panel-bg);
+        border-bottom: 1px solid var(--line);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .navbar-inner {
+        max-width: 900px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 14px 24px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 800;
+        font-size: 16px;
+      }
+      .brand-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        background: var(--coral);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+      }
+      .nav-links {
+        display: flex;
+        gap: 4px;
+        flex: 1;
+      }
+      .nav-link {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ink-soft);
+        padding: 7px 12px;
+        border-radius: 8px;
+      }
+      .nav-link:hover {
+        background: var(--badge-bg);
+      }
+      .nav-link.active {
+        background: var(--ink);
+        color: #fff;
+      }
+      .nav-perm-btn {
+        font-size: 12.5px;
+        background: var(--badge-bg);
+        color: var(--ink);
+        border: none;
+        border-radius: 6px;
+        padding: 7px 11px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 32px 24px 80px;
+      }
+      .page-header {
+        margin-bottom: 24px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .page-title {
+        font-size: 22px;
+        font-weight: 800;
+        margin: 0 0 6px;
+      }
+      .page-sub {
+        font-size: 14px;
+        color: var(--ink-soft);
+        margin: 0;
+      }
+
+      /* 버튼 */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: none;
+        border-radius: 9px;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .btn:hover {
+        opacity: 0.9;
+      }
+      .btn-primary {
+        background: var(--coral);
+        color: #fff;
+      }
+      .btn-dark {
+        background: var(--ink);
+        color: #fff;
+      }
+      .btn-secondary {
+        background: var(--badge-bg);
+        color: var(--ink);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--ink-soft);
+        border: 1px solid var(--line);
+      }
+      .btn-block {
+        width: 100%;
+      }
+
+      /* 홈: 통계 바 */
+      .stats-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .stat-chip {
+        background: var(--panel-bg);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px 16px;
+        font-size: 13px;
+        color: var(--ink-soft);
+        flex: 1;
+        min-width: 140px;
+      }
+      .stat-chip strong {
+        display: block;
+        font-size: 20px;
+        color: var(--ink);
+        font-weight: 800;
+      }
+
+      .empty-state {
+        background: var(--panel-bg);
+        border: 1px dashed var(--line);
+        border-radius: 14px;
+        padding: 48px 24px;
+        text-align: center;
+        color: var(--ink-soft);
+        font-size: 14px;
+      }
+      .empty-state .btn {
+        margin-top: 14px;
+      }
+
+      .task-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .task-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 18px 20px;
+      }
+      .task-card.done {
+        opacity: 0.7;
+      }
+      .task-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .task-face {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        background: var(--badge-bg);
+      }
+      .task-face.urgent {
+        width: 44px;
+        height: 44px;
+        font-size: 24px;
+        background: #fde7dc;
+        animation: pulse 1s ease infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.12);
+        }
+      }
+      .task-title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .task-title {
+        font-size: 16px;
+        font-weight: 800;
+        margin: 0 0 4px;
+      }
+      .task-meta {
+        font-size: 12.5px;
+        color: var(--ink-soft);
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .meta-chip {
+        background: var(--badge-bg);
+        border-radius: 999px;
+        padding: 2px 9px;
+        font-weight: 600;
+      }
+      .deadline-chip {
+        color: var(--lv4);
+      }
+      .done-chip {
+        color: var(--done);
+        background: #e4f3ea;
+      }
+
+      .pressure-track {
+        height: 8px;
+        background: var(--badge-bg);
+        border-radius: 999px;
+        overflow: hidden;
+        margin: 14px 0 8px;
+      }
+      .pressure-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(
+          90deg,
+          var(--lv1),
+          var(--lv2) 40%,
+          var(--lv3) 70%,
+          var(--lv4)
+        );
+        transition: width 0.35s ease;
+      }
+      .pressure-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ink-soft);
+      }
+
+      .task-actions {
+        margin-top: 14px;
+        display: flex;
+        gap: 8px;
+      }
+
+      /* 등록 폼 */
+      .form-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 28px;
+        max-width: 520px;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink-soft);
+        margin: 18px 0 6px;
+      }
+      label:first-of-type {
+        margin-top: 0;
+      }
+      input[type="text"],
+      input[type="number"],
+      input[type="time"],
+      select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        font-size: 14px;
+        font-family: inherit;
+        color: var(--ink);
+        background: #fafaf8;
+      }
+      input:focus,
+      select:focus {
+        outline: 2px solid var(--lv1);
+        outline-offset: 1px;
+      }
+      .field-row {
+        display: flex;
+        gap: 10px;
+      }
+      .field-row > div {
+        flex: 1;
+      }
+      .quick-chip-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .quick-chip {
+        background: var(--badge-bg);
+        border: none;
+        border-radius: 999px;
+        padding: 5px 11px;
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--ink-soft);
+        cursor: pointer;
+      }
+      .quick-chip.selected {
+        background: var(--ink);
+        color: #fff;
+      }
+      .hint {
+        font-size: 12px;
+        color: var(--ink-soft);
+        margin-top: 6px;
+      }
+
+      /* 히스토리 */
+      .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .history-row {
+        background: var(--panel-bg);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .history-row .htitle {
+        font-size: 13.5px;
+        font-weight: 700;
+        flex: 0 0 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .bar-track {
+        flex: 1;
+        height: 8px;
+        background: var(--badge-bg);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        background: var(--lv3);
+        border-radius: 999px;
+      }
+      .history-row .hcount {
+        font-size: 12px;
+        color: var(--ink-soft);
+        flex: 0 0 70px;
+        text-align: right;
+      }
+
+      /* 알림 모달 (챗봇 정체성은 여기 집중) */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 18, 30, 0.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 50;
+      }
+      .modal-content {
+        width: 100%;
+        max-width: 400px;
+        background: var(--notif-bg);
+        border-radius: 18px;
+        padding: 20px 20px 18px;
+        color: var(--notif-text);
+      }
+      .modal-content.urgent {
+        border: 2px solid var(--lv4);
+        animation: shake 0.4s ease 1;
+      }
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-4px);
+        }
+        75% {
+          transform: translateX(4px);
+        }
+      }
+      .notif-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .notif-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: var(--coral);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        flex-shrink: 0;
+      }
+      .calendar-slot {
+        background: #10162e;
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-top: 10px;
+        color: #fff;
+      }
+      .calendar-slot .slot-tag {
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        color: #ffbe9e;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        font-weight: 700;
+      }
+      .calendar-slot .slot-time {
+        font-weight: 700;
+        font-size: 13.5px;
+      }
+      .calendar-slot .slot-desc {
+        font-size: 11.5px;
+        color: var(--notif-text-soft);
+        margin-top: 4px;
+      }
+      .notif-name {
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .notif-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        color: var(--notif-text-soft);
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .notif-status {
+        font-size: 13.5px;
+        color: var(--notif-text-soft);
+        margin-bottom: 10px;
+      }
+
+      .reason-check-box {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid #3b4470;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .reason-check-box p {
+        margin: 0 0 8px;
+        font-size: 13px;
+        color: var(--notif-text-soft);
+      }
+      .reason-check-box .row {
+        display: flex;
+        gap: 8px;
+      }
+      .reason-check-box select {
+        flex: 1;
+        background: var(--notif-bg-soft);
+        color: var(--notif-text);
+        border: 1px solid #3b4470;
+      }
+
+      .notif-message {
+        background: var(--notif-bg-soft);
+        border-radius: 12px;
+        padding: 14px;
+        font-size: 14.5px;
+        line-height: 1.55;
+      }
+      .lv-chip {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 3px 9px;
+        border-radius: 6px;
+        margin-right: 6px;
+        color: #fff;
+      }
+      .lv-chip.lv1 {
+        background: var(--lv1);
+      }
+      .lv-chip.lv2 {
+        background: var(--lv2);
+      }
+      .lv-chip.lv3 {
+        background: var(--lv3);
+      }
+      .lv-chip.lv4 {
+        background: var(--lv4);
+      }
+      .feature-note {
+        font-size: 11.5px;
+        color: var(--notif-text-soft);
+        margin-top: 10px;
+      }
+      .feature-note strong {
+        color: var(--notif-text);
+      }
+
+      .progress-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+      }
+      .notif-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .btn-notif-primary {
+        background: var(--coral);
+        color: #fff;
+        flex: 1;
+      }
+      .btn-notif-secondary {
+        background: transparent;
+        color: var(--notif-text);
+        border: 1px solid #3b4470;
+        flex: 1;
+      }
+
+      /* 포커스 모드 (지금 시작하기 이후 큰 시계 화면) */
+      .modal-content.focus-mode {
+        text-align: center;
+        padding: 40px 24px;
+      }
+      .focus-face {
+        font-size: 56px;
+        margin-bottom: 10px;
+      }
+      .focus-title {
+        font-size: 15px;
+        color: var(--notif-text-soft);
+        margin-bottom: 6px;
+      }
+      .focus-clock {
+        font-size: 52px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        color: #fff;
+        margin: 6px 0 4px;
+        letter-spacing: 0.02em;
+      }
+      .focus-sub {
+        font-size: 13px;
+        color: var(--notif-text-soft);
+        margin-bottom: 20px;
+      }
+
+      footer {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 24px 60px;
+        font-size: 12.5px;
+        color: var(--ink-soft);
+      }
+      footer ul {
+        margin: 6px 0 0;
+        padding-left: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-inner">
+        <span class="brand"><span class="brand-icon">🤖</span>잔소리봇</span>
+        <div class="nav-links">
+          <a class="nav-link" data-route="/home" href="#/home">홈</a>
+          <a class="nav-link" data-route="/register" href="#/register"
+            >할일 등록</a
+          >
+          <a class="nav-link" data-route="/history" href="#/history"
+            >히스토리</a
+          >
+        </div>
+        <button class="nav-perm-btn" id="notifPermBtn">🔔 알림 켜기</button>
+      </div>
+    </nav>
+
+    <div id="app"></div>
+
+    <footer>
+      <strong>이 데모는 브라우저 안에서만 동작합니다.</strong> 새로고침하면
+      초기화돼요.
+      <ul>
+        <li>
+          각 할일은 등록 직후부터 20초마다 자동으로 개입 강도가 오릅니다(세션
+          기반 에스컬레이션). 실제 서비스는 서버가 무응답 시간을 감지해 Web
+          Push를 보냅니다.
+        </li>
+        <li>
+          마이크로태스크만 하거나 일부만 진행하면 할일은 완료 처리되지 않고 홈에
+          남아서 다시 알림이 옵니다 — "다 끝냈어요"를 선택해야 완료돼요.
+        </li>
+        <li>
+          과목(subjects)·일일 체크인 개념은 plan.md 문제 정의에 근거가 약해 이번
+          구조에서 제외했습니다.
+        </li>
+      </ul>
+    </footer>
+
+    <script>
+      const REASON_LABELS = {
+        overwhelm: "막막해서 못 시작",
+        dislike: "이 할일 자체가 하기 싫음",
+        temptation: "눈앞의 유혹(놀고 싶음)",
+      };
+
+      const TYPES = [
+        "리포트/글쓰기",
+        "문제풀이/암기",
+        "발표/PT 준비",
+        "코딩 실습",
+        "시험공부",
+        "프로젝트",
+        "조별과제",
+        "개인공부",
+        "기타",
+      ];
+
+      const TYPE_TASKS = {
+        "리포트/글쓰기": {
+          overwhelm: (t) => `${t}에 대해 딱 한 문장만 써볼까요?`,
+          dislike: (t) => `${t} 개요만 3줄 적어볼까요?`,
+          temptation: (t) => `${t} 첫 문장만 쓰고 다시 쉬어도 돼요.`,
+        },
+        "문제풀이/암기": {
+          overwhelm: (t) => `${t} 문제 딱 1개만 풀어볼까요?`,
+          dislike: (t) => `${t} 5분만 훑어볼까요?`,
+          temptation: (t) => `${t} 문제 하나만 풀고 다시 볼까요?`,
+        },
+        "발표/PT 준비": {
+          overwhelm: (t) => `${t} 슬라이드 제목만 먼저 적어볼까요?`,
+          dislike: (t) => `${t} 목차만 정해볼까요?`,
+          temptation: (t) => `${t} 첫 슬라이드만 만들고 쉬어요.`,
+        },
+        "코딩 실습": {
+          overwhelm: (t) => `${t} 폴더/파일만 먼저 만들어볼까요?`,
+          dislike: (t) => `${t} 코드 한 줄만 써볼까요?`,
+          temptation: (t) => `${t} 파일 열어서 5분만 보고 와요.`,
+        },
+        시험공부: {
+          overwhelm: (t) => `${t} 요약 노트 한 페이지만 펼쳐볼까요?`,
+          dislike: (t) => `${t} 기출문제 1개만 풀어볼까요?`,
+          temptation: (t) => `${t} 딱 10분만 훑고 다시 쉬어요.`,
+        },
+        프로젝트: {
+          overwhelm: (t) => `${t} 할 일 목록 하나만 적어볼까요?`,
+          dislike: (t) => `${t} 관련 문서 하나만 열어볼까요?`,
+          temptation: (t) => `${t} 딱 하나만 처리하고 다시 봐요.`,
+        },
+        조별과제: {
+          overwhelm: (t) =>
+            `${t} 조원들에게 보낼 진행 상황 메시지 한 줄만 써볼까요?`,
+          dislike: (t) => `${t} 내가 맡은 부분 문서만 먼저 열어볼까요?`,
+          temptation: (t) => `${t} 10분만 내 몫 확인하고 다시 쉬어요.`,
+        },
+        개인공부: {
+          overwhelm: (t) => `${t} 책 아무 페이지나 펼쳐서 5분만 읽어볼까요?`,
+          dislike: (t) => `${t} 노트에 딱 한 줄만 적어볼까요?`,
+          temptation: (t) => `${t} 10분만 훑어보고 다시 딴짓해요.`,
+        },
+        기타: {
+          overwhelm: (t) => `${t} 관련해서 아무거나 5분만 시작해볼까요?`,
+          dislike: (t) => `${t} 아주 작은 부분 하나만 먼저 해볼까요?`,
+          temptation: (t) => `${t} 10분만 먼저 해보고 다시 딴짓해요.`,
+        },
+      };
+
+      const LEVEL_META = [
+        { label: "시작 대기", chipClass: "", face: "🙂" },
+        { label: "Lv1 · 가벼운 알림", chipClass: "lv1", face: "🙂" },
+        { label: "Lv2 · 마이크로태스크 제안", chipClass: "lv2", face: "😐" },
+        { label: "Lv3 · 근거 기반 개입", chipClass: "lv3", face: "😟" },
+        { label: "Lv4 · 마감 임박 경고", chipClass: "lv4", face: "🔥" },
+      ];
+
+      const CHECKPOINT_LEVELS = [1, 3];
+      const TICK_MS = 20000;
+
+      let tasks = [];
+      let nextId = 1;
+      let streak = 0;
+      const history = []; // 완료된 할일의 {title, skipCount, reason, type, customReasonText} 기록 — memoryFor가 참조
+      const sensitivity = {};
+      const timers = {};
+      let modalTaskId = null;
+      let modalLocked = false; // 포커스 모드 등 모달이 자체적으로 화면을 그리는 동안, 다른 타이머가 renderModal()로 덮어쓰지 못하게 막는 잠금
+
+      function levelFromSkip(skipCount, reason) {
+        const divisor = sensitivity[reason] === "gentle" ? 2 : 1;
+        return Math.min(Math.ceil(skipCount / divisor), 4);
+      }
+      function reasonLabel(task) {
+        return task.reason === "custom"
+          ? task.customReasonText
+          : REASON_LABELS[task.reason];
+      }
+      function microtaskFor(reason, type, title) {
+        const set = TYPE_TASKS[type] || TYPE_TASKS["기타"];
+        return reason === "custom" ? set.overwhelm(title) : set[reason](title);
+      }
+      function evidenceFor(reason, skipCount, customText) {
+        if (reason === "overwhelm")
+          return `${skipCount}번째 알림에도 시작을 못 하고 계셨어요.`;
+        if (reason === "dislike")
+          return `지난번에도 이 유형의 할일을 이만큼 미뤘었어요.`;
+        if (reason === "temptation")
+          return `이 시간대에 유독 딴짓으로 넘어가는 패턴이 있었어요.`;
+        if (reason === "custom")
+          return `"${customText}" 때문에 미루고 계신 거 알고 있어요.`;
+        return "";
+      }
+      // 세션 안에서 완료된 할일 중 같은 회피 이유가 있으면, 그때 성공했던 마이크로태스크를 그대로 다시 제안
+      function memoryFor(task) {
+        const prior = [...history]
+          .reverse()
+          .find((h) => h.reason === task.reason);
+        if (!prior) return null;
+        const priorMicrotask = microtaskFor(
+          prior.reason,
+          prior.type,
+          prior.title,
+        );
+        return `지난번 "${prior.title}"도 "${priorMicrotask}"로 시작했을 때 성공했어요. 오늘도 그렇게 해볼까요?`;
+      }
+      function lv3ContentFor(task) {
+        const memory = memoryFor(task);
+        if (memory) return { text: memory, usedMemory: true };
+        return {
+          text: `${evidenceFor(task.reason, task.skipCount, task.customReasonText)} ${microtaskFor(task.reason, task.type, task.title)}`,
+          usedMemory: false,
+        };
+      }
+      function messageFor(t) {
+        const {
+          title,
+          reason,
+          type,
+          level,
+          skipCount,
+          deadline,
+          customReasonText,
+        } = t;
+        if (level === 0)
+          return `${title} 시작 예정 시간이 됐어요. 준비되셨나요?`;
+        if (level === 1) return `슬슬 시작해볼까요, ${title}?`;
+        if (level === 2) return microtaskFor(reason, type, title);
+        if (level === 3) return lv3ContentFor(t).text;
+        if (level === 4)
+          return `마감 D-${deadline}이에요! ${title}, 지금 당장 시작하지 않으면 정말 위험해요.`;
+        return "";
+      }
+      function featureNoteFor(task) {
+        if (task.level === 2)
+          return "<strong>🔧 기능① 마이크로태스크 자동 생성</strong> — 유형·제목 기반으로 지금 이 순간의 첫 행동을 새로 만들었어요.";
+        if (task.level === 3) {
+          if (lv3ContentFor(task).usedMemory)
+            return "<strong>🧠 과거 기록 기반 개입</strong> — 같은 회피 이유로 성공했던 방법을 기억해서 다시 제안했어요.";
+          return "<strong>🏷 기능② 회피 원인 태깅 + 맞춤 개입</strong> — 등록해둔 회피 이유를 근거로 메시지를 다르게 구성했어요.";
+        }
+        return "";
+      }
+      function maybeNotify(t) {
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification("잔소리봇", { body: messageFor(t) });
+        }
+      }
+
+      function hasStartTimePassed(startTimeStr) {
+        if (!startTimeStr) return true;
+        const [h, m] = startTimeStr.split(":").map(Number);
+        const target = new Date();
+        target.setHours(h, m, 0, 0);
+        return new Date() >= target;
+      }
+
+      function startTimer(task) {
+        stopTimer(task.id);
+        task.nextTickAt = Date.now() + TICK_MS;
+        timers[task.id] = setInterval(() => {
+          const t = tasks.find((x) => x.id === task.id);
+          if (!t || t.status !== "active") {
+            stopTimer(task.id);
+            return;
+          }
+          if (t.level >= 4) {
+            stopTimer(task.id);
+            return;
+          }
+          const prevLevel = t.level;
+          t.skipCount += 1;
+          t.level = levelFromSkip(t.skipCount, t.reason);
+          t.nextTickAt = Date.now() + TICK_MS;
+          maybeNotify(t);
+          renderApp();
+          // 압력 게이지(레벨)가 실제로 올라간 순간엔 사용자가 누르지 않아도 잔소리봇이 먼저 말을 건다.
+          // 단, 포커스 모드처럼 모달이 잠겨있을 땐 다른 할일이 끼어들어 화면을 가로채지 않게 막는다.
+          if (!modalLocked && t.level > prevLevel) {
+            modalTaskId = t.id;
+          }
+          if (modalTaskId === t.id) renderModal();
+        }, TICK_MS);
+      }
+      function stopTimer(id) {
+        if (timers[id]) {
+          clearInterval(timers[id]);
+          delete timers[id];
+        }
+      }
+
+      // ---------- 라우터 ----------
+      function currentRoute() {
+        return location.hash.replace("#", "") || "/home";
+      }
+      window.addEventListener("hashchange", renderApp);
+
+      function renderApp() {
+        const route = currentRoute();
+        document.querySelectorAll(".nav-link").forEach((a) => {
+          a.classList.toggle("active", a.dataset.route === route);
+        });
+        const app = document.getElementById("app");
+        if (route === "/register") app.innerHTML = registerPageHTML();
+        else if (route === "/history") app.innerHTML = historyPageHTML();
+        else app.innerHTML = homePageHTML();
+
+        bindPageEvents(route);
+      }
+
+      // ---------- 홈 ----------
+      function homePageHTML() {
+        const activeTasks = tasks.filter((t) => t.status === "active");
+        const doneTasks = tasks.filter((t) => t.status === "done");
+
+        if (tasks.length === 0) {
+          return `
+        <div class="page">
+          <div class="page-header">
+            <h1 class="page-title">홈</h1>
+            <p class="page-sub">등록된 할일이 여기 모여요. 미룰수록 압력 게이지가 차오릅니다.</p>
+          </div>
+          <div class="empty-state">
+            아직 등록된 할일이 없어요.
+            <div><a class="btn btn-primary" href="#/register">할일 등록하러 가기</a></div>
+          </div>
+        </div>`;
+        }
+
+        const statsHtml = `
+      <div class="stats-row">
+        <div class="stat-chip">진행 중<strong>${activeTasks.length}</strong></div>
+        <div class="stat-chip">완료<strong>${doneTasks.length}</strong></div>
+        <div class="stat-chip">스트릭<strong>🔥 ${streak}</strong></div>
+      </div>`;
+
+        const cardsHtml = tasks.map((t) => taskCardHTML(t)).join("");
+
+        return `
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">홈</h1>
+            <p class="page-sub">등록된 할일과 지금 상태예요.</p>
+          </div>
+          <a class="btn btn-primary" href="#/register">+ 새 할일 등록</a>
+        </div>
+        ${statsHtml}
+        <div class="task-grid">${cardsHtml}</div>
+      </div>`;
+      }
+
+      function taskCardHTML(t) {
+        const meta = LEVEL_META[t.level];
+        if (t.status === "done") {
+          return `
+        <div class="task-card done">
+          <div class="task-top">
+            <div>
+              <p class="task-title">${t.title}</p>
+              <div class="task-meta">
+                <span class="meta-chip">${t.type}</span>
+                <span class="meta-chip done-chip">✅ 완료</span>
+              </div>
+            </div>
+          </div>
+        </div>`;
+        }
+        if (t.status === "waiting") {
+          return `
+        <div class="task-card">
+          <div class="task-top">
+            <div class="task-title-row">
+              <div class="task-face">⏳</div>
+              <div>
+                <p class="task-title">${t.title}</p>
+                <div class="task-meta">
+                  <span class="meta-chip">${t.type}</span>
+                  <span class="meta-chip deadline-chip">마감 D-${t.deadline}</span>
+                  <span class="meta-chip">⏳ 오늘 ${t.startTime}부터 시작돼요</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+        }
+        const countdown =
+          t.level < 4 && t.nextTickAt
+            ? `다음 알림까지 ${Math.max(0, Math.ceil((t.nextTickAt - Date.now()) / 1000))}초`
+            : t.level === 4
+              ? "더는 미룰 수 없어요"
+              : "";
+        return `
+      <div class="task-card" data-task-id="${t.id}">
+        <div class="task-top">
+          <div class="task-title-row">
+            <div class="task-face ${t.level === 4 ? "urgent" : ""}">${meta.face}</div>
+            <div>
+              <p class="task-title">${t.title}</p>
+              <div class="task-meta">
+                <span class="meta-chip">${t.type}</span>
+                <span class="meta-chip deadline-chip">마감 D-${t.deadline}</span>
+                <span class="meta-chip">시작 예정 ${t.startTime || "지금부터"}</span>
+                <span class="meta-chip">회피 이유: ${reasonLabel(t)}</span>
+                ${t.level === 4 ? '<span class="meta-chip deadline-chip">📅 캘린더 삽입됨</span>' : ""}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pressure-track"><div class="pressure-fill" style="width:${(t.level / 4) * 100}%"></div></div>
+        <div class="pressure-label">
+          <span>${meta.label}</span>
+          <span>벌써 ${t.skipCount}번째 알림 · ${countdown}</span>
+        </div>
+        <div class="task-actions">
+          <button class="btn btn-primary open-modal-btn" data-task-id="${t.id}">🔔 지금 확인하기</button>
+        </div>
+      </div>`;
+      }
+
+      // ---------- 등록 ----------
+      function registerPageHTML() {
+        const typeOptions = TYPES.map(
+          (t) => `<option value="${t}">${t}</option>`,
+        ).join("");
+        return `
+      <div class="page">
+        <div class="page-header">
+          <h1 class="page-title">할일 등록</h1>
+          <p class="page-sub">한 번에 하나씩, 필요한 정보만 입력해주세요.</p>
+        </div>
+        <div class="form-card">
+          <label for="f-title">할일 제목</label>
+          <input type="text" id="f-title" placeholder="예: 자료구조 복습">
+
+          <label for="f-type">할일 유형</label>
+          <select id="f-type">${typeOptions}</select>
+
+          <div class="field-row">
+            <div>
+              <label for="f-start">시작 예정 시각</label>
+              <input type="time" id="f-start">
+              <p class="hint" style="margin-top:4px;">비워두면 지금부터 바로 시작돼요.</p>
+            </div>
+            <div>
+              <label for="f-deadline">마감까지 D-day</label>
+              <input type="number" id="f-deadline" min="0" max="30" value="3">
+              <div class="quick-chip-row">
+                <button type="button" class="quick-chip" data-deadline="1">D-1</button>
+                <button type="button" class="quick-chip" data-deadline="3">D-3</button>
+                <button type="button" class="quick-chip" data-deadline="7">D-7</button>
+                <button type="button" class="quick-chip" data-deadline="14">D-14</button>
+              </div>
+            </div>
+          </div>
+
+          <label for="f-reason">예상되는 회피 이유</label>
+          <select id="f-reason">
+            <option value="overwhelm">막막해서 못 시작</option>
+            <option value="dislike">이 할일 자체가 하기 싫음</option>
+            <option value="temptation">눈앞의 유혹(놀고 싶음)</option>
+            <option value="custom">기타(직접입력)</option>
+          </select>
+          <input type="text" id="f-reason-custom" placeholder="예: 완벽하게 하고 싶어서" style="display:none; margin-top:8px;">
+
+          <button class="btn btn-dark btn-block" id="f-submit" style="margin-top:22px;">등록하고 홈으로</button>
+          <p class="hint">등록 직후부터 20초마다 자동으로 개입 강도가 올라가는 세션이 시작돼요(데모용 압축 배속).</p>
+        </div>
+      </div>`;
+      }
+
+      // ---------- 히스토리 ----------
+      function historyPageHTML() {
+        const done = tasks.filter((t) => t.status === "done");
+        if (done.length === 0) {
+          return `
+        <div class="page">
+          <div class="page-header">
+            <h1 class="page-title">히스토리</h1>
+            <p class="page-sub">완료한 할일이 여기 쌓여요.</p>
+          </div>
+          <div class="empty-state">아직 완료한 할일이 없어요.</div>
+        </div>`;
+        }
+        const maxSkip = Math.max(...done.map((t) => t.skipCount), 1);
+        const rows = done
+          .map(
+            (t) => `
+      <div class="history-row">
+        <span class="htitle">${t.title}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(t.skipCount / maxSkip) * 100}%"></div></div>
+        <span class="hcount">${t.skipCount}회 미룸</span>
+      </div>`,
+          )
+          .join("");
+        return `
+      <div class="page">
+        <div class="page-header">
+          <h1 class="page-title">히스토리</h1>
+          <p class="page-sub">완료 ${done.length}개 · 스트릭 🔥 ${streak}</p>
+        </div>
+        <div class="history-list">${rows}</div>
+      </div>`;
+      }
+
+      // ---------- 페이지별 이벤트 ----------
+      function bindPageEvents(route) {
+        if (route === "/home") {
+          document.querySelectorAll(".open-modal-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              modalTaskId = parseInt(btn.dataset.taskId, 10);
+              renderModal();
+            });
+          });
+        }
+        if (route === "/register") {
+          document.querySelectorAll(".quick-chip").forEach((chip) => {
+            chip.addEventListener("click", () => {
+              document.getElementById("f-deadline").value =
+                chip.dataset.deadline;
+              document
+                .querySelectorAll(".quick-chip")
+                .forEach((c) => c.classList.remove("selected"));
+              chip.classList.add("selected");
+            });
+          });
+          document
+            .getElementById("f-reason")
+            .addEventListener("change", (e) => {
+              document.getElementById("f-reason-custom").style.display =
+                e.target.value === "custom" ? "block" : "none";
+            });
+          document
+            .getElementById("f-submit")
+            .addEventListener("click", submitRegister);
+        }
+      }
+
+      function submitRegister() {
+        const title = document.getElementById("f-title").value.trim();
+        if (!title) {
+          document.getElementById("f-title").focus();
+          return;
+        }
+        const type = document.getElementById("f-type").value;
+        const startTime = document.getElementById("f-start").value;
+        const deadline =
+          parseInt(document.getElementById("f-deadline").value, 10) || 0;
+        const reasonSel = document.getElementById("f-reason").value;
+        const customText = document
+          .getElementById("f-reason-custom")
+          .value.trim();
+
+        const task = {
+          id: nextId++,
+          title,
+          type,
+          startTime,
+          deadline,
+          reason: reasonSel,
+          customReasonText:
+            reasonSel === "custom"
+              ? customText || "직접 입력한 이유"
+              : undefined,
+          level: 0,
+          skipCount: 0,
+          status: hasStartTimePassed(startTime) ? "active" : "waiting",
+          feedbackGiven: false,
+          reasonCheckCount: 0,
+          reasonCheckedLevels: [],
+          freeTextAsked: false,
+          userNote: null,
+        };
+        tasks.push(task);
+        if (task.status === "active") startTimer(task);
+        location.hash = "/home";
+      }
+
+      // 대기 중인 할일의 시작 예정 시각이 지났는지 주기적으로 확인
+      setInterval(() => {
+        let changed = false;
+        tasks.forEach((t) => {
+          if (t.status === "waiting" && hasStartTimePassed(t.startTime)) {
+            t.status = "active";
+            startTimer(t);
+            changed = true;
+          }
+        });
+        if (changed) renderApp();
+      }, 5000);
+
+      // 홈 화면의 "다음 알림까지 N초" 카운트다운을 매초 갱신
+      setInterval(() => {
+        if (currentRoute() === "/home") renderApp();
+      }, 1000);
+
+      // ---------- 알림 모달 ----------
+      function renderModal() {
+        if (modalLocked) return;
+        let backdrop = document.getElementById("modalBackdrop");
+        const task = tasks.find((t) => t.id === modalTaskId);
+
+        if (!task || task.status !== "active") {
+          if (backdrop) backdrop.remove();
+          modalTaskId = null;
+          return;
+        }
+
+        if (!backdrop) {
+          backdrop = document.createElement("div");
+          backdrop.className = "modal-backdrop";
+          backdrop.id = "modalBackdrop";
+          document.body.appendChild(backdrop);
+        }
+
+        const meta = LEVEL_META[task.level];
+        const showCheckpoint =
+          CHECKPOINT_LEVELS.includes(task.level) &&
+          !task.reasonCheckedLevels.includes(task.level) &&
+          task.reasonCheckCount < 2;
+
+        const reasonOptions = ["overwhelm", "dislike", "temptation"]
+          .map(
+            (k) =>
+              `<option value="${k}" ${task.reason === k ? "selected" : ""}>${REASON_LABELS[k]}</option>`,
+          )
+          .join("");
+
+        const checkpointHtml = showCheckpoint
+          ? `
+      <div class="reason-check-box">
+        <p>이 회피 이유가 아직 맞나요? (할일당 최대 2번만 여쭤봐요)</p>
+        <div class="row">
+          <select id="reasonCorrectSelect">${reasonOptions}</select>
+          <button class="btn btn-secondary" id="reasonConfirmBtn">확인</button>
+        </div>
+      </div>`
+          : "";
+
+        const chip =
+          task.level > 0
+            ? `<span class="lv-chip ${meta.chipClass}">${meta.label}</span>`
+            : "";
+        const feature = featureNoteFor(task);
+        const noteAck = task.userNote
+          ? `<div class="feature-note">💬 "${task.userNote}" — 그 마음 이해해요.</div>`
+          : "";
+
+        const showFreeText = task.level === 2 && !task.freeTextAsked;
+        const freeTextHtml = showFreeText
+          ? `
+      <div class="reason-check-box">
+        <p>💬 오늘은 왜 아직 시작 못 했어요? (편하게 적어주세요, 안 적어도 괜찮아요)</p>
+        <div class="row">
+          <input type="text" id="freeTextInput" placeholder="예: 그냥 하기 싫었어요"
+            style="flex:1; background:var(--notif-bg-soft); color:var(--notif-text); border:1px solid #3B4470; border-radius:9px; padding:8px 10px;">
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn btn-secondary" id="freeTextSkipBtn">건너뛰기</button>
+          <button class="btn btn-notif-primary" id="freeTextSendBtn">보내기</button>
+        </div>
+      </div>`
+          : "";
+
+        const calendarSlotHtml =
+          task.level === 4
+            ? `
+      <div class="calendar-slot">
+        <div class="slot-tag">📅 캘린더 자동 삽입 (데모)</div>
+        <div class="slot-time">오늘 저녁 8:00 · 복습 슬롯 30분</div>
+        <div class="slot-desc">마감이 임박해서 캘린더에 슬롯을 넣어봤어요. 실제 구글 캘린더·휴대폰 연동은 향후 확장 예정이에요.</div>
+      </div>`
+            : "";
+
+        backdrop.innerHTML = `
+      <div class="modal-content ${task.level === 4 ? "urgent" : ""}">
+        <div class="notif-top">
+          <div class="notif-icon">${task.level > 0 ? meta.face : "🤖"}</div>
+          <span class="notif-name">잔소리봇</span>
+          <button class="notif-close" id="modalCloseBtn">닫기 ✕</button>
+        </div>
+        <div class="notif-status">벌써 ${task.skipCount}번째 알림이에요.</div>
+        ${checkpointHtml}
+        ${freeTextHtml}
+        <div id="notifBody">
+          <div class="notif-message">${chip}${messageFor(task)}</div>
+          ${noteAck}
+          ${feature ? `<div class="feature-note">${feature}</div>` : ""}
+          ${calendarSlotHtml}
+          <div class="notif-buttons">
+            <button class="btn btn-notif-primary" id="acceptBtn">지금 시작하기</button>
+          </div>
+        </div>
+      </div>`;
+
+        document
+          .getElementById("modalCloseBtn")
+          .addEventListener("click", () => {
+            modalTaskId = null;
+            renderModal();
+          });
+        document
+          .getElementById("acceptBtn")
+          .addEventListener("click", () => acceptTask(task.id));
+        if (showFreeText) {
+          document
+            .getElementById("freeTextSkipBtn")
+            .addEventListener("click", () => {
+              task.freeTextAsked = true;
+              renderModal();
+            });
+          document
+            .getElementById("freeTextSendBtn")
+            .addEventListener("click", () => {
+              const val = document.getElementById("freeTextInput").value.trim();
+              task.userNote = val || null;
+              task.freeTextAsked = true;
+              renderModal();
+            });
+        }
+        if (showCheckpoint) {
+          document
+            .getElementById("reasonConfirmBtn")
+            .addEventListener("click", () => {
+              const newReason = document.getElementById(
+                "reasonCorrectSelect",
+              ).value;
+              task.reason = newReason;
+              task.reasonCheckCount += 1;
+              task.reasonCheckedLevels.push(task.level);
+              renderModal();
+            });
+        }
+      }
+
+      let focusStartAt = null;
+      let focusTickHandle = null;
+
+      function acceptTask(taskId) {
+        const task = tasks.find((t) => t.id === taskId);
+        if (!task) return;
+        stopTimer(task.id);
+        modalLocked = true;
+        focusStartAt = Date.now();
+        renderFocusMode(taskId);
+        focusTickHandle = setInterval(() => renderFocusMode(taskId), 1000);
+      }
+
+      function renderFocusMode(taskId) {
+        const task = tasks.find((t) => t.id === taskId);
+        const backdrop = document.getElementById("modalBackdrop");
+        if (!task || !backdrop) return;
+        const elapsed = Math.floor((Date.now() - focusStartAt) / 1000);
+        const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
+        const ss = String(elapsed % 60).padStart(2, "0");
+        backdrop.innerHTML = `
+      <div class="modal-content focus-mode">
+        <div class="focus-face">${LEVEL_META[task.level].face}</div>
+        <div class="focus-title">${task.title}</div>
+        <div class="focus-clock">${mm}:${ss}</div>
+        <div class="focus-sub">지금 집중하고 있어요. 끝나면 완료를 눌러주세요.</div>
+        <div class="notif-buttons">
+          <button class="btn btn-notif-secondary" id="focusStopBtn">멈추기</button>
+          <button class="btn btn-notif-primary" id="focusDoneBtn">완료</button>
+        </div>
+      </div>`;
+        document
+          .getElementById("focusStopBtn")
+          .addEventListener("click", () => finishFocus(task.id, false));
+        document
+          .getElementById("focusDoneBtn")
+          .addEventListener("click", () => finishFocus(task.id, true));
+      }
+
+      function finishFocus(taskId, completed) {
+        clearInterval(focusTickHandle);
+        focusTickHandle = null;
+        finishProgress(taskId, completed ? "all" : "more");
+      }
+
+      function finishProgress(taskId, kind) {
+        const task = tasks.find((t) => t.id === taskId);
+        if (!task) return;
+        const backdrop = document.getElementById("modalBackdrop");
+        if (!backdrop) return;
+
+        if (kind === "all") {
+          const wasFirstTry = task.skipCount === 0;
+          streak = wasFirstTry ? streak + 1 : 0;
+          task.status = "done";
+          history.push({
+            title: task.title,
+            skipCount: task.skipCount,
+            reason: task.reason,
+            type: task.type,
+            customReasonText: task.customReasonText,
+          });
+          backdrop.innerHTML = `
+        <div class="modal-content">
+          <div class="notif-message">완전히 끝냈어요! 최고예요 🎉 ${wasFirstTry ? `스트릭 ${streak}일째예요 🔥` : ""}</div>
+          <div class="progress-row">
+            <button class="btn btn-notif-secondary" id="fbHelpful">👍 도움됐음</button>
+            <button class="btn btn-notif-secondary" id="fbAnnoying">😑 귀찮았음</button>
+          </div>
+        </div>`;
+          document.getElementById("fbHelpful").addEventListener("click", () => {
+            sensitivity[task.reason] = "normal";
+            closeModalAndRefresh();
+          });
+          document
+            .getElementById("fbAnnoying")
+            .addEventListener("click", () => {
+              sensitivity[task.reason] = "gentle";
+              closeModalAndRefresh();
+            });
+          return;
+        }
+
+        // 멈추기: 완료 처리하지 않고 강도만 낮춰서 홈에 계속 남김. 휴식이지 실패가 아니므로 스트릭은 건드리지 않는다.
+        task.skipCount = Math.max(0, Math.floor(task.skipCount / 2));
+        task.level = Math.min(task.level, 1);
+        startTimer(task);
+        backdrop.innerHTML = `
+      <div class="modal-content">
+        <div class="notif-message">괜찮아요, 잠깐 멈췄어요. 남은 부분은 홈에 계속 남겨둘게요. 다시 알림 드릴게요.</div>
+      </div>`;
+        setTimeout(closeModalAndRefresh, 1600);
+      }
+
+      function closeModalAndRefresh() {
+        modalLocked = false;
+        modalTaskId = null;
+        renderModal();
+        renderApp();
+      }
+
+      // ---------- 알림 권한 ----------
+      document.getElementById("notifPermBtn").addEventListener("click", () => {
+        if (!("Notification" in window)) return;
+        Notification.requestPermission();
+      });
+
+      renderApp();
+    </script>
+  </body>
+</html>
