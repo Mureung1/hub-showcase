@@ -20,6 +20,7 @@ body {
   margin: 0;
   background: #f2f4f6;
   color: #191f28;
+  padding-top: env(safe-area-inset-top);
 }
 
 #root {

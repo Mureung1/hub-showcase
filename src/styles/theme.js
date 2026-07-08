@@ -79,6 +79,7 @@ export const font = {
 export const layout = {
   maxWidth: 430, // 420~480px 범위, 모바일 화면 중앙 정렬 기준
   pagePaddingX: 20,
+  shellMaxWidth: 480, // AppShell/BottomTabBar 전용 바깥 셸 폭
 }
 
 // 페이지·카드·폼 요소에 공통으로 쓰는 인라인 스타일 조각. 전 페이지에서 이 값들만 사용해 시각 일관성 유지.
