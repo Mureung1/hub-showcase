@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>커리어핏 — 핵심 흐름 프로토타입</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --ink:#191C22;
+    --muted:#6E7480;
+    --faint:#9AA0AB;
+    --base:#EAEDF2;
+    --surface:#FFFFFF;
+    --line:#E4E7EC;
+    --line-soft:#EEF0F4;
+    --brand:#3B34C4;
+    --brand-ink:#2A249A;
+    --brand-tint:#EEEDFB;
+    --hi:#12996A;      /* high fit */
+    --good:#2F6FE0;    /* good fit */
+    --mid:#D2960F;     /* moderate fit */
+    --low:#9AA0AB;     /* low fit */
+    --hi-tint:#E4F5EE;
+    --good-tint:#E7EFFC;
+    --mid-tint:#FBF1DA;
+    --radius:16px;
+    --mono:"SF Mono",ui-monospace,"Roboto Mono","Menlo",monospace;
+    --sans:"Pretendard","Pretendard Variable",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--sans);
+    background:
+      radial-gradient(120% 80% at 50% -10%, #F2F1FB 0%, rgba(242,241,251,0) 55%),
+      var(--base);
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding:28px 16px 80px;
+    min-height:100vh;
+  }
+  .stage{max-width:452px;margin:0 auto}
+
+  /* ---- screen switching (pure CSS, no JS) ---- */
+  .screen{display:none;animation:rise .32s ease both}
+  .screen:target{display:block}
+  #s-login{display:block}          /* default screen */
+  :target ~ #s-login{display:none} /* hide default once any screen is targeted */
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* ---- app frame ---- */
+  .app{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:24px;
+    overflow:hidden;
+    box-shadow:0 1px 2px rgba(20,24,40,.04),0 24px 48px -24px rgba(20,24,40,.28);
+  }
+  .bar{
+    display:flex;align-items:center;gap:10px;
+    padding:14px 18px;
+    border-bottom:1px solid var(--line-soft);
+    background:var(--surface);
+  }
+  .back{
+    text-decoration:none;color:var(--muted);font-size:20px;line-height:1;
+    width:30px;height:30px;display:grid;place-items:center;border-radius:9px;
+    margin-left:-6px;
+  }
+  .back:hover{background:var(--base);color:var(--ink)}
+  .bar h1{font-size:15px;margin:0;font-weight:650;letter-spacing:-.01em}
+  .bar .sub{font-size:12px;color:var(--faint);margin-left:auto;font-variant-numeric:tabular-nums}
+
+  .body{padding:22px 20px 26px}
+
+  /* ---- stepper ---- */
+  .steps{display:flex;gap:5px;padding:12px 20px 0}
+  .steps i{flex:1;height:3px;border-radius:3px;background:var(--line);display:block}
+  .steps i.on{background:var(--brand)}
+  .steps i.done{background:var(--brand-tint)}
+
+  /* ---- type ---- */
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--brand);margin:0 0 8px}
+  .title{font-size:22px;font-weight:750;letter-spacing:-.02em;margin:0 0 6px;line-height:1.25}
+  .lede{font-size:13.5px;color:var(--muted);margin:0 0 20px}
+  .k{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* ---- controls ---- */
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;font-weight:650;color:var(--muted);margin:0 0 6px}
+  .input{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:11px;
+    font:inherit;font-size:14px;color:var(--ink);background:#FCFCFD;
+  }
+  .input::placeholder{color:var(--faint)}
+  textarea.input{resize:none;line-height:1.55}
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:14px;border-radius:12px;border:0;cursor:pointer;
+    font:inherit;font-size:15px;font-weight:700;letter-spacing:-.01em;text-decoration:none;
+    background:var(--brand);color:#fff;transition:background .15s,transform .05s;
+  }
+  .btn:hover{background:var(--brand-ink)}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--brand-tint);color:var(--brand-ink)}
+  .btn.ghost:hover{background:#E4E2F7}
+  .btn.line{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:600}
+  .btn.line:hover{background:var(--base);color:var(--ink)}
+  .btn-row{display:flex;gap:10px;margin-top:14px}
+  .btn-row .btn{flex:1}
+
+  .linkline{text-align:center;font-size:13px;color:var(--muted);margin:16px 0 2px}
+  .linkline a{color:var(--brand-ink);font-weight:650;text-decoration:none}
+  .linkline a:hover{text-decoration:underline}
+
+  /* ---- chips / tags ---- */
+  .group{margin-bottom:18px}
+  .group h3{font-size:12px;font-weight:700;color:var(--faint);letter-spacing:.04em;margin:0 0 9px;text-transform:uppercase}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:7px 11px;border-radius:9px;font-size:12.5px;font-weight:600;
+    background:var(--base);color:var(--ink);border:1px solid var(--line-soft);
+  }
+  .chip.add{color:var(--brand-ink);background:var(--brand-tint);border-color:transparent;border:1px dashed #C7C3EE}
+
+  /* ---- position cards (hero screen) ---- */
+  .rank-head{display:flex;align-items:baseline;justify-content:space-between;margin:2px 0 14px}
+  .rank-head .who{font-size:13px;color:var(--muted)}
+  .rank-head .who b{color:var(--ink);font-weight:700}
+  .cards{display:flex;flex-direction:column;gap:11px}
+  .card{
+    display:block;text-decoration:none;color:inherit;
+    border:1px solid var(--line);border-radius:14px;padding:15px 15px 14px;background:var(--surface);
+    transition:border-color .15s,box-shadow .15s,transform .06s;
+  }
+  .card:hover{border-color:#CFCBF0;box-shadow:0 10px 24px -16px rgba(59,52,196,.5);transform:translateY(-1px)}
+  .card .row1{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .card .co{font-size:12px;color:var(--muted);font-weight:600;margin:0 0 2px}
+  .card .role{font-size:15.5px;font-weight:700;letter-spacing:-.01em;margin:0}
+  .score{
+    text-align:right;flex:0 0 auto;
+  }
+  .score .num{font-family:var(--mono);font-size:22px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+  .score .lab{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;margin-top:3px}
+  .meter{height:7px;border-radius:6px;background:var(--line-soft);overflow:hidden;margin:12px 0 11px}
+  .meter i{display:block;height:100%;border-radius:6px;width:0;animation:fill .7s .05s cubic-bezier(.3,.8,.3,1) forwards}
+  @keyframes fill{to{width:var(--w)}}
+  .lvl-hi .num{color:var(--hi)} .lvl-hi .meter i{background:var(--hi)}
+  .lvl-good .num{color:var(--good)} .lvl-good .meter i{background:var(--good)}
+  .lvl-mid .num{color:var(--mid)} .lvl-mid .meter i{background:var(--mid)}
+  .lvl-low .num{color:var(--low)} .lvl-low .meter i{background:var(--low)}
+  .tags{display:flex;flex-wrap:wrap;gap:6px}
+  .tag{font-size:11.5px;font-weight:650;padding:4px 8px;border-radius:7px}
+  .tag.ok{background:var(--hi-tint);color:#0C7A52}
+  .tag.gap{background:#F6EEE9;color:#A85B2E}
+  .tag.ok::before{content:"✓ ";}
+  .tag.gap::before{content:"! ";font-weight:800}
+
+  /* ---- detail: requirement breakdown ---- */
+  .panel{border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px;background:var(--surface)}
+  .panel > h3{font-size:13px;font-weight:700;margin:0 0 13px;letter-spacing:-.01em}
+  .req{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:9px 0;border-top:1px solid var(--line-soft)}
+  .req:first-of-type{border-top:0}
+  .req .name{font-size:13.5px;font-weight:600}
+  .req .mustpref{font-size:10.5px;font-weight:700;color:var(--muted);margin-left:7px;letter-spacing:.03em}
+  .req .must{color:var(--brand-ink)}
+  .req .w{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+  .req .fitbar{grid-column:1/-1;height:5px;border-radius:5px;background:var(--line-soft);overflow:hidden;margin-top:2px}
+  .req .fitbar i{display:block;height:100%;border-radius:5px}
+  .req .pct{font-family:var(--mono);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+  .total{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:13px;border-top:1.5px solid var(--line)}
+  .total span{font-size:13px;font-weight:700}
+  .total b{font-family:var(--mono);font-size:20px;color:var(--hi);font-weight:600}
+
+  .advice{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+  .advice li{display:flex;gap:11px;font-size:13.5px;line-height:1.55}
+  .advice .n{flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:var(--brand-tint);color:var(--brand-ink);
+    font-family:var(--mono);font-size:12px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+  .advice b{color:var(--brand-ink);font-weight:700}
+
+  /* ---- generate: tabs via radio (pure CSS) ---- */
+  .doc-tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--base);padding:4px;border-radius:11px}
+  .doc-tabs label{flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;font-weight:650;color:var(--muted);cursor:pointer}
+  .rgrp{display:none}
+  #tab-resume:checked ~ .doc-tabs label[for="tab-resume"],
+  #tab-cover:checked  ~ .doc-tabs label[for="tab-cover"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .doc{display:none}
+  #tab-resume:checked ~ #doc-resume{display:block}
+  #tab-cover:checked  ~ #doc-cover{display:block}
+  .doc .badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--brand-ink);
+    background:var(--brand-tint);padding:5px 9px;border-radius:8px;margin-bottom:12px;letter-spacing:.02em}
+  .doc .badge::before{content:"✦";font-size:12px}
+  mark{background:#FBF0CF;color:#7A5A05;padding:0 3px;border-radius:4px;font-weight:600}
+
+  /* ---- handoff ---- */
+  .done-mark{width:56px;height:56px;border-radius:16px;background:var(--hi-tint);color:var(--hi);
+    display:grid;place-items:center;font-size:28px;margin:6px auto 18px}
+  .handoff{text-align:center}
+  .handoff .title{margin-bottom:8px}
+  .handoff .lede{margin-bottom:22px}
+  .co-strip{display:flex;align-items:center;gap:11px;text-align:left;border:1px solid var(--line);border-radius:12px;padding:13px 14px;margin-bottom:16px}
+  .co-strip .logo{width:38px;height:38px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:800;font-size:15px;flex:0 0 auto}
+  .co-strip .t{font-size:13.5px;font-weight:700}
+  .co-strip .s{font-size:12px;color:var(--muted)}
+
+  .foot{font-size:11.5px;color:var(--faint);text-align:center;margin-top:16px}
+
+  /* ---- login ---- */
+  .brand{text-align:center;padding:14px 0 6px}
+  .brand .mark{
+    display:inline-grid;place-items:center;width:52px;height:52px;border-radius:15px;
+    background:var(--brand);color:#fff;font-weight:800;font-size:23px;letter-spacing:-.02em;margin-bottom:14px;
+    box-shadow:0 12px 24px -12px rgba(59,52,196,.6);
+  }
+  .brand .name{font-size:20px;font-weight:800;letter-spacing:-.02em}
+  .brand .tag{font-size:13px;color:var(--muted);margin-top:5px}
+
+  @media (prefers-reduced-motion:reduce){
+    .screen,.meter i,.card{animation:none!important;transition:none!important}
+    .meter i{width:var(--w)}
+  }
+  :focus-visible{outline:2.5px solid var(--brand);outline-offset:2px;border-radius:6px}
+  a,button{-webkit-tap-highlight-color:transparent}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- ============ 2. 이력 입력 ============ -->
+  <section class="screen" id="s-input">
+    <div class="app">
+      <div class="bar"><a class="back" href="#s-login" aria-label="뒤로">‹</a><h1>이력 입력</h1><span class="sub k">2 / 6</span></div>
+      <div class="steps"><i class="done"></i><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      <div class="body">
+        <p class="eyebrow">가입 · 프로필</p>
+        <h2 class="title">이력을 알려주세요</h2>
+        <p class="lede">입력한 내용의 <b>가중치</b>를 기준으로 맞는 포지션을 찾아드려요. 예시 데이터가 채워져 있습니다.</p>
+
+        <div class="group">
+          <h3>경력</h3>
+          <div class="chips"><span class="chip">백엔드 개발자 · 3년 4개월</span></div>
+        </div>
+        <div class="group">
+          <h3>회사</h3>
+          <div class="chips"><span class="chip">(주)테크커머스 — 결제플랫폼팀</span></div>
+        </div>
+        <div class="group">
+          <h3>자격증</h3>
+          <div class="chips"><span class="chip">정보처리기사</span><span class="chip">SQLD</span></div>
+        </div>
+        <div class="group">
+          <h3>포트폴리오</h3>
+          <div class="chips"><span class="chip">결제 시스템 리팩터링</span><span class="chip">github.com/seojun</span><span class="chip add">+ 추가</span></div>
+        </div>
+        <div class="group">
+          <h3>기술</h3>
+          <div class="chips"><span class="chip">Python</span><span class="chip">Django</span><span class="chip">MySQL</span><span class="chip">AWS(일부)</span></div>
+        </div>
+
+        <a class="btn" href="#s-list">저장하고 포지션 보기</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. 포지션 목록 (핵심) ============ -->
+  <section class="screen" id="s-list">
+    <div class="app">
+      <div class="bar"><a class="back" href="#s-input" aria-label="뒤로">‹</a><h1>추천 포지션</h1><span class="sub k">3 / 6</span></div>
+      <div class="steps"><i class="done"></i><i class="done"></i><i class="on"></i><i></i><i></i><i></i></div>
+      <div class="body">
+        <div class="rank-head">
+          <div>
+            <p class="eyebrow" style="margin-bottom:4px">적합도 순</p>
+            <div class="who"><b>김서준</b>님 이력 기준으로 정렬했어요</div>
+          </div>
+        </div>
+        <div class="cards">
+
+          <a class="card lvl-hi" href="#s-detail">
+            <div class="row1">
+              <div><p class="co">(주)페이라인</p><h3 class="role">백엔드 엔지니어 · 결제</h3></div>
+              <div class="score"><div class="num k">92</div><div class="lab">적합도</div></div>
+            </div>
+            <div class="meter"><i style="--w:92%"></i></div>
+            <div class="tags"><span class="tag ok">Python 3년+</span><span class="tag ok">결제 경험</span><span class="tag gap">대규모 트래픽</span></div>
+          </a>
+
+          <a class="card lvl-good" href="#s-detail">
+            <div class="row1">
+              <div><p class="co">넥스트커머스</p><h3 class="role">서버 개발자</h3></div>
+              <div class="score"><div class="num k">84</div><div class="lab">적합도</div></div>
+            </div>
+            <div class="meter"><i style="--w:84%"></i></div>
+            <div class="tags"><span class="tag ok">Django</span><span class="tag ok">MySQL</span><span class="tag gap">AWS 운영</span></div>
+          </a>
+
+          <a class="card lvl-good" href="#s-detail">
+            <div class="row1">
+              <div><p class="co">클라우드베이스</p><h3 class="role">백엔드 개발자</h3></div>
+              <div class="score"><div class="num k">71</div><div class="lab">적합도</div></div>
+            </div>
+            <div class="meter"><i style="--w:71%"></i></div>
+            <div class="tags"><span class="tag ok">Python</span><span class="tag gap">Kubernetes 필수</span></div>
+          </a>
+
+          <a class="card lvl-mid" href="#s-detail">
+            <div class="row1">
+              <div><p class="co">데이터브릿지</p><h3 class="role">데이터 엔지니어</h3></div>
+              <div class="score"><div class="num k">58</div><div class="lab">적합도</div></div>
+            </div>
+            <div class="meter"><i style="--w:58%"></i></div>
+            <div class="tags"><span class="tag ok">SQL</span><span class="tag gap">데이터 파이프라인</span><span class="tag gap">Spark</span></div>
+          </a>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4. 포지션 상세 + 방향 제시 ============ -->
+  <section class="screen" id="s-detail">
+    <div class="app">
+      <div class="bar"><a class="back" href="#s-list" aria-label="뒤로">‹</a><h1>포지션 상세</h1><span class="sub k">4 / 6</span></div>
+      <div class="steps"><i class="done"></i><i class="done"></i><i class="done"></i><i class="on"></i><i></i><i></i></div>
+      <div class="body">
+        <p class="co" style="font-size:12px;color:var(--muted);font-weight:600;margin:0 0 3px">(주)페이라인</p>
+        <h2 class="title">백엔드 엔지니어 · 결제</h2>
+        <p class="lede">요구조건별 <b>가중치 × 내 충족도</b>로 계산한 적합도예요.</p>
+
+        <div class="panel">
+          <h3>적합도 분석</h3>
+          <div class="req">
+            <div class="name">Python 3년+<span class="mustpref must">필수</span></div>
+            <div class="w k">가중치 0.35</div>
+            <div class="fitbar"><i style="width:100%;background:var(--hi)"></i></div>
+            <div></div><div class="pct" style="color:var(--hi)">100%</div>
+          </div>
+          <div class="req">
+            <div class="name">결제 시스템 경험<span class="mustpref must">필수</span></div>
+            <div class="w k">가중치 0.30</div>
+            <div class="fitbar"><i style="width:90%;background:var(--hi)"></i></div>
+            <div></div><div class="pct" style="color:var(--hi)">90%</div>
+          </div>
+          <div class="req">
+            <div class="name">대규모 트래픽 처리<span class="mustpref">우대</span></div>
+            <div class="w k">가중치 0.20</div>
+            <div class="fitbar"><i style="width:40%;background:var(--mid)"></i></div>
+            <div></div><div class="pct" style="color:var(--mid)">40%</div>
+          </div>
+          <div class="req">
+            <div class="name">CS·DB 기본기<span class="mustpref">우대</span></div>
+            <div class="w k">가중치 0.15</div>
+            <div class="fitbar"><i style="width:100%;background:var(--hi)"></i></div>
+            <div></div><div class="pct" style="color:var(--hi)">100%</div>
+          </div>
+          <div class="total"><span>종합 적합도</span><b class="k">92%</b></div>
+        </div>
+
+        <div class="panel">
+          <h3>내 이력으로 맞추는 방향</h3>
+          <ul class="advice">
+            <li><span class="n k">1</span><div><b>결제 시스템 리팩터링</b> 경험을 정산·안정성 개선 성과 중심으로 재구성해 이력서 최상단에 배치하세요.</div></li>
+            <li><span class="n k">2</span><div>약한 <b>대규모 트래픽</b> 항목은 리팩터링 당시 처리량·응답속도 개선 수치로 연결해 보완하세요.</div></li>
+            <li><span class="n k">3</span><div><b>정보처리기사·SQLD</b>로 CS·DB 기본기를 명시적으로 어필하세요.</div></li>
+          </ul>
+        </div>
+
+        <a class="btn" href="#s-generate">AI로 지원서 생성</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. AI 문서 생성 ============ -->
+  <section class="screen" id="s-generate">
+    <div class="app">
+      <div class="bar"><a class="back" href="#s-detail" aria-label="뒤로">‹</a><h1>지원서 생성</h1><span class="sub k">5 / 6</span></div>
+      <div class="steps"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="on"></i><i></i></div>
+      <div class="body">
+        <p class="eyebrow">페이라인 · 백엔드 엔지니어</p>
+        <h2 class="title">포지션에 맞춰 생성했어요</h2>
+        <p class="lede"><mark>표시된 부분</mark>이 이 포지션에 맞춰 강조된 내용이에요. 수정 후 지원하세요.</p>
+
+        <input type="radio" name="doc" id="tab-resume" class="rgrp" checked>
+        <input type="radio" name="doc" id="tab-cover" class="rgrp">
+        <div class="doc-tabs">
+          <label for="tab-resume">이력서</label>
+          <label for="tab-cover">자기소개서</label>
+        </div>
+
+        <div class="doc" id="doc-resume">
+          <span class="badge">포지션 맞춤 이력서</span>
+          <div class="field"><label>핵심 요약</label>
+            <textarea class="input" rows="4">결제 도메인 3년 경력의 백엔드 개발자. 커머스 결제 시스템 리팩터링으로 결제 실패율을 개선하고 정산 안정성을 높인 경험 보유. Python·Django 기반 서비스 설계·운영에 강점.</textarea>
+          </div>
+          <div class="field"><label>대표 성과 (강조 재배치)</label>
+            <textarea class="input" rows="4">· 결제 시스템 리팩터링으로 피크 시간대 처리량 개선, 응답속도 단축
+· 결제·정산 데이터 정합성 로직 재설계로 오류 건 감소
+· 정보처리기사·SQLD 보유 — CS·DB 기본기</textarea>
+          </div>
+        </div>
+
+        <div class="doc" id="doc-cover">
+          <span class="badge">포지션 맞춤 자기소개서</span>
+          <div class="field"><label>지원 동기 & 강점</label>
+            <textarea class="input" rows="9">저는 결제 도메인에서 3년간 서버를 설계·운영하며 "돈이 오가는 시스템"의 안정성을 최우선으로 다뤄왔습니다. 특히 커머스 결제 시스템 리팩터링을 주도하며 정산 정합성과 결제 안정성을 개선한 경험은, 페이라인이 요구하는 결제 백엔드 역량과 직접 맞닿아 있습니다.
+
+리팩터링 과정에서 처리량과 응답속도를 개선한 경험을 바탕으로, 대규모 트래픽 환경에서도 안정적인 결제 흐름을 설계하는 데 기여하고자 합니다.</textarea>
+          </div>
+        </div>
+
+        <a class="btn" href="#s-handoff" style="margin-top:16px">지원하기</a>
+        <a class="btn line" href="#s-detail" style="margin-top:10px">다시 방향 보기</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6. 외부 채용사이트 연결 ============ -->
+  <section class="screen" id="s-handoff">
+    <div class="app">
+      <div class="bar"><a class="back" href="#s-generate" aria-label="뒤로">‹</a><h1>지원 연결</h1><span class="sub k">6 / 6</span></div>
+      <div class="steps"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="on"></i></div>
+      <div class="body handoff">
+        <div class="done-mark">↗</div>
+        <h2 class="title">지원서가 준비됐어요</h2>
+        <p class="lede">생성한 이력서·자기소개서를 채용 페이지에서 이어서 제출하면 지원이 완료됩니다.</p>
+
+        <div class="co-strip">
+          <div class="logo">P</div>
+          <div><div class="t">(주)페이라인 채용 페이지</div><div class="s">외부 사이트로 이동합니다</div></div>
+        </div>
+
+        <a class="btn" href="#s-handoff">채용 페이지로 이동</a>
+        <a class="btn ghost" href="#s-handoff" style="margin-top:10px">지원서 복사하기</a>
+
+        <p class="foot">외부 채용 사이트에서 지원이 완료됩니다.</p>
+        <div class="linkline"><a href="#s-list">← 다른 포지션 더 보기</a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 1. 로그인 (기본 화면, DOM 마지막) ============ -->
+  <section class="screen" id="s-login">
+    <div class="app">
+      <div class="steps"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="body">
+        <div class="brand">
+          <div class="mark">핏</div>
+          <div class="name">커리어핏</div>
+          <div class="tag">내 이력에 맞는 포지션을 적합도 순으로</div>
+        </div>
+        <div style="height:18px"></div>
+        <div class="field"><label>이메일</label><input class="input" type="email" placeholder="you@example.com"></div>
+        <div class="field"><label>비밀번호</label><input class="input" type="password" placeholder="••••••••"></div>
+        <a class="btn" href="#s-list" style="margin-top:6px">로그인</a>
+        <p class="linkline">처음이신가요? <a href="#s-input">이력 입력하고 시작하기</a></p>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot" style="max-width:452px;margin:18px auto 0">프로토타입 · 순수 HTML/CSS · 카드·버튼을 눌러 6단계 흐름을 확인하세요</p>
+</div>
+</body>
+</html>
