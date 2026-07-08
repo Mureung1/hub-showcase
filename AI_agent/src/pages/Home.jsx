@@ -27,11 +27,15 @@ function Home() {
   useEffect(() => {
     const timerId = setInterval(() => {
       setActiveFeatureIndex((currentIndex) =>
-        currentIndex === homeFeatures.length - 1 ? 0 : currentIndex + 1
+        (currentIndex + 1) % homeFeatures.length
       );
     }, 3000);
 
     return () => clearInterval(timerId);
+  }, []);
+
+  useEffect(() => {
+    setActiveFeatureIndex((currentIndex) => currentIndex % homeFeatures.length);
   }, []);
 
   useEffect(() => {
