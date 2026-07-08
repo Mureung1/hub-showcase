@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import Header from "../components/layout/Header";
-import { saveUser } from "../features/auth/authStorage";
+import { savePendingUser } from "../features/auth/authStorage";
 import {
   searchMajorsBySchool,
   searchUniversities,
@@ -22,6 +22,14 @@ const isValidUsername = (username) =>
   /^[A-Za-z0-9]+$/.test(username) &&
   /[A-Za-z]/.test(username) &&
   /\d/.test(username);
+
+const createVerificationToken = () => {
+  if (window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
 
 function Signup() {
   const [form, setForm] = useState(initialForm);
@@ -189,6 +197,8 @@ function Signup() {
       return;
     }
 
+    const verificationToken = createVerificationToken();
+    const verificationUrl = `${window.location.origin}${routes.verifyEmail}?token=${verificationToken}`;
     const user = {
       id: form.username.trim(),
       name: form.name.trim(),
@@ -199,10 +209,14 @@ function Signup() {
       major: selectedMajor.name,
       majorMeta: selectedMajor,
       password: form.password,
+      emailVerified: false,
+      verificationToken,
     };
 
-    saveUser(user);
-    alert("회원가입이 완료되었습니다. 로그인 화면으로 이동합니다.");
+    savePendingUser(user);
+    alert(
+      `확인 메일을 발송했습니다. ${form.email.trim()} 메일함에서 확인 버튼을 눌러 회원가입을 완료해 주세요.\n\n개발용 확인 링크: ${verificationUrl}`
+    );
     navigate(routes.login);
   };
 
@@ -214,8 +228,7 @@ function Signup() {
           <p style={styles.badge}>Career Mission</p>
           <h1 style={styles.title}>회원가입</h1>
           <p style={styles.description}>
-            기본 정보를 입력하면 스펙 등록, AI 분석, 맞춤 미션 추천 흐름을
-            시작할 수 있습니다.
+            기본 정보를 입력하면 스펙 등록, AI 분석, 맞춤 미션 추천 흐름을 시작할 수 있습니다.
           </p>
         </div>
 
@@ -429,18 +442,26 @@ const styles = {
       "radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.16), transparent 28%), radial-gradient(circle at 88% 12%, rgba(6, 182, 212, 0.18), transparent 26%), linear-gradient(135deg, #f8fafc 0%, #eef6ff 48%, #f8fbff 100%)",
     fontFamily: "Arial, sans-serif",
     color: "#0f172a",
+    display: "flex",
+    flexDirection: "column",
   },
   page: {
-    width: "min(1040px, calc(100% - clamp(32px, 6vw, 96px)))",
+    width: "min(760px, calc(100% - clamp(32px, 6vw, 96px)))",
+    minHeight: "calc(100vh - 67px)",
     margin: "0 auto",
-    padding: "clamp(42px, 6vw, 72px) 0",
+    padding: "clamp(24px, 4vw, 44px) 0 92px",
+    boxSizing: "border-box",
     display: "grid",
-    gridTemplateColumns: "0.8fr 1.2fr",
-    gap: "clamp(24px, 4vw, 48px)",
-    alignItems: "start",
+    gridTemplateColumns: "1fr",
+    gap: "24px",
+    alignItems: "center",
+    alignContent: "center",
+    justifyItems: "center",
   },
   intro: {
-    paddingTop: "20px",
+    paddingTop: 0,
+    width: "100%",
+    textAlign: "center",
   },
   badge: {
     display: "inline-block",
@@ -462,10 +483,12 @@ const styles = {
   description: {
     margin: 0,
     color: "#475569",
-    fontSize: "17px",
+    fontSize: "16px",
     lineHeight: 1.75,
+    whiteSpace: "nowrap",
   },
   form: {
+    width: "100%",
     padding: "28px",
     borderRadius: "24px",
     background: "rgba(255, 255, 255, 0.76)",
@@ -477,6 +500,7 @@ const styles = {
     display: "grid",
     gap: "6px",
     marginBottom: "22px",
+    textAlign: "center",
   },
   formTitle: {
     color: "#0f172a",
@@ -573,7 +597,7 @@ const styles = {
   },
   actions: {
     display: "flex",
-    justifyContent: "flex-end",
+    justifyContent: "center",
     flexWrap: "wrap",
     gap: "10px",
     marginTop: "24px",

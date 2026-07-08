@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import Home from "./pages/Home";
 import Signup from "./pages/Signup";
+import VerifyEmail from "./pages/VerifyEmail";
 import Login from "./pages/Login";
 import MyPage from "./pages/MyPage";
 import SpecRegister from "./pages/SpecRegister";
@@ -17,6 +18,7 @@ import { getCurrentPath, routes, subscribeToRouteChange } from "./router";
 const pageMap = {
   [routes.home]: Home,
   [routes.signup]: Signup,
+  [routes.verifyEmail]: VerifyEmail,
   [routes.login]: Login,
   [routes.myPage]: MyPage,
   [routes.specs]: SpecRegister,

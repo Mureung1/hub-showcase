@@ -1,6 +1,7 @@
 export const routes = {
   home: "/",
   signup: "/signup",
+  verifyEmail: "/verify-email",
   login: "/login",
   myPage: "/me",
   specs: "/specs",
