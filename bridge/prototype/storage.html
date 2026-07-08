@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bridge 프로토타입 — 저장소</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main class="storage-screen">
+  <h1>저장소</h1>
+
+  <div class="tabs">
+    <input type="radio" name="tab" id="tab-mine" checked>
+    <input type="radio" name="tab" id="tab-received">
+    <input type="radio" name="tab" id="tab-thread">
+
+    <div class="tab-labels">
+      <label for="tab-mine">내가 쓴 편지</label>
+      <label for="tab-received">받은 편지</label>
+      <label for="tab-thread">이어진 편지</label>
+    </div>
+
+    <section class="tab-panel panel-mine">
+      <article class="letter-row"><span>2026-07-07 보낸 편지</span><span class="tag">전달됨</span></article>
+      <article class="letter-row"><span>2026-07-06 보낸 편지</span><span class="tag">전달됨</span></article>
+    </section>
+
+    <section class="tab-panel panel-received">
+      <article class="letter-row"><span>새로운 시작에 대한 편지</span><span class="tag tag-new">미읽음</span></article>
+      <article class="letter-row"><span>혼자 있는 시간에 대한 편지</span><span class="tag">읽음 · 답장 안 함</span></article>
+    </section>
+
+    <section class="tab-panel panel-thread">
+      <article class="letter-row"><span>새로운 시작 — 답장 스레드</span><span class="tag tag-progress">전송 중</span></article>
+      <article class="letter-row"><span>여름밤 산책 — 답장 스레드</span><span class="tag tag-progress">대화 진행</span></article>
+    </section>
+  </div>
+</main>
+<nav class="proto-nav">
+  <a href="index.html">시작</a>
+  <a href="main.html">메인</a>
+  <a href="send.html">편지 발송</a>
+  <a href="waiting.html">대기</a>
+  <a href="recommend.html">추천 편지</a>
+  <a href="storage.html" class="current">저장소</a>
+</nav>
+</body>
+</html>
