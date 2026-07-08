@@ -2,8 +2,8 @@ import { useState } from "react";
 import "./result.css";
 
 // 4단계: 완성된 포트폴리오 전달.
-// 미리보기(iframe) ↔ HTML 코드 탭 + 다운로드 + 다시 만들기.
-export default function ResultView({ html, cv, theme, onRestart }) {
+// 미리보기(iframe) ↔ HTML 코드 탭 + 다운로드 + 다시 만들기 + 디자인만 바꾸기.
+export default function ResultView({ html, cv, theme, onRestart, onChangeDesign }) {
   const [tab, setTab] = useState("preview");
   const [copied, setCopied] = useState(false);
 
@@ -63,9 +63,16 @@ export default function ResultView({ html, cv, theme, onRestart }) {
       )}
 
       <div className="stage-nav">
-        <button className="btn" onClick={onRestart}>
-          ↺ 새로 만들기
-        </button>
+        <div className="result-nav-left">
+          <button className="btn" onClick={onRestart}>
+            ↺ 새로 만들기
+          </button>
+          {onChangeDesign && (
+            <button className="btn ghost" onClick={onChangeDesign}>
+              🎨 디자인만 바꾸기
+            </button>
+          )}
+        </div>
         <span className="result-hint">
           다운로드한 <code>.html</code> 파일은 그대로 웹에 올리면 포트폴리오가 됩니다.
         </span>
