@@ -1,0 +1,200 @@
+:root {
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  background: #FBEFEF;
+  color: #2F2638;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #FBEFEF;
+}
+
+#root {
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.app {
+  width: 100%;
+  max-width: 960px;
+}
+
+.project-intro {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+}
+
+.intro-header {
+  margin-bottom: 2rem;
+  background: #FFE2E2;
+  padding: 1.75rem 1.5rem;
+  border-radius: 16px;
+}
+
+.intro-header h1 {
+  margin: 0 0 20px;
+  font-size: 38px;
+  line-height: 1.15;
+  color: #2F2638;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.intro-tagline {
+  margin: 0 0 16px;
+  font-size: 20px;
+  line-height: 1.55;
+  color: #5F5566;
+  font-weight: 500;
+}
+
+.project-description,
+.project-additional {
+  margin: 0 0 12px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: #5F5566;
+  font-weight: 400;
+  max-width: 760px;
+}
+
+.project-additional {
+  margin-bottom: 0;
+}
+
+@media (max-width: 700px) {
+  .intro-header h1 {
+    font-size: 30px;
+    white-space: normal;
+  }
+
+  .intro-tagline {
+    font-size: 17px;
+  }
+
+  .project-description,
+  .project-additional {
+    font-size: 15px;
+  }
+}
+
+.exam-section,
+.feature-section {
+  margin-top: 2rem;
+}
+
+.exam-section h2,
+.feature-section h2 {
+  margin: 0 0 1rem;
+  font-size: 26px;
+  color: #2F2638;
+}
+
+.exam-grid,
+.feature-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.exam-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.exam-card,
+.feature-card {
+  background: #FFFFFF;
+  border: 1px solid #F5CBCB;
+  border-top: 4px solid #F5CBCB;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.04);
+  transition: background 0.2s ease;
+}
+
+.exam-card:hover,
+.feature-card:hover {
+  background: #FFE2E2;
+}
+
+.exam-card h3 {
+  margin: 0 0 0.75rem;
+  font-size: 21px;
+  color: #AA96DA;
+}
+
+.exam-info {
+  margin: 0.5rem 0;
+  color: #5F5566;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.exam-info span {
+  font-weight: 600;
+  color: #2F2638;
+  margin-right: 6px;
+}
+
+.feature-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.feature-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #AA96DA;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.feature-card h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #2F2638;
+}
+
+.feature-description {
+  margin: 0;
+  color: #5F5566;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+@media (max-width: 900px) {
+  .exam-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .intro-header h1 {
+    font-size: 30px;
+    white-space: normal;
+  }
+
+  .intro-tagline {
+    font-size: 17px;
+  }
+
+  .project-description,
+  .project-additional {
+    font-size: 15px;
+  }
+
+  .exam-grid,
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
