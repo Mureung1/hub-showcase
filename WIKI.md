@@ -145,7 +145,47 @@ npm install tailwindcss @tailwindcss/vite
 
 ---
 
-## 6. 의사결정 기록 (ADR)
+## 6. 백엔드 환경 설정
+
+### 6.1 환경 변수 자동 로드 (.env)
+
+매번 서버를 킬 때마다 환경변수를 재입력하지 않도록, `.env` 파일로 자동 로드하는 방식으로 설정했습니다.
+
+**파일 생성:**
+
+프로젝트 루트(`C:\AI_Agent\hub\`)에 `.env` 파일을 생성 (파일명: `.env`, 확장자 없음):
+
+```
+GOOGLE_API_KEY=발급받은_Gemini_API_키
+NAVER_CLIENT_ID=발급받은_네이버_Client_ID
+NAVER_CLIENT_SECRET=발급받은_네이버_Client_Secret
+```
+
+**코드 통합:**
+
+`main.py` 맨 위에 다음을 추가:
+
+```python
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # .env 파일 자동 로드
+```
+
+**패키지 설치:**
+
+```bash
+pip install python-dotenv
+```
+
+**이후:**
+- `.env` 파일은 컴퓨터에만 있고 (서버 실행 시 사용)
+- GitHub에는 올리지 않음 (`.gitignore`에 `.env` 추가)
+- `uvicorn main:app --reload`만 입력하면 환경변수 자동 적용
+
+---
+
+## 7. 의사결정 기록 (ADR)
 
 ### ADR-1. 네이버 플레이스 리뷰 크롤링을 하지 않기로 함
 
@@ -175,33 +215,39 @@ npm install tailwindcss @tailwindcss/vite
 
 ---
 
-## 7. 트러블슈팅 기록
+## 8. 트러블슈팅 기록
 
-### 7.1 레이아웃 깨짐 (Tailwind 미적용)
+### 8.1 레이아웃 깨짐 (Tailwind 미적용)
 
 - 증상: 클래스가 전부 무시되어 텍스트가 겹치고 카드·여백이 사라짐
 - 원인: 프로젝트에 Tailwind가 설치되지 않은 상태에서 Tailwind 클래스를 사용 + Vite 템플릿 기본 CSS가 충돌
 - 해결: Tailwind v4를 `@tailwindcss/vite` 플러그인으로 설치하고, 템플릿 기본 CSS 제거
 
-### 7.2 Gemini 모델 404 에러 (1주차)
+### 8.2 Gemini 모델 404 에러 (1주차)
 
 - 증상: `gemini-1.5-flash` 호출 시 "models/gemini-1.5-flash is not found" 404 NOT_FOUND 에러
 - 원인: Gemini 1.5 모델 세트가 2026년 7월 기준 완전 종료됨
 - 해결: 모델명을 `gemini-2.5-flash`로 변경, 즉시 정상 작동
 - 교훈: Google의 모델 lifecycle 변화를 주기적으로 확인 필요
 
-### 7.3 Gemini API 일일 할당량 한도 (1주차)
+### 8.3 Gemini API 일일 할당량 한도 (1주차)
 
 - 증상: 새 매장 조회 시 429 RESOURCE_EXHAUSTED, 메시지 "Quota exceeded for gemini-2.5-flash, limit: 20"
 - 원인: Gemini API 무료 등급의 일일 요청 한도(RPD)가 20회이며, 리뷰 N건 분석 = N+1번의 LLM 호출로 구성되므로 한 번의 분석으로 거의 한도 소진
-- 현황: 현재 collector.py의 기본값이 20건 수집이므로, count=5 정도로 축소하면 테스트 여유 확보 가능
-- 장기 해결: Google Cloud 결제 계정을 프로젝트에 연결하면 무료 등급 제약 제거 (pay-as-you-go)
+- 현황: 할당량 리셋 대기 중 (UTC-8 자정, KST 오후 4시경)
+- 해결: 결제를 연결하거나 내일 리셋 후 재테스트
+
+### 8.4 네이버 API 401 인증 에러 (1주차)
+
+- 증상: `401 Unauthorized` 에러로 블로그 검색 실패
+- 원인: `NAVER_CLIENT_ID`/`SECRET`이 인식되지 않음 (`.env` 파일 미설정 또는 `python-dotenv` 미설치)
+- 해결: `.env` 파일 생성 + `load_dotenv()` 코드 추가 + `python-dotenv` 설치
 
 ---
 
-## 8. 1주차 체크리스트
+## 9. 1주차 체크리스트
 
-### 완료 항목
+### 완료 항목 ✅
 
 - [x] 수집 계층 분리 (`collector.py` 작성)
 - [x] 네이버 블로그 검색 API 연동 (환경변수: `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`)
@@ -209,19 +255,22 @@ npm install tailwindcss @tailwindcss/vite
 - [x] 응답에 `source`(`naver_blog`/`fallback_dummy`/`database`) 및 `cached` 플래그 추가
 - [x] 모델 업그레이드 (gemini-1.5-flash → gemini-2.5-flash)
 - [x] `/health` 엔드포인트 추가 (배포 대비)
+- [x] 환경변수 `.env` 파일 자동 로드 (python-dotenv)
+- [x] `.gitignore`에 `.env` 추가
 
-### 검증 대기 (할당량 리셋 후)
+### 검증 대기 (할당량 리셋 후) ⏳
 
 - [ ] 네이버 API로부터 실제 리뷰 텍스트 수집 확인 (`source: naver_blog`)
-- [ ] 새 매장 이름으로 전체 파이프라인 성공 응답 확인
+- [ ] 새 매장 이름으로 전체 파이프라인 성공 응답 확인 (내일 할당량 리셋 후)
 
 ---
 
-## 9. 향후 과제
+## 10. 향후 과제
 
 1. ~~네이버 블로그 검색 API 연동~~ **(1주차 완료)**
-2. 분석 결과 완전 캐싱: 컨설팅 리포트도 DB에 저장 (현재는 재생성 중)
-3. Docker 컨테이너화 및 docker-compose 구성 (2주차)
-4. GitHub Actions 기반 CI/CD (3주차)
-5. 네이버 클라우드 플랫폼 배포 및 헬스체크 모니터링 (3주차)
-6. 간단한 모니터링 대시보드 (4주차)
+2. ~~환경변수 `.env` 자동 로드~~ **(1주차 완료)**
+3. 분석 결과 완전 캐싱: 컨설팅 리포트도 DB에 저장 (현재는 재생성 중) (2주차)
+4. Docker 컨테이너화 및 docker-compose 구성 (2주차)
+5. GitHub Actions 기반 CI/CD (3주차)
+6. 네이버 클라우드 플랫폼 배포 및 헬스체크 모니터링 (3주차)
+7. 간단한 모니터링 대시보드 (4주차)

@@ -9,7 +9,10 @@
 # export NAVER_CLIENT_ID="..."        # 없으면 더미 데이터로 동작
 # export NAVER_CLIENT_SECRET="..."
 # 실행: uvicorn main:app --reload --port 8000
+from dotenv import load_dotenv
+import os
 
+load_dotenv()  # .env 파일 읽기
 from collections import Counter
 from datetime import datetime
 from typing import List, Literal, Optional

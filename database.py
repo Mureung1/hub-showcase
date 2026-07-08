@@ -1,14 +1,12 @@
-# database.py
 import os
 from sqlalchemy import (
-    create_engine, Column, Integer, String, Text, Enum, JSON, DateTime, ForeignKey, func,
+    create_engine, Column, BigInteger, String, Text, Enum, JSON, DateTime, ForeignKey, func,
 )
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 
-DB_URL = "sqlite:///./mystery_shopper.db"
+DB_URL = os.getenv("DB_URL", "sqlite:///./mystery_shopper.db")
 
-# SQLite의 동시성 접근 및 스레딩 문제를 완전히 방지하는 옵션
-engine = create_engine(DB_URL, connect_args={"check_same_thread": False}, echo=False)
+engine = create_engine(DB_URL, connect_args={"check_same_thread": False} if "sqlite" in DB_URL else {}, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -16,8 +14,7 @@ Base = declarative_base()
 class Competitor(Base):
     __tablename__ = "competitors"
 
-    # SQLite에서 autoincrement가 완벽하게 무조건 작동하도록 기본 Integer 타입으로 강제 매핑합니다.
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
     name = Column(String(100), nullable=False, unique=True)
     category = Column(String(50), nullable=True)
     address = Column(String(255), nullable=True)
@@ -29,8 +26,8 @@ class Competitor(Base):
 class Review(Base):
     __tablename__ = "reviews"
 
-    id = Column(Integer, primary_key=True, index=True)
-    competitor_id = Column(Integer, ForeignKey("competitors.id", ondelete="CASCADE"), nullable=False)
+    id = Column(BigInteger, primary_key=True, index=True)
+    competitor_id = Column(BigInteger, ForeignKey("competitors.id", ondelete="CASCADE"), nullable=False)
     content = Column(Text, nullable=False)
     sentiment = Column(Enum("긍정", "부정"), nullable=True)
     keywords = Column(JSON, nullable=True)
