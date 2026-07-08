@@ -95,14 +95,18 @@ flowchart TD
 - [개발 작업 흐름 보기](docs/plan.md#15-개발-작업-흐름)
 - [기획 덱 보기](docs/stockmate-planning-deck.html)
 - [프로토타입 보기](docs/stockmate-prototype.html)
+- [기획 덱 PDF 보기](docs/stockmate-planning-deck.pdf)
+- [프로토타입 PDF 보기](docs/stockmate-prototype.pdf)
 
 ---
 
 ## 산출물 미리보기
 
-![StockMate 기획 덱 미리보기](docs/assets/stockmate-planning-deck-preview.svg)
+![StockMate 기획 덱 1페이지](docs/assets/screens/stockmate-planning-deck-page-1.png)
 
-![StockMate 프로토타입 미리보기](docs/assets/stockmate-prototype-preview.svg)
+![StockMate 기획 덱 2페이지](docs/assets/screens/stockmate-planning-deck-page-2.png)
+
+![StockMate 프로토타입 화면](docs/assets/screens/stockmate-prototype-page-1.png)
 
 ---
 
