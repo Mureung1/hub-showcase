@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 
 import { menuItems } from "../../data/menuItems";
+import careerMissionLogo from "../../assets/career-mission-logo.png";
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -17,7 +18,15 @@ function Header() {
     <header className="app-header">
       <style>{styles}</style>
       <div className="header-inner">
-        <strong className="brand">Career Mission AI</strong>
+        <strong className="brand">
+          <img
+            src={careerMissionLogo}
+            alt=""
+            className="brand-logo"
+            aria-hidden="true"
+          />
+          <span>Career Mission</span>
+        </strong>
 
         <div className="header-actions">
           <div
@@ -98,9 +107,19 @@ const styles = `
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: #ffffff;
   font-size: clamp(15px, 2vw, 18px);
   white-space: nowrap;
+}
+
+.brand-logo {
+  width: 58px;
+  height: 44px;
+  display: block;
+  object-fit: contain;
 }
 
 .header-actions {
