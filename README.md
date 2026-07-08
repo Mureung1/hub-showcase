@@ -104,6 +104,7 @@ AI Game Project Operating System
 - [Product Plan](docs/plan.md): 문제 정의, 목표 사용자, 사용자 시나리오, 핵심 기능, 화면 흐름, 예시 UI
 - [Development Checklist](docs/checklist.md): 기능별 개발 실행 체크리스트
 - [Architecture](docs/architecture.md): 시스템 아키텍처 문서, 작성 예정
+- [2026-07-08 Development Log](docs/dev-log/2026-07-08.md): 승인 기반 AI 문서 생성/수정 파이프라인의 일별 개발 기록과 흐름도
 
 ## Current Status
 
@@ -112,6 +113,40 @@ AI Game Project Operating System
 - 기능별 개발 체크리스트 작성 완료
 - 예시 UI mockup 추가 완료
 - 시스템 아키텍처 문서 작성 예정
+- 승인 기반 문서 생성/수정 MVP 구현 시작
+- 일별 개발 일지 구조 시작
+
+## MVP Usage
+
+기본 `rule` 에이전트는 외부 의존성 없이 Python 표준 라이브러리만 사용합니다. OpenAI 기반 `prompt` 에이전트는 `requirements.txt` 설치가 필요합니다.
+
+```bash
+python3 -m gamepm_agent.cli --store .gamepm project-create demo "Demo Project"
+python3 -m gamepm_agent.cli --store .gamepm submit demo "새 NPC 문서로 만들어줘. 이름은 Rina이고 역할은 guide다."
+python3 -m gamepm_agent.cli --store .gamepm proposals demo
+python3 -m gamepm_agent.cli --store .gamepm decide demo <proposal_id> approved --user pm --reason "승인"
+python3 -m gamepm_agent.cli --store .gamepm apply demo <proposal_id>
+```
+
+핵심 정책은 다음과 같습니다.
+
+- 승인 전 변경안은 `Approval Queue`에만 저장되고 실제 문서는 수정되지 않습니다.
+- 승인 후 저장 직전에 원본 문서 버전을 다시 확인합니다.
+- 원본 문서가 바뀌었으면 저장하지 않고 `needs_reconfirmation` 상태로 돌립니다.
+- 저장 성공 시 `Version History`와 `Decision Log`를 남깁니다.
+
+에이전트 판단 레이어는 교체 가능하게 분리되어 있습니다.
+
+- `--agent rule`: 기본값이며, 키워드/템플릿 기반으로 동작합니다.
+- `--agent prompt`: 프롬프트 기반 엔진 경로를 사용합니다.
+
+OpenAI API를 사용하는 prompt-agent 실행 예시는 다음과 같습니다. API key는 코드에 하드코딩하지 않고 환경 변수로만 설정합니다.
+
+```bash
+python3 -m pip install -r requirements.txt
+export OPENAI_API_KEY="your_api_key_here"
+python3 -m gamepm_agent.cli --store .gamepm --agent prompt --llm openai --model gpt-4o-mini submit demo "새 NPC 문서로 만들어줘. 이름은 Rina이고 역할은 guide다."
+```
 
 ## Future Goal
 
