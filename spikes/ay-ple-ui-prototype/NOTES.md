@@ -40,6 +40,8 @@ User feedback on 2026-07-08: `mp3` and `png` selected sources made the preview f
 
 User feedback on 2026-07-08: file previews should not put editing controls inside the PDF content, and txt files should not look like Markdown pages. The prototype now moves the `편집하기` / `프리뷰 보기` control to the editor toolbar, similar to Obsidian's editing/reading mode switch. The selected txt source renders as a plain text file in both modes, and the syllabus PDF renders as either extracted Markdown source or a Markdown preview.
 
+User feedback on 2026-07-08: AY interpretation such as `AY가 참고한 문장` should not be encoded into the source preview itself. The prototype now keeps file previews clean and moves evidence into a separate bottom panel under the source preview.
+
 User feedback on 2026-07-08: generated image mockups were making the app spec and HTML/CSS prototype diverge. Standalone screen mockup images were removed; the remaining generated images are narrow brand assets wired directly into the HTML/CSS prototype.
 
 User feedback on 2026-07-08: the desired ChatSidecar is closer to a VS Code/Codex right-side dock than an inline dropdown. The prototype now pulls the chat out of the review card and renders it as a separate right dock. Pure HTML/CSS can make a persistent docked panel and clickable tabs, but resizing, selected-tab persistence across reloads, and synchronized panel state would need JavaScript.

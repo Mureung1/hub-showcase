@@ -394,7 +394,7 @@ body {
 
 .editor-area {
   display: grid;
-  grid-template-rows: 44px 42px minmax(0, 1fr);
+  grid-template-rows: 44px 42px minmax(0, 1fr) 160px;
   min-width: 0;
   min-height: 0;
   background: var(--editor);
@@ -778,59 +778,100 @@ body {
   font-size: 16px;
 }
 
-.source-evidence-summary {
+.evidence-panel {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 10px;
-  margin-top: 20px;
-  padding: 14px 16px;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line-soft);
+  background: #fffaf0;
+}
+
+.evidence-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+}
+
+.evidence-panel-head div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.evidence-panel-head strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 820;
+}
+
+.evidence-panel-head span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.evidence-panel-head > span {
+  flex: 0 0 auto;
+}
+
+.evidence-card {
+  display: none;
+  grid-template-columns: 160px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
   border: 1px solid rgba(69, 183, 167, 0.28);
   border-radius: 8px;
   background: #f2fbf7;
 }
 
-.source-evidence-summary header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+#tab-notice:checked ~ .workspace-frame .evidence-notice,
+#tab-syllabus:checked ~ .workspace-frame .evidence-syllabus {
+  display: grid;
 }
 
-.source-evidence-summary strong {
-  color: var(--text);
-  font-size: 13px;
+.evidence-card div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
 }
 
-.source-evidence-summary span {
+.evidence-label,
+.evidence-source {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 720;
 }
 
-.source-evidence-summary p {
+.evidence-card strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evidence-card blockquote {
+  min-width: 0;
   margin: 0;
   color: #33444c;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.source-evidence-summary dl {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-}
-
-.source-evidence-summary div {
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
-  gap: 12px;
-}
-
-.source-evidence-summary dt,
-.source-evidence-summary dd {
-  margin: 0;
-  color: #33444c;
-}
-
-.source-evidence-summary dt {
-  font-weight: 760;
+.evidence-source {
+  justify-self: end;
+  white-space: nowrap;
 }
 
 .chat-dock {
