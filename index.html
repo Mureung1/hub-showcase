@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TasteFit Prototype</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">취향 기반 음식점 리뷰/추천</p>
+      <h1>TasteFit</h1>
+      <p class="header-copy">별점만 보던 탐색에서 벗어나, 나와 취향이 비슷한 사람들의 리뷰와 기준별 추천을 먼저 확인하는 정적 프로토타입입니다.</p>
+    </div>
+    <a class="primary-action" href="#recommend">우선순위 추천 보기</a>
+  </header>
+
+  <main>
+    <section class="section intro-section" aria-labelledby="intro-title">
+      <div>
+        <p class="section-kicker">핵심 아이디어</p>
+        <h2 id="intro-title">모두에게 같은 별점 대신, 나에게 맞는 판단 기준</h2>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <span class="feature-number">01</span>
+          <h3>취향 유사도 기반 리뷰 필터링</h3>
+          <p>매운맛, 가성비, 분위기처럼 사용자의 취향 점수를 비교해 나와 비슷한 사람이 남긴 리뷰를 먼저 보여줍니다.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-number">02</span>
+          <h3>우선순위 가중치 추천</h3>
+          <p>사용자가 고른 1~3순위 기준에 각각 5점, 3점, 1점을 반영해 후보 가게의 추천 점수를 계산한 것처럼 보여줍니다.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-number">03</span>
+          <h3>베이지안 보정 호평률</h3>
+          <p>리뷰 수가 너무 적은 가게가 우연히 높은 평가만 받아 과대평가되지 않도록, 전체 평균을 함께 반영해 점수를 부드럽게 보정합니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="taste-title">
+      <div class="section-heading">
+        <p class="section-kicker">Step 1</p>
+        <h2 id="taste-title">취향 설정</h2>
+        <p>사용자가 자신의 음식점 선택 기준을 1~10점으로 설정한 상태입니다.</p>
+      </div>
+      <div class="app-panel taste-panel">
+        <div class="panel-top">
+          <div>
+            <p class="panel-label">내 취향 프로필</p>
+            <h3>카페 탐색 기준</h3>
+          </div>
+          <span class="status-badge">저장됨</span>
+        </div>
+
+        <div class="taste-list">
+          <article class="taste-row">
+            <div class="taste-meta">
+              <strong>매운맛</strong>
+              <span>8점</span>
+            </div>
+            <div class="score-track"><span style="width: 80%;"></span></div>
+          </article>
+          <article class="taste-row">
+            <div class="taste-meta">
+              <strong>가성비</strong>
+              <span>7점</span>
+            </div>
+            <div class="score-track"><span style="width: 70%;"></span></div>
+          </article>
+          <article class="taste-row">
+            <div class="taste-meta">
+              <strong>분위기</strong>
+              <span>9점</span>
+            </div>
+            <div class="score-track"><span style="width: 90%;"></span></div>
+          </article>
+          <article class="taste-row">
+            <div class="taste-meta">
+              <strong>웨이팅</strong>
+              <span>3점</span>
+            </div>
+            <div class="score-track muted"><span style="width: 30%;"></span></div>
+          </article>
+          <article class="taste-row">
+            <div class="taste-meta">
+              <strong>조용함</strong>
+              <span>8점</span>
+            </div>
+            <div class="score-track"><span style="width: 80%;"></span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="search-title">
+      <div class="section-heading">
+        <p class="section-kicker">Step 2</p>
+        <h2 id="search-title">가게 검색 결과</h2>
+        <p>검색어 “수플레 카페” 기준의 주변 가게 목록입니다.</p>
+      </div>
+      <div class="search-layout">
+        <aside class="map-box" aria-label="지도 예시 영역">
+          <span>지도 영역</span>
+          <strong>수플레 카페 주변</strong>
+          <p>실제 지도 대신 위치 탐색 흐름을 보여주는 영역</p>
+        </aside>
+
+        <div class="result-panel">
+          <div class="search-bar">
+            <span>수플레 카페</span>
+            <a class="small-action" href="#recommend">우선순위 추천</a>
+          </div>
+
+          <article class="store-card recommended-mini">
+            <div>
+              <h3>몽글수플레 성수</h3>
+              <p>320m · 전체 별점 4.6 · 리뷰 238개</p>
+            </div>
+            <span class="tag">분위기 좋은</span>
+          </article>
+          <article class="store-card">
+            <div>
+              <h3>온도카페</h3>
+              <p>540m · 전체 별점 4.4 · 리뷰 91개</p>
+            </div>
+            <span class="tag">조용한</span>
+          </article>
+          <article class="store-card">
+            <div>
+              <h3>라운드브런치</h3>
+              <p>710m · 전체 별점 4.2 · 리뷰 176개</p>
+            </div>
+            <span class="tag">가성비</span>
+          </article>
+          <article class="store-card">
+            <div>
+              <h3>소프트팬케이크랩</h3>
+              <p>890m · 전체 별점 4.8 · 리뷰 18개</p>
+            </div>
+            <span class="tag">신규 인기</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="recommend" aria-labelledby="recommend-title">
+      <div class="section-heading">
+        <p class="section-kicker">Step 3</p>
+        <h2 id="recommend-title">우선순위 추천</h2>
+        <p>중요한 기준을 1~3순위로 선택한 뒤 맞춤 추천 결과를 확인하는 화면입니다.</p>
+      </div>
+      <div class="recommend-layout">
+        <div class="priority-panel">
+          <h3>선택한 우선순위</h3>
+          <ol class="priority-list">
+            <li><span>1순위</span><strong>분위기</strong></li>
+            <li><span>2순위</span><strong>조용함</strong></li>
+            <li><span>3순위</span><strong>가성비</strong></li>
+          </ol>
+          <p class="weight-note">가중치: 1순위 5점 · 2순위 3점 · 3순위 1점</p>
+        </div>
+
+        <article class="recommend-card">
+          <span class="rank-badge">맞춤 추천 1위</span>
+          <h3>몽글수플레 성수</h3>
+          <p class="recommend-score">맞춤 점수 92점 · 보정 호평률 87%</p>
+          <p>분위기와 조용함 항목에서 취향이 비슷한 유저들의 호평률이 높아요.</p>
+          <div class="score-breakdown">
+            <span>분위기 94%</span>
+            <span>조용함 88%</span>
+            <span>가성비 76%</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="detail-title">
+      <div class="section-heading">
+        <p class="section-kicker">Step 4</p>
+        <h2 id="detail-title">가게 상세 페이지</h2>
+        <p>전체 평점보다 나와 비슷한 사람의 리뷰가 먼저 보이는 상세 화면입니다.</p>
+      </div>
+      <article class="detail-panel">
+        <div class="hero-placeholder">
+          <span>대표 이미지 영역</span>
+        </div>
+        <div class="detail-summary">
+          <div>
+            <h3>몽글수플레 성수</h3>
+            <p>전체 별점 4.6 · 리뷰 238개</p>
+          </div>
+          <span class="tag">수플레 전문</span>
+        </div>
+        <nav class="review-tabs" aria-label="리뷰 탭 예시">
+          <span>전체 리뷰</span>
+          <strong>나와 비슷한 사람 리뷰</strong>
+        </nav>
+
+        <div class="review-list">
+          <article class="review-card">
+            <div class="review-head">
+              <strong>분위기중시러</strong>
+              <span class="match-badge">나와 취향 93% 비슷함</span>
+            </div>
+            <p class="stars">별점 4.8</p>
+            <p>조명이 차분하고 좌석 간격이 넓어서 오래 머무르기 좋았습니다. 수플레도 과하게 달지 않아 만족스러웠어요.</p>
+            <div class="review-actions"><span>공감</span><span>비추천</span></div>
+          </article>
+          <article class="review-card">
+            <div class="review-head">
+              <strong>조용한테이블</strong>
+              <span class="match-badge">나와 취향 89% 비슷함</span>
+            </div>
+            <p class="stars">별점 4.6</p>
+            <p>평일 오후에는 대화하기 편한 정도로 조용했습니다. 웨이팅은 짧았고 직원 응대도 안정적이었습니다.</p>
+            <div class="review-actions"><span>공감</span><span>비추천</span></div>
+          </article>
+          <article class="review-card">
+            <div class="review-head">
+              <strong>가성비메모</strong>
+              <span class="match-badge">나와 취향 84% 비슷함</span>
+            </div>
+            <p class="stars">별점 4.4</p>
+            <p>가격은 아주 저렴하진 않지만 디저트 완성도와 공간 만족도를 고려하면 다시 방문할 만합니다.</p>
+            <div class="review-actions"><span>공감</span><span>비추천</span></div>
+          </article>
+        </div>
+      </article>
+    </section>
+
+    <section class="section" aria-labelledby="write-title">
+      <div class="section-heading">
+        <p class="section-kicker">Step 5</p>
+        <h2 id="write-title">리뷰 작성 및 방문 인증</h2>
+        <p>사진 인증과 리뷰 등록 흐름을 실제 입력 없이 정적으로 표현했습니다.</p>
+      </div>
+      <form class="write-panel">
+        <div class="photo-box">
+          <span>사진 인증 박스</span>
+          <strong class="verified-badge">방문 인증 완료</strong>
+        </div>
+        <label>
+          별점 선택
+          <span class="rating-picker">★ ★ ★ ★ ☆</span>
+        </label>
+        <label>
+          리뷰 입력
+          <textarea rows="5" placeholder="공간 분위기, 조용함, 가격 만족도 등을 남겨주세요."></textarea>
+        </label>
+        <button type="button">리뷰 등록하기</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
