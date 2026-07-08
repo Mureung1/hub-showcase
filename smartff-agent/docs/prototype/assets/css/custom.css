@@ -1,0 +1,113 @@
+/**
+ * SmartFF Agent Custom CSS
+ * Tailwind으로 표현 안 되는 최소한의 커스텀만 정의
+ */
+
+:root {
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-track: #f1f5f9;
+}
+
+/* 스크롤바 스타일 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Firefox 스크롤바 */
+* {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+/* 부드러운 페이지 전환 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 텍스트 선택 스타일 */
+::selection {
+  background-color: #0067C5;
+  color: white;
+}
+
+/* 포커스 스타일 */
+:focus-visible {
+  outline: 2px solid #0067C5;
+  outline-offset: 2px;
+}
+
+/* 태그별 기본 스타일 */
+body {
+  background-color: #F8FAFC;
+  color: #14171a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: #0067C5;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+/* Tailwind과 조화되는 기본 그림자 */
+.shadow-xs {
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+}
+
+/* 유틸리티: 시각적 피드백 */
+.transition-fast {
+  transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 테이블 기본 스타일 */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  font-size: 14px;
+  color: #475569;
+}
+
+tr:hover {
+  background-color: #f8fafc;
+}
