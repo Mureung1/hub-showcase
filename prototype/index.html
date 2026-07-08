@@ -16,6 +16,13 @@
     --toss-bg: #f9fafb;
     --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.05);
     --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+    --level-0: var(--toss-gray-100);
+    --level-1: #e3edff;
+    --level-2: #bcd8ff;
+    --level-3: #8bbcff;
+    --level-4: #5397ff;
+    --level-5: #1b64da;
   }
 
   * {
@@ -113,16 +120,15 @@
 
   .slot {
     height: 56px;
-    background: var(--toss-gray-100);
+    background: var(--level-0);
     border-radius: 14px;
     border: 1px solid transparent;
     cursor: pointer;
-    transition: background 0.18s ease, border-color 0.18s ease,
-      transform 0.12s ease, box-shadow 0.18s ease;
+    transition: background 0.2s ease, border-color 0.2s ease,
+      transform 0.12s ease, box-shadow 0.2s ease;
   }
 
   .slot:hover {
-    background: var(--toss-blue-light);
     border-color: #d6e6ff;
     transform: translateY(-1px);
   }
@@ -131,47 +137,98 @@
     transform: translateY(0) scale(0.97);
   }
 
-  .slot.selected {
-    background: var(--toss-blue);
-    border-color: var(--toss-blue);
-    box-shadow: 0 4px 12px rgba(49, 130, 246, 0.35);
+  .slot.level-0:hover {
+    background: var(--toss-blue-light);
   }
 
-  .slot.selected:hover {
-    background: #2272eb;
-    border-color: #2272eb;
-    transform: translateY(-1px);
+  .slot.level-1 { background: var(--level-1); }
+  .slot.level-2 { background: var(--level-2); }
+  .slot.level-3 { background: var(--level-3); }
+  .slot.level-4 { background: var(--level-4); }
+  .slot.level-5 { background: var(--level-5); }
+
+  .slot.level-3:hover,
+  .slot.level-4:hover,
+  .slot.level-5:hover {
+    border-color: transparent;
+    filter: brightness(1.06);
+  }
+
+  .slot.mine {
+    box-shadow: inset 0 0 0 2px #ffffff, 0 4px 10px rgba(49, 130, 246, 0.28);
+  }
+
+  .slot.mine:hover {
+    box-shadow: inset 0 0 0 2px #ffffff, 0 6px 14px rgba(49, 130, 246, 0.32);
+  }
+
+  .team-note {
+    font-size: 13px;
+    color: var(--toss-gray-400);
+    margin-bottom: 20px;
+  }
+
+  .team-note b {
+    color: var(--toss-gray-600);
+    font-weight: 600;
   }
 
   .legend {
-    display: flex;
-    align-items: center;
-    gap: 20px;
     margin-top: 24px;
     padding-top: 20px;
     border-top: 1px solid var(--toss-gray-200);
   }
 
+  .legend-title {
+    font-size: 12px;
+    color: var(--toss-gray-400);
+    margin-bottom: 10px;
+  }
+
+  .legend-scale {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
   .legend-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
   .legend-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 4px;
-    background: var(--toss-gray-100);
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    background: var(--level-0);
   }
 
-  .legend-dot.selected {
-    background: var(--toss-blue);
-  }
+  .legend-dot.level-1 { background: var(--level-1); }
+  .legend-dot.level-2 { background: var(--level-2); }
+  .legend-dot.level-3 { background: var(--level-3); }
+  .legend-dot.level-4 { background: var(--level-4); }
+  .legend-dot.level-5 { background: var(--level-5); }
 
   .legend-text {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--toss-gray-400);
+  }
+
+  .legend-mine {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .legend-mine-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    background: var(--level-3);
+    box-shadow: inset 0 0 0 2px #ffffff, 0 2px 6px rgba(49, 130, 246, 0.28);
   }
 
   .footer-note {
@@ -192,9 +249,10 @@
     <div class="card">
       <div class="card-title">가능한 시간을 선택해주세요</div>
       <div class="card-subtitle">평일 오전 10시 ~ 오후 6시 사이에서 선택할 수 있어요</div>
+      <div class="team-note">팀원 <b>지훈, 서연, 민준, 하은</b>의 가능 시간과 겹쳐서 보여드려요</div>
 
       <div class="grid-wrapper">
-        <div class="grid">
+        <div class="grid" id="grid">
           <div class="corner-cell"></div>
           <div class="day-label">월</div>
           <div class="day-label">화</div>
@@ -233,26 +291,95 @@
       </div>
 
       <div class="legend">
-        <div class="legend-item">
-          <div class="legend-dot"></div>
-          <div class="legend-text">선택 가능한 시간대</div>
+        <div class="legend-title">가능한 인원이 많을수록 진해져요</div>
+        <div class="legend-scale">
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <div class="legend-text">0명</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot level-1"></div>
+            <div class="legend-text">1명</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot level-2"></div>
+            <div class="legend-text">2명</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot level-3"></div>
+            <div class="legend-text">3명</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot level-4"></div>
+            <div class="legend-text">4명</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot level-5"></div>
+            <div class="legend-text">5명(전원)</div>
+          </div>
         </div>
-        <div class="legend-item">
-          <div class="legend-dot selected"></div>
-          <div class="legend-text">내가 선택한 시간</div>
+        <div class="legend-mine">
+          <div class="legend-mine-dot"></div>
+          <div class="legend-text">흰 테두리 = 내가 선택한 시간</div>
         </div>
       </div>
     </div>
 
-    <div class="footer-note">칸을 클릭해서 가능한 시간을 선택해보세요</div>
+    <div class="footer-note">칸을 클릭해서 내 가능한 시간을 선택해보세요</div>
   </div>
 
   <script>
-    document.querySelectorAll(".slot").forEach(function (slot) {
+    // 가상 팀원별 가능 시간 (칸 index: 0~19, 왼쪽→오른쪽, 위→아래 순서)
+    var teammates = [
+      { name: "지훈", slots: [0, 1, 2, 5, 6, 10, 11, 15, 16] },
+      { name: "서연", slots: [1, 2, 3, 6, 7, 8, 11, 12, 16, 17] },
+      { name: "민준", slots: [2, 3, 4, 7, 8, 12, 13, 17, 18] },
+      { name: "하은", slots: [0, 5, 10, 11, 12, 15, 16, 17, 18, 19] },
+    ];
+
+    var slotEls = Array.prototype.slice.call(document.querySelectorAll("#grid .slot"));
+    var mySelected = new Set();
+
+    function teammateCount(index) {
+      return teammates.filter(function (t) {
+        return t.slots.indexOf(index) !== -1;
+      }).length;
+    }
+
+    function render() {
+      slotEls.forEach(function (slot, index) {
+        var baseCount = teammateCount(index);
+        var iAmIn = mySelected.has(index);
+        var total = baseCount + (iAmIn ? 1 : 0);
+
+        slot.className = "slot level-" + total;
+        slot.classList.toggle("mine", iAmIn);
+
+        var names = teammates
+          .filter(function (t) {
+            return t.slots.indexOf(index) !== -1;
+          })
+          .map(function (t) {
+            return t.name;
+          });
+        if (iAmIn) names.push("나");
+
+        slot.title = total === 0 ? "가능한 사람이 없어요" : total + "명 가능 (" + names.join(", ") + ")";
+      });
+    }
+
+    slotEls.forEach(function (slot, index) {
       slot.addEventListener("click", function () {
-        slot.classList.toggle("selected");
+        if (mySelected.has(index)) {
+          mySelected.delete(index);
+        } else {
+          mySelected.add(index);
+        }
+        render();
       });
     });
+
+    render();
   </script>
 </body>
 </html>
