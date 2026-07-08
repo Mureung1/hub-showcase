@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>취업비서 - 일정 관리</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 헤더 */
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .header-subtitle {
+            font-size: 13px;
+            color: #999;
+        }
+
+        /* 통계 섹션 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* 섹션 */
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        /* 타임라인 */
+        .timeline-item {
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .company-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .job-title {
+            font-size: 13px;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .days-ago {
+            font-size: 12px;
+            color: #999;
+            background: #f5f5f5;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        /* 타임라인 진행도 */
+        .timeline-progress {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .progress-step {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .progress-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: -1;
+        }
+
+        .progress-step.completed:not(:last-child)::after {
+            background: #4caf50;
+        }
+
+        .step-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .progress-step.completed .step-dot {
+            background: #4caf50;
+            color: white;
+            border-color: #4caf50;
+        }
+
+        .progress-step.current .step-dot {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+        }
+
+        .step-label {
+            font-size: 11px;
+            color: #999;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .step-date {
+            font-size: 10px;
+            color: #bbb;
+            margin-top: 2px;
+        }
+
+        .progress-step.completed .step-label,
+        .progress-step.current .step-label {
+            color: #333;
+        }
+
+        /* 진행률 바 */
+        .progress-bar-simple {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        /* 면접 일정 섹션 */
+        .interview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .interview-card {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s;
+        }
+
+        .interview-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .interview-company {
+            font-size: 14px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .interview-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .interview-info-icon {
+            font-size: 16px;
+        }
+
+        .days-until {
+            display: inline-block;
+            background: #fff3cd;
+            color: #856404;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .days-until.urgent {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* 마감기한 알림 */
+        .deadline-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .deadline-card {
+            background: #fff5f5;
+            border: 2px solid #ffcccc;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .deadline-card.safe {
+            background: #f0f8f5;
+            border-color: #4caf50;
+        }
+
+        .deadline-company {
+            font-size: 14px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .deadline-date {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .deadline-status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .deadline-status.urgent {
+            background: #ffcccc;
+            color: #c41c3b;
+        }
+
+        .deadline-status.safe {
+            background: #ccf5e5;
+            color: #0d6b35;
+        }
+
+        /* 빈 상태 */
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+        }
+
+        .empty-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px;
+            }
+
+            .section {
+                padding: 15px;
+            }
+
+            .timeline-progress {
+                font-size: 12px;
+            }
+
+            .step-dot {
+                width: 28px;
+                height: 28px;
+                font-size: 10px;
+            }
+
+            .interview-grid,
+            .deadline-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header">
+            <div class="header-title">📅 일정 관리</div>
+            <div class="header-subtitle">지원 공고와 면접 일정을 한눈에 관리하세요</div>
+
+            <!-- 통계 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">지원 중인 공고</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">2</div>
+                    <div class="stat-label">예정된 면접</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">0</div>
+                    <div class="stat-label">합격</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">0</div>
+                    <div class="stat-label">불합격</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 지원 현황 타임라인 -->
+        <div class="section">
+            <div class="section-title">🗓️ 지원 현황</div>
+
+            <!-- 타임라인 아이템 1 -->
+            <div class="timeline-item">
+                <div class="timeline-header">
+                    <div>
+                        <div class="company-name">네이버 웨일 팀</div>
+                        <div class="job-title">풀스택 개발자</div>
+                    </div>
+                    <div class="days-ago">7일 전 지원</div>
+                </div>
+                <div class="timeline-progress">
+                    <div class="progress-step completed">
+                        <div class="step-dot">✓</div>
+                        <div class="step-label">지원</div>
+                        <div class="step-date">7/7</div>
+                    </div>
+                    <div class="progress-step current">
+                        <div class="step-dot">▶</div>
+                        <div class="step-label">서류심사</div>
+                        <div class="step-date">진행 중</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-dot">3</div>
+                        <div class="step-label">면접</div>
+                        <div class="step-date">7/14</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-dot">4</div>
+                        <div class="step-label">결과</div>
+                        <div class="step-date">예상</div>
+                    </div>
+                </div>
+                <div class="progress-bar-simple">
+                    <div class="progress-fill" style="width: 50%;"></div>
+                </div>
+            </div>
+
+            <!-- 타임라인 아이템 2 -->
+            <div class="timeline-item">
+                <div class="timeline-header">
+                    <div>
+                        <div class="company-name">라인플러스</div>
+                        <div class="job-title">백엔드 개발자</div>
+                    </div>
+                    <div class="days-ago">5일 전 지원</div>
+                </div>
+                <div class="timeline-progress">
+                    <div class="progress-step completed">
+                        <div class="step-dot">✓</div>
+                        <div class="step-label">지원</div>
+                        <div class="step-date">7/3</div>
+                    </div>
+                    <div class="progress-step completed">
+                        <div class="step-dot">✓</div>
+                        <div class="step-label">서류심사</div>
+                        <div class="step-date">7/10</div>
+                    </div>
+                    <div class="progress-step current">
+                        <div class="step-dot">▶</div>
+                        <div class="step-label">면접</div>
+                        <div class="step-date">7/15</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-dot">4</div>
+                        <div class="step-label">결과</div>
+                        <div class="step-date">예상</div>
+                    </div>
+                </div>
+                <div class="progress-bar-simple">
+                    <div class="progress-fill" style="width: 75%;"></div>
+                </div>
+            </div>
+
+            <!-- 타임라인 아이템 3 -->
+            <div class="timeline-item">
+                <div class="timeline-header">
+                    <div>
+                        <div class="company-name">토스</div>
+                        <div class="job-title">프론트엔드 개발자</div>
+                    </div>
+                    <div class="days-ago">3일 전 지원</div>
+                </div>
+                <div class="timeline-progress">
+                    <div class="progress-step completed">
+                        <div class="step-dot">✓</div>
+                        <div class="step-label">지원</div>
+                        <div class="step-date">7/5</div>
+                    </div>
+                    <div class="progress-step current">
+                        <div class="step-dot">▶</div>
+                        <div class="step-label">서류심사</div>
+                        <div class="step-date">진행 중</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-dot">3</div>
+                        <div class="step-label">면접</div>
+                        <div class="step-date">예상</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-dot">4</div>
+                        <div class="step-label">결과</div>
+                        <div class="step-date">예상</div>
+                    </div>
+                </div>
+                <div class="progress-bar-simple">
+                    <div class="progress-fill" style="width: 33%;"></div>
+                </div>
+            </div>
+
+            <!-- 타임라인 아이템 4 -->
+            <div class="timeline-item">
+                <div class="timeline-header">
+                    <div>
+                        <div class="company-name">당근마켓</div>
+                        <div class="job-title">풀스택 개발자</div>
+                    </div>
+                    <div class="days-ago">1일 전 지원</div>
+                </div>
+                <div class="timeline-progress">
+                    <div class="progress-step completed">
+                        <div class="step-dot">✓</div>
+                        <div class="step-label">지원</div>
+                        <div class="step-date">7/7</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-dot">2</div>
+                        <div class="step-label">서류심사</div>
+                        <div class="step-date">예상</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-dot">3</div>
+                        <div class="step-label">면접</div>
+                        <div class="step-date">예상</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-dot">4</div>
+                        <div class="step-label">결과</div>
+                        <div class="step-date">예상</div>
+                    </div>
+                </div>
+                <div class="progress-bar-simple">
+                    <div class="progress-fill" style="width: 25%;"></div>
+                </div>
+            </div>
+
+            <!-- 타임라인 아이템 5 -->
+            <div class="timeline-item">
+                <div class="timeline-header">
+                    <div>
+                        <div class="company-name">쿠팡</div>
+                        <div class="job-title">Python 개발자</div>
+                    </div>
+                    <div class="days-ago">미지원</div>
+                </div>
+                <div class="timeline-progress">
+                    <div class="progress-step">
+                        <div class="step-dot">1</div>
+                        <div class="step-label">지원</div>
+                        <div class="step-date">예정</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-dot">2</div>
+                        <div class="step-label">서류심사</div>
+                        <div class="step-date">예상</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-dot">3</div>
+                        <div class="step-label">면접</div>
+                        <div class="step-date">예상</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-dot">4</div>
+                        <div class="step-label">결과</div>
+                        <div class="step-date">예상</div>
+                    </div>
+                </div>
+                <div class="progress-bar-simple">
+                    <div class="progress-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 면접 일정 -->
+        <div class="section">
+            <div class="section-title">🎤 면접 일정</div>
+            <div class="interview-grid">
+                <div class="interview-card">
+                    <div class="interview-company">네이버 웨일 팀</div>
+                    <div class="interview-info">
+                        <span class="interview-info-icon">📅</span>
+                        <span>2026년 7월 14일 (화)</span>
+                    </div>
+                    <div class="interview-info">
+                        <span class="interview-info-icon">⏰</span>
+                        <span>14:00 ~ 15:00</span>
+                    </div>
+                    <div class="days-until">6일 남음</div>
+                </div>
+
+                <div class="interview-card">
+                    <div class="interview-company">라인플러스</div>
+                    <div class="interview-info">
+                        <span class="interview-info-icon">📅</span>
+                        <span>2026년 7월 15일 (수)</span>
+                    </div>
+                    <div class="interview-info">
+                        <span class="interview-info-icon">⏰</span>
+                        <span>10:00 ~ 11:00</span>
+                    </div>
+                    <div class="days-until urgent">7일 남음 ⚠️</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 마감기한 알림 -->
+        <div class="section">
+            <div class="section-title">⏰ 지원 마감 알림</div>
+            <div class="deadline-grid">
+                <div class="deadline-card urgent">
+                    <div class="deadline-company">라인플러스</div>
+                    <div class="deadline-date">
+                        <span>📌</span>
+                        <span>마감: 2026년 7월 25일</span>
+                    </div>
+                    <div class="deadline-status urgent">17일 남음 (진행 중)</div>
+                </div>
+
+                <div class="deadline-card urgent">
+                    <div class="deadline-company">토스</div>
+                    <div class="deadline-date">
+                        <span>📌</span>
+                        <span>마감: 2026년 7월 22일</span>
+                    </div>
+                    <div class="deadline-status urgent">14일 남음 (진행 중)</div>
+                </div>
+
+                <div class="deadline-card safe">
+                    <div class="deadline-company">당근마켓</div>
+                    <div class="deadline-date">
+                        <span>📌</span>
+                        <span>마감: 2026년 7월 28일</span>
+                    </div>
+                    <div class="deadline-status safe">20일 남음</div>
+                </div>
+
+                <div class="deadline-card safe">
+                    <div class="deadline-company">쿠팡</div>
+                    <div class="deadline-date">
+                        <span>📌</span>
+                        <span>마감: 2026년 7월 30일</span>
+                    </div>
+                    <div class="deadline-status safe">22일 남음</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
