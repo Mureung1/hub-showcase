@@ -1,6 +1,31 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Button } from '@wanteddev/wds';
+import {
+  BottomNavigation,
+  BottomNavigationItem,
+  Button,
+  Category,
+  CategoryList,
+  CategoryListItem,
+  Chip,
+  FallbackView,
+  FallbackViewContent,
+  FallbackViewImage,
+  FallbackViewText,
+  IconButton,
+  SearchField,
+  TextArea,
+  TextField,
+} from '@wanteddev/wds';
+import {
+  IconCirclePlus,
+  IconFilter,
+  IconFolder,
+  IconHome,
+  IconLink,
+  IconListCategory,
+  IconPlus,
+} from '@wanteddev/wds-icon';
 import './App.css';
 
 type Tab = 'library' | 'home' | 'save';
@@ -96,11 +121,11 @@ const initialInsights: Insight[] = [
   },
 ];
 
-const tabs: Array<{ id: Tab; label: string; icon: string }> = [
-  { id: 'library', label: '보관함', icon: '□' },
-  { id: 'home', label: '홈', icon: '+' },
-  { id: 'save', label: '저장', icon: '↗' },
-];
+const tabs = [
+  { id: 'library', label: '보관함', icon: IconFolder },
+  { id: 'home', label: '홈', icon: IconHome },
+  { id: 'save', label: '저장', icon: IconCirclePlus },
+] satisfies Array<{ id: Tab; label: string; icon: typeof IconFolder }>;
 
 const suggestedSituations = [
   '팀 프로젝트 앱 디자인 참고',
@@ -251,34 +276,47 @@ function CategoryRail({
   setActiveCategory: (category: string) => void;
 }) {
   return (
-    <nav className="category-rail" aria-label="카테고리 필터">
-      <button className="rail-icon-button" type="button" aria-label="보기 방식">
-        <span aria-hidden="true">▦</span>
-      </button>
-      <div className="category-scroll">
-        {categoryFilters.map((category) => (
-          <button
-            aria-pressed={activeCategory === category.name}
-            className="category-tab"
-            key={category.name}
-            onClick={() => setActiveCategory(category.name)}
-            type="button"
-          >
-            <span className={`mini-mark mark-${category.tone}`}>
-              {category.icon}
-            </span>
-            <span>{category.name}</span>
-          </button>
-        ))}
-      </div>
-      <button
-        className="rail-icon-button"
-        type="button"
-        aria-label="카테고리 추가"
-      >
-        <span aria-hidden="true">＋</span>
-      </button>
-    </nav>
+    <Category value={activeCategory} onValueChange={setActiveCategory}>
+      <nav className="category-rail" aria-label="카테고리 필터">
+        <IconButton
+          aria-label="보기 방식"
+          className="rail-icon-button"
+          size="medium"
+          type="button"
+          variant="outlined"
+        >
+          <IconListCategory aria-hidden="true" />
+        </IconButton>
+        <CategoryList
+          className="category-scroll"
+          horizontalPadding={false}
+          size="small"
+          verticalPadding={false}
+        >
+          {categoryFilters.map((category) => (
+            <CategoryListItem
+              aria-label={`${category.name} 카테고리`}
+              key={category.name}
+              value={category.name}
+            >
+              <span className={`mini-mark mark-${category.tone}`}>
+                {category.icon}
+              </span>
+              <span>{category.name}</span>
+            </CategoryListItem>
+          ))}
+        </CategoryList>
+        <IconButton
+          aria-label="카테고리 추가"
+          className="rail-icon-button"
+          size="medium"
+          type="button"
+          variant="outlined"
+        >
+          <IconPlus aria-hidden="true" />
+        </IconButton>
+      </nav>
+    </Category>
   );
 }
 
@@ -301,18 +339,26 @@ function SearchBand({
       <label className="visually-hidden" htmlFor="global-search">
         검색
       </label>
-      <div className="search-field">
-        <span aria-hidden="true">⌕</span>
-        <input
-          id="global-search"
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={placeholder}
-          value={query}
-        />
-      </div>
-      <button className="filter-button" type="button" aria-label="필터 설정">
-        ≡
-      </button>
+      <SearchField
+        aria-label="검색"
+        className="search-field"
+        id="global-search"
+        onChange={(event) => setQuery(event.currentTarget.value)}
+        onReset={() => setQuery('')}
+        placeholder={placeholder}
+        size="medium"
+        value={query}
+        width="100%"
+      />
+      <IconButton
+        aria-label="필터 설정"
+        className="filter-button"
+        size="medium"
+        type="button"
+        variant="outlined"
+      >
+        <IconFilter aria-hidden="true" />
+      </IconButton>
     </section>
   );
 }
@@ -416,11 +462,12 @@ function HomeBoard({
         <form className="retrieve-form" onSubmit={onRetrieve}>
           <label htmlFor="retrieve-query">현재 상황</label>
           <div className="retrieve-row">
-            <input
+            <TextField
               id="retrieve-query"
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder="예: 팀 프로젝트 앱 디자인 참고"
               value={query}
+              width="100%"
             />
             <Button color="primary" size="medium" type="submit" variant="solid">
               꺼내보기
@@ -430,15 +477,18 @@ function HomeBoard({
 
         <div className="situation-row" aria-label="추천 상황">
           {suggestedSituations.map((situation) => (
-            <button
+            <Chip
+              active={selectedSituation === situation}
               aria-pressed={selectedSituation === situation}
               className="suggestion-chip"
               key={situation}
               onClick={() => onSituationClick(situation)}
+              size="medium"
               type="button"
+              variant={selectedSituation === situation ? 'solid' : 'outlined'}
             >
               {situation}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
@@ -489,19 +539,21 @@ function SaveBoard({
 
         <form className="save-form" onSubmit={onSave}>
           <label htmlFor="save-url">링크 URL</label>
-          <input
+          <TextField
             id="save-url"
             onChange={(event) => {
-              setSaveUrl(event.target.value);
+              setSaveUrl(event.currentTarget.value);
               setSaveComplete(false);
             }}
             placeholder="https://example.com/article"
             type="url"
             value={saveUrl}
+            width="100%"
           />
           <Button
             color="primary"
             fullWidth
+            leadingContent={<IconLink aria-hidden="true" />}
             size="medium"
             type="submit"
             variant="solid"
@@ -517,20 +569,24 @@ function SaveBoard({
           <p>필요하면 카테고리와 메모를 가볍게 붙여두세요.</p>
           <div className="situation-row" aria-label="추천 카테고리">
             {suggestedCategories.map((category) => (
-              <button
+              <Chip
                 className={`suggestion-chip chip-${category.tone}`}
                 key={category.name}
+                size="medium"
                 type="button"
+                variant="outlined"
               >
                 {category.name}
-              </button>
+              </Chip>
             ))}
           </div>
           <label htmlFor="save-memo">메모</label>
-          <textarea
+          <TextArea
             id="save-memo"
+            minRows={3}
             placeholder="나중에 왜 다시 볼지 짧게 남겨두기"
             rows={3}
+            width="100%"
           />
           <Button
             color="primary"
@@ -561,11 +617,16 @@ function InsightGrid({ insights }: { insights: Insight[] }) {
             {insight.categories.length > 0 ? (
               <ul className="category-list" aria-label="카테고리 목록">
                 {insight.categories.map((category) => (
-                  <li
-                    className={`category-pill category-${category.tone}`}
-                    key={category.name}
-                  >
-                    {category.name}
+                  <li key={category.name}>
+                    <Chip
+                      as="span"
+                      className={`category-pill category-${category.tone}`}
+                      disableInteraction
+                      size="xsmall"
+                      variant="solid"
+                    >
+                      {category.name}
+                    </Chip>
                   </li>
                 ))}
               </ul>
@@ -596,36 +657,39 @@ function EmptyState({
   title: string;
 }) {
   return (
-    <div className="empty-state">
-      <div className="empty-art" aria-hidden="true">
-        <span />
-        <i />
-      </div>
-      <strong>{title}</strong>
-      <p>{description}</p>
-      <div className="empty-actions">
-        <Button
-          color="primary"
-          onClick={onAction}
-          size="medium"
-          type="button"
-          variant="solid"
-        >
-          {actionLabel}
-        </Button>
-        {secondaryActionLabel ? (
+    <FallbackView className="empty-state" padding="compact" platform="desktop">
+      <FallbackViewImage>
+        <div className="empty-art" aria-hidden="true">
+          <span />
+          <i />
+        </div>
+      </FallbackViewImage>
+      <FallbackViewContent>
+        <FallbackViewText description={description} title={title} />
+        <div className="empty-actions">
           <Button
             color="primary"
-            onClick={onSecondaryAction}
+            onClick={onAction}
             size="medium"
             type="button"
-            variant="outlined"
+            variant="solid"
           >
-            {secondaryActionLabel}
+            {actionLabel}
           </Button>
-        ) : null}
-      </div>
-    </div>
+          {secondaryActionLabel ? (
+            <Button
+              color="primary"
+              onClick={onSecondaryAction}
+              size="medium"
+              type="button"
+              variant="outlined"
+            >
+              {secondaryActionLabel}
+            </Button>
+          ) : null}
+        </div>
+      </FallbackViewContent>
+    </FallbackView>
   );
 }
 
@@ -637,20 +701,25 @@ function BottomNav({
   setActiveTab: (tab: Tab) => void;
 }) {
   return (
-    <nav className="bottom-nav" aria-label="주요 화면">
-      {tabs.map((tab) => (
-        <button
-          aria-current={activeTab === tab.id ? 'page' : undefined}
-          className="nav-item"
-          key={tab.id}
-          onClick={() => setActiveTab(tab.id)}
-          type="button"
-        >
-          <span aria-hidden="true">{tab.icon}</span>
-          <span>{tab.label}</span>
-        </button>
-      ))}
-    </nav>
+    <BottomNavigation
+      aria-label="주요 화면"
+      className="bottom-nav"
+      onValueChange={(value) => setActiveTab(value as Tab)}
+      value={activeTab}
+    >
+      {tabs.map((tab) => {
+        const TabIcon = tab.icon;
+
+        return (
+          <BottomNavigationItem
+            icon={<TabIcon aria-hidden="true" />}
+            key={tab.id}
+            label={tab.label}
+            value={tab.id}
+          />
+        );
+      })}
+    </BottomNavigation>
   );
 }
 
