@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>퇴거 안내 - 보증금 타임키퍼</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Noto Sans KR", sans-serif;
+    background: #f5f5f4;
+    color: #2a2724;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1px solid #e5e2da;
+    border-radius: 12px;
+    padding: 32px;
+  }
+
+  /* 상단 뒤로가기 */
+  .back-row { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+  .back-btn {
+    width: 32px; height: 32px;
+    background: #fff; border: 1px solid #d5cdbb; border-radius: 8px;
+    cursor: pointer; font-size: 16px; color: #6b6558;
+  }
+  .back-row span { font-size: 13px; color: #999; }
+
+  /* 제목 */
+  .title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .title-row .t-icon { font-size: 22px; }
+  .title-row .t-text { font-size: 18px; font-weight: 700; }
+  .intro { font-size: 13px; color: #6b6558; line-height: 1.6; margin-bottom: 20px; }
+
+  /* 타이밍 경고 배너 */
+  .timing-warn {
+    display: flex; align-items: flex-start; gap: 8px;
+    background: #fbf3e2; border-radius: 8px; padding: 12px 14px;
+    font-size: 12px; color: #a06f2a; line-height: 1.6; margin-bottom: 22px;
+  }
+  .timing-warn b { color: #8a5a1a; }
+
+  /* 진행 순서 안내 */
+  .steps-guide { background: #eef3f6; border-radius: 12px; padding: 16px 18px; margin-bottom: 24px; }
+  .steps-guide .sg-title { font-size: 13px; font-weight: 700; color: #35586b; margin-bottom: 12px; }
+  .steps-guide .sg-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+  .steps-guide .sg-item:last-child { margin-bottom: 0; }
+  .steps-guide .sg-num {
+    flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%;
+    background: #35586b; color: #fff; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .steps-guide .sg-text { font-size: 13px; color: #35586b; line-height: 1.5; }
+
+  .section-label { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+
+  /* 주의사항 체크리스트 */
+  .checklist { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .check-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 14px; border: 1px solid #eeece5; border-radius: 8px; cursor: pointer;
+  }
+  .check-item input { width: 17px; height: 17px; margin-top: 1px; }
+  .check-item .ci-title { font-size: 13px; font-weight: 500; }
+  .check-item .ci-desc { display: block; font-size: 12px; color: #6b6558; margin-top: 2px; line-height: 1.5; }
+  /* 가장 위험한 항목 강조 (빨간 테두리만) */
+  .check-item.danger { border: 1.5px solid #d99a9a; }
+  .check-item.danger .ci-title { color: #b83232; }
+
+  /* 공식 링크 */
+  .official-link {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; background: #fff; border: 1px solid #eeece5; border-radius: 8px;
+    text-decoration: none; margin-bottom: 22px;
+  }
+  .official-link span { font-size: 13px; color: #35586b; }
+  .official-link .arrow { font-size: 15px; color: #35586b; }
+
+  /* 통보 방법 선택 */
+  .method-select { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .method-select button {
+    padding: 10px; background: #fff; border: 1px solid #d5cdbb; border-radius: 8px;
+    font-size: 13px; color: #2a2724; cursor: pointer; font-family: inherit;
+  }
+  .method-select button:hover { border-color: #35586b; background: #f7f9fa; }
+  .method-select button.picked { background: #35586b; color: #fff; border-color: #35586b; }
+
+  /* 완료 체크 */
+  .done-check {
+    display: flex; align-items: center; gap: 10px; padding: 14px;
+    border: 1px solid #d5cdbb; border-radius: 8px; cursor: pointer; margin-bottom: 18px;
+  }
+  .done-check input { width: 18px; height: 18px; }
+  .done-check .dc-label { font-size: 14px; font-weight: 500; }
+  .done-check .dc-note { margin-left: auto; font-size: 12px; color: #999; }
+
+  /* 저장 버튼 */
+  .save-btn {
+    width: 100%; height: 46px; background: #35586b; color: #fff;
+    border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .save-btn:hover { background: #294453; }
+
+  @media (max-width: 480px) {
+    .card { padding: 24px; }
+    .method-select { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="back-row">
+      <button class="back-btn" onclick="goBack()" aria-label="뒤로">&#8592;</button>
+      <span>선택 다시 하기</span>
+    </div>
+
+    <div class="title-row">
+      <span class="t-icon">&#128682;</span>
+      <span class="t-text">나가기로 하셨네요</span>
+    </div>
+    <p class="intro">
+      집주인에게 나가겠다고 알리고, 보증금을 안전하게 돌려받는 게 목표예요.
+      아래 순서대로 챙겨보세요.
+    </p>
+
+    <!-- 타이밍 경고 (퇴거는 타이밍이 특히 중요) -->
+    <div class="timing-warn">
+      <span>&#9888; <b>만료 2개월 전까지</b> 나가겠다는 의사를 꼭 알려야 해요. 안 그러면 계약이 자동으로 연장될 수 있어요.</span>
+    </div>
+
+    <!-- 진행 순서 -->
+    <div class="steps-guide">
+      <div class="sg-title">이렇게 진행하면 돼요</div>
+      <div class="sg-item"><span class="sg-num">1</span><span class="sg-text">집주인에게 "나가겠다"고 통보해요</span></div>
+      <div class="sg-item"><span class="sg-num">2</span><span class="sg-text">아래 주의사항을 확인하며 이사를 준비해요</span></div>
+      <div class="sg-item"><span class="sg-num">3</span><span class="sg-text">통보 완료 표시를 남겨요</span></div>
+    </div>
+
+    <!-- 나갈 때 주의사항 체크리스트 (이 화면의 핵심) -->
+    <div class="section-label">나갈 때 꼭 확인하세요</div>
+    <div class="checklist">
+      <!-- danger: 가장 위험한 항목 강조 -->
+      <label class="check-item danger">
+        <input type="checkbox">
+        <span>
+          <span class="ci-title">보증금 받기 전엔 전입신고 옮기지 않기</span>
+          <span class="ci-desc">미리 옮기면 보증금 지킬 권리(대항력)를 잃을 수 있어요</span>
+        </span>
+      </label>
+      <label class="check-item">
+        <input type="checkbox">
+        <span>
+          <span class="ci-title">새 집 잔금일과 보증금 받는 날 맞추기</span>
+          <span class="ci-desc">두 날짜가 어긋나면 목돈이 잠깐 비어버릴 수 있어요</span>
+        </span>
+      </label>
+      <label class="check-item">
+        <input type="checkbox">
+        <span>
+          <span class="ci-title">등기부등본 다시 확인하기</span>
+          <span class="ci-desc">근저당 등이 새로 잡혔는지 이사 전에 점검해요</span>
+        </span>
+      </label>
+    </div>
+
+    <!-- 공식 링크 -->
+    <a class="official-link" href="https://www.easylaw.go.kr" target="_blank" rel="noopener">
+      <span>퇴거·보증금 반환 자세히 알아보기 · 생활법령정보</span>
+      <span class="arrow">&#8599;</span>
+    </a>
+
+    <!-- 통보 방법 선택 -->
+    <div class="section-label">어떤 방법으로 통보하셨나요?</div>
+    <div class="method-select">
+      <button onclick="pickMethod(this)">문자·카톡</button>
+      <button onclick="pickMethod(this)">내용증명</button>
+      <button onclick="pickMethod(this)">직접 얘기</button>
+    </div>
+
+    <!-- 완료 체크 -->
+    <label class="done-check">
+      <input type="checkbox" id="doneCheck">
+      <span class="dc-label">통보 완료했어요</span>
+      <span class="dc-note">완료 시 오늘 날짜가 기록돼요</span>
+    </label>
+
+    <button class="save-btn" onclick="save()">저장하고 타임라인으로</button>
+  </div>
+
+<script>
+  function goBack() { alert('선택 화면으로 돌아가기'); }
+
+  // 통보 방법 하나만 선택
+  function pickMethod(btn) {
+    document.querySelectorAll('.method-select button').forEach(b => b.classList.remove('picked'));
+    btn.classList.add('picked');
+  }
+
+  // 저장 - 완료 체크됐을 때만 날짜 기록
+  function save() {
+    const done = document.getElementById('doneCheck').checked;
+    if (done) {
+      const today = new Date().toLocaleDateString('ko-KR');
+      alert('통보 완료 기록됨 (' + today + ') · 타임라인으로 이동');
+    } else {
+      alert('아직 통보 완료 전이에요. 타임라인으로 이동합니다.');
+    }
+  }
+</script>
+</body>
+</html>

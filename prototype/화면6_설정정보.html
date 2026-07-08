@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>설정 - 보증금 타임키퍼</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Noto Sans KR", sans-serif;
+    background: #f5f5f4;
+    color: #2a2724;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1px solid #e5e2da;
+    border-radius: 12px;
+    padding: 32px;
+  }
+
+  /* 상단 헤더 */
+  .header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 24px; padding-bottom: 16px;
+    border-bottom: 1px solid #eeece5;
+  }
+  .header .back-btn {
+    width: 32px; height: 32px;
+    background: #fff; border: 1px solid #d5cdbb; border-radius: 8px;
+    cursor: pointer; font-size: 16px; color: #6b6558;
+  }
+  .header .title { font-size: 16px; font-weight: 700; }
+
+  /* 섹션 라벨 */
+  .section-label { font-size: 12px; color: #999; margin-bottom: 8px; }
+
+  /* 설정 항목 그룹 */
+  .menu-group {
+    display: flex; flex-direction: column;
+    border: 1px solid #eeece5; border-radius: 8px;
+    margin-bottom: 22px; overflow: hidden;
+  }
+  .menu-item {
+    display: flex; align-items: center; gap: 12px; padding: 14px;
+    cursor: pointer; background: #fff;
+  }
+  .menu-item:not(:last-child) { border-bottom: 1px solid #eeece5; }
+  .menu-item:hover { background: #f7f5f0; }
+  .menu-item .mi-icon { font-size: 18px; }
+  .menu-item .mi-label { font-size: 13px; color: #2a2724; }
+  /* 항목에 부가 설명(현재값 등) 붙일 때 */
+  .menu-item .mi-col { display: flex; flex-direction: column; }
+  .menu-item .mi-sub { font-size: 11px; color: #999; margin-top: 2px; }
+  /* 개수 배지 */
+  .menu-item .mi-badge {
+    font-size: 11px; color: #6b6558; background: #f1efe8;
+    padding: 2px 8px; border-radius: 10px; margin-left: 4px;
+  }
+  .menu-item .mi-arrow { margin-left: auto; font-size: 15px; color: #b4b2a9; }
+
+  /* 위험 항목 (데이터 삭제) */
+  .menu-item.danger .mi-icon,
+  .menu-item.danger .mi-label,
+  .menu-item.danger .mi-arrow { color: #d64545; }
+
+  /* 면책 고지 박스 (상시 배치) */
+  .disclaimer-box {
+    border: 1px solid #eeece5; border-radius: 12px;
+    padding: 16px 18px; background: #f7f5f0;
+  }
+  .disclaimer-box .db-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  }
+  .disclaimer-box .db-title { font-size: 13px; font-weight: 500; color: #2a2724; }
+  .disclaimer-box p { font-size: 12px; color: #6b6558; line-height: 1.7; }
+
+  @media (max-width: 480px) { .card { padding: 24px; } }
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="header">
+      <button class="back-btn" onclick="goBack()" aria-label="뒤로">&#8592;</button>
+      <span class="title">설정</span>
+    </div>
+
+    <!-- 계약 관리 -->
+    <div class="section-label">계약 관리</div>
+    <div class="menu-group">
+      <div class="menu-item" onclick="open('내 계약 관리')">
+        <span class="mi-icon">&#128218;</span>
+        <span class="mi-label">내 계약 관리</span>
+        <span class="mi-badge">2건</span>
+        <span class="mi-arrow">&#8250;</span>
+      </div>
+      <div class="menu-item" onclick="open('계약 정보 수정')">
+        <span class="mi-icon">&#128196;</span>
+        <span class="mi-label">계약 정보 수정</span>
+        <span class="mi-arrow">&#8250;</span>
+      </div>
+    </div>
+
+    <!-- 알림 -->
+    <div class="section-label">알림</div>
+    <div class="menu-group">
+      <div class="menu-item" onclick="open('알림 켜기/끄기')">
+        <span class="mi-icon">&#128276;</span>
+        <span class="mi-label">알림 켜기 / 끄기</span>
+        <span class="mi-arrow">&#8250;</span>
+      </div>
+      <div class="menu-item" onclick="open('알림 시점 조절')">
+        <span class="mi-icon">&#9203;</span>
+        <span class="mi-col">
+          <span class="mi-label">알림 시점 조절</span>
+          <span class="mi-sub">현재: 6개월 · 2개월 전</span>
+        </span>
+        <span class="mi-arrow">&#8250;</span>
+      </div>
+    </div>
+
+    <!-- 정보 -->
+    <div class="section-label">정보</div>
+    <div class="menu-group">
+      <div class="menu-item" onclick="open('이 앱에 대하여')">
+        <span class="mi-icon">&#8505;</span>
+        <span class="mi-label">이 앱에 대하여</span>
+        <span class="mi-arrow">&#8250;</span>
+      </div>
+      <div class="menu-item" onclick="open('참고한 공식 사이트 모음')">
+        <span class="mi-icon">&#128279;</span>
+        <span class="mi-label">참고한 공식 사이트 모음</span>
+        <span class="mi-arrow">&#8250;</span>
+      </div>
+    </div>
+
+    <!-- 데이터·개인정보 -->
+    <div class="section-label">데이터·개인정보</div>
+    <div class="menu-group">
+      <div class="menu-item" onclick="open('개인정보 처리방침')">
+        <span class="mi-icon">&#128274;</span>
+        <span class="mi-label">개인정보 처리방침</span>
+        <span class="mi-arrow">&#8250;</span>
+      </div>
+      <!-- danger: 되돌릴 수 없는 위험 동작 -->
+      <div class="menu-item danger" onclick="deleteData()">
+        <span class="mi-icon">&#128465;</span>
+        <span class="mi-label">모든 데이터 삭제</span>
+        <span class="mi-arrow">&#8250;</span>
+      </div>
+    </div>
+
+    <!-- 면책 고지 (상시 배치) -->
+    <div class="disclaimer-box">
+      <div class="db-head">
+        <span>&#9888;</span>
+        <span class="db-title">꼭 알아두세요</span>
+      </div>
+      <p>이 앱은 법률 자문이 아닌 일정 안내 서비스입니다. 정확한 법적 판단은 공식 기관이나 전문가를 통해 확인해주세요.</p>
+    </div>
+  </div>
+
+<script>
+  function goBack() { alert('타임라인 화면으로 돌아가기'); }
+  function open(name) { alert(name + ' 화면으로 이동'); }
+
+  // 데이터 삭제는 되돌릴 수 없으니 한 번 더 확인
+  function deleteData() {
+    if (confirm('정말 모든 데이터를 삭제할까요? 계약 정보와 기록이 모두 지워지며 되돌릴 수 없어요.')) {
+      alert('모든 데이터가 삭제되었습니다.');
+    }
+  }
+</script>
+</body>
+</html>

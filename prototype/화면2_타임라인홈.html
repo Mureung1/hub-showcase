@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>타임라인 - 보증금 타임키퍼</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Noto Sans KR", sans-serif;
+    background: #f5f5f4;
+    color: #2a2724;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 720px;
+    background: #fff;
+    border: 1px solid #e5e2da;
+    border-radius: 12px;
+    padding: 32px;
+  }
+
+  /* 상단 헤더 */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #eeece5;
+    padding-bottom: 18px;
+    margin-bottom: 24px;
+  }
+  .header .contract-title { font-size: 18px; font-weight: 700; }
+  .header .contract-sub { font-size: 12px; color: #999; margin-top: 3px; }
+  .header .actions { display: flex; gap: 8px; }
+  .icon-btn {
+    height: 36px; padding: 0 14px;
+    background: #fff; border: 1px solid #d5cdbb; border-radius: 8px;
+    font-size: 13px; color: #6b6558; cursor: pointer; font-family: inherit;
+  }
+  .icon-btn:hover { background: #f5f3ee; }
+
+  /* 다가오는 할 일 배너 */
+  .alert-banner {
+    display: flex; align-items: center; gap: 12px;
+    background: #fbf3e2; border-radius: 8px; padding: 16px; margin-bottom: 26px;
+  }
+  .alert-banner .alert-title { font-size: 14px; font-weight: 700; color: #8a5a1a; }
+  .alert-banner .alert-desc { font-size: 13px; color: #a06f2a; margin-top: 3px; line-height: 1.5; }
+  .alert-banner .alert-btn {
+    margin-left: auto; height: 38px; padding: 0 16px;
+    background: #b07a2a; color: #fff; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; font-family: inherit;
+  }
+
+  /* 전체 일정 라벨 줄 + 범례 */
+  .timeline-head {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px;
+  }
+  .timeline-head .label { font-size: 13px; color: #6b6558; }
+  .legend { display: flex; gap: 14px; font-size: 11px; color: #999; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend .dot-sm { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+  /* 가로 시간축 타임라인 */
+  .timeline { position: relative; padding: 0 4px; }
+  .timeline .line {
+    position: absolute; left: 11%; right: 11%; top: 11px; height: 2px; background: #e5e2da;
+  }
+
+  /* '오늘' 세로 마커 — left 값(%)으로 현재 위치 조절 */
+  .today-marker {
+    position: absolute; left: 38%; top: -6px; bottom: 26px;
+    border-left: 1.5px dashed #35586b; z-index: 2;
+  }
+  .today-label {
+    position: absolute; left: 38%; top: -20px; transform: translateX(-50%);
+    font-size: 11px; font-weight: 700; color: #35586b; z-index: 3; white-space: nowrap;
+  }
+
+  .points { position: relative; display: flex; justify-content: space-between; }
+  .point { display: flex; flex-direction: column; align-items: center; width: 22%; text-align: center; }
+  .point .dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; border: 2px solid #b4b2a9; z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px; font-weight: bold;
+  }
+  .point .name { font-size: 12px; font-weight: 500; color: #6b6558; margin-top: 10px; }
+  .point .date { font-size: 11px; color: #999; margin-top: 2px; }
+  .point .status { font-size: 11px; color: #999; margin-top: 6px; }
+
+  /* 상태별 색상 — 클래스만 바꾸면 상태 전환됨 */
+  /* 완료 (초록) */
+  .point.done .dot { background: #3f6e4f; border-color: #3f6e4f; }
+  .point.done .status { color: #3f6e4f; font-weight: 700; }
+  /* 임박 (주황) */
+  .point.active .dot { background: #b07a2a; border-color: #b07a2a; }
+  .point.active .name { color: #2a2724; }
+  .point.active .status { color: #b07a2a; font-weight: 700; }
+  /* 놓침 (빨강) */
+  .point.missed .dot { background: #d64545; border-color: #d64545; }
+  .point.missed .status { color: #d64545; font-weight: 700; }
+  /* 만료일 예정 (빨간 테두리만) */
+  .point.expiry .dot { border-color: #d64545; }
+
+  @media (max-width: 480px) {
+    .card { padding: 24px; }
+    .point .name { font-size: 11px; }
+    .legend { display: none; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="header">
+      <div>
+        <div class="contract-title">내 계약 타임라인</div>
+        <div class="contract-sub">2024.03.01 ~ 2026.03.01 · 보증금 15,000만원</div>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" onclick="goArchive()">보관함</button>
+        <button class="icon-btn" onclick="goSettings()" aria-label="설정">설정</button>
+      </div>
+    </div>
+
+    <div class="alert-banner">
+      <div>
+        <div class="alert-title">다가오는 할 일 · D-45</div>
+        <div class="alert-desc">갱신 여부를 결정할 시점이 다가와요. 계속 살지, 나갈지 정해주세요.</div>
+      </div>
+      <button class="alert-btn" onclick="goDecision()">결정하러 가기</button>
+    </div>
+
+    <div class="timeline-head">
+      <div class="label">전체 일정</div>
+      <div class="legend">
+        <span><span class="dot-sm" style="background:#3f6e4f;"></span>완료</span>
+        <span><span class="dot-sm" style="background:#b07a2a;"></span>임박</span>
+        <span><span class="dot-sm" style="border:1.5px solid #b4b2a9;"></span>예정</span>
+      </div>
+    </div>
+
+    <div class="timeline">
+      <div class="line"></div>
+
+      <!-- '오늘' 위치 마커 (left 값으로 조절) -->
+      <div class="today-marker"></div>
+      <div class="today-label">오늘</div>
+
+      <div class="points">
+
+        <!-- done: 완료한 시점 -->
+        <div class="point done">
+          <div class="dot">&#10003;</div>
+          <div class="name">보증보험 마감</div>
+          <div class="date">2025.03.01</div>
+          <div class="status">완료</div>
+        </div>
+
+        <!-- active: 지금 임박한 시점 -->
+        <div class="point active">
+          <div class="dot">!</div>
+          <div class="name">갱신 결정</div>
+          <div class="date">2025.09.01</div>
+          <div class="status">D-45</div>
+        </div>
+
+        <!-- 예정 (기본) -->
+        <div class="point">
+          <div class="dot"></div>
+          <div class="name">통보 마지노선</div>
+          <div class="date">2026.01.01</div>
+          <div class="status">예정</div>
+        </div>
+
+        <!-- expiry: 만료일 -->
+        <div class="point expiry">
+          <div class="dot"></div>
+          <div class="name">계약 만료</div>
+          <div class="date">2026.03.01</div>
+          <div class="status">예정</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+  function goArchive()  { alert('기록 보관함 화면으로 이동'); }
+  function goSettings() { alert('설정/정보 화면으로 이동'); }
+  function goDecision() { alert('갱신 결정 화면으로 이동'); }
+
+  /*
+    상태 전환 방법:
+    - 해당 .point 요소의 class에 done / active / missed 중 하나를 넣으면 색이 바뀜
+    - 예: 통보를 안 하고 마지노선을 넘기면 class="point missed"로 바꾸고 status를 '놓침'으로
+    - 'today-marker'와 'today-label'의 left 값(%)을 오늘 날짜 위치에 맞게 계산해서 넣으면 됨
+  */
+</script>
+</body>
+</html>

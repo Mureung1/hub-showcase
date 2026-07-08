@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>계약 입력 - 보증금 타임키퍼</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Noto Sans KR", sans-serif;
+    background: #f5f5f4;
+    color: #2a2724;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  /* 화면 전체를 감싸는 카드 */
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1px solid #e5e2da;
+    border-radius: 12px;
+    padding: 32px;
+  }
+
+  /* 상단 헤더 (제목 + 단계 표시) */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #eeece5;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .header .title { font-size: 18px; font-weight: 700; }
+  .header .step { font-size: 12px; color: #999; }
+
+  .desc {
+    font-size: 14px;
+    color: #6b6558;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  /* 날짜 두 개를 좌우로 나란히 (데스크톱) */
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: #6b6558;
+    margin-bottom: 6px;
+  }
+  .required { color: #d64545; }
+  .optional { color: #aaa; font-size: 12px; }
+
+  /* 입력창 공통 스타일 */
+  input {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #d5cdbb;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    background: #fff;
+  }
+  input:focus { outline: 2px solid #35586b; outline-offset: 1px; }
+
+  /* 금액 입력창 오른쪽에 '만원' 단위 붙이기 */
+  .money-wrap { position: relative; }
+  .money-wrap .unit {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: #999;
+  }
+  .money-wrap input { padding-right: 44px; }
+
+  /* 콤마 붙은 금액을 한 번 더 확인시켜주는 텍스트 */
+  .money-word {
+    display: block;
+    font-size: 12px;
+    color: #35586b;
+    margin-top: 6px;
+    min-height: 16px;
+  }
+
+  /* 안내 박스 */
+  .notice {
+    display: flex;
+    gap: 8px;
+    background: #eef3f6;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    color: #35586b;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  /* 제출 버튼 */
+  .submit-btn {
+    width: 100%;
+    height: 48px;
+    background: #35586b;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .submit-btn:hover { background: #294453; }
+
+  /* 화면이 좁아지면(모바일) 날짜를 세로로 */
+  @media (max-width: 480px) {
+    .row-2 { grid-template-columns: 1fr; }
+    .card { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="header">
+      <span class="title">계약 정보 입력</span>
+      <span class="step">1 / 1 단계</span>
+    </div>
+
+    <p class="desc">
+      계약서에 적힌 날짜와 보증금을 입력하면 챙겨야 할 일정이 자동으로 만들어져요.
+      전세·월세·반전세 모두 같은 방식으로 입력하면 돼요.
+    </p>
+
+    <div class="row-2">
+      <div class="field">
+        <label>계약 시작일 <span class="required">*</span></label>
+        <input type="date" id="startDate">
+      </div>
+      <div class="field">
+        <label>계약 만료일 <span class="required">*</span></label>
+        <input type="date" id="endDate">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>보증금 액수 <span class="required">*</span></label>
+      <div class="money-wrap">
+        <input type="text" inputmode="numeric" id="deposit" placeholder="15,000">
+        <span class="unit">만원</span>
+      </div>
+      <span class="money-word" id="depositWord"></span>
+    </div>
+
+    <div class="field">
+      <label>월 임대료 <span class="optional">(선택 · 월세·반전세만)</span></label>
+      <div class="money-wrap">
+        <input type="text" inputmode="numeric" id="rent" placeholder="50">
+        <span class="unit">만원</span>
+      </div>
+    </div>
+
+    <div class="notice">
+      <span>만료일은 시작일보다 나중이어야 해요. 입력한 날짜로 갱신·반환 일정을 계산해요.</span>
+    </div>
+
+    <button class="submit-btn" onclick="handleSubmit()">타임라인 만들기</button>
+  </div>
+
+<script>
+  // 숫자만 남기고 천 단위 콤마를 붙이는 함수
+  function addComma(el, wordEl) {
+    el.addEventListener('input', function () {
+      let raw = this.value.replace(/[^0-9]/g, '');       // 숫자 외 문자 제거
+      this.value = raw ? Number(raw).toLocaleString('ko-KR') : '';  // 콤마 삽입
+      if (wordEl) {
+        wordEl.textContent = raw ? Number(raw).toLocaleString('ko-KR') + '만원' : '';
+      }
+    });
+  }
+  addComma(document.getElementById('deposit'), document.getElementById('depositWord'));
+  addComma(document.getElementById('rent'), null);
+
+  // 제출 시 유효성 검사 (만료일 > 시작일)
+  function handleSubmit() {
+    const start = document.getElementById('startDate').value;
+    const end = document.getElementById('endDate').value;
+    const deposit = document.getElementById('deposit').value.replace(/[^0-9]/g, '');
+
+    if (!start || !end) { alert('계약 시작일과 만료일을 입력해주세요.'); return; }
+    if (new Date(end) <= new Date(start)) { alert('만료일은 시작일보다 나중이어야 해요.'); return; }
+    if (!deposit) { alert('보증금 액수를 입력해주세요.'); return; }
+
+    alert('입력 완료! 다음 화면(타임라인)으로 이동합니다.');
+    // 실제로는 여기서 타임라인 화면으로 이동
+  }
+</script>
+</body>
+</html>

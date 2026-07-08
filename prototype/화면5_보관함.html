@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보관함 - 보증금 타임키퍼</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Noto Sans KR", sans-serif;
+    background: #f5f5f4;
+    color: #2a2724;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    gap: 16px;
+  }
+
+  /* 데모용 상태 전환 버튼 (실제 앱에는 없음) */
+  .demo-toggle {
+    display: flex; gap: 8px;
+  }
+  .demo-toggle button {
+    padding: 8px 14px; font-size: 12px; font-family: inherit;
+    background: #fff; border: 1px solid #d5cdbb; border-radius: 20px;
+    color: #6b6558; cursor: pointer;
+  }
+  .demo-toggle button.on { background: #35586b; color: #fff; border-color: #35586b; }
+
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1px solid #e5e2da;
+    border-radius: 12px;
+    padding: 32px;
+  }
+
+  /* 상단 헤더 */
+  .header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 24px; padding-bottom: 16px;
+    border-bottom: 1px solid #eeece5;
+  }
+  .header .back-btn {
+    width: 32px; height: 32px;
+    background: #fff; border: 1px solid #d5cdbb; border-radius: 8px;
+    cursor: pointer; font-size: 16px; color: #6b6558;
+  }
+  .header .title { font-size: 16px; font-weight: 700; }
+  .header .count { margin-left: auto; font-size: 12px; color: #999; }
+
+  /* ===== 빈 상태 ===== */
+  .empty { text-align: center; padding: 40px 20px; }
+  .empty .empty-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #f7f5f0; border: 1px solid #eeece5; margin-bottom: 18px; font-size: 26px;
+  }
+  .empty .empty-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .empty .empty-desc {
+    font-size: 13px; color: #6b6558; line-height: 1.7;
+    max-width: 360px; margin: 0 auto;
+  }
+
+  /* ===== 기록 목록 ===== */
+  .record-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+  .record {
+    display: flex; gap: 12px; padding: 14px;
+    border: 1px solid #eeece5; border-radius: 8px;
+  }
+  .record .r-icon {
+    flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .record .r-icon.ok { background: #eaf3e0; }
+  .record .r-icon.info { background: #eef3f6; }
+  .record .r-icon.plain { background: #f7f5f0; border: 1px solid #eeece5; }
+  .record .r-body { flex: 1; }
+  .record .r-title { font-size: 13px; font-weight: 500; }
+  .record .r-sub { font-size: 12px; color: #6b6558; margin-top: 2px; }
+  .record .r-date { font-size: 12px; color: #999; white-space: nowrap; }
+
+  /* 면책 문구 */
+  .disclaimer {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 12px; background: #f7f5f0; border-radius: 8px;
+    font-size: 12px; color: #6b6558; line-height: 1.6; margin-bottom: 22px;
+  }
+
+  /* 하단 버튼 */
+  .back-timeline {
+    width: 100%; height: 44px; background: #fff; color: #2a2724;
+    border: 1px solid #d5cdbb; border-radius: 8px;
+    font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit;
+  }
+  .back-timeline:hover { background: #f5f3ee; }
+
+  .hidden { display: none; }
+
+  @media (max-width: 480px) { .card { padding: 24px; } }
+</style>
+</head>
+<body>
+
+  <!-- 데모용: 두 상태를 눌러서 확인 (실제 앱에는 없는 버튼) -->
+  <div class="demo-toggle">
+    <button id="btnEmpty" onclick="showState('empty')">빈 상태</button>
+    <button id="btnFilled" class="on" onclick="showState('filled')">기록 있는 상태</button>
+  </div>
+
+  <div class="card">
+    <div class="header">
+      <button class="back-btn" onclick="goBack()" aria-label="뒤로">&#8592;</button>
+      <span class="title">보관함</span>
+      <span class="count" id="count">총 3건</span>
+    </div>
+
+    <!-- 빈 상태 -->
+    <div id="emptyState" class="empty hidden">
+      <div class="empty-icon">&#128230;</div>
+      <div class="empty-title">아직 보관된 게 없어요</div>
+      <div class="empty-desc">
+        갱신이나 퇴거 통보를 완료하면, 언제 어떤 방법으로 했는지 여기에
+        자동으로 기록돼요. 나중에 필요할 때 다시 확인할 수 있어요.
+      </div>
+    </div>
+
+    <!-- 기록 있는 상태 -->
+    <div id="filledState">
+      <div class="record-list">
+        <div class="record">
+          <div class="r-icon ok">&#127968;</div>
+          <div class="r-body">
+            <div class="r-title">갱신 통보 완료</div>
+            <div class="r-sub">문자·카톡으로 통보</div>
+          </div>
+          <div class="r-date">2025.09.03</div>
+        </div>
+        <div class="record">
+          <div class="r-icon info">&#128737;</div>
+          <div class="r-body">
+            <div class="r-title">보증보험 가입 확인</div>
+            <div class="r-sub">가입 마감 전 완료</div>
+          </div>
+          <div class="r-date">2025.02.20</div>
+        </div>
+        <div class="record">
+          <div class="r-icon plain">&#128196;</div>
+          <div class="r-body">
+            <div class="r-title">계약 정보 등록</div>
+            <div class="r-sub">2024.03.01 ~ 2026.03.01</div>
+          </div>
+          <div class="r-date">2024.03.05</div>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        <span>&#8505; 이 기록은 참고용 메모예요. 법적 증빙 효력을 보장하지는 않아요.</span>
+      </div>
+    </div>
+
+    <button class="back-timeline" onclick="goBack()">타임라인으로 돌아가기</button>
+  </div>
+
+<script>
+  function goBack() { alert('타임라인 화면으로 돌아가기'); }
+
+  // 데모용 상태 전환 (실제 앱에서는 기록 유무에 따라 자동 결정)
+  function showState(state) {
+    const empty = document.getElementById('emptyState');
+    const filled = document.getElementById('filledState');
+    const count = document.getElementById('count');
+    if (state === 'empty') {
+      empty.classList.remove('hidden');
+      filled.classList.add('hidden');
+      count.classList.add('hidden');
+      document.getElementById('btnEmpty').classList.add('on');
+      document.getElementById('btnFilled').classList.remove('on');
+    } else {
+      empty.classList.add('hidden');
+      filled.classList.remove('hidden');
+      count.classList.remove('hidden');
+      document.getElementById('btnFilled').classList.add('on');
+      document.getElementById('btnEmpty').classList.remove('on');
+    }
+  }
+</script>
+</body>
+</html>
