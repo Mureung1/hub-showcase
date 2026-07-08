@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TeamFlow 대시보드 프로토타입</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">TF</div>
+        <div>
+          <strong>TeamFlow</strong>
+          <span>팀 프로젝트 관리 웹서비스</span>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="프로토타입 화면 이동">
+        <a class="active" href="#dashboard">대시보드</a>
+        <a href="#tasks">할 일</a>
+        <a href="#members">팀원</a>
+        <a href="#meeting">회의록</a>
+        <a href="#resources">자료</a>
+      </nav>
+    </header>
+
+    <main id="dashboard" class="page">
+      <section class="project-hero">
+        <div class="project-copy">
+          <p class="eyebrow">내 프로젝트 / 부트캠프 4주 프로젝트</p>
+          <h1>팀플 관리 웹서비스</h1>
+          <p class="project-description">
+            역할, 할 일, 회의록, 자료 링크가 여러 곳에 흩어지는 문제를 줄이기 위해
+            프로젝트 진행 상황을 한 화면에서 확인하는 대시보드 프로토타입입니다.
+          </p>
+          <div class="project-meta">
+            <span>목표: 팀플 정보를 한 공간에서 관리</span>
+            <span>마감: 2026. 07. 31</span>
+          </div>
+        </div>
+
+        <div class="hero-actions" aria-label="주요 동작 버튼">
+          <button type="button" class="button primary">+ 새 할 일</button>
+          <button type="button" class="button secondary">회의록 작성</button>
+        </div>
+      </section>
+
+      <section class="summary-grid" aria-label="프로젝트 요약">
+        <article class="summary-card progress-card">
+          <div class="card-head">
+            <span class="label">전체 진행률</span>
+            <strong>62%</strong>
+          </div>
+          <div class="progress-bar" aria-label="전체 진행률 62퍼센트">
+            <div style="width: 62%"></div>
+          </div>
+          <p>완료 5개 / 전체 8개</p>
+        </article>
+
+        <article class="summary-card">
+          <span class="label">남은 할 일</span>
+          <strong>3개</strong>
+          <p>진행 중 1개 · 검토 중 1개 · 시작 전 1개</p>
+        </article>
+
+        <article class="summary-card">
+          <span class="label">마감 임박</span>
+          <strong>2개</strong>
+          <p>프로토타입 제작, 역할 데이터 정리</p>
+        </article>
+
+        <article class="summary-card muted">
+          <span class="label">확장 영역</span>
+          <strong>AI 팀원</strong>
+          <p>팀원 타입으로 추가 가능하도록 구조만 표시</p>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <section class="main-column">
+          <article id="tasks" class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="label">핵심 기능 1</span>
+                <h2>할 일 및 역할 관리</h2>
+              </div>
+              <button type="button" class="ghost-button">상태별 보기</button>
+            </div>
+
+            <div class="task-table" role="table" aria-label="할 일 목록">
+              <div class="task-row table-head" role="row">
+                <span>할 일</span>
+                <span>담당자</span>
+                <span>마감일</span>
+                <span>상태</span>
+              </div>
+
+              <div class="task-row" role="row">
+                <div>
+                  <strong>기획서 최종 정리</strong>
+                  <p>문제 정의, 사용자 시나리오, 핵심 기능 정리</p>
+                </div>
+                <span>이주환</span>
+                <span>07.08</span>
+                <span class="status done">완료</span>
+              </div>
+
+              <div class="task-row" role="row">
+                <div>
+                  <strong>대시보드 프로토타입 제작</strong>
+                  <p>기획서에서 바로 확인할 수 있는 HTML/CSS 화면</p>
+                </div>
+                <span>이주환</span>
+                <span>07.09</span>
+                <span class="status progress">진행 중</span>
+              </div>
+
+              <div class="task-row" role="row">
+                <div>
+                  <strong>팀원·역할 데이터 구조 정리</strong>
+                  <p>팀원별 역할과 담당 업무를 연결하는 구조 작성</p>
+                </div>
+                <span>기획 담당</span>
+                <span>07.10</span>
+                <span class="status review">검토 중</span>
+              </div>
+
+              <div class="task-row" role="row">
+                <div>
+                  <strong>자료 링크 정리</strong>
+                  <p>노션 템플릿, 참고 글, 산출물 링크를 자료 영역에 등록</p>
+                </div>
+                <span>자료 담당</span>
+                <span>07.11</span>
+                <span class="status todo">시작 전</span>
+              </div>
+            </div>
+          </article>
+
+          <article id="meeting" class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="label">회의록</span>
+                <h2>최근 회의록</h2>
+              </div>
+            </div>
+
+            <div class="meeting-card">
+              <div class="meeting-top">
+                <strong>1차 기획 회의</strong>
+                <span>2026. 07. 07</span>
+              </div>
+              <dl>
+                <div>
+                  <dt>회의 주제</dt>
+                  <dd>프로젝트 주제 확정 및 핵심 기능 선정</dd>
+                </div>
+                <div>
+                  <dt>결정사항</dt>
+                  <dd>팀 프로젝트 관리 웹서비스를 만들고, 핵심 기능은 할 일 및 역할 관리와 대시보드로 정한다.</dd>
+                </div>
+                <div>
+                  <dt>다음 할 일</dt>
+                  <dd>대시보드 프로토타입 제작, 기획서 링크 연결, 동료 피드백 반영</dd>
+                </div>
+              </dl>
+            </div>
+          </article>
+        </section>
+
+        <aside class="side-column">
+          <article id="members" class="panel">
+            <div class="panel-header compact">
+              <div>
+                <span class="label">팀원</span>
+                <h2>팀원별 역할</h2>
+              </div>
+            </div>
+
+            <div class="member-list">
+              <div class="member-item">
+                <div class="avatar">이</div>
+                <div>
+                  <strong>이주환</strong>
+                  <p>개발 / 프로젝트 관리</p>
+                </div>
+                <span class="member-count">3개</span>
+              </div>
+
+              <div class="member-item">
+                <div class="avatar">기</div>
+                <div>
+                  <strong>기획 담당</strong>
+                  <p>문제 정의 / 기능 정리</p>
+                </div>
+                <span class="member-count">2개</span>
+              </div>
+
+              <div class="member-item">
+                <div class="avatar">자</div>
+                <div>
+                  <strong>자료 담당</strong>
+                  <p>자료조사 / 링크 정리</p>
+                </div>
+                <span class="member-count">1개</span>
+              </div>
+            </div>
+          </article>
+
+          <article id="resources" class="panel">
+            <div class="panel-header compact">
+              <div>
+                <span class="label">자료</span>
+                <h2>자료 링크</h2>
+              </div>
+            </div>
+
+            <div class="resource-list">
+              <a href="#">
+                <strong>기획서.md</strong>
+                <span>문제 정의와 핵심 기능 정리</span>
+              </a>
+              <a href="#">
+                <strong>Notion 팀 프로젝트 템플릿</strong>
+                <span>팀원, 일정, 회의록 구조 참고</span>
+              </a>
+              <a href="#">
+                <strong>프로토타입 결과</strong>
+                <span>대시보드 화면 확인용</span>
+              </a>
+            </div>
+          </article>
+
+          <article class="panel ai-panel">
+            <div class="panel-header compact">
+              <div>
+                <span class="label">확장 기능</span>
+                <h2>AI 팀원 카드</h2>
+              </div>
+            </div>
+
+            <div class="ai-member">
+              <div class="avatar ai-avatar">AI</div>
+              <div>
+                <strong>자료조사 담당 AI</strong>
+                <p>팀원 타입: AI · 역할: 자료조사</p>
+              </div>
+            </div>
+
+            <ul class="ai-list">
+              <li>할 일 배정: 참고 자료 조사</li>
+              <li>참고 정보: 프로젝트 목표, 자료 링크, 회의록</li>
+              <li>결과 반영: 사용자 검토 후 저장</li>
+            </ul>
+          </article>
+        </aside>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
