@@ -7,96 +7,141 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <main class="prototype">
-      <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Project to Portfolio</p>
-          <h1>PtoP</h1>
-          <p>
-            GitHub Repository를 분석해 프로젝트 참여자, 기여도, 내가 주로
-            작업한 내용을 정리합니다.
-          </p>
+    <main class="page">
+      <section class="intro" aria-label="PtoP Repository 분석 시작">
+        <div class="intro-inner">
+          <p class="section-label">Project to Portfolio</p>
+          <h1 class="hero-logo">
+            <img src="../Logo-cropped.png" alt="PtoP Project to Portfolio 로고" />
+          </h1>
+
+          <form class="hero-search" id="repo-form">
+            <label class="sr-only" for="repo-url">GitHub Repository URL</label>
+            <input
+              id="repo-url"
+              type="url"
+              placeholder="https://github.com/user/repository"
+              required
+            />
+            <button id="analyze-button" type="submit">분석 시작</button>
+          </form>
+
+          <div id="analysis-feedback" class="analysis-feedback" aria-live="polite"></div>
         </div>
-        <img class="hero-logo" src="../Logo-cropped.png" alt="PtoP Project to Portfolio 로고" />
       </section>
 
-      <section class="workspace" aria-label="PtoP 동작 프로토타입">
-        <article class="input-panel">
-          <div class="section-title">
-            <span>01 Input</span>
-            <h2>Repository 입력</h2>
-          </div>
+      <section class="overview" aria-label="프로젝트 개요">
+        <div class="overview-item">
+          <span>대상</span>
+          <strong>프로젝트 경험을 쌓는 대학생 개발자</strong>
+        </div>
+        <div class="overview-item">
+          <span>문제</span>
+          <strong>프로젝트 종료 후 역할과 핵심 구현 내용을 잊어버림</strong>
+        </div>
+        <div class="overview-item">
+          <span>해결</span>
+          <strong>저장소를 분석해 참여자와 작업 흐름 확인</strong>
+        </div>
+        <div class="overview-item">
+          <span>형태</span>
+          <strong>GitHub Repository 기반 AI Agent</strong>
+        </div>
+      </section>
 
-          <form id="repo-form" class="repo-form">
-            <label for="repo-url">GitHub Repository URL</label>
-            <div class="input-row">
-              <input
-                id="repo-url"
-                name="repo-url"
-                type="url"
-                placeholder="https://github.com/user/repository"
-                autocomplete="off"
-                required
-              />
-              <button type="submit">분석 시작</button>
-            </div>
+      <section class="feature-section core-section">
+        <div class="section-heading">
+          <span class="section-label">01 Core Features</span>
+          <h2>핵심 기능</h2>
+        </div>
+        <ul class="feature-list">
+          <li>
+            <strong class="feature-title">Repository 입력</strong>
+            <span class="feature-desc">GitHub Repository URL을 입력합니다.</span>
+          </li>
+          <li>
+            <strong class="feature-title">참여자 분석</strong>
+            <span class="feature-desc">contributors API 기준 참여자와 기여도를 확인합니다.</span>
+          </li>
+          <li>
+            <strong class="feature-title">작업 내용 정리</strong>
+            <span class="feature-desc">최근 commit message를 바탕으로 주요 작업 단서를 보여줍니다.</span>
+          </li>
+        </ul>
+      </section>
 
-            <label for="my-login">내 GitHub ID</label>
-            <input
-              id="my-login"
-              name="my-login"
-              type="text"
-              placeholder="비워두면 Repository owner 기준으로 분석"
-              autocomplete="off"
-            />
-
-            <p class="form-hint">
-              GitHub 공개 API에서 참여자와 최근 커밋을 가져옵니다. API 제한이나
-              비공개 저장소 때문에 실패하면 임의 결과를 만들지 않고 오류를 표시합니다.
-            </p>
-          </form>
+      <section class="content-grid" aria-label="프로젝트 주제 소개">
+        <article class="panel">
+          <span class="section-label">02 Problem</span>
+          <h2>문제 정의</h2>
+          <p>
+            대학생들은 동아리, 해커톤, 부트캠프, 개인 프로젝트를 통해 많은
+            결과물을 만듭니다. 하지만 프로젝트가 끝나고 시간이 지나면 내가 맡은
+            역할, 핵심 구현, 기술적 고민, 문제 해결 과정이 흐려집니다.
+          </p>
         </article>
 
-        <article class="process-panel">
-          <div class="section-title">
-            <span>02 Process</span>
-            <h2>분석 진행</h2>
-          </div>
-          <ol class="step-list" id="step-list">
-            <li data-step="repo"><strong>Repository 확인</strong><span>대기 중</span></li>
-            <li data-step="contributors"><strong>참여자 수집</strong><span>대기 중</span></li>
-            <li data-step="commits"><strong>최근 커밋 확인</strong><span>대기 중</span></li>
-            <li data-step="summary"><strong>내 작업 요약</strong><span>대기 중</span></li>
-          </ol>
+        <article class="panel solution-panel">
+          <span class="section-label">03 Solution</span>
+          <h2>해결 방안</h2>
+          <p>
+            사용자가 GitHub Repository를 입력하면 PtoP가 참여자, 기여도, 최근
+            커밋 흐름을 정리합니다. 사용자는 이 결과를 바탕으로 프로젝트 경험을
+            다시 복기할 수 있습니다.
+          </p>
         </article>
+      </section>
 
-        <article class="result-panel">
-          <div class="section-title">
-            <span>03 Result</span>
-            <h2>분석 결과</h2>
-          </div>
+      <section class="feature-section future-section">
+        <div class="section-heading">
+          <span class="section-label">04 Next</span>
+          <h2>추가 핵심 기능 고려사항</h2>
+        </div>
+        <ul class="feature-list compact">
+          <li>
+            <strong class="feature-title">PR/Issue 분석</strong>
+            <span class="feature-desc">논의, 리뷰, 해결한 문제를 경험 자료로 정리합니다.</span>
+          </li>
+          <li>
+            <strong class="feature-title">회고 초안 생성</strong>
+            <span class="feature-desc">작업 단서를 바탕으로 회고 문장 초안을 만듭니다.</span>
+          </li>
+          <li>
+            <strong class="feature-title">Markdown 내보내기</strong>
+            <span class="feature-desc">포트폴리오에 바로 옮길 수 있는 문서로 제공합니다.</span>
+          </li>
+        </ul>
+      </section>
 
-          <section class="result-section">
-            <h3>프로젝트 참여자 및 기여도</h3>
-            <div id="contributors-output" class="contributors-output">
-              Repository URL을 입력하고 분석을 시작하세요.
-            </div>
-          </section>
+      <section class="feature-section resource-section">
+        <div class="section-heading">
+          <span class="section-label">05 Resources</span>
+          <h2>기획 문서와 프로토타입</h2>
+        </div>
+        <div class="resource-grid">
+          <a class="resource-card" href="../docs/plan.md">
+            <strong>기획서</strong>
+            <span>문제 정의, 사용자 시나리오, 화면 구조</span>
+          </a>
+          <a class="resource-card" href="./index.html">
+            <strong>프로토타입</strong>
+            <span>Repository 입력 기반 동작 흐름</span>
+          </a>
+          <a class="resource-card" href="https://github.com/SubJeeLee/hub/wiki">
+            <strong>GitHub Wiki</strong>
+            <span>제출용 기획 문서</span>
+          </a>
+        </div>
+      </section>
 
-          <section class="result-section">
-            <h3>내가 주로 작업한 내용</h3>
-            <div id="my-work-output" class="work-output">
-              내 GitHub ID를 입력하거나 Repository owner 기준으로 분석합니다.
-            </div>
-          </section>
-
-          <section class="result-section">
-            <h3>복사용 요약</h3>
-            <pre><code id="summary-output">분석 결과가 여기에 표시됩니다.</code></pre>
-            <button id="copy-button" type="button">요약 복사</button>
-            <p class="copy-status" id="copy-status" aria-live="polite"></p>
-          </section>
-        </article>
+      <section class="closing">
+        <span class="section-label">06 Summary</span>
+        <h2>한 줄 소개</h2>
+        <p>
+          PtoP(Project to Portfolio)는 GitHub Repository를 분석해 대학생
+          개발자의 프로젝트 경험을 포트폴리오와 회고 형태로 정리해주는 AI Agent
+          서비스.
+        </p>
       </section>
     </main>
 
