@@ -336,8 +336,8 @@ function waitForInitialize(child: ReturnType<typeof spawn>, rl: readline.Interfa
       id: 1,
       params: {
         clientInfo: {
-          name: 'semesterops_runtime_ownership_spike',
-          title: 'SemesterOps Runtime Ownership Spike',
+          name: 'ay_ple_runtime_ownership_spike',
+          title: 'AY-PLE Runtime Ownership Spike',
           version: '0.0.0',
         },
       },
@@ -471,7 +471,7 @@ function readLastResult(): VerifyResult | null {
 function writeReport(result: VerifyResult | null) {
   if (!result) {
     writeFileSync(reportPath, [
-      '# SemesterOps Runtime Ownership Spike Report',
+      '# AY-PLE Runtime Ownership Spike Report',
       '',
       '작성일: 2026-07-07',
       '상태: 미실행',
@@ -499,7 +499,7 @@ function writeReport(result: VerifyResult | null) {
     : '변화 없음'
 
   const lines = [
-    '# SemesterOps Runtime Ownership Spike Report',
+    '# AY-PLE Runtime Ownership Spike Report',
     '',
     `작성일: ${formatKoreanDate(result.generatedAt)}`,
     `상태: ${status}`,
@@ -556,7 +556,7 @@ function writeReport(result: VerifyResult | null) {
     '',
     '## 다음 단계',
     '',
-    '- 성공 결과를 바탕으로 SemesterOps runtime adapter 인터페이스를 설계한다.',
+    '- 성공 결과를 바탕으로 AY-PLE runtime adapter 인터페이스를 설계한다.',
     '- 다음 spike에서는 실제 학기 task가 아니라 `thread/start`와 취소/approval 흐름 같은 runtime lifecycle만 확장 검증한다.',
     '',
   ]
