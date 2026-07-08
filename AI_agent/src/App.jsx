@@ -11,6 +11,7 @@ import MissionDetail from "./pages/MissionDetail";
 import UploadResult from "./pages/UploadResult";
 import Feedback from "./pages/Feedback";
 import Portfolio from "./pages/Portfolio";
+import Footer from "./components/layout/Footer";
 import { getCurrentPath, routes, subscribeToRouteChange } from "./router";
 
 const pageMap = {
@@ -36,7 +37,12 @@ function App() {
 
   const Page = useMemo(() => pageMap[currentPath] || Home, [currentPath]);
 
-  return <Page />;
+  return (
+    <>
+      <Page />
+      <Footer />
+    </>
+  );
 }
 
 export default App;

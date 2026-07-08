@@ -163,6 +163,8 @@ const styles = `
 
 .feature-menu {
   position: relative;
+  padding-bottom: 10px;
+  margin-bottom: -10px;
 }
 
 .feature-button,
@@ -227,7 +229,7 @@ const styles = `
 
 .submenu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: 100%;
   right: 0;
   z-index: 10;
   width: min(220px, calc(100vw - 32px));
