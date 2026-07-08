@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
+import AppButton from '../components/AppButton.jsx'
+import Card from '../components/Card.jsx'
 import DeficiencyBar from '../components/DeficiencyBar.jsx'
 import MenuRecommendation from '../components/MenuRecommendation.jsx'
 import PlaceList from '../components/PlaceList.jsx'
 import PlaceMap from '../components/PlaceMap.jsx'
+import ScreenHeader from '../components/ScreenHeader.jsx'
+import SectionTitle from '../components/SectionTitle.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import Spinner from '../components/Spinner.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
@@ -206,8 +210,8 @@ export default function Result() {
   if (!recommended) {
     return (
       <div style={styles.page}>
-        <h1>오늘의 부족 영양소</h1>
-        <div style={{ ...styles.card, textAlign: 'center' }}>
+        <ScreenHeader title="오늘의 영양 진단" />
+        <Card style={{ textAlign: 'center' }}>
           <p>신체정보가 없습니다. 먼저 프로필을 입력해주세요.</p>
           <Link
             to="/profile"
@@ -216,7 +220,7 @@ export default function Result() {
           >
             프로필 입력하러 가기
           </Link>
-        </div>
+        </Card>
       </div>
     )
   }
@@ -224,8 +228,8 @@ export default function Result() {
   if (!todayTotal) {
     return (
       <div style={styles.page}>
-        <h1>오늘의 부족 영양소</h1>
-        <div style={{ ...styles.card, textAlign: 'center' }}>
+        <ScreenHeader title="오늘의 영양 진단" />
+        <Card style={{ textAlign: 'center' }}>
           <p>오늘 분석한 식사 기록이 없습니다. 먼저 사진을 분석해주세요.</p>
           <Link
             to="/analyze"
@@ -234,89 +238,73 @@ export default function Result() {
           >
             사진 분석하러 가기
           </Link>
-        </div>
+        </Card>
       </div>
     )
   }
 
   return (
     <div style={styles.page}>
-      <h1>오늘의 부족 영양소</h1>
+      <ScreenHeader title="오늘의 영양 진단" subtitle="하루 목표 달성률을 확인해보세요" />
 
-      <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <h2 style={{ alignSelf: 'flex-start' }}>오늘의 영양 진단</h2>
+      <Card style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ margin: `${spacing.sm}px 0` }}>
           <AchievementRing percent={achievementPercent} />
         </div>
         <p style={{ color: colors.muted, fontSize: font.size.sm }}>하루 목표 달성률</p>
-      </div>
+      </Card>
 
+      <SectionTitle>부족한 영양소</SectionTitle>
       {rows.map(({ key, ...row }) => (
         <DeficiencyBar key={key} {...row} highlighted={top3DeficientKeys.includes(key)} />
       ))}
 
-      <h2 style={{ marginTop: spacing.xl }}>오늘 저녁 추천 메뉴</h2>
+      <SectionTitle>오늘의 보충 추천 메뉴</SectionTitle>
       {recLoading && (
         <>
           {[0, 1].map((i) => (
-            <div key={i} style={styles.card}>
+            <Card key={i}>
               <Skeleton height={18} width="40%" style={{ marginBottom: spacing.sm }} />
               <Skeleton height={14} width="85%" />
-            </div>
+            </Card>
           ))}
         </>
       )}
       {recError && (
-        <div style={styles.card}>
+        <Card>
           <p style={{ ...styles.errorText, margin: 0 }}>{recError}</p>
-          <button
-            type="button"
-            className="tds-press"
-            onClick={fetchRecommendations}
-            style={{ ...styles.buttonSecondary, marginTop: spacing.sm }}
-          >
+          <AppButton variant="secondary" onClick={fetchRecommendations} style={{ marginTop: spacing.sm }}>
             다시 시도
-          </button>
-        </div>
+          </AppButton>
+        </Card>
       )}
       {!recLoading && !recError && <MenuRecommendation recommendations={recommendations} />}
 
-      <h2 style={{ marginTop: spacing.xl }}>주변 추천 식당</h2>
-      <div style={styles.card}>
-        <button
-          type="button"
-          className="tds-press"
-          onClick={handleFindNearby}
-          disabled={nearbyLoading}
-          style={{ ...styles.buttonPrimary, opacity: nearbyLoading ? 0.7 : 1, cursor: nearbyLoading ? 'not-allowed' : 'pointer' }}
-        >
+      <SectionTitle>주변 추천 식당</SectionTitle>
+      <Card>
+        <AppButton onClick={handleFindNearby} disabled={nearbyLoading}>
           {nearbyLoading && <Spinner size={16} />}
           {nearbyLoading ? '찾는 중...' : '내 주변에서 찾기'}
-        </button>
+        </AppButton>
         {nearbyError && <p style={styles.errorText}>{nearbyError}</p>}
-      </div>
+      </Card>
 
       {nearbyLoading && (
         <>
           {[0, 1].map((i) => (
-            <div key={i} style={styles.card}>
+            <Card key={i}>
               <Skeleton height={18} width="45%" style={{ marginBottom: spacing.sm }} />
               <Skeleton height={14} width="70%" style={{ marginBottom: spacing.sm }} />
               <Skeleton height={14} width="55%" />
-            </div>
+            </Card>
           ))}
         </>
       )}
       {!nearbyLoading && places && (
         <>
-          <button
-            type="button"
-            className="tds-press"
-            onClick={() => setShowMap((prev) => !prev)}
-            style={{ ...styles.buttonSecondary, marginBottom: spacing.md }}
-          >
+          <AppButton variant="secondary" onClick={() => setShowMap((prev) => !prev)} style={{ marginBottom: spacing.md }}>
             {showMap ? '목록으로 보기' : '지도로 보기'}
-          </button>
+          </AppButton>
           {showMap && myPosition && <PlaceMap myPosition={myPosition} places={places} />}
           {!showMap && <PlaceList places={places} />}
         </>

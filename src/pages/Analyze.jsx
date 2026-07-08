@@ -4,6 +4,10 @@ import PhotoUpload from '../components/PhotoUpload.jsx'
 import NutritionCard from '../components/NutritionCard.jsx'
 import Spinner from '../components/Spinner.jsx'
 import Skeleton from '../components/Skeleton.jsx'
+import AppButton from '../components/AppButton.jsx'
+import Card from '../components/Card.jsx'
+import ScreenHeader from '../components/ScreenHeader.jsx'
+import TextField from '../components/TextField.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { isMealAnalysis } from '../lib/nutrition.js'
@@ -53,7 +57,7 @@ function AnalyzingSkeleton() {
 }
 
 export default function Analyze() {
-  const { setTodayMeal, todayMeal } = useUser()
+  const { user, setTodayMeal, todayMeal } = useUser()
   const navigate = useNavigate()
   const [photo, setPhoto] = useState(null) // { base64, mimeType, dataUrl, width, height }
   const [menuName, setMenuName] = useState('')
@@ -91,38 +95,23 @@ export default function Analyze() {
 
   return (
     <div style={styles.page}>
-      <h1>사진 분석</h1>
+      <ScreenHeader title={`안녕하세요, ${user?.id ?? ''}님 👋`} subtitle="오늘 점심을 찍어볼까요?" />
 
-      <div style={styles.card}>
+      <Card>
         <PhotoUpload onChange={setPhoto} />
 
-        <div style={{ ...styles.field, marginTop: spacing.lg }}>
-          <label htmlFor="menuName" style={styles.label}>
-            메뉴명 (선택)
-          </label>
-          <input id="menuName" value={menuName} onChange={(e) => setMenuName(e.target.value)} style={styles.input} />
+        <div style={{ marginTop: spacing.lg }}>
+          <TextField label="메뉴 이름 (선택)" id="menuName" value={menuName} onChange={(e) => setMenuName(e.target.value)} />
+          <TextField label="브랜드 (선택)" id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
         </div>
 
-        <div style={styles.field}>
-          <label htmlFor="brand" style={styles.label}>
-            브랜드 (선택)
-          </label>
-          <input id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} style={styles.input} />
-        </div>
-
-        <button
-          type="button"
-          className="tds-press"
-          onClick={handleAnalyze}
-          disabled={loading}
-          style={{ ...styles.buttonPrimary, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
-        >
+        <AppButton onClick={handleAnalyze} disabled={loading} style={{ marginTop: spacing.sm }}>
           {loading && <Spinner size={16} />}
-          {loading ? '분석 중...' : error && photo ? '다시 시도' : '분석하기'}
-        </button>
+          {loading ? '분석 중...' : error && photo ? '다시 시도' : '촬영 후 분석하기'}
+        </AppButton>
 
         {error && <p style={styles.errorText}>{error}</p>}
-      </div>
+      </Card>
 
       {loading && <AnalyzingSkeleton />}
       {!loading && <NutritionCard analysis={todayMeal} />}

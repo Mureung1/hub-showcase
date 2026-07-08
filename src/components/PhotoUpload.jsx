@@ -74,8 +74,8 @@ export default function PhotoUpload({ onChange, maxSize = 1024 }) {
           cursor: 'pointer',
           borderRadius: radius.md,
           overflow: 'hidden',
-          background: colors.background,
-          minHeight: 200,
+          background: colors.bg,
+          minHeight: 240,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -91,8 +91,8 @@ export default function PhotoUpload({ onChange, maxSize = 1024 }) {
           />
         ) : (
           <>
-            <span style={{ fontSize: 32 }}>📷</span>
-            <span style={{ color: colors.body, fontSize: font.size.sm, fontWeight: 600 }}>사진을 선택해주세요</span>
+            <span style={{ fontSize: 48 }}>📷</span>
+            <span style={{ color: colors.textSub, fontSize: font.size.md, fontWeight: 600 }}>메뉴를 화면에 담고 촬영하세요</span>
           </>
         )}
       </div>
