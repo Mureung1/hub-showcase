@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>업데이트 결과 · PlaceSync</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <header class="app-header">
+    <div class="app-header__brand">PlaceSync</div>
+    <div class="app-header__store">카페 하루</div>
+    <div class="app-header__spacer"></div>
+    <div class="app-header__user"><span class="role-text">역할</span> <strong>사장님</strong></div>
+  </header>
+
+  <nav class="mobile-nav" aria-label="모바일 메뉴">
+    <a href="index.html">대시보드</a>
+    <a href="edit.html">정보 수정</a>
+    <span aria-disabled="true">수정 이력(준비 중)</span>
+    <span aria-disabled="true">플랫폼 연결(준비 중)</span>
+  </nav>
+
+  <div class="app-body">
+    <aside class="sidebar">
+      <div class="sidebar__group-title">메뉴</div>
+      <nav>
+        <a class="sidebar__link" href="index.html">대시보드</a>
+        <a class="sidebar__link is-active" href="edit.html">정보 수정</a>
+        <span class="sidebar__link is-disabled">수정 이력 <span class="sidebar__badge-soon">준비 중</span></span>
+        <span class="sidebar__link is-disabled">플랫폼 연결 <span class="sidebar__badge-soon">준비 중</span></span>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-head">
+        <h1 class="page-head__title">업데이트 결과</h1>
+        <p class="page-head__desc">플랫폼마다 처리 상태가 다를 수 있습니다. 결과를 확인해 주세요.</p>
+      </div>
+
+      <ol class="steps">
+        <li class="steps__item is-complete"><span class="steps__num">✓</span>정보 편집</li>
+        <li class="steps__item is-complete"><span class="steps__num">✓</span>적용값 확인</li>
+        <li class="steps__item is-complete"><span class="steps__num">✓</span>업데이트</li>
+        <li class="steps__item is-current"><span class="steps__num">4</span>결과 확인</li>
+      </ol>
+
+      <!-- 전체 결과 요약 -->
+      <section class="section">
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="summary-card__label">반영 완료</div>
+            <div class="summary-card__value">1개</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-card__label">검토 중</div>
+            <div class="summary-card__value">1개</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-card__label">반영 실패</div>
+            <div class="summary-card__value">1개</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-card__label">처리 완료 시각</div>
+            <div class="summary-card__value" style="font-size:16px;">오늘 14:35</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="banner banner--info" role="status">
+        <span class="banner__icon" aria-hidden="true">ℹ</span>
+        <div>
+          <div class="banner__title">성공한 플랫폼의 결과는 유지됩니다.</div>
+          <div class="banner__desc">실패한 플랫폼만 다시 처리되며, 성공·검토 중인 플랫폼은 영향을 받지 않습니다.</div>
+        </div>
+      </div>
+
+      <!-- 플랫폼별 결과 -->
+      <section class="section">
+        <h2 class="section__title">플랫폼별 결과</h2>
+        <div class="platform-grid">
+
+          <div class="platform-card">
+            <div class="platform-card__head">
+              <span class="platform-glyph platform-glyph--naver" aria-hidden="true">N</span>
+              <span class="platform-card__name">네이버 플레이스</span>
+            </div>
+            <div class="platform-card__row"><span>상태</span><span class="badge badge--success">✓ 실제 반영 완료</span></div>
+            <div class="platform-card__row"><span>완료 시간</span><span>오늘 14:35</span></div>
+            <div class="platform-card__row"><span>반영 항목</span><span>가격 2건, 공지 1건</span></div>
+          </div>
+
+          <div class="platform-card">
+            <div class="platform-card__head">
+              <span class="platform-glyph platform-glyph--kakao" aria-hidden="true">K</span>
+              <span class="platform-card__name">카카오맵</span>
+            </div>
+            <div class="platform-card__row"><span>상태</span><span class="badge badge--warning">⏳ 플랫폼 검토 중</span></div>
+            <div class="platform-card__row"><span>전송 시간</span><span>오늘 14:35</span></div>
+            <div class="platform-card__row"><span>안내</span><span>반영 완료 여부는 나중에 다시 확인해 주세요.</span></div>
+          </div>
+
+          <div class="platform-card">
+            <div class="platform-card__head">
+              <span class="platform-glyph platform-glyph--delivery" aria-hidden="true">배</span>
+              <span class="platform-card__name">배달앱</span>
+            </div>
+            <div class="platform-card__row"><span>상태</span><span class="badge badge--danger">✕ 반영 실패</span></div>
+            <div class="platform-card__row"><span>실패 원인</span><span>업데이트 처리 중 계정 인증이 만료됨</span></div>
+            <div class="platform-card__row"><span>재시도 횟수</span><span>1회</span></div>
+            <div class="btn-row" style="margin-top: var(--space-3);">
+              <button type="button" class="btn btn--secondary" disabled aria-disabled="true">다시 시도</button>
+              <a href="manual.html" class="btn btn--danger">수동으로 수정하기</a>
+            </div>
+            <p class="static-note">다시 시도 버튼은 정적 프로토타입 안내용이며 실제로 동작하지 않습니다.</p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 하단 동작 -->
+      <div class="footer-actions">
+        <a href="index.html" class="btn btn--secondary">대시보드로 돌아가기</a>
+        <a href="manual.html" class="btn btn--primary">배달앱 수동 수정</a>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>적용값 미리보기 · PlaceSync</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <header class="app-header">
+    <div class="app-header__brand">PlaceSync</div>
+    <div class="app-header__store">카페 하루</div>
+    <div class="app-header__spacer"></div>
+    <div class="app-header__user"><span class="role-text">역할</span> <strong>사장님</strong></div>
+  </header>
+
+  <nav class="mobile-nav" aria-label="모바일 메뉴">
+    <a href="index.html">대시보드</a>
+    <a href="edit.html">정보 수정</a>
+    <span aria-disabled="true">수정 이력(준비 중)</span>
+    <span aria-disabled="true">플랫폼 연결(준비 중)</span>
+  </nav>
+
+  <div class="app-body">
+    <aside class="sidebar">
+      <div class="sidebar__group-title">메뉴</div>
+      <nav>
+        <a class="sidebar__link" href="index.html">대시보드</a>
+        <a class="sidebar__link is-active" href="edit.html">정보 수정</a>
+        <span class="sidebar__link is-disabled">수정 이력 <span class="sidebar__badge-soon">준비 중</span></span>
+        <span class="sidebar__link is-disabled">플랫폼 연결 <span class="sidebar__badge-soon">준비 중</span></span>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-head">
+        <h1 class="page-head__title">플랫폼별 적용값 미리보기</h1>
+        <p class="page-head__desc">실제 반영 전, 각 플랫폼에 어떤 값이 적용될지 확인하고 최종 승인해 주세요.</p>
+      </div>
+
+      <ol class="steps">
+        <li class="steps__item is-complete"><span class="steps__num">✓</span>정보 편집</li>
+        <li class="steps__item is-current"><span class="steps__num">2</span>적용값 확인</li>
+        <li class="steps__item"><span class="steps__num">3</span>업데이트</li>
+        <li class="steps__item"><span class="steps__num">4</span>결과 확인</li>
+      </ol>
+
+      <!-- 안내 배너 -->
+      <div class="banner banner--info" role="status">
+        <span class="banner__icon" aria-hidden="true">ℹ</span>
+        <div>
+          <div class="banner__title">아직 플랫폼에 반영되지 않았습니다.</div>
+          <div class="banner__desc">변경 내용을 확인한 뒤 최종 승인해 주세요.</div>
+        </div>
+      </div>
+
+      <!-- 플랫폼별 미리보기 카드 -->
+      <section class="section">
+        <h2 class="section__title">플랫폼별 미리보기</h2>
+        <div class="platform-grid">
+
+          <div class="platform-card">
+            <div class="platform-card__head">
+              <span class="platform-glyph platform-glyph--naver" aria-hidden="true">N</span>
+              <span class="platform-card__name">네이버 플레이스</span>
+            </div>
+            <div class="platform-card__row"><span>반영 방식</span><span class="badge badge--success">자동 업데이트</span></div>
+            <div class="platform-card__row"><span>아메리카노</span><span>4,000원 → 4,500원</span></div>
+            <div class="platform-card__row"><span>카페라테</span><span>4,800원 → 5,000원</span></div>
+            <div class="platform-card__row"><span>치즈케이크</span><span>5,500원 유지</span></div>
+            <div class="platform-card__row"><span>공지 문체</span><span>자연스러운 매장 안내 문체</span></div>
+          </div>
+
+          <div class="platform-card">
+            <div class="platform-card__head">
+              <span class="platform-glyph platform-glyph--kakao" aria-hidden="true">K</span>
+              <span class="platform-card__name">카카오맵</span>
+            </div>
+            <div class="platform-card__row"><span>반영 방식</span><span class="badge badge--success">자동 업데이트</span></div>
+            <div class="platform-card__row"><span>아메리카노</span><span>4,000원 → 4,500원</span></div>
+            <div class="platform-card__row"><span>카페라테</span><span>4,800원 → 5,000원</span></div>
+            <div class="platform-card__row"><span>치즈케이크</span><span>5,500원 유지</span></div>
+            <div class="platform-card__row"><span>공지 문체</span><span>짧은 안내 문구</span></div>
+          </div>
+
+          <div class="platform-card">
+            <div class="platform-card__head">
+              <span class="platform-glyph platform-glyph--delivery" aria-hidden="true">배</span>
+              <span class="platform-card__name">배달앱</span>
+            </div>
+            <div class="platform-card__row"><span>반영 방식</span><span class="badge badge--warning">자동 업데이트 예정</span></div>
+            <div class="platform-card__row">
+              <span>아메리카노</span>
+              <span>4,800원<span class="price-source">기준 4,500원 + 개별 예외 300원</span></span>
+            </div>
+            <div class="platform-card__row">
+              <span>카페라테</span>
+              <span>5,500원<span class="price-source">기준 5,000원 + 음료 정책 500원</span></span>
+            </div>
+            <div class="platform-card__row">
+              <span>치즈케이크</span>
+              <span>6,500원<span class="price-source">기준 5,500원 + 디저트 정책 1,000원</span></span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 전후 비교 -->
+      <section class="section">
+        <div class="card">
+          <div class="card__header">
+            <h2 class="card__title">변경 전 · 변경 후 비교</h2>
+          </div>
+          <div class="compare">
+            <div class="compare__col compare__col--before">
+              <span class="compare__label">변경 전</span>
+              <div class="compare__row"><span>아메리카노</span><span>4,000원</span></div>
+              <div class="compare__row"><span>카페라테</span><span>4,800원</span></div>
+              <div class="compare__row"><span>치즈케이크</span><span>5,500원</span></div>
+              <div class="compare__row"><span>공지</span><span>없음</span></div>
+            </div>
+            <div class="compare__col compare__col--after">
+              <span class="compare__label">변경 후 (매장 기준)</span>
+              <div class="compare__row"><span>아메리카노</span><span>4,500원</span></div>
+              <div class="compare__row"><span>카페라테</span><span>5,000원</span></div>
+              <div class="compare__row"><span>치즈케이크</span><span>5,500원</span></div>
+              <div class="compare__row"><span>공지</span><span>음료 가격 변경 안내</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 최종 확인 -->
+      <section class="section">
+        <div class="card">
+          <div class="card__header">
+            <h2 class="card__title">최종 확인</h2>
+          </div>
+          <div class="summary-grid">
+            <div class="summary-card">
+              <div class="summary-card__label">변경 유형</div>
+              <div class="summary-card__value" style="font-size:16px;">영구 변경</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-card__label">대상 플랫폼</div>
+              <div class="summary-card__value">3개</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-card__label">수정 메뉴</div>
+              <div class="summary-card__value">2개</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-card__label">공지 등록</div>
+              <div class="summary-card__value">1건</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 하단 동작 -->
+      <div class="footer-actions">
+        <a href="edit.html" class="btn btn--secondary">다시 수정</a>
+        <a href="result.html" class="btn btn--primary">최종 승인하고 업데이트</a>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>
