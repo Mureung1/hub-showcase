@@ -1,3 +1,6 @@
+## 🔗 프로젝트 문서 바로가기
+* [🎯 GNU 전공/교양 수강신청 AI 네비게이터 기획서](https://excessive-noise-9a0.notion.site/GNU-AI-428495d4a4b9468ca520ff6e981ec797?source=copy_link)
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
