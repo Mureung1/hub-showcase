@@ -170,15 +170,21 @@ export const commands = [
     name: 'chmod',
     summary: '파일/디렉터리의 접근 권한을 변경한다',
     description:
-      'Change Mode의 약자로, 파일 소유자/그룹/기타 사용자에 대한 읽기(r)·쓰기(w)·실행(x) 권한을 설정한다. 실습 스크립트를 실행 파일로 만들 때 자주 쓴다.',
+      'Change Mode의 약자로, 소유자(owner)·그룹(group)·기타 사용자(other) 각각에 대해 읽기(r)·쓰기(w)·실행(x) 권한을 설정한다. 실습 스크립트를 실행 파일로 만들 때 자주 쓴다. 숫자 표기법(755 등)의 계산 방식은 아래 옵션 표를 참고.',
     options: [
-      { flag: '+x', desc: '실행 권한 추가' },
+      { flag: 'r = 4', desc: '읽기 권한 (2진수 1자리: 100)' },
+      { flag: 'w = 2', desc: '쓰기 권한 (2진수 1자리: 010)' },
+      { flag: 'x = 1', desc: '실행 권한 (2진수 1자리: 001)' },
+      { flag: '숫자 한 자리', desc: '부여할 권한의 값을 모두 더한 값 (예: rwx → 4+2+1 = 7, rw- → 4+2 = 6)' },
+      { flag: '세 자리 숫자', desc: '왼쪽부터 소유자·그룹·기타 순서 (예: 755 → 소유자 7, 그룹 5, 기타 5)' },
+      { flag: '+x', desc: '숫자 대신 기호로 실행 권한만 추가' },
       { flag: '-R', desc: '디렉터리 내 모든 파일에 재귀적으로 적용' },
-      { flag: '755 / 644', desc: '숫자 표기법으로 소유자/그룹/기타 권한을 한 번에 지정' },
     ],
     examples: [
-      { command: 'chmod +x deploy.sh', desc: 'deploy.sh에 실행 권한 부여' },
-      { command: 'chmod 644 config.yml', desc: '소유자는 읽기/쓰기, 그 외는 읽기만 가능하도록 설정' },
+      { command: 'chmod 644 config.yml', desc: 'rw-r--r-- (소유자 6, 그룹 4, 기타 4)' },
+      { command: 'chmod 755 deploy.sh', desc: 'rwxr-xr-x (소유자 7, 그룹 5, 기타 5)' },
+      { command: 'chmod 777 temp/', desc: 'rwxrwxrwx : 모든 사용자에게 전체 권한 허용 (보안상 권장하지 않음)' },
+      { command: 'chmod +x deploy.sh', desc: 'deploy.sh에 실행 권한만 추가' },
     ],
   },
   {
