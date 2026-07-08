@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TideNote — 프로토타입</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600&family=Pretendard:wght@400;500;600;700&display=swap');
+
+  :root{
+    --deep-night:#1b1f3b;
+    --dusk-purple:#4a4472;
+    --dawn-coral:#e79a86;
+    --morning-cream:#fbf3e7;
+    --tide-foam:#9fc4c9;
+    --ink:#2a2438;
+    --ink-soft:#6b6478;
+    --paper:#fffaf3;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    font-family:'Pretendard', -apple-system, sans-serif;
+    background:#0e0f1a;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 16px;
+  }
+
+  .phone{
+    width:380px;
+    height:760px;
+    background:var(--morning-cream);
+    border-radius:36px;
+    overflow:hidden;
+    position:relative;
+    box-shadow:0 30px 60px rgba(0,0,0,0.5), 0 0 0 8px #0a0a12;
+  }
+
+  .screen{
+    position:absolute;
+    inset:0;
+    display:none;
+    flex-direction:column;
+    transition:opacity 0.4s ease;
+  }
+  .screen.active{ display:flex; }
+
+  /* ---------- Screen 1: Timeline ---------- */
+  #screen-timeline{
+    background:linear-gradient(180deg, var(--morning-cream) 0%, #f5ebd9 100%);
+  }
+  .status-bar{
+    height:44px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 24px;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .timeline-header{
+    padding:8px 24px 20px;
+  }
+  .timeline-header .eyebrow{
+    font-size:12px;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  .timeline-header h1{
+    font-family:'Noto Serif KR', serif;
+    font-size:26px;
+    font-weight:600;
+    color:var(--ink);
+  }
+
+  .card-list{
+    flex:1;
+    overflow-y:auto;
+    padding:4px 20px 24px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .tide-card{
+    border-radius:20px;
+    padding:18px 20px;
+    position:relative;
+    cursor:pointer;
+    border:1px solid rgba(0,0,0,0.04);
+    transition:transform 0.2s ease;
+  }
+  .tide-card:active{ transform:scale(0.98); }
+
+  .tide-card.hidden-card{
+    background:linear-gradient(135deg, var(--deep-night) 0%, var(--dusk-purple) 100%);
+    color:#f1eefc;
+  }
+  .tide-card.open-card{
+    background:var(--paper);
+    color:var(--ink);
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .card-time{
+    font-size:12px;
+    opacity:0.72;
+    margin-bottom:8px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .card-time .dot{
+    width:6px; height:6px; border-radius:50%;
+    background:currentColor;
+  }
+
+  .card-body{
+    font-size:15px;
+    line-height:1.55;
+  }
+  .hidden-card .card-body{
+    font-family:'Noto Serif KR', serif;
+    font-style:italic;
+    font-size:14.5px;
+    opacity:0.92;
+  }
+
+  .card-cta{
+    margin-top:12px;
+    font-size:12.5px;
+    font-weight:600;
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+  }
+  .hidden-card .card-cta{ color:var(--tide-foam); }
+  .open-card .card-cta{ color:#b8825f; }
+
+  /* ---------- Screen 2: Buffer / Nostalgia ---------- */
+  #screen-buffer{
+    background:linear-gradient(180deg, var(--dusk-purple) 0%, var(--dawn-coral) 100%);
+    color:#fff;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    padding:0 36px;
+    position:relative;
+  }
+  .back-btn{
+    position:absolute;
+    top:20px; left:20px;
+    width:34px; height:34px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.18);
+    border:none;
+    color:#fff;
+    font-size:18px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .buffer-time{
+    font-size:13px;
+    letter-spacing:0.05em;
+    opacity:0.85;
+    margin-bottom:18px;
+  }
+  .buffer-line{
+    font-family:'Noto Serif KR', serif;
+    font-size:22px;
+    line-height:1.6;
+    font-weight:500;
+    margin-bottom:14px;
+  }
+  .buffer-sub{
+    font-size:14px;
+    line-height:1.7;
+    opacity:0.88;
+    margin-bottom:40px;
+  }
+
+  .gauge{
+    width:112px; height:112px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto 32px;
+    background:conic-gradient(#fff 0% 34%, rgba(255,255,255,0.25) 34% 100%);
+  }
+  .gauge-inner{
+    width:88px; height:88px;
+    border-radius:50%;
+    background:rgba(0,0,0,0.15);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+  }
+  .gauge-inner .pct{ font-size:20px; font-weight:700; }
+  .gauge-inner .lbl{ font-size:10px; opacity:0.8; margin-top:2px; }
+
+  .primary-btn{
+    background:#fff;
+    color:var(--dusk-purple);
+    border:none;
+    padding:14px 28px;
+    border-radius:100px;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    width:100%;
+    max-width:260px;
+  }
+  .ghost-note{
+    margin-top:16px;
+    font-size:12.5px;
+    opacity:0.75;
+  }
+
+  /* ---------- Screen 3: Original text revealed ---------- */
+  #screen-reveal{
+    background:linear-gradient(180deg, #241f3d 0%, #3a2f52 40%, var(--dawn-coral) 100%);
+    color:#f7f1ea;
+  }
+  .reveal-header{
+    padding:20px 24px 0;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .reveal-meta{
+    padding:6px 24px 18px;
+  }
+  .reveal-meta .time{ font-size:12px; opacity:0.7; }
+  .reveal-meta .caption{
+    font-family:'Noto Serif KR', serif;
+    font-size:17px;
+    margin-top:6px;
+    line-height:1.5;
+  }
+  .reveal-divider{
+    margin:6px 24px 18px;
+    border-top:1px solid rgba(255,255,255,0.18);
+  }
+  .reveal-body{
+    flex:1;
+    margin:0 20px 20px;
+    background:rgba(255,255,255,0.08);
+    border-radius:18px;
+    padding:22px;
+    font-size:15px;
+    line-height:1.75;
+    overflow-y:auto;
+  }
+  .reveal-body p{ margin-bottom:14px; }
+  .reveal-body p:last-child{ margin-bottom:0; }
+
+  .reveal-footer{
+    padding:16px 24px 28px;
+    text-align:center;
+    font-size:12.5px;
+    opacity:0.75;
+    font-style:italic;
+  }
+
+  /* Nav dots for prototype only */
+  .proto-nav{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+    margin-top:20px;
+  }
+  .proto-nav button{
+    width:8px; height:8px; border-radius:50%;
+    border:none; background:rgba(255,255,255,0.3);
+    cursor:pointer;
+  }
+  .proto-nav button.on{ background:#fff; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- SCREEN 1: 타임라인 -->
+  <div class="screen active" id="screen-timeline">
+    <div class="status-bar"><span>9:14</span><span>TideNote</span></div>
+    <div class="timeline-header">
+      <div class="eyebrow">오늘, 7월 8일</div>
+      <h1>다시 만난 대화들</h1>
+    </div>
+    <div class="card-list">
+
+      <div class="tide-card hidden-card" onclick="goTo('buffer')">
+        <div class="card-time"><span class="dot"></span> 오전 2:14 · 평소보다 늦은 시간</div>
+        <div class="card-body">"요즘 계속 이런 생각이 드는데, 나만 그런 건가 싶어서…"</div>
+        <div class="card-cta">밀물에 잠겨 있어요 →</div>
+      </div>
+
+      <div class="tide-card open-card">
+        <div class="card-time"><span class="dot"></span> 오후 3:40</div>
+        <div class="card-body">프로젝트 마감 일정 정리하는 것 도와줄 수 있어?</div>
+        <div class="card-cta">전체 보기</div>
+      </div>
+
+      <div class="tide-card hidden-card" onclick="goTo('buffer')">
+        <div class="card-time"><span class="dot"></span> 오전 3:02 · 평소보다 늦은 시간</div>
+        <div class="card-body">"솔직히 요즘 자신 없어. 근데 아무한테도 말 못 했어."</div>
+        <div class="card-cta">밀물에 잠겨 있어요 →</div>
+      </div>
+
+      <div class="tide-card open-card">
+        <div class="card-time"><span class="dot"></span> 오전 11:20</div>
+        <div class="card-body">React useEffect 클린업 함수 언제 써야 해?</div>
+        <div class="card-cta">전체 보기</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCREEN 2: 완충 (향수 메타포) -->
+  <div class="screen" id="screen-buffer">
+    <button class="back-btn" onclick="goTo('timeline')">←</button>
+
+    <div class="buffer-time">오전 2:14, 평소보다 늦은 시간이었어요</div>
+    <div class="buffer-line">그때의 당신도,<br>지금의 당신입니다.</div>
+    <div class="buffer-sub">밀물이 잠시 가려두었던 이야기예요.<br>준비가 되면, 그때의 나를 만나보세요.</div>
+
+    <div class="gauge">
+      <div class="gauge-inner">
+        <div class="pct">34%</div>
+        <div class="lbl">지금과 가까움</div>
+      </div>
+    </div>
+
+    <button class="primary-btn" onclick="goTo('reveal')">원문 보기</button>
+    <div class="ghost-note">기록은 지워지지 않아요. 언제든 다시 닫아둘 수 있어요.</div>
+  </div>
+
+  <!-- SCREEN 3: 원문 열람 -->
+  <div class="screen" id="screen-reveal">
+    <div class="reveal-header">
+      <button class="back-btn" style="position:static;" onclick="goTo('buffer')">←</button>
+    </div>
+    <div class="reveal-meta">
+      <div class="time">오전 2:14 · 밀물이 걷힌 지금, 다시 만나는 대화</div>
+      <div class="caption">그날의 공기를 함께 불러왔어요</div>
+    </div>
+    <div class="reveal-divider"></div>
+    <div class="reveal-body">
+      <p>"요즘 계속 이런 생각이 드는데, 나만 그런 건가 싶어서…"</p>
+      <p>"낮에는 괜찮은 척하는데, 이 시간만 되면 자꾸 생각이 많아져."</p>
+      <p>"근데 이렇게 말하고 나니까 조금은 후련하다."</p>
+    </div>
+    <div class="reveal-footer">이 대화는 삭제되지 않고, 항상 여기에 남아 있어요.</div>
+  </div>
+
+</div>
+
+<script>
+  function goTo(id){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+  }
+</script>
+
+</body>
+</html>
