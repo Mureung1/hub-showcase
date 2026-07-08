@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>스택 시각화 — 프로토타입</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="logo"><span>전공</span> 시각화 학습실</div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section cs">
+        <h3>컴퓨터공학과</h3>
+        <a class="sidebar-item" href="sort.html">정렬</a>
+        <a class="sidebar-item active" href="stack.html">스택</a>
+        <span class="sidebar-item disabled">큐 <span class="badge">준비 중</span></span>
+        <span class="sidebar-item disabled">트리 <span class="badge">준비 중</span></span>
+      </div>
+      <div class="sidebar-section chem">
+        <h3>화학과</h3>
+        <span class="sidebar-item disabled">일반화학 (분자 뷰어) <span class="badge">준비 중</span></span>
+      </div>
+    </aside>
+
+    <main class="content">
+      <a class="back-link" href="index.html">← 홈으로</a>
+      <h1>스택 시각화</h1>
+      <p class="subtitle">기능 B — 값을 직접 입력하고 Push/Pop을 실행해 결과를 즉시 확인합니다.</p>
+
+      <section class="panel">
+        <div class="panel-titlebar">
+          <div class="panel-dots"><span></span><span></span><span></span></div>
+          <div class="panel-title">cs / stack.tsx</div>
+        </div>
+        <div class="panel-body">
+          <div class="stack-area">
+            <div class="stack-column">
+              <div class="stack-box">5</div>
+              <div class="stack-box">21</div>
+              <div class="stack-box">49</div>
+            </div>
+            <span class="stack-label">← Top (가장 최근에 넣은 값)</span>
+          </div>
+
+          <div class="controls-row" style="margin-top:20px">
+            <input class="btn" style="width:100px; text-align:left; color:var(--text-bright)" placeholder="값 입력" />
+            <button class="btn chem">Push</button>
+            <button class="btn">Pop</button>
+            <button class="btn">Peek</button>
+            <button class="btn">초기화</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="two-col">
+        <section class="panel">
+          <div class="panel-titlebar">
+            <div class="panel-dots"><span></span><span></span><span></span></div>
+            <div class="panel-title">마지막 연산 로그</div>
+          </div>
+          <div class="panel-body">
+            <p class="log-line">Push(49) 완료 — Top = 49</p>
+            <p class="log-line">Push(21) 완료 — Top = 21</p>
+            <p class="log-line">Push(5) 완료 — Top = 5</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-titlebar">
+            <div class="panel-dots"><span></span><span></span><span></span></div>
+            <div class="panel-title">설명</div>
+          </div>
+          <div class="panel-body">
+            <strong>스택 (Stack) — LIFO</strong>
+            <p class="subtitle" style="margin-top:8px">
+              마지막에 넣은(Push) 값이 가장 먼저 빠져나오는(Pop) 후입선출(LIFO) 구조입니다.
+              Top 위치에서만 삽입과 삭제가 일어나며, 스택이 비어 있을 때 Pop을 시도하면
+              언더플로우 오류가 발생합니다.
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

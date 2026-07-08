@@ -6,6 +6,7 @@ interface ArrayVisualizerProps {
   comparingIndices: number[]
   swappingIndices: number[]
   sortedIndices: Set<number>
+  pivotIndex?: number
 }
 
 function styleFor(
@@ -13,12 +14,16 @@ function styleFor(
   comparingIndices: number[],
   swappingIndices: number[],
   sortedIndices: Set<number>,
+  pivotIndex?: number,
 ) {
   if (swappingIndices.includes(index)) {
     return 'border-rose-500 bg-rose-500/10 text-rose-400'
   }
   if (comparingIndices.includes(index)) {
     return 'border-amber-400 bg-amber-400/10 text-amber-300'
+  }
+  if (pivotIndex === index) {
+    return 'border-violet-400 bg-violet-400/10 text-violet-300'
   }
   if (sortedIndices.has(index)) {
     return 'border-emerald-400 bg-emerald-400/10 text-emerald-300'
@@ -31,6 +36,7 @@ export default function ArrayVisualizer({
   comparingIndices,
   swappingIndices,
   sortedIndices,
+  pivotIndex,
 }: ArrayVisualizerProps) {
   return (
     <LayoutGroup>
@@ -45,6 +51,7 @@ export default function ArrayVisualizer({
               comparingIndices,
               swappingIndices,
               sortedIndices,
+              pivotIndex,
             )}`}
           >
             {cell.value}
