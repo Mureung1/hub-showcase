@@ -21,9 +21,9 @@ Use TypeScript ESM throughout. Match the existing style: two-space indentation, 
 
 When writing Markdown planning, technical, or product documents, prefer tables for structured information and bullet points for scannable lists. Use prose for context and decisions, but model comparable items, options, tradeoffs, risks, and open questions in tables when practical. Follow `docs/README.md` for formal project document placement, and update the root `README.md` whenever adding or moving a formal project document under `docs/`.
 
-## AY-PLE Prototype Scope
+## Interface Scope
 
-Current AY-PLE planning and `spikes/ay-ple-ui-prototype` work is desktop-first. Treat mobile and small-screen responsive layout as out-of-scope unless the user explicitly asks for mobile work. Do not spend implementation, review, or verification time optimizing mobile breakpoints, raising mobile-only layout issues, or reshaping the prototype for phones. Use desktop review workspaces as the validation target, especially widths around 1440px to 1920px.
+Mobile and small-screen responsive layout are deferred for this project unless the user explicitly asks for mobile work. Do not spend implementation, review, or verification time optimizing mobile breakpoints, raising mobile-only layout issues, or reshaping interfaces for phones. Use desktop workspaces as the validation target, especially widths around 1440px to 1920px.
 
 ## Testing Guidelines
 
