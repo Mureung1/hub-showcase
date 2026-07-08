@@ -47,7 +47,40 @@
         
         <!-- 상단 우측: Curation (1/4 너비 차지) -->
         <section class="grid-item curation">
-            <!-- Curation Area Skeleton -->
+            <div class="curation-header">
+                <h2>큐레이션 보드</h2>
+            </div>
+            
+            <div class="curation-body">
+                <!-- 쿼리 입력/디스플레이 박스 -->
+                <div class="query-section">
+                    <label for="query-input-box">연구 질문 (Query)</label>
+                    <textarea id="query-input-box" placeholder="탐색하고 싶은 구체적인 연구 질문이나 키워드 조합을 입력하세요..." rows="3">최신 거대 언어 모델(LLM)의 효율적인 파인튜닝 기법과 검색 증강 생성(RAG)의 융합 연구 동향 탐색</textarea>
+                </div>
+                
+                <!-- 큐레이션 시작 마스터 버튼 -->
+                <button class="btn-start-curation">
+                    <span>큐레이션 시작</span>
+                    <svg class="icon-play" viewBox="0 0 24 24" width="16" height="16">
+                        <path fill="currentColor" d="M8 5v14l11-7z"/>
+                    </svg>
+                </button>
+                
+                <!-- 분석 상태 및 프로그레스 컴포넌트 -->
+                <div class="analysis-status">
+                    <div class="status-info">
+                        <span class="status-label">에이전트 분석 상태</span>
+                        <span class="status-percent">65%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: 65%;"></div>
+                    </div>
+                    <div class="status-subtask">
+                        <span class="pulse-indicator"></span>
+                        <span class="subtask-text">arXiv 및 IEEE 데이터베이스에서 관련 논문 초록 수집 중...</span>
+                    </div>
+                </div>
+            </div>
         </section>
         
         <!-- 하단: Insights & Library (전체 너비 차지) -->
