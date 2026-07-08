@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>회의시간 매칭</title>
+<style>
+  :root {
+    --toss-blue: #3182f6;
+    --toss-blue-light: #eef4ff;
+    --toss-gray-900: #191f28;
+    --toss-gray-600: #4e5968;
+    --toss-gray-400: #8b95a1;
+    --toss-gray-200: #e5e8eb;
+    --toss-gray-100: #f2f4f6;
+    --toss-bg: #f9fafb;
+    --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.05);
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+    --level-0: var(--toss-gray-100);
+    --level-1: #e3edff;
+    --level-2: #bcd8ff;
+    --level-3: #8bbcff;
+    --level-4: #5397ff;
+    --level-5: #1b64da;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: var(--toss-bg);
+    color: var(--toss-gray-900);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+
+  .page {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .header {
+    padding: 8px 4px 28px;
+  }
+
+  .header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    font-size: 15px;
+    color: var(--toss-gray-600);
+    line-height: 1.5;
+  }
+
+  .card {
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: var(--shadow-soft);
+    padding: 28px 24px 32px;
+  }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--toss-gray-900);
+    margin-bottom: 4px;
+  }
+
+  .card-subtitle {
+    font-size: 13px;
+    color: var(--toss-gray-400);
+    margin-bottom: 24px;
+  }
+
+  .grid-wrapper {
+    overflow-x: auto;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 84px repeat(5, 1fr);
+    gap: 8px;
+    min-width: 480px;
+  }
+
+  .corner-cell {
+    /* empty top-left corner */
+  }
+
+  .day-label {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--toss-gray-900);
+    padding: 10px 4px;
+  }
+
+  .time-label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--toss-gray-600);
+    padding-right: 10px;
+    white-space: nowrap;
+  }
+
+  .slot {
+    height: 56px;
+    background: var(--level-0);
+    border-radius: 14px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease,
+      transform 0.12s ease, box-shadow 0.2s ease;
+  }
+
+  .slot:hover {
+    border-color: #d6e6ff;
+    transform: translateY(-1px);
+  }
+
+  .slot:active {
+    transform: translateY(0) scale(0.97);
+  }
+
+  .slot.level-0:hover {
+    background: var(--toss-blue-light);
+  }
+
+  .slot.level-1 { background: var(--level-1); }
+  .slot.level-2 { background: var(--level-2); }
+  .slot.level-3 { background: var(--level-3); }
+  .slot.level-4 { background: var(--level-4); }
+  .slot.level-5 { background: var(--level-5); }
+
+  .slot.level-3:hover,
+  .slot.level-4:hover,
+  .slot.level-5:hover {
+    border-color: transparent;
+    filter: brightness(1.06);
+  }
+
+  .slot.mine {
+    box-shadow: inset 0 0 0 2px #ffffff, 0 4px 10px rgba(49, 130, 246, 0.28);
+  }
+
+  .slot.mine:hover {
+    box-shadow: inset 0 0 0 2px #ffffff, 0 6px 14px rgba(49, 130, 246, 0.32);
+  }
+
+  .team-note {
+    font-size: 13px;
+    color: var(--toss-gray-400);
+    margin-bottom: 20px;
+  }
+
+  .team-note b {
+    color: var(--toss-gray-600);
+    font-weight: 600;
+  }
+
+  .legend {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--toss-gray-200);
+  }
+
+  .legend-title {
+    font-size: 12px;
+    color: var(--toss-gray-400);
+    margin-bottom: 10px;
+  }
+
+  .legend-scale {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    background: var(--level-0);
+  }
+
+  .legend-dot.level-1 { background: var(--level-1); }
+  .legend-dot.level-2 { background: var(--level-2); }
+  .legend-dot.level-3 { background: var(--level-3); }
+  .legend-dot.level-4 { background: var(--level-4); }
+  .legend-dot.level-5 { background: var(--level-5); }
+
+  .legend-text {
+    font-size: 12px;
+    color: var(--toss-gray-400);
+  }
+
+  .legend-mine {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .legend-mine-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    background: var(--level-3);
+    box-shadow: inset 0 0 0 2px #ffffff, 0 2px 6px rgba(49, 130, 246, 0.28);
+  }
+
+  .footer-note {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--toss-gray-400);
+  }
+
+  .recommend-card {
+    margin-top: 16px;
+  }
+
+  .recommend-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .recommend-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--toss-gray-100);
+    border-radius: 16px;
+  }
+
+  .recommend-rank {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--toss-blue-light);
+    color: var(--toss-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .recommend-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .recommend-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--toss-gray-900);
+  }
+
+  .recommend-sub {
+    font-size: 13px;
+    color: var(--toss-gray-400);
+    margin-top: 2px;
+  }
+
+  .recommend-badge {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--level-1);
+    color: #3b6fc4;
+  }
+
+  .recommend-badge.level-1 { background: var(--level-1); color: #3b6fc4; }
+  .recommend-badge.level-2 { background: var(--level-2); color: #1f4fa8; }
+  .recommend-badge.level-3 { background: var(--level-3); color: #0d3f96; }
+  .recommend-badge.level-4 { background: var(--level-4); color: #ffffff; }
+  .recommend-badge.level-5 { background: var(--level-5); color: #ffffff; }
+
+  .recommend-empty {
+    padding: 20px 4px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--toss-gray-400);
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <h1>회의시간 매칭</h1>
+      <p>가능한 시간대를 선택하면 팀원들과 겹치는 시간을 쉽게 찾을 수 있어요.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">가능한 시간을 선택해주세요</div>
+      <div class="card-subtitle">평일 오전 10시 ~ 오후 6시 사이에서 선택할 수 있어요</div>
+      <div class="team-note">팀원 <b>지훈, 서연, 민준, 하은</b>의 가능 시간과 겹쳐서 보여드려요</div>
+
+      <div class="grid-wrapper">
+        <div class="grid" id="grid">
+          <div class="corner-cell"></div>
+          <div class="day-label">월</div>
+          <div class="day-label">화</div>
+          <div class="day-label">수</div>
+          <div class="day-label">목</div>
+          <div class="day-label">금</div>
+
+          <div class="time-label">오전 10시</div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+
+          <div class="time-label">오후 12시</div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+
+          <div class="time-label">오후 2시</div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+
+          <div class="time-label">오후 4시</div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+          <div class="slot"></div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-title">가능한 인원이 많을수록 진해져요</div>
+        <div class="legend-scale">
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <div class="legend-text">0명</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot level-1"></div>
+            <div class="legend-text">1명</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot level-2"></div>
+            <div class="legend-text">2명</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot level-3"></div>
+            <div class="legend-text">3명</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot level-4"></div>
+            <div class="legend-text">4명</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot level-5"></div>
+            <div class="legend-text">5명(전원)</div>
+          </div>
+        </div>
+        <div class="legend-mine">
+          <div class="legend-mine-dot"></div>
+          <div class="legend-text">흰 테두리 = 내가 선택한 시간</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card recommend-card">
+      <div class="card-title">✨ 추천 회의 시간</div>
+      <div class="card-subtitle">가장 많은 팀원이 가능한 시간이에요</div>
+      <div class="recommend-list" id="recommendList"></div>
+    </div>
+
+    <div class="footer-note">칸을 클릭해서 내 가능한 시간을 선택해보세요</div>
+  </div>
+
+  <script>
+    // 가상 팀원별 가능 시간 (칸 index: 0~19, 왼쪽→오른쪽, 위→아래 순서)
+    var teammates = [
+      { name: "지훈", slots: [0, 1, 2, 5, 6, 10, 11, 15, 16] },
+      { name: "서연", slots: [1, 2, 3, 6, 7, 8, 11, 12, 16, 17] },
+      { name: "민준", slots: [2, 3, 4, 7, 8, 12, 13, 17, 18] },
+      { name: "하은", slots: [0, 5, 10, 11, 12, 15, 16, 17, 18, 19] },
+    ];
+
+    var slotEls = Array.prototype.slice.call(document.querySelectorAll("#grid .slot"));
+    var recommendListEl = document.getElementById("recommendList");
+    var mySelected = new Set();
+    var TOTAL_PEOPLE = teammates.length + 1; // 팀원 + 나
+
+    var dayNames = ["월요일", "화요일", "수요일", "목요일", "금요일"];
+    var timeNames = ["오전 10시", "오후 12시", "오후 2시", "오후 4시"];
+
+    function slotLabel(index) {
+      var dayIdx = index % 5;
+      var timeIdx = Math.floor(index / 5);
+      return dayNames[dayIdx] + " " + timeNames[timeIdx];
+    }
+
+    function teammateCount(index) {
+      return teammates.filter(function (t) {
+        return t.slots.indexOf(index) !== -1;
+      }).length;
+    }
+
+    function updateRecommendation(counts) {
+      var topIndices = counts
+        .map(function (count, index) {
+          return index;
+        })
+        .filter(function (index) {
+          return counts[index] > 0;
+        })
+        .sort(function (a, b) {
+          if (counts[b] !== counts[a]) return counts[b] - counts[a];
+          return a - b;
+        })
+        .slice(0, 3);
+
+      recommendListEl.innerHTML = "";
+
+      if (topIndices.length === 0) {
+        recommendListEl.innerHTML =
+          '<div class="recommend-empty">아직 겹치는 시간이 없어요. 가능한 시간을 선택해보세요!</div>';
+        return;
+      }
+
+      topIndices.forEach(function (index, rank) {
+        var count = counts[index];
+        var subText = count === TOTAL_PEOPLE ? count + "명 모두 가능" : count + "명 가능";
+
+        var item = document.createElement("div");
+        item.className = "recommend-item";
+        item.innerHTML =
+          '<div class="recommend-rank">' + (rank + 1) + "</div>" +
+          '<div class="recommend-info">' +
+          '<div class="recommend-time">' + slotLabel(index) + "</div>" +
+          '<div class="recommend-sub">' + subText + "</div>" +
+          "</div>" +
+          '<div class="recommend-badge level-' + count + '">' + count + "명</div>";
+        recommendListEl.appendChild(item);
+      });
+    }
+
+    function render() {
+      var counts = slotEls.map(function (_, index) {
+        var iAmIn = mySelected.has(index);
+        return teammateCount(index) + (iAmIn ? 1 : 0);
+      });
+
+      slotEls.forEach(function (slot, index) {
+        var total = counts[index];
+        var iAmIn = mySelected.has(index);
+
+        slot.className = "slot level-" + total;
+        slot.classList.toggle("mine", iAmIn);
+
+        var names = teammates
+          .filter(function (t) {
+            return t.slots.indexOf(index) !== -1;
+          })
+          .map(function (t) {
+            return t.name;
+          });
+        if (iAmIn) names.push("나");
+
+        slot.title = total === 0 ? "가능한 사람이 없어요" : total + "명 가능 (" + names.join(", ") + ")";
+      });
+
+      updateRecommendation(counts);
+    }
+
+    slotEls.forEach(function (slot, index) {
+      slot.addEventListener("click", function () {
+        if (mySelected.has(index)) {
+          mySelected.delete(index);
+        } else {
+          mySelected.add(index);
+        }
+        render();
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>
