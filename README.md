@@ -89,7 +89,43 @@
 
 ---
 
-## 📅 4. 단계별 개발 로드맵
+## 🧩 4. MVP 우선 구현 React 컴포넌트 시각화
+
+최소 기능 제품(MVP)은 팀장이 AI 분석 결과를 한 화면에서 확인하고, 승인 또는 보류한 항목만 외부 도구에 반영하는 흐름을 검증하는 첫 버전입니다.
+
+![MVP Control Tower UI Mockup](docs/assets/mvp-control-tower-ui.png)
+
+```mermaid
+flowchart TD
+    A[CommandCenterDashboard<br/>팀장 컨트롤 타워] --> B[ApprovalQueue<br/>승인 대기 큐]
+    A --> C[LoreConflictReport<br/>설정 충돌 리포트]
+    A --> D[ResourceExtractionPanel<br/>리소스 후보 패널]
+    A --> E[RiskReportPanel<br/>일정 리스크 리포트]
+    A --> F[DataSyncDiffViewer<br/>데이터 변경안 Diff]
+
+    C --> B
+    D --> B
+    E --> B
+    F --> B
+
+    B --> G{팀장 결정}
+    G -->|승인| H[Notion / GitHub / Unity / Slack·Discord 커넥터 실행]
+    G -->|보류| I[외부 도구 반영 중단]
+    G -->|수정 요청| J[재분석 또는 수동 수정]
+```
+
+| 컴포넌트 | 역할 | 주요 표시 데이터 | 승인 흐름 |
+| --- | --- | --- | --- |
+| `CommandCenterDashboard` | MVP 화면의 진입점이자 전체 현황판 | 프로젝트, 분석 요약, 커넥터 상태, 승인 대기 수 | 각 패널의 승인 대기 항목으로 이동 |
+| `ApprovalQueue` | 팀장이 실행 전 항목을 검토하는 큐 | 대상 작업, 출처, 영향 범위, 요청 상태 | 승인, 보류, 수정 요청 처리 |
+| `LoreConflictReport` | 신규 설정과 기존 설정의 충돌을 확인 | 기존 설정, 신규 설정, 충돌 이유, 권장 대응 | 승인 시 Notion 갱신 요청으로 전달 |
+| `ResourceExtractionPanel` | 시나리오에서 추출된 리소스 후보 확인 | NPC, 대사, 이펙트, 사운드, UI, 컷신 | 승인 시 태스크 후보 생성으로 전달 |
+| `RiskReportPanel` | 일정 지연과 병목 가능성 확인 | 원인, 영향받는 작업, 권장 대응 | 승인 시 리마인더 또는 대응 태스크로 전달 |
+| `DataSyncDiffViewer` | Notion 값과 Unity 데이터 변경안 비교 | 변경 전 값, 변경 후 값, 대상 파일, diff | 승인 시 커밋 또는 동기화 작업으로 전달 |
+
+---
+
+## 📅 5. 단계별 개발 로드맵
 
 1. **1단계 (노코드 기반 프로토타입):** `Make`나 `Zapier`를 활용하여 단일 프로젝트의 `노션 회의록 생성 ↔ LLM 상충 분석 및 요약 ↔ 하위 태스크 자동 생성` 자동화 흐름 검증.
 2. **2단계 (커스텀 독립 서버 구축):** Python(FastAPI) 기반 서버를 구축하고, 프로젝트ID 기반으로 지식 저장소(Vector DB)를 격리 분리하여 다중 프로젝트 대응 시동.
