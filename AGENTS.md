@@ -21,13 +21,17 @@ Use TypeScript ESM throughout. Match the existing style: two-space indentation, 
 
 When writing Markdown planning, technical, or product documents, prefer tables for structured information and bullet points for scannable lists. Use prose for context and decisions, but model comparable items, options, tradeoffs, risks, and open questions in tables when practical. Follow `docs/README.md` for formal project document placement, and update the root `README.md` whenever adding or moving a formal project document under `docs/`.
 
+## Interface Scope
+
+Mobile and small-screen responsive layout are deferred for this project unless the user explicitly asks for mobile work. Do not spend implementation, review, or verification time optimizing mobile breakpoints, raising mobile-only layout issues, or reshaping interfaces for phones. Use desktop workspaces as the validation target, especially widths around 1440px to 1920px.
+
 ## Testing Guidelines
 
 No test framework or coverage threshold is configured yet. For now, run `npm run typecheck`, `npm run build`, and client linting before opening a PR. When adding tests, place them near the code they cover, using names like `server/src/health.test.ts` or `client/src/App.test.tsx`, and add the relevant workspace `test` script in the same change.
 
 ## Commit & Pull Request Guidelines
 
-Create commits frequently at natural checkpoints so work is easy to review and recover. Use focused Conventional Commit-style prefixes such as `docs:`, `chore:`, `feat:`, `fix:`, `test:`, `refactor:`, and `build:`. Keep the subject short, imperative, and behavior-focused, for example `docs: organize project documentation`. Camp-facing PRs should follow `.github/pull_request_template.md`: summarize the work, include screenshots for UI changes, explain one implementation choice, note anything still unclear, and list what you learned. Use the requested PR title pattern, for example `[N100_Name] Add health status UI`, and link related issues when applicable.
+Create commits frequently at natural checkpoints so work is easy to review and recover. Use focused Conventional Commit-style prefixes such as `docs:`, `chore:`, `feat:`, `fix:`, `test:`, `refactor:`, and `build:`. Keep the subject short, imperative, and behavior-focused, for example `docs: organize project documentation`. Upstream camp submission PRs should follow `.github/pull_request_template.md`: summarize the work, include screenshots for UI changes, explain one implementation choice, note anything still unclear, and list what you learned. Use the requested PR title pattern, for example `[N100_Name] Add health status UI`, and link related issues when applicable.
 
 For this participant, do not use `main` as a working branch or PR target. The default working branch is the current daily branch, named `codex/MMDD` such as `codex/0707`. `N180_하성욱` is the camp-facing personal integration branch, not a normal working branch.
 
@@ -46,11 +50,11 @@ Use this PR flow:
 | --- | --- | --- |
 | Work-scoped review | `swh3467:codex/MMDD` | `swh3467:codex/<work>` |
 | Camp daily PR | `swh3467:N180_하성욱` | `swh3467:codex/MMDD` |
-| Camp-facing submission | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | `swh3467:N180_하성욱` |
+| Camp-facing submission PR | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | `swh3467:N180_하성욱` |
 
 The upstream `origin` repository is read-only for this contributor, so publish branches by pushing to the personal fork remote (`fork`). Open upstream PRs only for camp-facing submission, not for every work-in-progress feature branch. Do not target `main`; the auto-merge workflow explicitly skips PRs whose base branch is `main`.
 
-The PR template in `.github/pull_request_template.md` is the camp submission template. Use its sections (`주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, `새로 알게 된 것`) for camp-facing daily PRs only. Internal work PRs do not use a separate GitHub PR template; link the source PRD, issue, agent brief, spike report, or handoff document instead. Create a `codex/MMDD` to `N180_하성욱` daily PR only when the user invokes `/camp-daily-pr`; that skill interviews the user section by section, creates the PR, and does not merge it. When a Matt Pocock skill refers to a template, treat it as the skill's own PRD, issue, agent brief, or review artifact shape, not as `.github/pull_request_template.md`. When a Matt Pocock skill refers to PRs as an issue-tracker or triage surface, follow the agent workflow in `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md` instead; do not treat the camp reflection sections as the skill's triage state or PRD format.
+The PR template in `.github/pull_request_template.md` is the camp submission template. Use its sections (`주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, `새로 알게 된 것`) only for the upstream camp-facing submission PR. The `codex/MMDD` to `N180_하성욱` daily PR is an internal integration and review artifact; the agent should write it directly with a local/Matt-style body such as `Summary`, `Key Changes`, `Verification`, `Risks / Follow-ups`, and links to the source PRD, issue, agent brief, spike report, or handoff document. When the user invokes `/camp-daily-pr`, that skill should create or update the daily PR without approval or section-by-section interview, then move into the interview for the upstream camp submission PR. The fork daily PR is not the final submission surface. `/camp-daily-pr` must also verify or create the upstream submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` when `fork/N180_하성욱` contains the daily work, or clearly report that the latest daily work is not yet present in the submission branch. When a Matt Pocock skill refers to a template, treat it as the skill's own PRD, issue, agent brief, or review artifact shape, not as `.github/pull_request_template.md`. When a Matt Pocock skill refers to PRs as an issue-tracker or triage surface, follow the agent workflow in `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md` instead; do not treat the camp reflection sections as the skill's triage state or PRD format.
 
 ## Security & Configuration Tips
 
@@ -72,8 +76,8 @@ Matt Pocock skills use generic GitHub terms such as issue tracker, PR, label, pu
 | Apply or read a triage label | Use the body/comment marker state in `docs/agents/triage-labels.md`; do not assume GitHub label permissions. |
 | Treat PRs as request or triage surface | Only external PRs, or PRs explicitly named by the user, are triage input. Collaborator work PRs and camp daily PRs are not triage queues. |
 | Commit to the current branch | The default current branch should be `codex/MMDD`; optional `codex/<work>` branches must merge back to `codex/MMDD`. Do not commit normal work on `N180_하성욱` or `main`. |
-| Use a GitHub PR template | `.github/pull_request_template.md` is only for `/camp-daily-pr` camp daily PRs. Matt skill templates are their own PRD, issue, agent brief, or review artifact shapes. |
-| Merge a PR | Do not merge a camp daily PR created by `/camp-daily-pr`; stop after creating or updating it unless the user gives a separate explicit merge instruction. |
+| Use a GitHub PR template | `.github/pull_request_template.md` is only for upstream camp submission PRs. Daily PRs use a local/Matt-style work brief, and Matt skill templates remain their own PRD, issue, agent brief, or review artifact shapes. |
+| Merge a PR | Do not merge PRs created or checked by `/camp-daily-pr` unless the user gives a separate explicit merge instruction. |
 | Run `/setup-matt-pocock-skills` | This repo is already configured. Do not regenerate `docs/agents/**` unless the user explicitly asks; preserve the `codex/MMDD`, `/camp-daily-pr`, marker-based triage, and fork-based PR rules. |
 
 ### Triage labels
