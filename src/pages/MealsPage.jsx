@@ -98,7 +98,7 @@ function MealCard({ meal, onRemove }) {
         </h3>
         <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.xs }}>
           {Math.round(n.calories) || 0}kcal · 단백질 {Math.round(n.protein) || 0}g · 탄수 {Math.round(n.carbs) || 0}g · 지방{' '}
-          {Math.round(n.fat) || 0}g · 나트륨 {Math.round(n.sodium) || 0}mg
+          {Math.round(n.fat) || 0}g · 나트륨 {Math.round(n.sodium) || 0}mg · 식이섬유 {Math.round(n.fiber) || 0}g
         </p>
       </div>
       <button

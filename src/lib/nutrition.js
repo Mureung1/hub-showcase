@@ -50,6 +50,18 @@ export function isMealAnalysis(value) {
   )
 }
 
+// AI가 계산한 "1인분 예상 섭취량"(expected)을 "단백질 18g · 지방 4g 섭취 가능" 형태로 요약.
+// 없거나 형식이 어긋나면 null을 반환해 표시를 생략하게 한다.
+export function formatExpectedIntake(expected) {
+  if (!expected || typeof expected !== 'object') return null
+
+  const parts = NUTRIENT_LABELS.filter(({ key }) => typeof expected[key] === 'number').map(
+    ({ key, label, unit }) => `${label} ${Math.round(expected[key])}${unit}`,
+  )
+
+  return parts.length > 0 ? `${parts.join(' · ')} 섭취 가능` : null
+}
+
 // 영양소별 (실제/권장) 비율을 1로 캡핑해 평균낸 하루 목표 달성률(%). Result.jsx의 계산과 동일한 정의.
 export function calcAchievementPercent(recommended, total) {
   if (!isNutrientSet(recommended) || !isNutrientSet(total)) return 0

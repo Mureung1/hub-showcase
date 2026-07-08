@@ -1,3 +1,4 @@
+import { formatExpectedIntake } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
 export default function PlaceList({ places }) {
@@ -9,6 +10,11 @@ export default function PlaceList({ places }) {
         <div key={i} style={styles.card}>
           <h3>{place.place_name}</h3>
           <p style={{ margin: 0, color: colors.muted, fontSize: font.size.sm }}>{place.road_address_name}</p>
+          {formatExpectedIntake(place.expected) && (
+            <p style={{ margin: `${spacing.sm}px 0 0`, color: colors.primary, fontSize: font.size.xs, fontWeight: 600 }}>
+              {formatExpectedIntake(place.expected)}
+            </p>
+          )}
           <div
             style={{
               display: 'flex',
