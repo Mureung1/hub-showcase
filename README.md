@@ -18,5 +18,6 @@ TODO 앱과 캘린더는 이미 많습니다. 하지만 정작 어려운 것은 
 
 | Docs | Description |
 |------|-------------|
-| docs/plan.md | 기획서 및 사용자 시나리오 |
+| docs/plan.md | 기획서 (문제 정의 · 시나리오 · User Flow · 화면 목록(IA) · 와이어프레임 · 기능 · MVP) |
+| docs/prototype/ | 순수 HTML·CSS 프로토타입 (디자인 보드 · 화이트 노이즈 테마 · ADHD 기능 제안) |
 | docs/checklist.md | 개발 계획 및 작업 분해 |
