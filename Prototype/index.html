@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWIM - Music Diary</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="phone-frame" aria-label="SWIM mobile prototype">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">SWIM</p>
+        <h1 id="screen-title">Today's Music Cards</h1>
+      </div>
+      <div class="status-dot" aria-hidden="true"></div>
+    </header>
+
+    <section id="home" class="screen active-screen" aria-labelledby="home-title">
+      <h2 id="home-title" class="sr-only">Today's Music Cards</h2>
+
+      <article class="music-card feed-card">
+        <div class="card-user">
+          <div class="avatar gradient-a"></div>
+          <div>
+            <strong>min.wav</strong>
+            <span>July 8, 2026</span>
+          </div>
+        </div>
+        <div class="album-cover cover-a"></div>
+        <div class="song-row">
+          <div>
+            <h3>Night Changes</h3>
+            <p>One Direction</p>
+          </div>
+          <button class="icon-button" type="button" aria-label="Like">&hearts;</button>
+        </div>
+        <p class="mood-line">A quiet day that can move as slowly as it needs.</p>
+        <button class="spotify-button" type="button">Open in Spotify</button>
+      </article>
+
+      <article class="music-card feed-card">
+        <div class="card-user">
+          <div class="avatar gradient-b"></div>
+          <div>
+            <strong>seoulblue</strong>
+            <span>July 7, 2026</span>
+          </div>
+        </div>
+        <div class="album-cover cover-b"></div>
+        <div class="song-row">
+          <div>
+            <h3>Sweet Disposition</h3>
+            <p>The Temper Trap</p>
+          </div>
+          <button class="icon-button liked" type="button" aria-label="Liked">&hearts;</button>
+        </div>
+        <p class="mood-line">The kind of song that belongs to a late bus ride home.</p>
+        <button class="spotify-button" type="button">Open in Spotify</button>
+      </article>
+
+      <article class="music-card feed-card">
+        <div class="card-user">
+          <div class="avatar gradient-c"></div>
+          <div>
+            <strong>slow.june</strong>
+            <span>July 6, 2026</span>
+          </div>
+        </div>
+        <div class="album-cover cover-c"></div>
+        <div class="song-row">
+          <div>
+            <h3>Can I Call You Rose?</h3>
+            <p>Thee Sacred Souls</p>
+          </div>
+          <button class="icon-button" type="button" aria-label="Like">&hearts;</button>
+        </div>
+        <p class="mood-line">A small evening I wanted to keep for a little longer.</p>
+        <button class="spotify-button" type="button">Open in Spotify</button>
+      </article>
+    </section>
+
+    <section id="create" class="screen" aria-labelledby="create-title">
+      <h2 id="create-title" class="section-title">Today's Music Card</h2>
+      <p class="section-copy">Choose one song that remembers your day, then leave a single quiet line.</p>
+
+      <div class="create-panel">
+        <div class="album-cover large-cover cover-d">
+          <span>album cover</span>
+        </div>
+        <button class="secondary-button" type="button">Search Song</button>
+        <label class="field-label" for="mood">One-line feeling</label>
+        <textarea id="mood" rows="4" placeholder="Write today's feeling in one line."></textarea>
+        <div class="date-row">
+          <span>Today</span>
+          <strong>July 8, 2026</strong>
+        </div>
+        <button class="save-button" type="button">Save Card</button>
+      </div>
+    </section>
+
+    <section id="search" class="screen" aria-labelledby="search-title">
+      <h2 id="search-title" class="section-title">Find People</h2>
+      <div class="search-box">
+        <span aria-hidden="true">Search</span>
+        <input type="search" placeholder="Search username">
+      </div>
+
+      <div class="user-list">
+        <article class="user-row">
+          <div class="avatar gradient-d"></div>
+          <div>
+            <strong>yuna.playlist</strong>
+            <span>Yuna</span>
+          </div>
+          <button type="button">Follow</button>
+        </article>
+        <article class="user-row">
+          <div class="avatar gradient-e"></div>
+          <div>
+            <strong>afterglow</strong>
+            <span>Jin Park</span>
+          </div>
+          <button type="button">Follow</button>
+        </article>
+        <article class="user-row">
+          <div class="avatar gradient-f"></div>
+          <div>
+            <strong>monday.room</strong>
+            <span>Sora</span>
+          </div>
+          <button type="button">Follow</button>
+        </article>
+        <article class="user-row">
+          <div class="avatar gradient-b"></div>
+          <div>
+            <strong>vinyl.note</strong>
+            <span>Daniel</span>
+          </div>
+          <button type="button">Follow</button>
+        </article>
+      </div>
+    </section>
+
+    <section id="diary" class="screen" aria-labelledby="diary-title">
+      <h2 id="diary-title" class="section-title">My Music Diary</h2>
+
+      <section class="profile-card" aria-label="My profile">
+        <div class="avatar profile-avatar gradient-a"></div>
+        <div>
+          <strong>min.wav</strong>
+          <span>Minseo</span>
+          <p>Keeping the temperature of each day inside one song.</p>
+        </div>
+      </section>
+
+      <div class="timeline">
+        <article class="diary-card">
+          <time>July 8, 2026</time>
+          <div class="diary-content">
+            <div class="album-cover small-cover cover-a"></div>
+            <div>
+              <h3>Night Changes</h3>
+              <p>One Direction</p>
+              <span>A quiet day that can move as slowly as it needs.</span>
+              <button class="spotify-button compact" type="button">Spotify</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="diary-card">
+          <time>July 7, 2026</time>
+          <div class="diary-content">
+            <div class="album-cover small-cover cover-e"></div>
+            <div>
+              <h3>Fade Into You</h3>
+              <p>Mazzy Star</p>
+              <span>A night when silence felt warmer than words.</span>
+              <button class="spotify-button compact" type="button">Spotify</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="diary-card">
+          <time>July 6, 2026</time>
+          <div class="diary-content">
+            <div class="album-cover small-cover cover-f"></div>
+            <div>
+              <h3>Homebody</h3>
+              <p>pH-1</p>
+              <span>My mind settled only after I came back home.</span>
+              <button class="spotify-button compact" type="button">Spotify</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="diary-card">
+          <time>July 5, 2026</time>
+          <div class="diary-content">
+            <div class="album-cover small-cover cover-c"></div>
+            <div>
+              <h3>Can I Call You Rose?</h3>
+              <p>Thee Sacred Souls</p>
+              <span>A small evening I wanted to keep for a little longer.</span>
+              <button class="spotify-button compact" type="button">Spotify</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button class="nav-button active" type="button" data-target="home" data-title="Today's Music Cards">
+        <span>H</span>
+        Home
+      </button>
+      <button class="nav-button" type="button" data-target="create" data-title="Today's Music Card">
+        <span>+</span>
+        Create
+      </button>
+      <button class="nav-button" type="button" data-target="search" data-title="Find People">
+        <span>S</span>
+        Search
+      </button>
+      <button class="nav-button" type="button" data-target="diary" data-title="My Music Diary">
+        <span>D</span>
+        Diary
+      </button>
+    </nav>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
