@@ -19,6 +19,7 @@ def main() -> int:
     html_files = [
         root / "docs" / "wiki" / "knowledge-graph.html",
         root / "docs" / "wiki" / "doc-viewer.html",
+        root / "docs" / "prototypes" / "core-market-analysis-prototype.html",
     ]
     for html_file in html_files:
         if not html_file.exists():

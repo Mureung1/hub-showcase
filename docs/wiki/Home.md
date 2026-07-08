@@ -22,8 +22,11 @@ docs/
     Home.md
     doc-viewer.html
     knowledge-graph.html
+    localtwin-project-proposal.md
     localtwin-product-plan.md
     localtwin-v0.1-execution-plan.md
+  prototypes/
+    core-market-analysis-prototype.html
   development/
     overview.md
     checklist.md
@@ -76,6 +79,7 @@ LocalTwin/
 
 ## Product Planning
 
+- [프로젝트 기획서: 화면 구조와 핵심 기능](./localtwin-project-proposal.md)
 - [제품 기획서: 문제 정의, 사용자 시나리오, 기능 구성](./localtwin-product-plan.md)
 - [LocalTwin v0.1 전체 실행 계획](./localtwin-v0.1-execution-plan.md)
 

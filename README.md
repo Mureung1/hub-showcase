@@ -11,6 +11,7 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 - [Wiki Home](docs/wiki/Home.md)
 - [Interactive Knowledge Graph](docs/wiki/knowledge-graph.html)
 - [Document Viewer](docs/wiki/doc-viewer.html?doc=Home.md)
+- [프로젝트 기획서: 화면 구조와 핵심 기능](docs/wiki/localtwin-project-proposal.md)
 - [제품 기획서: 문제 정의, 사용자 시나리오, 기능 구성](docs/wiki/localtwin-product-plan.md)
 - [LocalTwin v0.1 전체 실행 계획](docs/wiki/localtwin-v0.1-execution-plan.md)
 
