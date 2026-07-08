@@ -1,0 +1,156 @@
+/* 기본 설정 */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+:root {
+  --sky-blue-light: #E0F2FE;
+  --sky-blue-main: #38BDF8;
+  --sky-blue-dark: #0284C7;
+  --lemon-yellow-light: #FEF9C3;
+  --lemon-yellow-main: #FDE047;
+  --text-main: #334155;
+  --text-light: #64748B;
+  --bg-white: #FFFFFF;
+}
+
+body {
+  font-family: 'Pretendard', sans-serif;
+  background-color: var(--bg-white);
+  color: var(--text-main);
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+/* 헤더 섹션 */
+header {
+  text-align: center;
+  padding: 50px 20px;
+  background: linear-gradient(135deg, var(--sky-blue-light) 0%, var(--lemon-yellow-light) 100%);
+  border-radius: 20px;
+  margin-bottom: 40px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+header h1 {
+  font-size: 2.2rem;
+  color: var(--sky-blue-dark);
+  margin-bottom: 10px;
+}
+
+header p {
+  font-size: 1.2rem;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.highlight {
+  background: linear-gradient(to top, var(--lemon-yellow-main) 40%, transparent 40%);
+  font-weight: bold;
+}
+
+/* 공통 섹션 스타일 */
+section {
+  margin-bottom: 50px;
+}
+
+h2 {
+  font-size: 1.6rem;
+  color: var(--sky-blue-dark);
+  border-bottom: 2px solid var(--lemon-yellow-main);
+  display: inline-block;
+  margin-bottom: 20px;
+  padding-bottom: 5px;
+}
+
+/* 카드 그리드 레이아웃 */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.card {
+  background-color: var(--bg-white);
+  border: 1px solid var(--sky-blue-light);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  border-color: var(--sky-blue-main);
+}
+
+.card.lemon-accent {
+  border-top: 4px solid var(--lemon-yellow-main);
+}
+
+.card.blue-accent {
+  border-top: 4px solid var(--sky-blue-main);
+}
+
+.card h3 {
+  margin-top: 0;
+  color: var(--sky-blue-dark);
+  font-size: 1.2rem;
+}
+
+ul {
+  padding-left: 20px;
+  margin-bottom: 0;
+}
+
+li {
+  margin-bottom: 8px;
+}
+
+/* 배지 스타일 */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.badge-blue {
+  background-color: var(--sky-blue-light);
+  color: var(--sky-blue-dark);
+}
+
+.badge-yellow {
+  background-color: var(--lemon-yellow-light);
+  color: #B45309;
+}
+
+/* 로드맵 타임라인 */
+.roadmap-item {
+  display: flex;
+  margin-bottom: 15px;
+  background-color: #F8FAFC;
+  border-radius: 8px;
+  padding: 15px;
+  border-left: 4px solid var(--sky-blue-main);
+}
+
+.roadmap-week {
+  font-weight: bold;
+  color: var(--sky-blue-dark);
+  min-width: 80px;
+}
+
+/* 반응형 */
+@media (max-width: 600px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
