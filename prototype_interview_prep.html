@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>취업비서 - 면접 준비</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* 헤더 */
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .breadcrumb {
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 15px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .job-info h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .company-info {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s;
+            align-self: center;
+        }
+
+        .back-btn:hover {
+            background: #e8e8e8;
+        }
+
+        /* 진행도 바 */
+        .progress-section {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .progress-label {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .progress-stat {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* 아코디언 */
+        .accordion {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .accordion-item {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            background: #f9f9f9;
+            padding: 18px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.3s;
+            border-bottom: 1px solid #eee;
+        }
+
+        .accordion-header:hover {
+            background: #f0f0f0;
+        }
+
+        .accordion-item.active .accordion-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom: none;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .question-number {
+            background: #667eea;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .accordion-item.active .question-number {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .question-text {
+            font-weight: 600;
+            font-size: 15px;
+            color: #333;
+        }
+
+        .accordion-item.active .question-text {
+            color: white;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-notstarted {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .status-inprogress {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .accordion-item.active .status-badge {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        .toggle-icon {
+            color: #999;
+            font-size: 16px;
+            transition: transform 0.3s;
+        }
+
+        .accordion-item.active .toggle-icon {
+            transform: rotate(180deg);
+            color: white;
+        }
+
+        /* 아코디언 컨텐츠 */
+        .accordion-content {
+            display: none;
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .accordion-item.active .accordion-content {
+            display: block;
+        }
+
+        .content-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 답변 아이디어 */
+        .idea-toggle-btn {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+            width: 100%;
+            text-align: left;
+            color: #333;
+        }
+
+        .idea-toggle-btn:hover {
+            background: #e8e8e8;
+        }
+
+        .idea-toggle-btn.active {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-color: #1976d2;
+        }
+
+        .idea-content {
+            display: none;
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #666;
+        }
+
+        .idea-content.active {
+            display: block;
+        }
+
+        .idea-point {
+            margin-bottom: 8px;
+            padding-left: 16px;
+            position: relative;
+        }
+
+        .idea-point:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        /* 답변 입력 */
+        .answer-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 13px;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.3s;
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .answer-counter {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        /* 피드백 */
+        .feedback-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 12px;
+            transition: all 0.3s;
+        }
+
+        .feedback-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .feedback-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .feedback-content {
+            display: none;
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .feedback-content.active {
+            display: block;
+        }
+
+        .feedback-header {
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .feedback-item {
+            margin-bottom: 8px;
+            color: #666;
+        }
+
+        .feedback-item strong {
+            color: #333;
+        }
+
+        /* 로딩 */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 15px;
+            }
+
+            .header-content {
+                flex-direction: column;
+            }
+
+            .back-btn {
+                width: 100%;
+            }
+
+            .question-text {
+                font-size: 13px;
+            }
+
+            .accordion-content {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header">
+            <div class="breadcrumb">자소서 작성 완료 > 면접 준비</div>
+            <div class="header-content">
+                <div class="job-info">
+                    <h1>🎤 면접 준비</h1>
+                    <div class="company-info">
+                        <span>네이버 웨일 팀 - 풀스택 개발자</span>
+                    </div>
+                </div>
+                <button class="back-btn">← 뒤로가기</button>
+            </div>
+
+            <!-- 진행도 -->
+            <div class="progress-section">
+                <div class="progress-info">
+                    <span class="progress-label">면접 준비 진행도</span>
+                    <span class="progress-stat"><span id="completedCount">0</span>/7 완료</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 아코디언 질문 목록 -->
+        <div class="accordion" id="accordion">
+            <!-- 질문 1 -->
+            <div class="accordion-item" data-question="1">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="header-left">
+                        <div class="question-number">1</div>
+                        <div class="question-text">웨일을 지원한 이유는 무엇인가요?</div>
+                    </div>
+                    <div class="header-right">
+                        <span class="status-badge status-notstarted" data-status="notstarted">미작성</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                </div>
+                <div class="accordion-content">
+                    <div class="content-section">
+                        <div class="section-title">💡 답변 아이디어</div>
+                        <button class="idea-toggle-btn" onclick="toggleIdea(this)">💡 힌트 보기</button>
+                        <div class="idea-content">
+                            <div class="idea-point">회사의 비전과 당신의 가치관이 일치하는 점</div>
+                            <div class="idea-point">그들의 기술/서비스에 대한 이해도 표현</div>
+                            <div class="idea-point">이 직무에서 성장하고 싶은 분야 언급</div>
+                            <div class="idea-point">실제 사용 경험이 있다면 구체적으로</div>
+                        </div>
+                    </div>
+
+                    <div class="content-section">
+                        <div class="section-title">📝 답변 입력</div>
+                        <textarea class="answer-input" placeholder="당신의 답변을 입력해주세요..." onkeyup="updateCounter(this)"></textarea>
+                        <div class="answer-counter"><span class="char-count">0</span>/500자</div>
+                    </div>
+
+                    <div class="content-section">
+                        <button class="feedback-btn" onclick="getFeedback(this)">🔍 피드백 받기</button>
+                        <div class="feedback-content">
+                            <div class="feedback-header">💬 AI 피드백</div>
+                            <div class="loading" style="display: none;">
+                                <span class="spinner"></span>분석 중...
+                            </div>
+                            <div class="feedback-result" style="display: none;">
+                                <div class="feedback-item"><strong>✓ 잘한 점:</strong> 웨일의 기술과 당신의 경험을 잘 연결했습니다.</div>
+                                <div class="feedback-item"><strong>💡 개선 제안:</strong> "빠른 성장"은 구체적인 예시로 뒷받침하면 더 설득력 있을 것 같습니다.</div>
+                                <div class="feedback-item"><strong>🎯 종합 평가:</strong> 기본은 잘 되어있으나, 더 개인적인 스토리를 추가하면 좋을 것 같습니다.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 질문 2 -->
+            <div class="accordion-item" data-question="2">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="header-left">
+                        <div class="question-number">2</div>
+                        <div class="question-text">당신의 개발 철학은 무엇인가요?</div>
+                    </div>
+                    <div class="header-right">
+                        <span class="status-badge status-notstarted" data-status="notstarted">미작성</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                </div>
+                <div class="accordion-content">
+                    <div class="content-section">
+                        <div class="section-title">💡 답변 아이디어</div>
+                        <button class="idea-toggle-btn" onclick="toggleIdea(this)">💡 힌트 보기</button>
+                        <div class="idea-content">
+                            <div class="idea-point">사용자 중심 개발 vs 성능 vs 협업 중시 중 선택</div>
+                            <div class="idea-point">실제 프로젝트에서 이를 실천한 사례</div>
+                            <div class="idea-point">왜 이러한 철학을 갖게 되었는지 배경 설명</div>
+                            <div class="idea-point">지속적 학습과 개선에 대한 의지</div>
+                        </div>
+                    </div>
+
+                    <div class="content-section">
+                        <div class="section-title">📝 답변 입력</div>
+                        <textarea class="answer-input" placeholder="당신의 답변을 입력해주세요..." onkeyup="updateCounter(this)"></textarea>
+                        <div class="answer-counter"><span class="char-count">0</span>/500자</div>
+                    </div>
+
+                    <div class="content-section">
+                        <button class="feedback-btn" onclick="getFeedback(this)">🔍 피드백 받기</button>
+                        <div class="feedback-content">
+                            <div class="feedback-header">💬 AI 피드백</div>
+                            <div class="loading" style="display: none;">
+                                <span class="spinner"></span>분석 중...
+                            </div>
+                            <div class="feedback-result" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 질문 3 -->
+            <div class="accordion-item" data-question="3">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="header-left">
+                        <div class="question-number">3</div>
+                        <div class="question-text">최근 프로젝트에서 어려웠던 점과 해결 방법은?</div>
+                    </div>
+                    <div class="header-right">
+                        <span class="status-badge status-notstarted" data-status="notstarted">미작성</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                </div>
+                <div class="accordion-content">
+                    <div class="content-section">
+                        <div class="section-title">💡 답변 아이디어</div>
+                        <button class="idea-toggle-btn" onclick="toggleIdea(this)">💡 힌트 보기</button>
+                        <div class="idea-content">
+                            <div class="idea-point">기술적 문제 또는 협업 과정에서의 어려움 선택</div>
+                            <div class="idea-point">구체적인 상황 설명 (작지만 임팩트 있는 사례)</div>
+                            <div class="idea-point">문제 해결 과정에서의 시도와 시행착오</div>
+                            <div class="idea-point">그 경험에서 배운 교훈 강조</div>
+                        </div>
+                    </div>
+
+                    <div class="content-section">
+                        <div class="section-title">📝 답변 입력</div>
+                        <textarea class="answer-input" placeholder="당신의 답변을 입력해주세요..." onkeyup="updateCounter(this)"></textarea>
+                        <div class="answer-counter"><span class="char-count">0</span>/500자</div>
+                    </div>
+
+                    <div class="content-section">
+                        <button class="feedback-btn" onclick="getFeedback(this)">🔍 피드백 받기</button>
+                        <div class="feedback-content">
+                            <div class="feedback-header">💬 AI 피드백</div>
+                            <div class="loading" style="display: none;">
+                                <span class="spinner"></span>분석 중...
+                            </div>
+                            <div class="feedback-result" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 질문 4 -->
+            <div class="accordion-item" data-question="4">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="header-left">
+                        <div class="question-number">4</div>
+                        <div class="question-text">팀과의 협업 경험을 소개해주세요.</div>
+                    </div>
+                    <div class="header-right">
+                        <span class="status-badge status-notstarted" data-status="notstarted">미작성</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                </div>
+                <div class="accordion-content">
+                    <div class="content-section">
+                        <div class="section-title">💡 답변 아이디어</div>
+                        <button class="idea-toggle-btn" onclick="toggleIdea(this)">💡 힌트 보기</button>
+                        <div class="idea-content">
+                            <div class="idea-point">학교, 인턴십, 또는 프로젝트에서의 팀 협력 경험</div>
+                            <div class="idea-point">당신의 역할과 책임 명확히</div>
+                            <div class="idea-point">팀원과의 갈등이나 의견 불일치 해결 경험</div>
+                            <div class="idea-point">협업을 통해 얻은 성과와 개인적 성장</div>
+                        </div>
+                    </div>
+
+                    <div class="content-section">
+                        <div class="section-title">📝 답변 입력</div>
+                        <textarea class="answer-input" placeholder="당신의 답변을 입력해주세요..." onkeyup="updateCounter(this)"></textarea>
+                        <div class="answer-counter"><span class="char-count">0</span>/500자</div>
+                    </div>
+
+                    <div class="content-section">
+                        <button class="feedback-btn" onclick="getFeedback(this)">🔍 피드백 받기</button>
+                        <div class="feedback-content">
+                            <div class="feedback-header">💬 AI 피드백</div>
+                            <div class="loading" style="display: none;">
+                                <span class="spinner"></span>분석 중...
+                            </div>
+                            <div class="feedback-result" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 질문 5 -->
+            <div class="accordion-item" data-question="5">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="header-left">
+                        <div class="question-number">5</div>
+                        <div class="question-text">5년 후 자신의 모습은 어떨 것 같나요?</div>
+                    </div>
+                    <div class="header-right">
+                        <span class="status-badge status-notstarted" data-status="notstarted">미작성</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                </div>
+                <div class="accordion-content">
+                    <div class="content-section">
+                        <div class="section-title">💡 답변 아이디어</div>
+                        <button class="idea-toggle-btn" onclick="toggleIdea(this)">💡 힌트 보기</button>
+                        <div class="idea-content">
+                            <div class="idea-point">기술적 성장과 리더십 역할의 균형</div>
+                            <div class="idea-point">회사와 함께 성장하는 비전 보여주기</div>
+                            <div class="idea-point">너무 거창하지 않으면서도 포부 있는 표현</div>
+                            <div class="idea-point">구체적인 기술이나 영역 언급 (예: AI, 클라우드)</div>
+                        </div>
+                    </div>
+
+                    <div class="content-section">
+                        <div class="section-title">📝 답변 입력</div>
+                        <textarea class="answer-input" placeholder="당신의 답변을 입력해주세요..." onkeyup="updateCounter(this)"></textarea>
+                        <div class="answer-counter"><span class="char-count">0</span>/500자</div>
+                    </div>
+
+                    <div class="content-section">
+                        <button class="feedback-btn" onclick="getFeedback(this)">🔍 피드백 받기</button>
+                        <div class="feedback-content">
+                            <div class="feedback-header">💬 AI 피드백</div>
+                            <div class="loading" style="display: none;">
+                                <span class="spinner"></span>분석 중...
+                            </div>
+                            <div class="feedback-result" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 질문 6 -->
+            <div class="accordion-item" data-question="6">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="header-left">
+                        <div class="question-number">6</div>
+                        <div class="question-text">일에서 가장 중요하다고 생각하는 것은?</div>
+                    </div>
+                    <div class="header-right">
+                        <span class="status-badge status-notstarted" data-status="notstarted">미작성</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                </div>
+                <div class="accordion-content">
+                    <div class="content-section">
+                        <div class="section-title">💡 답변 아이디어</div>
+                        <button class="idea-toggle-btn" onclick="toggleIdea(this)">💡 힌트 보기</button>
+                        <div class="idea-content">
+                            <div class="idea-point">기술 실력 vs 팀워크 vs 고객만족 중 우선순위</div>
+                            <div class="idea-point">회사의 핵심 가치와 일치하는 가치관 표현</div>
+                            <div class="idea-point">두 가지 모두 중요하다는 입장도 좋음</div>
+                            <div class="idea-point">실제 경험으로 뒷받침</div>
+                        </div>
+                    </div>
+
+                    <div class="content-section">
+                        <div class="section-title">📝 답변 입력</div>
+                        <textarea class="answer-input" placeholder="당신의 답변을 입력해주세요..." onkeyup="updateCounter(this)"></textarea>
+                        <div class="answer-counter"><span class="char-count">0</span>/500자</div>
+                    </div>
+
+                    <div class="content-section">
+                        <button class="feedback-btn" onclick="getFeedback(this)">🔍 피드백 받기</button>
+                        <div class="feedback-content">
+                            <div class="feedback-header">💬 AI 피드백</div>
+                            <div class="loading" style="display: none;">
+                                <span class="spinner"></span>분석 중...
+                            </div>
+                            <div class="feedback-result" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 질문 7 -->
+            <div class="accordion-item" data-question="7">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="header-left">
+                        <div class="question-number">7</div>
+                        <div class="question-text">실패 경험과 그에서 배운 점은?</div>
+                    </div>
+                    <div class="header-right">
+                        <span class="status-badge status-notstarted" data-status="notstarted">미작성</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                </div>
+                <div class="accordion-content">
+                    <div class="content-section">
+                        <div class="section-title">💡 답변 아이디어</div>
+                        <button class="idea-toggle-btn" onclick="toggleIdea(this)">💡 힌트 보기</button>
+                        <div class="idea-content">
+                            <div class="idea-point">진정한 실패 경험 (너무 가벼운 것X, 심각한 것도 조심)</div>
+                            <div class="idea-point">실패에 책임감 보여주기</div>
+                            <div class="idea-point">배운 점과 그 이후의 변화 강조</div>
+                            <div class="idea-point">성장 마인드셋 표현</div>
+                        </div>
+                    </div>
+
+                    <div class="content-section">
+                        <div class="section-title">📝 답변 입력</div>
+                        <textarea class="answer-input" placeholder="당신의 답변을 입력해주세요..." onkeyup="updateCounter(this)"></textarea>
+                        <div class="answer-counter"><span class="char-count">0</span>/500자</div>
+                    </div>
+
+                    <div class="content-section">
+                        <button class="feedback-btn" onclick="getFeedback(this)">🔍 피드백 받기</button>
+                        <div class="feedback-content">
+                            <div class="feedback-header">💬 AI 피드백</div>
+                            <div class="loading" style="display: none;">
+                                <span class="spinner"></span>분석 중...
+                            </div>
+                            <div class="feedback-result" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 아코디언 토글
+        function toggleAccordion(header) {
+            const item = header.parentElement;
+            const isActive = item.classList.contains('active');
+
+            // 모든 아코디언 닫기
+            document.querySelectorAll('.accordion-item').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            // 클릭한 아코디언 열기
+            if (!isActive) {
+                item.classList.add('active');
+            }
+        }
+
+        // 아이디어 토글
+        function toggleIdea(btn) {
+            btn.classList.toggle('active');
+            btn.nextElementSibling.classList.toggle('active');
+        }
+
+        // 글자 수 카운트
+        function updateCounter(textarea) {
+            const count = textarea.value.length;
+            const counter = textarea.parentElement.querySelector('.char-count');
+            counter.textContent = count;
+
+            // 상태 업데이트
+            updateStatus(textarea);
+        }
+
+        // 상태 업데이트
+        function updateStatus(element) {
+            const item = element.closest('.accordion-item');
+            const badge = item.querySelector('.status-badge');
+            const textarea = item.querySelector('.answer-input');
+            const feedbackContent = item.querySelector('.feedback-content');
+
+            if (textarea.value.length > 0 && feedbackContent.classList.contains('active')) {
+                badge.className = 'status-badge status-completed';
+                badge.textContent = '완료';
+                badge.dataset.status = 'completed';
+            } else if (textarea.value.length > 0) {
+                badge.className = 'status-badge status-inprogress';
+                badge.textContent = '작성중';
+                badge.dataset.status = 'inprogress';
+            } else {
+                badge.className = 'status-badge status-notstarted';
+                badge.textContent = '미작성';
+                badge.dataset.status = 'notstarted';
+            }
+
+            updateProgress();
+        }
+
+        // 피드백 받기
+        function getFeedback(btn) {
+            const item = btn.closest('.accordion-item');
+            const feedbackContent = item.querySelector('.feedback-content');
+            const loading = feedbackContent.querySelector('.loading');
+            const result = feedbackContent.querySelector('.feedback-result');
+
+            if (feedbackContent.classList.contains('active')) {
+                feedbackContent.classList.remove('active');
+                btn.textContent = '🔍 피드백 받기';
+                return;
+            }
+
+            const textarea = item.querySelector('.answer-input');
+            if (textarea.value.length < 20) {
+                alert('최소 20자 이상 입력해주세요.');
+                return;
+            }
+
+            feedbackContent.classList.add('active');
+            btn.textContent = '🔍 피드백 닫기';
+            btn.disabled = true;
+
+            loading.style.display = 'block';
+            result.style.display = 'none';
+
+            setTimeout(() => {
+                loading.style.display = 'none';
+                result.style.display = 'block';
+                result.innerHTML = generateFeedback(textarea.value);
+                btn.disabled = false;
+                updateStatus(textarea);
+            }, 1500);
+        }
+
+        // 피드백 생성
+        function generateFeedback(answer) {
+            const feedbacks = [
+                '<div class="feedback-item"><strong>✓ 잘한 점:</strong> 구체적인 사례와 함께 설명해주셨습니다.</div><div class="feedback-item"><strong>💡 개선 제안:</strong> 시작 부분을 더 강하게 시작하면 좋을 것 같습니다.</div><div class="feedback-item"><strong>🎯 종합 평가:</strong> 좋은 답변입니다! 약간의 문장 다듬기로 더 완성도 높게 만들 수 있습니다.</div>',
+                '<div class="feedback-item"><strong>✓ 잘한 점:</strong> 질문에 정확하게 답변하셨습니다.</div><div class="feedback-item"><strong>💡 개선 제안:</strong> 마지막에 회사와의 연결고리를 한 문장 더 추가하면 완벽할 것 같습니다.</div><div class="feedback-item"><strong>🎯 종합 평가:</strong> 기본은 잘 되어있으나, 개인적인 스토리가 더 필요해 보입니다.</div>',
+                '<div class="feedback-item"><strong>✓ 잘한 점:</strong> 경험을 상세하게 설명했습니다.</div><div class="feedback-item"><strong>💡 개선 제안:</strong> 배운 점을 조금 더 구체적으로 표현해주세요.</div><div class="feedback-item"><strong>🎯 종합 평가:</strong> 전체적으로 좋은 답변입니다!</div>'
+            ];
+            return feedbacks[Math.floor(Math.random() * feedbacks.length)];
+        }
+
+        // 진행도 업데이트
+        function updateProgress() {
+            const items = document.querySelectorAll('.accordion-item');
+            let completed = 0;
+
+            items.forEach(item => {
+                const badge = item.querySelector('.status-badge');
+                if (badge.dataset.status === 'completed') {
+                    completed++;
+                }
+            });
+
+            const total = items.length;
+            const percentage = (completed / total) * 100;
+
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('progressFill').style.width = percentage + '%';
+        }
+
+        // 뒤로가기
+        document.querySelector('.back-btn').addEventListener('click', () => {
+            alert('이전 페이지로 돌아갑니다.');
+        });
+    </script>
+</body>
+</html>
