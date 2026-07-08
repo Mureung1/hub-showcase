@@ -30,7 +30,6 @@ function CommandDetailPage() {
                         {command.name}
                         <span className="cursor-blink">▌</span>
                     </h1>
-                    <span className={`category-badge ${command.category}`}>{command.category}</span>
                 </div>
                 <p className="detail-summary">{command.summary}</p>
 
