@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pick My Clothes - Recommend</title>
+    <link rel="stylesheet" href="recommend.css" />
+</head>
+
+<body>
+    <div class="notebook-lines"></div>
+
+    <header>
+        <div class="rings">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="star star-left">★</div>
+        <div class="star star-small-left">☆</div>
+
+        <div class="title-box">
+            <h1>Pick My Clothse</h1>
+        </div>
+
+        <button class="login-btn">login</button>
+    </header>
+
+    <main>
+        <section class="select-card">
+            <h2>날씨</h2>
+            <button class="option-btn">✓ 맑음</button>
+            <button class="option-btn">✓ 흐림</button>
+            <button class="option-btn">✓ 비</button>
+            <button class="option-btn">✓ 눈</button>
+            <div class="input-box">입력하기...</div>
+        </section>
+
+        <section class="select-card">
+            <h2>장소</h2>
+            <button class="option-btn">✓ 회사</button>
+            <button class="option-btn">✓ 학교</button>
+            <button class="option-btn">✓ 레스토랑</button>
+            <button class="option-btn">✓ 영화관</button>
+            <div class="input-box">입력하기...</div>
+        </section>
+
+        <section class="select-card">
+            <h2>상황</h2>
+            <button class="option-btn">✓ 회의</button>
+            <button class="option-btn">✓ 친구랑 모임</button>
+            <button class="option-btn">✓ 데이트</button>
+            <button class="option-btn">✓ 식사</button>
+            <div class="input-box">입력하기...</div>
+        </section>
+
+        <a href="result.html" class="done-btn">선택 완료</a>
+
+        <div class="star star-right">★</div>
+        <div class="star star-small-right">☆</div>
+    </main>
+
+
+    <script>
+        const buttons = document.querySelectorAll(".option-btn");
+
+        buttons.forEach(button => {
+            button.addEventListener("click", () => {
+                button.classList.toggle("active");
+            });
+        });
+    </script>
+
+
+</body>
+
+</html>

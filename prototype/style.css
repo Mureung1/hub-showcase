@@ -1,0 +1,215 @@
+@import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Pacifico&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #fff8fb;
+    font-family: 'Gaegu', cursive;
+    overflow: hidden;
+    color: #555;
+}
+
+.notebook-lines {
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(to bottom,
+            #fff8fb 0px,
+            #fff8fb 57px,
+            #f7dce6 58px,
+            #f7dce6 60px);
+    z-index: -3;
+}
+
+header {
+    height: 115px;
+    position: relative;
+    overflow: visible;
+}
+
+.rings {
+    position: absolute;
+    top: -4px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    gap: 23px;
+    padding-left: 0;
+    overflow: visible;
+}
+
+.rings span {
+    width: 16px;
+    height: 62px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.rings span::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 5px;
+    width: 6px;
+    height: 43px;
+    background: #f6aac2;
+    border-radius: 999px;
+}
+
+.rings span::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 4px;
+    width: 16px;
+    height: 15px;
+    border: 5px solid #f6aac2;
+    border-top: none;
+    border-radius: 0 0 18px 18px;
+}
+
+.login-btn {
+    position: absolute;
+    top: 65px;
+    right: 55px;
+    padding: 10px 28px;
+    border: none;
+    border-radius: 24px;
+    background: #555;
+    color: white;
+    font-family: 'Gaegu', cursive;
+    font-size: 34px;
+    box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+}
+
+main {
+    min-height: calc(100vh - 115px);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.title-area {
+    margin-top: 160px;
+    position: relative;
+    width: 1080px;
+    text-align: center;
+}
+
+.pink-marker {
+    position: absolute;
+    height: 72px;
+    background: rgba(255, 214, 229, 0.95);
+    transform: skewX(-14deg);
+    z-index: 0;
+}
+
+.marker-top {
+    width: 830px;
+    top: 8px;
+    left: 80px;
+}
+
+.marker-bottom {
+    width: 810px;
+    top: 82px;
+    left: 270px;
+}
+
+h1 {
+    position: relative;
+    z-index: 2;
+    font-family: 'Pacifico', cursive;
+    font-size: 112px;
+    font-weight: 400;
+    color: #555;
+    letter-spacing: 2px;
+    text-shadow: 2px 3px 0 rgba(255, 180, 205, 0.35);
+}
+
+.start-btn {
+    margin-top: 145px;
+    padding: 28px 84px;
+    border: none;
+    border-radius: 90px;
+    background: #555;
+    color: white;
+    font-family: 'Gaegu', cursive;
+    font-size: 56px;
+    box-shadow: 5px 6px 0 rgba(0, 0, 0, 0.13);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.start-btn:hover {
+    transform: translateY(-3px);
+    background: #494949;
+}
+
+.star {
+    position: absolute;
+    color: #ffb7cf;
+    text-shadow:
+        1px 1px 0 #555,
+        -1px 1px 0 #555,
+        1px -1px 0 #555,
+        -1px -1px 0 #555;
+}
+
+.star-left {
+    top: 28px;
+    left: 110px;
+    font-size: 78px;
+    transform: rotate(-15deg);
+}
+
+.star-small-left {
+    top: 105px;
+    left: 62px;
+    font-size: 42px;
+    color: white;
+}
+
+.star-right {
+    right: 80px;
+    bottom: 38px;
+    font-size: 62px;
+    transform: rotate(-14deg);
+}
+
+.star-small-right {
+    right: 118px;
+    bottom: 132px;
+    font-size: 36px;
+    color: white;
+}
+
+@media (max-width: 1000px) {
+    .title-area {
+        width: 90%;
+    }
+
+    h1 {
+        font-size: 64px;
+    }
+
+    .marker-top {
+        width: 80%;
+        left: 5%;
+    }
+
+    .marker-bottom {
+        width: 75%;
+        left: 20%;
+    }
+
+    .start-btn {
+        font-size: 38px;
+        padding: 22px 54px;
+    }
+}

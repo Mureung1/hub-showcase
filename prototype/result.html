@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Pick My Clothes - Result</title>
+    <link rel="stylesheet" href="result.css" />
+</head>
+
+<body>
+    <div class="notebook-lines"></div>
+
+    <header>
+        <div class="rings">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="star star-left">★</div>
+        <div class="star star-small-left">☆</div>
+
+        <div class="title-box">
+            <h1>Pick My Clothes</h1>
+        </div>
+
+        <button class="login-btn">login</button>
+    </header>
+
+    <main>
+        <section class="result-card">
+            <h2>오늘의 코디</h2>
+
+            <div class="item item-left">스트라이프 티</div>
+            <div class="item item-right">카고 팬츠</div>
+            <div class="item item-left">운동화</div>
+
+            <a href="recommend.html" class="retry-btn">다시 추천하기</a>
+        </section>
+
+        <section class="clothes-area">
+            <img class="shirt" src="https://cdn.jsdelivr.net/npm/openmoji@14.0.0/color/svg/1F455.svg" alt="shirt">
+            <img class="pants" src="https://cdn.jsdelivr.net/npm/openmoji@14.0.0/color/svg/1F456.svg" alt="pants">
+            <img class="shoes" src="https://cdn.jsdelivr.net/npm/openmoji@14.0.0/color/svg/1F45F.svg" alt="shoes">
+        </section>
+
+        <button class="save-btn" onclick="showToast()">
+            저장하기
+        </button>
+        <div class="star star-right">★</div>
+        <div class="star star-small-right">☆</div>
+    </main>
+
+    <div id="toast" class="toast">
+        💖 코디가 저장되었습니다!
+    </div>
+
+    <script>
+
+        function showToast() {
+
+            const toast = document.getElementById("toast");
+
+            toast.classList.add("show");
+
+            setTimeout(() => {
+
+                toast.classList.remove("show");
+
+            }, 2000);
+
+        }
+
+    </script>
+
+</body>
+
+</html>
