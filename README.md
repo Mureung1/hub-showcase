@@ -16,3 +16,6 @@
 npm install
 npm run dev
 ```
+
+## 산출물
+- [기획서](./기획서.md)
