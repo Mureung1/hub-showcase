@@ -1,24 +1,78 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { analyzeOpportunity as requestAnalyzeOpportunity, getHealth } from "./api.js";
 import {
-  SAMPLE_KNOWN_URLS,
-  SAMPLE_NOTICE_SITE,
-  buildKnownLinkKey,
   findNewPostLinks,
   resolveTargetUrl,
   runNoticeLinkScan,
-  sampleNoticeHtml,
 } from "./agents/noticeLinkAgent.js";
+import {
+  createNoticeBriefsFromLinks,
+  getNoticeBriefValue,
+  noticeBriefFields,
+} from "./agents/noticeBriefAgent.js";
+import {
+  expansionRoadmap,
+  opportunityCategories,
+  defaultNoticeSources,
+} from "./data/noticeSources.js";
+import {
+  mergeNoticeHistory,
+  readCustomSources,
+  readNoticeHistory,
+  readScanSnapshot,
+  upsertCustomSource,
+  writeNoticeHistory,
+  writeScanSnapshot,
+} from "./storage/noticeHistoryStore.js";
 
-const sourceOptions = [
-  { id: "sample", label: "샘플 HTML" },
-  { id: "live", label: "실제 웹페이지" },
+const resultModes = [
+  { id: "latest", label: "최신" },
+  { id: "all", label: "전체" },
 ];
 
+const sourceModes = [
+  { id: "manual", label: "HTML 입력" },
+  { id: "live", label: "웹사이트 직접" },
+];
+const sampleRawText = `2026 AI 소프트웨어 공모전 참가자 모집
+
+대상: 전국 대학교 2학년 이상 재학생. 컴퓨터공학, 인공지능, 소프트웨어 관련 전공자 우대.
+접수 마감: 2026년 8월 31일
+제출 서류: 참가신청서, 프로젝트 계획서, 재학증명서
+활동 지역: 온라인
+혜택: 대상 300만원, 우수상 100만원
+팀 참가 가능, 개인 참가 가능`;
+
+const initialProfileDraft = {
+  school: "경북대학교",
+  grade: "2",
+  majors: "컴퓨터학부, 수학",
+  interests: "AI, 소프트웨어, 공모전",
+  regions: "대구, 온라인",
+  canJoinTeam: true,
+};
+
+const categoryLabels = {
+  activity: "대외활동",
+  contest: "공모전",
+  scholarship: "장학금",
+  support: "지원사업",
+  unknown: "미분류",
+  volunteer: "봉사",
+};
+
+const matchStatusLabels = {
+  conditionally_eligible: "조건부 가능",
+  eligible: "지원 가능",
+  insufficient_info: "정보 부족",
+  not_eligible: "지원 어려움",
+};
+
 const statusLabels = {
-  idle: "준비",
-  running: "스캔 중",
   complete: "완료",
   error: "확인 필요",
+  idle: "준비",
+  running: "스캔 중",
 };
 
 const timeFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -27,31 +81,36 @@ const timeFormatter = new Intl.DateTimeFormat("ko-KR", {
   second: "2-digit",
 });
 
-function defaultKnownLinks(targetUrl) {
-  return resolveTargetUrl(targetUrl) === SAMPLE_NOTICE_SITE.url ? SAMPLE_KNOWN_URLS : [];
+function findSourceByUrl(sources, targetUrl) {
+  const resolvedUrl = resolveTargetUrl(targetUrl);
+  return sources.find((item) => item.targetUrl === resolvedUrl);
 }
 
-function readKnownLinks(targetUrl) {
+function getFallbackSourceName(targetUrl) {
   try {
-    const rawValue = window.localStorage.getItem(buildKnownLinkKey(targetUrl));
+    return new URL(targetUrl).hostname;
+  } catch {
+    return "직접 입력";
+  }
+}
 
-    if (!rawValue) {
-      return defaultKnownLinks(targetUrl);
+function uniqueSourcesByUrl(sources) {
+  const sourceMap = new Map();
+
+  sources.forEach((source) => {
+    const targetUrl = resolveTargetUrl(source.targetUrl);
+
+    if (!targetUrl) {
+      return;
     }
 
-    const parsedValue = JSON.parse(rawValue);
-    return Array.isArray(parsedValue) ? parsedValue : defaultKnownLinks(targetUrl);
-  } catch {
-    return defaultKnownLinks(targetUrl);
-  }
-}
+    sourceMap.set(targetUrl, {
+      ...source,
+      targetUrl,
+    });
+  });
 
-function saveKnownLinks(targetUrl, urls) {
-  try {
-    window.localStorage.setItem(buildKnownLinkKey(targetUrl), JSON.stringify(urls));
-  } catch {
-    // Local storage is best-effort in this prototype.
-  }
+  return Array.from(sourceMap.values());
 }
 
 function formatScanTime(value) {
@@ -70,98 +129,825 @@ function getErrorMessage(error) {
   return "스캔 중 오류가 발생했습니다.";
 }
 
+
+function parseCommaList(value) {
+  return String(value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+function createInitialConfig() {
+  return {
+    htmlSource: "",
+    linkSelector: "a[href]",
+    selectedSourceId: "custom",
+    sourceMode: "live",
+    sourceName: "",
+    targetUrl: "",
+  };
+}
+
+function annotateLinks(links, source) {
+  return links.map((link) => ({
+    ...link,
+    id: `${source.id}:${link.url}`,
+    sourceId: source.id,
+    sourceName: source.name,
+    sourceUrl: source.targetUrl,
+  }));
+}
+
+function createScanSummary(sourceResults, failedSources = []) {
+  return {
+    allLinks: sourceResults.flatMap((result) => result.allLinks),
+    failedSources,
+    fetchedAt: new Date().toISOString(),
+    isBatch: sourceResults.length > 1 || failedSources.length > 0,
+    knownCount: sourceResults.reduce((sum, result) => sum + result.knownCount, 0),
+    latestLinks: sourceResults.flatMap((result) => result.latestLinks),
+    newLinks: sourceResults.flatMap((result) => result.newLinks),
+    previousScanCount: sourceResults.reduce((sum, result) => sum + result.previousScanCount, 0),
+    sourceCount: sourceResults.length,
+    sourceResults,
+    sourceMode: "batch",
+    targetUrl: sourceResults[0]?.targetUrl ?? "batch",
+  };
+}
+
+function AnalysisResultCard({ result }) {
+  const opportunity = result.opportunity;
+  const match = result.match;
+  const fields = [
+    { label: "공고명", value: opportunity.title },
+    { label: "주최 기관", value: opportunity.organizer },
+    { label: "분류", value: categoryLabels[opportunity.category] ?? opportunity.category },
+    { label: "마감일", value: opportunity.deadline },
+    { label: "지원 대상", value: opportunity.target },
+    { label: "활동 기간", value: opportunity.activityPeriod },
+  ];
+
+  return (
+    <div className="analysis-result">
+      <div className="analysis-result-heading">
+        <div>
+          <p className="eyebrow">Analysis Result</p>
+          <h3>{opportunity.title || "공고명 확인 필요"}</h3>
+        </div>
+        <span className={`analysis-mode mode-${result.mode}`}>{result.mode}</span>
+      </div>
+
+      {result.mode === "mock" ? (
+        <p className="demo-mode-message">현재 데모 모드입니다. 실제 OpenAI API는 호출되지 않았습니다.</p>
+      ) : null}
+
+      <div className="analysis-field-grid">
+        {fields.map((field) => (
+          <div className="analysis-field" key={field.label}>
+            <span>{field.label}</span>
+            <strong>{field.value || "확인 필요"}</strong>
+          </div>
+        ))}
+      </div>
+
+      <div className="match-box">
+        <div>
+          <span>{matchStatusLabels[match.status] ?? match.status}</span>
+          <strong>{match.score}점</strong>
+        </div>
+        <p>{match.summary}</p>
+      </div>
+
+      <div className="analysis-lists">
+        <section>
+          <h4>맞는 이유</h4>
+          <ul>
+            {(match.matchedReasons.length ? match.matchedReasons : ["아직 확인된 일치 조건이 없습니다."]).map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+        <section>
+          <h4>다음 행동</h4>
+          <ul>
+            {match.nextActions.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+        <section>
+          <h4>준비 태스크</h4>
+          <ul>
+            {result.tasks.map((task) => (
+              <li key={`${task.title}-${task.dueDate || "none"}`}>
+                {task.title}{task.dueDate ? ` (${task.dueDate})` : ""}
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function AnalysisDemoPanel({
+  analysisError,
+  analysisRawText,
+  analysisResult,
+  analysisUrl,
+  health,
+  healthError,
+  isAnalyzing,
+  onAnalyze,
+  onChangeProfile,
+  onChangeRawText,
+  onChangeUrl,
+  profileDraft,
+}) {
+  return (
+    <section className="analysis-panel" aria-labelledby="analysis-title">
+      <header className="analysis-panel-header">
+        <div>
+          <p className="eyebrow">AI Analysis</p>
+          <h2 id="analysis-title">공고 본문 분석</h2>
+        </div>
+        <span className="analysis-health">
+          {health ? `${health.aiProvider} / live ${String(health.liveOpenAIEnabled)}` : "server 확인 중"}
+        </span>
+      </header>
+
+      <form className="analysis-form" onSubmit={onAnalyze}>
+        <div className="profile-grid">
+          <label className="field">
+            <span>학교</span>
+            <input
+              value={profileDraft.school}
+              onChange={(event) => onChangeProfile({ school: event.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>학년</span>
+            <input
+              min="1"
+              type="number"
+              value={profileDraft.grade}
+              onChange={(event) => onChangeProfile({ grade: event.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>전공</span>
+            <input
+              value={profileDraft.majors}
+              onChange={(event) => onChangeProfile({ majors: event.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>관심 분야</span>
+            <input
+              value={profileDraft.interests}
+              onChange={(event) => onChangeProfile({ interests: event.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>활동 지역</span>
+            <input
+              value={profileDraft.regions}
+              onChange={(event) => onChangeProfile({ regions: event.target.value })}
+            />
+          </label>
+          <label className="check-field">
+            <input
+              checked={profileDraft.canJoinTeam}
+              type="checkbox"
+              onChange={(event) => onChangeProfile({ canJoinTeam: event.target.checked })}
+            />
+            <span>팀 참가 가능</span>
+          </label>
+        </div>
+
+        <label className="field">
+          <span>출처 URL</span>
+          <input
+            type="url"
+            value={analysisUrl}
+            onChange={(event) => onChangeUrl(event.target.value)}
+            placeholder="https://example.com/notice/123"
+          />
+        </label>
+
+        <label className="field rawtext-field">
+          <span>공고 본문</span>
+          <textarea
+            value={analysisRawText}
+            onChange={(event) => onChangeRawText(event.target.value)}
+            spellCheck="false"
+          />
+        </label>
+
+        <button className="primary-button" type="submit" disabled={isAnalyzing}>
+          {isAnalyzing ? "분석 중" : "AI 분석 실행"}
+        </button>
+      </form>
+
+      {healthError ? <p className="notice-message is-error">{healthError}</p> : null}
+      {analysisError ? <p className="notice-message is-error">{analysisError}</p> : null}
+      {analysisResult ? <AnalysisResultCard result={analysisResult} /> : null}
+    </section>
+  );
+}
+
+function ConfigPanel({
+  config,
+  errorMessage,
+  isRunning,
+  noticeMessage,
+  onChangeConfig,
+  onLoadSource,
+  onResetHistory,
+  onRunBatchScan,
+  onRunScan,
+  onSaveLinks,
+  onSaveSource,
+  scan,
+  sourceOptions,
+}) {
+  return (
+    <form className="config-panel" onSubmit={onRunScan}>
+      <div className="form-grid">
+        <label className="field field-wide">
+          <span>대상 웹사이트</span>
+          <input
+            type="url"
+            value={config.targetUrl}
+            onChange={(event) => onChangeConfig({ targetUrl: event.target.value })}
+            placeholder="https://example.ac.kr/notices"
+          />
+        </label>
+
+        <label className="field">
+          <span>출처 이름</span>
+          <input
+            type="text"
+            value={config.sourceName}
+            onChange={(event) => onChangeConfig({ sourceName: event.target.value })}
+            placeholder="예: 학교 공지사항"
+          />
+        </label>
+      </div>
+
+      <div className="form-grid source-grid">
+        <label className="field">
+          <span>저장된 출처</span>
+          <select
+            value={config.selectedSourceId}
+            onChange={(event) => onLoadSource(event.target.value)}
+          >
+            <option value="custom">직접 입력</option>
+            {defaultNoticeSources.length ? (
+              <optgroup label="기본 출처">
+                {defaultNoticeSources.map((source) => (
+                  <option key={source.id} value={source.id}>
+                    {source.name}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
+            {sourceOptions.length > defaultNoticeSources.length ? (
+              <optgroup label="내 출처">
+                {sourceOptions
+                  .filter((source) => source.id.startsWith("custom:"))
+                  .map((source) => (
+                    <option key={source.id} value={source.id}>
+                      {source.name}
+                    </option>
+                  ))}
+              </optgroup>
+            ) : null}
+          </select>
+        </label>
+
+        <label className="field">
+          <span>링크 선택자</span>
+          <input
+            type="text"
+            value={config.linkSelector}
+            onChange={(event) => onChangeConfig({ linkSelector: event.target.value })}
+            placeholder="a[href]"
+          />
+        </label>
+      </div>
+
+      <div className="segmented-control source-mode-control" role="group" aria-label="HTML 소스 선택">
+        {sourceModes.map((mode) => (
+          <button
+            type="button"
+            key={mode.id}
+            className={config.sourceMode === mode.id ? "is-active" : ""}
+            onClick={() => onChangeConfig({ sourceMode: mode.id })}
+          >
+            {mode.label}
+          </button>
+        ))}
+      </div>
+
+      <label className="field html-field">
+        <span>HTML 소스</span>
+        <textarea
+          value={config.htmlSource}
+          disabled={config.sourceMode === "live"}
+          onChange={(event) => onChangeConfig({ htmlSource: event.target.value })}
+          spellCheck="false"
+        />
+      </label>
+
+      <div className="action-row">
+        <button className="primary-button" type="submit" disabled={isRunning}>
+          {isRunning ? "스캔 중" : "스캔 실행"}
+        </button>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={onRunBatchScan}
+          disabled={isRunning || !sourceOptions.length}
+        >
+          저장된 출처 모두 스캔
+        </button>
+        <button className="secondary-button" type="button" onClick={onSaveSource} disabled={isRunning}>
+          출처 저장
+        </button>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={onSaveLinks}
+          disabled={!scan || isRunning}
+        >
+          현재 결과 저장
+        </button>
+        <button className="ghost-button" type="button" onClick={onResetHistory} disabled={isRunning}>
+          기록 초기화
+        </button>
+      </div>
+
+      {errorMessage ? (
+        <p className="notice-message is-error" role="alert">
+          {errorMessage}
+        </p>
+      ) : (
+        <p className="notice-message">{noticeMessage}</p>
+      )}
+    </form>
+  );
+}
+
+function PipelinePanel({ config, isRunning, scan }) {
+  const resolvedUrl = resolveTargetUrl(config.targetUrl);
+  const isBatch = scan?.isBatch;
+  const steps = [
+    {
+      copy: isBatch ? `${scan.sourceCount}개 저장 출처` : config.sourceName || resolvedUrl || "출처 대기",
+      state: resolvedUrl || isBatch ? "done" : "idle",
+      title: "출처 설정",
+    },
+    {
+      copy: isBatch ? "저장된 출처 일괄 요청" : config.sourceMode === "live" ? "브라우저 직접 요청" : "입력 HTML 사용",
+      state: isRunning ? "active" : scan ? "done" : "idle",
+      title: "HTML 확보",
+    },
+    {
+      copy: `${scan?.allLinks.length ?? 0}개 발견`,
+      state: scan ? "done" : "idle",
+      title: "링크 추출",
+    },
+    {
+      copy: `${scan?.latestLinks.length ?? 0}개 남김`,
+      state: scan ? "done" : "idle",
+      title: "최신 필터",
+    },
+  ];
+
+  return (
+    <aside className="pipeline-panel" aria-label="에이전트 처리 흐름">
+      <div className="panel-heading">
+        <p className="eyebrow">Agent Flow</p>
+        <h2>처리 흐름</h2>
+      </div>
+      <ol className="pipeline-list">
+        {steps.map((step, index) => (
+          <li key={step.title} className={`pipeline-step step-${step.state}`}>
+            <span>{index + 1}</span>
+            <div>
+              <strong>{step.title}</strong>
+              <p>{step.copy}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </aside>
+  );
+}
+
+function RoadmapPanel() {
+  return (
+    <section className="roadmap-section" aria-labelledby="roadmap-title">
+      <div className="section-heading compact-heading">
+        <p className="eyebrow">Expansion</p>
+        <h2 id="roadmap-title">확장 가능한 에이전트 단계</h2>
+      </div>
+      <div className="roadmap-list">
+        {expansionRoadmap.map((item) => (
+          <article key={item.id} className={`roadmap-item roadmap-${item.status}`}>
+            <span>{item.label}</span>
+            <strong>{item.title}</strong>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Metrics({ knownLinks, scan }) {
+  const metrics = [
+    { label: "스캔 출처", value: scan?.sourceCount ?? 0 },
+    { label: "추출 링크", value: scan?.allLinks.length ?? 0 },
+    { label: "최신 링크", value: scan?.latestLinks.length ?? 0 },
+    { label: "기존 기록", value: scan?.knownCount ?? knownLinks.length },
+    { label: "마지막 스캔", value: formatScanTime(scan?.fetchedAt) },
+  ];
+
+  return (
+    <div className="metrics-row">
+      {metrics.map((metric) => (
+        <div className="metric" key={metric.label}>
+          <span>{metric.label}</span>
+          <strong>{metric.value}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ResultTable({ displayMode, failedSources = [], links, onChangeMode }) {
+  const heading = displayMode === "all" ? "전체 공지 링크" : "최신 공지 링크";
+  const eyebrow = displayMode === "all" ? "All Notices" : "Latest Since Last Scan";
+
+  return (
+    <div className="result-table">
+      <header className="result-header result-header-with-mode">
+        <div>
+          <p className="eyebrow">{eyebrow}</p>
+          <h2>{heading}</h2>
+        </div>
+        <div className="result-controls">
+          <div className="mode-toggle" role="group" aria-label="공지 표시 모드">
+            {resultModes.map((mode) => (
+              <button
+                type="button"
+                key={mode.id}
+                className={displayMode === mode.id ? "is-active" : ""}
+                onClick={() => onChangeMode(mode.id)}
+              >
+                {mode.label}
+              </button>
+            ))}
+          </div>
+          <span>{links.length}개</span>
+        </div>
+      </header>
+
+      {failedSources.length ? (
+        <div className="scan-warning">
+          {failedSources.length}개 출처는 스캔하지 못했습니다: {failedSources.map((item) => item.name).join(", ")}
+        </div>
+      ) : null}
+
+      <div className="link-list">
+        {links.length ? (
+          links.map((link, index) => (
+            <a className="link-row" href={link.url} key={link.id} rel="noreferrer" target="_blank">
+              <span className="row-index">{String(index + 1).padStart(2, "0")}</span>
+              <span className="link-copy">
+                <strong>{link.title}</strong>
+                <small>{link.url}</small>
+              </span>
+              <span className="link-host">{link.sourceName || link.hostname}</span>
+            </a>
+          ))
+        ) : (
+          <div className="empty-state">표시할 공지 링크가 없습니다.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function NoticeBriefPanel({ briefs }) {
+  return (
+    <section className="notice-brief-panel" aria-labelledby="notice-brief-title">
+      <header className="result-header result-header-with-mode">
+        <div>
+          <p className="eyebrow">Structured Notice</p>
+          <h2 id="notice-brief-title">공고 정보</h2>
+        </div>
+        <span>{briefs.length}개</span>
+      </header>
+
+      <div className="notice-brief-list">
+        {briefs.length ? (
+          briefs.map((brief) => (
+            <article className="notice-brief" key={brief.id}>
+              <header className="notice-brief-title">
+                <div>
+                  <strong>{brief.title}</strong>
+                  <small>{brief.sourceName}</small>
+                </div>
+                <span>{brief.statusLabel}</span>
+              </header>
+              <dl className="brief-field-grid">
+                {noticeBriefFields.map((field) => (
+                  <div className="brief-field" key={field.key}>
+                    <dt>{field.label}</dt>
+                    <dd className={brief.fields[field.key]?.value ? "" : "is-pending"}>
+                      {getNoticeBriefValue(brief, field.key)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </article>
+          ))
+        ) : (
+          <div className="empty-state">정리할 공고 정보가 없습니다.</div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CategoryStrip() {
+  return (
+    <div className="category-strip" aria-label="향후 정리 대상">
+      {opportunityCategories.map((category) => (
+        <span key={category}>{category}</span>
+      ))}
+    </div>
+  );
+}
+
 export default function OpportunityAgentWorkbench() {
-  const [targetUrl, setTargetUrl] = useState(SAMPLE_NOTICE_SITE.url);
-  const [linkSelector, setLinkSelector] = useState(SAMPLE_NOTICE_SITE.linkSelector);
-  const [sourceMode, setSourceMode] = useState("sample");
-  const [htmlSource, setHtmlSource] = useState(sampleNoticeHtml);
-  const [knownLinks, setKnownLinks] = useState(() => readKnownLinks(SAMPLE_NOTICE_SITE.url));
+  const [customSources, setCustomSources] = useState(() => readCustomSources());
+  const [config, setConfig] = useState(createInitialConfig);
+  const [knownLinks, setKnownLinks] = useState([]);
   const [scan, setScan] = useState(null);
   const [status, setStatus] = useState("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [noticeMessage, setNoticeMessage] = useState("API 없이 브라우저와 로컬 기록만 사용 중입니다.");
+  const [displayMode, setDisplayMode] = useState("latest");
+  const [health, setHealth] = useState(null);
+  const [healthError, setHealthError] = useState("");
+  const [profileDraft, setProfileDraft] = useState(initialProfileDraft);
+  const [analysisUrl, setAnalysisUrl] = useState("");
+  const [analysisRawText, setAnalysisRawText] = useState(sampleRawText);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [analysisError, setAnalysisError] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const resolvedTargetUrl = resolveTargetUrl(targetUrl);
   const isRunning = status === "running";
+  const resolvedTargetUrl = resolveTargetUrl(config.targetUrl);
+  const sourceOptions = useMemo(() => [...defaultNoticeSources, ...customSources], [customSources]);
 
-  const pipelineSteps = useMemo(
-    () => [
-      {
-        copy: resolvedTargetUrl || "URL 대기",
-        state: resolvedTargetUrl ? "done" : "idle",
-        title: "대상 확인",
-      },
-      {
-        copy: sourceMode === "live" ? "웹페이지 HTML 요청" : "로컬 HTML 사용",
-        state: isRunning ? "active" : scan ? "done" : "idle",
-        title: "HTML 수집",
-      },
-      {
-        copy: `${scan?.allLinks.length ?? 0}개 발견`,
-        state: scan ? "done" : "idle",
-        title: "링크 추출",
-      },
-      {
-        copy: `${scan?.newLinks.length ?? 0}개 남김`,
-        state: scan ? "done" : "idle",
-        title: "신규 필터",
-      },
-      {
-        copy: "공지 요약 확장 슬롯",
-        state: "queued",
-        title: "요약 대기",
-      },
-    ],
-    [isRunning, resolvedTargetUrl, scan, sourceMode],
-  );
+  const sourceSummary = useMemo(() => {
+    const selectedSource = sourceOptions.find((source) => source.id === config.selectedSourceId);
+    return selectedSource?.name || config.sourceName || "직접 입력";
+  }, [config.selectedSourceId, config.sourceName, sourceOptions]);
 
-  const metrics = useMemo(
-    () => [
-      { label: "추출 링크", value: scan?.allLinks.length ?? 0 },
-      { label: "새 링크", value: scan?.newLinks.length ?? 0 },
-      { label: "기존 기록", value: knownLinks.length },
-      { label: "마지막 스캔", value: formatScanTime(scan?.fetchedAt) },
-    ],
-    [knownLinks.length, scan],
+  const displayLinks = useMemo(
+    () => (displayMode === "all" ? (scan?.allLinks ?? []) : (scan?.latestLinks ?? [])),
+    [displayMode, scan],
   );
+  const noticeBriefs = useMemo(() => createNoticeBriefsFromLinks(displayLinks), [displayLinks]);
+
 
   useEffect(() => {
     let isCancelled = false;
 
-    async function runInitialScan() {
-      setStatus("running");
-
-      try {
-        const result = await runNoticeLinkScan({
-          html: sampleNoticeHtml,
-          knownUrls: readKnownLinks(SAMPLE_NOTICE_SITE.url),
-          linkSelector: SAMPLE_NOTICE_SITE.linkSelector,
-          sourceMode: "sample",
-          targetUrl: SAMPLE_NOTICE_SITE.url,
-        });
-
+    getHealth()
+      .then((result) => {
         if (!isCancelled) {
-          setScan(result);
-          setStatus("complete");
-          setErrorMessage("");
+          setHealth(result);
+          setHealthError("");
         }
-      } catch (error) {
+      })
+      .catch((error) => {
         if (!isCancelled) {
-          setStatus("error");
-          setErrorMessage(getErrorMessage(error));
+          setHealthError(getErrorMessage(error));
         }
-      }
-    }
-
-    runInitialScan();
+      });
 
     return () => {
       isCancelled = true;
     };
   }, []);
-
   useEffect(() => {
-    setKnownLinks(readKnownLinks(targetUrl));
-  }, [targetUrl]);
+    if (!resolveTargetUrl(config.targetUrl)) {
+      setKnownLinks([]);
+      return;
+    }
+
+    const fallbackUrls = findSourceByUrl(sourceOptions, config.targetUrl)?.knownUrls ?? [];
+    setKnownLinks(readNoticeHistory(config.targetUrl, fallbackUrls));
+  }, [config.targetUrl, sourceOptions]);
+
+
+  function updateProfileDraft(partialProfile) {
+    setProfileDraft((currentProfile) => ({
+      ...currentProfile,
+      ...partialProfile,
+    }));
+  }
+
+  async function handleAnalyzeOpportunity(event) {
+    event.preventDefault();
+    setIsAnalyzing(true);
+    setAnalysisError("");
+
+    try {
+      const result = await requestAnalyzeOpportunity({
+        profile: {
+          school: profileDraft.school.trim(),
+          grade: Number(profileDraft.grade),
+          majors: parseCommaList(profileDraft.majors),
+          interests: parseCommaList(profileDraft.interests),
+          regions: parseCommaList(profileDraft.regions),
+          canJoinTeam: profileDraft.canJoinTeam,
+        },
+        url: analysisUrl.trim() || undefined,
+        rawText: analysisRawText,
+      });
+
+      setAnalysisResult(result);
+    } catch (error) {
+      setAnalysisError(getErrorMessage(error));
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+  function updateConfig(partialConfig) {
+    setConfig((currentConfig) => ({
+      ...currentConfig,
+      ...partialConfig,
+      selectedSourceId:
+        partialConfig.targetUrl && partialConfig.targetUrl !== currentConfig.targetUrl
+          ? "custom"
+          : (partialConfig.selectedSourceId ?? currentConfig.selectedSourceId),
+    }));
+    setNoticeMessage("입력값이 변경되었습니다. 스캔하면 새 출처가 자동 저장됩니다.");
+  }
+
+  function loadSource(sourceId) {
+    if (sourceId === "custom") {
+      setConfig((currentConfig) => ({
+        ...currentConfig,
+        htmlSource: "",
+        linkSelector: "a[href]",
+        selectedSourceId: "custom",
+        sourceMode: "live",
+        sourceName: "",
+        targetUrl: "",
+      }));
+      setScan(null);
+      setDisplayMode("latest");
+      setStatus("idle");
+      setErrorMessage("");
+      setNoticeMessage("새 출처 이름과 URL을 입력한 뒤 스캔하면 자동 저장됩니다.");
+      return;
+    }
+
+    const source = sourceOptions.find((item) => item.id === sourceId);
+
+    if (!source) {
+      return;
+    }
+
+    setConfig({
+      htmlSource: source.html ?? "",
+      linkSelector: source.linkSelector,
+      selectedSourceId: source.id,
+      sourceMode: source.sourceMode ?? "manual",
+      sourceName: source.name,
+      targetUrl: source.targetUrl,
+    });
+    setScan(null);
+    setDisplayMode("latest");
+    setStatus("idle");
+    setErrorMessage("");
+    setNoticeMessage(`${source.name} 출처를 불러왔습니다.`);
+  }
+
+  function createSourceFromConfig() {
+    const targetUrl = resolveTargetUrl(config.targetUrl);
+
+    if (!targetUrl) {
+      throw new Error("대상 웹사이트 URL을 입력해주세요.");
+    }
+
+    const savedCustomSource = findSourceByUrl(customSources, targetUrl);
+    const savedDefaultSource = findSourceByUrl(defaultNoticeSources, targetUrl);
+    const savedSource = savedCustomSource ?? savedDefaultSource;
+    const sourceName = config.sourceName.trim() || savedSource?.name || getFallbackSourceName(targetUrl);
+
+    return {
+      category: savedSource?.category ?? "직접 추가",
+      html: config.sourceMode === "manual" ? config.htmlSource : "",
+      id: savedSource?.id ?? `current:${targetUrl}`,
+      knownUrls: savedSource?.knownUrls ?? [],
+      linkSelector: config.linkSelector || savedSource?.linkSelector || "a[href]",
+      name: sourceName,
+      sourceMode: config.sourceMode,
+      targetUrl,
+    };
+  }
+
+  function saveSource(source, { silent = false } = {}) {
+    const { source: savedSource, sources } = upsertCustomSource(source);
+
+    setCustomSources(sources);
+    setConfig((currentConfig) => ({
+      ...currentConfig,
+      htmlSource: savedSource.html ?? "",
+      linkSelector: savedSource.linkSelector,
+      selectedSourceId: savedSource.id,
+      sourceMode: savedSource.sourceMode,
+      sourceName: savedSource.name,
+      targetUrl: savedSource.targetUrl,
+    }));
+
+    if (!silent) {
+      setNoticeMessage(`${savedSource.name} 출처를 저장했습니다.`);
+    }
+
+    return savedSource;
+  }
+
+  function maybeAutoSaveCurrentSource() {
+    const source = createSourceFromConfig();
+    const savedDefaultSource = findSourceByUrl(defaultNoticeSources, source.targetUrl);
+    const savedCustomSource = findSourceByUrl(customSources, source.targetUrl);
+    const shouldAutoSave = Boolean(config.sourceName.trim() && (!savedDefaultSource || savedCustomSource));
+
+    if (!shouldAutoSave) {
+      return {
+        autoSaved: false,
+        source,
+      };
+    }
+
+    return {
+      autoSaved: true,
+      source: saveSource(source, { silent: true }),
+    };
+  }
+
+  function handleSaveSource() {
+    setErrorMessage("");
+
+    try {
+      saveSource(createSourceFromConfig());
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    }
+  }
+
+  async function scanSource(source) {
+    const fallbackUrls = source.knownUrls ?? [];
+    const currentKnownLinks = readNoticeHistory(source.targetUrl, fallbackUrls);
+    const previousScanLinks = readScanSnapshot(source.targetUrl);
+    const result = await runNoticeLinkScan({
+      html: source.html ?? "",
+      knownUrls: currentKnownLinks,
+      linkSelector: source.linkSelector,
+      sourceMode: source.sourceMode,
+      targetUrl: source.targetUrl,
+    });
+    const latestLinks = previousScanLinks.length
+      ? findNewPostLinks(result.allLinks, previousScanLinks, result.targetUrl)
+      : result.allLinks;
+
+    writeScanSnapshot(
+      result.targetUrl,
+      result.allLinks.map((link) => link.url),
+    );
+
+    return {
+      ...result,
+      allLinks: annotateLinks(result.allLinks, source),
+      knownCount: currentKnownLinks.length,
+      latestLinks: annotateLinks(latestLinks, source),
+      newLinks: annotateLinks(result.newLinks, source),
+      previousScanCount: previousScanLinks.length,
+      source,
+      sourceCount: 1,
+      sourceId: source.id,
+      sourceName: source.name,
+    };
+  }
 
   async function handleRunScan(event) {
     event.preventDefault();
@@ -169,15 +955,20 @@ export default function OpportunityAgentWorkbench() {
     setErrorMessage("");
 
     try {
-      const result = await runNoticeLinkScan({
-        html: htmlSource,
-        knownUrls: knownLinks,
-        linkSelector,
-        sourceMode,
-        targetUrl,
-      });
+      const { autoSaved, source } = maybeAutoSaveCurrentSource();
+      const result = await scanSource(source);
+      const scanWithModes = createScanSummary([result]);
 
-      setScan(result);
+      setKnownLinks(readNoticeHistory(source.targetUrl, source.knownUrls));
+      setScan({
+        ...scanWithModes,
+        isBatch: false,
+        targetUrl: result.targetUrl,
+      });
+      setDisplayMode("latest");
+      setNoticeMessage(
+        `${autoSaved ? "출처를 저장하고 " : ""}${source.name}에서 최신 링크 ${result.latestLinks.length}개를 찾았습니다.`,
+      );
       setStatus("complete");
     } catch (error) {
       setStatus("error");
@@ -185,35 +976,119 @@ export default function OpportunityAgentWorkbench() {
     }
   }
 
-  function handleSaveCurrentLinks() {
+  async function handleRunBatchScan() {
+    const savedSources = uniqueSourcesByUrl(sourceOptions);
+
+    if (!savedSources.length) {
+      setErrorMessage("저장된 출처가 없습니다.");
+      return;
+    }
+
+    setStatus("running");
+    setErrorMessage("");
+    setNoticeMessage(`${savedSources.length}개 저장 출처를 스캔하고 있습니다.`);
+
+    const settledResults = await Promise.allSettled(savedSources.map((source) => scanSource(source)));
+    const sourceResults = [];
+    const failedSources = [];
+
+    settledResults.forEach((result, index) => {
+      const source = savedSources[index];
+
+      if (result.status === "fulfilled") {
+        sourceResults.push(result.value);
+        return;
+      }
+
+      failedSources.push({
+        id: source.id,
+        message: getErrorMessage(result.reason),
+        name: source.name,
+        targetUrl: source.targetUrl,
+      });
+    });
+
+    if (!sourceResults.length) {
+      setStatus("error");
+      setErrorMessage("저장된 출처를 스캔하지 못했습니다.");
+      return;
+    }
+
+    const scanSummary = createScanSummary(sourceResults, failedSources);
+    const fallbackUrls = findSourceByUrl(sourceOptions, config.targetUrl)?.knownUrls ?? [];
+
+    setKnownLinks(readNoticeHistory(config.targetUrl, fallbackUrls));
+    setScan(scanSummary);
+    setDisplayMode("latest");
+    setNoticeMessage(
+      `저장된 출처 ${sourceResults.length}개에서 최신 링크 ${scanSummary.latestLinks.length}개를 찾았습니다.` +
+        (failedSources.length ? ` ${failedSources.length}개 출처는 확인이 필요합니다.` : ""),
+    );
+    setStatus("complete");
+  }
+
+  function handleSaveLinks() {
     if (!scan) {
       return;
     }
 
-    const nextKnownLinks = Array.from(
-      new Set([...knownLinks, ...scan.allLinks.map((link) => link.url)]),
+    if (scan.isBatch && scan.sourceResults?.length) {
+      const nextKnownCount = scan.sourceResults.reduce((sum, sourceResult) => {
+        const nextKnownLinks = mergeNoticeHistory(
+          sourceResult.targetUrl,
+          readNoticeHistory(sourceResult.targetUrl, sourceResult.source.knownUrls),
+          sourceResult.allLinks.map((link) => link.url),
+        );
+
+        return sum + nextKnownLinks.length;
+      }, 0);
+      const fallbackUrls = findSourceByUrl(sourceOptions, config.targetUrl)?.knownUrls ?? [];
+
+      setKnownLinks(readNoticeHistory(config.targetUrl, fallbackUrls));
+      setScan({
+        ...scan,
+        knownCount: nextKnownCount,
+      });
+      setNoticeMessage("현재 결과를 각 출처의 기존 공지 기록으로 저장했습니다.");
+      return;
+    }
+
+    const nextKnownLinks = mergeNoticeHistory(
+      scan.targetUrl,
+      knownLinks,
+      scan.allLinks.map((link) => link.url),
     );
 
-    saveKnownLinks(scan.targetUrl, nextKnownLinks);
     setKnownLinks(nextKnownLinks);
     setScan({
       ...scan,
       knownCount: nextKnownLinks.length,
       newLinks: findNewPostLinks(scan.allLinks, nextKnownLinks, scan.targetUrl),
     });
+    setNoticeMessage("현재 결과를 기존 공지 기록으로 저장했습니다.");
   }
 
-  function handleResetKnownLinks() {
-    saveKnownLinks(targetUrl, []);
+  function handleResetHistory() {
+    if (!resolvedTargetUrl) {
+      setKnownLinks([]);
+      return;
+    }
+
+    writeNoticeHistory(resolvedTargetUrl, []);
+    writeScanSnapshot(resolvedTargetUrl, []);
     setKnownLinks([]);
 
     if (scan && scan.targetUrl === resolvedTargetUrl) {
       setScan({
         ...scan,
         knownCount: 0,
+        latestLinks: scan.allLinks,
         newLinks: scan.allLinks,
+        previousScanCount: 0,
       });
+      setDisplayMode("latest");
     }
+    setNoticeMessage("이 출처의 기존 기록과 마지막 스캔 기준을 초기화했습니다.");
   }
 
   return (
@@ -222,150 +1097,80 @@ export default function OpportunityAgentWorkbench() {
         <header className="workspace-header">
           <div>
             <p className="eyebrow">Opportunity Agent</p>
-            <h1 id="agent-title">공지 링크 수집 에이전트</h1>
+            <h1 id="agent-title">공지 링크 수집 워크벤치</h1>
+            <CategoryStrip />
           </div>
-          <span className={`status-pill status-${status}`}>{statusLabels[status]}</span>
+          <div className="header-status">
+            <span className="source-chip">{sourceSummary}</span>
+            <span className={`status-pill status-${status}`}>{statusLabels[status]}</span>
+          </div>
         </header>
 
-        <section className="tool-grid" aria-label="스캔 설정">
-          <form className="scan-panel" onSubmit={handleRunScan}>
-            <div className="field-row">
-              <label className="field field-wide">
-                <span>대상 웹사이트</span>
-                <input
-                  type="url"
-                  value={targetUrl}
-                  onChange={(event) => setTargetUrl(event.target.value)}
-                  placeholder="https://example.ac.kr/notice"
-                />
-              </label>
-
-              <label className="field">
-                <span>링크 선택자</span>
-                <input
-                  type="text"
-                  value={linkSelector}
-                  onChange={(event) => setLinkSelector(event.target.value)}
-                  placeholder="a[href]"
-                />
-              </label>
-            </div>
-
-            <div className="segmented-control" role="group" aria-label="소스 선택">
-              {sourceOptions.map((option) => (
-                <button
-                  type="button"
-                  key={option.id}
-                  className={sourceMode === option.id ? "is-active" : ""}
-                  onClick={() => setSourceMode(option.id)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            <label className="field html-field">
-              <span>HTML 소스</span>
-              <textarea
-                value={htmlSource}
-                disabled={sourceMode === "live"}
-                onChange={(event) => setHtmlSource(event.target.value)}
-                spellCheck="false"
-              />
-            </label>
-
-            <div className="action-row">
-              <button className="primary-button" type="submit" disabled={isRunning}>
-                {isRunning ? "스캔 중" : "스캔 실행"}
-              </button>
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={handleSaveCurrentLinks}
-                disabled={!scan || isRunning}
-              >
-                현재 결과 저장
-              </button>
-              <button
-                className="ghost-button"
-                type="button"
-                onClick={handleResetKnownLinks}
-                disabled={isRunning}
-              >
-                기록 초기화
-              </button>
-            </div>
-
-            {errorMessage ? (
-              <p className="error-message" role="alert">
-                {errorMessage}
-              </p>
-            ) : null}
-          </form>
-
-          <aside className="pipeline-panel" aria-label="에이전트 처리 흐름">
-            <div className="panel-heading">
-              <p className="eyebrow">Agent Flow</p>
-              <h2>처리 흐름</h2>
-            </div>
-            <ol className="pipeline-list">
-              {pipelineSteps.map((step, index) => (
-                <li key={step.title} className={`pipeline-step step-${step.state}`}>
-                  <span>{index + 1}</span>
-                  <div>
-                    <strong>{step.title}</strong>
-                    <p>{step.copy}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </aside>
+        <section className="tool-grid" aria-label="스캔 설정과 흐름">
+          <ConfigPanel
+            config={config}
+            errorMessage={errorMessage}
+            isRunning={isRunning}
+            noticeMessage={noticeMessage}
+            onChangeConfig={updateConfig}
+            onLoadSource={loadSource}
+            onResetHistory={handleResetHistory}
+            onRunBatchScan={handleRunBatchScan}
+            onRunScan={handleRunScan}
+            onSaveLinks={handleSaveLinks}
+            onSaveSource={handleSaveSource}
+            scan={scan}
+            sourceOptions={sourceOptions}
+          />
+          <div className="side-stack">
+            <PipelinePanel config={config} isRunning={isRunning} scan={scan} />
+            <RoadmapPanel />
+          </div>
         </section>
 
+        <AnalysisDemoPanel
+          analysisError={analysisError}
+          analysisRawText={analysisRawText}
+          analysisResult={analysisResult}
+          analysisUrl={analysisUrl}
+          health={health}
+          healthError={healthError}
+          isAnalyzing={isAnalyzing}
+          onAnalyze={handleAnalyzeOpportunity}
+          onChangeProfile={updateProfileDraft}
+          onChangeRawText={setAnalysisRawText}
+          onChangeUrl={setAnalysisUrl}
+          profileDraft={profileDraft}
+        />
+
         <section className="result-section" aria-label="스캔 결과">
-          <div className="metrics-row">
-            {metrics.map((metric) => (
-              <div className="metric" key={metric.label}>
-                <span>{metric.label}</span>
-                <strong>{metric.value}</strong>
-              </div>
-            ))}
-          </div>
-
-          <div className="result-table">
-            <header className="result-header">
-              <div>
-                <p className="eyebrow">New Links</p>
-                <h2>새 글 링크</h2>
-              </div>
-              <span>{scan?.newLinks.length ?? 0}개</span>
-            </header>
-
-            <div className="link-list">
-              {scan?.newLinks.length ? (
-                scan.newLinks.map((link, index) => (
-                  <a
-                    className="link-row"
-                    href={link.url}
-                    key={link.id}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    <span className="row-index">{String(index + 1).padStart(2, "0")}</span>
-                    <span className="link-copy">
-                      <strong>{link.title}</strong>
-                      <small>{link.url}</small>
-                    </span>
-                    <span className="link-host">{link.hostname}</span>
-                  </a>
-                ))
-              ) : (
-                <div className="empty-state">새 글 링크가 없습니다.</div>
-              )}
-            </div>
-          </div>
+          <Metrics knownLinks={knownLinks} scan={scan} />
+          <ResultTable
+            displayMode={displayMode}
+            failedSources={scan?.failedSources ?? []}
+            links={displayLinks}
+            onChangeMode={setDisplayMode}
+          />
+          <NoticeBriefPanel briefs={noticeBriefs} />
         </section>
       </section>
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
