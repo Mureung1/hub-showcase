@@ -12,9 +12,11 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 | --- | --- | --- |
 | 문서 컨벤션 | [docs/README.md](docs/README.md) | 프로젝트 문서 위치와 관리 규칙 |
 | 제품 기획 | [SemesterOps Product Brief](docs/product/semesterops-product-brief.md) | 문제 정의, 제품 테제, MVP 방향 |
+| 제품 기획 | [Review Workspace Scenario](docs/product/semesterops-review-workspace-scenario.md) | 사용자 시나리오와 화면 단위 prototype 구조 |
 | 기술 구조 | [Codex Runtime Isolation](docs/architecture/codex-runtime-isolation.md) | Codex runtime 격리와 실행 경계 |
 | Spike 계획 | [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | Codex 실행환경 소유권 PoC 계획 |
 | ADR | [0001. Use file auth store for runtime spike](docs/adr/0001-use-file-auth-store-for-runtime-spike.md) | runtime spike의 인증 저장소 결정 |
+| ADR | [0002. Use first-class academic objects](docs/adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam canonical model과 derived operational view 결정 |
 | Agent 운영 | [Issue Tracker](docs/agents/issue-tracker.md) | issue, PRD, PR 요청 표면 규칙 |
 | Agent 운영 | [Triage Labels](docs/agents/triage-labels.md) | triage 상태 마커 규칙 |
 | Agent 운영 | [Domain Docs](docs/agents/domain.md) | domain docs와 ADR 위치 규칙 |

@@ -20,6 +20,11 @@ _Avoid_: Dump, manual filing, upload-only flow
 An original course or semester artifact, such as an LMS notice, syllabus, PDF, slide deck, document, image, or note, preserved before SemesterOps interprets it.
 _Avoid_: Clean data, parsed result, attachment
 
+**EvidenceRef**:
+A field-level reference from a RawMaterial location or quote to a specific SemesterModel fact, used to explain why SemesterOps believes a proposed value.
+_UI alias_: 근거 연결
+_Avoid_: Generic citation, source file, footnote
+
 **SourceList**:
 The GUI list of RawMaterial available for a student to inspect, select, and explicitly send into AgentModeling.
 _Avoid_: File explorer, automatic inbox
@@ -55,6 +60,36 @@ _Avoid_: Final state, trusted state
 **SemesterModel**:
 The structured state SemesterOps uses to represent a semester after RawMaterial has been interpreted, reviewed, and connected to courses.
 _Avoid_: Calendar, folder structure, chat history
+
+**Assignment**:
+A first-class academic requirement in SemesterOps, representing coursework that asks the student to produce, submit, or complete something for a course. It owns assignment facts such as due dates, submission details, requirements, cautions, and evidence.
+_UI alias_: 과제
+_Avoid_: Generic task, calendar event, board card
+
+**Exam**:
+A first-class academic assessment in SemesterOps, representing a test, quiz, midterm, final, or similar evaluation with date, scope, location, allowed materials, preparation guidance, and evidence.
+_UI alias_: 시험
+_Avoid_: Generic event, study note, dashboard widget
+
+**TaskCandidate**:
+A proposed student action, such as reading, drafting, submitting, reviewing, or preparing, that may be derived from an Assignment, Exam, RawMaterial, or UserCorrection before it becomes trusted semester work.
+_UI alias_: 추천 할 일
+_Avoid_: Assignment, exam, deadline
+
+**StudentTask**:
+A trusted operational action that the student has accepted into their task list. When linked to an Assignment or Exam, it references the academic object's deadline instead of duplicating it.
+_UI alias_: 내 할 일
+_Avoid_: Assignment, exam, schedule event
+
+**ScheduleEvent**:
+A canonical standalone time fact that is not better owned by an Assignment or Exam, such as a class meeting, makeup class, cancelled class, office hour, or department event.
+_UI alias_: 별도 일정
+_Avoid_: Assignment deadline, exam time, task
+
+**TimelineEntry**:
+A derived calendar or timeline row generated from Assignment, Exam, ScheduleEvent, or StudentTask state. It is rebuildable read-model data, not the source of truth for academic facts.
+_UI alias_: 타임라인 항목
+_Avoid_: Schedule source of truth, assignment, exam
 
 **MarkdownProjection**:
 A human-readable Markdown document generated from SemesterModel state under a built-in heading template, where the section content may use tables, bullets, Mermaid, or other suitable presentation formats without becoming the source of truth.
@@ -108,6 +143,11 @@ _Avoid_: Standalone chatbot, separate AI tab
 The interaction model where a student uses GUI controls and Agent conversation against the same live SemesterModel, so neither surface feels separate from the other.
 _Avoid_: Chat-only assistant, GUI-only app, split brain UX
 
+**Review-first Academic Workspace**:
+The first SemesterOps workspace pattern where AgentModeling proposals are reviewed around a first-class academic object before derived timeline, task, and projection surfaces become trusted.
+_UI alias_: 검토 중심 학업 워크스페이스
+_Avoid_: Dashboard, calendar-first UI, chat-first UI
+
 **UIPrototypeSpike**:
 A focused prototype used to decide the user-facing layout after the required UX capabilities are known.
 _Avoid_: Final product design, implementation sprint
@@ -118,6 +158,7 @@ _Avoid_: File watcher magic, stale agent context, manual refresh
 
 **StatePatch**:
 A structured proposed change to DraftState, ReviewState, TrustedState, or ArtifactState that can originate from GUI actions, UserCorrection, or AgentModeling.
+_UI alias_: 변경 제안
 _Avoid_: Freeform chat instruction, direct database mutation
 
 **RecommendedChoice**:

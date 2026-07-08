@@ -45,9 +45,11 @@ Root companion docs:
 | 문서 | 위치 | 상태 |
 | --- | --- | --- |
 | SemesterOps Product Brief | [product/semesterops-product-brief.md](product/semesterops-product-brief.md) | Draft |
+| SemesterOps Review Workspace Scenario | [product/semesterops-review-workspace-scenario.md](product/semesterops-review-workspace-scenario.md) | Draft |
 | Codex Runtime Isolation | [architecture/codex-runtime-isolation.md](architecture/codex-runtime-isolation.md) | Draft |
 | Runtime Ownership Spike Plan | [spikes/codex-runtime-ownership/plan.md](spikes/codex-runtime-ownership/plan.md) | Draft |
 | Runtime auth ADR | [adr/0001-use-file-auth-store-for-runtime-spike.md](adr/0001-use-file-auth-store-for-runtime-spike.md) | Accepted |
+| Academic object model ADR | [adr/0002-use-first-class-academic-objects-with-derived-operational-views.md](adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Accepted |
 | Agent issue tracker rules | [agents/issue-tracker.md](agents/issue-tracker.md) | Active |
 | Agent triage marker rules | [agents/triage-labels.md](agents/triage-labels.md) | Active |
 | Agent domain docs layout | [agents/domain.md](agents/domain.md) | Active |

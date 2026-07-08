@@ -5,7 +5,7 @@
 
 ## 한 줄 요약
 
-**SemesterOps는 학생이 한 학기 자료를 정리하지 않고 넣으면, 로컬 Codex agent runtime이 자료를 해석하고 사용자와 대화하며 과목·공지·자료·일정·task 후보로 모델링해주는 local-first academic agent app이다.**
+**SemesterOps는 학생이 한 학기 자료를 정리하지 않고 넣으면, 로컬 Codex agent runtime이 자료를 해석하고 사용자와 대화하며 과목·과제·시험·공지·자료·task 후보로 모델링해주는 local-first academic agent app이다.**
 
 SemesterOps의 핵심은 캘린더 앱이나 AI 채팅창이 아니라, 더러운 학기 RawMaterial을 사용자 컴퓨터 안에서 SemesterModel로 바꾸는 AgentLedProcessing 경험이다. 사용자는 GUI와 ChatSidecar를 함께 쓰며 자료를 넣고, 처리할 source를 선택하고, Agent가 만든 StatePatch를 확인·수정·승인한다. 앱은 사용자의 UserConfirmation을 trusted state의 기준으로 삼고, MarkdownProjection과 WorkspaceQuery를 통해 정리된 학기 상태를 보여준다.
 
@@ -45,11 +45,11 @@ SemesterOps가 해결해야 할 문제는 다음과 같다.
 
 **SemesterOps는 한 학기 자료를 먹고, 학생과 대화하며, 앱이 다룰 수 있는 학기 상태를 만들어내는 로컬 에이전트 하네스다.**
 
-앱은 파일 타입별 처리 로직을 모두 하드코딩하지 않는다. 대신 RawMaterial 보존, state contract, built-in Skills, local scripts, Review UX, UserConfirmation 경계를 제공한다. Agent는 이 경계 안에서 자료를 읽고, 필요한 도구를 실행하고, 사용자에게 묻고, DraftState와 ReviewState를 만든다.
+앱은 파일 타입별 처리 로직을 모두 하드코딩하지 않는다. 대신 RawMaterial 보존, state contract, built-in Skills, local scripts, Review UX, UserConfirmation 경계를 제공한다. Agent는 이 경계 안에서 자료를 읽고, 필요한 도구를 실행하고, 사용자에게 묻고, Assignment, Exam, TaskCandidate, Uncertainty 같은 DraftState와 ReviewState를 만든다.
 
 ## MVP 약속
 
-> 학생이 한 학기 자료를 넣고 처리할 source를 명시적으로 선택하면, SemesterOps는 Agent와 함께 이를 과목·자료·공지·일정·task 후보로 모델링하고, 사용자가 확인한 trusted state와 읽기 좋은 MarkdownProjection으로 남긴다.
+> 학생이 한 학기 자료를 넣고 처리할 source를 명시적으로 선택하면, SemesterOps는 Agent와 함께 이를 Course, Assignment, Exam, Material, Notice, TaskCandidate 같은 학업 상태로 모델링하고, 사용자가 확인한 trusted state와 읽기 좋은 MarkdownProjection으로 남긴다.
 
 MVP는 과제 해결이나 자동 제출을 목표로 하지 않는다. 목표는 학기 자료를 앱이 이해할 수 있는 상태로 바꾸고, 사용자가 그 상태를 신뢰할 수 있게 만드는 것이다.
 
@@ -63,6 +63,7 @@ MVP는 과제 해결이나 자동 제출을 목표로 하지 않는다. 목표�
 | ModelingRun | 버튼이나 대화로 AgentModeling을 시작한다. | Agent가 Skills/scripts/files를 사용해 처리 전략을 선택한다. | DraftState, ReviewState, StatePatch |
 | UserDecisionRequest | Agent가 혼자 확정하기 어려운 질문에 답한다. | GUI를 통해 사용자 판단을 받고 작업을 이어간다. | 추가 UserCorrection |
 | Review | 추천안을 확인하고 승인·수정·거절한다. | StatePatch를 검증하고 UserConfirmation을 기록한다. | TrustedState |
+| Timeline/Task View | 확정된 학업 상태가 일정과 할 일 표면에 어떻게 반영되는지 본다. | TimelineEntry와 StudentTask를 canonical state에서 파생한다. | 읽기 쉬운 운영 표면 |
 | MarkdownProjection | 정리된 결과를 읽는다. | built-in heading template으로 Markdown을 렌더링한다. | 사람이 읽는 FinalArtifact |
 | WorkspaceQuery | 정리된 상태에 질문한다. | TrustedState와 RawMaterial 근거를 함께 사용한다. | 학기 상태 기반 답변 |
 
@@ -74,26 +75,45 @@ MVP 산출물은 직접적인 DB schema의 출발점이다. 다만 이 문서는
 | --- | --- | --- |
 | `Course` | Init에서 확정한 이번 학기 과목 | TrustedState |
 | `RawMaterial` | 원본 파일, 공지, 메모, 이미지 | RawState |
+| `EvidenceRef` | RawMaterial의 특정 위치나 인용문이 어떤 canonical field를 뒷받침하는지 나타내는 field-level 근거 | RawState 또는 ReviewState |
+| `Assignment` | 과목이 요구하는 과제, 제출물, 활동 같은 first-class academic requirement | DraftState 또는 TrustedState |
+| `Exam` | 시험, 퀴즈, 중간고사, 기말고사 같은 first-class academic assessment | DraftState 또는 TrustedState |
 | `Material` | 해석된 수업 자료 | DraftState 또는 TrustedState |
 | `Notice` | 공지나 안내사항 | DraftState 또는 TrustedState |
-| `ScheduleItem` | 수업, 시험, 마감, 보강 등 시간 정보 | DraftState 또는 TrustedState |
-| `TaskCandidate` | 과제, 준비물, 복습 등 할 일 후보 | ReviewState |
+| `ScheduleEvent` | Assignment나 Exam이 소유하지 않는 독립 시간 사실, 예를 들어 정규 수업, 보강, 휴강, 오피스아워 | DraftState 또는 TrustedState |
+| `TimelineEntry` | Assignment, Exam, ScheduleEvent, StudentTask에서 파생되는 일정/timeline read model | ArtifactState에 기록 가능한 derived read model |
+| `TaskCandidate` | 학생이 할 수 있는 행동 제안. ReviewState에서 검토되고 승인되면 StudentTask가 된다. | ReviewState |
+| `StudentTask` | 사용자가 수락한 실제 운영 task. Assignment나 Exam에 연결되면 deadline을 복제하지 않고 참조한다. | TrustedState |
 | `Uncertainty` | Agent가 확신하지 못한 지점 | ReviewState |
 | `StatePatch` | 사용자 확인 단위의 구조화 변경 제안 | ReviewState |
 | `UserDecisionRequest` | Agent가 GUI로 요청하는 live 사용자 판단 | ReviewState |
 | `MarkdownProjection` | SemesterModel에서 렌더링된 사람이 읽는 문서 | ArtifactState |
+
+정보 모델의 가장 중요한 규칙은 **하나의 학업 사실은 하나의 owner만 가진다**는 것이다. Assignment deadline은 `Assignment.dueAt`이 소유하고, Exam 시간은 `Exam.startsAt`/`Exam.endsAt`이 소유한다. Timeline이나 task list는 이 값을 복제하지 않고 canonical object를 읽어서 표시한다.
+
+| 사실 | Canonical owner | 표시되는 표면 |
+| --- | --- | --- |
+| 과제 마감 | `Assignment.dueAt` | Assignment UI, TimelineEntry, linked StudentTask |
+| 과제 제출 방식과 요구사항 | `Assignment.submission`, `Assignment.requirements` | Assignment UI, MarkdownProjection |
+| 시험 일시 | `Exam.startsAt`, `Exam.endsAt` | Exam UI, TimelineEntry |
+| 시험 범위와 준비 안내 | `Exam.scope`, `Exam.prepGuidance` | Exam UI, MarkdownProjection |
+| 보강, 휴강, 정규 수업 | `ScheduleEvent` | TimelineEntry, MarkdownProjection |
+| 학생의 작업 계획 시간 | `StudentTask.plannedFor` | Task list, TimelineEntry |
+| source 근거 | `RawMaterial` + `EvidenceRef` | Review, Evidence panel |
 
 ## 상태 계층
 
 | 계층 | 역할 | 권한 |
 | --- | --- | --- |
 | RawState | 원본 RawMaterial과 provenance 보존 | 앱이 저장하고 사용자가 소유 |
-| DraftState | AgentModeling의 초기 해석 | Agent가 제안하고 앱이 검증 |
-| ReviewState | 확인·정정·거절이 필요한 후보 | 사용자와 Agent가 함께 다룸 |
-| TrustedState | UserConfirmation을 거친 신뢰 상태 | 사용자가 결정권을 가짐 |
-| ArtifactState | MarkdownProjection 등 생성 산출물 기록 | 앱이 생성하고 사용자가 확인 |
+| DraftState | AgentModeling의 초기 해석. Assignment, Exam, Material, Notice, ScheduleEvent 같은 canonical 후보를 포함할 수 있다. | Agent가 제안하고 앱이 검증 |
+| ReviewState | 확인·정정·거절이 필요한 StatePatch, TaskCandidate, Uncertainty | 사용자와 Agent가 함께 다룸 |
+| TrustedState | UserConfirmation을 거친 Course, Assignment, Exam, Material, Notice, ScheduleEvent, StudentTask | 사용자가 결정권을 가짐 |
+| ArtifactState | MarkdownProjection, TimelineEntry 같은 생성 산출물과 read model 기록 | 앱이 생성하고 사용자가 확인 |
 
 TrustedState의 SSOT는 Agent가 아니라 UserConfirmation이다. Agent는 TrustedState를 입력으로 받아 작업하고, 변경은 StatePatch로 제안한다.
+
+TimelineEntry는 직접 patch하지 않는다. 사용자가 timeline에서 과제 마감 시간을 고치면 실제 변경 대상은 `TimelineEntry.startsAt`이 아니라 해당 `Assignment.dueAt`이다. linked StudentTask도 과제나 시험의 deadline을 복제하지 않고 `deadlineRef`로 따른다.
 
 ## StatePatch
 
@@ -114,6 +134,8 @@ StatePatch는 사용자가 이해 가능한 변화 묶음이다. 선택 피로�
 | `riskLevel` | App + Agent | low, medium, high |
 | `requiresConfirmation` | App | trusted 반영 전 확인 필요 여부 |
 | `status` | App/User | pending, accepted, edited, rejected |
+
+StatePatch는 projection이 아니라 canonical entity를 바꾼다. 예를 들어 Agent가 "문제해결글쓰기" 과목의 "개요 작성하기" 과제를 찾으면 `Assignment`와 필요한 `TaskCandidate`, `EvidenceRef`, `Uncertainty`를 제안한다. 같은 마감일을 별도 ScheduleEvent나 TaskCandidate deadline으로 중복 생성하는 patch는 validator가 거절하거나 canonical owner를 참조하도록 고친다.
 
 ## Source of Truth 전략
 
@@ -229,6 +251,25 @@ MarkdownProjection 원칙:
 
 UIPrototypeSpike에서는 NotebookLM의 source-grounded workflow, Obsidian의 local-first workspace 감각, VS Code의 side panel과 co-control 패턴을 참고하되, 일반 대학생에게 과한 개발자 UI를 그대로 가져오지 않는다.
 
+## 검토 중심 학업 워크스페이스
+
+첫 prototype과 MVP UX의 중심은 대시보드가 아니라 검토 중심 학업 워크스페이스다. 학생이 즉시 이해해야 할 규칙은 다음과 같다.
+
+> SemesterOps가 학업 객체를 찾고, 사용자가 한 번 확인하면, 타임라인과 할 일 표면은 그 trusted state에서 생성된다.
+
+대표 시나리오는 "문제해결글쓰기" 과목의 "개요 작성하기" 과제다. AgentModeling은 선택한 RawMaterial에서 과제명과 마감일을 찾고, `Assignment` 생성 patch와 `TaskCandidate`를 제안한다. 사용자가 승인하면 `Assignment`가 TrustedState가 되고, `TimelineEntry`와 MarkdownProjection은 이 상태에서 파생된다.
+
+| 화면 영역 | 보여줄 것 | 모델링 의도 |
+| --- | --- | --- |
+| Source rail | Course, RawMaterial, SourceSelection, ModelingRun 상태 | SemesterOps가 수동 calendar entry가 아니라 source-grounded modeling에서 시작함을 보여준다. |
+| Academic object canvas | pending 또는 trusted Assignment detail | 과제 마감과 제출 정보의 canonical home이 Assignment임을 보여준다. |
+| Review rail | 변경 제안, 추천 선택, 수락/수정/거절 | Agent가 제안하고 사용자가 UserConfirmation으로 trusted state를 만든다. |
+| Evidence panel | source highlight와 field mapping | "왜 이 값을 믿는가"를 field-level로 검토한다. |
+| Operational strip | TimelineEntry, TaskCandidate/StudentTask, MarkdownProjection preview | 일정과 할 일은 canonical 학업 객체에서 파생됨을 보여준다. |
+| ChatSidecar | 현재 proposal에 대한 짧은 설명과 질문 prompt | GUI와 대화가 같은 ReviewState를 다룬다. |
+
+이 흐름의 세부 화면 구조는 [SemesterOps Review Workspace Scenario](semesterops-review-workspace-scenario.md)에 둔다.
+
 ## Agent Runtime 전략
 
 Codex runtime 격리, 설치, 상태 분리의 세부 정책은 [Codex Runtime Isolation Technical Note](../architecture/codex-runtime-isolation.md)를 따른다.
@@ -275,8 +316,12 @@ SemesterOps의 기능 확장은 built-in Skills와 local scripts를 늘리는 �
 | 포함 | MaterialIntake | RawMaterial 원본 보존과 SourceList 표시 |
 | 포함 | SourceSelection | 사용자가 처리할 source를 명시적으로 선택 |
 | 포함 | ModelingRun | 선택한 source에 대한 AgentLedProcessing 실행 |
+| 포함 | Assignment/Exam first-class modeling | 과제와 시험을 task나 calendar event로 축소하지 않고 학업 객체로 다룬다. |
 | 포함 | DraftState/ReviewState/TrustedState | 상태 계층 분리 |
 | 포함 | StatePatch + RecommendedChoice | 사용자 확인 단위의 추천 변경 묶음 |
+| 포함 | EvidenceRef | source 근거를 field-level로 연결해 Review에서 확인 가능하게 한다. |
+| 포함 | TimelineEntry read model | Assignment, Exam, ScheduleEvent, StudentTask에서 timeline을 파생한다. |
+| 포함 | TaskCandidate → StudentTask | 제안된 행동을 사용자가 수락하면 trusted task가 된다. |
 | 포함 | UserCorrection/UserConfirmation | 사용자가 정정하고 trusted 여부를 결정 |
 | 포함 | WorkspaceHistory | UserConfirmation과 Projection 변경을 app-managed history로 기록 |
 | 포함 | MarkdownProjection 3종 | `semester-overview.md`, `courses/*/overview.md`, `review-queue.md` |
@@ -346,6 +391,7 @@ SemesterOps는 학습과 운영을 보조하는 도구다.
 | MCP 과사용 | context bloat와 tool selection noise가 생긴다. | MVP MCP는 `app.request_user_decision` startpoint로 제한한다. |
 | Agent 자유도 과잉 | 결과가 흔들리거나 사용자가 불신할 수 있다. | ProcessingGuardrail, schema validator, StatePatch evidence를 둔다. |
 | Markdown state 오염 | 자유 Markdown을 source of truth로 쓰면 깨지기 쉽다. | SQLite를 source of truth로 두고 MarkdownProjection은 artifact로 둔다. |
+| 일정과 task 중복 저장 | Assignment 마감, timeline row, task deadline이 서로 다른 값으로 갈라질 수 있다. | academic fact는 하나의 owner만 두고 TimelineEntry와 linked task는 canonical owner를 참조한다. |
 | RawMaterial 자동 정리 위험 | 잘못된 이동/삭제가 신뢰를 깬다. | 원본은 보존하고 정리는 Review 이후 artifact/projection으로만 한다. |
 | local history storage 증가 | PDF, PPTX, HWP/HWPX 같은 RawMaterial binary를 포함하면 디바이스 저장공간을 더 사용한다. | MVP에서는 local-only 원본 복구를 우선하고, 이후 storage usage와 retention UX를 제공한다. |
 | 기존 Git repo와 충돌 | 사용자가 이미 Git repo 안에서 workspace를 만들 수 있다. | workspace root `.git` 대신 `.semesterops/history.git` 같은 app-managed repo를 후보로 둔다. |
@@ -356,7 +402,7 @@ SemesterOps는 학습과 운영을 보조하는 도구다.
 
 | 질문 | 결정이 필요한 이유 |
 | --- | --- |
-| `.semesterops/semester.sqlite`의 실제 table schema는 어떻게 둘 것인가? | 정보 모델을 구현 가능한 DB schema로 내려야 한다. |
+| `.semesterops/semester.sqlite`의 실제 table schema는 어떻게 둘 것인가? | 채택한 canonical object와 derived read model을 구현 가능한 DB schema로 내려야 한다. |
 | `sources/`와 `.semesterops/` 사이의 raw file 위치를 최종적으로 어떻게 나눌 것인가? | 사용자가 원본을 직접 볼 수 있는 정도와 앱 관리 안정성의 균형이다. |
 | WorkspaceHistory의 storage usage와 retention UX를 어떻게 보여줄 것인가? | RawMaterial binary를 포함하므로 사용자가 로컬 저장공간 사용량을 이해할 수 있어야 한다. |
 | `app.request_user_decision`의 UI와 protocol은 어떻게 설계할 것인가? | Agent 중간 질문이 사용자 피로가 아니라 마법 같은 UX로 느껴져야 한다. |
