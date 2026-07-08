@@ -68,6 +68,29 @@
 
 여기에 **얕은 메모리 연결**을 더한다: 감시는 스케줄러가 하되, **알림 문구를 에이전트가 생성**하면서 관련 과거 복기 한 줄을 붙여 능동 개입한다 — *"지난번 이 조건으로 샀을 때 성급했다고 복기했었죠. 이번엔?"*
 
+아래는 복기 요청 한 번에 에이전트가 **여러 도구를 스스로 호출해** 근거를 모으고 판단하는 과정이다 (1-shot 호출과의 결정적 차이).
+
+```mermaid
+sequenceDiagram
+    actor U as 사용자
+    participant W as 웹앱
+    participant A as 복기 에이전트 (Gemini)
+    participant DB as Supabase
+    participant K as KIS API
+    U->>W: "이 매매 복기해줘"
+    W->>A: 복기 요청 (trade_id)
+    Note over A: ① 무엇을 확인할지 스스로 계획
+    A->>DB: search_past_trades(ticker)
+    DB-->>A: 과거 유사 매매 목록
+    A->>K: get_price_context(ticker, date)
+    K-->>A: 매매 전후 주가 흐름
+    A->>DB: get_past_reviews(user)
+    DB-->>A: 지난 복기 기록
+    Note over A: ② 근거 종합·반복 패턴 판단
+    A-->>W: 코칭 결과 (+cited_trade_ids)
+    W-->>U: "급등 직후 추격매수 반복 중"
+```
+
 ### 다중 사용자 구조
 
 - **계정**: Supabase Auth로 가입/로그인. 모든 테이블에 Row Level Security 적용
@@ -154,6 +177,43 @@ flowchart TD
     F --> G
     G -.->|다음 매매 전 점검| A
 ```
+
+### 페르소나 여정 (도입 전후)
+
+같은 하루를 Beacon 도입 전후로 비교하면, 끊겨 있던 루프가 이어지며 만족도가 올라간다. (1=최악 … 5=최상)
+
+```mermaid
+journey
+    title 김대리의 하루 — Beacon 도입 전 vs 후
+    section 도입 전 (끊긴 루프)
+      장중 시세 확인 시도: 2: 김대리
+      업무로 타이밍 놓침: 1: 김대리
+      뒤늦게 충동 매매: 1: 김대리
+      기록 없이 잊어버림: 2: 김대리
+    section 도입 후 (이어진 루프)
+      자연어로 조건 설정: 4: 김대리
+      Discord 알림 수신: 5: 김대리
+      원클릭으로 기록: 5: 김대리
+      AI 복기로 실수 자각: 4: 김대리
+```
+
+### 화면 설계 (UI 목업)
+
+핵심 화면 3종의 목업. 소스는 [`mockups/`](../mockups/)에 자가완결형 HTML/CSS로 있으며, 브랜드 토큰([src/index.css](../src/index.css))을 그대로 반영했다.
+
+**① Discord 알림 메시지** — 조건 충족 시 과거 복기 메모리 한 줄 + 원클릭 기록 버튼이 함께 도착.
+
+![Discord 알림 목업](images/discord-alert.png)
+
+**② AI 복기 결과** — 에이전트가 과거 매매·주가 흐름·지난 복기를 도구로 조회해(인용 근거 표시) 반복 패턴을 짚음.
+
+![AI 복기 결과 목업](images/ai-review.png)
+
+**③ 저널** — 원클릭 기록이 차트 위 마커로 표시되고, 메모 보완 후 AI 복기를 요청.
+
+![저널 화면 목업](images/journal.png)
+
+> 이미지가 안 보이면 아직 스크린샷 미첨부 상태다. 캡처 방법은 [docs/images/README.md](images/README.md) 참고.
 
 ## 7. 기술 아키텍처
 
