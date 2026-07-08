@@ -1,0 +1,1265 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CJMT - AI 식단 진단 데모</title>
+<style>
+  :root{
+    --primary:#0F766E;
+    --primary-dk:#0B5952;
+    --teal:#14B8A6;
+    --mint:#5EEAD4;
+    --soft:#EAF6F3;
+    --ink:#191F28;
+    --slate:#4E5968;
+    --muted:#8B95A1;
+    --line:#F2F4F6;
+    --divider:#E5E8EB;
+    --amber:#D97706;
+    --amber-soft:#FFF8EA;
+    --red:#F04452;
+    --shadow-sm:0 1px 3px rgba(15,23,42,.05);
+    --shadow-card:0 2px 12px rgba(15,23,42,.06);
+    --shadow-elevated:0 12px 32px rgba(15,23,42,.14);
+    --radius-lg:22px;
+    --radius-md:16px;
+    --radius-sm:12px;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;
+    font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI","Malgun Gothic",sans-serif;
+    background:#F2F4F6;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    letter-spacing:-0.01em;
+  }
+  body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 12px;
+  }
+
+  /* ---------- Phone frame ---------- */
+  .phone{
+    position:relative;
+    width:390px;
+    height:780px;
+    background:#fff;
+    border-radius:36px;
+    box-shadow:0 40px 80px -20px rgba(15,23,42,.28), 0 0 0 10px #0B1220, 0 0 0 11px #20242c;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  .notch{
+    position:absolute;
+    top:8px;left:50%;
+    transform:translateX(-50%);
+    width:120px;height:22px;
+    background:#0B1220;
+    border-radius:14px;
+    z-index:50;
+  }
+  .screen-container{
+    position:relative;
+    flex:1;
+    overflow-y:auto;
+    overflow-x:hidden;
+    scrollbar-width:none;
+    background:#fff;
+  }
+  .screen-container::-webkit-scrollbar{display:none;}
+
+  .screen{
+    display:none;
+    min-height:100%;
+    flex-direction:column;
+    padding-top:36px;
+  }
+  .screen.active{
+    display:flex;
+    animation:fadeIn .3s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes fadeIn{
+    from{opacity:0; transform:translateY(10px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .screen.app{ padding-bottom:84px; }
+
+  /* ---------- Typography / common ---------- */
+  h2{margin:6px 0 4px; font-size:23px; font-weight:800; letter-spacing:-.02em;}
+  h3.section-title{
+    font-size:16px;
+    font-weight:800;
+    color:var(--ink);
+    margin:28px 0 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    letter-spacing:-.01em;
+  }
+  .sub{color:var(--muted); font-size:14px; margin:0 0 22px; line-height:1.5;}
+
+  /* ---------- Auth screens ---------- */
+  .auth-wrap{
+    padding:32px 24px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .logo{
+    font-size:30px;
+    font-weight:800;
+    color:var(--primary);
+    letter-spacing:-.02em;
+    margin-top:16px;
+  }
+  .tagline{color:var(--muted); font-size:14px; margin:0 0 20px;}
+  .back-btn{
+    background:none;border:none;font-size:22px;color:var(--ink);
+    cursor:pointer; padding:4px; width:36px; text-align:left; margin-bottom:6px; margin-left:-4px;
+    border-radius:50%;
+  }
+  .field{ display:flex; flex-direction:column; gap:8px; margin-bottom:2px;}
+  .field label{ font-size:13px; color:var(--slate); font-weight:700;}
+  input[type="text"], input[type="password"], input[type="number"], select{
+    border:1.5px solid transparent;
+    border-radius:14px;
+    padding:15px 16px;
+    font-size:15px;
+    font-family:inherit;
+    color:var(--ink);
+    background:var(--line);
+    outline:none;
+    transition:border-color .15s, background .15s;
+    width:100%;
+    font-weight:600;
+  }
+  input::placeholder{ color:var(--muted); font-weight:500; }
+  input:focus, select:focus{ background:#fff; border-color:var(--primary); box-shadow:0 0 0 4px rgba(15,118,110,.10);}
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:12px 14px;}
+
+  .btn{
+    border:none;
+    border-radius:16px;
+    padding:16px 18px;
+    font-size:15.5px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+    transition:transform .08s ease, filter .15s ease, background .15s ease, opacity .15s ease;
+    text-align:center;
+    letter-spacing:-.01em;
+  }
+  .btn:active{ transform:scale(.97); opacity:.92; }
+  .btn.primary{ background:var(--primary); color:#fff; }
+  .btn.primary:hover{ background:var(--primary-dk); }
+  .btn.big{ width:100%; padding:17px; font-size:16px; margin-top:8px;}
+  .btn.ghost{ background:var(--line); color:var(--ink); width:100%; }
+  .btn.ghost:hover{ background:var(--divider); }
+  .btn.danger{ background:#FFF0F1; color:var(--red); width:100%; margin-top:28px;}
+  .btn.small{ padding:9px 14px; font-size:13px; }
+
+  .switch-link{ font-size:14px; color:var(--muted); text-align:center; margin-top:14px;}
+  .switch-link a{ color:var(--primary); font-weight:700; cursor:pointer; }
+
+  /* ---------- App content ---------- */
+  .content{ padding:20px 20px 24px; display:flex; flex-direction:column; flex:1;}
+  .top-bar{
+    display:flex; align-items:center; gap:8px;
+    padding:2px 20px 18px;
+    font-weight:800; font-size:17px;
+    letter-spacing:-.01em;
+  }
+  .icon-btn{
+    background:none; border:none; font-size:19px; cursor:pointer; color:var(--ink);
+    padding:6px; margin-left:-6px; border-radius:50%; display:flex; align-items:center;
+  }
+  .icon-btn:active{ background:var(--line); }
+
+  .app-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px 20px;
+  }
+  .hello{ font-size:20px; font-weight:800; letter-spacing:-.02em; }
+  .mini-summary{
+    display:inline-block;
+    font-size:12.5px; color:var(--primary-dk); font-weight:700;
+    margin-top:8px; background:var(--soft); padding:6px 12px; border-radius:20px;
+  }
+  .avatar-mini{
+    width:40px;height:40px;border-radius:50%;
+    background:var(--line); display:flex; align-items:center; justify-content:center;
+    font-size:19px;
+  }
+
+  .camera-view{
+    background:var(--line);
+    border:none;
+    border-radius:var(--radius-lg);
+    height:206px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    cursor:pointer;
+    transition:background .15s, transform .1s;
+    margin-bottom:16px;
+  }
+  .camera-view:active{ transform:scale(.985); }
+  .camera-view:hover{ background:var(--divider); }
+  .cam-icon{
+    font-size:28px;
+    width:64px; height:64px; border-radius:50%;
+    background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:var(--shadow-sm);
+  }
+  .cam-hint{ font-size:13.5px; color:var(--slate); font-weight:700;}
+
+  .quick-tips{
+    margin-top:20px;
+    background:var(--soft);
+    border-radius:var(--radius-md);
+    padding:16px 18px;
+    font-size:13px;
+    color:var(--primary-dk);
+    line-height:1.6;
+    font-weight:500;
+  }
+
+  /* ---------- Result screen ---------- */
+  .result-thumb{
+    height:152px;
+    border-radius:var(--radius-lg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:16px;
+    box-shadow:var(--shadow-card);
+  }
+  .result-thumb .emoji{ font-size:48px; }
+  .result-thumb .name{ font-weight:800; font-size:16.5px; color:var(--ink); letter-spacing:-.01em; }
+
+  .badge{
+    display:inline-block;
+    font-size:12px;
+    font-weight:700;
+    padding:6px 12px;
+    border-radius:20px;
+    margin-bottom:22px;
+    width:fit-content;
+  }
+  .badge.official{ background:#E8F1FF; color:#1B64DA; }
+  .badge.estimated{ background:var(--line); color:var(--slate); }
+
+  .bar-row{ margin-bottom:16px; }
+  .bar-row .bar-label{
+    display:flex; justify-content:space-between;
+    font-size:13.5px; font-weight:700; margin-bottom:8px; color:var(--ink);
+  }
+  .bar-row .bar-label span.val{ color:var(--muted); font-weight:600;}
+  .bar-track{
+    height:8px; background:var(--line); border-radius:20px; overflow:hidden;
+  }
+  .bar-fill{
+    height:100%; width:0%; border-radius:20px;
+    background:linear-gradient(90deg, var(--teal), var(--primary));
+    transition:width 1s cubic-bezier(.2,.8,.2,1);
+  }
+  .bar-fill.over{ background:linear-gradient(90deg,#FF9AA4,var(--red)); }
+
+  /* ---------- Diagnosis screen ---------- */
+  .gauge-wrap{ display:flex; justify-content:center; margin:10px 0 14px; }
+  .gauge{
+    width:172px;height:172px;border-radius:50%;
+    background:conic-gradient(var(--primary) calc(var(--pct,0) * 3.6deg), var(--line) 0deg);
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .gauge::before{
+    content:"";
+    position:absolute;
+    width:136px;height:136px;
+    background:#fff;
+    border-radius:50%;
+    box-shadow:var(--shadow-sm);
+  }
+  .gauge-inner{ position:relative; z-index:2; display:flex; flex-direction:column; align-items:center;}
+  .gauge-inner span{ font-size:32px; font-weight:800; color:var(--ink); letter-spacing:-.02em; }
+  .gauge-inner small{ font-size:12.5px; color:var(--muted); font-weight:700; margin-top:4px;}
+
+  .deficient-list{ display:flex; flex-direction:column; gap:10px; }
+  .deficient-card{
+    background:var(--amber-soft);
+    border-left:4px solid var(--amber);
+    border-radius:var(--radius-sm);
+    padding:13px 16px;
+  }
+  .deficient-card .d-title{ font-weight:800; font-size:14px; color:#92400E; margin-bottom:3px;}
+  .deficient-card .d-desc{ font-size:12.5px; color:#B45309; font-weight:500;}
+  .all-good{
+    background:var(--soft); color:var(--primary-dk); border-radius:var(--radius-sm);
+    padding:16px; font-size:14px; font-weight:700; text-align:center;
+  }
+
+  .rec-list{ display:flex; flex-direction:column; gap:10px; }
+  .rec-card{
+    display:flex; align-items:center; gap:12px;
+    border:none; border-radius:var(--radius-md);
+    padding:13px 15px;
+    background:#fff;
+    box-shadow:var(--shadow-card);
+  }
+  .rec-card .r-emoji{
+    width:44px;height:44px;border-radius:14px;background:var(--soft);
+    display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;
+  }
+  .rec-card .r-name{ font-weight:800; font-size:14px; }
+  .rec-card .r-fill{ font-size:12px; color:var(--teal); font-weight:700; margin-top:3px;}
+
+  /* ---------- Calendar ---------- */
+  .cal-header{ display:flex; justify-content:center; margin-bottom:18px; }
+  .cal-header span{ font-weight:800; font-size:17px; letter-spacing:-.01em;}
+  .cal-grid{
+    display:grid; grid-template-columns:repeat(7,1fr);
+    gap:6px; text-align:center; margin-bottom:20px;
+  }
+  .cal-grid .wd{ font-size:11.5px; color:var(--muted); font-weight:700; padding-bottom:8px;}
+  .cal-cell{
+    aspect-ratio:1/1;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:14px;
+    font-size:13px;
+    color:var(--slate);
+    font-weight:600;
+    background:transparent;
+    border:2px solid transparent;
+    cursor:pointer;
+    position:relative;
+  }
+  .cal-cell.empty{ cursor:default; }
+  .cal-cell.recorded{ background:var(--soft); color:var(--primary-dk); font-weight:800;}
+  .cal-cell.recorded::after{
+    content:""; position:absolute; bottom:5px; width:4px;height:4px;border-radius:50%;
+    background:var(--teal);
+  }
+  .cal-cell.today{ border-color:var(--primary); font-weight:800; color:var(--primary-dk);}
+  .cal-cell.selected{ background:var(--primary); color:#fff; }
+  .cal-cell.selected::after{ background:#fff; }
+
+  .cal-detail{
+    background:#fff; border:none; border-radius:var(--radius-md);
+    padding:16px 18px; min-height:90px;
+    box-shadow:var(--shadow-card);
+  }
+  .cal-detail .cd-date{ font-weight:800; font-size:14.5px; margin-bottom:10px;}
+  .cal-detail .cd-rate{ color:var(--primary); font-weight:800; font-size:13.5px; margin-bottom:8px;}
+  .cal-detail ul{ margin:0; padding-left:18px; font-size:13px; color:var(--slate); line-height:1.8; font-weight:500;}
+  .cal-detail .cd-empty{ color:var(--muted); font-size:13.5px; }
+
+  /* ---------- My page ---------- */
+  .profile-card{ display:flex; align-items:center; gap:16px; margin-bottom:8px;}
+  .avatar-lg{
+    width:58px;height:58px;border-radius:50%;
+    background:var(--line); display:flex; align-items:center;justify-content:center;
+    font-size:27px;
+  }
+  .p-name{ font-weight:800; font-size:18px; letter-spacing:-.01em;}
+  .p-goal{ font-size:12.5px; color:var(--teal); font-weight:700; margin-top:4px;}
+  .link-btn{
+    background:var(--line);border:none;color:var(--ink);font-weight:700;font-size:12.5px;cursor:pointer;
+    padding:7px 14px; border-radius:20px;
+  }
+  .link-btn:active{ background:var(--divider); }
+  .info-grid{
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .info-grid.hidden{ display:none; }
+  .info-item{
+    background:#fff; border:none; border-radius:14px;
+    padding:12px 14px;
+    box-shadow:var(--shadow-card);
+  }
+  .info-item .i-label{ font-size:11.5px; color:var(--muted); font-weight:700;}
+  .info-item .i-val{ font-size:14.5px; font-weight:800; color:var(--ink); margin-top:4px;}
+  .info-item input, .info-item select{ padding:8px 10px; font-size:13px; margin-top:4px; background:var(--line);}
+
+  /* ---------- Map ---------- */
+  .map-mock{
+    height:180px; background:#EAEDF0; border-radius:var(--radius-lg); position:relative;
+    overflow:hidden; margin-bottom:16px;
+    background-image:
+      linear-gradient(90deg, rgba(139,149,161,.16) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(139,149,161,.16) 1px, transparent 1px);
+    background-size:24px 24px;
+  }
+  .map-mock .pin{ position:absolute; font-size:24px; transform:translate(-50%,-100%); filter:drop-shadow(0 3px 4px rgba(15,23,42,.25));}
+  .map-label{
+    position:absolute; left:12px; bottom:12px;
+    background:#fff; font-size:11.5px; font-weight:700; color:var(--primary-dk);
+    padding:7px 12px; border-radius:20px;
+    box-shadow:var(--shadow-card);
+  }
+  .store-list{ display:flex; flex-direction:column; gap:10px; }
+  .store-card{
+    display:flex; align-items:center; gap:12px;
+    border:none; border-radius:var(--radius-md); padding:13px 15px; background:#fff;
+    box-shadow:var(--shadow-card);
+  }
+  .store-card .s-emoji{
+    width:44px;height:44px;border-radius:14px;background:var(--soft);
+    display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;
+  }
+  .store-card .s-name{ font-weight:800; font-size:14px;}
+  .store-card .s-fill{ font-size:12px; color:var(--teal); font-weight:700; margin-top:3px;}
+  .store-card .s-dist{ margin-left:auto; font-size:12.5px; color:var(--muted); font-weight:700;}
+
+  /* ---------- Tab bar ---------- */
+  .tabbar{
+    position:absolute; left:0; right:0; bottom:0;
+    height:66px;
+    background:#fff;
+    border-top:none;
+    box-shadow:0 -1px 0 var(--divider), 0 -8px 20px rgba(15,23,42,.04);
+    display:flex;
+    z-index:40;
+  }
+  .tabbar.hidden{ display:none; }
+  .tabbar button{
+    flex:1; border:none; background:none; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    font-size:10.5px; font-weight:700; color:var(--muted);
+    font-family:inherit;
+  }
+  .tabbar button span{ font-size:20px; transition:transform .15s; }
+  .tabbar button.active{ color:var(--primary); }
+  .tabbar button.active span{ transform:translateY(-1px) scale(1.05); }
+
+  /* ---------- Overlays ---------- */
+  .overlay{
+    position:absolute; inset:0; z-index:60;
+    background:rgba(15,23,42,.5);
+    display:flex; align-items:flex-end;
+    animation:fadeIn .2s ease;
+  }
+  .overlay.hidden{ display:none; }
+  .overlay.center{ align-items:center; justify-content:center; background:rgba(11,18,32,.92); }
+
+  .modal-card{
+    background:#fff; width:100%;
+    border-radius:26px 26px 0 0;
+    padding:14px 20px 28px;
+    display:flex; flex-direction:column; gap:10px;
+    box-shadow:var(--shadow-elevated);
+  }
+  .modal-handle{
+    width:36px; height:4px; border-radius:4px;
+    background:var(--divider);
+    margin:2px auto 10px;
+  }
+  .modal-card h3{ margin:0 0 8px; font-size:16px; font-weight:800; letter-spacing:-.01em;}
+  .modal-card h3 small{ color:var(--muted); font-weight:500; font-size:11.5px;}
+  .menu-choice{
+    display:flex; align-items:center; gap:12px;
+    border:none; border-radius:var(--radius-md);
+    padding:12px 14px; cursor:pointer;
+    background:var(--line);
+    transition:background .15s, transform .08s;
+  }
+  .menu-choice:active{ transform:scale(.98); }
+  .menu-choice:hover{ background:var(--divider); }
+  .menu-choice .m-emoji{
+    width:46px;height:46px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;
+  }
+  .menu-choice .m-name{ font-weight:800; font-size:14px; }
+  .menu-choice .m-kcal{ font-size:12px; color:var(--muted); margin-top:3px; font-weight:500;}
+
+  .loading-card{
+    display:flex; flex-direction:column; align-items:center; gap:16px;
+    color:#fff; font-size:13.5px; font-weight:700; text-align:center; padding:0 30px;
+    line-height:1.5;
+  }
+  .spinner{
+    width:42px;height:42px;border-radius:50%;
+    border:4px solid rgba(255,255,255,.22);
+    border-top-color:#fff;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:absolute;
+    left:50%; bottom:88px;
+    transform:translate(-50%,20px);
+    background:var(--ink);
+    color:#fff;
+    font-size:13.5px;
+    font-weight:700;
+    padding:13px 22px;
+    border-radius:24px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:80;
+    white-space:nowrap;
+    box-shadow:var(--shadow-elevated);
+  }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen-container">
+
+    <!-- S1 로그인 -->
+    <section id="S1" class="screen auth active">
+      <div class="auth-wrap">
+        <div class="logo">CJMT</div>
+        <p class="tagline">사진 한 장으로 완성하는 균형 식단</p>
+        <div class="field">
+          <label>아이디</label>
+          <input type="text" id="loginId" placeholder="아이디를 입력하세요">
+        </div>
+        <div class="field">
+          <label>비밀번호</label>
+          <input type="password" id="loginPw" placeholder="비밀번호를 입력하세요">
+        </div>
+        <button class="btn primary" id="btnLogin">로그인</button>
+        <button class="btn ghost" id="btnDemoStart">데모로 바로 시작</button>
+        <p class="switch-link">계정이 없으신가요? <a id="linkToSignup">회원가입</a></p>
+      </div>
+    </section>
+
+    <!-- S2 회원가입 -->
+    <section id="S2" class="screen auth">
+      <div class="auth-wrap">
+        <button class="back-btn" id="backToS1">←</button>
+        <h2>회원가입</h2>
+        <p class="sub">CJMT와 함께 균형 잡힌 한 끼를 시작해보세요</p>
+        <div class="field"><label>아이디</label><input type="text" placeholder="아이디"></div>
+        <div class="field"><label>비밀번호</label><input type="password" placeholder="비밀번호"></div>
+        <div class="field"><label>비밀번호 확인</label><input type="password" placeholder="비밀번호 확인"></div>
+        <div class="field"><label>이메일</label><input type="text" placeholder="email@example.com"></div>
+        <button class="btn primary" id="btnToS3" style="margin-top:8px;">다음</button>
+      </div>
+    </section>
+
+    <!-- S3 신체정보 입력 -->
+    <section id="S3" class="screen auth">
+      <div class="auth-wrap">
+        <button class="back-btn" id="backToS2">←</button>
+        <h2>신체 정보 입력</h2>
+        <p class="sub">정확한 영양 진단을 위해 알려주세요</p>
+        <div class="grid-2">
+          <div class="field"><label>나이</label><input type="number" id="inAge" value="21"></div>
+          <div class="field"><label>성별</label>
+            <select id="inGender"><option value="남" selected>남</option><option value="여">여</option></select>
+          </div>
+          <div class="field"><label>키 (cm)</label><input type="number" id="inHeight" value="175"></div>
+          <div class="field"><label>몸무게 (kg)</label><input type="number" id="inWeight" value="68"></div>
+          <div class="field"><label>활동량</label>
+            <select id="inActivity">
+              <option>낮음</option><option selected>보통</option><option>높음</option>
+            </select>
+          </div>
+          <div class="field"><label>기저질환</label>
+            <select id="inDisease">
+              <option selected>없음</option><option>고혈압</option><option>당뇨</option><option>신장질환</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:2px;">
+          <label>목표</label>
+          <select id="inGoal">
+            <option>감량</option><option selected>유지</option><option>증량</option>
+          </select>
+        </div>
+        <button class="btn primary" id="btnStart" style="margin-top:10px;">시작하기</button>
+      </div>
+    </section>
+
+    <!-- S4 홈 / 카메라 -->
+    <section id="S4" class="screen app">
+      <div class="app-header">
+        <div>
+          <div class="hello">안녕하세요, <b id="userNameLabel">현빈</b>님 👋</div>
+          <div class="mini-summary" id="miniSummary">오늘 39% 달성</div>
+        </div>
+        <div class="avatar-mini">🙂</div>
+      </div>
+      <div class="content">
+        <div class="camera-view" id="cameraView">
+          <div class="cam-icon">📷</div>
+          <div class="cam-hint">탭해서 메뉴 사진 촬영</div>
+        </div>
+        <div class="field">
+          <input type="text" id="menuNameInput" placeholder="메뉴명 (선택)">
+        </div>
+        <button class="btn primary big" id="btnCapture">촬영 후 분석하기</button>
+        <div class="quick-tips">
+          💡 사진을 찍으면 AI가 메뉴를 인식하고, 영양성분 분석 후 내 신체 데이터 기준으로 부족한 영양소를 채워줄 메뉴를 추천해줘요.
+        </div>
+      </div>
+    </section>
+
+    <!-- S5 영양분석 결과 -->
+    <section id="S5" class="screen app">
+      <div class="top-bar"><button class="icon-btn" id="backToS4">←</button><span>영양 분석 결과</span></div>
+      <div class="content">
+        <div class="result-thumb" id="resultThumb"></div>
+        <div class="badge" id="sourceBadge"></div>
+        <div id="nutriBars"></div>
+        <button class="btn primary big" id="btnGoDiagnosis">진단 보기</button>
+      </div>
+    </section>
+
+    <!-- S6 진단 / 추천 -->
+    <section id="S6" class="screen app">
+      <div class="top-bar"><button class="icon-btn" id="backToS5">←</button><span>영양 진단</span></div>
+      <div class="content">
+        <div class="gauge-wrap">
+          <div class="gauge" id="gauge">
+            <div class="gauge-inner"><span id="gaugeText">0%</span><small>오늘 달성률</small></div>
+          </div>
+        </div>
+        <h3 class="section-title">부족한 영양소</h3>
+        <div id="deficientList" class="deficient-list"></div>
+        <h3 class="section-title">보충 추천 메뉴</h3>
+        <div id="recList" class="rec-list"></div>
+        <button class="btn primary big" id="btnSave" style="margin-top:20px;">저장</button>
+        <button class="btn ghost" id="btnGoMap" style="margin-top:10px;">주변 가게 보기</button>
+      </div>
+    </section>
+
+    <!-- S7 달력 / 기록 -->
+    <section id="S7" class="screen app">
+      <div class="top-bar"><span>기록 달력</span></div>
+      <div class="content">
+        <div class="cal-header"><span id="calMonthLabel">2026년 7월</span></div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-detail" id="calDetail"></div>
+      </div>
+    </section>
+
+    <!-- S8 마이페이지 -->
+    <section id="S8" class="screen app">
+      <div class="top-bar"><span>마이페이지</span></div>
+      <div class="content">
+        <div class="profile-card">
+          <div class="avatar-lg">🙂</div>
+          <div>
+            <div class="p-name" id="myName">현빈</div>
+            <div class="p-goal" id="myGoal">목표: 유지</div>
+          </div>
+        </div>
+        <h3 class="section-title">신체 정보 <button class="link-btn" id="editBtn">수정</button></h3>
+        <div id="profileView" class="info-grid"></div>
+        <div id="profileEdit" class="info-grid hidden"></div>
+        <h3 class="section-title">일일 권장 섭취량</h3>
+        <div id="targetsView" class="info-grid"></div>
+        <button class="btn danger" id="btnLogout">로그아웃</button>
+      </div>
+    </section>
+
+    <!-- S9 주변 가게 지도 -->
+    <section id="S9" class="screen app">
+      <div class="top-bar"><span>주변 가게</span></div>
+      <div class="content">
+        <div class="map-mock">
+          <div class="pin" style="left:28%;top:38%;">📍</div>
+          <div class="pin" style="left:58%;top:52%;">📍</div>
+          <div class="pin" style="left:44%;top:76%;">📍</div>
+          <div class="map-label">반경 3km · 소상공인 우선</div>
+        </div>
+        <div id="storeList" class="store-list"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- 하단 탭바 -->
+  <nav class="tabbar hidden" id="tabbar">
+    <button data-tab="home" data-target="S4"><span>🏠</span>홈</button>
+    <button data-tab="calendar" data-target="S7"><span>📅</span>달력</button>
+    <button data-tab="map" data-target="S9"><span>📍</span>지도</button>
+    <button data-tab="my" data-target="S8"><span>👤</span>MY</button>
+  </nav>
+
+  <!-- 촬영 메뉴 선택 모달 -->
+  <div class="overlay hidden" id="captureModal">
+    <div class="modal-card">
+      <div class="modal-handle"></div>
+      <h3>어떤 메뉴로 분석할까요? <small>(mock 촬영 · 3가지 중 선택)</small></h3>
+      <div id="menuChoiceList"></div>
+      <button class="btn ghost" id="btnCloseModal">취소</button>
+    </div>
+  </div>
+
+  <!-- 로딩 오버레이 -->
+  <div class="overlay center hidden" id="loadingOverlay">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <p>AI가 사진 속 메뉴의<br>영양성분을 분석하고 있어요...</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ==================== Mock 데이터 ==================== */
+  var MENUS = {
+    A:{ key:"A", name:"제육볶음 정식", source:"표준 조리법 추정", emoji:"🍚", color:"#FDE9B0",
+        kcal:720, carb:88, protein:34, fat:26, sodium:1490, fiber:6, calcium:80 },
+    B:{ key:"B", name:"김치찌개 백반", source:"표준 조리법 추정", emoji:"🍲", color:"#FBC7C0",
+        kcal:560, carb:62, protein:28, fat:22, sodium:1720, fiber:9, calcium:140 },
+    C:{ key:"C", name:"치킨버거 세트", source:"공식 영양표", emoji:"🍔", color:"#FCD9AE",
+        kcal:940, carb:102, protein:38, fat:44, sodium:1350, fiber:4, calcium:120 }
+  };
+
+  var RECS = [
+    { menu:"두부 샐러드", fills:"단백질·칼슘 보충", emoji:"🥗" },
+    { menu:"귀리 요거트볼", fills:"식이섬유 ↑", emoji:"🥣" },
+    { menu:"닭가슴살 랩", fills:"단백질 보충", emoji:"🌯" }
+  ];
+
+  var STORES = [
+    { name:"오늘식당", fills:"단백질 보충", dist:"320m", emoji:"🍱" },
+    { name:"샐러디 궁동", fills:"식이섬유", dist:"540m", emoji:"🥗" },
+    { name:"한끼두부", fills:"칼슘", dist:"810m", emoji:"🍲" }
+  ];
+
+  var NUTRI_ROWS = [
+    { key:"kcal", label:"열량", unit:"kcal" },
+    { key:"carb", label:"탄수화물", unit:"g" },
+    { key:"protein", label:"단백질", unit:"g" },
+    { key:"fat", label:"지방", unit:"g" },
+    { key:"sodium", label:"나트륨", unit:"mg" },
+    { key:"fiber", label:"식이섬유", unit:"g" }
+  ];
+
+  var YEAR = 2026, MONTH_INDEX = 6, TODAY_DAY = 25; // 2026년 7월, "오늘"은 25일로 고정한 mock 시나리오
+
+  /* ==================== 상태 (메모리 전용) ==================== */
+  var state = {
+    userName:"현빈",
+    profile:{ age:21, gender:"남", height:175, weight:68, activity:"보통", disease:"없음", goal:"유지" },
+    targets:{ kcal:2500, carb:313, protein:156, fat:69, fiber:28, sodium:2000, calcium:900 },
+    consumed:{ kcal:980, carb:120, protein:42, fat:30, fiber:8, sodium:1600, calcium:220 },
+    selectedMenuKey:null,
+    customMenuName:"",
+    editingProfile:false,
+    calendarRecords:{
+      3:{ rate:75, meals:["점심 비빔밥"] },
+      7:{ rate:88, meals:["저녁 삼겹살 정식"] },
+      8:{ rate:82, meals:["아침 요거트볼","점심 제육정식"] },
+      12:{ rate:70, meals:["점심 초밥세트"] },
+      15:{ rate:90, meals:["저녁 닭갈비"] },
+      18:{ rate:65, meals:["점심 우동세트"] },
+      19:{ rate:95, meals:["저녁 스테이크"] },
+      22:{ rate:78, meals:["점심 파스타"] }
+    },
+    selectedCalDay:8
+  };
+
+  /* ==================== 유틸 ==================== */
+  function $(id){ return document.getElementById(id); }
+  function round(n){ return Math.round(n); }
+
+  function toast(msg){
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function(){ t.classList.remove("show"); }, 2000);
+  }
+
+  function hideToast(){
+    var t = $("toast");
+    clearTimeout(t._timer);
+    t.classList.remove("show");
+  }
+
+  function animateNumber(duration, onFrame, onDone){
+    var start = null;
+    function step(ts){
+      if(start === null) start = ts;
+      var p = Math.min(1, (ts - start) / duration);
+      var eased = 1 - Math.pow(1 - p, 3);
+      onFrame(eased);
+      if(p < 1){ requestAnimationFrame(step); }
+      else if(onDone){ onDone(); }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function recomputeTargets(p){
+    var bmr = 10*p.weight + 6.25*p.height - 5*p.age + (p.gender === "남" ? 5 : -161);
+    var actFactor = p.activity === "낮음" ? 1.2 : (p.activity === "높음" ? 1.75 : 1.45);
+    var kcal = Math.round(bmr * actFactor / 10) * 10;
+    if(p.goal === "감량") kcal = Math.round(kcal*0.85/10)*10;
+    if(p.goal === "증량") kcal = Math.round(kcal*1.15/10)*10;
+    var protein = Math.round(p.weight * 2.0);
+    var fat = Math.round(kcal * 0.25 / 9);
+    var carb = Math.round((kcal - protein*4 - fat*9) / 4);
+    return { kcal:kcal, carb:Math.max(carb,50), protein:protein, fat:fat, fiber:28, sodium:2000, calcium:900 };
+  }
+
+  /* ==================== 화면 전환 ==================== */
+  var SCREENS_WITH_TABBAR = { S4:1, S5:1, S6:1, S7:1, S8:1, S9:1 };
+  var TAB_FOR_SCREEN = { S4:"home", S5:"home", S6:"home", S7:"calendar", S8:"my", S9:"map" };
+
+  function showScreen(id){
+    hideToast();
+    var all = document.querySelectorAll(".screen");
+    for(var i=0;i<all.length;i++){ all[i].classList.remove("active"); }
+    $(id).classList.add("active");
+
+    var tabbar = $("tabbar");
+    if(SCREENS_WITH_TABBAR[id]){
+      tabbar.classList.remove("hidden");
+      highlightTab(TAB_FOR_SCREEN[id]);
+    } else {
+      tabbar.classList.add("hidden");
+    }
+
+    if(id === "S4") renderHome();
+    if(id === "S7") renderCalendar();
+    if(id === "S8") renderMyPage();
+    if(id === "S9") renderStores();
+
+    document.querySelector(".screen-container").scrollTop = 0;
+  }
+
+  function highlightTab(name){
+    var btns = document.querySelectorAll(".tabbar button");
+    for(var i=0;i<btns.length;i++){
+      btns[i].classList.toggle("active", btns[i].getAttribute("data-tab") === name);
+    }
+  }
+
+  /* ==================== S4 홈 ==================== */
+  function renderHome(){
+    $("userNameLabel").textContent = state.userName;
+    var rate = round(state.consumed.kcal / state.targets.kcal * 100);
+    $("miniSummary").textContent = "오늘 " + rate + "% 달성 (" + state.consumed.kcal + " / " + state.targets.kcal + " kcal)";
+  }
+
+  /* ==================== 촬영 모달 ==================== */
+  function buildMenuChoiceList(){
+    var wrap = $("menuChoiceList");
+    wrap.innerHTML = "";
+    ["A","B","C"].forEach(function(key){
+      var m = MENUS[key];
+      var card = document.createElement("div");
+      card.className = "menu-choice";
+      var emojiBox = document.createElement("div");
+      emojiBox.className = "m-emoji";
+      emojiBox.style.background = m.color;
+      emojiBox.textContent = m.emoji;
+      var info = document.createElement("div");
+      info.innerHTML = '<div class="m-name">' + m.name + '</div><div class="m-kcal">' + m.kcal + ' kcal · ' + m.source + '</div>';
+      card.appendChild(emojiBox);
+      card.appendChild(info);
+      card.addEventListener("click", function(k){
+        return function(){ selectMenu(k); };
+      }(key));
+      wrap.appendChild(card);
+    });
+  }
+
+  function openCaptureModal(){
+    hideToast();
+    state.customMenuName = $("menuNameInput").value.trim();
+    $("captureModal").classList.remove("hidden");
+  }
+  function closeCaptureModal(){
+    $("captureModal").classList.add("hidden");
+  }
+
+  function selectMenu(key){
+    state.selectedMenuKey = key;
+    closeCaptureModal();
+    $("loadingOverlay").classList.remove("hidden");
+    setTimeout(function(){
+      $("loadingOverlay").classList.add("hidden");
+      showScreen("S5");
+      renderResult(key);
+    }, 1200);
+  }
+
+  /* ==================== S5 영양분석 결과 ==================== */
+  function renderResult(key){
+    var m = MENUS[key];
+    var displayName = state.customMenuName || m.name;
+
+    var thumb = $("resultThumb");
+    thumb.style.background = m.color;
+    thumb.innerHTML = '<div class="emoji">' + m.emoji + '</div><div class="name">' + displayName + '</div>';
+
+    var badge = $("sourceBadge");
+    badge.textContent = m.source;
+    badge.className = "badge " + (m.source === "공식 영양표" ? "official" : "estimated");
+
+    var barsWrap = $("nutriBars");
+    barsWrap.innerHTML = "";
+    NUTRI_ROWS.forEach(function(row){
+      var value = m[row.key];
+      var target = state.targets[row.key];
+      var pct = Math.min(100, round(value/target*100));
+
+      var rowEl = document.createElement("div");
+      rowEl.className = "bar-row";
+      rowEl.innerHTML =
+        '<div class="bar-label"><span>' + row.label + '</span><span class="val">' + value + row.unit + '</span></div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:0%"></div></div>';
+      barsWrap.appendChild(rowEl);
+
+      var fillEl = rowEl.querySelector(".bar-fill");
+      if(row.key === "sodium" && pct >= 85) fillEl.classList.add("over");
+      setTimeout(function(el,p){
+        return function(){ el.style.width = p + "%"; };
+      }(fillEl, pct), 60);
+    });
+  }
+
+  /* ==================== S6 진단 ==================== */
+  function goDiagnosis(){
+    showScreen("S6");
+    renderDiagnosis(state.selectedMenuKey);
+  }
+
+  function renderDiagnosis(key){
+    var m = MENUS[key];
+    var sum = {};
+    Object.keys(state.targets).forEach(function(k){
+      sum[k] = (state.consumed[k] || 0) + (m[k] || 0);
+    });
+
+    var rate = round((state.consumed.kcal + m.kcal) / state.targets.kcal * 100);
+
+    // 원형 게이지 애니메이션
+    var gauge = $("gauge");
+    var gaugeText = $("gaugeText");
+    animateNumber(900, function(eased){
+      var v = Math.min(rate, 999);
+      var current = round(eased * v);
+      gauge.style.setProperty("--pct", Math.min(current, 100));
+      gaugeText.textContent = current + "%";
+    });
+
+    // 부족 영양소 계산: 목표 대비 60% 미만 섭취된 항목만 부족으로 표시 (나트륨은 상한형 지표라 제외)
+    var DEFICIT_KEYS = [
+      { key:"carb", label:"탄수화물", unit:"g" },
+      { key:"protein", label:"단백질", unit:"g" },
+      { key:"fat", label:"지방", unit:"g" },
+      { key:"fiber", label:"식이섬유", unit:"g" },
+      { key:"calcium", label:"칼슘", unit:"mg" }
+    ];
+    var deficits = [];
+    DEFICIT_KEYS.forEach(function(d){
+      var pct = round(sum[d.key] / state.targets[d.key] * 100);
+      if(pct < 60){
+        deficits.push({
+          label:d.label,
+          pct:pct,
+          remain:state.targets[d.key] - sum[d.key],
+          unit:d.unit
+        });
+      }
+    });
+    deficits.sort(function(a,b){ return a.pct - b.pct; });
+
+    var listEl = $("deficientList");
+    listEl.innerHTML = "";
+    if(deficits.length === 0){
+      listEl.innerHTML = '<div class="all-good">오늘 영양 균형이 훌륭해요! 👏</div>';
+    } else {
+      deficits.forEach(function(d){
+        var card = document.createElement("div");
+        card.className = "deficient-card";
+        card.innerHTML =
+          '<div class="d-title">' + d.label + ' 부족 (목표의 ' + d.pct + '%)</div>' +
+          '<div class="d-desc">약 ' + round(d.remain) + d.unit + ' 더 채우면 좋아요</div>';
+        listEl.appendChild(card);
+      });
+    }
+
+    if(sum.sodium > state.targets.sodium){
+      var sodiumCard = document.createElement("div");
+      sodiumCard.className = "deficient-card";
+      sodiumCard.style.borderLeftColor = "#DC2626";
+      sodiumCard.innerHTML =
+        '<div class="d-title" style="color:#B91C1C;">나트륨 과다 섭취 주의</div>' +
+        '<div class="d-desc" style="color:#DC2626;">목표보다 ' + round(sum.sodium - state.targets.sodium) + 'mg 초과했어요</div>';
+      listEl.appendChild(sodiumCard);
+    }
+
+    // 보충 추천 메뉴
+    var recWrap = $("recList");
+    recWrap.innerHTML = "";
+    RECS.forEach(function(r){
+      var card = document.createElement("div");
+      card.className = "rec-card";
+      card.innerHTML =
+        '<div class="r-emoji">' + r.emoji + '</div>' +
+        '<div><div class="r-name">' + r.menu + '</div><div class="r-fill">' + r.fills + '</div></div>';
+      recWrap.appendChild(card);
+    });
+  }
+
+  function saveDiagnosis(){
+    var key = state.selectedMenuKey;
+    if(!key) return;
+    var m = MENUS[key];
+    var displayName = state.customMenuName || m.name;
+
+    Object.keys(state.consumed).forEach(function(k){
+      state.consumed[k] += (m[k] || 0);
+    });
+
+    var rate = round(state.consumed.kcal / state.targets.kcal * 100);
+    var existing = state.calendarRecords[TODAY_DAY];
+    if(existing){
+      existing.rate = rate;
+      existing.meals.push(displayName);
+    } else {
+      state.calendarRecords[TODAY_DAY] = { rate:rate, meals:[displayName] };
+    }
+    state.selectedCalDay = TODAY_DAY;
+
+    $("menuNameInput").value = "";
+    state.customMenuName = "";
+    state.selectedMenuKey = null;
+
+    toast("기록에 저장했어요");
+    showScreen("S7");
+  }
+
+  /* ==================== S7 달력 ==================== */
+  function renderCalendar(){
+    $("calMonthLabel").textContent = YEAR + "년 " + (MONTH_INDEX+1) + "월";
+
+    var grid = $("calGrid");
+    grid.innerHTML = "";
+    ["일","월","화","수","목","금","토"].forEach(function(wd){
+      var el = document.createElement("div");
+      el.className = "wd";
+      el.textContent = wd;
+      grid.appendChild(el);
+    });
+
+    var firstWeekday = new Date(YEAR, MONTH_INDEX, 1).getDay();
+    var daysInMonth = new Date(YEAR, MONTH_INDEX+1, 0).getDate();
+
+    for(var i=0;i<firstWeekday;i++){
+      var blank = document.createElement("div");
+      blank.className = "cal-cell empty";
+      grid.appendChild(blank);
+    }
+
+    for(var day=1; day<=daysInMonth; day++){
+      var cell = document.createElement("div");
+      cell.className = "cal-cell";
+      cell.textContent = day;
+      var rec = state.calendarRecords[day];
+      if(rec) cell.classList.add("recorded");
+      if(day === TODAY_DAY) cell.classList.add("today");
+      if(day === state.selectedCalDay) cell.classList.add("selected");
+      cell.addEventListener("click", function(d){
+        return function(){
+          state.selectedCalDay = d;
+          renderCalendar();
+        };
+      }(day));
+      grid.appendChild(cell);
+    }
+
+    renderCalDetail(state.selectedCalDay);
+  }
+
+  function renderCalDetail(day){
+    var detail = $("calDetail");
+    var rec = state.calendarRecords[day];
+    var dateLabel = (MONTH_INDEX+1) + "월 " + day + "일" + (day === TODAY_DAY ? " (오늘)" : "");
+    if(!rec){
+      detail.innerHTML = '<div class="cd-date">' + dateLabel + '</div><div class="cd-empty">이 날은 기록이 없어요.</div>';
+      return;
+    }
+    var mealsHtml = rec.meals.map(function(m){ return "<li>" + m + "</li>"; }).join("");
+    detail.innerHTML =
+      '<div class="cd-date">' + dateLabel + '</div>' +
+      '<div class="cd-rate">달성률 ' + rec.rate + '%</div>' +
+      '<ul>' + mealsHtml + '</ul>';
+  }
+
+  /* ==================== S8 마이페이지 ==================== */
+  function renderMyPage(){
+    $("myName").textContent = state.userName;
+    $("myGoal").textContent = "목표: " + state.profile.goal;
+
+    var p = state.profile;
+    $("profileView").innerHTML =
+      infoItem("나이", p.age + "세") +
+      infoItem("성별", p.gender) +
+      infoItem("키", p.height + "cm") +
+      infoItem("몸무게", p.weight + "kg") +
+      infoItem("활동량", p.activity) +
+      infoItem("기저질환", p.disease);
+
+    var t = state.targets;
+    $("targetsView").innerHTML =
+      infoItem("열량", t.kcal + "kcal") +
+      infoItem("탄수화물", t.carb + "g") +
+      infoItem("단백질", t.protein + "g") +
+      infoItem("지방", t.fat + "g") +
+      infoItem("식이섬유", t.fiber + "g") +
+      infoItem("나트륨", t.sodium + "mg") +
+      infoItem("칼슘", t.calcium + "mg");
+  }
+
+  function infoItem(label, val){
+    return '<div class="info-item"><div class="i-label">' + label + '</div><div class="i-val">' + val + '</div></div>';
+  }
+
+  function toggleEditProfile(){
+    state.editingProfile = !state.editingProfile;
+    var editBtn = $("editBtn");
+    if(state.editingProfile){
+      editBtn.textContent = "저장";
+      buildProfileEditForm();
+      $("profileView").classList.add("hidden");
+      $("profileEdit").classList.remove("hidden");
+    } else {
+      saveProfileEdit();
+      editBtn.textContent = "수정";
+      $("profileView").classList.remove("hidden");
+      $("profileEdit").classList.add("hidden");
+    }
+  }
+
+  function buildProfileEditForm(){
+    var p = state.profile;
+    var edit = $("profileEdit");
+    edit.innerHTML =
+      editItem("나이", '<input type="number" id="editAge" value="'+p.age+'">') +
+      editItem("성별", '<select id="editGender"><option '+(p.gender==="남"?"selected":"")+'>남</option><option '+(p.gender==="여"?"selected":"")+'>여</option></select>') +
+      editItem("키(cm)", '<input type="number" id="editHeight" value="'+p.height+'">') +
+      editItem("몸무게(kg)", '<input type="number" id="editWeight" value="'+p.weight+'">') +
+      editItem("활동량", buildSelect("editActivity", ["낮음","보통","높음"], p.activity)) +
+      editItem("기저질환", buildSelect("editDisease", ["없음","고혈압","당뇨","신장질환"], p.disease));
+  }
+
+  function editItem(label, inputHtml){
+    return '<div class="info-item"><div class="i-label">' + label + '</div>' + inputHtml + '</div>';
+  }
+
+  function buildSelect(id, options, selected){
+    var html = '<select id="' + id + '">';
+    options.forEach(function(o){
+      html += '<option ' + (o===selected ? "selected" : "") + '>' + o + '</option>';
+    });
+    html += '</select>';
+    return html;
+  }
+
+  function saveProfileEdit(){
+    var p = state.profile;
+    p.age = parseInt($("editAge").value, 10) || p.age;
+    p.gender = $("editGender").value;
+    p.height = parseInt($("editHeight").value, 10) || p.height;
+    p.weight = parseInt($("editWeight").value, 10) || p.weight;
+    p.activity = $("editActivity").value;
+    p.disease = $("editDisease").value;
+
+    state.targets = recomputeTargets(p);
+    renderMyPage();
+    toast("재계산됐어요");
+  }
+
+  /* ==================== S9 지도 ==================== */
+  function renderStores(){
+    var wrap = $("storeList");
+    wrap.innerHTML = "";
+    STORES.forEach(function(s){
+      var card = document.createElement("div");
+      card.className = "store-card";
+      card.innerHTML =
+        '<div class="s-emoji">' + s.emoji + '</div>' +
+        '<div><div class="s-name">' + s.name + '</div><div class="s-fill">' + s.fills + '</div></div>' +
+        '<div class="s-dist">' + s.dist + '</div>';
+      wrap.appendChild(card);
+    });
+  }
+
+  /* ==================== 이벤트 바인딩 ==================== */
+  function bind(){
+    $("btnLogin").addEventListener("click", function(){ showScreen("S4"); });
+    $("btnDemoStart").addEventListener("click", function(){ showScreen("S4"); });
+    $("linkToSignup").addEventListener("click", function(){ showScreen("S2"); });
+
+    $("backToS1").addEventListener("click", function(){ showScreen("S1"); });
+    $("btnToS3").addEventListener("click", function(){ showScreen("S3"); });
+
+    $("backToS2").addEventListener("click", function(){ showScreen("S2"); });
+    $("btnStart").addEventListener("click", function(){
+      var p = state.profile;
+      p.age = parseInt($("inAge").value, 10) || p.age;
+      p.gender = $("inGender").value;
+      p.height = parseInt($("inHeight").value, 10) || p.height;
+      p.weight = parseInt($("inWeight").value, 10) || p.weight;
+      p.activity = $("inActivity").value;
+      p.disease = $("inDisease").value;
+      p.goal = $("inGoal").value;
+      state.targets = recomputeTargets(p);
+      toast("권장량이 계산됐어요");
+      showScreen("S4");
+    });
+
+    $("cameraView").addEventListener("click", openCaptureModal);
+    $("btnCapture").addEventListener("click", openCaptureModal);
+    $("btnCloseModal").addEventListener("click", closeCaptureModal);
+
+    $("backToS4").addEventListener("click", function(){ showScreen("S4"); });
+    $("btnGoDiagnosis").addEventListener("click", goDiagnosis);
+
+    $("backToS5").addEventListener("click", function(){ showScreen("S5"); });
+    $("btnSave").addEventListener("click", saveDiagnosis);
+    $("btnGoMap").addEventListener("click", function(){ showScreen("S9"); });
+
+    $("editBtn").addEventListener("click", toggleEditProfile);
+    $("btnLogout").addEventListener("click", function(){ showScreen("S1"); });
+
+    var tabBtns = document.querySelectorAll(".tabbar button");
+    for(var i=0;i<tabBtns.length;i++){
+      tabBtns[i].addEventListener("click", function(){
+        showScreen(this.getAttribute("data-target"));
+      });
+    }
+
+    buildMenuChoiceList();
+  }
+
+  bind();
+  renderHome();
+})();
+</script>
+</body>
+</html>
