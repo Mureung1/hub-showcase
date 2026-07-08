@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>빵지도 — 대전 베이커리 동선 추천 서비스</title>
+  <style>
+    :root {
+      --bg: #fff7e8;
+      --bg2: #fff1d1;
+      --ink: #2f2118;
+      --sub: #756052;
+      --brown: #9b5a2e;
+      --brown2: #c9813f;
+      --cream: #fffdf7;
+      --line: rgba(73, 45, 26, .14);
+      --orange: #ff9f2f;
+      --yellow: #ffd86f;
+      --green: #67b26f;
+      --red: #e05b3f;
+      --shadow: 0 24px 70px rgba(122, 76, 30, .18);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 8%, rgba(255, 216, 111, .5), transparent 28%),
+        radial-gradient(circle at 85% 4%, rgba(255, 159, 47, .22), transparent 25%),
+        linear-gradient(180deg, var(--bg), #fffdf7 44%, #fff7e8);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(88, 52, 25, .08) 1px, transparent 1px);
+      background-size: 22px 22px;
+      mask-image: linear-gradient(to bottom, black, transparent 60%);
+      z-index: -1;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    .nav {
+      position: sticky;
+      top: 14px;
+      z-index: 10;
+      margin-top: 14px;
+    }
+
+    .nav-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 14px 18px;
+      border: 1px solid rgba(105, 68, 35, .16);
+      border-radius: 999px;
+      background: rgba(255, 253, 247, .76);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 12px 38px rgba(89, 52, 23, .08);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 900;
+      letter-spacing: -.04em;
+      font-size: 20px;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #ffcf70, #c77a35);
+      box-shadow: inset -4px -5px 10px rgba(92, 43, 8, .18), inset 3px 3px 10px rgba(255,255,255,.45);
+    }
+
+    .nav-links { display: flex; gap: 8px; align-items: center; color: var(--sub); font-weight: 700; font-size: 14px; }
+    .nav-links a { padding: 10px 13px; border-radius: 999px; }
+    .nav-links a:hover { background: #fff1d1; color: var(--brown); }
+
+    .hero {
+      min-height: 720px;
+      display: grid;
+      grid-template-columns: 1.03fr .97fr;
+      align-items: center;
+      gap: 50px;
+      padding: 72px 0 54px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 13px;
+      border-radius: 999px;
+      color: #7a421e;
+      background: rgba(255, 225, 148, .72);
+      border: 1px solid rgba(163, 94, 34, .16);
+      font-weight: 800;
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(48px, 8vw, 94px);
+      line-height: .96;
+      letter-spacing: -.075em;
+    }
+
+    .hero h1 .accent {
+      display: inline-block;
+      transform: rotate(-2deg) translateY(2px);
+      color: #ad612d;
+      text-shadow: 0 5px 0 rgba(255, 216, 111, .65);
+    }
+
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 30px;
+      color: var(--sub);
+      font-size: 21px;
+      line-height: 1.65;
+      letter-spacing: -.035em;
+      word-break: keep-all;
+    }
+
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    .btn {
+      border: 0;
+      padding: 15px 20px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 15px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn.primary { background: #2f2118; color: #fffdf7; box-shadow: 0 14px 28px rgba(47, 33, 24, .18); }
+    .btn.ghost { background: rgba(255,255,255,.65); color: var(--brown); border: 1px solid var(--line); }
+
+    .phone-stage {
+      position: relative;
+      min-height: 570px;
+      display: grid;
+      place-items: center;
+    }
+
+    .blob {
+      position: absolute;
+      width: 560px;
+      height: 560px;
+      border-radius: 42% 58% 52% 48%;
+      background: linear-gradient(145deg, rgba(255, 212, 116, .8), rgba(255, 161, 62, .2));
+      filter: blur(.2px);
+      animation: float 7s ease-in-out infinite;
+    }
+
+    .phone {
+      position: relative;
+      width: min(390px, 90vw);
+      border: 12px solid #2f2118;
+      border-radius: 46px;
+      background: #fffaf0;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transform: rotate(2deg);
+    }
+
+    .phone-top {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 18px 18px 12px;
+      background: linear-gradient(180deg, #fff6df, #fffaf0);
+    }
+
+    .search {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 999px;
+      background: white;
+      color: #8c6b55;
+      font-weight: 800;
+      font-size: 13px;
+      box-shadow: inset 0 0 0 1px rgba(80, 50, 25, .09);
+    }
+
+    .login-pill { padding: 10px 12px; border-radius: 999px; background: #2f2118; color: #fff; font-size: 12px; font-weight: 900; }
+
+    .map {
+      position: relative;
+      height: 360px;
+      margin: 0 18px;
+      border-radius: 28px;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(95, 140, 97, .13) 1px, transparent 1px),
+        linear-gradient(rgba(95, 140, 97, .13) 1px, transparent 1px),
+        #f7ead1;
+      background-size: 44px 44px;
+      border: 1px solid rgba(75, 46, 25, .1);
+    }
+
+    .road { position: absolute; height: 12px; background: rgba(205, 157, 94, .7); border-radius: 999px; transform-origin: left center; }
+    .r1 { width: 270px; left: 30px; top: 88px; transform: rotate(18deg); }
+    .r2 { width: 250px; left: 72px; top: 226px; transform: rotate(-22deg); }
+    .r3 { width: 190px; left: 150px; top: 48px; transform: rotate(78deg); }
+
+    .route-line {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .pin {
+      position: absolute;
+      width: 46px;
+      height: 46px;
+      border-radius: 17px 17px 17px 4px;
+      transform: rotate(-45deg);
+      background: linear-gradient(145deg, #ffb64e, #b9622c);
+      box-shadow: 0 12px 20px rgba(96, 50, 15, .18);
+      display: grid;
+      place-items: center;
+      border: 3px solid #fff6dc;
+    }
+    .pin::after { content: "🥐"; transform: rotate(45deg); font-size: 20px; }
+    .p1 { left: 54px; top: 70px; }
+    .p2 { right: 60px; top: 130px; background: linear-gradient(145deg, #ffd86f, #c98230); }
+    .p3 { left: 150px; bottom: 52px; background: linear-gradient(145deg, #ff9a6a, #a85631); }
+
+    .route-card {
+      margin: -34px 28px 20px;
+      position: relative;
+      background: rgba(255, 253, 247, .93);
+      border: 1px solid rgba(78, 48, 25, .12);
+      border-radius: 26px;
+      box-shadow: 0 18px 38px rgba(76, 48, 24, .14);
+      padding: 18px;
+    }
+
+    .route-card h3 { margin: 0 0 8px; font-size: 18px; letter-spacing: -.04em; }
+    .route-card p { margin: 0 0 14px; color: var(--sub); font-size: 13px; line-height: 1.45; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { padding: 8px 10px; border-radius: 999px; background: #fff1d1; color: #8a4c25; font-size: 12px; font-weight: 900; }
+
+    section { padding: 82px 0; }
+
+    .section-head { margin-bottom: 30px; display: flex; justify-content: space-between; gap: 24px; align-items: end; }
+    .section-head h2 { margin: 0; font-size: clamp(34px, 4.4vw, 56px); line-height: 1.05; letter-spacing: -.065em; }
+    .section-head p { max-width: 520px; margin: 0; color: var(--sub); line-height: 1.7; font-size: 17px; word-break: keep-all; }
+
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+
+    .card {
+      background: rgba(255, 253, 247, .82);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 26px;
+      box-shadow: 0 18px 44px rgba(107, 67, 30, .08);
+    }
+    .card strong.kicker { display: inline-block; color: var(--brown); font-size: 13px; margin-bottom: 10px; letter-spacing: -.02em; }
+    .card h3 { margin: 0 0 10px; font-size: 24px; letter-spacing: -.045em; }
+    .card p, .card li { color: var(--sub); line-height: 1.72; word-break: keep-all; }
+    .card ul { padding-left: 19px; margin: 12px 0 0; }
+
+    .problem-card { position: relative; overflow: hidden; min-height: 260px; }
+    .problem-card::after { content: attr(data-num); position: absolute; right: 22px; bottom: -18px; font-size: 120px; font-weight: 1000; color: rgba(155, 90, 46, .08); letter-spacing: -.08em; }
+
+    .feature-main {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .feature-highlight {
+      background: linear-gradient(145deg, #2f2118, #6d3d20);
+      color: white;
+      min-height: 400px;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-highlight p, .feature-highlight li { color: rgba(255,255,255,.76); }
+    .feature-highlight .badge { background: rgba(255,255,255,.13); color: #ffe8b1; }
+    .feature-highlight::before {
+      content: "";
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      right: -80px;
+      top: -70px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 216, 111, .35), transparent 66%);
+    }
+
+    .badge {
+      display: inline-flex;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: #fff0c5;
+      color: #8c4b20;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+
+    .mini-route { display: grid; gap: 12px; margin-top: 18px; }
+    .route-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border-radius: 20px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.12); }
+    .route-option b { font-size: 15px; }
+    .route-option span { font-size: 12px; color: #ffe8b1; font-weight: 900; }
+
+    .data-table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 22px; background: rgba(255,255,255,.55); }
+    .data-table th, .data-table td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .data-table th { color: #7d451f; font-size: 13px; background: rgba(255, 225, 148, .45); }
+    .data-table td { color: var(--sub); line-height: 1.5; }
+    .data-table tr:last-child td { border-bottom: 0; }
+
+    .scenario {
+      background: #2f2118;
+      color: white;
+      border-radius: 44px;
+      padding: 44px;
+      display: grid;
+      grid-template-columns: .78fr 1.22fr;
+      gap: 28px;
+      box-shadow: var(--shadow);
+    }
+    .scenario p { color: rgba(255,255,255,.78); line-height: 1.85; word-break: keep-all; }
+    .steps { display: grid; gap: 12px; }
+    .step { display: grid; grid-template-columns: 44px 1fr; gap: 14px; align-items: start; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1); border-radius: 22px; padding: 16px; }
+    .num { width: 44px; height: 44px; border-radius: 16px; background: #ffd86f; color: #2f2118; display: grid; place-items: center; font-weight: 1000; }
+    .step b { display: block; margin-bottom: 4px; }
+    .step small { color: rgba(255,255,255,.68); line-height: 1.55; }
+
+    .screens { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .screen-card { min-height: 220px; padding: 20px; border-radius: 28px; background: #fffdf7; border: 1px solid var(--line); box-shadow: 0 14px 32px rgba(107, 67, 30, .08); }
+    .screen-emoji { width: 52px; height: 52px; border-radius: 20px; background: #fff0c5; display: grid; place-items: center; font-size: 25px; margin-bottom: 16px; }
+    .screen-card h3 { margin: 0 0 9px; font-size: 19px; letter-spacing: -.04em; }
+    .screen-card p { color: var(--sub); line-height: 1.55; font-size: 14px; margin: 0; word-break: keep-all; }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .arch-col { border-radius: 30px; padding: 24px; background: rgba(255,253,247,.88); border: 1px solid var(--line); position: relative; }
+    .arch-col h3 { margin: 0 0 14px; letter-spacing: -.04em; }
+    .arch-box { padding: 14px; border-radius: 18px; background: #fff1d1; margin-top: 10px; font-weight: 800; color: #7d451f; line-height: 1.45; }
+    .arch-box.dark { background: #2f2118; color: white; }
+    .arrow { text-align: center; color: var(--brown); font-weight: 1000; margin-top: 8px; }
+
+    .risks { display: grid; gap: 12px; }
+    .risk { display: grid; grid-template-columns: .9fr 1.1fr; gap: 14px; padding: 17px; border-radius: 22px; background: rgba(255,253,247,.82); border: 1px solid var(--line); }
+    .risk b { color: #7d451f; }
+    .risk span { color: var(--sub); line-height: 1.55; }
+
+    .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .week { position: relative; padding: 24px; border-radius: 30px; background: linear-gradient(180deg, #fffdf7, #fff1d1); border: 1px solid var(--line); min-height: 220px; overflow: hidden; }
+    .week::after { content: attr(data-week); position: absolute; right: -8px; bottom: -24px; font-size: 92px; font-weight: 1000; color: rgba(155,90,46,.09); }
+    .week h3 { margin: 0 0 12px; font-size: 26px; }
+    .week p { margin: 0; color: var(--sub); line-height: 1.65; word-break: keep-all; }
+
+    footer { padding: 50px 0 80px; text-align: center; color: var(--sub); }
+    footer b { color: var(--ink); }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      50% { transform: translateY(-16px) rotate(5deg); }
+    }
+
+    @media (max-width: 920px) {
+      .hero, .feature-main, .scenario { grid-template-columns: 1fr; }
+      .hero { padding-top: 48px; min-height: auto; }
+      .phone-stage { min-height: 520px; }
+      .grid-3, .grid-2, .architecture, .timeline { grid-template-columns: 1fr; }
+      .screens { grid-template-columns: repeat(2, 1fr); }
+      .section-head { display: block; }
+      .section-head p { margin-top: 14px; }
+      .nav-links { display: none; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 24px, 1180px); }
+      section { padding: 56px 0; }
+      .screens { grid-template-columns: 1fr; }
+      .scenario { padding: 26px; border-radius: 32px; }
+      .risk { grid-template-columns: 1fr; }
+      .phone { transform: none; }
+      .phone-stage { min-height: 470px; }
+      .blob { width: 430px; height: 430px; }
+    }
+  </style>
+</head>
+<body><div style="position:fixed;top:20px;right:20px;z-index:9999"><a href="https://dynehan.github.io/painmap/" target="_blank" style="display:inline-block;padding:14px 22px;background:#ff9f1c;color:#fff;text-decoration:none;border-radius:999px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.15)">🚀 프로토타입 체험하기</a></div>
+  <nav class="nav wrap">
+    <div class="nav-inner">
+      <a class="brand" href="#top"><span class="logo">🥐</span><span>빵지도</span></a>
+      <div class="nav-links">
+        <a href="#problem">문제</a>
+        <a href="#features">기능</a>
+        <a href="#scenario">시나리오</a>
+        <a href="#screens">화면</a>
+        <a href="#roadmap">로드맵</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top" class="wrap">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">🍞 Daejeon Bakery Route Planner</div>
+        <h1>대전 빵투어,<br><span class="accent">동선까지</span><br>맛있게 짜다.</h1>
+        <p class="lead">여러 빵집을 고르면 가장 효율적인 방문 순서를 자동 계산해주는 웹 서비스. 지도, 리스트, 경로 추천을 하나로 묶어 빵투어 계획 시간을 줄입니다.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#features">핵심 기능 보기 →</a>
+          <a class="btn ghost" href="#roadmap">4주 개발 계획 보기</a>
+        </div>
+      </div>
+
+      <div class="phone-stage" aria-label="빵지도 앱 목업">
+        <div class="blob"></div>
+        <div class="phone">
+          <div class="phone-top">
+            <div class="search">성심당, 하레하레, 앤드유 검색</div>
+            <div class="login-pill">LOGIN</div>
+          </div>
+          <div class="map">
+            <div class="road r1"></div><div class="road r2"></div><div class="road r3"></div>
+            <svg class="route-line" viewBox="0 0 360 360" preserveAspectRatio="none">
+              <path d="M74 96 C150 80 245 122 274 154 C220 190 168 226 176 285" fill="none" stroke="#e05b3f" stroke-width="8" stroke-linecap="round" stroke-dasharray="1 16" />
+            </svg>
+            <div class="pin p1"></div><div class="pin p2"></div><div class="pin p3"></div>
+          </div>
+          <div class="route-card">
+            <h3>가장 빠른 경로</h3>
+            <p>성심당 본점 → 앤드유 → 하레하레 순으로 방문하면 이동 거리를 최소화할 수 있어요.</p>
+            <div class="chips"><span class="chip">🚶 도보 42분</span><span class="chip">🚗 차량 16분</span><span class="chip">🚌 버스 31분</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="problem">
+      <div class="section-head">
+        <h2>문제는 빵이 아니라<br>동선입니다.</h2>
+        <p>대전 빵투어는 갈 곳이 많을수록 방문 순서, 이동 시간, 마감시간, 품절 가능성을 함께 고려해야 합니다.</p>
+      </div>
+      <div class="grid-3">
+        <article class="card problem-card" data-num="01">
+          <strong class="kicker">Problem</strong>
+          <h3>방문 순서 고민</h3>
+          <p>여러 빵집을 하루에 돌고 싶지만 어디부터 가야 효율적인지 사용자가 직접 비교해야 합니다.</p>
+        </article>
+        <article class="card problem-card" data-num="02">
+          <strong class="kicker">Problem</strong>
+          <h3>이동 시간 낭비</h3>
+          <p>지도 앱은 개별 길찾기는 잘하지만, 여러 장소를 한 번에 고려한 최적 순서 제안은 약합니다.</p>
+        </article>
+        <article class="card problem-card" data-num="03">
+          <strong class="kicker">Problem</strong>
+          <h3>마감·품절 변수</h3>
+          <p>마감시간에 맞춰 도착해도 인기 메뉴가 품절된 경우가 있어 빵투어 만족도가 떨어질 수 있습니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="section-head">
+        <h2>핵심은<br>AI 동선 설계.</h2>
+        <p>단순한 빵집 리스트가 아니라, 사용자가 선택한 장소들을 실제로 어떻게 돌아야 하는지 알려주는 서비스입니다.</p>
+      </div>
+      <div class="feature-main">
+        <article class="card feature-highlight">
+          <span class="badge">핵심 기능</span>
+          <h3>선택한 빵집의 상위 3개 경로 자동 추천</h3>
+          <p>사용자가 지도나 리스트에서 빵집을 고르면, 가장 효율적인 방문 순서 3개를 계산해 보여줍니다. 1순위 경로는 지도 색상과 리스트 색상을 일치시켜 직관적으로 안내합니다.</p>
+          <div class="mini-route">
+            <div class="route-option"><b>1위 성심당 → 앤드유 → 하레하레</b><span>추천</span></div>
+            <div class="route-option"><b>2위 앤드유 → 성심당 → 하레하레</b><span>대안</span></div>
+            <div class="route-option"><b>3위 하레하레 → 앤드유 → 성심당</b><span>대안</span></div>
+          </div>
+        </article>
+        <div class="grid-2">
+          <article class="card">
+            <span class="badge">Route</span>
+            <h3>이동수단별 시간 비교</h3>
+            <p>도보, 자동차, 버스별 예상 소요시간을 제공해 사용자가 상황에 맞는 이동 방식을 고를 수 있게 합니다.</p>
+          </article>
+          <article class="card">
+            <span class="badge">Account</span>
+            <h3>로그인 / 회원가입</h3>
+            <p>아이디·비밀번호 기반 계정과 빵 취향, 가본 곳, 가고 싶은 곳 데이터를 저장합니다.</p>
+          </article>
+          <article class="card">
+            <span class="badge">Curation</span>
+            <h3>대화형 빵집 큐레이터</h3>
+            <p>“달달한 거 먹고 싶어”처럼 자연어로 요청하면 보유 데이터 중 적합한 빵집을 추천합니다. 단, 부가 기능으로 후순위 구현합니다.</p>
+          </article>
+          <article class="card">
+            <span class="badge">MVP</span>
+            <h3>15~20곳 데이터 집중</h3>
+            <p>4주차 데모 기준으로 대전 전역 15~20곳의 베이커리 데이터를 큐레이션해 완성도를 높입니다.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="data">
+      <div class="section-head">
+        <h2>데이터는<br>작지만 진하게.</h2>
+        <p>공공데이터 기반 정보에 직접 조사한 큐레이션 정보를 더해, 단순 위치 정보 이상의 빵집 선택 기준을 제공합니다.</p>
+      </div>
+      <div class="grid-2">
+        <article class="card">
+          <h3>빵집 데이터</h3>
+          <table class="data-table">
+            <tr><th>항목</th><th>설명</th></tr>
+            <tr><td>이름·위치</td><td>상호명, 위도/경도, 주소</td></tr>
+            <tr><td>대표메뉴</td><td>유명한 빵 종류</td></tr>
+            <tr><td>코멘트·가격대</td><td>직접 방문/조사 기반 한줄 코멘트와 대략적 가격</td></tr>
+            <tr><td>영업정보</td><td>영업시간, 휴무일, 몰리는 시간</td></tr>
+          </table>
+        </article>
+        <article class="card">
+          <h3>사용자 데이터</h3>
+          <table class="data-table">
+            <tr><th>항목</th><th>활용</th></tr>
+            <tr><td>아이디/비밀번호</td><td>기본 로그인 인증</td></tr>
+            <tr><td>빵 취향</td><td>향후 큐레이터 추천과 연결</td></tr>
+            <tr><td>가본 곳</td><td>방문 기록 관리</td></tr>
+            <tr><td>가고 싶은 곳</td><td>찜 목록 및 동선 계산 후보로 활용</td></tr>
+          </table>
+        </article>
+      </div>
+    </section>
+
+    <section id="scenario">
+      <div class="scenario">
+        <div>
+          <span class="badge">User Scenario</span>
+          <h2>다인이의<br>주말 빵투어</h2>
+          <p>앱을 켜고, 지도와 리스트를 오가며 빵집을 고르고, 선택한 장소를 바탕으로 가장 효율적인 방문 순서를 추천받습니다.</p>
+        </div>
+        <div class="steps">
+          <div class="step"><div class="num">1</div><div><b>지도에서 탐색</b><small>홈 화면에서 대전 베이커리 마커를 확인합니다.</small></div></div>
+          <div class="step"><div class="num">2</div><div><b>리스트에서 비교</b><small>성심당 본점, 하레하레, 앤드유를 체크합니다.</small></div></div>
+          <div class="step"><div class="num">3</div><div><b>선택함 확인</b><small>고른 빵집 목록을 확인하고 동선 계산을 누릅니다.</small></div></div>
+          <div class="step"><div class="num">4</div><div><b>추천 경로로 출발</b><small>가장 효율적인 순서와 이동수단별 시간을 보고 빵투어를 시작합니다.</small></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screens">
+      <div class="section-head">
+        <h2>화면 구성은<br>명확하게.</h2>
+        <p>데스크톱 브라우저 기준으로 상단 검색바와 하단 메뉴바를 기본 구조로 설계합니다.</p>
+      </div>
+      <div class="screens">
+        <article class="screen-card"><div class="screen-emoji">🗺️</div><h3>홈 지도</h3><p>대전 베이커리를 지도 마커로 표시하고 검색바를 제공합니다.</p></article>
+        <article class="screen-card"><div class="screen-emoji">📋</div><h3>리스트 뷰</h3><p>이름, 대표메뉴, 위치를 목록으로 비교하고 선택합니다.</p></article>
+        <article class="screen-card"><div class="screen-emoji">📍</div><h3>빵집 상세</h3><p>대표 빵, 연락처, 몰리는 시간, 선택 버튼을 보여줍니다.</p></article>
+        <article class="screen-card"><div class="screen-emoji">🧭</div><h3>경로 결과</h3><p>상위 3개 경로와 이동수단별 예상 시간을 제공합니다.</p></article>
+        <article class="screen-card"><div class="screen-emoji">🤖</div><h3>챗봇</h3><p>자연어 기반 빵집 추천을 제공하는 부가 기능입니다.</p></article>
+        <article class="screen-card"><div class="screen-emoji">👤</div><h3>마이페이지</h3><p>내 정보, 빵 취향, 방문·찜 목록을 확인하고 수정합니다.</p></article>
+        <article class="screen-card"><div class="screen-emoji">🔐</div><h3>로그인</h3><p>아이디와 비밀번호 기반의 최소 인증을 구현합니다.</p></article>
+        <article class="screen-card"><div class="screen-emoji">🥯</div><h3>취향 설문</h3><p>회원가입 시 빵 취향을 체크해 향후 추천에 활용합니다.</p></article>
+      </div>
+    </section>
+
+    <section id="tech">
+      <div class="section-head">
+        <h2>기술 구조는<br>직접 구축 중심.</h2>
+        <p>프론트엔드, 백엔드, DB, 지도 API, 동선 계산 로직을 분리해 MVP 이후 확장 가능하게 설계합니다.</p>
+      </div>
+      <div class="architecture">
+        <div class="arch-col">
+          <h3>Client</h3>
+          <div class="arch-box dark">React + Vite 웹 앱</div>
+          <div class="arch-box">지도 · 리스트 · 경로 결과 · 챗봇 · 마이페이지</div>
+          <div class="arrow">↓ HTTP 요청</div>
+        </div>
+        <div class="arch-col">
+          <h3>Server</h3>
+          <div class="arch-box dark">Node.js API 서버</div>
+          <div class="arch-box">DB 조회 / 회원 인증 / 동선 계산</div>
+          <div class="arch-box">완전탐색 + 휴리스틱 알고리즘</div>
+        </div>
+        <div class="arch-col">
+          <h3>External</h3>
+          <div class="arch-box">Naver Maps JavaScript API</div>
+          <div class="arch-box">길찾기·대중교통 API 2단계 도입</div>
+          <div class="arch-box">LLM API 챗봇 부가 기능</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="risk">
+      <div class="section-head">
+        <h2>리스크는<br>범위 조절로 대응.</h2>
+        <p>4주 안에 데모 가능한 수준을 확보하기 위해 핵심 기능과 부가 기능을 명확히 분리합니다.</p>
+      </div>
+      <div class="risks">
+        <div class="risk"><b>백엔드 구축 시간 증가</b><span>데이터 목표치를 15~20곳으로 조정해 구현 시간을 확보합니다.</span></div>
+        <div class="risk"><b>인증 기능 범위 확대</b><span>소셜 로그인, 비밀번호 찾기는 제외하고 아이디·비밀번호 기반으로 한정합니다.</span></div>
+        <div class="risk"><b>대중교통 API 난이도</b><span>1차는 거리 기반 근사치로 구현하고, 실제 API는 시간이 남을 때 교체합니다.</span></div>
+        <div class="risk"><b>경로 계산 복잡도</b><span>소규모는 완전탐색, 일정 개수 이상은 휴리스틱으로 전환합니다.</span></div>
+        <div class="risk"><b>화면 수 증가</b><span>챗봇은 부가 기능으로 유지하고 핵심 화면 안정화 이후 착수합니다.</span></div>
+      </div>
+    </section>
+
+    <section id="roadmap">
+      <div class="section-head">
+        <h2>4주 로드맵.</h2>
+        <p>지도 연동과 데이터 수집부터 동선 계산, 마이페이지, 발표 준비까지 단계적으로 완성합니다.</p>
+      </div>
+      <div class="timeline">
+        <article class="week" data-week="01"><h3>1주차</h3><p>백엔드 API/DB 기본 구조 설계, 회원 테이블 포함, 네이버 지도 연동, 데이터 수집 착수.</p></article>
+        <article class="week" data-week="02"><h3>2주차</h3><p>로그인/회원가입 구현, 빵집 선택 → 상위 3개 동선 계산 로직 구현, 결과 화면 완성.</p></article>
+        <article class="week" data-week="03"><h3>3주차</h3><p>도보·차량·버스별 근사 소요시간 구현, 마이페이지 개발, UI 완성도 개선.</p></article>
+        <article class="week" data-week="04"><h3>4주차</h3><p>버그 수정, 실제 API 교체 시도, 챗봇 부가 기능 연결, 데모와 발표 준비.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap"><b>빵지도</b> — 대전 베이커리 동선 추천 서비스 MVP 기획안</div>
+  </footer>
+</body>
+</html>
