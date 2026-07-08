@@ -8,6 +8,7 @@ import Analyze from './pages/Analyze.jsx'
 import Result from './pages/Result.jsx'
 import Calendar from './pages/Calendar.jsx'
 import MapPage from './pages/MapPage.jsx'
+import MealsPage from './pages/MealsPage.jsx'
 
 function RequireAuth({ children }) {
   const { user } = useUser()
@@ -66,6 +67,16 @@ export default function AppRouter() {
             <RequireAuth>
               <AppShell>
                 <Result />
+              </AppShell>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/meals"
+          element={
+            <RequireAuth>
+              <AppShell>
+                <MealsPage />
               </AppShell>
             </RequireAuth>
           }

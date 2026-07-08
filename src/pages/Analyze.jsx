@@ -58,7 +58,7 @@ function AnalyzingSkeleton() {
 }
 
 export default function Analyze() {
-  const { user, setTodayMeal, todayMeal } = useUser()
+  const { user, setTodayMeal, todayMeal, addTodayMeal } = useUser()
   const navigate = useNavigate()
   const [photo, setPhoto] = useState(null) // { base64, mimeType, dataUrl, width, height }
   const [menuName, setMenuName] = useState('')
@@ -85,6 +85,11 @@ export default function Analyze() {
       }
 
       setTodayMeal(parsed)
+
+      // 분석된 각 음식을 오늘 식단 목록(mealStore)에 추가
+      parsed.items.forEach((item) => {
+        addTodayMeal({ name: item.name, brand: item.brand, nutrients: item.nutrients })
+      })
 
       if (user) {
         const achievementPercent = calcAchievementPercent(user.recommended, parsed.total)
