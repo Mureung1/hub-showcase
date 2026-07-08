@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>우리결 | 생활성향 테스트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page">
+
+  <div class="progress-label" id="progress">1/6</div>
+
+  <h1 class="page-title" id="introTitle">먼저 생활성향 테스트를 시작할게요!</h1>
+  <p class="page-subtitle" id="introSub" style="display:none;"></p>
+
+  <h2 class="page-title" id="questionText" style="margin-bottom:16px;"></h2>
+
+  <div class="choice-grid" id="choiceGrid"></div>
+
+</div>
+
+<script src="js/quiz.js"></script>
+<script>
+  var questions = [
+    { q: "기상 시간은 언제인가요?", options: [
+      { icon: "🌅", label: "오전 7시 이전" },
+      { icon: "😴", label: "오전 9시 이후" }
+    ]},
+    { q: "취침 시간은 언제인가요?", options: [
+      { icon: "🌙", label: "밤 11시 이전" },
+      { icon: "🦉", label: "새벽 1시 이후" }
+    ]},
+    { q: "청소는 얼마나 자주 하나요?", options: [
+      { icon: "🧹", label: "자주 해요 (주3회+)" },
+      { icon: "🍃", label: "가끔 해요 (주1회)" }
+    ]},
+    { q: "생활용품은 어떻게 쓰고 싶나요?", options: [
+      { icon: "🤝", label: "공동으로 써요" },
+      { icon: "📦", label: "각자 써요" }
+    ]},
+    { q: "집에 손님 초대는 어떤가요?", options: [
+      { icon: "🎉", label: "자주 초대해요" },
+      { icon: "🚪", label: "거의 안 해요" }
+    ]},
+    { q: "실내 온도는 어떤 편이 좋나요?", options: [
+      { icon: "🔥", label: "따뜻하게" },
+      { icon: "❄️", label: "시원하게" }
+    ]}
+  ];
+
+  renderQuiz({ questions: questions, totalSteps: 6, resultUrl: "07_roommate_branch.html" });
+</script>
+</body>
+</html>

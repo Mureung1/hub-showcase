@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>우리결 | 회원가입</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page">
+
+  <div class="logo small">
+    <img src="public/logo.png" alt="우리결 로고">
+    <span class="brand-name">우리결</span>
+  </div>
+
+  <h1 class="page-title">회원가입</h1>
+
+  <div class="panel">
+    <div class="row">
+      <input class="input-field" type="text" placeholder="아이디" style="flex:1;">
+      <button type="button" class="btn btn-coral" style="width:110px;">중복확인</button>
+    </div>
+
+    <input class="input-field" type="password" placeholder="비밀번호">
+    <input class="input-field" type="password" placeholder="비밀번호 확인">
+
+    <div class="row">
+      <input class="input-field" type="text" placeholder="이름" style="flex:1.4;">
+      <input class="input-field" type="number" placeholder="나이" style="flex:1;">
+    </div>
+
+    <div class="row" style="margin-bottom:12px;">
+      <button type="button" class="btn-toggle active" id="genderMale">남성</button>
+      <button type="button" class="btn-toggle" id="genderFemale">여성</button>
+    </div>
+
+    <input class="input-field" type="text" placeholder="사용할 닉네임">
+
+    <div class="row">
+      <input class="input-field" type="email" placeholder="학교 이메일 (.ac.kr)" style="flex:1;">
+      <button type="button" class="btn btn-mint" style="width:96px;">인증하기</button>
+    </div>
+
+    <a class="btn btn-coral btn-block" style="margin-top:6px;" href="03_hobby_question.html">가입하기</a>
+  </div>
+
+</div>
+
+<script>
+  var male = document.getElementById('genderMale');
+  var female = document.getElementById('genderFemale');
+  male.addEventListener('click', function () {
+    male.classList.add('active');
+    female.classList.remove('active');
+  });
+  female.addEventListener('click', function () {
+    female.classList.add('active');
+    male.classList.remove('active');
+  });
+</script>
+</body>
+</html>

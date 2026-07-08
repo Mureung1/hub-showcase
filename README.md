@@ -119,3 +119,15 @@
 ## License
 
 TBD
+
+## 참고 문서
+
+[개발계획서] https://github.com/user-attachments/files/29743978/default.docx
+
+[브레인스토밍_정리보고서_v0.1]https://github.com/user-attachments/files/29743979/_.v0.1.docx
+
+[취미성향_대학생_매칭플랫폼_사업계획서_v0.2]https://github.com/user-attachments/files/29743985/_._._.v0.2.docx
+
+[취미성향_대학생매칭플랫폼_기획서_v1.0]https://github.com/user-attachments/files/29799314/_._._v1.0.docx
+
+

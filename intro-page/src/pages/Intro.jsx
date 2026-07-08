@@ -25,6 +25,9 @@ const menuItems = [
 function Intro() {
   return (
     <div className="intro-page">
+      <div className="intro-blob intro-blob-1" aria-hidden="true" />
+      <div className="intro-blob intro-blob-2" aria-hidden="true" />
+      <div className="intro-blob intro-blob-3" aria-hidden="true" />
       <div className="intro-inner">
         <div className="intro-logo-wrap">
           <img src="/logo.png" alt="우리결 로고" className="intro-logo" />
