@@ -43,3 +43,4 @@
 - 기능 개발 체크리스트 (의존성 순서 — 완료 체크의 단일 기준): docs/CHECKLIST.md
 - UX 지침 (대기/선택/복사 패턴 조사·결정): docs/UX.md
 - CI/CD 파이프라인 (CI 단계/브랜치·PR/Vercel 배포·롤백): docs/CICD.md
+- 시드 예시 원본 24개 + 검수 현황: docs/SEEDS.md (블라인드 정렬 검수지: docs/SEEDS_REVIEW.md)
