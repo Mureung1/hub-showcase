@@ -1,5 +1,17 @@
 # Beacon 작업 체크리스트
 
+## 0단계 — 착수 전 확인 (docs/prd.md §10)
+
+원본 두 레포에 근거해야 하는 항목. 아래를 먼저 확인·확정한 뒤 1단계를 시작한다.
+
+- [ ] KIS 엔드포인트/TR ID·OAuth 토큰 흐름 확인 → Deno/TS로 포팅 (`KIS_openapi`의 `kis_alert_bot/`, `main.py`)
+- [ ] 종목 마스터 데이터 포맷 확인 (`KIS_openapi/web/data/symbols/`)
+- [ ] `investment_journal`의 차트/마커 구현·실제 DB 스키마 확인
+- [ ] KIS 일봉 히스토리 깊이가 `get_price_context`에 충분한지 확인
+- [ ] Gemini 호출 방식(Deno REST 등) 확정
+- [ ] Discord 앱 설정 및 시크릿 준비
+- [ ] 감시 중복 방지 상태(원본 `last_alerts.json` 역할) 저장 방식 확정
+
 ## 1단계 — MVP (1인용)
 
 ### 통합 기반
