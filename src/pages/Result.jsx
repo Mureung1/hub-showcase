@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import DeficiencyBar from '../components/DeficiencyBar.jsx'
 import MenuRecommendation from '../components/MenuRecommendation.jsx'
-import Spinner from '../components/Spinner.jsx'
+import Skeleton from '../components/Skeleton.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
-import { spacing, styles } from '../styles/theme.js'
+import { colors, font, spacing, styles } from '../styles/theme.js'
 
 const NUTRIENT_LABELS = [
   { key: 'calories', label: '칼로리', unit: 'kcal' },
@@ -40,6 +40,43 @@ function isMenuRecommendationList(value) {
   )
 }
 
+function AchievementRing({ percent, size = 160, strokeWidth = 14 }) {
+  const r = (size - strokeWidth) / 2
+  const circumference = 2 * Math.PI * r
+  const offset = circumference * (1 - percent / 100)
+
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size / 2} cy={size / 2} r={r} stroke={colors.track} strokeWidth={strokeWidth} fill="none" />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={colors.primary}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 0.6s ease-out' }}
+        />
+      </svg>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <span style={{ fontSize: 30, fontWeight: 800, color: colors.title }}>{percent}%</span>
+      </div>
+    </div>
+  )
+}
+
 export default function Result() {
   const { user, todayMeal } = useUser()
   const recommended = user?.recommended
@@ -66,6 +103,12 @@ export default function Result() {
     [rows],
   )
   const top3DeficientKeys = useMemo(() => top3Rows.map((row) => row.key), [top3Rows])
+
+  const achievementPercent = useMemo(() => {
+    if (rows.length === 0) return 0
+    const sum = rows.reduce((acc, row) => acc + Math.min(1, row.recommended > 0 ? row.actual / row.recommended : 0), 0)
+    return Math.round((sum / rows.length) * 100)
+  }, [rows])
 
   const [recommendations, setRecommendations] = useState(null)
   const [recLoading, setRecLoading] = useState(false)
@@ -103,9 +146,14 @@ export default function Result() {
   if (!recommended) {
     return (
       <div style={styles.page}>
+        <h1>오늘의 부족 영양소</h1>
         <div style={{ ...styles.card, textAlign: 'center' }}>
           <p>신체정보가 없습니다. 먼저 프로필을 입력해주세요.</p>
-          <Link to="/profile" style={{ ...styles.buttonPrimary, display: 'block', marginTop: spacing.lg, textDecoration: 'none' }}>
+          <Link
+            to="/profile"
+            className="tds-press"
+            style={{ ...styles.buttonPrimary, display: 'block', marginTop: spacing.lg, textDecoration: 'none' }}
+          >
             프로필 입력하러 가기
           </Link>
         </div>
@@ -116,9 +164,14 @@ export default function Result() {
   if (!todayTotal) {
     return (
       <div style={styles.page}>
+        <h1>오늘의 부족 영양소</h1>
         <div style={{ ...styles.card, textAlign: 'center' }}>
           <p>오늘 분석한 식사 기록이 없습니다. 먼저 사진을 분석해주세요.</p>
-          <Link to="/analyze" style={{ ...styles.buttonPrimary, display: 'block', marginTop: spacing.lg, textDecoration: 'none' }}>
+          <Link
+            to="/analyze"
+            className="tds-press"
+            style={{ ...styles.buttonPrimary, display: 'block', marginTop: spacing.lg, textDecoration: 'none' }}
+          >
             사진 분석하러 가기
           </Link>
         </div>
@@ -129,21 +182,39 @@ export default function Result() {
   return (
     <div style={styles.page}>
       <h1>오늘의 부족 영양소</h1>
+
+      <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <h2 style={{ alignSelf: 'flex-start' }}>오늘의 영양 진단</h2>
+        <div style={{ margin: `${spacing.sm}px 0` }}>
+          <AchievementRing percent={achievementPercent} />
+        </div>
+        <p style={{ color: colors.muted, fontSize: font.size.sm }}>하루 목표 달성률</p>
+      </div>
+
       {rows.map(({ key, ...row }) => (
         <DeficiencyBar key={key} {...row} highlighted={top3DeficientKeys.includes(key)} />
       ))}
 
       <h2 style={{ marginTop: spacing.xl }}>오늘 저녁 추천 메뉴</h2>
       {recLoading && (
-        <div style={{ ...styles.card, display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-          <Spinner size={16} />
-          <span style={styles.helperText}>추천 메뉴를 불러오는 중입니다...</span>
-        </div>
+        <>
+          {[0, 1].map((i) => (
+            <div key={i} style={styles.card}>
+              <Skeleton height={18} width="40%" style={{ marginBottom: spacing.sm }} />
+              <Skeleton height={14} width="85%" />
+            </div>
+          ))}
+        </>
       )}
       {recError && (
         <div style={styles.card}>
           <p style={{ ...styles.errorText, margin: 0 }}>{recError}</p>
-          <button type="button" onClick={fetchRecommendations} style={{ ...styles.buttonSecondary, marginTop: spacing.sm }}>
+          <button
+            type="button"
+            className="tds-press"
+            onClick={fetchRecommendations}
+            style={{ ...styles.buttonSecondary, marginTop: spacing.sm }}
+          >
             다시 시도
           </button>
         </div>
@@ -152,7 +223,8 @@ export default function Result() {
 
       <Link
         to="/analyze"
-        style={{ ...styles.linkButton, display: 'block', textAlign: 'center', marginTop: spacing.xl, textDecoration: 'none' }}
+        className="tds-press"
+        style={{ ...styles.linkButton, display: 'block', textAlign: 'center', marginTop: spacing.xl }}
       >
         다른 음식 다시 분석하기
       </Link>

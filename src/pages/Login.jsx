@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
-import { styles } from '../styles/theme.js'
+import { colors, font, spacing, styles } from '../styles/theme.js'
 
 export default function Login() {
   const { login, signup } = useUser()
@@ -28,8 +28,13 @@ export default function Login() {
   }
 
   return (
-    <div style={styles.page}>
-      <h1 style={{ textAlign: 'center' }}>{mode === 'login' ? '로그인' : '회원가입'}</h1>
+    <div style={{ ...styles.page, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <h1 style={{ fontSize: font.size.xxl, textAlign: 'center', color: colors.title }}>
+        {mode === 'login' ? '로그인' : '회원가입'}
+      </h1>
+      <p style={{ textAlign: 'center', color: colors.muted, fontSize: font.size.sm, marginBottom: spacing.xl }}>
+        CJMT와 함께 오늘의 영양 균형을 확인해보세요
+      </p>
       <div style={styles.card}>
         <form onSubmit={handleSubmit}>
           <div style={styles.field}>
@@ -52,14 +57,15 @@ export default function Login() {
             />
           </div>
           {error && <p style={styles.errorText}>{error}</p>}
-          <button type="submit" style={{ ...styles.buttonPrimary, marginTop: 4 }}>
+          <button type="submit" className="tds-press" style={{ ...styles.buttonPrimary, marginTop: spacing.sm }}>
             {mode === 'login' ? '로그인' : '회원가입'}
           </button>
         </form>
         <button
           type="button"
+          className="tds-press"
           onClick={toggleMode}
-          style={{ ...styles.linkButton, display: 'block', margin: '16px auto 0' }}
+          style={{ ...styles.linkButton, display: 'block', margin: `${spacing.lg}px auto 0` }}
         >
           {mode === 'login' ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인'}
         </button>

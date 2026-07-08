@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { radius, spacing, styles } from '../styles/theme.js'
+import { useRef, useState } from 'react'
+import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 이미지를 긴 변 기준 maxSize(px)로 리사이즈해 base64로 변환.
 // Gemini inline_data용으로 "data:image/...;base64," 접두어는 제거한 순수 데이터를 반환.
@@ -35,6 +35,7 @@ export function resizeImageToBase64(file, { maxSize = 1024, quality = 0.85 } = {
 }
 
 export default function PhotoUpload({ onChange, maxSize = 1024 }) {
+  const inputRef = useRef(null)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [error, setError] = useState('')
 
@@ -56,13 +57,54 @@ export default function PhotoUpload({ onChange, maxSize = 1024 }) {
 
   return (
     <div>
-      <input type="file" accept="image/*" onChange={handleFileChange} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+      <div
+        role="button"
+        tabIndex={0}
+        className="tds-press"
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
+        style={{
+          cursor: 'pointer',
+          borderRadius: radius.md,
+          overflow: 'hidden',
+          background: colors.background,
+          minHeight: 200,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.sm,
+        }}
+      >
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt="업로드한 사진 미리보기"
+            style={{ width: '100%', display: 'block' }}
+          />
+        ) : (
+          <>
+            <span style={{ fontSize: 32 }}>📷</span>
+            <span style={{ color: colors.body, fontSize: font.size.sm, fontWeight: 600 }}>사진을 선택해주세요</span>
+          </>
+        )}
+      </div>
       {previewUrl && (
-        <img
-          src={previewUrl}
-          alt="업로드한 사진 미리보기"
-          style={{ maxWidth: '100%', marginTop: spacing.sm, borderRadius: radius.md, display: 'block' }}
-        />
+        <button
+          type="button"
+          className="tds-press"
+          onClick={() => inputRef.current?.click()}
+          style={{ ...styles.linkButton, display: 'block', marginTop: spacing.sm }}
+        >
+          다른 사진 선택
+        </button>
       )}
       {error && <p style={styles.errorText}>{error}</p>}
     </div>

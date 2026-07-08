@@ -1,7 +1,7 @@
-import { colors, spacing, styles } from '../styles/theme.js'
+import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 const NUTRIENT_LABELS = [
-  { key: 'calories', label: '칼로리', unit: 'kcal' },
+  { key: 'calories', label: '열량', unit: 'kcal' },
   { key: 'protein', label: '단백질', unit: 'g' },
   { key: 'carbs', label: '탄수화물', unit: 'g' },
   { key: 'fat', label: '지방', unit: 'g' },
@@ -11,16 +11,20 @@ const NUTRIENT_LABELS = [
 
 function NutrientList({ nutrients }) {
   return (
-    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+    <div>
       {NUTRIENT_LABELS.map(({ key, label, unit }) => (
-        <li key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+        <div
+          key={key}
+          style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', color: colors.body }}
+        >
           <span>{label}</span>
-          <span>
-            {nutrients[key]} {unit}
+          <span style={{ fontWeight: 700, color: colors.title }}>
+            {nutrients[key]}
+            <span style={{ fontWeight: 400, color: colors.muted, marginLeft: 2 }}>{unit}</span>
           </span>
-        </li>
+        </div>
       ))}
-    </ul>
+    </div>
   )
 }
 
@@ -31,7 +35,22 @@ export default function NutritionCard({ analysis }) {
     <div style={{ marginTop: spacing.lg }}>
       {analysis.items.map((item, i) => (
         <div key={i} style={styles.card}>
-          <h3>
+          <div
+            style={{
+              width: '100%',
+              height: 96,
+              borderRadius: radius.sm,
+              background: colors.background,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 32,
+              marginBottom: spacing.lg,
+            }}
+          >
+            🍽️
+          </div>
+          <h3 style={{ fontSize: font.size.lg }}>
             {item.name}
             {item.brand ? ` (${item.brand})` : ''}
           </h3>
@@ -39,8 +58,8 @@ export default function NutritionCard({ analysis }) {
         </div>
       ))}
 
-      <div style={{ ...styles.card, border: `2px solid ${colors.primary}` }}>
-        <h3>합계</h3>
+      <div style={{ ...styles.card, background: colors.primarySurface, boxShadow: 'none' }}>
+        <h3 style={{ color: colors.primary }}>합계</h3>
         <NutrientList nutrients={analysis.total} />
       </div>
     </div>

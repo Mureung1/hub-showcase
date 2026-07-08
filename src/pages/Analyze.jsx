@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import PhotoUpload from '../components/PhotoUpload.jsx'
 import NutritionCard from '../components/NutritionCard.jsx'
 import Spinner from '../components/Spinner.jsx'
+import Skeleton from '../components/Skeleton.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { isMealAnalysis } from '../lib/nutrition.js'
-import { spacing, styles } from '../styles/theme.js'
+import { radius, spacing, styles } from '../styles/theme.js'
 
 function buildPrompt(menuName, brand) {
   const hints = []
@@ -23,6 +24,18 @@ function buildPrompt(menuName, brand) {
   ],
   "total": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0 }
 }`
+}
+
+function AnalyzingSkeleton() {
+  return (
+    <div style={styles.card}>
+      <Skeleton height={96} radius={radius.sm} style={{ marginBottom: spacing.lg }} />
+      <Skeleton height={20} width="55%" style={{ marginBottom: spacing.lg }} />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <Skeleton key={i} height={14} style={{ marginBottom: spacing.sm }} />
+      ))}
+    </div>
+  )
 }
 
 export default function Analyze() {
@@ -85,21 +98,20 @@ export default function Analyze() {
 
         <button
           type="button"
+          className="tds-press"
           onClick={handleAnalyze}
           disabled={loading}
           style={{ ...styles.buttonPrimary, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
         >
           {loading && <Spinner size={16} />}
-          {loading ? '분석 중...' : error ? '다시 시도' : '분석하기'}
+          {loading ? '분석 중...' : error && photo ? '다시 시도' : '분석하기'}
         </button>
 
-        {loading && (
-          <p style={{ ...styles.helperText, marginTop: spacing.sm }}>사진을 분석하고 있어요. 수 초 정도 걸릴 수 있어요.</p>
-        )}
         {error && <p style={styles.errorText}>{error}</p>}
       </div>
 
-      <NutritionCard analysis={todayMeal} />
+      {loading && <AnalyzingSkeleton />}
+      {!loading && <NutritionCard analysis={todayMeal} />}
     </div>
   )
 }
