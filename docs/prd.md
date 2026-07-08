@@ -240,15 +240,17 @@ lightweight-charts는 프레임워크 무관 → 원본 investment_journal 차�
 
 ---
 
-## 10. 미해결 / 원본 레포 확인 필요 (새 세션 TODO)
+## 10. 확인 완료 (2026-07-08, [docs/research.md](research.md))
 
-- [ ] **KIS 엔드포인트/TR ID**: 현재가·일봉 정확한 경로와 OAuth 토큰 흐름 → `KIS_openapi`의 `kis_alert_bot/`, `main.py` 확인 후 **Deno/TS로 포팅**.
-- [ ] **종목 마스터 포맷**: `KIS_openapi/web/data/symbols/` 구조 → 티커 검증에 재사용.
-- [ ] **차트/마커 구현**: `investment_journal`의 lightweight-charts 셋업·매매 마커·실제 DB 스키마(README에 미기재) 확인.
-- [ ] **KIS 일봉 히스토리 깊이**: `get_price_context`에 충분한지(원본 저널은 yahoo-finance2 사용) 확인, 부족 시 대안.
-- [ ] **Gemini 호출 방식**: Deno에서 직접 REST vs Vercel AI SDK — Edge Function 환경 확인.
-- [ ] **Discord 앱 설정**: slash command 등록, `DISCORD_PUBLIC_KEY`/`BOT_TOKEN`/`APPLICATION_ID` 시크릿.
-- [ ] **감시 중복 방지 상태**: 원본 `last_alerts.json` 역할을 테이블/컬럼 중 무엇으로 둘지 확정.
+> 0단계에서 원본 레포 2개를 조사해 전부 확정. 포팅 세부사항(엔드포인트/필드명/판정로직)은 research.md가 단일 참조점.
+
+- [x] **KIS 엔드포인트/TR ID**: 토큰 `POST /oauth2/tokenP` + 현재가/일봉 4종(TR `FHKST01010100`/`HHDFS00000300`/`FHKST03010100`/`HHDFS76240000`) 확정, 일봉 응답은 최신순이라 reverse 필요 → research.md §1–§3.
+- [x] **종목 마스터 포맷**: `{market, exchange, ticker, name, source}` JSON 배열(kr 3,577건/us 8,637건) → DB `symbols` 테이블로 시드해 재사용 → research.md §7.
+- [x] **차트/마커 구현**: lightweight-charts **v5**(`chart.addSeries(CandlestickSeries, ...)`, time은 `"YYYY-MM-DD"` 문자열). 마커는 네이티브 `createSeriesMarkers` 사용, 캔들 색은 국내 관례(상승 `#e0453f`/하락 `#2f6bd6`). 원본 DB는 `entries` 단일 테이블 + `ai_analysis` jsonb였으나 본 PRD §2 분리 스키마 유지 → research.md §10.
+- [x] **KIS 일봉 히스토리 깊이**: `get_price_context`(window_days=10)에는 충분. 1회 ~100행 캡 가능성 → SMA 20/60 완전 지원, 240/480은 구현 후 실측으로 확정 → research.md §4.
+- [x] **Gemini 호출 방식**: Deno에서 **raw REST fetch** 확정(`generativelanguage.googleapis.com/v1beta/.../generateContent`, `x-goog-api-key` 헤더, `responseJsonSchema` structured output). SDK 불필요 → research.md §8.
+- [x] **Discord 앱 설정**: Ed25519 검증(crypto.subtle)·인터랙션 타입 1/2/3·3초 제한 defer(type 5)+PATCH `@original`·bot 토큰으로 `POST /channels/{id}/messages`(버튼)·커맨드 등록 API 전부 확인. 시크릿 발급만 사용자 체크포인트로 남음 → research.md §9.
+- [x] **감시 중복 방지 상태**: `conditions`에 `last_matched boolean`/`last_alerted_at timestamptz` 컬럼 추가, 매칭 **전이 시점**(edge-trigger)에만 알림, `delete_after_alert=true`면 `status='done'` → research.md §6.
 
 ## 환경 변수 (참고, 원본 기준)
 

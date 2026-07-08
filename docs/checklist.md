@@ -4,13 +4,13 @@
 
 원본 두 레포에 근거해야 하는 항목. 아래를 먼저 확인·확정한 뒤 1단계를 시작한다.
 
-- [ ] KIS 엔드포인트/TR ID·OAuth 토큰 흐름 확인 → Deno/TS로 포팅 (`KIS_openapi`의 `kis_alert_bot/`, `main.py`)
-- [ ] 종목 마스터 데이터 포맷 확인 (`KIS_openapi/web/data/symbols/`)
-- [ ] `investment_journal`의 차트/마커 구현·실제 DB 스키마 확인
-- [ ] KIS 일봉 히스토리 깊이가 `get_price_context`에 충분한지 확인
-- [ ] Gemini 호출 방식(Deno REST 등) 확정
-- [ ] Discord 앱 설정 및 시크릿 준비
-- [ ] 감시 중복 방지 상태(원본 `last_alerts.json` 역할) 저장 방식 확정
+- [x] KIS 엔드포인트/TR ID·OAuth 토큰 흐름 확인 → Deno/TS로 포팅 (`KIS_openapi`의 `kis_alert_bot/`, `main.py`) — 토큰·엔드포인트 4종·스로틀·SMA 크로스 로직 확인 완료 → [docs/research.md](research.md) §1–§5 참조
+- [x] 종목 마스터 데이터 포맷 확인 (`KIS_openapi/web/data/symbols/`) — `{market, exchange, ticker, name, source}` 배열(kr 3,577건/us 8,637건), DB `symbols` 테이블로 시드 결정 → research.md §7
+- [x] `investment_journal`의 차트/마커 구현·실제 DB 스키마 확인 — lightweight-charts v5(`chart.addSeries(CandlestickSeries, ...)`), 마커는 네이티브 `createSeriesMarkers`로 대체, DB는 PRD §2 분리 스키마 유지 → research.md §10
+- [x] KIS 일봉 히스토리 깊이가 `get_price_context`에 충분한지 확인 — window_days=10에는 충분. SMA 20/60 완전 지원, 240/480은 1회 ~100행 캡 가능성 있어 실측 후 확정 → research.md §4
+- [x] Gemini 호출 방식(Deno REST 등) 확정 — SDK 없이 raw REST fetch(`generativelanguage.googleapis.com`, `responseJsonSchema`)로 확정, Deno 그대로 동작 → research.md §8
+- [x] Discord 앱 설정 및 시크릿 준비 — Ed25519 검증(crypto.subtle)·defer 후 PATCH·bot 토큰 채널 POST·custom_id 파이프 인코딩·커맨드 등록 API 확인 완료(시크릿 발급은 체크포인트 2에서) → research.md §9
+- [x] 감시 중복 방지 상태(원본 `last_alerts.json` 역할) 저장 방식 확정 — `conditions.last_matched`/`last_alerted_at` 컬럼 + edge-trigger 알림, `delete_after_alert=true`면 `status='done'` → research.md §6
 
 ## 1단계 — MVP (1인용)
 
