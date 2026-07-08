@@ -1,903 +1,387 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>분야별 실시간 트렌드 시각화 대시보드 MVP</title>
+    <title>🌸 TrendLog | 실시간 트렌드 보드</title>
     
     <!-- Preconnect to Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Plus Jakarta Sans and Noto Sans KR -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
-    <style>
-      :root {
-        /* Color Tokens - Modern Dark Palette */
-        --bg-main: #0a0f1d;
-        --bg-card: rgba(15, 23, 42, 0.65);
-        --bg-card-hover: rgba(30, 41, 59, 0.8);
-        --border-color: rgba(99, 102, 241, 0.15);
-        --border-color-hover: rgba(99, 102, 241, 0.3);
-        
-        --text-primary: #f8fafc;
-        --text-secondary: #94a3b8;
-        --text-muted: #64748b;
-        
-        /* Neon Accents */
-        --accent-purple: #c084fc;
-        --accent-cyan: #22d3ee;
-        --accent-pink: #f472b6;
-        
-        /* Fonts */
-        --font-sans: 'Plus Jakarta Sans', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
-      }
-
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-
-      body {
-        background-color: var(--bg-main);
-        background-image: 
-          radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-          radial-gradient(circle at 90% 80%, rgba(244, 114, 182, 0.06) 0%, transparent 40%);
-        background-attachment: fixed;
-        color: var(--text-primary);
-        font-family: var(--font-sans);
-        min-height: 100vh;
-        overflow-x: hidden;
-      }
-
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: var(--bg-main);
-      }
-      ::-webkit-scrollbar-thumb {
-        background: rgba(99, 102, 241, 0.3);
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: rgba(99, 102, 241, 0.5);
-      }
-
-      /* UI Helpers */
-      .glass-panel {
-        background: var(--bg-card);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid var(--border-color);
-        border-radius: 16px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-
-      .glass-panel:hover {
-        border-color: var(--border-color-hover);
-        box-shadow: 0 8px 32px 0 rgba(99, 102, 241, 0.08);
-      }
-
-      /* App Layout - Center Aligned */
-      .app-container {
-        width: 100%;
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 48px 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-        min-height: 100vh;
-      }
-
-      /* Flex utility classes */
-      .flex { display: flex; }
-      .flex-col { flex-direction: column; }
-      .flex-wrap { flex-wrap: wrap; }
-      .items-center { align-items: center; }
-      .items-start { align-items: flex-start; }
-      .justify-between { justify-content: space-between; }
-      .justify-center { justify-content: center; }
-      .flex-1 { flex: 1 1 0%; }
-
-      /* Gap utility classes */
-      .gap-1\.5 { gap: 6px; }
-      .gap-2 { gap: 8px; }
-      .gap-3 { gap: 12px; }
-      .gap-4 { gap: 16px; }
-      .gap-6 { gap: 24px; }
-
-      /* Grid System */
-      .grid {
-        display: grid;
-        gap: 20px;
-      }
-      .grid-cols-1 {
-        grid-template-columns: repeat(1, minmax(0, 1fr));
-      }
-      @media (min-width: 768px) {
-        .md\:grid-cols-12 {
-          grid-template-columns: repeat(12, minmax(0, 1fr));
-        }
-        .md\:col-span-5 {
-          grid-column: span 5 / span 5;
-        }
-        .md\:col-span-7 {
-          grid-column: span 7 / span 7;
-        }
-      }
-
-      /* Buttons & Controls */
-      button {
-        cursor: pointer;
-        border: none;
-        background: none;
-        font-family: inherit;
-        outline: none;
-        color: inherit;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease-in-out;
-      }
-      button:hover {
-        transform: translateY(-1px);
-      }
-      button:active {
-        transform: translateY(0);
-      }
-
-      .btn-primary {
-        background-image: linear-gradient(to right, #0891b2, #06b6d4);
-        padding: 8px 14px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 700;
-        color: white;
-        box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.2);
-      }
-      .btn-primary:hover {
-        background-image: linear-gradient(to right, #06b6d4, #22d3ee);
-      }
-
-      input[type="text"] {
-        background-color: rgba(2, 6, 23, 0.6);
-        border: 1px solid #1e293b;
-        border-radius: 12px;
-        padding: 8px 12px;
-        font-size: 12px;
-        color: white;
-        outline: none;
-        width: 100%;
-        transition: all 0.2s;
-      }
-      input[type="text"]:focus {
-        border-color: rgba(34, 211, 238, 0.6);
-        box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
-      }
-
-      /* Badges & Tags */
-      .badge {
-        padding: 2px 8px;
-        border-radius: 9999px;
-        font-size: 12px;
-        font-weight: 600;
-      }
-      .badge-purple { color: #d8b4fe; background-color: rgba(88, 28, 135, 0.4); border: 1px solid rgba(168, 85, 247, 0.3); }
-      .badge-pink { color: #fb7185; background-color: rgba(136, 19, 55, 0.4); border: 1px solid rgba(244, 114, 182, 0.3); }
-      .badge-cyan { color: #22d3ee; background-color: rgba(21, 94, 117, 0.4); border: 1px solid rgba(34, 211, 238, 0.3); }
-      
-      .tag {
-        font-size: 10px;
-        font-weight: 500;
-        padding: 2px 8px;
-        border-radius: 4px;
-        background-color: rgba(15, 23, 42, 0.6);
-        border: 1px solid #1e293b;
-        color: #94a3b8;
-        cursor: default;
-        white-space: nowrap;
-      }
-
-      /* Bubble Chart container */
-      .filter-tabs {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        padding: 4px;
-        background-color: rgba(2, 6, 23, 0.8);
-        border: 1px solid #1e293b;
-        border-radius: 12px;
-        max-width: max-content;
-      }
-      .filter-tab {
-        padding: 6px 12px;
-        border-radius: 8px;
-        font-size: 11px;
-        font-weight: 700;
-        color: #94a3b8;
-      }
-      .filter-tab.active {
-        background-color: #1e293b;
-        color: white;
-      }
-
-      /* Sparkline Chart & Word Cloud */
-      .sparkline-container {
-        background-color: rgba(2, 6, 23, 0.6);
-        border: 1px solid #1e293b;
-        border-radius: 12px;
-        padding: 8px;
-        height: 70px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .word-cloud-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        height: 70px;
-        overflow: hidden;
-        align-content: flex-start;
-      }
-
-      /* Animations */
-      .pulse-dot {
-        animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      }
-      @keyframes pulse-dot {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: .4; transform: scale(1.3); }
-      }
-      @keyframes pulse-slow {
-        0%, 100% { opacity: 0.6; transform: scale(1); }
-        50% { opacity: 0.9; transform: scale(1.02); }
-      }
-      .animate-pulse-slow {
-        animation: pulse-slow 4s ease-in-out infinite;
-      }
-
-      /* Bubble hover group effect */
-      .bubble-group {
-        transition: transform 0.2s ease-out;
-      }
-      .bubble-group:hover {
-        filter: brightness(1.2);
-      }
-
-      /* Toast toast */
-      .toast {
-        position: fixed;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%) translateY(100px);
-        background-color: #0f172a;
-        border: 1px solid #3b82f6;
-        color: #f8fafc;
-        padding: 12px 24px;
-        border-radius: 12px;
-        font-size: 13px;
-        font-weight: 600;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        z-index: 9999;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .toast.show {
-        transform: translateX(-50%) translateY(0);
-      }
-    </style>
+    <link rel="stylesheet" href="style.css">
   </head>
   
   <body>
+    <!-- Trend Details Dialog -->
+    <dialog id="trend-detail-dialog" class="detail-dialog">
+      <div class="dialog-header">
+        <span id="dialog-title" class="dialog-title">트렌드 상세</span>
+        <span id="dialog-close-btn" class="dialog-close">&times;</span>
+      </div>
+      <div id="dialog-body" class="dialog-body">
+        <!-- Dynamically populated -->
+      </div>
+      <div class="dialog-footer">
+        <button type="button" id="dialog-confirm-btn" class="btn-confirm">확인</button>
+      </div>
+    </dialog>
+
     <div class="app-container">
       
-      <!-- Top Simple Topic Card (Brief Topic description) -->
-      <div class="glass-panel p-6 flex flex-col gap-3">
-        <div class="flex items-center justify-between">
-          <span class="badge badge-purple" style="font-size: 10px; width: max-content;">프로젝트 주제 소개 MVP</span>
-          <span style="font-size: 11px; color: #94a3b8;" class="flex items-center gap-1">
-            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" class="pulse-dot"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-            오프라인 로컬 데모
-          </span>
+      <!-- Logo Header -->
+      <header>
+        <a href="#" class="logo">🌸 Trend<span>Log</span></a>
+        <div class="header-meta">실시간 소셜 데이터 연동</div>
+      </header>
+
+      <!-- Advanced Filter Group (props.cash inspired query selectors) -->
+      <div class="filter-group">
+        <!-- 1. Age Group Filter -->
+        <div class="filter-row">
+          <div class="filter-label">연령대</div>
+          <div class="tabs-bar" id="age-tabs">
+            <!-- JS populated -->
+          </div>
         </div>
-        
-        <h2 style="font-size: 18px; font-weight: 700; color: white;">
-          대학생/취준생을 위한 실시간 분야별 트렌드 수집 및 시각화 대시보드
-        </h2>
-        
-        <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.6;">
-          다양한 커뮤니티와 플랫폼(네이버 데이터랩, 구글 트렌드 등)에 파편화된 관심 키워드 트렌드 정보를 오픈 API로 실시간 수집하고, 
-          사용자에게 한눈에 트렌드 비율을 보여주는 <strong>시각화 대시보드 서비스</strong> 아이디어입니다.
-          비율이 높은 인기 주제일수록 차트 속 원(버블)의 크기가 크게 렌더링됩니다.
-        </p>
-      </div>
-
-      <!-- Bubble Chart & Tabs Section -->
-      <div class="flex flex-col gap-4">
-        <!-- Filters -->
-        <div class="filter-tabs" id="filter-container">
-          <!-- JavaScript will populate -->
-        </div>
-
-        <!-- Bubble Chart SVG Canvas -->
-        <div class="glass-panel p-4 flex flex-col items-center justify-center relative" style="height: 460px;">
-          <div class="absolute inset-0 opacity-10 pointer-events-none" 
-               style="background-image: radial-gradient(var(--border-color-hover) 1px, transparent 1px); background-size: 20px 20px;"></div>
-          
-          <svg id="bubble-svg" width="100%" height="100%" viewBox="0 0 650 460" style="overflow: visible; cursor: pointer; user-select: none;">
-            <defs>
-              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="6" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-            <!-- SVG groups representing nodes will be placed here dynamically -->
-          </svg>
-
-          <!-- Legends -->
-          <div style="position: absolute; bottom: 12px; left: 16px; right: 16px;" class="flex items-center justify-between text-[10px] text-slate-500 pointer-events-none">
-            <div>💡 원의 크기는 해당 관심사의 실시간 트렌드 검색량에 비례합니다.</div>
-            <div class="flex items-center gap-3">
-              <span class="flex items-center gap-1"><span style="width: 7px; height: 7px; border-radius: 50%; background-color: var(--accent-purple); display: inline-block;"></span> IT/개발</span>
-              <span class="flex items-center gap-1"><span style="width: 7px; height: 7px; border-radius: 50%; background-color: var(--accent-pink); display: inline-block;"></span> 취업/진로</span>
-              <span class="flex items-center gap-1"><span style="width: 7px; height: 7px; border-radius: 50%; background-color: var(--accent-cyan); display: inline-block;"></span> 자격증/어학</span>
-            </div>
+        <!-- 2. Category Filter -->
+        <div class="filter-row">
+          <div class="filter-label">분야</div>
+          <div class="tabs-bar" id="category-tabs">
+            <!-- JS populated -->
           </div>
         </div>
       </div>
 
-      <!-- Bottom Grid Details & Search Forms -->
-      <div class="grid md:grid-cols-12 gap-6">
-        
-        <!-- Search & Add Tags Form (5 cols) -->
-        <div class="glass-panel p-5 md:col-span-5 flex flex-col gap-4">
-          <div>
-            <h3 style="font-size: 12px; font-weight: 800; color: #cbd5e1;" class="flex items-center gap-1.5">
-              <!-- Search Icon -->
-              <svg viewBox="0 0 24 24" width="13" height="13" stroke="#22d3ee" stroke-width="2.5" fill="none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              실시간 키워드 검색 / 추가
-            </h3>
-            <p style="font-size: 10px; color: #64748b; margin-top: 4px;">
-              관심 분야 키워드를 검색하면, 해당 키워드가 즉시 원형 버블이 되어 통통 튀며 배치됩니다!
-            </p>
-          </div>
+      <!-- Clean Cards Grid -->
+      <main class="cards-grid" id="cards-container">
+        <!-- JS populated -->
+      </main>
 
-          <form id="add-trend-form" class="flex gap-2">
-            <input type="text" id="search-input" placeholder="예: 리액트, 코딩, 면접..." />
-            <button type="submit" class="btn-primary flex items-center gap-1">
-              <!-- Plus Icon -->
-              <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-              추가
-            </button>
-          </form>
-          
-          <div class="flex flex-col gap-2">
-            <div style="font-size: 9px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">추천 키워드</div>
-            <div class="flex flex-wrap gap-1.5" id="recommend-tags">
-              <!-- JS populated -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Bubble click analytics details panel (7 cols) -->
-        <div class="glass-panel p-5 md:col-span-7 flex flex-col gap-4" style="min-height: 200px;">
-          <div class="flex justify-between items-start" id="detail-header">
-            <!-- Populated dynamically by active selection -->
-          </div>
-
-          <div class="grid md:grid-cols-12 gap-4" style="border-top: 1px solid rgba(30,41,59,0.6); padding-top: 12px; margin-top: 4px;">
-            <!-- Graph Sparkline -->
-            <div class="md:col-span-6 flex flex-col gap-2">
-              <div style="font-size: 10px; font-weight: 700; color: #64748b;">📈 6개월 검색량 추이</div>
-              <div class="sparkline-container">
-                <svg id="sparkline-svg" width="100%" height="60" style="overflow: visible;">
-                  <!-- JavaScript renders path here -->
-                </svg>
-              </div>
-            </div>
-
-            <!-- Word cloud tag items -->
-            <div class="md:col-span-6 flex flex-col gap-2">
-              <div style="font-size: 10px; font-weight: 700; color: #64748b;">☁️ 연관 검색 키워드</div>
-              <div class="word-cloud-container" id="cloud-container">
-                <!-- Javascript populated -->
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      <!-- Minimalist Footer -->
+      <footer>
+        인터넷 소셜 데이터 언급량을 1시간 주기로 수집하여 자동 갱신합니다.
+        <a href="file:///Users/tatata/Desktop/Ai_agent/hub/git_wiki_planning.md" class="wiki-link">📖 서비스 기획서 확인</a>
+      </footer>
 
     </div>
 
-    <!-- Toast Notification -->
-    <div class="toast" id="toast">
-      <!-- Check Icon -->
-      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M20 6 9 17l-5-5"/></svg>
-      <span id="toast-msg">추가되었습니다!</span>
-    </div>
-
-    <!-- Dynamic JavaScript Engine -->
+    <!-- Script to render the grid with sparklines -->
     <script>
-      // 1. Datasets
-      const INITIAL_TRENDS = [
-        { id: '1', label: 'AI 코딩', value: 95, category: 'IT/개발', color: '#a855f7', changeRate: 48.2, details: 'GitHub Copilot, Cursor IDE 등 AI 코딩 보조 도구 사용이 급증하며 대학생/취준생 프로젝트 필수 기술로 자리매김함.' },
-        { id: '2', label: '사이드 프로젝트', value: 88, category: 'IT/개발', color: '#a855f7', changeRate: 35.7, details: '단순 이론 공부를 넘어 실서비스를 배포해본 포트폴리오를 구성하려는 취준생이 늘어남에 따라 사이드 프로젝트 구인 및 네트워킹 플랫폼이 호황임.' },
-        { id: '3', label: '부트캠프', value: 78, category: 'IT/개발', color: '#a855f7', changeRate: 12.5, details: '비전공자 개발 유입은 다소 감소했으나, 심층 교육(AI/빅데이터) 중심의 전문 부트캠프 트렌드는 여전히 높은 수요를 보임.' },
-        { id: '4', label: '자격증 취득', value: 70, category: '자격증/어학', color: '#06b6d4', changeRate: -4.3, details: '방학 시즌 공기업/대기업 지원을 위한 한국사, 정보처리기사, SQLD 등의 시험 일정이 몰리는 시기로 트렌드 트래픽이 집중됨.' },
-        { id: '5', label: '영어 회화', value: 58, category: '자격증/어학', color: '#06b6d4', changeRate: 15.1, details: '토익/오픽 등 시험 성적 외에도 실질적인 면접 경쟁력을 기르기 위해 링글, 스픽 등 앱을 통한 데일리 회화 루틴이 유행.' },
-        { id: '6', label: '노션 포트폴리오', value: 84, category: '취업/진로', color: '#ec4899', changeRate: 28.9, details: 'PDF 형식의 딱딱한 이력서 대신 노션 템플릿을 활용해 동적이고 개인 브랜딩이 드러나는 포트폴리오를 제작하는 사례가 대세임.' },
-        { id: '7', label: '해외 인턴', value: 62, category: '취업/진로', color: '#ec4899', changeRate: 8.6, details: '정부 지원 글로벌 인턴십 및 싱가포르, 미국 등 다국적 IT 기업의 원격 인턴 공고에 대한 취준생들의 관심 증대.' },
-        { id: '8', label: '갓생 루틴', value: 52, category: '트렌드/이슈', color: '#fbbf24', changeRate: -8.7, details: '아침 기상 인증, 공부 시간 타이머 기록 등 SNS를 기반으로 한 일상/성장 트래킹 챌린지들이 스터디 형태로 확산 중.' },
-        { id: '9', label: '네카라쿠배', value: 80, category: 'IT/개발', color: '#a855f7', changeRate: 22.4, details: '개발 취업 시장의 정점에 있는 대형 IT 기업들의 신입 수시 채용 일정 및 코딩 테스트 출제 경향성 정보 탐색 집중.' },
-        { id: '10', label: '토스 채용', value: 75, category: '취업/진로', color: '#ec4899', changeRate: 18.2, details: '최근 공개 채용 및 인턴십 프로세스에서 직무 중심의 빠른 전형을 선언하여 대학생 및 신입 구직자들의 검색 지수가 크게 오름.' }
+      // 14 Real-time trending keywords with histories & age-groups
+      const TRENDING_DATA = [
+        { 
+          id: '1', 
+          label: 'AI 코딩', 
+          category: 'IT/개발', 
+          catClass: 'cat-dev',
+          rate: '+48.2%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=100&auto=format&fit=crop&q=80',
+          history: [30, 45, 55, 68, 85, 95],
+          ageGroups: ['전체', '20대 초반', '20대 후반'],
+          details: 'GitHub Copilot 및 Cursor IDE 등의 AI 코딩 어시스턴트 도구입니다. 최근 대학생들과 실무 개발자들 사이에서 코딩 생산성을 비약적으로 높여주는 최고의 트렌드 툴로 자리 잡았습니다.' 
+        },
+        { 
+          id: '2', 
+          label: '노션 포트폴리오', 
+          category: '취업/진로', 
+          catClass: 'cat-career',
+          rate: '+28.9%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=100&auto=format&fit=crop&q=80',
+          history: [35, 48, 60, 72, 80, 84],
+          ageGroups: ['전체', '20대 초반', '20대 후반'],
+          details: '딱딱한 PDF 이력서 대신, 노션의 깔끔한 디자인 템플릿을 활용해 동적으로 포트폴리오를 제작하는 트렌드입니다. 20대 취준생들의 개성과 커리어를 시각적으로 예쁘게 어필하는 방식으로 유행하고 있습니다.' 
+        },
+        { 
+          id: '3', 
+          label: '영어 회화 스픽', 
+          category: '자격증/어학', 
+          catClass: 'cat-study',
+          rate: '+15.1%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=100&auto=format&fit=crop&q=80',
+          history: [50, 52, 55, 58, 62, 65],
+          ageGroups: ['전체', '20대 초반'],
+          details: '시험용 영어 대신 실전 회화 실력을 키우기 위한 모바일 AI 스피킹 트렌드입니다. 20대 여성들 사이에서 매일 조금씩 가볍게 회화 습관을 기르는 데일리 챌린지 형태로 확산 중입니다.' 
+        },
+        { 
+          id: '4', 
+          label: '토스 채용', 
+          category: '취업/진로', 
+          catClass: 'cat-career',
+          rate: '+18.2%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=100&auto=format&fit=crop&q=80',
+          history: [40, 48, 55, 62, 70, 75],
+          ageGroups: ['전체', '20대 초반', '20대 후반'],
+          details: '최근 공개 채용 및 인턴십 프로세스에서 복잡한 전형을 생략하고 빠르게 지원할 수 있는 직무 중심의 채용 방식이 대세가 됨에 따라 구직 희망자들의 검색 지수가 크게 상승했습니다.' 
+        },
+        { 
+          id: '5', 
+          label: '사이드 프로젝트', 
+          category: 'IT/개발', 
+          catClass: 'cat-dev',
+          rate: '+35.7%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=100&auto=format&fit=crop&q=80',
+          history: [45, 52, 60, 68, 75, 80],
+          ageGroups: ['전체', '20대 초반', '20대 후반'],
+          details: '실제 사용자가 사용할 수 있는 서비스를 팀원들과 배포해보는 실전 협업 프로젝트입니다. 포트폴리오의 실전 신뢰성을 높이기 위한 취준생 기획자/디자이너/개발자 간 네트워킹 트렌드입니다.' 
+        },
+        { 
+          id: '6', 
+          label: '갓생 루틴', 
+          category: '트렌드/이슈', 
+          catClass: 'cat-daily',
+          rate: '-8.7%', 
+          isUp: false,
+          image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=100&auto=format&fit=crop&q=80',
+          history: [75, 72, 68, 60, 55, 52],
+          ageGroups: ['전체', '10대', '20대 초반'],
+          details: '기상 시간 인증, 공부 시간 타이머, 플래너 기록 등 일상의 소소한 성취를 SNS와 모바일 앱으로 투명하게 공유하며 에너지를 얻는 라이프스타일 루틴 챌린지입니다.' 
+        },
+        { 
+          id: '7', 
+          label: '해외 인턴', 
+          category: '취업/진로', 
+          catClass: 'cat-career',
+          rate: '+8.6%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=100&auto=format&fit=crop&q=80',
+          history: [50, 58, 65, 60, 59, 62],
+          ageGroups: ['전체', '20대 후반'],
+          details: '글로벌 역량 확보를 위해 해외 기업에서 인턴십을 경험하는 채용 트렌드입니다. 원격으로 해외 기업에서 근무하는 리모트 인턴 공고에 대한 취준생들의 검색율도 두드러지고 있습니다.' 
+        },
+        { 
+          id: '8', 
+          label: 'SQLD 기출', 
+          category: '자격증/어학', 
+          catClass: 'cat-study',
+          rate: '+31.4%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=100&auto=format&fit=crop&q=80',
+          history: [45, 50, 72, 88, 65, 70],
+          ageGroups: ['전체', '20대 초반', '20대 후반'],
+          details: '데이터 분석가 및 개발 직군의 필수 교양으로 떠오른 SQL 개발자 자격증입니다. 시험을 앞두고 실전 기출 문제 풀이 및 요약 자료를 구하려는 트래픽이 크게 늘어났습니다.' 
+        },
+        { 
+          id: '9', 
+          label: '네카라쿠배', 
+          category: 'IT/개발', 
+          catClass: 'cat-dev',
+          rate: '+22.4%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=100&auto=format&fit=crop&q=80',
+          history: [70, 75, 74, 82, 81, 80],
+          ageGroups: ['전체', '20대 후반'],
+          details: '국내 상위 대형 IT 플랫폼 기업(네이버, 카카오, 라인, 쿠팡, 배달의민족) 취업을 준비하는 스터디 그룹 및 코딩 테스트 합격 노하우를 공유하는 전통적인 대세 키워드입니다.' 
+        },
+        { 
+          id: '10', 
+          label: '부트캠프', 
+          category: 'IT/개발', 
+          catClass: 'cat-dev',
+          rate: '+12.5%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=100&auto=format&fit=crop&q=80',
+          history: [82, 80, 75, 78, 76, 78],
+          ageGroups: ['전체', '20대 초반', '20대 후반'],
+          details: '실제 프로젝트 역량을 단기간에 완성시켜주는 집중 교육 과정입니다. 최근에는 AI와 데이터 트렌드 교육으로 개편되면서 경쟁력 있는 포트폴리오를 준비하려는 취준생이 찾고 있습니다.' 
+        },
+        // FASHION SPECIFIC TRENDING ITEMS
+        { 
+          id: '11', 
+          label: '살로몬 XT-6 스니커즈', 
+          category: '패션', 
+          catClass: 'cat-fashion',
+          rate: '+45.8%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&auto=format&fit=crop&q=80',
+          history: [40, 52, 60, 78, 86, 95],
+          ageGroups: ['전체', '20대 초반'],
+          details: '고프코어 및 믹스매치 룩의 대표 스니커즈가 된 살로몬 XT-6 시리즈입니다. 특히 실버/메탈릭 컬러라인은 10대 후반부터 20대 초중반 사이 여학생들의 워너비 데일리 신발로 급부상했습니다.' 
+        },
+        { 
+          id: '12', 
+          label: '인형 키링', 
+          category: '패션', 
+          catClass: 'cat-fashion',
+          rate: '+32.4%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=100&auto=format&fit=crop&q=80',
+          history: [25, 38, 45, 58, 70, 84],
+          ageGroups: ['전체', '10대', '20대 초반'],
+          details: '백팩이나 토트백에 달고 다니는 귀여운 캐릭터/봉제 인형 키링입니다. 모남희, 마지셔우드, 젤리캣 키링 등이 20대 초반 여학생들 사이에서 본인만의 패션 포인트를 나타내는 수집 챌린지 템으로 큰 인기입니다.' 
+        },
+        { 
+          id: '13', 
+          label: '글레이즈 멜팅 립틴트', 
+          category: '패션', 
+          catClass: 'cat-fashion',
+          rate: '+19.6%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=100&auto=format&fit=crop&q=80',
+          history: [48, 52, 58, 65, 70, 75],
+          ageGroups: ['전체', '10대', '20대 초반'],
+          details: '도톰하고 촉촉하게 입술 광택을 극대화해주는 멜팅 타입 립밤/립틴트 카테고리입니다. SNS 메이크업 피드와 패션 코디 정보에서 가장 많이 언급되는 필수 뷰티/패션 아이템입니다.' 
+        },
+        { 
+          id: '14', 
+          label: '아크테릭스 백팩', 
+          category: '패션', 
+          catClass: 'cat-fashion',
+          rate: '+24.5%', 
+          isUp: true,
+          image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=100&auto=format&fit=crop&q=80',
+          history: [30, 42, 50, 62, 70, 78],
+          ageGroups: ['전체', '10대', '20대 초반'],
+          details: '뉴진스 백팩으로 잘 알려진 아크테릭스 헬리아드 등의 스포티 백팩 라인입니다. Gorpcore 트렌드 확산과 함께 대학생들의 가볍고 스타일리시한 등교룩 가방으로 품귀현상을 빚고 있습니다.' 
+        }
       ];
 
-      const MOCK_HISTORIES = {
-        '1': [30, 45, 55, 68, 85, 95],
-        '2': [40, 52, 50, 64, 75, 88],
-        '3': [82, 80, 75, 78, 76, 78],
-        '4': [45, 50, 72, 88, 65, 70],
-        '5': [55, 54, 56, 55, 57, 58],
-        '6': [35, 48, 60, 72, 80, 84],
-        '7': [50, 58, 65, 60, 59, 62],
-        '8': [75, 72, 68, 60, 55, 52],
-        '9': [70, 75, 74, 82, 81, 80],
-        '10': [40, 50, 45, 68, 70, 75]
-      };
+      const cardsContainer = document.getElementById('cards-container');
+      const categoryTabs = document.getElementById('category-tabs');
+      const ageTabs = document.getElementById('age-tabs');
+      const dialog = document.getElementById('trend-detail-dialog');
+      const dialogTitle = document.getElementById('dialog-title');
+      const dialogBody = document.getElementById('dialog-body');
 
-      const MOCK_WORDS = {
-        '1': ['Cursor IDE', 'ChatGPT-5', 'LLM', 'Copilot', '자동완성', '프롬프트', '자동화', 'VSC'],
-        '2': ['MVP', '디자이너 구인', '기획자 협업', '팀빌딩', '출시', 'NestJS', 'Next.js', '배포'],
-        '3': ['국비지원', 'K-Digital', '포트폴리오', '풀스택', '코딩테스트', '네트워킹'],
-        '4': ['정처기', 'SQLD', 'ADsP', '컴활1급', '시험일정', '기출문제', '큐넷', '가산점'],
-        '5': ['링글', '스픽', '전화영어', '원어민회화', '비즈니스', '토익스피킹', '오픽 AL', '쉐도잉'],
-        '6': ['이력서 템플릿', '노션 포폴', '자기소개서', '링크드인', '커리어', '개인브랜딩'],
-        '7': ['글로벌인턴', '원격근무', '미국 인턴십', '워킹홀리데이', 'K-Move', '비자 발급', '글래스도어'],
-        '8': ['미라클모닝', '열품타', '투두리스트', '챌린저스', '공스타그램', '루틴추천', '습관형성'],
-        '9': ['공채 일정', '기술 블로그', '코딩테스트', '알고리즘', '코테 언어', '면접 후기', '개발자 연봉'],
-        '10': ['Toss Next', '원클릭 채용', '토스 뱅크', '개발자 합격', '직무 역량', '문화 적합도', 'Toss Core']
-      };
+      let activeCategory = '전체';
+      let activeAge = '전체';
 
-      // Current State variables
-      let trends = [...INITIAL_TRENDS];
-      let selectedCategory = '전체';
-      let selectedTrendId = '1';
-
-      // DOM Elements
-      const bubbleSvg = document.getElementById('bubble-svg');
-      const filterContainer = document.getElementById('filter-container');
-      const searchInput = document.getElementById('search-input');
-      const addTrendForm = document.getElementById('add-trend-form');
-      const recommendTagsContainer = document.getElementById('recommend-tags');
-      const detailHeader = document.getElementById('detail-header');
-      const sparklineSvg = document.getElementById('sparkline-svg');
-      const cloudContainer = document.getElementById('cloud-container');
-      const toast = document.getElementById('toast');
-      const toastMsg = document.getElementById('toast-msg');
-
-      // Constants for Physics
-      const WIDTH = 650;
-      const HEIGHT = 460;
-      let physicsNodes = [];
-
-      // 3. Initialize functions
-      function init() {
-        renderFilters();
-        renderRecommendTags();
-        updateDetails();
-        initPhysicsNodes();
-        
-        // Start animation loop
-        requestAnimationFrame(updatePhysics);
-      }
-
-      // Render Categories
-      function renderFilters() {
-        const categories = ['전체', 'IT/개발', '취업/진로', '자격증/어학', '트렌드/이슈'];
-        filterContainer.innerHTML = categories.map(cat => `
-          <button class="filter-tab ${selectedCategory === cat ? 'active' : ''}" data-cat="${cat}">
+      // Render Categories Filter tabs
+      function renderCategoryTabs() {
+        const categories = ['전체', '패션', 'IT/개발', '취업/진로', '자격증/어학', '트렌드/이슈'];
+        categoryTabs.innerHTML = categories.map(cat => `
+          <button class="tab-btn ${activeCategory === cat ? 'active' : ''}" onclick="selectCategory('${cat}')">
             ${cat}
           </button>
         `).join('');
-
-        // Filter Click Listener
-        document.querySelectorAll('.filter-tab').forEach(tab => {
-          tab.addEventListener('click', (e) => {
-            selectedCategory = e.target.getAttribute('data-cat');
-            renderFilters();
-          });
-        });
       }
 
-      // Render Recommend Tags
-      function renderRecommendTags() {
-        const recommendTags = ['백엔드', '인적성 검사', 'SQLD 기출', '포트폴리오'];
-        recommendTagsContainer.innerHTML = recommendTags.map(tag => `
-          <button type="button" class="tag recommend-tag-btn" data-tag="${tag}">#${tag}</button>
+      // Render Age Filter tabs
+      function renderAgeTabs() {
+        const ages = ['전체', '10대', '20대 초반', '20대 후반'];
+        ageTabs.innerHTML = ages.map(age => `
+          <button class="tab-btn ${activeAge === age ? 'active' : ''}" onclick="selectAge('${age}')">
+            ${age}
+          </button>
         `).join('');
-
-        document.querySelectorAll('.recommend-tag-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            searchInput.value = e.target.getAttribute('data-tag');
-          });
-        });
       }
 
-      // Show Toast Notification
-      function showToast(message) {
-        toastMsg.textContent = message;
-        toast.classList.add('show');
-        setTimeout(() => {
-          toast.classList.remove('show');
-        }, 2000);
-      }
+      window.selectCategory = function(cat) {
+        activeCategory = cat;
+        renderCategoryTabs();
+        renderCards();
+      };
 
-      // 5. Physics Nodes Initialization
-      function initPhysicsNodes() {
-        const currentNodesMap = new Map(physicsNodes.map(n => [n.id, n]));
-        
-        physicsNodes = trends.map(trend => {
-          const targetRadius = 30 + (trend.value - 30) * 0.44; // Radius proportional to value
-          const existing = currentNodesMap.get(trend.id);
-          
-          if (existing) {
-            return {
-              ...existing,
-              label: trend.label,
-              value: trend.value,
-              category: trend.category,
-              color: trend.color,
-              changeRate: trend.changeRate,
-              radius: targetRadius
-            };
-          } else {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 40 + Math.random() * 80;
-            return {
-              id: trend.id,
-              label: trend.label,
-              value: trend.value,
-              category: trend.category,
-              color: trend.color,
-              changeRate: trend.changeRate,
-              x: WIDTH / 2 + Math.cos(angle) * distance,
-              y: HEIGHT / 2 + Math.sin(angle) * distance,
-              vx: (Math.random() - 0.5) * 1.5,
-              vy: (Math.random() - 0.5) * 1.5,
-              radius: targetRadius,
-              currentRadius: 0 // Animate scaling up from 0
-            };
-          }
-        });
-      }
+      window.selectAge = function(age) {
+        activeAge = age;
+        renderAgeTabs();
+        renderCards();
+      };
 
-      // Physics animation engine loop
-      function updatePhysics() {
-        if (physicsNodes.length === 0) {
-          requestAnimationFrame(updatePhysics);
-          return;
-        }
-
-        const centerForce = 0.005;
-        const collisionForce = 0.07;
-        const damping = 0.88;
-        const spacing = 12;
-
-        // 1. Calculate active target radii
-        physicsNodes.forEach(node => {
-          const isMatched = selectedCategory === '전체' || node.category === selectedCategory;
-          const targetRadius = isMatched ? node.radius : 0;
-          node.currentRadius += (targetRadius - node.currentRadius) * 0.12;
-        });
-
-        // 2. Select only active nodes
-        const activeNodes = physicsNodes.filter(n => n.currentRadius > 1);
-
-        // 3. Compute forces
-        activeNodes.forEach((node, i) => {
-          // Pull to center force
-          const dxCenter = WIDTH / 2 - node.x;
-          const dyCenter = HEIGHT / 2 - node.y;
-          node.vx += dxCenter * centerForce;
-          node.vy += dyCenter * centerForce;
-
-          // Float animation
-          const time = Date.now() * 0.001;
-          node.vx += Math.sin(time + i) * 0.05;
-          node.vy += Math.cos(time - i) * 0.05;
-
-          // Collision handling
-          for (let j = i + 1; j < activeNodes.length; j++) {
-            const other = activeNodes[j];
-            const dx = other.x - node.x;
-            const dy = other.y - node.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const minDist = node.currentRadius + other.currentRadius + spacing;
-
-            if (distance < minDist && distance > 0) {
-              const overlap = minDist - distance;
-              const pushX = (dx / distance) * overlap * collisionForce;
-              const pushY = (dy / distance) * overlap * collisionForce;
-
-              node.vx -= pushX;
-              node.vy -= pushY;
-              other.vx += pushX;
-              other.vy += pushY;
-            }
-          }
-
-          // Apply displacement & friction
-          node.x += node.vx;
-          node.y += node.vy;
-          node.vx *= damping;
-          node.vy *= damping;
-
-          // Keep in bounds
-          const r = node.currentRadius;
-          const margin = 20;
-          if (node.x - r < margin) { node.x = r + margin; node.vx *= -0.5; }
-          else if (node.x + r > WIDTH - margin) { node.x = WIDTH - r - margin; node.vx *= -0.5; }
-          
-          if (node.y - r < margin) { node.y = r + margin; node.vy *= -0.5; }
-          else if (node.y + r > HEIGHT - margin) { node.y = HEIGHT - r - margin; node.vy *= -0.5; }
-        });
-
-        // 4. Update SVG render elements
-        renderSvg();
-
-        requestAnimationFrame(updatePhysics);
-      }
-
-      // Draw SVG element representing circles
-      function renderSvg() {
-        // Clear previous groups except definitions
-        const groups = bubbleSvg.querySelectorAll('g');
-        groups.forEach(g => g.remove());
-
-        physicsNodes.forEach(node => {
-          if (node.currentRadius < 3) return;
-
-          const isSelected = selectedTrendId === node.id;
-          
-          // Create group
-          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-          g.setAttribute("class", "bubble-group");
-          g.setAttribute("transform", `translate(${node.x}, ${node.y})`);
-          g.addEventListener('click', () => {
-            selectedTrendId = node.id;
-            updateDetails();
-          });
-
-          // Glow shadow
-          const glowCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-          glowCircle.setAttribute("r", node.currentRadius);
-          glowCircle.setAttribute("fill", node.color);
-          glowCircle.setAttribute("opacity", isSelected ? "0.3" : "0.08");
-          glowCircle.setAttribute("filter", "url(#glow)");
-          g.appendChild(glowCircle);
-
-          // Main circle
-          const mainCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-          mainCircle.setAttribute("r", node.currentRadius);
-          mainCircle.setAttribute("fill", "rgba(15, 23, 42, 0.85)");
-          mainCircle.setAttribute("stroke", isSelected ? "white" : node.color);
-          mainCircle.setAttribute("stroke-width", isSelected ? "3.5" : "1.8");
-          mainCircle.style.transition = "stroke-width 0.2s, stroke 0.2s";
-          g.appendChild(mainCircle);
-
-          // Pulsing border overlay if selected
-          if (isSelected) {
-            const pulseCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            pulseCircle.setAttribute("r", node.currentRadius + 6);
-            pulseCircle.setAttribute("fill", "none");
-            pulseCircle.setAttribute("stroke", node.color);
-            pulseCircle.setAttribute("stroke-width", "1.5");
-            pulseCircle.setAttribute("opacity", "0.6");
-            pulseCircle.setAttribute("class", "animate-pulse-slow");
-            g.appendChild(pulseCircle);
-          }
-
-          // Shimmer ring
-          const shineCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-          shineCircle.setAttribute("r", node.currentRadius * 0.9);
-          shineCircle.setAttribute("fill", "none");
-          shineCircle.setAttribute("stroke", "rgba(255, 255, 255, 0.05)");
-          shineCircle.setAttribute("stroke-width", "1");
-          g.appendChild(shineCircle);
-
-          // Labels inside bubble
-          if (node.currentRadius > 38) {
-            // Label
-            const textLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            textLabel.setAttribute("text-anchor", "middle");
-            textLabel.setAttribute("y", "-6");
-            textLabel.setAttribute("fill", isSelected ? "white" : "#f8fafc");
-            textLabel.setAttribute("font-weight", isSelected ? "700" : "600");
-            textLabel.setAttribute("font-size", node.currentRadius > 50 ? "13px" : "11px");
-            textLabel.style.pointerEvents = "none";
-            textLabel.textContent = node.label;
-            g.appendChild(textLabel);
-
-            // Index Value
-            const textVal = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            textVal.setAttribute("text-anchor", "middle");
-            textVal.setAttribute("y", "14");
-            textVal.setAttribute("fill", node.color);
-            textVal.setAttribute("font-weight", "700");
-            textVal.setAttribute("font-size", node.currentRadius > 50 ? "10px" : "9px");
-            textVal.style.pointerEvents = "none";
-            textVal.textContent = `지수: ${node.value}%`;
-            g.appendChild(textVal);
-
-            // Change percentage rate
-            const textRate = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            textRate.setAttribute("text-anchor", "middle");
-            textRate.setAttribute("y", node.currentRadius * 0.7);
-            textRate.setAttribute("fill", node.changeRate >= 0 ? "#10b981" : "#ef4444");
-            textRate.setAttribute("font-weight", "600");
-            textRate.setAttribute("font-size", "9px");
-            textRate.style.pointerEvents = "none";
-            textRate.textContent = node.changeRate >= 0 ? `▲ ${node.changeRate}%` : `▼ ${Math.abs(node.changeRate)}%`;
-            g.appendChild(textRate);
-          } else if (node.currentRadius > 20) {
-            // Shortened label for small circles
-            const textLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            textLabel.setAttribute("text-anchor", "middle");
-            textLabel.setAttribute("y", "4");
-            textLabel.setAttribute("fill", "#cbd5e1");
-            textLabel.setAttribute("font-weight", "600");
-            textLabel.setAttribute("font-size", "10px");
-            textLabel.style.pointerEvents = "none";
-            textLabel.textContent = node.label.length > 4 ? `${node.label.substring(0, 3)}..` : node.label;
-            g.appendChild(textLabel);
-          }
-
-          bubbleSvg.appendChild(g);
-        });
-      }
-
-      // 6. Selected Detail Update Panel
-      function updateDetails() {
-        const trend = trends.find(t => t.id === selectedTrendId) || trends[0];
-
-        // 1. Header Card Details
-        detailHeader.innerHTML = `
-          <div>
-            <div class="flex items-center gap-2">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background-color: ${trend.color}; display: inline-block;"></span>
-              <h3 style="font-size: 15px; font-weight: 700; color: white;">${trend.label}</h3>
-              <span class="badge" style="font-size: 9px; padding: 1px 6px; background-color: rgba(15,23,42,0.8); border: 1px solid #1e293b; color: #94a3b8;">
-                ${trend.category}
-              </span>
-            </div>
-            <div style="font-size: 11px; color: #94a3b8; margin-top: 6px; line-height: 1.5;">
-              ${trend.details}
-            </div>
-          </div>
-
-          <div style="text-align: right; flex-shrink: 0;">
-            <div style="font-size: 10px; color: #64748b;">트렌드 지수</div>
-            <div style="font-size: 20px; font-weight: 900; color: white; margin-top: 2px;">${trend.value}%</div>
-            <div style="font-size: 9px; font-weight: 700; margin-top: 2px;" class="${trend.changeRate >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
-              ${trend.changeRate >= 0 ? `▲ +${trend.changeRate}%` : `▼ ${trend.changeRate}%`}
-            </div>
-          </div>
-        `;
-
-        // 2. Render Sparkline SVG Path
-        const history = MOCK_HISTORIES[trend.id] || [50, 50, 50, 50, 50, 50];
+      // Draw SVG Sparkline path dynamically
+      function generateSparkline(history, color) {
         const pointsCount = history.length;
-        const gWidth = 180;
-        const gHeight = 60;
+        const width = 190;
+        const height = 30;
         
         const points = history.map((val, idx) => {
-          const x = (idx / (pointsCount - 1)) * gWidth;
-          const y = gHeight - (val / 100) * gHeight;
+          const x = (idx / (pointsCount - 1)) * width;
+          const y = height - (val / 100) * height;
           return `${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
         }).join(' ');
 
-        sparklineSvg.innerHTML = `
-          <linearGradient id="areaGrad-${trend.id}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="${trend.color}" stop-opacity="0.3" />
-            <stop offset="100%" stop-color="${trend.color}" stop-opacity="0.0" />
-          </linearGradient>
-          <path d="${points} L ${gWidth} ${gHeight} L 0 ${gHeight} Z" fill="url(#areaGrad-${trend.id})" />
-          <path d="${points}" fill="none" stroke="${trend.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-          <circle cx="${gWidth}" cy="${gHeight - (history[pointsCount-1]/100)*gHeight}" r="3.5" fill="${trend.color}" class="pulse-dot" />
+        return `
+          <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="overflow: visible;">
+            <path d="${points}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="${width}" cy="${height - (history[pointsCount-1]/100)*height}" r="3" fill="${color}" />
+          </svg>
         `;
-
-        // 3. Render Word Cloud
-        const words = MOCK_WORDS[trend.id] || [];
-        cloudContainer.innerHTML = words.map((word, i) => `
-          <span class="tag" style="font-size: ${10 + (3 - (i % 3)) * 1.2}px; opacity: ${0.8 + (i % 3) * 0.1}; color: ${i % 2 === 0 ? trend.color : 'var(--text-primary)'}">
-            ${word}
-          </span>
-        `).join('');
       }
 
-      // 7. Add Custom Trend Bubble Form Listener
-      addTrendForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const keyword = searchInput.value.trim();
-        if (!keyword) return;
+      // Render Cards Grid
+      function renderCards() {
+        // Filter by Category and Age
+        let filtered = TRENDING_DATA;
+        
+        if (activeCategory !== '전체') {
+          filtered = filtered.filter(item => item.category === activeCategory);
+        }
+        
+        if (activeAge !== '전체') {
+          filtered = filtered.filter(item => item.ageGroups.includes(activeAge));
+        }
 
-        // Check duplicate
-        const duplicate = trends.find(t => t.label.toLowerCase() === keyword.toLowerCase());
-        if (duplicate) {
-          selectedTrendId = duplicate.id;
-          selectedCategory = '전체';
-          renderFilters();
-          updateDetails();
-          searchInput.value = '';
+        if (filtered.length === 0) {
+          cardsContainer.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px;">
+              해당 필터에 맞는 오늘의 트렌드 스티커가 없습니다. 🌸
+            </div>
+          `;
           return;
         }
 
-        // Check Category matching
-        let category = '트렌드/이슈';
-        let color = '#fbbf24'; // Amber
-        const lowerK = keyword.toLowerCase();
-        
-        if (lowerK.includes('코딩') || lowerK.includes('개발') || lowerK.includes('프로젝트') || lowerK.includes('웹') || lowerK.includes('앱') || lowerK.includes('스택') || lowerK.includes('js') || lowerK.includes('파이썬') || lowerK.includes('java')) {
-          category = 'IT/개발';
-          color = 'var(--accent-purple)';
-        } else if (lowerK.includes('영어') || lowerK.includes('토익') || lowerK.includes('자격증') || lowerK.includes('시험') || lowerK.includes('회화')) {
-          category = '자격증/어학';
-          color = 'var(--accent-cyan)';
-        } else if (lowerK.includes('인턴') || lowerK.includes('채용') || lowerK.includes('취업') || lowerK.includes('포트폴리오') || lowerK.includes('이력서')) {
-          category = '취업/진로';
-          color = 'var(--accent-pink)';
-        }
+        cardsContainer.innerHTML = filtered.map(item => {
+          const sparklineColor = item.isUp ? '#ff8a7a' : '#8e8e8e';
+          const history = item.history || [50, 52, 54, 52, 53, 55];
+          const sparklineHtml = generateSparkline(history, sparklineColor);
 
-        const value = Math.floor(40 + Math.random() * 55); // 40~95
-        const changeRate = parseFloat(((Math.random() - 0.3) * 50).toFixed(1)); // -15% ~ +35%
-        const newId = String(trends.length + 1);
+          return `
+            <div class="trend-card" onclick="openDetail('${item.id}')">
+              <!-- Top details -->
+              <div class="card-header">
+                <span class="category-tag ${item.catClass}">${item.category}</span>
+                <span class="rate-pill ${item.isUp ? '' : 'down'}">
+                  ${item.isUp ? '▲' : '▼'} ${item.rate}
+                </span>
+              </div>
+              
+              <!-- Content body -->
+              <div class="card-body">
+                <div class="keyword-title">${item.label}</div>
+                <img src="${item.image}" alt="${item.label}" class="thumbnail-photo" />
+              </div>
 
-        const newTrend = {
-          id: newId,
-          label: keyword,
-          value,
-          category,
-          color,
-          changeRate,
-          details: `'${keyword}'에 관한 검색량 분석 결과, 관심 카테고리 ${category}의 신규 라이징 키워드로 분석되었으며 최근 취준생들 사이의 소셜 멘션량이 부쩍 급증하고 있습니다.`
-        };
+              <!-- Sparkline Trend Chart -->
+              <div class="card-sparkline">
+                ${sparklineHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
 
-        // Populate mocks
-        MOCK_HISTORIES[newId] = Array.from({ length: 6 }, (_, i) => {
-          const base = value - (5 - i) * 5;
-          return Math.max(10, Math.min(100, Math.round(base + (Math.random() - 0.5) * 10)));
-        });
+      // Open Modal detail dialog
+      window.openDetail = function(id) {
+        const item = TRENDING_DATA.find(k => k.id === id);
+        if (!item) return;
 
-        MOCK_WORDS[newId] = [`${keyword} 꿀팁`, `${keyword} 정보`, `${keyword} 채용`, `${keyword} 후기`, '갓생', '포트폴리오'];
+        dialogTitle.innerHTML = `✨ ${item.label} (${item.category})`;
+        dialogBody.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="width: 100%; height: 160px; border-radius: 12px; background-image: url(${item.image}); background-size: cover; background-position: center; border: 1px solid #eef0f2;"></div>
+            <div style="font-size: 11px; font-weight: 800; color: var(--pastel-peach); letter-spacing: 0.5px; text-transform: uppercase;">ABOUT THIS ITEM</div>
+            <div style="color: var(--text-secondary); line-height: 1.6;">${item.details}</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">주 타겟 소비층: ${item.ageGroups.filter(g => g !== '전체').join(', ')}</div>
+          </div>
+        `;
+        dialog.showModal();
+      };
 
-        // Push new data and update
-        trends.unshift(newTrend);
-        selectedTrendId = newId;
-        selectedCategory = '전체';
-        
-        renderFilters();
-        updateDetails();
-        initPhysicsNodes(); // Recalculate physics bounds and add new bubble
-        
-        searchInput.value = '';
-        showToast(`'${keyword}' 버블이 생성되어 추가되었습니다!`);
-      });
+      // Set up dialog action listeners
+      document.getElementById('dialog-close-btn').addEventListener('click', () => dialog.close());
+      document.getElementById('dialog-confirm-btn').addEventListener('click', () => dialog.close());
 
-      // Start App
-      window.onload = init;
+      // Initialize
+      renderCategoryTabs();
+      renderAgeTabs();
+      renderCards();
     </script>
   </body>
 </html>
