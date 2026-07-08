@@ -7,19 +7,20 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#1a1b23',
-        surface: '#252631',
-        primary: '#FF94A1', // Cute pastel pink
-        secondary: '#A394FF', // Cute pastel purple
-        textMain: '#ffffff',
-        textMuted: '#9495a5'
+        background: '#F0F4F8', // 연한 파스텔 블루 배경
+        surface: '#FFFFFF',    // 하얀색 블록(박스)
+        primary: '#4A90E2',    // 포인트 블루
+        secondary: '#FFB6C1',  // 포인트 핑크
+        textMain: '#2D3748',   // 진한 텍스트
+        textMuted: '#718096',
+        borderLine: '#E2E8F0'  // 부드러운 테두리
       },
       borderRadius: {
-        'xl': '1rem',
         '2xl': '1.5rem',
+        '3xl': '2rem',
       },
       boxShadow: {
-        'soft': '0 8px 30px rgba(0, 0, 0, 0.12)',
+        'block': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
       }
     },
   },
