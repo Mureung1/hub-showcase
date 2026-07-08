@@ -3,6 +3,7 @@ import ProjectProvider from './StoreProvider';
 import CreateWizard from './screens/CreateWizard';
 import PlanReview from './screens/PlanReview';
 import Survey from './screens/Survey';
+import Assignment from './screens/Assignment';
 import Placeholder from './screens/Placeholder';
 import './App.css';
 
@@ -35,7 +36,7 @@ function Screen() {
     case 'survey':
       return <Survey />;
     case 'assignment':
-      return <Placeholder stage={4} />;
+      return <Assignment />;
     case 'dashboard':
       return <Placeholder stage={5} />;
     default:

@@ -80,6 +80,25 @@ export function reducer(state, action) {
       });
       return { ...state, surveys, step: 'assignment' };
     }
+    case 'SET_ASSIGNMENT':
+      return { ...state, assignment: action.assignment };
+    case 'SWAP_ROLES': {
+      // 두 팀원의 역할 전체를 맞교환 (양측 동의 후 1회 한정)
+      const byMember = { ...state.assignment.result.byMember };
+      const tmp = byMember[action.a];
+      byMember[action.a] = byMember[action.b];
+      byMember[action.b] = tmp;
+      return {
+        ...state,
+        swapUsed: true,
+        assignment: {
+          ...state.assignment,
+          result: { ...state.assignment.result, byMember },
+        },
+      };
+    }
+    case 'CONFIRM_ASSIGNMENT':
+      return { ...state, step: 'dashboard' };
     case 'GO_TO_STEP':
       return { ...state, step: action.step };
     case 'RESET':

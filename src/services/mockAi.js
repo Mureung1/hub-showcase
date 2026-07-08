@@ -70,15 +70,43 @@ export async function generatePlan(project, { variant = 0 } = {}) {
 
 /**
  * 배정 설명 에이전트: 배정 결과 + 팀 통계 → 팀 단위 자연어 설명.
- * 개인 응답은 인용하지 않는다 (비공개 약속 유지).
+ * 개인 응답은 인용하지 않는다 (비공개 약속 유지) — 집계값 기반의 팀 단위 서술만 생성.
  * @param {object} assignment - assignRoles() 결과
- * @param {object} teamStats - 팀 단위 통계 (개인 식별 불가 형태)
- * @returns {Promise<{ summary: string, perMember: object, compromise: string|null }>}
+ * @param {object} teamStats - computeTeamStats()의 팀 단위 통계 (개인 식별 불가 형태)
+ * @returns {Promise<{ summary: string, points: string[], compromise: string|null }>}
  */
 export async function explainAssignment(assignment, teamStats) {
   await delay(1200);
-  /* TODO(4단계): 팀 단위 서술 설명 + 전원 기피 역할 타협안 생성 */
-  void assignment;
-  void teamStats;
-  throw new Error('explainAssignment는 4단계에서 구현됩니다');
+
+  const { total, matchedPref, expMatched, forcedCount, leaderVolunteer, fullyAvoidedNames, forcedNames } = teamStats;
+
+  const points = [];
+  points.push(`${total}명 중 ${matchedPref}명이 본인이 선호한 1~3순위 안의 역할을 맡았어요.`);
+  if (expMatched > 0) {
+    points.push(`${expMatched}명은 경험이 있는 역할에 배치되어 시행착오를 줄일 수 있어요.`);
+  }
+  points.push(
+    forcedCount === 0
+      ? '기피 역할이 배정된 팀원은 없어요.'
+      : `불가피하게 기피 역할 배정이 ${forcedCount}건 있었어요 — 아래 타협안을 함께 봐주세요.`,
+  );
+  if (leaderVolunteer) {
+    points.push('조장은 리더 의향을 밝힌 팀원 중에서 정해졌어요.');
+  }
+
+  const summary =
+    '팀 전체의 선호를 종합했을 때 만족도가 가장 높은 조합이에요. 누가 무엇을 적었는지는 공개하지 않고, 팀 단위 결과만 알려드려요.';
+
+  let compromise = null;
+  const problemRoles = fullyAvoidedNames.length > 0 ? fullyAvoidedNames : forcedNames;
+  if (problemRoles.length > 0) {
+    const names = problemRoles.map((n) => `'${n}'`).join(', ');
+    compromise =
+      (fullyAvoidedNames.length > 0
+        ? `팀 전원이 ${names} 역할을 기피했어요. 그래도 누군가는 맡아야 하니, 이렇게 풀어보면 어때요?`
+        : `${names} 역할은 기피에도 불구하고 배정이 불가피했어요. 이렇게 풀어보면 어때요?`) +
+      '\n① 로테이션 — 마일스톤마다 담당자를 번갈아 맡기\n② 부담 나누기 — 이 역할을 맡은 팀원의 다른 태스크를 팀이 나눠 갖기\n최종 결정은 팀 투표로 정해요!';
+  }
+
+  return { summary, points, compromise };
 }
