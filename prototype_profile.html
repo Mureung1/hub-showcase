@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>취업비서 - 프로필 설정</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .multi-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .multi-input input {
+            flex: 1;
+        }
+
+        .add-btn {
+            padding: 12px 20px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: 500;
+        }
+
+        .add-btn:hover {
+            background: #e8e8e8;
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            background: #667eea;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 40px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .reset-btn {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .reset-btn:hover {
+            background: #e8e8e8;
+        }
+
+        .info-text {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 취업비서</h1>
+            <p class="subtitle">당신의 프로필을 입력하고 맞춤 공고를 받아보세요</p>
+        </header>
+
+        <form id="profileForm">
+            <!-- 기본정보 섹션 -->
+            <div class="form-section">
+                <div class="section-title">📚 기본정보</div>
+
+                <div class="form-group">
+                    <label for="school">학교</label>
+                    <input type="text" id="school" name="school" placeholder="예: 부산대학교" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="major">전공</label>
+                    <input type="text" id="major" name="major" placeholder="예: 컴퓨터공학과" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="gpa">학점</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="gpa" name="gpa" placeholder="3.5" min="0" max="4.5" step="0.1" style="flex: 1;">
+                        <span style="padding: 12px; color: #666;">/ 4.5</span>
+                    </div>
+                    <p class="info-text">학점을 입력하세요. (선택사항)</p>
+                </div>
+            </div>
+
+            <!-- 기술스택 섹션 -->
+            <div class="form-section">
+                <div class="section-title">💻 기술스택</div>
+                <p class="info-text" style="margin-bottom: 15px;">사용 가능한 언어, 프레임워크를 입력하세요.</p>
+
+                <div class="multi-input">
+                    <input type="text" id="techInput" placeholder="예: Python, React, Node.js" onkeypress="handleTechKeypress(event)">
+                    <button type="button" class="add-btn" onclick="addTech()">추가</button>
+                </div>
+
+                <div class="tag-list" id="techList"></div>
+            </div>
+
+            <!-- 선호조건 섹션 -->
+            <div class="form-section">
+                <div class="section-title">🎁 선호조건</div>
+
+                <div class="form-group">
+                    <label>회사규모</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="startup" name="company_size" value="startup">
+                            <label for="startup">스타트업</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="mid" name="company_size" value="mid">
+                            <label for="mid">중소기업</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="large" name="company_size" value="large">
+                            <label for="large">대기업</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="public" name="company_size" value="public">
+                            <label for="public">공기업</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="location">근무지역</label>
+                    <input type="text" id="location" name="location" placeholder="예: 서울, 부산, 강남구" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="salary">희망연봉 (선택사항)</label>
+                    <input type="text" id="salary" name="salary" placeholder="예: 3000만원 이상">
+                </div>
+
+                <div class="form-group">
+                    <label for="culture">원하는 기업문화</label>
+                    <textarea id="culture" name="culture" placeholder="예: 빠른 성장, 자유로운 분위기, 워라밸 중시 등..."></textarea>
+                </div>
+            </div>
+
+            <!-- 버튼 -->
+            <div class="button-group">
+                <button type="reset" class="reset-btn" onclick="resetTechList()">초기화</button>
+                <button type="submit" class="submit-btn">추천받기</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let techStack = [];
+
+        function addTech() {
+            const input = document.getElementById('techInput');
+            const tech = input.value.trim();
+
+            if (tech && !techStack.includes(tech)) {
+                techStack.push(tech);
+                input.value = '';
+                renderTechList();
+            }
+        }
+
+        function handleTechKeypress(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                addTech();
+            }
+        }
+
+        function removeTech(tech) {
+            techStack = techStack.filter(t => t !== tech);
+            renderTechList();
+        }
+
+        function renderTechList() {
+            const list = document.getElementById('techList');
+            list.innerHTML = techStack.map(tech => `
+                <div class="tag">
+                    ${tech}
+                    <span class="tag-remove" onclick="removeTech('${tech}')">✕</span>
+                </div>
+            `).join('');
+        }
+
+        function resetTechList() {
+            techStack = [];
+            renderTechList();
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const profile = {
+                school: document.getElementById('school').value,
+                major: document.getElementById('major').value,
+                gpa: document.getElementById('gpa').value || 'N/A',
+                techStack: techStack,
+                companySizes: Array.from(document.querySelectorAll('input[name="company_size"]:checked')).map(cb => cb.value),
+                location: document.getElementById('location').value,
+                salary: document.getElementById('salary').value,
+                culture: document.getElementById('culture').value,
+            };
+
+            console.log('프로필 데이터:', profile);
+            window.location.href = 'prototype_recommendation.html';
+        });
+    </script>
+</body>
+</html>

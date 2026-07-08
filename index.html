@@ -1,12 +1,357 @@
-<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>개인 맞춤형 취업비서</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>취업비서 - 당신의 취업 준비 파트너</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero {
+            background: white;
+            border-radius: 16px;
+            padding: 60px 40px;
+            margin-bottom: 50px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .hero-title {
+            font-size: 42px;
+            font-weight: 800;
+            color: #333;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .hero-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .feature-item {
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 16px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .prototypes-section {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 30px;
+        }
+
+        .prototype-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .prototype-card {
+            background: linear-gradient(135deg, #f9f9f9 0%, #f0f0f0 100%);
+            border: 2px solid #eee;
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prototype-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .prototype-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .phase-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .prototype-number {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .prototype-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .prototype-description {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .prototype-features {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 15px;
+            padding-top: 12px;
+            border-top: 1px solid #ddd;
+        }
+
+        .prototype-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .prototype-link:hover {
+            background: #764ba2;
+            transform: translateX(2px);
+        }
+
+        .flow-section {
+            margin-top: 50px;
+            padding-top: 40px;
+            border-top: 2px solid #eee;
+        }
+
+        .flow-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .flow-step {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .flow-arrow {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                padding: 40px 20px;
+            }
+
+            .hero-title {
+                font-size: 28px;
+            }
+
+            .prototypes-section {
+                padding: 20px;
+            }
+
+            .prototype-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1 class="hero-title">🎯 취업비서</h1>
+            <p class="hero-subtitle">
+                AI 기반 맞춤형 취업 준비 플랫폼<br>
+                채용공고 추천부터 면접 준비까지 한 곳에서!
+            </p>
+
+            <div class="hero-features">
+                <div class="feature-item">
+                    <div class="feature-icon">🎯</div>
+                    <div>맞춤 공고 추천</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">✍️</div>
+                    <div>자소서 작성 지원</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🎤</div>
+                    <div>면접 준비</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📅</div>
+                    <div>일정 관리</div>
+                </div>
+            </div>
+
+            <a href="prototype_profile.html" class="cta-button">지금 시작하기 →</a>
+        </div>
+
+        <div class="prototypes-section">
+            <h2 class="section-title">📱 프로토타입 목록</h2>
+            <p class="section-subtitle">각 기능을 순서대로 살펴보세요</p>
+
+            <div class="prototype-grid">
+                <div class="prototype-card">
+                    <div class="phase-badge">PHASE 1-1</div>
+                    <div class="prototype-number">1/6</div>
+                    <div class="prototype-title">프로필 설정</div>
+                    <div class="prototype-description">학교, 전공, 기술스택, 선호조건을 입력하세요.</div>
+                    <div class="prototype-features">✓ 기본정보 입력 / ✓ 기술스택 추가 / ✓ 선호조건 설정</div>
+                    <a href="prototype_profile.html" class="prototype-link">시작하기 →</a>
+                </div>
+
+                <div class="prototype-card">
+                    <div class="phase-badge">PHASE 1-2</div>
+                    <div class="prototype-number">2/6</div>
+                    <div class="prototype-title">공고 추천</div>
+                    <div class="prototype-description">당신의 프로필에 맞는 공고를 추천받으세요.</div>
+                    <div class="prototype-features">✓ 5개 공고 카드 / ✓ 적합도 점수 / ✓ 추천 이유</div>
+                    <a href="prototype_recommendation.html" class="prototype-link">보기 →</a>
+                </div>
+
+                <div class="prototype-card">
+                    <div class="phase-badge">PHASE 2-1</div>
+                    <div class="prototype-number">3/6</div>
+                    <div class="prototype-title">자소서 초안 생성</div>
+                    <div class="prototype-description">4가지 질문에 답하면 AI가 초안을 만들어줍니다.</div>
+                    <div class="prototype-features">✓ 질문 입력 / ✓ AI 초안 생성 / ✓ 실시간 미리보기</div>
+                    <a href="prototype_resume_draft.html" class="prototype-link">시작하기 →</a>
+                </div>
+
+                <div class="prototype-card">
+                    <div class="phase-badge">PHASE 2-2</div>
+                    <div class="prototype-number">4/6</div>
+                    <div class="prototype-title">자소서 작성 & 첨삭</div>
+                    <div class="prototype-description">자소서를 작성하고 AI의 첨삭 피드백을 받으세요.</div>
+                    <div class="prototype-features">✓ 에디터 / ✓ AI 첨삭 / ✓ 점수 표시</div>
+                    <a href="prototype_resume_editor.html" class="prototype-link">시작하기 →</a>
+                </div>
+
+                <div class="prototype-card">
+                    <div class="phase-badge">PHASE 3</div>
+                    <div class="prototype-number">5/6</div>
+                    <div class="prototype-title">면접 준비</div>
+                    <div class="prototype-description">7개 예상 질문에 답변하고 AI 피드백을 받으세요.</div>
+                    <div class="prototype-features">✓ 7개 질문 / ✓ 답변 아이디어 / ✓ AI 피드백</div>
+                    <a href="prototype_interview_prep.html" class="prototype-link">시작하기 →</a>
+                </div>
+
+                <div class="prototype-card">
+                    <div class="phase-badge">PHASE 4</div>
+                    <div class="prototype-number">6/6</div>
+                    <div class="prototype-title">일정 관리</div>
+                    <div class="prototype-description">지원 현황을 추적하고 면접 일정을 관리하세요.</div>
+                    <div class="prototype-features">✓ 지원 타임라인 / ✓ 면접 일정 / ✓ 마감기한 알림</div>
+                    <a href="prototype_schedule.html" class="prototype-link">보기 →</a>
+                </div>
+            </div>
+
+            <div class="flow-section">
+                <div class="flow-title">📍 추천 진행 순서: 1 → 2 → 3 → 4 → 5 → 6</div>
+            </div>
+        </div>
+    </div>
+</body>
 </html>

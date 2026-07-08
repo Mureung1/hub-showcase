@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>취업비서 - 자소서 작성 및 첨삭</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* 헤더 */
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .header-company {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            background: #f5f5f5;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .btn-small:hover {
+            background: #efefef;
+        }
+
+        /* 메인 컨텐츠 */
+        .main-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 20px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .panel-content {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* 에디터 패널 */
+        .editor-toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-btn {
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .toolbar-btn:hover {
+            background: #efefef;
+            border-color: #bbb;
+        }
+
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #resumeContent {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.8;
+            resize: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #resumeContent:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .editor-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .char-count {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        /* 첨삭 패널 */
+        .feedback-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .feedback-placeholder {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .feedback-item {
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            border-radius: 6px;
+            padding: 15px;
+            font-size: 13px;
+        }
+
+        .feedback-category {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .category-badge {
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .feedback-description {
+            color: #666;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .feedback-example {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        .example-label {
+            color: #999;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+
+        .example-original {
+            color: #d32f2f;
+            margin-bottom: 5px;
+        }
+
+        .example-improved {
+            color: #388e3c;
+        }
+
+        /* 평점 */
+        .score-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .score-label {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .score-bar {
+            flex: 1;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin: 0 10px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+        }
+
+        .score-number {
+            min-width: 40px;
+            text-align: right;
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        /* 로딩 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loading.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        /* 버튼 그룹 */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-large {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-feedback {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-feedback:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-feedback:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            color: white;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 1024px) {
+            .main-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header-top {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header">
+            <div class="header-top">
+                <div>
+                    <div class="header-title">✏️ 자소서 작성 및 첨삭</div>
+                    <div class="header-company">네이버 웨일 팀 - 풀스택 개발자</div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-small">📋 복사</button>
+                    <button class="btn-small">↩️ 뒤로</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 컨텐츠 -->
+        <div class="main-wrapper">
+            <!-- 좌측: 에디터 -->
+            <div class="panel">
+                <div class="panel-header">📝 자소서 작성</div>
+                <div class="panel-content">
+                    <div class="editor-toolbar">
+                        <button class="toolbar-btn">B 볼드</button>
+                        <button class="toolbar-btn">I 이탤릭</button>
+                        <button class="toolbar-btn">U 언더라인</button>
+                        <button class="toolbar-btn">• 리스트</button>
+                        <button class="toolbar-btn">⌫ 초기화</button>
+                    </div>
+
+                    <div class="editor-area">
+                        <textarea id="resumeContent" placeholder="여기에 자소서를 작성해주세요. 초안을 바탕으로 수정하거나 새로 작성할 수 있습니다.">저는 웹 개발에 열정을 가진 개발자입니다. Python, React에 능숙하고, 빠른 학습 능력이 있습니다.
+
+특히 네이버 웨일 팀에 관심을 가지게 된 이유는 웨일의 빠른 기술 혁신과 사용자 중심의 개발 문화에 매력을 느끼기 때문입니다.
+
+이러한 관심은 실무 경험으로도 이어졌습니다. 대학 프로젝트에서 React와 Node.js를 사용해 SNS 앱을 개발했으며, 이 과정에서 빠른 피드백 문화와 팀과의 협업을 경험했습니다.
+
+네이버 웨일 팀에 입사하게 된다면, 빠른 피드백 문화에 잘 적응하며 팀과의 협업을 중시할 것입니다. 이를 통해 팀의 성장에 기여하고 싶습니다.
+
+빠르게 변화하는 기술 환경에서 지속적인 학습과 개선을 추구하며, 사용자 중심의 개발 철학을 실천하겠습니다. 감사합니다.</textarea>
+                    </div>
+
+                    <div class="editor-footer">
+                        <span>글자 수: <span class="char-count" id="charCount">0</span> / 1000</span>
+                        <span id="autoSave">자동저장됨</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 우측: 첨삭 -->
+            <div class="panel">
+                <div class="panel-header">💡 AI 첨삭 피드백</div>
+                <div class="panel-content">
+                    <div id="feedbackContainer" class="feedback-placeholder">
+                        "첨삭 받기" 버튼을 눌러<br>AI의 피드백을 받아보세요!
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-large btn-feedback" onclick="getFeedback()">🔍 첨삭 받기</button>
+                        <button class="btn-large btn-submit" onclick="submitResume()">✅ 제출하기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 글자 수 실시간 카운트
+        const resumeContent = document.getElementById('resumeContent');
+        const charCount = document.getElementById('charCount');
+
+        resumeContent.addEventListener('input', () => {
+            charCount.textContent = resumeContent.value.length;
+        });
+
+        // 초기 글자 수
+        charCount.textContent = resumeContent.value.length;
+
+        // 첨삭 받기
+        function getFeedback() {
+            const feedbackContainer = document.getElementById('feedbackContainer');
+            const btn = event.target;
+
+            // 로딩 상태
+            feedbackContainer.innerHTML = `
+                <div class="loading active">
+                    <div class="spinner"></div>
+                    <div class="loading-text">AI가 자소서를 분석 중입니다...</div>
+                </div>
+            `;
+
+            btn.disabled = true;
+
+            // 시뮬레이션: 2초 후 피드백 표시
+            setTimeout(() => {
+                feedbackContainer.innerHTML = generateFeedback();
+                btn.disabled = false;
+            }, 2000);
+        }
+
+        function generateFeedback() {
+            return `
+                <div class="feedback-list">
+                    <div class="feedback-item">
+                        <div class="feedback-category">
+                            <span class="category-badge">표현</span>
+                            <span>더 구체적인 표현 제안</span>
+                        </div>
+                        <div class="feedback-description">
+                            "빠른 학습 능력"은 많은 자소서에서 사용되는 표현입니다. 구체적인 사례나 수치로 증명하면 더 설득력 있을 것 같습니다.
+                        </div>
+                        <div class="feedback-example">
+                            <div class="example-label">💡 제안:</div>
+                            <div class="example-improved">
+                                "새로운 라이브러리를 배워 프로젝트에 적용하는데 평균 3일이 소걸립니다"
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feedback-item">
+                        <div class="feedback-category">
+                            <span class="category-badge">구조</span>
+                            <span>문장 구조 개선</span>
+                        </div>
+                        <div class="feedback-description">
+                            2번째 문단이 다소 길고 복잡합니다. 한 문장을 두 개로 나누면 가독성이 좋아질 것 같습니다.
+                        </div>
+                        <div class="feedback-example">
+                            <div class="example-label">💡 제안:</div>
+                            <div class="example-original">
+                                기존: "이 과정에서 빠른 피드백 문화와 팀과의 협업을 경험했습니다."
+                            </div>
+                            <div class="example-improved">
+                                개선: "이를 통해 빠른 피드백의 중요성을 깨달았습니다. 특히 팀과의 협업 경험이 저에게 큰 자산이 되었습니다."
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feedback-item">
+                        <div class="feedback-category">
+                            <span class="category-badge">설득력</span>
+                            <span>회사와의 연결고리 강화</span>
+                        </div>
+                        <div class="feedback-description">
+                            웨일 팀의 어떤 점이 좋은지는 나오지만, 자신의 경험과 어떻게 연결되는지가 더 명확하면 좋을 것 같습니다.
+                        </div>
+                        <div class="feedback-example">
+                            <div class="example-label">💡 제안:</div>
+                            <div class="example-improved">
+                                "웨일의 빠른 기술 혁신은 저의 지속적인 학습 철학과 완벽하게 부합합니다"
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="score-row">
+                        <span class="score-label">🎯 종합 평가</span>
+                        <div class="score-bar">
+                            <div class="score-fill" style="width: 78%;"></div>
+                        </div>
+                        <span class="score-number">78/100</span>
+                    </div>
+
+                    <div class="score-row">
+                        <span class="score-label">📝 표현력</span>
+                        <div class="score-bar">
+                            <div class="score-fill" style="width: 72%;"></div>
+                        </div>
+                        <span class="score-number">72</span>
+                    </div>
+
+                    <div class="score-row">
+                        <span class="score-label">💡 설득력</span>
+                        <div class="score-bar">
+                            <div class="score-fill" style="width: 80%;"></div>
+                        </div>
+                        <span class="score-number">80</span>
+                    </div>
+
+                    <div class="score-row">
+                        <span class="score-label">🎯 적합도</span>
+                        <div class="score-bar">
+                            <div class="score-fill" style="width: 85%;"></div>
+                        </div>
+                        <span class="score-number">85</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 제출하기
+        function submitResume() {
+            if (resumeContent.value.length < 100) {
+                alert('자소서는 최소 100자 이상이어야 합니다.');
+                return;
+            }
+            window.location.href = 'prototype_interview_prep.html';
+        }
+
+        // 복사 버튼
+        document.querySelector('.btn-small:nth-child(1)').addEventListener('click', () => {
+            resumeContent.select();
+            document.execCommand('copy');
+            alert('자소서가 복사되었습니다.');
+        });
+
+        // 뒤로 버튼
+        document.querySelector('.btn-small:nth-child(2)').addEventListener('click', () => {
+            window.location.href = 'prototype_resume_draft.html';
+        });
+    </script>
+</body>
+</html>
