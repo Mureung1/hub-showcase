@@ -1,6 +1,13 @@
 ﻿import { useEffect, useState } from "react";
 import Header from "../components/layout/Header";
 import { homeFeatures } from "../data/homeFeatures";
+import { getSession, getUser } from "../features/auth/authStorage";
+import {
+  getCareerAnalysis,
+  getCareerSpec,
+  isCareerSpecComplete,
+} from "../features/career/careerStorage";
+import { navigate, routes } from "../router";
 
 const workflowSteps = [
   {
@@ -17,17 +24,97 @@ const workflowSteps = [
   },
 ];
 
+const getRandomReadiness = () => Math.floor(Math.random() * 41) + 40;
+
 function Home() {
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
+  const [sampleReadiness, setSampleReadiness] = useState(78);
+  const [displayReadiness, setDisplayReadiness] = useState(78);
+  const session = getSession();
+  const user = getUser();
+  const currentUser = session && user?.id === session.id ? user : null;
+  const spec = getCareerSpec(currentUser?.id);
+  const analysis = getCareerAnalysis(currentUser?.id);
+  const hasCompleteSpec = isCareerSpecComplete(spec);
+  const targetReadiness = analysis?.readiness || sampleReadiness;
+  const readinessLabel = analysis
+    ? "확정 준비도"
+    : hasCompleteSpec
+      ? "분석 대기 준비도"
+      : "예시 준비도";
+  const primaryActionLabel = analysis
+    ? "분석 결과 보기"
+    : hasCompleteSpec
+      ? "분석하기"
+      : "스펙 등록하고 분석 받기";
+  const primaryActionPath = hasCompleteSpec || analysis ? routes.analysis : routes.specs;
+  const panelMetrics = analysis
+    ? [
+        ["직무 적합도", analysis.fitLevel],
+        ["포트폴리오 준비도", analysis.portfolioLevel],
+        ["번아웃 위험도", analysis.burnoutLevel],
+      ]
+    : hasCompleteSpec
+    ? [
+        ["직무 적합도", "분석하기 필요"],
+        ["포트폴리오 준비도", "분석하기 필요"],
+        ["번아웃 위험도", "분석하기 필요"],
+      ]
+    : [
+        ["직무 적합도", "스펙 등록 후 분석"],
+        ["포트폴리오 준비도", "프로젝트 등록 후 제공"],
+        ["번아웃 위험도", "학습/활동 정보 등록 후 분석"],
+      ];
+
   useEffect(() => {
     const timerId = setInterval(() => {
       setActiveFeatureIndex((currentIndex) =>
-        currentIndex === homeFeatures.length - 1 ? 0 : currentIndex + 1
+        (currentIndex + 1) % homeFeatures.length
       );
     }, 3000);
 
     return () => clearInterval(timerId);
   }, []);
+
+  useEffect(() => {
+    if (analysis) {
+      return undefined;
+    }
+
+    const timerId = setInterval(() => {
+      setSampleReadiness(getRandomReadiness());
+    }, 5000);
+
+    return () => clearInterval(timerId);
+  }, [analysis]);
+
+  useEffect(() => {
+    if (displayReadiness === targetReadiness) {
+      return undefined;
+    }
+
+    const step = displayReadiness < targetReadiness ? 1 : -1;
+    const timerId = setInterval(() => {
+      setDisplayReadiness((currentValue) => {
+        if (currentValue === targetReadiness) {
+          clearInterval(timerId);
+          return currentValue;
+        }
+
+        const nextValue = currentValue + step;
+        if (
+          (step > 0 && nextValue > targetReadiness) ||
+          (step < 0 && nextValue < targetReadiness)
+        ) {
+          return targetReadiness;
+        }
+
+        return nextValue;
+      });
+    }, 28);
+
+    return () => clearInterval(timerId);
+  }, [displayReadiness, targetReadiness]);
 
   return (
     <main style={styles.container}>
@@ -41,13 +128,15 @@ function Home() {
             <p style={styles.badge}>AI Career Manager</p>
 
             <h1 style={styles.title}>
-              스펙을 실무 경험으로 바꾸는 AI 커리어 매니저
+              AI 커리어 매니저가
+              <br />
+              <span style={styles.noWrap}>취업 준비를 설계합니다.</span>
             </h1>
 
             <p style={styles.description}>
-              Career Mission AI는 취업 준비에 어려움을 겪는 대학생을 위해 목표
-              직무와 현재 역량을 분석하고, 포트폴리오로 연결되는 맞춤형 실무
-              미션을 제안하는 서비스입니다.
+              목표 직무에 맞춰 부족한 역량을 찾고,
+              <br />
+              포트폴리오로 남길 수 있는 실무형 미션을 제안합니다.
             </p>
 
             <div style={styles.actions}>
@@ -55,13 +144,15 @@ function Home() {
                 type="button"
                 className="hero-action primary"
                 style={styles.primaryAction}
+                onClick={() => navigate(primaryActionPath)}
               >
-                AI 커리어 분석
+                {primaryActionLabel}
               </button>
               <button
                 type="button"
                 className="hero-action secondary"
                 style={styles.secondaryAction}
+                onClick={() => navigate(routes.mission)}
               >
                 맞춤 미션 추천
               </button>
@@ -74,35 +165,35 @@ function Home() {
           <aside style={styles.aiPanel}>
             <div style={styles.panelHeader}>
               <span style={styles.statusDot}></span>
-              <span style={styles.panelLabel}>Live Career Scan</span>
+              <span style={styles.panelLabel}>Sample Career Scan</span>
             </div>
 
             <div style={styles.scoreBox}>
-              <p style={styles.scoreLabel}>Career Readiness</p>
-              <strong style={styles.score}>78%</strong>
+              <p style={styles.scoreLabel}>{readinessLabel}</p>
+              <strong style={styles.score}>{displayReadiness}%</strong>
               <div style={styles.scoreTrack}>
-                <span style={styles.scoreFill}></span>
+                <span
+                  style={{
+                    ...styles.scoreFill,
+                    width: `${displayReadiness}%`,
+                  }}
+                ></span>
               </div>
             </div>
 
             <div style={styles.metricList}>
-              <div style={styles.metricItem}>
-                <span>직무 적합도</span>
-                <strong>High</strong>
-              </div>
-              <div style={styles.metricItem}>
-                <span>포트폴리오 준비도</span>
-                <strong>Medium</strong>
-              </div>
-              <div style={styles.metricItem}>
-                <span>번아웃 위험도</span>
-                <strong>Low</strong>
-              </div>
+              {panelMetrics.map(([label, value]) => (
+                <div key={label} style={styles.metricItem}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
             </div>
           </aside>
         </div>
 
         <section style={styles.workflowPanel} aria-label="서비스 사용 흐름">
+          <p style={styles.workflowLabel}>서비스 이용 흐름</p>
           {workflowSteps.map((step, index) => (
             <div key={step.title} style={styles.workflowStep}>
               <span style={styles.workflowNumber}>0{index + 1}</span>
@@ -129,7 +220,7 @@ function Home() {
               <article key={feature.title} style={styles.radarCard}>
                 <div style={styles.radarHeader}>
                   <div>
-                    <p style={styles.radarEyebrow}>Career Radar</p>
+                    <p style={styles.radarEyebrow}>Career Radar 미리보기</p>
                     <h2 style={styles.featureTitle}>{feature.title}</h2>
                   </div>
                   <div style={styles.scanStatus}>
@@ -363,6 +454,11 @@ const styles = {
     color: "#0f172a",
     margin: "0 0 22px",
     textShadow: "0 1px 0 rgba(255, 255, 255, 0.8)",
+    wordBreak: "keep-all",
+    overflowWrap: "normal",
+  },
+  noWrap: {
+    whiteSpace: "nowrap",
   },
   description: {
     maxWidth: "720px",
@@ -375,6 +471,7 @@ const styles = {
     display: "flex",
     flexWrap: "wrap",
     gap: "12px",
+    transform: "translateY(-10px)",
   },
   primaryAction: {
     padding: "14px 18px",
@@ -475,6 +572,7 @@ const styles = {
     borderRadius: "999px",
     background: "linear-gradient(90deg, #60a5fa, #22d3ee)",
     boxShadow: "0 0 18px rgba(34, 211, 238, 0.5)",
+    transition: "width 420ms cubic-bezier(0.22, 1, 0.36, 1)",
   },
   metricList: {
     display: "grid",
@@ -483,6 +581,7 @@ const styles = {
   metricItem: {
     display: "flex",
     justifyContent: "space-between",
+    alignItems: "center",
     gap: "12px",
     padding: "13px 14px",
     borderRadius: "14px",
@@ -505,6 +604,13 @@ const styles = {
     border: "1px solid rgba(255, 255, 255, 0.78)",
     boxShadow: "0 16px 34px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.72)",
     backdropFilter: "blur(16px) saturate(140%)",
+  },
+  workflowLabel: {
+    gridColumn: "1 / -1",
+    margin: "0 0 2px",
+    color: "#2563eb",
+    fontSize: "12px",
+    fontWeight: "bold",
   },
   workflowStep: {
     position: "relative",

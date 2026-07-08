@@ -1,23 +1,48 @@
 ﻿import { useState } from "react";
 
 import { menuItems } from "../../data/menuItems";
+import careerMissionLogo from "../../assets/career-mission-logo.png";
+import { clearSession, getSession } from "../../features/auth/authStorage";
+import { navigate, routes } from "../../router";
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isLoggedIn = false;
+  const session = getSession();
+  const isLoggedIn = Boolean(session);
+
+  const handleLogout = () => {
+    clearSession();
+    alert("로그아웃되었습니다.");
+    navigate(routes.home);
+  };
 
   const handleMyPageClick = () => {
     if (!isLoggedIn) {
       alert("마이페이지를 이용하려면 로그인 또는 회원가입을 먼저 진행해 주세요.");
+      navigate(routes.login);
       return;
     }
+
+    navigate(routes.myPage);
   };
 
   return (
     <header className="app-header">
       <style>{styles}</style>
       <div className="header-inner">
-        <strong className="brand">Career Mission AI</strong>
+        <button
+          type="button"
+          className="brand"
+          onClick={() => navigate(routes.home)}
+        >
+          <img
+            src={careerMissionLogo}
+            alt=""
+            className="brand-logo"
+            aria-hidden="true"
+          />
+          <span>Career Mission</span>
+        </button>
 
         <div className="header-actions">
           <div
@@ -43,7 +68,15 @@ function Header() {
             {isMenuOpen && (
               <div className="submenu">
                 {menuItems.map((item) => (
-                  <button key={item.path} type="button" className="submenu-item">
+                  <button
+                    key={item.path}
+                    type="button"
+                    className="submenu-item"
+                    onClick={() => {
+                      navigate(item.path);
+                      setIsMenuOpen(false);
+                    }}
+                  >
                     {item.label}
                   </button>
                 ))}
@@ -52,15 +85,27 @@ function Header() {
           </div>
 
           {isLoggedIn ? (
-            <button type="button" className="auth-button secondary">
+            <button
+              type="button"
+              className="auth-button secondary"
+              onClick={handleLogout}
+            >
               로그아웃
             </button>
           ) : (
             <>
-              <button type="button" className="auth-button secondary">
+              <button
+                type="button"
+                className="auth-button secondary"
+                onClick={() => navigate(routes.login)}
+              >
                 로그인
               </button>
-              <button type="button" className="auth-button secondary">
+              <button
+                type="button"
+                className="auth-button secondary"
+                onClick={() => navigate(routes.signup)}
+              >
                 회원가입
               </button>
             </>
@@ -98,9 +143,24 @@ const styles = `
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: #ffffff;
   font-size: clamp(15px, 2vw, 18px);
+  font-weight: 700;
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.brand-logo {
+  width: 58px;
+  height: 44px;
+  display: block;
+  object-fit: contain;
 }
 
 .header-actions {
@@ -115,6 +175,8 @@ const styles = `
 
 .feature-menu {
   position: relative;
+  padding-bottom: 10px;
+  margin-bottom: -10px;
 }
 
 .feature-button,
@@ -179,7 +241,7 @@ const styles = `
 
 .submenu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: 100%;
   right: 0;
   z-index: 10;
   width: min(220px, calc(100vw - 32px));

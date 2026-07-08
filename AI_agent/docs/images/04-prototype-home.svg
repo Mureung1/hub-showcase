@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#eef6ff"/>
+  <rect x="58" y="46" width="1164" height="628" rx="30" fill="#ffffff" stroke="#dbeafe"/>
+
+  <rect x="58" y="46" width="1164" height="70" rx="30" fill="#0f172a"/>
+  <text x="94" y="91" fill="#ffffff" font-family="Arial, sans-serif" font-size="25" font-weight="800">Career Mission</text>
+  <text x="420" y="89" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="17">스펙 등록</text>
+  <text x="514" y="89" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="17">AI 분석</text>
+  <text x="596" y="89" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="17">미션 수행</text>
+  <rect x="1030" y="68" width="72" height="30" rx="15" fill="#1e293b"/>
+  <text x="1066" y="89" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="13" font-weight="700">로그인</text>
+  <rect x="1110" y="68" width="86" height="30" rx="15" fill="#2563eb"/>
+  <text x="1153" y="89" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="13" font-weight="700">회원가입</text>
+
+  <text x="100" y="202" fill="#2563eb" font-family="Arial, sans-serif" font-size="18" font-weight="800">AI Career Manager</text>
+  <text x="100" y="264" fill="#0f172a" font-family="Arial, sans-serif" font-size="48" font-weight="800">AI 커리어 매니저가</text>
+  <text x="100" y="324" fill="#0f172a" font-family="Arial, sans-serif" font-size="48" font-weight="800">취업 준비를 설계합니다.</text>
+  <text x="100" y="384" fill="#475569" font-family="Arial, sans-serif" font-size="22">목표 직무에 맞춰 부족한 역량을 찾고,</text>
+  <text x="100" y="420" fill="#475569" font-family="Arial, sans-serif" font-size="22">포트폴리오로 남길 수 있는 실무형 미션을 제안합니다.</text>
+  <rect x="100" y="468" width="202" height="48" rx="16" fill="#2563eb"/>
+  <text x="201" y="500" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="15" font-weight="800">스펙 등록하고 분석 받기</text>
+  <rect x="318" y="468" width="152" height="48" rx="16" fill="#f8fafc" stroke="#dbe3ef"/>
+  <text x="394" y="500" text-anchor="middle" fill="#334155" font-family="Arial, sans-serif" font-size="15" font-weight="800">맞춤 미션 추천</text>
+
+  <rect x="724" y="156" width="430" height="386" rx="28" fill="#0f172a"/>
+  <circle cx="766" cy="205" r="7" fill="#22c55e"/>
+  <text x="786" y="211" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="17" font-weight="700">Sample Career Scan</text>
+
+  <rect x="764" y="242" width="350" height="122" rx="20" fill="#1e3a8a"/>
+  <text x="796" y="285" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="16">예시 준비도</text>
+  <text x="796" y="340" fill="#ffffff" font-family="Arial, sans-serif" font-size="54" font-weight="800">78%</text>
+  <rect x="956" y="317" width="120" height="12" rx="6" fill="#1e40af"/>
+  <rect x="956" y="317" width="94" height="12" rx="6" fill="#22d3ee"/>
+
+  <rect x="764" y="392" width="350" height="44" rx="13" fill="#1e293b"/>
+  <text x="790" y="420" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="15">직무 적합도</text>
+  <text x="1088" y="420" text-anchor="end" fill="#ffffff" font-family="Arial, sans-serif" font-size="14" font-weight="800">스펙 등록 후 분석</text>
+
+  <rect x="764" y="448" width="350" height="44" rx="13" fill="#1e293b"/>
+  <text x="790" y="476" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="15">포트폴리오 준비도</text>
+  <text x="1088" y="476" text-anchor="end" fill="#ffffff" font-family="Arial, sans-serif" font-size="14" font-weight="800">프로젝트 등록 후 제공</text>
+
+  <rect x="764" y="504" width="350" height="44" rx="13" fill="#1e293b"/>
+  <text x="790" y="532" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="15">번아웃 위험도</text>
+  <text x="1088" y="532" text-anchor="end" fill="#ffffff" font-family="Arial, sans-serif" font-size="14" font-weight="800">학습 정보 등록 후 분석</text>
+
+  <rect x="100" y="574" width="930" height="50" rx="18" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="128" y="606" fill="#1d4ed8" font-family="Arial, sans-serif" font-size="17" font-weight="800">서비스 이용 흐름</text>
+  <text x="300" y="606" fill="#0f172a" font-family="Arial, sans-serif" font-size="17">스펙 등록 → AI 분석 → 미션 수행 → 결과물 제출 → 피드백</text>
+</svg>

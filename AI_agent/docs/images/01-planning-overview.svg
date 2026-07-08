@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#f8fbff"/>
+  <rect x="64" y="58" width="1152" height="604" rx="28" fill="#ffffff" stroke="#dbeafe"/>
+  <text x="96" y="118" fill="#2563eb" font-family="Arial, sans-serif" font-size="20" font-weight="700">기획 초안 01</text>
+  <text x="96" y="174" fill="#0f172a" font-family="Arial, sans-serif" font-size="54" font-weight="800">Career Mission AI</text>
+  <text x="96" y="226" fill="#334155" font-family="Arial, sans-serif" font-size="24">AI가 커리어 미션을 설계하고 성장과 취업까지 함께하는 서비스</text>
+
+  <rect x="96" y="286" width="500" height="228" rx="18" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="128" y="336" fill="#1d4ed8" font-family="Arial, sans-serif" font-size="24" font-weight="800">서비스 목표</text>
+  <text x="128" y="384" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">현재 역량을 분석하고</text>
+  <text x="128" y="424" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">실무 경험으로 연결되는 미션을 수행하며</text>
+  <text x="128" y="464" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">포트폴리오를 완성하도록 돕는다.</text>
+
+  <rect x="644" y="286" width="476" height="228" rx="18" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <text x="676" y="336" fill="#0f172a" font-family="Arial, sans-serif" font-size="24" font-weight="800">핵심 제공 가치</text>
+  <circle cx="690" cy="382" r="7" fill="#2563eb"/><text x="712" y="390" fill="#0f172a" font-family="Arial, sans-serif" font-size="21">AI 역량 분석</text>
+  <circle cx="690" cy="424" r="7" fill="#06b6d4"/><text x="712" y="432" fill="#0f172a" font-family="Arial, sans-serif" font-size="21">맞춤 미션 추천</text>
+  <circle cx="690" cy="466" r="7" fill="#7c3aed"/><text x="712" y="474" fill="#0f172a" font-family="Arial, sans-serif" font-size="21">AI 피드백 제공</text>
+  <circle cx="690" cy="508" r="7" fill="#22c55e"/><text x="712" y="516" fill="#0f172a" font-family="Arial, sans-serif" font-size="21">포트폴리오 생성</text>
+
+  <text x="96" y="596" fill="#64748b" font-family="Arial, sans-serif" font-size="18">프로토타입 방향: 실제 AI/DB 없이 localStorage와 규칙 기반 분석으로 핵심 흐름 검증</text>
+</svg>
