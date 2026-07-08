@@ -567,10 +567,11 @@ body {
 }
 
 .raw-file-preview {
-  max-width: 980px;
+  width: 100%;
+  max-width: none;
   min-height: 100vh;
-  margin: 0 auto;
-  padding: 30px 44px 80px;
+  margin: 0;
+  padding: 24px 28px 72px;
   color: var(--text);
 }
 
