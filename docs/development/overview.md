@@ -93,6 +93,7 @@ Occlusion 고급 복원
 - [Wiki Home](../wiki/Home.md)
 - [개발 체크리스트](./checklist.md)
 - [Git 작업 규칙](./git-workflow.md)
+- [데이터 소스 매핑](../data/data-source-mapping.md)
 - [v0.1 구현 범위 고정 명세](../module-notes/localtwin-v0.1-scope.md)
 - [공공데이터 기반 상권 분석 스펙](../features/market-analysis.md)
 - [혼잡도 3D 기반 탐색 스펙](../features/3d-congestion-explorer.md)

@@ -18,6 +18,10 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 - [전체 개발 체크리스트](docs/development/checklist.md)
 - [Git 작업 규칙](docs/development/git-workflow.md)
 
+### 데이터 문서
+
+- [LocalTwin v0.1 데이터 소스 매핑](docs/data/data-source-mapping.md)
+
 ### 기능 스펙
 
 - [공공데이터 기반 상권 분석](docs/features/market-analysis.md)

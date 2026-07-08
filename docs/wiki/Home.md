@@ -13,6 +13,10 @@ LocalTwin Wiki는 프로젝트 기획, 기능 정의, 개발 운영 문서를 �
 - [전체 개발 체크리스트](../development/checklist.md)
 - [Git 작업 규칙](../development/git-workflow.md)
 
+## Data
+
+- [LocalTwin v0.1 데이터 소스 매핑](../data/data-source-mapping.md)
+
 ## Feature Specs
 
 - [공공데이터 기반 상권 분석](../features/market-analysis.md)
