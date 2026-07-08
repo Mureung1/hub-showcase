@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235c7a5f'/%3E%3Ctext x='16' y='22' font-size='17' font-family='sans-serif' fill='white' text-anchor='middle' font-weight='700'%3ES%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>스펙핏 SpecFit</title>
+<style>
+  :root {
+    --gray-900: #1c2420;
+    --gray-700: #454f45;
+    --gray-500: #74806f;
+    --gray-200: #dbded0;
+    --gray-50: #f4f4ec;
+    --paper: #e2e4d1;
+    --card-bg: #fdfcf7;
+    --green-bg: #eaf3de; --green-text: #27500a;
+    --orange-bg: #faeeda; --orange-text: #633806;
+    --red-bg: #fcebeb; --red-text: #791f1f;
+    --purple-bg: #f2eafb; --purple-text: #4a2170;
+    --blue-bg: #e7f1fb; --blue-text: #0f3d66;
+    --accent: #5c7a5f;
+    --accent-dark: #45603f;
+    --accent-bg: #e6ebe0;
+    --accent-text: #33452c;
+    --donut-ok: #5c7a5f;
+    --donut-no: #d9d7c9;
+    --shadow-sm: 0 1px 2px rgba(28,36,32,0.05), 0 1px 1px rgba(28,36,32,0.04);
+    --shadow-md: 0 8px 24px rgba(28,36,32,0.12);
+    --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Pretendard Variable", -apple-system, "Malgun Gothic", sans-serif;
+    background: var(--paper);
+    color: var(--gray-900);
+  }
+  main { display: block; min-height: 50vh; }
+  .mono { font-family: var(--mono); }
+  .fade-in { animation: fadeIn .35s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- header / stepper / footer ---------- */
+  .site-header { position: sticky; top: 0; background: rgba(253,252,247,0.9); backdrop-filter: blur(6px); border-bottom: 1px solid var(--gray-200); z-index: 40; }
+  .site-header-inner { max-width: 1080px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .logo { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .logo-mark { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+  .logo-mark.small { width: 22px; height: 22px; font-size: 12px; border-radius: 6px; }
+  .logo-text { font-weight: 700; font-size: 15px; color: var(--gray-900); }
+  .logo-sub { font-weight: 500; color: var(--gray-500); font-size: 12px; margin-left: 3px; }
+  .site-nav { display: flex; gap: 2px; align-items: center; }
+  .nav-link { background: none; border: none; font-size: 13px; color: var(--gray-700); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-family: inherit; transition: background .15s, color .15s; }
+  .nav-link:hover { background: var(--gray-50); color: var(--gray-900); }
+  .nav-link.cta { background: var(--gray-900); color: #fff; font-weight: 600; }
+  .nav-link.cta:hover { background: #000; }
+
+  .stepper { border-bottom: 1px solid var(--gray-200); background: var(--card-bg); }
+  .stepper-inner { max-width: 640px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; }
+  .step-item { display: flex; align-items: center; gap: 8px; opacity: .4; transition: opacity .15s; }
+  .step-item.clickable { cursor: pointer; }
+  .step-item.clickable:hover { opacity: .75; }
+  .step-item.active, .step-item.done { opacity: 1; }
+  .step-circle { width: 22px; height: 22px; border-radius: 50%; background: var(--gray-200); color: var(--gray-700); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s, color .15s; }
+  .step-item.active .step-circle { background: var(--gray-900); color: #fff; }
+  .step-item.done .step-circle { background: var(--donut-ok); color: #fff; }
+  .step-label { font-size: 12px; font-weight: 600; color: var(--gray-500); white-space: nowrap; }
+  .step-item.active .step-label, .step-item.done .step-label { color: var(--gray-900); }
+  .step-line { flex: 1; height: 1px; background: var(--gray-200); margin: 0 10px; min-width: 14px; transition: background .2s; }
+  .step-line.done { background: var(--donut-ok); }
+
+  .site-footer { border-top: 1px solid var(--gray-200); margin-top: 32px; }
+  .site-footer-inner { max-width: 640px; margin: 0 auto; padding: 30px 24px; text-align: center; color: var(--gray-500); font-size: 12px; line-height: 1.7; }
+  .site-footer-inner .logo-mark { margin: 0 auto 10px; }
+  .footer-meta { margin-top: 4px; color: #9a9d8e; }
+
+  /* ---------- generic ---------- */
+  .screen { max-width: 640px; margin: 0 auto; padding: 32px 24px 60px; }
+  .screen-wide { max-width: 1080px; margin: 0 auto; padding: 32px 24px 60px; }
+  h1 { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+  .sub { font-size: 13px; color: var(--gray-500); margin: 0 0 24px; line-height: 1.5; }
+  label.field { display: block; margin-bottom: 18px; }
+  .field-full { grid-column: 1 / -1; }
+  .field-grid { display: block; }
+  .field-label { font-size: 13px; color: var(--gray-700); font-weight: 500; display: block; margin-bottom: 6px; }
+  select, input[type=number], input[type=text] {
+    width: 100%; border: 1px solid var(--gray-200); border-radius: 8px;
+    padding: 9px 10px; font-size: 13px; font-family: inherit; background: var(--card-bg); color: var(--gray-900);
+    transition: border-color .15s;
+  }
+  select:focus, input[type=number]:focus, input[type=text]:focus { outline: none; border-color: var(--gray-900); }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .btn-commit {
+    flex: none; padding: 9px 14px; font-size: 12.5px; font-weight: 600; border-radius: 8px;
+    border: 1px solid var(--gray-900); background: var(--gray-900); color: #fff; cursor: pointer;
+    font-family: inherit; white-space: nowrap; transition: background .15s;
+  }
+  .btn-commit:hover { background: #000; }
+  .row > * { flex: 1; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-btn {
+    font-size: 12px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--gray-200);
+    background: var(--card-bg); color: var(--gray-700); cursor: pointer; transition: all .15s;
+  }
+  .chip-btn:hover { border-color: var(--gray-900); }
+  .chip-btn.active { background: var(--gray-900); color: #fff; border-color: var(--gray-900); }
+  .btn-primary {
+    width: 100%; background: var(--gray-900); color: #fff; border: none; border-radius: 10px;
+    padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s, transform .1s;
+  }
+  .btn-primary:hover { background: #000; }
+  .btn-primary:active { transform: scale(0.99); }
+  .btn-secondary {
+    flex: 1; background: var(--card-bg); color: var(--gray-900); border: 1px solid var(--gray-200); border-radius: 10px;
+    padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s, border-color .15s;
+  }
+  .btn-secondary:hover { background: var(--gray-50); border-color: #ccc; }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn-primary { flex: 2; }
+  .btn-link { background: none; border: none; color: var(--gray-700); font-size: 13px; cursor: pointer; text-decoration: underline; font-family: inherit; padding: 0; }
+
+  .spec-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 20px; }
+  .spec-chip { font-size: 12px; color: var(--gray-700); padding: 5px 10px; border: 1px solid var(--gray-200); border-radius: 6px; background: var(--card-bg); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--gray-50); border-radius: 10px; padding: 14px; box-shadow: var(--shadow-sm); }
+  .stat-card .label { font-size: 12px; color: var(--gray-500); margin-bottom: 4px; }
+  .stat-card .value { font-size: 22px; font-weight: 700; }
+
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .chart-card { background: var(--card-bg); border: 1px solid var(--gray-200); border-radius: 12px; padding: 16px; box-shadow: var(--shadow-sm); }
+  .chart-card .title { font-size: 12px; color: var(--gray-500); margin-bottom: 10px; font-weight: 500; }
+
+  .donut-wrap { position: relative; width: 140px; height: 140px; margin: 0 auto; }
+  .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .donut-center .rate { font-size: 22px; font-weight: 700; }
+  .donut-center .frac { font-size: 11px; color: var(--gray-500); }
+  .legend { display: flex; gap: 14px; justify-content: center; margin-top: 10px; font-size: 11px; color: var(--gray-500); }
+  .legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 11px; }
+  .bar-row .bar-label { width: 66px; color: var(--gray-500); flex-shrink: 0; text-align: right; }
+  .bar-track { flex: 1; background: var(--gray-50); border-radius: 5px; height: 16px; position: relative; overflow: hidden; }
+  .bar-fill { background: var(--accent); height: 100%; border-radius: 5px 0 0 5px; transition: width .5s ease; }
+  .bar-value { font-size: 11px; color: var(--gray-700); width: 26px; }
+
+  .insight-banner { background: var(--accent-bg); border-left: 3px solid var(--accent); border-radius: 8px; padding: 12px 14px; font-size: 12.5px; color: var(--accent-text); margin-bottom: 18px; line-height: 1.6; }
+
+  .result-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .result-tabs { display: flex; gap: 4px; background: var(--gray-50); padding: 4px; border-radius: 10px; }
+  .result-tab { font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 8px; border: none; background: transparent; color: var(--gray-500); cursor: pointer; display: flex; align-items: center; gap: 5px; transition: background .15s, color .15s; font-family: inherit; }
+  .result-tab:hover { color: var(--gray-900); }
+  .result-tab.active { background: var(--card-bg); color: var(--gray-900); box-shadow: var(--shadow-sm); }
+  .tab-count { font-size: 10.5px; color: var(--gray-500); font-family: var(--mono); }
+  .result-tab.active .tab-count { color: var(--accent-dark); }
+  .result-sort { width: auto; font-size: 12px; padding: 7px 10px; }
+
+  .job-list-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+  .job-card {
+    width: 100%; text-align: left; background: var(--card-bg); border: 1px solid var(--gray-200); border-radius: 12px;
+    padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    cursor: pointer; margin-bottom: 10px; box-shadow: var(--shadow-sm); transition: box-shadow .15s, transform .15s, border-color .15s;
+    font-family: inherit;
+  }
+  .job-card:hover { border-color: #ccc; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .job-card-main { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+  .job-type-badge { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .job-title { font-size: 13px; font-weight: 600; margin: 0 0 2px; }
+  .job-meta { font-size: 11px; color: var(--gray-500); margin: 0; }
+  .job-check { display: flex; gap: 5px; margin-top: 6px; }
+  .job-check .ok { color: #3f5c3f; font-weight: 700; font-size: 12px; }
+  .job-check .no { color: #b0473b; font-weight: 700; font-size: 12px; }
+  .status-tag { font-size: 11px; padding: 5px 9px; border-radius: 6px; white-space: nowrap; font-weight: 600; flex-shrink: 0; }
+
+  .empty-state { text-align: center; padding: 40px 20px; border: 1px dashed var(--gray-500); border-radius: 12px; color: var(--gray-500); background: var(--card-bg); }
+  .empty-title { font-size: 14px; font-weight: 700; color: var(--gray-900); margin: 0 0 6px; }
+  .empty-desc { font-size: 12.5px; margin: 0 0 16px; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(20,24,20,0.5); display: flex; align-items: center;
+    justify-content: center; padding: 16px; z-index: 50; animation: fadeIn .15s ease;
+  }
+  .modal-box { background: var(--card-bg); border-radius: 14px; max-width: 380px; width: 100%; padding: 22px; box-shadow: var(--shadow-md); }
+  .modal-box .job-title { font-size: 15px; margin-bottom: 2px; }
+  .modal-box .job-meta { margin-bottom: 16px; }
+  .checklist-row { border: 1px solid var(--gray-200); border-radius: 8px; padding: 9px 12px; margin-bottom: 8px; font-size: 13px; }
+  .checklist-main { display: flex; align-items: center; justify-content: space-between; }
+  .checklist-label { font-weight: 600; color: var(--gray-900); }
+  .checklist-detail { margin: 5px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--gray-500); word-break: keep-all; }
+  .checklist-detail-fail { color: var(--red-text); }
+
+  .banner {
+    background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 10px;
+    padding: 12px 14px; font-size: 12px; color: var(--gray-700); margin-bottom: 20px; line-height: 1.6;
+  }
+  .banner b { color: var(--gray-900); }
+
+  /* ---------- landing ---------- */
+  .resume-banner { max-width: 1080px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--card-bg); border-bottom: 1px solid var(--gray-200); }
+  .resume-text { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gray-700); }
+  .resume-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .resume-actions { display: flex; align-items: center; gap: 14px; }
+  .resume-cta { padding: 8px 14px; font-size: 12.5px; white-space: nowrap; }
+  .hero { max-width: 640px; margin: 0 auto; padding: 60px 24px 44px; text-align: center; }
+  .hero-eyebrow { font-size: 12px; font-weight: 700; color: var(--accent-dark); letter-spacing: .02em; margin-bottom: 14px; }
+  .hero-title { font-size: 28px; font-weight: 700; line-height: 1.42; margin: 0 0 16px; }
+  .hero-title .accent { color: var(--accent-dark); }
+  .hero-sub { font-size: 14px; color: var(--gray-500); line-height: 1.65; margin: 0 0 28px; }
+  .btn-hero { max-width: 300px; margin: 0 auto; padding: 15px; font-size: 15px; box-shadow: var(--shadow-md); background: var(--accent); }
+  .btn-hero:hover { background: var(--accent-dark); }
+
+  .how-it-works { max-width: 640px; margin: 0 auto; padding: 4px 24px 60px; }
+  .section-label { font-size: 12px; font-weight: 700; color: var(--gray-500); text-align: center; margin-bottom: 16px; letter-spacing: .02em; }
+  .how-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .how-card { background: var(--card-bg); border: 1px solid var(--gray-200); border-radius: 14px; padding: 20px; box-shadow: var(--shadow-sm); transition: box-shadow .15s, transform .15s; }
+  .how-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .how-num { font-size: 12px; font-weight: 700; color: var(--accent-dark); margin-bottom: 8px; }
+  .how-title { font-size: 14px; font-weight: 600; margin: 0 0 6px; }
+  .how-desc { font-size: 12.5px; color: var(--gray-500); line-height: 1.6; margin: 0; }
+
+  /* ---------- loading ---------- */
+  .loading-screen { max-width: 640px; margin: 0 auto; padding: 130px 24px; text-align: center; }
+  .spinner { width: 34px; height: 34px; border: 3px solid var(--gray-200); border-top-color: var(--accent); border-radius: 50%; margin: 0 auto 18px; animation: spin .75s linear infinite; }
+  .loading-text { font-size: 13px; color: var(--gray-500); }
+
+  /* ---------- result desktop split ---------- */
+  .result-layout { display: block; }
+  .result-sidebar { margin-bottom: 8px; }
+  .result-main { }
+
+  /* ---------- desktop breakpoint ---------- */
+  @media (min-width: 860px) {
+    .hero-title { font-size: 36px; }
+    .hero { padding-top: 76px; }
+    .how-grid { grid-template-columns: repeat(3, 1fr); }
+    .screen { max-width: 760px; }
+    label.field { margin-bottom: 22px; }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 36px; }
+    .result-layout { display: grid; grid-template-columns: 360px 1fr; gap: 28px; align-items: start; }
+    .result-sidebar { position: sticky; top: 84px; }
+    .chart-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .chart-grid { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .result-toolbar { flex-direction: column; align-items: stretch; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ===========================================================================
+// 1) 예시 데이터 (워크넷 API가 제공하기로 되어 있는 필드 구조를 흉내낸 목업)
+// ===========================================================================
+const MOCK_JOBS = [
+  { id:"job-1", title:"프론트엔드 개발자 신입", company:"테크스타트업 A", region:"서울 강남구", jobType:"IT/개발", employmentType:"정규직",
+    req:{ education:"학사", experienceType:"신입", minExperienceMonths:0, certifications:[], major:"무관", foreignLanguage:null, computerSkillPreferred:true } },
+  { id:"job-2", title:"백엔드 개발자 (경력 1년 이상)", company:"공공기관 B", region:"세종", jobType:"IT/개발", employmentType:"정규직",
+    req:{ education:"학사", experienceType:"경력", minExperienceMonths:12, certifications:["정보처리기사"], major:"컴퓨터공학", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-3", title:"QA 엔지니어 신입", company:"제조기업 C", region:"경기 화성", jobType:"IT/개발", employmentType:"정규직",
+    req:{ education:"전문학사", experienceType:"신입", minExperienceMonths:0, certifications:["정보처리기사"], major:"무관", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-4", title:"풀스택 개발자 신입", company:"핀테크 D", region:"서울 마포구", jobType:"IT/개발", employmentType:"정규직",
+    req:{ education:"학사", experienceType:"신입", minExperienceMonths:0, certifications:[], major:"무관", foreignLanguage:{language:"영어", minScore:700}, computerSkillPreferred:false } },
+  { id:"job-5", title:"데이터 엔지니어", company:"이커머스 E", region:"경기 성남", jobType:"IT/개발", employmentType:"계약직",
+    req:{ education:"학사", experienceType:"경력", minExperienceMonths:24, certifications:["SQLD"], major:"무관", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-6", title:"프론트엔드 개발자 신입", company:"게임사 F", region:"서울 강남구", jobType:"IT/개발", employmentType:"정규직",
+    req:{ education:"학사", experienceType:"신입", minExperienceMonths:0, certifications:[], major:"컴퓨터공학", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-7", title:"UX/UI 디자이너 신입", company:"패션플랫폼 R", region:"서울 강남구", jobType:"디자인", employmentType:"정규직",
+    req:{ education:"전문학사", experienceType:"신입", minExperienceMonths:0, certifications:["GTQ"], major:"디자인학", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-8", title:"프로덕트 디자이너", company:"AI스타트업 Q", region:"서울 마포구", jobType:"디자인", employmentType:"정규직",
+    req:{ education:"학사", experienceType:"경력", minExperienceMonths:12, certifications:[], major:"무관", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-9", title:"퍼포먼스 마케터 신입", company:"이커머스 E", region:"서울 강남구", jobType:"마케팅", employmentType:"정규직",
+    req:{ education:"학력무관", experienceType:"신입", minExperienceMonths:0, certifications:[], major:"무관", foreignLanguage:null, computerSkillPreferred:true } },
+  { id:"job-10", title:"브랜드 마케팅 담당자", company:"미디어 G", region:"서울 마포구", jobType:"마케팅", employmentType:"정규직",
+    req:{ education:"학사", experienceType:"경력", minExperienceMonths:24, certifications:[], major:"경영학", foreignLanguage:{language:"영어", minScore:800}, computerSkillPreferred:false } },
+  { id:"job-11", title:"콘텐츠 마케터", company:"콘텐츠기업 S", region:"경기 성남", jobType:"마케팅", employmentType:"인턴",
+    req:{ education:"학력무관", experienceType:"신입", minExperienceMonths:0, certifications:[], major:"무관", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-12", title:"해외영업 담당자", company:"자동차부품 L", region:"인천", jobType:"영업", employmentType:"정규직",
+    req:{ education:"학사", experienceType:"경력", minExperienceMonths:36, certifications:[], major:"무관", foreignLanguage:{language:"영어", minScore:900}, computerSkillPreferred:false } },
+  { id:"job-13", title:"기업영업 신입", company:"물류기업 H", region:"인천", jobType:"영업", employmentType:"정규직",
+    req:{ education:"고졸", experienceType:"신입", minExperienceMonths:0, certifications:[], major:"무관", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-14", title:"생산관리 신입", company:"제조기업 C", region:"경기 화성", jobType:"생산/제조", employmentType:"정규직",
+    req:{ education:"전문학사", experienceType:"신입", minExperienceMonths:0, certifications:["물류관리사"], major:"전기전자공학", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-15", title:"품질관리 담당자", company:"바이오벤처 I", region:"대전", jobType:"생산/제조", employmentType:"정규직",
+    req:{ education:"학사", experienceType:"경력", minExperienceMonths:12, certifications:["정보처리기사"], major:"무관", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-16", title:"백엔드 개발자", company:"핀테크 스타트업 P", region:"서울 강남구", jobType:"IT/개발", employmentType:"정규직",
+    req:{ education:"학사", experienceType:"신입", minExperienceMonths:0, certifications:["정보처리기사"], major:"무관", foreignLanguage:null, computerSkillPreferred:true } },
+  { id:"job-17", title:"프론트엔드 개발자 신입", company:"에듀테크 J", region:"경기 성남", jobType:"IT/개발", employmentType:"계약직",
+    req:{ education:"학력무관", experienceType:"신입", minExperienceMonths:0, certifications:[], major:"무관", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-18", title:"QA 엔지니어 신입", company:"헬스케어 M", region:"부산", jobType:"IT/개발", employmentType:"정규직",
+    req:{ education:"학사", experienceType:"신입", minExperienceMonths:0, certifications:[], major:"무관", foreignLanguage:{language:"영어", minScore:700}, computerSkillPreferred:false } },
+  { id:"job-19", title:"그래픽 디자이너", company:"여행플랫폼 N", region:"서울 마포구", jobType:"디자인", employmentType:"계약직",
+    req:{ education:"전문학사", experienceType:"신입", minExperienceMonths:0, certifications:["GTQ"], major:"무관", foreignLanguage:null, computerSkillPreferred:false } },
+  { id:"job-20", title:"공정기술 엔지니어", company:"제약회사 K", region:"대전", jobType:"생산/제조", employmentType:"정규직",
+    req:{ education:"학사", experienceType:"경력", minExperienceMonths:12, certifications:[], major:"전기전자공학", foreignLanguage:null, computerSkillPreferred:false } },
+];
+
+const EDUCATION_OPTIONS = ["학력무관", "고졸", "전문학사", "학사"];
+const EDUCATION_RANK = { "학력무관":0, "고졸":1, "전문학사":2, "학사":3 };
+const MAJOR_OPTIONS = ["무관", "컴퓨터공학", "경영학", "디자인학", "전기전자공학"];
+const CERT_OPTIONS = ["정보처리기사", "컴퓨터활용능력 1급", "SQLD", "GTQ", "물류관리사"];
+const CATEGORY_LABELS = { education:"학력", experience:"경력", certifications:"자격증/면허", major:"전공", foreignLanguage:"외국어 성적" };
+const STATUS_STYLE = {
+  match: {bg:"var(--green-bg)", text:"var(--green-text)"},
+  missing_education: {bg:"var(--orange-bg)", text:"var(--orange-text)"},
+  missing_experience: {bg:"var(--red-bg)", text:"var(--red-text)"},
+  missing_certifications: {bg:"var(--orange-bg)", text:"var(--orange-text)"},
+  missing_major: {bg:"var(--purple-bg)", text:"var(--purple-text)"},
+  missing_foreignLanguage: {bg:"var(--blue-bg)", text:"var(--blue-text)"},
+};
+const JOBTYPE_STYLE = {
+  "IT/개발": {bg:"var(--blue-bg)", text:"var(--blue-text)", letter:"IT"},
+  "디자인": {bg:"var(--purple-bg)", text:"var(--purple-text)", letter:"디"},
+  "마케팅": {bg:"var(--orange-bg)", text:"var(--orange-text)", letter:"마"},
+  "영업": {bg:"var(--green-bg)", text:"var(--green-text)", letter:"영"},
+  "생산/제조": {bg:"var(--gray-200)", text:"var(--gray-700)", letter:"생"},
+};
+
+// ===========================================================================
+// 2) 갭 분석 로직 (실제 백엔드 프로토타입의 gapAnalysisService.js와 동일한 규칙)
+// ===========================================================================
+function evaluateJob(job, spec) {
+  const req = job.req;
+  const educationOk = req.education === "학력무관" || (EDUCATION_RANK[spec.education] ?? 0) >= (EDUCATION_RANK[req.education] ?? 0);
+  const experienceOk = req.experienceType === "신입" || (spec.experienceType === "경력" && (spec.experienceMonths||0) >= req.minExperienceMonths);
+  const certificationsOk = !req.certifications.length || req.certifications.every(c => spec.certifications.includes(c));
+  const majorOk = req.major === "무관" || spec.major === req.major;
+  const foreignLanguageOk = !req.foreignLanguage || (spec.foreignLanguage && spec.foreignLanguage.language === req.foreignLanguage.language && (spec.foreignLanguage.score||0) >= req.foreignLanguage.minScore);
+  const checks = { education:educationOk, experience:experienceOk, certifications:certificationsOk, major:majorOk, foreignLanguage:foreignLanguageOk };
+  const overallMatch = Object.values(checks).every(Boolean);
+  return { job, checks, overallMatch };
+}
+
+function pickPrimaryStatus(checks) {
+  const order = ["education","experience","certifications","major","foreignLanguage"];
+  const failed = order.find(k => checks[k] === false);
+  if (!failed) return { key:"match", label:"지원 가능" };
+  return { key:`missing_${failed}`, label:`${CATEGORY_LABELS[failed]} 미충족` };
+}
+
+// 항목별로 "요구 조건 vs 내 스펙"을 사람이 읽을 수 있는 문장으로 만들어준다.
+// (results 화면의 상세 모달에서 무엇이 부족한지 정확히 보여주기 위함)
+function describeRequirement(category, req, spec) {
+  if (category === "education") {
+    if (req.education === "학력무관") return "학력 무관 (조건 없음)";
+    return `요구: ${req.education} 이상 · 보유: ${spec.education}`;
+  }
+  if (category === "experience") {
+    if (req.experienceType === "신입") return "경력 무관 (신입 지원 가능)";
+    const held = spec.experienceType === "경력" ? `경력 ${spec.experienceMonths||0}개월` : "신입 (0개월)";
+    return `요구: 경력 ${req.minExperienceMonths}개월 이상 · 보유: ${held}`;
+  }
+  if (category === "certifications") {
+    if (!req.certifications.length) return "필요 자격증/면허 없음";
+    const missing = req.certifications.filter(c => !spec.certifications.includes(c));
+    const held = spec.certifications.length ? spec.certifications.join(", ") : "없음";
+    const missingText = missing.length ? ` (미보유: ${missing.join(", ")})` : "";
+    return `요구: ${req.certifications.join(", ")} · 보유: ${held}${missingText}`;
+  }
+  if (category === "major") {
+    if (req.major === "무관") return "전공 무관 (조건 없음)";
+    return `요구: ${req.major} · 보유: ${spec.major}`;
+  }
+  if (category === "foreignLanguage") {
+    if (!req.foreignLanguage) return "외국어 성적 불필요";
+    const { language, minScore } = req.foreignLanguage;
+    if (!spec.foreignLanguage) return `요구: ${language} ${minScore}점 이상 · 보유: 미입력`;
+    if (spec.foreignLanguage.language !== language) {
+      return `요구: ${language} ${minScore}점 이상 · 보유: ${spec.foreignLanguage.language} 성적만 있음 (${language} 성적 없음)`;
+    }
+    return `요구: ${language} ${minScore}점 이상 · 보유: ${spec.foreignLanguage.score ?? 0}점`;
+  }
+  return "";
+}
+
+function runGapAnalysis(jobs, filters, spec) {
+  const filtered = jobs.filter(j =>
+    (!filters.jobType || j.jobType === filters.jobType) &&
+    (!filters.region || j.region.includes(filters.region)) &&
+    (!filters.employmentType || j.employmentType === filters.employmentType)
+  );
+  const evaluated = filtered.map(j => evaluateJob(j, spec));
+  const matchedJobs = evaluated.filter(e => e.overallMatch).length;
+  const totalJobs = evaluated.length;
+
+  const categories = ["education","experience","certifications","major","foreignLanguage"];
+  const improvementRanking = categories.map(cat => {
+    const delta = evaluated.filter(e => {
+      if (e.overallMatch) return false;
+      if (e.checks[cat] !== false) return false;
+      return Object.entries(e.checks).every(([k,v]) => k===cat || v===true);
+    }).length;
+    return { category: CATEGORY_LABELS[cat], delta };
+  }).sort((a,b) => b.delta - a.delta);
+
+  const jobList = evaluated.map(({job, checks, overallMatch}) => {
+    const status = pickPrimaryStatus(checks);
+    const req = job.req;
+    return {
+      id: job.id, title: job.title, company: job.company, region: job.region, jobType: job.jobType,
+      checklist: [
+        {label:"학력", ok:checks.education, detail: describeRequirement("education", req, spec)},
+        {label:"경력", ok:checks.experience, detail: describeRequirement("experience", req, spec)},
+        {label:"자격증/면허", ok:checks.certifications, detail: describeRequirement("certifications", req, spec)},
+        {label:"전공", ok:checks.major, detail: describeRequirement("major", req, spec)},
+        {label:"외국어", ok:checks.foreignLanguage, detail: describeRequirement("foreignLanguage", req, spec)},
+      ],
+      status: status.key, statusLabel: status.label,
+    };
+  });
+
+  return {
+    stats: { totalJobs, matchedJobs, matchRate: totalJobs ? Math.round(matchedJobs/totalJobs*100) : 0 },
+    improvementRanking, jobList,
+  };
+}
+
+// ===========================================================================
+// 3) 화면 상태 관리 (landing -> filter -> spec -> loading -> result, + 상세 모달)
+// ===========================================================================
+const state = {
+  step: "landing",
+  filters: { jobType:"", region:"", employmentType:"" },
+  spec: { education:"학사", experienceType:"신입", experienceMonths:0, major:"무관", certifications:[], foreignLanguage:null, hasComputerSkill:false },
+  result: null,
+  resultView: { statusFilter: "all", sort: "default" },
+  selectedJobId: null,
+};
+
+// ---------- 로컬 저장(새로고침 시 상태 유지) ----------
+const STORAGE_KEY = "specfit_state_v1";
+function saveState(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      step: state.step === "loading" ? "spec" : state.step,
+      filters: state.filters,
+      spec: state.spec,
+      result: state.result,
+      resultView: state.resultView,
+    }));
+  } catch (e) { /* localStorage 사용 불가(프라이빗 모드 등) 시 조용히 무시 */ }
+}
+function loadState(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (!saved || typeof saved !== "object") return;
+    if (saved.filters) Object.assign(state.filters, saved.filters);
+    if (saved.spec) Object.assign(state.spec, saved.spec);
+    if (saved.resultView) Object.assign(state.resultView, saved.resultView);
+    if (saved.result) state.result = saved.result;
+    if (saved.step) state.step = saved.step;
+  } catch (e) { /* 손상된 데이터는 무시하고 기본값 사용 */ }
+}
+function resetAll(){
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  state.step = "landing";
+  state.filters = { jobType:"", region:"", employmentType:"" };
+  state.spec = { education:"학사", experienceType:"신입", experienceMonths:0, major:"무관", certifications:[], foreignLanguage:null, hasComputerSkill:false };
+  state.result = null;
+  state.resultView = { statusFilter:"all", sort:"default" };
+  state.selectedJobId = null;
+  render();
+}
+
+function uniq(arr){ return [...new Set(arr)]; }
+const FILTER_OPTIONS = {
+  jobTypes: uniq(MOCK_JOBS.map(j=>j.jobType)),
+  regions: uniq(MOCK_JOBS.map(j=>j.region)),
+  employmentTypes: uniq(MOCK_JOBS.map(j=>j.employmentType)),
+};
+
+function setFilters(patch){ Object.assign(state.filters, patch); render(); }
+function setSpec(patch){ Object.assign(state.spec, patch); render(); }
+function toggleCert(cert){
+  const list = state.spec.certifications;
+  const i = list.indexOf(cert);
+  if (i>=0) list.splice(i,1); else list.push(cert);
+  render();
+}
+// 타이핑할 때마다 매번 다시 그리면 포커스가 풀리고 화면이 깜빡였기 때문에,
+// 입력은 자유롭게 하고 "입력" 버튼(또는 Enter)을 눌렀을 때만 값을 반영해 렌더링한다.
+function commitExpMonths(){
+  const el = document.getElementById("expMonthsInput");
+  if (!el) return;
+  const months = Number(el.value.replace(/[^0-9]/g,"")) || 0;
+  setSpec({ experienceMonths: months });
+}
+function commitForeignScore(){
+  const el = document.getElementById("flScoreInput");
+  if (!el || !state.spec.foreignLanguage) return;
+  const score = Number(el.value.replace(/[^0-9]/g,"")) || 0;
+  setSpec({ foreignLanguage: { ...state.spec.foreignLanguage, score } });
+}
+function goStep(step){
+  if (step === "result" && !state.result) { state.step = "filter"; render(); return; }
+  state.step = step;
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+function runAnalysis(){
+  state.step = "loading";
+  render();
+  setTimeout(() => {
+    state.result = runGapAnalysis(MOCK_JOBS, state.filters, state.spec);
+    state.resultView = { statusFilter:"all", sort:"default" };
+    state.step = "result";
+    render();
+  }, 550);
+}
+function fillSampleSpec(){
+  Object.assign(state.spec, {
+    education:"학사", experienceType:"신입", experienceMonths:0, major:"컴퓨터공학",
+    certifications:["정보처리기사"], foreignLanguage:{language:"영어", score:750}, hasComputerSkill:true,
+  });
+  render();
+}
+function openJob(id){ state.selectedJobId = id; render(); }
+function closeJob(){ state.selectedJobId = null; render(); }
+
+// ---------- 결과 화면 재필터/정렬 ----------
+function setResultView(patch){ Object.assign(state.resultView, patch); render(); }
+function getDisplayedJobs(){
+  const { jobList } = state.result;
+  const { statusFilter, sort } = state.resultView;
+  let list = jobList;
+  if (statusFilter === "match") list = list.filter(j => j.status === "match");
+  else if (statusFilter === "missing") list = list.filter(j => j.status !== "match");
+
+  list = [...list];
+  if (sort === "matchFirst") list.sort((a,b) => (a.status==="match"?0:1) - (b.status==="match"?0:1));
+  else if (sort === "company") list.sort((a,b) => a.company.localeCompare(b.company, "ko"));
+  return list;
+}
+
+// ===========================================================================
+// 4) 렌더링
+// ===========================================================================
+const STEP_TITLES = {
+  landing: "스펙핏 SpecFit - 내 스펙으로 지원 가능한 공고 확인하기",
+  filter: "조건 필터링 - 스펙핏",
+  spec: "스펙 입력 - 스펙핏",
+  loading: "분석 중... - 스펙핏",
+  result: "갭 분석 결과 - 스펙핏",
+};
+const STEPPER_STEPS = [
+  {key:"filter", num:1, label:"조건 필터링"},
+  {key:"spec", num:2, label:"스펙 입력"},
+  {key:"result", num:3, label:"갭 분석 결과"},
+];
+
+function renderHeader(){
+  return `
+    <header class="site-header">
+      <div class="site-header-inner">
+        <div class="logo" onclick="goStep('landing')">
+          <span class="logo-mark">S</span>
+          <span class="logo-text">스펙핏 <span class="logo-sub mono">SpecFit</span></span>
+        </div>
+        <nav class="site-nav">
+          <button class="nav-link" onclick="goStep('landing')">홈</button>
+          <button class="nav-link" onclick="resetAll()" title="입력한 필터/스펙/결과를 모두 초기화합니다">초기화</button>
+        </nav>
+      </div>
+    </header>
+  `;
+}
+
+function renderStepper(){
+  const rank = { filter:1, spec:2, loading:3, result:3 };
+  const currentRank = rank[state.step] || 1;
+  const maxReached = state.result ? 3 : (state.step === "spec" || state.step === "loading" ? 2 : 1);
+  return `
+    <div class="stepper">
+      <div class="stepper-inner">
+        ${STEPPER_STEPS.map((s,i) => `
+          <div class="step-item ${s.num===currentRank?'active':''} ${s.num<currentRank?'done':''} ${s.num<=maxReached?'clickable':''}"
+               ${s.num<=maxReached ? `onclick="goStep('${s.key}')"` : ""}>
+            <span class="step-circle mono">${s.num<currentRank ? '✓' : s.num}</span>
+            <span class="step-label">${s.label}</span>
+          </div>
+          ${i<STEPPER_STEPS.length-1 ? `<div class="step-line ${s.num<currentRank?'done':''}"></div>` : ""}
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderFooter(){
+  return `
+    <footer class="site-footer">
+      <div class="site-footer-inner">
+        <span class="logo-mark small">S</span>
+        <p>스펙핏 SpecFit · 워크넷 채용정보 데이터를 활용한 스펙 자가진단 서비스 (프로토타입)</p>
+        <p class="footer-meta mono">© 2026 SpecFit. 문의: contact@specfit.example</p>
+      </div>
+    </footer>
+  `;
+}
+
+// ---------- 이전 진행 상태 이어하기 (홈 ≠ 초기화를 실제로 체감할 수 있게) ----------
+const DEFAULT_SPEC_JSON = JSON.stringify({ education:"학사", experienceType:"신입", experienceMonths:0, major:"무관", certifications:[], foreignLanguage:null, hasComputerSkill:false });
+function getResumeStep(){
+  if (state.result) return "result";
+  const filtersTouched = !!(state.filters.jobType || state.filters.region || state.filters.employmentType);
+  const specTouched = JSON.stringify(state.spec) !== DEFAULT_SPEC_JSON;
+  if (specTouched) return "spec";
+  if (filtersTouched) return "filter";
+  return null;
+}
+function renderResumeBanner(){
+  const resumeStep = getResumeStep();
+  if (!resumeStep) return "";
+  let summary;
+  if (resumeStep === "result") {
+    summary = `이전에 분석한 결과가 남아 있어요 · 지원 가능 ${state.result.stats.matchedJobs}/${state.result.stats.totalJobs}건 (${state.result.stats.matchRate}%)`;
+  } else if (resumeStep === "spec") {
+    summary = "이전에 입력하던 스펙이 저장되어 있어요.";
+  } else {
+    summary = "이전에 선택한 조건이 저장되어 있어요.";
+  }
+  const resumeLabel = resumeStep === "result" ? "결과 다시 보기" : resumeStep === "spec" ? "스펙 입력 이어하기" : "조건 선택 이어하기";
+  return `
+    <div class="resume-banner">
+      <div class="resume-text"><span class="resume-dot"></span><span>${summary}</span></div>
+      <div class="resume-actions">
+        <button class="btn-link" onclick="resetAll()">처음부터 다시 시작</button>
+        <button class="nav-link cta resume-cta" onclick="goStep('${resumeStep}')">${resumeLabel}</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderLandingScreen(){
+  return `
+    ${renderResumeBanner()}
+    <section class="hero">
+      <p class="hero-eyebrow">스펙 자가진단 · 갭 분석</p>
+      <h1 class="hero-title">내 스펙으로 지금<br/>지원 가능한 공고, <span class="accent">몇 개</span>일까요?</h1>
+      <p class="hero-sub">관심 있는 공고 조건을 고르고 스펙을 입력하면, 지원 가능 비율과 부족한 역량을 한눈에 확인할 수 있어요.</p>
+      <button class="btn-primary btn-hero" onclick="goStep('filter')">갭 분석 시작하기</button>
+    </section>
+    <section class="how-it-works">
+      <p class="section-label">이렇게 동작해요</p>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-num mono">01</div>
+          <p class="how-title">조건 필터링 & 스펙 입력</p>
+          <p class="how-desc">관심 직종·지역·고용형태를 고르고, 학력·경력·자격증·전공·외국어 스펙을 입력해요.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-num mono">02</div>
+          <p class="how-title">갭 분석 엔진</p>
+          <p class="how-desc">공고 요구사항과 내 스펙을 항목별로 대조해 지원 가능 여부를 자동으로 판정해요.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-num mono">03</div>
+          <p class="how-title">시각화 결과</p>
+          <p class="how-desc">지원 가능 비율(도넛)과 보완 시 늘어나는 공고 수(막대)로 다음 액션을 알려줘요.</p>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderFilterScreen(){
+  const opt = (list, val) => list.map(o => `<option value="${o}" ${o===val?"selected":""}>${o}</option>`).join("");
+  return `
+    <div class="screen">
+      <div class="banner"><b>1단계 · 조건 필터링</b> — 관심 있는 직종/지역/고용형태를 고르면, 그 조건에 맞는 예시 공고만 모아서 갭 분석을 진행해요. 비워두면 전체 20건을 대상으로 합니다.</div>
+      <h1>관심 조건 선택</h1>
+      <p class="sub">직종 · 지역 · 고용형태를 선택하세요.</p>
+      <div class="field-grid">
+        <label class="field">
+          <span class="field-label">직종</span>
+          <select onchange="setFilters({jobType:this.value})">
+            <option value="">전체</option>${opt(FILTER_OPTIONS.jobTypes, state.filters.jobType)}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">근무지역</span>
+          <select onchange="setFilters({region:this.value})">
+            <option value="">전체</option>${opt(FILTER_OPTIONS.regions, state.filters.region)}
+          </select>
+        </label>
+        <label class="field field-full">
+          <span class="field-label">고용형태</span>
+          <select onchange="setFilters({employmentType:this.value})">
+            <option value="">전체</option>${opt(FILTER_OPTIONS.employmentTypes, state.filters.employmentType)}
+          </select>
+        </label>
+      </div>
+      <button class="btn-primary" onclick="goStep('spec')">다음: 스펙 입력하기</button>
+    </div>
+  `;
+}
+
+function renderSpecScreen(){
+  const s = state.spec;
+  const opt = (list, val) => list.map(o => `<option value="${o}" ${o===val?"selected":""}>${o}</option>`).join("");
+  return `
+    <div class="screen">
+      <div class="banner"><b>2단계 · 스펙 입력</b> — 입력한 스펙은 1단계에서 고른 조건의 공고들과 항목별로 대조됩니다. 귀찮으면 아래 "예시 스펙으로 채우기"를 눌러보세요.</div>
+      <h1>내 스펙 입력</h1>
+      <p class="sub"><button class="btn-link" onclick="fillSampleSpec()">예시 스펙으로 채우기</button></p>
+
+      <div class="field-grid">
+        <label class="field">
+          <span class="field-label">학력</span>
+          <select onchange="setSpec({education:this.value})">${opt(EDUCATION_OPTIONS, s.education)}</select>
+        </label>
+
+        <label class="field">
+          <span class="field-label">경력</span>
+          <div class="row">
+            <select onchange="setSpec({experienceType:this.value})">
+              <option value="신입" ${s.experienceType==="신입"?"selected":""}>신입</option>
+              <option value="경력" ${s.experienceType==="경력"?"selected":""}>경력</option>
+            </select>
+            ${s.experienceType==="경력" ? `<input type="text" inputmode="numeric" pattern="[0-9]*" placeholder="경력 개월 수" value="${s.experienceMonths||""}" id="expMonthsInput" onkeydown="if(event.key==='Enter'){commitExpMonths();}" /><button type="button" class="btn-commit" onclick="commitExpMonths()">입력</button>` : ""}
+          </div>
+        </label>
+
+        <label class="field">
+          <span class="field-label">전공</span>
+          <select onchange="setSpec({major:this.value})">${opt(MAJOR_OPTIONS, s.major)}</select>
+        </label>
+
+        <label class="field">
+          <span class="field-label">외국어 성적</span>
+          <div class="row">
+            <select onchange="setSpec({foreignLanguage: this.value ? {language:this.value, score:(state.spec.foreignLanguage&&state.spec.foreignLanguage.score)||0} : null})">
+              <option value="" ${!s.foreignLanguage?"selected":""}>없음</option>
+              <option value="영어" ${s.foreignLanguage&&s.foreignLanguage.language==="영어"?"selected":""}>영어</option>
+            </select>
+            ${s.foreignLanguage ? `<input type="text" inputmode="numeric" pattern="[0-9]*" placeholder="점수" value="${s.foreignLanguage.score||""}" id="flScoreInput" onkeydown="if(event.key==='Enter'){commitForeignScore();}" /><button type="button" class="btn-commit" onclick="commitForeignScore()">입력</button>` : ""}
+          </div>
+        </label>
+
+        <label class="field field-full">
+          <span class="field-label">보유 자격증/면허</span>
+          <div class="chip-row">
+            ${CERT_OPTIONS.map(c => `<button type="button" class="chip-btn ${s.certifications.includes(c)?'active':''}" onclick="toggleCert('${c}')">${c}</button>`).join("")}
+          </div>
+        </label>
+
+        <label class="field field-full">
+          <span class="field-label">컴퓨터활용능력 보유 여부 (우대 항목 · 지원가능 판정엔 영향 없음)</span>
+          <div class="row" style="align-items:center;">
+            <input type="checkbox" style="width:16px;height:16px;flex:none;" ${s.hasComputerSkill?"checked":""} onchange="setSpec({hasComputerSkill:this.checked})" />
+            <span style="font-size:13px;">보유하고 있음</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="goStep('filter')">이전</button>
+        <button class="btn-primary" onclick="runAnalysis()">갭 분석 결과 보기</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderLoadingScreen(){
+  return `
+    <div class="loading-screen">
+      <div class="spinner"></div>
+      <p class="loading-text">스펙과 공고 요건을 항목별로 대조하는 중이에요…</p>
+    </div>
+  `;
+}
+
+function donutSvg(rate){
+  const r = 60, c = 2*Math.PI*r;
+  const okLen = c * (rate/100);
+  return `
+    <svg width="140" height="140" viewBox="0 0 140 140">
+      <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--donut-no)" stroke-width="16" />
+      <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--donut-ok)" stroke-width="16"
+        stroke-dasharray="${okLen} ${c-okLen}" stroke-dashoffset="${c*0.25}" stroke-linecap="round"
+        transform="scale(1,-1) translate(0,-140)" />
+    </svg>
+  `;
+}
+
+function renderResultScreen(){
+  const { stats, improvementRanking, jobList } = state.result;
+  const s = state.spec;
+  const rv = state.resultView;
+  const specChips = [
+    {label:"학력", value:s.education},
+    {label:"경력", value: s.experienceType==="경력" ? `경력 ${s.experienceMonths}개월` : "신입"},
+    {label:"자격증", value:`${s.certifications.length}개`},
+    {label:"전공", value:s.major},
+  ];
+  const maxDelta = Math.max(1, ...improvementRanking.map(d=>d.delta));
+  const topTip = improvementRanking[0];
+
+  const allCount = jobList.length;
+  const matchCount = jobList.filter(j => j.status === "match").length;
+  const missingCount = allCount - matchCount;
+  const displayedJobs = getDisplayedJobs();
+
+  return `
+    <div class="screen-wide">
+      <div class="banner"><b>3단계 · 갭 분석 결과</b> — 왼쪽(데스크톱 기준)은 "필터링된 공고 중 지금 스펙으로 지원 가능한 비율", "이 항목 하나만 채우면 몇 건이 더 열리는지"를 보여줍니다. 아래 공고 카드를 클릭하면 항목별 충족 여부를 볼 수 있어요.</div>
+
+      <div class="spec-chips">
+        ${specChips.map(c=>`<span class="spec-chip">${c.label}: ${c.value}</span>`).join("")}
+        <button class="btn-link" style="margin-left:auto;" onclick="goStep('spec')">스펙 수정</button>
+      </div>
+
+      <div class="result-layout">
+        <aside class="result-sidebar">
+          <div class="stat-grid">
+            <div class="stat-card"><div class="label">전체 공고</div><div class="value mono">${stats.totalJobs}</div></div>
+            <div class="stat-card"><div class="label">지원 가능 공고</div><div class="value mono">${stats.matchedJobs}</div></div>
+            <div class="stat-card"><div class="label">지원 가능 비율</div><div class="value mono">${stats.matchRate}%</div></div>
+          </div>
+
+          <div class="chart-grid">
+            <div class="chart-card">
+              <div class="title">지원 가능 비율</div>
+              <div class="donut-wrap">
+                ${donutSvg(stats.matchRate)}
+                <div class="donut-center">
+                  <span class="rate mono">${stats.matchRate}%</span>
+                  <span class="frac mono">${stats.matchedJobs} / ${stats.totalJobs}건</span>
+                </div>
+              </div>
+              <div class="legend">
+                <span><span class="dot" style="background:var(--donut-ok)"></span>지원 가능</span>
+                <span><span class="dot" style="background:var(--donut-no)"></span>지원 불가</span>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="title">보완 시 늘어나는 공고 수</div>
+              ${improvementRanking.map(r => `
+                <div class="bar-row">
+                  <span class="bar-label">${r.category}</span>
+                  <div class="bar-track"><div class="bar-fill" style="width:${(r.delta/maxDelta*100)}%"></div></div>
+                  <span class="bar-value mono">+${r.delta}</span>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+
+          ${ topTip && topTip.delta > 0 ? `
+            <div class="insight-banner"><b>${topTip.category}</b>만 보완하면 지원 가능한 공고가 <b>+${topTip.delta}건</b> 더 늘어나요.</div>
+          ` : "" }
+        </aside>
+
+        <div class="result-main">
+          <div class="result-toolbar">
+            <div class="result-tabs">
+              <button class="result-tab ${rv.statusFilter==='all'?'active':''}" onclick="setResultView({statusFilter:'all'})">전체 <span class="tab-count">${allCount}</span></button>
+              <button class="result-tab ${rv.statusFilter==='match'?'active':''}" onclick="setResultView({statusFilter:'match'})">지원 가능 <span class="tab-count">${matchCount}</span></button>
+              <button class="result-tab ${rv.statusFilter==='missing'?'active':''}" onclick="setResultView({statusFilter:'missing'})">미충족 <span class="tab-count">${missingCount}</span></button>
+            </div>
+            <select class="result-sort" onchange="setResultView({sort:this.value})">
+              <option value="default" ${rv.sort==='default'?'selected':''}>기본순</option>
+              <option value="matchFirst" ${rv.sort==='matchFirst'?'selected':''}>지원 가능 우선</option>
+              <option value="company" ${rv.sort==='company'?'selected':''}>회사명순</option>
+            </select>
+          </div>
+
+          <p class="job-list-title">공고 목록 (${displayedJobs.length}건${displayedJobs.length!==allCount ? ` · 전체 ${allCount}건 중` : ""})</p>
+
+          ${ allCount === 0 ? `
+            <div class="empty-state">
+              <p class="empty-title">조건에 맞는 공고가 없어요</p>
+              <p class="empty-desc">필터 조건을 조금 넓혀서 다시 시도해보세요.</p>
+              <button class="btn-secondary" onclick="goStep('filter')">필터 다시 설정하기</button>
+            </div>
+          ` : displayedJobs.length === 0 ? `
+            <div class="empty-state">
+              <p class="empty-title">해당하는 공고가 없어요</p>
+              <p class="empty-desc">다른 탭을 선택해서 확인해보세요.</p>
+              <button class="btn-secondary" onclick="setResultView({statusFilter:'all'})">전체 보기</button>
+            </div>
+          ` : displayedJobs.map(job => {
+            const style = STATUS_STYLE[job.status] || STATUS_STYLE.match;
+            const jt = JOBTYPE_STYLE[job.jobType] || {bg:"var(--gray-200)", text:"var(--gray-700)", letter:"?"};
+            return `
+            <button class="job-card" onclick="openJob('${job.id}')">
+              <div class="job-card-main">
+                <span class="job-type-badge mono" style="background:${jt.bg};color:${jt.text};">${jt.letter}</span>
+                <div>
+                  <p class="job-title">${job.title}</p>
+                  <p class="job-meta">${job.company} · ${job.region}</p>
+                  <div class="job-check">${job.checklist.map(c => `<span class="${c.ok?'ok':'no'}">${c.ok?'✓':'✕'}</span>`).join("")}</div>
+                </div>
+              </div>
+              <span class="status-tag" style="background:${style.bg};color:${style.text};">${job.statusLabel}</span>
+            </button>
+          `;
+          }).join("") }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderJobModal(){
+  const job = state.result.jobList.find(j => j.id === state.selectedJobId);
+  if (!job) return "";
+  const style = STATUS_STYLE[job.status] || STATUS_STYLE.match;
+  return `
+    <div class="modal-overlay" onclick="closeJob()">
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <p class="job-title">${job.title}</p>
+        <p class="job-meta">${job.company} · ${job.region}</p>
+        <span class="status-tag" style="background:${style.bg};color:${style.text};display:inline-block;margin-bottom:14px;">${job.statusLabel}</span>
+        <p style="font-size:13px;font-weight:600;margin-bottom:8px;">항목별 충족 여부</p>
+        ${job.checklist.map(c => `
+          <div class="checklist-row">
+            <div class="checklist-main">
+              <span class="checklist-label">${c.label}</span>
+              <span class="${c.ok?'ok':'no'}" style="font-size:14px;">${c.ok?'✓':'✕'}</span>
+            </div>
+            <p class="checklist-detail mono ${c.ok?'':'checklist-detail-fail'}">${c.detail}</p>
+          </div>
+        `).join("")}
+        <button class="btn-secondary" style="width:100%;margin-top:8px;" onclick="closeJob()">닫기</button>
+      </div>
+    </div>
+  `;
+}
+
+function render(){
+  // 손상되었거나 앞뒤가 안 맞는 저장 상태에 대한 안전장치
+  if (state.step === "result" && !state.result) state.step = "landing";
+  if (state.step === "loading" && !state.result) state.step = "spec";
+
+  const app = document.getElementById("app");
+  document.title = STEP_TITLES[state.step] || "스펙핏 SpecFit";
+
+  // innerHTML을 통째로 다시 그리면 입력 중이던 요소가 매번 새 DOM 노드로 교체되면서
+  // 포커스/커서 위치가 사라진다(숫자 인풋에 한 글자 입력할 때마다 포커스가 풀리는 원인).
+  // data-field로 표시해둔 인풋이 포커스 상태였다면 재렌더 후 같은 필드를 찾아 포커스/커서를 복원한다.
+  const active = document.activeElement;
+  let focusField = null, selStart = null, selEnd = null;
+  if (active && active.dataset && active.dataset.field) {
+    focusField = active.dataset.field;
+    try { selStart = active.selectionStart; selEnd = active.selectionEnd; } catch (e) { /* type=number 등 선택 API 미지원 */ }
+  }
+
+  let body;
+  if (state.step === "landing") body = renderLandingScreen();
+  else if (state.step === "filter") body = renderFilterScreen();
+  else if (state.step === "spec") body = renderSpecScreen();
+  else if (state.step === "loading") body = renderLoadingScreen();
+  else body = renderResultScreen();
+
+  const showStepper = ["filter","spec","loading","result"].includes(state.step);
+
+  app.innerHTML = `
+    ${renderHeader()}
+    ${showStepper ? renderStepper() : ""}
+    <main class="fade-in">${body}</main>
+    ${renderFooter()}
+  `;
+
+  if (state.step === "result" && state.selectedJobId) {
+    app.innerHTML += renderJobModal();
+  }
+
+  if (focusField) {
+    const el = app.querySelector(`[data-field="${focusField}"]`);
+    if (el) {
+      el.focus();
+      if (typeof selStart === "number" && el.setSelectionRange) {
+        try { el.setSelectionRange(selStart, selEnd); } catch (e) { /* type=number 등 선택 API 미지원 */ }
+      }
+    }
+  }
+
+  saveState();
+}
+
+loadState();
+render();
+</script>
+</body>
+</html>
