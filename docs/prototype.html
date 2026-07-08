@@ -21,7 +21,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-    background: var(--bg-page);
+    background: linear-gradient(180deg, #eef2ff 0%, #f7f3ff 50%, #fff5f2 100%);
     color: var(--text-body);
     display: flex;
     justify-content: center;
@@ -177,11 +177,35 @@
     flex: 1;
   }
   .card {
+    perspective: 1000px;
+    min-height: 132px;
+  }
+  .card-flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 132px;
+    transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+  .card.flipped .card-flip-inner {
+    transform: rotateY(180deg);
+  }
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 16px 18px;
-    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .card-face-back {
+    transform: rotateY(180deg);
+    background: var(--primary-light);
+    border-color: transparent;
   }
   .card .card-head {
     display: flex;
@@ -197,11 +221,19 @@
     font-weight: 700;
     color: var(--primary);
   }
-  .card .edit-hint {
+  .why-btn {
     margin-left: auto;
-    font-size: 11px;
+    border: none;
+    background: var(--bg-page);
     color: var(--text-sub);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: inherit;
   }
+  .why-btn:hover { background: var(--border); }
   .card-body {
     font-size: 15px;
     color: var(--text-strong);
@@ -213,6 +245,24 @@
   }
   .card-body:focus {
     background: var(--primary-light);
+  }
+  .reason-text {
+    font-size: 13.5px;
+    color: var(--text-body);
+    line-height: 1.55;
+    flex: 1;
+  }
+  .back-btn {
+    align-self: flex-start;
+    margin-top: 8px;
+    border: none;
+    background: none;
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
   }
 
   .toast {
@@ -286,29 +336,62 @@
     </div>
 
     <div class="result-cards">
-      <div class="card">
-        <div class="card-head">
-          <span class="icon">🙂</span>
-          <span class="card-title">오늘의 감정</span>
-          <span class="edit-hint">누르면 수정</span>
+      <div class="card" data-card="emotion">
+        <div class="card-flip-inner">
+          <div class="card-face card-face-front">
+            <div class="card-head">
+              <span class="icon">🙂</span>
+              <span class="card-title">오늘의 감정</span>
+              <button class="why-btn" type="button">왜?</button>
+            </div>
+            <div class="card-body" contenteditable="true" id="card-emotion">무기력함, 답답함</div>
+          </div>
+          <div class="card-face card-face-back">
+            <div class="card-head">
+              <span class="card-title">왜 이렇게 정리했나요?</span>
+            </div>
+            <p class="reason-text">"지쳤다"는 표현이 반복돼서 무기력·답답함으로 정리했어요.</p>
+            <button class="back-btn" type="button">다시 보기</button>
+          </div>
         </div>
-        <div class="card-body" contenteditable="true" id="card-emotion">무기력함, 답답함</div>
       </div>
-      <div class="card">
-        <div class="card-head">
-          <span class="icon">🔍</span>
-          <span class="card-title">원인</span>
-          <span class="edit-hint">누르면 수정</span>
+      <div class="card" data-card="cause">
+        <div class="card-flip-inner">
+          <div class="card-face card-face-front">
+            <div class="card-head">
+              <span class="icon">🔍</span>
+              <span class="card-title">원인</span>
+              <button class="why-btn" type="button">왜?</button>
+            </div>
+            <div class="card-body" contenteditable="true" id="card-cause">팀플에서 낸 의견이 반복해서 무시당함</div>
+          </div>
+          <div class="card-face card-face-back">
+            <div class="card-head">
+              <span class="card-title">왜 이렇게 정리했나요?</span>
+            </div>
+            <p class="reason-text">"의견이 계속 무시됐다"는 부분이 구체적인 사건으로 언급돼서 원인으로 짚었어요.</p>
+            <button class="back-btn" type="button">다시 보기</button>
+          </div>
         </div>
-        <div class="card-body" contenteditable="true" id="card-cause">팀플에서 낸 의견이 반복해서 무시당함</div>
       </div>
-      <div class="card">
-        <div class="card-head">
-          <span class="icon">🌱</span>
-          <span class="card-title">내일의 작은 행동</span>
-          <span class="edit-hint">누르면 수정</span>
+      <div class="card" data-card="action">
+        <div class="card-flip-inner">
+          <div class="card-face card-face-front">
+            <div class="card-head">
+              <span class="icon">🌱</span>
+              <span class="card-title">내일의 작은 행동</span>
+              <button class="why-btn" type="button">왜?</button>
+            </div>
+            <div class="card-body" contenteditable="true" id="card-action">내일 회의에서 의견 하나만 짧고 명확하게 말해보기</div>
+          </div>
+          <div class="card-face card-face-back">
+            <div class="card-head">
+              <span class="card-title">왜 이렇게 정리했나요?</span>
+            </div>
+            <p class="reason-text">한 번에 관계를 바꾸기보다, 내일 바로 해볼 수 있는 작은 행동 하나만 제안했어요. 조언이 아니라 정리라서, 실행은 여전히 당신의 몫이에요.</p>
+            <button class="back-btn" type="button">다시 보기</button>
+          </div>
         </div>
-        <div class="card-body" contenteditable="true" id="card-action">내일 회의에서 의견 하나만 짧고 명확하게 말해보기</div>
       </div>
     </div>
 
@@ -364,6 +447,17 @@
 
   btnRetry.addEventListener('click', function () {
     showScreen(screenInput);
+  });
+
+  document.querySelectorAll('.why-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      btn.closest('.card').classList.add('flipped');
+    });
+  });
+  document.querySelectorAll('.back-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      btn.closest('.card').classList.remove('flipped');
+    });
   });
 
   btnSave.addEventListener('click', function () {
