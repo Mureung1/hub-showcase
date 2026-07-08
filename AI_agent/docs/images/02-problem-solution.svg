@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#f8fbff"/>
+  <text x="72" y="92" fill="#2563eb" font-family="Arial, sans-serif" font-size="20" font-weight="700">기획 초안 02</text>
+  <text x="72" y="146" fill="#0f172a" font-family="Arial, sans-serif" font-size="44" font-weight="800">문제 정의와 해결 방향</text>
+
+  <rect x="72" y="202" width="520" height="398" rx="24" fill="#ffffff" stroke="#fecaca"/>
+  <text x="108" y="258" fill="#b91c1c" font-family="Arial, sans-serif" font-size="27" font-weight="800">사용자 고민</text>
+  <text x="108" y="318" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">1. 목표 직무에 필요한 역량을 알기 어렵다.</text>
+  <text x="108" y="366" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">2. 스펙이 실무 경험으로 연결되지 않는다.</text>
+  <text x="108" y="414" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">3. 포트폴리오 결과물을 만들기 어렵다.</text>
+  <text x="108" y="462" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">4. 혼자 준비해 피드백을 받기 어렵다.</text>
+  <text x="108" y="510" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">5. 장기 준비로 번아웃이 생길 수 있다.</text>
+
+  <rect x="688" y="202" width="520" height="398" rx="24" fill="#ffffff" stroke="#bfdbfe"/>
+  <text x="724" y="258" fill="#1d4ed8" font-family="Arial, sans-serif" font-size="27" font-weight="800">서비스 해결 방식</text>
+  <text x="724" y="318" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">1. 스펙과 목표 직무를 등록한다.</text>
+  <text x="724" y="366" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">2. AI 분석으로 준비도를 확인한다.</text>
+  <text x="724" y="414" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">3. 부족 역량에 맞는 미션을 추천한다.</text>
+  <text x="724" y="462" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">4. 결과물을 제출하고 피드백을 받는다.</text>
+  <text x="724" y="510" fill="#0f172a" font-family="Arial, sans-serif" font-size="22">5. 경험을 포트폴리오로 정리한다.</text>
+
+  <path d="M618 390 L660 390" stroke="#2563eb" stroke-width="8" stroke-linecap="round"/>
+  <path d="M650 374 L666 390 L650 406" fill="none" stroke="#2563eb" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
