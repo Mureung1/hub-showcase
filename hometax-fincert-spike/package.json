@@ -5,7 +5,8 @@
   "scripts": {
     "explore": "node explore-login.mjs",
     "login-test": "node login-test.mjs",
-    "invoice-check": "node invoice-account-check.mjs"
+    "invoice-check": "node invoice-account-check.mjs",
+    "invoice-explore": "node invoice-explore.mjs"
   },
   "devDependencies": {
     "playwright": "^1.48.0"
