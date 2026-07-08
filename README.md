@@ -1,4 +1,6 @@
 # hub
+#위키링크
+https://github.com/dabinnida/hub/wiki
 
 # about-me
 프로젝트 주제
@@ -48,3 +50,59 @@ AI 기반 혼자 여행자를 위한 여행 도우미 웹·앱 서비스
 	•	여러 여행 앱을 번갈아 사용할 필요 없이 하나의 서비스에서 여행 정보를 관리할 수 있다.
 	•	일정 변경에도 AI가 자동으로 계획을 재구성하여 여행의 부담을 줄인다.
 	•	언어 장벽을 낮춰 혼자 여행하는 사용자의 불안감을 줄이고 더 자유로운 여행 경험을 제공한다.
+
+	---
+
+# 2026-07-08 Project Planning
+
+## AI Life Review
+
+### Today
+
+- 프로젝트 주제 선정
+- 서비스 컨셉 구체화
+- 디자인 방향 설정
+- 기술 스택 선정
+- AI 분석 파이프라인 설계
+
+### AI Pipeline
+
+```text
+ChatGPT Conversation
+
+↓
+
+Preprocessing
+
+↓
+
+LLM Analysis
+
+↓
+
+Event Extractor
+
+↓
+
+Memory Database
+
+↓
+
+Insight Generator
+
+↓
+
+Monthly Report
+
+↓
+
+Visualization
+```
+
+### Next Step
+
+- User Flow 작성
+- IA 설계
+- Wireframe 제작
+- Database 설계
+- Event 분류 체계 정의
