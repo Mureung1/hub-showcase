@@ -875,9 +875,9 @@ body {
 
 .evidence-card {
   display: none;
-  grid-template-columns: 160px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
   min-width: 0;
   padding: 12px 14px;
   border: 1px solid rgba(69, 183, 167, 0.28);
@@ -896,14 +896,13 @@ body {
   min-width: 0;
 }
 
-.evidence-label,
-.evidence-source {
+.evidence-label {
   color: var(--muted);
   font-size: 11px;
   font-weight: 720;
 }
 
-.evidence-card strong {
+.evidence-card > div strong {
   min-width: 0;
   color: var(--text);
   font-size: 14px;
@@ -912,20 +911,39 @@ body {
   white-space: nowrap;
 }
 
-.evidence-card blockquote {
+.evidence-list {
+  display: grid;
+  gap: 5px;
   min-width: 0;
   margin: 0;
+  padding-left: 18px;
   color: #33444c;
   font-size: 13px;
   line-height: 1.5;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.evidence-list li {
+  min-width: 0;
+}
+
+.evidence-list li::marker {
+  color: var(--teal);
+}
+
+.evidence-list strong {
+  color: var(--text);
+  font-weight: 820;
+}
+
+.evidence-list span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 680;
   white-space: nowrap;
 }
 
-.evidence-source {
-  justify-self: end;
-  white-space: nowrap;
+.evidence-list span::before {
+  content: ' · ';
 }
 
 .chat-dock {
