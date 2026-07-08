@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AlriJang - 브랜드 정보 등록</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .chip-active {
+            background-color: #0066ff !important;
+            color: #ffffff !important;
+            border-color: #0066ff !important;
+        }
+        .category-card-active {
+            border-color: #0066ff !important;
+            background-color: #f8f7ff !important;
+            color: #0050cb !important;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #0066ff !important;
+            box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.15);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#0050cb",
+                        "on-surface": "#191c1e",
+                        "outline": "#727687",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#f7f9fc",
+                        "primary-container": "#0066ff",
+                        "outline-variant": "#c2c6d8",
+                        "on-surface-variant": "#424656",
+                        "surface-variant": "#e0e3e6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-margin": "40px",
+                        "lg": "24px",
+                        "sm": "12px",
+                        "md": "16px",
+                        "gutter": "20px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Be Vietnam Pro"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Be Vietnam Pro"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background min-h-screen font-body-md text-on-surface antialiased">
+<!-- Header Navigation (Simplified for Onboarding) -->
+<header class="flex justify-between items-center w-full px-container-margin h-16 sticky top-0 z-50 bg-surface-container-lowest shadow-sm border-b border-outline-variant">
+<div class="font-headline-md text-headline-md font-bold text-primary">AlriJang</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors">help</span>
+</div>
+</header>
+<main class="flex flex-col items-center py-xl px-4">
+<!-- Progress Indicator -->
+<div class="w-full max-w-[800px] mb-8">
+<div class="flex justify-between items-end mb-2">
+<span class="text-primary font-bold font-label-md">Step 1 / 3</span>
+<span class="text-on-surface-variant font-label-md">기본 정보 입력</span>
+</div>
+<div class="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary-container transition-all duration-500 ease-out" style="width: 33.33%"></div>
+</div>
+</div>
+<!-- Main Form Card -->
+<div class="w-full max-w-[800px] bg-white rounded-xl shadow-[0px_4px_20px_0px_rgba(0,0,0,0.04)] border border-outline-variant/30 overflow-hidden">
+<div class="p-lg md:p-xl border-b border-outline-variant/20 bg-gradient-to-r from-white to-surface-container-low">
+<h1 class="font-headline-md text-headline-md text-on-surface mb-2">브랜드 정보 등록</h1>
+<p class="text-on-surface-variant font-body-md">AI가 사장님의 비즈니스를 학습하여 맞춤형 마케팅을 제안해드립니다.</p>
+</div>
+<div class="p-lg md:p-xl space-y-xl">
+<!-- Category Selection -->
+<div class="space-y-md">
+<label class="block font-headline-sm text-headline-sm text-on-surface">업종 선택</label>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-sm">
+<button class="flex flex-col items-center justify-center p-md border border-outline-variant rounded-lg transition-all hover:border-primary group bg-white" onclick="toggleCategory(this)">
+<span class="material-symbols-outlined text-4xl mb-2 text-on-surface-variant group-hover:text-primary">local_cafe</span>
+<span class="font-label-md">카페</span>
+</button>
+<button class="flex flex-col items-center justify-center p-md border border-outline-variant rounded-lg transition-all hover:border-primary group bg-white category-card-active" onclick="toggleCategory(this)">
+<span class="material-symbols-outlined text-4xl mb-2 text-primary">restaurant</span>
+<span class="font-label-md">음식점</span>
+</button>
+<button class="flex flex-col items-center justify-center p-md border border-outline-variant rounded-lg transition-all hover:border-primary group bg-white" onclick="toggleCategory(this)">
+<span class="material-symbols-outlined text-4xl mb-2 text-on-surface-variant group-hover:text-primary">content_cut</span>
+<span class="font-label-md">뷰티/미용</span>
+</button>
+<button class="flex flex-col items-center justify-center p-md border border-outline-variant rounded-lg transition-all hover:border-primary group bg-white" onclick="toggleCategory(this)">
+<span class="material-symbols-outlined text-4xl mb-2 text-on-surface-variant group-hover:text-primary">shopping_bag</span>
+<span class="font-label-md">소매/유통</span>
+</button>
+<button class="flex flex-col items-center justify-center p-md border border-outline-variant rounded-lg transition-all hover:border-primary group bg-white" onclick="toggleCategory(this)">
+<span class="material-symbols-outlined text-4xl mb-2 text-on-surface-variant group-hover:text-primary">fitness_center</span>
+<span class="font-label-md">운동/건강</span>
+</button>
+<button class="flex flex-col items-center justify-center p-md border border-outline-variant rounded-lg transition-all hover:border-primary group bg-white" onclick="toggleCategory(this)">
+<span class="material-symbols-outlined text-4xl mb-2 text-on-surface-variant group-hover:text-primary">school</span>
+<span class="font-label-md">학원/교육</span>
+</button>
+<button class="flex flex-col items-center justify-center p-md border border-outline-variant rounded-lg transition-all hover:border-primary group bg-white" onclick="toggleCategory(this)">
+<span class="material-symbols-outlined text-4xl mb-2 text-on-surface-variant group-hover:text-primary">medical_services</span>
+<span class="font-label-md">병원/의원</span>
+</button>
+<button class="flex flex-col items-center justify-center p-md border border-outline-variant rounded-lg transition-all hover:border-primary group bg-white" onclick="toggleCategory(this)">
+<span class="material-symbols-outlined text-4xl mb-2 text-on-surface-variant group-hover:text-primary">more_horiz</span>
+<span class="font-label-md">기타</span>
+</button>
+</div>
+</div>
+<!-- Brand Name Input -->
+<div class="space-y-sm">
+<label class="block font-headline-sm text-headline-sm text-on-surface" for="brand_name">브랜드명</label>
+<input class="w-full px-md py-sm border border-outline-variant rounded-lg transition-all text-body-md" id="brand_name" placeholder="브랜드 이름을 입력해주세요" type="text"/>
+</div>
+<!-- Brand One-line Intro -->
+<div class="space-y-sm">
+<label class="block font-headline-sm text-headline-sm text-on-surface" for="brand_intro">브랜드 한 줄 소개</label>
+<textarea class="w-full px-md py-sm border border-outline-variant rounded-lg transition-all text-body-md resize-none" id="brand_intro" placeholder="예: 우리 동네에서 가장 편안한 디저트 카페" rows="2"></textarea>
+</div>
+<!-- Target Audience Multi-select Chips -->
+<div class="space-y-md">
+<div class="flex items-center justify-between">
+<label class="block font-headline-sm text-headline-sm text-on-surface">주요 타겟</label>
+<span class="text-label-md text-on-surface-variant">중복 선택 가능</span>
+</div>
+<div class="flex flex-wrap gap-sm">
+<button class="px-md py-xs rounded-full border border-outline-variant text-label-md text-on-surface-variant hover:border-primary hover:text-primary transition-all bg-white chip-active" onclick="toggleChip(this)">지역 주민</button>
+<button class="px-md py-xs rounded-full border border-outline-variant text-label-md text-on-surface-variant hover:border-primary hover:text-primary transition-all bg-white chip-active" onclick="toggleChip(this)">직장인</button>
+<button class="px-md py-xs rounded-full border border-outline-variant text-label-md text-on-surface-variant hover:border-primary hover:text-primary transition-all bg-white" onclick="toggleChip(this)">학생</button>
+<button class="px-md py-xs rounded-full border border-outline-variant text-label-md text-on-surface-variant hover:border-primary hover:text-primary transition-all bg-white" onclick="toggleChip(this)">주부</button>
+<button class="px-md py-xs rounded-full border border-outline-variant text-label-md text-on-surface-variant hover:border-primary hover:text-primary transition-all bg-white" onclick="toggleChip(this)">1인 가구</button>
+<button class="px-md py-xs rounded-full border border-outline-variant text-label-md text-on-surface-variant hover:border-primary hover:text-primary transition-all bg-white" onclick="toggleChip(this)">여행객/방문객</button>
+<button class="px-md py-xs rounded-full border border-outline-variant text-label-md text-on-surface-variant hover:border-primary hover:text-primary transition-all bg-white" onclick="toggleChip(this)">고령층</button>
+</div>
+</div>
+</div>
+<!-- Footer Action Area -->
+<div class="p-lg bg-surface-container-low/50 flex justify-end border-t border-outline-variant/20">
+<button class="bg-primary-container text-white px-xl py-md rounded-lg font-headline-sm flex items-center gap-2 hover:bg-primary transition-all active:scale-95 shadow-md">
+                    다음 단계로
+                    <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Atmospheric Visual Support -->
+<div class="w-full max-w-[800px] mt-xl grid grid-cols-1 md:grid-cols-3 gap-lg opacity-80">
+<div class="flex items-start gap-md">
+<div class="w-10 h-10 rounded-full bg-secondary-container/30 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-2xl">auto_awesome</span>
+</div>
+<div class="space-y-base">
+<p class="font-label-md text-on-surface font-bold">AI 맞춤 분석</p>
+<p class="text-xs text-on-surface-variant">입력하신 정보로 최적의 마케팅 타겟을 도출합니다.</p>
+</div>
+</div>
+<div class="flex items-start gap-md">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed/30 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-tertiary text-2xl">shield_person</span>
+</div>
+<div class="space-y-base">
+<p class="font-label-md text-on-surface font-bold">데이터 보안</p>
+<p class="text-xs text-on-surface-variant">사장님의 브랜드 정보는 안전하게 보호됩니다.</p>
+</div>
+</div>
+<div class="flex items-start gap-md">
+<div class="w-10 h-10 rounded-full bg-primary-fixed/30 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-2xl">speed</span>
+</div>
+<div class="space-y-base">
+<p class="font-label-md text-on-surface font-bold">빠른 시작</p>
+<p class="text-xs text-on-surface-variant">3분이면 우리 가게만의 AI 마케터가 생성됩니다.</p>
+</div>
+</div>
+</div>
+</main>
+<footer class="mt-auto py-lg text-center text-on-surface-variant/60 font-label-sm">
+        © 2024 AlriJang Brand Hub. All rights reserved.
+    </footer>
+<script>
+        function toggleCategory(el) {
+            // Remove active from all siblings
+            const parent = el.parentElement;
+            parent.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('category-card-active');
+                btn.querySelector('.material-symbols-outlined').classList.replace('text-primary', 'text-on-surface-variant');
+            });
+            
+            // Add to selected
+            el.classList.add('category-card-active');
+            el.querySelector('.material-symbols-outlined').classList.replace('text-on-surface-variant', 'text-primary');
+        }
+
+        function toggleChip(el) {
+            el.classList.toggle('chip-active');
+        }
+
+        // Add a soft entrance animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const card = document.querySelector('.bg-white');
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+</body></html>

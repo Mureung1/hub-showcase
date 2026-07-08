@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#c0c1ff",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#f8f7ff",
+                        "on-surface-variant": "#424656",
+                        "inverse-on-surface": "#eff1f4",
+                        "secondary": "#006c49",
+                        "primary-fixed-dim": "#b3c5ff",
+                        "on-secondary-container": "#00714d",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#e0e3e6",
+                        "surface-bright": "#f7f9fc",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-error-container": "#93000a",
+                        "surface-dim": "#d8dadd",
+                        "outline-variant": "#c2c6d8",
+                        "surface-container-low": "#f2f4f7",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#191c1e",
+                        "on-secondary-fixed": "#002113",
+                        "surface-container-high": "#e6e8eb",
+                        "outline": "#727687",
+                        "tertiary-fixed": "#e1e0ff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#faf6ff",
+                        "on-primary-fixed": "#001849",
+                        "background": "#f7f9fc",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#6cf8bb",
+                        "primary": "#0050cb",
+                        "surface-tint": "#0054d6",
+                        "on-primary-fixed-variant": "#003fa4",
+                        "surface": "#f7f9fc",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#2d3133",
+                        "primary-container": "#0066ff",
+                        "on-tertiary-fixed-variant": "#2f2ebe",
+                        "on-background": "#191c1e",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#6ffbbe",
+                        "surface-container-highest": "#e0e3e6",
+                        "on-secondary-fixed-variant": "#005236",
+                        "tertiary": "#4345d1",
+                        "surface-container": "#eceef1",
+                        "on-tertiary-fixed": "#07006c",
+                        "inverse-primary": "#b3c5ff",
+                        "primary-fixed": "#dae1ff",
+                        "tertiary-container": "#5d60eb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "lg": "24px",
+                        "gutter": "20px",
+                        "xs": "8px",
+                        "container-margin": "40px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Be Vietnam Pro"],
+                        "body-sm": ["Be Vietnam Pro"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "body-lg": ["Be Vietnam Pro"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "label-sm": ["11px", {"lineHeight": "1", "fontWeight": "600"}],
+                        "label-md": ["13px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+        }
+        .custom-shadow {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #CBD5E1;
+        }
+    </style>
+</head>
+<body class="bg-background font-body-md text-on-surface">
+<!-- Top Navigation Bar -->
+<header class="bg-surface-container-lowest flex justify-between items-center w-full px-container-margin h-16 sticky top-0 z-50 border-b border-outline-variant shadow-sm">
+<div class="flex items-center gap-md cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined text-on-surface-variant">arrow_back</span>
+<span class="font-body-md text-body-md text-on-surface-variant">뒤로</span>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">AI 홍보글 생성 결과</h1>
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs">
+<span class="font-label-md text-label-md text-on-surface-variant">OO카페</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer active:opacity-80">settings</span>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a friendly smiling female user with clean office lighting, set against a minimal soft blue background to match corporate SaaS branding. High resolution digital photography, crisp and clean aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuChHOowMh6_VvvxWXh4gNcuPKPfPuYglmbDmbjua1VJsAGYw_sg68Y49y8S7gyb-zYn941IZYF_GHxo0klECBuEQFdwIl2IiyWhZBCSYocJBe_XqbsUOYW3bF2ekV5rlvzRg9vqiTTkDlHnCmFCcZV88nRTjK4bv5IQVe3cLsjWkFn5DCRyRPc6SVKnlL3IryTTaSnsDlCRLkLfeKLPvGu5BAxFw3sRU-qQHL9KUNloOgQKXTwOwLi3_g"/>
+</div>
+</div>
+</header>
+<main class="max-w-[1440px] mx-auto px-container-margin py-xl flex gap-xl min-h-[calc(100vh-64px)]">
+<!-- Left Column: AI Insights -->
+<aside class="w-[30%] flex flex-col gap-lg">
+<!-- AI Summary Card -->
+<section class="bg-surface-container-lowest p-lg rounded-xl custom-shadow flex flex-col gap-md">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-primary">🤖 알리장 AI</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                    브랜드 정보와 인터뷰 내용을 반영하여 홍보글을 작성했습니다.
+                </p>
+</section>
+<!-- SEO Card -->
+<section class="bg-surface-container-lowest p-lg rounded-xl custom-shadow flex flex-col gap-md">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm">추천 키워드</h3>
+<span class="material-symbols-outlined text-secondary">trending_up</span>
+</div>
+<div class="flex flex-wrap gap-xs">
+<span class="px-sm py-1 rounded-full bg-secondary-container/20 text-on-secondary-container text-label-md font-label-md">#여름카페</span>
+<span class="px-sm py-1 rounded-full bg-secondary-container/20 text-on-secondary-container text-label-md font-label-md">#신메뉴</span>
+<span class="px-sm py-1 rounded-full bg-secondary-container/20 text-on-secondary-container text-label-md font-label-md">#디저트</span>
+<span class="px-sm py-1 rounded-full bg-secondary-container/20 text-on-secondary-container text-label-md font-label-md">#충북대카페</span>
+</div>
+</section>
+<!-- Hashtag Card -->
+<section class="bg-surface-container-lowest p-lg rounded-xl custom-shadow flex flex-col gap-md">
+<h3 class="font-headline-sm text-headline-sm">추천 해시태그</h3>
+<div class="flex flex-wrap gap-xs">
+<span class="px-sm py-1 rounded-full bg-surface-container-high text-on-surface-variant text-label-md font-label-md">#청주카페</span>
+<span class="px-sm py-1 rounded-full bg-surface-container-high text-on-surface-variant text-label-md font-label-md">#신메뉴</span>
+<span class="px-sm py-1 rounded-full bg-surface-container-high text-on-surface-variant text-label-md font-label-md">#카페추천</span>
+<span class="px-sm py-1 rounded-full bg-surface-container-high text-on-surface-variant text-label-md font-label-md">#디저트맛집</span>
+</div>
+</section>
+<!-- Thumbnail Recommendation -->
+<section class="bg-surface-container-lowest p-lg rounded-xl custom-shadow flex flex-col gap-md">
+<h3 class="font-headline-sm text-headline-sm">추천 썸네일</h3>
+<div class="aspect-square w-full rounded-lg overflow-hidden border border-outline-variant relative">
+<img class="w-full h-full object-cover" data-alt="A delicious close-up of a fresh blueberry yogurt tart on a minimalist ceramic plate. The lighting is bright and natural, highlighting the glossy textures of the berries and the creamy yogurt. Soft aesthetic, top-down culinary photography, vibrant purple and white colors, clean modern cafe background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbEXwEZ2UnEJ9mVIvfD-1HOfh2gF_0tTNTCy2eO85JbeYNKIl0yMLzD9-nkdyakH391BEiceXNJUusghWLuqFXHsRspAR3CLqxYQ6pxqf6luzNV9hJa7kY9wxBLGuekaUkP9DgHz3tlUGGvUcoNEOmA5Sazij9Fx6gIYjf3zbPp4pQ5mz_7kJ_nPuHyivgz3aCPkgU51O92oQQhYVySgw6GRuEuDdQXTf7mmtdDdTeGYXEE3cNph8FIg"/>
+<div class="absolute top-2 left-2 bg-primary text-on-primary px-sm py-1 rounded-md text-label-sm font-label-sm">BEST</div>
+</div>
+<div class="flex items-start gap-xs p-sm bg-primary-container/10 rounded-lg">
+<span class="material-symbols-outlined text-primary text-[18px]">info</span>
+<p class="font-body-sm text-body-sm text-on-primary-fixed-variant">첫 번째 사진으로 사용하는 것을 추천합니다.</p>
+</div>
+</section>
+<!-- AI Explanation -->
+<section class="bg-surface-container-lowest rounded-xl custom-shadow overflow-hidden">
+<button class="w-full p-lg flex items-center justify-between hover:bg-surface-container-low transition-colors" onclick="toggleDetails()">
+<h3 class="font-headline-sm text-headline-sm">AI 추천 이유</h3>
+<span class="material-symbols-outlined transition-transform duration-300" id="expand-icon">expand_more</span>
+</button>
+<div class="px-lg pb-lg flex flex-col gap-lg" id="ai-explanation-content">
+<div class="space-y-sm">
+<div class="flex items-center gap-xs">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">브랜드 분위기 반영</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">계절 키워드 반영</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">검색량이 높은 키워드 활용</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">기존 블로그 스타일 반영</span>
+</div>
+</div>
+<div class="p-md bg-secondary-container/10 rounded-lg space-y-xs">
+<span class="font-label-md text-label-md text-secondary block mb-xs">기대 효과</span>
+<div class="flex items-center gap-xs text-secondary">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span class="font-body-sm text-body-sm">검색 노출 향상</span>
+</div>
+<div class="flex items-center gap-xs text-secondary">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span class="font-body-sm text-body-sm">브랜드 일관성 유지</span>
+</div>
+<div class="flex items-center gap-xs text-secondary">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span class="font-body-sm text-body-sm">방문자 유입 증가</span>
+</div>
+</div>
+</div>
+</section>
+</aside>
+<!-- Right Column: Editor -->
+<div class="flex-1 flex flex-col gap-lg overflow-y-auto">
+<section class="bg-surface-container-lowest p-xl rounded-xl custom-shadow flex flex-col gap-xl">
+<!-- Title Input -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant px-1">제목</label>
+<input class="w-full p-md bg-surface-container-low border border-outline-variant rounded-lg font-headline-sm text-headline-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" type="text" value="청량함 가득! OO카페의 여름 신메뉴 블루베리 요거트 타르트 출시"/>
+</div>
+<!-- Rich Text Editor (Notion-like) -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant px-1">홍보글</label>
+<div class="min-h-[500px] p-xl bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+<div class="outline-none space-y-lg text-on-surface" contenteditable="true">
+<p>안녕하세요, <strong>OO카페</strong>입니다! 🌿</p>
+<p>유난히 일찍 찾아온 여름, 무더위를 한 번에 날려버릴 청량한 신메뉴 소식을 들고 왔습니다. 이번 시즌 저희가 공들여 준비한 주인공은 바로 <strong>'블루베리 요거트 타르트'</strong>입니다.</p>
+<h4 class="font-headline-sm text-headline-sm text-primary">🫐 알알이 톡톡, 신선한 블루베리의 유혹</h4>
+<p>매일 아침 엄선한 생블루베리를 아낌없이 올렸습니다. 입안에서 톡톡 터지는 블루베리의 달콤함과 상큼한 요거트 크림의 조화는 그야말로 환상적이에요.</p>
+<h4 class="font-headline-sm text-headline-sm text-primary">🧁 바삭한 타르트지와 부드러운 필링</h4>
+<p>고소하게 구워낸 수제 타르트지 위에 산뜻한 요거트 무스를 듬뿍 채웠습니다. 너무 달지 않아 커피와 함께 즐기기에 딱 좋은 밸런스를 구현했습니다.</p>
+<p>OO카페는 항상 여러분의 일상에 작은 여유와 행복을 더해드리고 싶습니다. 이번 주말, 시원한 카페에서 달콤한 타르트 한 조각 어떠신가요?</p>
+<p class="text-on-surface-variant italic">📍 위치: 충북대학교 정문 앞 산책로 방면<br/>⏰ 운영시간: 매일 10:00 - 22:00</p>
+</div>
+</div>
+</div>
+<!-- Photo Layout Recommendation -->
+<div class="border-t border-outline-variant pt-xl flex flex-col gap-md">
+<h3 class="font-headline-sm text-headline-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary">photo_library</span>
+                        사진 배치 추천
+                    </h3>
+<div class="grid grid-cols-3 gap-md">
+<div class="p-md bg-surface-container-high rounded-lg flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">1</div>
+<span class="font-body-sm text-body-sm">대표 이미지 (타르트 근접)</span>
+</div>
+<div class="p-md bg-surface-container-high rounded-lg flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">2</div>
+<span class="font-body-sm text-body-sm">메뉴 소개 (단면/상세)</span>
+</div>
+<div class="p-md bg-surface-container-high rounded-lg flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">3</div>
+<span class="font-body-sm text-body-sm">매장 분위기 (전경)</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom Action Area -->
+<footer class="flex items-center justify-end gap-md py-lg mb-container-margin">
+<button class="px-xl h-12 rounded-lg border border-primary text-primary font-label-md text-label-md hover:bg-primary/5 active:bg-primary/10 transition-all flex items-center gap-xs">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+                    직접 수정
+                </button>
+<button class="px-xl h-12 rounded-lg border border-outline text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high active:bg-surface-container-highest transition-all flex items-center gap-xs">
+<span class="material-symbols-outlined text-[20px]">refresh</span>
+                    다시 생성
+                </button>
+<button class="px-xl h-12 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 active:scale-[0.98] transition-all flex items-center gap-xs shadow-md">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+                    예약 발행
+                </button>
+</footer>
+</div>
+</main>
+<script>
+        function toggleDetails() {
+            const content = document.getElementById('ai-explanation-content');
+            const icon = document.getElementById('expand-icon');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(-180deg)';
+            }
+        }
+
+        // Simple animation logic for the AI summary card avatar
+        document.addEventListener('DOMContentLoaded', () => {
+            const aiIcon = document.querySelector('.material-symbols-outlined[style*="FILL: 1"]');
+            if (aiIcon) {
+                setInterval(() => {
+                    aiIcon.style.opacity = '0.7';
+                    setTimeout(() => aiIcon.style.opacity = '1', 500);
+                }, 3000);
+            }
+        });
+    </script>
+</body></html>
