@@ -35,10 +35,6 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    setActiveFeatureIndex((currentIndex) => currentIndex % homeFeatures.length);
-  }, []);
-
-  useEffect(() => {
     const timerId = setInterval(() => {
       setSampleReadiness(getRandomReadiness());
     }, 5000);
