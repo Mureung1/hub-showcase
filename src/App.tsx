@@ -1,4 +1,4 @@
-import ProjectIntro from './components/ProjectIntro.jsx'
+import ProjectIntro from './components/ProjectIntro.tsx'
 
 function App() {
   return <ProjectIntro />

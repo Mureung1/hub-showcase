@@ -1,0 +1,208 @@
+# plan.md — 챌린지로그 웹앱 실행 계획
+
+> `@plan.md`로 에이전트에게 Task를 지시할 때 이 문서를 참조합니다.
+> 완료 검증은 [checklist.md](./checklist.md)와 함께 사용합니다.
+
+## 아키텍처 개요
+
+```
+[Browser / PWA]
+  React (Vite) ── REST API ── Spring Boot ── PostgreSQL
+                              └── S3 (이미지)
+                              └── LLM API (AI 데일리 케어)
+```
+
+- **프론트엔드**: React SPA, 이후 PWA·Web Push 확장
+- **백엔드**: Spring Boot REST API, JWT 인증
+- **시간 기준**: KST(Asia/Seoul), 챌린지·기록은 날짜 단위
+
+---
+
+## Task 종속 관계
+
+```
+Task 0 (프로젝트 셋업)
+  └── Task 1 (UI 기반·라우팅)
+        └── Task 2 (인증)
+              ├── Task 3 (챌린지·기록)
+              │     ├── Task 4 (캘린더)
+              │     └── Task 6 (AI 데일리 케어)
+              └── Task 5 (친구 방)
+                    └── Task 7 (알림)
+```
+
+---
+
+## Task 0 — 프로젝트 셋업
+
+**목표**: Vite + React 개발 환경과 문서 기반을 갖춘다.
+
+- [x] Vite + React 프로젝트 초기화
+- [x] TypeScript 설정 (`.tsx` 마이그레이션, `npm run typecheck`)
+- [x] Tailwind CSS v4 설정 (`@tailwindcss/vite`, `@theme` 토큰)
+- [x] oxlint 설정
+- [x] CLAUDE.md · README.md · plan.md · checklist.md 작성
+- [ ] `src/pages/`, `src/hooks/`, `src/api/` 디렉터리 생성
+- [ ] React Router 도입 및 기본 레이아웃
+
+**완료 기준**: `npm run dev`, `npm run typecheck`, `npm run lint`, `npm run build` 모두 성공
+
+---
+
+## Task 1 — UI 기반·라우팅
+
+**목표**: 공통 레이아웃과 주요 화면 뼈대를 만든다.  
+**선행**: Task 0
+
+| 화면 | 경로 (예정) | 설명 |
+|---|---|---|
+| 홈 | `/` | 오늘의 챌린지 + 기록 CTA |
+| 기록 작성 | `/record` | 사진 업로드 + 메모 |
+| 캘린더 | `/calendar` | 월별 썸네일 |
+| 친구 방 | `/room` | 멤버 완료 O/X |
+| 설정 | `/settings` | 알림·계정 |
+
+- 공통 헤더/하단 네비게이션
+- 반응형 레이아웃 (모바일 우선)
+- 목업 데이터로 각 화면 UI 프로토타입
+
+**완료 기준**: 5개 화면 간 라우팅 동작, 모바일 뷰포트에서 레이아웃 깨짐 없음
+
+---
+
+## Task 2 — 백엔드·인증
+
+**목표**: 사용자 가입·로그인과 JWT 기반 API 인증을 구축한다.  
+**선행**: Task 1
+
+### Backend
+
+- Spring Boot 프로젝트 (`server/`) 초기화
+- PostgreSQL · User 엔티티 · JWT 발급/검증
+- `POST /auth/signup`, `POST /auth/login`, `GET /auth/me`
+
+### Frontend
+
+- `src/api/` HTTP 클라이언트 (fetch wrapper, 토큰 저장)
+- 로그인·회원가입 페이지
+- 인증 가드 (비로그인 시 로그인으로 리다이렉트)
+
+**완료 기준**: 회원가입 → 로그인 → `/auth/me` 응답 확인
+
+---
+
+## Task 3 — 챌린지·기록
+
+**목표**: 매일 챌린지 조회와 하루 1회 사진 기록을 구현한다.  
+**선행**: Task 2
+
+### Backend
+
+- Challenge: 일별 랜덤 주제 생성 (07:00 KST)
+- Record: 사진 업로드(S3) + 메모, 동일 날짜 중복 저장 거부
+- `GET /challenges/today`, `POST /records`, `GET /records/today`
+
+### Frontend
+
+- 오늘의 챌린지 카드
+- `<input type="file" accept="image/*">` 또는 MediaDevices API
+- 기록 완료 후 홈 상태 갱신
+
+**완료 기준**: 당일 1회 기록 성공, 같은 날 두 번째 기록 시 서버 에러
+
+---
+
+## Task 4 — 캘린더
+
+**목표**: 월별 기록을 썸네일로 열람한다.  
+**선행**: Task 3
+
+### Backend
+
+- `GET /records?year=&month=` — 해당 월 기록 목록 (날짜·썸네일 URL)
+
+### Frontend
+
+- 월 이동 UI
+- 기록 있는 날: 썸네일, 없는 날: 빈 칸
+- 날짜 클릭 시 해당 기록 상세 (본인만)
+
+**완료 기준**: 기록한 날만 썸네일 표시, 월 전환 정상
+
+---
+
+## Task 5 — 친구 방
+
+**목표**: 3~6명 그룹에서 오늘 완료 O/X만 공유한다.  
+**선행**: Task 2 (Task 3과 병렬 가능)
+
+### Backend
+
+- Room 생성·초대코드·참여 (최대 6명)
+- `GET /rooms/{id}/completion/today` — 멤버별 O/X만 반환 (기록 내용 미포함)
+
+### Frontend
+
+- 방 생성·참여 UI
+- 멤버 아바타 + O/X 표시
+- **금지**: 기록 수, 연속일, 순위 UI
+
+**완료 기준**: 방 멤버 완료 상태만 표시, 사진·메모 미노출
+
+---
+
+## Task 6 — AI 데일리 케어
+
+**목표**: 기록 후 응원/제안 메시지를 생성한다.  
+**선행**: Task 3
+
+### Backend
+
+- 기록 저장 후 LLM 호출 (메모·이미지 메타 기반)
+- `GET /records/{id}/ai-care`
+
+### Frontend
+
+- 기록 완료 화면에 AI 메시지 카드
+- 로딩·에러 상태 처리
+
+**완료 기준**: 기록 1건당 AI 메시지 1회 생성, 평가·점수 UI 없음
+
+---
+
+## Task 7 — 알림
+
+**목표**: 매일 07:00 챌린지 알림을 보낸다.  
+**선행**: Task 3, Task 5(선택)
+
+### Backend
+
+- 스케줄러 (07:00 KST) + Web Push 발송
+- Push 구독 저장 `POST /notifications/subscribe`
+
+### Frontend
+
+- Service Worker 등록
+- 알림 권한 요청 UI (설정 화면)
+
+**완료 기준**: 구독 사용자에게 07:00 알림 수신 (테스트 환경에서 수동 트리거 가능)
+
+---
+
+## 이후 확장 (MVP 이후)
+
+- PWA 오프라인 캐시
+- 이미지 리사이즈·최적화
+- 접근성(a11y) 개선
+- E2E 테스트 (Playwright)
+
+---
+
+## 에이전트 지시 예시
+
+```
+@plan.md Task 1을 진행해줘.
+- React Router 도입
+- pages/ 디렉터리에 5개 화면 뼈대 생성
+- 완료 후 @checklist.md Task 1 항목 체크
+```
