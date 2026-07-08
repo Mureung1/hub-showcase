@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>리뷰지기 | HTML·CSS 프로토타입</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">본문 바로가기</a>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#start"><span class="brand-seal">리</span><span><strong>리뷰지기</strong><small>사장님의 평판 관리인</small></span></a>
+      <nav class="nav" aria-label="주 메뉴">
+        <a class="nav-home" href="#home"><i class="nav-icon">⌂</i>홈</a>
+        <a class="nav-inbox" href="#inbox"><i class="nav-icon">▤</i>리뷰함</a>
+        <a class="nav-input" href="#input"><i class="nav-icon">＋</i>리뷰 입력</a>
+        <a class="nav-report" href="#report"><i class="nav-icon">⌁</i>분석 리포트</a>
+        <a class="nav-response" href="#response"><i class="nav-icon">⚑</i>블랙컨슈머 대응</a>
+        <a class="nav-settings" href="#settings"><i class="nav-icon">⚙</i>매장 설정</a>
+      </nav>
+      <p class="side-note"><strong>프로토타입 범위</strong><br>실제 AI·저장·플랫폼 게시는 구현하지 않고 핵심 사용자 흐름을 시연합니다.</p>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar"><a class="store" href="#settings">행복분식 강남점⌄</a><div class="profile"><span>김사장님</span><span class="avatar">김</span></div></header>
+      <main id="main">
+        <section class="overview content" id="start">
+          <header class="page-head"><div><p class="eyebrow">HTML · CSS PROTOTYPE</p><h1>리뷰지기 화면 둘러보기</h1><p class="lead">리뷰 입력부터 답글 작성, 악성 리뷰 대응까지 핵심 흐름을 확인하세요.</p></div><span class="brand-seal" aria-hidden="true">리</span></header>
+          <article class="card gold">
+            <h2>추천 검토 순서</h2>
+            <div class="timeline">
+              <div class="timeline-step"><span class="step-no">1</span><div><strong>리뷰를 입력합니다</strong><p>배민에서 복사한 리뷰를 한 건 또는 여러 건 붙여넣습니다.</p></div></div>
+              <div class="timeline-step"><span class="step-no">2</span><div><strong>AI 초안을 확인합니다</strong><p>유형과 분류 근거를 보고 답글을 수정·복사합니다.</p></div></div>
+              <div class="timeline-step"><span class="step-no">3</span><div><strong>필요한 조치를 선택합니다</strong><p>일반 리뷰는 완료 처리하고 악성 의심 리뷰는 대응 절차를 확인합니다.</p></div></div>
+            </div>
+            <div class="button-row top-gap"><a class="btn primary" href="#input">핵심 흐름 시작하기 →</a><a class="btn" href="#home">대시보드 먼저 보기</a></div>
+          </article>
+          <section class="section"><div class="section-head"><h2>전체 화면</h2><span class="muted small">7개 화면 · 단일 HTML</span></div><div class="grid grid-2 prototype-map">
+            <a class="prototype-link" href="#home"><span><strong>홈 대시보드</strong><br><span class="muted small">오늘 현황과 처리할 리뷰</span></span></a>
+            <a class="prototype-link" href="#inbox"><span><strong>리뷰함</strong><br><span class="muted small">유형·상태별 리뷰 조회</span></span></a>
+            <a class="prototype-link" href="#detail"><span><strong>리뷰 상세·답글</strong><br><span class="muted small">AI 답글 확인과 복사</span></span></a>
+            <a class="prototype-link" href="#input"><span><strong>리뷰 입력</strong><br><span class="muted small">수동 입력과 일괄 붙여넣기</span></span></a>
+            <a class="prototype-link" href="#report"><span><strong>분석 리포트</strong><br><span class="muted small">손님 반응과 개선 인사이트</span></span></a>
+            <a class="prototype-link" href="#response"><span><strong>블랙컨슈머 대응</strong><br><span class="muted small">위험 판단과 단계별 매뉴얼</span></span></a>
+            <a class="prototype-link" href="#settings"><span><strong>매장 설정</strong><br><span class="muted small">매장 정보와 답글 말투 설정</span></span></a>
+          </div></section>
+          <p class="notice info section">외부 라이브러리와 JavaScript를 사용하지 않은 화면 검증용 프로토타입입니다.</p>
+        </section>
+
+        <section class="screen content" id="home">
+          <header class="page-head"><div><p class="eyebrow">2026년 7월 8일 수요일</p><h1>안녕하세요, 김사장님</h1><p class="lead">오늘 들어온 리뷰와 먼저 처리할 항목을 모았습니다.</p></div><a class="btn primary" href="#input">＋ 새 리뷰 입력</a></header>
+          <div class="grid grid-4" aria-label="오늘의 리뷰 현황">
+            <article class="card stat"><span class="stat-label">신규 리뷰</span><strong class="stat-value">12건</strong><p class="stat-trend">어제보다 3건 많아요</p></article>
+            <article class="card stat"><span class="stat-label">답글 대기</span><strong class="stat-value">5건</strong><p class="stat-trend">약 8분이면 처리할 수 있어요</p></article>
+            <article class="card stat"><span class="stat-label">평균 별점</span><strong class="stat-value">4.6</strong><p class="stat-trend">지난달보다 0.2 올랐어요</p></article>
+            <article class="card stat danger"><span class="stat-label">악성 의심</span><strong class="stat-value">1건</strong><p class="stat-trend">확인이 필요해요</p></article>
+          </div>
+          <div class="section grid grid-2">
+            <article class="card"><div class="card-header"><div><h2>손님 반응 추이</h2><p class="muted">최근 30일</p></div><span class="status">긍정 78%</span></div><div class="chart" aria-label="긍정 반응 상승 추이"><div class="line-chart"></div></div><div class="legend"><span><i class="legend-primary"></i>긍정 반응</span><span><i class="legend-gold"></i>부정 반응</span></div></article>
+            <article class="card gold"><h2>AI가 찾은 변화</h2><div class="timeline"><div class="timeline-step"><span class="step-no">1</span><div><strong>배달 지연 불만이 늘었어요</strong><p>최근 2주 동안 이전보다 3배 증가했습니다.</p></div></div><div class="timeline-step"><span class="step-no">2</span><div><strong>포장 칭찬이 늘고 있어요</strong><p>지난주보다 34% 증가했습니다.</p></div></div></div><a class="btn gold block top-gap" href="#report">분석 리포트 자세히 보기</a></article>
+          </div>
+          <section class="section"><div class="section-head"><div><h2>지금 처리가 필요한 리뷰</h2><p class="muted">위험도가 높은 리뷰부터 보여드려요.</p></div><a class="btn small-btn" href="#inbox">전체 보기</a></div><div class="review-list">
+            <article class="review-item malicious"><div><div class="review-meta"><span class="badge malicious">악성 의심</span><span class="stars">★☆☆☆☆</span><strong>떡볶이러버</strong></div><p><strong>환불 안 해주면 맘카페에 가게 이름 올립니다.</strong></p><span class="muted small">AI 감지: 환불 강요 및 유포 협박</span></div><a class="btn primary" href="#response">대응 방법 확인</a></article>
+            <article class="review-item"><div><div class="review-meta"><span class="badge complaint">불만</span><span class="stars">★★★☆☆</span><strong>배고픈직장인</strong></div><p><strong>맛은 좋았는데 배달이 예상보다 30분 늦었어요.</strong></p><span class="muted small">AI 분류: 불만 · 배달 지연</span></div><a class="btn primary" href="#detail">AI 답글 확인</a></article>
+          </div></section>
+        </section>
+
+        <section class="screen content" id="inbox">
+          <header class="page-head"><div><p class="eyebrow">Review inbox</p><h1>리뷰함</h1><p class="lead">등록된 리뷰를 유형과 처리 상태별로 확인하세요.</p></div><a class="btn primary" href="#input">＋ 리뷰 입력</a></header>
+          <div class="card flat filter-panel"><nav class="filters" aria-label="리뷰 유형"><a class="active" href="#inbox">전체 48</a><a href="#inbox">칭찬 31</a><a href="#inbox">불만 10</a><a href="#inbox">문의 6</a><a href="#response">악성 의심 1</a></nav><label class="field filter-select"><span class="small">답글 상태</span><select><option>전체 상태</option><option>초안 대기</option><option>확인 필요</option><option>완료</option></select></label></div>
+          <div class="section review-list">
+            <article class="review-item malicious"><div><div class="review-meta"><span class="badge malicious">악성 의심</span><span class="status">확인 필요</span><span class="stars">★☆☆☆☆</span><strong>떡볶이러버</strong></div><p><strong>환불 안 해주면 맘카페에 가게 이름 올립니다.</strong></p><span class="chip">모둠떡볶이</span></div><a class="btn primary" href="#response">대응 센터 열기</a></article>
+            <article class="review-item"><div><div class="review-meta"><span class="badge complaint">불만</span><span class="status">초안 대기</span><span class="stars">★★★☆☆</span><strong>배고픈직장인</strong></div><p><strong>맛은 좋았는데 배달이 예상보다 30분 늦었어요.</strong></p><span class="chip">참치김밥 · 라볶이</span></div><a class="btn primary" href="#detail">답글 확인</a></article>
+            <article class="review-item"><div><div class="review-meta"><span class="badge question">문의</span><span class="status">초안 대기</span><span class="stars">★★★★☆</span><strong>강남먹방</strong></div><p><strong>아이와 먹으려고 하는데 안 맵게도 가능한가요?</strong></p><span class="chip">국물떡볶이</span></div><a class="btn" href="#detail">답글 확인</a></article>
+            <article class="review-item"><div><div class="review-meta"><span class="badge praise">칭찬</span><span class="status">완료</span><span class="stars">★★★★★</span><strong>분식최고</strong></div><p><strong>떡볶이도 맛있고 포장도 정말 꼼꼼했어요.</strong></p><span class="chip">모둠튀김 · 떡볶이</span></div><a class="btn" href="#detail">내용 보기</a></article>
+          </div>
+        </section>
+
+        <section class="screen content" id="detail">
+          <header class="page-head"><div><p class="eyebrow">Review detail</p><h1>리뷰 답글 확인</h1><p class="lead">AI가 만든 초안을 확인하고 사장님 말투에 맞게 수정하세요.</p></div><a class="btn" href="#inbox">← 리뷰함으로</a></header>
+          <div class="split">
+            <article class="card"><div class="card-header"><span class="badge complaint">불만 · 복합</span><span class="status">초안 대기</span></div><div class="review-meta top-gap"><span class="stars">★★★☆☆</span><strong>배고픈직장인</strong><span>배민 · 오늘 17:15</span></div><blockquote>“맛은 좋았는데 배달이 예상보다 30분 늦었어요. 음식도 조금 식었습니다.”</blockquote><div class="review-meta"><span class="chip">참치김밥</span><span class="chip">라볶이</span></div><hr><h3>AI 분류 근거</h3><p class="notice">맛에 대한 칭찬과 배달 지연·음식 온도 불만이 함께 있어 <strong>복합 불만</strong>으로 분류했습니다.</p></article>
+            <article class="card"><div class="card-header"><div><h2>AI 답글 초안</h2><p class="muted">매장 설정의 말투를 반영했습니다.</p></div><span class="badge praise">안전 검사 완료</span></div><fieldset><legend class="label">답글 말투</legend><div class="radio-row"><label class="radio-card"><input type="radio" name="tone" checked><span>기본</span></label><label class="radio-card"><input type="radio" name="tone"><span>더 정중하게</span></label><label class="radio-card"><input type="radio" name="tone"><span>짧게</span></label></div></fieldset><label class="field"><span>답글 내용</span><textarea rows="8">안녕하세요, 행복분식입니다. 음식 맛을 좋게 봐주셔서 감사합니다. 다만 배달이 늦어 음식이 식은 상태로 도착해 불편을 드린 점 죄송합니다. 전달해 주신 내용은 배달 과정과 포장 방식을 점검하는 데 반영하겠습니다.</textarea><small>현재 132자 · 권장 100~200자</small></label><input class="demo-toggle" id="copy-reply" type="checkbox"><div class="button-row top-gap"><a class="btn" href="#detail">↻ 다시 생성</a><label class="btn primary" for="copy-reply">답글 복사하기</label></div><p class="demo-result toast">복사 완료 상태입니다. 실제 제품에서는 클립보드에 저장됩니다.</p><p class="notice info">복사한 답글을 배민 사장님 페이지에 붙여넣어 주세요.</p><a class="btn gold block" href="#home">게시 완료로 표시</a></article>
+          </div>
+          <article class="card danger section"><div class="card-header"><div><h2>악성 의심 리뷰라면</h2><p class="muted">답글을 자동 생성하지 않고 사장님의 확인을 먼저 요청합니다.</p></div><span class="badge malicious">항상 수동 확인</span></div><a class="btn primary" href="#response">대응 매뉴얼 보기 →</a></article>
+        </section>
+
+        <section class="screen content" id="input">
+          <header class="page-head"><div><p class="eyebrow">Manual review input</p><h1>리뷰 입력</h1><p class="lead">배민에서 복사한 리뷰를 붙여넣으면 유형과 답글 초안을 준비합니다.</p></div><a class="btn" href="#inbox">등록된 리뷰 보기</a></header>
+          <p class="notice">과거 리뷰도 한꺼번에 붙여넣으면 분석이 더 정확해져요.</p>
+          <div class="section split">
+            <form class="card"><h2>리뷰 한 건 입력</h2><div class="form-grid"><label class="field"><span>플랫폼</span><select><option>배달의민족</option></select></label><label class="field"><span>작성일</span><input type="date" value="2026-07-08"></label><label class="field"><span>별점</span><select><option>5점</option><option>4점</option><option selected>3점</option></select></label><label class="field"><span>닉네임 <small>(선택)</small></span><input value="배고픈직장인"></label><label class="field full"><span>주문 메뉴</span><input value="참치김밥, 라볶이"></label><label class="field full"><span>리뷰 내용</span><textarea>맛은 좋았는데 배달이 예상보다 30분 늦었어요. 음식도 조금 식었습니다.</textarea></label></div><a class="btn primary block top-gap" href="#inbox">입력하고 분류하기 →</a></form>
+            <aside class="card gold"><h2>AI 분류 미리보기</h2><div class="card-header"><span class="badge complaint">불만 · 복합</span><span class="stars">★★★☆☆</span></div><p class="preview-copy">맛은 좋았지만 배달 지연과 음식 온도에 대한 불만이 포함되어 있습니다.</p><div class="review-meta"><span class="chip">맛</span><span class="chip">배달</span><span class="chip">음식 온도</span></div><hr><p class="muted">등록하면 답글 초안이 준비되고 리뷰함의 <strong>초안 대기</strong>에 표시됩니다.</p></aside>
+          </div>
+          <article class="card section"><div class="card-header"><div><h2>여러 건 한꺼번에 붙여넣기</h2><p class="muted">리뷰 사이를 한 줄씩 띄워 붙여넣어 주세요.</p></div><span class="status">3건 감지</span></div><textarea rows="6">★★★★★ 떡볶이도 맛있고 포장도 꼼꼼했어요!&#10;&#10;★★★☆☆ 맛은 좋았는데 배달이 너무 늦었어요.&#10;&#10;★★★★☆ 아이와 먹으려고 하는데 안 맵게도 가능한가요?</textarea><div class="button-row top-gap"><a class="btn primary" href="#inbox">3건 일괄 등록하기 →</a></div></article>
+        </section>
+
+        <section class="screen content" id="report">
+          <header class="page-head"><div><p class="eyebrow">Weekly insight</p><h1>분석 리포트</h1><p class="lead">리뷰 48건에서 손님 반응과 개선할 점을 찾았습니다.</p></div><nav class="filters"><a class="active" href="#report">주간</a><a href="#report">월간</a><a href="#report">직접 선택</a></nav></header>
+          <article class="card gold"><p class="eyebrow">이번 주 핵심</p><h2>배달은 점검하고, 포장 강점은 계속 살려주세요</h2><p class="lead">배달 지연 부정 언급은 이전 주보다 3배 늘었고 포장 칭찬은 34% 증가했습니다.</p></article>
+          <div class="section grid grid-2"><article class="card"><div class="card-header"><div><h2>손님 반응</h2><p class="muted">긍정·부정·중립 비율</p></div><span class="status">총 48건</span></div><div class="donut" aria-label="긍정 68%, 부정 20%, 중립 12%"></div><div class="legend centered"><span><i class="legend-green"></i>긍정 68%</span><span><i class="legend-gold"></i>부정 20%</span></div></article><article class="card"><div class="card-header"><div><h2>별점 추이</h2><p class="muted">최근 8주</p></div><strong class="large-number">4.6</strong></div><div class="chart"><div class="line-chart"></div></div></article></div>
+          <div class="section grid grid-2"><article class="card"><h2>어떤 이야기가 많았나요?</h2><div class="bars top-gap"><div class="bar-row"><strong>맛</strong><span class="bar-track"><span class="bar-fill w88"></span></span><span>42건</span></div><div class="bar-row"><strong>포장</strong><span class="bar-track"><span class="bar-fill w67"></span></span><span>32건</span></div><div class="bar-row"><strong>배달</strong><span class="bar-track"><span class="bar-fill gold-fill w52"></span></span><span>25건</span></div><div class="bar-row"><strong>양</strong><span class="bar-track"><span class="bar-fill w38"></span></span><span>18건</span></div></div><p class="notice danger top-gap">배달 언급 25건 중 9건이 부정적이었습니다.</p></article><article class="card"><h2>메뉴별 핵심 키워드</h2><table class="metric-table"><thead><tr><th>메뉴</th><th>자주 나온 말</th><th>반응</th></tr></thead><tbody><tr><td><strong>국물떡볶이</strong></td><td><span class="chip">매콤해요</span></td><td><span class="badge praise">긍정</span></td></tr><tr><td><strong>모둠튀김</strong></td><td><span class="chip">바삭해요</span></td><td><span class="badge praise">긍정</span></td></tr><tr><td><strong>참치김밥</strong></td><td><span class="chip">조금 짜요</span></td><td><span class="badge complaint">혼합</span></td></tr></tbody></table></article></div>
+        </section>
+
+        <section class="screen content" id="response">
+          <header class="page-head"><div><p class="eyebrow">Response center</p><h1>블랙컨슈머 대응</h1><p class="lead">사실과 절차를 차례로 확인하고 모든 실행은 사장님이 결정합니다.</p></div><a class="btn" href="#inbox">← 리뷰함으로</a></header>
+          <p class="notice danger"><strong>고위험 표현 감지:</strong> 환불 강요와 온라인 유포 협박이 함께 포함되어 있습니다.</p>
+          <div class="section split-wide"><aside class="card flat"><div class="card-header"><h2>대응 사건</h2><span class="status">3건</span></div><div class="case-list"><a class="case-link active" href="#response"><span class="badge malicious">③ 악성 의심</span><strong>떡볶이러버</strong><span class="muted small">오늘 18:40</span></a><a class="case-link" href="#response"><span class="badge complaint">② 정당한 클레임</span><strong>강남미식가</strong><span class="muted small">7월 5일</span></a></div><a class="btn block top-gap" href="#detail">일반 답글로 재분류</a></aside>
+            <div class="grid"><article class="card danger"><div class="card-header"><span class="badge malicious">위험도 ③ 악성 의심</span><span class="stars">★☆☆☆☆</span></div><h2 class="top-gap">환불 안 해주면 맘카페에 올립니다</h2><p class="muted">감지 근거: 조건부 유포 협박 · 과도한 환불 요구</p></article>
+              <article class="card"><p class="eyebrow">STEP 1</p><h2>답글 작성 가이드</h2><p class="notice">남겨주신 내용은 주문 및 배달 기록을 기준으로 사실관계를 확인하겠습니다. 확인되지 않은 내용의 확산은 자제 부탁드립니다.</p><input class="demo-toggle" id="copy-guide" type="checkbox"><label class="btn primary" for="copy-guide">예시문 복사</label><p class="demo-result toast">예시문 복사 상태를 시연합니다.</p></article>
+              <article class="card"><p class="eyebrow">STEP 2</p><h2>배민 신고 절차</h2><div class="check-list"><label class="check-item"><input type="checkbox"><span>배민 셀프서비스 로그인</span></label><label class="check-item"><input type="checkbox"><span>해당 리뷰에서 신고 선택</span></label><label class="check-item"><input type="checkbox"><span>게시중단 요청과 근거 제출</span></label></div></article>
+              <article class="card"><p class="eyebrow">STEP 3</p><h2>증거 수집 체크리스트</h2><div class="check-list"><label class="check-item"><input type="checkbox"><span>리뷰 전체 화면과 작성 시각 캡처</span></label><label class="check-item"><input type="checkbox"><span>주문·결제·배달 기록 보관</span></label><label class="check-item"><input type="checkbox"><span>대화 내용과 CCTV 확인</span></label></div></article>
+              <article class="card gold"><p class="eyebrow">STEP 4</p><h2>법적 대응 안내</h2><p>피해가 우려된다면 수집 자료를 바탕으로 경찰 민원 또는 법률 전문가 상담을 검토할 수 있습니다.</p><p class="notice danger"><strong>일반적인 정보 안내이며 법률 자문이 아닙니다.</strong></p><a class="btn primary" href="#home">사례 저장 후 홈으로</a></article>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen content" id="settings">
+          <header class="page-head"><div><p class="eyebrow">Store profile</p><h1>매장 설정</h1><p class="lead">AI 답글이 사장님답게 들리도록 매장 정보와 말투를 알려주세요.</p></div><a class="btn" href="#home">← 홈으로</a></header>
+          <div class="split"><div class="grid">
+            <article class="card"><h2>기본 정보</h2><div class="form-grid"><label class="field"><span>매장명</span><input value="행복분식 강남점"></label><label class="field"><span>업종</span><select><option>분식·한식</option></select></label><label class="field full"><span>대표 메뉴</span><input value="국물떡볶이, 모둠튀김, 참치김밥"></label></div></article>
+            <article class="card"><h2>답글 말투</h2><div class="radio-row"><label class="radio-card"><input type="radio" name="setting-tone" checked><span>정중한 존댓말</span></label><label class="radio-card"><input type="radio" name="setting-tone"><span>친근하게</span></label><label class="radio-card"><input type="radio" name="setting-tone"><span>간결하게</span></label></div><div class="form-grid top-gap"><label class="field full"><span>첫 인사</span><input value="안녕하세요, 행복분식입니다."></label><label class="field full"><span>맺음말</span><input value="다음에는 더 만족스러운 식사로 보답하겠습니다."></label></div></article>
+            <article class="card"><h2>운영 정보</h2><p class="muted">등록된 정보 안에서만 문의에 답합니다.</p><div class="form-grid"><label class="field"><span>영업시간</span><input value="매일 11:00~22:00"></label><label class="field"><span>휴무일</span><input value="매월 둘째 월요일"></label><label class="field"><span>맵기 조절</span><input value="순한맛 가능"></label><label class="field"><span>원산지</span><input value="쌀·김치 국내산"></label></div></article>
+            <article class="card"><h2>이벤트와 금지 표현</h2><div class="form-grid"><label class="field full"><span>진행 중 이벤트</span><input value="7월 리뷰 작성 시 튀김 1개 증정"></label><label class="field full"><span>사용하지 않을 표현</span><input value="무조건, 환불해드릴게요, 서비스 드릴게요"></label></div></article>
+          </div><aside class="grid sticky-preview"><article class="card gold"><p class="eyebrow">Reply preview</p><h2>답글 미리보기</h2><div class="review-meta"><span class="badge praise">칭찬 리뷰</span><span class="stars">★★★★★</span></div><blockquote>안녕하세요, 행복분식입니다. 국물떡볶이와 포장을 좋게 봐주셔서 정말 감사합니다. 다음에도 맛있는 식사로 보답하겠습니다. 😊</blockquote></article><article class="card"><div class="card-header"><div><h2>답글 자동화 수준</h2><p class="muted">MVP에서는 사용할 수 없습니다.</p></div><span class="status">Phase 2 예정</span></div><p class="notice info">현재는 모든 답글을 사장님이 확인하고 직접 게시합니다.</p></article><a class="btn primary block" href="#home">설정 저장하고 홈으로</a></aside></div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
