@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>First-pr · 프로토타입</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<input class="nav-radio" type="radio" name="screen" id="nav-landing" checked>
+<input class="nav-radio" type="radio" name="screen" id="nav-input">
+<input class="nav-radio" type="radio" name="screen" id="nav-analyze">
+<input class="nav-radio" type="radio" name="screen" id="nav-profile">
+<input class="nav-radio" type="radio" name="screen" id="nav-search">
+<input class="nav-radio" type="radio" name="screen" id="nav-result">
+<input class="nav-radio" type="radio" name="screen" id="nav-detail">
+
+<div class="app">
+  <div class="topbar"><span class="mark">↣</span><span class="brand">First-pr</span></div>
+  <div class="stepper">
+    <div class="track"><span class="fill"></span></div>
+    <span class="node n1" data-tip="아이디 입력"></span>
+    <span class="node n2" data-tip="프로필 분석"></span>
+    <span class="node n3" data-tip="조건 확인"></span>
+    <span class="node n4" data-tip="이슈 검색"></span>
+    <span class="node n5" data-tip="추천 결과"></span>
+  </div>
+
+  <!-- 0 · 랜딩 -->
+  <section class="screen screen--landing">
+    <div class="land">
+      <div class="eyebrow">오픈소스 첫 기여 · First-pr</div>
+      <h1 class="land-title">오픈소스에<br>기여하고 싶으신가요?</h1>
+      <p class="land-sub">어디서부터 시작할지 막막하다면,<br>지금 실력에 딱 맞는 첫 이슈부터 찾아드릴게요.</p>
+    </div>
+
+    <div class="reasons">
+      <h2 class="reasons-h">왜 오픈소스에 기여할까요?</h2>
+      <div class="reason">
+        <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15l5-5 3 3 7-7"/><path d="M16 6h4v4"/></svg></div>
+        <div><div class="rtitle">실력이 확 늘어요</div><div class="rdesc">실제 서비스 코드를 읽고 고치면서, 혼자서는 못 배우는 실전 감각이 쌓여요.</div></div>
+      </div>
+      <div class="reason">
+        <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="M9 13l-1.6 7L12 18l4.6 2L15 13"/></svg></div>
+        <div><div class="rtitle">커리어 자산이 돼요</div><div class="rdesc">공개된 기여 이력은 그 자체로 증명서예요. 이력서보다 강한 한 줄이 되죠.</div></div>
+      </div>
+      <div class="reason">
+        <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="9" r="2.4"/><path d="M6 8.4v7.2"/><path d="M18 11.4c0 3.6-4 4-6 5.4"/></svg></div>
+        <div><div class="rtitle">협업이 익숙해져요</div><div class="rdesc">이슈 · PR · 코드리뷰까지, 팀에서 쓰는 협업 흐름을 미리 몸에 익혀요.</div></div>
+      </div>
+    </div>
+
+    <label for="nav-input" class="btn btn-primary btn-block">지금 시작하기</label>
+    <p class="foot-note">GitHub 아이디만 있으면 3분이면 충분해요</p>
+  </section>
+
+  <!-- 1 · 아이디 입력 -->
+  <section class="screen screen--input">
+    <div class="panel">
+      <div class="eyebrow">First-pr 시작하기</div>
+      <h1 class="hero">먼저, 당신의<br>GitHub을 볼게요</h1>
+      <p class="lead">공개 활동만 분석해서<br>지금 실력에 맞는 첫 기여 이슈를 찾아드릴게요.</p>
+      <label class="label">GitHub 아이디</label>
+      <div class="gh-input">
+        <span class="at">github.com/</span>
+        <input type="text" value="sunho-kim" aria-label="GitHub 아이디">
+      </div>
+      <label for="nav-analyze" class="btn btn-primary btn-block">내 활동 분석하기</label>
+    </div>
+    <p class="foot-note">로그인 없이 공개 활동만으로 분석해요</p>
+  </section>
+
+  <!-- 2 · 프로필 분석 중 -->
+  <section class="screen screen--analyze">
+    <div class="panel">
+      <h1 class="a-title"><span class="spinner"></span>활동을 살펴보고 있어요</h1>
+      <p class="a-lead">@sunho-kim 님의 공개 GitHub 활동을 분석 중이에요.</p>
+      <ul class="steps">
+        <li class="done">
+          <div class="st-icon">✓</div>
+          <div class="st-title">공개 레포·커밋 수집</div>
+          <div class="st-meta">본인이 기여한 레포만 · 최근 12개월</div>
+        </li>
+        <li class="active">
+          <div class="st-icon">2</div>
+          <div class="st-title">언어·활동 분석</div>
+          <div class="st-meta">빌드·자동생성 파일은 빼고, 실제 작성한 코드만 집계해요</div>
+        </li>
+        <li class="pending">
+          <div class="st-icon">3</div>
+          <div class="st-title">실력·관심 영역 추정</div>
+          <div class="st-meta">기여 패턴으로 난이도와 관심 분야를 가늠해요</div>
+        </li>
+      </ul>
+      <label for="nav-profile" class="btn btn-primary btn-block">분석 결과 보기</label>
+    </div>
+  </section>
+
+  <!-- 3 · 분석 결과 + 조건 입력 -->
+  <section class="screen screen--profile">
+    <div class="panel">
+      <div class="eyebrow">분석 완료</div>
+      <h1 class="hero">이런 개발자시네요</h1>
+
+      <div class="profile-card">
+        <div class="pc-handle">@sunho-kim</div>
+        <div class="pc-headline">JavaScript · Python 중심의 개발자</div>
+        <div class="pc-stats">
+          <div class="pc-stat"><div class="k">주 언어</div><div class="v">JavaScript · Python</div></div>
+          <div class="pc-stat"><div class="k">최근 활동</div><div class="v">활발 · 기여 레포 8개</div></div>
+          <div class="pc-stat"><div class="k">추정 실력</div><div class="v">초급</div></div>
+          <div class="pc-stat"><div class="k">관심 영역</div><div class="v">웹 프론트엔드</div></div>
+        </div>
+      </div>
+
+      <div class="cond-intro">
+        <div class="ci-title">이 조건으로 찾아드릴게요</div>
+        <div class="ci-sub">분석 결과에 맞춰 미리 골라뒀어요. 바꾸고 싶으면 눌러서 수정하세요.</div>
+      </div>
+
+      <label class="label">언어</label>
+      <div class="chips">
+        <span class="chip on">JavaScript</span>
+        <span class="chip">Python</span>
+        <span class="chip">TypeScript</span>
+        <span class="chip">Go</span>
+        <span class="chip">Java</span>
+      </div>
+
+      <label class="label">난이도 <span class="hint">· 초급이시라 '쉬움'을 추천해요</span></label>
+      <div class="chips">
+        <span class="chip">입문</span>
+        <span class="chip on">쉬움</span>
+        <span class="chip">보통</span>
+      </div>
+
+      <label class="label">관심 분야</label>
+      <div class="chips">
+        <span class="chip on">웹 / 프론트</span>
+        <span class="chip">백엔드</span>
+        <span class="chip">모바일</span>
+        <span class="chip">AI / ML</span>
+        <span class="chip">데이터</span>
+        <span class="chip">DevOps / 인프라</span>
+        <span class="chip">개발도구</span>
+      </div>
+
+      <label class="label">기여 유형 <span class="hint">· 여러 개 선택 가능</span></label>
+      <div class="chips">
+        <span class="chip on">코드</span>
+        <span class="chip on">문서</span>
+      </div>
+
+      <label for="nav-search" class="btn btn-primary btn-block">이 조건으로 이슈 찾기</label>
+    </div>
+  </section>
+
+  <!-- 4 · 이슈 검색 (에이전트) -->
+  <section class="screen screen--search">
+    <div class="panel">
+      <h1 class="a-title"><span class="spinner"></span>이슈를 찾고 있어요</h1>
+      <p class="a-lead">조건에 맞는 이슈를 검색하고, 스스로 다듬어가며 골라요.</p>
+      <ul class="steps">
+        <li class="done">
+          <div class="st-icon">✓</div>
+          <div class="st-title">맞춤 이슈 검색</div>
+          <div class="st-meta"><code>good first issue</code> · <code>JavaScript</code> · <code>웹</code> → <b>42건</b> 발견</div>
+        </li>
+        <li class="done">
+          <div class="st-icon">✓</div>
+          <div class="st-title">활발한 레포만 남기기</div>
+          <div class="st-meta">방치된 레포는 걸러내고 유지보수가 활발한 곳만 추렸어요</div>
+        </li>
+        <li class="active">
+          <div class="st-icon">3</div>
+          <div class="st-title">후보 이슈 살펴보는 중</div>
+          <div class="st-meta">유망한 상위 6개 이슈의 본문·필요 기술을 직접 확인하고 있어요</div>
+        </li>
+        <li class="pending">
+          <div class="st-icon">4</div>
+          <div class="st-title">추천 이유 정리</div>
+          <div class="st-meta">왜 나에게 맞는지 한 줄로 정리해드려요</div>
+        </li>
+      </ul>
+      <label for="nav-result" class="btn btn-primary btn-block">추천 결과 보기</label>
+    </div>
+    <p class="foot-note">실제 서비스에선 이 화면이 자동으로 넘어가요</p>
+  </section>
+
+  <!-- 5 · 추천 결과 -->
+  <section class="screen screen--result">
+    <div class="r-head">
+      <h1>이런 이슈는 어때요?</h1>
+      <p>딱 맞는 이슈 <b style="color:var(--blue)">6개</b>를 찾았어요. 이슈를 눌러 자세히 확인해보세요.</p>
+      <div class="filterbar">
+        <span class="filter active">전체</span>
+        <span class="filter">JavaScript</span>
+        <span class="filter">쉬움</span>
+        <span class="filter">웹</span>
+      </div>
+    </div>
+
+    <label class="card" for="nav-detail">
+      <div class="card-top">
+        <span class="badge b-blue">쉬움</span>
+        <span class="repo"><span class="lang js"><span class="sw"></span>JavaScript</span> · <b>chartjs/Chart.js</b> <span class="inum">#11821</span> · <span class="star">★</span> 64.2k · 활발</span>
+      </div>
+      <h2 class="i-title">Tooltip 위치가 작은 화면에서 잘리는 문제 수정</h2>
+      <div class="tags"><span class="tag t-gfi">good first issue</span><span class="tag t-bug">bug</span><span class="tag">CSS</span><span class="tag">DOM</span></div>
+      <div class="why"><span class="ic">↣</span><div><b>주 언어 JavaScript와 일치</b>해요. 재현 방법이 명확하고 변경 범위가 작아 첫 기여로 딱 좋아요.</div></div>
+    </label>
+
+    <label class="card" for="nav-detail">
+      <div class="card-top">
+        <span class="badge b-green">입문</span>
+        <span class="repo"><span class="lang js"><span class="sw"></span>JavaScript</span> · <b>expressjs/express</b> <span class="inum">#5412</span> · <span class="star">★</span> 65.8k · 활발</span>
+      </div>
+      <h2 class="i-title">라우팅 예제 문서에 async/await 사용법 추가</h2>
+      <div class="tags"><span class="tag t-gfi">good first issue</span><span class="tag t-doc">documentation</span><span class="tag">web</span></div>
+      <div class="why"><span class="ic">↣</span><div><b>관심 분야 '웹'과 일치</b>해요. 코드 변경 없이 문서만 다뤄서 첫 PR 흐름 익히기 좋아요.</div></div>
+    </label>
+
+    <label class="card" for="nav-detail">
+      <div class="card-top">
+        <span class="badge b-amber">보통</span>
+        <span class="repo"><span class="lang ts"><span class="sw"></span>TypeScript</span> · <b>vitejs/vite</b> <span class="inum">#16233</span> · <span class="star">★</span> 71.4k · 활발</span>
+      </div>
+      <h2 class="i-title">dev 서버 에러 메시지에 파일 경로 함께 출력</h2>
+      <div class="tags"><span class="tag t-enh">enhancement</span><span class="tag">DX</span><span class="tag">CLI</span></div>
+      <div class="why"><span class="ic">↣</span><div>JavaScript 경험으로 접근할 수 있으면서 <b>TypeScript로 한 단계 도전</b>해볼 만해요.</div></div>
+    </label>
+
+    <p class="foot-note">조건에 맞는 결과가 부족하면 난이도·분야를 완화해 다시 찾아드려요</p>
+  </section>
+
+  <!-- 6 · 상세 -->
+  <section class="screen screen--detail">
+    <div class="panel">
+      <label for="nav-result" class="back">← 목록으로</label>
+      <div class="d-repo"><span class="lang js"><span class="sw"></span>JavaScript</span> · chartjs/Chart.js <span class="inum">#11821</span> · <span class="star">★</span> 64.2k · 최근 커밋 2일 전</div>
+      <h1 class="d-title">Tooltip 위치가 작은 화면에서 잘리는 문제 수정</h1>
+      <div class="tags"><span class="badge b-blue">쉬움</span><span class="tag t-gfi">good first issue</span><span class="tag t-bug">bug</span><span class="tag">CSS</span></div>
+
+      <div class="meta">
+        <div class="cell"><div class="k">필요 기술</div><div class="v">JavaScript · DOM</div></div>
+        <div class="cell"><div class="k">예상 변경 규모</div><div class="v">파일 1~2개</div></div>
+        <div class="cell"><div class="k">레포 유지보수</div><div class="v">활발</div></div>
+      </div>
+
+      <div class="d-body">
+        <div class="why" style="margin-bottom:20px;">
+          <span class="ic">↣</span>
+          <div><b>왜 나에게 맞나요?</b> 주 언어가 JavaScript로 일치하고, 재현 방법이 명확하며 변경 범위가 작아요. 메인테이너가 활발히 응답하는 레포라 첫 기여 피드백을 빠르게 받을 수 있어요.</div>
+        </div>
+        <h3>이슈 요약</h3>
+        <p>화면 폭이 좁을 때 차트 툴팁이 컨테이너 밖으로 벗어나 잘리는 현상이 보고됐어요. 툴팁 위치 계산 로직이 뷰포트 경계를 반영하도록 보정이 필요해요.</p>
+        <h3>기여 시작 가이드</h3>
+        <ol class="guide">
+          <li data-n="1">레포를 포크하고 로컬에 클론해요.</li>
+          <li data-n="2"><code>tooltip</code> 위치 계산 부분에 뷰포트 경계 조건을 추가해요.</li>
+          <li data-n="3">작은 화면에서 동작을 확인한 뒤 PR을 올려요.</li>
+        </ol>
+      </div>
+
+      <div class="d-actions">
+        <a class="btn btn-primary btn-lg" href="#">GitHub에서 이슈 보기 ↗</a>
+        <label for="nav-result" class="btn btn-soft btn-lg">다른 이슈 보기</label>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>
