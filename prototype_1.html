@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자취방 청결관리사 · 프로토타입</title>
+<style>
+  /* ============ Design tokens ============
+     소재: 자취방 위생 = 물기, 배수구, 타일, 소독.
+     팔레트는 "청결 직후의 물기 있는 타일" — 차가운 청록/민트 + 경고의 앰버.
+     Display: 둥근 산세리프(친근한 매니저), Body: 시스템 산세리프. */
+  :root{
+    --ink:#0f2a2e;
+    --ink-soft:#3c5a5e;
+    --paper:#f2f6f5;
+    --tile:#ffffff;
+    --line:#dbe6e4;
+    --mint:#12b3a0;      /* 브랜드 청록 */
+    --mint-deep:#0a8577;
+    --mint-wash:#e3f5f1;
+    --amber:#f0a132;     /* 경고/이상 신호 */
+    --amber-wash:#fdf1dd;
+    --alarm:#e5644e;     /* 문제 있음 */
+    --alarm-wash:#fce7e2;
+    --shadow:0 10px 30px -12px rgba(15,42,46,.35);
+    --radius:20px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #dff0ec 0%, var(--paper) 55%) fixed;
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 16px 120px;
+    line-height:1.5;
+  }
+  ::selection{background:var(--mint);color:#fff}
+
+  /* ---- top brand ---- */
+  .brand{
+    display:flex;align-items:center;gap:9px;
+    margin-bottom:22px;
+  }
+  .brand .dot{
+    width:30px;height:30px;border-radius:9px;
+    background:linear-gradient(150deg,var(--mint),var(--mint-deep));
+    display:grid;place-items:center;color:#fff;font-size:15px;
+    box-shadow:0 4px 12px -3px rgba(10,133,119,.6);
+  }
+  .brand b{font-size:16px;letter-spacing:-.01em}
+  .brand span{color:var(--ink-soft);font-size:13px}
+
+  /* ---- phone frame ---- */
+  .phone{
+    width:100%;max-width:390px;
+    background:var(--tile);
+    border-radius:34px;
+    box-shadow:var(--shadow), inset 0 0 0 1px var(--line);
+    overflow:hidden;
+    display:flex;flex-direction:column;
+    min-height:720px;
+    position:relative;
+  }
+  .statusbar{
+    height:42px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 22px;font-size:12px;color:var(--ink-soft);
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(var(--mint-wash),transparent);
+  }
+  .statusbar .sp{display:flex;gap:5px;align-items:center}
+  .screen{padding:22px 20px 26px;flex:1;display:none;animation:fade .35s ease}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .eyebrow{
+    font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--mint-deep);margin-bottom:8px;display:flex;align-items:center;gap:7px;
+  }
+  .eyebrow::before{content:"";width:16px;height:2px;background:var(--mint);border-radius:2px}
+  h1{font-size:23px;letter-spacing:-.02em;margin-bottom:6px;font-weight:800}
+  .sub{color:var(--ink-soft);font-size:14px;margin-bottom:20px}
+
+  /* ---- screen 1: probe ---- */
+  .space-card{
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:13px;
+    background:#fbfdfc;
+  }
+  .space-ico{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:22px;background:var(--mint-wash)}
+  .space-card .meta{flex:1}
+  .space-card .meta b{font-size:15px}
+  .space-card .meta p{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .silence{font-size:11px;color:var(--amber);font-weight:600}
+
+  .probe{
+    background:linear-gradient(160deg,var(--mint-wash),#fff);
+    border:1px solid var(--mint);border-radius:var(--radius);
+    padding:18px;margin-top:6px;
+  }
+  .probe .q{font-size:14.5px;font-weight:600;margin-bottom:14px;line-height:1.45}
+  .probe .q small{display:block;color:var(--ink-soft);font-weight:400;font-size:12px;margin-top:4px}
+  .taprow{display:flex;gap:9px}
+  .tap{
+    flex:1;border:1.5px solid var(--line);background:#fff;border-radius:14px;
+    padding:12px 6px;text-align:center;cursor:pointer;transition:.16s;font:inherit;
+  }
+  .tap .em{font-size:22px;display:block;margin-bottom:5px}
+  .tap .lb{font-size:12px;font-weight:600;color:var(--ink-soft)}
+  .tap:hover{transform:translateY(-2px)}
+  .tap.ok:hover{border-color:var(--mint);background:var(--mint-wash)}
+  .tap.mid:hover{border-color:var(--amber);background:var(--amber-wash)}
+  .tap.bad:hover{border-color:var(--alarm);background:var(--alarm-wash)}
+  .note{margin-top:16px;font-size:12px;color:var(--ink-soft);text-align:center;line-height:1.6}
+  .note code{background:var(--mint-wash);color:var(--mint-deep);padding:1px 6px;border-radius:6px;font-size:11px}
+
+  /* ---- chat / session ---- */
+  .thread{display:flex;flex-direction:column;gap:12px;margin-bottom:8px}
+  .bubble{max-width:85%;padding:12px 14px;border-radius:16px;font-size:14px;line-height:1.5}
+  .bubble.ai{background:var(--mint-wash);border-bottom-left-radius:5px;align-self:flex-start;color:var(--ink)}
+  .bubble.me{background:var(--ink);color:#eafcf8;border-bottom-right-radius:5px;align-self:flex-end}
+  .bubble .who{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.6;margin-bottom:4px}
+  .photo-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);padding:5px 9px;border-radius:9px;font-size:12px;margin-top:7px}
+
+  /* hypothesis card */
+  .hcard{
+    border:1px solid var(--line);border-radius:16px;padding:14px;background:#fff;
+    box-shadow:0 4px 14px -10px rgba(15,42,46,.4);margin-top:2px;
+  }
+  .hcard .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+  .hcard .rank{font-size:11px;font-weight:700;color:var(--mint-deep);letter-spacing:.08em}
+  .conf{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-soft)}
+  .conf .bar{width:52px;height:6px;background:var(--line);border-radius:4px;overflow:hidden}
+  .conf .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--mint),var(--mint-deep))}
+  .hcard h3{font-size:15px;margin-bottom:5px;letter-spacing:-.01em}
+  .hcard p{font-size:13px;color:var(--ink-soft);margin-bottom:12px}
+  .hbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .hbtn{flex:1;min-width:92px;border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:9px 6px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.16s;color:var(--ink-soft)}
+  .hbtn:hover{transform:translateY(-1px)}
+  .hbtn.done:hover{border-color:var(--mint);color:var(--mint-deep);background:var(--mint-wash)}
+  .hbtn.na:hover{border-color:var(--ink-soft)}
+  .hbtn.photo:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-wash)}
+
+  .assume{
+    background:var(--amber-wash);border:1px dashed var(--amber);border-radius:12px;
+    padding:11px 13px;font-size:12.5px;color:#7a531a;margin-top:2px;
+  }
+  .assume b{color:var(--amber)}
+
+  /* verify screen */
+  .verify{border:1px solid var(--alarm);background:var(--alarm-wash);border-radius:16px;padding:15px;margin-top:4px}
+  .verify .tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--alarm);letter-spacing:.06em;margin-bottom:8px}
+  .verify p{font-size:13.5px;color:var(--ink);line-height:1.5}
+  .verify p b{color:var(--alarm)}
+
+  /* summary */
+  .sumhead{text-align:center;padding:8px 0 18px}
+  .sumhead .check{width:58px;height:58px;border-radius:50%;background:linear-gradient(150deg,var(--mint),var(--mint-deep));color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto 12px;box-shadow:0 8px 20px -8px rgba(10,133,119,.7)}
+  .sumrow{display:flex;justify-content:space-between;padding:13px 2px;border-bottom:1px solid var(--line);font-size:14px}
+  .sumrow:last-of-type{border-bottom:none}
+  .sumrow span{color:var(--ink-soft)}
+  .sumrow b{font-weight:700}
+  .pill{display:inline-block;background:var(--mint-wash);color:var(--mint-deep);font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px}
+  .followup{background:#fbfdfc;border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-top:16px;font-size:13px;color:var(--ink-soft);line-height:1.55}
+  .followup b{color:var(--ink);display:block;margin-bottom:5px;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+
+  /* primary cta inside screens */
+  .cta{width:100%;margin-top:20px;border:none;background:var(--ink);color:#eafcf8;font:inherit;font-weight:700;font-size:15px;padding:15px;border-radius:15px;cursor:pointer;transition:.18s}
+  .cta:hover{background:var(--mint-deep)}
+  .cta.ghost{background:transparent;color:var(--ink-soft);border:1.5px solid var(--line);font-weight:600}
+  .cta.ghost:hover{color:var(--mint-deep);border-color:var(--mint)}
+
+  /* ---- footer nav (flow control) ---- */
+  .flowbar{
+    position:fixed;bottom:0;left:0;right:0;
+    background:rgba(255,255,255,.86);backdrop-filter:blur(14px);
+    border-top:1px solid var(--line);
+    padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+  }
+  .steps{display:flex;gap:8px}
+  .step{display:flex;align-items:center;gap:7px;cursor:pointer;padding:6px 12px;border-radius:20px;transition:.16s;border:1px solid transparent}
+  .step:hover{background:var(--paper)}
+  .step .n{width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--ink-soft);font-size:11px;font-weight:700;display:grid;place-items:center}
+  .step .t{font-size:12px;font-weight:600;color:var(--ink-soft);display:none}
+  .step.on{border-color:var(--mint);background:var(--mint-wash)}
+  .step.on .n{background:var(--mint-deep);color:#fff}
+  .step.on .t{display:inline;color:var(--mint-deep)}
+  .hint{font-size:11px;color:var(--ink-soft)}
+  @media(max-width:430px){.step.on .t{display:inline}}
+</style>
+</head>
+<body>
+
+  <div class="brand">
+    <span class="dot">✦</span>
+    <b>자취방 청결관리사</b>
+    <span>· 핵심 흐름 프로토타입</span>
+  </div>
+
+  <div class="phone">
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="sp">청결관리사</span>
+      <span class="sp">●●● ▮</span>
+    </div>
+
+    <!-- ============ SCREEN 1 · 체크인 / 프로브 ============ -->
+    <section class="screen active" id="s1">
+      <div class="eyebrow">평상시 · 침묵 모델</div>
+      <h1>오늘의 자취방</h1>
+      <p class="sub">입력이 없으면 "잘 지내는 중"으로 봅니다. 가끔 슬쩍 확인만 할게요.</p>
+
+      <div class="space-card">
+        <div class="space-ico">🚰</div>
+        <div class="meta">
+          <b>화장실</b>
+          <p>마지막 확인 · 어제</p>
+        </div>
+        <span class="pill">양호</span>
+      </div>
+
+      <div class="space-card">
+        <div class="space-ico">🍳</div>
+        <div class="meta">
+          <b>부엌</b>
+          <p class="silence">마지막 확인 · 21일 전 🔔</p>
+        </div>
+      </div>
+
+      <div class="probe">
+        <div class="q">
+          부엌 배수구 확인한 지 3주 됐어요. 지금 상태 어때요?
+          <small>탭 한 번이면 돼요 — 이 응답이 다음 판단의 근거가 됩니다.</small>
+        </div>
+        <div class="taprow">
+          <button class="tap ok" onclick="go('s1')"><span class="em">👍</span><span class="lb">괜찮음</span></button>
+          <button class="tap mid" onclick="go('s2')"><span class="em">👀</span><span class="lb">좀 남</span></button>
+          <button class="tap bad" onclick="go('s2')"><span class="em">🔧</span><span class="lb">문제 있음</span></button>
+        </div>
+        <p class="note">"괜찮음" → 침묵-희소식 가정이 검증됩니다.<br>"문제 있음" → 곧바로 <code>진단 세션</code>으로 들어갑니다.</p>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 2 · 진단 세션 (가설 카드) ============ -->
+    <section class="screen" id="s2">
+      <div class="eyebrow">문제 발생 · 턴제 진단</div>
+      <h1>같이 원인을 찾아봐요</h1>
+      <p class="sub">데이터가 없으면 그 자리에서 되물어 채웁니다. 유력한 원인부터 하나씩.</p>
+
+      <div class="thread">
+        <div class="bubble me">
+          <div class="who">나</div>
+          싱크대에서 초파리가 계속 나와요 😩
+          <div class="photo-chip">📷 kitchen_sink.jpg</div>
+        </div>
+
+        <div class="bubble ai">
+          <div class="who">청결관리사</div>
+          사진 확인했어요. 3주 전 확인 이력도 같이 봤고요. 가능성 높은 순서로 하나씩 짚어볼게요.
+        </div>
+      </div>
+
+      <!-- 행동 ③ 가정하고 진행 -->
+      <div class="assume">
+        <b>가정하고 진행</b> · 자취방은 보통 배수구 트랩이 없어요. 없다고 보고 진행할게요 — 있으면 알려주세요.
+      </div>
+
+      <!-- 가설 카드: 행동 ① 묻기 -->
+      <div class="hcard" style="margin-top:12px">
+        <div class="top">
+          <span class="rank">가설 1 · 가장 유력</span>
+          <span class="conf">유력 <span class="bar"><i style="width:82%"></i></span></span>
+        </div>
+        <h3>배수구에 유기물이 쌓여 번식 중</h3>
+        <p>뜨거운 물 + 베이킹소다·식초로 배수구를 세척하고, 초파리 트랩을 하루 설치해보세요.</p>
+        <div class="hbtns">
+          <button class="hbtn done" onclick="go('s3')">완료했어요</button>
+          <button class="hbtn na" onclick="go('s2')">해당 없음</button>
+          <button class="hbtn photo" onclick="go('s3')">📷 사진 확인</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="cta ghost" style="margin-top:0" onclick="go('s3')">한 번에 여러 방안 보기</button>
+      </div>
+      <p class="note" style="margin-top:12px">순차 모드 · 확인 안 한 가설도 버리지 않고 세션에 남겨 재발 시 재활용합니다.</p>
+    </section>
+
+    <!-- ============ SCREEN 3 · AI 재검증 ============ -->
+    <section class="screen" id="s3">
+      <div class="eyebrow">근거 기반 · AI 재검증</div>
+      <h1>사진을 다시 볼게요</h1>
+      <p class="sub">"완료"라고 해도, 근거가 어긋나면 조심스럽게 다시 여쭤봐요.</p>
+
+      <div class="thread">
+        <div class="bubble me">
+          <div class="who">나</div>
+          배수구 청소 끝! 완료했어요 ✅
+          <div class="photo-chip">📷 after_cleaning.jpg</div>
+        </div>
+      </div>
+
+      <div class="verify">
+        <span class="tag">⚠ 이의 제기</span>
+        <p>보내주신 사진에서 <b>거름망 아래쪽에 아직 찌꺼기</b>가 남아 있어요. 여기가 초파리 산란처일 수 있어서, 이 부분만 한 번 더 헹궈주면 재발 확률이 크게 줄어요.</p>
+      </div>
+
+      <div class="thread" style="margin-top:14px">
+        <div class="bubble ai">
+          <div class="who">청결관리사</div>
+          다시 해보고 사진 주시면 확인해드릴게요. 아니면 이대로 종료해도 괜찮아요 — 며칠 뒤 재발하는지 한 번 체크할게요.
+        </div>
+      </div>
+
+      <button class="cta" onclick="go('s4')">이대로 세션 종료</button>
+      <button class="cta ghost" onclick="go('s2')">다시 시도하고 재확인</button>
+    </section>
+
+    <!-- ============ SCREEN 4 · 세션 종료 요약 ============ -->
+    <section class="screen" id="s4">
+      <div class="eyebrow">기록 · 다음 판단으로 연결</div>
+      <div class="sumhead">
+        <div class="check">✓</div>
+        <h1 style="text-align:center">세션을 마쳤어요</h1>
+        <p class="sub" style="text-align:center;margin-bottom:0">이 기록이 다음번 판단의 근거가 됩니다.</p>
+      </div>
+
+      <div class="sumrow"><span>문제</span><b>부엌 · 초파리 반복 발생</b></div>
+      <div class="sumrow"><span>결론</span><b>배수구 유기물 → 세척</b></div>
+      <div class="sumrow"><span>종료 방식</span><span class="pill">조기 만족 종료</span></div>
+      <div class="sumrow"><span>소요 턴</span><b>3턴</b></div>
+
+      <div class="followup">
+        <b>후속 체크인 (자동 예약)</b>
+        3일 뒤 · "부엌 초파리 다시 보이나요?" 1탭 확인<br>
+        재발하면 <b style="color:var(--alarm)">단발이 아닌 구조적 문제</b>로 격상해 방역을 안내할게요.
+      </div>
+
+      <button class="cta" onclick="go('s1')">홈으로 돌아가기</button>
+    </section>
+
+  </div><!-- /phone -->
+
+  <!-- ============ flow control ============ -->
+  <nav class="flowbar">
+    <div class="steps">
+      <div class="step on" id="d1" onclick="go('s1')"><span class="n">1</span><span class="t">체크인·프로브</span></div>
+      <div class="step" id="d2" onclick="go('s2')"><span class="n">2</span><span class="t">가설 카드</span></div>
+      <div class="step" id="d3" onclick="go('s3')"><span class="n">3</span><span class="t">AI 재검증</span></div>
+      <div class="step" id="d4" onclick="go('s4')"><span class="n">4</span><span class="t">종료 요약</span></div>
+    </div>
+    <span class="hint">아래 단계나 화면 속 버튼을 눌러 흐름을 따라가 보세요</span>
+  </nav>
+
+<script>
+  var map={s1:'d1',s2:'d2',s3:'d3',s4:'d4'};
+  function go(id){
+    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.step').forEach(function(s){s.classList.remove('on')});
+    document.getElementById(map[id]).classList.add('on');
+    document.querySelector('.phone').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+</script>
+</body>
+</html>
