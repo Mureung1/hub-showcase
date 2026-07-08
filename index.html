@@ -1,13 +1,424 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>hub</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미리캣 — 내 출근길의 보초</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#33261A;          /* 짙은 흙색 */
+    --paper:#FBF6EE;        /* 모래빛 종이 */
+    --mist:#ECE1CF;         /* 경계선 */
+    --slate:#8B7863;        /* 보조 텍스트 */
+    --signal:#E4572E;       /* 경보 */
+    --signal-soft:#FCE8DF;
+    --fur:#DCA96E;          /* 미어캣 털 */
+    --fur-light:#F2DDB6;
+    --fur-dark:#4A3423;
+    --route:#3E7CB1;        /* 지도 경로 */
+    --route-soft:#E9F1F8;
+    --chat:#2E2823;         /* 알림 채널 배경 */
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'IBM Plex Sans KR',-apple-system,'Apple SD Gothic Neo',sans-serif;
+    background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  .wrap{max-width:980px;margin:0 auto;padding:0 28px}
+
+  header{padding:24px 0;display:flex;justify-content:space-between;align-items:center}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:-.01em}
+  .logo svg{width:32px;height:32px;border-radius:50%;background:var(--fur-light);border:1px solid var(--mist)}
+  .header-tag{font-size:12.5px;color:var(--slate)}
+
+  .hero{display:grid;grid-template-columns:1fr 300px;gap:44px;align-items:end;padding:40px 0 0}
+  .eyebrow{display:inline-block;font-size:12px;font-weight:600;color:var(--slate);letter-spacing:.12em;margin-bottom:16px}
+  h1{font-size:clamp(28px,4vw,38px);font-weight:700;line-height:1.36;letter-spacing:-.03em;margin-bottom:16px}
+  h1 .accent{color:var(--signal)}
+  .hero p{font-size:15.5px;color:var(--slate);margin-bottom:22px;max-width:480px}
+  .hero-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:44px}
+  .chip{font-size:12px;font-weight:500;color:var(--slate);border:1px solid var(--mist);background:#fff;padding:7px 13px;border-radius:100px}
+  .hero-mascot{display:flex;justify-content:center}
+  .hero-mascot svg{width:250px;height:auto;filter:drop-shadow(0 16px 20px rgba(51,38,26,.16))}
+
+  .divider{border-top:1px solid var(--mist)}
+
+  .screen{padding:56px 0 24px}
+  .screen-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+  .screen-num{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--signal);letter-spacing:.1em}
+  .screen-head h2{font-size:20px;font-weight:700;letter-spacing:-.02em}
+  .screen-cap{font-size:13.5px;color:var(--slate);margin-bottom:26px;max-width:620px}
+
+  .frame{background:#fff;border:1px solid var(--mist);border-radius:16px;overflow:hidden;
+    box-shadow:0 28px 56px -32px rgba(51,38,26,.28),0 2px 8px rgba(51,38,26,.05)}
+  .frame-bar{display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:1px solid var(--mist);background:#FDFAF4}
+  .f-dot{width:9px;height:9px;border-radius:50%;background:var(--mist)}
+  .f-url{margin-left:10px;font-size:11px;color:var(--slate);background:var(--paper);border:1px solid var(--mist);border-radius:6px;padding:4px 12px;flex:1;max-width:320px}
+
+  /* screen 1: register */
+  .reg{display:grid;grid-template-columns:300px 1fr;min-height:380px}
+  .reg-side{padding:20px;border-right:1px solid var(--mist);display:flex;flex-direction:column;gap:12px}
+  .field label{font-size:11px;font-weight:600;color:var(--slate);display:block;margin-bottom:5px}
+  .field .input{border:1px solid var(--mist);border-radius:9px;padding:9px 12px;font-size:13px;font-weight:500;background:#fff}
+  .field .input .mono{font-size:12px;color:var(--slate)}
+  .route-opt{border:1.5px solid var(--mist);border-radius:11px;padding:12px 14px}
+  .route-opt.on{border-color:var(--signal);background:var(--signal-soft)}
+  .route-opt .r1{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600}
+  .route-opt .r1 .mono{font-size:11px;background:#fff;border:1px solid var(--mist);padding:1px 7px;border-radius:4px;color:var(--route)}
+  .route-opt .r2{font-size:11.5px;color:var(--slate);margin-top:3px}
+  .reg-btn{margin-top:auto;background:var(--ink);color:#fff;text-align:center;font-size:13px;font-weight:600;padding:11px;border-radius:9px}
+  .reg-map{position:relative;background:#F1F4F7}
+  .reg-map svg{width:100%;height:100%;display:block;position:absolute;inset:0}
+
+  /* screen 2: discord-like channel */
+  .chat{background:var(--chat);padding:6px 0;min-height:330px}
+  .chat-head{padding:12px 22px;border-bottom:1px solid rgba(255,255,255,.08);color:#EDE4D6;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .chat-head .mono{color:#9C8D79;font-size:12px;font-weight:400}
+  .msg{display:flex;gap:13px;padding:11px 22px}
+  .msg-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--fur-light)}
+  .msg-avatar svg{width:100%;height:100%}
+  .msg-body{min-width:0;flex:1}
+  .msg-meta{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+  .msg-meta .name{font-size:13.5px;font-weight:600;color:#F2E9DA}
+  .msg-meta .bot{font-size:9.5px;font-weight:700;background:var(--route);color:#fff;padding:1px 5px;border-radius:4px;letter-spacing:.03em}
+  .msg-meta .when{font-size:11px;color:#9C8D79}
+  .msg-text{font-size:13px;color:#C9BCA9}
+  .msg-text b{color:#EDE4D6}
+  .embed{margin-top:6px;background:#3A322B;border-left:4px solid var(--signal);border-radius:6px;padding:13px 15px;max-width:460px}
+  .embed-title{font-size:13.5px;font-weight:700;color:#F5EBDC;margin-bottom:9px}
+  .embed-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px 16px;margin-bottom:12px}
+  .ef{font-size:12px;color:#C9BCA9}
+  .ef b{display:block;font-size:10.5px;font-weight:700;color:#9C8D79;letter-spacing:.06em;margin-bottom:2px}
+  .ef .mono{color:#F2E9DA;font-size:11.5px}
+  .embed-btn{display:inline-block;background:var(--signal);color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px}
+
+  /* screen 3: report */
+  .report{display:grid;grid-template-columns:1fr 330px;min-height:420px}
+  .report-map{position:relative;background:#F1F4F7;overflow:hidden}
+  .report-map svg{width:100%;height:100%;display:block;position:absolute;inset:0}
+  .map-legend{position:absolute;left:16px;bottom:16px;background:rgba(255,255,255,.95);border:1px solid var(--mist);
+    border-radius:10px;padding:10px 14px;font-size:11px;display:grid;gap:6px}
+  .lg{display:flex;align-items:center;gap:8px;font-weight:500}
+  .lg i{width:18px;height:0;border-top:3px solid var(--route);border-radius:2px}
+  .lg.red i{border-color:var(--signal)}
+  .lg.dash i{border-top:2.5px dashed var(--route);opacity:.65}
+  .report-side{padding:20px;border-left:1px solid var(--mist);display:flex;flex-direction:column;gap:12px;background:#fff}
+  .rp-block{border:1px solid var(--mist);border-radius:12px;padding:13px 15px}
+  .rp-block.alert{border-color:#F3C4AC;background:var(--signal-soft)}
+  .rp-kicker{font-size:10.5px;font-weight:600;letter-spacing:.1em;color:var(--slate);margin-bottom:6px}
+  .rp-block.alert .rp-kicker{color:var(--signal)}
+  .rp-block h4{font-size:13px;font-weight:600;line-height:1.5;letter-spacing:-.01em}
+  .rp-block .sub{font-size:11.5px;color:var(--slate);margin-top:4px}
+  .rp-alt{display:flex;align-items:center;gap:10px}
+  .rp-alt .ok{width:20px;height:20px;border-radius:50%;background:var(--route-soft);color:var(--route);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+  .trace-item{display:flex;gap:9px;font-size:11.5px;color:var(--slate);padding:4px 0}
+  .trace-item::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--slate);opacity:.5;flex-shrink:0;margin-top:7px}
+  .trace-item.found{color:var(--ink);font-weight:500}
+  .trace-item.found::before{background:var(--signal);opacity:1}
+  .rp-link{font-size:12px;color:var(--route);font-weight:600;text-decoration:none;margin-top:auto}
+
+  .foot-strip{margin:64px 0 0;padding:28px 0;border-top:1px solid var(--mist);display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .foot-item{font-size:12.5px;color:var(--slate)}
+  .foot-item b{display:block;color:var(--ink);font-size:13px;font-weight:600;margin-bottom:3px}
+  footer{border-top:1px solid var(--mist);margin-top:28px;padding:26px 0 44px;display:flex;justify-content:space-between;font-size:12.5px;color:var(--slate)}
+
+  @media(max-width:860px){
+    .hero{grid-template-columns:1fr;gap:8px}
+    .hero-mascot svg{width:180px}
+    .reg{grid-template-columns:1fr}
+    .reg-side{border-right:none;border-bottom:1px solid var(--mist)}
+    .reg-map{min-height:260px}
+    .report{grid-template-columns:1fr}
+    .report-map{min-height:260px}
+    .report-side{border-left:none;border-top:1px solid var(--mist)}
+    .foot-strip{grid-template-columns:1fr}
+    .embed-fields{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="miricat"><!-- 꼬리 (맨 뒤) -->
+  <path d="M155 365 C 75 345, 48 265, 72 195" stroke="#DCA96E" stroke-width="36" fill="none" stroke-linecap="round"/>
+  <circle cx="74" cy="190" r="23" fill="#4A3423"/>
+  <!-- 몸통 -->
+  <path d="M152 240 C 128 320, 138 388, 210 388 C 282 388, 292 320, 268 240 Z" fill="#DCA96E"/>
+  <!-- 배 -->
+  <ellipse cx="210" cy="318" rx="47" ry="60" fill="#F5E3C0"/>
+  <!-- 팔 -->
+  <path d="M184 262 C 180 288, 180 302, 184 316" stroke="#C48F55" stroke-width="17" fill="none" stroke-linecap="round"/>
+  <path d="M236 262 C 240 288, 240 302, 236 316" stroke="#C48F55" stroke-width="17" fill="none" stroke-linecap="round"/>
+  <!-- 발 -->
+  <ellipse cx="178" cy="384" rx="21" ry="10" fill="#C48F55"/>
+  <ellipse cx="242" cy="384" rx="21" ry="10" fill="#C48F55"/>
+  <!-- 머리 그룹 -->
+  
+  <!-- 바닥 그림자 -->
+  <ellipse cx="205" cy="394" rx="95" ry="9" fill="#33261A" opacity=".08"/><g>
+    <!-- 뿔털 -->
+    <path d="M198 66 C 200 52, 206 46, 210 42 C 211 50, 210 56, 209 62 Z" fill="#C48F55"/>
+    <path d="M212 62 C 216 50, 224 46, 230 44 C 228 52, 224 60, 219 66 Z" fill="#C48F55"/>
+    <!-- 귀 -->
+    <circle cx="97" cy="102" r="25" fill="#C48F55"/>
+    <circle cx="323" cy="102" r="25" fill="#C48F55"/>
+    <circle cx="94" cy="102" r="12" fill="#4A3423"/>
+    <circle cx="326" cy="102" r="12" fill="#4A3423"/>
+    <!-- 얼굴 -->
+    <ellipse cx="210" cy="152" rx="102" ry="93" fill="#DCA96E"/>
+    <!-- 눈 패치 -->
+    <ellipse cx="164" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(-7 164 140)"/>
+    <ellipse cx="256" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(7 256 140)"/>
+    <!-- 눈 -->
+    <circle cx="165" cy="142" r="25" fill="#FFF8EC"/>
+    <circle cx="255" cy="142" r="25" fill="#FFF8EC"/>
+    <circle cx="165" cy="143" r="19" fill="#8A5A2B"/>
+    <circle cx="255" cy="143" r="19" fill="#8A5A2B"/>
+    <circle cx="165" cy="143" r="10" fill="#2A1B0F"/>
+    <circle cx="255" cy="143" r="10" fill="#2A1B0F"/>
+    <circle cx="159" cy="134" r="7" fill="#FFFFFF"/>
+    <circle cx="249" cy="134" r="7" fill="#FFFFFF"/>
+    <circle cx="172" cy="151" r="3" fill="#FFFFFF" opacity=".9"/>
+    <circle cx="262" cy="151" r="3" fill="#FFFFFF" opacity=".9"/>
+    <!-- 주둥이 -->
+    <ellipse cx="210" cy="196" rx="44" ry="32" fill="#F5E3C0"/>
+    <ellipse cx="210" cy="182" rx="11" ry="8" fill="#3A2A1B"/>
+    <path d="M210 190 V 200" stroke="#3A2A1B" stroke-width="4" stroke-linecap="round"/>
+    <path d="M192 202 Q 210 216 228 202" stroke="#3A2A1B" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <!-- 볼터치 -->
+    <ellipse cx="126" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/>
+    <ellipse cx="294" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/>
+  </g></g>
+    <g id="miricat-face">
+    <!-- 뿔털 -->
+    <path d="M198 66 C 200 52, 206 46, 210 42 C 211 50, 210 56, 209 62 Z" fill="#C48F55"/>
+    <path d="M212 62 C 216 50, 224 46, 230 44 C 228 52, 224 60, 219 66 Z" fill="#C48F55"/>
+    <!-- 귀 -->
+    <circle cx="97" cy="102" r="25" fill="#C48F55"/>
+    <circle cx="323" cy="102" r="25" fill="#C48F55"/>
+    <circle cx="94" cy="102" r="12" fill="#4A3423"/>
+    <circle cx="326" cy="102" r="12" fill="#4A3423"/>
+    <!-- 얼굴 -->
+    <ellipse cx="210" cy="152" rx="102" ry="93" fill="#DCA96E"/>
+    <!-- 눈 패치 -->
+    <ellipse cx="164" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(-7 164 140)"/>
+    <ellipse cx="256" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(7 256 140)"/>
+    <!-- 눈 -->
+    <circle cx="165" cy="142" r="25" fill="#FFF8EC"/>
+    <circle cx="255" cy="142" r="25" fill="#FFF8EC"/>
+    <circle cx="165" cy="143" r="19" fill="#8A5A2B"/>
+    <circle cx="255" cy="143" r="19" fill="#8A5A2B"/>
+    <circle cx="165" cy="143" r="10" fill="#2A1B0F"/>
+    <circle cx="255" cy="143" r="10" fill="#2A1B0F"/>
+    <circle cx="159" cy="134" r="7" fill="#FFFFFF"/>
+    <circle cx="249" cy="134" r="7" fill="#FFFFFF"/>
+    <circle cx="172" cy="151" r="3" fill="#FFFFFF" opacity=".9"/>
+    <circle cx="262" cy="151" r="3" fill="#FFFFFF" opacity=".9"/>
+    <!-- 주둥이 -->
+    <ellipse cx="210" cy="196" rx="44" ry="32" fill="#F5E3C0"/>
+    <ellipse cx="210" cy="182" rx="11" ry="8" fill="#3A2A1B"/>
+    <path d="M210 190 V 200" stroke="#3A2A1B" stroke-width="4" stroke-linecap="round"/>
+    <path d="M192 202 Q 210 216 228 202" stroke="#3A2A1B" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <!-- 볼터치 -->
+    <ellipse cx="126" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/>
+    <ellipse cx="294" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/>
+  </g>
+  </defs>
+</svg>
+
+
+
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg>
+      미리캣
+    </div>
+    <div class="header-tag">AI Agent Challenge · <span class="mono">2026.07</span> · 정재현</div>
+  </header>
+
+  <div class="hero">
+    <div>
+      <span class="eyebrow">이동 경로 상시 감시 에이전트</span>
+      <h1>내 출근길에<br><span class="accent">보초</span> 한 마리 세워두기</h1>
+      <p>미어캣 무리는 보초를 세웁니다. 한 마리가 망을 보는 동안 나머지는 각자 일을 하죠. 미리캣은 흩어진 게시판에 한 번 올라오고 묻히는 통제·우회 공지를 매일 대신 확인하고 — 이상 없으면 한 줄 보고, 위험이 보이면 근거가 담긴 경보를 보냅니다.</p>
+      <div class="hero-chips">
+        <span class="chip">예측 없음 · 공지된 사실만</span>
+        <span class="chip">보고는 매일 한 줄, 경보는 드물게</span>
+        <span class="chip">모든 경보에 원문 출처</span>
+      </div>
+    </div>
+    <div class="hero-mascot">
+      <svg viewBox="15 30 370 380" role="img" aria-label="미리캣 캐릭터 — 망을 보는 미어캣"><use href="#miricat"/></svg>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 화면 01 -->
+  <div class="screen">
+    <div class="screen-head"><span class="screen-num">SCREEN 01</span><h2>경로 등록 — 한 번이면 끝</h2></div>
+    <p class="screen-cap">출발지·도착지·시간대를 넣으면 경로 후보가 뜨고, 평소 다니는 길을 고릅니다. 경유 도로·이용 노선·정류장까지 저장돼 미리캣의 감시 대상이 됩니다.</p>
+    <div class="frame" role="img" aria-label="경로 등록 화면">
+      <div class="frame-bar"><span class="f-dot"></span><span class="f-dot"></span><span class="f-dot"></span><span class="f-url mono">miricat.app/routes/new</span></div>
+      <div class="reg">
+        <div class="reg-side">
+          <div class="field"><label>출발지</label><div class="input">우리집 <span class="mono">· 유성구</span></div></div>
+          <div class="field"><label>도착지</label><div class="input">회사 <span class="mono">· 대덕구</span></div></div>
+          <div class="field"><label>시간대</label><div class="input">평일 <span class="mono">07:30 – 09:00</span></div></div>
+          <div class="route-opt on">
+            <div class="r1">경로 A · 43분 <span class="mono">B1</span></div>
+            <div class="r2">갑천도시고속도로 경유 · 정류장 12개</div>
+          </div>
+          <div class="route-opt">
+            <div class="r1">경로 B · 51분 <span class="mono">급행2</span></div>
+            <div class="r2">한밭대로 경유 · 정류장 15개</div>
+          </div>
+          <div class="reg-btn">이 경로에 보초 세우기</div>
+        </div>
+        <div class="reg-map">
+          <svg viewBox="0 0 560 380" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <g stroke="#DEE4EA" stroke-width="9" stroke-linecap="round">
+              <path d="M-20 80 H580"/><path d="M-20 190 H580"/><path d="M-20 300 H580"/>
+              <path d="M100 -20 V400"/><path d="M270 -20 V400"/><path d="M430 -20 V400"/>
+            </g>
+            <path d="M490 -20 C 470 110, 545 240, 505 400" stroke="#CFE1EF" stroke-width="24" fill="none"/>
+            <path d="M55 330 H180 V240 H355 V135 H430 V80 H505" stroke="#3E7CB1" stroke-width="4" fill="none" stroke-dasharray="8 7" opacity=".45" stroke-linecap="round"/>
+            <path d="M55 330 V190 H270 V135 H430 V80 H505" stroke="#3E7CB1" stroke-width="6" fill="none" stroke-linecap="round"/>
+            <circle cx="55" cy="330" r="8" fill="#fff" stroke="#33261A" stroke-width="3.5"/>
+            <circle cx="505" cy="80" r="8" fill="#33261A" stroke="#fff" stroke-width="3"/>
+            <text x="55" y="358" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">집</text>
+            <text x="505" y="58" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">회사</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 화면 02 -->
+  <div class="screen">
+    <div class="screen-head"><span class="screen-num">SCREEN 02</span><h2>알림 채널 — 신호의 무게가 다릅니다</h2></div>
+    <p class="screen-cap">이상 없는 날은 확인한 소스가 담긴 한 줄 보고. 보초가 서 있다는 증거입니다. 영향이 있는 날만 경보가 옵니다 — 그래서 경보 한 통이 무겁습니다.</p>
+    <div class="frame" role="img" aria-label="디스코드 알림 채널 화면">
+      <div class="chat">
+        <div class="chat-head"># 출근길-보초 <span class="mono">미리캣이 매일 06:30에 보고합니다</span></div>
+        <div class="msg">
+          <div class="msg-avatar"><svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg></div>
+          <div class="msg-body">
+            <div class="msg-meta"><span class="name">미리캣</span><span class="bot">BOT</span><span class="when">3.25 오전 6:30</span></div>
+            <div class="msg-text">✅ 출근 경로 이상 없음 · 확인: 대전시 공지, 버스조합, KBO</div>
+          </div>
+        </div>
+        <div class="msg">
+          <div class="msg-avatar"><svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg></div>
+          <div class="msg-body">
+            <div class="msg-meta"><span class="name">미리캣</span><span class="bot">BOT</span><span class="when">3.26 오전 6:30</span></div>
+            <div class="msg-text">✅ 출근 경로 이상 없음 · 확인: 대전시 공지, 버스조합, KBO</div>
+          </div>
+        </div>
+        <div class="msg">
+          <div class="msg-avatar"><svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg></div>
+          <div class="msg-body">
+            <div class="msg-meta"><span class="name">미리캣</span><span class="bot">BOT</span><span class="when">3.27 오전 6:31</span></div>
+            <div class="msg-text">✅ 출근 경로 이상 없음 · 확인: 대전시 공지, 버스조합, KBO</div>
+          </div>
+        </div>
+        <div class="msg">
+          <div class="msg-avatar"><svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg></div>
+          <div class="msg-body">
+            <div class="msg-meta"><span class="name">미리캣</span><span class="bot">BOT</span><span class="when">3.28 오전 6:40</span></div>
+            <div class="msg-text"><b>🚨 경보 — 출근 경로 영향 공지를 발견했어요</b></div>
+            <div class="embed">
+              <div class="embed-title">갑천도시고속도로 전면 통제 · B1 우회</div>
+              <div class="embed-fields">
+                <div class="ef"><b>기간</b><span class="mono">3.30 (월) – 4.3 (금)</span></div>
+                <div class="ef"><b>영향</b><span class="mono">B1</span> 우회 · 오정농수산시장 미정차</div>
+                <div class="ef"><b>대안</b>후보 경로 B — 영향권 밖</div>
+                <div class="ef"><b>출처</b>대전광역시 공지 (3.27)</div>
+              </div>
+              <span class="embed-btn">브리핑 리포트 보기</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 화면 03 -->
+  <div class="screen">
+    <div class="screen-head"><span class="screen-num">SCREEN 03</span><h2>브리핑 리포트 — 경보의 근거 전부</h2></div>
+    <p class="screen-cap">경보를 열면 미리캣이 무엇을, 어디서, 어떻게 찾았는지가 남아 있습니다. 사실과 출처, 영향 구간 지도, 영향권 밖 대안 경로, 그리고 조사 과정까지.</p>
+    <div class="frame" role="img" aria-label="브리핑 리포트 화면">
+      <div class="frame-bar"><span class="f-dot"></span><span class="f-dot"></span><span class="f-dot"></span><span class="f-url mono">miricat.app/briefing/0330-b1</span></div>
+      <div class="report">
+        <div class="report-map">
+          <svg viewBox="0 0 620 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <g stroke="#DEE4EA" stroke-width="10" stroke-linecap="round">
+              <path d="M-20 90 H640"/><path d="M-20 210 H640"/><path d="M-20 330 H640"/>
+              <path d="M110 -20 V450"/><path d="M300 -20 V450"/><path d="M480 -20 V450"/>
+            </g>
+            <g stroke="#E7EDF2" stroke-width="5">
+              <path d="M-20 150 H640"/><path d="M-20 270 H640"/><path d="M200 -20 V450"/><path d="M395 -20 V450"/>
+            </g>
+            <path d="M540 -20 C 520 120, 600 260, 560 450" stroke="#CFE1EF" stroke-width="26" fill="none"/>
+            <circle cx="300" cy="150" r="72" fill="rgba(228,87,46,.09)" stroke="#E4572E" stroke-width="1.5" stroke-dasharray="4 5"/>
+            <path d="M60 372 H200 V270 H395 V150 H480 V90 H560" stroke="#3E7CB1" stroke-width="4" fill="none" stroke-dasharray="8 7" opacity=".5" stroke-linecap="round"/>
+            <path d="M60 372 V210 H240" stroke="#3E7CB1" stroke-width="6" fill="none" stroke-linecap="round"/>
+            <path d="M240 210 L360 150" stroke="#E4572E" stroke-width="7" fill="none" stroke-linecap="round"/>
+            <path d="M360 150 H480 V90 H560" stroke="#3E7CB1" stroke-width="6" fill="none" stroke-linecap="round"/>
+            <circle cx="60" cy="372" r="9" fill="#fff" stroke="#33261A" stroke-width="3.5"/>
+            <circle cx="560" cy="90" r="9" fill="#33261A" stroke="#fff" stroke-width="3"/>
+            <g transform="translate(300 118)">
+              <path d="M0 26 C -12 12, -12 -4, 0 -10 C 12 -4, 12 12, 0 26 Z" fill="#E4572E"/>
+              <circle cx="0" cy="2" r="4.5" fill="#fff"/>
+            </g>
+            <text x="60" y="404" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">집</text>
+            <text x="560" y="66" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">회사</text>
+          </svg>
+          <div class="map-legend">
+            <span class="lg"><i></i>내 경로</span>
+            <span class="lg red"><i></i>통제 구간</span>
+            <span class="lg dash"><i></i>대안 경로 B</span>
+          </div>
+        </div>
+        <div class="report-side">
+          <div class="rp-block alert">
+            <div class="rp-kicker">발견된 사실</div>
+            <h4>갑천도시고속도로 전면 통제 · B1 우회</h4>
+            <div class="sub mono">2026.3.30 – 4.3 · 출처: 대전광역시 공지</div>
+          </div>
+          <div class="rp-block">
+            <div class="rp-kicker">대안</div>
+            <div class="rp-alt"><span class="ok">✓</span><h4>후보 경로 B — 영향권 밖 <span style="color:var(--slate);font-weight:400">(B1 미이용 · 통제 구간 미경유)</span></h4></div>
+          </div>
+          <div class="rp-block">
+            <div class="rp-kicker">미리캣의 조사 과정</div>
+            <div class="trace-item">경로 분석 — 이용 노선 B1 식별</div>
+            <div class="trace-item">관할 소스 결정 — 대전시 · 버스조합</div>
+            <div class="trace-item found">대전시 공지에서 통제 공고 발견</div>
+            <div class="trace-item">추출 결과 원문 대조 — 검증 통과</div>
+            <div class="trace-item found">B1 노선 매칭 — 영향 확정</div>
+          </div>
+          <a class="rp-link" href="#">공지 원문 보기 →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot-strip">
+    <div class="foot-item"><b>예측하지 않습니다</b>공지와 일정이라는 사실, 경로와의 겹침만 전달. 모든 경보에 원문 링크</div>
+    <div class="foot-item"><b>실사례로 검증했습니다</b>원촌육교 긴급 통제, 문평동 화재 우회 등 대전·세종 실제 공지 확인</div>
+    <div class="foot-item"><b>LangGraph 멀티에이전트</b>Planner → Scout ⇄ Verifier → Analyst → Reporter · Langfuse 트레이싱 · 추출 평가셋</div>
+  </div>
+
+  <footer>
+    <span><b style="color:var(--ink)">미리캣</b> · 내 출근길의 보초</span>
+    <span>Naver AI Agent Challenge · 정재현 · <span class="mono">2026.07</span></span>
+  </footer>
+</div>
+
+</body>
 </html>
