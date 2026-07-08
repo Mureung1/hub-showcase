@@ -1,0 +1,25 @@
+.dashboard-page {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  grid-template-rows: auto auto;
+  gap: 1.375rem;
+  padding: 1.375rem 1.5rem 2rem;
+  flex: 1;
+}
+
+.dashboard-page .meal-panel {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-page {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding: 1rem 1rem 1.5rem;
+    gap: 1rem;
+  }
+}

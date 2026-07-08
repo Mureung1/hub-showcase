@@ -1,17 +1,29 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AppStoreProvider } from './hooks/useAppStore';
+import Layout from './components/layout/Layout';
+import DashboardPage from './pages/DashboardPage';
+import MembersPage from './pages/MembersPage';
+import RoutinePage from './pages/RoutinePage';
+import MealsPage from './pages/MealsPage';
+import ReportsPage from './pages/ReportsPage';
 import './App.css';
 
 function App() {
   return (
-    <main className="app">
-      <header className="header">
-        <span className="logo">FitCheck</span>
-        <span className="badge">Trainer</span>
-      </header>
-      <section className="hero">
-        <h1>트레이너 웹 서비스</h1>
-        <p>회원 관리, 운동 프로그램, 피드백을 한곳에서 관리하세요.</p>
-      </section>
-    </main>
+    <BrowserRouter>
+      <AppStoreProvider>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="members" element={<MembersPage />} />
+            <Route path="routine" element={<RoutinePage />} />
+            <Route path="meals" element={<MealsPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </AppStoreProvider>
+    </BrowserRouter>
   );
 }
 
