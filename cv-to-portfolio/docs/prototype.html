@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CV → 포트폴리오 생성기 · UI 프로토타입</title>
+<style>
+  /* ── 순수 HTML/CSS 프로토타입 (JS 없음) · 화면 전환은 :target 앵커로 ── */
+  :root{
+    --bg:#eef0f4; --card:#fff; --ink:#16181d; --muted:#6b7280; --line:#e5e7eb;
+    --brand:#4f46e5; --brand-soft:#eef2ff; --ok:#16a34a; --note:#b45309; --note-bg:#fef3c7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+  .page{max-width:1040px;margin:0 auto;padding:24px 20px 64px}
+  .doc-banner{background:#111827;color:#fff;border-radius:12px;padding:12px 18px;font-size:13.5px;margin-bottom:20px}
+  .doc-banner b{color:#a5b4fc}
+
+  /* 브라우저 프레임 */
+  .frame{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    box-shadow:0 8px 30px rgba(0,0,0,.08)}
+  .frame-bar{display:flex;align-items:center;gap:6px;padding:10px 14px;background:#f7f8fa;border-bottom:1px solid var(--line)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+  .frame-url{margin-left:10px;font-size:12px;color:var(--muted);background:#fff;border:1px solid var(--line);
+    border-radius:6px;padding:3px 10px;flex:1}
+  .frame-body{padding:22px}
+
+  /* 스텝퍼 */
+  .stepper{list-style:none;display:flex;gap:8px;padding:0;margin:0 0 20px;flex-wrap:wrap}
+  .stepper li{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:#fff;
+    border:1px solid var(--line);color:var(--muted);font-size:13px;font-weight:600}
+  .stepper .no{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--line);color:#fff;font-size:11px}
+  .stepper li.on{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
+  .stepper li.on .no{background:var(--brand)}
+  .stepper li.done{color:var(--ok)} .stepper li.done .no{background:var(--ok)}
+
+  /* 화면 전환: 기본 s1, 앵커 타겟이면 해당 화면 */
+  .screen{display:none}
+  .screen:target{display:block}
+  body:not(:has(.screen:target)) #s1{display:block}
+
+  h2.screen-title{font-size:17px;margin:0 0 14px}
+  .grid2{display:grid;grid-template-columns:1fr 300px;gap:18px}
+  .grid-design{display:grid;grid-template-columns:320px 1fr;gap:18px}
+
+  .btn{font:inherit;font-weight:600;font-size:13.5px;border:1px solid var(--line);background:#fff;color:var(--ink);
+    padding:9px 16px;border-radius:9px;text-decoration:none;display:inline-block}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.ghost{border-style:dashed;color:var(--brand)}
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+
+  .textarea{height:210px;border:1px solid var(--line);border-radius:10px;background:#fcfcfd;padding:12px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#334;white-space:pre-wrap;overflow:hidden}
+  .toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .preview-card{background:var(--brand-soft);border:1px solid #dfe3ff;border-radius:12px;padding:14px}
+  .preview-card h4{margin:0 0 10px;font-size:13px}
+  .pname{font-weight:800;font-size:17px;margin:0}
+  .ptitle{color:var(--muted);font-size:13px;margin:2px 0 10px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+  .chip{font-size:11px;font-weight:700;color:var(--brand);background:#fff;padding:2px 8px;border-radius:999px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .stats div{background:#fff;border-radius:8px;padding:7px 2px;text-align:center}
+  .stats dt{font-size:10px;color:var(--muted)} .stats dd{margin:2px 0 0;font-size:17px;font-weight:800;color:var(--brand)}
+
+  /* 디자인 카드 */
+  .tcards{display:flex;flex-direction:column;gap:9px}
+  .tcard{display:grid;grid-template-columns:64px 1fr;gap:11px;align-items:center;border:1.5px solid var(--line);
+    border-radius:11px;padding:9px;background:#fff}
+  .tcard.on{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .sw{grid-row:1/3;width:64px;height:48px;border-radius:8px;border:1px solid var(--line);padding:7px;
+    display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden}
+  .sw i{height:5px;border-radius:3px;display:block}
+  .tname{font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px}
+  .rec{font-size:10px;font-weight:700;color:var(--brand);background:var(--brand-soft);padding:1px 7px;border-radius:999px}
+  .tvibe{font-size:11.5px;color:var(--muted)}
+  .docmd{border:1px solid var(--line);border-radius:12px;background:#fbfbfd;padding:16px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#333;white-space:pre-wrap;line-height:1.7}
+  .docmd .h{color:var(--brand);font-weight:700}
+
+  /* 생성 중 */
+  .gen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:46px 0;text-align:center}
+  .spin{width:44px;height:44px;border-radius:50%;border:4px solid var(--brand-soft);border-top-color:var(--brand);margin-bottom:16px}
+  .stages{list-style:none;padding:0;margin:14px 0 0;text-align:left;display:inline-flex;flex-direction:column;gap:7px;font-size:13px;color:var(--muted)}
+  .stages li.done{color:var(--ok)} .stages li.now{color:var(--brand);font-weight:700}
+
+  /* 결과 */
+  .tabs{display:inline-flex;background:#eceef1;border-radius:9px;padding:3px}
+  .tabs span{padding:6px 15px;border-radius:7px;font-size:13px;font-weight:600;color:var(--muted)}
+  .tabs span.on{background:#fff;color:var(--brand);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .result-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+  .miniport{border:1px solid var(--line);border-radius:12px;height:300px;background:#fff;padding:26px 30px;overflow:hidden}
+  .miniport .n{font-size:26px;font-weight:800;text-align:center}
+  .miniport .t{text-align:center;color:var(--muted);font-size:13px;margin-top:2px}
+  .miniport .sec{margin-top:18px}
+  .miniport .sl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:8px}
+  .miniport .ln{height:8px;background:#eef0f4;border-radius:4px;margin:6px 0}
+
+  /* 주석(behavior note) */
+  .note{margin-top:16px;background:var(--note-bg);border:1px solid #fcd34d;border-left:4px solid var(--note);
+    border-radius:8px;padding:11px 14px;font-size:12.5px;color:#78350f}
+  .note b{color:var(--note)}
+  .cap{font-size:12px;color:var(--muted);margin:8px 2px 0}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="doc-banner">🧩 <b>UI 프로토타입</b> · 순수 HTML/CSS (JS 없음) · 상단 스텝을 클릭하면 화면이 전환됩니다.</div>
+
+  <!-- ① 업로드 -->
+  <section class="screen" id="s1">
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="frame-url">cv-to-portfolio · ① CV 업로드</span></div>
+      <div class="frame-body">
+        <ul class="stepper">
+          <li class="on"><span class="no">1</span> CV 업로드</li>
+          <li><span class="no">2</span> 디자인 선택</li>
+          <li><span class="no">3</span> 생성</li>
+          <li><span class="no">4</span> 완성</li>
+        </ul>
+        <div class="grid2">
+          <div>
+            <div class="toolbar">
+              <span class="btn">📄 파일 업로드</span>
+              <span class="btn ghost">🧑‍💻 개발자 샘플</span>
+              <span class="btn ghost">🎨 디자이너 샘플</span>
+            </div>
+            <div class="textarea"># 김지우
+Frontend Engineer
+jiwoo.kim.dev@gmail.com · github.com/jiwoo-kim · 서울
+
+## Summary
+React·TypeScript 3년차. 성능 개선과 디자인 시스템에 강점.
+
+## Skills
+TypeScript, React, Next.js, Vite, Jest ...
+
+## Experience
+### 마켓플러스 — Frontend Engineer (2023.03 - 현재)
+- 페이지 로딩 1.8s → 1.1s (38% 개선)</div>
+          </div>
+          <aside class="preview-card">
+            <h4>파싱 미리보기</h4>
+            <p class="pname">김지우</p>
+            <p class="ptitle">Frontend Engineer</p>
+            <div class="chips"><span class="chip">email</span><span class="chip">github</span></div>
+            <dl class="stats">
+              <div><dt>기술</dt><dd>22</dd></div>
+              <div><dt>경력</dt><dd>2</dd></div>
+              <div><dt>프로젝트</dt><dd>1</dd></div>
+              <div><dt>학력</dt><dd>2</dd></div>
+            </dl>
+          </aside>
+        </div>
+        <div class="nav"><span></span><a class="btn primary" href="#s2">다음: 디자인 선택 →</a></div>
+      </div>
+    </div>
+    <div class="note"><b>동작:</b> 마크다운 CV를 붙여넣거나 파일 업로드 → <b>실시간 파싱</b>으로 오른쪽 미리보기(이름·직함·연락처·통계)가 즉시 갱신. 내용이 있어야 "다음" 활성화.</div>
+    <p class="cap">화면 ①/④ — 상단 스텝 클릭으로 이동</p>
+  </section>
+
+  <!-- ② 디자인 선택 -->
+  <section class="screen" id="s2">
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="frame-url">cv-to-portfolio · ② 디자인 선택</span></div>
+      <div class="frame-body">
+        <ul class="stepper">
+          <li class="done"><span class="no">✓</span> CV 업로드</li>
+          <li class="on"><span class="no">2</span> 디자인 선택</li>
+          <li><span class="no">3</span> 생성</li>
+          <li><span class="no">4</span> 완성</li>
+        </ul>
+        <div class="grid-design">
+          <div class="tcards">
+            <div class="tcard on">
+              <span class="sw" style="background:#fff"><i style="width:60%;background:#2b5ce6"></i><i style="width:80%;background:#1a1d23"></i><i style="width:70%;background:#5b616e"></i></span>
+              <span class="tname">Minimal Clean <span class="rec">추천</span></span><span class="tvibe">여백 중심 미니멀</span>
+            </div>
+            <div class="tcard">
+              <span class="sw" style="background:#0a0e14"><i style="width:60%;background:#3be38b"></i><i style="width:80%;background:#d6e0ea"></i><i style="width:70%;background:#8a97a6"></i></span>
+              <span class="tname">Terminal Dark</span><span class="tvibe">개발자 다크 콘솔</span>
+            </div>
+            <div class="tcard">
+              <span class="sw" style="background:#0f0b1e"><i style="width:60%;background:#b57bff"></i><i style="width:80%;background:#f4f1ff"></i><i style="width:70%;background:#ff7ac6"></i></span>
+              <span class="tname">Creative Gradient</span><span class="tvibe">컬러풀 그라디언트</span>
+            </div>
+            <div class="tcard">
+              <span class="sw" style="background:#fbfaf7"><i style="width:60%;background:#8a4b2f"></i><i style="width:80%;background:#1f1b16"></i><i style="width:70%;background:#6b6357"></i></span>
+              <span class="tname">Editorial Serif</span><span class="tvibe">매거진 세리프</span>
+            </div>
+            <div class="tcard">
+              <span class="sw" style="background:#f4f6f8"><i style="width:60%;background:#1f5fa8"></i><i style="width:80%;background:#1a2230"></i><i style="width:70%;background:#5a6572"></i></span>
+              <span class="tname">Pro Sidebar</span><span class="tvibe">비즈니스 사이드바</span>
+            </div>
+          </div>
+          <div class="docmd"><span class="h"># Minimal Clean</span>
+
+여백이 넉넉한 단정한 미니멀 이력서 테마입니다.
+콘텐츠(경력·프로젝트) 자체가 주인공이 되도록 설계.
+
+<span class="h">## 팔레트</span>
+- 배경 #FFFFFF / 본문 #1A1D23 (대비 ~15:1)
+- 강조 #2B5CE6 (딥 블루)
+
+<span class="h">## 이럴 때 좋아요</span>
+- 대기업·금융 등 보수적 업계 지원 시
+- 직군 무관 가장 무난한 기본값</div>
+        </div>
+        <div class="nav"><a class="btn" href="#s1">← 이전</a><a class="btn primary" href="#s3">이 디자인으로 생성 →</a></div>
+      </div>
+    </div>
+    <div class="note"><b>동작:</b> 왼쪽 <b>테마 카드</b>를 고르면 오른쪽에 해당 <b>DESIGN.md 원문</b> 표시. 테마는 "직군"이 아니라 "분위기/스타일" 선택지.</div>
+    <p class="cap">화면 ②/④</p>
+  </section>
+
+  <!-- ③ 생성 중 -->
+  <section class="screen" id="s3">
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="frame-url">cv-to-portfolio · ③ 생성</span></div>
+      <div class="frame-body">
+        <ul class="stepper">
+          <li class="done"><span class="no">✓</span> CV 업로드</li>
+          <li class="done"><span class="no">✓</span> 디자인 선택</li>
+          <li class="on"><span class="no">3</span> 생성</li>
+          <li><span class="no">4</span> 완성</li>
+        </ul>
+        <div class="gen">
+          <div class="spin"></div>
+          <p style="font-size:16px;margin:0">✨ <b>Minimal Clean</b> 스타일로 생성 중</p>
+          <ul class="stages">
+            <li class="done">✓ CV 구조 분석</li>
+            <li class="done">✓ 디자인 토큰 적용</li>
+            <li class="now">• 섹션 레이아웃 구성…</li>
+            <li>• HTML 페이지 조립</li>
+          </ul>
+        </div>
+        <div class="nav"><a class="btn" href="#s2">← 이전</a><span></span></div>
+      </div>
+    </div>
+    <div class="note"><b>동작:</b> <b>결정적 렌더러</b>가 (파싱된 CV + 디자인 토큰) → 독립 실행형 HTML을 조립. 백엔드·API 키 불필요. 단계 표시는 진행감을 위한 연출.</div>
+    <p class="cap">화면 ③/④</p>
+  </section>
+
+  <!-- ④ 결과 -->
+  <section class="screen" id="s4">
+    <div class="frame">
+      <div class="frame-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="frame-url">cv-to-portfolio · ④ 완성</span></div>
+      <div class="frame-body">
+        <ul class="stepper">
+          <li class="done"><span class="no">✓</span> CV 업로드</li>
+          <li class="done"><span class="no">✓</span> 디자인 선택</li>
+          <li class="done"><span class="no">✓</span> 생성</li>
+          <li class="on"><span class="no">4</span> 완성</li>
+        </ul>
+        <div class="result-bar">
+          <div class="tabs"><span class="on">미리보기</span><span>HTML 코드</span></div>
+          <div><span class="btn">코드 복사</span> <span class="btn primary">⬇ HTML 다운로드</span></div>
+        </div>
+        <div class="miniport">
+          <div class="n">김지우</div>
+          <div class="t">Frontend Engineer</div>
+          <div class="sec"><div class="sl">소개</div><div class="ln" style="width:96%"></div><div class="ln" style="width:88%"></div></div>
+          <div class="sec"><div class="sl">경력</div><div class="ln" style="width:70%"></div><div class="ln" style="width:92%"></div><div class="ln" style="width:84%"></div></div>
+        </div>
+        <div class="nav"><a class="btn" href="#s1">↺ 새로 만들기</a><span class="cap">다운로드한 .html은 그대로 웹에 올리면 포트폴리오</span></div>
+      </div>
+    </div>
+    <div class="note"><b>동작:</b> <b>미리보기(iframe) ↔ HTML 코드</b> 탭 전환. <b>다운로드</b>로 <code>&lt;이름&gt;_portfolio.html</code> 저장, 코드 복사, 새로 만들기(초기화).</div>
+    <p class="cap">화면 ④/④</p>
+  </section>
+</div>
+</body>
+</html>
