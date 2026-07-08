@@ -8,6 +8,8 @@
   :root {
     --toss-blue: #3182f6;
     --toss-blue-light: #eef4ff;
+    --toss-purple: #7c5cfc;
+    --toss-purple-light: #f2edff;
     --toss-green: #1faa59;
     --toss-green-light: #e6f9f0;
     --toss-gray-900: #191f28;
@@ -78,20 +80,77 @@
     margin-bottom: 16px;
   }
 
+  .progress-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .progress-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .progress-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--toss-gray-600);
+  }
+
+  .progress-title::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .progress-title.team {
+    color: var(--toss-purple);
+  }
+
+  .progress-title.mine {
+    color: var(--toss-blue);
+  }
+
+  .progress-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--toss-gray-900);
+  }
+
   .progress-track {
     height: 8px;
     background: var(--toss-gray-200);
     border-radius: 999px;
     overflow: hidden;
-    margin-bottom: 24px;
   }
 
   .progress-fill {
     height: 100%;
     width: 0%;
-    background: var(--toss-blue);
     border-radius: 999px;
     transition: width 0.3s ease;
+  }
+
+  .progress-fill.fill-team {
+    background: var(--toss-purple);
+  }
+
+  .progress-fill.fill-mine {
+    background: var(--toss-blue);
+  }
+
+  .progress-caption {
+    font-size: 12px;
+    color: var(--toss-gray-400);
+    margin-top: 6px;
   }
 
   .task-list {
@@ -315,23 +374,43 @@
 
     <div class="card">
       <div class="card-title">전체 할 일</div>
-      <div class="card-subtitle" id="taskSummary">총 4개 중 1개 완료 (25%)</div>
+      <div class="card-subtitle">담당자가 "나"인 할 일은 내 진행도에 함께 반영돼요</div>
 
-      <div class="progress-track">
-        <div class="progress-fill" id="progressFill"></div>
+      <div class="progress-group">
+        <div class="progress-block">
+          <div class="progress-top">
+            <span class="progress-title team">팀 전체 진행도</span>
+            <span class="progress-value" id="teamProgressValue">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill fill-team" id="teamProgressFill"></div>
+          </div>
+          <div class="progress-caption" id="teamProgressCaption"></div>
+        </div>
+
+        <div class="progress-block">
+          <div class="progress-top">
+            <span class="progress-title mine">내 진행도</span>
+            <span class="progress-value" id="myProgressValue">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill fill-mine" id="myProgressFill"></div>
+          </div>
+          <div class="progress-caption" id="myProgressCaption"></div>
+        </div>
       </div>
 
       <div class="task-list" id="taskList">
-        <div class="task-item" data-status="progress">
+        <div class="task-item" data-status="progress" data-mine="true">
           <div class="checkbox"></div>
           <div class="task-info">
             <div class="task-title">회의시간 매칭 화면 디자인 리뷰</div>
-            <div class="task-meta">지훈 · 마감 7월 10일</div>
+            <div class="task-meta">나 · 마감 7월 10일</div>
           </div>
           <div class="status-badge status-progress">진행</div>
         </div>
 
-        <div class="task-item" data-status="wait">
+        <div class="task-item" data-status="wait" data-mine="false">
           <div class="checkbox"></div>
           <div class="task-info">
             <div class="task-title">팀원 가능시간 데이터 연동</div>
@@ -340,16 +419,16 @@
           <div class="status-badge status-wait">대기</div>
         </div>
 
-        <div class="task-item done" data-status="progress">
+        <div class="task-item done" data-status="progress" data-mine="true">
           <div class="checkbox checked">&#10003;</div>
           <div class="task-info">
             <div class="task-title">추천 로직 QA 테스트</div>
-            <div class="task-meta">민준 · 마감 7월 9일</div>
+            <div class="task-meta">나 · 마감 7월 9일</div>
           </div>
           <div class="status-badge status-done">완료</div>
         </div>
 
-        <div class="task-item" data-status="wait">
+        <div class="task-item" data-status="wait" data-mine="false">
           <div class="checkbox"></div>
           <div class="task-info">
             <div class="task-title">반응형 레이아웃 점검</div>
@@ -369,7 +448,7 @@
         <div class="form-row">
           <div class="field">
             <label class="field-label" for="newTaskAssignee">담당자</label>
-            <input type="text" class="form-input" id="newTaskAssignee" placeholder="이름 입력" />
+            <input type="text" class="form-input" id="newTaskAssignee" placeholder="이름 입력 (내 할 일은 '나')" />
           </div>
           <div class="field">
             <label class="field-label" for="newTaskDue">마감기한</label>
@@ -389,8 +468,13 @@
   <script>
     var STATUS_LABEL = { wait: "대기", progress: "진행" };
     var taskListEl = document.getElementById("taskList");
-    var progressFill = document.getElementById("progressFill");
-    var taskSummary = document.getElementById("taskSummary");
+
+    var teamProgressFill = document.getElementById("teamProgressFill");
+    var teamProgressValue = document.getElementById("teamProgressValue");
+    var teamProgressCaption = document.getElementById("teamProgressCaption");
+    var myProgressFill = document.getElementById("myProgressFill");
+    var myProgressValue = document.getElementById("myProgressValue");
+    var myProgressCaption = document.getElementById("myProgressCaption");
 
     var addTaskBtn = document.getElementById("addTaskBtn");
     var addTaskForm = document.getElementById("addTaskForm");
@@ -412,14 +496,31 @@
       }
     }
 
-    function updateProgress() {
-      var items = taskListEl.querySelectorAll(".task-item");
+    function calcStats(items) {
       var total = items.length;
-      var doneCount = taskListEl.querySelectorAll(".task-item.done").length;
+      var doneCount = items.filter(function (item) {
+        return item.classList.contains("done");
+      }).length;
       var percent = total === 0 ? 0 : Math.round((doneCount / total) * 100);
+      return { total: total, doneCount: doneCount, percent: percent };
+    }
 
-      progressFill.style.width = percent + "%";
-      taskSummary.textContent = "총 " + total + "개 중 " + doneCount + "개 완료 (" + percent + "%)";
+    function updateProgress() {
+      var allItems = Array.prototype.slice.call(taskListEl.querySelectorAll(".task-item"));
+      var myItems = allItems.filter(function (item) {
+        return item.getAttribute("data-mine") === "true";
+      });
+
+      var team = calcStats(allItems);
+      teamProgressFill.style.width = team.percent + "%";
+      teamProgressValue.textContent = team.percent + "%";
+      teamProgressCaption.textContent = "총 " + team.total + "개 중 " + team.doneCount + "개 완료";
+
+      var mine = calcStats(myItems);
+      myProgressFill.style.width = mine.percent + "%";
+      myProgressValue.textContent = mine.percent + "%";
+      myProgressCaption.textContent =
+        mine.total === 0 ? "내 할 일이 아직 없어요" : "총 " + mine.total + "개 중 " + mine.doneCount + "개 완료";
     }
 
     // 체크박스는 위임 방식으로 처리해서, 나중에 새로 추가되는 할 일에도 그대로 동작해요
@@ -472,10 +573,12 @@
       }
       var assignee = newTaskAssignee.value.trim() || "담당자 미정";
       var dueText = formatDue(newTaskDue.value) || "마감일 미정";
+      var isMine = assignee === "나";
 
       var item = document.createElement("div");
       item.className = "task-item";
       item.setAttribute("data-status", "wait");
+      item.setAttribute("data-mine", isMine ? "true" : "false");
       item.innerHTML =
         '<div class="checkbox"></div>' +
         '<div class="task-info">' +
