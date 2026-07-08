@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Tutor Agent - 프로토타입</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <span class="logo-dot"></span>
+      <button class="icon-btn ghost" type="button" aria-label="사이드바 접기">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><line x1="9.5" y1="4.5" x2="9.5" y2="19.5"/></svg>
+      </button>
+    </div>
+
+    <nav class="side-nav">
+      <a class="nav-item active" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 11.5-11.5a1.7 1.7 0 0 1 2.4 0l1.6 1.6a1.7 1.7 0 0 1 0 2.4L9 20l-4 1z"/><line x1="14" y1="6.5" x2="17.5" y2="10"/></svg>
+        <span>새 학습</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="19.5" y1="19.5" x2="15.2" y2="15.2"/></svg>
+        <span>학습 검색</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5a1.5 1.5 0 0 1 1.5-1.5H10l1.7 2H18.5A1.5 1.5 0 0 1 20 7.5v10a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-12z"/></svg>
+        <span>강의자료함</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+        <span>진행 현황</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+        <span>더 보기</span>
+      </a>
+    </nav>
+
+    <div class="pinned-label">학습 세션</div>
+    <div class="pinned-list">
+      <a class="pinned-item" href="#">
+        <span class="course-dot" style="background:#4f8cff">자</span> 자료구조 개론
+      </a>
+      <a class="pinned-item" href="#">
+        <span class="course-dot" style="background:#ff8a4f">미</span> 미분적분학
+      </a>
+      <a class="pinned-item" href="#">
+        <span class="course-dot" style="background:#4fd1a5">세</span> 세포생물학
+      </a>
+      <a class="pinned-item" href="#">
+        <span class="course-dot" style="background:#c96bff">운</span> 운영체제
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <a class="user-chip" href="#">
+        <div class="avatar">학</div>
+        <div class="user-meta">
+          <div class="user-name">학생</div>
+          <div class="user-plan">Free 플랜</div>
+        </div>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-title">AI Tutor Agent <span class="chevron">⌄</span></div>
+      <a class="icon-btn ghost topbar-right" href="#" aria-label="새로고침">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.2M20 12a8 8 0 0 1-14 5.2"/><path d="M18 3.5V7h-3.5M6 20.5V17h3.5"/></svg>
+      </a>
+    </header>
+
+    <div class="chat-wrap">
+
+      <section id="conversation" class="screen conversation">
+        <a class="back-link" href="#">← 새 학습으로 돌아가기</a>
+        <div class="messages">
+          <div class="msg bot">
+            <div class="msg-avatar">🎓</div>
+            <div class="msg-bubble">📘 "자료구조_강의노트.pdf" 분석을 완료했어요!
+
+핵심 개념 3개를 찾았어요:
+1. 재귀 함수
+2. 스택과 큐
+3. 이진 탐색 트리
+
+첫 번째 개념부터 이해도를 확인해볼게요.</div>
+          </div>
+          <div class="msg bot">
+            <div class="msg-avatar">🎓</div>
+            <div class="msg-bubble">Q. 재귀 함수에 대해 예시를 들어 설명해볼 수 있을까요?</div>
+          </div>
+          <div class="msg user">
+            <div class="msg-bubble">재귀 함수는 자기 자신을 호출하는 함수예요. 예를 들어 팩토리얼 계산이 있어요.</div>
+          </div>
+          <div class="msg bot">
+            <div class="msg-avatar">🎓</div>
+            <div class="msg-bubble">좋아요, 핵심은 맞았어요! 다만 종료 조건(base case) 언급이 빠졌어요.
+
+💡 힌트: 재귀 함수는 반드시 멈추는 조건이 있어야 무한 호출을 막을 수 있어요.</div>
+          </div>
+          <div class="msg user">
+            <div class="msg-bubble">아 맞다, base case가 없으면 무한 재귀에 빠지겠네요!</div>
+          </div>
+          <div class="msg bot">
+            <div class="msg-avatar">🎓</div>
+            <div class="msg-bubble">정확해요! 🎉 "재귀 함수" 개념을 숙달했어요.
+다음 개념인 "스택과 큐"로 넘어가볼까요?</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="plan" class="screen plan">
+        <a class="back-link" href="#">← 새 학습으로 돌아가기</a>
+        <div class="plan-card">
+          <h2>📋 학습 계획 - 자료구조 개론</h2>
+          <ul class="plan-list">
+            <li><span class="status done">✅</span> 재귀 함수 <span class="tag">숙달 완료</span></li>
+            <li><span class="status active">🔵</span> 스택과 큐 <span class="tag">진행 중</span></li>
+            <li><span class="status pending">⬜</span> 이진 탐색 트리 <span class="tag">대기</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <div class="hero screen">
+        <h1>무엇을 학습해볼까요?</h1>
+        <p class="hero-sub">강의 자료(PDF)를 올리면 AI가 분석하고 맞춤 학습을 시작해요.</p>
+      </div>
+
+    </div>
+
+    <div class="composer">
+      <div class="input-bar">
+        <label class="icon-btn round" for="pdfFile" title="PDF 업로드">+</label>
+        <input class="chat-input" type="text" placeholder="무엇이든 물어보세요">
+        <a class="send-btn" href="#conversation" title="전송">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 20l16-8L4 4v6l10 2-10 2v6z" fill="currentColor"/></svg>
+        </a>
+      </div>
+
+      <div class="pill-row">
+        <div class="pill file-pill">
+          <span class="pill-icon">📄</span>
+          <input id="pdfFile" class="pdf-input" type="file" accept="application/pdf">
+        </div>
+        <a class="pill" href="#conversation"><span class="pill-icon">💬</span> 대화 예시 보기</a>
+        <a class="pill" href="#plan"><span class="pill-icon">📚</span> 학습 계획 보기</a>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>
