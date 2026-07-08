@@ -16,4 +16,10 @@
 - Vite + React
 
 ## 문서
-- [기획서](docs/plan.md)
+- [기획서](docs/plan.md) ([위키](https://github.com/Yooseunghyeok/hub/wiki/기획서))
+- [프로토타입](docs/prototype.html) — 순수 HTML/CSS, 목데이터
+- [프로토타입 디자인 가이드 (토스 참고)](docs/toss-design.md)
+- [소개 페이지](docs/intro.html)
+- [진행상황 일지](docs/progress.md)
+- [캠프 학습 노트](docs/learning-notes.md)
+- [Vite + React 개발 환경 학습 노트](docs/vite-react-learning-notes.md)
