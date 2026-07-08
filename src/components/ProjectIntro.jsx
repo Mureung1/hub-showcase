@@ -116,7 +116,7 @@ function ProjectIntro() {
           <code>KIS Open API</code>
           <code>Discord</code>
           <code>Gemini</code>
-          <code>Next.js</code>
+          <code>Vite + React</code>
           <code>Supabase</code>
           <code>lightweight-charts</code>
         </p>

@@ -1,0 +1,28 @@
+.placeholder-card {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 48px 32px;
+  max-width: 640px;
+}
+
+.placeholder-card h1 {
+  font-size: 32px;
+  margin: 0 0 12px;
+}
+
+.placeholder-card__desc {
+  color: var(--text);
+  margin-bottom: 20px;
+  line-height: 150%;
+}
+
+.placeholder-card__badge {
+  display: inline-flex;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
