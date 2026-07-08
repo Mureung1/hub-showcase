@@ -14,6 +14,7 @@ import {
   FallbackViewText,
   IconButton,
   SearchField,
+  SectionMessage,
   TextArea,
   TextField,
 } from '@wanteddev/wds';
@@ -46,14 +47,14 @@ type Insight = {
   url: string;
 };
 
-const categoryFilters: Array<Category & { icon: string }> = [
-  { name: 'All', tone: 'slate', icon: 'A' },
-  { name: '개발', tone: 'green', icon: 'D' },
-  { name: '디자인', tone: 'blue', icon: 'U' },
-  { name: '팀프로젝트', tone: 'amber', icon: 'T' },
-  { name: '공부', tone: 'slate', icon: 'S' },
-  { name: '취업', tone: 'rose', icon: 'C' },
-  { name: '미분류', tone: 'slate', icon: '-' },
+const categoryFilters: Category[] = [
+  { name: 'All', tone: 'slate' },
+  { name: '개발', tone: 'green' },
+  { name: '디자인', tone: 'blue' },
+  { name: '팀프로젝트', tone: 'amber' },
+  { name: '공부', tone: 'slate' },
+  { name: '취업', tone: 'rose' },
+  { name: '미분류', tone: 'slate' },
 ];
 
 const initialInsights: Insight[] = [
@@ -299,9 +300,10 @@ function CategoryRail({
               key={category.name}
               value={category.name}
             >
-              <span className={`mini-mark mark-${category.tone}`}>
-                {category.icon}
-              </span>
+              <span
+                aria-hidden="true"
+                className={`category-swatch swatch-${category.tone}`}
+              />
               <span>{category.name}</span>
             </CategoryListItem>
           ))}
@@ -378,22 +380,17 @@ function TipBanner({
         : 'URL만 저장해도 보관함에 먼저 들어가고, 정리는 나중에 해도 괜찮아요.';
 
   return (
-    <aside className="tip-banner" aria-label="화면 안내">
-      <div className="tip-icon" aria-hidden="true">
-        i
-      </div>
-      <div>
-        <strong>
-          {activeTab === 'library'
-            ? '필터로 빠르게 찾기'
-            : getScreenTitle(activeTab)}
-        </strong>
-        <p>{message}</p>
-      </div>
-      <button type="button" aria-label="안내 닫기">
-        ×
-      </button>
-    </aside>
+    <SectionMessage
+      aria-label="화면 안내"
+      className="tip-banner"
+      closeButton
+      description={message}
+      variant="info"
+    >
+      {activeTab === 'library'
+        ? '필터로 빠르게 찾기'
+        : getScreenTitle(activeTab)}
+    </SectionMessage>
   );
 }
 

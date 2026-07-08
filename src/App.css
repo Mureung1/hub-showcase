@@ -157,8 +157,13 @@ p {
 }
 
 .category-scroll [wds-component='category-list-item'] {
-  gap: 8px;
   font-weight: 700;
+}
+
+.category-scroll [wds-component='category-list-item'] > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .rail-icon-button,
@@ -173,45 +178,65 @@ p {
   color: var(--color-text);
 }
 
-.mini-mark {
-  display: grid;
-  width: 20px;
-  height: 20px;
-  place-items: center;
+.category-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
 }
 
-.mark-blue,
+.category-scroll
+  [wds-component='category-list-item'][data-active='true']
+  .category-swatch {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.38);
+}
+
+.swatch-blue {
+  background: #1458dd;
+}
+
+.swatch-green {
+  background: #047857;
+}
+
+.swatch-amber {
+  background: #d97706;
+}
+
+.swatch-rose {
+  background: #be123c;
+}
+
+.swatch-slate {
+  background: #64748b;
+}
+
 .chip-blue,
 .category-blue {
   background: #eff6ff;
   color: #1458dd;
 }
 
-.mark-green,
 .chip-green,
 .category-green {
   background: #ecfdf5;
   color: #047857;
 }
 
-.mark-amber,
 .chip-amber,
 .category-amber {
   background: #fffbeb;
   color: #b45309;
 }
 
-.mark-rose,
 .chip-rose,
 .category-rose {
   background: #fff1f2;
   color: #be123c;
 }
 
-.mark-slate,
 .chip-slate,
 .category-slate {
   background: #f1f5f9;
@@ -254,54 +279,13 @@ a:focus-visible {
 }
 
 .tip-banner {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
   width: calc(100% - 24px);
   margin: 0 auto 10px;
-  border-radius: 12px;
-  background: #000000;
-  color: #ffffff;
-  padding: 16px 18px 16px 42px;
-  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(20, 88, 221, 0.1);
 }
 
-.tip-banner strong {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 15px;
-  line-height: 20px;
-}
-
-.tip-banner p {
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 14px;
-  line-height: 20px;
-}
-
-.tip-banner button {
-  width: 28px;
-  height: 28px;
-  border: 0;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 20px;
-}
-
-.tip-icon {
-  position: absolute;
-  left: -10px;
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border: 3px solid var(--color-bg);
-  border-radius: 999px;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-weight: 800;
+.tip-banner [data-role='section-message-content-title'] {
+  font-weight: 700;
 }
 
 .board {
