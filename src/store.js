@@ -63,6 +63,23 @@ export function reducer(state, action) {
       };
     case 'CONFIRM_PLAN':
       return { ...state, step: 'survey' };
+    case 'SUBMIT_SURVEY':
+      return {
+        ...state,
+        surveys: { ...state.surveys, [action.memberId]: action.survey },
+      };
+    case 'SUBMIT_SURVEYS':
+      return { ...state, surveys: { ...state.surveys, ...action.entries } };
+    case 'CLOSE_SURVEY': {
+      // 미제출자는 "상관없음"(중립 응답)으로 처리하고 배정 단계로 진행
+      const surveys = { ...state.surveys };
+      state.project.members.forEach((m) => {
+        if (!surveys[m.id]) {
+          surveys[m.id] = { preferences: [], avoid: null, experience: [], leader: 'any', neutral: true };
+        }
+      });
+      return { ...state, surveys, step: 'assignment' };
+    }
     case 'GO_TO_STEP':
       return { ...state, step: action.step };
     case 'RESET':
