@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>맞춤 영양제 서비스 사용자 흐름</title>
+</head>
+<body>
+
+  <h1>맞춤 영양제 분석 서비스 흐름</h1>
+
+  <!-- 0. 앱 시작 화면 -->
+  <section>
+    <h2>0. 앱 시작 화면</h2>
+    <div>
+      <!-- 앱 로고/아이콘 영역 -->
+      <svg viewBox="0 0 24 24" width="56" height="56">
+        <path d="M11 20A7 7 0 0 1 4 13V4h9a7 7 0 0 1 7 7v0a7 7 0 0 1-7 7H4"/>
+        <path d="M4 13c0-2 2-4 5-4"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 1. 홈 화면 -->
+  <section>
+    <h2>1. 홈 화면</h2>
+    <p>AI 추천</p>
+    <h3>오늘 컨디션은 어떠세요?</h3>
+    <ul>
+      <li>피로감 (체크됨)</li>
+      <li>안구건조 (체크됨)</li>
+      <li>수면 부족 (체크 해제됨)</li>
+    </ul>
+    <button type="button">진단 시작하기</button>
+  </section>
+
+  <!-- 2. 성분 분석 화면 -->
+  <section>
+    <h2>2. 성분 분석 화면</h2>
+    <h3>이 성분이 필요해요</h3>
+    <ul>
+      <li>안토시아닌</li>
+      <li>비타민 B군</li>
+    </ul>
+    <p>지금 드시는 영양제가 있나요?</p>
+    <input type="text" placeholder="성분명 검색" />
+    <button type="button">다음</button>
+  </section>
+
+  <!-- 3. 성분 중복 체크 화면 -->
+  <section>
+    <h2>3. 성분 중복 체크 화면</h2>
+    <h3>성분 중복을 확인했어요</h3>
+    <div>
+      <strong>비타민A가 겹쳐요</strong>
+    </div>
+    <ul>
+      <li>✓ 루테인은 중복 없음</li>
+      <li>✓ 안토시아닌은 중복 없음</li>
+    </ul>
+    <button type="button">다음</button>
+  </section>
+
+  <!-- 4. SME 제품 추천 화면 -->
+  <section>
+    <h2>4. SME 제품 추천 화면</h2>
+    <h3>믿을 수 있는 제품</h3>
+    <ul>
+      <li>
+        <strong>그린바이오 안토시아닌</strong> - 18,900원
+      </li>
+      <li>
+        <strong>루테인 플러스</strong> - 22,000원
+      </li>
+    </ul>
+    <span>국내 중소기업 제품군</span>
+  </section>
+
+  <!-- 5. 상세 화면 -->
+  <section>
+    <h2>5. 상세 화면</h2>
+    <!-- 제품 이미지 대체 영역 -->
+    <hr />
+    <h3>그린바이오 안토시아닌</h3>
+    <ul>
+      <li>HACCP 인증</li>
+      <li>시험성적서 완료</li>
+    </ul>
+    <p>가격: 18,900원</p>
+    <button type="button">스마트스토어로 이동</button>
+  </section>
+
+  <!-- 6. 스토어 이동 전환 -->
+  <section>
+    <h2>6. 스토어 이동 전환</h2>
+    <div>로딩 중 아이콘 표시 영역</div>
+    <h3>스마트스토어로 이동할게요</h3>
+    <p>잠시만 기다려주세요</p>
+  </section>
+
+</body>
+</html>
