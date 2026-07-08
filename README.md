@@ -98,6 +98,14 @@ flowchart TD
 
 ---
 
+## 산출물 미리보기
+
+![StockMate 기획 덱 미리보기](docs/assets/stockmate-planning-deck-preview.svg)
+
+![StockMate 프로토타입 미리보기](docs/assets/stockmate-prototype-preview.svg)
+
+---
+
 ## 개발 기간
 
 4주 MVP 개발을 목표로 합니다.
