@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PREFER — 첫 화면</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page">
+  <div class="screen-label">01. 첫 화면</div>
+  <div class="landing-grid">
+    <div>
+      <div class="brand-mark landing-fade" style="animation-delay:0ms">PREFER</div>
+      <h1 class="landing-headline landing-fade" style="animation-delay:80ms">
+        <span class="dim">가능한 시간</span>😐보다,<br>
+        더 <span class="strong">좋은 시간</span>😊을.
+      </h1>
+      <p class="landing-sub landing-fade" style="animation-delay:160ms">
+        모두가 가능한 시간 중에서도 각자의 선호를 반영해<br>
+        가장 만족스러운 약속 시간을 찾아드려요.
+      </p>
+      <div class="landing-actions landing-fade" style="animation-delay:240ms">
+        <button type="button" id="btn-open-create" class="btn btn-primary">새 약속 만들기</button>
+        <button type="button" id="btn-open-join" class="btn btn-secondary">기존 약속 참여하기</button>
+      </div>
+      <ol class="landing-steps landing-fade" style="animation-delay:320ms; list-style: none;">
+        <li>1. 가능한 시간 선택</li>
+        <li>2. 선호·비선호 입력</li>
+        <li>3. 최적 시간 추천</li>
+      </ol>
+      <p style="margin-top:18px;">
+        <a href="2.약속 허브 화면.html" style="font-size:12px; color:var(--color-text-muted);">또는 공유받은 링크를 직접 열어보기 →</a>
+      </p>
+    </div>
+    <div class="calendar-card">
+      <div class="calendar-card-title">7월</div>
+      <div class="calendar-weekday-row"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span></div>
+      <div class="calendar-day-grid">
+        <div class="calendar-day">7</div><div class="calendar-day">8</div><div class="calendar-day">9</div><div class="calendar-day">10</div><div class="calendar-day">11</div>
+        <div class="calendar-day">12</div><div class="calendar-day">13</div><div class="calendar-day highlight">14</div><div class="calendar-day highlight">15</div><div class="calendar-day">16</div>
+        <div class="calendar-day">17</div><div class="calendar-day highlight">18</div><div class="calendar-day">19</div><div class="calendar-day highlight">20</div><div class="calendar-day">21</div>
+        <div class="calendar-day">22</div><div class="calendar-day">23</div><div class="calendar-day">24</div><div class="calendar-day">25</div><div class="calendar-day">26</div>
+      </div>
+      <hr class="calendar-divider">
+      <div class="calendar-bubble">"목요일 오후가 좋아요"</div>
+      <div class="calendar-caption">선호 시간으로 반영할까요?</div>
+    </div>
+  </div>
+</div>
+
+<script src="js/mock-data.js"></script>
+<script src="js/components.js"></script>
+<script src="js/main.js"></script>
+<script>initIndexPage();</script>
+</body>
+</html>
