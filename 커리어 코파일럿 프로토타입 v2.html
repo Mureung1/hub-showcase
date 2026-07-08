@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>커리어 코파일럿 — 채용 공고 적합도 대시보드 (v2)</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --bg-panel: #0e121a;
+    --card: #141821;
+    --card-hi: #1a2029;
+    --border: #232a37;
+    --border-soft: #1c2230;
+    --text: #e8eaed;
+    --text-dim: #8b92a5;
+    --text-faint: #565f74;
+
+    --concept: #5eead4;      /* 개념·판단 축 (시안) */
+    --concept-dim: rgba(94, 234, 212, 0.22);
+    --impl: #f59e0b;         /* 구현·독립 축 (앰버) */
+    --impl-dim: rgba(245, 158, 11, 0.22);
+
+    --tier-green: #4ade80;
+    --tier-green-bg: rgba(74, 222, 128, 0.1);
+    --tier-yellow: #fbbf24;
+    --tier-yellow-bg: rgba(251, 191, 36, 0.1);
+    --tier-red: #f87171;
+    --tier-red-bg: rgba(248, 113, 113, 0.1);
+
+    --mono: 'JetBrains Mono', 'Consolas', 'SF Mono', 'Cascadia Code', monospace;
+    --sans: 'Pretendard', 'Malgun Gothic', '맑은 고딕', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(94, 234, 212, 0.06), transparent),
+      radial-gradient(ellipse 800px 500px at 90% 10%, rgba(245, 158, 11, 0.05), transparent);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+
+  /* ---------- 공통 카드 ---------- */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 36px 0 14px;
+  }
+  .section-label .num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 7px;
+  }
+  .section-label h2 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .section-label .sub {
+    font-size: 12.5px;
+    color: var(--text-faint);
+    margin-left: 2px;
+  }
+
+  /* ============================================================
+     1. 헤더
+     ============================================================ */
+  header.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 18px 22px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--concept), var(--impl));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 15px;
+    color: #0b0e14;
+    flex-shrink: 0;
+  }
+  .brand-text h1 {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .brand-text p {
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-top: 1px;
+  }
+
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 8px;
+    flex-wrap: wrap;
+  }
+  .filter-bar label {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  select.hdr-select {
+    background: var(--card-hi);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 30px 8px 12px;
+    font-size: 13.5px;
+    font-family: var(--sans);
+    font-weight: 500;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b92a5' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    transition: border-color 0.15s;
+  }
+  select.hdr-select:hover { border-color: var(--text-faint); }
+  select.hdr-select:focus { outline: none; border-color: var(--concept); }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .updated-at {
+    font-size: 12px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+  .badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-family: var(--mono);
+    padding: 5px 11px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: var(--card-hi);
+    white-space: nowrap;
+  }
+  .badge-pill .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .dot-new { background: var(--tier-green); box-shadow: 0 0 6px var(--tier-green); }
+  .dot-urgent { background: var(--tier-yellow); box-shadow: 0 0 6px var(--tier-yellow); }
+  .badge-pill b { color: var(--text); font-weight: 700; }
+
+  /* ============================================================
+     2. 공고 리스트 — <details> 카드
+     ============================================================ */
+  .job-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .job-card {
+    overflow: hidden;
+    border-left-width: 4px;
+    border-left-style: solid;
+  }
+  .job-card.tier-green { border-left-color: var(--tier-green); }
+  .job-card.tier-yellow { border-left-color: var(--tier-yellow); }
+  .job-card.tier-red { border-left-color: var(--tier-red); }
+
+  /* summary 기본 마커 제거 (크로스브라우저) */
+  .job-card summary {
+    list-style: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .job-card summary::-webkit-details-marker { display: none; }
+  .job-card summary::marker { content: ""; }
+
+  .job-card summary:focus-visible {
+    outline: 2px solid var(--concept);
+    outline-offset: -2px;
+  }
+
+  /* ---- 접힌 상태 요약 한 줄 ---- */
+  .job-summary-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    transition: background 0.15s;
+  }
+  .job-card summary:hover .job-summary-row {
+    background: var(--card-hi);
+  }
+
+  .tier-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .tier-green .tier-badge { background: var(--tier-green-bg); }
+  .tier-yellow .tier-badge { background: var(--tier-yellow-bg); }
+  .tier-red .tier-badge { background: var(--tier-red-bg); }
+
+  .job-id {
+    min-width: 0;
+  }
+  .job-id-top {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+  }
+  .job-company {
+    font-size: 15.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .job-role {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .new-tag {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--tier-green);
+    border: 1px solid rgba(74, 222, 128, 0.4);
+    border-radius: 5px;
+    padding: 1px 6px;
+    letter-spacing: 0.02em;
+  }
+  .job-meta-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .job-source {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-faint);
+  }
+
+  .job-fit-col {
+    text-align: right;
+    white-space: nowrap;
+    padding-right: 4px;
+  }
+  .job-fit-num {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .job-fit-num b { font-size: 16px; }
+  .tier-green .job-fit-num b { color: var(--tier-green); }
+  .tier-yellow .job-fit-num b { color: var(--tier-yellow); }
+  .tier-red .job-fit-num b { color: var(--tier-red); }
+  .job-gap-note {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 3px;
+    font-family: var(--mono);
+  }
+
+  .job-deadline-col {
+    text-align: right;
+    white-space: nowrap;
+  }
+  .deadline-tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: var(--mono);
+  }
+  .tier-green .deadline-tag { background: var(--tier-green-bg); color: var(--tier-green); }
+  .tier-yellow .deadline-tag { background: var(--tier-yellow-bg); color: var(--tier-yellow); }
+  .tier-red .deadline-tag { background: var(--tier-red-bg); color: var(--tier-red); }
+  .deadline-sub {
+    display: block;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    margin-top: 6px;
+    font-family: var(--mono);
+  }
+
+  .expand-chevron {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    transition: transform 0.15s;
+    display: inline-block;
+  }
+  .job-card[open] .expand-chevron { transform: rotate(180deg); }
+
+  /* ---- 펼친 상세 ---- */
+  .job-detail {
+    padding: 4px 20px 24px;
+    border-top: 1px solid var(--border-soft);
+    margin: 0 20px;
+  }
+  .job-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 18px;
+  }
+  .detail-block {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 16px 16px 14px;
+  }
+  .detail-block-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-faint);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .detail-block-title .n {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    background: var(--card-hi);
+    color: var(--text-dim);
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  /* ① 요구 역량 리스트 */
+  .req-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .req-group-label {
+    font-size: 10.5px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    margin: 6px 0 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .req-group-label:first-child { margin-top: 0; }
+  .req-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12.5px;
+    padding: 5px 0;
+  }
+  .req-name { color: var(--text); }
+  .req-status {
+    font-family: var(--mono);
+    font-size: 11px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .req-status.ok { color: var(--tier-green); }
+  .req-status.gap { color: var(--impl); }
+
+  /* ② 2원형 + 스킬바 */
+  .fit-mini-row {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .fit-mini {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .donut-mini {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .donut-mini::after {
+    content: "";
+    position: absolute;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--bg-panel);
+  }
+  .donut-mini-value {
+    position: relative;
+    z-index: 2;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.02em;
+  }
+  .donut-mini-value sup {
+    font-size: 9px;
+    font-weight: 500;
+  }
+  .fit-mini.concept .donut-mini-value { color: var(--concept); }
+  .fit-mini.impl .donut-mini-value { color: var(--impl); }
+  .fit-mini-label {
+    font-size: 10.5px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+  }
+
+  .mini-skill-row {
+    display: grid;
+    grid-template-columns: 68px 1fr 44px;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+  }
+  .mini-skill-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+  .mini-skill-track {
+    position: relative;
+    height: 14px;
+    background: var(--card);
+    border: 1px solid var(--border-soft);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .mini-skill-bar {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+  }
+  .mini-skill-bar.concept-bar {
+    background: var(--concept-dim);
+    border-right: 2px solid var(--concept);
+  }
+  .mini-skill-bar.impl-bar {
+    background: var(--impl);
+    opacity: 0.9;
+  }
+  .mini-skill-nums {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .mini-skill-nums .n-c { color: var(--concept); }
+  .mini-skill-nums .n-s { color: var(--text-faint); margin: 0 1px; }
+  .mini-skill-nums .n-i { color: var(--impl); font-weight: 700; }
+
+  .mini-legend {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-soft);
+    font-size: 10px;
+    color: var(--text-faint);
+  }
+  .mini-legend .item { display: flex; align-items: center; gap: 4px; }
+  .mini-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .mini-legend-swatch.impl-sw { background: var(--impl); }
+  .mini-legend-swatch.concept-sw { background: var(--concept-dim); border: 1.5px solid var(--concept); }
+
+  /* ③ 갭 액션 */
+  .mini-action-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .mini-action-item {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .mini-action-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .mini-action-order {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: var(--card-hi);
+    border: 1px solid var(--border-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .mini-action-item.locked .mini-action-order {
+    background: rgba(245, 158, 11, 0.16);
+    border-color: var(--impl);
+    color: var(--impl);
+  }
+  .mini-action-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+  }
+  .mini-action-desc {
+    font-size: 11.5px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* 게이트(경력요건 미충족) 전용 상세 레이아웃 */
+  .gate-detail {
+    padding: 18px 20px 4px;
+  }
+  .gate-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--bg-panel);
+    border: 1px dashed var(--tier-red);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .gate-notice .gate-icon { font-size: 22px; flex-shrink: 0; }
+  .gate-notice h3 {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--tier-red);
+    margin-bottom: 4px;
+  }
+  .gate-notice p {
+    font-size: 12.5px;
+    color: var(--text-dim);
+    line-height: 1.55;
+  }
+  .gate-notice .gate-req-list {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .gate-notice .gate-req-item {
+    font-size: 12px;
+    color: var(--text-faint);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .gate-notice .gate-req-item .x { color: var(--tier-red); font-family: var(--mono); }
+
+  /* 정직 레이어 (공통 provenance) */
+  .provenance {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-faint);
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-soft);
+  }
+  .provenance .sep { color: var(--border); }
+  .confidence-high { color: var(--tier-green); }
+  .confidence-mid { color: var(--tier-yellow); }
+  .tag-unconfirmed {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 10.5px;
+    color: var(--text-faint);
+    border: 1px dashed var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+  }
+
+  footer.foot-note {
+    margin-top: 44px;
+    padding: 16px 4px 0;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    text-align: center;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  @media (max-width: 860px) {
+    .job-detail-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 760px) {
+    header.topbar { flex-direction: column; align-items: flex-start; }
+    .job-summary-row {
+      grid-template-columns: 40px 1fr;
+      grid-template-rows: auto auto;
+    }
+    .job-fit-col, .job-deadline-col {
+      grid-column: 2 / 3;
+      text-align: left;
+    }
+    .job-detail { margin: 0 8px; padding: 4px 8px 20px; }
+    .fit-mini-row { flex-direction: column; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ============================================================
+       1. 헤더
+       ============================================================ -->
+  <header class="topbar panel">
+    <div class="brand">
+      <div class="brand-mark">CC</div>
+      <div class="brand-text">
+        <h1>커리어 코파일럿</h1>
+        <p>내 위키·GitHub 기반 · 매일 자동 갱신되는 채용 공고 적합도 트래커</p>
+      </div>
+      <div class="filter-bar">
+        <label for="role-filter">직군</label>
+        <select id="role-filter" class="hdr-select">
+          <option selected>전체</option>
+          <option>백엔드</option>
+          <option>AI 백엔드</option>
+          <option>AI 엔지니어</option>
+        </select>
+        <label for="sort-select">정렬</label>
+        <select id="sort-select" class="hdr-select">
+          <option selected>가까운순 (갭 작은 순)</option>
+          <option>적합도 높은순</option>
+          <option>마감임박순</option>
+          <option>신규순</option>
+        </select>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="updated-at">마지막 갱신 06:00</span>
+      <span class="badge-pill"><span class="dot dot-new"></span>어제 대비 신규 <b>+3</b></span>
+      <span class="badge-pill"><span class="dot dot-urgent"></span>마감 임박 <b>2</b></span>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       2. 채용 공고 리스트
+       ============================================================ -->
+  <div class="section-label"><span class="num">01</span><h2>채용 공고</h2><span class="sub">공고별 적합도 — 펼치면 요구역량 · 개념/구현 적합도 · 갭 액션</span></div>
+
+  <div class="job-list">
+
+    <!-- ========== 1. 당근 · 백엔드 신입 (🟢 72) ========== -->
+    <details class="job-card panel tier-green" open>
+      <summary>
+        <div class="job-summary-row">
+          <div class="tier-badge">🟢</div>
+          <div class="job-id">
+            <div class="job-id-top">
+              <span class="job-company">당근</span>
+              <span class="job-role">백엔드 신입</span>
+              <span class="new-tag">NEW</span>
+            </div>
+            <div class="job-meta-row">
+              <span class="job-source">greenhouse · 수집 07-08</span>
+            </div>
+          </div>
+          <div class="job-fit-col">
+            <div class="job-fit-num">적합도 <b>72</b></div>
+            <div class="job-gap-note">갭 2개 · 필수 6/8 충족</div>
+          </div>
+          <div class="job-deadline-col">
+            <span class="deadline-tag">D-12</span>
+            <span class="deadline-sub">7/20 마감 <span class="expand-chevron">▾</span></span>
+          </div>
+        </div>
+      </summary>
+
+      <div class="job-detail">
+        <div class="job-detail-grid">
+
+          <!-- ① 요구 역량 -->
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량</div>
+            <div class="req-list">
+              <div class="req-group-label">필수</div>
+              <div class="req-item"><span class="req-name">Java/Spring 기반 API 개발</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">RDB 설계·쿼리 최적화</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">자료구조·알고리즘</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">Git 협업</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">테스트 코드 작성</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-group-label">우대</div>
+              <div class="req-item"><span class="req-name">Docker·컨테이너 배포 경험</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-item"><span class="req-name">대용량 트래픽 처리 경험</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">사이드 프로젝트 운영 경험</span><span class="req-status ok">✅ 충족</span></div>
+            </div>
+          </div>
+
+          <!-- ② 이 공고 기준 적합도 -->
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">2</span>나의 적합도 (이 공고 기준)</div>
+            <div class="fit-mini-row">
+              <div class="fit-mini concept">
+                <div class="donut-mini" style="background: conic-gradient(var(--concept) 0% 82%, var(--border-soft) 82% 100%);">
+                  <div class="donut-mini-value">82<sup>%</sup></div>
+                </div>
+                <div class="fit-mini-label">개념</div>
+              </div>
+              <div class="fit-mini impl">
+                <div class="donut-mini" style="background: conic-gradient(var(--impl) 0% 41%, var(--border-soft) 41% 100%);">
+                  <div class="donut-mini-value">41<sup>%</sup></div>
+                </div>
+                <div class="fit-mini-label">구현</div>
+              </div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">언어·백엔드</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:75%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:48%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">75</span><span class="n-s">/</span><span class="n-i">48</span></div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">DB·동시성</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:88%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:45%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">88</span><span class="n-s">/</span><span class="n-i">45</span></div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">인프라·배포</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:30%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:15%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">30</span><span class="n-s">/</span><span class="n-i">15</span></div>
+            </div>
+            <div class="mini-legend">
+              <span class="item"><span class="mini-legend-swatch impl-sw"></span>구현</span>
+              <span class="item"><span class="mini-legend-swatch concept-sw"></span>개념</span>
+            </div>
+          </div>
+
+          <!-- ③ 갭 → 뭐부터 -->
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">3</span>갭 → 뭐부터</div>
+            <div class="mini-action-list">
+              <div class="mini-action-item locked">
+                <div class="mini-action-order">1</div>
+                <div>
+                  <div class="mini-action-title">🔒 테스트 코드 습관화</div>
+                  <div class="mini-action-desc">JUnit 기준 단위테스트 붙이기. 필수요건 중 유일한 갭.</div>
+                </div>
+              </div>
+              <div class="mini-action-item">
+                <div class="mini-action-order">2</div>
+                <div>
+                  <div class="mini-action-title">Docker 배포 1회 경험</div>
+                  <div class="mini-action-desc">우대사항이지만 다른 공고에도 공통 게이트라 겸사겸사 우선.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="provenance">
+          <span>출처: greenhouse</span><span class="sep">·</span>
+          <span>수집 07-08</span><span class="sep">·</span>
+          <span class="confidence-high">확신도 높음</span>
+        </div>
+      </div>
+    </details>
+
+    <!-- ========== 2. 우아한형제들 · 서버 개발자 신입 (🟢 70) ========== -->
+    <details class="job-card panel tier-green">
+      <summary>
+        <div class="job-summary-row">
+          <div class="tier-badge">🟢</div>
+          <div class="job-id">
+            <div class="job-id-top">
+              <span class="job-company">우아한형제들</span>
+              <span class="job-role">서버 개발자 신입</span>
+              <span class="new-tag">NEW</span>
+            </div>
+            <div class="job-meta-row">
+              <span class="job-source">내부 API (career.woowahan.com) · 수집 07-08</span>
+            </div>
+          </div>
+          <div class="job-fit-col">
+            <div class="job-fit-num">적합도 <b>70</b></div>
+            <div class="job-gap-note">갭 2개 · 필수 5/7 충족</div>
+          </div>
+          <div class="job-deadline-col">
+            <span class="deadline-tag">D-18</span>
+            <span class="deadline-sub">7/26 마감 <span class="expand-chevron">▾</span></span>
+          </div>
+        </div>
+      </summary>
+
+      <div class="job-detail">
+        <div class="job-detail-grid">
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량</div>
+            <div class="req-list">
+              <div class="req-group-label">필수</div>
+              <div class="req-item"><span class="req-name">Java/Kotlin 기반 서버 개발</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">RDB·트랜잭션 처리</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">CS 기본기(운영체제·네트워크)</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">TDD·테스트 문화 이해</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-group-label">우대</div>
+              <div class="req-item"><span class="req-name">MSA 설계 경험</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-item"><span class="req-name">알고리즘 문제풀이 역량</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">기술 블로그·글쓰기</span><span class="req-status ok">✅ 충족</span></div>
+            </div>
+          </div>
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">2</span>나의 적합도 (이 공고 기준)</div>
+            <div class="fit-mini-row">
+              <div class="fit-mini concept">
+                <div class="donut-mini" style="background: conic-gradient(var(--concept) 0% 80%, var(--border-soft) 80% 100%);">
+                  <div class="donut-mini-value">80<sup>%</sup></div>
+                </div>
+                <div class="fit-mini-label">개념</div>
+              </div>
+              <div class="fit-mini impl">
+                <div class="donut-mini" style="background: conic-gradient(var(--impl) 0% 39%, var(--border-soft) 39% 100%);">
+                  <div class="donut-mini-value">39<sup>%</sup></div>
+                </div>
+                <div class="fit-mini-label">구현</div>
+              </div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">CS·알고리즘</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:70%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:40%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">70</span><span class="n-s">/</span><span class="n-i">40</span></div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">언어·백엔드</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:68%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:45%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">68</span><span class="n-s">/</span><span class="n-i">45</span></div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">시스템·분산</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:55%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:20%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">55</span><span class="n-s">/</span><span class="n-i">20</span></div>
+            </div>
+            <div class="mini-legend">
+              <span class="item"><span class="mini-legend-swatch impl-sw"></span>구현</span>
+              <span class="item"><span class="mini-legend-swatch concept-sw"></span>개념</span>
+            </div>
+          </div>
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">3</span>갭 → 뭐부터</div>
+            <div class="mini-action-list">
+              <div class="mini-action-item locked">
+                <div class="mini-action-order">1</div>
+                <div>
+                  <div class="mini-action-title">🔒 TDD 습관 붙이기</div>
+                  <div class="mini-action-desc">우아한 특유 문화 요건. 테스트 먼저 짜는 연습 필요.</div>
+                </div>
+              </div>
+              <div class="mini-action-item">
+                <div class="mini-action-order">2</div>
+                <div>
+                  <div class="mini-action-title">MSA 구조 학습·미니 구현</div>
+                  <div class="mini-action-desc">서비스 분리 경험 있으면 서면 통과율 크게 오름.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="provenance">
+          <span>출처: 내부 API (비공개 SPA)</span><span class="sep">·</span>
+          <span>수집 07-08</span><span class="sep">·</span>
+          <span class="confidence-high">확신도 높음</span>
+        </div>
+      </div>
+    </details>
+
+    <!-- ========== 3. 쿠팡 · 백엔드 (🟡 63) ========== -->
+    <details class="job-card panel tier-yellow">
+      <summary>
+        <div class="job-summary-row">
+          <div class="tier-badge">🟡</div>
+          <div class="job-id">
+            <div class="job-id-top">
+              <span class="job-company">쿠팡</span>
+              <span class="job-role">백엔드 엔지니어</span>
+            </div>
+            <div class="job-meta-row">
+              <span class="job-source">greenhouse · 수집 07-08</span>
+            </div>
+          </div>
+          <div class="job-fit-col">
+            <div class="job-fit-num">적합도 <b>63</b></div>
+            <div class="job-gap-note">갭 1개: K8s</div>
+          </div>
+          <div class="job-deadline-col">
+            <span class="deadline-tag">D-25</span>
+            <span class="deadline-sub">상시채용 <span class="expand-chevron">▾</span></span>
+          </div>
+        </div>
+      </summary>
+
+      <div class="job-detail">
+        <div class="job-detail-grid">
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량</div>
+            <div class="req-list">
+              <div class="req-group-label">필수</div>
+              <div class="req-item"><span class="req-name">Java/Kotlin·Spring Boot</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">대용량 트래픽 대응 경험</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">RDB·NoSQL 설계</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-group-label">우대</div>
+              <div class="req-item"><span class="req-name">Kubernetes 운영 경험</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-item"><span class="req-name">MSA·이벤트 기반 아키텍처</span><span class="req-status ok">✅ 충족</span></div>
+            </div>
+          </div>
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">2</span>나의 적합도 (이 공고 기준)</div>
+            <div class="fit-mini-row">
+              <div class="fit-mini concept">
+                <div class="donut-mini" style="background: conic-gradient(var(--concept) 0% 76%, var(--border-soft) 76% 100%);">
+                  <div class="donut-mini-value">76<sup>%</sup></div>
+                </div>
+                <div class="fit-mini-label">개념</div>
+              </div>
+              <div class="fit-mini impl">
+                <div class="donut-mini" style="background: conic-gradient(var(--impl) 0% 32%, var(--border-soft) 32% 100%);">
+                  <div class="donut-mini-value">32<sup>%</sup></div>
+                </div>
+                <div class="fit-mini-label">구현</div>
+              </div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">DB·동시성</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:85%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:42%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">85</span><span class="n-s">/</span><span class="n-i">42</span></div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">시스템·분산</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:55%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:20%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">55</span><span class="n-s">/</span><span class="n-i">20</span></div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">인프라·배포</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:30%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:15%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">30</span><span class="n-s">/</span><span class="n-i">15</span></div>
+            </div>
+            <div class="mini-legend">
+              <span class="item"><span class="mini-legend-swatch impl-sw"></span>구현</span>
+              <span class="item"><span class="mini-legend-swatch concept-sw"></span>개념</span>
+            </div>
+          </div>
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">3</span>갭 → 뭐부터</div>
+            <div class="mini-action-list">
+              <div class="mini-action-item locked">
+                <div class="mini-action-order">1</div>
+                <div>
+                  <div class="mini-action-title">🔒 K8s·Docker 배포 실습</div>
+                  <div class="mini-action-desc">유일 갭이자 게이트성 큰 항목. 작은 배포 1개면 우대사항 충족.</div>
+                </div>
+              </div>
+              <div class="mini-action-item">
+                <div class="mini-action-order">2</div>
+                <div>
+                  <div class="mini-action-title">분산 트레이싱 기초 학습</div>
+                  <div class="mini-action-desc">MSA 환경 면접 질문 대비용, 필수는 아니나 가산점.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="provenance">
+          <span>출처: greenhouse</span><span class="sep">·</span>
+          <span>수집 07-08</span><span class="sep">·</span>
+          <span class="confidence-high">확신도 높음</span>
+        </div>
+      </div>
+    </details>
+
+    <!-- ========== 4. AI 백엔드 공고군 (🟡 61) ========== -->
+    <details class="job-card panel tier-yellow">
+      <summary>
+        <div class="job-summary-row">
+          <div class="tier-badge">🟡</div>
+          <div class="job-id">
+            <div class="job-id-top">
+              <span class="job-company">AI 백엔드 공고군</span>
+              <span class="job-role">(5개사 평균)</span>
+            </div>
+            <div class="job-meta-row">
+              <span class="job-source">wanted API · 수집 07-08</span>
+            </div>
+          </div>
+          <div class="job-fit-col">
+            <div class="job-fit-num">적합도 <b>61</b></div>
+            <div class="job-gap-note">갭 2개: K8s·서빙</div>
+          </div>
+          <div class="job-deadline-col">
+            <span class="deadline-tag">D-9</span>
+            <span class="deadline-sub">최빠른 마감 <span class="expand-chevron">▾</span></span>
+          </div>
+        </div>
+      </summary>
+
+      <div class="job-detail">
+        <div class="job-detail-grid">
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량</div>
+            <div class="req-list">
+              <div class="req-group-label">필수</div>
+              <div class="req-item"><span class="req-name">Python 백엔드(FastAPI 등)</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">LLM·에이전트 파이프라인 이해</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">RAG 실구현 경험</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-group-label">우대</div>
+              <div class="req-item"><span class="req-name">모델 서빙(vLLM·TensorRT)</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-item"><span class="req-name">Kubernetes 배포</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-item"><span class="req-name">프롬프트 엔지니어링</span><span class="req-status ok">✅ 충족</span></div>
+            </div>
+          </div>
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">2</span>나의 적합도 (이 공고 기준)</div>
+            <div class="fit-mini-row">
+              <div class="fit-mini concept">
+                <div class="donut-mini" style="background: conic-gradient(var(--concept) 0% 74%, var(--border-soft) 74% 100%);">
+                  <div class="donut-mini-value">74<sup>%</sup></div>
+                </div>
+                <div class="fit-mini-label">개념</div>
+              </div>
+              <div class="fit-mini impl">
+                <div class="donut-mini" style="background: conic-gradient(var(--impl) 0% 33%, var(--border-soft) 33% 100%);">
+                  <div class="donut-mini-value">33<sup>%</sup></div>
+                </div>
+                <div class="fit-mini-label">구현</div>
+              </div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">AI·에이전트</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:88%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:42%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">88</span><span class="n-s">/</span><span class="n-i">42</span></div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">언어·백엔드</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:68%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:45%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">68</span><span class="n-s">/</span><span class="n-i">45</span></div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">인프라·배포</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:30%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:15%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">30</span><span class="n-s">/</span><span class="n-i">15</span></div>
+            </div>
+            <div class="mini-legend">
+              <span class="item"><span class="mini-legend-swatch impl-sw"></span>구현</span>
+              <span class="item"><span class="mini-legend-swatch concept-sw"></span>개념</span>
+            </div>
+          </div>
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">3</span>갭 → 뭐부터</div>
+            <div class="mini-action-list">
+              <div class="mini-action-item locked">
+                <div class="mini-action-order">1</div>
+                <div>
+                  <div class="mini-action-title">🔒 RAG 실구현 1개 완성</div>
+                  <div class="mini-action-desc">개념은 있으나 필수요건인 "실구현"이 갭. 작은 프로젝트로 증명.</div>
+                </div>
+              </div>
+              <div class="mini-action-item">
+                <div class="mini-action-order">2</div>
+                <div>
+                  <div class="mini-action-title">모델 서빙(vLLM) 학습</div>
+                  <div class="mini-action-desc">고빈도 우대요건 + 비전정합 부스트로 우선순위 상위.</div>
+                </div>
+              </div>
+              <div class="mini-action-item">
+                <div class="mini-action-order">3</div>
+                <div>
+                  <div class="mini-action-title">K8s 배포 경험</div>
+                  <div class="mini-action-desc">공고군 5개 중 4개가 요구. 게이트성 큼.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="provenance">
+          <span>출처: wanted API</span><span class="sep">·</span>
+          <span>수집 07-08</span><span class="sep">·</span>
+          <span class="confidence-mid">확신도 중간</span><span class="sep">·</span>
+          <span class="tag-unconfirmed">경력요건 미확인</span>
+        </div>
+      </div>
+    </details>
+
+    <!-- ========== 5. 네이버 · 백엔드 (🟡 58) ========== -->
+    <details class="job-card panel tier-yellow">
+      <summary>
+        <div class="job-summary-row">
+          <div class="tier-badge">🟡</div>
+          <div class="job-id">
+            <div class="job-id-top">
+              <span class="job-company">네이버</span>
+              <span class="job-role">백엔드 개발자</span>
+            </div>
+            <div class="job-meta-row">
+              <span class="job-source">내부 API (recruit.navercorp.com) · 수집 07-08</span>
+            </div>
+          </div>
+          <div class="job-fit-col">
+            <div class="job-fit-num">적합도 <b>58</b></div>
+            <div class="job-gap-note">갭 2개: 대용량·분산</div>
+          </div>
+          <div class="job-deadline-col">
+            <span class="deadline-tag">D-30</span>
+            <span class="deadline-sub">8/7 마감 <span class="expand-chevron">▾</span></span>
+          </div>
+        </div>
+      </summary>
+
+      <div class="job-detail">
+        <div class="job-detail-grid">
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량</div>
+            <div class="req-list">
+              <div class="req-group-label">필수</div>
+              <div class="req-item"><span class="req-name">Java/Spring 기반 개발</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">대용량 트래픽 처리 경험</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-item"><span class="req-name">분산시스템 설계 이해</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-group-label">우대</div>
+              <div class="req-item"><span class="req-name">오픈소스 기여 경험</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">CS 기본기 (네트워크·OS)</span><span class="req-status ok">✅ 충족</span></div>
+            </div>
+          </div>
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">2</span>나의 적합도 (이 공고 기준)</div>
+            <div class="fit-mini-row">
+              <div class="fit-mini concept">
+                <div class="donut-mini" style="background: conic-gradient(var(--concept) 0% 65%, var(--border-soft) 65% 100%);">
+                  <div class="donut-mini-value">65<sup>%</sup></div>
+                </div>
+                <div class="fit-mini-label">개념</div>
+              </div>
+              <div class="fit-mini impl">
+                <div class="donut-mini" style="background: conic-gradient(var(--impl) 0% 27%, var(--border-soft) 27% 100%);">
+                  <div class="donut-mini-value">27<sup>%</sup></div>
+                </div>
+                <div class="fit-mini-label">구현</div>
+              </div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">시스템·분산</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:55%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:20%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">55</span><span class="n-s">/</span><span class="n-i">20</span></div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">언어·백엔드</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:68%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:45%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">68</span><span class="n-s">/</span><span class="n-i">45</span></div>
+            </div>
+            <div class="mini-skill-row">
+              <div class="mini-skill-name">CS·알고리즘</div>
+              <div class="mini-skill-track">
+                <div class="mini-skill-bar concept-bar" style="width:70%;"></div>
+                <div class="mini-skill-bar impl-bar" style="width:40%;"></div>
+              </div>
+              <div class="mini-skill-nums"><span class="n-c">70</span><span class="n-s">/</span><span class="n-i">40</span></div>
+            </div>
+            <div class="mini-legend">
+              <span class="item"><span class="mini-legend-swatch impl-sw"></span>구현</span>
+              <span class="item"><span class="mini-legend-swatch concept-sw"></span>개념</span>
+            </div>
+          </div>
+
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">3</span>갭 → 뭐부터</div>
+            <div class="mini-action-list">
+              <div class="mini-action-item locked">
+                <div class="mini-action-order">1</div>
+                <div>
+                  <div class="mini-action-title">🔒 대용량 트래픽 실험(k6)</div>
+                  <div class="mini-action-desc">보유 도구(k6)로 부하테스트 리포트 하나 만들면 바로 증명 가능.</div>
+                </div>
+              </div>
+              <div class="mini-action-item">
+                <div class="mini-action-order">2</div>
+                <div>
+                  <div class="mini-action-title">분산 실무(멱등성·Kafka) 학습</div>
+                  <div class="mini-action-desc">네이버류 공고 공통 요건. 중빈도지만 비전정합 있어 다음 사이클 후보.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="provenance">
+          <span>출처: 내부 API (비공개 SPA)</span><span class="sep">·</span>
+          <span>수집 07-08</span><span class="sep">·</span>
+          <span class="confidence-mid">확신도 중간</span>
+        </div>
+      </div>
+    </details>
+
+    <!-- ========== 6. 티맵모빌리티 · AI Quality (🔴 게이트) ========== -->
+    <details class="job-card panel tier-red">
+      <summary>
+        <div class="job-summary-row">
+          <div class="tier-badge">🔴</div>
+          <div class="job-id">
+            <div class="job-id-top">
+              <span class="job-company">티맵모빌리티</span>
+              <span class="job-role">AI Quality Engineer</span>
+            </div>
+            <div class="job-meta-row">
+              <span class="job-source">greenhouse · 수집 07-07</span>
+            </div>
+          </div>
+          <div class="job-fit-col">
+            <div class="job-fit-num">경력 <b>게이트</b></div>
+            <div class="job-gap-note">경력 1년+ 요건 미충족</div>
+          </div>
+          <div class="job-deadline-col">
+            <span class="deadline-tag">상시</span>
+            <span class="deadline-sub">채용시 마감 <span class="expand-chevron">▾</span></span>
+          </div>
+        </div>
+      </summary>
+
+      <div class="gate-detail">
+        <div class="gate-notice">
+          <div class="gate-icon">🚧</div>
+          <div>
+            <h3>하드 게이트 — 경력 요건 미충족</h3>
+            <p>이 공고는 <b>경력 1년 이상</b>을 필수로 명시. 신입 지원 불가 게이트라 적합도를 산출하지 않고 "북극성"으로 분류함 (합격 가능성 대신 재평가 시점을 안내).</p>
+            <div class="gate-req-list">
+              <div class="gate-req-item"><span class="x">✕</span> 경력 1년 이상 (현재: 신입)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="job-detail-grid" style="margin-top:16px;">
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량 (참고용)</div>
+            <div class="req-list">
+              <div class="req-item"><span class="req-name">LLM 평가·검증 파이프라인 설계</span><span class="req-status ok">✅ 충족(개념)</span></div>
+              <div class="req-item"><span class="req-name">적대적 테스트·레드티밍</span><span class="req-status ok">✅ 충족(개념)</span></div>
+              <div class="req-item"><span class="req-name">실무 QA 프로세스 경험</span><span class="req-status gap">⚠️ 갭</span></div>
+            </div>
+          </div>
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">2</span>참고: 방향 정합도</div>
+            <p style="font-size:12.5px; color:var(--text-dim); line-height:1.6;">개념 축은 이 직군과 가장 잘 맞음(검증·엄밀함 = 내 시그니처). 경력 게이트만 시간이 해결.</p>
+          </div>
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">3</span>지금 할 것</div>
+            <div class="mini-action-list">
+              <div class="mini-action-item">
+                <div class="mini-action-order">→</div>
+                <div>
+                  <div class="mini-action-title">북극성 — 1~2년 뒤 재평가</div>
+                  <div class="mini-action-desc">그 사이 검증·엄밀함을 밖에서 보이는 활동(블로그·OSS)으로 대체 증명.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="provenance">
+          <span>출처: greenhouse</span><span class="sep">·</span>
+          <span>수집 07-07</span><span class="sep">·</span>
+          <span class="confidence-high">확신도 높음</span>
+        </div>
+      </div>
+    </details>
+
+    <!-- ========== 7. CJ올리브네트웍스 · FDE (🔴 게이트) ========== -->
+    <details class="job-card panel tier-red">
+      <summary>
+        <div class="job-summary-row">
+          <div class="tier-badge">🔴</div>
+          <div class="job-id">
+            <div class="job-id-top">
+              <span class="job-company">CJ올리브네트웍스</span>
+              <span class="job-role">Forward Deployed Engineer</span>
+            </div>
+            <div class="job-meta-row">
+              <span class="job-source">자체 채용페이지 · 수집 07-06</span>
+            </div>
+          </div>
+          <div class="job-fit-col">
+            <div class="job-fit-num">경력 <b>게이트</b></div>
+            <div class="job-gap-note">경력 2년+ 요건 미충족</div>
+          </div>
+          <div class="job-deadline-col">
+            <span class="deadline-tag">상시</span>
+            <span class="deadline-sub">채용시 마감 <span class="expand-chevron">▾</span></span>
+          </div>
+        </div>
+      </summary>
+
+      <div class="gate-detail">
+        <div class="gate-notice">
+          <div class="gate-icon">🚧</div>
+          <div>
+            <h3>하드 게이트 — 경력 요건 미충족</h3>
+            <p>이 공고는 <b>경력 2년 이상</b>을 필수로 명시. 신입 지원 불가 게이트라 적합도를 산출하지 않고 "북극성"으로 분류함.</p>
+            <div class="gate-req-list">
+              <div class="gate-req-item"><span class="x">✕</span> 경력 2년 이상 (현재: 신입)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="job-detail-grid" style="margin-top:16px;">
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량 (참고용)</div>
+            <div class="req-list">
+              <div class="req-item"><span class="req-name">고객 현장 배포·문제해결(FDE)</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-item"><span class="req-name">풀스택 프로토타이핑</span><span class="req-status ok">✅ 충족(개념)</span></div>
+              <div class="req-item"><span class="req-name">AI 솔루션 적용 경험</span><span class="req-status ok">✅ 충족(개념)</span></div>
+            </div>
+          </div>
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">2</span>참고: 방향 정합도</div>
+            <p style="font-size:12.5px; color:var(--text-dim); line-height:1.6;">우대사항이 미확인 상태라 실제 갭 크기는 더 조사 필요. 확신도 중간으로 표시.</p>
+          </div>
+          <div class="detail-block">
+            <div class="detail-block-title"><span class="n">3</span>지금 할 것</div>
+            <div class="mini-action-list">
+              <div class="mini-action-item">
+                <div class="mini-action-order">→</div>
+                <div>
+                  <div class="mini-action-title">북극성 — 1~2년 뒤 재평가</div>
+                  <div class="mini-action-desc">현장 배포형 사이드 프로젝트로 "실무 유사 경험" 축적.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="provenance">
+          <span>출처: 자체 채용페이지</span><span class="sep">·</span>
+          <span>수집 07-06</span><span class="sep">·</span>
+          <span class="confidence-mid">확신도 중간</span><span class="sep">·</span>
+          <span class="tag-unconfirmed">우대사항 미확인</span>
+        </div>
+      </div>
+    </details>
+
+  </div>
+
+  <footer class="foot-note">
+    러프 프로토타입 · 예시 데이터
+  </footer>
+
+</div>
+
+</body>
+</html>
