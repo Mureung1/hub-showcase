@@ -8,7 +8,9 @@
 - 📄 **[기획서](docs/기획서.md)** — 문제 정의 · 사용자 시나리오 · 핵심 기능
 - 🎨 [디자인 명세 (DESIGN.md 5종)](designs)
 - 🖼️ [예시 결과 + 스크린샷](examples)
-- 🔀 [Pull Request #1](https://github.com/dolphin1404/NaverConnect_wm/pull/1)
+- 
+## wiki
+![계획서](https://github.com/dolphin1404/NaverConnect_wm/wiki/%EA%B8%B0%ED%9A%8D%EC%84%9C)
 
 ## 미리보기
 
@@ -70,12 +72,11 @@ src/
 
 ## "AI 생성"에 대하여 (프로토타입 vs 실서비스)
 
-- **프로토타입**: `generatePortfolio()`가 CV + 디자인 토큰으로 HTML을 **결정적으로 렌더링**합니다. 백엔드·API 키 없이 브라우저만으로 동작합니다.
+- **프로토타입**: `generatePortfolio()`가 CV + 디자인 토큰으로 HTML을 **렌더링**합니다. 백엔드·API 키 없이 브라우저만으로 동작합니다.
 - **실서비스(seam)**: 자유도 높은 결과를 원하면 이 함수를 `generateWithAI.js`의 **Claude API 호출**로 교체합니다. CV 원문 + 선택한 `DESIGN.md`를 그대로 LLM에 넘겨 HTML을 생성합니다.
-  - ⚠️ API 키는 브라우저에 노출하면 안 되므로 **백엔드(서버/서버리스)**에서 호출해야 합니다.
 
 ## 한계 / TODO
 
 - PDF·DOCX 업로드는 미지원(현재는 마크다운/텍스트). 실서비스에선 파싱 단계에 문서 변환기 추가 필요.
-- 파서는 흔한 마크다운 구조를 관대하게 처리하는 수준(휴리스틱).
+- 파서는 흔한 마크다운 구조를 관대하게? 휴리스틱하게 처리하는 수준.
 - 실제 LLM 생성 경로(`generateWithAI.js`)는 seam만 있고 호출되지 않음 → 백엔드 붙이면 활성화.
