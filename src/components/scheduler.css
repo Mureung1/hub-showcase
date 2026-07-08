@@ -103,14 +103,29 @@ body { background: #f1f0eb; }
 .agenda-title h2 { margin: 4px 0 0; font-size: 20px; }
 .agenda-count { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: #fff !important; background: var(--scheduler-green); font-size: 13px !important; }
 .agenda-list { display: grid; gap: 7px; margin-top: 18px; }
-.agenda-list article { min-height: 55px; display: grid; grid-template-columns: 9px 1fr auto; gap: 12px; align-items: center; padding: 10px 13px; border: 1px solid #ebe8df; border-radius: 15px; background: #fff; }
+.agenda-list article { min-height: 55px; display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 13px; border: 1px solid #ebe8df; border-radius: 15px; background: #fff; }
+.agenda-list article.editing { border-color: var(--scheduler-ink); box-shadow: 5px 5px 0 rgba(52,75,70,.1); }
 .agenda-list article > i { width: 9px; height: 30px; border-radius: 5px; background: var(--scheduler-green); }
 .agenda-list article > i.blue { background: var(--scheduler-blue); }
 .agenda-list article > i.violet { background: var(--scheduler-violet); }
 .agenda-list article > i.coral { background: var(--scheduler-coral); }
-.agenda-list article div { display: grid; }
+.agenda-copy { min-width: 0; display: grid; }
 .agenda-list strong { font-size: 12px; }
 .agenda-list article span, .agenda-list time { color: var(--scheduler-muted); font-size: 9px; }
+.agenda-item-tools { display: flex; align-items: center; gap: 9px; }
+.agenda-item-tools time { min-width: 42px; text-align: right; }
+.agenda-menu-button { width: 30px; height: 34px; display: grid; place-content: center; gap: 3px; padding: 0; border: 1px solid transparent; border-radius: 10px; background: transparent; cursor: pointer; }
+.agenda-menu-button:hover, .agenda-menu-button[aria-expanded="true"] { border-color: var(--scheduler-line); background: var(--scheduler-cream); }
+.agenda-menu-button i { width: 3px; height: 3px; display: block; border-radius: 50%; background: var(--scheduler-ink); }
+.schedule-editor { grid-column: 2 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 118px; gap: 10px; padding: 13px; border-radius: 13px; background: var(--scheduler-cream); }
+.schedule-editor label { min-width: 0; display: grid; gap: 5px; }
+.schedule-editor label > span { color: var(--scheduler-muted); font-size: 8px; font-weight: 800; }
+.schedule-editor input { min-width: 0; height: 38px; padding: 0 11px; border: 1px solid var(--scheduler-line); border-radius: 10px; background: #fff; color: var(--scheduler-ink); font: inherit; font-size: 11px; outline: none; }
+.schedule-editor input:focus { border-color: var(--scheduler-green); box-shadow: 0 0 0 3px rgba(143,189,171,.18); }
+.schedule-editor-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 7px; }
+.schedule-editor-actions button { min-width: 54px; height: 32px; padding: 0 12px; border: 1px solid var(--scheduler-line); border-radius: 9px; background: #fff; color: var(--scheduler-ink); cursor: pointer; font-size: 9px; font-weight: 800; }
+.schedule-editor-actions button.delete { margin-right: auto; border-color: #efcbc3; color: #c76358; }
+.schedule-editor-actions button.save { border-color: var(--scheduler-ink); background: var(--scheduler-ink); color: #fff; }
 .empty-agenda { margin: 17px 0 0; color: var(--scheduler-muted); font-size: 11px; line-height: 1.6; }
 
 .quick-groups { margin-bottom: 24px; }
