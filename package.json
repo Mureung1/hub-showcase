@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@wanteddev/wds": "3.11.0",
+    "@wanteddev/wds-icon": "3.11.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
