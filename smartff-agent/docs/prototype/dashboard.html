@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — SmartFF Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="./assets/js/config.js"></script>
+  <link rel="stylesheet" href="./assets/css/custom.css" />
+</head>
+<body class="bg-bg">
+  <div class="min-h-screen flex flex-col">
+    <!-- ============================================================================ -->
+    <!-- TOPBAR (고정) -->
+    <!-- ============================================================================ -->
+    <!-- component: topbar -->
+    <div class="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 shadow-sm z-50">
+      <div class="h-full px-6 flex items-center justify-between">
+        <!-- Left: Logo & Tagline -->
+        <div class="flex items-center gap-3 flex-1">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-sm">
+            S
+          </div>
+          <div class="hidden sm:block">
+            <p class="text-sm font-semibold text-gray-900">SmartFF Agent</p>
+            <p class="text-xs text-slate-500 truncate">판매량이 아니라 수익성을 분석하는 AI DSS</p>
+          </div>
+        </div>
+
+        <!-- Center: Shop & Date -->
+        <div class="hidden md:flex items-center gap-2 text-sm text-slate-600">
+          <span class="font-medium">GS25 강남역점</span>
+          <span class="text-slate-400">•</span>
+          <span>2026-07-08 (월)</span>
+        </div>
+
+        <!-- Right: Status & Data Basis -->
+        <div class="flex items-center gap-4">
+          <!-- Status Badge -->
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-success/10 rounded-full border border-success/20">
+            <span class="text-lg">🟢</span>
+            <span class="text-xs font-semibold text-success">분석 완료</span>
+          </div>
+          <!-- Data Basis Badge -->
+          <div class="text-xs text-slate-600 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 text-right">
+            <p class="font-semibold">최근 4주 데이터 기반</p>
+            <p class="text-xs text-slate-500">Last Upload: 2026-07-07 14:32</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- /component -->
+
+    <!-- Main Layout (Topbar 아래) -->
+    <div class="flex flex-1 mt-16">
+      <!-- ============================================================================ -->
+      <!-- SIDEBAR (고정) -->
+      <!-- ============================================================================ -->
+      <!-- component: sidebar -->
+      <div class="w-60 bg-slate-50 border-r border-slate-200 fixed left-0 top-16 bottom-0 overflow-y-auto">
+        <div class="p-4 space-y-2">
+          <!-- Nav Item: Dashboard (Active) -->
+          <a
+            href="./dashboard.html"
+            aria-current="page"
+            class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-medium text-sm transition-colors duration-150"
+          >
+            <span class="text-lg">📊</span>
+            <span>Dashboard</span>
+          </a>
+
+          <!-- Nav Item: Analysis -->
+          <a
+            href="./analysis.html"
+            class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 font-medium text-sm transition-colors duration-150 hover:bg-slate-100"
+          >
+            <span class="text-lg">📈</span>
+            <span>Analysis</span>
+          </a>
+
+          <!-- Nav Item: Financial -->
+          <a
+            href="./financial.html"
+            class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 font-medium text-sm transition-colors duration-150 hover:bg-slate-100"
+          >
+            <span class="text-lg">💰</span>
+            <span>Financial</span>
+          </a>
+
+          <!-- Nav Item: Upload -->
+          <a
+            href="./upload.html"
+            class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 font-medium text-sm transition-colors duration-150 hover:bg-slate-100"
+          >
+            <span class="text-lg">📤</span>
+            <span>Upload</span>
+          </a>
+        </div>
+      </div>
+      <!-- /component -->
+
+      <!-- ============================================================================ -->
+      <!-- MAIN CONTENT -->
+      <!-- ============================================================================ -->
+      <div class="flex-1 ml-60 p-8 overflow-y-auto">
+        <!-- Page Title -->
+        <h1 class="text-4xl font-bold text-gray-900 mb-8">Dashboard</h1>
+
+        <!-- ======================================================================== -->
+        <!-- HERO SECTION — SPLIT LAYOUT (Today's Brief + AI Summary) -->
+        <!-- ======================================================================== -->
+        <div class="grid grid-cols-7 gap-6 mb-12">
+          <!-- Left Card: Today's Brief (7/12 width) -->
+          <!-- component: hero-briefing -->
+          <div class="col-span-4 bg-gradient-to-r from-primary to-primary/80 text-white rounded-2xl p-8 shadow-md">
+            <p class="text-xl font-semibold mb-2">Good Morning ☀️</p>
+            <p class="text-3xl font-bold mb-6">GS25 강남역점</p>
+            <div class="space-y-4 mb-8 text-white/95">
+              <p class="text-base">최근 4주 데이터를 분석한 결과</p>
+              <p class="text-lg font-bold">
+                오늘은 도시락 카테고리의 판매 추세가 상승하고 있습니다.
+              </p>
+            </div>
+            <a
+              href="./analysis.html"
+              class="inline-flex px-5 py-2.5 bg-white text-primary font-bold rounded-lg transition-colors duration-150 hover:bg-white/90 mb-6"
+            >
+              Analysis 확인 →
+            </a>
+            <p class="text-xs text-white/80 leading-relaxed">
+              AI는 발주를 대신하지 않습니다. 판매 데이터와 폐기 데이터를 분석하여 점주의 최종 의사결정을 지원합니다.
+            </p>
+          </div>
+          <!-- /component -->
+
+          <!-- Right Card: AI Summary (5/12 width) -->
+          <!-- component: ai-summary -->
+          <div class="col-span-3 bg-white rounded-2xl border-2 border-primary/20 p-6 shadow-md">
+            <p class="text-sm font-bold text-primary mb-4 uppercase">AI Summary</p>
+
+            <div class="mb-6 pb-6 border-b border-slate-200">
+              <p class="text-xs font-semibold text-slate-500 mb-3">Today's Decision</p>
+
+              <!-- Aggressive -->
+              <div class="mb-4">
+                <div class="inline-flex px-2.5 py-1 bg-success/10 text-success text-xs font-bold rounded-full mb-2">적극 발주</div>
+                <p class="text-lg font-bold text-gray-900">도시락</p>
+                <div class="mt-2 space-y-1 text-xs text-slate-600">
+                  <p>최근 판매량: <span class="font-bold text-primary">+18%</span></p>
+                  <p>폐기 위험: <span class="font-bold text-success">낮음</span></p>
+                </div>
+              </div>
+
+              <!-- Cautious -->
+              <div>
+                <div class="inline-flex px-2.5 py-1 bg-accent/10 text-accent text-xs font-bold rounded-full mb-2">신중 발주</div>
+                <p class="text-lg font-bold text-gray-900">샌드위치</p>
+                <div class="mt-2 space-y-1 text-xs text-slate-600">
+                  <p>폐기율: <span class="font-bold text-accent">12.5%</span></p>
+                  <p>판매 추세: <span class="font-bold text-accent">하락</span></p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Confidence Section -->
+            <div class="bg-slate-50 rounded-lg p-4">
+              <p class="text-xs font-semibold text-slate-600 mb-3">Confidence</p>
+              <div class="grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <p class="text-2xl font-bold text-primary">92%</p>
+                  <p class="text-xs text-slate-500 mt-1">Accuracy</p>
+                </div>
+                <div>
+                  <p class="text-2xl font-bold text-slate-700">4w</p>
+                  <p class="text-xs text-slate-500 mt-1">Period</p>
+                </div>
+                <div>
+                  <p class="text-2xl font-bold text-slate-700">12K</p>
+                  <p class="text-xs text-slate-500 mt-1">Rows</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /component -->
+        </div>
+        <!-- /component -->
+
+        <!-- ======================================================================== -->
+        <!-- 1. TODAY'S DECISION SUMMARY — KPI CARDS -->
+        <!-- ======================================================================== -->
+        <!-- component: kpi-card-group -->
+        <div class="grid grid-cols-3 gap-4 mb-8">
+          <!-- component: kpi-card -->
+          <div class="bg-success/8 border-2 border-success rounded-2xl p-6">
+            <p class="text-xs font-semibold text-success mb-3">🟢 적극 발주</p>
+            <p class="text-4xl font-bold text-success tabular-nums mb-3">2개</p>
+            <div class="text-xs text-slate-700 space-y-1">
+              <p>• 도시락</p>
+              <p>• 주먹밥</p>
+            </div>
+          </div>
+          <!-- /component -->
+
+          <!-- component: kpi-card -->
+          <div class="bg-slate-50 border-2 border-slate-400 rounded-2xl p-6">
+            <p class="text-xs font-semibold text-slate-600 mb-3">🟡 유지</p>
+            <p class="text-4xl font-bold text-slate-700 tabular-nums mb-3">5개</p>
+            <div class="text-xs text-slate-700 space-y-1">
+              <p>• 김밥</p>
+            </div>
+          </div>
+          <!-- /component -->
+
+          <!-- component: kpi-card -->
+          <div class="bg-accent/8 border-2 border-accent rounded-2xl p-6">
+            <p class="text-xs font-semibold text-accent mb-3">🔴 신중 발주</p>
+            <p class="text-4xl font-bold text-accent tabular-nums mb-3">1개</p>
+            <div class="text-xs text-slate-700 space-y-1">
+              <p>• 샌드위치</p>
+            </div>
+          </div>
+          <!-- /component -->
+        </div>
+        <!-- /component -->
+
+        <!-- ======================================================================== -->
+        <!-- 2. CATEGORY PRIORITY CARDS -->
+        <!-- ======================================================================== -->
+        <div class="mb-12">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Category Priority</h2>
+          <!-- component: category-card-group -->
+          <div class="grid grid-cols-4 gap-4">
+            <!-- component: category-card -->
+            <a
+              href="./analysis.html"
+              class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer transition-all duration-150 hover:shadow-md hover:border-primary/50"
+            >
+              <p class="text-2xl font-bold text-gray-900 mb-4">도시락</p>
+              <div class="space-y-4">
+                <div>
+                  <p class="inline-flex px-3 py-1.5 bg-success/10 text-success text-sm font-bold rounded-full">적극 발주</p>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-slate-600 mb-1">판매 추세</p>
+                  <p class="text-base text-slate-700 font-semibold">상승</p>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-slate-600 mb-1">폐기 위험</p>
+                  <p class="text-base text-slate-700 font-semibold">낮음</p>
+                </div>
+              </div>
+            </a>
+            <!-- /component -->
+
+            <!-- component: category-card -->
+            <a
+              href="./analysis.html"
+              class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer transition-all duration-150 hover:shadow-md hover:border-primary/50"
+            >
+              <p class="text-2xl font-bold text-gray-900 mb-4">김밥</p>
+              <div class="space-y-4">
+                <div>
+                  <p class="inline-flex px-3 py-1.5 bg-slate-100 text-slate-600 text-sm font-bold rounded-full">유지</p>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-slate-600 mb-1">판매 추세</p>
+                  <p class="text-base text-slate-700 font-semibold">안정</p>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-slate-600 mb-1">폐기 위험</p>
+                  <p class="text-base text-slate-700 font-semibold">보통</p>
+                </div>
+              </div>
+            </a>
+            <!-- /component -->
+
+            <!-- component: category-card -->
+            <a
+              href="./analysis.html"
+              class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer transition-all duration-150 hover:shadow-md hover:border-primary/50"
+            >
+              <p class="text-2xl font-bold text-gray-900 mb-4">주먹밥</p>
+              <div class="space-y-4">
+                <div>
+                  <p class="inline-flex px-3 py-1.5 bg-slate-100 text-slate-600 text-sm font-bold rounded-full">유지</p>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-slate-600 mb-1">판매 추세</p>
+                  <p class="text-base text-slate-700 font-semibold">안정</p>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-slate-600 mb-1">폐기 위험</p>
+                  <p class="text-base text-slate-700 font-semibold">낮음</p>
+                </div>
+              </div>
+            </a>
+            <!-- /component -->
+
+            <!-- component: category-card -->
+            <a
+              href="./analysis.html"
+              class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer transition-all duration-150 hover:shadow-md hover:border-primary/50"
+            >
+              <p class="text-2xl font-bold text-gray-900 mb-4">샌드위치</p>
+              <div class="space-y-4">
+                <div>
+                  <p class="inline-flex px-3 py-1.5 bg-accent/10 text-accent text-sm font-bold rounded-full">신중 발주</p>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-slate-600 mb-1">판매 추세</p>
+                  <p class="text-base text-slate-700 font-semibold">하락</p>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-slate-600 mb-1">폐기 위험</p>
+                  <p class="text-base text-slate-700 font-semibold">높음</p>
+                </div>
+              </div>
+            </a>
+            <!-- /component -->
+          </div>
+          <!-- /component -->
+        </div>
+
+        <!-- ======================================================================== -->
+        <!-- 3. AI RECOMMENDATION (최대 비중) -->
+        <!-- ======================================================================== -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-8">AI Recommendation</h2>
+
+          <!-- component: recommendation-item -->
+          <div class="mb-10">
+            <div class="flex items-center gap-3 mb-4">
+              <span class="inline-flex px-3 py-1.5 bg-success/10 text-success text-sm font-bold rounded-full">적극 발주</span>
+              <h3 class="text-2xl font-bold text-gray-900">도시락</h3>
+            </div>
+            <div class="space-y-4 ml-0">
+              <div class="bg-slate-50 p-4 rounded-lg">
+                <p class="text-sm font-bold text-slate-600 mb-2">Analysis</p>
+                <p class="text-base text-slate-700">최근 4주 금요일 판매량이 지속적으로 증가. 주말 전 판매량 증가 패턴 확인됨. 폐기율 3.2%로 관리 가능한 수준.</p>
+              </div>
+              <div class="border-l-4 border-success pl-4">
+                <p class="text-sm font-bold text-slate-600 mb-1">Recommendation</p>
+                <p class="text-lg font-bold text-success">발주량 15~20% 확대 검토</p>
+              </div>
+            </div>
+          </div>
+          <!-- /component -->
+
+          <hr class="border-slate-200 my-8" />
+
+          <!-- component: recommendation-item -->
+          <div class="mb-10">
+            <div class="flex items-center gap-3 mb-4">
+              <span class="inline-flex px-3 py-1.5 bg-slate-100 text-slate-600 text-sm font-bold rounded-full">유지</span>
+              <h3 class="text-2xl font-bold text-gray-900">김밥</h3>
+            </div>
+            <div class="space-y-4 ml-0">
+              <div class="bg-slate-50 p-4 rounded-lg">
+                <p class="text-sm font-bold text-slate-600 mb-2">Analysis</p>
+                <p class="text-base text-slate-700">평년 수준의 안정적인 판매 패턴 (변동폭 ±5%). 폐기율 4.8%로 정상 범위.</p>
+              </div>
+              <div class="border-l-4 border-slate-400 pl-4">
+                <p class="text-sm font-bold text-slate-600 mb-1">Recommendation</p>
+                <p class="text-lg font-bold text-slate-700">현재 발주 전략 유지</p>
+              </div>
+            </div>
+          </div>
+          <!-- /component -->
+
+          <hr class="border-slate-200 my-8" />
+
+          <!-- component: recommendation-item -->
+          <div>
+            <div class="flex items-center gap-3 mb-4">
+              <span class="inline-flex px-3 py-1.5 bg-accent/10 text-accent text-sm font-bold rounded-full">신중 발주</span>
+              <h3 class="text-2xl font-bold text-gray-900">샌드위치</h3>
+            </div>
+            <div class="space-y-4 ml-0">
+              <div class="bg-slate-50 p-4 rounded-lg">
+                <p class="text-sm font-bold text-slate-600 mb-2">Analysis</p>
+                <p class="text-base text-slate-700">최근 2주 판매량 감소 추세 (-12%, 변동성 높음). 폐기율 12.5%로 높은 수준 (지난주 대비 +3.3%p).</p>
+              </div>
+              <div class="border-l-4 border-accent pl-4">
+                <p class="text-sm font-bold text-slate-600 mb-1">Recommendation</p>
+                <p class="text-lg font-bold text-accent">발주량 10~15% 축소 검토</p>
+              </div>
+            </div>
+          </div>
+          <!-- /component -->
+        </div>
+        <!-- /component -->
+
+        <!-- 푸터 공간 -->
+        <div class="mt-12 text-center text-xs text-slate-500">
+          <p>© 2026 SmartFF Agent — 점주의 의사결정을 돕는 AI DSS</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analysis — SmartFF Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="./assets/js/config.js"></script>
+  <link rel="stylesheet" href="./assets/css/custom.css" />
+</head>
+<body class="bg-bg">
+  <div class="min-h-screen flex flex-col">
+    <!-- ============================================================================ -->
+    <!-- TOPBAR (고정) -->
+    <!-- ============================================================================ -->
+    <!-- component: topbar -->
+    <div class="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 shadow-sm z-50">
+      <div class="h-full px-6 flex items-center justify-between">
+        <!-- Left: Logo & Tagline -->
+        <div class="flex items-center gap-3 flex-1">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-sm">
+            S
+          </div>
+          <div class="hidden sm:block">
+            <p class="text-sm font-semibold text-gray-900">SmartFF Agent</p>
+            <p class="text-xs text-slate-500 truncate">판매량이 아니라 수익성을 분석하는 AI DSS</p>
+          </div>
+        </div>
+
+        <!-- Center: Shop & Date -->
+        <div class="hidden md:flex items-center gap-2 text-sm text-slate-600">
+          <span class="font-medium">GS25 강남역점</span>
+          <span class="text-slate-400">•</span>
+          <span>2026-07-08 (월)</span>
+        </div>
+
+        <!-- Right: Status & Data Basis -->
+        <div class="flex items-center gap-4">
+          <!-- Status Badge -->
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-success/10 rounded-full border border-success/20">
+            <span class="text-lg">🟢</span>
+            <span class="text-xs font-semibold text-success">분석 완료</span>
+          </div>
+          <!-- Data Basis Badge -->
+          <div class="text-xs text-slate-600 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 text-right">
+            <p class="font-semibold">최근 4주 데이터 기반</p>
+            <p class="text-xs text-slate-500">Last Upload: 2026-07-07 14:32</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- /component -->
+
+    <!-- Main Layout (Topbar 아래) -->
+    <div class="flex flex-1 mt-16">
+      <!-- ============================================================================ -->
+      <!-- SIDEBAR (고정) -->
+      <!-- ============================================================================ -->
+      <!-- component: sidebar -->
+      <div class="w-60 bg-slate-50 border-r border-slate-200 fixed left-0 top-16 bottom-0 overflow-y-auto">
+        <div class="p-4 space-y-2">
+          <!-- Nav Item: Dashboard -->
+          <a
+            href="./dashboard.html"
+            class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 font-medium text-sm transition-colors duration-150 hover:bg-slate-100"
+          >
+            <span class="text-lg">📊</span>
+            <span>Dashboard</span>
+          </a>
+
+          <!-- Nav Item: Analysis (Active) -->
+          <a
+            href="./analysis.html"
+            aria-current="page"
+            class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-medium text-sm transition-colors duration-150"
+          >
+            <span class="text-lg">📈</span>
+            <span>Analysis</span>
+          </a>
+
+          <!-- Nav Item: Financial -->
+          <a
+            href="./financial.html"
+            class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 font-medium text-sm transition-colors duration-150 hover:bg-slate-100"
+          >
+            <span class="text-lg">💰</span>
+            <span>Financial</span>
+          </a>
+
+          <!-- Nav Item: Upload -->
+          <a
+            href="./upload.html"
+            class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 font-medium text-sm transition-colors duration-150 hover:bg-slate-100"
+          >
+            <span class="text-lg">📤</span>
+            <span>Upload</span>
+          </a>
+        </div>
+      </div>
+      <!-- /component -->
+
+      <!-- ============================================================================ -->
+      <!-- MAIN CONTENT -->
+      <!-- ============================================================================ -->
+      <div class="flex-1 ml-60 p-8 overflow-y-auto">
+        <!-- Page Title -->
+        <h1 class="text-4xl font-bold text-gray-900 mb-8">Analysis</h1>
+
+        <!-- ======================================================================== -->
+        <!-- FILTER BAR (Sticky) -->
+        <!-- ======================================================================== -->
+        <!-- component: filter-bar -->
+        <div class="sticky top-0 bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-8 z-40">
+          <div class="flex items-center gap-4">
+            <div class="flex-1">
+              <label for="category-filter" class="block text-xs font-medium text-slate-500 mb-1">
+                카테고리
+              </label>
+              <select
+                id="category-filter"
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:border-primary"
+              >
+                <option value="">전체</option>
+                <option value="kimbap">도시락</option>
+                <option value="kimbab">김밥</option>
+                <option value="balls">주먹밥</option>
+                <option value="sandwich">샌드위치</option>
+              </select>
+            </div>
+            <div class="flex-1">
+              <label for="period-filter" class="block text-xs font-medium text-slate-500 mb-1">
+                기간
+              </label>
+              <select
+                id="period-filter"
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:border-primary"
+              >
+                <option value="2w">Recent 2 Weeks</option>
+                <option value="4w" selected>Recent 4 Weeks</option>
+                <option value="8w">Recent 8 Weeks</option>
+                <option value="12w">Recent 12 Weeks</option>
+              </select>
+            </div>
+            <button
+              class="self-end px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg transition-colors duration-150 hover:opacity-90"
+            >
+              적용
+            </button>
+          </div>
+        </div>
+        <!-- /component -->
+
+        <!-- ======================================================================== -->
+        <!-- CHART SECTION 1: 요일별 & 시간대별 패턴 (좌우 2열) -->
+        <!-- ======================================================================== -->
+        <div class="grid grid-cols-2 gap-6 mb-8">
+          <!-- 요일별 판매 패턴 -->
+          <!-- component: chart-card -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h2 class="text-base font-semibold text-gray-900 mb-4">요일별 판매 패턴 (도시락)</h2>
+            <div class="h-64 bg-slate-50 rounded-lg border border-slate-200 flex items-end justify-around px-4 py-6">
+              <!-- 차트 대체 바 -->
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-8 bg-primary rounded" style="height: 120px"></div>
+                <span class="text-xs text-slate-600">월</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-8 bg-primary rounded" style="height: 95px"></div>
+                <span class="text-xs text-slate-600">화</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-8 bg-primary rounded" style="height: 110px"></div>
+                <span class="text-xs text-slate-600">수</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-8 bg-primary rounded" style="height: 100px"></div>
+                <span class="text-xs text-slate-600">목</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-8 bg-primary rounded" style="height: 145px"></div>
+                <span class="text-xs text-slate-600">금</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-8 bg-primary rounded" style="height: 125px"></div>
+                <span class="text-xs text-slate-600">토</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-8 bg-primary rounded" style="height: 90px"></div>
+                <span class="text-xs text-slate-600">일</span>
+              </div>
+            </div>
+            <div class="mt-5 p-3 bg-primary/5 rounded-lg border border-primary/10">
+              <p class="text-sm font-bold text-primary">▲ 금요일 판매량</p>
+              <p class="text-lg font-bold text-primary tabular-nums">+18%</p>
+              <p class="text-xs text-slate-600 mt-1">평균 대비</p>
+            </div>
+          </div>
+          <!-- /component -->
+
+          <!-- 시간대별 판매 패턴 -->
+          <!-- component: chart-card -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h2 class="text-base font-semibold text-gray-900 mb-4">시간대별 판매 패턴 (도시락)</h2>
+            <div class="h-64 bg-slate-50 rounded-lg border border-slate-200 relative p-6">
+              <!-- 선 그래프 대체 -->
+              <svg class="w-full h-full" viewBox="0 0 400 200" preserveAspectRatio="none">
+                <polyline
+                  points="10,160 50,140 90,100 130,80 170,90 210,70 250,60 290,75 330,110 370,140"
+                  fill="none"
+                  stroke="#0067C5"
+                  stroke-width="2"
+                />
+              </svg>
+            </div>
+            <div class="flex justify-between text-xs text-slate-600 mt-2">
+              <span>06시</span>
+              <span>09시</span>
+              <span>12시</span>
+              <span>15시</span>
+              <span>18시</span>
+              <span>21시</span>
+              <span>24시</span>
+            </div>
+            <div class="mt-5 p-3 bg-primary/5 rounded-lg border border-primary/10">
+              <p class="text-sm font-bold text-primary">집중 판매 시간대</p>
+              <div class="space-y-1 mt-2">
+                <p class="text-sm"><span class="text-lg font-bold text-primary">42%</span> 점심시간 (11~13시)</p>
+                <p class="text-sm"><span class="text-lg font-bold text-primary">38%</span> 저녁시간 (17~19시)</p>
+              </div>
+            </div>
+          </div>
+          <!-- /component -->
+        </div>
+
+        <!-- ======================================================================== -->
+        <!-- CHART SECTION 2: 판매·폐기 추세 (전체 폭, 라인 차트) -->
+        <!-- ======================================================================== -->
+        <!-- component: chart-card -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <h2 class="text-base font-semibold text-gray-900 mb-4">판매·폐기 추세 (최근 8주, 도시락)</h2>
+          <div class="h-80 bg-slate-50 rounded-lg border border-slate-200 relative p-6">
+            <!-- 다중선 그래프 대체 -->
+            <svg class="w-full h-full" viewBox="0 0 600 200" preserveAspectRatio="none">
+              <!-- 판매 라인 (파란색) -->
+              <polyline
+                points="20,160 80,140 140,110 200,100 260,90 320,80 380,95 440,110 500,120 560,130"
+                fill="none"
+                stroke="#0067C5"
+                stroke-width="2"
+              />
+              <!-- 폐기 라인 (주황색) -->
+              <polyline
+                points="20,180 80,175 140,170 200,165 260,160 320,155 380,160 440,165 500,168 560,170"
+                fill="none"
+                stroke="#F58220"
+                stroke-width="2"
+              />
+            </svg>
+          </div>
+          <div class="flex gap-6 mt-4">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 bg-primary rounded-full"></div>
+              <span class="text-xs text-slate-600">판매량</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 bg-accent rounded-full"></div>
+              <span class="text-xs text-slate-600">폐기량</span>
+            </div>
+          </div>
+          <div class="mt-5 grid grid-cols-2 gap-4">
+            <div class="p-3 bg-primary/5 rounded-lg border border-primary/10">
+              <p class="text-sm font-bold text-primary">▼ 판매량 추세</p>
+              <p class="text-xl font-bold text-primary tabular-nums">-12%</p>
+              <p class="text-xs text-slate-600 mt-1">4주간 감소</p>
+            </div>
+            <div class="p-3 bg-success/5 rounded-lg border border-success/10">
+              <p class="text-sm font-bold text-success">✓ 폐기율</p>
+              <p class="text-xl font-bold text-success tabular-nums">3.2%</p>
+              <p class="text-xs text-slate-600 mt-1">안정적</p>
+            </div>
+          </div>
+        </div>
+        <!-- /component -->
+
+        <!-- Insight Box -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-5">
+          <h3 class="text-sm font-semibold text-blue-900 mb-2">💡 인사이트</h3>
+          <ul class="list-disc ml-4 space-y-1 text-sm text-blue-800">
+            <li>금요일과 주말의 판매량이 주중보다 약 30~40% 높습니다.</li>
+            <li>점심시간(11시~13시)과 저녁시간(17시~19시)에 집중 판매됩니다.</li>
+            <li>
+              최근 2주 판매량 감소로 인해 폐기율이 개선되는 추세입니다.
+              <a href="./financial.html" class="underline text-blue-600 hover:text-blue-700"
+                >Financial 화면에서 마진율 확인</a
+              >
+            </li>
+          </ul>
+        </div>
+
+        <!-- 푸터 공간 -->
+        <div class="mt-12 text-center text-xs text-slate-500">
+          <p>© 2026 SmartFF Agent — 점주의 의사결정을 돕는 AI DSS</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
