@@ -4,6 +4,7 @@ import { useUser } from '../context/UserContext.jsx'
 import DeficiencyBar from '../components/DeficiencyBar.jsx'
 import MenuRecommendation from '../components/MenuRecommendation.jsx'
 import PlaceList from '../components/PlaceList.jsx'
+import PlaceMap from '../components/PlaceMap.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import Spinner from '../components/Spinner.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
@@ -42,6 +43,32 @@ function isMenuRecommendationList(value) {
     value.recommendations.length > 0 &&
     value.recommendations.every((r) => r && typeof r.name === 'string' && typeof r.reason === 'string')
   )
+}
+
+const FALLBACK_SEARCH_KEYWORD = '백반'
+
+function buildKeywordPrompt(deficientRows) {
+  const nutrientText = deficientRows.map((row) => row.label).join(', ')
+
+  return `아래 부족한 영양소를 보충하기 좋은 한국 식당을 찾으려고 해.
+부족한 영양소: ${nutrientText}.
+그 영양소를 보충하기 좋은 음식을 파는, 한국 식당 검색에 쓸 키워드를 딱 1개만 알려줘.
+(예: 단백질→"고깃집", 식이섬유→"샐러드", 탄수화물→"백반")
+
+설명 없이 키워드 단어 하나만 출력해. 마크다운, 따옴표, 문장부호 없이.`
+}
+
+async function fetchSearchKeyword(deficientRows) {
+  if (deficientRows.length === 0) return FALLBACK_SEARCH_KEYWORD
+  try {
+    const prompt = buildKeywordPrompt(deficientRows)
+    const text = await geminiComplete({ prompt })
+    const keyword = text.trim().replace(/^["'“”]+|["'“”]+$/g, '').split('\n')[0].trim()
+    return keyword || FALLBACK_SEARCH_KEYWORD
+  } catch (err) {
+    console.error('search keyword generation failed:', err)
+    return FALLBACK_SEARCH_KEYWORD
+  }
 }
 
 function AchievementRing({ percent, size = 160, strokeWidth = 14 }) {
@@ -148,25 +175,25 @@ export default function Result() {
   }, [top3Rows])
 
   const [places, setPlaces] = useState(null)
+  const [myPosition, setMyPosition] = useState(null)
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [nearbyError, setNearbyError] = useState('')
+  const [showMap, setShowMap] = useState(false)
 
   async function handleFindNearby() {
     setNearbyLoading(true)
     setNearbyError('')
     setPlaces(null)
+    setShowMap(false)
     try {
       const { x, y } = await getCurrentPosition()
-
-      // TODO: 다음 단계에서 top3Rows(부족 상위 영양소) 기반으로 AI가 검색 키워드를 생성하도록 교체 예정.
-      // 지금은 1단계라 임시로 고정 키워드를 사용한다.
-      const keyword = '백반'
-
+      const keyword = await fetchSearchKeyword(top3Rows)
       const results = await searchPlaces({ x, y, keyword, radius: 3000 })
       if (results.length === 0) {
         setNearbyError('주변에서 추천할 식당을 찾지 못했어요. 잠시 후 다시 시도해주세요.')
         return
       }
+      setMyPosition({ lat: y, lng: x })
       setPlaces(results)
     } catch (err) {
       console.error('nearby search failed:', err)
@@ -280,7 +307,20 @@ export default function Result() {
           ))}
         </>
       )}
-      {!nearbyLoading && places && <PlaceList places={places} />}
+      {!nearbyLoading && places && (
+        <>
+          <button
+            type="button"
+            className="tds-press"
+            onClick={() => setShowMap((prev) => !prev)}
+            style={{ ...styles.buttonSecondary, marginBottom: spacing.md }}
+          >
+            {showMap ? '목록으로 보기' : '지도로 보기'}
+          </button>
+          {showMap && myPosition && <PlaceMap myPosition={myPosition} places={places} />}
+          {!showMap && <PlaceList places={places} />}
+        </>
+      )}
 
       <Link
         to="/analyze"
