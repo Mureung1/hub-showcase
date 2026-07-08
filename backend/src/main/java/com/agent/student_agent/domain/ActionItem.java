@@ -76,4 +76,14 @@ public class ActionItem {
      */
     @Column(columnDefinition = "TEXT")
     private String resolutionRationale;
+
+    /**
+     * AI가 충돌 재배치를 통해 새로 제안한 (혹은 확정된) 캘린더 상의 시작 시간
+     */
+    private LocalDateTime scheduledStart;
+
+    /**
+     * AI가 충돌 재배치를 통해 새로 제안한 (혹은 확정된) 캘린더 상의 종료 시간
+     */
+    private LocalDateTime scheduledEnd;
 }

@@ -12,14 +12,18 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.3.2",
     "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
     "lucide-react": "^1.23.0",
     "react": "^19.2.7",
+    "react-big-calendar": "^1.20.0",
     "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
+    "@types/react-big-calendar": "^1.16.3",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "autoprefixer": "^10.5.2",
