@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 import logoUrl from "../Logo-cropped.png";
@@ -31,6 +31,85 @@ const futureFeatures = [
   ["프로젝트 비교", "여러 프로젝트 중 포트폴리오 우선순위를 추천합니다."],
   ["외부 내보내기", "Notion 또는 GitHub Pages로 결과를 연결합니다."],
 ];
+
+const resourceLinks = [
+  ["기획서", "./docs/plan.md", "문제 정의, 사용자 시나리오, 화면 구조"],
+  ["프로토타입", "./prototype/index.html", "Repository 입력 기반 동작 흐름"],
+  ["GitHub Wiki", "https://github.com/SubJeeLee/hub/wiki", "제출용 기획 문서"],
+];
+
+function parseGitHubUrl(value) {
+  const match = value.trim().match(/^https:\/\/github\.com\/([^/]+)\/([^/#?]+?)(?:\.git)?\/?$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    owner: match[1],
+    repo: match[2],
+  };
+}
+
+async function fetchGithubJson(url) {
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github+json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub API 요청 실패: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function getCommitLogin(commit) {
+  return commit.author?.login || commit.commit.author?.name || "unknown";
+}
+
+function normalizeMessage(message) {
+  return message.trim().replace(/\s+/g, " ");
+}
+
+function calculateContributors(contributors) {
+  const total = contributors.reduce((sum, contributor) => sum + contributor.contributions, 0);
+
+  return contributors.slice(0, 5).map((contributor) => ({
+    login: contributor.login,
+    count: contributor.contributions,
+    percent: total === 0 ? 0 : Math.round((contributor.contributions / total) * 1000) / 10,
+  }));
+}
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+async function analyzeRepository(owner, repo) {
+  const baseUrl = `https://api.github.com/repos/${owner}/${repo}`;
+  const [repository, contributors, commits] = await Promise.all([
+    fetchGithubJson(baseUrl),
+    fetchGithubJson(`${baseUrl}/contributors?per_page=100`),
+    fetchGithubJson(`${baseUrl}/commits?per_page=100`),
+  ]);
+
+  const topContributors = calculateContributors(contributors);
+  const ownerCommits = commits.filter((commit) => getCommitLogin(commit).toLowerCase() === owner.toLowerCase());
+  const ownerMessages = [
+    ...new Set(ownerCommits.map((commit) => normalizeMessage(commit.commit.message.split("\n")[0])).filter(Boolean)),
+  ].slice(0, 4);
+
+  return {
+    name: repository.full_name,
+    url: repository.html_url,
+    owner,
+    contributors: topContributors,
+    ownerMessages,
+  };
+}
 
 function SectionHeading({ label, title }) {
   return (
@@ -67,13 +146,159 @@ function Overview() {
   );
 }
 
+function ResourceLinks() {
+  return (
+    <section className="feature-section resource-section">
+      <SectionHeading label="05 Resources" title="기획 문서와 프로토타입" />
+      <div className="resource-grid">
+        {resourceLinks.map(([title, href, description]) => (
+          <a className="resource-card" href={href} key={title}>
+            <strong>{title}</strong>
+            <span>{description}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function BrandSpinner() {
+  return (
+    <div className="brand-spinner" aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </div>
+  );
+}
+
+function AnalysisResult({ result }) {
+  return (
+    <section className="analysis-result-page" aria-label="Repository 분석 결과">
+      <div className="result-heading">
+        <span className="section-label">Analysis Result</span>
+        <h2>{result.name}</h2>
+        <a href={result.url} target="_blank" rel="noreferrer">
+          GitHub에서 보기
+        </a>
+      </div>
+
+      <div className="result-grid">
+        <article>
+          <h3>프로젝트 참여자</h3>
+          <ul className="contributor-preview">
+            {result.contributors.map((contributor) => (
+              <li key={contributor.login}>
+                <strong>{contributor.login}</strong>
+                <span>{contributor.count} commits</span>
+                <em>{contributor.percent}%</em>
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <article>
+          <h3>{result.owner}의 주요 작업</h3>
+          {result.ownerMessages.length > 0 ? (
+            <ul className="work-preview">
+              {result.ownerMessages.map((message) => (
+                <li key={message}>{message}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>최근 100개 커밋 안에서 repository owner의 커밋을 찾지 못했습니다.</p>
+          )}
+        </article>
+      </div>
+    </section>
+  );
+}
+
 function ProjectTopic() {
+  const [repoUrl, setRepoUrl] = useState("");
+  const [analysisStatus, setAnalysisStatus] = useState("idle");
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [analysisError, setAnalysisError] = useState("");
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const parsed = parseGitHubUrl(repoUrl);
+    if (!parsed) {
+      setAnalysisStatus("error");
+      setAnalysisResult(null);
+      setAnalysisError("https://github.com/owner/repository 형식으로 입력해 주세요.");
+      return;
+    }
+
+    setAnalysisStatus("loading");
+    setAnalysisResult(null);
+    setAnalysisError("");
+
+    try {
+      const [result] = await Promise.all([analyzeRepository(parsed.owner, parsed.repo), wait(900)]);
+      setAnalysisResult(result);
+      setAnalysisStatus("done");
+    } catch (error) {
+      setAnalysisStatus("error");
+      setAnalysisError("Repository 데이터를 가져오지 못했습니다. 공개 저장소인지 확인해 주세요.");
+    }
+  };
+
+  const handleRepoChange = (event) => {
+    setRepoUrl(event.target.value);
+    setAnalysisStatus("idle");
+    setAnalysisResult(null);
+    setAnalysisError("");
+  };
+
   return (
     <main className="page">
-      <section className="intro">
-        <h1 className="hero-logo">
-          <img src={logoUrl} alt="PtoP Project to Portfolio 로고" />
-        </h1>
+      <section className="intro" aria-label="PtoP Repository 분석 시작">
+        <div className="intro-inner">
+          <p className="section-label">Project to Portfolio</p>
+          <h1 className="hero-logo">
+            <img src={logoUrl} alt="PtoP Project to Portfolio 로고" />
+          </h1>
+
+          <form className="hero-search" onSubmit={handleSubmit}>
+            <label className="sr-only" htmlFor="repo-url">
+              GitHub Repository URL
+            </label>
+            <input
+              id="repo-url"
+              type="url"
+              value={repoUrl}
+              onChange={handleRepoChange}
+              placeholder="https://github.com/user/repository"
+              required
+            />
+            <button type="submit" disabled={analysisStatus === "loading"}>
+              {analysisStatus === "loading" ? "분석 중" : "분석 시작"}
+            </button>
+          </form>
+
+          {analysisStatus === "loading" && (
+            <div className="analysis-status" role="status" aria-live="polite">
+              <BrandSpinner />
+              <div>
+                <strong>Repository를 분석하고 있어요</strong>
+                <span>참여자, 기여도, 최근 커밋 흐름을 확인하는 중입니다.</span>
+              </div>
+            </div>
+          )}
+
+          {analysisStatus === "error" && (
+            <div className="analysis-status error" role="status" aria-live="polite">
+              <BrandSpinner />
+              <div>
+                <strong>분석할 수 없습니다</strong>
+                <span>{analysisError}</span>
+              </div>
+            </div>
+          )}
+
+          {analysisStatus === "done" && analysisResult && <AnalysisResult result={analysisResult} />}
+        </div>
       </section>
 
       <Overview />
@@ -113,8 +338,10 @@ function ProjectTopic() {
         <FeatureList items={futureFeatures} compact />
       </section>
 
+      <ResourceLinks />
+
       <section className="closing">
-        <span className="section-label">05 Summary</span>
+        <span className="section-label">06 Summary</span>
         <h2>한 줄 소개</h2>
         <p>
           PtoP(Project to Portfolio)는 GitHub Repository나 프로젝트 폴더를
