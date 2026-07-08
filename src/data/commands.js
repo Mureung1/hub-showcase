@@ -405,6 +405,44 @@ export const commands = [
       { command: 'gcc -Wall -g main.c -o main', desc: '경고 메시지와 디버깅 정보를 포함해 컴파일' },
     ],
   },
+  {
+    id: 'unix-tar',
+    category: 'unix',
+    name: 'tar',
+    summary: '여러 파일/디렉터리를 하나의 아카이브로 묶거나 푼다',
+    description:
+      'Tape Archive의 약자로, 여러 파일과 디렉터리를 하나의 파일(.tar)로 묶는다. -z 옵션을 함께 쓰면 gzip 압축까지 동시에 적용한 .tar.gz 아카이브를 만들 수 있다. 옵션 조합이 많아 헷갈리기 쉬운데, 아래처럼 "묶어서 압축(czvf)"과 "압축 풀며 해제(xzvf)" 두 조합만 기억해도 실습에서는 충분하다.',
+    options: [
+      { flag: 'c', desc: '새 아카이브를 생성 (create)' },
+      { flag: 'x', desc: '아카이브의 내용을 풀어냄 (extract)' },
+      { flag: 'z', desc: 'gzip으로 압축하거나 압축을 해제 (동작은 c/x에 따라 결정됨)' },
+      { flag: 'v', desc: '처리 중인 파일 목록을 화면에 출력 (verbose)' },
+      { flag: 'f <파일명>', desc: '대상 아카이브 파일명을 지정, 관례상 옵션 조합의 맨 마지막에 붙임' },
+    ],
+    examples: [
+      { command: 'tar -czvf backup.tar.gz project/', desc: 'project 디렉터리를 gzip으로 압축해 backup.tar.gz로 생성' },
+      { command: 'tar -xzvf backup.tar.gz', desc: 'backup.tar.gz의 압축을 현재 위치에 해제' },
+      { command: 'tar -xzvf backup.tar.gz -C /tmp', desc: '지정한 디렉터리(/tmp)에 압축 해제' },
+    ],
+  },
+  {
+    id: 'unix-gzip',
+    category: 'unix',
+    name: 'gzip',
+    summary: '파일 하나를 gzip 방식으로 압축하거나 해제한다',
+    description:
+      'GNU zip의 약자로, tar와 달리 여러 파일을 하나로 묶는 기능은 없고 파일 하나를 압축해 원본을 .gz 파일로 대체한다(기본적으로 원본은 삭제됨). 압축을 풀 때는 -d 옵션을 쓰거나, 같은 역할을 하는 gunzip 명령어를 사용한다.',
+    options: [
+      { flag: '-d', desc: '압축 해제 (gunzip과 동일한 동작)' },
+      { flag: '-k', desc: '압축/해제 후에도 원본 파일을 삭제하지 않고 보존' },
+      { flag: '-v', desc: '압축률 등 처리 결과를 화면에 출력' },
+    ],
+    examples: [
+      { command: 'gzip access.log', desc: 'access.log를 압축해 access.log.gz로 만들고 원본은 삭제' },
+      { command: 'gzip -k access.log', desc: '원본 access.log를 남긴 채 access.log.gz 생성' },
+      { command: 'gzip -d access.log.gz', desc: 'access.log.gz의 압축을 해제해 access.log로 복원' },
+    ],
+  },
 
   // ── Git ───────────────────────────────────────────
   {
