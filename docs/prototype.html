@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>하루 체크아웃 — 프로토타입</title>
+<style>
+  :root {
+    --primary: #3182f6;
+    --primary-hover: #2272eb;
+    --primary-light: #e8f3ff;
+    --text-strong: #191f28;
+    --text-body: #4e5968;
+    --text-sub: #8b95a1;
+    --border: #e5e8eb;
+    --bg-page: #f2f4f6;
+    --bg-card: #ffffff;
+    --bg-input: #f9fafb;
+    --error: #f04452;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: linear-gradient(180deg, #eef2ff 0%, #f7f3ff 50%, #fff5f2 100%);
+    color: var(--text-body);
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 80px;
+    min-height: 100vh;
+  }
+  .phone {
+    width: 100%;
+    max-width: 430px;
+  }
+  .app-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .app-header .badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-light);
+    padding: 4px 12px;
+    border-radius: 9999px;
+    margin-bottom: 8px;
+  }
+  .app-header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-strong);
+  }
+
+  .screen {
+    background: var(--bg-card);
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 24px 20px 20px;
+    min-height: 560px;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen[hidden] { display: none; }
+
+  /* ---------- S1 입력 화면 ---------- */
+  .date-label {
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-bottom: 6px;
+  }
+  .prompt-title {
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--text-strong);
+    line-height: 1.4;
+    margin-bottom: 20px;
+  }
+  textarea#input-text {
+    flex: 1;
+    width: 100%;
+    min-height: 260px;
+    resize: none;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    font-size: 15px;
+    line-height: 1.6;
+    font-family: inherit;
+    color: var(--text-strong);
+    outline: none;
+  }
+  textarea#input-text:focus { border-color: var(--primary); }
+  textarea#input-text::placeholder { color: var(--text-sub); }
+
+  .hint {
+    font-size: 12.5px;
+    color: var(--text-sub);
+    margin-top: 10px;
+    margin-bottom: 18px;
+  }
+
+  .btn {
+    height: 56px;
+    border: none;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    font-family: inherit;
+    transition: background 0.15s ease;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+  .btn-primary:disabled {
+    background: var(--border);
+    color: #b0b8c1;
+    cursor: not-allowed;
+  }
+  .btn-weak {
+    background: var(--bg-page);
+    color: var(--text-body);
+    margin-top: 10px;
+  }
+
+  /* ---------- 로딩 상태 ---------- */
+  .loading-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--primary-light);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-wrap p {
+    font-size: 14px;
+    color: var(--text-sub);
+  }
+
+  /* ---------- S2 결과 화면 ---------- */
+  .origin-box {
+    background: var(--bg-page);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .origin-box .label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-sub);
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  .result-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+  }
+  .card {
+    perspective: 1000px;
+    min-height: 132px;
+  }
+  .card-flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 132px;
+    transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+  .card.flipped .card-flip-inner {
+    transform: rotateY(180deg);
+  }
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+  }
+  .card-face-back {
+    transform: rotateY(180deg);
+    background: var(--primary-light);
+    border-color: transparent;
+  }
+  .card .card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .card .icon {
+    font-size: 18px;
+  }
+  .card .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .why-btn {
+    margin-left: auto;
+    border: none;
+    background: var(--bg-page);
+    color: var(--text-sub);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .why-btn:hover { background: var(--border); }
+  .card-body {
+    font-size: 15px;
+    color: var(--text-strong);
+    line-height: 1.55;
+    outline: none;
+    border-radius: 8px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+  }
+  .card-body:focus {
+    background: var(--primary-light);
+  }
+  .reason-text {
+    font-size: 13.5px;
+    color: var(--text-body);
+    line-height: 1.55;
+    flex: 1;
+  }
+  .back-btn {
+    align-self: flex-start;
+    margin-top: 8px;
+    border: none;
+    background: none;
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translate(-50%, 12px);
+    background: var(--text-strong);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 14px 22px;
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 10;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .result-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .result-actions .btn { margin-top: 0; }
+  .result-actions .btn-weak { flex: 1; }
+  .result-actions .btn-primary { flex: 2; }
+
+  footer.note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-top: 20px;
+  }
+
+  /* ---------- 상담 프렙시트 ---------- */
+  .prep-link {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    border: none;
+    background: none;
+    color: var(--text-sub);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 4px;
+  }
+  .prep-link:hover { color: var(--primary); }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 23, 43, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 20;
+  }
+  .modal-overlay[hidden] { display: none; }
+
+  .prep-sheet {
+    background: #fff;
+    border-radius: 20px;
+    padding: 22px 20px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  }
+  .prep-head {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .prep-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-strong);
+  }
+  .modal-close {
+    margin-left: auto;
+    border: none;
+    background: none;
+    color: var(--text-sub);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .prep-sub {
+    font-size: 12.5px;
+    color: var(--text-sub);
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .prep-date {
+    font-size: 12px;
+    color: var(--text-sub);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .prep-row {
+    display: flex;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .prep-row:last-of-type { border-bottom: none; }
+  .prep-label {
+    flex: 0 0 88px;
+    color: var(--text-sub);
+    font-weight: 600;
+  }
+  .prep-value {
+    color: var(--text-strong);
+    flex: 1;
+  }
+  .prep-note {
+    font-size: 11.5px;
+    color: var(--text-sub);
+    margin: 14px 0 16px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="app-header">
+    <div class="badge">PROTOTYPE</div>
+    <h1>하루 체크아웃</h1>
+  </div>
+
+  <!-- S1. 입력 화면 -->
+  <section class="screen" id="screen-input">
+    <div class="date-label" id="today-label"></div>
+    <div class="prompt-title">오늘 하루,<br />어떤 감정이 남았어?</div>
+    <textarea id="input-text" placeholder="정리 안 해도 돼. 그냥 있었던 일, 든 생각을 편하게 적어봐.&#10;예) 팀플에서 의견이 계속 무시돼서 지쳤다"></textarea>
+    <div class="hint">비워둔 채로는 정리할 수 없어요. 한두 문장이어도 괜찮아요.</div>
+    <button class="btn btn-primary" id="btn-organize" disabled>정리하기</button>
+  </section>
+
+  <!-- 로딩 상태 -->
+  <section class="screen" id="screen-loading" hidden>
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <p>AI가 감정을 정리하고 있어요…</p>
+    </div>
+  </section>
+
+  <!-- S2. 결과 화면 -->
+  <section class="screen" id="screen-result" hidden>
+    <div class="origin-box">
+      <span class="label">오늘 남긴 말</span>
+      <span id="origin-text-preview"></span>
+    </div>
+
+    <div class="result-cards">
+      <div class="card" data-card="emotion">
+        <div class="card-flip-inner">
+          <div class="card-face card-face-front">
+            <div class="card-head">
+              <span class="icon">🙂</span>
+              <span class="card-title">오늘의 감정</span>
+              <button class="why-btn" type="button">왜?</button>
+            </div>
+            <div class="card-body" contenteditable="true" id="card-emotion">무기력함, 답답함</div>
+          </div>
+          <div class="card-face card-face-back">
+            <div class="card-head">
+              <span class="card-title">왜 이렇게 정리했나요?</span>
+            </div>
+            <p class="reason-text">"지쳤다"는 표현이 반복돼서 무기력·답답함으로 정리했어요.</p>
+            <button class="back-btn" type="button">다시 보기</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" data-card="cause">
+        <div class="card-flip-inner">
+          <div class="card-face card-face-front">
+            <div class="card-head">
+              <span class="icon">🔍</span>
+              <span class="card-title">원인</span>
+              <button class="why-btn" type="button">왜?</button>
+            </div>
+            <div class="card-body" contenteditable="true" id="card-cause">팀플에서 낸 의견이 반복해서 무시당함</div>
+          </div>
+          <div class="card-face card-face-back">
+            <div class="card-head">
+              <span class="card-title">왜 이렇게 정리했나요?</span>
+            </div>
+            <p class="reason-text">"의견이 계속 무시됐다"는 부분이 구체적인 사건으로 언급돼서 원인으로 짚었어요.</p>
+            <button class="back-btn" type="button">다시 보기</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" data-card="action">
+        <div class="card-flip-inner">
+          <div class="card-face card-face-front">
+            <div class="card-head">
+              <span class="icon">🌱</span>
+              <span class="card-title">내일의 작은 행동</span>
+              <button class="why-btn" type="button">왜?</button>
+            </div>
+            <div class="card-body" contenteditable="true" id="card-action">내일 회의에서 의견 하나만 짧고 명확하게 말해보기</div>
+          </div>
+          <div class="card-face card-face-back">
+            <div class="card-head">
+              <span class="card-title">왜 이렇게 정리했나요?</span>
+            </div>
+            <p class="reason-text">한 번에 관계를 바꾸기보다, 내일 바로 해볼 수 있는 작은 행동 하나만 제안했어요. 조언이 아니라 정리라서, 실행은 여전히 당신의 몫이에요.</p>
+            <button class="back-btn" type="button">다시 보기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn btn-weak" id="btn-retry">다시 정리하기</button>
+      <button class="btn btn-primary" id="btn-save">저장</button>
+    </div>
+
+    <button class="prep-link" id="btn-prep" type="button">📋 상담 프렙시트 미리보기</button>
+  </section>
+
+  <footer class="note">
+    핵심 기능 프로토타입 (목데이터) · 화면구조는 <a href="plan.md">기획서</a> 참고
+  </footer>
+</div>
+
+<div class="toast" id="toast">저장했어요</div>
+
+<div class="modal-overlay" id="prep-overlay" hidden>
+  <div class="prep-sheet">
+    <div class="prep-head">
+      <span class="prep-title">상담 프렙시트</span>
+      <button class="modal-close" id="prep-close" type="button" aria-label="닫기">✕</button>
+    </div>
+    <p class="prep-sub">이 요약을 상담사에게 보여주면, 처음부터 상황을 다시 설명하지 않아도 돼요.</p>
+    <div class="prep-date" id="prep-date"></div>
+    <div class="prep-row"><span class="prep-label">🙂 감정</span><span class="prep-value" id="prep-emotion"></span></div>
+    <div class="prep-row"><span class="prep-label">🔍 원인</span><span class="prep-value" id="prep-cause"></span></div>
+    <div class="prep-row"><span class="prep-label">🌱 다음 행동</span><span class="prep-value" id="prep-action"></span></div>
+    <p class="prep-note">프로토타입이라 오늘 기록 1건만 표시돼요. 실제로는 최근 기록이 함께 요약됩니다 (체크리스트 6번).</p>
+    <button class="btn btn-primary" id="prep-share" type="button">공유하기 (준비 중)</button>
+  </div>
+</div>
+
+<script>
+  var screenInput = document.getElementById('screen-input');
+  var screenLoading = document.getElementById('screen-loading');
+  var screenResult = document.getElementById('screen-result');
+  var inputText = document.getElementById('input-text');
+  var btnOrganize = document.getElementById('btn-organize');
+  var btnRetry = document.getElementById('btn-retry');
+  var btnSave = document.getElementById('btn-save');
+  var originPreview = document.getElementById('origin-text-preview');
+  var toast = document.getElementById('toast');
+
+  document.getElementById('today-label').textContent = new Date().toLocaleDateString('ko-KR', {
+    year: 'numeric', month: 'long', day: 'numeric', weekday: 'short'
+  });
+
+  function showScreen(el) {
+    [screenInput, screenLoading, screenResult].forEach(function (s) { s.hidden = (s !== el); });
+  }
+
+  function syncOrganizeButton() {
+    btnOrganize.disabled = inputText.value.trim().length === 0;
+  }
+  inputText.addEventListener('input', syncOrganizeButton);
+  syncOrganizeButton(); // 새로고침 시 브라우저가 값 복원해도(=input 이벤트 미발생) 초기 상태를 맞춤
+
+  btnOrganize.addEventListener('click', function () {
+    if (inputText.value.trim().length === 0) return;
+    var raw = inputText.value.trim();
+    originPreview.textContent = raw.length > 60 ? raw.slice(0, 60) + '…' : raw;
+
+    showScreen(screenLoading);
+    // 목데이터 프로토타입: 실제 AI 연동은 체크리스트 3번에서 진행 (오늘은 정해진 카드로 흉내)
+    setTimeout(function () {
+      showScreen(screenResult);
+    }, 900);
+  });
+
+  btnRetry.addEventListener('click', function () {
+    showScreen(screenInput);
+  });
+
+  var btnPrep = document.getElementById('btn-prep');
+  var prepOverlay = document.getElementById('prep-overlay');
+  var prepClose = document.getElementById('prep-close');
+  var prepShare = document.getElementById('prep-share');
+
+  btnPrep.addEventListener('click', function () {
+    document.getElementById('prep-date').textContent = document.getElementById('today-label').textContent;
+    document.getElementById('prep-emotion').textContent = document.getElementById('card-emotion').textContent;
+    document.getElementById('prep-cause').textContent = document.getElementById('card-cause').textContent;
+    document.getElementById('prep-action').textContent = document.getElementById('card-action').textContent;
+    prepOverlay.hidden = false;
+  });
+  prepClose.addEventListener('click', function () { prepOverlay.hidden = true; });
+  prepOverlay.addEventListener('click', function (e) {
+    if (e.target === prepOverlay) prepOverlay.hidden = true;
+  });
+  prepShare.addEventListener('click', function () {
+    toast.textContent = '프로토타입이라 공유는 아직 준비 중이에요';
+    toast.classList.add('show');
+    setTimeout(function () {
+      toast.classList.remove('show');
+      setTimeout(function () { toast.textContent = '저장했어요'; }, 200);
+    }, 1800);
+  });
+
+  document.querySelectorAll('.why-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      btn.closest('.card').classList.add('flipped');
+    });
+  });
+  document.querySelectorAll('.back-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      btn.closest('.card').classList.remove('flipped');
+    });
+  });
+
+  btnSave.addEventListener('click', function () {
+    toast.classList.add('show');
+    setTimeout(function () { toast.classList.remove('show'); }, 1800);
+  });
+</script>
+</body>
+</html>
