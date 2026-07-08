@@ -149,6 +149,35 @@ body {
   color: #185342;
 }
 
+.calendar-icon {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.calendar-icon::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: -2px;
+  right: -2px;
+  border-top: 2px solid currentColor;
+}
+
+.calendar-icon::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 4px;
+  width: 6px;
+  height: 5px;
+  border-left: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+}
+
 .source-explorer {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
