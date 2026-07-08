@@ -14,14 +14,14 @@ export const initialCategories: Category[] = [
 ]
 
 export const initialSchedules: Schedule[] = [
-  { id: 1, date: '2026-07-07', title: '저녁 운동', time: '19:00', category: 'exercise', tone: 'coral' },
-  { id: 2, date: '2026-07-10', title: '포트폴리오 정리', time: '14:00', category: 'study', tone: 'blue' },
-  { id: 3, date: '2026-07-17', title: '성수 팝업', time: '18:30', category: 'appointment', tone: 'violet' },
-  { id: 4, date: '2026-07-26', title: '7월 돌아보기', time: '21:00', category: 'personal', tone: 'green' },
-  { id: 5, date: '2026-07-08', title: '헬스', time: '20:00', category: 'exercise', tone: 'coral' },
-  { id: 6, date: '2026-07-14', title: '영어 공부', time: '20:30', category: 'study', tone: 'blue' },
-  { id: 7, date: '2026-07-22', title: '러닝', time: '07:30', category: 'exercise', tone: 'coral' },
-  { id: 8, date: '2026-07-23', title: '주간 스터디', time: '19:30', category: 'study', tone: 'blue' },
+  { id: 1, date: '2026-07-07', title: '저녁 운동', time: '19:00', category: 'exercise', tone: 'coral', completed: false },
+  { id: 2, date: '2026-07-10', title: '포트폴리오 정리', time: '14:00', category: 'study', tone: 'blue', completed: false },
+  { id: 3, date: '2026-07-17', title: '성수 팝업', time: '18:30', category: 'appointment', tone: 'violet', completed: false },
+  { id: 4, date: '2026-07-26', title: '7월 돌아보기', time: '21:00', category: 'personal', tone: 'green', completed: false },
+  { id: 5, date: '2026-07-08', title: '헬스', time: '20:00', category: 'exercise', tone: 'coral', completed: false },
+  { id: 6, date: '2026-07-14', title: '영어 공부', time: '20:30', category: 'study', tone: 'blue', completed: false },
+  { id: 7, date: '2026-07-22', title: '러닝', time: '07:30', category: 'exercise', tone: 'coral', completed: false },
+  { id: 8, date: '2026-07-23', title: '주간 스터디', time: '19:30', category: 'study', tone: 'blue', completed: false },
 ]
 
 export const shareGroups: ShareGroup[] = ['절친', '스터디', '가족', '커플']

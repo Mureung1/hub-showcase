@@ -51,6 +51,7 @@ export function useScheduleManager() {
       time: '',
       category: selectedCategory.id,
       tone: selectedCategory.tone,
+      completed: false,
     }
 
     setSchedules((current) => [...current, nextSchedule])
@@ -96,6 +97,18 @@ export function useScheduleManager() {
     setNotice(`‘${schedule.title}’ 일정을 삭제했어요.`)
   }
 
+  const toggleScheduleCompletion = (scheduleId: number) => {
+    const target = schedules.find((schedule) => schedule.id === scheduleId)
+    if (!target) return
+
+    setSchedules((current) => current.map((schedule) => (
+      schedule.id === scheduleId
+        ? { ...schedule, completed: !schedule.completed }
+        : schedule
+    )))
+    setNotice(target.completed ? '일정을 미완료 상태로 되돌렸어요.' : '일정을 완료했어요!')
+  }
+
   const toggleVisibleGroup = (categoryId: ScheduleCategoryId, group: ShareGroup) => {
     setCategories((current) => current.map((category) => {
       if (category.id !== categoryId) return category
@@ -126,6 +139,7 @@ export function useScheduleManager() {
     openScheduleEditor,
     saveScheduleChanges,
     deleteSchedule,
+    toggleScheduleCompletion,
     toggleVisibleGroup,
     toggleCategorySettings: () => setCategorySettingsOpen((open) => !open),
     closeCategorySettings: () => setCategorySettingsOpen(false),

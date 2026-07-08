@@ -26,6 +26,7 @@ export function CalendarView({ manager }: CalendarViewProps) {
     openScheduleEditor,
     saveScheduleChanges,
     deleteSchedule,
+    toggleScheduleCompletion,
     toggleVisibleGroup,
     toggleCategorySettings,
     closeCategorySettings,
@@ -98,8 +99,15 @@ export function CalendarView({ manager }: CalendarViewProps) {
               const visibility = category?.visibleTo.join(', ') || '나만 보기'
 
               return (
-                <article key={schedule.id} className={editingScheduleId === schedule.id ? 'editing' : ''}>
-                  <i className={schedule.tone} />
+                <article className={`${editingScheduleId === schedule.id ? 'editing' : ''} ${schedule.completed ? 'completed' : ''}`} key={schedule.id}>
+                  <button
+                    type="button"
+                    className={`schedule-check ${schedule.tone} ${schedule.completed ? 'checked' : ''}`}
+                    role="checkbox"
+                    aria-checked={schedule.completed}
+                    aria-label={`${schedule.title} ${schedule.completed ? '미완료로 변경' : '완료 처리'}`}
+                    onClick={() => toggleScheduleCompletion(schedule.id)}
+                  />
                   <div className="agenda-copy">
                     <strong>{schedule.title}</strong>
                     <span>{category?.name ?? '개인'} · {visibility}</span>

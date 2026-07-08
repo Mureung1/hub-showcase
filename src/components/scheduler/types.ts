@@ -18,6 +18,7 @@ export type Schedule = {
   time: string
   category: ScheduleCategoryId
   tone: GroupTone
+  completed: boolean
 }
 
 export type Friend = {

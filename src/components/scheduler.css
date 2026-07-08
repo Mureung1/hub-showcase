@@ -103,13 +103,17 @@ body { background: #f1f0eb; }
 .agenda-title h2 { margin: 4px 0 0; font-size: 20px; }
 .agenda-count { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: #fff !important; background: var(--scheduler-green); font-size: 13px !important; }
 .agenda-list { display: grid; gap: 7px; margin-top: 18px; }
-.agenda-list article { min-height: 55px; display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 13px; border: 1px solid #ebe8df; border-radius: 15px; background: #fff; }
+.agenda-list article { min-height: 55px; display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 13px; border: 1px solid #ebe8df; border-radius: 15px; background: #fff; }
 .agenda-list article.editing { border-color: var(--scheduler-ink); box-shadow: 5px 5px 0 rgba(52,75,70,.1); }
-.agenda-list article > i { width: 9px; height: 30px; border-radius: 5px; background: var(--scheduler-green); }
-.agenda-list article > i.blue { background: var(--scheduler-blue); }
-.agenda-list article > i.violet { background: var(--scheduler-violet); }
-.agenda-list article > i.coral { background: var(--scheduler-coral); }
+.schedule-check { width: 22px; height: 22px; position: relative; padding: 0; border: 2px solid var(--scheduler-ink); border-radius: 7px; background: var(--scheduler-green); cursor: pointer; box-shadow: 3px 3px 0 rgba(52,75,70,.11); }
+.schedule-check.blue { background: var(--scheduler-blue); }
+.schedule-check.violet { background: var(--scheduler-violet); }
+.schedule-check.coral { background: var(--scheduler-coral); }
+.schedule-check:hover { transform: translateY(-1px); }
+.schedule-check.checked::after { content: ''; width: 9px; height: 5px; position: absolute; left: 4px; top: 5px; border-left: 3px solid var(--scheduler-ink); border-bottom: 3px solid var(--scheduler-ink); transform: rotate(-45deg); }
 .agenda-copy { min-width: 0; display: grid; }
+.agenda-list article.completed .agenda-copy strong { color: var(--scheduler-muted); text-decoration: line-through; text-decoration-thickness: 2px; }
+.agenda-list article.completed .agenda-copy span, .agenda-list article.completed time { opacity: .62; }
 .agenda-list strong { font-size: 12px; }
 .agenda-list article span, .agenda-list time { color: var(--scheduler-muted); font-size: 9px; }
 .agenda-item-tools { display: flex; align-items: center; gap: 9px; }
