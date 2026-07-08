@@ -17,6 +17,8 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 - [전체 개발문서](docs/development/overview.md)
 - [전체 개발 체크리스트](docs/development/checklist.md)
 - [Git 작업 규칙](docs/development/git-workflow.md)
+- [LocalTwin Dev Harness](docs/development/harness.md)
+- [검증 가이드](docs/development/validation.md)
 
 ### 데이터 문서
 
@@ -32,9 +34,16 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 
 - [LocalTwin v0.1 구현 범위 고정 명세](docs/module-notes/localtwin-v0.1-scope.md)
 
-### 소개 페이지
+### 평가 문서
 
-- [Intro Page README](intro-page/README.md)
+- [Agent Evaluation Rubric](docs/evaluation/agent-rubric.md)
+- [Evaluation Log](docs/evaluation/evaluation-log.md)
+- [Failure Log](docs/evaluation/failure-log.md)
+- [Meta-Evaluation](docs/evaluation/meta-evaluation.md)
+
+### HTML 개발문서 포털
+
+- [LocalTwin Development Docs Portal](intro-page/README.md)
 
 ## v0.1 우선순위
 

@@ -34,6 +34,9 @@
 - [x] 문제 정의, 사용자 시나리오, 핵심/서브 기능 기획서를 문서화한다.
 - [x] README에서 기획서와 모든 주요 문서에 접근할 수 있게 링크한다.
 - [x] v0.1 필수 데이터 충분성과 데이터 소스 매핑을 문서화한다.
+- [x] LocalTwin 개발용 Dev Harness P0 구조를 만든다.
+- [x] task packet, run report, 평가 rubric, failure log 템플릿을 만든다.
+- [x] `scripts/check.ps1`를 전체 검증 진입점으로 만든다.
 
 ## 2. 대상 상권 선정
 

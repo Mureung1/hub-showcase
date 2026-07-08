@@ -12,6 +12,8 @@ LocalTwin Wiki는 프로젝트 기획, 기능 정의, 개발 운영 문서를 �
 - [전체 개발문서](../development/overview.md)
 - [전체 개발 체크리스트](../development/checklist.md)
 - [Git 작업 규칙](../development/git-workflow.md)
+- [LocalTwin Dev Harness](../development/harness.md)
+- [검증 가이드](../development/validation.md)
 
 ## Data
 
@@ -26,3 +28,10 @@ LocalTwin Wiki는 프로젝트 기획, 기능 정의, 개발 운영 문서를 �
 ## Decision Notes
 
 - [LocalTwin v0.1 구현 범위 고정 명세](../module-notes/localtwin-v0.1-scope.md)
+
+## Evaluation
+
+- [Agent Evaluation Rubric](../evaluation/agent-rubric.md)
+- [Evaluation Log](../evaluation/evaluation-log.md)
+- [Failure Log](../evaluation/failure-log.md)
+- [Meta-Evaluation](../evaluation/meta-evaluation.md)
