@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scholar-Sync Prototype Layout</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="grid-container">
+        <!-- 상단 좌측: Profile (3/4 너비 차지) -->
+        <section class="grid-item profile">
+            <div class="profile-header">
+                <h2>연구 프로필</h2>
+                <div class="academic-identity">
+                    <span class="label">소속/전공</span>
+                    <span class="value">컴퓨터공학부 / 인공지능 전공</span>
+                </div>
+            </div>
+            
+            <div class="profile-section">
+                <h3>학술 채널 모니터링</h3>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" data-channel="arxiv">arXiv</button>
+                    <button class="toggle-btn active" data-channel="ieee">IEEE</button>
+                    <button class="toggle-btn" data-channel="neurips">NeurIPS</button>
+                    <button class="toggle-btn" data-channel="cvpr">CVPR</button>
+                    <button class="toggle-btn" data-channel="acl">ACL</button>
+                </div>
+            </div>
+            
+            <div class="profile-section">
+                <h3>연구 키워드</h3>
+                <div class="keyword-container">
+                    <div class="keyword-list" id="keyword-list">
+                        <span class="keyword-badge">Large Language Models <button class="keyword-delete" aria-label="삭제">&times;</button></span>
+                        <span class="keyword-badge">RAG <button class="keyword-delete" aria-label="삭제">&times;</button></span>
+                        <span class="keyword-badge">Information Retrieval <button class="keyword-delete" aria-label="삭제">&times;</button></span>
+                    </div>
+                    <form class="keyword-form" id="keyword-form" onsubmit="event.preventDefault();">
+                        <input type="text" id="keyword-input" placeholder="새 연구 키워드 입력..." aria-label="새 키워드 입력">
+                        <button type="submit" class="btn-add-keyword">추가</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 상단 우측: Curation (1/4 너비 차지) -->
+        <section class="grid-item curation">
+            <div class="curation-header">
+                <h2>큐레이션 보드</h2>
+            </div>
+            
+            <div class="curation-body">
+                <!-- 쿼리 입력/디스플레이 박스 -->
+                <div class="query-section">
+                    <label for="query-input-box">연구 질문 (Query)</label>
+                    <textarea id="query-input-box" placeholder="탐색하고 싶은 구체적인 연구 질문이나 키워드 조합을 입력하세요..." rows="3">최신 거대 언어 모델(LLM)의 효율적인 파인튜닝 기법과 검색 증강 생성(RAG)의 융합 연구 동향 탐색</textarea>
+                </div>
+                
+                <!-- 큐레이션 시작 마스터 버튼 -->
+                <button class="btn-start-curation">
+                    <span>큐레이션 시작</span>
+                    <svg class="icon-play" viewBox="0 0 24 24" width="16" height="16">
+                        <path fill="currentColor" d="M8 5v14l11-7z"/>
+                    </svg>
+                </button>
+                
+                <!-- 분석 상태 및 프로그레스 컴포넌트 -->
+                <div class="analysis-status">
+                    <div class="status-info">
+                        <span class="status-label">에이전트 분석 상태</span>
+                        <span class="status-percent">65%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: 65%;"></div>
+                    </div>
+                    <div class="status-subtask">
+                        <span class="pulse-indicator"></span>
+                        <span class="subtask-text">arXiv 및 IEEE 데이터베이스에서 관련 논문 초록 수집 중...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 하단: Insights & Library (전체 너비 차지) -->
+        <section class="grid-item insights-library">
+            <div class="insights-container">
+                <!-- 좌측 공간: 큐레이션 결과 목록 -->
+                <div class="curation-list-panel">
+                    <div class="panel-header">
+                        <h2>큐레이션 결과 목록</h2>
+                        <span class="paper-count">3개의 추천 논문</span>
+                    </div>
+                    <div class="paper-list">
+                        <!-- 논문 카드 1 (선택 활성화 상태, 고정밀도) -->
+                        <div class="paper-card active" data-id="paper-1">
+                            <div class="paper-card-header">
+                                <span class="match-badge high">94% 매칭</span>
+                                <span class="paper-journal">NeurIPS 2025</span>
+                            </div>
+                            <h3 class="paper-title">LoRA-RAG: Parameter-Efficient Fine-Tuning for Context-Aware Retrieval Augmentation</h3>
+                            <p class="paper-authors">Jiuk Kim, Alexarius Lee, et al.</p>
+                        </div>
+                        
+                        <!-- 논문 카드 2 (중정밀도) -->
+                        <div class="paper-card" data-id="paper-2">
+                            <div class="paper-card-header">
+                                <span class="match-badge medium">82% 매칭</span>
+                                <span class="paper-journal">arXiv 2026</span>
+                            </div>
+                            <h3 class="paper-title">Adaptive Context Summarization in Retrieval-Augmented Generation for Scientific Question Answering</h3>
+                            <p class="paper-authors">Ji-Uk Kim, S. Park</p>
+                        </div>
+                        
+                        <!-- 논문 카드 3 (중정밀도) -->
+                        <div class="paper-card" data-id="paper-3">
+                            <div class="paper-card-header">
+                                <span class="match-badge medium">75% 매칭</span>
+                                <span class="paper-journal">ACL 2025</span>
+                            </div>
+                            <h3 class="paper-title">Reducing Hallucination in Scholarly Search Engine via Joint Embedded Dictionaries</h3>
+                            <p class="paper-authors">R. Jung, Alexarius Lee</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 우측 공간: 3줄 인사이트 및 내 서재 보관함 -->
+                <div class="detail-library-panel">
+                    <!-- 상단: 3줄 인사이트 패널 -->
+                    <div class="insight-panel">
+                        <div class="panel-header">
+                            <h2>3줄 인사이트</h2>
+                            <button class="btn-archive-paper" id="btn-archive">
+                                <svg class="icon-bookmark" viewBox="0 0 24 24" width="16" height="16">
+                                    <path fill="currentColor" d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+                                </svg>
+                                <span>내 서재 보관</span>
+                            </button>
+                        </div>
+                        <div class="insight-content" id="insight-content">
+                            <h3 class="insight-title" id="insight-title">LoRA-RAG: Parameter-Efficient Fine-Tuning for Context-Aware Retrieval Augmentation</h3>
+                            <ol class="insight-list">
+                                <li>
+                                    <span class="num">1</span>
+                                    <div class="text">
+                                        <strong>연구 배경 및 한계 원인:</strong> 
+                                        기존의 RAG 시스템은 대규모 컨텍스트를 주입할 때 메모리 부하가 심해지며, 특정 도메인에 대한 미세조정(Fine-tuning) 비용이 크다는 한계가 있었습니다.
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="num">2</span>
+                                    <div class="text">
+                                        <strong>제안하는 핵심 방법론:</strong> 
+                                        본 논문은 검색 쿼리 인코더와 생성 LLM 모듈에 독립적인 LoRA 어댑터를 설계하여 가중치 파라미터를 0.1%만 업데이트하면서도 컨텍스트 정렬도를 극대화하는 LoRA-RAG 프레임워크를 제안합니다.
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="num">3</span>
+                                    <div class="text">
+                                        <strong>구체적 개선 결과 및 수치:</strong> 
+                                        실험 결과, 기존 RAG 파이프라인 대비 훈련 시간은 78% 단축되었으며 학술 QA 벤치마크 데이터셋에서 정밀도(Precision)는 14.5% 향상되는 유의미한 성능 개선을 보였습니다.
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <!-- 하단: 내 서재 아카이빙 라이브러리 -->
+                    <div class="library-panel">
+                        <div class="panel-header">
+                            <h2>내 서재 보관함</h2>
+                            <span class="library-count" id="library-count">1개 보관됨</span>
+                        </div>
+                        <div class="library-list-container">
+                            <div class="library-list" id="library-list">
+                                <!-- 보관 처리된 논문 아이템 -->
+                                <div class="library-item" data-id="paper-1">
+                                    <div class="library-item-info">
+                                        <h4 class="library-item-title">LoRA-RAG: Parameter-Efficient Fine-Tuning for Context-Aware Retrieval Augmentation</h4>
+                                        <p class="library-item-meta">NeurIPS 2025 • Jiuk Kim</p>
+                                    </div>
+                                    <button class="btn-remove-library" aria-label="제거">
+                                        <svg viewBox="0 0 24 24" width="16" height="16">
+                                            <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
