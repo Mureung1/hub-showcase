@@ -56,6 +56,8 @@
 
 ![화면별 UI 동작 시각화](assets/ui-flow.png)
 
+**핵심 기능 프로토타입:** [`prototype/index.html`](prototype/index.html) — 필터→랭킹→상세→구매 링크 흐름을 순수 HTML/CSS로 구현 (필터는 JS 없이 CSS `:has()`로 실제 동작, Chrome/Edge/Safari·Firefox 121+ 권장). 브라우저로 직접 열어서 확인 가능.
+
 ## 데이터 흐름
 1. (하루 1회 배치, 예정) KAMIS API에서 농산물 평균 시세를 가져옴
 2. 재료별 참고 구매가(현재는 수동 관리)와 KAMIS 시세를 비교해 "시세보다 싼지/비싼지" 판단

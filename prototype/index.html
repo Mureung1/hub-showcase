@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>식비구조대 — 프로토타입</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <nav class="site-nav">
+    <span class="brand"><img class="logo-emblem" src="../src/assets/logo-emblem.png" alt=""><img class="logo-wordmark" src="../src/assets/logo-wordmark.png" alt="식비구조대"></span>
+    <div class="nav-search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor"/><path d="M11.5 11.5L15 15" stroke="currentColor" stroke-linecap="round"/></svg><input type="text" placeholder="검색어를 입력해주세요"></div>
+    </nav>
+
+  <div class="page">
+    <div class="page-heading">
+      <h1>1인분 총 재료비가 저렴한 순</h1>
+    </div>
+
+    <div class="filters">
+      <div class="filter-group">
+        <span class="filter-group-label">음식종류</span>
+        <div class="chip-row">
+          <input type="radio" name="type" id="type-all" checked><label for="type-all">전체</label>
+          <input type="radio" name="type" id="type-main"><label for="type-main">메인음식</label>
+          <input type="radio" name="type" id="type-side"><label for="type-side">반찬</label>
+          <input type="radio" name="type" id="type-snack"><label for="type-snack">간식</label>
+        </div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-group-label">재료</span>
+        <div class="chip-row">
+          <input type="radio" name="ing" id="ing-all" checked><label for="ing-all">전체</label>
+          <input type="radio" name="ing" id="ing-egg"><label for="ing-egg">계란</label>
+          <input type="radio" name="ing" id="ing-pork"><label for="ing-pork">돼지고기</label>
+          <input type="radio" name="ing" id="ing-tofu"><label for="ing-tofu">두부</label>
+          <input type="radio" name="ing" id="ing-kimchi"><label for="ing-kimchi">김치</label>
+          <input type="radio" name="ing" id="ing-ramyeon"><label for="ing-ramyeon">라면</label>
+        </div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-group-label">시간</span>
+        <div class="chip-row">
+          <input type="radio" name="time" id="time-all" checked><label for="time-all">전체</label>
+          <input type="radio" name="time" id="time-under10"><label for="time-under10">10분 미만</label>
+          <input type="radio" name="time" id="time-10to20"><label for="time-10to20">10~20분</label>
+          <input type="radio" name="time" id="time-20to30"><label for="time-20to30">20~30분</label>
+          <input type="radio" name="time" id="time-over30"><label for="time-over30">30분 이상</label>
+        </div>
+      </div>
+    </div>
+
+    <ul class="results">
+      <li data-type="main" data-time="under10" data-ing="egg">
+        <a class="recipe-card" href="recipe-gyeran-bokkeumbap.html">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/RUgH6TBDtsM/hqdefault.jpg" alt="계란볶음밥">
+          <div class="recipe-body">
+            <span class="recipe-name">계란볶음밥</span>
+            <span class="recipe-sub">10분 미만</span>
+            <span class="recipe-price">2,200원</span>
+          </div>
+        </a>
+      </li>
+      <li data-type="main" data-time="under10" data-ing="ramyeon egg">
+        <a class="recipe-card" href="recipe-shin-ramyeon.html">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/Wk4gfmVRE_I/hqdefault.jpg" alt="신라면">
+          <div class="recipe-body">
+            <span class="recipe-name">신라면</span>
+            <span class="recipe-sub">10분 미만</span>
+            <span class="recipe-price best">1,200원</span>
+          </div>
+        </a>
+      </li>
+      <li data-type="snack" data-time="under10" data-ing="egg">
+        <a class="recipe-card" href="recipe-gyeran-toast.html">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/y_rgEYvCKxo/hqdefault.jpg" alt="계란토스트">
+          <div class="recipe-body">
+            <span class="recipe-name">계란토스트</span>
+            <span class="recipe-sub">10분 미만</span>
+            <span class="recipe-price">2,000원</span>
+          </div>
+        </a>
+      </li>
+      <li data-type="side" data-time="10to20" data-ing="egg">
+        <a class="recipe-card" href="recipe-gyeran-mari.html">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/6gqSdqiN53s/hqdefault.jpg" alt="계란말이">
+          <div class="recipe-body">
+            <span class="recipe-name">계란말이</span>
+            <span class="recipe-sub">10~20분</span>
+            <span class="recipe-price">2,100원</span>
+          </div>
+        </a>
+      </li>
+      <li data-type="main" data-time="20to30" data-ing="kimchi pork tofu">
+        <a class="recipe-card" href="recipe-kimchi-jjigae.html">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/4quUR3RLVyI/hqdefault.jpg" alt="김치찌개">
+          <div class="recipe-body">
+            <span class="recipe-name">김치찌개</span>
+            <span class="recipe-sub">20~30분</span>
+            <span class="recipe-price">3,200원</span>
+          </div>
+        </a>
+      </li>
+      <li data-type="main" data-time="20to30" data-ing="pork">
+        <a class="recipe-card" href="recipe-jeyuk-bokkeum.html">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/AE7CsTg3iFc/hqdefault.jpg" alt="제육볶음">
+          <div class="recipe-body">
+            <span class="recipe-name">제육볶음</span>
+            <span class="recipe-sub">20~30분</span>
+            <span class="recipe-price">4,200원</span>
+          </div>
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
