@@ -80,14 +80,307 @@ body {
 .insights-library {
     grid-column: 1 / -1; /* Spans full width */
     grid-row: 2 / 3;
-    border: 2px dashed #dee2e6;
-    background-color: #e9ecef;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+    overflow: hidden;
 }
 
-/* Hover effects for interactive feel in skeleton items */
-.insights-library:hover {
-    border-color: #adb5bd;
-    background-color: #e2e6ea;
+.insights-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Panel Headers */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 12px;
+}
+
+.panel-header h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-deep-teal-dark);
+}
+
+/* Left Panel: Curation List Panel (45% Width) */
+.curation-list-panel {
+    width: 45%;
+    border-right: 1px solid var(--color-border);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.paper-count {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    background-color: var(--color-bg-main);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.paper-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 4px;
+}
+
+/* Paper Cards in List */
+.paper-card {
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    background-color: var(--color-bg-card);
+    transition: all var(--transition-fast);
+}
+
+.paper-card:hover {
+    border-color: var(--color-sky-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.paper-card.active {
+    border-color: var(--color-deep-teal-light);
+    background-color: var(--color-sky-blue-light);
+    box-shadow: 0 4px 12px rgba(10, 147, 150, 0.08);
+}
+
+.paper-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* Match Badges (Green / Yellow) */
+.match-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.match-badge.high {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.match-badge.medium {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.paper-journal {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.paper-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--color-text-primary);
+    margin-bottom: 8px;
+}
+
+.paper-card.active .paper-title {
+    color: var(--color-deep-teal-dark);
+}
+
+.paper-authors {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+/* Right Panel: Detail & Library Area (55% Width) */
+.detail-library-panel {
+    width: 55%;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Top: 3-line Insight Panel */
+.insight-panel {
+    flex: 1.3;
+    padding: 24px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.btn-archive-paper {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-deep-teal);
+    background-color: var(--color-sky-blue-light);
+    border: 1px solid var(--color-sky-blue);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-archive-paper:hover {
+    background-color: var(--color-sky-blue-hover);
+    color: var(--color-deep-teal-dark);
+}
+
+.insight-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.insight-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-deep-teal-dark);
+    line-height: 1.4;
+    margin-bottom: 4px;
+}
+
+.insight-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.insight-list li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.insight-list .num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    background-color: var(--color-deep-teal-light);
+    color: #ffffff;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-top: 2px;
+}
+
+.insight-list .text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-text-primary);
+}
+
+.insight-list .text strong {
+    color: var(--color-deep-teal-dark);
+    display: block;
+    margin-bottom: 2px;
+}
+
+/* Bottom: My Library Archiving Library */
+.library-panel {
+    flex: 0.7;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--color-bg-main);
+}
+
+.library-count {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.library-list-container {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.library-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Library Item Card */
+.library-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    gap: 12px;
+    transition: all var(--transition-fast);
+}
+
+.library-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.library-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.library-item-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.library-item-meta {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+.btn-remove-library {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all var(--transition-fast);
+}
+
+.btn-remove-library:hover {
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.05);
 }
 
 /* Container B: Curation Board Section Specific Styles */
