@@ -1,3 +1,5 @@
+<sub>[Wiki Home](./doc-viewer.html?doc=Home.md) · [Knowledge Graph](./knowledge-graph.html)</sub>
+
 # LocalTwin v0.1 전체 실행 계획
 
 이 문서는 GitHub Wiki에 올리기 위한 LocalTwin v0.1 실행 계획이다.
@@ -267,7 +269,7 @@ template 상권 해석 리포트
 
 첫 화면은 소개 페이지가 아니라 실제 상권 분석 대시보드로 한다.
 
-`intro-page`는 임시 소개 페이지로만 보존하고 실제 개발에는 사용하지 않는다.
+문서 홈은 `docs/wiki/Home.md`를 기준으로 관리하고, 인터랙티브 탐색은 `docs/wiki/knowledge-graph.html`에서 제공한다.
 
 ## 8. Sprint 4: 보조 기능 준비
 

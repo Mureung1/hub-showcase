@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LocalTwin Document Viewer</title>
+    <style>
+      :root {
+        color: #17211c;
+        background: #f6f8f7;
+        font-family:
+          Inter, Pretendard, "Apple SD Gothic Neo", system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        --green: #03c75a;
+        --green-dark: #08703a;
+        --ink: #17211c;
+        --muted: #617067;
+        --line: rgba(15, 23, 42, 0.12);
+        --surface: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 10% 0%, rgba(3, 199, 90, 0.12), transparent 28%),
+          linear-gradient(180deg, #fbfdfc 0%, #f4f7f5 100%);
+      }
+
+      a {
+        color: var(--green-dark);
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      a:hover,
+      a:focus-visible {
+        text-decoration: underline;
+      }
+
+      .top-links {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(18px);
+      }
+
+      .top-links__inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: min(980px, calc(100% - 32px));
+        margin: 0 auto;
+        min-height: 44px;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .top-links__inner div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .doc-shell {
+        width: min(980px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 30px 0 70px;
+      }
+
+      .doc-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 18px 54px rgba(15, 23, 42, 0.08);
+        padding: clamp(22px, 4vw, 42px);
+      }
+
+      .doc-path {
+        margin: 0 0 16px;
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.78rem;
+      }
+
+      .content h1 {
+        margin: 0 0 20px;
+        color: #07120d;
+        font-size: clamp(2rem, 5vw, 3.8rem);
+        line-height: 1.02;
+        letter-spacing: 0;
+      }
+
+      .content h2 {
+        margin: 34px 0 12px;
+        color: #07120d;
+        font-size: 1.65rem;
+        line-height: 1.22;
+      }
+
+      .content h3 {
+        margin: 24px 0 10px;
+        color: #07120d;
+      }
+
+      .content p,
+      .content li {
+        color: #34443c;
+        line-height: 1.72;
+      }
+
+      .content ul,
+      .content ol {
+        padding-left: 1.3rem;
+      }
+
+      .content code {
+        border-radius: 6px;
+        background: #eef6f1;
+        color: #075f32;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        padding: 0.12rem 0.28rem;
+      }
+
+      .content pre {
+        overflow-x: auto;
+        border-radius: 14px;
+        background: #07120d;
+        color: #dcefe6;
+        padding: 16px;
+      }
+
+      .content pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+      }
+
+      .content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 18px 0;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+
+      .content th,
+      .content td {
+        border: 1px solid var(--line);
+        padding: 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .content th {
+        background: #eef6f1;
+        color: #1c3429;
+      }
+
+      .content blockquote {
+        margin: 18px 0;
+        border-left: 4px solid var(--green);
+        background: #f2fbf6;
+        color: #244237;
+        padding: 12px 16px;
+      }
+
+      .error {
+        border: 1px solid rgba(239, 68, 68, 0.32);
+        border-radius: 14px;
+        background: #fff1f2;
+        color: #991b1b;
+        padding: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="top-links" aria-label="문서 내비게이션">
+      <div class="top-links__inner">
+        <div>
+          <a href="./doc-viewer.html?doc=Home.md">Wiki Home</a>
+          <a href="./knowledge-graph.html">Knowledge Graph</a>
+          <a id="raw-link" href="./Home.md">Raw Markdown</a>
+        </div>
+        <span>Document Viewer</span>
+      </div>
+    </nav>
+
+    <main class="doc-shell">
+      <article class="doc-card">
+        <p id="doc-path" class="doc-path"></p>
+        <div id="content" class="content">문서를 불러오는 중입니다.</div>
+      </article>
+    </main>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const requestedDoc = normalizeDoc(params.get("doc") || "Home.md");
+      const content = document.querySelector("#content");
+      const docPath = document.querySelector("#doc-path");
+      const rawLink = document.querySelector("#raw-link");
+
+      function normalizeDoc(input) {
+        const parts = String(input)
+          .replace(/\\/g, "/")
+          .split("/")
+          .filter(Boolean);
+        const normalized = [];
+        for (const part of parts) {
+          if (part === ".") continue;
+          if (part === "..") {
+            normalized.push(part);
+            continue;
+          }
+          normalized.push(part);
+        }
+        const value = normalized.join("/");
+        if (!value.endsWith(".md")) return "Home.md";
+        if (value.includes("://") || value.startsWith("/") || value.includes("\0")) return "Home.md";
+        return value;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function docDir(doc) {
+        const index = doc.lastIndexOf("/");
+        return index === -1 ? "" : doc.slice(0, index + 1);
+      }
+
+      function normalizeRelative(baseDoc, href) {
+        if (/^(https?:|mailto:|#)/.test(href)) return href;
+        if (!href.endsWith(".md")) return href;
+        const stack = docDir(baseDoc).split("/").filter(Boolean);
+        href.split("/").forEach((part) => {
+          if (!part || part === ".") return;
+          if (part === "..") stack.push("..");
+          else stack.push(part);
+        });
+        return `./doc-viewer.html?doc=${encodeURIComponent(stack.join("/"))}`;
+      }
+
+      function inline(markdown, currentDoc) {
+        let html = escapeHtml(markdown);
+        html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+        html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
+          return `<a href="${escapeHtml(normalizeRelative(currentDoc, href))}">${label}</a>`;
+        });
+        return html;
+      }
+
+      function renderTable(lines, currentDoc) {
+        const rows = lines.map((line) =>
+          line
+            .trim()
+            .replace(/^\||\|$/g, "")
+            .split("|")
+            .map((cell) => cell.trim()),
+        );
+        const header = rows[0] || [];
+        const body = rows.slice(2);
+        return `<table><thead><tr>${header
+          .map((cell) => `<th>${inline(cell, currentDoc)}</th>`)
+          .join("")}</tr></thead><tbody>${body
+          .map((row) => `<tr>${row.map((cell) => `<td>${inline(cell, currentDoc)}</td>`).join("")}</tr>`)
+          .join("")}</tbody></table>`;
+      }
+
+      function renderMarkdown(markdown, currentDoc) {
+        const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+        const blocks = [];
+        let paragraph = [];
+        let list = [];
+        let table = [];
+        let code = [];
+        let inCode = false;
+
+        function flushParagraph() {
+          if (!paragraph.length) return;
+          blocks.push(`<p>${inline(paragraph.join(" "), currentDoc)}</p>`);
+          paragraph = [];
+        }
+
+        function flushList() {
+          if (!list.length) return;
+          blocks.push(`<ul>${list.map((item) => `<li>${inline(item, currentDoc)}</li>`).join("")}</ul>`);
+          list = [];
+        }
+
+        function flushTable() {
+          if (!table.length) return;
+          blocks.push(renderTable(table, currentDoc));
+          table = [];
+        }
+
+        for (const line of lines) {
+          if (line.startsWith("```")) {
+            if (inCode) {
+              blocks.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+              code = [];
+              inCode = false;
+            } else {
+              flushParagraph();
+              flushList();
+              flushTable();
+              inCode = true;
+            }
+            continue;
+          }
+          if (inCode) {
+            code.push(line);
+            continue;
+          }
+          if (!line.trim()) {
+            flushParagraph();
+            flushList();
+            flushTable();
+            continue;
+          }
+          if (/^\|.+\|$/.test(line.trim())) {
+            flushParagraph();
+            flushList();
+            table.push(line);
+            continue;
+          }
+          flushTable();
+          const heading = line.match(/^(#{1,4})\s+(.+)$/);
+          if (heading) {
+            flushParagraph();
+            flushList();
+            const level = heading[1].length;
+            blocks.push(`<h${level}>${inline(heading[2], currentDoc)}</h${level}>`);
+            continue;
+          }
+          const listItem = line.match(/^[-*]\s+(.+)$/);
+          if (listItem) {
+            flushParagraph();
+            list.push(listItem[1]);
+            continue;
+          }
+          if (line.startsWith("> ")) {
+            flushParagraph();
+            flushList();
+            blocks.push(`<blockquote>${inline(line.slice(2), currentDoc)}</blockquote>`);
+            continue;
+          }
+          paragraph.push(line.trim());
+        }
+
+        flushParagraph();
+        flushList();
+        flushTable();
+        return blocks.join("\n");
+      }
+
+      async function loadDocument() {
+        docPath.textContent = requestedDoc;
+        rawLink.href = requestedDoc;
+        try {
+          const response = await fetch(requestedDoc, { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          const markdown = await response.text();
+          content.innerHTML = renderMarkdown(markdown, requestedDoc);
+        } catch (error) {
+          content.innerHTML = `<div class="error">문서를 불러오지 못했습니다: ${escapeHtml(
+            requestedDoc,
+          )}<br />로컬에서는 repository root를 정적 서버로 열어야 합니다.</div>`;
+        }
+      }
+
+      loadDocument();
+    </script>
+  </body>
+</html>

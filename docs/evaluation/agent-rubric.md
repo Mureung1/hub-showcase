@@ -1,3 +1,5 @@
+<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
+
 # LocalTwin Agent Evaluation Rubric
 
 이 문서는 LocalTwin 개발 작업을 평가하기 위한 기준이다.

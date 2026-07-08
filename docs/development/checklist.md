@@ -1,3 +1,5 @@
+<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
+
 # LocalTwin v0.1 전체 개발 체크리스트
 
 이 문서는 LocalTwin v0.1 전체 개발 진행 상황을 추적하기 위한 실행용 체크리스트다.
@@ -37,6 +39,7 @@
 - [x] LocalTwin 개발용 Dev Harness P0 구조를 만든다.
 - [x] task packet, run report, 평가 rubric, failure log 템플릿을 만든다.
 - [x] `scripts/check.ps1`를 전체 검증 진입점으로 만든다.
+- [x] source-like 변경 시 문서 또는 `.harness` 기록을 같은 커밋에 포함하도록 hook 규칙을 추가한다.
 
 ## 2. 대상 상권 선정
 

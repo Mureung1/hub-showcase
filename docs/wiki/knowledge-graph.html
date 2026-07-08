@@ -178,13 +178,13 @@
       .graph-card {
         position: relative;
         overflow: hidden;
-        min-height: 680px;
+        min-height: 540px;
       }
 
       .graph-card svg {
         display: block;
         width: 100%;
-        height: 680px;
+        height: 540px;
         background:
           linear-gradient(rgba(9, 35, 26, 0.035) 1px, transparent 1px),
           linear-gradient(90deg, rgba(9, 35, 26, 0.035) 1px, transparent 1px),
@@ -304,6 +304,30 @@
         font-weight: 700;
       }
 
+      .structure-tree {
+        margin-top: 18px;
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
+      }
+
+      .structure-tree h3 {
+        margin: 0 0 10px;
+        color: #07120d;
+        font-size: 0.92rem;
+      }
+
+      .structure-tree pre {
+        overflow-x: auto;
+        margin: 0;
+        border-radius: 12px;
+        background: #07120d;
+        color: #dcefe6;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.76rem;
+        line-height: 1.55;
+        padding: 12px;
+      }
+
       .swatch {
         width: 12px;
         height: 12px;
@@ -339,8 +363,8 @@
 
         .graph-card,
         .graph-card svg {
-          min-height: 600px;
-          height: 600px;
+          min-height: 500px;
+          height: 500px;
         }
       }
 
@@ -351,8 +375,8 @@
 
         .graph-card,
         .graph-card svg {
-          min-height: 560px;
-          height: 560px;
+          min-height: 460px;
+          height: 460px;
         }
       }
     </style>
@@ -360,7 +384,7 @@
   <body>
     <main class="shell">
       <nav class="topbar" aria-label="문서 그래프 내비게이션">
-        <a class="back-link" href="./Home.md">← Wiki Home</a>
+        <a class="back-link" href="./doc-viewer.html?doc=Home.md">← Wiki Home</a>
         <a class="back-link" href="../../README.md">README</a>
       </nav>
 
@@ -403,6 +427,24 @@
           <a id="detail-link" class="doc-link" href="./Home.md">문서 열기</a>
 
           <div id="legend" class="legend" aria-label="그래프 범례"></div>
+
+          <div class="structure-tree" aria-label="프로젝트 구조">
+            <h3>Project Structure</h3>
+            <pre>LocalTwin/
+  README.md
+  docs/
+    wiki/
+    development/
+    features/
+    data/
+    evaluation/
+    module-notes/
+  scripts/
+  .harness/
+  .githooks/
+  .agents/
+  .codex/</pre>
+          </div>
         </aside>
       </section>
     </main>
@@ -423,7 +465,7 @@
             id: "home",
             label: "Wiki Home",
             group: "home",
-            href: "./Home.md",
+            href: "./doc-viewer.html?doc=Home.md",
             description: "개발문서와 기획문서로 들어가는 최상위 진입점입니다.",
             keywords: ["docs index", "navigation", "home"],
             size: 24,
@@ -432,7 +474,7 @@
             id: "product-plan",
             label: "Product Plan",
             group: "planning",
-            href: "./localtwin-product-plan.md",
+            href: "./doc-viewer.html?doc=localtwin-product-plan.md",
             description: "문제 정의, 사용자 시나리오, 핵심 기능과 서브 기능을 정리한 기획 문서입니다.",
             keywords: ["문제 정의", "사용자 흐름", "핵심 기능", "MVP"],
           },
@@ -440,7 +482,7 @@
             id: "execution-plan",
             label: "Execution Plan",
             group: "planning",
-            href: "./localtwin-v0.1-execution-plan.md",
+            href: "./doc-viewer.html?doc=localtwin-v0.1-execution-plan.md",
             description: "v0.1 개발 순서, 데이터 조사, API, 프론트엔드, 검증 환경을 묶은 실행 계획입니다.",
             keywords: ["sprint", "API-first", "mock fixture", "React", "FastAPI"],
           },
@@ -448,7 +490,7 @@
             id: "scope",
             label: "Scope Note",
             group: "decision",
-            href: "../module-notes/localtwin-v0.1-scope.md",
+            href: "./doc-viewer.html?doc=../module-notes/localtwin-v0.1-scope.md",
             description: "주기능은 상권 분석, 3D 탐색은 보조 데모로 제한한다는 범위 고정 메모입니다.",
             keywords: ["scope", "3D demo", "상권 분석", "v0.1"],
           },
@@ -456,7 +498,7 @@
             id: "market",
             label: "Market Analysis",
             group: "feature",
-            href: "../features/market-analysis.md",
+            href: "./doc-viewer.html?doc=../features/market-analysis.md",
             description: "지도, 업종 필터, 경쟁 강도, 개폐업 흐름, 입지 점수, 리포트의 핵심 기능 스펙입니다.",
             keywords: ["지도", "경쟁 강도", "입지 점수", "리포트"],
           },
@@ -464,7 +506,7 @@
             id: "three-d",
             label: "3D Explorer",
             group: "feature",
-            href: "../features/3d-congestion-explorer.md",
+            href: "./doc-viewer.html?doc=../features/3d-congestion-explorer.md",
             description: "한 가게 또는 짧은 거리 구간의 정적 3D 탐색과 시간대별 혼잡도 표시 스펙입니다.",
             keywords: ["3D", "혼잡도", "마커", "정적 장면"],
           },
@@ -472,7 +514,7 @@
             id: "privacy",
             label: "Anonymization",
             group: "feature",
-            href: "../features/person-anonymization-preprocessing.md",
+            href: "./doc-viewer.html?doc=../features/person-anonymization-preprocessing.md",
             description: "사람 영역 탐지 후 blur, mask, exclude로 개인정보 노출 위험을 줄이는 전처리 스펙입니다.",
             keywords: ["person bbox", "blur", "mask", "privacy"],
           },
@@ -480,7 +522,7 @@
             id: "data-map",
             label: "Data Mapping",
             group: "data",
-            href: "../data/data-source-mapping.md",
+            href: "./doc-viewer.html?doc=../data/data-source-mapping.md",
             description: "공공데이터, 수동 관찰값, canonical schema 역할을 연결한 데이터 기준 문서입니다.",
             keywords: ["Store", "PermitBusiness", "FlowObservation", "canonical schema"],
           },
@@ -488,7 +530,7 @@
             id: "dev-overview",
             label: "Dev Overview",
             group: "development",
-            href: "../development/overview.md",
+            href: "./doc-viewer.html?doc=../development/overview.md",
             description: "개발 환경, 백엔드/프론트엔드 구성, 구현 순서의 상위 개발문서입니다.",
             keywords: ["React", "FastAPI", "SQLite", "Leaflet"],
           },
@@ -496,7 +538,7 @@
             id: "checklist",
             label: "Checklist",
             group: "development",
-            href: "../development/checklist.md",
+            href: "./doc-viewer.html?doc=../development/checklist.md",
             description: "전체 개발 진행을 추적하는 체크리스트입니다.",
             keywords: ["checklist", "progress", "validation"],
           },
@@ -504,7 +546,7 @@
             id: "git",
             label: "Git Workflow",
             group: "development",
-            href: "../development/git-workflow.md",
+            href: "./doc-viewer.html?doc=../development/git-workflow.md",
             description: "작은 커밋, 커밋 메시지, 검증 기록 규칙을 정리한 문서입니다.",
             keywords: ["commit", "why", "verify", "small change"],
           },
@@ -512,7 +554,7 @@
             id: "harness",
             label: "Dev Harness",
             group: "development",
-            href: "../development/harness.md",
+            href: "./doc-viewer.html?doc=../development/harness.md",
             description: "task packet, run report, 검증, 평가를 개발 과정에 연결하는 하네스 문서입니다.",
             keywords: ["task packet", "run report", "guardrail", "workflow"],
           },
@@ -520,7 +562,7 @@
             id: "validation",
             label: "Validation",
             group: "development",
-            href: "../development/validation.md",
+            href: "./doc-viewer.html?doc=../development/validation.md",
             description: "문서 링크 검사, API 테스트, 웹 빌드 등 검증 기준과 실행 방식을 정의합니다.",
             keywords: ["check.ps1", "test", "smoke", "docs index"],
           },
@@ -528,7 +570,7 @@
             id: "rubric",
             label: "Agent Rubric",
             group: "evaluation",
-            href: "../evaluation/agent-rubric.md",
+            href: "./doc-viewer.html?doc=../evaluation/agent-rubric.md",
             description: "에이전트 작업을 범위, 정확성, 검증, 문서화, 안전성, Git hygiene로 평가합니다.",
             keywords: ["scope", "correctness", "verification", "git hygiene"],
           },
@@ -536,7 +578,7 @@
             id: "eval-log",
             label: "Evaluation Log",
             group: "evaluation",
-            href: "../evaluation/evaluation-log.md",
+            href: "./doc-viewer.html?doc=../evaluation/evaluation-log.md",
             description: "작업별 평가 결과를 기록하는 로그입니다.",
             keywords: ["review", "score", "decision"],
           },
@@ -544,7 +586,7 @@
             id: "failure-log",
             label: "Failure Log",
             group: "evaluation",
-            href: "../evaluation/failure-log.md",
+            href: "./doc-viewer.html?doc=../evaluation/failure-log.md",
             description: "실패 사례와 재발 방지책을 기록하는 로그입니다.",
             keywords: ["failure", "prevention", "postmortem"],
           },
@@ -552,7 +594,7 @@
             id: "meta-eval",
             label: "Meta Evaluation",
             group: "evaluation",
-            href: "../evaluation/meta-evaluation.md",
+            href: "./doc-viewer.html?doc=../evaluation/meta-evaluation.md",
             description: "평가 시스템 자체가 좋은 작업과 나쁜 작업을 구분하는지 확인하는 문서입니다.",
             keywords: ["golden case", "evaluator", "quality gate"],
           },

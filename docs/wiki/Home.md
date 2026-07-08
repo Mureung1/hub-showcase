@@ -1,3 +1,5 @@
+<sub>[Wiki Home](./doc-viewer.html?doc=Home.md) · [Knowledge Graph](./knowledge-graph.html)</sub>
+
 # LocalTwin Wiki Home
 
 LocalTwin Wiki는 프로젝트 기획, 기능 정의, 개발 운영 문서를 연결하는 진입점이다.
@@ -5,9 +7,72 @@ LocalTwin Wiki는 프로젝트 기획, 기능 정의, 개발 운영 문서를 �
 ## Knowledge Graph
 
 - [Interactive Knowledge Graph](./knowledge-graph.html)
+- [Document Viewer](./doc-viewer.html?doc=Home.md)
 
 문서 간 핵심 개념, 기능, 데이터, 개발 운영 기준의 연결을 Node & Edge 형식으로 확인한다.
 노드를 클릭하면 관련 문서로 이동하고, 검색과 그룹 필터로 필요한 문서를 좁혀볼 수 있다.
+
+## Structure Maps
+
+### 문서 구조
+
+```text
+docs/
+  wiki/
+    Home.md
+    doc-viewer.html
+    knowledge-graph.html
+    localtwin-product-plan.md
+    localtwin-v0.1-execution-plan.md
+  development/
+    overview.md
+    checklist.md
+    git-workflow.md
+    harness.md
+    validation.md
+  features/
+    market-analysis.md
+    3d-congestion-explorer.md
+    person-anonymization-preprocessing.md
+  data/
+    data-source-mapping.md
+  evaluation/
+    agent-rubric.md
+    evaluation-log.md
+    failure-log.md
+    meta-evaluation.md
+  module-notes/
+    localtwin-v0.1-scope.md
+```
+
+### 프로젝트 구조
+
+```text
+LocalTwin/
+  README.md
+  docs/
+    wiki/
+    development/
+    features/
+    data/
+    evaluation/
+    module-notes/
+  scripts/
+    check.ps1
+    check_docs_index.py
+    check_task_packet.py
+  .harness/
+    templates/
+    tasks/
+    runs/
+    evaluations/
+    policies/
+  .githooks/
+    pre-commit
+    commit-msg
+  .agents/
+  .codex/
+```
 
 ## Product Planning
 

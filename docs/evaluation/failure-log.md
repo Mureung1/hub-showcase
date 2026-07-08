@@ -1,3 +1,5 @@
+<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
+
 # LocalTwin Failure Log
 
 반복 가능한 실패, 사용자 피드백으로 수정된 방향, 검증 누락을 기록한다.

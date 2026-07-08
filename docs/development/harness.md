@@ -1,3 +1,5 @@
+<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
+
 # LocalTwin Dev Harness
 
 이 문서는 LocalTwin 제품 기능이 아니라 LocalTwin을 개발하는 과정에서 사용하는 개발 운영 하네스를 정의한다.
@@ -90,7 +92,20 @@ run report 작성
 commit message why/verify 작성
 ```
 
-## 6. 실패 기록 규칙
+## 6. Documentation Sync Gate
+
+코드, 스크립트, HTML, 스타일 등 source-like 파일이 바뀌면 같은 커밋에 다음 중 하나를 포함한다.
+
+```text
+관련 docs 문서 갱신
+README 링크 갱신
+.harness task packet 또는 run report 기록
+```
+
+이 규칙은 `.githooks/pre-commit`에서 1차로 확인한다. 공개 문서 변경이 필요 없는 내부 수정이라도,
+왜 문서 변경이 불필요한지 `.harness` 기록에 남긴다.
+
+## 7. 실패 기록 규칙
 
 다음 경우에는 `docs/evaluation/failure-log.md`에 기록한다.
 
@@ -104,7 +119,7 @@ Mermaid/화면/데이터 등 산출물 검증 누락
 
 기록은 blame이 아니라 harness 개선을 위한 입력이다.
 
-## 7. Harness 개선 규칙
+## 8. Harness 개선 규칙
 
 반복 실패가 2회 이상 나오면 다음 중 하나를 추가한다.
 

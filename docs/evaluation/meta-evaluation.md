@@ -1,3 +1,5 @@
+<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
+
 # LocalTwin Meta-Evaluation
 
 이 문서는 평가 시스템 자체가 좋은 작업과 나쁜 작업을 구분하는지 확인하기 위한 기준이다.

@@ -1,3 +1,5 @@
+<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
+
 # LocalTwin Validation Guide
 
 이 문서는 LocalTwin 개발 중 어떤 검증을 수행해야 하는지 정의한다.
@@ -24,7 +26,8 @@ scripts/check.ps1
 ```text
 task packet 형식 검사
 README/docs 주요 링크 존재 확인
-intro-page build 확인
+문서 링크 검사
+docs HTML 문법과 그래프 문서 대상 존재 확인
 ```
 
 ## 3. 작업 유형별 검증
