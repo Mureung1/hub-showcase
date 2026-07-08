@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import Header from "../components/layout/Header";
 import { homeFeatures } from "../data/homeFeatures";
+import { navigate, routes } from "../router";
 
 const workflowSteps = [
   {
@@ -98,6 +99,7 @@ function Home() {
                 type="button"
                 className="hero-action primary"
                 style={styles.primaryAction}
+                onClick={() => navigate(routes.analysis)}
               >
                 AI 커리어 분석
               </button>
@@ -105,6 +107,7 @@ function Home() {
                 type="button"
                 className="hero-action secondary"
                 style={styles.secondaryAction}
+                onClick={() => navigate(routes.mission)}
               >
                 맞춤 미션 추천
               </button>
@@ -143,8 +146,8 @@ function Home() {
                 <strong>스펙 등록 후 제공</strong>
               </div>
               <div style={styles.metricItem}>
-                <span>미션 추천 상태</span>
-                <strong>목표 직무 설정 후 제공</strong>
+                <span>번아웃 위험도</span>
+                <strong>로그인 후 분석</strong>
               </div>
             </div>
           </aside>

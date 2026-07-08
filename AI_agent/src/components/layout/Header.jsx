@@ -2,6 +2,7 @@
 
 import { menuItems } from "../../data/menuItems";
 import careerMissionLogo from "../../assets/career-mission-logo.png";
+import { navigate, routes } from "../../router";
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -10,15 +11,22 @@ function Header() {
   const handleMyPageClick = () => {
     if (!isLoggedIn) {
       alert("마이페이지를 이용하려면 로그인 또는 회원가입을 먼저 진행해 주세요.");
+      navigate(routes.login);
       return;
     }
+
+    navigate(routes.myPage);
   };
 
   return (
     <header className="app-header">
       <style>{styles}</style>
       <div className="header-inner">
-        <strong className="brand">
+        <button
+          type="button"
+          className="brand"
+          onClick={() => navigate(routes.home)}
+        >
           <img
             src={careerMissionLogo}
             alt=""
@@ -26,7 +34,7 @@ function Header() {
             aria-hidden="true"
           />
           <span>Career Mission</span>
-        </strong>
+        </button>
 
         <div className="header-actions">
           <div
@@ -52,7 +60,15 @@ function Header() {
             {isMenuOpen && (
               <div className="submenu">
                 {menuItems.map((item) => (
-                  <button key={item.path} type="button" className="submenu-item">
+                  <button
+                    key={item.path}
+                    type="button"
+                    className="submenu-item"
+                    onClick={() => {
+                      navigate(item.path);
+                      setIsMenuOpen(false);
+                    }}
+                  >
                     {item.label}
                   </button>
                 ))}
@@ -66,10 +82,18 @@ function Header() {
             </button>
           ) : (
             <>
-              <button type="button" className="auth-button secondary">
+              <button
+                type="button"
+                className="auth-button secondary"
+                onClick={() => navigate(routes.login)}
+              >
                 로그인
               </button>
-              <button type="button" className="auth-button secondary">
+              <button
+                type="button"
+                className="auth-button secondary"
+                onClick={() => navigate(routes.signup)}
+              >
                 회원가입
               </button>
             </>
@@ -110,9 +134,14 @@ const styles = `
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: #ffffff;
   font-size: clamp(15px, 2vw, 18px);
+  font-weight: 700;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .brand-logo {
