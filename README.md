@@ -1,8 +1,8 @@
 # cmds-llm-wiki
 
-> **LLM Wiki 볼트 템플릿** — Karpathy LLM Wiki pattern + 미래의 나에게 보내는 편지 + Claude Code · Codex 듀얼 harness.
+> **LLM Wiki 볼트 템플릿** — Karpathy LLM Wiki pattern + 미래의 나에게 보내는 편지 + Codex-first agent harness.
 >
-> Obsidian 볼트이자 Claude Code / Codex 프로젝트. 외부 소스 (기사·논문·전사) 를 LLM 이 컴파일하여 복리로 성장하는 persistent wiki 로 축적합니다.
+> Obsidian 볼트이자 Codex 프로젝트. 외부 소스 (기사·논문·전사) 를 LLM 이 컴파일하여 복리로 성장하는 persistent wiki 로 축적합니다.
 
 **🌐 Live Showcase**: **[llm-wiki.cmdspace.work](https://llm-wiki.cmdspace.work)** — 10 섹션 상세 페이지 (아키텍처 · 11 commands · 미래의 나에게 보내는 편지 · Quick Start)
 
@@ -17,10 +17,12 @@
   - Ingest · Query · Lint 3 operations
   - `index.md` + `log.md` 두 개 핵심 파일
 - **미래의 나에게 보내는 편지** — `/ingest` 시 "왜 수집?" 목적 질문을 강제하여 파편 축적 방지
-- **Claude Code + Codex 듀얼 harness**
-  - 11 slash commands (`/ingest`, `/query`, `/lint`, `/inbox`, `/status`, `/reindex`, `/refresh-context`, `/onboard`, `/capture-tabs`, `/verify`, `/audit`)
-  - 2 PostToolUse hooks (raw source verbatim 검증 + qmd auto-reindex)
-  - **Codex 미러**: `.codex/commands/` (10) + `.agents/skills/` (10) + `AGENTS.md` — 같은 operation 을 Codex·Cursor·Windsurf 등에서도 동일하게 실행
+- **Codex-first harness**
+  - `AGENTS.md` — Codex 가 자동으로 읽는 repo 규칙
+  - `.agents/skills/` — Codex repo-scoped skills 10개 (`ingest`, `query`, `lint`, `status`, `verify`, `audit` 등)
+  - `.codex/commands/` — 각 skill 이 읽는 상세 operation checklist 10개
+  - `.codex/hooks/` — raw source verbatim 검증 + qmd auto-reindex hooks
+  - `.claude/` + `CLAUDE.md` — Claude Code 호환용 legacy mirror
   - 18 Obsidian Web Clipper JSON 템플릿 (Article / YouTube / Substack / X / arXiv / Stibee 등)
   - 73개 Obsidian hotkey 바인딩 (`.obsidian/hotkeys.json`) — heading shortcuts, wikilink/callout 삽입, 사이드바 토글 등
 - **선택적 mothership 볼트 연계** — 별도 PKM 볼트가 있다면 satellite 로 운영 가능
@@ -50,7 +52,7 @@
 
 ```bash
 cd ~/DEV
-git clone https://github.com/johnfkoo951/cmds-llm-wiki.git my-llm-wiki
+git clone https://github.com/gyutaetae/cmds-llm-wiki.git my-llm-wiki
 cd my-llm-wiki
 ```
 
@@ -105,18 +107,62 @@ qmd update && qmd embed
 
 `90. Settings/Sharing/clipper-*.json` 18개 중 원하는 사이트 템플릿을 Web Clipper Settings → Templates → Import 에서 불러오기.
 
-### 7. Claude Code 실행
+### 7. Codex 실행
 
 ```bash
 cd my-llm-wiki
-claude
+codex
 ```
 
 첫 명령어 추천 순서:
-1. `/status` — 현재 볼트 상태 확인
-2. `/ingest <URL>` — 관심 기사 하나 ingest (목적 질문에 답해보기)
-3. `/query <질문>` — 쌓인 wiki 로 첫 질의
-4. `/lint` — 건강도 체크
+1. `$status` 또는 `/status` — 현재 볼트 상태 확인
+2. `$ingest <URL>` 또는 `/ingest <URL>` — 관심 기사 하나 ingest
+3. `$query <질문>` 또는 `/query <질문>` — 쌓인 wiki 로 첫 질의
+4. `$lint` 또는 `/lint` — 건강도 체크
+
+Codex 는 repo 안의 `.agents/skills/*/SKILL.md` 를 repo-scoped skills 로 발견합니다. 즉, 이 저장소를 클론한 뒤 **repo 루트나 그 하위 폴더에서 Codex 를 실행하면** 이 skills 는 별도 설치 없이 사용할 수 있습니다.
+
+---
+
+## Codex skills 사용 방식
+
+이 레포의 skills 는 다음 위치에 있습니다.
+
+```text
+.agents/skills/
+├── ingest/SKILL.md
+├── query/SKILL.md
+├── lint/SKILL.md
+├── status/SKILL.md
+├── inbox/SKILL.md
+├── capture-tabs/SKILL.md
+├── reindex/SKILL.md
+├── refresh-context/SKILL.md
+├── verify/SKILL.md
+└── audit/SKILL.md
+```
+
+Codex 에서 명시적으로 부를 수 있습니다.
+
+```text
+$ingest https://example.com/article
+$query "이 위키의 핵심 패턴은 뭐야?"
+$lint
+```
+
+명시 호출을 하지 않아도, 프롬프트가 skill description 과 맞으면 Codex 가 자동으로 해당 skill 을 선택할 수 있습니다.
+
+### 다른 사람이 이 skills 를 쓰는 방법
+
+목적에 따라 다릅니다.
+
+| 목적 | 방법 | 설치 필요 여부 |
+|---|---|---|
+| 이 LLM Wiki 레포 안에서만 사용 | 레포 클론 후 repo 안에서 `codex` 실행 | 별도 설치 없음 |
+| 다른 모든 repo 에서 개인적으로 사용 | `.agents/skills/{skill}` 폴더를 `$HOME/.agents/skills/` 로 복사 또는 symlink | 로컬 복사 필요 |
+| 여러 사람에게 재사용 가능한 패키지로 배포 | Codex plugin 으로 패키징 | plugin 설치 필요 |
+
+따라서 이 레포를 쓰는 사용자는 `.ps1` 같은 설치 스크립트를 실행할 필요가 없습니다. 단, 이 skills 를 **다른 repo 에서도 전역으로 쓰고 싶다면** 사용자 홈의 `.agents/skills` 로 복사하거나, 장기적으로는 plugin 으로 배포하는 것이 맞습니다.
 
 ---
 
@@ -124,24 +170,24 @@ claude
 
 ```
 cmds-llm-wiki/
-├── CLAUDE.md                    # Schema (Claude Code) — LLM 행동 규칙
-├── AGENTS.md                    # Schema (Codex/Cursor/Windsurf) — CLAUDE.md 미러
+├── AGENTS.md                    # Schema (Codex) — LLM 행동 규칙
+├── CLAUDE.md                    # Schema (Claude Code legacy mirror)
 ├── Core Context.md              # 사용자 맥락 (채워서 사용)
 ├── index.md                     # 마스터 인덱스
 ├── log.md                       # 변경 이력 (append-only)
 ├── README.md                    # 이 파일
 ├── CHANGELOG.md                 # 템플릿 버전 이력
 ├── LLM-Wiki-Starter-Kit.md      # 간이 공유용 킷
-├── .claude/
-│   ├── commands/                # 11 slash commands
-│   ├── hooks/                   # 2 PostToolUse hooks
-│   └── settings.json
-├── .codex/                      # Codex harness (Claude 미러)
-│   ├── commands/                # 10 commands (onboard 제외)
+├── .codex/                      # Codex harness
+│   ├── commands/                # 10 operation checklists
 │   ├── hooks/                   # 2 hooks
 │   └── hooks.json
 ├── .agents/
-│   └── skills/                  # 10 Codex reusable operation skills
+│   └── skills/                  # 10 Codex repo-scoped skills
+├── .claude/
+│   ├── commands/                # Claude Code legacy commands
+│   ├── hooks/                   # Claude Code legacy hooks
+│   └── settings.json
 ├── .obsidian/
 │   └── hotkeys.json             # 73개 Obsidian hotkey 바인딩 (선택 — 마음에 안 들면 삭제)
 ├── 00. Inbox/                   # Web Clipper 수신 (02~05 서브폴더)
@@ -171,7 +217,7 @@ cmds-llm-wiki/
 - **ISO 8601 날짜**: `YYYY-MM-DD`
 - **새 YAML 키는 camelCase**: `collectionPurpose`, `mainVaultRelated`, `mainVaultCmds`, `reusableFor`
 
-자세한 내용은 `CLAUDE.md` 참조.
+자세한 Codex 운영 규칙은 `AGENTS.md` 참조. Claude Code 를 쓸 때만 `CLAUDE.md` 를 함께 보세요.
 
 ---
 
