@@ -146,9 +146,7 @@ spikes/semesterops-ui-prototype/index.html
 
 예시 목업 이미지:
 
-```text
-spikes/semesterops-ui-prototype/assets/review-workspace-mockup.png
-```
+![검토 중심 학업 워크스페이스 목업](../../spikes/semesterops-ui-prototype/assets/review-workspace-mockup.png)
 
 이 이미지는 최종 UI가 아니라 prototype과 기획서를 설명하기 위한 보조 asset이다. 정확한 상호작용과 문구는 HTML/CSS prototype에서 보장한다.
 
