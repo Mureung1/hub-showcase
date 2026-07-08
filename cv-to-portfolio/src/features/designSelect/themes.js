@@ -8,6 +8,7 @@ import terminalMd from "../../../designs/terminal-dark.md?raw";
 import creativeMd from "../../../designs/creative-gradient.md?raw";
 import editorialMd from "../../../designs/editorial-serif.md?raw";
 import proMd from "../../../designs/pro-sidebar.md?raw";
+import warmMd from "../../../designs/warm-sans.md?raw";
 
 export const THEMES = [
   {
@@ -129,6 +130,29 @@ export const THEMES = [
         "https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Inter:wght@400;500;600&display=swap",
       layout: "sidebar",
       headerStyle: "sidebar-profile",
+    },
+  },
+  {
+    slug: "warm-sans",
+    name: "Warm Sans",
+    vibe: "따뜻한 아이보리 · 친근한 산세리프",
+    audience: "마케터·기획자·교육·사무 등 직군 무관, 따뜻하고 친근한 인상을 원하는 사람",
+    markdown: warmMd,
+    tokens: {
+      bg: "#FFFBF7",
+      surface: "#FBF1E8",
+      text: "#2A2320",
+      textMuted: "#7A6E64",
+      accent: "#B4451F",
+      accent2: "#3A7D6B",
+      border: "#ECE0D4",
+      radius: "14px",
+      fontHeading: "'Poppins', 'Pretendard', system-ui, -apple-system, 'Segoe UI', sans-serif",
+      fontBody: "'Nunito Sans', 'Pretendard', system-ui, -apple-system, 'Segoe UI', sans-serif",
+      googleFontHref:
+        "https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&family=Poppins:wght@500;600;700&display=swap",
+      layout: "single-column",
+      headerStyle: "centered",
     },
   },
 ];

@@ -8,10 +8,14 @@ import Generating from "./features/generate/Generating.jsx";
 import ResultView from "./features/result/ResultView.jsx";
 import frontendSample from "../samples/kim-jiwoo-frontend.md?raw";
 import designerSample from "../samples/kim-seoyeon-designer.md?raw";
+import marketerSample from "../samples/lee-marketing.md?raw";
+import pmSample from "../samples/park-pm.md?raw";
 
 const SAMPLES = [
-  { label: "🧑‍💻 개발자 샘플", md: frontendSample },
-  { label: "🎨 디자이너 샘플", md: designerSample },
+  { label: "🧑‍💻 개발자", md: frontendSample },
+  { label: "🎨 디자이너", md: designerSample },
+  { label: "📈 마케터", md: marketerSample },
+  { label: "🗂️ 기획자", md: pmSample },
 ];
 
 // 앱 전체 흐름을 관리하는 오케스트레이터.

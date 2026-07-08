@@ -6,7 +6,7 @@
 ## 문서
 
 - 📄 **[기획서](docs/기획서.md)** — 문제 정의 · 사용자 시나리오 · 핵심 기능
-- 🎨 [디자인 명세 (DESIGN.md 5종)](designs)
+- 🎨 [디자인 명세 (DESIGN.md 6종)](designs)
 - 🖼️ [예시 결과 + 스크린샷](examples)
 - 
 ## wiki
@@ -22,8 +22,8 @@
 | ![Minimal Clean](examples/minimal-clean.png) | ![Terminal Dark](examples/terminal-dark.png) |
 | **Pro Sidebar** | **Editorial Serif** |
 | ![Pro Sidebar](examples/pro-sidebar.png) | ![Editorial Serif](examples/editorial-serif.png) |
-| **Creative Gradient** | |
-| ![Creative Gradient](examples/creative-gradient.png) | |
+| **Creative Gradient** | **Warm Sans** (비개발 직군 친화) |
+| ![Creative Gradient](examples/creative-gradient.png) | ![Warm Sans](examples/warm-sans.png) |
 
 ## 사용자 흐름
 
@@ -31,8 +31,8 @@
 ① CV 업로드/붙여넣기  →  ② DESIGN.md 테마 선택  →  ③ AI 생성  →  ④ 미리보기 & 다운로드
 ```
 
-1. **CV 업로드** — 마크다운 이력서를 붙여넣거나 `.md/.txt` 파일 업로드 (샘플 2종 제공). 실시간으로 이름·직함·연락처·스킬·경력·프로젝트·학력으로 파싱됩니다.
-2. **디자인 선택** — 5개 테마의 미리보기 카드에서 하나를 고르면 해당 `DESIGN.md` 원문이 표시됩니다.
+1. **CV 업로드** — 마크다운 이력서를 붙여넣거나 `.md/.txt` 파일 업로드 (샘플 4종: 개발자·디자이너·마케터·기획자). 실시간으로 이름·직함·연락처·스킬·경력·프로젝트·학력으로 파싱됩니다.
+2. **디자인 선택** — 6개 테마의 미리보기 카드에서 하나를 고르면 해당 `DESIGN.md` 원문이 표시됩니다.
 3. **생성** — 선택한 디자인 토큰으로 CV를 렌더링해 HTML 페이지를 조립합니다.
 4. **결과** — iframe 미리보기 ↔ HTML 코드 탭, `<이름>_portfolio.html`로 다운로드.
 
@@ -46,8 +46,8 @@ npm run dev     # http://localhost:5173
 ## 프로젝트 구조
 
 ```
-designs/                     # 사람이 읽는 디자인 명세 (DESIGN.md 5종)
-samples/                     # 샘플 CV 2종 (개발자 / 디자이너)
+designs/                     # 사람이 읽는 디자인 명세 (DESIGN.md 6종)
+samples/                     # 샘플 CV 4종 (개발자·디자이너·마케터·기획자)
 src/
 ├─ App.jsx                   # 4단계 흐름 오케스트레이터
 ├─ components/Stepper.jsx    # 진행 표시기
@@ -58,15 +58,16 @@ src/
    └─ result/                # ④ 미리보기 + 다운로드
 ```
 
-## 디자인 테마 5종
+## 디자인 테마 6종
 
 | 테마 | 결 | 레이아웃 |
 | --- | --- | --- |
 | **Minimal Clean** ⭐기본 | 여백 중심 미니멀, 채용담당자 친화 | single-column |
-| Terminal Dark | 터미널/코드 감성 다크, 개발자 | timeline |
-| Creative Gradient | 그라디언트 배너, 크리에이터 | single-column (banner) |
+| Terminal Dark | 모노스페이스·고대비 다크 | timeline |
+| Creative Gradient | 그라디언트 배너, 컬러풀 | single-column (banner) |
 | Editorial Serif | 매거진 세리프, 에디토리얼 | two-column |
-| Pro Sidebar | 좌측 프로필 사이드바, 비즈니스 | sidebar |
+| Pro Sidebar | 좌측 프로필 사이드바 | sidebar |
+| Warm Sans | 따뜻한 아이보리·산세리프, 직군 무관 | single-column |
 
 > 기본 테마(minimal-clean)는 큐레이션 결과 본문 대비(약 15.8:1)가 가장 높고 범용적이라 선정.
 
