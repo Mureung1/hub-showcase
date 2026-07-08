@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "explore": "node explore-login.mjs",
-    "login-test": "node login-test.mjs"
+    "login-test": "node login-test.mjs",
+    "invoice-check": "node invoice-account-check.mjs"
   },
   "devDependencies": {
     "playwright": "^1.48.0"
