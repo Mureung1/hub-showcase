@@ -1,9 +1,9 @@
 # hub
 
-[기획서 (plan)](../../wiki/plan) — 문제 정의, 리프레임 근거, 통계·경쟁 분석, 구현 아키텍처, 로드맵
+[기획서 (plan)](https://github.com/imHay0ung/hub/wiki/%EC%9E%90%EC%B7%A8%EB%B0%A9-%EC%B2%AD%EA%B2%B0%EA%B4%80%EB%A6%AC%EC%82%AC-(Cleanliness-Manager-Agent)) — 문제 정의, 리프레임 근거, 통계·경쟁 분석, 구현 아키텍처, 로드맵
 
 
-[작업 체크리스트 (checklist)](../../wiki/checklist) — 4주 개발 작업 단위 체크리스트
+
 
 # 자취방 청결관리사 (Cleanliness Manager Agent)
 
