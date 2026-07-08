@@ -54,3 +54,9 @@
 > → 각 플랫폼에 업데이트  
 > → 플랫폼별 반영 결과 확인  
 > → 실패 시 재시도 또는 수동 수정
+>
+> ## 프로토타입
+
+PlaceSync의 핵심 기능과 사용자 흐름을 확인할 수 있는 정적 프로토타입입니다.
+
+[PlaceSync 프로토타입 바로 실행하기](https://dlstodakd.github.io/hub/prototype/)
