@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>한끼바꿈 — 프로토타입 v0.2 (Sky)</title>
+  <style>
+    :root {
+      --sky: #2E9BDA;
+      /* 주요 액션 (하늘색) */
+      --sky-deep: #1B6FA8;
+      --sky-soft: #E3F2FC;
+      --sky-mist: #F3FAFF;
+      --navy: #12395A;
+      /* 페이지 제목/노트 */
+      --ink: #22303B;
+      /* 본문 잉크 */
+      --muted: #7C8B96;
+      --line: #DEEAF2;
+      --paper: #FCFEFF;
+      --ticket: #FFC93C;
+      /* 식권 노랑 */
+      --ticket-ink: #4A3608;
+      --hot: #E85D3D;
+      /* 핫딜/긴급 */
+      --hot-soft: #FDEEE9;
+      --ok: #1E9E6A;
+      --ok-soft: #E4F5EE;
+      --radius: 14px;
+      font-size: 16px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    body {
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      background: linear-gradient(180deg, #BFE0F5 0%, #E4F3FC 45%, #F6FBFF 100%);
+      background-attachment: fixed;
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 44px 20px 70px;
+    }
+
+    input[type=radio].nav {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none
+    }
+
+    label {
+      cursor: pointer
+    }
+
+    label:focus-visible,
+    button:focus-visible {
+      outline: 3px solid var(--navy);
+      outline-offset: 2px
+    }
+
+    /* ── 페이지 헤더 ───────────────────────── */
+    .intro {
+      max-width: 980px;
+      margin: 0 auto 30px;
+      color: var(--navy)
+    }
+
+    .intro .eyebrow {
+      font-size: .76rem;
+      letter-spacing: .2em;
+      color: var(--sky-deep);
+      font-weight: 800
+    }
+
+    .intro h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      margin: .28em 0 .35em
+    }
+
+    .intro p {
+      font-size: .95rem;
+      color: #3D5A73;
+      max-width: 640px;
+      line-height: 1.65
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      display: flex;
+      gap: 34px;
+      align-items: flex-start;
+      justify-content: center;
+      flex-wrap: wrap
+    }
+
+    /* ── 폰 프레임 ─────────────────────────── */
+    .phone {
+      width: 390px;
+      flex: 0 0 390px;
+      background: var(--paper);
+      border-radius: 36px;
+      box-shadow: 0 34px 64px rgba(18, 57, 90, .28), 0 0 0 10px #0F2E47;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 800px;
+      position: relative;
+    }
+
+    .statusbar {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 22px 4px;
+      font-size: .72rem;
+      color: var(--muted);
+      font-weight: 600
+    }
+
+    .appbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px 12px;
+      border-bottom: 1px solid var(--line);
+      gap: 8px
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 1.02rem;
+      letter-spacing: -.02em;
+      color: var(--navy)
+    }
+
+    .brand em {
+      font-style: normal;
+      color: var(--sky)
+    }
+
+    .appbar .right {
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .region {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--sky-deep);
+      background: var(--sky-soft);
+      padding: 6px 12px;
+      border-radius: 999px
+    }
+
+    .bell {
+      position: relative;
+      font-size: 1.05rem;
+      line-height: 1
+    }
+
+    .bell::after {
+      content: "2";
+      position: absolute;
+      top: -6px;
+      right: -8px;
+      background: var(--hot);
+      color: #fff;
+      font-size: .58rem;
+      font-weight: 800;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stage {
+      flex: 1;
+      overflow-y: auto;
+      position: relative;
+      padding-bottom: 88px
+    }
+
+    .screen {
+      display: none;
+      padding: 16px 16px 26px;
+      animation: fade .25s ease
+    }
+
+    @keyframes fade {
+      from {
+        opacity: 0;
+        transform: translateY(4px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .screen {
+        animation: none
+      }
+    }
+
+    #r-hot:checked~.wrap .screen-hot,
+    #r-write:checked~.wrap .screen-write,
+    #r-talent:checked~.wrap .screen-talent,
+    #r-detail:checked~.wrap .screen-detail,
+    #r-done:checked~.wrap .screen-done,
+    #r-form:checked~.wrap .screen-form {
+      display: block
+    }
+
+    /* ── 하단 탭바 ─────────────────────────── */
+    .tabbar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 74px;
+      background: var(--paper);
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: stretch;
+    }
+
+    .tabbar label {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--muted)
+    }
+
+    .tabbar .ico {
+      font-size: 1.25rem;
+      line-height: 1
+    }
+
+    .tab-write {
+      flex: 0 0 76px;
+      align-self: center
+    }
+
+    .tab-write span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 54px;
+      height: 54px;
+      margin: 0 auto;
+      border-radius: 50%;
+      background: linear-gradient(160deg, var(--sky), var(--sky-deep));
+      color: #fff;
+      font-size: 1.55rem;
+      box-shadow: 0 8px 16px rgba(46, 155, 218, .4);
+    }
+
+    #r-hot:checked~.wrap label[for=r-hot],
+    #r-talent:checked~.wrap label[for=r-talent],
+    #r-detail:checked~.wrap label[for=r-talent],
+    #r-done:checked~.wrap label[for=r-talent],
+    #r-form:checked~.wrap label[for=r-talent] {
+      color: var(--sky-deep)
+    }
+
+    /* ── 공통 부품 ─────────────────────────── */
+    .sec-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      margin: 6px 2px 12px;
+      color: var(--navy)
+    }
+
+    .sec-title small {
+      display: block;
+      font-size: .78rem;
+      color: var(--muted);
+      font-weight: 500;
+      margin-top: 4px;
+      letter-spacing: 0
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 12px;
+      display: block;
+      box-shadow: 0 1px 3px rgba(18, 57, 90, .05)
+    }
+
+    .tagrow {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 8px
+    }
+
+    .tag {
+      font-size: .72rem;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--sky-soft);
+      color: var(--sky-deep)
+    }
+
+    .tag.hot {
+      background: var(--hot-soft);
+      color: var(--hot)
+    }
+
+    .tag.ai {
+      background: #EDF7FF;
+      color: var(--sky-deep);
+      border: 1px dashed var(--sky)
+    }
+
+    .tag.open {
+      background: #FFF3D6;
+      color: #9A6B00
+    }
+
+    .tag.closed {
+      background: #ECF1F4;
+      color: var(--muted)
+    }
+
+    .tag.done-b {
+      background: var(--ok-soft);
+      color: var(--ok)
+    }
+
+    .card h3 {
+      font-size: .98rem;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      color: var(--ink)
+    }
+
+    .card .meta {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-top: 5px;
+      line-height: 1.5
+    }
+
+    .thumb {
+      height: 112px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .8rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .02em;
+    }
+
+    .thumb .from {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: .66rem;
+      font-weight: 700;
+      background: rgba(15, 46, 71, .6);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+
+    .thumb .until {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      font-size: .66rem;
+      font-weight: 800;
+      background: #fff;
+      color: var(--hot);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: .95rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: linear-gradient(160deg, var(--sky), var(--sky-deep));
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(46, 155, 218, .3)
+    }
+
+    .btn-ghost {
+      background: #fff;
+      color: var(--sky-deep);
+      border: 1.5px solid var(--sky)
+    }
+
+    .btn-dim {
+      background: #EDF3F7;
+      color: var(--muted)
+    }
+
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .85rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 10px
+    }
+
+    /* 필터 칩 (피드 상단) */
+    .filters {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 2px 12px;
+      -ms-overflow-style: none;
+      scrollbar-width: none
+    }
+
+    .filters::-webkit-scrollbar {
+      display: none
+    }
+
+    .fchip {
+      flex: 0 0 auto;
+      font-size: .76rem;
+      font-weight: 700;
+      padding: 7px 13px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1.5px solid var(--line);
+      color: var(--muted)
+    }
+
+    .fchip.on {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #fff
+    }
+
+    /* ── 식권 티켓 (시그니처) ───────────────── */
+    .ticket {
+      display: flex;
+      align-items: center;
+      background: var(--ticket);
+      border-radius: 10px;
+      margin: 12px 0;
+      position: relative;
+      box-shadow: 0 2px 0 rgba(0, 0, 0, .07);
+    }
+
+    .ticket .stub {
+      flex: 0 0 84px;
+      text-align: center;
+      padding: 12px 6px;
+      border-right: 2px dashed rgba(0, 0, 0, .28);
+      font-weight: 800;
+      font-size: 1.35rem;
+      color: var(--ticket-ink);
+      line-height: 1.05;
+    }
+
+    .ticket .stub small {
+      display: block;
+      font-size: .6rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+      margin-top: 2px
+    }
+
+    .ticket .body {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--ticket-ink)
+    }
+
+    .ticket .body em {
+      display: block;
+      font-style: normal;
+      font-weight: 500;
+      font-size: .72rem;
+      margin-top: 3px;
+      color: #6B5410
+    }
+
+    .ticket::before,
+    .ticket::after {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--paper);
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .ticket::before {
+      left: 77px
+    }
+
+    .ticket::after {
+      right: -7px
+    }
+
+    .card .ticket::before,
+    .card .ticket::after {
+      background: #fff
+    }
+
+    .ticket.paid {
+      background: var(--ok-soft)
+    }
+
+    .ticket.paid .stub {
+      color: var(--ok);
+      border-right-color: rgba(30, 158, 106, .4)
+    }
+
+    .ticket.paid .body {
+      color: #146243
+    }
+
+    .ticket.paid .body em {
+      color: #3B8266
+    }
+
+    /* ── 진행 단계 스텝바 ───────────────────── */
+    .steps {
+      display: flex;
+      margin: 14px 0 8px
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      font-size: .68rem;
+      font-weight: 700;
+      color: var(--muted);
+      position: relative
+    }
+
+    .step .dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #E6EEF4;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 5px;
+      font-size: .7rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step::before {
+      content: "";
+      position: absolute;
+      top: 11px;
+      left: -50%;
+      width: 100%;
+      height: 2px;
+      background: #E6EEF4
+    }
+
+    .step:first-child::before {
+      display: none
+    }
+
+    .step.done .dot {
+      background: var(--sky);
+      color: #fff
+    }
+
+    .step.done {
+      color: var(--sky-deep)
+    }
+
+    .step.done::before {
+      background: var(--sky)
+    }
+
+    .step.now .dot {
+      background: #fff;
+      border: 2.5px solid var(--hot);
+      color: var(--hot)
+    }
+
+    .step.now {
+      color: var(--hot)
+    }
+
+    .step.now::before {
+      background: var(--sky)
+    }
+
+    .step.fin .dot {
+      background: var(--ok);
+      color: #fff
+    }
+
+    .step.fin {
+      color: var(--ok)
+    }
+
+    .step.fin::before {
+      background: var(--ok)
+    }
+
+    /* ── 폼 요소 ───────────────────────────── */
+    .field {
+      margin-bottom: 16px
+    }
+
+    .field .lb {
+      display: block;
+      font-size: .82rem;
+      font-weight: 700;
+      margin-bottom: 7px;
+      color: var(--navy)
+    }
+
+    .req {
+      color: var(--hot);
+      font-size: .75rem;
+      margin-left: 3px
+    }
+
+    .opt {
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 500;
+      margin-left: 3px
+    }
+
+    .input,
+    .textarea,
+    .select {
+      width: 100%;
+      border: 1.5px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 12px;
+      font-size: .9rem;
+      font-family: inherit;
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    .textarea {
+      min-height: 86px
+    }
+
+    .chips {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap
+    }
+
+    .chip {
+      font-size: .8rem;
+      font-weight: 700;
+      padding: 8px 13px;
+      border-radius: 999px;
+      border: 1.5px solid var(--line);
+      background: #fff;
+      color: var(--muted)
+    }
+
+    .chip.on {
+      border-color: var(--sky);
+      background: var(--sky-soft);
+      color: var(--sky-deep)
+    }
+
+    .upload {
+      border: 2px dashed #BFD9EC;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      font-size: .82rem;
+      color: var(--muted);
+      background: var(--sky-mist);
+    }
+
+    .upload strong {
+      display: block;
+      color: var(--navy);
+      margin-bottom: 3px
+    }
+
+    .hint {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: 6px;
+      line-height: 1.55
+    }
+
+    .rulebox {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: var(--sky-soft);
+      border-radius: 10px;
+      padding: 11px 13px;
+      font-size: .78rem;
+      line-height: 1.6;
+      color: #164A6E;
+    }
+
+    .rulebox .ico {
+      font-size: 1rem;
+      line-height: 1.4
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border: 1.5px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      width: max-content;
+      background: #fff
+    }
+
+    .stepper b {
+      width: 42px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: var(--sky-deep);
+      background: var(--sky-mist)
+    }
+
+    .stepper span {
+      width: 56px;
+      text-align: center;
+      font-weight: 800;
+      font-size: .95rem
+    }
+
+    /* ── AI 초안 카드 ──────────────────────── */
+    .ai-draft {
+      border: 1.5px solid var(--sky);
+      background: var(--sky-mist)
+    }
+
+    .ai-draft h3 {
+      margin-bottom: 4px;
+      color: var(--navy)
+    }
+
+    .ai-draft p {
+      font-size: .85rem;
+      line-height: 1.65;
+      color: #33536B
+    }
+
+    .confirm {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px
+    }
+
+    .confirm .btn {
+      font-size: .82rem;
+      padding: 12px 6px
+    }
+
+    .note-strip {
+      font-size: .72rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 9px;
+      line-height: 1.55
+    }
+
+    /* 별점 */
+    .stars {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      font-size: 1.7rem;
+      margin: 8px 0 4px
+    }
+
+    .stars b {
+      color: var(--ticket);
+      text-shadow: 0 1px 0 rgba(0, 0, 0, .08)
+    }
+
+    .stars i {
+      color: #DBE6EE;
+      font-style: normal
+    }
+
+    /* 프로필 행 */
+    .who {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      background: var(--sky-soft)
+    }
+
+    .who .nm {
+      font-weight: 800;
+      font-size: .9rem;
+      color: var(--navy)
+    }
+
+    .who .sub {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    /* ── 우측 설명 패널 ─────────────────────── */
+    .notes {
+      flex: 1 1 330px;
+      max-width: 440px;
+      position: sticky;
+      top: 32px
+    }
+
+    .notes h2 {
+      font-size: .78rem;
+      letter-spacing: .18em;
+      color: var(--sky-deep);
+      font-weight: 800;
+      margin-bottom: 14px
+    }
+
+    .note {
+      display: none;
+      background: #fff;
+      border: 1px solid #CFE4F2;
+      border-radius: 18px;
+      padding: 22px 24px;
+      box-shadow: 0 10px 30px rgba(18, 57, 90, .1)
+    }
+
+    .note h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      margin-bottom: 12px;
+      color: var(--navy)
+    }
+
+    .note ul {
+      list-style: none
+    }
+
+    .note li {
+      font-size: .86rem;
+      line-height: 1.65;
+      padding-left: 20px;
+      position: relative;
+      margin-bottom: 10px;
+      color: #3D5165
+    }
+
+    .note li::before {
+      content: "—";
+      position: absolute;
+      left: 0;
+      color: var(--sky)
+    }
+
+    .note li strong {
+      color: var(--navy)
+    }
+
+    .note .ref {
+      font-size: .72rem;
+      color: #8AA2B5;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line)
+    }
+
+    #r-hot:checked~.wrap .note-hot,
+    #r-write:checked~.wrap .note-write,
+    #r-talent:checked~.wrap .note-talent,
+    #r-detail:checked~.wrap .note-detail,
+    #r-done:checked~.wrap .note-done,
+    #r-form:checked~.wrap .note-form {
+      display: block
+    }
+
+    @media (max-width:880px) {
+      body {
+        padding: 24px 10px 44px
+      }
+
+      .wrap {
+        gap: 24px
+      }
+
+      .notes {
+        position: static;
+        max-width: 390px
+      }
+
+      .phone {
+        flex: 0 1 390px;
+        width: 100%
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 화면 전환 상태 (JS 없이 라디오로 제어) -->
+  <input class="nav" type="radio" name="screen" id="r-hot" checked>
+  <input class="nav" type="radio" name="screen" id="r-write">
+  <input class="nav" type="radio" name="screen" id="r-talent">
+  <input class="nav" type="radio" name="screen" id="r-detail">
+  <input class="nav" type="radio" name="screen" id="r-done">
+  <input class="nav" type="radio" name="screen" id="r-form">
+
+  <header class="intro">
+    <div class="eyebrow">PROTOTYPE v0.2 · HTML/CSS ONLY</div>
+    <h1>한끼바꿈</h1>
+    <p>대학생의 재능과 사장님의 식사권을 잇는 현금 없는 로컬 상생 플랫폼.
+      자바스크립트 없이 순수 HTML/CSS로 동작하는 클릭형 프로토타입입니다.
+      하단 탭과 카드, 버튼을 눌러 6개 화면을 오갈 수 있어요.</p>
+  </header>
+
+  <div class="wrap">
+
+    <!-- ═══════════ 폰 프레임 ═══════════ -->
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+      <div class="appbar">
+        <div class="brand">한끼 <em>바꿈</em></div>
+        <div class="right">
+          <div class="region">○○대 앞 ▾</div>
+          <div class="bell">🔔</div>
+        </div>
+      </div>
+
+      <div class="stage">
+
+        <!-- ── 화면 1 · Tab1 동네 핫딜 ── -->
+        <section class="screen screen-hot">
+          <div class="sec-title">동네 핫딜
+            <small>지금 우리 동네에 뜬 특가 · 돌발 소식</small>
+          </div>
+
+          <div class="filters">
+            <span class="fchip on">전체</span>
+            <span class="fchip">#마감할인</span>
+            <span class="fchip">#노쇼발생</span>
+            <span class="fchip">#우천특가</span>
+            <span class="fchip">#당일한정</span>
+          </div>
+
+          <div class="card">
+            <div class="thumb" style="background:linear-gradient(135deg,#4A90C2,#2C5F8A)">
+              <span class="from">🎨 재능헬퍼 결과물</span>
+              순자네 백반 새 메뉴판
+              <span class="until">오늘 21시까지</span>
+            </div>
+            <div class="tagrow"><span class="tag hot">#우천특가</span><span class="tag hot">#당일한정</span></div>
+            <h3>비 오는 날엔 김치찌개 5,000원</h3>
+            <div class="meta">순자네 백반 · 도보 4분 · 3분 전 · ♡ 12</div>
+          </div>
+
+          <div class="card">
+            <div class="tagrow"><span class="tag hot">#노쇼발생</span></div>
+            <h3>예약 노쇼 😢 떡볶이 2인 세트 반값에 가져가세요</h3>
+            <div class="meta">청춘분식 · 도보 6분 · 20분 전 · ♡ 8 · 남은 수량 2</div>
+          </div>
+
+          <div class="card">
+            <div class="tagrow"><span class="tag hot">#마감할인</span></div>
+            <h3>오늘 8시 이후 모든 김밥 1+1</h3>
+            <div class="meta">대학로김밥 · 도보 2분 · 1시간 전 · ♡ 23</div>
+          </div>
+
+          <div class="note-strip">알림 설정한 태그의 새 글이 뜨면 바로 알려드려요 🔔</div>
+        </section>
+
+        <!-- ── 화면 2 · Tab1 글쓰기 (AI) ── -->
+        <section class="screen screen-write">
+          <label class="back" for="r-hot">← 핫딜로 돌아가기</label>
+          <div class="sec-title">핫딜 올리기
+            <small>사장님, 상황만 한 줄 적어주세요. 나머지는 저희가 써 드려요.</small>
+          </div>
+
+          <div class="field">
+            <span class="lb">지금 상황이 어떤가요?</span>
+            <div class="input">비 와서 손님 없는데 김치찌개 남았어요</div>
+          </div>
+          <button class="btn btn-ghost" type="button">✏️ 홍보 글 만들기</button>
+
+          <div class="card ai-draft" style="margin-top:16px">
+            <div class="tagrow">
+              <span class="tag ai">✦ AI가 만든 초안</span>
+              <span class="tag hot">#우천특가</span><span class="tag hot">#당일한정</span>
+            </div>
+            <h3>비 오는 날엔 김치찌개 5,000원</h3>
+            <p>창밖에 비 오는 소리 들리시죠? 뜨끈한 김치찌개가 오늘만 5,000원.
+              ○○대 앞 순자네 백반에서 우산 털고 몸 녹이고 가세요. 오늘 21시까지!</p>
+          </div>
+
+          <div class="field" style="margin-top:14px">
+            <span class="lb">사진 <span class="opt">선택 · 없으면 재능헬퍼 결과물이 자동으로 들어가요</span></span>
+            <div class="upload"><strong>🖼 새 메뉴판.png 자동 첨부됨</strong>탭해서 다른 사진으로 바꿀 수 있어요</div>
+          </div>
+
+          <div class="confirm">
+            <label class="btn btn-primary" for="r-hot" role="button">이대로 올리기</label>
+            <button class="btn btn-dim" type="button">다시 만들기</button>
+          </div>
+          <div class="note-strip">태그는 입력 내용에서 자동으로 골라져요 · 올리기 전에 자유롭게 고칠 수 있어요<br>AI 초안은 사장님이 확인해야만 게시돼요</div>
+        </section>
+
+        <!-- ── 화면 3 · Tab2 재능 헬퍼 피드 ── -->
+        <section class="screen screen-talent">
+          <div class="sec-title">재능 헬퍼
+            <small>내 스킬로 돕고, 식사권으로 받는 동네 물물교환</small>
+          </div>
+
+          <div class="filters">
+            <span class="fchip on">전체</span>
+            <span class="fchip">#포스터제작</span>
+            <span class="fchip">#릴스편집</span>
+            <span class="fchip">#리뷰관리</span>
+            <span class="fchip">#메뉴판디자인</span>
+            <span class="fchip">#SNS운영</span>
+          </div>
+
+          <label class="card" for="r-detail" role="button">
+            <div class="tagrow"><span class="tag">#메뉴판디자인</span><span class="tag open">모집중 · 지원 2명</span></div>
+            <h3>10년 된 손글씨 메뉴판, 예쁘게 바꿔주실 분</h3>
+            <div class="meta">순자네 백반 · 사장님 평점 ★4.9 (거래 12회) · 도보 4분</div>
+            <div class="ticket">
+              <div class="stub">5장<small>MEAL</small></div>
+              <div class="body">백반 식사권 5장<em>완료 확인 후 바로 지급</em></div>
+            </div>
+          </label>
+
+          <div class="card">
+            <div class="tagrow"><span class="tag">#릴스편집</span><span class="tag open">모집중 · 지원 1명</span></div>
+            <h3>곱창 굽는 영상으로 릴스 1편 만들어주세요</h3>
+            <div class="meta">불타는곱창 · 사장님 평점 ★4.7 · 가게 방문 촬영 필요</div>
+            <div class="ticket">
+              <div class="stub">3장<small>MEAL</small></div>
+              <div class="body">곱창 식사권 3장<em>촬영 당일 1장 선지급</em></div>
+            </div>
+          </div>
+
+          <div class="card" style="opacity:.6">
+            <div class="tagrow"><span class="tag">#리뷰관리</span><span class="tag closed">매칭완료</span></div>
+            <h3>한 달간 리뷰 답글 대신 달아주실 분</h3>
+            <div class="meta">카페온도 · 사장님 평점 ★5.0 · 헬퍼 김○○ 진행 중</div>
+          </div>
+
+          <label class="btn btn-primary" for="r-form" role="button" style="margin-top:4px">+ 도움 요청 올리기 (사장님)</label>
+          <div class="note-strip">헬퍼로 참여하려면 관심 태그를 등록해 두세요. 새 요청이 뜨면 알려드려요</div>
+        </section>
+
+        <!-- ── 화면 4 · Tab2 요청 상세 ── -->
+        <section class="screen screen-detail">
+          <label class="back" for="r-talent">← 재능 헬퍼 목록</label>
+          <div class="tagrow"><span class="tag">#메뉴판디자인</span></div>
+          <div class="sec-title" style="margin-top:2px">10년 된 손글씨 메뉴판, 예쁘게 바꿔주실 분</div>
+
+          <div class="who">
+            <div class="avatar">👩‍🍳</div>
+            <div>
+              <div class="nm">순자네 백반 · 김순자 사장님</div>
+              <div class="sub">평점 ★4.9 · 거래 12회 · ○○대 앞</div>
+            </div>
+          </div>
+
+          <div class="steps">
+            <div class="step done">
+              <div class="dot">✓</div>요청등록
+            </div>
+            <div class="step done">
+              <div class="dot">✓</div>매칭
+            </div>
+            <div class="step now">
+              <div class="dot">●</div>완료대기
+            </div>
+            <div class="step">
+              <div class="dot">4</div>완료·지급
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 style="font-size:.85rem;margin-bottom:8px">📎 사장님이 올린 기대 결과물 예시</h3>
+            <div class="thumb" style="height:84px;background:linear-gradient(135deg,#6FA8CF,#3C6E96)">참고 메뉴판 사진.jpg
+            </div>
+            <div class="meta" style="margin-top:0">"이 집처럼 사진 크고 글씨 시원시원했으면 해요. 가격 꼭 잘 보이게!"</div>
+          </div>
+
+          <div class="ticket">
+            <div class="stub">5장<small>MEAL</small></div>
+            <div class="body">백반 식사권 5장<em>양측 완료 확인 후 지급됩니다</em></div>
+          </div>
+
+          <div class="rulebox">
+            <span class="ico">🤝</span>
+            <span><strong>수정 요청 1회 포함</strong>이 약속된 요청이에요.
+              결과물이 올라오면 <strong>사장님과 헬퍼 두 사람 모두 확인</strong>해야 거래가 끝나요.
+              한쪽이 3일간 응답하지 않으면 알림 후 자동 처리돼요.</span>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <h3 style="font-size:.85rem;margin-bottom:8px">📤 헬퍼가 올린 결과물 <span class="tag" style="font-size:.62rem">수정
+                1회 반영됨</span></h3>
+            <div class="thumb" style="height:84px;background:linear-gradient(135deg,#4A90C2,#2C5F8A)">새_메뉴판_최종.png</div>
+            <div class="confirm">
+              <button class="btn btn-dim" type="button">✓ 사장님 확인 완료</button>
+              <label class="btn btn-primary" for="r-done" role="button">헬퍼 확인하기</label>
+            </div>
+            <div class="note-strip">두 사람 모두 확인하면 식사권이 지급되고 서로 평점을 남겨요</div>
+          </div>
+        </section>
+
+        <!-- ── 화면 5 · 거래 완료 & 상호 평점 ── -->
+        <section class="screen screen-done">
+          <div class="sec-title" style="text-align:center;margin-top:18px">🎉 거래가 끝났어요!
+            <small>양측 확인이 완료되어 식사권이 지급됐어요</small>
+          </div>
+
+          <div class="steps">
+            <div class="step done">
+              <div class="dot">✓</div>요청등록
+            </div>
+            <div class="step done">
+              <div class="dot">✓</div>매칭
+            </div>
+            <div class="step done">
+              <div class="dot">✓</div>완료대기
+            </div>
+            <div class="step fin">
+              <div class="dot">✓</div>완료·지급
+            </div>
+          </div>
+
+          <div class="ticket paid">
+            <div class="stub">5장<small>PAID</small></div>
+            <div class="body">백반 식사권 5장 지급 완료<em>내 식사권 지갑에서 확인 · 사용 시 사장님께 보여주세요</em></div>
+          </div>
+
+          <div class="card" style="text-align:center">
+            <h3 style="font-size:.9rem">순자네 백반과의 거래, 어땠나요?</h3>
+            <div class="stars"><b>★</b><b>★</b><b>★</b><b>★</b><b>★</b></div>
+            <div class="field" style="margin-top:10px;text-align:left">
+              <span class="lb">한줄 후기</span>
+              <div class="input">사장님이 원하는 걸 명확히 알려주셔서 작업이 편했어요!</div>
+            </div>
+            <label class="btn btn-primary" for="r-talent" role="button">평점 남기기</label>
+            <div class="note-strip">사장님도 같은 화면에서 헬퍼님을 평가해요 (상호 평점)</div>
+          </div>
+
+          <div class="card" style="background:var(--sky-mist);border-color:var(--sky)">
+            <div class="tagrow"><span class="tag">🗂 포트폴리오</span></div>
+            <h3 style="font-size:.88rem">이번 결과물이 내 포트폴리오에 저장됐어요</h3>
+            <div class="meta">실제 가게에 쓰인 작업물 1건 추가 · 프로필에서 공개 여부를 선택할 수 있어요</div>
+          </div>
+        </section>
+
+        <!-- ── 화면 6 · Tab2 요청 등록 폼 ── -->
+        <section class="screen screen-form">
+          <label class="back" for="r-talent">← 재능 헬퍼 목록</label>
+          <div class="sec-title">도움 요청 올리기
+            <small>꼼꼼히 적을수록 딱 맞는 헬퍼가 와요</small>
+          </div>
+
+          <div class="field">
+            <span class="lb">어떤 도움이 필요하세요?<span class="req">필수</span></span>
+            <div class="chips">
+              <span class="chip">#포스터제작</span>
+              <span class="chip">#릴스편집</span>
+              <span class="chip">#리뷰관리</span>
+              <span class="chip on">#메뉴판디자인</span>
+              <span class="chip">#SNS운영</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="lb">요청 내용<span class="req">필수</span></span>
+            <div class="textarea">메뉴판이 10년 됐어요. 사진 크게, 가격 잘 보이게 새로 만들어주실 분 찾아요.</div>
+          </div>
+
+          <div class="field">
+            <span class="lb">기대하는 결과물 예시<span class="req">필수</span></span>
+            <div class="upload"><strong>📎 참고 사진 올리기</strong>원하는 느낌의 사진이나 설명을 꼭 넣어주세요</div>
+            <div class="hint">예시가 있으면 "생각이 달랐다"는 다툼이 확 줄어요. 그래서 필수예요.</div>
+          </div>
+
+          <div class="field">
+            <span class="lb">수정 요청</span>
+            <div class="rulebox"><span class="ico">🤝</span><span><strong>수정 1회 포함</strong>이 기본 약속이에요. 추가 수정은 헬퍼와 따로
+                협의해요.</span></div>
+          </div>
+
+          <div class="field">
+            <span class="lb">보상 식사권<span class="req">필수</span></span>
+            <div class="stepper"><b>−</b><span>5장</span><b>＋</b></div>
+            <div class="hint">비슷한 요청은 보통 4~6장으로 올라와요</div>
+          </div>
+
+          <div class="field">
+            <span class="lb">완료 희망일 <span class="opt">선택</span></span>
+            <div class="select">일주일 안에 ▾</div>
+          </div>
+
+          <div class="field">
+            <span class="lb">지역<span class="req">필수</span></span>
+            <div class="select">○○대 앞 ▾</div>
+          </div>
+
+          <label class="btn btn-primary" for="r-talent" role="button">요청 올리기</label>
+          <div class="note-strip">일정 시간 응답이 없는 매칭은 자동으로 취소돼요 (노쇼 방지)</div>
+        </section>
+
+      </div><!-- /stage -->
+
+      <!-- 하단 탭바 -->
+      <nav class="tabbar">
+        <label for="r-hot"><span class="ico">🔥</span>동네 핫딜</label>
+        <label for="r-write" class="tab-write" aria-label="핫딜 올리기"><span>＋</span></label>
+        <label for="r-talent"><span class="ico">🤝</span>재능 헬퍼</label>
+      </nav>
+    </div><!-- /phone -->
+
+    <!-- ═══════════ 화면별 기획 메모 ═══════════ -->
+    <aside class="notes">
+      <h2>이 화면이 보여주는 것</h2>
+
+      <div class="note note-hot">
+        <h3>① 동네 핫딜 (Tab 1)</h3>
+        <ul>
+          <li>돌발 상황을 <strong>4개 태그</strong>로 분류, 상단 <strong>필터 칩</strong>으로 태그별 조회</li>
+          <li>첫 카드 썸네일의 <strong>"재능헬퍼 결과물" 배지</strong> — Tab2 결과물이 Tab1 홍보 이미지로 재사용되는 <strong>선순환 구조</strong></li>
+          <li>마감 시각·남은 수량 표기로 <strong>당일성 강조</strong>, 지역은 프리셋 드롭다운(○○대 앞)</li>
+        </ul>
+        <div class="ref">기획서 3-2절 · 7절 태그 체계 대응</div>
+      </div>
+
+      <div class="note note-write">
+        <h3>② 핫딜 올리기 + AI (Tab 1)</h3>
+        <ul>
+          <li>사장님은 <strong>상황 한 줄만 입력</strong> → 홍보 문구·태그 자동 생성</li>
+          <li>사진이 없으면 <strong>재능헬퍼 결과물이 자동 첨부</strong> — 선순환의 실제 접점</li>
+          <li>AI 초안은 반드시 <strong>사장님 확인 후 게시</strong> — 자동 게시 아님</li>
+        </ul>
+        <div class="ref">기획서 8절 AI 활용 방침 · 9절 리스크 4번 대응</div>
+      </div>
+
+      <div class="note note-talent">
+        <h3>③ 재능 헬퍼 (Tab 2 · 핵심)</h3>
+        <ul>
+          <li>학생 스킬 ↔ 식사권 <strong>물물교환 피드</strong> — 본 서비스의 진짜 차별점</li>
+          <li>보상을 <strong>절취선 있는 식권 티켓</strong>으로 시각화 (서비스 시그니처)</li>
+          <li>상태 배지(모집중·지원 수 / 매칭완료)로 <strong>채팅 없이 상태값만으로</strong> 운영</li>
+        </ul>
+        <div class="ref">기획서 3-1절 · 첫 번째 카드를 누르면 상세 화면</div>
+      </div>
+
+      <div class="note note-detail">
+        <h3>④ 요청 상세 = 신뢰 장치의 집합</h3>
+        <ul>
+          <li>상단 스텝바: <strong>요청등록 → 매칭 → 완료대기 → 완료·지급</strong> 상태값 흐름</li>
+          <li><strong>기대 결과물 예시</strong>가 상세에 고정 노출 — 기대치 분쟁 예방</li>
+          <li><strong>수정 1회 규칙</strong> + <strong>양측 확인 버튼</strong> + 무응답 자동 처리 안내</li>
+        </ul>
+        <div class="ref">기획서 6절 신뢰·분쟁 장치 · 시나리오 A/B 대응 · "헬퍼 확인하기"를 누르면 완료 화면</div>
+      </div>
+
+      <div class="note note-done">
+        <h3>⑤ 완료 · 상호 평점 (신규)</h3>
+        <ul>
+          <li>양측 확인 성립 → <strong>식사권 지급 완료</strong> 티켓이 초록으로 전환</li>
+          <li><strong>별점 + 한줄후기</strong> 상호 평점 — 결제 없는 구조의 신뢰 자산</li>
+          <li>결과물이 <strong>학생 포트폴리오에 자동 저장</strong> — 가치 비대칭 리스크의 비금전 보상</li>
+        </ul>
+        <div class="ref">기획서 6절 5항 · 9절 리스크 1번 대응 · 시나리오 A-6 / B-4</div>
+      </div>
+
+      <div class="note note-form">
+        <h3>⑥ 요청 등록 폼</h3>
+        <ul>
+          <li>분쟁 예방 규칙을 <strong>필드 자체에 내장</strong>: 기대 예시 첨부 필수, 수정 1회 기본 명시</li>
+          <li>식사권 수량 스테퍼에 <strong>시세 힌트</strong>(보통 4~6장) — 보상 기준점 제공</li>
+          <li>태그·완료 희망일·지역 프리셋 — <strong>Tab2 게시글 필드 상세설계의 초안</strong></li>
+        </ul>
+        <div class="ref">기획서 3-1절 필수 필드 표 · 6절 대응</div>
+      </div>
+    </aside>
+
+  </div><!-- /wrap -->
+
+</body>
+
+</html>
