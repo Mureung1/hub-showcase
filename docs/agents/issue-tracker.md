@@ -31,6 +31,8 @@ Internal work PRs should follow the branch flow in `AGENTS.md`:
 | Camp daily PR | `swh3467:N180_하성욱` | `swh3467:codex/MMDD` |
 | Camp-facing submission PR | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | `swh3467:N180_하성욱` |
 
+Daily branches remain date-based (`codex/MMDD`). Camp labels are separate PR metadata that follow the upstream week/day mission names, for example `[1-3] 기획완성`, `[1-3] 프로토타이핑`, or `[1-4] design-system`.
+
 When triaging PRs, read the PR body, comments, and diff. Use `gh pr view <number> --comments` and `gh pr diff <number>`.
 
 The workflow `.github/workflows/auto-merge.yml` is template-provided but active in the repo. It attempts scheduled PR merges, skips PRs targeting `main`, skips PRs with the GitHub `review` label, defers changes-requested PRs, and closes conflicting PRs. Treat the GitHub `review` label as an auto-merge control, not as an agent triage state.
