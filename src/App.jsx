@@ -1,7 +1,7 @@
-import ProjectIntro from './components/ProjectIntro.jsx'
+import Prototype from './components/Prototype.jsx'
 
 function App() {
-  return <ProjectIntro />
+  return <Prototype />
 }
 
 export default App
