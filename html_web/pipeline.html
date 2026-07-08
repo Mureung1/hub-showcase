@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShortsGen - 릴스 생성 파이프라인</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo">ShortsGen</div>
+        <nav class="nav-menu">
+            <a href="dashboard.html" class="nav-link">대시보드 홈</a>
+            <a href="pipeline.html" class="nav-link active">릴스 생성 파이프라인</a>
+            <a href="#" class="nav-link">내 보관함</a>
+            <a href="#" class="nav-link">설정</a>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="header">
+            <h1 class="header-title">릴스 생성 파이프라인</h1>
+        </header>
+
+        <main class="content">
+            
+            <!-- Step 1: Video Planning Direction -->
+            <div class="block">
+                <h2 class="block-title">Step 1: 영상 기획 방향성 설정</h2>
+                <p class="block-subtitle">원하시는 영상의 목적과 분위기를 선택해 주세요. AI가 이 정보에 맞춰 완벽한 스크립트를 생성합니다.</p>
+                
+                <div class="form-group">
+                    <label class="form-label">홍보 목적 (중복 선택 가능)</label>
+                    <div class="checkbox-group">
+                        <label class="custom-checkbox">
+                            <input type="checkbox" name="purpose" value="new">
+                            신메뉴 / 신제품 출시
+                        </label>
+                        <label class="custom-checkbox">
+                            <input type="checkbox" name="purpose" value="vibe" checked>
+                            매장 분위기 / 인테리어 자랑
+                        </label>
+                        <label class="custom-checkbox">
+                            <input type="checkbox" name="purpose" value="event">
+                            이벤트 / 타임 세일 / 할인 정보
+                        </label>
+                        <label class="custom-checkbox">
+                            <input type="checkbox" name="purpose" value="daily">
+                            사장님의 일상 (출근길, 오픈 준비 등 B급 공감)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">원하는 영상 분위기 (태그 선택)</label>
+                    <div class="tag-radio-group">
+                        <label class="tag-radio-label">
+                            <input type="radio" name="mood" value="emotional"> #감성적인
+                        </label>
+                        <label class="tag-radio-label">
+                            <input type="radio" name="mood" value="energetic" checked> #활기찬
+                        </label>
+                        <label class="tag-radio-label">
+                            <input type="radio" name="mood" value="humor"> #B급유머
+                        </label>
+                        <label class="tag-radio-label">
+                            <input type="radio" name="mood" value="luxury"> #고급스러운
+                        </label>
+                        <label class="tag-radio-label">
+                            <input type="radio" name="mood" value="calm"> #잔잔한
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">핵심 강조 키워드 (선택 사항)</label>
+                    <input type="text" class="form-input" placeholder="영상에 꼭 들어갔으면 하는 문구 (예: 마감 할인 50%)">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">소스 업로드</label>
+                    <div class="upload-zone">
+                        <div class="upload-title">가게 내부나 신메뉴 사진을 이곳에 끌어다 놓으세요</div>
+                        <div class="upload-desc">JPG, PNG, MP4 지원 (최대 50MB)</div>
+                    </div>
+                </div>
+                
+                <button class="btn" style="width: auto; padding: 16px 32px;" onclick="document.getElementById('pipelineArea').style.opacity = 1;">기획 완료 및 AI 생성 시작 ➔</button>
+            </div>
+
+            <!-- Step 2: Pipeline Visualization & Result -->
+            <div class="grid-2" id="pipelineArea" style="opacity: 0.3; transition: opacity 0.5s;">
+                
+                <!-- Left: Pipeline Status -->
+                <div class="block">
+                    <h2 class="block-title">Step 2: AI 생성 진행 상태</h2>
+                    
+                    <div class="pipeline-nodes" style="margin-top: 24px;">
+                        <div class="node active">
+                            <div class="node-icon">1</div>
+                            <div>
+                                <h3 style="font-size: 16px; margin-bottom: 4px;">비전 AI 객체 인식 (YOLOv8)</h3>
+                                <p style="font-size: 13px; color: var(--text-muted);">업로드된 사진에서 메인 객체를 인식하고 세로형(9:16)으로 크롭했습니다.</p>
+                            </div>
+                        </div>
+                        <div class="node active">
+                            <div class="node-icon">2</div>
+                            <div>
+                                <h3 style="font-size: 16px; margin-bottom: 4px;">문맥 및 트렌드 매칭 (KoBERT)</h3>
+                                <p style="font-size: 13px; color: var(--text-muted);">미리 분석된 트렌드 해시태그를 영상 메타데이터와 자막 스크립트에 매칭했습니다.</p>
+                            </div>
+                        </div>
+                        <div class="node active">
+                            <div class="node-icon">3</div>
+                            <div>
+                                <h3 style="font-size: 16px; margin-bottom: 4px;">후킹 오디오 합성 (TTS API)</h3>
+                                <p style="font-size: 13px; color: var(--text-muted);">작성된 스크립트를 기반으로 '활기찬' AI 성우 나레이션을 생성했습니다.</p>
+                            </div>
+                        </div>
+                        <div class="node active">
+                            <div class="node-icon">4</div>
+                            <div>
+                                <h3 style="font-size: 16px; margin-bottom: 4px;">최종 숏폼 렌더링 (FFmpeg)</h3>
+                                <p style="font-size: 13px; color: var(--text-muted);">크롭된 사진, 자막, TTS 오디오를 합성하여 15초짜리 mp4 비디오를 렌더링했습니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Final Output -->
+                <div class="block">
+                    <h2 class="block-title">최종 렌더링 결과</h2>
+                    
+                    <div class="video-preview-wrapper" style="margin-top: 24px;">
+                        <div class="video-mockup">
+                            <div class="video-content">🥐</div>
+                            <div class="video-overlay">
+                                <div class="overlay-chip">#틱톡인기</div>
+                                <h3 style="font-size: 20px; font-weight: 800; line-height: 1.3;">갓 구운 버터 풍미 한가득!<br>연남동 디저트 끝판왕</h3>
+                            </div>
+                        </div>
+
+                        <div style="width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 12px;">
+                            <button class="btn" style="background-color: var(--secondary-color);">인스타그램/틱톡 발행</button>
+                            <button class="btn btn-secondary">영상 다운로드 (mp4)</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</body>
+</html>
