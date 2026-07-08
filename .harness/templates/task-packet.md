@@ -77,6 +77,7 @@ scripts:
 
 ## 8. Documentation Updates
 
+- [ ] 코드/스크립트 변경 시 관련 문서 또는 `.harness` 기록을 같은 커밋에 포함
 - [ ] README 링크 필요 여부 확인
 - [ ] 기능 spec 갱신
 - [ ] data mapping 갱신

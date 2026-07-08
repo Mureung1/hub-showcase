@@ -1,0 +1,70 @@
+#!/bin/sh
+
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
+
+file_count="$(printf '%s\n' "$staged_files" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+if [ "$file_count" -gt 10 ]; then
+  cat <<EOF
+Commit is too large: $file_count staged files.
+
+LocalTwin policy:
+  - one feature -> verify -> commit
+  - one bug fix -> reproduce/verify -> commit
+  - one documentation update -> review -> commit
+
+Split this change into smaller commits.
+EOF
+  exit 1
+fi
+
+areas="$(printf '%s\n' "$staged_files" | awk -F/ '
+  /^docs\/features\// { print "docs/features"; next }
+  /^docs\/development\// { print "docs/development"; next }
+  /^docs\/module-notes\// { print "docs/module-notes"; next }
+  /^\.githooks\// { print "tooling/hooks"; next }
+  /^\.github\// { print "tooling/github"; next }
+  NF >= 2 { print $1 "/" $2; next }
+  { print $1 }
+' | sort -u)"
+
+area_count="$(printf '%s\n' "$areas" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+if [ "$area_count" -gt 3 ]; then
+  cat <<EOF
+Commit touches too many areas: $area_count areas.
+
+Touched areas:
+$areas
+
+LocalTwin policy:
+  - keep each commit scoped to one feature, one bug fix, or one document change
+  - avoid mixing backend, frontend, data pipeline, 3D pipeline, and docs in one commit
+
+Split this change into smaller commits.
+EOF
+  exit 1
+fi
+
+source_files="$(printf '%s\n' "$staged_files" | grep -E '\.(py|js|jsx|ts|tsx|css|html|sql)$|^(api|app|backend|frontend|web|src|packages)/' | grep -Ev '^(docs/|scripts/check_|scripts/check\.ps1|\.harness/)' || true)"
+doc_files="$(printf '%s\n' "$staged_files" | grep -E '^(README\.md|docs/|\.harness/)' || true)"
+
+if [ -n "$source_files" ] && [ -z "$doc_files" ]; then
+  cat <<EOF
+Source changes require a documentation sync.
+
+Changed source-like files:
+$source_files
+
+LocalTwin policy:
+  - code changes must update docs, README, or .harness task/run notes in the same commit
+  - if no public docs changed, stage the relevant task packet or run report explaining why
+EOF
+  exit 1
+fi
+
+exit 0
