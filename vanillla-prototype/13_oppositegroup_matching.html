@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>우리결 | 이성그룹 매칭</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page">
+
+  <div class="progress-label">4/5</div>
+
+  <h1 class="page-title" id="matchTitle" style="margin-bottom:6px;">이성그룹 매칭 3:3</h1>
+  <p class="page-subtitle">우리 팀과 어울리는 상대 팀을 찾았어요!</p>
+
+  <div class="team-mini-row">
+    <div class="dots">
+      <div class="dot avatar peach"></div>
+      <div class="dot avatar pink"></div>
+      <div class="dot avatar yellow"></div>
+    </div>
+    <span class="arrow">↔</span>
+    <div class="dots">
+      <div class="dot avatar blue"></div>
+      <div class="dot avatar mint"></div>
+      <div class="dot avatar pink"></div>
+    </div>
+  </div>
+
+  <div class="profile-list" style="margin-bottom:0;">
+
+    <div class="team-card">
+      <div class="dots">
+        <div class="dot avatar blue"></div>
+        <div class="dot avatar mint"></div>
+        <div class="dot avatar pink"></div>
+      </div>
+      <div class="info">
+        <div class="name-text">미소 팀</div>
+        <div class="match-percent">취향 궁합 92%</div>
+      </div>
+      <a class="detail-btn" href="14_matching_detail.html?team=미소">자세히보기</a>
+    </div>
+
+    <div class="team-card">
+      <div class="dots">
+        <div class="dot avatar peach"></div>
+        <div class="dot avatar yellow"></div>
+        <div class="dot avatar pink"></div>
+      </div>
+      <div class="info">
+        <div class="name-text">설렘 팀</div>
+        <div class="match-percent">취향 궁합 88%</div>
+      </div>
+      <a class="detail-btn" href="14_matching_detail.html?team=설렘">자세히보기</a>
+    </div>
+
+    <div class="team-card">
+      <div class="dots">
+        <div class="dot avatar mint"></div>
+        <div class="dot avatar blue"></div>
+        <div class="dot avatar peach"></div>
+      </div>
+      <div class="info">
+        <div class="name-text">다정 팀</div>
+        <div class="match-percent">취향 궁합 85%</div>
+      </div>
+      <a class="detail-btn" href="14_matching_detail.html?team=다정">자세히보기</a>
+    </div>
+
+    <div class="team-card">
+      <div class="dots">
+        <div class="dot avatar pink"></div>
+        <div class="dot avatar yellow"></div>
+        <div class="dot avatar mint"></div>
+      </div>
+      <div class="info">
+        <div class="name-text">활기 팀</div>
+        <div class="match-percent">취향 궁합 80%</div>
+      </div>
+      <a class="detail-btn" href="14_matching_detail.html?team=활기">자세히보기</a>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  var groupSize = localStorage.getItem('groupSize') || '3:3';
+  document.getElementById('matchTitle').textContent = '이성그룹 매칭 ' + groupSize;
+</script>
+</body>
+</html>

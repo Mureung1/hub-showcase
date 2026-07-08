@@ -1,0 +1,695 @@
+/* =========================================================
+   우리결(WooriGyeol) — 공통 스타일
+   ========================================================= */
+
+:root {
+  --bg-top: #ffe2ce;
+  --bg-bottom: #fff7ee;
+
+  --text-dark: #4a2e22;
+  --text-body: #8a7266;
+  --text-muted: #c2a996;
+  --text-placeholder: #c9b7ac;
+
+  --coral: #ee9b7c;
+  --coral-dark: #e17b54;
+  --coral-darker: #d97650;
+  --coral-light: #fbe4de;
+  --coral-light-border: #eeab8f;
+
+  --mint: #7bc9a0;
+  --mint-dark: #4fae85;
+  --mint-light: #dff3ea;
+  --mint-light-border: #9bd7bb;
+
+  --gray-card: #ede7de;
+  --gray-card-border: #cdbfad;
+  --gray-text: #7a6a5c;
+
+  --card-white: #ffffff;
+  --card-white-70: rgba(255, 255, 255, 0.55);
+
+  --tag-mint-bg: #cdeee0;
+  --tag-mint-text: #2f8768;
+  --tag-pink-bg: #fbd8e3;
+  --tag-pink-text: #c15d82;
+  --tag-blue-bg: #d6e6fb;
+  --tag-blue-text: #4677b0;
+  --tag-peach-bg: #fbe0c9;
+  --tag-peach-text: #c1794f;
+
+  --avatar-mint: #8fd9bc;
+  --avatar-peach: #f0b79c;
+  --avatar-pink: #f5a8c4;
+  --avatar-blue: #a8cdef;
+  --avatar-yellow: #f5c065;
+
+  --shadow: 0 6px 20px rgba(190, 130, 100, 0.14);
+  --shadow-sm: 0 2px 10px rgba(190, 130, 100, 0.1);
+
+  --radius-lg: 26px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+  --radius-pill: 999px;
+
+  --font-body: "Gowun Dodum", sans-serif;
+  --font-title: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--text-dark);
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 65%);
+  display: flex;
+  justify-content: center;
+}
+
+h1, h2, h3,
+.title-font,
+.brand-name,
+.name-text,
+.percent-text,
+.result-highlight,
+.btn {
+  font-family: var(--font-title);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.page {
+  width: 100%;
+  max-width: 460px;
+  min-height: 100vh;
+  padding: 44px 22px 60px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- 로고 ---------- */
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 34px;
+}
+
+.logo img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+
+.logo .brand-name {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.logo.small {
+  margin-bottom: 18px;
+}
+
+.logo.small img {
+  width: 34px;
+  height: 34px;
+}
+
+.logo.small .brand-name {
+  font-size: 20px;
+}
+
+/* ---------- 공통 패널 / 카드 ---------- */
+.panel {
+  background: var(--card-white-70);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.page-title {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0 0 22px;
+}
+
+.page-subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-body);
+  margin: -14px 0 22px;
+}
+
+.progress-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+
+/* ---------- 입력창 / 버튼 ---------- */
+.input-field {
+  width: 100%;
+  padding: 15px 18px;
+  border: none;
+  outline: none;
+  border-radius: var(--radius-md);
+  background: var(--card-white);
+  font-size: 15px;
+  font-family: var(--font-body);
+  color: var(--text-dark);
+  margin-bottom: 12px;
+}
+
+.input-field::placeholder {
+  color: var(--text-placeholder);
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.row .input-field {
+  margin-bottom: 12px;
+}
+
+.btn {
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-dark);
+  text-align: center;
+}
+
+.btn-block {
+  width: 100%;
+  display: block;
+}
+
+.btn-coral {
+  background: var(--coral);
+}
+.btn-coral:hover {
+  background: var(--coral-dark);
+}
+
+.btn-mint {
+  background: var(--mint);
+}
+.btn-mint:hover {
+  background: var(--mint-dark);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--coral);
+  color: var(--coral-darker);
+}
+
+.btn-toggle {
+  flex: 1;
+  padding: 15px;
+  border-radius: var(--radius-md);
+  background: var(--card-white);
+  color: var(--text-body);
+  font-weight: 700;
+  text-align: center;
+  border: none;
+  font-family: var(--font-body);
+}
+
+.btn-toggle.active {
+  background: var(--coral);
+  color: var(--text-dark);
+}
+
+.link-accent {
+  color: var(--coral-dark);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.helper-text {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-body);
+  margin-top: 18px;
+}
+
+/* ---------- 로그인 ---------- */
+.login-panel {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+  background: var(--card-white-70);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.login-panel .fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+
+.login-panel .fields .input-field {
+  margin-bottom: 0;
+}
+
+.login-panel .btn-login {
+  width: 130px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--coral);
+  color: var(--text-dark);
+  font-weight: 800;
+  font-size: 17px;
+  font-family: var(--font-title);
+}
+
+/* ---------- 2지선다 카드 (취미/생활성향/이상형 테스트) ---------- */
+.choice-grid {
+  display: flex;
+  gap: 14px;
+  flex: 1;
+}
+
+.choice-card {
+  flex: 1;
+  border-radius: var(--radius-lg);
+  padding: 20px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 340px;
+  border: none;
+  font-family: var(--font-body);
+}
+
+.choice-card.mint {
+  background: var(--mint-light);
+}
+
+.choice-card.peach {
+  background: var(--coral-light);
+}
+
+.choice-icon {
+  font-size: 64px;
+  margin: auto 0;
+  line-height: 1;
+}
+
+.choice-label {
+  width: 100%;
+  background: var(--card-white);
+  border-radius: var(--radius-md);
+  padding: 14px 8px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+  font-family: var(--font-title);
+}
+
+.choice-card.mint .choice-label {
+  color: var(--mint-dark);
+}
+
+.choice-card.peach .choice-label {
+  color: var(--coral-dark);
+}
+
+/* ---------- 분기 선택 큰 카드 (05, 07, 09) ---------- */
+.branch-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  flex: 1;
+}
+
+.branch-card {
+  border-radius: var(--radius-lg);
+  border: 1.5px solid transparent;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  justify-content: center;
+  min-height: 180px;
+}
+
+.branch-card .branch-icon {
+  font-size: 48px;
+  margin-bottom: 14px;
+}
+
+.branch-card .branch-title {
+  font-size: 19px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.branch-card .branch-sub {
+  font-size: 13px;
+  color: var(--text-body);
+}
+
+.branch-card.peach {
+  background: var(--coral-light);
+  border-color: var(--coral-light-border);
+}
+.branch-card.peach .branch-title {
+  color: var(--coral-darker);
+}
+
+.branch-card.mint {
+  background: var(--mint-light);
+  border-color: var(--mint-light-border);
+}
+.branch-card.mint .branch-title {
+  color: var(--mint-dark);
+}
+
+.branch-card.gray {
+  background: var(--gray-card);
+  border-color: var(--gray-card-border);
+}
+.branch-card.gray .branch-title {
+  color: var(--gray-text);
+}
+
+/* ---------- 과팅 인원 선택 카드 (09) ---------- */
+.size-card {
+  background: var(--coral-light);
+  border: 1.5px solid var(--coral-light-border);
+  border-radius: var(--radius-lg);
+  padding: 26px 20px;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.size-card .emoji-row {
+  font-size: 30px;
+  margin-bottom: 14px;
+  letter-spacing: 2px;
+}
+
+.size-card .size-ratio {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--coral-darker);
+  margin-bottom: 6px;
+}
+
+.size-card .size-desc {
+  font-size: 13px;
+  color: var(--text-body);
+}
+
+/* ---------- 프로필 리스트 카드 (08, 11) ---------- */
+.profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.profile-card {
+  background: var(--card-white);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.avatar.mint { background: var(--avatar-mint); }
+.avatar.peach { background: var(--avatar-peach); }
+.avatar.pink { background: var(--avatar-pink); }
+.avatar.blue { background: var(--avatar-blue); }
+.avatar.yellow { background: var(--avatar-yellow); }
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-info .name-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+
+.profile-info .name-meta {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.tag-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.tag.mint { background: var(--tag-mint-bg); color: var(--tag-mint-text); }
+.tag.pink { background: var(--tag-pink-bg); color: var(--tag-pink-text); }
+.tag.blue { background: var(--tag-blue-bg); color: var(--tag-blue-text); }
+.tag.peach { background: var(--tag-peach-bg); color: var(--tag-peach-text); }
+
+.chat-icon {
+  font-size: 20px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  background: none;
+  border: none;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.list-header .eyebrow {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.invite-btn {
+  background: var(--coral);
+  color: var(--text-dark);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-title);
+}
+
+/* ---------- 팀 매칭 리스트 (13) ---------- */
+.team-mini-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.team-mini-row .dots {
+  display: flex;
+  gap: -4px;
+}
+
+.dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-bottom);
+  margin-left: -8px;
+}
+.dot:first-child { margin-left: 0; }
+
+.team-mini-row .arrow {
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.team-card {
+  background: var(--card-white);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 14px;
+}
+
+.team-card .dots {
+  display: flex;
+}
+
+.team-card .info {
+  flex: 1;
+}
+
+.team-card .name-text {
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.team-card .match-percent {
+  font-size: 13px;
+  color: var(--coral-dark);
+  font-weight: 700;
+}
+
+.detail-btn {
+  border: 1.5px solid var(--coral);
+  color: var(--coral-darker);
+  background: transparent;
+  border-radius: var(--radius-pill);
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-title);
+  white-space: nowrap;
+}
+
+/* ---------- 팀 구성 (12) ---------- */
+.team-build-row {
+  display: flex;
+  justify-content: center;
+  gap: 34px;
+  margin: 50px 0 60px;
+}
+
+.team-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+}
+
+.slot-circle {
+  width: 94px;
+  height: 94px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  color: var(--coral-dark);
+}
+
+.slot-circle.filled.peach { background: var(--avatar-peach); }
+.slot-circle.filled.pink { background: var(--avatar-pink); }
+.slot-circle.filled.mint { background: var(--avatar-mint); }
+.slot-circle.filled.blue { background: var(--avatar-blue); }
+.slot-circle.filled.yellow { background: var(--avatar-yellow); }
+
+.slot-circle.empty {
+  background: transparent;
+  border: 2px dashed var(--coral);
+}
+
+.slot-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+/* ---------- 매칭 상세 (14) ---------- */
+.detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 60px 0 40px;
+}
+
+.detail-person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 120px;
+}
+
+.detail-person .avatar-lg {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+}
+
+.detail-person .name-text {
+  font-size: 16px;
+}
+
+.detail-person .name-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.divider-dash {
+  width: 0;
+  height: 90px;
+  border-left: 2px dashed var(--coral-light-border);
+  margin: 0 6px;
+}
+
+.match-percent-block {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--coral-dark);
+  margin-bottom: 26px;
+}

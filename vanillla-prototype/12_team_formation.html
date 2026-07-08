@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>우리결 | 팀 구성</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page">
+
+  <div class="progress-label">3/5</div>
+
+  <h1 class="page-title" id="teamTitle" style="margin-bottom:6px;">팀 구성 3:3</h1>
+  <p class="page-subtitle" style="margin-top:0;">함께 나갈 팀을 만들어볼까요?</p>
+
+  <div class="team-build-row" id="teamRow"></div>
+
+  <a href="13_oppositegroup_matching.html" class="btn btn-coral btn-block" style="margin-top:auto;">팀 확정</a>
+
+</div>
+
+<script>
+  var groupSize = localStorage.getItem('groupSize') || '3:3';
+  var teamSize = parseInt(groupSize.split(':')[0], 10) || 3;
+
+  document.getElementById('teamTitle').textContent = '팀 구성 ' + groupSize;
+
+  var friendPool = [
+    { name: '서연', color: 'pink' },
+    { name: '지우', color: 'blue' },
+    { name: '하은', color: 'mint' }
+  ];
+  var invitePool = ['민지', '다은', '하율'];
+
+  var row = document.getElementById('teamRow');
+
+  function buildSlots() {
+    row.innerHTML = '';
+
+    // 나
+    row.appendChild(makeSlot({ filled: true, color: 'peach', label: '나', icon: '' }));
+
+    // 나 이후 슬롯: 마지막 한 자리만 초대(빈 슬롯), 나머지는 미리 채워진 친구
+    for (var i = 1; i < teamSize; i++) {
+      var isLast = i === teamSize - 1;
+      if (isLast) {
+        row.appendChild(makeInviteSlot());
+      } else {
+        var friend = friendPool[i - 1];
+        row.appendChild(makeSlot({ filled: true, color: friend.color, label: friend.name, icon: '' }));
+      }
+    }
+  }
+
+  function makeSlot(opts) {
+    var wrap = document.createElement('div');
+    wrap.className = 'team-slot';
+    wrap.innerHTML =
+      '<div class="slot-circle filled ' + opts.color + '">' + opts.icon + '</div>' +
+      '<div class="slot-label">' + opts.label + '</div>';
+    return wrap;
+  }
+
+  function makeInviteSlot() {
+    var wrap = document.createElement('div');
+    wrap.className = 'team-slot';
+    wrap.innerHTML =
+      '<button type="button" class="slot-circle empty">+</button>' +
+      '<div class="slot-label">초대하기</div>';
+
+    wrap.querySelector('button').addEventListener('click', function () {
+      var name = invitePool[Math.floor(Math.random() * invitePool.length)];
+      var colors = ['mint', 'peach', 'pink', 'blue', 'yellow'];
+      var color = colors[Math.floor(Math.random() * colors.length)];
+      wrap.innerHTML =
+        '<div class="slot-circle filled ' + color + '"></div>' +
+        '<div class="slot-label">' + name + '</div>';
+    });
+    return wrap;
+  }
+
+  buildSlots();
+</script>
+</body>
+</html>

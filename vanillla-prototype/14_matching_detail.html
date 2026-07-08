@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>우리결 | 매칭 상세</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page">
+
+  <h1 class="page-title" id="detailTitle" style="margin-top:20px;">미소 팀과의 궁합</h1>
+
+  <div class="detail-row" id="detailRow"></div>
+
+  <div class="match-percent-block" id="percentBlock">취향 궁합 92%</div>
+
+  <button type="button" class="btn btn-coral btn-block" id="interestBtn">❤️ 관심을 보내시겠어요?</button>
+
+</div>
+
+<script>
+  var teams = {
+    '미소': {
+      percent: 92,
+      members: [
+        { name: '기우', meta: '23세 · 카페투어', color: 'peach' },
+        { name: '서준', meta: '24세 · 전시관람', color: 'mint' },
+        { name: '하율', meta: '23세 · 산책', color: 'blue' }
+      ]
+    },
+    '설렘': {
+      percent: 88,
+      members: [
+        { name: '도윤', meta: '24세 · 맛집탐방', color: 'peach' },
+        { name: '건우', meta: '23세 · 드라이브', color: 'yellow' },
+        { name: '시우', meta: '25세 · 사진촬영', color: 'pink' }
+      ]
+    },
+    '다정': {
+      percent: 85,
+      members: [
+        { name: '준서', meta: '24세 · 보드게임', color: 'mint' },
+        { name: '지호', meta: '23세 · 카페투어', color: 'blue' },
+        { name: '민재', meta: '25세 · 산책', color: 'peach' }
+      ]
+    },
+    '활기': {
+      percent: 80,
+      members: [
+        { name: '태윤', meta: '23세 · 러닝', color: 'pink' },
+        { name: '우진', meta: '24세 · 클라이밍', color: 'yellow' },
+        { name: '선우', meta: '22세 · 등산', color: 'mint' }
+      ]
+    }
+  };
+
+  var params = new URLSearchParams(window.location.search);
+  var teamName = params.get('team') || '미소';
+  var team = teams[teamName] || teams['미소'];
+
+  document.getElementById('detailTitle').textContent = teamName + ' 팀과의 궁합';
+  document.getElementById('percentBlock').textContent = '취향 궁합 ' + team.percent + '%';
+
+  var row = document.getElementById('detailRow');
+  team.members.forEach(function (m, i) {
+    var person = document.createElement('div');
+    person.className = 'detail-person';
+    person.innerHTML =
+      '<div class="avatar-lg avatar ' + m.color + '"></div>' +
+      '<div class="name-text">' + m.name + '</div>' +
+      '<div class="name-meta">' + m.meta + '</div>';
+    row.appendChild(person);
+    if (i < team.members.length - 1) {
+      var divider = document.createElement('div');
+      divider.className = 'divider-dash';
+      row.appendChild(divider);
+    }
+  });
+
+  document.getElementById('interestBtn').addEventListener('click', function () {
+    alert('💌 관심을 보냈습니다! ' + teamName + ' 팀에게 알림이 전달돼요.');
+  });
+</script>
+</body>
+</html>
