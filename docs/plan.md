@@ -282,4 +282,4 @@ flowchart TD
 ## 12. 프로토타입 링크
 
 - 프로토타입 배포 링크: TODO
-- 로컬 확인 위치: `prototype/index.html`
+- **프로토타입:** [HTML 프로토타입 확인](../prototype/index.html)
