@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>시험 벼락치기 스케줄러 · 정보 입력</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="stage">
+  <div class="stage-caption">2 · 정보 입력</div>
+
+  <div class="device">
+    <div class="statusbar">
+      <span class="statusbar-time">10:14</span>
+      <span class="statusbar-icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="3" width="3" height="9" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1 4a10 10 0 0114 0"/><path d="M3.8 7a6 6 0 018.4 0"/><circle cx="8" cy="10.2" r="1.1" fill="currentColor" stroke="none"/></svg>
+        <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="8" rx="1.3" fill="currentColor"/><rect x="21.5" y="4" width="1.7" height="4" rx="0.8" fill="currentColor"/></svg>
+      </span>
+    </div>
+
+    <div class="navbar">
+      <div class="nav-side">
+        <a href="index.html" class="icon-btn ghost">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <span class="nav-title">정보 입력</span>
+      </div>
+      <div class="nav-side"></div>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-seg is-done"></div>
+      <div class="progress-seg is-current"></div>
+      <div class="progress-seg"></div>
+      <div class="progress-seg"></div>
+      <div class="progress-seg"></div>
+    </div>
+
+    <div class="screen">
+      <h1 class="headline">상황을 알려주세요</h1>
+      <p class="subtext" style="margin-bottom:20px;">직접 입력하거나, 자연어로 빠르게 채워보세요.</p>
+
+      <div class="nl-box">
+        <div class="nl-title">✨ 자연어로 빠르게 입력 (선택)</div>
+        <textarea placeholder="예) 시험이 모레 아침 9시에 있고, 평소엔 12시에 자서 7시에 일어나."></textarea>
+        <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+          <button class="btn btn-secondary btn-sm" type="button">아래 항목에 채우기</button>
+        </div>
+      </div>
+
+      <div class="section-block mt-0">
+        <div class="section-head">
+          <span class="label">시험 일정</span>
+          <span class="meta">3개</span>
+        </div>
+        <div class="card">
+          <div class="row">
+            <span class="row-icon exam">🗓️</span>
+            <span class="row-body">
+              <div class="row-title">세포생물학</div>
+              <div class="row-sub">월 09:00 · 남은 공부 3시간</div>
+            </span>
+            <span class="row-chevron">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+          <div class="row">
+            <span class="row-icon exam">🗓️</span>
+            <span class="row-body">
+              <div class="row-title">유전학</div>
+              <div class="row-sub">수 14:00 · 남은 공부 5시간</div>
+            </span>
+            <span class="row-chevron">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+          <div class="row">
+            <span class="row-icon exam">🗓️</span>
+            <span class="row-body">
+              <div class="row-title">생화학</div>
+              <div class="row-sub">금 10:00 · 남은 공부 6시간</div>
+            </span>
+            <span class="row-chevron">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+          <button type="button" class="row is-add" data-open-sheet="examSheet">
+            <span class="row-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            </span>
+            <span class="row-body">
+              <div class="row-title">시험 추가</div>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-head"><span class="label">평소 수면 패턴</span></div>
+        <div class="card" style="display:flex; gap:12px;">
+          <div class="field" style="margin:0; flex:1;">
+            <label class="field-label">평소 취침</label>
+            <input type="time" value="00:00" />
+          </div>
+          <div class="field" style="margin:0; flex:1;">
+            <label class="field-label">평소 기상</label>
+            <input type="time" value="07:00" />
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-head">
+          <span class="label">오늘 이미 섭취한 카페인</span>
+          <span class="meta">150mg</span>
+        </div>
+        <div class="card">
+          <div class="row">
+            <span class="row-icon caffeine">☕</span>
+            <span class="row-body">
+              <div class="row-title">아이스 아메리카노</div>
+              <div class="row-sub">오늘 09:00</div>
+            </span>
+            <span class="row-value">150mg</span>
+          </div>
+          <button type="button" class="row is-add" data-open-sheet="drinkSheet">
+            <span class="row-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            </span>
+            <span class="row-body">
+              <div class="row-title">음료 추가</div>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-head"><span class="label">카페인 민감도</span></div>
+        <div class="segmented">
+          <button type="button">둔감</button>
+          <button type="button" class="active">보통</button>
+          <button type="button">예민</button>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-head"><span class="label">나이 · 성별 · 건강 상태</span></div>
+        <div class="card">
+          <div class="field" style="margin-bottom:14px;">
+            <label class="field-label">나이</label>
+            <input type="number" value="23" placeholder="나이" />
+          </div>
+          <div class="field" style="margin-bottom:14px;">
+            <label class="field-label">성별</label>
+            <div class="segmented">
+              <button type="button" class="active">여성</button>
+              <button type="button">남성</button>
+            </div>
+          </div>
+          <div class="hairline"></div>
+          <div class="row">
+            <span class="row-body"><div class="row-title">임신 중이에요</div></span>
+            <span class="switch"><span class="knob"></span></span>
+          </div>
+          <div class="row">
+            <span class="row-body"><div class="row-title">심장질환이 있어요</div></span>
+            <span class="switch"><span class="knob"></span></span>
+          </div>
+          <div class="row">
+            <span class="row-body"><div class="row-title">평소 불안·불면 증상이 있어요</div></span>
+            <span class="switch"><span class="knob"></span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="card">
+          <div class="slider-row">
+            <div class="slider-head">
+              <span class="name">최소 수면시간</span>
+              <span class="value"><span data-range-out="minSleep">4</span>시간</span>
+            </div>
+            <input id="minSleep" type="range" min="2" max="8" step="0.5" value="4" data-suffix="" />
+            <div class="range-bounds"><span>2시간</span><span>8시간</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="field">
+          <label class="field-label">시험장까지 이동시간</label>
+          <input type="number" value="30" placeholder="분 단위로 입력" />
+          <p class="field-hint text-muted" style="font-size:12px; margin-top:6px;">기상 후 준비·이동에 필요한 시간만큼 목표 각성 시각을 앞당겨 계산해요.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-cta">
+      <a href="processing.html" class="btn btn-primary">계산하기</a>
+    </div>
+    <div class="home-indicator-wrap"><div class="home-indicator"></div></div>
+
+    <!-- 시트: 시험 추가 -->
+    <div class="sheet-backdrop" id="sheetBackdrop" data-close-sheet></div>
+    <div class="sheet" id="examSheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">시험 추가</div>
+      <div class="field">
+        <label class="field-label">과목명</label>
+        <input type="text" placeholder="예) 유기화학" />
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div class="field" style="flex:1;">
+          <label class="field-label">날짜</label>
+          <input type="date" />
+        </div>
+        <div class="field" style="flex:1;">
+          <label class="field-label">시각</label>
+          <input type="time" />
+        </div>
+      </div>
+      <div class="slider-row" style="margin-bottom:18px;">
+        <div class="slider-head">
+          <span class="name">남은 공부 시간</span>
+          <span class="value"><span data-range-out="examStudy">4</span>시간</span>
+        </div>
+        <input id="examStudy" type="range" min="0" max="40" step="1" value="4" />
+        <div class="range-bounds"><span>0시간</span><span>40시간 (5일치)</span></div>
+      </div>
+      <button type="button" class="btn btn-primary" style="width:100%;" data-close-sheet>추가하기</button>
+    </div>
+
+    <!-- 시트: 음료 추가 -->
+    <div class="sheet" id="drinkSheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">방금 마신 음료 선택</div>
+      <button type="button" class="row sheet-row" data-close-sheet>
+        <span class="row-icon caffeine">☕</span>
+        <span class="row-body"><div class="row-title">아이스 아메리카노 (톨)</div></span>
+        <span class="row-value">150mg</span>
+      </button>
+      <button type="button" class="row sheet-row" data-close-sheet>
+        <span class="row-icon caffeine">🥤</span>
+        <span class="row-body"><div class="row-title">에너지 드링크</div></span>
+        <span class="row-value">80mg</span>
+      </button>
+      <button type="button" class="row sheet-row" data-close-sheet>
+        <span class="row-icon caffeine">🍵</span>
+        <span class="row-body"><div class="row-title">커피믹스 1포</div></span>
+        <span class="row-value">60mg</span>
+      </button>
+      <button type="button" class="row sheet-row is-add" data-close-sheet>
+        <span class="row-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>
+        <span class="row-body"><div class="row-title">직접 입력</div></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="screen-jump">
+    <a href="index.html">1 홈</a>
+    <a href="input.html" class="is-active">2 정보 입력</a>
+    <a href="processing.html">3 처리 중</a>
+    <a href="result.html">4 결과</a>
+    <a href="adjust.html">5 스케줄 조정</a>
+  </div>
+</div>
+<script src="script.js" defer></script>
+</body>
+</html>
