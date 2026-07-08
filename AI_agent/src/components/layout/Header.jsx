@@ -2,11 +2,19 @@
 
 import { menuItems } from "../../data/menuItems";
 import careerMissionLogo from "../../assets/career-mission-logo.png";
+import { clearSession, getSession } from "../../features/auth/authStorage";
 import { navigate, routes } from "../../router";
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isLoggedIn = false;
+  const session = getSession();
+  const isLoggedIn = Boolean(session);
+
+  const handleLogout = () => {
+    clearSession();
+    alert("로그아웃되었습니다.");
+    navigate(routes.home);
+  };
 
   const handleMyPageClick = () => {
     if (!isLoggedIn) {
@@ -77,7 +85,11 @@ function Header() {
           </div>
 
           {isLoggedIn ? (
-            <button type="button" className="auth-button secondary">
+            <button
+              type="button"
+              className="auth-button secondary"
+              onClick={handleLogout}
+            >
               로그아웃
             </button>
           ) : (

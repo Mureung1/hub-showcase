@@ -1,7 +1,11 @@
 import { useState } from "react";
 
 import Header from "../components/layout/Header";
-import { savePendingUser } from "../features/auth/authStorage";
+import {
+  getPendingUser,
+  getUser,
+  savePendingUser,
+} from "../features/auth/authStorage";
 import {
   searchMajorsBySchool,
   searchUniversities,
@@ -40,6 +44,9 @@ const createVerificationToken = () => {
 function Signup() {
   const [form, setForm] = useState(initialForm);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isPasswordConfirmVisible, setIsPasswordConfirmVisible] =
+    useState(false);
   const [schoolResults, setSchoolResults] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [isSearchingSchool, setIsSearchingSchool] = useState(false);
@@ -183,6 +190,24 @@ function Signup() {
       return;
     }
 
+    const existingUser = getUser();
+    const pendingUser = getPendingUser();
+    const username = form.username.trim();
+    const email = form.email.trim();
+
+    if (
+      existingUser?.username === username ||
+      pendingUser?.username === username
+    ) {
+      setErrorMessage("이미 존재하는 아이디입니다.");
+      return;
+    }
+
+    if (existingUser?.email === email || pendingUser?.email === email) {
+      setErrorMessage("이미 가입 또는 인증 대기 중인 이메일입니다.");
+      return;
+    }
+
     if (!selectedSchool || selectedSchool.name !== form.school.trim()) {
       setErrorMessage("학교 찾기 결과에서 학교를 선택해 주세요.");
       return;
@@ -210,8 +235,8 @@ function Signup() {
     const user = {
       id: form.username.trim(),
       name: form.name.trim(),
-      username: form.username.trim(),
-      email: form.email.trim(),
+      username,
+      email,
       school: selectedSchool.name,
       schoolMeta: selectedSchool,
       major: selectedMajor.name,
@@ -400,26 +425,70 @@ function Signup() {
 
             <label style={styles.field}>
               <span style={styles.label}>비밀번호</span>
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                style={styles.input}
-                placeholder="영문, 숫자, 특수문자 포함"
-              />
+              <div style={styles.passwordField}>
+                <input
+                  type={isPasswordVisible ? "text" : "password"}
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  style={{ ...styles.input, ...styles.passwordInput }}
+                  placeholder="영문, 숫자, 특수문자 포함"
+                />
+                <button
+                  type="button"
+                  style={styles.passwordToggle}
+                  onClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
+                  aria-label={
+                    isPasswordVisible ? "비밀번호 숨기기" : "비밀번호 보기"
+                  }
+                >
+                  {isPasswordVisible ? (
+                    <svg style={styles.eyeIcon} viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M3.3 2 22 20.7 20.7 22l-3.3-3.3A12.7 12.7 0 0 1 12 20C5 20 1.4 13.7 1.2 13.4a2.8 2.8 0 0 1 0-2.8 16 16 0 0 1 4.3-4.8L2 3.3 3.3 2Zm5 6.7a5 5 0 0 0 7 7l-1.5-1.5a3 3 0 0 1-4-4L8.3 8.7Zm3-3.6c.2 0 .5-.1.7-.1 7 0 10.6 6.3 10.8 6.6.5.9.5 1.9 0 2.8a14.7 14.7 0 0 1-2.4 3L17 14a5 5 0 0 0-6.4-6.4L8.9 5.9a12.4 12.4 0 0 1 2.4-.8Z" />
+                    </svg>
+                  ) : (
+                    <svg style={styles.eyeIcon} viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 5c7 0 10.6 6.3 10.8 6.6.5.9.5 1.9 0 2.8C22.6 14.7 19 21 12 21S1.4 14.7 1.2 14.4a2.8 2.8 0 0 1 0-2.8C1.4 11.3 5 5 12 5Zm0 2C6.3 7 3.3 12.2 3 12.6c-.1.2-.1.6 0 .8.3.4 3.3 5.6 9 5.6s8.7-5.2 9-5.6c.1-.2.1-.6 0-.8-.3-.4-3.3-5.6-9-5.6Zm0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </label>
 
             <label style={styles.field}>
               <span style={styles.label}>비밀번호 확인</span>
-              <input
-                type="password"
-                name="passwordConfirm"
-                value={form.passwordConfirm}
-                onChange={handleChange}
-                style={styles.input}
-                placeholder="비밀번호 재입력"
-              />
+              <div style={styles.passwordField}>
+                <input
+                  type={isPasswordConfirmVisible ? "text" : "password"}
+                  name="passwordConfirm"
+                  value={form.passwordConfirm}
+                  onChange={handleChange}
+                  style={{ ...styles.input, ...styles.passwordInput }}
+                  placeholder="비밀번호 재입력"
+                />
+                <button
+                  type="button"
+                  style={styles.passwordToggle}
+                  onClick={() =>
+                    setIsPasswordConfirmVisible((isVisible) => !isVisible)
+                  }
+                  aria-label={
+                    isPasswordConfirmVisible
+                      ? "비밀번호 확인 숨기기"
+                      : "비밀번호 확인 보기"
+                  }
+                >
+                  {isPasswordConfirmVisible ? (
+                    <svg style={styles.eyeIcon} viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M3.3 2 22 20.7 20.7 22l-3.3-3.3A12.7 12.7 0 0 1 12 20C5 20 1.4 13.7 1.2 13.4a2.8 2.8 0 0 1 0-2.8 16 16 0 0 1 4.3-4.8L2 3.3 3.3 2Zm5 6.7a5 5 0 0 0 7 7l-1.5-1.5a3 3 0 0 1-4-4L8.3 8.7Zm3-3.6c.2 0 .5-.1.7-.1 7 0 10.6 6.3 10.8 6.6.5.9.5 1.9 0 2.8a14.7 14.7 0 0 1-2.4 3L17 14a5 5 0 0 0-6.4-6.4L8.9 5.9a12.4 12.4 0 0 1 2.4-.8Z" />
+                    </svg>
+                  ) : (
+                    <svg style={styles.eyeIcon} viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 5c7 0 10.6 6.3 10.8 6.6.5.9.5 1.9 0 2.8C22.6 14.7 19 21 12 21S1.4 14.7 1.2 14.4a2.8 2.8 0 0 1 0-2.8C1.4 11.3 5 5 12 5Zm0 2C6.3 7 3.3 12.2 3 12.6c-.1.2-.1.6 0 .8.3.4 3.3 5.6 9 5.6s8.7-5.2 9-5.6c.1-.2.1-.6 0-.8-.3-.4-3.3-5.6-9-5.6Zm0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </label>
           </div>
 
@@ -547,6 +616,34 @@ const styles = {
     color: "#0f172a",
     fontSize: "15px",
     boxSizing: "border-box",
+  },
+  passwordField: {
+    position: "relative",
+  },
+  passwordInput: {
+    paddingRight: "62px",
+  },
+  passwordToggle: {
+    position: "absolute",
+    top: "50%",
+    right: "8px",
+    width: "34px",
+    height: "34px",
+    padding: 0,
+    border: "1px solid #dbe3ef",
+    borderRadius: "50%",
+    background: "#f8fafc",
+    color: "#334155",
+    cursor: "pointer",
+    transform: "translateY(-50%)",
+    display: "grid",
+    placeItems: "center",
+  },
+  eyeIcon: {
+    width: "18px",
+    height: "18px",
+    display: "block",
+    fill: "currentColor",
   },
   searchButton: {
     minHeight: "46px",

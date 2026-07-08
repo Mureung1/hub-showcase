@@ -1,21 +1,48 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 import Header from "../components/layout/Header";
-import { verifyPendingUser } from "../features/auth/authStorage";
+import {
+  getPendingUser,
+  verifyCurrentPendingUser,
+  verifyPendingUser,
+} from "../features/auth/authStorage";
 import { navigate, routes } from "../router";
 
+const getInitialVerificationState = () => {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token") || "";
+  const verifiedUser = verifyPendingUser(token);
+
+  return {
+    verifiedUser,
+    hasPendingUser: !verifiedUser && Boolean(getPendingUser()),
+  };
+};
+
 function VerifyEmail() {
-  const token = useMemo(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("token") || "";
-  }, []);
-  const [verifiedUser, setVerifiedUser] = useState(null);
+  const [verificationState, setVerificationState] = useState(
+    getInitialVerificationState
+  );
 
-  useEffect(() => {
-    setVerifiedUser(verifyPendingUser(token));
-  }, [token]);
+  const handleManualVerify = () => {
+    const verifiedUser = verifyCurrentPendingUser();
 
+    setVerificationState({
+      verifiedUser,
+      hasPendingUser: false,
+    });
+  };
+
+  const { verifiedUser, hasPendingUser } = verificationState;
   const isVerified = Boolean(verifiedUser);
+  const title = isVerified
+    ? "이메일 확인이 완료되었습니다."
+    : "확인 링크가 유효하지 않습니다.";
+  const description = isVerified
+    ? `${verifiedUser.email} 인증이 완료되어 회원가입이 최종 완료되었습니다.`
+    : hasPendingUser
+      ? "확인 링크의 토큰이 일치하지 않습니다. 현재 브라우저의 인증 대기 계정을 직접 확인할 수 있습니다."
+      : "이미 사용된 링크이거나 인증 대기 중인 계정 정보가 없습니다.";
 
   return (
     <main style={styles.container}>
@@ -23,14 +50,19 @@ function VerifyEmail() {
       <section style={styles.page}>
         <div style={styles.card}>
           <p style={styles.badge}>Email Verification</p>
-          <h1 style={styles.title}>
-            {isVerified ? "이메일 확인이 완료되었습니다." : "확인 링크가 유효하지 않습니다."}
-          </h1>
-          <p style={styles.description}>
-            {isVerified
-              ? `${verifiedUser.email} 인증이 완료되어 회원가입이 최종 완료되었습니다.`
-              : "이미 사용된 링크이거나 인증 대기 중인 계정 정보가 없습니다."}
-          </p>
+          <h1 style={styles.title}>{title}</h1>
+          <p style={styles.description}>{description}</p>
+
+          {!isVerified && hasPendingUser && (
+            <button
+              type="button"
+              style={styles.secondaryButton}
+              onClick={handleManualVerify}
+            >
+              현재 대기 계정 인증하기
+            </button>
+          )}
+
           <button
             type="button"
             style={styles.primaryButton}
@@ -97,6 +129,7 @@ const styles = {
   primaryButton: {
     minHeight: "44px",
     padding: "0 18px",
+    margin: "0 5px",
     border: 0,
     borderRadius: "999px",
     background: "linear-gradient(135deg, #2563eb, #06b6d4)",
@@ -104,6 +137,17 @@ const styles = {
     fontWeight: 800,
     cursor: "pointer",
     boxShadow: "0 14px 26px rgba(37, 99, 235, 0.28)",
+  },
+  secondaryButton: {
+    minHeight: "44px",
+    padding: "0 18px",
+    margin: "0 5px 10px",
+    border: "1px solid #dbe3ef",
+    borderRadius: "999px",
+    background: "#ffffff",
+    color: "#334155",
+    fontWeight: 800,
+    cursor: "pointer",
   },
 };
 
