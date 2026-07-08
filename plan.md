@@ -56,7 +56,7 @@
 
 ![화면별 UI 동작 시각화](assets/ui-flow.png)
 
-**핵심 기능 프로토타입:** [`prototype/index.html`](prototype/index.html) — 필터→랭킹→상세→구매 링크 흐름을 순수 HTML/CSS로 구현 (필터는 JS 없이 CSS `:has()`로 실제 동작, Chrome/Edge/Safari·Firefox 121+ 권장). 브라우저로 직접 열어서 확인 가능.
+**핵심 기능 프로토타입:** [pyojung.github.io/hub/prototype/index.html](https://pyojung.github.io/hub/prototype/index.html) — 필터→랭킹→상세→구매 링크 흐름을 순수 HTML/CSS로 구현 (필터는 JS 없이 CSS `:has()`로 실제 동작, Chrome/Edge/Safari·Firefox 121+ 권장). GitHub Pages로 배포돼 있어 클릭하면 바로 동작하는 화면을 확인할 수 있음. (저장소 안에서는 [`prototype/index.html`](prototype/index.html) 경로)
 
 ## 데이터 흐름
 1. (하루 1회 배치, 예정) KAMIS API에서 농산물 평균 시세를 가져옴
