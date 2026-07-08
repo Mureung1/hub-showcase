@@ -1,6 +1,4 @@
-<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
-
-# LocalTwin v0.1 데이터 소스 매핑
+﻿# LocalTwin v0.1 데이터 소스 매핑
 
 이 문서는 LocalTwin v0.1에 필요한 공공데이터가 충분한지 판단하고, 원천 데이터와 내부 canonical schema를 연결하기 위한 기준 문서다.
 

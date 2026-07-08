@@ -1,6 +1,4 @@
-<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
-
-# LocalTwin v0.1 구현 범위 고정 명세
+﻿# LocalTwin v0.1 구현 범위 고정 명세
 
 ## 1. 프로젝트 정의
 

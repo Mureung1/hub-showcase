@@ -1,6 +1,4 @@
-<sub>[Wiki Home](./doc-viewer.html?doc=Home.md) · [Knowledge Graph](./knowledge-graph.html)</sub>
-
-# LocalTwin Wiki Home
+﻿# LocalTwin Wiki Home
 
 LocalTwin Wiki는 프로젝트 기획, 기능 정의, 개발 운영 문서를 연결하는 진입점이다.
 

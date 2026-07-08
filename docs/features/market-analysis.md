@@ -1,6 +1,4 @@
-<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
-
-# 기능 스펙: 공공데이터 기반 상권 분석
+﻿# 기능 스펙: 공공데이터 기반 상권 분석
 
 ## 1. 기능 구분
 

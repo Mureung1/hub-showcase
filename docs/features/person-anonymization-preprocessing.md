@@ -1,6 +1,4 @@
-<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
-
-# 기능 스펙: 사람 영역 익명화 전처리
+﻿# 기능 스펙: 사람 영역 익명화 전처리
 
 ## 1. 기능 구분
 

@@ -8,7 +8,7 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 
 ### Wiki용 기획 문서
 
-- [Wiki Home](docs/wiki/Home.md)
+- [Wiki Home](docs/wiki/doc-viewer.html?doc=Home.md)
 - [Interactive Knowledge Graph](docs/wiki/knowledge-graph.html)
 - [Document Viewer](docs/wiki/doc-viewer.html?doc=Home.md)
 - [프로젝트 기획서: 화면 구조와 핵심 기능](docs/wiki/localtwin-project-proposal.md)

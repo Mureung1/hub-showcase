@@ -190,6 +190,146 @@
         color: #991b1b;
         padding: 14px;
       }
+
+      .home-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(240px, 0.42fr);
+        gap: 20px;
+        align-items: end;
+        margin-bottom: 24px;
+      }
+
+      .home-hero h1 {
+        margin-bottom: 14px;
+      }
+
+      .home-hero p {
+        max-width: 720px;
+        margin: 0;
+        color: #405148;
+        font-size: 1.02rem;
+        line-height: 1.7;
+      }
+
+      .home-status {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #f4fbf7;
+        padding: 16px;
+      }
+
+      .home-status strong {
+        display: block;
+        margin-bottom: 8px;
+        color: #07120d;
+      }
+
+      .home-actions,
+      .home-card-grid,
+      .home-map-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .home-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-bottom: 22px;
+      }
+
+      .home-action,
+      .home-card,
+      .home-map {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #ffffff;
+        padding: 16px;
+      }
+
+      .home-action {
+        display: block;
+        color: #07120d;
+      }
+
+      .home-action span,
+      .home-card span {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--green-dark);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .home-action strong,
+      .home-card strong,
+      .home-map strong {
+        display: block;
+        color: #07120d;
+        font-size: 1rem;
+      }
+
+      .home-action small,
+      .home-card p,
+      .home-map p {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.55;
+      }
+
+      .home-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .home-card ul {
+        display: grid;
+        gap: 8px;
+        margin: 14px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .home-card li {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        border-top: 1px solid var(--line);
+        padding-top: 8px;
+      }
+
+      .home-card em {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-style: normal;
+        font-weight: 700;
+      }
+
+      .home-map-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 22px;
+      }
+
+      .home-map pre {
+        overflow-x: auto;
+        margin: 12px 0 0;
+        border-radius: 12px;
+        background: #07120d;
+        color: #dcefe6;
+        font-size: 0.78rem;
+        line-height: 1.55;
+        padding: 12px;
+      }
+
+      @media (max-width: 760px) {
+        .home-hero,
+        .home-actions,
+        .home-card-grid,
+        .home-map-grid {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
   </head>
   <body>
@@ -213,29 +353,50 @@
 
     <script>
       const params = new URLSearchParams(window.location.search);
-      const requestedDoc = normalizeDoc(params.get("doc") || "Home.md");
+      const rawDocParam = params.get("doc") || "Home.md";
+      const requestedDoc = normalizeDoc(rawDocParam);
       const content = document.querySelector("#content");
       const docPath = document.querySelector("#doc-path");
       const rawLink = document.querySelector("#raw-link");
 
-      function normalizeDoc(input) {
-        const parts = String(input)
+      function safeDecode(value) {
+        try {
+          return decodeURIComponent(value);
+        } catch {
+          return value;
+        }
+      }
+
+      function normalizeDoc(input, depth = 0) {
+        let value = safeDecode(String(input || "Home.md")).trim();
+        const nestedMatch = value.match(/(?:^|\/|\.\/)doc-viewer\.html\?doc=(.+)$/);
+        if (nestedMatch && depth < 3) {
+          return normalizeDoc(nestedMatch[1], depth + 1);
+        }
+        if (value.includes("?") || value.includes("#") || value.includes("://") || value.includes("\0")) {
+          return "Home.md";
+        }
+        value = value.replace(/^\.\//, "");
+        if (!value.endsWith(".md")) return "Home.md";
+        const parts = value
           .replace(/\\/g, "/")
           .split("/")
           .filter(Boolean);
         const normalized = [];
+        let leadingParents = 0;
         for (const part of parts) {
           if (part === ".") continue;
           if (part === "..") {
+            leadingParents += 1;
+            if (leadingParents > 1) return "Home.md";
             normalized.push(part);
             continue;
           }
+          leadingParents = 0;
           normalized.push(part);
         }
-        const value = normalized.join("/");
-        if (!value.endsWith(".md")) return "Home.md";
-        if (value.includes("://") || value.startsWith("/") || value.includes("\0")) return "Home.md";
-        return value;
+        const normalizedValue = normalized.join("/");
+        return normalizedValue || "Home.md";
       }
 
       function escapeHtml(value) {
@@ -253,6 +414,12 @@
 
       function normalizeRelative(baseDoc, href) {
         if (/^(https?:|mailto:|#)/.test(href)) return href;
+        const nestedViewer = href.match(/(?:^|\.\/)doc-viewer\.html\?doc=(.+)$/);
+        if (nestedViewer) {
+          return `./doc-viewer.html?doc=${encodeURIComponent(normalizeDoc(nestedViewer[1]))}`;
+        }
+        if (href.includes("?") || href.includes("#")) return href;
+        if (href.endsWith(".html")) return href;
         if (!href.endsWith(".md")) return href;
         const stack = docDir(baseDoc).split("/").filter(Boolean);
         href.split("/").forEach((part) => {
@@ -261,6 +428,94 @@
           else stack.push(part);
         });
         return `./doc-viewer.html?doc=${encodeURIComponent(stack.join("/"))}`;
+      }
+
+      function renderHome() {
+        return `
+          <section class="home-hero">
+            <div>
+              <h1>LocalTwin Docs Home</h1>
+              <p>상권 분석 제품 기획, 기능 스펙, 데이터 기준, 개발 운영 문서를 한 화면에서 찾는 개발문서 포털입니다.</p>
+            </div>
+            <aside class="home-status">
+              <strong>현재 기준</strong>
+              <p>주기능은 공공데이터 기반 상권 분석이고, 3D 탐색은 보조 데모로 관리합니다.</p>
+            </aside>
+          </section>
+
+          <nav class="home-actions" aria-label="주요 문서 바로가기">
+            <a class="home-action" href="./doc-viewer.html?doc=localtwin-project-proposal.md"><span>Proposal</span><strong>프로젝트 기획서</strong><small>사용자 시나리오, 화면 구조, 핵심 기능</small></a>
+            <a class="home-action" href="../prototypes/core-market-analysis-prototype.html"><span>Prototype</span><strong>상권 분석 프로토타입</strong><small>지도 중심 핵심 화면</small></a>
+            <a class="home-action" href="./knowledge-graph.html"><span>Graph</span><strong>Knowledge Graph</strong><small>문서 간 연결 구조</small></a>
+          </nav>
+
+          <section class="home-card-grid">
+            <article class="home-card">
+              <span>Planning</span>
+              <strong>제품과 실행 계획</strong>
+              <p>문제 정의부터 v0.1 개발 순서까지 확인합니다.</p>
+              <ul>
+                <li><a href="./doc-viewer.html?doc=localtwin-product-plan.md">제품 기획서</a><em>problem</em></li>
+                <li><a href="./doc-viewer.html?doc=localtwin-v0.1-execution-plan.md">v0.1 실행 계획</a><em>plan</em></li>
+                <li><a href="./doc-viewer.html?doc=../module-notes/localtwin-v0.1-scope.md">범위 고정 메모</a><em>scope</em></li>
+              </ul>
+            </article>
+            <article class="home-card">
+              <span>Core Specs</span>
+              <strong>핵심 기능 스펙</strong>
+              <p>상권 분석을 먼저 탄탄히 만들고 3D는 보조 기능으로 연결합니다.</p>
+              <ul>
+                <li><a href="./doc-viewer.html?doc=../features/market-analysis.md">공공데이터 기반 상권 분석</a><em>P0</em></li>
+                <li><a href="./doc-viewer.html?doc=../features/3d-congestion-explorer.md">혼잡도 3D 기반 탐색</a><em>P1</em></li>
+                <li><a href="./doc-viewer.html?doc=../features/person-anonymization-preprocessing.md">사람 영역 익명화</a><em>safety</em></li>
+              </ul>
+            </article>
+            <article class="home-card">
+              <span>Data</span>
+              <strong>데이터 기준</strong>
+              <p>공공데이터와 수동 관찰값을 canonical schema로 연결합니다.</p>
+              <ul>
+                <li><a href="./doc-viewer.html?doc=../data/data-source-mapping.md">데이터 소스 매핑</a><em>schema</em></li>
+              </ul>
+            </article>
+            <article class="home-card">
+              <span>Development</span>
+              <strong>개발 운영과 검증</strong>
+              <p>작업 단위, 검증, 평가, 문서 동기화 규칙을 확인합니다.</p>
+              <ul>
+                <li><a href="./doc-viewer.html?doc=../development/overview.md">전체 개발문서</a><em>overview</em></li>
+                <li><a href="./doc-viewer.html?doc=../development/harness.md">Dev Harness</a><em>workflow</em></li>
+                <li><a href="./doc-viewer.html?doc=../development/validation.md">검증 가이드</a><em>check</em></li>
+                <li><a href="./doc-viewer.html?doc=../evaluation/agent-rubric.md">Agent Rubric</a><em>review</em></li>
+              </ul>
+            </article>
+          </section>
+
+          <section class="home-map-grid">
+            <article class="home-map">
+              <strong>문서 구조</strong>
+              <pre>docs/
+  wiki/
+  prototypes/
+  features/
+  data/
+  development/
+  evaluation/
+  module-notes/</pre>
+            </article>
+            <article class="home-map">
+              <strong>프로젝트 구조</strong>
+              <pre>LocalTwin/
+  README.md
+  docs/
+  scripts/
+  .harness/
+  .githooks/
+  .agents/
+  .codex/</pre>
+            </article>
+          </section>
+        `;
       }
 
       function inline(markdown, currentDoc) {
@@ -378,8 +633,16 @@
       }
 
       async function loadDocument() {
+        const canonicalUrl = `./doc-viewer.html?doc=${encodeURIComponent(requestedDoc)}`;
+        if (rawDocParam !== requestedDoc && window.history.replaceState) {
+          window.history.replaceState(null, "", canonicalUrl);
+        }
         docPath.textContent = requestedDoc;
         rawLink.href = requestedDoc;
+        if (requestedDoc === "Home.md") {
+          content.innerHTML = renderHome();
+          return;
+        }
         try {
           const response = await fetch(requestedDoc, { cache: "no-store" });
           if (!response.ok) {

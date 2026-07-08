@@ -1,6 +1,4 @@
-<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
-
-# LocalTwin v0.1 전체 개발 체크리스트
+﻿# LocalTwin v0.1 전체 개발 체크리스트
 
 이 문서는 LocalTwin v0.1 전체 개발 진행 상황을 추적하기 위한 실행용 체크리스트다.
 

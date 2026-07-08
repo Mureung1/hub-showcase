@@ -1,6 +1,4 @@
-<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
-
-# LocalTwin Evaluation Log
+﻿# LocalTwin Evaluation Log
 
 작업별 평가 결과를 기록한다.
 

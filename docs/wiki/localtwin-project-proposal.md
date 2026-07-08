@@ -1,6 +1,4 @@
-<sub>[Wiki Home](./doc-viewer.html?doc=Home.md) · [Knowledge Graph](./knowledge-graph.html)</sub>
-
-# LocalTwin 프로젝트 기획서
+﻿# LocalTwin 프로젝트 기획서
 
 ## 1. 한 줄 정의
 

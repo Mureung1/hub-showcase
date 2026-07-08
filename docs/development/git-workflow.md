@@ -1,6 +1,4 @@
-<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
-
-# Git 작업 규칙
+﻿# Git 작업 규칙
 
 ## 1. 원칙
 

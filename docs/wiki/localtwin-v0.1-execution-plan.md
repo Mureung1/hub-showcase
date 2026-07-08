@@ -1,6 +1,4 @@
-<sub>[Wiki Home](./doc-viewer.html?doc=Home.md) · [Knowledge Graph](./knowledge-graph.html)</sub>
-
-# LocalTwin v0.1 전체 실행 계획
+﻿# LocalTwin v0.1 전체 실행 계획
 
 이 문서는 GitHub Wiki에 올리기 위한 LocalTwin v0.1 실행 계획이다.
 

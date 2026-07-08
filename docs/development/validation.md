@@ -1,6 +1,4 @@
-<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
-
-# LocalTwin Validation Guide
+﻿# LocalTwin Validation Guide
 
 이 문서는 LocalTwin 개발 중 어떤 검증을 수행해야 하는지 정의한다.
 

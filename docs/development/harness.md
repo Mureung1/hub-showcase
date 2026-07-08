@@ -1,6 +1,4 @@
-<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
-
-# LocalTwin Dev Harness
+﻿# LocalTwin Dev Harness
 
 이 문서는 LocalTwin 제품 기능이 아니라 LocalTwin을 개발하는 과정에서 사용하는 개발 운영 하네스를 정의한다.
 

@@ -1,6 +1,4 @@
-<sub>[Wiki Home](../wiki/doc-viewer.html?doc=Home.md) · [Knowledge Graph](../wiki/knowledge-graph.html)</sub>
-
-# LocalTwin v0.1 전체 개발문서
+﻿# LocalTwin v0.1 전체 개발문서
 
 ## 1. 제품 정의
 
