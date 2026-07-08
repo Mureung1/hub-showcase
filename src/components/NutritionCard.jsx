@@ -1,21 +1,23 @@
 import Card from './Card.jsx'
+import { NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
 
-// max는 진단(RDA) 값이 아니라, 막대 시각화를 위한 "한 끼 기준" 참고 상한값이다.
-const NUTRIENT_LABELS = [
-  { key: 'calories', label: '열량', unit: 'kcal', max: 900 },
-  { key: 'protein', label: '단백질', unit: 'g', max: 40 },
-  { key: 'carbs', label: '탄수화물', unit: 'g', max: 100 },
-  { key: 'fat', label: '지방', unit: 'g', max: 35 },
-  { key: 'fiber', label: '식이섬유', unit: 'g', max: 15 },
-  { key: 'sodium', label: '나트륨', unit: 'mg', max: 2000 },
-]
+// 막대 시각화를 위한 "한 끼 기준" 참고 상한값(진단 RDA가 아님). 이 컴포넌트 전용 표시 스케일이라 로컬로 둔다.
+const BAR_MAX = {
+  calories: 900,
+  protein: 40,
+  carbs: 100,
+  fat: 35,
+  fiber: 15,
+  sodium: 2000,
+}
 
 function NutrientBars({ nutrients }) {
   return (
     <div>
-      {NUTRIENT_LABELS.map(({ key, label, unit, max }) => {
+      {NUTRIENT_LABELS.map(({ key, label, unit }) => {
         const value = nutrients[key]
+        const max = BAR_MAX[key]
         const percent = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0
 
         return (

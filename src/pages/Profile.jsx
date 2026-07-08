@@ -5,7 +5,7 @@ import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import TextField from '../components/TextField.jsx'
-import { calcRecommendedNutrients } from '../lib/nutrition.js'
+import { calcRecommendedNutrients, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 const CONDITION_OPTIONS = [
@@ -23,15 +23,6 @@ const ACTIVITY_OPTIONS = [
   { key: 'low', label: '낮음' },
   { key: 'moderate', label: '보통' },
   { key: 'high', label: '높음' },
-]
-
-const NUTRIENT_LABELS = [
-  { key: 'calories', label: '칼로리', unit: 'kcal' },
-  { key: 'protein', label: '단백질', unit: 'g' },
-  { key: 'carbs', label: '탄수화물', unit: 'g' },
-  { key: 'fat', label: '지방', unit: 'g' },
-  { key: 'fiber', label: '식이섬유', unit: 'g' },
-  { key: 'sodium', label: '나트륨', unit: 'mg' },
 ]
 
 function SegmentedControl({ label, options, value, onChange }) {

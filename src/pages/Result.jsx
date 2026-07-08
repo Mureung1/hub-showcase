@@ -9,16 +9,8 @@ import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
+import { calcAchievementPercent, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
-
-const NUTRIENT_LABELS = [
-  { key: 'calories', label: '칼로리', unit: 'kcal' },
-  { key: 'protein', label: '단백질', unit: 'g' },
-  { key: 'carbs', label: '탄수화물', unit: 'g' },
-  { key: 'fat', label: '지방', unit: 'g' },
-  { key: 'fiber', label: '식이섬유', unit: 'g' },
-  { key: 'sodium', label: '나트륨', unit: 'mg' },
-]
 
 function buildRecommendationPrompt(deficientRows) {
   const nutrientText = deficientRows.map((row) => `${row.label} 약 ${row.deficiency}${row.unit} 부족`).join(', ')
@@ -108,11 +100,10 @@ export default function Result() {
   )
   const top3DeficientKeys = useMemo(() => top3Rows.map((row) => row.key), [top3Rows])
 
-  const achievementPercent = useMemo(() => {
-    if (rows.length === 0) return 0
-    const sum = rows.reduce((acc, row) => acc + Math.min(1, row.recommended > 0 ? row.actual / row.recommended : 0), 0)
-    return Math.round((sum / rows.length) * 100)
-  }, [rows])
+  const achievementPercent = useMemo(
+    () => calcAchievementPercent(recommended, todayTotal),
+    [recommended, todayTotal],
+  )
 
   const [recommendations, setRecommendations] = useState(null)
   const [recLoading, setRecLoading] = useState(false)

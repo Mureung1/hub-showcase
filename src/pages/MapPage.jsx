@@ -10,16 +10,8 @@ import Spinner from '../components/Spinner.jsx'
 import { geminiComplete } from '../lib/gemini.js'
 import { getCurrentPosition } from '../lib/geolocation.js'
 import { searchPlaces } from '../lib/kakao.js'
+import { NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { spacing, styles } from '../styles/theme.js'
-
-const NUTRIENT_LABELS = [
-  { key: 'calories', label: '칼로리', unit: 'kcal' },
-  { key: 'protein', label: '단백질', unit: 'g' },
-  { key: 'carbs', label: '탄수화물', unit: 'g' },
-  { key: 'fat', label: '지방', unit: 'g' },
-  { key: 'fiber', label: '식이섬유', unit: 'g' },
-  { key: 'sodium', label: '나트륨', unit: 'mg' },
-]
 
 const FALLBACK_SEARCH_KEYWORD = '백반'
 

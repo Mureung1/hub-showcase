@@ -25,7 +25,17 @@ const FIBER_G = {
 
 const SODIUM_LIMIT_MG = 2000
 
-const NUTRIENT_KEYS = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium']
+// 6대 영양소 표시 정보(키/라벨/단위) 단일 소스. 화면에서 이 순서/라벨/단위를 공통으로 사용한다.
+export const NUTRIENT_LABELS = [
+  { key: 'calories', label: '칼로리', unit: 'kcal' },
+  { key: 'protein', label: '단백질', unit: 'g' },
+  { key: 'carbs', label: '탄수화물', unit: 'g' },
+  { key: 'fat', label: '지방', unit: 'g' },
+  { key: 'fiber', label: '식이섬유', unit: 'g' },
+  { key: 'sodium', label: '나트륨', unit: 'mg' },
+]
+
+const NUTRIENT_KEYS = NUTRIENT_LABELS.map((n) => n.key)
 
 export function isNutrientSet(value) {
   return Boolean(value) && typeof value === 'object' && NUTRIENT_KEYS.every((key) => typeof value[key] === 'number')
@@ -77,9 +87,6 @@ export function calcRecommendedNutrients({ age, heightCm, weightKg, sex, activit
     fiber: FIBER_G[sex] ?? FIBER_G.female,
     sodium: SODIUM_LIMIT_MG,
   }
-
-  // TODO: 검증용 임시 로그 - 확인 후 제거 가능
-  console.log('[nutrition] bmr:', Math.round(bmr), 'tdee:', Math.round(tdee), 'recommended:', recommended)
 
   return recommended
 }
