@@ -34,7 +34,7 @@ const initialCategories: Category[] = [
   { id: 'study', name: '공부', color: '#98bce7', tone: 'blue', visibleTo: ['스터디'] },
   { id: 'exercise', name: '운동', color: '#f2a58d', tone: 'coral', visibleTo: ['절친'] },
   { id: 'appointment', name: '약속', color: '#b8a6de', tone: 'violet', visibleTo: ['절친', '커플'] },
-  { id: 'personal', name: '개인', color: '#8fbdab', tone: 'green', visibleTo: [] },
+  { id: 'personal', name: '기타', color: '#8fbdab', tone: 'green', visibleTo: [] },
 ]
 
 const shareGroups: ShareGroup[] = ['절친', '스터디', '가족', '커플']
