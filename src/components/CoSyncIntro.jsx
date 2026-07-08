@@ -1,16 +1,5 @@
-import CoSyncIntro from "./components/CoSyncIntro";
-
-function App() {
-  return <CoSyncIntro />;
-}
-
-export default App;
-
 import { useState } from "react";
 
-}
-
-export default App;
 /**
  * CoSyncIntro
  * "협업 및 모임 도움 에이전트" 프로젝트 소개 컴포넌트.
