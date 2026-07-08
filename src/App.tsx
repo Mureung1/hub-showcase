@@ -1,20 +1,35 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { Button } from '@wanteddev/wds';
 import './App.css';
 
 type Tab = 'library' | 'home' | 'save';
-
 type CategoryTone = 'blue' | 'green' | 'amber' | 'rose' | 'slate';
+
+type Category = {
+  name: string;
+  tone: CategoryTone;
+};
 
 type Insight = {
   id: number;
   title: string;
   domain: string;
   memo?: string;
-  categories: Array<{ name: string; tone: CategoryTone }>;
+  categories: Category[];
   thumbnail: string;
   url: string;
 };
+
+const categoryFilters: Array<Category & { icon: string }> = [
+  { name: 'All', tone: 'slate', icon: 'A' },
+  { name: '개발', tone: 'green', icon: 'D' },
+  { name: '디자인', tone: 'blue', icon: 'U' },
+  { name: '팀프로젝트', tone: 'amber', icon: 'T' },
+  { name: '공부', tone: 'slate', icon: 'S' },
+  { name: '취업', tone: 'rose', icon: 'C' },
+  { name: '미분류', tone: 'slate', icon: '-' },
+];
 
 const initialInsights: Insight[] = [
   {
@@ -24,7 +39,7 @@ const initialInsights: Insight[] = [
     memo: '관심 분야 선택 화면 만들 때 참고하기',
     categories: [
       { name: '디자인', tone: 'blue' },
-      { name: '온보딩', tone: 'green' },
+      { name: '공부', tone: 'slate' },
     ],
     thumbnail: 'UX',
     url: '#',
@@ -36,7 +51,7 @@ const initialInsights: Insight[] = [
     memo: '사용자별 보관함 분리 확인 체크리스트',
     categories: [
       { name: '개발', tone: 'green' },
-      { name: '보안', tone: 'rose' },
+      { name: '공부', tone: 'slate' },
     ],
     thumbnail: 'DB',
     url: '#',
@@ -48,7 +63,7 @@ const initialInsights: Insight[] = [
     memo: '데모데이 발표 흐름 정리할 때 다시 보기',
     categories: [
       { name: '팀프로젝트', tone: 'amber' },
-      { name: '기획', tone: 'slate' },
+      { name: '공부', tone: 'slate' },
     ],
     thumbnail: 'PM',
     url: '#',
@@ -81,20 +96,20 @@ const initialInsights: Insight[] = [
   },
 ];
 
-const tabs: Array<{ id: Tab; label: string }> = [
-  { id: 'library', label: '보관함' },
-  { id: 'home', label: '홈' },
-  { id: 'save', label: '저장' },
+const tabs: Array<{ id: Tab; label: string; icon: string }> = [
+  { id: 'library', label: '보관함', icon: '□' },
+  { id: 'home', label: '홈', icon: '+' },
+  { id: 'save', label: '저장', icon: '↗' },
 ];
 
-const categoryFilters = ['All', '개발', '디자인', '팀프로젝트', '미분류'];
 const suggestedSituations = [
   '팀 프로젝트 앱 디자인 참고',
   '개발 공부 정리',
   '온보딩 화면 만들기',
   '취업 포트폴리오 준비',
 ];
-const suggestedCategories: Array<{ name: string; tone: CategoryTone }> = [
+
+const suggestedCategories: Category[] = [
   { name: '개발', tone: 'green' },
   { name: '디자인', tone: 'blue' },
   { name: '공부', tone: 'amber' },
@@ -102,77 +117,34 @@ const suggestedCategories: Array<{ name: string; tone: CategoryTone }> = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [activeTab, setActiveTab] = useState<Tab>('library');
   const [insights, setInsights] = useState(initialInsights);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [globalQuery, setGlobalQuery] = useState('');
   const [retrieveQuery, setRetrieveQuery] =
     useState('팀 프로젝트 앱 디자인 참고');
   const [selectedSituation, setSelectedSituation] = useState(
     suggestedSituations[0]
   );
-  const [hasRetrieved, setHasRetrieved] = useState(true);
-  const [libraryQuery, setLibraryQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
   const [saveUrl, setSaveUrl] = useState('');
   const [saveComplete, setSaveComplete] = useState(false);
 
+  const visibleInsights = useMemo(() => {
+    return filterInsights(insights, activeCategory, globalQuery);
+  }, [activeCategory, globalQuery, insights]);
+
   const retrieveResults = useMemo(() => {
-    const normalized = `${retrieveQuery} ${selectedSituation}`
-      .trim()
-      .toLowerCase();
-    if (!normalized) {
-      return insights.slice(0, 3);
-    }
-
-    return insights
-      .filter((insight) => {
-        const haystack = [
-          insight.title,
-          insight.domain,
-          insight.memo ?? '',
-          ...insight.categories.map((category) => category.name),
-        ]
-          .join(' ')
-          .toLowerCase();
-
-        return normalized
-          .split(/\s+/)
-          .filter(Boolean)
-          .some((token) => haystack.includes(token));
-      })
-      .slice(0, 6);
+    const query = `${retrieveQuery} ${selectedSituation}`.trim();
+    return filterInsights(insights, 'All', query).slice(0, 6);
   }, [insights, retrieveQuery, selectedSituation]);
-
-  const libraryInsights = useMemo(() => {
-    const normalized = libraryQuery.trim().toLowerCase();
-
-    return insights.filter((insight) => {
-      const matchesCategory =
-        activeCategory === 'All' ||
-        (activeCategory === '미분류' && insight.categories.length === 0) ||
-        insight.categories.some((category) => category.name === activeCategory);
-
-      const haystack = [
-        insight.title,
-        insight.domain,
-        insight.memo ?? '',
-        ...insight.categories.map((category) => category.name),
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      return matchesCategory && (!normalized || haystack.includes(normalized));
-    });
-  }, [activeCategory, insights, libraryQuery]);
-
-  function handleRetrieve(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setHasRetrieved(true);
-  }
 
   function handleSituationClick(situation: string) {
     setSelectedSituation(situation);
     setRetrieveQuery(situation);
-    setHasRetrieved(true);
+  }
+
+  function handleRetrieve(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
   }
 
   function handleSave(event: FormEvent<HTMLFormElement>) {
@@ -194,32 +166,58 @@ export default function App() {
       },
       ...current,
     ]);
+    setActiveCategory('All');
     setSaveComplete(true);
   }
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">아맞다</p>
-          <h1>{getScreenTitle(activeTab)}</h1>
+    <div className="workspace">
+      <header className="workspace-header">
+        <div className="identity">
+          <div className="avatar" aria-hidden="true">
+            아
+          </div>
+          <div>
+            <p className="eyebrow">Amadda Space</p>
+            <h1>{getScreenTitle(activeTab)}</h1>
+          </div>
         </div>
-        <button
-          className="profile-button"
-          type="button"
-          aria-label="프로필 메뉴 열기"
-        >
-          최
+        <button className="pro-button" type="button">
+          Google 연결됨
         </button>
       </header>
 
-      <main
-        className="app-main"
-        aria-label={`${getScreenTitle(activeTab)} 화면`}
-      >
+      <CategoryRail
+        activeCategory={activeCategory}
+        setActiveCategory={setActiveCategory}
+      />
+
+      <SearchBand
+        query={globalQuery}
+        setQuery={setGlobalQuery}
+        activeTab={activeTab}
+      />
+
+      <TipBanner activeTab={activeTab} activeCategory={activeCategory} />
+
+      <main className="board" aria-label={`${getScreenTitle(activeTab)} 화면`}>
+        <div className="board-action">
+          <button className="share-button" type="button">
+            공유
+          </button>
+        </div>
+
+        {activeTab === 'library' && (
+          <LibraryBoard
+            activeCategory={activeCategory}
+            insights={visibleInsights}
+            setActiveCategory={setActiveCategory}
+            setActiveTab={setActiveTab}
+          />
+        )}
+
         {activeTab === 'home' && (
-          <HomeView
-            hasRetrieved={hasRetrieved}
+          <HomeBoard
             query={retrieveQuery}
             results={retrieveResults}
             selectedSituation={selectedSituation}
@@ -228,17 +226,9 @@ export default function App() {
             onSituationClick={handleSituationClick}
           />
         )}
-        {activeTab === 'library' && (
-          <LibraryView
-            activeCategory={activeCategory}
-            insights={libraryInsights}
-            query={libraryQuery}
-            setActiveCategory={setActiveCategory}
-            setQuery={setLibraryQuery}
-          />
-        )}
+
         {activeTab === 'save' && (
-          <SaveView
+          <SaveBoard
             saveComplete={saveComplete}
             saveUrl={saveUrl}
             setSaveComplete={setSaveComplete}
@@ -248,25 +238,159 @@ export default function App() {
         )}
       </main>
 
-      <nav className="bottom-nav" aria-label="주요 화면">
-        {tabs.map((tab) => (
-          <button
-            aria-current={activeTab === tab.id ? 'page' : undefined}
-            className="nav-item"
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            type="button"
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
 }
 
-function HomeView({
-  hasRetrieved,
+function CategoryRail({
+  activeCategory,
+  setActiveCategory,
+}: {
+  activeCategory: string;
+  setActiveCategory: (category: string) => void;
+}) {
+  return (
+    <nav className="category-rail" aria-label="카테고리 필터">
+      <button className="rail-icon-button" type="button" aria-label="보기 방식">
+        <span aria-hidden="true">▦</span>
+      </button>
+      <div className="category-scroll">
+        {categoryFilters.map((category) => (
+          <button
+            aria-pressed={activeCategory === category.name}
+            className="category-tab"
+            key={category.name}
+            onClick={() => setActiveCategory(category.name)}
+            type="button"
+          >
+            <span className={`mini-mark mark-${category.tone}`}>
+              {category.icon}
+            </span>
+            <span>{category.name}</span>
+          </button>
+        ))}
+      </div>
+      <button
+        className="rail-icon-button"
+        type="button"
+        aria-label="카테고리 추가"
+      >
+        <span aria-hidden="true">＋</span>
+      </button>
+    </nav>
+  );
+}
+
+function SearchBand({
+  activeTab,
+  query,
+  setQuery,
+}: {
+  activeTab: Tab;
+  query: string;
+  setQuery: (value: string) => void;
+}) {
+  const placeholder =
+    activeTab === 'home'
+      ? '꺼내보고 싶은 상황, 제목, 메모 검색'
+      : '제목, 메모, 카테고리 검색';
+
+  return (
+    <section className="search-band" aria-label="검색">
+      <label className="visually-hidden" htmlFor="global-search">
+        검색
+      </label>
+      <div className="search-field">
+        <span aria-hidden="true">⌕</span>
+        <input
+          id="global-search"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={placeholder}
+          value={query}
+        />
+      </div>
+      <button className="filter-button" type="button" aria-label="필터 설정">
+        ≡
+      </button>
+    </section>
+  );
+}
+
+function TipBanner({
+  activeCategory,
+  activeTab,
+}: {
+  activeCategory: string;
+  activeTab: Tab;
+}) {
+  const message =
+    activeTab === 'library'
+      ? `${activeCategory} 필터와 검색으로 저장한 링크를 빠르게 찾을 수 있어요.`
+      : activeTab === 'home'
+        ? '현재 상황을 입력하면 저장해둔 인사이트를 다시 꺼내볼 수 있어요.'
+        : 'URL만 저장해도 보관함에 먼저 들어가고, 정리는 나중에 해도 괜찮아요.';
+
+  return (
+    <aside className="tip-banner" aria-label="화면 안내">
+      <div className="tip-icon" aria-hidden="true">
+        i
+      </div>
+      <div>
+        <strong>
+          {activeTab === 'library'
+            ? '필터로 빠르게 찾기'
+            : getScreenTitle(activeTab)}
+        </strong>
+        <p>{message}</p>
+      </div>
+      <button type="button" aria-label="안내 닫기">
+        ×
+      </button>
+    </aside>
+  );
+}
+
+function LibraryBoard({
+  activeCategory,
+  insights,
+  setActiveCategory,
+  setActiveTab,
+}: {
+  activeCategory: string;
+  insights: Insight[];
+  setActiveCategory: (category: string) => void;
+  setActiveTab: (tab: Tab) => void;
+}) {
+  return (
+    <section className="board-content" aria-labelledby="library-title">
+      <div className="board-heading">
+        <div>
+          <p className="eyebrow">최신 저장순</p>
+          <h2 id="library-title">
+            {activeCategory === 'All' ? '전체 인사이트' : activeCategory}
+          </h2>
+        </div>
+        <span>{insights.length}개</span>
+      </div>
+
+      {insights.length > 0 ? (
+        <InsightGrid insights={insights} />
+      ) : (
+        <EmptyState
+          actionLabel="전체 보기"
+          description="저장한 링크가 없거나 조건에 맞는 인사이트가 없습니다. 다른 카테고리로 바꾸거나 새 링크를 저장해보세요."
+          title="저장된 링크가 없어요"
+          onAction={() => setActiveCategory('All')}
+          secondaryActionLabel="링크 저장"
+          onSecondaryAction={() => setActiveTab('save')}
+        />
+      )}
+    </section>
+  );
+}
+
+function HomeBoard({
   query,
   results,
   selectedSituation,
@@ -274,7 +398,6 @@ function HomeView({
   onRetrieve,
   onSituationClick,
 }: {
-  hasRetrieved: boolean;
   query: string;
   results: Insight[];
   selectedSituation: string;
@@ -283,33 +406,33 @@ function HomeView({
   onSituationClick: (situation: string) => void;
 }) {
   return (
-    <>
-      <section className="retrieve-panel" aria-labelledby="retrieve-title">
-        <div className="section-heading">
+    <section className="home-board" aria-labelledby="retrieve-title">
+      <div className="retrieve-command">
+        <div>
           <p className="eyebrow">꺼내보기</p>
           <h2 id="retrieve-title">지금 하려는 일에 맞는 인사이트를 찾아요</h2>
         </div>
 
         <form className="retrieve-form" onSubmit={onRetrieve}>
           <label htmlFor="retrieve-query">현재 상황</label>
-          <div className="input-action-row">
+          <div className="retrieve-row">
             <input
               id="retrieve-query"
               onChange={(event) => setQuery(event.target.value)}
               placeholder="예: 팀 프로젝트 앱 디자인 참고"
               value={query}
             />
-            <button className="button button-primary" type="submit">
+            <Button color="primary" size="medium" type="submit" variant="solid">
               꺼내보기
-            </button>
+            </Button>
           </div>
         </form>
 
-        <div className="chip-row" aria-label="추천 상황">
+        <div className="situation-row" aria-label="추천 상황">
           {suggestedSituations.map((situation) => (
             <button
               aria-pressed={selectedSituation === situation}
-              className="chip chip-situation"
+              className="suggestion-chip"
               key={situation}
               onClick={() => onSituationClick(situation)}
               type="button"
@@ -318,107 +441,30 @@ function HomeView({
             </button>
           ))}
         </div>
-      </section>
+      </div>
 
-      <section
-        className="content-section"
-        aria-labelledby="retrieve-results-title"
-      >
-        <div className="section-heading section-heading-inline">
-          <div>
-            <p className="eyebrow">추천 결과</p>
-            <h2 id="retrieve-results-title">다시 볼 만한 인사이트</h2>
-          </div>
-          <span className="result-count">{results.length}개</span>
+      <div className="board-heading">
+        <div>
+          <p className="eyebrow">추천 결과</p>
+          <h2>다시 볼 만한 인사이트</h2>
         </div>
+        <span>{results.length}개</span>
+      </div>
 
-        {hasRetrieved && results.length > 0 ? (
-          <InsightGrid insights={results} />
-        ) : (
-          <EmptyState
-            action="보관함으로 이동"
-            description="먼저 인사이트를 저장하면 현재 상황에 맞춰 다시 꺼내볼 수 있습니다."
-            title="꺼내볼 인사이트가 아직 없어요"
-          />
-        )}
-      </section>
-
-      <section className="content-section" aria-labelledby="recent-title">
-        <div className="section-heading">
-          <p className="eyebrow">최근 보관함</p>
-          <h2 id="recent-title">방금 저장해둔 자료</h2>
-        </div>
-        <InsightGrid insights={initialInsights.slice(0, 3)} />
-      </section>
-    </>
+      {results.length > 0 ? (
+        <InsightGrid insights={results} />
+      ) : (
+        <EmptyState
+          actionLabel="보관함 보기"
+          description="먼저 인사이트를 저장하면 현재 상황에 맞춰 다시 꺼내볼 수 있습니다."
+          title="꺼내볼 인사이트가 아직 없어요"
+        />
+      )}
+    </section>
   );
 }
 
-function LibraryView({
-  activeCategory,
-  insights,
-  query,
-  setActiveCategory,
-  setQuery,
-}: {
-  activeCategory: string;
-  insights: Insight[];
-  query: string;
-  setActiveCategory: (category: string) => void;
-  setQuery: (value: string) => void;
-}) {
-  return (
-    <>
-      <section className="toolbar" aria-label="보관함 필터">
-        <div className="field">
-          <label htmlFor="library-search">검색</label>
-          <input
-            id="library-search"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="제목, 메모, 카테고리 검색"
-            value={query}
-          />
-        </div>
-
-        <div className="chip-row" aria-label="카테고리 필터">
-          {categoryFilters.map((category) => (
-            <button
-              aria-pressed={activeCategory === category}
-              className="chip chip-filter"
-              key={category}
-              onClick={() => setActiveCategory(category)}
-              type="button"
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="content-section" aria-labelledby="library-title">
-        <div className="section-heading section-heading-inline">
-          <div>
-            <p className="eyebrow">최신 저장순</p>
-            <h2 id="library-title">내 인사이트</h2>
-          </div>
-          <span className="result-count">{insights.length}개</span>
-        </div>
-
-        {insights.length > 0 ? (
-          <InsightGrid insights={insights} />
-        ) : (
-          <EmptyState
-            action="검색 초기화"
-            description="검색어나 카테고리 필터를 바꾸면 저장한 자료를 다시 볼 수 있습니다."
-            title="조건에 맞는 인사이트가 없어요"
-          />
-        )}
-      </section>
-    </>
-  );
-}
-
-function SaveView({
+function SaveBoard({
   saveComplete,
   saveUrl,
   setSaveComplete,
@@ -432,37 +478,47 @@ function SaveView({
   onSave: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
-    <section className="save-panel" aria-labelledby="save-title">
-      <div className="section-heading">
+    <section className="save-board" aria-labelledby="save-title">
+      <div className="save-card">
         <p className="eyebrow">링크 저장</p>
         <h2 id="save-title">URL만 넣고 바로 보관해요</h2>
+        <p>
+          저장 전 미리보기 없이 먼저 보관하고, 카테고리와 메모는 선택적으로
+          남깁니다.
+        </p>
+
+        <form className="save-form" onSubmit={onSave}>
+          <label htmlFor="save-url">링크 URL</label>
+          <input
+            id="save-url"
+            onChange={(event) => {
+              setSaveUrl(event.target.value);
+              setSaveComplete(false);
+            }}
+            placeholder="https://example.com/article"
+            type="url"
+            value={saveUrl}
+          />
+          <Button
+            color="primary"
+            fullWidth
+            size="medium"
+            type="submit"
+            variant="solid"
+          >
+            저장하기
+          </Button>
+        </form>
       </div>
 
-      <form className="save-form" onSubmit={onSave}>
-        <label htmlFor="save-url">링크 URL</label>
-        <input
-          id="save-url"
-          onChange={(event) => {
-            setSaveUrl(event.target.value);
-            setSaveComplete(false);
-          }}
-          placeholder="https://example.com/article"
-          type="url"
-          value={saveUrl}
-        />
-        <button className="button button-primary" type="submit">
-          저장하기
-        </button>
-      </form>
-
       {saveComplete ? (
-        <div className="save-result" role="status">
+        <div className="save-followup" role="status">
           <strong>저장 완료</strong>
-          <p>카테고리와 메모는 선택 사항입니다.</p>
-          <div className="chip-row" aria-label="추천 카테고리">
+          <p>필요하면 카테고리와 메모를 가볍게 붙여두세요.</p>
+          <div className="situation-row" aria-label="추천 카테고리">
             {suggestedCategories.map((category) => (
               <button
-                className={`chip chip-${category.tone}`}
+                className={`suggestion-chip chip-${category.tone}`}
                 key={category.name}
                 type="button"
               >
@@ -476,17 +532,16 @@ function SaveView({
             placeholder="나중에 왜 다시 볼지 짧게 남겨두기"
             rows={3}
           />
-          <button className="button button-secondary" type="button">
+          <Button
+            color="primary"
+            size="medium"
+            type="button"
+            variant="outlined"
+          >
             그냥 저장
-          </button>
+          </Button>
         </div>
-      ) : (
-        <EmptyState
-          action="URL 붙여넣기"
-          description="저장 후 메타데이터를 불러오고, 카테고리와 메모를 가볍게 제안합니다."
-          title="링크 하나로 시작해요"
-        />
-      )}
+      ) : null}
     </section>
   );
 }
@@ -526,23 +581,119 @@ function InsightGrid({ insights }: { insights: Insight[] }) {
 }
 
 function EmptyState({
-  action,
+  actionLabel,
   description,
+  onAction,
+  onSecondaryAction,
+  secondaryActionLabel,
   title,
 }: {
-  action: string;
+  actionLabel: string;
   description: string;
+  onAction?: () => void;
+  onSecondaryAction?: () => void;
+  secondaryActionLabel?: string;
   title: string;
 }) {
   return (
     <div className="empty-state">
+      <div className="empty-art" aria-hidden="true">
+        <span />
+        <i />
+      </div>
       <strong>{title}</strong>
       <p>{description}</p>
-      <button className="button button-ghost" type="button">
-        {action}
-      </button>
+      <div className="empty-actions">
+        <Button
+          color="primary"
+          onClick={onAction}
+          size="medium"
+          type="button"
+          variant="solid"
+        >
+          {actionLabel}
+        </Button>
+        {secondaryActionLabel ? (
+          <Button
+            color="primary"
+            onClick={onSecondaryAction}
+            size="medium"
+            type="button"
+            variant="outlined"
+          >
+            {secondaryActionLabel}
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
+}
+
+function BottomNav({
+  activeTab,
+  setActiveTab,
+}: {
+  activeTab: Tab;
+  setActiveTab: (tab: Tab) => void;
+}) {
+  return (
+    <nav className="bottom-nav" aria-label="주요 화면">
+      {tabs.map((tab) => (
+        <button
+          aria-current={activeTab === tab.id ? 'page' : undefined}
+          className="nav-item"
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          type="button"
+        >
+          <span aria-hidden="true">{tab.icon}</span>
+          <span>{tab.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function filterInsights(insights: Insight[], category: string, query: string) {
+  const normalized = query.trim().toLowerCase();
+  const queryTokens = Array.from(
+    new Set(normalized.split(/\s+/).filter(Boolean))
+  );
+
+  return insights
+    .map((insight, index) => {
+      const matchesCategory =
+        category === 'All' ||
+        (category === '미분류' && insight.categories.length === 0) ||
+        insight.categories.some((item) => item.name === category);
+
+      const haystack = [
+        insight.title,
+        insight.domain,
+        insight.memo ?? '',
+        ...insight.categories.map((item) => item.name),
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      const score = queryTokens.reduce(
+        (total, token) => total + (haystack.includes(token) ? 1 : 0),
+        0
+      );
+
+      return { index, insight, matchesCategory, score };
+    })
+    .filter(({ matchesCategory, score }) => {
+      return matchesCategory && (queryTokens.length === 0 || score > 0);
+    })
+    .sort((current, next) => {
+      if (queryTokens.length === 0) {
+        return current.index - next.index;
+      }
+
+      return next.score - current.score || current.index - next.index;
+    })
+    .map(({ insight }) => insight);
 }
 
 function getScreenTitle(tab: Tab) {
