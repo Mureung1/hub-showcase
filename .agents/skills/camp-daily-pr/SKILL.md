@@ -1,12 +1,12 @@
 ---
 name: camp-daily-pr
-description: Create an agent-written local daily integration PR from codex/MMDD to N180_하성욱, then interview only for the camp submission PR that uses .github/pull_request_template.md.
+description: Create an agent-written local daily integration PR from the current codex/w<week>d<day> branch to N180_하성욱, then interview only for the camp submission PR that uses .github/pull_request_template.md.
 disable-model-invocation: true
 ---
 
 # Camp Daily PR
 
-Create the local daily integration PR from `codex/MMDD` to `N180_하성욱`, then verify or create the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱`.
+Create the local daily integration PR from the current `codex/w<week>d<day>` branch to `N180_하성욱`, then verify or create the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱`.
 
 Do not stop after creating the fork daily PR. The final camp submission surface is the upstream PR. Do not merge PRs as part of this skill unless the user gives a separate explicit merge instruction.
 
@@ -17,14 +17,14 @@ Use different body conventions for the two PRs:
 | Daily integration PR | Local/Matt-style work brief: `Summary`, `Key Changes`, `Verification`, `Risks / Follow-ups`, and links to PRDs, issues, spike reports, or handoffs. |
 | Upstream camp submission PR | `.github/pull_request_template.md` exactly, including `주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, and `새로 알게 된 것`. |
 
-Keep branch names and camp labels separate:
+Use the camp week/day as the daily branch identity:
 
 | Concern | Convention |
 | --- | --- |
-| Daily work branch | Keep using date-based `codex/MMDD`, for example `codex/0709`. This is the operational branch and should remain easy to match to the calendar day and local history. |
-| Camp mission labels | Use the camp-provided week/day labels, for example `[1-3] 기획완성`, `[1-3] 프로토타이핑`, or `[1-4] design-system`. Labels describe the submitted mission category, not the branch identity. |
+| Daily work branch | Use `codex/w<week>d<day>`, for example `codex/w1d4`. This mirrors the camp mission day while keeping the branch ASCII and CLI-friendly. |
+| Camp mission labels | Use the camp-provided labels with the same week/day prefix, for example `[1-3] 기획완성`, `[1-3] 프로토타이핑`, or `[1-4] design-system`. Labels describe the submitted mission category on PRs. |
 
-When creating or updating PRs, discover available labels before writing the PR and apply the relevant camp labels. Prefer labels whose bracket prefix matches the current mission day, such as `[1-4]` for week 1 day 4. If multiple labels for that day are relevant, apply all of them. If the correct label is unclear and the user is not available, choose the smallest set that matches the changed work and state the assumption in the final report.
+When creating or updating PRs, discover available labels before writing the PR and apply the relevant camp labels. Prefer labels whose bracket prefix matches the current daily branch, such as `[1-4]` for `codex/w1d4`. If multiple labels for that day are relevant, apply all of them. If the correct label is unclear and the user is not available, choose the smallest set that matches the changed work and state the assumption in the final report.
 
 ## Process
 
@@ -34,9 +34,9 @@ Read `AGENTS.md` and `docs/agents/issue-tracker.md`. Read `.github/pull_request_
 
 Determine the daily branch without asking for confirmation:
 
-- Prefer the current branch when it matches `codex/MMDD`.
+- Prefer the current branch when it matches `codex/w<week>d<day>`, such as `codex/w1d4`.
 - Otherwise use the branch the user named.
-- If neither is available, infer the most likely local `codex/MMDD` branch.
+- If neither is available, infer the most likely local `codex/w<week>d<day>` branch.
 - If multiple branches are equally likely, stop and report the ambiguity instead of guessing.
 
 Stop before PR work if:
@@ -58,8 +58,8 @@ Check the current camp labels:
 
 Inspect the daily branch against `N180_하성욱`:
 
-- `git log --oneline N180_하성욱..codex/MMDD`
-- `git diff --name-status N180_하성욱...codex/MMDD`
+- `git log --oneline N180_하성욱..<daily-branch>`
+- `git diff --name-status N180_하성욱...<daily-branch>`
 - Relevant existing work PR bodies, spike reports, PRDs, issues, handoff docs, and ADRs referenced by the commits or changed files
 
 Use this material to draft candidate PR content, but do not create the PR yet.
@@ -84,10 +84,10 @@ Do not ask the user to approve the daily PR body. The daily PR is an agent-writt
 
 Push the daily branch to `fork`.
 
-Check for an existing open PR from `swh3467:codex/MMDD` to `swh3467:N180_하성욱`.
+Check for an existing open PR from `swh3467:<daily-branch>` to `swh3467:N180_하성욱`.
 
 - If one exists, update its title and body with the agent-written daily PR content.
-- If none exists, create a PR with base `N180_하성욱` and head `codex/MMDD`.
+- If none exists, create a PR with base `N180_하성욱` and head `<daily-branch>`.
 
 Apply the relevant camp labels to the daily PR after it exists. These labels are review metadata only; do not force camp reflection content into the daily PR body.
 
@@ -97,13 +97,13 @@ After the PR exists, keep its URL for the final report. Do not treat this fork P
 
 Fetch `fork` and `origin`, then check whether the daily branch is already contained in `fork/N180_하성욱`.
 
-- `git merge-base --is-ancestor codex/MMDD fork/N180_하성욱` succeeds.
+- `git merge-base --is-ancestor <daily-branch> fork/N180_하성욱` succeeds.
 
 If the daily branch is not contained in `fork/N180_하성욱`, do not claim that the latest daily work has been submitted. Report:
 
 - The daily PR URL
 - Whether an upstream submission PR already exists
-- That the upstream submission PR cannot include the latest daily work until `fork/N180_하성욱` contains `codex/MMDD`
+- That the upstream submission PR cannot include the latest daily work until `fork/N180_하성욱` contains `<daily-branch>`
 
 If the daily branch is contained in `fork/N180_하성욱`, check for an open upstream PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱`.
 

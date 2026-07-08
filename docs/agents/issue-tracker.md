@@ -2,12 +2,12 @@
 
 Issues and PRDs for this repo live in GitHub Issues. Pull requests are also a limited request and triage surface.
 
-This repo is PR-based, but implementation work should use the layered branch model in `AGENTS.md`, not `main` or the camp-facing branch as a working branch. The default working branch is the current daily branch, named `codex/MMDD` such as `codex/0707`.
+This repo is PR-based, but implementation work should use the layered branch model in `AGENTS.md`, not `main` or the camp-facing branch as a working branch. The default working branch is the current daily branch, named by camp week/day as `codex/w<week>d<day>`, such as `codex/w1d4`.
 
 | Branch level | Example | Role |
 | --- | --- | --- |
-| Daily work branch | `codex/0707` | Default branch for the day's implementation, docs, spikes, and internal merges. |
-| Individual work branch | `codex/runtime-ownership-spike-poc` | Optional branch for one feature, spike, fix, or document change before merging back to `codex/MMDD`. |
+| Daily work branch | `codex/w1d4` | Default branch for the camp day's implementation, docs, spikes, and internal merges. |
+| Individual work branch | `codex/runtime-ownership-spike-poc` | Optional branch for one feature, spike, fix, or document change before merging back to the current daily branch. |
 | Camp-facing personal branch | `N180_하성욱` | The participant's official branch for camp submission. |
 | Upstream target branch | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | The final upstream branch that receives submitted work. |
 
@@ -27,17 +27,17 @@ Internal work PRs should follow the branch flow in `AGENTS.md`:
 
 | Purpose | Base | Head |
 | --- | --- | --- |
-| Work-scoped review | `swh3467:codex/MMDD` | `swh3467:codex/<work>` |
-| Camp daily PR | `swh3467:N180_하성욱` | `swh3467:codex/MMDD` |
+| Work-scoped review | `swh3467:<daily-branch>` | `swh3467:codex/<work>` |
+| Camp daily PR | `swh3467:N180_하성욱` | `swh3467:<daily-branch>` |
 | Camp-facing submission PR | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | `swh3467:N180_하성욱` |
 
-Daily branches remain date-based (`codex/MMDD`). Camp labels are separate PR metadata that follow the upstream week/day mission names, for example `[1-3] 기획완성`, `[1-3] 프로토타이핑`, or `[1-4] design-system`.
+Daily branches use the camp week/day identity (`codex/w<week>d<day>`). Camp labels use the matching upstream week/day mission names, for example `[1-3] 기획완성`, `[1-3] 프로토타이핑`, or `[1-4] design-system`.
 
 When triaging PRs, read the PR body, comments, and diff. Use `gh pr view <number> --comments` and `gh pr diff <number>`.
 
 The workflow `.github/workflows/auto-merge.yml` is template-provided but active in the repo. It attempts scheduled PR merges, skips PRs targeting `main`, skips PRs with the GitHub `review` label, defers changes-requested PRs, and closes conflicting PRs. Treat the GitHub `review` label as an auto-merge control, not as an agent triage state.
 
-The PR template in `.github/pull_request_template.md` is the upstream camp submission template only. Create a `codex/MMDD` to `N180_하성욱` daily PR only through `/camp-daily-pr`; that skill writes and creates or updates the fork PR directly with a local/Matt-style work brief, not the camp reflection template. The fork daily PR is not the final submission surface, and section-by-section interview is reserved for the upstream camp submission PR. `/camp-daily-pr` must also verify or create the upstream submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` when `fork/N180_하성욱` contains the daily work, or clearly report that the latest daily work is not yet present in the submission branch. Matt Pocock skill templates are the PRD, issue, agent brief, and two-axis review artifact shapes described by the skills; they are not GitHub PR templates.
+The PR template in `.github/pull_request_template.md` is the upstream camp submission template only. Create a daily branch to `N180_하성욱` PR only through `/camp-daily-pr`; that skill writes and creates or updates the fork PR directly with a local/Matt-style work brief, not the camp reflection template. The fork daily PR is not the final submission surface, and section-by-section interview is reserved for the upstream camp submission PR. `/camp-daily-pr` must also verify or create the upstream submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` when `fork/N180_하성욱` contains the daily work, or clearly report that the latest daily work is not yet present in the submission branch. Matt Pocock skill templates are the PRD, issue, agent brief, and two-axis review artifact shapes described by the skills; they are not GitHub PR templates.
 
 ## When a skill says "publish to the issue tracker"
 
