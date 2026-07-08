@@ -1,0 +1,31 @@
+.container { 
+  max-width: 800px; 
+  margin: 40px auto; 
+  padding: 20px; 
+  font-family: 'Pretendard', sans-serif; 
+  line-height: 1.6;
+}
+header { text-align: center; margin-bottom: 30px; }
+.intro { 
+  background: #f9f9f9; 
+  padding: 25px; 
+  border-radius: 12px; 
+  border-left: 5px solid #007bff;
+  margin-bottom: 30px;
+}
+.card { 
+  border: 1px solid #eee; 
+  padding: 20px; 
+  border-radius: 8px; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+}
+button { 
+  padding: 10px 20px; 
+  background: #007bff; 
+  color: white; 
+  border: none; 
+  border-radius: 5px; 
+  cursor: pointer; 
+}
