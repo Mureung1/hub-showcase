@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manager.exe Static Prototype</title>
+    <style>
+      :root {
+        --xp-blue: #245edb;
+        --xp-blue-dark: #1746ad;
+        --xp-blue-light: #3f8cff;
+        --xp-green: #3f8f34;
+        --xp-green-dark: #237020;
+        --cream: #fff8df;
+        --panel: #ece9d8;
+        --panel-light: #fffef4;
+        --border-dark: #1f1f1f;
+        --text: #1d1d1d;
+        --muted: #5d5d5d;
+        --shadow: rgba(18, 38, 80, 0.32);
+        font-family: Tahoma, "MS UI Gothic", "Malgun Gothic", Arial, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.92) 0 4%, transparent 5%),
+          radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.75) 0 7%, transparent 8%),
+          linear-gradient(180deg, #68b9ff 0%, #88cfff 46%, #8ccb5d 47%, #45a843 68%, #2d8f36 100%);
+        overflow: hidden;
+      }
+
+      .desktop {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        padding: 22px 22px 54px;
+      }
+
+      .desktop::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 38px;
+        height: 34vh;
+        background:
+          radial-gradient(ellipse at 20% 86%, rgba(255, 255, 255, 0.2), transparent 32%),
+          radial-gradient(ellipse at 88% 72%, rgba(255, 255, 255, 0.14), transparent 36%),
+          linear-gradient(8deg, rgba(32, 126, 42, 0.76) 0 44%, transparent 45%),
+          linear-gradient(-9deg, rgba(58, 154, 55, 0.82) 0 42%, transparent 43%);
+        pointer-events: none;
+      }
+
+      .icons {
+        position: relative;
+        z-index: 3;
+        display: grid;
+        grid-template-columns: 84px;
+        gap: 18px;
+        width: 96px;
+      }
+
+      .desktop-icon {
+        width: 82px;
+        color: white;
+        text-align: center;
+        text-shadow: 1px 1px 2px #003a74;
+        font-size: 12px;
+        line-height: 1.25;
+      }
+
+      .icon-box {
+        width: 44px;
+        height: 44px;
+        margin: 0 auto 6px;
+        border: 1px solid rgba(0, 0, 0, 0.28);
+        box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.9), 2px 3px 7px rgba(0, 0, 0, 0.22);
+        background: linear-gradient(135deg, #fffef2, #82c1ff 54%, #0b55c5);
+      }
+
+      .icon-box.profile {
+        border-radius: 7px;
+        background:
+          radial-gradient(circle at 50% 34%, #ffe9bb 0 18%, transparent 19%),
+          radial-gradient(circle at 50% 80%, #265ec9 0 28%, transparent 29%),
+          linear-gradient(135deg, #e9f4ff, #66b2ff);
+      }
+
+      .icon-box.note {
+        background:
+          repeating-linear-gradient(180deg, #fff7bf 0 7px, #7fb3ef 8px 9px),
+          linear-gradient(135deg, #fffbc7, #f3c73a);
+      }
+
+      .icon-box.manager {
+        border-radius: 50% 50% 42% 42%;
+        background:
+          radial-gradient(circle at 36% 34%, #ffffff 0 8%, transparent 9%),
+          radial-gradient(circle at 64% 34%, #ffffff 0 8%, transparent 9%),
+          linear-gradient(135deg, #93fff5, #2c85ff 48%, #24329a);
+      }
+
+      .icon-box.trash {
+        border-radius: 3px;
+        background:
+          linear-gradient(180deg, transparent 0 9px, rgba(255, 255, 255, 0.85) 10px 12px, transparent 13px),
+          linear-gradient(135deg, #e8f5ff, #9eb4c8);
+      }
+
+      .window {
+        position: absolute;
+        z-index: 4;
+        border: 1px solid #083894;
+        border-radius: 8px 8px 3px 3px;
+        background: var(--panel);
+        box-shadow: 8px 12px 24px var(--shadow);
+        overflow: hidden;
+      }
+
+      .window.active {
+        z-index: 8;
+      }
+
+      .window.quest {
+        left: min(17vw, 240px);
+        top: 112px;
+        width: 420px;
+      }
+
+      .window.manager {
+        right: 82px;
+        top: 116px;
+        width: 292px;
+      }
+
+      .window.runner {
+        left: min(34vw, 520px);
+        top: 320px;
+        width: 455px;
+      }
+
+      .titlebar {
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 8px 0 10px;
+        color: white;
+        font-size: 13px;
+        font-weight: 700;
+        background: linear-gradient(180deg, #5ca8ff 0%, var(--xp-blue) 42%, var(--xp-blue-dark) 100%);
+        user-select: none;
+      }
+
+      .title {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .tiny-icon {
+        width: 15px;
+        height: 15px;
+        border: 1px solid rgba(0, 0, 0, 0.3);
+        background: linear-gradient(135deg, #fff7a8, #1a8fff);
+      }
+
+      .buttons {
+        display: flex;
+        gap: 4px;
+      }
+
+      .win-btn {
+        width: 20px;
+        height: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.75);
+        border-radius: 3px;
+        color: white;
+        font-size: 12px;
+        line-height: 17px;
+        text-align: center;
+        background: linear-gradient(180deg, #7fb7ff, #1a58d8);
+      }
+
+      .win-btn.close {
+        background: linear-gradient(180deg, #ff9a7b, #d02b19);
+      }
+
+      .content {
+        padding: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.72);
+      }
+
+      .field {
+        margin-bottom: 11px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .input,
+      .select,
+      .console {
+        min-height: 30px;
+        padding: 7px 8px;
+        border: 2px inset #f6f3df;
+        background: white;
+        font-size: 12px;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .button-row {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .xp-button {
+        min-width: 72px;
+        height: 28px;
+        padding: 0 12px;
+        border: 1px solid #1a4d99;
+        border-radius: 3px;
+        background: linear-gradient(180deg, #fffef9, #d6e6ff 48%, #9fc4f2);
+        box-shadow: inset 1px 1px 0 white;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .xp-button.primary {
+        border-color: #093d8d;
+        color: #073475;
+        background: linear-gradient(180deg, #fff6bb, #ffd85a 52%, #e5a900);
+      }
+
+      .manager-body {
+        display: grid;
+        gap: 12px;
+        text-align: center;
+      }
+
+      .pet {
+        width: 106px;
+        height: 108px;
+        margin: 0 auto;
+        border: 2px solid #2b5faf;
+        border-radius: 44% 44% 38% 38%;
+        background:
+          radial-gradient(circle at 36% 38%, #fff 0 7%, transparent 8%),
+          radial-gradient(circle at 64% 38%, #fff 0 7%, transparent 8%),
+          linear-gradient(180deg, #7ef8eb, #2c7ff0 58%, #272f96);
+        box-shadow:
+          inset 8px 8px 0 rgba(255, 255, 255, 0.3),
+          inset -8px -10px 0 rgba(0, 0, 0, 0.12),
+          0 8px 0 rgba(42, 73, 96, 0.22);
+        image-rendering: pixelated;
+      }
+
+      .expbar,
+      .runner-bar {
+        height: 18px;
+        border: 2px inset #fff9df;
+        background: #f7f2dd;
+        overflow: hidden;
+      }
+
+      .expfill,
+      .runner-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #33ad4a, #8fea5f);
+      }
+
+      .expfill {
+        width: 36%;
+      }
+
+      .runner-fill {
+        width: 58%;
+        background: repeating-linear-gradient(90deg, #245edb 0 10px, #69a9ff 11px 20px);
+      }
+
+      .speech {
+        padding: 9px;
+        border: 1px solid #c5bd94;
+        background: var(--panel-light);
+        font-size: 12px;
+        line-height: 1.55;
+        text-align: left;
+      }
+
+      .runner .content {
+        background: #dcd8c8;
+      }
+
+      .menubar {
+        margin: -14px -14px 12px;
+        padding: 4px 9px;
+        border-bottom: 1px solid #b8b5a6;
+        background: #eeeade;
+        font-size: 12px;
+        word-spacing: 12px;
+      }
+
+      .runner-head {
+        display: grid;
+        grid-template-columns: 58px 1fr;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .run-icon {
+        width: 52px;
+        height: 52px;
+        display: grid;
+        place-items: center;
+        border: 2px outset #f7f4e5;
+        background: #0b3d91;
+        color: white;
+        font-weight: 800;
+        font-size: 13px;
+      }
+
+      .runner-title {
+        margin: 0 0 4px;
+        font-size: 15px;
+      }
+
+      .runner-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin: 12px 0;
+      }
+
+      .tag {
+        padding: 4px 7px;
+        border: 1px solid #aaa17b;
+        background: #fff7ce;
+        font-size: 11px;
+      }
+
+      .console {
+        margin-top: 12px;
+        color: #e1f7dc;
+        background: #11210e;
+        border-color: #2f4c25;
+        font-family: Consolas, "Courier New", monospace;
+        line-height: 1.45;
+      }
+
+      .taskbar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 20;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 8px;
+        background: linear-gradient(180deg, #3d8cff, #1c58c7 45%, #1746a0);
+        color: white;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      }
+
+      .start {
+        height: 31px;
+        min-width: 88px;
+        border: 1px solid #0b5c16;
+        border-radius: 16px 6px 6px 16px;
+        color: white;
+        font-weight: 800;
+        background: linear-gradient(180deg, #89db72, var(--xp-green) 50%, var(--xp-green-dark));
+        text-shadow: 1px 1px 1px #105814;
+      }
+
+      .task {
+        height: 29px;
+        min-width: 145px;
+        padding: 0 10px;
+        border: 1px solid #093d8d;
+        color: white;
+        text-align: left;
+        background: linear-gradient(180deg, #6ca9ff, #2862cf);
+        box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.45);
+      }
+
+      .task.active {
+        background: linear-gradient(180deg, #1e4fae, #173e96);
+      }
+
+      .tray {
+        margin-left: auto;
+        padding: 6px 10px;
+        border-left: 1px solid rgba(255, 255, 255, 0.34);
+        font-size: 12px;
+      }
+
+      @media (max-width: 850px) {
+        body {
+          overflow: auto;
+        }
+
+        .desktop {
+          min-height: 980px;
+        }
+
+        .window.quest,
+        .window.manager,
+        .window.runner {
+          left: 112px;
+          right: auto;
+          width: calc(100vw - 134px);
+          max-width: 480px;
+        }
+
+        .window.quest {
+          top: 86px;
+        }
+
+        .window.manager {
+          top: 398px;
+        }
+
+        .window.runner {
+          top: 682px;
+        }
+
+        .task {
+          min-width: 92px;
+          max-width: 128px;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="desktop" aria-label="XP 데스크톱형 정적 프로토타입">
+      <section class="icons" aria-label="바탕화면 아이콘">
+        <div class="desktop-icon">
+          <div class="icon-box"></div>
+          오늘의<br />퀘스트
+        </div>
+        <div class="desktop-icon">
+          <div class="icon-box manager"></div>
+          매니저
+        </div>
+        <div class="desktop-icon">
+          <div class="icon-box profile"></div>
+          내 프로필
+        </div>
+        <div class="desktop-icon">
+          <div class="icon-box note"></div>
+          기록 노트
+        </div>
+        <div class="desktop-icon">
+          <div class="icon-box trash"></div>
+          휴지통
+        </div>
+      </section>
+
+      <section class="window quest active" aria-label="오늘의 퀘스트 창">
+        <div class="titlebar">
+          <div class="title"><span class="tiny-icon"></span>오늘의 퀘스트</div>
+          <div class="buttons"><span class="win-btn">_</span><span class="win-btn">□</span><span class="win-btn close">×</span></div>
+        </div>
+        <div class="content">
+          <div class="field">
+            <label>오늘 수행할 퀘스트 초안</label>
+            <div class="input">데이터베이스 개념 15분 공부</div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label>유형</label>
+              <div class="select">시간형</div>
+            </div>
+            <div class="field">
+              <label>분량</label>
+              <div class="select">15분</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label>난이도</label>
+              <div class="select">보통</div>
+            </div>
+            <div class="field">
+              <label>제한 시간</label>
+              <div class="select">오늘 23:59</div>
+            </div>
+          </div>
+          <div class="speech">예상 보상: EXP 20<br />수락하면 QuestRunner.exe에서 진행 상태를 확인합니다.</div>
+          <div class="button-row">
+            <button class="xp-button">초기화</button>
+            <button class="xp-button primary">수락</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="window manager" aria-label="매니저 창">
+        <div class="titlebar">
+          <div class="title"><span class="tiny-icon"></span>매니저</div>
+          <div class="buttons"><span class="win-btn">_</span><span class="win-btn">□</span><span class="win-btn close">×</span></div>
+        </div>
+        <div class="content manager-body">
+          <div class="pet" aria-label="전자 생물 루미"></div>
+          <strong>루미 · 전자 생물형 페이스메이커</strong>
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px;">
+              <span>Lv.1</span><span>EXP 36 / 100</span>
+            </div>
+            <div class="expbar"><div class="expfill"></div></div>
+          </div>
+          <div class="speech">"기다리고 있었어. 오늘 크기는 네가 정해도 돼."</div>
+        </div>
+      </section>
+
+      <section class="window runner" aria-label="QuestRunner.exe 실행 창">
+        <div class="titlebar">
+          <div class="title"><span class="tiny-icon"></span>QuestRunner.exe</div>
+          <div class="buttons"><span class="win-btn">_</span><span class="win-btn">□</span><span class="win-btn close">×</span></div>
+        </div>
+        <div class="content">
+          <div class="menubar">File Quest Help</div>
+          <div class="runner-head">
+            <div class="run-icon">RUN</div>
+            <div>
+              <h1 class="runner-title">데이터베이스 개념 15분 공부</h1>
+              <div style="font-size: 12px; color: var(--muted);">활성 퀘스트가 실행 중입니다.</div>
+            </div>
+          </div>
+          <div class="runner-meta">
+            <span class="tag">상태: 실행 중</span>
+            <span class="tag">남은 시간: 04:21:33</span>
+            <span class="tag">보상: EXP 20</span>
+          </div>
+          <div class="runner-bar"><div class="runner-fill"></div></div>
+          <div class="console">
+            C:\Manager\QuestRunner&gt; waiting for completion...<br />
+            Lumi: 끝까지 기다릴게. 네 속도로 해.
+          </div>
+          <div class="button-row">
+            <button class="xp-button primary">완료했어</button>
+            <button class="xp-button">실패 처리</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="taskbar" aria-label="작업표시줄">
+      <button class="start">시작</button>
+      <button class="task">오늘의 퀘스트</button>
+      <button class="task">매니저</button>
+      <button class="task active">QuestRunner.exe</button>
+      <div class="tray">Lv.1&nbsp;&nbsp;18:12</div>
+    </footer>
+  </body>
+</html>
