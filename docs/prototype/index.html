@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUBZIP 프로토타입</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+  <h1>SUBZIP 프로토타입</h1>
+  <p>매달 지출하는 실제 구독료를 관리하고, 공유 구독 정산과 그룹의 구독 의사결정을 돕는 서비스</p>
+</header>
+
+<main class="screen-flow">
+
+  <!-- 1. 대시보드 -->
+  <div class="screen">
+    <p class="screen-caption">1. 대시보드 <span>· 홈</span></p>
+    <div class="device">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="statusbar-icons">●●●▮ 🔋</span>
+      </div>
+      <div class="appbar">
+        <span class="appbar-title">SUBZIP</span>
+        <span class="appbar-icon">🔔</span>
+      </div>
+      <div class="screen-body">
+        <p class="section-label">이번 달 내가 실제로 부담하는 구독료</p>
+        <p class="big-amount">28,400<span class="unit">원</span></p>
+        <p class="sub-note">전체 결제 금액 96,000원 중 내 몫만 계산했어요</p>
+
+        <ul class="sub-list">
+          <li class="sub-item">
+            <span class="sub-dot" style="background:#0f7a42"></span>
+            <span class="sub-name">넷플릭스</span>
+            <span class="sub-share">4인 공유</span>
+            <span class="sub-price">4,250원</span>
+          </li>
+          <li class="sub-item">
+            <span class="sub-dot" style="background:#37c9a1"></span>
+            <span class="sub-name">유튜브 프리미엄</span>
+            <span class="sub-share">3인 공유</span>
+            <span class="sub-price">4,900원</span>
+          </li>
+          <li class="sub-item">
+            <span class="sub-dot" style="background:#ffb648"></span>
+            <span class="sub-name">디즈니플러스</span>
+            <span class="sub-share">개인</span>
+            <span class="sub-price">19,250원</span>
+          </li>
+        </ul>
+
+        <button class="link-btn">＋ 새 구독 등록하기</button>
+      </div>
+      <nav class="tabbar">
+        <span class="tab active">🏠<em>홈</em></span>
+        <span class="tab">💳<em>정산</em></span>
+        <span class="tab">📊<em>리포트</em></span>
+        <span class="tab">👤<em>MY</em></span>
+      </nav>
+    </div>
+  </div>
+
+  <span class="flow-arrow">→</span>
+
+  <!-- 2. 정산 요청 -->
+  <div class="screen">
+    <p class="screen-caption">2. 정산 요청 <span>· 파티장</span></p>
+    <div class="device">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="statusbar-icons">●●●▮ 🔋</span>
+      </div>
+      <div class="appbar">
+        <span class="appbar-icon">‹</span>
+        <span class="appbar-title">정산 요청</span>
+        <span class="appbar-icon-spacer"></span>
+      </div>
+      <div class="screen-body">
+        <p class="section-label">결제일이 다가왔어요</p>
+        <div class="card">
+          <p class="card-title">넷플릭스 프리미엄</p>
+          <p class="card-desc">결제일 7월 12일 · 파티원 4명</p>
+          <p class="card-desc">1인당 정산 금액 4,250원</p>
+        </div>
+
+        <p class="section-label" style="margin-top:20px;">정산 대상 파티원</p>
+        <ul class="member-list">
+          <li>😀 민지 <span class="member-status pending">대기중</span></li>
+          <li>😎 태윤 <span class="member-status pending">대기중</span></li>
+          <li>🙂 서연 <span class="member-status pending">대기중</span></li>
+        </ul>
+      </div>
+      <div class="screen-footer">
+        <button class="btn btn-kakao">💬 카카오톡으로 정산 요청 보내기</button>
+        <p class="sub-note center">버튼을 누르면 파티원 전체에게<br>정산 메시지가 한 번에 전송돼요</p>
+      </div>
+    </div>
+  </div>
+
+  <span class="flow-arrow">→</span>
+
+  <!-- 3. 비회원 송금 -->
+  <div class="screen">
+    <p class="screen-caption">3. 비회원 송금 <span>· 카카오톡 링크</span></p>
+    <div class="device">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="statusbar-icons">●●●▮ 🔋</span>
+      </div>
+      <div class="browserbar">
+        <span class="lock">🔒</span>
+        <span class="url">subzip.app/pay/a1b2c3</span>
+      </div>
+      <div class="screen-body">
+        <div class="kakao-bubble">
+          <p><strong>[SUBZIP]</strong> 넷플릭스 정산 요청</p>
+          <p>이번 달 내 몫 4,250원을 송금해주세요.</p>
+        </div>
+        <p class="section-label" style="margin-top:22px;">간편 송금 수단 선택</p>
+      </div>
+      <div class="screen-footer">
+        <button class="btn btn-toss">토스로 송금하기</button>
+        <button class="btn btn-kakaopay">카카오페이로 송금하기</button>
+        <p class="sub-note center">회원가입 없이 바로 송금할 수 있어요</p>
+      </div>
+    </div>
+  </div>
+
+  <span class="flow-arrow">→</span>
+
+  <!-- 4. 다음 정산 알림 (잠금화면) -->
+  <div class="screen">
+    <p class="screen-caption">4. 다음 정산 알림 <span>· 잠금화면</span></p>
+    <div class="device">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="statusbar-icons">●●●▮ 🔋</span>
+      </div>
+      <div class="screen-body screen-body-center">
+        <p class="lock-date">7월 12일 금요일</p>
+        <p class="lock-time">9:41</p>
+
+        <div class="push-preview">
+          <span class="push-icon">🔔</span>
+          <div class="push-text">
+            <p class="push-title">SUBZIP <span class="push-time">지금</span></p>
+            <p class="push-body">이번 달 넷플릭스 정산 요청이 도착했어요. 지금 확인해보세요.</p>
+          </div>
+        </div>
+
+        <p class="sub-note center">다음 정산부터는 카카오톡 대신<br>이렇게 SUBZIP 알림으로 받아요</p>
+      </div>
+    </div>
+  </div>
+
+  <span class="flow-arrow">→</span>
+
+  <!-- 5. 1초 만족도 체크 -->
+  <div class="screen">
+    <p class="screen-caption">5. 1초 만족도 체크 <span>· 송금 직후</span></p>
+    <div class="device">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="statusbar-icons">●●●▮ 🔋</span>
+      </div>
+      <div class="appbar appbar-plain">
+        <span class="appbar-title">송금 완료</span>
+      </div>
+      <div class="screen-body screen-body-center">
+        <p class="check-icon">✅</p>
+        <p class="section-label center">4,250원 송금이 완료되었어요</p>
+        <p class="question">이번 달 넷플릭스,<br>만족하셨나요?</p>
+        <div class="emoji-row">
+          <button class="emoji-btn">
+            <span class="emoji">😊</span>
+            <span class="emoji-label">충분히 만족</span>
+          </button>
+          <button class="emoji-btn">
+            <span class="emoji">😐</span>
+            <span class="emoji-label">보통</span>
+          </button>
+          <button class="emoji-btn">
+            <span class="emoji">😞</span>
+            <span class="emoji-label">거의 안 씀</span>
+          </button>
+        </div>
+      </div>
+      <div class="screen-footer">
+        <button class="link-btn">나중에 평가할게요</button>
+      </div>
+    </div>
+  </div>
+
+  <span class="flow-arrow">→</span>
+
+  <!-- 6. AI 리포트 -->
+  <div class="screen">
+    <p class="screen-caption">6. AI 의사결정 리포트</p>
+    <div class="device">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="statusbar-icons">●●●▮ 🔋</span>
+      </div>
+      <div class="appbar">
+        <span class="appbar-icon">‹</span>
+        <span class="appbar-title">넷플릭스 리포트</span>
+        <span class="appbar-icon-spacer"></span>
+      </div>
+      <div class="screen-body">
+        <div class="card card-warning">
+          <p class="card-title">⚠️ 만족도가 낮아지고 있어요</p>
+          <p class="card-desc">최근 3개월 동안 만족도가 지속적으로 낮아졌습니다. 다음 달에도 이용 계획이 없다면 잠시 해지를 고려해 보세요.</p>
+        </div>
+        <div class="card">
+          <p class="card-title">👥 그룹 만족도</p>
+          <p class="card-desc">파티원 4명 중 3명이 이번 달 만족도가 낮다고 응답했습니다.</p>
+        </div>
+        <div class="card card-suggest">
+          <p class="card-title">🔄 대체 서비스 제안</p>
+          <p class="card-desc">이번 달은 넷플릭스 대신 티빙을 이용하면 비슷한 가격으로 최신 콘텐츠를 즐길 수 있습니다.</p>
+        </div>
+      </div>
+      <div class="screen-footer">
+        <button class="btn btn-outline">파티원과 유지 여부 논의하기</button>
+      </div>
+      <nav class="tabbar">
+        <span class="tab">🏠<em>홈</em></span>
+        <span class="tab">💳<em>정산</em></span>
+        <span class="tab active">📊<em>리포트</em></span>
+        <span class="tab">👤<em>MY</em></span>
+      </nav>
+    </div>
+  </div>
+
+</main>
+
+</body>
+</html>
