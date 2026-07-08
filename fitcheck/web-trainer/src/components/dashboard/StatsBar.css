@@ -2,64 +2,74 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
-  padding: 1.25rem 1.5rem 0;
+  padding: 1.375rem 1.5rem 0;
 }
 
 .stat-card {
   display: flex;
   align-items: center;
-  gap: 0.875rem;
+  gap: 1rem;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem 1.25rem;
-  transition: transform 0.15s, box-shadow 0.15s;
+  border-radius: var(--radius-lg);
+  padding: 1.125rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
 }
 
-.stat-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
+.stat-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
-.stat-red .stat-dot {
-  background: var(--red);
-  box-shadow: 0 0 8px var(--red);
+.stat-icon-red {
+  background: var(--red-dim);
+  color: var(--red);
 }
 
-.stat-yellow .stat-dot {
-  background: var(--yellow);
-  box-shadow: 0 0 8px var(--yellow);
+.stat-icon-yellow {
+  background: var(--yellow-dim);
+  color: var(--yellow);
 }
 
-.stat-green .stat-dot {
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green);
+.stat-icon-green {
+  background: var(--green-dim);
+  color: var(--green);
 }
 
-.stat-icon {
-  font-size: 1.25rem;
+.stat-icon-accent {
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .stat-card strong {
   display: block;
-  font-size: 1.5rem;
+  font-size: 1.625rem;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .stat-card span:last-child {
   font-size: 0.75rem;
   color: var(--text-secondary);
-  margin-top: 0.125rem;
+  margin-top: 0.2rem;
   display: block;
+  font-weight: 500;
 }
 
 @media (max-width: 1024px) {
@@ -71,5 +81,14 @@
 @media (max-width: 768px) {
   .stats-bar {
     padding: 1rem 1rem 0;
+    gap: 0.75rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-card strong {
+    font-size: 1.375rem;
   }
 }

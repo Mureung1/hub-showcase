@@ -39,7 +39,7 @@ export default function MembersPage() {
 
   return (
     <div className="members-page">
-      <div className="members-page-header">
+      <div className="page-header">
         <h1>회원 관리</h1>
         <p>회원별 신호등 상태와 소통 이력을 관리하세요</p>
       </div>

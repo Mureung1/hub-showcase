@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar, { useSidebarState } from './Sidebar';
 import Header from './Header';
 import Toast from './Toast';
+import BottomNav from './BottomNav';
 import './Layout.css';
 
 export default function Layout() {
@@ -14,6 +15,7 @@ export default function Layout() {
         <Header />
         <Outlet />
       </div>
+      <BottomNav />
       <Toast />
     </div>
   );

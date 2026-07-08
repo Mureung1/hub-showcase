@@ -1,3 +1,4 @@
+import { UtensilsCrossed } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../hooks/useAppStore';
@@ -34,7 +35,12 @@ export default function MealTimeline() {
     <section className="panel meal-panel">
       <div className="panel-header">
         <div>
-          <h2>🍽️ 식단 피드백 타임라인</h2>
+          <h2>
+            <span className="panel-icon">
+              <UtensilsCrossed size={14} />
+            </span>
+            식단 피드백 타임라인
+          </h2>
           <p>회원이 업로드한 일별 식단을 한눈에 보고 즉각 피드백하세요</p>
         </div>
         <div className="meal-header-actions">
@@ -70,7 +76,7 @@ export default function MealTimeline() {
                     </span>
                   </div>
                   {meal.pending && (
-                    <span className="meal-pending-dot" title="피드백 대기" />
+                    <span className="meal-pending-dot pulse-dot" title="피드백 대기" />
                   )}
                 </div>
                 <p className="meal-memo">{meal.memo}</p>

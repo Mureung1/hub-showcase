@@ -1,3 +1,4 @@
+import { Zap, Copy } from 'lucide-react';
 import { useAppStore } from '../../hooks/useAppStore';
 import './RoutinePanel.css';
 
@@ -28,7 +29,12 @@ export default function RoutinePanel() {
     <section className="panel routine-panel">
       <div className="panel-header">
         <div>
-          <h2>⚡ 초간편 루틴 입력</h2>
+          <h2>
+            <span className="panel-icon">
+              <Zap size={14} />
+            </span>
+            초간편 루틴 입력
+          </h2>
           <p>지난 세션 복사 &amp; 점진적 과부하로 초고속 가이드 전송</p>
         </div>
         {hasDraft && <span className="draft-badge">매크로 적용됨</span>}
@@ -54,7 +60,8 @@ export default function RoutinePanel() {
         className="btn-copy-session"
         onClick={() => copySession(selectedMember.id)}
       >
-        📋 지난 세션 복사
+        <Copy size={15} />
+        지난 세션 복사
       </button>
 
       <div className="macro-buttons">

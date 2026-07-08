@@ -1,29 +1,41 @@
-/* ── FitCheck Trainer — Global theme variables ── */
+@import './styles/shared.css';
+
+/* ── FitCheck Trainer — Design System ── */
 
 :root {
-  --bg-base: #0f1117;
-  --bg-surface: #1a1d27;
-  --bg-elevated: #222633;
-  --bg-hover: #2a2f3d;
-  --border: #2e3344;
-  --text-primary: #f0f1f5;
-  --text-secondary: #9ca3b4;
-  --text-muted: #6b7280;
+  --bg-base: #0c0e14;
+  --bg-surface: #14171f;
+  --bg-elevated: #1c2030;
+  --bg-hover: #252a3a;
+  --border: #2a3044;
+  --border-hover: #3a4258;
+  --text-primary: #f2f3f7;
+  --text-secondary: #9aa3b5;
+  --text-muted: #636d80;
   --accent: #e63946;
   --accent-hover: #ff4d5a;
-  --accent-dim: rgba(230, 57, 70, 0.15);
+  --accent-dim: rgba(230, 57, 70, 0.14);
+  --accent-glow: rgba(230, 57, 70, 0.35);
   --green: #22c55e;
-  --green-dim: rgba(34, 197, 94, 0.15);
+  --green-dim: rgba(34, 197, 94, 0.14);
   --yellow: #eab308;
-  --yellow-dim: rgba(234, 179, 8, 0.15);
+  --yellow-dim: rgba(234, 179, 8, 0.14);
   --red: #ef4444;
-  --red-dim: rgba(239, 68, 68, 0.15);
-  --sidebar-width: 220px;
-  --sidebar-collapsed: 64px;
-  --header-height: 60px;
-  --radius: 10px;
-  --radius-sm: 6px;
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  --red-dim: rgba(239, 68, 68, 0.14);
+  --sidebar-width: 228px;
+  --sidebar-collapsed: 68px;
+  --header-height: 64px;
+  --bottom-nav-height: 64px;
+  --radius: 12px;
+  --radius-lg: 14px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 24px var(--accent-glow);
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --font-body: 'Pretendard', system-ui, -apple-system, sans-serif;
 }
 
 *,
@@ -32,14 +44,23 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100svh;
-  background: var(--bg-base);
+  background-color: var(--bg-base);
+  background-image:
+    radial-gradient(ellipse 80% 60% at 100% -10%, rgba(230, 57, 70, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at -10% 100%, rgba(230, 57, 70, 0.05) 0%, transparent 50%);
+  background-attachment: fixed;
   color: var(--text-primary);
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
@@ -51,4 +72,36 @@ input,
 select,
 textarea {
   font-family: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-dim);
+  color: var(--text-primary);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
 }

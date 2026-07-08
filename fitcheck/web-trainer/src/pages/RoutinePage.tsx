@@ -60,7 +60,7 @@ export default function RoutinePage() {
 
   return (
     <div className="routine-page">
-      <div className="routine-page-header">
+      <div className="page-header">
         <h1>루틴 관리</h1>
         <p>회원별 운동 루틴을 편집하고 점진적 과부하 매크로로 가이드를 전송하세요</p>
       </div>

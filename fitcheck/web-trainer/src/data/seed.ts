@@ -1,4 +1,4 @@
-import type { AppData, Exercise } from '../types';
+import type { AppData, Exercise, WorkoutRecord } from '../types';
 import { daysAgo, todayString } from '../utils/date';
 import { generateId } from '../utils/routine';
 
@@ -34,6 +34,40 @@ const MEMBER_ROUTINES: Record<string, Exercise[]> = {
     { id: 'e20', name: '업라이트 로우', weight: 25, sets: 3, reps: 12 },
   ],
 };
+
+/** 8주간 메인 운동 중량 추이 (회원별) */
+const MAIN_WEIGHT_PROGRESSION: Record<string, number[]> = {
+  '1': [50, 52.5, 55, 55, 57.5, 57.5, 60, 60],
+  '2': [60, 62.5, 65, 65, 67.5, 67.5, 70, 70],
+  '3': [90, 92.5, 95, 95, 97.5, 97.5, 100, 100],
+  '4': [35, 37.5, 40, 40, 42.5, 42.5, 45, 45],
+  '5': [32.5, 35, 37.5, 37.5, 40, 40, 40, 40],
+};
+
+function createWorkoutHistory(): WorkoutRecord[] {
+  const records: WorkoutRecord[] = [];
+
+  for (const [memberId, weights] of Object.entries(MAIN_WEIGHT_PROGRESSION)) {
+    const template = MEMBER_ROUTINES[memberId]!;
+    for (let week = 0; week < 8; week++) {
+      const mainWeight = weights[week]!;
+      const exercises = template.map((ex, i) => ({
+        ...ex,
+        id: `wh-${memberId}-w${week}-e${i}`,
+        weight: i === 0 ? mainWeight : ex.weight,
+      }));
+
+      records.push({
+        id: `wh-${memberId}-w${week}`,
+        memberId,
+        date: daysAgo(7 * (7 - week)),
+        exercises,
+      });
+    }
+  }
+
+  return records;
+}
 
 export function createSeedData(): AppData {
   const today = todayString();
@@ -136,6 +170,72 @@ export function createSeedData(): AppData {
         feedback: '치팅데이 OK! 내일부터 단백질 위주로',
         feedbackAt: daysAgo(1),
       },
+      {
+        id: 'm7',
+        memberId: '2',
+        date: daysAgo(2),
+        mealType: '아침',
+        time: '07:50',
+        memo: '계란 3개 + 토스트',
+        pending: false,
+        feedback: '단백질 충분해요',
+        feedbackAt: daysAgo(2),
+      },
+      {
+        id: 'm8',
+        memberId: '3',
+        date: daysAgo(3),
+        mealType: '저녁',
+        time: '19:30',
+        memo: '소고기 구이 + 샐러드',
+        pending: false,
+        feedback: '완벽한 식단!',
+        feedbackAt: daysAgo(3),
+      },
+      {
+        id: 'm9',
+        memberId: '4',
+        date: daysAgo(5),
+        mealType: '점심',
+        time: '12:00',
+        memo: '닭가슴살 샐러드',
+        pending: false,
+        feedback: '좋아요',
+        feedbackAt: daysAgo(5),
+      },
+      {
+        id: 'm10',
+        memberId: '2',
+        date: daysAgo(7),
+        mealType: '점심',
+        time: '12:20',
+        memo: '현미밥 도시락',
+        pending: false,
+        feedback: '잘 하고 있어요',
+        feedbackAt: daysAgo(7),
+      },
+      {
+        id: 'm11',
+        memberId: '3',
+        date: daysAgo(10),
+        mealType: '아침',
+        time: '08:00',
+        memo: '프로틴 쉐이크 + 바나나',
+        pending: false,
+        feedback: '굿',
+        feedbackAt: daysAgo(10),
+      },
+      {
+        id: 'm12',
+        memberId: '4',
+        date: daysAgo(14),
+        mealType: '저녁',
+        time: '20:00',
+        memo: '닭가슴살 + 브로콜리',
+        pending: false,
+        feedback: '완벽',
+        feedbackAt: daysAgo(14),
+      },
     ],
     notifications: [
       {
@@ -162,6 +262,7 @@ export function createSeedData(): AppData {
     ],
     communicationLogs: [],
     sentGuides: [],
+    workoutHistory: createWorkoutHistory(),
   };
 }
 

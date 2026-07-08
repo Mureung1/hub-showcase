@@ -1,3 +1,4 @@
+import { Signal } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../hooks/useAppStore';
@@ -54,7 +55,12 @@ export default function SignalPanel() {
     <section className="panel signal-panel">
       <div className="panel-header">
         <div>
-          <h2>🚦 신호등 소통 대시보드</h2>
+          <h2>
+            <span className="panel-icon">
+              <Signal size={14} />
+            </span>
+            신호등 소통 대시보드
+          </h2>
           <p>관리 공백 회원을 실시간 포착하고 즉시 알림을 보내세요</p>
         </div>
         <div className="filter-tabs">

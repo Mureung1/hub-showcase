@@ -227,6 +227,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       if (!member || exercises.length === 0) return;
       const text = formatRoutineText(member.name, exercises);
       const now = new Date().toISOString();
+      const today = todayString();
       setData((prev) => ({
         ...prev,
         routines: { ...prev.routines, [memberId]: exercises },
@@ -239,6 +240,15 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             text,
           },
           ...prev.sentGuides,
+        ],
+        workoutHistory: [
+          {
+            id: generateId(),
+            memberId,
+            date: today,
+            exercises: structuredClone(exercises),
+          },
+          ...prev.workoutHistory,
         ],
       }));
       setDraftRoutines((prev) => {

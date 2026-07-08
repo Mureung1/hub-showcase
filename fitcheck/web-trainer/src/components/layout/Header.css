@@ -8,34 +8,38 @@
   gap: 1rem;
   height: var(--header-height);
   padding: 0 1.5rem;
-  background: rgba(15, 17, 23, 0.85);
-  backdrop-filter: blur(12px);
+  background: rgba(12, 14, 20, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
 }
 
 .header-left {
   flex: 1;
-  max-width: 420px;
+  max-width: 400px;
 }
 
 .search-bar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.5rem 0.875rem;
-  transition: border-color 0.15s;
+  padding: 0.5625rem 0.9375rem;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .search-bar:focus-within {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
 }
 
 .search-icon {
-  font-size: 0.875rem;
-  opacity: 0.6;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .search-bar input {
@@ -54,13 +58,14 @@
 .header-right {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .header-date {
   font-size: 0.8125rem;
   color: var(--text-secondary);
   white-space: nowrap;
+  font-weight: 500;
 }
 
 .notification-wrapper {
@@ -72,28 +77,31 @@
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-size: 1rem;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .notification-btn:hover {
   background: var(--bg-hover);
-  border-color: var(--accent);
+  border-color: var(--border-hover);
 }
 
 .notification-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -3px;
+  right: -3px;
   background: var(--accent);
   color: #fff;
-  font-size: 0.625rem;
+  font-size: 0.5625rem;
   font-weight: 700;
   min-width: 16px;
   height: 16px;
@@ -102,17 +110,18 @@
   align-items: center;
   justify-content: center;
   padding: 0 4px;
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .notification-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 10px);
   right: 0;
   width: 320px;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -120,7 +129,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.875rem 1rem;
+  padding: 0.9375rem 1rem;
   border-bottom: 1px solid var(--border);
   font-size: 0.875rem;
   font-weight: 600;
@@ -132,21 +141,28 @@
   color: var(--accent);
   font-size: 0.75rem;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.mark-all-read:hover {
+  background: var(--accent-dim);
 }
 
 .notification-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 280px;
+  max-height: 300px;
   overflow-y: auto;
 }
 
 .notification-item {
   padding: 0.875rem 1rem;
   border-bottom: 1px solid var(--border);
-  transition: background 0.15s;
+  transition: background var(--transition-fast);
   cursor: pointer;
 }
 
@@ -158,19 +174,23 @@
   background: var(--accent-dim);
 }
 
+.notification-item:hover {
+  background: var(--bg-hover);
+}
+
 .notification-item p {
   margin: 0 0 0.25rem;
   font-size: 0.8125rem;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .notification-item time {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   color: var(--text-muted);
 }
 
 .notification-empty {
-  padding: 1.5rem;
+  padding: 1.75rem;
   text-align: center;
   color: var(--text-muted);
   font-size: 0.8125rem;
@@ -179,12 +199,12 @@
 .trainer-profile {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
 }
 
 .trainer-avatar {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   background: var(--accent-dim);
   color: var(--accent);
@@ -192,12 +212,12 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.875rem;
-  border: 2px solid var(--accent);
+  font-size: 0.8125rem;
+  border: 2px solid rgba(230, 57, 70, 0.4);
 }
 
 .trainer-name {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
 }

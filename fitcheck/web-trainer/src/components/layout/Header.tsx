@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Bell, Search } from 'lucide-react';
 import { useAppStore } from '../../hooks/useAppStore';
 import { formatDateKo } from '../../utils/date';
 import './Header.css';
@@ -20,7 +21,7 @@ export default function Header() {
     <header className="header">
       <div className="header-left">
         <div className="search-bar">
-          <span className="search-icon">🔍</span>
+          <Search className="search-icon" size={16} />
           <input
             type="search"
             placeholder="회원 이름, 운동 검색..."
@@ -40,7 +41,7 @@ export default function Header() {
             onClick={() => setShowNotifications((prev) => !prev)}
             aria-label="알림"
           >
-            🔔
+            <Bell size={18} />
             {unreadCount > 0 && (
               <span className="notification-badge">{unreadCount}</span>
             )}

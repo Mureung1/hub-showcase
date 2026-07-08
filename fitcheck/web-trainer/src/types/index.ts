@@ -58,6 +58,13 @@ export interface SentGuide {
   text: string;
 }
 
+export interface WorkoutRecord {
+  id: string;
+  memberId: string;
+  date: string;
+  exercises: Exercise[];
+}
+
 export interface AppData {
   members: Member[];
   routines: Record<string, Exercise[]>;
@@ -65,6 +72,7 @@ export interface AppData {
   notifications: Notification[];
   communicationLogs: CommunicationLog[];
   sentGuides: SentGuide[];
+  workoutHistory: WorkoutRecord[];
 }
 
 export interface MemberWithStatus extends Member {
