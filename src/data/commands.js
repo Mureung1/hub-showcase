@@ -240,6 +240,117 @@ export const commands = [
       { command: 'touch a.txt b.txt c.txt', desc: '여러 개의 빈 파일을 한 번에 생성' },
     ],
   },
+  {
+    id: 'unix-head',
+    category: 'unix',
+    name: 'head',
+    summary: '파일의 앞부분 몇 줄을 출력한다',
+    description:
+      '기본값으로 파일의 처음 10줄을 출력한다. 로그 파일이나 대용량 파일의 앞부분만 빠르게 확인할 때 사용한다.',
+    options: [{ flag: '-n <숫자>', desc: '출력할 줄 수를 지정 (기본값 10)' }],
+    examples: [
+      { command: 'head access.log', desc: 'access.log의 앞 10줄 출력' },
+      { command: 'head -n 30 access.log', desc: 'access.log의 앞 30줄 출력' },
+    ],
+  },
+  {
+    id: 'unix-tail',
+    category: 'unix',
+    name: 'tail',
+    summary: '파일의 뒷부분 몇 줄을 출력한다',
+    description:
+      '기본값으로 파일의 마지막 10줄을 출력한다. -f 옵션과 함께 쓰면 파일에 새로 추가되는 내용을 실시간으로 따라가며 볼 수 있어 로그 모니터링에 자주 쓴다.',
+    options: [
+      { flag: '-n <숫자>', desc: '출력할 줄 수를 지정 (기본값 10)' },
+      { flag: '-f', desc: '파일에 새로 추가되는 내용을 실시간으로 계속 출력 (follow)' },
+    ],
+    examples: [
+      { command: 'tail -n 20 error.log', desc: 'error.log의 마지막 20줄 출력' },
+      { command: 'tail -f server.log', desc: 'server.log에 새로 쌓이는 로그를 실시간으로 확인' },
+    ],
+  },
+  {
+    id: 'unix-wc',
+    category: 'unix',
+    name: 'wc',
+    summary: '파일의 줄 수, 단어 수, 문자 수를 센다',
+    description:
+      'Word Count의 약자로, 텍스트 파일이나 다른 명령어의 출력에서 줄/단어/바이트 수를 세어 보여준다. grep 등과 파이프로 연결해 검색 결과 개수를 셀 때도 자주 쓴다.',
+    options: [
+      { flag: '-l', desc: '줄 수만 출력' },
+      { flag: '-w', desc: '단어 수만 출력' },
+      { flag: '-c', desc: '바이트(문자) 수만 출력' },
+    ],
+    examples: [
+      { command: 'wc -l notes.txt', desc: 'notes.txt의 줄 수 세기' },
+      { command: 'grep -c "error" app.log', desc: 'grep -c로 error가 포함된 줄 수 바로 세기' },
+    ],
+  },
+  {
+    id: 'unix-less',
+    category: 'unix',
+    name: 'less',
+    summary: '파일 내용을 페이지 단위로 넘겨보며 확인한다',
+    description:
+      'cat과 달리 파일 전체를 한 번에 출력하지 않고, 화면 단위로 스크롤하며 볼 수 있게 해준다. 대용량 로그 파일이나 긴 문서를 볼 때 유용하며 / 로 검색, q로 종료한다.',
+    options: [{ flag: '-N', desc: '각 줄 앞에 줄 번호를 함께 표시' }],
+    examples: [
+      { command: 'less big.log', desc: 'big.log 파일을 페이지 단위로 보기' },
+      { command: 'less -N config.yml', desc: '줄 번호를 표시하며 파일 보기' },
+    ],
+  },
+  {
+    id: 'unix-chown',
+    category: 'unix',
+    name: 'chown',
+    summary: '파일/디렉터리의 소유자와 소유 그룹을 변경한다',
+    description:
+      'Change Owner의 약자로, 지정한 파일이나 디렉터리의 소유자·그룹을 다른 사용자/그룹으로 바꾼다. 대부분 관리자 권한(sudo)이 필요하다.',
+    options: [
+      { flag: '-R', desc: '디렉터리 내 모든 파일에 재귀적으로 적용' },
+      { flag: '<user>:<group>', desc: '(인자로 사용) 소유자와 그룹을 동시에 지정' },
+    ],
+    examples: [
+      { command: 'sudo chown student app.log', desc: 'app.log의 소유자를 student로 변경' },
+      { command: 'sudo chown -R student:student project/', desc: 'project 디렉터리 전체의 소유자/그룹을 일괄 변경' },
+    ],
+  },
+  {
+    id: 'unix-df',
+    category: 'unix',
+    name: 'df',
+    summary: '디스크 사용량과 남은 용량을 보여준다',
+    description:
+      'Disk Free의 약자로, 마운트된 파일 시스템별 전체 용량·사용량·남은 용량을 보여준다. 디스크 공간 부족 문제를 확인할 때 사용한다.',
+    options: [{ flag: '-h', desc: '용량을 사람이 읽기 쉬운 단위(K, M, G)로 표시' }],
+    examples: [{ command: 'df -h', desc: '전체 파일 시스템의 사용량을 읽기 쉬운 단위로 확인' }],
+  },
+  {
+    id: 'unix-echo',
+    category: 'unix',
+    name: 'echo',
+    summary: '문자열이나 변수 값을 화면에 출력한다',
+    description:
+      '인자로 전달한 텍스트를 그대로 표준 출력에 내보낸다. 환경 변수 값을 확인하거나 스크립트에서 간단한 로그를 남길 때 자주 쓴다.',
+    options: [{ flag: '-n', desc: '출력 끝의 줄바꿈을 생략' }],
+    examples: [
+      { command: 'echo "Hello, world"', desc: '문자열 그대로 출력' },
+      { command: 'echo $HOME', desc: 'HOME 환경 변수의 값 출력' },
+    ],
+  },
+  {
+    id: 'unix-history',
+    category: 'unix',
+    name: 'history',
+    summary: '최근에 실행한 명령어 목록을 보여준다',
+    description:
+      '현재 셸 세션에서 입력했던 명령어들을 번호와 함께 순서대로 보여준다. !번호 로 특정 기록을 다시 실행할 수도 있다.',
+    options: [{ flag: '-c', desc: '저장된 명령어 기록을 모두 삭제' }],
+    examples: [
+      { command: 'history', desc: '지금까지 실행한 명령어 기록 전체 확인' },
+      { command: '!245', desc: 'history에서 245번으로 표시된 명령어 다시 실행' },
+    ],
+  },
 
   // ── Git ───────────────────────────────────────────
   {
@@ -472,6 +583,96 @@ export const commands = [
     examples: [
       { command: 'git stash', desc: '현재 변경 사항을 임시 저장하고 작업 디렉터리 초기화' },
       { command: 'git stash pop', desc: '가장 최근에 저장한 변경 사항을 다시 적용' },
+    ],
+  },
+  {
+    id: 'git-remote',
+    category: 'git',
+    name: 'git remote',
+    summary: '연결된 원격 저장소 목록을 관리한다',
+    description:
+      '로컬 저장소가 알고 있는 원격 저장소(origin 등)의 이름과 URL을 조회하거나 추가/변경/삭제한다.',
+    options: [
+      { flag: '-v', desc: '등록된 원격 저장소의 이름과 URL을 함께 표시' },
+      { flag: 'add <name> <url>', desc: '(하위 명령) 새 원격 저장소를 등록' },
+    ],
+    examples: [
+      { command: 'git remote -v', desc: '등록된 원격 저장소 목록과 URL 확인' },
+      { command: 'git remote add origin https://github.com/user/repo.git', desc: 'origin이라는 이름으로 원격 저장소 등록' },
+    ],
+  },
+  {
+    id: 'git-rebase',
+    category: 'git',
+    name: 'git rebase',
+    summary: '커밋의 기준점을 바꿔 히스토리를 재배치한다',
+    description:
+      '현재 브랜치의 커밋들을 지정한 브랜치 위로 다시 쌓아 올려, 병합 커밋 없이 하나의 일직선 히스토리를 만든다. 이미 공유(push)된 브랜치를 리베이스하면 팀원과 히스토리가 어긋날 수 있어 주의해야 한다.',
+    options: [
+      { flag: '-i <commit>', desc: '대화형(interactive) 모드로 커밋을 수정/합치기/순서 변경' },
+      { flag: '--abort', desc: '충돌 발생 시 리베이스를 취소하고 이전 상태로 복귀' },
+      { flag: '--continue', desc: '충돌을 해결한 뒤 리베이스를 이어서 진행' },
+    ],
+    examples: [
+      { command: 'git rebase main', desc: '현재 브랜치를 main의 최신 커밋 위로 재배치' },
+      { command: 'git rebase -i HEAD~3', desc: '최근 3개 커밋을 대화형으로 수정' },
+    ],
+  },
+  {
+    id: 'git-tag',
+    category: 'git',
+    name: 'git tag',
+    summary: '특정 커밋에 버전 이름표(태그)를 붙인다',
+    description:
+      '릴리즈 시점 등 의미 있는 커밋을 기억하기 쉬운 이름(v1.0.0 등)으로 표시한다. 브랜치와 달리 태그가 가리키는 커밋은 이후에도 움직이지 않는다.',
+    options: [
+      { flag: '-a <name> -m "<message>"', desc: '메시지가 포함된 주석 태그(annotated tag) 생성' },
+      { flag: '-d <name>', desc: '지정한 태그 삭제' },
+    ],
+    examples: [
+      { command: 'git tag v1.0.0', desc: '현재 커밋에 v1.0.0 태그 생성' },
+      { command: 'git tag -a v1.0.0 -m "첫 정식 릴리즈"', desc: '메시지를 포함한 주석 태그 생성' },
+    ],
+  },
+  {
+    id: 'git-revert',
+    category: 'git',
+    name: 'git revert',
+    summary: '특정 커밋의 변경 내용을 되돌리는 새 커밋을 만든다',
+    description:
+      'reset과 달리 히스토리를 지우지 않고, 지정한 커밋의 변경 사항을 반대로 적용하는 새로운 커밋을 추가한다. 이미 원격에 공유된 커밋을 안전하게 되돌릴 때 주로 사용한다.',
+    options: [{ flag: '--no-edit', desc: '기본 커밋 메시지를 그대로 사용하고 에디터를 열지 않음' }],
+    examples: [
+      { command: 'git revert HEAD', desc: '가장 최근 커밋을 되돌리는 새 커밋 생성' },
+      { command: 'git revert a1b2c3d', desc: '지정한 해시의 커밋을 되돌리는 새 커밋 생성' },
+    ],
+  },
+  {
+    id: 'git-cherry-pick',
+    category: 'git',
+    name: 'git cherry-pick',
+    summary: '다른 브랜치의 특정 커밋만 골라서 현재 브랜치에 적용한다',
+    description:
+      '브랜치 전체를 병합하지 않고, 지정한 커밋 하나(또는 여러 개)만 현재 브랜치 위에 새 커밋으로 그대로 적용한다. 다른 브랜치의 버그 수정 하나만 가져오고 싶을 때 유용하다.',
+    options: [{ flag: '--continue', desc: '충돌을 해결한 뒤 cherry-pick을 이어서 진행' }],
+    examples: [
+      { command: 'git cherry-pick a1b2c3d', desc: 'a1b2c3d 커밋을 현재 브랜치에 그대로 적용' },
+    ],
+  },
+  {
+    id: 'git-config',
+    category: 'git',
+    name: 'git config',
+    summary: 'git 사용자 정보나 동작 방식을 설정한다',
+    description:
+      '커밋에 기록될 사용자 이름·이메일, 기본 에디터 등 git의 각종 설정 값을 조회하거나 변경한다.',
+    options: [
+      { flag: '--global', desc: '현재 사용자의 모든 저장소에 공통으로 적용되는 설정 변경' },
+      { flag: '--list', desc: '현재 적용된 설정 값 전체 조회' },
+    ],
+    examples: [
+      { command: 'git config --global user.name "Sungmin Park"', desc: '전역 사용자 이름 설정' },
+      { command: 'git config --global user.email "you@example.com"', desc: '전역 사용자 이메일 설정' },
     ],
   },
 ];
