@@ -570,17 +570,28 @@ body {
   max-width: 980px;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 38px 44px 80px;
+  padding: 30px 44px 80px;
   color: var(--text);
 }
 
 .file-preview-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line);
+  min-height: 46px;
+  margin: 0 0 20px;
+  padding: 10px 14px 10px 16px;
+  border: 1px solid #d5e3d5;
+  border-left: 4px solid var(--teal);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fbfff8 0%, #eef7ee 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 10px 22px rgba(44, 70, 53, 0.08);
 }
 
 .file-preview-bar strong {
@@ -598,6 +609,19 @@ body {
   color: var(--muted);
   font-size: 12px;
   font-weight: 680;
+}
+
+.file-preview-bar + .txt-lines {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-warm);
+}
+
+.file-preview-bar + .rendered-markdown-document,
+.file-preview-bar + .plain-text-editor,
+.file-preview-bar + .markdown-editor-textarea {
+  margin-top: 0;
 }
 
 .markdown-preview {
