@@ -116,21 +116,46 @@
     background: var(--toss-gray-100);
     border-radius: 14px;
     border: 1px solid transparent;
-    transition: background 0.15s ease;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease,
+      transform 0.12s ease, box-shadow 0.18s ease;
   }
 
   .slot:hover {
     background: var(--toss-blue-light);
     border-color: #d6e6ff;
+    transform: translateY(-1px);
+  }
+
+  .slot:active {
+    transform: translateY(0) scale(0.97);
+  }
+
+  .slot.selected {
+    background: var(--toss-blue);
+    border-color: var(--toss-blue);
+    box-shadow: 0 4px 12px rgba(49, 130, 246, 0.35);
+  }
+
+  .slot.selected:hover {
+    background: #2272eb;
+    border-color: #2272eb;
+    transform: translateY(-1px);
   }
 
   .legend {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 20px;
     margin-top: 24px;
     padding-top: 20px;
     border-top: 1px solid var(--toss-gray-200);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .legend-dot {
@@ -138,6 +163,10 @@
     height: 12px;
     border-radius: 4px;
     background: var(--toss-gray-100);
+  }
+
+  .legend-dot.selected {
+    background: var(--toss-blue);
   }
 
   .legend-text {
@@ -204,12 +233,26 @@
       </div>
 
       <div class="legend">
-        <div class="legend-dot"></div>
-        <div class="legend-text">선택 가능한 시간대</div>
+        <div class="legend-item">
+          <div class="legend-dot"></div>
+          <div class="legend-text">선택 가능한 시간대</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot selected"></div>
+          <div class="legend-text">내가 선택한 시간</div>
+        </div>
       </div>
     </div>
 
-    <div class="footer-note">클릭 기능은 다음 단계에서 추가될 예정이에요</div>
+    <div class="footer-note">칸을 클릭해서 가능한 시간을 선택해보세요</div>
   </div>
+
+  <script>
+    document.querySelectorAll(".slot").forEach(function (slot) {
+      slot.addEventListener("click", function () {
+        slot.classList.toggle("selected");
+      });
+    });
+  </script>
 </body>
 </html>
