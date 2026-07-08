@@ -134,6 +134,12 @@ h2 {
   opacity: 0.68;
 }
 
+.hero-guide {
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
 .analysis-status {
   display: flex;
   align-items: center;
