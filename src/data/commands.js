@@ -386,6 +386,25 @@ export const commands = [
       { command: '!245', desc: 'history에서 245번으로 표시된 명령어 다시 실행' },
     ],
   },
+  {
+    id: 'unix-gcc',
+    category: 'unix',
+    name: 'gcc',
+    summary: 'C/C++ 소스 코드를 컴파일해 실행 파일로 만든다',
+    description:
+      'GNU Compiler Collection의 약자로, 엄밀히는 유닉스 셸 명령어가 아니라 컴파일러 툴체인이지만 실습에서 C 소스 코드를 실행 파일로 만들 때 가장 먼저 쓰는 명령어라 함께 정리한다. 소스 파일(.c)을 오브젝트 파일을 거쳐 실행 가능한 바이너리로 변환한다.',
+    options: [
+      { flag: '-o <파일명>', desc: '출력할 실행 파일 이름을 지정 (생략 시 기본값 a.out)' },
+      { flag: '-c', desc: '링크까지 하지 않고 오브젝트 파일(.o)만 생성' },
+      { flag: '-Wall', desc: '흔히 놓치기 쉬운 경고까지 대부분의 경고 메시지를 함께 출력' },
+      { flag: '-g', desc: '디버깅 정보를 포함해 컴파일 (gdb 등으로 디버깅할 때 필요)' },
+    ],
+    examples: [
+      { command: 'gcc hello.c -o hello', desc: 'hello.c를 컴파일해 hello라는 실행 파일 생성' },
+      { command: './hello', desc: '컴파일된 실행 파일 실행' },
+      { command: 'gcc -Wall -g main.c -o main', desc: '경고 메시지와 디버깅 정보를 포함해 컴파일' },
+    ],
+  },
 
   // ── Git ───────────────────────────────────────────
   {
