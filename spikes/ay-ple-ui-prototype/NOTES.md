@@ -9,6 +9,7 @@
 | Main artifact | [index.html](index.html) |
 | Applied state | [state-accepted.html](state-accepted.html) |
 | Shared CSS | [styles.css](styles.css) |
+| Brand assets | [assets/ay-ple-logo.png](assets/ay-ple-logo.png), [assets/ay-ple-mark.png](assets/ay-ple-mark.png), [assets/ay-profile.png](assets/ay-profile.png) |
 | Source previews | [previews/](previews/) |
 | Run command | `open spikes/ay-ple-ui-prototype/index.html` |
 | Target viewport | Designed for 1920x1080, fitted to the current browser viewport to avoid page scroll |
@@ -39,7 +40,7 @@ User feedback on 2026-07-08: preview bodies should not be encoded inside the mai
 
 User feedback on 2026-07-08: source previews should respect the source extension instead of all looking like the same document. The preview files now render `.txt` as plain text, `.md` as Markdown source plus rendered fields, `.mp3` as an audio/transcript preview, and `.png` as an image/OCR preview.
 
-User feedback on 2026-07-08: generated image mockups were making the app spec and HTML/CSS prototype diverge. The image assets were removed, and the HTML/CSS prototype is now the only visual artifact for this spike.
+User feedback on 2026-07-08: generated image mockups were making the app spec and HTML/CSS prototype diverge. Standalone screen mockup images were removed; the remaining generated images are narrow brand assets wired directly into the HTML/CSS prototype.
 
 User feedback on 2026-07-08: the desired ChatSidecar is closer to a VS Code/Codex right-side dock than an inline dropdown. The prototype now pulls the chat out of the review card and renders it as a separate right dock. Pure HTML/CSS can make a persistent docked panel and clickable tabs, but resizing, selected-tab persistence across reloads, and synchronized panel state would need JavaScript.
 
