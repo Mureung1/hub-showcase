@@ -6,9 +6,9 @@
 
 ## 1. 현재 상태 요약
 
-NoticePilot은 기존 React + Vite UI skeleton을 유지한 상태에서, 처음 제공된 follow-up 구현 지시서의 프론트엔드 MVP 범위를 대부분 반영한 상태입니다.
+NoticePilot은 기존 React + Vite UI skeleton을 유지한 상태에서, 프론트엔드 MVP follow-up 범위와 Express mock analyze API skeleton, 그리고 frontend ↔ server mock analyze wiring까지 반영한 상태입니다.
 
-현재 작업 트리는 마지막 확인 기준 clean 상태였으며, 주요 변경은 아래 3개 커밋으로 순차 정리되었습니다.
+이전 프론트엔드 MVP 1차 기준에서는 기존 React + Vite UI skeleton을 유지한 상태에서, 처음 제공된 follow-up 구현 지시서의 프론트엔드 MVP 범위를 대부분 반영한 상태였습니다. 해당 기준선은 아래 3개 커밋으로 먼저 정리되었습니다.
 
 ```text
 8a89b10 Add NoticePilot utility helpers
@@ -16,17 +16,36 @@ NoticePilot은 기존 React + Vite UI skeleton을 유지한 상태에서, 처음
 8ba1440 Wire NoticePilot follow-up workflow
 ```
 
-검증 결과:
+문서 최신화 시작 전 작업 트리는 clean 상태였으며, 현재 구현 기준선은 아래 커밋 흐름으로 정리됩니다.
+
+```text
+8a89b10 Add NoticePilot utility helpers
+56252c0 Add review warnings and export UI
+8ba1440 Wire NoticePilot follow-up workflow
+78f5b09 Fix major frontend MVP QA issues
+3ec0079 Add Express analyze API skeleton
+8f4207b Fix backend analyze API QA issues
+fe70e46 Wire frontend server mock analysis
+8fd7578 Update work log for server mock wiring
+ff666ff Update README for server mock wiring
+```
+
+최근 검증 기준:
 
 ```text
 npm run build
+npm run dev:server
+npm run dev
+GET /api/health
+POST /api/analyze
 ```
 
-위 명령은 정상 통과했습니다.
+Phase 3 QA에서 build, backend health, backend mock analyze, `mode=ai` 501 응답, unsupported mode 400 응답, Vite `/api` proxy, client-side mock flow, server mock flow, overwrite/privacy confirmation, server unavailable error 표시를 확인했습니다.
 
-개발 서버도 승인 실행으로 아래 명령의 정상 기동을 확인했습니다.
+이전 프론트엔드 MVP 1차 검증에서는 아래 명령의 정상 통과를 확인했습니다.
 
 ```text
+npm run build
 npm run dev -- --host 127.0.0.1
 ```
 
@@ -770,6 +789,45 @@ const SECTION_LIMITS = {
 - concise Markdown checklist export
 - optional evidence export
 
+### `vite.config.js`
+
+- Vite React plugin 설정
+- `/api` dev proxy를 `http://127.0.0.1:3001` Express server로 전달
+
+### `server/src/index.js`
+
+- Express app 생성
+- JSON body limit `1mb` 적용
+- `GET /api/health` 제공
+- `/api/analyze` router mount
+- server-level error response normalization
+- 기본 실행 host/port: `127.0.0.1:3001`
+
+### `server/src/routes/analyzeRoutes.js`
+
+- `POST /api/analyze` route
+- `mode: "mock"` / `mode: "ai"`만 허용
+- unsupported mode를 `400 unsupported_mode`로 처리
+- raw analysis result를 server-side validation 후 response로 반환
+
+### `server/src/services/mockAnalysisService.js`
+
+- Express server mock analysis result 생성
+- 입력 language/title/text/metadata를 반영한 mock response 생성
+- 실제 AI 호출 없이 frontend schema와 server validation 경로 검증
+
+### `server/src/services/aiAnalysisService.js`
+
+- 실제 AI integration을 위한 stub
+- 현재 `mode: "ai"` 요청은 `501 ai_not_implemented`로 차단
+
+### `server/src/utils/validateAnalysisResult.js`
+
+- backend analysis result normalization
+- missing field/default value 처리
+- section limits와 duplicate calendar event 제거
+- server validation warning 생성
+
 ## 7. 검증 로그
 
 Frontend MVP 1차 마지막 확인 build:
@@ -811,12 +869,18 @@ Local: http://127.0.0.1:5173/
 
 ## 8. 커밋 순서
 
-현재 follow-up 작업 커밋:
+현재 구현 기준 커밋:
 
 ```text
 8a89b10 Add NoticePilot utility helpers
 56252c0 Add review warnings and export UI
 8ba1440 Wire NoticePilot follow-up workflow
+78f5b09 Fix major frontend MVP QA issues
+3ec0079 Add Express analyze API skeleton
+8f4207b Fix backend analyze API QA issues
+fe70e46 Wire frontend server mock analysis
+8fd7578 Update work log for server mock wiring
+ff666ff Update README for server mock wiring
 ```
 
 각 커밋의 의도:
@@ -829,6 +893,21 @@ Local: http://127.0.0.1:5173/
 
 3. Follow-up workflow wiring
    - App 상태와 전체 사용자 흐름에 기능을 연결하고 README를 갱신
+
+4. Frontend MVP QA fix
+   - major QA issue를 수정하고 `frontend-mvp-followup-v1` 기준선을 고정
+
+5. Express analyze API skeleton
+   - `/api/health`, `/api/analyze`, mock service, AI stub, server validation을 추가
+
+6. Backend QA fix
+   - `mock` / `ai` mode 정책, `501 ai_not_implemented`, unsupported mode 400, server validation 안정성을 정리
+
+7. Frontend server mock wiring
+   - Vite `/api` proxy와 `src/utils/analyzeApi.js`를 통해 server mock 분석 버튼을 실제 Express mock endpoint에 연결
+
+8. Documentation sync
+   - server mock wiring 이후 작업 로그와 README를 현재 실행 방식에 맞게 갱신
 
 ## 9. 주의 사항
 
@@ -950,12 +1029,14 @@ frontend-mvp-followup-v1
 express-analyze-skeleton-v1
 express-analyze-skeleton-qa-v1
 fe70e46 Wire frontend server mock analysis
+8fd7578 Update work log for server mock wiring
+ff666ff Update README for server mock wiring
 ```
 
-현재 HEAD:
+문서 최신화 직전 HEAD:
 
 ```text
-fe70e46 Wire frontend server mock analysis
+ff666ff Update README for server mock wiring
 ```
 
 의미:
@@ -964,6 +1045,8 @@ fe70e46 Wire frontend server mock analysis
 - `express-analyze-skeleton-v1`: Express `/api/analyze` skeleton 초기 구현 기준선
 - `express-analyze-skeleton-qa-v1`: backend QA major issue 수정 완료 기준선
 - `fe70e46`: Frontend ↔ Server mock analyze wiring 완료 커밋 기준선
+- `8fd7578`: server mock wiring 내용을 작업 로그에 반영한 문서 기준선
+- `ff666ff`: server mock wiring 내용을 README에 반영한 문서 기준선
 
 참고:
 
