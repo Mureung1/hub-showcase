@@ -94,7 +94,7 @@ Prototype은 여러 페이지가 아니라 **하나의 main screen + 두 상태*
 기술적인 domain term은 prototype 설명 chip에는 쓸 수 있지만, 학생-facing copy는 더 부드럽게 쓴다.
 
 | 내부 용어 | UI alias | 학생-facing 문구 |
-| --- | --- |
+| --- | --- | --- |
 | `Assignment` | 과제 | `개요 작성하기 과제` |
 | `Exam` | 시험 | `중간고사 시험` |
 | `TaskCandidate` | 추천 할 일 | `개요 초안 작성하기` |
