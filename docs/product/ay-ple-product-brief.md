@@ -269,6 +269,17 @@ AY-PLE의 visual direction은 기존 다크 IDE 테마가 아니라 밝은 학�
 | [HTML/CSS Prototype](../../spikes/ay-ple-ui-prototype/index.html) | 검토 대기 상태에서 시작하고 [반영됨 상태](../../spikes/ay-ple-ui-prototype/state-accepted.html)로 이동하는 throwaway UI prototype |
 | [Prototype Notes](../../spikes/ay-ple-ui-prototype/NOTES.md) | prototype 질문, 탭별 의도, 피드백 후 판정 기록 |
 
+프로토타입 결과는 기획서에서 바로 확인할 수 있도록 1920x1080 desktop 기준 캡처 asset으로도 남긴다. HTML/CSS 원본은 위 링크에서 열고, 제출 문서에서는 아래 캡처로 핵심 화면 흐름을 확인한다.
+
+| 상태 | 실행 링크 | 캡처 asset |
+| --- | --- | --- |
+| 검토 대기 | [index.html](../../spikes/ay-ple-ui-prototype/index.html) | [ay-ple-prototype-review.png](assets/ay-ple-prototype-review.png) |
+| 반영됨 | [state-accepted.html](../../spikes/ay-ple-ui-prototype/state-accepted.html) | [ay-ple-prototype-accepted.png](assets/ay-ple-prototype-accepted.png) |
+
+![AY-PLE prototype review state](assets/ay-ple-prototype-review.png)
+
+![AY-PLE prototype accepted state](assets/ay-ple-prototype-accepted.png)
+
 | 화면 영역 | 보여줄 것 | 모델링 의도 |
 | --- | --- | --- |
 | Source explorer | 과목별 RawMaterial, SourceSelection, ModelingRun 상태 | AY-PLE가 선택한 과목 자료 묶음에서 시작함을 보여준다. |
