@@ -16,6 +16,10 @@ _Avoid_: AI Agent, bot, assistant in visible product UI
 The product copy style for AY-PLE screens: plain wording that non-developer college students can understand, keeping implementation and agent-runtime terms out of the UI.
 _Avoid_: Developer UI, internal state labels, English technical labels
 
+**Light Academic Workspace**:
+The visual direction for AY-PLE's default UI: bright paper-like surfaces, calm productivity density, and brand coral/green/yellow accents that feel approachable to college students without copying a dark IDE or terminal.
+_Avoid_: Dark IDE default, terminal skin, generic AI SaaS gradient, mascot-only toy UI
+
 **Init**:
 The stage where a student fixes the confirmed courses for a semester and AY-PLE creates the initial semester workspace and model.
 _Avoid_: Generic onboarding, account setup

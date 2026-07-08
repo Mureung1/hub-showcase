@@ -52,6 +52,8 @@ User feedback on 2026-07-08: state switching should not live in a header prototy
 
 User feedback on 2026-07-08: the header should not use a separate `workspace-meta` pill cluster. Term and course now live in the left brand area, source count stays only in the source explorer, and the review state appears as a concise `검토 대기`/`반영됨` pill in the ChatSidecar head.
 
+User feedback on 2026-07-08: the existing dark theme still felt too developer-oriented for AY-PLE. The prototype now follows a light-first academic workspace direction: warm paper surfaces, ink text, brand coral/green/yellow accents, and an AY panel that reads as a companion chat rather than a terminal-like sidecar.
+
 ## Verdict placeholder
 
 | Decision | Notes |

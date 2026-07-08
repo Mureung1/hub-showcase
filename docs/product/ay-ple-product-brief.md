@@ -251,6 +251,8 @@ MarkdownProjection 원칙:
 
 UIPrototypeSpike에서는 NotebookLM의 source-grounded workflow, Obsidian의 local-first workspace 감각, VS Code의 side panel과 co-control 패턴을 참고하되, 일반 대학생에게 과한 개발자 UI를 그대로 가져오지 않는다.
 
+AY-PLE의 visual direction은 기존 다크 IDE 테마가 아니라 밝은 학업 워크스페이스를 기본값으로 둔다. 구체적인 색상, surface, 컴포넌트 톤은 [AY-PLE Design System Direction](ay-ple-design-system.md)에 둔다.
+
 ## 검토 중심 학업 워크스페이스
 
 첫 prototype과 MVP UX의 중심은 대시보드가 아니라 검토 중심 학업 워크스페이스다. 학생이 즉시 이해해야 할 규칙은 다음과 같다.

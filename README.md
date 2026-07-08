@@ -13,6 +13,7 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 | 문서 컨벤션 | [docs/README.md](docs/README.md) | 프로젝트 문서 위치와 관리 규칙 |
 | 제품 기획 | [AY-PLE Product Brief](docs/product/ay-ple-product-brief.md) | 문제 정의, 제품 테제, MVP 방향 |
 | 제품 기획 | [Review Workspace Scenario](docs/product/ay-ple-review-workspace-scenario.md) | 사용자 시나리오와 화면 단위 prototype 구조 |
+| 제품 기획 | [AY-PLE Design System Direction](docs/product/ay-ple-design-system.md) | 밝은 학업 워크스페이스 중심의 브랜드/UI 기준 |
 | 기술 구조 | [Codex Runtime Isolation](docs/architecture/codex-runtime-isolation.md) | Codex runtime 격리와 실행 경계 |
 | Spike 계획 | [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | Codex 실행환경 소유권 PoC 계획 |
 | ADR | [0001. Use file auth store for runtime spike](docs/adr/0001-use-file-auth-store-for-runtime-spike.md) | runtime spike의 인증 저장소 결정 |

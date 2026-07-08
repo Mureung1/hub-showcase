@@ -46,6 +46,7 @@ Root companion docs:
 | --- | --- | --- |
 | AY-PLE Product Brief | [product/ay-ple-product-brief.md](product/ay-ple-product-brief.md) | Draft |
 | AY-PLE Review Workspace Scenario | [product/ay-ple-review-workspace-scenario.md](product/ay-ple-review-workspace-scenario.md) | Draft |
+| AY-PLE Design System Direction | [product/ay-ple-design-system.md](product/ay-ple-design-system.md) | Draft |
 | Codex Runtime Isolation | [architecture/codex-runtime-isolation.md](architecture/codex-runtime-isolation.md) | Draft |
 | Runtime Ownership Spike Plan | [spikes/codex-runtime-ownership/plan.md](spikes/codex-runtime-ownership/plan.md) | Draft |
 | Runtime auth ADR | [adr/0001-use-file-auth-store-for-runtime-spike.md](adr/0001-use-file-auth-store-for-runtime-spike.md) | Accepted |

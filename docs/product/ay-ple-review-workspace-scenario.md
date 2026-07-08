@@ -2,7 +2,7 @@
 
 작성일: 2026-07-08
 상태: Draft
-관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [ADR 0002](../adr/0002-use-first-class-academic-objects-with-derived-operational-views.md)
+관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Design System Direction](ay-ple-design-system.md), [ADR 0002](../adr/0002-use-first-class-academic-objects-with-derived-operational-views.md)
 
 ## 목적
 
@@ -38,6 +38,8 @@ AY-PLE의 첫 prototype은 대시보드가 아니라 검토 중심 작업공간�
 ## 화면 구조
 
 Prototype은 **하나의 선택 자료 검토 화면 + 두 상태 + 선택 자료 탭**으로 만든다.
+
+Visual tone은 다크 IDE가 아니라 밝은 학업 워크스페이스를 따른다. 자료를 읽는 중심 영역은 종이 같은 밝은 surface로 두고, AY 대화 패널은 warm surface와 말풍선으로 보여준다.
 
 | 상태 | 목적 | 표시 |
 | --- | --- | --- |
