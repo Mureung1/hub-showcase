@@ -18,8 +18,6 @@
   <body>
     <input class="control" type="radio" name="workspace-tab" id="tab-notice" checked>
     <input class="control" type="radio" name="workspace-tab" id="tab-syllabus">
-    <input class="control" type="radio" name="workspace-tab" id="tab-lecture">
-    <input class="control" type="radio" name="workspace-tab" id="tab-rubric">
 
     <div class="workspace-frame state-pending">
       <header class="workspace-header">
@@ -43,7 +41,7 @@
         <aside class="source-explorer" aria-label="자료 목록">
           <div class="explorer-head">
             <strong>자료</strong>
-            <span>4개 선택됨</span>
+            <span>2개 선택됨</span>
           </div>
           <div class="explorer-actions">
             <button>+ 자료 추가</button>
@@ -55,7 +53,7 @@
             <summary>
               <span class="twist" aria-hidden="true"></span>
               <strong>문제해결글쓰기</strong>
-              <span>4/5</span>
+              <span>2/5</span>
             </summary>
             <ul class="source-tree">
               <li class="source-row source-notice">
@@ -67,23 +65,23 @@
                 </span>
               </li>
               <li class="source-row source-syllabus">
-                <input type="checkbox" checked aria-label="problem-solving-syllabus.md 선택">
-                <span class="file-icon markdown"></span>
+                <input type="checkbox" checked aria-label="problem-solving-syllabus.pdf 선택">
+                <span class="file-icon pdf"></span>
                 <span class="file-main">
-                  <strong>problem-solving-syllabus.md</strong>
-                  <small>강의계획서 · 6월 24일</small>
+                  <strong>problem-solving-syllabus.pdf</strong>
+                  <small>강의계획서 · Markdown 추출본</small>
                 </span>
               </li>
-              <li class="source-row source-lecture">
-                <input type="checkbox" checked aria-label="week03-lecture.mp3 선택">
+              <li class="source-row source-lecture muted">
+                <input type="checkbox" aria-label="week03-lecture.mp3 선택">
                 <span class="file-icon audio"></span>
                 <span class="file-main">
                   <strong>week03-lecture.mp3</strong>
                   <small>수업 녹음 · 7월 7일</small>
                 </span>
               </li>
-              <li class="source-row source-rubric">
-                <input type="checkbox" checked aria-label="outline-rubric.png 선택">
+              <li class="source-row source-rubric muted">
+                <input type="checkbox" aria-label="outline-rubric.png 선택">
                 <span class="file-icon image"></span>
                 <span class="file-main">
                   <strong>outline-rubric.png</strong>
@@ -142,13 +140,11 @@
         <main class="editor-area" aria-label="선택한 자료 미리보기">
           <nav class="editor-tabs" aria-label="선택한 자료 탭">
             <label for="tab-notice">lms-outline-notice.txt</label>
-            <label for="tab-syllabus">problem-solving-syllabus.md</label>
-            <label for="tab-lecture">week03-lecture.mp3</label>
-            <label for="tab-rubric">outline-rubric.png</label>
+            <label for="tab-syllabus">problem-solving-syllabus.pdf</label>
           </nav>
 
           <div class="editor-toolbar">
-            <span>문제해결글쓰기 › 선택한 원본 자료 4개</span>
+            <span>문제해결글쓰기 › 선택한 원본 자료 2개</span>
             <span class="toolbar-state">자료 해석 입력 · 과제 후보 검토 대기</span>
           </div>
 
@@ -157,16 +153,8 @@
               <iframe class="source-preview-frame" title="lms-outline-notice.txt 미리보기" src="previews/lms-outline-notice.html"></iframe>
             </article>
 
-            <article class="tab-panel syllabus-tab source-preview-panel" aria-label="problem-solving-syllabus.md 미리보기">
-              <iframe class="source-preview-frame" title="problem-solving-syllabus.md 미리보기" src="previews/problem-solving-syllabus.html"></iframe>
-            </article>
-
-            <article class="tab-panel lecture-tab source-preview-panel" aria-label="week03-lecture.mp3 미리보기">
-              <iframe class="source-preview-frame" title="week03-lecture.mp3 미리보기" src="previews/week03-lecture.html"></iframe>
-            </article>
-
-            <article class="tab-panel rubric-tab source-preview-panel" aria-label="outline-rubric.png 미리보기">
-              <iframe class="source-preview-frame" title="outline-rubric.png 미리보기" src="previews/outline-rubric.html"></iframe>
+            <article class="tab-panel syllabus-tab source-preview-panel" aria-label="problem-solving-syllabus.pdf 미리보기">
+              <iframe class="source-preview-frame" title="problem-solving-syllabus.pdf 미리보기" src="previews/problem-solving-syllabus.html"></iframe>
             </article>
           </section>
         </main>

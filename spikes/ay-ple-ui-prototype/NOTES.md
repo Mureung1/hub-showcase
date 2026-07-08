@@ -20,13 +20,11 @@
 | Editor tab | Source explorer row | What it tests |
 | --- | --- | --- |
 | `lms-outline-notice.txt` | 문제해결글쓰기 checked source | Whether the center surface reads as the opened source selected from the explorer. |
-| `problem-solving-syllabus.md` | 문제해결글쓰기 checked source | Whether supporting course policy material can be inspected without leaving the review workspace. |
-| `week03-lecture.mp3` | 문제해결글쓰기 checked source | Whether media/transcript material can sit beside text sources as ModelingRun input. |
-| `outline-rubric.png` | 문제해결글쓰기 checked source | Whether image/OCR material can be inspected as part of the same source set. |
+| `problem-solving-syllabus.pdf` | 문제해결글쓰기 checked source | Whether a syllabus PDF can appear as extracted Markdown with edit/preview controls. |
 
 ## Current read
 
-User feedback on 2026-07-08: the editor tabs should be the actual selected source rows from the source explorer, not generated workspace surfaces. The prototype now uses pure HTML/CSS radio tabs for the four selected 문제해결글쓰기 resources: `lms-outline-notice.txt`, `problem-solving-syllabus.md`, `week03-lecture.mp3`, and `outline-rubric.png`.
+User feedback on 2026-07-08: the editor tabs should be the actual selected source rows from the source explorer, not generated workspace surfaces. The prototype now uses pure HTML/CSS radio tabs for the two selected 문제해결글쓰기 resources: `lms-outline-notice.txt` and `problem-solving-syllabus.pdf`.
 
 The primary layout is now an AY-PLE three-pane academic workspace: left source panel, center source preview surface, and right AY conversation panel. The center preview stays focused on the selected raw material, while accept/edit/reject controls live inline inside the right-side messages.
 
@@ -38,7 +36,7 @@ User feedback on 2026-07-08: the original prototype file was too large as a sing
 
 User feedback on 2026-07-08: preview bodies should not be encoded inside the main workspace shell. The four selected source previews now live as separate HTML files under `previews/`, and the two state shells import them with iframe panels.
 
-User feedback on 2026-07-08: source previews should respect the source extension instead of all looking like the same document. The preview files now render `.txt` as plain text, `.md` as Markdown source plus rendered fields, `.mp3` as an audio/transcript preview, and `.png` as an image/OCR preview.
+User feedback on 2026-07-08: `mp3` and `png` selected sources made the preview feel broader than the assignment scenario. The source explorer still shows the surrounding materials and other courses, but only `lms-outline-notice.txt` and `problem-solving-syllabus.pdf` are selected and opened as preview tabs. The txt preview looks like a plain text file, while the syllabus preview shows Markdown extracted from the PDF with CSS-only `편집하기` / `프리뷰 보기` controls.
 
 User feedback on 2026-07-08: generated image mockups were making the app spec and HTML/CSS prototype diverge. Standalone screen mockup images were removed; the remaining generated images are narrow brand assets wired directly into the HTML/CSS prototype.
 

@@ -275,9 +275,7 @@ body {
 }
 
 #tab-notice:checked ~ .workspace-frame .source-row.source-notice,
-#tab-syllabus:checked ~ .workspace-frame .source-row.source-syllabus,
-#tab-lecture:checked ~ .workspace-frame .source-row.source-lecture,
-#tab-rubric:checked ~ .workspace-frame .source-row.source-rubric {
+#tab-syllabus:checked ~ .workspace-frame .source-row.source-syllabus {
   background: #e8f4ef;
 }
 
@@ -324,6 +322,7 @@ body {
 
 .file-icon.text,
 .file-icon.markdown,
+.file-icon.pdf,
 .file-icon.image {
   border: 2px solid currentColor;
   border-radius: 3px;
@@ -348,6 +347,21 @@ body {
   top: 3px;
   font-size: 9px;
   font-weight: 800;
+}
+
+.file-icon.pdf {
+  color: var(--red);
+}
+
+.file-icon.pdf::after {
+  content: "PDF";
+  position: absolute;
+  left: 2px;
+  top: 5px;
+  color: currentColor;
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: 0;
 }
 
 .file-icon.audio::before {
@@ -412,9 +426,7 @@ body {
 }
 
 #tab-notice:checked ~ .workspace-frame label[for="tab-notice"],
-#tab-syllabus:checked ~ .workspace-frame label[for="tab-syllabus"],
-#tab-lecture:checked ~ .workspace-frame label[for="tab-lecture"],
-#tab-rubric:checked ~ .workspace-frame label[for="tab-rubric"] {
+#tab-syllabus:checked ~ .workspace-frame label[for="tab-syllabus"] {
   border-top-color: var(--accent);
   background: var(--editor);
   color: var(--text);
@@ -449,9 +461,7 @@ body {
 }
 
 #tab-notice:checked ~ .workspace-frame .notice-tab,
-#tab-syllabus:checked ~ .workspace-frame .syllabus-tab,
-#tab-lecture:checked ~ .workspace-frame .lecture-tab,
-#tab-rubric:checked ~ .workspace-frame .rubric-tab {
+#tab-syllabus:checked ~ .workspace-frame .syllabus-tab {
   display: block;
 }
 
@@ -579,18 +589,47 @@ body {
 
 .plain-text-view {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
   overflow: hidden;
 }
 
-.line-number {
-  padding: 14px 0;
-  border-right: 1px solid var(--line);
+.text-file-meta {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--line);
   background: #f4eadb;
   color: var(--faint);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
-  text-align: center;
+  font-size: 11px;
+}
+
+.txt-lines {
+  margin: 0;
+  padding: 14px 0;
+  list-style: none;
+  counter-reset: txt-line;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.txt-lines li {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  min-height: 25px;
+  margin: 0;
+  color: #23323a;
+  white-space: pre-wrap;
+}
+
+.txt-lines li::before {
+  counter-increment: txt-line;
+  content: counter(txt-line);
+  padding-right: 14px;
+  border-right: 1px solid var(--line);
+  color: var(--faint);
+  text-align: right;
 }
 
 .plain-text-view pre,
@@ -607,6 +646,79 @@ body {
 
 .markdown-source-view {
   border-color: rgba(60, 120, 216, 0.28);
+}
+
+.preview-toggle-input {
+  position: fixed;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.preview-doc-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.preview-doc-header div:first-child {
+  min-width: 0;
+}
+
+.preview-switch {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+}
+
+.preview-switch label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 13px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+#syllabus-edit:checked ~ .preview-doc-header label[for="syllabus-edit"],
+#syllabus-preview:checked ~ .preview-doc-header label[for="syllabus-preview"] {
+  background: #dff5f0;
+  color: #13645d;
+}
+
+.markdown-mode-panels {
+  min-height: 270px;
+}
+
+.markdown-edit-panel,
+.markdown-rendered-panel {
+  display: none;
+}
+
+#syllabus-edit:checked ~ .markdown-mode-panels .markdown-edit-panel,
+#syllabus-preview:checked ~ .markdown-mode-panels .markdown-rendered-panel {
+  display: block;
+}
+
+.markdown-editor-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  background: #f4eadb;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 740;
 }
 
 .audio-player-mock {

@@ -272,10 +272,10 @@ AY-PLE의 visual direction은 기존 다크 IDE 테마가 아니라 밝은 학�
 | 화면 영역 | 보여줄 것 | 모델링 의도 |
 | --- | --- | --- |
 | Source explorer | 과목별 RawMaterial, SourceSelection, ModelingRun 상태 | AY-PLE가 선택한 과목 자료 묶음에서 시작함을 보여준다. |
-| Center source preview | 선택한 `txt`, `md`, `mp3`, `png` 원본 자료 preview | 학생이 AY 제안을 원본 자료와 함께 확인하게 한다. |
+| Center source preview | 선택한 `txt` 원문과 syllabus Markdown 추출 preview | 학생이 AY 제안을 원본 자료와 함께 확인하게 한다. |
 | 변경 제안 브리핑 | 과제 생성 제안과 수락 후 반영 결과 | AY 제안과 사용자 확인 경계를 ChatSidecar 안에서 보여준다. |
 | Evidence inline content | source quote와 field mapping table | "왜 이 값을 믿는가"를 field-level로 검토한다. |
-| Source tabs | 선택한 RawMaterial preview surfaces | 여러 자료가 하나의 SourceSelection으로 AgentModeling에 들어감을 보여준다. |
+| Source tabs | `lms-outline-notice.txt`, `problem-solving-syllabus.pdf` | 두 자료가 하나의 SourceSelection으로 AgentModeling에 들어감을 보여준다. |
 | ChatSidecar | 현재 선택한 자료와 변경 제안에 대한 짧은 설명, 수락/수정/거절, 반영 결과 브리핑 | GUI와 대화가 같은 검토 맥락을 다룬다. |
 
 타임라인, 추천 할 일, 읽기용 정리 문서의 실제 화면 위치는 아직 확정하지 않는다. 이 표면들은 과제 상태에서 파생되는 후속 UX로 남기되, 오늘 prototype에서는 SourceSelection 검토와 과제 반영 브리핑을 먼저 고정한다.
