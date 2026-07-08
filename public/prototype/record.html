@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>기록 작성 · 챌린지로그 프로토타입</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="screen">
+  <header class="topbar">
+    <p class="brand">Prototype</p>
+    <h1>기록 작성</h1>
+  </header>
+
+  <main class="content">
+    <section class="card">
+      <p class="tag">오늘의 챌린지</p>
+      <h2>오늘의 하늘</h2>
+    </section>
+
+    <form onsubmit="return false">
+      <div class="field">
+        <label for="photo">사진</label>
+        <div class="upload-box">
+          오늘의 챌린지 사진을 올려주세요
+          <input id="photo" type="file" accept="image/*" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="memo">한 줄 메모</label>
+        <textarea id="memo" rows="2" maxlength="60" placeholder="오늘의 순간을 한 줄로 남겨보세요"></textarea>
+        <p class="char-count">0 / 60</p>
+      </div>
+
+      <button class="btn-primary" type="submit">기록 완료하기</button>
+    </form>
+
+    <section class="card" style="margin-top: 24px">
+      <p class="tag">제출 후 예시 — AI 데일리 케어</p>
+      <p style="color: var(--color-heading); font-size: 14px">
+        "오늘 하늘 사진 잘 남겼어요. 하루를 잘 마무리하고 계시네요, 내일도 편안한 하늘이었으면 좋겠어요."
+      </p>
+      <p style="font-size: 12px; margin-top: 8px">
+        기록을 제출하면 이런 응원·제안 메시지가 한 번 표시돼요. 점수나 등급은 없어요.
+      </p>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="index.html"><span class="icon">🏠</span>홈</a>
+    <a href="record.html" aria-current="page"><span class="icon">📷</span>기록</a>
+    <a href="calendar.html"><span class="icon">📅</span>캘린더</a>
+    <a href="rooms.html"><span class="icon">👥</span>친구 방</a>
+    <a href="settings.html"><span class="icon">⚙️</span>설정</a>
+  </nav>
+</div>
+</body>
+</html>
