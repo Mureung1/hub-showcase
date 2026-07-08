@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TimeTable 추천 프로토타입</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="phone">
+  <header class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="뒤로가기">‹</button>
+    <h1 id="pageTitle">시간표 추천</h1>
+  </header>
+
+  <main>
+    <!-- ================= 화면 1: 조건 입력 ================= -->
+    <section id="formScreen">
+      <div class="section-title">🗓️ 시간표 조건 입력</div>
+      <p class="section-desc">원하는 조건을 입력하면 맞춤 시간표를 추천해드려요.</p>
+
+      <div class="field-list">
+        <div class="field">
+          <div class="field-label"><span class="ico">🏛️</span>학과</div>
+          <select id="dept">
+            <option>컴퓨터공학</option>
+            <option>전자공학</option>
+            <option>경영학</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="ico">🎓</span>학년</div>
+          <select id="year">
+            <option>1학년</option><option>2학년</option><option selected>3학년</option><option>4학년</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="ico">📅</span>공강 요일</div>
+          <select id="offDay">
+            <option value="none">상관없음</option>
+            <option value="월">월요일</option>
+            <option value="화">화요일</option>
+            <option value="수" selected>수요일</option>
+            <option value="목">목요일</option>
+            <option value="금">금요일</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="ico">☀️</span>오전 수업</div>
+          <select id="morning">
+            <option value="any" selected>상관없음</option>
+            <option value="avoid">피하고 싶어요</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="ico">👥</span>팀플</div>
+          <select id="team">
+            <option value="any">상관없음</option>
+            <option value="dislike" selected>싫음</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="ico">🎯</span>목표 학점</div>
+          <select id="targetCredit">
+            <option value="12">12학점</option>
+            <option value="15" selected>15학점</option>
+            <option value="18">18학점</option>
+            <option value="21">21학점</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="note-box">
+        ℹ️ "목표 학점"은 이번 학기에 듣고 싶은 <b>총 이수학점</b>이에요. 정확히 맞는 조합이 없으면 가장 가까운 학점 조합을 대신 추천해드려요.
+      </div>
+
+      <button class="primary-btn" id="genBtn">✦ 시간표 추천 받기</button>
+    </section>
+
+    <!-- ================= 화면 2: 추천 결과 ================= -->
+    <section id="resultScreen" class="hidden">
+      <div id="resultList"></div>
+      <button class="ghost-btn" id="editBtn">조건 다시 입력하기</button>
+    </section>
+  </main>
+
+  <nav class="bottombar">
+    <button class="nav-tab" data-tab="home"><span class="nav-ico">🏠</span>홈</button>
+    <button class="nav-tab active" data-tab="table"><span class="nav-ico">📅</span>시간표</button>
+    <button class="nav-tab" data-tab="plan"><span class="nav-ico">🔖</span>일정</button>
+  </nav>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
