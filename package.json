@@ -1,0 +1,13 @@
+{
+  "name": "hub",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w intro",
+    "build": "npm run build -w intro",
+    "lint": "npm run lint -w intro"
+  }
+}
