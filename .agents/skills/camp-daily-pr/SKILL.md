@@ -4,9 +4,11 @@ description: Create, update, and merge an agent-written fork daily integration P
 disable-model-invocation: true
 ---
 
-# Camp Daily PR
+# Fork Daily Integration PR
 
 Create, update, and merge the fork-local daily integration PR from the current `codex/w<week>d<day>` branch to `N180_하성욱`. This daily PR is an internal integration/review artifact and can be created, updated, labelled, and merged without further approval.
+
+Despite this skill's historical name, the daily integration PR is not the upstream camp submission PR. Everything from `codex/w<week>d<day>` through `swh3467:N180_하성욱` stays inside the participant's fork. Only the PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` is the camp submission surface.
 
 Do not create, update, or merge the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` unless the user explicitly asks to submit to camp or continue to the upstream camp submission PR. The final camp submission surface is the upstream PR, but it is not part of the default daily PR action.
 
@@ -22,6 +24,8 @@ Use the camp week/day as the daily branch identity:
 | Concern | Convention |
 | --- | --- |
 | Daily work branch | Use `codex/w<week>d<day>`, for example `codex/w1d4`. This mirrors the camp mission day while keeping the branch ASCII and CLI-friendly. |
+| Fork integration branch | Use `swh3467:N180_하성욱`. This is still inside the participant's fork. |
+| Upstream camp submission branch | Use `connect-AIAgentChallenge-26-1/hub:N180_하성욱` as the base and `swh3467:N180_하성욱` as the head. |
 | Camp mission labels | Use the camp-provided labels with the same week/day prefix, for example `[1-3] 기획완성`, `[1-3] 프로토타이핑`, or `[1-4] design-system`. Labels describe the submitted mission category on PRs. |
 
 When creating or updating PRs, discover available labels before writing the PR and apply the relevant camp labels. Prefer labels whose bracket prefix matches the current daily branch, such as `[1-4]` for `codex/w1d4`. If multiple labels for that day are relevant, apply all of them. If the correct label is unclear and the user is not available, choose the smallest set that matches the changed work and state the assumption in the final report.
@@ -99,7 +103,7 @@ Fetch `fork` and `origin`, then check whether the daily branch is already contai
 
 - `git merge-base --is-ancestor <daily-branch> fork/N180_하성욱` succeeds.
 
-Always report the upstream submission readiness status, but do not create or update the upstream camp submission PR unless the user explicitly asked for camp submission in this turn.
+Always report the upstream submission readiness status, but do not create, update, or merge the upstream camp submission PR unless the user explicitly asked for camp submission in this turn.
 
 If the daily branch is not contained in `fork/N180_하성욱` after the daily PR merge step, do not claim that the latest daily work has been submitted. Report:
 
