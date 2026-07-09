@@ -18,6 +18,19 @@ TODO 앱과 캘린더는 이미 많습니다. 하지만 정작 어려운 것은 
 
 | Docs | Description |
 |------|-------------|
-| docs/plan.md | 기획서 (문제 정의 · 시나리오 · User Flow · 화면 목록(IA) · 와이어프레임 · 기능 · MVP) |
-| docs/prototype/ | 순수 HTML·CSS 프로토타입 (디자인 보드 · 화이트 노이즈 테마 · ADHD 기능 제안) |
-| docs/checklist.md | 개발 계획 및 작업 분해 |
+| [Wiki](https://github.com/imjyong/hub/wiki) | 상세 기획서, 환경 설정, 개발 프로세스, 트러블 슈팅 등 |
+| [docs/plan.md](docs/plan.md) | 기획서 슬라이드 (문제 정의 · 시나리오 · User Flow · 화면 목록(IA) · 와이어프레임 · 기능 · MVP) |
+| [docs/prototype/](docs/prototype/) | 순수 HTML·CSS 프로토타입 (디자인 보드 · 화이트 노이즈 테마 · ADHD 기능 제안) |
+| [docs/checklist.md](docs/checklist.md) | 개발 계획 및 작업 분해 |
+
+## 📁 폴더 구조
+
+```
+hub/
+├── docs/
+│   ├── plan.md        # 기획서 슬라이드
+│   ├── checklist.md   # 작업 분해 및 매일 할 일
+│   ├── images/        # 슬라이드, 다이어그램 이미지
+│   └── prototype/     # 순수 HTML·CSS 프로토타입
+└── .claude/skills/    # Claude가 작업할 때 따르는 규칙
+```
