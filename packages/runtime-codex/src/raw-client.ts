@@ -9,7 +9,13 @@ import type {
   ClientRequest,
   InitializeParams,
   InitializeResponse,
+  ServerNotification,
 } from './internal/codex-app-server-protocol/generated/index.js'
+import type { ThreadStartParams } from './internal/codex-app-server-protocol/generated/v2/ThreadStartParams.js'
+import type { ThreadStartResponse } from './internal/codex-app-server-protocol/generated/v2/ThreadStartResponse.js'
+import type { TurnStartParams } from './internal/codex-app-server-protocol/generated/v2/TurnStartParams.js'
+import type { TurnStartResponse } from './internal/codex-app-server-protocol/generated/v2/TurnStartResponse.js'
+import type { UserInput } from './internal/codex-app-server-protocol/generated/v2/UserInput.js'
 
 export type CodexRuntimeHome = {
   codexHome: string
@@ -42,6 +48,8 @@ export type CodexRawDebugLogEntry = {
     | 'stdout'
     | 'stderr'
     | 'message'
+    | 'response'
+    | 'notification'
     | 'parse_error'
     | 'exit'
     | 'error'
@@ -49,6 +57,40 @@ export type CodexRawDebugLogEntry = {
   raw?: string
   message?: string
   data?: Record<string, unknown>
+}
+
+export type CodexRawTextInput = {
+  type: 'text'
+  text: string
+  text_elements: []
+}
+
+export type CodexRawTurnInput = CodexRawTextInput
+
+export type CodexThreadStartInput = {
+  cwd?: string | null
+  ephemeral?: boolean | null
+}
+
+export type CodexThreadStartResult = {
+  threadId: string
+}
+
+export type CodexTurnStartInput = {
+  threadId: string
+  input: CodexRawTurnInput[]
+  cwd?: string | null
+}
+
+export type CodexTurnStartResult = {
+  turnId: string
+}
+
+export type CodexRawServerNotification = {
+  timestamp: string
+  method: string
+  params?: unknown
+  raw: Record<string, unknown>
 }
 
 export type CodexInitializeResponse = {
@@ -88,6 +130,8 @@ type PendingResponse = {
 
 type CodexResponseMessage = {
   id?: string | number
+  method?: string
+  params?: unknown
   result?: unknown
   error?: {
     message?: string
@@ -95,6 +139,10 @@ type CodexResponseMessage = {
     data?: unknown
   }
 }
+
+type NotificationResolver = (
+  notification: CodexRawServerNotification | undefined,
+) => void
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const defaultTimeoutMs = 15000
@@ -112,9 +160,12 @@ export class CodexRawClient {
   private readonly codexArgs: string[]
   private readonly debugLog: CodexRawDebugLogEntry[] = []
   private readonly pendingResponses = new Map<string, PendingResponse>()
+  private readonly notificationQueue: CodexRawServerNotification[] = []
+  private readonly notificationResolvers: NotificationResolver[] = []
   private child: ChildProcessWithoutNullStreams | undefined
   private stdoutReader: readline.Interface | undefined
   private stderrReader: readline.Interface | undefined
+  private notificationStreamClosed = false
   private nextRequestId = 1
 
   constructor(options: CodexRawClientOptions = {}) {
@@ -151,8 +202,7 @@ export class CodexRawClient {
   async initialize(): Promise<CodexInitializeResult> {
     this.start()
 
-    const requestId = this.nextRequestId
-    this.nextRequestId += 1
+    const requestId = this.createRequestId()
 
     const params: InitializeParams = {
       clientInfo: this.clientInfo,
@@ -179,12 +229,76 @@ export class CodexRawClient {
     }
   }
 
+  async startThread(
+    input: CodexThreadStartInput = {},
+  ): Promise<CodexThreadStartResult> {
+    this.start()
+
+    const requestId = this.createRequestId()
+    const params: ThreadStartParams = {
+      cwd: input.cwd ?? this.cwd,
+    }
+
+    if (input.ephemeral !== undefined) {
+      params.ephemeral = input.ephemeral
+    }
+
+    const request: Extract<ClientRequest, { method: 'thread/start' }> = {
+      method: 'thread/start',
+      id: requestId,
+      params,
+    }
+    const response = toThreadStartResponse(
+      await this.sendRequest(requestId, request),
+    )
+
+    return {
+      threadId: response.thread.id,
+    }
+  }
+
+  async startTurn(input: CodexTurnStartInput): Promise<CodexTurnStartResult> {
+    this.start()
+
+    const requestId = this.createRequestId()
+    const params: TurnStartParams = {
+      threadId: input.threadId,
+      input: input.input.map(toUserInput),
+      cwd: input.cwd,
+    }
+    const request: Extract<ClientRequest, { method: 'turn/start' }> = {
+      method: 'turn/start',
+      id: requestId,
+      params,
+    }
+    const response = toTurnStartResponse(
+      await this.sendRequest(requestId, request),
+    )
+
+    return {
+      turnId: response.turn.id,
+    }
+  }
+
+  async *notifications(): AsyncIterable<CodexRawServerNotification> {
+    while (true) {
+      const notification = await this.nextNotification()
+
+      if (!notification) {
+        return
+      }
+
+      yield notification
+    }
+  }
+
   start(): void {
     if (this.child) {
       return
     }
 
     ensureCodexRuntimeHome(this.runtimeHome)
+    this.notificationStreamClosed = false
 
     const childEnv = buildChildEnv(this.runtimeHome, this.env)
     const child = spawn(this.codexBinPath, this.codexArgs, {
@@ -228,6 +342,7 @@ export class CodexRawClient {
         message: error.message,
       })
       this.rejectPendingResponses(error)
+      this.closeNotificationStream()
     })
 
     child.once('exit', (code, signal) => {
@@ -244,6 +359,7 @@ export class CodexRawClient {
           `Codex app-server exited before completing pending requests${code === null ? '' : ` with code ${code}`}${signal ? ` and signal ${signal}` : ''}`,
         ),
       )
+      this.closeNotificationStream()
     })
   }
 
@@ -255,6 +371,7 @@ export class CodexRawClient {
     this.stdoutReader = undefined
     this.stderrReader = undefined
     this.child = undefined
+    this.closeNotificationStream()
 
     if (!child) {
       return
@@ -282,7 +399,10 @@ export class CodexRawClient {
     await Promise.race([exitPromise, delay(1000)])
   }
 
-  private sendRequest(id: string | number, request: ClientRequest) {
+  private sendRequest(
+    id: string | number,
+    request: ClientRequest,
+  ): Promise<unknown> {
     const requestId = String(id)
     const responsePromise = new Promise<unknown>((resolvePromise, reject) => {
       const timeout = setTimeout(() => {
@@ -313,6 +433,22 @@ export class CodexRawClient {
     this.sendJson(request)
 
     return responsePromise
+  }
+
+  private nextNotification(): Promise<CodexRawServerNotification | undefined> {
+    const notification = this.notificationQueue.shift()
+
+    if (notification) {
+      return Promise.resolve(notification)
+    }
+
+    if (this.notificationStreamClosed) {
+      return Promise.resolve(undefined)
+    }
+
+    return new Promise((resolvePromise) => {
+      this.notificationResolvers.push(resolvePromise)
+    })
   }
 
   private sendJson(message: ClientRequest | ClientNotification): void {
@@ -356,12 +492,17 @@ export class CodexRawClient {
       kind: 'message',
       data: {
         id: message.id,
+        method: message.method,
         hasResult: message.result !== undefined,
         hasError: message.error !== undefined,
       },
     })
 
     if (message.id === undefined) {
+      if (typeof message.method === 'string') {
+        this.handleServerNotification(message, message.method)
+      }
+
       return
     }
 
@@ -376,6 +517,15 @@ export class CodexRawClient {
     this.pendingResponses.delete(requestId)
 
     if (message.error) {
+      this.log({
+        source: 'server',
+        kind: 'response',
+        data: {
+          id: message.id,
+          method: pendingResponse.method,
+          hasError: true,
+        },
+      })
       pendingResponse.reject(
         new Error(
           `${pendingResponse.method} returned error: ${message.error.message ?? 'unknown Codex app-server error'}`,
@@ -384,7 +534,67 @@ export class CodexRawClient {
       return
     }
 
+    this.log({
+      source: 'server',
+      kind: 'response',
+      data: {
+        id: message.id,
+        method: pendingResponse.method,
+        hasError: false,
+      },
+    })
     pendingResponse.resolve(message.result)
+  }
+
+  private handleServerNotification(
+    message: CodexResponseMessage,
+    method: string,
+  ): void {
+    const serverNotification = {
+      ...message,
+      method,
+    } as ServerNotification
+    const timestamp = new Date().toISOString()
+    const notification: CodexRawServerNotification = {
+      timestamp,
+      method: serverNotification.method,
+      params: serverNotification.params,
+      raw: message as unknown as Record<string, unknown>,
+    }
+
+    this.log({
+      source: 'server',
+      kind: 'notification',
+      message: 'received Codex app-server notification',
+      data: {
+        method: notification.method,
+        params: notification.params,
+      },
+    })
+    this.pushNotification(notification)
+  }
+
+  private pushNotification(notification: CodexRawServerNotification): void {
+    const resolver = this.notificationResolvers.shift()
+
+    if (resolver) {
+      resolver(notification)
+      return
+    }
+
+    this.notificationQueue.push(notification)
+  }
+
+  private closeNotificationStream(): void {
+    if (this.notificationStreamClosed) {
+      return
+    }
+
+    this.notificationStreamClosed = true
+
+    for (const resolver of this.notificationResolvers.splice(0)) {
+      resolver(undefined)
+    }
   }
 
   private rejectPendingResponses(error: Error): void {
@@ -400,6 +610,13 @@ export class CodexRawClient {
       timestamp: new Date().toISOString(),
       ...entry,
     })
+  }
+
+  private createRequestId(): number {
+    const requestId = this.nextRequestId
+    this.nextRequestId += 1
+
+    return requestId
   }
 }
 
@@ -531,11 +748,49 @@ function toInitializeResponse(value: unknown): CodexInitializeResponse {
   } satisfies InitializeResponse
 }
 
+function toThreadStartResponse(value: unknown): ThreadStartResponse {
+  readResponseObjectWithId(value, 'thread/start', 'thread')
+
+  return value as ThreadStartResponse
+}
+
+function toTurnStartResponse(value: unknown): TurnStartResponse {
+  readResponseObjectWithId(value, 'turn/start', 'turn')
+
+  return value as TurnStartResponse
+}
+
+function readResponseObjectWithId(
+  value: unknown,
+  method: string,
+  objectKey: string,
+): void {
+  if (!isRecord(value)) {
+    throw new Error(`${method} returned a non-object result`)
+  }
+
+  const object = value[objectKey]
+
+  if (!isRecord(object)) {
+    throw new Error(`${method} result is missing ${objectKey} object`)
+  }
+
+  readString(object, 'id')
+}
+
+function toUserInput(input: CodexRawTurnInput): UserInput {
+  return {
+    type: 'text',
+    text: input.text,
+    text_elements: [],
+  } satisfies Extract<UserInput, { type: 'text' }>
+}
+
 function readString(value: Record<string, unknown>, key: string): string {
   const field = value[key]
 
   if (typeof field !== 'string') {
-    throw new Error(`initialize result is missing string field: ${key}`)
+    throw new Error(`result is missing string field: ${key}`)
   }
 
   return field

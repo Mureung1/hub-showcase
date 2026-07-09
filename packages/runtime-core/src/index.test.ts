@@ -36,6 +36,26 @@ class FailingAdapter implements AgentRuntimeAdapter {
   }
 }
 
+class DebugLogAdapter implements AgentRuntimeAdapter {
+  readonly name = 'test'
+
+  async *run(): AsyncIterable<RuntimeAdapterEvent> {
+    yield {
+      type: 'debug_log',
+      entries: [
+        {
+          timestamp: '2026-07-09T00:00:00.000Z',
+          source: 'server',
+          kind: 'notification',
+          message: 'observed raw notification',
+          data: { method: 'turn/completed' },
+        },
+      ],
+    }
+    yield { type: 'completed' }
+  }
+}
+
 test('AgentRuntimeKernel records a completed run lifecycle and log', async () => {
   const kernel = new AgentRuntimeKernel({
     adapters: [new HappyPathAdapter()],
@@ -156,6 +176,30 @@ test('AgentRuntimeKernel records a failed run lifecycle and log', async () => {
       runId,
       startedAt: '2026-07-09T00:00:00.000Z',
       status: 'failed',
+    },
+  ])
+})
+
+test('AgentRuntimeKernel records adapter debug log entries outside normalized events', async () => {
+  const kernel = new AgentRuntimeKernel({
+    adapters: [new DebugLogAdapter()],
+    now: () => new Date('2026-07-09T00:00:00.000Z'),
+  })
+
+  const startedLog = kernel.startRun({ adapter: 'test', prompt: '관측해줘' })
+  const completedLog = await kernel.waitForRun(startedLog.runId)
+
+  assert.deepEqual(
+    completedLog.events.map((event) => event.type),
+    ['started', 'completed'],
+  )
+  assert.deepEqual(completedLog.debugLog, [
+    {
+      timestamp: '2026-07-09T00:00:00.000Z',
+      source: 'server',
+      kind: 'notification',
+      message: 'observed raw notification',
+      data: { method: 'turn/completed' },
     },
   ])
 })

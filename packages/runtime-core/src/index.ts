@@ -65,8 +65,18 @@ export type RuntimeRunLog = {
   output: string
   error?: string
   events: RuntimeRunEvent[]
+  debugLog?: RuntimeRunDebugLogEntry[]
   startedAt: string
   completedAt?: string
+}
+
+export type RuntimeRunDebugLogEntry = {
+  timestamp: string
+  source: string
+  kind: string
+  raw?: string
+  message?: string
+  data?: Record<string, unknown>
 }
 
 export type RuntimeRunSummary = {
@@ -100,6 +110,10 @@ export type RuntimeAdapterEvent =
   | {
       type: 'completed'
       output?: string
+    }
+  | {
+      type: 'debug_log'
+      entries: RuntimeRunDebugLogEntry[]
     }
 
 export type AgentRuntimeAdapter = {
@@ -297,6 +311,10 @@ export class AgentRuntimeKernel {
           })
         }
 
+        if (adapterEvent.type === 'debug_log') {
+          this.appendDebugLog(log, adapterEvent.entries)
+        }
+
         if (adapterEvent.type === 'completed') {
           if (adapterEvent.output !== undefined) {
             log.output = adapterEvent.output
@@ -316,6 +334,17 @@ export class AgentRuntimeKernel {
         this.failRun(log, toErrorMessage(error))
       }
     }
+  }
+
+  private appendDebugLog(
+    log: RuntimeRunLog,
+    entries: RuntimeRunDebugLogEntry[],
+  ): void {
+    if (entries.length < 1) {
+      return
+    }
+
+    log.debugLog = [...(log.debugLog ?? []), ...entries.map(cloneDebugLogEntry)]
   }
 
   private completeRun(log: RuntimeRunLog): void {
@@ -428,11 +457,21 @@ function cloneLog(log: RuntimeRunLog): RuntimeRunLog {
   return {
     ...log,
     events: log.events.map(cloneEvent),
+    debugLog: log.debugLog?.map(cloneDebugLogEntry),
   }
 }
 
 function cloneEvent(event: RuntimeRunEvent): RuntimeRunEvent {
   return { ...event }
+}
+
+function cloneDebugLogEntry(
+  entry: RuntimeRunDebugLogEntry,
+): RuntimeRunDebugLogEntry {
+  return {
+    ...entry,
+    data: entry.data ? { ...entry.data } : undefined,
+  }
 }
 
 export function isTerminalRuntimeRunStatus(status: RuntimeRunStatus): boolean {

@@ -16,7 +16,7 @@
     "build": "tsc",
     "generate:codex-types": "tsx scripts/generate-codex-app-server-types.ts",
     "smoke:codex": "tsx src/smoke.ts",
-    "test": "tsx --test \"src/**/*.test.ts\"",
+    "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json"
   },
   "devDependencies": {
@@ -25,6 +25,7 @@
     "typescript": "~6.0.2"
   },
   "dependencies": {
+    "@ay-ple/runtime-core": "0.0.0",
     "@openai/codex": "0.142.5"
   }
 }

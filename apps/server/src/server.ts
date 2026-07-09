@@ -4,6 +4,7 @@ import {
   isTerminalRuntimeRunEvent,
   type RuntimeRunEvent,
 } from '@ay-ple/runtime-core'
+import { CodexRuntimeAdapter } from '@ay-ple/runtime-codex'
 import { FakeRuntimeAdapter } from '@ay-ple/runtime-fake'
 import cors from 'cors'
 import dotenv from 'dotenv'
@@ -25,10 +26,11 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
   const fakeAdapter = new FakeRuntimeAdapter({
     delayMs: options.fakeDelayMs,
   })
+  const codexAdapter = new CodexRuntimeAdapter()
   const kernel =
     options.kernel ??
     new AgentRuntimeKernel({
-      adapters: [fakeAdapter],
+      adapters: [fakeAdapter, codexAdapter],
     })
   const canControlFakeAdapter = options.kernel === undefined
 

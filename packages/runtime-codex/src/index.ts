@@ -1,4 +1,8 @@
 export {
+  CodexRuntimeAdapter,
+  type CodexRuntimeAdapterOptions,
+} from './adapter.js'
+export {
   CodexRawClient,
   ensureCodexRuntimeHome,
   resolveDefaultCodexRuntimeHome,
@@ -10,5 +14,12 @@ export {
   type CodexRawClientInfo,
   type CodexRawClientOptions,
   type CodexRawDebugLogEntry,
+  type CodexRawServerNotification,
+  type CodexRawTextInput,
+  type CodexRawTurnInput,
   type CodexRuntimeHome,
+  type CodexThreadStartInput,
+  type CodexThreadStartResult,
+  type CodexTurnStartInput,
+  type CodexTurnStartResult,
 } from './raw-client.js'
