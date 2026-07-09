@@ -44,10 +44,6 @@ server/
 
 Express 서버는 FSD 대상이 아니므로 `server/`에 별도로 둔다. 프론트엔드에서 서버 API를 호출하는 공통 클라이언트가 필요해지면 `src/shared/api`에 둔다.
 
-## 현재 라이브러리
+## 기술 스택
 
-- Front-end runtime: React, React DOM, Vite, TypeScript
-- UI system: `@wanteddev/wds`, `@wanteddev/wds-icon`
-- Server runtime: Express
-- Dev tools: `tsx`, `concurrently`, Prettier
-- Test tools: Vitest, Supertest
+현재 사용 중인 라이브러리와 도입 예정 라이브러리는 `docs/tech-stack.md`를 기준으로 관리한다.
