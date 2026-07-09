@@ -10,7 +10,15 @@
 ## 실행 방법
 
 ```bash
-cd "Core Loop Builder"
+cd client
+npm install
+npm run dev
+```
+
+서버(Express) 실행:
+
+```bash
+cd server
 npm install
 npm run dev
 ```
