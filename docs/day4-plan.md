@@ -8,7 +8,7 @@ Day4는 PtoP의 기획과 프로토타입을 바탕으로 이후 개발이 흔�
 
 - 핵심 기능 화면을 기준으로 한 디자인 시스템
 - PtoP 디자인 제작에 사용할 개인 design skill
-- React + Express 기반 개발 환경과 Agent 지침 문서
+- React + NestJS 기반 개발 환경과 Agent 지침 문서
 
 ## 마스터클래스 정리 포인트
 
@@ -86,39 +86,43 @@ PtoP 화면을 만들거나 수정할 때 다음 기준으로 디자인을 검�
 ### 기본 스택
 
 - Frontend: React + Vite
-- Backend: Express
+- Backend: NestJS
 - API: GitHub REST API
 - 문서: Markdown
 - 스타일: CSS 또는 CSS Module 방식 우선 검토
 
-### 디렉토리 구조 후보
+### 모노레포 디렉토리 구조 후보
 
 ```text
 Project
-├─ client/
-│  ├─ src/
-│  └─ package.json
-├─ server/
-│  ├─ src/
-│  └─ package.json
+├─ apps/
+│  ├─ web/
+│  │  ├─ src/
+│  │  └─ package.json
+│  └─ api/
+│     ├─ src/
+│     └─ package.json
 ├─ docs/
 ├─ prototype/
-├─ CLAUDE.md 또는 Agent.md
+├─ AGENTS.md
 └─ README.md
 ```
 
-현재는 React/Vite 프로젝트가 루트에 있으므로, 2주차 개발 시작 전에 다음 중 하나를 결정한다.
+현재는 React/Vite 프로젝트가 루트에 있으므로, 2주차 개발 시작 전후로 다음 구조 전환을 계획한다.
 
-- 루트 React 구조를 유지하고 `server/`만 추가한다.
-- `client/`, `server/`로 분리하는 구조로 옮긴다.
+- 현재 React/Vite 앱을 `apps/web`으로 이동한다.
+- NestJS 백엔드 앱을 `apps/api`에 생성한다.
+- 공통 타입이나 유틸이 필요해지면 이후 `packages/shared`를 추가한다.
+- GitHub Pages는 `apps/web`만 빌드해 UI 테스트용으로 배포한다.
+- NestJS 백엔드는 Render, Railway, Fly.io 등 별도 서버 배포를 고려한다.
 
 ### 조사할 라이브러리
 
-- Express: API 서버 구성
+- NestJS: API 서버 구성
+- @nestjs/config: 환경 변수 관리
+- @nestjs/axios 또는 fetch: GitHub API 호출
 - cors: FE/BE 로컬 개발 연결
-- dotenv: GitHub token 등 환경 변수 관리
-- nodemon 또는 tsx: 서버 개발 실행
-- concurrently: client/server 동시 실행
+- concurrently: web/api 동시 실행
 - zod 또는 validator: Repository URL 검증
 
 ### 컨벤션
@@ -141,7 +145,7 @@ Project
 ```text
 docs: Day4 디자인 시스템 작업 계획 정리
 
-PtoP 핵심 화면 디자인 범위와 React/Express 개발 환경 조사 항목을 문서화한다.
+PtoP 핵심 화면 디자인 범위와 React/Nest 모노레포 개발 환경 조사 항목을 문서화한다.
 ```
 
 ### 개발 전에 더 결정할 것
@@ -171,7 +175,7 @@ PtoP 핵심 화면 디자인 범위와 React/Express 개발 환경 조사 항목
 - [ ] 디자인 시스템 항목 정리하기
 - [ ] PtoP design skill 초안 만들기
 - [ ] design skill 기준으로 현재 UI 점검하기
-- [ ] React + Express 디렉토리 구조 결정하기
+- [ ] React + NestJS 모노레포 디렉토리 구조 결정하기
 - [ ] 필요한 라이브러리와 도입 이유 정리하기
 - [ ] 커밋 컨벤션과 브랜치 규칙 정리하기
 - [ ] `CLAUDE.md` 또는 `Agent.md` 초안 작성하기

@@ -28,6 +28,43 @@ PtoP(Project to Portfolio)는 GitHub Repository를 분석해 대학생 개발자
 - API: GitHub REST API
 - 문서: Markdown
 
+## 모노레포 구조 계획
+
+현재 프로젝트는 루트에 React/Vite 앱이 있는 구조지만, 실제 서비스화를 고려해 2주차 개발 전후로 모노레포 구조로 전환한다.
+
+목표 구조:
+
+```text
+Project
+├─ apps/
+│  ├─ web/        # React + Vite 프론트엔드
+│  └─ api/        # NestJS 백엔드
+├─ docs/
+├─ prototype/
+├─ AGENTS.md
+└─ README.md
+```
+
+구조 선택 이유:
+
+- PtoP는 FE와 BE가 `Repository 입력 → 분석 요청 → 결과 표시` 흐름으로 강하게 연결되어 있어 한 저장소에서 관리하는 편이 효율적이다.
+- `apps/web`과 `apps/api`를 분리하면 배포는 각각 독립적으로 진행할 수 있다.
+- 추후 공통 타입이나 유틸이 필요해지면 `packages/shared`를 추가할 수 있다.
+- 프로젝트가 커져 FE/BE 팀이나 배포 권한이 분리되는 시점이 오면 별도 레포 분리를 다시 검토한다.
+
+배포 기준:
+
+- `apps/web`: GitHub Pages 또는 Vercel 같은 정적 프론트엔드 배포 대상
+- `apps/api`: Render, Railway, Fly.io, Vercel Serverless 등 별도 백엔드 배포 대상
+- GitHub Pages는 NestJS 서버를 실행할 수 없으므로 UI 테스트용 React 배포에만 사용한다.
+
+전환 시 주의할 점:
+
+- 루트 React 구조를 모노레포로 옮길 때 기능 변경과 폴더 이동을 같은 커밋에 과하게 섞지 않는다.
+- 기존 `prototype/`은 과제 제출용 정적 프로토타입으로 유지한다.
+- 배포 설정은 `apps/web`과 `apps/api`의 root directory를 명확히 지정한다.
+- Agent는 임의로 `client/`, `server/` 구조를 새로 만들지 말고 `apps/web`, `apps/api` 구조를 우선한다.
+
 ## 백엔드로 NestJS를 선택한 이유
 
 처음에는 Express를 기본 백엔드 후보로 두었지만, PtoP는 앞으로 Repository 분석, GitHub API 연동, 사용자별 분석 기록, AI 요약, 포트폴리오 초안 생성처럼 기능이 단계적으로 늘어날 가능성이 크다.
