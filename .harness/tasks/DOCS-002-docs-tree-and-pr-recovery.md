@@ -6,7 +6,7 @@
 Task: Vercel 문서 트리, 배포 접근성, PR CI와 충돌 복구
 Type: fix
 Owner: Codex
-Status: in_progress
+Status: done
 ```
 
 ## 2. Goal
@@ -60,14 +60,14 @@ git: conflict resolution merge
 
 ## 6. Acceptance Criteria
 
-- [ ] 모든 `docs/**/*.md`와 `docs/**/*.html`이 Home 문서 트리에 표시된다.
-- [ ] 각 폴더를 keyboard와 pointer로 접고 펼칠 수 있다.
-- [ ] 각 파일에서 해당 Markdown viewer 또는 HTML 문서로 이동할 수 있다.
-- [ ] `week1-completion-report.md`가 docs-only Vercel 배포에서 열린다.
-- [ ] 공개 배포의 모든 문서 URL과 내부 링크가 성공한다.
-- [ ] CI가 존재하지 않는 `setup-uv@v8` tag를 참조하지 않는다.
-- [ ] PR #3의 `.gitignore`, `package.json` 충돌이 해결된다.
-- [ ] 폐기된 root intro application을 활성 개발환경에 다시 포함하지 않는다.
+- [x] 모든 `docs/**/*.md`와 `docs/**/*.html`이 Home 문서 트리에 표시된다.
+- [x] 각 폴더를 keyboard와 pointer로 접고 펼칠 수 있다.
+- [x] 각 파일에서 해당 Markdown viewer 또는 HTML 문서로 이동할 수 있다.
+- [x] `week1-completion-report.md`가 docs-only Vercel 배포에서 열린다.
+- [x] 공개 배포의 모든 문서 URL과 내부 링크가 성공한다.
+- [x] CI가 존재하지 않는 `setup-uv@v8` tag를 참조하지 않는다.
+- [x] PR #3의 `.gitignore`, `package.json` 충돌이 해결된다.
+- [x] 폐기된 root intro application을 활성 개발환경에 다시 포함하지 않는다.
 
 ## 7. Verification Plan
 
@@ -86,10 +86,10 @@ Home 문서 트리 screenshot과 접기/펼치기 interaction 확인
 
 ## 8. Documentation Updates
 
-- [ ] README 문서 링크 확인
-- [ ] Wiki Home 구조 확인
-- [ ] validation/run report 갱신
-- [ ] 기능 spec과 data mapping 변경 없음 확인
+- [x] README 문서 링크 확인
+- [x] Wiki Home 카드와 Document Tree 구조 확인
+- [x] validation failure log와 run report 갱신
+- [x] 기능 spec과 data mapping 변경 없음 확인
 
 ## 9. Commit Plan
 
@@ -103,7 +103,8 @@ docs: record docs deployment verification
 
 ## 10. Self-check
 
-- [ ] 변경이 요청한 문서/CI/충돌 범위 안에 있는가?
-- [ ] 사용자 소유 문서를 보존했는가?
-- [ ] local과 deployed behavior를 각각 확인했는가?
-- [ ] PR 상태와 확인하지 못한 항목을 구분했는가?
+- [x] 변경이 요청한 문서/CI/충돌 범위 안에 있는가?
+- [x] 사용자 소유 디자인 비교 문서를 내용 변경 없이 공개 문서에 포함했는가?
+- [x] local과 deployed behavior를 각각 확인했는가?
+- [x] PR conflict 해결과 원격 CI conclusion을 구분했는가?
+- [ ] 원격 GitHub Actions 최종 conclusion은 push 후 GitHub UI에서 확인한다.
