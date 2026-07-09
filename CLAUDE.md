@@ -55,7 +55,7 @@ hub/
 - **프론트**: React 18 + Vite, react-router-dom, axios. 상태관리 라이브러리는 도입하지 않고 시작(필요해지면 그때 결정). 스타일은 컴포넌트별 CSS 파일 + 전역 CSS 변수 토큰.
 - **백엔드**: Express(ESM) + PostgreSQL. **ORM 없이 `pg` + raw SQL** — 선착순 재고 차감(원자적 `UPDATE ... WHERE 남은수량 >= qty`, `SELECT ... FOR UPDATE`)이 이 프로젝트의 기술 셀링포인트라 SQL을 직접 다룬다.
 - **위치 조회**: 1차 Haversine/PostGIS → Redis GeoSpatial은 "최적화 단계"로 도입해 전후 비교(기획서 §6).
-- **알림**: MVP는 인앱 알림/폴링. FCM 푸시는 여유 시.
+- **알림**: **FCM 푸시를 MVP에 포함**(server: `firebase-admin`, client: Firebase JS SDK + 서비스 워커). 인앱 알림을 병행하고, 푸시 권한 거부·미수신 대비 인앱 폴링을 폴백으로 둔다. Firebase 자격증명(서비스 계정 키)은 `server/.env` 경유로 관리하고 커밋하지 않는다.
 - **포트**: client 5173, server 4000. Vite dev 서버가 `/api`를 4000으로 프록시하므로 클라이언트 코드는 상대경로 `/api/...`만 사용한다.
 
 ## API·코드 컨벤션
