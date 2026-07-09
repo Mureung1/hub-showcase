@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import BlogHealthCard from "../components/BlogHealthCard";
 import BrandSummaryCard from "../components/BrandSummaryCard";
@@ -10,6 +11,7 @@ import { useInsights } from "../hooks/useInsights";
 import { usePosts } from "../hooks/usePosts";
 
 function Dashboard() {
+  const navigate = useNavigate();
   const { data: brandProfile } = useBrandProfile();
   const { data: briefing } = useBriefing();
   const { data: insight } = useInsights();
@@ -48,7 +50,7 @@ function Dashboard() {
             reason={briefing.reason}
             recommendedTopic={briefing.recommendedTopic}
             expectedEffect={briefing.expectedEffect}
-            onStart={() => {}}
+            onStart={() => navigate("/posts/promotion/new")}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-xl">
@@ -58,7 +60,7 @@ function Dashboard() {
               title="홍보글 작성"
               description="AI와 대화하며 브랜드에 맞는 홍보글을 작성합니다."
               actionLabel="작성하기"
-              onAction={() => {}}
+              onAction={() => navigate("/posts/promotion/new")}
             />
             <ActionCard
               variant="secondary"
