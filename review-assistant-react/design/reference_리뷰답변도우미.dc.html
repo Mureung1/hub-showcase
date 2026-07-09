@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" as="style" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+  <style>
+    body { margin: 0; background: oklch(97.5% 0.014 70); }
+    * { box-sizing: border-box; }
+    textarea:focus, button:focus { outline: none; }
+  </style>
+</helmet>
+
+<div style="font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif; background: oklch(97.5% 0.014 70); color: oklch(28% 0.02 50); min-height: 100vh; line-height: 1.55;">
+
+  <!-- Navbar -->
+  <div style="position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; background: oklch(99% 0.006 70 / 0.9); backdrop-filter: blur(8px); border-bottom: 1px solid oklch(90% 0.02 60);">
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; color: oklch(30% 0.02 50);">
+      <span>🍊</span><span>리뷰 답변 도우미</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 24px; font-size: 14px; font-weight: 600;">
+      <a href="#howitworks" style="color: oklch(40% 0.02 50); text-decoration: none;" style-hover="color: oklch(58% 0.18 40);">사용법</a>
+      <a href="#tool" style="background: oklch(64% 0.17 45); color: white; padding: 9px 18px; border-radius: 8px; text-decoration: none;" style-hover="background: oklch(58% 0.18 42);">바로 사용하기</a>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div style="text-align: center; padding: 56px 24px 40px; max-width: 720px; margin: 0 auto;">
+    <h1 style="font-size: 34px; font-weight: 800; margin: 0 0 12px; color: oklch(26% 0.03 45); letter-spacing: -0.01em;">손님 리뷰, 이제 고민하지 말고 답변하세요</h1>
+    <p style="font-size: 16px; color: oklch(45% 0.02 50); margin: 0 0 24px;">감정분석 · 반복문제 감지 · 개선제안, 붙여넣기 한 번으로 끝내세요</p>
+    <a href="#tool" style="display: inline-block; background: oklch(64% 0.17 45); color: white; font-size: 15px; font-weight: 700; padding: 13px 28px; border-radius: 10px; text-decoration: none; box-shadow: 0 6px 16px oklch(64% 0.17 45 / 0.3);" style-hover="background: oklch(58% 0.18 42);">지금 시작하기</a>
+  </div>
+
+  <!-- How it works -->
+  <div id="howitworks" style="max-width: 760px; margin: 0 auto; padding: 8px 24px 48px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 10px; background: oklch(99% 0.006 70); border: 1px solid oklch(91% 0.02 60); border-radius: 999px; padding: 10px 18px; font-size: 14px; font-weight: 600; color: oklch(40% 0.02 50);">
+      <span style="width: 22px; height: 22px; border-radius: 999px; background: oklch(64% 0.17 45); color: white; font-size: 12px; display: flex; align-items: center; justify-content: center;">1</span>
+      리뷰 붙여넣기
+    </div>
+    <span style="color: oklch(75% 0.02 50);">→</span>
+    <div style="display: flex; align-items: center; gap: 10px; background: oklch(99% 0.006 70); border: 1px solid oklch(91% 0.02 60); border-radius: 999px; padding: 10px 18px; font-size: 14px; font-weight: 600; color: oklch(40% 0.02 50);">
+      <span style="width: 22px; height: 22px; border-radius: 999px; background: oklch(64% 0.17 45); color: white; font-size: 12px; display: flex; align-items: center; justify-content: center;">2</span>
+      분석 시작
+    </div>
+    <span style="color: oklch(75% 0.02 50);">→</span>
+    <div style="display: flex; align-items: center; gap: 10px; background: oklch(99% 0.006 70); border: 1px solid oklch(91% 0.02 60); border-radius: 999px; padding: 10px 18px; font-size: 14px; font-weight: 600; color: oklch(40% 0.02 50);">
+      <span style="width: 22px; height: 22px; border-radius: 999px; background: oklch(64% 0.17 45); color: white; font-size: 12px; display: flex; align-items: center; justify-content: center;">3</span>
+      답변 복사
+    </div>
+  </div>
+
+  <!-- Tool -->
+  <div id="tool" style="max-width: 800px; margin: 0 auto; padding: 8px 24px 80px;">
+
+    <!-- Input card -->
+    <div style="background: oklch(99% 0.006 70); border: 1px solid oklch(91% 0.02 60); border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px oklch(40% 0.02 50 / 0.05);">
+      <label style="display: block; font-size: 15px; font-weight: 700; margin-bottom: 8px; color: oklch(30% 0.02 50);">리뷰 붙여넣기</label>
+      <textarea
+        value="{{ text }}"
+        onChange="{{ onTextChange }}"
+        placeholder="예) 음식은 맛있었는데 너무 오래 기다렸어요.&#10;직원분이 너무 불친절했어요.&#10;(리뷰 하나당 한 줄, 최대 15개)"
+        style="width: 100%; min-height: 160px; resize: vertical; border: 1px solid oklch(88% 0.02 60); border-radius: 10px; padding: 14px; font-size: 15px; font-family: inherit; color: oklch(28% 0.02 50); background: oklch(98.5% 0.01 70);"
+      ></textarea>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+        <span style="font-size: 13px; color: oklch(55% 0.02 50);">줄바꿈으로 리뷰를 구분해주세요 · 최대 15개</span>
+        <span style="font-size: 13px; color: oklch(55% 0.02 50);">{{ lineCount }}개 입력됨</span>
+      </div>
+      <button
+        onClick="{{ onAnalyze }}"
+        disabled="{{ loading }}"
+        style="margin-top: 16px; width: 100%; padding: 14px; font-size: 16px; font-weight: 700; color: white; background: oklch(64% 0.17 45); border: none; border-radius: 10px; cursor: pointer;"
+        style-hover="background: oklch(58% 0.18 42);"
+      >{{ analyzeButtonLabel }}</button>
+    </div>
+
+    <!-- Status message -->
+    <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top: 16px; display: flex; align-items: center; gap: 10px; color: oklch(45% 0.02 50); font-size: 14px; font-weight: 600;">
+        <span style="width: 16px; height: 16px; border-radius: 999px; border: 3px solid oklch(85% 0.03 45); border-top-color: oklch(60% 0.17 45); display: inline-block; animation: spin 0.7s linear infinite;"></span>
+        분석 중이에요...
+      </div>
+    </sc-if>
+
+    <!-- Error message -->
+    <sc-if value="{{ errorMessage }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top: 16px; padding: 14px 16px; background: oklch(94% 0.05 30); border: 1px solid oklch(75% 0.12 30); border-radius: 10px; color: oklch(38% 0.14 30); font-size: 14px; font-weight: 600;">
+        ⚠️ {{ errorMessage }}
+      </div>
+    </sc-if>
+
+    <!-- Copy error -->
+    <sc-if value="{{ copyError }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top: 16px; padding: 14px 16px; background: oklch(94% 0.05 30); border: 1px solid oklch(75% 0.12 30); border-radius: 10px; color: oklch(38% 0.14 30); font-size: 14px; font-weight: 600;">
+        ⚠️ {{ copyError }}
+      </div>
+    </sc-if>
+
+    <!-- Recurring issues banner -->
+    <sc-if value="{{ hasRecurring }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top: 28px; background: oklch(93% 0.06 35); border: 2px solid oklch(62% 0.18 30); border-radius: 14px; padding: 20px 22px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: oklch(35% 0.16 30);">
+            <span>⚠️</span><span>반복되는 문제 감지</span>
+          </div>
+          <button onClick="{{ onResetHistory }}" style="background: none; border: 1px solid oklch(55% 0.15 30); color: oklch(40% 0.15 30); font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 999px; cursor: pointer;" style-hover="background: oklch(88% 0.06 30);">누적 기록 초기화</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{ recurringIssues }}" as="issue" hint-placeholder-count="1">
+            <div style="background: oklch(98% 0.01 30); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+              <div style="font-size: 14px; font-weight: 700; color: oklch(35% 0.14 30);">"{{ issue.keyword }}" 관련 부정 리뷰 {{ issue.count }}건 누적</div>
+              <div style="font-size: 13px; color: oklch(45% 0.1 30);">💡 {{ issue.suggestion }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- Empty results -->
+    <sc-if value="{{ showEmptyResults }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top: 28px; text-align: center; color: oklch(55% 0.02 50); font-size: 14px;">분석 결과가 없어요.</div>
+    </sc-if>
+
+    <!-- Results list -->
+    <div style="margin-top: 28px; display: flex; flex-direction: column; gap: 18px;">
+      <sc-for list="{{ results }}" as="r" hint-placeholder-count="2">
+        <div style="background: oklch(99% 0.006 70); border: 1px solid oklch(91% 0.02 60); border-radius: 16px; padding: 22px; box-shadow: 0 2px 10px oklch(40% 0.02 50 / 0.05);">
+
+          <div style="font-size: 15px; color: oklch(30% 0.02 50); margin-bottom: 12px;">"{{ r.originalText }}"</div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+            <span style="font-size: 12px; font-weight: 800; padding: 5px 12px; border-radius: 999px; background: {{ r.sentimentBg }}; color: {{ r.sentimentColor }};">{{ r.sentimentLabel }}</span>
+            <sc-for list="{{ r.keywordList }}" as="kw" hint-placeholder-count="2">
+              <span style="font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 999px; background: oklch(95% 0.02 60); color: oklch(45% 0.02 50);">#{{ kw }}</span>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ r.suggestionText }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size: 13px; color: oklch(45% 0.1 30); background: oklch(96% 0.03 35); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px;">💡 개선 제안: {{ r.suggestionText }}</div>
+          </sc-if>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <sc-for list="{{ r.draftsList }}" as="d" hint-placeholder-count="3">
+              <div style="border: 1px solid oklch(90% 0.02 60); border-radius: 10px; padding: 12px 14px; background: oklch(98.5% 0.01 70);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <span style="font-size: 12px; font-weight: 800; color: oklch(55% 0.14 45);">{{ d.label }}</span>
+                  <button onClick="{{ d.onCopy }}" style="font-size: 12px; font-weight: 700; padding: 5px 14px; min-width: 88px; white-space: nowrap; border-radius: 999px; border: 1px solid oklch(70% 0.15 45); background: {{ d.copyBg }}; color: {{ d.copyFg }}; cursor: pointer;">{{ d.copyLabel }}</button>
+                </div>
+                <div style="font-size: 14px; color: oklch(32% 0.02 50);">{{ d.text }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align: center; padding: 32px 24px; color: oklch(55% 0.02 50); font-size: 13px; border-top: 1px solid oklch(91% 0.02 60);">
+    🍊 리뷰 답변 도우미 · 소상공인 무료 도구
+  </div>
+
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const KEYWORD_CATEGORIES = {
+  '맛': ['맛있', '맛없', '맛이', '음식이', '메뉴'],
+  '친절도': ['친절', '불친절', '무례', '응대'],
+  '대기시간': ['대기', '기다', '웨이팅', '오래'],
+  '가격': ['가격', '비싸', '저렴', '가성비'],
+  '청결도': ['청결', '깨끗', '더러운', '위생'],
+  '분위기': ['분위기', '인테리어', '조용', '시끄러'],
+};
+
+const POSITIVE_WORDS = ['맛있', '친절', '깨끗', '좋아요', '최고', '빠르', '만족', '추천', '훌륭', '쾌적', '친근'];
+const NEGATIVE_WORDS = ['별로', '불친절', '오래', '대기', '기다', '길었', '실망', '비싸', '비싼', '비쌌', '더러운', '늦게', '불편', '최악', '부족', '무례', '시끄러'];
+const NEGATION_PREFIXES = ['불', '안', '못'];
+
+const SUGGESTIONS = {
+  '대기시간': '피크타임 인력 배치 조정을 검토해보세요.',
+  '친절도': '응대 매뉴얼 교육을 강화해보세요.',
+  '맛': '레시피와 조리 일관성을 점검해보세요.',
+  '가격': '가격 대비 만족도를 높일 세트/할인 구성을 고려해보세요.',
+  '청결도': '청소 주기와 위생 점검을 강화해보세요.',
+  '분위기': '매장 조명·음악·좌석 배치를 점검해보세요.',
+  '일반': '구체적인 피드백을 요청해 개선 포인트를 파악해보세요.',
+};
+
+const SENTIMENT_STYLE = {
+  positive: { label: '긍정', bg: 'oklch(90% 0.09 150)', color: 'oklch(35% 0.1 150)' },
+  negative: { label: '부정', bg: 'oklch(91% 0.07 25)', color: 'oklch(40% 0.15 25)' },
+  neutral: { label: '중립', bg: 'oklch(92% 0.01 60)', color: 'oklch(45% 0.01 60)' },
+};
+
+const SAMPLE_TEXT = [
+  '음식은 맛있었는데 너무 오래 기다렸어요.',
+  '직원분이 너무 불친절했어요.',
+  '웨이팅이 정말 길었어요, 30분 넘게 기다렸어요.',
+  '사장님이 친절하시고 음식도 맛있어요!',
+  '가격이 좀 비싼 편이에요.',
+  '그냥 그랬어요, 평범한 맛이었어요.',
+].join('\n');
+
+function scoreSentiment(text) {
+  let pos = 0, neg = 0;
+  POSITIVE_WORDS.forEach((w) => {
+    let idx = text.indexOf(w);
+    while (idx !== -1) {
+      const prefix = text.slice(Math.max(0, idx - 1), idx);
+      if (NEGATION_PREFIXES.includes(prefix)) neg++; else pos++;
+      idx = text.indexOf(w, idx + 1);
+    }
+  });
+  NEGATIVE_WORDS.forEach((w) => {
+    let idx = text.indexOf(w);
+    while (idx !== -1) { neg++; idx = text.indexOf(w, idx + 1); }
+  });
+  if (pos === 0 && neg === 0) return 'neutral';
+  if (neg > 0 && pos === neg) return 'negative';
+  if (pos > neg) return 'positive';
+  if (neg > pos) return 'negative';
+  return 'neutral';
+}
+
+function extractKeywords(text) {
+  const found = [];
+  for (const [cat, triggers] of Object.entries(KEYWORD_CATEGORIES)) {
+    if (found.length >= 3) break;
+    if (triggers.some((t) => text.includes(t))) found.push(cat);
+  }
+  return found.length ? found : ['일반'];
+}
+
+function makeDrafts(sentiment, keyword) {
+  const kw = keyword === '일반' ? '전반적인 부분' : keyword;
+  if (sentiment === 'positive') {
+    return {
+      polite: `소중한 후기 남겨주셔서 감사합니다. ${kw} 부분까지 좋게 봐주셔서 정말 기쁩니다. 앞으로도 최선을 다하겠습니다.`,
+      friendly: `우와 감사해요! 😊 ${kw} 칭찬해주시니 힘이 나네요. 다음에도 꼭 또 와주세요!`,
+      concise: `감사합니다. 다음에도 좋은 모습 보여드릴게요.`,
+    };
+  }
+  if (sentiment === 'negative') {
+    return {
+      polite: `소중한 의견 감사합니다. ${kw}로 불편을 드려 진심으로 죄송합니다. 바로 개선하도록 하겠습니다.`,
+      friendly: `아이고 많이 불편하셨죠 ㅠㅠ ${kw} 바로 신경 쓸게요. 다음엔 꼭 만족시켜드릴게요!`,
+      concise: `${kw} 개선하겠습니다. 죄송합니다.`,
+    };
+  }
+  return {
+    polite: `소중한 의견 남겨주셔서 감사합니다. 더 나은 모습으로 보답하겠습니다.`,
+    friendly: `방문해주셔서 감사해요! 다음엔 더 만족스러운 경험 드릴게요 :)`,
+    concise: `감사합니다. 더 좋은 모습 보여드릴게요.`,
+  };
+}
+
+class Component extends DCLogic {
+  state = {
+    text: SAMPLE_TEXT,
+    results: null,
+    loading: false,
+    errorMessage: null,
+    copyError: null,
+    copiedKey: null,
+    historyCounts: {},
+    recurringIssues: [],
+    nextId: 1,
+  };
+
+  componentDidMount() {
+    this.runAnalysis({ skipValidation: true, skipDelay: true });
+  }
+
+  buildResults(lines) {
+    let id = this.state.nextId;
+    return lines.map((line) => {
+      const sentiment = scoreSentiment(line);
+      const keywords = extractKeywords(line);
+      const primary = keywords[0];
+      const drafts = makeDrafts(sentiment, primary);
+      const suggestion = sentiment === 'negative' ? SUGGESTIONS[primary] : null;
+      return {
+        id: id++,
+        originalText: line,
+        sentiment,
+        keywords,
+        suggestion,
+      };
+    });
+  }
+
+  runAnalysis({ skipValidation = false, skipDelay = false } = {}) {
+    const raw = this.state.text;
+    if (!skipValidation) {
+      if (raw.length === 0) {
+        this.setState({ errorMessage: '리뷰를 먼저 입력해주세요.' });
+        return;
+      }
+      const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+      if (lines.length === 0) {
+        this.setState({ errorMessage: '유효한 리뷰가 없어요.' });
+        return;
+      }
+      if (lines.length > 15) {
+        this.setState({ errorMessage: '한 번에 최대 15개까지 분석할 수 있어요.' });
+        return;
+      }
+    }
+    const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+    const finish = () => {
+      const results = this.buildResults(lines);
+      const historyCounts = { ...this.state.historyCounts };
+      results.forEach((r) => {
+        if (r.sentiment === 'negative') {
+          r.keywords.forEach((k) => {
+            if (k === '일반') return;
+            historyCounts[k] = (historyCounts[k] || 0) + 1;
+          });
+        }
+      });
+      const recurringIssues = Object.entries(historyCounts)
+        .filter(([, c]) => c >= 2)
+        .map(([keyword, count]) => ({ keyword, count, suggestion: SUGGESTIONS[keyword] }));
+      this.setState({
+        results,
+        loading: false,
+        errorMessage: null,
+        historyCounts,
+        recurringIssues,
+        nextId: this.state.nextId + results.length,
+      });
+    };
+    this.setState({ loading: true, errorMessage: null });
+    if (skipDelay) finish(); else setTimeout(finish, 500);
+  }
+
+  onTextChange(e) {
+    this.setState({ text: e.target.value, errorMessage: null });
+  }
+
+  onAnalyze() {
+    if (this.state.loading) return;
+    this.runAnalysis({});
+  }
+
+  onResetHistory() {
+    this.setState({ historyCounts: {}, recurringIssues: [] });
+  }
+
+  copyDraft(key, text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        () => {
+          this.setState({ copiedKey: key, copyError: null });
+          setTimeout(() => {
+            if (this.state.copiedKey === key) this.setState({ copiedKey: null });
+          }, 1500);
+        },
+        () => this.setState({ copyError: '복사에 실패했어요. 직접 선택해서 복사해주세요.' })
+      );
+    } else {
+      this.setState({ copyError: '복사에 실패했어요. 직접 선택해서 복사해주세요.' });
+    }
+  }
+
+  renderVals() {
+    const { text, results, loading, errorMessage, copyError, copiedKey, recurringIssues } = this.state;
+    const lineCount = text.split('\n').map((l) => l.trim()).filter(Boolean).length;
+
+    const toneLabels = { polite: '정중함', friendly: '친근함', concise: '간결함' };
+
+    const processedResults = (results || []).map((r) => {
+      const style = SENTIMENT_STYLE[r.sentiment];
+      const drafts = makeDrafts(r.sentiment, r.keywords[0]);
+      const draftsList = ['polite', 'friendly', 'concise'].map((tone) => {
+        const key = `${r.id}-${tone}`;
+        const isCopied = copiedKey === key;
+        return {
+          tone,
+          label: toneLabels[tone],
+          text: drafts[tone],
+          copyLabel: isCopied ? '복사됨 ✓' : '복사하기',
+          copyBg: isCopied ? 'oklch(88% 0.09 150)' : 'oklch(98% 0.01 45)',
+          copyFg: isCopied ? 'oklch(35% 0.1 150)' : 'oklch(50% 0.15 45)',
+          onCopy: () => this.copyDraft(key, drafts[tone]),
+        };
+      });
+      return {
+        id: r.id,
+        originalText: r.originalText,
+        sentimentLabel: style.label,
+        sentimentBg: style.bg,
+        sentimentColor: style.color,
+        keywordList: r.keywords,
+        suggestionText: r.suggestion,
+        draftsList,
+      };
+    });
+
+    return {
+      text,
+      onTextChange: (e) => this.onTextChange(e),
+      lineCount,
+      loading,
+      analyzeButtonLabel: loading ? '분석 중...' : '분석 시작',
+      onAnalyze: () => this.onAnalyze(),
+      errorMessage,
+      copyError,
+      results: processedResults,
+      showEmptyResults: results !== null && processedResults.length === 0,
+      hasRecurring: recurringIssues.length > 0,
+      recurringIssues,
+      onResetHistory: () => this.onResetHistory(),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
