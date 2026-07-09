@@ -1,7 +1,7 @@
 # Review Points
 
-> Wiki version: 2026-07-07 Phase 3 baseline / Phase 4 planning  
-> Review baseline: React + Vite frontend MVP, Express mock analyze API, frontend-server mock analyze wiring  
+> Wiki version: 2026-07-09 Calendar tab / campus preferences baseline
+> Review baseline: React + Vite frontend MVP, Express mock analyze API, Zod server schemas, frontend-server mock analyze wiring, calendar tab, and campus preferences
 > Review scope: implementation quality, architecture direction, and Phase 4 planning rather than production readiness.
 
 ## 1. Purpose of Peer Review
@@ -29,18 +29,20 @@ Product idea feedback is welcome, but the current priority is implementation qua
 
 ## 2. Current Review Context
 
-NoticePilot currently includes a React + Vite frontend MVP and an Express mock analyze API.
+NoticePilot currently includes a React + Vite frontend MVP, an Express mock analyze API, Zod-backed server schemas, workspace tabs, and campus preferences.
 
 Implemented:
 
 ```text
 - React + Vite frontend MVP
 - Express analyze API skeleton
+- Zod-backed server schemas
 - GET /api/health
 - POST /api/analyze mock mode
 - mode="ai" returns 501 ai_not_implemented
 - unknown explicit mode returns 400 unsupported_mode
 - Vite /api dev proxy
+- workspace hash tabs: #analyze and #calendar
 - bilingual UI
 - manual text paste flow
 - TXT / MD upload
@@ -59,6 +61,10 @@ Implemented:
 - overwrite confirmation
 - frontend/backend validation and normalization
 - localStorage persistence
+- separate campus preference persistence
+- inert metadata.userPreferencesSnapshot
+- calendar tab with campus preferences
+- subscription ICS 준비 중 status card
 - Markdown export
 - optional evidence in Markdown export
 - selected all-day .ics export
@@ -73,7 +79,7 @@ Not yet implemented:
 - advanced relative date resolution
 - school-level notice parsing
 - checkbox-based batch .ics export
-- subscription calendar feed
+- subscription calendar feed URL / backend feed generation
 - login / database / payment
 - Google Calendar API integration
 ```
@@ -101,6 +107,7 @@ Review questions:
 - At what point would useReducer or Context become justified?
 - Should Phase 4 real AI integration happen before or after a state-management refactor?
 - Are current utility functions enough to keep update/delete/toggle logic maintainable?
+- Does keeping campus preferences in App.jsx remain reasonable while they are inert metadata?
 ```
 
 ---
@@ -184,6 +191,29 @@ Review questions:
 
 ---
 
+### 3.5 Calendar Tab and Campus Preferences
+
+Current decision:
+
+```text
+- Calendar tab is a workspace tab, not a separate route.
+- Campus preferences use a separate localStorage key.
+- Campus preferences are attached as inert metadata.userPreferencesSnapshot.
+- Campus preferences do not filter notices or change exports in the current MVP.
+- Subscription ICS is represented only as a 준비 중 status card.
+```
+
+Review questions:
+
+```text
+- Is a hash-tab workspace enough before real routing is introduced?
+- Is the campus preference storage shape suitable for future school-level parsing?
+- Should campus preferences remain inert until filtering/subscription behavior is explicitly scoped?
+- Does the subscription ICS 준비 중 card communicate future scope without implying an active feed?
+```
+
+---
+
 ## 4. API and AI Integration Review Points
 
 ### 4.1 Express /api/analyze Design
@@ -219,6 +249,7 @@ Review questions:
 - Should /api/extract remain separate from /api/analyze?
 - Should mode selection be user-facing, developer-facing, or environment-controlled?
 - Is explicit 501 ai_not_implemented the right behavior until real AI is ready?
+- Should userPreferencesSnapshot remain optional metadata on /api/analyze?
 ```
 
 ---
@@ -288,8 +319,9 @@ Review questions:
 Current decision:
 
 ```text
-- MVP: manual validation function
-- Future: possible Zod migration after schema stabilizes
+- Backend app and AI raw schemas use Zod.
+- Frontend keeps defensive validation utilities for browser-side safety.
+- Shared schema strategy is still an open architecture question.
 ```
 
 Validation should:
@@ -308,8 +340,8 @@ Validation should:
 Review questions:
 
 ```text
-- Is manual validation still acceptable for Phase 4 real AI integration?
-- Should Zod be introduced when AI raw schema is added?
+- Should frontend validation stay manual, or should schemas be shared later?
+- Should Zod schemas become the authoritative contract for real AI integration?
 - Which fields should be required vs optional?
 - Should both server and client keep validation, or should server be authoritative?
 ```

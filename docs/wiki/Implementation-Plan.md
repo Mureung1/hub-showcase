@@ -1,24 +1,26 @@
 # Implementation Plan
 
-> Wiki version: 2026-07-07 Phase 3 baseline / Phase 4 planning  
-> Implementation baseline: React + Vite frontend MVP, Express mock analyze API, frontend-server mock analyze wiring  
+> Wiki version: 2026-07-09 Calendar tab / campus preferences baseline
+> Implementation baseline: React + Vite frontend MVP, Express mock analyze API, Zod server schemas, frontend-server mock analyze wiring, calendar tab, and campus preferences
 > Runtime scope: Phase 4 real AI integration is planned but not implemented yet.
 
 ## 1. Current Baseline
 
-The current NoticePilot project is no longer only a React + Vite UI skeleton. It now includes a React + Vite frontend MVP, an Express mock analyze API, and frontend-to-server mock analyze wiring.
+The current NoticePilot project is no longer only a React + Vite UI skeleton. It now includes a React + Vite frontend MVP, an Express mock analyze API, Zod-backed server schemas, frontend-to-server mock analyze wiring, workspace tabs, and campus preferences.
 
 Current implemented baseline:
 
 ```text
 - React + Vite frontend MVP
 - Express analyze API skeleton
+- Zod-backed server schemas
 - GET /api/health
 - POST /api/analyze mock mode
 - mode: "ai" returns 501 ai_not_implemented
 - unknown explicit mode returns 400 unsupported_mode
 - Vite /api dev proxy to the Express server
 - bilingual UI
+- workspace hash tabs for #analyze and #calendar
 - project introduction section
 - notice title/body input
 - TXT / MD file upload
@@ -38,6 +40,9 @@ Current implemented baseline:
 - overwrite confirmation
 - frontend and backend validation/normalization
 - localStorage persistence
+- separate campus preference persistence
+- inert metadata.userPreferencesSnapshot
+- calendar tab with campus preferences and subscription ICS 준비 중 status card
 - Markdown checklist download
 - optional evidence inclusion in Markdown export
 - selected all-day .ics export
@@ -53,7 +58,7 @@ Not implemented yet:
 - advanced relative date resolution
 - school-level notice parsing
 - checkbox-based batch .ics export
-- subscription calendar feed
+- subscription calendar feed URL / backend feed generation
 - login / database / payment
 - Google Calendar API integration
 ```
@@ -69,6 +74,7 @@ This implementation plan assumes the current working app should be preserved. Do
 - Preserve the existing server mock flow.
 - Keep the app usable with manual text paste only.
 - Keep TXT / MD upload as a lightweight client-side path.
+- Keep campus preferences inert until a later school parsing/filtering phase explicitly changes behavior.
 - Add real functionality incrementally.
 - Treat AI output as untrusted external input.
 - Treat file input as unstable.
@@ -268,6 +274,67 @@ Verified:
 
 ---
 
+### 3.7 Calendar Tab + Campus Preferences
+
+Status: Completed
+
+Implemented:
+
+```text
+- added workspace hash tabs for #analyze and #calendar
+- normalized unsupported workspace hashes to #analyze
+- updated header links to supported workspace hashes
+- added full-width calendar tab
+- added campus preference card
+- added subscription ICS 준비 중 status card
+- added separate campus preference localStorage key
+- normalized invalid and duplicate campus IDs
+- attached inert metadata.userPreferencesSnapshot to client mock results
+- included userPreferencesSnapshot in server mock requests
+- echoed normalized metadata.userPreferencesSnapshot from Express mock responses
+- preserved existing analysis, filtering, Markdown export, and .ics export behavior
+```
+
+Scope limits:
+
+```text
+- no crawler
+- no real school notice collection
+- no school selector or notice filtering
+- no subscription ICS URL/backend feed generation
+- no behavior changes from campus preferences
+```
+
+---
+
+### 3.8 Calendar / Export QA Notes
+
+Status: Completed with documented limitations
+
+Verified:
+
+```text
+- npm run build passed
+- git diff --check passed
+- campus preference helper checks passed
+- backend snapshot normalization checks passed
+- Express /api/analyze snapshot echo smoke passed
+- browser tab routing and Back behavior worked
+- campus preference save status and refresh restore worked
+- Markdown and .ics files were generated from browser clicks
+- generated export file contents matched expected sample data
+```
+
+Known QA limitations:
+
+```text
+- Browser plugin read-only page scope did not expose raw localStorage.
+- Blob download events were not captured through waitForEvent('download').
+- Those checks were covered by helper serialization, refresh restore, and Downloads file inspection.
+```
+
+---
+
 ## 4. Current Regression Baseline
 
 The following behavior must remain stable in future phases:
@@ -295,6 +362,9 @@ The following behavior must remain stable in future phases:
 - Markdown export with evidence option
 - selected all-day .ics export
 - localStorage session restore and clear
+- workspace tab routing
+- campus preference localStorage restore
+- userPreferencesSnapshot remains inert metadata
 ```
 
 ---
@@ -634,7 +704,7 @@ Move beyond downloaded .ics files toward a future subscription feed.
 Status:
 
 ```text
-Future roadmap only. Not part of the current MVP or Phase 4 implementation.
+Future roadmap only. The current MVP only shows a subscription ICS 준비 중 status card.
 ```
 
 ---
@@ -725,6 +795,7 @@ Do not remove or hide the existing mock flows during Phase 4.
 - client-side mock analysis remains available
 - server mock analysis remains available
 - future real AI analysis is added separately
+- campus preferences remain metadata-only until a later explicit filtering or subscription phase
 ```
 
 This keeps the demo stable and gives reviewers a reliable regression baseline.
