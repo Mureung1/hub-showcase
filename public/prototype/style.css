@@ -1,6 +1,6 @@
 :root {
-  --color-accent: #d74557;
-  --color-accent-bg: rgba(215, 69, 87, 0.1);
+  --color-accent: #ff355e;
+  --color-accent-bg: rgba(255, 53, 94, 0.1);
   --color-card: #ffffff;
   --color-border: #ececec;
   --color-muted: #8a8a8a;
@@ -13,8 +13,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-accent: #ef6d7d;
-    --color-accent-bg: rgba(239, 109, 125, 0.16);
+    --color-accent: #ff6e89;
+    --color-accent-bg: rgba(255, 110, 137, 0.16);
     --color-card: #201f1f;
     --color-border: #333131;
     --color-muted: #b9b3b3;

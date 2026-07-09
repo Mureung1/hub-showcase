@@ -51,9 +51,9 @@
 ## Task 2 — 백엔드·인증
 
 ### Backend
-- [ ] `server/` Spring Boot 프로젝트 초기화
-- [ ] PostgreSQL 연결 및 User 엔티티
-- [ ] JWT 발급·검증 설정
+- [x] `server/` Express + TypeScript 프로젝트 초기화 (디렉토리 구조·Prisma·oxlint·vitest 환경 구성 완료, `GET /health`로 확인됨)
+- [ ] Prisma로 PostgreSQL 연결 및 User 모델 정의
+- [ ] JWT 발급·검증 설정 (jsonwebtoken, bcryptjs)
 - [ ] `POST /auth/signup` 구현
 - [ ] `POST /auth/login` 구현
 - [ ] `GET /auth/me` 구현

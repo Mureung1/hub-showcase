@@ -1,22 +1,7 @@
 # CLAUDE.md — 챌린지로그 개발 규칙
 
 Claude Code(및 협업자)는 세션 시작 시 이 문서를 먼저 읽습니다.
-검증 가능한 규칙을 따르며, 아래 절대 원칙은 예외 없이 지킵니다.
-
-## 절대 원칙
-
-1. **비교 요소 절대 금지**
-   - 랭킹, 순위, 리더보드, 스트릭(연속 기록일수) 노출, "누가 더 많이/자주 기록했는지" 같은
-     정량적 비교 UI·API·통계를 추가하지 않습니다.
-   - 친구 방에서는 오늘의 완료 여부(O/X)와 함께 그날의 기록(사진·한 줄 메모)을 공유할 수
-     있습니다. 단, 기록 개수·빈도·연속일수를 집계하거나 멤버 간에 순위·등수를 매기는
-     화면이나 데이터는 만들지 않습니다.
-
-2. **공부/자기계발 인증류 기능 금지**
-   - 스터디 타이머, 집중 시간 측정, "인증 성공/실패" 판정, 습관 점수화·등급화 등
-     자기계발 인증 앱 패턴을 넣지 않습니다.
-
-원칙에 위배되는 요청을 받으면 구현 전에 문제를 짚고 대안을 제시합니다.
+검증 가능한 규칙을 따릅니다.
 
 ## 📖 도메인 용어
 
@@ -58,7 +43,7 @@ Claude Code(및 협업자)는 세션 시작 시 이 문서를 먼저 읽습니�
 | 패키지 매니저 | npm |
 | 프론트엔드 | React 19 · Vite 8 · TypeScript · Tailwind CSS v4 |
 | 린터 | oxlint |
-| 백엔드 (예정) | Java · Spring Boot · PostgreSQL |
+| 백엔드 | Node.js 20 · Express · TypeScript · Prisma · PostgreSQL |
 
 ## 📂 폴더 구조
 
@@ -77,12 +62,25 @@ hub/
 ├── index.html
 ├── vite.config.ts
 ├── tsconfig.json
+├── server/
+│   ├── prisma/
+│   │   └── schema.prisma   # datasource + generator, 모델은 Task 2부터
+│   ├── src/
+│   │   ├── routes/         # Express Router (*.routes.ts)
+│   │   ├── controllers/    # 라우트 핸들러 (*.controller.ts)
+│   │   ├── middleware/     # 인증 가드·에러 핸들러 (*.middleware.ts)
+│   │   ├── lib/             # env.ts(환경변수 검증), prisma.ts(싱글턴)
+│   │   ├── app.ts           # Express app 조립
+│   │   └── index.ts         # 진입점
+│   ├── .env.example
+│   ├── package.json
+│   └── tsconfig.json
 ├── plan.md             # 작업 계획·로드맵
 ├── checklist.md        # 진행·검증 체크리스트
 └── CLAUDE.md
 ```
 
-새 파일은 위 구조에 맞춰 추가합니다. `server/` 백엔드는 별도 디렉터리로 추가 예정입니다.
+새 파일은 위 구조에 맞춰 추가합니다.
 
 ## 🚀 빌드·실행 명령어
 
@@ -96,6 +94,21 @@ npm run lint         # oxlint 검사
 ```
 
 코드 변경 후 `npm run typecheck`, `npm run lint`, `npm run build`가 통과해야 합니다.
+
+백엔드(`server/`)는 별도 패키지입니다. `server/.env.example`을 `.env`로 복사한 뒤 사용하세요.
+
+```bash
+cd server
+npm install          # 의존성 설치 (postinstall에서 prisma generate 자동 실행)
+npm run dev          # 개발 서버, tsx watch (기본 http://localhost:4000)
+npm run build        # tsc 빌드 → dist/
+npm run start        # 빌드된 서버 실행
+npm run typecheck    # TypeScript 타입 검사
+npm run lint         # oxlint 검사
+npm run test         # vitest
+npx prisma generate  # Prisma Client 재생성 (스키마 변경 후)
+npx prisma migrate dev --name <설명>  # 마이그레이션 생성·적용
+```
 
 ## 📝 코딩 컨벤션
 
@@ -121,10 +134,21 @@ npm run lint         # oxlint 검사
 - 날짜·시간은 KST(Asia/Seoul) 기준으로 처리합니다.
 - 하루 1회 기록 제한은 서버에서 검증합니다. 클라이언트 검증만으로는 충분하지 않습니다.
 
+### Express / TypeScript (백엔드)
+
+- 파일명은 kebab-case + 역할 접미사를 붙입니다 (`auth.routes.ts`, `auth.controller.ts`, `auth.middleware.ts`).
+- 요청 바디·쿼리 검증은 zod 스키마로 합니다. 컨트롤러 진입 시 파싱하고, 실패하면 400을 반환합니다.
+- DB 접근은 Prisma를 통해서만 합니다. `src/lib/prisma.ts`의 싱글턴 `PrismaClient`를 import해서 씁니다.
+- 환경변수는 `process.env`를 직접 참조하지 않고 `src/lib/env.ts`(zod로 검증된 값)를 통해서만 접근합니다.
+- 에러는 각 핸들러에서 개별 처리하지 않고 중앙 에러 미들웨어로 모읍니다.
+- 인증은 JWT를 `Authorization: Bearer <token>` 헤더로 받고, 인증 미들웨어에서 검증 후 `req.user`를 채웁니다.
+- 비밀번호 해시는 bcryptjs를 씁니다.
+
 ### Git·PR
 
 - 변경 범위는 요청된 작업에 한정합니다. 무관한 리팩터링은 하지 않습니다.
 - PR 전 `npm run lint`를 실행합니다.
+- 커밋 메시지는 Conventional Commits를 따릅니다: `feat|fix|refactor|docs|chore|test|style: 설명` (예: `feat: 로그인 API 추가`).
 
 ## 작업 워크플로우
 

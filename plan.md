@@ -7,13 +7,13 @@
 
 ```
 [Browser / PWA]
-  React (Vite) ── REST API ── Spring Boot ── PostgreSQL
+  React (Vite) ── REST API ── Express (TypeScript) ── PostgreSQL (Prisma)
                               └── S3 (이미지)
                               └── LLM API (AI 데일리 케어)
 ```
 
 - **프론트엔드**: React SPA, 이후 PWA·Web Push 확장
-- **백엔드**: Spring Boot REST API, JWT 인증
+- **백엔드**: Express REST API, TypeScript, Prisma, JWT 인증
 - **시간 기준**: KST(Asia/Seoul), 챌린지·기록은 날짜 단위
 
 ---
@@ -81,8 +81,9 @@ Task 0 (프로젝트 셋업)
 
 ### Backend
 
-- Spring Boot 프로젝트 (`server/`) 초기화
-- PostgreSQL · User 엔티티 · JWT 발급/검증
+- Express 프로젝트(`server/`) — 환경 구성(디렉토리 구조·Prisma·oxlint·vitest)은 완료, User 모델·인증 API를 이번 Task에서 구현
+- Prisma로 User 모델 정의·마이그레이션
+- jsonwebtoken으로 JWT 발급/검증, bcryptjs로 비밀번호 해시
 - `POST /auth/signup`, `POST /auth/login`, `GET /auth/me`
 
 ### Frontend
@@ -102,6 +103,7 @@ Task 0 (프로젝트 셋업)
 
 ### Backend
 
+- Challenge, Record Prisma 모델 정의
 - Challenge: 일별 랜덤 주제 생성 (07:00 KST)
 - Record: 사진 업로드(S3) + 메모, 동일 날짜 중복 저장 거부
 - `GET /challenges/today`, `POST /records`, `GET /records/today`
@@ -183,7 +185,7 @@ Task 0 (프로젝트 셋업)
 
 ### Backend
 
-- 스케줄러 (07:00 KST) + Web Push 발송
+- 스케줄러 (node-cron, 07:00 KST) + Web Push 발송
 - Push 구독 저장 `POST /notifications/subscribe`
 
 ### Frontend
