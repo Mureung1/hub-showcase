@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import type { MechanismStep } from '../data/types'
+import type { TreeStep } from '../types'
 
-export function useMechanismPlayer(steps: MechanismStep[]) {
+export function useTreePlayer(steps: TreeStep[]) {
   const [stepIndex, setStepIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [speed, setSpeed] = useState(2200)
+  const [speed, setSpeed] = useState(900)
 
   useEffect(() => {
     setStepIndex(0)
@@ -24,7 +24,7 @@ export function useMechanismPlayer(steps: MechanismStep[]) {
   }, [playing, stepIndex, speed, steps])
 
   return {
-    currentStep: steps[stepIndex],
+    step: steps[stepIndex],
     isDone: stepIndex >= steps.length - 1,
     playing,
     stepIndex,
