@@ -1,0 +1,17 @@
+.banner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border-radius: var(--r-md);
+  padding: 13px 15px;
+  font-size: 13px;
+  margin: 18px 0;
+}
+
+.icon {
+  color: var(--danger-icon);
+  flex-shrink: 0;
+  margin-top: 1px;
+}

@@ -1,0 +1,63 @@
+/* docs/디자인.md 3번 타이포그래피 — 여러 화면이 공유하는 텍스트 스타일 */
+.eyebrow {
+  font-size: 13px;
+  color: var(--ink-600);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.displayNum {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+  margin: 0 0 4px;
+}
+
+.headline {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--ink-900);
+  margin: 0 0 4px;
+}
+
+.subtext {
+  font-size: 13.5px;
+  color: var(--ink-600);
+  margin: 0;
+}
+
+.sectionBlock {
+  margin-top: 30px;
+}
+
+.sectionBlockTight {
+  margin-top: 0;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.label {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink-900);
+}
+
+.meta {
+  font-size: 12.5px;
+  color: var(--ink-600);
+}
+
+.hairline {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 0;
+}
