@@ -22,4 +22,7 @@ if (Get-Command node -ErrorAction SilentlyContinue) {
   node scripts/check_doc_viewer_normalization.js
 }
 
+Write-Host "== Application checks =="
+pnpm check
+
 Write-Host "== Harness check passed =="

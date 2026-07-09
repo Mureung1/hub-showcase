@@ -11,8 +11,9 @@
     "dev:web": "pnpm --dir apps/web dev",
     "dev:api": "uv run --directory apps/api uvicorn localtwin_api.main:app --reload --port 8000",
     "build": "pnpm --dir apps/web build",
+    "check": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "lint": "pnpm --dir apps/web lint && uv run --directory apps/api ruff check .",
-    "format:check": "prettier --check . && uv run --directory apps/api ruff format --check .",
+    "format:check": "prettier --check package.json pnpm-workspace.yaml .prettierrc.json apps/web && uv run --directory apps/api ruff format --check .",
     "test": "pnpm --dir apps/web test && uv run --directory apps/api pytest",
     "typecheck": "pnpm --dir apps/web typecheck"
   },
