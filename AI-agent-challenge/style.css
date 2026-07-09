@@ -68,13 +68,44 @@ h3 { margin: 0; font-size: 18px; }
 .status-card span { display: block; color: var(--muted); font-size: 14px; }
 .status-card strong { display: block; margin-top: 8px; color: var(--orange-600); font-size: 32px; }
 
-.dashboard,
-.detail-layout {
-  display: grid;
-  grid-template-columns: 540px 1fr;
-  gap: 24px;
+.workspace-shell {
+  min-height: 620px;
 }
-.detail-layout { align-items: start; margin-top: 24px; }
+
+.main-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.main-tab {
+  min-height: 52px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 900;
+}
+
+.main-tab.active {
+  color: #fff;
+  background: var(--green-600);
+  box-shadow: 0 10px 22px rgba(63, 139, 100, 0.2);
+}
+
+.workspace-panel {
+  display: none;
+}
+
+.workspace-panel.active {
+  display: block;
+}
 
 .ingredient-panel,
 .recommend-panel,
@@ -86,9 +117,12 @@ h3 { margin: 0; font-size: 18px; }
   box-shadow: var(--shadow);
 }
 .ingredient-panel,
-.recommend-panel { min-height: 560px; padding: 24px; }
+.recommend-panel,
 .recipe-detail,
-.shopping-panel { padding: 24px; }
+.shopping-panel {
+  min-height: 620px;
+  padding: 24px;
+}
 
 .section-title,
 .workspace-header,
@@ -343,3 +377,7 @@ h3 { margin: 0; font-size: 18px; }
 .shopping-card h3 { margin-bottom: 8px; font-size: 18px; }
 .shopping-card p { margin: 0 0 14px; color: var(--muted); line-height: 1.5; }
 .buy-button { width: 100%; }
+
+.recipe-content {
+  display: block;
+}

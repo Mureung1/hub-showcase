@@ -1,26 +1,33 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>자취생 냉장고 식단 추천</title>
+  <title>&#xC790;&#xCDE8;&#xC0DD; &#xB0C9;&#xC7A5;&#xACE0; &#xC2DD;&#xB2E8; &#xCD94;&#xCC9C;</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="app-shell">
     <section class="topbar">
       <div>
-        <p class="eyebrow">AI 자취 식단 추천</p>
-        <h1>집에 있는 재료를 정리하고 오늘의 식단을 추천받아요</h1>
+        <p class="eyebrow">AI &#xC790;&#xCDE8; &#xC2DD;&#xB2E8; &#xCD94;&#xCC9C;</p>
+        <h1>&#xC9D1;&#xC5D0; &#xC788;&#xB294; &#xC7AC;&#xB8CC;&#xB97C; &#xC815;&#xB9AC;&#xD558;&#xACE0; &#xC624;&#xB298;&#xC758; &#xC2DD;&#xB2E8;&#xC744; &#xCD94;&#xCC9C;&#xBC1B;&#xC544;&#xC694;</h1>
       </div>
       <div class="status-card">
-        <span>오늘 우선 소비</span>
-        <strong id="urgentCount">0개</strong>
+        <span>&#xC624;&#xB298; &#xC6B0;&#xC120; &#xC18C;&#xBE44;</span>
+        <strong id="urgentCount">0&#xAC1C;</strong>
       </div>
     </section>
 
-    <section class="dashboard">
-      <aside class="ingredient-panel">
+    <nav class="main-tabs" aria-label="&#xC8FC;&#xC694; &#xC6CC;&#xD06C;&#xC2A4;&#xD398;&#xC774;&#xC2A4;">
+      <button class="main-tab active" type="button" data-main-tab="fridge">&#xB0B4; &#xB0C9;&#xC7A5;&#xACE0;</button>
+      <button class="main-tab" type="button" data-main-tab="recommend">&#xC2DD;&#xB2E8; &#xCD94;&#xCC9C;</button>
+      <button class="main-tab" type="button" data-main-tab="recipe">&#xB808;&#xC2DC;&#xD53C; &#xC0C1;&#xC138;</button>
+      <button class="main-tab" type="button" data-main-tab="shopping">&#xAD6C;&#xB9E4; &#xCD94;&#xCC9C;</button>
+    </nav>
+
+    <section class="workspace-shell">
+      <section id="fridgePanel" class="workspace-panel ingredient-panel active" data-main-panel="fridge">
         <div class="workspace-header">
           <div>
             <p class="eyebrow">Step 1</p>
@@ -98,9 +105,8 @@
           <strong id="boardCount">0개</strong>
         </div>
         <div id="ingredientTiles" class="ingredient-grid" aria-live="polite"></div>
-      </aside>
-
-      <section class="recommend-panel">
+      </section>
+      <section id="recommendPanel" class="workspace-panel recommend-panel" data-main-panel="recommend">
         <div class="section-title">
           <div>
             <p class="eyebrow">Step 2</p>
@@ -117,18 +123,16 @@
 
         <div id="menuCards" class="menu-grid"></div>
       </section>
-    </section>
-
-    <section class="detail-layout">
-      <article id="recipeDetail" class="recipe-detail">
+      <section id="recipePanel" class="workspace-panel recipe-detail" data-main-panel="recipe">
+        <article id="recipeDetail" class="recipe-content">
         <div class="empty-state">
           <p class="eyebrow">Step 3</p>
           <h2>메뉴를 선택하면 레시피가 표시됩니다</h2>
           <p>메뉴 카드 또는 레시피 보기 버튼을 눌러 발표 화면에서 상세 흐름을 보여주세요.</p>
         </div>
-      </article>
-
-      <aside id="shoppingPanel" class="shopping-panel">
+        </article>
+      </section>
+      <section id="shoppingPanel" class="workspace-panel shopping-panel" data-main-panel="shopping">
         <div class="section-title">
           <div>
             <p class="eyebrow">Step 4</p>
@@ -138,7 +142,7 @@
         <div class="empty-shopping">
           부족 재료가 있는 메뉴를 선택하면 구매 추천 카드가 표시됩니다.
         </div>
-      </aside>
+      </section>
     </section>
   </main>
 

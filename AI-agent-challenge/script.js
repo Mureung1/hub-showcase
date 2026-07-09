@@ -107,6 +107,8 @@ const todayRecommendation = document.querySelector("#todayRecommendation");
 const boardTitle = document.querySelector("#boardTitle");
 const boardCount = document.querySelector("#boardCount");
 const storageTabs = document.querySelectorAll(".storage-tab");
+const mainTabs = document.querySelectorAll(".main-tab");
+const workspacePanels = document.querySelectorAll(".workspace-panel");
 const tabButtons = document.querySelectorAll(".tab-button");
 const menuCards = document.querySelector("#menuCards");
 const recipeDetail = document.querySelector("#recipeDetail");
@@ -244,12 +246,21 @@ function renderShopping(menu) {
   `;
 }
 
-function selectMenu(menuId) {
+function activateMainTab(tabName) {
+  mainTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.mainTab === tabName));
+  workspacePanels.forEach((panel) => panel.classList.toggle("active", panel.dataset.mainPanel === tabName));
+}
+
+function selectMenu(menuId, options = {}) {
   selectedMenuId = menuId;
   const menu = findMenu(menuId);
   renderMenus();
   renderRecipe(menu);
   renderShopping(menu);
+
+  if (options.openRecipe) {
+    activateMainTab("recipe");
+  }
 }
 
 toggleIngredientForm.addEventListener("click", () => {
@@ -333,6 +344,10 @@ function updateStorageTabs() {
   storageTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.storage === activeStorage));
 }
 
+mainTabs.forEach((tab) => {
+  tab.addEventListener("click", () => activateMainTab(tab.dataset.mainTab));
+});
+
 storageTabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     activeStorage = tab.dataset.storage;
@@ -355,7 +370,7 @@ tabButtons.forEach((button) => {
 menuCards.addEventListener("click", (event) => {
   const target = event.target.closest("[data-menu-id]");
   if (!target) return;
-  selectMenu(target.dataset.menuId);
+  selectMenu(target.dataset.menuId, { openRecipe: event.target.closest(".recipe-button") !== null });
 });
 
 resetForm({ close: true });
