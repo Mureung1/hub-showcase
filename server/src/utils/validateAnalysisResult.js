@@ -1,3 +1,6 @@
+import { safeParseAppAnalysis } from '../schemas/appAnalysisSchema.js'
+import { createValidationError } from './validationResult.js'
+
 export const SECTION_LIMITS = {
   deadlines: 8,
   tasks: 30,
@@ -213,5 +216,16 @@ export function validateAnalysisResult(rawResult, copy = serverValidationWarning
 
   normalizedResult.warnings = warnings
 
-  return normalizedResult
+  const appValidationResult = safeParseAppAnalysis(normalizedResult)
+
+  if (!appValidationResult.success) {
+    throw createValidationError({
+      code: 'APP_ANALYSIS_SCHEMA_INVALID',
+      message: 'Normalized analysis result did not match NoticePilot app schema.',
+      cause: appValidationResult.error,
+      statusCode: 500,
+    })
+  }
+
+  return appValidationResult.data
 }
