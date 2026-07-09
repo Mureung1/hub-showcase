@@ -1,111 +1,126 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import "tailwindcss";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+/*
+ * 디자인 토큰 출처: design-reference/*.html 프로토타입 (Material Design 3 기반)
+ * 모든 프로토타입 파일에서 색상/폰트/spacing 토큰이 동일하게 확인되어 이 파일로 일원화함.
+ * borderRadius(sm/lg/xl)는 Tailwind v4 기본값과 값이 일치해 별도 정의하지 않음.
+ */
+@theme {
+  --color-primary: #0050cb;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #0066ff;
+  --color-on-primary-container: #f8f7ff;
+  --color-primary-fixed: #dae1ff;
+  --color-primary-fixed-dim: #b3c5ff;
+  --color-on-primary-fixed: #001849;
+  --color-on-primary-fixed-variant: #003fa4;
+  --color-inverse-primary: #b3c5ff;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --color-secondary: #006c49;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #6cf8bb;
+  --color-on-secondary-container: #00714d;
+  --color-secondary-fixed: #6ffbbe;
+  --color-secondary-fixed-dim: #4edea3;
+  --color-on-secondary-fixed: #002113;
+  --color-on-secondary-fixed-variant: #005236;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
+  --color-tertiary: #4345d1;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #5d60eb;
+  --color-on-tertiary-container: #faf6ff;
+  --color-tertiary-fixed: #e1e0ff;
+  --color-tertiary-fixed-dim: #c0c1ff;
+  --color-on-tertiary-fixed: #07006c;
+  --color-on-tertiary-fixed-variant: #2f2ebe;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+  --color-background: #f7f9fc;
+  --color-on-background: #191c1e;
+  --color-surface: #f7f9fc;
+  --color-on-surface: #191c1e;
+  --color-surface-variant: #e0e3e6;
+  --color-on-surface-variant: #424656;
+  --color-surface-tint: #0054d6;
+  --color-surface-bright: #f7f9fc;
+  --color-surface-dim: #d8dadd;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f4f7;
+  --color-surface-container: #eceef1;
+  --color-surface-container-high: #e6e8eb;
+  --color-surface-container-highest: #e0e3e6;
+  --color-inverse-surface: #2d3133;
+  --color-inverse-on-surface: #eff1f4;
+
+  --color-outline: #727687;
+  --color-outline-variant: #c2c6d8;
+
+  /* spacing: 숫자 스케일(p-4 등)과 별개로 프로토타입에서 쓰는 이름 있는 간격 */
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-base: 4px;
+  --spacing-gutter: 20px;
+  --spacing-container-margin: 40px;
+
+  --font-display-lg: "Plus Jakarta Sans";
+  --font-headline-lg: "Plus Jakarta Sans";
+  --font-headline-md: "Plus Jakarta Sans";
+  --font-headline-sm: "Plus Jakarta Sans";
+  --font-body-lg: "Be Vietnam Pro";
+  --font-body-md: "Be Vietnam Pro";
+  --font-body-sm: "Be Vietnam Pro";
+  --font-label-md: "Inter";
+  --font-label-sm: "Inter";
+
+  --text-display-lg: 48px;
+  --text-display-lg--line-height: 1.2;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 700;
+
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 1.3;
+  --text-headline-lg--letter-spacing: -0.01em;
+  --text-headline-lg--font-weight: 600;
+
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 1.4;
+  --text-headline-md--font-weight: 600;
+
+  --text-headline-sm: 20px;
+  --text-headline-sm--line-height: 1.4;
+  --text-headline-sm--font-weight: 600;
+
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 1.6;
+  --text-body-lg--font-weight: 400;
+
+  --text-body-md: 16px;
+  --text-body-md--line-height: 1.6;
+  --text-body-md--font-weight: 400;
+
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 1.5;
+  --text-body-sm--font-weight: 400;
+
+  --text-label-md: 13px;
+  --text-label-md--line-height: 1;
+  --text-label-md--letter-spacing: 0.02em;
+  --text-label-md--font-weight: 500;
+
+  --text-label-sm: 11px;
+  --text-label-sm--line-height: 1;
+  --text-label-sm--font-weight: 600;
 }
 
 body {
   margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+  background: var(--color-background);
+  color: var(--color-on-background);
 }
