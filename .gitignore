@@ -1,0 +1,5 @@
+node_modules/
+dist/
+photo-navigation-prototype/node_modules/
+photo-navigation-prototype/dist/
+gh-pages-worktree/

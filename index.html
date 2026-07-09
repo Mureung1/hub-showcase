@@ -619,6 +619,28 @@
       </section>
 
       <section class="section">
+        <div class="visual-showcase">
+          <div>
+            <h2>네이버 지도 위 UI 콘셉트</h2>
+            <p class="muted">
+              실제 구현은 네이버 지도 앱 안에서 동작하는 방식이 아니라, 우리 웹앱 안에
+              네이버 지도 JavaScript API를 띄우고 그 위에 포토스팟 마커와 하단 카드를 얹는 구조입니다.
+              복잡한 프레임 선택, 카메라 오버레이, 결과 비교는 지도 화면이 아니라 별도 화면으로 분리합니다.
+            </p>
+            <div class="hash-cloud" aria-label="지도 구현 키워드">
+              <span class="tag strong">Naver Maps JS API</span>
+              <span class="tag">Custom Marker</span>
+              <span class="tag">Bottom Sheet</span>
+              <span class="tag">Camera Overlay</span>
+            </div>
+          </div>
+          <div class="mockup-frame">
+            <img src="assets/naver-map-ui-concept.png" alt="네이버 지도 위에 포토스팟 UI를 얹은 포토 네비게이션 콘셉트" />
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
         <h2>핵심 사용자 플로우</h2>
 
          <div class="screen-strip">
@@ -712,6 +734,50 @@
         </div>
       </section>
 
+      <section class="section">
+        <h2>네이버 지도 연결 방식</h2>
+        <div class="grid cols-3">
+          <article class="card green">
+            <h3>지도 메인</h3>
+            <p class="muted">네이버 지도 JS SDK로 지도 화면을 띄우고, 현재 위치와 주변 포토스팟 마커를 표시합니다.</p>
+          </article>
+          <article class="card blue">
+            <h3>커스텀 UI</h3>
+            <p class="muted">마커 클릭 시 HTML/CSS 하단 카드로 장소명, 거리, 태그, 프레임 고르기 버튼을 보여줍니다.</p>
+          </article>
+          <article class="card yellow">
+            <h3>촬영 화면 분리</h3>
+            <p class="muted">지도는 탐색과 진입에만 사용하고, 카메라 오버레이는 별도 화면에서 처리합니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>전체 데이터 흐름</h2>
+        <div class="flow">
+          <div class="flow-step">
+            <div class="step-number">1</div>
+            <h3>스팟 표시</h3>
+            <p class="muted">DB의 <code>places</code>, <code>photo_spots</code> 좌표를 지도 마커로 표시.</p>
+          </div>
+          <div class="flow-step">
+            <div class="step-number">2</div>
+            <h3>프레임 조회</h3>
+            <p class="muted">선택한 포토스팟의 <code>shot_frames</code> 목록을 불러옵니다.</p>
+          </div>
+          <div class="flow-step">
+            <div class="step-number">3</div>
+            <h3>오버레이 촬영</h3>
+            <p class="muted">예시 사진과 <code>overlay_image_url</code>을 카메라 화면 위에 표시.</p>
+          </div>
+          <div class="flow-step">
+            <div class="step-number">4</div>
+            <h3>결과 비교</h3>
+            <p class="muted">촬영 결과를 <code>captures</code>에 저장하고 점수/피드백을 제공합니다.</p>
+          </div>
+        </div>
+      </section>
+
   
       <section class="section">
         <h2>해시태그 전략</h2>
@@ -759,6 +825,32 @@
             필터와 추천이 복잡해지면 정규화하는 방식이 현실적입니다.
           </p>
         </div>
+      </section>
+
+      <section class="section">
+        <h2>API 설계 맛보기</h2>
+        <p class="muted" style="margin-bottom: 14px">
+          MVP에서 가장 중요한 API는 지도에서 선택한 포토스팟에 연결된 촬영 프레임 목록을 내려주는 API입니다.
+        </p>
+        <pre><code>GET /api/photo-spots/{photoSpotId}/shot-frames
+
+Response
+{
+  "photoSpotId": "spot_daegu_music_hall_lawn",
+  "photoSpotName": "대구 야외음악당 잔디광장",
+  "frames": [
+    {
+      "id": "frame_couple_stage_v",
+      "title": "무대 배경 커플샷",
+      "frameType": "couple",
+      "difficulty": "easy",
+      "tags": ["커플샷", "무대배경", "초보추천"],
+      "sampleImageUrl": "/assets/samples/daegu-stage-couple.jpg",
+      "overlayImageUrl": "/assets/overlays/daegu-stage-couple-overlay.png",
+      "guideText": "무대 지붕선을 오버레이 상단 곡선에 맞춰보세요."
+    }
+  ]
+}</code></pre>
       </section>
 
       <section class="section">
@@ -955,6 +1047,36 @@ create table captures (
               <div class="task">LLM 촬영 팁 생성</div>
               <div class="task">관리자 등록 화면</div>
             </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>구상해야 할 핵심 UI</h2>
+        <div class="grid cols-3">
+          <article class="card green">
+            <h3>지도 메인 화면</h3>
+            <p class="muted">지도, 현재 위치, 포토스팟 마커, 하단 포토스팟 카드.</p>
+          </article>
+          <article class="card green">
+            <h3>프레임 선택 화면</h3>
+            <p class="muted">커플샷, 전신샷, 노을샷 등 촬영 프레임 카드 목록.</p>
+          </article>
+          <article class="card green">
+            <h3>카메라 오버레이</h3>
+            <p class="muted">카메라 프리뷰, 배경 윤곽, 인물 위치 가이드, 촬영 버튼.</p>
+          </article>
+          <article class="card blue">
+            <h3>결과 비교 화면</h3>
+            <p class="muted">예시 사진과 내 사진, 유사도 점수, 피드백, 다시 찍기.</p>
+          </article>
+          <article class="card blue">
+            <h3>포토스팟 상세</h3>
+            <p class="muted">장소명, 추천 시간대, 거리, 해시태그, 대표 예시 사진.</p>
+          </article>
+          <article class="card yellow">
+            <h3>데이터 등록</h3>
+            <p class="muted">MVP에서는 seed 데이터로 시작하고, 이후 운영 관리 기능으로 확장.</p>
           </article>
         </div>
       </section>
