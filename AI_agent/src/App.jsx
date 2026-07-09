@@ -30,6 +30,14 @@ const pageMap = {
   [routes.portfolio]: Portfolio,
 };
 
+const resolvePage = (path) => {
+  if (path.startsWith("/mission/")) {
+    return MissionDetail;
+  }
+
+  return pageMap[path] || Home;
+};
+
 function App() {
   const [currentPath, setCurrentPath] = useState(getCurrentPath);
 
@@ -37,7 +45,7 @@ function App() {
     return subscribeToRouteChange(() => setCurrentPath(getCurrentPath()));
   }, []);
 
-  const Page = useMemo(() => pageMap[currentPath] || Home, [currentPath]);
+  const Page = useMemo(() => resolvePage(currentPath), [currentPath]);
 
   return (
     <>

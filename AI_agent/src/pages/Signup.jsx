@@ -306,7 +306,7 @@ function Signup() {
               />
             </label>
 
-            <label style={styles.field}>
+            <label style={{ ...styles.field, ...styles.lookupField }}>
               <span style={styles.label}>학교</span>
               <div style={styles.schoolSearch}>
                 <input
@@ -361,7 +361,7 @@ function Signup() {
               )}
             </label>
 
-            <label style={styles.field}>
+            <label style={{ ...styles.field, ...styles.lookupField }}>
               <span style={styles.label}>전공</span>
               <div style={styles.schoolSearch}>
                 <input
@@ -514,23 +514,24 @@ function Signup() {
 
 const styles = {
   container: {
-    minHeight: "100vh",
+    height: "100vh",
     background:
       "radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.16), transparent 28%), radial-gradient(circle at 88% 12%, rgba(6, 182, 212, 0.18), transparent 26%), linear-gradient(135deg, #f8fafc 0%, #eef6ff 48%, #f8fbff 100%)",
     fontFamily: "Arial, sans-serif",
     color: "#0f172a",
     display: "flex",
     flexDirection: "column",
+    overflow: "hidden",
   },
   page: {
-    width: "min(760px, calc(100% - clamp(32px, 6vw, 96px)))",
-    minHeight: "calc(100vh - 67px)",
+    width: "min(800px, calc(100% - clamp(32px, 6vw, 96px)))",
+    height: "calc(100vh - 67px)",
     margin: "0 auto",
-    padding: "clamp(24px, 4vw, 44px) 0 92px",
+    padding: "clamp(12px, 2vw, 20px) 0 18px",
     boxSizing: "border-box",
     display: "grid",
     gridTemplateColumns: "1fr",
-    gap: "24px",
+    gap: "12px",
     alignItems: "center",
     alignContent: "center",
     justifyItems: "center",
@@ -542,7 +543,7 @@ const styles = {
   },
   badge: {
     display: "inline-block",
-    margin: "0 0 18px",
+    margin: "0 0 8px",
     padding: "8px 13px",
     borderRadius: "999px",
     backgroundColor: "rgba(37, 99, 235, 0.1)",
@@ -551,23 +552,23 @@ const styles = {
     fontWeight: "bold",
   },
   title: {
-    margin: "0 0 16px",
+    margin: "0 0 8px",
     color: "#0f172a",
-    fontSize: "clamp(34px, 5vw, 52px)",
+    fontSize: "clamp(28px, 4vw, 38px)",
     fontWeight: 800,
     lineHeight: 1.12,
   },
   description: {
     margin: 0,
     color: "#475569",
-    fontSize: "16px",
-    lineHeight: 1.75,
+    fontSize: "14px",
+    lineHeight: 1.55,
     whiteSpace: "nowrap",
   },
   form: {
     width: "100%",
-    padding: "28px",
-    borderRadius: "24px",
+    padding: "20px",
+    borderRadius: "20px",
     background: "rgba(255, 255, 255, 0.76)",
     border: "1px solid rgba(226, 232, 240, 0.88)",
     boxShadow: "0 24px 54px rgba(15, 23, 42, 0.12)",
@@ -575,13 +576,13 @@ const styles = {
   },
   formHeader: {
     display: "grid",
-    gap: "6px",
-    marginBottom: "22px",
+    gap: "4px",
+    marginBottom: "14px",
     textAlign: "center",
   },
   formTitle: {
     color: "#0f172a",
-    fontSize: "20px",
+    fontSize: "18px",
   },
   formHint: {
     color: "#64748b",
@@ -589,16 +590,21 @@ const styles = {
   },
   fieldGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: "16px",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: "14px",
   },
   field: {
+    position: "relative",
     display: "grid",
     gap: "8px",
+    alignContent: "start",
+  },
+  lookupField: {
+    minHeight: "224px",
   },
   schoolSearch: {
     display: "grid",
-    gridTemplateColumns: "1fr auto",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
     gap: "8px",
   },
   label: {
@@ -608,13 +614,13 @@ const styles = {
   },
   input: {
     width: "100%",
-    minHeight: "46px",
-    padding: "0 14px",
+    minHeight: "42px",
+    padding: "0 12px",
     borderRadius: "12px",
     border: "1px solid #dbe3ef",
     background: "#ffffff",
     color: "#0f172a",
-    fontSize: "15px",
+    fontSize: "14px",
     boxSizing: "border-box",
   },
   passwordField: {
@@ -646,13 +652,13 @@ const styles = {
     fill: "currentColor",
   },
   searchButton: {
-    minHeight: "46px",
-    padding: "0 14px",
+    minHeight: "42px",
+    padding: "0 10px",
     border: "1px solid #bfdbfe",
     borderRadius: "12px",
     background: "#eff6ff",
     color: "#1d4ed8",
-    fontSize: "14px",
+    fontSize: "13px",
     fontWeight: 800,
     whiteSpace: "nowrap",
     cursor: "pointer",
@@ -671,16 +677,20 @@ const styles = {
   schoolResultList: {
     display: "grid",
     gap: "8px",
+    maxHeight: "142px",
+    overflowY: "auto",
     padding: "8px",
     borderRadius: "14px",
     background: "#f8fafc",
     border: "1px solid #e2e8f0",
+    boxShadow: "0 18px 34px rgba(15, 23, 42, 0.14)",
   },
   schoolResultItem: {
     display: "grid",
     gap: "3px",
     width: "100%",
-    padding: "10px 12px",
+    minHeight: "40px",
+    padding: "7px 10px",
     border: 0,
     borderRadius: "10px",
     background: "#ffffff",
@@ -705,7 +715,7 @@ const styles = {
     justifyContent: "center",
     flexWrap: "wrap",
     gap: "10px",
-    marginTop: "24px",
+    marginTop: "16px",
   },
   primaryButton: {
     minHeight: "44px",
