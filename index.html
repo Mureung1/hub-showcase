@@ -3,385 +3,383 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🌸 TrendLog | 실시간 트렌드 보드</title>
+    <title>dropcast* // alternative asset prediction market</title>
     
-    <!-- Preconnect to Google Fonts -->
+    <!-- Google Fonts Load -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Plus Jakarta Sans and Noto Sans KR -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css">
   </head>
   
   <body>
-    <!-- Trend Details Dialog -->
-    <dialog id="trend-detail-dialog" class="detail-dialog">
-      <div class="dialog-header">
-        <span id="dialog-title" class="dialog-title">트렌드 상세</span>
-        <span id="dialog-close-btn" class="dialog-close">&times;</span>
-      </div>
-      <div id="dialog-body" class="dialog-body">
-        <!-- Dynamically populated -->
-      </div>
-      <div class="dialog-footer">
-        <button type="button" id="dialog-confirm-btn" class="btn-confirm">확인</button>
-      </div>
-    </dialog>
-
-    <div class="app-container">
-      
-      <!-- Logo Header -->
-      <header>
-        <a href="#" class="logo">🌸 Trend<span>Log</span></a>
-        <div class="header-meta">실시간 소셜 데이터 연동</div>
-      </header>
-
-      <!-- Advanced Filter Group (props.cash inspired query selectors) -->
-      <div class="filter-group">
-        <!-- 1. Age Group Filter -->
-        <div class="filter-row">
-          <div class="filter-label">연령대</div>
-          <div class="tabs-bar" id="age-tabs">
-            <!-- JS populated -->
-          </div>
-        </div>
-        <!-- 2. Category Filter -->
-        <div class="filter-row">
-          <div class="filter-label">분야</div>
-          <div class="tabs-bar" id="category-tabs">
-            <!-- JS populated -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Clean Cards Grid -->
-      <main class="cards-grid" id="cards-container">
-        <!-- JS populated -->
-      </main>
-
-      <!-- Minimalist Footer -->
-      <footer>
-        인터넷 소셜 데이터 언급량을 1시간 주기로 수집하여 자동 갱신합니다.
-        <a href="file:///Users/tatata/Desktop/Ai_agent/hub/git_wiki_planning.md" class="wiki-link">📖 서비스 기획서 확인</a>
-      </footer>
-
+    <!-- Top Announcement Bar -->
+    <div class="top-bar">
+      based on crowd consensus // forecasting next week's alternative drops // version 1.0.0
     </div>
 
-    <!-- Script to render the grid with sparklines -->
+    <!-- Header / GNB -->
+    <header>
+      <a href="#" class="logo">dropcast*</a>
+      
+      <nav class="nav-filters">
+        <a href="#" class="filter-tab active" data-category="all">all</a>
+        <a href="#" class="filter-tab" data-category="sneakers">sneakers 👟</a>
+        <a href="#" class="filter-tab" data-category="streetwear">streetwear 👕</a>
+        <a href="#" class="filter-tab" data-category="tcg">tcg/toys 🃏</a>
+        <a href="#" class="filter-tab" data-category="lego">lego 🧱</a>
+      </nav>
+
+      <a href="#active-drops" class="btn-touch">predict drops</a>
+    </header>
+
+    <!-- Hero Section (August* Layered Collage Style) -->
+    <section class="hero-section">
+      <div class="hero-meta-label">main / <span class="accent-text">about us</span></div>
+      
+      <div class="hero-title-container">
+        <!-- Floating Layered Images (replicated from August* design) -->
+        <img src="artist_bw.png" alt="Artist B&W" class="floating-img img-left">
+        <img src="tunnel_green.png" alt="Model Green Tunnel" class="floating-img img-center">
+        
+        <h1 class="hero-title">predict<br>next</h1>
+      </div>
+
+      <!-- Scroll indicator & location detail -->
+      <div class="hero-footer">
+        <div class="plus-icon">[+]</div>
+        <p class="location-text">based in seoul, analyzing global markets</p>
+        <div class="vertical-line"></div>
+      </div>
+    </section>
+
+    <!-- Core Statement Section -->
+    <section class="statement-section">
+      <p class="statement-text">
+        we are a crowdsourced consensus engine forecasting the future value of alternative assets before they hit the market.
+      </p>
+      
+      <div class="statement-sub">
+        <p>
+          돈은 없지만 관심은 많은 대학생과 컬렉터들을 위해 가상 포인트로 한정판의 발매가와 리셀 시세를 예측하고 집단지성을 구축합니다.
+        </p>
+        <p>
+          도박이나 베팅의 위험 없이, 순수한 의견 제출과 빅데이터 연산 엔진을 통해 차세대 자산군의 가격 지표를 3초 만에 시각화해 줍니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- Winding Timeline Process Section (Lime Green Curve Line) -->
+    <section class="process-section">
+      <div class="process-bg-line">
+        <!-- Custom Winding SVG Curve matching August* image -->
+        <svg viewBox="0 0 400 800" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+          <path d="M 200,0 C 200,150 350,180 200,320 C 50,450 100,520 250,650 C 350,750 200,780 200,800" stroke="#d4ff00" stroke-width="2" stroke-dasharray="1000" stroke-dashoffset="0" id="path-guide" />
+        </svg>
+      </div>
+
+      <div class="process-container">
+        <!-- Step 1 -->
+        <div class="process-step step-left" style="top: 10%;">
+          <div class="step-num">01.</div>
+          <div class="step-content">
+            <h3 class="step-title">&bull; forecast</h3>
+            <p class="step-desc">발매 전 한정판 스니커즈와 수집품 카드를 보고 3초 만에 업/다운 예측 투표를 진행합니다.</p>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="process-step step-right" style="top: 32%;">
+          <div class="step-num">02.</div>
+          <div class="step-content">
+            <h3 class="step-title">o drop</h3>
+            <p class="step-desc">금요일 오전 실제 시장에 오프라인/온라인 한정판 드롭이 개시되며 투표는 공식 잠금 처리됩니다.</p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="process-step step-left" style="top: 55%;">
+          <div class="step-num">03.</div>
+          <div class="step-content">
+            <h3 class="step-title">o market tracking</h3>
+            <p class="step-desc">발매 주말 동안 KREAM, StockX 등의 실제 체결가를 크롤링하여 주말 공식 종가 데이터를 확정합니다.</p>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="process-step step-right" style="top: 78%;">
+          <div class="step-num">04.</div>
+          <div class="step-content">
+            <h3 class="step-title">o reward & rank</h3>
+            <p class="step-desc">예측 방향이 적중한 유저에게 스코어를 부여하고, 주간 전광판 랭커에게 경품 리워드를 순차 자동 지급합니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Active Drops Grid Section -->
+    <section class="drops-section" id="active-drops">
+      <div class="drops-header">
+        <h2 class="section-title">active drops</h2>
+        <p class="section-subtitle">이번 주 투표 마감 예정인 한정판 드롭 라인업입니다. 버튼을 클릭해 3초 만에 의견을 투표하세요.</p>
+      </div>
+
+      <div class="drops-grid" id="drops-container">
+        <!-- JS Populated Cards -->
+      </div>
+    </section>
+
+    <!-- Detail Overlay Panel (Sleek Brutalist Design) -->
+    <div class="detail-overlay" id="detail-panel">
+      <div class="detail-content">
+        <button class="btn-close" onclick="closeDetailPanel()">&times;</button>
+        <span class="detail-tag" id="detail-category">sneakers 👟</span>
+        <h2 class="detail-title" id="detail-title">travis scott jordan</h2>
+        
+        <div class="detail-pricing">
+          <div class="price-box">
+            <span class="label">정가 (retail)</span>
+            <span class="val" id="detail-retail">219,000 KRW</span>
+          </div>
+          <div class="price-box highlight">
+            <span class="label">대중 합의 예상가 (consensus)</span>
+            <span class="val accent-text" id="detail-consensus">820,000 KRW</span>
+          </div>
+        </div>
+
+        <!-- Mini Chart (SVG Sparkline) -->
+        <div class="chart-container">
+          <h4 class="chart-label">6개월 시장 관심도 추이 (sparkline)</h4>
+          <svg class="sparkline-chart" viewBox="0 0 300 100">
+            <path d="M 0 80 Q 50 60 100 70 T 200 30 T 300 10" fill="none" stroke="#d4ff00" stroke-width="3" />
+            <circle cx="300" cy="10" r="5" fill="#d4ff00" />
+          </svg>
+        </div>
+
+        <div class="detail-sentiment">
+          <div class="sentiment-bar-label">
+            <span>bullish (▲) <strong id="detail-bullish-pct">84%</strong></span>
+            <span>bearish (▼) <strong id="detail-bearish-pct">16%</strong></span>
+          </div>
+          <div class="sentiment-bar-track">
+            <div class="sentiment-bar-fill" id="detail-bar-fill" style="width: 84%;"></div>
+          </div>
+        </div>
+
+        <div class="vote-actions">
+          <button class="btn-vote up" onclick="castVoteFromDetail(true)">▲ 오를까</button>
+          <button class="btn-vote down" onclick="castVoteFromDetail(false)">▼ 내릴까</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Minimalist Footer -->
+    <footer>
+      <p>&copy; 2026 dropcast* all rights reserved.</p>
+      <p>본 사이트는 크라우드소싱 기반 시세 예측 적합성 검증을 위한 데모 페이지입니다.</p>
+      <div class="footer-links">
+        <a href="file:///Users/tatata/Desktop/Ai_agent/hub/design.md">design.md</a>
+        <a href="file:///Users/tatata/Desktop/Ai_agent/hub/git_wiki_planning.md">git_wiki_planning.md</a>
+      </div>
+    </footer>
+
+    <!-- Core Logic & Interaction Script -->
     <script>
-      // 14 Real-time trending keywords with histories & age-groups
-      const TRENDING_DATA = [
-        { 
-          id: '1', 
-          label: 'AI 코딩', 
-          category: 'IT/개발', 
-          catClass: 'cat-dev',
-          rate: '+48.2%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=100&auto=format&fit=crop&q=80',
-          history: [30, 45, 55, 68, 85, 95],
-          ageGroups: ['전체', '20대 초반', '20대 후반'],
-          details: 'GitHub Copilot 및 Cursor IDE 등의 AI 코딩 어시스턴트 도구입니다. 최근 대학생들과 실무 개발자들 사이에서 코딩 생산성을 비약적으로 높여주는 최고의 트렌드 툴로 자리 잡았습니다.' 
+      // 1. Mock Data based on Alt Assets
+      const MOCK_DROPS = [
+        {
+          id: '1',
+          title: 'travis scott jordan 1 low',
+          category: 'sneakers',
+          catLabel: 'sneakers 👟',
+          retail: '219,000 KRW',
+          consensus: 820000,
+          bullish: 84,
+          sparkline: 'M 0 90 C 50 80, 100 50, 150 70 C 200 40, 250 15, 300 20'
         },
-        { 
-          id: '2', 
-          label: '노션 포트폴리오', 
-          category: '취업/진로', 
-          catClass: 'cat-career',
-          rate: '+28.9%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=100&auto=format&fit=crop&q=80',
-          history: [35, 48, 60, 72, 80, 84],
-          ageGroups: ['전체', '20대 초반', '20대 후반'],
-          details: '딱딱한 PDF 이력서 대신, 노션의 깔끔한 디자인 템플릿을 활용해 동적으로 포트폴리오를 제작하는 트렌드입니다. 20대 취준생들의 개성과 커리어를 시각적으로 예쁘게 어필하는 방식으로 유행하고 있습니다.' 
+        {
+          id: '2',
+          title: 'supreme stars zip hoodie',
+          category: 'streetwear',
+          catLabel: 'streetwear 👕',
+          retail: '258,000 KRW',
+          consensus: 360000,
+          bullish: 62,
+          sparkline: 'M 0 80 C 50 90, 100 70, 150 60 C 200 50, 250 40, 300 35'
         },
-        { 
-          id: '3', 
-          label: '영어 회화 스픽', 
-          category: '자격증/어학', 
-          catClass: 'cat-study',
-          rate: '+15.1%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=100&auto=format&fit=crop&q=80',
-          history: [50, 52, 55, 58, 62, 65],
-          ageGroups: ['전체', '20대 초반'],
-          details: '시험용 영어 대신 실전 회화 실력을 키우기 위한 모바일 AI 스피킹 트렌드입니다. 20대 여성들 사이에서 매일 조금씩 가볍게 회화 습관을 기르는 데일리 챌린지 형태로 확산 중입니다.' 
+        {
+          id: '3',
+          title: 'pikachu masterball mirror card',
+          category: 'tcg',
+          catLabel: 'tcg/toys 🃏',
+          retail: '5,000 KRW',
+          consensus: 190000,
+          bullish: 78,
+          sparkline: 'M 0 95 C 50 90, 100 80, 150 40 C 200 30, 250 10, 300 15'
         },
-        { 
-          id: '4', 
-          label: '토스 채용', 
-          category: '취업/진로', 
-          catClass: 'cat-career',
-          rate: '+18.2%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=100&auto=format&fit=crop&q=80',
-          history: [40, 48, 55, 62, 70, 75],
-          ageGroups: ['전체', '20대 초반', '20대 후반'],
-          details: '최근 공개 채용 및 인턴십 프로세스에서 복잡한 전형을 생략하고 빠르게 지원할 수 있는 직무 중심의 채용 방식이 대세가 됨에 따라 구직 희망자들의 검색 지수가 크게 상승했습니다.' 
-        },
-        { 
-          id: '5', 
-          label: '사이드 프로젝트', 
-          category: 'IT/개발', 
-          catClass: 'cat-dev',
-          rate: '+35.7%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=100&auto=format&fit=crop&q=80',
-          history: [45, 52, 60, 68, 75, 80],
-          ageGroups: ['전체', '20대 초반', '20대 후반'],
-          details: '실제 사용자가 사용할 수 있는 서비스를 팀원들과 배포해보는 실전 협업 프로젝트입니다. 포트폴리오의 실전 신뢰성을 높이기 위한 취준생 기획자/디자이너/개발자 간 네트워킹 트렌드입니다.' 
-        },
-        { 
-          id: '6', 
-          label: '갓생 루틴', 
-          category: '트렌드/이슈', 
-          catClass: 'cat-daily',
-          rate: '-8.7%', 
-          isUp: false,
-          image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=100&auto=format&fit=crop&q=80',
-          history: [75, 72, 68, 60, 55, 52],
-          ageGroups: ['전체', '10대', '20대 초반'],
-          details: '기상 시간 인증, 공부 시간 타이머, 플래너 기록 등 일상의 소소한 성취를 SNS와 모바일 앱으로 투명하게 공유하며 에너지를 얻는 라이프스타일 루틴 챌린지입니다.' 
-        },
-        { 
-          id: '7', 
-          label: '해외 인턴', 
-          category: '취업/진로', 
-          catClass: 'cat-career',
-          rate: '+8.6%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=100&auto=format&fit=crop&q=80',
-          history: [50, 58, 65, 60, 59, 62],
-          ageGroups: ['전체', '20대 후반'],
-          details: '글로벌 역량 확보를 위해 해외 기업에서 인턴십을 경험하는 채용 트렌드입니다. 원격으로 해외 기업에서 근무하는 리모트 인턴 공고에 대한 취준생들의 검색율도 두드러지고 있습니다.' 
-        },
-        { 
-          id: '8', 
-          label: 'SQLD 기출', 
-          category: '자격증/어학', 
-          catClass: 'cat-study',
-          rate: '+31.4%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=100&auto=format&fit=crop&q=80',
-          history: [45, 50, 72, 88, 65, 70],
-          ageGroups: ['전체', '20대 초반', '20대 후반'],
-          details: '데이터 분석가 및 개발 직군의 필수 교양으로 떠오른 SQL 개발자 자격증입니다. 시험을 앞두고 실전 기출 문제 풀이 및 요약 자료를 구하려는 트래픽이 크게 늘어났습니다.' 
-        },
-        { 
-          id: '9', 
-          label: '네카라쿠배', 
-          category: 'IT/개발', 
-          catClass: 'cat-dev',
-          rate: '+22.4%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=100&auto=format&fit=crop&q=80',
-          history: [70, 75, 74, 82, 81, 80],
-          ageGroups: ['전체', '20대 후반'],
-          details: '국내 상위 대형 IT 플랫폼 기업(네이버, 카카오, 라인, 쿠팡, 배달의민족) 취업을 준비하는 스터디 그룹 및 코딩 테스트 합격 노하우를 공유하는 전통적인 대세 키워드입니다.' 
-        },
-        { 
-          id: '10', 
-          label: '부트캠프', 
-          category: 'IT/개발', 
-          catClass: 'cat-dev',
-          rate: '+12.5%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=100&auto=format&fit=crop&q=80',
-          history: [82, 80, 75, 78, 76, 78],
-          ageGroups: ['전체', '20대 초반', '20대 후반'],
-          details: '실제 프로젝트 역량을 단기간에 완성시켜주는 집중 교육 과정입니다. 최근에는 AI와 데이터 트렌드 교육으로 개편되면서 경쟁력 있는 포트폴리오를 준비하려는 취준생이 찾고 있습니다.' 
-        },
-        // FASHION SPECIFIC TRENDING ITEMS
-        { 
-          id: '11', 
-          label: '살로몬 XT-6 스니커즈', 
-          category: '패션', 
-          catClass: 'cat-fashion',
-          rate: '+45.8%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&auto=format&fit=crop&q=80',
-          history: [40, 52, 60, 78, 86, 95],
-          ageGroups: ['전체', '20대 초반'],
-          details: '고프코어 및 믹스매치 룩의 대표 스니커즈가 된 살로몬 XT-6 시리즈입니다. 특히 실버/메탈릭 컬러라인은 10대 후반부터 20대 초중반 사이 여학생들의 워너비 데일리 신발로 급부상했습니다.' 
-        },
-        { 
-          id: '12', 
-          label: '인형 키링', 
-          category: '패션', 
-          catClass: 'cat-fashion',
-          rate: '+32.4%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=100&auto=format&fit=crop&q=80',
-          history: [25, 38, 45, 58, 70, 84],
-          ageGroups: ['전체', '10대', '20대 초반'],
-          details: '백팩이나 토트백에 달고 다니는 귀여운 캐릭터/봉제 인형 키링입니다. 모남희, 마지셔우드, 젤리캣 키링 등이 20대 초반 여학생들 사이에서 본인만의 패션 포인트를 나타내는 수집 챌린지 템으로 큰 인기입니다.' 
-        },
-        { 
-          id: '13', 
-          label: '글레이즈 멜팅 립틴트', 
-          category: '패션', 
-          catClass: 'cat-fashion',
-          rate: '+19.6%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=100&auto=format&fit=crop&q=80',
-          history: [48, 52, 58, 65, 70, 75],
-          ageGroups: ['전체', '10대', '20대 초반'],
-          details: '도톰하고 촉촉하게 입술 광택을 극대화해주는 멜팅 타입 립밤/립틴트 카테고리입니다. SNS 메이크업 피드와 패션 코디 정보에서 가장 많이 언급되는 필수 뷰티/패션 아이템입니다.' 
-        },
-        { 
-          id: '14', 
-          label: '아크테릭스 백팩', 
-          category: '패션', 
-          catClass: 'cat-fashion',
-          rate: '+24.5%', 
-          isUp: true,
-          image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=100&auto=format&fit=crop&q=80',
-          history: [30, 42, 50, 62, 70, 78],
-          ageGroups: ['전체', '10대', '20대 초반'],
-          details: '뉴진스 백팩으로 잘 알려진 아크테릭스 헬리아드 등의 스포티 백팩 라인입니다. Gorpcore 트렌드 확산과 함께 대학생들의 가볍고 스타일리시한 등교룩 가방으로 품귀현상을 빚고 있습니다.' 
+        {
+          id: '4',
+          title: 'lego star wars millenium falcon',
+          category: 'lego',
+          catLabel: 'lego 🧱',
+          retail: '1,100,000 KRW',
+          consensus: 1250000,
+          bullish: 45,
+          sparkline: 'M 0 50 C 50 50, 100 60, 150 55 C 200 45, 250 52, 300 48'
         }
       ];
 
-      const cardsContainer = document.getElementById('cards-container');
-      const categoryTabs = document.getElementById('category-tabs');
-      const ageTabs = document.getElementById('age-tabs');
-      const dialog = document.getElementById('trend-detail-dialog');
-      const dialogTitle = document.getElementById('dialog-title');
-      const dialogBody = document.getElementById('dialog-body');
+      let selectedDropId = null;
 
-      let activeCategory = '전체';
-      let activeAge = '전체';
+      // 2. Render Cards
+      function renderCards(filter = 'all') {
+        const container = document.getElementById('drops-container');
+        container.innerHTML = '';
 
-      // Render Categories Filter tabs
-      function renderCategoryTabs() {
-        const categories = ['전체', '패션', 'IT/개발', '취업/진로', '자격증/어학', '트렌드/이슈'];
-        categoryTabs.innerHTML = categories.map(cat => `
-          <button class="tab-btn ${activeCategory === cat ? 'active' : ''}" onclick="selectCategory('${cat}')">
-            ${cat}
-          </button>
-        `).join('');
-      }
+        const filtered = filter === 'all' ? MOCK_DROPS : MOCK_DROPS.filter(d => d.category === filter);
 
-      // Render Age Filter tabs
-      function renderAgeTabs() {
-        const ages = ['전체', '10대', '20대 초반', '20대 후반'];
-        ageTabs.innerHTML = ages.map(age => `
-          <button class="tab-btn ${activeAge === age ? 'active' : ''}" onclick="selectAge('${age}')">
-            ${age}
-          </button>
-        `).join('');
-      }
+        filtered.forEach(drop => {
+          const card = document.createElement('div');
+          card.className = `drop-card ${drop.bullish > 70 ? 'bullish-heavy' : ''}`;
+          card.onclick = (e) => {
+            // Prevent open panel when clicking buttons directly
+            if (e.target.tagName !== 'BUTTON') {
+              openDetailPanel(drop.id);
+            }
+          };
 
-      window.selectCategory = function(cat) {
-        activeCategory = cat;
-        renderCategoryTabs();
-        renderCards();
-      };
+          card.innerHTML = `
+            <div class="card-top">
+              <span class="card-tag">${drop.catLabel}</span>
+              <span class="card-pct ${drop.bullish >= 50 ? 'up' : 'down'}">${drop.bullish}% bullish</span>
+            </div>
+            
+            <h3 class="card-title">${drop.title}</h3>
+            
+            <div class="card-pricing">
+              <span class="card-consensus">est. ${drop.consensus.toLocaleString()} KRW</span>
+              <span class="card-retail">retail: ${drop.retail}</span>
+            </div>
 
-      window.selectAge = function(age) {
-        activeAge = age;
-        renderAgeTabs();
-        renderCards();
-      };
+            <!-- Mini Sparkline inside card -->
+            <div class="card-sparkline">
+              <svg viewBox="0 0 300 50">
+                <path d="${drop.sparkline}" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
+                <path d="${drop.sparkline}" fill="none" stroke="#d4ff00" stroke-width="2" class="sparkline-fill" />
+              </svg>
+            </div>
 
-      // Draw SVG Sparkline path dynamically
-      function generateSparkline(history, color) {
-        const pointsCount = history.length;
-        const width = 190;
-        const height = 30;
-        
-        const points = history.map((val, idx) => {
-          const x = (idx / (pointsCount - 1)) * width;
-          const y = height - (val / 100) * height;
-          return `${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
-        }).join(' ');
-
-        return `
-          <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="overflow: visible;">
-            <path d="${points}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-            <circle cx="${width}" cy="${height - (history[pointsCount-1]/100)*height}" r="3" fill="${color}" />
-          </svg>
-        `;
-      }
-
-      // Render Cards Grid
-      function renderCards() {
-        // Filter by Category and Age
-        let filtered = TRENDING_DATA;
-        
-        if (activeCategory !== '전체') {
-          filtered = filtered.filter(item => item.category === activeCategory);
-        }
-        
-        if (activeAge !== '전체') {
-          filtered = filtered.filter(item => item.ageGroups.includes(activeAge));
-        }
-
-        if (filtered.length === 0) {
-          cardsContainer.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px;">
-              해당 필터에 맞는 오늘의 트렌드 스티커가 없습니다. 🌸
+            <div class="card-actions">
+              <button class="btn-vote-mini up" onclick="castVote('${drop.id}', true)">▲ up</button>
+              <button class="btn-vote-mini down" onclick="castVote('${drop.id}', false)">▼ down</button>
             </div>
           `;
-          return;
-        }
-
-        cardsContainer.innerHTML = filtered.map(item => {
-          const sparklineColor = item.isUp ? '#ff8a7a' : '#8e8e8e';
-          const history = item.history || [50, 52, 54, 52, 53, 55];
-          const sparklineHtml = generateSparkline(history, sparklineColor);
-
-          return `
-            <div class="trend-card" onclick="openDetail('${item.id}')">
-              <!-- Top details -->
-              <div class="card-header">
-                <span class="category-tag ${item.catClass}">${item.category}</span>
-                <span class="rate-pill ${item.isUp ? '' : 'down'}">
-                  ${item.isUp ? '▲' : '▼'} ${item.rate}
-                </span>
-              </div>
-              
-              <!-- Content body -->
-              <div class="card-body">
-                <div class="keyword-title">${item.label}</div>
-                <img src="${item.image}" alt="${item.label}" class="thumbnail-photo" />
-              </div>
-
-              <!-- Sparkline Trend Chart -->
-              <div class="card-sparkline">
-                ${sparklineHtml}
-              </div>
-            </div>
-          `;
-        }).join('');
+          container.appendChild(card);
+        });
       }
 
-      // Open Modal detail dialog
-      window.openDetail = function(id) {
-        const item = TRENDING_DATA.find(k => k.id === id);
+      // 3. Tab Filtering
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.onclick = (e) => {
+          e.preventDefault();
+          document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          renderCards(tab.getAttribute('data-category'));
+        };
+      });
+
+      // 4. Up / Down Voting Logic (Recalculating consensus prices)
+      function castVote(id, isUp) {
+        const item = MOCK_DROPS.find(d => d.id === id);
         if (!item) return;
 
-        dialogTitle.innerHTML = `✨ ${item.label} (${item.category})`;
-        dialogBody.innerHTML = `
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div style="width: 100%; height: 160px; border-radius: 12px; background-image: url(${item.image}); background-size: cover; background-position: center; border: 1px solid #eef0f2;"></div>
-            <div style="font-size: 11px; font-weight: 800; color: var(--pastel-peach); letter-spacing: 0.5px; text-transform: uppercase;">ABOUT THIS ITEM</div>
-            <div style="color: var(--text-secondary); line-height: 1.6;">${item.details}</div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">주 타겟 소비층: ${item.ageGroups.filter(g => g !== '전체').join(', ')}</div>
-          </div>
-        `;
-        dialog.showModal();
-      };
+        // Sentiment adjustments
+        if (isUp) {
+          item.bullish = Math.min(99, item.bullish + 1);
+          // Increase estimated consensus price slightly
+          item.consensus += Math.floor(Math.random() * 5000) + 1000;
+        } else {
+          item.bullish = Math.max(1, item.bullish - 1);
+          // Decrease estimated consensus price slightly
+          item.consensus -= Math.floor(Math.random() * 5000) + 1000;
+        }
 
-      // Set up dialog action listeners
-      document.getElementById('dialog-close-btn').addEventListener('click', () => dialog.close());
-      document.getElementById('dialog-confirm-btn').addEventListener('click', () => dialog.close());
+        renderCards(document.querySelector('.filter-tab.active').getAttribute('data-category'));
+        showToast(isUp ? `[▲ 오를까] 투표완료 // 예상 리셀가가 상승했습니다.` : `[▼ 내릴까] 투표완료 // 예상 리셀가가 하락했습니다.`);
+        
+        // Update overlay if open
+        if (selectedDropId === id) {
+          updateOverlayContent(item);
+        }
+      }
+
+      function castVoteFromDetail(isUp) {
+        if (selectedDropId) {
+          castVote(selectedDropId, isUp);
+        }
+      }
+
+      // 5. Toast alerts
+      function showToast(msg) {
+        const existing = document.querySelector('.toast-alert');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'toast-alert';
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+          toast.classList.add('show');
+        }, 100);
+
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => toast.remove(), 400);
+        }, 3000);
+      }
+
+      // 6. Overlay Panels
+      function openDetailPanel(id) {
+        const item = MOCK_DROPS.find(d => d.id === id);
+        if (!item) return;
+
+        selectedDropId = id;
+        updateOverlayContent(item);
+        
+        const panel = document.getElementById('detail-panel');
+        panel.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeDetailPanel() {
+        const panel = document.getElementById('detail-panel');
+        panel.classList.remove('active');
+        document.body.style.overflow = '';
+        selectedDropId = null;
+      }
+
+      function updateOverlayContent(item) {
+        document.getElementById('detail-title').innerText = item.title;
+        document.getElementById('detail-category').innerText = item.catLabel;
+        document.getElementById('detail-retail').innerText = item.retail;
+        document.getElementById('detail-consensus').innerText = item.consensus.toLocaleString() + ' KRW';
+        document.getElementById('detail-bullish-pct').innerText = item.bullish + '%';
+        document.getElementById('detail-bearish-pct').innerText = (100 - item.bullish) + '%';
+        document.getElementById('detail-bar-fill').style.width = item.bullish + '%';
+      }
 
       // Initialize
-      renderCategoryTabs();
-      renderAgeTabs();
       renderCards();
+
+      // Mouse position tracker for background glow
+      document.addEventListener('mousemove', (e) => {
+        const x = (e.clientX / window.innerWidth) * 100;
+        const y = (e.clientY / window.innerHeight) * 100;
+        document.documentElement.style.setProperty('--mouse-x', `${x}%`);
+        document.documentElement.style.setProperty('--mouse-y', `${y}%`);
+      });
     </script>
   </body>
 </html>
