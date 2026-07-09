@@ -24,6 +24,11 @@ type CodexTurnCompletion = {
   errorMessage?: string
 }
 
+type CodexErrorNotification = {
+  willRetry: boolean
+  errorMessage?: string
+}
+
 type AbortedNotificationWait = {
   type: 'aborted'
   pendingNotification?: Promise<IteratorResult<CodexRawServerNotification>>
@@ -38,6 +43,7 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
   readonly name = 'codex'
   readonly label = 'Codex Runtime'
   readonly description = 'Codex app-server adapter for Runtime Inspector parity'
+  readonly cancellationMode = 'adapter_confirmed'
 
   private readonly createClient: () => CodexRawClient
 
@@ -85,6 +91,10 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
       }
 
       if (input.signal.aborted) {
+        yield {
+          type: 'failed',
+          error: 'Codex cancellation requested before turn started',
+        }
         return
       }
 
@@ -96,6 +106,10 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
       }
 
       if (input.signal.aborted) {
+        yield {
+          type: 'failed',
+          error: 'Codex cancellation requested before turn started',
+        }
         return
       }
 
@@ -171,6 +185,28 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
           }
         }
 
+        const errorNotification = readMatchingErrorNotification(
+          notification.value,
+          turnScope,
+        )
+
+        if (errorNotification && !errorNotification.willRetry) {
+          await client.close()
+
+          const failedDebugLog = emitDebugLog()
+
+          if (failedDebugLog) {
+            yield failedDebugLog
+          }
+
+          yield {
+            type: 'failed',
+            error: errorNotification.errorMessage ?? 'Codex turn failed',
+          }
+
+          return
+        }
+
         const completion = readMatchingTurnCompletion(
           notification.value,
           turnScope,
@@ -185,7 +221,9 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
             yield completedDebugLog
           }
 
-          yield toTerminalAdapterEvent(completion)
+          yield toTerminalAdapterEvent(completion, {
+            interruptedCancellationConfirmed: false,
+          })
 
           return
         }
@@ -222,11 +260,16 @@ async function* interruptTurnAndDrainNotifications(
 ): AsyncIterable<RuntimeAdapterEvent> {
   try {
     await client.interruptTurn(turnScope)
-  } catch {
+  } catch (error) {
     const failureDebugLog = emitDebugLog()
 
     if (failureDebugLog) {
       yield failureDebugLog
+    }
+
+    yield {
+      type: 'failed',
+      error: `Codex turn interrupt failed: ${toErrorMessage(error)}`,
     }
 
     return
@@ -248,7 +291,7 @@ async function* interruptTurnAndDrainNotifications(
     pendingNotification = undefined
 
     if (notification === 'timeout' || notification.done) {
-      return
+      break
     }
 
     const notificationDebugLog = emitDebugLog()
@@ -257,15 +300,35 @@ async function* interruptTurnAndDrainNotifications(
       yield notificationDebugLog
     }
 
+    const errorNotification = readMatchingErrorNotification(
+      notification.value,
+      turnScope,
+    )
+
+    if (errorNotification && !errorNotification.willRetry) {
+      yield {
+        type: 'failed',
+        error: errorNotification.errorMessage ?? 'Codex turn failed',
+      }
+      return
+    }
+
     const completion = readMatchingTurnCompletion(
       notification.value,
       turnScope,
     )
 
     if (completion) {
-      yield toTerminalAdapterEvent(completion)
+      yield toTerminalAdapterEvent(completion, {
+        interruptedCancellationConfirmed: true,
+      })
       return
     }
+  }
+
+  yield {
+    type: 'failed',
+    error: 'Codex turn interrupt did not complete before timeout',
   }
 }
 
@@ -377,14 +440,42 @@ function readMatchingTurnCompletion(
   }
 }
 
+function readMatchingErrorNotification(
+  notification: CodexRawServerNotification,
+  turnScope: CodexTurnScope,
+): CodexErrorNotification | undefined {
+  if (notification.method !== 'error') {
+    return undefined
+  }
+
+  const params = notificationParams(notification)
+
+  if (!params || !matchesThreadAndTurn(params, turnScope)) {
+    return undefined
+  }
+
+  return {
+    willRetry: params.willRetry === true,
+    errorMessage: readNotificationErrorMessage(params),
+  }
+}
+
 function toTerminalAdapterEvent(
   completion: CodexTurnCompletion,
+  options: { interruptedCancellationConfirmed: boolean },
 ): RuntimeAdapterEvent {
   if (completion.status === 'completed') {
     return { type: 'completed' }
   }
 
   if (completion.status === 'interrupted') {
+    if (!options.interruptedCancellationConfirmed) {
+      return {
+        type: 'failed',
+        error: 'Codex turn interrupted without confirmed runtime cancellation',
+      }
+    }
+
     return {
       type: 'cancelled',
       reason: 'Codex turn interrupted',
@@ -406,7 +497,19 @@ function isCodexTurnTerminalStatus(
 }
 
 function readTurnErrorMessage(turn: Record<string, unknown>): string | undefined {
-  const error = turn.error
+  return readErrorMessageFromRecord(turn)
+}
+
+function readNotificationErrorMessage(
+  params: Record<string, unknown>,
+): string | undefined {
+  return readErrorMessageFromRecord(params)
+}
+
+function readErrorMessageFromRecord(
+  value: Record<string, unknown>,
+): string | undefined {
+  const error = value.error
 
   if (!isRecord(error)) {
     return undefined
@@ -455,4 +558,12 @@ function readString(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return 'unknown Codex runtime error'
 }

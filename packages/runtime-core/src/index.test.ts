@@ -80,6 +80,43 @@ class CancelDebugLogAdapter implements AgentRuntimeAdapter {
   }
 }
 
+class AdapterConfirmedCancelAdapter implements AgentRuntimeAdapter {
+  readonly name = 'test'
+  readonly cancellationMode = 'adapter_confirmed'
+
+  async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
+    await new Promise<void>((resolve) => {
+      input.signal.addEventListener('abort', () => resolve(), { once: true })
+    })
+    yield { type: 'cancelled', reason: 'Adapter confirmed cancellation' }
+  }
+}
+
+class AdapterConfirmedCancelFailureAdapter implements AgentRuntimeAdapter {
+  readonly name = 'test'
+  readonly cancellationMode = 'adapter_confirmed'
+
+  async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
+    await new Promise<void>((resolve) => {
+      input.signal.addEventListener('abort', () => resolve(), { once: true })
+    })
+    yield { type: 'failed', error: 'Adapter cancellation failed' }
+  }
+}
+
+class AdapterConfirmedCancelWithoutTerminalAdapter
+  implements AgentRuntimeAdapter
+{
+  readonly name = 'test'
+  readonly cancellationMode = 'adapter_confirmed'
+
+  async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
+    await new Promise<void>((resolve) => {
+      input.signal.addEventListener('abort', () => resolve(), { once: true })
+    })
+  }
+}
+
 test('AgentRuntimeKernel records a completed run lifecycle and log', async () => {
   const kernel = new AgentRuntimeKernel({
     adapters: [new HappyPathAdapter()],
@@ -256,6 +293,72 @@ test('AgentRuntimeKernel retains debug log entries yielded after cancellation', 
       data: { method: 'turn/interrupt' },
     },
   ])
+})
+
+test('AgentRuntimeKernel supports adapter-confirmed cancellation', async () => {
+  const kernel = new AgentRuntimeKernel({
+    adapters: [new AdapterConfirmedCancelAdapter()],
+    now: () => new Date('2026-07-09T00:00:00.000Z'),
+  })
+
+  const startedLog = kernel.startRun({ adapter: 'test', prompt: '멈춰줘' })
+  const cancellingLog = kernel.cancelRun(startedLog.runId)
+  const terminalLog = await kernel.waitForRun(startedLog.runId)
+
+  assert.equal(cancellingLog?.status, 'cancelling')
+  assert.equal(terminalLog.status, 'cancelled')
+  assert.deepEqual(
+    terminalLog.events.map((event) => event.type),
+    ['started', 'cancelling', 'cancelled'],
+  )
+
+  const cancellingEvent = terminalLog.events[1]
+  assert.equal(cancellingEvent?.type, 'cancelling')
+
+  if (cancellingEvent?.type === 'cancelling') {
+    assert.equal(cancellingEvent.reason, 'Runtime run cancellation requested')
+  }
+})
+
+test('AgentRuntimeKernel records adapter-confirmed cancellation failure', async () => {
+  const kernel = new AgentRuntimeKernel({
+    adapters: [new AdapterConfirmedCancelFailureAdapter()],
+    now: () => new Date('2026-07-09T00:00:00.000Z'),
+  })
+
+  const startedLog = kernel.startRun({ adapter: 'test', prompt: '멈춰줘' })
+  const cancellingLog = kernel.cancelRun(startedLog.runId)
+  const terminalLog = await kernel.waitForRun(startedLog.runId)
+
+  assert.equal(cancellingLog?.status, 'cancelling')
+  assert.equal(terminalLog.status, 'failed')
+  assert.equal(terminalLog.error, 'Adapter cancellation failed')
+  assert.deepEqual(
+    terminalLog.events.map((event) => event.type),
+    ['started', 'cancelling', 'failed'],
+  )
+})
+
+test('AgentRuntimeKernel fails adapter-confirmed cancellation without terminal confirmation', async () => {
+  const kernel = new AgentRuntimeKernel({
+    adapters: [new AdapterConfirmedCancelWithoutTerminalAdapter()],
+    now: () => new Date('2026-07-09T00:00:00.000Z'),
+  })
+
+  const startedLog = kernel.startRun({ adapter: 'test', prompt: '멈춰줘' })
+  const cancellingLog = kernel.cancelRun(startedLog.runId)
+  const terminalLog = await kernel.waitForRun(startedLog.runId)
+
+  assert.equal(cancellingLog?.status, 'cancelling')
+  assert.equal(terminalLog.status, 'failed')
+  assert.equal(
+    terminalLog.error,
+    'Runtime run cancellation was not confirmed by adapter',
+  )
+  assert.deepEqual(
+    terminalLog.events.map((event) => event.type),
+    ['started', 'cancelling', 'failed'],
+  )
 })
 
 async function waitForRunLog(

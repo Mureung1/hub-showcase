@@ -33,6 +33,7 @@ function App() {
   const eventSourceRef = useRef<EventSource | null>(null)
   const terminalRunIdsRef = useRef(new Set<string>())
   const isRunning = activeStatus === 'running'
+  const isActiveRun = activeStatus === 'running' || activeStatus === 'cancelling'
 
   useEffect(() => {
     let active = true
@@ -94,7 +95,7 @@ function App() {
 
     const requestPrompt = prompt
 
-    if (!requestPrompt.trim() || isRunning) {
+    if (!requestPrompt.trim() || isActiveRun) {
       return
     }
 
@@ -151,6 +152,10 @@ function App() {
         setOutput((currentOutput) => `${currentOutput}${runtimeEvent.delta}`)
       }
 
+      if (runtimeEvent.type === 'cancelling') {
+        setActiveStatus('cancelling')
+      }
+
       if (isTerminalRuntimeRunEvent(runtimeEvent)) {
         terminal = true
         terminalRunIdsRef.current.add(runId)
@@ -186,7 +191,6 @@ function App() {
 
     const runId = activeRunId
     setError(null)
-    terminalRunIdsRef.current.add(runId)
 
     try {
       const response = await fetch(`/api/runtime/runs/${runId}/cancel`, {
@@ -247,7 +251,7 @@ function App() {
   const activeAdapter = adapters.find((adapter) => adapter.name === selectedAdapter)
   const isFakeAdapter = selectedAdapter === 'fake'
   const isFakeFailureScenario = isFakeAdapter && fakeScenario === 'failure'
-  const canStartRun = !isRunning && prompt.trim().length > 0
+  const canStartRun = !isActiveRun && prompt.trim().length > 0
   const terminalMessage = getTerminalMessage(activeStatus, events, runLog)
   const visibleLog =
     runLog ??
@@ -517,6 +521,10 @@ function getTerminalMessage(
 
   if (status === 'failed') {
     return `Run failed: ${log?.error ?? findFailedError(events)}`
+  }
+
+  if (status === 'cancelling') {
+    return 'Cancelling run...'
   }
 
   if (status === 'completed') {

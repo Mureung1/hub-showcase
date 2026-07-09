@@ -1,8 +1,14 @@
-export type RuntimeRunStatus = 'running' | 'completed' | 'cancelled' | 'failed'
+export type RuntimeRunStatus =
+  | 'running'
+  | 'cancelling'
+  | 'completed'
+  | 'cancelled'
+  | 'failed'
 
 export type RuntimeRunEvent =
   | RuntimeRunStartedEvent
   | RuntimeRunOutputDeltaEvent
+  | RuntimeRunCancellingEvent
   | RuntimeRunCompletedEvent
   | RuntimeRunCancelledEvent
   | RuntimeRunFailedEvent
@@ -28,6 +34,15 @@ export type RuntimeRunOutputDeltaEvent = {
   adapter: string
   timestamp: string
   delta: string
+}
+
+export type RuntimeRunCancellingEvent = {
+  type: 'cancelling'
+  sequence: number
+  runId: string
+  adapter: string
+  timestamp: string
+  reason: string
 }
 
 export type RuntimeRunCompletedEvent = {
@@ -102,6 +117,8 @@ export type RuntimeAdapterRunInput = {
   signal: AbortSignal
 }
 
+export type RuntimeAdapterCancellationMode = 'immediate' | 'adapter_confirmed'
+
 export type RuntimeAdapterEvent =
   | {
       type: 'output_delta'
@@ -128,6 +145,7 @@ export type AgentRuntimeAdapter = {
   readonly name: string
   readonly label?: string
   readonly description?: string
+  readonly cancellationMode?: RuntimeAdapterCancellationMode
   run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent>
 }
 
@@ -287,7 +305,20 @@ export class AgentRuntimeKernel {
       return cloneLog(log)
     }
 
+    if (log.status === 'cancelling') {
+      return cloneLog(log)
+    }
+
     const abortController = this.abortControllers.get(runId)
+    const adapter = this.adapters.get(log.adapter)
+
+    if (adapter?.cancellationMode === 'adapter_confirmed') {
+      this.beginCancellingRun(log, 'Runtime run cancellation requested')
+      abortController?.abort()
+
+      return cloneLog(log)
+    }
+
     this.cancelRunLog(log, 'Runtime run cancelled')
     abortController?.abort()
     this.abortControllers.delete(runId)
@@ -348,6 +379,14 @@ export class AgentRuntimeKernel {
       }
 
       if (!isTerminalRuntimeRunStatus(log.status)) {
+        if (log.status === 'cancelling') {
+          this.failRun(
+            log,
+            'Runtime run cancellation was not confirmed by adapter',
+          )
+          return
+        }
+
         this.completeRun(log)
       }
     } catch (error) {
@@ -379,6 +418,14 @@ export class AgentRuntimeKernel {
     this.abortControllers.delete(log.runId)
   }
 
+  private beginCancellingRun(log: RuntimeRunLog, reason: string): void {
+    log.status = 'cancelling'
+    this.appendEvent(log, {
+      type: 'cancelling',
+      reason,
+    })
+  }
+
   private cancelRunLog(log: RuntimeRunLog, reason: string): void {
     log.status = 'cancelled'
     this.appendEvent(log, {
@@ -386,6 +433,7 @@ export class AgentRuntimeKernel {
       reason,
     })
     this.resolveTerminal(log)
+    this.abortControllers.delete(log.runId)
   }
 
   private failRun(log: RuntimeRunLog, error: string): void {
@@ -404,6 +452,7 @@ export class AgentRuntimeKernel {
     event:
       | { type: 'started'; prompt: string }
       | { type: 'output_delta'; delta: string }
+      | { type: 'cancelling'; reason: string }
       | { type: 'completed'; output: string }
       | { type: 'cancelled'; reason: string }
       | { type: 'failed'; error: string },

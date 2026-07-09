@@ -5,7 +5,12 @@ import {
   type RuntimeRunDebugLogEntry,
 } from '@ay-ple/runtime-core'
 import { CodexRuntimeAdapter } from '@ay-ple/runtime-codex'
-import { withFakeCodexAppServer } from '@ay-ple/runtime-codex/testing'
+import {
+  hasRuntimeDebugClientRequest,
+  hasRuntimeDebugTurnCompletionStatus,
+  waitForRuntimeCondition,
+  withFakeCodexAppServer,
+} from '@ay-ple/runtime-codex/testing'
 import { createServerApp } from './server.js'
 
 type ServerRunLog = {
@@ -310,8 +315,15 @@ test('runtime API cancels a codex run through normalized cancellation', async ()
         assert.equal(startResponse.status, 201)
 
         await waitForServerRunLog(baseUrl, startedRun.runId, (run) =>
-          hasClientRequest(run.debugLog, 'turn/start'),
+          hasRuntimeDebugClientRequest(run.debugLog, 'turn/start'),
         )
+
+        const eventsPromise = fetch(
+          `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,
+        ).then(async (eventsResponse) => {
+          assert.equal(eventsResponse.status, 200)
+          return parseSseData(await eventsResponse.text())
+        })
 
         const cancelResponse = await fetch(
           `${baseUrl}/api/runtime/runs/${startedRun.runId}/cancel`,
@@ -319,23 +331,28 @@ test('runtime API cancels a codex run through normalized cancellation', async ()
             method: 'POST',
           },
         )
-        const cancelledRun = await cancelResponse.json()
+        const cancellingRun = await cancelResponse.json()
 
         assert.equal(cancelResponse.status, 200)
-        assert.equal(cancelledRun.run.status, 'cancelled')
+        assert.equal(cancellingRun.run.status, 'cancelling')
 
         const log = await waitForServerRunLog(
           baseUrl,
           startedRun.runId,
           (run) =>
-            hasClientRequest(run.debugLog, 'turn/interrupt') &&
-            hasTurnCompletionStatus(run.debugLog, 'interrupted'),
+            hasRuntimeDebugClientRequest(run.debugLog, 'turn/interrupt') &&
+            hasRuntimeDebugTurnCompletionStatus(run.debugLog, 'interrupted'),
         )
+        const streamedEvents = await eventsPromise
 
         assert.equal(log.status, 'cancelled')
         assert.deepEqual(
           log.events.map((event: Record<string, unknown>) => event.type),
-          ['started', 'cancelled'],
+          ['started', 'cancelling', 'cancelled'],
+        )
+        assert.deepEqual(
+          streamedEvents.map((event) => event.type),
+          ['started', 'cancelling', 'cancelled'],
         )
 
         const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
@@ -351,6 +368,167 @@ test('runtime API cancels a codex run through normalized cancellation', async ()
           ),
           false,
         )
+      })
+    },
+  )
+})
+
+test('runtime API records codex interrupt failure as normalized failure', async () => {
+  await withFakeCodexAppServer(
+    {
+      threadId: 'thread-server-interrupt-error',
+      turnId: 'turn-server-interrupt-error',
+      turnCompletions: [],
+      turnInterruptError: 'interrupt unavailable',
+    },
+    async ({ rawClientOptions }) => {
+      const kernel = new AgentRuntimeKernel({
+        adapters: [
+          new CodexRuntimeAdapter({
+            rawClientOptions,
+          }),
+        ],
+      })
+
+      await withTestServer({ kernel }, async (baseUrl) => {
+        const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            adapter: 'codex',
+            prompt: 'Cancel from server API',
+          }),
+        })
+        const startedRun = (await startResponse.json()) as { runId: string }
+
+        assert.equal(startResponse.status, 201)
+
+        await waitForServerRunLog(baseUrl, startedRun.runId, (run) =>
+          hasRuntimeDebugClientRequest(run.debugLog, 'turn/start'),
+        )
+
+        const eventsPromise = fetch(
+          `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,
+        ).then(async (eventsResponse) => {
+          assert.equal(eventsResponse.status, 200)
+          return parseSseData(await eventsResponse.text())
+        })
+        const cancelResponse = await fetch(
+          `${baseUrl}/api/runtime/runs/${startedRun.runId}/cancel`,
+          {
+            method: 'POST',
+          },
+        )
+        const cancellingRun = await cancelResponse.json()
+        const terminalLog = await waitForServerRunLog(
+          baseUrl,
+          startedRun.runId,
+          (run) => run.status === 'failed',
+        )
+        const streamedEvents = await eventsPromise
+
+        assert.equal(cancelResponse.status, 200)
+        assert.equal(cancellingRun.run.status, 'cancelling')
+        assert.equal(terminalLog.status, 'failed')
+        assert.match(
+          terminalLog.error ?? '',
+          /Codex turn interrupt failed: turn\/interrupt returned error: interrupt unavailable/,
+        )
+        assert.deepEqual(
+          terminalLog.events.map((event: Record<string, unknown>) => event.type),
+          ['started', 'cancelling', 'failed'],
+        )
+        assert.deepEqual(
+          streamedEvents.map((event) => event.type),
+          ['started', 'cancelling', 'failed'],
+        )
+
+        const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
+        const history = await historyResponse.json()
+
+        assert.equal(historyResponse.status, 200)
+        assert.equal(history.runs[0].runId, startedRun.runId)
+        assert.equal(history.runs[0].status, 'failed')
+      })
+    },
+  )
+})
+
+test('runtime API records codex interrupt timeout as normalized failure', async () => {
+  await withFakeCodexAppServer(
+    {
+      threadId: 'thread-server-interrupt-timeout',
+      turnId: 'turn-server-interrupt-timeout',
+      turnCompletions: [],
+    },
+    async ({ rawClientOptions }) => {
+      const kernel = new AgentRuntimeKernel({
+        adapters: [
+          new CodexRuntimeAdapter({
+            rawClientOptions,
+          }),
+        ],
+      })
+
+      await withTestServer({ kernel }, async (baseUrl) => {
+        const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            adapter: 'codex',
+            prompt: 'Cancel from server API',
+          }),
+        })
+        const startedRun = (await startResponse.json()) as { runId: string }
+
+        assert.equal(startResponse.status, 201)
+
+        await waitForServerRunLog(baseUrl, startedRun.runId, (run) =>
+          hasRuntimeDebugClientRequest(run.debugLog, 'turn/start'),
+        )
+
+        const eventsPromise = fetch(
+          `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,
+        ).then(async (eventsResponse) => {
+          assert.equal(eventsResponse.status, 200)
+          return parseSseData(await eventsResponse.text())
+        })
+        const cancelResponse = await fetch(
+          `${baseUrl}/api/runtime/runs/${startedRun.runId}/cancel`,
+          {
+            method: 'POST',
+          },
+        )
+        const cancellingRun = await cancelResponse.json()
+        const terminalLog = await waitForServerRunLog(
+          baseUrl,
+          startedRun.runId,
+          (run) => run.status === 'failed',
+        )
+        const streamedEvents = await eventsPromise
+
+        assert.equal(cancelResponse.status, 200)
+        assert.equal(cancellingRun.run.status, 'cancelling')
+        assert.equal(terminalLog.status, 'failed')
+        assert.equal(
+          terminalLog.error,
+          'Codex turn interrupt did not complete before timeout',
+        )
+        assert.deepEqual(
+          streamedEvents.map((event) => event.type),
+          ['started', 'cancelling', 'failed'],
+        )
+
+        const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
+        const history = await historyResponse.json()
+
+        assert.equal(historyResponse.status, 200)
+        assert.equal(history.runs[0].runId, startedRun.runId)
+        assert.equal(history.runs[0].status, 'failed')
       })
     },
   )
@@ -403,60 +581,16 @@ async function waitForServerRunLog(
   runId: string,
   predicate: (run: ServerRunLog) => boolean,
 ): Promise<ServerRunLog> {
-  const deadline = Date.now() + 1000
+  return waitForRuntimeCondition(
+    async () => {
+      const response = await fetch(`${baseUrl}/api/runtime/runs/${runId}`)
+      const data = await response.json()
 
-  while (Date.now() < deadline) {
-    const response = await fetch(`${baseUrl}/api/runtime/runs/${runId}`)
-    const data = await response.json()
-    const run = data.run as ServerRunLog
-
-    if (predicate(run)) {
-      return run
-    }
-
-    await new Promise<void>((resolve) => {
-      setImmediate(resolve)
-    })
-  }
-
-  assert.fail('expected server run log condition was not observed')
-}
-
-function hasClientRequest(
-  debugLog: RuntimeRunDebugLogEntry[] | undefined,
-  method: string,
-): boolean {
-  return (
-    debugLog
-      ?.filter((entry) => entry.source === 'client' && entry.kind === 'stdin')
-      .map((entry) => JSON.parse(String(entry.raw ?? '{}')) as { method?: string })
-      .some((message) => message.method === method) ?? false
+      return data.run as ServerRunLog
+    },
+    predicate,
+    {
+      failureMessage: 'expected server run log condition was not observed',
+    },
   )
-}
-
-function hasTurnCompletionStatus(
-  debugLog: RuntimeRunDebugLogEntry[] | undefined,
-  status: string,
-): boolean {
-  return (
-    debugLog?.some((entry) => {
-      if (entry.source !== 'server' || entry.kind !== 'notification') {
-        return false
-      }
-
-      const data = entry.data as Record<string, unknown> | undefined
-      const params = data?.params
-
-      return (
-        data?.method === 'turn/completed' &&
-        isRecord(params) &&
-        isRecord(params.turn) &&
-        params.turn.status === status
-      )
-    }) ?? false
-  )
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }

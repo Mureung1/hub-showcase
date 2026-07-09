@@ -3,12 +3,13 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { AgentRuntimeKernel, type RuntimeRunLog } from '@ay-ple/runtime-core'
 import {
-  AgentRuntimeKernel,
-  type RuntimeRunDebugLogEntry,
-  type RuntimeRunLog,
-} from '@ay-ple/runtime-core'
-import {
+  hasRuntimeDebugClientRequest,
+  hasRuntimeDebugNotification,
+  hasRuntimeDebugTurnCompletionStatus,
+  readRuntimeDebugClientRequest,
+  waitForRuntimeCondition,
   withFakeCodexAppServer,
   type FakeCodexAppServerScenario,
 } from '@ay-ple/runtime-codex/testing'
@@ -153,29 +154,204 @@ test('CodexRuntimeAdapter sends turn interrupt and preserves normalized cancella
       })
 
       await waitForRunLog(kernel, startedLog.runId, (log) =>
-        hasClientRequest(log.debugLog, 'turn/start'),
+        hasRuntimeDebugClientRequest(log.debugLog, 'turn/start'),
       )
 
-      const cancelledLog = kernel.cancelRun(startedLog.runId)
+      const cancellingLog = kernel.cancelRun(startedLog.runId)
       const logWithInterrupt = await waitForRunLog(
         kernel,
         startedLog.runId,
         (log) =>
-          hasClientRequest(log.debugLog, 'turn/interrupt') &&
-          hasTurnCompletionStatus(log.debugLog, 'interrupted'),
+          hasRuntimeDebugClientRequest(log.debugLog, 'turn/interrupt') &&
+          hasRuntimeDebugTurnCompletionStatus(log.debugLog, 'interrupted'),
       )
 
-      assert.equal(cancelledLog?.status, 'cancelled')
+      assert.equal(cancellingLog?.status, 'cancelling')
       assert.equal(logWithInterrupt.status, 'cancelled')
       assert.deepEqual(
         logWithInterrupt.events.map((event) => event.type),
-        ['started', 'cancelled'],
+        ['started', 'cancelling', 'cancelled'],
       )
-      assert.deepEqual(readClientRequest(logWithInterrupt.debugLog, 'turn/interrupt')?.params, {
-        threadId: 'thread-cancel',
-        turnId: 'turn-cancel',
-      })
+      assert.deepEqual(
+        readRuntimeDebugClientRequest(
+          logWithInterrupt.debugLog,
+          'turn/interrupt',
+        )?.params,
+        {
+          threadId: 'thread-cancel',
+          turnId: 'turn-cancel',
+        },
+      )
     },
+  )
+})
+
+test('CodexRuntimeAdapter records failed run when turn interrupt request fails', async () => {
+  await withFakeCodexAppServer(
+    {
+      threadId: 'thread-interrupt-error',
+      turnId: 'turn-interrupt-error',
+      turnCompletions: [],
+      turnInterruptError: 'interrupt unavailable',
+    },
+    async ({ rawClientOptions }) => {
+      const kernel = new AgentRuntimeKernel({
+        adapters: [
+          new CodexRuntimeAdapter({
+            rawClientOptions,
+          }),
+        ],
+        now: () => new Date('2026-07-09T00:00:00.000Z'),
+      })
+      const startedLog = kernel.startRun({
+        adapter: 'codex',
+        prompt: 'Cancel this Codex run',
+      })
+
+      await waitForRunLog(kernel, startedLog.runId, (log) =>
+        hasRuntimeDebugClientRequest(log.debugLog, 'turn/start'),
+      )
+
+      const cancellingLog = kernel.cancelRun(startedLog.runId)
+      const terminalLog = await kernel.waitForRun(startedLog.runId)
+
+      assert.equal(cancellingLog?.status, 'cancelling')
+      assert.equal(terminalLog.status, 'failed')
+      assert.match(
+        terminalLog.error ?? '',
+        /Codex turn interrupt failed: turn\/interrupt returned error: interrupt unavailable/,
+      )
+      assert.deepEqual(
+        terminalLog.events.map((event) => event.type),
+        ['started', 'cancelling', 'failed'],
+      )
+      assert.ok(
+        hasRuntimeDebugClientRequest(terminalLog.debugLog, 'turn/interrupt'),
+      )
+    },
+  )
+})
+
+test('CodexRuntimeAdapter records failed run when turn interrupt completion is missing', async () => {
+  await withFakeCodexAppServer(
+    {
+      threadId: 'thread-interrupt-timeout',
+      turnId: 'turn-interrupt-timeout',
+      turnCompletions: [],
+    },
+    async ({ rawClientOptions }) => {
+      const kernel = new AgentRuntimeKernel({
+        adapters: [
+          new CodexRuntimeAdapter({
+            rawClientOptions,
+          }),
+        ],
+        now: () => new Date('2026-07-09T00:00:00.000Z'),
+      })
+      const startedLog = kernel.startRun({
+        adapter: 'codex',
+        prompt: 'Cancel this Codex run',
+      })
+
+      await waitForRunLog(kernel, startedLog.runId, (log) =>
+        hasRuntimeDebugClientRequest(log.debugLog, 'turn/start'),
+      )
+
+      const cancellingLog = kernel.cancelRun(startedLog.runId)
+      const terminalLog = await kernel.waitForRun(startedLog.runId)
+
+      assert.equal(cancellingLog?.status, 'cancelling')
+      assert.equal(terminalLog.status, 'failed')
+      assert.equal(
+        terminalLog.error,
+        'Codex turn interrupt did not complete before timeout',
+      )
+      assert.deepEqual(
+        terminalLog.events.map((event) => event.type),
+        ['started', 'cancelling', 'failed'],
+      )
+      assert.ok(
+        hasRuntimeDebugClientRequest(terminalLog.debugLog, 'turn/interrupt'),
+      )
+    },
+  )
+})
+
+test('CodexRuntimeAdapter maps non-retryable error notification to normalized failure', async () => {
+  const failedLog = await runCodexScenario({
+    threadId: 'thread-error',
+    turnId: 'turn-error',
+    turnCompletions: [],
+    errorNotifications: [
+      {
+        willRetry: false,
+        message: 'Codex error notification failed the turn',
+      },
+    ],
+  })
+
+  assert.equal(failedLog.status, 'failed')
+  assert.equal(failedLog.error, 'Codex error notification failed the turn')
+  assert.deepEqual(
+    failedLog.events.map((event) => event.type),
+    ['started', 'failed'],
+  )
+  assert.ok(hasRuntimeDebugNotification(failedLog.debugLog, 'error'))
+})
+
+test('CodexRuntimeAdapter keeps retryable error notification non-terminal', async () => {
+  const completedLog = await runCodexScenario({
+    threadId: 'thread-retryable-error',
+    turnId: 'turn-retryable-error',
+    agentMessageDeltas: [
+      {
+        delta: 'Recovered after retry',
+      },
+    ],
+    errorNotifications: [
+      {
+        willRetry: true,
+        message: 'Temporary Codex error',
+      },
+    ],
+    turnCompletions: [
+      {
+        status: 'completed',
+      },
+    ],
+  })
+
+  assert.equal(completedLog.status, 'completed')
+  assert.equal(completedLog.output, 'Recovered after retry')
+  assert.deepEqual(
+    completedLog.events.map((event) => event.type),
+    ['started', 'output_delta', 'completed'],
+  )
+  assert.ok(hasRuntimeDebugNotification(completedLog.debugLog, 'error'))
+})
+
+test('CodexRuntimeAdapter treats interrupted completion without runtime cancel as failure', async () => {
+  const failedLog = await runCodexScenario({
+    threadId: 'thread-unexpected-interrupt',
+    turnId: 'turn-unexpected-interrupt',
+    turnCompletions: [
+      {
+        status: 'interrupted',
+      },
+    ],
+  })
+
+  assert.equal(failedLog.status, 'failed')
+  assert.equal(
+    failedLog.error,
+    'Codex turn interrupted without confirmed runtime cancellation',
+  )
+  assert.deepEqual(
+    failedLog.events.map((event) => event.type),
+    ['started', 'failed'],
+  )
+  assert.ok(
+    hasRuntimeDebugTurnCompletionStatus(failedLog.debugLog, 'interrupted'),
   )
 })
 
@@ -197,7 +373,7 @@ test('CodexRuntimeAdapter maps failed turn completion to normalized failure', as
     failedLog.events.map((event) => event.type),
     ['started', 'failed'],
   )
-  assert.ok(hasTurnCompletionStatus(failedLog.debugLog, 'failed'))
+  assert.ok(hasRuntimeDebugTurnCompletionStatus(failedLog.debugLog, 'failed'))
 })
 
 test('CodexRuntimeAdapter records failed run when notification stream ends before terminal turn', async () => {
@@ -340,62 +516,15 @@ async function waitForRunLog(
   runId: string,
   predicate: (log: RuntimeRunLog) => boolean,
 ): Promise<RuntimeRunLog> {
-  const deadline = Date.now() + 1000
-
-  while (Date.now() < deadline) {
-    const log = kernel.getRunLog(runId)
-
-    if (log && predicate(log)) {
-      return log
-    }
-
-    await new Promise<void>((resolve) => {
-      setImmediate(resolve)
-    })
-  }
-
-  assert.fail('expected run log condition was not observed')
-}
-
-function readClientRequest(
-  debugLog: RuntimeRunDebugLogEntry[] | undefined,
-  method: string,
-): { method?: string; params?: unknown } | undefined {
-  return debugLog
-    ?.filter((entry) => entry.source === 'client' && entry.kind === 'stdin')
-    .map((entry) => JSON.parse(entry.raw ?? '{}') as { method?: string; params?: unknown })
-    .find((message) => message.method === method)
-}
-
-function hasClientRequest(
-  debugLog: RuntimeRunDebugLogEntry[] | undefined,
-  method: string,
-): boolean {
-  return readClientRequest(debugLog, method) !== undefined
-}
-
-function hasTurnCompletionStatus(
-  debugLog: RuntimeRunDebugLogEntry[] | undefined,
-  status: string,
-): boolean {
-  return (
-    debugLog?.some((entry) => {
-      if (entry.source !== 'server' || entry.kind !== 'notification') {
-        return false
-      }
-
-      const params = entry.data?.params
-
-      return (
-        entry.data?.method === 'turn/completed' &&
-        isRecord(params) &&
-        isRecord(params.turn) &&
-        params.turn.status === status
-      )
-    }) ?? false
+  const log = await waitForRuntimeCondition(
+    () => kernel.getRunLog(runId),
+    (candidate) => candidate !== undefined && predicate(candidate),
+    {
+      failureMessage: 'expected run log condition was not observed',
+    },
   )
-}
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
+  assert.ok(log)
+
+  return log
 }

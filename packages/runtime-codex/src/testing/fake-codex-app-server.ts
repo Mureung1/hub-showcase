@@ -1,6 +1,7 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { RuntimeRunDebugLogEntry } from '@ay-ple/runtime-core'
 import type { CodexRawClientOptions } from '../raw-client.js'
 
 export type FakeCodexAgentMessageDelta = {
@@ -17,6 +18,13 @@ export type FakeCodexTurnCompletion = {
   errorMessage?: string
 }
 
+export type FakeCodexErrorNotification = {
+  threadId?: string
+  turnId?: string
+  willRetry?: boolean
+  message: string
+}
+
 export type FakeCodexAppServerScenario = {
   userAgent?: string
   threadId?: string
@@ -24,11 +32,13 @@ export type FakeCodexAppServerScenario = {
   agentMessageDeltas?: FakeCodexAgentMessageDelta[]
   turnCompletions?: FakeCodexTurnCompletion[]
   interruptTurnCompletion?: FakeCodexTurnCompletion
+  errorNotifications?: FakeCodexErrorNotification[]
   initializeError?: string
   initializeHang?: boolean
   exitAfterInitialize?: boolean
   threadStartError?: string
   turnStartError?: string
+  turnInterruptError?: string
   endBeforeTerminal?: boolean
 }
 
@@ -68,6 +78,92 @@ export async function withFakeCodexAppServer(
   }
 }
 
+export async function waitForRuntimeCondition<T>(
+  read: () => T | Promise<T>,
+  predicate: (value: T) => boolean,
+  options: {
+    timeoutMs?: number
+    failureMessage?: string
+  } = {},
+): Promise<T> {
+  const deadline = Date.now() + (options.timeoutMs ?? 1000)
+
+  while (Date.now() < deadline) {
+    const value = await read()
+
+    if (predicate(value)) {
+      return value
+    }
+
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve)
+    })
+  }
+
+  throw new Error(
+    options.failureMessage ?? 'expected runtime condition was not observed',
+  )
+}
+
+export function readRuntimeDebugClientRequest(
+  debugLog: RuntimeRunDebugLogEntry[] | undefined,
+  method: string,
+): { method?: string; params?: unknown } | undefined {
+  return debugLog
+    ?.filter((entry) => entry.source === 'client' && entry.kind === 'stdin')
+    .map(
+      (entry) =>
+        JSON.parse(entry.raw ?? '{}') as {
+          method?: string
+          params?: unknown
+        },
+    )
+    .find((message) => message.method === method)
+}
+
+export function hasRuntimeDebugClientRequest(
+  debugLog: RuntimeRunDebugLogEntry[] | undefined,
+  method: string,
+): boolean {
+  return readRuntimeDebugClientRequest(debugLog, method) !== undefined
+}
+
+export function hasRuntimeDebugNotification(
+  debugLog: RuntimeRunDebugLogEntry[] | undefined,
+  method: string,
+): boolean {
+  return (
+    debugLog?.some(
+      (entry) =>
+        entry.source === 'server' &&
+        entry.kind === 'notification' &&
+        entry.data?.method === method,
+    ) ?? false
+  )
+}
+
+export function hasRuntimeDebugTurnCompletionStatus(
+  debugLog: RuntimeRunDebugLogEntry[] | undefined,
+  status: string,
+): boolean {
+  return (
+    debugLog?.some((entry) => {
+      if (entry.source !== 'server' || entry.kind !== 'notification') {
+        return false
+      }
+
+      const params = entry.data?.params
+
+      return (
+        entry.data?.method === 'turn/completed' &&
+        isRecord(params) &&
+        isRecord(params.turn) &&
+        params.turn.status === status
+      )
+    }) ?? false
+  )
+}
+
 function createFakeCodexAppServerSource(
   scenario: FakeCodexAppServerScenario,
 ): string {
@@ -103,11 +199,20 @@ function normalizeScenario(
     interruptTurnCompletion: scenario.interruptTurnCompletion
       ? normalizeCompletion(scenario.interruptTurnCompletion, threadId, turnId)
       : null,
+    errorNotifications: (scenario.errorNotifications ?? []).map(
+      (notification) => ({
+        threadId: notification.threadId ?? threadId,
+        turnId: notification.turnId ?? turnId,
+        willRetry: notification.willRetry ?? false,
+        message: notification.message,
+      }),
+    ),
     initializeError: scenario.initializeError ?? null,
     initializeHang: scenario.initializeHang ?? false,
     exitAfterInitialize: scenario.exitAfterInitialize ?? false,
     threadStartError: scenario.threadStartError ?? null,
     turnStartError: scenario.turnStartError ?? null,
+    turnInterruptError: scenario.turnInterruptError ?? null,
     endBeforeTerminal: scenario.endBeforeTerminal ?? false,
   }
 }
@@ -126,11 +231,13 @@ type NormalizedFakeCodexAppServerScenario = {
   agentMessageDeltas: Required<FakeCodexAgentMessageDelta>[]
   turnCompletions: NormalizedFakeCodexTurnCompletion[]
   interruptTurnCompletion: NormalizedFakeCodexTurnCompletion | null
+  errorNotifications: Required<FakeCodexErrorNotification>[]
   initializeError: string | null
   initializeHang: boolean
   exitAfterInitialize: boolean
   threadStartError: string | null
   turnStartError: string | null
+  turnInterruptError: string | null
   endBeforeTerminal: boolean
 }
 
@@ -220,6 +327,10 @@ reader.on('line', (line) => {
         })
       }
 
+      for (const errorNotification of scenario.errorNotifications) {
+        writeErrorNotification(errorNotification)
+      }
+
       for (const completion of scenario.turnCompletions) {
         writeTurnCompletion(completion)
       }
@@ -233,6 +344,11 @@ reader.on('line', (line) => {
   }
 
   if (message.method === 'turn/interrupt') {
+    if (scenario.turnInterruptError) {
+      writeError(message.id, scenario.turnInterruptError)
+      return
+    }
+
     writeResponse(message.id, {})
 
     if (scenario.interruptTurnCompletion) {
@@ -260,6 +376,19 @@ function writeNotification(method, params) {
   process.stdout.write(JSON.stringify({ method, params }) + '\n')
 }
 
+function writeErrorNotification(errorNotification) {
+  writeNotification('error', {
+    threadId: errorNotification.threadId,
+    turnId: errorNotification.turnId,
+    willRetry: errorNotification.willRetry,
+    error: {
+      message: errorNotification.message,
+      codexErrorInfo: null,
+      additionalDetails: null,
+    },
+  })
+}
+
 function writeTurnCompletion(completion) {
   writeNotification('turn/completed', {
     threadId: completion.threadId,
@@ -284,3 +413,7 @@ function writeTurnCompletion(completion) {
   })
 }
 `
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}

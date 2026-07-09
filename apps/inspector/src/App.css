@@ -113,6 +113,11 @@ h1 {
   background: #ffe2a9;
 }
 
+.run-state.cancelling {
+  color: #7a4b00;
+  background: #ffe2a9;
+}
+
 .run-state.completed {
   color: #3f7f68;
   background: #e5f4e7;
