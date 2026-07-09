@@ -30,7 +30,7 @@
 
 - Frontend: React, Vite
 - Backend: Express
-- Database: PostgreSQL
+- Database: Supabase
 
 ## 실행 방법
 
