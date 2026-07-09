@@ -41,7 +41,7 @@ function PostResult() {
           content={result.content}
           photoLayout={result.photoLayout}
           onRegenerate={() => {}}
-          onSchedule={() => {}}
+          onSchedule={() => navigate("/posts/promotion/schedule")}
         />
       </main>
     </div>
