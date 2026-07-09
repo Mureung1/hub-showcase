@@ -1,0 +1,42 @@
+# docker-compose.yml — 전체 스택 한 번에 실행
+# 프론트엔드와 백엔드 파일이 같은 루트 폴더(HUB)에 있는 구조 기준
+# 실행: docker compose up --build
+# 종료: docker compose down
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: mystery_shopper
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    env_file: .env          # GOOGLE_API_KEY, NAVER_CLIENT_ID/SECRET
+    environment:
+      DB_URL: mysql+pymysql://root:${MYSQL_ROOT_PASSWORD:-rootpass}@db:3306/mystery_shopper?charset=utf8mb4
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  db_data:
