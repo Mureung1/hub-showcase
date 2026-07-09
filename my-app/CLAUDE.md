@@ -33,7 +33,7 @@ src/
 
 ## 디자인 시스템
 
-화면 레이아웃/구조는 [WIREFRAME.md](WIREFRAME.md), 색상/타이포/spacing/radius 토큰과 컴포넌트 스타일 가이드는 [DESIGN.md](DESIGN.md) 참고. 새 컴포넌트를 만들기 전에 `design-system` 스킬(`.claude/skills/design-system/`)이 이 두 문서를 확인하도록 되어 있다. `src/index.css`의 Tailwind `@theme`는 DESIGN.md의 토큰을 그대로 반영한 것이다.
+화면 레이아웃/구조는 [WIREFRAME.md](WIREFRAME.md), 색상/타이포/spacing/radius 토큰과 컴포넌트 스타일 가이드는 [DESIGN.md](DESIGN.md) 참고. 새 컴포넌트를 만들기 전에 `design-system` 스킬(`../.claude/skills/design-system/`, hub 저장소 공용)이 이 두 문서를 확인하도록 되어 있다. `src/index.css`의 Tailwind `@theme`는 DESIGN.md의 토큰을 그대로 반영한 것이다.
 
 ## 작업 방식
 
