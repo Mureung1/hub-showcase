@@ -31,4 +31,5 @@
 
 - 기획서: [docs/기획서.md](docs/기획서.md)
 - 서비스 기술 지도: [docs/서비스_기술_지도.md](docs/서비스_기술_지도.md)
+- 디자인 문서: [docs/디자인.md](docs/디자인.md)
 - 프로토타입: https://dodeho.github.io/hub/ (소스: `docs/prototype/`)
