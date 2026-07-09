@@ -421,7 +421,50 @@ auto-merge workflow가 CI 상태를 자체 검사하지 않음.
 | G4 | SQLite vs SQLAlchemy 결정 |
 | G5 | 대상 상권 sample로 MapLibre 2.5D PoC |
 
-## 7. 관련 문서
+## 7. 문서 허브 반영 상태
+
+개발 환경 구성 결과는 저장소에만 남겨두지 않고 공개 문서 허브에 반영했다.
+
+공개 주소:
+
+```text
+https://hub-localtwin-docs-vercel.vercel.app
+```
+
+Home 배치:
+
+| 위치 | 노출 문서 |
+| --- | --- |
+| Development 카드 | 개발환경, 개발 컨벤션, 개발 전 결정 Gate, 검증 가이드, 1주차 완료 보고서 |
+| Document Tree / development | `docs/development/`의 Markdown 9개 전체 |
+| README | 공개 문서사이트와 주요 개발문서 링크 |
+
+Document Tree는 폴더별 `<details>`와 `<summary>`를 사용한다. pointer와 keyboard로 폴더를 접거나 펼칠 수 있고, 각 파일명은 Markdown viewer 또는 독립 HTML 문서로 바로 연결된다.
+
+2026-07-09 배포 검증:
+
+```text
+docs-only production deployment: READY
+공개 index + docs 파일: 29/29 HTTP 200
+내부 전용 경로: 4/4 HTTP 404
+Home의 개발환경/컨벤션/결정 Gate/1주차 보고서 링크 확인
+development 폴더 접기/펼치기 확인
+desktop/mobile 문서 트리 확인
+browser console error 없음
+```
+
+공개하지 않는 경로:
+
+```text
+.harness/
+scripts/
+apps/
+.env.example
+```
+
+`README.md`는 GitHub 저장소의 최상위 진입점으로 관리하며, Vercel의 공개 문서 집합은 `index.html`과 `docs/` 아래 문서로 제한한다.
+
+## 8. 관련 문서
 
 - [전체 개발문서](./overview.md)
 - [개발환경](./environment.md)
