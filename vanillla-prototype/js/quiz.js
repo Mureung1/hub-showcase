@@ -22,8 +22,9 @@ function renderQuiz({ questions, totalSteps, resultUrl }) {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "choice-card " + (i === 0 ? "mint" : "peach");
+      var iconSvg = (window.ICONS && ICONS[opt.icon]) || "";
       btn.innerHTML =
-        '<span class="choice-icon">' + opt.icon + "</span>" +
+        '<span class="choice-icon">' + iconSvg + "</span>" +
         '<span class="choice-label">' + opt.label + "</span>";
       btn.addEventListener("click", function () {
         idx++;
