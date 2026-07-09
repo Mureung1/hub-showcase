@@ -1,0 +1,669 @@
+<title>인터랙티브 프로토타입 — 디자인 스킨 실험 (docs/design.md 적용)</title>
+<style>
+  :root {
+    /* docs/design.md 팔레트 그대로 적용 — 실험용, 라이트 모드 없음 */
+    --bg: #0d0d0d;
+    --surface: #1a1a1a;
+    --surface-2: #151515;
+    --surface-3: #202020;
+    --border: #2a2a2a;
+    --ink: #f5f5f5;
+    --ink-soft: #c2c2c2;
+    --ink-faint: #9a9a9a;
+
+    --accent: #ff6a1a;
+    --accent-ink: #ffb27a;
+    --accent-soft: #2a1a0e;
+    --accent-border: #7a3c14;
+
+    --sidebar-fill: #000000;
+    --sidebar-ink: #f5f5f5;
+    --sidebar-sub: #8a8a8a;
+    --sidebar-active-bg: #ff6a1a;
+    --sidebar-active-ink: #0d0d0d;
+
+    --good: #5fd38a;
+    --good-soft: #123322;
+    --warn: #ffb020;
+    --warn-soft: #2a1f0a;
+
+    --chrome: #141414;
+    --chrome-dot1: #ef6a5f;
+    --chrome-dot2: #f4bf50;
+    --chrome-dot3: #61c454;
+
+    --shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 20px 40px rgba(0, 0, 0, 0.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Pretendard", -apple-system,
+      BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- settings screen ---------- */
+  .settings-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface);
+  }
+  .settings-row-label { font-size: 0.88rem; font-weight: 700; }
+  .settings-row-desc { font-size: 0.76rem; color: var(--ink-faint); margin-top: 2px; }
+  .profile-card { display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #0d0d0d; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; flex: none; }
+  .profile-name { font-size: 0.95rem; font-weight: 700; }
+  .profile-sub { font-size: 0.76rem; color: var(--ink-faint); }
+
+  .page { max-width: 1080px; margin: 0 auto; padding: 40px 24px 56px; display: flex; flex-direction: column; gap: 24px; background: var(--bg); color: var(--ink); }
+
+  header.head { display: flex; flex-direction: column; gap: 10px; }
+  .eyebrow {
+    font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; color: var(--accent);
+    text-transform: uppercase; display: flex; align-items: center; gap: 8px;
+  }
+  .eyebrow::before { content: ''; width: 14px; height: 3px; background: var(--accent); display: inline-block; }
+  h1 {
+    margin: 0; font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; text-transform: uppercase;
+    line-height: 1.15;
+  }
+  .subtitle { margin: 0; max-width: 68ch; color: var(--ink-soft); font-size: 0.92rem; line-height: 1.6; }
+  .note { font-size: 0.78rem; color: var(--ink-faint); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; max-width: 68ch; }
+
+  /* ---------- shared window chrome ---------- */
+  .window { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+  .titlebar { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: var(--chrome); border-bottom: 1px solid var(--border); }
+  .traffic { display: flex; gap: 7px; }
+  .traffic span { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .traffic .r { background: var(--chrome-dot1); } .traffic .y { background: var(--chrome-dot2); } .traffic .g { background: var(--chrome-dot3); }
+  .urlbar { flex: 1; max-width: 420px; font-size: 0.78rem; color: var(--ink-faint); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 5px 14px; font-variant-numeric: tabular-nums; }
+  .urlbar b { color: var(--ink-soft); font-weight: 700; }
+
+  .app-shell { display: flex; min-height: 480px; }
+  .sidebar { width: 168px; flex: none; background: var(--sidebar-fill); color: var(--sidebar-ink); padding: 18px 14px; display: flex; flex-direction: column; gap: 22px; border-right: 1px solid var(--border); }
+  .brand { font-size: 0.95rem; font-weight: 800; letter-spacing: -0.01em; text-transform: uppercase; }
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav-item { font-size: 0.82rem; padding: 8px 10px; border-radius: 8px; color: var(--sidebar-sub); text-decoration: none; display: block; font-weight: 600; }
+  .nav-item.active { background: var(--sidebar-active-bg); color: var(--sidebar-active-ink); font-weight: 800; }
+  .sidebar-foot { margin-top: auto; font-size: 0.72rem; color: var(--sidebar-sub); line-height: 1.6; }
+  .sidebar-foot b { color: var(--accent); }
+
+  .content { flex: 1; padding: 24px 28px; background: var(--surface-2); display: flex; flex-direction: column; gap: 18px; overflow-y: auto; }
+  .content-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .content-head h2 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.01em; }
+  .content-head .date { font-size: 0.78rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+  .content-desc { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.55; margin: -8px 0 0; }
+
+  /* ---------- hub weekly view ---------- */
+  .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .day { border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; background: var(--surface); }
+  .day-label { font-size: 0.68rem; color: var(--ink-faint); font-weight: 700; }
+  .day-part { font-size: 0.8rem; font-weight: 800; }
+  .day-status { font-size: 0.66rem; }
+  .status-done { color: var(--good); }
+  .status-planned { color: var(--ink-faint); }
+  .status-rest { color: var(--ink-faint); font-style: italic; }
+  label.day { cursor: pointer; }
+  label.day:hover { border-color: var(--accent); }
+
+  .day-radio { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .day-radio:focus-visible ~ .week label { outline: none; }
+
+  #day-mon:checked ~ .week label[for="day-mon"],
+  #day-tue:checked ~ .week label[for="day-tue"],
+  #day-wed:checked ~ .week label[for="day-wed"],
+  #day-thu:checked ~ .week label[for="day-thu"],
+  #day-fri:checked ~ .week label[for="day-fri"],
+  #day-sat:checked ~ .week label[for="day-sat"],
+  #day-sun:checked ~ .week label[for="day-sun"] {
+    background: var(--accent); border-color: var(--accent); color: #0d0d0d;
+  }
+  #day-mon:checked ~ .week label[for="day-mon"] .day-label, #day-mon:checked ~ .week label[for="day-mon"] .day-status.status-planned,
+  #day-tue:checked ~ .week label[for="day-tue"] .day-label, #day-tue:checked ~ .week label[for="day-tue"] .day-status.status-planned,
+  #day-wed:checked ~ .week label[for="day-wed"] .day-label, #day-wed:checked ~ .week label[for="day-wed"] .day-status.status-planned,
+  #day-thu:checked ~ .week label[for="day-thu"] .day-label, #day-thu:checked ~ .week label[for="day-thu"] .day-status.status-planned,
+  #day-fri:checked ~ .week label[for="day-fri"] .day-label, #day-fri:checked ~ .week label[for="day-fri"] .day-status.status-planned,
+  #day-sat:checked ~ .week label[for="day-sat"] .day-label, #day-sat:checked ~ .week label[for="day-sat"] .day-status.status-planned,
+  #day-sun:checked ~ .week label[for="day-sun"] .day-label, #day-sun:checked ~ .week label[for="day-sun"] .day-status.status-planned {
+    color: rgba(13,13,13,0.7);
+  }
+  #day-mon:checked ~ .week label[for="day-mon"] .day-part, #day-tue:checked ~ .week label[for="day-tue"] .day-part,
+  #day-wed:checked ~ .week label[for="day-wed"] .day-part, #day-thu:checked ~ .week label[for="day-thu"] .day-part,
+  #day-fri:checked ~ .week label[for="day-fri"] .day-part, #day-sat:checked ~ .week label[for="day-sat"] .day-part,
+  #day-sun:checked ~ .week label[for="day-sun"] .day-part { color: #0d0d0d; }
+
+  .day-panel { display: none; }
+  #day-mon:checked ~ #panel-mon,
+  #day-tue:checked ~ #panel-tue,
+  #day-wed:checked ~ #panel-wed,
+  #day-thu:checked ~ #panel-thu,
+  #day-fri:checked ~ #panel-fri,
+  #day-sat:checked ~ #panel-sat,
+  #day-sun:checked ~ #panel-sun { display: block; }
+
+  .today-panel { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--surface); display: flex; flex-direction: column; gap: 12px; }
+  .today-panel-head { display: flex; align-items: baseline; justify-content: space-between; }
+  .today-panel-head .label { font-size: 0.78rem; color: var(--ink-faint); }
+  .today-panel-head .value { font-size: 1.05rem; font-weight: 800; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .btn { font-size: 0.82rem; font-weight: 700; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); text-decoration: none; display: inline-block; cursor: pointer; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #0d0d0d; }
+  .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+  .field-hint { font-size: 0.75rem; color: var(--ink-faint); }
+  .back-link { font-size: 0.8rem; color: var(--ink-soft); text-decoration: none; }
+  .back-link:hover { color: var(--accent); }
+
+  /* ---------- body part picker (radio chips) ---------- */
+  .part-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .part-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .part-chip { font-size: 0.85rem; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; user-select: none; font-weight: 600; }
+  .part-input:checked + .part-chip { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; }
+  .part-input:focus-visible + .part-chip { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- candidate exercise picker (checkbox, multi-select, state lives at top of body) ---------- */
+  .global-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .candidate-list { display: flex; flex-direction: column; gap: 8px; }
+  .candidate { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; background: var(--surface); cursor: pointer; }
+  #cand-legcurl:checked ~ .overlay label[for="cand-legcurl"],
+  #cand-hipthrust:checked ~ .overlay label[for="cand-hipthrust"],
+  #cand-rdl:checked ~ .overlay label[for="cand-rdl"] {
+    border-color: var(--accent-border); background: var(--accent-soft);
+  }
+  .candidate-name { font-size: 0.88rem; font-weight: 700; }
+  .candidate-tags { display: flex; gap: 6px; align-items: center; }
+  .rec-tag { font-size: 0.66rem; font-weight: 800; color: var(--accent-ink); background: var(--surface); border: 1px solid var(--accent-border); padding: 2px 8px; border-radius: 999px; }
+  .picked-badge { display: none; font-size: 0.66rem; font-weight: 800; color: #0d0d0d; background: var(--good); padding: 2px 8px; border-radius: 999px; }
+  #cand-legcurl:checked ~ .overlay label[for="cand-legcurl"] .picked-badge,
+  #cand-hipthrust:checked ~ .overlay label[for="cand-hipthrust"] .picked-badge,
+  #cand-rdl:checked ~ .overlay label[for="cand-rdl"] .picked-badge {
+    display: inline-flex;
+  }
+
+  /* ---------- hub exercise chips (reflect pain-result candidate selection) ---------- */
+  .exercise-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .ex-chip { font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--surface-3); border: 1px solid var(--border); }
+  .ex-chip.sub { display: none; background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-ink); }
+  #cand-legcurl:checked ~ .page .ex-chip.sub-legcurl,
+  #cand-hipthrust:checked ~ .page .ex-chip.sub-hipthrust,
+  #cand-rdl:checked ~ .page .ex-chip.sub-rdl { display: inline-block; }
+  #cand-legcurl:checked ~ .page .ex-chip.default-only,
+  #cand-hipthrust:checked ~ .page .ex-chip.default-only,
+  #cand-rdl:checked ~ .page .ex-chip.default-only { display: none; }
+  .excluded { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--ink-faint); }
+  .advisory { display: flex; gap: 8px; align-items: flex-start; font-size: 0.8rem; color: var(--warn); background: var(--warn-soft); border: 1px solid var(--warn); border-radius: 10px; padding: 10px 12px; }
+  .reason-box { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.5; border-left: 3px solid var(--accent); padding-left: 10px; }
+  .no-reject { font-size: 0.75rem; color: var(--ink-faint); font-style: italic; }
+
+  /* ---------- skip → shift cascade (목 skipped → 금/토/일 each pushed one slot) ---------- */
+  .skip-post { display: none; }
+  #skip-today:checked ~ .page .skip-pre { display: none; }
+  #skip-today:checked ~ .page .skip-post { display: inline; }
+  #skip-today:checked ~ .page .today-panel.skip-post { display: flex; }
+  #skip-today:checked ~ .page .sidebar-foot .skip-post,
+  #skip-today:checked ~ .overlay .sidebar-foot .skip-post { display: inline; }
+  #skip-today:checked ~ .overlay .sidebar-foot .skip-pre { display: none; }
+
+  /* ---------- full-screen overlay for pain scenario ---------- */
+  .overlay { position: fixed; inset: 0; z-index: 100; display: none; overflow-y: auto; background: var(--bg); color: var(--ink); padding: 40px 24px; }
+  .overlay:target { display: block; }
+  .overlay-inner { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+  .overlay-inner.wide { max-width: 860px; }
+
+  /* ---------- workout log calendar ---------- */
+  .log-cal-head { font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; }
+  .log-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .log-cal-dow { font-size: 0.7rem; font-weight: 700; color: var(--ink-faint); text-align: center; padding: 4px 0; }
+  .log-cal-cell {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 0.82rem; border-radius: 8px; color: var(--ink-faint); position: relative;
+  }
+  .log-cal-cell.active-week { cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--ink); font-weight: 700; }
+  .log-cal-cell.active-week:hover { border-color: var(--accent); }
+  .log-cal-cell.today::after {
+    content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent);
+  }
+  .log-detail { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--surface); }
+  .log-panel { display: none; flex-direction: column; gap: 10px; }
+  .log-panel-head { display: flex; align-items: baseline; justify-content: space-between; }
+  .log-panel-head .value { font-size: 0.95rem; font-weight: 800; }
+  .pending-tag { font-size: 0.68rem; font-weight: 700; color: var(--ink-faint); background: var(--surface-3); padding: 2px 8px; border-radius: 999px; }
+  .log-exercise-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); }
+  .log-exercise-row:first-of-type { border-top: none; }
+  .log-ex-name { font-size: 0.85rem; font-weight: 700; }
+  .log-ex-sets { font-size: 0.82rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .log-exercise-row.pending .log-ex-sets { color: var(--ink-faint); }
+
+  #log-mon:checked ~ .overlay #logpanel-mon,
+  #log-tue:checked ~ .overlay #logpanel-tue,
+  #log-wed:checked ~ .overlay #logpanel-wed,
+  #log-thu:checked ~ .overlay #logpanel-thu,
+  #log-fri:checked ~ .overlay #logpanel-fri,
+  #log-sat:checked ~ .overlay #logpanel-sat,
+  #log-sun:checked ~ .overlay #logpanel-sun { display: flex; }
+
+  #log-mon:checked ~ .overlay label[for="log-mon"],
+  #log-tue:checked ~ .overlay label[for="log-tue"],
+  #log-wed:checked ~ .overlay label[for="log-wed"],
+  #log-thu:checked ~ .overlay label[for="log-thu"],
+  #log-fri:checked ~ .overlay label[for="log-fri"],
+  #log-sat:checked ~ .overlay label[for="log-sat"],
+  #log-sun:checked ~ .overlay label[for="log-sun"] { background: var(--accent); border-color: var(--accent); color: #0d0d0d; }
+
+  footer.foot { font-size: 0.78rem; color: var(--ink-faint); border-top: 1px solid var(--border); padding-top: 16px; }
+
+  @media (max-width: 640px) {
+    .app-shell { flex-direction: column; }
+    .sidebar { width: 100%; flex-direction: row; align-items: center; gap: 14px; padding: 12px 14px; }
+    .nav { flex-direction: row; }
+    .sidebar-foot { display: none; }
+    .week { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+
+<input type="checkbox" id="cand-legcurl" class="global-input">
+<input type="checkbox" id="cand-hipthrust" class="global-input">
+<input type="checkbox" id="cand-rdl" class="global-input">
+<input type="checkbox" id="skip-today" class="global-input">
+<input type="radio" name="log-select" id="log-mon" class="global-input">
+<input type="radio" name="log-select" id="log-tue" class="global-input">
+<input type="radio" name="log-select" id="log-wed" class="global-input">
+<input type="radio" name="log-select" id="log-thu" class="global-input" checked>
+<input type="radio" name="log-select" id="log-fri" class="global-input">
+<input type="radio" name="log-select" id="log-sat" class="global-input">
+<input type="radio" name="log-select" id="log-sun" class="global-input">
+
+<div class="page">
+  <header class="head">
+    <span class="eyebrow">Design Skin 실험 · docs/design.md 적용</span>
+    <h1>인터랙티브 프로토타입 — 다크·오렌지 스킨</h1>
+    <p class="subtitle">
+      기능은 원본 prototype.html과 완전히 동일하다. 여기서는 <code>docs/design.md</code>의 팔레트(어두운 배경, 주황 강조색,
+      굵은 헤드라인)만 입혀봤다. 이 스킨은 라이트 모드가 없어서, 원본에 있던 다크모드 토글은 이번 실험판에서 뺐다.
+    </p>
+    <p class="note">글꼴은 시스템 기본 글꼴에 굵기·자간만 조정해 "압축된 헤드라인" 느낌을 흉내 낸 것이라, 참고 이미지의 실제 서체와는 다르다 — 브랜드 서체를 쓰려면 별도 폰트 파일이 필요하다. 나머지 동작(통증 재편성, 요일 전환, 스킵 연쇄, 운동 기록)은 원본과 동일하니 자세한 설명은 prototype.html 쪽 설명을 참고하면 된다.</p>
+  </header>
+
+  <section id="screen-hub" class="window">
+    <div class="titlebar">
+      <span class="traffic"><span class="r"></span><span class="y"></span><span class="g"></span></span>
+      <span class="urlbar">🔒 <b>routine.app</b>/today</span>
+    </div>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">루틴코치</div>
+        <nav class="nav">
+          <a href="#screen-hub" class="nav-item active">오늘의 루틴</a>
+          <a href="#screen-log" class="nav-item">운동 기록</a>
+          <a href="#screen-settings" class="nav-item">설정</a>
+        </nav>
+        <div class="sidebar-foot">이번 주 누적 스킵<br><b class="skip-pre">1회</b><b class="skip-post">2회</b></div>
+      </aside>
+      <div class="content">
+        <div class="content-head">
+          <h2>이번 주 루틴</h2>
+          <span class="date">2026. 7. 9. (목)</span>
+        </div>
+        <input type="radio" name="day-select" id="day-mon" class="day-radio">
+        <input type="radio" name="day-select" id="day-tue" class="day-radio">
+        <input type="radio" name="day-select" id="day-wed" class="day-radio">
+        <input type="radio" name="day-select" id="day-thu" class="day-radio" checked>
+        <input type="radio" name="day-select" id="day-fri" class="day-radio">
+        <input type="radio" name="day-select" id="day-sat" class="day-radio">
+        <input type="radio" name="day-select" id="day-sun" class="day-radio">
+
+        <div class="week">
+          <label for="day-mon" class="day"><span class="day-label">월</span><span class="day-part">가슴</span><span class="day-status status-done">완료</span></label>
+          <label for="day-tue" class="day"><span class="day-label">화</span><span class="day-part">휴식</span><span class="day-status status-rest">-</span></label>
+          <label for="day-wed" class="day"><span class="day-label">수</span><span class="day-part">등</span><span class="day-status status-done">완료</span></label>
+          <label for="day-thu" class="day">
+            <span class="day-label">목 · 오늘</span>
+            <span class="day-part skip-pre">하체</span><span class="day-part skip-post">스킵함</span>
+            <span class="day-status status-planned skip-pre">예정</span><span class="day-status status-rest skip-post">-</span>
+          </label>
+          <label for="day-fri" class="day">
+            <span class="day-label">금</span>
+            <span class="day-part skip-pre">어깨</span><span class="day-part skip-post">하체</span>
+            <span class="day-status status-planned">예정</span>
+          </label>
+          <label for="day-sat" class="day">
+            <span class="day-label">토</span>
+            <span class="day-part skip-pre">팔</span><span class="day-part skip-post">어깨</span>
+            <span class="day-status status-planned">예정</span>
+          </label>
+          <label for="day-sun" class="day">
+            <span class="day-label">일</span>
+            <span class="day-part skip-pre">휴식</span><span class="day-part skip-post">팔</span>
+            <span class="day-status status-rest skip-pre">-</span><span class="day-status status-planned skip-post">예정</span>
+          </label>
+        </div>
+        <span class="field-hint">요일을 누르면 아래 내용이 그날의 루틴으로 바로 바뀝니다 (새 화면으로 넘어가지 않음). 오늘 세션을 스킵하면 이 주간 뷰도 함께 밀립니다.</span>
+
+        <div class="day-panel" id="panel-mon">
+          <div class="today-panel">
+            <div class="today-panel-head">
+              <span class="label">월요일</span>
+              <span class="value">가슴 — 벤치프레스 · 인클라인 덤벨프레스 · 딥스</span>
+            </div>
+            <span class="status-done" style="font-size: 0.8rem; font-weight: 700;">완료했습니다.</span>
+          </div>
+        </div>
+        <div class="day-panel" id="panel-tue">
+          <div class="today-panel">
+            <div class="today-panel-head">
+              <span class="label">화요일</span>
+              <span class="value">휴식일</span>
+            </div>
+            <span class="content-desc" style="margin: 0;">휴식을 취했습니다.</span>
+          </div>
+        </div>
+        <div class="day-panel" id="panel-wed">
+          <div class="today-panel">
+            <div class="today-panel-head">
+              <span class="label">수요일</span>
+              <span class="value">등 — 데드리프트 · 풀업 · 바벨로우</span>
+            </div>
+            <span class="status-done" style="font-size: 0.8rem; font-weight: 700;">완료했습니다.</span>
+          </div>
+        </div>
+        <div class="day-panel" id="panel-thu">
+          <div class="today-panel skip-pre">
+            <div class="today-panel-head">
+              <span class="label">오늘 (목요일)</span>
+              <span class="value">하체</span>
+            </div>
+            <div class="exercise-chips">
+              <span class="ex-chip default-only">스쿼트</span>
+              <span class="ex-chip default-only">레그프레스</span>
+              <span class="ex-chip sub sub-legcurl">레그 컬</span>
+              <span class="ex-chip sub sub-hipthrust">힙 쓰러스트</span>
+              <span class="ex-chip sub sub-rdl">스티프레그 데드리프트</span>
+              <span class="ex-chip">카프레이즈</span>
+            </div>
+            <div class="btn-row">
+              <a href="#screen-pain-select" class="btn primary">통증 보고</a>
+              <label for="skip-today" class="btn">오늘 세션 스킵</label>
+            </div>
+            <span class="field-hint">"통증 보고"를 눌러보세요. 재편성 결과 화면에서 대체 운동을 고르면 위 목록이 바로 바뀝니다. "오늘 세션 스킵"을 누르면 이번 주 루틴이 밀립니다.</span>
+          </div>
+          <div class="today-panel skip-post">
+            <div class="today-panel-head">
+              <span class="label">오늘 (목요일)</span>
+              <span class="value">세션이 밀렸습니다</span>
+            </div>
+            <div class="reason-box">이번 주 세션이 밀려서 목요일 루틴을 금요일로 옮겼습니다. 누적 스킵이 2회 이상이라 밀기(shift)로 처리했습니다 — 48시간이면 대부분의 근육이 회복되는 시간대라는 기준으로, 스킵이 반복되는 경우와 일회성 예외를 구분합니다.</div>
+            <span class="no-reject">이 판단은 자동으로 계산된 결과라 거부하거나 원래 일정으로 되돌릴 수 없습니다 (의도된 설계).</span>
+          </div>
+        </div>
+        <div class="day-panel" id="panel-fri">
+          <div class="today-panel">
+            <div class="today-panel-head">
+              <span class="label">금요일</span>
+              <span class="value">어깨 — 오버헤드프레스 · 사이드 레터럴 레이즈 · 페이스풀</span>
+            </div>
+            <span class="status-planned" style="font-size: 0.8rem; font-weight: 700;">예정입니다.</span>
+          </div>
+        </div>
+        <div class="day-panel" id="panel-sat">
+          <div class="today-panel">
+            <div class="today-panel-head">
+              <span class="label">토요일</span>
+              <span class="value">팔 — 바벨컬 · 트라이셉스 푸시다운 · 해머컬</span>
+            </div>
+            <span class="status-planned" style="font-size: 0.8rem; font-weight: 700;">예정입니다.</span>
+          </div>
+        </div>
+        <div class="day-panel" id="panel-sun">
+          <div class="today-panel">
+            <div class="today-panel-head">
+              <span class="label">일요일</span>
+              <span class="value">휴식일</span>
+            </div>
+            <span class="content-desc" style="margin: 0;">휴식을 취했습니다.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    이 파일은 docs/design.md 실험용 스킨이다. 기능 설명과 다음 단계는 prototype.html을 참고한다.
+  </footer>
+</div>
+
+<!-- Overlay 1: body part picker -->
+<div id="screen-pain-select" class="overlay">
+  <div class="overlay-inner">
+    <a href="#screen-hub" class="back-link">← 오늘의 루틴으로</a>
+    <div class="window">
+      <div class="titlebar">
+        <span class="traffic"><span class="r"></span><span class="y"></span><span class="g"></span></span>
+        <span class="urlbar">🔒 <b>routine.app</b>/today/pain</span>
+      </div>
+      <div class="app-shell">
+        <aside class="sidebar">
+          <div class="brand">루틴코치</div>
+          <nav class="nav">
+            <a href="#screen-hub" class="nav-item">오늘의 루틴</a>
+            <a href="#screen-log" class="nav-item">운동 기록</a>
+            <a href="#screen-settings" class="nav-item">설정</a>
+          </nav>
+          <div class="sidebar-foot">이번 주 누적 스킵<br><b class="skip-pre">1회</b><b class="skip-post">2회</b></div>
+        </aside>
+        <div class="content">
+          <div class="content-head">
+            <h2>어디가 아프신가요?</h2>
+            <span class="date">2026. 7. 9. (목)</span>
+          </div>
+          <p class="content-desc">부위를 눌러 선택해보세요. 선택한 부위를 쓰는 운동은 오늘 루틴에서 제외됩니다.</p>
+          <div class="part-grid">
+            <input type="radio" name="part" id="part-knee" class="part-input" checked>
+            <label for="part-knee" class="part-chip">무릎</label>
+            <input type="radio" name="part" id="part-back" class="part-input">
+            <label for="part-back" class="part-chip">허리</label>
+            <input type="radio" name="part" id="part-shoulder" class="part-input">
+            <label for="part-shoulder" class="part-chip">어깨</label>
+            <input type="radio" name="part" id="part-wrist" class="part-input">
+            <label for="part-wrist" class="part-chip">손목</label>
+            <input type="radio" name="part" id="part-neck" class="part-input">
+            <label for="part-neck" class="part-chip">목</label>
+            <input type="radio" name="part" id="part-ankle" class="part-input">
+            <label for="part-ankle" class="part-chip">발목</label>
+          </div>
+          <span class="field-hint">전체 목록은 미확정 — 지금은 예시 6개만 표시. 어떤 부위를 골라도 다음 화면은 "무릎" 예시로 고정된다.</span>
+          <div class="btn-row">
+            <a href="#screen-pain-result" class="btn primary">선택 완료</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay 2: pain reorganization result -->
+<div id="screen-pain-result" class="overlay">
+  <div class="overlay-inner">
+    <a href="#screen-pain-select" class="back-link">← 부위 다시 선택</a>
+    <div class="window">
+      <div class="titlebar">
+        <span class="traffic"><span class="r"></span><span class="y"></span><span class="g"></span></span>
+        <span class="urlbar">🔒 <b>routine.app</b>/today/pain/result</span>
+      </div>
+      <div class="app-shell">
+        <aside class="sidebar">
+          <div class="brand">루틴코치</div>
+          <nav class="nav">
+            <a href="#screen-hub" class="nav-item">오늘의 루틴</a>
+            <a href="#screen-log" class="nav-item">운동 기록</a>
+            <a href="#screen-settings" class="nav-item">설정</a>
+          </nav>
+          <div class="sidebar-foot">이번 주 누적 스킵<br><b class="skip-pre">1회</b><b class="skip-post">2회</b></div>
+        </aside>
+        <div class="content">
+          <div class="content-head">
+            <h2>무릎 통증으로 오늘 루틴을 다시 구성했습니다</h2>
+            <span class="date">2026. 7. 9. (목)</span>
+          </div>
+          <div class="excluded">제외된 운동: <s>스쿼트</s>, <s>레그프레스</s> (무릎 관여) — 두 자리를 채울 대체 운동을 아래에서 골라주세요.</div>
+          <div class="candidate-list">
+            <label for="cand-legcurl" class="candidate">
+              <span class="candidate-name">레그 컬</span>
+              <span class="candidate-tags"><span class="rec-tag">추천</span><span class="picked-badge">선택됨</span></span>
+            </label>
+            <label for="cand-hipthrust" class="candidate">
+              <span class="candidate-name">힙 쓰러스트</span>
+              <span class="candidate-tags"><span class="picked-badge">선택됨</span></span>
+            </label>
+            <label for="cand-rdl" class="candidate">
+              <span class="candidate-name">스티프레그 데드리프트</span>
+              <span class="candidate-tags"><span class="picked-badge">선택됨</span></span>
+            </label>
+          </div>
+          <span class="field-hint">여러 개 골라도 된다 — 아무것도 안 고르면 오늘의 루틴은 원래 운동 그대로 유지된다. 고른 운동은 오늘의 루틴 화면에도 바로 반영된다.</span>
+          <div class="advisory">⚠ 통증이 지속되면 전문가 상담을 권장합니다. 이 추천은 의학적 진단이 아닙니다.</div>
+          <div class="btn-row">
+            <a href="#screen-hub" class="btn primary">오늘 루틴 확정하기</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay: settings -->
+<div id="screen-settings" class="overlay">
+  <div class="overlay-inner">
+    <a href="#screen-hub" class="back-link">← 오늘의 루틴으로</a>
+    <div class="window">
+      <div class="titlebar">
+        <span class="traffic"><span class="r"></span><span class="y"></span><span class="g"></span></span>
+        <span class="urlbar">🔒 <b>routine.app</b>/settings</span>
+      </div>
+      <div class="app-shell">
+        <aside class="sidebar">
+          <div class="brand">루틴코치</div>
+          <nav class="nav">
+            <a href="#screen-hub" class="nav-item">오늘의 루틴</a>
+            <a href="#screen-log" class="nav-item">운동 기록</a>
+            <a href="#screen-settings" class="nav-item active">설정</a>
+          </nav>
+          <div class="sidebar-foot">이번 주 누적 스킵<br><b class="skip-pre">1회</b><b class="skip-post">2회</b></div>
+        </aside>
+        <div class="content">
+          <div class="content-head">
+            <h2>설정</h2>
+          </div>
+
+          <div class="profile-card">
+            <span class="avatar">강</span>
+            <div>
+              <div class="profile-name">강민구</div>
+              <div class="profile-sub">N001</div>
+            </div>
+          </div>
+
+          <p class="note" style="margin: 0;">이 스킨(docs/design.md 실험판)은 다크 전용이라 다크모드 토글이 없습니다. 라이트 모드가 있는 원본은 prototype.html을 확인하세요.</p>
+
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-label">루틴 설정</div>
+              <div class="settings-row-desc">요일별 타겟 부위를 직접 수정합니다. (다음 단계에서 연결 예정)</div>
+            </div>
+            <button class="btn" disabled>이동</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay: workout log calendar -->
+<div id="screen-log" class="overlay">
+  <div class="overlay-inner wide">
+    <a href="#screen-hub" class="back-link">← 오늘의 루틴으로</a>
+    <div class="window">
+      <div class="titlebar">
+        <span class="traffic"><span class="r"></span><span class="y"></span><span class="g"></span></span>
+        <span class="urlbar">🔒 <b>routine.app</b>/log</span>
+      </div>
+      <div class="app-shell">
+        <aside class="sidebar">
+          <div class="brand">루틴코치</div>
+          <nav class="nav">
+            <a href="#screen-hub" class="nav-item">오늘의 루틴</a>
+            <a href="#screen-log" class="nav-item active">운동 기록</a>
+            <a href="#screen-settings" class="nav-item">설정</a>
+          </nav>
+          <div class="sidebar-foot">이번 주 누적 스킵<br><b class="skip-pre">1회</b><b class="skip-post">2회</b></div>
+        </aside>
+        <div class="content">
+          <div class="content-head">
+            <h2>운동 기록</h2>
+          </div>
+          <p class="content-desc">날짜를 누르면 그날의 세트 수와 세트별 횟수를 볼 수 있습니다. 실제 데이터는 이번 주(7/6~7/12)만 채워져 있습니다.</p>
+
+          <div class="log-cal-head">2026년 7월</div>
+          <div class="log-cal-grid">
+            <span class="log-cal-dow">월</span><span class="log-cal-dow">화</span><span class="log-cal-dow">수</span><span class="log-cal-dow">목</span><span class="log-cal-dow">금</span><span class="log-cal-dow">토</span><span class="log-cal-dow">일</span>
+            <span class="log-cal-cell"></span><span class="log-cal-cell"></span>
+            <span class="log-cal-cell">1</span><span class="log-cal-cell">2</span><span class="log-cal-cell">3</span><span class="log-cal-cell">4</span><span class="log-cal-cell">5</span>
+            <label for="log-mon" class="log-cal-cell active-week">6</label>
+            <label for="log-tue" class="log-cal-cell active-week">7</label>
+            <label for="log-wed" class="log-cal-cell active-week">8</label>
+            <label for="log-thu" class="log-cal-cell active-week today">9</label>
+            <label for="log-fri" class="log-cal-cell active-week">10</label>
+            <label for="log-sat" class="log-cal-cell active-week">11</label>
+            <label for="log-sun" class="log-cal-cell active-week">12</label>
+            <span class="log-cal-cell">13</span><span class="log-cal-cell">14</span><span class="log-cal-cell">15</span><span class="log-cal-cell">16</span><span class="log-cal-cell">17</span><span class="log-cal-cell">18</span><span class="log-cal-cell">19</span>
+            <span class="log-cal-cell">20</span><span class="log-cal-cell">21</span><span class="log-cal-cell">22</span><span class="log-cal-cell">23</span><span class="log-cal-cell">24</span><span class="log-cal-cell">25</span><span class="log-cal-cell">26</span>
+            <span class="log-cal-cell">27</span><span class="log-cal-cell">28</span><span class="log-cal-cell">29</span><span class="log-cal-cell">30</span><span class="log-cal-cell">31</span><span class="log-cal-cell"></span><span class="log-cal-cell"></span>
+          </div>
+
+          <div class="log-detail">
+            <div class="log-panel" id="logpanel-mon">
+              <div class="log-panel-head"><span class="value">7/6 (월) · 가슴</span></div>
+              <div class="log-exercise-row"><span class="log-ex-name">벤치프레스</span><span class="log-ex-sets">10회 · 9회 · 8회</span></div>
+              <div class="log-exercise-row"><span class="log-ex-name">인클라인 덤벨프레스</span><span class="log-ex-sets">12회 · 11회 · 10회</span></div>
+              <div class="log-exercise-row"><span class="log-ex-name">딥스</span><span class="log-ex-sets">10회 · 9회 · 8회</span></div>
+            </div>
+            <div class="log-panel" id="logpanel-tue">
+              <div class="log-panel-head"><span class="value">7/7 (화) · 휴식일</span></div>
+              <p class="content-desc" style="margin: 0;">휴식을 취했습니다.</p>
+            </div>
+            <div class="log-panel" id="logpanel-wed">
+              <div class="log-panel-head"><span class="value">7/8 (수) · 등</span></div>
+              <div class="log-exercise-row"><span class="log-ex-name">데드리프트</span><span class="log-ex-sets">8회 · 7회 · 6회</span></div>
+              <div class="log-exercise-row"><span class="log-ex-name">풀업</span><span class="log-ex-sets">8회 · 7회 · 6회</span></div>
+              <div class="log-exercise-row"><span class="log-ex-name">바벨로우</span><span class="log-ex-sets">10회 · 9회 · 8회</span></div>
+            </div>
+            <div class="log-panel" id="logpanel-thu">
+              <div class="log-panel-head"><span class="value">7/9 (목) · 하체</span><span class="pending-tag">아직 완료 전</span></div>
+              <div class="log-exercise-row pending"><span class="log-ex-name">스쿼트</span><span class="log-ex-sets">목표 3세트 × 10회</span></div>
+              <div class="log-exercise-row pending"><span class="log-ex-name">레그프레스</span><span class="log-ex-sets">목표 3세트 × 10회</span></div>
+              <div class="log-exercise-row pending"><span class="log-ex-name">카프레이즈</span><span class="log-ex-sets">목표 3세트 × 10회</span></div>
+            </div>
+            <div class="log-panel" id="logpanel-fri">
+              <div class="log-panel-head"><span class="value">7/10 (금) · 어깨</span><span class="pending-tag">아직 완료 전</span></div>
+              <div class="log-exercise-row pending"><span class="log-ex-name">오버헤드프레스</span><span class="log-ex-sets">목표 3세트 × 10회</span></div>
+              <div class="log-exercise-row pending"><span class="log-ex-name">사이드 레터럴 레이즈</span><span class="log-ex-sets">목표 3세트 × 10회</span></div>
+              <div class="log-exercise-row pending"><span class="log-ex-name">페이스풀</span><span class="log-ex-sets">목표 3세트 × 10회</span></div>
+            </div>
+            <div class="log-panel" id="logpanel-sat">
+              <div class="log-panel-head"><span class="value">7/11 (토) · 팔</span><span class="pending-tag">아직 완료 전</span></div>
+              <div class="log-exercise-row pending"><span class="log-ex-name">바벨컬</span><span class="log-ex-sets">목표 3세트 × 10회</span></div>
+              <div class="log-exercise-row pending"><span class="log-ex-name">트라이셉스 푸시다운</span><span class="log-ex-sets">목표 3세트 × 10회</span></div>
+              <div class="log-exercise-row pending"><span class="log-ex-name">해머컬</span><span class="log-ex-sets">목표 3세트 × 10회</span></div>
+            </div>
+            <div class="log-panel" id="logpanel-sun">
+              <div class="log-panel-head"><span class="value">7/12 (일) · 휴식일</span></div>
+              <p class="content-desc" style="margin: 0;">휴식을 취했습니다.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

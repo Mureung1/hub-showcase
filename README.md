@@ -13,12 +13,21 @@
 
 ## 개발 환경
 
-React + Vite 프로젝트다.
+React(Vite) 프론트엔드 + Express 백엔드 구조다. 프론트엔드는 저장소 루트(`src/`), 백엔드는 `server/`에 있다.
 
 ```bash
-npm install
-npm run dev      # 개발 서버
-npm run build    # 프로덕션 빌드
-npm run lint     # ESLint
-npm run preview  # 빌드 결과 미리보기
+# 최초 1회
+npm install              # 루트(client) 의존성
+npm --prefix server install   # server 의존성
+cp server/.env.example server/.env   # 실제 Supabase 연결 정보로 채워넣기
+
+# 개발
+npm run dev:all   # client(Vite)+server(Express) 동시 실행
+npm run dev       # client만
+npm run dev:server  # server만
+
+npm run build     # client 프로덕션 빌드
+npm run lint      # client ESLint
+npm run test      # client Vitest
+npm run preview   # client 빌드 결과 미리보기
 ```

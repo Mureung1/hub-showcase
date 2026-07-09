@@ -1,0 +1,11 @@
+node_modules
+dist
+server/node_modules
+server/generated
+package-lock.json
+server/package-lock.json
+
+# 문서·정적 목업은 코드 포맷 대상이 아님 — 손으로 다듬은 서식을 그대로 유지
+*.md
+docs/diagrams/*.html
+.github/
