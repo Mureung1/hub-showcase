@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>식비구조대 — 프로토타입</title>
-<link rel="stylesheet" href="style.css">
+<title>식비구조대 — 프로토타입 (웜톤)</title>
+<link rel="stylesheet" href="style-warm.css">
 </head>
 <body>
 <div class="app">
@@ -16,6 +16,49 @@
     </nav>
 
   <div class="page">
+    <div class="promo-banner">
+      <input type="radio" name="promo" id="promo-1" class="promo-radio" checked>
+      <input type="radio" name="promo" id="promo-2" class="promo-radio">
+      <input type="radio" name="promo" id="promo-3" class="promo-radio">
+
+      <div class="promo-slide" data-slide="1">
+        <div class="promo-text">
+          <p class="promo-eyebrow">이번 주 최저가 특가</p>
+          <h2>제철 재료로<br>가성비 요리 찾기</h2>
+        </div>
+        <img class="promo-image" src="https://img.youtube.com/vi/4quUR3RLVyI/hqdefault.jpg" alt="">
+      </div>
+      <div class="promo-slide" data-slide="2">
+        <div class="promo-text">
+          <p class="promo-eyebrow">이번 주 가성비 픽</p>
+          <h2>가성비 TOP3<br>레시피 모아보기</h2>
+        </div>
+        <img class="promo-image" src="https://img.youtube.com/vi/RUgH6TBDtsM/hqdefault.jpg" alt="">
+      </div>
+      <div class="promo-slide" data-slide="3">
+        <div class="promo-text">
+          <p class="promo-eyebrow">바쁜 날엔 이거</p>
+          <h2>10분 안에<br>완성하는 한 끼</h2>
+        </div>
+        <img class="promo-image" src="https://img.youtube.com/vi/Wk4gfmVRE_I/hqdefault.jpg" alt="">
+      </div>
+
+      <div class="promo-dots">
+        <label for="promo-1" class="promo-dot"></label>
+        <label for="promo-2" class="promo-dot"></label>
+        <label for="promo-3" class="promo-dot"></label>
+      </div>
+    </div>
+
+    <div class="quick-tabs" role="tablist">
+      <button type="button" class="quick-tab is-active" data-cuisine-tab="all">전체</button>
+      <button type="button" class="quick-tab" data-cuisine-tab="korean">한식</button>
+      <button type="button" class="quick-tab" data-cuisine-tab="japanese">일식</button>
+      <button type="button" class="quick-tab" data-cuisine-tab="chinese">중식</button>
+      <button type="button" class="quick-tab" data-cuisine-tab="western">양식</button>
+      <button type="button" class="quick-tab" data-cuisine-tab="etc">기타</button>
+    </div>
+
     <div class="filters">
       <div class="filter-group">
         <span class="filter-group-label">음식종류</span>
@@ -47,7 +90,7 @@
     </div>
 
     <ul class="results">
-      <li data-type="main" data-time="under10" data-ing="egg">
+      <li data-type="main" data-cuisine="korean" data-time="under10" data-ing="egg">
         <a class="recipe-card" href="recipe-gyeran-bokkeumbap.html">
           <img class="recipe-thumb" src="https://img.youtube.com/vi/RUgH6TBDtsM/hqdefault.jpg" alt="계란볶음밥">
           <div class="recipe-body">
@@ -57,7 +100,7 @@
           </div>
         </a>
       </li>
-      <li data-type="main" data-time="under10" data-ing="ramyeon egg">
+      <li data-type="main" data-cuisine="korean" data-time="under10" data-ing="ramyeon egg">
         <a class="recipe-card" href="recipe-shin-ramyeon.html">
           <img class="recipe-thumb" src="https://img.youtube.com/vi/Wk4gfmVRE_I/hqdefault.jpg" alt="신라면">
           <div class="recipe-body">
@@ -67,7 +110,7 @@
           </div>
         </a>
       </li>
-      <li data-type="snack" data-time="under10" data-ing="egg">
+      <li data-type="snack" data-cuisine="etc" data-time="under10" data-ing="egg">
         <a class="recipe-card" href="recipe-gyeran-toast.html">
           <img class="recipe-thumb" src="https://img.youtube.com/vi/y_rgEYvCKxo/hqdefault.jpg" alt="계란토스트">
           <div class="recipe-body">
@@ -77,7 +120,7 @@
           </div>
         </a>
       </li>
-      <li data-type="side" data-time="10to20" data-ing="egg">
+      <li data-type="side" data-cuisine="korean" data-time="10to20" data-ing="egg">
         <a class="recipe-card" href="recipe-gyeran-mari.html">
           <img class="recipe-thumb" src="https://img.youtube.com/vi/6gqSdqiN53s/hqdefault.jpg" alt="계란말이">
           <div class="recipe-body">
@@ -87,7 +130,7 @@
           </div>
         </a>
       </li>
-      <li data-type="main" data-time="20to30" data-ing="kimchi pork tofu">
+      <li data-type="main" data-cuisine="korean" data-time="20to30" data-ing="kimchi pork tofu">
         <a class="recipe-card" href="recipe-kimchi-jjigae.html">
           <img class="recipe-thumb" src="https://img.youtube.com/vi/4quUR3RLVyI/hqdefault.jpg" alt="김치찌개">
           <div class="recipe-body">
@@ -97,7 +140,7 @@
           </div>
         </a>
       </li>
-      <li data-type="main" data-time="20to30" data-ing="pork">
+      <li data-type="main" data-cuisine="korean" data-time="20to30" data-ing="pork">
         <a class="recipe-card" href="recipe-jeyuk-bokkeum.html">
           <img class="recipe-thumb" src="https://img.youtube.com/vi/AE7CsTg3iFc/hqdefault.jpg" alt="제육볶음">
           <div class="recipe-body">

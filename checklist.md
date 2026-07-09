@@ -7,26 +7,38 @@
 - [ ] 모바일 반응형 레이아웃 점검
 - [ ] 카테고리가 10개 이상으로 늘어나면 "더보기" 페이지네이션 추가 검토
 
+## 네이버쇼핑 검색 오픈API (우선순위 상향 — 승인 불필요, 바로 시작 가능)
+- [x] developers.naver.com 개발자 등록 + 애플리케이션 생성, Client ID/Secret 발급 (`.env.local`에 저장, gitignore 확인 완료)
+- [x] 네이버쇼핑 검색 API 테스트 호출로 응답 구조 확인 (상품명·가격·링크·이미지 — `title`, `lprice`, `link`, `image`, `mallName` 등 확인 완료)
+- [x] Client Secret을 가리는 백엔드 라우트 작성, Express로 마이그레이션 완료 (`server/routes/naver.js` + `/api/index.js`, 경로는 `/api/naver/search`) — 브라우저에서 직접 호출 시 CORS·키 노출 문제라 반드시 서버 경유. 400(query 누락)·200(정상) 케이스 검증 완료
+- [x] `src/utils/purchaseLinks.js`에 `fetchNaverProducts`·`estimateCoupangPrice` 추가, `PurchaseLinkPanel`을 "최저가" 강조 바 + "쇼핑몰별 최저가"(네이버 실제/쿠팡 추정) 비교 UI로 개편. `npm run dev` + `npm run dev:api` 두 서버로 **실제 네이버 응답까지 로컬에서 완전히 확인 완료** (예: "쌀" → 24,900원 밥선생, 쿠팡 추정 25,400원 정상 렌더링)
+- [x] **버그 수정**: 최저가가 100원 미만이면(`estimateCoupangPrice`가 반올림으로 0원 반환) `0`이 falsy라서 최저가 섹션 전체가 안 보이던 문제 → `!= null` 체크로 수정
+- [x] **데이터 품질 이슈 발견 및 수정**: 네이버 API `sort=asc`(가격순 정렬)를 쓰면 관련도 무시하고 스티커·문의용 상품(1~120원)이 최저가로 잡힘 ("쌀", "돼지고기"로 실측 확인). 기본 관련도순(sim) 정렬로 20개를 받아온 뒤 우리가 직접 가격순 재정렬하는 방식으로 변경 (`server/lib/naverClient.js`)
+- [ ] 요리별 1인분 총 재료비 계산에 네이버 검색 결과 가격을 참고 구매가로 반영할지 검토 (지금은 수동 관리 값 사용 중)
+
 ## 데이터
 - [x] 레시피·카테고리 목업 데이터 구성 (12개 카테고리, 36개 레시피, `src/data/`)
 - [x] 위키미디어 커먼즈 사진 채우기 (계란토스트·즉석밥·도라지나물은 적절한 사진을 못 찾아 이모지로 남음 — 재검색 필요)
 - [ ] KAMIS 오픈API 회원가입 및 인증키 발급
 - [ ] KAMIS API 테스트 호출로 필요한 품목(채소·과일·곡물) 가격 데이터 구조 확인
 - [ ] 비농산물 재료(고기·수산물·조미료 등) 참고 고정가 데이터 정리
-- [ ] 목업 데이터를 실제 KAMIS/네이버/쿠팡 데이터로 교체
-
-## 백엔드 · 배포
-- [ ] Vercel 프로젝트 연결 + `/api` 서버리스 함수 기본 세팅
-- [ ] KAMIS 시세를 가져오는 서버리스 함수 작성 (`/api/prices`), API 키는 환경변수로 서버에만 보관
-- [ ] Vercel Cron Job으로 하루 1회 시세 갱신 배치 구성
-- [ ] Vercel에 배포하고 환경변수(KAMIS 키) 설정 (React Router BrowserRouter 쓰므로 SPA 리라이트 설정 필요)
+- [ ] 목업 데이터를 실제 KAMIS/네이버 데이터로 교체 (쿠팡은 쿠팡파트너스 승인 전까지 검색 링크 유지)
 
 ## 가계부
 - [ ] localStorage 기반 지출 추가/조회/삭제 UI 구현
 - [ ] 저장 로직을 별도 모듈로 분리 (추후 로그인+DB 전환 대비)
 
+## 백엔드 · 배포 (우선순위 최하위로 미룸 — 다른 항목 다 끝난 뒤 진행)
+- [x] React + Express 개발 환경 구성 (팀장 지시, 2주차 개발 전 준비) — `server/`(Express 앱) + `api/index.js`(Vercel 진입점) + `scripts/dev-server.js`(로컬 실행기) 구조, `npm run dev:api`로 로컬 3001 포트 실행, Vite 프록시로 `/api/*` 연결. 라우트 컨벤션(`/api/<서비스>/<동작>`)·환경변수 관리 규칙·커밋 규칙은 `CLAUDE.md` "개발 환경" 섹션에 기록
+- [ ] Vercel 프로젝트 연결 + 배포 세팅
+- [ ] KAMIS 시세를 가져오는 라우트 작성 (`server/routes/kamis.js` → `/api/kamis/prices`), API 키는 환경변수로 서버에만 보관
+- [ ] Vercel Cron Job으로 하루 1회 시세 갱신 배치 구성
+- [ ] Vercel에 배포하고 환경변수(KAMIS 키, 네이버 Client ID/Secret) 설정 (React Router BrowserRouter 쓰므로 SPA 리라이트 설정 필요)
+- [x] 로컬에서 `/api/naver/search` 실제 응답 확인 (`npm run dev:api` + Vite 프록시로 완전히 동작 확인됨)
+- [ ] 배포 환경(Vercel)에서도 `/api/naver/search` 동일하게 동작하는지 별도 확인 필요
+
 ## 다음 단계 (선택)
-- [ ] 쿠팡 파트너스 / 네이버 커머스 API 신청 및 승인 후 실제 최저가 연동으로 교체
+- [ ] 쿠팡파트너스 신청 및 승인 후 실제 구매 링크(수수료 딥링크)로 교체 — 네이버는 오픈API로 이미 우선 진행 중이라 제외
 - [ ] 회원가입/로그인 + 서버 DB로 가계부 데이터 이전
 - [ ] 레시피 가짓수 확대, 재료 자동 매칭 정확도 개선
 - [ ] 전체 플로우 테스트: 홈 → 카테고리 → 레시피 상세 → 구매 링크 → 가계부 기록

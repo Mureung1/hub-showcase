@@ -1,0 +1,313 @@
+:root {
+  /* 웜톤 디자인 토큰 (배달앱 레퍼런스 스크린샷에서 추출) */
+  --color-primary: #F9BE3B;
+  --color-primary-soft: #FDE9B9;
+  --color-primary-text: #8A5A08;   /* primary-soft 배경 위 텍스트 */
+
+  --color-bg-page: #E9EBF2;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-muted: #F4F5F9;
+
+  --color-text-primary: #17182B;
+  --color-text-secondary: #9A9DAE;
+
+  --color-accent-heart: #F0455C;
+  --color-border: #EFEFF4;
+
+  --font-family: "Pretendard", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --radius-container: 32px;
+  --radius-banner: 20px;
+  --radius-card: 16px;
+  --radius-input: 14px;
+  --radius-pill: 9999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+
+  --shadow-card: 0 4px 16px rgba(23, 24, 43, 0.06);
+  --shadow-panel: 0 20px 60px rgba(23, 24, 43, 0.12);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  justify-content: center;
+  padding: 40px 16px;
+}
+
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+/* ---- container: 스크린샷의 둥근 흰 패널 느낌 ---- */
+.app {
+  width: 100%;
+  max-width: 960px;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+
+/* ---- nav ---- */
+
+.site-nav {
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  background: var(--color-bg-surface);
+  z-index: 10;
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 20px var(--space-5);
+}
+.brand { display: flex; align-items: center; gap: 12px; flex: none; }
+.logo-emblem { height: 44px; width: auto; object-fit: contain; display: block; }
+.logo-wordmark { height: 32px; width: auto; object-fit: contain; display: block; }
+
+.nav-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 280px;
+  max-width: 100%;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: var(--radius-input);
+  border: 1px solid transparent;
+  background: var(--color-bg-muted);
+}
+.nav-search:focus-within { border-color: var(--color-primary); }
+.nav-search input {
+  border: 0;
+  outline: 0;
+  background: none;
+  font-family: var(--font-family);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  width: 100%;
+}
+.nav-search input::placeholder { color: var(--color-text-secondary); }
+.nav-search svg { flex: none; color: var(--color-text-secondary); }
+
+.page { padding-bottom: var(--space-5); }
+
+/* ---- promo banner: 라디오 hack으로 슬라이드 전환 (JS 없이) ---- */
+
+.promo-banner {
+  position: relative;
+  margin: var(--space-4) var(--space-5) 0;
+  padding: var(--space-4) var(--space-5) 30px;
+  border-radius: var(--radius-banner);
+  background: linear-gradient(120deg, var(--color-primary) 0%, #FFE49A 100%);
+}
+.promo-radio { position: absolute; opacity: 0; pointer-events: none; }
+.promo-slide {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+#promo-1:checked ~ .promo-slide[data-slide="1"],
+#promo-2:checked ~ .promo-slide[data-slide="2"],
+#promo-3:checked ~ .promo-slide[data-slide="3"] {
+  display: flex;
+}
+.promo-eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  opacity: 0.65;
+}
+.promo-banner h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+}
+.promo-image {
+  flex: none;
+  width: 140px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: var(--radius-card);
+}
+@media (max-width: 640px) { .promo-image { display: none; } }
+
+.promo-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+.promo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: rgba(23, 24, 43, 0.25);
+  cursor: pointer;
+}
+#promo-1:checked ~ .promo-dots label[for="promo-1"],
+#promo-2:checked ~ .promo-dots label[for="promo-2"],
+#promo-3:checked ~ .promo-dots label[for="promo-3"] {
+  background: var(--color-text-primary);
+}
+
+/* ---- quick tabs (레퍼런스의 Nearby/Promotion 탭 자리, 음식종류 필터와 동기화) ---- */
+
+.quick-tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) var(--space-5) 0;
+}
+.quick-tab {
+  flex: none;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.quick-tab:hover { border-color: var(--color-primary); }
+.quick-tab.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* ---- page heading ---- */
+
+.page-heading { padding: var(--space-4) var(--space-5) var(--space-3); }
+.page-heading h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* ---- filter panel (checkbox-hack, 원본 로직 그대로) ---- */
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: var(--space-4) var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-muted);
+  border: none;
+}
+.filter-group { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
+.filter-group-label {
+  flex: none;
+  width: 64px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.chip-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.filters input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+.filters label {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.filters label:hover { border-color: var(--color-primary); }
+.filters input[type="checkbox"]:checked + label {
+  background: var(--color-primary);
+  color: var(--color-text-primary);
+  border-color: var(--color-primary);
+}
+.filters input[type="checkbox"]:focus-visible + label { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+/* ---- results grid ---- */
+
+.results {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2) var(--space-5) var(--space-5);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+@media (max-width: 640px) { .results { grid-template-columns: 1fr; } }
+
+.recipe-card {
+  display: block;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.recipe-card:hover {
+  box-shadow: 0 10px 24px rgba(23, 24, 43, 0.1);
+  transform: translateY(-2px);
+}
+
+.recipe-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--color-bg-muted); }
+
+.recipe-body { padding: var(--space-3) var(--space-3) var(--space-3); display: flex; flex-direction: column; gap: 4px; }
+.recipe-name { font-size: 15px; font-weight: 700; }
+.recipe-sub { font-size: 12px; color: var(--color-text-secondary); }
+.recipe-price-row { display: flex; align-items: center; gap: 6px; margin-top: var(--space-2); }
+.recipe-price { font-size: 16px; font-weight: 700; }
+.best-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-primary-text);
+  background: var(--color-primary-soft);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.empty-note {
+  grid-column: 1 / -1;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: var(--space-4) 0;
+}
+
+.filter-caption {
+  padding: 0 var(--space-5) var(--space-5);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+/* ---- 필터 로직: 그룹 내 다중 선택(OR)이 필요해져서 filter.js로 이동 ---- */
