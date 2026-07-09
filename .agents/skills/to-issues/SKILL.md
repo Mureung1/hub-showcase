@@ -10,6 +10,8 @@ Break a plan into independently-grabbable issues using vertical slices (tracer b
 
 This repo's Matt Pocock flow uses local Markdown issue briefs by default. Do not create GitHub Issues or PRs unless the user explicitly asks for GitHub publication and confirms the target repo/surface.
 
+Write generated issue brief content in Korean; leave the template and examples below unchanged.
+
 ## Process
 
 ### 1. Gather context

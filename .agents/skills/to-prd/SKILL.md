@@ -8,6 +8,8 @@ This skill takes the current conversation context and codebase understanding and
 
 This repo's Matt Pocock flow uses local Markdown PRDs by default. Do not create GitHub Issues or PRs unless the user explicitly asks for GitHub publication and confirms the target repo/surface.
 
+Write generated PRD content in Korean; leave the template and examples below unchanged.
+
 ## Process
 
 1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the PRD, and respect any ADRs in the area you're touching.
