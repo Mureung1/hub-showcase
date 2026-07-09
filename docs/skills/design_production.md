@@ -1,0 +1,24 @@
+# Skill: 디자인 제작 및 비주얼 QA 절차서
+
+본 문서는 Scholar-Sync AI의 UI를 일관되게 제작하고 검증하기 위한 안티그래비티 CLI 전용 반복 실행 스킬(절차)이다.
+
+## 1. 실행 가이드 및 순서 (Procedure)
+사용자가 "우리 디자인 스킬 적용해서 [특정 화면/요소] 만들어줘/수정해줘"라고 요청하면, 안티그래비티 에이전트는 다음 단계를 순차적으로 수행한다.
+
+### Step 1. 디자인 토큰 주입
+모든 UI 마크업과 CSS 스타일은 `docs/design_system.md`에 명세된 규칙을 바인딩한다.
+- 주색 (Primary): #005F73 (Deep Teal) / #004F5E (Header Background)
+- 강조 (Accent): #94D2BD (Sky Blue) / #E0F2FE (Active Light Blue)
+- 모서리 (Radius): 카드 및 컨테이너 12px, 인라인 버튼 및 태그 6px
+- 서체 (Font): 타이틀 Outfit, 본문 Inter, 수치 및 메타데이터 JetBrains Mono
+
+### Step 2. 컴포넌트 특화 레이아웃 적용
+- 논문 카드 UI: 90% 이상 고정밀 매칭 카드는 반드시 좌측 상단에 리본/책갈피 형태의 스코어 뱃지 오프셋 레이아웃을 형성한다.
+- 3줄 인사이트 패널: 요약 출력 시 서클 넘버링(1, 2, 3)과 함께 [연구 배경 및 한계 원인 / Research Background & Limitations], [제안하는 핵심 방법론 / Proposed Core Method], [구체적 개선 결과 및 수치 / Specific Results & Metrics] 구획 구조와 볼드 처리를 유기적으로 유지한다.
+
+### Step 3. 코드 출력 전 자가 검증 (QA)
+코드를 작성하거나 수정안을 제안하기 전, 스스로 작성한 내용이 `docs/plan.md`에 정의된 구조를 충족하는지 대조 검증한다.
+
+## 2. 출력 프로토콜 (Output Log)
+작업을 완료하면 안티그래비티 에이전트는 답변 최상단에 본 스킬이 올바르게 작동했음을 증명하는 검증 로그를 아래 포맷으로 반드시 출력해야 한다.
+> 🎨 **[Design Skill Applied]** 헤더 테마(O) / 요약 타이포(O) / 리본 뱃지(O) -> 스타일 정렬 완료.
