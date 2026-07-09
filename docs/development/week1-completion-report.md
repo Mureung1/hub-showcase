@@ -430,4 +430,4 @@ auto-merge workflow가 CI 상태를 자체 검사하지 않음.
 - [전체 개발 체크리스트](./checklist.md)
 - [Git 작업 규칙](./git-workflow.md)
 - [LocalTwin 디자인 시스템](../design/design-system.md)
-- [검증 기록](../../.harness/runs/2026-07-09-ENV-001-development-environment.md)
+- [검증 가이드](./validation.md)

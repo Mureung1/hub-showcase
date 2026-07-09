@@ -105,6 +105,22 @@ def main() -> int:
             elif target and not target.exists():
                 errors.append(f"{html_file.relative_to(root)}: missing graph/viewer target {target.relative_to(root)}")
 
+    viewer = root / "docs" / "wiki" / "doc-viewer.html"
+    if viewer.exists():
+        viewer_text = viewer.read_text(encoding="utf-8")
+        tree_paths = set(re.findall(r'data-doc-path="([^"]+)"', viewer_text))
+        expected_paths = {
+            path.relative_to(root / "docs").as_posix()
+            for path in root.glob("docs/**/*")
+            if path.is_file() and path.suffix in {".md", ".html"}
+        }
+        missing_from_tree = sorted(expected_paths - tree_paths)
+        stale_tree_paths = sorted(tree_paths - expected_paths)
+        for path in missing_from_tree:
+            errors.append(f"docs/wiki/doc-viewer.html: document tree is missing docs/{path}")
+        for path in stale_tree_paths:
+            errors.append(f"docs/wiki/doc-viewer.html: document tree target does not exist: docs/{path}")
+
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

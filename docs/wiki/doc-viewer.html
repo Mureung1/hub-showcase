@@ -307,7 +307,7 @@
       }
 
       .home-map-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
         margin-top: 22px;
       }
 
@@ -322,11 +322,100 @@
         padding: 12px;
       }
 
+      .document-tree {
+        margin-top: 22px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #ffffff;
+        padding: 16px;
+      }
+
+      .document-tree__header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+
+      .document-tree__header h2 {
+        margin: 0;
+        color: #07120d;
+        font-size: 1.05rem;
+      }
+
+      .document-tree__header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .doc-folder {
+        border-top: 1px solid var(--line);
+      }
+
+      .doc-folder:first-of-type {
+        border-top: 0;
+      }
+
+      .doc-folder summary {
+        cursor: pointer;
+        padding: 12px 4px;
+        color: #07120d;
+        font-weight: 800;
+      }
+
+      .doc-folder summary:hover,
+      .doc-folder summary:focus-visible {
+        color: var(--green-dark);
+      }
+
+      .doc-folder summary small {
+        margin-left: 8px;
+        color: var(--muted);
+        font-size: 0.76rem;
+        font-weight: 700;
+      }
+
+      .doc-files {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px 16px;
+        margin: 0 0 12px 22px;
+        padding: 0;
+        list-style: none;
+      }
+
+      .doc-files a {
+        display: block;
+        overflow-wrap: anywhere;
+        border-radius: 6px;
+        padding: 7px 8px;
+        color: #20332a;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.78rem;
+      }
+
+      .doc-files a:hover,
+      .doc-files a:focus-visible {
+        background: #f0f8f3;
+        color: var(--green-dark);
+      }
+
       @media (max-width: 760px) {
         .home-hero,
         .home-actions,
         .home-card-grid,
         .home-map-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .document-tree__header {
+          align-items: start;
+          flex-direction: column;
+        }
+
+        .doc-files {
           grid-template-columns: 1fr;
         }
       }
@@ -491,24 +580,13 @@
                 <li><a href="./doc-viewer.html?doc=../design/design-system.md">디자인 시스템</a><em>UI</em></li>
                 <li><a href="./doc-viewer.html?doc=../development/harness.md">Dev Harness</a><em>workflow</em></li>
                 <li><a href="./doc-viewer.html?doc=../development/validation.md">검증 가이드</a><em>check</em></li>
+                <li><a href="./doc-viewer.html?doc=../development/week1-completion-report.md">1주차 완료 보고서</a><em>report</em></li>
                 <li><a href="./doc-viewer.html?doc=../evaluation/agent-rubric.md">Agent Rubric</a><em>review</em></li>
               </ul>
             </article>
           </section>
 
           <section class="home-map-grid">
-            <article class="home-map">
-              <strong>문서 구조</strong>
-              <pre>docs/
-  wiki/
-  prototypes/
-  design/
-  features/
-  data/
-  development/
-  evaluation/
-  module-notes/</pre>
-            </article>
             <article class="home-map">
               <strong>프로젝트 구조</strong>
               <pre>LocalTwin/
@@ -524,6 +602,89 @@
   .agents/
   .codex/</pre>
             </article>
+          </section>
+
+          <section class="document-tree" aria-labelledby="document-tree-title">
+            <div class="document-tree__header">
+              <h2 id="document-tree-title">Document Tree</h2>
+              <p>폴더를 눌러 접거나 펼치고 파일을 바로 엽니다.</p>
+            </div>
+
+            <details class="doc-folder" open>
+              <summary>data <small>1 file</small></summary>
+              <ul class="doc-files">
+                <li><a data-doc-path="data/data-source-mapping.md" href="./doc-viewer.html?doc=../data/data-source-mapping.md">data-source-mapping.md</a></li>
+              </ul>
+            </details>
+
+            <details class="doc-folder" open>
+              <summary>design <small>1 file</small></summary>
+              <ul class="doc-files">
+                <li><a data-doc-path="design/design-system.md" href="./doc-viewer.html?doc=../design/design-system.md">design-system.md</a></li>
+              </ul>
+            </details>
+
+            <details class="doc-folder" open>
+              <summary>development <small>9 files</small></summary>
+              <ul class="doc-files">
+                <li><a data-doc-path="development/checklist.md" href="./doc-viewer.html?doc=../development/checklist.md">checklist.md</a></li>
+                <li><a data-doc-path="development/conventions.md" href="./doc-viewer.html?doc=../development/conventions.md">conventions.md</a></li>
+                <li><a data-doc-path="development/environment.md" href="./doc-viewer.html?doc=../development/environment.md">environment.md</a></li>
+                <li><a data-doc-path="development/git-workflow.md" href="./doc-viewer.html?doc=../development/git-workflow.md">git-workflow.md</a></li>
+                <li><a data-doc-path="development/harness.md" href="./doc-viewer.html?doc=../development/harness.md">harness.md</a></li>
+                <li><a data-doc-path="development/overview.md" href="./doc-viewer.html?doc=../development/overview.md">overview.md</a></li>
+                <li><a data-doc-path="development/pre-development-decisions.md" href="./doc-viewer.html?doc=../development/pre-development-decisions.md">pre-development-decisions.md</a></li>
+                <li><a data-doc-path="development/validation.md" href="./doc-viewer.html?doc=../development/validation.md">validation.md</a></li>
+                <li><a data-doc-path="development/week1-completion-report.md" href="./doc-viewer.html?doc=../development/week1-completion-report.md">week1-completion-report.md</a></li>
+              </ul>
+            </details>
+
+            <details class="doc-folder">
+              <summary>evaluation <small>4 files</small></summary>
+              <ul class="doc-files">
+                <li><a data-doc-path="evaluation/agent-rubric.md" href="./doc-viewer.html?doc=../evaluation/agent-rubric.md">agent-rubric.md</a></li>
+                <li><a data-doc-path="evaluation/evaluation-log.md" href="./doc-viewer.html?doc=../evaluation/evaluation-log.md">evaluation-log.md</a></li>
+                <li><a data-doc-path="evaluation/failure-log.md" href="./doc-viewer.html?doc=../evaluation/failure-log.md">failure-log.md</a></li>
+                <li><a data-doc-path="evaluation/meta-evaluation.md" href="./doc-viewer.html?doc=../evaluation/meta-evaluation.md">meta-evaluation.md</a></li>
+              </ul>
+            </details>
+
+            <details class="doc-folder" open>
+              <summary>features <small>4 files</small></summary>
+              <ul class="doc-files">
+                <li><a data-doc-path="features/3d-congestion-explorer.md" href="./doc-viewer.html?doc=../features/3d-congestion-explorer.md">3d-congestion-explorer.md</a></li>
+                <li><a data-doc-path="features/market-analysis.md" href="./doc-viewer.html?doc=../features/market-analysis.md">market-analysis.md</a></li>
+                <li><a data-doc-path="features/market-map-experience.md" href="./doc-viewer.html?doc=../features/market-map-experience.md">market-map-experience.md</a></li>
+                <li><a data-doc-path="features/person-anonymization-preprocessing.md" href="./doc-viewer.html?doc=../features/person-anonymization-preprocessing.md">person-anonymization-preprocessing.md</a></li>
+              </ul>
+            </details>
+
+            <details class="doc-folder">
+              <summary>module-notes <small>1 file</small></summary>
+              <ul class="doc-files">
+                <li><a data-doc-path="module-notes/localtwin-v0.1-scope.md" href="./doc-viewer.html?doc=../module-notes/localtwin-v0.1-scope.md">localtwin-v0.1-scope.md</a></li>
+              </ul>
+            </details>
+
+            <details class="doc-folder">
+              <summary>prototypes <small>2 files</small></summary>
+              <ul class="doc-files">
+                <li><a data-doc-path="prototypes/core-market-analysis-prototype.html" href="../prototypes/core-market-analysis-prototype.html">core-market-analysis-prototype.html</a></li>
+                <li><a data-doc-path="prototypes/design-guide-visual-comparison.html" href="../prototypes/design-guide-visual-comparison.html">design-guide-visual-comparison.html</a></li>
+              </ul>
+            </details>
+
+            <details class="doc-folder" open>
+              <summary>wiki <small>6 files</small></summary>
+              <ul class="doc-files">
+                <li><a data-doc-path="wiki/Home.md" href="./doc-viewer.html?doc=Home.md">Home.md</a></li>
+                <li><a data-doc-path="wiki/doc-viewer.html" href="./doc-viewer.html?doc=Home.md">doc-viewer.html</a></li>
+                <li><a data-doc-path="wiki/knowledge-graph.html" href="./knowledge-graph.html">knowledge-graph.html</a></li>
+                <li><a data-doc-path="wiki/localtwin-product-plan.md" href="./doc-viewer.html?doc=localtwin-product-plan.md">localtwin-product-plan.md</a></li>
+                <li><a data-doc-path="wiki/localtwin-project-proposal.md" href="./doc-viewer.html?doc=localtwin-project-proposal.md">localtwin-project-proposal.md</a></li>
+                <li><a data-doc-path="wiki/localtwin-v0.1-execution-plan.md" href="./doc-viewer.html?doc=localtwin-v0.1-execution-plan.md">localtwin-v0.1-execution-plan.md</a></li>
+              </ul>
+            </details>
           </section>
         `;
       }
