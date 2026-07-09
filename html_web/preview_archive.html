@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShortsGen - My Archive Preview</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <style>
+        :root {
+            --bg-page: #F4F7FE;
+            --bg-surface: #FFFFFF;
+            --primary-color: #5D5FEF;
+            --primary-hover: #4B4CE0;
+            --text-main: #151D48;
+            --text-muted: #737791;
+            --border-color: #F1F3F9;
+            --pastel-pink: #FFE2E5;
+            --pastel-orange: #FFF4DE;
+            --pastel-green: #DCFCE7;
+            --pastel-purple: #F3E8FF;
+
+            --radius-card: 20px;
+            --radius-btn: 12px;
+            --radius-pill: 9999px;
+
+            --padding-card: 24px;
+            --gap-layout: 24px;
+            --sidebar-width: 260px;
+
+            --shadow-card: 0px 4px 20px rgba(0, 0, 0, 0.04);
+            --shadow-btn: 0px 4px 10px rgba(93, 95, 239, 0.3);
+            
+            --font-family: 'Pretendard', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
+        body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width); background-color: var(--bg-surface); padding: 32px 24px;
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        .logo { font-size: 24px; font-weight: 800; color: var(--primary-color); margin-bottom: 32px; display: flex; align-items: center; gap: 12px; }
+        .nav-item { padding: 16px 20px; border-radius: var(--radius-btn); font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease; }
+        .nav-item.active { background-color: var(--primary-color); color: white; box-shadow: var(--shadow-btn); }
+        
+        .main-content {
+            flex: 1; padding: 32px 40px; max-width: 1600px; margin: 0 auto;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        .header h1 { font-size: 28px; font-weight: 700; }
+
+        /* Top Filters */
+        .filter-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .tab-group {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background-color: var(--bg-surface);
+            border-radius: var(--radius-pill);
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            transition: 0.2s;
+        }
+
+        .tab.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-btn);
+        }
+
+        /* Grid Layout */
+        .archive-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--gap-layout);
+        }
+
+        /* Video Card */
+        .video-card {
+            background-color: var(--bg-surface);
+            border-radius: var(--radius-card);
+            padding: 16px;
+            box-shadow: var(--shadow-card);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        
+        .video-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0px 8px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .thumbnail-container {
+            width: 100%;
+            aspect-ratio: 9/16;
+            background-color: #E2E8F0;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .status-published { background-color: #00B074; }
+        .status-draft { background-color: #FF5B5B; }
+
+        .video-info { display: flex; flex-direction: column; gap: 8px; }
+        .video-date { font-size: 12px; color: var(--text-muted); }
+        .video-title { font-size: 15px; font-weight: 700; line-height: 1.4; }
+        .hashtag-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+        .hash-tag { font-size: 11px; font-weight: 600; color: var(--primary-color); background-color: var(--pastel-purple); padding: 2px 8px; border-radius: 6px; }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background-color: #F8FAFC;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: 0.2s;
+        }
+        .btn-icon:hover { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .btn-text {
+            background-color: transparent; border: none; font-size: 13px; font-weight: 700; color: var(--primary-color); cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <span style="background-color: var(--primary-color); color: white; padding: 4px 8px; border-radius: 8px;">SG</span>
+            ShortsGen
+        </div>
+        <div class="nav-item" onclick="window.location.href='preview_dabang.html'">대시보드 홈</div>
+        <div class="nav-item" onclick="window.location.href='preview_generate.html'">릴스 생성하기</div>
+        <div class="nav-item active">내 보관함</div>
+        <div class="nav-item" onclick="window.location.href='preview_setup.html'">내 가게 정보 관리</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        
+        <div class="header">
+            <div>
+                <h1>내 보관함</h1>
+                <p style="color: var(--text-muted); margin-top: 8px;">AI가 생성한 릴스 영상들을 관리하고 다시 다운로드하거나 SNS에 재발행할 수 있습니다.</p>
+            </div>
+            
+            <button style="background-color: var(--primary-color); color: white; border: none; padding: 12px 24px; border-radius: var(--radius-btn); font-weight: 700; box-shadow: var(--shadow-btn); cursor: pointer;" onclick="window.location.href='preview_generate.html'">+ 새 릴스 만들기</button>
+        </div>
+
+        <div class="filter-bar">
+            <div class="tab-group">
+                <div class="tab active">전체 영상 (12)</div>
+                <div class="tab">인스타 발행완료 (8)</div>
+                <div class="tab">미발행 (4)</div>
+            </div>
+            
+            <select style="padding: 10px 16px; border-radius: var(--radius-btn); border: 1px solid var(--border-color); color: var(--text-main); background-color: white;">
+                <option>최신순</option>
+                <option>오래된 순</option>
+                <option>인기순</option>
+            </select>
+        </div>
+
+        <div class="archive-grid">
+            
+            <!-- Card 1 -->
+            <div class="video-card">
+                <div class="thumbnail-container" style="background-image: url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80');">
+                    <div class="status-badge status-published">인스타 발행됨</div>
+                    <!-- Play icon overlay -->
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; background: rgba(0,0,0,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">▶</div>
+                </div>
+                <div class="video-info">
+                    <div class="video-date">2023. 10. 28</div>
+                    <div class="video-title">겉바속촉 끝판왕 크루아상, 지금 바로 예약하세요!</div>
+                    <div class="hashtag-list">
+                        <span class="hash-tag">#빵지순례</span>
+                        <span class="hash-tag">#연남동데이트</span>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button class="btn-text">통계 보기</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-icon" title="다운로드">⬇</button>
+                        <button class="btn-icon" title="삭제" style="color: #FF5B5B;">🗑</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="video-card">
+                <div class="thumbnail-container" style="background-image: url('https://images.unsplash.com/photo-1579954115545-a95591f28bfc?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80');">
+                    <div class="status-badge status-draft">미발행</div>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; background: rgba(0,0,0,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">▶</div>
+                </div>
+                <div class="video-info">
+                    <div class="video-date">2023. 10. 25</div>
+                    <div class="video-title">여름 한정 수박주스 개시! 상큼함 터집니다 🍉</div>
+                    <div class="hashtag-list">
+                        <span class="hash-tag" style="background-color: var(--pastel-pink); color: #FF5B5B;">#여름한정</span>
+                        <span class="hash-tag">#수박주스</span>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button class="btn-text" style="color: #FF5B5B;">바로 발행하기</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-icon" title="다운로드">⬇</button>
+                        <button class="btn-icon" title="삭제" style="color: #FF5B5B;">🗑</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="video-card">
+                <div class="thumbnail-container" style="background-image: url('https://images.unsplash.com/photo-1559598467-f8b76c8155d0?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80');">
+                    <div class="status-badge status-published">인스타 발행됨</div>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; background: rgba(0,0,0,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">▶</div>
+                </div>
+                <div class="video-info">
+                    <div class="video-date">2023. 10. 20</div>
+                    <div class="video-title">따뜻한 라떼 한 잔의 여유, 브이로그 느낌 ☕</div>
+                    <div class="hashtag-list">
+                        <span class="hash-tag" style="background-color: var(--pastel-orange); color: #FFAA00;">#감성카페</span>
+                        <span class="hash-tag">#라떼아트</span>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button class="btn-text">통계 보기</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-icon" title="다운로드">⬇</button>
+                        <button class="btn-icon" title="삭제" style="color: #FF5B5B;">🗑</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State / Add New Card -->
+            <div class="video-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; border: 2px dashed #CBD5E1; background-color: #F8FAFC; box-shadow: none;" onclick="window.location.href='preview_generate.html'">
+                <div style="width: 64px; height: 64px; background-color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--primary-color); margin-bottom: 16px; box-shadow: var(--shadow-card);">+</div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--text-main);">새로운 릴스 기획하기</div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-top: 8px;">트렌드를 분석하고 생성해보세요</div>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

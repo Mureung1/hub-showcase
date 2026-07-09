@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShortsGen - Dabang Theme Preview</title>
+    <!-- Pretendard Font -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-page: #F4F7FE;
+            --bg-surface: #FFFFFF;
+            
+            --primary-color: #5D5FEF;
+            --primary-hover: #4B4CE0;
+            
+            --text-main: #151D48;
+            --text-muted: #737791;
+            
+            --border-color: #F1F3F9;
+
+            --pastel-pink: #FFE2E5;
+            --pastel-orange: #FFF4DE;
+            --pastel-green: #DCFCE7;
+            --pastel-purple: #F3E8FF;
+
+            --radius-card: 20px;
+            --radius-btn: 12px;
+            --radius-pill: 9999px;
+
+            --padding-card: 24px;
+            --gap-layout: 24px;
+            --sidebar-width: 260px;
+
+            --shadow-card: 0px 4px 20px rgba(0, 0, 0, 0.04);
+            --shadow-btn: 0px 4px 10px rgba(93, 95, 239, 0.3);
+            
+            --font-family: 'Pretendard', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-surface);
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item {
+            padding: 16px 20px;
+            border-radius: var(--radius-btn);
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item.active {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow-btn);
+        }
+
+        .pro-badge {
+            margin-top: auto;
+            background: linear-gradient(135deg, #5D5FEF, #8F90FF);
+            color: white;
+            padding: 24px;
+            border-radius: var(--radius-card);
+            text-align: center;
+            box-shadow: var(--shadow-btn);
+        }
+
+        .pro-badge button {
+            margin-top: 16px;
+            background-color: white;
+            color: var(--primary-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius-btn);
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 32px 40px;
+            max-width: 1600px; /* 훨씬 넓게 */
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .search-bar {
+            background-color: var(--bg-surface);
+            padding: 12px 24px;
+            border-radius: var(--radius-pill);
+            border: none;
+            width: 300px;
+            color: var(--text-muted);
+            box-shadow: var(--shadow-card);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--gap-layout);
+            margin-bottom: var(--gap-layout);
+        }
+
+        .stat-card {
+            background-color: var(--bg-surface);
+            padding: var(--padding-card);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-card);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-size: 20px;
+        }
+
+        .c-pink { background-color: var(--pastel-pink); color: #FF5B5B; }
+        .c-orange { background-color: var(--pastel-orange); color: #FFAA00; }
+        .c-green { background-color: var(--pastel-green); color: #00B074; }
+        .c-purple { background-color: var(--pastel-purple); color: #A064FA; }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: var(--gap-layout);
+        }
+
+        .card {
+            background-color: var(--bg-surface);
+            padding: var(--padding-card);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-card);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <span style="background-color: var(--primary-color); color: white; padding: 4px 8px; border-radius: 8px;">SG</span>
+            ShortsGen
+        </div>
+        
+        <div class="nav-item active">대시보드 홈</div>
+        <div class="nav-item">릴스 생성하기</div>
+        <div class="nav-item">내 보관함</div>
+        <div class="nav-item">트렌드 리포트</div>
+        
+        <div class="pro-badge">
+            <h3 style="margin-bottom: 8px;">ShortsGen Pro</h3>
+            <p style="font-size: 12px; opacity: 0.9;">AI 자동화 무제한 생성</p>
+            <button>업그레이드</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        
+        <!-- Header -->
+        <div class="header">
+            <h1>대시보드</h1>
+            <input type="text" class="search-bar" placeholder="트렌드 해시태그 검색...">
+        </div>
+
+        <!-- Store Profile Card (저장된 가게 정보 디스플레이) -->
+        <div class="card" style="margin-bottom: var(--gap-layout); padding: 0; overflow: hidden; position: relative;">
+            
+            <div style="padding: 32px; display: flex; gap: 32px; align-items: flex-start;">
+                <!-- Store Photo -->
+                <div style="width: 140px; height: 140px; border-radius: 24px; background: url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80') center/cover; position: relative;">
+                    <!-- Fade effect at bottom like the image -->
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 40px; background: linear-gradient(to top, white, transparent); border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;"></div>
+                </div>
+
+                <!-- Store Info details -->
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 4px;">달콤베이커리</h2>
+                            <p style="color: var(--text-muted); font-size: 15px; font-weight: 500; margin-bottom: 24px;">베이커리/카페 <span style="opacity: 0.5;">·</span> 가입한 지 286일</p>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 12px;">
+                            <button style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-color); background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-main);"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8m-4-6l-4-4-4 4m4-4v13"></path></svg></button>
+                            <button style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-color); background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-main);"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                        </div>
+                    </div>
+
+                    <!-- Contact Grid -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; color: var(--text-main);">
+                            <span style="color: var(--text-muted);">📞</span> 02-1234-5678
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; color: var(--text-main);">
+                            <span style="color: var(--text-muted);">🌐</span> www.dalcom-bake.com
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; color: var(--text-main);">
+                            <span style="color: var(--text-muted);">📍</span> 서울특별시 마포구 연남동
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; color: var(--text-main);">
+                            <span style="color: var(--text-muted);">🥐</span> 주력: 방금 구운 크루아상
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Stats inside Card -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 0 32px 32px 32px;">
+                <div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 8px;">이번 달 목표 달성률</div>
+                    <div style="font-size: 24px; font-weight: 800;">120%</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 8px;">판매된 시그니처 메뉴</div>
+                    <div style="font-size: 24px; font-weight: 800;">912 개</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 8px;">단골 고객 수</div>
+                    <div style="font-size: 24px; font-weight: 800;">320 명</div>
+                </div>
+            </div>
+
+            <!-- Colorful bottom border line -->
+            <div style="display: flex; height: 6px; width: 100%; position: absolute; bottom: 0;">
+                <div style="flex: 1; background-color: var(--pastel-pink);"></div>
+                <div style="flex: 1; background-color: var(--pastel-green);"></div>
+                <div style="flex: 1; background-color: var(--pastel-orange);"></div>
+            </div>
+        </div>
+
+        <!-- 4 Pastel Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon c-pink">🎬</div>
+                <div class="stat-value">1,024</div>
+                <div class="stat-label">생성된 릴스 총합</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon c-orange">📈</div>
+                <div class="stat-value">34.2%</div>
+                <div class="stat-label">평균 목적지 CTR</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon c-green">#</div>
+                <div class="stat-value">15</div>
+                <div class="stat-label">오늘 발굴된 트렌드</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon c-purple">❤️</div>
+                <div class="stat-value">8,400</div>
+                <div class="stat-label">누적 좋아요 획득</div>
+            </div>
+        </div>
+
+        <!-- Main Chart Area -->
+        <div class="content-grid">
+            <div class="card">
+                <div class="card-title">목적지 클릭률(CTR) 및 조회수 추이</div>
+                <div class="chart-container">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">오늘의 트렌드 태그</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                    <span style="background-color: var(--pastel-purple); color: #A064FA; padding: 8px 16px; border-radius: var(--radius-pill); font-weight: 600; font-size: 14px;">#빵지순례</span>
+                    <span style="background-color: var(--pastel-pink); color: #FF5B5B; padding: 8px 16px; border-radius: var(--radius-pill); font-weight: 600; font-size: 14px;">#연남동데이트</span>
+                    <span style="background-color: var(--pastel-green); color: #00B074; padding: 8px 16px; border-radius: var(--radius-pill); font-weight: 600; font-size: 14px;">#겉바속촉</span>
+                    <span style="background-color: var(--pastel-orange); color: #FFAA00; padding: 8px 16px; border-radius: var(--radius-pill); font-weight: 600; font-size: 14px;">#카페투어</span>
+                </div>
+                
+                <div style="margin-top: 32px;">
+                    <button style="background-color: var(--primary-color); color: white; width: 100%; border: none; padding: 16px; border-radius: var(--radius-btn); font-weight: 700; box-shadow: var(--shadow-btn); cursor: pointer;">
+                        이 트렌드로 영상 만들기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3rd Row: Extra Widgets for Packed Feeling -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--gap-layout); margin-top: var(--gap-layout);">
+            <!-- Top Reels Ranking -->
+            <div class="card">
+                <div class="card-title">이번 달 인기 폭발 릴스 Top 3</div>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 48px; height: 64px; background-color: #E2E8F0; border-radius: 8px;"></div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 14px; font-weight: 700;">#빵지순례 크루아상</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">조회수 12.5k</div>
+                            <div style="width: 100%; height: 6px; background-color: var(--border-color); border-radius: 4px; margin-top: 6px;">
+                                <div style="width: 85%; height: 100%; background-color: var(--primary-color); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 48px; height: 64px; background-color: #E2E8F0; border-radius: 8px;"></div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 14px; font-weight: 700;">여름 한정 수박주스</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">조회수 8.2k</div>
+                            <div style="width: 100%; height: 6px; background-color: var(--border-color); border-radius: 4px; margin-top: 6px;">
+                                <div style="width: 60%; height: 100%; background-color: #43E0AA; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 48px; height: 64px; background-color: #E2E8F0; border-radius: 8px;"></div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 14px; font-weight: 700;">사장님 브이로그</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">조회수 5.1k</div>
+                            <div style="width: 100%; height: 6px; background-color: var(--border-color); border-radius: 4px; margin-top: 6px;">
+                                <div style="width: 40%; height: 100%; background-color: #A064FA; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Reactions -->
+            <div class="card">
+                <div class="card-title">시청자 감정 분석 (KoBERT)</div>
+                <div class="chart-container" style="height: 200px;">
+                    <canvas id="reactionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Target vs Reality -->
+            <div class="card">
+                <div class="card-title">플랫폼별 도달률 비교</div>
+                <div class="chart-container" style="height: 200px;">
+                    <canvas id="platformChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['월', '화', '수', '목', '금', '토', '일'],
+                datasets: [
+                    {
+                        label: '조회수',
+                        data: [1200, 1900, 3000, 2500, 2200, 3400, 4100],
+                        backgroundColor: '#5D5FEF',
+                        borderRadius: 4
+                    },
+                    {
+                        label: '목적지 클릭 (CTR)',
+                        data: [800, 1200, 2500, 1800, 1900, 2900, 3200],
+                        backgroundColor: '#43E0AA',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#F1F3F9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        const ctxReact = document.getElementById('reactionChart').getContext('2d');
+        new Chart(ctxReact, {
+            type: 'doughnut',
+            data: {
+                labels: ['긍정적 (방문 희망)', '중립 (단순 호기심)', '기타'],
+                datasets: [{
+                    data: [65, 25, 10],
+                    backgroundColor: ['#5D5FEF', '#43E0AA', '#F1F3F9'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                }
+            }
+        });
+
+        const ctxPlat = document.getElementById('platformChart').getContext('2d');
+        new Chart(ctxPlat, {
+            type: 'bar',
+            data: {
+                labels: ['1주차', '2주차', '3주차', '4주차'],
+                datasets: [
+                    {
+                        label: '인스타그램',
+                        data: [120, 190, 300, 250],
+                        backgroundColor: '#FF5B5B',
+                        borderRadius: 4
+                    },
+                    {
+                        label: '틱톡',
+                        data: [80, 120, 250, 180],
+                        backgroundColor: '#151D48',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                },
+                scales: {
+                    y: { display: false },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
