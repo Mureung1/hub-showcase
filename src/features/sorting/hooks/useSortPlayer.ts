@@ -4,7 +4,7 @@ import type { SortStep } from '../algorithms/types'
 export function useSortPlayer(steps: SortStep[]) {
   const [stepIndex, setStepIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [speed, setSpeed] = useState(400)
+  const [speed, setSpeed] = useState(700)
 
   useEffect(() => {
     setStepIndex(0)

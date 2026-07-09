@@ -18,7 +18,7 @@ const sections: MenuSection[] = [
       { label: '스택', to: '/cs/stack' },
       { label: '큐', to: '/cs/queue' },
       { label: '덱', to: '/cs/deque' },
-      { label: '트리' },
+      { label: '트리', to: '/cs/tree' },
     ],
   },
   {
