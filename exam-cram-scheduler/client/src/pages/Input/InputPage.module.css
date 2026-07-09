@@ -1,0 +1,27 @@
+.nlBox {
+  border: 1.5px dashed var(--brand-soft);
+  background: var(--surface-muted);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  margin-bottom: 24px;
+}
+
+.nlTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand-strong);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.nlBox textarea {
+  background: #fff;
+}
+
+.nlActions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}

@@ -1,0 +1,80 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 2px;
+  text-decoration: none;
+  color: inherit;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.rowIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  background: var(--surface-muted);
+}
+
+.sleep {
+  background: var(--tag-sleep);
+}
+.study {
+  background: var(--tag-study);
+}
+.caffeine {
+  background: var(--tag-caffeine);
+}
+.exam {
+  background: var(--brand-soft);
+}
+
+.rowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowTitle {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.rowSub {
+  font-size: 12.5px;
+  color: var(--ink-600);
+  margin-top: 1px;
+}
+
+.rowValue {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink-900);
+  white-space: nowrap;
+  text-align: right;
+}
+
+.rowChevron {
+  color: var(--ink-400);
+  flex-shrink: 0;
+  display: flex;
+}
+
+.isAdd .isAddTitle {
+  color: var(--brand-strong);
+  font-weight: 700;
+}
+
+.isAdd .rowIcon {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}

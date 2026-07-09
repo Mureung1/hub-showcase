@@ -1,0 +1,9 @@
+.card {
+  background: var(--surface-muted);
+  border-radius: var(--r-lg);
+  padding: 18px;
+}
+
+.card + .card {
+  margin-top: 12px;
+}

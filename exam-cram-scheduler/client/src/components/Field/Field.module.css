@@ -1,0 +1,17 @@
+.field {
+  margin-bottom: 16px;
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-900);
+  margin-bottom: 7px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--ink-600);
+  margin-top: 6px;
+}

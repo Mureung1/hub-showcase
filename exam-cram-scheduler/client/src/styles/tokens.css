@@ -1,0 +1,87 @@
+/* docs/디자인.md 2~4번 기준 — 프로토타입 styles.css의 :root를 그대로 이식 */
+:root {
+  --stage-bg: #140c07;
+
+  --surface: #ffffff;
+  --surface-muted: #f6f1e9;
+  --surface-sunken: #efe7da;
+
+  --ink-900: #201409;
+  --ink-600: #786a5c;
+  --ink-400: #ab9d8c;
+  --line: #ece3d5;
+
+  --brand: #9a5b28;
+  --brand-strong: #7a4720;
+  --brand-soft: #f1e0c9;
+  --brand-soft-text: #7a4720;
+
+  --tag-sleep: #43290f;
+  --tag-study: #b98a55;
+  --tag-caffeine: #d99a3d;
+
+  --danger-bg: #fbeae5;
+  --danger-text: #9a3324;
+  --danger-icon: #c1442c;
+
+  --r-lg: 22px;
+  --r-md: 16px;
+  --r-sm: 10px;
+
+  --font: "Pretendard Variable", Pretendard, "Noto Sans KR", -apple-system,
+    BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--surface);
+  font-family: var(--font);
+  color: var(--ink-900);
+}
+
+button {
+  font-family: var(--font);
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+/* 입력 요소는 태그 선택자라 CSS Module로 스코프할 수 없어 전역에 둔다 (프로토타입과 동일 방식) */
+input[type='text'],
+input[type='number'],
+input[type='date'],
+input[type='time'],
+select,
+textarea {
+  width: 100%;
+  font-family: var(--font);
+  font-size: 14.5px;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+  color: var(--ink-900);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  background: #fff;
+}
