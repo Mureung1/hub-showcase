@@ -30,5 +30,8 @@
 ## Scripts
 
 - `npm install`
-- `npm run dev`
+- `npm run dev` - runs Vite and Express together
+- `npm run dev:client` - runs only Vite
+- `npm run dev:server` - runs only Express
 - `npm run build`
+- `npm test`
