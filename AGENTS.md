@@ -81,6 +81,7 @@ NestJS는 Express보다 초기 구조가 무겁지만, module, controller, servi
 - 외부 UI 라이브러리는 별도 합의 없이 추가하지 않는다.
 - 기획서에 없는 기능을 임의로 넓히지 않는다.
 - 로고와 마스코트가 핵심 정보보다 더 크게 보이도록 배치하지 않는다.
+- `.github/` 디렉토리와 GitHub Actions workflow는 사용자의 명시 요청 없이 수정하지 않는다.
 
 ## 디자인 원칙
 
