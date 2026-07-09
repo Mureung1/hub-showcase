@@ -34,7 +34,7 @@
   - RSS/Atom 피드: 공지 게시판·취업진로포털(capd.jnu.ac.kr) 둘 다 미제공 확인 → HTML 파싱 방식으로 결정
   - 취업진로포털: 메인 페이지 미리보기는 공개, 전체 프로그램 목록 메뉴는 로그인 필요(JS alert로 차단) 확인 → MVP 미포함, 2순위 검증 채널로 분류
 - [x] 기획서를 docs/plan.md로 정리 (wiki 대신 — wiki는 별도 git 저장소라 커밋 이력과 분리되는 문제), README는 한 줄 소개 + 링크로 정리
-- [ ] 프로토타입 (순수 HTML/CSS)
+- [x] 와이어프레임 (S1~S4, 순수 HTML/CSS) → docs/wireframe.html 작성, docs/plan.md에 화면별 설계 근거 정리
 - [ ] eclass Open API 존재 여부 확인
 
 ## 참고
