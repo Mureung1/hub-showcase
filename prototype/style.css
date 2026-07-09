@@ -37,6 +37,13 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Match the intended desktop presentation density without changing mobile layouts. */
+@media (min-width: 1050px) {
+  html {
+    zoom: 0.9;
+  }
+}
+
 body {
   min-width: 320px;
   margin: 0;
@@ -207,7 +214,7 @@ a {
   opacity: 0.75;
 }
 
-@media (min-width: 1500px) {
+@media (min-width: 1350px) {
   .reader-layout {
     grid-template-columns: minmax(0, 1fr) minmax(0, 980px) minmax(0, 1fr);
     column-gap: 0;
