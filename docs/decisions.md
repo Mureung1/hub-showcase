@@ -14,12 +14,15 @@
 
 ## 기록
 
-### GitHub API 클라이언트로 @octokit/rest 사용
+### GitHub API 클라이언트: @octokit/rest + @octokit/graphql (용도별 분담)
 - 날짜: 2026-07-09
-- 배경/문제: 프로필 분석·레포/이슈 조회에 GitHub API를 호출해야 함. 비인증 60회/시간 제한, 페이지네이션, rate limit 헤더 처리가 필요.
-- 선택한 방안: 공식 클라이언트 `@octokit/rest`.
-- 고려했던 대안: `axios`로 직접 호출 (KNU_Capstone_Backend에서 사용해 익숙).
-- 이유: 인증·페이지네이션·rate limit 처리가 내장돼 있어 보일러플레이트가 줄고, GitHub 전용이라 유지보수가 편함. 학습 비용은 있으나 GitHub API에 한정되므로 부담이 작음.
+- 배경/문제: 프로필 분석·레포/이슈 조회에 GitHub API를 호출해야 함. 비인증 60회/시간 제한, 페이지네이션, rate limit 헤더 처리가 필요. GitHub는 REST와 GraphQL을 모두 제공하며, 작업 성격에 따라 유불리가 다름.
+- 선택한 방안: 공식 클라이언트 계열을 용도별로 나눠 사용.
+  - **프로필 분석 → GraphQL (`@octokit/graphql`)**: 레포 목록 + 언어 비율 + 커밋/PR 이력을 한 쿼리로 조회해 REST의 N+1 호출을 회피.
+  - **이슈 검색 → REST (`@octokit/rest`의 `/search/issues`)**: 라벨·언어 필터 검색이 단순하고 직관적.
+  - 우리 서버가 프론트에 노출하는 API는 REST로만 제공하고, GitHub의 GraphQL 호출은 백엔드 내부 구현으로 감춘다(우리 쪽 GraphQL 서버는 만들지 않음).
+- 고려했던 대안: `axios`로 직접 호출 (KNU_Capstone_Backend에서 사용해 익숙) / REST만으로 프로필 분석까지 처리.
+- 이유: 인증·페이지네이션·rate limit 처리가 내장돼 보일러플레이트가 줄고, GitHub 전용이라 유지보수가 편함. 프로필 분석은 중첩·집계 데이터라 GraphQL이 호출 수·전송량 모두 유리하고, 검색은 REST가 간단해 각각의 강점을 취함.
 
 ### 프론트 데이터 페칭에 TanStack Query 사용
 - 날짜: 2026-07-09
