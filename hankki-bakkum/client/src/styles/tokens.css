@@ -1,0 +1,27 @@
+/* hankki-design 스킬 v3 (Warm Paper) 토큰 — 임의 수정 금지, 스킬과 항상 동일하게 유지 */
+:root{
+  --primary:#5B6CF5; --primary-soft:#EAEDFB; --primary-deep:#4354D8;
+  --bg-page:#F6F3EC; --bg-card:#FFFEFB; --bg-section:#F5F1E8;
+  --ink:#2B2620; --body:#5A544B; --muted:#A39A8C; --line:#EDE7DB;
+  --ticket-bg:#FFF3D6; --ticket-ink:#8A6A1B;
+  --ok-soft:#E9F4EA; --ok:#3E9A64;
+  --hot-soft:#FDEEE9; --hot:#E85D3D;
+  --r-card:20px; --r-inner:14px; --r-pill:999px;
+  --shadow-card:0 8px 24px rgba(88,68,32,.07);
+  --shadow-float:0 18px 44px rgba(88,68,32,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  background:var(--bg-page);color:var(--body);font-size:16px;
+}
+.app{max-width:430px;margin:0 auto;min-height:100vh;background:var(--bg-card);display:flex;flex-direction:column}
+.appbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px}
+.brand{font-weight:800;color:var(--ink)} .brand em{font-style:normal;color:var(--primary)}
+.region{font-size:.78rem;font-weight:600;color:var(--primary);background:var(--primary-soft);padding:7px 14px;border-radius:var(--r-pill)}
+.stage{flex:1;padding:8px 18px 90px}
+.sec-title{font-size:1.3rem;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+.sec-cap{font-size:.8rem;color:var(--muted);margin-top:4px}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:72px;background:var(--bg-card);border-top:1px solid var(--line);display:flex}
+.tabbar a{flex:1;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;color:var(--muted);text-decoration:none}
+.tabbar a.active{color:var(--primary)}
