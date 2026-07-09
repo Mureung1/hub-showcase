@@ -13,6 +13,7 @@
     "typecheck": "npm run typecheck -w @ay-ple/runtime-core && npm run typecheck -w @ay-ple/runtime-fake && npm run typecheck -w @ay-ple/runtime-codex && npm run typecheck -w @ay-ple/server && npm run typecheck -w @ay-ple/inspector"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "playwright": "^1.61.1"
   }
 }
