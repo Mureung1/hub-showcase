@@ -1,0 +1,13 @@
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  font-weight: var(--weight-regular);
+  font-size: var(--text-lg);
+  line-height: var(--leading-normal);
+  color: var(--label-normal, rgb(23,23,25));
+  background: var(--background-normal-normal, #fff);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--primary-normal, rgb(0,102,255)); text-decoration: none; }
+a:hover { color: var(--primary-strong, rgb(0,94,235)); text-decoration: underline; }
