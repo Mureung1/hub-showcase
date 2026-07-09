@@ -5,7 +5,7 @@
 ```text
 Task packet: .harness/tasks/DOCS-002-docs-tree-and-pr-recovery.md
 Branch: develop
-Status: passed with remote CI follow-up
+Status: partial
 ```
 
 ## 2. Changed Files
@@ -28,7 +28,7 @@ Home 최하단에 모든 docs Markdown/HTML을 표시하는 접기/펼치기 트
 개발환경, 컨벤션, 결정 Gate와 1주차 보고서를 Development 카드에 배치했다.
 사용자 작성 디자인 비교 HTML을 내용 변경 없이 공개 문서 집합에 포함했다.
 setup-uv v8.1.0 release SHA를 pin해 존재하지 않는 v8 tag 오류를 수정했다.
-main을 develop에 병합하고 폐기된 root intro 앱을 되살리지 않은 채 충돌을 해결했다.
+main을 develop에 병합하고 폐기된 root intro 앱을 되살리지 않은 채 local conflict resolution을 준비했다.
 check.ps1가 native command 실패를 성공으로 처리하던 문제를 수정했다.
 docs-only Vercel production alias를 갱신했다.
 ```
@@ -83,6 +83,9 @@ normal repository check passed
 
 ```text
 Private GitHub API가 404를 반환해 원격 Actions의 최종 conclusion은 확인하지 못했다.
+origin/develop은 1f6ed0c이지만 refs/pull/3/head는 이전 4cc2682에 머물러 있다.
+refs/pull/3/merge가 생성되지 않아 PR #3 conflict는 원격 기준으로 아직 해결되지 않았다.
+PR #3의 실제 source branch 확인에는 로그인된 GitHub UI 접근이 필요하다.
 GitHub branch protection 설정은 repository settings에서 별도로 확인해야 한다.
 README.md는 GitHub 진입점이며 Vercel 공개 파일 집합에서는 제공하지 않는다.
 ```
@@ -90,5 +93,6 @@ README.md는 GitHub 진입점이며 Vercel 공개 파일 집합에서는 제공�
 ## 7. Next Action
 
 ```text
-develop push 후 PR #3에서 docs, web, api checks가 통과하는지 GitHub UI에서 확인한다.
+PR #3의 실제 source branch를 확인하고 conflict resolution commit을 해당 branch에 적용한다.
+그 후 docs, web, api checks가 통과하는지 GitHub UI에서 확인한다.
 ```

@@ -6,7 +6,7 @@
 Task: Vercel 문서 트리, 배포 접근성, PR CI와 충돌 복구
 Type: fix
 Owner: Codex
-Status: done
+Status: in_progress
 ```
 
 ## 2. Goal
@@ -66,7 +66,7 @@ git: conflict resolution merge
 - [x] `week1-completion-report.md`가 docs-only Vercel 배포에서 열린다.
 - [x] 공개 배포의 모든 문서 URL과 내부 링크가 성공한다.
 - [x] CI가 존재하지 않는 `setup-uv@v8` tag를 참조하지 않는다.
-- [x] PR #3의 `.gitignore`, `package.json` 충돌이 해결된다.
+- [ ] PR #3의 `.gitignore`, `package.json` 충돌이 원격 PR에 반영된다.
 - [x] 폐기된 root intro application을 활성 개발환경에 다시 포함하지 않는다.
 
 ## 7. Verification Plan
@@ -106,5 +106,5 @@ docs: record docs deployment verification
 - [x] 변경이 요청한 문서/CI/충돌 범위 안에 있는가?
 - [x] 사용자 소유 디자인 비교 문서를 내용 변경 없이 공개 문서에 포함했는가?
 - [x] local과 deployed behavior를 각각 확인했는가?
-- [x] PR conflict 해결과 원격 CI conclusion을 구분했는가?
+- [x] local develop conflict 해결과 원격 PR 상태를 구분했는가?
 - [ ] 원격 GitHub Actions 최종 conclusion은 push 후 GitHub UI에서 확인한다.
