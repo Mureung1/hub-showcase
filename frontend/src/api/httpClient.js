@@ -1,0 +1,38 @@
+// 실제 Express 백엔드(backend/)를 호출하는 API 클라이언트.
+// mockServer.js와 함수 시그니처를 동일하게 맞춰서, src/api/index.js의 한 줄만 바꾸면 서로 교체된다.
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
+async function request(method, path, body) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 204) return undefined;
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `${method} ${path} failed with ${res.status}`);
+  return data;
+}
+
+export const getFridge = () => request('GET', '/api/fridge');
+export const addFridgeItem = (payload) => request('POST', '/api/fridge', payload);
+export const updateFridgeItem = (id, patch) => request('PATCH', `/api/fridge/${id}`, patch);
+export const deleteFridgeItem = (id) => request('DELETE', `/api/fridge/${id}`);
+export const getExpiryAlerts = () => request('GET', '/api/fridge/alerts');
+
+export const uploadReceipt = () => request('POST', '/api/receipts');
+export const confirmReceipt = (receiptId, body) => request('POST', `/api/receipts/${receiptId}/confirm`, body);
+
+export const getRecipes = ({ filter = 'all', level = 'all' } = {}) =>
+  request('GET', `/api/recipes?filter=${encodeURIComponent(filter)}&level=${encodeURIComponent(level)}`);
+export const getRecipeDetail = (id) => request('GET', `/api/recipes/${id}`);
+export const cookDone = (recipeId, body) => request('POST', `/api/recipes/${recipeId}/cook-done`, body);
+
+export const getShoppingSets = () => request('GET', '/api/shopping/sets');
+export const getShoppingList = () => request('GET', '/api/shopping/list');
+
+export const getPrices = () => request('GET', '/api/prices');
+
+export const getMealPlanCandidates = () => request('GET', '/api/meal-plan/candidates');
+export const buildWeeklyPlan = (pickedIds) => request('POST', '/api/meal-plan/weekly', { pickedIds });
+export const getMealShoppingList = (weekPlanIds) => request('POST', '/api/meal-plan/shopping-list', { weekPlanIds });
