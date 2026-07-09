@@ -1,6 +1,6 @@
-# Issue Tracker: GitHub
+# Issue Tracker
 
-Issues and PRDs for this repo live in GitHub Issues. Pull requests are also a limited request and triage surface.
+Matt Pocock PRDs and implementation issue briefs for this repo live in local Markdown by default. GitHub Issues are used only when the user explicitly requests GitHub publication and confirms the target repository/surface. Pull requests are also a limited request and triage surface.
 
 This repo is PR-based, but implementation work should use the layered branch model in `AGENTS.md`, not `main` or the camp-facing branch as a working branch. The default working branch is the current daily branch, named by camp week/day as `codex/w<week>d<day>`, such as `codex/w1d4`.
 
@@ -39,12 +39,23 @@ The workflow `.github/workflows/auto-merge.yml` is template-provided but active 
 
 The PR template in `.github/pull_request_template.md` is the upstream camp submission template only. Create a daily branch to `N180_하성욱` PR only through `/camp-daily-pr`; that skill writes and creates or updates the fork PR directly with a local/Matt-style work brief, not the camp reflection template. The fork daily PR is not the final submission surface, and section-by-section interview is reserved for the upstream camp submission PR. `/camp-daily-pr` must also verify or create the upstream submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` when `fork/N180_하성욱` contains the daily work, or clearly report that the latest daily work is not yet present in the submission branch. Matt Pocock skill templates are the PRD, issue, agent brief, and two-axis review artifact shapes described by the skills; they are not GitHub PR templates.
 
+## Local Matt artifacts
+
+| Artifact | Default location | Notes |
+| --- | --- | --- |
+| PRD from `/to-prd` | `docs/prds/YYYY-MM-DD-<slug>.md` | Include an `Agent triage` block with `State: ready-for-agent`. |
+| Issue brief from `/to-issues` | `docs/issues/<prd-slug>/NNN-<slug>.md` | Reference local parent/blocking files instead of GitHub issue numbers. |
+
+Local Matt PRDs and issue briefs are agent workflow artifacts. They do not create upstream camp-visible GitHub noise and do not use `.github/pull_request_template.md`.
+
 ## When a skill says "publish to the issue tracker"
 
-Prefer creating a GitHub issue if permissions allow. If issue creation is unavailable, publish the content in the relevant PR body or PR comment using the marker format in `docs/agents/triage-labels.md`.
+For `/to-prd` and `/to-issues`, publish local Markdown as described above. Do not create GitHub Issues unless the user explicitly asks for GitHub publication and confirms the target repo/surface.
+
+For other skills, prefer local Markdown when the artifact is an internal Matt planning artifact. If a GitHub write is explicitly requested but unavailable, publish the content in the relevant PR body or PR comment using the marker format in `docs/agents/triage-labels.md`.
 
 ## When a skill says "fetch the relevant ticket"
 
-For internal work PRs, prefer the linked PRD, issue, agent brief, spike report, handoff document, or other spec source before treating the PR body as the source of truth.
+For internal work PRs, prefer the linked local PRD, local issue brief, agent brief, spike report, handoff document, or other spec source before treating the PR body as the source of truth.
 
 Resolve bare numbers carefully: GitHub shares one number space across issues and PRs. Try `gh pr view <number> --comments` first for PR-based work, then fall back to `gh issue view <number> --comments`.

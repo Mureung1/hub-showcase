@@ -66,7 +66,7 @@ Keep secrets in local `.env` files and out of git. The server reads `PORT` throu
 
 ### Issue tracker
 
-Issues and PRDs are tracked in GitHub Issues. External PRs, or PRs explicitly named for triage, can be treated as a request surface; collaborator in-flight PRs are review artifacts, and camp daily PRs are created through `/camp-daily-pr`. See `docs/agents/issue-tracker.md`.
+Matt Pocock PRDs and implementation issue briefs are tracked as local Markdown by default. GitHub Issues are used only when the user explicitly requests GitHub publication and confirms the target repo/surface. External PRs, or PRs explicitly named for triage, can be treated as a request surface; collaborator in-flight PRs are review artifacts, and camp daily PRs are created through `/camp-daily-pr`. See `docs/agents/issue-tracker.md`.
 
 ### Matt skill operation alerts
 
@@ -74,7 +74,7 @@ Matt Pocock skills use generic GitHub terms such as issue tracker, PR, label, pu
 
 | Generic skill instruction | Repo-specific rule |
 | --- | --- |
-| Publish a PRD or issue to the issue tracker | Prefer GitHub Issues if permissions allow; otherwise use the PR body or a PR comment with the marker format in `docs/agents/triage-labels.md`. |
+| Publish a PRD or issue to the issue tracker | For `/to-prd` and `/to-issues`, write local Markdown under `docs/prds/` and `docs/issues/`. Do not create GitHub Issues unless the user explicitly asks and confirms the target repo/surface. |
 | Apply or read a triage label | Use the body/comment marker state in `docs/agents/triage-labels.md`; do not assume GitHub label permissions. |
 | Treat PRs as request or triage surface | Only external PRs, or PRs explicitly named by the user, are triage input. Collaborator work PRs and camp daily PRs are not triage queues. |
 | Commit to the current branch | The default current branch should be `codex/w<week>d<day>`; optional `codex/<work>` branches must merge back to the current daily branch. Do not commit normal work on `N180_하성욱` or `main`. |
