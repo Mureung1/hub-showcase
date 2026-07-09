@@ -38,6 +38,7 @@
 - [x] task packet, run report, 평가 rubric, failure log 템플릿을 만든다.
 - [x] `scripts/check.ps1`를 전체 검증 진입점으로 만든다.
 - [x] source-like 변경 시 문서 또는 `.harness` 기록을 같은 커밋에 포함하도록 hook 규칙을 추가한다.
+- [x] 제품 UI와 개발문서에 적용할 디자인 시스템 기준을 문서화한다.
 
 ## 2. 대상 상권 선정
 
@@ -108,6 +109,9 @@
 ## 7. 프론트엔드
 
 - [ ] 기술 스택을 확정한다.
+- [ ] 디자인 시스템 token을 `web/src/styles/tokens.css`로 구현한다.
+- [ ] 공통 button, filter, panel, score, marker component를 구현한다.
+- [ ] desktop/mobile visual regression 기준 화면을 만든다.
 - [ ] 기본 레이아웃을 구성한다.
 - [ ] 상권 지도 대시보드 화면을 만든다.
 - [ ] 업종 필터 UI를 만든다.

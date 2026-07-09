@@ -25,6 +25,8 @@ docs/
     localtwin-v0.1-execution-plan.md
   prototypes/
     core-market-analysis-prototype.html
+  design/
+    design-system.md
   development/
     overview.md
     checklist.md
@@ -53,6 +55,7 @@ LocalTwin/
   README.md
   docs/
     wiki/
+    design/
     development/
     features/
     data/
@@ -88,6 +91,10 @@ LocalTwin/
 - [Git 작업 규칙](../development/git-workflow.md)
 - [LocalTwin Dev Harness](../development/harness.md)
 - [검증 가이드](../development/validation.md)
+
+## Design System
+
+- [LocalTwin 디자인 시스템](../design/design-system.md)
 
 ## Data
 

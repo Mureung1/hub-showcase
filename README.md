@@ -26,6 +26,10 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 - [LocalTwin Dev Harness](docs/development/harness.md)
 - [검증 가이드](docs/development/validation.md)
 
+### 디자인 시스템
+
+- [LocalTwin 디자인 시스템](docs/design/design-system.md)
+
 ### 데이터 문서
 
 - [LocalTwin v0.1 데이터 소스 매핑](docs/data/data-source-mapping.md)
