@@ -16,7 +16,11 @@ export async function searchFoodDB(foodName, source = 'food') {
   const data = await res.json().catch(() => null)
 
   if (!res.ok) {
-    throw new Error(data?.error || `FoodDB request failed (${res.status})`)
+    const err = new Error(data?.error || `FoodDB request failed (${res.status})`)
+    // 서버가 "식약처 연결 자체가 안 됨"을 code로 표시해주면 그대로 옮겨 담는다.
+    // findFoodMatch가 이 code를 보고 나머지 재시도를 건너뛸지 판단한다.
+    if (data?.code) err.code = data.code
+    throw err
   }
 
   return Array.isArray(data) ? data : []

@@ -23,10 +23,16 @@ const FOODSAFETY_SOURCES = {
 const RETRY_DELAYS_MS = [1000, 2000, 4000]
 const RETRYABLE_STATUS = new Set([429, 503])
 
-// 외부 API(OpenRouter/카카오/식약처) 응답이 지연될 때 요청이 무한정 붙잡혀 있지 않도록 하는 타임아웃.
+// 외부 API(OpenRouter/카카오) 응답이 지연될 때 요청이 무한정 붙잡혀 있지 않도록 하는 타임아웃.
 // 프론트의 fetchWithTimeout(28초)보다 짧게 잡아, 프론트가 자체 타임아웃을 띄우기 전에 서버가 먼저
 // 의미 있는 에러 응답(504)을 내려줄 수 있게 한다.
 const EXTERNAL_TIMEOUT_MS = 25000
+
+// 식약처 API 전용 타임아웃. 배포 리전(해외 IP)에서는 api.data.go.kr 접속 자체가 막혀 있는 경우가 있는데,
+// 그 상황에서 findFoodMatch가 최대 4번(음식DB→가공식품DB→재검색×2) 시도하며 매번 타임아웃을 기다리면
+// 사진 분석 전체가 수십 초씩 걸린다. 짧게 잡아 "연결 안 됨"을 빨리 판정하고, 판정 즉시 나머지 시도를
+// 건너뛰도록 한다(아래 /api/fooddb 핸들러의 FOODDB_CONNECTION_FAILED 참고).
+const FOODSAFETY_TIMEOUT_MS = 5000
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -234,7 +240,7 @@ function buildFoodSafetyUrl(baseUrl, apiKey, foodName, rawKey) {
 
 async function callFoodSafetyApi(baseUrl, apiKey, foodName, rawKey) {
   const url = buildFoodSafetyUrl(baseUrl, apiKey, foodName, rawKey)
-  const upstreamRes = await fetchWithTimeout(url)
+  const upstreamRes = await fetchWithTimeout(url, undefined, FOODSAFETY_TIMEOUT_MS)
   const raw = await upstreamRes.text()
   let data = null
   try {
@@ -300,11 +306,15 @@ app.post('/api/fooddb', async (req, res) => {
   } catch (err) {
     // 이 catch에 도달하는 예외는 전부 식약처 서버로의 네트워크 연결 실패(타임아웃 포함)다.
     // 그 외 실패 케이스는 위에서 전부 명시적으로 status를 응답하고 return하기 때문이다.
-    // 배포 리전(해외 IP)에서는 api.data.go.kr 접속이 종종 막히는데, 500을 던져 전체 사진
-    // 분석을 실패시키는 대신 "검색 결과 없음"으로 응답해 프론트가 AI 추정치로 자연스럽게
-    // 폴백하게 한다. 국내(로컬)에서는 연결이 정상적이라 이 분기를 타지 않는다.
-    console.error(`FoodSafety proxy(${source}) upstream connection failed, falling back to empty result:`, err.message)
-    res.json([])
+    // 배포 리전(해외 IP)에서는 api.data.go.kr 접속이 아예 안 되는 경우가 있는데, 이를 "검색
+    // 결과 없음"(NODATA, 200 [])과 똑같이 응답하면 프론트가 계속 나머지 소스/재검색어로
+    // 재시도한다 — 연결 자체가 안 되는 상황에서는 그 재시도도 전부 똑같이 실패할 뿐이라
+    // 시간만 누적된다. 그래서 코드(FOODDB_CONNECTION_FAILED)를 실어 503으로 응답해 프론트가
+    // "연결 실패"와 "결과 없음"을 구분해, 연결 실패일 때는 남은 재시도를 건너뛰고 즉시 AI
+    // 추정치로 폴백하도록 한다(findFoodMatch 참고). 국내(로컬)에서는 연결이 정상이라 이 분기를
+    // 타지 않고 기존처럼 식약처 DB를 계속 활용한다.
+    console.error(`FoodSafety proxy(${source}) upstream connection failed:`, err.message)
+    res.status(503).json({ error: '식약처 API 서버에 연결할 수 없습니다', code: 'FOODDB_CONNECTION_FAILED' })
   }
 })
 

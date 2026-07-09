@@ -106,6 +106,10 @@ async function findFoodMatch(idItem) {
       if (match) return { match, dbSource: attempt.dbSource }
     } catch (err) {
       console.error(`fooddb search failed (${attempt.dbSource}, ${attempt.term}):`, err)
+      // 식약처 서버 연결 자체가 안 되는 상황(배포 리전 등)이면 나머지 소스/재검색어도 똑같이
+      // 실패할 뿐이니 즉시 포기하고 AI 추정치 폴백으로 넘어간다. "결과 없음"은 이 코드가 아니므로
+      // 계속 다음 시도로 진행한다.
+      if (err.code === 'FOODDB_CONNECTION_FAILED') break
     }
   }
 
