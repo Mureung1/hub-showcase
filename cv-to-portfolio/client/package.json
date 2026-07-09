@@ -1,0 +1,26 @@
+{
+  "name": "@cv2pf/client",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "CV2PF 웹 클라이언트 — CV 업로드 → DESIGN.md 선택 → 생성 → 다운로드 (React + Vite)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .js,.jsx",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.35.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "vite": "^5.4.2",
+    "vitest": "^2.0.5"
+  }
+}

@@ -132,7 +132,7 @@ function splitHead(head) {
     period = pm[1].trim();
     rest = head.slice(0, pm.index).trim();
   }
-  const parts = rest.split(/\s*[—–\-]\s*|\s*\/\s*|\s*·\s*/);
+  const parts = rest.split(/\s*[—–-]\s*|\s*\/\s*|\s*·\s*/);
   return {
     title: (parts[0] || rest).trim(),
     role: (parts[1] || "").trim(),
