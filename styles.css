@@ -1,0 +1,109 @@
+:root{
+  /* Colors */
+  --color-primary: #FFD24A; /* 주색: 밝은 노랑 */
+  --color-primary-600: #FFC107;
+  --color-bg: #FBF7F3; /* 전체 배경톤: 따뜻한 크림 */
+  --color-surface: #FFFFFF; /* 카드 표면 */
+  --color-muted: #E9E6E2; /* 엘리먼트 배경 */
+  --color-text: #2E2E2E; /* 기본 글자 */
+  --color-subtext: #6B6B6B; /* 보조 텍스트 */
+  --color-accent-green: #DFF3E8; /* 취향 배지 배경 */
+  --color-accent-green-text: #1E8A59;
+
+  /* Typography */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --fs-lg: 20px;
+  --fs-md: 16px;
+  --fs-sm: 14px;
+  --fw-regular: 400;
+  --fw-medium: 600;
+
+  /* Geometry */
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
+  --gap-xl: 28px;
+  --gap-lg: 20px;
+  --gap-md: 12px;
+  --gap-sm: 8px;
+
+  /* Card */
+  --card-shadow: 0 8px 20px rgba(33,33,33,0.06);
+}
+
+/* Global */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:var(--font-sans);
+  background:var(--color-bg);
+  color:var(--color-text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+.container{
+  max-width:1100px;
+  margin:40px auto;
+  padding:24px;
+}
+
+.hero{
+  background:linear-gradient(90deg,#fff 0%, #fff 60%);
+  border-radius:var(--radius-lg);
+  padding:18px;
+  margin-bottom:20px;
+  display:flex;
+  gap:18px;
+  align-items:center;
+  box-shadow:var(--card-shadow);
+  background-color:var(--color-surface);
+}
+.hero-image{
+  flex:1 1 65%;
+  height:140px;
+  border-radius:10px;
+  background:linear-gradient(135deg,#F7F2EE,#EEF7F3);
+  display:flex;align-items:center;justify-content:center;color:var(--color-subtext);
+  font-size:var(--fs-md);
+}
+.hero-meta{flex:1 1 35%}
+.store-name{margin:0;font-size:22px}
+.store-sub{color:var(--color-subtext);margin-top:6px}
+
+.layout{display:flex;gap:24px;margin-top:18px}
+.reviews-col{flex:1}
+.side-col{width:300px}
+
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{background:transparent;border-radius:8px;border:1px solid transparent;padding:10px 14px;font-weight:600;cursor:pointer}
+.tab.active{background:var(--color-primary);color:#fff;border-color:var(--color-primary-600)}
+
+.review-list{display:flex;flex-direction:column;gap:12px}
+.review-card{background:var(--color-surface);padding:16px;border-radius:var(--radius-md);box-shadow:var(--card-shadow);border:1px solid #F0ECEA}
+.review-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.review-title{margin:0;font-size:16px}
+.badge{padding:6px 10px;border-radius:999px;font-size:13px;background:#F1F8F4;color:var(--color-accent-green-text);}
+.badge.green{background:var(--color-accent-green);color:var(--color-accent-green-text)}
+.rating{color:var(--color-subtext);margin-top:6px}
+.review-text{margin:10px 0 12px;color:var(--color-subtext);line-height:1.6}
+.review-actions{display:flex;gap:8px}
+.pill{background:var(--color-muted);border:none;padding:6px 10px;border-radius:999px;cursor:pointer}
+.pill.muted{background:transparent;border:1px solid #EEE}
+
+.detail-card{background:var(--color-surface);border-radius:var(--radius-md);padding:12px;box-shadow:var(--card-shadow);border:1px solid #F0ECEA}
+.thumb{height:140px;border-radius:8px;background:linear-gradient(135deg,#FFF3D6,#FFFFFF);display:flex;align-items:center;justify-content:center;color:var(--color-subtext)}
+.detail-body{padding-top:12px}
+.small-meta{color:var(--color-subtext);margin-top:6px}
+.cta-row{display:flex;gap:10px;margin-top:12px}
+.btn{padding:10px 14px;border-radius:8px;border:1px solid transparent;cursor:pointer}
+.btn.primary{background:var(--color-primary);color:#111;font-weight:600}
+.btn.outline{background:transparent;border:1px solid #EAE6E2}
+
+/* responsive-ish but desktop-focused */
+@media (max-width:1000px){
+  .container{padding:16px}
+  .layout{flex-direction:column}
+  .side-col{width:100%}
+}

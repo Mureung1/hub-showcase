@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Design Skill Demo</title>
+  <link rel="stylesheet" href="design-tokens.css">
+  <link rel="stylesheet" href="skill.css">
+</head>
+<body class="ds-container">
+  <div class="ds-hero">
+    <div class="image">대표 이미지</div>
+    <div class="meta">
+      <h1>몽글수플레 성수</h1>
+      <p>전체 별점 4.6 · 리뷰 238개</p>
+    </div>
+  </div>
+
+  <div class="ds-layout">
+    <div class="ds-reviews">
+      <div class="ds-tabs">
+        <button class="ds-tab">전체 리뷰</button>
+        <button class="ds-tab ds-active">나와 비슷한 사람 리뷰</button>
+      </div>
+
+      <div class="ds-list">
+        <div class="ds-card">
+          <div style="display:flex;justify-content:space-between;align-items:center"><h3>분위기/좋시러</h3><div class="ds-badge">나와 취향 93% 비슷함</div></div>
+          <div class="ds-rating">별점 <strong>4.8</strong></div>
+          <p class="ds-text">조명이 차분하고 좌석 간격이 넓어서 오래 머무르기 좋았습니다.</p>
+        </div>
+        <div class="ds-card">
+          <div style="display:flex;justify-content:space-between;align-items:center"><h3>조용한테이블</h3><div class="ds-badge">나와 취향 89% 비슷함</div></div>
+          <div class="ds-rating">별점 <strong>4.6</strong></div>
+          <p class="ds-text">평일 오후에는 대화하기 편할 정도로 조용했습니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <aside class="ds-side">
+      <div class="ds-detail">
+        <div class="ds-thumb">썸네일</div>
+        <div style="padding-top:12px">
+          <div style="font-weight:600">몽글수플레 성수</div>
+          <div style="color:var(--color-subtext);margin-top:6px">별점 4.6 · 리뷰 238개</div>
+          <div class="ds-cta">
+            <button class="ds-btn ds-primary">예약하기</button>
+            <button class="ds-btn ds-outline">메뉴보기</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</body>
+</html>
