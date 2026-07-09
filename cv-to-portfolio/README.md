@@ -1,18 +1,20 @@
-# CV → 포트폴리오 생성기 (프로토타입)
+# CV → 포트폴리오 생성기 (CV2PF)
 
 이력서(CV)를 업로드하고 원하는 **DESIGN.md** 테마를 고르면, 그 디자인으로 완성된
-**독립 실행형 포트폴리오 HTML**을 만들어 주는 웹앱입니다. (React only, Vite)
+**독립 실행형 포트폴리오 HTML**을 만들어 주는 웹앱입니다.
+프론트(React/Vite)와 백엔드(Express)를 **npm workspaces 모노레포**로 관리합니다.
 
 ## 문서
 
 - 📄 **[기획서 (Wiki)](https://github.com/dolphin1404/NaverConnect_wm/wiki/기획서)** — 문제 정의 · 사용자 시나리오 · 화면 구조 · 핵심 기능 (스크린샷 포함 최신본)
 - 📄 [기획서 (repo 사본)](docs/기획서.md)
-- 🎨 [디자인 명세 (DESIGN.md 6종)](designs)
+- 🧭 [개발 컨텍스트 (CLAUDE.md)](CLAUDE.md) — 아키텍처 · 구조 · 라이브러리 · 컨벤션 · 커밋/PR 규칙
+- 🎨 [디자인 명세 (DESIGN.md 6종)](client/designs) · [디자인 리뷰](docs/design-review-2026-07-09.md)
 - 🖼️ [예시 결과 + 스크린샷](examples)
 
 ## 미리보기
 
-샘플 개발자 CV(`samples/kim-jiwoo-frontend.md`)를 각 테마로 생성한 실제 결과입니다.
+샘플 개발자 CV(`client/samples/kim-jiwoo-frontend.md`)를 각 테마로 생성한 실제 결과입니다.
 전체 HTML은 [`examples/`](examples) 폴더에서 열어볼 수 있습니다.
 
 | Minimal Clean · 기본 | Terminal Dark |
@@ -37,23 +39,31 @@
 ## 실행
 
 ```bash
-npm install
-npm run dev     # http://localhost:5173
+npm install            # 저장소 루트(cv-to-portfolio/)에서 워크스페이스 일괄 설치
+
+npm run dev            # client(:5173) + server(:4000) 동시 실행
+# 또는 개별로
+npm run dev:client     # http://localhost:5173  (프로토타입은 이것만으로 완결)
+npm run dev:server     # http://localhost:4000  (server/.env 에 ANTHROPIC_API_KEY 필요)
 ```
+
+> 프로토타입(결정적 렌더러)은 **클라이언트만으로 동작**합니다. 서버는 실서비스용 AI 생성
+> 경로(`/api/generate`)로, 2주차에 본격 개발합니다.
 
 ## 프로젝트 구조
 
 ```
-designs/                     # 사람이 읽는 디자인 명세 (DESIGN.md 6종)
-samples/                     # 샘플 CV 4종 (개발자·디자이너·마케터·기획자)
-src/
-├─ App.jsx                   # 4단계 흐름 오케스트레이터
-├─ components/Stepper.jsx    # 진행 표시기
-└─ features/
-   ├─ cvUpload/              # ① 업로드 + 마크다운 파서(parseCv)
-   ├─ designSelect/          # ② 테마 갤러리 + 레지스트리(themes.js)
-   ├─ generate/              # ③ 생성 엔진(generatePortfolio) + AI seam
-   └─ result/                # ④ 미리보기 + 다운로드
+package.json                 # 워크스페이스 루트 (dev/build/lint 오케스트레이션)
+CLAUDE.md                    # 개발 컨텍스트 (아키텍처·컨벤션·커밋 규칙)
+client/                      # @cv2pf/client — React + Vite
+├─ designs/                  # 사람이 읽는 디자인 명세 (DESIGN.md 6종)
+├─ samples/                  # 샘플 CV 4종 (개발자·디자이너·마케터·기획자)
+└─ src/
+   ├─ App.jsx                # 4단계 흐름 오케스트레이터
+   ├─ components/Stepper.jsx # 진행 표시기
+   └─ features/              # cvUpload · designSelect · generate · result
+server/                      # @cv2pf/server — Express API
+└─ src/                      # index·app / config·routes·controllers·services·middlewares
 ```
 
 ## 디자인 테마 6종

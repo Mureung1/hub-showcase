@@ -5,5 +5,8 @@ dist-ssr
 .DS_Store
 .env
 .env.local
-.claude/
 .vite/
+
+# Claude Code: 로컬 설정은 제외하되, 저장소에 공유하는 스킬은 추적한다.
+.claude/*
+!.claude/skills/

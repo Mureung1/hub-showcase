@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>포트폴리오 생성기 - CV 업로드</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary": "#784b00",
+                      "secondary": "#006c4a",
+                      "on-primary-fixed": "#00174b",
+                      "surface-variant": "#d5e3fc",
+                      "error": "#ba1a1a",
+                      "surface": "#f8f9ff",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "primary": "#004ac6",
+                      "on-tertiary-container": "#ffeedd",
+                      "on-tertiary-fixed": "#2a1700",
+                      "surface-container-low": "#eff4ff",
+                      "on-background": "#0d1c2e",
+                      "on-secondary-fixed": "#002114",
+                      "on-error": "#ffffff",
+                      "inverse-on-surface": "#eaf1ff",
+                      "surface-container-highest": "#d5e3fc",
+                      "on-surface-variant": "#434655",
+                      "outline-variant": "#c3c6d7",
+                      "secondary-container": "#82f5c1",
+                      "surface-tint": "#0053db",
+                      "background": "#f8f9ff",
+                      "tertiary-fixed": "#ffddb8",
+                      "surface-dim": "#ccdbf3",
+                      "surface-bright": "#f8f9ff",
+                      "on-secondary-container": "#00714e",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "tertiary-fixed-dim": "#ffb95f",
+                      "on-primary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "inverse-surface": "#233144",
+                      "on-secondary-fixed-variant": "#005137",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container": "#e6eeff",
+                      "surface-container-high": "#dce9ff",
+                      "on-secondary": "#ffffff",
+                      "on-primary-container": "#eeefff",
+                      "primary-container": "#2563eb",
+                      "error-container": "#ffdad6",
+                      "inverse-primary": "#b4c5ff",
+                      "on-surface": "#0d1c2e",
+                      "on-tertiary": "#ffffff",
+                      "secondary-fixed-dim": "#68dba9",
+                      "secondary-fixed": "#85f8c4",
+                      "outline": "#737686",
+                      "tertiary-container": "#996100",
+                      "on-tertiary-fixed-variant": "#653e00",
+                      "primary-fixed": "#dbe1ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "0.5rem",
+                      "lg": "1.5rem",
+                      "gutter": "1.5rem",
+                      "base": "4px",
+                      "xxl": "3rem",
+                      "md": "1rem",
+                      "xl": "2rem",
+                      "container-max": "1200px",
+                      "xs": "0.25rem"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "label-md": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "headline-lg-mobile": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background h-full flex flex-col antialiased">
+<!-- TopNavBar -->
+<header class="bg-surface border-b border-outline-variant shadow-sm w-full sticky top-0 z-50">
+<div class="flex justify-between items-center w-full px-gutter h-16 max-w-container-max mx-auto">
+<div class="flex items-center">
+<span class="text-headline-md font-headline-md font-extrabold text-primary">CV2PF</span>
+</div>
+<nav class="hidden md:flex gap-lg h-full items-center">
+<a class="text-on-surface-variant hover:text-primary transition-colors h-full flex items-center text-label-md font-label-md" href="#">도움말/가이드</a>
+</nav>
+<div class="flex items-center gap-md">
+<button class="text-label-md font-label-md text-primary bg-primary-container/10 hover:bg-primary-container/20 px-4 py-2 rounded-lg transition-colors font-medium">임시 저장</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant shrink-0">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a person looking forward, neutral lighting, corporate modern aesthetic, solid light blue background, highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMUy5BxzVutwzov0k3pKkgPmmMI_RmEOjf4MnEXVnwJevs_T8rKYMxtV-qlodYVxOzHTRXGhayrSzAmF1aNqw81i543ylSIF57MR29_tIkV55DCUHjl5ebXBVZ4HC-EO0Dpx1U7WQvTycZJzrLRBMACerXmx80F9-Z9YF8TiBJPYmzt9_KuVot9V8DPmTPk5v_aG_LpuCWk2cXy65Cz87qSVmH1CLNg9bbHiE2sv7ii0T9sx28Ofgx"/>
+</div>
+</div>
+</div>
+<!-- Progress Bar (Stepper) -->
+<div class="w-full h-1 bg-surface-variant absolute bottom-0 left-0">
+<div class="h-full bg-primary w-1/4 transition-all duration-500 ease-in-out"></div>
+</div>
+</header>
+<!-- SideNavBar (Hidden on Mobile) -->
+<aside class="hidden lg:flex flex-col h-[calc(100vh-4rem)] fixed left-0 top-16 w-64 bg-surface-container-low border-r border-outline-variant shadow-sm py-lg z-40">
+<div class="px-xl mb-xl">
+<h2 class="text-headline-sm font-headline-sm font-semibold text-on-background">프로젝트 흐름</h2>
+<p class="text-label-md font-label-md text-on-surface-variant mt-1">1단계 / 총 4단계</p>
+</div>
+<nav class="flex flex-col gap-sm flex-1 overflow-y-auto">
+<a aria-current="step" class="flex items-center gap-md bg-primary-container text-on-primary-container rounded-lg p-3 mx-2 scale-95 duration-150 shadow-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">upload_file</span>
+<span class="text-label-md font-label-md font-medium">CV 업로드</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-variant rounded-lg p-3 mx-2 transition-all" href="#">
+<span class="material-symbols-outlined">palette</span>
+<span class="text-label-md font-label-md">디자인 선택</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-variant rounded-lg p-3 mx-2 transition-all" href="#">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="text-label-md font-label-md">생성</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-variant rounded-lg p-3 mx-2 transition-all" href="#">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="text-label-md font-label-md">완성</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 lg:ml-64 p-gutter md:p-xl max-w-container-max mx-auto w-full flex flex-col overflow-y-auto">
+<!-- Mobile Stepper -->
+<div class="lg:hidden flex items-center justify-between mb-lg bg-surface-container-low p-md rounded-lg border border-outline-variant">
+<div>
+<h2 class="text-label-md font-label-md font-bold text-on-background">1. CV 업로드</h2>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-1">다음: 디자인 선택</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold shadow-sm">1</div>
+</div>
+<!-- Split Workspace -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-xl flex-1 mb-xxl">
+<!-- Left Column: Input -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow h-[600px]">
+<header class="mb-md">
+<h1 class="text-headline-md font-headline-md text-on-background">이력서 업로드</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-sm">마크다운 형식의 이력서를 아래에 붙여넣거나 .md/.txt 파일을 업로드하여 파싱을 시작하세요.</p>
+</header>
+<div class="flex items-center gap-md mb-md">
+<button class="flex items-center gap-sm bg-surface-variant hover:bg-surface-dim text-on-surface-variant px-4 py-2 rounded-lg border border-outline-variant transition-colors group">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">cloud_upload</span>
+<span class="text-label-md font-label-md font-medium">파일 선택</span>
+</button>
+<span class="text-label-sm font-label-sm text-outline">최대 크기: 5MB (.md, .txt)</span>
+</div>
+<div class="flex-1 flex flex-col relative group">
+<label class="sr-only" for="cv-markdown-input">CV Markdown Input</label>
+<textarea class="w-full flex-1 rounded-lg border border-outline-variant bg-surface p-md text-body-md font-body-md font-mono text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none transition-all shadow-inner" id="cv-markdown-input" placeholder="# John Doe
+Software Engineer
+
+## Experience
+- Senior Developer at TechCorp...
+
+## Education
+- B.S. Computer Science..."></textarea>
+<div class="absolute bottom-md right-md flex gap-sm opacity-50 group-hover:opacity-100 transition-opacity">
+<button class="p-2 bg-surface border border-outline-variant rounded-md hover:bg-surface-variant text-on-surface-variant transition-colors" title="텍스트 지우기">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Right Column: Parsing Preview -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col shadow-[0_2px_4px_rgba(0,0,0,0.05)] h-[600px] overflow-hidden relative">
+<header class="mb-md pb-md border-b border-outline-variant flex justify-between items-center sticky top-0 bg-surface-container-lowest z-10">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-background flex items-center gap-sm">
+                            실시간 미리보기
+                            <span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</h2>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-1">데이터 구조화 완료.</p>
+</div>
+<button class="text-label-md font-label-md text-primary hover:underline">파싱된 데이터 편집</button>
+</header>
+<div class="flex-1 overflow-y-auto pr-sm pb-md space-y-xl custom-scrollbar">
+<!-- Structured Data View -->
+<div class="space-y-md">
+<!-- Header Section -->
+<div class="p-md bg-surface-container-low rounded-lg border border-outline-variant/50">
+<h3 class="text-label-sm font-label-sm text-outline uppercase tracking-wider mb-xs">기본 정보</h3>
+<div class="text-headline-md font-headline-md font-bold text-on-background mb-1">Jane Smith</div>
+<div class="text-body-md font-body-md text-primary mb-md font-medium">수석 UX 디자이너</div>
+<div class="flex flex-wrap gap-md text-label-md font-label-md text-on-surface-variant">
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">mail</span> jane.smith@example.com</span>
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">link</span> linkedin.com/in/janesmith</span>
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">location_on</span> New York, NY</span>
+</div>
+</div>
+<!-- Summary Section -->
+<div class="p-md bg-surface-container-low rounded-lg border border-outline-variant/50">
+<h3 class="text-label-sm font-label-sm text-outline uppercase tracking-wider mb-sm">전문 요약</h3>
+<p class="text-body-md font-body-md text-on-surface leading-relaxed">
+                                혁신적이고 디테일에 강한 8년 이상의 경력을 가진 수석 UX 디자이너로, 복잡한 엔터프라이즈 애플리케이션을 위한 직관적이고 사용자 중심적인 인터페이스 설계에 전문성이 있습니다. 디자인 팀을 이끌고 엔지니어링 팀과 긴밀히 협력하여 고품질 제품을 출시한 입증된 실적이 있습니다.
+                            </p>
+</div>
+<!-- Experience Placeholder -->
+<div class="p-md bg-surface-container-low rounded-lg border border-outline-variant/50 border-dashed opacity-70">
+<h3 class="text-label-sm font-label-sm text-outline uppercase tracking-wider mb-sm">경력 (3개 항목 감지)</h3>
+<div class="h-2 bg-outline-variant/30 rounded w-full mb-2"></div>
+<div class="h-2 bg-outline-variant/30 rounded w-5/6 mb-2"></div>
+<div class="h-2 bg-outline-variant/30 rounded w-4/6"></div>
+</div>
+</div>
+</div>
+<!-- Fade effect for scroll -->
+<div class="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-surface-container-lowest to-transparent pointer-events-none"></div>
+</section>
+</div>
+<!-- Sticky Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 lg:left-64 right-0 p-gutter bg-surface/90 backdrop-blur-md border-t border-outline-variant flex justify-between items-center z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+<button class="px-6 py-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-variant transition-colors text-label-md font-label-md font-medium">취소</button>
+<button class="px-8 py-3 rounded-lg bg-primary text-on-primary hover:bg-primary/90 focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all text-label-md font-label-md font-bold shadow-md flex items-center gap-sm">
+                다음: 디자인 선택
+                <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<!-- Spacer for fixed bottom bar -->
+<div class="h-24 w-full shrink-0"></div>
+</main>
+<style>
+        /* Custom Scrollbar for the preview area */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: var(--color-outline-variant);
+            border-radius: 20px;
+        }
+    </style>
+</body></html>

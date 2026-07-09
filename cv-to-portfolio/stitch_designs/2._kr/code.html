@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CV2PF - 디자인 테마 선택</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#eeefff",
+                        "on-error": "#ffffff",
+                        "primary": "#004ac6",
+                        "surface-bright": "#f8f9ff",
+                        "secondary-fixed-dim": "#68dba9",
+                        "on-tertiary-container": "#ffeedd",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "surface-variant": "#d5e3fc",
+                        "surface-container": "#e6eeff",
+                        "tertiary": "#784b00",
+                        "on-background": "#0d1c2e",
+                        "surface-tint": "#0053db",
+                        "surface-container-high": "#dce9ff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-surface": "#0d1c2e",
+                        "inverse-surface": "#233144",
+                        "tertiary-container": "#996100",
+                        "primary-fixed": "#dbe1ff",
+                        "surface-container-low": "#eff4ff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#82f5c1",
+                        "surface-container-highest": "#d5e3fc",
+                        "outline": "#737686",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#b4c5ff",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#006c4a",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-secondary-fixed-variant": "#005137",
+                        "background": "#f8f9ff",
+                        "on-secondary-fixed": "#002114",
+                        "surface": "#f8f9ff",
+                        "on-secondary-container": "#00714e",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "outline-variant": "#c3c6d7",
+                        "on-surface-variant": "#434655",
+                        "secondary-fixed": "#85f8c4",
+                        "on-primary-fixed": "#00174b",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#2563eb",
+                        "on-error-container": "#93000a",
+                        "surface-dim": "#ccdbf3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "1.5rem",
+                        "gutter": "1.5rem",
+                        "sm": "0.5rem",
+                        "base": "4px",
+                        "xl": "2rem",
+                        "md": "1rem",
+                        "container-max": "1200px",
+                        "xxl": "3rem",
+                        "xs": "0.25rem"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        .card-shadow {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .card-shadow-hover:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #c3c6d7;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface border-b border-outline-variant shadow-sm docked full-width top-0 z-50">
+<div class="flex justify-between items-center w-full px-gutter h-16 max-w-container-max mx-auto">
+<div class="flex items-center gap-md">
+<span class="text-headline-md font-headline-md font-extrabold text-primary">CV2PF</span>
+</div>
+<div class="flex items-center gap-md">
+<a class="text-on-surface-variant hover:text-primary transition-colors text-label-md font-label-md" href="#">도움말/가이드</a>
+<button class="text-label-md font-label-md text-primary bg-primary-fixed hover:bg-primary-fixed-dim px-4 py-2 rounded-lg transition-colors">
+                    임시 저장
+                </button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden border border-outline-variant ml-2 flex-shrink-0">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional headshot portrait of a user in a well-lit studio setting. Crisp details, corporate modern aesthetic, soft lighting, neutral background, reflecting a professional environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEXdqYpbLO1pXacML9ZiF8MjN3jD-8ntqi1emFj48J7KmihHLaDn9ezAdGHNunbTqR_1frpfcDBlq27gKjwK9j9hATN8zNO1rkk1lZeatzwsWVu6UYALCir3bzNE2MhtU9F3O7GapDXM_bIHutu3_S3i23PDtriFBVPgIqz0nOtNB8RP_0AqPNA9ggBRrnx9P1jFBY1d_xsEDsO1OELKcKIrIbA3rinEj-ZUx_y3Yaz3Cg_Lwn76Vx"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden lg:flex flex-col h-screen fixed left-0 top-16 py-lg bg-surface-container-low shadow-sm docked h-full w-64 z-40 border-r border-outline-variant">
+<div class="px-gutter mb-xl">
+<h2 class="text-headline-sm font-headline-md text-on-surface">프로젝트 흐름</h2>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-1">2단계 / 총 4단계</p>
+<div class="w-full bg-surface-variant h-1 mt-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-2/4"></div>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-md text-on-surface-variant p-3 mx-2 hover:bg-surface-variant rounded-lg transition-all text-label-md font-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+                    이력서 업로드
+                    <span class="material-symbols-outlined ml-auto text-secondary text-sm">check_circle</span>
+</a>
+<a class="flex items-center gap-md bg-primary-container text-on-primary-container rounded-lg p-3 mx-2 opacity-80 transition-all text-label-md font-label-md" href="#">
+<span class="material-symbols-outlined fill" data-icon="palette" data-weight="fill">palette</span>
+                    디자인 테마 선택
+                </a>
+<a class="flex items-center gap-md text-on-surface-variant p-3 mx-2 hover:bg-surface-variant rounded-lg transition-all text-label-md font-label-md opacity-50 cursor-not-allowed" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+                    생성
+                </a>
+<a class="flex items-center gap-md text-on-surface-variant p-3 mx-2 hover:bg-surface-variant rounded-lg transition-all text-label-md font-label-md opacity-50 cursor-not-allowed" href="#">
+<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span>
+                    완료
+                </a>
+</nav>
+</aside>
+<!-- Main Workspace -->
+<main class="flex-1 lg:ml-64 bg-background overflow-y-auto custom-scrollbar flex flex-col relative pb-24">
+<!-- Mobile Stepper Indicator -->
+<div class="lg:hidden px-gutter py-md bg-surface border-b border-outline-variant">
+<p class="text-label-sm font-label-sm text-on-surface-variant mb-2">2단계 / 총 4단계: 디자인 테마 선택</p>
+<div class="w-full bg-surface-variant h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-2/4"></div>
+</div>
+</div>
+<div class="p-gutter lg:p-xl max-w-container-max mx-auto w-full flex-1">
+<div class="mb-lg">
+<h1 class="text-headline-lg font-headline-lg text-on-background lg:block hidden">2. 디자인 테마 선택</h1>
+<h1 class="text-headline-lg-mobile font-headline-lg-mobile text-on-background lg:hidden">2. 디자인 테마 선택</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-2 max-w-2xl">포트폴리오의 시각적 스타일을 선택하세요. 귀하의 이력서를 분석하여 'Minimal Clean' 테마를 추천합니다.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-xl h-full">
+<!-- Left: Theme Selection -->
+<div class="lg:col-span-5 flex flex-col gap-md h-full overflow-y-auto custom-scrollbar pr-2 pb-8">
+<!-- Theme 1: Minimal Clean (Selected) -->
+<div class="bg-surface rounded-lg p-md border-[3px] border-primary relative cursor-pointer card-shadow group transition-all">
+<div class="absolute top-md right-md bg-primary text-on-primary rounded-full w-6 h-6 flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px] fill" data-icon="check">check</span>
+</div>
+<div class="flex gap-4">
+<div class="w-20 h-20 rounded bg-surface-container border border-outline-variant flex-shrink-0 flex items-center justify-center relative overflow-hidden">
+<div class="absolute inset-0 flex">
+<div class="w-1/2 bg-white"></div>
+<div class="w-1/2 bg-[#f1f5f9]"></div>
+</div>
+<div class="absolute inset-x-0 bottom-0 h-1 flex">
+<div class="flex-1 bg-black"></div>
+<div class="flex-1 bg-[#3b82f6]"></div>
+</div>
+</div>
+<div>
+<h3 class="text-label-md font-label-md font-bold text-on-surface">Minimal Clean</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-1 line-clamp-2">전문적이고 현대적입니다. 여백이 많은 고대비 타이포그래피. 기업 역할에 가장 적합합니다.</p>
+<div class="flex gap-2 mt-2">
+<span class="px-2 py-0.5 bg-primary-container text-on-primary-container text-[10px] rounded font-medium uppercase tracking-wider">추천</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Theme 2: Terminal Dark -->
+<div class="bg-surface rounded-lg p-md border border-outline-variant cursor-pointer card-shadow card-shadow-hover transition-all group">
+<div class="flex gap-4">
+<div class="w-20 h-20 rounded border border-outline-variant flex-shrink-0 flex items-center justify-center relative overflow-hidden bg-[#0f172a]">
+<div class="absolute top-2 left-2 flex gap-1">
+<div class="w-2 h-2 rounded-full bg-red-500"></div>
+<div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+<div class="w-2 h-2 rounded-full bg-green-500"></div>
+</div>
+<div class="text-[#22c55e] text-xs font-mono absolute left-2 top-6 opacity-70">
+                                        &gt;_
+                                    </div>
+<div class="absolute inset-x-0 bottom-0 h-1 flex">
+<div class="flex-1 bg-[#22c55e]"></div>
+</div>
+</div>
+<div>
+<h3 class="text-label-md font-label-md font-bold text-on-surface group-hover:text-primary transition-colors">Terminal Dark</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-1 line-clamp-2">개발자 중심의 다크 모드입니다. 가시성이 높은 구문 색상이 포함된 고정폭 액센트입니다.</p>
+</div>
+</div>
+</div>
+<!-- Theme 3: Creative Gradient -->
+<div class="bg-surface rounded-lg p-md border border-outline-variant cursor-pointer card-shadow card-shadow-hover transition-all group">
+<div class="flex gap-4">
+<div class="w-20 h-20 rounded border border-outline-variant flex-shrink-0 relative overflow-hidden" style="background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);">
+<div class="absolute inset-x-0 bottom-0 h-1 bg-white opacity-50"></div>
+</div>
+<div>
+<h3 class="text-label-md font-label-md font-bold text-on-surface group-hover:text-primary transition-colors">Creative Gradient</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-1 line-clamp-2">활기차고 표현력이 풍부합니다. 디자인 중심 역할을 위한 부드러운 메시 그라데이션 및 둥근 기하학.</p>
+</div>
+</div>
+</div>
+<!-- Theme 4: Editorial Serif -->
+<div class="bg-surface rounded-lg p-md border border-outline-variant cursor-pointer card-shadow card-shadow-hover transition-all group">
+<div class="flex gap-4">
+<div class="w-20 h-20 rounded bg-[#fdfbf7] border border-outline-variant flex-shrink-0 flex items-center justify-center relative overflow-hidden">
+<div class="font-serif text-3xl font-bold text-[#2d3748]">Ag</div>
+<div class="absolute inset-x-0 bottom-0 h-1 flex">
+<div class="flex-1 bg-[#9f7aea]"></div>
+</div>
+</div>
+<div>
+<h3 class="text-label-md font-label-md font-bold text-on-surface group-hover:text-primary transition-colors">Editorial Serif</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-1 line-clamp-2">클래식 프린트 미학. 가독성이 높은 산세리프 본문 텍스트와 짝을 이루는 우아한 세리프 제목입니다.</p>
+</div>
+</div>
+</div>
+<!-- Theme 5: Warm Sans -->
+<div class="bg-surface rounded-lg p-md border border-outline-variant cursor-pointer card-shadow card-shadow-hover transition-all group">
+<div class="flex gap-4">
+<div class="w-20 h-20 rounded bg-[#fff7ed] border border-outline-variant flex-shrink-0 flex items-center justify-center relative overflow-hidden">
+<div class="w-8 h-8 rounded-full bg-[#f97316] opacity-80"></div>
+<div class="absolute inset-x-0 bottom-0 h-1 flex">
+<div class="flex-1 bg-[#ea580c]"></div>
+</div>
+</div>
+<div>
+<h3 class="text-label-md font-label-md font-bold text-on-surface group-hover:text-primary transition-colors">Warm Sans</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-1 line-clamp-2">친근하고 친숙합니다. 흙빛 톤, 부드럽게 둥근 모서리, 열린 산세리프 타이포그래피.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Design Specification View -->
+<div class="lg:col-span-7 h-[600px] lg:h-auto border border-outline-variant rounded-lg bg-inverse-surface text-inverse-on-surface overflow-hidden flex flex-col shadow-sm hidden md:flex">
+<!-- Header -->
+<div class="bg-[#1e293b] px-md py-sm border-b border-[#334155] flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-sm" data-icon="description">description</span>
+<span class="text-label-sm font-mono text-[#cbd5e1]">DESIGN.md</span>
+<div class="ml-auto flex gap-1">
+<button class="w-3 h-3 rounded-full bg-[#334155] hover:bg-outline transition-colors"></button>
+<button class="w-3 h-3 rounded-full bg-[#334155] hover:bg-outline transition-colors"></button>
+<button class="w-3 h-3 rounded-full bg-[#334155] hover:bg-outline transition-colors"></button>
+</div>
+</div>
+<!-- Code Content -->
+<div class="p-md lg:p-lg overflow-y-auto custom-scrollbar flex-1 font-mono text-sm leading-relaxed text-[#94a3b8]">
+<pre><code><span class="text-[#38bdf8]">---</span>
+<span class="text-[#e2e8f0]">theme_name:</span> <span class="text-[#a3e635]">"Minimal Clean"</span>
+<span class="text-[#e2e8f0]">base_style:</span> <span class="text-[#a3e635]">"corporate-modern"</span>
+<span class="text-[#e2e8f0]">layout:</span> <span class="text-[#a3e635]">"single-column-centered"</span>
+<span class="text-[#38bdf8]">---</span>
+
+<span class="text-[#38bdf8]"># 타이포그래피 설정</span>
+<span class="text-[#e2e8f0]">font_family_primary:</span> <span class="text-[#a3e635]">"Inter"</span>, <span class="text-[#a3e635]">sans-serif</span>
+<span class="text-[#e2e8f0]">font_family_mono:</span> <span class="text-[#a3e635]">"Fira Code"</span>, <span class="text-[#a3e635]">monospace</span>
+
+<span class="text-[#e2e8f0]">headings:</span>
+  <span class="text-[#e2e8f0]">weight:</span> <span class="text-[#f472b6]">700</span> <span class="text-[#64748b]"># 명확성을 위한 굵은 글꼴</span>
+  <span class="text-[#e2e8f0]">letter_spacing:</span> <span class="text-[#a3e635]">"-0.02em"</span>
+<span class="text-[#e2e8f0]">body:</span>
+  <span class="text-[#e2e8f0]">weight:</span> <span class="text-[#f472b6]">400</span>
+  <span class="text-[#e2e8f0]">line_height:</span> <span class="text-[#a3e635]">"1.6"</span>
+
+<span class="text-[#38bdf8]"># 색상 팔레트</span>
+<span class="text-[#64748b]">// 주요 상호작용 및 하이라이트</span>
+<span class="text-[#e2e8f0]">color_primary:</span>
+  <span class="text-[#e2e8f0]">hex:</span> <span class="text-[#a3e635]">"#2563eb"</span> <span class="inline-block w-3 h-3 rounded-sm bg-[#2563eb] align-middle ml-1"></span>
+  <span class="text-[#e2e8f0]">usage:</span> <span class="text-[#a3e635]">["buttons", "active_links", "progress_bars"]</span>
+
+<span class="text-[#64748b]">// 표면 및 배경</span>
+<span class="text-[#e2e8f0]">color_background:</span>
+  <span class="text-[#e2e8f0]">hex:</span> <span class="text-[#a3e635]">"#ffffff"</span> <span class="inline-block w-3 h-3 rounded-sm bg-[#ffffff] align-middle ml-1 border border-outline"></span>
+<span class="text-[#e2e8f0]">color_surface_alt:</span>
+  <span class="text-[#e2e8f0]">hex:</span> <span class="text-[#a3e635]">"#f8fafc"</span> <span class="inline-block w-3 h-3 rounded-sm bg-[#f8fafc] align-middle ml-1 border border-outline"></span>
+
+<span class="text-[#64748b]">// 텍스트 계층</span>
+<span class="text-[#e2e8f0]">color_text_main:</span>
+  <span class="text-[#e2e8f0]">hex:</span> <span class="text-[#a3e635]">"#0f172a"</span> <span class="inline-block w-3 h-3 rounded-sm bg-[#0f172a] align-middle ml-1"></span>
+<span class="text-[#e2e8f0]">color_text_muted:</span>
+  <span class="text-[#e2e8f0]">hex:</span> <span class="text-[#a3e635]">"#64748b"</span> <span class="inline-block w-3 h-3 rounded-sm bg-[#64748b] align-middle ml-1"></span>
+
+<span class="text-[#38bdf8]"># 간격 및 그리드</span>
+<span class="text-[#e2e8f0]">container_max_width:</span> <span class="text-[#a3e635]">"800px"</span> <span class="text-[#64748b]"># 최적의 읽기 너비</span>
+<span class="text-[#e2e8f0]">section_padding:</span> <span class="text-[#a3e635]">"4rem 0"</span>
+<span class="text-[#e2e8f0]">border_radius_default:</span> <span class="text-[#a3e635]">"8px"</span>
+
+<span class="text-[#38bdf8]"># 생성된 컴포넌트 지시문</span>
+<span class="text-[#e2e8f0]">components:</span>
+  <span class="text-[#e2e8f0]">hero:</span> <span class="text-[#a3e635]">"원형 아바타가 있는 왼쪽 정렬 텍스트"</span>
+  <span class="text-[#e2e8f0]">experience:</span> <span class="text-[#a3e635]">"왼쪽에 미세한 테두리가 있는 타임라인"</span>
+  <span class="text-[#e2e8f0]">skills:</span> <span class="text-[#a3e635]">"알약 태그, 중립적인 회색 배경"</span>
+</code></pre>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Action Bar (Fixed on Mobile, absolute on Desktop within main) -->
+<div class="fixed lg:absolute bottom-0 left-0 lg:left-64 right-0 bg-surface border-t border-outline-variant p-4 z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+<div class="max-w-container-max mx-auto flex justify-between items-center px-4 lg:px-lg">
+<button class="px-6 py-2 border border-outline-variant rounded-lg text-on-surface hover:bg-surface-variant transition-colors text-label-md font-label-md flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="arrow_back">arrow_back</span>
+                        이전
+                    </button>
+<button class="px-6 py-2 bg-secondary text-on-secondary rounded-lg hover:bg-secondary-fixed-dim transition-colors shadow-sm text-label-md font-label-md font-bold flex items-center gap-2">
+                        다음: 포트폴리오 생성
+                        <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+</body></html>

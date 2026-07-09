@@ -1,8 +1,17 @@
+# deps / build
 node_modules
 dist
 dist-ssr
+.vite
+
+# env (예시 파일은 커밋)
+.env
+.env.*
+!.env.example
+
+# misc
 *.local
 .DS_Store
-.env
-.env.local
+
+# 로컬 Claude 설정 (스킬은 저장소 루트 .claude/skills 에서 관리)
 .claude/

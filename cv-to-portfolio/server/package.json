@@ -1,0 +1,21 @@
+{
+  "name": "@cv2pf/server",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "CV2PF API 서버 — CV + DESIGN.md 를 받아 포트폴리오 HTML을 생성 (Express). Claude API 키는 서버에만 둔다.",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "lint": "eslint . --ext .js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}
