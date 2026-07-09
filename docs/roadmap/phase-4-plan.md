@@ -17,6 +17,21 @@ AI raw schema
 
 The AI should not directly return the current frontend app schema. This separation keeps prompt design, AI response evaluation, and future batch calendar export more maintainable.
 
+## Current Baseline Before Real AI
+
+The current app already includes:
+
+- React + Vite frontend MVP
+- Express mock analyze API
+- Zod-backed server schemas
+- client mock and server mock analysis paths
+- workspace tabs for `#analyze` and `#calendar`
+- separate campus preference storage
+- inert `metadata.userPreferencesSnapshot`
+- selected all-day `.ics` export
+
+Campus preferences are stored and echoed as metadata only. They do not affect analysis, filtering, Markdown export, or `.ics` export behavior in Phase 4.
+
 ## Phase 4-A. Planning / Contract Documentation
 
 ### Goal
@@ -37,6 +52,8 @@ Create the planning and contract documentation needed before implementing real A
 - Frontend MVP follow-up complete
 - Express analyze API skeleton complete
 - Frontend ↔ server mock wiring complete
+- Zod-backed server schemas available
+- Calendar tab and campus preference metadata complete
 - client mock and server mock available as regression baselines
 
 ### Exit Criteria
@@ -54,6 +71,7 @@ Create the planning and contract documentation needed before implementing real A
 - no API key
 - no PDF/HWP/HWPX/OCR extraction
 - no runtime behavior change
+- no campus-preference-based filtering or analysis behavior
 - no database/auth/payment/Google Calendar API
 
 ## Phase 4-B. Test Corpus Scaffold
@@ -117,6 +135,7 @@ frontend request
 → provider call
 → parse AI raw JSON
 → normalize to app schema
+→ attach inert app metadata as needed
 → validate app schema
 → return result to frontend
 ```
@@ -126,7 +145,9 @@ frontend request
 - API key must never be exposed to the browser.
 - provider-specific code should remain server-side.
 - AI response must be parsed as AI raw schema first.
+- Zod schemas should validate AI raw output and app analysis output.
 - server normalization must convert AI raw schema into current NoticePilot app schema.
+- `userPreferencesSnapshot` should remain optional app metadata and must not alter extraction in this phase.
 - frontend should continue using existing validation defensively.
 - client mock and server mock should remain available.
 
@@ -149,6 +170,8 @@ Do not automatically fall back to server mock. A future user-controlled fallback
 - no batch `.ics`
 - no PDF/HWPX/OCR
 - no school-specific parser
+- no campus preference filtering
+- no subscription ICS feed URL/backend generation
 - no database/auth/payment/Google Calendar API
 
 ## Phase 4-D. Corpus-based AI QA
@@ -260,3 +283,5 @@ Goal:
 Status:
 
 - future roadmap only
+- current MVP only shows a subscription ICS 준비 중 status card
+- no feed URL, backend feed generation, database, or user-specific subscription state exists yet

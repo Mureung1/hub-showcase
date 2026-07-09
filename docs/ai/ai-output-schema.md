@@ -32,6 +32,10 @@ The AI raw schema should be optimized for extraction quality:
 
 This separation prevents prompts from being tightly coupled to UI-only fields such as `edited`, `selected`, or `completed`.
 
+## Current Validation Stack
+
+The backend now uses Zod schemas for app analysis and AI raw schema validation. The frontend still keeps defensive validation utilities for browser-side safety and backward compatibility with older saved results.
+
 ## Current App Schema Target
 
 The server should normalize AI raw output into the current app schema:
@@ -49,9 +53,18 @@ The server should normalize AI raw output into the current app schema:
   "requirements": [],
   "cautions": [],
   "calendarEvents": [],
+  "metadata": {
+    "userPreferencesSnapshot": {
+      "activeInstitution": "kangwon",
+      "selectedCampuses": [],
+      "includeCommonNotices": true
+    }
+  },
   "warnings": []
 }
 ```
+
+`metadata.userPreferencesSnapshot` is optional app metadata. It is not an AI extraction target and should not be required from AI raw output.
 
 ## Proposed AI Raw Schema
 
@@ -95,6 +108,21 @@ The server should normalize AI raw output into the current app schema:
   ]
 }
 ```
+
+## User Preferences Snapshot Policy
+
+Campus preferences are currently inert product metadata:
+
+```text
+userPreferencesSnapshot
+→ request / result metadata only
+→ no effect on AI extraction
+→ no notice filtering
+→ no Markdown export changes
+→ no .ics export changes
+```
+
+The AI raw schema should not include `userPreferencesSnapshot`. If a future phase explicitly scopes preference-aware filtering or subscription behavior, that should be designed as a separate product and prompt contract change.
 
 ## Field Policy
 
