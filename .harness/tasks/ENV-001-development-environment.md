@@ -65,7 +65,7 @@ scripts: 전체 검증 진입점 확장
 ## 6. Acceptance Criteria
 
 - [x] `apps/web`이 typecheck, test와 production build를 통과한다.
-- [ ] `apps/api`의 `/health` test가 통과한다.
+- [x] `apps/api`의 `/health` test가 통과한다.
 - [ ] 루트 검증 명령이 docs, web와 api를 모두 확인한다.
 - [ ] directory, dependency, convention과 사전 결정이 문서화된다.
 - [ ] 제품 prototype 또는 실제 데이터 연동이 포함되지 않는다.
