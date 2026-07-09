@@ -1,0 +1,23 @@
+{
+  "name": "localtwin",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=24.11.0 <25"
+  },
+  "scripts": {
+    "dev": "concurrently --names web,api --prefix-colors green,blue \"pnpm dev:web\" \"pnpm dev:api\"",
+    "dev:web": "pnpm --dir apps/web dev",
+    "dev:api": "uv run --directory apps/api uvicorn localtwin_api.main:app --reload --port 8000",
+    "build": "pnpm --dir apps/web build",
+    "lint": "pnpm --dir apps/web lint && uv run --directory apps/api ruff check .",
+    "format:check": "prettier --check . && uv run --directory apps/api ruff format --check .",
+    "test": "pnpm --dir apps/web test && uv run --directory apps/api pytest",
+    "typecheck": "pnpm --dir apps/web typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "10.0.3",
+    "prettier": "3.9.4"
+  }
+}

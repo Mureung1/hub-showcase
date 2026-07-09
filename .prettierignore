@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+.venv
+uv.lock
+pnpm-lock.yaml
+data/raw
+data/processed
+data/scenes
+intro-page
