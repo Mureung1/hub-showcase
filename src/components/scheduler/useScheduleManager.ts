@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { initialCategories, initialSchedules } from './data'
 import type { Category, Schedule, ScheduleCategoryId, ShareGroup } from './types'
 
-function dateKey(year: number, monthIndex: number, day: number) {
+export function dateKey(year: number, monthIndex: number, day: number) {
   return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
@@ -16,6 +16,8 @@ export function useScheduleManager() {
   const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null)
   const [draftTitle, setDraftTitle] = useState('')
   const [draftTime, setDraftTime] = useState('')
+  const [renamingId, setRenamingId] = useState<number | null>(null)
+  const [renameDraft, setRenameDraft] = useState('')
 
   const year = viewDate.getFullYear()
   const monthIndex = viewDate.getMonth()
@@ -58,12 +60,9 @@ export function useScheduleManager() {
     setNotice(`${monthIndex + 1}월 ${selectedDay}일에 ${selectedCategory.name} 일정을 추가했어요.`)
   }
 
-  const addPersonalSchedule = () => {
-    const personalCategory = categories.find((category) => category.id === 'personal')
-    if (personalCategory) addSchedule(personalCategory)
-  }
-
   const openScheduleEditor = (schedule: Schedule) => {
+    setRenamingId(null)
+
     if (editingScheduleId === schedule.id) {
       setEditingScheduleId(null)
       return
@@ -74,6 +73,25 @@ export function useScheduleManager() {
     setDraftTime(schedule.time)
     setNotice('')
   }
+
+  const startRename = (schedule: Schedule) => {
+    setEditingScheduleId(null)
+    setRenamingId(schedule.id)
+    setRenameDraft(schedule.title)
+  }
+
+  const commitRename = (scheduleId: number) => {
+    const title = renameDraft.trim()
+
+    setSchedules((current) => current.map((schedule) => (
+      schedule.id === scheduleId && title
+        ? { ...schedule, title }
+        : schedule
+    )))
+    setRenamingId(null)
+  }
+
+  const cancelRename = () => setRenamingId(null)
 
   const saveScheduleChanges = (scheduleId: number) => {
     const title = draftTitle.trim()
@@ -132,10 +150,11 @@ export function useScheduleManager() {
     editingScheduleId,
     draftTitle,
     draftTime,
+    renamingId,
+    renameDraft,
     moveMonth,
     selectDay,
     addSchedule,
-    addPersonalSchedule,
     openScheduleEditor,
     saveScheduleChanges,
     deleteSchedule,
@@ -146,6 +165,10 @@ export function useScheduleManager() {
     cancelScheduleEditor: () => setEditingScheduleId(null),
     setDraftTitle,
     setDraftTime,
+    startRename,
+    commitRename,
+    cancelRename,
+    setRenameDraft,
   }
 }
 

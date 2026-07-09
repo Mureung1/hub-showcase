@@ -27,3 +27,33 @@ export type Friend = {
   color: string
   eyes: 1 | 2
 }
+
+export type ReactionKind = 'sparkle' | 'heart' | 'fire' | 'tear' | 'wow' | 'sleepy'
+
+export type ReactionMeta = {
+  key: ReactionKind
+  label: string
+  hint: string
+  emoji: string
+}
+
+export type FriendScheduleEntry = {
+  id: number
+  date: string
+  title: string
+  time: string
+  categoryName: string
+  tone: GroupTone
+}
+
+export type FriendPost = {
+  id: number
+  friendId: string
+  categoryName: string
+  tone: GroupTone
+  caption: string
+  timeAgo: string
+  duration?: string
+  videoUrl?: string
+  reactions: Record<ReactionKind, number>
+}
