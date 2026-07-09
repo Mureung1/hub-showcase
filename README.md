@@ -10,6 +10,7 @@
 | 초기 논의 배경과 결정 이유를 아카이브로 확인할 때            | [기획 논의 아카이브](docs/discussion.md)                                                                       |
 | 지금 무엇을 구현해야 하는지 작업 단위를 확인할 때           | [작업 체크리스트](docs/checklist.md)                                                                           |
 | 로그인 전 서비스 온보딩의 목적, 문구, 화면 흐름을 확인할 때 | [온보딩 기획](docs/onboarding.md)                                                                              |
+| 로그인 전 온보딩의 GSAP 모션 서사를 확인할 때               | [온보딩 모션 설계](docs/superpowers/specs/2026-07-09-onboarding-motion-design.md)                              |
 | `꺼내보기`의 유사도 검색과 작업팩 UX 기준을 확인할 때       | [꺼내보기 기획](docs/retrieve.md)                                                                              |
 | 화면 톤, 색상, 타이포그래피, 컴포넌트 규칙을 확인할 때      | [디자인 시스템](DESIGN.md)                                                                                     |
 | WDS 컴포넌트 적용 기준과 도입 순서를 확인할 때              | [WDS 적용 메모](docs/wds-adoption.md)                                                                          |

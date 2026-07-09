@@ -30,7 +30,9 @@
 | Zustand                     | 5.0.14                                          | 클라이언트 상태 관리 | 설치됨, 미연동 | 간단한 전역 UI 상태나 사용자 설정을 적은 보일러플레이트로 관리할 수 있다.                              | Redux Toolkit, Jotai, Recoil, Context API                | 서버 데이터 캐시는 TanStack Query에 맡기고, Zustand는 클라이언트 상태로 제한한다.                         |
 | TanStack Query              | 5.101.2                                         | 서버 상태 관리       | 설치됨, 미연동 | API 요청, 캐싱, 로딩/에러 상태, refetch를 표준화할 수 있다.                                            | SWR, 직접 fetch, Apollo Client                           | Supabase 또는 Express API 호출이 늘어나는 시점에 연결한다.                                                |
 | TanStack Query Devtools     | 5.101.2                                         | 개발 도구            | 설치됨, 미연동 | 쿼리 캐시와 refetch 상태를 개발 중 확인하기 쉽다.                                                      | 브라우저 로그                                            | 프로덕션 번들에 노출되지 않도록 개발 환경에서만 연결한다.                                                 |
-| Motion                      | 12.42.2                                         | 애니메이션           | 설치됨, 미연동 | 화면 전환, 버튼 인터랙션, 등장 애니메이션을 선언적으로 구현할 수 있다.                                 | Framer Motion, CSS transition, GSAP                      | Framer Motion은 현재 Motion으로 이어졌으며 신규 코드는 `motion/react` import를 우선 검토한다.             |
+| Motion                      | 12.42.2                                         | UI 애니메이션        | 설치됨, 미연동 | 화면 전환, 버튼 인터랙션, 등장 애니메이션을 React 컴포넌트 상태와 함께 선언적으로 구현할 수 있다.       | CSS transition, GSAP                                     | 앱 내부 micro interaction 기본값이다. 로그인 전 서비스 온보딩의 브랜드 시퀀스에는 사용하지 않는다.        |
+| GSAP                        | 3.15.0                                          | 온보딩 애니메이션    | 설치됨, 미연동 | 저장물이 현재 상황과 다시 연결되는 온보딩 핵심 경험을 정교한 timeline으로 연출하기 위해 도입한다.       | Motion, CSS keyframes                                    | 로그인 전 서비스 온보딩의 브랜드 시퀀스에만 사용한다. 앱 내부 UI 전환에는 Motion을 우선한다.              |
+| @gsap/react                 | 2.1.2                                           | GSAP React 연동      | 설치됨, 미연동 | React 컴포넌트에서 GSAP timeline을 scope 처리하고 unmount 시 cleanup하기 위해 사용한다.                 | 직접 `gsap.context()` 사용                               | `useGSAP()` 훅으로 온보딩 시퀀스를 관리한다. `prefers-reduced-motion` 정적 fallback을 반드시 제공한다.     |
 | dnd-kit                     | core 6.3.1, sortable 10.0.0, utilities 3.2.2    | 드래그 앤 드롭       | 설치됨, 미연동 | 카테고리 정렬이나 카드 순서 변경이 필요해질 때 접근성과 확장성을 갖춘 드래그 앤 드롭을 구현할 수 있다. | react-beautiful-dnd, react-dnd                           | 실제 정렬/드래그 화면을 만들 때 연결한다.                                                                 |
 | pnpm                        | 11.10.0                                         | 패키지 매니저        | 전환 예정      | 설치 속도와 디스크 효율이 좋고, 의존성 구조가 엄격해 장기 유지보수에 유리하다.                         | npm, yarn, bun                                           | 현재 repo는 npm lockfile을 사용한다. 전환 시 `package-lock.json` 제거와 `pnpm-lock.yaml` 생성이 필요하다. |
 | Supabase JS                 | 2.110.1                                         | BaaS 클라이언트      | 설치됨, 미연동 | Auth, Postgres, Edge Functions를 프론트엔드에서 일관된 클라이언트로 다룰 수 있다.                      | Firebase, 직접 Express API, Appwrite                     | 제품 계획상 Google OAuth와 사용자별 저장소에 필요하다.                                                    |
@@ -59,7 +61,8 @@
 3. `MiniSearch`: `꺼내보기` 유사도 검색과 작업팩 생성 기준이 확정되면 연결한다.
 4. `Supabase JS`, `TanStack Query`, `Zod`: 인증/저장 API 구현 시 `src/shared` 하위 클라이언트와 스키마부터 연결한다.
 5. `Testing Library`, `jsdom`: FSD 리팩터링으로 화면 컴포넌트를 분리할 때 테스트 환경 설정을 추가한다.
-6. `Zustand`, `Motion`, `dnd-kit`: 실제 상태 공유, 애니메이션, 드래그 앤 드롭 요구가 생길 때 사용 지점을 만든다.
+6. `GSAP`, `@gsap/react`: 로그인 전 서비스 온보딩의 핵심 경험 애니메이션을 구현할 때만 연결한다.
+7. `Zustand`, `Motion`, `dnd-kit`: 실제 상태 공유, 앱 내부 애니메이션, 드래그 앤 드롭 요구가 생길 때 사용 지점을 만든다.
 
 ## 아직 코드에 연결하지 않은 항목
 
@@ -68,6 +71,7 @@
 - `shadcn/ui`: CLI는 설치되어 있지만 컴포넌트 생성과 `components.json` 초기화는 하지 않았다.
 - `MiniSearch`, `Fuse.js`: 아직 설치하지 않았다. `꺼내보기`와 보관함 검색 구현 시 최종 선택한다.
 - `React Router`, `TanStack Query`, `Supabase JS`, `Zustand`, `Motion`, `dnd-kit`, `React Hook Form`, `Sonner`: 설치되어 있지만 실제 기능 구현 시 연결한다.
+- `GSAP`, `@gsap/react`: 설치되어 있지만 로그인 전 서비스 온보딩 애니메이션 구현 전까지는 코드에 연결하지 않는다.
 
 ## 참고 자료
 
@@ -75,6 +79,8 @@
 - [shadcn/ui Vite 설치 문서](https://ui.shadcn.com/docs/installation/vite)
 - [TanStack Query React 설치 문서](https://tanstack.com/query/v5/docs/framework/react/installation)
 - [Motion for React 문서](https://motion.dev/docs/react)
+- [GSAP 설치 문서](https://gsap.com/docs/v3/Installation/)
+- [React & GSAP 문서](https://gsap.com/resources/React/)
 - [Zustand 문서](https://zustand.docs.pmnd.rs/)
 - [dnd-kit 문서](https://dndkit.com/)
 - [pnpm 문서](https://pnpm.io/)

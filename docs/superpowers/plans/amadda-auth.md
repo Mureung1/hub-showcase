@@ -9,7 +9,7 @@
 
 **FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
 
-**Tech Stack:** React 19, TypeScript, Vite, Supabase Auth, Google OAuth, Vitest, React Testing Library
+**Tech Stack:** React 19, TypeScript, Vite, Supabase Auth, Google OAuth, GSAP, @gsap/react, Vitest, React Testing Library
 
 ---
 
@@ -23,6 +23,7 @@
 - Google OAuth 로그인
 - Google 로그인만 제공
 - 로그인 전 소개 화면
+- 로그인 전 핵심 경험 애니메이션
 - 로그인 상태 감지
 - 인증된 사용자만 앱 화면 접근
 - 로그아웃
@@ -39,7 +40,7 @@
 ## 파일 구조
 
 - Modify: `package.json`
-  - `@supabase/supabase-js` 의존성을 추가한다.
+  - `@supabase/supabase-js`, `gsap`, `@gsap/react` 의존성을 추가한다.
 - Create: `src/shared/config/env.ts`
   - Supabase URL과 anon key 환경 변수를 검증한다.
 - Create: `src/shared/config/env.test.ts`
@@ -58,6 +59,8 @@
   - 비로그인/로그인 상태 분기를 검증한다.
 - Create: `src/pages/landing/ui/LandingPage.tsx`
   - 로그인 전 소개 화면을 만든다.
+- Create: `src/pages/landing/ui/OnboardingMotionPreview.tsx`
+  - 저장 카드가 현재 상황 문장 기준으로 작업팩처럼 모이는 GSAP 시퀀스를 만든다.
 - Modify: `src/app/AppShell.tsx`
   - 프로필 버튼에서 기본 사용자 정보와 로그아웃 액션을 제공한다.
 - Modify: `src/app/App.tsx`
@@ -67,7 +70,7 @@
 
 ---
 
-### Task 1: Supabase 의존성과 환경 변수 검증 추가
+### Task 1: 인증/온보딩 의존성과 환경 변수 검증 추가
 
 **Files:**
 
@@ -76,12 +79,12 @@
 - Create: `src/shared/config/env.ts`
 - Create: `src/shared/config/env.test.ts`
 
-- [ ] **Step 1: Supabase 클라이언트 설치**
+- [ ] **Step 1: 인증과 온보딩 애니메이션 의존성 설치**
 
 Run:
 
 ```bash
-npm install @supabase/supabase-js
+npm install @supabase/supabase-js gsap @gsap/react
 ```
 
 Expected:
@@ -384,6 +387,7 @@ git commit -m "feat: Supabase Google 인증 서비스 추가"
 - Create: `src/features/auth/ui/AuthGate.tsx`
 - Create: `src/features/auth/ui/AuthGate.test.tsx`
 - Create: `src/pages/landing/ui/LandingPage.tsx`
+- Create: `src/pages/landing/ui/OnboardingMotionPreview.tsx`
 - Modify: `src/app/App.tsx`
 
 - [ ] **Step 1: 인증 분기 테스트 작성**
@@ -545,11 +549,69 @@ export function useAuth() {
 
 - [ ] **Step 4: LandingPage 구현**
 
+Create `src/pages/landing/ui/OnboardingMotionPreview.tsx`:
+
+```tsx
+import { useRef } from 'react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+
+export function OnboardingMotionPreview() {
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      const reduceMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)'
+      ).matches;
+
+      if (reduceMotion) {
+        return;
+      }
+
+      const timeline = gsap.timeline({ repeat: -1, repeatDelay: 1.2 });
+      timeline
+        .from('.onboarding-motion__card', {
+          opacity: 0,
+          stagger: 0.12,
+          y: 18,
+        })
+        .from('.onboarding-motion__situation', { opacity: 0, y: 10 })
+        .to('.onboarding-motion__card', {
+          stagger: 0.08,
+          x: 18,
+          y: -8,
+        })
+        .from('.onboarding-motion__pack', { opacity: 0, y: 16 });
+    },
+    { scope: rootRef }
+  );
+
+  return (
+    <div className="onboarding-motion" ref={rootRef} aria-hidden="true">
+      <p className="onboarding-motion__situation">
+        팀 프로젝트 앱 첫 화면 참고
+      </p>
+      <div className="onboarding-motion__card">온보딩 레퍼런스</div>
+      <div className="onboarding-motion__card">React 폼 구현 글</div>
+      <div className="onboarding-motion__pack">지금 다시 볼 작업팩</div>
+    </div>
+  );
+}
+```
+
+주의:
+
+- GSAP은 이 컴포넌트 안에서만 import한다.
+- 앱 내부 화면 전환과 버튼/카드 micro interaction에는 Motion 또는 CSS transition을 사용한다.
+- `prefers-reduced-motion`에서는 timeline을 만들지 않고 정적 미리보기만 보여준다.
+
 Create `src/pages/landing/ui/LandingPage.tsx`:
 
 ```tsx
 import { signInWithGoogle } from '@/features/auth';
 import { Button } from '@/shared/ui';
+import { OnboardingMotionPreview } from './OnboardingMotionPreview';
 
 export function LandingPage() {
   return (
@@ -564,6 +626,7 @@ export function LandingPage() {
           Google로 시작하기
         </Button>
       </section>
+      <OnboardingMotionPreview />
     </main>
   );
 }
@@ -675,7 +738,7 @@ Expected:
 Run:
 
 ```bash
-git add src/features/auth/model/AuthProvider.tsx src/features/auth/ui/AuthGate.tsx src/features/auth/ui/AuthGate.test.tsx src/pages/landing/ui/LandingPage.tsx src/app/App.tsx
+git add package.json package-lock.json src/features/auth/model/AuthProvider.tsx src/features/auth/ui/AuthGate.tsx src/features/auth/ui/AuthGate.test.tsx src/pages/landing/ui/LandingPage.tsx src/pages/landing/ui/OnboardingMotionPreview.tsx src/app/App.tsx
 git commit -m "feat: 인증 게이트와 로그인 전 화면 구현"
 ```
 
