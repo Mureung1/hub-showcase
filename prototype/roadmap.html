@@ -28,13 +28,13 @@
           <span class="eyebrow">리포트 기반 추천</span>
           <h1><span class="roadmap-job-badge">프론트엔드 개발자</span> 지원 가능성을 높이는 4단계 로드맵</h1>
           <p>
-            24건의 mock 공고 분석에서 반복된 필수 조건과 우대 조건을 기준으로,
-            대학생·신입이 무엇을 먼저 증명해야 하는지 순서를 잡았습니다.
+            24건의 mock 공고 분석에서 반복된 구현 범위를 기준으로,
+            필수 요구사항과 우대사항을 프로젝트에 적용하는 순서를 정리했습니다.
           </p>
           <div class="data-note">
             <span>목표: 신입·주니어 지원 가능</span>
-            <span>핵심 근거: 포트폴리오 요구 71%</span>
-            <span>차별화: 배포·테스트·디자인 시스템</span>
+            <span>핵심 지표: 포트폴리오 요구 71%</span>
+            <span>산출물: 배포 URL · README · GitHub 기록</span>
           </div>
         </header>
 
@@ -47,24 +47,24 @@
             <article class="roadmap-card">
               <div class="roadmap-card-heading">
                 <span class="roadmap-phase">STEP 01 · 2주</span>
-                <h2 class="roadmap-title">지원 필수 조건부터 맞추기</h2>
+                <h2 class="roadmap-title">필수 요구사항을 충족하는 기능 흐름 완성하기</h2>
                 <span class="roadmap-duration">우선순위: 매우 높음</span>
               </div>
               <p class="roadmap-description">
-                React 문법을 넓게 훑기보다 TypeScript로 props, state, API 응답 타입을 정의하며
-                작은 기능 단위 화면을 안정적으로 완성하는 연습부터 시작하세요.
+                입력, 목록, 상세, 수정 흐름이 있는 작은 기능을 정하고
+                React 컴포넌트 구성과 TypeScript 타입 정의까지 포함해 배포 가능한 화면으로 완성하세요.
               </p>
               <div class="roadmap-topics">
-                <span class="roadmap-topic-chip"><img src="./assets/logos/typescript.svg" alt="" />TypeScript 타입 정의</span>
-                <span class="roadmap-topic-chip"><img src="./assets/logos/react.svg" alt="" />React 컴포넌트</span>
-                <span class="roadmap-topic-chip">상태·이벤트 흐름</span>
+                <span class="roadmap-topic-chip"><img src="./assets/logos/typescript.svg" alt="" />API 응답 타입</span>
+                <span class="roadmap-topic-chip"><img src="./assets/logos/react.svg" alt="" />기능 단위 화면</span>
+                <span class="roadmap-topic-chip">배포 가능한 데모</span>
               </div>
               <div class="roadmap-reason">
                 <span class="roadmap-reason-icon">i</span>
                 <div>
                   <p class="roadmap-reason-label">왜 먼저 해야 하나요?</p>
                   <p class="roadmap-reason-text">
-                    필수 조건에서 React는 18/24건, TypeScript는 14/24건 등장했습니다. 신입 지원자는 “기술을 안다”보다 “타입 안정성 있게 화면을 끝낸다”를 보여줘야 합니다.
+                    React와 TypeScript는 주요 필수 조건으로 반복됩니다. 하나의 사용자 흐름을 끝까지 구현하면 화면 구성과 데이터 모델링 역량을 함께 보여줄 수 있습니다.
                   </p>
                 </div>
               </div>
@@ -79,24 +79,24 @@
             <article class="roadmap-card">
               <div class="roadmap-card-heading">
                 <span class="roadmap-phase">STEP 02 · 3주</span>
-                <h2 class="roadmap-title">API 연동까지 포함한 기능형 프로젝트 만들기</h2>
+                <h2 class="roadmap-title">실패 상태까지 보이는 데이터 흐름 만들기</h2>
                 <span class="roadmap-duration">우선순위: 높음</span>
               </div>
               <p class="roadmap-description">
-                게시판, 채용공고 스크랩, 일정 관리처럼 CRUD와 검색, 로딩·에러·빈 상태가 모두 있는 기능을 하나 정해서
-                REST API 연동까지 구현하세요.
+                채용공고 스크랩, 일정 관리, 검색 대시보드처럼 데이터가 바뀌는 기능을 정하고
+                로딩, 에러, 빈 결과, 재시도 흐름을 데모에서 확인할 수 있게 만드세요.
               </p>
               <div class="roadmap-topics">
                 <span class="roadmap-topic-chip"><img src="./assets/logos/api.svg" alt="" />REST API</span>
-                <span class="roadmap-topic-chip">로딩·에러 상태</span>
-                <span class="roadmap-topic-chip"><img src="./assets/logos/git.svg" alt="" />Git 커밋 로그</span>
+                <span class="roadmap-topic-chip">빈 상태·에러 상태</span>
+                <span class="roadmap-topic-chip">README 캡처</span>
               </div>
               <div class="roadmap-reason">
                 <span class="roadmap-reason-icon">i</span>
                 <div>
                   <p class="roadmap-reason-label">왜 기능형 프로젝트인가요?</p>
                   <p class="roadmap-reason-text">
-                    API 연동은 12/24건에서 반복됐고, 포트폴리오 요구는 71%였습니다. 화면만 예쁜 프로젝트보다 데이터 흐름을 다루는 프로젝트가 공고 조건과 더 잘 맞습니다.
+                    API 연동은 12/24건에서 반복됩니다. 실패 상황을 다룬 흔적이 있으면 데이터 흐름을 안정적으로 다룬 경험을 보여줄 수 있습니다.
                   </p>
                 </div>
               </div>
@@ -111,24 +111,24 @@
             <article class="roadmap-card">
               <div class="roadmap-card-heading">
                 <span class="roadmap-phase">STEP 03 · 2주</span>
-                <h2 class="roadmap-title">우대사항으로 차별화 신호 만들기</h2>
+                <h2 class="roadmap-title">우대사항은 하나만 골라 깊게 남기기</h2>
                 <span class="roadmap-duration">우선순위: 중간</span>
               </div>
               <p class="roadmap-description">
-                필수 조건을 맞춘 뒤에는 Next.js, 테스트, 디자인 시스템 중 하나를 골라 프로젝트에 작게라도 녹이세요.
-                모든 것을 얕게 넣기보다 한 가지를 근거 있게 설명하는 편이 좋습니다.
+                필수 흐름을 만든 뒤에는 Next.js, 테스트, 디자인 시스템 중 하나를 골라
+                프로젝트의 문제를 해결하는 데 적용하세요. 선택 이유와 적용 결과가 분명한 우대사항은 프로젝트 완성도를 높입니다.
               </p>
               <div class="roadmap-topics">
-                <span class="roadmap-topic-chip"><img src="./assets/logos/nextjs.svg" alt="" />Next.js</span>
-                <span class="roadmap-topic-chip"><img src="./assets/logos/testing.svg" alt="" />테스트</span>
-                <span class="roadmap-topic-chip"><img src="./assets/logos/design-system.svg" alt="" />디자인 시스템</span>
+                <span class="roadmap-topic-chip"><img src="./assets/logos/nextjs.svg" alt="" />Next.js 선택 이유</span>
+                <span class="roadmap-topic-chip"><img src="./assets/logos/testing.svg" alt="" />핵심 흐름 테스트</span>
+                <span class="roadmap-topic-chip"><img src="./assets/logos/design-system.svg" alt="" />토큰·상태 정리</span>
               </div>
               <div class="roadmap-reason">
                 <span class="roadmap-reason-icon">i</span>
                 <div>
                   <p class="roadmap-reason-label">왜 우대사항을 골라야 하나요?</p>
                   <p class="roadmap-reason-text">
-                    Next.js는 9/24건, 테스트는 7/24건, 디자인 시스템은 6/24건에서 우대 신호로 나타났습니다. 필수 조건 이후의 차별화 포인트로 적합합니다.
+                    Next.js, 테스트, 디자인 시스템은 우대 신호로 반복됩니다. 공고 문장과 프로젝트의 보완 지점을 연결해 선택하면 설득력이 높아집니다.
                   </p>
                 </div>
               </div>
@@ -142,24 +142,24 @@
             <article class="roadmap-card">
               <div class="roadmap-card-heading">
                 <span class="roadmap-phase">STEP 04 · 1주</span>
-                <h2 class="roadmap-title">목표 기업군에 맞춰 포트폴리오 설명 바꾸기</h2>
+                <h2 class="roadmap-title">목표 기업군에 맞춰 프로젝트 소개 순서 구성하기</h2>
                 <span class="roadmap-duration">우선순위: 높음</span>
               </div>
               <p class="roadmap-description">
-                같은 프로젝트라도 스타트업에는 빠른 기능 완성, SaaS 기업에는 타입과 협업,
-                플랫폼 기업에는 성능과 일관된 UI를 강조하세요. 공고별 문장에 맞춰 README와 자기소개서의 근거를 바꾸는 것이 중요합니다.
+                같은 프로젝트라도 스타트업에는 배포와 개선 속도, SaaS 기업에는 타입과 협업 기록,
+                플랫폼 기업에는 성능과 접근성을 앞에 둡니다. 공고별 문장에 맞춰 README 첫 화면과 자기소개서 내용을 바꾸세요.
               </p>
               <div class="roadmap-topics">
-                <span class="roadmap-topic-chip">스타트업: 구현 속도</span>
-                <span class="roadmap-topic-chip">SaaS: 유지보수성</span>
-                <span class="roadmap-topic-chip">플랫폼: 성능·접근성</span>
+                <span class="roadmap-topic-chip">스타트업: 배포 링크 먼저</span>
+                <span class="roadmap-topic-chip">SaaS: PR 기록 먼저</span>
+                <span class="roadmap-topic-chip">플랫폼: 개선 지표 먼저</span>
               </div>
               <div class="roadmap-reason">
                 <span class="roadmap-reason-icon">i</span>
                 <div>
                   <p class="roadmap-reason-label">왜 마지막 단계인가요?</p>
                   <p class="roadmap-reason-text">
-                    기업 규모별 요구가 다르기 때문에, 하나의 포트폴리오를 그대로 제출하기보다 공고의 필수·우대 문장에 맞춰 증거를 재배치해야 합니다.
+                    채용공고는 같은 프론트엔드라도 강조하는 구현 경험이 다릅니다. 이미 만든 프로젝트를 공고에 맞게 소개하면 지원 메시지가 더 선명해집니다.
                   </p>
                 </div>
               </div>
