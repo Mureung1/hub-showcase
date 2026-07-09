@@ -69,4 +69,6 @@
 ![플로우차트](./SUBZIP-플로우차트_260709.jpg)
 
 ## 7. 프로토타입
-[웹 프로토타입 보기](https://hyunjinch.github.io/hub/docs/prototype/index.html)
+![프로토타입-1](./SUBZIP-프로토타입-1_260709.jpg)
+![프로토타입-2](./SUBZIP-프로토타입-2_260709.jpg)
+
