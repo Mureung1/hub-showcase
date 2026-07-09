@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>vintage-sketch-ui · styles.css demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+<!-- 스킬 디렉터리 기준 상대경로로 unit의 styles.css를 그대로 사용 -->
+<link rel="stylesheet" href="../../../styles.css">
+</head>
+<body>
+  <!-- 손그림 러프 필터 (styles.css의 .*.thumb / .banner::before 등이 참조) -->
+  <svg width="0" height="0" style="position:absolute">
+    <filter id="roughen" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" seed="7" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="statusbar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="screen">
+      <div class="header">
+        <div>
+          <div class="hi">안녕하세요, 상진님 👋</div>
+          <div class="title">나만의 냉장고</div>
+        </div>
+        <div class="avatar">🧑</div>
+      </div>
+
+      <input class="search" placeholder="재료·레시피 검색" />
+
+      <div class="banner">
+        <div class="b-icon">⏰</div>
+        <div class="b-text">
+          <b>유통기한 임박 재료 3개</b>
+          <span>대파·계란·양배추를 먼저 소진해보세요</span>
+        </div>
+      </div>
+
+      <div class="chips">
+        <span class="chip on">재료 최대활용</span>
+        <span class="chip">100% 완성</span>
+        <span class="chip">초보자</span>
+        <span class="chip">중급자</span>
+        <span class="chip">상급자</span>
+      </div>
+
+      <div class="section-head"><h2>오늘의 추천</h2><a href="#">더보기</a></div>
+      <div class="hero-card">
+        <div class="thumb">🍚</div>
+        <div class="info">
+          <div class="n">계란볶음밥</div>
+          <div class="stars">★★★★<span class="off">★</span></div>
+          <div class="d">밥·계란·대파·간장만 있으면 완성. 약 10분 · 1인분</div>
+          <button class="go">요리 완료 · 재고 차감</button>
+        </div>
+      </div>
+
+      <div class="section-head"><h2>재료로 만들 수 있어요</h2><a href="#">전체</a></div>
+      <div class="grid">
+        <article class="recipe">
+          <div class="thumb">🍜<span class="bookmark">🔖</span></div>
+          <div class="body"><div class="name">김치찌개</div>
+            <div class="meta"><span>초보자</span><span class="match">90%</span></div></div>
+        </article>
+        <article class="recipe">
+          <div class="thumb">🥘<span class="bookmark">🔖</span></div>
+          <div class="body"><div class="name">제육볶음</div>
+            <div class="meta"><span>중급자</span><span class="match">80%</span></div></div>
+        </article>
+        <article class="recipe">
+          <div class="thumb">🍳<span class="bookmark">🔖</span></div>
+          <div class="body"><div class="name">간장계란밥</div>
+            <div class="meta"><span>초보자</span><span class="match">100%</span></div></div>
+        </article>
+        <article class="recipe">
+          <div class="thumb">🥗<span class="bookmark">🔖</span></div>
+          <div class="body"><div class="name">양배추샐러드</div>
+            <div class="meta"><span>초보자</span><span class="match">95%</span></div></div>
+        </article>
+        <article class="recipe">
+          <div class="thumb">🍲<span class="bookmark">🔖</span></div>
+          <div class="body"><div class="name">된장국</div>
+            <div class="meta"><span>초보자</span><span class="match">85%</span></div></div>
+        </article>
+        <article class="recipe">
+          <div class="thumb">🍢<span class="bookmark">🔖</span></div>
+          <div class="body"><div class="name">어묵볶음</div>
+            <div class="meta"><span>초보자</span><span class="match">75%</span></div></div>
+        </article>
+      </div>
+    </div>
+
+    <nav class="tabbar">
+      <button class="tab active"><span class="ico">🍳</span>레시피</button>
+      <button class="tab"><span class="ico">🥕</span>냉장고</button>
+      <button class="tab center"><span class="ico">🧾</span></button>
+      <button class="tab"><span class="ico">🛒</span>장보기</button>
+      <button class="tab"><span class="ico">⚙️</span>설정</button>
+    </nav>
+  </div>
+</body>
+</html>
