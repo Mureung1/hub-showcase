@@ -4,16 +4,12 @@
 
 사이사이는 같은 건물 또는 가까운 생활권 이웃을 연결하는 생활 커뮤니티 서비스입니다.
 
-현재 React + Vite 기반 프런트엔드 MVP와 프로토타입 중심으로 구성되어 있습니다. 
-백엔드와 Supabase 연동은 목표 스택에는 포함되어 있지만, 현재 코드에는 아직 구현되어 있지 않습니다.
 
 ## 기술 스택
 
-- Frontend: React + TypeScript
-- Backend: Express
-- Database: Supabase(Postgres)
-
-현재 구현은 `src/`의 React + Vite 코드가 중심이며, TypeScript 전환과 백엔드/DB 연동은 이후 작업 범위로 봅니다.
+- Frontend: React + JavaScript (Vite, `src/`)
+- Backend 예정: Express + JavaScript ESM (`server/`)
+- Database 예정: Supabase(Postgres) (`supabase/`)
 
 ## 컨벤션
 
@@ -30,19 +26,42 @@
 - 별도 합의 전까지 외부 UI 라이브러리를 추가하지 않습니다.
 - 사용자가 명시적으로 요청하지 않은 `.github/` 자동화 파일 수정은 하지 않습니다.
 - 요청 범위를 벗어난 대규모 리팩터링, 파일 이동, 기술 스택 변경은 하지 않습니다.
-- 현재 구현되지 않은 백엔드, 인증, 결제, 관리자 기능이 이미 있는 것처럼 작성하지 않습니다.
+- 현재 구현되지 않은 백엔드, 인증, 결제, 관리자 기능을 이미 있는 것처럼 작성하지 않습니다.
+- `server/`, `supabase/`는 골격만 있으므로 구현 완료 상태로 표현하지 않습니다.
 
-## 참고
+## 참고 문서
 
-- 기획서: `wiki/기획서.md`
+- 기획 의도: `wiki/기획서.md`
+- 프론트 작업 분해: `docs/frontend-tasks.md`
+- 백엔드 작업 분해: `docs/backend-tasks.md`
+- DB 작업 분해: `docs/database-tasks.md`
+- 실행/개요: `README.md`
+
+## 문서 우선순위
+
+1. 구현 상태: 실제 코드/디렉터리 구조
+2. 작업 분해: `docs/frontend-tasks.md`, `docs/backend-tasks.md`, `docs/database-tasks.md`
+3. 기획 의도: `wiki/기획서.md`
+4. 실행/개요: `README.md`
+
+세부 구현 스펙은 `docs/*-tasks.md`를 기준으로 합니다. `AGENTS.md`는 진입점 요약만 제공합니다.
 
 ## 작업 범위와 기준
 
-- 주요 애플리케이션 코드는 `src/`에 있습니다.
-- `prototype/`은 기존 HTML/CSS/JS 프로토타입 참고용으로 사용합니다.
-- 루트의 README와 기획 문서를 우선하되, 문서와 실제 구현 상태가 충돌하면 현재 코드 구조를 먼저 확인합니다.
-- 공동구매는 결제나 송금을 직접 처리하지 않고, 모집, 참여, 1인 부담 금액 확인, 분배 안내를 중심으로 설계합니다.
-- 현재 제외 범위는 푸시 알림, 리뷰 및 신고 시스템, 차단 기능, 관리자 페이지입니다.
+- 프론트엔드: `src/`
+- 백엔드 골격: `server/src/{routes,controllers,services,middleware,lib,validators,errors}`
+- DB 골격: `supabase/migrations`, `supabase/seed`
+- `prototype/`은 기존 HTML/CSS/JS 프로토타입 참고용입니다.
+- 문서와 실제 구현 상태가 충돌하면 현재 코드/디렉터리 구조를 먼저 확인합니다.
+- 공동구매는 결제/송금을 직접 처리하지 않고, 모집, 참여, 1인 부담 금액 확인, 분배 안내를 중심으로 설계합니다.
+
+### 제외 범위
+
+- 결제/송금 직접 처리
+- 푸시 알림
+- 리뷰/신고
+- 차단
+- 관리자 페이지
 
 ## 개발 명령
 
@@ -52,6 +71,7 @@
 - 린트 실행: `npm run lint`
 - 빌드 결과 미리보기: `npm run preview`
 
+백엔드 전용 명령(`dev:api` 등)은 `server/` 구현 후 추가합니다.
 의존성을 추가하거나 변경할 때는 `package.json`과 `package-lock.json`을 함께 확인합니다.
 
 ## 검증 지침
