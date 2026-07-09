@@ -49,7 +49,7 @@ Pretendard는 WDS README의 CDN 링크 또는 자체 font-face로 로드한다.
 | ---------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------- |
 | `Button`               | `Button`, `TextButton`, `IconButton`       | 크기, loading, disabled, solid/outlined 구조를 따른다.                              |
 | `TextInput`            | `TextField`                                | URL 입력, 메모 외 단일 입력에 사용한다.                                             |
-| `SearchBand`           | `SearchField`                              | 보관함/꺼내보기 검색에 사용하되, 화면 레이아웃은 아맞다 기준으로 조정한다.          |
+| `LibrarySearch`        | `SearchField`                              | 보관함의 직접 검색 입력에 사용한다. `꺼내보기`는 단순 검색창이 아니라 작업팩 흐름으로 별도 설계한다. |
 | `Chip`, `CategoryRail` | `Chip`, `CategoryList`, `CategoryListItem` | 카테고리 필터와 추천 상황 칩의 크기/선택 상태를 맞춘다.                             |
 | `InsightCard`          | `Card`, `Thumbnail`                        | 카드 구조는 유지하고 썸네일 비율, 제목 말줄임, caption 규칙을 차용한다.             |
 | `BottomNavigation`     | `BottomNavigation`                         | 탭 값/상태 관리와 접근성 패턴을 참고한다. floating 형태는 아맞다에서 별도 결정한다. |
@@ -71,10 +71,10 @@ Pretendard는 WDS README의 CDN 링크 또는 자체 font-face로 로드한다.
 ## 도입 순서
 
 1. WDS 패키지 설치와 `ThemeProvider` 연결.
-2. 공통 `Button`, `Input`, `Search`, `Chip` 래퍼를 만든다.
+2. 공통 `Button`, `Input`, 보관함 검색 입력, `Chip` 래퍼를 만든다.
 3. 보관함의 `CategoryRail`과 `InsightCard`부터 WDS 규격에 맞춘다.
 4. 저장 화면의 URL 입력과 액션 버튼을 WDS 기반으로 교체한다.
-5. 하단 내비게이션은 Stashby식 floating 유지 여부를 먼저 확정한 뒤 교체한다.
+5. 하단 내비게이션은 floating 형태 유지 여부를 먼저 확정한 뒤 교체한다.
 
 ## 유지할 아맞다 기준
 
@@ -82,3 +82,4 @@ Pretendard는 WDS README의 CDN 링크 또는 자체 font-face로 로드한다.
 - WDS primary 색상을 그대로 브랜드 색으로 고정하지 않는다.
 - 원티드 제품처럼 보이는 레이아웃 복제는 피한다.
 - `꺼내보기`, 보관함, 저장 흐름의 문구와 정보 구조는 `docs/plan.md`를 따른다.
+- `꺼내보기`의 유사도 검색과 작업팩 UX는 `docs/retrieve.md`를 우선한다.

@@ -2,11 +2,14 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Supabase Auth와 Google OAuth를 연결하고, 로그인 전 소개 화면과 인증된 사용자 전용 앱 진입 흐름을 만든다.
+**Goal:** Supabase Auth와 Google OAuth를 연결하고, 로그인 전 소개 화면, 별도 로그인 화면, 인증된 사용자 전용 앱 진입 흐름을 만든다.
 
-**Architecture:** 인증은 `src/auth`에 모아두고, Supabase 클라이언트는 `src/lib`에서 단일 인스턴스로 제공한다. `AuthProvider`가 세션 상태를 관리하고, `AuthGate`가 로그인 전 소개 화면과 앱 셸 접근을 분기한다.
+**Architecture:** 인증 유스케이스와 세션 상태는 `src/features/auth`에 둔다. Supabase 클라이언트는 `src/shared/api`, 환경 변수 검증은 `src/shared/config`에서 단일 인스턴스로 제공한다. `AuthProvider`가 세션 상태를 관리하고, `AuthGate`가 로그인 전 소개 화면, 로그인 화면, 앱 셸 접근을 분기한다.
 
-**Tech Stack:** React 19, TypeScript, Vite, Supabase Auth, Google OAuth, Vitest, React Testing Library
+
+**FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
+
+**Tech Stack:** React 19, TypeScript, Vite, Supabase Auth, Google OAuth, GSAP, @gsap/react, Vitest, React Testing Library
 
 ---
 
@@ -20,6 +23,8 @@
 - Google OAuth 로그인
 - Google 로그인만 제공
 - 로그인 전 소개 화면
+- 별도 로그인 화면
+- 로그인 전 핵심 경험 애니메이션
 - 로그인 상태 감지
 - 인증된 사용자만 앱 화면 접근
 - 로그아웃
@@ -36,49 +41,53 @@
 ## 파일 구조
 
 - Modify: `package.json`
-  - `@supabase/supabase-js` 의존성을 추가한다.
-- Create: `src/lib/env.ts`
+  - `@supabase/supabase-js`, `gsap`, `@gsap/react` 의존성을 추가한다.
+- Create: `src/shared/config/env.ts`
   - Supabase URL과 anon key 환경 변수를 검증한다.
-- Create: `src/lib/env.test.ts`
+- Create: `src/shared/config/env.test.ts`
   - 환경 변수 누락 시 명확한 오류가 나는지 검증한다.
-- Create: `src/lib/supabase.ts`
+- Create: `src/shared/api/supabase.ts`
   - Supabase 브라우저 클라이언트를 생성한다.
-- Create: `src/auth/authService.ts`
+- Create: `src/features/auth/api/authService.ts`
   - Google 로그인, 로그아웃, 세션 구독 함수를 감싼다.
-- Create: `src/auth/authService.test.ts`
+- Create: `src/features/auth/api/authService.test.ts`
   - Google provider만 사용하는지 검증한다.
-- Create: `src/auth/AuthProvider.tsx`
+- Create: `src/features/auth/model/AuthProvider.tsx`
   - 인증 세션과 사용자 상태를 React Context로 제공한다.
-- Create: `src/auth/AuthGate.tsx`
+- Create: `src/features/auth/ui/AuthGate.tsx`
   - 로그인 전 화면과 앱 화면을 분기한다.
-- Create: `src/auth/AuthGate.test.tsx`
+- Create: `src/features/auth/ui/AuthGate.test.tsx`
   - 비로그인/로그인 상태 분기를 검증한다.
-- Create: `src/pages/LandingPage.tsx`
+- Create: `src/pages/landing/ui/LandingPage.tsx`
   - 로그인 전 소개 화면을 만든다.
+- Create: `src/pages/landing/ui/OnboardingMotionPreview.tsx`
+  - 저장 카드가 현재 상황 문장 기준으로 작업팩처럼 모이는 GSAP 시퀀스를 만든다.
+- Create: `src/pages/login/ui/LoginPage.tsx`
+  - Google 로그인 버튼과 약관/개인정보처리방침 안내를 제공한다.
 - Modify: `src/app/AppShell.tsx`
   - 프로필 버튼에서 기본 사용자 정보와 로그아웃 액션을 제공한다.
-- Modify: `src/App.tsx`
+- Modify: `src/app/App.tsx`
   - 앱 전체를 `AuthProvider`와 `AuthGate`로 감싼다.
 - Create: `.env.example`
   - 필요한 공개 환경 변수 이름을 문서화한다.
 
 ---
 
-### Task 1: Supabase 의존성과 환경 변수 검증 추가
+### Task 1: 인증/온보딩 의존성과 환경 변수 검증 추가
 
 **Files:**
 
 - Modify: `package.json`
 - Create: `.env.example`
-- Create: `src/lib/env.ts`
-- Create: `src/lib/env.test.ts`
+- Create: `src/shared/config/env.ts`
+- Create: `src/shared/config/env.test.ts`
 
-- [ ] **Step 1: Supabase 클라이언트 설치**
+- [ ] **Step 1: 인증과 온보딩 애니메이션 의존성 설치**
 
 Run:
 
 ```bash
-npm install @supabase/supabase-js
+npm install @supabase/supabase-js gsap @gsap/react
 ```
 
 Expected:
@@ -99,7 +108,7 @@ VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 
 - [ ] **Step 3: 환경 변수 검증 테스트 작성**
 
-Create `src/lib/env.test.ts`:
+Create `src/shared/config/env.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -143,19 +152,19 @@ describe('getClientEnv', () => {
 Run:
 
 ```bash
-npm test -- src/lib/env.test.ts
+npm test -- src/shared/config/env.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/lib/env.test.ts
+FAIL src/shared/config/env.test.ts
 Cannot find module './env'
 ```
 
 - [ ] **Step 5: 환경 변수 검증 구현**
 
-Create `src/lib/env.ts`:
+Create `src/shared/config/env.ts`:
 
 ```ts
 type ClientEnvSource = {
@@ -194,7 +203,7 @@ export function getClientEnv(source: ClientEnvSource = import.meta.env) {
 Run:
 
 ```bash
-npm test -- src/lib/env.test.ts
+npm test -- src/shared/config/env.test.ts
 npm run build
 ```
 
@@ -210,7 +219,7 @@ Expected:
 Run:
 
 ```bash
-git add package.json package-lock.json .env.example src/lib/env.ts src/lib/env.test.ts
+git add package.json package-lock.json .env.example src/shared/config/env.ts src/shared/config/env.test.ts
 git commit -m "feat: Supabase 환경 변수 검증 추가"
 ```
 
@@ -220,13 +229,13 @@ git commit -m "feat: Supabase 환경 변수 검증 추가"
 
 **Files:**
 
-- Create: `src/lib/supabase.ts`
-- Create: `src/auth/authService.ts`
-- Create: `src/auth/authService.test.ts`
+- Create: `src/shared/api/supabase.ts`
+- Create: `src/features/auth/api/authService.ts`
+- Create: `src/features/auth/api/authService.test.ts`
 
 - [ ] **Step 1: 인증 서비스 테스트 작성**
 
-Create `src/auth/authService.test.ts`:
+Create `src/features/auth/api/authService.test.ts`:
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
@@ -271,19 +280,19 @@ describe('authService', () => {
 Run:
 
 ```bash
-npm test -- src/auth/authService.test.ts
+npm test -- src/features/auth/api/authService.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/auth/authService.test.ts
+FAIL src/features/auth/api/authService.test.ts
 Cannot find module './authService'
 ```
 
 - [ ] **Step 3: Supabase 클라이언트 생성**
 
-Create `src/lib/supabase.ts`:
+Create `src/shared/api/supabase.ts`:
 
 ```ts
 import { createClient } from '@supabase/supabase-js';
@@ -301,10 +310,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 - [ ] **Step 4: 인증 서비스 구현**
 
-Create `src/auth/authService.ts`:
+Create `src/features/auth/api/authService.ts`:
 
 ```ts
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/shared/api';
 
 type OAuthClient = {
   auth: {
@@ -351,7 +360,7 @@ export async function signOut(client: SignOutClient = supabase) {
 Run:
 
 ```bash
-npm test -- src/auth/authService.test.ts
+npm test -- src/features/auth/api/authService.test.ts
 npm run build
 ```
 
@@ -367,7 +376,7 @@ Expected:
 Run:
 
 ```bash
-git add src/lib/supabase.ts src/auth/authService.ts src/auth/authService.test.ts
+git add src/shared/api/supabase.ts src/features/auth/api/authService.ts src/features/auth/api/authService.test.ts
 git commit -m "feat: Supabase Google 인증 서비스 추가"
 ```
 
@@ -377,15 +386,17 @@ git commit -m "feat: Supabase Google 인증 서비스 추가"
 
 **Files:**
 
-- Create: `src/auth/AuthProvider.tsx`
-- Create: `src/auth/AuthGate.tsx`
-- Create: `src/auth/AuthGate.test.tsx`
-- Create: `src/pages/LandingPage.tsx`
-- Modify: `src/App.tsx`
+- Create: `src/features/auth/model/AuthProvider.tsx`
+- Create: `src/features/auth/ui/AuthGate.tsx`
+- Create: `src/features/auth/ui/AuthGate.test.tsx`
+- Create: `src/pages/landing/ui/LandingPage.tsx`
+- Create: `src/pages/landing/ui/OnboardingMotionPreview.tsx`
+- Create: `src/pages/login/ui/LoginPage.tsx`
+- Modify: `src/app/App.tsx`
 
 - [ ] **Step 1: 인증 분기 테스트 작성**
 
-Create `src/auth/AuthGate.test.tsx`:
+Create `src/features/auth/ui/AuthGate.test.tsx`:
 
 ```tsx
 import { render, screen } from '@testing-library/react';
@@ -436,25 +447,25 @@ describe('AuthGate', () => {
 Run:
 
 ```bash
-npm test -- src/auth/AuthGate.test.tsx
+npm test -- src/features/auth/ui/AuthGate.test.tsx
 ```
 
 Expected:
 
 ```text
-FAIL src/auth/AuthGate.test.tsx
+FAIL src/features/auth/ui/AuthGate.test.tsx
 Cannot find module './AuthGate'
 ```
 
 - [ ] **Step 3: AuthProvider 구현**
 
-Create `src/auth/AuthProvider.tsx`:
+Create `src/features/auth/model/AuthProvider.tsx`:
 
 ```tsx
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/shared/api';
 
 export type AuthUser = {
   avatarUrl: string | null;
@@ -540,15 +551,82 @@ export function useAuth() {
 }
 ```
 
-- [ ] **Step 4: LandingPage 구현**
+- [ ] **Step 4: LandingPage와 LoginPage 구현**
 
-Create `src/pages/LandingPage.tsx`:
+Create `src/pages/landing/ui/OnboardingMotionPreview.tsx`:
 
 ```tsx
-import { signInWithGoogle } from '@/auth/authService';
-import { Button } from '@/components/ui/Button';
+import { useRef } from 'react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 
-export function LandingPage() {
+export function OnboardingMotionPreview() {
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      const reduceMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)'
+      ).matches;
+
+      if (reduceMotion) {
+        return;
+      }
+
+      const timeline = gsap.timeline({ repeat: -1, repeatDelay: 1.2 });
+      timeline
+        .from('.onboarding-motion__card', {
+          opacity: 0,
+          stagger: 0.12,
+          y: 18,
+        })
+        .from('.onboarding-motion__situation', { opacity: 0, y: 10 })
+        .to('.onboarding-motion__card', {
+          stagger: 0.08,
+          x: 18,
+          y: -8,
+        })
+        .from('.onboarding-motion__pack', { opacity: 0, y: 16 });
+    },
+    { scope: rootRef }
+  );
+
+  return (
+    <div className="onboarding-motion" ref={rootRef} aria-hidden="true">
+      <p className="onboarding-motion__situation">
+        팀 프로젝트 앱 첫 화면 참고
+      </p>
+      <div className="onboarding-motion__card">첫 화면 흐름 메모</div>
+      <div className="onboarding-motion__card">React 폼 구현 글</div>
+      <div className="onboarding-motion__pack">지금 다시 볼 작업팩</div>
+    </div>
+  );
+}
+```
+
+주의:
+
+- GSAP은 이 컴포넌트 안에서만 import한다.
+- 앱 내부 화면 전환과 버튼/카드 micro interaction에는 Motion 또는 CSS transition을 사용한다.
+- `prefers-reduced-motion`에서는 timeline을 만들지 않고 정적 미리보기만 보여준다.
+
+Create `src/pages/landing/ui/LandingPage.tsx`:
+
+```tsx
+import { Button } from '@/shared/ui';
+import { OnboardingMotionPreview } from './OnboardingMotionPreview';
+
+type LandingPageProps = {
+  onStart: () => void;
+};
+
+const highlights = [
+  'URL과 짧은 메모를 바로 보관해요.',
+  '정리는 나중에 필요한 만큼만 해요.',
+  '지금 하는 일에 맞게 다시 꺼내봐요.',
+];
+
+export function LandingPage({ onStart }: LandingPageProps) {
   return (
     <main className="landing-page">
       <section className="landing-page__content">
@@ -557,9 +635,45 @@ export function LandingPage() {
         <p>
           저장해둔 인사이트를 현재 상황이나 목적에 맞게 다시 꺼내보세요.
         </p>
+        <ul>
+          {highlights.map((highlight) => (
+            <li key={highlight}>{highlight}</li>
+          ))}
+        </ul>
+        <Button onClick={onStart}>서비스 경험하기</Button>
+      </section>
+      <OnboardingMotionPreview />
+    </main>
+  );
+}
+```
+
+Create `src/pages/login/ui/LoginPage.tsx`:
+
+```tsx
+import { signInWithGoogle } from '@/features/auth';
+import { Button } from '@/shared/ui';
+
+type LoginPageProps = {
+  onBack: () => void;
+};
+
+export function LoginPage({ onBack }: LoginPageProps) {
+  return (
+    <main className="login-page">
+      <button className="back-button" type="button" onClick={onBack}>
+        서비스 소개로
+      </button>
+      <section className="login-panel">
+        <h1>환영합니다!</h1>
+        <p>로그인 후 나만의 보관함과 꺼내보기를 사용할 수 있어요.</p>
         <Button onClick={() => void signInWithGoogle()}>
           Google로 시작하기
         </Button>
+        <p className="login-helper">간편 로그인</p>
+        <p className="terms-notice">
+          로그인 시 이용약관 및 개인정보처리방침에 동의하게 됩니다.
+        </p>
       </section>
     </main>
   );
@@ -568,11 +682,13 @@ export function LandingPage() {
 
 - [ ] **Step 5: AuthGate 구현**
 
-Create `src/auth/AuthGate.tsx`:
+Create `src/features/auth/ui/AuthGate.tsx`:
 
 ```tsx
 import type { ReactNode } from 'react';
-import { LandingPage } from '@/pages/LandingPage';
+import { useState } from 'react';
+import { LandingPage } from '@/pages/landing';
+import { LoginPage } from '@/pages/login';
 import type { AuthState } from './AuthProvider';
 import { useAuth } from './AuthProvider';
 
@@ -586,13 +702,21 @@ type AuthGateContentProps = {
   children: ReactNode;
 };
 
+type AuthEntryScreen = 'landing' | 'login';
+
 function AuthGateContent({ authState, children }: AuthGateContentProps) {
+  const [entryScreen, setEntryScreen] = useState<AuthEntryScreen>('landing');
+
   if (authState.status === 'loading') {
     return <p className="loading-message">로그인 상태를 확인하고 있습니다.</p>;
   }
 
   if (authState.status === 'signed-out') {
-    return <LandingPage />;
+    if (entryScreen === 'login') {
+      return <LoginPage onBack={() => setEntryScreen('landing')} />;
+    }
+
+    return <LandingPage onStart={() => setEntryScreen('login')} />;
   }
 
   return <>{children}</>;
@@ -615,18 +739,18 @@ export function AuthGate({ authState, children }: AuthGateProps) {
 
 - [ ] **Step 6: App에 인증 게이트 연결**
 
-Modify `src/App.tsx`:
+Modify `src/app/App.tsx`:
 
 ```tsx
 import { useState } from 'react';
 import { AppShell } from '@/app/AppShell';
-import { AuthGate } from '@/auth/AuthGate';
-import { AuthProvider } from '@/auth/AuthProvider';
-import type { AppTab } from '@/domain/navigation';
-import { DEFAULT_APP_TAB } from '@/domain/navigation';
-import { HomePage } from '@/pages/HomePage';
-import { LibraryPage } from '@/pages/LibraryPage';
-import { SavePage } from '@/pages/SavePage';
+import { AuthGate } from '@/features/auth';
+import { AuthProvider } from '@/features/auth';
+import type { AppTab } from '@/shared/model';
+import { DEFAULT_APP_TAB } from '@/shared/model';
+import { HomePage } from '@/pages/home';
+import { LibraryPage } from '@/pages/library';
+import { SavePage } from '@/pages/save';
 
 function AuthenticatedApp() {
   const [activeTab, setActiveTab] = useState<AppTab>(DEFAULT_APP_TAB);
@@ -656,7 +780,7 @@ export default function App() {
 Run:
 
 ```bash
-npm test -- src/auth/AuthGate.test.tsx
+npm test -- src/features/auth/ui/AuthGate.test.tsx
 npm run build
 ```
 
@@ -672,7 +796,7 @@ Expected:
 Run:
 
 ```bash
-git add src/auth/AuthProvider.tsx src/auth/AuthGate.tsx src/auth/AuthGate.test.tsx src/pages/LandingPage.tsx src/App.tsx
+git add package.json package-lock.json src/features/auth/model/AuthProvider.tsx src/features/auth/ui/AuthGate.tsx src/features/auth/ui/AuthGate.test.tsx src/pages/landing/ui/LandingPage.tsx src/pages/landing/ui/OnboardingMotionPreview.tsx src/pages/login/ui/LoginPage.tsx src/app/App.tsx
 git commit -m "feat: 인증 게이트와 로그인 전 화면 구현"
 ```
 
@@ -749,11 +873,11 @@ Modify `src/app/AppShell.tsx` so it accepts `user` and `onSignOut`:
 ```tsx
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { BottomNavigation } from '@/components/navigation/BottomNavigation';
-import type { AuthUser } from '@/auth/AuthProvider';
-import { signOut } from '@/auth/authService';
-import type { AppTab } from '@/domain/navigation';
-import { getAppTabLabel } from '@/domain/navigation';
+import { BottomNavigation } from '@/widgets/bottom-navigation';
+import type { AuthUser } from '@/features/auth';
+import { signOut } from '@/features/auth';
+import type { AppTab } from '@/shared/model';
+import { getAppTabLabel } from '@/shared/model';
 
 type AppShellProps = {
   activeTab: AppTab;
@@ -812,7 +936,7 @@ export function AppShell({
 
 - [ ] **Step 4: App에서 사용자 정보 전달**
 
-Modify `AuthenticatedApp` inside `src/App.tsx`:
+Modify `AuthenticatedApp` inside `src/app/App.tsx`:
 
 ```tsx
 function AuthenticatedApp() {
@@ -836,7 +960,7 @@ function AuthenticatedApp() {
 Also add import:
 
 ```ts
-import { useAuth } from '@/auth/AuthProvider';
+import { useAuth } from '@/features/auth';
 ```
 
 - [ ] **Step 5: 테스트와 빌드 확인**
@@ -860,7 +984,7 @@ Expected:
 Run:
 
 ```bash
-git add src/app/AppShell.tsx src/app/AppShell.auth.test.tsx src/App.tsx
+git add src/app/AppShell.tsx src/app/AppShell.auth.test.tsx src/app/App.tsx
 git commit -m "feat: 프로필 메뉴 로그아웃 연결"
 ```
 
@@ -871,7 +995,8 @@ git commit -m "feat: 프로필 메뉴 로그아웃 연결"
 **Spec coverage:**
 
 - Google OAuth만 로그인 방식으로 제공한다.
-- 로그인 전 소개 화면에 서비스명, 한 줄 소개, Google 로그인 CTA가 있다.
+- 로그인 전 소개 화면에 서비스명, 한 줄 소개, 핵심 경험 미리보기, `서비스 경험하기` CTA가 있다.
+- `서비스 경험하기` CTA 이후 별도 로그인 화면에서 Google 로그인 버튼과 약관/개인정보처리방침 안내를 제공한다.
 - 인증 상태를 감지하고 비로그인 사용자의 앱 접근을 막는다.
 - 로그아웃 기능과 기본 프로필 정보 표시가 포함된다.
 - 별도 설정 페이지는 만들지 않는다.

@@ -4,7 +4,10 @@
 
 **Goal:** 사용자가 URL만으로 인사이트를 즉시 저장하고, 저장 후 메모와 여러 카테고리를 선택적으로 연결할 수 있게 한다.
 
-**Architecture:** URL 검증과 정규화는 `src/domain/url.ts`에 둔다. 저장 유스케이스는 `src/insights/saveInsight.ts`에서 Repository를 주입받아 테스트 가능하게 만들고, 화면은 `SavePage`에서 입력-저장-후속 분류 흐름을 담당한다.
+**Architecture:** URL 검증과 정규화는 `src/entities/insight/lib/url.ts`에 둔다. 저장 유스케이스는 `src/features/insight-save/model/saveInsight.ts`에서 Repository를 주입받아 테스트 가능하게 만들고, 화면은 `SavePage`에서 입력-저장-후속 분류 흐름을 담당한다.
+
+
+**FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
 
 **Tech Stack:** React 19, TypeScript, Supabase, Vitest, React Testing Library
 
@@ -33,17 +36,17 @@
 
 ## 파일 구조
 
-- Create: `src/domain/url.ts`
+- Create: `src/entities/insight/lib/url.ts`
   - URL 검증, 정규화, 도메인 추출을 담당한다.
-- Create: `src/domain/url.test.ts`
+- Create: `src/entities/insight/lib/url.test.ts`
   - 정규화 규칙과 차단 protocol을 검증한다.
-- Create: `src/insights/insightRepository.ts`
+- Create: `src/entities/insight/api/insightRepository.ts`
   - Supabase 인사이트 저장과 카테고리 연결을 담당한다.
-- Create: `src/insights/saveInsight.ts`
+- Create: `src/features/insight-save/model/saveInsight.ts`
   - URL을 인사이트로 저장하는 유스케이스를 담당한다.
-- Create: `src/insights/saveInsight.test.ts`
+- Create: `src/features/insight-save/model/saveInsight.test.ts`
   - 중복 감지와 저장 payload를 검증한다.
-- Modify: `src/pages/SavePage.tsx`
+- Modify: `src/pages/save/ui/SavePage.tsx`
   - 실제 URL 저장 화면으로 교체한다.
 
 ---
@@ -52,12 +55,12 @@
 
 **Files:**
 
-- Create: `src/domain/url.ts`
-- Create: `src/domain/url.test.ts`
+- Create: `src/entities/insight/lib/url.ts`
+- Create: `src/entities/insight/lib/url.test.ts`
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-Create `src/domain/url.test.ts`:
+Create `src/entities/insight/lib/url.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -98,19 +101,19 @@ describe('url domain', () => {
 Run:
 
 ```bash
-npm test -- src/domain/url.test.ts
+npm test -- src/entities/insight/lib/url.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/domain/url.test.ts
+FAIL src/entities/insight/lib/url.test.ts
 Cannot find module './url'
 ```
 
 - [ ] **Step 3: URL 규칙 구현**
 
-Create `src/domain/url.ts`:
+Create `src/entities/insight/lib/url.ts`:
 
 ```ts
 const BLOCKED_PROTOCOLS = new Set(['javascript:', 'data:', 'file:', 'ftp:']);
@@ -191,7 +194,7 @@ export function parseInsightUrl(rawUrl: string): ParsedInsightUrl {
 Run:
 
 ```bash
-npm test -- src/domain/url.test.ts
+npm test -- src/entities/insight/lib/url.test.ts
 ```
 
 Expected:
@@ -205,7 +208,7 @@ Expected:
 Run:
 
 ```bash
-git add src/domain/url.ts src/domain/url.test.ts
+git add src/entities/insight/lib/url.ts src/entities/insight/lib/url.test.ts
 git commit -m "feat: 인사이트 URL 검증과 정규화 추가"
 ```
 
@@ -215,13 +218,13 @@ git commit -m "feat: 인사이트 URL 검증과 정규화 추가"
 
 **Files:**
 
-- Create: `src/insights/saveInsight.ts`
-- Create: `src/insights/saveInsight.test.ts`
-- Create: `src/insights/insightRepository.ts`
+- Create: `src/features/insight-save/model/saveInsight.ts`
+- Create: `src/features/insight-save/model/saveInsight.test.ts`
+- Create: `src/entities/insight/api/insightRepository.ts`
 
 - [ ] **Step 1: 저장 유스케이스 테스트 작성**
 
-Create `src/insights/saveInsight.test.ts`:
+Create `src/features/insight-save/model/saveInsight.test.ts`:
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
@@ -278,23 +281,23 @@ describe('saveInsight', () => {
 Run:
 
 ```bash
-npm test -- src/insights/saveInsight.test.ts
+npm test -- src/features/insight-save/model/saveInsight.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/insights/saveInsight.test.ts
+FAIL src/features/insight-save/model/saveInsight.test.ts
 Cannot find module './saveInsight'
 ```
 
 - [ ] **Step 3: Repository 작성**
 
-Create `src/insights/insightRepository.ts`:
+Create `src/entities/insight/api/insightRepository.ts`:
 
 ```ts
-import { supabase } from '@/lib/supabase';
-import type { InsightInsert } from '@/types/database';
+import { supabase } from '@/shared/api';
+import type { InsightInsert } from '@/shared/api';
 
 export async function createInsight(input: InsightInsert) {
   const { data, error } = await supabase
@@ -335,11 +338,11 @@ export async function attachInsightCategories(
 
 - [ ] **Step 4: 저장 유스케이스 구현**
 
-Create `src/insights/saveInsight.ts`:
+Create `src/features/insight-save/model/saveInsight.ts`:
 
 ```ts
-import { parseInsightUrl } from '@/domain/url';
-import type { InsightInsert } from '@/types/database';
+import { parseInsightUrl } from '@/entities/insight';
+import type { InsightInsert } from '@/shared/api';
 
 type SaveInsightInput = {
   attachCategories: (
@@ -390,7 +393,7 @@ export async function saveInsight({
 Run:
 
 ```bash
-npm test -- src/insights/saveInsight.test.ts
+npm test -- src/features/insight-save/model/saveInsight.test.ts
 ```
 
 Expected:
@@ -404,7 +407,7 @@ Expected:
 Run:
 
 ```bash
-git add src/insights/saveInsight.ts src/insights/saveInsight.test.ts src/insights/insightRepository.ts
+git add src/features/insight-save/model/saveInsight.ts src/features/insight-save/model/saveInsight.test.ts src/entities/insight/api/insightRepository.ts
 git commit -m "feat: 인사이트 저장 유스케이스 추가"
 ```
 
@@ -414,25 +417,25 @@ git commit -m "feat: 인사이트 저장 유스케이스 추가"
 
 **Files:**
 
-- Modify: `src/pages/SavePage.tsx`
+- Modify: `src/pages/save/ui/SavePage.tsx`
 
 - [ ] **Step 1: 저장 화면을 실제 입력 흐름으로 교체**
 
-Modify `src/pages/SavePage.tsx`:
+Modify `src/pages/save/ui/SavePage.tsx`:
 
 ```tsx
 import { useEffect, useState } from 'react';
-import { getMyCategories } from '@/categories/categoryRepository';
-import { Button } from '@/components/ui/Button';
-import { Chip } from '@/components/ui/Chip';
-import { TextInput } from '@/components/ui/TextInput';
-import { useAuth } from '@/auth/AuthProvider';
+import { getMyCategories } from '@/entities/category';
+import { Button } from '@/shared/ui';
+import { Chip } from '@/shared/ui';
+import { TextInput } from '@/shared/ui';
+import { useAuth } from '@/features/auth';
 import {
   attachInsightCategories,
   createInsight,
-} from '@/insights/insightRepository';
-import { saveInsight } from '@/insights/saveInsight';
-import type { CategoryRow } from '@/types/database';
+} from '@/entities/insight';
+import { saveInsight } from '@/features/insight-save';
+import type { CategoryRow } from '@/shared/api';
 
 export function SavePage() {
   const { authState } = useAuth();
@@ -545,7 +548,7 @@ Expected:
 Run:
 
 ```bash
-git add src/pages/SavePage.tsx
+git add src/pages/save/ui/SavePage.tsx
 git commit -m "feat: URL 인사이트 저장 화면 연결"
 ```
 

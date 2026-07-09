@@ -4,7 +4,10 @@
 
 **Goal:** 사용자가 카테고리를 생성, 수정, 삭제하고 보관함 필터에 즉시 반영할 수 있게 한다.
 
-**Architecture:** 카테고리 이름 정규화는 `src/domain/category.ts`를 재사용한다. Supabase 작업은 `src/categories/categoryRepository.ts`에 모으고, 화면 조작은 `CategoryManager` 컴포넌트로 분리해 보관함 화면에 붙인다.
+**Architecture:** 카테고리 이름 정규화는 `src/entities/category/model/category.ts`를 재사용한다. Supabase 작업은 `src/entities/category/api/categoryRepository.ts`에 모으고, 화면 조작은 `CategoryManager` 컴포넌트로 분리해 보관함 화면에 붙인다.
+
+
+**FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
 
 **Tech Stack:** React 19, TypeScript, Supabase, Vitest, React Testing Library
 
@@ -33,17 +36,17 @@
 
 ## 파일 구조
 
-- Modify: `src/categories/categoryRepository.ts`
+- Modify: `src/entities/category/api/categoryRepository.ts`
   - 단일 카테고리 생성, 이름 수정, 삭제 함수를 추가한다.
-- Create: `src/categories/categoryUseCases.ts`
+- Create: `src/features/category-management/model/categoryUseCases.ts`
   - 이름 검증과 중복 방지 유스케이스를 둔다.
-- Create: `src/categories/categoryUseCases.test.ts`
+- Create: `src/features/category-management/model/categoryUseCases.test.ts`
   - 공백, 중복, 생성 payload를 검증한다.
-- Create: `src/components/categories/CategoryManager.tsx`
+- Create: `src/features/category-management/ui/CategoryManager.tsx`
   - 카테고리 생성/수정/삭제 UI를 만든다.
-- Create: `src/components/categories/CategoryManager.test.tsx`
+- Create: `src/features/category-management/ui/CategoryManager.test.tsx`
   - 생성 입력과 삭제 액션을 검증한다.
-- Modify: `src/pages/LibraryPage.tsx`
+- Modify: `src/pages/library/ui/LibraryPage.tsx`
   - 보관함 필터 영역에 카테고리 관리 진입점을 연결한다.
 
 ---
@@ -52,12 +55,12 @@
 
 **Files:**
 
-- Create: `src/categories/categoryUseCases.ts`
-- Create: `src/categories/categoryUseCases.test.ts`
+- Create: `src/features/category-management/model/categoryUseCases.ts`
+- Create: `src/features/category-management/model/categoryUseCases.test.ts`
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-Create `src/categories/categoryUseCases.test.ts`:
+Create `src/features/category-management/model/categoryUseCases.test.ts`:
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
@@ -117,23 +120,23 @@ describe('category use cases', () => {
 Run:
 
 ```bash
-npm test -- src/categories/categoryUseCases.test.ts
+npm test -- src/features/category-management/model/categoryUseCases.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/categories/categoryUseCases.test.ts
+FAIL src/features/category-management/model/categoryUseCases.test.ts
 Cannot find module './categoryUseCases'
 ```
 
 - [ ] **Step 3: 유스케이스 구현**
 
-Create `src/categories/categoryUseCases.ts`:
+Create `src/features/category-management/model/categoryUseCases.ts`:
 
 ```ts
-import { getDefaultCategoryColor, normalizeCategoryName } from '@/domain/category';
-import type { CategoryInsert } from '@/types/database';
+import { getDefaultCategoryColor, normalizeCategoryName } from '@/entities/category';
+import type { CategoryInsert } from '@/shared/api';
 
 type CreateCategoryForUserInput = {
   createCategory: (input: CategoryInsert) => Promise<{ id: string }>;
@@ -207,7 +210,7 @@ export async function renameCategoryForUser({
 Run:
 
 ```bash
-npm test -- src/categories/categoryUseCases.test.ts
+npm test -- src/features/category-management/model/categoryUseCases.test.ts
 ```
 
 Expected:
@@ -221,7 +224,7 @@ Expected:
 Run:
 
 ```bash
-git add src/categories/categoryUseCases.ts src/categories/categoryUseCases.test.ts
+git add src/features/category-management/model/categoryUseCases.ts src/features/category-management/model/categoryUseCases.test.ts
 git commit -m "feat: 카테고리 관리 유스케이스 추가"
 ```
 
@@ -231,14 +234,14 @@ git commit -m "feat: 카테고리 관리 유스케이스 추가"
 
 **Files:**
 
-- Modify: `src/categories/categoryRepository.ts`
+- Modify: `src/entities/category/api/categoryRepository.ts`
 
 - [ ] **Step 1: Repository 함수 추가**
 
-Modify `src/categories/categoryRepository.ts` by adding:
+Modify `src/entities/category/api/categoryRepository.ts` by adding:
 
 ```ts
-import type { CategoryInsert } from '@/types/database';
+import type { CategoryInsert } from '@/shared/api';
 
 export async function createCategory(input: CategoryInsert) {
   const { data, error } = await supabase
@@ -293,7 +296,7 @@ Expected:
 Run:
 
 ```bash
-git add src/categories/categoryRepository.ts
+git add src/entities/category/api/categoryRepository.ts
 git commit -m "feat: 카테고리 Repository 관리 함수 추가"
 ```
 
@@ -303,12 +306,12 @@ git commit -m "feat: 카테고리 Repository 관리 함수 추가"
 
 **Files:**
 
-- Create: `src/components/categories/CategoryManager.tsx`
-- Create: `src/components/categories/CategoryManager.test.tsx`
+- Create: `src/features/category-management/ui/CategoryManager.tsx`
+- Create: `src/features/category-management/ui/CategoryManager.test.tsx`
 
 - [ ] **Step 1: 실패하는 UI 테스트 작성**
 
-Create `src/components/categories/CategoryManager.test.tsx`:
+Create `src/features/category-management/ui/CategoryManager.test.tsx`:
 
 ```tsx
 import { render, screen } from '@testing-library/react';
@@ -343,25 +346,25 @@ describe('CategoryManager', () => {
 Run:
 
 ```bash
-npm test -- src/components/categories/CategoryManager.test.tsx
+npm test -- src/features/category-management/ui/CategoryManager.test.tsx
 ```
 
 Expected:
 
 ```text
-FAIL src/components/categories/CategoryManager.test.tsx
+FAIL src/features/category-management/ui/CategoryManager.test.tsx
 Cannot find module './CategoryManager'
 ```
 
 - [ ] **Step 3: CategoryManager 구현**
 
-Create `src/components/categories/CategoryManager.tsx`:
+Create `src/features/category-management/ui/CategoryManager.tsx`:
 
 ```tsx
 import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
-import { TextInput } from '@/components/ui/TextInput';
-import type { CategoryRow } from '@/types/database';
+import { Button } from '@/shared/ui';
+import { TextInput } from '@/shared/ui';
+import type { CategoryRow } from '@/shared/api';
 
 type CategoryManagerProps = {
   categories: CategoryRow[];
@@ -428,7 +431,7 @@ export function CategoryManager({
 Run:
 
 ```bash
-npm test -- src/components/categories/CategoryManager.test.tsx
+npm test -- src/features/category-management/ui/CategoryManager.test.tsx
 ```
 
 Expected:
@@ -442,7 +445,7 @@ Expected:
 Run:
 
 ```bash
-git add src/components/categories/CategoryManager.tsx src/components/categories/CategoryManager.test.tsx
+git add src/features/category-management/ui/CategoryManager.tsx src/features/category-management/ui/CategoryManager.test.tsx
 git commit -m "feat: 카테고리 관리 UI 추가"
 ```
 
@@ -452,24 +455,24 @@ git commit -m "feat: 카테고리 관리 UI 추가"
 
 **Files:**
 
-- Modify: `src/pages/LibraryPage.tsx`
+- Modify: `src/pages/library/ui/LibraryPage.tsx`
 
 - [ ] **Step 1: 카테고리 관리 import 추가**
 
-Modify imports in `src/pages/LibraryPage.tsx`:
+Modify imports in `src/pages/library/ui/LibraryPage.tsx`:
 
 ```tsx
-import { CategoryManager } from '@/components/categories/CategoryManager';
+import { CategoryManager } from '@/features/category-management';
 import {
   createCategory,
   deleteCategory,
   getMyCategories,
   updateCategoryName,
-} from '@/categories/categoryRepository';
+} from '@/entities/category';
 import {
   createCategoryForUser,
   renameCategoryForUser,
-} from '@/categories/categoryUseCases';
+} from '@/features/category-management';
 ```
 
 - [ ] **Step 2: 카테고리 관리 handler 추가**
@@ -550,7 +553,7 @@ Expected:
 Run:
 
 ```bash
-git add src/pages/LibraryPage.tsx
+git add src/pages/library/ui/LibraryPage.tsx
 git commit -m "feat: 보관함 카테고리 관리 연결"
 ```
 

@@ -4,7 +4,10 @@
 
 **Goal:** 아맞다 MVP의 기본 앱 구조, 하단 탭 내비게이션, 핵심 화면 골격, 공통 UI 컴포넌트, 테스트 환경을 만든다.
 
-**Architecture:** 이 계획은 Supabase 인증/DB를 붙이기 전 단계의 프론트엔드 앱 셸만 다룬다. `src/domain`에는 앱 탭 같은 화면 상태 모델을 두고, `src/app`은 전체 레이아웃을, `src/pages`는 홈/보관함/저장 화면 골격을, `src/components`는 재사용 UI를 담당한다.
+**Architecture:** 이 계획은 Supabase 인증/DB를 붙이기 전 단계의 프론트엔드 앱 셸만 다룬다. 앱 탭 같은 화면 상태 모델은 `src/shared/model`, 전체 레이아웃은 `src/app`, 홈/보관함/저장 화면 골격은 `src/pages`, 하단 내비게이션은 `src/widgets/bottom-navigation`, 재사용 UI는 `src/shared/ui`가 담당한다.
+
+
+**FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
 
 **Tech Stack:** React 19, TypeScript, Vite, Vitest, React Testing Library, Testing Library jest-dom, lucide-react
 
@@ -41,41 +44,41 @@
   - Vitest, jsdom, alias, React 플러그인을 설정한다.
 - Modify: `tsconfig.node.json`
   - `vitest.config.ts`가 타입 체크 대상에 포함되도록 한다.
-- Create: `src/test/setup.ts`
+- Create: `src/shared/testing/setup.ts`
   - Testing Library jest-dom matcher를 Vitest에 연결한다.
-- Create: `src/domain/navigation.ts`
+- Create: `src/shared/model/navigation.ts`
   - 앱 탭 도메인 모델과 기본 탭을 정의한다.
-- Create: `src/domain/navigation.test.ts`
+- Create: `src/shared/model/navigation.test.ts`
   - 탭 순서와 기본 탭을 검증한다.
-- Create: `src/components/ui/Button.tsx`
+- Create: `src/shared/ui/Button.tsx`
   - 공통 버튼 컴포넌트를 만든다.
-- Create: `src/components/ui/TextInput.tsx`
+- Create: `src/shared/ui/TextInput.tsx`
   - 라벨이 있는 공통 입력 컴포넌트를 만든다.
-- Create: `src/components/ui/Chip.tsx`
+- Create: `src/shared/ui/Chip.tsx`
   - 카테고리/추천 상황에 쓸 칩 컴포넌트를 만든다.
-- Create: `src/components/ui/InsightCard.tsx`
+- Create: `src/shared/ui/InsightCard.tsx`
   - 인사이트 카드의 최소 표시 구조를 만든다.
-- Create: `src/components/ui/ui.test.tsx`
+- Create: `src/shared/ui/ui.test.tsx`
   - 공통 UI의 접근성과 조건부 렌더링을 검증한다.
-- Create: `src/components/navigation/BottomNavigation.tsx`
+- Create: `src/widgets/bottom-navigation/ui/BottomNavigation.tsx`
   - 하단 중앙 내비게이션을 만든다.
-- Create: `src/components/navigation/BottomNavigation.test.tsx`
+- Create: `src/widgets/bottom-navigation/ui/BottomNavigation.test.tsx`
   - 탭 순서, 활성 상태, 클릭 동작을 검증한다.
 - Create: `src/app/AppShell.tsx`
   - 상단 헤더, 본문, 하단 내비게이션을 조합한다.
 - Create: `src/app/AppShell.test.tsx`
   - 앱 셸이 현재 탭 화면과 프로필 진입점을 렌더링하는지 검증한다.
-- Create: `src/pages/HomePage.tsx`
+- Create: `src/pages/home/ui/HomePage.tsx`
   - 꺼내보기 중심의 홈 화면 골격을 만든다.
-- Create: `src/pages/LibraryPage.tsx`
+- Create: `src/pages/library/ui/LibraryPage.tsx`
   - 보관함 화면 골격을 만든다.
-- Create: `src/pages/SavePage.tsx`
+- Create: `src/pages/save/ui/SavePage.tsx`
   - 저장 화면 골격을 만든다.
-- Modify: `src/App.tsx`
+- Modify: `src/app/App.tsx`
   - 기본 탭 상태와 화면 전환을 연결한다.
 - Modify: `src/main.tsx`
   - 글로벌 스타일을 불러온다.
-- Create: `src/styles/global.css`
+- Create: `src/app/styles/global.css`
   - 기본 색상, 레이아웃, 반응형 스타일을 정의한다.
 
 ---
@@ -87,8 +90,8 @@
 - Modify: `package.json`
 - Create: `vitest.config.ts`
 - Modify: `tsconfig.node.json`
-- Create: `src/test/setup.ts`
-- Create: `src/test/smoke.test.ts`
+- Create: `src/shared/testing/setup.ts`
+- Create: `src/app/App.test.tsx`
 
 - [ ] **Step 1: 테스트와 UI 의존성 설치**
 
@@ -137,15 +140,12 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: [
-      { find: '@components', replacement: path.resolve(dirname, 'src/components') },
-      { find: '@', replacement: path.resolve(dirname, 'src') },
-    ],
+    alias: [{ find: '@', replacement: path.resolve(dirname, 'src') }],
   },
   test: {
     css: true,
     environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
+    setupFiles: ['./src/shared/testing/setup.ts'],
   },
 });
 ```
@@ -181,7 +181,7 @@ Modify `tsconfig.node.json`:
 
 - [ ] **Step 5: 테스트 setup 작성**
 
-Create `src/test/setup.ts`:
+Create `src/shared/testing/setup.ts`:
 
 ```ts
 import '@testing-library/jest-dom/vitest';
@@ -189,7 +189,7 @@ import '@testing-library/jest-dom/vitest';
 
 - [ ] **Step 6: smoke test 작성**
 
-Create `src/test/smoke.test.ts`:
+Create `src/app/App.test.tsx`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -206,7 +206,7 @@ describe('test environment', () => {
 Run:
 
 ```bash
-npm test -- src/test/smoke.test.ts
+npm test -- src/app/App.test.tsx
 ```
 
 Expected:
@@ -234,7 +234,7 @@ Expected:
 Run:
 
 ```bash
-git add package.json package-lock.json vitest.config.ts tsconfig.node.json src/test/setup.ts src/test/smoke.test.ts
+git add package.json package-lock.json vitest.config.ts tsconfig.node.json src/shared/testing/setup.ts src/app/App.test.tsx
 git commit -m "test: Vitest 테스트 환경 설정"
 ```
 
@@ -244,12 +244,12 @@ git commit -m "test: Vitest 테스트 환경 설정"
 
 **Files:**
 
-- Create: `src/domain/navigation.ts`
-- Create: `src/domain/navigation.test.ts`
+- Create: `src/shared/model/navigation.ts`
+- Create: `src/shared/model/navigation.test.ts`
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-Create `src/domain/navigation.test.ts`:
+Create `src/shared/model/navigation.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -289,19 +289,19 @@ describe('navigation domain', () => {
 Run:
 
 ```bash
-npm test -- src/domain/navigation.test.ts
+npm test -- src/shared/model/navigation.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/domain/navigation.test.ts
+FAIL src/shared/model/navigation.test.ts
 Cannot find module './navigation'
 ```
 
 - [ ] **Step 3: 최소 구현 작성**
 
-Create `src/domain/navigation.ts`:
+Create `src/shared/model/navigation.ts`:
 
 ```ts
 export type AppTab = 'library' | 'home' | 'save';
@@ -346,7 +346,7 @@ export function getAppTabLabel(tabId: AppTab): string {
 Run:
 
 ```bash
-npm test -- src/domain/navigation.test.ts
+npm test -- src/shared/model/navigation.test.ts
 ```
 
 Expected:
@@ -360,7 +360,7 @@ Expected:
 Run:
 
 ```bash
-git add src/domain/navigation.ts src/domain/navigation.test.ts
+git add src/shared/model/navigation.ts src/shared/model/navigation.test.ts
 git commit -m "feat: 앱 탭 도메인 모델 추가"
 ```
 
@@ -370,15 +370,15 @@ git commit -m "feat: 앱 탭 도메인 모델 추가"
 
 **Files:**
 
-- Create: `src/components/ui/Button.tsx`
-- Create: `src/components/ui/TextInput.tsx`
-- Create: `src/components/ui/Chip.tsx`
-- Create: `src/components/ui/InsightCard.tsx`
-- Create: `src/components/ui/ui.test.tsx`
+- Create: `src/shared/ui/Button.tsx`
+- Create: `src/shared/ui/TextInput.tsx`
+- Create: `src/shared/ui/Chip.tsx`
+- Create: `src/shared/ui/InsightCard.tsx`
+- Create: `src/shared/ui/ui.test.tsx`
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-Create `src/components/ui/ui.test.tsx`:
+Create `src/shared/ui/ui.test.tsx`:
 
 ```tsx
 import { render, screen } from '@testing-library/react';
@@ -455,19 +455,19 @@ describe('shared UI components', () => {
 Run:
 
 ```bash
-npm test -- src/components/ui/ui.test.tsx
+npm test -- src/shared/ui/ui.test.tsx
 ```
 
 Expected:
 
 ```text
-FAIL src/components/ui/ui.test.tsx
+FAIL src/shared/ui/ui.test.tsx
 Cannot find module './Button'
 ```
 
 - [ ] **Step 3: Button 구현**
 
-Create `src/components/ui/Button.tsx`:
+Create `src/shared/ui/Button.tsx`:
 
 ```tsx
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
@@ -502,7 +502,7 @@ export function Button({
 
 - [ ] **Step 4: TextInput 구현**
 
-Create `src/components/ui/TextInput.tsx`:
+Create `src/shared/ui/TextInput.tsx`:
 
 ```tsx
 import { useId } from 'react';
@@ -513,12 +513,7 @@ type TextInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
 };
 
-export function TextInput({
-  helperText,
-  id,
-  label,
-  ...props
-}: TextInputProps) {
+export function TextInput({ helperText, id, label, ...props }: TextInputProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
 
@@ -534,7 +529,7 @@ export function TextInput({
 
 - [ ] **Step 5: Chip 구현**
 
-Create `src/components/ui/Chip.tsx`:
+Create `src/shared/ui/Chip.tsx`:
 
 ```tsx
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
@@ -568,7 +563,7 @@ export function Chip({
 
 - [ ] **Step 6: InsightCard 구현**
 
-Create `src/components/ui/InsightCard.tsx`:
+Create `src/shared/ui/InsightCard.tsx`:
 
 ```tsx
 import { ExternalLink } from 'lucide-react';
@@ -635,7 +630,7 @@ export function InsightCard({
 Run:
 
 ```bash
-npm test -- src/components/ui/ui.test.tsx
+npm test -- src/shared/ui/ui.test.tsx
 ```
 
 Expected:
@@ -649,7 +644,7 @@ Expected:
 Run:
 
 ```bash
-git add src/components/ui/Button.tsx src/components/ui/TextInput.tsx src/components/ui/Chip.tsx src/components/ui/InsightCard.tsx src/components/ui/ui.test.tsx
+git add src/shared/ui/Button.tsx src/shared/ui/TextInput.tsx src/shared/ui/Chip.tsx src/shared/ui/InsightCard.tsx src/shared/ui/ui.test.tsx
 git commit -m "feat: 공통 UI 컴포넌트 추가"
 ```
 
@@ -659,12 +654,12 @@ git commit -m "feat: 공통 UI 컴포넌트 추가"
 
 **Files:**
 
-- Create: `src/components/navigation/BottomNavigation.tsx`
-- Create: `src/components/navigation/BottomNavigation.test.tsx`
+- Create: `src/widgets/bottom-navigation/ui/BottomNavigation.tsx`
+- Create: `src/widgets/bottom-navigation/ui/BottomNavigation.test.tsx`
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-Create `src/components/navigation/BottomNavigation.test.tsx`:
+Create `src/widgets/bottom-navigation/ui/BottomNavigation.test.tsx`:
 
 ```tsx
 import { render, screen } from '@testing-library/react';
@@ -698,9 +693,7 @@ describe('BottomNavigation', () => {
     const handleTabChange = vi.fn();
     const user = userEvent.setup();
 
-    render(
-      <BottomNavigation activeTab="home" onTabChange={handleTabChange} />
-    );
+    render(<BottomNavigation activeTab="home" onTabChange={handleTabChange} />);
 
     await user.click(screen.getByRole('button', { name: '저장' }));
 
@@ -714,25 +707,25 @@ describe('BottomNavigation', () => {
 Run:
 
 ```bash
-npm test -- src/components/navigation/BottomNavigation.test.tsx
+npm test -- src/widgets/bottom-navigation/ui/BottomNavigation.test.tsx
 ```
 
 Expected:
 
 ```text
-FAIL src/components/navigation/BottomNavigation.test.tsx
+FAIL src/widgets/bottom-navigation/ui/BottomNavigation.test.tsx
 Cannot find module './BottomNavigation'
 ```
 
 - [ ] **Step 3: BottomNavigation 구현**
 
-Create `src/components/navigation/BottomNavigation.tsx`:
+Create `src/widgets/bottom-navigation/ui/BottomNavigation.tsx`:
 
 ```tsx
 import { Archive, Home, PlusCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { AppTab } from '@/domain/navigation';
-import { APP_TABS } from '@/domain/navigation';
+import type { AppTab } from '@/shared/model';
+import { APP_TABS } from '@/shared/model';
 
 type BottomNavigationProps = {
   activeTab: AppTab;
@@ -783,7 +776,7 @@ export function BottomNavigation({
 Run:
 
 ```bash
-npm test -- src/components/navigation/BottomNavigation.test.tsx
+npm test -- src/widgets/bottom-navigation/ui/BottomNavigation.test.tsx
 ```
 
 Expected:
@@ -797,7 +790,7 @@ Expected:
 Run:
 
 ```bash
-git add src/components/navigation/BottomNavigation.tsx src/components/navigation/BottomNavigation.test.tsx
+git add src/widgets/bottom-navigation/ui/BottomNavigation.tsx src/widgets/bottom-navigation/ui/BottomNavigation.test.tsx
 git commit -m "feat: 하단 탭 내비게이션 구현"
 ```
 
@@ -809,10 +802,10 @@ git commit -m "feat: 하단 탭 내비게이션 구현"
 
 - Create: `src/app/AppShell.tsx`
 - Create: `src/app/AppShell.test.tsx`
-- Create: `src/pages/HomePage.tsx`
-- Create: `src/pages/LibraryPage.tsx`
-- Create: `src/pages/SavePage.tsx`
-- Modify: `src/App.tsx`
+- Create: `src/pages/home/ui/HomePage.tsx`
+- Create: `src/pages/library/ui/LibraryPage.tsx`
+- Create: `src/pages/save/ui/SavePage.tsx`
+- Modify: `src/app/App.tsx`
 
 - [ ] **Step 1: 실패하는 앱 셸 테스트 작성**
 
@@ -877,9 +870,9 @@ Create `src/app/AppShell.tsx`:
 
 ```tsx
 import type { ReactNode } from 'react';
-import { BottomNavigation } from '@/components/navigation/BottomNavigation';
-import type { AppTab } from '@/domain/navigation';
-import { getAppTabLabel } from '@/domain/navigation';
+import { BottomNavigation } from '@/widgets/bottom-navigation';
+import type { AppTab } from '@/shared/model';
+import { getAppTabLabel } from '@/shared/model';
 
 type AppShellProps = {
   activeTab: AppTab;
@@ -916,15 +909,15 @@ export function AppShell({ activeTab, children, onTabChange }: AppShellProps) {
 
 - [ ] **Step 4: 화면 컴포넌트 작성**
 
-Create `src/pages/HomePage.tsx`:
+Create `src/pages/home/ui/HomePage.tsx`:
 
 ```tsx
-import { Button } from '@/components/ui/Button';
-import { Chip } from '@/components/ui/Chip';
-import { InsightCard } from '@/components/ui/InsightCard';
-import { TextInput } from '@/components/ui/TextInput';
+import { Button } from '@/shared/ui';
+import { Chip } from '@/shared/ui';
+import { InsightCard } from '@/shared/ui';
+import { TextInput } from '@/shared/ui';
 
-const recommendedSituations = ['팀 프로젝트', '개발 공부', '디자인 참고'];
+const recommendedSituations = ['팀 프로젝트', '개발 공부', 'UI 레퍼런스'];
 
 export function HomePage() {
   return (
@@ -956,7 +949,9 @@ export function HomePage() {
             categories={['UI/UX', '팀프로젝트']}
             domain="example.com"
             memo="앱 첫 화면 구성 참고"
-            onOpen={() => window.open('https://example.com', '_blank', 'noopener')}
+            onOpen={() =>
+              window.open('https://example.com', '_blank', 'noopener')
+            }
             title="모바일 온보딩 UX 레퍼런스"
           />
         </div>
@@ -966,12 +961,12 @@ export function HomePage() {
 }
 ```
 
-Create `src/pages/LibraryPage.tsx`:
+Create `src/pages/library/ui/LibraryPage.tsx`:
 
 ```tsx
-import { Chip } from '@/components/ui/Chip';
-import { InsightCard } from '@/components/ui/InsightCard';
-import { TextInput } from '@/components/ui/TextInput';
+import { Chip } from '@/shared/ui';
+import { InsightCard } from '@/shared/ui';
+import { TextInput } from '@/shared/ui';
 
 const categories = ['All', '개발', '디자인', '공부', '미분류'];
 
@@ -1011,12 +1006,12 @@ export function LibraryPage() {
 }
 ```
 
-Create `src/pages/SavePage.tsx`:
+Create `src/pages/save/ui/SavePage.tsx`:
 
 ```tsx
-import { Button } from '@/components/ui/Button';
-import { Chip } from '@/components/ui/Chip';
-import { TextInput } from '@/components/ui/TextInput';
+import { Button } from '@/shared/ui';
+import { Chip } from '@/shared/ui';
+import { TextInput } from '@/shared/ui';
 
 const suggestedCategories = ['개발', '디자인', '공부'];
 
@@ -1048,16 +1043,16 @@ export function SavePage() {
 
 - [ ] **Step 5: App 연결**
 
-Modify `src/App.tsx`:
+Modify `src/app/App.tsx`:
 
 ```tsx
 import { useState } from 'react';
 import { AppShell } from '@/app/AppShell';
-import type { AppTab } from '@/domain/navigation';
-import { DEFAULT_APP_TAB } from '@/domain/navigation';
-import { HomePage } from '@/pages/HomePage';
-import { LibraryPage } from '@/pages/LibraryPage';
-import { SavePage } from '@/pages/SavePage';
+import type { AppTab } from '@/shared/model';
+import { DEFAULT_APP_TAB } from '@/shared/model';
+import { HomePage } from '@/pages/home';
+import { LibraryPage } from '@/pages/library';
+import { SavePage } from '@/pages/save';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab>(DEFAULT_APP_TAB);
@@ -1105,7 +1100,7 @@ Expected:
 Run:
 
 ```bash
-git add src/app/AppShell.tsx src/app/AppShell.test.tsx src/pages/HomePage.tsx src/pages/LibraryPage.tsx src/pages/SavePage.tsx src/App.tsx
+git add src/app/AppShell.tsx src/app/AppShell.test.tsx src/pages/home/ui/HomePage.tsx src/pages/library/ui/LibraryPage.tsx src/pages/save/ui/SavePage.tsx src/app/App.tsx
 git commit -m "feat: 앱 셸과 핵심 화면 골격 구현"
 ```
 
@@ -1115,19 +1110,24 @@ git commit -m "feat: 앱 셸과 핵심 화면 골격 구현"
 
 **Files:**
 
-- Create: `src/styles/global.css`
+- Create: `src/app/styles/global.css`
 - Modify: `src/main.tsx`
 
 - [ ] **Step 1: 글로벌 스타일 파일 작성**
 
-Create `src/styles/global.css`:
+Create `src/app/styles/global.css`:
 
 ```css
 :root {
   color: #17201a;
   background: #f7f8f5;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -1444,8 +1444,8 @@ Modify `src/main.tsx`:
 ```tsx
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from '@/App.tsx';
-import '@/styles/global.css';
+import App from '@/app';
+import '@/app/styles/global.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -1508,7 +1508,7 @@ Local: http://localhost:5173/
 Run:
 
 ```bash
-git add src/styles/global.css src/main.tsx
+git add src/app/styles/global.css src/main.tsx
 git commit -m "style: 아맞다 앱 셸 기본 스타일 적용"
 ```
 
@@ -1523,8 +1523,8 @@ git commit -m "style: 아맞다 앱 셸 기본 스타일 적용"
 - 하단 중앙 내비게이션과 `보관함 / 홈 / 저장` 순서는 `BottomNavigation`과 `APP_TABS`에서 처리했다.
 - 홈 탭 가운데 배치는 `APP_TABS` 순서 테스트로 검증했다.
 - 상단 프로필 메뉴 영역은 `profile-button` 최소 UI로 처리했다.
-- 공통 버튼, 입력창, 카드, 칩은 `src/components/ui`에 분리했다.
-- 반응형 레이아웃 기준은 `src/styles/global.css`의 3열/2열/1열 그리드로 처리했다.
+- 공통 버튼, 입력창, 카드, 칩은 `src/shared/ui`에 분리했다.
+- 반응형 레이아웃 기준은 `src/app/styles/global.css`의 3열/2열/1열 그리드로 처리했다.
 - 환경 변수 구조 설정은 Supabase 인증 계획에서 다루는 것이 더 적절하므로 이 계획에서는 제외했다.
 
 **Placeholder scan:**

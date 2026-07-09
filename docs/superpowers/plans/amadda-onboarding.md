@@ -4,7 +4,10 @@
 
 **Goal:** 최초 로그인 사용자가 관심 분야를 선택하거나 건너뛰고 시작할 수 있게 하고, 선택한 항목을 초기 카테고리로 생성한다.
 
-**Architecture:** 온보딩은 `profiles.onboarding_completed`를 기준으로 한 번만 보여준다. 관심 분야 옵션과 카테고리 생성 로직은 `src/onboarding`에 두고, Supabase 읽기/쓰기 함수는 `src/profiles`와 `src/categories`에 분리한다.
+**Architecture:** 온보딩은 `profiles.onboarding_completed`를 기준으로 한 번만 보여준다. 관심 분야 옵션과 완료 유스케이스는 `src/features/onboarding`에 두고, Supabase 읽기/쓰기 함수는 `src/entities/profile`과 `src/entities/category`에 분리한다.
+
+
+**FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
 
 **Tech Stack:** React 19, TypeScript, Supabase, Vitest, React Testing Library
 
@@ -31,23 +34,23 @@
 
 ## 파일 구조
 
-- Create: `src/profiles/profileRepository.ts`
+- Create: `src/entities/profile/api/profileRepository.ts`
   - 프로필 조회와 온보딩 완료 업데이트를 담당한다.
-- Create: `src/categories/categoryRepository.ts`
+- Create: `src/entities/category/api/categoryRepository.ts`
   - 카테고리 생성과 목록 조회를 담당한다.
-- Create: `src/onboarding/onboardingOptions.ts`
+- Create: `src/features/onboarding/model/onboardingOptions.ts`
   - 기본 관심 분야 후보를 정의한다.
-- Create: `src/onboarding/completeOnboarding.ts`
+- Create: `src/features/onboarding/model/completeOnboarding.ts`
   - 선택 항목과 직접 입력을 카테고리로 만들고 프로필을 완료 처리한다.
-- Create: `src/onboarding/completeOnboarding.test.ts`
+- Create: `src/features/onboarding/model/completeOnboarding.test.ts`
   - 건너뛰기, 중복 제거, 직접 입력 처리를 검증한다.
-- Create: `src/pages/OnboardingPage.tsx`
+- Create: `src/pages/onboarding/ui/OnboardingPage.tsx`
   - 온보딩 UI를 만든다.
-- Create: `src/onboarding/OnboardingGate.tsx`
+- Create: `src/features/onboarding/ui/OnboardingGate.tsx`
   - 프로필 상태에 따라 온보딩과 앱 화면을 분기한다.
-- Create: `src/onboarding/OnboardingGate.test.tsx`
+- Create: `src/features/onboarding/ui/OnboardingGate.test.tsx`
   - 온보딩 완료 여부 분기를 검증한다.
-- Modify: `src/App.tsx`
+- Modify: `src/app/App.tsx`
   - 인증 이후 온보딩 게이트를 연결한다.
 
 ---
@@ -56,13 +59,13 @@
 
 **Files:**
 
-- Create: `src/onboarding/onboardingOptions.ts`
-- Create: `src/onboarding/completeOnboarding.ts`
-- Create: `src/onboarding/completeOnboarding.test.ts`
+- Create: `src/features/onboarding/model/onboardingOptions.ts`
+- Create: `src/features/onboarding/model/completeOnboarding.ts`
+- Create: `src/features/onboarding/model/completeOnboarding.test.ts`
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-Create `src/onboarding/completeOnboarding.test.ts`:
+Create `src/features/onboarding/model/completeOnboarding.test.ts`:
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
@@ -112,19 +115,19 @@ describe('completeOnboarding', () => {
 Run:
 
 ```bash
-npm test -- src/onboarding/completeOnboarding.test.ts
+npm test -- src/features/onboarding/model/completeOnboarding.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/onboarding/completeOnboarding.test.ts
+FAIL src/features/onboarding/model/completeOnboarding.test.ts
 Cannot find module './completeOnboarding'
 ```
 
 - [ ] **Step 3: 관심 분야 옵션 작성**
 
-Create `src/onboarding/onboardingOptions.ts`:
+Create `src/features/onboarding/model/onboardingOptions.ts`:
 
 ```ts
 export const ONBOARDING_INTERESTS = [
@@ -141,10 +144,10 @@ export const ONBOARDING_INTERESTS = [
 
 - [ ] **Step 4: 온보딩 완료 유스케이스 구현**
 
-Create `src/onboarding/completeOnboarding.ts`:
+Create `src/features/onboarding/model/completeOnboarding.ts`:
 
 ```ts
-import { normalizeCategoryName } from '@/domain/category';
+import { normalizeCategoryName } from '@/entities/category';
 
 type CompleteOnboardingInput = {
   createCategories: (userId: string, names: string[]) => Promise<void>;
@@ -198,7 +201,7 @@ export async function completeOnboarding({
 Run:
 
 ```bash
-npm test -- src/onboarding/completeOnboarding.test.ts
+npm test -- src/features/onboarding/model/completeOnboarding.test.ts
 ```
 
 Expected:
@@ -212,7 +215,7 @@ Expected:
 Run:
 
 ```bash
-git add src/onboarding/onboardingOptions.ts src/onboarding/completeOnboarding.ts src/onboarding/completeOnboarding.test.ts
+git add src/features/onboarding/model/onboardingOptions.ts src/features/onboarding/model/completeOnboarding.ts src/features/onboarding/model/completeOnboarding.test.ts
 git commit -m "feat: 온보딩 완료 유스케이스 추가"
 ```
 
@@ -222,16 +225,16 @@ git commit -m "feat: 온보딩 완료 유스케이스 추가"
 
 **Files:**
 
-- Create: `src/profiles/profileRepository.ts`
-- Create: `src/categories/categoryRepository.ts`
+- Create: `src/entities/profile/api/profileRepository.ts`
+- Create: `src/entities/category/api/categoryRepository.ts`
 
 - [ ] **Step 1: 프로필 Repository 작성**
 
-Create `src/profiles/profileRepository.ts`:
+Create `src/entities/profile/api/profileRepository.ts`:
 
 ```ts
-import { supabase } from '@/lib/supabase';
-import type { ProfileRow } from '@/types/database';
+import { supabase } from '@/shared/api';
+import type { ProfileRow } from '@/shared/api';
 
 export async function getMyProfile(userId: string) {
   const { data, error } = await supabase
@@ -261,12 +264,12 @@ export async function markOnboardingCompleted(userId: string) {
 
 - [ ] **Step 2: 카테고리 Repository 작성**
 
-Create `src/categories/categoryRepository.ts`:
+Create `src/entities/category/api/categoryRepository.ts`:
 
 ```ts
-import { getDefaultCategoryColor } from '@/domain/category';
-import { supabase } from '@/lib/supabase';
-import type { CategoryRow } from '@/types/database';
+import { getDefaultCategoryColor } from '@/entities/category';
+import { supabase } from '@/shared/api';
+import type { CategoryRow } from '@/shared/api';
 
 export async function getMyCategories(userId: string) {
   const { data, error } = await supabase
@@ -319,7 +322,7 @@ Expected:
 Run:
 
 ```bash
-git add src/profiles/profileRepository.ts src/categories/categoryRepository.ts
+git add src/entities/profile/api/profileRepository.ts src/entities/category/api/categoryRepository.ts
 git commit -m "feat: 프로필과 카테고리 Repository 추가"
 ```
 
@@ -329,14 +332,14 @@ git commit -m "feat: 프로필과 카테고리 Repository 추가"
 
 **Files:**
 
-- Create: `src/pages/OnboardingPage.tsx`
-- Create: `src/onboarding/OnboardingGate.tsx`
-- Create: `src/onboarding/OnboardingGate.test.tsx`
-- Modify: `src/App.tsx`
+- Create: `src/pages/onboarding/ui/OnboardingPage.tsx`
+- Create: `src/features/onboarding/ui/OnboardingGate.tsx`
+- Create: `src/features/onboarding/ui/OnboardingGate.test.tsx`
+- Modify: `src/app/App.tsx`
 
 - [ ] **Step 1: 온보딩 게이트 테스트 작성**
 
-Create `src/onboarding/OnboardingGate.test.tsx`:
+Create `src/features/onboarding/ui/OnboardingGate.test.tsx`:
 
 ```tsx
 import { render, screen } from '@testing-library/react';
@@ -392,26 +395,26 @@ describe('OnboardingGate', () => {
 Run:
 
 ```bash
-npm test -- src/onboarding/OnboardingGate.test.tsx
+npm test -- src/features/onboarding/ui/OnboardingGate.test.tsx
 ```
 
 Expected:
 
 ```text
-FAIL src/onboarding/OnboardingGate.test.tsx
+FAIL src/features/onboarding/ui/OnboardingGate.test.tsx
 Cannot find module './OnboardingGate'
 ```
 
 - [ ] **Step 3: 온보딩 화면 구현**
 
-Create `src/pages/OnboardingPage.tsx`:
+Create `src/pages/onboarding/ui/OnboardingPage.tsx`:
 
 ```tsx
 import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Chip } from '@/components/ui/Chip';
-import { TextInput } from '@/components/ui/TextInput';
-import { ONBOARDING_INTERESTS } from '@/onboarding/onboardingOptions';
+import { Button } from '@/shared/ui';
+import { Chip } from '@/shared/ui';
+import { TextInput } from '@/shared/ui';
+import { ONBOARDING_INTERESTS } from '@/features/onboarding';
 
 type OnboardingPageProps = {
   onComplete: (selected: string[], custom: string[]) => Promise<void> | void;
@@ -470,15 +473,15 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
 
 - [ ] **Step 4: 온보딩 게이트 구현**
 
-Create `src/onboarding/OnboardingGate.tsx`:
+Create `src/features/onboarding/ui/OnboardingGate.tsx`:
 
 ```tsx
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { createCategories } from '@/categories/categoryRepository';
-import { markOnboardingCompleted } from '@/profiles/profileRepository';
-import type { ProfileRow } from '@/types/database';
-import { OnboardingPage } from '@/pages/OnboardingPage';
+import { createCategories } from '@/entities/category';
+import { markOnboardingCompleted } from '@/entities/profile';
+import type { ProfileRow } from '@/shared/api';
+import { OnboardingPage } from '@/pages/onboarding';
 import { completeOnboarding } from './completeOnboarding';
 
 type OnboardingGateProps = {
@@ -518,7 +521,7 @@ export function OnboardingGate({
 
 - [ ] **Step 5: App에 온보딩 게이트 연결**
 
-Modify `AuthenticatedApp` in `src/App.tsx` to load profile:
+Modify `AuthenticatedApp` in `src/app/App.tsx` to load profile:
 
 ```tsx
 function AuthenticatedApp() {
@@ -561,9 +564,9 @@ Add imports:
 
 ```ts
 import { useEffect, useState } from 'react';
-import { OnboardingGate } from '@/onboarding/OnboardingGate';
-import { getMyProfile } from '@/profiles/profileRepository';
-import type { ProfileRow } from '@/types/database';
+import { OnboardingGate } from '@/features/onboarding';
+import { getMyProfile } from '@/entities/profile';
+import type { ProfileRow } from '@/shared/api';
 ```
 
 - [ ] **Step 6: 테스트와 빌드 확인**
@@ -571,7 +574,7 @@ import type { ProfileRow } from '@/types/database';
 Run:
 
 ```bash
-npm test -- src/onboarding/OnboardingGate.test.tsx
+npm test -- src/features/onboarding/ui/OnboardingGate.test.tsx
 npm run build
 ```
 
@@ -587,7 +590,7 @@ Expected:
 Run:
 
 ```bash
-git add src/pages/OnboardingPage.tsx src/onboarding/OnboardingGate.tsx src/onboarding/OnboardingGate.test.tsx src/App.tsx
+git add src/pages/onboarding/ui/OnboardingPage.tsx src/features/onboarding/ui/OnboardingGate.tsx src/features/onboarding/ui/OnboardingGate.test.tsx src/app/App.tsx
 git commit -m "feat: 최초 관심 분야 온보딩 구현"
 ```
 
