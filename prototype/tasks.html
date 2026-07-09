@@ -6,19 +6,40 @@
 <title>할 일</title>
 <style>
   :root {
-    --toss-blue: #3182f6;
-    --toss-blue-light: #eef4ff;
-    --toss-purple: #7c5cfc;
-    --toss-purple-light: #f2edff;
-    --toss-green: #1faa59;
-    --toss-green-light: #e6f9f0;
-    --toss-gray-900: #191f28;
-    --toss-gray-600: #4e5968;
-    --toss-gray-400: #8b95a1;
-    --toss-gray-200: #e5e8eb;
-    --toss-gray-100: #f2f4f6;
-    --toss-bg: #f9fafb;
-    --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.05);
+    --color-primary: #6C5CE7;
+    --color-primary-hover: #5A4BD1;
+    --color-primary-light: #A29BFE;
+    --color-primary-subtle: #EFECFC;
+
+    --bg-page: #F7F5F6;
+    --bg-surface: #FFFFFF;
+    --bg-dark: #1A1726;
+    --bg-dark-alt: #262238;
+
+    --text-primary: #1A1726;
+    --text-secondary: #5C5670;
+    --text-muted: #948FA4;
+    --text-on-dark: #FFFFFF;
+    --text-on-dark-muted: #A8A3BB;
+
+    --border-subtle: rgba(26,23,38,0.05);
+    --border-default: rgba(26,23,38,0.10);
+    --border-dark: rgba(255,255,255,0.07);
+
+    --color-info: #2F80ED;
+    --color-info-light: #4DA3FF;
+    --color-success: #0F7A57;
+    --color-success-bg: #E4F7EF;
+
+    --radius-sm: 9px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-full: 9999px;
+
+    --shadow-sm: 0 1px 3px rgba(26,23,38,0.03);
+    --shadow-md: 0 4px 18px rgba(26,23,38,0.05);
+    --shadow-lg: 0 14px 36px rgba(26,23,38,0.07);
+    --shadow-primary: 0 8px 24px rgba(108,92,231,0.22);
   }
 
   * {
@@ -30,12 +51,12 @@
   body {
     font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI",
       "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-    background: var(--toss-bg);
-    color: var(--toss-gray-900);
+    background: var(--bg-page);
+    color: var(--text-primary);
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    padding: 40px 16px;
+    padding: 48px 24px;
   }
 
   .page {
@@ -43,120 +64,141 @@
     max-width: 720px;
   }
 
-  .header {
-    padding: 8px 4px 28px;
-  }
-
-  .header h1 {
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    margin-bottom: 8px;
-  }
-
-  .header p {
-    font-size: 15px;
-    color: var(--toss-gray-600);
-    line-height: 1.5;
-  }
-
-  .card {
-    background: #ffffff;
-    border-radius: 24px;
-    box-shadow: var(--shadow-soft);
-    padding: 28px 24px 32px;
-  }
-
-  .card-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--toss-gray-900);
-    margin-bottom: 4px;
-  }
-
-  .card-subtitle {
-    font-size: 13px;
-    color: var(--toss-gray-400);
-    margin-bottom: 16px;
-  }
-
-  .progress-group {
+  .page-header {
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 28px;
+  }
+
+  .page-header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+
+  .page-header .subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .avatar {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    color: var(--text-on-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    box-shadow: var(--shadow-primary);
+  }
+
+  /* 진행도 카드 (다크) */
+  .progress-card {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-xl);
+    padding: 28px 24px;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 28px;
+  }
+
+  .progress-block + .progress-block {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-dark);
   }
 
   .progress-top {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   .progress-title {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--toss-gray-600);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--text-on-dark-muted);
   }
 
-  .progress-title::before {
-    content: "";
+  .dot {
+    flex-shrink: 0;
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: currentColor;
   }
 
-  .progress-title.team {
-    color: var(--toss-purple);
+  .dot-team {
+    background: var(--color-primary-light);
   }
 
-  .progress-title.mine {
-    color: var(--toss-blue);
+  .dot-mine {
+    background: var(--color-info-light);
   }
 
   .progress-value {
-    font-size: 14px;
+    font-size: 20px;
     font-weight: 700;
-    color: var(--toss-gray-900);
+    color: var(--text-on-dark);
   }
 
   .progress-track {
     height: 8px;
-    background: var(--toss-gray-200);
-    border-radius: 999px;
+    background: var(--border-dark);
+    border-radius: var(--radius-full);
     overflow: hidden;
   }
 
   .progress-fill {
     height: 100%;
     width: 0%;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     transition: width 0.3s ease;
   }
 
   .progress-fill.fill-team {
-    background: var(--toss-purple);
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
   }
 
   .progress-fill.fill-mine {
-    background: var(--toss-blue);
+    background: linear-gradient(90deg, var(--color-info), var(--color-info-light));
   }
 
   .progress-caption {
     font-size: 12px;
-    color: var(--toss-gray-400);
-    margin-top: 6px;
+    color: var(--text-on-dark-muted);
+    margin-top: 8px;
   }
 
+  /* 섹션 라벨 */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--text-muted);
+    margin: 0 0 12px 4px;
+  }
+
+  /* 할 일 목록 */
   .task-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-bottom: 16px;
   }
 
   .task-item {
@@ -164,17 +206,25 @@
     align-items: center;
     gap: 14px;
     padding: 16px;
-    background: var(--toss-gray-100);
-    border-radius: 16px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .task-item:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
   }
 
   .checkbox {
     flex-shrink: 0;
     width: 22px;
     height: 22px;
-    border-radius: 7px;
-    border: 2px solid var(--toss-gray-200);
-    background: #ffffff;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--border-default);
+    background: var(--bg-surface);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -183,7 +233,7 @@
   }
 
   .checkbox:hover {
-    border-color: var(--toss-blue);
+    border-color: var(--color-primary);
   }
 
   .checkbox:active {
@@ -191,15 +241,16 @@
   }
 
   .checkbox.checked {
-    background: var(--toss-green);
-    border-color: var(--toss-green);
-    color: #ffffff;
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--text-on-dark);
     font-size: 13px;
     font-weight: 700;
   }
 
   .checkbox.checked:hover {
-    border-color: var(--toss-green);
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
   }
 
   .task-info {
@@ -210,79 +261,78 @@
   .task-title {
     font-size: 15px;
     font-weight: 600;
-    color: var(--toss-gray-900);
+    color: var(--text-primary);
   }
 
   .task-item.done .task-title {
-    color: var(--toss-gray-400);
+    color: var(--text-muted);
     text-decoration: line-through;
   }
 
   .task-meta {
     font-size: 13px;
-    color: var(--toss-gray-400);
+    color: var(--text-muted);
     margin-top: 4px;
   }
 
   .status-badge {
     flex-shrink: 0;
     padding: 5px 12px;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
   }
 
   .status-badge.status-wait {
-    background: var(--toss-gray-200);
-    color: var(--toss-gray-600);
+    background: #F2F0F4;
+    color: var(--text-secondary);
   }
 
   .status-badge.status-progress {
-    background: var(--toss-blue-light);
-    color: var(--toss-blue);
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
   }
 
   .status-badge.status-done {
-    background: var(--toss-green-light);
-    color: var(--toss-green);
+    background: var(--color-success-bg);
+    color: var(--color-success);
   }
 
-  .footer-note {
-    text-align: center;
-    margin-top: 20px;
-    font-size: 13px;
-    color: var(--toss-gray-400);
-  }
-
+  /* 할 일 추가 */
   .add-task-btn {
     width: 100%;
-    margin-top: 12px;
-    padding: 14px;
-    background: transparent;
-    border: 1.5px dashed var(--toss-gray-200);
-    border-radius: 16px;
-    color: var(--toss-blue);
+    padding: 15px;
+    background: var(--color-primary);
+    border: none;
+    border-radius: var(--radius-full);
+    color: var(--text-on-dark);
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     font-family: inherit;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    box-shadow: var(--shadow-primary);
+    transition: background 0.15s ease, transform 0.1s ease;
   }
 
   .add-task-btn:hover {
-    background: var(--toss-blue-light);
-    border-color: var(--toss-blue);
+    background: var(--color-primary-hover);
+  }
+
+  .add-task-btn:active {
+    transform: scale(0.98);
   }
 
   .add-task-form {
     margin-top: 12px;
-    padding: 16px;
-    background: var(--toss-gray-100);
-    border-radius: 16px;
+    padding: 20px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
   .add-task-form[hidden] {
@@ -297,7 +347,7 @@
   .field {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
 
   .form-row .field {
@@ -306,26 +356,28 @@
   }
 
   .field-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--toss-gray-400);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--text-muted);
     padding-left: 2px;
   }
 
   .form-input {
     width: 100%;
     padding: 11px 12px;
-    background: #ffffff;
-    border: 1px solid var(--toss-gray-200);
-    border-radius: 10px;
+    background: var(--bg-page);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
     font-size: 14px;
     font-family: inherit;
-    color: var(--toss-gray-900);
+    color: var(--text-primary);
   }
 
   .form-input:focus {
     outline: none;
-    border-color: var(--toss-blue);
+    border-color: var(--color-primary);
   }
 
   .form-actions {
@@ -337,128 +389,136 @@
 
   .btn {
     padding: 10px 18px;
-    border-radius: 10px;
+    border-radius: var(--radius-full);
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     font-family: inherit;
     border: none;
     cursor: pointer;
   }
 
   .btn-secondary {
-    background: #ffffff;
-    color: var(--toss-gray-600);
-    border: 1px solid var(--toss-gray-200);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
   }
 
   .btn-secondary:hover {
-    background: var(--toss-gray-200);
+    background: var(--border-subtle);
   }
 
   .btn-primary {
-    background: var(--toss-blue);
-    color: #ffffff;
+    background: var(--color-primary);
+    color: var(--text-on-dark);
+    box-shadow: var(--shadow-primary);
   }
 
   .btn-primary:hover {
-    background: #2272eb;
+    background: var(--color-primary-hover);
+  }
+
+  .footer-note {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text-muted);
   }
 </style>
 </head>
 <body>
   <div class="page">
-    <div class="header">
-      <h1>할 일</h1>
-      <p>오늘 처리해야 할 업무를 한눈에 확인해보세요.</p>
+    <header class="page-header">
+      <div>
+        <h1>할 일</h1>
+        <p class="subtitle">프로토타입 팀 · 팀원 4명</p>
+      </div>
+      <div class="avatar">나</div>
+    </header>
+
+    <div class="progress-card">
+      <div class="progress-block">
+        <div class="progress-top">
+          <span class="progress-title"><span class="dot dot-team"></span>팀 전체 진행도</span>
+          <span class="progress-value" id="teamProgressValue">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill fill-team" id="teamProgressFill"></div>
+        </div>
+        <div class="progress-caption" id="teamProgressCaption"></div>
+      </div>
+
+      <div class="progress-block">
+        <div class="progress-top">
+          <span class="progress-title"><span class="dot dot-mine"></span>내 진행도</span>
+          <span class="progress-value" id="myProgressValue">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill fill-mine" id="myProgressFill"></div>
+        </div>
+        <div class="progress-caption" id="myProgressCaption"></div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">전체 할 일</div>
-      <div class="card-subtitle">담당자가 "나"인 할 일은 내 진행도에 함께 반영돼요</div>
+    <div class="section-label">할 일 목록</div>
 
-      <div class="progress-group">
-        <div class="progress-block">
-          <div class="progress-top">
-            <span class="progress-title team">팀 전체 진행도</span>
-            <span class="progress-value" id="teamProgressValue">0%</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill fill-team" id="teamProgressFill"></div>
-          </div>
-          <div class="progress-caption" id="teamProgressCaption"></div>
+    <div class="task-list" id="taskList">
+      <div class="task-item" data-status="progress" data-mine="true">
+        <div class="checkbox"></div>
+        <div class="task-info">
+          <div class="task-title">회의시간 매칭 화면 디자인 리뷰</div>
+          <div class="task-meta">나 · 마감 7월 10일</div>
         </div>
-
-        <div class="progress-block">
-          <div class="progress-top">
-            <span class="progress-title mine">내 진행도</span>
-            <span class="progress-value" id="myProgressValue">0%</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill fill-mine" id="myProgressFill"></div>
-          </div>
-          <div class="progress-caption" id="myProgressCaption"></div>
-        </div>
+        <div class="status-badge status-progress">진행</div>
       </div>
 
-      <div class="task-list" id="taskList">
-        <div class="task-item" data-status="progress" data-mine="true">
-          <div class="checkbox"></div>
-          <div class="task-info">
-            <div class="task-title">회의시간 매칭 화면 디자인 리뷰</div>
-            <div class="task-meta">나 · 마감 7월 10일</div>
-          </div>
-          <div class="status-badge status-progress">진행</div>
+      <div class="task-item" data-status="wait" data-mine="false">
+        <div class="checkbox"></div>
+        <div class="task-info">
+          <div class="task-title">팀원 가능시간 데이터 연동</div>
+          <div class="task-meta">서연 · 마감 7월 12일</div>
         </div>
-
-        <div class="task-item" data-status="wait" data-mine="false">
-          <div class="checkbox"></div>
-          <div class="task-info">
-            <div class="task-title">팀원 가능시간 데이터 연동</div>
-            <div class="task-meta">서연 · 마감 7월 12일</div>
-          </div>
-          <div class="status-badge status-wait">대기</div>
-        </div>
-
-        <div class="task-item done" data-status="progress" data-mine="true">
-          <div class="checkbox checked">&#10003;</div>
-          <div class="task-info">
-            <div class="task-title">추천 로직 QA 테스트</div>
-            <div class="task-meta">나 · 마감 7월 9일</div>
-          </div>
-          <div class="status-badge status-done">완료</div>
-        </div>
-
-        <div class="task-item" data-status="wait" data-mine="false">
-          <div class="checkbox"></div>
-          <div class="task-info">
-            <div class="task-title">반응형 레이아웃 점검</div>
-            <div class="task-meta">하은 · 마감 7월 15일</div>
-          </div>
-          <div class="status-badge status-wait">대기</div>
-        </div>
+        <div class="status-badge status-wait">대기</div>
       </div>
 
-      <button type="button" class="add-task-btn" id="addTaskBtn">+ 할 일 추가</button>
+      <div class="task-item done" data-status="progress" data-mine="true">
+        <div class="checkbox checked">&#10003;</div>
+        <div class="task-info">
+          <div class="task-title">추천 로직 QA 테스트</div>
+          <div class="task-meta">나 · 마감 7월 9일</div>
+        </div>
+        <div class="status-badge status-done">완료</div>
+      </div>
 
-      <div class="add-task-form" id="addTaskForm" hidden>
+      <div class="task-item" data-status="wait" data-mine="false">
+        <div class="checkbox"></div>
+        <div class="task-info">
+          <div class="task-title">반응형 레이아웃 점검</div>
+          <div class="task-meta">하은 · 마감 7월 15일</div>
+        </div>
+        <div class="status-badge status-wait">대기</div>
+      </div>
+    </div>
+
+    <button type="button" class="add-task-btn" id="addTaskBtn">+ 할 일 추가</button>
+
+    <div class="add-task-form" id="addTaskForm" hidden>
+      <div class="field">
+        <label class="field-label" for="newTaskTitle">할 일 제목</label>
+        <input type="text" class="form-input" id="newTaskTitle" placeholder="예: 디자인 리뷰" />
+      </div>
+      <div class="form-row">
         <div class="field">
-          <label class="field-label" for="newTaskTitle">할 일 제목</label>
-          <input type="text" class="form-input" id="newTaskTitle" placeholder="예: 디자인 리뷰" />
+          <label class="field-label" for="newTaskAssignee">담당자</label>
+          <input type="text" class="form-input" id="newTaskAssignee" placeholder="이름 입력 (내 할 일은 '나')" />
         </div>
-        <div class="form-row">
-          <div class="field">
-            <label class="field-label" for="newTaskAssignee">담당자</label>
-            <input type="text" class="form-input" id="newTaskAssignee" placeholder="이름 입력 (내 할 일은 '나')" />
-          </div>
-          <div class="field">
-            <label class="field-label" for="newTaskDue">마감기한</label>
-            <input type="date" class="form-input" id="newTaskDue" />
-          </div>
+        <div class="field">
+          <label class="field-label" for="newTaskDue">마감기한</label>
+          <input type="date" class="form-input" id="newTaskDue" />
         </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" id="cancelAddBtn">취소</button>
-          <button type="button" class="btn btn-primary" id="confirmAddBtn">추가</button>
-        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="cancelAddBtn">취소</button>
+        <button type="button" class="btn btn-primary" id="confirmAddBtn">추가</button>
       </div>
     </div>
 
