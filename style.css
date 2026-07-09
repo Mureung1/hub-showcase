@@ -934,3 +934,347 @@ footer p {
     padding: 40px 24px;
   }
 }
+
+/* --- 12. LEADERBOARD / WEEKLY RANKINGS --- */
+.ranking-section {
+  padding: 120px 5%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.ranking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 60px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 24px;
+}
+
+.ranking-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-rank-toggle {
+  background: transparent;
+  color: var(--muted-color);
+  border: 1px solid var(--border-color);
+  padding: 10px 24px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: lowercase;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-rank-toggle:hover {
+  color: var(--fg-color);
+  border-color: var(--fg-color);
+}
+
+.btn-rank-toggle.active {
+  background-color: var(--fg-color);
+  color: var(--bg-color);
+  border-color: var(--fg-color);
+}
+
+.ranking-content {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 60px;
+}
+
+/* Podium layouts (Rank 1, 2, 3 Cards) */
+.podium-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.podium-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transition: var(--transition-smooth);
+}
+
+.podium-card:hover {
+  border-color: var(--accent-color);
+  background-color: rgba(212, 255, 0, 0.015);
+}
+
+.podium-card.rank-1 {
+  min-height: 280px;
+  border-color: rgba(212, 255, 0, 0.3);
+  box-shadow: inset 0 0 20px rgba(212, 255, 0, 0.02);
+}
+
+.podium-card.rank-1:hover {
+  border-color: var(--accent-color);
+  box-shadow: inset 0 0 30px rgba(212, 255, 0, 0.04);
+}
+
+.podium-top-badge {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.user-profile.small {
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.user-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: var(--card-badge-bg);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+
+.user-profile.small .user-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 1.4rem;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-info .username {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+
+.user-profile.small .user-info .username {
+  font-size: 1.15rem;
+}
+
+.user-reward-label {
+  font-size: 0.65rem;
+  color: var(--muted-color);
+  text-transform: lowercase;
+}
+
+.user-reward {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.podium-stats {
+  display: flex;
+  gap: 40px;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 24px;
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--muted-color);
+  text-transform: lowercase;
+}
+
+.stat-val {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.podium-card.rank-2 .stat-val, .podium-card.rank-3 .stat-val {
+  font-size: 1.2rem;
+}
+
+.podium-sub-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* Rank List Column */
+.rank-list-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.list-title {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: lowercase;
+  color: var(--muted-color);
+  margin-bottom: 24px;
+}
+
+.rank-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-color);
+  margin-bottom: 40px;
+}
+
+.rank-list-row {
+  display: grid;
+  grid-template-columns: 0.4fr 1.5fr 1fr 1fr 0.4fr;
+  align-items: center;
+  padding: 16px 12px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  transition: var(--transition-fast);
+}
+
+.rank-list-row:hover {
+  background-color: rgba(255, 255, 255, 0.015);
+  border-bottom-color: var(--accent-color);
+}
+
+.row-rank {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--muted-color);
+}
+
+.row-name {
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+.row-acc {
+  font-weight: 600;
+}
+
+.row-points {
+  color: var(--muted-color);
+}
+
+.row-trend {
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.trend-up {
+  color: var(--accent-color);
+}
+
+.trend-down {
+  color: #0088ff;
+}
+
+.trend-same {
+  color: var(--muted-color);
+}
+
+/* User standing Widget (Glassmorphic) */
+.my-rank-card {
+  background-color: rgba(212, 255, 0, 0.015);
+  border: 1px dashed var(--accent-color);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.my-rank-header-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+}
+
+.my-rank-label {
+  font-size: 0.7rem;
+  color: var(--muted-color);
+  text-transform: lowercase;
+}
+
+.my-rank-val {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+
+.my-rank-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.my-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.my-stat .label {
+  font-size: 0.65rem;
+  color: var(--muted-color);
+  text-transform: lowercase;
+}
+
+.my-stat .val {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.my-rank-footer {
+  font-size: 0.75rem;
+  color: var(--muted-color);
+  text-transform: lowercase;
+}
+
+/* Leaderboard Responsive Styles */
+@media (max-width: 1024px) {
+  .ranking-content {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  .podium-sub-row {
+    grid-template-columns: 1fr;
+  }
+  .rank-list-row {
+    grid-template-columns: 0.5fr 1.2fr 1fr 0.4fr;
+    font-size: 0.75rem;
+  }
+  .row-points {
+    display: none;
+  }
+}
+

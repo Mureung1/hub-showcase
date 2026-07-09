@@ -29,6 +29,7 @@
         <a href="#" class="filter-tab" data-category="streetwear">streetwear 👕</a>
         <a href="#" class="filter-tab" data-category="tcg">tcg/toys 🃏</a>
         <a href="#" class="filter-tab" data-category="lego">lego 🧱</a>
+        <a href="#" class="filter-tab" data-category="ranking">ranking 🏆</a>
       </nav>
 
       <a href="#active-drops" class="btn-touch">predict drops</a>
@@ -127,6 +128,139 @@
 
       <div class="drops-grid" id="drops-container">
         <!-- JS Populated Cards -->
+      </div>
+    </section>
+
+    <!-- Leaderboard / Weekly Ranking Section (Hidden by default, styled with August* aesthetics) -->
+    <section class="ranking-section" id="ranking-dashboard" style="display: none;">
+      <div class="ranking-header">
+        <h2 class="section-title">weekly leaderboard</h2>
+        <div class="ranking-controls">
+          <button class="btn-rank-toggle active" id="btn-rank-current" onclick="switchRankingPeriod('current')">this week</button>
+          <button class="btn-rank-toggle" id="btn-rank-last" onclick="switchRankingPeriod('last')">last week</button>
+        </div>
+      </div>
+
+      <div class="ranking-content">
+        <!-- Left Column: Top 3 Podiums -->
+        <div class="podium-container">
+          <!-- Rank 1 Card (Largest, prominent) -->
+          <div class="podium-card rank-1">
+            <div class="podium-top-badge">
+              <span class="card-tag">gold standard</span>
+              <span class="status-badge upcoming">rank #01</span>
+            </div>
+            
+            <div class="user-profile">
+              <div class="user-avatar" id="avatar-1">🥇</div>
+              <div class="user-info">
+                <span class="username" id="username-1">@minu</span>
+                <span class="user-reward-label">weekly prize</span>
+                <span class="user-reward accent-text" id="reward-1">naver pay 50,000 krw</span>
+              </div>
+            </div>
+            
+            <div class="podium-stats">
+              <div class="stat-box">
+                <span class="stat-label">accuracy</span>
+                <span class="stat-val accent-text" id="accuracy-1">99.4%</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">accumulated points</span>
+                <span class="stat-val" id="points-1">14,200 pts</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rank 2 & 3 Subgrid -->
+          <div class="podium-sub-row">
+            <!-- Rank 2 Card -->
+            <div class="podium-card rank-2">
+              <div class="podium-top-badge">
+                <span class="card-tag">contender</span>
+                <span class="status-badge released">rank #02</span>
+              </div>
+              
+              <div class="user-profile small">
+                <div class="user-avatar" id="avatar-2">🥈</div>
+                <div class="user-info">
+                  <span class="username" id="username-2">@jieun</span>
+                  <span class="user-reward" id="reward-2">starbucks voucher</span>
+                </div>
+              </div>
+              
+              <div class="podium-stats">
+                <div class="stat-box">
+                  <span class="stat-label">accuracy</span>
+                  <span class="stat-val accent-text" id="accuracy-2">97.8%</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-label">points</span>
+                  <span class="stat-val" id="points-2">12,500 pts</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rank 3 Card -->
+            <div class="podium-card rank-3">
+              <div class="podium-top-badge">
+                <span class="card-tag">contender</span>
+                <span class="status-badge released">rank #03</span>
+              </div>
+              
+              <div class="user-profile small">
+                <div class="user-avatar" id="avatar-3">🥉</div>
+                <div class="user-info">
+                  <span class="username" id="username-3">@sohee</span>
+                  <span class="user-reward" id="reward-3">starbucks voucher</span>
+                </div>
+              </div>
+              
+              <div class="podium-stats">
+                <div class="stat-box">
+                  <span class="stat-label">accuracy</span>
+                  <span class="stat-val accent-text" id="accuracy-3">96.5%</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-label">points</span>
+                  <span class="stat-val" id="points-3">11,100 pts</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Rank 4 to 10 list + Personal Rank Card -->
+        <div class="rank-list-container">
+          <h3 class="list-title">top contenders (rank 04 - 10)</h3>
+          
+          <div class="rank-list" id="ranking-list-body">
+            <!-- JS Populated Rows -->
+          </div>
+
+          <!-- My Rank Status Card (August* Style Glassmorphism) -->
+          <div class="my-rank-card">
+            <div class="my-rank-header-box">
+              <span class="my-rank-label">your standing</span>
+              <span class="my-rank-val">rank #14 // @youngmin</span>
+            </div>
+            
+            <div class="my-rank-stats-grid">
+              <div class="my-stat">
+                <span class="label">my accuracy</span>
+                <span class="val accent-text">91.8%</span>
+              </div>
+              <div class="my-stat">
+                <span class="label">total points</span>
+                <span class="val">8,450 pts</span>
+              </div>
+            </div>
+            
+            <div class="my-rank-footer">
+              <span>you need <strong class="accent-text">+450 pts</strong> to enter top 10</span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -287,9 +421,45 @@
         }
       ];
 
+      // 2. Leaderboard Mock Data (this week / last week)
+      const MOCK_RANKINGS = {
+        current: {
+          podium: [
+            { name: '@minu', accuracy: '99.4%', points: '14,200 pts', reward: 'naver pay 50,000 krw', avatar: '🥇' },
+            { name: '@jieun', accuracy: '97.8%', points: '12,500 pts', reward: 'starbucks voucher', avatar: '🥈' },
+            { name: '@sohee', accuracy: '96.5%', points: '11,100 pts', reward: 'starbucks voucher', avatar: '🥉' }
+          ],
+          list: [
+            { rank: '04', name: '@jungsik', accuracy: '95.2%', points: '9,800 pts', trend: 'up' },
+            { rank: '05', name: '@subin', accuracy: '94.8%', points: '9,550 pts', trend: 'down' },
+            { rank: '06', name: '@kyeongmin', accuracy: '93.7%', points: '9,200 pts', trend: 'same' },
+            { rank: '07', name: '@yebin', accuracy: '93.1%', points: '9,050 pts', trend: 'up' },
+            { rank: '08', name: '@woohyun', accuracy: '92.6%', points: '8,800 pts', trend: 'down' },
+            { rank: '09', name: '@eunjin', accuracy: '92.3%', points: '8,700 pts', trend: 'up' },
+            { rank: '10', name: '@daehyun', accuracy: '92.0%', points: '8,500 pts', trend: 'same' }
+          ]
+        },
+        last: {
+          podium: [
+            { name: '@subin', accuracy: '98.9%', points: '13,800 pts', reward: 'naver pay 50,000 krw', avatar: '🥇' },
+            { name: '@minu', accuracy: '97.1%', points: '12,100 pts', reward: 'starbucks voucher', avatar: '🥈' },
+            { name: '@jungsik', accuracy: '96.8%', points: '11,900 pts', reward: 'starbucks voucher', avatar: '🥉' }
+          ],
+          list: [
+            { rank: '04', name: '@jieun', accuracy: '95.9%', points: '10,100 pts', trend: 'up' },
+            { rank: '05', name: '@sohee', accuracy: '94.0%', points: '9,200 pts', trend: 'down' },
+            { rank: '06', name: '@woohyun', accuracy: '93.5%', points: '9,000 pts', trend: 'same' },
+            { rank: '07', name: '@kyeongmin', accuracy: '92.8%', points: '8,900 pts', trend: 'up' },
+            { rank: '08', name: '@daehyun', accuracy: '92.1%', points: '8,400 pts', trend: 'down' },
+            { rank: '09', name: '@yebin', accuracy: '91.8%', points: '8,200 pts', trend: 'up' },
+            { rank: '10', name: '@eunjin', accuracy: '91.5%', points: '8,000 pts', trend: 'same' }
+          ]
+        }
+      };
+
       let selectedDropId = null;
 
-      // 2. Render Cards based on Status & Category
+      // 3. Render Cards based on Status & Category
       function renderCards(filter = 'all') {
         const container = document.getElementById('drops-container');
         container.innerHTML = '';
@@ -300,13 +470,11 @@
           const card = document.createElement('div');
           card.className = `drop-card ${drop.status} ${drop.bullish > 70 && drop.status === 'upcoming' ? 'bullish-heavy' : ''}`;
           card.onclick = (e) => {
-            // Prevent open panel when clicking buttons directly
             if (e.target.tagName !== 'BUTTON') {
               openDetailPanel(drop.id);
             }
           };
 
-          // Pricing block based on status
           let pricingHTML = '';
           let actionHTML = '';
 
@@ -361,7 +529,7 @@
         });
       }
 
-      // 3. Tab Filtering & Hide Editorial Sections
+      // 4. Tab Filtering & Hide Editorial Sections + Handle Leaderboard
       document.querySelectorAll('.filter-tab').forEach(tab => {
         tab.onclick = (e) => {
           e.preventDefault();
@@ -370,25 +538,96 @@
           
           const category = tab.getAttribute('data-category');
           
-          // If 'all' is clicked, show brand story (editorial layout).
-          // Otherwise, hide editorial and immediately display active drops at the top.
           if (category === 'all') {
             document.body.classList.remove('hide-editorial');
           } else {
             document.body.classList.add('hide-editorial');
           }
           
-          renderCards(category);
+          const dropsSection = document.getElementById('active-drops');
+          const rankingSection = document.getElementById('ranking-dashboard');
+
+          if (category === 'ranking') {
+            dropsSection.style.display = 'none';
+            rankingSection.style.display = 'block';
+            renderRanking('current');
+          } else {
+            dropsSection.style.display = 'block';
+            rankingSection.style.display = 'none';
+            renderCards(category);
+          }
         };
       });
 
-      // 4. Up / Down Voting Logic (Upcoming only)
+      // 5. Leaderboard Rendering
+      function renderRanking(period = 'current') {
+        const data = MOCK_RANKINGS[period];
+        
+        // Podium (1st, 2nd, 3rd)
+        document.getElementById('username-1').innerText = data.podium[0].name;
+        document.getElementById('reward-1').innerText = data.podium[0].reward;
+        document.getElementById('accuracy-1').innerText = data.podium[0].accuracy;
+        document.getElementById('points-1').innerText = data.podium[0].points;
+        document.getElementById('avatar-1').innerText = data.podium[0].avatar;
+
+        document.getElementById('username-2').innerText = data.podium[1].name;
+        document.getElementById('reward-2').innerText = data.podium[1].reward;
+        document.getElementById('accuracy-2').innerText = data.podium[1].accuracy;
+        document.getElementById('points-2').innerText = data.podium[1].points;
+        document.getElementById('avatar-2').innerText = data.podium[1].avatar;
+
+        document.getElementById('username-3').innerText = data.podium[2].name;
+        document.getElementById('reward-3').innerText = data.podium[2].reward;
+        document.getElementById('accuracy-3').innerText = data.podium[2].accuracy;
+        document.getElementById('points-3').innerText = data.podium[2].points;
+        document.getElementById('avatar-3').innerText = data.podium[2].avatar;
+
+        // Rankings List (4 - 10)
+        const listBody = document.getElementById('ranking-list-body');
+        listBody.innerHTML = '';
+
+        data.list.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'rank-list-row';
+          
+          let trendIndicator = '&bull;';
+          let trendClass = 'trend-same';
+          if (item.trend === 'up') {
+            trendIndicator = '▲';
+            trendClass = 'trend-up';
+          } else if (item.trend === 'down') {
+            trendIndicator = '▼';
+            trendClass = 'trend-down';
+          }
+
+          row.innerHTML = `
+            <span class="row-rank">${item.rank}</span>
+            <span class="row-name">${item.name}</span>
+            <span class="row-acc accent-text">${item.accuracy}</span>
+            <span class="row-points">${item.points}</span>
+            <span class="row-trend ${trendClass}">${trendIndicator}</span>
+          `;
+          listBody.appendChild(row);
+        });
+      }
+
+      function switchRankingPeriod(period) {
+        document.querySelectorAll('.btn-rank-toggle').forEach(btn => btn.classList.remove('active'));
+        if (period === 'current') {
+          document.getElementById('btn-rank-current').classList.add('active');
+        } else {
+          document.getElementById('btn-rank-last').classList.add('active');
+        }
+        renderRanking(period);
+        showToast(`${period === 'current' ? 'this week' : 'last week'} 주간 랭킹 정보로 전환되었습니다.`);
+      }
+
+      // 6. Up / Down Voting Logic (Upcoming only)
       function castVote(id, isUp) {
         const item = MOCK_DROPS.find(d => d.id === id);
         if (!item) return;
-        if (item.status === 'released') return; // Cannot vote on released items
+        if (item.status === 'released') return; 
 
-        // Sentiment adjustments
         if (isUp) {
           item.bullish = Math.min(99, item.bullish + 1);
           item.consensus += Math.floor(Math.random() * 5000) + 1000;
@@ -400,7 +639,6 @@
         renderCards(document.querySelector('.filter-tab.active').getAttribute('data-category'));
         showToast(isUp ? `[▲ 오를까] 투표완료 // 예상 리셀가가 상승했습니다.` : `[▼ 내릴까] 투표완료 // 예상 리셀가가 하락했습니다.`);
         
-        // Update overlay if open
         if (selectedDropId === id) {
           updateOverlayContent(item);
         }
@@ -412,7 +650,7 @@
         }
       }
 
-      // 5. Toast alerts
+      // 7. Toast alerts
       function showToast(msg) {
         const existing = document.querySelector('.toast-alert');
         if (existing) existing.remove();
@@ -432,7 +670,7 @@
         }, 3000);
       }
 
-      // 6. Overlay Panels
+      // 8. Overlay Panels
       function openDetailPanel(id) {
         const item = MOCK_DROPS.find(d => d.id === id);
         if (!item) return;
@@ -478,7 +716,6 @@
           priceVal.innerText = item.marketPrice;
           priceVal.className = 'val white-text';
           
-          // Released items don't have active voting/sentiment modification on details
           sentimentSection.style.display = 'none';
           actionsSection.style.display = 'none';
         }
