@@ -5,3 +5,6 @@ dist-ssr
 .vite
 .DS_Store
 *.log
+
+# VS Code 개인 에디터 설정 (머신 종속 경로 포함)
+.vscode/
