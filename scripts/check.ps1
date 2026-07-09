@@ -30,6 +30,9 @@ Invoke-Checked "Docs index check" { python scripts/check_docs_index.py }
 Write-Host "== Docs HTML check =="
 Invoke-Checked "Docs HTML check" { python scripts/check_docs_html.py }
 
+Write-Host "== CI scope check =="
+Invoke-Checked "CI scope check" { python scripts/check_ci_scope.py }
+
 if (Get-Command node -ErrorAction SilentlyContinue) {
   Write-Host "== Doc viewer URL normalization check =="
   Invoke-Checked "Doc viewer URL normalization check" {

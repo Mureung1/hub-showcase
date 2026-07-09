@@ -36,7 +36,7 @@ docs/
     git-workflow.md
     harness.md
     validation.md
-    week1-completion-report.md
+    week1-thursday-progress-report.md
   features/
     market-analysis.md
     market-map-experience.md
@@ -107,7 +107,7 @@ LocalTwin/
 - [Git 작업 규칙](../development/git-workflow.md)
 - [LocalTwin Dev Harness](../development/harness.md)
 - [검증 가이드](../development/validation.md)
-- [1주차 태스크 완료 보고서](../development/week1-completion-report.md)
+- [1주차 목요일 진행 보고서](../development/week1-thursday-progress-report.md)
 
 ## Design System
 
