@@ -94,6 +94,7 @@ flowchart TD
 - [MVP 기획서 보기](docs/plan.md)
 - [화면 설계 시각 자료 보기](docs/plan.md#14-화면-설계-시각-자료)
 - [개발 작업 흐름 보기](docs/plan.md#16-개발-작업-흐름)
+- [진행 기록 보기](docs/progress-log.md)
 - [기획 덱 보기](docs/stockmate-planning-deck.html)
 - [프로토타입 보기](docs/stockmate-prototype.html)
 - [기획 덱 PDF 보기](docs/stockmate-planning-deck.pdf)
