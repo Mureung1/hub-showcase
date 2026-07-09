@@ -6,23 +6,36 @@
 <title>회의시간 매칭</title>
 <style>
   :root {
-    --toss-blue: #3182f6;
-    --toss-blue-light: #eef4ff;
-    --toss-gray-900: #191f28;
-    --toss-gray-600: #4e5968;
-    --toss-gray-400: #8b95a1;
-    --toss-gray-200: #e5e8eb;
-    --toss-gray-100: #f2f4f6;
-    --toss-bg: #f9fafb;
-    --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.05);
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --color-primary: #6C5CE7;
+    --color-primary-light: #A29BFE;
 
-    --level-0: var(--toss-gray-100);
-    --level-1: #e3edff;
-    --level-2: #bcd8ff;
-    --level-3: #8bbcff;
-    --level-4: #5397ff;
-    --level-5: #1b64da;
+    --bg-page: #F7F5F6;
+    --bg-surface: #FFFFFF;
+    --bg-dark: #1A1726;
+    --bg-dark-alt: #262238;
+
+    --text-primary: #1A1726;
+    --text-secondary: #5C5670;
+    --text-muted: #948FA4;
+    --text-on-dark: #FFFFFF;
+    --text-on-dark-muted: #A8A3BB;
+
+    --border-subtle: rgba(26,23,38,0.05);
+    --border-dark: rgba(255,255,255,0.07);
+
+    --radius-sm: 9px;
+    --radius-xl: 28px;
+    --radius-full: 9999px;
+
+    --shadow-sm: 0 1px 3px rgba(26,23,38,0.03);
+    --shadow-lg: 0 14px 36px rgba(26,23,38,0.07);
+
+    /* 격자 색 5단계 (겹치는 인원수) */
+    --grid-0: #F2F0F4;
+    --grid-1: #DED9FB;
+    --grid-2: #BCB2F7;
+    --grid-3: #9384EF;
+    --grid-4: #6C5CE7;
   }
 
   * {
@@ -34,12 +47,12 @@
   body {
     font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI",
       "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-    background: var(--toss-bg);
-    color: var(--toss-gray-900);
+    background: var(--bg-page);
+    color: var(--text-primary);
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    padding: 40px 16px;
+    padding: 48px 24px;
   }
 
   .page {
@@ -47,40 +60,60 @@
     max-width: 720px;
   }
 
-  .header {
-    padding: 8px 4px 28px;
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
   }
 
-  .header h1 {
-    font-size: 26px;
+  .page-header h1 {
+    font-size: 36px;
     font-weight: 700;
-    letter-spacing: -0.5px;
-    margin-bottom: 8px;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    margin-bottom: 6px;
   }
 
-  .header p {
+  .page-header .subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .avatar {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    color: var(--text-on-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 15px;
-    color: var(--toss-gray-600);
-    line-height: 1.5;
+    font-weight: 700;
+    box-shadow: var(--shadow-lg);
   }
 
   .card {
-    background: #ffffff;
-    border-radius: 24px;
-    box-shadow: var(--shadow-soft);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
     padding: 28px 24px 32px;
   }
 
   .card-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--toss-gray-900);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
     margin-bottom: 4px;
   }
 
   .card-subtitle {
     font-size: 13px;
-    color: var(--toss-gray-400);
+    color: var(--text-muted);
     margin-bottom: 24px;
   }
 
@@ -95,15 +128,11 @@
     min-width: 480px;
   }
 
-  .corner-cell {
-    /* empty top-left corner */
-  }
-
   .day-label {
     text-align: center;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--toss-gray-900);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
     padding: 10px 4px;
   }
 
@@ -113,82 +142,69 @@
     justify-content: flex-end;
     font-size: 13px;
     font-weight: 500;
-    color: var(--toss-gray-600);
+    color: var(--text-secondary);
     padding-right: 10px;
     white-space: nowrap;
   }
 
   .slot {
     height: 56px;
-    background: var(--level-0);
-    border-radius: 14px;
-    border: 1px solid transparent;
+    background: var(--grid-0);
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease,
-      transform 0.12s ease, box-shadow 0.2s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
 
   .slot:hover {
-    border-color: #d6e6ff;
-    transform: translateY(-1px);
+    transform: scale(1.06);
+    position: relative;
+    z-index: 2;
   }
 
   .slot:active {
-    transform: translateY(0) scale(0.97);
+    transform: scale(0.97);
   }
 
-  .slot.level-0:hover {
-    background: var(--toss-blue-light);
-  }
-
-  .slot.level-1 { background: var(--level-1); }
-  .slot.level-2 { background: var(--level-2); }
-  .slot.level-3 { background: var(--level-3); }
-  .slot.level-4 { background: var(--level-4); }
-  .slot.level-5 { background: var(--level-5); }
-
-  .slot.level-3:hover,
-  .slot.level-4:hover,
-  .slot.level-5:hover {
-    border-color: transparent;
-    filter: brightness(1.06);
-  }
+  .slot.level-1 { background: var(--grid-1); }
+  .slot.level-2 { background: var(--grid-2); }
+  .slot.level-3 { background: var(--grid-3); }
+  .slot.level-4 { background: var(--grid-3); }
+  .slot.level-5 { background: var(--grid-4); }
 
   .slot.mine {
-    box-shadow: inset 0 0 0 2px #ffffff, 0 4px 10px rgba(49, 130, 246, 0.28);
-  }
-
-  .slot.mine:hover {
-    box-shadow: inset 0 0 0 2px #ffffff, 0 6px 14px rgba(49, 130, 246, 0.32);
+    box-shadow: inset 0 0 0 2px var(--color-primary);
   }
 
   .team-note {
     font-size: 13px;
-    color: var(--toss-gray-400);
+    color: var(--text-muted);
     margin-bottom: 20px;
   }
 
   .team-note b {
-    color: var(--toss-gray-600);
+    color: var(--text-secondary);
     font-weight: 600;
   }
 
   .legend {
     margin-top: 24px;
     padding-top: 20px;
-    border-top: 1px solid var(--toss-gray-200);
+    border-top: 1px solid var(--border-subtle);
   }
 
-  .legend-title {
-    font-size: 12px;
-    color: var(--toss-gray-400);
-    margin-bottom: 10px;
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
   }
 
   .legend-scale {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 14px;
     flex-wrap: wrap;
   }
 
@@ -201,19 +217,17 @@
   .legend-dot {
     width: 16px;
     height: 16px;
-    border-radius: 5px;
-    background: var(--level-0);
+    border-radius: var(--radius-sm);
+    background: var(--grid-1);
   }
 
-  .legend-dot.level-1 { background: var(--level-1); }
-  .legend-dot.level-2 { background: var(--level-2); }
-  .legend-dot.level-3 { background: var(--level-3); }
-  .legend-dot.level-4 { background: var(--level-4); }
-  .legend-dot.level-5 { background: var(--level-5); }
+  .legend-dot.level-2 { background: var(--grid-2); }
+  .legend-dot.level-3 { background: var(--grid-3); }
+  .legend-dot.level-4 { background: var(--grid-4); }
 
   .legend-text {
-    font-size: 12px;
-    color: var(--toss-gray-400);
+    font-size: 13px;
+    color: var(--text-muted);
   }
 
   .legend-mine {
@@ -226,49 +240,66 @@
   .legend-mine-dot {
     width: 16px;
     height: 16px;
-    border-radius: 5px;
-    background: var(--level-3);
-    box-shadow: inset 0 0 0 2px #ffffff, 0 2px 6px rgba(49, 130, 246, 0.28);
+    border-radius: var(--radius-sm);
+    background: var(--grid-2);
+    box-shadow: inset 0 0 0 2px var(--color-primary);
   }
 
   .footer-note {
     text-align: center;
     margin-top: 20px;
     font-size: 13px;
-    color: var(--toss-gray-400);
+    color: var(--text-muted);
   }
 
+  /* 추천 회의 시간 (다크 카드) */
   .recommend-card {
     margin-top: 16px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-dark);
+  }
+
+  .recommend-card .card-title {
+    color: var(--text-on-dark);
+  }
+
+  .recommend-card .card-subtitle {
+    color: var(--text-on-dark-muted);
   }
 
   .recommend-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
   }
 
   .recommend-item {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 14px 16px;
-    background: var(--toss-gray-100);
-    border-radius: 16px;
+    padding: 14px 4px;
+  }
+
+  .recommend-item + .recommend-item {
+    border-top: 1px solid var(--border-dark);
   }
 
   .recommend-rank {
     flex-shrink: 0;
     width: 28px;
     height: 28px;
-    border-radius: 50%;
-    background: var(--toss-blue-light);
-    color: var(--toss-blue);
+    border-radius: var(--radius-full);
+    background: var(--bg-dark-alt);
+    color: var(--text-on-dark-muted);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 13px;
     font-weight: 700;
+  }
+
+  .recommend-rank.rank-1 {
+    background: var(--color-primary);
+    color: var(--text-on-dark);
   }
 
   .recommend-info {
@@ -279,45 +310,48 @@
   .recommend-time {
     font-size: 15px;
     font-weight: 600;
-    color: var(--toss-gray-900);
+    color: var(--text-on-dark);
   }
 
   .recommend-sub {
     font-size: 13px;
-    color: var(--toss-gray-400);
+    color: var(--text-on-dark-muted);
     margin-top: 2px;
   }
 
   .recommend-badge {
     flex-shrink: 0;
     padding: 5px 12px;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     font-size: 12px;
     font-weight: 700;
-    background: var(--level-1);
-    color: #3b6fc4;
+    background: var(--grid-1);
+    color: var(--text-primary);
   }
 
-  .recommend-badge.level-1 { background: var(--level-1); color: #3b6fc4; }
-  .recommend-badge.level-2 { background: var(--level-2); color: #1f4fa8; }
-  .recommend-badge.level-3 { background: var(--level-3); color: #0d3f96; }
-  .recommend-badge.level-4 { background: var(--level-4); color: #ffffff; }
-  .recommend-badge.level-5 { background: var(--level-5); color: #ffffff; }
+  .recommend-badge.level-1 { background: var(--grid-1); color: var(--text-primary); }
+  .recommend-badge.level-2 { background: var(--grid-2); color: var(--text-primary); }
+  .recommend-badge.level-3 { background: var(--grid-3); color: var(--text-on-dark); }
+  .recommend-badge.level-4 { background: var(--grid-3); color: var(--text-on-dark); }
+  .recommend-badge.level-5 { background: var(--grid-4); color: var(--text-on-dark); }
 
   .recommend-empty {
     padding: 20px 4px;
     text-align: center;
-    font-size: 14px;
-    color: var(--toss-gray-400);
+    font-size: 13px;
+    color: var(--text-on-dark-muted);
   }
 </style>
 </head>
 <body>
   <div class="page">
-    <div class="header">
-      <h1>회의시간 매칭</h1>
-      <p>가능한 시간대를 선택하면 팀원들과 겹치는 시간을 쉽게 찾을 수 있어요.</p>
-    </div>
+    <header class="page-header">
+      <div>
+        <h1>회의시간 매칭</h1>
+        <p class="subtitle">프로토타입 팀 · 팀원 4명</p>
+      </div>
+      <div class="avatar">나</div>
+    </header>
 
     <div class="card">
       <div class="card-title">가능한 시간을 선택해주세요</div>
@@ -364,14 +398,10 @@
       </div>
 
       <div class="legend">
-        <div class="legend-title">가능한 인원이 많을수록 진해져요</div>
+        <div class="section-label">겹치는 인원 · 적음 → 많음</div>
         <div class="legend-scale">
           <div class="legend-item">
             <div class="legend-dot"></div>
-            <div class="legend-text">0명</div>
-          </div>
-          <div class="legend-item">
-            <div class="legend-dot level-1"></div>
             <div class="legend-text">1명</div>
           </div>
           <div class="legend-item">
@@ -380,20 +410,16 @@
           </div>
           <div class="legend-item">
             <div class="legend-dot level-3"></div>
-            <div class="legend-text">3명</div>
+            <div class="legend-text">3명 이상</div>
           </div>
           <div class="legend-item">
             <div class="legend-dot level-4"></div>
-            <div class="legend-text">4명</div>
-          </div>
-          <div class="legend-item">
-            <div class="legend-dot level-5"></div>
-            <div class="legend-text">5명(전원)</div>
+            <div class="legend-text">전원 가능</div>
           </div>
         </div>
         <div class="legend-mine">
           <div class="legend-mine-dot"></div>
-          <div class="legend-text">흰 테두리 = 내가 선택한 시간</div>
+          <div class="legend-text">보라 테두리 = 내가 선택한 시간</div>
         </div>
       </div>
     </div>
@@ -465,7 +491,7 @@
         var item = document.createElement("div");
         item.className = "recommend-item";
         item.innerHTML =
-          '<div class="recommend-rank">' + (rank + 1) + "</div>" +
+          '<div class="recommend-rank' + (rank === 0 ? " rank-1" : "") + '">' + (rank + 1) + "</div>" +
           '<div class="recommend-info">' +
           '<div class="recommend-time">' + slotLabel(index) + "</div>" +
           '<div class="recommend-sub">' + subText + "</div>" +
