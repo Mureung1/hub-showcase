@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+/* docs/design.md 기준 디자인 토큰 — 값이 바뀌면 이 파일도 같이 갱신한다 */
+@theme {
+  --color-bg: #0d0d0d;
+  --color-surface: #1a1a1a;
+  --color-border: #2a2a2a;
+  --color-accent: #ff6a1a;
+  --color-accent-hover: #ff8035;
+  --color-text: #f5f5f5;
+  --color-text-secondary: #9a9a9a;
+  --color-muted: #6a6a6a;
+  --color-on-accent: #0d0d0d;
+
+  --color-day-default: #151515;
+  --color-day-rest: #111111;
+  --color-day-today: #241407;
+  --color-banner: #1c1207;
+  --color-panel: #141414;
+
+  --color-success: #4a7a52;
+  --color-disabled: #242424;
+
+  --color-outline-hover: #4a4a4a;
+  --color-link-hover: #ff8a45;
+  --color-nav-inactive: #3a3a3a;
+
+  --radius-xs: 7px;
+  --radius-sm: 9px;
+  --radius-md: 11px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 18px;
+  --radius-pill: 100px;
+
+  --font-display: "Oswald", sans-serif;
+  --font-body: "Pretendard Variable", "Pretendard", system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}

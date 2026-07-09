@@ -1,8 +1,12 @@
+import { Routes, Route } from 'react-router-dom'
 import ProjectIntro from './ProjectIntro'
 
-
 function App() {
-  return <ProjectIntro />
+  return (
+    <Routes>
+      <Route path="/" element={<ProjectIntro />} />
+    </Routes>
+  )
 }
 
 export default App
