@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>자취 냉장고 식단 추천</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="topbar">
+      <div>
+        <p class="eyebrow">AI 자취 식단 추천</p>
+        <h1>냉장고 재료로 오늘 먹을 메뉴를 추천해드려요</h1>
+      </div>
+      <div class="status-card">
+        <span>오늘 우선 소비</span>
+        <strong id="urgentCount">0개</strong>
+      </div>
+    </section>
+
+    <section class="dashboard">
+      <aside class="ingredient-panel">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Step 1</p>
+            <h2>??? ?? ??????</h2>
+          </div>
+        </div>
+
+        <form id="ingredientForm" class="ingredient-form">
+          <label>
+            <span>???</span>
+            <input id="ingredientInput" type="text" placeholder="?: ??" aria-label="??? ??">
+          </label>
+          <label>
+            <span>??</span>
+            <input id="quantityInput" type="text" placeholder="?: 1?" aria-label="?? ??">
+          </label>
+          <label>
+            <span>????</span>
+            <input id="expiryInput" type="date" aria-label="???? ??">
+          </label>
+          <button type="submit">+ ?? ??</button>
+        </form>
+
+        <div class="workspace-summary">
+          <span>?? ?? <strong id="totalCount">0?</strong></span>
+          <span>?? ?? <strong id="summaryUrgentCount">0?</strong></span>
+        </div>
+
+        <div id="ingredientMessage" class="form-message" role="status"></div>
+
+        <div id="ingredientTiles" class="ingredient-grid" aria-live="polite"></div>
+      </aside>
+
+      <section class="recommend-panel">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Step 2</p>
+            <h2>식단 추천 결과</h2>
+          </div>
+        </div>
+
+        <nav class="tab-list" aria-label="추천 기준">
+          <button class="tab-button active" data-filter="balanced">종합 추천</button>
+          <button class="tab-button" data-filter="quick">빠른 조리</button>
+          <button class="tab-button" data-filter="urgent">임박 재료 우선</button>
+          <button class="tab-button" data-filter="nutrition">영양 균형</button>
+        </nav>
+
+        <div id="menuCards" class="menu-grid"></div>
+      </section>
+    </section>
+
+    <section class="detail-layout">
+      <article id="recipeDetail" class="recipe-detail">
+        <div class="empty-state">
+          <p class="eyebrow">Step 3</p>
+          <h2>메뉴를 선택하면 레시피가 표시됩니다</h2>
+          <p>메뉴 카드 또는 레시피 보기 버튼을 눌러 발표 화면에서 상세 흐름을 보여주세요.</p>
+        </div>
+      </article>
+
+      <aside id="shoppingPanel" class="shopping-panel">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Step 4</p>
+            <h2>부족 재료 구매 추천</h2>
+          </div>
+        </div>
+        <div class="empty-shopping">
+          부족 재료가 있는 메뉴를 선택하면 구매 추천 카드가 표시됩니다.
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
