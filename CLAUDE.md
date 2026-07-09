@@ -63,11 +63,11 @@ ShortsGen/
 ## User Journey (6-Step Flow)
 
 ```
-Step 1: Store Setup (Home)
+Step 1: Store Setup (Setup Page)
   └─ Input: business category, location, signature menu
 
-Step 2: Real-time Trend Review (Home)
-  └─ Display: trending hashtags, search volume trends
+Step 2: Real-time Trend Review (Home Dashboard)
+  └─ Display: Beautiful profile card, trending hashtags, search volume trends
 
 Step 3: Campaign Planning (Generate)
   └─ Select: promotion purpose + video mood (checkboxes + radio)
@@ -115,32 +115,37 @@ npm start            # Start Express server (http://localhost:5000)
 
 ## Frontend Project Structure
 
-### Current State (Single-File Architecture)
+### Target State (Multi-Page Architecture)
 ```
 frontend/src/
-├── App.jsx              # 400+ lines: Sidebar + HomeView + GenerateView
-├── main.jsx             # Entry point (React root)
-├── index.css            # Tailwind + global fonts
-├── App.css              # Component-level styles (minimal)
-└── assets/
-    └── react.svg        # Default asset
+├── App.jsx              # Router setup
+├── main.jsx             # Entry point
+├── index.css            # Tailwind + CSS Variables (Dabang Theme)
+└── pages/
+    ├── Dashboard.jsx    # Home dashboard with Profile Card & Trends
+    ├── Setup.jsx        # Store information onboarding
+    ├── Generate.jsx     # AI Pipeline (Planning, Upload, Preview)
+    └── Archive.jsx      # Generated reels history
 ```
 
-### Components Breakdown (inside App.jsx)
-1. **Sidebar**
-   - Navigation buttons (Home, Generate, Saved Items)
-   - User profile card (store name + category)
-   - Persistent 16rem width, sticky positioning
+### Components Breakdown (by Page)
+1. **Sidebar (Common)**
+   - Navigation (Home, Generate, Archive, Setup)
+   - ShortsGen Pro Badge
 
-2. **HomeView**
-   - Section 1: Store profile setup (category input, location input)
-   - Section 2: Real-time trend analysis (3 trending hashtags with metadata)
-   - Button: "Create reel with this trend" → Navigate to GenerateView
+2. **Dashboard.jsx (Home)**
+   - Store Profile Card (saved info)
+   - Real-time trend analysis (Hashtags, Charts)
 
-3. **GenerateView**
-   - Left column: Image upload area (drag-drop zone, upload status)
-   - Right column: Video preview (9:16 aspect, emoji placeholder, final captions)
-   - Action buttons: Publish to Instagram
+3. **Setup.jsx**
+   - Detailed store info form (Category, signature menu, photo upload)
+
+4. **Generate.jsx**
+   - Left: Campaign Planning (Checkboxes/Radios) & Image Upload
+   - Right: 9:16 Video Preview & Publish CTA
+
+5. **Archive.jsx**
+   - Grid of previously generated videos with status badges
 
 ---
 

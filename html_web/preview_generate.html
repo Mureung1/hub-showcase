@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShortsGen - Generate Reel Preview</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <style>
+        :root {
+            --bg-page: #F4F7FE;
+            --bg-surface: #FFFFFF;
+            --primary-color: #5D5FEF;
+            --primary-hover: #4B4CE0;
+            --text-main: #151D48;
+            --text-muted: #737791;
+            --border-color: #F1F3F9;
+            --pastel-pink: #FFE2E5;
+            --pastel-orange: #FFF4DE;
+            --pastel-green: #DCFCE7;
+            --pastel-purple: #F3E8FF;
+
+            --radius-card: 20px;
+            --radius-btn: 12px;
+            --radius-pill: 9999px;
+
+            --padding-card: 32px;
+            --gap-layout: 24px;
+            --sidebar-width: 260px;
+
+            --shadow-card: 0px 4px 20px rgba(0, 0, 0, 0.04);
+            --shadow-btn: 0px 4px 10px rgba(93, 95, 239, 0.3);
+            
+            --font-family: 'Pretendard', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
+        body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+
+        /* Sidebar (Same as Home) */
+        .sidebar {
+            width: var(--sidebar-width); background-color: var(--bg-surface); padding: 32px 24px;
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        .logo { font-size: 24px; font-weight: 800; color: var(--primary-color); margin-bottom: 32px; display: flex; align-items: center; gap: 12px; }
+        .nav-item { padding: 16px 20px; border-radius: var(--radius-btn); font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease; }
+        .nav-item.active { background-color: var(--primary-color); color: white; box-shadow: var(--shadow-btn); }
+        
+        .main-content {
+            flex: 1; padding: 32px 40px; max-width: 1600px; margin: 0 auto;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        .header h1 { font-size: 28px; font-weight: 700; }
+
+        /* Layout Grid for Generation Page */
+        .generate-layout {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 40px;
+        }
+
+        /* Card Setup */
+        .card { background-color: var(--bg-surface); padding: var(--padding-card); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+        .card-title { font-size: 20px; font-weight: 800; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; }
+        
+        /* Step Blocks */
+        .step-block { margin-bottom: 32px; }
+        .step-title { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 16px; }
+        .step-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; font-weight: 500; }
+
+        /* Checkbox & Radio selections (Pill style) */
+        .selection-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+        
+        .select-pill {
+            padding: 12px 20px; border: 1px solid var(--border-color); border-radius: var(--radius-pill);
+            color: var(--text-muted); font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .select-pill:hover { border-color: var(--primary-color); color: var(--primary-color); background-color: #F8F9FF; }
+        .select-pill.selected { border-color: var(--primary-color); background-color: var(--primary-color); color: white; box-shadow: var(--shadow-btn); }
+
+        /* Drag Drop Zone */
+        .drag-drop-zone {
+            border: 2px dashed #CBD5E1; border-radius: var(--radius-card); padding: 48px 24px;
+            text-align: center; background-color: #F8FAFC; cursor: pointer; transition: 0.2s;
+        }
+        .drag-drop-zone:hover { border-color: var(--primary-color); background-color: #F0F4FE; }
+        .icon-upload { width: 64px; height: 64px; background-color: white; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; color: var(--primary-color); box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 16px; }
+
+        /* Primary Action Button */
+        .btn-generate {
+            width: 100%; background: linear-gradient(135deg, #5D5FEF, #8F90FF); color: white; border: none;
+            padding: 20px; border-radius: var(--radius-btn); font-size: 18px; font-weight: 800; cursor: pointer;
+            box-shadow: var(--shadow-btn); transition: 0.3s transform; margin-top: 16px;
+        }
+        .btn-generate:active { transform: scale(0.98); }
+
+        /* Phone Preview Container (9:16 Aspect Ratio) */
+        .phone-preview-wrapper {
+            background-color: var(--bg-page); border-radius: 40px; padding: 12px;
+            box-shadow: inset 0px 0px 10px rgba(0,0,0,0.05);
+            width: 100%; max-width: 360px; margin: 0 auto;
+        }
+        .phone-screen {
+            background-color: #000; border-radius: 32px; overflow: hidden; position: relative;
+            aspect-ratio: 9/16; width: 100%; display: flex; flex-direction: column; justify-content: flex-end;
+            background: url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80') center/cover;
+        }
+        
+        /* Subtitle Overlay */
+        .subtitle-overlay {
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 40px 24px 32px 24px;
+            color: white; width: 100%;
+        }
+        .hashtag-pill { background-color: var(--primary-color); color: white; padding: 4px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 700; display: inline-block; margin-bottom: 8px;}
+        
+        .publish-btn {
+            background-color: #111; color: white; border: none; width: 100%; padding: 16px; border-radius: var(--radius-btn); font-weight: 700; font-size: 16px; cursor: pointer; margin-top: 24px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .publish-btn:hover { background-color: #222; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <span style="background-color: var(--primary-color); color: white; padding: 4px 8px; border-radius: 8px;">SG</span>
+            ShortsGen
+        </div>
+        <div class="nav-item" onclick="window.location.href='preview_dabang.html'">대시보드 홈</div>
+        <div class="nav-item active">릴스 생성하기</div>
+        <div class="nav-item">내 보관함</div>
+        <div class="nav-item">트렌드 리포트</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        
+        <div class="header">
+            <div>
+                <h1>새로운 릴스 기획 & 생성</h1>
+                <p style="color: var(--text-muted); margin-top: 8px;">트렌드에 맞는 기획을 선택하고 사진 한 장만 올리면 AI가 알아서 영상을 완성합니다.</p>
+            </div>
+        </div>
+
+        <div class="generate-layout">
+            
+            <!-- Left Area: Planning Form -->
+            <div class="card">
+                <div class="card-title">
+                    <span style="background-color: var(--pastel-purple); color: #A064FA; padding: 4px 12px; border-radius: 8px; font-size: 14px;">기획 세팅</span>
+                    AI 프롬프트 설정
+                </div>
+
+                <!-- Step 1 -->
+                <div class="step-block">
+                    <div class="step-title">1. 이 영상의 목적이 무엇인가요? (중복 선택)</div>
+                    <div class="selection-grid">
+                        <div class="select-pill selected">📣 신메뉴 홍보</div>
+                        <div class="select-pill">🎁 할인 / 이벤트</div>
+                        <div class="select-pill">🧑‍🍳 매장 분위기 / 브이로그</div>
+                        <div class="select-pill">✨ 기타</div>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-block">
+                    <div class="step-title">2. 원하시는 영상 분위기를 골라주세요.</div>
+                    <div class="step-desc">트렌드 분석에 따라 현재 #빵지순례 에는 'B급 유머'가 가장 인기가 많습니다.</div>
+                    <div class="selection-grid">
+                        <div class="select-pill" style="border-color: var(--pastel-green); color: #00B074; background-color: var(--pastel-green);">😊 차분하고 감성적인</div>
+                        <div class="select-pill selected" style="box-shadow: 0 4px 10px rgba(255, 91, 91, 0.2);">🤣 B급 유머 / 밈 (추천)</div>
+                        <div class="select-pill" style="border-color: var(--pastel-orange); color: #FFAA00; background-color: var(--pastel-orange);">🔥 활기찬 / 에너지 넘치는</div>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step-block">
+                    <div class="step-title">3. 사진이나 짧은 영상을 올려주세요.</div>
+                    <div class="drag-drop-zone">
+                        <div class="icon-upload">📁</div>
+                        <h3 style="font-weight: 700; margin-bottom: 8px;">클릭하여 파일 업로드 또는 드래그 앤 드롭</h3>
+                        <p style="color: var(--text-muted); font-size: 14px;">JPG, PNG, MP4 지원 (최대 50MB)</p>
+                    </div>
+                </div>
+
+                <button class="btn-generate">✨ 사진 1장으로 AI 릴스 생성 시작</button>
+            </div>
+
+            <!-- Right Area: Preview (9:16) -->
+            <div class="card" style="display: flex; flex-direction: column; align-items: center; background-color: #F8FAFC;">
+                <div class="card-title" style="align-self: flex-start; margin-bottom: 16px;">
+                    <span style="background-color: var(--pastel-green); color: #00B074; padding: 4px 12px; border-radius: 8px; font-size: 14px;">생성 완료</span>
+                    최종 미리보기
+                </div>
+
+                <div class="phone-preview-wrapper">
+                    <div class="phone-screen">
+                        
+                        <!-- Floating UI elements like TikTok/Reels -->
+                        <div style="position: absolute; right: 16px; bottom: 120px; display: flex; flex-direction: column; gap: 24px; align-items: center; color: white;">
+                            <div style="text-align: center;"><div style="font-size: 24px; margin-bottom: 4px;">❤️</div><span style="font-size: 12px;">Like</span></div>
+                            <div style="text-align: center;"><div style="font-size: 24px; margin-bottom: 4px;">💬</div><span style="font-size: 12px;">Comment</span></div>
+                            <div style="text-align: center;"><div style="font-size: 24px; margin-bottom: 4px;">↗️</div><span style="font-size: 12px;">Share</span></div>
+                        </div>
+
+                        <!-- Video Subtitles & Captions -->
+                        <div class="subtitle-overlay">
+                            <div class="hashtag-pill">#빵지순례</div>
+                            <div class="hashtag-pill" style="background-color: #FF5B5B;">#달콤베이커리</div>
+                            <h3 style="font-size: 18px; font-weight: 800; line-height: 1.4; margin-top: 12px; text-shadow: 0px 2px 4px rgba(0,0,0,0.5);">
+                                사장님이 미쳤어요!<br>방금 갓 구워 겉바속촉 끝판왕인 크루아상 🥐
+                            </h3>
+                            <p style="font-size: 13px; font-weight: 500; margin-top: 12px; color: #E2E8F0;">프로필 링크에서 지금 바로 예약하세요! 👉</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="publish-btn">
+                    <span>📱</span> 인스타그램/틱톡 원클릭 발행
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
