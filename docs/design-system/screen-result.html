@@ -1,0 +1,130 @@
+<!-- @dsCard group="Screens" -->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>하루 체크아웃 — S2 결과 화면</title>
+<style>
+  :root {
+    --primary: #3182f6;
+    --primary-light: #e8f3ff;
+    --text-strong: #191f28;
+    --text-body: #4e5968;
+    --text-sub: #8b95a1;
+    --border: #e5e8eb;
+    --bg-page: #f2f4f6;
+    --bg-card: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: linear-gradient(180deg, #eef2ff 0%, #f7f3ff 50%, #fff5f2 100%);
+    color: var(--text-body);
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 80px;
+    min-height: 100vh;
+  }
+  .phone { width: 100%; max-width: 430px; }
+  .app-header { text-align: center; margin-bottom: 20px; }
+  .app-header .badge {
+    display: inline-block; font-size: 12px; font-weight: 700; color: var(--primary);
+    background: var(--primary-light); padding: 4px 12px; border-radius: 9999px; margin-bottom: 8px;
+  }
+  .app-header h1 { font-size: 18px; font-weight: 700; color: var(--text-strong); }
+  .screen {
+    background: var(--bg-card); border-radius: 20px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 24px 20px 20px; min-height: 560px; display: flex; flex-direction: column;
+  }
+  .origin-box { background: var(--bg-page); border-radius: 14px; padding: 14px 16px; font-size: 13px; color: var(--text-sub); margin-bottom: 20px; line-height: 1.5; }
+  .origin-box .label { display: block; font-size: 11px; font-weight: 700; color: var(--text-sub); margin-bottom: 4px; letter-spacing: 0.02em; }
+  .result-cards { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .card { perspective: 1000px; min-height: 132px; }
+  .card-flip-inner { position: relative; width: 100%; height: 100%; min-height: 132px; transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
+  .card.flipped .card-flip-inner { transform: rotateY(180deg); }
+  .card-face { position: absolute; inset: 0; backface-visibility: hidden; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; }
+  .card-face-back { transform: rotateY(180deg); background: var(--primary-light); border-color: transparent; }
+  .card .card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .card .icon { font-size: 18px; }
+  .card .card-title { font-size: 13px; font-weight: 700; color: var(--primary); }
+  .why-btn { margin-left: auto; border: none; background: var(--bg-page); color: var(--text-sub); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; cursor: pointer; font-family: inherit; }
+  .card-body { font-size: 15px; color: var(--text-strong); line-height: 1.55; }
+  .reason-text { font-size: 13.5px; color: var(--text-body); line-height: 1.55; flex: 1; }
+  .back-btn { align-self: flex-start; margin-top: 8px; border: none; background: none; color: var(--primary); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; padding: 0; }
+  .result-actions { display: flex; gap: 8px; margin-top: 18px; }
+  .btn { height: 56px; border: none; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-primary { background: var(--primary); color: #fff; flex: 2; }
+  .btn-weak { background: var(--bg-page); color: var(--text-body); flex: 1; }
+  .prep-link { display: block; width: 100%; margin-top: 14px; border: none; background: none; color: var(--text-sub); font-size: 12.5px; font-weight: 600; text-align: center; cursor: pointer; font-family: inherit; padding: 4px; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="app-header">
+    <div class="badge">DESIGN SYSTEM</div>
+    <h1>하루 체크아웃</h1>
+  </div>
+  <section class="screen">
+    <div class="origin-box">
+      <span class="label">오늘 남긴 말</span>
+      <span>팀플에서 의견이 계속 무시돼서 지쳤다</span>
+    </div>
+    <div class="result-cards">
+      <div class="card" data-card="emotion">
+        <div class="card-flip-inner">
+          <div class="card-face card-face-front">
+            <div class="card-head"><span class="icon">🙂</span><span class="card-title">오늘의 감정</span><button class="why-btn" type="button">왜?</button></div>
+            <div class="card-body">무기력함, 답답함</div>
+          </div>
+          <div class="card-face card-face-back">
+            <div class="card-head"><span class="card-title">왜 이렇게 정리했나요?</span></div>
+            <p class="reason-text">"지쳤다"는 표현이 반복돼서 무기력·답답함으로 정리했어요.</p>
+            <button class="back-btn" type="button">다시 보기</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" data-card="cause">
+        <div class="card-flip-inner">
+          <div class="card-face card-face-front">
+            <div class="card-head"><span class="icon">🔍</span><span class="card-title">원인</span><button class="why-btn" type="button">왜?</button></div>
+            <div class="card-body">팀플에서 낸 의견이 반복해서 무시당함</div>
+          </div>
+          <div class="card-face card-face-back">
+            <div class="card-head"><span class="card-title">왜 이렇게 정리했나요?</span></div>
+            <p class="reason-text">"의견이 계속 무시됐다"는 부분이 구체적인 사건으로 언급돼서 원인으로 짚었어요.</p>
+            <button class="back-btn" type="button">다시 보기</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" data-card="action">
+        <div class="card-flip-inner">
+          <div class="card-face card-face-front">
+            <div class="card-head"><span class="icon">🌱</span><span class="card-title">내일의 작은 행동</span><button class="why-btn" type="button">왜?</button></div>
+            <div class="card-body">내일 회의에서 의견 하나만 짧고 명확하게 말해보기</div>
+          </div>
+          <div class="card-face card-face-back">
+            <div class="card-head"><span class="card-title">왜 이렇게 정리했나요?</span></div>
+            <p class="reason-text">한 번에 관계를 바꾸기보다, 내일 바로 해볼 수 있는 작은 행동 하나만 제안했어요. 조언이 아니라 정리라서, 실행은 여전히 당신의 몫이에요.</p>
+            <button class="back-btn" type="button">다시 보기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="result-actions">
+      <button class="btn btn-weak">다시 정리하기</button>
+      <button class="btn btn-primary">저장</button>
+    </div>
+    <button class="prep-link" type="button">📋 상담 프렙시트 미리보기</button>
+  </section>
+</div>
+<script>
+  document.querySelectorAll('.why-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { btn.closest('.card').classList.add('flipped'); });
+  });
+  document.querySelectorAll('.back-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { btn.closest('.card').classList.remove('flipped'); });
+  });
+</script>
+</body>
+</html>
