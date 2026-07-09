@@ -137,6 +137,12 @@
   word-break: keep-all;
 }
 
+.target-badge-break {
+  flex-basis: 100%;
+  width: 0;
+  height: 0;
+}
+
 /* 기능 소개 영역 */
 .features-section {
   margin-bottom: 56px;
@@ -191,6 +197,47 @@
   word-break: keep-all;
 }
 
+/* 서브 기능 영역 */
+.sub-feature-section {
+  margin-bottom: 56px;
+}
+
+.sub-feature-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 24px;
+  text-align: left;
+}
+
+.sub-feature-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  background: #e5e7eb;
+  padding: 3px 9px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.sub-feature-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px;
+  letter-spacing: -0.3px;
+}
+
+.sub-feature-desc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+  word-break: keep-all;
+}
+
 /* 차별점(AI) 강조 영역 */
 .highlight-section {
   background: #14532d;
@@ -232,6 +279,22 @@
 /* 사용자 시나리오 영역 */
 .scenario-section {
   margin-bottom: 56px;
+}
+
+.scenario-group {
+  margin-bottom: 32px;
+}
+
+.scenario-group:last-child {
+  margin-bottom: 0;
+}
+
+.scenario-role {
+  font-size: 15px;
+  font-weight: 700;
+  color: #15803d;
+  margin: 0 0 14px;
+  word-break: keep-all;
 }
 
 .scenario-list {
