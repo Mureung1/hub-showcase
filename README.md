@@ -19,8 +19,9 @@
 
 ## 기술 스택
 
-- 프로토타입: 순수 HTML / CSS / JS
-- (향후 구현 예정: React + Vite 기반 확장 — 자세한 내용은 기획서 참고)
+- 프로토타입 데모: 순수 HTML / CSS / JS (`docs/prototype.html`)
+- 실제 앱: Vite + React (프로젝트 소개 컴포넌트만 구현됨)
+- 백엔드: Express 예정 (아직 미착수)
 
 ## 개발 환경 실행
 
