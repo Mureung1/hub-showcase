@@ -196,6 +196,26 @@ _Avoid_: General chat app, AY-PLE student UI, polished assistant experience, pro
 The stable runtime module that owns run lifecycle, normalized runtime events, cancellation, failure handling, and run logs so AY-PLE-specific flows do not depend directly on Codex raw protocol events.
 _Avoid_: Product workflow, raw Codex wrapper, AY-PLE feature module
 
+**RuntimeRun**:
+A single run-centric interaction with an agent runtime, started from a prompt or product operation and tracked until it reaches a terminal runtime state.
+_Avoid_: Chat message, Codex thread, background import
+
+**RuntimeRunEvent**:
+A normalized lifecycle event for a RuntimeRun, such as started, output delta, cancelling, completed, cancelled, or failed, used instead of exposing raw runtime protocol notifications to AY-PLE flows.
+_Avoid_: Raw Codex notification, UI event, log line
+
+**RuntimeRunLog**:
+The canonical record of a RuntimeRun's prompt, status, output, error, normalized events, debug evidence, and timing.
+_Avoid_: Chat transcript, raw protocol dump, durable storage guarantee
+
+**CodexCapabilitySlot**:
+A non-productized engine-inspection reservation for a Codex app-server capability that AY-PLE may observe before deciding whether to translate it into a student-facing feature.
+_Avoid_: Product feature, student-facing control, runtime-core contract
+
+**CodexRawClient**:
+The runtime-codex internal client role for generated-schema-backed Codex app-server requests, kept separate from AY-PLE's normalized runtime contract.
+_Avoid_: Product API, runtime-core contract, student-facing capability
+
 **AppCapabilitySurface**:
 The small live app control surface exposed to AY for cases that need app-mediated interaction, especially requesting a user decision from the GUI.
 _Avoid_: General feature API, direct database access, everything-as-MCP
