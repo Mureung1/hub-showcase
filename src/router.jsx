@@ -9,6 +9,7 @@ import Result from './pages/Result.jsx'
 import Calendar from './pages/Calendar.jsx'
 import MapPage from './pages/MapPage.jsx'
 import MealsPage from './pages/MealsPage.jsx'
+import FoodDbTest from './pages/FoodDbTest.jsx'
 
 function RequireAuth({ children }) {
   const { user } = useUser()
@@ -97,6 +98,17 @@ export default function AppRouter() {
             <RequireAuth>
               <AppShell>
                 <MapPage />
+              </AppShell>
+            </RequireAuth>
+          }
+        />
+        {/* 임시 테스트 라우트: 식약처 식품DB 연동 확인용. 다음 단계에서 제거 예정. */}
+        <Route
+          path="/fooddb-test"
+          element={
+            <RequireAuth>
+              <AppShell hideTabBar>
+                <FoodDbTest />
               </AppShell>
             </RequireAuth>
           }
