@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>디자인 데모 | 어학시험 학습 플래너</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="demo-shell">
+    <header class="hero-collage">
+      <div class="hero-summary">
+        <div class="summary-main">
+          <div class="summary-label">시험 D-Day</div>
+          <div class="summary-blocks" aria-label="시험 디데이 요약">
+            <div class="summary-block summary-block-d">D</div>
+            <div class="summary-block summary-block-number">20</div>
+          </div>
+          <div class="summary-meta-inline">
+            <span>TOEIC</span>
+            <span>2026.10.24</span>
+          </div>
+        </div>
+        <div class="summary-meta">
+          <div class="summary-item">
+            <span class="summary-item-label">선택한 시험</span>
+            <strong>TOEIC</strong>
+          </div>
+          <div class="summary-item">
+            <span class="summary-item-label">목표 점수</span>
+            <strong>850점</strong>
+          </div>
+          <div class="summary-item">
+            <span class="summary-item-label">오늘 가능 시간</span>
+            <strong>60분</strong>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="page-head">
+      <p class="section-label">학습 플래너</p>
+      <h1>나만의 어학시험 학습 플래너</h1>
+      <p class="page-description">목표 시험일까지 오늘 해야 할 공부를 계획해 드려요</p>
+    </section>
+
+    <main class="layout-grid">
+      <aside class="side-panel">
+        <div class="panel-card panel-time">
+          <div class="panel-title">이번 주 목표 학습 시간</div>
+          <div class="panel-value">8시간</div>
+        </div>
+        <div class="panel-card panel-todo">
+          <div class="panel-title">오늘의 할 일</div>
+          <ul class="todo-list">
+            <li class="todo-item done"><label><input type="checkbox" checked disabled /> LC Part 2 문제 복습</label></li>
+            <li class="todo-item"><label><input type="checkbox" disabled /> 단어 20개 암기</label></li>
+            <li class="todo-item"><label><input type="checkbox" disabled /> RC Part 5 오답 정리</label></li>
+          </ul>
+        </div>
+      </aside>
+
+      <section class="main-panel">
+        <div class="panel-card exam-selection">
+          <div class="section-label">시험 선택</div>
+          <div class="exam-grid">
+            <button class="exam-card exam-selected">TOEIC</button>
+            <button class="exam-card">OPIc</button>
+            <button class="exam-card">TOEIC Speaking</button>
+            <button class="exam-card">TOEFL</button>
+          </div>
+        </div>
+
+        <div class="panel-card progress-card">
+          <div class="section-title">학습 진행률</div>
+          <div class="progress-meta">
+            <span class="progress-label">오늘 목표 달성</span>
+            <span class="progress-percent">78%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+          <div class="progress-notes">중요 과제 우선 처리 후 남은 시간 조정</div>
+        </div>
+
+        <div class="panel-card today-plan">
+          <div class="section-title">오늘의 학습 계획</div>
+          <ul class="plan-list">
+            <li><span>09:00</span><span>LC Part 3 대화 문제 10개 풀기</span><span class="plan-state state-done">완료</span></li>
+            <li><span>11:00</span><span>RC Part 5 문법 문제 20개 풀기</span><span class="plan-state state-active">진행 중</span></li>
+            <li><span>15:00</span><span>틀린 문제 오답노트 정리</span><span class="plan-state state-upcoming">예정</span></li>
+          </ul>
+        </div>
+
+        <div class="panel-card schedule-card">
+          <div class="section-title">주간 학습 시간표</div>
+          <div class="schedule-table">
+            <div class="row header"><span>시간</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span></div>
+            <div class="row"><span>09:00</span><span>LC</span><span>RC</span><span>단어</span><span>오답정리</span><span>모의고사</span></div>
+            <div class="row"><span>14:00</span><span>LC</span><span>단어</span><span>RC</span><span>오답 정리</span><span>실전 모의고사</span></div>
+            <div class="row"><span>18:00</span><span>복습</span><span>문제풀이</span><span>오답노트</span><span>실전연습</span><span>정리</span></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="demo-footer">
+      <div class="control-row">
+        <button class="btn btn-primary">계획 저장</button>
+        <button class="btn btn-secondary">다음 날 보기</button>
+      </div>
+      <div class="input-row">
+        <label>
+          <span>검색</span>
+          <input type="text" placeholder="학습 항목 검색" />
+        </label>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
