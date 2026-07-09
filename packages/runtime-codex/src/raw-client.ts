@@ -1,6 +1,5 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import { existsSync, mkdirSync } from 'node:fs'
-import { homedir } from 'node:os'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import readline from 'node:readline'
 import { fileURLToPath } from 'node:url'
@@ -47,6 +46,22 @@ export type CodexRawClientOptions = {
   clientInfo?: CodexRawClientInfo
   env?: Record<string, string | undefined>
   codexArgs?: string[]
+  ensureFileAuthConfig?: boolean
+}
+
+export type CodexAuthStatusInput = {
+  includeToken?: boolean
+  refreshToken?: boolean
+}
+
+export type CodexAuthStatusResult = {
+  authMethod: string | null
+  authToken: string | null
+  requiresOpenaiAuth: boolean | null
+}
+
+export type EnsureCodexRuntimeHomeOptions = {
+  fileAuthConfig?: boolean
 }
 
 export type CodexRawDebugLogEntry = {
@@ -241,6 +256,8 @@ type NotificationResolver = (
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const defaultTimeoutMs = 15000
 const defaultCodexArgs = ['app-server', '--listen', 'stdio://']
+const fileAuthConfigKey = 'cli_auth_credentials_store'
+const fileAuthConfigLine = `${fileAuthConfigKey} = "file"`
 const tokenLikeEnvKeyPattern =
   /(^|_)(ACCESS_TOKEN|API_KEY|AUTH_TOKEN|ID_TOKEN|PRIVATE_KEY|REFRESH_TOKEN|SECRET|TOKEN|PASSWORD)($|_)/
 
@@ -252,6 +269,7 @@ export class CodexRawClient {
   private readonly clientInfo: CodexRawClientInfo
   private readonly env?: Record<string, string | undefined>
   private readonly codexArgs: string[]
+  private readonly shouldEnsureFileAuthConfig: boolean
   private readonly debugLog: CodexRawDebugLogEntry[] = []
   private readonly pendingResponses = new Map<string, PendingResponse>()
   private readonly notificationQueue: CodexRawServerNotification[] = []
@@ -275,6 +293,9 @@ export class CodexRawClient {
       }
     this.env = options.env
     this.codexArgs = options.codexArgs ?? defaultCodexArgs
+    this.shouldEnsureFileAuthConfig =
+      options.ensureFileAuthConfig ??
+      isDefaultCodexRuntimeHome(this.runtimeHome)
   }
 
   getDebugLog(): CodexRawDebugLogEntry[] {
@@ -441,6 +462,19 @@ export class CodexRawClient {
     )
   }
 
+  async getAuthStatus(
+    input: CodexAuthStatusInput = {},
+  ): Promise<CodexAuthStatusResult> {
+    return this.sendGeneratedRequest(
+      'getAuthStatus',
+      {
+        includeToken: input.includeToken ?? false,
+        refreshToken: input.refreshToken ?? false,
+      },
+      toGetAuthStatusResponse,
+    )
+  }
+
   async *notifications(): AsyncIterable<CodexRawServerNotification> {
     while (true) {
       const notification = await this.nextNotification()
@@ -458,7 +492,9 @@ export class CodexRawClient {
       return
     }
 
-    ensureCodexRuntimeHome(this.runtimeHome)
+    ensureCodexRuntimeHome(this.runtimeHome, {
+      fileAuthConfig: this.shouldEnsureFileAuthConfig,
+    })
     this.notificationStreamClosed = false
 
     const childEnv = buildChildEnv(this.runtimeHome, this.env)
@@ -855,7 +891,7 @@ export function resolvePackageCodexBinPath(startDir = packageRoot): string {
 }
 
 export function resolveDefaultCodexRuntimeHome(
-  baseDir = join(homedir(), '.ay-ple', 'runtime-codex'),
+  baseDir = resolveDefaultCodexRuntimeBaseDir(),
 ): CodexRuntimeHome {
   return {
     codexHome: join(baseDir, 'codex-home'),
@@ -863,9 +899,100 @@ export function resolveDefaultCodexRuntimeHome(
   }
 }
 
-export function ensureCodexRuntimeHome(runtimeHome: CodexRuntimeHome): void {
+export function ensureCodexRuntimeHome(
+  runtimeHome: CodexRuntimeHome,
+  options: EnsureCodexRuntimeHomeOptions = {},
+): void {
   mkdirSync(runtimeHome.codexHome, { recursive: true })
   mkdirSync(runtimeHome.codexSqliteHome, { recursive: true })
+
+  if (options.fileAuthConfig === true) {
+    ensureCodexFileAuthConfig(runtimeHome.codexHome)
+  }
+}
+
+function resolveDefaultCodexRuntimeBaseDir(startDir = packageRoot): string {
+  const workspaceRoot = findWorkspaceRoot(startDir)
+
+  return join(workspaceRoot ?? process.cwd(), '.ay-ple', 'runtime-codex')
+}
+
+function findWorkspaceRoot(startDir: string): string | undefined {
+  let currentDir = startDir
+
+  while (true) {
+    if (hasWorkspacePackageJson(currentDir)) {
+      return currentDir
+    }
+
+    const parentDir = dirname(currentDir)
+
+    if (parentDir === currentDir) {
+      return undefined
+    }
+
+    currentDir = parentDir
+  }
+}
+
+function hasWorkspacePackageJson(candidateDir: string): boolean {
+  const packageJsonPath = join(candidateDir, 'package.json')
+
+  if (!existsSync(packageJsonPath)) {
+    return false
+  }
+
+  try {
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
+      workspaces?: unknown
+    }
+
+    return (
+      Array.isArray(packageJson.workspaces) ||
+      isRecord(packageJson.workspaces)
+    )
+  } catch {
+    return false
+  }
+}
+
+function isDefaultCodexRuntimeHome(runtimeHome: CodexRuntimeHome): boolean {
+  const defaultRuntimeHome = resolveDefaultCodexRuntimeHome()
+
+  return (
+    resolve(runtimeHome.codexHome) === resolve(defaultRuntimeHome.codexHome) &&
+    resolve(runtimeHome.codexSqliteHome) ===
+      resolve(defaultRuntimeHome.codexSqliteHome)
+  )
+}
+
+function ensureCodexFileAuthConfig(codexHome: string): void {
+  const configPath = join(codexHome, 'config.toml')
+
+  if (!existsSync(configPath)) {
+    writeFileSync(configPath, `${fileAuthConfigLine}\n`)
+    return
+  }
+
+  const currentConfig = readFileSync(configPath, 'utf8')
+  const configKeyPattern = new RegExp(`^\\s*${fileAuthConfigKey}\\s*=.*$`, 'm')
+
+  if (configKeyPattern.test(currentConfig)) {
+    const nextConfig = currentConfig.replace(
+      configKeyPattern,
+      fileAuthConfigLine,
+    )
+
+    if (nextConfig !== currentConfig) {
+      writeFileSync(configPath, nextConfig)
+    }
+
+    return
+  }
+
+  const separator =
+    currentConfig.length === 0 || currentConfig.endsWith('\n') ? '' : '\n'
+  writeFileSync(configPath, `${currentConfig}${separator}${fileAuthConfigLine}\n`)
 }
 
 function resolveCodexRuntimeHome(
@@ -999,6 +1126,18 @@ function toTurnInterruptResponse(value: unknown): TurnInterruptResponse {
   return value as TurnInterruptResponse
 }
 
+function toGetAuthStatusResponse(value: unknown): CodexAuthStatusResult {
+  if (!isRecord(value)) {
+    throw new Error('getAuthStatus returned a non-object result')
+  }
+
+  return {
+    authMethod: readStringOrNull(value, 'authMethod'),
+    authToken: readStringOrNull(value, 'authToken'),
+    requiresOpenaiAuth: readBooleanOrNull(value, 'requiresOpenaiAuth'),
+  }
+}
+
 function readResponseObjectWithId(
   value: unknown,
   method: string,
@@ -1043,6 +1182,19 @@ function readStringOrNull(
 
   if (field !== null && typeof field !== 'string') {
     throw new Error(`result is missing nullable string field: ${key}`)
+  }
+
+  return field
+}
+
+function readBooleanOrNull(
+  value: Record<string, unknown>,
+  key: string,
+): boolean | null {
+  const field = value[key]
+
+  if (field !== null && typeof field !== 'boolean') {
+    throw new Error(`result is missing nullable boolean field: ${key}`)
   }
 
   return field

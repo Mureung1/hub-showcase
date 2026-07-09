@@ -32,6 +32,13 @@ Run the opt-in app-server initialize smoke with:
 npm run smoke:codex -w @ay-ple/runtime-codex
 ```
 
+Without overrides, the runtime home is workspace-local:
+
+| Path | Purpose |
+| --- | --- |
+| `.ay-ple/runtime-codex/codex-home` | App-managed `CODEX_HOME`, including file-based auth config. |
+| `.ay-ple/runtime-codex/sqlite` | App-managed `CODEX_SQLITE_HOME`. |
+
 Supported environment overrides:
 
 | Variable | Purpose |

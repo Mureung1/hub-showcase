@@ -132,6 +132,51 @@ test('runtime API exposes Codex capability slots as engine inspection metadata',
   })
 })
 
+test('runtime API exposes Codex binary, runtime home, and auth status', async () => {
+  await withFakeCodexAppServer(
+    {
+      userAgent: 'fake-codex-status-test',
+      authStatus: {
+        authMethod: 'chatgpt',
+        authToken: 'hidden-token',
+        requiresOpenaiAuth: true,
+      },
+    },
+    async ({ rawClientOptions }) => {
+      await withTestServer(
+        {
+          codexRawClientOptions: {
+            ...rawClientOptions,
+            ensureFileAuthConfig: true,
+          },
+        },
+        async (baseUrl) => {
+          const response = await fetch(`${baseUrl}/api/runtime/codex/status`)
+          const body = await response.json()
+
+          assert.equal(response.status, 200)
+          assert.equal(body.ok, true)
+          assert.equal(body.codexBinPath, process.execPath)
+          assert.match(body.version, /^v\d+\./)
+          assert.equal(body.cwd, rawClientOptions.cwd)
+          assert.deepEqual(body.runtimeHome, {
+            codexHome: rawClientOptions.codexHome,
+            codexSqliteHome: rawClientOptions.codexSqliteHome,
+          })
+          assert.equal(body.config.authCredentialsStore, 'file')
+          assert.equal(body.config.fileAuthConfigPresent, true)
+          assert.equal(body.initialize.userAgent, 'fake-codex-status-test')
+          assert.deepEqual(body.auth, {
+            authMethod: 'chatgpt',
+            requiresOpenaiAuth: true,
+          })
+          assert.equal('authToken' in body.auth, false)
+        },
+      )
+    },
+  )
+})
+
 test('runtime API cancels a running fake run and streams normalized cancellation', async () => {
   await withTestServer({ fakeDelayMs: 1000 }, async (baseUrl) => {
     const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {

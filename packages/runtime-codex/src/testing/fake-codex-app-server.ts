@@ -25,6 +25,12 @@ export type FakeCodexErrorNotification = {
   message: string
 }
 
+export type FakeCodexAuthStatus = {
+  authMethod?: string | null
+  authToken?: string | null
+  requiresOpenaiAuth?: boolean | null
+}
+
 export type FakeCodexAppServerScenario = {
   userAgent?: string
   threadId?: string
@@ -41,6 +47,7 @@ export type FakeCodexAppServerScenario = {
   turnStartError?: string
   turnInterruptError?: string
   endBeforeTerminal?: boolean
+  authStatus?: FakeCodexAuthStatus
 }
 
 export type FakeCodexAppServerFixture = {
@@ -52,6 +59,7 @@ export type FakeCodexAppServerFixture = {
 export type CodexDebugClientRequestMethod =
   | 'initialize'
   | 'initialized'
+  | 'getAuthStatus'
   | 'thread/list'
   | 'thread/loaded/list'
   | 'thread/read'
@@ -280,6 +288,11 @@ function normalizeScenario(
     turnStartError: scenario.turnStartError ?? null,
     turnInterruptError: scenario.turnInterruptError ?? null,
     endBeforeTerminal: scenario.endBeforeTerminal ?? false,
+    authStatus: {
+      authMethod: scenario.authStatus?.authMethod ?? null,
+      authToken: scenario.authStatus?.authToken ?? null,
+      requiresOpenaiAuth: scenario.authStatus?.requiresOpenaiAuth ?? true,
+    },
   }
 }
 
@@ -306,6 +319,7 @@ type NormalizedFakeCodexAppServerScenario = {
   turnStartError: string | null
   turnInterruptError: string | null
   endBeforeTerminal: boolean
+  authStatus: Required<FakeCodexAuthStatus>
 }
 
 function normalizeCompletion(
@@ -355,6 +369,17 @@ reader.on('line', (line) => {
   }
 
   if (message.method === 'initialized') {
+    return
+  }
+
+  if (message.method === 'getAuthStatus') {
+    writeResponse(message.id, {
+      authMethod: scenario.authStatus.authMethod,
+      authToken: message.params?.includeToken === true
+        ? scenario.authStatus.authToken
+        : null,
+      requiresOpenaiAuth: scenario.authStatus.requiresOpenaiAuth,
+    })
     return
   }
 

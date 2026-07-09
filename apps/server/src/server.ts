@@ -7,6 +7,8 @@ import {
 import {
   CodexRuntimeAdapter,
   listCodexCapabilitySlots,
+  readCodexRuntimeStatus,
+  type CodexRawClientOptions,
 } from '@ay-ple/runtime-codex'
 import { FakeRuntimeAdapter } from '@ay-ple/runtime-fake'
 import cors from 'cors'
@@ -20,16 +22,21 @@ const port = Number(process.env.PORT ?? 3000)
 export type CreateServerAppOptions = {
   fakeDelayMs?: number
   kernel?: AgentRuntimeKernel
+  codexRawClientOptions?: CodexRawClientOptions
 }
 
 type FakeRuntimeScenario = 'failure'
 
 export function createServerApp(options: CreateServerAppOptions = {}): Express {
   const app = express()
+  const codexRawClientOptions =
+    options.codexRawClientOptions ?? readCodexRawClientOptionsFromEnv()
   const fakeAdapter = new FakeRuntimeAdapter({
     delayMs: options.fakeDelayMs,
   })
-  const codexAdapter = new CodexRuntimeAdapter()
+  const codexAdapter = new CodexRuntimeAdapter({
+    rawClientOptions: codexRawClientOptions,
+  })
   const kernel =
     options.kernel ??
     new AgentRuntimeKernel({
@@ -50,6 +57,10 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
 
   app.get('/api/runtime/codex/capabilities', (_req, res) => {
     res.json({ slots: listCodexCapabilitySlots() })
+  })
+
+  app.get('/api/runtime/codex/status', async (_req, res) => {
+    res.json(await readCodexRuntimeStatus(codexRawClientOptions))
   })
 
   app.post('/api/runtime/runs', (req, res) => {
@@ -180,6 +191,15 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
   })
 
   return app
+}
+
+function readCodexRawClientOptionsFromEnv(): CodexRawClientOptions {
+  return {
+    codexBinPath: process.env.CODEX_BIN_PATH,
+    cwd: process.env.CODEX_RUNTIME_CWD,
+    codexHome: process.env.CODEX_HOME,
+    codexSqliteHome: process.env.CODEX_SQLITE_HOME,
+  }
 }
 
 function writeSseEvent(res: Response, event: RuntimeRunEvent): void {
