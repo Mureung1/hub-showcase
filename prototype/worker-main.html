@@ -3,243 +3,178 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>알바노트 알바생 메인화면 프로토타입</title>
+  <title>알바노트 알바생 메인 화면 프로토타입</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css">
   <link rel="stylesheet" href="./style.css">
 </head>
-<body class="app-page">
-  <header class="site-header">
-    <a class="brand" href="#" aria-label="알바노트 홈">
-      <span class="brand-mark">A</span>
-      <span>알바노트</span>
-    </a>
+<body>
+  <div class="stage">
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./worker-main.html" aria-label="알바노트 홈">
+          <span class="brand-mark">A</span>
+          <span>알바노트</span>
+        </a>
 
-    <nav class="main-nav worker-nav" aria-label="알바생 메뉴">
-      <a class="active" href="#">근무표</a>
-      <a href="./worker-substitute.html">대타 요청</a>
-      <a href="#">내 근무 정보</a>
-      <a href="#">알림</a>
-    </nav>
+        <nav class="topnav" aria-label="알바생 메뉴">
+          <a class="active" href="./worker-main.html">근무표</a>
+          <a href="./worker-substitute.html">대타 요청</a>
+          <a href="#">내 근무 정보</a>
+          <a href="#">알림</a>
+        </nav>
 
-    <div class="user-actions">
-      <a class="store-select" href="#">연남점</a>
-      <a class="user-pill" href="#">
-        <span class="user-avatar">김</span>
-        <span>김민지</span>
-      </a>
-    </div>
-  </header>
-
-  <main class="app-main">
-    <section class="dashboard-hero" aria-labelledby="dashboard-title">
-      <div>
-        <h1 id="dashboard-title">연남점 근무표</h1>
-      </div>
-
-      <div class="dashboard-status">
-        <div class="status-item">
-          <span>이번 달 근무</span>
-          <strong>12회</strong>
-        </div>
-        <div class="status-item">
-          <span>예상 급여</span>
-          <strong>528,000원</strong>
-        </div>
-        <div class="status-item point">
-          <span>대타 가능</span>
-          <strong>ON</strong>
-        </div>
-      </div>
-    </section>
-
-    <section class="dashboard-layout" aria-label="알바생 근무표 대시보드">
-      <section class="calendar-panel" aria-labelledby="calendar-title">
-        <div class="panel-header">
-          <div>
-            <p class="preview-label">월간 근무표</p>
-            <h2 id="calendar-title">2026년 7월</h2>
-          </div>
-          <div class="month-controls" aria-label="월 이동 표시">
-            <span>이전</span>
-            <strong>오늘</strong>
-            <span>다음</span>
-          </div>
-        </div>
-
-        <div class="calendar-grid large-calendar" aria-label="2026년 7월 근무표 예시">
-          <span class="weekday">월</span>
-          <span class="weekday">화</span>
-          <span class="weekday">수</span>
-          <span class="weekday">목</span>
-          <span class="weekday">금</span>
-          <span class="weekday">토</span>
-          <span class="weekday">일</span>
-
-          <div class="day muted">29</div>
-          <div class="day muted">30</div>
-          <div class="day my-shift">
-            <strong>1</strong>
-            <span>18:00-22:00</span>
-          </div>
-          <div class="day">
-            <strong>2</strong>
-          </div>
-          <div class="day has-shift">
-            <strong>3</strong>
-            <span>매장 근무 3명</span>
-          </div>
-          <div class="day">
-            <strong>4</strong>
-          </div>
-          <div class="day my-shift">
-            <strong>5</strong>
-            <span>12:00-18:00</span>
-          </div>
-
-          <div class="day has-shift">
-            <strong>6</strong>
-            <span>마감 근무</span>
-          </div>
-          <a class="day today my-shift" href="./worker-day.html" aria-label="2026년 7월 7일 일간 근무표 보기">
-            <strong>7</strong>
-            <span>18:00-22:00</span>
+        <div class="top-actions">
+          <a class="store-button" href="#">연남점</a>
+          <a class="profile-chip" href="#">
+            <span>김</span>
+            <strong>김민지</strong>
           </a>
-          <div class="day">
-            <strong>8</strong>
-          </div>
-          <div class="day has-shift">
-            <strong>9</strong>
-            <span>대타 가능 2명</span>
-          </div>
-          <div class="day my-shift">
-            <strong>10</strong>
-            <span>17:00-22:00</span>
-          </div>
-          <div class="day">
-            <strong>11</strong>
-          </div>
-          <div class="day has-shift">
-            <strong>12</strong>
-            <span>오픈 근무</span>
-          </div>
-
-          <div class="day">
-            <strong>13</strong>
-          </div>
-          <div class="day my-shift">
-            <strong>14</strong>
-            <span>18:00-22:00</span>
-          </div>
-          <div class="day">
-            <strong>15</strong>
-          </div>
-          <div class="day has-shift">
-            <strong>16</strong>
-            <span>매장 근무 4명</span>
-          </div>
-          <div class="day">
-            <strong>17</strong>
-          </div>
-          <div class="day my-shift">
-            <strong>18</strong>
-            <span>12:00-18:00</span>
-          </div>
-          <div class="day">
-            <strong>19</strong>
-          </div>
-
-          <div class="day has-shift">
-            <strong>20</strong>
-            <span>마감 근무</span>
-          </div>
-          <div class="day my-shift">
-            <strong>21</strong>
-            <span>18:00-22:00</span>
-          </div>
-          <div class="day">
-            <strong>22</strong>
-          </div>
-          <div class="day">
-            <strong>23</strong>
-          </div>
-          <div class="day my-shift">
-            <strong>24</strong>
-            <span>17:00-22:00</span>
-          </div>
-          <div class="day has-shift">
-            <strong>25</strong>
-            <span>대타 가능 1명</span>
-          </div>
-          <div class="day">
-            <strong>26</strong>
-          </div>
-
-          <div class="day">
-            <strong>27</strong>
-          </div>
-          <div class="day my-shift">
-            <strong>28</strong>
-            <span>18:00-22:00</span>
-          </div>
-          <div class="day">
-            <strong>29</strong>
-          </div>
-          <div class="day has-shift">
-            <strong>30</strong>
-            <span>매장 근무 3명</span>
-          </div>
-          <div class="day">
-            <strong>31</strong>
-          </div>
-          <div class="day muted">1</div>
-          <div class="day muted">2</div>
         </div>
-      </section>
+      </header>
 
-      <aside class="side-panel" aria-label="내 근무 요약">
-        <section class="summary-card today-card">
-          <p class="preview-label">오늘 내 근무</p>
-          <h2>18:00 - 22:00</h2>
-          <p class="summary-text">마감 근무 · 4시간</p>
-          <div class="worker-list left-align">
-            <span>김민지</span>
-            <span>서준</span>
-            <span>하은</span>
+      <main class="dashboard">
+        <section class="hero-row" aria-labelledby="dashboard-title">
+          <div>
+            <p class="kicker">WORKER DASHBOARD</p>
+            <h1 id="dashboard-title">연남점 근무표</h1>
+          </div>
+          <div class="search-box">
+            <span aria-hidden="true"></span>
+            <p>근무, 요청, 알림 검색</p>
           </div>
         </section>
 
-        <section class="summary-card">
-          <p class="preview-label">이번 주 근무</p>
-          <div class="mini-list">
-            <div>
-              <span>7월 7일 화</span>
-              <strong>18:00 - 22:00</strong>
-            </div>
-            <div>
-              <span>7월 10일 금</span>
-              <strong>17:00 - 22:00</strong>
-            </div>
-            <div>
-              <span>7월 12일 일</span>
-              <strong>휴무</strong>
-            </div>
-          </div>
+        <section class="metric-grid" aria-label="이번 달 요약">
+          <article class="metric-card">
+            <span>이번 달 근무</span>
+            <strong>12회</strong>
+            <p>48시간 예정</p>
+          </article>
+          <article class="metric-card">
+            <span>예상 급여</span>
+            <strong>528,000원</strong>
+            <p>시급 11,000원</p>
+          </article>
+          <article class="metric-card highlight">
+            <span>공개 요청</span>
+            <strong>2건</strong>
+            <p>신청 가능한 요청</p>
+          </article>
         </section>
 
-        <section class="summary-card">
-          <div class="card-row">
-            <div>
-              <p class="preview-label">최근 알림</p>
-              <h3>알림 2개</h3>
+        <section class="content-grid">
+          <section class="calendar-card" aria-label="월간 근무표">
+            <div class="card-head">
+              <div>
+                <p class="label">MONTHLY SCHEDULE</p>
+                <h2>2026년 7월</h2>
+              </div>
+              <div class="month-pills">
+                <span>이전</span>
+                <strong>오늘</strong>
+                <span>다음</span>
+              </div>
             </div>
-            <span class="notice-badge">2</span>
-          </div>
-          <div class="notice-list">
-            <p>7월 9일 대타 요청</p>
-            <p>7월 10일 근무 시간 변경</p>
-          </div>
+
+            <div class="calendar-grid">
+              <span class="weekday">일</span>
+              <span class="weekday">월</span>
+              <span class="weekday">화</span>
+              <span class="weekday">수</span>
+              <span class="weekday">목</span>
+              <span class="weekday">금</span>
+              <span class="weekday">토</span>
+
+              <div class="day muted"><strong>29</strong></div>
+              <div class="day muted"><strong>30</strong></div>
+              <div class="day shift"><strong>1</strong><span>내 근무</span></div>
+              <div class="day"><strong>2</strong></div>
+              <div class="day store"><strong>3</strong><span>3명 근무</span></div>
+              <div class="day"><strong>4</strong></div>
+              <div class="day shift"><strong>5</strong><span>내 근무</span></div>
+              <div class="day store"><strong>6</strong><span>마감</span></div>
+              <a class="day today shift" href="./worker-day.html" aria-label="2026년 7월 7일 근무 상세 보기">
+                <strong>7</strong>
+                <span>내 근무</span>
+              </a>
+              <div class="day"><strong>8</strong></div>
+              <div class="day request"><strong>9</strong><span>요청 2건</span></div>
+              <div class="day shift"><strong>10</strong><span>내 근무</span></div>
+              <div class="day"><strong>11</strong></div>
+              <div class="day store"><strong>12</strong><span>오픈</span></div>
+              <div class="day"><strong>13</strong></div>
+              <div class="day shift"><strong>14</strong><span>내 근무</span></div>
+              <div class="day"><strong>15</strong></div>
+              <div class="day store"><strong>16</strong><span>4명 근무</span></div>
+              <div class="day"><strong>17</strong></div>
+              <div class="day shift"><strong>18</strong><span>내 근무</span></div>
+              <div class="day"><strong>19</strong></div>
+              <div class="day store"><strong>20</strong><span>마감</span></div>
+              <div class="day shift"><strong>21</strong><span>내 근무</span></div>
+              <div class="day"><strong>22</strong></div>
+              <div class="day"><strong>23</strong></div>
+              <div class="day shift"><strong>24</strong><span>내 근무</span></div>
+              <div class="day request"><strong>25</strong><span>요청 1건</span></div>
+              <div class="day"><strong>26</strong></div>
+              <div class="day"><strong>27</strong></div>
+              <div class="day shift"><strong>28</strong><span>내 근무</span></div>
+              <div class="day"><strong>29</strong></div>
+              <div class="day store"><strong>30</strong><span>3명 근무</span></div>
+              <div class="day"><strong>31</strong></div>
+              <div class="day muted"><strong>1</strong></div>
+              <div class="day muted"><strong>2</strong></div>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="근무 요약">
+            <section class="side-card today-card">
+              <p class="label">TODAY</p>
+              <h2>18:00 - 22:00</h2>
+              <span>마감 · 4시간 · 40,000원</span>
+              <div class="mini-people">
+                <strong>김민지</strong>
+                <strong>서준</strong>
+                <strong>하은</strong>
+              </div>
+            </section>
+
+            <section class="side-card">
+              <div class="card-head compact">
+                <h3>공개 요청</h3>
+                <a href="./worker-substitute.html">전체</a>
+              </div>
+              <div class="request-list">
+                <article>
+                  <div>
+                    <strong>7월 9일 목</strong>
+                    <span>19:00 - 23:00</span>
+                  </div>
+                  <p class="badge">대기</p>
+                </article>
+                <article>
+                  <div>
+                    <strong>7월 10일 금</strong>
+                    <span>17:00 - 22:00</span>
+                  </div>
+                  <p class="badge">승인 대기</p>
+                </article>
+              </div>
+            </section>
+
+            <section class="side-card notice-card">
+              <div class="card-head compact">
+                <h3>알림</h3>
+                <p class="badge">2</p>
+              </div>
+              <p>7월 10일 근무 시간이 변경되었습니다.</p>
+            </section>
+          </aside>
         </section>
-      </aside>
-    </section>
-  </main>
+      </main>
+    </div>
+  </div>
 </body>
 </html>
