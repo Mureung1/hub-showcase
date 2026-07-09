@@ -49,6 +49,23 @@ web
 api
 ```
 
+현재 CI는 개인 fork 전용이다.
+
+```text
+repository: HyunKN/hub
+push branches: main, develop
+pull request base branches: main, develop
+manual: workflow_dispatch
+```
+
+각 job의 repository guard는 다음 조건을 사용한다.
+
+```yaml
+if: github.repository == 'HyunKN/hub'
+```
+
+따라서 `connect-AIAgentChallenge-26-1/hub`의 `N187_정현우`, `main` 또는 다른 branch에서는 이 CI job을 실행하지 않는다. 단, workflow 파일 자체를 외부 PR의 변경 목록에서 제외하려면 개인 CI branch와 제출용 branch를 별도로 운영해야 한다.
+
 workflow 파일이 존재하는 것과 원격 CI가 통과한 것은 다르다. push 후 GitHub 실행 결과를 별도로 확인한다.
 
 ## 4. Run Report에 남길 내용
