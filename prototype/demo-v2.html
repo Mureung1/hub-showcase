@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>탑히어 v2 — 프로토타입</title>
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
+  <style>
+    /* ===== Design Tokens (docs/design.md) ===== */
+    :root {
+      --bg:              #F7F8FA;
+      --surface:         #FFFFFF;
+      --sidebar-bg:      #111111;
+      --sidebar-active:  #2D2D2D;
+      --text-primary:    #1A1A1A;
+      --text-secondary:  #6B7280;
+      --text-muted:      #9CA3AF;
+      --border:          #E5E7EB;
+      --grad-start:      #C7B8F5;
+      --grad-end:        #F9CDD5;
+      --green-bg:        #D1FAE5;
+      --green-text:      #059669;
+      --red-bg:          #FDE8E8;
+      --red-text:        #E53E3E;
+      --map-bg:          #EFEFEF;
+      --shadow-card:     0 2px 8px rgba(0,0,0,0.06);
+      --shadow-hover:    0 4px 16px rgba(0,0,0,0.10);
+      --shadow-popover:  0 8px 24px rgba(0,0,0,0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      font-family: 'Pretendard Variable', Pretendard, 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ===== Page wrapper ===== */
+    .page-wrap {
+      padding: 28px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .page-note {
+      max-width: 1440px;
+      width: 100%;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+    .page-note strong { color: var(--text-secondary); }
+    .app-scroll {
+      width: 100%;
+      max-width: 1440px;
+      overflow-x: auto;
+    }
+
+    /* ===== Hidden state inputs ===== */
+    .state-input { position: absolute; opacity: 0; pointer-events: none; }
+
+    /* ===== App shell ===== */
+    .app {
+      position: relative;
+      width: 100%;
+      min-width: 1040px;
+      aspect-ratio: 1440 / 900;
+      display: flex;
+      background: var(--surface);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px -20px rgba(20, 20, 40, 0.20);
+      border: 1px solid var(--border);
+    }
+
+    /* ===== Sidebar (64px, dark) ===== */
+    .sidebar {
+      flex: 0 0 64px;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 0;
+      gap: 6px;
+      z-index: 10;
+    }
+    .sidebar-logo {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+      color: var(--text-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 15px;
+      margin-bottom: 16px;
+    }
+    .sidebar-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted);
+      font-size: 18px;
+    }
+    .sidebar-icon.active {
+      background: var(--sidebar-active);
+      color: #FFFFFF;
+    }
+
+    /* ===== Left panel ===== */
+    .panel {
+      flex: 0 0 300px;
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      overflow-y: auto;
+      background: var(--surface);
+    }
+
+    /* Shared panel elements */
+    .panel-title {
+      font-size: 20px; font-weight: 600;
+      letter-spacing: -0.02em; line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .panel-sub {
+      font-size: 12px; color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+    .school-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+      color: var(--text-primary);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 13px; font-weight: 500;
+      margin-bottom: 4px;
+      cursor: pointer;
+    }
+    .section-label {
+      font-size: 12px; font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    /* Search bar */
+    .search-bar {
+      display: flex; align-items: center; gap: 8px;
+      background: #F3F4F6;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px; color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    .search-icon { color: var(--text-muted); font-size: 15px; }
+
+    /* Autocomplete dropdown */
+    .autocomplete {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--shadow-popover);
+    }
+    .autocomplete-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item .sch-name { font-size: 14px; font-weight: 500; }
+    .autocomplete-item .sch-addr { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .autocomplete-item:first-child { background: linear-gradient(135deg, rgba(199,184,245,0.15), rgba(249,205,213,0.15)); }
+
+    /* Condition inputs (state 2) */
+    .input-field {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 14px; color: var(--text-primary);
+      font-family: inherit;
+    }
+    .input-group { margin-bottom: 14px; }
+    .btn-primary {
+      display: block; width: 100%;
+      background: var(--text-primary);
+      color: #FFFFFF;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 14px; font-weight: 600;
+      text-align: center; text-decoration: none;
+      cursor: pointer; border: none;
+      font-family: inherit;
+      margin-top: 4px;
+    }
+
+    /* Sliders (state 3) */
+    .slider-section-title {
+      font-size: 16px; font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    .slider-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .slider-label {
+      font-size: 12px; font-weight: 500; color: var(--text-secondary);
+      width: 56px; flex-shrink: 0;
+    }
+    .slider-row input[type="range"] {
+      flex: 1; accent-color: var(--text-primary);
+    }
+    .slider-val {
+      font-size: 12px; font-weight: 600; color: var(--text-primary);
+      width: 18px; text-align: right;
+    }
+
+    /* TOP5 cards */
+    .top5-title {
+      font-size: 16px; font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+    .cards { display: flex; flex-direction: column; gap: 8px; }
+    .card {
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      cursor: pointer;
+      background: var(--surface);
+      box-shadow: var(--shadow-card);
+    }
+    .card.hero {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      border: none;
+    }
+    .card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .rank {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(0,0,0,0.08);
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .card-name { font-size: 14px; font-weight: 600; flex: 1; }
+    .badge {
+      font-size: 11px; font-weight: 500;
+      border-radius: 20px; padding: 3px 10px;
+      background: rgba(0,0,0,0.07);
+      color: var(--text-secondary);
+    }
+    .card.hero .badge { color: var(--text-primary); }
+    .card-stats { display: flex; gap: 10px; font-size: 12px; color: var(--text-secondary); }
+    .card-stats span b { color: var(--text-primary); font-weight: 600; }
+    .card.hero .card-stats { color: rgba(26,26,26,0.65); }
+    .card.hero .card-stats span b { color: var(--text-primary); }
+
+    /* ===== Map area ===== */
+    .map-area {
+      flex: 1;
+      position: relative;
+      background: var(--map-bg);
+      overflow: hidden;
+    }
+
+    /* Map state 1: hint */
+    .map-hint-wrap {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 10px;
+      color: var(--text-muted);
+    }
+    .map-hint-wrap .hint-icon { font-size: 48px; }
+    .map-hint-wrap .hint-text { font-size: 13px; text-align: center; line-height: 1.7; }
+
+    /* Real map (state 2+) */
+    .map-real {
+      position: absolute; inset: 0;
+      background-image: url("../public/prototype-map-bg.png");
+      background-size: cover;
+      background-position: center;
+      display: none;
+    }
+
+    /* Zoom */
+    .zoom-controls {
+      position: absolute; right: 16px; bottom: 20px;
+      display: flex; flex-direction: column; gap: 6px;
+      z-index: 5;
+    }
+    .zoom-btn {
+      width: 32px; height: 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: var(--text-secondary);
+      box-shadow: var(--shadow-card);
+    }
+
+    /* Pins */
+    .pin { position: absolute; transform: translate(-50%, -50%); cursor: pointer; }
+    .dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--text-primary);
+      border: 3px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .pin.school .dot { background: var(--green-text); }
+    .pin-label {
+      position: absolute;
+      bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      background: var(--text-primary);
+      color: #fff;
+      font-size: 11px; font-weight: 600;
+      padding: 4px 8px; border-radius: 6px;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.15s;
+      pointer-events: none;
+    }
+    .pin:hover .pin-label { opacity: 1; visibility: visible; }
+    .pin-region { display: none; }
+
+    /* Detail drawer */
+    .drawer {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 272px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      box-shadow: var(--shadow-popover);
+      padding: 20px;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 20;
+      display: none;
+    }
+    .drawer-name {
+      font-size: 20px; font-weight: 600;
+      letter-spacing: -0.02em; line-height: 1.2;
+    }
+    .drawer-rank { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .drawer-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+    .drawer-close {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; color: var(--text-secondary);
+      cursor: pointer; flex-shrink: 0;
+    }
+    .drawer-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+    .drawer-row:last-of-type { border-bottom: none; }
+    .drawer-row span { color: var(--text-secondary); }
+    .drawer-row b { font-weight: 600; }
+    .drawer-note {
+      font-size: 12px; color: var(--text-secondary);
+      font-style: italic; line-height: 1.65;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: 12px 0;
+    }
+    .btn-external {
+      display: block;
+      background: var(--text-primary); color: #fff;
+      border-radius: 10px; padding: 12px;
+      text-align: center; font-size: 13px; font-weight: 600;
+      text-decoration: none;
+    }
+
+    /* ===== State machine ===== */
+
+    /* Default (s1 checked): show state-1 content, map hint */
+    .s2-content, .s3-content { display: none; }
+
+    /* s2: school selected → show condition inputs, real map */
+    #s2:checked ~ .app .s1-content { display: none; }
+    #s2:checked ~ .app .s2-content { display: block; }
+    #s2:checked ~ .app .map-hint-wrap { display: none; }
+    #s2:checked ~ .app .map-real { display: block; }
+
+    /* s3: confirm → show sliders + TOP5, real map + pins */
+    #s3:checked ~ .app .s1-content { display: none; }
+    #s3:checked ~ .app .s3-content { display: block; }
+    #s3:checked ~ .app .map-hint-wrap { display: none; }
+    #s3:checked ~ .app .map-real { display: block; }
+    #s3:checked ~ .app .pin-region { display: block; }
+
+    /* Region selection: card highlight + drawer open */
+    #r1:checked ~ .app .card-1 { box-shadow: var(--shadow-hover); outline: 2px solid var(--text-primary); }
+    #r2:checked ~ .app .card-2 { box-shadow: var(--shadow-hover); outline: 2px solid var(--text-primary); }
+    #r3:checked ~ .app .card-3 { box-shadow: var(--shadow-hover); outline: 2px solid var(--text-primary); }
+    #r4:checked ~ .app .card-4 { box-shadow: var(--shadow-hover); outline: 2px solid var(--text-primary); }
+    #r5:checked ~ .app .card-5 { box-shadow: var(--shadow-hover); outline: 2px solid var(--text-primary); }
+
+    #r1:checked ~ .app .drawer-1,
+    #r2:checked ~ .app .drawer-2,
+    #r3:checked ~ .app .drawer-3,
+    #r4:checked ~ .app .drawer-4,
+    #r5:checked ~ .app .drawer-5 { display: flex; flex-direction: column; }
+
+    /* Pin pulse on selected */
+    #r1:checked ~ .app .pin-1 .dot,
+    #r2:checked ~ .app .pin-2 .dot,
+    #r3:checked ~ .app .pin-3 .dot,
+    #r4:checked ~ .app .pin-4 .dot,
+    #r5:checked ~ .app .pin-5 .dot {
+      width: 18px; height: 18px;
+      box-shadow: 0 0 0 6px rgba(26,26,26,0.12), 0 2px 6px rgba(0,0,0,0.25);
+    }
+
+    /* hero card outline override for gradient bg */
+    #r1:checked ~ .app .card-1.hero {
+      outline-color: rgba(26,26,26,0.5);
+      box-shadow: 0 4px 20px rgba(199,184,245,0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="page-note">
+      <strong>탑히어 v2 프로토타입</strong> · 순수 HTML/CSS (JavaScript 없음) · 학교 선택 → 조건 입력 → 추천 결과 흐름을 클릭으로 확인할 수 있습니다
+    </div>
+    <div class="app-scroll">
+
+      <!-- State machine inputs -->
+      <input type="radio" name="state" id="s1" class="state-input" checked />
+      <input type="radio" name="state" id="s2" class="state-input" />
+      <input type="radio" name="state" id="s3" class="state-input" />
+
+      <!-- Region selection inputs -->
+      <input type="radio" name="region" id="r0" class="state-input" checked />
+      <input type="radio" name="region" id="r1" class="state-input" />
+      <input type="radio" name="region" id="r2" class="state-input" />
+      <input type="radio" name="region" id="r3" class="state-input" />
+      <input type="radio" name="region" id="r4" class="state-input" />
+      <input type="radio" name="region" id="r5" class="state-input" />
+
+      <div class="app">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <div class="sidebar-logo">T</div>
+          <div class="sidebar-icon">⌂</div>
+          <div class="sidebar-icon active">◈</div>
+          <div class="sidebar-icon">☆</div>
+          <div class="sidebar-icon">◎</div>
+        </aside>
+
+        <!-- Left Panel -->
+        <section class="panel">
+
+          <!-- STATE 1: 학교 검색 -->
+          <div class="s1-content">
+            <div class="panel-title">자취 지역 찾기</div>
+            <div class="panel-sub">학교를 선택하면 주변 지역을 분석합니다</div>
+            <div class="search-bar">
+              <span class="search-icon">🔍</span>
+              <span>학교 이름을 검색하세요</span>
+            </div>
+            <div class="autocomplete">
+              <label class="autocomplete-item" for="s2">
+                <span>🎓</span>
+                <div>
+                  <div class="sch-name">건국대학교</div>
+                  <div class="sch-addr">서울 광진구 화양동</div>
+                </div>
+              </label>
+              <div class="autocomplete-item">
+                <span>🎓</span>
+                <div>
+                  <div class="sch-name">세종대학교</div>
+                  <div class="sch-addr">서울 광진구 군자동</div>
+                </div>
+              </div>
+              <div class="autocomplete-item">
+                <span>🎓</span>
+                <div>
+                  <div class="sch-name">한양대학교</div>
+                  <div class="sch-addr">서울 성동구 행당동</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STATE 2: 조건 입력 -->
+          <div class="s2-content">
+            <label class="school-chip" for="s1">🎓 건국대학교 ▾</label>
+            <div class="panel-sub">예산과 통학 조건을 입력하세요</div>
+
+            <div class="input-group">
+              <div class="section-label">월세 상한 (만원)</div>
+              <input class="input-field" type="number" value="60" />
+            </div>
+            <div class="input-group">
+              <div class="section-label">통학 허용시간 (분)</div>
+              <input class="input-field" type="number" value="30" />
+            </div>
+
+            <label class="btn-primary" for="s3">확인 →</label>
+          </div>
+
+          <!-- STATE 3: 슬라이더 + TOP5 -->
+          <div class="s3-content">
+            <label class="school-chip" for="s1">🎓 건국대학교 ▾</label>
+            <div class="panel-sub" style="margin-bottom:14px">슬라이더를 조정하면 추천 순위가 바뀝니다</div>
+
+            <div class="slider-section-title">중요도 설정</div>
+            <div class="slider-row">
+              <span class="slider-label">통학</span>
+              <input type="range" min="0" max="10" value="7" />
+              <span class="slider-val">7</span>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">월세</span>
+              <input type="range" min="0" max="10" value="6" />
+              <span class="slider-val">6</span>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">치안</span>
+              <input type="range" min="0" max="10" value="7" />
+              <span class="slider-val">7</span>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">편의시설</span>
+              <input type="range" min="0" max="10" value="5" />
+              <span class="slider-val">5</span>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">교통</span>
+              <input type="range" min="0" max="10" value="6" />
+              <span class="slider-val">6</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="top5-title">TOP5 추천 지역</div>
+            <div class="cards">
+              <label class="card hero card-1" for="r1">
+                <div class="card-top">
+                  <span class="rank">1</span>
+                  <span class="card-name">자양동</span>
+                  <span class="badge">91점</span>
+                </div>
+                <div class="card-stats">
+                  <span>통학 <b>22분</b></span>
+                  <span>월세 <b>58만</b></span>
+                  <span>치안 <b>80</b></span>
+                </div>
+              </label>
+              <label class="card card-2" for="r2">
+                <div class="card-top">
+                  <span class="rank">2</span>
+                  <span class="card-name">화양동</span>
+                  <span class="badge">87점</span>
+                </div>
+                <div class="card-stats">
+                  <span>통학 <b>15분</b></span>
+                  <span>월세 <b>62만</b></span>
+                  <span>치안 <b>74</b></span>
+                </div>
+              </label>
+              <label class="card card-3" for="r3">
+                <div class="card-top">
+                  <span class="rank">3</span>
+                  <span class="card-name">군자동</span>
+                  <span class="badge">82점</span>
+                </div>
+                <div class="card-stats">
+                  <span>통학 <b>25분</b></span>
+                  <span>월세 <b>54만</b></span>
+                  <span>치안 <b>85</b></span>
+                </div>
+              </label>
+              <label class="card card-4" for="r4">
+                <div class="card-top">
+                  <span class="rank">4</span>
+                  <span class="card-name">성수동</span>
+                  <span class="badge">76점</span>
+                </div>
+                <div class="card-stats">
+                  <span>통학 <b>30분</b></span>
+                  <span>월세 <b>70만</b></span>
+                  <span>치안 <b>78</b></span>
+                </div>
+              </label>
+              <label class="card card-5" for="r5">
+                <div class="card-top">
+                  <span class="rank">5</span>
+                  <span class="card-name">중곡동</span>
+                  <span class="badge">71점</span>
+                </div>
+                <div class="card-stats">
+                  <span>통학 <b>28분</b></span>
+                  <span>월세 <b>49만</b></span>
+                  <span>치안 <b>72</b></span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- Map Area -->
+        <section class="map-area">
+
+          <!-- State 1: hint -->
+          <div class="map-hint-wrap">
+            <div class="hint-icon">🗺️</div>
+            <div class="hint-text">학교를 선택하면<br>주변 지역이 표시됩니다</div>
+          </div>
+
+          <!-- State 2+: real map -->
+          <div class="map-real">
+            <!-- 학교 마커 -->
+            <div class="pin school" style="left:59.9%; top:46.8%;">
+              <div class="dot"></div>
+              <div class="pin-label">건국대학교 🎓</div>
+            </div>
+
+            <!-- 지역 핀 (state 3만 표시) -->
+            <div class="pin pin-region pin-1" style="left:82.3%; top:81.2%;">
+              <label for="r1"><div class="dot"></div></label>
+              <div class="pin-label">자양동 · 91점</div>
+            </div>
+            <div class="pin pin-region pin-2" style="left:23.2%; top:39.1%;">
+              <label for="r2"><div class="dot"></div></label>
+              <div class="pin-label">화양동 · 87점</div>
+            </div>
+            <div class="pin pin-region pin-3" style="left:40.6%; top:53.7%;">
+              <label for="r3"><div class="dot"></div></label>
+              <div class="pin-label">군자동 · 82점</div>
+            </div>
+            <div class="pin pin-region pin-4" style="left:69.5%; top:63.5%;">
+              <label for="r4"><div class="dot"></div></label>
+              <div class="pin-label">성수동 · 76점</div>
+            </div>
+            <div class="pin pin-region pin-5" style="left:17.4%; top:73.2%;">
+              <label for="r5"><div class="dot"></div></label>
+              <div class="pin-label">중곡동 · 71점</div>
+            </div>
+          </div>
+
+          <!-- 줌 컨트롤 -->
+          <div class="zoom-controls">
+            <div class="zoom-btn">+</div>
+            <div class="zoom-btn">−</div>
+          </div>
+
+          <!-- 상세 드로어 — 지역별 -->
+          <div class="drawer drawer-1">
+            <div class="drawer-head">
+              <div>
+                <div class="drawer-name">자양동</div>
+                <div class="drawer-rank">종합점수 91 · 전체 1위</div>
+              </div>
+              <label class="drawer-close" for="r0">✕</label>
+            </div>
+            <div class="divider" style="margin:0 0 12px"></div>
+            <div class="drawer-row"><span>통학시간</span><b>22분</b></div>
+            <div class="drawer-row"><span>예상 월세</span><b>58만원</b></div>
+            <div class="drawer-row"><span>치안 점수</span><b>80 / 100</b></div>
+            <div class="drawer-row"><span>편의시설 점수</span><b>78 / 100</b></div>
+            <div class="drawer-row"><span>교통 점수</span><b>85 / 100</b></div>
+            <div class="drawer-note">"통학은 조금 늘어나지만 월세·교통에서 앞선다"</div>
+            <a class="btn-external" href="https://new.land.naver.com/" target="_blank" rel="noopener">네이버 부동산에서 보기 ↗</a>
+          </div>
+
+          <div class="drawer drawer-2">
+            <div class="drawer-head">
+              <div>
+                <div class="drawer-name">화양동</div>
+                <div class="drawer-rank">종합점수 87 · 전체 2위</div>
+              </div>
+              <label class="drawer-close" for="r0">✕</label>
+            </div>
+            <div class="divider" style="margin:0 0 12px"></div>
+            <div class="drawer-row"><span>통학시간</span><b>15분</b></div>
+            <div class="drawer-row"><span>예상 월세</span><b>62만원</b></div>
+            <div class="drawer-row"><span>치안 점수</span><b>74 / 100</b></div>
+            <div class="drawer-row"><span>편의시설 점수</span><b>93 / 100</b></div>
+            <div class="drawer-row"><span>교통 점수</span><b>90 / 100</b></div>
+            <div class="drawer-note">"학교에서 가장 가깝고 편의시설이 풍부하다"</div>
+            <a class="btn-external" href="https://new.land.naver.com/" target="_blank" rel="noopener">네이버 부동산에서 보기 ↗</a>
+          </div>
+
+          <div class="drawer drawer-3">
+            <div class="drawer-head">
+              <div>
+                <div class="drawer-name">군자동</div>
+                <div class="drawer-rank">종합점수 82 · 전체 3위</div>
+              </div>
+              <label class="drawer-close" for="r0">✕</label>
+            </div>
+            <div class="divider" style="margin:0 0 12px"></div>
+            <div class="drawer-row"><span>통학시간</span><b>25분</b></div>
+            <div class="drawer-row"><span>예상 월세</span><b>54만원</b></div>
+            <div class="drawer-row"><span>치안 점수</span><b>85 / 100</b></div>
+            <div class="drawer-row"><span>편의시설 점수</span><b>70 / 100</b></div>
+            <div class="drawer-row"><span>교통 점수</span><b>78 / 100</b></div>
+            <div class="drawer-note">"월세는 낮지만 통학 시간이 가장 길다"</div>
+            <a class="btn-external" href="https://new.land.naver.com/" target="_blank" rel="noopener">네이버 부동산에서 보기 ↗</a>
+          </div>
+
+          <div class="drawer drawer-4">
+            <div class="drawer-head">
+              <div>
+                <div class="drawer-name">성수동</div>
+                <div class="drawer-rank">종합점수 76 · 전체 4위</div>
+              </div>
+              <label class="drawer-close" for="r0">✕</label>
+            </div>
+            <div class="divider" style="margin:0 0 12px"></div>
+            <div class="drawer-row"><span>통학시간</span><b>30분</b></div>
+            <div class="drawer-row"><span>예상 월세</span><b>70만원</b></div>
+            <div class="drawer-row"><span>치안 점수</span><b>78 / 100</b></div>
+            <div class="drawer-row"><span>편의시설 점수</span><b>95 / 100</b></div>
+            <div class="drawer-row"><span>교통 점수</span><b>88 / 100</b></div>
+            <div class="drawer-note">"편의시설과 교통은 좋지만 월세가 가장 높다"</div>
+            <a class="btn-external" href="https://new.land.naver.com/" target="_blank" rel="noopener">네이버 부동산에서 보기 ↗</a>
+          </div>
+
+          <div class="drawer drawer-5">
+            <div class="drawer-head">
+              <div>
+                <div class="drawer-name">중곡동</div>
+                <div class="drawer-rank">종합점수 71 · 전체 5위</div>
+              </div>
+              <label class="drawer-close" for="r0">✕</label>
+            </div>
+            <div class="divider" style="margin:0 0 12px"></div>
+            <div class="drawer-row"><span>통학시간</span><b>28분</b></div>
+            <div class="drawer-row"><span>예상 월세</span><b>49만원</b></div>
+            <div class="drawer-row"><span>치안 점수</span><b>72 / 100</b></div>
+            <div class="drawer-row"><span>편의시설 점수</span><b>68 / 100</b></div>
+            <div class="drawer-row"><span>교통 점수</span><b>75 / 100</b></div>
+            <div class="drawer-note">"월세는 가장 저렴하지만 다른 항목은 평균 수준이다"</div>
+            <a class="btn-external" href="https://new.land.naver.com/" target="_blank" rel="noopener">네이버 부동산에서 보기 ↗</a>
+          </div>
+
+        </section>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
