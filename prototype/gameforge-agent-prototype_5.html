@@ -99,6 +99,14 @@
     border:1px solid var(--border); border-radius:8px; padding:14px; color:var(--text-dim);
     white-space:pre-wrap; overflow-x:auto;
   }
+  .code-editor{
+    width:100%; min-height:140px; resize:vertical;
+    font-family:var(--mono); font-size:12px; line-height:1.7; background:var(--panel-2);
+    border:1px solid var(--teal); border-radius:8px; padding:14px; color:var(--text); outline:none;
+  }
+  .md-preview-head .path{ font-family:var(--mono); font-size:11px; color:var(--text-mute); }
+  #mdEditBtn{ font-size:11px; font-family:var(--mono); }
+  #mdEditBtn:hover{ color:var(--text); }
 
   /* workspace layout */
   .workspace{ display:flex; border:1px solid var(--border); border-radius:12px; overflow:hidden; min-height:560px; }
@@ -121,11 +129,15 @@
   .ws-top{ display:flex; align-items:center; justify-content:space-between; }
   .ws-eyebrow{ font-family:var(--mono); font-size:11px; color:var(--teal); }
   .ws-title{ font-size:16px; font-weight:600; margin-top:2px; }
-  .qa-box{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px; display:flex; flex-direction:column; gap:12px; }
-  .qa-count{ font-size:12.5px; color:var(--text-dim); }
-  .qa-question{ font-size:15px; }
-  .qa-options{ display:flex; gap:8px; flex-wrap:wrap; }
-  .qa-options button.picked{ border-color:var(--teal); color:var(--teal); }
+  .qa-box{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:10px; max-height:340px; }
+  .chat-head{ display:flex; align-items:center; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--text-mute); }
+  .chat-messages{ display:flex; flex-direction:column; gap:8px; overflow-y:auto; padding-right:4px; }
+  .chat-msg{ max-width:82%; padding:9px 12px; border-radius:10px; font-size:13px; line-height:1.5; }
+  .chat-msg.agent{ align-self:flex-start; background:var(--panel-2); border:1px solid var(--border); border-bottom-left-radius:3px; }
+  .chat-msg.user{ align-self:flex-end; background:var(--teal-bg); border:1px solid var(--teal); color:var(--text); border-bottom-right-radius:3px; }
+  .chat-msg.typing{ align-self:flex-start; background:var(--panel-2); border:1px solid var(--border); color:var(--text-mute); font-family:var(--mono); border-bottom-left-radius:3px; }
+  .chat-input-row{ display:flex; gap:8px; }
+  .chat-input-row input[type=text]{ flex:1; }
   .md-preview-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
   .md-preview-head .path{ font-family:var(--mono); font-size:11px; color:var(--text-mute); }
 
@@ -244,19 +256,21 @@
       </div>
 
       <div class="qa-box" id="qaBox">
-        <div class="qa-count">질문 3 / 8</div>
-        <div class="qa-question">대시 이동 시 무적 프레임을 적용할까요?</div>
-        <div class="qa-options">
-          <button class="picked">적용한다</button>
-          <button>적용하지 않는다</button>
-          <button>쿨다운에 따라 다르게</button>
+        <div class="chat-head">
+          <span id="chatAgentLabel">PLANNING AGENT</span>
+          <span id="chatProgress">질문 3 / 8</span>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" placeholder="답변을 입력하세요…">
+          <button class="primary" id="chatSendBtn">전송</button>
         </div>
       </div>
 
       <div style="border-top:1px solid var(--border); padding-top:14px;">
         <div class="md-preview-head">
           <span class="path" id="mdPath">02_Game_Design.md — PREVIEW</span>
-          <span style="color:var(--text-dim); cursor:pointer;">✎</span>
+          <span id="mdEditBtn" style="color:var(--text-dim); cursor:pointer;" title="원문 수정">✎ 수정</span>
         </div>
         <pre class="code" id="mdContent"># Game Design
 
@@ -264,6 +278,11 @@
 - [x] Player Movement
 - [x] Jump
 - [ ] Dash</pre>
+        <textarea id="mdEditor" class="code-editor" style="display:none;"></textarea>
+        <div id="mdEditActions" style="display:none; justify-content:flex-end; gap:8px; margin-top:8px;">
+          <button id="mdCancelBtn">취소</button>
+          <button class="primary" id="mdSaveBtn">저장</button>
+        </div>
       </div>
 
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:auto;" id="wsActions">
@@ -296,9 +315,21 @@
     },
     2: {
       eyebrow: "STEP 02 / 16 · PLANNING AGENT",
-      title: "게임 기획 — 질문지",
+      title: "게임 기획 — 대화",
       badgeText: "진행 중", badgeClass: "warning",
-      showQA: true,
+      showChat: true,
+      agentLabel: "PLANNING AGENT",
+      questionTotal: 8,
+      questionIndex: 3,
+      messages: [
+        { from: "agent", text: "대시 이동 시 무적 프레임을 적용할까요?" },
+        { from: "user", text: "적용한다" }
+      ],
+      queue: [
+        "좋아요. 무적 프레임 지속 시간은 대시 지속 시간과 동일하게 맞출까요, 아니면 별도로 설정할까요?",
+        "대시 중 피격 판정은 어떻게 처리할까요? 완전 무시 / 데미지만 무시 / 넉백만 무시 중에서 골라주셔도 되고, 자유롭게 설명해주셔도 돼요.",
+        "마지막으로, 대시 쿨다운은 몇 초 정도로 생각하고 계신가요?"
+      ],
       mdPath: "02_Game_Design.md — PREVIEW",
       md: `# Game Design
 
@@ -310,9 +341,13 @@
     }
   };
 
+  let currentStep = 2;
+
   function openStep(n){
     const detail = stepDetails[n];
     if(!detail) return; // pending steps have no content yet
+    currentStep = n;
+    exitEditMode(); // discard any unsaved edit when switching steps
 
     document.getElementById('wsEyebrow').textContent = detail.eyebrow;
     document.getElementById('wsTitle').textContent = detail.title;
@@ -321,7 +356,12 @@
     badge.textContent = detail.badgeText;
     badge.className = `badge ${detail.badgeClass}`;
 
-    document.getElementById('qaBox').style.display = detail.showQA ? 'flex' : 'none';
+    document.getElementById('qaBox').style.display = detail.showChat ? 'flex' : 'none';
+    if (detail.showChat){
+      document.getElementById('chatAgentLabel').textContent = detail.agentLabel;
+      renderChatProgress(detail);
+      renderChatMessages(detail);
+    }
     document.getElementById('mdPath').textContent = detail.mdPath;
     document.getElementById('mdContent').textContent = detail.md;
     document.getElementById('wsActions').innerHTML = detail.actions;
@@ -331,6 +371,93 @@
       row.classList.toggle('active-selected', Number(row.dataset.n) === n);
     });
   }
+
+  // chat-style Q&A
+  const chatMessagesEl = document.getElementById('chatMessages');
+  const chatInputEl = document.getElementById('chatInput');
+  const chatSendBtn = document.getElementById('chatSendBtn');
+
+  function renderChatProgress(detail){
+    document.getElementById('chatProgress').textContent = `질문 ${detail.questionIndex} / ${detail.questionTotal}`;
+  }
+
+  function renderChatMessages(detail){
+    chatMessagesEl.innerHTML = '';
+    detail.messages.forEach(m => {
+      const bubble = document.createElement('div');
+      bubble.className = `chat-msg ${m.from}`;
+      bubble.textContent = m.text;
+      chatMessagesEl.appendChild(bubble);
+    });
+    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+  }
+
+  function sendChatAnswer(){
+    const detail = stepDetails[currentStep];
+    if (!detail || !detail.showChat) return;
+    const text = chatInputEl.value.trim();
+    if (!text) return;
+
+    detail.messages.push({ from: 'user', text });
+    chatInputEl.value = '';
+    renderChatMessages(detail);
+
+    // simulate the agent "typing" the next question
+    const typingBubble = document.createElement('div');
+    typingBubble.className = 'chat-msg typing';
+    typingBubble.textContent = '입력 중…';
+    chatMessagesEl.appendChild(typingBubble);
+    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+
+    setTimeout(() => {
+      typingBubble.remove();
+      if (detail.queue.length > 0){
+        const nextQuestion = detail.queue.shift();
+        detail.questionIndex = Math.min(detail.questionIndex + 1, detail.questionTotal);
+        detail.messages.push({ from: 'agent', text: nextQuestion });
+      } else {
+        detail.messages.push({ from: 'agent', text: '답변 감사해요. 지금까지 내용으로 게임 기획 문서를 정리했어요. 아래 미리보기를 확인하고 승인해주세요.' });
+      }
+      renderChatProgress(detail);
+      renderChatMessages(detail);
+    }, 700);
+  }
+
+  chatSendBtn.addEventListener('click', sendChatAnswer);
+  chatInputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendChatAnswer();
+  });
+
+  // markdown edit mode
+  const mdContentEl = document.getElementById('mdContent');
+  const mdEditorEl = document.getElementById('mdEditor');
+  const mdEditActionsEl = document.getElementById('mdEditActions');
+  const mdEditBtn = document.getElementById('mdEditBtn');
+
+  function enterEditMode(){
+    mdEditorEl.value = mdContentEl.textContent;
+    mdContentEl.style.display = 'none';
+    mdEditorEl.style.display = 'block';
+    mdEditActionsEl.style.display = 'flex';
+    mdEditBtn.style.display = 'none';
+    mdEditorEl.focus();
+  }
+
+  function exitEditMode(){
+    mdContentEl.style.display = '';
+    mdEditorEl.style.display = 'none';
+    mdEditActionsEl.style.display = 'none';
+    mdEditBtn.style.display = '';
+  }
+
+  mdEditBtn.addEventListener('click', enterEditMode);
+  document.getElementById('mdCancelBtn').addEventListener('click', exitEditMode);
+  document.getElementById('mdSaveBtn').addEventListener('click', () => {
+    const newText = mdEditorEl.value;
+    mdContentEl.textContent = newText;
+    if (stepDetails[currentStep]) stepDetails[currentStep].md = newText;
+    exitEditMode();
+  });
 
   // repo verification -> unlocks branch select, presets, start button
   function verifyRepo(){
