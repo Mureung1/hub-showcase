@@ -7,8 +7,8 @@
 ## 1주차 — 입력 파이프라인 구축 + PoC
 
 ### 환경 설정
-- [ ] Spring Boot 프로젝트 초기 설정 (Java, Gradle/Maven)
-- [ ] React 프로젝트 초기 설정
+- [x] Express + TypeScript + Prisma 프로젝트 초기 설정
+- [x] React 프로젝트 초기 설정
 - [ ] PostgreSQL 로컬/개발 DB 세팅
 - [ ] Git 브랜치 전략 확정 (기능별 브랜치, PR 흐름)
 
