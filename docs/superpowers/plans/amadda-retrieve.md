@@ -6,7 +6,10 @@
 
 **Product Definition:** 상세 제품 기준은 `docs/retrieve.md`를 따른다. `꺼내보기`는 보관함 검색 결과 화면이 아니라 상황 기반 유사도 검색과 작업팩 UX다.
 
-**Architecture:** 보관함 검색과 같은 인사이트 view model은 재사용하되, 랭킹과 표시 모델은 `src/retrieve`에 분리한다. 검색 문서는 `title`, `memo`, `categoryNames`, `domain`, `originalUrl`, `description` 필드를 포함한다. MVP에서는 `MiniSearch` 기반 field boosting을 우선 적용한다.
+**Architecture:** 보관함 검색과 같은 인사이트 view model은 재사용하되, 랭킹과 표시 모델은 `src/features/retrieve`에 분리한다. 검색 문서는 `title`, `memo`, `categoryNames`, `domain`, `originalUrl`, `description` 필드를 포함한다. MVP에서는 `MiniSearch` 기반 field boosting을 우선 적용한다.
+
+
+**FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
 
 **Tech Stack:** React 19, TypeScript, MiniSearch, Supabase, Vitest, React Testing Library
 
@@ -41,17 +44,17 @@
 
 - Modify: `package.json`
   - `minisearch`를 추가한다.
-- Create: `src/retrieve/retrieveSituations.ts`
+- Create: `src/features/retrieve/model/retrieveSituations.ts`
   - 추천 상황 버튼과 query 변환 규칙을 정의한다.
-- Create: `src/retrieve/retrieveSearchDocument.ts`
+- Create: `src/features/retrieve/model/retrieveSearchDocument.ts`
   - 인사이트를 검색 문서로 변환한다.
-- Create: `src/retrieve/retrieveInsights.ts`
+- Create: `src/features/retrieve/model/retrieveInsights.ts`
   - MiniSearch 기반 유사도 검색과 결과 제한을 담당한다.
-- Create: `src/retrieve/retrievePack.ts`
+- Create: `src/features/retrieve/model/retrievePack.ts`
   - 작업팩 view model과 연결 단서를 만든다.
-- Create: `src/retrieve/retrieveInsights.test.ts`
+- Create: `src/features/retrieve/model/retrieveInsights.test.ts`
   - query 변환, 랭킹, 결과 제한, 연결 단서를 검증한다.
-- Modify: `src/pages/HomePage.tsx`
+- Modify: `src/pages/home/ui/HomePage.tsx`
   - 실제 꺼내보기 화면으로 연결한다.
 
 ---
@@ -61,11 +64,11 @@
 **Files:**
 
 - Modify: `package.json`
-- Create: `src/retrieve/retrieveSituations.ts`
-- Create: `src/retrieve/retrieveSearchDocument.ts`
-- Create: `src/retrieve/retrieveInsights.ts`
-- Create: `src/retrieve/retrievePack.ts`
-- Create: `src/retrieve/retrieveInsights.test.ts`
+- Create: `src/features/retrieve/model/retrieveSituations.ts`
+- Create: `src/features/retrieve/model/retrieveSearchDocument.ts`
+- Create: `src/features/retrieve/model/retrieveInsights.ts`
+- Create: `src/features/retrieve/model/retrievePack.ts`
+- Create: `src/features/retrieve/model/retrieveInsights.test.ts`
 
 - [ ] **Step 1: MiniSearch 설치**
 
@@ -77,11 +80,11 @@ npm install minisearch
 
 - [ ] **Step 2: 실패하는 테스트 작성**
 
-Create `src/retrieve/retrieveInsights.test.ts`:
+Create `src/features/retrieve/model/retrieveInsights.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import type { InsightView } from '@/insights/insightView';
+import type { InsightView } from '@/entities/insight';
 import { createRetrievePack } from './retrievePack';
 import { retrieveInsights } from './retrieveInsights';
 import { getSituationQuery, RETRIEVE_SITUATIONS } from './retrieveSituations';
@@ -151,19 +154,19 @@ describe('retrieve', () => {
 Run:
 
 ```bash
-npm test -- src/retrieve/retrieveInsights.test.ts
+npm test -- src/features/retrieve/model/retrieveInsights.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/retrieve/retrieveInsights.test.ts
+FAIL src/features/retrieve/model/retrieveInsights.test.ts
 Cannot find module './retrievePack'
 ```
 
 - [ ] **Step 4: 추천 상황 작성**
 
-Create `src/retrieve/retrieveSituations.ts`:
+Create `src/features/retrieve/model/retrieveSituations.ts`:
 
 ```ts
 export type RetrieveSituationId =
@@ -206,10 +209,10 @@ export function getSituationQuery(id: RetrieveSituationId) {
 
 - [ ] **Step 5: 검색 문서 작성**
 
-Create `src/retrieve/retrieveSearchDocument.ts`:
+Create `src/features/retrieve/model/retrieveSearchDocument.ts`:
 
 ```ts
-import type { InsightView } from '@/insights/insightView';
+import type { InsightView } from '@/entities/insight';
 
 export type RetrieveSearchDocument = {
   categoryNames: string;
@@ -242,11 +245,11 @@ export function toRetrieveSearchDocument(
 
 - [ ] **Step 6: 유사도 검색 작성**
 
-Create `src/retrieve/retrieveInsights.ts`:
+Create `src/features/retrieve/model/retrieveInsights.ts`:
 
 ```ts
 import MiniSearch from 'minisearch';
-import type { InsightView } from '@/insights/insightView';
+import type { InsightView } from '@/entities/insight';
 import { toRetrieveSearchDocument } from './retrieveSearchDocument';
 
 const RETRIEVE_RESULT_LIMIT = 6;
@@ -309,7 +312,7 @@ export function retrieveInsights(
 
 - [ ] **Step 7: 작업팩 작성**
 
-Create `src/retrieve/retrievePack.ts`:
+Create `src/features/retrieve/model/retrievePack.ts`:
 
 ```ts
 import type { RetrieveResult } from './retrieveInsights';
@@ -367,7 +370,7 @@ function getConnectionCue(result: RetrieveResult) {
 Run:
 
 ```bash
-npm test -- src/retrieve/retrieveInsights.test.ts
+npm test -- src/features/retrieve/model/retrieveInsights.test.ts
 npm run build
 ```
 
@@ -376,7 +379,7 @@ npm run build
 Run:
 
 ```bash
-git add package.json package-lock.json src/retrieve
+git add package.json package-lock.json src/features/retrieve
 git commit -m "feat: 꺼내보기 유사도 검색 추가"
 ```
 
@@ -386,7 +389,7 @@ git commit -m "feat: 꺼내보기 유사도 검색 추가"
 
 **Files:**
 
-- Modify: `src/pages/HomePage.tsx`
+- Modify: `src/pages/home/ui/HomePage.tsx`
 
 - [ ] **Step 1: 홈 화면 구현**
 
@@ -426,7 +429,7 @@ Run:
 npm run lint
 npm test
 npm run build
-git add src/pages/HomePage.tsx
+git add src/pages/home/ui/HomePage.tsx
 git commit -m "feat: 홈 꺼내보기 작업팩 연결"
 ```
 

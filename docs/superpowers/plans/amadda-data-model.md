@@ -6,6 +6,9 @@
 
 **Architecture:** 데이터 소유권은 모든 핵심 테이블의 `user_id`로 표현한다. 프론트엔드는 anon key만 사용하고, Supabase RLS가 사용자별 조회/생성/수정/삭제 권한을 강제한다.
 
+
+**FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
+
 **Tech Stack:** Supabase Postgres, SQL Migration, TypeScript, Vitest
 
 ---
@@ -32,11 +35,11 @@
 
 - Create: `supabase/migrations/0001_init_amadda_schema.sql`
   - 테이블, 인덱스, 트리거, RLS 정책을 정의한다.
-- Create: `src/types/database.ts`
+- Create: `src/shared/api/database.types.ts`
   - MVP에서 사용할 Supabase row/insert/update 타입을 정의한다.
-- Create: `src/domain/category.ts`
+- Create: `src/entities/category/model/category.ts`
   - 카테고리 이름 정규화와 기본 색상 선택 규칙을 둔다.
-- Create: `src/domain/category.test.ts`
+- Create: `src/entities/category/model/category.test.ts`
   - 카테고리 이름 중복 판단에 필요한 정규화 규칙을 검증한다.
 - Create: `docs/supabase-setup.md`
   - Supabase SQL 적용 순서와 환경 변수 입력 위치를 기록한다.
@@ -47,12 +50,12 @@
 
 **Files:**
 
-- Create: `src/domain/category.ts`
-- Create: `src/domain/category.test.ts`
+- Create: `src/entities/category/model/category.ts`
+- Create: `src/entities/category/model/category.test.ts`
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-Create `src/domain/category.test.ts`:
+Create `src/entities/category/model/category.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -85,19 +88,19 @@ describe('category domain', () => {
 Run:
 
 ```bash
-npm test -- src/domain/category.test.ts
+npm test -- src/entities/category/model/category.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/domain/category.test.ts
+FAIL src/entities/category/model/category.test.ts
 Cannot find module './category'
 ```
 
 - [ ] **Step 3: 카테고리 도메인 구현**
 
-Create `src/domain/category.ts`:
+Create `src/entities/category/model/category.ts`:
 
 ```ts
 export const CATEGORY_COLOR_PALETTE = [
@@ -123,7 +126,7 @@ export function getDefaultCategoryColor(index: number) {
 Run:
 
 ```bash
-npm test -- src/domain/category.test.ts
+npm test -- src/entities/category/model/category.test.ts
 ```
 
 Expected:
@@ -137,7 +140,7 @@ Expected:
 Run:
 
 ```bash
-git add src/domain/category.ts src/domain/category.test.ts
+git add src/entities/category/model/category.ts src/entities/category/model/category.test.ts
 git commit -m "feat: 카테고리 도메인 규칙 추가"
 ```
 
@@ -397,11 +400,11 @@ git commit -m "feat: Supabase 데이터 모델과 RLS 정책 추가"
 
 **Files:**
 
-- Create: `src/types/database.ts`
+- Create: `src/shared/api/database.types.ts`
 
 - [ ] **Step 1: 타입 파일 작성**
 
-Create `src/types/database.ts`:
+Create `src/shared/api/database.types.ts`:
 
 ```ts
 export type ProfileRow = {
@@ -476,7 +479,7 @@ Expected:
 Run:
 
 ```bash
-git add src/types/database.ts
+git add src/shared/api/database.types.ts
 git commit -m "feat: Supabase 테이블 타입 추가"
 ```
 

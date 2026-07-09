@@ -31,14 +31,26 @@ server/
 - `src/shared`: 비즈니스 로직이 없는 공통 코드만 둔다. 예: 공통 UI, API 클라이언트, 환경 설정, 범용 라이브러리.
 - `src/entities`, `src/features`, `src/widgets`: 아직 만들지 않는다. 도메인 모델이나 재사용 기능이 실제로 생길 때 추가한다.
 
+구현 계획 문서에서는 실제 MVP 기능을 붙이는 시점의 목표 구조를 기준으로 `entities`, `features`, `widgets`를 사용한다.
+
+| 성격                         | 위치 예시                                                   |
+| ---------------------------- | ----------------------------------------------------------- |
+| 앱 셸, provider, 전역 조합    | `src/app`                                                   |
+| 화면 단위                     | `src/pages/home`, `src/pages/library`, `src/pages/save`     |
+| 하단 내비게이션 같은 화면 블록 | `src/widgets/bottom-navigation`                             |
+| 인증, 저장, 수정, 온보딩 기능 | `src/features/auth`, `src/features/insight-save`            |
+| 인사이트, 카테고리, 프로필 모델 | `src/entities/insight`, `src/entities/category`, `src/entities/profile` |
+| 공통 UI, API 클라이언트, 설정 | `src/shared/ui`, `src/shared/api`, `src/shared/config`      |
+
 ## Import 규칙
 
 - 외부 코드는 각 레이어나 slice의 public API인 `index.ts`를 통해 import한다.
+- 새 slice를 만들 때는 `index.ts`를 함께 만들고, 외부에 공개할 컴포넌트/함수/타입만 export한다.
 - `src/main.tsx`는 `@/app`만 import해서 앱을 부트스트랩한다.
 - TypeScript/Vite alias는 `@/*`만 사용한다.
 - 같은 레이어의 slice끼리 직접 import하지 않는다.
 - 상위 레이어는 하위 레이어를 import할 수 있지만, 하위 레이어가 상위 레이어를 import하면 안 된다.
-- 과거 구현 계획 문서에 `src/App.tsx`나 `@/App.tsx`가 남아 있어도 현재 기준 경로는 `src/app/App.tsx`와 `@/app`이다.
+- 앱 루트는 `src/app/App.tsx`와 `@/app`을 기준으로 관리한다.
 
 ## 서버 구조
 

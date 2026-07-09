@@ -4,7 +4,10 @@
 
 **Goal:** 사용자가 저장한 인사이트의 제목, 메모, 카테고리 연결을 수정하고, 잘못 저장한 인사이트를 삭제할 수 있게 한다.
 
-**Architecture:** URL은 수정하지 않고, 수정 가능한 필드만 `src/insights/editInsight.ts` 유스케이스로 제한한다. 카테고리 연결은 기존 연결을 지운 뒤 새 연결을 삽입하는 방식으로 단순화하고, 삭제는 보관함 목록에서 즉시 반영한다.
+**Architecture:** URL은 수정하지 않고, 수정 가능한 필드만 `src/features/insight-edit/model/editInsight.ts` 유스케이스로 제한한다. 카테고리 연결은 기존 연결을 지운 뒤 새 연결을 삽입하는 방식으로 단순화하고, 삭제는 보관함 목록에서 즉시 반영한다.
+
+
+**FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
 
 **Tech Stack:** React 19, TypeScript, Supabase, Vitest, React Testing Library
 
@@ -32,17 +35,17 @@
 
 ## 파일 구조
 
-- Modify: `src/insights/insightQueries.ts`
+- Modify: `src/entities/insight/api/insightQueries.ts`
   - 수정 가능한 필드 업데이트와 카테고리 연결 교체 함수를 추가한다.
-- Create: `src/insights/editInsight.ts`
+- Create: `src/features/insight-edit/model/editInsight.ts`
   - URL을 제외한 인사이트 수정 유스케이스를 만든다.
-- Create: `src/insights/editInsight.test.ts`
+- Create: `src/features/insight-edit/model/editInsight.test.ts`
   - 제목/메모 trim, URL 수정 금지, 카테고리 연결 교체를 검증한다.
-- Create: `src/components/insights/InsightEditor.tsx`
+- Create: `src/features/insight-edit/ui/InsightEditor.tsx`
   - 제목, 메모, 카테고리 선택, 삭제 확인 UI를 만든다.
-- Create: `src/components/insights/InsightEditor.test.tsx`
+- Create: `src/features/insight-edit/ui/InsightEditor.test.tsx`
   - 저장과 삭제 액션을 검증한다.
-- Modify: `src/pages/LibraryPage.tsx`
+- Modify: `src/pages/library/ui/LibraryPage.tsx`
   - 보관함 카드에서 편집 UI를 열고 저장/삭제 후 목록을 갱신한다.
 
 ---
@@ -51,12 +54,12 @@
 
 **Files:**
 
-- Create: `src/insights/editInsight.ts`
-- Create: `src/insights/editInsight.test.ts`
+- Create: `src/features/insight-edit/model/editInsight.ts`
+- Create: `src/features/insight-edit/model/editInsight.test.ts`
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-Create `src/insights/editInsight.test.ts`:
+Create `src/features/insight-edit/model/editInsight.test.ts`:
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
@@ -114,19 +117,19 @@ describe('editInsight', () => {
 Run:
 
 ```bash
-npm test -- src/insights/editInsight.test.ts
+npm test -- src/features/insight-edit/model/editInsight.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/insights/editInsight.test.ts
+FAIL src/features/insight-edit/model/editInsight.test.ts
 Cannot find module './editInsight'
 ```
 
 - [ ] **Step 3: 수정 유스케이스 구현**
 
-Create `src/insights/editInsight.ts`:
+Create `src/features/insight-edit/model/editInsight.ts`:
 
 ```ts
 type EditableInsightFields = {
@@ -179,7 +182,7 @@ export async function editInsight({
 Run:
 
 ```bash
-npm test -- src/insights/editInsight.test.ts
+npm test -- src/features/insight-edit/model/editInsight.test.ts
 ```
 
 Expected:
@@ -193,7 +196,7 @@ Expected:
 Run:
 
 ```bash
-git add src/insights/editInsight.ts src/insights/editInsight.test.ts
+git add src/features/insight-edit/model/editInsight.ts src/features/insight-edit/model/editInsight.test.ts
 git commit -m "feat: 인사이트 수정 유스케이스 추가"
 ```
 
@@ -203,11 +206,11 @@ git commit -m "feat: 인사이트 수정 유스케이스 추가"
 
 **Files:**
 
-- Modify: `src/insights/insightQueries.ts`
+- Modify: `src/entities/insight/api/insightQueries.ts`
 
 - [ ] **Step 1: 수정 함수 추가**
 
-Add to `src/insights/insightQueries.ts`:
+Add to `src/entities/insight/api/insightQueries.ts`:
 
 ```ts
 export async function updateInsightEditableFields(
@@ -276,7 +279,7 @@ Expected:
 Run:
 
 ```bash
-git add src/insights/insightQueries.ts
+git add src/entities/insight/api/insightQueries.ts
 git commit -m "feat: 인사이트 수정 Repository 함수 추가"
 ```
 
@@ -286,12 +289,12 @@ git commit -m "feat: 인사이트 수정 Repository 함수 추가"
 
 **Files:**
 
-- Create: `src/components/insights/InsightEditor.tsx`
-- Create: `src/components/insights/InsightEditor.test.tsx`
+- Create: `src/features/insight-edit/ui/InsightEditor.tsx`
+- Create: `src/features/insight-edit/ui/InsightEditor.test.tsx`
 
 - [ ] **Step 1: 실패하는 UI 테스트 작성**
 
-Create `src/components/insights/InsightEditor.test.tsx`:
+Create `src/features/insight-edit/ui/InsightEditor.test.tsx`:
 
 ```tsx
 import { render, screen } from '@testing-library/react';
@@ -340,27 +343,27 @@ describe('InsightEditor', () => {
 Run:
 
 ```bash
-npm test -- src/components/insights/InsightEditor.test.tsx
+npm test -- src/features/insight-edit/ui/InsightEditor.test.tsx
 ```
 
 Expected:
 
 ```text
-FAIL src/components/insights/InsightEditor.test.tsx
+FAIL src/features/insight-edit/ui/InsightEditor.test.tsx
 Cannot find module './InsightEditor'
 ```
 
 - [ ] **Step 3: InsightEditor 구현**
 
-Create `src/components/insights/InsightEditor.tsx`:
+Create `src/features/insight-edit/ui/InsightEditor.tsx`:
 
 ```tsx
 import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Chip } from '@/components/ui/Chip';
-import { TextInput } from '@/components/ui/TextInput';
-import type { CategoryRow } from '@/types/database';
-import type { InsightView } from '@/insights/insightView';
+import { Button } from '@/shared/ui';
+import { Chip } from '@/shared/ui';
+import { TextInput } from '@/shared/ui';
+import type { CategoryRow } from '@/shared/api';
+import type { InsightView } from '@/entities/insight';
 
 type InsightEditorProps = {
   categories: CategoryRow[];
@@ -440,7 +443,7 @@ export function InsightEditor({
 Run:
 
 ```bash
-npm test -- src/components/insights/InsightEditor.test.tsx
+npm test -- src/features/insight-edit/ui/InsightEditor.test.tsx
 ```
 
 Expected:
@@ -454,7 +457,7 @@ Expected:
 Run:
 
 ```bash
-git add src/components/insights/InsightEditor.tsx src/components/insights/InsightEditor.test.tsx
+git add src/features/insight-edit/ui/InsightEditor.tsx src/features/insight-edit/ui/InsightEditor.test.tsx
 git commit -m "feat: 인사이트 편집 UI 추가"
 ```
 
@@ -464,12 +467,12 @@ git commit -m "feat: 인사이트 편집 UI 추가"
 
 **Files:**
 
-- Modify: `src/pages/LibraryPage.tsx`
-- Modify: `src/components/ui/InsightCard.tsx`
+- Modify: `src/pages/library/ui/LibraryPage.tsx`
+- Modify: `src/shared/ui/InsightCard.tsx`
 
 - [ ] **Step 1: 카드에 편집 액션 추가**
 
-Extend `InsightCardProps` in `src/components/ui/InsightCard.tsx`:
+Extend `InsightCardProps` in `src/shared/ui/InsightCard.tsx`:
 
 ```tsx
 onEdit?: () => void;
@@ -487,15 +490,15 @@ Render edit button next to the open action:
 
 - [ ] **Step 2: 보관함 상태와 handler 추가**
 
-Add to `src/pages/LibraryPage.tsx`:
+Add to `src/pages/library/ui/LibraryPage.tsx`:
 
 ```tsx
-import { InsightEditor } from '@/components/insights/InsightEditor';
-import { editInsight } from '@/insights/editInsight';
+import { InsightEditor } from '@/features/insight-edit';
+import { editInsight } from '@/features/insight-edit';
 import {
   replaceInsightCategories,
   updateInsightEditableFields,
-} from '@/insights/insightQueries';
+} from '@/entities/insight';
 ```
 
 Add state:
@@ -586,7 +589,7 @@ Expected:
 Run:
 
 ```bash
-git add src/pages/LibraryPage.tsx src/components/ui/InsightCard.tsx
+git add src/pages/library/ui/LibraryPage.tsx src/shared/ui/InsightCard.tsx
 git commit -m "feat: 보관함 인사이트 편집 흐름 연결"
 ```
 

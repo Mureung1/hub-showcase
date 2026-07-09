@@ -1,6 +1,26 @@
 # 코딩/커밋 컨벤션
 
-이 프로젝트의 코드 작성과 커밋 메시지는 Notion의 [코딩/커밋 컨벤션](https://app.notion.com/p/396f551ebf2380deaaaacff5c78a000e)을 따른다.
+이 프로젝트의 코드 작성과 커밋 메시지는 Notion의 [코딩/커밋 컨벤션](https://app.notion.com/p/396f551ebf2380deaaaacff5c78a000e)을 따른다. 브랜치 이름과 PR 작업 단위는 Notion의 [브랜치 전략](https://app.notion.com/p/396f551ebf2380aca2e4d6d9eff0d616)을 따른다.
+
+## 브랜치 전략
+
+- 협업 작업은 기능, 수정, 문서 등 작업 단위별 브랜치를 만들어 진행한다.
+- 브랜치 이름은 `<type>/<이슈번호>-<간단-키워드>` 형식으로 작성한다.
+- 키워드는 영어 소문자와 하이픈을 사용해 짧게 작성한다.
+- 브랜치 type은 커밋 메시지 type과 비슷하지만 완전히 같은 목록은 아니다.
+
+| type       | 의미             | 예시                       |
+| ---------- | ---------------- | -------------------------- |
+| `feat`     | 새로운 기능 추가 | `feat/12-login`            |
+| `fix`      | 버그 수정        | `fix/34-token-error`       |
+| `refactor` | 코드 리팩토링    | `refactor/56-user-service` |
+| `docs`     | 문서 수정        | `docs/78-readme-update`    |
+| `style`    | 코드 포맷/스타일 | `style/79-format`          |
+| `test`     | 테스트 코드      | `test/80-signup`           |
+| `deploy`   | 배포 관련        | `deploy/81-v1.2.0`         |
+| `hotfix`   | 긴급 패치        | `hotfix/82-critical-bug`   |
+
+PR은 작업 브랜치 단위로 생성하고, 리뷰와 필요한 검증을 거친 뒤 기준 브랜치에 병합한다.
 
 ## 커밋 메시지
 

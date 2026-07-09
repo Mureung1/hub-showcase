@@ -6,6 +6,9 @@
 
 **Architecture:** 프론트엔드는 `supabase.functions.invoke`로 메타데이터 수집을 요청한다. Supabase Edge Function은 HTML만 가져와 `og:title`, `<title>`, description, `og:image`를 파싱하고, SSRF 위험을 줄이기 위해 protocol, localhost, private IP, timeout, 응답 크기를 제한한다.
 
+
+**FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
+
 **Tech Stack:** Supabase Edge Functions, Deno TypeScript, Supabase JavaScript client, React 19, TypeScript
 
 ---
@@ -38,11 +41,11 @@
   - Edge Function 진입점이다.
 - Create: `supabase/functions/collect-metadata/metadata.ts`
   - HTML 메타데이터 파싱과 URL 안전성 검사를 담당한다.
-- Create: `src/metadata/metadataRepository.ts`
+- Create: `src/features/metadata/api/metadataRepository.ts`
   - 프론트엔드에서 Edge Function 호출을 담당한다.
-- Modify: `src/insights/saveInsight.ts`
+- Modify: `src/features/insight-save/model/saveInsight.ts`
   - 저장 성공 후 메타데이터 요청 함수를 선택적으로 호출한다.
-- Modify: `src/insights/saveInsight.test.ts`
+- Modify: `src/features/insight-save/model/saveInsight.test.ts`
   - 메타데이터 요청 실패가 저장 실패로 전파되지 않는지 검증한다.
 
 ---
@@ -280,16 +283,16 @@ git commit -m "feat: URL 메타데이터 수집 Edge Function 추가"
 
 **Files:**
 
-- Create: `src/metadata/metadataRepository.ts`
-- Modify: `src/insights/saveInsight.ts`
-- Modify: `src/insights/saveInsight.test.ts`
+- Create: `src/features/metadata/api/metadataRepository.ts`
+- Modify: `src/features/insight-save/model/saveInsight.ts`
+- Modify: `src/features/insight-save/model/saveInsight.test.ts`
 
 - [ ] **Step 1: 메타데이터 Repository 작성**
 
-Create `src/metadata/metadataRepository.ts`:
+Create `src/features/metadata/api/metadataRepository.ts`:
 
 ```ts
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/shared/api';
 
 export async function requestMetadataCollection(insightId: string, url: string) {
   const { error } = await supabase.functions.invoke('collect-metadata', {
@@ -307,7 +310,7 @@ export async function requestMetadataCollection(insightId: string, url: string) 
 
 - [ ] **Step 2: 저장 유스케이스 테스트 확장**
 
-Add to `src/insights/saveInsight.test.ts`:
+Add to `src/features/insight-save/model/saveInsight.test.ts`:
 
 ```ts
 it('does not fail insight saving when metadata collection fails', async () => {
@@ -332,7 +335,7 @@ it('does not fail insight saving when metadata collection fails', async () => {
 
 - [ ] **Step 3: 저장 유스케이스 수정**
 
-Modify `src/insights/saveInsight.ts` so `SaveInsightInput` includes:
+Modify `src/features/insight-save/model/saveInsight.ts` so `SaveInsightInput` includes:
 
 ```ts
 requestMetadata?: (insightId: string, url: string) => Promise<void>;
@@ -348,10 +351,10 @@ if (requestMetadata) {
 
 - [ ] **Step 4: 저장 화면에서 메타데이터 요청 함수 전달**
 
-Modify `src/pages/SavePage.tsx`:
+Modify `src/pages/save/ui/SavePage.tsx`:
 
 ```tsx
-import { requestMetadataCollection } from '@/metadata/metadataRepository';
+import { requestMetadataCollection } from '@/features/metadata';
 ```
 
 Add to the `saveInsight` call:
@@ -365,7 +368,7 @@ requestMetadata: requestMetadataCollection,
 Run:
 
 ```bash
-npm test -- src/insights/saveInsight.test.ts
+npm test -- src/features/insight-save/model/saveInsight.test.ts
 npm run build
 ```
 
@@ -381,7 +384,7 @@ Expected:
 Run:
 
 ```bash
-git add src/metadata/metadataRepository.ts src/insights/saveInsight.ts src/insights/saveInsight.test.ts src/pages/SavePage.tsx
+git add src/features/metadata/api/metadataRepository.ts src/features/insight-save/model/saveInsight.ts src/features/insight-save/model/saveInsight.test.ts src/pages/save/ui/SavePage.tsx
 git commit -m "feat: 저장 후 URL 메타데이터 수집 요청 연결"
 ```
 

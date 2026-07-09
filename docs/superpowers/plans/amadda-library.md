@@ -4,7 +4,10 @@
 
 **Goal:** 사용자가 보관함에서 저장한 인사이트를 최신순으로 보고, 카테고리/미분류 필터와 키워드 검색으로 직접 찾을 수 있게 한다.
 
-**Architecture:** 인사이트 조회와 수정/삭제는 `src/insights` Repository에 둔다. 보관함 검색은 `src/search`에 순수 함수로 구현한다. `꺼내보기`와 검색 문서 일부를 공유할 수 있지만, 보관함 검색 UX는 직접 탐색용 결과 목록이고 `꺼내보기` UX는 `docs/retrieve.md`의 작업팩 기준을 따른다.
+**Architecture:** 인사이트 조회와 삭제 Repository는 `src/entities/insight`에 둔다. 보관함 검색과 필터링은 `src/features/library`에 순수 함수로 구현한다. `꺼내보기`와 검색 문서 일부를 공유할 수 있지만, 보관함 검색 UX는 직접 탐색용 결과 목록이고 `꺼내보기` UX는 `docs/retrieve.md`의 작업팩 기준을 따른다.
+
+
+**FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
 
 **Tech Stack:** React 19, TypeScript, Supabase, MiniSearch 또는 Fuse.js, Vitest, React Testing Library
 
@@ -36,19 +39,19 @@
 
 - Modify: `package.json`
   - 보관함 검색에 사용할 검색 라이브러리를 추가한다.
-- Create: `src/insights/insightView.ts`
+- Create: `src/entities/insight/model/insightView.ts`
   - 카드와 검색에 쓰는 인사이트 view model을 정의한다.
-- Create: `src/insights/insightQueries.ts`
+- Create: `src/entities/insight/api/insightQueries.ts`
   - 보관함 목록 조회, 수정, 삭제를 담당한다.
-- Create: `src/search/insightSearch.ts`
+- Create: `src/features/library/model/insightSearch.ts`
   - 보관함 검색 함수를 제공한다.
-- Create: `src/search/insightSearch.test.ts`
+- Create: `src/features/library/model/insightSearch.test.ts`
   - 검색 대상 필드와 결과 정렬을 검증한다.
-- Create: `src/categories/categoryFilters.ts`
+- Create: `src/features/library/model/categoryFilters.ts`
   - `All`, 사용자 카테고리, `미분류` 필터 모델을 만든다.
-- Create: `src/categories/categoryFilters.test.ts`
+- Create: `src/features/library/model/categoryFilters.test.ts`
   - 필터 순서를 검증한다.
-- Modify: `src/pages/LibraryPage.tsx`
+- Modify: `src/pages/library/ui/LibraryPage.tsx`
   - 실제 보관함 화면으로 연결한다.
 
 ---
@@ -58,9 +61,9 @@
 **Files:**
 
 - Modify: `package.json`
-- Create: `src/insights/insightView.ts`
-- Create: `src/search/insightSearch.ts`
-- Create: `src/search/insightSearch.test.ts`
+- Create: `src/entities/insight/model/insightView.ts`
+- Create: `src/features/library/model/insightSearch.ts`
+- Create: `src/features/library/model/insightSearch.test.ts`
 
 - [ ] **Step 1: 검색 라이브러리 설치**
 
@@ -79,7 +82,7 @@ found 0 vulnerabilities
 
 - [ ] **Step 2: 검색 view model 작성**
 
-Create `src/insights/insightView.ts`:
+Create `src/entities/insight/model/insightView.ts`:
 
 ```ts
 export type InsightCategoryView = {
@@ -102,11 +105,11 @@ export type InsightView = {
 
 - [ ] **Step 3: 실패하는 검색 테스트 작성**
 
-Create `src/search/insightSearch.test.ts`:
+Create `src/features/library/model/insightSearch.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import type { InsightView } from '@/insights/insightView';
+import type { InsightView } from '@/entities/insight';
 import { searchInsights } from './insightSearch';
 
 const insights: InsightView[] = [
@@ -164,23 +167,23 @@ describe('searchInsights', () => {
 Run:
 
 ```bash
-npm test -- src/search/insightSearch.test.ts
+npm test -- src/features/library/model/insightSearch.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/search/insightSearch.test.ts
+FAIL src/features/library/model/insightSearch.test.ts
 Cannot find module './insightSearch'
 ```
 
 - [ ] **Step 5: 보관함 검색 구현**
 
-Create `src/search/insightSearch.ts`:
+Create `src/features/library/model/insightSearch.ts`:
 
 ```ts
 import MiniSearch from 'minisearch';
-import type { InsightView } from '@/insights/insightView';
+import type { InsightView } from '@/entities/insight';
 
 type SearchDocument = InsightView & {
   categoryNames: string;
@@ -233,7 +236,7 @@ export function searchInsights(insights: InsightView[], query: string) {
 Run:
 
 ```bash
-npm test -- src/search/insightSearch.test.ts
+npm test -- src/features/library/model/insightSearch.test.ts
 npm run build
 ```
 
@@ -249,7 +252,7 @@ Expected:
 Run:
 
 ```bash
-git add package.json package-lock.json src/insights/insightView.ts src/search/insightSearch.ts src/search/insightSearch.test.ts
+git add package.json package-lock.json src/entities/insight/model/insightView.ts src/features/library/model/insightSearch.ts src/features/library/model/insightSearch.test.ts
 git commit -m "feat: 보관함 인사이트 검색 추가"
 ```
 
@@ -259,12 +262,12 @@ git commit -m "feat: 보관함 인사이트 검색 추가"
 
 **Files:**
 
-- Create: `src/categories/categoryFilters.ts`
-- Create: `src/categories/categoryFilters.test.ts`
+- Create: `src/features/library/model/categoryFilters.ts`
+- Create: `src/features/library/model/categoryFilters.test.ts`
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-Create `src/categories/categoryFilters.test.ts`:
+Create `src/features/library/model/categoryFilters.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -303,22 +306,22 @@ describe('buildCategoryFilters', () => {
 Run:
 
 ```bash
-npm test -- src/categories/categoryFilters.test.ts
+npm test -- src/features/library/model/categoryFilters.test.ts
 ```
 
 Expected:
 
 ```text
-FAIL src/categories/categoryFilters.test.ts
+FAIL src/features/library/model/categoryFilters.test.ts
 Cannot find module './categoryFilters'
 ```
 
 - [ ] **Step 3: 필터 모델 구현**
 
-Create `src/categories/categoryFilters.ts`:
+Create `src/features/library/model/categoryFilters.ts`:
 
 ```ts
-import type { CategoryRow } from '@/types/database';
+import type { CategoryRow } from '@/shared/api';
 
 export type CategoryFilter =
   | { id: 'all'; label: 'All'; type: 'all' }
@@ -345,7 +348,7 @@ export function buildCategoryFilters(
 Run:
 
 ```bash
-npm test -- src/categories/categoryFilters.test.ts
+npm test -- src/features/library/model/categoryFilters.test.ts
 ```
 
 Expected:
@@ -359,7 +362,7 @@ Expected:
 Run:
 
 ```bash
-git add src/categories/categoryFilters.ts src/categories/categoryFilters.test.ts
+git add src/features/library/model/categoryFilters.ts src/features/library/model/categoryFilters.test.ts
 git commit -m "feat: 보관함 카테고리 필터 모델 추가"
 ```
 
@@ -369,14 +372,14 @@ git commit -m "feat: 보관함 카테고리 필터 모델 추가"
 
 **Files:**
 
-- Create: `src/insights/insightQueries.ts`
+- Create: `src/entities/insight/api/insightQueries.ts`
 
 - [ ] **Step 1: Repository 작성**
 
-Create `src/insights/insightQueries.ts`:
+Create `src/entities/insight/api/insightQueries.ts`:
 
 ```ts
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/shared/api';
 import type { InsightView } from './insightView';
 
 type InsightListRow = {
@@ -474,7 +477,7 @@ Expected:
 Run:
 
 ```bash
-git add src/insights/insightQueries.ts
+git add src/entities/insight/api/insightQueries.ts
 git commit -m "feat: 보관함 인사이트 조회와 삭제 추가"
 ```
 
@@ -484,25 +487,25 @@ git commit -m "feat: 보관함 인사이트 조회와 삭제 추가"
 
 **Files:**
 
-- Modify: `src/pages/LibraryPage.tsx`
+- Modify: `src/pages/library/ui/LibraryPage.tsx`
 
 - [ ] **Step 1: 보관함 화면 구현**
 
-Modify `src/pages/LibraryPage.tsx`:
+Modify `src/pages/library/ui/LibraryPage.tsx`:
 
 ```tsx
 import { useEffect, useMemo, useState } from 'react';
-import { getMyCategories } from '@/categories/categoryRepository';
-import { buildCategoryFilters } from '@/categories/categoryFilters';
-import type { CategoryFilter } from '@/categories/categoryFilters';
-import { useAuth } from '@/auth/AuthProvider';
-import { Chip } from '@/components/ui/Chip';
-import { InsightCard } from '@/components/ui/InsightCard';
-import { TextInput } from '@/components/ui/TextInput';
-import { deleteInsight, getMyInsights } from '@/insights/insightQueries';
-import type { InsightView } from '@/insights/insightView';
-import { searchInsights } from '@/search/insightSearch';
-import type { CategoryRow } from '@/types/database';
+import { getMyCategories } from '@/entities/category';
+import { buildCategoryFilters } from '@/features/library';
+import type { CategoryFilter } from '@/features/library';
+import { useAuth } from '@/features/auth';
+import { Chip } from '@/shared/ui';
+import { InsightCard } from '@/shared/ui';
+import { TextInput } from '@/shared/ui';
+import { deleteInsight, getMyInsights } from '@/entities/insight';
+import type { InsightView } from '@/entities/insight';
+import { searchInsights } from '@/features/library';
+import type { CategoryRow } from '@/shared/api';
 
 function matchesFilter(insight: InsightView, filter: CategoryFilter) {
   if (filter.type === 'all') {
@@ -611,7 +614,7 @@ export function LibraryPage() {
 
 - [ ] **Step 2: 삭제 액션을 카드에 연결**
 
-Modify `src/components/ui/InsightCard.tsx`:
+Modify `src/shared/ui/InsightCard.tsx`:
 
 ```tsx
 import { ExternalLink } from 'lucide-react';
@@ -682,7 +685,7 @@ export function InsightCard({
 }
 ```
 
-Modify the `InsightCard` call inside `src/pages/LibraryPage.tsx`:
+Modify the `InsightCard` call inside `src/pages/library/ui/LibraryPage.tsx`:
 
 ```tsx
 onDelete={() => void handleDelete(insight.id)}
@@ -707,7 +710,7 @@ Expected:
 Run:
 
 ```bash
-git add src/pages/LibraryPage.tsx src/components/ui/InsightCard.tsx
+git add src/pages/library/ui/LibraryPage.tsx src/shared/ui/InsightCard.tsx
 git commit -m "feat: 보관함 필터와 검색 화면 연결"
 ```
 
