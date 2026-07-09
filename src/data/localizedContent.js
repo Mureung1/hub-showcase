@@ -2,9 +2,44 @@ export const localizedContent = {
   en: {
     languageLabel: 'English',
     header: {
-      ariaLabel: 'NoticePilot home',
+      ariaLabel: 'NoticePilot workspace',
       tagline: 'Turn long university notices into checklists and calendar events.',
       navCta: 'Try mock analysis',
+    },
+    workspaceTabs: {
+      ariaLabel: 'Workspace tabs',
+      items: [
+        { id: 'calendar', href: '#calendar', label: 'Notice calendar' },
+        { id: 'analyze', href: '#analyze', label: 'Single notice analysis' },
+      ],
+    },
+    calendarPage: {
+      campusPreference: {
+        title: 'Campus preferences',
+        subtitle: 'Kangwon National University',
+        description:
+          'Selected campuses will be used later for notice filtering and subscription calendar conditions.',
+        groupLabel: 'Campus selection',
+        campuses: [
+          { id: 'chuncheon', label: 'Chuncheon' },
+          { id: 'samcheok', label: 'Samcheok' },
+          { id: 'dogye', label: 'Dogye' },
+          { id: 'gangneung_wonju', label: 'Gangneung-Wonju' },
+        ],
+        saveStatus: {
+          default: 'Changed settings are automatically saved in this browser.',
+          successLabel: 'Saved',
+          successDetail: 'Campus preferences were updated.',
+          failure: 'Settings could not be saved in this browser.',
+        },
+        commonNoticePolicy:
+          'Common notices for all campuses are included automatically.',
+      },
+      subscriptionIcs: {
+        title: 'Subscription ICS',
+        badge: 'Coming soon',
+        body: 'This will be available after school notice collection is connected.',
+      },
     },
     collectionLabels: {
       deadlines: 'Deadline',
@@ -294,9 +329,44 @@ export const localizedContent = {
   ko: {
     languageLabel: '한국어',
     header: {
-      ariaLabel: 'NoticePilot 홈',
+      ariaLabel: 'NoticePilot 작업 영역',
       tagline: '긴 대학 공지를 체크리스트와 캘린더 일정으로 바꿉니다.',
       navCta: '샘플 분석하기',
+    },
+    workspaceTabs: {
+      ariaLabel: '작업 영역 탭',
+      items: [
+        { id: 'calendar', href: '#calendar', label: '공지 캘린더' },
+        { id: 'analyze', href: '#analyze', label: '단건 공지 분석' },
+      ],
+    },
+    calendarPage: {
+      campusPreference: {
+        title: '관심 캠퍼스 설정',
+        subtitle: '강원대학교 기준',
+        description:
+          '선택한 캠퍼스는 이후 공지 필터링과 구독형 캘린더 조건에 사용됩니다.',
+        groupLabel: '캠퍼스 선택',
+        campuses: [
+          { id: 'chuncheon', label: '춘천' },
+          { id: 'samcheok', label: '삼척' },
+          { id: 'dogye', label: '도계' },
+          { id: 'gangneung_wonju', label: '강릉원주' },
+        ],
+        saveStatus: {
+          default: '변경한 설정은 이 브라우저에 자동 저장됩니다.',
+          successLabel: '저장됨',
+          successDetail: '관심 캠퍼스 설정이 업데이트되었습니다.',
+          failure: '설정을 이 브라우저에 저장하지 못했습니다.',
+        },
+        commonNoticePolicy:
+          '모든 캠퍼스에 해당하는 공통 공지는 자동 포함됩니다.',
+      },
+      subscriptionIcs: {
+        title: '구독형 ICS',
+        badge: '준비 중',
+        body: '학교 공지 수집 기능이 연결된 뒤 사용할 수 있습니다.',
+      },
     },
     collectionLabels: {
       deadlines: '마감일',

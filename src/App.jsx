@@ -4,7 +4,9 @@ import ConfirmationModal from './components/ConfirmationModal.jsx'
 import EmptyState from './components/EmptyState.jsx'
 import ExportPanel from './components/ExportPanel.jsx'
 import Header from './components/Header.jsx'
+import NoticeCalendarPage from './components/NoticeCalendarPage.jsx'
 import NoticeInput from './components/NoticeInput.jsx'
+import NoticePilotTabs from './components/NoticePilotTabs.jsx'
 import SourceEvidencePanel from './components/SourceEvidencePanel.jsx'
 import DemoExampleSection from './components/intro/DemoExampleSection.jsx'
 import FeatureSection from './components/intro/FeatureSection.jsx'
@@ -28,6 +30,12 @@ import {
   updateCalendarEventField,
   updateSectionItem,
 } from './utils/analysisHandlers.js'
+import {
+  createCampusPreferencesSnapshot,
+  loadCampusPreferences,
+  normalizeCampusPreferences,
+  saveCampusPreferences,
+} from './utils/campusPreferences.js'
 import { detectPrivacyPatterns } from './utils/privacyPatterns.js'
 import {
   clearNoticePilotState,
@@ -50,9 +58,55 @@ const analysisSources = {
   clientMock: 'clientMock',
   serverMock: 'serverMock',
 }
+const workspaceTabs = {
+  calendar: 'calendar',
+  analyze: 'analyze',
+}
+const defaultWorkspaceTab = workspaceTabs.analyze
+const workspaceTabHashes = {
+  [workspaceTabs.calendar]: '#calendar',
+  [workspaceTabs.analyze]: '#analyze',
+}
+
+function getWorkspaceTabFromHash(hash) {
+  const normalizedHash = hash || ''
+
+  if (normalizedHash === workspaceTabHashes.calendar) {
+    return workspaceTabs.calendar
+  }
+
+  if (normalizedHash === workspaceTabHashes.analyze) {
+    return workspaceTabs.analyze
+  }
+
+  return defaultWorkspaceTab
+}
+
+function normalizeWorkspaceHash() {
+  if (typeof window === 'undefined') {
+    return defaultWorkspaceTab
+  }
+
+  const nextTab = getWorkspaceTabFromHash(window.location.hash)
+  const expectedHash = workspaceTabHashes[nextTab]
+
+  if (window.location.hash !== expectedHash) {
+    window.history.replaceState(null, '', expectedHash)
+  }
+
+  return nextTab
+}
 
 export default function App() {
   const [savedState] = useState(() => loadNoticePilotState() || {})
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState(() =>
+    typeof window === 'undefined'
+      ? defaultWorkspaceTab
+      : getWorkspaceTabFromHash(window.location.hash),
+  )
+  const [campusPreferences, setCampusPreferences] = useState(() =>
+    loadCampusPreferences(),
+  )
   const initialLanguage = savedState.language || 'en'
   const [language, setLanguage] = useState(initialLanguage)
   const [noticeTitle, setNoticeTitle] = useState(savedState.noticeTitle || '')
@@ -83,6 +137,19 @@ export default function App() {
   const [pendingAnalysisSource, setPendingAnalysisSource] = useState(null)
   const [isServerAnalyzing, setIsServerAnalyzing] = useState(false)
   const copy = localizedContent[language]
+
+  useEffect(() => {
+    function handleHashChange() {
+      setActiveWorkspaceTab(normalizeWorkspaceHash())
+    }
+
+    handleHashChange()
+    window.addEventListener('hashchange', handleHashChange)
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange)
+    }
+  }, [])
 
   useEffect(() => {
     saveNoticePilotState({
@@ -116,6 +183,20 @@ export default function App() {
       },
       localizedContent[nextLanguage].validationWarnings,
     )
+  }
+
+  function getUserPreferencesSnapshot() {
+    return createCampusPreferencesSnapshot(campusPreferences)
+  }
+
+  function attachUserPreferencesSnapshot(rawResult) {
+    return {
+      ...rawResult,
+      metadata: {
+        ...(rawResult.metadata || {}),
+        userPreferencesSnapshot: getUserPreferencesSnapshot(),
+      },
+    }
   }
 
   function setBlockingError(nextError) {
@@ -167,7 +248,7 @@ export default function App() {
   function executeMockAnalysis(nextLanguage = language) {
     const mockNotice = getMockNotice(nextLanguage)
     const mockResult = prepareAnalysisResult(
-      createMockAnalysisResult(nextLanguage),
+      attachUserPreferencesSnapshot(createMockAnalysisResult(nextLanguage)),
       nextLanguage,
     )
 
@@ -193,6 +274,7 @@ export default function App() {
         userSelectedNoticeType,
         noticePublicationDate,
         uploadedFileName,
+        userPreferencesSnapshot: getUserPreferencesSnapshot(),
       })
       const validatedResult = prepareAnalysisResult(serverResult, nextLanguage)
 
@@ -317,6 +399,19 @@ export default function App() {
         ...updates,
       }
     })
+  }
+
+  function handleSelectedCampusesChange(nextSelectedCampuses) {
+    const nextCampusPreferences = normalizeCampusPreferences({
+      ...campusPreferences,
+      selectedCampuses: nextSelectedCampuses,
+      includeCommonNotices: true,
+    })
+    const persistenceResult = saveCampusPreferences(nextCampusPreferences)
+
+    setCampusPreferences(nextCampusPreferences)
+
+    return persistenceResult
   }
 
   function handleClearNotice() {
@@ -453,65 +548,84 @@ export default function App() {
         </section>
 
         <section className="section-band workspace-band" id="workspace">
-          <div className="workspace-layout">
-            <div className="workspace-main">
-              <NoticeInput
-                copy={copy.noticeInput}
-                noticeTitle={noticeTitle}
-                extractedText={extractedText}
-                uploadedFileName={uploadedFileName}
-                userSelectedNoticeType={userSelectedNoticeType}
-                noticePublicationDate={noticePublicationDate}
-                warnings={inputWarnings}
-                error={error}
-                onTitleChange={setNoticeTitle}
-                onExtractedTextChange={setExtractedText}
-                onNoticeTypeChange={(value) => {
-                  setUserSelectedNoticeType(value)
-                  handleAnalysisMetadataChange({
-                    userSelectedNoticeType: value || 'unknown',
-                  })
-                }}
-                onPublicationDateChange={(value) => {
-                  setNoticePublicationDate(value)
-                  handleAnalysisMetadataChange({ noticePublicationDate: value })
-                }}
-                onFileUpload={handleNoticeFileUpload}
-                onAnalyzeMock={handleAnalyzeMockNotice}
-                onAnalyzeServerMock={handleAnalyzeServerMockNotice}
-                isServerAnalyzing={isServerAnalyzing}
-                onClear={handleClearNotice}
-              />
+          <div className="workspace-shell">
+            <span className="workspace-anchor" id="calendar" aria-hidden="true" />
+            <span className="workspace-anchor" id="analyze" aria-hidden="true" />
+            <NoticePilotTabs
+              copy={copy.workspaceTabs}
+              activeTab={activeWorkspaceTab}
+            />
 
-              {analysisResult ? (
-                <AnalysisDashboard
-                  analysisResult={analysisResult}
-                  copy={copy.dashboard}
-                  cardCopy={copy.card}
-                  collectionLabels={copy.collectionLabels}
-                  onItemUpdate={handleItemUpdate}
-                  onItemDelete={handleItemDelete}
-                  onShowEvidence={handleShowEvidence}
+            {activeWorkspaceTab === workspaceTabs.analyze ? (
+              <div className="workspace-layout">
+                <div className="workspace-main">
+                  <NoticeInput
+                    copy={copy.noticeInput}
+                    noticeTitle={noticeTitle}
+                    extractedText={extractedText}
+                    uploadedFileName={uploadedFileName}
+                    userSelectedNoticeType={userSelectedNoticeType}
+                    noticePublicationDate={noticePublicationDate}
+                    warnings={inputWarnings}
+                    error={error}
+                    onTitleChange={setNoticeTitle}
+                    onExtractedTextChange={setExtractedText}
+                    onNoticeTypeChange={(value) => {
+                      setUserSelectedNoticeType(value)
+                      handleAnalysisMetadataChange({
+                        userSelectedNoticeType: value || 'unknown',
+                      })
+                    }}
+                    onPublicationDateChange={(value) => {
+                      setNoticePublicationDate(value)
+                      handleAnalysisMetadataChange({ noticePublicationDate: value })
+                    }}
+                    onFileUpload={handleNoticeFileUpload}
+                    onAnalyzeMock={handleAnalyzeMockNotice}
+                    onAnalyzeServerMock={handleAnalyzeServerMockNotice}
+                    isServerAnalyzing={isServerAnalyzing}
+                    onClear={handleClearNotice}
+                  />
+
+                  {analysisResult ? (
+                    <AnalysisDashboard
+                      analysisResult={analysisResult}
+                      copy={copy.dashboard}
+                      cardCopy={copy.card}
+                      collectionLabels={copy.collectionLabels}
+                      onItemUpdate={handleItemUpdate}
+                      onItemDelete={handleItemDelete}
+                      onShowEvidence={handleShowEvidence}
+                    />
+                  ) : (
+                    <EmptyState copy={copy.emptyState} />
+                  )}
+                </div>
+
+                <aside className="workspace-sidebar">
+                  <SourceEvidencePanel
+                    copy={copy.evidencePanel}
+                    evidence={activeEvidence}
+                  />
+                  <ExportPanel
+                    copy={copy.exportPanel}
+                    markdownCopy={copy.markdown}
+                    analysisResult={analysisResult}
+                    error={error}
+                    onError={setBlockingError}
+                    onClearError={clearErrorType}
+                  />
+                </aside>
+              </div>
+            ) : (
+              <div className="workspace-calendar-shell">
+                <NoticeCalendarPage
+                  copy={copy.calendarPage}
+                  preferences={campusPreferences}
+                  onSelectedCampusesChange={handleSelectedCampusesChange}
                 />
-              ) : (
-                <EmptyState copy={copy.emptyState} />
-              )}
-            </div>
-
-            <aside className="workspace-sidebar">
-              <SourceEvidencePanel
-                copy={copy.evidencePanel}
-                evidence={activeEvidence}
-              />
-              <ExportPanel
-                copy={copy.exportPanel}
-                markdownCopy={copy.markdown}
-                analysisResult={analysisResult}
-                error={error}
-                onError={setBlockingError}
-                onClearError={clearErrorType}
-              />
-            </aside>
+              </div>
+            )}
           </div>
         </section>
       </main>
