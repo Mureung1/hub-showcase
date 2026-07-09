@@ -189,7 +189,6 @@ export default function Analyze() {
         throw new Error('영양 계산 결과 형식이 올바르지 않습니다.')
       }
 
-      setMealType(getRecommendedMealType())
       setPendingAnalysis(parsed)
     } catch (err) {
       console.error('meal analysis failed:', err)
@@ -258,23 +257,24 @@ export default function Analyze() {
         {error && <p style={styles.errorText}>{error}</p>}
       </Card>
 
+      <Card>
+        <h3 style={{ fontSize: font.size.md, fontWeight: 600, margin: `0 0 ${spacing.xs}px`, color: colors.textStrong }}>
+          언제 드셨어요?
+        </h3>
+        <p style={{ margin: `0 0 ${spacing.md}px`, color: colors.textSub, fontSize: font.size.sm }}>
+          시간대를 선택하면 식단 기록에 함께 표시돼요.
+        </p>
+        <MealTypePicker value={mealType} recommended={getRecommendedMealType()} onChange={setMealType} />
+      </Card>
+
       {loading && <AnalyzingSkeleton />}
 
       {!loading && pendingAnalysis && (
         <>
           <NutritionCard analysis={pendingAnalysis} />
-          <Card>
-            <h3 style={{ fontSize: font.size.md, fontWeight: 600, margin: `0 0 ${spacing.xs}px`, color: colors.textStrong }}>
-              언제 드셨어요?
-            </h3>
-            <p style={{ margin: `0 0 ${spacing.md}px`, color: colors.textSub, fontSize: font.size.sm }}>
-              시간대를 선택하면 식단 기록에 함께 표시돼요.
-            </p>
-            <MealTypePicker value={mealType} recommended={getRecommendedMealType()} onChange={setMealType} />
-            <AppButton onClick={handleConfirmSave} style={{ marginTop: spacing.lg }}>
-              저장하기
-            </AppButton>
-          </Card>
+          <AppButton onClick={handleConfirmSave} style={{ marginTop: spacing.md }}>
+            저장하기
+          </AppButton>
         </>
       )}
 

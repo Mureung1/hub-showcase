@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import Card from '../components/Card.jsx'
+import ChevronIcon from '../components/ChevronIcon.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
+import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import { getManualDayStatus, setManualDayStatus } from '../lib/dayStatus.js'
 import { getMeals, sumNutrients } from '../lib/mealStore.js'
-import { calcDayStatus, countSatisfiedNutrients, NUTRIENT_LABELS } from '../lib/nutrition.js'
+import { calcDayStatus } from '../lib/nutrition.js'
 import { getAllRecords, toDateKey } from '../lib/records.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
@@ -41,6 +43,44 @@ function StatusBadge({ status, label }) {
   )
 }
 
+// 식단 탭의 큰 카드와 달리, 이름 + 핵심 영양정보(열량·단백·탄수·지방·나트륨)만 압축해 2열 그리드에 촘촘히 배치하는 용도.
+function MiniMealCard({ item }) {
+  const n = item.nutrients || {}
+  return (
+    <div
+      style={{
+        background: colors.surface,
+        border: `1px solid ${colors.border}`,
+        borderRadius: radius.sm,
+        padding: spacing.md,
+        minWidth: 0,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.xs, marginBottom: spacing.xs }}>
+        <span
+          style={{
+            fontSize: font.size.sm,
+            fontWeight: 700,
+            color: colors.textStrong,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            minWidth: 0,
+          }}
+        >
+          {item.name}
+        </span>
+        <MealTypeBadge mealType={item.mealType} />
+      </div>
+      <p style={{ margin: 0, fontSize: font.size.xs, color: colors.textSub, lineHeight: 1.5 }}>
+        {Math.round(n.calories) || 0}kcal · 단백 {Math.round(n.protein) || 0}g · 탄수 {Math.round(n.carbs) || 0}g
+        <br />
+        지방 {Math.round(n.fat) || 0}g · 나트륨 {Math.round(n.sodium) || 0}mg
+      </p>
+    </div>
+  )
+}
+
 export default function Calendar() {
   const { user } = useUser()
   const today = new Date()
@@ -51,6 +91,7 @@ export default function Calendar() {
   const [selectedDateKey, setSelectedDateKey] = useState(null)
   const [futureNotice, setFutureNotice] = useState(false)
   const [statusVersion, setStatusVersion] = useState(0) // 수동 상태 저장 후 재조회 트리거
+  const [foodListOpen, setFoodListOpen] = useState(false) // "그날 먹은 음식" 아코디언, 날짜를 새로 고를 때마다 접힘으로 초기화
 
   const isCurrentMonth = cursor.year * 12 + cursor.month >= currentMonthTotal
 
@@ -106,6 +147,7 @@ export default function Calendar() {
     }
     setFutureNotice(false)
     setSelectedDateKey((prev) => (prev === dateKey ? null : dateKey))
+    setFoodListOpen(false)
   }
 
   function handlePickManualStatus(status) {
@@ -219,34 +261,50 @@ export default function Calendar() {
 
       {selectedDateKey && selectedInfo?.source === 'auto' && (
         <Card style={{ background: colors.primarySurface, boxShadow: 'none' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
             <h3 style={{ margin: 0, color: colors.textStrong }}>{selectedDateKey}</h3>
             <StatusBadge status={selectedInfo.status} label={`자동 판정 · ${AUTO_STATUS_LABELS[selectedInfo.status]}`} />
           </div>
-          <div style={{ marginBottom: spacing.xs }}>
-            {selectedItems.map((item, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: spacing.sm,
-                  padding: `${spacing.xs}px 0`,
-                }}
-              >
-                <span style={{ color: colors.textSub, fontSize: font.size.sm }}>{item.name}</span>
-                <MealTypeBadge mealType={item.mealType} />
+
+          <NutritionStatusPanel recommended={user.recommended} total={selectedInfo.total} />
+
+          <button
+            type="button"
+            className="tds-press"
+            onClick={() => setFoodListOpen((v) => !v)}
+            aria-expanded={foodListOpen}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'none',
+              border: 'none',
+              borderTop: `1px solid ${colors.border}`,
+              marginTop: spacing.lg,
+              padding: `${spacing.md}px 0 0`,
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <span style={{ fontSize: font.size.sm, fontWeight: 600, color: colors.textStrong }}>
+              {foodListOpen ? '접기' : '그날 먹은 음식 보기'}
+            </span>
+            <ChevronIcon open={foodListOpen} />
+          </button>
+
+          {foodListOpen && (
+            selectedItems.length === 0 ? (
+              <p style={{ margin: `${spacing.md}px 0 0`, color: colors.textSub, fontSize: font.size.sm, textAlign: 'center' }}>
+                그날 먹은 음식 기록이 없어요.
+              </p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: spacing.sm, marginTop: spacing.md }}>
+                {selectedItems.map((item, i) => (
+                  <MiniMealCard key={i} item={item} />
+                ))}
               </div>
-            ))}
-          </div>
-          <p style={{ margin: `0 0 ${spacing.sm}px`, color: colors.textSub, fontSize: font.size.xs }}>
-            {NUTRIENT_LABELS.length}개 영양소 중 {countSatisfiedNutrients(user.recommended, selectedInfo.total)}개 충족
-          </p>
-          {typeof selectedRecord?.achievementPercent === 'number' && (
-            <p style={{ margin: 0, fontWeight: 700, color: colors.primary }}>
-              하루 목표 달성률 {selectedRecord.achievementPercent}%
-            </p>
+            )
           )}
         </Card>
       )}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
+import ChevronIcon from '../components/ChevronIcon.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import StandardComparisonList from '../components/StandardComparisonList.jsx'
 import TextField from '../components/TextField.jsx'
@@ -93,24 +94,6 @@ function ConditionChips({ selected, onToggle }) {
         })}
       </div>
     </div>
-  )
-}
-
-function ChevronIcon({ open }) {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', flexShrink: 0 }}
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
   )
 }
 

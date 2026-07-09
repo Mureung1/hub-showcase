@@ -7,10 +7,12 @@
     "dev": "vite",
     "server": "node server/proxy.js",
     "build": "vite build",
+    "start": "cross-env NODE_ENV=production node server/proxy.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
+    "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "react": "^19.2.7",

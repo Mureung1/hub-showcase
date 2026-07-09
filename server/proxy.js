@@ -1,8 +1,13 @@
 // POST /api/gemini - OpenRouter(OpenAI 호환) chat/completions 프록시 (OPENROUTER_API_KEY는 서버에서만 사용)
 import 'dotenv/config'
 import express from 'express'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const PORT = process.env.PROXY_PORT || 8787
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+const PORT = process.env.PORT || process.env.PROXY_PORT || 8787
 const MODEL = 'google/gemini-3-flash-preview'
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const APP_TITLE = 'CJMT'
@@ -268,6 +273,24 @@ app.post('/api/fooddb', async (req, res) => {
   }
 })
 
+// 프로덕션(Render)에서는 이 서버가 빌드된 프론트(dist)까지 함께 서빙한다.
+// 개발 환경(vite dev + node server)에서는 이 블록이 실행되지 않고 프록시 프론트는 vite dev server가 담당한다.
+if (process.env.NODE_ENV === 'production') {
+  const distDir = path.join(__dirname, '..', 'dist')
+
+  app.use(express.static(distDir))
+
+  // 정의된 /api 라우트에 매칭되지 않은 요청은 SPA 폴백 대신 JSON 404로 응답한다.
+  app.use('/api', (req, res) => {
+    res.status(404).json({ error: 'Not found' })
+  })
+
+  // /api가 아닌 나머지 GET 요청은 index.html로 폴백해 클라이언트 라우팅을 지원한다.
+  app.get('/*splat', (req, res) => {
+    res.sendFile(path.join(distDir, 'index.html'))
+  })
+}
+
 app.listen(PORT, () => {
-  console.log(`Gemini proxy server listening on http://localhost:${PORT}`)
+  console.log(`Server listening on http://localhost:${PORT}`)
 })

@@ -144,6 +144,45 @@ export function calcAchievementPercent(recommended, total) {
   return Math.round((sum / NUTRIENT_KEYS.length) * 100)
 }
 
+// ── 영양소별 3단계 상태(충족/부족/초과) 판정 ────────────────────────────────
+// 목표형 영양소가 권장량의 이 배수를 넘으면 "초과"로 본다(부족 기준은 NUTRIENT_SATISFY_RATIO=0.8 재사용).
+export const NUTRIENT_EXCEED_RATIO = 1.5
+
+export const NUTRIENT_STATUS = { SATISFIED: 'satisfied', DEFICIENT: 'deficient', EXCEEDED: 'exceeded' }
+
+// 나트륨은 상한형이라 "부족"이 없다(상한 이하=충족, 상한 초과=초과). 나머지 5개는 목표형(부족/충족/초과 3단계).
+export function classifyNutrientStatus(key, actual, recommended) {
+  const rec = Number(recommended) || 0
+  const ratio = rec > 0 ? Number(actual) / rec : 0
+
+  if (key === 'sodium') {
+    return ratio <= 1 ? NUTRIENT_STATUS.SATISFIED : NUTRIENT_STATUS.EXCEEDED
+  }
+  if (ratio < NUTRIENT_SATISFY_RATIO) return NUTRIENT_STATUS.DEFICIENT
+  if (ratio > NUTRIENT_EXCEED_RATIO) return NUTRIENT_STATUS.EXCEEDED
+  return NUTRIENT_STATUS.SATISFIED
+}
+
+// NUTRIENT_LABELS 순서대로 각 영양소의 비율·퍼센트·상태를 계산한 행 목록.
+export function buildNutrientStatusRows(recommended, total) {
+  return NUTRIENT_LABELS.map(({ key, label, unit }) => {
+    const actual = Number(total?.[key]) || 0
+    const rec = Number(recommended?.[key]) || 0
+    const ratio = rec > 0 ? actual / rec : 0
+
+    return {
+      key,
+      label,
+      unit,
+      actual,
+      recommended: rec,
+      ratio,
+      percent: Math.round(ratio * 100),
+      status: classifyNutrientStatus(key, actual, rec),
+    }
+  })
+}
+
 export function calcBMR({ sex, weightKg, heightCm, age }) {
   const base = 10 * weightKg + 6.25 * heightCm - 5 * age
   return sex === 'male' ? base + 5 : base - 161
