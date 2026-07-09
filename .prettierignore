@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+package-lock.json
+
+# Reference/legacy material this project does not reformat
+docs
+prototype
+stitch-reference
+.claude
+.github
+README.md
