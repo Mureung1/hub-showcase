@@ -154,7 +154,7 @@
 .meal-detail-avatar {
   width: 32px;
   height: 32px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--bg-elevated);
   display: flex;
   align-items: center;
@@ -163,6 +163,7 @@
   font-size: 0.8125rem;
   border: 1px solid var(--border);
   flex-shrink: 0;
+  color: var(--text-primary);
 }
 
 .meal-detail-top strong {

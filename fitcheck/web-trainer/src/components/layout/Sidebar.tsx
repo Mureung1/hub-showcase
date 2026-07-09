@@ -28,7 +28,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-brand">
-        <span className="logo-mark">FC</span>
+        <span className="logo-mark">FT</span>
         {!collapsed && (
           <div className="brand-text">
             <span className="logo">FitCheck</span>

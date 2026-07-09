@@ -80,7 +80,7 @@ export default function Header() {
         </div>
 
         <div className="trainer-profile">
-          <span className="trainer-avatar">김</span>
+          <span className="avatar avatar-md avatar-trainer" aria-hidden="true">김</span>
           <span className="trainer-name">김트레이너</span>
         </div>
       </div>

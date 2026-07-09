@@ -3,32 +3,37 @@
 /* ── FitCheck Trainer — Design System ── */
 
 :root {
-  --bg-base: #0c0e14;
-  --bg-surface: #14171f;
-  --bg-elevated: #1c2030;
-  --bg-hover: #252a3a;
-  --border: #2a3044;
-  --border-hover: #3a4258;
-  --text-primary: #f2f3f7;
-  --text-secondary: #9aa3b5;
-  --text-muted: #636d80;
-  --accent: #e63946;
-  --accent-hover: #ff4d5a;
-  --accent-dim: rgba(230, 57, 70, 0.14);
-  --accent-glow: rgba(230, 57, 70, 0.35);
-  --green: #22c55e;
-  --green-dim: rgba(34, 197, 94, 0.14);
-  --yellow: #eab308;
-  --yellow-dim: rgba(234, 179, 8, 0.14);
-  --red: #ef4444;
-  --red-dim: rgba(239, 68, 68, 0.14);
+  /* Deep dark tone (current look) with DESIGN.md-aligned accents */
+  --bg-base: #0e1016;
+  --bg-surface: #161922;
+  --bg-elevated: #1e2230;
+  --bg-hover: #272c3c;
+  --bg-sidebar: #1a1d27;
+  --border: #2e3448;
+  --border-hover: #3e465c;
+  --text-primary: #ffffff;
+  --text-secondary: #999999;
+  --text-muted: #6b7280;
+  --accent: #e50914;
+  --accent-hover: #ff1a25;
+  --accent-dim: rgba(229, 9, 20, 0.14);
+  --accent-glow: rgba(229, 9, 20, 0.32);
+  --green: #34c759;
+  --green-dim: rgba(52, 199, 89, 0.14);
+  --yellow: #ffcc00;
+  --yellow-dim: rgba(255, 204, 0, 0.14);
+  --red: #ff3b30;
+  --red-dim: rgba(255, 59, 48, 0.14);
+  --purple: #af52de;
+  --purple-dim: rgba(175, 82, 222, 0.14);
   --sidebar-width: 228px;
   --sidebar-collapsed: 68px;
   --header-height: 64px;
   --bottom-nav-height: 64px;
-  --radius: 12px;
-  --radius-lg: 14px;
+  --radius: 10px;
+  --radius-lg: 12px;
   --radius-sm: 8px;
+  --radius-pill: 9999px;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
   --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
@@ -54,8 +59,8 @@ body {
   min-height: 100svh;
   background-color: var(--bg-base);
   background-image:
-    radial-gradient(ellipse 80% 60% at 100% -10%, rgba(230, 57, 70, 0.08) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 50% at -10% 100%, rgba(230, 57, 70, 0.05) 0%, transparent 50%);
+    radial-gradient(ellipse 80% 60% at 100% -10%, rgba(229, 9, 20, 0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at -10% 100%, rgba(229, 9, 20, 0.04) 0%, transparent 50%);
   background-attachment: fixed;
   color: var(--text-primary);
   font-family: var(--font-body);

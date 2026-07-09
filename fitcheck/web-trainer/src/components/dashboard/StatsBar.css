@@ -11,7 +11,7 @@
   gap: 1rem;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   padding: 1.125rem 1.25rem;
   box-shadow: var(--shadow-sm);
   transition:
@@ -21,39 +21,37 @@
 }
 
 .stat-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   border-color: var(--border-hover);
 }
 
-.stat-icon-wrap {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.stat-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-pill);
   flex-shrink: 0;
+  box-shadow: 0 0 0 4px transparent;
 }
 
-.stat-icon-red {
-  background: var(--red-dim);
-  color: var(--red);
+.stat-dot-red {
+  background: var(--red);
+  box-shadow: 0 0 0 4px var(--red-dim);
 }
 
-.stat-icon-yellow {
-  background: var(--yellow-dim);
-  color: var(--yellow);
+.stat-dot-yellow {
+  background: var(--yellow);
+  box-shadow: 0 0 0 4px var(--yellow-dim);
 }
 
-.stat-icon-green {
-  background: var(--green-dim);
-  color: var(--green);
+.stat-dot-green {
+  background: var(--green);
+  box-shadow: 0 0 0 4px var(--green-dim);
 }
 
-.stat-icon-accent {
-  background: var(--accent-dim);
-  color: var(--accent);
+.stat-dot-purple {
+  background: var(--purple);
+  box-shadow: 0 0 0 4px var(--purple-dim);
 }
 
 .stat-card strong {

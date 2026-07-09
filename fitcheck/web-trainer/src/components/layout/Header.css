@@ -5,10 +5,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.25rem;
   height: var(--header-height);
   padding: 0 1.5rem;
-  background: rgba(12, 14, 20, 0.75);
+  background: rgba(14, 16, 22, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
@@ -16,17 +16,19 @@
 
 .header-left {
   flex: 1;
-  max-width: 400px;
+  min-width: 0;
+  max-width: none;
 }
 
 .search-bar {
   display: flex;
   align-items: center;
   gap: 0.625rem;
+  width: 100%;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.5625rem 0.9375rem;
+  border-radius: var(--radius-pill);
+  padding: 0.5625rem 1.125rem;
   transition:
     border-color var(--transition-fast),
     box-shadow var(--transition-fast);
@@ -59,6 +61,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-shrink: 0;
 }
 
 .header-date {
@@ -200,20 +203,6 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
-}
-
-.trainer-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  background: var(--accent-dim);
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.8125rem;
-  border: 2px solid rgba(230, 57, 70, 0.4);
 }
 
 .trainer-name {
