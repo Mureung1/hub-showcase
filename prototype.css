@@ -15,7 +15,12 @@
   --code-bg: #151a24;
   --radius: 8px;
   font-family:
-    Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    Inter,
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
 }
 
 * {
@@ -573,7 +578,7 @@ button {
   padding: 24px;
   overflow: auto;
   color: #d8e8ff;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
   font-size: 14px;
   line-height: 1.75;
   white-space: pre-wrap;
@@ -599,8 +604,7 @@ button {
     --muted: #9babbd;
     background:
       linear-gradient(135deg, rgb(255 138 28 / 10%), transparent 28%),
-      linear-gradient(145deg, transparent 40%, rgb(53 200 244 / 10%) 78%),
-      #07111f;
+      linear-gradient(145deg, transparent 40%, rgb(53 200 244 / 10%) 78%), #07111f;
   }
 
   .app-topbar,

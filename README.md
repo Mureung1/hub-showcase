@@ -1,4 +1,4 @@
-﻿# DevChat
+# DevChat
 
 DevChat은 새로운 기술을 배워야 하지만 무엇부터 공부해야 할지 막막한 사용자를 위한 AI 코딩 튜터 프로젝트입니다. 사용자가 목표와 현재 수준을 말하면 AI 튜터가 학습 순서, 필요한 개념, 실습 과제를 제안하고 코드 실행과 피드백까지 한 화면에서 이어갈 수 있도록 돕는 것을 목표로 합니다.
 
@@ -48,7 +48,7 @@ DevChat이 목표로 하는 핵심 경험은 다음과 같습니다.
 
 - React
 - Vite
-- JavaScript
+- TypeScript
 - CSS
 - Electron
 
@@ -74,13 +74,37 @@ npm run dev
 http://localhost:5173/
 ```
 
-### 3. 프로덕션 빌드
+### 3. 타입 검사
+
+```bash
+npm run typecheck
+```
+
+### 4. 린트
+
+```bash
+npm run lint
+```
+
+### 5. 포맷 확인
+
+```bash
+npm run format:check
+```
+
+### 6. 테스트
+
+```bash
+npm run test
+```
+
+### 7. 프로덕션 빌드
 
 ```bash
 npm run build
 ```
 
-### 4. 빌드 결과 미리보기
+### 8. 빌드 결과 미리보기
 
 ```bash
 npm run preview
@@ -91,13 +115,31 @@ npm run preview
 ```text
 hub/
 ├─ src/
+│  ├─ app/
+│  │  ├─ App.tsx
+│  │  └─ router.tsx
 │  ├─ components/
-│  │  └─ ProjectIntro.jsx
-│  ├─ App.jsx
-│  ├─ main.jsx
-│  └─ style.css
+│  │  └─ README.md
+│  ├─ data/
+│  │  ├─ curriculumPresets.ts
+│  │  └─ curriculumPresets.test.ts
+│  ├─ features/
+│  │  └─ README.md
+│  ├─ pages/
+│  │  └─ IntroPage.tsx
+│  ├─ stores/
+│  │  └─ useThemeStore.ts
+│  ├─ styles/
+│  │  └─ global.css
+│  ├─ types/
+│  │  └─ learning.ts
+│  └─ main.tsx
+├─ prototype.html
+├─ prototype.css
+├─ AGENTS.md
 ├─ index.html
 ├─ package.json
+├─ tsconfig.json
 ├─ vite.config.js
 └─ README.md
 ```
