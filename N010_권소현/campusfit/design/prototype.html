@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>캠퍼스핏 — 프로토타입</title>
+<style>
+  :root{
+    --paper:#FFFFFF;
+    --card:#EEF7FD;
+    --ink:#262421;
+    --ink-soft:#5C5850;
+    --ink-faint:#94908A;
+    --line:#C6E2F0;
+    --bulb:#4FA3E0;
+    --bulb-soft:#E4F3FC;
+    --bulb-ink:#175C86;
+    --alert:#D65C3D;
+    --alert-soft:#FBE2D9;
+    --alert-ink:#7A2E14;
+    --font-body:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#12181D;--card:#1B2A35;--ink:#E9EEF2;--ink-soft:#A7B2BA;--ink-faint:#6E7981;
+      --line:#2C3E4A;--bulb:#6FBEEB;--bulb-soft:#163247;--bulb-ink:#BFE6FA;
+      --alert:#FF8B67;--alert-soft:#4A2418;--alert-ink:#FFD9C8;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#12181D;--card:#1B2A35;--ink:#E9EEF2;--ink-soft:#A7B2BA;--ink-faint:#6E7981;
+    --line:#2C3E4A;--bulb:#6FBEEB;--bulb-soft:#163247;--bulb-ink:#BFE6FA;
+    --alert:#FF8B67;--alert-soft:#4A2418;--alert-ink:#FFD9C8;
+  }
+  :root[data-theme="light"]{
+    --paper:#FFFFFF;--card:#EEF7FD;--ink:#262421;--ink-soft:#5C5850;--ink-faint:#94908A;
+    --line:#C6E2F0;--bulb:#4FA3E0;--bulb-soft:#E4F3FC;--bulb-ink:#175C86;
+    --alert:#D65C3D;--alert-soft:#FBE2D9;--alert-ink:#7A2E14;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--font-body);color:var(--ink);background:var(--paper);}
+  input[type="radio"],input[type="checkbox"]{position:absolute;opacity:0;pointer-events:none;}
+
+  /* ── 웹사이트 셸 (폰 프레임 아님) ── */
+  .proto-banner{background:var(--card);color:var(--bulb-ink);font-size:12.5px;text-align:center;padding:8px 12px;}
+  .topnav{border-bottom:1px solid var(--line);background:var(--paper);}
+  .topnav-inner{
+    max-width:1040px;margin:0 auto;padding:18px 24px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .topnav .logo{font-size:20px;font-weight:800;letter-spacing:-.01em;}
+  .nav-links{display:flex;gap:28px;}
+  .nav-links label{font-size:15px;color:var(--ink-soft);cursor:pointer;font-weight:500;}
+  .nav-links label:hover{color:var(--bulb-ink);}
+  .page{max-width:1040px;margin:0 auto;padding:40px 24px 96px;}
+
+  .screen{display:none;}
+  .screen.onboard{
+    max-width:960px;margin:56px auto 0;
+    grid-template-columns:1fr 1fr;gap:56px;align-items:center;
+  }
+  .onboard-form{
+    border:1px solid var(--line);border-radius:16px;
+    padding:36px 32px;background:var(--paper);
+  }
+  .onboard-copy .eyebrow{
+    font-size:12px;letter-spacing:.08em;color:var(--bulb-ink);font-weight:700;
+    text-transform:uppercase;margin:0 0 14px;
+  }
+  .onboard-copy h2{font-size:32px;line-height:1.3;margin:0 0 16px;font-weight:800;letter-spacing:-.01em;}
+  .onboard-copy p{font-size:15px;color:var(--ink-soft);line-height:1.65;}
+  .screen.reading{max-width:680px;margin:0 auto;}
+
+  .step{font-family:monospace;font-size:12px;color:var(--ink-faint);margin:0 0 6px;}
+  h1{font-size:28px;font-weight:700;margin:0 0 20px;letter-spacing:-.01em;}
+  .option{
+    display:block;border:1px solid var(--line);border-radius:10px;
+    padding:13px 15px;margin-bottom:8px;font-size:15px;cursor:pointer;
+  }
+  .option:hover{border-color:var(--bulb);}
+  .option-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px;}
+  .option-grid .option{padding:10px 4px;margin-bottom:0;text-align:center;font-size:14px;}
+
+  .btn{
+    display:inline-block;text-align:center;background:var(--bulb);color:#fff;
+    border-radius:10px;padding:12px 16px;font-size:15px;font-weight:600;
+    cursor:pointer;margin-top:14px;width:100%;
+  }
+  .btn-line{
+    display:inline-block;text-align:center;background:var(--paper);color:var(--bulb-ink);
+    border:1px solid var(--bulb);border-radius:10px;padding:12px 16px;font-size:15px;font-weight:600;
+    cursor:pointer;margin-top:10px;width:100%;
+  }
+  .btn-ghost{
+    display:block;text-align:center;color:var(--ink-faint);
+    font-size:13px;padding:8px;cursor:pointer;
+  }
+  .btn-back{
+    display:inline-flex;align-items:center;gap:6px;color:var(--ink-soft);
+    font-size:14px;cursor:pointer;margin-bottom:14px;
+  }
+  .dots{display:flex;gap:5px;margin-bottom:18px;}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--line);}
+
+  .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+  .cat-card{
+    border:1px solid var(--line);border-radius:14px;padding:26px 22px;
+    text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:112px;
+  }
+  .cat-card__title{font-size:17px;font-weight:700;}
+  .cat-card__desc{font-size:13px;color:var(--ink-faint);}
+  .cat-card:hover{border-color:var(--bulb);background:var(--bulb-soft);}
+  .cat-card.board{background:var(--card);}
+  .main-sub{font-size:15px;color:var(--ink-soft);margin:-8px 0 24px;}
+
+  .row{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:8px;padding:11px 0;border-top:1px solid var(--line);
+  }
+  .row:first-of-type{border-top:none;}
+  .row p{margin:0;}
+  .row .t{font-size:14px;font-weight:500;}
+  .row .s{font-size:12px;color:var(--ink-faint);margin-top:2px;}
+  /* 팀원모집이 아닌 일반 공고는 공식 페이지로 나가는 링크다 (기획서 지원 플로우) */
+  .row.link{cursor:pointer;}
+  .row.link:hover{background:var(--bulb-soft);margin:0 -10px;padding:11px 10px;border-radius:8px;}
+  .row .ext{color:var(--ink-faint);font-weight:400;font-size:11.5px;}
+  .row.link:hover .ext{color:var(--bulb-ink);}
+  .pill-alert{
+    font-size:11px;font-weight:600;background:var(--alert-soft);color:var(--alert-ink);
+    padding:2px 8px;border-radius:999px;white-space:nowrap;
+  }
+  .pill{
+    font-size:11px;font-weight:600;background:var(--bulb-soft);color:var(--bulb-ink);
+    padding:2px 8px;border-radius:999px;white-space:nowrap;
+  }
+  /* 팀원모집 게시판 (핵심기능 3) */
+  .post-card{
+    display:block;border:1px solid var(--line);border-radius:12px;
+    padding:14px 15px;margin-bottom:10px;cursor:pointer;
+  }
+  .post-card:hover{border-color:var(--bulb);}
+  .post-card .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .post-card .title{font-size:15px;font-weight:600;}
+  .post-card .meta{font-size:12px;color:var(--ink-faint);margin-top:4px;}
+  .post-body{font-size:14px;color:var(--ink-soft);line-height:1.6;margin:0 0 18px;}
+  .apply-box{
+    border:1px solid var(--line);border-radius:12px;padding:15px;margin-bottom:16px;background:var(--card);
+  }
+  .apply-box .label{font-size:12px;color:var(--ink-faint);margin-bottom:6px;}
+  .comment{border-top:1px solid var(--line);padding:10px 0;}
+  .comment:first-of-type{border-top:none;}
+  .comment .who{font-size:13px;font-weight:600;}
+  .comment .txt{font-size:13px;color:var(--ink-soft);margin-top:3px;}
+  textarea{
+    width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;
+    font-family:var(--font-body);font-size:14px;color:var(--ink);resize:none;min-height:56px;
+  }
+  .center-msg{text-align:center;padding:60px 10px 20px;}
+  .center-msg .icon{
+    width:52px;height:52px;border-radius:50%;background:var(--bulb-soft);color:var(--bulb-ink);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;font-weight:700;
+  }
+  .center-msg h1{margin-bottom:8px;}
+  .center-msg p{font-size:14px;color:var(--ink-soft);}
+
+  #s-ob1:checked ~ #scr-ob1,
+  #s-ob2:checked ~ #scr-ob2{display:grid;}
+
+  #s-main:checked ~ #scr-main,
+  #s-cat-scholarship:checked ~ #scr-cat-scholarship,
+  #s-cat-contest:checked ~ #scr-cat-contest,
+  #s-cat-local:checked ~ #scr-cat-local,
+  #s-cat-activity:checked ~ #scr-cat-activity,
+  #s-cat-internship:checked ~ #scr-cat-internship,
+  #s-board:checked ~ #scr-board,
+  #s-post:checked ~ #scr-post,
+  #s-applied:checked ~ #scr-applied{display:block;}
+
+  @media (max-width:860px){
+    .screen.onboard{grid-template-columns:1fr;gap:28px;max-width:480px;margin-top:24px;}
+    .onboard-copy{order:2;padding:0 4px;}
+    .onboard-copy h2{font-size:24px;}
+    .onboard-form{padding:24px 22px;}
+    .nav-links{display:none;}
+  }
+  @media (max-width:640px){
+    .option-grid{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<div class="proto-banner">클릭해서 넘겨보는 프로토타입입니다. 실제 데이터는 연결되어 있지 않아요.</div>
+<header class="topnav">
+  <div class="topnav-inner">
+    <span class="logo">캠퍼스핏</span>
+    <nav class="nav-links">
+      <label for="s-main">홈</label>
+      <label for="s-board">팀원모집</label>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+
+  <input type="radio" name="step" id="s-ob1" checked>
+  <input type="radio" name="step" id="s-ob2">
+  <input type="radio" name="step" id="s-main">
+  <input type="radio" name="step" id="s-cat-scholarship">
+  <input type="radio" name="step" id="s-cat-contest">
+  <input type="radio" name="step" id="s-cat-local">
+  <input type="radio" name="step" id="s-cat-activity">
+  <input type="radio" name="step" id="s-cat-internship">
+  <input type="radio" name="step" id="s-board">
+  <input type="radio" name="step" id="s-post">
+  <input type="radio" name="step" id="s-applied">
+
+  <section class="screen onboard" id="scr-ob1">
+    <div class="onboard-form">
+      <p class="step">1 / 2 · 온보딩</p>
+      <div class="dots"><span class="dot" style="background:var(--bulb);"></span><span class="dot"></span></div>
+      <h1>국립대인가요, 사립대인가요?</h1>
+      <label class="option" for="s-ob2">국립대</label>
+      <label class="option" for="s-ob2">사립대</label>
+    </div>
+    <div class="onboard-copy">
+      <p class="eyebrow">Campus Info Platform</p>
+      <h2>흩어진 정보 중,<br>내게 필요한 것만.</h2>
+      <p>장학금·공모전·지자체 혜택·대외활동·인턴십. 학과 네트워크가 없어도 괜찮아요 — 국립/사립과 지역만 알려주시면, 지원 자격이 되는 것만 걸러서 보여드려요.</p>
+    </div>
+  </section>
+
+  <section class="screen onboard" id="scr-ob2">
+    <div class="onboard-form">
+      <label class="btn-back" for="s-ob1">← 이전</label>
+      <p class="step">2 / 2 · 온보딩</p>
+      <div class="dots"><span class="dot"></span><span class="dot" style="background:var(--bulb);"></span></div>
+      <h1>어느 지역 학교에 다니시나요?</h1>
+      <div class="option-grid">
+        <label class="option" for="s-main">서울</label>
+        <label class="option" for="s-main">부산</label>
+        <label class="option" for="s-main">대구</label>
+        <label class="option" for="s-main">인천</label>
+        <label class="option" for="s-main">광주</label>
+        <label class="option" for="s-main">대전</label>
+        <label class="option" for="s-main">울산</label>
+        <label class="option" for="s-main">세종</label>
+        <label class="option" for="s-main">경기</label>
+        <label class="option" for="s-main">강원</label>
+        <label class="option" for="s-main">충북</label>
+        <label class="option" for="s-main">충남</label>
+        <label class="option" for="s-main">전북</label>
+        <label class="option" for="s-main">전남</label>
+        <label class="option" for="s-main">경북</label>
+        <label class="option" for="s-main">경남</label>
+        <label class="option" for="s-main">제주</label>
+      </div>
+    </div>
+    <div class="onboard-copy">
+      <p class="eyebrow">Campus Info Platform</p>
+      <h2>재학 학교 소재지 기준,<br>딱 한 번만 정하면 끝.</h2>
+      <p>거주지가 아니라 학교 소재지를 기준으로 삼았어요. 자취·통학처럼 변수 많은 조건 대신, 온보딩에서 한 번만 정하면 되는 단순한 기준으로요.</p>
+    </div>
+  </section>
+
+  <section class="screen wide" id="scr-main">
+    <label class="btn-back" for="s-ob2">← 조건 다시 설정</label>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <h1 style="margin:0;">캠퍼스핏</h1>
+      <span class="pill">국립대 · 서울</span>
+    </div>
+    <p class="main-sub">직접 찾지 않아도, 조건에 맞는 것만 걸러서 보여드려요.</p>
+    <div class="cat-grid">
+      <label class="cat-card" for="s-cat-scholarship">
+        <span class="cat-card__title">장학금</span>
+        <span class="cat-card__desc">국가·교내 장학금 모아보기</span>
+      </label>
+      <label class="cat-card" for="s-cat-contest">
+        <span class="cat-card__title">공모전</span>
+        <span class="cat-card__desc">팀 단위 공모전, 팀원모집까지</span>
+      </label>
+      <label class="cat-card" for="s-cat-local">
+        <span class="cat-card__title">지자체 혜택</span>
+        <span class="cat-card__desc">거주·소속 지역 혜택 확인</span>
+      </label>
+      <label class="cat-card" for="s-cat-activity">
+        <span class="cat-card__title">대외활동</span>
+        <span class="cat-card__desc">서포터즈·홍보대사 모집 정보</span>
+      </label>
+      <label class="cat-card" for="s-cat-internship">
+        <span class="cat-card__title">인턴십</span>
+        <span class="cat-card__desc">공공·민간 인턴십 채용 공고</span>
+      </label>
+      <label class="cat-card board" for="s-board">
+        <span class="cat-card__title">🤝 팀원모집</span>
+        <span class="cat-card__desc">함께할 팀원 구하고 지원하기</span>
+      </label>
+    </div>
+  </section>
+
+  <section class="screen reading" id="scr-cat-scholarship">
+    <label class="btn-back" for="s-main">← 메인으로</label>
+    <h1 style="margin-bottom:4px;">장학금</h1>
+    <p class="step">마감 임박 · 7일 이내</p>
+    <div class="row link">
+      <div><p class="t">국가장학금 2차 <span class="ext">↗</span></p><p class="s">소득분위 기준 · 공식 페이지에서 지원</p></div>
+      <span class="pill-alert">D-3</span>
+    </div>
+    <p class="step" style="margin-top:16px;">전체 목록</p>
+    <div class="row link">
+      <div><p class="t">교내 성적우수 장학금 <span class="ext">↗</span></p><p class="s">평점 3.5 이상 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-14</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">근로 장학생 모집 <span class="ext">↗</span></p><p class="s">주 10시간 이내 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-16</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">지역인재 장학금 <span class="ext">↗</span></p><p class="s">서울 소재 대학 재학생 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-21</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">다자녀 가정 장학금 <span class="ext">↗</span></p><p class="s">3자녀 이상 가정 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-24</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">사회배려대상자 장학금 <span class="ext">↗</span></p><p class="s">국가보훈·기초생활수급 등 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-30</span>
+    </div>
+  </section>
+
+  <section class="screen reading" id="scr-cat-contest">
+    <label class="btn-back" for="s-main">← 메인으로</label>
+    <h1 style="margin-bottom:4px;">공모전</h1>
+    <p class="step">마감 임박 · 7일 이내</p>
+    <div class="row">
+      <div><p class="t">청년 아이디어 공모전</p><p class="s">팀 단위 지원 · 3인 이내</p></div>
+      <span class="pill-alert">D-3</span>
+    </div>
+    <p class="step" style="margin-top:16px;">전체 목록</p>
+    <div class="row">
+      <label class="t" for="s-board" style="cursor:pointer;">청년 아이디어 공모전
+        <span class="pill" style="margin-left:6px;">팀원모집 2건</span>
+      </label>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-3</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">교내 캡스톤 경진대회 <span class="ext">↗</span></p><p class="s">개인 지원 가능 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-14</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">SNS 콘텐츠 공모전 <span class="ext">↗</span></p><p class="s">개인·팀 자유 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-17</span>
+    </div>
+    <div class="row">
+      <label class="t" for="s-board" style="cursor:pointer;">지역 해커톤
+        <span class="pill" style="margin-left:6px;">팀원모집 1건</span>
+      </label>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-21</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">지속가능경영 아이디어 공모전 <span class="ext">↗</span></p><p class="s">3인 이내 팀 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-26</span>
+    </div>
+  </section>
+
+  <section class="screen reading" id="scr-cat-local">
+    <label class="btn-back" for="s-main">← 메인으로</label>
+    <h1 style="margin-bottom:4px;">지자체 혜택</h1>
+    <p class="step">마감 임박 · 7일 이내</p>
+    <div class="row link">
+      <div><p class="t">청년 월세 지원 <span class="ext">↗</span></p><p class="s">서울 거주 무주택 청년 · 공식 페이지에서 지원</p></div>
+      <span class="pill-alert">D-5</span>
+    </div>
+    <p class="step" style="margin-top:16px;">전체 목록</p>
+    <div class="row link">
+      <div><p class="t">문화가 있는 날 통합할인권 <span class="ext">↗</span></p><p class="s">전 지역 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-10</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">청년 취업 장려금 <span class="ext">↗</span></p><p class="s">서울 거주 미취업 청년 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-15</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">청년 교통비 지원 <span class="ext">↗</span></p><p class="s">서울 거주 대학생 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-18</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">청년 문화패스 <span class="ext">↗</span></p><p class="s">지역 문화시설 할인 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-23</span>
+    </div>
+  </section>
+
+  <section class="screen reading" id="scr-cat-activity">
+    <label class="btn-back" for="s-main">← 메인으로</label>
+    <h1 style="margin-bottom:4px;">대외활동</h1>
+    <p class="step">마감 임박 · 7일 이내</p>
+    <div class="row link">
+      <div><p class="t">대학생 서포터즈 14기 <span class="ext">↗</span></p><p class="s">전국 대학생 · 공식 페이지에서 지원</p></div>
+      <span class="pill-alert">D-4</span>
+    </div>
+    <p class="step" style="margin-top:16px;">전체 목록</p>
+    <div class="row link">
+      <div><p class="t">기업 홍보대사 모집 <span class="ext">↗</span></p><p class="s">2~4학년 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-12</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">대학생 기자단 모집 <span class="ext">↗</span></p><p class="s">전공 무관 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-16</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">봉사활동 캠페인 <span class="ext">↗</span></p><p class="s">주말 참여 가능자 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-20</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">해외 탐방단 모집 <span class="ext">↗</span></p><p class="s">4인 1팀 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-28</span>
+    </div>
+  </section>
+
+  <section class="screen reading" id="scr-cat-internship">
+    <label class="btn-back" for="s-main">← 메인으로</label>
+    <h1 style="margin-bottom:4px;">인턴십</h1>
+    <p class="step">마감 임박 · 7일 이내</p>
+    <div class="row link">
+      <div><p class="t">공공기관 하계 인턴십 <span class="ext">↗</span></p><p class="s">서울·경기 소재 대학 · 공식 페이지에서 지원</p></div>
+      <span class="pill-alert">D-6</span>
+    </div>
+    <p class="step" style="margin-top:16px;">전체 목록</p>
+    <div class="row link">
+      <div><p class="t">스타트업 인턴 채용 <span class="ext">↗</span></p><p class="s">개발/기획 직군 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-15</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">사회적기업 인턴십 <span class="ext">↗</span></p><p class="s">마케팅/기획 직군 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-19</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">대기업 체험형 인턴 <span class="ext">↗</span></p><p class="s">3학년 이상 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-25</span>
+    </div>
+    <div class="row link">
+      <div><p class="t">공기업 채용연계형 인턴 <span class="ext">↗</span></p><p class="s">서류·면접 전형 · 공식 페이지에서 지원</p></div>
+      <span style="font-size:10.5px;color:var(--ink-faint);">D-31</span>
+    </div>
+  </section>
+
+  <section class="screen reading" id="scr-board">
+    <label class="btn-back" for="s-cat-contest">← 공모전</label>
+    <p class="step" style="margin-top:0;">팀원모집 · 2건</p>
+    <label class="post-card" for="s-post">
+      <div class="top">
+        <span class="title">디자이너 1명 구해요</span>
+        <span class="pill-alert">D-3</span>
+      </div>
+      <p class="meta">기획·개발 2명 확정 · UI/UX 담당자 모집</p>
+    </label>
+    <label class="post-card" for="s-post">
+      <div class="top">
+        <span class="title">기획 같이 하실 분</span>
+        <span class="pill">D-6</span>
+      </div>
+      <p class="meta">1인 팀 · 아이디어부터 같이 짤 팀원 구함</p>
+    </label>
+    <label class="btn-line" for="s-cat-contest">공식 공모전 페이지 확인하기 ↗</label>
+  </section>
+
+  <section class="screen reading" id="scr-post">
+    <label class="btn-back" for="s-board">← 팀원모집</label>
+    <p class="step" style="margin-top:0;">청년 아이디어 공모전 · D-3</p>
+    <h1>디자이너 1명 구해요</h1>
+    <p class="post-body">
+      기획·개발 각 1명 확정됐고, UI/UX 디자인 맡아주실 분 찾습니다.
+      Figma 다룰 줄 아시면 좋아요. 주 2회 온라인 미팅, 마감까지 같이 갑니다.
+    </p>
+    <div class="apply-box">
+      <p class="label">지원 방법</p>
+      <label class="btn" for="s-applied">댓글로 지원하기</label>
+    </div>
+    <p class="step">댓글 3</p>
+    <div class="comment">
+      <p class="who">공모전러버</p>
+      <p class="txt">저 포트폴리오 있어요! 지원할게요 🙋</p>
+    </div>
+    <div class="comment">
+      <p class="who">디자이너지망생</p>
+      <p class="txt">주제 방향 조금만 더 알 수 있을까요?</p>
+    </div>
+    <div class="comment">
+      <p class="who">글쓴이</p>
+      <p class="txt">위 댓글에 답장 남겼어요, 확인해주세요!</p>
+    </div>
+    <textarea placeholder="댓글로 지원 의사를 남겨보세요"></textarea>
+  </section>
+
+  <section class="screen reading" id="scr-applied">
+    <div class="center-msg">
+      <div class="icon">✓</div>
+      <h1>지원 완료</h1>
+      <p>댓글이 등록됐어요. 글쓴이가 확인하면 알림 없이도<br>이 화면에서 다시 상태를 볼 수 있어요.</p>
+      <label class="btn" for="s-board" style="max-width:220px;margin:20px auto 0;">팀원모집으로 돌아가기</label>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
