@@ -122,6 +122,7 @@ Radius와 컴포넌트 크기는 WDS(Wanted Design System)의 실사용 수치�
 - 저장 완료, 칩 선택, focus, 결과 등장처럼 행동 확인에만 사용한다.
 - 로그인 전 서비스 온보딩의 핵심 경험 예고편은 GSAP 기반 브랜드 시퀀스로 예외 허용한다.
 - GSAP은 저장 카드가 현재 상황 문장 기준으로 작업팩처럼 모이는 장면에만 사용한다.
+- 온보딩 첫 화면에서는 핵심 문장, 모션 미리보기, CTA가 한 viewport 안에 보여야 한다.
 - 앱 내부 micro interaction은 Motion 또는 CSS transition을 우선한다.
 - `prefers-reduced-motion`에서는 온보딩 시퀀스를 정적 작업팩 미리보기로 대체한다.
 - 장식용 스크롤 애니메이션, 과한 hover lift, 반복 애니메이션은 사용하지 않는다.

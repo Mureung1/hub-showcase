@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Supabase Auth와 Google OAuth를 연결하고, 로그인 전 소개 화면과 인증된 사용자 전용 앱 진입 흐름을 만든다.
+**Goal:** Supabase Auth와 Google OAuth를 연결하고, 로그인 전 소개 화면, 별도 로그인 화면, 인증된 사용자 전용 앱 진입 흐름을 만든다.
 
-**Architecture:** 인증 유스케이스와 세션 상태는 `src/features/auth`에 둔다. Supabase 클라이언트는 `src/shared/api`, 환경 변수 검증은 `src/shared/config`에서 단일 인스턴스로 제공한다. `AuthProvider`가 세션 상태를 관리하고, `AuthGate`가 로그인 전 소개 화면과 앱 셸 접근을 분기한다.
+**Architecture:** 인증 유스케이스와 세션 상태는 `src/features/auth`에 둔다. Supabase 클라이언트는 `src/shared/api`, 환경 변수 검증은 `src/shared/config`에서 단일 인스턴스로 제공한다. `AuthProvider`가 세션 상태를 관리하고, `AuthGate`가 로그인 전 소개 화면, 로그인 화면, 앱 셸 접근을 분기한다.
 
 
 **FSD note:** 파일 경로는 slice 내부 위치를 표기한다. 외부 import는 각 slice의 `index.ts` public API를 사용하며, 새 slice를 만들 때 필요한 `index.ts`도 함께 추가한다.
@@ -23,6 +23,7 @@
 - Google OAuth 로그인
 - Google 로그인만 제공
 - 로그인 전 소개 화면
+- 별도 로그인 화면
 - 로그인 전 핵심 경험 애니메이션
 - 로그인 상태 감지
 - 인증된 사용자만 앱 화면 접근
@@ -61,6 +62,8 @@
   - 로그인 전 소개 화면을 만든다.
 - Create: `src/pages/landing/ui/OnboardingMotionPreview.tsx`
   - 저장 카드가 현재 상황 문장 기준으로 작업팩처럼 모이는 GSAP 시퀀스를 만든다.
+- Create: `src/pages/login/ui/LoginPage.tsx`
+  - Google 로그인 버튼과 약관/개인정보처리방침 안내를 제공한다.
 - Modify: `src/app/AppShell.tsx`
   - 프로필 버튼에서 기본 사용자 정보와 로그아웃 액션을 제공한다.
 - Modify: `src/app/App.tsx`
@@ -388,6 +391,7 @@ git commit -m "feat: Supabase Google 인증 서비스 추가"
 - Create: `src/features/auth/ui/AuthGate.test.tsx`
 - Create: `src/pages/landing/ui/LandingPage.tsx`
 - Create: `src/pages/landing/ui/OnboardingMotionPreview.tsx`
+- Create: `src/pages/login/ui/LoginPage.tsx`
 - Modify: `src/app/App.tsx`
 
 - [ ] **Step 1: 인증 분기 테스트 작성**
@@ -547,7 +551,7 @@ export function useAuth() {
 }
 ```
 
-- [ ] **Step 4: LandingPage 구현**
+- [ ] **Step 4: LandingPage와 LoginPage 구현**
 
 Create `src/pages/landing/ui/OnboardingMotionPreview.tsx`:
 
@@ -592,7 +596,7 @@ export function OnboardingMotionPreview() {
       <p className="onboarding-motion__situation">
         팀 프로젝트 앱 첫 화면 참고
       </p>
-      <div className="onboarding-motion__card">온보딩 레퍼런스</div>
+      <div className="onboarding-motion__card">첫 화면 흐름 메모</div>
       <div className="onboarding-motion__card">React 폼 구현 글</div>
       <div className="onboarding-motion__pack">지금 다시 볼 작업팩</div>
     </div>
@@ -609,11 +613,20 @@ export function OnboardingMotionPreview() {
 Create `src/pages/landing/ui/LandingPage.tsx`:
 
 ```tsx
-import { signInWithGoogle } from '@/features/auth';
 import { Button } from '@/shared/ui';
 import { OnboardingMotionPreview } from './OnboardingMotionPreview';
 
-export function LandingPage() {
+type LandingPageProps = {
+  onStart: () => void;
+};
+
+const highlights = [
+  'URL과 짧은 메모를 바로 보관해요.',
+  '정리는 나중에 필요한 만큼만 해요.',
+  '지금 하는 일에 맞게 다시 꺼내봐요.',
+];
+
+export function LandingPage({ onStart }: LandingPageProps) {
   return (
     <main className="landing-page">
       <section className="landing-page__content">
@@ -622,11 +635,46 @@ export function LandingPage() {
         <p>
           저장해둔 인사이트를 현재 상황이나 목적에 맞게 다시 꺼내보세요.
         </p>
+        <ul>
+          {highlights.map((highlight) => (
+            <li key={highlight}>{highlight}</li>
+          ))}
+        </ul>
+        <Button onClick={onStart}>서비스 경험하기</Button>
+      </section>
+      <OnboardingMotionPreview />
+    </main>
+  );
+}
+```
+
+Create `src/pages/login/ui/LoginPage.tsx`:
+
+```tsx
+import { signInWithGoogle } from '@/features/auth';
+import { Button } from '@/shared/ui';
+
+type LoginPageProps = {
+  onBack: () => void;
+};
+
+export function LoginPage({ onBack }: LoginPageProps) {
+  return (
+    <main className="login-page">
+      <button className="back-button" type="button" onClick={onBack}>
+        서비스 소개로
+      </button>
+      <section className="login-panel">
+        <h1>환영합니다!</h1>
+        <p>로그인 후 나만의 보관함과 꺼내보기를 사용할 수 있어요.</p>
         <Button onClick={() => void signInWithGoogle()}>
           Google로 시작하기
         </Button>
+        <p className="login-helper">간편 로그인</p>
+        <p className="terms-notice">
+          로그인 시 이용약관 및 개인정보처리방침에 동의하게 됩니다.
+        </p>
       </section>
-      <OnboardingMotionPreview />
     </main>
   );
 }
@@ -638,7 +686,9 @@ Create `src/features/auth/ui/AuthGate.tsx`:
 
 ```tsx
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { LandingPage } from '@/pages/landing';
+import { LoginPage } from '@/pages/login';
 import type { AuthState } from './AuthProvider';
 import { useAuth } from './AuthProvider';
 
@@ -652,13 +702,21 @@ type AuthGateContentProps = {
   children: ReactNode;
 };
 
+type AuthEntryScreen = 'landing' | 'login';
+
 function AuthGateContent({ authState, children }: AuthGateContentProps) {
+  const [entryScreen, setEntryScreen] = useState<AuthEntryScreen>('landing');
+
   if (authState.status === 'loading') {
     return <p className="loading-message">로그인 상태를 확인하고 있습니다.</p>;
   }
 
   if (authState.status === 'signed-out') {
-    return <LandingPage />;
+    if (entryScreen === 'login') {
+      return <LoginPage onBack={() => setEntryScreen('landing')} />;
+    }
+
+    return <LandingPage onStart={() => setEntryScreen('login')} />;
   }
 
   return <>{children}</>;
@@ -738,7 +796,7 @@ Expected:
 Run:
 
 ```bash
-git add package.json package-lock.json src/features/auth/model/AuthProvider.tsx src/features/auth/ui/AuthGate.tsx src/features/auth/ui/AuthGate.test.tsx src/pages/landing/ui/LandingPage.tsx src/pages/landing/ui/OnboardingMotionPreview.tsx src/app/App.tsx
+git add package.json package-lock.json src/features/auth/model/AuthProvider.tsx src/features/auth/ui/AuthGate.tsx src/features/auth/ui/AuthGate.test.tsx src/pages/landing/ui/LandingPage.tsx src/pages/landing/ui/OnboardingMotionPreview.tsx src/pages/login/ui/LoginPage.tsx src/app/App.tsx
 git commit -m "feat: 인증 게이트와 로그인 전 화면 구현"
 ```
 
@@ -937,7 +995,8 @@ git commit -m "feat: 프로필 메뉴 로그아웃 연결"
 **Spec coverage:**
 
 - Google OAuth만 로그인 방식으로 제공한다.
-- 로그인 전 소개 화면에 서비스명, 한 줄 소개, Google 로그인 CTA가 있다.
+- 로그인 전 소개 화면에 서비스명, 한 줄 소개, 핵심 경험 미리보기, `서비스 경험하기` CTA가 있다.
+- `서비스 경험하기` CTA 이후 별도 로그인 화면에서 Google 로그인 버튼과 약관/개인정보처리방침 안내를 제공한다.
 - 인증 상태를 감지하고 비로그인 사용자의 앱 접근을 막는다.
 - 로그아웃 기능과 기본 프로필 정보 표시가 포함된다.
 - 별도 설정 페이지는 만들지 않는다.
