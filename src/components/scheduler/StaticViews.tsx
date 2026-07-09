@@ -1,5 +1,7 @@
 import { friends } from './data'
+import { FriendFeed } from './FriendFeed'
 import { PixelAvatar } from './shared'
+import type { FriendPost } from './types'
 
 type MyHomeViewProps = {
   message: string
@@ -50,21 +52,37 @@ export function MyHomeView({ message, onInteract }: MyHomeViewProps) {
   )
 }
 
-export function FriendsView() {
+type FriendsViewProps = {
+  myPosts: FriendPost[]
+  onDeletePost: (postId: number) => void
+}
+
+export function FriendsView({ myPosts, onDeletePost }: FriendsViewProps) {
   return (
     <section className="friends-view" aria-labelledby="friends-title">
-      <div className="tab-page-heading">
-        <div><span>TOGETHER</span><h1 id="friends-title">내 친구</h1></div>
-        <button type="button" className="page-add-button">+</button>
-      </div>
-      <div className="friend-list">
-        {friends.map((friend, index) => (
-          <article key={friend.id}>
-            <PixelAvatar color={friend.color} eyes={friend.eyes} />
-            <div><strong>{friend.name}</strong><span>{index === 2 ? '스터디 멤버 4명' : `함께한 일정 ${8 - index}개`}</span></div>
-            <button type="button">일정 보기</button>
-          </article>
-        ))}
+      <div className="friends-layout">
+        <div className="friends-feed-col">
+          <div className="tab-page-heading">
+            <div><span>ACTIVITY</span><h2>친구 인증 피드</h2></div>
+          </div>
+          <FriendFeed myPosts={myPosts} onDeletePost={onDeletePost} />
+        </div>
+
+        <div className="friends-list-col">
+          <div className="tab-page-heading">
+            <div><span>TOGETHER</span><h1 id="friends-title">내 친구</h1></div>
+            <button type="button" className="page-add-button">+</button>
+          </div>
+          <div className="friend-list">
+            {friends.map((friend, index) => (
+              <article key={friend.id}>
+                <PixelAvatar color={friend.color} eyes={friend.eyes} />
+                <div><strong>{friend.name}</strong><span>{index === 2 ? '스터디 멤버 4명' : `함께한 일정 ${8 - index}개`}</span></div>
+                <button type="button">일정 보기</button>
+              </article>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   )
