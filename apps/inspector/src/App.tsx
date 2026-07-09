@@ -10,21 +10,12 @@ import type {
   RuntimeRunStatus,
   RuntimeRunSummary,
 } from '@ay-ple/runtime-core'
+import type { CodexCapabilitySlot } from '@ay-ple/runtime-codex/capabilities'
 import './App.css'
 
 type HealthState = 'checking' | 'ok' | 'error'
 type InspectorRunStatus = RuntimeRunStatus | 'idle'
 type FakeScenario = 'normal' | 'failure'
-type CodexCapabilitySlot = {
-  id: string
-  label: string
-  category: string
-  status: 'raw-callable' | 'schema-confirmed' | 'reserved'
-  methods: string[]
-  evidence: string[]
-  productized: false
-  notes: string
-}
 
 function App() {
   const [health, setHealth] = useState<HealthState>('checking')

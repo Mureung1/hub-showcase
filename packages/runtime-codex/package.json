@@ -11,6 +11,11 @@
       "types": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./capabilities": {
+      "development": "./src/capability-slots.ts",
+      "types": "./src/capability-slots.ts",
+      "default": "./dist/capability-slots.js"
+    },
     "./testing": {
       "development": "./src/testing/fake-codex-app-server.ts",
       "types": "./src/testing/fake-codex-app-server.ts",

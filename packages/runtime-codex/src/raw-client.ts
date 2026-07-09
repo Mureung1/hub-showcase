@@ -210,6 +210,18 @@ type PendingResponse = {
   reject: (error: Error) => void
 }
 
+type CodexClientRequestMethod = ClientRequest['method']
+
+type CodexClientRequestFor<Method extends CodexClientRequestMethod> = Extract<
+  ClientRequest,
+  { method: Method }
+>
+
+type CodexClientRequestParams<Method extends CodexClientRequestMethod> =
+  CodexClientRequestFor<Method> extends { params: infer Params }
+    ? Params
+    : never
+
 type CodexResponseMessage = {
   id?: string | number
   method?: string
@@ -282,21 +294,14 @@ export class CodexRawClient {
   }
 
   async initialize(): Promise<CodexInitializeResult> {
-    this.start()
-
-    const requestId = this.createRequestId()
-
     const params: InitializeParams = {
       clientInfo: this.clientInfo,
       capabilities: null,
     }
-    const request: Extract<ClientRequest, { method: 'initialize' }> = {
-      method: 'initialize',
-      id: requestId,
+    const response = await this.sendGeneratedRequest(
+      'initialize',
       params,
-    }
-    const response = toInitializeResponse(
-      await this.sendRequest(requestId, request),
+      toInitializeResponse,
     )
     const initialized: ClientNotification = { method: 'initialized' }
 
@@ -314,9 +319,6 @@ export class CodexRawClient {
   async startThread(
     input: CodexThreadStartInput = {},
   ): Promise<CodexThreadStartResult> {
-    this.start()
-
-    const requestId = this.createRequestId()
     const params: ThreadStartParams = {
       cwd: input.cwd ?? this.cwd,
     }
@@ -325,13 +327,10 @@ export class CodexRawClient {
       params.ephemeral = input.ephemeral
     }
 
-    const request: Extract<ClientRequest, { method: 'thread/start' }> = {
-      method: 'thread/start',
-      id: requestId,
+    const response = await this.sendGeneratedRequest(
+      'thread/start',
       params,
-    }
-    const response = toThreadStartResponse(
-      await this.sendRequest(requestId, request),
+      toThreadStartResponse,
     )
 
     return {
@@ -342,17 +341,11 @@ export class CodexRawClient {
   async listThreads(
     input: CodexThreadListInput = {},
   ): Promise<CodexThreadListResult> {
-    this.start()
-
-    const requestId = this.createRequestId()
     const params: ThreadListParams = { ...input }
-    const request: Extract<ClientRequest, { method: 'thread/list' }> = {
-      method: 'thread/list',
-      id: requestId,
+    const response = await this.sendGeneratedRequest(
+      'thread/list',
       params,
-    }
-    const response = toThreadListResponse(
-      await this.sendRequest(requestId, request),
+      toThreadListResponse,
     )
 
     return {
@@ -365,17 +358,11 @@ export class CodexRawClient {
   async listLoadedThreads(
     input: CodexThreadLoadedListInput = {},
   ): Promise<CodexThreadLoadedListResult> {
-    this.start()
-
-    const requestId = this.createRequestId()
     const params: ThreadLoadedListParams = { ...input }
-    const request: Extract<ClientRequest, { method: 'thread/loaded/list' }> = {
-      method: 'thread/loaded/list',
-      id: requestId,
+    const response = await this.sendGeneratedRequest(
+      'thread/loaded/list',
       params,
-    }
-    const response = toThreadLoadedListResponse(
-      await this.sendRequest(requestId, request),
+      toThreadLoadedListResponse,
     )
 
     return {
@@ -385,20 +372,14 @@ export class CodexRawClient {
   }
 
   async readThread(input: CodexThreadReadInput): Promise<CodexThreadReadResult> {
-    this.start()
-
-    const requestId = this.createRequestId()
     const params: ThreadReadParams = {
       threadId: input.threadId,
       includeTurns: input.includeTurns,
     }
-    const request: Extract<ClientRequest, { method: 'thread/read' }> = {
-      method: 'thread/read',
-      id: requestId,
+    const response = await this.sendGeneratedRequest(
+      'thread/read',
       params,
-    }
-    const response = toThreadReadResponse(
-      await this.sendRequest(requestId, request),
+      toThreadReadResponse,
     )
 
     return {
@@ -407,21 +388,15 @@ export class CodexRawClient {
   }
 
   async startTurn(input: CodexTurnStartInput): Promise<CodexTurnStartResult> {
-    this.start()
-
-    const requestId = this.createRequestId()
     const params: TurnStartParams = {
       threadId: input.threadId,
       input: input.input.map(toUserInput),
       cwd: input.cwd,
     }
-    const request: Extract<ClientRequest, { method: 'turn/start' }> = {
-      method: 'turn/start',
-      id: requestId,
+    const response = await this.sendGeneratedRequest(
+      'turn/start',
       params,
-    }
-    const response = toTurnStartResponse(
-      await this.sendRequest(requestId, request),
+      toTurnStartResponse,
     )
 
     return {
@@ -430,9 +405,6 @@ export class CodexRawClient {
   }
 
   async steerTurn(input: CodexTurnSteerInput): Promise<CodexTurnSteerResult> {
-    this.start()
-
-    const requestId = this.createRequestId()
     const params: TurnSteerParams = {
       threadId: input.threadId,
       expectedTurnId: input.expectedTurnId,
@@ -443,13 +415,10 @@ export class CodexRawClient {
       params.clientUserMessageId = input.clientUserMessageId
     }
 
-    const request: Extract<ClientRequest, { method: 'turn/steer' }> = {
-      method: 'turn/steer',
-      id: requestId,
+    const response = await this.sendGeneratedRequest(
+      'turn/steer',
       params,
-    }
-    const response = toTurnSteerResponse(
-      await this.sendRequest(requestId, request),
+      toTurnSteerResponse,
     )
 
     return {
@@ -460,20 +429,16 @@ export class CodexRawClient {
   async interruptTurn(
     input: CodexTurnInterruptInput,
   ): Promise<CodexTurnInterruptResult> {
-    this.start()
-
-    const requestId = this.createRequestId()
     const params: TurnInterruptParams = {
       threadId: input.threadId,
       turnId: input.turnId,
     }
-    const request: Extract<ClientRequest, { method: 'turn/interrupt' }> = {
-      method: 'turn/interrupt',
-      id: requestId,
-      params,
-    }
 
-    return toTurnInterruptResponse(await this.sendRequest(requestId, request))
+    return this.sendGeneratedRequest(
+      'turn/interrupt',
+      params,
+      toTurnInterruptResponse,
+    )
   }
 
   async *notifications(): AsyncIterable<CodexRawServerNotification> {
@@ -629,6 +594,26 @@ export class CodexRawClient {
     this.sendJson(request)
 
     return responsePromise
+  }
+
+  private async sendGeneratedRequest<
+    Method extends CodexClientRequestMethod,
+    Response,
+  >(
+    method: Method,
+    params: CodexClientRequestParams<Method>,
+    readResponse: (value: unknown) => Response,
+  ): Promise<Response> {
+    this.start()
+
+    const requestId = this.createRequestId()
+    const request = {
+      method,
+      id: requestId,
+      params,
+    } as unknown as CodexClientRequestFor<Method>
+
+    return readResponse(await this.sendRequest(requestId, request))
   }
 
   private nextNotification(): Promise<CodexRawServerNotification | undefined> {
