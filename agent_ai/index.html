@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Learning Demo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-2" aria-hidden="true"></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <main class="demo-shell">
+    <header class="topbar glass">
+      <div class="brand">
+        <div class="brand-mark">AI</div>
+        <div>
+          <p class="brand-kicker">University Learning</p>
+          <h1>강의자료 기반 AI 학습 서비스</h1>
+        </div>
+      </div>
+      <div class="step-pill" id="stepPill">Landing</div>
+    </header>
+
+    <section class="screen active" data-screen="landing">
+      <div class="hero glass">
+        <p class="eyebrow">Presentation Demo</p>
+        <h2>강의자료를 이해하는 과정을 AI와 함께 보여줍니다</h2>
+        <p class="lead">
+          교수님의 강의를 이해하기 어려운 학생들을 위해, PDF를 업로드하고
+          AI가 질문하는 방식으로 학습을 이어가는 클릭형 프로토타입입니다.
+        </p>
+        <div class="hero-actions">
+          <button class="primary-btn" type="button" data-action="go-upload">학습 시작하기</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="upload">
+      <div class="panel-layout">
+        <div class="content-card glass">
+          <p class="eyebrow">PDF Upload</p>
+          <h2>강의자료를 선택하세요</h2>
+          <p class="lead">이 단계는 실제 업로드를 시뮬레이션합니다. 발표에서는 사용자가 자료를 넣는 첫 진입점으로 보여줍니다.</p>
+
+          <label class="upload-zone" for="pdfInput">
+            <span class="upload-icon" aria-hidden="true"></span>
+            <strong>드래그 앤 드롭 또는 클릭</strong>
+            <span id="uploadLabel">샘플 PDF를 선택해도 됩니다.</span>
+            <input id="pdfInput" type="file" accept="application/pdf,.pdf" />
+          </label>
+
+          <div class="upload-meta">
+            <div class="file-chip" id="fileChip">선택된 파일 없음</div>
+            <button class="ghost-btn" type="button" data-action="choose-file">파일 선택</button>
+          </div>
+
+          <div class="hero-actions">
+            <button class="primary-btn" type="button" data-action="start-analysis">분석 시작</button>
+            <button class="ghost-btn" type="button" data-action="back-landing">뒤로</button>
+          </div>
+        </div>
+
+        <aside class="side-card glass">
+          <p class="eyebrow">Flow</p>
+          <div class="flow-list">
+            <div class="flow-item is-current">PDF 업로드</div>
+            <div class="flow-item">분석</div>
+            <div class="flow-item">소크라테스 문답</div>
+            <div class="flow-item">완료</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="analysis">
+      <div class="analysis-card glass">
+        <p class="eyebrow">Analysis</p>
+        <h2>강의자료를 분석하는 중입니다</h2>
+        <p class="lead" id="analysisMessage">PDF 분석 중...</p>
+
+        <div class="analysis-visual">
+          <div class="spinner"></div>
+          <div class="loading-bars">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-track">
+            <div class="progress-fill" id="analysisProgress"></div>
+          </div>
+          <div class="progress-label" id="analysisPercent">0%</div>
+        </div>
+
+        <div class="analysis-log" id="analysisLog"></div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="dialogue">
+      <div class="panel-layout dialogue-layout">
+        <div class="content-card glass">
+          <p class="eyebrow">Socratic Dialogue</p>
+          <h2>AI가 먼저 질문합니다</h2>
+          <p class="lead">정답을 바로 주지 않고, 질문과 힌트를 통해 이해를 넓혀가는 대화형 학습을 보여줍니다.</p>
+
+          <div class="chat-window" id="chatWindow" aria-live="polite"></div>
+
+          <div class="chat-composer">
+            <input id="chatInput" type="text" placeholder="답변을 입력하고 계속하세요." />
+            <button class="primary-btn" type="button" data-action="send-chat">전송</button>
+          </div>
+
+          <div class="hero-actions">
+            <button class="ghost-btn" type="button" data-action="chat-hint">힌트 보기</button>
+            <button class="ghost-btn" type="button" data-action="skip-chat">예시 답변 사용</button>
+          </div>
+        </div>
+
+        <aside class="side-card glass">
+          <p class="eyebrow">Learning Point</p>
+          <h3>문답형 학습</h3>
+          <p class="side-copy">
+            이 단계의 핵심은 설명이 아니라 생각을 유도하는 것입니다.
+            AI는 학생이 스스로 말하게 만들고, 답변을 바탕으로 다음 질문을 이어갑니다.
+          </p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="complete">
+      <div class="complete-card glass">
+        <p class="eyebrow">Completed</p>
+        <h2>학습이 완료되었습니다</h2>
+        <p class="lead">
+          이제 학생은 배운 내용을 자신의 말로 설명할 수 있습니다.
+          이 프로토타입은 그 흐름을 발표용으로 간결하게 보여줍니다.
+        </p>
+
+        <div class="completion-box">
+          <strong>Explain in your own words</strong>
+          <span>소크라테스 문답을 거친 뒤, 개념을 스스로 정리할 수 있게 됩니다.</span>
+        </div>
+
+        <div class="hero-actions">
+          <button class="primary-btn" type="button" data-action="restart">다시 시작</button>
+          <button class="ghost-btn" type="button" data-action="review-flow">흐름 다시 보기</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
