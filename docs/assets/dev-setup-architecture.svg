@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 520" fill="none">
+  <rect width="920" height="520" fill="#F5F7FA"/>
+  <text x="460" y="36" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="18" font-weight="600" fill="#0A2540">å¡ıx Ä¿– Pt0   XΩ lp</text>
+
+  <!-- Client -->
+  <rect x="40" y="70" width="260" height="200" rx="12" fill="#FFFFFF" stroke="#E1E5EB"/>
+  <text x="170" y="98" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="13" font-weight="600" fill="#0A2540">React Client</text>
+  <text x="170" y="118" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="11" fill="#666">Vite ∑ :5173</text>
+  <rect x="60" y="132" width="220" height="36" rx="8" fill="#EEF4FC" stroke="#2563EB"/>
+  <text x="170" y="155" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="11" fill="#2563EB">src/ ∑ tokens.css</text>
+  <rect x="60" y="178" width="220" height="36" rx="8" fill="#EEF4FC" stroke="#2563EB"/>
+  <text x="170" y="201" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="11" fill="#2563EB">@t¥Ñ UI (2¸()</text>
+  <rect x="60" y="224" width="220" height="32" rx="8" fill="#F5F7FA" stroke="#E1E5EB"/>
+  <text x="170" y="245" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="10" fill="#666">gov-subsidy-design Skill</text>
+
+  <!-- Proxy -->
+  <rect x="340" y="140" width="120" height="60" rx="10" fill="#0A2540"/>
+  <text x="400" y="166" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="11" font-weight="500" fill="#FFFFFF">Vite Proxy</text>
+  <text x="400" y="184" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="10" fill="#FFFFFF" opacity="0.8">/api í :3001</text>
+
+  <!-- Server -->
+  <rect x="500" y="70" width="260" height="200" rx="12" fill="#FFFFFF" stroke="#E1E5EB"/>
+  <text x="630" y="98" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="13" font-weight="600" fill="#0A2540">Express API</text>
+  <text x="630" y="118" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="11" fill="#666">server/ ∑ :3001</text>
+  <rect x="520" y="132" width="220" height="32" rx="8" fill="#DCFCE7" stroke="#16A34A"/>
+  <text x="630" y="153" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="10" fill="#16A34A">GET /api/health</text>
+  <rect x="520" y="174" width="220" height="32" rx="8" fill="#DCFCE7" stroke="#16A34A"/>
+  <text x="630" y="195" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="10" fill="#16A34A">GET /api/subsidies</text>
+  <rect x="520" y="216" width="220" height="32" rx="8" fill="#F5F7FA" stroke="#E1E5EB"/>
+  <text x="630" y="237" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="10" fill="#666">shared/ ¿Ö</text>
+
+  <!-- Docs -->
+  <rect x="40" y="300" width="840" height="190" rx="12" fill="#FFFFFF" stroke="#E1E5EB"/>
+  <text x="460" y="328" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="13" font-weight="600" fill="#0A2540">8 ∑ êx å§</text>
+
+  <rect x="60" y="348" width="180" height="56" rx="8" fill="#EEF4FC" stroke="#2563EB"/>
+  <text x="150" y="372" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="11" fill="#0A2540">plan.md</text>
+  <text x="150" y="390" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="9" fill="#666">à îl¨m</text>
+
+  <rect x="260" y="348" width="180" height="56" rx="8" fill="#EEF4FC" stroke="#2563EB"/>
+  <text x="350" y="372" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="11" fill="#0A2540">@t¥Ñ HTML</text>
+  <text x="350" y="390" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="9" fill="#666">UI Ë| å§</text>
+
+  <rect x="460" y="348" width="180" height="56" rx="8" fill="#EEF4FC" stroke="#2563EB"/>
+  <text x="550" y="372" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="11" fill="#0A2540">CLAUDE.md</text>
+  <text x="550" y="390" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="9" fill="#666"> Â}∑Ë§X</text>
+
+  <rect x="660" y="348" width="200" height="56" rx="8" fill="#EEF4FC" stroke="#2563EB"/>
+  <text x="760" y="372" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="11" fill="#0A2540">gov-subsidy-design</text>
+  <text x="760" y="390" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="9" fill="#666">Agent Skill</text>
+
+  <rect x="120" y="420" width="680" height="48" rx="8" fill="#FEE2E2" stroke="#DC2626"/>
+  <text x="460" y="442" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="10" fill="#DC2626">¨(: README Next.jsíReact+Express ∑ checklist ı p ∑ planî@t¥Ñ l Ù©</text>
+  <text x="460" y="458" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="10" fill="#666">1¸( : Supabase ∑ crawler/ ∑ 0≈»˘ —</text>
+
+  <!-- Arrows -->
+  <path d="M300 170 H340" stroke="#2563EB" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M460 170 H500" stroke="#2563EB" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M170 270 V285 H460 V348" stroke="#999" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+  <path d="M630 270 V285 H550 V348" stroke="#999" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#2563EB"/>
+    </marker>
+  </defs>
+</svg>

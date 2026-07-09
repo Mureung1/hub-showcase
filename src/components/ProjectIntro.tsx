@@ -2,11 +2,11 @@ import './ProjectIntro.css'
 
 const MVP_MUST = [
   '업종 / 지역 / 사업자 규모 입력 폼',
-  '조건에 맞는 지원사업 필터링 + 마감일순 정렬',
-  '공고문 핵심 요약 (지원대상·지원내용·신청기간·신청방법 표)',
+  '조건에 맞는 지원사업 필터링 + 매칭도순·마감임박·지원금액 정렬',
+  '공고문 핵심 요약 (지원대상·지원내용·신청기간·신청방법)',
 ]
 
-const MVP_SHOULD = ['마감 임박 알림 (카톡 / 이메일)', '즐겨찾기 / 스크랩']
+const MVP_SHOULD = ['마감 임박 알림', '즐겨찾기 / 스크랩'] // MVP 이후 (plan.md 제외 항목)
 
 const MVP_WONT = [
   '신청서 자동 작성',
@@ -198,7 +198,7 @@ export default function ProjectIntro() {
           골라서 보여준다&rdquo;
         </blockquote>
         <p className="value-note">
-          MVP는 <strong>필터링 + 알림</strong>에만 집중 — 신청 대행, 서류
+          MVP는 <strong>필터링 + 매칭</strong>에 집중 — 알림·신청 대행·서류
           작성 지원은 과감히 버린다.
         </p>
       </section>
