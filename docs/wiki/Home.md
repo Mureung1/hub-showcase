@@ -1,4 +1,4 @@
-﻿# LocalTwin Wiki Home
+# LocalTwin Wiki Home
 
 LocalTwin Wiki는 프로젝트 기획, 기능 정의, 개발 운영 문서를 연결하는 진입점이다.
 
@@ -36,6 +36,7 @@ docs/
     git-workflow.md
     harness.md
     validation.md
+    week1-completion-report.md
   features/
     market-analysis.md
     market-map-experience.md
@@ -106,6 +107,7 @@ LocalTwin/
 - [Git 작업 규칙](../development/git-workflow.md)
 - [LocalTwin Dev Harness](../development/harness.md)
 - [검증 가이드](../development/validation.md)
+- [1주차 태스크 완료 보고서](../development/week1-completion-report.md)
 
 ## Design System
 
