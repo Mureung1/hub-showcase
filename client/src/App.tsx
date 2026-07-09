@@ -1,4 +1,4 @@
-import ProjectIntro from './ProjectIntro.jsx'
+import ProjectIntro from './ProjectIntro.tsx'
 import './App.css'
 
 function App() {
