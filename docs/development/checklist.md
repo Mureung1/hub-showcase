@@ -40,6 +40,11 @@
 - [x] source-like 변경 시 문서 또는 `.harness` 기록을 같은 커밋에 포함하도록 hook 규칙을 추가한다.
 - [x] 제품 UI와 개발문서에 적용할 디자인 시스템 기준을 문서화한다.
 - [x] 2.5D 상권 지도와 유동인구 Layer의 역할과 PoC Gate를 문서화한다.
+- [x] web/api 실행 가능한 개발 scaffold를 구성한다.
+- [x] pnpm/uv 기반 dependency와 lockfile 정책을 정한다.
+- [x] 코드, API, 데이터, test와 Git 컨벤션을 문서화한다.
+- [x] 개발 전 결정 Gate를 문서화한다.
+- [x] docs/web/api GitHub Actions 검증 workflow를 구성한다.
 
 ## 2. 대상 상권 선정
 
@@ -102,8 +107,8 @@
 
 ## 6. 백엔드/API
 
-- [ ] 기술 스택을 확정한다.
-- [ ] 프로젝트 기본 구조를 생성한다.
+- [x] 기술 스택을 FastAPI + Pydantic Settings로 확정한다.
+- [x] 실행 가능한 프로젝트 기본 구조와 `/health` endpoint를 생성한다.
 - [ ] 상권 목록/상권 상세 API를 설계한다.
 - [ ] 점포 조회 API를 설계한다.
 - [ ] 반경 분석 API를 설계한다.
@@ -111,14 +116,14 @@
 - [ ] 시간대별 혼잡도 API를 설계한다.
 - [ ] 3D 장면 메타데이터 API를 설계한다.
 - [ ] API 응답 예시를 문서화한다.
-- [ ] 기본 smoke test를 작성한다.
+- [x] `/health` 기본 smoke test를 작성한다.
 
 ## 7. 프론트엔드
 
-- [ ] 기술 스택을 확정한다.
+- [x] 기술 스택을 React + Vite + TypeScript로 확정한다.
 - [ ] 대상 상권의 footprint와 높이 데이터로 MapLibre extrusion PoC를 만든다.
 - [ ] MapLibre 채택 또는 2D fallback 여부를 PoC 결과로 결정한다.
-- [ ] 디자인 시스템 token을 `web/src/styles/tokens.css`로 구현한다.
+- [x] 디자인 시스템 token을 `apps/web/src/styles/tokens.css`로 구현한다.
 - [ ] 공통 button, filter, panel, score, marker component를 구현한다.
 - [ ] desktop/mobile visual regression 기준 화면을 만든다.
 - [ ] 기본 레이아웃을 구성한다.
@@ -213,6 +218,9 @@
 ## 13. 현재 기준 다음 작업
 
 - [ ] 대상 상권 후보를 정한다.
-- [ ] 사용할 기술 스택을 확정한다.
 - [ ] 데이터 확보 가능성을 먼저 검증한다.
+- [ ] canonical schema와 fixture contract를 확정한다.
+- [ ] SQLite 접근 방식과 migration 필요성을 결정한다.
+- [ ] 대상 상권 sample로 MapLibre 2.5D PoC를 검증한다.
+- [ ] `develop`과 `main`의 required checks와 branch protection을 설정한다.
 - [ ] 3D 복원 파이프라인을 작은 실내/외 샘플로 먼저 테스트한다.

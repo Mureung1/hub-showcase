@@ -432,6 +432,10 @@
             <h3>Project Structure</h3>
             <pre>LocalTwin/
   README.md
+  apps/
+    web/
+    api/
+  data/
   docs/
     wiki/
     development/
@@ -559,6 +563,30 @@
             keywords: ["React", "FastAPI", "SQLite", "MapLibre PoC"],
           },
           {
+            id: "environment",
+            label: "Dev Environment",
+            group: "development",
+            href: "./doc-viewer.html?doc=../development/environment.md",
+            description: "실행 가능한 web/api scaffold, toolchain, directory와 dependency 기준을 정의합니다.",
+            keywords: ["pnpm", "uv", "React", "FastAPI", "directory"],
+          },
+          {
+            id: "conventions",
+            label: "Conventions",
+            group: "development",
+            href: "./doc-viewer.html?doc=../development/conventions.md",
+            description: "코드, API, 데이터, 테스트, dependency와 Git 규칙을 정의합니다.",
+            keywords: ["naming", "API contract", "test", "dependency"],
+          },
+          {
+            id: "decision-gates",
+            label: "Decision Gates",
+            group: "decision",
+            href: "./doc-viewer.html?doc=../development/pre-development-decisions.md",
+            description: "개발 전에 증거를 확인하고 결정해야 할 제품, 데이터, 지도, 3D와 운영 항목입니다.",
+            keywords: ["gate", "canonical schema", "MapLibre PoC", "branch protection"],
+          },
+          {
             id: "design-system",
             label: "Design System",
             group: "development",
@@ -641,6 +669,9 @@
           ["home", "three-d"],
           ["home", "data-map"],
           ["home", "dev-overview"],
+          ["home", "environment"],
+          ["home", "conventions"],
+          ["home", "decision-gates"],
           ["home", "design-system"],
           ["home", "harness"],
           ["home", "rubric"],
@@ -663,6 +694,7 @@
           ["market", "data-map"],
           ["market", "validation"],
           ["data-map", "dev-overview"],
+          ["data-map", "decision-gates"],
           ["project-proposal", "design-system"],
           ["core-prototype", "design-system"],
           ["design-system", "market"],
@@ -671,6 +703,14 @@
           ["design-system", "validation"],
           ["dev-overview", "checklist"],
           ["dev-overview", "git"],
+          ["dev-overview", "environment"],
+          ["environment", "conventions"],
+          ["environment", "validation"],
+          ["conventions", "git"],
+          ["conventions", "validation"],
+          ["decision-gates", "checklist"],
+          ["decision-gates", "market-map"],
+          ["decision-gates", "three-d"],
           ["harness", "checklist"],
           ["harness", "validation"],
           ["harness", "rubric"],

@@ -29,6 +29,9 @@ docs/
     design-system.md
   development/
     overview.md
+    environment.md
+    conventions.md
+    pre-development-decisions.md
     checklist.md
     git-workflow.md
     harness.md
@@ -54,6 +57,14 @@ docs/
 ```text
 LocalTwin/
   README.md
+  apps/
+    web/
+    api/
+  data/
+    raw/
+    processed/
+    fixtures/
+    scenes/
   docs/
     wiki/
     design/
@@ -88,6 +99,9 @@ LocalTwin/
 ## Development
 
 - [전체 개발문서](../development/overview.md)
+- [개발환경](../development/environment.md)
+- [개발 컨벤션](../development/conventions.md)
+- [개발 전 결정 Gate](../development/pre-development-decisions.md)
 - [전체 개발 체크리스트](../development/checklist.md)
 - [Git 작업 규칙](../development/git-workflow.md)
 - [LocalTwin Dev Harness](../development/harness.md)
