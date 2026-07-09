@@ -1,0 +1,5 @@
+.local/
+.DS_Store
+docs/wiki.md
+.claude/skills/docs-convention/
+.claude/skills/design-system/whitenoise-themes-example.png
