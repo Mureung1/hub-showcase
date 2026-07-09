@@ -1,4 +1,4 @@
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
+﻿const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 function addDays(days) {
   const date = new Date();
@@ -7,10 +7,10 @@ function addDays(days) {
 }
 
 const ingredients = [
-  { id: 1, name: "??", quantity: "6?", expiry: addDays(10) },
-  { id: 2, name: "??", quantity: "1/2?", expiry: addDays(5) },
-  { id: 3, name: "??", quantity: "1?", expiry: addDays(2) },
-  { id: 4, name: "?", quantity: "2??", expiry: addDays(7) }
+  { id: 1, name: "계란", quantity: "6개", expiry: addDays(10) },
+  { id: 2, name: "김치", quantity: "1/2통", expiry: addDays(5) },
+  { id: 3, name: "두부", quantity: "1모", expiry: addDays(2) },
+  { id: 4, name: "밥", quantity: "2공기", expiry: addDays(7) }
 ];
 
 const menusByFilter = {
@@ -195,10 +195,16 @@ const menusByFilter = {
 
 let selectedFilter = "balanced";
 let selectedMenuId = null;
+let isIngredientFormOpen = false;
 let editingIngredientId = null;
 let nextIngredientId = 5;
 
 const ingredientForm = document.querySelector("#ingredientForm");
+const ingredientFormPanel = document.querySelector("#ingredientFormPanel");
+const toggleIngredientForm = document.querySelector("#toggleIngredientForm");
+const closeIngredientForm = document.querySelector("#closeIngredientForm");
+const formPanelTitle = document.querySelector("#formPanelTitle");
+const submitIngredient = document.querySelector("#submitIngredient");
 const ingredientInput = document.querySelector("#ingredientInput");
 const quantityInput = document.querySelector("#quantityInput");
 const expiryInput = document.querySelector("#expiryInput");
@@ -207,6 +213,7 @@ const ingredientTiles = document.querySelector("#ingredientTiles");
 const urgentCount = document.querySelector("#urgentCount");
 const totalCount = document.querySelector("#totalCount");
 const summaryUrgentCount = document.querySelector("#summaryUrgentCount");
+const todayRecommendation = document.querySelector("#todayRecommendation");
 const tabButtons = document.querySelectorAll(".tab-button");
 const menuCards = document.querySelector("#menuCards");
 const recipeDetail = document.querySelector("#recipeDetail");
@@ -233,11 +240,28 @@ function setMessage(text) {
   }, 2200);
 }
 
-function resetForm() {
+function setIngredientFormOpen(open) {
+  isIngredientFormOpen = open;
+  ingredientFormPanel.hidden = !open;
+  toggleIngredientForm.classList.toggle("active", open);
+  toggleIngredientForm.setAttribute("aria-expanded", String(open));
+  toggleIngredientForm.textContent = open ? "입력 닫기" : "+ 재료 추가";
+
+  if (open) {
+    ingredientInput.focus();
+  }
+}
+
+function resetForm(options = {}) {
   ingredientForm.reset();
   expiryInput.value = addDays(5);
   editingIngredientId = null;
-  ingredientForm.querySelector("button").textContent = "+ ?? ??";
+  formPanelTitle.textContent = "새 재료 타일 만들기";
+  submitIngredient.textContent = "타일 추가";
+
+  if (options.close) {
+    setIngredientFormOpen(false);
+  }
 }
 
 function renderIngredients() {
@@ -248,18 +272,17 @@ function renderIngredients() {
       return `
         <article class="ingredient-tile ${isUrgent ? "urgent" : ""}">
           <div class="tile-top">
-            <div>
-              <span class="ingredient-name">${ingredient.name}</span>
-              <span class="ingredient-quantity">?? ${ingredient.quantity}</span>
-            </div>
+            <span class="ingredient-name">${ingredient.name}</span>
             <span class="ingredient-dday">${formatDday(dday)}</span>
           </div>
-          <div class="expiry-text">
-            ?? ?? ???<br>${ingredient.expiry}
+          ${isUrgent ? `<span class="use-first-label">먼저 사용</span>` : ""}
+          <div class="tile-meta">
+            <span>수량 <strong>${ingredient.quantity}</strong></span>
+            <span>예상 소비 권장일 <strong>${ingredient.expiry}</strong></span>
           </div>
           <div class="tile-actions">
-            <button type="button" data-action="edit" data-id="${ingredient.id}">??</button>
-            <button class="delete-button" type="button" data-action="delete" data-id="${ingredient.id}">??</button>
+            <button type="button" data-action="edit" data-id="${ingredient.id}">수정</button>
+            <button class="delete-button" type="button" data-action="delete" data-id="${ingredient.id}">삭제</button>
           </div>
         </article>
       `;
@@ -267,9 +290,10 @@ function renderIngredients() {
     .join("");
 
   const urgentItems = ingredients.filter((ingredient) => getDday(ingredient.expiry) <= 2).length;
-  urgentCount.textContent = `${urgentItems}?`;
-  totalCount.textContent = `${ingredients.length}?`;
-  summaryUrgentCount.textContent = `${urgentItems}?`;
+  urgentCount.textContent = `${urgentItems}개`;
+  totalCount.textContent = `${ingredients.length}개`;
+  summaryUrgentCount.textContent = `${urgentItems}개`;
+  todayRecommendation.textContent = urgentItems > 0 ? "임박 재료 우선" : "종합 추천";
 }
 
 function renderMenus() {
@@ -389,6 +413,23 @@ function selectMenu(menuId) {
   renderShopping(menu);
 }
 
+toggleIngredientForm.addEventListener("click", () => {
+  if (isIngredientFormOpen && !editingIngredientId) {
+    setIngredientFormOpen(false);
+    return;
+  }
+
+  if (editingIngredientId) {
+    resetForm();
+  }
+
+  setIngredientFormOpen(true);
+});
+
+closeIngredientForm.addEventListener("click", () => {
+  resetForm({ close: true });
+});
+
 ingredientForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const name = ingredientInput.value.trim();
@@ -396,7 +437,7 @@ ingredientForm.addEventListener("submit", (event) => {
   const expiry = expiryInput.value;
 
   if (!name || !quantity || !expiry) {
-    setMessage("???, ??, ????? ?? ??????.");
+    setMessage("재료명, 수량, 유통기한을 모두 입력해주세요.");
     return;
   }
 
@@ -405,7 +446,7 @@ ingredientForm.addEventListener("submit", (event) => {
   );
 
   if (duplicated) {
-    setMessage("?? ??? ?????. ?? ??? ??????.");
+    setMessage("이미 등록된 재료입니다. 수정 버튼을 사용해주세요.");
     return;
   }
 
@@ -414,14 +455,14 @@ ingredientForm.addEventListener("submit", (event) => {
     target.name = name;
     target.quantity = quantity;
     target.expiry = expiry;
-    setMessage("?? ??? ??????.");
+    setMessage("재료 타일을 수정했습니다.");
   } else {
     ingredients.unshift({ id: nextIngredientId, name, quantity, expiry });
     nextIngredientId += 1;
-    setMessage("? ?? ??? ??????.");
+    setMessage("새 재료 타일을 추가했습니다.");
   }
 
-  resetForm();
+  resetForm({ close: true });
   renderIngredients();
 });
 
@@ -436,8 +477,8 @@ ingredientTiles.addEventListener("click", (event) => {
   if (button.dataset.action === "delete") {
     const index = ingredients.findIndex((item) => item.id === id);
     ingredients.splice(index, 1);
-    setMessage("?? ??? ??????.");
-    if (editingIngredientId === id) resetForm();
+    setMessage("재료 타일을 삭제했습니다.");
+    if (editingIngredientId === id) resetForm({ close: true });
     renderIngredients();
     return;
   }
@@ -446,8 +487,9 @@ ingredientTiles.addEventListener("click", (event) => {
   ingredientInput.value = ingredient.name;
   quantityInput.value = ingredient.quantity;
   expiryInput.value = ingredient.expiry;
-  ingredientForm.querySelector("button").textContent = "?? ??";
-  ingredientInput.focus();
+  formPanelTitle.textContent = "재료 타일 수정하기";
+  submitIngredient.textContent = "수정 완료";
+  setIngredientFormOpen(true);
 });
 
 tabButtons.forEach((button) => {
@@ -466,6 +508,6 @@ menuCards.addEventListener("click", (event) => {
   selectMenu(target.dataset.menuId);
 });
 
-resetForm();
+resetForm({ close: true });
 renderIngredients();
 renderMenus();

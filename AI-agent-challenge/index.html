@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>자취 냉장고 식단 추천</title>
+  <title>자취생 냉장고 식단 추천</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,36 +21,53 @@
 
     <section class="dashboard">
       <aside class="ingredient-panel">
-        <div class="section-title">
+        <div class="workspace-header">
           <div>
             <p class="eyebrow">Step 1</p>
-            <h2>??? ?? ??????</h2>
+            <h2>냉장고 재료 워크스페이스</h2>
+            <p>보유 재료와 소비 임박일을 정리하고 추천 기준을 한눈에 확인하세요.</p>
+          </div>
+          <button id="toggleIngredientForm" class="add-toggle" type="button" aria-expanded="false">+ 재료 추가</button>
+        </div>
+
+        <div class="workspace-summary" aria-label="냉장고 재료 요약">
+          <div class="summary-card">
+            <span>전체 재료</span>
+            <strong id="totalCount">0개</strong>
+          </div>
+          <div class="summary-card urgent-summary">
+            <span>임박 재료</span>
+            <strong id="summaryUrgentCount">0개</strong>
+          </div>
+          <div class="summary-card recommendation-summary">
+            <span>오늘 추천 기준</span>
+            <strong id="todayRecommendation">임박 재료 우선</strong>
           </div>
         </div>
 
-        <form id="ingredientForm" class="ingredient-form">
-          <label>
-            <span>???</span>
-            <input id="ingredientInput" type="text" placeholder="?: ??" aria-label="??? ??">
-          </label>
-          <label>
-            <span>??</span>
-            <input id="quantityInput" type="text" placeholder="?: 1?" aria-label="?? ??">
-          </label>
-          <label>
-            <span>????</span>
-            <input id="expiryInput" type="date" aria-label="???? ??">
-          </label>
-          <button type="submit">+ ?? ??</button>
-        </form>
-
-        <div class="workspace-summary">
-          <span>?? ?? <strong id="totalCount">0?</strong></span>
-          <span>?? ?? <strong id="summaryUrgentCount">0?</strong></span>
-        </div>
+        <section id="ingredientFormPanel" class="form-panel" hidden>
+          <div class="form-panel-title">
+            <h3 id="formPanelTitle">새 재료 타일 만들기</h3>
+            <button id="closeIngredientForm" type="button" aria-label="재료 입력 닫기">닫기</button>
+          </div>
+          <form id="ingredientForm" class="ingredient-form">
+            <label>
+              <span>재료명</span>
+              <input id="ingredientInput" type="text" placeholder="예: 두부" aria-label="재료명 입력">
+            </label>
+            <label>
+              <span>수량</span>
+              <input id="quantityInput" type="text" placeholder="예: 1모" aria-label="수량 입력">
+            </label>
+            <label>
+              <span>유통기한</span>
+              <input id="expiryInput" type="date" aria-label="유통기한 선택">
+            </label>
+            <button id="submitIngredient" type="submit">타일 추가</button>
+          </form>
+        </section>
 
         <div id="ingredientMessage" class="form-message" role="status"></div>
-
         <div id="ingredientTiles" class="ingredient-grid" aria-live="polite"></div>
       </aside>
 
