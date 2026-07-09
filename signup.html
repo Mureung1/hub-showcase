@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>회원가입 - ShopEase</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <div class="logo"><span class="logo-mark">S</span>ShopEase</div>
+      <nav class="menu-links">
+        <a href="shopping_site.html">홈으로</a>
+      </nav>
+    </header>
+
+    <section class="form-card">
+      <h1>회원가입</h1>
+      <p>ShopEase 계정을 생성하면 더 편리하게 쇼핑을 이용할 수 있습니다.</p>
+      <form action="account.html" method="get">
+        <div class="form-field">
+          <label for="name">이름</label>
+          <input id="name" name="name" type="text" placeholder="이름을 입력하세요" required />
+        </div>
+        <div class="form-field">
+          <label for="email">이메일</label>
+          <input id="email" name="email" type="email" placeholder="example@domain.com" required />
+        </div>
+        <div class="form-field">
+          <label for="password">비밀번호</label>
+          <input id="password" name="password" type="password" placeholder="비밀번호를 입력하세요" required />
+        </div>
+        <button type="submit" class="primary">회원가입 완료</button>
+      </form>
+      <p class="link-row">이미 계정이 있으신가요? <a href="login.html">로그인</a></p>
+    </section>
+  </div>
+</body>
+</html>

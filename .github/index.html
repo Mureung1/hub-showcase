@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>소상공인 AI 에이전트 프로토타입</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-2: #f8fbff;
+      --text: #162033;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --accent: #22c55e;
+      --border: #e2e8f0;
+      --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: linear-gradient(135deg, #eef4ff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    a { text-decoration: none; color: inherit; }
+
+    .page {
+      min-height: 100vh;
+      padding: 24px;
+      display: grid;
+      place-items: center;
+    }
+
+    .card {
+      width: min(960px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .intro {
+      display: block;
+      padding: 40px;
+      background: linear-gradient(120deg, #ffffff 0%, #f9fbff 100%);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--primary);
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #e8f0ff;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 32px;
+      line-height: 1.25;
+      margin: 0 0 12px;
+    }
+
+    .lead {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--muted);
+      margin: 0 0 24px;
+    }
+
+    .form-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 7px;
+      color: #334155;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
+      background: white;
+      color: var(--text);
+    }
+
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 14px 16px;
+      margin-top: 8px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 28px rgba(37, 99, 235, 0.28);
+    }
+
+    .note {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .result-panel {
+      display: none;
+      padding: 36px;
+      background: linear-gradient(135deg, #f7fbff 0%, #eef6ff 100%);
+    }
+
+    .result-panel:target {
+      display: block;
+    }
+
+    #result:target ~ .intro {
+      display: none;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.45); opacity: 0.7; }
+    }
+
+    .analysis-box {
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid #dbeafe;
+      background: white;
+      margin-bottom: 16px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .result-card {
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: white;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+    }
+
+    .result-card strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+
+    .score {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: var(--primary-dark);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .ghost-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 14px;
+      border-radius: 12px;
+      background: white;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    @media (max-width: 800px) {
+      .hero { grid-template-columns: 1fr; }
+      .result-grid { grid-template-columns: 1fr; }
+      .result-header { flex-direction: column; align-items: flex-start; }
+      .intro, .result-panel { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="card result-panel" id="result">
+      <div class="result-header">
+        <div>
+          <div class="eyebrow">AI 분석 결과</div>
+          <h1>맞춤형 지원금 추천이 도출됐습니다</h1>
+        </div>
+        <div class="status-pill"><span class="pulse"></span>실시간 분석 완료</div>
+      </div>
+
+      <div class="analysis-box">
+        입력하신 매장 정보 기준으로, 소상공인에게 가장 적합한 공공 지원금 후보를 정리했습니다. 신청 가능성, 기한, 준비 서류까지 한눈에 확인할 수 있도록 구성했습니다.
+      </div>
+
+      <div class="result-grid">
+        <div class="result-card">
+          <strong>지역 창업 지원금</strong>
+          <span>신청 가능성 높음</span>
+          <div class="score">적합도 92%</div>
+        </div>
+        <div class="result-card">
+          <strong>운영비 지원금</strong>
+          <span>매출·인건비 반영 가능</span>
+          <div class="score">적합도 84%</div>
+        </div>
+        <div class="result-card">
+          <strong>디지털 전환 지원금</strong>
+          <span>온라인 예약·배달 연계</span>
+          <div class="score">적합도 76%</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a class="ghost-btn" href="#home">다시 입력하기</a>
+        <a class="ghost-btn" href="#">알림 설정하기</a>
+      </div>
+    </section>
+
+    <section class="card intro" id="home">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">소상공인 AI 에이전트</div>
+          <h1>내 매장에 꼭 맞는 지원금을 1분 만에 확인하세요.</h1>
+          <p class="lead">
+            복잡한 공공 지원금 제도와 규제 정보를 대신 정리해 주는 에이전트입니다.
+            간단한 정보만 입력하면, 가장 적합한 지원금 후보를 바로 제안합니다.
+          </p>
+        </div>
+
+        <div class="form-card">
+          <div class="field">
+            <label for="industry">업종</label>
+            <select id="industry">
+              <option>카페</option>
+              <option>식당</option>
+              <option>미용실</option>
+              <option>소매점</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="region">지역</label>
+            <select id="region">
+              <option>서울</option>
+              <option>부산</option>
+              <option>대구</option>
+              <option>광주</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="size">매장 규모</label>
+            <select id="size">
+              <option>1인~5인</option>
+              <option>6인~10인</option>
+              <option>10인 이상</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="period">운영 기간</label>
+            <select id="period">
+              <option>1년 미만</option>
+              <option>1~3년</option>
+              <option>3년 이상</option>
+            </select>
+          </div>
+
+          <a class="cta" href="#result">맞춤형 지원금 찾기</a>
+          <div class="note">입력한 정보는 추천 결과 도출에만 사용되며, 개인정보는 저장되지 않습니다.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
