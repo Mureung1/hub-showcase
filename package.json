@@ -3,17 +3,24 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+  "engines": {
+    "node": ">=22"
   },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+  "workspaces": [
+    "client",
+    "server",
+    "prototype"
+  ],
+  "scripts": {
+    "dev": "concurrently -n client,server -c blue,green \"npm:dev:client\" \"npm:dev:server\"",
+    "dev:client": "npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "dev:proto": "npm run dev -w prototype",
+    "build": "npm run build -w client",
+    "format": "prettier --write \"client/src/**/*.{js,jsx,css}\" \"server/src/**/*.js\""
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.7"
+    "concurrently": "^9.1.2",
+    "prettier": "^3.4.2"
   }
 }
