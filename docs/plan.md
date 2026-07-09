@@ -21,10 +21,11 @@
 11. [사용자 흐름](#11-사용자-흐름)
 12. [화면 구성](#12-화면-구성)
 13. [화면 흐름](#13-화면-흐름)
-14. [4주 개발 계획](#14-4주-개발-계획)
-15. [개발 작업 흐름](#15-개발-작업-흐름)
-16. [MVP 성공 기준](#16-mvp-성공-기준)
-17. [최종 요약](#17-최종-요약)
+14. [화면 설계 시각 자료](#14-화면-설계-시각-자료)
+15. [4주 개발 계획](#15-4주-개발-계획)
+16. [개발 작업 흐름](#16-개발-작업-흐름)
+17. [MVP 성공 기준](#17-mvp-성공-기준)
+18. [최종 요약](#18-최종-요약)
 
 ---
 
@@ -420,7 +421,53 @@ flowchart LR
 
 ---
 
-## 14. 4주 개발 계획
+## 14. 화면 설계 시각 자료
+
+이 섹션은 StockMate Agent의 화면 흐름, 정보 구조, 핵심 와이어프레임, 예시 UI를 시각적으로 정리한 자료입니다.
+
+### 기획서 표지
+
+![StockMate 기획서 표지](assets/planning-doc/00-cover.png)
+
+### 서비스 한눈에 보기
+
+![서비스 한눈에 보기](assets/planning-doc/01-service-overview.png)
+
+### 화면 흐름
+
+![사용자 흐름](assets/planning-doc/02-user-flow.png)
+
+### 정보 구조
+
+![정보 구조](assets/planning-doc/03-information-architecture.png)
+
+### 와이어프레임: 시작 화면
+
+![온보딩 화면](assets/planning-doc/04-onboarding.png)
+
+### 와이어프레임: 대시보드와 상태 필터
+
+![대시보드와 상태 필터](assets/planning-doc/05-dashboard-filter.png)
+
+### 와이어프레임: 오늘의 브리핑과 발주 추천 카드
+
+![오늘의 브리핑과 발주 추천 카드](assets/planning-doc/06-briefing-reorder-card.png)
+
+### 와이어프레임: 상품 상세 화면
+
+![상품 상세 화면](assets/planning-doc/07-product-detail.png)
+
+### 예시 UI: 대시보드
+
+![예시 UI 대시보드](assets/planning-doc/08-ui-dashboard.png)
+
+### 예시 UI: 오늘의 브리핑
+
+![예시 UI 오늘의 브리핑](assets/planning-doc/09-ui-briefing.png)
+
+---
+
+## 15. 4주 개발 계획
 
 ### 4주 개발 타임라인
 
@@ -440,7 +487,7 @@ flowchart LR
 
 ---
 
-## 15. 개발 작업 흐름
+## 16. 개발 작업 흐름
 
 이 프로젝트는 화면부터 만들기보다 **데이터 준비 → 예측 로직 → 브리핑 생성 → 화면 연결 → 검증** 순서로 구현합니다.
 
@@ -489,7 +536,7 @@ flowchart TD
 
 ---
 
-## 16. MVP 성공 기준
+## 17. MVP 성공 기준
 
 이 MVP는 다음이 가능하면 성공으로 봅니다.
 
@@ -502,7 +549,7 @@ flowchart TD
 
 ---
 
-## 17. 최종 요약
+## 18. 최종 요약
 
 StockMate Agent는 소규모 스마트스토어 셀러가 상품 재고를 직접 하나씩 확인하지 않아도 되도록 돕는 재고관리 에이전트입니다.
 

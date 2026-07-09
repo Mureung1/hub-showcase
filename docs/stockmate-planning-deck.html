@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockMate Agent — 기획서 · UI · 유저플로우 · IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F5EFE4;
+    --paper-deep:#EEE4D2;
+    --ink:#241C14;
+    --ink-soft:#5C5040;
+    --line:#DBCFB8;
+    --gold:#A8722E;
+    --gold-soft:#EFDFC2;
+    --danger:#9C3B2E;
+    --danger-soft:#F3DAD3;
+    --amber:#C0902E;
+    --amber-soft:#F5E6C3;
+    --sage:#4F6B52;
+    --sage-soft:#DEE8DA;
+    --plum:#6E5B7B;
+    --plum-soft:#E7E0ED;
+    --gray:#8B8378;
+    --gray-soft:#E7E2D8;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#E8E1D2;font-family:'Work Sans',sans-serif;color:var(--ink);}
+  .deck{width:960px;margin:0 auto;background:var(--paper);}
+  .display{font-family:'Fraunces',serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .section{padding:64px 60px;border-bottom:1px solid var(--line);}
+  .eyebrow-num{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gold);
+    letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase;
+  }
+  .eyebrow-num .num{
+    width:22px;height:22px;border-radius:50%;background:var(--gold);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;
+  }
+  .section-title{font-family:'Fraunces',serif;font-size:26px;font-weight:700;margin:0 0 6px;}
+  .section-desc{font-size:13.5px;color:var(--ink-soft);margin:0 0 32px;line-height:1.6;}
+
+  /* ---------------- COVER ---------------- */
+  .cover{
+    position:relative;overflow:hidden;
+    background:var(--ink);color:var(--paper);
+    padding:80px 60px 64px;
+    min-height:420px;
+    display:flex;flex-direction:column;justify-content:flex-end;
+  }
+  .cover::before{
+    content:"";position:absolute;top:-60px;right:-60px;width:280px;height:280px;
+    border-radius:50%;background:rgba(168,114,46,0.35);
+  }
+  .cover::after{
+    content:"";position:absolute;bottom:-90px;right:120px;width:180px;height:180px;
+    border-radius:50%;background:rgba(168,114,46,0.18);
+  }
+  .cover-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--gold-soft);text-transform:uppercase;position:relative;z-index:1;}
+  .cover-title{font-family:'Fraunces',serif;font-size:44px;font-weight:700;margin:14px 0 10px;position:relative;z-index:1;letter-spacing:-0.01em;}
+  .cover-sub{font-size:13.5px;color:#D8CDB8;margin-bottom:22px;position:relative;z-index:1;}
+  .cover-sub b{color:#fff;}
+  .cover-line{width:48px;height:2px;background:var(--gold);margin-bottom:22px;position:relative;z-index:1;}
+  .cover-desc{font-size:14.5px;color:#E8E1D2;max-width:560px;line-height:1.7;margin-bottom:28px;position:relative;z-index:1;}
+  .cover-meta{font-size:12px;color:#B8AC94;position:relative;z-index:1;}
+
+  /* ---------------- 00 서비스 한눈에 ---------------- */
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .panel{border:1px solid var(--line);border-radius:10px;background:#fff;padding:22px 22px 18px;}
+  .panel-title{font-size:13px;font-weight:700;margin-bottom:16px;color:var(--ink);}
+  .panel-title.danger{color:var(--danger);}
+  .panel-title.gold{color:var(--gold);}
+  .problem-item{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line);}
+  .problem-item:first-child{border-top:none;padding-top:0;}
+  .p-icon{
+    width:30px;height:30px;border-radius:8px;background:var(--danger-soft);color:var(--danger);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;
+  }
+  .p-text .t1{font-size:13px;font-weight:600;}
+  .p-text .t2{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+
+  .flow-step{display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px 0;}
+  .flow-step .s-icon{
+    width:34px;height:34px;border-radius:8px;background:var(--gold-soft);color:var(--gold);
+    display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:8px;
+  }
+  .flow-step .t1{font-size:12.5px;font-weight:600;}
+  .flow-step .t2{font-size:11px;color:var(--ink-soft);margin-top:1px;}
+  .flow-arrow-v{color:var(--line);font-size:14px;margin:2px 0;}
+
+  /* ---------------- 01 User Flow ---------------- */
+  .flow-row{display:flex;align-items:center;gap:0;margin-bottom:26px;}
+  .flow-node{
+    width:118px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;text-align:center;
+  }
+  .node-icon{
+    width:52px;height:52px;border-radius:12px;background:var(--paper-deep);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:8px;color:var(--gold);
+  }
+  .node-icon.hi{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .node-t1{font-size:12px;font-weight:700;line-height:1.3;}
+  .node-t2{font-size:10px;color:var(--ink-soft);margin-top:2px;}
+  .flow-arrow{
+    flex:1;height:1px;background:var(--line);position:relative;margin:0 -4px;
+  }
+  .flow-arrow::after{
+    content:"›";position:absolute;right:-2px;top:50%;transform:translateY(-58%);
+    color:var(--gold);font-size:18px;font-weight:700;
+  }
+
+  .subflow-box{border:1px solid var(--line);border-radius:10px;background:#fff;padding:16px 20px;margin-top:8px;}
+  .subflow-title{font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;}
+  .subflow-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .subflow-item{display:flex;gap:10px;align-items:flex-start;}
+  .subflow-item .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:6px;flex-shrink:0;}
+  .subflow-item .t1{font-size:12px;font-weight:600;}
+  .subflow-item .t2{font-size:10.5px;color:var(--ink-soft);margin-top:1px;}
+
+  /* ---------------- 02 IA tree ---------------- */
+  .ia-root{
+    width:200px;margin:0 auto 28px;text-align:center;
+    background:var(--ink);color:var(--paper);font-size:13px;font-weight:700;
+    padding:12px;border-radius:8px;
+  }
+  .ia-branch{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;position:relative;}
+  .ia-branch::before{
+    content:"";position:absolute;top:-14px;left:16.6%;right:16.6%;height:1px;background:var(--line);
+  }
+  .ia-col{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;position:relative;}
+  .ia-col::before{
+    content:"";position:absolute;top:-14px;left:50%;width:1px;height:14px;background:var(--line);
+  }
+  .ia-col-head{
+    padding:10px 14px;font-size:12px;font-weight:700;text-align:center;
+    background:var(--gold-soft);color:var(--gold);
+  }
+  .ia-col-head.core{background:var(--ink);color:var(--paper);}
+  .ia-item{padding:10px 14px;font-size:11.5px;border-top:1px solid var(--line);display:flex;gap:8px;}
+  .ia-item .idx{color:var(--gold);font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:10.5px;}
+
+  /* ---------------- Wireframe sections ---------------- */
+  .wf-row{display:flex;gap:36px;align-items:flex-start;}
+  .wf-mock{width:230px;flex-shrink:0;}
+  .wf-mock-frame{
+    border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px;
+    box-shadow:0 4px 14px rgba(36,28,20,0.06);
+  }
+  .wf-mock-label{text-align:center;font-size:11px;color:var(--ink-soft);margin-top:10px;font-weight:600;}
+  .wf-notes{flex:1;display:flex;flex-direction:column;gap:14px;padding-top:6px;}
+  .wf-note{display:flex;gap:12px;}
+  .wf-note .n-num{
+    width:22px;height:22px;border-radius:50%;background:var(--gold);color:#fff;font-size:11px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .wf-note .n-t1{font-size:13px;font-weight:600;}
+  .wf-note .n-t2{font-size:11.5px;color:var(--ink-soft);margin-top:2px;line-height:1.5;}
+  .wf-group{display:flex;gap:28px;margin-bottom:44px;}
+  .wf-group:last-child{margin-bottom:0;}
+
+  /* mini UI atoms for mocks */
+  .mini-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:10.5px;}
+  .mini-row:first-child{border-top:none;}
+  .mini-btn{background:var(--ink);color:var(--paper);font-size:10.5px;font-weight:600;text-align:center;padding:9px;border-radius:6px;margin-top:6px;}
+  .mini-btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);}
+  .mini-tag{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;}
+  .mini-tag.danger{background:var(--danger-soft);color:var(--danger);}
+  .mini-tag.amber{background:var(--amber-soft);color:var(--amber);}
+  .mini-tag.sage{background:var(--sage-soft);color:var(--sage);}
+  .mini-tag.plum{background:var(--plum-soft);color:var(--plum);}
+  .mini-stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+  .mini-stat{border:1px solid var(--line);border-radius:6px;padding:8px 6px;text-align:center;}
+  .mini-stat .n{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;}
+  .mini-stat .l{font-size:8px;color:var(--ink-soft);margin-top:2px;}
+  .mini-ticket{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--paper);}
+  .mini-ticket .r{font-size:9px;color:var(--gold);font-weight:700;font-family:'IBM Plex Mono',monospace;}
+  .mini-ticket .nm{font-family:'Fraunces',serif;font-size:13px;font-weight:700;margin:2px 0 4px;}
+  .mini-ticket .rs{font-size:9.5px;color:var(--ink-soft);line-height:1.5;}
+
+  /* ---------------- 07 closing summary ---------------- */
+  .closing{
+    background:var(--ink);color:var(--paper);padding:52px 60px 60px;position:relative;overflow:hidden;
+  }
+  .closing::before{content:"";position:absolute;bottom:-70px;left:-50px;width:220px;height:220px;border-radius:50%;background:rgba(168,114,46,0.25);}
+  .closing .eyebrow-num{color:var(--gold-soft);}
+  .closing .eyebrow-num .num{background:var(--gold-soft);color:var(--ink);}
+  .closing .section-title{color:#fff;}
+  .closing-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;position:relative;z-index:1;margin-top:24px;}
+  .closing-panel{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);border-radius:10px;padding:20px 22px;}
+  .closing-panel-head{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;margin-bottom:14px;}
+  .closing-panel-head .chip{width:8px;height:8px;border-radius:50%;background:var(--gold);}
+  .closing-item{display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(255,255,255,0.1);}
+  .closing-item:first-child{border-top:none;}
+  .closing-item .wk{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gold-soft);flex-shrink:0;width:34px;
+  }
+  .closing-item .tx{font-size:12px;color:#E8E1D2;line-height:1.5;}
+  .closing-quote{
+    margin-top:26px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-style:italic;
+    color:#EFDFC2;position:relative;z-index:1;
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- ===== COVER ===== -->
+  <div class="cover">
+    <div class="cover-eyebrow">프로젝트 · StockMate</div>
+    <div class="cover-title">재고소진 예측 · 발주 브리핑 에이전트</div>
+    <div class="cover-sub">화면 설계 문서 — <b>User Flow · IA · Wireframe</b></div>
+    <div class="cover-line"></div>
+    <div class="cover-desc">눈앞의 재고를 확인하며, 매일 기준으로 지금 발주해야 하는지 알려주는 셀러용 재고 브리핑 에이전트입니다.</div>
+    <div class="cover-meta">모닝루틴 · 소규모 스마트스토어 셀러 대상 · AI Agent Challenge</div>
+  </div>
+
+  <!-- ===== 00 서비스 한눈에 ===== -->
+  <div class="section">
+    <div class="eyebrow-num"><span class="num">00</span> 서비스 한눈에</div>
+    <h2 class="section-title">무엇을 해결하고, 어떻게 도달하나</h2>
+    <p class="section-desc">소규모 셀러가 매일 겪는 재고 판단 문제를 정의하고, StockMate가 그 문제를 해결하는 세 단계를 정리했어요.</p>
+
+    <div class="twocol">
+      <div class="panel">
+        <div class="panel-title danger">무엇을 해결하나</div>
+        <div class="problem-item">
+          <div class="p-icon">⚠</div>
+          <div class="p-text"><div class="t1">잘 팔리는 상품이 갑자기 품절</div><div class="t2">판매 속도를 매일 확인하지 못해 대응 시점을 놓침</div></div>
+        </div>
+        <div class="problem-item">
+          <div class="p-icon">📦</div>
+          <div class="p-text"><div class="t1">감으로 발주해 과잉재고 발생</div><div class="t2">리드타임을 고려한 발주 판단 기준이 없음</div></div>
+        </div>
+        <div class="problem-item">
+          <div class="p-icon">⏱</div>
+          <div class="p-text"><div class="t1">상품 수가 늘수록 확인이 벅참</div><div class="t2">40개 SKU를 매일 직접 훑어볼 시간이 없음</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title gold">StockMate가 도달하는 방식</div>
+        <div class="flow-step">
+          <div class="s-icon">①</div>
+          <div class="t1">인지 — 데이터 확인</div>
+          <div class="t2">판매량 · 재고 · 리드타임 · 추세</div>
+        </div>
+        <div class="flow-arrow-v">↓</div>
+        <div class="flow-step">
+          <div class="s-icon">②</div>
+          <div class="t1">판단 — 상태 분류</div>
+          <div class="t2">품절위험 · 발주필요 · 과잉재고 등 6단계</div>
+        </div>
+        <div class="flow-arrow-v">↓</div>
+        <div class="flow-step">
+          <div class="s-icon">③</div>
+          <div class="t1">제안 — 오늘의 브리핑</div>
+          <div class="t2">우선순위 3~5개 + 추천 행동</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 01 User Flow ===== -->
+  <div class="section">
+    <div class="eyebrow-num"><span class="num">01</span> 화면 흐름 (User Flow)</div>
+    <h2 class="section-title">접속 → 데이터 입력 → 분석 → 대시보드 → 브리핑 → 발주 결정</h2>
+    <p class="section-desc">더미 데이터 또는 CSV 업로드로 시작해, 오늘의 브리핑을 확인하고 사용자가 최종 발주 여부를 결정하는 흐름이에요.</p>
+
+    <div class="flow-row">
+      <div class="flow-node">
+        <div class="node-icon">▷</div>
+        <div class="node-t1">서비스 접속</div>
+        <div class="node-t2">홈 화면</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node">
+        <div class="node-icon">⇪</div>
+        <div class="node-t1">데이터 입력</div>
+        <div class="node-t2">더미 · CSV 선택</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node">
+        <div class="node-icon hi">≋</div>
+        <div class="node-t1">분석 중</div>
+        <div class="node-t2">소진일 · 상태 계산</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node">
+        <div class="node-icon">▤</div>
+        <div class="node-t1">대시보드</div>
+        <div class="node-t2">전체 재고 확인</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node">
+        <div class="node-icon">✎</div>
+        <div class="node-t1">오늘의 브리핑</div>
+        <div class="node-t2">우선순위 3~5개</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node">
+        <div class="node-icon">✓</div>
+        <div class="node-t1">발주 여부 결정</div>
+        <div class="node-t2">사용자 최종 판단</div>
+      </div>
+    </div>
+
+    <div class="subflow-box">
+      <div class="subflow-title">보조 흐름</div>
+      <div class="subflow-grid">
+        <div class="subflow-item"><div class="dot"></div><div><div class="t1">CSV 형식 오류</div><div class="t2">업로드 실패 시 더미 데이터로 전환 안내</div></div></div>
+        <div class="subflow-item"><div class="dot"></div><div><div class="t1">판매 이력 7일 미만</div><div class="t2">'데이터 수집 중'으로 분류, 브리핑 제외</div></div></div>
+        <div class="subflow-item"><div class="dot"></div><div><div class="t1">과잉재고 판단 시</div><div class="t2">상품 상세에서 프로모션 검토 제안</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 02 IA ===== -->
+  <div class="section">
+    <div class="eyebrow-num"><span class="num">02</span> 화면 목록 (Information Architecture)</div>
+    <h2 class="section-title">3개 영역, 8개 화면 구조</h2>
+    <p class="section-desc">서비스를 구성하는 전체 화면 구조예요. 핵심 영역은 대시보드와 오늘의 브리핑입니다.</p>
+
+    <div class="ia-root">StockMate Agent</div>
+    <div class="ia-branch">
+      <div class="ia-col">
+        <div class="ia-col-head">① 시작 (온보딩)</div>
+        <div class="ia-item"><span class="idx">S1</span> 홈 화면</div>
+        <div class="ia-item"><span class="idx">S2</span> 더미 데이터 불러오기</div>
+        <div class="ia-item"><span class="idx">S3</span> CSV 업로드</div>
+      </div>
+      <div class="ia-col">
+        <div class="ia-col-head core">② 대시보드 (핵심)</div>
+        <div class="ia-item"><span class="idx">S4</span> 전체 재고 대시보드</div>
+        <div class="ia-item"><span class="idx">S5</span> 상태 필터</div>
+        <div class="ia-item"><span class="idx">S6</span> 상품 상세</div>
+      </div>
+      <div class="ia-col">
+        <div class="ia-col-head core">③ 브리핑 (차별점)</div>
+        <div class="ia-item"><span class="idx">S7</span> 오늘의 브리핑</div>
+        <div class="ia-item"><span class="idx">S8</span> 발주 추천 카드</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 03 와이어프레임 · 시작 ===== -->
+  <div class="section">
+    <div class="eyebrow-num"><span class="num">03</span> 와이어프레임 · 시작 (온보딩)</div>
+    <h2 class="section-title">S1 홈 · S2 데이터 선택 · S3 업로드</h2>
+    <p class="section-desc">서비스 접속 직후, 어떤 데이터로 시작할지 선택하는 첫 화면들이에요.</p>
+
+    <div class="wf-group">
+      <div class="wf-mock">
+        <div class="wf-mock-frame" style="text-align:center;padding-top:26px;padding-bottom:26px;">
+          <div style="font-family:'Fraunces',serif;font-weight:700;font-size:15px;">StockMate Agent</div>
+          <div style="font-size:9.5px;color:var(--ink-soft);margin:6px 0 18px;">오늘 발주할 상품, 알려드릴게요</div>
+          <div class="mini-btn">더미 데이터로 시작하기</div>
+          <div class="mini-btn ghost">CSV 업로드하기</div>
+        </div>
+        <div class="wf-mock-label">S1 · 홈 화면</div>
+      </div>
+      <div class="wf-notes">
+        <div class="wf-note"><div class="n-num">1</div><div><div class="n-t1">진입 즉시 가치 제안</div><div class="n-t2">"오늘 발주할 상품을 알려드릴게요"로 서비스 목적을 한 문장에 담아요.</div></div></div>
+        <div class="wf-note"><div class="n-num">2</div><div><div class="n-t1">두 가지 시작 경로</div><div class="n-t2">API 연동 없이도 더미 데이터로 바로 체험할 수 있게 해요.</div></div></div>
+        <div class="wf-note"><div class="n-num">3</div><div><div class="n-t1">CSV 업로드 선택 시</div><div class="n-t2">order_date, product_id 등 필요한 컬럼 안내 화면으로 연결돼요.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 04 와이어프레임 · 대시보드 ===== -->
+  <div class="section">
+    <div class="eyebrow-num"><span class="num">04</span> 와이어프레임 · 대시보드 (핵심)</div>
+    <h2 class="section-title">S4 대시보드 · S5 상태 필터</h2>
+    <p class="section-desc">40개 상품의 상태를 한눈에 보여주는 화면. 핵심 기능 1 '재고 소진 예측 및 상태 분류'가 여기서 드러나요.</p>
+
+    <div class="wf-group">
+      <div class="wf-mock">
+        <div class="wf-mock-frame">
+          <div class="mini-stat-row">
+            <div class="mini-stat"><div class="n">40</div><div class="l">전체</div></div>
+            <div class="mini-stat" style="border-color:var(--danger);"><div class="n" style="color:var(--danger);">3</div><div class="l">품절위험</div></div>
+            <div class="mini-stat" style="border-color:var(--amber);"><div class="n" style="color:var(--amber);">5</div><div class="l">발주필요</div></div>
+            <div class="mini-stat" style="border-color:var(--plum);"><div class="n" style="color:var(--plum);">4</div><div class="l">과잉재고</div></div>
+          </div>
+          <div class="mini-row"><span>콜롬비아 원두 250g</span><span class="mini-tag danger">품절위험</span></div>
+          <div class="mini-row"><span>드립백 10입</span><span class="mini-tag amber">발주필요</span></div>
+          <div class="mini-row"><span>얼그레이 티백 20입</span><span class="mini-tag plum">과잉재고</span></div>
+          <div class="mini-row"><span>시그니처 머그컵</span><span class="mini-tag sage">정상</span></div>
+        </div>
+        <div class="wf-mock-label">S4 · 대시보드</div>
+      </div>
+      <div class="wf-notes">
+        <div class="wf-note"><div class="n-num">1</div><div><div class="n-t1">상단 통계 스트립</div><div class="n-t2">품절위험 · 발주필요 · 과잉재고 수를 색으로 즉시 구분해요.</div></div></div>
+        <div class="wf-note"><div class="n-num">2</div><div><div class="n-t1">상품 리스트 + 상태 태그</div><div class="n-t2">6가지 상태(품절위험/발주필요/정상/과잉재고/판매급증/수집중)를 컬러 태그로 표시해요.</div></div></div>
+        <div class="wf-note"><div class="n-num">3</div><div><div class="n-t1">상태 필터 (S5)</div><div class="n-t2">칩 버튼으로 원하는 상태만 골라볼 수 있어요.</div></div></div>
+        <div class="wf-note"><div class="n-num">4</div><div><div class="n-t1">상품 클릭 → 상세(S6)</div><div class="n-t2">소진 예상일 계산 근거를 상세 화면에서 확인해요.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 05 와이어프레임 · 브리핑 ===== -->
+  <div class="section">
+    <div class="eyebrow-num"><span class="num">05</span> 와이어프레임 · 오늘의 브리핑 (차별점)</div>
+    <h2 class="section-title">S7 브리핑 · S8 발주 추천 카드</h2>
+    <p class="section-desc">서비스를 단순 재고표가 아니라 재고 담당 에이전트처럼 보이게 만드는 핵심 화면이에요.</p>
+
+    <div class="wf-group">
+      <div class="wf-mock">
+        <div class="wf-mock-frame">
+          <div class="mini-ticket">
+            <div class="r">PRIORITY 01</div>
+            <div class="nm">과테말라 원두 250g</div>
+            <div class="rs">판매 속도 대비 2일 뒤 품절 예상. 리드타임 5일이라 오늘 발주해야 해요.</div>
+          </div>
+          <div class="mini-ticket">
+            <div class="r">PRIORITY 02</div>
+            <div class="nm">콜롬비아 원두 250g</div>
+            <div class="rs">최근 7일 판매 60% 증가. 4일 뒤 품절 예상돼요.</div>
+          </div>
+        </div>
+        <div class="wf-mock-label">S7 · 오늘의 브리핑</div>
+      </div>
+      <div class="wf-notes">
+        <div class="wf-note"><div class="n-num">1</div><div><div class="n-t1">우선순위 3~5개만 노출</div><div class="n-t2">40개 전체가 아니라 오늘 확인할 상품만 골라 보여줘 판단 피로를 줄여요.</div></div></div>
+        <div class="wf-note"><div class="n-num">2</div><div><div class="n-t1">이유를 문장으로 설명</div><div class="n-t2">"왜 확인해야 하는지"를 숫자가 아니라 문장으로 전달해요.</div></div></div>
+        <div class="wf-note"><div class="n-num">3</div><div><div class="n-t1">추천 발주 수량 포함(S8)</div><div class="n-t2">발주 확인 버튼을 누르면 추천 수량 카드로 연결돼요.</div></div></div>
+        <div class="wf-note"><div class="n-num">4</div><div><div class="n-t1">최종 결정은 사용자 몫</div><div class="n-t2">자동 발주는 없고, 결정 버튼을 눌러야 다음 단계로 진행돼요.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 06 와이어프레임 · 상세 ===== -->
+  <div class="section">
+    <div class="eyebrow-num"><span class="num">06</span> 와이어프레임 · 상품 상세</div>
+    <h2 class="section-title">S6 상품 상세 화면</h2>
+    <p class="section-desc">특정 상품의 판단 근거를 자세히 확인하고 싶을 때 들어가는 화면이에요.</p>
+
+    <div class="wf-group">
+      <div class="wf-mock">
+        <div class="wf-mock-frame">
+          <div class="mini-row"><span>상품명</span><span style="font-weight:700;">콜롬비아 원두 250g</span></div>
+          <div class="mini-row"><span>현재 재고</span><span class="mono">18개</span></div>
+          <div class="mini-row"><span>일평균 판매</span><span class="mono">4.5개</span></div>
+          <div class="mini-row"><span>리드타임</span><span class="mono">5일</span></div>
+          <div class="mini-row"><span>상태</span><span class="mini-tag danger">품절위험</span></div>
+          <div class="mini-btn">추천 발주 수량 30개 확인</div>
+        </div>
+        <div class="wf-mock-label">S6 · 상품 상세</div>
+      </div>
+      <div class="wf-notes">
+        <div class="wf-note"><div class="n-num">1</div><div><div class="n-t1">예측 근거 투명하게 노출</div><div class="n-t2">일평균 판매량, 리드타임 등 계산에 쓰인 값을 그대로 보여줘요.</div></div></div>
+        <div class="wf-note"><div class="n-num">2</div><div><div class="n-t1">대시보드 · 브리핑에서 진입</div><div class="n-t2">두 화면 어디서든 상품을 누르면 이 화면으로 연결돼요.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 07 설계 요약 ===== -->
+  <div class="closing">
+    <div class="eyebrow-num"><span class="num">07</span> 설계 요약 · 무엇부터 만드나</div>
+    <h2 class="section-title">4주 MVP, 핵심 기능 2개부터</h2>
+
+    <div class="closing-grid">
+      <div class="closing-panel">
+        <div class="closing-panel-head"><span class="chip"></span> MVP · 4주 내 구현</div>
+        <div class="closing-item"><span class="wk">1주</span><span class="tx">기획 확정, 더미 상품 40개, CSV 컬럼 구조 정의</span></div>
+        <div class="closing-item"><span class="wk">2주</span><span class="tx">소진 예상일 · 상태 분류 예측 로직 구현</span></div>
+        <div class="closing-item"><span class="wk">3주</span><span class="tx">홈 · 대시보드 · 브리핑 · 상세 화면 구현</span></div>
+        <div class="closing-item"><span class="wk">4주</span><span class="tx">전체 연결, 예외 처리, 데모 준비</span></div>
+      </div>
+      <div class="closing-panel">
+        <div class="closing-panel-head"><span class="chip"></span> 확장 · MVP 검증 후</div>
+        <div class="closing-item"><span class="wk">E1</span><span class="tx">네이버 커머스 API 실제 연동</span></div>
+        <div class="closing-item"><span class="wk">E2</span><span class="tx">카카오톡 · 이메일 알림 발송</span></div>
+        <div class="closing-item"><span class="wk">E3</span><span class="tx">사용자 계정 · 로그인 기능</span></div>
+        <div class="closing-item"><span class="wk">E4</span><span class="tx">규칙 기반 → 머신러닝 수요 예측 고도화</span></div>
+      </div>
+    </div>
+
+    <div class="closing-quote">"재고표가 아니라, 오늘 확인할 것만 알려주는 에이전트를 만든다"</div>
+  </div>
+
+</div>
+</body>
+</html>
