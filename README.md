@@ -28,7 +28,7 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 - [Git 작업 규칙](docs/development/git-workflow.md)
 - [LocalTwin Dev Harness](docs/development/harness.md)
 - [검증 가이드](docs/development/validation.md)
-- [1주차 태스크 완료 보고서](docs/development/week1-completion-report.md)
+- [1주차 목요일 진행 보고서](docs/development/week1-completion-report.md)
 
 ### 디자인 시스템
 
