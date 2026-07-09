@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CV2PF - 완료</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#d5e3fc",
+                        "on-primary-container": "#eeefff",
+                        "primary-container": "#2563eb",
+                        "primary": "#004ac6",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "surface-container-high": "#dce9ff",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#005137",
+                        "inverse-surface": "#233144",
+                        "tertiary-fixed": "#ffddb8",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#ccdbf3",
+                        "on-surface-variant": "#434655",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#b4c5ff",
+                        "on-tertiary-fixed": "#2a1700",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#eff4ff",
+                        "surface-variant": "#d5e3fc",
+                        "surface-bright": "#f8f9ff",
+                        "outline-variant": "#c3c6d7",
+                        "secondary-fixed-dim": "#68dba9",
+                        "surface-container": "#e6eeff",
+                        "secondary": "#006c4a",
+                        "on-surface": "#0d1c2e",
+                        "surface-tint": "#0053db",
+                        "secondary-fixed": "#85f8c4",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "background": "#f8f9ff",
+                        "tertiary-container": "#996100",
+                        "on-tertiary-container": "#ffeedd",
+                        "surface": "#f8f9ff",
+                        "on-background": "#0d1c2e",
+                        "on-primary-fixed": "#00174b",
+                        "on-secondary-container": "#00714e",
+                        "secondary-container": "#82f5c1",
+                        "primary-fixed": "#dbe1ff",
+                        "outline": "#737686",
+                        "on-secondary-fixed": "#002114",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#eaf1ff",
+                        "tertiary": "#784b00",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "success": "#22c55e",
+                        "on-success": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "0.5rem",
+                        "md": "1rem",
+                        "xs": "0.25rem",
+                        "container-max": "1200px",
+                        "xl": "2rem",
+                        "gutter": "1.5rem",
+                        "lg": "1.5rem",
+                        "xxl": "3rem",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-[#F8FAFC] text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<nav class="bg-surface border-b border-outline-variant shadow-sm w-full fixed top-0 z-50">
+<div class="flex justify-between items-center w-full px-gutter h-16 max-w-container-max mx-auto">
+<div class="flex items-center gap-md">
+<span class="text-headline-md font-headline-md font-extrabold text-primary">CV2PF</span>
+</div>
+<div class="hidden md:flex gap-md absolute left-1/2 -translate-x-1/2 h-full items-center">
+<!-- Stepper in Header -->
+<div class="flex items-center space-x-2">
+<div class="w-6 h-6 rounded-full border border-outline flex items-center justify-center bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">1</div>
+<div class="w-8 h-px bg-outline-variant"></div>
+<div class="w-6 h-6 rounded-full border border-outline flex items-center justify-center bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">2</div>
+<div class="w-8 h-px bg-outline-variant"></div>
+<div class="w-6 h-6 rounded-full border border-outline flex items-center justify-center bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">3</div>
+<div class="w-8 h-px bg-outline-variant"></div>
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary font-label-sm text-label-sm">4</div>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<a class="text-on-surface-variant hover:text-primary transition-colors text-label-md font-label-md hidden md:block" href="#">도움말/가이드</a>
+<button class="text-primary hover:text-primary-fixed-dim transition-colors text-label-md font-label-md">임시 저장</button>
+<img alt="User Profile" class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="A small circular profile picture of a young professional wearing business casual attire, neutral background, modern lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCn-cBuPjQ_qlcRy0fOTfW95Yf1p045kVGDuNlHya_kd6WA5qBAMQ_evPZTBVD4G-rftB9ebEF9o85xd-3WKl38ZZ4rZHqhfy3Sb-9zp0YDv3YjCCcDvJFFEVO5IKVx2J2cnWmrJJ5K8GaeW0NODoStN5hVsl2r7H4EejWrKQvMI2kU0ybkEHcrR4oxv1fqgJRhl8NrDTNc5OD8odE8H8uStZHjOoKOjyspzM3UyeHHurdJ2aHxOdfH"/>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="w-full h-1 bg-surface-variant absolute bottom-0 left-0">
+<div class="h-full bg-primary w-full"></div>
+</div>
+</nav>
+<div class="flex flex-1 pt-16">
+<!-- SideNavBar -->
+<aside class="hidden lg:flex flex-col h-screen fixed left-0 top-16 py-lg bg-surface-container-low shadow-sm docked w-64 z-40">
+<div class="px-gutter mb-xl">
+<h2 class="text-headline-sm font-headline-sm text-on-surface">프로젝트 흐름</h2>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-1">4단계 / 총 4단계</p>
+</div>
+<nav class="flex flex-col gap-sm flex-1">
+<a class="flex items-center gap-md text-on-surface-variant p-3 mx-2 hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+<span class="text-label-md font-label-md">이력서 업로드</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant p-3 mx-2 hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="palette">palette</span>
+<span class="text-label-md font-label-md">디자인 선택</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant p-3 mx-2 hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="text-label-md font-label-md">생성</span>
+</a>
+<a class="flex items-center gap-md bg-primary-container text-on-primary-container rounded-lg p-3 mx-2 opacity-80 transition-all scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-label-md font-label-md">완료</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 lg:ml-64 p-gutter md:p-xl max-w-container-max mx-auto w-full flex flex-col gap-xl">
+<!-- Success Header -->
+<div class="flex flex-col items-center justify-center text-center space-y-md animate-[fadeIn_0.5s_ease-out]">
+<div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-green-600 text-4xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<h1 class="text-headline-lg md:text-display-lg font-headline-lg md:font-display-lg text-on-surface">포트폴리오가 완성되었습니다!</h1>
+<p class="text-body-lg font-body-lg text-on-surface-variant max-w-2xl">
+                    전문적인 포트폴리오가 성공적으로 생성되었습니다. 아래에서 검토하고 소스 파일을 다운로드하여 호스팅 서비스에 배포하세요.
+                </p>
+</div>
+<!-- Preview / Code Container (Bento/Card Style) -->
+<div class="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col h-[600px] mt-md">
+<!-- Tab Switcher Header -->
+<div class="border-b border-outline-variant bg-surface-bright flex justify-between items-center px-lg py-sm">
+<div class="flex space-x-md">
+<button class="text-primary border-b-2 border-primary pb-2 pt-2 px-2 text-label-md font-label-md transition-colors">
+                            라이브 미리보기
+                        </button>
+<button class="text-on-surface-variant hover:text-primary pb-2 pt-2 px-2 text-label-md font-label-md transition-colors">
+                            HTML 코드
+                        </button>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">devices</span>
+<span class="text-label-sm font-label-sm">데스크톱 뷰</span>
+</div>
+</div>
+<!-- Content Area -->
+<div class="flex-1 bg-gray-50 relative overflow-hidden flex flex-col p-md">
+<!-- Iframe-like Mockup Container for "Minimal Clean" Theme -->
+<div class="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 w-full max-w-4xl mx-auto overflow-hidden flex flex-col relative">
+<!-- Browser Chrome Mockup -->
+<div class="h-8 bg-gray-100 border-b border-gray-200 flex items-center px-3 space-x-2">
+<div class="w-3 h-3 rounded-full bg-gray-300"></div>
+<div class="w-3 h-3 rounded-full bg-gray-300"></div>
+<div class="w-3 h-3 rounded-full bg-gray-300"></div>
+<div class="flex-1 ml-4 bg-white rounded text-[10px] text-gray-400 px-2 py-0.5 flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-1">lock</span>
+                                portfolio.kimchulsoo.dev
+                            </div>
+</div>
+<!-- Inner Portfolio Mockup -->
+<div class="flex-1 overflow-y-auto p-8 font-sans">
+<!-- Hero Section Mockup (Minimal Clean) -->
+<header class="flex justify-between items-center mb-16">
+<div class="font-bold text-xl tracking-tight text-gray-900">KC.</div>
+<nav class="space-x-6 text-sm font-medium text-gray-500">
+<a class="text-gray-900" href="#">작업</a>
+<a href="#">소개</a>
+<a href="#">이력서</a>
+</nav>
+</header>
+<div class="max-w-2xl mt-24">
+<h2 class="text-5xl font-extrabold text-gray-900 tracking-tight leading-tight mb-6">
+                                    김철수
+                                </h2>
+<h3 class="text-2xl text-gray-500 font-medium mb-8">
+                                    시니어 UX 디자이너
+                                </h3>
+<p class="text-lg text-gray-600 mb-10 leading-relaxed">
+                                    저는 사용자의 니즈와 비즈니스 목표의 균형을 맞추는 디지털 경험을 제작하며, 미니멀리스트 인터페이스와 복잡한 시스템 디자인을 전문으로 합니다.
+                                </p>
+<button class="px-6 py-3 bg-gray-900 text-white rounded-md font-medium hover:bg-gray-800 transition-colors">
+                                    프로젝트 보기
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Buttons Footer -->
+<div class="flex flex-col md:flex-row justify-center items-center gap-md mt-lg pb-xl">
+<button class="w-full md:w-auto px-xl py-3 bg-[#22c55e] hover:bg-green-600 text-white rounded-lg font-label-md text-label-md shadow-sm transition-all flex items-center justify-center gap-2 transform hover:-translate-y-0.5">
+<span class="material-symbols-outlined">download</span>
+                    HTML 파일 다운로드
+                </button>
+<button class="w-full md:w-auto px-lg py-3 border border-outline hover:border-primary hover:text-primary text-on-surface rounded-lg font-label-md text-label-md transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">content_copy</span>
+                    코드 복사
+                </button>
+<button class="w-full md:w-auto px-lg py-3 border border-outline hover:bg-surface-variant text-on-surface rounded-lg font-label-md text-label-md transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">add</span>
+                    새 프로젝트 시작
+                </button>
+</div>
+</main>
+</div>
+<style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</body></html>

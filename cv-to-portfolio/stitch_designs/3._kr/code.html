@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Step 3: Generation - CV2PF</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#ffeedd",
+                        "outline-variant": "#c3c6d7",
+                        "secondary-fixed-dim": "#68dba9",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#ccdbf3",
+                        "on-surface": "#0d1c2e",
+                        "on-primary-container": "#eeefff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "inverse-primary": "#b4c5ff",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "tertiary-container": "#996100",
+                        "secondary-fixed": "#85f8c4",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "secondary": "#006c4a",
+                        "on-secondary-fixed": "#002114",
+                        "surface-bright": "#f8f9ff",
+                        "surface-tint": "#0053db",
+                        "primary": "#004ac6",
+                        "inverse-surface": "#233144",
+                        "on-primary": "#ffffff",
+                        "on-background": "#0d1c2e",
+                        "tertiary-fixed": "#ffddb8",
+                        "surface-variant": "#d5e3fc",
+                        "surface-container-low": "#eff4ff",
+                        "tertiary": "#784b00",
+                        "on-secondary-container": "#00714e",
+                        "inverse-on-surface": "#eaf1ff",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "outline": "#737686",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-primary-fixed": "#00174b",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#005137",
+                        "surface-container-highest": "#d5e3fc",
+                        "surface": "#f8f9ff",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#434655",
+                        "background": "#f8f9ff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "secondary-container": "#82f5c1",
+                        "surface-container-high": "#dce9ff",
+                        "primary-container": "#2563eb",
+                        "surface-container": "#e6eeff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "0.25rem",
+                        "base": "4px",
+                        "sm": "0.5rem",
+                        "xxl": "3rem",
+                        "container-max": "1200px",
+                        "xl": "2rem",
+                        "md": "1rem",
+                        "lg": "1.5rem",
+                        "gutter": "1.5rem"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter", "sans-serif"],
+                        "label-sm": ["Inter", "sans-serif"],
+                        "display-lg": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "headline-md": ["Inter", "sans-serif"],
+                        "headline-lg-mobile": ["Inter", "sans-serif"],
+                        "headline-lg": ["Inter", "sans-serif"],
+                        "label-md": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .console-text { font-family: monospace; }
+        @keyframes pulse-opacity {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-slow { animation: pulse-opacity 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        .spin-slow { animation: spin 2s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .typewriter p {
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: .15em solid #00ff00;
+            margin: 0;
+            animation: typing 1.5s steps(40, end), blink-caret .75s step-end infinite;
+            display: inline-block;
+        }
+        @keyframes typing { from { width: 0 } to { width: 100% } }
+        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #00ff00; } }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-full flex flex-col antialiased">
+<!-- TopNavBar -->
+<header class="bg-surface border-b border-outline-variant shadow-sm w-full z-50 relative flex justify-between items-center w-full px-gutter h-16 max-w-container-max mx-auto">
+<div class="flex items-center gap-md">
+<span class="text-headline-md font-headline-md font-extrabold text-primary">CV2PF</span>
+</div>
+<div class="hidden md:flex items-center gap-lg">
+<nav class="flex gap-lg">
+<a class="text-on-surface-variant font-label-md text-label-md hover:text-primary transition-colors" href="#">도움말/가이드</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<button class="hidden sm:block text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors">임시저장</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden border border-outline-variant shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">person</span>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden lg:flex flex-col h-screen fixed left-0 top-16 py-lg bg-surface-container-low shadow-sm w-64 z-40">
+<div class="px-md mb-xl">
+<h2 class="text-headline-sm font-headline-md text-on-surface">프로젝트 흐름</h2>
+<p class="text-label-md font-label-md text-on-surface-variant mt-xs">3단계 / 총 4단계</p>
+</div>
+<nav class="flex flex-col gap-sm px-xs">
+<!-- Step 1 -->
+<a class="flex items-center gap-md text-on-surface-variant p-3 mx-2 hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">upload_file</span>
+<span class="text-label-md font-label-md">CV 업로드</span>
+<span class="material-symbols-outlined text-secondary ml-auto text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</a>
+<!-- Step 2 -->
+<a class="flex items-center gap-md text-on-surface-variant p-3 mx-2 hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">palette</span>
+<span class="text-label-md font-label-md">디자인 선택</span>
+<span class="material-symbols-outlined text-secondary ml-auto text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</a>
+<!-- Step 3 (Active) -->
+<a class="flex items-center gap-md bg-primary-container text-on-primary-container rounded-lg p-3 mx-2 opacity-80 transition-all scale-95 duration-150 shadow-sm border border-primary/20" href="#">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="text-label-md font-label-md font-semibold text-primary">생성</span>
+</a>
+<!-- Step 4 -->
+<a class="flex items-center gap-md text-on-surface-variant p-3 mx-2 hover:bg-surface-variant rounded-lg transition-all opacity-50 cursor-not-allowed pointer-events-none" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">check_circle</span>
+<span class="text-label-md font-label-md">완료</span>
+</a>
+</nav>
+</aside>
+<!-- Main Workspace -->
+<main class="flex-1 lg:ml-64 bg-background overflow-y-auto w-full relative">
+<div class="max-w-4xl mx-auto px-gutter py-xl md:py-xxl min-h-full flex flex-col">
+<!-- Header -->
+<div class="mb-xl text-center md:text-left">
+<h1 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg text-on-surface mb-sm">포트폴리오 생성 중</h1>
+<p class="text-body-lg font-body-lg text-on-surface-variant max-w-2xl">
+                        결정적 렌더러가 'Minimal Clean' 디자인 토큰을 사용하여 CV 데이터를 조립하고 있습니다. API 키가 필요 없는 안전한 방식입니다.
+                    </p>
+</div>
+<!-- Processing Pipeline Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-lg md:p-xl mb-xl flex flex-col lg:flex-row gap-xl relative overflow-hidden">
+<!-- Top abstract gradient decoration -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary-fixed to-tertiary-fixed"></div>
+<!-- Left: Status List -->
+<div class="flex-1 space-y-md">
+<!-- Step 1: Done -->
+<div class="flex items-start gap-md group">
+<div class="mt-1 w-6 h-6 rounded-full bg-secondary text-on-secondary flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+</div>
+<div>
+<h3 class="text-body-md font-label-md font-semibold text-on-surface">CV 구조 분석 중</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-xs">4개 섹션, 12개 항목 파싱됨</p>
+</div>
+</div>
+<!-- Step 2: Done -->
+<div class="flex items-start gap-md group">
+<div class="mt-1 w-6 h-6 rounded-full bg-secondary text-on-secondary flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+</div>
+<div>
+<h3 class="text-body-md font-label-md font-semibold text-on-surface">디자인 토큰 추출 중</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-xs">Minimal Clean 프리셋 로드됨</p>
+</div>
+</div>
+<!-- Step 3: In Progress -->
+<div class="flex items-start gap-md p-md -ml-md bg-surface-container rounded-lg border border-primary/20 relative">
+<!-- Loading glow -->
+<div class="absolute inset-0 bg-primary/5 blur-xl rounded-lg pointer-events-none animate-pulse-slow"></div>
+<div class="mt-1 w-6 h-6 rounded-full border-2 border-primary border-t-transparent spin-slow flex items-center justify-center shrink-0 relative z-10"></div>
+<div class="relative z-10">
+<h3 class="text-body-md font-label-md font-semibold text-primary">레이아웃에 콘텐츠 주입 중</h3>
+<p class="text-label-sm font-label-sm text-primary/80 mt-xs">시맨틱 HTML 노드 매핑 중...</p>
+</div>
+</div>
+<!-- Step 4: Waiting -->
+<div class="flex items-start gap-md opacity-50">
+<div class="mt-1 w-6 h-6 rounded-full border-2 border-outline-variant text-outline-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px]">hourglass_empty</span>
+</div>
+<div>
+<h3 class="text-body-md font-label-md font-semibold text-on-surface-variant">단독 실행형 HTML 조립 중</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-xs">대기 중...</p>
+</div>
+</div>
+</div>
+<!-- Right: Live Console -->
+<div class="flex-1 bg-inverse-surface text-inverse-on-surface rounded-lg p-md font-mono text-sm overflow-hidden h-[240px] flex flex-col border border-outline-variant/30 shadow-inner">
+<div class="flex items-center justify-between mb-sm border-b border-outline-variant/20 pb-xs">
+<span class="text-[11px] uppercase tracking-wider text-outline-variant font-semibold">시스템 로그</span>
+<div class="flex gap-1.5">
+<div class="w-2.5 h-2.5 rounded-full bg-error/80"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim/80"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-secondary-fixed/80"></div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto console-text space-y-1.5 text-inverse-primary/80 leading-relaxed text-[13px] flex flex-col justify-end pb-sm">
+<div class="opacity-50">&gt; Initializing render engine v2.4.1... [OK]</div>
+<div class="opacity-60">&gt; Parsing JSON resume schema... [OK]</div>
+<div class="opacity-70">&gt; 인터 폰트 페칭 중... [OK]</div>
+<div class="opacity-80">&gt; CSS 변수 매핑 중... [OK]</div>
+<div class="opacity-90">&gt; 마크다운 입력값 정제 중... [OK]</div>
+<div class="text-secondary-fixed font-semibold">&gt; 시맨틱 HTML 랜드마크 생성 중...</div>
+<div class="typewriter text-tertiary-fixed">
+<p>&gt; 반응형 그리드 레이아웃 적용 중...</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="mt-auto pt-xl flex justify-between items-center border-t border-outline-variant/50">
+<button class="px-md py-sm rounded-lg border border-outline-variant text-on-surface font-label-md text-label-md hover:bg-surface-variant transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                        이전
+                    </button>
+<button class="px-lg py-sm rounded-lg bg-surface-variant text-on-surface-variant font-label-md text-label-md font-semibold cursor-not-allowed flex items-center gap-sm shadow-sm border border-outline-variant/20">
+<span class="material-symbols-outlined spin-slow text-[18px]">sync</span>
+                        다음: 결과 확인
+                    </button>
+</div>
+</div>
+</main>
+</div>
+</body></html>
