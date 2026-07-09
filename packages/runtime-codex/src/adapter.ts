@@ -17,6 +17,18 @@ type CodexTurnScope = {
   turnId: string
 }
 
+type CodexTurnTerminalStatus = 'completed' | 'interrupted' | 'failed'
+
+type CodexTurnCompletion = {
+  status: CodexTurnTerminalStatus
+  errorMessage?: string
+}
+
+type AbortedNotificationWait = {
+  type: 'aborted'
+  pendingNotification?: Promise<IteratorResult<CodexRawServerNotification>>
+}
+
 export type CodexRuntimeAdapterOptions = {
   rawClientOptions?: CodexRawClientOptions
   createClient?: () => CodexRawClient
@@ -38,6 +50,7 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
   async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
     const client = this.createClient()
     let emittedDebugEntries = 0
+    let turnScope: CodexTurnScope | undefined
     const emitDebugLog = (): RuntimeAdapterEvent | undefined => {
       const debugLog = client.getDebugLog()
       const entries = debugLog
@@ -55,7 +68,9 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
       }
     }
     const abortClient = () => {
-      void client.close()
+      if (!turnScope) {
+        void client.close()
+      }
     }
 
     input.signal.addEventListener('abort', abortClient, { once: true })
@@ -93,7 +108,7 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
         threadId: thread.threadId,
         input: [promptInput],
       })
-      const turnScope: CodexTurnScope = {
+      turnScope = {
         threadId: thread.threadId,
         turnId: turn.turnId,
       }
@@ -103,24 +118,39 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
         yield turnDebugLog
       }
 
-      if (input.signal.aborted) {
-        return
-      }
-
       const notifications = client.notifications()[Symbol.asyncIterator]()
 
-      while (!input.signal.aborted) {
+      while (true) {
+        if (input.signal.aborted) {
+          yield* interruptTurnAndDrainNotifications(
+            client,
+            notifications,
+            turnScope,
+            emitDebugLog,
+          )
+          return
+        }
+
         const notification = await nextNotificationOrAbort(
           notifications,
           input.signal,
         )
 
-        if (notification === 'aborted') {
+        if (isAbortedNotificationWait(notification)) {
+          yield* interruptTurnAndDrainNotifications(
+            client,
+            notifications,
+            turnScope,
+            emitDebugLog,
+            notification.pendingNotification,
+          )
           return
         }
 
         if (notification.done) {
-          throw new Error('Codex notification stream ended before turn completed')
+          throw new Error(
+            'Codex notification stream ended before terminal turn',
+          )
         }
 
         const notificationDebugLog = emitDebugLog()
@@ -141,7 +171,12 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
           }
         }
 
-        if (isMatchingCompletedTurn(notification.value, turnScope)) {
+        const completion = readMatchingTurnCompletion(
+          notification.value,
+          turnScope,
+        )
+
+        if (completion) {
           await client.close()
 
           const completedDebugLog = emitDebugLog()
@@ -150,7 +185,7 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
             yield completedDebugLog
           }
 
-          yield { type: 'completed' }
+          yield toTerminalAdapterEvent(completion)
 
           return
         }
@@ -170,26 +205,124 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
   }
 }
 
+function isAbortedNotificationWait(
+  value: IteratorResult<CodexRawServerNotification> | AbortedNotificationWait,
+): value is AbortedNotificationWait {
+  return isRecord(value) && value.type === 'aborted'
+}
+
+async function* interruptTurnAndDrainNotifications(
+  client: CodexRawClient,
+  notifications: AsyncIterator<CodexRawServerNotification>,
+  turnScope: CodexTurnScope,
+  emitDebugLog: () => RuntimeAdapterEvent | undefined,
+  initialPendingNotification?: Promise<
+    IteratorResult<CodexRawServerNotification>
+  >,
+): AsyncIterable<RuntimeAdapterEvent> {
+  try {
+    await client.interruptTurn(turnScope)
+  } catch {
+    const failureDebugLog = emitDebugLog()
+
+    if (failureDebugLog) {
+      yield failureDebugLog
+    }
+
+    return
+  }
+
+  const interruptDebugLog = emitDebugLog()
+
+  if (interruptDebugLog) {
+    yield interruptDebugLog
+  }
+
+  const deadline = Date.now() + 300
+  let pendingNotification = initialPendingNotification
+
+  while (Date.now() < deadline) {
+    const notification = pendingNotification
+      ? await notificationOrTimeout(pendingNotification, deadline - Date.now())
+      : await nextNotificationOrTimeout(notifications, deadline - Date.now())
+    pendingNotification = undefined
+
+    if (notification === 'timeout' || notification.done) {
+      return
+    }
+
+    const notificationDebugLog = emitDebugLog()
+
+    if (notificationDebugLog) {
+      yield notificationDebugLog
+    }
+
+    const completion = readMatchingTurnCompletion(
+      notification.value,
+      turnScope,
+    )
+
+    if (completion) {
+      yield toTerminalAdapterEvent(completion)
+      return
+    }
+  }
+}
+
 async function nextNotificationOrAbort(
   notifications: AsyncIterator<CodexRawServerNotification>,
   signal: AbortSignal,
 ): Promise<
-  IteratorResult<CodexRawServerNotification> | 'aborted'
+  IteratorResult<CodexRawServerNotification> | AbortedNotificationWait
 > {
   if (signal.aborted) {
-    return 'aborted'
+    return { type: 'aborted' }
   }
 
   let abortListener = () => {}
-  const abortPromise = new Promise<'aborted'>((resolve) => {
-    abortListener = () => resolve('aborted')
+  const notificationPromise = notifications.next()
+  const abortPromise = new Promise<AbortedNotificationWait>((resolve) => {
+    abortListener = () =>
+      resolve({
+        type: 'aborted',
+        pendingNotification: notificationPromise,
+      })
     signal.addEventListener('abort', abortListener, { once: true })
   })
 
   try {
-    return await Promise.race([notifications.next(), abortPromise])
+    return await Promise.race([notificationPromise, abortPromise])
   } finally {
     signal.removeEventListener('abort', abortListener)
+  }
+}
+
+async function nextNotificationOrTimeout(
+  notifications: AsyncIterator<CodexRawServerNotification>,
+  timeoutMs: number,
+): Promise<IteratorResult<CodexRawServerNotification> | 'timeout'> {
+  return notificationOrTimeout(notifications.next(), timeoutMs)
+}
+
+async function notificationOrTimeout(
+  notificationPromise: Promise<IteratorResult<CodexRawServerNotification>>,
+  timeoutMs: number,
+): Promise<IteratorResult<CodexRawServerNotification> | 'timeout'> {
+  if (timeoutMs <= 0) {
+    return 'timeout'
+  }
+
+  let timeout: NodeJS.Timeout | undefined
+  const timeoutPromise = new Promise<'timeout'>((resolve) => {
+    timeout = setTimeout(() => resolve('timeout'), timeoutMs)
+  })
+
+  try {
+    return await Promise.race([notificationPromise, timeoutPromise])
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout)
+    }
   }
 }
 
@@ -212,27 +345,74 @@ function extractMatchingAgentMessageDelta(
   return typeof delta === 'string' ? delta : undefined
 }
 
-function isMatchingCompletedTurn(
+function readMatchingTurnCompletion(
   notification: CodexRawServerNotification,
   turnScope: CodexTurnScope,
-): boolean {
+): CodexTurnCompletion | undefined {
   if (notification.method !== 'turn/completed') {
-    return false
+    return undefined
   }
 
   const params = notificationParams(notification)
 
   if (!params || readString(params, 'threadId') !== turnScope.threadId) {
-    return false
+    return undefined
   }
 
   const turn = params.turn
 
+  if (!isRecord(turn) || readString(turn, 'id') !== turnScope.turnId) {
+    return undefined
+  }
+
+  const status = readString(turn, 'status')
+
+  if (!isCodexTurnTerminalStatus(status)) {
+    return undefined
+  }
+
+  return {
+    status,
+    errorMessage: readTurnErrorMessage(turn),
+  }
+}
+
+function toTerminalAdapterEvent(
+  completion: CodexTurnCompletion,
+): RuntimeAdapterEvent {
+  if (completion.status === 'completed') {
+    return { type: 'completed' }
+  }
+
+  if (completion.status === 'interrupted') {
+    return {
+      type: 'cancelled',
+      reason: 'Codex turn interrupted',
+    }
+  }
+
+  return {
+    type: 'failed',
+    error: completion.errorMessage ?? 'Codex turn failed',
+  }
+}
+
+function isCodexTurnTerminalStatus(
+  status: string | undefined,
+): status is CodexTurnTerminalStatus {
   return (
-    isRecord(turn) &&
-    readString(turn, 'id') === turnScope.turnId &&
-    readString(turn, 'status') === 'completed'
+    status === 'completed' || status === 'interrupted' || status === 'failed'
   )
+}
+
+function readTurnErrorMessage(turn: Record<string, unknown>): string | undefined {
+  const error = turn.error
+
+  if (!isRecord(error)) {
+    return undefined
+  }
+
+  return readString(error, 'message')
 }
 
 function matchesThreadAndTurn(

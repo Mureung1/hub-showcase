@@ -13,6 +13,8 @@ import type {
 } from './internal/codex-app-server-protocol/generated/index.js'
 import type { ThreadStartParams } from './internal/codex-app-server-protocol/generated/v2/ThreadStartParams.js'
 import type { ThreadStartResponse } from './internal/codex-app-server-protocol/generated/v2/ThreadStartResponse.js'
+import type { TurnInterruptParams } from './internal/codex-app-server-protocol/generated/v2/TurnInterruptParams.js'
+import type { TurnInterruptResponse } from './internal/codex-app-server-protocol/generated/v2/TurnInterruptResponse.js'
 import type { TurnStartParams } from './internal/codex-app-server-protocol/generated/v2/TurnStartParams.js'
 import type { TurnStartResponse } from './internal/codex-app-server-protocol/generated/v2/TurnStartResponse.js'
 import type { UserInput } from './internal/codex-app-server-protocol/generated/v2/UserInput.js'
@@ -85,6 +87,13 @@ export type CodexTurnStartInput = {
 export type CodexTurnStartResult = {
   turnId: string
 }
+
+export type CodexTurnInterruptInput = {
+  threadId: string
+  turnId: string
+}
+
+export type CodexTurnInterruptResult = Record<string, never>
 
 export type CodexRawServerNotification = {
   timestamp: string
@@ -278,6 +287,25 @@ export class CodexRawClient {
     return {
       turnId: response.turn.id,
     }
+  }
+
+  async interruptTurn(
+    input: CodexTurnInterruptInput,
+  ): Promise<CodexTurnInterruptResult> {
+    this.start()
+
+    const requestId = this.createRequestId()
+    const params: TurnInterruptParams = {
+      threadId: input.threadId,
+      turnId: input.turnId,
+    }
+    const request: Extract<ClientRequest, { method: 'turn/interrupt' }> = {
+      method: 'turn/interrupt',
+      id: requestId,
+      params,
+    }
+
+    return toTurnInterruptResponse(await this.sendRequest(requestId, request))
   }
 
   async *notifications(): AsyncIterable<CodexRawServerNotification> {
@@ -758,6 +786,14 @@ function toTurnStartResponse(value: unknown): TurnStartResponse {
   readResponseObjectWithId(value, 'turn/start', 'turn')
 
   return value as TurnStartResponse
+}
+
+function toTurnInterruptResponse(value: unknown): TurnInterruptResponse {
+  if (!isRecord(value)) {
+    throw new Error('turn/interrupt returned a non-object result')
+  }
+
+  return value as TurnInterruptResponse
 }
 
 function readResponseObjectWithId(

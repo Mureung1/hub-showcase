@@ -20,6 +20,8 @@ export {
   type CodexRuntimeHome,
   type CodexThreadStartInput,
   type CodexThreadStartResult,
+  type CodexTurnInterruptInput,
+  type CodexTurnInterruptResult,
   type CodexTurnStartInput,
   type CodexTurnStartResult,
 } from './raw-client.js'

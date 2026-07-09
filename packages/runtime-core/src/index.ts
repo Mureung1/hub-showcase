@@ -112,6 +112,14 @@ export type RuntimeAdapterEvent =
       output?: string
     }
   | {
+      type: 'cancelled'
+      reason: string
+    }
+  | {
+      type: 'failed'
+      error: string
+    }
+  | {
       type: 'debug_log'
       entries: RuntimeRunDebugLogEntry[]
     }
@@ -299,6 +307,11 @@ export class AgentRuntimeKernel {
         prompt: log.prompt,
         signal: abortController?.signal ?? AbortSignal.abort(),
       })) {
+        if (adapterEvent.type === 'debug_log') {
+          this.appendDebugLog(log, adapterEvent.entries)
+          continue
+        }
+
         if (isTerminalRuntimeRunStatus(log.status)) {
           return
         }
@@ -311,16 +324,24 @@ export class AgentRuntimeKernel {
           })
         }
 
-        if (adapterEvent.type === 'debug_log') {
-          this.appendDebugLog(log, adapterEvent.entries)
-        }
-
         if (adapterEvent.type === 'completed') {
           if (adapterEvent.output !== undefined) {
             log.output = adapterEvent.output
           }
 
           this.completeRun(log)
+
+          return
+        }
+
+        if (adapterEvent.type === 'cancelled') {
+          this.cancelRunLog(log, adapterEvent.reason)
+
+          return
+        }
+
+        if (adapterEvent.type === 'failed') {
+          this.failRun(log, adapterEvent.error)
 
           return
         }

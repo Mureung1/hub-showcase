@@ -56,6 +56,30 @@ class DebugLogAdapter implements AgentRuntimeAdapter {
   }
 }
 
+class CancelDebugLogAdapter implements AgentRuntimeAdapter {
+  readonly name = 'test'
+
+  async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
+    await new Promise<void>((resolve) => {
+      input.signal.addEventListener('abort', () => resolve(), { once: true })
+    })
+
+    yield {
+      type: 'debug_log',
+      entries: [
+        {
+          timestamp: '2026-07-09T00:00:00.000Z',
+          source: 'client',
+          kind: 'stdin',
+          message: 'interrupt sent after cancellation',
+          data: { method: 'turn/interrupt' },
+        },
+      ],
+    }
+    yield { type: 'completed' }
+  }
+}
+
 test('AgentRuntimeKernel records a completed run lifecycle and log', async () => {
   const kernel = new AgentRuntimeKernel({
     adapters: [new HappyPathAdapter()],
@@ -203,3 +227,54 @@ test('AgentRuntimeKernel records adapter debug log entries outside normalized ev
     },
   ])
 })
+
+test('AgentRuntimeKernel retains debug log entries yielded after cancellation', async () => {
+  const kernel = new AgentRuntimeKernel({
+    adapters: [new CancelDebugLogAdapter()],
+    now: () => new Date('2026-07-09T00:00:00.000Z'),
+  })
+
+  const startedLog = kernel.startRun({ adapter: 'test', prompt: '멈춰줘' })
+  const cancelledLog = kernel.cancelRun(startedLog.runId)
+  const logWithDebug = await waitForRunLog(
+    () => kernel.getRunLog(startedLog.runId),
+    (log) => (log.debugLog?.length ?? 0) > 0,
+  )
+
+  assert.equal(cancelledLog?.status, 'cancelled')
+  assert.equal(logWithDebug.status, 'cancelled')
+  assert.deepEqual(
+    logWithDebug.events.map((event) => event.type),
+    ['started', 'cancelled'],
+  )
+  assert.deepEqual(logWithDebug.debugLog, [
+    {
+      timestamp: '2026-07-09T00:00:00.000Z',
+      source: 'client',
+      kind: 'stdin',
+      message: 'interrupt sent after cancellation',
+      data: { method: 'turn/interrupt' },
+    },
+  ])
+})
+
+async function waitForRunLog(
+  getLog: () => ReturnType<AgentRuntimeKernel['getRunLog']>,
+  predicate: (log: NonNullable<ReturnType<AgentRuntimeKernel['getRunLog']>>) => boolean,
+): Promise<NonNullable<ReturnType<AgentRuntimeKernel['getRunLog']>>> {
+  const deadline = Date.now() + 500
+
+  while (Date.now() < deadline) {
+    const log = getLog()
+
+    if (log && predicate(log)) {
+      return log
+    }
+
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve)
+    })
+  }
+
+  assert.fail('expected run log condition was not observed')
+}

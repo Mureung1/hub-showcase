@@ -14,6 +14,7 @@ export type FakeCodexTurnCompletion = {
   threadId?: string
   turnId?: string
   status?: string
+  errorMessage?: string
 }
 
 export type FakeCodexAppServerScenario = {
@@ -22,6 +23,13 @@ export type FakeCodexAppServerScenario = {
   turnId?: string
   agentMessageDeltas?: FakeCodexAgentMessageDelta[]
   turnCompletions?: FakeCodexTurnCompletion[]
+  interruptTurnCompletion?: FakeCodexTurnCompletion
+  initializeError?: string
+  initializeHang?: boolean
+  exitAfterInitialize?: boolean
+  threadStartError?: string
+  turnStartError?: string
+  endBeforeTerminal?: boolean
 }
 
 export type FakeCodexAppServerFixture = {
@@ -71,7 +79,7 @@ ${fakeCodexAppServerSourceSuffix}
 
 function normalizeScenario(
   scenario: FakeCodexAppServerScenario,
-): Required<FakeCodexAppServerScenario> {
+): NormalizedFakeCodexAppServerScenario {
   const threadId = scenario.threadId ?? defaultThreadId
   const turnId = scenario.turnId ?? defaultTurnId
 
@@ -91,11 +99,51 @@ function normalizeScenario(
         turnId,
         status: 'completed',
       },
-    ]).map((completion) => ({
-      threadId: completion.threadId ?? threadId,
-      turnId: completion.turnId ?? turnId,
-      status: completion.status ?? 'completed',
-    })),
+    ]).map((completion) => normalizeCompletion(completion, threadId, turnId)),
+    interruptTurnCompletion: scenario.interruptTurnCompletion
+      ? normalizeCompletion(scenario.interruptTurnCompletion, threadId, turnId)
+      : null,
+    initializeError: scenario.initializeError ?? null,
+    initializeHang: scenario.initializeHang ?? false,
+    exitAfterInitialize: scenario.exitAfterInitialize ?? false,
+    threadStartError: scenario.threadStartError ?? null,
+    turnStartError: scenario.turnStartError ?? null,
+    endBeforeTerminal: scenario.endBeforeTerminal ?? false,
+  }
+}
+
+type NormalizedFakeCodexTurnCompletion = {
+  threadId: string
+  turnId: string
+  status: string
+  errorMessage: string | null
+}
+
+type NormalizedFakeCodexAppServerScenario = {
+  userAgent: string
+  threadId: string
+  turnId: string
+  agentMessageDeltas: Required<FakeCodexAgentMessageDelta>[]
+  turnCompletions: NormalizedFakeCodexTurnCompletion[]
+  interruptTurnCompletion: NormalizedFakeCodexTurnCompletion | null
+  initializeError: string | null
+  initializeHang: boolean
+  exitAfterInitialize: boolean
+  threadStartError: string | null
+  turnStartError: string | null
+  endBeforeTerminal: boolean
+}
+
+function normalizeCompletion(
+  completion: FakeCodexTurnCompletion,
+  threadId: string,
+  turnId: string,
+): NormalizedFakeCodexTurnCompletion {
+  return {
+    threadId: completion.threadId ?? threadId,
+    turnId: completion.turnId ?? turnId,
+    status: completion.status ?? 'completed',
+    errorMessage: completion.errorMessage ?? null,
   }
 }
 
@@ -110,6 +158,19 @@ reader.on('line', (line) => {
   const message = JSON.parse(line)
 
   if (message.method === 'initialize') {
+    if (scenario.exitAfterInitialize) {
+      process.exit(7)
+    }
+
+    if (scenario.initializeHang) {
+      return
+    }
+
+    if (scenario.initializeError) {
+      writeError(message.id, scenario.initializeError)
+      return
+    }
+
     writeResponse(message.id, {
       userAgent: scenario.userAgent,
       codexHome: process.env.CODEX_HOME ?? '',
@@ -124,6 +185,11 @@ reader.on('line', (line) => {
   }
 
   if (message.method === 'thread/start') {
+    if (scenario.threadStartError) {
+      writeError(message.id, scenario.threadStartError)
+      return
+    }
+
     writeResponse(message.id, {
       thread: {
         id: scenario.threadId,
@@ -133,6 +199,11 @@ reader.on('line', (line) => {
   }
 
   if (message.method === 'turn/start') {
+    if (scenario.turnStartError) {
+      writeError(message.id, scenario.turnStartError)
+      return
+    }
+
     writeResponse(message.id, {
       turn: {
         id: scenario.turnId,
@@ -150,15 +221,25 @@ reader.on('line', (line) => {
       }
 
       for (const completion of scenario.turnCompletions) {
-        writeNotification('turn/completed', {
-          threadId: completion.threadId,
-          turn: {
-            id: completion.turnId,
-            status: completion.status,
-          },
-        })
+        writeTurnCompletion(completion)
+      }
+
+      if (scenario.endBeforeTerminal) {
+        process.exit(0)
       }
     })
+
+    return
+  }
+
+  if (message.method === 'turn/interrupt') {
+    writeResponse(message.id, {})
+
+    if (scenario.interruptTurnCompletion) {
+      setImmediate(() => {
+        writeTurnCompletion(scenario.interruptTurnCompletion)
+      })
+    }
   }
 })
 
@@ -166,7 +247,40 @@ function writeResponse(id, result) {
   process.stdout.write(JSON.stringify({ id, result }) + '\n')
 }
 
+function writeError(id, message) {
+  process.stdout.write(JSON.stringify({
+    id,
+    error: {
+      message,
+    },
+  }) + '\n')
+}
+
 function writeNotification(method, params) {
   process.stdout.write(JSON.stringify({ method, params }) + '\n')
+}
+
+function writeTurnCompletion(completion) {
+  writeNotification('turn/completed', {
+    threadId: completion.threadId,
+    turn: {
+      id: completion.turnId,
+      items: [],
+      itemsView: {
+        type: 'complete',
+      },
+      status: completion.status,
+      error: completion.errorMessage
+        ? {
+            message: completion.errorMessage,
+            codexErrorInfo: null,
+            additionalDetails: null,
+          }
+        : null,
+      startedAt: null,
+      completedAt: null,
+      durationMs: null,
+    },
+  })
 }
 `

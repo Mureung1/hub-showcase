@@ -127,6 +127,18 @@ const child = spawn(codexBin, ['app-server', '--listen', 'stdio://'], {
 | Auth storage | app-managed `CODEX_HOME` | 전역 `~/.codex`와 섞이지 않게 한다. |
 | Semester workspace | 사용자 선택 폴더 | 자료 소유권과 장기 보존성을 유지한다. |
 
+## Week 1 parity gate demo 기준
+
+CodexRuntimeAdapter parity gate는 AY-PLE product-specific SourceSelection, StatePatch, Review, TrustedState 구현으로 넘어가기 전 Runtime Inspector에서 확인해야 하는 최소 기준이다.
+
+| 항목 | Demo 기준 |
+| --- | --- |
+| Prompt lifecycle | 같은 Runtime Inspector에서 Fake와 Codex adapter 모두 prompt run을 시작하고 normalized `started`, `output_delta`, `completed` event와 run log를 확인한다. |
+| Cancellation | Inspector의 기존 cancel 경로가 Codex run에 `turn/interrupt`를 보내고, matching `turn/completed` `interrupted` 흐름 또는 interrupt completion을 normalized `cancelled` 상태로 닫는다. |
+| Failure mapping | missing binary/spawn, initialize, `thread/start`, `turn/start`, failed turn completion, terminal 전 notification stream 종료가 normalized `failed` 상태와 debug log로 남는다. |
+| Log parity | Fake와 Codex 모두 `RuntimeRunLog`의 `status`, `events`, `output`, `error`, `debugLog` 구조를 사용하며 Codex generated type은 runtime-core, server, inspector로 노출하지 않는다. |
+| Inspector state | cancel 또는 failure 뒤 Runtime Inspector history/log가 terminal 상태를 표시하고 해당 run이 `running`으로 남지 않는다. |
+
 ## 제품 문서와의 경계
 
 | 제품 기획서에 남길 것 | 이 기술 메모가 소유할 것 |

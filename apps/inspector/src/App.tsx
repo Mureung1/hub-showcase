@@ -206,6 +206,11 @@ function App() {
 
       if (isTerminalRuntimeRunStatus(data.run.status)) {
         terminalRunIdsRef.current.add(data.run.runId)
+        window.setTimeout(() => {
+          void refreshRunState(runId).catch((refreshError: unknown) => {
+            setError(toErrorMessage(refreshError))
+          })
+        }, 400)
       }
     } catch (cancelError) {
       terminalRunIdsRef.current.delete(runId)

@@ -8,6 +8,62 @@ import {
   runCodexInitializeSmoke,
   type CodexRawDebugLogEntry,
 } from './index.js'
+import { withFakeCodexAppServer } from './testing/fake-codex-app-server.js'
+
+test('CodexRawClient interrupts a turn over stdio JSONL', async () => {
+  await withFakeCodexAppServer(
+    {
+      threadId: 'thread-raw-interrupt',
+      turnId: 'turn-raw-interrupt',
+      turnCompletions: [],
+    },
+    async ({ rawClientOptions }) => {
+      const client = new CodexRawClient(rawClientOptions)
+
+      try {
+        await client.initialize()
+        const thread = await client.startThread()
+        const turn = await client.startTurn({
+          threadId: thread.threadId,
+          input: [
+            {
+              type: 'text',
+              text: 'stop this turn',
+              text_elements: [],
+            },
+          ],
+        })
+        const result = await client.interruptTurn({
+          threadId: thread.threadId,
+          turnId: turn.turnId,
+        })
+        const outboundMessages = client
+          .getDebugLog()
+          .filter(
+            (entry) => entry.source === 'client' && entry.kind === 'stdin',
+          )
+          .map(
+            (entry) =>
+              JSON.parse(entry.raw ?? '{}') as {
+                method?: string
+                params?: unknown
+              },
+          )
+        const interruptRequest = outboundMessages.find(
+          (message) => message.method === 'turn/interrupt',
+        )
+
+        assert.deepEqual(result, {})
+        assert.deepEqual(interruptRequest?.params, {
+          threadId: 'thread-raw-interrupt',
+          turnId: 'turn-raw-interrupt',
+        })
+      } finally {
+        await client.close()
+      }
+    },
+  )
+})
 
 test('CodexRawClient performs initialize and initialized over stdio JSONL', async () => {
   await withFakeAppServer(async ({ scriptPath, tempDir }) => {
