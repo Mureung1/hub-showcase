@@ -149,3 +149,40 @@ body {
 .shadow-dropdown {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
+
+/* design-reference/brand_onboarding3.html의 AI 분석 애니메이션 (orbit/scan/pulse) */
+@keyframes orbit {
+  0% {
+    transform: rotate(0deg) translateX(80px) rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg) translateX(80px) rotate(-360deg);
+  }
+}
+@keyframes pulse-custom {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+@keyframes scan {
+  0% {
+    top: 0%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+.scanning-line {
+  height: 2px;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  background: linear-gradient(90deg, transparent, var(--color-primary-container), transparent);
+  animation: scan 3s linear infinite;
+}
