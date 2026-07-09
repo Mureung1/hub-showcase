@@ -3,22 +3,7 @@ import test from 'node:test'
 import { createServerApp } from './server.js'
 
 test('runtime API starts a fake run and streams normalized events', async () => {
-  const app = createServerApp({ fakeDelayMs: 0 })
-  const server = app.listen(0)
-
-  await new Promise<void>((resolve) => {
-    server.once('listening', resolve)
-  })
-
-  const address = server.address()
-
-  if (!address || typeof address === 'string') {
-    throw new Error('Expected server to listen on a TCP port')
-  }
-
-  const baseUrl = `http://127.0.0.1:${address.port}`
-
-  try {
+  await withTestServer({ fakeDelayMs: 0 }, async (baseUrl) => {
     const adaptersResponse = await fetch(`${baseUrl}/api/runtime/adapters`)
     const adapters = await adaptersResponse.json()
 
@@ -85,37 +70,11 @@ test('runtime API starts a fake run and streams normalized events', async () => 
     assert.equal(log.run.runId, startedRun.runId)
     assert.equal(log.run.status, 'completed')
     assert.equal(log.run.events.length, 4)
-  } finally {
-    await new Promise<void>((resolve, reject) => {
-      server.close((error) => {
-        if (error) {
-          reject(error)
-          return
-        }
-
-        resolve()
-      })
-    })
-  }
+  })
 })
 
 test('runtime API cancels a running fake run and streams normalized cancellation', async () => {
-  const app = createServerApp({ fakeDelayMs: 1000 })
-  const server = app.listen(0)
-
-  await new Promise<void>((resolve) => {
-    server.once('listening', resolve)
-  })
-
-  const address = server.address()
-
-  if (!address || typeof address === 'string') {
-    throw new Error('Expected server to listen on a TCP port')
-  }
-
-  const baseUrl = `http://127.0.0.1:${address.port}`
-
-  try {
+  await withTestServer({ fakeDelayMs: 1000 }, async (baseUrl) => {
     const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
       method: 'POST',
       headers: {
@@ -172,37 +131,11 @@ test('runtime API cancels a running fake run and streams normalized cancellation
       log.run.events.map((event: Record<string, unknown>) => event.type),
       ['started', 'cancelled'],
     )
-  } finally {
-    await new Promise<void>((resolve, reject) => {
-      server.close((error) => {
-        if (error) {
-          reject(error)
-          return
-        }
-
-        resolve()
-      })
-    })
-  }
+  })
 })
 
 test('runtime API records deterministic fake failure in stream, log, and history', async () => {
-  const app = createServerApp({ fakeDelayMs: 0 })
-  const server = app.listen(0)
-
-  await new Promise<void>((resolve) => {
-    server.once('listening', resolve)
-  })
-
-  const address = server.address()
-
-  if (!address || typeof address === 'string') {
-    throw new Error('Expected server to listen on a TCP port')
-  }
-
-  const baseUrl = `http://127.0.0.1:${address.port}`
-
-  try {
+  await withTestServer({ fakeDelayMs: 0 }, async (baseUrl) => {
     const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
       method: 'POST',
       headers: {
@@ -211,7 +144,7 @@ test('runtime API records deterministic fake failure in stream, log, and history
       body: JSON.stringify({
         adapter: 'fake',
         prompt: '실패해줘',
-        scenario: 'failure',
+        fakeScenario: 'failure',
       }),
     })
     const startedRun = (await startResponse.json()) as { runId: string }
@@ -252,6 +185,30 @@ test('runtime API records deterministic fake failure in stream, log, and history
     assert.equal(logResponse.status, 200)
     assert.equal(log.run.status, 'failed')
     assert.equal(log.run.error, 'Fake runtime deterministic failure requested')
+  })
+})
+
+async function withTestServer(
+  options: Parameters<typeof createServerApp>[0],
+  testBody: (baseUrl: string) => Promise<void>,
+): Promise<void> {
+  const app = createServerApp(options)
+  const server = app.listen(0)
+
+  await new Promise<void>((resolve) => {
+    server.once('listening', resolve)
+  })
+
+  const address = server.address()
+
+  if (!address || typeof address === 'string') {
+    throw new Error('Expected server to listen on a TCP port')
+  }
+
+  const baseUrl = `http://127.0.0.1:${address.port}`
+
+  try {
+    await testBody(baseUrl)
   } finally {
     await new Promise<void>((resolve, reject) => {
       server.close((error) => {
@@ -264,7 +221,7 @@ test('runtime API records deterministic fake failure in stream, log, and history
       })
     })
   }
-})
+}
 
 function parseSseData(stream: string): Array<Record<string, unknown>> {
   return stream

@@ -3,7 +3,6 @@ import {
   AgentRuntimeKernel,
   isTerminalRuntimeRunEvent,
   type RuntimeRunEvent,
-  type RuntimeRunScenario,
 } from '@ay-ple/runtime-core'
 import { FakeRuntimeAdapter } from '@ay-ple/runtime-fake'
 import cors from 'cors'
@@ -19,17 +18,19 @@ export type CreateServerAppOptions = {
   kernel?: AgentRuntimeKernel
 }
 
+type FakeRuntimeScenario = 'failure'
+
 export function createServerApp(options: CreateServerAppOptions = {}): Express {
   const app = express()
+  const fakeAdapter = new FakeRuntimeAdapter({
+    delayMs: options.fakeDelayMs,
+  })
   const kernel =
     options.kernel ??
     new AgentRuntimeKernel({
-      adapters: [
-        new FakeRuntimeAdapter({
-          delayMs: options.fakeDelayMs,
-        }),
-      ],
+      adapters: [fakeAdapter],
     })
+  const canControlFakeAdapter = options.kernel === undefined
 
   app.use(cors())
   app.use(express.json())
@@ -45,7 +46,7 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
   app.post('/api/runtime/runs', (req, res) => {
     const adapter = req.body?.adapter
     const prompt = req.body?.prompt
-    const scenario = req.body?.scenario
+    const fakeScenario = req.body?.fakeScenario
 
     if (typeof adapter !== 'string') {
       res.status(400).json({ error: 'adapter is required' })
@@ -57,13 +58,24 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
       return
     }
 
-    if (!isRuntimeRunScenario(scenario)) {
-      res.status(400).json({ error: 'scenario is invalid' })
+    if (!isFakeRuntimeScenario(fakeScenario)) {
+      res.status(400).json({ error: 'fakeScenario is invalid' })
       return
     }
 
+    if (fakeScenario === 'failure') {
+      if (!canControlFakeAdapter || adapter !== fakeAdapter.name) {
+        res.status(400).json({
+          error: 'fakeScenario is only supported by the fake adapter',
+        })
+        return
+      }
+
+      fakeAdapter.failNextRun()
+    }
+
     try {
-      const run = kernel.startRun({ adapter, prompt, scenario })
+      const run = kernel.startRun({ adapter, prompt })
       res.status(201).json({ runId: run.runId })
     } catch (error) {
       res.status(400).json({
@@ -166,12 +178,10 @@ function writeSseEvent(res: Response, event: RuntimeRunEvent): void {
   res.write(`data: ${JSON.stringify(event)}\n\n`)
 }
 
-function isRuntimeRunScenario(
-  scenario: unknown,
-): scenario is RuntimeRunScenario | undefined {
-  return (
-    scenario === undefined || scenario === 'normal' || scenario === 'failure'
-  )
+function isFakeRuntimeScenario(
+  fakeScenario: unknown,
+): fakeScenario is FakeRuntimeScenario | undefined {
+  return fakeScenario === undefined || fakeScenario === 'failure'
 }
 
 function startServer(): void {

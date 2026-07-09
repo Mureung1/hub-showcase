@@ -116,7 +116,7 @@ function App() {
         body: JSON.stringify({
           adapter: selectedAdapter,
           prompt: requestPrompt,
-          scenario: isFakeFailureScenario ? 'failure' : undefined,
+          fakeScenario: isFakeFailureScenario ? 'failure' : undefined,
         }),
       })
 
@@ -156,16 +156,14 @@ function App() {
         terminalRunIdsRef.current.add(runId)
         setActiveStatus(runtimeEvent.type)
 
+        if (runtimeEvent.type === 'completed') {
+          setOutput(runtimeEvent.output)
+        }
+
         if (runtimeEvent.type === 'failed') {
           setError(runtimeEvent.error)
         }
-      }
 
-      if (runtimeEvent.type === 'completed') {
-        setOutput(runtimeEvent.output)
-      }
-
-      if (isTerminalRuntimeRunEvent(runtimeEvent)) {
         source.close()
         void refreshRunState(runId)
       }

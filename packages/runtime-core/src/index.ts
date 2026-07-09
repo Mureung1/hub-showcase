@@ -1,5 +1,4 @@
 export type RuntimeRunStatus = 'running' | 'completed' | 'cancelled' | 'failed'
-export type RuntimeRunScenario = 'normal' | 'failure'
 
 export type RuntimeRunEvent =
   | RuntimeRunStartedEvent
@@ -62,7 +61,6 @@ export type RuntimeRunLog = {
   runId: string
   adapter: string
   prompt: string
-  scenario?: RuntimeRunScenario
   status: RuntimeRunStatus
   output: string
   error?: string
@@ -91,7 +89,6 @@ export type RuntimeAdapterDescriptor = {
 export type RuntimeAdapterRunInput = {
   runId: string
   prompt: string
-  scenario?: RuntimeRunScenario
   signal: AbortSignal
 }
 
@@ -115,7 +112,6 @@ export type AgentRuntimeAdapter = {
 export type StartRuntimeRunInput = {
   adapter: string
   prompt: string
-  scenario?: RuntimeRunScenario
 }
 
 export type AgentRuntimeKernelOptions = {
@@ -168,7 +164,6 @@ export class AgentRuntimeKernel {
       runId,
       adapter: adapter.name,
       prompt: input.prompt,
-      scenario: input.scenario,
       status: 'running',
       output: '',
       events: [],
@@ -288,7 +283,6 @@ export class AgentRuntimeKernel {
       for await (const adapterEvent of adapter.run({
         runId: log.runId,
         prompt: log.prompt,
-        scenario: log.scenario,
         signal: abortController?.signal ?? AbortSignal.abort(),
       })) {
         if (isTerminalRuntimeRunStatus(log.status)) {

@@ -14,13 +14,18 @@ export class FakeRuntimeAdapter implements AgentRuntimeAdapter {
   readonly description = 'Deterministic local adapter for Runtime Inspector development'
 
   private readonly delayMs: number
+  private pendingFailureRuns = 0
 
   constructor(options: FakeRuntimeAdapterOptions = {}) {
     this.delayMs = options.delayMs ?? 120
   }
 
+  failNextRun(): void {
+    this.pendingFailureRuns += 1
+  }
+
   async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
-    if (input.scenario === 'failure') {
+    if (this.consumePendingFailureRun()) {
       throw new Error('Fake runtime deterministic failure requested')
     }
 
@@ -43,6 +48,16 @@ export class FakeRuntimeAdapter implements AgentRuntimeAdapter {
     }
 
     yield { type: 'completed' }
+  }
+
+  private consumePendingFailureRun(): boolean {
+    if (this.pendingFailureRuns < 1) {
+      return false
+    }
+
+    this.pendingFailureRuns -= 1
+
+    return true
   }
 }
 
