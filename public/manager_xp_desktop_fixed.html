@@ -743,8 +743,8 @@
     </style>
   </head>
   <body>
-    <main class="desktop" aria-label="XP ?�스?�톱">
-      <nav class="desktop-icons" aria-label="바탕?�면 ?�이�?>
+    <main class="desktop" aria-label="XP 데스크톱">
+      <nav class="desktop-icons" aria-label="바탕화면 아이콘">
         <button class="desktop-icon" type="button" data-open="quest">
           <span class="desktop-icon__graphic" aria-hidden="true">
             <svg viewBox="0 0 38 38">
@@ -755,14 +755,14 @@
               <path fill="#4c4a43" d="M18 14h8v2h-8zM18 22h8v2h-8z" />
             </svg>
           </span>
-          <span>?�늘???�스??/span>
+          <span>오늘의 퀘스트</span>
         </button>
 
         <button class="desktop-icon" type="button" data-open="manager">
           <span class="desktop-icon__graphic desktop-icon__graphic--lumi" aria-hidden="true">
             <img src="./assets/lumi-manager.png" alt="" />
           </span>
-          <span>매니?�</span>
+          <span>매니저</span>
         </button>
 
         <button class="desktop-icon" type="button">
@@ -774,7 +774,7 @@
               <path fill="#56756a" d="M14 13h10v2H14zM14 18h10v2H14zM14 23h7v2h-7z" />
             </svg>
           </span>
-          <span>기록 ?�트</span>
+          <span>기록 노트</span>
         </button>
 
         <button class="desktop-icon" type="button">
@@ -786,91 +786,91 @@
               <path fill="#63a68b" d="M15 17h3v10h-3zM21 17h3v10h-3z" />
             </svg>
           </span>
-          <span>?��???/span>
+          <span>휴지통</span>
         </button>
       </nav>
 
       <section class="window window--quest is-active" id="quest-window" data-window="quest">
         <header class="titlebar">
           <span class="titlebar__icon" aria-hidden="true">Q</span>
-          <span class="titlebar__name">?�늘???�스??/span>
+          <span class="titlebar__name">오늘의 퀘스트</span>
           <div class="window-controls">
-            <button class="window-control" type="button" aria-label="최소??>_</button>
-            <button class="window-control" type="button" aria-label="최�???>??/button>
-            <button class="window-control window-control--close" type="button" data-close="quest" aria-label="?�기">×</button>
+            <button class="window-control" type="button" aria-label="최소화">_</button>
+            <button class="window-control" type="button" aria-label="최대화">□</button>
+            <button class="window-control window-control--close" type="button" data-close="quest" aria-label="닫기">×</button>
           </div>
         </header>
 
         <div class="window-body">
           <div class="quest-summary">
-            <span>?�늘 ?�행???�스??초안</span>
-            <strong>3 / 4 ?�료</strong>
+            <span>오늘 진행할 퀘스트 초안</span>
+            <strong>3 / 4 완료</strong>
           </div>
 
           <form class="quest-form" id="quest-form">
-            <label for="quest-title">?�목</label>
-            <input class="xp-input" id="quest-title" value="?�이?�베?�스 개념 15�?공�?" />
+            <label for="quest-title">제목</label>
+            <input class="xp-input" id="quest-title" value="데이터베이스 개념 15분 공부" />
 
-            <label for="quest-type">?�형</label>
+            <label for="quest-type">유형</label>
             <select class="xp-select" id="quest-type">
-              <option>?�간??/option>
-              <option>?�적??/option>
-              <option>?�동??/option>
+              <option>시간형</option>
+              <option>목표형</option>
+              <option>행동형</option>
             </select>
 
             <label for="quest-amount">분량</label>
             <div class="form-pair">
               <input class="xp-input" id="quest-amount" type="number" min="5" value="15" />
-              <select class="xp-select" aria-label="분량 ?�위">
-                <option>�?/option>
-                <option>?�이지</option>
-                <option>??/option>
+              <select class="xp-select" aria-label="분량 단위">
+                <option>분</option>
+                <option>페이지</option>
+                <option>개</option>
               </select>
             </div>
 
-            <span aria-hidden="true">?�이??/span>
-            <div class="difficulty" role="radiogroup" aria-label="?�이??>
+            <span aria-hidden="true">난이도</span>
+            <div class="difficulty" role="radiogroup" aria-label="난이도">
               <input id="difficulty-easy" name="difficulty" type="radio" />
-              <label for="difficulty-easy">?��?</label>
+              <label for="difficulty-easy">쉬움</label>
               <input id="difficulty-normal" name="difficulty" type="radio" checked />
               <label for="difficulty-normal">보통</label>
               <input id="difficulty-hard" name="difficulty" type="radio" />
-              <label for="difficulty-hard">?�려?�</label>
+              <label for="difficulty-hard">어려움</label>
             </div>
 
-            <label for="quest-deadline">?�한 ?�간</label>
+            <label for="quest-deadline">제한 시간</label>
             <select class="xp-select" id="quest-deadline">
-              <option>?�늘 23:59</option>
-              <option>2?�간 ??/option>
-              <option>?�일 ?�전 9:00</option>
+              <option>오늘 23:59</option>
+              <option>2시간 뒤</option>
+              <option>내일 오전 9:00</option>
             </select>
           </form>
 
           <div class="quest-footer">
-            <span class="reward">?�상 보상: EXP 20</span>
-            <button class="xp-button" id="complete-demo" type="button">?�료 ?�연</button>
+            <span class="reward">예상 보상: EXP 20</span>
+            <button class="xp-button" id="complete-demo" type="button">완료 시연</button>
           </div>
         </div>
       </section>
 
       <section class="window window--manager" id="manager-window" data-window="manager">
         <header class="titlebar">
-          <span class="titlebar__icon" aria-hidden="true">??/span>
-          <span class="titlebar__name">매니?�</span>
+          <span class="titlebar__icon" aria-hidden="true">M</span>
+          <span class="titlebar__name">매니저</span>
           <div class="window-controls">
-            <button class="window-control" type="button" aria-label="최소??>_</button>
-            <button class="window-control" type="button" aria-label="최�???>??/button>
-            <button class="window-control window-control--close" type="button" data-close="manager" aria-label="?�기">×</button>
+            <button class="window-control" type="button" aria-label="최소화">_</button>
+            <button class="window-control" type="button" aria-label="최대화">□</button>
+            <button class="window-control window-control--close" type="button" data-close="manager" aria-label="닫기">×</button>
           </div>
         </header>
 
         <div class="window-body">
           <div class="manager-stage">
-            <div class="manager-name">??루�? ??/div>
+            <div class="manager-name">루미</div>
 
             <div class="manager-visual">
               <div class="reaction-bubble" id="reaction-bubble" aria-hidden="true"></div>
-              <img class="manager-sprite" src="./assets/lumi-manager.png" alt="분홍???�자 ?�물 매니?� 루�?" />
+              <img class="manager-sprite" src="./assets/lumi-manager.png" alt="분홍 전자 생물 매니저 루미" />
             </div>
 
             <div class="manager-progress">
@@ -878,7 +878,7 @@
               <div
                 class="exp-bar"
                 role="progressbar"
-                aria-label="루�? 경험�?
+                aria-label="루미 경험치"
                 aria-valuemin="0"
                 aria-valuemax="100"
                 aria-valuenow="20"
@@ -890,12 +890,12 @@
 
             <div class="manager-status">
               <span class="status-pixel" id="status-icon" aria-hidden="true">..</span>
-              <span id="status-label">기다리는 �?/span>
+              <span id="status-label">기다리는 중</span>
             </div>
           </div>
 
           <div class="dialogue-panel" id="dialogue">
-            기다리고 ?�었?? ?�늘 ??분량?� ?��? ?�해????
+            기다리고 있었어. 오늘도 분량을 함께 정해볼까?
           </div>
         </div>
       </section>
@@ -904,17 +904,17 @@
     <footer class="taskbar">
       <button class="start-button" type="button">
         <span class="start-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
-        ?�작
+        시작
       </button>
 
-      <div class="task-buttons" aria-label="?�린 �?>
+      <div class="task-buttons" aria-label="열린 창">
         <button class="task-button is-active" type="button" data-task="quest">
           <span aria-hidden="true">Q</span>
-          <span>?�늘???�스??/span>
+          <span>오늘의 퀘스트</span>
         </button>
         <button class="task-button" type="button" data-task="manager">
-          <span aria-hidden="true">??/span>
-          <span>매니?�</span>
+          <span aria-hidden="true">M</span>
+          <span>매니저</span>
         </button>
       </div>
 
@@ -1077,10 +1077,10 @@
           void reactionBubble.offsetWidth;
           reactionBubble.classList.add("is-visible");
 
-          statusIcon.textContent = "??;
+          statusIcon.textContent = "✓";
           statusIcon.classList.add("is-complete");
-          statusLabel.textContent = "?�께 ?�장?�어";
-          dialogue.textContent = "?�늘???��? 걸음???�았?? ?�음?�도 ?�기??기다릴게.";
+          statusLabel.textContent = "함께 성장했어";
+          dialogue.textContent = "오늘도 한 걸음 나아갔어. 다음에도 여기서 기다릴게.";
           expFill.style.width = "40%";
           expValue.textContent = "40 / 100 EXP";
           progress.setAttribute("aria-valuenow", "40");
