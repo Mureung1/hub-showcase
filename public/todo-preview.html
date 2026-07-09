@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>답냥이 할 일 목록 톤 확인</title>
+    <style>
+      :root {
+        --color-primary: #05339b;
+        --color-primary-hover: #042b82;
+        --color-primary-pressed: #032267;
+        --color-primary-soft: #e7edff;
+        --color-primary-border: #9cb3ee;
+
+        --color-bg: #f8f1e5;
+        --color-bg-subtle: #fbf6ed;
+        --color-surface: #fffaf0;
+        --color-surface-muted: #efe6d6;
+
+        --color-text: #24262d;
+        --color-text-muted: #60636c;
+        --color-text-subtle: #8a8d96;
+        --color-text-on-primary: #fffaf0;
+
+        --color-border: #d9d0c1;
+        --color-border-strong: #7a7a76;
+        --color-disabled: #d8d1c5;
+        --color-backdrop: #e1e3e8;
+
+        --color-danger: #b8422e;
+        --color-danger-soft: #f7ded8;
+
+        --font-sans: "Pretendard", "Inter", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+        --font-display: "Pretendard", "Inter", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+
+        --font-size-display: 2.25rem;
+        --font-size-title: 1.375rem;
+        --font-size-subtitle: 1.125rem;
+        --font-size-body: 1rem;
+        --font-size-body-sm: 0.875rem;
+        --font-size-caption: 0.75rem;
+
+        --line-height-display: 1.08;
+        --line-height-title: 1.25;
+        --line-height-body: 1.5;
+        --line-height-caption: 1.35;
+
+        --font-weight-regular: 400;
+        --font-weight-medium: 500;
+        --font-weight-semibold: 650;
+        --font-weight-bold: 750;
+
+        --radius-xs: 8px;
+        --radius-sm: 12px;
+        --radius-md: 18px;
+        --radius-lg: 28px;
+        --radius-pill: 999px;
+
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 20px;
+        --space-6: 24px;
+        --space-8: 32px;
+        --space-10: 40px;
+        --space-12: 48px;
+
+        --page-padding-x: 20px;
+        --page-padding-y: 24px;
+        --content-max-width: 430px;
+        --card-padding: 18px;
+        --control-height: 48px;
+        --bottom-action-height: 56px;
+
+        --card-bg: var(--color-surface);
+        --card-border: 1.5px solid var(--color-border-strong);
+        --card-radius: var(--radius-lg);
+        --card-shadow: none;
+
+        --button-radius: var(--radius-pill);
+        --button-shadow: 0 10px 24px rgba(5, 51, 155, 0.18);
+
+        --input-bg: rgba(255, 250, 240, 0.82);
+        --input-border: 1px solid var(--color-border);
+        --input-radius: var(--radius-sm);
+        --focus-ring: 0 0 0 3px rgba(5, 51, 155, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          linear-gradient(90deg, rgba(5, 51, 155, 0.05) 1px, transparent 1px) 0 0 / 52px 52px,
+          var(--color-backdrop);
+        color: var(--color-text);
+        font-family: var(--font-sans);
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .page {
+        width: min(100%, var(--content-max-width));
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: var(--page-padding-y) var(--page-padding-x) var(--space-8);
+        background: var(--color-bg);
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-4);
+        margin-bottom: var(--space-8);
+      }
+
+      .iconButton {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border: 1.5px solid transparent;
+        border-radius: var(--radius-pill);
+        background: transparent;
+        color: var(--color-primary);
+        cursor: pointer;
+      }
+
+      .iconButton:focus-visible,
+      .primaryButton:focus-visible,
+      .taskAction:focus-visible,
+      .filter:focus-visible,
+      .field input:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+      }
+
+      .brandMark {
+        display: grid;
+        width: 46px;
+        height: 46px;
+        place-items: center;
+        border: 2px solid var(--color-primary);
+        border-radius: 50%;
+        color: var(--color-primary);
+        font-size: var(--font-size-caption);
+        font-weight: var(--font-weight-bold);
+        line-height: 1;
+      }
+
+      .hero {
+        margin-bottom: var(--space-8);
+      }
+
+      .eyebrow {
+        margin: 0 0 var(--space-2);
+        color: var(--color-primary);
+        font-size: var(--font-size-caption);
+        font-weight: var(--font-weight-bold);
+      }
+
+      h1 {
+        max-width: 320px;
+        margin: 0;
+        color: var(--color-text);
+        font-size: var(--font-size-display);
+        font-weight: var(--font-weight-bold);
+        letter-spacing: 0;
+        line-height: var(--line-height-display);
+      }
+
+      .heroText {
+        max-width: 320px;
+        margin: var(--space-3) 0 0;
+        color: var(--color-text-muted);
+        font-size: var(--font-size-body-sm);
+        line-height: var(--line-height-body);
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-3);
+        margin-bottom: var(--space-6);
+      }
+
+      .summaryCard {
+        min-height: 104px;
+        padding: var(--space-4);
+        border: var(--card-border);
+        border-radius: var(--card-radius);
+        background: var(--color-surface);
+      }
+
+      .summaryCard strong {
+        display: block;
+        color: var(--color-primary);
+        font-size: 2rem;
+        font-weight: var(--font-weight-bold);
+        line-height: 1;
+      }
+
+      .summaryCard span {
+        display: block;
+        margin-top: var(--space-2);
+        color: var(--color-text-muted);
+        font-size: var(--font-size-caption);
+        line-height: var(--line-height-caption);
+      }
+
+      .panel {
+        padding: var(--card-padding);
+        border: var(--card-border);
+        border-radius: var(--card-radius);
+        background: var(--card-bg);
+      }
+
+      .panelHeader {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-4);
+        margin-bottom: var(--space-4);
+      }
+
+      h2 {
+        margin: 0;
+        font-size: var(--font-size-title);
+        font-weight: var(--font-weight-bold);
+        line-height: var(--line-height-title);
+      }
+
+      .datePill {
+        flex: none;
+        padding: 7px 12px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-pill);
+        color: var(--color-text-muted);
+        font-size: var(--font-size-caption);
+        font-weight: var(--font-weight-semibold);
+      }
+
+      .field {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        min-height: var(--control-height);
+        margin-bottom: var(--space-4);
+        padding: 0 var(--space-4);
+        border: var(--input-border);
+        border-radius: var(--input-radius);
+        background: var(--input-bg);
+      }
+
+      .field input {
+        width: 100%;
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--color-text);
+      }
+
+      .field input::placeholder {
+        color: var(--color-text-subtle);
+      }
+
+      .filters {
+        display: flex;
+        gap: var(--space-2);
+        margin-bottom: var(--space-4);
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      .filters::-webkit-scrollbar {
+        display: none;
+      }
+
+      .filter {
+        flex: none;
+        min-height: 38px;
+        padding: 0 var(--space-4);
+        border: 1.5px solid var(--color-border-strong);
+        border-radius: var(--radius-pill);
+        background: transparent;
+        color: var(--color-text);
+        font-size: var(--font-size-body-sm);
+        font-weight: var(--font-weight-semibold);
+      }
+
+      .filter[aria-pressed="true"] {
+        border-color: var(--color-primary);
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
+      }
+
+      .taskList {
+        display: grid;
+        gap: var(--space-3);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .task {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: var(--space-3);
+        align-items: center;
+        min-height: 76px;
+        padding: var(--space-3);
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-subtle);
+      }
+
+      .task[data-selected="true"] {
+        border-color: var(--color-primary);
+        background: var(--color-primary-soft);
+      }
+
+      .check {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border: 1.5px solid var(--color-primary);
+        border-radius: 50%;
+        color: var(--color-primary);
+        font-size: var(--font-size-caption);
+        font-weight: var(--font-weight-bold);
+      }
+
+      .task.done .check {
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
+      }
+
+      .taskTitle {
+        margin: 0;
+        font-size: var(--font-size-body);
+        font-weight: var(--font-weight-semibold);
+        line-height: var(--line-height-title);
+      }
+
+      .taskMeta {
+        margin: var(--space-1) 0 0;
+        color: var(--color-text-muted);
+        font-size: var(--font-size-caption);
+        line-height: var(--line-height-caption);
+      }
+
+      .taskAction {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border: 0;
+        border-radius: var(--radius-pill);
+        background: var(--color-surface-muted);
+        color: var(--color-primary);
+        font-weight: var(--font-weight-bold);
+      }
+
+      .primaryButton {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: var(--bottom-action-height);
+        margin-top: var(--space-5);
+        border: 0;
+        border-radius: var(--button-radius);
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
+        box-shadow: var(--button-shadow);
+        font-weight: var(--font-weight-semibold);
+        cursor: pointer;
+      }
+
+      .primaryButton:hover {
+        background: var(--color-primary-hover);
+      }
+
+      .note {
+        margin: var(--space-4) 0 0;
+        color: var(--color-text-muted);
+        font-size: var(--font-size-caption);
+        line-height: var(--line-height-caption);
+        text-align: center;
+      }
+
+      @media (min-width: 760px) {
+        body {
+          padding: var(--space-8);
+        }
+
+        .page {
+          min-height: auto;
+          border: 1px solid rgba(36, 38, 45, 0.08);
+          border-radius: 36px;
+          box-shadow: 0 24px 70px rgba(36, 38, 45, 0.16);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar" aria-label="상단 메뉴">
+        <button class="iconButton" type="button" aria-label="뒤로가기">←</button>
+        <div class="brandMark" aria-label="답냥이">답냥이</div>
+        <button class="iconButton" type="button" aria-label="설정">○</button>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">오늘의 메시지 준비</p>
+        <h1 id="page-title">보내기 어려운 말, 하나씩 정리하기</h1>
+        <p class="heroText">팀플, 교수님, 선배, 친구에게 보내야 할 말을 놓치지 않도록 가볍게 모아둔 목록이에요.</p>
+      </section>
+
+      <section class="summary" aria-label="오늘 요약">
+        <div class="summaryCard">
+          <strong>4</strong>
+          <span>오늘 정리할 메시지</span>
+        </div>
+        <div class="summaryCard">
+          <strong>2</strong>
+          <span>이미 복사한 초안</span>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="todo-title">
+        <div class="panelHeader">
+          <h2 id="todo-title">할 일 목록</h2>
+          <span class="datePill">7월 9일</span>
+        </div>
+
+        <label class="field">
+          <span aria-hidden="true">＋</span>
+          <input type="text" placeholder="새로 보낼 말 추가하기" />
+        </label>
+
+        <div class="filters" aria-label="목록 필터">
+          <button class="filter" type="button" aria-pressed="true">전체</button>
+          <button class="filter" type="button" aria-pressed="false">답장</button>
+          <button class="filter" type="button" aria-pressed="false">먼저 보내기</button>
+          <button class="filter" type="button" aria-pressed="false">완료</button>
+        </div>
+
+        <ul class="taskList">
+          <li class="task" data-selected="true">
+            <span class="check" aria-hidden="true">1</span>
+            <div>
+              <p class="taskTitle">팀플 자료 요청 메시지 만들기</p>
+              <p class="taskMeta">팀플·조모임 · 오늘 오후 6시 전</p>
+            </div>
+            <button class="taskAction" type="button" aria-label="열기">›</button>
+          </li>
+          <li class="task done">
+            <span class="check" aria-hidden="true">✓</span>
+            <div>
+              <p class="taskTitle">교수님께 결석 사유 정리</p>
+              <p class="taskMeta">교수님·조교님 · 복사 완료</p>
+            </div>
+            <button class="taskAction" type="button" aria-label="열기">›</button>
+          </li>
+          <li class="task">
+            <span class="check" aria-hidden="true">3</span>
+            <div>
+              <p class="taskTitle">선배에게 일정 확인하기</p>
+              <p class="taskMeta">선배·동기 · 먼저 보내기</p>
+            </div>
+            <button class="taskAction" type="button" aria-label="열기">›</button>
+          </li>
+          <li class="task">
+            <span class="check" aria-hidden="true">4</span>
+            <div>
+              <p class="taskTitle">친구에게 미안한 일 말하기</p>
+              <p class="taskMeta">친구·연인 · 답장 준비</p>
+            </div>
+            <button class="taskAction" type="button" aria-label="열기">›</button>
+          </li>
+        </ul>
+
+        <button class="primaryButton" type="button">보낼 말 만들기</button>
+        <p class="note">색, 폰트, 둥근 카드, 여백 확인용 정적 HTML입니다.</p>
+      </section>
+    </main>
+  </body>
+</html>
