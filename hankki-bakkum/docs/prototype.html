@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한끼바꿈 — 프로토타입 v3 (Warm Paper)</title>
+<style>
+  :root{
+    --primary:#5B6CF5; --primary-soft:#EAEDFB; --primary-deep:#4354D8;
+    --bg-page:#F6F3EC; --bg-card:#FFFEFB; --bg-section:#F5F1E8;
+    --ink:#2B2620; --body:#5A544B; --muted:#A39A8C; --line:#EDE7DB;
+    --ticket-bg:#FFF3D6; --ticket-ink:#8A6A1B;
+    --ok-soft:#E9F4EA; --ok:#3E9A64;
+    --hot-soft:#FDEEE9; --hot:#E85D3D;
+    --r-card:20px; --r-inner:14px; --r-pill:999px;
+    --shadow-card:0 8px 24px rgba(88,68,32,.07);
+    --shadow-float:0 18px 44px rgba(88,68,32,.12);
+    font-size:16px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+    background:var(--bg-page);
+    color:var(--body);
+    min-height:100vh;
+    padding:48px 20px 72px;
+  }
+  input[type=radio].nav{position:absolute;opacity:0;pointer-events:none}
+  label{cursor:pointer}
+  label:focus-visible, button:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+
+  /* ── 페이지 헤더 ── */
+  .intro{max-width:980px;margin:0 auto 32px}
+  .intro .eyebrow{font-size:.76rem;letter-spacing:.2em;color:var(--primary);font-weight:700}
+  .intro h1{font-size:2rem;font-weight:800;letter-spacing:-.02em;margin:.28em 0 .35em;color:var(--ink)}
+  .intro h1 .hl{color:var(--primary)}
+  .intro p{font-size:.95rem;color:var(--body);max-width:640px;line-height:1.7}
+
+  .wrap{max-width:980px;margin:0 auto;display:flex;gap:36px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+
+  /* ── 폰 프레임 ── */
+  .phone{
+    width:390px;flex:0 0 390px;
+    background:var(--bg-card);
+    border-radius:40px;
+    box-shadow:var(--shadow-float);
+    overflow:hidden;
+    display:flex;flex-direction:column;
+    min-height:800px;
+    position:relative;
+  }
+  .statusbar{display:flex;justify-content:space-between;padding:14px 24px 6px;font-size:.72rem;color:var(--muted);font-weight:600}
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 14px;gap:8px}
+  .brand{font-weight:800;font-size:1.02rem;letter-spacing:-.02em;color:var(--ink)}
+  .brand em{font-style:normal;color:var(--primary)}
+  .appbar .right{display:flex;align-items:center;gap:8px}
+  .region{font-size:.78rem;font-weight:600;color:var(--primary);background:var(--primary-soft);padding:7px 14px;border-radius:var(--r-pill)}
+  .bell{position:relative;font-size:1.05rem;line-height:1}
+  .bell::after{
+    content:"2";position:absolute;top:-6px;right:-8px;
+    background:var(--hot);color:#fff;font-size:.58rem;font-weight:700;
+    width:15px;height:15px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  .stage{flex:1;overflow-y:auto;position:relative;padding-bottom:90px}
+  .screen{display:none;padding:8px 18px 28px;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){.screen{animation:none}}
+
+  #r-hot:checked    ~ .wrap .screen-hot,
+  #r-write:checked  ~ .wrap .screen-write,
+  #r-talent:checked ~ .wrap .screen-talent,
+  #r-detail:checked ~ .wrap .screen-detail,
+  #r-done:checked   ~ .wrap .screen-done,
+  #r-form:checked   ~ .wrap .screen-form{display:block}
+
+  /* ── 하단 탭바 ── */
+  .tabbar{
+    position:absolute;bottom:0;left:0;right:0;height:76px;
+    background:var(--bg-card);border-top:1px solid var(--line);
+    display:flex;align-items:stretch;
+  }
+  .tabbar label{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:.72rem;font-weight:600;color:var(--muted)}
+  .tabbar .ico{font-size:1.25rem;line-height:1}
+  .tab-write{flex:0 0 78px;align-self:center}
+  .tab-write span{
+    display:flex;align-items:center;justify-content:center;
+    width:54px;height:54px;margin:0 auto;border-radius:50%;
+    background:var(--primary);color:#fff;
+    font-size:1.55rem;box-shadow:0 8px 18px rgba(91,108,245,.35);
+  }
+  #r-hot:checked    ~ .wrap label[for=r-hot],
+  #r-talent:checked ~ .wrap label[for=r-talent],
+  #r-detail:checked ~ .wrap label[for=r-talent],
+  #r-done:checked   ~ .wrap label[for=r-talent],
+  #r-form:checked   ~ .wrap label[for=r-talent]{color:var(--primary)}
+
+  /* ── 공통 부품 ── */
+  .sec-title{font-size:1.3rem;font-weight:800;letter-spacing:-.02em;margin:8px 2px 4px;color:var(--ink);line-height:1.35}
+  .sec-title .hl{color:var(--primary)}
+  .sec-cap{font-size:.8rem;color:var(--muted);font-weight:500;margin:0 2px 16px}
+  .card{background:var(--bg-card);border-radius:var(--r-card);padding:20px;margin-bottom:16px;display:block;box-shadow:var(--shadow-card)}
+  .tagrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .tag{font-size:.72rem;font-weight:600;padding:5px 11px;border-radius:var(--r-pill);background:var(--primary-soft);color:var(--primary)}
+  .tag.hot{background:var(--hot-soft);color:var(--hot)}
+  .tag.ai{background:var(--bg-card);color:var(--primary);border:1.5px dashed var(--primary)}
+  .tag.open{background:var(--ticket-bg);color:var(--ticket-ink)}
+  .tag.closed{background:var(--bg-section);color:var(--muted)}
+  .card h3{font-size:.98rem;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+  .card .meta{font-size:.78rem;color:var(--muted);margin-top:6px;line-height:1.55;font-weight:500}
+  .thumb{
+    height:112px;border-radius:var(--r-inner);margin-bottom:12px;position:relative;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.8rem;font-weight:700;color:#fff;letter-spacing:.02em;
+  }
+  .thumb .from{
+    position:absolute;top:8px;left:8px;font-size:.66rem;font-weight:600;
+    background:rgba(43,38,32,.55);padding:4px 9px;border-radius:var(--r-pill);
+  }
+  .thumb .until{
+    position:absolute;bottom:8px;right:8px;font-size:.66rem;font-weight:700;
+    background:var(--bg-card);color:var(--hot);padding:4px 9px;border-radius:var(--r-pill);
+    box-shadow:0 2px 6px rgba(88,68,32,.12);
+  }
+  /* 사진 자리 대신 CSS로 그린 미니 메뉴판 목업 */
+  .mock-menu{
+    height:130px;border-radius:var(--r-inner);margin-bottom:12px;position:relative;
+    background:linear-gradient(165deg,#FFFDF6,#F7EFDC);
+    display:flex;flex-direction:column;justify-content:center;gap:7px;
+    padding:16px 20px;overflow:hidden;
+  }
+  .mock-menu::after{content:"🍲";position:absolute;right:-6px;bottom:-14px;font-size:4.2rem;opacity:.14;transform:rotate(-8deg)}
+  .mock-menu .mm-title{font-weight:800;color:var(--ink);font-size:.95rem;letter-spacing:-.01em}
+  .mock-menu .mm-row{display:flex;align-items:baseline;gap:8px;font-size:.72rem;color:var(--body);font-weight:600}
+  .mock-menu .mm-row .dots{flex:1;border-bottom:2px dotted #D8CBAE;transform:translateY(-3px)}
+  .mock-menu .mm-row .price{color:var(--hot);font-weight:700}
+  .mock-menu.ref{background:linear-gradient(165deg,#F5F3EE,#EAE5D8)}
+  .mock-menu.ref::after{content:"📷";opacity:.12}
+  .mock-menu.ref .mm-title{color:var(--body)}
+  .mock-menu.ref .mm-row{color:var(--muted)}
+  .mock-menu.ref .mm-row .price{color:var(--muted)}
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:6px;width:100%;
+    border:none;border-radius:var(--r-inner);min-height:48px;padding:12px;
+    font-size:.92rem;font-weight:700;font-family:inherit;cursor:pointer;
+    background:var(--primary-soft);color:var(--primary);
+  }
+  .btn:active{background:#DEE2F8}
+  .btn-dim{background:var(--bg-section);color:var(--muted)}
+  .back{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;font-weight:600;color:var(--muted);margin-bottom:12px}
+
+  .filters{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 14px;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .fchip{flex:0 0 auto;font-size:.76rem;font-weight:600;padding:8px 14px;border-radius:var(--r-pill);background:var(--bg-card);box-shadow:var(--shadow-card);color:var(--muted)}
+  .fchip.on{background:var(--primary);color:#fff;box-shadow:none}
+
+  /* ── 식권 티켓 ── */
+  .ticket{display:flex;align-items:center;background:var(--ticket-bg);border-radius:var(--r-inner);margin:14px 0;position:relative}
+  .ticket .stub{flex:0 0 86px;text-align:center;padding:13px 6px;border-right:2px dashed rgba(138,106,27,.3);font-weight:800;font-size:1.3rem;color:var(--ticket-ink);line-height:1.05}
+  .ticket .stub small{display:block;font-size:.6rem;font-weight:700;letter-spacing:.14em;margin-top:3px;opacity:.7}
+  .ticket .body{flex:1;padding:11px 15px;font-size:.83rem;font-weight:600;color:var(--ticket-ink)}
+  .ticket .body em{display:block;font-style:normal;font-weight:500;font-size:.73rem;margin-top:4px;opacity:.75}
+  .ticket::before,.ticket::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:var(--bg-card);top:50%;transform:translateY(-50%)}
+  .ticket::before{left:79px} .ticket::after{right:-7px}
+  .ticket.paid{background:var(--ok-soft)}
+  .ticket.paid .stub{color:var(--ok);border-right-color:rgba(62,154,100,.35)}
+  .ticket.paid .body{color:#2E6E4A}
+  .ticket.paid .body em{color:#5C8D72}
+
+  /* ── 진행 스텝바 ── */
+  .steps{display:flex;margin:16px 0 10px}
+  .step{flex:1;text-align:center;font-size:.68rem;font-weight:600;color:var(--muted);position:relative}
+  .step .dot{
+    width:22px;height:22px;border-radius:50%;background:var(--bg-section);color:var(--muted);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 5px;font-size:.7rem;
+    position:relative;z-index:1;
+  }
+  .step::before{content:"";position:absolute;top:11px;left:-50%;width:100%;height:2px;background:var(--bg-section)}
+  .step:first-child::before{display:none}
+  .step.done .dot{background:var(--primary);color:#fff}
+  .step.done{color:var(--primary)}
+  .step.done::before{background:var(--primary)}
+  .step.now .dot{background:var(--bg-card);border:2.5px solid var(--hot);color:var(--hot)}
+  .step.now{color:var(--hot)}
+  .step.now::before{background:var(--primary)}
+  .step.fin .dot{background:var(--ok);color:#fff}
+  .step.fin{color:var(--ok)}
+  .step.fin::before{background:var(--ok)}
+
+  /* ── 폼 요소 ── */
+  .field{margin-bottom:18px}
+  .field .lb{display:block;font-size:.82rem;font-weight:700;margin-bottom:8px;color:var(--ink)}
+  .req{color:var(--hot);font-size:.75rem;margin-left:3px}
+  .opt{color:var(--muted);font-size:.72rem;font-weight:500;margin-left:3px}
+  .input, .textarea, .select{
+    width:100%;border:none;border-radius:var(--r-inner);background:var(--bg-section);
+    padding:13px 14px;font-size:.9rem;font-family:inherit;color:var(--ink);line-height:1.55;
+  }
+  .textarea{min-height:86px}
+  .chips{display:flex;gap:7px;flex-wrap:wrap}
+  .chip{font-size:.8rem;font-weight:600;padding:9px 14px;border-radius:var(--r-pill);background:var(--bg-section);color:var(--muted)}
+  .chip.on{background:var(--primary-soft);color:var(--primary)}
+  .upload{
+    border:2px dashed #DCD3C2;border-radius:var(--r-inner);padding:20px;text-align:center;
+    font-size:.82rem;color:var(--muted);background:var(--bg-section);
+  }
+  .upload strong{display:block;color:var(--ink);margin-bottom:3px}
+  .hint{font-size:.72rem;color:var(--muted);margin-top:7px;line-height:1.6;font-weight:500}
+  .rulebox{
+    display:flex;gap:10px;align-items:flex-start;background:var(--primary-soft);
+    border-radius:var(--r-inner);padding:13px 15px;font-size:.78rem;line-height:1.65;color:#3D479E;
+  }
+  .rulebox .ico{font-size:1rem;line-height:1.4}
+  .stepper{display:flex;align-items:center;border-radius:var(--r-inner);overflow:hidden;width:max-content;background:var(--bg-section)}
+  .stepper b{width:44px;height:42px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--primary)}
+  .stepper span{width:58px;text-align:center;font-weight:800;font-size:.95rem;color:var(--ink)}
+
+  .ai-draft{border:1.5px dashed var(--primary);background:var(--bg-card);box-shadow:none}
+  .ai-draft h3{margin-bottom:5px}
+  .ai-draft p{font-size:.85rem;line-height:1.7;color:var(--body)}
+
+  .confirm{display:flex;gap:8px;margin-top:12px}
+  .confirm .btn{font-size:.82rem;padding:12px 6px}
+  .note-strip{font-size:.72rem;color:var(--muted);text-align:center;margin-top:10px;line-height:1.6;font-weight:500}
+
+  .stars{display:flex;gap:6px;justify-content:center;font-size:1.7rem;margin:10px 0 4px}
+  .stars b{color:#F5B301}
+  .stars i{color:var(--line);font-style:normal}
+
+  .who{display:flex;align-items:center;gap:11px;margin:12px 0}
+  .avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:var(--bg-section);flex:0 0 44px}
+  .who .nm{font-weight:700;font-size:.92rem;color:var(--ink)}
+  .who .sub{font-size:.74rem;color:var(--muted);margin-top:2px;font-weight:500}
+
+  .foot{text-align:center;font-size:.78rem;color:var(--muted);line-height:1.7;padding:6px 0 2px;font-weight:500}
+  .foot strong{color:var(--body)}
+
+  /* ── 우측 설명 패널 ── */
+  .notes{flex:1 1 330px;max-width:440px;position:sticky;top:32px}
+  .notes h2{font-size:.78rem;letter-spacing:.18em;color:var(--primary);font-weight:700;margin-bottom:14px}
+  .note{display:none;background:var(--bg-card);border-radius:var(--r-card);padding:24px 26px;box-shadow:var(--shadow-card)}
+  .note h3{font-size:1.05rem;font-weight:800;letter-spacing:-.01em;margin-bottom:14px;color:var(--ink)}
+  .note ul{list-style:none}
+  .note li{font-size:.86rem;line-height:1.7;padding-left:20px;position:relative;margin-bottom:10px;color:var(--body)}
+  .note li::before{content:"—";position:absolute;left:0;color:var(--primary)}
+  .note li strong{color:var(--ink)}
+  .note .ref{font-size:.72rem;color:var(--muted);margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-weight:500}
+  #r-hot:checked    ~ .wrap .note-hot,
+  #r-write:checked  ~ .wrap .note-write,
+  #r-talent:checked ~ .wrap .note-talent,
+  #r-detail:checked ~ .wrap .note-detail,
+  #r-done:checked   ~ .wrap .note-done,
+  #r-form:checked   ~ .wrap .note-form{display:block}
+
+  @media (max-width:880px){
+    body{padding:28px 12px 48px}
+    .wrap{gap:26px}
+    .notes{position:static;max-width:390px}
+    .phone{flex:0 1 390px;width:100%}
+  }
+</style>
+</head>
+<body>
+
+<input class="nav" type="radio" name="screen" id="r-hot" checked>
+<input class="nav" type="radio" name="screen" id="r-write">
+<input class="nav" type="radio" name="screen" id="r-talent">
+<input class="nav" type="radio" name="screen" id="r-detail">
+<input class="nav" type="radio" name="screen" id="r-done">
+<input class="nav" type="radio" name="screen" id="r-form">
+
+<header class="intro">
+  <div class="eyebrow">PROTOTYPE v3 · WARM PAPER · HTML/CSS ONLY</div>
+  <h1>한끼바꿈 <span class="hl">🤝</span></h1>
+  <p>재능 한 번과 한 끼를 맞바꾸는 현금 없는 로컬 상생 플랫폼.
+  자바스크립트 없이 순수 HTML/CSS로 동작하는 클릭형 프로토타입입니다.
+  하단 탭과 카드, 버튼을 눌러 6개 화면을 오갈 수 있어요.</p>
+</header>
+
+<div class="wrap">
+
+  <!-- ═══ 폰 프레임 ═══ -->
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+    <div class="appbar">
+      <div class="brand">한끼<em>바꿈</em></div>
+      <div class="right">
+        <div class="region">부산대 앞 ▾</div>
+        <div class="bell">🔔</div>
+      </div>
+    </div>
+
+    <div class="stage">
+
+      <!-- ① Tab1 동네 핫딜 -->
+      <section class="screen screen-hot">
+        <div class="sec-title">동네 핫딜 🔥<br><span class="hl">지금 우리 동네</span>에 뜬 소식</div>
+        <div class="sec-cap">Local hot deals</div>
+
+        <div class="filters">
+          <span class="fchip on">전체</span>
+          <span class="fchip">#마감할인</span>
+          <span class="fchip">#노쇼발생</span>
+          <span class="fchip">#우천특가</span>
+          <span class="fchip">#당일한정</span>
+        </div>
+
+        <div class="card">
+          <div class="mock-menu">
+            <span class="from" style="position:absolute;top:8px;left:8px;font-size:.66rem;font-weight:600;background:rgba(43,38,32,.55);color:#fff;padding:4px 9px;border-radius:var(--r-pill)">🎨 재능헬퍼 결과물</span>
+            <div class="mm-title" style="margin-top:14px">순자네 백반</div>
+            <div class="mm-row">김치찌개<span class="dots"></span><span class="price">5,000</span></div>
+            <div class="mm-row">제육볶음<span class="dots"></span><span class="price">8,000</span></div>
+            <span class="until" style="position:absolute;bottom:8px;right:8px;font-size:.66rem;font-weight:700;background:var(--bg-card);color:var(--hot);padding:4px 9px;border-radius:var(--r-pill);box-shadow:0 2px 6px rgba(88,68,32,.12)">오늘 21시까지</span>
+          </div>
+          <div class="tagrow"><span class="tag hot">#우천특가</span><span class="tag hot">#당일한정</span></div>
+          <h3>비 오는 날엔 김치찌개 5,000원</h3>
+          <div class="meta">순자네 백반 · 도보 4분 · 3분 전 · ♡ 12</div>
+        </div>
+
+        <div class="card">
+          <div class="tagrow"><span class="tag hot">#노쇼발생</span></div>
+          <h3>예약 노쇼 😢 떡볶이 2인 세트 반값에 가져가세요</h3>
+          <div class="meta">청춘분식 · 도보 6분 · 20분 전 · 남은 수량 2</div>
+        </div>
+
+        <div class="card">
+          <div class="tagrow"><span class="tag hot">#마감할인</span></div>
+          <h3>오늘 8시 이후 모든 김밥 1+1</h3>
+          <div class="meta">대학로김밥 · 도보 2분 · 1시간 전 · ♡ 23</div>
+        </div>
+
+        <div class="foot">🔔 알림 설정한 태그의 새 글이 뜨면 바로 알려드려요</div>
+      </section>
+
+      <!-- ② Tab1 글쓰기 (AI) -->
+      <section class="screen screen-write">
+        <label class="back" for="r-hot">← 핫딜로 돌아가기</label>
+        <div class="sec-title">핫딜 올리기 ✏️<br>상황만 <span class="hl">한 줄</span> 적어주세요</div>
+        <div class="sec-cap">나머지는 저희가 써 드려요</div>
+
+        <div class="field">
+          <span class="lb">지금 상황이 어떤가요?</span>
+          <div class="input">비 와서 손님 없는데 김치찌개 남았어요</div>
+        </div>
+        <button class="btn" type="button">✨ 홍보 글 만들기</button>
+
+        <div class="card ai-draft" style="margin-top:18px">
+          <div class="tagrow">
+            <span class="tag ai">✦ AI가 만든 초안</span>
+            <span class="tag hot">#우천특가</span><span class="tag hot">#당일한정</span>
+          </div>
+          <h3>비 오는 날엔 김치찌개 5,000원</h3>
+          <p>창밖에 비 오는 소리 들리시죠? 뜨끈한 김치찌개가 오늘만 5,000원.
+          부산대 앞 순자네 백반에서 우산 털고 몸 녹이고 가세요. 오늘 21시까지!</p>
+        </div>
+
+        <div class="field" style="margin-top:16px">
+          <span class="lb">사진 <span class="opt">선택 · 없으면 재능헬퍼 결과물이 자동으로 들어가요</span></span>
+          <div class="upload"><strong>🖼 새 메뉴판.png 자동 첨부됨</strong>탭해서 다른 사진으로 바꿀 수 있어요</div>
+        </div>
+
+        <div class="confirm">
+          <label class="btn" for="r-hot" role="button" style="background:var(--primary);color:#fff">이대로 올리기</label>
+          <button class="btn btn-dim" type="button">다시 만들기</button>
+        </div>
+        <div class="note-strip">AI 초안은 사장님이 확인해야만 게시돼요 · 올리기 전에 자유롭게 고칠 수 있어요</div>
+      </section>
+
+      <!-- ③ Tab2 재능 헬퍼 피드 -->
+      <section class="screen screen-talent">
+        <div class="sec-title">재능 헬퍼 🤝<br>내 재능으로 돕고 <span class="hl">한 끼</span>로 받아요</div>
+        <div class="sec-cap">Talent helper</div>
+
+        <div class="filters">
+          <span class="fchip on">전체</span>
+          <span class="fchip">#포스터제작</span>
+          <span class="fchip">#릴스편집</span>
+          <span class="fchip">#리뷰관리</span>
+          <span class="fchip">#메뉴판디자인</span>
+          <span class="fchip">#SNS운영</span>
+        </div>
+
+        <label class="card" for="r-detail" role="button">
+          <div class="tagrow"><span class="tag">#메뉴판디자인</span><span class="tag open">모집중 · 지원 2명</span></div>
+          <h3>10년 된 손글씨 메뉴판, 예쁘게 바꿔주실 분</h3>
+          <div class="meta">순자네 백반 · 사장님 평점 ★4.9 (거래 12회) · 도보 4분</div>
+          <div class="ticket">
+            <div class="stub">5장<small>MEAL</small></div>
+            <div class="body">백반 식사권 5장<em>완료 확인 후 바로 지급</em></div>
+          </div>
+        </label>
+
+        <div class="card">
+          <div class="tagrow"><span class="tag">#릴스편집</span><span class="tag open">모집중 · 지원 1명</span></div>
+          <h3>곱창 굽는 영상으로 릴스 1편 만들어주세요</h3>
+          <div class="meta">불타는곱창 · 사장님 평점 ★4.7 · 가게 방문 촬영 필요</div>
+          <div class="ticket">
+            <div class="stub">3장<small>MEAL</small></div>
+            <div class="body">곱창 식사권 3장<em>촬영 당일 1장 선지급</em></div>
+          </div>
+        </div>
+
+        <div class="card" style="opacity:.55">
+          <div class="tagrow"><span class="tag">#리뷰관리</span><span class="tag closed">매칭완료</span></div>
+          <h3>한 달간 리뷰 답글 대신 달아주실 분</h3>
+          <div class="meta">카페온도 · 사장님 평점 ★5.0 · 헬퍼 김○○ 진행 중</div>
+        </div>
+
+        <label class="btn" for="r-form" role="button" style="margin-top:4px">＋ 도움 요청 올리기 (사장님)</label>
+        <div class="foot">🌱 관심 태그를 등록하면 새 요청을 알려드려요</div>
+      </section>
+
+      <!-- ④ Tab2 요청 상세 -->
+      <section class="screen screen-detail">
+        <label class="back" for="r-talent">← 재능 헬퍼 목록</label>
+        <div class="tagrow"><span class="tag">#메뉴판디자인</span></div>
+        <div class="sec-title" style="margin-top:2px;font-size:1.15rem">10년 된 손글씨 메뉴판,<br>예쁘게 바꿔주실 분</div>
+
+        <div class="who">
+          <div class="avatar">👩‍🍳</div>
+          <div>
+            <div class="nm">순자네 백반 · 김순자 사장님</div>
+            <div class="sub">평점 ★4.9 · 거래 12회 · 부산대 앞</div>
+          </div>
+        </div>
+
+        <div class="steps">
+          <div class="step done"><div class="dot">✓</div>요청등록</div>
+          <div class="step done"><div class="dot">✓</div>매칭</div>
+          <div class="step now"><div class="dot">●</div>완료대기</div>
+          <div class="step"><div class="dot">4</div>완료·지급</div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:.85rem;margin-bottom:10px">📎 사장님이 올린 기대 결과물 예시</h3>
+          <div class="mock-menu ref" style="height:96px;gap:5px;padding:12px 18px">
+            <div class="mm-title" style="font-size:.82rem">다른 가게 메뉴판.jpg</div>
+            <div class="mm-row">된장찌개<span class="dots"></span><span class="price">7,000</span></div>
+            <div class="mm-row">불백정식<span class="dots"></span><span class="price">9,000</span></div>
+          </div>
+          <div class="meta" style="margin-top:0">"이 집처럼 사진 크고 글씨 시원시원했으면 해요. 가격 꼭 잘 보이게!"</div>
+        </div>
+
+        <div class="ticket">
+          <div class="stub">5장<small>MEAL</small></div>
+          <div class="body">백반 식사권 5장<em>양측 완료 확인 후 지급됩니다</em></div>
+        </div>
+
+        <div class="rulebox">
+          <span class="ico">🤝</span>
+          <span><strong>수정 요청 1회 포함</strong>이 약속된 요청이에요.
+          결과물이 올라오면 <strong>사장님과 헬퍼 두 사람 모두 확인</strong>해야 거래가 끝나요.
+          한쪽이 3일간 응답하지 않으면 알림 후 자동 처리돼요.</span>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h3 style="font-size:.85rem;margin-bottom:10px">📤 헬퍼가 올린 결과물 <span class="tag" style="font-size:.62rem">수정 1회 반영됨</span></h3>
+          <div class="mock-menu" style="height:96px;gap:5px;padding:12px 18px">
+            <div class="mm-title" style="font-size:.82rem">순자네 백반</div>
+            <div class="mm-row">김치찌개<span class="dots"></span><span class="price">5,000</span></div>
+            <div class="mm-row">제육볶음<span class="dots"></span><span class="price">8,000</span></div>
+          </div>
+          <div class="confirm">
+            <button class="btn btn-dim" type="button">✓ 사장님 확인 완료</button>
+            <label class="btn" for="r-done" role="button" style="background:var(--primary);color:#fff">헬퍼 확인하기</label>
+          </div>
+          <div class="note-strip">두 사람 모두 확인하면 식사권이 지급되고 서로 평점을 남겨요</div>
+        </div>
+      </section>
+
+      <!-- ⑤ 거래 완료 & 상호 평점 -->
+      <section class="screen screen-done">
+        <div class="sec-title" style="text-align:center;margin-top:20px">거래가 끝났어요 🎉<br><span class="hl">양측 확인 완료</span>, 식사권 지급!</div>
+        <div class="sec-cap" style="text-align:center">Trade complete</div>
+
+        <div class="steps">
+          <div class="step done"><div class="dot">✓</div>요청등록</div>
+          <div class="step done"><div class="dot">✓</div>매칭</div>
+          <div class="step done"><div class="dot">✓</div>완료대기</div>
+          <div class="step fin"><div class="dot">✓</div>완료·지급</div>
+        </div>
+
+        <div class="ticket paid">
+          <div class="stub">5장<small>PAID</small></div>
+          <div class="body">백반 식사권 5장 지급 완료<em>내 식사권 지갑에서 확인 · 사용 시 사장님께 보여주세요</em></div>
+        </div>
+
+        <div class="card" style="text-align:center">
+          <h3 style="font-size:.9rem">순자네 백반과의 거래, 어땠나요?</h3>
+          <div class="stars"><b>★</b><b>★</b><b>★</b><b>★</b><b>★</b></div>
+          <div class="field" style="margin-top:12px;text-align:left">
+            <span class="lb">한줄 후기</span>
+            <div class="input">사장님이 원하는 걸 명확히 알려주셔서 작업이 편했어요!</div>
+          </div>
+          <label class="btn" for="r-talent" role="button" style="background:var(--primary);color:#fff">평점 남기기</label>
+          <div class="note-strip">사장님도 같은 화면에서 헬퍼님을 평가해요 (상호 평점)</div>
+        </div>
+
+        <div class="card" style="background:var(--bg-section);box-shadow:none">
+          <div class="tagrow"><span class="tag">🗂 포트폴리오</span></div>
+          <h3 style="font-size:.88rem">이번 결과물이 내 포트폴리오에 저장됐어요</h3>
+          <div class="meta">실제 가게에 쓰인 작업물 1건 추가 · 프로필에서 공개 여부를 선택할 수 있어요</div>
+        </div>
+
+        <div class="foot">🤝 헬퍼님의 재능이 <strong>동네 한 끼</strong>가 됐어요</div>
+      </section>
+
+      <!-- ⑥ Tab2 요청 등록 폼 -->
+      <section class="screen screen-form">
+        <label class="back" for="r-talent">← 재능 헬퍼 목록</label>
+        <div class="sec-title">도움 요청 올리기 📝<br><span class="hl">꼼꼼히</span> 적을수록 딱 맞는 헬퍼가 와요</div>
+        <div class="sec-cap">New request</div>
+
+        <div class="field">
+          <span class="lb">어떤 도움이 필요하세요?<span class="req">필수</span></span>
+          <div class="chips">
+            <span class="chip">#포스터제작</span>
+            <span class="chip">#릴스편집</span>
+            <span class="chip">#리뷰관리</span>
+            <span class="chip on">#메뉴판디자인</span>
+            <span class="chip">#SNS운영</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="lb">요청 내용<span class="req">필수</span></span>
+          <div class="textarea">메뉴판이 10년 됐어요. 사진 크게, 가격 잘 보이게 새로 만들어주실 분 찾아요.</div>
+        </div>
+
+        <div class="field">
+          <span class="lb">기대하는 결과물 예시<span class="req">필수</span></span>
+          <div class="upload"><strong>📎 참고 사진 올리기</strong>원하는 느낌의 사진이나 설명을 꼭 넣어주세요</div>
+          <div class="hint">예시가 있으면 "생각이 달랐다"는 다툼이 확 줄어요. 그래서 필수예요.</div>
+        </div>
+
+        <div class="field">
+          <span class="lb">수정 요청</span>
+          <div class="rulebox"><span class="ico">🤝</span><span><strong>수정 1회 포함</strong>이 기본 약속이에요. 추가 수정은 헬퍼와 따로 협의해요.</span></div>
+        </div>
+
+        <div class="field">
+          <span class="lb">보상 식사권<span class="req">필수</span></span>
+          <div class="stepper"><b>−</b><span>5장</span><b>＋</b></div>
+          <div class="hint">비슷한 요청은 보통 4~6장으로 올라와요</div>
+        </div>
+
+        <div class="field">
+          <span class="lb">완료 희망일 <span class="opt">선택</span></span>
+          <div class="select">일주일 안에 ▾</div>
+        </div>
+
+        <div class="field">
+          <span class="lb">지역<span class="req">필수</span></span>
+          <div class="select">부산대 앞 ▾ <span style="color:var(--muted);font-size:.78rem">(경북대 앞·경상국립대 앞 오픈 예정)</span></div>
+        </div>
+
+        <label class="btn" for="r-talent" role="button" style="background:var(--primary);color:#fff">요청 올리기</label>
+        <div class="note-strip">일정 시간 응답이 없는 매칭은 자동으로 취소돼요 (노쇼 방지)</div>
+      </section>
+
+    </div>
+
+    <!-- 하단 탭바 -->
+    <nav class="tabbar">
+      <label for="r-hot"><span class="ico">🔥</span>동네 핫딜</label>
+      <label for="r-write" class="tab-write" aria-label="핫딜 올리기"><span>＋</span></label>
+      <label for="r-talent"><span class="ico">🤝</span>재능 헬퍼</label>
+    </nav>
+  </div>
+
+  <!-- ═══ 화면별 기획 메모 ═══ -->
+  <aside class="notes">
+    <h2>이 화면이 보여주는 것</h2>
+
+    <div class="note note-hot">
+      <h3>① 동네 핫딜 (Tab 1)</h3>
+      <ul>
+        <li>돌발 상황을 <strong>4개 태그</strong>로 분류, 상단 <strong>필터 칩</strong>으로 태그별 조회</li>
+        <li>첫 카드 썸네일의 <strong>"재능헬퍼 결과물" 배지</strong> — Tab2 결과물이 Tab1 홍보 이미지로 재사용되는 <strong>선순환 구조</strong></li>
+        <li>지역은 프리셋 드롭다운 — 활성 <strong>부산대 앞</strong>, 오픈 예정 경북대·경상국립대 앞</li>
+      </ul>
+      <div class="ref">기획서 3-2절 · 8절 태그 체계 대응</div>
+    </div>
+
+    <div class="note note-write">
+      <h3>② 핫딜 올리기 + AI (Tab 1)</h3>
+      <ul>
+        <li>사장님은 <strong>상황 한 줄만 입력</strong> → 홍보 문구·태그 자동 생성</li>
+        <li>사진이 없으면 <strong>재능헬퍼 결과물이 자동 첨부</strong> — 선순환의 실제 접점</li>
+        <li>AI 초안은 반드시 <strong>사장님 확인 후 게시</strong> — 자동 게시 아님</li>
+      </ul>
+      <div class="ref">기획서 9절 AI 활용 방침 · 10절 리스크 4번 대응</div>
+    </div>
+
+    <div class="note note-talent">
+      <h3>③ 재능 헬퍼 (Tab 2 · 핵심)</h3>
+      <ul>
+        <li>학생 재능 ↔ 식사권 <strong>물물교환 피드</strong> — 본 서비스의 진짜 차별점</li>
+        <li>보상을 <strong>절취선 있는 식권 티켓</strong>으로 시각화 (서비스 시그니처)</li>
+        <li>상태 배지(모집중·지원 수 / 매칭완료)로 <strong>채팅 없이 상태값만으로</strong> 운영</li>
+      </ul>
+      <div class="ref">기획서 3-1절 · 첫 번째 카드를 누르면 상세 화면</div>
+    </div>
+
+    <div class="note note-detail">
+      <h3>④ 요청 상세 = 신뢰 장치의 집합</h3>
+      <ul>
+        <li>상단 스텝바: <strong>요청등록 → 매칭 → 완료대기 → 완료·지급</strong> 상태값 흐름</li>
+        <li><strong>기대 결과물 예시</strong>가 상세에 고정 노출 — 기대치 분쟁 예방</li>
+        <li><strong>수정 1회 규칙</strong> + <strong>양측 확인 버튼</strong> + 무응답 자동 처리 안내</li>
+      </ul>
+      <div class="ref">기획서 7절 신뢰·분쟁 장치 · 시나리오 A/B 대응 · "헬퍼 확인하기"를 누르면 완료 화면</div>
+    </div>
+
+    <div class="note note-done">
+      <h3>⑤ 완료 · 상호 평점</h3>
+      <ul>
+        <li>양측 확인 성립 → 식사권 티켓이 <strong>초록 "지급 완료"</strong>로 전환</li>
+        <li><strong>별점 + 한줄후기</strong> 상호 평점 — 결제 없는 구조의 신뢰 자산</li>
+        <li>결과물이 <strong>학생 포트폴리오에 자동 저장</strong> — 가치 비대칭 리스크의 비금전 보상</li>
+      </ul>
+      <div class="ref">기획서 7절 5항 · 10절 리스크 1번 대응 · 시나리오 A-6 / B-4</div>
+    </div>
+
+    <div class="note note-form">
+      <h3>⑥ 요청 등록 폼</h3>
+      <ul>
+        <li>분쟁 예방 규칙을 <strong>필드 자체에 내장</strong>: 기대 예시 첨부 필수, 수정 1회 기본 명시</li>
+        <li>식사권 수량 스테퍼에 <strong>시세 힌트</strong>(보통 4~6장) — 보상 기준점 제공</li>
+        <li>지역 프리셋에 <strong>오픈 예정 지역 노출</strong> — 지거국 확장 로드맵의 UI 표현</li>
+      </ul>
+      <div class="ref">기획서 3-1절 필수 필드 표 · 7절 대응</div>
+    </div>
+  </aside>
+
+</div>
+
+</body>
+</html>

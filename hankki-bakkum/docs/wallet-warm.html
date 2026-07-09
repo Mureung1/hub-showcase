@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한끼바꿈 — 내 식사권 지갑 (Warm)</title>
+<style>
+  :root{
+    /* 주색 — 그대로 */
+    --primary:#5B6CF5;
+    --primary-soft:#EAEDFB;
+    --primary-deep:#4354D8;
+    /* 배경 — 차가운 라벤더그레이 → 따뜻한 종이색 */
+    --bg-page:#F6F3EC;
+    --bg-card:#FFFEFB;
+    --bg-section:#F5F1E8;
+    /* 글자 — 쿨그레이 → 웜그레이 */
+    --ink:#2B2620;
+    --body:#5A544B;
+    --muted:#A39A8C;
+    --line:#EDE7DB;
+    /* 보상(식사권) */
+    --ticket-bg:#FFF3D6;
+    --ticket-ink:#8A6A1B;
+    /* 상태 */
+    --ok-soft:#E9F4EA;  --ok:#3E9A64;
+    /* 반경 */
+    --r-card:20px; --r-inner:14px; --r-pill:999px;
+    /* 그림자 — 남색 기운 → 갈색 기운 */
+    --shadow-card:0 8px 24px rgba(88,68,32,.07);
+    --shadow-float:0 18px 44px rgba(88,68,32,.12);
+    font-size:16px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+    background:var(--bg-page);
+    color:var(--body);
+    min-height:100vh;
+    display:flex;align-items:flex-start;justify-content:center;
+    padding:48px 16px 72px;
+  }
+  .phone{
+    width:390px;background:var(--bg-card);border-radius:40px;
+    box-shadow:var(--shadow-float);
+    overflow:hidden;min-height:800px;display:flex;flex-direction:column;
+  }
+  .statusbar{display:flex;justify-content:space-between;padding:14px 24px 6px;font-size:.72rem;color:var(--muted);font-weight:600}
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 16px}
+  .brand{font-weight:800;font-size:1.02rem;letter-spacing:-.02em;color:var(--ink)}
+  .brand em{font-style:normal;color:var(--primary)}
+  .region{font-size:.78rem;font-weight:600;color:var(--primary);background:var(--primary-soft);padding:7px 14px;border-radius:var(--r-pill)}
+
+  .stage{flex:1;padding:4px 20px 32px;overflow-y:auto}
+
+  .sec-title{font-size:1.45rem;font-weight:800;letter-spacing:-.02em;color:var(--ink);line-height:1.35;margin:8px 0 4px}
+  .sec-title .hl{color:var(--primary)}
+  .sec-cap{font-size:.82rem;color:var(--muted);font-weight:500;margin-bottom:24px}
+
+  .summary{
+    background:var(--bg-card);border-radius:var(--r-card);
+    box-shadow:var(--shadow-card);
+    padding:24px;margin-bottom:28px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .summary .label{font-size:.82rem;font-weight:600;color:var(--muted)}
+  .summary .count{font-size:2.1rem;font-weight:800;letter-spacing:-.02em;color:var(--primary);margin-top:4px}
+  .summary .count small{font-size:1rem;font-weight:700;color:var(--body)}
+  .summary .emoji{font-size:2.4rem}
+
+  .group{
+    background:var(--bg-card);border-radius:var(--r-card);
+    box-shadow:var(--shadow-card);
+    padding:24px;margin-bottom:20px;
+  }
+  .group-head{display:flex;align-items:center;gap:12px}
+  .avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;background:var(--bg-section);flex:0 0 44px}
+  .group-head .nm{font-weight:700;font-size:.98rem;color:var(--ink)}
+  .group-head .sub{font-size:.76rem;color:var(--muted);margin-top:3px;font-weight:500}
+  .pill{margin-left:auto;font-size:.72rem;font-weight:600;padding:6px 12px;border-radius:var(--r-pill);white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok)}
+  .pill.used{background:var(--bg-section);color:var(--muted)}
+
+  .ticket{display:flex;align-items:center;background:var(--ticket-bg);border-radius:var(--r-inner);margin:18px 0 16px;position:relative}
+  .ticket .stub{flex:0 0 86px;text-align:center;padding:14px 6px;border-right:2px dashed rgba(138,106,27,.3);font-weight:800;font-size:1.35rem;color:var(--ticket-ink);line-height:1.05}
+  .ticket .stub small{display:block;font-size:.6rem;font-weight:700;letter-spacing:.14em;margin-top:3px;opacity:.7}
+  .ticket .body{flex:1;padding:12px 16px;font-size:.84rem;font-weight:600;color:var(--ticket-ink)}
+  .ticket .body em{display:block;font-style:normal;font-weight:500;font-size:.74rem;margin-top:4px;opacity:.75}
+  .ticket::before,.ticket::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:var(--bg-card);top:50%;transform:translateY(-50%)}
+  .ticket::before{left:79px} .ticket::after{right:-7px}
+  .ticket.dim{background:var(--bg-section)}
+  .ticket.dim .stub{color:var(--muted);border-right-color:var(--line)}
+  .ticket.dim .body{color:var(--muted)}
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:6px;width:100%;
+    border:none;border-radius:var(--r-inner);min-height:48px;
+    font-size:.92rem;font-weight:700;font-family:inherit;cursor:pointer;
+    background:var(--primary-soft);color:var(--primary);
+  }
+  .btn:active{background:#DEE2F8}
+
+  .howto{background:var(--bg-section);border-radius:var(--r-inner);padding:16px 18px;font-size:.82rem;line-height:1.7;color:var(--body);margin:4px 0 40px}
+  .howto strong{color:var(--ink)}
+  .howto .hl{color:var(--primary);font-weight:700}
+
+  .divider{font-size:.76rem;font-weight:700;color:var(--muted);letter-spacing:.06em;margin:0 2px 14px}
+
+  .foot{
+    text-align:center;font-size:.78rem;color:var(--muted);line-height:1.7;
+    padding:8px 0 4px;
+  }
+  .foot strong{color:var(--body)}
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+    <div class="appbar">
+      <div class="brand">한끼<em>바꿈</em></div>
+      <div class="region">부산대 앞 ▾</div>
+    </div>
+
+    <div class="stage">
+      <div class="sec-title">내 식사권 지갑 👛<br><span class="hl">재능으로 번 한 끼</span>가 모여 있어요</div>
+      <div class="sec-cap">My meal ticket wallet</div>
+
+      <div class="summary">
+        <div>
+          <div class="label">사용할 수 있는 식사권</div>
+          <div class="count">7<small>장</small></div>
+        </div>
+        <div class="emoji">🎟️</div>
+      </div>
+
+      <div class="group">
+        <div class="group-head">
+          <div class="avatar">🍚</div>
+          <div>
+            <div class="nm">순자네 백반</div>
+            <div class="sub">메뉴판 디자인 거래 · 7월 8일 획득</div>
+          </div>
+          <span class="pill ok">사용 가능</span>
+        </div>
+        <div class="ticket">
+          <div class="stub">5장<small>MEAL</small></div>
+          <div class="body">백반 식사권<em>유효기간 없음 · 1장씩 나눠 써도 돼요</em></div>
+        </div>
+        <button class="btn" type="button">🍽️ 사용하기</button>
+      </div>
+
+      <div class="group">
+        <div class="group-head">
+          <div class="avatar">🥘</div>
+          <div>
+            <div class="nm">불타는곱창</div>
+            <div class="sub">릴스 편집 거래 · 7월 5일 획득</div>
+          </div>
+          <span class="pill ok">사용 가능</span>
+        </div>
+        <div class="ticket">
+          <div class="stub">2장<small>MEAL</small></div>
+          <div class="body">곱창 식사권<em>3장 중 1장 사용함</em></div>
+        </div>
+        <button class="btn" type="button">🍽️ 사용하기</button>
+      </div>
+
+      <div class="howto">
+        <strong>💡 사용 방법</strong><br>
+        가게에서 <span class="hl">사용하기</span>를 누르고 나온 화면을 사장님께 보여주세요.
+        사장님이 확인하면 1장이 차감돼요.
+      </div>
+
+      <div class="divider">지난 사용 내역</div>
+
+      <div class="group" style="box-shadow:none;background:transparent;padding:0 4px">
+        <div class="group-head">
+          <div class="avatar">🥘</div>
+          <div>
+            <div class="nm" style="color:var(--muted)">불타는곱창</div>
+            <div class="sub">7월 6일 저녁에 사용</div>
+          </div>
+          <span class="pill used">사용 완료</span>
+        </div>
+        <div class="ticket dim">
+          <div class="stub">1장<small>USED</small></div>
+          <div class="body">곱창 식사권<em>맛있게 드셨나요? 😋</em></div>
+        </div>
+      </div>
+
+      <div class="foot">🤝 이 식사권들은 <strong>헬퍼님의 재능</strong>으로 만들어졌어요</div>
+    </div>
+  </div>
+</body>
+</html>

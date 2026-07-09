@@ -1,0 +1,12 @@
+// Express 서버 호출 전용 (AI 문구 생성 등) — LLM 키는 절대 클라이언트에 두지 않는다
+const API = import.meta.env.VITE_API_URL;
+
+export async function generateAdCopy(situation) {
+  const res = await fetch(`${API}/api/ai/ad-copy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ situation }),
+  });
+  if (!res.ok) throw new Error('AI 문구 생성 실패');
+  return res.json();
+}
