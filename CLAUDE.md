@@ -41,19 +41,6 @@ pnpm dev      # 개발 서버 (기본 8443 포트)
 pnpm build    # 빌드
 ```
 
-## Architecture
-
-두 단계로 나뉜 파이프라인 (상세 스펙은 [docs/plan.md](docs/plan.md) 5장 참고):
-
-1. **결정론적 분석 파이프라인** (F1~F8, F12, F13) — OCR → 파싱 → 카테고리 분류 → 예산/소진일 계산 → 소비 신호(Context) 생성. 규칙 기반이며 확률/추정 없이 실제 계산값만 다룬다.
-2. **AI Agent** (F16) — 파이프라인이 만든 Context를 받아 개입 여부와 Tool 선택(F11 Recipe Tool / F15 Smart Purchase Tool / 개입 안 함)을 판단. 하나의 신호만으로 판단하지 않고 전체 상황(예산 사용률 등)을 함께 본다. Tool 실행 결과는 그대로 노출하지 않고 "추천 이유 → Tool 결과 → 예상 절약 효과 → 예산 소진 예상일" 순서로 재구성해 사용자에게 전달한다.
-
-현재 `SpendMate/be/prisma/schema.prisma`에는 도메인 모델(`User`, `Receipt`, `Expense`, `Subscription`, `Category`, `ReceiptSourceType`, `ExpenseInputType`)이 정의돼 있고, `src/app.ts`는 `/health` 헬스체크 라우트만 있는 상태 — 실제 라우트/컨트롤러/서비스/Agent 레이어는 아직 없음. 진행 순서는 [docs/checklist.md](docs/checklist.md)의 주차별 체크리스트를 따른다: ① OCR PoC → ② 네이버 쇼핑 API PoC → ③ Recipe Tool 데이터 확보 → ④ Agent 프롬프트 설계 → ⑤ Function Calling 연결.
-
-DB 연결은 Prisma 7 방식(드라이버 어댑터)을 따른다 — `schema.prisma`의 `datasource` 블록엔 `url`을 넣지 않고, 연결 정보는 `prisma.config.ts`(마이그레이션/CLI용)와 런타임 `PrismaClient` 생성 시 `@prisma/adapter-pg`(설치 필요, 아직 미설치) 어댑터로 따로 넘긴다.
-
-`Category` enum(`DELIVERY`, `CONVENIENCE_STORE`, `CAFE`, `MEAL_KIT`, `MART`, `CAMPUS_MEAL`, `SHOPPING`, `OTHER`)은 프론트엔드 카테고리 라벨(카페/편의점/외식/식료품/교통/쇼핑)과 이름이 1:1로 대응하지 않으므로, API 응답을 설계할 때 매핑이 필요하다 — [docs/design.md](docs/design.md)의 카테고리 컬러 매핑 참고.
-
 ## 커밋 컨벤션
 
 [Conventional Commits](https://www.conventionalcommits.org/) 형식 사용: `<type>: <설명>`
