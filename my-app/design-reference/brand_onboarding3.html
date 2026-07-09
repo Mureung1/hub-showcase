@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AlriJang - AI Brand Analysis</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#e1e0ff",
+                        "primary": "#0050cb",
+                        "on-surface": "#191c1e",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#727687",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#eceef1",
+                        "on-primary-fixed": "#001849",
+                        "secondary": "#006c49",
+                        "on-secondary-fixed-variant": "#005236",
+                        "error": "#ba1a1a",
+                        "background": "#f7f9fc",
+                        "primary-fixed": "#dae1ff",
+                        "surface-dim": "#d8dadd",
+                        "surface-container-highest": "#e0e3e6",
+                        "on-tertiary-fixed": "#07006c",
+                        "on-tertiary-container": "#faf6ff",
+                        "on-tertiary-fixed-variant": "#2f2ebe",
+                        "on-secondary-fixed": "#002113",
+                        "on-primary-container": "#f8f7ff",
+                        "surface-container-low": "#f2f4f7",
+                        "surface-tint": "#0054d6",
+                        "inverse-on-surface": "#eff1f4",
+                        "primary-fixed-dim": "#b3c5ff",
+                        "surface-bright": "#f7f9fc",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f7f9fc",
+                        "primary-container": "#0066ff",
+                        "outline-variant": "#c2c6d8",
+                        "on-surface-variant": "#424656",
+                        "tertiary": "#4345d1",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#5d60eb",
+                        "on-secondary-container": "#00714d",
+                        "secondary-container": "#6cf8bb",
+                        "inverse-primary": "#b3c5ff",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#2d3133",
+                        "secondary-fixed-dim": "#4edea3",
+                        "tertiary-fixed-dim": "#c0c1ff",
+                        "on-background": "#191c1e",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#e6e8eb",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-primary-fixed-variant": "#003fa4",
+                        "surface-variant": "#e0e3e6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-margin": "40px",
+                        "lg": "24px",
+                        "sm": "12px",
+                        "base": "4px",
+                        "md": "16px",
+                        "gutter": "20px",
+                        "xs": "8px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Be Vietnam Pro"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-sm": ["Be Vietnam Pro"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Be Vietnam Pro"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        @keyframes orbit {
+            0% { transform: rotate(0deg) translateX(80px) rotate(0deg); }
+            100% { transform: rotate(360deg) translateX(80px) rotate(-360deg); }
+        }
+        
+        @keyframes pulse-custom {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        .scanning-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #0066FF, transparent);
+            position: absolute;
+            width: 100%;
+            top: 0;
+            animation: scan 3s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+
+        .gradient-blur {
+            filter: blur(40px);
+            background: radial-gradient(circle, rgba(0, 102, 255, 0.15) 0%, rgba(108, 248, 187, 0.1) 100%);
+        }
+    </style>
+</head>
+<body class="bg-background font-body-md text-on-background min-h-screen flex items-center justify-center p-md overflow-hidden">
+<!-- Ambient background effect -->
+<div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+<div class="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] gradient-blur rounded-full"></div>
+<div class="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] gradient-blur rounded-full opacity-60"></div>
+</div>
+<!-- Main Card Container -->
+<main class="relative z-10 w-full max-w-[600px]">
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant p-xl flex flex-col items-center text-center">
+<!-- Header Section -->
+<header class="mb-xl">
+<h1 class="font-headline-md text-headline-md text-on-surface mb-sm">AI 브랜드 분석 중</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-[400px] mx-auto">
+                    입력하신 정보를 바탕으로 사장님의 브랜드를 분석하고 있습니다.
+                </p>
+</header>
+<!-- AI Visualization Section -->
+<div class="relative w-64 h-64 mb-xl flex items-center justify-center">
+<!-- Background Pulse Rings -->
+<div class="absolute w-48 h-48 border border-primary/20 rounded-full animate-[pulse-custom_3s_ease-in-out_infinite]"></div>
+<div class="absolute w-36 h-36 border border-secondary/20 rounded-full animate-[pulse-custom_4s_ease-in-out_infinite_reverse]"></div>
+<!-- Logo with Scanning Effect -->
+<div class="relative z-20 w-32 h-32 p-4 bg-white rounded-xl shadow-md border border-outline-variant overflow-hidden">
+<img alt="AlriJang AI Brand Logo" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida/AP1WRLvogDRb298Bmo5_83zWmsVwwV_e_baKOuCYYR2uCN04fAPhvc8ewmwYbtHr0NMzXztT5X3i0Pmr0XurtdS7IPI9OMbXQz7o_NnsxkVybWkNJ01855tOn15QnFtHWcl4t5R1I4tS59Vk5aya9ibp4cUFaMBRrjkN0MtRZ0fx1e3B23YKqcfwpjiVzxG06Fwrqp4laP1u5xv1D_iFjNp4-BmDtAE9isgKly_l2mYX6CM9PHvflLGoKFavu-Wi"/>
+<div class="scanning-line"></div>
+</div>
+<!-- Orbiting Data Points -->
+<div class="absolute w-4 h-4 bg-primary rounded-full" style="animation: orbit 5s linear infinite;"></div>
+<div class="absolute w-3 h-3 bg-secondary rounded-full" style="animation: orbit 7s linear infinite reverse;"></div>
+<div class="absolute w-2 h-2 bg-tertiary-container rounded-full" style="animation: orbit 4s linear infinite 1s;"></div>
+</div>
+<!-- Status Progress Items -->
+<div class="w-full max-w-[360px] space-y-md mb-xl">
+<!-- Item 1 -->
+<div class="flex items-center justify-between p-sm rounded-lg bg-surface-container-low border border-outline-variant transition-all duration-500 ease-out" id="status-1">
+<div class="flex items-center gap-sm">
+<div class="flex items-center justify-center w-6 h-6 rounded-full bg-secondary text-on-secondary">
+<span class="material-symbols-outlined !text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">비즈니스 성격 분석 완료</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex items-center justify-between p-sm rounded-lg bg-surface-container-low border border-outline-variant transition-all duration-500 ease-out" id="status-2">
+<div class="flex items-center gap-sm">
+<div class="flex items-center justify-center w-6 h-6 rounded-full bg-secondary text-on-secondary">
+<span class="material-symbols-outlined !text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">지역구 타겟팅 전략 수립 완료</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex items-center justify-between p-sm rounded-lg bg-white border-2 border-primary/10 shadow-sm transition-all duration-500 ease-out" id="status-3">
+<div class="flex items-center gap-sm">
+<div class="flex items-center justify-center w-6 h-6 rounded-full bg-primary-container text-on-primary">
+<span class="material-symbols-outlined animate-spin !text-[16px]">sync</span>
+</div>
+<span class="font-label-md text-label-md text-primary font-semibold" id="status-text-3">맞춤형 보이스톤 설정 중...</span>
+</div>
+<div class="w-16 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary animate-[progress_3s_ease-in-out_infinite]" style="width: 45%;"></div>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<div class="w-full">
+<button class="w-full py-md rounded-lg font-label-md text-label-md transition-all duration-300 flex items-center justify-center gap-xs cursor-not-allowed bg-surface-container-highest text-on-surface-variant" disabled="" id="cta-button">
+<span>잠시만 기다려주세요</span>
+</button>
+</div>
+<!-- Footer Small Text -->
+<p class="mt-md font-label-sm text-label-sm text-outline">
+                약 10초 정도 소요될 수 있습니다.
+            </p>
+</div>
+</main>
+<script>
+        // Micro-interactions and Status Simulation
+        document.addEventListener('DOMContentLoaded', () => {
+            const status3 = document.getElementById('status-3');
+            const statusText3 = document.getElementById('status-text-3');
+            const ctaButton = document.getElementById('cta-button');
+            const iconContainer = status3.querySelector('.bg-primary-container');
+
+            // Simulate the completion of the third task
+            setTimeout(() => {
+                // Change status 3 to completed
+                statusText3.innerText = '맞춤형 보이스톤 설정 완료';
+                statusText3.classList.remove('text-primary');
+                statusText3.classList.add('text-on-surface');
+                status3.classList.remove('border-primary/10', 'bg-white');
+                status3.classList.add('bg-surface-container-low', 'border-outline-variant');
+                
+                // Update icon to checkmark
+                iconContainer.innerHTML = '<span class="material-symbols-outlined !text-[16px]" style="font-variation-settings: \'FILL\' 1;">check</span>';
+                iconContainer.classList.remove('bg-primary-container', 'text-on-primary');
+                iconContainer.classList.add('bg-secondary', 'text-on-secondary');
+                
+                // Hide progress bar
+                status3.querySelector('.w-16').classList.add('hidden');
+
+                // Enable CTA Button
+                ctaButton.disabled = false;
+                ctaButton.classList.remove('bg-surface-container-highest', 'text-on-surface-variant', 'cursor-not-allowed');
+                ctaButton.classList.add('bg-primary', 'text-on-primary', 'hover:bg-primary-container', 'shadow-md', 'active:scale-[0.98]', 'cursor-pointer');
+                ctaButton.innerHTML = '시작하기 <span class="material-symbols-outlined">arrow_forward</span>';
+                
+                // Trigger button pulse to draw attention
+                ctaButton.classList.add('animate-bounce-short');
+            }, 3500);
+        });
+    </script>
+<style>
+        @keyframes progress {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+
+        .animate-bounce-short {
+            animation: bounce-short 1s ease-in-out 3;
+        }
+
+        @keyframes bounce-short {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+    </style>
+</body></html>
