@@ -1,4 +1,4 @@
-const PADDING = { lg: "p-lg", xl: "p-xl" };
+const PADDING = { none: "p-0", lg: "p-lg", xl: "p-xl" };
 
 function Card({ padding = "lg", className = "", children }) {
   return (

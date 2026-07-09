@@ -1,4 +1,4 @@
-function InterviewTopBar({ storeName, title, onBack }) {
+function PageTopBar({ storeName, title, onBack }) {
   const initials = storeName.slice(0, 2);
 
   return (
@@ -36,4 +36,4 @@ function InterviewTopBar({ storeName, title, onBack }) {
   );
 }
 
-export default InterviewTopBar;
+export default PageTopBar;

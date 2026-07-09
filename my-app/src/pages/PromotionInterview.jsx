@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import InterviewTopBar from "../components/interview/InterviewTopBar";
+import PageTopBar from "../components/PageTopBar";
 import InfoTooltip from "../components/interview/InfoTooltip";
 import ChoiceQuestion from "../components/interview/ChoiceQuestion";
 import TextQuestion from "../components/interview/TextQuestion";
@@ -89,7 +89,7 @@ function PromotionInterview() {
 
   const handleNext = () => {
     if (isLast) {
-      // TODO: 콘텐츠 생성 결과 화면(WIREFRAME.md 3번)으로 연결
+      navigate("/posts/promotion/result");
       return;
     }
     setStepIndex((i) => i + 1);
@@ -105,7 +105,7 @@ function PromotionInterview() {
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
-      <InterviewTopBar
+      <PageTopBar
         storeName="OO카페"
         title="AI와 함께 홍보글 작성"
         onBack={handlePrev}
