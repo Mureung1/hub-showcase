@@ -121,8 +121,8 @@
     <!-- Active Drops Grid Section -->
     <section class="drops-section" id="active-drops">
       <div class="drops-header">
-        <h2 class="section-title">active drops</h2>
-        <p class="section-subtitle">이번 주 투표 마감 예정인 한정판 드롭 라인업입니다. 버튼을 클릭해 3초 만에 의견을 투표하세요.</p>
+        <h2 class="section-title">alternative items</h2>
+        <p class="section-subtitle">한정판 드롭 라인업입니다. 출시 전 상품은 예측 투표를 진행하고, 출시 완료 상품은 실시간 시세를 추적합니다.</p>
       </div>
 
       <div class="drops-grid" id="drops-container">
@@ -143,21 +143,21 @@
             <span class="val" id="detail-retail">219,000 KRW</span>
           </div>
           <div class="price-box highlight">
-            <span class="label">대중 합의 예상가 (consensus)</span>
+            <span class="label" id="detail-price-label">대중 합의 예상가 (consensus)</span>
             <span class="val accent-text" id="detail-consensus">820,000 KRW</span>
           </div>
         </div>
 
         <!-- Mini Chart (SVG Sparkline) -->
         <div class="chart-container">
-          <h4 class="chart-label">6개월 시장 관심도 추이 (sparkline)</h4>
+          <h4 class="chart-label">시세 변동 추이 (sparkline)</h4>
           <svg class="sparkline-chart" viewBox="0 0 300 100">
             <path d="M 0 80 Q 50 60 100 70 T 200 30 T 300 10" fill="none" stroke="#d4ff00" stroke-width="3" />
             <circle cx="300" cy="10" r="5" fill="#d4ff00" />
           </svg>
         </div>
 
-        <div class="detail-sentiment">
+        <div class="detail-sentiment" id="detail-sentiment-section">
           <div class="sentiment-bar-label">
             <span>bullish (▲) <strong id="detail-bullish-pct">84%</strong></span>
             <span>bearish (▼) <strong id="detail-bearish-pct">16%</strong></span>
@@ -167,7 +167,7 @@
           </div>
         </div>
 
-        <div class="vote-actions">
+        <div class="vote-actions" id="detail-actions-section">
           <button class="btn-vote up" onclick="castVoteFromDetail(true)">▲ 오를까</button>
           <button class="btn-vote down" onclick="castVoteFromDetail(false)">▼ 내릴까</button>
         </div>
@@ -186,16 +186,18 @@
 
     <!-- Core Logic & Interaction Script -->
     <script>
-      // 1. Mock Data based on Alt Assets
+      // 1. Mock Data including Images and status (upcoming / released)
       const MOCK_DROPS = [
         {
           id: '1',
           title: 'travis scott jordan 1 low',
           category: 'sneakers',
           catLabel: 'sneakers 👟',
+          status: 'upcoming',
           retail: '219,000 KRW',
           consensus: 820000,
           bullish: 84,
+          image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&auto=format&fit=crop&q=80',
           sparkline: 'M 0 90 C 50 80, 100 50, 150 70 C 200 40, 250 15, 300 20'
         },
         {
@@ -203,19 +205,23 @@
           title: 'supreme stars zip hoodie',
           category: 'streetwear',
           catLabel: 'streetwear 👕',
+          status: 'upcoming',
           retail: '258,000 KRW',
           consensus: 360000,
           bullish: 62,
+          image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500&auto=format&fit=crop&q=80',
           sparkline: 'M 0 80 C 50 90, 100 70, 150 60 C 200 50, 250 40, 300 35'
         },
         {
           id: '3',
-          title: 'pikachu masterball mirror card',
+          title: 'pikachu masterball mirror',
           category: 'tcg',
           catLabel: 'tcg/toys 🃏',
+          status: 'upcoming',
           retail: '5,000 KRW',
           consensus: 190000,
           bullish: 78,
+          image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=80',
           sparkline: 'M 0 95 C 50 90, 100 80, 150 40 C 200 30, 250 10, 300 15'
         },
         {
@@ -223,16 +229,67 @@
           title: 'lego star wars millenium falcon',
           category: 'lego',
           catLabel: 'lego 🧱',
+          status: 'upcoming',
           retail: '1,100,000 KRW',
           consensus: 1250000,
           bullish: 45,
+          image: 'https://images.unsplash.com/photo-1585366119957-e57c93602f77?w=500&auto=format&fit=crop&q=80',
           sparkline: 'M 0 50 C 50 50, 100 60, 150 55 C 200 45, 250 52, 300 48'
+        },
+        // Released items
+        {
+          id: '5',
+          title: 'air force 1 peaceminusone',
+          category: 'sneakers',
+          catLabel: 'sneakers 👟',
+          status: 'released',
+          retail: '229,000 KRW',
+          marketPrice: '480,000 KRW',
+          bullish: 91,
+          image: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500&auto=format&fit=crop&q=80',
+          sparkline: 'M 0 85 C 50 60, 100 40, 150 25 C 200 20, 250 15, 300 10'
+        },
+        {
+          id: '6',
+          title: 'stussy 8 ball fleece jacket',
+          category: 'streetwear',
+          catLabel: 'streetwear 👕',
+          status: 'released',
+          retail: '285,000 KRW',
+          marketPrice: '520,000 KRW',
+          bullish: 79,
+          image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=500&auto=format&fit=crop&q=80',
+          sparkline: 'M 0 90 C 50 85, 100 80, 150 60 C 200 50, 250 40, 300 38'
+        },
+        {
+          id: '7',
+          title: 'charizard shadowless 1st ed',
+          category: 'tcg',
+          catLabel: 'tcg/toys 🃏',
+          status: 'released',
+          retail: '10,000 KRW',
+          marketPrice: '4,500,000 KRW',
+          bullish: 98,
+          image: 'https://images.unsplash.com/photo-1601987177651-8edfe6c20009?w=500&auto=format&fit=crop&q=80',
+          sparkline: 'M 0 98 C 50 80, 100 60, 150 40 C 200 30, 250 15, 300 5'
+        },
+        {
+          id: '8',
+          title: 'lego creator expert porsche 911',
+          category: 'lego',
+          catLabel: 'lego 🧱',
+          status: 'released',
+          retail: '179,900 KRW',
+          marketPrice: '240,000 KRW',
+          bullish: 55,
+          image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop&q=80',
+          sparkline: 'M 0 70 C 50 72, 100 68, 150 65 C 200 62, 250 60, 300 58'
         }
       ];
 
       let selectedDropId = null;
 
-      // 2. Render Cards
+      // 2. Render Cards based on Status & Category
       function renderCards(filter = 'all') {
         const container = document.getElementById('drops-container');
         container.innerHTML = '';
@@ -241,7 +298,7 @@
 
         filtered.forEach(drop => {
           const card = document.createElement('div');
-          card.className = `drop-card ${drop.bullish > 70 ? 'bullish-heavy' : ''}`;
+          card.className = `drop-card ${drop.status} ${drop.bullish > 70 && drop.status === 'upcoming' ? 'bullish-heavy' : ''}`;
           card.onclick = (e) => {
             // Prevent open panel when clicking buttons directly
             if (e.target.tagName !== 'BUTTON') {
@@ -249,59 +306,94 @@
             }
           };
 
+          // Pricing block based on status
+          let pricingHTML = '';
+          let actionHTML = '';
+
+          if (drop.status === 'upcoming') {
+            pricingHTML = `
+              <span class="card-consensus">est. ${drop.consensus.toLocaleString()} KRW</span>
+              <span class="card-retail">retail: ${drop.retail}</span>
+            `;
+            actionHTML = `
+              <button class="btn-vote-mini up" onclick="castVote('${drop.id}', true)">▲ up</button>
+              <button class="btn-vote-mini down" onclick="castVote('${drop.id}', false)">▼ down</button>
+            `;
+          } else {
+            pricingHTML = `
+              <span class="card-consensus market-accent">market. ${drop.marketPrice}</span>
+              <span class="card-retail">retail: ${drop.retail}</span>
+            `;
+            actionHTML = `
+              <div class="locked-status">🔒 voting locked (released)</div>
+            `;
+          }
+
           card.innerHTML = `
             <div class="card-top">
               <span class="card-tag">${drop.catLabel}</span>
-              <span class="card-pct ${drop.bullish >= 50 ? 'up' : 'down'}">${drop.bullish}% bullish</span>
+              <span class="status-badge ${drop.status}">${drop.status}</span>
+            </div>
+            
+            <div class="card-img-container">
+              <img src="${drop.image}" alt="${drop.title}" class="card-img" onerror="this.src='https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80'">
             </div>
             
             <h3 class="card-title">${drop.title}</h3>
             
             <div class="card-pricing">
-              <span class="card-consensus">est. ${drop.consensus.toLocaleString()} KRW</span>
-              <span class="card-retail">retail: ${drop.retail}</span>
+              ${pricingHTML}
             </div>
 
             <!-- Mini Sparkline inside card -->
             <div class="card-sparkline">
               <svg viewBox="0 0 300 50">
-                <path d="${drop.sparkline}" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
-                <path d="${drop.sparkline}" fill="none" stroke="#d4ff00" stroke-width="2" class="sparkline-fill" />
+                <path d="${drop.sparkline}" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2" />
+                <path d="${drop.sparkline}" fill="none" stroke="${drop.status === 'upcoming' ? '#d4ff00' : '#888888'}" stroke-width="2" class="sparkline-fill" />
               </svg>
             </div>
 
             <div class="card-actions">
-              <button class="btn-vote-mini up" onclick="castVote('${drop.id}', true)">▲ up</button>
-              <button class="btn-vote-mini down" onclick="castVote('${drop.id}', false)">▼ down</button>
+              ${actionHTML}
             </div>
           `;
           container.appendChild(card);
         });
       }
 
-      // 3. Tab Filtering
+      // 3. Tab Filtering & Hide Editorial Sections
       document.querySelectorAll('.filter-tab').forEach(tab => {
         tab.onclick = (e) => {
           e.preventDefault();
           document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
-          renderCards(tab.getAttribute('data-category'));
+          
+          const category = tab.getAttribute('data-category');
+          
+          // If 'all' is clicked, show brand story (editorial layout).
+          // Otherwise, hide editorial and immediately display active drops at the top.
+          if (category === 'all') {
+            document.body.classList.remove('hide-editorial');
+          } else {
+            document.body.classList.add('hide-editorial');
+          }
+          
+          renderCards(category);
         };
       });
 
-      // 4. Up / Down Voting Logic (Recalculating consensus prices)
+      // 4. Up / Down Voting Logic (Upcoming only)
       function castVote(id, isUp) {
         const item = MOCK_DROPS.find(d => d.id === id);
         if (!item) return;
+        if (item.status === 'released') return; // Cannot vote on released items
 
         // Sentiment adjustments
         if (isUp) {
           item.bullish = Math.min(99, item.bullish + 1);
-          // Increase estimated consensus price slightly
           item.consensus += Math.floor(Math.random() * 5000) + 1000;
         } else {
           item.bullish = Math.max(1, item.bullish - 1);
-          // Decrease estimated consensus price slightly
           item.consensus -= Math.floor(Math.random() * 5000) + 1000;
         }
 
@@ -364,10 +456,32 @@
         document.getElementById('detail-title').innerText = item.title;
         document.getElementById('detail-category').innerText = item.catLabel;
         document.getElementById('detail-retail').innerText = item.retail;
-        document.getElementById('detail-consensus').innerText = item.consensus.toLocaleString() + ' KRW';
-        document.getElementById('detail-bullish-pct').innerText = item.bullish + '%';
-        document.getElementById('detail-bearish-pct').innerText = (100 - item.bullish) + '%';
-        document.getElementById('detail-bar-fill').style.width = item.bullish + '%';
+        
+        const priceLabel = document.getElementById('detail-price-label');
+        const priceVal = document.getElementById('detail-consensus');
+        const sentimentSection = document.getElementById('detail-sentiment-section');
+        const actionsSection = document.getElementById('detail-actions-section');
+
+        if (item.status === 'upcoming') {
+          priceLabel.innerText = '대중 합의 예상가 (consensus)';
+          priceVal.innerText = item.consensus.toLocaleString() + ' KRW';
+          priceVal.className = 'val accent-text';
+          
+          sentimentSection.style.display = 'block';
+          actionsSection.style.display = 'grid';
+          
+          document.getElementById('detail-bullish-pct').innerText = item.bullish + '%';
+          document.getElementById('detail-bearish-pct').innerText = (100 - item.bullish) + '%';
+          document.getElementById('detail-bar-fill').style.width = item.bullish + '%';
+        } else {
+          priceLabel.innerText = '현재 거래 시세 (market)';
+          priceVal.innerText = item.marketPrice;
+          priceVal.className = 'val white-text';
+          
+          // Released items don't have active voting/sentiment modification on details
+          sentimentSection.style.display = 'none';
+          actionsSection.style.display = 'none';
+        }
       }
 
       // Initialize

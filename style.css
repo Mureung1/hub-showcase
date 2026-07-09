@@ -407,7 +407,7 @@ header {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 310px;
+  min-height: 480px;
   position: relative;
   cursor: pointer;
   transition: var(--transition-smooth);
@@ -429,6 +429,79 @@ header {
   justify-content: space-between;
   align-items: center;
 }
+
+/* Card image container and img styles */
+.card-img-container {
+  width: 100%;
+  height: 180px;
+  margin: 15px 0;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--border-color);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(0.5);
+  transition: var(--transition-smooth);
+}
+
+.drop-card:hover .card-img {
+  filter: grayscale(0);
+  transform: scale(1.05);
+}
+
+/* Status Badges */
+.status-badge {
+  font-size: 0.6rem;
+  text-transform: lowercase;
+  padding: 3px 8px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
+}
+
+.status-badge.upcoming {
+  background-color: var(--accent-color);
+  color: var(--bg-color);
+}
+
+.status-badge.released {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--muted-color);
+  border-color: var(--border-color);
+}
+
+.card-consensus.market-accent {
+  color: var(--muted-color) !important;
+}
+
+.locked-status {
+  grid-column: span 2;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--muted-color);
+  border: 1px dashed var(--border-color);
+  padding: 8px 0;
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+/* Hide Editorial Layout on Tab switching */
+body.hide-editorial .hero-section,
+body.hide-editorial .statement-section,
+body.hide-editorial .process-section {
+  display: none;
+}
+
+body.hide-editorial .drops-section {
+  padding-top: 60px;
+}
+
 
 .card-tag {
   background-color: var(--card-badge-bg);
