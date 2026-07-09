@@ -54,7 +54,7 @@ export default function MealsPage() {
       <div className="page-header meals-page-header">
         <div>
           <h1>식단 피드백</h1>
-          <p>회원이 업로드한 식단을 날짜별로 확인하고 피드백하세요</p>
+          <p>회원님들이 업로드한 식단을 날짜별로 피드백하세요.</p>
         </div>
         <span className="meals-pending-badge">
           피드백 대기 {pendingCount}건

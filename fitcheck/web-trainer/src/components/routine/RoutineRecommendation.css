@@ -1,11 +1,11 @@
 .routine-recommendation {
   background: linear-gradient(
     145deg,
-    rgba(230, 57, 70, 0.08) 0%,
+    rgba(229, 9, 20, 0.08) 0%,
     var(--bg-surface) 45%
   );
-  border: 1px solid rgba(230, 57, 70, 0.25);
-  border-radius: var(--radius-lg);
+  border: 1px solid rgba(229, 9, 20, 0.25);
+  border-radius: var(--radius-sm);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -171,10 +171,10 @@
 }
 
 .trend-plateau {
-  border-color: rgba(234, 179, 8, 0.3);
+  border-color: rgba(255, 204, 0, 0.3);
   background: linear-gradient(
     145deg,
-    rgba(234, 179, 8, 0.06) 0%,
+    rgba(255, 204, 0, 0.06) 0%,
     var(--bg-surface) 45%
   );
 }

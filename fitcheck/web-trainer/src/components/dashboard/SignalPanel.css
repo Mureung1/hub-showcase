@@ -38,14 +38,14 @@
   flex-shrink: 0;
   width: 40px;
   height: 40px;
-  border-radius: 999px;
-  background: var(--bg-base);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   border: 1px solid var(--border);
 }
 
@@ -124,8 +124,8 @@
 }
 
 .btn-action:hover { transform: scale(1.03); }
-.btn-red { background: var(--red); color: #fff; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3); }
-.btn-yellow { background: var(--yellow-dim); color: var(--yellow); border: 1px solid rgba(234, 179, 8, 0.4); }
+.btn-red { background: var(--red); color: #fff; box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3); }
+.btn-yellow { background: var(--yellow-dim); color: var(--yellow); border: 1px solid rgba(255, 204, 0, 0.4); }
 
 .btn-select {
   padding: 0.4375rem 0.625rem;
@@ -165,7 +165,7 @@
 .modal {
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   padding: 1.5rem;
   width: 90%;
   max-width: 400px;
