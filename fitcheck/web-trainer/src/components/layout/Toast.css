@@ -4,7 +4,7 @@
   left: 50%;
   transform: translateX(-50%);
   background: var(--bg-elevated);
-  border: 1px solid rgba(230, 57, 70, 0.4);
+  border: 1px solid rgba(229, 9, 20, 0.4);
   color: var(--text-primary);
   padding: 0.8125rem 1.625rem;
   border-radius: 999px;

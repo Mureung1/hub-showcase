@@ -24,13 +24,13 @@ import {
 import './ReportsPage.css';
 
 const CHART_COLORS = {
-  accent: '#e63946',
-  accentFill: 'rgba(230, 57, 70, 0.2)',
-  green: '#22c55e',
-  grid: '#2e3344',
-  text: '#9ca3b4',
-  tooltipBg: '#1a1d27',
-  target: '#2e3344',
+  accent: '#e50914',
+  accentFill: 'rgba(229, 9, 20, 0.2)',
+  green: '#34c759',
+  grid: '#2e3448',
+  text: '#999999',
+  tooltipBg: '#1e2230',
+  target: '#2e3448',
 };
 
 function CustomTooltip({
@@ -124,7 +124,7 @@ export default function ReportsPage() {
       <div className="page-header reports-header">
         <div>
           <h1>성장 리포트</h1>
-          <p>회원의 점진적 과부하 추이와 식단 준수 현황을 확인하세요</p>
+          <p>회원의 운동 상태와 식단 현황을 확인해보세요.</p>
         </div>
         <div className="member-select-wrap">
           <label htmlFor="report-member">회원</label>

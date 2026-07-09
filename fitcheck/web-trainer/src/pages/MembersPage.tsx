@@ -41,7 +41,7 @@ export default function MembersPage() {
     <div className="members-page">
       <div className="page-header">
         <h1>회원 관리</h1>
-        <p>회원별 신호등 상태와 소통 이력을 관리하세요</p>
+        <p>회원님들의 상태와 이력을 통해 관리하세요.</p>
       </div>
 
       <div className="members-layout">
