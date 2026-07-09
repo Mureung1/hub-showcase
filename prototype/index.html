@@ -14,11 +14,6 @@
             <img src="./assets/iris-logo.png" alt="IRIS Logo" />
             <span>IRIS</span>
           </div>
-          <nav>
-            <a href="#features">기능 소개</a>
-            <a href="#guide">사용 가이드</a>
-            <button type="button">관리자 시작하기</button>
-          </nav>
         </header>
 
         <div class="landing-content">
@@ -26,12 +21,12 @@
             <p class="eyebrow">Discord University Notice Service</p>
             <h1>필요한 대학 공지를<br />Discord에서 더 편하게</h1>
             <p class="description">
-              Iris는 대학 공지를 자동으로 확인하고, 카테고리 알림과 키워드 DM으로
-              필요한 공지만 빠르게 받아볼 수 있도록 돕습니다.
+              IRIS는 대학 공지를 자동으로 수집해 Discord로 전달하는 봇입니다.카테고리 알림과 키워드 DM으로
+              필요한 공지만 빠르게 받아보세요.
             </p>
             <div class="landing-actions">
               <button type="button" class="primary">Discord 봇 초대하기</button>
-              <button type="button" class="secondary">시작 가이드 보기</button>
+              <button type="button" class="secondary">시작 가이드</button>
             </div>
           </div>
 
@@ -42,24 +37,20 @@
 
         <div class="feature-grid" id="features">
           <article>
-            <div class="icon">🌐</div>
-            <h3>공지 사이트 등록</h3>
-            <p>관리자가 공지 사이트와 Selector를 등록합니다.</p>
+            <h3>실시간 공지 알림</h3>
+            <p>새로운 공지가 올라오면 Discord에서 바로 알림을 받습니다.</p>
           </article>
           <article>
-            <div class="icon">🔔</div>
             <h3>카테고리 알림</h3>
             <p>카테고리별 Discord 채널과 역할을 연결하고 알림을 받습니다.</p>
           </article>
           <article>
-            <div class="icon">🔍</div>
             <h3>키워드 알림</h3>
             <p>관심 키워드가 포함된 제목의 공지를 개인 DM으로 받습니다.</p>
           </article>
           <article>
-            <div class="icon">💬</div>
-            <h3>Discord 연동</h3>
-            <p>사용자는 슬래시 명령어로 키워드와 카테고리 구독을 관리합니다.</p>
+            <h3>('/') 슬래시 명령어</h3>
+            <p>Discord에서 간편하게 키워드와 카테고리 구독을 관리합니다.</p>
           </article>
         </div>
       </section>
@@ -79,32 +70,39 @@
             <div class="form-section">
               <h3>1. 공지 사이트 정보 입력</h3>
               <label>사이트 이름</label>
-              <input type="text" value="경북대학교 컴퓨터학부" />
+              <input type="text" placeholder="예: 경북대학교 컴퓨터학부" />
               <label>공지 사이트 URL</label>
-              <input type="text" value="https://cse.knu.ac.kr/board/notice" />
+              <input type="text" placeholder="예: https://cse.knu.ac.kr/board/notice" />
             </div>
 
             <div class="form-section">
-              <h3>2. Selector 설정</h3>
+              <div class="section-title-row">
+                <h3>2. Selector 설정</h3>
+                <div class="helper-actions">
+                  <p>도움이 필요하신가요?</p>
+                  <button type="button" class="secondary">설정 방법</button>
+                  <button type="button" class="primary">개발자에게 요청하기</button>
+                </div>
+              </div>
               <div class="selector-row">
                 <span>목록 Selector (list)</span>
-                <input type="text" value="ul.notice-list > li" />
+                <input type="text" placeholder="예: ul.notice-list > li" />
               </div>
               <div class="selector-row">
                 <span>제목 Selector (title)</span>
-                <input type="text" value=".title" />
+                <input type="text" placeholder="예: .title" />
               </div>
               <div class="selector-row">
                 <span>링크 Selector (link)</span>
-                <input type="text" value="a.link" />
+                <input type="text" placeholder="예: a.link" />
               </div>
               <div class="selector-row">
                 <span>날짜 Selector (date)</span>
-                <input type="text" value=".date" />
+                <input type="text" placeholder="예: .date" />
               </div>
               <div class="selector-row">
                 <span>카테고리 Selector (category)</span>
-                <input type="text" value=".category" />
+                <input type="text" placeholder="예: .category" />
               </div>
               <button type="button" class="primary full">테스트 크롤링</button>
             </div>
@@ -114,18 +112,12 @@
                 <h3>최근 공지 미리보기 <span>(최근 5개)</span></h3>
               </div>
               <ul>
-                <li><span>2024학년도 2학기 수강신청 안내</span><em>2024-05-20</em></li>
-                <li><span>하계 현장실습 모집 안내</span><em>2024-05-20</em></li>
-                <li><span>졸업 요건 변경 안내</span><em>2024-05-19</em></li>
-                <li><span>장학금 신청 안내</span><em>2024-05-18</em></li>
-                <li><span>컴퓨터학부 특강 안내</span><em>2024-05-17</em></li>
+                <li><span>2024학년도 2학기 수강신청 안내</span><em>2026-07-10</em></li>
+                <li><span>하계 현장실습 모집 안내</span><em>2026-06-30</em></li>
+                <li><span>졸업 요건 변경 안내</span><em>2026-06-19</em></li>
+                <li><span>장학금 신청 안내</span><em>2026-05-31</em></li>
+                <li><span>컴퓨터학부 특강 안내</span><em>2026-05-17</em></li>
               </ul>
-            </div>
-
-            <div class="helper-actions">
-              <p>Selector 입력이 어려우신가요?</p>
-              <button type="button" class="secondary">가이드 보기</button>
-              <button type="button" class="secondary">개발자에게 요청하기</button>
             </div>
 
             <div class="page-actions right">
@@ -136,11 +128,13 @@
           <aside class="guide-panel" id="guide">
             <h3>Guide</h3>
             <ol>
-              <li>공지 사이트 URL을 입력합니다.</li>
+              <li>공지 사이트 정보를 입력합니다.</li>
               <li>목록, 제목, 링크, 날짜, 카테고리 Selector를 입력합니다.</li>
-              <li>테스트 크롤링으로 최근 공지가 보이는지 확인합니다.</li>
+              <li>검증을 위해서 테스트 크롤링 버튼을 눌러 최근 공지가 보이는지 확인합니다.</li>
             </ol>
-            <div class="tip">💡 Selector는 개발자 도구(F12)를 활용해 찾을 수 있습니다.</div>
+            <div class="tip"> <p>💡 Selector 설정은 HTML 구조를 이해해야 하므로 직접 입력하기 어려울 수 있습니다.</p>
+              <p>직접 설정이 어려운 경우, 개발자 요청을 통해 등록을 도와드립니다.</p>
+            </div>
           </aside>
         </section>
       </section>
@@ -172,42 +166,43 @@
                   <tr>
                     <td>학사공지</td>
                     <td><select><option>#학사-공지</option></select></td>
-                    <td><input value="Iris-학사공지" /></td>
+                    <td><input placeholder="예: Iris-학사공지" /></td>
                     <td><span class="toggle on"></span></td>
                   </tr>
                   <tr>
                     <td>장학공지</td>
                     <td><select><option>#장학-공지</option></select></td>
-                    <td><input value="Iris-장학공지" /></td>
+                    <td><input placeholder="예: Iris-장학공지" /></td>
                     <td><span class="toggle on"></span></td>
                   </tr>
                   <tr>
                     <td>취업공지</td>
                     <td><select><option>#취업-공지</option></select></td>
-                    <td><input value="Iris-취업공지" /></td>
+                    <td><input placeholder="예: Iris-취업공지" /></td>
                     <td><span class="toggle on"></span></td>
                   </tr>
                   <tr>
                     <td>행사공지</td>
                     <td><select><option>#행사-공지</option></select></td>
-                    <td><input value="Iris-행사공지" /></td>
+                    <td><input placeholder="예: Iris-행사공지" /></td>
                     <td><span class="toggle on"></span></td>
                   </tr>
                   <tr>
                     <td>기타공지</td>
                     <td><select><option>#기타-공지</option></select></td>
-                    <td><input value="Iris-기타공지" /></td>
+                    <td><input placeholder="예: Iris-기타공지" /></td>
                     <td><span class="toggle"></span></td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <div class="notice-box">활성화 OFF인 카테고리는 크롤링은 하지만 알림이 전송되지 않습니다.</div>
+            <div class="notice-box">활성화 OFF인 카테고리는 구독 및 알림 대상에서 제외됩니다.</div>
 
             <div class="page-actions between">
               <a href="#site-register" class="secondary link-button">이전</a>
               <div>
+                <span class="action-status success">저장되었습니다.</span>
                 <button type="button" class="primary">저장</button>
                 <a href="#complete" class="primary link-button">다음 →</a>
               </div>
@@ -217,9 +212,9 @@
           <aside class="guide-panel">
             <h3>Guide</h3>
             <ol>
-              <li>사용할 카테고리를 확인합니다.</li>
-              <li>알림을 보낼 Discord 채널을 선택합니다.</li>
-              <li>Role 이름을 입력하면 저장 시 Discord에 자동 생성됩니다.</li>
+              <li>사용할 수 있는 카테고리를 확인합니다.</li>
+              <li>해당 카테고리의 알림을 보낼 Discord 채널을 선택합니다.</li>
+              <li>역할 이름을 입력하면 저장 시 Discord에 자동 생성됩니다. <br>사용자가 카테고리를 구독하면 해당 역할이 자동으로 부여됩니다.</li>
             </ol>
           </aside>
         </section>
@@ -246,11 +241,12 @@
               <div><strong>/keyword</strong><span>키워드 등록/관리</span></div>
             </div>
 
-            <a href="#site-register" class="primary link-button">관리자 페이지로 이동</a>
+            <a href="#site-register" class="primary link-button">처음으로 이동</a>
           </div>
           <aside class="guide-panel small">
             <h3>Guide</h3>
             <p>/setup은 관리자만 사용할 수 있습니다.</p>
+            <p>자세한 설명은 /help 명령어를 참고해주세요.</p>
             <p>설정은 언제든지 수정할 수 있습니다.</p>
           </aside>
         </section>

@@ -6,43 +6,26 @@
 
 ## 프로젝트 소개
 
-**IRIS**는 대학교 공지를 Discord에서 편리하게 받아볼 수 있도록 도와주는 서비스입니다.
+**IRIS**는 대학교 공지사항을 Discord 알림으로 정보를 놓치치 않게 도와주는 서비스입니다.
 프로젝트 이름인 IRIS는 전령의 의미를 가지고 있으며, 직관적이고 부르기 쉬운 이름이라 선택했습니다.
-
-관리자는 공지 사이트와 Selector를 등록하고, Discord 채널 및 Role을 연결할 수 있습니다.
-사용자는 원하는 공지 카테고리를 구독하거나 키워드를 등록하여 필요한 공지만 Discord에서 받아볼 수 있습니다.
+- 관리자는 관리자 페이지에서 공지 사이트를 등록하고, 공지 카테고리와 Discord 채널을 연결할 수 있습니다.
+- 사용자는 원하는 공지 카테고리를 구독하거나 키워드를 등록하여 필요한 공지만 Discord에서 받아볼 수 있습니다.
 
 
 
 ## 주요 기능
 
-- 공지 사이트 등록
-- Discord 구독
-- 카테고리별 Discord 알림
-- 키워드 알림
+- 실시간 공지 알림 : 새로운 공지가 올라오면 Discord에서 바로 알림을 받습니다.
+- 카테고리별 Discord 알림 : 카테고리별 Discord 채널과 역할을 연결하고, 알림을 받습니다.
+- 키워드 알림 : 관심 키워드가 포함된 제목의 공지를 개인 DM으로 받습니다.
+- ('/') 슬래시 명령어 : Discord에서 간편하게 키워드와 카테고리 구독을 관리합니다.
 
 
 
 ## 문서
 
-프로젝트 기획 및 상세 문서는 아래 Notion에서 확인할 수 있습니다.
+프로젝트 기획 및 상세 문서는 아래 링크에서 확인할 수 있습니다.
 
-> Notion : **[IRIS 문서](https://app.notion.com/p/IRIS-beb020cdef3e82dba426015fa9eb15c2)**
+- GitHub Wiki : **[IRIS 기획서](https://github.com/codeHyeon/hub/wiki/IRIS-%EA%B8%B0%ED%9A%8D%EC%84%9C)**
 
-
-
-## 실행 방법
-
-```bash
-npm install
-```
-
-```bash
-npm run dev
-```
-
-브라우저에서 아래 주소를 열어 확인할 수 있습니다.
-
-```
-http://localhost:5173
-```
+- Notion : **[IRIS 문서](https://app.notion.com/p/IRIS-beb020cdef3e82dba426015fa9eb15c2)**
