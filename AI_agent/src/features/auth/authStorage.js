@@ -6,6 +6,29 @@ export const saveUser = (user) => {
   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
 };
 
+export const updateUserProfile = (updates) => {
+  const user = getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const updatedUser = {
+    ...user,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+
+  saveUser(updatedUser);
+
+  const session = getSession();
+  if (session?.id === updatedUser.id) {
+    saveSession(updatedUser);
+  }
+
+  return updatedUser;
+};
+
 export const savePendingUser = (user) => {
   localStorage.setItem(PENDING_USER_STORAGE_KEY, JSON.stringify(user));
 };

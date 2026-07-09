@@ -123,6 +123,13 @@ function Analysis() {
               >
                 다시 분석하기
               </button>
+              <button
+                type="button"
+                style={styles.secondaryButton}
+                onClick={() => navigate(routes.mission)}
+              >
+                추천 미션 보기
+              </button>
             </section>
 
             <section style={styles.card}>

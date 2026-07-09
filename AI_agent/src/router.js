@@ -13,6 +13,8 @@ export const routes = {
   portfolio: "/portfolio",
 };
 
+export const getMissionDetailPath = (missionId) => `/mission/${missionId}`;
+
 export const getCurrentPath = () => window.location.pathname || routes.home;
 
 export const navigate = (path) => {
