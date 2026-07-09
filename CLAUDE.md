@@ -277,3 +277,98 @@ https://github.com/jsjsbs7233/hub/pull/new/N048_김우현
 
 ### 화면 만들 때
 위 디자인 시스템의 CSS 변수를 그대로 사용할 것. 색을 임의로 정하지 말 것.
+
+디렉토리 구조
+teamplan/
+├── client/                    # React (Vite)
+│   ├── src/
+│   │   ├── components/        # 재사용 부품 (버튼, 카드, 진행바)
+│   │   ├── pages/             # 화면 단위 (로그인, 팀목록, 태스크관리)
+│   │   ├── api/               # 서버 요청 코드
+│   │   ├── styles/            # CSS 변수 (디자인 시스템)
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── index.html
+│   └── package.json
+│
+├── server/                    # Express
+│   ├── src/
+│   │   ├── routes/            # 주소 → controller 연결 (안내)
+│   │   ├── controllers/       # 요청 처리 로직 (판단)
+│   │   ├── models/            # DB 다루는 코드 (DB)
+│   │   ├── middleware/        # 로그인 확인 등 (검문)
+│   │   └── app.js             # 서버 시작점
+│   ├── db/                    # SQLite 파일
+│   └── package.json
+│
+├── CLAUDE.md
+└── README.md
+폴더 역할 기억법: routes는 안내, controllers는 판단, models는 DB, middleware는 검문.
+
+처음부터 완벽히 나누려 하지 말 것. 헷갈리면 Claude Code에게 "이 코드는 어디에 넣는 게 맞아?"라고 물어볼 것.
+
+
+라이브러리
+server
+라이브러리용도express서버 프레임워크better-sqlite3DB (아래 주의사항 참고)cors프론트-백 통신 허용bcrypt비밀번호 암호화jsonwebtoken로그인 토큰 (JWT)dotenv비밀 설정값 관리nodemon코드 수정 시 서버 자동 재시작 (개발용)
+client
+라이브러리용도react, react-domVite가 기본 설치react-router-dom화면 이동axios서버 요청chart.js기여도 차트 (확장 기능, 나중에)
+
+better-sqlite3 설치 실패 시 대응
+증상: 설치할 때 gyp ERR!, node-gyp rebuild failed, MSBuild.exe ENOENT 같은 에러.
+원인: better-sqlite3는 C++ 컴파일이 필요한데, 윈도우에 빌드 도구(Visual Studio Build Tools, Python)가 없으면 실패한다.
+
+대응 순서
+
+일단 그냥 설치 시도. Node.js LTS 버전이면 미리 컴파일된 바이너리가 있어 그냥 되는 경우가 많다.
+실패하면 → Node.js 내장 SQLite 사용 검토. (최신 Node.js에 기본 내장, 설치 불필요. 다만 자료가 적음)
+그래도 안 되면 → 빌드 도구 설치 (Visual Studio Build Tools + Python). 시간이 오래 걸림.
+
+중요: 이 에러가 떠도 당황하지 말 것. 흔한 문제이고 해결책이 있다.
+
+서버 / API 규칙
+
+포트: 프론트 5173 (Vite 기본), 백엔드 3000
+API 주소: 앞에 /api 붙이기
+
+/api/tasks — 태스크
+/api/teams — 팀
+/api/auth/login — 로그인
+
+
+개발 중 터미널: 두 개 띄우기 (client 하나, server 하나)
+
+나중에 귀찮아지면 concurrently 도입 검토
+
+
+
+
+파일 이름 규칙
+
+React 컴포넌트: TaskCard.jsx (대문자 시작, 붙여쓰기)
+일반 파일: taskController.js (소문자 시작, 붙여쓰기)
+폴더: components, routes (전부 소문자)
+
+
+커밋 메시지 규칙
+feat: 새 기능 추가
+fix: 버그 수정
+docs: 문서 작업
+style: 디자인/포맷 변경 (기능 동일)
+refactor: 코드 정리 (기능 동일)
+chore: 잡일 (라이브러리 설치, 설정)
+예시
+feat: 회의시간 매칭 격자 UI 추가
+fix: 완료 체크가 진행률에 반영 안 되는 문제 수정
+docs: 기획서 추가
+
+완벽하게 지킬 필요 없음. 헷갈리면 feat:. 자주 쓰는 3개만 기억: feat, fix, docs.
+
+
+개발 원칙
+
+과도한 설계를 피한다. 작은 프로젝트는 단순한 구조로.
+1개 만들고 → 바로 확인 → 커밋 반복.
+완벽한 구조를 미리 짜려다 시작도 못 하는 게 더 나쁘다. 필요해지면 그때 나눈다.
+프로토타입은 완벽할 필요 없다. 방향 확인용.
+기능을 늘리지 말고 핵심 2개(태스크 관리, 회의시간 매칭)를 꼼꼼히 완성한다.
