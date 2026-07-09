@@ -9,7 +9,7 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 ## 2. v0.1 목표
 
 ```text
-특정 상권 1곳을 기준으로 상권 데이터, 입지 점수, 시간대별 혼잡도, 정적 3D 탐색 화면을 연결한다.
+특정 상권 1곳을 기준으로 상권 데이터, 입지 점수, toggle 가능한 인구 Layer와 사람 눈높이의 3DGS 현장 상세보기를 연결한다.
 ```
 
 v0.1에서는 지역을 서울로 고정하지 않는다. 실제 구현 시 데이터 확보가 쉬운 특정 상권 1곳을 선택한다.
@@ -20,17 +20,17 @@ v0.1에서는 지역을 서울로 고정하지 않는다. 실제 구현 시 데�
 | --- | --- | --- | --- |
 | 주기능 | 공공데이터 기반 상권 분석 | P0 | [market-analysis.md](../features/market-analysis.md) |
 | 주기능 표현 | 2.5D 상권 지도와 유동인구 Layer | P0 | [market-map-experience.md](../features/market-map-experience.md) |
-| 보조/추가기능 | 혼잡도 3D 기반 탐색 | P1 | [3d-congestion-explorer.md](../features/3d-congestion-explorer.md) |
+| 보조/추가기능 | Gaussian Splatting 현장 상세보기 | P1 | [3d-congestion-explorer.md](../features/3d-congestion-explorer.md) |
 | 보조/추가기능 | 사람 영역 익명화 전처리 | P1 | [person-anonymization-preprocessing.md](../features/person-anonymization-preprocessing.md) |
 
 ## 4. 사용자 흐름
 
 ```text
 1. 사용자가 분석 대상 상권을 선택한다.
-2. 지도 대시보드에서 주변 점포, 업종 분포, 경쟁 강도, 개폐업 흐름을 확인한다.
+2. 지도 대시보드에서 주변 점포, 업종 분포, 경쟁 강도, 개폐업 흐름과 선택한 인구 Layer를 확인한다.
 3. 입지 분석 카드에서 수요, 경쟁, 변화, 공간, 시간대 점수를 확인한다.
-4. 보조 화면에서 한 가게 앞 또는 거리 일부의 정적 3D 장면을 탐색한다.
-5. 10시 / 13시 / 15시 / 18시 시간대별 혼잡도 관찰값을 3D 장면 위 마커 또는 카드로 확인한다.
+4. 선택한 위치의 현장 상세보기를 열어 사람 눈높이의 3DGS 장면을 탐색한다.
+5. 10시 / 13시 / 15시 / 18시 시간대별 혼잡도를 추상적 사람 오브젝트와 정보 panel로 확인한다.
 ```
 
 ## 5. 데이터 흐름
@@ -48,15 +48,15 @@ v0.1에서는 지역을 서울로 고정하지 않는다. 실제 구현 시 데�
 → 프레임 추출
 → 사람 영역 bbox 탐지
 → 별도 전처리 프로그램에서 blur/mask/프레임 제외
-→ 정제 이미지 기반 3D map 생성
-→ 웹 3D 뷰어 제공
+→ 정제 이미지 기반 Gaussian Splatting 생성
+→ 사람 눈높이의 웹 3DGS viewer 제공
 ```
 
 ```text
 시간대별 촬영
 → 10시 / 13시 / 15시 / 18시 대표 시간대 관찰
 → 수동 또는 경량 모델 기반 사람 수/혼잡도 추정
-→ 대시보드와 3D 탐색 화면에 집계값 표시
+→ 지도 Layer와 현장 상세보기에 서로 다른 방식으로 집계값 표시
 ```
 
 ## 6. v0.1 제외 범위
@@ -81,9 +81,9 @@ Occlusion 고급 복원
 카페 또는 음식점 1개 업종 기준 분석이 가능하다.
 지도에서 반경 내 점포와 동일 업종 경쟁 강도를 볼 수 있다.
 개업/폐업 흐름과 유동인구 또는 생활인구 시간대 그래프를 볼 수 있다.
-한 가게 앞 또는 거리 10~20m의 정적 3D 장면을 웹에서 탐색할 수 있다.
+한 가게 앞 또는 거리 10~20m의 3DGS 장면을 사람 눈높이에서 탐색할 수 있다.
 3D 장면에 가게 마커가 있고, 클릭 시 상권 정보 카드가 열린다.
-10시 / 13시 / 15시 / 18시 관찰 데이터가 화면에 표시된다.
+10시 / 13시 / 15시 / 18시 관찰 데이터가 지도 Layer와 현장 상세보기에 표시된다.
 사람 영역 익명화 전처리 정책이 문서화되어 있다.
 규칙 기반 입지 점수와 AI 해석 리포트를 생성할 수 있다.
 ```
@@ -101,5 +101,5 @@ Occlusion 고급 복원
 - [v0.1 구현 범위 고정 명세](../module-notes/localtwin-v0.1-scope.md)
 - [공공데이터 기반 상권 분석 스펙](../features/market-analysis.md)
 - [2.5D 상권 지도와 유동인구 Layer 스펙](../features/market-map-experience.md)
-- [혼잡도 3D 기반 탐색 스펙](../features/3d-congestion-explorer.md)
+- [Gaussian Splatting 현장 상세보기 스펙](../features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리 스펙](../features/person-anonymization-preprocessing.md)

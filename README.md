@@ -38,7 +38,7 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 
 - [공공데이터 기반 상권 분석](docs/features/market-analysis.md)
 - [2.5D 상권 지도와 유동인구 Layer](docs/features/market-map-experience.md)
-- [혼잡도 3D 기반 탐색](docs/features/3d-congestion-explorer.md)
+- [Gaussian Splatting 현장 상세보기](docs/features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리](docs/features/person-anonymization-preprocessing.md)
 
 ### 결정 메모
