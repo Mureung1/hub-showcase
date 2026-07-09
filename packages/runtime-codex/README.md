@@ -8,7 +8,8 @@ depend on Codex-specific message shapes.
 
 | Item | Value |
 | --- | --- |
-| Codex package | `@openai/codex@0.142.5` |
+| Codex package | `@openai/codex@0.144.0` |
+| Model selection | Codex default; AY-PLE does not pin a model yet |
 | Transport | `stdio` JSONL |
 | Startup | `codex app-server --listen stdio://` |
 | Generated protocol path | `src/internal/codex-app-server-protocol/generated/` |
@@ -23,6 +24,10 @@ The generator runs the package-owned Codex binary, then rewrites generated
 relative imports to `.js` specifiers so the package compiles under `NodeNext`
 ESM. Generated files are internal and must not be re-exported as AY-PLE product
 contracts.
+
+The package pin fixes the app-server binary and generated protocol contract. It
+does not force a model such as `gpt-5.6-sol`; thread creation currently follows
+the configured Codex default model.
 
 ## Raw Initialize Smoke
 

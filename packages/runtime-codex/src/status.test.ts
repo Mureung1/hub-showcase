@@ -26,6 +26,8 @@ test('readCodexRuntimeStatus reports binary, runtime home, config, and auth', as
         assert.equal(status.codexBinPath, process.execPath)
         assert.notEqual(status.version, null)
         assert.match(status.version ?? '', /^v\d+\./)
+        assert.equal(status.pinnedVersion, '0.144.0')
+        assert.equal(status.versionMatchesPin, false)
         assert.equal(status.cwd, rawClientOptions.cwd)
         assert.deepEqual(status.runtimeHome, {
           codexHome: rawClientOptions.codexHome,

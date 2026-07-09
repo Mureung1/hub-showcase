@@ -21,6 +21,8 @@ type CodexRuntimeStatus = {
   ok: boolean
   codexBinPath: string | null
   version: string | null
+  pinnedVersion: string
+  versionMatchesPin: boolean | null
   cwd: string | null
   runtimeHome: {
     codexHome: string
@@ -407,6 +409,10 @@ function App() {
                     <dd>{codexStatus?.version ?? 'Unknown'}</dd>
                   </div>
                   <div>
+                    <dt>Package pin</dt>
+                    <dd>{formatCodexVersionPin(codexStatus)}</dd>
+                  </div>
+                  <div>
                     <dt>Binary</dt>
                     <dd>{codexStatus?.codexBinPath ?? 'Unknown'}</dd>
                   </div>
@@ -708,6 +714,18 @@ function formatCodexAuthStatus(status: CodexRuntimeStatus | null): string {
   }
 
   return status?.auth?.authMethod ?? 'Missing'
+}
+
+function formatCodexVersionPin(status: CodexRuntimeStatus | null): string {
+  if (!status) {
+    return 'Unknown'
+  }
+
+  if (status.versionMatchesPin === null) {
+    return `${status.pinnedVersion} / Unknown`
+  }
+
+  return `${status.pinnedVersion} / ${status.versionMatchesPin ? 'Matched' : 'Mismatch'}`
 }
 
 function formatEventDetail(event: RuntimeRunEvent): string {

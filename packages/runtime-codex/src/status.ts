@@ -19,6 +19,8 @@ export type CodexRuntimeStatus =
       ok: true
       codexBinPath: string
       version: string | null
+      pinnedVersion: string
+      versionMatchesPin: boolean | null
       cwd: string
       runtimeHome: CodexRuntimeHome
       config: CodexRuntimeConfigStatus
@@ -38,6 +40,8 @@ export type CodexRuntimeStatus =
       error: string
       codexBinPath: string | null
       version: string | null
+      pinnedVersion: string
+      versionMatchesPin: boolean | null
       cwd: string | null
       runtimeHome: CodexRuntimeHome | null
       config: CodexRuntimeConfigStatus | null
@@ -45,6 +49,7 @@ export type CodexRuntimeStatus =
 
 const execFileAsync = promisify(execFile)
 const fileAuthConfigKey = 'cli_auth_credentials_store'
+const pinnedVersion = readPinnedCodexVersion()
 
 export async function readCodexRuntimeStatus(
   options: CodexRawClientOptions = {},
@@ -64,6 +69,8 @@ export async function readCodexRuntimeStatus(
       ok: true,
       codexBinPath: client.getCodexBinPath(),
       version,
+      pinnedVersion,
+      versionMatchesPin: versionMatchesPin(version),
       cwd: client.getCwd(),
       runtimeHome: client.getRuntimeHome(),
       config,
@@ -82,6 +89,8 @@ export async function readCodexRuntimeStatus(
         error instanceof Error ? error.message : 'Unable to read Codex status',
       codexBinPath: client?.getCodexBinPath() ?? options.codexBinPath ?? null,
       version,
+      pinnedVersion,
+      versionMatchesPin: versionMatchesPin(version),
       cwd: client?.getCwd() ?? options.cwd ?? null,
       runtimeHome,
       config: runtimeHome ? readCodexRuntimeConfigStatus(runtimeHome) : null,
@@ -89,6 +98,29 @@ export async function readCodexRuntimeStatus(
   } finally {
     await client?.close()
   }
+}
+
+function readPinnedCodexVersion(): string {
+  const packageJson = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+  ) as {
+    dependencies?: Record<string, unknown>
+  }
+  const version = packageJson.dependencies?.['@openai/codex']
+
+  if (typeof version !== 'string' || version.length === 0) {
+    throw new Error('Unable to read pinned @openai/codex version')
+  }
+
+  return version
+}
+
+function versionMatchesPin(version: string | null): boolean | null {
+  if (version === null) {
+    return null
+  }
+
+  return version.split(/\s+/).includes(pinnedVersion)
 }
 
 export function readCodexRuntimeConfigStatus(
