@@ -1,0 +1,30 @@
+{
+  "id": "example-001",
+  "sourceTitle": "Example notice title",
+  "noticeType": "scholarship",
+  "expected": {
+    "deadlines": [
+      {
+        "title": "Example application deadline",
+        "date": "2026-07-20",
+        "evidence": "Example evidence excerpt from the notice."
+      }
+    ],
+    "tasks": [],
+    "submissions": [
+      {
+        "title": "Example required document",
+        "evidence": "Example evidence excerpt from the notice."
+      }
+    ],
+    "requirements": [],
+    "cautions": [],
+    "calendarEvents": [
+      {
+        "title": "Example application deadline",
+        "startDate": "2026-07-20",
+        "eventType": "deadline"
+      }
+    ]
+  }
+}

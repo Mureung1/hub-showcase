@@ -1,5 +1,8 @@
 const defaultNoticeText =
   'Applications must be submitted online by the stated deadline. Applicants should review requirements and prepare all requested documents before submission.'
+const activeInstitution = 'kangwon'
+const campusOrder = ['chuncheon', 'samcheok', 'dogye', 'gangneung_wonju']
+const campusIdSet = new Set(campusOrder)
 
 function normalizeString(value) {
   return typeof value === 'string' ? value : ''
@@ -40,12 +43,31 @@ function firstEvidenceLine(noticeText) {
   return noticeText.split('\n').find((line) => line.trim()) || noticeText
 }
 
+function normalizeUserPreferencesSnapshot(snapshot) {
+  const selectedCampusSet = new Set(
+    Array.isArray(snapshot?.selectedCampuses)
+      ? snapshot.selectedCampuses.filter((campusId) => campusIdSet.has(campusId))
+      : [],
+  )
+
+  return {
+    activeInstitution,
+    selectedCampuses: campusOrder.filter((campusId) =>
+      selectedCampusSet.has(campusId),
+    ),
+    includeCommonNotices: true,
+  }
+}
+
 export async function analyzeWithMock(input = {}) {
   const noticeText = pickNoticeText(input)
   const language = pickLanguage(input, noticeText)
   const title = pickTitle(input, language)
   const evidence = firstEvidenceLine(noticeText)
   const isKorean = language === 'ko'
+  const userPreferencesSnapshot = normalizeUserPreferencesSnapshot(
+    input?.userPreferencesSnapshot,
+  )
 
   return {
     title,
@@ -56,6 +78,9 @@ export async function analyzeWithMock(input = {}) {
     userSelectedNoticeType: normalizeString(input?.userSelectedNoticeType) || 'unknown',
     noticePublicationDate: normalizeString(input?.noticePublicationDate),
     uploadedFileName: normalizeString(input?.uploadedFileName),
+    metadata: {
+      userPreferencesSnapshot,
+    },
     deadlines: [
       {
         id: 'server-deadline-1',

@@ -31,6 +31,22 @@ export const AppWarningSchema = z
   })
   .strict()
 
+export const AppUserPreferencesSnapshotSchema = z
+  .object({
+    activeInstitution: z.literal('kangwon'),
+    selectedCampuses: z.array(
+      z.enum(['chuncheon', 'samcheok', 'dogye', 'gangneung_wonju']),
+    ),
+    includeCommonNotices: z.literal(true),
+  })
+  .strict()
+
+export const AppAnalysisMetadataSchema = z
+  .object({
+    userPreferencesSnapshot: AppUserPreferencesSnapshotSchema.optional(),
+  })
+  .strict()
+
 export const AppDeadlineSchema = z
   .object({
     ...appBaseItemFields,
@@ -124,6 +140,7 @@ export const AppAnalysisSchema = z
     cautions: z.array(AppCautionSchema),
     calendarEvents: z.array(AppCalendarEventSchema),
     warnings: z.array(AppWarningSchema),
+    metadata: AppAnalysisMetadataSchema.optional(),
   })
   .strict()
 
