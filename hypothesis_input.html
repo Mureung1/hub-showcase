@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가설 입력 및 분석 준비 - PM supporting tool</title>
+    <!-- Google Fonts for Poppins and Pretendard CDN for Korean -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css">
+    <style>
+        :root {
+            /* Colors */
+            --color-primary: #5A89FA;
+            --color-primary-dark: #2C3D8F;
+            --color-text: #1F1F1F;
+            --color-text-muted: #6A8FB3;
+            --color-accent-light: #ABBCE0;
+            --color-bg: #F8F9FD;
+            --color-surface: #FFFFFF;
+            --color-border: #E5E9F5;
+
+            /* Typography */
+            --font-family: 'Poppins', 'Pretendard', sans-serif;
+            --font-weight-regular: 400;
+            --font-weight-medium: 500;
+            --font-weight-bold: 700;
+            --font-size-title: 20px;
+            --font-size-body: 14px;
+            --font-size-caption: 12px;
+
+            /* Radius */
+            --radius-pill: 999px;   /* 버튼 */
+            --radius-card: 18px;    /* 카드 */
+            --radius-input: 12px;   /* 인풋, 작은 요소 */
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+
+            /* Card */
+            --card-bg: var(--color-surface);
+            --card-radius: var(--radius-card);
+            --card-padding: 24px; /* 기획서 및 패딩 조정 */
+            --card-shadow: 0 10px 30px rgba(90, 137, 250, 0.06), 0 2px 8px rgba(90, 137, 250, 0.04);
+
+            /* Button */
+            --btn-primary-bg: var(--color-primary);
+            --btn-secondary-bg: var(--color-primary-dark);
+            --btn-radius: var(--radius-pill);
+            --btn-padding: 12px 28px;
+            --btn-text-color: #FFFFFF;
+            
+            /* Custom Animation Tokens */
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            padding: var(--space-xl) var(--space-md);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        header {
+            margin-bottom: var(--space-lg);
+            text-align: left;
+        }
+
+        .breadcrumbs {
+            font-size: var(--font-size-caption);
+            color: var(--color-text-muted);
+            font-weight: var(--font-weight-medium);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: var(--space-xs);
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        .breadcrumbs span.active {
+            color: var(--color-primary);
+            font-weight: var(--font-weight-bold);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: var(--font-weight-bold);
+            color: var(--color-primary-dark);
+            margin-top: var(--space-xs);
+        }
+
+        /* Card styles */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--card-radius);
+            padding: var(--card-padding);
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--color-border);
+            transition: var(--transition-smooth);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .card-title-group {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .dot:nth-child(1) { background-color: #FF5F56; }
+        .dot:nth-child(2) { background-color: #FFBD2E; }
+        .dot:nth-child(3) { background-color: #27C93F; }
+
+        .card-header h2 {
+            font-size: var(--font-size-title);
+            font-weight: var(--font-weight-bold);
+            color: var(--color-primary-dark);
+        }
+
+        .step-indicator {
+            font-size: var(--font-size-caption);
+            background-color: rgba(90, 137, 250, 0.1);
+            color: var(--color-primary);
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            font-weight: var(--font-weight-bold);
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: var(--space-lg);
+        }
+
+        label {
+            display: block;
+            font-size: var(--font-size-body);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-primary-dark);
+            margin-bottom: var(--space-sm);
+        }
+
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-input);
+            font-family: var(--font-family);
+            font-size: var(--font-size-body);
+            color: var(--color-text);
+            background-color: #FCFDFE;
+            transition: var(--transition-smooth);
+            outline: none;
+        }
+
+        textarea:focus, input[type="text"]:focus {
+            border-color: var(--color-primary);
+            background-color: var(--color-surface);
+            box-shadow: 0 0 0 4px rgba(90, 137, 250, 0.15);
+        }
+
+        textarea::placeholder, input[type="text"]::placeholder {
+            color: var(--color-accent-light);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Hypothesis Blocks Container */
+        .hypothesis-container {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .hypothesis-block {
+            background-color: #FBFDFF;
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-card);
+            padding: var(--space-md);
+            position: relative;
+            animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            transition: var(--transition-smooth);
+        }
+
+        .hypothesis-block:hover {
+            border-color: var(--color-accent-light);
+            box-shadow: 0 6px 16px rgba(90, 137, 250, 0.03);
+        }
+
+        .hypothesis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-sm);
+        }
+
+        .hypothesis-title {
+            font-size: var(--font-size-body);
+            font-weight: var(--font-weight-bold);
+            color: var(--color-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #FF5F56;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: var(--font-weight-medium);
+            padding: 4px 8px;
+            border-radius: var(--radius-input);
+            transition: var(--transition-smooth);
+        }
+
+        .btn-delete:hover {
+            background-color: rgba(255, 95, 86, 0.1);
+        }
+
+        .h-sentence-preview {
+            font-size: var(--font-size-body);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-muted);
+            background-color: #F0F4FC;
+            padding: 10px 14px;
+            border-radius: var(--radius-input);
+            margin-bottom: var(--space-md);
+            border-left: 3px solid var(--color-primary);
+            word-break: break-all;
+        }
+
+        .h-sentence-preview strong {
+            color: var(--color-primary-dark);
+        }
+
+        .h-split-inputs {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .h-split-inputs .sub-form-group {
+            flex: 1;
+        }
+
+        .h-split-inputs .connector-text {
+            font-size: var(--font-size-body);
+            font-weight: var(--font-weight-bold);
+            color: var(--color-text-muted);
+            margin-top: 22px; /* aligns with inputs */
+            white-space: nowrap;
+        }
+
+        /* Buttons styling */
+        .btn {
+            font-family: var(--font-family);
+            font-size: var(--font-size-body);
+            font-weight: var(--font-weight-bold);
+            padding: var(--btn-padding);
+            border-radius: var(--btn-radius);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            border: none;
+            outline: none;
+        }
+
+        .btn-primary {
+            background-color: var(--btn-primary-bg);
+            color: var(--btn-text-color);
+            box-shadow: 0 4px 14px rgba(90, 137, 250, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: #4878E8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(90, 137, 250, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px dashed var(--color-primary);
+            color: var(--color-primary);
+            width: 100%;
+            padding: 16px;
+            border-radius: var(--radius-card);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(90, 137, 250, 0.05);
+            border-style: solid;
+        }
+
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: var(--space-xl);
+            border-top: 1px solid var(--color-border);
+            padding-top: var(--space-lg);
+        }
+
+        .actions-bar .info-msg {
+            font-size: var(--font-size-caption);
+            color: var(--color-text-muted);
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .h-split-inputs {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--space-xs);
+            }
+            .h-split-inputs .connector-text {
+                margin-top: var(--space-xs);
+                margin-bottom: var(--space-xs);
+                text-align: center;
+            }
+            body {
+                padding: var(--space-md) var(--space-xs);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="breadcrumbs">
+                <span>PROJECT</span> &gt; <span class="active">STEP 1. 가설 입력</span>
+            </div>
+            <h1>인터뷰 가설 설정</h1>
+        </header>
+
+        <main class="card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <div class="dots">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </div>
+                    <h2>분석 대상 정의</h2>
+                </div>
+                <div class="step-indicator">기획 & 가설</div>
+            </div>
+
+            <form id="hypothesis-form" onsubmit="handleSubmit(event)">
+                <!-- 문제 정의 -->
+                <div class="form-group">
+                    <label for="problem-definition">문제 정의</label>
+                    <textarea id="problem-definition" placeholder="(예시) 배달 앱 홈 화면 개편 이후, 핵심 타겟인 2030 직장인의 재주문율 하락" required>배달 앱 홈 화면 개편 이후, 핵심 타겟인 2030 직장인의 재주문율 하락</textarea>
+                </div>
+
+                <!-- 가설 리스트 -->
+                <div class="form-group">
+                    <label>검증하고자 하는 가설</label>
+                    <div class="hypothesis-container" id="hypothesis-container">
+                        <!-- Hypothesis Block 1 -->
+                        <div class="hypothesis-block" data-index="1">
+                            <div class="hypothesis-header">
+                                <div class="hypothesis-title">가설 1</div>
+                                <button type="button" class="btn-delete" onclick="deleteBlock(this)">삭제</button>
+                            </div>
+                            <div class="h-sentence-preview" id="preview-1">
+                                만약 <strong>[원인]</strong> 하면, <strong>[결과]</strong> 일 것이다.
+                            </div>
+                            <div class="h-split-inputs">
+                                <div class="sub-form-group">
+                                    <input type="text" class="cause-input" placeholder="원인 (예: 추천 메뉴 영역 상향)" value="추천 메뉴 영역 위치 상향" oninput="updatePreview(1)" required>
+                                </div>
+                                <div class="connector-text">하면 &rarr;</div>
+                                <div class="sub-form-group">
+                                    <input type="text" class="effect-input" placeholder="결과 (예: 재주문율 증가)" value="재주문율 증가" oninput="updatePreview(1)" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-outline" onclick="addHypothesisBlock()">
+                        + 다른 가설 추가
+                    </button>
+                </div>
+
+                <!-- 전사본 텍스트 -->
+                <div class="form-group">
+                    <label for="transcript">인터뷰 전사본 텍스트</label>
+                    <textarea id="transcript" placeholder="인터뷰이와의 대화 내용을 붙여넣어 주세요..." required>인터뷰이 A: 추천 메뉴가 상단에 가 있으니까 손이 자주 가네요. 확실히 편해졌어요.
+인터뷰이 B: 메뉴 찾기가 쉬워진 건 사실인데, 앱 홈 화면 자체가 가끔 너무 느리게 로딩돼요.
+인터뷰이 K: UI가 바뀐 줄도 몰랐는데 로딩이 너무 걸리니까 짜증 나서 그냥 껐어요.</textarea>
+                </div>
+
+                <!-- 추가 고려 사항 -->
+                <div class="form-group">
+                    <label for="additional-notes">추가로 고려해야 할 사항 (선택)</label>
+                    <textarea id="additional-notes" placeholder="정성/정량 데이터, 인터뷰 대상 특성 등...">최근 1개월 내 이탈한 유저 위주의 인터뷰 데이터 참고</textarea>
+                </div>
+
+                <!-- 하단 액션 바 -->
+                <div class="actions-bar">
+                    <span class="info-msg">* 분석 시작 시 AI 모델이 가설별 근거 분류를 진행합니다.</span>
+                    <button type="submit" class="btn btn-primary" id="btn-submit">
+                        분석 시작 &nbsp;&rarr;
+                    </button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script>
+        let blockCount = 1;
+
+        // Initialize preview on load
+        window.addEventListener('DOMContentLoaded', () => {
+            updatePreview(1);
+        });
+
+        function updatePreview(index) {
+            const block = document.querySelector(`.hypothesis-block[data-index="${index}"]`);
+            if (!block) return;
+
+            const causeVal = block.querySelector('.cause-input').value.trim();
+            const effectVal = block.querySelector('.effect-input').value.trim();
+            const previewEl = document.getElementById(`preview-${index}`);
+
+            const causeSpan = causeVal ? `<strong>${causeVal}</strong>` : '[원인]';
+            const effectSpan = effectVal ? `<strong>${effectVal}</strong>` : '[결과]';
+
+            previewEl.innerHTML = `만약 ${causeSpan} 하면, ${effectSpan} 일 것이다.`;
+        }
+
+        function addHypothesisBlock() {
+            blockCount++;
+            const container = document.getElementById('hypothesis-container');
+            
+            const newBlock = document.createElement('div');
+            newBlock.className = 'hypothesis-block';
+            newBlock.setAttribute('data-index', blockCount);
+            
+            newBlock.innerHTML = `
+                <div class="hypothesis-header">
+                    <div class="hypothesis-title">가설 ${blockCount}</div>
+                    <button type="button" class="btn-delete" onclick="deleteBlock(this)">삭제</button>
+                </div>
+                <div class="h-sentence-preview" id="preview-${blockCount}">
+                    만약 <strong>[원인]</strong> 하면, <strong>[결과]</strong> 일 것이다.
+                </div>
+                <div class="h-split-inputs">
+                    <div class="sub-form-group">
+                        <input type="text" class="cause-input" placeholder="원인 (예: 로딩 속도 최적화)" oninput="updatePreview(${blockCount})" required>
+                    </div>
+                    <div class="connector-text">하면 &rarr;</div>
+                    <div class="sub-form-group">
+                        <input type="text" class="effect-input" placeholder="결과 (예: 이탈률 감소)" oninput="updatePreview(${blockCount})" required>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(newBlock);
+            reorderBlocks();
+        }
+
+        function deleteBlock(btn) {
+            const block = btn.closest('.hypothesis-block');
+            block.style.animation = 'scaleIn 0.3s ease-out reverse';
+            setTimeout(() => {
+                block.remove();
+                reorderBlocks();
+            }, 250);
+        }
+
+        function reorderBlocks() {
+            const blocks = document.querySelectorAll('.hypothesis-block');
+            blocks.forEach((block, index) => {
+                const newIndex = index + 1;
+                block.setAttribute('data-index', newIndex);
+                block.querySelector('.hypothesis-title').innerText = `가설 ${newIndex}`;
+                
+                const preview = block.querySelector('.h-sentence-preview');
+                preview.id = `preview-${newIndex}`;
+                
+                const inputs = block.querySelectorAll('input');
+                inputs[0].setAttribute('oninput', `updatePreview(${newIndex})`);
+                inputs[1].setAttribute('oninput', `updatePreview(${newIndex})`);
+                
+                updatePreview(newIndex);
+            });
+            // Update the global block count
+            blockCount = blocks.length;
+        }
+
+        function handleSubmit(event) {
+            event.preventDefault();
+            
+            // Collect Form Data
+            const problem = document.getElementById('problem-definition').value;
+            const transcript = document.getElementById('transcript').value;
+            const notes = document.getElementById('additional-notes').value;
+            
+            const hypotheses = [];
+            document.querySelectorAll('.hypothesis-block').forEach(block => {
+                const cause = block.querySelector('.cause-input').value;
+                const effect = block.querySelector('.effect-input').value;
+                hypotheses.push({ cause, effect });
+            });
+
+            console.log('Submission Data:', { problem, hypotheses, transcript, notes });
+            
+            alert('가설 분석 요청이 전송되었습니다!\n대시보드 화면으로 이동합니다. (데모 콘솔 로그 확인 가능)');
+        }
+    </script>
+</body>
+</html>
