@@ -5,7 +5,12 @@
   --bg: #ffffff;
   --bg-muted: #f9fafb;
   --border: #e5e4e7;
-  --accent: #2563eb;
+  --accent: oklch(0.55 0.1209 175.76);
+  --accent-hover: oklch(0.45 0.1209 175.76);
+  --accent-text: oklch(0.4 0.1209 175.76);
+  --accent-soft-bg: oklch(0.96 0.03 175.76);
+  --accent-soft-border: oklch(0.88 0.06 175.76);
+  --danger: #dc2626;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;

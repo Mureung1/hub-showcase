@@ -16,7 +16,7 @@
   width: 1.4rem;
   height: 1.4rem;
   margin-top: 0.2rem;
-  accent-color: #2563eb;
+  accent-color: var(--accent);
 }
 
 .task-card__body {
@@ -41,17 +41,22 @@
 
 .task-card__dday {
   flex-shrink: 0;
-  background: #fee2e2;
-  color: #b91c1c;
+  background: #f3f4f6;
+  color: #6b7280;
   font-size: 0.9rem;
   font-weight: 700;
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
 }
 
+.task-card__dday--urgent {
+  background: #fee2e2;
+  color: var(--danger);
+}
+
 .task-card__reason {
   margin: 0;
-  color: #1d4ed8;
+  color: var(--accent-text);
   font-size: 0.95rem;
   font-weight: 600;
 }
@@ -65,7 +70,7 @@
 
 .task-card__source {
   font-size: 1rem;
-  color: #2563eb;
+  color: var(--accent);
   font-weight: 600;
   text-decoration: underline;
 }

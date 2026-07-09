@@ -8,13 +8,15 @@ interface TaskCardProps {
   onToggle: (taskId: string) => void
 }
 
-function formatDday(dueDate: Date): string {
+function daysUntil(dueDate: Date): number {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const due = new Date(dueDate)
   due.setHours(0, 0, 0, 0)
-  const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  return Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+}
 
+function formatDday(diffDays: number): string {
   if (diffDays === 0) return 'D-DAY'
   if (diffDays > 0) return `D-${diffDays}`
   return `D+${Math.abs(diffDays)} 지남`
@@ -22,6 +24,8 @@ function formatDday(dueDate: Date): string {
 
 function TaskCard({ task, profile, checked, onToggle }: TaskCardProps) {
   const dueDate = task.dueDate?.(profile)
+  const diffDays = dueDate ? daysUntil(dueDate) : null
+  const isUrgent = diffDays !== null && diffDays <= 7
 
   return (
     <article className={`task-card${checked ? ' task-card--checked' : ''}`}>
@@ -32,7 +36,11 @@ function TaskCard({ task, profile, checked, onToggle }: TaskCardProps) {
       <div className="task-card__body">
         <div className="task-card__header">
           <h3>{task.title}</h3>
-          {dueDate && <span className="task-card__dday">{formatDday(dueDate)}</span>}
+          {diffDays !== null && (
+            <span className={`task-card__dday${isUrgent ? ' task-card__dday--urgent' : ''}`}>
+              {formatDday(diffDays)}
+            </span>
+          )}
         </div>
         <p className="task-card__reason">{task.reason(profile)}</p>
         <p className="task-card__description">{task.description}</p>

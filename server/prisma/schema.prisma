@@ -1,0 +1,38 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Session {
+  id        String         @id @default(uuid())
+  createdAt DateTime       @default(now())
+  profile   Profile?
+  progress  TaskProgress[]
+}
+
+model Profile {
+  id            String   @id @default(uuid())
+  sessionId     String   @unique
+  session       Session  @relation(fields: [sessionId], references: [id])
+  industry      String
+  isCorporation Boolean
+  hasEmployee   Boolean
+  isRented      Boolean
+  closureDate   DateTime
+  updatedAt     DateTime @updatedAt
+}
+
+model TaskProgress {
+  id        String   @id @default(uuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id])
+  taskId    String
+  checked   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, taskId])
+}
