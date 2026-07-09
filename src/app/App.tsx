@@ -30,6 +30,7 @@ import {
 import './styles/global.css';
 
 type Tab = 'library' | 'home' | 'save';
+type AuthEntryView = 'onboarding' | 'login' | 'workspace';
 type CategoryTone = 'blue' | 'green' | 'amber' | 'rose' | 'slate';
 
 type Category = {
@@ -145,6 +146,28 @@ const suggestedCategories: Category[] = [
 ];
 
 export function App() {
+  const [authEntryView, setAuthEntryView] =
+    useState<AuthEntryView>('onboarding');
+
+  if (authEntryView === 'onboarding') {
+    return <OnboardingPage onStart={() => setAuthEntryView('login')} />;
+  }
+
+  if (authEntryView === 'login') {
+    return (
+      <LoginPage
+        onBack={() => setAuthEntryView('onboarding')}
+        onLogin={() => setAuthEntryView('workspace')}
+      />
+    );
+  }
+
+  return <AuthenticatedWorkspace />;
+}
+
+export default App;
+
+function AuthenticatedWorkspace() {
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [insights, setInsights] = useState(initialInsights);
   const [activeCategory, setActiveCategory] = useState('All');
@@ -288,7 +311,117 @@ export function App() {
   );
 }
 
-export default App;
+function OnboardingPage({ onStart }: { onStart: () => void }) {
+  return (
+    <main className="onboarding-shell" aria-labelledby="onboarding-title">
+      <section className="onboarding-copy">
+        <p className="eyebrow">아맞다</p>
+        <h1 id="onboarding-title">
+          저장한 링크를 필요한 순간 다시 꺼내보세요
+        </h1>
+        <p className="onboarding-description">
+          아맞다는 흩어진 링크와 메모를 한곳에 모아두고, 나중에 지금
+          필요한 상황에 맞게 다시 찾는 개인 인사이트 보관함입니다.
+        </p>
+
+        <ul className="onboarding-feature-list" aria-label="주요 장점">
+          <li>
+            <strong>빠른 저장</strong>
+            <span>URL과 짧은 메모를 바로 보관합니다.</span>
+          </li>
+          <li>
+            <strong>나중에 정리</strong>
+            <span>카테고리와 메모는 필요할 때 붙입니다.</span>
+          </li>
+          <li>
+            <strong>상황으로 찾기</strong>
+            <span>제목을 몰라도 지금 하는 일로 다시 꺼내봅니다.</span>
+          </li>
+        </ul>
+
+        <div className="onboarding-actions">
+          <Button color="primary" onClick={onStart} size="large" type="button">
+            서비스 경험하기
+          </Button>
+          <p>로그인 후 나만의 보관함과 꺼내보기를 사용할 수 있어요.</p>
+        </div>
+      </section>
+
+      <section className="onboarding-preview" aria-label="꺼내보기 미리보기">
+        <div className="preview-situation">
+          <span>지금 필요한 상황</span>
+          <strong>팀 프로젝트 앱 첫 화면 참고</strong>
+        </div>
+
+        <div className="preview-source-list" aria-hidden="true">
+          <div className="preview-source-card source-card-blue">
+            <span>UX</span>
+            <strong>모바일 온보딩 흐름</strong>
+            <p>첫 화면의 선택 부담 줄이기</p>
+          </div>
+          <div className="preview-source-card source-card-green">
+            <span>DEV</span>
+            <strong>React 폼 구현 글</strong>
+            <p>로그인 이후 입력 상태 관리</p>
+          </div>
+          <div className="preview-source-card source-card-amber">
+            <span>PM</span>
+            <strong>팀 프로젝트 기획서</strong>
+            <p>데모 시나리오와 사용자 흐름</p>
+          </div>
+        </div>
+
+        <div className="preview-pack">
+          <p className="eyebrow">다시 볼 작업팩</p>
+          <h2>현재 상황과 가까운 저장물 3개</h2>
+          <ul>
+            <li>메모에 비슷한 상황이 남아 있어요.</li>
+            <li>팀 프로젝트 자료와 함께 보면 좋아요.</li>
+            <li>첫 화면 흐름을 잡을 때 바로 열 수 있어요.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function LoginPage({
+  onBack,
+  onLogin,
+}: {
+  onBack: () => void;
+  onLogin: () => void;
+}) {
+  return (
+    <main className="login-shell" aria-labelledby="login-title">
+      <section className="login-panel">
+        <button className="back-button" type="button" onClick={onBack}>
+          서비스 소개로
+        </button>
+        <p className="eyebrow">로그인</p>
+        <h1 id="login-title">환영합니다!</h1>
+        <p className="login-description">
+          로그인 후 나만의 보관함과 꺼내보기를 사용할 수 있어요.
+        </p>
+        <Button
+          color="primary"
+          fullWidth
+          onClick={onLogin}
+          size="large"
+          type="button"
+        >
+          Google로 시작하기
+        </Button>
+        <div className="login-divider">
+          <span>간편 로그인</span>
+        </div>
+        <p className="terms-notice">
+          로그인 시 이용약관 및 개인정보처리방침에 동의하게 됩니다.
+        </p>
+      </section>
+    </main>
+  );
+}
 
 function CategoryRail({
   activeCategory,
