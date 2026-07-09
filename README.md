@@ -34,11 +34,14 @@ http://localhost:5173/prototype-static.html
 
 | 문서 | 역할 |
 |---|---|
+| [AGENTS.md](AGENTS.md) | 코딩 에이전트 작업 규칙과 세션 인수인계 기준 |
 | [docs/README.md](docs/README.md) | 문서 허브, 문서 역할, Wiki/프로토타입 확인 방법 |
 | [docs/product-plan.md](docs/product-plan.md) | 문제 정의, 사용자 시나리오, 핵심 기능, MVP 범위 |
 | [docs/user-flow-wireframes.md](docs/user-flow-wireframes.md) | User Flow, 화면 목록, 와이어프레임 |
-| [docs/xp-desktop-mvp-spec.md](docs/xp-desktop-mvp-spec.md) | XP 데스크톱형 MVP 구현 명세 |
-| [docs/agent-design.md](docs/agent-design.md) | AI Agent 역할, MVP 규칙 기반 동작, 확장 방향 |
+| [docs/design-system.md](docs/design-system.md) | concept.png 기반 XP 디자인 토큰과 컴포넌트 스타일 규칙 |
+| [docs/mvp-functional-spec.md](docs/mvp-functional-spec.md) | MVP 기능 동작과 완료 조건 |
+| [docs/agent-design.md](docs/agent-design.md) | AI Agent 역할과 MVP 규칙 기반 동작 |
+| [docs/future-expansion-plan.md](docs/future-expansion-plan.md) | 개인 AI, 픽셀 월드, 음성, 웹캠, 소셜 등 MVP 이후 확장 계획 |
 | [docs/four-week-roadmap.md](docs/four-week-roadmap.md) | 7월 10일/17일/24일/30일 기준 4주 작업 계획 |
 | [docs/status.md](docs/status.md) | 현재 진행 상황, 확인 링크, 남은 작업 |
 | [docs/archive/haetsalharu-plan.md](docs/archive/haetsalharu-plan.md) | 이전 아이디어 햇살하루 백업 기획서 |
@@ -87,3 +90,9 @@ Profile Setup Wizard
 - QuestRunner.exe 형태의 퀘스트 진행 창 구현
 - 기획서/Wiki용 정적 미리보기 `public/prototype-static.html` 추가
 - 프로젝트 문서를 역할별 `docs/` 구조로 재정리
+
+
+
+
+
+

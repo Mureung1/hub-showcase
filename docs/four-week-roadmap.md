@@ -10,7 +10,7 @@
 - [ ] `docs/README.md` 마스터 문서 작성
 - [ ] `product-plan.md`에 문제 정의/핵심 기능/MVP 범위만 정리
 - [ ] `user-flow-wireframes.md`를 XP 데스크톱 흐름 기준으로 재정렬
-- [ ] `xp-desktop-mvp-spec.md`에 현재 구현 화면과 상호작용 명세 정리
+- [ ] `mvp-functional-spec.md`에 현재 구현 화면과 상호작용 명세 정리
 - [ ] `agent-design.md`에 Agent 역할과 MVP 규칙 기반 동작 정리
 - [ ] `four-week-roadmap.md`에 4주 작업 체크리스트 작성
 - [ ] `status.md`에 현재 구현 완료 항목 정리
@@ -77,3 +77,4 @@
 - UI 작업과 로직 작업을 가능하면 분리한다.
 - AI에게 지시할 때는 파일명보다 사용자가 확인할 동작을 중심으로 설명한다.
 - 큰 기능은 체크리스트를 먼저 만든 뒤 구현한다.
+
