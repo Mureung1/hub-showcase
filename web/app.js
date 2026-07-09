@@ -4,7 +4,12 @@
 const DATA_URL = "../data/2026-07-09.json";
 const BOOKMARK_KEY = "briefing.bookmarks";
 const IMPORTANCE_RANK = { high: 3, medium: 2, low: 1 };
-const IMPORTANCE_LABEL = { high: "🔥 중요", medium: "주목", low: "참고" };
+
+// "2026-07-09" → "2026년 7월 9일"
+function formatDate(iso) {
+  const [y, m, d] = String(iso).split("-");
+  return `${y}년 ${Number(m)}월 ${Number(d)}일`;
+}
 
 const state = {
   data: null,          // { date, count, papers[] }
@@ -40,9 +45,10 @@ const esc = (s) =>
 
 function paperById(id) { return state.data.papers.find((p) => p.id === id); }
 
-function allTags() {
+// 카테고리 탭 = 각 논문의 대표 태그(tags[0]) 집합
+function categories() {
   const set = new Set();
-  state.data.papers.forEach((p) => p.tags.forEach((t) => set.add(t)));
+  state.data.papers.forEach((p) => set.add(p.tags[0]));
   return ["전체", ...set];
 }
 
@@ -55,41 +61,42 @@ function sortByImportance(papers) {
 /* ── 카드 (F2) ─────────────────────────────────────── */
 function cardHTML(p) {
   const marked = isBookmarked(p.id);
-  const tags = p.tags.map((t) => `<span class="tag">#${esc(t)}</span>`).join(" ");
+  const isHigh = p.importance === "high";
+  const tags = p.tags.map((t) => `<span class="tag">#${esc(t)}</span>`).join("");
   return `
     <article class="card" data-id="${esc(p.id)}" tabindex="0" role="button" aria-label="${esc(p.title_ko)}">
       <div class="toprow">
-        <span class="badge ${p.importance}">${IMPORTANCE_LABEL[p.importance] || ""}</span>
-        ${tags}
+        <span class="dot ${isHigh ? "high" : ""}"></span>
+        ${isHigh ? `<span class="imp-lbl">중요</span>` : ""}
         <button class="bk ${marked ? "on" : ""}" data-bk="${esc(p.id)}" type="button"
           aria-pressed="${marked}" title="저장">🔖</button>
       </div>
-      <div class="ttl">${esc(p.title_en)}<div class="ttl-ko">${esc(p.title_ko)}</div></div>
+      <div class="ttl">${esc(p.title_en)}</div>
       <div class="ko">${esc(p.one_liner)}</div>
+      <div class="tags">${tags}</div>
     </article>`;
 }
 
 /* ── F1 피드 뷰 ────────────────────────────────────── */
 function renderFeed() {
   const { data } = state;
-  const tabs = allTags()
+  const tabs = categories()
     .map((t) => `<button class="tab ${t === state.activeTag ? "on" : ""}" data-tab="${esc(t)}" type="button">${esc(t)}</button>`)
     .join("");
 
   const filtered = state.activeTag === "전체"
     ? data.papers
-    : data.papers.filter((p) => p.tags.includes(state.activeTag));
+    : data.papers.filter((p) => p.tags[0] === state.activeTag);
   const cards = sortByImportance(filtered).map(cardHTML).join("");
 
   app.innerHTML = `
     <section>
       <div class="feed-head">
-        <div class="datecount">
-          <h1 class="date-lbl">${esc(data.date)} 오늘의 브리핑</h1>
-          <span class="count-lbl">오늘 ${data.count}편 수집</span>
-        </div>
-        <div class="tabs">${tabs}</div>
+        <p class="date-lbl">${esc(formatDate(data.date))}</p>
+        <h1 class="title">오늘의 브리핑</h1>
+        <p class="subcopy">오늘 <strong>${data.count}</strong>편의 새 논문을 정리했어요</p>
       </div>
+      <div class="tabs">${tabs}</div>
       <div class="cards">${cards || `<p class="empty">이 카테고리에 논문이 없습니다.</p>`}</div>
     </section>`;
 }
@@ -104,7 +111,7 @@ function renderDetail() {
     `<div class="sec"><span class="sec-lbl">${label}</span><p>${esc(text)}</p></div>`;
 
   app.innerHTML = `
-    <section>
+    <section class="detail-wrap">
       <button class="back" type="button" data-back>← 오늘의 브리핑</button>
       <h1 class="d-title">${esc(p.title_en)}</h1>
       <p class="d-title-ko">${esc(p.title_ko)}</p>
@@ -139,10 +146,8 @@ function renderSaved() {
   app.innerHTML = `
     <section>
       <div class="feed-head">
-        <div class="datecount">
-          <h1 class="date-lbl">🔖 저장한 논문</h1>
-          <span class="count-lbl">${saved.length}편</span>
-        </div>
+        <h1 class="title">🔖 저장한 논문</h1>
+        <p class="subcopy"><strong>${saved.length}</strong>편</p>
       </div>
       <div class="cards">${cards}</div>
     </section>`;
