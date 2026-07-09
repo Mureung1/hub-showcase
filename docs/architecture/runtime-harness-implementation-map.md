@@ -2,7 +2,7 @@
 
 작성일: 2026-07-09
 상태: 활성
-관련 문서: [Runtime Harness와 Codex Adapter 기반 PRD](../prds/2026-07-09-runtime-harness-codex-adapter-foundation.md), [Runtime Harness ADR](../adr/0003-build-runtime-harness-before-product-layer.md)
+관련 문서: [Runtime Harness와 Codex Adapter 기반 PRD](../prds/2026-07-09-runtime-harness-codex-adapter-foundation.md), [Runtime Harness ADR](../adr/0003-build-runtime-harness-before-product-layer.md), [Runtime history storage ADR](../adr/0004-split-runtime-history-semantics-from-workspace-storage.md)
 
 ## 목적
 
@@ -111,11 +111,12 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 
 | Gap | 중요한 이유 | 다음 제안 |
 | --- | --- | --- |
-| 영속 run log | PRD는 영속 log를 요구했지만 현재 log는 서버 프로세스 안에 산다. | 서버 재시작을 넘어서는 run 이력에 의존하기 전에 `AgentRuntimeKernel` 뒤나 server storage 쪽에 작은 파일 기반 또는 SQLite 기반 log repository를 추가한다. |
-| Live Codex parity 근거 | 테스트는 Codex-shaped protocol을 가진 fake app-server를 다루지만, 실제 인증된 Codex behavior는 여전히 달라질 수 있다. | product layer 작업 전에 `smoke:codex`를 실행하고 app-managed runtime home으로 수동 Inspector demo를 확인한다. |
+| 영속 run log | PRD는 영속 log를 요구했지만 현재 log는 서버 프로세스 안에 산다. | ADR 0004에 따라 `runtime-core`가 self-contained RuntimeRunLog persistence와 recovery semantics를 소유하고, server가 per-run versioned JSON snapshot adapter를 조립하도록 구현한다. |
+| Live Codex parity 근거 | 테스트는 Codex-shaped protocol을 가진 fake app-server를 다루지만, 실제 인증된 Codex behavior는 여전히 달라질 수 있다. | ADR 0003에 따라 app-managed runtime home의 실제 Codex를 server HTTP/SSE seam으로 실행·취소하는 opt-in parity command를 추가하고, 수동 Inspector demo는 보조 증거로 확인한다. |
 | 제품 runtime handoff | Runtime Harness는 의도적으로 SourceSelection, StatePatch, Review, TrustedState가 아니다. | parity demo 이후 첫 product-facing adapter use case를 정의하되, `runtime-core`만 runtime contract로 유지한다. |
 | Cancellation timeout 정책 | Codex interrupt confirmation timeout은 현재 package constant다. | 더 느린 turn에서 live Codex cancellation behavior를 관측한 뒤 timeout/config를 재검토한다. |
 | Inspector 영속성 | Inspector history는 현재 server memory를 반영한다. | Inspector가 reload나 server restart를 견뎌야 한다면 durable run log와 history hydration을 함께 설계한다. |
+| Inspector UI-level verification | Inspector workspace에는 browser test와 `test` script가 없어 실제 HTTP/SSE wiring, terminal display, history interaction을 자동 검증하지 않는다. | ADR 0003에 따라 real server와 FakeRuntimeAdapter를 사용하는 Playwright browser integration test로 streaming, cancel, failure, history, restart hydration을 검증한다. |
 
 ## 이후 Agent 작업 규칙
 

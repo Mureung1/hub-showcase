@@ -2,6 +2,10 @@
 
 AY-PLE will first build a Runtime Harness with a Runtime Inspector, AgentRuntimeKernel, FakeRuntimeAdapter, and CodexRuntimeAdapter before implementing product-specific SourceSelection, StatePatch, Review, or TrustedState flows. FakeRuntimeAdapter may be used to develop the interface and UI quickly, but CodexRuntimeAdapter parity is a product-layer gate: by the end of week 1, before work on `codex/w1d7` on Sunday, July 12, 2026, the same Runtime Inspector must be able to run and cancel a prompt through both adapters and show compatible normalized run lifecycle events and run logs.
 
+The repeatable live Codex parity command crosses the `apps/server` HTTP and SSE seam rather than calling CodexRuntimeAdapter directly. It must prove a real prompt lifecycle and adapter-confirmed cancellation through the same contract consumed by the browser. Deterministic fake app-server coverage remains the CI gate, while a manual Runtime Inspector demo is supplementary evidence rather than the repeatable gate itself.
+
+Runtime Inspector behavior is verified with deterministic Playwright browser integration against the real server and the FakeRuntimeAdapter. The browser gate covers prompt streaming, cancellation, failure display, normalized events, debug evidence, history interaction, and restart hydration. Live Codex browser automation and a separate React component-test stack are not initial gates.
+
 This deliberately avoids building AY-PLE features directly on raw Codex app-server events, while also preventing the project from drifting into a fake-only harness that discovers Codex integration constraints too late.
 
 Runtime Inspector capabilities are engine-inspection affordances, not student-facing product commitments. Common chat capabilities such as prompt input, transcript, streaming output, cancellation, errors, run history, profile slots, attachments, approvals, settings, and thread/session slots should be considered while shaping the Runtime Harness and AgentRuntimeKernel, but AY-PLE will decide separately whether, where, and how those capabilities appear in a user-friendly product surface.

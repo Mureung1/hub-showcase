@@ -65,6 +65,7 @@ Root companion docs:
 | Runtime auth ADR | [adr/0001-use-file-auth-store-for-runtime-spike.md](adr/0001-use-file-auth-store-for-runtime-spike.md) | Accepted |
 | Academic object model ADR | [adr/0002-use-first-class-academic-objects-with-derived-operational-views.md](adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Accepted |
 | Runtime harness ADR | [adr/0003-build-runtime-harness-before-product-layer.md](adr/0003-build-runtime-harness-before-product-layer.md) | Accepted |
+| Runtime history storage ADR | [adr/0004-split-runtime-history-semantics-from-workspace-storage.md](adr/0004-split-runtime-history-semantics-from-workspace-storage.md) | Accepted |
 | Agent issue tracker rules | [agents/issue-tracker.md](agents/issue-tracker.md) | Active |
 | Agent triage marker rules | [agents/triage-labels.md](agents/triage-labels.md) | Active |
 | Agent domain docs layout | [agents/domain.md](agents/domain.md) | Active |
