@@ -13,6 +13,7 @@ dist-ssr
 *.local
 .design-sync/ds-bundle-tokens/
 docs/design/*.gif
+docs/design/*.jpg
 
 # Editor directories and files
 .vscode/*
