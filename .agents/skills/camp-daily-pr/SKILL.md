@@ -1,20 +1,20 @@
 ---
 name: camp-daily-pr
-description: Create an agent-written local daily integration PR from the current codex/w<week>d<day> branch to N180_하성욱. Only create or update the upstream camp submission PR when the user explicitly asks for camp submission.
+description: Create, update, and merge an agent-written fork daily integration PR from the current codex/w<week>d<day> branch to N180_하성욱. Only create, update, or merge the upstream camp submission PR when the user explicitly asks for camp submission.
 disable-model-invocation: true
 ---
 
 # Camp Daily PR
 
-Create the local daily integration PR from the current `codex/w<week>d<day>` branch to `N180_하성욱`. This daily PR is an internal integration/review artifact and can be created or updated without further approval.
+Create, update, and merge the fork-local daily integration PR from the current `codex/w<week>d<day>` branch to `N180_하성욱`. This daily PR is an internal integration/review artifact and can be created, updated, labelled, and merged without further approval.
 
-Do not create or update the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` unless the user explicitly asks to submit to camp or continue to the upstream camp submission PR. The final camp submission surface is the upstream PR, but it is not part of the default daily PR action. Do not merge PRs as part of this skill unless the user gives a separate explicit merge instruction.
+Do not create, update, or merge the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` unless the user explicitly asks to submit to camp or continue to the upstream camp submission PR. The final camp submission surface is the upstream PR, but it is not part of the default daily PR action.
 
 Use different body conventions for the two PRs:
 
 | PR | Body convention |
 | --- | --- |
-| Daily integration PR | Local/Matt-style work brief: `Summary`, `Key Changes`, `Verification`, `Risks / Follow-ups`, and links to PRDs, issues, spike reports, or handoffs. |
+| Daily integration PR | Local/Matt-style work brief: `Summary`, `Key Changes`, `Verification`, `Risks / Follow-ups`, and links to PRDs, issues, spike reports, or handoffs. Merge automatically after creation/update unless blocked. |
 | Upstream camp submission PR | Only when explicitly requested: `.github/pull_request_template.md` exactly, including `주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, and `새로 알게 된 것`. |
 
 Use the camp week/day as the daily branch identity:
@@ -78,9 +78,9 @@ Use this structure:
 
 Link source material rather than forcing camp reflection content into the daily PR. If important context is genuinely missing, make a conservative assumption and note it under `Risks / Follow-ups`.
 
-### 4. Create or update the daily PR
+### 4. Create, update, and merge the daily PR
 
-Do not ask the user to approve the daily PR body. The daily PR is an agent-written internal integration artifact.
+Do not ask the user to approve the daily PR body or merge. The daily PR is an agent-written internal integration artifact inside the user's fork.
 
 Push the daily branch to `fork`.
 
@@ -91,7 +91,7 @@ Check for an existing open PR from `swh3467:<daily-branch>` to `swh3467:N180_하
 
 Apply the relevant camp labels to the daily PR after it exists. These labels are review metadata only; do not force camp reflection content into the daily PR body.
 
-After the PR exists, keep its URL for the final report. Do not treat this fork PR as the final camp submission.
+Merge the daily PR into `swh3467:N180_하성욱` after it exists and labels have been applied. Prefer a normal merge commit when available, preserve the daily branch unless the user explicitly asks to delete it, and continue without merging only when GitHub reports conflicts, branch protection, missing permissions, or another hard blocker. After merging, fetch `fork/N180_하성욱` again and keep the PR URL for the final report. Do not treat this fork PR as the final camp submission.
 
 ### 5. Report upstream submission readiness
 
@@ -101,7 +101,7 @@ Fetch `fork` and `origin`, then check whether the daily branch is already contai
 
 Always report the upstream submission readiness status, but do not create or update the upstream camp submission PR unless the user explicitly asked for camp submission in this turn.
 
-If the daily branch is not contained in `fork/N180_하성욱`, do not claim that the latest daily work has been submitted. Report:
+If the daily branch is not contained in `fork/N180_하성욱` after the daily PR merge step, do not claim that the latest daily work has been submitted. Report:
 
 - The daily PR URL
 - Whether an upstream submission PR already exists
