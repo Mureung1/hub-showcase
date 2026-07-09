@@ -121,6 +121,8 @@
     grid-template-columns: 72px repeat(7, 1fr);
     gap: 6px;
     min-width: 700px;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   .date-header {
@@ -154,11 +156,26 @@
   .slot {
     height: 40px;
     background: var(--cell-empty);
+    border: 2.5px solid transparent;
     border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+
+  .slot:hover:not(.disabled) {
+    transform: scale(1.06);
+    position: relative;
+    z-index: 2;
+  }
+
+  .slot.selected {
+    border-color: var(--color-primary);
   }
 
   .slot.disabled {
     opacity: 0.45;
+    cursor: default;
+    pointer-events: none;
   }
 
   .footer-note {
@@ -187,7 +204,7 @@
       </div>
     </div>
 
-    <div class="footer-note">클릭 기능은 다음 단계에서 추가될 예정이에요</div>
+    <div class="footer-note">칸을 클릭하거나 드래그해서 내 가능한 시간을 선택해보세요</div>
   </div>
 
   <script>
@@ -206,6 +223,9 @@
     var weekRangeEl = document.getElementById("weekRange");
 
     var currentWeek = 0;
+    var selectedSlots = new Set(); // 날짜별로 저장: "YYYY-MM-DD_시" 형태의 key
+    var isDragging = false;
+    var dragValue = true; // 드래그 중 적용할 선택 상태(선택/해제)
 
     function addDays(date, days) {
       var result = new Date(date);
@@ -232,6 +252,14 @@
 
     function isOutOfProject(date) {
       return date < PROJECT_START || date > PROJECT_END;
+    }
+
+    function isoDate(date) {
+      return date.getFullYear() + "-" + pad2(date.getMonth() + 1) + "-" + pad2(date.getDate());
+    }
+
+    function slotKey(date, hour) {
+      return isoDate(date) + "_" + hour;
     }
 
     function getWeekDates(weekIndex) {
@@ -275,8 +303,13 @@
       for (var hour = START_HOUR; hour <= END_HOUR; hour++) {
         html += '<div class="time-label">' + hour + "시</div>";
         for (var col = 0; col < 7; col++) {
-          var slotClass = "slot" + (isOutOfProject(dates[col]) ? " disabled" : "");
-          html += '<div class="' + slotClass + '"></div>';
+          var date = dates[col];
+          var outOfProject = isOutOfProject(date);
+          var key = slotKey(date, hour);
+          var slotClass = "slot";
+          if (outOfProject) slotClass += " disabled";
+          if (!outOfProject && selectedSlots.has(key)) slotClass += " selected";
+          html += '<div class="' + slotClass + '" data-key="' + key + '"></div>';
         }
       }
 
@@ -289,6 +322,41 @@
       renderTabs();
       renderGrid(dates);
     }
+
+    function setSlotState(slotEl, key, selected) {
+      if (selected) {
+        selectedSlots.add(key);
+        slotEl.classList.add("selected");
+      } else {
+        selectedSlots.delete(key);
+        slotEl.classList.remove("selected");
+      }
+    }
+
+    // 클릭 = 즉시 토글, 누른 채로 끌면(드래그) 첫 칸에서 정한 선택/해제 상태를 지나가는 칸에 그대로 적용
+    gridEl.addEventListener("mousedown", function (e) {
+      var slot = e.target.closest(".slot");
+      if (!slot || slot.classList.contains("disabled")) return;
+      e.preventDefault();
+
+      var key = slot.getAttribute("data-key");
+      dragValue = !slot.classList.contains("selected");
+      isDragging = true;
+      setSlotState(slot, key, dragValue);
+    });
+
+    gridEl.addEventListener("mouseover", function (e) {
+      if (!isDragging) return;
+      var slot = e.target.closest(".slot");
+      if (!slot || slot.classList.contains("disabled")) return;
+
+      var key = slot.getAttribute("data-key");
+      setSlotState(slot, key, dragValue);
+    });
+
+    document.addEventListener("mouseup", function () {
+      isDragging = false;
+    });
 
     render();
   </script>
