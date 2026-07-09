@@ -29,6 +29,13 @@ test('CodexRawClient performs initialize and initialized over stdio JSONL', asyn
 
     try {
       const result = await client.initialize()
+      const initializedEntry = await waitForDebugEntry(
+        () => client.getDebugLog(),
+        (entry) =>
+          entry.source === 'server' &&
+          entry.kind === 'stderr' &&
+          entry.raw === 'fake app-server observed initialized',
+      )
 
       assert.equal(
         result.response.userAgent,
@@ -67,6 +74,7 @@ test('CodexRawClient performs initialize and initialized over stdio JSONL', asyn
             entry.raw === 'fake app-server observed initialize',
         ),
       )
+      assert.equal(initializedEntry.raw, 'fake app-server observed initialized')
     } finally {
       await client.close()
 
@@ -173,6 +181,31 @@ function requireDebugEntry(
   assert.ok(entry, `expected debug entry kind ${kind}`)
 
   return entry
+}
+
+async function waitForDebugEntry(
+  getDebugLog: () => CodexRawDebugLogEntry[],
+  predicate: (entry: CodexRawDebugLogEntry) => boolean,
+): Promise<CodexRawDebugLogEntry> {
+  const deadline = Date.now() + 500
+
+  while (Date.now() < deadline) {
+    const entry = getDebugLog().find(predicate)
+
+    if (entry) {
+      return entry
+    }
+
+    await yieldToEventLoop()
+  }
+
+  assert.fail('expected debug entry was not observed')
+}
+
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => {
+    setImmediate(resolve)
+  })
 }
 
 const fakeAppServerSource = String.raw`
