@@ -145,6 +145,15 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 - filter 변경으로 지도 크기나 toolbar 위치가 움직이지 않게 안정적인 column 크기를 사용한다.
 - loading, empty, error, selected 상태를 각각 설계한다.
 
+지도 시각 방향:
+
+- 사실적인 위성사진보다 단순한 low-poly 도시 모형을 우선 검토한다.
+- 건물은 footprint와 높이를 이용한 단순 extrusion으로 표현한다.
+- 일반 건물은 중립색으로 두고 선택한 건물과 업종 marker만 강조한다.
+- 유동인구 Layer는 사용자가 켜고 끌 수 있어야 한다.
+- 지도 위 사람 symbol은 실제 개인 위치가 아니라 집계값의 시각적 표본임을 표시한다.
+- 지도 화면과 사람 눈높이의 Gaussian Splatting 현장 상세보기를 혼동하지 않는다.
+
 ### 4.2 혼잡도 3D 탐색 화면
 
 ```text
@@ -304,6 +313,7 @@ error
 
 - [프로젝트 기획서](../wiki/localtwin-project-proposal.md)
 - [공공데이터 기반 상권 분석 스펙](../features/market-analysis.md)
+- [2.5D 상권 지도와 유동인구 Layer 스펙](../features/market-map-experience.md)
 - [혼잡도 3D 기반 탐색 스펙](../features/3d-congestion-explorer.md)
 - [전체 개발 체크리스트](../development/checklist.md)
 - [검증 가이드](../development/validation.md)

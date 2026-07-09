@@ -19,6 +19,7 @@ v0.1에서는 지역을 서울로 고정하지 않는다. 실제 구현 시 데�
 | 구분 | 기능 | 우선순위 | 문서 |
 | --- | --- | --- | --- |
 | 주기능 | 공공데이터 기반 상권 분석 | P0 | [market-analysis.md](../features/market-analysis.md) |
+| 주기능 표현 | 2.5D 상권 지도와 유동인구 Layer | P0 | [market-map-experience.md](../features/market-map-experience.md) |
 | 보조/추가기능 | 혼잡도 3D 기반 탐색 | P1 | [3d-congestion-explorer.md](../features/3d-congestion-explorer.md) |
 | 보조/추가기능 | 사람 영역 익명화 전처리 | P1 | [person-anonymization-preprocessing.md](../features/person-anonymization-preprocessing.md) |
 
@@ -99,5 +100,6 @@ Occlusion 고급 복원
 - [데이터 소스 매핑](../data/data-source-mapping.md)
 - [v0.1 구현 범위 고정 명세](../module-notes/localtwin-v0.1-scope.md)
 - [공공데이터 기반 상권 분석 스펙](../features/market-analysis.md)
+- [2.5D 상권 지도와 유동인구 Layer 스펙](../features/market-map-experience.md)
 - [혼잡도 3D 기반 탐색 스펙](../features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리 스펙](../features/person-anonymization-preprocessing.md)

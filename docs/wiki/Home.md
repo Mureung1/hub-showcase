@@ -35,6 +35,7 @@ docs/
     validation.md
   features/
     market-analysis.md
+    market-map-experience.md
     3d-congestion-explorer.md
     person-anonymization-preprocessing.md
   data/
@@ -103,6 +104,7 @@ LocalTwin/
 ## Feature Specs
 
 - [공공데이터 기반 상권 분석](../features/market-analysis.md)
+- [2.5D 상권 지도와 유동인구 Layer](../features/market-map-experience.md)
 - [혼잡도 3D 기반 탐색](../features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리](../features/person-anonymization-preprocessing.md)
 

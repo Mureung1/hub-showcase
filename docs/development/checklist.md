@@ -39,6 +39,7 @@
 - [x] `scripts/check.ps1`를 전체 검증 진입점으로 만든다.
 - [x] source-like 변경 시 문서 또는 `.harness` 기록을 같은 커밋에 포함하도록 hook 규칙을 추가한다.
 - [x] 제품 UI와 개발문서에 적용할 디자인 시스템 기준을 문서화한다.
+- [x] 2.5D 상권 지도와 유동인구 Layer의 역할과 PoC Gate를 문서화한다.
 
 ## 2. 대상 상권 선정
 
@@ -109,6 +110,8 @@
 ## 7. 프론트엔드
 
 - [ ] 기술 스택을 확정한다.
+- [ ] 대상 상권의 footprint와 높이 데이터로 MapLibre extrusion PoC를 만든다.
+- [ ] MapLibre 채택 또는 2D fallback 여부를 PoC 결과로 결정한다.
 - [ ] 디자인 시스템 token을 `web/src/styles/tokens.css`로 구현한다.
 - [ ] 공통 button, filter, panel, score, marker component를 구현한다.
 - [ ] desktop/mobile visual regression 기준 화면을 만든다.
@@ -117,6 +120,9 @@
 - [ ] 업종 필터 UI를 만든다.
 - [ ] 반경 선택 UI를 만든다.
 - [ ] 점포 마커 표시를 구현한다.
+- [ ] 건물 또는 점포 선택과 `feature-state` 강조를 구현한다.
+- [ ] 유동인구 Layer의 표시 toggle과 시간대 전환을 구현한다.
+- [ ] 지도 symbol이 실제 개인 위치가 아님을 legend에 표시한다.
 - [ ] 상권 요약 카드 UI를 만든다.
 - [ ] 입지 분석 카드 UI를 만든다.
 - [ ] 시간대별 유동 그래프 UI를 만든다.
