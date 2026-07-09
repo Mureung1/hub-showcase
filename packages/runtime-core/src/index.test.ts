@@ -3,8 +3,8 @@ import test from 'node:test'
 import {
   AgentRuntimeKernel,
   type AgentRuntimeAdapter,
-  type RuntimeAdapterRunInput,
   type RuntimeAdapterEvent,
+  type RuntimeAdapterRunInput,
 } from './index.js'
 
 class HappyPathAdapter implements AgentRuntimeAdapter {
@@ -13,6 +13,26 @@ class HappyPathAdapter implements AgentRuntimeAdapter {
   async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
     yield { type: 'output_delta', delta: `Echo: ${input.prompt}` }
     yield { type: 'completed' }
+  }
+}
+
+class HangingAdapter implements AgentRuntimeAdapter {
+  readonly name = 'test'
+
+  async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
+    await new Promise<void>((resolve) => {
+      input.signal.addEventListener('abort', () => resolve(), { once: true })
+    })
+    yield { type: 'output_delta', delta: 'late output' }
+    yield { type: 'completed' }
+  }
+}
+
+class FailingAdapter implements AgentRuntimeAdapter {
+  readonly name = 'test'
+
+  async *run(): AsyncIterable<RuntimeAdapterEvent> {
+    throw new Error('Adapter exploded')
   }
 }
 
@@ -52,11 +72,90 @@ test('AgentRuntimeKernel records a completed run lifecycle and log', async () =>
     {
       adapter: 'test',
       completedAt: '2026-07-09T00:00:00.000Z',
+      error: undefined,
       outputPreview: 'Echo: 정리해줘',
       prompt: '정리해줘',
       runId,
       startedAt: '2026-07-09T00:00:00.000Z',
       status: 'completed',
+    },
+  ])
+})
+
+test('AgentRuntimeKernel records a cancelled run lifecycle and log', async () => {
+  const kernel = new AgentRuntimeKernel({
+    adapters: [new HangingAdapter()],
+    now: () => new Date('2026-07-09T00:00:00.000Z'),
+  })
+
+  const startedLog = kernel.startRun({ adapter: 'test', prompt: '멈춰줘' })
+  const cancelledLog = kernel.cancelRun(startedLog.runId)
+  const waitedLog = await kernel.waitForRun(startedLog.runId)
+  const runId = startedLog.runId
+
+  assert.equal(cancelledLog?.status, 'cancelled')
+  assert.equal(waitedLog.status, 'cancelled')
+  assert.deepEqual(
+    waitedLog.events.map((event) => event.type),
+    ['started', 'cancelled'],
+  )
+  assert.equal(waitedLog.events[1]?.sequence, 2)
+
+  const cancelledEvent = waitedLog.events[1]
+  assert.equal(cancelledEvent?.type, 'cancelled')
+
+  if (cancelledEvent?.type === 'cancelled') {
+    assert.equal(cancelledEvent.reason, 'Runtime run cancelled')
+  }
+
+  assert.deepEqual(kernel.listRuns(), [
+    {
+      adapter: 'test',
+      completedAt: undefined,
+      error: undefined,
+      outputPreview: '',
+      prompt: '멈춰줘',
+      runId,
+      startedAt: '2026-07-09T00:00:00.000Z',
+      status: 'cancelled',
+    },
+  ])
+})
+
+test('AgentRuntimeKernel records a failed run lifecycle and log', async () => {
+  const kernel = new AgentRuntimeKernel({
+    adapters: [new FailingAdapter()],
+    now: () => new Date('2026-07-09T00:00:00.000Z'),
+  })
+
+  const startedLog = kernel.startRun({ adapter: 'test', prompt: '실패해줘' })
+  const failedLog = await kernel.waitForRun(startedLog.runId)
+  const runId = startedLog.runId
+
+  assert.equal(failedLog.status, 'failed')
+  assert.equal(failedLog.error, 'Adapter exploded')
+  assert.deepEqual(
+    failedLog.events.map((event) => event.type),
+    ['started', 'failed'],
+  )
+
+  const failedEvent = failedLog.events[1]
+  assert.equal(failedEvent?.type, 'failed')
+
+  if (failedEvent?.type === 'failed') {
+    assert.equal(failedEvent.error, 'Adapter exploded')
+  }
+
+  assert.deepEqual(kernel.listRuns(), [
+    {
+      adapter: 'test',
+      completedAt: undefined,
+      error: 'Adapter exploded',
+      outputPreview: '',
+      prompt: '실패해줘',
+      runId,
+      startedAt: '2026-07-09T00:00:00.000Z',
+      status: 'failed',
     },
   ])
 })

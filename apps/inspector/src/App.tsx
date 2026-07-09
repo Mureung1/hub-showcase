@@ -1,18 +1,26 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import {
+  isTerminalRuntimeRunEvent,
+  isTerminalRuntimeRunStatus,
+} from '@ay-ple/runtime-core'
 import type {
   RuntimeAdapterDescriptor,
   RuntimeRunEvent,
   RuntimeRunLog,
+  RuntimeRunStatus,
   RuntimeRunSummary,
 } from '@ay-ple/runtime-core'
 import './App.css'
 
 type HealthState = 'checking' | 'ok' | 'error'
+type InspectorRunStatus = RuntimeRunStatus | 'idle'
+type FakeScenario = 'normal' | 'failure'
 
 function App() {
   const [health, setHealth] = useState<HealthState>('checking')
   const [adapters, setAdapters] = useState<RuntimeAdapterDescriptor[]>([])
   const [selectedAdapter, setSelectedAdapter] = useState('fake')
+  const [fakeScenario, setFakeScenario] = useState<FakeScenario>('normal')
   const [prompt, setPrompt] = useState('정리해줘')
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [activePrompt, setActivePrompt] = useState('')
@@ -20,9 +28,11 @@ function App() {
   const [events, setEvents] = useState<RuntimeRunEvent[]>([])
   const [history, setHistory] = useState<RuntimeRunSummary[]>([])
   const [runLog, setRunLog] = useState<RuntimeRunLog | null>(null)
-  const [isRunning, setIsRunning] = useState(false)
+  const [activeStatus, setActiveStatus] = useState<InspectorRunStatus>('idle')
   const [error, setError] = useState<string | null>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
+  const terminalRunIdsRef = useRef(new Set<string>())
+  const isRunning = activeStatus === 'running'
 
   useEffect(() => {
     let active = true
@@ -82,7 +92,9 @@ function App() {
   async function handleRunSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!prompt.trim() || isRunning) {
+    const requestPrompt = prompt
+
+    if (!requestPrompt.trim() || isRunning) {
       return
     }
 
@@ -91,8 +103,9 @@ function App() {
     setEvents([])
     setOutput('')
     setRunLog(null)
-    setActivePrompt(prompt)
-    setIsRunning(true)
+    setActivePrompt(requestPrompt)
+    setActiveStatus('running')
+    terminalRunIdsRef.current.delete(activeRunId ?? '')
 
     try {
       const response = await fetch('/api/runtime/runs', {
@@ -102,7 +115,8 @@ function App() {
         },
         body: JSON.stringify({
           adapter: selectedAdapter,
-          prompt,
+          prompt: requestPrompt,
+          scenario: isFakeFailureScenario ? 'failure' : undefined,
         }),
       })
 
@@ -114,20 +128,20 @@ function App() {
       setActiveRunId(startedRun.runId)
       openEventStream(startedRun.runId)
     } catch (runError) {
-      setIsRunning(false)
+      setActiveStatus('idle')
       setError(toErrorMessage(runError))
     }
   }
 
   function openEventStream(runId: string) {
     const source = new EventSource(`/api/runtime/runs/${runId}/events?after=0`)
-    let completed = false
+    let terminal = false
     eventSourceRef.current = source
 
     source.addEventListener('runtime-event', (message) => {
       const runtimeEvent = JSON.parse(message.data) as RuntimeRunEvent
 
-      setEvents((currentEvents) => [...currentEvents, runtimeEvent])
+      setEvents((currentEvents) => appendRuntimeEvent(currentEvents, runtimeEvent))
 
       if (runtimeEvent.type === 'started') {
         setActivePrompt(runtimeEvent.prompt)
@@ -137,22 +151,67 @@ function App() {
         setOutput((currentOutput) => `${currentOutput}${runtimeEvent.delta}`)
       }
 
+      if (isTerminalRuntimeRunEvent(runtimeEvent)) {
+        terminal = true
+        terminalRunIdsRef.current.add(runId)
+        setActiveStatus(runtimeEvent.type)
+
+        if (runtimeEvent.type === 'failed') {
+          setError(runtimeEvent.error)
+        }
+      }
+
       if (runtimeEvent.type === 'completed') {
-        completed = true
         setOutput(runtimeEvent.output)
-        setIsRunning(false)
+      }
+
+      if (isTerminalRuntimeRunEvent(runtimeEvent)) {
         source.close()
         void refreshRunState(runId)
       }
     })
 
     source.onerror = () => {
-      if (!completed) {
+      if (!terminal && !terminalRunIdsRef.current.has(runId)) {
         setError('Runtime event stream disconnected')
-        setIsRunning(false)
+        setActiveStatus('idle')
       }
 
       source.close()
+    }
+  }
+
+  async function handleCancelRun() {
+    if (!activeRunId || !isRunning) {
+      return
+    }
+
+    const runId = activeRunId
+    setError(null)
+    terminalRunIdsRef.current.add(runId)
+
+    try {
+      const response = await fetch(`/api/runtime/runs/${runId}/cancel`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Run cancel failed: ${response.status}`)
+      }
+
+      const data = (await response.json()) as { run: RuntimeRunLog }
+      setActiveStatus(data.run.status)
+      setOutput(data.run.output)
+      setEvents(data.run.events)
+      setRunLog(data.run)
+      setHistory(await fetchHistory())
+
+      if (isTerminalRuntimeRunStatus(data.run.status)) {
+        terminalRunIdsRef.current.add(data.run.runId)
+      }
+    } catch (cancelError) {
+      terminalRunIdsRef.current.delete(runId)
+      setError(toErrorMessage(cancelError))
     }
   }
 
@@ -164,6 +223,7 @@ function App() {
 
     setRunLog(latestLog)
     setHistory(latestHistory)
+    setActiveStatus(latestLog.status)
   }
 
   async function handleHistorySelect(runId: string) {
@@ -174,6 +234,7 @@ function App() {
       setOutput(latestLog.output)
       setEvents(latestLog.events)
       setRunLog(latestLog)
+      setActiveStatus(latestLog.status)
       setError(null)
     } catch (historyError) {
       setError(toErrorMessage(historyError))
@@ -181,6 +242,10 @@ function App() {
   }
 
   const activeAdapter = adapters.find((adapter) => adapter.name === selectedAdapter)
+  const isFakeAdapter = selectedAdapter === 'fake'
+  const isFakeFailureScenario = isFakeAdapter && fakeScenario === 'failure'
+  const canStartRun = !isRunning && prompt.trim().length > 0
+  const terminalMessage = getTerminalMessage(activeStatus, events, runLog)
   const visibleLog =
     runLog ??
     (activeRunId
@@ -188,7 +253,7 @@ function App() {
           runId: activeRunId,
           adapter: selectedAdapter,
           prompt: activePrompt,
-          status: isRunning ? 'running' : 'completed',
+          status: activeStatus === 'idle' ? 'completed' : activeStatus,
           output,
           events,
         }
@@ -215,8 +280,8 @@ function App() {
         <section className="control-panel" aria-labelledby="run-controls-title">
           <div className="panel-header">
             <h2 id="run-controls-title">Run</h2>
-            <span className={`run-state ${isRunning ? 'running' : 'idle'}`}>
-              {isRunning ? 'Running' : 'Ready'}
+            <span className={`run-state ${activeStatus}`}>
+              {formatRunStatus(activeStatus)}
             </span>
           </div>
 
@@ -225,7 +290,10 @@ function App() {
               <span>Adapter</span>
               <select
                 value={selectedAdapter}
-                onChange={(event) => setSelectedAdapter(event.target.value)}
+                onChange={(event) => {
+                  setSelectedAdapter(event.target.value)
+                  setFakeScenario('normal')
+                }}
               >
                 {adapters.map((adapter) => (
                   <option key={adapter.name} value={adapter.name}>
@@ -239,6 +307,21 @@ function App() {
               <p className="adapter-description">{activeAdapter.description}</p>
             )}
 
+            {isFakeAdapter && (
+              <label>
+                <span>Fake Scenario</span>
+                <select
+                  value={fakeScenario}
+                  onChange={(event) =>
+                    setFakeScenario(event.target.value as FakeScenario)
+                  }
+                >
+                  <option value="normal">Normal completion</option>
+                  <option value="failure">Deterministic failure</option>
+                </select>
+              </label>
+            )}
+
             <label>
               <span>Prompt</span>
               <textarea
@@ -248,9 +331,14 @@ function App() {
               />
             </label>
 
-            <button type="submit" disabled={isRunning || !prompt.trim()}>
-              Start Run
-            </button>
+            <div className="run-actions">
+              <button type="submit" disabled={!canStartRun}>
+                Start Run
+              </button>
+              <button type="button" disabled={!isRunning} onClick={handleCancelRun}>
+                Cancel
+              </button>
+            </div>
           </form>
 
           {error && <p className="error-line">{error}</p>}
@@ -271,7 +359,7 @@ function App() {
                 </article>
                 <article className="message runtime-message">
                   <p className="message-label">Output</p>
-                  <pre>{output || 'Waiting for output...'}</pre>
+                  <pre>{output || terminalMessage}</pre>
                 </article>
               </>
             ) : (
@@ -290,7 +378,10 @@ function App() {
             {events.map((event) => (
               <li key={`${event.runId}-${event.sequence}`}>
                 <span className="event-sequence">#{event.sequence}</span>
-                <span className="event-type">{event.type}</span>
+                <span className="event-type">
+                  {event.type}
+                  {formatEventDetail(event)}
+                </span>
                 <span className="event-time">{formatTime(event.timestamp)}</span>
               </li>
             ))}
@@ -326,7 +417,7 @@ function App() {
                 <span>{run.adapter}</span>
                 <span>{run.status}</span>
                 <span className="history-preview">
-                  {run.outputPreview || run.prompt}
+                  {run.error || run.outputPreview || run.prompt}
                 </span>
               </button>
             ))}
@@ -373,6 +464,87 @@ async function fetchRunLog(runId: string): Promise<RuntimeRunLog> {
   const data = (await response.json()) as { run: RuntimeRunLog }
 
   return data.run
+}
+
+function appendRuntimeEvent(
+  events: RuntimeRunEvent[],
+  event: RuntimeRunEvent,
+): RuntimeRunEvent[] {
+  if (
+    events.some(
+      (existingEvent) =>
+        existingEvent.runId === event.runId &&
+        existingEvent.sequence === event.sequence,
+    )
+  ) {
+    return events
+  }
+
+  return [...events, event]
+}
+
+function formatRunStatus(status: InspectorRunStatus): string {
+  if (status === 'idle') {
+    return 'Ready'
+  }
+
+  return `${status.slice(0, 1).toUpperCase()}${status.slice(1)}`
+}
+
+function formatEventDetail(event: RuntimeRunEvent): string {
+  if (event.type === 'cancelled') {
+    return `: ${event.reason}`
+  }
+
+  if (event.type === 'failed') {
+    return `: ${event.error}`
+  }
+
+  return ''
+}
+
+function getTerminalMessage(
+  status: InspectorRunStatus,
+  events: RuntimeRunEvent[],
+  log: RuntimeRunLog | null,
+): string {
+  if (status === 'cancelled') {
+    return `Run cancelled: ${findCancelledReason(events)}`
+  }
+
+  if (status === 'failed') {
+    return `Run failed: ${log?.error ?? findFailedError(events)}`
+  }
+
+  if (status === 'completed') {
+    return 'No output.'
+  }
+
+  return 'Waiting for output...'
+}
+
+function findCancelledReason(events: RuntimeRunEvent[]): string {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
+
+    if (event?.type === 'cancelled') {
+      return event.reason
+    }
+  }
+
+  return 'Runtime run cancelled'
+}
+
+function findFailedError(events: RuntimeRunEvent[]): string {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
+
+    if (event?.type === 'failed') {
+      return event.error
+    }
+  }
+
+  return 'Unknown runtime error'
 }
 
 function toErrorMessage(error: unknown): string {

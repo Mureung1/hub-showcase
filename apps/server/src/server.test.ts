@@ -99,6 +99,173 @@ test('runtime API starts a fake run and streams normalized events', async () => 
   }
 })
 
+test('runtime API cancels a running fake run and streams normalized cancellation', async () => {
+  const app = createServerApp({ fakeDelayMs: 1000 })
+  const server = app.listen(0)
+
+  await new Promise<void>((resolve) => {
+    server.once('listening', resolve)
+  })
+
+  const address = server.address()
+
+  if (!address || typeof address === 'string') {
+    throw new Error('Expected server to listen on a TCP port')
+  }
+
+  const baseUrl = `http://127.0.0.1:${address.port}`
+
+  try {
+    const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        adapter: 'fake',
+        prompt: '멈춰줘',
+      }),
+    })
+    const startedRun = (await startResponse.json()) as { runId: string }
+
+    assert.equal(startResponse.status, 201)
+
+    const eventsPromise = fetch(
+      `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,
+    ).then(async (eventsResponse) => {
+      assert.equal(eventsResponse.status, 200)
+      return parseSseData(await eventsResponse.text())
+    })
+
+    const cancelResponse = await fetch(
+      `${baseUrl}/api/runtime/runs/${startedRun.runId}/cancel`,
+      {
+        method: 'POST',
+      },
+    )
+    const cancelledRun = await cancelResponse.json()
+    const streamedEvents = await eventsPromise
+
+    assert.equal(cancelResponse.status, 200)
+    assert.equal(cancelledRun.run.status, 'cancelled')
+    assert.deepEqual(
+      streamedEvents.map((event) => event.type),
+      ['started', 'cancelled'],
+    )
+    assert.equal(streamedEvents[1]?.reason, 'Runtime run cancelled')
+
+    const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
+    const history = await historyResponse.json()
+
+    assert.equal(historyResponse.status, 200)
+    assert.equal(history.runs[0].runId, startedRun.runId)
+    assert.equal(history.runs[0].status, 'cancelled')
+
+    const logResponse = await fetch(
+      `${baseUrl}/api/runtime/runs/${startedRun.runId}`,
+    )
+    const log = await logResponse.json()
+
+    assert.equal(logResponse.status, 200)
+    assert.equal(log.run.status, 'cancelled')
+    assert.deepEqual(
+      log.run.events.map((event: Record<string, unknown>) => event.type),
+      ['started', 'cancelled'],
+    )
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error) {
+          reject(error)
+          return
+        }
+
+        resolve()
+      })
+    })
+  }
+})
+
+test('runtime API records deterministic fake failure in stream, log, and history', async () => {
+  const app = createServerApp({ fakeDelayMs: 0 })
+  const server = app.listen(0)
+
+  await new Promise<void>((resolve) => {
+    server.once('listening', resolve)
+  })
+
+  const address = server.address()
+
+  if (!address || typeof address === 'string') {
+    throw new Error('Expected server to listen on a TCP port')
+  }
+
+  const baseUrl = `http://127.0.0.1:${address.port}`
+
+  try {
+    const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        adapter: 'fake',
+        prompt: '실패해줘',
+        scenario: 'failure',
+      }),
+    })
+    const startedRun = (await startResponse.json()) as { runId: string }
+
+    assert.equal(startResponse.status, 201)
+
+    const eventsResponse = await fetch(
+      `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,
+    )
+    const streamedEvents = parseSseData(await eventsResponse.text())
+
+    assert.equal(eventsResponse.status, 200)
+    assert.deepEqual(
+      streamedEvents.map((event) => event.type),
+      ['started', 'failed'],
+    )
+    assert.equal(
+      streamedEvents[1]?.error,
+      'Fake runtime deterministic failure requested',
+    )
+
+    const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
+    const history = await historyResponse.json()
+
+    assert.equal(historyResponse.status, 200)
+    assert.equal(history.runs[0].runId, startedRun.runId)
+    assert.equal(history.runs[0].status, 'failed')
+    assert.equal(
+      history.runs[0].error,
+      'Fake runtime deterministic failure requested',
+    )
+
+    const logResponse = await fetch(
+      `${baseUrl}/api/runtime/runs/${startedRun.runId}`,
+    )
+    const log = await logResponse.json()
+
+    assert.equal(logResponse.status, 200)
+    assert.equal(log.run.status, 'failed')
+    assert.equal(log.run.error, 'Fake runtime deterministic failure requested')
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error) {
+          reject(error)
+          return
+        }
+
+        resolve()
+      })
+    })
+  }
+})
+
 function parseSseData(stream: string): Array<Record<string, unknown>> {
   return stream
     .split('\n')

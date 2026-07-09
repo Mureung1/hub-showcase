@@ -113,6 +113,21 @@ h1 {
   background: #ffe2a9;
 }
 
+.run-state.completed {
+  color: #3f7f68;
+  background: #e5f4e7;
+}
+
+.run-state.cancelled {
+  color: #53605a;
+  background: #ece5d9;
+}
+
+.run-state.failed {
+  color: #9f3324;
+  background: #ffe0d7;
+}
+
 .run-form {
   display: grid;
   gap: 14px;
@@ -160,11 +175,22 @@ button {
   cursor: pointer;
 }
 
+.run-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
 .run-form button {
   height: 42px;
   color: #fffaf1;
   background: #d95c42;
   font-weight: 800;
+}
+
+.run-form button[type="button"] {
+  color: #263238;
+  background: #eadfce;
 }
 
 .run-form button:disabled {

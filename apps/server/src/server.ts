@@ -1,5 +1,10 @@
 import { pathToFileURL } from 'node:url'
-import { AgentRuntimeKernel, type RuntimeRunEvent } from '@ay-ple/runtime-core'
+import {
+  AgentRuntimeKernel,
+  isTerminalRuntimeRunEvent,
+  type RuntimeRunEvent,
+  type RuntimeRunScenario,
+} from '@ay-ple/runtime-core'
 import { FakeRuntimeAdapter } from '@ay-ple/runtime-fake'
 import cors from 'cors'
 import dotenv from 'dotenv'
@@ -40,6 +45,7 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
   app.post('/api/runtime/runs', (req, res) => {
     const adapter = req.body?.adapter
     const prompt = req.body?.prompt
+    const scenario = req.body?.scenario
 
     if (typeof adapter !== 'string') {
       res.status(400).json({ error: 'adapter is required' })
@@ -51,8 +57,13 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
       return
     }
 
+    if (!isRuntimeRunScenario(scenario)) {
+      res.status(400).json({ error: 'scenario is invalid' })
+      return
+    }
+
     try {
-      const run = kernel.startRun({ adapter, prompt })
+      const run = kernel.startRun({ adapter, prompt, scenario })
       res.status(201).json({ runId: run.runId })
     } catch (error) {
       res.status(400).json({
@@ -67,6 +78,17 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
 
   app.get('/api/runtime/runs/:runId', (req, res) => {
     const run = kernel.getRunLog(req.params.runId)
+
+    if (!run) {
+      res.status(404).json({ error: 'runtime run not found' })
+      return
+    }
+
+    res.json({ run })
+  })
+
+  app.post('/api/runtime/runs/:runId/cancel', (req, res) => {
+    const run = kernel.cancelRun(req.params.runId)
 
     if (!run) {
       res.status(404).json({ error: 'runtime run not found' })
@@ -111,7 +133,7 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
       (event) => {
         writeSseEvent(res, event)
 
-        if (event.type !== 'completed') {
+        if (!isTerminalRuntimeRunEvent(event)) {
           return
         }
 
@@ -142,6 +164,14 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
 function writeSseEvent(res: Response, event: RuntimeRunEvent): void {
   res.write('event: runtime-event\n')
   res.write(`data: ${JSON.stringify(event)}\n\n`)
+}
+
+function isRuntimeRunScenario(
+  scenario: unknown,
+): scenario is RuntimeRunScenario | undefined {
+  return (
+    scenario === undefined || scenario === 'normal' || scenario === 'failure'
+  )
 }
 
 function startServer(): void {

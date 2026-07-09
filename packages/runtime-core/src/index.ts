@@ -1,9 +1,17 @@
-export type RuntimeRunStatus = 'running' | 'completed'
+export type RuntimeRunStatus = 'running' | 'completed' | 'cancelled' | 'failed'
+export type RuntimeRunScenario = 'normal' | 'failure'
 
 export type RuntimeRunEvent =
   | RuntimeRunStartedEvent
   | RuntimeRunOutputDeltaEvent
   | RuntimeRunCompletedEvent
+  | RuntimeRunCancelledEvent
+  | RuntimeRunFailedEvent
+
+export type RuntimeRunTerminalEvent =
+  | RuntimeRunCompletedEvent
+  | RuntimeRunCancelledEvent
+  | RuntimeRunFailedEvent
 
 export type RuntimeRunStartedEvent = {
   type: 'started'
@@ -32,12 +40,32 @@ export type RuntimeRunCompletedEvent = {
   output: string
 }
 
+export type RuntimeRunCancelledEvent = {
+  type: 'cancelled'
+  sequence: number
+  runId: string
+  adapter: string
+  timestamp: string
+  reason: string
+}
+
+export type RuntimeRunFailedEvent = {
+  type: 'failed'
+  sequence: number
+  runId: string
+  adapter: string
+  timestamp: string
+  error: string
+}
+
 export type RuntimeRunLog = {
   runId: string
   adapter: string
   prompt: string
+  scenario?: RuntimeRunScenario
   status: RuntimeRunStatus
   output: string
+  error?: string
   events: RuntimeRunEvent[]
   startedAt: string
   completedAt?: string
@@ -49,6 +77,7 @@ export type RuntimeRunSummary = {
   prompt: string
   status: RuntimeRunStatus
   outputPreview: string
+  error?: string
   startedAt: string
   completedAt?: string
 }
@@ -62,6 +91,8 @@ export type RuntimeAdapterDescriptor = {
 export type RuntimeAdapterRunInput = {
   runId: string
   prompt: string
+  scenario?: RuntimeRunScenario
+  signal: AbortSignal
 }
 
 export type RuntimeAdapterEvent =
@@ -84,6 +115,7 @@ export type AgentRuntimeAdapter = {
 export type StartRuntimeRunInput = {
   adapter: string
   prompt: string
+  scenario?: RuntimeRunScenario
 }
 
 export type AgentRuntimeKernelOptions = {
@@ -103,6 +135,7 @@ export class AgentRuntimeKernel {
   private readonly logs = new Map<string, RuntimeRunLog>()
   private readonly subscribers = new Map<string, Set<RunSubscriber>>()
   private readonly terminalResolvers = new Map<string, TerminalResolver>()
+  private readonly abortControllers = new Map<string, AbortController>()
   private readonly now: () => Date
   private nextRunNumber = 1
 
@@ -135,6 +168,7 @@ export class AgentRuntimeKernel {
       runId,
       adapter: adapter.name,
       prompt: input.prompt,
+      scenario: input.scenario,
       status: 'running',
       output: '',
       events: [],
@@ -143,6 +177,7 @@ export class AgentRuntimeKernel {
 
     this.logs.set(runId, log)
     this.terminalResolvers.set(runId, this.createTerminalResolver())
+    this.abortControllers.set(runId, new AbortController())
     this.appendEvent(log, {
       type: 'started',
       prompt: input.prompt,
@@ -167,6 +202,7 @@ export class AgentRuntimeKernel {
         prompt: log.prompt,
         status: log.status,
         outputPreview: previewOutput(log.output),
+        error: log.error,
         startedAt: log.startedAt,
         completedAt: log.completedAt,
       }))
@@ -180,7 +216,7 @@ export class AgentRuntimeKernel {
       return Promise.reject(new Error(`Unknown runtime run: ${runId}`))
     }
 
-    if (log.status === 'completed') {
+    if (isTerminalRuntimeRunStatus(log.status)) {
       return Promise.resolve(cloneLog(log))
     }
 
@@ -210,7 +246,7 @@ export class AgentRuntimeKernel {
       }
     }
 
-    if (log.status === 'completed') {
+    if (isTerminalRuntimeRunStatus(log.status)) {
       return () => {}
     }
 
@@ -223,34 +259,69 @@ export class AgentRuntimeKernel {
     }
   }
 
+  cancelRun(runId: string): RuntimeRunLog | undefined {
+    const log = this.logs.get(runId)
+
+    if (!log) {
+      return undefined
+    }
+
+    if (isTerminalRuntimeRunStatus(log.status)) {
+      return cloneLog(log)
+    }
+
+    const abortController = this.abortControllers.get(runId)
+    this.cancelRunLog(log, 'Runtime run cancelled')
+    abortController?.abort()
+    this.abortControllers.delete(runId)
+
+    return cloneLog(log)
+  }
+
   private async runAdapter(
     adapter: AgentRuntimeAdapter,
     log: RuntimeRunLog,
   ): Promise<void> {
-    for await (const adapterEvent of adapter.run({
-      runId: log.runId,
-      prompt: log.prompt,
-    })) {
-      if (adapterEvent.type === 'output_delta') {
-        log.output += adapterEvent.delta
-        this.appendEvent(log, {
-          type: 'output_delta',
-          delta: adapterEvent.delta,
-        })
-      }
+    const abortController = this.abortControllers.get(log.runId)
 
-      if (adapterEvent.type === 'completed') {
-        if (adapterEvent.output !== undefined) {
-          log.output = adapterEvent.output
+    try {
+      for await (const adapterEvent of adapter.run({
+        runId: log.runId,
+        prompt: log.prompt,
+        scenario: log.scenario,
+        signal: abortController?.signal ?? AbortSignal.abort(),
+      })) {
+        if (isTerminalRuntimeRunStatus(log.status)) {
+          return
         }
 
-        this.completeRun(log)
+        if (adapterEvent.type === 'output_delta') {
+          log.output += adapterEvent.delta
+          this.appendEvent(log, {
+            type: 'output_delta',
+            delta: adapterEvent.delta,
+          })
+        }
 
-        return
+        if (adapterEvent.type === 'completed') {
+          if (adapterEvent.output !== undefined) {
+            log.output = adapterEvent.output
+          }
+
+          this.completeRun(log)
+
+          return
+        }
+      }
+
+      if (!isTerminalRuntimeRunStatus(log.status)) {
+        this.completeRun(log)
+      }
+    } catch (error) {
+      if (!isTerminalRuntimeRunStatus(log.status)) {
+        this.failRun(log, toErrorMessage(error))
       }
     }
-
-    this.completeRun(log)
   }
 
   private completeRun(log: RuntimeRunLog): void {
@@ -261,6 +332,27 @@ export class AgentRuntimeKernel {
       output: log.output,
     })
     this.resolveTerminal(log)
+    this.abortControllers.delete(log.runId)
+  }
+
+  private cancelRunLog(log: RuntimeRunLog, reason: string): void {
+    log.status = 'cancelled'
+    this.appendEvent(log, {
+      type: 'cancelled',
+      reason,
+    })
+    this.resolveTerminal(log)
+  }
+
+  private failRun(log: RuntimeRunLog, error: string): void {
+    log.status = 'failed'
+    log.error = error
+    this.appendEvent(log, {
+      type: 'failed',
+      error,
+    })
+    this.resolveTerminal(log)
+    this.abortControllers.delete(log.runId)
   }
 
   private appendEvent(
@@ -268,7 +360,9 @@ export class AgentRuntimeKernel {
     event:
       | { type: 'started'; prompt: string }
       | { type: 'output_delta'; delta: string }
-      | { type: 'completed'; output: string },
+      | { type: 'completed'; output: string }
+      | { type: 'cancelled'; reason: string }
+      | { type: 'failed'; error: string },
   ): void {
     const base = {
       sequence: log.events.length + 1,
@@ -345,4 +439,22 @@ function cloneLog(log: RuntimeRunLog): RuntimeRunLog {
 
 function cloneEvent(event: RuntimeRunEvent): RuntimeRunEvent {
   return { ...event }
+}
+
+export function isTerminalRuntimeRunStatus(status: RuntimeRunStatus): boolean {
+  return status === 'completed' || status === 'cancelled' || status === 'failed'
+}
+
+export function isTerminalRuntimeRunEvent(
+  event: RuntimeRunEvent,
+): event is RuntimeRunTerminalEvent {
+  return isTerminalRuntimeRunStatus(event.type as RuntimeRunStatus)
+}
+
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return 'Runtime run failed'
 }
