@@ -1,12 +1,13 @@
 // /api/fooddb 프록시 경유 식약처 전국통합식품영양성분정보 검색 헬퍼.
 // source: 'food'(조리식·기본) | 'process'(가공식품, 편의점/포장/프랜차이즈 제품 보완용 폴백)
+import { fetchWithTimeout } from './fetchWithTimeout.js'
 
 export async function searchFoodDB(foodName, source = 'food') {
   if (!foodName || typeof foodName !== 'string' || !foodName.trim()) {
     throw new Error('foodName is required')
   }
 
-  const res = await fetch('/api/fooddb', {
+  const res = await fetchWithTimeout('/api/fooddb', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ foodName: foodName.trim(), source }),

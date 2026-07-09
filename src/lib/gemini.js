@@ -1,11 +1,12 @@
 // geminiComplete() 공통 헬퍼 (프록시 /api/gemini 경유), parseJsonLoose() 응답 JSON 파싱 헬퍼
+import { fetchWithTimeout } from './fetchWithTimeout.js'
 
 export async function geminiComplete({ prompt, system, imageBase64, mimeType } = {}) {
   if (!prompt || typeof prompt !== 'string') {
     throw new Error('prompt is required')
   }
 
-  const res = await fetch('/api/gemini', {
+  const res = await fetchWithTimeout('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt, system, imageBase64, mimeType }),

@@ -23,24 +23,56 @@ const FOODSAFETY_SOURCES = {
 const RETRY_DELAYS_MS = [1000, 2000, 4000]
 const RETRYABLE_STATUS = new Set([429, 503])
 
+// 외부 API(OpenRouter/카카오/식약처) 응답이 지연될 때 요청이 무한정 붙잡혀 있지 않도록 하는 타임아웃.
+// 프론트의 fetchWithTimeout(28초)보다 짧게 잡아, 프론트가 자체 타임아웃을 띄우기 전에 서버가 먼저
+// 의미 있는 에러 응답(504)을 내려줄 수 있게 한다.
+const EXTERNAL_TIMEOUT_MS = 25000
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+async function fetchWithTimeout(url, options, timeoutMs = EXTERNAL_TIMEOUT_MS) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function fetchWithRetry(url, options) {
-  let response = await fetch(url, options)
+  let response = await fetchWithTimeout(url, options)
 
   for (const delay of RETRY_DELAYS_MS) {
     if (response.ok || !RETRYABLE_STATUS.has(response.status)) break
     await sleep(delay)
-    response = await fetch(url, options)
+    response = await fetchWithTimeout(url, options)
   }
 
   return response
 }
 
+// 타임아웃(AbortError)을 504로, 그 외 예외를 500으로 매핑하는 공통 에러 핸들러.
+// 데모 단계에서는 이 정도 구분만 두고, 레이트리밋/CORS 같은 강한 제한은 아래 자리에서 나중에 추가한다.
+function respondToProxyError(res, err, label) {
+  if (err.name === 'AbortError') {
+    console.error(`${label}: upstream timeout`)
+    return res.status(504).json({ error: '외부 서비스 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.' })
+  }
+  console.error(`${label} failed:`, err)
+  return res.status(500).json({ error: 'Internal proxy error' })
+}
+
 const app = express()
 app.use(express.json({ limit: '15mb' }))
+
+// TODO(공개 확대 시): 레이트리밋 미들웨어 자리 (예: express-rate-limit로 IP별 요청 수 제한).
+// 소수 사용자 데모 단계라 지금은 생략.
+// TODO(공개 확대 시): CORS 정책 자리 (예: cors 미들웨어로 허용 오리진 제한).
+// 현재는 프론트/프록시가 동일 오리진으로 서빙되어 생략.
 
 app.post('/api/gemini', async (req, res) => {
   const apiKey = process.env.OPENROUTER_API_KEY
@@ -88,8 +120,7 @@ app.post('/api/gemini', async (req, res) => {
     const text = data?.choices?.[0]?.message?.content ?? ''
     res.json({ text })
   } catch (err) {
-    console.error('OpenRouter proxy request failed:', err)
-    res.status(500).json({ error: 'Internal proxy error' })
+    respondToProxyError(res, err, 'OpenRouter proxy request')
   }
 })
 
@@ -114,7 +145,7 @@ app.post('/api/places', async (req, res) => {
   url.searchParams.set('size', '5')
 
   try {
-    const kakaoRes = await fetch(url, {
+    const kakaoRes = await fetchWithRetry(url, {
       headers: { Authorization: `KakaoAK ${apiKey}` },
     })
 
@@ -138,8 +169,7 @@ app.post('/api/places', async (req, res) => {
 
     res.json(places)
   } catch (err) {
-    console.error('Kakao proxy request failed:', err)
-    res.status(500).json({ error: 'Internal proxy error' })
+    respondToProxyError(res, err, 'Kakao proxy request')
   }
 })
 
@@ -204,7 +234,7 @@ function buildFoodSafetyUrl(baseUrl, apiKey, foodName, rawKey) {
 
 async function callFoodSafetyApi(baseUrl, apiKey, foodName, rawKey) {
   const url = buildFoodSafetyUrl(baseUrl, apiKey, foodName, rawKey)
-  const upstreamRes = await fetch(url)
+  const upstreamRes = await fetchWithTimeout(url)
   const raw = await upstreamRes.text()
   let data = null
   try {
@@ -268,8 +298,7 @@ app.post('/api/fooddb', async (req, res) => {
 
     res.json(items.map(normalizeFoodItem))
   } catch (err) {
-    console.error(`FoodSafety proxy(${source}) request failed:`, err)
-    res.status(500).json({ error: 'Internal proxy error' })
+    respondToProxyError(res, err, `FoodSafety proxy(${source}) request`)
   }
 })
 
