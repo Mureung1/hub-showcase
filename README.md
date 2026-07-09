@@ -26,7 +26,9 @@
 
 | 문서명 | 링크 |
 |---|---|
-| 1Pager | Decision Board AI |
+| 1. Main 기획서 | https://github.com/lymsla/N132_-/wiki/1.-Main-%EA%B8%B0%ED%9A%8D%EC%84%9C |
+| 2. 가치 구조 문서 | https://github.com/lymsla/N132_-/wiki/2.-%EA%B0%80%EC%B9%98-%EA%B5%AC%EC%A1%B0-%EB%AC%B8%EC%84%9C |
+| 3. Task List | https://github.com/lymsla/N132_-/wiki/3.-Task-List |
 
 
 
