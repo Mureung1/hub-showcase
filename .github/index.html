@@ -1,357 +1,543 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>소상공인 AI 에이전트 프로토타입</title>
-  <style>
-    :root {
-      --bg: #f4f7fb;
-      --surface: #ffffff;
-      --surface-2: #f8fbff;
-      --text: #162033;
-      --muted: #64748b;
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --accent: #22c55e;
-      --border: #e2e8f0;
-      --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>소상공인 지원금 매칭 에이전트</title>
+<style>
 
-    * { box-sizing: border-box; }
+  /* ============================================================
+     DESIGN TOKENS
+     재사용을 위해 색상 / 타이포 / 간격을 변수로 분리했습니다.
+     다른 화면을 만들 때는 이 :root 블록만 교체하면 됩니다.
+     ============================================================ */
+  :root{
+    /* ---- Color: Primary (핵심 액션, 브랜드 강조) ---- */
+    --color-primary:        #002855; /* 유저님의 시그니처 네이비 */
+    --color-primary-hover:  #001A3A; /* 조금 더 어두운 네이비 */
+    --color-primary-light:  #EAF0FF;  /* 배지/입력창 포커스 배경 */
+    --color-primary-border: #C9DAFF;
 
-    body {
-      margin: 0;
-      font-family: "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-      background: linear-gradient(135deg, #eef4ff 0%, var(--bg) 100%);
-      color: var(--text);
-    }
+    /* ---- Color: Secondary (보조 액션, 상태/성공 표시) ---- */
+    --color-secondary:        #16A34A;
+    --color-secondary-hover:  #10863C;
+    --color-secondary-light: #E9F9EF;
+    --color-secondary-border:#BCEBCB;
 
-    a { text-decoration: none; color: inherit; }
+    /* ---- Color: Neutral (텍스트/배경/보더) ---- */
+    --color-ink-900: #0F172A;   /* 헤드라인 */
+    --color-ink-700: #334155;   /* 카드 제목 */
+    --color-ink-500: #64748B;   /* 본문/설명 */
+    --color-ink-300: #94A3B8;   /* 캡션/플레이스홀더 */
+    --color-border:  #E2E8F0;
+    --color-surface: #FFFFFF;
+    --color-bg-start:#EEF2FF;
+    --color-bg-end:  #F8FAFC;
 
-    .page {
-      min-height: 100vh;
-      padding: 24px;
-      display: grid;
-      place-items: center;
-    }
+    /* ---- Typography scale ---- */
+    --font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+                    "Pretendard", "Malgun Gothic", "Noto Sans KR", sans-serif;
 
-    .card {
-      width: min(960px, 100%);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 28px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
+    --fs-display: 34px;  /* 메인 헤드라인 */
+    --fs-h2:      20px;  /* 카드/섹션 제목 */
+    --fs-body:    16px;  /* 본문, 폼 라벨/값 */
+    --fs-caption: 13px;  /* 배지, 보조 안내 문구 */
 
-    .intro {
-      display: block;
-      padding: 40px;
-      background: linear-gradient(120deg, #ffffff 0%, #f9fbff 100%);
-    }
+    --lh-display: 1.35;
+    --lh-body:    1.6;
 
-    .hero {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 28px;
-      align-items: center;
-    }
+    /* ---- Radius / Shadow / Spacing ---- */
+    --radius-lg: 24px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --shadow-card: 0 24px 60px -20px rgba(15, 23, 42, 0.18);
+    --space-unit: 8px;
+  }
 
-    .eyebrow {
-      display: inline-block;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--primary);
-      padding: 7px 12px;
-      border-radius: 999px;
-      background: #e8f0ff;
-      margin-bottom: 12px;
-    }
+  *{ box-sizing: border-box; }
+  html, body{
+    margin:0; padding:0; height:100%;
+    font-family: var(--font-family);
+    color: var(--color-ink-900);
+    background: linear-gradient(160deg, var(--color-bg-start), var(--color-bg-end));
+  }
 
-    h1 {
-      font-size: 32px;
-      line-height: 1.25;
-      margin: 0 0 12px;
-    }
+  .page{
+    min-height:100%;
+    display:flex; align-items:center; justify-content:center;
+    padding: 48px 20px;
+  }
 
-    .lead {
-      font-size: 16px;
-      line-height: 1.7;
-      color: var(--muted);
-      margin: 0 0 24px;
-    }
+  /* ============================================================
+     BUTTON COMPONENTS (재사용 클래스)
+     .btn-primary   : 핵심 CTA (채움)
+     .btn-secondary : 보조 액션 (톤온톤 채움)
+     .btn-ghost     : 3차 액션 (아웃라인/텍스트형)
+     ============================================================ */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    gap:8px;
+    font-family: inherit;
+    font-size: var(--fs-body);
+    font-weight:600;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    padding: 15px 22px;
+    cursor:pointer;
+    transition: background-color .15s ease, border-color .15s ease, transform .05s ease;
+  }
+  .btn:active{ transform: translateY(1px); }
+  .btn:focus-visible{ outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
-    .form-card {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 20px;
-    }
+  .btn-primary{
+    background: var(--color-primary);
+    color: #fff;
+    width:100%;
+  }
+  .btn-primary:hover{ background: var(--color-primary-hover); }
 
-    .field {
-      margin-bottom: 14px;
-    }
+  .btn-secondary{
+    background: var(--color-secondary-light);
+    color: var(--color-secondary-hover);
+    border-color: var(--color-secondary-border);
+  }
+  .btn-secondary:hover{ background: var(--color-secondary-border); }
 
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 7px;
-      color: #334155;
-    }
+  .btn-ghost{
+    background: transparent;
+    color: var(--color-ink-700);
+    border-color: var(--color-border);
+  }
+  .btn-ghost:hover{ background: #F1F5F9; }
 
-    input, select {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid #cbd5e1;
-      font-size: 14px;
-      background: white;
-      color: var(--text);
-    }
+  /* ============================================================
+     SHARED PRIMITIVES
+     ============================================================ */
+  .card{
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    width:100%;
+    max-width: 980px;
+    padding: 56px;
+    position:relative;
+    overflow:hidden;
+  }
+  @media (max-width: 720px){
+    .card{ padding: 32px 22px; }
+  }
 
-    .cta {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      padding: 14px 16px;
-      margin-top: 8px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: white;
-      font-size: 15px;
-      font-weight: 700;
-      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size: var(--fs-caption);
+    font-weight:700;
+    color: var(--color-primary);
+    background: var(--color-primary-light);
+    border: 1px solid var(--color-primary-border);
+    padding: 6px 12px;
+    border-radius: 999px;
+    margin-bottom: 20px;
+  }
+  .eyebrow.success{
+    color: var(--color-secondary-hover);
+    background: var(--color-secondary-light);
+    border-color: var(--color-secondary-border);
+  }
 
-    .cta:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 28px rgba(37, 99, 235, 0.28);
-    }
+  h1.display{
+    font-size: var(--fs-display);
+    line-height: var(--lh-display);
+    font-weight:800;
+    letter-spacing:-0.02em;
+    margin: 0 0 16px;
+    color: var(--color-ink-900);
+  }
 
-    .note {
-      margin-top: 10px;
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
+  p.body-muted{
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    color: var(--color-ink-500);
+    margin:0;
+  }
 
-    .result-panel {
-      display: none;
-      padding: 36px;
-      background: linear-gradient(135deg, #f7fbff 0%, #eef6ff 100%);
-    }
+  label.field-label{
+    display:block;
+    font-size: var(--fs-caption);
+    font-weight:700;
+    color: var(--color-ink-700);
+    margin-bottom: 8px;
+  }
 
-    .result-panel:target {
-      display: block;
-    }
+  select.field-input{
+    width:100%;
+    font-family: inherit;
+    font-size: var(--fs-body);
+    color: var(--color-ink-900);
+    background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="9" viewBox="0 0 14 9"><path d="M1 1L7 7L13 1" stroke="%2364748B" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>') no-repeat right 16px center;
+    appearance:none;
+    -webkit-appearance:none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 14px 40px 14px 16px;
+    cursor:pointer;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  select.field-input:hover{ border-color: #CBD5E1; }
+  select.field-input:focus{
+    outline:none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+  }
 
-    #result:target ~ .intro {
-      display: none;
-    }
+  .field-group{ margin-bottom: 20px; }
 
-    .result-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
+  /* ============================================================
+     STATE 1 — INPUT (매칭 조건 입력)
+     ============================================================ */
+  .layout-split{
+    display:grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 56px;
+    align-items:center;
+  }
+  @media (max-width: 860px){
+    .layout-split{ grid-template-columns: 1fr; gap: 36px; }
+  }
 
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: #dcfce7;
-      color: #166534;
-      font-size: 13px;
-      font-weight: 700;
-    }
+  .intro-panel .caption-note{
+    font-size: var(--fs-caption);
+    color: var(--color-ink-300);
+    line-height:1.6;
+    margin-top:16px;
+  }
 
-    .pulse {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: var(--accent);
-      animation: pulse 1s infinite;
-    }
+  .form-panel{
+    background: #FAFBFF;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 28px;
+  }
 
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.45); opacity: 0.7; }
-    }
+  /* ============================================================
+     STATE 2 — RESULT (추천 결과)
+     ============================================================ */
+  .status-pill{
+    position:absolute;
+    top: 56px; right:56px;
+    display:inline-flex; align-items:center; gap:8px;
+    font-size: var(--fs-caption);
+    font-weight:700;
+    color: var(--color-secondary-hover);
+    background: var(--color-secondary-light);
+    border: 1px solid var(--color-secondary-border);
+    padding: 7px 14px;
+    border-radius: 999px;
+  }
+  @media (max-width: 720px){
+    .status-pill{ position:static; display:inline-flex; margin-bottom:16px; }
+  }
+  .status-dot{
+    width:7px; height:7px; border-radius:50%;
+    background: var(--color-secondary);
+  }
+  .status-dot.pulse{ animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse{
+    0%,100%{ box-shadow: 0 0 0 0 rgba(22,163,74,0.45); }
+    50%{ box-shadow: 0 0 0 5px rgba(22,163,74,0); }
+  }
 
-    .analysis-box {
-      padding: 16px 18px;
-      border-radius: 16px;
-      border: 1px solid #dbeafe;
-      background: white;
-      margin-bottom: 16px;
-      color: var(--muted);
-      line-height: 1.6;
-    }
+  .summary-box{
+    background: #F8FAFC;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 22px 24px;
+    margin: 28px 0 28px;
+  }
+  .summary-box p{
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    color: var(--color-ink-500);
+    margin:0;
+  }
 
-    .result-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      margin-top: 18px;
-    }
+  .result-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 720px){
+    .result-grid{ grid-template-columns: 1fr; }
+  }
 
-    .result-card {
-      padding: 16px;
-      border-radius: 16px;
-      border: 1px solid var(--border);
-      background: white;
-      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
-    }
+  .result-card{
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    background: var(--color-surface);
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .result-card:hover{
+    border-color: var(--color-primary-border);
+    transform: translateY(-2px);
+  }
+  .result-card h3{
+    font-size: var(--fs-h2);
+    font-weight:700;
+    margin: 0 0 6px;
+    color: var(--color-ink-900);
+  }
+  .result-card .result-sub{
+    font-size: var(--fs-caption);
+    color: var(--color-ink-500);
+    margin: 0 0 14px;
+  }
 
-    .result-card strong {
-      display: block;
-      font-size: 15px;
-      margin-bottom: 8px;
-    }
+  /* 시그니처 요소: 정적 배지가 아니라, 실제 적합도 수치를 애니메이션 바로 보여줍니다. */
+  .match-row{
+    display:flex; align-items:center; gap:10px;
+  }
+  .match-track{
+    flex:1;
+    height:6px;
+    border-radius:999px;
+    background: var(--color-border);
+    overflow:hidden;
+  }
+  .match-fill{
+    height:100%;
+    border-radius:999px;
+    background: linear-gradient(90deg, var(--color-primary), #6C9BFF);
+    width:0%;
+    transition: width 1s cubic-bezier(.2,.7,.2,1);
+  }
+  .match-value{
+    font-size: var(--fs-caption);
+    font-weight:800;
+    color: var(--color-primary);
+    min-width: 38px;
+    text-align:right;
+  }
 
-    .score {
-      display: inline-block;
-      margin-top: 8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: #eff6ff;
-      color: var(--primary-dark);
-      font-size: 12px;
-      font-weight: 700;
-    }
+  .action-row{
+    display:flex; gap:10px; flex-wrap:wrap;
+  }
 
-    .actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 20px;
-      flex-wrap: wrap;
-    }
+  /* ============================================================
+     LOADING (분석 중 전환 상태)
+     ============================================================ */
+  .loading-panel{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding: 60px 20px;
+    text-align:center;
+  }
+  .loading-spinner{
+    width:40px; height:40px;
+    border-radius:50%;
+    border: 3px solid var(--color-primary-light);
+    border-top-color: var(--color-primary);
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 20px;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  .loading-panel p{
+    font-size: var(--fs-body);
+    color: var(--color-ink-500);
+    margin:0;
+  }
 
-    .ghost-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 11px 14px;
-      border-radius: 12px;
-      background: white;
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-weight: 700;
-      font-size: 14px;
-    }
+  /* 화면 전환 */
+  .view{ display:none; }
+  .view.active{ display:block; animation: fadeIn .35s ease; }
+  @keyframes fadeIn{ from{ opacity:0; transform: translateY(6px);} to{ opacity:1; transform:none; } }
 
-    @media (max-width: 800px) {
-      .hero { grid-template-columns: 1fr; }
-      .result-grid { grid-template-columns: 1fr; }
-      .result-header { flex-direction: column; align-items: flex-start; }
-      .intro, .result-panel { padding: 24px; }
-    }
-  </style>
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+</style>
 </head>
 <body>
-  <div class="page">
-    <section class="card result-panel" id="result">
-      <div class="result-header">
-        <div>
-          <div class="eyebrow">AI 분석 결과</div>
-          <h1>맞춤형 지원금 추천이 도출됐습니다</h1>
-        </div>
-        <div class="status-pill"><span class="pulse"></span>실시간 분석 완료</div>
-      </div>
 
-      <div class="analysis-box">
-        입력하신 매장 정보 기준으로, 소상공인에게 가장 적합한 공공 지원금 후보를 정리했습니다. 신청 가능성, 기한, 준비 서류까지 한눈에 확인할 수 있도록 구성했습니다.
-      </div>
+<div class="page">
+  <div class="card" id="card">
 
-      <div class="result-grid">
-        <div class="result-card">
-          <strong>지역 창업 지원금</strong>
-          <span>신청 가능성 높음</span>
-          <div class="score">적합도 92%</div>
-        </div>
-        <div class="result-card">
-          <strong>운영비 지원금</strong>
-          <span>매출·인건비 반영 가능</span>
-          <div class="score">적합도 84%</div>
-        </div>
-        <div class="result-card">
-          <strong>디지털 전환 지원금</strong>
-          <span>온라인 예약·배달 연계</span>
-          <div class="score">적합도 76%</div>
-        </div>
-      </div>
-
-      <div class="actions">
-        <a class="ghost-btn" href="#home">다시 입력하기</a>
-        <a class="ghost-btn" href="#">알림 설정하기</a>
-      </div>
-    </section>
-
-    <section class="card intro" id="home">
-      <div class="hero">
-        <div>
-          <div class="eyebrow">소상공인 AI 에이전트</div>
-          <h1>내 매장에 꼭 맞는 지원금을 1분 만에 확인하세요.</h1>
-          <p class="lead">
+    <!-- ============================================================
+         VIEW 1: 입력 화면
+         ============================================================ -->
+    <section class="view active" id="view-input">
+      <div class="layout-split">
+        <div class="intro-panel">
+          <span class="eyebrow">소상공인 AI 에이전트</span>
+          <h1 class="display">내 매장에 꼭 맞는 지원금을<br>1분 만에 확인하세요.</h1>
+          <p class="body-muted">
             복잡한 공공 지원금 제도와 규제 정보를 대신 정리해 주는 에이전트입니다.
             간단한 정보만 입력하면, 가장 적합한 지원금 후보를 바로 제안합니다.
           </p>
         </div>
 
-        <div class="form-card">
-          <div class="field">
-            <label for="industry">업종</label>
-            <select id="industry">
+        <div class="form-panel">
+          <div class="field-group">
+            <label class="field-label">업종</label>
+            <select class="field-input" id="f-industry">
               <option>카페</option>
-              <option>식당</option>
-              <option>미용실</option>
-              <option>소매점</option>
+              <option>음식점</option>
+              <option>소매·유통업</option>
+              <option>미용·뷰티업</option>
+              <option>기타 서비스업</option>
             </select>
           </div>
 
-          <div class="field">
-            <label for="region">지역</label>
-            <select id="region">
+          <div class="field-group">
+            <label class="field-label">지역</label>
+            <select class="field-input" id="f-region">
               <option>서울</option>
               <option>부산</option>
               <option>대구</option>
-              <option>광주</option>
+              <option>인천</option>
+              <option>기타 지역</option>
             </select>
           </div>
 
-          <div class="field">
-            <label for="size">매장 규모</label>
-            <select id="size">
+          <div class="field-group">
+            <label class="field-label">매장 규모</label>
+            <select class="field-input" id="f-size">
               <option>1인~5인</option>
               <option>6인~10인</option>
-              <option>10인 이상</option>
+              <option>11인~20인</option>
+              <option>21인 이상</option>
             </select>
           </div>
 
-          <div class="field">
-            <label for="period">운영 기간</label>
-            <select id="period">
+          <div class="field-group" style="margin-bottom:24px;">
+            <label class="field-label">운영 기간</label>
+            <select class="field-input" id="f-period">
               <option>1년 미만</option>
-              <option>1~3년</option>
-              <option>3년 이상</option>
+              <option>1년~3년</option>
+              <option>3년~5년</option>
+              <option>5년 이상</option>
             </select>
           </div>
 
-          <a class="cta" href="#result">맞춤형 지원금 찾기</a>
-          <div class="note">입력한 정보는 추천 결과 도출에만 사용되며, 개인정보는 저장되지 않습니다.</div>
+          <button class="btn btn-primary" onclick="startAnalysis()">맞춤형 지원금 찾기</button>
+
+          <p class="body-muted" style="font-size:var(--fs-caption); color:var(--color-ink-300); margin-top:14px;">
+            입력한 정보는 추천 결과 도출에만 사용되며, 개인정보는 저장되지 않습니다.
+          </p>
         </div>
       </div>
     </section>
+
+    <!-- ============================================================
+         VIEW 2: 분석 중 (로딩)
+         ============================================================ -->
+    <section class="view" id="view-loading">
+      <div class="loading-panel">
+        <div class="loading-spinner"></div>
+        <p>입력하신 매장 정보를 분석하고 있어요…</p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VIEW 3: 결과 화면
+         ============================================================ -->
+    <section class="view" id="view-result">
+      <span class="eyebrow">AI 분석 결과</span>
+      <span class="status-pill"><span class="status-dot pulse"></span>실시간 분석 완료</span>
+
+      <h1 class="display" style="font-size: 28px;">맞춤형 지원금 추천이 도출됐습니다</h1>
+
+      <div class="summary-box">
+        <p>입력하신 매장 정보 기준으로, 소상공인에게 가장 적합한 공공 지원금 후보를 정리했습니다.
+        신청 가능성, 기한, 준비 서류까지 한눈에 확인할 수 있도록 구성했습니다.</p>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-card">
+          <h3>지역 창업 지원금</h3>
+          <p class="result-sub">신청 가능성 높음</p>
+          <div class="match-row">
+            <div class="match-track"><div class="match-fill" id="bar-1"></div></div>
+            <span class="match-value" id="val-1">0%</span>
+          </div>
+        </div>
+
+        <div class="result-card">
+          <h3>운영비 지원금</h3>
+          <p class="result-sub">매출·인건비 반영 가능</p>
+          <div class="match-row">
+            <div class="match-track"><div class="match-fill" id="bar-2"></div></div>
+            <span class="match-value" id="val-2">0%</span>
+          </div>
+        </div>
+
+        <div class="result-card">
+          <h3>디지털 전환 지원금</h3>
+          <p class="result-sub">온라인 예약·배달 연계</p>
+          <div class="match-row">
+            <div class="match-track"><div class="match-fill" id="bar-3"></div></div>
+            <span class="match-value" id="val-3">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-ghost" onclick="resetFlow()">다시 입력하기</button>
+        <button class="btn btn-secondary" onclick="alert('알림이 설정되었습니다.')">알림 설정하기</button>
+      </div>
+    </section>
+
   </div>
+</div>
+
+<script>
+  const MATCH_SCORES = [92, 84, 76];
+
+  function showView(id){
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function startAnalysis(){
+    showView('view-loading');
+    setTimeout(() => {
+      showView('view-result');
+      animateBars();
+    }, 900);
+  }
+
+  function animateBars(){
+    MATCH_SCORES.forEach((score, i) => {
+      const bar = document.getElementById('bar-' + (i+1));
+      const val = document.getElementById('val-' + (i+1));
+      // 리플로우 이후 트랜지션이 걸리도록 다음 프레임에 적용
+      requestAnimationFrame(() => {
+        bar.style.width = score + '%';
+      });
+      animateCount(val, score);
+    });
+  }
+
+  function animateCount(el, target){
+    const duration = 900;
+    const start = performance.now();
+    function tick(now){
+      const progress = Math.min((now - start) / duration, 1);
+      el.textContent = Math.round(progress * target) + '%';
+      if(progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function resetFlow(){
+    showView('view-input');
+    // 바 초기화 (다음 분석 시 다시 애니메이션 되도록)
+    document.querySelectorAll('.match-fill').forEach(b => b.style.width = '0%');
+    document.querySelectorAll('.match-value').forEach(v => v.textContent = '0%');
+  }
+</script>
+
 </body>
 </html>
