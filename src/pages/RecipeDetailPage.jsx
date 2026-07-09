@@ -14,7 +14,7 @@ function RecipeDetailPage() {
     return (
       <main className="min-h-screen bg-white px-4 py-10 text-center text-gray-500">
         요리를 찾을 수 없어요.{' '}
-        <Link to="/" className="text-orange-600 underline">
+        <Link to="/home" className="text-orange-600 underline">
           홈으로
         </Link>
       </main>

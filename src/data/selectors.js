@@ -15,6 +15,16 @@ export function getRecipesBySubgroups(recipes, category) {
   }))
 }
 
+// 냉장고에서 고른 재료(matchNames: 재료명 목록)가 1개 이상 들어가는 레시피만 골라 저렴한 순으로 반환
+export function getRecipesByOwnedIngredients(recipes, matchNames) {
+  if (matchNames.length === 0) return []
+  return sortByCost(
+    recipes.filter((recipe) =>
+      recipe.ingredients.some((ingredient) => matchNames.includes(ingredient.name)),
+    ),
+  )
+}
+
 export function getCategoriesWithCheapest(categories, recipes, type) {
   return categories
     .filter((category) => category.type === type)

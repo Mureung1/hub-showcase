@@ -11,7 +11,7 @@ function TypePage() {
   return (
     <main className="min-h-screen bg-white px-4 py-10">
       <div className="mx-auto max-w-xl">
-        <Link to="/" className="text-sm text-gray-500 hover:text-orange-600">
+        <Link to="/home" className="text-sm text-gray-500 hover:text-orange-600">
           ← 홈으로
         </Link>
         <h1 className="mt-2 text-2xl font-bold text-gray-900">

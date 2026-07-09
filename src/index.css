@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #F9BE3B;
+  --color-primary-soft: #FDE9B9;
+  --color-primary-text: #8A5A08;
+  --color-bg-page: #E9EBF2;
+  --color-bg-cream: #FCF0DC;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-muted: #F4F5F9;
+  --color-text-primary: #17182B;
+  --color-text-secondary: #9A9DAE;
+  --color-accent-heart: #F0455C;
+  --color-border: #EFEFF4;
+
+  --radius-container: 32px;
+  --radius-banner: 20px;
+  --radius-card: 16px;
+  --radius-input: 14px;
+}
+
 body {
   margin: 0;
 }

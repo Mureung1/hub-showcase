@@ -1,13 +1,17 @@
 # 작업 체크리스트
 
 ## 리브랜딩 (식비구조대 → 끼니픽)
-- [ ] 기니 캐릭터 일러스트 리소스 정리 (제공된 시트 기준 — 계속 수정될 예정이라 확정본 나올 때까지 임시 리소스로 취급)
-- [ ] 홈 화면을 "원룸 + 문 열린 냉장고 + 냉장고를 들여다보는 기니" 씬으로 재설계 (`design-system` 스킬 기준 참고, 기존 Miro/Figma DESIGN.md는 마스코트 톤과 안 맞아 재정의 필요)
-- [ ] 대표 재료 체크리스트 UI (냉장고 씬 바로 아래) — 사용자가 고른 재료를 저장
-- [ ] "고른 재료가 들어가는 요리" 매칭 로직 + 저렴한 순 추천 리스트 (기존 카테고리 미리보기 방식에서 전환)
+- [x] 기니 캐릭터 일러스트 리소스 정리 — 빈 냉장고 씬(`src/assets/fridge-empty.png`) 확보 (제공된 시트 기준 — 계속 수정될 예정이라 확정본 나올 때까지 임시 리소스로 취급)
+- [x] 홈 화면을 "원룸 + 문 열린 냉장고 + 냉장고를 들여다보는 기니" 씬으로 재설계 (`Home.jsx` 상단 히어로 이미지로 적용)
+- [x] `DESIGN_SYSTEM.md` 공식 토큰(`@theme` 블록)을 `src/index.css`에 적용
+- [x] 재료 선택 UI — 자유 입력(`IngredientTagInput`) 방식으로 만들었다가, 레시피 재료명과 매칭이 안 되는 문제로 **미리 준비된 재료 칩 탭 방식**(`IngredientChipPicker` + `src/data/fridgeIngredients.js`)으로 교체. 냉장고 일러스트 아래 말풍선 대답 구도의 카드에 배치, 완료 버튼 포함
+- [x] 고른 재료가 들어가는 요리를 저렴한 순으로 추천하는 매칭 로직 (`getRecipesByOwnedIngredients` 셀렉터) — 완료 시 localStorage(`src/data/fridgeStorage.js`, 모듈 분리)에 저장하고 `/home` 상단 "냉장고 재료로 만들 수 있는 요리" 섹션에 표시
+- [ ] 폰트를 Pretendard 기본에서 좀 더 귀여운 느낌의 폰트로 교체 (마스코트 톤에 맞는 폰트 후보 조사 필요)
+- [ ] 기존 컴포넌트(`MenuCard`, `IngredientList`, `PurchaseLinkPanel`, `Thumbnail` 등)의 오렌지 톤을 `DESIGN_SYSTEM.md` 공식 토큰(`primary` 등)으로 전체 교체
 - [ ] 레시피 상세 화면에 재료별 "보유"/"구매 필요" 배지 추가, "구매 필요" 재료만 구매 링크 노출
 - [ ] `README.md`, 로고 이미지(`src/assets/logo-*.png`), `prototype/` 파일 제목·워드마크, `package.json` name 등 "식비구조대" 표기를 "끼니픽"으로 교체
 - [ ] `prototype/`도 냉장고 씬 + 보유/구매 필요 구분에 맞게 다시 제작 (지금은 리브랜딩 전 필터+랭킹 버전)
+- [ ] `src/assets/fridge-empty.png` 용량 최적화 (현재 5MB대로 너무 큼 — 압축·WebP 변환 검토)
 
 ## 프론트엔드 (화면)
 - [x] 홈 화면: 카테고리 카드 목록 UI (메인음식/반찬/간식 3단 구성) — 끼니픽 냉장고 씬으로 교체 예정, 위 리브랜딩 항목 참고
