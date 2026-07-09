@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LocalTwin 디자인 가이드 시각 비교</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        color: #14211b;
+        background: #f4f7f5;
+        font-family:
+          Inter, Pretendard, "Apple SD Gothic Neo", system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        font-synthesis: none;
+        --brand: #03c75a;
+        --brand-strong: #08703a;
+        --text: #14211b;
+        --muted: #65766d;
+        --canvas: #edf3ef;
+        --surface: #ffffff;
+        --border: rgba(15, 23, 42, 0.13);
+        --info: #2563eb;
+        --danger: #dc2626;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        color-scheme: light;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        background: #f4f7f5;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      button:not(:disabled) {
+        cursor: pointer;
+      }
+
+      .skip-link {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        z-index: 100;
+        transform: translateY(-140%);
+        border-radius: 6px;
+        background: #07120d;
+        color: #ffffff;
+        padding: 10px 14px;
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .page {
+        width: min(1480px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 56px;
+      }
+
+      .page-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 24px;
+        align-items: end;
+        margin-bottom: 24px;
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: var(--brand-strong);
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 3.8rem);
+        line-height: 1;
+        letter-spacing: -0.045em;
+      }
+
+      .lede {
+        max-width: 720px;
+        margin: 16px 0 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .demo-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .demo-button {
+        min-height: 44px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        font-weight: 750;
+        padding: 0 14px;
+      }
+
+      .demo-button:hover {
+        border-color: rgba(3, 199, 90, 0.55);
+        background: #f4fff8;
+      }
+
+      .demo-button:focus-visible,
+      .force-focus .refined-demo .control,
+      .force-focus .refined-demo .state-button {
+        outline: 3px solid rgba(37, 99, 235, 0.35);
+        outline-offset: 2px;
+      }
+
+      .comparison-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        align-items: stretch;
+      }
+
+      .comparison-card {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+      }
+
+      .comparison-card.is-recommended {
+        border-color: rgba(3, 199, 90, 0.7);
+        box-shadow: 0 0 0 2px rgba(3, 199, 90, 0.08);
+      }
+
+      .card-heading {
+        min-height: 134px;
+        border-bottom: 1px solid var(--border);
+        padding: 18px;
+      }
+
+      .card-heading span {
+        color: var(--brand-strong);
+        font-size: 0.75rem;
+        font-weight: 850;
+      }
+
+      .card-heading h2 {
+        margin: 8px 0;
+        font-size: 1.2rem;
+      }
+
+      .card-heading p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+
+      .demo-frame {
+        display: flex;
+        min-height: 430px;
+        flex: 1;
+        flex-direction: column;
+        background: var(--canvas);
+      }
+
+      .mini-topbar {
+        display: flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.96);
+        padding: 6px 8px 6px 12px;
+      }
+
+      .mini-brand {
+        min-width: 0;
+        font-size: 0.78rem;
+        font-weight: 850;
+      }
+
+      .mini-brand small {
+        display: block;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 0.62rem;
+        font-weight: 650;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .mini-search {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: #ffffff;
+        color: var(--muted);
+        font-size: 0.67rem;
+        padding: 0 8px;
+      }
+
+      .base-demo .mini-search {
+        height: 40px;
+      }
+
+      .refined-demo .mini-search {
+        min-height: 44px;
+      }
+
+      .workspace {
+        display: grid;
+        min-height: 0;
+        flex: 1;
+        grid-template-columns: 92px minmax(0, 1fr) 112px;
+      }
+
+      .side-panel,
+      .detail-panel {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 8px;
+      }
+
+      .side-panel {
+        border-right: 1px solid var(--border);
+      }
+
+      .detail-panel {
+        border-left: 1px solid var(--border);
+      }
+
+      .panel-label {
+        margin: 0 0 7px;
+        color: var(--muted);
+        font-size: 0.58rem;
+        font-weight: 850;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .control {
+        display: grid;
+        width: 100%;
+        min-height: 40px;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: #ffffff;
+        color: var(--text);
+        font-size: 0.64rem;
+        font-weight: 750;
+        padding: 4px;
+      }
+
+      .control + .control {
+        margin-top: 6px;
+      }
+
+      .refined-demo .control {
+        min-height: 44px;
+        transition:
+          border-color 180ms ease,
+          background-color 180ms ease;
+      }
+
+      .control.is-selected {
+        border-color: rgba(3, 199, 90, 0.55);
+        background: #e8fff2;
+        color: #075f32;
+      }
+
+      .map-area {
+        position: relative;
+        min-width: 0;
+        overflow: hidden;
+        background:
+          linear-gradient(31deg, transparent 48%, rgba(255, 255, 255, 0.75) 49% 53%, transparent 54%),
+          linear-gradient(122deg, transparent 42%, rgba(255, 255, 255, 0.88) 43% 48%, transparent 49%),
+          #dce9e0;
+      }
+
+      .map-area::after {
+        position: absolute;
+        right: 8px;
+        bottom: 8px;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.9);
+        color: #526158;
+        content: "지도 작업 영역";
+        font-size: 0.57rem;
+        font-weight: 800;
+        padding: 4px 6px;
+      }
+
+      .marker {
+        position: absolute;
+        width: 13px;
+        height: 13px;
+        border: 3px solid #ffffff;
+        border-radius: 50%;
+        background: var(--brand);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.24);
+      }
+
+      .marker:nth-child(1) {
+        top: 30%;
+        left: 28%;
+      }
+
+      .marker:nth-child(2) {
+        top: 53%;
+        left: 61%;
+      }
+
+      .marker:nth-child(3) {
+        top: 71%;
+        left: 40%;
+      }
+
+      .marker.is-selected {
+        width: 18px;
+        height: 18px;
+        border-color: #ffffff;
+        outline: 3px solid rgba(37, 99, 235, 0.35);
+        background: var(--info);
+      }
+
+      .marker-label {
+        position: absolute;
+        top: calc(53% + 22px);
+        left: 54%;
+        border-radius: 4px;
+        background: #14211b;
+        color: #ffffff;
+        font-size: 0.55rem;
+        font-weight: 750;
+        padding: 4px 6px;
+      }
+
+      .score {
+        display: block;
+        color: var(--text);
+        font-size: 1.25rem;
+        font-weight: 850;
+      }
+
+      .refined-demo .score {
+        font-variant-numeric: tabular-nums;
+      }
+
+      .meta {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 0.55rem;
+        line-height: 1.35;
+      }
+
+      .metric-line {
+        height: 5px;
+        margin-top: 8px;
+        border-radius: 2px;
+        background: #dfe7e2;
+      }
+
+      .metric-line::before {
+        display: block;
+        width: 72%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--brand);
+        content: "";
+      }
+
+      .state-box {
+        margin-top: 10px;
+        border-top: 1px solid var(--border);
+        padding-top: 9px;
+      }
+
+      .state-copy {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.58rem;
+        line-height: 1.45;
+      }
+
+      .state-button {
+        width: 100%;
+        min-height: 44px;
+        margin-top: 7px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: #ffffff;
+        color: var(--brand-strong);
+        font-size: 0.58rem;
+        font-weight: 850;
+      }
+
+      .state-box[data-state="loading"] .state-copy {
+        min-height: 34px;
+        border-radius: 4px;
+        background:
+          linear-gradient(90deg, #e8efeb 20%, #f7faf8 40%, #e8efeb 60%) 0 0 / 200% 100%;
+        color: transparent;
+        animation: skeleton 1.2s linear infinite;
+      }
+
+      .state-box[data-state="empty"] .state-copy {
+        color: var(--danger);
+      }
+
+      @keyframes skeleton {
+        to {
+          background-position: -200% 0;
+        }
+      }
+
+      .rule-list {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 16px 18px 18px;
+        list-style: none;
+      }
+
+      .rule-list li {
+        display: grid;
+        grid-template-columns: 8px 1fr;
+        gap: 9px;
+        color: #43554c;
+        font-size: 0.78rem;
+        line-height: 1.45;
+      }
+
+      .rule-list li::before {
+        width: 8px;
+        height: 8px;
+        margin-top: 0.36em;
+        border-radius: 2px;
+        background: var(--brand);
+        content: "";
+      }
+
+      .intro-demo {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 15% 10%, rgba(3, 199, 90, 0.28), transparent 36%),
+          radial-gradient(circle at 90% 20%, rgba(37, 99, 235, 0.24), transparent 34%),
+          linear-gradient(180deg, #f7fbf8, #eef5f1);
+        padding: 14px;
+      }
+
+      .intro-demo::before {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background:
+          linear-gradient(rgba(9, 35, 26, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(9, 35, 26, 0.04) 1px, transparent 1px);
+        background-size: 28px 28px;
+        content: "";
+      }
+
+      .glass-nav,
+      .glass-card {
+        border: 1px solid rgba(255, 255, 255, 0.76);
+        background: rgba(255, 255, 255, 0.56);
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.1);
+        backdrop-filter: blur(18px) saturate(160%);
+      }
+
+      .glass-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 999px;
+        padding: 8px 10px;
+        font-size: 0.64rem;
+        font-weight: 850;
+      }
+
+      .glass-nav span:last-child {
+        border-radius: 999px;
+        background: rgba(3, 199, 90, 0.12);
+        padding: 6px 9px;
+      }
+
+      .intro-hero {
+        display: grid;
+        gap: 16px;
+        align-content: center;
+        flex: 1;
+        padding: 28px 6px 12px;
+      }
+
+      .intro-hero h3 {
+        max-width: 310px;
+        margin: 0;
+        color: #07120d;
+        font-size: clamp(2.3rem, 8vw, 4.8rem);
+        line-height: 0.86;
+        letter-spacing: -0.065em;
+      }
+
+      .intro-hero p {
+        max-width: 310px;
+        margin: 0;
+        color: #4d6157;
+        font-size: 0.78rem;
+        line-height: 1.55;
+      }
+
+      .glass-card {
+        border-radius: 18px;
+        padding: 16px;
+      }
+
+      .glass-card strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 1.5rem;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .pill {
+        display: inline-grid;
+        min-height: 42px;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.64);
+        color: #062416;
+        font-size: 0.68rem;
+        font-weight: 850;
+        padding: 0 14px;
+        box-shadow: 0 12px 28px rgba(3, 199, 90, 0.14);
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .summary article {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 16px;
+      }
+
+      .summary strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+      }
+
+      .summary p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.78rem;
+        line-height: 1.5;
+      }
+
+      .calm-mode *,
+      .calm-mode *::before,
+      .calm-mode *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+
+      @media (max-width: 1080px) {
+        .comparison-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .comparison-card {
+          display: grid;
+          grid-template-columns: minmax(0, 0.8fr) minmax(360px, 1.2fr);
+        }
+
+        .card-heading,
+        .rule-list {
+          grid-column: 1;
+        }
+
+        .demo-frame {
+          grid-row: 1 / span 2;
+          grid-column: 2;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .page {
+          width: min(100% - 20px, 1480px);
+          padding-top: 22px;
+        }
+
+        .page-header,
+        .comparison-card,
+        .summary {
+          grid-template-columns: 1fr;
+        }
+
+        .demo-actions {
+          justify-content: flex-start;
+        }
+
+        .card-heading,
+        .rule-list,
+        .demo-frame {
+          grid-row: auto;
+          grid-column: auto;
+        }
+
+        .workspace {
+          grid-template-columns: 78px minmax(0, 1fr) 100px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#comparison">비교 화면으로 건너뛰기</a>
+
+    <main class="page">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">LocalTwin design system</p>
+          <h1>같은 브랜드, 다른 시각 언어</h1>
+          <p class="lede">
+            제품 UI의 기본 구조, MengTo 스킬에서 가져올 정밀한 운영 규칙, 그리고 현재
+            intro-page의 표현형 스타일을 실제 HTML로 비교합니다.
+          </p>
+        </div>
+
+        <div class="demo-actions" aria-label="비교 화면 표시 설정">
+          <button class="demo-button" id="focusToggle" type="button" aria-pressed="false">
+            Focus ring 보기
+          </button>
+          <button class="demo-button" id="motionToggle" type="button" aria-pressed="false">
+            Reduced motion
+          </button>
+        </div>
+      </header>
+
+      <section class="comparison-grid" id="comparison" aria-label="세 가지 디자인 방향 비교">
+        <article class="comparison-card">
+          <header class="card-heading">
+            <span>01 · 현재 제품 가이드</span>
+            <h2>지도와 분석이 먼저</h2>
+            <p>낮은 장식성, 작은 radius, 흰색 panel과 녹색 선택 상태를 사용합니다.</p>
+          </header>
+
+          <div class="demo-frame base-demo" aria-label="현재 제품 가이드 예시">
+            <div class="mini-topbar">
+              <div class="mini-brand">LocalTwin<small>성수동 카페 상권</small></div>
+              <div class="mini-search">상권 또는 점포 검색</div>
+            </div>
+            <div class="workspace">
+              <aside class="side-panel">
+                <p class="panel-label">분석 조건</p>
+                <button class="control is-selected" type="button">카페</button>
+                <button class="control" type="button">300m</button>
+                <button class="control" type="button">평일</button>
+              </aside>
+              <div class="map-area" aria-label="상권 지도 작업 영역">
+                <span class="marker"></span>
+                <span class="marker"></span>
+                <span class="marker"></span>
+              </div>
+              <aside class="detail-panel">
+                <p class="panel-label">선택 상권</p>
+                <strong class="score">72 / 100</strong>
+                <span class="meta">경쟁 점포 18곳</span>
+                <div class="metric-line"></div>
+              </aside>
+            </div>
+          </div>
+
+          <ul class="rule-list">
+            <li>정보 구조와 의미 중심</li>
+            <li>40px control과 6–8px radius</li>
+            <li>현재 문서에 정의된 기본 상태</li>
+          </ul>
+        </article>
+
+        <article class="comparison-card is-recommended">
+          <header class="card-heading">
+            <span>02 · 권장 보강형</span>
+            <h2>같은 화면, 더 명확한 작동</h2>
+            <p>외형은 유지하고 접근성, 숫자 정렬, 상태 피드백과 성능 기준을 강화합니다.</p>
+          </header>
+
+          <div class="demo-frame refined-demo" aria-label="MengTo 규칙을 선별 적용한 제품 UI 예시">
+            <div class="mini-topbar">
+              <div class="mini-brand">LocalTwin<small>성수동 카페 상권</small></div>
+              <div class="mini-search">상권 또는 점포 검색</div>
+            </div>
+            <div class="workspace">
+              <aside class="side-panel">
+                <p class="panel-label">분석 조건</p>
+                <button class="control is-selected" type="button">카페</button>
+                <button class="control" type="button">300m</button>
+                <button class="control" type="button">평일</button>
+              </aside>
+              <div class="map-area" aria-label="상권 지도 작업 영역">
+                <span class="marker"></span>
+                <span class="marker is-selected"></span>
+                <span class="marker"></span>
+                <span class="marker-label">서울숲길 17</span>
+              </div>
+              <aside class="detail-panel">
+                <p class="panel-label">선택 상권</p>
+                <strong class="score">72 / 100</strong>
+                <span class="meta">경쟁 점포 18곳</span>
+                <span class="meta">공공데이터 · 2026.06</span>
+                <div class="metric-line"></div>
+                <div class="state-box" id="stateBox" data-state="loaded" aria-live="polite">
+                  <p class="state-copy" id="stateCopy">분석 결과를 불러왔습니다.</p>
+                  <button class="state-button" id="stateToggle" type="button">상태 전환</button>
+                </div>
+              </aside>
+            </div>
+          </div>
+
+          <ul class="rule-list">
+            <li>44px hit area와 명시적인 focus ring</li>
+            <li>색상뿐 아니라 label과 형태로 선택 표시</li>
+            <li>loading·empty·loaded 상태를 실제 동작으로 확인</li>
+          </ul>
+        </article>
+
+        <article class="comparison-card">
+          <header class="card-heading">
+            <span>03 · 현재 intro-page</span>
+            <h2>설명하고 인상을 남기는 화면</h2>
+            <p>대형 제목, gradient, glass, pill과 깊은 shadow를 쓰는 landing-page 문법입니다.</p>
+          </header>
+
+          <div class="demo-frame intro-demo" aria-label="현재 intro-page 스타일 예시">
+            <div class="glass-nav">
+              <span>LocalTwin</span>
+              <span>문서 보기</span>
+            </div>
+            <div class="intro-hero">
+              <div>
+                <p class="panel-label">상권 디지털 트윈</p>
+                <h3>LOCAL<br />TWIN</h3>
+              </div>
+              <p>공공데이터와 한 장면의 3D 탐색으로 상권의 흐름을 설명합니다.</p>
+              <div class="pill-row">
+                <span class="pill">프로젝트 보기</span>
+                <span class="pill">개발 문서</span>
+              </div>
+              <div class="glass-card">
+                <span class="meta">prototype status</span>
+                <strong>v0.1 Active</strong>
+              </div>
+            </div>
+          </div>
+
+          <ul class="rule-list">
+            <li>18px·999px radius와 반투명 surface</li>
+            <li>hero typography와 분위기 중심</li>
+            <li>제품 화면보다 소개·문서 첫 화면에 적합</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="summary" aria-label="적용 결론">
+        <article>
+          <strong>제품 UI</strong>
+          <p>01의 지도 중심 구조를 유지하고 02의 상호작용·접근성 규칙을 적용합니다.</p>
+        </article>
+        <article>
+          <strong>문서 소개 화면</strong>
+          <p>03의 표현형 스타일을 제한적으로 허용하되 공통 색상과 typography를 유지합니다.</p>
+        </article>
+        <article>
+          <strong>적용하지 않을 것</strong>
+          <p>제품 화면 전체를 glass, laser, cinematic motion이나 WebGL hero로 바꾸지 않습니다.</p>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const focusToggle = document.querySelector("#focusToggle");
+      const motionToggle = document.querySelector("#motionToggle");
+      const stateToggle = document.querySelector("#stateToggle");
+      const stateBox = document.querySelector("#stateBox");
+      const stateCopy = document.querySelector("#stateCopy");
+
+      const states = [
+        { name: "loaded", copy: "분석 결과를 불러왔습니다." },
+        { name: "loading", copy: "분석 결과를 불러오는 중입니다." },
+        { name: "empty", copy: "조건에 맞는 결과가 없습니다. 반경을 넓혀보세요." },
+      ];
+      let stateIndex = 0;
+
+      focusToggle.addEventListener("click", () => {
+        const enabled = document.body.classList.toggle("force-focus");
+        focusToggle.setAttribute("aria-pressed", String(enabled));
+        focusToggle.textContent = enabled ? "Focus ring 숨기기" : "Focus ring 보기";
+      });
+
+      motionToggle.addEventListener("click", () => {
+        const enabled = document.body.classList.toggle("calm-mode");
+        motionToggle.setAttribute("aria-pressed", String(enabled));
+        motionToggle.textContent = enabled ? "Motion 기본값" : "Reduced motion";
+      });
+
+      stateToggle.addEventListener("click", () => {
+        stateIndex = (stateIndex + 1) % states.length;
+        const state = states[stateIndex];
+        stateBox.dataset.state = state.name;
+        stateCopy.textContent = state.copy;
+      });
+    </script>
+  </body>
+</html>

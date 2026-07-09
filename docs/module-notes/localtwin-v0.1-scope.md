@@ -244,14 +244,15 @@ v0.1에서 사용할 데이터 후보는 다음으로 둔다. 실제 API 필드,
 추천 전략
 ```
 
-### 화면 3. 혼잡도 3D 기반 탐색
+### 화면 3. Gaussian Splatting 현장 상세보기
 
 ```text
-선택한 가게 앞 3D 공간 보기
+선택한 위치에 서 있는 사람 눈높이의 3D 공간 보기
 가게 마커 클릭
 상권 정보 카드 표시
 10시 / 13시 / 15시 / 18시 버튼
 시간대별 혼잡도 표시
+집계값 기반의 추상적 사람 오브젝트 표시
 ```
 
 ## 9. 입지 점수 v0.1
@@ -368,5 +369,6 @@ LocalTwin
 
 - [전체 개발문서](../development/overview.md)
 - [공공데이터 기반 상권 분석 스펙](../features/market-analysis.md)
-- [혼잡도 3D 기반 탐색 스펙](../features/3d-congestion-explorer.md)
+- [2.5D 상권 지도와 유동인구 Layer 스펙](../features/market-map-experience.md)
+- [Gaussian Splatting 현장 상세보기 스펙](../features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리 스펙](../features/person-anonymization-preprocessing.md)

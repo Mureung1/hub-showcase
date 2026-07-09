@@ -8,16 +8,10 @@
 https://github.com/HyunKN/hub
 ```
 
-권장 문서 작업 브랜치:
+개발 브랜치:
 
 ```text
-docs/localtwin-v0.1-plan
-```
-
-실제 앱 개발용 브랜치는 문서 정리 후 별도로 다음 이름을 추천한다.
-
-```text
-dev/localtwin-v0.1
+develop
 ```
 
 ## 1. 프로젝트 방향
@@ -40,8 +34,8 @@ LocalTwin의 주기능은 공공데이터 기반 상권 분석이다.
 ```text
 Frontend: React
 Backend: FastAPI
-Map: Leaflet + OSM
-DB/공간계산: SQLite + Haversine
+Map: MapLibre GL JS PoC -> 데이터 부족 시 2D fallback
+DB/공간계산: SQLite + Haversine + point-in-polygon
 Data: API-first 조사 -> canonical schema -> 동일 schema mock fixture -> 구현
 Category: 카페 + 음식점 동시
 Report: Template report -> 범용 LLM adapter
@@ -255,8 +249,11 @@ API 레이어에서 Haversine으로 반경 필터링
 상권 선택
 업종 필터
 반경 선택
-Leaflet 지도
+2.5D 상권 지도 PoC
+건물 footprint extrusion
 점포 마커
+유동인구 Layer toggle
+10시 / 13시 / 15시 / 18시 전환
 상권 요약 카드
 동일 업종 경쟁 강도 카드
 개업/폐업 흐름 카드
@@ -279,7 +276,9 @@ template 상권 해석 리포트
 상권 분석 대상과 3D 촬영 대상은 분리 가능
 도시 전체 3D 복원은 하지 않음
 한 가게 앞 또는 거리 10~20m만 촬영
-정적 3D map만 제공
+Gaussian Splatting으로 정적 배경 공간 복원
+사람 눈높이의 현장 상세보기 제공
+집계값 기반의 추상적 사람 오브젝트 표시
 원본 영상은 서비스 화면에 노출하지 않음
 ```
 
@@ -296,7 +295,7 @@ GET /scenes/{scene_id}/markers
 person bbox detection
 -> blur / mask / exclude
 -> cleaned frames
--> 3D map 생성 입력
+-> Gaussian Splatting 생성 입력
 ```
 
 이 기능은 MoE가 아니다.
@@ -435,27 +434,19 @@ CI 기준:
 
 ## 12. Branch Strategy
 
-문서 정리용 브랜치 추천:
+개발과 문서 작업 브랜치:
 
 ```text
-docs/localtwin-v0.1-plan
+develop
 ```
 
-이 브랜치의 목적:
+작업 원칙:
 
 ```text
-Wiki에 올릴 계획 문서 정리
-README 문서 허브 갱신
-docs/wiki 문서 구조 정리
+한 기능 또는 한 문서 단위로 구현
+검증 후 작업 단위별 커밋
+README와 문서 허브를 같은 작업에서 갱신
 ```
-
-이후 실제 개발용 브랜치 추천:
-
-```text
-dev/localtwin-v0.1
-```
-
-실제 개발 브랜치에서는 앱 구현, API 구현, 테스트, CI 설정을 진행한다.
 
 ## 13. Open Gates
 
@@ -472,3 +463,11 @@ GitHub repository/wiki 반영 방식 확정
 README는 항상 문서 허브 역할을 유지한다.
 
 새 주요 문서가 추가되면 README에 반드시 링크를 추가한다.
+
+## 14. 관련 문서
+
+- [공공데이터 기반 상권 분석 스펙](../features/market-analysis.md)
+- [2.5D 상권 지도와 유동인구 Layer 스펙](../features/market-map-experience.md)
+- [Gaussian Splatting 현장 상세보기 스펙](../features/3d-congestion-explorer.md)
+- [데이터 소스 매핑](../data/data-source-mapping.md)
+- [LocalTwin 디자인 시스템](../design/design-system.md)

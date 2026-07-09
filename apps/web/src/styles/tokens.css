@@ -1,0 +1,36 @@
+:root {
+  color: #14211b;
+  background: #edf3ef;
+  font-family:
+    Inter,
+    Pretendard,
+    "Apple SD Gothic Neo",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  --lt-color-brand: #03c75a;
+  --lt-color-brand-strong: #08703a;
+  --lt-color-text: #14211b;
+  --lt-color-text-muted: #65766d;
+  --lt-color-canvas: #edf3ef;
+  --lt-color-surface: #ffffff;
+  --lt-color-border: rgba(15, 23, 42, 0.13);
+  --lt-color-info: #2563eb;
+  --lt-color-warning: #f59e0b;
+  --lt-color-danger: #dc2626;
+
+  --lt-space-1: 4px;
+  --lt-space-2: 8px;
+  --lt-space-3: 12px;
+  --lt-space-4: 16px;
+  --lt-space-6: 24px;
+  --lt-space-8: 32px;
+
+  --lt-radius-control: 6px;
+  --lt-radius-panel: 8px;
+}

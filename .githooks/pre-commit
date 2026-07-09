@@ -23,6 +23,10 @@ EOF
 fi
 
 areas="$(printf '%s\n' "$staged_files" | awk -F/ '
+  /^(package\.json|pnpm-workspace\.yaml|pnpm-lock\.yaml|\.editorconfig|\.env\.example|\.gitignore|\.node-version|\.prettierignore|\.prettierrc\.json)$/ { print "tooling/root"; next }
+  /^apps\/web\// { print "apps/web"; next }
+  /^apps\/api\// { print "apps/api"; next }
+  /^data\// { print "data"; next }
   /^docs\/features\// { print "docs/features"; next }
   /^docs\/development\// { print "docs/development"; next }
   /^docs\/module-notes\// { print "docs/module-notes"; next }

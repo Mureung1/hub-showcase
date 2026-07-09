@@ -1,0 +1,43 @@
+@import "./tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--lt-color-canvas);
+  color: var(--lt-color-text);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: 64px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--lt-color-border);
+  background: var(--lt-color-surface);
+  padding: 0 var(--lt-space-6);
+}
+
+.workspace {
+  min-height: 0;
+}

@@ -24,6 +24,32 @@ Follow-up:
 
 ## Entries
 
+### 2026-07-09
+
+```text
+Task:
+Vercel 문서 허브와 PR 복구
+
+Issue:
+PR CI가 존재하지 않는 astral-sh/setup-uv@v8 tag에서 중단됐고,
+local scripts/check.ps1는 pnpm check 실패 후에도 성공 문구와 exit code 0을 반환했다.
+
+Cause:
+setup-uv의 v8.1.0 release를 floating major tag v8로 가정했다.
+PowerShell의 ErrorActionPreference가 native command의 non-zero exit code도 예외로 만든다고 가정했다.
+
+Fix:
+setup-uv v8.1.0의 공식 commit SHA를 pin했다.
+check.ps1의 모든 native command를 Invoke-Checked로 실행해 non-zero exit code에서 즉시 실패시켰다.
+
+Harness update:
+CI action reference는 remote tag 또는 공식 release SHA 존재를 확인한다.
+검증 entrypoint는 의도적인 실패 command로 non-zero propagation을 sanity check한다.
+
+Follow-up:
+GitHub required checks와 branch protection을 설정해 local hook 우회를 원격에서 차단한다.
+```
+
 ### 2026-07-08
 
 ```text
