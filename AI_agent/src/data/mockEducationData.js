@@ -1,6 +1,6 @@
 export const mockUniversities = [
   {
-    id: "saim0807",
+    id: "mock-jeonbuk-main",
     name: "전북대학교",
     type: "일반대학",
     region: "전북특별자치도",
