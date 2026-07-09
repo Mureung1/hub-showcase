@@ -1,12 +1,14 @@
 # 아맞다 꺼내보기 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 사용자가 현재 상황이나 필요한 용도를 입력해 관련 인사이트를 최대 6개까지 다시 꺼내볼 수 있게 한다.
+**Goal:** 사용자가 현재 상황이나 필요한 용도를 입력하면, 저장된 인사이트를 유사도 기반으로 다시 찾아 작업팩 형태로 보여준다.
 
-**Architecture:** 꺼내보기는 검색과 같은 인사이트 view model을 재사용하되, 홈 화면에서 추천 상황 버튼과 자유 입력으로 시작한다. 결과 메시지와 최대 결과 수는 `src/retrieve`에 순수 함수로 분리하고, 실제 데이터 조회는 보관함의 `getMyInsights`를 재사용한다.
+**Product Definition:** 상세 제품 기준은 `docs/retrieve.md`를 따른다. `꺼내보기`는 보관함 검색 결과 화면이 아니라 상황 기반 유사도 검색과 작업팩 UX다.
 
-**Tech Stack:** React 19, TypeScript, Fuse.js, Supabase, Vitest, React Testing Library
+**Architecture:** 보관함 검색과 같은 인사이트 view model은 재사용하되, 랭킹과 표시 모델은 `src/retrieve`에 분리한다. 검색 문서는 `title`, `memo`, `categoryNames`, `domain`, `originalUrl`, `description` 필드를 포함한다. MVP에서는 `MiniSearch` 기반 field boosting을 우선 적용한다.
+
+**Tech Stack:** React 19, TypeScript, MiniSearch, Supabase, Vitest, React Testing Library
 
 ---
 
@@ -14,35 +16,41 @@
 
 포함 범위:
 
-- 홈 화면의 꺼내보기 입력 영역
+- 홈 화면의 `꺼내보기` 입력 영역
 - 추천 상황 버튼
 - 자유 입력
-- 추천 상황 버튼을 검색 query로 변환
-- Fuse.js 기반 관련 인사이트 검색
+- 추천 상황 버튼을 query로 변환
+- MiniSearch 기반 유사도 검색
+- field weight 기반 랭킹
 - 최대 6개 결과 제한
-- 결과 개수별 메시지
+- 작업팩 view model 생성
+- 연결 단서 생성
 - 결과 없음 상태
-- 최근 보관한 인사이트 섹션
 - 원문 새 탭 열기
 
 제외 범위:
 
-- AI 추천
-- Embedding 기반 의미 검색
+- 보관함 검색 결과 화면과 같은 단순 카드 목록
+- `기획 참고`, `디자인 참고`, `구현 참고` 같은 고정 분류 라벨 노출
+- AI/LLM 추천
+- embedding 기반 의미 검색
 - 추천 결과별 피드백
-- 추천 반복 횟수 기반 랭킹 조정
 - 이메일/푸시 리마인드
 
 ## 파일 구조
 
+- Modify: `package.json`
+  - `minisearch`를 추가한다.
 - Create: `src/retrieve/retrieveSituations.ts`
   - 추천 상황 버튼과 query 변환 규칙을 정의한다.
-- Create: `src/retrieve/retrieveMessages.ts`
-  - 결과 개수별 문구를 만든다.
+- Create: `src/retrieve/retrieveSearchDocument.ts`
+  - 인사이트를 검색 문서로 변환한다.
 - Create: `src/retrieve/retrieveInsights.ts`
-  - 검색 결과를 최대 6개로 제한하는 꺼내보기 함수를 만든다.
+  - MiniSearch 기반 유사도 검색과 결과 제한을 담당한다.
+- Create: `src/retrieve/retrievePack.ts`
+  - 작업팩 view model과 연결 단서를 만든다.
 - Create: `src/retrieve/retrieveInsights.test.ts`
-  - query 변환, 결과 제한, 메시지를 검증한다.
+  - query 변환, 랭킹, 결과 제한, 연결 단서를 검증한다.
 - Modify: `src/pages/HomePage.tsx`
   - 실제 꺼내보기 화면으로 연결한다.
 
@@ -52,54 +60,93 @@
 
 **Files:**
 
+- Modify: `package.json`
 - Create: `src/retrieve/retrieveSituations.ts`
-- Create: `src/retrieve/retrieveMessages.ts`
+- Create: `src/retrieve/retrieveSearchDocument.ts`
 - Create: `src/retrieve/retrieveInsights.ts`
+- Create: `src/retrieve/retrievePack.ts`
 - Create: `src/retrieve/retrieveInsights.test.ts`
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [ ] **Step 1: MiniSearch 설치**
+
+Run:
+
+```bash
+npm install minisearch
+```
+
+- [ ] **Step 2: 실패하는 테스트 작성**
 
 Create `src/retrieve/retrieveInsights.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
 import type { InsightView } from '@/insights/insightView';
-import { getRetrieveMessage } from './retrieveMessages';
+import { createRetrievePack } from './retrievePack';
 import { retrieveInsights } from './retrieveInsights';
 import { getSituationQuery, RETRIEVE_SITUATIONS } from './retrieveSituations';
 
-const insights: InsightView[] = Array.from({ length: 8 }, (_, index) => ({
-  categories: [{ id: 'design', name: '디자인' }],
-  createdAt: `2026-07-0${index + 1}T00:00:00Z`,
-  domain: 'example.com',
-  id: String(index + 1),
-  memo: '팀 프로젝트 앱 디자인 참고',
-  originalUrl: `https://example.com/${index + 1}`,
-  thumbnailUrl: null,
-  title: `UI 레퍼런스 ${index + 1}`,
-}));
+const insights: InsightView[] = [
+  {
+    categories: [{ id: 'design', name: '디자인' }],
+    createdAt: '2026-07-01T00:00:00Z',
+    description: '가입 전 첫 화면과 CTA 설계 사례',
+    domain: 'example.com',
+    id: '1',
+    memo: '팀 프로젝트 앱 온보딩 참고',
+    originalUrl: 'https://example.com/onboarding',
+    thumbnailUrl: null,
+    title: '모바일 온보딩 UX 패턴',
+  },
+  {
+    categories: [{ id: 'dev', name: '개발' }],
+    createdAt: '2026-07-02T00:00:00Z',
+    description: null,
+    domain: 'react.dev',
+    id: '2',
+    memo: '폼 상태 관리 참고',
+    originalUrl: 'https://react.dev/learn',
+    thumbnailUrl: null,
+    title: 'React 공식 문서',
+  },
+];
 
 describe('retrieve', () => {
   it('maps situation button to query', () => {
     expect(RETRIEVE_SITUATIONS.map((situation) => situation.label)).toContain(
       '팀 프로젝트'
     );
-    expect(getSituationQuery('team-project')).toBe('팀 프로젝트 기획 디자인 개발');
+    expect(getSituationQuery('team-project')).toContain('팀 프로젝트');
+  });
+
+  it('ranks insights by current situation similarity', () => {
+    const results = retrieveInsights(insights, '팀 프로젝트 온보딩 화면');
+
+    expect(results[0].insight.id).toBe('1');
   });
 
   it('limits retrieve results to 6 items', () => {
-    expect(retrieveInsights(insights, '팀 프로젝트').length).toBe(6);
+    const manyInsights = Array.from({ length: 8 }, (_, index) => ({
+      ...insights[0],
+      id: String(index + 1),
+      title: `온보딩 참고 ${index + 1}`,
+    }));
+
+    expect(retrieveInsights(manyInsights, '온보딩').length).toBe(6);
   });
 
-  it('returns count-based messages', () => {
-    expect(getRetrieveMessage(0)).toBe('지금 꺼내볼 만한 인사이트가 없습니다.');
-    expect(getRetrieveMessage(1)).toBe('인사이트 1개를 꺼냈습니다.');
-    expect(getRetrieveMessage(6)).toBe('인사이트 6개를 꺼냈습니다.');
+  it('creates a work pack with connection cues', () => {
+    const pack = createRetrievePack(
+      retrieveInsights(insights, '팀 프로젝트 온보딩 화면')
+    );
+
+    expect(pack.sections[0].title).toBe('이 상황과 가장 가까운 자료');
+    expect(pack.sections[0].items[0].connectionCue).toContain('온보딩');
   });
 });
 ```
 
-- [ ] **Step 2: 실패 확인**
+- [ ] **Step 3: 실패 확인**
 
 Run:
 
@@ -111,10 +158,10 @@ Expected:
 
 ```text
 FAIL src/retrieve/retrieveInsights.test.ts
-Cannot find module './retrieveMessages'
+Cannot find module './retrievePack'
 ```
 
-- [ ] **Step 3: 추천 상황 작성**
+- [ ] **Step 4: 추천 상황 작성**
 
 Create `src/retrieve/retrieveSituations.ts`:
 
@@ -125,7 +172,7 @@ export type RetrieveSituationId =
   | 'development'
   | 'design'
   | 'portfolio'
-  | 'chill';
+  | 'light-reading';
 
 export type RetrieveSituation = {
   id: RetrieveSituationId;
@@ -135,73 +182,207 @@ export type RetrieveSituation = {
 
 export const RETRIEVE_SITUATIONS: RetrieveSituation[] = [
   { id: 'study', label: '공부', query: '공부 개념 정리 시험 과제' },
-  { id: 'team-project', label: '팀 프로젝트', query: '팀 프로젝트 기획 디자인 개발' },
+  {
+    id: 'team-project',
+    label: '팀 프로젝트',
+    query: '팀 프로젝트 기획 디자인 개발',
+  },
   { id: 'development', label: '개발', query: '개발 코드 구현 프론트엔드' },
   { id: 'design', label: '디자인', query: '디자인 UI UX 레퍼런스' },
   { id: 'portfolio', label: '포트폴리오', query: '포트폴리오 프로젝트 정리' },
-  { id: 'chill', label: '쉬면서 보기', query: '쉬면서 보기 가볍게 읽기' },
+  {
+    id: 'light-reading',
+    label: '가볍게 보기',
+    query: '가볍게 읽기 나중에 보기',
+  },
 ];
 
 export function getSituationQuery(id: RetrieveSituationId) {
-  return RETRIEVE_SITUATIONS.find((situation) => situation.id === id)?.query ?? '';
+  return (
+    RETRIEVE_SITUATIONS.find((situation) => situation.id === id)?.query ?? ''
+  );
 }
 ```
 
-- [ ] **Step 4: 결과 메시지 작성**
+- [ ] **Step 5: 검색 문서 작성**
 
-Create `src/retrieve/retrieveMessages.ts`:
+Create `src/retrieve/retrieveSearchDocument.ts`:
 
 ```ts
-export function getRetrieveMessage(count: number) {
-  if (count === 0) {
-    return '지금 꺼내볼 만한 인사이트가 없습니다.';
-  }
+import type { InsightView } from '@/insights/insightView';
 
-  return `인사이트 ${count}개를 꺼냈습니다.`;
+export type RetrieveSearchDocument = {
+  categoryNames: string;
+  createdAt: string;
+  description: string;
+  domain: string;
+  id: string;
+  memo: string;
+  originalUrl: string;
+  title: string;
+};
+
+export function toRetrieveSearchDocument(
+  insight: InsightView
+): RetrieveSearchDocument {
+  return {
+    categoryNames: insight.categories
+      .map((category) => category.name)
+      .join(' '),
+    createdAt: insight.createdAt,
+    description: insight.description ?? '',
+    domain: insight.domain,
+    id: insight.id,
+    memo: insight.memo ?? '',
+    originalUrl: insight.originalUrl,
+    title: insight.title,
+  };
 }
 ```
 
-- [ ] **Step 5: 꺼내보기 검색 작성**
+- [ ] **Step 6: 유사도 검색 작성**
 
 Create `src/retrieve/retrieveInsights.ts`:
 
 ```ts
+import MiniSearch from 'minisearch';
 import type { InsightView } from '@/insights/insightView';
-import { searchInsights } from '@/search/insightSearch';
+import { toRetrieveSearchDocument } from './retrieveSearchDocument';
 
 const RETRIEVE_RESULT_LIMIT = 6;
 
-export function retrieveInsights(insights: InsightView[], query: string) {
-  return searchInsights(insights, query).slice(0, RETRIEVE_RESULT_LIMIT);
+export type RetrieveResult = {
+  insight: InsightView;
+  matchedTerms: string[];
+  score: number;
+};
+
+export function retrieveInsights(
+  insights: InsightView[],
+  query: string
+): RetrieveResult[] {
+  const trimmedQuery = query.trim();
+
+  if (!trimmedQuery) {
+    return [];
+  }
+
+  const documents = insights.map(toRetrieveSearchDocument);
+  const insightById = new Map(insights.map((insight) => [insight.id, insight]));
+  const miniSearch = new MiniSearch({
+    fields: [
+      'title',
+      'memo',
+      'categoryNames',
+      'description',
+      'domain',
+      'originalUrl',
+    ],
+    idField: 'id',
+    searchOptions: {
+      boost: {
+        title: 3,
+        memo: 2.5,
+        categoryNames: 1.5,
+        description: 1.2,
+        domain: 0.8,
+        originalUrl: 0.5,
+      },
+      fuzzy: 0.2,
+      prefix: true,
+    },
+    storeFields: ['id'],
+  });
+
+  miniSearch.addAll(documents);
+
+  return miniSearch
+    .search(trimmedQuery)
+    .slice(0, RETRIEVE_RESULT_LIMIT)
+    .map((result) => ({
+      insight: insightById.get(String(result.id))!,
+      matchedTerms: result.terms,
+      score: result.score,
+    }));
 }
 ```
 
-- [ ] **Step 6: 테스트 확인**
+- [ ] **Step 7: 작업팩 작성**
+
+Create `src/retrieve/retrievePack.ts`:
+
+```ts
+import type { RetrieveResult } from './retrieveInsights';
+
+export type RetrievePackItem = {
+  connectionCue: string;
+  result: RetrieveResult;
+};
+
+export type RetrievePackSection = {
+  items: RetrievePackItem[];
+  title: string;
+};
+
+export type RetrievePack = {
+  sections: RetrievePackSection[];
+};
+
+export function createRetrievePack(results: RetrieveResult[]): RetrievePack {
+  const primary = results.slice(0, 3).map(toPackItem);
+  const secondary = results.slice(3).map(toPackItem);
+
+  return {
+    sections: [
+      ...(primary.length > 0
+        ? [{ title: '이 상황과 가장 가까운 자료', items: primary }]
+        : []),
+      ...(secondary.length > 0
+        ? [{ title: '함께 보면 좋은 자료', items: secondary }]
+        : []),
+    ],
+  };
+}
+
+function toPackItem(result: RetrieveResult): RetrievePackItem {
+  return {
+    connectionCue: getConnectionCue(result),
+    result,
+  };
+}
+
+function getConnectionCue(result: RetrieveResult) {
+  const [term] = result.matchedTerms;
+
+  if (term) {
+    return `현재 상황과 "${term}" 단서가 겹쳐요.`;
+  }
+
+  return '현재 상황과 가까운 저장 자료예요.';
+}
+```
+
+- [ ] **Step 8: 테스트와 빌드 확인**
 
 Run:
 
 ```bash
 npm test -- src/retrieve/retrieveInsights.test.ts
+npm run build
 ```
 
-Expected:
-
-```text
-3 passed
-```
-
-- [ ] **Step 7: 커밋**
+- [ ] **Step 9: 커밋**
 
 Run:
 
 ```bash
-git add src/retrieve/retrieveSituations.ts src/retrieve/retrieveMessages.ts src/retrieve/retrieveInsights.ts src/retrieve/retrieveInsights.test.ts
-git commit -m "feat: 꺼내보기 추천 규칙 추가"
+git add package.json package-lock.json src/retrieve
+git commit -m "feat: 꺼내보기 유사도 검색 추가"
 ```
 
 ---
 
-### Task 2: 홈 화면에 꺼내보기 연결
+### Task 2: 홈 화면에 작업팩 연결
 
 **Files:**
 
@@ -209,151 +390,18 @@ git commit -m "feat: 꺼내보기 추천 규칙 추가"
 
 - [ ] **Step 1: 홈 화면 구현**
 
-Modify `src/pages/HomePage.tsx`:
+홈 화면은 `꺼내보기` 입력, 추천 상황 버튼, 작업팩 섹션, 결과 없음 상태를 포함한다. UI 문구는 고정 분류를 노출하지 않는다.
 
-```tsx
-import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '@/auth/AuthProvider';
-import { Button } from '@/components/ui/Button';
-import { Chip } from '@/components/ui/Chip';
-import { InsightCard } from '@/components/ui/InsightCard';
-import { TextInput } from '@/components/ui/TextInput';
-import { getMyInsights } from '@/insights/insightQueries';
-import type { InsightView } from '@/insights/insightView';
-import { getRetrieveMessage } from '@/retrieve/retrieveMessages';
-import { retrieveInsights } from '@/retrieve/retrieveInsights';
-import {
-  getSituationQuery,
-  RETRIEVE_SITUATIONS,
-} from '@/retrieve/retrieveSituations';
+필수 동작:
 
-export function HomePage() {
-  const { authState } = useAuth();
-  const [insights, setInsights] = useState<InsightView[]>([]);
-  const [query, setQuery] = useState('');
-  const [submittedQuery, setSubmittedQuery] = useState('');
+- 추천 상황 버튼을 누르면 query가 입력되고 작업팩이 생성된다.
+- 자유 입력으로도 작업팩을 생성할 수 있다.
+- 작업팩 섹션은 `이 상황과 가장 가까운 자료`, `함께 보면 좋은 자료`를 기본으로 한다.
+- 각 항목은 연결 단서를 짧게 표시한다.
+- 원문 열기는 새 탭으로 열린다.
+- 결과가 없으면 저장 CTA 또는 보관함 이동 CTA를 제공한다.
 
-  const userId = authState.status === 'signed-in' ? authState.user.id : null;
-
-  useEffect(() => {
-    if (!userId) {
-      return;
-    }
-
-    void getMyInsights(userId).then(setInsights);
-  }, [userId]);
-
-  const retrieveResults = useMemo(
-    () => retrieveInsights(insights, submittedQuery),
-    [insights, submittedQuery]
-  );
-  const recentInsights = insights.slice(0, 3);
-  const hasSubmitted = submittedQuery.trim().length > 0;
-
-  const submitQuery = (nextQuery: string) => {
-    setQuery(nextQuery);
-    setSubmittedQuery(nextQuery);
-  };
-
-  return (
-    <div className="page-stack">
-      <section className="hero-panel" aria-labelledby="retrieve-title">
-        <p className="section-kicker">꺼내보기</p>
-        <h2 id="retrieve-title">지금 필요한 인사이트를 다시 꺼내보세요.</h2>
-        <div className="retrieve-form">
-          <TextInput
-            label="상황 또는 용도"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="예: 팀 프로젝트 앱 디자인 참고"
-            value={query}
-          />
-          <Button onClick={() => submitQuery(query)}>추천 보기</Button>
-        </div>
-        <div className="chip-row" aria-label="추천 상황">
-          {RETRIEVE_SITUATIONS.map((situation) => (
-            <Chip
-              key={situation.id}
-              onClick={() => submitQuery(getSituationQuery(situation.id))}
-            >
-              {situation.label}
-            </Chip>
-          ))}
-        </div>
-      </section>
-
-      {hasSubmitted ? (
-        <section aria-labelledby="retrieve-result-title">
-          <div className="section-heading">
-            <p className="section-kicker">결과</p>
-            <h2 id="retrieve-result-title">
-              {getRetrieveMessage(retrieveResults.length)}
-            </h2>
-          </div>
-          {retrieveResults.length > 0 ? (
-            <div className="card-grid">
-              {retrieveResults.map((insight) => (
-                <InsightCard
-                  categories={insight.categories.map((category) => category.name)}
-                  domain={insight.domain}
-                  key={insight.id}
-                  memo={insight.memo ?? undefined}
-                  onOpen={() =>
-                    window.open(insight.originalUrl, '_blank', 'noopener')
-                  }
-                  thumbnailUrl={insight.thumbnailUrl ?? undefined}
-                  title={insight.title}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="empty-state">보관함에 인사이트를 더 저장해보세요.</p>
-          )}
-        </section>
-      ) : null}
-
-      <section aria-labelledby="recent-insights-title">
-        <div className="section-heading">
-          <p className="section-kicker">최근 보관</p>
-          <h2 id="recent-insights-title">최근 보관한 인사이트</h2>
-        </div>
-        {recentInsights.length > 0 ? (
-          <div className="card-grid">
-            {recentInsights.map((insight) => (
-              <InsightCard
-                categories={insight.categories.map((category) => category.name)}
-                domain={insight.domain}
-                key={insight.id}
-                memo={insight.memo ?? undefined}
-                onOpen={() => window.open(insight.originalUrl, '_blank', 'noopener')}
-                thumbnailUrl={insight.thumbnailUrl ?? undefined}
-                title={insight.title}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="empty-state">최근 보관한 인사이트가 없습니다.</p>
-        )}
-      </section>
-    </div>
-  );
-}
-```
-
-- [ ] **Step 2: 빌드 확인**
-
-Run:
-
-```bash
-npm run build
-```
-
-Expected:
-
-```text
-✓ built in
-```
-
-- [ ] **Step 3: 수동 확인**
+- [ ] **Step 2: 수동 확인**
 
 Run:
 
@@ -361,58 +409,33 @@ Run:
 npm run dev
 ```
 
-Expected:
-
-```text
-Local: http://localhost:5173/
-```
-
 브라우저에서 확인할 동작:
 
 - 홈 화면에 `꺼내보기` 입력 영역이 있다.
-- 추천 상황 버튼을 누르면 결과 영역이 열린다.
-- 결과는 최대 6개 카드로 보인다.
-- 결과 수에 따라 제목 문구가 달라진다.
+- 추천 상황 버튼을 누르면 작업팩이 열린다.
+- 결과는 단순 검색 결과 목록처럼 보이지 않는다.
+- 고정된 `기획 참고`, `디자인 참고`, `구현 참고` 라벨이 보이지 않는다.
+- 연결 단서가 각 항목에 표시된다.
 - 카드의 원문 열기는 새 탭으로 열린다.
 
-- [ ] **Step 4: 커밋**
+- [ ] **Step 3: 검증과 커밋**
 
 Run:
 
 ```bash
+npm run lint
+npm test
+npm run build
 git add src/pages/HomePage.tsx
-git commit -m "feat: 홈 꺼내보기 화면 연결"
+git commit -m "feat: 홈 꺼내보기 작업팩 연결"
 ```
 
 ---
 
 ## Self-Review
 
-**Spec coverage:**
-
-- 추천 상황 버튼과 자유 입력을 모두 제공한다.
-- 추천 상황 버튼은 query로 변환된다.
-- 결과는 최대 6개로 제한된다.
-- 결과 개수별 메시지를 사용한다.
-- 꺼내보기 결과에서 원문은 새 탭으로 열린다.
-- 최근 보관한 인사이트 섹션이 포함된다.
-
-**Placeholder scan:**
-
-- 금지된 자리표시자 표현은 본문에 사용하지 않았다.
-- 결과 제한과 문구는 테스트 가능한 함수로 분리했다.
-
-**Type consistency:**
-
-- `InsightView`는 보관함과 꺼내보기에서 같은 타입을 사용한다.
-- `RetrieveSituationId`는 추천 상황 목록과 query 변환 함수에서 일치한다.
-
-## Execution Handoff
-
-계획 작성이 완료되었고 `docs/superpowers/plans/amadda-retrieve.md`에 저장되었다. 실행 방식은 두 가지다.
-
-**1. Subagent-Driven (recommended)** - 태스크마다 새 subagent를 투입하고, 각 태스크 사이에 리뷰하며 빠르게 반복한다.
-
-**2. Inline Execution** - 현재 세션에서 `executing-plans` 방식으로 실행하고, 중간 체크포인트마다 검토한다.
-
-어떤 방식으로 실행할지 선택한다.
+- `꺼내보기`를 보관함 검색 결과 화면과 분리했다.
+- 상황 기반 유사도 검색과 작업팩 UX를 구현 기준으로 삼았다.
+- 고정 분류 라벨을 사용자에게 노출하지 않는다.
+- 연결 단서는 과장된 추천 이유가 아니라 검색 근거를 짧게 보여준다.
+- AI/LLM, embedding, 리마인드는 MVP 제외 범위로 남겼다.

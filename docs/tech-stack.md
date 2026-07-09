@@ -38,6 +38,8 @@
 | Zod                         | 4.4.3                                           | 스키마 검증          | 설치됨, 미연동 | 환경 변수, API 응답, 폼 입력을 런타임에서 검증해 TypeScript의 빈틈을 보완한다.                         | Valibot, Yup, ArkType                                    | `src/shared/config`, `src/shared/api`, 폼 검증에 유용하다.                                                |
 | React Hook Form             | 7.81.0                                          | 폼 상태 관리         | 설치됨, 미연동 | 저장/온보딩/편집 폼이 복잡해질 때 렌더링 비용과 검증 코드를 줄일 수 있다.                              | Formik, TanStack Form, 직접 state                        | 폼 설계가 생기면 Zod resolver와 함께 연결한다.                                                            |
 | @hookform/resolvers         | 5.4.0                                           | 폼 검증 연동         | 설치됨, 미연동 | React Hook Form과 Zod schema를 연결한다.                                                               | 직접 resolver 작성                                       | 폼 도입 시 사용한다.                                                                                      |
+| MiniSearch                  | 7.2.0                                           | 검색/유사도          | 도입 예정      | `꺼내보기`에서 여러 필드의 유사도와 field boosting을 계산하기에 적합하다.                              | Fuse.js, Lunr, Meilisearch, Algolia                      | `docs/retrieve.md` 기준으로 `꺼내보기` 작업팩 생성에 우선 검토한다.                                       |
+| Fuse.js                     | 7.4.2                                           | fuzzy search         | 검토           | 오타 허용 검색이나 작은 데이터셋 검색에 적합하다.                                                      | MiniSearch, Lunr                                         | 보관함 검색 후보로 검토하되, `꺼내보기`는 MiniSearch를 우선한다.                                          |
 | ESLint                      | 10.6.0                                          | 정적 분석            | 사용 중        | 코드 컨벤션 문서에 ESLint 기준이 있으므로 실제 검사 도구도 맞춰야 한다.                                | Biome, oxlint                                            | `eslint.config.js`와 `npm run lint`로 검사한다.                                                           |
 | typescript-eslint           | 8.63.0                                          | TypeScript lint      | 사용 중        | TypeScript 코드의 타입/문법 기반 lint 규칙을 적용한다.                                                 | Biome                                                    | ESLint flat config에 함께 설정되어 있다.                                                                  |
 | Prettier                    | 3.9.4                                           | 코드 포맷터          | 사용 중        | 코드 스타일을 자동 정리해 리뷰 비용을 줄인다.                                                          | Biome formatter, dprint                                  | 현재 문서와 코드 포맷 검증에 사용 중이다.                                                                 |
@@ -54,15 +56,17 @@
 
 1. `ESLint`, `typescript-eslint`: 설치와 기본 설정을 완료했으므로 규칙 강화는 별도 변경으로 진행한다.
 2. `Tailwind CSS`, `shadcn/ui`: 패키지는 설치되어 있으나 WDS를 계속 쓸지, shadcn UI로 전환할지 먼저 결정한 뒤 코드에 연결한다.
-3. `Supabase JS`, `TanStack Query`, `Zod`: 인증/저장 API 구현 시 `src/shared` 하위 클라이언트와 스키마부터 연결한다.
-4. `Testing Library`, `jsdom`: FSD 리팩터링으로 화면 컴포넌트를 분리할 때 테스트 환경 설정을 추가한다.
-5. `Zustand`, `Motion`, `dnd-kit`: 실제 상태 공유, 애니메이션, 드래그 앤 드롭 요구가 생길 때 사용 지점을 만든다.
+3. `MiniSearch`: `꺼내보기` 유사도 검색과 작업팩 생성 기준이 확정되면 연결한다.
+4. `Supabase JS`, `TanStack Query`, `Zod`: 인증/저장 API 구현 시 `src/shared` 하위 클라이언트와 스키마부터 연결한다.
+5. `Testing Library`, `jsdom`: FSD 리팩터링으로 화면 컴포넌트를 분리할 때 테스트 환경 설정을 추가한다.
+6. `Zustand`, `Motion`, `dnd-kit`: 실제 상태 공유, 애니메이션, 드래그 앤 드롭 요구가 생길 때 사용 지점을 만든다.
 
 ## 아직 코드에 연결하지 않은 항목
 
 - `pnpm`: 현재 npm 기반 lockfile이 있으므로 별도 전환 작업으로 처리한다. 프로젝트 의존성으로 설치하지 않는다.
 - `Tailwind CSS`, `@tailwindcss/vite`: 설치되어 있지만 아직 Vite 설정과 CSS 엔트리에 연결하지 않았다.
 - `shadcn/ui`: CLI는 설치되어 있지만 컴포넌트 생성과 `components.json` 초기화는 하지 않았다.
+- `MiniSearch`, `Fuse.js`: 아직 설치하지 않았다. `꺼내보기`와 보관함 검색 구현 시 최종 선택한다.
 - `React Router`, `TanStack Query`, `Supabase JS`, `Zustand`, `Motion`, `dnd-kit`, `React Hook Form`, `Sonner`: 설치되어 있지만 실제 기능 구현 시 연결한다.
 
 ## 참고 자료
@@ -75,3 +79,5 @@
 - [dnd-kit 문서](https://dndkit.com/)
 - [pnpm 문서](https://pnpm.io/)
 - [React Router 문서](https://reactrouter.com/)
+- [MiniSearch 문서](https://github.com/lucaong/minisearch)
+- [Fuse.js 문서](https://www.fusejs.io/)

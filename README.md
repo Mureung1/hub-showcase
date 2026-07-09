@@ -10,6 +10,7 @@
 | 초기 논의 배경과 결정 이유를 추적할 때                      | [기획 논의](docs/discussion.md)                                                                                |
 | 지금 무엇을 구현해야 하는지 작업 단위를 확인할 때           | [작업 체크리스트](docs/checklist.md)                                                                           |
 | 로그인 전 서비스 온보딩의 목적, 문구, 화면 흐름을 확인할 때 | [온보딩 기획](docs/onboarding.md)                                                                              |
+| `꺼내보기`의 유사도 검색과 작업팩 UX 기준을 확인할 때       | [꺼내보기 기획](docs/retrieve.md)                                                                              |
 | 화면 톤, 색상, 타이포그래피, 컴포넌트 규칙을 확인할 때      | [디자인 시스템](DESIGN.md)                                                                                     |
 | WDS 컴포넌트 적용 기준과 도입 순서를 확인할 때              | [WDS 적용 메모](docs/wds-adoption.md)                                                                          |
 | FSD 레이어, import 규칙, 서버 구조를 확인할 때              | [개발 아키텍처](docs/development-architecture.md)                                                              |
@@ -33,7 +34,7 @@
 | 인사이트 제목, 메모, 카테고리 수정과 삭제를 구현할 때     | [인사이트 수정 구현 계획](docs/superpowers/plans/amadda-insight-edit.md) |
 | 보관함 목록, 검색, 카드 그리드를 구현할 때                | [보관함 구현 계획](docs/superpowers/plans/amadda-library.md)             |
 | URL 메타데이터 수집과 fallback 처리를 구현할 때           | [메타데이터 수집 구현 계획](docs/superpowers/plans/amadda-metadata.md)   |
-| 홈의 `꺼내보기` 입력, 추천 상황, 결과 제한을 구현할 때    | [꺼내보기 구현 계획](docs/superpowers/plans/amadda-retrieve.md)          |
+| 홈의 `꺼내보기` 유사도 검색과 작업팩을 구현할 때          | [꺼내보기 구현 계획](docs/superpowers/plans/amadda-retrieve.md)          |
 
 ## 스크립트
 

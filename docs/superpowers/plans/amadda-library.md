@@ -4,9 +4,9 @@
 
 **Goal:** 사용자가 보관함에서 저장한 인사이트를 최신순으로 보고, 카테고리/미분류 필터와 키워드 검색으로 직접 찾을 수 있게 한다.
 
-**Architecture:** 인사이트 조회와 수정/삭제는 `src/insights` Repository에 둔다. 검색은 `src/search`에 Fuse.js 기반 순수 함수로 구현해 보관함과 꺼내보기에서 함께 사용한다. 보관함 UI는 필터 상태, 검색어, 카드 목록, 편집 진입점을 관리한다.
+**Architecture:** 인사이트 조회와 수정/삭제는 `src/insights` Repository에 둔다. 보관함 검색은 `src/search`에 순수 함수로 구현한다. `꺼내보기`와 검색 문서 일부를 공유할 수 있지만, 보관함 검색 UX는 직접 탐색용 결과 목록이고 `꺼내보기` UX는 `docs/retrieve.md`의 작업팩 기준을 따른다.
 
-**Tech Stack:** React 19, TypeScript, Supabase, Fuse.js, Vitest, React Testing Library
+**Tech Stack:** React 19, TypeScript, Supabase, MiniSearch 또는 Fuse.js, Vitest, React Testing Library
 
 ---
 
@@ -29,18 +29,19 @@
 - 휴지통/복구
 - 정렬 옵션
 - 협업 보관함
-- 추천 이유 표시
+- 보관함 카드의 추천 이유 표시
+- 꺼내보기 작업팩 생성
 
 ## 파일 구조
 
 - Modify: `package.json`
-  - `fuse.js`를 추가한다.
+  - 보관함 검색에 사용할 검색 라이브러리를 추가한다.
 - Create: `src/insights/insightView.ts`
   - 카드와 검색에 쓰는 인사이트 view model을 정의한다.
 - Create: `src/insights/insightQueries.ts`
   - 보관함 목록 조회, 수정, 삭제를 담당한다.
 - Create: `src/search/insightSearch.ts`
-  - Fuse.js 기반 검색 함수를 제공한다.
+  - 보관함 검색 함수를 제공한다.
 - Create: `src/search/insightSearch.test.ts`
   - 검색 대상 필드와 결과 정렬을 검증한다.
 - Create: `src/categories/categoryFilters.ts`
@@ -52,7 +53,7 @@
 
 ---
 
-### Task 1: Fuse.js 검색 도입
+### Task 1: 보관함 검색 도입
 
 **Files:**
 
@@ -61,12 +62,12 @@
 - Create: `src/search/insightSearch.ts`
 - Create: `src/search/insightSearch.test.ts`
 
-- [ ] **Step 1: Fuse.js 설치**
+- [ ] **Step 1: 검색 라이브러리 설치**
 
 Run:
 
 ```bash
-npm install fuse.js
+npm install minisearch
 ```
 
 Expected:
@@ -89,6 +90,7 @@ export type InsightCategoryView = {
 export type InsightView = {
   categories: InsightCategoryView[];
   createdAt: string;
+  description: string | null;
   domain: string;
   id: string;
   memo: string | null;
@@ -111,6 +113,7 @@ const insights: InsightView[] = [
   {
     categories: [{ id: 'c1', name: '개발' }],
     createdAt: '2026-01-02T00:00:00Z',
+    description: null,
     domain: 'react.dev',
     id: '1',
     memo: '폼 상태 관리 참고',
@@ -121,6 +124,7 @@ const insights: InsightView[] = [
   {
     categories: [{ id: 'c2', name: '디자인' }],
     createdAt: '2026-07-06T00:00:00Z',
+    description: null,
     domain: 'example.com',
     id: '2',
     memo: '앱 온보딩 화면 참고',
@@ -139,10 +143,18 @@ describe('searchInsights', () => {
   });
 
   it('searches by title, memo, category, URL, and domain', () => {
-    expect(searchInsights(insights, 'React').map((item) => item.id)).toEqual(['1']);
-    expect(searchInsights(insights, '온보딩').map((item) => item.id)).toEqual(['2']);
-    expect(searchInsights(insights, '디자인').map((item) => item.id)).toEqual(['2']);
-    expect(searchInsights(insights, 'react.dev').map((item) => item.id)).toEqual(['1']);
+    expect(searchInsights(insights, 'React').map((item) => item.id)).toEqual([
+      '1',
+    ]);
+    expect(searchInsights(insights, '온보딩').map((item) => item.id)).toEqual([
+      '2',
+    ]);
+    expect(searchInsights(insights, '디자인').map((item) => item.id)).toEqual([
+      '2',
+    ]);
+    expect(
+      searchInsights(insights, 'react.dev').map((item) => item.id)
+    ).toEqual(['1']);
   });
 });
 ```
@@ -162,12 +174,12 @@ FAIL src/search/insightSearch.test.ts
 Cannot find module './insightSearch'
 ```
 
-- [ ] **Step 5: Fuse.js 검색 구현**
+- [ ] **Step 5: 보관함 검색 구현**
 
 Create `src/search/insightSearch.ts`:
 
 ```ts
-import Fuse from 'fuse.js';
+import MiniSearch from 'minisearch';
 import type { InsightView } from '@/insights/insightView';
 
 type SearchDocument = InsightView & {
@@ -177,7 +189,9 @@ type SearchDocument = InsightView & {
 function toSearchDocument(insight: InsightView): SearchDocument {
   return {
     ...insight,
-    categoryNames: insight.categories.map((category) => category.name).join(' '),
+    categoryNames: insight.categories
+      .map((category) => category.name)
+      .join(' '),
   };
 }
 
@@ -189,19 +203,28 @@ export function searchInsights(insights: InsightView[], query: string) {
   }
 
   const documents = insights.map(toSearchDocument);
-  const fuse = new Fuse(documents, {
-    includeScore: true,
-    keys: [
-      { name: 'title', weight: 0.35 },
-      { name: 'memo', weight: 0.2 },
-      { name: 'categoryNames', weight: 0.2 },
-      { name: 'domain', weight: 0.15 },
-      { name: 'originalUrl', weight: 0.1 },
-    ],
-    threshold: 0.35,
+  const miniSearch = new MiniSearch({
+    fields: ['title', 'memo', 'categoryNames', 'domain', 'originalUrl'],
+    idField: 'id',
+    searchOptions: {
+      boost: {
+        title: 3,
+        memo: 2,
+        categoryNames: 1.5,
+        domain: 1,
+        originalUrl: 0.5,
+      },
+      fuzzy: 0.2,
+      prefix: true,
+    },
+    storeFields: ['id'],
   });
+  miniSearch.addAll(documents);
+  const insightById = new Map(insights.map((insight) => [insight.id, insight]));
 
-  return fuse.search(trimmedQuery).map((result) => result.item);
+  return miniSearch.search(trimmedQuery).map((result) => {
+    return insightById.get(String(result.id))!;
+  });
 }
 ```
 
@@ -251,8 +274,24 @@ describe('buildCategoryFilters', () => {
   it('places All first and uncategorized last', () => {
     expect(
       buildCategoryFilters([
-        { color: '#000', created_at: '', id: 'c1', name: '개발', sort_order: 0, updated_at: '', user_id: 'u1' },
-        { color: '#111', created_at: '', id: 'c2', name: '디자인', sort_order: 1, updated_at: '', user_id: 'u1' },
+        {
+          color: '#000',
+          created_at: '',
+          id: 'c1',
+          name: '개발',
+          sort_order: 0,
+          updated_at: '',
+          user_id: 'u1',
+        },
+        {
+          color: '#111',
+          created_at: '',
+          id: 'c2',
+          name: '디자인',
+          sort_order: 1,
+          updated_at: '',
+          user_id: 'u1',
+        },
       ]).map((filter) => filter.label)
     ).toEqual(['All', '개발', '디자인', '미분류']);
   });
@@ -286,7 +325,9 @@ export type CategoryFilter =
   | { id: string; label: string; type: 'category' }
   | { id: 'uncategorized'; label: '미분류'; type: 'uncategorized' };
 
-export function buildCategoryFilters(categories: CategoryRow[]): CategoryFilter[] {
+export function buildCategoryFilters(
+  categories: CategoryRow[]
+): CategoryFilter[] {
   return [
     { id: 'all', label: 'All', type: 'all' },
     ...categories.map((category) => ({
@@ -358,7 +399,9 @@ function mapInsightRow(row: InsightListRow): InsightView {
   return {
     categories: row.insight_categories
       .map((item) => item.categories)
-      .filter((category): category is { id: string; name: string } => Boolean(category)),
+      .filter((category): category is { id: string; name: string } =>
+        Boolean(category)
+      ),
     createdAt: row.created_at,
     domain: row.domain,
     id: row.id,
@@ -401,7 +444,10 @@ export async function getMyInsights(userId: string) {
 }
 
 export async function deleteInsight(insightId: string) {
-  const { error } = await supabase.from('insights').delete().eq('id', insightId);
+  const { error } = await supabase
+    .from('insights')
+    .delete()
+    .eq('id', insightId);
 
   if (error) {
     throw error;
@@ -506,7 +552,9 @@ export function LibraryPage() {
 
   const handleDelete = async (insightId: string) => {
     await deleteInsight(insightId);
-    setInsights((current) => current.filter((insight) => insight.id !== insightId));
+    setInsights((current) =>
+      current.filter((insight) => insight.id !== insightId)
+    );
   };
 
   return (
@@ -544,7 +592,9 @@ export function LibraryPage() {
                 domain={insight.domain}
                 key={insight.id}
                 memo={insight.memo ?? undefined}
-                onOpen={() => window.open(insight.originalUrl, '_blank', 'noopener')}
+                onOpen={() =>
+                  window.open(insight.originalUrl, '_blank', 'noopener')
+                }
                 thumbnailUrl={insight.thumbnailUrl ?? undefined}
                 title={insight.title}
               />
@@ -670,7 +720,7 @@ git commit -m "feat: 보관함 필터와 검색 화면 연결"
 - 최신 저장순 조회는 Supabase query에서 처리한다.
 - `All`, 사용자 카테고리, `미분류` 필터를 제공한다.
 - 제목, 메모, 카테고리 이름, URL, 도메인 검색을 제공한다.
-- 저장일과 추천 이유는 카드에 표시하지 않는다.
+- 저장일과 보관함 카드의 추천 이유는 표시하지 않는다.
 - 원문은 새 탭으로 연다.
 
 **Placeholder scan:**

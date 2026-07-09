@@ -138,7 +138,10 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: [
-      { find: '@components', replacement: path.resolve(dirname, 'src/components') },
+      {
+        find: '@components',
+        replacement: path.resolve(dirname, 'src/components'),
+      },
       { find: '@', replacement: path.resolve(dirname, 'src') },
     ],
   },
@@ -513,12 +516,7 @@ type TextInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
 };
 
-export function TextInput({
-  helperText,
-  id,
-  label,
-  ...props
-}: TextInputProps) {
+export function TextInput({ helperText, id, label, ...props }: TextInputProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
 
@@ -698,9 +696,7 @@ describe('BottomNavigation', () => {
     const handleTabChange = vi.fn();
     const user = userEvent.setup();
 
-    render(
-      <BottomNavigation activeTab="home" onTabChange={handleTabChange} />
-    );
+    render(<BottomNavigation activeTab="home" onTabChange={handleTabChange} />);
 
     await user.click(screen.getByRole('button', { name: '저장' }));
 
@@ -924,7 +920,7 @@ import { Chip } from '@/components/ui/Chip';
 import { InsightCard } from '@/components/ui/InsightCard';
 import { TextInput } from '@/components/ui/TextInput';
 
-const recommendedSituations = ['팀 프로젝트', '개발 공부', '디자인 참고'];
+const recommendedSituations = ['팀 프로젝트', '개발 공부', 'UI 레퍼런스'];
 
 export function HomePage() {
   return (
@@ -956,7 +952,9 @@ export function HomePage() {
             categories={['UI/UX', '팀프로젝트']}
             domain="example.com"
             memo="앱 첫 화면 구성 참고"
-            onOpen={() => window.open('https://example.com', '_blank', 'noopener')}
+            onOpen={() =>
+              window.open('https://example.com', '_blank', 'noopener')
+            }
             title="모바일 온보딩 UX 레퍼런스"
           />
         </div>
@@ -1127,7 +1125,12 @@ Create `src/styles/global.css`:
   color: #17201a;
   background: #f7f8f5;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
