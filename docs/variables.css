@@ -1,0 +1,173 @@
+/* ============================================================
+   진로 에이전트 프로토타입 — 디자인 토큰 (A안 · 카페형 기준)
+   docs/design-system.md 와 1:1로 매칭됩니다.
+   ============================================================ */
+
+:root {
+  /* ---------- Color / Primary (Naver Green) ---------- */
+  --color-primary: #03C75A;
+  --color-primary-hover: #00A94E;
+  --color-primary-tint-bg: #E9FAF0;
+  --color-primary-tint-border: #A6E6C1;
+  --color-primary-tint-text: #2F5F43;
+
+  /* ---------- Color / Accent (Sports Blue) ---------- */
+  --color-accent: #1B64DA;
+  --color-accent-tint-bg: #EAF1FD;
+  --color-accent-tint-text: #2F5F92;
+
+  /* ---------- Color / Background ---------- */
+  --color-bg-page: #EDEFEF;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-subtle: #F5F7F5;
+  --color-bg-input: #FFFFFF;
+  --color-bg-textarea: #FBFCFB;
+  --color-bg-chip-neutral: #F1F3F1;
+
+  /* ---------- Color / Border ---------- */
+  --color-border: #E3E6E3;
+  --color-border-input: #D8DDD8;
+
+  /* ---------- Color / Text ---------- */
+  --color-text-primary: #1A2620;
+  --color-text-secondary: #6B7A72;
+  --color-text-tertiary: #8B968F;
+  --color-text-placeholder: #9AA39C;
+  --color-error: #E0344A;
+  --color-text-on-primary: #FFFFFF;
+
+  /* ---------- Typography ---------- */
+  --font-family-base: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+
+  --font-size-display: 26px;   /* 정보입력 메인 타이틀 */
+  --font-size-h1: 24px;        /* 화면 타이틀 */
+  --font-size-h2: 15px;        /* 섹션 소제목 */
+  --font-size-body: 15px;      /* 인풋/서브타이틀 */
+  --font-size-body-sm: 14px;   /* 라벨/리스트 텍스트 */
+  --font-size-caption: 13px;   /* 보조설명/에러/링크 */
+  --font-size-badge: 12px;     /* 배지 */
+  --font-size-button-lg: 16px; /* 풀와이드 버튼 */
+  --font-size-button-md: 15px; /* 인라인 버튼 */
+  --font-size-eyebrow: 13px;   /* STEP 1 라벨 */
+
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ---------- Spacing (4px 기반 스케일) ---------- */
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 10px;
+  --space-5: 12px;
+  --space-6: 14px;
+  --space-7: 16px;
+  --space-8: 18px;
+  --space-9: 20px;
+  --space-10: 22px;
+  --space-11: 24px;
+  --space-12: 28px;
+  --space-14: 32px;
+  --space-16: 36px;
+
+  --container-max-width: 720px;
+  --container-padding-x: 20px;
+  --container-padding-top: 28px;
+  --container-padding-bottom: 100px;
+
+  /* ---------- Radius ---------- */
+  --radius-chip-sm: 8px;
+  --radius-input: 10px;
+  --radius-button-md: 12px;
+  --radius-button-lg: 14px;
+  --radius-card-md: 16px;
+  --radius-card-lg: 20px;
+  --radius-pill: 999px;
+
+  /* ---------- Shadow ---------- */
+  --shadow-card: 0 12px 32px rgba(20, 40, 30, 0.06);
+  --shadow-card-soft: 0 12px 32px rgba(20, 40, 30, 0.05);
+}
+
+/* ============================================================
+   참고용 베이스 클래스 (선택 적용 — CSS-in-JS/Tailwind 등으로
+   대체해도 무방하며, 값의 출처는 위 변수와 동일합니다)
+   ============================================================ */
+
+body {
+  margin: 0;
+  font-family: var(--font-family-base);
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-primary-hover);
+}
+
+.btn-primary {
+  border: none;
+  border-radius: var(--radius-button-lg);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-button-lg);
+  padding: 14px 20px;
+  cursor: pointer;
+}
+.btn-primary[disabled],
+.btn-primary.is-loading {
+  background: #BFE8D0;
+  cursor: default;
+}
+
+.btn-ghost {
+  border: 1px dashed var(--color-primary-tint-border);
+  border-radius: var(--radius-chip-sm);
+  background: var(--color-primary-tint-bg);
+  color: var(--color-primary);
+  font-size: var(--font-size-caption);
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.field-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  font-size: var(--font-size-body);
+  font-family: inherit;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--color-border-input);
+  background: var(--color-bg-input);
+  color: var(--color-text-primary);
+}
+.field-input.has-error {
+  border-color: var(--color-error);
+}
+
+.card {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-card-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.tag {
+  display: inline-block;
+  font-size: var(--font-size-badge);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+}
+.tag--primary {
+  color: var(--color-primary);
+  background: var(--color-primary-tint-bg);
+}
+.tag--accent {
+  color: var(--color-accent);
+  background: var(--color-accent-tint-bg);
+}
