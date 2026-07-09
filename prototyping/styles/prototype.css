@@ -1,0 +1,319 @@
+@import url("./components.css");
+
+.prototype-shell {
+  position: relative;
+  overflow-x: hidden;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.screen {
+  display: none;
+  min-height: 100vh;
+}
+
+.screen.is-active {
+  display: block;
+}
+
+.compact-header {
+  padding-bottom: var(--space-6);
+}
+
+.recipe-list-item {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.bottom-nav button {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-meta);
+  text-align: center;
+}
+
+.bottom-nav button.is-current {
+  color: var(--color-primary-pressed);
+  font-weight: 500;
+}
+
+.empty-message {
+  display: none;
+  margin: var(--space-8) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-supporting);
+  line-height: var(--line-height-supporting);
+}
+
+.empty-message.is-visible {
+  display: block;
+}
+
+.quiet-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 var(--space-8);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-supporting);
+}
+
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-pill);
+  background: transparent;
+}
+
+.toggle span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--color-text-tertiary);
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.toggle[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-divider));
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg));
+}
+
+.toggle[aria-pressed="true"] span {
+  transform: translateX(20px);
+  background: var(--color-primary);
+}
+
+.cooking-fade,
+.management-action {
+  transition: opacity 160ms ease;
+}
+
+.cooking-mode .cooking-fade,
+.cooking-mode .management-action {
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.cooking-mode #detail-ingredients,
+.cooking-mode #detail-steps {
+  font-size: 18px;
+  line-height: 1.82;
+}
+
+.cooking-mode #detail-ingredients,
+.cooking-mode #detail-steps {
+  gap: var(--space-6);
+}
+
+.large-textarea {
+  min-height: calc(var(--space-16) * 3);
+}
+
+.short-textarea {
+  min-height: var(--space-16);
+}
+
+.invite-link {
+  justify-self: start;
+  text-align: left;
+}
+
+.status-banner {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-divider);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-supporting);
+  line-height: var(--line-height-supporting);
+}
+
+.inline-section {
+  margin-bottom: 0;
+}
+
+.invitation-header {
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.relationship-choice {
+  padding-bottom: 0;
+}
+
+.prototype-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--bottom-cta-height) + var(--space-12));
+  z-index: 50;
+  transform: translate(-50%, var(--space-4));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.prototype-toast.is-visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-bg) 86%, transparent);
+}
+
+.loading-overlay[hidden],
+.sheet-backdrop[hidden],
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.loading-message {
+  padding: var(--space-4) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-supporting);
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: color-mix(in srgb, var(--color-text-primary) 14%, transparent);
+}
+
+.bottom-sheet {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 80;
+  display: grid;
+  gap: 0;
+  max-width: var(--mobile-width);
+  margin: 0 auto;
+  padding: var(--space-3) var(--page-padding) max(var(--space-6), env(safe-area-inset-bottom));
+  border: 1px solid var(--color-divider);
+  border-bottom: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: var(--color-surface);
+  transform: translateY(105%);
+  transition: transform 180ms ease;
+}
+
+.bottom-sheet.is-open {
+  transform: translateY(0);
+}
+
+.sheet-handle {
+  justify-self: center;
+  width: var(--space-8);
+  height: var(--space-1);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-divider);
+}
+
+.bottom-sheet h2 {
+  margin: 0;
+  padding-bottom: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-supporting);
+  font-weight: 500;
+}
+
+.bottom-sheet button {
+  min-height: 48px;
+  border: 0;
+  border-top: 1px solid var(--color-divider);
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: left;
+}
+
+.bottom-sheet .danger-action {
+  color: var(--color-danger);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: color-mix(in srgb, var(--color-text-primary) 14%, transparent);
+}
+
+.code-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 100;
+  display: grid;
+  gap: var(--space-4);
+  width: calc(var(--mobile-width) - var(--page-padding) * 2);
+  max-width: calc(100vw - var(--page-padding) * 2);
+  padding: var(--space-6) var(--space-4);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  transform: translate(-50%, -50%);
+}
+
+.code-modal[aria-hidden="true"] {
+  display: none;
+}
+
+.code-modal h2 {
+  margin: 0;
+  font-size: var(--font-size-section);
+  line-height: 1.4;
+}
+
+.modal-actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.share-lines {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.share-lines p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-supporting);
+  line-height: var(--line-height-supporting);
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle span,
+  .prototype-toast,
+  .bottom-sheet {
+    transition: none;
+  }
+}
