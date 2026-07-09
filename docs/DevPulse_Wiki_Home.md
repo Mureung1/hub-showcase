@@ -80,14 +80,14 @@
 
 ## 5. 기능별 구현 매핑 요약
 
-| 기능 | 사용 기술/API | 데이터 흐름 |
-|---|---|---|
-| 레포 데이터 수집 | GitHub GraphQL API (Feign) | 외부 API → Kafka(`project.commit.collected`) → DB(JPA) |
-| 변경 유형 분류 | JavaParser | Kafka 컨슈머 내부 로직 → `commit_log.change_type` 업데이트(JPA) |
-| 우선순위 스코어링 | MyBatis | `commit_log` + `issue_log` + `doc_status` join 집계 → `priority_score` 저장 |
-| 문서 갱신 제안 | 무료 LLM API (Feign) | 컨슈머 자체 판단 → 선별된 항목만 LLM 배치 호출 → `doc_suggestion` 저장 |
-| 대시보드 조회 | QueryDsl | REST API → 동적 조건 조회 → React 프론트 렌더링 |
-| 프로젝트 소개 | React | 정적 컴포넌트 (외부 데이터 없음) |
+| 기능 | 사용 기술/API | 데이터 흐름 | agent_run.run_type |
+|---|---|---|---|
+| 레포 데이터 수집 | GitHub GraphQL API (Feign) | 외부 API → Kafka(`project.commit.collected`) → DB(JPA) | `COLLECT` |
+| 변경 유형 분류 | JavaParser | Kafka 컨슈머 내부 로직 → `commit_log.change_type` 업데이트(JPA) | `CLASSIFY` |
+| 우선순위 스코어링 | MyBatis | `commit_log` + `issue_log` + `doc_status` join 집계 → `priority_score` 저장 | `SCORE` |
+| 문서 갱신 제안 | 무료 LLM API (Feign) | 컨슈머 자체 판단 → 선별된 항목만 LLM 배치 호출 → `doc_suggestion` 저장 | `SUGGEST` |
+| 대시보드 조회 | QueryDsl | REST API → 동적 조건 조회 → React 프론트 렌더링 | - |
+| 프로젝트 소개 | React | 정적 컴포넌트 (외부 데이터 없음) | - |
 
 ---
 
