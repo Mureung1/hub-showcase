@@ -5,14 +5,14 @@
 ```text
 Task packet: .harness/tasks/DOCS-002-docs-tree-and-pr-recovery.md
 Branch: develop
-Status: partial
+Status: passed
 ```
 
 ## 2. Changed Files
 
 ```text
 docs/wiki/doc-viewer.html
-docs/development/week1-completion-report.md
+docs/development/week1-thursday-progress-report.md
 docs/prototypes/design-guide-visual-comparison.html
 scripts/check_docs_html.py
 scripts/check.ps1
@@ -54,7 +54,7 @@ private paths: 4/4 HTTP 404
 Home Development card links present
 development folder collapse/expand passed
 environment.md navigation passed
-week1-completion-report.md navigation passed
+week1-thursday-progress-report.md navigation passed
 desktop and mobile document-tree layout passed
 fresh browser session console errors: 0
 ```
@@ -82,10 +82,7 @@ normal repository check passed
 ## 6. Known Limitations
 
 ```text
-Private GitHub API가 404를 반환해 원격 Actions의 최종 conclusion은 확인하지 못했다.
-origin/develop은 1f6ed0c이지만 refs/pull/3/head는 이전 4cc2682에 머물러 있다.
-refs/pull/3/merge가 생성되지 않아 PR #3 conflict는 원격 기준으로 아직 해결되지 않았다.
-PR #3의 실제 source branch 확인에는 로그인된 GitHub UI 접근이 필요하다.
+PR #4가 main의 bed2aeb로 병합된 것을 remote ref에서 확인했다.
 GitHub branch protection 설정은 repository settings에서 별도로 확인해야 한다.
 README.md는 GitHub 진입점이며 Vercel 공개 파일 집합에서는 제공하지 않는다.
 ```
@@ -93,6 +90,5 @@ README.md는 GitHub 진입점이며 Vercel 공개 파일 집합에서는 제공�
 ## 7. Next Action
 
 ```text
-PR #3의 실제 source branch를 확인하고 conflict resolution commit을 해당 branch에 적용한다.
-그 후 docs, web, api checks가 통과하는지 GitHub UI에서 확인한다.
+다음 제품 task를 시작하기 전에 GitHub branch protection 설정을 확인한다.
 ```
