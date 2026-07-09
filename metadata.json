@@ -1,0 +1,6 @@
+{
+  "name": "Pick My Clothes",
+  "description": "나만의 감성적인 디지털 스타일 다이어리 및 AI 기반 옷장 맞춤 코디 추천 서비스",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
