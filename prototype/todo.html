@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CalMe - 할 일 목록</title>
+  <style>
+    :root {
+      --canvas: #e3e8ec;
+      --sidebar: #f1f4f6;
+      --surface: #ffffff;
+      --surface-subtle: #f7f9fa;
+      --surface-selected: #e5ebf0;
+      --border: #e7ebee;
+      --border-strong: #d9e0e5;
+      --text: #171a1d;
+      --muted: #687078;
+      --faint: #a5adb4;
+      --primary: #4f7fb8;
+      --primary-soft: #eaf2fa;
+      --warning: #d49b2e;
+      --warning-soft: #fff5d9;
+      --success: #54a85b;
+      --success-soft: #e6f6e5;
+      --danger: #c75b61;
+      --danger-soft: #fbe7e8;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-app: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--text);
+      background: var(--surface);
+      font-family: Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system,
+        BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    button, input { font: inherit; }
+    button { color: inherit; }
+    svg { width: 18px; height: 18px; flex: 0 0 auto; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      width: 100%;
+      min-height: 100vh;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding: 24px 16px 16px;
+      border-right: 1px solid var(--border-strong);
+      background: var(--sidebar);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 10px 24px;
+      font-size: 18px;
+      font-weight: 750;
+      letter-spacing: -.03em;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: 9px;
+      color: white;
+      background: var(--primary);
+    }
+
+    .search {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .search svg {
+      position: absolute;
+      top: 11px;
+      left: 12px;
+      color: var(--faint);
+      pointer-events: none;
+    }
+
+    .search input {
+      width: 100%;
+      height: 40px;
+      padding: 0 36px 0 38px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      outline: 0;
+      color: var(--text);
+      background: var(--surface-subtle);
+    }
+
+    .search input::placeholder { color: var(--faint); }
+
+    .key {
+      position: absolute;
+      top: 9px;
+      right: 10px;
+      padding: 2px 6px;
+      border: 1px solid var(--border-strong);
+      border-radius: 5px;
+      color: var(--faint);
+      background: var(--surface);
+      font-size: 11px;
+    }
+
+    .nav-title {
+      margin: 12px 12px 6px;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .nav-list {
+      display: grid;
+      gap: 4px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      min-height: 40px;
+      gap: 11px;
+      padding: 0 12px;
+      border-radius: var(--radius-md);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 550;
+    }
+
+    .nav-item.active {
+      color: var(--text);
+      background: var(--surface-selected);
+      font-weight: 700;
+    }
+
+    .nav-item.active svg { color: var(--primary); }
+
+    .count {
+      min-width: 22px;
+      margin-left: auto;
+      padding: 1px 7px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--surface);
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      margin: 0 5px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+
+    .dot.yellow { background: var(--warning); }
+    .dot.green { background: var(--success); }
+    .dot.red { background: var(--danger); }
+
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: auto;
+      padding: 16px 8px 0;
+      border-top: 1px solid var(--border-strong);
+    }
+
+    .avatar {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border-radius: 50%;
+      color: #355d8c;
+      background: var(--primary-soft);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .profile-copy { min-width: 0; }
+    .profile-copy strong, .profile-copy span { display: block; }
+    .profile-copy strong { font-size: 13px; }
+    .profile-copy span {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .main { min-width: 0; background: var(--surface); }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      height: 64px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mobile-menu { display: none; }
+
+    .breadcrumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .icon-button, .secondary-button, .primary-button, .filter-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      gap: 8px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .icon-button { width: 36px; padding: 0; color: var(--muted); }
+    .secondary-button, .filter-button { padding: 0 12px; }
+
+    .primary-button {
+      padding: 0 14px;
+      border-color: var(--primary);
+      color: white;
+      background: var(--primary);
+    }
+
+    .content {
+      width: 100%;
+      padding: 28px 24px 40px;
+    }
+
+    .page-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 5px;
+      font-size: 22px;
+      line-height: 1.3;
+      letter-spacing: -.03em;
+    }
+
+    .page-heading p { margin: 0; color: var(--muted); }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 84px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+    }
+
+    .summary-icon {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border-radius: 10px;
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .summary-icon.warning { color: #986b16; background: var(--warning-soft); }
+    .summary-icon.success { color: #3d8343; background: var(--success-soft); }
+    .summary-card span { display: block; color: var(--muted); font-size: 12px; }
+    .summary-card strong { font-size: 20px; line-height: 1.25; letter-spacing: -.02em; }
+
+    .list-card {
+      overflow: hidden;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+    }
+
+    .list-toolbar {
+      display: flex;
+      align-items: center;
+      min-height: 60px;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .segmented {
+      display: flex;
+      gap: 3px;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--surface-subtle);
+    }
+
+    .segment {
+      min-height: 30px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 6px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .segment.active {
+      color: #355d8c;
+      background: var(--primary-soft);
+    }
+
+    .toolbar-right {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .task-group + .task-group { border-top: 1px solid var(--border); }
+
+    .group-heading {
+      display: flex;
+      align-items: center;
+      height: 42px;
+      padding: 0 18px;
+      color: var(--muted);
+      background: var(--surface-subtle);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .group-heading strong { margin-right: 8px; color: var(--text); font-size: 13px; }
+
+    .task {
+      display: grid;
+      grid-template-columns: 28px minmax(180px, 1.5fr) minmax(160px, 1fr) 118px 36px;
+      align-items: center;
+      min-height: 68px;
+      gap: 12px;
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .task:first-child { border-top: 0; }
+
+    .check {
+      width: 19px;
+      height: 19px;
+      border: 1.5px solid var(--border-strong);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .task.done .check {
+      display: grid;
+      place-items: center;
+      border-color: var(--success);
+      color: white;
+      background: var(--success);
+    }
+
+    .task.done .check svg { width: 13px; height: 13px; }
+    .task-main { min-width: 0; }
+    .task-title {
+      display: block;
+      overflow: hidden;
+      font-size: 14px;
+      font-weight: 650;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .task.done .task-title { color: var(--muted); text-decoration: line-through; }
+
+    .task-note {
+      display: block;
+      margin-top: 3px;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 12px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .category {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .badge {
+      justify-self: start;
+      padding: 4px 9px;
+      border-radius: 999px;
+      color: #355d8c;
+      background: var(--primary-soft);
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge.danger { color: #9f4147; background: var(--danger-soft); }
+    .badge.warning { color: #8b651b; background: var(--warning-soft); }
+    .badge.success { color: #3d7f42; background: var(--success-soft); }
+
+    .more {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border: 0;
+      border-radius: var(--radius-md);
+      color: var(--muted);
+      background: transparent;
+    }
+
+    .footer-note {
+      margin: 16px 0 0;
+      color: var(--faint);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    button:focus-visible, input:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 1024px) {
+      .app { grid-template-columns: 220px minmax(0, 1fr); }
+      .content { padding-inline: 16px; }
+      .task { grid-template-columns: 28px minmax(180px, 1.4fr) minmax(130px, .8fr) 108px 36px; }
+    }
+
+    @media (max-width: 768px) {
+      .app {
+        display: block;
+        min-height: 100vh;
+      }
+      .sidebar { display: none; }
+      .topbar { padding: 0 16px; }
+      .mobile-menu { display: inline-flex; margin-right: 12px; }
+      .breadcrumb { font-size: 14px; }
+      .top-actions .icon-button { display: none; }
+      .content { padding: 24px 16px 32px; }
+      .summary-grid { grid-template-columns: 1fr; gap: 8px; }
+      .summary-card { min-height: 72px; }
+      .list-toolbar { align-items: stretch; flex-direction: column; }
+      .segmented { align-self: flex-start; }
+      .toolbar-right { margin-left: 0; }
+      .task { grid-template-columns: 28px minmax(0, 1fr) 92px 36px; }
+      .category { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      .primary-button span { display: none; }
+      .primary-button { width: 40px; height: 40px; padding: 0; }
+      .page-heading { align-items: start; flex-direction: column; gap: 12px; }
+      .page-heading .secondary-button { display: none; }
+      .summary-grid { grid-template-columns: repeat(3, 1fr); }
+      .summary-card { display: block; min-height: auto; padding: 12px; }
+      .summary-icon { width: 32px; height: 32px; margin-bottom: 8px; }
+      .summary-card strong { font-size: 17px; }
+      .summary-card span { font-size: 10px; }
+      .toolbar-right .filter-button:last-child { display: none; }
+      .task { grid-template-columns: 24px minmax(0, 1fr) 36px; padding-inline: 12px; }
+      .badge { display: none; }
+      .group-heading { padding-inline: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3v3M17 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/><path d="m9 14 2 2 4-4"/></svg>
+        </span>
+        CalMe
+      </div>
+
+      <label class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <input type="text" placeholder="검색" aria-label="검색" />
+        <span class="key">⌘ K</span>
+      </label>
+
+      <span class="nav-title">메뉴</span>
+      <ul class="nav-list">
+        <li class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+          대시보드
+        </li>
+        <li class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+          캘린더
+        </li>
+        <li class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 11 2 2 4-4"/><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M7 17h10"/></svg>
+          할 일 목록
+          <span class="count">8</span>
+        </li>
+        <li class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg>
+          공지 분석
+        </li>
+      </ul>
+
+      <span class="nav-title">내 캘린더</span>
+      <ul class="nav-list">
+        <li class="nav-item"><span class="dot"></span>학교 일정<span class="count">5</span></li>
+        <li class="nav-item"><span class="dot yellow"></span>공모전<span class="count">2</span></li>
+        <li class="nav-item"><span class="dot green"></span>대외활동<span class="count">1</span></li>
+        <li class="nav-item"><span class="dot red"></span>개인 일정</li>
+      </ul>
+
+      <div class="profile">
+        <span class="avatar">김민</span>
+        <span class="profile-copy">
+          <strong>김민서</strong>
+          <span>minseo@calme.kr</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--faint)"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" aria-label="메뉴 열기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <span class="breadcrumb">할 일 목록</span>
+        <div class="top-actions">
+          <button class="icon-button" aria-label="도움말">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.6 1.9c-.9.6-1.4 1-1.4 2.1M12 17h.01"/></svg>
+          </button>
+          <button class="icon-button" aria-label="알림">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+          </button>
+          <button class="primary-button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span>할 일 추가</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="page-heading">
+          <div>
+            <h1>할 일 목록</h1>
+            <p>다가오는 일정과 마감해야 할 일을 한눈에 확인하세요.</p>
+          </div>
+          <button class="secondary-button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M7 12h10M10 17h4"/></svg>
+            우선순위 정렬
+          </button>
+        </section>
+
+        <section class="summary-grid" aria-label="할 일 요약">
+          <article class="summary-card">
+            <span class="summary-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h16M12 4v16"/><circle cx="12" cy="12" r="9"/></svg>
+            </span>
+            <div><span>남은 할 일</span><strong>8개</strong></div>
+          </article>
+          <article class="summary-card">
+            <span class="summary-icon warning">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            </span>
+            <div><span>이번 주 마감</span><strong>3개</strong></div>
+          </article>
+          <article class="summary-card">
+            <span class="summary-icon success">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="9"/></svg>
+            </span>
+            <div><span>이번 주 완료</span><strong>5개</strong></div>
+          </article>
+        </section>
+
+        <section class="list-card">
+          <div class="list-toolbar">
+            <div class="segmented" aria-label="상태 필터">
+              <button class="segment active">전체 8</button>
+              <button class="segment">진행 중 6</button>
+              <button class="segment">완료 2</button>
+            </div>
+            <div class="toolbar-right">
+              <button class="filter-button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+                필터
+              </button>
+              <button class="filter-button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7 10 5 5 5-5"/></svg>
+                마감일순
+              </button>
+            </div>
+          </div>
+
+          <div class="task-group">
+            <div class="group-heading"><strong>오늘</strong> 7월 9일 목요일 · 3개</div>
+            <div class="task">
+              <span class="check"></span>
+              <div class="task-main">
+                <span class="task-title">캡스톤 디자인 중간 보고서 제출</span>
+                <span class="task-note">보고서 PDF와 발표 자료를 함께 제출</span>
+              </div>
+              <span class="category"><span class="dot"></span>학교 일정</span>
+              <span class="badge danger">오늘 마감</span>
+              <button class="more" aria-label="더보기">•••</button>
+            </div>
+            <div class="task">
+              <span class="check"></span>
+              <div class="task-main">
+                <span class="task-title">여름방학 공모전 팀 회의</span>
+                <span class="task-note">학생회관 스터디룸 B · 오후 4:00</span>
+              </div>
+              <span class="category"><span class="dot yellow"></span>공모전</span>
+              <span class="badge">오후 4:00</span>
+              <button class="more" aria-label="더보기">•••</button>
+            </div>
+            <div class="task done">
+              <span class="check">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg>
+              </span>
+              <div class="task-main">
+                <span class="task-title">교환학생 지원 서류 확인</span>
+                <span class="task-note">성적증명서, 어학성적표 발급 여부 확인</span>
+              </div>
+              <span class="category"><span class="dot"></span>학교 일정</span>
+              <span class="badge success">완료</span>
+              <button class="more" aria-label="더보기">•••</button>
+            </div>
+          </div>
+
+          <div class="task-group">
+            <div class="group-heading"><strong>예정</strong> 7월 10일 이후 · 5개</div>
+            <div class="task">
+              <span class="check"></span>
+              <div class="task-main">
+                <span class="task-title">청년 정책 아이디어 공모전 접수</span>
+                <span class="task-note">참가 신청서와 기획안 최종 검토</span>
+              </div>
+              <span class="category"><span class="dot yellow"></span>공모전</span>
+              <span class="badge warning">D-2</span>
+              <button class="more" aria-label="더보기">•••</button>
+            </div>
+            <div class="task">
+              <span class="check"></span>
+              <div class="task-main">
+                <span class="task-title">데이터 분석 특강 신청</span>
+                <span class="task-note">선착순 50명 · 온라인 신청</span>
+              </div>
+              <span class="category"><span class="dot green"></span>대외활동</span>
+              <span class="badge warning">D-5</span>
+              <button class="more" aria-label="더보기">•••</button>
+            </div>
+            <div class="task">
+              <span class="check"></span>
+              <div class="task-main">
+                <span class="task-title">2학기 국가장학금 신청</span>
+                <span class="task-note">가구원 동의 및 제출 서류 확인</span>
+              </div>
+              <span class="category"><span class="dot"></span>학교 일정</span>
+              <span class="badge">7월 18일</span>
+              <button class="more" aria-label="더보기">•••</button>
+            </div>
+          </div>
+        </section>
+        <p class="footer-note">AI가 추출한 일정은 저장 전 반드시 내용을 확인해주세요.</p>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
