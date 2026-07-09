@@ -8,6 +8,9 @@ const codeModalBackdrop = document.querySelector("#code-modal-backdrop");
 const inviteCode = document.querySelector("#invite-code");
 const shareModal = document.querySelector("#share-modal");
 const shareModalBackdrop = document.querySelector("#share-modal-backdrop");
+const memoModal = document.querySelector("#memo-modal");
+const memoModalBackdrop = document.querySelector("#memo-modal-backdrop");
+const memoEdit = document.querySelector("#memo-edit");
 const searchInput = document.querySelector("#recipe-search");
 const emptyList = document.querySelector("#empty-list");
 const draftButton = document.querySelector("#draft-button");
@@ -30,7 +33,8 @@ const recipes = {
     relationship: ["엄마가 알려준 레시피", "관계: 가족", "2026.07.10 전달받음 · 재공유 불가"],
     source: "직접 전해 받은 레시피",
     sourceMeta: "원본 내용은 내 레시피북에 저장된 기록 기준으로 표시됩니다.",
-    canEdit: false,
+    canEditRecipe: false,
+    canEditMemo: true,
     canPassShare: false
   },
   galbi: {
@@ -44,7 +48,8 @@ const recipes = {
     relationship: ["민지가 전해준 레시피", "관계: 친구", "2026.07.10 전달받음 · 재공유 불가"],
     source: "가족에게 전해 받은 명절 레시피",
     sourceMeta: "원 저장자: 할머니 · AI 구조화 여부: 없음",
-    canEdit: false,
+    canEditRecipe: false,
+    canEditMemo: true,
     canPassShare: false
   },
   basil: {
@@ -58,7 +63,8 @@ const recipes = {
     relationship: ["민지에게 배운 레시피", "관계: 친구", "내가 기록 · 최근 수정"],
     source: "직접 입력한 메모에서 정리",
     sourceMeta: "입력한 내용을 바탕으로 만든 초안입니다.",
-    canEdit: true,
+    canEditRecipe: true,
+    canEditMemo: true,
     canPassShare: true
   }
 };
@@ -92,6 +98,7 @@ function showScreen(name) {
   closeSheet();
   closeCodeModal();
   closeShareModal();
+  closeMemoModal();
   window.scrollTo({ top: 0, behavior: "auto" });
 }
 
@@ -107,7 +114,8 @@ function showToast(message) {
 function openSheet() {
   const recipe = recipes[currentDetailRecipeId] || recipes.kimchi;
   document.querySelectorAll("[data-requires-edit]").forEach((item) => {
-    item.hidden = !recipe.canEdit;
+    item.hidden = !(recipe.canEditRecipe || recipe.canEditMemo);
+    item.textContent = recipe.canEditRecipe ? "수정" : "메모 수정하기";
   });
   document.querySelectorAll("[data-requires-pass-share]").forEach((item) => {
     item.hidden = !recipe.canPassShare;
@@ -142,6 +150,19 @@ function openShareModal() {
 function closeShareModal() {
   shareModal.setAttribute("aria-hidden", "true");
   shareModalBackdrop.hidden = true;
+}
+
+function openMemoModal() {
+  const recipe = recipes[currentDetailRecipeId] || recipes.kimchi;
+  memoEdit.value = recipe.memo;
+  memoModalBackdrop.hidden = false;
+  memoModal.setAttribute("aria-hidden", "false");
+  memoEdit.focus();
+}
+
+function closeMemoModal() {
+  memoModal.setAttribute("aria-hidden", "true");
+  memoModalBackdrop.hidden = true;
 }
 
 function updateDraftButton() {
@@ -210,6 +231,20 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  if (event.target === memoModalBackdrop || event.target.closest("[data-close-memo-modal]")) {
+    closeMemoModal();
+    return;
+  }
+
+  if (event.target.closest("[data-save-memo]")) {
+    const recipe = recipes[currentDetailRecipeId] || recipes.kimchi;
+    recipe.memo = memoEdit.value.trim() || "다음에 다시 볼 때 떠올릴 메모를 남겨보세요.";
+    renderRecipeDetail(currentDetailRecipeId);
+    closeMemoModal();
+    showToast("메모가 저장되었습니다.");
+    return;
+  }
+
   const copyShare = event.target.closest("[data-copy-share]");
   if (copyShare) {
     showToast(copyShare.dataset.copyShare === "link" ? "전달 링크가 복사되었습니다." : "초대 코드가 복사되었습니다.");
@@ -229,8 +264,10 @@ document.addEventListener("click", (event) => {
   const sheetAction = event.target.closest("[data-sheet-action]");
   if (sheetAction) {
     const action = sheetAction.dataset.sheetAction;
+    const recipe = recipes[currentDetailRecipeId] || recipes.kimchi;
     closeSheet();
-    if (action === "edit") showScreen("editor");
+    if (action === "edit" && recipe.canEditRecipe) showScreen("editor");
+    if (action === "edit" && !recipe.canEditRecipe && recipe.canEditMemo) openMemoModal();
     if (action === "view-share") showToast("열람 링크가 준비되었습니다.");
     if (action === "pass-share") openShareModal();
     if (action === "delete") showToast("프로토타입에서는 삭제하지 않습니다.");

@@ -377,6 +377,20 @@
         <button class="button button-text" type="button" data-close-share-modal>닫기</button>
       </div>
     </section>
+
+    <div class="modal-backdrop" id="memo-modal-backdrop" hidden></div>
+    <section class="code-modal" id="memo-modal" aria-hidden="true" aria-labelledby="memo-modal-title">
+      <h2 id="memo-modal-title">내 메모 수정하기</h2>
+      <p class="supporting">전달받은 레시피의 원본 내용은 그대로 두고, 내가 다시 볼 때 떠올릴 메모만 수정합니다.</p>
+      <div class="field">
+        <label for="memo-edit">내 메모</label>
+        <textarea class="textarea" id="memo-edit" placeholder="다음에 다시 봤을 때 떠올리고 싶은 내용을 남겨보세요."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="button button-primary" type="button" data-save-memo>메모 저장</button>
+        <button class="button button-text" type="button" data-close-memo-modal>닫기</button>
+      </div>
+    </section>
   </main>
 
   <script src="scripts/app.js"></script>
