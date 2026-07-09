@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import test from 'node:test'
 import { AgentRuntimeKernel } from '@ay-ple/runtime-core'
 import { CodexRuntimeAdapter } from '@ay-ple/runtime-codex'
+import { withFakeCodexAppServer } from '@ay-ple/runtime-codex/testing'
 import { createServerApp } from './server.js'
 
 test('runtime API starts a fake run and streams normalized events', async () => {
@@ -199,66 +197,72 @@ test('runtime API records deterministic fake failure in stream, log, and history
 })
 
 test('runtime API streams a codex adapter run through normalized events and log', async () => {
-  await withFakeCodexAppServer(async ({ scriptPath, tempDir }) => {
-    const kernel = new AgentRuntimeKernel({
-      adapters: [
-        new CodexRuntimeAdapter({
-          rawClientOptions: {
-            codexBinPath: process.execPath,
-            codexArgs: [scriptPath],
-            cwd: tempDir,
-            codexHome: join(tempDir, 'codex-home'),
-            codexSqliteHome: join(tempDir, 'sqlite'),
-            timeoutMs: 1000,
-          },
-        }),
-      ],
-    })
-
-    await withTestServer({ kernel }, async (baseUrl) => {
-      const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
+  await withFakeCodexAppServer(
+    {
+      userAgent: 'fake-codex-server-test',
+      threadId: 'thread-server-test',
+      turnId: 'turn-server-test',
+      agentMessageDeltas: [
+        {
+          itemId: 'item-server-test',
+          delta: 'Codex server path output',
         },
-        body: JSON.stringify({
-          adapter: 'codex',
-          prompt: 'Compare adapters',
-        }),
+      ],
+    },
+    async ({ rawClientOptions }) => {
+      const kernel = new AgentRuntimeKernel({
+        adapters: [
+          new CodexRuntimeAdapter({
+            rawClientOptions,
+          }),
+        ],
       })
-      const startedRun = (await startResponse.json()) as { runId: string }
 
-      assert.equal(startResponse.status, 201)
+      await withTestServer({ kernel }, async (baseUrl) => {
+        const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            adapter: 'codex',
+            prompt: 'Compare adapters',
+          }),
+        })
+        const startedRun = (await startResponse.json()) as { runId: string }
 
-      const eventsResponse = await fetch(
-        `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,
-      )
-      const streamedEvents = parseSseData(await eventsResponse.text())
+        assert.equal(startResponse.status, 201)
 
-      assert.equal(eventsResponse.status, 200)
-      assert.deepEqual(
-        streamedEvents.map((event) => event.type),
-        ['started', 'output_delta', 'completed'],
-      )
-      assert.equal(streamedEvents[1]?.delta, 'Codex server path output')
-      assert.equal(streamedEvents[2]?.output, 'Codex server path output')
+        const eventsResponse = await fetch(
+          `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,
+        )
+        const streamedEvents = parseSseData(await eventsResponse.text())
 
-      const logResponse = await fetch(
-        `${baseUrl}/api/runtime/runs/${startedRun.runId}`,
-      )
-      const log = await logResponse.json()
+        assert.equal(eventsResponse.status, 200)
+        assert.deepEqual(
+          streamedEvents.map((event) => event.type),
+          ['started', 'output_delta', 'completed'],
+        )
+        assert.equal(streamedEvents[1]?.delta, 'Codex server path output')
+        assert.equal(streamedEvents[2]?.output, 'Codex server path output')
 
-      assert.equal(logResponse.status, 200)
-      assert.equal(log.run.status, 'completed')
-      assert.equal(log.run.output, 'Codex server path output')
-      assert.ok(
-        log.run.debugLog.some(
-          (entry: Record<string, unknown>) =>
-            entry.source === 'server' && entry.kind === 'notification',
-        ),
-      )
-    })
-  })
+        const logResponse = await fetch(
+          `${baseUrl}/api/runtime/runs/${startedRun.runId}`,
+        )
+        const log = await logResponse.json()
+
+        assert.equal(logResponse.status, 200)
+        assert.equal(log.run.status, 'completed')
+        assert.equal(log.run.output, 'Codex server path output')
+        assert.ok(
+          log.run.debugLog.some(
+            (entry: Record<string, unknown>) =>
+              entry.source === 'server' && entry.kind === 'notification',
+          ),
+        )
+      })
+    },
+  )
 })
 
 async function withTestServer(
@@ -302,83 +306,3 @@ function parseSseData(stream: string): Array<Record<string, unknown>> {
     .filter((line) => line.startsWith('data: '))
     .map((line) => JSON.parse(line.slice('data: '.length)))
 }
-
-async function withFakeCodexAppServer(
-  testBody: (fixture: { scriptPath: string; tempDir: string }) => Promise<void>,
-): Promise<void> {
-  const tempDir = await mkdtemp(join(tmpdir(), 'ay-ple-server-codex-'))
-  const scriptPath = join(tempDir, 'fake-codex-app-server.mjs')
-
-  await writeFile(scriptPath, fakeCodexAppServerSource)
-
-  try {
-    await testBody({ scriptPath, tempDir })
-  } finally {
-    await rm(tempDir, { recursive: true, force: true })
-  }
-}
-
-const fakeCodexAppServerSource = String.raw`
-import readline from 'node:readline'
-
-const reader = readline.createInterface({ input: process.stdin })
-
-reader.on('line', (line) => {
-  const message = JSON.parse(line)
-
-  if (message.method === 'initialize') {
-    writeResponse(message.id, {
-      userAgent: 'fake-codex-server-test',
-      codexHome: process.env.CODEX_HOME ?? '',
-      platformFamily: process.env.CODEX_SQLITE_HOME ?? '',
-      platformOs: process.platform,
-    })
-    return
-  }
-
-  if (message.method === 'initialized') {
-    return
-  }
-
-  if (message.method === 'thread/start') {
-    writeResponse(message.id, {
-      thread: {
-        id: 'thread-server-test',
-      },
-    })
-    return
-  }
-
-  if (message.method === 'turn/start') {
-    writeResponse(message.id, {
-      turn: {
-        id: 'turn-server-test',
-      },
-    })
-
-    setImmediate(() => {
-      writeNotification('item/agentMessage/delta', {
-        threadId: 'thread-server-test',
-        turnId: 'turn-server-test',
-        itemId: 'item-server-test',
-        delta: 'Codex server path output',
-      })
-      writeNotification('turn/completed', {
-        threadId: 'thread-server-test',
-        turn: {
-          id: 'turn-server-test',
-          status: 'completed',
-        },
-      })
-    })
-  }
-})
-
-function writeResponse(id, result) {
-  process.stdout.write(JSON.stringify({ id, result }) + '\n')
-}
-
-function writeNotification(method, params) {
-  process.stdout.write(JSON.stringify({ method, params }) + '\n')
-}
-`

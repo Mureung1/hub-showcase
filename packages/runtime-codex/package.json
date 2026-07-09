@@ -10,6 +10,11 @@
       "development": "./src/index.ts",
       "types": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./testing": {
+      "development": "./src/testing/fake-codex-app-server.ts",
+      "types": "./src/testing/fake-codex-app-server.ts",
+      "default": "./dist/testing/fake-codex-app-server.js"
     }
   },
   "scripts": {
