@@ -1,14 +1,13 @@
 ---
-name: camp-daily-pr
-description: Create, update, and merge an agent-written fork daily integration PR from the current codex/w<week>d<day> branch to N180_하성욱. Only create, update, or merge the upstream camp submission PR when the user explicitly asks for camp submission.
-disable-model-invocation: true
+name: camp-pr
+description: "Manage this repo's camp PR flow: create, update, and merge fork-local integration PRs from codex/wXdY daily branches to N180_하성욱, and create, update, or merge upstream camp submission PRs to connect-AIAgentChallenge-26-1/hub only when explicitly requested."
 ---
 
-# Fork Daily Integration PR
+# Camp PR
 
-Create, update, and merge the fork-local daily integration PR from the current `codex/w<week>d<day>` branch to `N180_하성욱`. This daily PR is an internal integration/review artifact and can be created, updated, labelled, and merged without further approval.
+Manage the camp PR flow for this repo. Create, update, and merge the fork-local daily integration PR from the current `codex/w<week>d<day>` branch to `N180_하성욱`. This daily PR is an internal integration/review artifact and can be created, updated, labelled, and merged without further approval.
 
-Despite this skill's historical name, the daily integration PR is not the upstream camp submission PR. Everything from `codex/w<week>d<day>` through `swh3467:N180_하성욱` stays inside the participant's fork. Only the PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` is the camp submission surface.
+Everything from `codex/w<week>d<day>` through `swh3467:N180_하성욱` stays inside the participant's fork. Only the PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` is the camp submission surface.
 
 Do not create, update, or merge the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` unless the user explicitly asks to submit to camp or continue to the upstream camp submission PR. The final camp submission surface is the upstream PR, but it is not part of the default daily PR action.
 
