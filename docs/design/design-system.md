@@ -158,14 +158,18 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 
 ```text
 3D scene
-├─ 현장 marker
-├─ 선택한 marker의 정보 panel
+├─ 사람 눈높이의 Gaussian Splatting 현장
+├─ 통계 기반의 추상적 사람 오브젝트
+├─ 현장 marker와 정보 panel
 └─ 10시 / 13시 / 15시 / 18시 시간대 control
 ```
 
 - 3D scene은 장식 card 안에 넣지 않고 주 작업 영역으로 제공한다.
 - 시간대 control은 segmented control을 사용한다.
 - 혼잡도에는 관찰값, 관찰 시점과 데이터 성격을 명시한다.
+- 촬영된 실제 사람과 통계 기반 사람 오브젝트의 시각적 표현을 구분한다.
+- 사람 오브젝트는 low-poly, 단색 silhouette 등 의도적으로 단순한 형태를 사용한다.
+- 장면의 사람 수가 실제 집계 인원과 일치하지 않으면 그 의미를 legend로 설명한다.
 - camera 이동과 marker 선택은 keyboard로도 접근 가능한 대체 control을 제공한다.
 
 ### 4.3 반응형 동작
