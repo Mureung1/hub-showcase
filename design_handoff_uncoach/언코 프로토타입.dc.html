@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{--bg:#f4f7fa;--surface:#ffffff;--ink:#182430;--sub:#5b6b7a;--line:#dde5ec;--accent:#2e6da8;--accent-ink:#ffffff;--accent-soft:#e3edf6;--good:#2e8b62;--good-soft:#e2f1e9;--warn:#b98a2f;--warn-soft:#f7edda;--bad:#bf4545;--bad-soft:#f7e3e1;--side:#13293a;--side-ink:#cfe0ee;--side-dim:#7d95a8;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,-apple-system,"Noto Sans KR","Malgun Gothic",sans-serif;}
+a{color:var(--accent);text-decoration:none;} a:hover{color:var(--ink);}
+button{font-family:inherit;cursor:pointer;}
+textarea{font-family:inherit;}
+::placeholder{color:#9aa9b6;}
+@keyframes pc-spin{to{transform:rotate(360deg)}}
+@keyframes pc-pulse{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes ob-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ob-pop{from{opacity:0;transform:translateY(24px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes ob-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes ob-blob{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(26px,-20px) scale(1.12)}66%{transform:translate(-20px,16px) scale(.92)}}
+@keyframes ob-shine{to{background-position:-200% center}}
+@keyframes hero-draw{to{stroke-dashoffset:0}}
+@keyframes hero-ride{0%{opacity:0;transform:translate(-34px,26px)}60%{opacity:1}100%{opacity:1;transform:translate(0,0)}}
+@keyframes hero-area{from{opacity:0}to{opacity:.55}}
+@keyframes hero-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes hero-dot{0%,80%,100%{opacity:.3}40%{opacity:1}}
+</style>
+</helmet>
+<div style="display:flex;min-height:100vh;background:var(--bg)">
+
+  <sc-if value="{{ showSidebar }}" hint-placeholder-val="{{ false }}">
+    <div style="width:228px;flex:none;background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;box-sizing:border-box;padding:28px 18px 20px">
+      <div style="padding:0 10px 26px">
+        <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#fff">언코</div>
+        <div style="font-size:11.5px;color:var(--side-dim);margin-top:4px;line-height:1.5">화용 능력 코칭 에이전트<br>'맞는 상황의 말'을 훈련합니다</div>
+      </div>
+      <nav style="display:flex;flex-direction:column;gap:4px">
+        <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+          <button onClick="{{ n.go }}" style="{{ n.style }}" style-hover="background:rgba(255,255,255,0.10);color:#ffffff">
+            <span style="{{ n.dotStyle }}"></span>{{ n.label }}
+          </button>
+        </sc-for>
+      </nav>
+      <div style="margin-top:auto;padding:14px 10px 0;border-top:1px solid rgba(255,255,255,0.12)">
+        <div style="font-size:12px;font-weight:600;color:#fff">{{ profileLabel }}</div>
+        <div style="font-size:11px;color:var(--side-dim);margin-top:3px;line-height:1.55">실시간 개입 없음 · 프라이버시 우선<br>찾아와 훈련하는 '헬스장' 모델</div>
+        <button onClick="{{ setApiKey }}" style="margin-top:10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:var(--side-dim);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600" style-hover="color:#fff;border-color:rgba(255,255,255,0.4)">API 키 변경</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isOnboarding }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="온보딩" style="flex:1;display:flex;align-items:center;justify-content:center;padding:48px 24px;box-sizing:border-box;position:relative;overflow:hidden">
+      <div style="position:absolute;top:-90px;left:-70px;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,var(--accent-soft),transparent 70%);filter:blur(22px);opacity:.75;animation:ob-blob 15s ease-in-out infinite;pointer-events:none"></div>
+      <div style="position:absolute;bottom:-110px;right:-50px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,var(--good-soft),transparent 70%);filter:blur(26px);opacity:.6;animation:ob-blob 19s ease-in-out infinite reverse;pointer-events:none"></div>
+      <div style="width:640px;max-width:100%;position:relative;z-index:1">
+        <div style="text-align:center;margin-bottom:24px">
+          <svg width="260" height="150" viewBox="0 0 260 150" style="display:block;margin:0 auto 6px;max-width:100%;height:auto" role="img" aria-label="점수가 오르는 그래프를 타고 오르는 캐릭터">
+            <line x1="16" y1="138" x2="244" y2="138" style="stroke:var(--line);stroke-width:1.5"></line>
+            <line x1="16" y1="16" x2="16" y2="138" style="stroke:var(--line);stroke-width:1.5"></line>
+            <polygon points="24,128 74,110 124,90 168,60 212,38 212,138 24,138" style="fill:var(--accent-soft);opacity:0;animation:hero-area .8s .55s ease both"></polygon>
+            <polyline points="24,128 74,110 124,90 168,60 212,38" style="fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:250;stroke-dashoffset:250;animation:hero-draw 1.15s .2s ease-out forwards"></polyline>
+            <g style="opacity:0;animation:hero-area .5s 1.15s ease forwards">
+              <circle cx="74" cy="110" r="3" style="fill:var(--accent);stroke:var(--surface);stroke-width:1.5"></circle>
+              <circle cx="124" cy="90" r="3" style="fill:var(--accent);stroke:var(--surface);stroke-width:1.5"></circle>
+              <circle cx="168" cy="60" r="3" style="fill:var(--accent);stroke:var(--surface);stroke-width:1.5"></circle>
+            </g>
+            <g style="animation:hero-bob 3.6s .6s ease-in-out infinite">
+              <path d="M118,20 l0,10 M113,25 l10,0" style="stroke:var(--warn);stroke-width:2;stroke-linecap:round;opacity:.7"></path>
+              <path d="M238,48 l0,8 M234,52 l8,0" style="stroke:var(--good);stroke-width:2;stroke-linecap:round;opacity:.6"></path>
+            </g>
+            <g style="animation:hero-ride 1.15s .2s cubic-bezier(.22,1,.36,1) both,hero-bob 3.2s 1.45s ease-in-out infinite">
+              <circle cx="212" cy="20" r="16" style="fill:var(--accent)"></circle>
+              <circle cx="206" cy="13" r="4.5" style="fill:#ffffff;opacity:.22"></circle>
+              <circle cx="207" cy="18" r="2" style="fill:#ffffff"></circle>
+              <circle cx="217" cy="18" r="2" style="fill:#ffffff"></circle>
+              <path d="M205,24 Q212,29 219,24" style="fill:none;stroke:#ffffff;stroke-width:1.6;stroke-linecap:round"></path>
+              <rect x="196" y="28" width="34" height="21" rx="6" style="fill:var(--surface);stroke:var(--accent);stroke-width:1.6"></rect>
+              <path d="M206,49 l5,6 l4,-6 z" style="fill:var(--surface);stroke:var(--accent);stroke-width:1.6;stroke-linejoin:round"></path>
+              <circle cx="204" cy="39" r="2.1" style="fill:var(--sub);animation:hero-dot 1.4s 0s ease-in-out infinite"></circle>
+              <circle cx="213" cy="39" r="2.1" style="fill:var(--sub);animation:hero-dot 1.4s .2s ease-in-out infinite"></circle>
+              <circle cx="222" cy="39" r="2.1" style="fill:var(--sub);animation:hero-dot 1.4s .4s ease-in-out infinite"></circle>
+              <path d="M200,24 Q191,34 199,44" style="fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round"></path>
+              <path d="M224,24 Q233,34 225,44" style="fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round"></path>
+            </g>
+          </svg>
+          <div style="display:inline-block;font-size:12px;font-weight:700;letter-spacing:0.08em;color:var(--accent);background:var(--accent-soft);padding:6px 14px;border-radius:999px;animation:ob-rise .55s .05s both,ob-float 4s 1.2s ease-in-out infinite">화용 능력 코칭 AI 에이전트</div>
+          <h1 style="font-size:34px;font-weight:800;letter-spacing:-0.02em;margin:18px 0 10px;animation:ob-rise .6s .15s both">'맞는 말'이 아니라,<br><span style="background:linear-gradient(100deg,var(--accent),#4aa3e0,var(--accent));background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:ob-shine 4s linear infinite">'맞는 상황의 말'</span>을 훈련합니다</h1>
+          <p style="font-size:15px;color:var(--sub);line-height:1.7;margin:0;animation:ob-rise .6s .25s both">문법은 완벽해도 격식·관계에서 무너지는 글 —<br>말결은 대신 써주지 않고, 스스로 다시 쓰게 합니다.</p>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:0 8px 30px rgba(20,40,60,0.08);animation:ob-pop .6s .35s both">
+          <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:12px">1 · 지금 나와 가장 가까운 상황은</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px">
+            <sc-for list="{{ roleCards }}" as="r" hint-placeholder-count="3">
+              <button onClick="{{ r.pick }}" style="{{ r.style }}" style-hover="border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 20px rgba(30,60,90,0.12)">
+                <span style="font-size:14px;font-weight:700;display:block">{{ r.title }}</span>
+                <span style="font-size:12px;color:var(--sub);display:block;margin-top:5px;line-height:1.5">{{ r.desc }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:12px">2 · 먼저 훈련하고 싶은 것은</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px">
+            <sc-for list="{{ goalChips }}" as="g" hint-placeholder-count="3">
+              <button onClick="{{ g.pick }}" style="{{ g.style }}" style-hover="border-color:var(--accent);transform:translateY(-2px)">{{ g.label }}</button>
+            </sc-for>
+          </div>
+          <button onClick="{{ startApp }}" disabled="{{ obNotReady }}" style="{{ obStartStyle }}" style-hover="filter:brightness(1.08);transform:translateY(-2px)">훈련 시작하기</button>
+          <div style="font-size:11.5px;color:var(--sub);text-align:center;margin-top:12px">글은 채점·코칭에만 사용됩니다 · 실시간 감시나 개입은 없습니다</div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="홈 대시보드" style="flex:1;min-width:0;padding:44px 48px;box-sizing:border-box">
+      <div style="max-width:960px;margin:0 auto">
+        <h1 style="font-size:26px;font-weight:800;letter-spacing:-0.01em;margin:0 0 6px">오늘도 훈련하러 오셨네요</h1>
+        <p style="font-size:14px;color:var(--sub);margin:0 0 28px">화용 점수는 '한 번의 잘 쓴 글'이 아니라 궤적으로 오릅니다.</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">
+          <sc-for list="{{ homeAxes }}" as="ax" hint-placeholder-count="3">
+            <div style="{{ ax.cardStyle }}">
+              <div style="display:flex;align-items:baseline;justify-content:space-between">
+                <div style="font-size:13px;font-weight:700;word-break:keep-all;white-space:nowrap">{{ ax.num }} {{ ax.name }}</div>
+                <sc-if value="{{ ax.isWeak }}"><span style="font-size:10.5px;font-weight:700;color:var(--bad);background:var(--bad-soft);padding:3px 8px;border-radius:999px">집중 축</span></sc-if>
+              </div>
+              <div style="height:8px;border-radius:999px;background:var(--line);margin:14px 0 10px;overflow:hidden"><div style="{{ ax.fillStyle }}"></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <span style="{{ ax.chipStyle }}">{{ ax.levelLabel }}</span>
+                <span style="font-size:11.5px;color:var(--sub)">{{ ax.trend }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px">
+          <div style="background:var(--side);color:#fff;border-radius:14px;padding:26px;display:flex;flex-direction:column">
+            <div style="font-size:11.5px;font-weight:700;letter-spacing:0.06em;color:var(--side-dim)">오늘의 추천 훈련</div>
+            <div style="font-size:20px;font-weight:800;margin:10px 0 6px">{{ recoTitle }}</div>
+            <div style="font-size:13px;color:var(--side-ink);line-height:1.65;margin-bottom:20px">{{ recoReason }}</div>
+            <div style="display:flex;gap:10px;margin-top:auto">
+              <button onClick="{{ startReco }}" style="background:#ffffff;color:var(--side);border:none;border-radius:10px;padding:11px 20px;font-size:14px;font-weight:700" style-hover="filter:brightness(0.92)">바로 시작</button>
+              <button onClick="{{ goPicker }}" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.35);border-radius:10px;padding:11px 20px;font-size:14px;font-weight:600" style-hover="background:rgba(255,255,255,0.1)">다른 상황 고르기</button>
+            </div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px">
+            <div style="font-size:13px;font-weight:700;margin-bottom:14px">최근 세션</div>
+            <sc-if value="{{ hasRecents }}">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <sc-for list="{{ recents }}" as="s" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="font-size:11.5px;color:var(--sub);width:34px;flex:none">{{ s.date }}</span>
+                    <span style="font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.title }}</span>
+                    <span style="display:flex;gap:4px;align-items:center">
+                      <sc-for list="{{ s.chips }}" as="c"><span style="{{ c.style }}">{{ c.t }}</span></sc-for>
+                      <span style="font-size:11.5px;font-weight:800;margin-left:4px">{{ s.total }}</span>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noRecents }}"><div style="font-size:13px;color:var(--sub);line-height:1.6">아직 세션이 없습니다.<br>첫 훈련을 시작해보세요.</div></sc-if>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isPicker }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="상황 선택" style="flex:1;min-width:0;padding:44px 48px;box-sizing:border-box">
+      <div style="max-width:960px;margin:0 auto">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:6px">
+          <h1 style="font-size:26px;font-weight:800;margin:0">훈련 상황</h1>
+          <div style="display:flex;gap:8px;flex:none">
+            <button onClick="{{ toggleAllSits }}" style="background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:9px 14px;font-size:13px;font-weight:600;color:var(--sub)" style-hover="border-color:var(--accent);color:var(--accent)">{{ showAllLabel }}</button>
+            <button onClick="{{ goNewSit }}" style="background:var(--accent);color:var(--accent-ink);border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700" style-hover="filter:brightness(1.08)">＋ 직접 상황 만들기</button>
+          </div>
+        </div>
+        <p style="font-size:14px;color:var(--sub);margin:0 0 26px">'적절'의 방향은 관계마다 달라집니다 — 교수에게는 완충이, 조원에게는 가벼움이 3점입니다.</p>
+        <div style="display:flex;flex-direction:column;gap:26px">
+          <sc-for list="{{ relGroups }}" as="grp" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
+                <span style="{{ grp.chipStyle }}">{{ grp.rel }}</span>
+                <span style="font-size:12px;color:var(--sub)">{{ grp.hint }}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <sc-for list="{{ grp.items }}" as="it">
+                  <button onClick="{{ it.pick }}" style="text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:6px" style-hover="border-color:var(--accent);box-shadow:0 2px 10px rgba(30,60,90,0.08)">
+                    <span style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                      <span style="font-size:14.5px;font-weight:700">{{ it.title }}</span>
+                      <span style="font-size:10.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:3px 8px;border-radius:999px;flex:none">핵심 {{ it.axis }}</span>
+                    </span>
+                    <span style="font-size:12.5px;color:var(--sub);line-height:1.55">{{ it.tension }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ hasCustom }}">
+            <div>
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
+                <span style="{{ customGroup.chipStyle }}">내가 만든 상황</span>
+                <span style="font-size:12px;color:var(--sub)">직접 추가한 훈련 상황</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <sc-for list="{{ customGroup.items }}" as="it">
+                  <button onClick="{{ it.pick }}" style="text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;position:relative" style-hover="border-color:var(--accent);box-shadow:0 2px 10px rgba(30,60,90,0.08)">
+                    <span style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                      <span style="font-size:14.5px;font-weight:700">{{ it.title }}</span>
+                      <span onClick="{{ it.remove }}" style="font-size:14px;color:var(--sub);width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;flex:none" style-hover="background:var(--bad-soft);color:var(--bad)">×</span>
+                    </span>
+                    <span style="font-size:12.5px;color:var(--sub);line-height:1.55">{{ it.tension }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ pickerEmpty }}">
+            <div style="background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:44px;text-align:center;font-size:14px;color:var(--sub)">이 역할에 맞는 기본 상황이 아직 없어요. '전체 상황 보기'로 다른 상황을 보거나, '＋ 직접 상황 만들기'로 나만의 상황을 추가해보세요.</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isTrain }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="훈련 루프" style="flex:1;min-width:0;padding:36px 48px 48px;box-sizing:border-box">
+      <div style="max-width:1040px;margin:0 auto">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px">
+          <button onClick="{{ goPicker }}" style="background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--sub)" style-hover="color:var(--ink);border-color:var(--accent)">← 상황 다시 고르기</button>
+          <h1 style="font-size:20px;font-weight:800;margin:0;flex:1">{{ sitTitle }}</h1>
+          <span style="{{ sitRelChipStyle }}">{{ sitRel }}</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px">
+              <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;color:var(--sub);margin-bottom:12px">상황 브리핑</div>
+              <div style="display:grid;grid-template-columns:52px 1fr;gap:8px 12px;font-size:13.5px;line-height:1.6">
+                <span style="color:var(--sub);font-weight:600">상대</span><span>{{ sitCounterpart }}</span>
+                <span style="color:var(--sub);font-weight:600">목적</span><span>{{ sitGoal }}</span>
+                <span style="color:var(--sub);font-weight:600">긴장</span><span>{{ sitTension }}</span>
+              </div>
+              <div style="margin-top:14px;background:var(--accent-soft);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.6;color:var(--ink)"><strong style="color:var(--accent)">이 관계에서 '적절'의 방향</strong><br>{{ sitDirection }}</div>
+            </div>
+
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)">
+                <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;color:var(--sub)">초안 작성</div>
+                <div style="font-size:11.5px;color:var(--sub)">{{ attemptLabel }}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px;padding:16px 20px;min-height:96px;max-height:300px;overflow-y:auto;background:var(--bg)">
+                <sc-for list="{{ threadBubbles }}" as="tb" hint-placeholder-count="0">
+                  <div style="{{ tb.wrapStyle }}">
+                    <sc-if value="{{ tb.isThem }}"><span style="font-size:11px;color:var(--sub);padding:0 4px">{{ tb.label }}</span></sc-if>
+                    <div style="{{ tb.bubbleStyle }}">{{ tb.text }}</div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ showDraftBubble }}">
+                  <div style="align-self:flex-end;max-width:82%;background:var(--accent-soft);color:var(--ink);border:1px dashed var(--accent);border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:13.5px;line-height:1.55;white-space:pre-wrap">{{ draft }}</div>
+                </sc-if>
+                <sc-if value="{{ showTyping }}">
+                  <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;max-width:82%">
+                    <span style="font-size:11px;color:var(--sub);padding:0 4px">{{ sitCounterpart }}</span>
+                    <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:10px 16px;font-size:15px;letter-spacing:2px;color:var(--sub);animation:pc-pulse 1.4s ease infinite">···</div>
+                  </div>
+                </sc-if>
+              </div>
+              <div style="padding:14px 20px 20px;border-top:1px solid var(--line)">
+                <textarea value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onDraftKey }}" placeholder="메시지를 입력하고 Enter로 보내세요 (Shift+Enter 줄바꿈)" rows="3" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.6;resize:vertical;background:var(--bg);color:var(--ink);outline:none" style-focus="border-color:var(--accent)"></textarea>
+                <sc-if value="{{ hasError }}"><div style="margin-top:10px;font-size:12.5px;color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:9px 12px">{{ errorMsg }}</div></sc-if>
+                <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+                  <button onClick="{{ submitDraft }}" disabled="{{ isScoring }}" style="{{ submitStyle }}" style-hover="filter:brightness(1.08)">{{ submitLabel }}</button>
+                  <button onClick="{{ fillSample }}" style="background:transparent;border:1px solid var(--line);border-radius:10px;padding:11px 16px;font-size:13px;font-weight:600;color:var(--sub)" style-hover="border-color:var(--accent);color:var(--ink)">예시 초안 넣기</button>
+                  <span style="margin-left:auto;font-size:11.5px;color:var(--sub)">{{ charCount }}자</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <sc-if value="{{ showIntroPanel }}">
+              <div style="background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:22px">
+                <div style="font-size:13px;font-weight:700;margin-bottom:14px">채점 기준 — 화용 루브릭 3축</div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <sc-for list="{{ rubricRows }}" as="rb" hint-placeholder-count="3">
+                    <div style="display:flex;gap:12px;align-items:flex-start">
+                      <span style="{{ rb.numStyle }}">{{ rb.num }}</span>
+                      <span style="flex:1"><span style="font-size:13.5px;font-weight:700;display:block">{{ rb.name }}</span><span style="font-size:12.5px;color:var(--sub);line-height:1.6;display:block;margin-top:2px">{{ rb.desc }}</span></span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px;font-size:12px;color:var(--sub);line-height:1.6">세 축은 병렬이 아니라 <strong style="color:var(--ink)">위계</strong>입니다. ①이 무너지면 ②③을 아무리 다듬어도 소용없어요. 그래서 피드백은 가장 낮은 축부터 짚습니다.</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isScoring }}">
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:40px 22px;text-align:center">
+                <div style="width:34px;height:34px;border:3px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;margin:0 auto 16px;animation:pc-spin 0.8s linear infinite"></div>
+                <div style="font-size:14px;font-weight:700">3축 루브릭으로 채점 중입니다</div>
+                <div style="font-size:12.5px;color:var(--sub);margin-top:6px;animation:pc-pulse 1.6s ease infinite">맥락·의도 → 관계·격식 → 전략·표현</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ hasResult }}">
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">
+                  <div style="font-size:13px;font-weight:700">채점 결과</div>
+                  <div style="font-size:11.5px;color:var(--sub)">{{ resultAttemptLabel }}</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+                  <span style="font-size:36px;font-weight:800;letter-spacing:-0.02em;line-height:1">{{ totalScore }}</span>
+                  <span style="font-size:13px;color:var(--sub)">/ 100점</span>
+                  <sc-if value="{{ totalDelta }}"><span style="{{ totalDeltaStyle }}">{{ totalDelta }}</span></sc-if>
+                </div>
+                <div style="font-size:11px;color:var(--sub);margin-bottom:16px">위계 가중 총점 — 맥락 40 · 격식 30 · 전략 30</div>
+                <sc-if value="{{ allGood }}">
+                  <div style="background:var(--good-soft);color:var(--good);border-radius:10px;padding:12px 14px;font-size:13px;font-weight:700;margin-bottom:14px">세 축 모두 '적절' 구간에 들어왔어요. 이 감각을 자산집에 남겨두세요.</div>
+                </sc-if>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <sc-for list="{{ resultRows }}" as="ax" hint-placeholder-count="3">
+                    <div style="{{ ax.rowStyle }}">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-size:13px;font-weight:700;flex:1">{{ ax.num }} {{ ax.name }}</span>
+                        <sc-if value="{{ ax.isLowest }}"><span style="font-size:10px;font-weight:800;letter-spacing:0.04em;color:#fff;background:var(--bad);padding:3px 8px;border-radius:999px">여기부터</span></sc-if>
+                        <sc-if value="{{ ax.delta }}"><span style="{{ ax.deltaStyle }}">{{ ax.delta }}</span></sc-if>
+                        <span style="{{ ax.chipStyle }}">{{ ax.levelLabel }}</span>
+                      </div>
+                      <div style="height:7px;border-radius:999px;background:var(--line);margin:9px 0 8px;overflow:hidden"><div style="{{ ax.fillStyle }}"></div></div>
+                      <div style="font-size:12.5px;color:var(--sub);line-height:1.6">{{ ax.reason }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ showHierarchyNote }}">
+                  <div style="margin-top:14px;font-size:12px;color:var(--sub);line-height:1.6;border-top:1px solid var(--line);padding-top:12px">위계 원칙에 따라 <strong style="color:var(--bad)">가장 낮은 축</strong>부터 고칩니다 — 아래 축이 무너지면 위 축을 다듬어도 소용없어요.</div>
+                </sc-if>
+              </div>
+
+              <sc-if value="{{ hasDeductions }}">
+                <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px">
+                  <div style="font-size:13px;font-weight:700;margin-bottom:13px">어디서 깎였나 — 감점 포인트</div>
+                  <div style="display:flex;flex-direction:column;gap:11px">
+                    <sc-for list="{{ deductionRows }}" as="d" hint-placeholder-count="2">
+                      <div style="display:flex;gap:10px;align-items:flex-start">
+                        <span style="{{ d.tagStyle }}">{{ d.axisLabel }}</span>
+                        <span style="flex:1;font-size:12.5px;line-height:1.65;min-width:0"><span style="background:var(--bad-soft);color:var(--bad);border-radius:4px;padding:1px 6px;font-weight:600">“{{ d.quote }}”</span> — {{ d.why }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <div style="{{ coachCardStyle }}">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                  <span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:none">결</span>
+                  <span style="font-size:12.5px;font-weight:700;color:var(--accent)">코치</span>
+                </div>
+                <div style="font-size:13.5px;line-height:1.75">{{ coachText }}</div>
+                <sc-if value="{{ hasFix }}">
+                  <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:13px;line-height:1.6"><strong style="color:var(--accent)">다음엔 이렇게</strong> — {{ fixText }}</div>
+                </sc-if>
+                <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+                  <sc-if value="{{ canSaveAsset }}"><button onClick="{{ saveAsset }}" style="background:var(--good);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-size:13.5px;font-weight:700" style-hover="filter:brightness(1.08)">자산집에 저장</button></sc-if>
+                  <button onClick="{{ finishSession }}" style="background:transparent;border:1px solid var(--line);border-radius:10px;padding:11px 18px;font-size:13.5px;font-weight:600;color:var(--sub)" style-hover="color:var(--ink);border-color:var(--accent)">세션 마치기</button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isProgress }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="궤적" style="flex:1;min-width:0;padding:44px 48px;box-sizing:border-box">
+      <div style="max-width:960px;margin:0 auto">
+        <h1 style="font-size:26px;font-weight:800;margin:0 0 6px">궤적</h1>
+        <p style="font-size:14px;color:var(--sub);margin:0 0 26px">한 번의 점수가 아니라, 축별로 오르는 궤적을 봅니다. {{ demoNote }}</p>
+        <sc-if value="{{ hasProgress }}">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px 26px;margin-bottom:16px">
+            <div style="display:flex;gap:16px;margin-bottom:18px">
+              <sc-for list="{{ legend }}" as="lg" hint-placeholder-count="3">
+                <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)"><span style="{{ lg.swatch }}"></span>{{ lg.name }}</span>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:18px;height:110px;border-bottom:1px solid var(--line);padding-bottom:0">
+              <sc-for list="{{ progressCols }}" as="col" hint-placeholder-count="6">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex:1;height:100%;justify-content:flex-end">
+                  <div style="display:flex;align-items:flex-end;gap:3px;width:100%;justify-content:center">
+                    <sc-for list="{{ col.bars }}" as="b"><div style="{{ b.style }}"></div></sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:18px;margin-top:8px">
+              <sc-for list="{{ progressCols }}" as="col"><div style="flex:1;text-align:center;font-size:10.5px;color:var(--sub)">{{ col.label }}</div></sc-for>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+            <sc-for list="{{ progressSummary }}" as="ps" hint-placeholder-count="3">
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px">
+                <div style="font-size:12.5px;font-weight:700;color:var(--sub)">{{ ps.num }} {{ ps.name }}</div>
+                <div style="font-size:20px;font-weight:800;margin-top:8px">{{ ps.now }}</div>
+                <div style="{{ ps.deltaStyle }}">{{ ps.delta }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noProgress }}"><div style="background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:48px;text-align:center;font-size:14px;color:var(--sub)">아직 기록이 없습니다. 첫 세션을 마치면 궤적이 그려집니다.</div></sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAssets }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="표현 자산집" style="flex:1;min-width:0;padding:44px 48px;box-sizing:border-box">
+      <div style="max-width:820px;margin:0 auto">
+        <h1 style="font-size:26px;font-weight:800;margin:0 0 6px">내 표현 자산집</h1>
+        <p style="font-size:14px;color:var(--sub);margin:0 0 26px">스스로 완성한 좋은 표현만 저장됩니다 — 대신 써준 문장은 여기 없습니다.</p>
+        <sc-if value="{{ hasAssets }}">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ assetCards }}" as="a" hint-placeholder-count="3">
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 24px;border-left:3px solid var(--good)">
+                <div style="font-size:15px;line-height:1.7;font-weight:500">“{{ a.text }}”</div>
+                <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+                  <span style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:999px">{{ a.sit }}</span>
+                  <span style="font-size:11.5px;color:var(--sub)">{{ a.date }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noAssets }}"><div style="background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:48px;text-align:center;font-size:14px;color:var(--sub)">아직 저장된 표현이 없습니다. 훈련에서 '적절'에 도달하면 저장할 수 있어요.</div></sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="설정" style="flex:1;min-width:0;padding:44px 48px;box-sizing:border-box">
+      <div style="max-width:680px;margin:0 auto">
+        <h1 style="font-size:26px;font-weight:800;margin:0 0 6px">설정</h1>
+        <p style="font-size:14px;color:var(--sub);margin:0 0 26px">내 정보와 데이터는 이 브라우저에만 저장됩니다 · 서버로 보내지 않습니다.</p>
+
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px">프로필</div>
+          <div style="display:grid;grid-template-columns:64px 1fr;gap:9px 12px;font-size:14px;line-height:1.6">
+            <span style="color:var(--sub);font-weight:600">역할</span><span>{{ profileRole }}</span>
+            <span style="color:var(--sub);font-weight:600">목표</span><span>{{ profileGoal }}</span>
+          </div>
+          <button onClick="{{ reProfile }}" style="margin-top:16px;background:var(--accent-soft);color:var(--accent);border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:700" style-hover="filter:brightness(0.97)">프로필 다시 설정</button>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px">AI 채점</div>
+          <div style="display:grid;grid-template-columns:100px 1fr;gap:9px 12px;font-size:14px;line-height:1.6">
+            <span style="color:var(--sub);font-weight:600">채점 모델</span><span>{{ modelLabel }}</span>
+            <span style="color:var(--sub);font-weight:600">Gemini API 키</span><span>{{ apiKeyLabel }}</span>
+          </div>
+          <button onClick="{{ changeApiKey }}" style="margin-top:16px;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 16px;font-size:13px;font-weight:700" style-hover="border-color:var(--accent);color:var(--accent)">API 키 변경 · 삭제</button>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:6px">데이터</div>
+          <div style="font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:14px">훈련 기록 {{ historyCount }} · 저장한 표현 {{ assetCount }}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onClick="{{ clearHistory }}" style="background:transparent;color:var(--sub);border:1px solid var(--line);border-radius:9px;padding:9px 16px;font-size:13px;font-weight:600" style-hover="border-color:var(--bad);color:var(--bad)">훈련 기록 초기화</button>
+            <button onClick="{{ clearAssets }}" style="background:transparent;color:var(--sub);border:1px solid var(--line);border-radius:9px;padding:9px 16px;font-size:13px;font-weight:600" style-hover="border-color:var(--bad);color:var(--bad)">자산집 비우기</button>
+          </div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:6px">문의 · 지원</div>
+          <div style="font-size:13px;color:var(--sub);line-height:1.7;margin-bottom:14px">버그 제보나 궁금한 점이 있으면 메일로 알려주세요. 빠르게 답변드릴게요.</div>
+          <a href="mailto:jaykim1137@gmail.com?subject=%5B%EC%96%B8%EC%BD%94%5D%20%EB%AC%B8%EC%9D%98" style="display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:9px;padding:9px 16px;font-size:13px;font-weight:700;text-decoration:none" style-hover="filter:brightness(0.97)">문의하기</a>
+        </div>
+
+        <button onClick="{{ logout }}" style="width:100%;background:var(--bad-soft);color:var(--bad);border:1px solid transparent;border-radius:11px;padding:13px;font-size:14px;font-weight:700;margin-top:6px" style-hover="border-color:var(--bad)">로그아웃</button>
+        <div style="font-size:11.5px;color:var(--sub);text-align:center;margin-top:10px">로그아웃하면 이 기기에 저장된 내 정보가 지워집니다.</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isNewSit }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="상황 만들기" style="flex:1;min-width:0;padding:44px 48px;box-sizing:border-box">
+      <div style="max-width:680px;margin:0 auto">
+        <button onClick="{{ cancelNewSit }}" style="background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--sub);margin-bottom:18px" style-hover="color:var(--ink);border-color:var(--accent)">← 상황 목록으로</button>
+        <h1 style="font-size:26px;font-weight:800;margin:0 0 6px">직접 상황 만들기</h1>
+        <p style="font-size:14px;color:var(--sub);margin:0 0 24px">핵심만 적으면 나머지(상대 묘사·적절의 방향·채점 기준)는 AI가 채워줍니다.</p>
+
+        <sc-if value="{{ nsForm }}">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:16px">
+            <div>
+              <div style="font-size:12.5px;font-weight:700;color:var(--sub);margin-bottom:6px">상황 제목 <span style="color:var(--bad)">*</span></div>
+              <input value="{{ nsTitle }}" onChange="{{ onNsTitle }}" placeholder="예: 상사에게 휴가 사유 설명하기" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;background:var(--bg);color:var(--ink);outline:none" style-focus="border-color:var(--accent)">
+            </div>
+            <div>
+              <div style="font-size:12.5px;font-weight:700;color:var(--sub);margin-bottom:6px">상대는 누구인가요 <span style="color:var(--bad)">*</span></div>
+              <input value="{{ nsWho }}" onChange="{{ onNsWho }}" placeholder="예: 깐깐한 직속 팀장, 나를 평가함" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;background:var(--bg);color:var(--ink);outline:none" style-focus="border-color:var(--accent)">
+            </div>
+            <div>
+              <div style="font-size:12.5px;font-weight:700;color:var(--sub);margin-bottom:6px">무엇을 하려고 하나요 (목적) <span style="color:var(--bad)">*</span></div>
+              <input value="{{ nsGoal }}" onChange="{{ onNsGoal }}" placeholder="예: 갑작스런 연차를 정중히 요청" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;background:var(--bg);color:var(--ink);outline:none" style-focus="border-color:var(--accent)">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <div style="font-size:12.5px;font-weight:700;color:var(--sub);margin-bottom:6px">관계 라벨 (선택)</div>
+                <input value="{{ nsRel }}" onChange="{{ onNsRel }}" placeholder="예: 직속 상사" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;background:var(--bg);color:var(--ink);outline:none" style-focus="border-color:var(--accent)">
+              </div>
+              <div>
+                <div style="font-size:12.5px;font-weight:700;color:var(--sub);margin-bottom:6px">긴장 포인트 (선택)</div>
+                <input value="{{ nsTension }}" onChange="{{ onNsTension }}" placeholder="예: 눈치 보이고 미안한 상황" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;background:var(--bg);color:var(--ink);outline:none" style-focus="border-color:var(--accent)">
+              </div>
+            </div>
+            <sc-if value="{{ nsHasError }}"><div style="font-size:12.5px;color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:9px 12px">{{ nsErrorMsg }}</div></sc-if>
+            <button onClick="{{ generateSit }}" style="background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;padding:13px;font-size:14.5px;font-weight:700;margin-top:4px" style-hover="filter:brightness(1.08)">AI로 상황 완성하기</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ nsGenerating }}">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:44px 22px;text-align:center">
+            <div style="width:34px;height:34px;border:3px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;margin:0 auto 16px;animation:pc-spin 0.8s linear infinite"></div>
+            <div style="font-size:14px;font-weight:700">AI가 상황을 구성하고 있어요</div>
+            <div style="font-size:12.5px;color:var(--sub);margin-top:6px;animation:pc-pulse 1.6s ease infinite">상대 묘사 · 적절의 방향 · 채점 기준</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ nsPreview }}">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <span style="font-size:16px;font-weight:800">{{ nsPvTitle }}</span>
+              <span style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:999px;flex:none">핵심 {{ nsPvAxis }}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:60px 1fr;gap:8px 12px;font-size:13.5px;line-height:1.6">
+              <span style="color:var(--sub);font-weight:600">상대</span><span>{{ nsPvRel }} — {{ nsPvCounterpart }}</span>
+              <span style="color:var(--sub);font-weight:600">목적</span><span>{{ nsPvGoal }}</span>
+              <span style="color:var(--sub);font-weight:600">긴장</span><span>{{ nsPvTension }}</span>
+            </div>
+            <div style="background:var(--accent-soft);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.6"><strong style="color:var(--accent)">이 관계에서 '적절'의 방향</strong><br>{{ nsPvDirection }}</div>
+            <sc-if value="{{ nsPvHasOpener }}"><div style="font-size:12.5px;color:var(--sub);line-height:1.6"><strong>상대 첫 메시지</strong> — "{{ nsPvOpener }}"</div></sc-if>
+            <sc-if value="{{ nsPvHasRubric }}"><div style="font-size:11.5px;color:var(--good)">✓ 상황별 채점 기준(3축)까지 생성됨 — 더 정확하게 채점됩니다</div></sc-if>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+              <button onClick="{{ saveSit }}" style="background:var(--good);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-size:13.5px;font-weight:700" style-hover="filter:brightness(1.08)">이 상황 저장하기</button>
+              <button onClick="{{ generateSit }}" style="background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:11px 18px;font-size:13.5px;font-weight:700" style-hover="filter:brightness(1.08)">다시 생성</button>
+              <button onClick="{{ backToForm }}" style="background:transparent;color:var(--sub);border:1px solid var(--line);border-radius:10px;padding:11px 18px;font-size:13.5px;font-weight:600" style-hover="color:var(--ink);border-color:var(--accent)">입력 수정</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:13px;font-weight:600;padding:12px 22px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,0.25);z-index:50">{{ toastMsg }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;소프트 블루&quot;, &quot;세이지 그린&quot;, &quot;잉크 미니멀&quot;], &quot;default&quot;: &quot;소프트 블루&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;스타일&quot;}, &quot;demoData&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;데모&quot;}, &quot;aiModel&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;빠름 (flash)&quot;, &quot;정밀 (pro)&quot;], &quot;default&quot;: &quot;빠름 (flash)&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;데모&quot;}}">
+const AXES = [
+  { key: 'context', num: '①', name: '맥락·의도', desc: '상대가 왜 이 상황에 있고 무엇을 기대·우려하는지 읽었는가 — 최상위 축' },
+  { key: 'register', num: '②', name: '관계·격식', desc: '호칭·존대·문체가 관계에 맞는가 (과함·부족 모두 감점)' },
+  { key: 'strategy', num: '③', name: '전략·표현', desc: '완곡함·정보 배열·명료성 — 판단을 효과적인 글로 실현' },
+];
+
+const LEVELS = { 1: { label: '위험', c: 'var(--bad)', soft: 'var(--bad-soft)' }, 2: { label: '무난', c: 'var(--warn)', soft: 'var(--warn-soft)' }, 3: { label: '적절', c: 'var(--good)', soft: 'var(--good-soft)' } };
+
+const SITS = [
+  { id: 'pq', roles: ['대학생'], rel: '교수', title: '교수님께 질문 메일', counterpart: '전공 수업 담당 교수 (성적·평가 권한, 하루 수십 통의 메일을 받음)', goal: '과제 채점 결과에 대해 확인을 요청한다', tension: '근거 없이 항의로 읽히면 관계·평판 리스크', direction: '오류 가능성을 내 쪽에 귀속하고("제가 놓쳤을 수 있으니"), 확인할 지점을 특정하세요. 신중한 완충은 과해도 대체로 안전합니다.', axis: '① 맥락', sample: '쌤 저 과제 점수 왜 이렇게 나왔어요? 저 진짜 열심히 했는데 이건 좀 아닌 것 같아요. 다시 봐주세요ㅠㅠ', opener: '안녕하세요. 이번 과제 채점 결과에 대해 이의가 있으면 이번 주 금요일까지 회신 주세요.', rubric: { context: ['교수를 탓하거나("왜 이렇게 줬냐") 점수가 틀렸다고 단정하고, 평가 권한·부담을 무시함', '확인은 요청하나 어느 문항인지 특정하지 못하고 막연함', '오류 가능성을 내 쪽에 귀속("제가 놓쳤을 수도")하고 확인할 문항·지점을 구체적으로 특정, 판단은 교수에게 맡김'], register: ['반말·"쌤"·ㅠㅠ 등 교수에게 부적절한 레지스터', '존댓말이나 구어체가 섞이거나 호칭이 애매함', '"교수님" 호칭+정중한 존댓말(과공도 여기선 대체로 허용)'], strategy: ['감정 호소("열심히 했는데")만 있고 요청이 불명확하거나 요구조', '요청은 있으나 근거·문항 배열이 흐트러짐', '배경→구체 문항→확인요청 순으로 완곡하고 명료함'] } },
+  { id: 'pm', roles: ['대학생'], rel: '교수', title: '교수님께 면담 요청', counterpart: '지도교수 (일정이 빡빡하고, 목적 없는 면담 요청을 부담스러워함)', goal: '진로 상담을 위한 면담 시간을 요청한다', tension: '용건·소요 시간이 막연하면 부담스러운 요청이 됨', direction: '용건과 예상 소요 시간을 먼저 밝히고, 일정 선택권을 교수에게 넘기세요.', axis: '① 맥락', sample: '교수님 안녕하세요. 이번 주에 시간 되세요? 진로 때문에 상담 좀 하고 싶은데요. 답장 주세요.', opener: 'OO 학생, 요즘 진로 때문에 고민이 많다고 들었어요. 편할 때 한번 이야기 나눠볼까요?', rubric: { context: ['바쁜 일정·부담을 무시하고 목적 불명으로 통보("시간 되세요?")', '면담은 청하나 용건이 막연하거나 예상 소요시간을 밝히지 않음', '구체적 용건 + 예상 소요시간 명시 + 교수 사정 배려'], register: ['반말·과한 친근함 또는 명령조("답장 주세요")', '존댓말이나 딱딱하거나 다소 일방적', '정중한 존댓말로 요청을 부탁의 형태로 표현'], strategy: ['일정을 내가 정해 통보하고 선택권을 주지 않음', '일정 언급은 있으나 선택지가 부족함', '후보 시간대를 제시하거나 교수 편한 시간을 여쭙고 선택권을 위임'] } },
+  { id: 'pd', roles: ['대학생'], rel: '교수', title: '과제 마감 연장 요청', counterpart: '전공 수업 담당 교수 (형평성 때문에 예외 요청에 민감함)', goal: '사정을 설명하고 마감 연장을 요청한다', tension: '사유가 막연하거나 당연시하면 형평성 침해로 읽힘', direction: '구체적 사유 + 현재까지의 진행 상황 + 수용 가능한 대안(감점 감수 등)을 함께 제시하세요. 판단은 교수에게 위임합니다.', axis: '③ 전략', sample: '교수님 죄송한데 과제를 기한까지 못 낼 것 같습니다. 개인 사정이 있어서요. 며칠만 봐주시면 안 될까요? 다음엔 절대 안 그러겠습니다.', opener: '내일 자정까지 과제 제출 마감입니다. 혹시 어려운 점 있으면 미리 알려주세요.', rubric: { context: ['연장을 당연시하고 형평성을 무시하며 사유가 막연함', '사유는 대나 다른 학생·형평성에 대한 고려가 없음', '구체적 사유 + 현재까지 진행 상황 + 형평성 의식(대안·감점 감수) + 판단 위임'], register: ['반말·가벼운 톤 또는 변명조', '존댓말이나 사과가 과하거나 실질 정보가 부족함', '책임지는 정중한 존댓말, 과한 자기비하 없이'], strategy: ['"안 될까요?"만 있고 진행 상황·대안이 없음', '사유+요청은 있으나 대안이 없음', '사유→진행상황→구체적 연장기간+수용 가능한 대안 순으로 명료함'] } },
+  { id: 'ta', roles: ['대학생'], rel: '조교·행정', title: '조교님께 채점 문의', counterpart: '수업 조교 (대학원생, 수십 명의 문의를 처리 — 필요한 정보가 빠진 메일에 지침)', goal: '퀴즈 채점 결과 확인을 요청한다', tension: '학번·과목·문항 등 처리 정보가 빠지면 왕복이 늘어남', direction: '간결·정확이 3점입니다. 학번·과목·분반·문항을 완비하세요. 장황한 완충은 오히려 감점입니다.', axis: '③ 전략', sample: '조교님 안녕하세요. 제 퀴즈 점수가 잘못된 것 같습니다. 바쁘시겠지만 넓은 아량으로 살펴봐주시면 정말 감사하겠습니다. 늘 고생 많으십니다.', opener: '이번 주 퀴즈 채점 결과 관련 문의는 학번·분반·문항 번호를 적어 회신해주세요.', rubric: { context: ['조교를 교수처럼 대하거나(과공) 처리에 필요한 정보가 뭔지 못 읽어 누락함', '문의는 하나 학번·분반·문항 중 일부를 누락함', '조교의 처리 편의를 읽어 학번·과목·분반·문항을 완비함'], register: ['반말 또는 지나친 아부·과공("넓은 아량으로")으로 부담을 줌', '존댓말이나 완충이 다소 장황함', '정중하되 간결한 존댓말, 군더더기 없음'], strategy: ['감정·아부 위주로 핵심 정보가 묻힘', '정보는 있으나 배열이 흐트러짐', '용건+필요정보를 목록화하듯 간결·정확(여기선 간결=3점, 장황=감점)'] } },
+  { id: 'fp', roles: ['대학생'], rel: '동료(조원)', title: '초면 조원에게 첫 연락', counterpart: '같은 수업에서 처음 만난 동갑내기 조원 (아직 서로 존댓말)', goal: '팀플 첫 회의 일정을 잡자고 연락한다', tension: '너무 격식차리면 거리감, 너무 편하면 무례 — 밸런스', direction: '가볍고 명확한 톤이 3점입니다. 교수님께 쓰듯 과공하면 거리감을 만들어 오히려 1–2점이 됩니다.', axis: '② 격식', sample: '안녕하십니까. 이번 팀 프로젝트에서 함께하게 되어 진심으로 영광입니다. 귀하께서 편하신 일정을 회신해 주시면 감사드리겠습니다.', opener: '안녕하세요! 이번 팀플 같이 하게 됐네요. 잘 부탁드려요 :)', rubric: { context: ['과한 격식으로 부담을 주거나 초면인데 훅 반말을 함', '무난하나 회의 목적이 흐릿함', '초면 동료의 어색함을 배려한 가벼운 톤 + 회의 목적이 분명함'], register: ['교수식 과공("영광입니다","귀하") 또는 초면 반말', '존댓말이나 다소 딱딱하거나 과함', '가벼운 존댓말(친근하되 예의) — 여기선 과공이 감점'], strategy: ['인사만 있고 구체 제안이 없거나 일방 통보', '일정 얘기는 있으나 막연함', '가벼운 인사 + 구체 일정 제안/선택지 + 열린 질문'] } },
+  { id: 'rr', roles: ['대학생'], rel: '동료(조원)', title: '조원에게 역할 분담·독촉', counterpart: '자료 업로드가 늦어지는 조원 (발표는 이틀 뒤)', goal: '늦어지는 자료를 부담 주지 않으면서 받아낸다', tension: '통보조가 되면 갈등, 눈치만 보면 발표가 무너짐', direction: '비난 없이 상황(마감)을 주어로 말하고, 구체적 시점을 합의하세요. 상대의 사정을 여는 질문이 들어가면 좋습니다.', axis: '③ 전략', sample: '다들 뭐 하세요? 발표가 모레인데 아직 아무도 자료 안 올렸네요. 오늘까지 무조건 올려주세요.', opener: '미안 나 자료 조사가 생각보다 오래 걸려서 오늘 못 올릴 것 같아ㅠㅠ', rubric: { context: ['조원을 비난·통보("다들 뭐 하세요","무조건")해 갈등을 유발하고 상대 사정을 무시함', '독촉은 하나 상대 사정 배려·협의 톤이 부족함', '상대 사정을 여는 질문 + 마감(상황)을 주어로 삼아 개인 비난이 아니게 함'], register: ['명령조·차가운 통보 또는 지나친 눈치보기로 요지가 실종됨', '무난하나 톤이 딱딱하거나 미안함이 과다함', '동료다운 편안하고 명확한 톤'], strategy: ['"무조건 오늘까지" 식 일방 통보, 협의·대안이 없음', '요청은 있으나 구체 시점 합의·대안이 부족함', '구체 시점 제안 + 상대 사정 묻기 + 필요 시 분담/도움 제안'] } },
+  { id: 'gm1', roles: ['대학원생'], rel: '지도교수', title: '지도교수께 연구 진행 보고', counterpart: '지도교수 (연구 방향·진척에 책임, 막연한 보고를 답답해함)', goal: '현재 연구 진행 상황을 보고하고 면담 시간을 요청한다', tension: '진척이 더뎌 보이거나 방향이 막연하면 신뢰가 흔들림', direction: '진행된 것/막힌 것/판단이 필요한 지점을 구분해 구체적으로 보고하고, 면담에서 논의할 안건과 예상 소요시간을 밝히세요.', axis: '① 맥락', sample: '교수님 안녕하세요. 연구가 잘 안 되고 있는데 어떻게 해야 할지 모르겠습니다. 시간 되실 때 면담 가능할까요?', opener: 'OO 학생, 이번 주 미팅 전에 진행 상황 간단히 정리해서 보내줄 수 있을까요?', rubric: { context: ['막연히 "잘 안 된다"만 전하고 무엇을 논의할지 없음', '진행 보고는 하나 막힌 지점·필요한 결정이 불명확', '진행/난관/결정 필요 지점을 구분해 제시하고 면담 안건·소요시간 명시'], register: ['반말·과한 감정 호소 또는 지나친 격식', '존댓말이나 다소 장황하거나 호칭 애매', '지도교수께 맞는 정중하고 담백한 존댓말'], strategy: ['핵심 없이 하소연조', '정보는 있으나 배열이 흐트러짐', '두괄식 요약→세부→요청 순으로 명료'] } },
+  { id: 'gm2', roles: ['대학원생'], rel: '외부 교수', title: '타 연구실 교수께 자료 협조 요청', counterpart: '다른 학교·연구실 교수 (나를 모르고, 바쁘며 도와줄 의무가 없음)', goal: '연구에 필요한 자료·데이터 공유를 정중히 요청한다', tension: '초면에 의무 없는 상대에게 요청 — 무례하거나 목적이 불명하면 거절', direction: '소속·목적을 먼저 밝히고, 요청 범위를 좁게 특정하며, 거절해도 괜찮다는 여지를 두세요. 초면 격식은 갖추되 장황하지 않게.', axis: '② 격식', sample: '교수님 안녕하세요! 논문 쓰는데 데이터가 필요해서요. 혹시 자료 좀 보내주실 수 있나요? 급합니다.', opener: null, rubric: { context: ['상대가 의무 없고 바쁘다는 점을 무시, 급함만 강조', '목적은 밝히나 요청 범위가 막연', '소속·목적 명확 + 요청 범위 특정 + 상대 부담 배려'], register: ['초면인데 가벼운 반말투·느낌표 남발', '존댓말이나 어색하거나 자기소개 부족', '초면에 맞는 정중한 존댓말 + 간결한 자기소개'], strategy: ['요구조·기한 압박', '요청은 있으나 대안·거절 여지 없음', '좁은 요청 + 거절 여지 + 감사 표현'] } },
+  { id: 'gm3', roles: ['대학원생'], rel: '연구실 후배', title: '연구실 후배에게 실험 도움 부탁', counterpart: '같은 연구실 후배 (나보다 아래지만 각자 일이 많음)', goal: '바쁜 후배에게 실험·잡무 도움을 부탁한다', tension: '위계를 이용한 지시조가 되면 반발, 지나치게 굽히면 전달 실패', direction: '상황과 필요를 담백하게 설명하고, 후배의 사정을 먼저 묻고, 강요가 아니라 부탁임을 분명히 하세요.', axis: '③ 전략', sample: '야 내일 실험 좀 도와줘. 나 바빠서. 아침 9시까지 와.', opener: null, rubric: { context: ['후배 사정 무시·지시조·시간 통보', '부탁은 하나 후배 부담 배려 없음', '후배 사정을 먼저 묻고 부탁의 이유·범위를 설명'], register: ['위계로 찍어누르는 반말 명령', '편한 말이나 다소 일방적', '편하되 존중이 담긴 부탁 톤'], strategy: ['시점 통보·대안 없음', '부탁은 있으나 구체 조율 부족', '필요·시점을 제안하고 후배 가능 여부를 여는 질문'] } },
+  { id: 'js1', roles: ['취준생'], rel: '인사담당자', title: '지원 회사 인사담당자께 문의', counterpart: '채용 담당자 (하루 수많은 지원자를 응대, 정보가 빠진 문의에 지침)', goal: '채용 전형·일정에 대해 정확히 문의한다', tension: '열정만 앞세우거나 지원 정보(직무·전형)가 빠지면 처리하기 어려움', direction: '지원 직무·전형 단계를 특정하고, 궁금한 점을 한두 개로 좁혀 정중히 문의하세요. 과한 자기어필은 자제하세요.', axis: '① 맥락', sample: '안녕하세요! 저 이번에 지원한 사람인데요, 꼭 붙고 싶습니다!! 혹시 언제 발표나요? 정말 열심히 하겠습니다!', opener: null, rubric: { context: ['열정·어필만 있고 어떤 전형·직무인지 특정 없음', '문의는 하나 지원 정보 일부 누락', '지원 직무·전형 특정 + 궁금한 점 구체화 + 담당자 부담 배려'], register: ['과한 느낌표·구어체·자기어필', '존댓말이나 다소 들뜬 톤', '담백하고 정중한 지원자 톤'], strategy: ['질문이 막연하거나 여러 개 뒤섞임', '핵심 질문은 있으나 배경 부족', '배경(지원 사실)→구체 질문 1~2개로 명료'] } },
+  { id: 'js2', roles: ['취준생'], rel: '면접관', title: '면접 후 감사·추가 문의 메일', counterpart: '면접관 (여러 지원자를 봄, 과한 어필·부담은 역효과)', goal: '면접 기회에 감사하고 필요 시 짧게 보완 답변을 전한다', tension: '과공·장문으로 부담을 주거나 합격을 조르는 인상이 되면 감점', direction: '짧고 진정성 있게 감사만 전하고, 보완할 점이 있으면 한 가지만 간결히. 결과를 재촉하지 마세요.', axis: '② 격식', sample: '면접관님!! 오늘 정말 감사했습니다! 저 꼭 뽑아주세요 ㅠㅠ 아까 대답 못한 거 있는데 사실 저 진짜 잘합니다!', opener: null, rubric: { context: ['합격 조르기·과한 감정', '감사는 전하나 초점 흐림', '기회에 대한 담백한 감사 + (있으면) 핵심 보완 한 가지'], register: ['과공·이모티콘·읍소조', '정중하나 다소 장황', '짧고 품격 있는 존댓말'], strategy: ['장황하고 요지 없음', '감사와 보완이 뒤섞임', '감사→(선택)간결 보완, 재촉 없이 마무리'] } },
+  { id: 'js3', roles: ['취준생'], rel: '현직자 선배', title: '현직자에게 커피챗 정보 요청', counterpart: '가고 싶은 회사의 현직자 (나를 잘 모르고, 호의로 시간을 내주는 입장)', goal: '직무·업계에 대해 짧게 조언을 구하는 만남을 요청한다', tension: '낯선 상대에게 시간을 요구 — 목적·소요시간이 막연하면 부담', direction: '어떻게 알게 됐는지·왜 그분인지 짧게 밝히고, 궁금한 주제와 예상 소요시간(예: 20분)을 특정하며, 방식(통화/메일)도 상대가 고르게 하세요.', axis: '③ 전략', sample: '선배님 안녕하세요 저 취준생인데요 혹시 시간 되시면 커피 한잔 하면서 얘기 좀 들을 수 있을까요? 아무때나 괜찮아요!', opener: null, rubric: { context: ['왜 그분인지·주제 없이 시간만 요구', '요청은 하나 목적이 두루뭉술', '접점·관심 주제 명확 + 상대 시간 존중'], register: ['과하게 굽신 또는 지나친 친근', '정중하나 목적 흐림', '정중하고 담백한 부탁 톤'], strategy: ['"아무때나"식 배려 없는 통보', '요청은 있으나 방식·시간 미제시', '주제 특정 + 예상 소요시간 + 방식/일정 선택권 위임'] } },
+  { id: 'nw1', roles: ['사회초년생'], rel: '직속 상사', title: '상사에게 업무 보고·질문', counterpart: '직속 상사 (여러 일을 관리, 두괄식·핵심을 선호)', goal: '맡은 일의 진행을 보고하고 막힌 부분을 질문한다', tension: '서론이 길거나 결론이 없으면 답답, 다 물어보면 미숙해 보임', direction: '결론(진행률/이슈)부터 두괄식으로, 스스로 시도한 것을 밝힌 뒤 판단이 필요한 지점만 질문하세요.', axis: '① 맥락', sample: '팀장님 저 그거 하고 있는데요 좀 어렵기도 하고 이것저것 하다 보니까 잘 안 되고 있어서요 어떻게 할까요?', opener: 'OO님, 어제 맡긴 건 어떻게 돼가요?', rubric: { context: ['진행률·이슈 불명, 스스로 시도 없이 통째로 물음', '보고는 하나 핵심 결론이 늦음', '두괄식 결론 + 시도한 것 + 판단 필요한 지점만 질문'], register: ['지나친 눈치·횡설수설 또는 무뚝뚝', '존댓말이나 다소 장황', '직장에 맞는 간결·정중한 보고체'], strategy: ['맥락 없이 하소연조', '정보는 있으나 두서 없음', '결론→근거→요청 순으로 명료'] } },
+  { id: 'nw2', roles: ['사회초년생'], rel: '거래처', title: '거래처에 요청·일정 조율 메일', counterpart: '거래처 담당자 (외부 인물이고, 나는 회사를 대표함)', goal: '자료·일정 등을 정중히 요청하고 조율한다', tension: '너무 굽히면 끌려가고, 무례하면 회사 이미지가 손상됨', direction: '회사를 대표한다는 감각으로 정중하되 명확하게. 요청 사항과 기한을 분명히 하고 상대 사정도 물으세요.', axis: '② 격식', sample: '안녕하세요~ 저번에 말한 자료 언제 주시나요? 저희도 급해서요 ㅠㅠ 빨리 부탁드려요!', opener: '안녕하세요, 요청 주신 건 확인 중입니다. 언제까지 필요하신지요?', rubric: { context: ['상대 사정 무시·재촉만', '요청은 하나 기한·목적 흐림', '요청·기한 명확 + 상대 사정 확인 + 상호 조율'], register: ['반말투·이모티콘·가벼움', '정중하나 다소 캐주얼', '회사를 대표하는 정중·명확한 비즈니스 톤'], strategy: ['감정 섞인 재촉', '요청은 있으나 대안 없음', '요청+기한+대안/유연성 제시'] } },
+  { id: 'nw3', roles: ['사회초년생'], rel: '타부서·선배', title: '선배·타부서에 협조 요청', counterpart: '다른 부서 선배 (도와줄 의무는 없고 호의로 도와주는 관계)', goal: '업무에 필요한 협조를 부탁한다', tension: '통보조면 관계가 나빠지고, 지나치게 저자세면 일이 안 굴러감', direction: '왜 필요한지 맥락을 짧게 주고, 상대 업무 부담을 인정하며, 구체적 기한과 함께 부탁으로 표현하세요.', axis: '③ 전략', sample: '선배님 이거 오늘까지 처리 좀 해주세요. 위에서 시켜서요. 급합니다.', opener: null, rubric: { context: ['맥락 없이 지시·책임 전가', '부탁은 하나 상대 부담 배려 약함', '필요 맥락 + 상대 부담 인정 + 협의 톤'], register: ['명령조 또는 지나친 굽신', '정중하나 다소 일방적', '선배에 맞는 예의 있는 부탁 톤'], strategy: ['"오늘까지" 통보·대안 없음', '요청은 있으나 조율 부족', '맥락→구체 기한 제안→감사, 필요 시 대안'] } },
+  { id: 'fr1', roles: ['프리랜서·자영업'], rel: '클라이언트', title: '클라이언트와 범위·일정 조율', counterpart: '프로젝트 발주 클라이언트 (돈을 주는 입장, 요구가 늘어나기 쉬움)', goal: '작업 범위와 일정을 명확히 하고 추가 요구를 조율한다', tension: '을의 위치로 다 받아주면 손해, 뻣뻣하면 관계 악화', direction: '전문가로서 범위·일정을 근거와 함께 명확히 제시하고, 추가 요구는 별건(비용·일정)임을 정중히 안내하세요.', axis: '① 맥락', sample: '네네 그것도 해드릴게요~ 그거도 넣고 이것도 하고… 일정은 뭐 최대한 맞춰볼게요!', opener: '작업 잘 되고 있죠? 여기에 이 기능도 추가로 넣어주실 수 있을까요?', rubric: { context: ['범위·대가 감각 없이 다 수용', '대응은 하나 범위·비용 경계 모호', '추가 요구가 별건임을 인지하고 범위·일정·비용을 짚음'], register: ['지나치게 굽신·가벼움', '정중하나 경계 흐림', '전문가다운 정중하고 단단한 톤'], strategy: ['무한 수용·모호한 약속', '수용과 거절이 뒤섞여 불명확', '수용 가능 범위 + 추가건은 별도 조건으로 명료 안내'] } },
+  { id: 'fr2', roles: ['프리랜서·자영업'], rel: '클라이언트', title: '대금·추가비용 정중히 요청', counterpart: '대금 지급이 늦거나 추가 작업을 요청한 클라이언트', goal: '밀린 대금 또는 추가 작업 비용을 정중하지만 분명하게 청구한다', tension: '돈 얘기를 미안해하며 얼버무리면 못 받고, 딱딱하면 관계가 손상됨', direction: '감정이 아니라 계약·근거(작업 내역·금액·기한)를 담담하게 제시하세요. 미안함으로 흐리지 말고 정중하되 분명하게.', axis: '③ 전략', sample: '저기 혹시… 대금이 아직 안 들어와서요 ㅠㅠ 바쁘신 거 아는데 혹시 가능하시면 언제쯤… 죄송해요!', opener: null, rubric: { context: ['미안함만 앞세워 요지 흐림', '청구는 하나 근거·기한 불명', '작업 내역·금액·기한을 근거로 명확히'], register: ['과하게 사과·읍소', '정중하나 자신감 부족', '담담하고 정중한 청구 톤(사과 최소화)'], strategy: ['말끝 흐림·구체 없음', '요청은 있으나 숫자·기한 부족', '금액·근거·희망 기한을 분명히 제시'] } },
+  { id: 'fr3', roles: ['프리랜서·자영업'], rel: '불만 고객', title: '고객 컴플레인 응대', counterpart: '결과물에 불만을 표한 고객 (감정이 상해 있음)', goal: '불만을 진정시키되 부당한 요구엔 선을 지킨다', tension: '무조건 사과·수용하면 끌려가고, 방어적이면 폭발함', direction: '먼저 감정을 인정·공감하고, 사실관계를 차분히 정리한 뒤, 가능한 조치와 불가능한 선을 함께 제시하세요.', axis: '① 맥락', sample: '그건 원래 그렇게 하기로 한 건데요? 제 잘못 아닌데 왜 저한테 그러세요. 그렇게 말씀하시면 곤란합니다.', opener: '이거 제가 생각한 거랑 너무 다른데요. 환불해 주세요.', rubric: { context: ['고객 감정 무시·방어·책임 회피', '대응은 하나 공감 부족', '감정 인정 + 사실 정리 + 가능/불가능 선 제시'], register: ['따지는 톤 또는 무조건 굽신', '정중하나 다소 방어적', '침착하고 정중한 응대 톤'], strategy: ['맞받아치거나 회피', '사과는 있으나 해결책 없음', '공감→사실→구체적 조치/대안 순으로'] } },
+  { id: 'cx1', roles: ['경력·이직'], rel: '새 상사', title: '새 팀 상사에게 온보딩 질문', counterpart: '이직한 팀의 새 상사 (경력자로 뽑았기에 기대치가 있음)', goal: '새 조직의 방식·자료를 파악하기 위해 질문한다', tension: '경력자인데 기본을 물으면 미덥지 않아 보이고, 모른 채 진행하면 사고가 남', direction: '스스로 파악한 것을 먼저 요약해 보이고, 조직마다 다른 부분만 콕 집어 확인하세요. 경력자다운 판단과 겸손을 함께.', axis: '① 맥락', sample: '팀장님 여기는 이거 어떻게 해요? 그리고 저거는요? 제가 전에 있던 데랑 달라서 잘 모르겠어요.', opener: '입사 축하해요! 적응하는 데 궁금한 거 있으면 편하게 물어봐요.', rubric: { context: ['다 모른다는 식·스스로 파악 없음', '질문은 하나 초점 흐림', '파악한 것 요약 + 조직 특수한 부분만 확인'], register: ['너무 캐주얼하거나 위축', '정중하나 다소 막연', '경력자다운 침착·정중한 톤'], strategy: ['질문 나열·맥락 없음', '질문은 있으나 두서 없음', '내 이해→차이 확인→구체 질문으로 명료'] } },
+  { id: 'cx2', roles: ['경력·이직'], rel: '새 동료', title: '새 동료에게 협업 첫 연락', counterpart: '이직한 팀의 동료 (아직 서로 탐색 중, 기존 관계가 있음)', goal: '협업 시작을 위해 인사하고 필요한 것을 요청한다', tension: '너무 격식차리면 벽이 생기고, 너무 훅 들어가면 무례 — 신입도 아닌 애매함', direction: '가볍게 인사하되 협업 목적을 분명히 하고, 상대의 방식을 존중하는 태도를 보이세요. 과하지 않은 친근함이 3점입니다.', axis: '② 격식', sample: '안녕하십니까. 이번에 합류하게 된 사람입니다. 앞으로 잘 부탁드리며 귀하의 많은 협조를 부탁드립니다.', opener: null, rubric: { context: ['목적 없이 격식만 또는 무례하게 훅', '인사는 하나 협업 목적 흐림', '가벼운 인사 + 협업 목적 + 상대 방식 존중'], register: ['과공·딱딱 또는 초면 반말', '정중하나 다소 뻣뻣', '자연스럽고 예의 있는 동료 톤'], strategy: ['인사만·다음 액션 없음', '목적은 있으나 막연', '인사→협업 포인트→구체 다음 스텝'] } },
+  { id: 'cx3', roles: ['경력·이직'], rel: '전 직장 상사·동료', title: '전 직장에 레퍼런스·인수인계 부탁', counterpart: '전 직장의 상사나 동료 (좋게 나왔어도 부탁은 부담)', goal: '레퍼런스 체크 협조나 인수인계 관련 도움을 부탁한다', tension: '이미 떠난 사람의 부탁 — 당연시하면 결례, 지나치게 굽히면 어색함', direction: '안부와 감사를 먼저 진솔하게 전하고, 부탁은 구체적으로 좁혀서, 부담 없이 거절할 수 있는 여지를 두세요.', axis: '③ 전략', sample: '팀장님 오랜만이에요! 다름이 아니라 저 레퍼런스 좀 해주셔야 할 것 같아서요. 연락 오면 잘 말씀해 주세요~', opener: null, rubric: { context: ['당연시·통보조·안부 없음', '부탁은 하나 배려 약함', '안부·감사 먼저 + 부탁 범위 특정 + 거절 여지'], register: ['지나치게 가볍거나 사무적', '정중하나 다소 요구조', '따뜻하고 예의 있는 부탁 톤'], strategy: ['통보·구체 없음', '부탁은 있으나 정보 부족', '무엇을/언제/어떻게를 구체화 + 부담 최소화'] } },
+];
+
+const REL_HINTS = { '교수': '신중한 완충 + 자기 귀속이 안전 구간', '조교·행정': '간결·정확·필요 정보 완비가 3점', '동료(조원)': "'적절'의 방향이 뒤집힘 — 과공은 감점" };
+
+const THEMES = {
+  '소프트 블루': { '--bg': '#f4f7fa', '--surface': '#ffffff', '--ink': '#182430', '--sub': '#5b6b7a', '--line': '#dde5ec', '--accent': '#2e6da8', '--accent-ink': '#ffffff', '--accent-soft': '#e3edf6', '--good': '#2e8b62', '--good-soft': '#e2f1e9', '--warn': '#b98a2f', '--warn-soft': '#f7edda', '--bad': '#bf4545', '--bad-soft': '#f7e3e1', '--side': '#13293a', '--side-ink': '#cfe0ee', '--side-dim': '#7d95a8' },
+  '세이지 그린': { '--bg': '#f5f7f3', '--surface': '#ffffff', '--ink': '#1d2a22', '--sub': '#5f6f64', '--line': '#dee6dd', '--accent': '#3d7d5f', '--accent-ink': '#ffffff', '--accent-soft': '#e4efe7', '--good': '#2e8b62', '--good-soft': '#e2f1e9', '--warn': '#b98a2f', '--warn-soft': '#f6eeda', '--bad': '#b64f42', '--bad-soft': '#f6e5e1', '--side': '#1e3328', '--side-ink': '#d3e4d8', '--side-dim': '#87a08e' },
+  '잉크 미니멀': { '--bg': '#f7f6f3', '--surface': '#ffffff', '--ink': '#1b1b19', '--sub': '#6b6a64', '--line': '#e4e2db', '--accent': '#2c3e50', '--accent-ink': '#ffffff', '--accent-soft': '#eceae3', '--good': '#3d7355', '--good-soft': '#e6efe8', '--warn': '#a3823a', '--warn-soft': '#f2ecdb', '--bad': '#a84f45', '--bad-soft': '#f3e4e0', '--side': '#191918', '--side-ink': '#d9d8d2', '--side-dim': '#8a897f' },
+};
+
+const SEED_HISTORY = [
+  { d: '6.18', sid: 'pq', scores: { context: 1, register: 1, strategy: 2 } },
+  { d: '6.21', sid: 'fp', scores: { context: 1, register: 2, strategy: 2 } },
+  { d: '6.24', sid: 'pq', scores: { context: 2, register: 2, strategy: 2 } },
+  { d: '6.27', sid: 'ta', scores: { context: 2, register: 3, strategy: 2 } },
+  { d: '7.1', sid: 'pm', scores: { context: 2, register: 3, strategy: 3 } },
+  { d: '7.5', sid: 'rr', scores: { context: 3, register: 2, strategy: 3 } },
+];
+
+const SEED_ASSETS = [
+  { text: '혹시 제가 놓친 부분이 있는지, 3번 문항만 다시 확인해주실 수 있을까요?', sid: 'pq', date: '6.24' },
+  { text: '혹시 어제 필기 있어? 내가 놓친 부분이 있어서, 부탁해도 될까!', sid: 'fp', date: '6.21' },
+];
+
+const RUBRIC_SYSTEM = `당신은 한국어 '화용 능력' 채점 엔진입니다. 문법·어휘가 아니라 오직 화용(이 글이 이 상황·관계·의도에서 적절한가)만 채점합니다.
+
+[3축 루브릭 — 위계 순]
+① context 맥락·의도: 상대가 왜 이 상황에 있고 무엇을 기대·우려하는지 읽었는가. 최상위 축. (예: 교수에게 채점 문의 시 '교수 탓'이 아니라 '내가 놓쳤을 수 있음'으로 귀속했는가, 확인할 지점을 특정했는가)
+② register 관계·격식: 호칭·존대·문체 레지스터가 관계에 맞는가. 과함(과공)도 부족도 모두 감점.
+③ strategy 전략·표현: 완곡함·정보 배열·명료성. 판단을 효과적인 글로 실현했는가.
+위계 원칙: ①이 무너지면 ②③이 아무리 좋아도 글 전체가 실패합니다. 피드백은 항상 가장 낮은 축부터.
+
+[점수 척도 — 3단계]
+1 = 위험(관계·평판에 실질 리스크), 2 = 무난(목적은 전달되나 어색하거나 막연), 3 = 적절(대부분의 상대에게 안전한 구간 — '최적'이 아니라 '리스크 최소').
+
+[관계별 '적절'의 방향 — 격식은 높을수록 좋은 것이 아님]
+- 교수: 신중한 완충 + 오류 가능성의 자기 귀속 + 요청 범위 특정. 과한 완충도 대체로 허용.
+- 조교·행정: 간결·정확·필요 정보(학번·과목·문항 등) 완비. 장황한 완충·아부는 감점.
+- 동료(조원): 가볍고 명확한 톤이 3점. 교수식 과공·과격식은 거리감을 만들어 1~2점.
+정중한 단어를 써도 상대 입장을 읽지 않으면 '정중한 항의'일 뿐입니다.
+상황별 축별 채점 기준이 주어지면, 위 일반 지침보다 그 기준을 최우선으로 적용해 각 축의 1/2/3을 판정하세요.
+지금까지의 대화가 주어지면, 초안을 그 대화의 다음 차례 답장으로 보고 적절성을 평가하세요(상대가 요청한 정보를 담았는지, 상대의 말투·톤에 맞는 반응인지 포함).
+
+[코칭 원칙]
+- 대신 써주지 않습니다. 전체 모범 답안 작성 금지. 방향만 짚고 재작성을 유도합니다.
+- 가장 낮은 축부터, 깔끔한 존댓말로, 2~4문장. 마지막은 재작성을 권하는 문장으로.
+- 수정 방향(fix)은 딱 하나만. 재시도라면 직전 대비 나아진 점을 먼저 인정하세요.
+
+[상대방 답장(counterpartReply) 작성 원칙]
+- 내 초안 다음에 상대가 실제로 보낼 법한 메시지를 1~2문장으로 작성하세요. 관계·상황에 맞는 말투를 유지하세요.
+- 내 초안이 위험(1점 포함)했다면 상대는 약간 당황하거나 재확인하는 등 자연스럽게 불편함을 드러내되 무례하지 않게 반응하세요.
+- 내 초안이 대체로 적절(2~3점)했다면 상대는 우호적으로 대화를 이어가거나 자연스럽게 마무리하세요.
+- 새로운 정보(예: 다음 요청, 확인 사항)를 살짝 추가해 대화가 이어질 여지를 주세요.
+
+[출력 형식 — 아래 JSON만 출력, 다른 텍스트·마크다운 금지]
+{"scores":{"context":1,"register":1,"strategy":1},"reasons":{"context":"근거 한 문장","register":"근거 한 문장","strategy":"근거 한 문장"},"deductions":[{"axis":"context","quote":"감점의 원인이 된 초안 속 구절(짧게, 원문 그대로)","why":"왜 감점인지 한 문장"}],"coach":"코칭 멘트(존댓말 2~4문장)","fix":"딱 하나의 수정 방향 한 문장","bestSentence":"초안에서 그대로 살릴 만한 좋은 문장(없으면 null)","counterpartReply":"상대방의 다음 답장(1~2문장)"}
+deductions는 점수가 3 미만인 축마다 1~2개씩, 반드시 초안에 실제로 있는 구절을 인용하세요. 모두 3점이면 빈 배열.`;
+
+const AXIS_WEIGHT = { context: 40, register: 30, strategy: 30 };
+const totalOf = scores => Math.round(AXES.reduce((t, ax) => t + (scores[ax.key] / 3) * AXIS_WEIGHT[ax.key], 0));
+
+// Gemini 응답에서 첫 JSON 블록을 추출해 파싱. 모델이 가끔 넣는 트레일링 콤마 등을 관대하게 처리.
+function parseLooseJson(raw) {
+  const text = String(raw == null ? '' : raw);
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error(`JSON 형식이 아닌 응답: ${text.slice(0, 150)}`);
+  try {
+    return JSON.parse(m[0]);
+  } catch (e) {
+    const cleaned = m[0]
+      .replace(/,(\s*[}\]])/g, '$1')   // 배열/객체 끝의 트레일링 콤마 제거
+      .replace(/[“”]/g, '"')  // 스마트 큰따옴표 → 표준
+      .replace(/[‘’]/g, "'"); // 스마트 작은따옴표
+    return JSON.parse(cleaned);
+  }
+}
+
+const STORE_KEY = 'malgyeol-proto-v1';
+
+class Component extends DCLogic {
+  state = {
+    screen: 'onboarding', obRole: null, obGoal: null,
+    situationId: null, draft: '', phase: 'write', attempts: [], openerActive: false, thread: [], lastScores: null,
+    error: null, profile: null, history: [], assets: [], toast: null,
+    customSits: [], showAllSits: false,
+    newSit: { title: '', rel: '', who: '', goal: '', tension: '' }, newSitPhase: 'form', newSitError: null, newSitPreview: null,
+  };
+
+  componentDidMount() {
+    this.applyTheme();
+    try {
+      const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+      if (s && s.profile) this.setState({ profile: s.profile, history: s.history || [], assets: s.assets || [], customSits: s.customSits || [], screen: 'home' });
+    } catch (e) {}
+  }
+  componentDidUpdate() { this.applyTheme(); }
+  applyTheme() {
+    const t = THEMES[this.props.theme ?? '소프트 블루'] || THEMES['소프트 블루'];
+    if (this._appliedTheme === t) return;
+    this._appliedTheme = t;
+    for (const k in t) document.documentElement.style.setProperty(k, t[k]);
+  }
+  persist(extra) {
+    const m = { ...this.state, ...extra };
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ profile: m.profile, history: m.history, assets: m.assets, customSits: m.customSits })); } catch (e) {}
+  }
+  allSits() { return SITS.concat(this.state.customSits || []); }
+  removeCustom(id) {
+    if (!window.confirm('이 상황을 삭제할까요?')) return;
+    const customSits = (this.state.customSits || []).filter(s => s.id !== id);
+    this.setState({ customSits });
+    this.persist({ customSits });
+    this.showToast('상황을 삭제했습니다');
+  }
+  async generateSituation() {
+    const n = this.state.newSit;
+    if (!n.title.trim() || !n.who.trim() || !n.goal.trim()) {
+      this.setState({ newSitError: '제목·상대·목적은 채워주세요.' });
+      return;
+    }
+    this.setState({ newSitPhase: 'generating', newSitError: null });
+    const sys = `당신은 한국어 화용(공손·격식) 훈련용 '상황 카드'를 만드는 설계자입니다. 사용자가 준 간단 정보로 아래 JSON만 출력하세요(다른 텍스트·마크다운 금지).
+{"rel":"상대의 관계 라벨(짧게, 예: 상사/교수/거래처)","counterpart":"상대가 어떤 사람이고 무엇을 신경쓰는지 한 문장","goal":"내가 이루려는 목적 한 문장","tension":"이 상황의 핵심 긴장·리스크 한 문장","direction":"이 관계에서 '적절'의 방향 1~2문장","axis":"① 맥락 | ② 격식 | ③ 전략 중 가장 핵심인 하나","sample":"흔히 하는 부적절한 예시 초안 한 개(1~2문장)","opener":"상대가 먼저 보낼 법한 메시지(없으면 null)","rubric":{"context":["1점(위험) 기준","2점(무난) 기준","3점(적절) 기준"],"register":["1점","2점","3점"],"strategy":["1점","2점","3점"]}}`;
+    const brief = `[제목] ${n.title}\n[상대] ${n.who}\n[관계 라벨(있으면)] ${n.rel || '(비어있음, 네가 정해줘)'}\n[목적] ${n.goal}\n[긴장 포인트(있으면)] ${n.tension || '(비어있음, 네가 추론)'}\nJSON만 출력하세요.`;
+    try {
+      const model = (this.props.aiModel ?? '빠름 (flash)').includes('pro') ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+      const text = await this.callGemini(sys, brief, model);
+      const out = parseLooseJson(text);
+      const arr3 = v => Array.isArray(v) && v.length >= 3 ? [String(v[0] || ''), String(v[1] || ''), String(v[2] || '')] : null;
+      const rb = out.rubric || {};
+      const preview = {
+        id: 'c' + Date.now(),
+        roles: this.state.profile ? [this.state.profile.role] : [],
+        rel: String(out.rel || n.rel || '상대').slice(0, 20),
+        title: n.title.trim(),
+        counterpart: String(out.counterpart || n.who).slice(0, 160),
+        goal: String(out.goal || n.goal).slice(0, 160),
+        tension: String(out.tension || n.tension || '').slice(0, 160),
+        direction: String(out.direction || '').slice(0, 300),
+        axis: ['① 맥락', '② 격식', '③ 전략'].find(a => String(out.axis || '').includes(a[0])) || '① 맥락',
+        sample: String(out.sample || '').slice(0, 300),
+        opener: (out.opener && out.opener !== 'null') ? String(out.opener).slice(0, 200) : null,
+        rubric: (arr3(rb.context) && arr3(rb.register) && arr3(rb.strategy)) ? { context: arr3(rb.context), register: arr3(rb.register), strategy: arr3(rb.strategy) } : null,
+      };
+      this.setState({ newSitPhase: 'preview', newSitPreview: preview });
+    } catch (e) {
+      console.error('[uncoach] generateSituation failed:', e);
+      const msg = (e && e.message === 'NO_KEY') ? 'Gemini API 키가 필요합니다. 다시 시도해주세요.' : `상황 생성에 실패했습니다: ${(e && e.message) || e}`;
+      this.setState({ newSitPhase: 'form', newSitError: msg });
+    }
+  }
+  saveCustomSit() {
+    const p = this.state.newSitPreview;
+    if (!p) return;
+    const customSits = [...(this.state.customSits || []), p];
+    this.setState({ customSits, screen: 'picker', newSitPhase: 'form', newSitPreview: null, newSit: { title: '', rel: '', who: '', goal: '', tension: '' } });
+    this.persist({ customSits });
+    this.showToast('내 상황을 저장했습니다');
+  }
+  showToast(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._tt);
+    this._tt = setTimeout(() => this.setState({ toast: null }), 2400);
+  }
+  combined() { return ((this.props.demoData ?? true) ? SEED_HISTORY : []).concat(this.state.history); }
+
+  getApiKey() {
+    let k = localStorage.getItem('uncoach-gemini-key');
+    if (!k) {
+      k = window.prompt('Gemini API 키를 입력하세요.\n(Google AI Studio에서 무료 발급: https://aistudio.google.com/apikey — 이 브라우저에만 저장됩니다)');
+      if (k) { k = k.trim(); localStorage.setItem('uncoach-gemini-key', k); }
+    }
+    return k || null;
+  }
+  resetApiKey() {
+    localStorage.removeItem('uncoach-gemini-key');
+    this.showToast('API 키가 초기화되었습니다');
+  }
+  async callGemini(system, userMsg, model) {
+    const key = this.getApiKey();
+    if (!key) throw new Error('NO_KEY');
+    const generationConfig = { maxOutputTokens: 2048, responseMimeType: 'application/json' };
+    if (model === 'gemini-2.5-flash') generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: system }] },
+          contents: [{ role: 'user', parts: [{ text: userMsg }] }],
+          generationConfig,
+        }),
+      }
+    );
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const detail = (data && data.error && data.error.message) || `HTTP ${res.status}`;
+      throw new Error(detail);
+    }
+    const text = (data?.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+    if (!text) {
+      const reason = data?.candidates?.[0]?.finishReason || data?.promptFeedback?.blockReason || '알 수 없음';
+      throw new Error(`빈 응답 (사유: ${reason})`);
+    }
+    return text;
+  }
+
+  async evaluate() {
+    const draft = this.state.draft.trim();
+    if (draft.length < 2) { this.setState({ error: '메시지를 조금 더 써주세요.' }); return; }
+    const sit = this.allSits().find(s => s.id === this.state.situationId);
+    const priorThread = this.state.thread;
+    const sentThread = [...priorThread, { from: 'me', text: draft }];
+    // 낙관적 커밋: 내 메시지를 즉시 채팅에 띄우고 입력창을 비운다
+    this.setState({ phase: 'scoring', error: null, thread: sentThread, draft: '' });
+    let userMsg = `[상황] ${sit.title}\n[상대(관계)] ${sit.rel} — ${sit.counterpart}\n[목적] ${sit.goal}\n[긴장 포인트] ${sit.tension}\n`;
+    if (sit.direction) userMsg += `[이 관계에서 '적절'의 방향] ${sit.direction}\n`;
+    if (sit.rubric) {
+      userMsg += `[이 상황의 축별 채점 기준 — 이 기준을 최우선으로 적용하세요]\n`;
+      AXES.forEach(ax => {
+        const r = sit.rubric[ax.key];
+        if (r) userMsg += `${ax.num} ${ax.name} — 1(위험): ${r[0]} / 2(무난): ${r[1]} / 3(적절): ${r[2]}\n`;
+      });
+    }
+    if (priorThread.length) {
+      userMsg += `[지금까지의 대화]\n` + priorThread.map(t => `${t.from === 'them' ? '상대' : '나'}: ${t.text}`).join('\n') + '\n';
+    }
+    userMsg += `[채점할 내 메시지 — 위 대화의 다음 차례]\n"""\n${draft}\n"""\nJSON만 출력하세요.`;
+    let out = null;
+    try {
+      const model = (this.props.aiModel ?? '빠름 (flash)').includes('pro') ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+      const text = await this.callGemini(RUBRIC_SYSTEM, userMsg, model);
+      out = parseLooseJson(text);
+    } catch (e) {
+      console.error('[uncoach] evaluate failed:', e);
+      const msg = (e && e.message === 'NO_KEY')
+        ? 'Gemini API 키가 필요합니다. 다시 시도해주세요.'
+        : `채점 중 문제가 발생했습니다: ${(e && e.message) || e}`;
+      // 실패 시 롤백: 내 메시지와 입력값을 원복
+      this.setState({ phase: 'write', error: msg, thread: priorThread, draft });
+      return;
+    }
+    const clamp = v => Math.max(1, Math.min(3, Math.round(Number(v) || 1)));
+    const scores = { context: clamp(out.scores && out.scores.context), register: clamp(out.scores && out.scores.register), strategy: clamp(out.scores && out.scores.strategy) };
+    const deductions = (Array.isArray(out.deductions) ? out.deductions : []).filter(d => d && d.axis && AXES.some(a => a.key === d.axis) && d.quote).map(d => ({ axis: d.axis, quote: String(d.quote).slice(0, 90), why: String(d.why || '').slice(0, 160) }));
+    const attempt = { text: draft, scores, reasons: out.reasons || {}, deductions, coach: out.coach || '', fix: out.fix || '', best: (out.bestSentence && out.bestSentence !== 'null') ? out.bestSentence : null, counterpartReply: out.counterpartReply || '' };
+    const reply = out.counterpartReply || '';
+    const newThread = reply ? [...sentThread, { from: 'them', text: reply }] : sentThread;
+    this.setState({ thread: newThread, attempts: [...this.state.attempts, attempt], phase: 'result', lastScores: scores });
+  }
+
+  finishSession() {
+    const scores = this.state.lastScores;
+    let history = this.state.history;
+    if (scores) {
+      const now = new Date();
+      history = [...history, { d: `${now.getMonth() + 1}.${now.getDate()}`, sid: this.state.situationId, scores }];
+    }
+    this.setState({ history, screen: 'home', situationId: null, draft: '', attempts: [], phase: 'write', error: null, thread: [], openerActive: false, lastScores: null });
+    this.persist({ history });
+    if (scores) this.showToast('세션이 궤적에 기록되었습니다');
+  }
+
+  renderVals() {
+    const st = this.state;
+    const S = (o) => o; // style-object shorthand
+    const lvl = n => LEVELS[n] || LEVELS[1];
+    const fill = n => S({ width: `${Math.round(n / 3 * 100)}%`, height: '100%', borderRadius: '999px', background: lvl(n).c, transition: 'width .4s ease' });
+    const chip = n => S({ fontSize: '11px', fontWeight: 700, color: lvl(n).c, background: lvl(n).soft, padding: '3px 10px', borderRadius: '999px', flex: 'none' });
+    const sits = this.allSits();
+    const myRole = st.profile ? st.profile.role : null;
+    const isMine = s => !myRole || (s.roles && s.roles.includes(myRole));
+    const sit = sits.find(s => s.id === st.situationId) || SITS[0];
+    const combined = this.combined();
+    const last = combined[combined.length - 1];
+    const firstS = combined[0];
+
+    // nav
+    const navDefs = [['home', '홈'], ['train', '훈련'], ['progress', '궤적'], ['assets', '표현 자산집'], ['settings', '설정']];
+    const activeKey = st.screen === 'picker' ? 'train' : st.screen;
+    const navItems = navDefs.map(([key, label]) => ({
+      key, label,
+      go: () => this.setState({ screen: key === 'train' ? (st.situationId ? 'train' : 'picker') : key }),
+      style: S({ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', background: activeKey === key ? 'rgba(255,255,255,0.13)' : 'transparent', color: activeKey === key ? '#fff' : 'var(--side-dim)', border: 'none', borderRadius: '9px', padding: '10px 12px', fontSize: '13.5px', fontWeight: 600 }),
+      dotStyle: S({ width: '7px', height: '7px', borderRadius: '50%', background: activeKey === key ? 'var(--accent-soft)' : 'rgba(255,255,255,0.25)', flex: 'none' }),
+    }));
+
+    // onboarding
+    const roles = [['대학생', '교수·조교·조원 사이의 격식 혼선'], ['대학원생', '지도교수·학회·행정 메일의 부담'], ['취준생', '처음 겪는 사회 격식 글이 두렵다'], ['사회초년생', '상사·거래처 메신저의 매 순간'], ['프리랜서·자영업', '클라이언트와의 거리 조절이 어렵다'], ['경력·이직', '새 조직의 말결이 낯설다']];
+    const goals = ['교수·조교 메일 격식', '팀플 소통 (부탁·독촉·거절)', '사회 격식 전반'];
+    const roleCards = roles.map(([title, desc]) => ({
+      title, desc, pick: () => this.setState({ obRole: title }),
+      style: S({ textAlign: 'left', background: st.obRole === title ? 'var(--accent-soft)' : 'var(--bg)', border: `1.5px solid ${st.obRole === title ? 'var(--accent)' : 'var(--line)'}`, borderRadius: '12px', padding: '14px 15px', transition: 'transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease', boxShadow: st.obRole === title ? '0 4px 14px rgba(46,109,168,0.16)' : 'none' }),
+    }));
+    const goalChips = goals.map(label => ({
+      label, pick: () => this.setState({ obGoal: label }),
+      style: S({ background: st.obGoal === label ? 'var(--accent)' : 'var(--bg)', color: st.obGoal === label ? 'var(--accent-ink)' : 'var(--ink)', border: `1.5px solid ${st.obGoal === label ? 'var(--accent)' : 'var(--line)'}`, borderRadius: '999px', padding: '9px 16px', fontSize: '13px', fontWeight: 600, transition: 'transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, color .18s ease' }),
+    }));
+    const obReady = !!(st.obRole && st.obGoal);
+
+    // home stats
+    const axStats = AXES.map((ax, i) => {
+      const cur = last ? last.scores[ax.key] : null;
+      const past = firstS ? firstS.scores[ax.key] : null;
+      return { ax, cur, delta: (cur != null && past != null) ? cur - past : 0 };
+    });
+    const weakKey = axStats.reduce((w, a) => (a.cur != null && (w == null || a.cur < w.cur)) ? a : w, null);
+    const homeAxes = axStats.map(({ ax, cur, delta }) => ({
+      num: ax.num, name: ax.name,
+      isWeak: !!(weakKey && weakKey.ax.key === ax.key && cur != null && cur < 3),
+      fillStyle: fill(cur || 0),
+      chipStyle: cur ? chip(cur) : S({ fontSize: '11px', color: 'var(--sub)' }),
+      levelLabel: cur ? lvl(cur).label : '기록 없음',
+      trend: cur == null ? '' : (delta > 0 ? `첫 세션 대비 +${delta}` : delta < 0 ? `첫 세션 대비 ${delta}` : '유지 중'),
+      cardStyle: S({ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: '14px', padding: '18px 20px' }),
+    }));
+    const weakAxis = weakKey ? weakKey.ax : AXES[0];
+    const axisMark = { context: '①', register: '②', strategy: '③' }[weakAxis.key];
+    const recoPool = SITS.filter(isMine);
+    const recoSit = recoPool.find(s => s.axis.startsWith(axisMark)) || recoPool[0] || SITS[0];
+    const recents = combined.slice(-4).reverse().map(s => {
+      const ss = sits.find(x => x.id === s.sid) || SITS[0];
+      return { date: s.d, title: ss.title, total: `${totalOf(s.scores)}점`, chips: AXES.map(ax => ({ t: `${ax.num}${s.scores[ax.key]}`, style: chip(s.scores[ax.key]) })) };
+    });
+
+    // picker
+    const chipStyleBase = S({ fontSize: '12px', fontWeight: 800, color: 'var(--accent)', background: 'var(--accent-soft)', padding: '4px 12px', borderRadius: '999px' });
+    const startSit = s => {
+      const oa = Math.random() < 0.5;
+      this.setState({ screen: 'train', situationId: s.id, draft: '', attempts: [], phase: 'write', error: null, openerActive: oa, thread: oa ? [{ from: 'them', text: s.opener }] : [], lastScores: null });
+    };
+    const builtinPool = st.showAllSits ? SITS : SITS.filter(isMine);
+    const relOrder = [...new Set(builtinPool.map(s => s.rel))];
+    const relGroups = relOrder.map(rel => ({
+      rel, hint: REL_HINTS[rel] || '',
+      chipStyle: chipStyleBase,
+      items: builtinPool.filter(s => s.rel === rel).map(s => ({
+        title: s.title, axis: s.axis, tension: s.tension, isCustom: false, hasRemove: false,
+        pick: () => startSit(s),
+      })),
+    }));
+    const customList = st.customSits || [];
+    const customGroup = {
+      has: customList.length > 0,
+      chipStyle: chipStyleBase,
+      items: customList.map(s => ({
+        title: s.title, axis: s.axis || '직접', tension: s.tension || '', isCustom: true, hasRemove: true,
+        pick: () => startSit(s),
+        remove: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.removeCustom(s.id); },
+      })),
+    };
+    const pickerEmpty = builtinPool.length === 0 && customList.length === 0;
+    const showAllLabel = st.showAllSits ? '내 역할 상황만' : '전체 상황 보기';
+
+    // train
+    const lastAttempt = st.attempts[st.attempts.length - 1];
+    const prevAttempt = st.attempts[st.attempts.length - 2];
+    const scoring = st.phase === 'scoring';
+    const hasResult = st.phase === 'result' && !!lastAttempt;
+    const allGood = hasResult && AXES.every(ax => lastAttempt.scores[ax.key] === 3);
+    const lowestVal = hasResult ? Math.min(...AXES.map(ax => lastAttempt.scores[ax.key])) : 0;
+    const lowestKey = hasResult ? AXES.find(ax => lastAttempt.scores[ax.key] === lowestVal).key : null;
+    const resultRows = hasResult ? AXES.map(ax => {
+      const sc = lastAttempt.scores[ax.key];
+      const isLowest = ax.key === lowestKey && sc < 3;
+      const d = prevAttempt ? sc - prevAttempt.scores[ax.key] : 0;
+      return {
+        num: ax.num, name: ax.name, isLowest,
+        levelLabel: lvl(sc).label, chipStyle: chip(sc), fillStyle: fill(sc),
+        reason: (lastAttempt.reasons || {})[ax.key] || '',
+        delta: d !== 0 ? (d > 0 ? `▲ +${d}` : `▼ ${d}`) : null,
+        deltaStyle: S({ fontSize: '11px', fontWeight: 800, color: d > 0 ? 'var(--good)' : 'var(--bad)' }),
+        rowStyle: S({ border: `1.5px solid ${isLowest ? 'var(--bad)' : 'var(--line)'}`, background: isLowest ? 'var(--bad-soft)' : 'var(--bg)', borderRadius: '12px', padding: '13px 15px' }),
+      };
+    }) : [];
+
+    // progress
+    const progressCols = combined.slice(-8).map(s => ({
+      label: s.d,
+      bars: AXES.map(ax => ({ style: S({ width: '16px', height: `${(s.scores[ax.key] / 3) * 96}px`, borderRadius: '4px 4px 0 0', background: ax.key === 'context' ? 'var(--accent)' : ax.key === 'register' ? 'var(--good)' : 'var(--warn)' }) })),
+    }));
+    const legend = AXES.map(ax => ({ name: `${ax.num} ${ax.name}`, swatch: S({ width: '10px', height: '10px', borderRadius: '3px', display: 'inline-block', background: ax.key === 'context' ? 'var(--accent)' : ax.key === 'register' ? 'var(--good)' : 'var(--warn)' }) }));
+    const progressSummary = AXES.map(ax => {
+      const cur = last ? last.scores[ax.key] : null;
+      const past = firstS ? firstS.scores[ax.key] : null;
+      const d = (cur != null && past != null) ? cur - past : 0;
+      return {
+        num: ax.num, name: ax.name,
+        now: cur ? `${lvl(cur).label} (${cur}/3)` : '—',
+        delta: d > 0 ? `▲ 첫 세션 대비 +${d}` : d < 0 ? `▼ 첫 세션 대비 ${d}` : '변화 없음',
+        deltaStyle: S({ fontSize: '12px', fontWeight: 700, marginTop: '6px', color: d > 0 ? 'var(--good)' : d < 0 ? 'var(--bad)' : 'var(--sub)' }),
+      };
+    });
+
+    const assetCards = ((this.props.demoData ?? true) ? SEED_ASSETS : []).concat(st.assets).slice().reverse().map(a => ({
+      text: a.text, date: a.date, sit: (sits.find(x => x.id === a.sid) || SITS[0]).title,
+    }));
+
+    const attemptsN = st.attempts.length;
+    const canSave = hasResult && (allGood || !!lastAttempt.best);
+    const totalScore = hasResult ? totalOf(lastAttempt.scores) : 0;
+    const prevTotal = prevAttempt ? totalOf(prevAttempt.scores) : null;
+    const totalD = prevTotal != null ? totalScore - prevTotal : 0;
+    const axName = k => { const a = AXES.find(x => x.key === k); return `${a.num} ${a.name.split('·')[0]}`; };
+    const deductionRows = hasResult ? (lastAttempt.deductions || []).map(d => ({
+      axisLabel: axName(d.axis), quote: d.quote, why: d.why,
+      tagStyle: S({ fontSize: '11px', fontWeight: 700, color: 'var(--sub)', background: 'var(--bg)', border: '1px solid var(--line)', padding: '3px 9px', borderRadius: '999px', flex: 'none', whiteSpace: 'nowrap' }),
+    })) : [];
+
+    return {
+      // screens
+      isOnboarding: st.screen === 'onboarding',
+      isHome: st.screen === 'home',
+      isPicker: st.screen === 'picker',
+      isTrain: st.screen === 'train',
+      isProgress: st.screen === 'progress',
+      isAssets: st.screen === 'assets',
+      isSettings: st.screen === 'settings',
+      isNewSit: st.screen === 'newsit',
+      showSidebar: st.screen !== 'onboarding',
+      navItems,
+      profileLabel: st.profile ? `${st.profile.role} · ${st.profile.goal}` : '',
+      setApiKey: () => this.resetApiKey(),
+
+      // settings
+      profileRole: st.profile ? st.profile.role : '-',
+      profileGoal: st.profile ? st.profile.goal : '-',
+      modelLabel: this.props.aiModel ?? '빠름 (flash)',
+      apiKeyLabel: (() => { try { return localStorage.getItem('uncoach-gemini-key') ? '저장됨' : '미설정'; } catch (e) { return '미설정'; } })(),
+      historyCount: `${st.history.length}건`,
+      assetCount: `${st.assets.length}개`,
+      reProfile: () => this.setState({ screen: 'onboarding', obRole: st.profile ? st.profile.role : null, obGoal: st.profile ? st.profile.goal : null }),
+      changeApiKey: () => this.resetApiKey(),
+      clearHistory: () => { if (window.confirm('훈련 기록(궤적)을 모두 지울까요? 되돌릴 수 없습니다.')) { this.setState({ history: [] }); this.persist({ history: [] }); this.showToast('훈련 기록을 초기화했습니다'); } },
+      clearAssets: () => { if (window.confirm('저장한 표현을 모두 비울까요? 되돌릴 수 없습니다.')) { this.setState({ assets: [] }); this.persist({ assets: [] }); this.showToast('자산집을 비웠습니다'); } },
+      logout: () => { if (window.confirm('로그아웃하면 이 기기에 저장된 프로필·훈련 기록·자산·내 상황이 모두 지워집니다. 계속할까요?')) { try { localStorage.removeItem(STORE_KEY); } catch (e) {} this.setState({ profile: null, history: [], assets: [], customSits: [], showAllSits: false, obRole: null, obGoal: null, situationId: null, attempts: [], thread: [], draft: '', phase: 'write', screen: 'onboarding' }); } },
+
+      // onboarding
+      roleCards, goalChips,
+      obNotReady: !obReady,
+      obStartStyle: S({ width: '100%', background: obReady ? 'var(--accent)' : 'var(--line)', color: obReady ? 'var(--accent-ink)' : 'var(--sub)', border: 'none', borderRadius: '11px', padding: '14px', fontSize: '15px', fontWeight: 700, cursor: obReady ? 'pointer' : 'default', transition: 'all .2s ease', boxShadow: obReady ? '0 6px 18px rgba(46,109,168,0.28)' : 'none' }),
+      startApp: () => {
+        if (!obReady) return;
+        const profile = { role: st.obRole, goal: st.obGoal };
+        this.setState({ profile, screen: 'home' });
+        this.persist({ profile });
+      },
+
+      // home
+      homeAxes,
+      recoTitle: recoSit.title,
+      recoReason: last ? `최근 세션에서 '${weakAxis.name}' 축이 가장 낮았어요. 이 상황이 그 축을 정면으로 훈련합니다.` : '첫 훈련으로 가장 빈도가 높은 상황을 추천합니다.',
+      startReco: () => {
+        const oa = Math.random() < 0.5;
+        this.setState({ screen: 'train', situationId: recoSit.id, draft: '', attempts: [], phase: 'write', error: null, openerActive: oa, thread: oa ? [{ from: 'them', text: recoSit.opener }] : [], lastScores: null });
+      },
+      goPicker: () => this.setState({ screen: 'picker' }),
+      hasRecents: recents.length > 0, noRecents: recents.length === 0, recents,
+
+      // picker
+      relGroups,
+      customGroup,
+      hasCustom: customGroup.has,
+      pickerEmpty,
+      showAllSits: st.showAllSits,
+      showAllLabel,
+      toggleAllSits: () => this.setState({ showAllSits: !st.showAllSits }),
+      goNewSit: () => this.setState({ screen: 'newsit', newSit: { title: '', rel: '', who: '', goal: '', tension: '' }, newSitPhase: 'form', newSitError: null, newSitPreview: null }),
+
+      // new situation (커스텀)
+      nsTitle: st.newSit.title, nsRel: st.newSit.rel, nsWho: st.newSit.who, nsGoal: st.newSit.goal, nsTension: st.newSit.tension,
+      onNsTitle: e => this.setState({ newSit: { ...st.newSit, title: e.target.value }, newSitError: null }),
+      onNsRel: e => this.setState({ newSit: { ...st.newSit, rel: e.target.value }, newSitError: null }),
+      onNsWho: e => this.setState({ newSit: { ...st.newSit, who: e.target.value }, newSitError: null }),
+      onNsGoal: e => this.setState({ newSit: { ...st.newSit, goal: e.target.value }, newSitError: null }),
+      onNsTension: e => this.setState({ newSit: { ...st.newSit, tension: e.target.value }, newSitError: null }),
+      nsForm: st.newSitPhase === 'form', nsGenerating: st.newSitPhase === 'generating', nsPreview: st.newSitPhase === 'preview',
+      nsHasError: !!st.newSitError, nsErrorMsg: st.newSitError || '',
+      nsPvRel: st.newSitPreview ? st.newSitPreview.rel : '', nsPvTitle: st.newSitPreview ? st.newSitPreview.title : '',
+      nsPvCounterpart: st.newSitPreview ? st.newSitPreview.counterpart : '', nsPvGoal: st.newSitPreview ? st.newSitPreview.goal : '',
+      nsPvTension: st.newSitPreview ? st.newSitPreview.tension : '', nsPvDirection: st.newSitPreview ? st.newSitPreview.direction : '',
+      nsPvAxis: st.newSitPreview ? st.newSitPreview.axis : '', nsPvSample: st.newSitPreview ? st.newSitPreview.sample : '',
+      nsPvHasOpener: !!(st.newSitPreview && st.newSitPreview.opener), nsPvOpener: st.newSitPreview && st.newSitPreview.opener ? st.newSitPreview.opener : '',
+      nsPvHasRubric: !!(st.newSitPreview && st.newSitPreview.rubric),
+      generateSit: () => this.generateSituation(),
+      saveSit: () => this.saveCustomSit(),
+      backToForm: () => this.setState({ newSitPhase: 'form' }),
+      cancelNewSit: () => this.setState({ screen: 'picker', newSitPhase: 'form', newSitError: null, newSitPreview: null }),
+
+      // train
+      sitTitle: sit.title, sitRel: sit.rel,
+      sitRelChipStyle: S({ fontSize: '12px', fontWeight: 800, color: 'var(--accent)', background: 'var(--accent-soft)', padding: '5px 13px', borderRadius: '999px', flex: 'none' }),
+      sitCounterpart: sit.counterpart, sitGoal: sit.goal, sitTension: sit.tension, sitDirection: sit.direction,
+      threadBubbles: st.thread.map(t => ({
+        text: t.text,
+        isThem: t.from === 'them',
+        label: sit.counterpart,
+        wrapStyle: S(t.from === 'them'
+          ? { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', maxWidth: '82%' }
+          : { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', maxWidth: '82%', alignSelf: 'flex-end' }),
+        bubbleStyle: S(t.from === 'them'
+          ? { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: '14px 14px 14px 4px', padding: '10px 14px', fontSize: '13.5px', lineHeight: '1.55', color: 'var(--ink)', whiteSpace: 'pre-wrap' }
+          : { background: 'var(--accent)', color: 'var(--accent-ink)', borderRadius: '14px 14px 4px 14px', padding: '10px 14px', fontSize: '13.5px', lineHeight: '1.55', whiteSpace: 'pre-wrap' }),
+      })),
+      showDraftBubble: st.draft.trim().length > 0,
+      showTyping: scoring,
+      draft: st.draft,
+      onDraft: e => this.setState({ draft: e.target.value, error: null }),
+      onDraftKey: e => {
+        if (e.key !== 'Enter' || e.shiftKey) return;
+        if (e.nativeEvent && e.nativeEvent.isComposing) return;
+        if (e.keyCode === 229) return;
+        e.preventDefault();
+        if (this.state.phase !== 'scoring') this.evaluate();
+      },
+      taRows: 9,
+      charCount: st.draft.length,
+      attemptLabel: `${attemptsN + (st.phase === 'result' ? 0 : 1)}번째 메시지`,
+      resultAttemptLabel: `${attemptsN}번째 메시지`,
+      hasError: !!st.error, errorMsg: st.error || '',
+      isScoring: scoring,
+      submitLabel: scoring ? '전송 중…' : '보내기',
+      submitStyle: S({ background: 'var(--accent)', color: 'var(--accent-ink)', border: 'none', borderRadius: '10px', padding: '11px 20px', fontSize: '13.5px', fontWeight: 700, opacity: scoring ? 0.6 : 1 }),
+      submitDraft: () => this.evaluate(),
+      fillSample: () => this.setState({ draft: sit.sample, error: null }),
+      showIntroPanel: !scoring && !hasResult,
+      rubricRows: AXES.map(ax => ({ num: ax.num, name: ax.name, desc: ax.desc, numStyle: S({ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--accent-soft)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 800, flex: 'none' }) })),
+      totalScore,
+      totalDelta: totalD !== 0 ? (totalD > 0 ? `▲ +${totalD}점` : `▼ ${totalD}점`) : null,
+      totalDeltaStyle: S({ fontSize: '12.5px', fontWeight: 800, color: totalD > 0 ? 'var(--good)' : 'var(--bad)', background: totalD > 0 ? 'var(--good-soft)' : 'var(--bad-soft)', padding: '3px 10px', borderRadius: '999px' }),
+      hasDeductions: deductionRows.length > 0,
+      deductionRows,
+      hasResult, allGood,
+      showHierarchyNote: hasResult && !allGood,
+      resultRows,
+      coachCardStyle: S({ background: 'var(--accent-soft)', border: '1px solid var(--line)', borderRadius: '14px', padding: '20px 22px' }),
+      coachText: hasResult ? lastAttempt.coach : '',
+      hasFix: hasResult && !!lastAttempt.fix && !allGood,
+      fixText: hasResult ? lastAttempt.fix : '',
+      canSaveAsset: canSave,
+      saveAsset: () => {
+        const now = new Date();
+        const text = (lastAttempt && lastAttempt.best) || st.draft.trim();
+        const assets = [...st.assets, { text, sid: st.situationId, date: `${now.getMonth() + 1}.${now.getDate()}` }];
+        this.setState({ assets });
+        this.persist({ assets });
+        this.showToast('내 표현 자산집에 저장했습니다');
+      },
+      finishSession: () => this.finishSession(),
+
+      // progress
+      hasProgress: combined.length > 0, noProgress: combined.length === 0,
+      progressCols, legend, progressSummary,
+      demoNote: (this.props.demoData ?? true) ? '(데모 데이터 포함 — Tweaks에서 끌 수 있습니다)' : '',
+
+      // assets
+      hasAssets: assetCards.length > 0, noAssets: assetCards.length === 0, assetCards,
+
+      // toast
+      hasToast: !!st.toast, toastMsg: st.toast || '',
+    };
+  }
+}
+</script>
+</body>
+</html>
