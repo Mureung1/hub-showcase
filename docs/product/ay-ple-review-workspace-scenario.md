@@ -6,9 +6,9 @@
 
 ## 목적
 
-이 문서는 오늘 캠프 산출물인 기획서 보강과 순수 HTML/CSS prototype을 위해, AY-PLE MVP의 첫 사용자 시나리오와 화면 구조를 정리한다. 핵심 방향은 **검토 중심 학업 워크스페이스**다.
+이 문서는 AY-PLE MVP의 첫 사용자 시나리오와 화면 구조를 정리한다. 핵심 방향은 **검토 중심 학업 워크스페이스**다.
 
-AY-PLE의 첫 prototype은 대시보드가 아니라 검토 중심 작업공간이어야 한다. 학생이 이해해야 할 한 문장은 다음과 같다.
+AY-PLE의 첫 검토 화면은 대시보드가 아니라 검토 중심 작업공간이어야 한다. 학생이 이해해야 할 한 문장은 다음과 같다.
 
 > AY-PLE가 선택한 원본 자료에서 과제 같은 학업 객체 후보를 찾고, 사용자가 확인하면 그 과제 정보가 학기 상태에 반영된다.
 
@@ -37,7 +37,7 @@ AY-PLE의 첫 prototype은 대시보드가 아니라 검토 중심 작업공간�
 
 ## 화면 구조
 
-Prototype은 **하나의 선택 자료 검토 화면 + 두 상태 + 선택 자료 탭**으로 만든다.
+검토 화면은 **하나의 선택 자료 검토 화면 + 두 상태 + 선택 자료 탭**으로 잡는다.
 
 Visual tone은 다크 IDE가 아니라 밝은 학업 워크스페이스를 따른다. 자료를 읽는 중심 영역은 종이 같은 밝은 surface로 두고, AY 대화 패널은 warm surface와 말풍선으로 보여준다.
 
@@ -119,6 +119,8 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 워크스페이스를 따�
 | 선택 자료 검토 화면 | 왼쪽 자료 목록, 가운데 원본 미리보기, 오른쪽 대화 패널을 첫 화면 구조로 고정한다. |
 | 자료 목록 | 과목 드롭다운, 원본 자료 행, 파일별 체크 상태를 통해 SourceSelection을 명시적으로 보여준다. |
 | 선택 자료 탭 | 선택된 원본 자료가 ModelingRun 입력이라는 점을 보여준다. |
+| 원본 미리보기와 보기 모드 | 선택 자료를 원본 중심으로 읽고, 편집/프리뷰 전환은 파일 내용이 아니라 toolbar에 둔다. |
+| 하단 근거 패널 | AY 해석 문구가 원본 preview를 오염시키지 않도록 field-level evidence를 분리한다. |
 | 과제 생성 변경 제안 | AY 제안과 사용자 확인 경계를 ChatSidecar 안에서 보여준다. |
 | 반영 결과 브리핑 | 수락 이후 AY가 학생에게 저장된 과제명과 마감을 알려준다. |
 | 오른쪽 대화 패널 | 실제 Codex/Claude Code side panel처럼 현재 검토 맥락과 같은 상태를 다룬다. |
@@ -126,12 +128,12 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 워크스페이스를 따�
 | 제외 | 이유 |
 | --- | --- |
 | 전체 월/주 calendar view | calendar app처럼 보일 위험이 있다. |
-| drag-and-drop 마감 수정 | canonical owner를 우회할 수 있어 today scope에 맞지 않는다. |
-| 전체 task manager | 오늘 prototype에서는 source-grounded 과제 생성과 수락 브리핑을 먼저 고정한다. |
+| drag-and-drop 마감 수정 | canonical owner를 우회할 수 있어 현재 검토 화면 범위에 맞지 않는다. |
+| 전체 task manager | 검증 prototype에서는 source-grounded 과제 생성과 수락 브리핑을 먼저 고정한다. |
 | 시험 detail screen | 첫 prototype은 과제 flow를 선명하게 보여준다. |
 | 별도 일정 생성 UI | "개요 작성하기" 시나리오에는 필요 없다. |
 | Markdown editor | 읽기용 정리 문서는 source of truth가 아니다. |
-| 긴 전체 ChatSidecar conversation | 오늘은 현재 검토 항목에 묶인 오른쪽 side panel과 suggested prompt면 충분하다. |
+| 긴 전체 ChatSidecar conversation | 현재 검토 항목에 묶인 오른쪽 side panel과 suggested prompt면 충분하다. |
 | WorkspaceHistory UI | 중요한 후속 기능이지만 prototype 핵심이 아니다. |
 | LMS login/import flow | 자료 intake와 modeling을 흐린다. |
 | 외부 calendar sync | MVP 제외 범위다. |
@@ -139,13 +141,36 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 워크스페이스를 따�
 
 ## 아직 구체화하지 않은 화면
 
-오늘 prototype은 아래 표면을 무시하지 않는다. 다만 한 화면 안에서 어떤 정보량과 위치로 보여줄지는 별도 UX 설계가 필요하므로, 이번 prototype에서 섣불리 확정하지 않는다.
+검증 prototype은 아래 표면을 무시하지 않는다. 다만 한 화면 안에서 어떤 정보량과 위치로 보여줄지는 별도 UX 설계가 필요하므로, 이번 prototype에서 섣불리 확정하지 않는다.
 
 | 표면 | 현재 결정 | 다음 단계 |
 | --- | --- | --- |
 | 타임라인 | 과제 마감에서 파생되는 표면으로 남긴다. | 과제 상세 화면 또는 운영 화면에서 보여줄지 결정 |
 | 추천 할 일/내 할 일 | 과제에서 파생되거나 사용자가 수락하는 운영 행동으로 남긴다. | 선택 자료 검토 화면 안에 둘지, 별도 할 일 화면으로 둘지 결정 |
 | 읽기용 정리 문서 | 상태에서 생성되는 artifact로 남긴다. | 원본 미리보기와 같은 탭에 둘지, 별도 정리 문서 화면으로 둘지 결정 |
+
+## 검증 산출물
+
+순수 HTML/CSS prototype은 검토 중심 학업 워크스페이스의 화면 구조를 확인하기 위한 산출물이다. 제품 구현의 컴포넌트 구조나 최종 화면 범위로 간주하지 않는다.
+
+| 상태 | 실행 링크 | 캡처 asset |
+| --- | --- | --- |
+| 검토 대기 | [index.html](../../spikes/ay-ple-ui-prototype/index.html) | [ay-ple-prototype-review.png](assets/ay-ple-prototype-review.png) |
+| 반영됨 | [state-accepted.html](../../spikes/ay-ple-ui-prototype/state-accepted.html) | [ay-ple-prototype-accepted.png](assets/ay-ple-prototype-accepted.png) |
+
+![AY-PLE prototype review state](assets/ay-ple-prototype-review.png)
+
+![AY-PLE prototype accepted state](assets/ay-ple-prototype-accepted.png)
+
+## 제출 산출물 매핑
+
+| 제출 기준 | 확인할 위치 |
+| --- | --- |
+| 사용자 관점의 동작 시나리오 | [대표 시나리오](#대표-시나리오), [사용자 흐름](#사용자-흐름) |
+| 화면 구조와 화면 단위 동작 | [화면 구조](#화면-구조), [Panel Contract](#panel-contract) |
+| 핵심 기능 우선 정리 | [AY-PLE Product Brief](ay-ple-product-brief.md#핵심-기능-우선순위), [MVP 범위](ay-ple-product-brief.md#mvp-범위) |
+| 순수 HTML/CSS prototype | [검증 산출물](#검증-산출물), [index.html](../../spikes/ay-ple-ui-prototype/index.html), [state-accepted.html](../../spikes/ay-ple-ui-prototype/state-accepted.html) |
+| 피드백 반영 | [Prototype Notes](../../spikes/ay-ple-ui-prototype/NOTES.md#current-read) |
 
 ## Prototype Artifact
 
@@ -159,7 +184,7 @@ spikes/ay-ple-ui-prototype/styles.css
 
 [순수 HTML/CSS prototype 열기](../../spikes/ay-ple-ui-prototype/index.html) · [반영됨 상태 열기](../../spikes/ay-ple-ui-prototype/state-accepted.html)
 
-이 prototype은 throwaway artifact다. 기획서에는 링크와 스크린샷 또는 간단한 설명만 연결하고, 실제 제품 구현의 컴포넌트 구조로 간주하지 않는다. Prototype의 질문, 탭별 의도, 피드백 후 판정은 [prototype notes](../../spikes/ay-ple-ui-prototype/NOTES.md)에 둔다.
+이 prototype은 throwaway artifact다. Product Brief에는 제품 원칙만 남기고, 실제 제품 구현의 컴포넌트 구조로 간주하지 않는다. Prototype의 질문, 탭별 의도, 피드백 후 판정은 [prototype notes](../../spikes/ay-ple-ui-prototype/NOTES.md)에 둔다.
 
 ## 남은 질문
 

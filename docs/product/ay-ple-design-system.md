@@ -56,13 +56,13 @@ AY-PLE의 기본 화면은 기존 다크 IDE 테마가 아니라 **밝은 학업
 | Oversized marketing hero | prototype의 핵심은 실제 검토 workflow이지 랜딩 페이지가 아니다. |
 | Cute-only mascot UI | 학업 자료와 마감 관리를 믿고 맡기는 생산성 앱 신뢰도가 떨어진다. |
 
-## 현재 적용 위치
+## 검증 적용 위치
 
 | 위치 | 상태 |
 | --- | --- |
-| `spikes/ay-ple-ui-prototype/styles.css` | light-first 토큰과 주요 컴포넌트 색상 적용 |
-| `spikes/ay-ple-ui-prototype/assets/` | AY-PLE 로고, 헤더 마크, AY 프로필 이미지 |
-| `spikes/ay-ple-ui-prototype/index.html` | 검토 대기 상태의 밝은 workspace |
-| `spikes/ay-ple-ui-prototype/state-accepted.html` | 반영됨 상태의 밝은 workspace |
+| `spikes/ay-ple-ui-prototype/styles.css` | light-first 토큰과 주요 컴포넌트 색상을 검증 prototype에 적용 |
+| `spikes/ay-ple-ui-prototype/assets/` | AY-PLE 로고, 헤더 마크, AY 프로필 이미지를 검증 prototype에 적용 |
+| `spikes/ay-ple-ui-prototype/index.html` | 검토 대기 상태의 밝은 workspace 방향 검증 |
+| `spikes/ay-ple-ui-prototype/state-accepted.html` | 반영됨 상태의 밝은 workspace 방향 검증 |
 
-이 문서는 최종 디자인 시스템이 아니라, 오늘 prototype과 product brief가 같은 방향을 보게 하는 첫 기준이다.
+이 문서는 최종 디자인 시스템이 아니라, 검증 prototype과 product brief가 같은 방향을 보게 하는 첫 기준이다.

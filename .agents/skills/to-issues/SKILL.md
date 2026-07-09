@@ -1,6 +1,6 @@
 ---
 name: to-issues
-description: Break a plan, spec, or PRD into independently-grabbable issues on the project issue tracker using tracer-bullet vertical slices.
+description: Break a local Markdown plan, spec, or PRD into independently-grabbable local Markdown issue briefs using tracer-bullet vertical slices. Publish to GitHub only when explicitly requested.
 disable-model-invocation: true
 ---
 
@@ -8,13 +8,15 @@ disable-model-invocation: true
 
 Break a plan into independently-grabbable issues using vertical slices (tracer bullets).
 
-The issue tracker and triage label vocabulary should have been provided to you — run `/setup-matt-pocock-skills` if not.
+This repo's Matt Pocock flow uses local Markdown issue briefs by default. Do not create GitHub Issues or PRs unless the user explicitly asks for GitHub publication and confirms the target repo/surface.
+
+Write generated issue brief content in Korean; leave the template and examples below unchanged.
 
 ## Process
 
 ### 1. Gather context
 
-Work from whatever is already in the conversation context. If the user passes an issue reference (issue number, URL, or path) as an argument, fetch it from the issue tracker and read its full body and comments.
+Work from whatever is already in the conversation context. If the user passes a local Markdown path, read it fully. If the user passes a GitHub URL, fetch that exact URL. Do not resolve bare numbers as GitHub issues unless the user explicitly says they are GitHub issue or PR numbers.
 
 ### 2. Explore the codebase (optional)
 
@@ -50,16 +52,33 @@ Ask the user:
 
 Iterate until the user approves the breakdown.
 
-### 5. Publish the issues to the issue tracker
+### 5. Publish the issues as local Markdown
 
-For each approved slice, publish a new issue to the issue tracker. Use the issue body template below. These issues are considered ready for AFK agents, so publish them with the correct triage label unless instructed otherwise.
+For each approved slice, publish a new local Markdown issue brief. These issues are considered ready for AFK agents, so include the local `Agent triage` block unless instructed otherwise.
 
-Publish issues in dependency order (blockers first) so you can reference real issue identifiers in the "Blocked by" field.
+Publish issues in dependency order (blockers first) so you can reference earlier local issue files in the "Blocked by" field.
+
+If the source is a PRD file, create grouped issue files under:
+
+```text
+docs/issues/<prd-slug>/001-<slice-slug>.md
+docs/issues/<prd-slug>/002-<slice-slug>.md
+```
+
+If there is no obvious PRD slug, use `docs/issues/<YYYY-MM-DD>-<short-plan-slug>/`.
+
+After writing the files, report the created local paths. Do not create, edit, close, or delete GitHub Issues.
 
 <issue-template>
+## Agent triage
+
+- State: ready-for-agent
+- Surface: local-issue
+- Next actor: agent
+
 ## Parent
 
-A reference to the parent issue on the issue tracker (if the source was an existing issue, otherwise omit this section).
+A reference to the parent local PRD or issue path (if the source was an existing artifact, otherwise omit this section).
 
 ## What to build
 
@@ -75,10 +94,10 @@ Avoid specific file paths or code snippets — they go stale fast. Exception: if
 
 ## Blocked by
 
-- A reference to the blocking ticket (if any)
+- A reference to the blocking local issue file (if any)
 
 Or "None - can start immediately" if no blockers.
 
 </issue-template>
 
-Do NOT close or modify any parent issue.
+Do NOT close or modify any parent issue or PRD.

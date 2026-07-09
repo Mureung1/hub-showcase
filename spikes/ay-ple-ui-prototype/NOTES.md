@@ -42,6 +42,8 @@ User feedback on 2026-07-08: file previews should not put editing controls insid
 
 User feedback on 2026-07-08: AY interpretation such as `AY가 참고한 문장` should not be encoded into the source preview itself. The prototype now keeps file previews clean and moves evidence into a separate bottom panel under the source preview.
 
+User feedback on 2026-07-08: fitting every downstream surface into one screen would over-constrain the product too early. The prototype now fixes only SourceSelection review and assignment acceptance briefing, while timeline, recommended tasks, and reading projections remain follow-up UX surfaces.
+
 User feedback on 2026-07-08: generated image mockups were making the app spec and HTML/CSS prototype diverge. Standalone screen mockup images were removed; the remaining generated images are narrow brand assets wired directly into the HTML/CSS prototype.
 
 User feedback on 2026-07-08: the desired ChatSidecar is closer to a VS Code/Codex right-side dock than an inline dropdown. The prototype now pulls the chat out of the review card and renders it as a separate right dock. Pure HTML/CSS can make a persistent docked panel and clickable tabs, but resizing, selected-tab persistence across reloads, and synchronized panel state would need JavaScript.
@@ -55,6 +57,8 @@ User feedback on 2026-07-08: state switching should not live in a header prototy
 User feedback on 2026-07-08: the header should not use a separate `workspace-meta` pill cluster. Term and course now live in the left brand area, source count stays only in the source explorer, and the review state appears as a concise `검토 대기`/`반영됨` pill in the ChatSidecar head.
 
 User feedback on 2026-07-08: the existing dark theme still felt too developer-oriented for AY-PLE. The prototype now follows a light-first academic workspace direction: warm paper surfaces, ink text, brand coral/green/yellow accents, and an AY panel that reads as a companion chat rather than a terminal-like sidecar.
+
+User feedback on 2026-07-08: mobile layout feedback was pulling effort away from the desktop review workspace. The prototype keeps 1920x1080 desktop as the validation target, while mobile work stays deferred by the repository interface scope.
 
 ## Verdict placeholder
 

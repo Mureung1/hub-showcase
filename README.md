@@ -18,6 +18,7 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 | Spike 계획 | [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | Codex 실행환경 소유권 PoC 계획 |
 | ADR | [0001. Use file auth store for runtime spike](docs/adr/0001-use-file-auth-store-for-runtime-spike.md) | runtime spike의 인증 저장소 결정 |
 | ADR | [0002. Use first-class academic objects](docs/adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam canonical model과 derived operational view 결정 |
+| ADR | [0003. Build runtime harness before product layer](docs/adr/0003-build-runtime-harness-before-product-layer.md) | Runtime Harness 선행과 CodexRuntimeAdapter parity gate 결정 |
 | Agent 운영 | [Issue Tracker](docs/agents/issue-tracker.md) | issue, PRD, PR 요청 표면 규칙 |
 | Agent 운영 | [Triage Labels](docs/agents/triage-labels.md) | triage 상태 마커 규칙 |
 | Agent 운영 | [Domain Docs](docs/agents/domain.md) | domain docs와 ADR 위치 규칙 |
@@ -31,13 +32,22 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 ├── README.md
 ├── AGENTS.md
 ├── CONTEXT.md
+├── apps/
+│   ├── server/
+│   └── inspector/
 ├── docs/
 │   ├── README.md
 │   ├── product/
 │   ├── architecture/
+│   ├── prds/
+│   ├── issues/
 │   ├── spikes/
 │   ├── adr/
 │   └── agents/
+├── packages/
+│   ├── runtime-core/
+│   ├── runtime-fake/
+│   └── runtime-codex/
 └── spikes/
     └── codex-runtime-ownership/
 ```
@@ -46,9 +56,12 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 
 | 영역 | 위치 | 설명 |
 | --- | --- | --- |
-| Server | `server/` | Express API 서버 |
-| Client | `client/` | Vite React 클라이언트 |
-| Health check | `/api/health` | 서버와 클라이언트 연결 확인용 엔드포인트 |
+| Server app | `apps/server/` | Express API 서버 |
+| Inspector app | `apps/inspector/` | Vite React Runtime Inspector starter |
+| Runtime core | `packages/runtime-core/` | Runtime contract boundary placeholder |
+| Fake runtime | `packages/runtime-fake/` | Fake adapter boundary placeholder |
+| Codex runtime | `packages/runtime-codex/` | Codex adapter boundary placeholder |
+| Health check | `/api/health` | 서버와 Inspector 연결 확인용 엔드포인트 |
 
 ## 명령어
 
