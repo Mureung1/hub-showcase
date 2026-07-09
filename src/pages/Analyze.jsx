@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import PhotoUpload from '../components/PhotoUpload.jsx'
 import NutritionCard from '../components/NutritionCard.jsx'
 import Spinner from '../components/Spinner.jsx'
@@ -62,13 +62,14 @@ function AnalyzingSkeleton() {
 }
 
 export default function Analyze() {
-  const { user, setTodayMeal, todayMeal, addTodayMeal } = useUser()
-  const navigate = useNavigate()
+  const { user, setTodayMeal, addTodayMeal } = useUser()
   const [photo, setPhoto] = useState(null) // { base64, mimeType, dataUrl, width, height }
   const [menuName, setMenuName] = useState('')
   const [brand, setBrand] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // 방금 이 화면에서 분석한 결과(로컬 상태). 홈을 떠나면 사라져서, 다시 돌아와도 카드가 재표시되지 않는다.
+  const [lastAnalysis, setLastAnalysis] = useState(null)
 
   async function handleAnalyze() {
     setError('')
@@ -110,7 +111,7 @@ export default function Analyze() {
         })
       }
 
-      navigate('/result')
+      setLastAnalysis(parsed)
     } catch (err) {
       console.error('meal analysis failed:', err)
       setError('분석에 실패했습니다. 잠시 후 다시 시도해주세요.')
@@ -140,7 +141,18 @@ export default function Analyze() {
       </Card>
 
       {loading && <AnalyzingSkeleton />}
-      {!loading && <NutritionCard analysis={todayMeal} />}
+      {!loading && lastAnalysis && (
+        <>
+          <NutritionCard analysis={lastAnalysis} />
+          <Link
+            to="/result"
+            className="tds-press"
+            style={{ ...styles.linkButton, display: 'block', textAlign: 'center', marginTop: spacing.md }}
+          >
+            오늘의 영양 진단 보기
+          </Link>
+        </>
+      )}
     </div>
   )
 }

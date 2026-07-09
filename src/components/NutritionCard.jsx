@@ -12,7 +12,8 @@ const BAR_MAX = {
   sodium: 2000,
 }
 
-function NutrientBars({ nutrients }) {
+// 식단 탭의 "자세한 영양" 아코디언에서도 재사용하는 상세 막대 그래프
+export function NutrientBars({ nutrients }) {
   return (
     <div>
       {NUTRIENT_LABELS.map(({ key, label, unit }) => {

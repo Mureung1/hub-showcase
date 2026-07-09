@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import Card from '../components/Card.jsx'
+import { NutrientBars } from '../components/NutritionCard.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import { NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -86,42 +88,60 @@ function TrashIcon() {
   )
 }
 
-function MealCard({ meal, onRemove }) {
+function MealCard({ meal, expanded, onToggleDetail, onRemove }) {
   const n = meal.nutrients || {}
   return (
-    <Card style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.md }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <SourceBadge source={meal.source} />
-        <h3 style={{ fontSize: font.size.md, margin: `${spacing.sm}px 0 ${spacing.xs}px`, color: colors.textStrong }}>
-          {meal.name}
-          {meal.brand ? ` (${meal.brand})` : ''}
-        </h3>
-        <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.xs }}>
-          {Math.round(n.calories) || 0}kcal · 단백질 {Math.round(n.protein) || 0}g · 탄수 {Math.round(n.carbs) || 0}g · 지방{' '}
-          {Math.round(n.fat) || 0}g · 나트륨 {Math.round(n.sodium) || 0}mg · 식이섬유 {Math.round(n.fiber) || 0}g
-        </p>
+    <Card>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.md }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <SourceBadge source={meal.source} />
+          <h3 style={{ fontSize: font.size.md, margin: `${spacing.sm}px 0 ${spacing.xs}px`, color: colors.textStrong }}>
+            {meal.name}
+            {meal.brand ? ` (${meal.brand})` : ''}
+          </h3>
+          <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.xs }}>
+            {Math.round(n.calories) || 0}kcal · 단백질 {Math.round(n.protein) || 0}g · 탄수 {Math.round(n.carbs) || 0}g · 지방{' '}
+            {Math.round(n.fat) || 0}g · 나트륨 {Math.round(n.sodium) || 0}mg · 식이섬유 {Math.round(n.fiber) || 0}g
+          </p>
+        </div>
+        <button
+          type="button"
+          className="tds-press"
+          onClick={onRemove}
+          aria-label={`${meal.name} 삭제`}
+          style={{
+            border: 'none',
+            background: colors.bg,
+            color: colors.muted,
+            borderRadius: radius.sm,
+            width: 36,
+            height: 36,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          <TrashIcon />
+        </button>
       </div>
+
       <button
         type="button"
         className="tds-press"
-        onClick={onRemove}
-        aria-label={`${meal.name} 삭제`}
-        style={{
-          border: 'none',
-          background: colors.bg,
-          color: colors.muted,
-          borderRadius: radius.sm,
-          width: 36,
-          height: 36,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          flexShrink: 0,
-        }}
+        onClick={onToggleDetail}
+        aria-expanded={expanded}
+        style={{ ...styles.linkButton, marginTop: spacing.md }}
       >
-        <TrashIcon />
+        {expanded ? '접기' : '자세한 영양'}
       </button>
+
+      {expanded && (
+        <div style={{ marginTop: spacing.md }}>
+          <NutrientBars nutrients={n} />
+        </div>
+      )}
     </Card>
   )
 }
@@ -129,6 +149,19 @@ function MealCard({ meal, onRemove }) {
 export default function MealsPage() {
   const { user, todayMeals, todayMealsTotal, removeTodayMeal } = useUser()
   const recommended = user?.recommended
+  const [expandedIds, setExpandedIds] = useState(() => new Set())
+
+  function toggleDetail(mealId) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(mealId)) {
+        next.delete(mealId)
+      } else {
+        next.add(mealId)
+      }
+      return next
+    })
+  }
 
   return (
     <div style={styles.page}>
@@ -175,7 +208,15 @@ export default function MealsPage() {
           </Link>
         </Card>
       ) : (
-        todayMeals.map((meal) => <MealCard key={meal.id} meal={meal} onRemove={() => removeTodayMeal(meal.id)} />)
+        todayMeals.map((meal) => (
+          <MealCard
+            key={meal.id}
+            meal={meal}
+            expanded={expandedIds.has(meal.id)}
+            onToggleDetail={() => toggleDetail(meal.id)}
+            onRemove={() => removeTodayMeal(meal.id)}
+          />
+        ))
       )}
     </div>
   )
