@@ -1,118 +1,177 @@
+import Logo from './Logo.jsx';
+import { FolderIcon, DocumentIcon } from './FileIcons.jsx';
+import './PitchPage.css';
+
 export default function PitchPage({ onStart }) {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased flex flex-col justify-center py-20 px-6 max-w-4xl mx-auto">
+    <div className="pitch-page">
 
-      {/* 01. 프로젝트 타이틀 */}
-      <div className="space-y-4 mb-16 border-b border-slate-200 pb-8 text-left">
-        <div className="flex items-center justify-between gap-4">
-          <div className="text-xs font-mono tracking-widest text-blue-600 font-bold uppercase">
-            AI Agent Challenge Proposal
+      {/* Header */}
+      <header className="pitch-header">
+        <div className="pitch-header-brand">
+          <div className="traffic-lights">
+            <span className="dot red"></span>
+            <span className="dot yellow"></span>
+            <span className="dot green"></span>
           </div>
-          <button
-            type="button"
-            onClick={onStart}
-            className="shrink-0 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
-          >
-            지금 만들어보기 →
-          </button>
+          <Logo size={30} />
         </div>
-        <h1 className="text-4xl md:text-5xl font-black text-slate-950 tracking-tight">
-          Portpolio AI Agent
-        </h1>
-        <p className="text-lg text-slate-600 font-light leading-relaxed">
-          근거 기반 AI 에이전트를 활용한 JD 맞춤형 포트폴리오 자동 생성 서비스
-        </p>
-      </div>
-
-      {/* 02. 프로젝트 배경 */}
-      <div className="space-y-6 mb-16 text-left">
-        <h2 className="text-xs font-mono tracking-wider text-slate-400 uppercase">
-          01. BACKGROUND & PROBLEM
-        </h2>
-        <div className="text-2xl font-bold text-slate-900 tracking-tight leading-snug">
-          "수시 채용 시대, 공고마다 포트폴리오를 새로 고쳐 써야 하는 번거로움"
+        <div className="pitch-header-menu">
+          <span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span><span>Help</span>
         </div>
+        <div className="pitch-header-actions">
+          <button type="button" className="btn-ghost">로그인</button>
+          <button type="button" className="btn-primary" onClick={onStart}>지금 만들어보기 →</button>
+        </div>
+      </header>
 
-        {/* 페인 포인트 리스트 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-          <div className="p-5 bg-white rounded-xl border border-slate-200/60 shadow-sm">
-            <div className="text-blue-600 font-mono text-sm mb-2 font-bold">01. 반복적 피로</div>
-            <p className="text-sm text-slate-600 leading-relaxed font-light">
-              지원하는 기업의 JD 스택에 맞춰 매번 포트폴리오를 수정해야 하는 극심한 시간 소요
+      {/* Hero (전체 화면, 좌우 여백 없이 뷰포트 전체 활용) */}
+      <section className="pitch-hero">
+        <div className="pitch-hero-inner">
+          <div className="pitch-hero-copy">
+            <div className="eyebrow">AI Agent Challenge Proposal</div>
+            <h1 className="pitch-headline">
+              What is<br />
+              <span className="highlight">Portfolio</span> Agent<span className="cursor-blink"></span><br />
+              <span className="pixel">CORE?</span>
+            </h1>
+            <p className="pitch-subhead">
+              근거 기반 AI 에이전트를 활용한 JD 맞춤형 포트폴리오 자동 생성 서비스
+              <FolderIcon size={20} className="inline-icon" />
             </p>
-          </div>
-          <div className="p-5 bg-white rounded-xl border border-slate-200/60 shadow-sm">
-            <div className="text-blue-600 font-mono text-sm mb-2 font-bold">02. 판단의 한계</div>
-            <p className="text-sm text-slate-600 leading-relaxed font-light">
-              나의 수많은 경험 중 해당 기업 공고에 어떤 프로젝트를 강조해야 할지 기준 부재
-            </p>
-          </div>
-          <div className="p-5 bg-white rounded-xl border border-slate-200/60 shadow-sm">
-            <div className="text-blue-600 font-mono text-sm mb-2 font-bold">03. 낮은 AI 신뢰도</div>
-            <p className="text-sm text-slate-600 leading-relaxed font-light">
-              기존 AI 도구의 가짜 경력 생성 및 어색한 문체로 인한 서류 신뢰도 저하
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 03. 핵심 목표 (Solution) */}
-      <div className="space-y-6 border-t border-slate-200 pt-12 text-left">
-        <h2 className="text-xs font-mono tracking-wider text-slate-400 uppercase">
-          02. CORE GOAL
-        </h2>
-        <div className="text-2xl font-bold text-slate-900 tracking-tight leading-snug">
-          "실제 데이터 기반의 거짓 없는 맞춤형 슬라이드 빌드"
-        </div>
-
-        {/* 핵심 목표 프로세스 바 */}
-        <div className="bg-slate-900 text-white p-8 rounded-2xl shadow-xl space-y-6 mt-4">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between sm:items-center border-b border-slate-800 pb-4 text-xs font-mono text-slate-400">
-            <div>INPUT DATA</div>
-            <div className="hidden sm:block">⚙️ AGENT PROCESS</div>
-            <div>OUTPUT</div>
+            <button type="button" className="btn-primary hero-cta" onClick={onStart}>지금 만들어보기 →</button>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
-            {/* 인풋 */}
-            <div className="w-full md:w-1/3 space-y-2">
-              <div className="text-sm font-semibold text-slate-300">사용자 입력 데이터</div>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-2.5 py-1 bg-slate-800 text-blue-400 rounded text-xs font-mono">GitHub Repo</span>
-                <span className="px-2.5 py-1 bg-slate-800 text-blue-400 rounded text-xs font-mono">Base Resume</span>
-                <span className="px-2.5 py-1 bg-slate-800 text-blue-400 rounded text-xs font-mono">Target JD</span>
+          {/* 콜라주 카드 — 정렬된 2x2 그리드로 오른쪽 공간을 채워 좌우 여백을 없앰 */}
+          <div className="pitch-hero-collage">
+            <div className="float-card float-notify">
+              <div className="icon">🤖</div>
+              <div className="txt"><strong>Evidence First</strong>근거 없는 경험은 생성하지 않아요</div>
+            </div>
+
+            <div className="float-card float-folders">
+              <div className="folder-chip">
+                <FolderIcon size={28} />
+                <span className="label">Repo Data</span>
+              </div>
+              <div className="folder-chip">
+                <FolderIcon size={28} />
+                <span className="label">JD Text</span>
               </div>
             </div>
 
-            {/* 에이전트 브릿지 화살표 */}
-            <div className="flex items-center justify-center text-blue-500 py-2 md:py-0">
-              <span className="md:hidden text-xs text-slate-500">▼</span>
-              <span className="hidden md:inline text-xl">→</span>
+            <div className="float-card float-controls">
+              <div className="control-row">
+                <span className="sq" style={{ background: 'var(--color-primary)' }}>🐙</span>
+                <span className="label">GitHub<span className="sub">연동됨</span></span>
+              </div>
+              <div className="control-row">
+                <span className="sq" style={{ background: 'var(--color-primary-muted)' }}>
+                  <DocumentIcon size={12} tone="white" />
+                </span>
+                <span className="label">JD 분석<span className="sub">대기 중</span></span>
+              </div>
+              <div className="control-row">
+                <span className="sq" style={{ background: 'var(--color-primary-hover)' }}>✅</span>
+                <span className="label">Evidence<span className="sub">검증됨</span></span>
+              </div>
             </div>
 
-            {/* 에이전트 액션 */}
-            <div className="w-full md:w-1/3 space-y-1 text-left">
-              <div className="text-base font-bold text-white">근거 기반 매칭</div>
-              <p className="text-xs text-slate-400 leading-relaxed font-light">
-                실제 코드 경력만 추출하여 JD와 가장 적합한 TOP 3 프로젝트 자동 선정 및 포트폴리오 형태로 변환
-              </p>
-            </div>
-
-            {/* 아웃풋 브릿지 화살표 */}
-            <div className="flex items-center justify-center text-blue-500 py-2 md:py-0">
-              <span className="md:hidden text-xs text-slate-500">▼</span>
-              <span className="hidden md:inline text-xl">→</span>
-            </div>
-
-            {/* 아웃풋 */}
-            <div className="w-full md:w-1/4 text-left md:text-center">
-              <div className="inline-flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md">
-                <span>PPT / PDF 빌드</span>
+            <div className="float-card float-dialog">
+              <p className="msg">지금까지 만든 포트폴리오를<br />저장하시겠습니까?</p>
+              <div className="actions">
+                <button className="cancel" type="button">Cancel</button>
+                <button className="discard" type="button">Don&apos;t Save</button>
+                <button className="save" type="button">Save</button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+
+        <div className="scroll-cue">
+          <span>더 알아보기</span>
+          <span>↓</span>
+        </div>
+      </section>
+
+      {/* 01. Background — 스크롤해야 보이는 영역 */}
+      <section className="pitch-section alt">
+        <div className="pitch-section-inner">
+          <div className="section-label">01. Background &amp; Problem</div>
+          <h2 className="section-title">
+            "수시 채용 시대, 공고마다 포트폴리오를 새로 고쳐 써야 하는 번거로움"
+          </h2>
+          <div className="card-grid">
+            <div className="card">
+              <div className="card-index">01. 반복적 피로</div>
+              <p className="card-text">지원하는 기업의 JD 스택에 맞춰 매번 포트폴리오를 수정해야 하는 극심한 시간 소요</p>
+            </div>
+            <div className="card">
+              <div className="card-index">02. 판단의 한계</div>
+              <p className="card-text">나의 수많은 경험 중 해당 기업 공고에 어떤 프로젝트를 강조해야 할지 기준 부재</p>
+            </div>
+            <div className="card">
+              <div className="card-index">03. 낮은 AI 신뢰도</div>
+              <p className="card-text">기존 AI 도구의 가짜 경력 생성 및 어색한 문체로 인한 서류 신뢰도 저하</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 02. Core Goal */}
+      <section className="pitch-section">
+        <div className="pitch-section-inner">
+          <div className="section-label">02. Core Goal</div>
+          <h2 className="section-title">
+            "실제 데이터 기반의 거짓 없는 맞춤형 슬라이드 빌드"
+          </h2>
+
+          <div className="flow-panel">
+            <div className="flow-meta">
+              <span>INPUT DATA</span>
+              <span>⚙️ AGENT PROCESS</span>
+              <span>OUTPUT</span>
+            </div>
+            <div className="flow-steps">
+              <div className="flow-step">
+                <div className="flow-step-label">사용자 입력 데이터</div>
+                <div className="tag-row">
+                  <span className="tag"><FolderIcon size={13} tone="white" className="inline-icon" />GitHub Repo</span>
+                  <span className="tag"><FolderIcon size={13} tone="white" className="inline-icon" />Base Resume</span>
+                  <span className="tag"><DocumentIcon size={13} tone="white" className="inline-icon" />Target JD</span>
+                </div>
+              </div>
+              <div className="flow-arrow">→</div>
+              <div className="flow-step">
+                <p className="flow-action-title">근거 기반 매칭</p>
+                <p className="flow-action-desc">실제 코드 경력만 추출하여 JD와 가장 적합한 프로젝트 자동 선정 및 포트폴리오 형태로 변환</p>
+              </div>
+              <div className="flow-arrow">→</div>
+              <div className="flow-step" style={{ flex: '0 0 auto' }}>
+                <span className="flow-output-badge">
+                  <FolderIcon size={14} tone="white" className="inline-icon" />
+                  Portfolio 생성
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer strip */}
+      <section className="pitch-section alt" style={{ paddingTop: 0 }}>
+        <div className="pitch-strip">
+          <div className="strip-nav">
+            <span className="active">Overview</span>
+            <span>Features</span>
+            <span>Docs</span>
+          </div>
+          <div className="strip-date">지금 만들어보기</div>
+          <div className="strip-folder">
+            <FolderIcon size={18} tone="white" />
+          </div>
+        </div>
+      </section>
 
     </div>
   );
