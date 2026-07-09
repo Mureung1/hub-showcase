@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>차세워 · 검색 중</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <h1 class="screen-title">검색 결과</h1>
+
+    <div class="pad">
+      <form class="search-field" action="results.html">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input type="text" name="destination" value="강남역" />
+        <a class="clear" href="index.html" title="지우고 다시 검색">&times;</a>
+      </form>
+    </div>
+
+    <div class="loading-wrap">
+      <div class="loading-row">
+        <span class="spinner"></span>
+        <span>검색 중</span>
+      </div>
+      <div class="skeleton-list">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
