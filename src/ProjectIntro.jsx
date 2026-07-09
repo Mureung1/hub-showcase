@@ -124,62 +124,104 @@ export default function ProjectIntro() {
   return (
     <main className="study-app">
       <style>{`
-        #root{width:100%;border:0;text-align:left;display:block;background:#f6f3ee;}
-        .study-app{min-height:100vh;background:#f6f3ee;color:#20242a;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
-        .shell{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:28px 0 44px;}
-        .topbar{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px;}
-        .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:#224037;}
-        .pill{border:1px solid #d6d0c5;background:#fffdf8;color:#53615b;border-radius:999px;padding:8px 12px;font-size:13px;}
+        /* ── 디자인 토큰: docs/design.md §2~§4 ── */
+        #root{width:100%;max-width:100%;margin:0;border:0;text-align:left;display:block;min-height:100svh;}
+        :root{
+          --bg:#eef2f6;--surface:#fff;--surface-muted:#f4f7fb;
+          --tint-blue:#e7eefc;--on-tint-blue:#2c5fd0;
+          --tint-green:#e3f4ec;--on-tint-green:#1f7a54;
+          --tint-lav:#ecebfb;--on-tint-lav:#5b53c6;
+          --primary:#3b7dee;--primary-strong:#2f66c9;--on-primary:#fff;
+          --accent:#2fb37a;--accent-strong:#24936a;--on-accent:#fff;
+          --text-strong:#1a2230;--text:#4a5568;--text-muted:#8a93a3;
+          --border:#e2e8f1;--border-soft:#eef1f6;--focus:#3b7dee;
+          --shadow-sm:0 1px 3px rgba(27,45,76,.06),0 1px 2px rgba(27,45,76,.04);
+          --shadow-md:0 8px 24px rgba(27,45,76,.08);
+          --font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Malgun Gothic",system-ui,sans-serif;
+          --r-sm:10px;--r-md:14px;--r-lg:20px;--r-pill:999px;
+        }
+        @media (prefers-color-scheme:dark){:root{
+          --bg:#10151c;--surface:#182029;--surface-muted:#1e2732;
+          --tint-blue:#1b2942;--on-tint-blue:#9dbcf6;
+          --tint-green:#16311f;--on-tint-green:#74d3a4;
+          --tint-lav:#24234a;--on-tint-lav:#b6b0f5;
+          --primary:#5a97f2;--primary-strong:#78abf6;--on-primary:#0c1119;
+          --accent:#43c491;--accent-strong:#63d3a6;--on-accent:#0c1119;
+          --text-strong:#eef2f7;--text:#b3bccb;--text-muted:#7d8798;
+          --border:#2a343f;--border-soft:#222b35;--focus:#5a97f2;
+          --shadow-sm:0 1px 3px rgba(0,0,0,.4);--shadow-md:0 10px 28px rgba(0,0,0,.45);
+        }}
+        /* ── 레이아웃 ── */
+        .study-app{min-height:100svh;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+        .shell{width:min(720px,calc(100% - 32px));margin:0 auto;padding:24px 0 48px;}
+        .topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:20px;}
+        .brand{font-weight:800;font-size:15px;color:var(--text-strong);}
+        .pill{border:1px solid var(--border);background:var(--surface);color:var(--text-muted);border-radius:var(--r-pill);padding:7px 12px;font-size:12px;font-weight:600;}
+        /* ── 진행 표시 ── */
         .progress{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
-        .progress-dot{border:1px solid #d9d2c8;background:#fffaf2;color:#776f63;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:700;}
-        .progress-dot.active{background:#214f45;color:#fff;border-color:#214f45;}
-        .panel{background:#fffdf8;border:1px solid #ded7cc;border-radius:8px;box-shadow:0 18px 50px rgba(38,32,24,.08);padding:28px;}
-        .hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr);gap:28px;align-items:center;}
-        .eyebrow{margin:0 0 10px;color:#c05f3c;font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;}
-        h1,h2,h3,p{letter-spacing:0;}
-        h1{font-size:clamp(34px,6vw,64px);line-height:1.05;margin:0 0 18px;color:#1e2725;font-weight:900;}
-        h2{font-size:clamp(25px,3vw,38px);line-height:1.15;margin:0 0 12px;color:#1e2725;font-weight:850;}
-        h3{font-size:18px;margin:0 0 14px;color:#222723;font-weight:800;}
-        p{line-height:1.65;color:#53615b;}
-        .lead{font-size:18px;max-width:720px;margin:0 0 18px;}
-        .notice{background:#eef4f1;border-left:4px solid #2d6b5f;padding:14px 16px;border-radius:6px;color:#2d4b43;margin-top:18px;}
-        .hero-card{background:#1f2d2b;color:#fff;border-radius:8px;padding:22px;display:grid;gap:14px;}
-        .hero-card p{color:#d8e4df;}
+        .progress-dot{border:1px solid var(--border);background:var(--surface);color:var(--text-muted);border-radius:var(--r-pill);padding:7px 11px;font-size:12px;font-weight:700;}
+        .progress-dot.active{background:var(--primary);color:var(--on-primary);border-color:var(--primary);}
+        /* ── 카드/패널 ── */
+        .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:24px;}
+        .hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);gap:24px;align-items:center;}
+        /* ── 타이포 ── */
+        .eyebrow{margin:0 0 10px;color:var(--text-muted);font-size:13px;font-weight:700;letter-spacing:.04em;}
+        h1,h2,h3{letter-spacing:-.01em;color:var(--text-strong);}
+        h1{font-size:clamp(30px,6vw,52px);line-height:1.08;margin:0 0 16px;font-weight:800;}
+        h2{font-size:clamp(22px,3vw,32px);line-height:1.15;margin:0 0 12px;font-weight:800;}
+        h3{font-size:18px;line-height:1.3;margin:0 0 12px;font-weight:700;}
+        p{margin:0;line-height:1.6;color:var(--text);}
+        .lead{font-size:18px;max-width:640px;margin:0 0 16px;}
+        .notice{background:var(--tint-green);padding:14px 16px;border-radius:var(--r-md);color:var(--on-tint-green);margin-top:16px;font-size:14px;line-height:1.55;}
+        .hint{margin-top:12px;font-size:13px;color:var(--text-muted);line-height:1.5;}
+        /* ── 히어로 강조 카드(학습=블루) ── */
+        .hero-card{background:var(--tint-blue);color:var(--on-tint-blue);border-radius:var(--r-lg);padding:20px;display:grid;gap:14px;}
+        .hero-card p{color:var(--on-tint-blue);}
+        .hero-card .eyebrow{color:var(--on-tint-blue);opacity:.85;}
         .mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-        .mini{background:#fffaf2;color:#26312d;border-radius:8px;padding:12px;font-weight:800;text-align:center;}
+        .mini{background:var(--surface);color:var(--text-strong);border-radius:var(--r-md);padding:12px 8px;font-weight:700;text-align:center;font-size:13px;box-shadow:var(--shadow-sm);}
+        /* ── 버튼 ── */
         .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;}
         button{font:inherit;}
-        .primary,.secondary{border:0;border-radius:8px;padding:12px 16px;font-weight:800;cursor:pointer;min-height:46px;}
-        .primary{background:#214f45;color:white;}
+        .primary,.secondary{border:0;border-radius:var(--r-md);padding:13px 18px;font-weight:700;cursor:pointer;min-height:46px;transition:background .15s,border-color .15s;}
+        .primary{background:var(--primary);color:var(--on-primary);}
+        .primary:hover:not(:disabled){background:var(--primary-strong);}
         .primary:disabled{opacity:.45;cursor:not-allowed;}
-        .secondary{background:#eadfce;color:#2f3833;}
-        .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
-        .option-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;}
-        .option-card{border:1px solid #d8d1c5;background:#fffaf2;border-radius:8px;padding:13px;text-align:left;color:#2f3833;cursor:pointer;font-weight:750;min-height:54px;}
-        .option-card:hover,.option-card.selected{border-color:#214f45;background:#e9f1ed;color:#163c34;}
+        .secondary{background:var(--surface-muted);color:var(--text-strong);border:1px solid var(--border);}
+        .secondary:hover{border-color:var(--primary);}
+        .primary:focus-visible,.secondary:focus-visible,.option-card:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+        /* ── 옵션/선택 ── */
+        .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
+        .option-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+        .option-card{border:1px solid var(--border);background:var(--surface);border-radius:var(--r-md);padding:13px 14px;text-align:left;color:var(--text-strong);cursor:pointer;font-weight:600;min-height:52px;transition:border-color .15s,background .15s;}
+        .option-card:hover{border-color:var(--primary);}
+        .option-card.selected{border-color:var(--primary);background:var(--tint-blue);color:var(--on-tint-blue);font-weight:700;}
         .question-list{display:grid;gap:14px;margin-top:20px;}
-        .question-card,.result-card{border:1px solid #ddd5c8;background:#fffaf2;border-radius:8px;padding:18px;}
-        .result-layout{display:grid;grid-template-columns:minmax(0,.88fr) minmax(360px,1.12fr);gap:16px;margin-top:18px;}
-        .score-list{display:grid;gap:11px;}
-        .score-row>div:first-child{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:6px;color:#38443f;}
-        .score-track{height:9px;border-radius:999px;background:#eadfce;overflow:hidden;}
-        .score-track span{display:block;height:100%;background:#2d6b5f;border-radius:999px;}
+        .question-card,.result-card{border:1px solid var(--border);background:var(--surface);border-radius:var(--r-lg);padding:20px;}
+        /* ── 결과 ── */
+        .result-layout{display:grid;grid-template-columns:minmax(0,.9fr) minmax(300px,1.1fr);gap:16px;margin-top:18px;}
+        .score-list{display:grid;gap:12px;}
+        .score-row>div:first-child{display:flex;justify-content:space-between;gap:10px;font-size:14px;margin-bottom:6px;color:var(--text-strong);font-weight:600;}
+        .score-track{height:9px;border-radius:var(--r-pill);background:var(--surface-muted);overflow:hidden;}
+        .score-track span{display:block;height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:var(--r-pill);}
         .card-list{display:grid;gap:12px;}
-        .method{border:1px solid #ded7cc;border-radius:8px;padding:16px;background:#fffdf8;}
-        .method strong{display:block;color:#1f2d2b;font-size:18px;margin-bottom:8px;}
-        .method p{margin:6px 0 0;}
+        .method{border:1px solid var(--border);border-radius:var(--r-md);padding:16px;background:var(--surface-muted);}
+        .method strong{display:block;color:var(--text-strong);font-size:16px;margin-bottom:8px;}
+        .method p{margin:6px 0 0;font-size:14px;}
         .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;}
-        ul{margin:10px 0 0;padding-left:18px;color:#53615b;line-height:1.7;}
+        ul{margin:10px 0 0;padding-left:18px;color:var(--text);line-height:1.7;}
+        /* ── 실천 카드 ── */
         .routine{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px;}
-        .checkline{display:flex;align-items:center;gap:10px;margin-top:16px;font-weight:800;}
-        .checkline input{width:20px;height:20px;}
+        .checkline{display:flex;align-items:center;gap:10px;margin-top:16px;font-weight:700;color:var(--text-strong);}
+        .checkline input{width:20px;height:20px;accent-color:var(--accent);}
         .range-group{display:grid;gap:12px;margin-top:16px;}
-        .range-row{display:grid;grid-template-columns:96px 1fr 42px;gap:10px;align-items:center;color:#37443e;font-weight:750;}
-        input[type="range"]{accent-color:#c05f3c;}
-        .saved{margin-top:14px;color:#2d6b5f;font-weight:800;}
+        .range-row{display:grid;grid-template-columns:64px 1fr 28px;gap:10px;align-items:center;color:var(--text-strong);font-weight:600;}
+        input[type="range"]{accent-color:var(--primary);}
+        .saved{margin-top:14px;color:var(--accent-strong);font-weight:700;font-size:14px;}
+        /* ── 칩 ── */
         .answers{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
-        .answer-chip{background:#eef4f1;color:#2d4b43;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:750;}
-        @media (max-width:860px){.hero,.result-layout,.routine,.two-col{grid-template-columns:1fr}.panel{padding:20px}.topbar{align-items:flex-start;flex-direction:column}.mini-grid{grid-template-columns:1fr} }
+        .answer-chip{background:var(--tint-blue);color:var(--on-tint-blue);border-radius:var(--r-pill);padding:6px 11px;font-size:12px;font-weight:600;}
+        @media (max-width:860px){.hero,.result-layout,.routine,.two-col{grid-template-columns:1fr}.panel{padding:18px}.topbar{align-items:flex-start;flex-direction:column}.mini-grid{grid-template-columns:1fr 1fr} }
       `}</style>
 
       <div className="shell">
@@ -314,6 +356,7 @@ export default function ProjectIntro() {
                     <ScoreBar key={key} label={SCORE_LABELS[key]} value={value} />
                   ))}
                 </div>
+                <p className="hint">점수는 사용자를 평가하거나 남과 비교하는 값이 아니라, 오늘 어떤 방식을 먼저 시도해볼지 추천 방향을 정하는 신호입니다.</p>
               </div>
               <div className="result-card">
                 <h3>추천 공부법 TOP 3</h3>
