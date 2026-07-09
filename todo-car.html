@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Velocity Tasks</title>
+    <style>
+      :root {
+        /* =========================
+           Color
+        ========================= */
+
+        /* Primary: 고광택 스포츠 레드 */
+        --color-primary: #c40012;
+        --color-primary-hover: #e00016;
+        --color-primary-active: #92000d;
+
+        /* Secondary: 휠/타이어 차콜 */
+        --color-secondary: #171c21;
+        --color-secondary-hover: #252c33;
+        --color-secondary-active: #0b0f13;
+
+        /* Accent: 브레이크 캘리퍼 레드 */
+        --color-accent: #ff1f2d;
+        --color-accent-soft: #ff6b73;
+
+        /* Background */
+        --color-bg: #eef3f5;
+        --color-bg-soft: #dce5e9;
+        --color-bg-panel: #ffffff;
+        --color-bg-card: #f7fafb;
+
+        /* Surface / Metal */
+        --color-surface-dark: #11161b;
+        --color-surface-mid: #2f3a42;
+        --color-surface-light: #b8c5cb;
+
+        /* Text */
+        --color-text: #101418;
+        --color-text-muted: #52616b;
+        --color-text-subtle: #82919a;
+        --color-text-inverse: #ffffff;
+
+        /* Border */
+        --color-border: #c7d2d8;
+        --color-border-soft: #e2eaee;
+        --color-border-dark: #303941;
+        --color-border-bright: #ff2b38;
+
+        /* Shadow */
+        --shadow-color: rgba(8, 13, 18, 0.22);
+        --shadow-soft: 0 8px 24px rgba(8, 13, 18, 0.12);
+        --shadow-card: 0 16px 42px rgba(8, 13, 18, 0.16);
+        --shadow-gloss: 0 12px 36px rgba(196, 0, 18, 0.24);
+
+        /* =========================
+           Typography
+        ========================= */
+
+        --font-sans: "Inter", "Pretendard", "Helvetica Neue", system-ui, sans-serif;
+        --font-display: "Inter", "Pretendard", system-ui, sans-serif;
+
+        --font-heading: var(--font-display);
+        --font-body: var(--font-sans);
+
+        --font-size-xs: 0.75rem;
+        --font-size-sm: 0.875rem;
+        --font-size-md: 1rem;
+        --font-size-lg: 1.125rem;
+        --font-size-xl: 1.5rem;
+        --font-size-2xl: 2rem;
+        --font-size-hero: clamp(2.75rem, 7vw, 6rem);
+
+        --font-weight-regular: 400;
+        --font-weight-medium: 500;
+        --font-weight-semibold: 600;
+        --font-weight-bold: 700;
+        --font-weight-black: 900;
+
+        --line-height-tight: 1.08;
+        --line-height-normal: 1.5;
+        --line-height-loose: 1.7;
+
+        /* =========================
+           Radius
+        ========================= */
+
+        --radius-xs: 2px;
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --radius-pill: 999px;
+
+        /* =========================
+           Spacing
+        ========================= */
+
+        --space-1: 0.25rem;
+        --space-2: 0.5rem;
+        --space-3: 0.75rem;
+        --space-4: 1rem;
+        --space-5: 1.25rem;
+        --space-6: 1.5rem;
+        --space-8: 2rem;
+        --space-10: 2.5rem;
+        --space-12: 3rem;
+        --space-16: 4rem;
+        --space-20: 5rem;
+
+        /* =========================
+           Card
+        ========================= */
+
+        --card-bg: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.98),
+          rgba(247, 250, 251, 0.96)
+        );
+
+        --card-border: 1px solid var(--color-border-soft);
+        --card-radius: var(--radius-md);
+        --card-padding: var(--space-6);
+        --card-shadow: var(--shadow-card);
+
+        --card-dark-bg: linear-gradient(
+          180deg,
+          rgba(23, 28, 33, 0.98),
+          rgba(11, 15, 19, 0.98)
+        );
+
+        --card-dark-border: 1px solid var(--color-border-dark);
+        --card-hover-border: 1px solid var(--color-border-bright);
+        --card-hover-shadow: var(--shadow-card), var(--shadow-gloss);
+
+        /* =========================
+           Buttons
+        ========================= */
+
+        --button-bg: var(--color-primary);
+        --button-bg-hover: var(--color-primary-hover);
+        --button-bg-active: var(--color-primary-active);
+        --button-text: var(--color-text-inverse);
+        --button-border: 1px solid rgba(255, 255, 255, 0.18);
+        --button-radius: var(--radius-sm);
+        --button-padding-y: 0.7rem;
+        --button-padding-x: 1.15rem;
+
+        /* =========================
+           Inputs
+        ========================= */
+
+        --input-bg: #ffffff;
+        --input-border: 1px solid var(--color-border);
+        --input-border-focus: 1px solid var(--color-primary);
+        --input-text: var(--color-text);
+        --input-placeholder: var(--color-text-subtle);
+        --input-radius: var(--radius-sm);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--color-text);
+        font-family: var(--font-body);
+        line-height: var(--line-height-normal);
+        background:
+          linear-gradient(116deg, rgba(238, 243, 245, 0.9) 0%, rgba(238, 243, 245, 0.96) 48%, rgba(199, 210, 216, 0.86) 100%),
+          repeating-linear-gradient(
+            90deg,
+            rgba(47, 58, 66, 0.08) 0,
+            rgba(47, 58, 66, 0.08) 1px,
+            transparent 1px,
+            transparent 84px
+          );
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: var(--space-6) 0 var(--space-12);
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-4);
+        padding: var(--space-4) 0 var(--space-6);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        min-width: 0;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        flex: 0 0 auto;
+        color: var(--color-text-inverse);
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.32), transparent 38%),
+          linear-gradient(135deg, var(--color-primary-hover), var(--color-primary-active));
+        border: var(--button-border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-gloss);
+        font-weight: var(--font-weight-black);
+      }
+
+      .brand-title {
+        margin: 0;
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-black);
+        line-height: var(--line-height-tight);
+      }
+
+      .brand-subtitle {
+        margin: 3px 0 0;
+        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+      }
+
+      .today-pill {
+        flex: 0 0 auto;
+        padding: var(--space-2) var(--space-4);
+        color: var(--color-text-inverse);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: var(--radius-pill);
+        background: var(--color-secondary);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .hero {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: var(--space-6);
+        align-items: stretch;
+        margin-bottom: var(--space-6);
+      }
+
+      .hero-main {
+        position: relative;
+        overflow: hidden;
+        min-height: 360px;
+        padding: var(--space-10);
+        color: var(--color-text-inverse);
+        border: var(--card-dark-border);
+        border-radius: var(--radius-lg);
+        background:
+          linear-gradient(110deg, rgba(17, 22, 27, 0.95) 0%, rgba(23, 28, 33, 0.82) 50%, rgba(196, 0, 18, 0.92) 100%),
+          var(--card-dark-bg);
+        box-shadow: var(--shadow-card);
+      }
+
+      .hero-main::before {
+        position: absolute;
+        right: -90px;
+        bottom: -120px;
+        width: 430px;
+        height: 430px;
+        content: "";
+        border: 34px solid rgba(11, 15, 19, 0.88);
+        border-radius: 50%;
+        box-shadow:
+          inset 0 0 0 22px rgba(184, 197, 203, 0.18),
+          inset 0 0 0 60px rgba(255, 255, 255, 0.04),
+          0 24px 70px rgba(0, 0, 0, 0.38);
+      }
+
+      .hero-main::after {
+        position: absolute;
+        right: 68px;
+        bottom: 58px;
+        width: 128px;
+        height: 128px;
+        content: "";
+        border-radius: 50%;
+        background:
+          linear-gradient(90deg, transparent 44%, rgba(184, 197, 203, 0.52) 45%, transparent 56%),
+          linear-gradient(0deg, transparent 44%, rgba(184, 197, 203, 0.52) 45%, transparent 56%),
+          var(--color-secondary-active);
+        transform: rotate(24deg);
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 1;
+        max-width: 680px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        margin-bottom: var(--space-4);
+        padding: var(--space-1) var(--space-3);
+        color: var(--color-text-inverse);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-bold);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: var(--radius-pill);
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: var(--font-size-hero);
+        font-weight: var(--font-weight-black);
+        line-height: var(--line-height-tight);
+      }
+
+      .hero-copy {
+        max-width: 570px;
+        margin: var(--space-4) 0 0;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: var(--font-size-lg);
+      }
+
+      .stats-panel {
+        display: grid;
+        gap: var(--space-3);
+        padding: var(--card-padding);
+        color: var(--color-text-inverse);
+        border: var(--card-dark-border);
+        border-radius: var(--card-radius);
+        background: var(--card-dark-bg);
+        box-shadow: var(--card-shadow);
+      }
+
+      .stat-card {
+        padding: var(--space-4);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .stat-label {
+        display: block;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: var(--font-size-sm);
+      }
+
+      .stat-value {
+        display: block;
+        margin-top: var(--space-2);
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-black);
+        line-height: 1;
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 156px auto;
+        gap: var(--space-3);
+        margin-bottom: var(--space-6);
+        padding: var(--space-4);
+        border: var(--card-border);
+        border-radius: var(--radius-lg);
+        background: rgba(255, 255, 255, 0.82);
+        box-shadow: var(--shadow-soft);
+        backdrop-filter: blur(12px);
+      }
+
+      .task-input,
+      .priority-select {
+        min-height: 46px;
+        width: 100%;
+        color: var(--input-text);
+        border: var(--input-border);
+        border-radius: var(--input-radius);
+        background: var(--input-bg);
+        outline: none;
+      }
+
+      .task-input {
+        padding: 0 var(--space-4);
+      }
+
+      .priority-select {
+        padding: 0 var(--space-3);
+      }
+
+      .task-input::placeholder {
+        color: var(--input-placeholder);
+      }
+
+      .task-input:focus,
+      .priority-select:focus {
+        border: var(--input-border-focus);
+        box-shadow: var(--shadow-gloss);
+      }
+
+      .add-button {
+        min-height: 46px;
+        padding: var(--button-padding-y) var(--button-padding-x);
+        color: var(--button-text);
+        font-weight: var(--font-weight-bold);
+        border: var(--button-border);
+        border-radius: var(--button-radius);
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.25), transparent 36%),
+          var(--button-bg);
+        box-shadow: var(--shadow-gloss);
+        transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+      }
+
+      .add-button:hover {
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent 36%),
+          var(--button-bg-hover);
+        transform: translateY(-1px);
+      }
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 310px;
+        gap: var(--space-6);
+        align-items: start;
+      }
+
+      .task-board,
+      .briefing-panel {
+        border: var(--card-border);
+        border-radius: var(--card-radius);
+        background: var(--card-bg);
+        box-shadow: var(--card-shadow);
+      }
+
+      .task-board {
+        overflow: hidden;
+      }
+
+      .board-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-4);
+        padding: var(--space-5) var(--space-6);
+        border-bottom: 1px solid var(--color-border-soft);
+      }
+
+      .board-title {
+        margin: 0;
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-black);
+        line-height: var(--line-height-tight);
+      }
+
+      .filters {
+        display: flex;
+        gap: var(--space-2);
+      }
+
+      .filter-button {
+        min-width: 64px;
+        padding: var(--space-2) var(--space-3);
+        color: var(--color-text-muted);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-pill);
+        background: var(--color-bg-panel);
+      }
+
+      .filter-button.active,
+      .filter-button:hover {
+        color: var(--color-text-inverse);
+        border-color: var(--color-primary);
+        background: var(--color-secondary);
+      }
+
+      .task-list {
+        display: grid;
+        gap: var(--space-3);
+        margin: 0;
+        padding: var(--space-5);
+        list-style: none;
+      }
+
+      .task-item {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: var(--space-3);
+        align-items: start;
+        padding: var(--space-4);
+        border: 1px solid var(--color-border-soft);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-panel);
+        transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+      }
+
+      .task-item:hover {
+        border-color: var(--color-border-bright);
+        box-shadow: var(--card-hover-shadow);
+        transform: translateY(-1px);
+      }
+
+      .task-item.done {
+        opacity: 0.58;
+      }
+
+      .check {
+        display: grid;
+        width: 24px;
+        height: 24px;
+        place-items: center;
+        margin-top: 2px;
+        color: transparent;
+        border: 2px solid var(--color-secondary);
+        border-radius: var(--radius-xs);
+        background: var(--color-bg-card);
+      }
+
+      .task-item.done .check {
+        color: var(--color-text-inverse);
+        border-color: var(--color-primary);
+        background: var(--color-primary);
+      }
+
+      .task-title {
+        margin: 0;
+        color: var(--color-text);
+        font-weight: var(--font-weight-semibold);
+      }
+
+      .task-item.done .task-title {
+        text-decoration: line-through;
+      }
+
+      .task-meta {
+        display: flex;
+        gap: var(--space-2);
+        flex-wrap: wrap;
+        margin-top: var(--space-2);
+      }
+
+      .tag {
+        padding: 2px var(--space-2);
+        color: var(--color-text-muted);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-semibold);
+        border: 1px solid var(--color-border-soft);
+        border-radius: var(--radius-pill);
+        background: var(--color-bg-card);
+      }
+
+      .tag.hot {
+        color: var(--color-text-inverse);
+        border-color: var(--color-primary);
+        background: var(--color-primary);
+      }
+
+      .delete-button {
+        width: 32px;
+        height: 32px;
+        color: var(--color-text-subtle);
+        border: 1px solid transparent;
+        border-radius: var(--radius-sm);
+        background: transparent;
+      }
+
+      .delete-button:hover {
+        color: var(--color-text-inverse);
+        border-color: var(--color-secondary);
+        background: var(--color-secondary);
+      }
+
+      .briefing-panel {
+        padding: var(--space-6);
+      }
+
+      .panel-title {
+        margin: 0 0 var(--space-4);
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-black);
+      }
+
+      .briefing-copy {
+        margin: 0 0 var(--space-5);
+        color: var(--color-text-muted);
+      }
+
+      .focus-list {
+        display: grid;
+        gap: var(--space-3);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .focus-list li {
+        padding: var(--space-3);
+        color: var(--color-text);
+        border-left: 3px solid var(--color-primary);
+        border-radius: var(--radius-sm);
+        background: var(--color-bg-card);
+      }
+
+      @media (max-width: 920px) {
+        .hero,
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .toolbar {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          width: min(100% - 24px, 1180px);
+          padding-top: var(--space-4);
+        }
+
+        .topbar,
+        .board-header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .hero-main {
+          min-height: 420px;
+          padding: var(--space-6);
+        }
+
+        .hero-main::before {
+          right: -160px;
+          bottom: -150px;
+        }
+
+        .hero-main::after {
+          right: -4px;
+          bottom: 30px;
+        }
+
+        .filters {
+          width: 100%;
+        }
+
+        .filter-button {
+          flex: 1;
+        }
+
+        .task-item {
+          grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .delete-button {
+          grid-column: 2;
+          justify-self: end;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">V</div>
+          <div>
+            <p class="brand-title">Velocity Tasks</p>
+            <p class="brand-subtitle">오늘의 작업을 빠르게 정렬하는 드라이브 보드</p>
+          </div>
+        </div>
+        <div class="today-pill" id="todayLabel"></div>
+      </header>
+
+      <section class="hero" aria-labelledby="pageTitle">
+        <div class="hero-main">
+          <div class="hero-content">
+            <span class="eyebrow">Performance queue</span>
+            <h1 id="pageTitle">할 일을 속도감 있게 정리하세요.</h1>
+            <p class="hero-copy">
+              긴급한 작업은 레드 라인으로 끌어올리고, 완료한 작업은 대시보드에서 바로 접습니다.
+              스포츠카의 계기판처럼 선명한 할 일 목록입니다.
+            </p>
+          </div>
+        </div>
+
+        <aside class="stats-panel" aria-label="오늘 작업 요약">
+          <div class="stat-card">
+            <span class="stat-label">전체 작업</span>
+            <strong class="stat-value" id="totalCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">진행 중</span>
+            <strong class="stat-value" id="openCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">완료</span>
+            <strong class="stat-value" id="doneCount">0</strong>
+          </div>
+        </aside>
+      </section>
+
+      <form class="toolbar" id="taskForm">
+        <input
+          class="task-input"
+          id="taskInput"
+          type="text"
+          placeholder="예: 오후 5시까지 프로토타입 점검"
+          autocomplete="off"
+        />
+        <select class="priority-select" id="prioritySelect" aria-label="우선순위">
+          <option value="일반">일반</option>
+          <option value="중요">중요</option>
+          <option value="긴급">긴급</option>
+        </select>
+        <button class="add-button" type="submit">추가</button>
+      </form>
+
+      <section class="content-grid">
+        <div class="task-board">
+          <div class="board-header">
+            <h2 class="board-title">Task Queue</h2>
+            <div class="filters" aria-label="할 일 필터">
+              <button class="filter-button active" type="button" data-filter="all">전체</button>
+              <button class="filter-button" type="button" data-filter="open">진행</button>
+              <button class="filter-button" type="button" data-filter="done">완료</button>
+            </div>
+          </div>
+          <ul class="task-list" id="taskList"></ul>
+        </div>
+
+        <aside class="briefing-panel">
+          <h2 class="panel-title">Drive Briefing</h2>
+          <p class="briefing-copy">
+            오늘은 긴급 작업을 먼저 처리하고, 중요한 작업은 두 번째 주행 구간에 배치하세요.
+          </p>
+          <ul class="focus-list">
+            <li>긴급 작업은 시작 전에 범위를 줄이기</li>
+            <li>중요 작업은 45분 단위로 끊기</li>
+            <li>완료한 작업은 바로 체크해 흐름 유지</li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const tasks = [
+        { id: 1, title: "프로젝트 발표 자료 최종 점검", priority: "긴급", done: false },
+        { id: 2, title: "운동 루틴 40분 완료", priority: "일반", done: false },
+        { id: 3, title: "팀 회의 피드백 정리", priority: "중요", done: true },
+      ];
+
+      let activeFilter = "all";
+
+      const taskForm = document.querySelector("#taskForm");
+      const taskInput = document.querySelector("#taskInput");
+      const prioritySelect = document.querySelector("#prioritySelect");
+      const taskList = document.querySelector("#taskList");
+      const filterButtons = document.querySelectorAll(".filter-button");
+      const totalCount = document.querySelector("#totalCount");
+      const openCount = document.querySelector("#openCount");
+      const doneCount = document.querySelector("#doneCount");
+      const todayLabel = document.querySelector("#todayLabel");
+
+      todayLabel.textContent = new Intl.DateTimeFormat("ko-KR", {
+        month: "long",
+        day: "numeric",
+        weekday: "long",
+      }).format(new Date());
+
+      function escapeHtml(value) {
+        return value.replace(/[&<>"']/g, (character) => {
+          const entities = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          };
+
+          return entities[character];
+        });
+      }
+
+      function render() {
+        const visibleTasks = tasks.filter((task) => {
+          if (activeFilter === "open") return !task.done;
+          if (activeFilter === "done") return task.done;
+          return true;
+        });
+
+        taskList.innerHTML = visibleTasks
+          .map((task) => {
+            const hotClass = task.priority === "긴급" ? " hot" : "";
+
+            return `
+              <li class="task-item ${task.done ? "done" : ""}" data-id="${task.id}">
+                <button class="check" type="button" aria-label="완료 상태 변경">✓</button>
+                <div>
+                  <p class="task-title">${escapeHtml(task.title)}</p>
+                  <div class="task-meta">
+                    <span class="tag${hotClass}">${escapeHtml(task.priority)}</span>
+                    <span class="tag">${task.done ? "완료됨" : "진행 중"}</span>
+                  </div>
+                </div>
+                <button class="delete-button" type="button" aria-label="삭제">×</button>
+              </li>
+            `;
+          })
+          .join("");
+
+        totalCount.textContent = tasks.length;
+        openCount.textContent = tasks.filter((task) => !task.done).length;
+        doneCount.textContent = tasks.filter((task) => task.done).length;
+      }
+
+      taskForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const title = taskInput.value.trim();
+        if (!title) return;
+
+        tasks.unshift({
+          id: Date.now(),
+          title,
+          priority: prioritySelect.value,
+          done: false,
+        });
+
+        taskInput.value = "";
+        render();
+      });
+
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          activeFilter = button.dataset.filter;
+          filterButtons.forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          render();
+        });
+      });
+
+      taskList.addEventListener("click", (event) => {
+        const item = event.target.closest(".task-item");
+        if (!item) return;
+
+        const task = tasks.find((entry) => entry.id === Number(item.dataset.id));
+        if (!task) return;
+
+        if (event.target.closest(".check")) {
+          task.done = !task.done;
+          render();
+        }
+
+        if (event.target.closest(".delete-button")) {
+          const index = tasks.findIndex((entry) => entry.id === task.id);
+          tasks.splice(index, 1);
+          render();
+        }
+      });
+
+      render();
+    </script>
+  </body>
+</html>
