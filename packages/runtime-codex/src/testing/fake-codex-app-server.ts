@@ -52,8 +52,12 @@ export type FakeCodexAppServerFixture = {
 export type CodexDebugClientRequestMethod =
   | 'initialize'
   | 'initialized'
+  | 'thread/list'
+  | 'thread/loaded/list'
+  | 'thread/read'
   | 'thread/start'
   | 'turn/start'
+  | 'turn/steer'
   | 'turn/interrupt'
 
 const defaultThreadId = 'thread-1'
@@ -372,6 +376,32 @@ reader.on('line', (line) => {
     return
   }
 
+  if (message.method === 'thread/list') {
+    writeResponse(message.id, {
+      data: [createThread()],
+      nextCursor: null,
+      backwardsCursor: null,
+    })
+    return
+  }
+
+  if (message.method === 'thread/loaded/list') {
+    writeResponse(message.id, {
+      data: [scenario.threadId],
+      nextCursor: null,
+    })
+    return
+  }
+
+  if (message.method === 'thread/read') {
+    writeResponse(message.id, {
+      thread: createThread({
+        includeTurns: message.params?.includeTurns === true,
+      }),
+    })
+    return
+  }
+
   if (message.method === 'turn/start') {
     if (scenario.turnStartError) {
       writeError(message.id, scenario.turnStartError)
@@ -407,6 +437,13 @@ reader.on('line', (line) => {
       }
     })
 
+    return
+  }
+
+  if (message.method === 'turn/steer') {
+    writeResponse(message.id, {
+      turnId: scenario.turnId,
+    })
     return
   }
 
@@ -478,6 +515,21 @@ function writeTurnCompletion(completion) {
       durationMs: null,
     },
   })
+}
+
+function createThread(options = {}) {
+  return {
+    id: scenario.threadId,
+    preview: 'fake thread for raw capability slots',
+    turns: options.includeTurns
+      ? [
+          {
+            id: scenario.turnId,
+            status: 'completed',
+          },
+        ]
+      : [],
+  }
 }
 `
 

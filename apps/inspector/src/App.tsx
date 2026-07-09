@@ -15,10 +15,23 @@ import './App.css'
 type HealthState = 'checking' | 'ok' | 'error'
 type InspectorRunStatus = RuntimeRunStatus | 'idle'
 type FakeScenario = 'normal' | 'failure'
+type CodexCapabilitySlot = {
+  id: string
+  label: string
+  category: string
+  status: 'raw-callable' | 'schema-confirmed' | 'reserved'
+  methods: string[]
+  evidence: string[]
+  productized: false
+  notes: string
+}
 
 function App() {
   const [health, setHealth] = useState<HealthState>('checking')
   const [adapters, setAdapters] = useState<RuntimeAdapterDescriptor[]>([])
+  const [capabilitySlots, setCapabilitySlots] = useState<CodexCapabilitySlot[]>(
+    [],
+  )
   const [selectedAdapter, setSelectedAdapter] = useState('fake')
   const [fakeScenario, setFakeScenario] = useState<FakeScenario>('normal')
   const [prompt, setPrompt] = useState('정리해줘')
@@ -65,14 +78,15 @@ function App() {
   useEffect(() => {
     let active = true
 
-    Promise.all([fetchAdapters(), fetchHistory()])
-      .then(([adapterList, runList]) => {
+    Promise.all([fetchAdapters(), fetchHistory(), fetchCodexCapabilities()])
+      .then(([adapterList, runList, codexCapabilitySlots]) => {
         if (!active) {
           return
         }
 
         setAdapters(adapterList)
         setHistory(runList)
+        setCapabilitySlots(codexCapabilitySlots)
 
         if (adapterList[0]) {
           setSelectedAdapter(adapterList[0].name)
@@ -430,6 +444,53 @@ function App() {
             ))}
           </div>
         </section>
+
+        <section
+          className="capability-panel"
+          aria-labelledby="capability-slots-title"
+        >
+          <div className="panel-header">
+            <h2 id="capability-slots-title">Capability Slots</h2>
+            <span>{capabilitySlots.length} engine slots</span>
+          </div>
+
+          <div className="capability-list">
+            {capabilitySlots.map((slot) => (
+              <article className="capability-item" key={slot.id}>
+                <div className="capability-heading">
+                  <div>
+                    <h3>{slot.label}</h3>
+                    <p>{slot.category}</p>
+                  </div>
+                  <div className="capability-badges">
+                    <span className={`capability-status ${slot.status}`}>
+                      {formatCapabilityStatus(slot.status)}
+                    </span>
+                    <span className="capability-productized">
+                      productized: {String(slot.productized)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="capability-methods" aria-label="Methods">
+                  {slot.methods.map((method) => (
+                    <code key={method}>{method}</code>
+                  ))}
+                </div>
+
+                <ul className="capability-evidence">
+                  {slot.evidence.map((evidence) => (
+                    <li key={evidence}>
+                      <code>{evidence}</code>
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="capability-notes">{slot.notes}</p>
+              </article>
+            ))}
+          </div>
+        </section>
       </div>
     </main>
   )
@@ -447,6 +508,18 @@ async function fetchAdapters(): Promise<RuntimeAdapterDescriptor[]> {
   }
 
   return data.adapters
+}
+
+async function fetchCodexCapabilities(): Promise<CodexCapabilitySlot[]> {
+  const response = await fetch('/api/runtime/codex/capabilities')
+
+  if (!response.ok) {
+    throw new Error(`Capability slot fetch failed: ${response.status}`)
+  }
+
+  const data = (await response.json()) as { slots: CodexCapabilitySlot[] }
+
+  return data.slots
 }
 
 async function fetchHistory(): Promise<RuntimeRunSummary[]> {
@@ -496,6 +569,18 @@ function formatRunStatus(status: InspectorRunStatus): string {
   }
 
   return `${status.slice(0, 1).toUpperCase()}${status.slice(1)}`
+}
+
+function formatCapabilityStatus(status: CodexCapabilitySlot['status']): string {
+  if (status === 'raw-callable') {
+    return 'Raw callable'
+  }
+
+  if (status === 'schema-confirmed') {
+    return 'Schema confirmed'
+  }
+
+  return 'Reserved'
 }
 
 function formatEventDetail(event: RuntimeRunEvent): string {

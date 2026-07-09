@@ -4,7 +4,10 @@ import {
   isTerminalRuntimeRunEvent,
   type RuntimeRunEvent,
 } from '@ay-ple/runtime-core'
-import { CodexRuntimeAdapter } from '@ay-ple/runtime-codex'
+import {
+  CodexRuntimeAdapter,
+  listCodexCapabilitySlots,
+} from '@ay-ple/runtime-codex'
 import { FakeRuntimeAdapter } from '@ay-ple/runtime-fake'
 import cors from 'cors'
 import dotenv from 'dotenv'
@@ -43,6 +46,10 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
 
   app.get('/api/runtime/adapters', (_req, res) => {
     res.json({ adapters: kernel.listAdapters() })
+  })
+
+  app.get('/api/runtime/codex/capabilities', (_req, res) => {
+    res.json({ slots: listCodexCapabilitySlots() })
   })
 
   app.post('/api/runtime/runs', (req, res) => {

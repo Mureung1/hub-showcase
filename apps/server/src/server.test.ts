@@ -99,6 +99,39 @@ test('runtime API starts a fake run and streams normalized events', async () => 
   })
 })
 
+test('runtime API exposes Codex capability slots as engine inspection metadata', async () => {
+  await withTestServer({}, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/runtime/codex/capabilities`)
+    const body = (await response.json()) as {
+      slots: Array<{
+        id: string
+        methods: string[]
+        productized: boolean
+      }>
+    }
+
+    assert.equal(response.status, 200)
+    assert.ok(body.slots.length >= 7)
+    assert.ok(body.slots.every((slot) => slot.productized === false))
+
+    for (const method of [
+      'turn/steer',
+      'thread/list',
+      'thread/loaded/list',
+      'thread/read',
+      'thread/approveGuardianDeniedAction',
+      'permissionProfile/list',
+      'thread/inject_items',
+      'account/read',
+    ]) {
+      assert.ok(
+        body.slots.some((slot) => slot.methods.includes(method)),
+        `expected capability endpoint to include ${method}`,
+      )
+    }
+  })
+})
+
 test('runtime API cancels a running fake run and streams normalized cancellation', async () => {
   await withTestServer({ fakeDelayMs: 1000 }, async (baseUrl) => {
     const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {

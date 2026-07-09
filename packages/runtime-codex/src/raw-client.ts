@@ -13,10 +13,18 @@ import type {
 } from './internal/codex-app-server-protocol/generated/index.js'
 import type { ThreadStartParams } from './internal/codex-app-server-protocol/generated/v2/ThreadStartParams.js'
 import type { ThreadStartResponse } from './internal/codex-app-server-protocol/generated/v2/ThreadStartResponse.js'
+import type { ThreadListParams } from './internal/codex-app-server-protocol/generated/v2/ThreadListParams.js'
+import type { ThreadListResponse } from './internal/codex-app-server-protocol/generated/v2/ThreadListResponse.js'
+import type { ThreadLoadedListParams } from './internal/codex-app-server-protocol/generated/v2/ThreadLoadedListParams.js'
+import type { ThreadLoadedListResponse } from './internal/codex-app-server-protocol/generated/v2/ThreadLoadedListResponse.js'
+import type { ThreadReadParams } from './internal/codex-app-server-protocol/generated/v2/ThreadReadParams.js'
+import type { ThreadReadResponse } from './internal/codex-app-server-protocol/generated/v2/ThreadReadResponse.js'
 import type { TurnInterruptParams } from './internal/codex-app-server-protocol/generated/v2/TurnInterruptParams.js'
 import type { TurnInterruptResponse } from './internal/codex-app-server-protocol/generated/v2/TurnInterruptResponse.js'
 import type { TurnStartParams } from './internal/codex-app-server-protocol/generated/v2/TurnStartParams.js'
 import type { TurnStartResponse } from './internal/codex-app-server-protocol/generated/v2/TurnStartResponse.js'
+import type { TurnSteerParams } from './internal/codex-app-server-protocol/generated/v2/TurnSteerParams.js'
+import type { TurnSteerResponse } from './internal/codex-app-server-protocol/generated/v2/TurnSteerResponse.js'
 import type { UserInput } from './internal/codex-app-server-protocol/generated/v2/UserInput.js'
 
 export type CodexRuntimeHome = {
@@ -78,6 +86,60 @@ export type CodexThreadStartResult = {
   threadId: string
 }
 
+export type CodexThreadSortKey = 'created_at' | 'updated_at' | 'recency_at'
+
+export type CodexThreadSortDirection = 'asc' | 'desc'
+
+export type CodexThreadSourceKind =
+  | 'cli'
+  | 'vscode'
+  | 'exec'
+  | 'appServer'
+  | 'subAgent'
+  | 'subAgentReview'
+  | 'subAgentCompact'
+  | 'subAgentThreadSpawn'
+  | 'subAgentOther'
+  | 'unknown'
+
+export type CodexThreadListInput = {
+  cursor?: string | null
+  limit?: number | null
+  sortKey?: CodexThreadSortKey | null
+  sortDirection?: CodexThreadSortDirection | null
+  modelProviders?: string[] | null
+  sourceKinds?: CodexThreadSourceKind[] | null
+  archived?: boolean | null
+  cwd?: string | string[] | null
+  useStateDbOnly?: boolean
+  searchTerm?: string | null
+}
+
+export type CodexThreadListResult = {
+  data: unknown[]
+  nextCursor: string | null
+  backwardsCursor: string | null
+}
+
+export type CodexThreadLoadedListInput = {
+  cursor?: string | null
+  limit?: number | null
+}
+
+export type CodexThreadLoadedListResult = {
+  data: string[]
+  nextCursor: string | null
+}
+
+export type CodexThreadReadInput = {
+  threadId: string
+  includeTurns?: boolean
+}
+
+export type CodexThreadReadResult = {
+  thread: Record<string, unknown>
+}
+
 export type CodexTurnStartInput = {
   threadId: string
   input: CodexRawTurnInput[]
@@ -94,6 +156,17 @@ export type CodexTurnInterruptInput = {
 }
 
 export type CodexTurnInterruptResult = Record<string, never>
+
+export type CodexTurnSteerInput = {
+  threadId: string
+  expectedTurnId: string
+  input: CodexRawTurnInput[]
+  clientUserMessageId?: string | null
+}
+
+export type CodexTurnSteerResult = {
+  turnId: string
+}
 
 export type CodexRawServerNotification = {
   timestamp: string
@@ -266,6 +339,73 @@ export class CodexRawClient {
     }
   }
 
+  async listThreads(
+    input: CodexThreadListInput = {},
+  ): Promise<CodexThreadListResult> {
+    this.start()
+
+    const requestId = this.createRequestId()
+    const params: ThreadListParams = { ...input }
+    const request: Extract<ClientRequest, { method: 'thread/list' }> = {
+      method: 'thread/list',
+      id: requestId,
+      params,
+    }
+    const response = toThreadListResponse(
+      await this.sendRequest(requestId, request),
+    )
+
+    return {
+      data: response.data,
+      nextCursor: response.nextCursor,
+      backwardsCursor: response.backwardsCursor,
+    }
+  }
+
+  async listLoadedThreads(
+    input: CodexThreadLoadedListInput = {},
+  ): Promise<CodexThreadLoadedListResult> {
+    this.start()
+
+    const requestId = this.createRequestId()
+    const params: ThreadLoadedListParams = { ...input }
+    const request: Extract<ClientRequest, { method: 'thread/loaded/list' }> = {
+      method: 'thread/loaded/list',
+      id: requestId,
+      params,
+    }
+    const response = toThreadLoadedListResponse(
+      await this.sendRequest(requestId, request),
+    )
+
+    return {
+      data: response.data,
+      nextCursor: response.nextCursor,
+    }
+  }
+
+  async readThread(input: CodexThreadReadInput): Promise<CodexThreadReadResult> {
+    this.start()
+
+    const requestId = this.createRequestId()
+    const params: ThreadReadParams = {
+      threadId: input.threadId,
+      includeTurns: input.includeTurns,
+    }
+    const request: Extract<ClientRequest, { method: 'thread/read' }> = {
+      method: 'thread/read',
+      id: requestId,
+      params,
+    }
+    const response = toThreadReadResponse(
+      await this.sendRequest(requestId, request),
+    )
+
+    return {
+      thread: response.thread as unknown as Record<string, unknown>,
+    }
+  }
+
   async startTurn(input: CodexTurnStartInput): Promise<CodexTurnStartResult> {
     this.start()
 
@@ -286,6 +426,34 @@ export class CodexRawClient {
 
     return {
       turnId: response.turn.id,
+    }
+  }
+
+  async steerTurn(input: CodexTurnSteerInput): Promise<CodexTurnSteerResult> {
+    this.start()
+
+    const requestId = this.createRequestId()
+    const params: TurnSteerParams = {
+      threadId: input.threadId,
+      expectedTurnId: input.expectedTurnId,
+      input: input.input.map(toUserInput),
+    }
+
+    if (input.clientUserMessageId !== undefined) {
+      params.clientUserMessageId = input.clientUserMessageId
+    }
+
+    const request: Extract<ClientRequest, { method: 'turn/steer' }> = {
+      method: 'turn/steer',
+      id: requestId,
+      params,
+    }
+    const response = toTurnSteerResponse(
+      await this.sendRequest(requestId, request),
+    )
+
+    return {
+      turnId: response.turnId,
     }
   }
 
@@ -782,10 +950,60 @@ function toThreadStartResponse(value: unknown): ThreadStartResponse {
   return value as ThreadStartResponse
 }
 
+function toThreadListResponse(value: unknown): ThreadListResponse {
+  if (!isRecord(value)) {
+    throw new Error('thread/list returned a non-object result')
+  }
+
+  readArray(value, 'data')
+  readStringOrNull(value, 'nextCursor')
+  readStringOrNull(value, 'backwardsCursor')
+
+  return value as ThreadListResponse
+}
+
+function toThreadLoadedListResponse(value: unknown): ThreadLoadedListResponse {
+  if (!isRecord(value)) {
+    throw new Error('thread/loaded/list returned a non-object result')
+  }
+
+  const data = readArray(value, 'data')
+
+  if (!data.every((threadId) => typeof threadId === 'string')) {
+    throw new Error('thread/loaded/list result data must contain thread ids')
+  }
+
+  readStringOrNull(value, 'nextCursor')
+
+  return value as ThreadLoadedListResponse
+}
+
+function toThreadReadResponse(value: unknown): ThreadReadResponse {
+  if (!isRecord(value)) {
+    throw new Error('thread/read returned a non-object result')
+  }
+
+  if (!isRecord(value.thread)) {
+    throw new Error('thread/read result is missing thread object')
+  }
+
+  return value as ThreadReadResponse
+}
+
 function toTurnStartResponse(value: unknown): TurnStartResponse {
   readResponseObjectWithId(value, 'turn/start', 'turn')
 
   return value as TurnStartResponse
+}
+
+function toTurnSteerResponse(value: unknown): TurnSteerResponse {
+  if (!isRecord(value)) {
+    throw new Error('turn/steer returned a non-object result')
+  }
+
+  readString(value, 'turnId')
+
+  return value as TurnSteerResponse
 }
 
 function toTurnInterruptResponse(value: unknown): TurnInterruptResponse {
@@ -827,6 +1045,29 @@ function readString(value: Record<string, unknown>, key: string): string {
 
   if (typeof field !== 'string') {
     throw new Error(`result is missing string field: ${key}`)
+  }
+
+  return field
+}
+
+function readStringOrNull(
+  value: Record<string, unknown>,
+  key: string,
+): string | null {
+  const field = value[key]
+
+  if (field !== null && typeof field !== 'string') {
+    throw new Error(`result is missing nullable string field: ${key}`)
+  }
+
+  return field
+}
+
+function readArray(value: Record<string, unknown>, key: string): unknown[] {
+  const field = value[key]
+
+  if (!Array.isArray(field)) {
+    throw new Error(`result is missing array field: ${key}`)
   }
 
   return field

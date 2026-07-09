@@ -37,18 +37,7 @@ test('CodexRawClient interrupts a turn over stdio JSONL', async () => {
           threadId: thread.threadId,
           turnId: turn.turnId,
         })
-        const outboundMessages = client
-          .getDebugLog()
-          .filter(
-            (entry) => entry.source === 'client' && entry.kind === 'stdin',
-          )
-          .map(
-            (entry) =>
-              JSON.parse(entry.raw ?? '{}') as {
-                method?: string
-                params?: unknown
-              },
-          )
+        const outboundMessages = readOutboundClientMessages(client.getDebugLog())
         const interruptRequest = outboundMessages.find(
           (message) => message.method === 'turn/interrupt',
         )
@@ -58,6 +47,98 @@ test('CodexRawClient interrupts a turn over stdio JSONL', async () => {
           threadId: 'thread-raw-interrupt',
           turnId: 'turn-raw-interrupt',
         })
+      } finally {
+        await client.close()
+      }
+    },
+  )
+})
+
+test('CodexRawClient exposes broad shallow raw capability wrappers over stdio JSONL', async () => {
+  await withFakeCodexAppServer(
+    {
+      threadId: 'thread-raw-slots',
+      turnId: 'turn-raw-slots',
+      turnCompletions: [],
+    },
+    async ({ rawClientOptions }) => {
+      const client = new CodexRawClient(rawClientOptions)
+
+      try {
+        await client.initialize()
+
+        const steer = await client.steerTurn({
+          threadId: 'thread-raw-slots',
+          expectedTurnId: 'turn-raw-slots',
+          clientUserMessageId: 'message-raw-steer',
+          input: [
+            {
+              type: 'text',
+              text: 'steer this turn',
+              text_elements: [],
+            },
+          ],
+        })
+        const threads = await client.listThreads({
+          limit: 2,
+          searchTerm: 'raw slots',
+        })
+        const loadedThreads = await client.listLoadedThreads({ limit: 1 })
+        const readThread = await client.readThread({
+          threadId: 'thread-raw-slots',
+          includeTurns: true,
+        })
+        const outboundMessages = readOutboundClientMessages(client.getDebugLog())
+
+        assert.deepEqual(steer, { turnId: 'turn-raw-slots' })
+        assert.equal(threads.data.length, 1)
+        assert.equal(threads.nextCursor, null)
+        assert.deepEqual(loadedThreads, {
+          data: ['thread-raw-slots'],
+          nextCursor: null,
+        })
+        assert.equal(readThread.thread.id, 'thread-raw-slots')
+
+        assert.deepEqual(
+          outboundMessages.find((message) => message.method === 'turn/steer')
+            ?.params,
+          {
+            threadId: 'thread-raw-slots',
+            expectedTurnId: 'turn-raw-slots',
+            clientUserMessageId: 'message-raw-steer',
+            input: [
+              {
+                type: 'text',
+                text: 'steer this turn',
+                text_elements: [],
+              },
+            ],
+          },
+        )
+        assert.deepEqual(
+          outboundMessages.find((message) => message.method === 'thread/list')
+            ?.params,
+          {
+            limit: 2,
+            searchTerm: 'raw slots',
+          },
+        )
+        assert.deepEqual(
+          outboundMessages.find(
+            (message) => message.method === 'thread/loaded/list',
+          )?.params,
+          {
+            limit: 1,
+          },
+        )
+        assert.deepEqual(
+          outboundMessages.find((message) => message.method === 'thread/read')
+            ?.params,
+          {
+            threadId: 'thread-raw-slots',
+            includeTurns: true,
+          },
+        )
       } finally {
         await client.close()
       }
@@ -237,6 +318,20 @@ function requireDebugEntry(
   assert.ok(entry, `expected debug entry kind ${kind}`)
 
   return entry
+}
+
+function readOutboundClientMessages(
+  debugLog: CodexRawDebugLogEntry[],
+): Array<{ method?: string; params?: unknown }> {
+  return debugLog
+    .filter((entry) => entry.source === 'client' && entry.kind === 'stdin')
+    .map(
+      (entry) =>
+        JSON.parse(entry.raw ?? '{}') as {
+          method?: string
+          params?: unknown
+        },
+    )
 }
 
 async function waitForDebugEntry(

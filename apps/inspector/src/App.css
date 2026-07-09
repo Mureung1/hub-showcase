@@ -32,7 +32,7 @@ h1 {
 .workspace-grid {
   display: grid;
   grid-template-columns: 360px minmax(0, 1fr) 420px;
-  grid-template-rows: minmax(310px, auto) minmax(320px, 1fr);
+  grid-template-rows: minmax(310px, auto) minmax(320px, 1fr) minmax(320px, auto);
   gap: 16px;
   max-width: 1600px;
   margin: 0 auto;
@@ -43,7 +43,8 @@ h1 {
 .transcript-panel,
 .events-panel,
 .log-panel,
-.history-panel {
+.history-panel,
+.capability-panel {
   border: 1px solid #d8d0c2;
   border-radius: 8px;
   background: #fffaf1;
@@ -51,14 +52,15 @@ h1 {
 }
 
 .control-panel {
-  grid-row: 1 / span 2;
+  grid-row: 1 / span 3;
   padding: 18px;
 }
 
 .transcript-panel,
 .events-panel,
 .log-panel,
-.history-panel {
+.history-panel,
+.capability-panel {
   padding: 16px;
 }
 
@@ -76,6 +78,10 @@ h1 {
 
 .history-panel {
   grid-column: 3;
+}
+
+.capability-panel {
+  grid-column: 2 / span 2;
 }
 
 .panel-header {
@@ -374,4 +380,112 @@ pre {
 .history-run-id {
   color: #263238;
   font-weight: 800;
+}
+
+.capability-list {
+  display: grid;
+  gap: 10px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.capability-item {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #e1d9cc;
+  border-radius: 6px;
+  padding: 12px;
+  background: #fffdf8;
+}
+
+.capability-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.capability-heading h3 {
+  margin: 0;
+  color: #263238;
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.capability-heading p,
+.capability-notes {
+  margin: 4px 0 0;
+  color: #65736b;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.capability-badges,
+.capability-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.capability-badges {
+  justify-content: flex-end;
+  min-width: 220px;
+}
+
+.capability-status,
+.capability-productized {
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.capability-status.raw-callable {
+  color: #2f6c58;
+  background: #e5f4e7;
+}
+
+.capability-status.schema-confirmed {
+  color: #5b4d91;
+  background: #ece8ff;
+}
+
+.capability-status.reserved {
+  color: #6b5b42;
+  background: #eee4d2;
+}
+
+.capability-productized {
+  color: #53605a;
+  background: #ece5d9;
+}
+
+.capability-methods code {
+  border: 1px solid #d8d0c2;
+  border-radius: 5px;
+  padding: 4px 6px;
+  background: #f6f0e6;
+  color: #263238;
+  font-size: 0.76rem;
+}
+
+.capability-evidence {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.capability-evidence li {
+  min-width: 0;
+}
+
+.capability-evidence code {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #53605a;
+  font-size: 0.74rem;
+  line-height: 1.35;
 }

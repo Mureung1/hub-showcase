@@ -3,6 +3,11 @@ export {
   type CodexRuntimeAdapterOptions,
 } from './adapter.js'
 export {
+  listCodexCapabilitySlots,
+  type CodexCapabilitySlot,
+  type CodexCapabilitySlotStatus,
+} from './capability-slots.js'
+export {
   CodexRawClient,
   ensureCodexRuntimeHome,
   resolveDefaultCodexRuntimeHome,
@@ -18,10 +23,21 @@ export {
   type CodexRawTextInput,
   type CodexRawTurnInput,
   type CodexRuntimeHome,
+  type CodexThreadListInput,
+  type CodexThreadListResult,
+  type CodexThreadLoadedListInput,
+  type CodexThreadLoadedListResult,
+  type CodexThreadReadInput,
+  type CodexThreadReadResult,
+  type CodexThreadSortDirection,
+  type CodexThreadSortKey,
+  type CodexThreadSourceKind,
   type CodexThreadStartInput,
   type CodexThreadStartResult,
   type CodexTurnInterruptInput,
   type CodexTurnInterruptResult,
+  type CodexTurnSteerInput,
+  type CodexTurnSteerResult,
   type CodexTurnStartInput,
   type CodexTurnStartResult,
 } from './raw-client.js'
