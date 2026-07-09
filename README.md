@@ -1,96 +1,160 @@
-# 🎮 게임 기획 및 PM을 위한 '범용 멀티 AI 에이전트' 시스템 설계 총정리
+# 🎮 AI-Powered Game Planning & Project Management Multi-Agent Platform
 
-본 문서는 특정 프로젝트에 종속되지 않고, 향후 개발할 모든 게임(TRPG, 로그라이크, 캐주얼 등)에 유연하게 확장 및 재사용할 수 있는 **'기획·PM 총괄 보조 멀티 에이전트 플랫폼'**의 핵심 기능과 아키텍처를 정리한 최종 리포트입니다.
+> **AI 기반 게임 기획 · 프로젝트 관리 · 지식 관리 · 개발 자동화를 위한 범용 멀티 에이전트 플랫폼**
+>
+> 본 프로젝트는 특정 게임이나 장르에 종속되지 않는 범용 플랫폼으로, 게임 기획부터 프로젝트 관리, 문서 관리, 개발 자동화까지 하나의 AI 플랫폼에서 수행하는 것을 목표로 합니다.
 
----
+## Project Vision
 
-## 📌 1. 파트별 핵심 기능 및 실전 응용 워크플로우
+게임 개발 과정에서는 기획 문서, 회의록, 아이디어, 설정 변경, 일정, 개발 데이터가 지속적으로 생성되고 변경됩니다.
 
-### 📑 기획 & 시나리오 파트 (창작과 검증의 자동화)
+이 플랫폼은 흩어진 프로젝트 정보를 하나의 AI 기반 작업 공간에서 관리하여 다음 협업 환경을 만드는 것을 목표로 합니다.
 
-* **세계관 설정 구멍(설정 붕괴) 방지 시스템**
-    * **내용:** 신규 회의록이나 아이디어를 업로드하면, 에이전트가 기존 설정집과 대조하여 논리적 모순을 파악합니다.
-    * **실전 응용:** 모순 발견 시 *"기존 1차 설정과 신규 4차 설정이 충돌합니다. 신규 설정을 반영하여 기존 기획을 일괄 수정할까요?"*라며 선택지를 제공하고, 팀장의 승인 시 노션 문서를 자동으로 최신화합니다.
-* **시나리오 기반 리소스 파서 (Resource Parser)**
-    * **내용:** 줄글로 작성된 스토리 스크립트를 자연어 처리(NLP)로 분해합니다.
-    * **실전 응용:** 텍스트 내에서 [필요 NPC 목록], [대사 파일 트리], [필요 이펙트/사운드 리스트]를 자동으로 추출하여 노션 데이터베이스에 개별 태스크로 파싱합니다.
+- 기획자는 아이디어와 설계에 집중합니다.
+- PM은 승인, 일정, 리스크 관리에 집중합니다.
+- AI는 검색, 분석, 추천, 문서 초안, 자동화 요청을 담당합니다.
 
-### 📅 일정 관리 (PM) 파트 (예측 중심의 능동적 관리)
+최종 목표는 기획서를 작성해주는 AI가 아니라, 게임 개발 프로젝트 전체를 이해하고 함께 운영하는 **AI Project Partner**입니다.
 
-* **리스크 및 병목 구간 예측 (Bottleneck Predictor)**
-    * **내용:** 노션 칸반 보드의 이동 속도, 깃허브(GitHub)의 커밋 빈도 및 PR 대기 시간을 실시간으로 트래킹합니다.
-    * **실전 응용:** "UI 리소스 생성이 3일 지연되어 다음 주 개발자의 인벤토리 구현 일정이 밀릴 수 있습니다"라는 예측 리포트를 팀장에게 브리핑합니다.
-* **페르소나 기반 자동 리마인더 (Friendly Reminder)**
-    * **내용:** 마감이 임박했으나 착수되지 않은 태스크의 담당자를 추적합니다.
-    * **실전 응용:** 팀장의 이름이 아닌 'AI 부팀장 비서'의 페르소나로 슬랙/디스코드를 통해 팀원에게 부드럽고 정중한 리마인더 메시지를 자동 발송하여 팀장의 커뮤니케이션 스트레스를 줄입니다.
+## Core Principle
 
-### 🌉 가교 파트 (기획 - 개발 엔진 - 버전 관리 동기화)
+### Human in the Loop
 
-* **유니티-노션 데이터 실시간 동기화 (Live Data Sync)**
-    * **내용:** 노션 기획 테이블의 수치(밸런스 데이터 등)와 유니티 내 데이터 파일(JSON/CSV/ScriptableObject)을 연동합니다.
-    * **실전 응용:** 팀장님이 노션에서 아이템 능력치를 수정하면, 에이전트가 유니티 프로젝트 내 파일을 자동 수정하고 깃허브 커밋/푸시까지 전담합니다.
-* **유니티 인에디터 버그 트래커 (In-Editor Bug Tracker)**
-    * **내용:** 유니티 에디터에서 플레이 테스트 중 문제 발견 시 즉시 제보하는 기능입니다.
-    * **실전 응용:** 유니티 내 'AI 제보 버튼'을 누르면 현재 콘솔 에러 로그, 인스펙터 설정값, 화면 스크린샷을 묶어 노션 버그 DB 및 깃허브 이슈(Issue)로 자동 등록합니다.
+AI는 프로젝트를 직접 수정하지 않습니다.
 
----
+AI는 분석, 추천, 문서 초안, 변경 제안, 자동화 요청을 수행하지만 모든 실제 변경은 반드시 사용자의 승인 이후에만 반영됩니다.
 
-## 🚀 2. 다른 프로젝트 확장을 위한 범용성/확장성 설계안
+## Core Features
 
-향후 다양한 장르의 차기작을 개발할 때도 시스템을 그대로 재사용하기 위한 3대 개발 전략입니다.
-
-### ① 지식 저장소의 '멀티 테넌시(Multi-Tenancy)' 구조화
-
-* 차기작 설정을 물어봤을 때 전작의 데이터가 간섭하는 것을 방지하기 위해 프로젝트별 격리 공간을 확보합니다.
-* **설계 방법:** 벡터 데이터베이스(Vector DB) 내부에 프로젝트별 독립된 방(Namespace 또는 Collection)을 분리하고, 에이전트가 질문을 받을 때 항상 `Project_ID`를 매핑하여 독립된 컨텍스트만 참조하도록 제한합니다.
-
-### ② '플러그인/모듈형' 도구(Tools) 설계 (추상화)
-
-* 연동되는 외부 협업 툴이나 개발 엔진이 변경되더라도 핵심 AI 로직을 수정하지 않도록 느슨한 결합(Loose Coupling) 구조를 유지합니다.
-* **설계 방법:** 에이전트 내부 코드에 노션/깃허브 API를 박아두지 않고, `NotionConnector`, `GitHubConnector`, `UnityConnector` 같은 독립 모듈로 분리합니다. 차기작에서 언리얼 엔진이나 Jira를 쓰게 되면 해당 커넥터 부품만 교체하여 이식합니다.
-
-### ③ 규칙(Ruleset)의 템플릿화 및 메타데이터 관리
-
-* 장르마다 기획서에서 중요하게 검증해야 하는 규칙(스토리 개연성 vs 밸런스 수식 및 인플레 위험 등)이 다릅니다.
-* **설계 방법:** 검증 규칙을 하드코딩하지 않고 환경설정 파일(JSON/YAML)로 외주화합니다. 새로운 프로젝트 등록 시 *"이 프로젝트는 [방치형 RPG]이며, [밸런스 오류 감지]가 최우선 룰셋이다"*라는 메타데이터를 주입하여 에이전트의 성격과 검증 가이드를 스위칭합니다.
-
----
-
-## 🛠️ 3. 범용 시스템 아키텍처 모델
+### Feature Tree
 
 ```text
-[외부 툴 플러그인 레이어] (프로젝트에 따라 교체 가능)
-
-협업 툴: Notion / Jira / Slack / Discord
-
-개발 환경: Unity / Unreal / GitHub
-│ ▲ (Webhook & API 통신)
-▼ │
-┌────────────────────────────────────────────────────────┐
-│           범용 AI 커맨드 센터 (FastAPI / Node.js)       │
-│                                                        │
-│  ┌──────────────────┐   ┌───────────────────────────┐  │
-│  │   LLM 오케스트레이터  │ ↔ │   멀티 세션 대화 메모리     │  │
-│  │ (Gemini / OpenAI)│   │ (각 프로젝트 맥락 분리 기억)│  │
-│  └──────────────────┘   └───────────────────────────┘  │
-│           ▲                                            │
-│           │ (Project_ID 기반 라우팅 검색)                │
-│           ▼                                            │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │     멀티 테넌트 벡터 DB (Chroma / Pinecone 등)     │  │
-│  │  - Collection A: [Project_TRPG 설정집]            │  │
-│  │  - Collection B: [Project_Casual 밸런스 테이블]    │  │
-│  └──────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────┘
-│
-▼ (상충 및 리스크 발생 시)
-[팀장 컨트롤 타워 디스플레이] ── (승인/컨펌) ──▶ [모듈형 커넥터를 통한 외부 툴 제어]
+AI Game Project Operating System
+├── 1. Intelligent Knowledge Management
+│   ├── Input Sources
+│   ├── Input Intent Classification
+│   │   ├── Temporary Idea
+│   │   ├── Setting Change Request
+│   │   ├── Question / Search
+│   │   └── Workspace Recovery
+│   ├── Temporary Idea Management
+│   ├── Version History
+│   ├── Decision Log
+│   └── Project Search
+├── 2. AI Planning Assistant
+│   ├── Plan Mode
+│   ├── AI Document Generation & Updating
+│   ├── Intelligent Document Completion
+│   ├── Conflict Analysis
+│   ├── Confidence Report
+│   ├── Impact Analysis
+│   ├── AI Recommendation
+│   └── AI Questioning
+├── 3. Resource Management
+│   ├── Resource Extraction
+│   └── Automatic Task Generation
+├── 4. Project Management
+│   ├── Schedule & Risk Analysis
+│   ├── Friendly Reminder
+│   ├── Workspace Recovery
+│   └── Task Workspace
+├── 5. Approval System
+│   ├── Approval Queue
+│   ├── AI Action Preview
+│   └── Diff Viewer
+├── 6. Automation
+│   ├── Live Data Sync
+│   └── Unity In-Editor Bug Report
+├── 7. Multi Project Support
+│   ├── Multi Project Management
+│   └── RuleSet
+└── 8. Dashboard
+    ├── AI PM Dashboard
+    └── AI Control Tower
 ```
 
----
+### Feature Summary
 
-## 📅 4. 단계별 개발 로드맵
+1. **Intelligent Knowledge Management**  
+   다양한 입력을 프로젝트 지식으로 관리하고, Temporary Idea, Version History, Decision Log, Source 기반 검색을 제공합니다.
 
-1. **1단계 (노코드 기반 프로토타입):** `Make`나 `Zapier`를 활용하여 단일 프로젝트의 `노션 회의록 생성 ↔ LLM 상충 분석 및 요약 ↔ 하위 태스크 자동 생성` 자동화 흐름 검증.
-2. **2단계 (커스텀 독립 서버 구축):** Python(FastAPI) 기반 서버를 구축하고, 프로젝트ID 기반으로 지식 저장소(Vector DB)를 격리 분리하여 다중 프로젝트 대응 시동.
-3. **3단계 (엔진 연동 및 자동화 플랫폼화):** UnityWebRequest/MCP를 연동하여 기획 수치 자동 반영 및 인에디터 버그 트래킹을 구현하고, 기획 검증 룰셋을 템플릿화하여 완전한 **'범용 기획 플랫폼'**으로 완성.
+2. **AI Planning Assistant**  
+   설정 변경과 신규 기획 요청을 Plan Mode에서 분석하고, 충돌 분석, 영향도 분석, 추천안, 문서 초안을 생성합니다.
+
+3. **Resource Management**  
+   회의록과 시나리오에서 NPC, Dialogue, Item, Quest, UI, Effect, Sound, Cutscene 등 리소스와 태스크 후보를 추출합니다.
+
+4. **Project Management**  
+   일정 지연, 병목, 리스크를 분석하고, Friendly Reminder와 Workspace Recovery를 통해 작업 흐름을 이어갑니다.
+
+5. **Approval System**  
+   AI가 생성한 모든 변경안을 Approval Queue에 등록하고, Action Preview와 Diff Viewer를 통해 승인 전 검토를 지원합니다.
+
+6. **Automation**  
+   승인된 변경 사항을 내부 문서, Notion, GitHub, Unity 등에 반영하고 Unity 버그 리포트 자동화를 지원합니다.
+
+7. **Multi Project Support**  
+   여러 프로젝트의 문서, 설정, 아이디어, Decision Log, Version History를 `Project_ID` 기준으로 독립 관리합니다.
+
+8. **Dashboard**  
+   AI PM Dashboard와 AI Control Tower에서 진행률, 리스크, 승인 대기, 변경 이력, AI 분석 결과를 통합 확인합니다.
+
+## Documentation
+
+- [Product Plan](docs/plan.md): 문제 정의, 목표 사용자, 사용자 시나리오, 핵심 기능, 화면 흐름, 예시 UI
+- [Development Checklist](docs/checklist.md): 기능별 개발 실행 체크리스트
+- [Architecture](docs/architecture.md): 시스템 아키텍처 문서, 작성 예정
+- [2026-07-08 Development Log](docs/dev-log/2026-07-08.md): 승인 기반 AI 문서 생성/수정 파이프라인의 일별 개발 기록과 흐름도
+
+## Current Status
+
+- README 요약형 진입 문서 정리
+- 제품 기획서 작성 완료
+- 기능별 개발 체크리스트 작성 완료
+- 예시 UI mockup 추가 완료
+- 시스템 아키텍처 문서 작성 예정
+- 승인 기반 문서 생성/수정 MVP 구현 시작
+- 일별 개발 일지 구조 시작
+
+## MVP Usage
+
+기본 `rule` 에이전트는 외부 의존성 없이 Python 표준 라이브러리만 사용합니다. OpenAI 기반 `prompt` 에이전트는 `requirements.txt` 설치가 필요합니다.
+
+```bash
+python3 -m gamepm_agent.cli --store .gamepm project-create demo "Demo Project"
+python3 -m gamepm_agent.cli --store .gamepm submit demo "새 NPC 문서로 만들어줘. 이름은 Rina이고 역할은 guide다."
+python3 -m gamepm_agent.cli --store .gamepm proposals demo
+python3 -m gamepm_agent.cli --store .gamepm decide demo <proposal_id> approved --user pm --reason "승인"
+python3 -m gamepm_agent.cli --store .gamepm apply demo <proposal_id>
+```
+
+핵심 정책은 다음과 같습니다.
+
+- 승인 전 변경안은 `Approval Queue`에만 저장되고 실제 문서는 수정되지 않습니다.
+- 승인 후 저장 직전에 원본 문서 버전을 다시 확인합니다.
+- 원본 문서가 바뀌었으면 저장하지 않고 `needs_reconfirmation` 상태로 돌립니다.
+- 저장 성공 시 `Version History`와 `Decision Log`를 남깁니다.
+
+에이전트 판단 레이어는 교체 가능하게 분리되어 있습니다.
+
+- `--agent rule`: 기본값이며, 키워드/템플릿 기반으로 동작합니다.
+- `--agent prompt`: 프롬프트 기반 엔진 경로를 사용합니다.
+
+OpenAI API를 사용하는 prompt-agent 실행 예시는 다음과 같습니다. API key는 코드에 하드코딩하지 않고 환경 변수로만 설정합니다.
+
+```bash
+python3 -m pip install -r requirements.txt
+export OPENAI_API_KEY="your_api_key_here"
+python3 -m gamepm_agent.cli --store .gamepm --agent prompt --llm openai --model gpt-4o-mini submit demo "새 NPC 문서로 만들어줘. 이름은 Rina이고 역할은 guide다."
+```
+
+## Future Goal
+
+최종 목표는 게임 개발 프로젝트 전체를 이해하고 다음 영역을 하나의 플랫폼에서 수행하는 **AI Game Project Operating System**을 구축하는 것입니다.
+
+- 기획
+- 문서 관리
+- 프로젝트 관리
+- 일정 관리
+- 의사결정 관리
+- 개발 자동화

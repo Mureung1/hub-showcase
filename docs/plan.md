@@ -1,179 +1,293 @@
-# 게임 기획 및 PM을 위한 범용 멀티 AI 에이전트 개발 계획
+# AI Game Project Operating System 기획서
 
-## 1. 목표
+## 1. 문제 정의
 
-특정 게임 프로젝트에 종속되지 않고 TRPG, 로그라이크, 캐주얼 게임 등 다양한 장르에 재사용할 수 있는 기획 및 PM 총괄 보조 플랫폼을 구축한다.
+게임 개발 프로젝트에서는 기획 문서, 회의록, 아이디어, 설정 변경, 일정, 개발 데이터가 지속적으로 생성되고 수정된다.
 
-이 플랫폼은 기획 문서 검증, 시나리오 리소스 파싱, 일정 리스크 예측, 협업 도구 자동화, Unity 연동을 하나의 멀티 에이전트 시스템으로 통합하는 것을 목표로 한다.
+현재 문제는 다음과 같다.
 
-## 2. 파트별 기능 구현 계획
+- 프로젝트 정보가 문서, 메신저, 회의록, GitHub, Notion 등에 흩어진다.
+- 확정되지 않은 아이디어와 실제 반영된 설정이 섞이기 쉽다.
+- 설정 변경이 발생했을 때 기존 문서, NPC, Quest, Item, Dialogue, UI, Resource에 미치는 영향을 추적하기 어렵다.
+- 회의록과 시나리오에서 필요한 리소스와 태스크를 반복적으로 수동 정리해야 한다.
+- 일정 지연, 병목, 승인 대기 항목을 한 화면에서 파악하기 어렵다.
+- AI가 바로 문서를 수정하면 의도하지 않은 변경이 발생할 수 있다.
 
-### 2.1 기획 및 시나리오 파트
+따라서 이 플랫폼은 AI가 프로젝트 전체를 이해하고 분석하되, 모든 실제 변경은 사용자의 승인 이후에만 반영되는 **AI Project Partner**를 목표로 한다.
 
-#### 세계관 설정 붕괴 방지 시스템
+## 2. 목표 사용자
 
-- 신규 회의록, 아이디어, 설정 문서를 기존 설정집과 비교한다.
-- 캐릭터 설정, 세계관 규칙, 지역, 사건, 아이템, 퀘스트 간 논리적 모순을 탐지한다.
-- 충돌이 발견되면 기존 설정과 신규 설정의 차이를 요약한다.
-- 팀장에게 기존 기획 유지, 신규 설정 반영, 부분 수정 중 선택할 수 있는 승인 흐름을 제공한다.
-- 승인된 변경 사항은 Notion 문서 갱신 요청으로 변환한다.
+### 기획자
 
-#### 시나리오 기반 리소스 파서
+- 아이디어, 세계관, 시스템, NPC, Quest, Item, UI, 밸런스 문서를 관리한다.
+- 설정 변경 요청 전 기존 문서와의 충돌 여부를 확인한다.
+- 부족한 기획 정보를 AI 질문을 통해 보완한다.
 
-- 줄글 형태의 스토리 스크립트를 문단, 장면, 대사, 액션 단위로 분해한다.
-- 텍스트에서 필요한 NPC, 대사 파일, 이펙트, 사운드, UI, 컷신 리소스를 추출한다.
-- 추출된 리소스를 태스크 후보로 정리한다.
-- 각 태스크에는 리소스 종류, 등장 위치, 우선순위, 담당 파트 후보를 포함한다.
-- 팀장 승인 후 Notion 데이터베이스에 개별 태스크로 등록할 수 있게 한다.
+### PM / 팀장
 
-### 2.2 일정 관리 PM 파트
+- 승인 대기 변경안, 일정 리스크, 병목, 진행률, 최근 변경 사항을 확인한다.
+- AI가 생성한 문서 변경안, 태스크 후보, 외부 도구 반영안을 승인하거나 보류한다.
+- Decision Log와 Version History를 통해 의사결정 근거를 추적한다.
 
-#### 리스크 및 병목 구간 예측
+### 개발자
 
-- Notion 칸반 보드의 상태 이동 속도와 지연 항목을 추적한다.
-- GitHub 커밋 빈도, PR 대기 시간, Issue 상태를 수집한다.
-- 특정 리소스나 개발 태스크가 후속 작업을 막는지 분석한다.
-- 일정 지연 가능성이 있는 항목을 팀장용 리포트로 정리한다.
-- 예측 리포트에는 원인, 영향받는 작업, 권장 대응을 포함한다.
+- 승인된 기획 변경, 리소스 명세, 버그 리포트, 데이터 동기화 요청을 전달받는다.
+- GitHub, Unity, Notion과 연결된 확정 작업만 처리한다.
 
-#### 페르소나 기반 자동 리마인더
+### AI Agent
 
-- 마감이 임박했지만 착수되지 않은 태스크를 탐지한다.
-- 담당자, 마감일, 현재 상태, 관련 후속 작업을 확인한다.
-- 팀장 대신 AI 부팀장 비서 페르소나로 메시지를 작성한다.
-- Slack 또는 Discord로 정중한 리마인더를 발송할 수 있게 한다.
-- 자동 발송 전 팀장 승인 단계를 기본값으로 둔다.
+- 입력 의도를 분류한다.
+- 프로젝트 문서를 검색하고 Source와 함께 답변한다.
+- 충돌 분석, 영향도 분석, 추천안 생성, 리소스 추출, 태스크 후보 생성을 수행한다.
+- 변경안은 Approval Queue에 등록하고 직접 실행하지 않는다.
 
-### 2.3 가교 파트
+## 3. 사용자 시나리오
 
-#### Unity-Notion 데이터 실시간 동기화
+### 시나리오 1: 확정되지 않은 아이디어 저장
 
-- Notion 기획 테이블의 밸런스 수치와 Unity 프로젝트 내 데이터 파일을 연결한다.
-- 초기 대상 파일은 JSON, CSV, ScriptableObject 중 프로젝트별로 선택할 수 있게 한다.
-- Notion 값 변경 시 Unity 데이터 변경안을 생성한다.
-- 변경 전후 값을 비교해 팀장 또는 담당 개발자가 확인할 수 있는 diff를 제공한다.
-- 승인된 변경 사항은 GitHub 커밋 및 푸시 대상 작업으로 정리한다.
+1. 사용자가 채팅으로 신규 아이디어를 입력한다.
+2. AI는 명시적인 반영 요청이 없다고 판단한다.
+3. 입력은 Temporary Idea로 저장된다.
+4. 실제 프로젝트 문서는 수정되지 않는다.
+5. 이후 사용자는 저장된 아이디어를 검색하거나 설정 변경 후보로 전환할 수 있다.
 
-#### Unity 인에디터 버그 트래커
+### 시나리오 2: 설정 변경 요청 분석
 
-- Unity 에디터 안에 AI 제보 버튼을 제공한다.
-- 플레이 테스트 중 발생한 콘솔 에러 로그, 인스펙터 설정값, 화면 스크린샷을 수집한다.
-- 수집된 정보를 버그 리포트로 묶는다.
-- Notion 버그 DB와 GitHub Issue에 등록할 수 있는 형태로 변환한다.
-- 중복 이슈 가능성이 있는 경우 기존 이슈와 비교한 후보를 표시한다.
+1. 사용자가 기존 설정을 변경해달라고 요청한다.
+2. AI는 Setting Change Request로 분류하고 Plan Mode를 실행한다.
+3. 관련 문서를 검색한다.
+4. 충돌 분석과 영향도 분석을 수행한다.
+5. Confidence Report와 복수 추천안을 생성한다.
+6. 변경안은 Approval Queue에 등록된다.
+7. 사용자가 승인한 경우에만 문서 또는 외부 도구 반영 작업이 실행된다.
 
-## 3. 범용성 및 확장성 설계
+### 시나리오 3: 프로젝트 질문 검색
 
-### 3.1 멀티 테넌시 지식 저장소
+1. 사용자가 프로젝트 설정에 대해 질문한다.
+2. AI는 Question / Search로 분류한다.
+3. 현재 프로젝트의 문서만 검색한다.
+4. 관련 문서, 실제 내용, 관련 설정, 회의록, Source를 함께 제공한다.
 
-- 모든 프로젝트 데이터는 `Project_ID`를 기준으로 분리한다.
-- Vector DB는 프로젝트별 Namespace 또는 Collection 구조를 사용한다.
-- 에이전트의 모든 검색 요청에는 `Project_ID`를 필수로 포함한다.
-- 전작 설정, 다른 장르의 밸런스 데이터, 외부 프로젝트 문서가 현재 프로젝트 답변에 섞이지 않게 한다.
-- 신규 프로젝트 등록 시 프로젝트명, 장르, 사용 도구, 우선 룰셋 메타데이터를 함께 저장한다.
+### 시나리오 4: 회의록 기반 리소스와 태스크 생성
 
-### 3.2 플러그인 및 모듈형 도구 설계
+1. 사용자가 회의록 또는 시나리오를 업로드한다.
+2. AI는 NPC, Dialogue, Item, Quest, UI, Effect, Sound, Cutscene 후보를 추출한다.
+3. 추출된 항목을 기획, 프로그래밍, 아트, 사운드, QA 태스크 후보로 변환한다.
+4. 태스크 후보는 Approval Queue로 전달된다.
+5. 승인된 항목만 실제 태스크로 생성된다.
 
-- 핵심 AI 로직과 외부 도구 API 호출을 분리한다.
-- Notion, GitHub, Unity, Slack, Discord, Jira, Unreal 연동은 독립 커넥터로 관리한다.
-- 기본 커넥터는 다음 단위로 설계한다.
-  - `NotionConnector`: 문서 조회, DB 조회, 태스크 생성, 상태 갱신
-  - `GitHubConnector`: Issue 생성, PR 조회, 커밋 활동 조회, 변경안 커밋 준비
-  - `UnityConnector`: 데이터 파일 동기화, 에디터 버그 리포트 수신
-  - `SlackConnector` 또는 `DiscordConnector`: 승인 요청, 리마인더 발송
-- 차기 프로젝트에서 Jira 또는 Unreal을 사용할 경우 해당 커넥터만 추가하거나 교체한다.
+### 시나리오 5: 일정 리스크와 리마인더
 
-### 3.3 룰셋 템플릿 및 메타데이터 관리
+1. AI가 일정 데이터와 작업 상태를 분석한다.
+2. 일정 지연, 병목, 리스크 후보를 감지한다.
+3. PM Dashboard에 리스크 리포트를 표시한다.
+4. 필요한 경우 Friendly Reminder 초안을 생성한다.
+5. 리마인더는 사용자 승인 후에만 Slack, Discord 등으로 발송된다.
 
-- 기획 검증 규칙은 코드에 하드코딩하지 않고 JSON 또는 YAML 파일로 관리한다.
-- 프로젝트 장르에 따라 우선 검증 기준을 전환한다.
-- 예시는 다음과 같다.
-  - TRPG: 세계관 개연성, 캐릭터 관계, 퀘스트 분기 충돌 우선
-  - 로그라이크: 아이템 시너지, 반복 플레이 밸런스, 난이도 곡선 우선
-  - 방치형 RPG: 성장 수식, 재화 인플레이션, 보상 효율 우선
-- 룰셋에는 검증 목적, 우선순위, 적용 문서 타입, 경고 수준을 포함한다.
+### 시나리오 6: Unity 버그 리포트
 
-## 4. 시스템 아키텍처 구현 계획
+1. Unity 플레이 테스트 중 사용자가 AI 제보 버튼을 누른다.
+2. Console Log, Inspector, Screenshot 정보가 수집된다.
+3. AI가 버그 리포트를 생성한다.
+4. GitHub Issue와 Notion Bug DB 등록안이 Approval Queue에 등록된다.
+5. 승인된 등록안만 외부 도구에 반영된다.
 
-### 4.1 외부 툴 플러그인 레이어
+### 시나리오 7: 작업 복구
 
-- 협업 도구는 Notion, Jira, Slack, Discord를 우선 대상으로 둔다.
-- 개발 환경은 Unity, Unreal, GitHub를 확장 대상으로 둔다.
-- 각 도구는 Webhook 또는 API 기반으로 AI 커맨드 센터와 통신한다.
-- 외부 도구에서 들어온 이벤트는 표준 내부 이벤트 형식으로 변환한다.
+1. 프로그램이 종료되거나 대화가 중단된다.
+2. 다음 실행 시 Workspace Recovery가 실행된다.
+3. 진행 중 작업, 승인 대기, Temporary Idea, Plan Mode, 최근 대화를 복원한다.
+4. 사용자는 이전 작업 단위에서 이어서 진행한다.
 
-### 4.2 범용 AI 커맨드 센터
+## 4. 핵심 기능
 
-- 서버는 FastAPI 또는 Node.js 중 하나로 구현한다.
-- 주요 역할은 요청 수신, 프로젝트 라우팅, 에이전트 실행, 승인 흐름 관리다.
-- LLM 오케스트레이터는 Gemini 또는 OpenAI 모델 호출을 추상화한다.
-- 멀티 세션 대화 메모리는 프로젝트별 맥락을 분리해 저장한다.
-- 분석 결과는 팀장 컨트롤 타워로 전달한다.
+### 4.1 Intelligent Knowledge Management
 
-### 4.3 멀티 테넌트 Vector DB
+목적: 프로젝트의 모든 입력과 지식을 안전하게 분류, 저장, 검색한다.
 
-- Chroma 또는 Pinecone 같은 Vector DB를 사용한다.
-- 프로젝트별 설정집, 회의록, 밸런스 테이블, 태스크 데이터를 분리 저장한다.
-- 검색 결과는 항상 현재 `Project_ID`에 속한 문서만 반환한다.
-- 문서 임베딩 시 문서 타입, 작성일, 버전, 장르, 출처를 메타데이터로 저장한다.
+- 사용자 입력: Chat, Markdown, PDF, DOCX, TXT, 기존 기획서, 회의록, 아이디어 메모, GitHub, Notion
+- AI 처리: 입력 의도 분류, Temporary Idea 저장, Source 기반 검색
+- 산출물: Temporary Idea, 검색 결과, Version History, Decision Log
+- 승인 필요 여부: 실제 문서 반영 시 승인 필요
+- 관련 화면: Project Search Result, Temporary Idea 목록, Version History, Decision Log
 
-### 4.4 팀장 컨트롤 타워
+### 4.2 AI Planning Assistant
 
-- 모든 자동 반영 작업은 팀장 승인 후 실행한다.
-- 화면에는 설정 충돌, 리소스 태스크, 일정 리스크, 외부 도구 반영안을 표시한다.
-- 팀장은 승인, 보류, 수정 요청 중 하나를 선택할 수 있다.
-- 승인된 항목만 모듈형 커넥터를 통해 외부 도구로 전달한다.
+목적: 설정 변경이나 신규 기획 요청을 바로 반영하지 않고 분석과 추천을 먼저 제공한다.
 
-## 5. 단계별 개발 로드맵
+- 사용자 입력: 설정 변경 요청, 신규 기획 요청, 문서 작성 요청
+- AI 처리: Plan Mode, 충돌 분석, 영향도 분석, Confidence Report, 추천안 생성, 질문 생성
+- 산출물: Plan Mode Report, 승인 대기 변경안, 문서 초안
+- 승인 필요 여부: 문서 생성/수정 전 승인 필요
+- 관련 화면: Plan Mode Report, Approval Queue, Diff Viewer
 
-### 5.1 1단계: 노코드 기반 프로토타입
+### 4.3 Resource Management
 
-- Make 또는 Zapier를 사용해 단일 프로젝트 자동화 흐름을 검증한다.
-- Notion 회의록 생성 이벤트를 트리거로 사용한다.
-- LLM이 회의록을 요약하고 기존 설정과 충돌 가능성을 분석한다.
-- 분석 결과에서 하위 태스크 후보를 생성한다.
-- 산출물은 Notion 분석 리포트와 태스크 후보 DB다.
+목적: 회의록과 시나리오에서 필요한 리소스와 태스크 후보를 자동으로 추출한다.
 
-완료 기준:
+- 사용자 입력: 회의록, 시나리오, 신규 기획 문서
+- AI 처리: NPC, Dialogue, Item, Quest, UI, Effect, Sound, Cutscene 추출
+- 산출물: 리소스 후보, 태스크 후보
+- 승인 필요 여부: 실제 Task 생성 전 승인 필요
+- 관련 화면: Resource Extraction Panel, Approval Queue
 
-- 회의록 1개를 입력하면 요약, 충돌 후보, 태스크 후보가 생성된다.
-- 팀장이 결과를 보고 승인 또는 수정 판단을 할 수 있다.
-- 수동 작업 대비 반복 정리 시간이 줄어드는지 확인한다.
+### 4.4 Project Management
 
-### 5.2 2단계: 커스텀 독립 서버 구축
+목적: 프로젝트 진행 상황, 일정 리스크, 병목, 작업 복구를 관리한다.
 
-- Python FastAPI 기반 서버를 구축한다.
-- `Project_ID` 기반으로 문서, 검색, 분석 요청을 라우팅한다.
-- Vector DB를 프로젝트별 Collection 또는 Namespace로 분리한다.
-- Notion, GitHub, Slack 또는 Discord 커넥터의 최소 기능을 구현한다.
-- 룰셋 JSON/YAML을 읽어 프로젝트별 검증 기준을 적용한다.
+- 사용자 입력: 일정 데이터, 작업 상태, GitHub 활동, Notion 태스크
+- AI 처리: 일정 지연 분석, 병목 탐지, 리마인더 초안 생성, Workspace Recovery
+- 산출물: Risk Report, Friendly Reminder, Task Workspace
+- 승인 필요 여부: 외부 메시지 발송 전 승인 필요
+- 관련 화면: AI PM Dashboard, Risk Report, Workspace
 
-완료 기준:
+### 4.5 Approval System
 
-- 두 개 이상의 프로젝트 데이터를 분리해 검색할 수 있다.
-- 설정 충돌 분석과 리소스 파싱 결과가 프로젝트별로 독립 생성된다.
-- 팀장 승인 전에는 외부 도구 변경이 실행되지 않는다.
+목적: AI가 생성한 모든 변경안을 사용자가 검토하고 결정하게 한다.
 
-### 5.3 3단계: 엔진 연동 및 자동화 플랫폼화
+- 사용자 입력: 승인, 보류, 수정 요청, 거부
+- AI 처리: Action Preview 생성, Diff Viewer 연결, Decision Log 기록
+- 산출물: 승인 이력, 실행 큐, 보류/거부 기록
+- 승인 필요 여부: 핵심 기능 자체가 승인 시스템
+- 관련 화면: Approval Queue, AI Action Preview, Diff Viewer
 
-- UnityWebRequest 또는 MCP 기반 Unity 연동을 구현한다.
-- Notion 밸런스 테이블과 Unity 데이터 파일의 동기화 흐름을 만든다.
-- Unity 인에디터 버그 제보 기능을 구현한다.
-- 콘솔 로그, 인스펙터 설정값, 스크린샷을 Notion 버그 DB 및 GitHub Issue로 연결한다.
-- 프로젝트별 룰셋 템플릿을 확장해 범용 기획 플랫폼으로 정리한다.
+### 4.6 Automation
 
-완료 기준:
+목적: 승인된 변경 사항을 내부 문서, Notion, GitHub, Unity에 반영한다.
 
-- Notion 기획 수치 변경안이 Unity 데이터 변경안으로 변환된다.
-- Unity 에디터에서 버그 리포트를 생성할 수 있다.
-- 생성된 버그 리포트가 Notion과 GitHub에 등록 가능한 형태로 정리된다.
-- 신규 장르 프로젝트를 등록해도 기존 에이전트 구조를 재사용할 수 있다.
+- 사용자 입력: 승인된 변경안, Unity 버그 제보, 데이터 동기화 요청
+- AI 처리: Live Data Sync 변경안 생성, 버그 리포트 정리, 외부 도구 등록안 생성
+- 산출물: 동기화 요청, GitHub Issue 등록안, Notion 업데이트 요청, Unity 데이터 변경안
+- 승인 필요 여부: 모든 외부 반영 전 승인 필요
+- 관련 화면: Data Sync, Unity Bug Report, Approval Queue
 
-## 6. 검증 기준
+### 4.7 Multi Project Support
 
-- README의 6개 핵심 기능이 계획서에 모두 반영되어 있다.
-- `Project_ID` 기반 멀티 테넌시가 모든 검색과 분석 흐름의 전제 조건으로 명시되어 있다.
-- 외부 도구 연동은 커넥터 단위로 분리되어 있다.
-- 룰셋은 JSON/YAML 기반 템플릿으로 관리하는 방향이 명시되어 있다.
-- 모든 자동 반영 작업은 팀장 승인 이후 실행되는 구조다.
-- 1단계, 2단계, 3단계별 산출물과 완료 기준이 구분되어 있다.
+목적: 여러 프로젝트의 문서, 설정, 아이디어, Decision Log, Version History를 독립적으로 관리한다.
+
+- 사용자 입력: 프로젝트 생성, 프로젝트 선택, RuleSet 설정
+- AI 처리: Project_ID 기반 라우팅, 프로젝트별 검색 제한, RuleSet 적용
+- 산출물: 독립 프로젝트 Workspace, 프로젝트별 분석 결과
+- 승인 필요 여부: 프로젝트 설정 변경 시 승인 필요
+- 관련 화면: Project Selector, RuleSet Settings, Project Workspace
+
+### 4.8 Dashboard
+
+목적: 프로젝트 전체 상태와 AI 분석 결과를 한 화면에서 관리한다.
+
+- 사용자 입력: 프로젝트 선택, 리포트 필터, 승인 액션
+- AI 처리: 진행률, 리스크, 승인 대기, 최근 변경, Decision Log, Data Sync 상태 집계
+- 산출물: AI PM Dashboard, AI Control Tower
+- 승인 필요 여부: Dashboard의 승인 액션에서 처리
+- 관련 화면: AI PM Dashboard, Approval Queue, Conflict Report, Risk Report, Version History
+
+## 5. 화면 흐름
+
+### 5.1 전체 사용자 흐름
+
+```mermaid
+flowchart TD
+    A[사용자 입력] --> B{입력 의도 분류}
+    B -->|Temporary Idea| C[Temporary Idea 저장]
+    B -->|Setting Change Request| D[Plan Mode 실행]
+    B -->|Question / Search| E[Project Search]
+    B -->|Workspace Recovery| F[작업 상태 복원]
+
+    D --> G[충돌 분석]
+    G --> H[영향도 분석]
+    H --> I[추천안 생성]
+    I --> J[Approval Queue]
+
+    E --> K[Source 포함 답변]
+    C --> L[검색 가능한 아이디어 자산]
+    F --> M[이전 작업 이어서 진행]
+
+    J --> N{사용자 결정}
+    N -->|승인| O[문서/태스크/외부 툴 반영]
+    N -->|보류| P[대기 상태 유지]
+    N -->|수정 요청| Q[재분석]
+    N -->|거부| R[Decision Log 기록]
+```
+
+### 5.2 AI Control Tower 흐름
+
+```mermaid
+flowchart LR
+    A[AI PM Dashboard] --> B[Approval Queue]
+    A --> C[Conflict Report]
+    A --> D[Risk Report]
+    A --> E[Temporary Ideas]
+    A --> F[Version History]
+    A --> G[Decision Log]
+    A --> H[Data Sync]
+
+    C --> B
+    D --> B
+    E --> B
+    H --> B
+
+    B --> I[Action Preview]
+    I --> J[Diff Viewer]
+    J --> K{승인 / 보류 / 수정 요청 / 거부}
+```
+
+## 6. 예시 UI
+
+아래 이미지는 실제 구현 화면이 아니라 기획 방향을 보여주는 UI mockup이다.
+
+### 6.1 AI PM Dashboard
+
+프로젝트 진행률, 일정 리스크, 병목, 승인 대기, Temporary Idea, 최근 변경, Decision Log를 한 화면에서 확인한다.
+
+![AI PM Dashboard](assets/ui-ai-pm-dashboard.png)
+
+### 6.2 Approval Queue
+
+AI가 생성한 변경안을 검토하고, Action Preview와 Diff Viewer를 확인한 뒤 승인, 보류, 수정 요청, 거부를 결정한다.
+
+![Approval Queue](assets/ui-approval-queue.png)
+
+### 6.3 Plan Mode Report
+
+설정 변경 요청에 대한 관련 문서, 충돌 분석, 영향도 분석, Confidence Report, 추천안, 추가 질문을 확인한다.
+
+![Plan Mode Report](assets/ui-plan-mode-report.png)
+
+### 6.4 Project Search Result
+
+프로젝트 질문에 대해 관련 문서, 실제 내용, Source, 관련 설정, 회의록, Temporary Idea 후보를 함께 확인한다.
+
+![Project Search Result](assets/ui-project-search-result.png)
+
+## 7. MVP 범위
+
+MVP는 모든 자동화를 완성하기보다, 승인 기반 AI Project Partner의 핵심 흐름을 검증하는 데 집중한다.
+
+### 포함 범위
+
+- 단일 프로젝트 기준 지식 입력과 검색
+- Temporary Idea 저장
+- Input Intent Classification 기본 규칙
+- Plan Mode Report 생성
+- Conflict Analysis와 Impact Analysis 기본 리포트
+- Approval Queue
+- AI PM Dashboard 초안
+- Decision Log와 Version History 기본 기록
+
+### 제외 또는 후순위 범위
+
+- Google Docs, Slack, Discord, STT 회의록 직접 연동
+- 완전 자동 Live Data Sync
+- Unity In-Editor Bug Report 실제 플러그인
+- 다중 프로젝트 운영 자동화
+- 고급 RuleSet 편집 UI
+
+## 8. 완료 기준
+
+- README의 8개 Core Features가 기획서에 모두 반영되어 있다.
+- 모든 실제 변경은 Approval Queue를 거친다는 원칙이 명시되어 있다.
+- Temporary Idea는 실제 문서를 수정하지 않는다는 원칙이 명시되어 있다.
+- Project Search는 Source를 함께 제공하는 흐름으로 정의되어 있다.
+- Plan Mode는 충돌 분석, 영향도 분석, 추천안, Confidence Report를 포함한다.
+- 화면 흐름은 Mermaid 다이어그램으로 표현되어 있다.
+- 예시 UI 이미지는 `docs/assets/`에 저장되어 있고 본 문서에서 참조된다.
