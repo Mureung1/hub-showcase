@@ -1,0 +1,34 @@
+:root {
+  /* Colors */
+  --bg-deep: #0B0F19;
+  --bg-card: rgba(22, 28, 45, 0.6);
+  --bg-card-hover: rgba(30, 41, 59, 0.8);
+  
+  --color-primary: #6366F1;
+  --color-secondary: #3B82F6;
+  --color-accent: #8B5CF6;
+  
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  
+  --text-main: #F3F4F6;
+  --text-muted: #9CA3AF;
+  
+  --border-light: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(99, 102, 241, 0.4);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  font-family: 'Noto Sans KR', 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
