@@ -17,7 +17,12 @@
     --radius-xl: 28px;
     --shadow-sm: 0 1px 3px rgba(26,23,38,0.03);
 
-    --cell-empty: #F2F0F4;
+    /* 겹치는 인원수 5단계 */
+    --level-0: #F2F0F4;
+    --level-1: #DED9FB;
+    --level-2: #BCB2F7;
+    --level-3: #9384EF;
+    --level-4: #6C5CE7;
   }
 
   * {
@@ -155,11 +160,11 @@
 
   .slot {
     height: 40px;
-    background: var(--cell-empty);
+    background: var(--level-0);
     border: 2.5px solid transparent;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: transform 0.15s ease, border-color 0.15s ease;
+    transition: background 0.2s ease, transform 0.15s ease, border-color 0.15s ease;
   }
 
   .slot:hover:not(.disabled) {
@@ -167,6 +172,11 @@
     position: relative;
     z-index: 2;
   }
+
+  .slot.level-1 { background: var(--level-1); }
+  .slot.level-2 { background: var(--level-2); }
+  .slot.level-3 { background: var(--level-3); }
+  .slot.level-4 { background: var(--level-4); }
 
   .slot.selected {
     border-color: var(--color-primary);
@@ -177,6 +187,30 @@
     cursor: default;
     pointer-events: none;
   }
+
+  .legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .legend-text {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .legend-swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-sm);
+  }
+
+  .legend-swatch.level-1 { background: var(--level-1); }
+  .legend-swatch.level-2 { background: var(--level-2); }
+  .legend-swatch.level-3 { background: var(--level-3); }
+  .legend-swatch.level-4 { background: var(--level-4); }
 
   .footer-note {
     text-align: center;
@@ -202,6 +236,15 @@
       <div class="grid-wrapper">
         <div class="grid" id="grid"></div>
       </div>
+
+      <div class="legend">
+        <span class="legend-text">적음</span>
+        <div class="legend-swatch level-1"></div>
+        <div class="legend-swatch level-2"></div>
+        <div class="legend-swatch level-3"></div>
+        <div class="legend-swatch level-4"></div>
+        <span class="legend-text">많음</span>
+      </div>
     </div>
 
     <div class="footer-note">칸을 클릭하거나 드래그해서 내 가능한 시간을 선택해보세요</div>
@@ -226,6 +269,91 @@
     var selectedSlots = new Set(); // 날짜별로 저장: "YYYY-MM-DD_시" 형태의 key
     var isDragging = false;
     var dragValue = true; // 드래그 중 적용할 선택 상태(선택/해제)
+
+    // 가상 팀원별 가능 시간 (실제 날짜 기준)
+    var teammates = [
+      {
+        name: "지훈",
+        slots: [
+          { date: "2026-07-13", hours: [10, 11] },
+          { date: "2026-07-14", hours: [14, 15] },
+          { date: "2026-07-16", hours: [10, 11, 12] },
+          { date: "2026-07-20", hours: [10, 11] },
+          { date: "2026-07-21", hours: [15, 16] },
+          { date: "2026-07-23", hours: [11, 12] },
+          { date: "2026-07-27", hours: [10, 11, 12] },
+          { date: "2026-07-28", hours: [14, 15] },
+          { date: "2026-07-30", hours: [10, 11] },
+        ],
+      },
+      {
+        name: "서연",
+        slots: [
+          { date: "2026-07-13", hours: [11, 12] },
+          { date: "2026-07-15", hours: [10, 11, 12] },
+          { date: "2026-07-16", hours: [11, 12] },
+          { date: "2026-07-20", hours: [11, 12] },
+          { date: "2026-07-22", hours: [14, 15, 16] },
+          { date: "2026-07-23", hours: [12, 13] },
+          { date: "2026-07-27", hours: [11, 12] },
+          { date: "2026-07-29", hours: [10, 11] },
+          { date: "2026-07-30", hours: [11, 12] },
+        ],
+      },
+      {
+        name: "민준",
+        slots: [
+          { date: "2026-07-14", hours: [10, 11, 12] },
+          { date: "2026-07-15", hours: [11, 12] },
+          { date: "2026-07-16", hours: [12, 13] },
+          { date: "2026-07-21", hours: [10, 11, 12] },
+          { date: "2026-07-22", hours: [15, 16, 17] },
+          { date: "2026-07-23", hours: [11, 12] },
+          { date: "2026-07-28", hours: [10, 11, 12] },
+          { date: "2026-07-29", hours: [14, 15] },
+          { date: "2026-07-30", hours: [12, 13] },
+        ],
+      },
+    ];
+
+    // 각 팀원의 가능 시간을 key(Set)로 미리 펼쳐둠
+    teammates.forEach(function (t) {
+      t.keySet = new Set();
+      t.slots.forEach(function (entry) {
+        entry.hours.forEach(function (hour) {
+          t.keySet.add(entry.date + "_" + hour);
+        });
+      });
+    });
+
+    var TOTAL_PEOPLE = teammates.length + 1; // 팀원 + 나
+
+    function teammateCount(key) {
+      return teammates.filter(function (t) {
+        return t.keySet.has(key);
+      }).length;
+    }
+
+    function slotCount(key) {
+      return teammateCount(key) + (selectedSlots.has(key) ? 1 : 0);
+    }
+
+    function teammateNames(key) {
+      return teammates
+        .filter(function (t) {
+          return t.keySet.has(key);
+        })
+        .map(function (t) {
+          return t.name;
+        });
+    }
+
+    function slotTitle(key, count) {
+      if (count === 0) return "가능한 사람이 없어요";
+      var names = teammateNames(key);
+      if (selectedSlots.has(key)) names.push("나");
+      return count + "명 가능 (" + names.join(", ") + ")";
+    }
 
     function addDays(date, days) {
       var result = new Date(date);
@@ -306,10 +434,12 @@
           var date = dates[col];
           var outOfProject = isOutOfProject(date);
           var key = slotKey(date, hour);
-          var slotClass = "slot";
+          var count = outOfProject ? 0 : slotCount(key);
+          var slotClass = "slot level-" + count;
           if (outOfProject) slotClass += " disabled";
           if (!outOfProject && selectedSlots.has(key)) slotClass += " selected";
-          html += '<div class="' + slotClass + '" data-key="' + key + '"></div>';
+          var title = outOfProject ? "" : slotTitle(key, count);
+          html += '<div class="' + slotClass + '" data-key="' + key + '" title="' + title + '"></div>';
         }
       }
 
@@ -326,11 +456,17 @@
     function setSlotState(slotEl, key, selected) {
       if (selected) {
         selectedSlots.add(key);
-        slotEl.classList.add("selected");
       } else {
         selectedSlots.delete(key);
-        slotEl.classList.remove("selected");
       }
+      slotEl.classList.toggle("selected", selected);
+
+      for (var lv = 0; lv <= TOTAL_PEOPLE; lv++) {
+        slotEl.classList.remove("level-" + lv);
+      }
+      var count = slotCount(key);
+      slotEl.classList.add("level-" + count);
+      slotEl.title = slotTitle(key, count);
     }
 
     // 클릭 = 즉시 토글, 누른 채로 끌면(드래그) 첫 칸에서 정한 선택/해제 상태를 지나가는 칸에 그대로 적용
