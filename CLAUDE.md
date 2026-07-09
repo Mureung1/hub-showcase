@@ -1,0 +1,75 @@
+# hub_ — 리뷰 답변 도우미
+
+이 저장소는 "리뷰 답변 도우미"(소상공인이 손님 리뷰를 붙여넣으면 감정 분석·키워드 추출·반복 문제 감지·답변 초안 3종을 생성해주는 도구) 프로젝트다. 기획 배경과 기능 스펙은 [`review-assistant-react/기획서.md`](review-assistant-react/기획서.md)를 따른다.
+
+이 문서는 **개발 환경/컨벤션 관련 결정**을 정리한다(2주차 본격 개발 전 사전 세팅). 화면 전용 디자인 규칙은 [`review-assistant-react/CLAUDE.md`](review-assistant-react/CLAUDE.md)에 따로 있다.
+
+## 디렉토리 구조
+
+모노레포 툴(npm workspaces 등) 없이, **독립된 두 패키지를 형제 폴더**로 둔다. 이 프로젝트 규모(2주 단기 프로젝트, API 표면 2개)에서 워크스페이스 설정은 과한 복잡도라 판단했다.
+
+```
+hub_/
+├── index.html                  # 초기 순수 HTML/CSS/JS 프로토타입 (기획서 1:1 대응 참고용, 더 이상 수정 안 함)
+├── review-assistant-react/     # 프론트엔드 (Vite + React)
+│   ├── design/                 # 디자인 핸드오프 원본 (design-build 스킬 참고)
+│   ├── src/
+│   └── CLAUDE.md                # 디자인 시스템 규칙
+└── review-assistant-server/    # 백엔드 (Express) — 이번에 신규 추가
+    ├── src/
+    │   ├── routes/
+    │   ├── controllers/
+    │   ├── services/            # 향후 분석 엔진(규칙 기반 → Claude API 교체) 위치
+    │   └── middleware/
+    ├── .env.example
+    └── package.json
+```
+
+새 API 엔드포인트가 늘어나면 `routes/*.route.js` + `controllers/*.controller.js` + 필요 시 `services/*.service.js` 패턴을 유지한다.
+
+## 라이브러리
+
+**프론트엔드** (`review-assistant-react`) — 기존 그대로 유지, 이번에 lint 도구만 추가:
+- `react`, `react-dom`, `vite` (기존)
+- 신규: `eslint` (flat config, `eslint-plugin-react-hooks` + `eslint-plugin-react-refresh`), `prettier`
+
+**백엔드** (`review-assistant-server`) — 신규:
+- `express` — API 서버
+- `cors` — 프론트엔드 dev origin 허용
+- `dotenv` — `.env` 로드
+- `eslint` + `prettier` — 프론트엔드와 동일 스택
+- 개발 서버 재시작: 별도 `nodemon` 의존성 대신 **Node 18+ 내장 `node --watch`** 사용 (`npm run dev`)
+- DB 없음: 반복 문제 감지용 세션 히스토리는 우선 인메모리로 구현 예정(2주차). 영속성이 필요해지면 그때 추가 논의.
+
+## 컨벤션
+
+### 커밋 메시지
+`<type>: <한글 설명>` 형식을 새로 도입한다. `type`은 `feat` / `fix` / `docs` / `refactor` / `chore` / `style` / `test` 중 하나.
+- 예: `feat: 리뷰 분석 API 검증 로직 추가`, `docs: 백엔드 환경설정 문서화`
+- 기존 커밋 로그(타입 접두사 없는 한글 설명체)를 소급 변경하지는 않는다 — 이 시점부터 적용.
+
+### 코드 스타일
+- 세미콜론 없음(`semi: false`), 작은따옴표, 줄 길이 100자, trailing comma — 루트 [`.prettierrc.json`](.prettierrc.json)이 두 패키지에 공통 적용된다(prettier가 상위 디렉토리로 설정을 탐색하므로 각 패키지에 따로 만들 필요 없음).
+- 프론트엔드: 함수형 컴포넌트 + hooks, 컴포넌트는 PascalCase 파일명(`App.jsx`), 나머지 유틸은 camelCase.
+- 백엔드: 파일명은 kebab-case + 역할 접미사(`reviews.route.js`, `reviews.controller.js`) — Node 생태계 관례.
+- 각 패키지에서 `npm run lint` / `npm run format`으로 검사·정리한다.
+
+### 브랜치 / PR
+이 저장소는 코호트 공유 리포([[project_connect-aiagentchallenge-hub|메모리 참고]])이며 학생별 고정 브랜치(`N112_엄기윤`)를 사용한다. 기능별로 서브 브랜치를 새로 파지 않고 해당 브랜치에서 작업 후 업스트림 동일 이름 브랜치로 PR을 연다.
+
+## 그 외 결정 사항
+
+- **패키지 매니저**: npm (두 패키지 모두 `package-lock.json` 사용).
+- **Node 버전**: 18 이상 (`engines.node` 명시). 로컬 개발 환경은 Node 24.
+- **포트**: 프론트엔드 5173(Vite 기본값), 백엔드 4000. `review-assistant-server/.env.example`에 `PORT=4000` 기본값 포함.
+- **CORS**: 백엔드가 `CORS_ORIGIN` 환경변수(기본 `http://localhost:5173`)만 허용.
+- **세션 ID**: 로그인 없는 익명 세션. 백엔드 `sessionId` 미들웨어가 `X-Session-Id` 요청 헤더를 읽고, 없으면 `crypto.randomUUID()`로 생성해 응답 헤더로 그대로 돌려준다. 프론트엔드는 이후 이 값을 저장(localStorage)해 재사용해야 한다 — **아직 프론트엔드 쪽 구현은 안 됨(2주차)**.
+- **에러 응답 형식**: `{ "error": { "code": "...", "message": "..." } }` — 기획서 5-4절과 동일. 코드: `EMPTY_INPUT` / `NO_VALID_REVIEW` / `TOO_MANY_REVIEWS` (400), `ANALYSIS_FAILED` (500). `review-assistant-server/src/middleware/errorHandler.js`에서 일괄 처리.
+- **환경변수**: `.env`는 git에 올리지 않고 `.env.example`만 커밋. 향후 Claude API 연동 시 `ANTHROPIC_API_KEY`는 **백엔드 전용** — 프론트엔드에 절대 노출하지 않는다.
+
+## 향후 Claude API 연동 (2주차 이후, 지금은 미구현)
+
+기획서 4번(향후 확장)에 명시된 대로, 현재 브라우저 내 규칙 기반 분석을 실제 Claude API 호출로 교체할 예정이다.
+- 추천 모델: **`claude-haiku-4-5`** (입력 $1.00 / 출력 $5.00 per MTok) — 리뷰 감정 분류·키워드 추출·짧은 답변 초안 생성 정도의 경량 작업에 적합. 답변 품질을 더 높이고 싶으면 `claude-sonnet-5`(입력 $3.00 / 출력 $15.00, 2026-08-31까지 인트로가 $2.00/$10.00)로 상향 가능.
+- 호출은 `review-assistant-server`에서만 수행 (API 키를 서버에만 보관). 현재 `src/services/`에 분석 엔진 자리를 비워뒀다.
+- 정확한 모델 ID/가격은 시점에 따라 바뀔 수 있으므로, 실제 연동 시점에 다시 확인할 것 (모델 ID를 임의로 추측하지 말 것).

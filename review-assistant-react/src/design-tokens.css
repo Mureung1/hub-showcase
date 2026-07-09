@@ -1,0 +1,77 @@
+/*
+  Design tokens exported from claude.ai/design ("리뷰 답변 도우미" tool screen handoff).
+  Source of truth: design/handoff.md and design/reference_리뷰답변도우미.dc.html.
+  Do not hand-tune values here — update the design file and re-export instead.
+*/
+:root {
+  /* Colors */
+  --color-bg: oklch(97.5% 0.014 70);
+  --color-surface: oklch(99% 0.006 70);
+  --color-surface-sub: oklch(98.5% 0.01 70);
+  --color-border: oklch(91% 0.02 60);
+  --color-border-strong: oklch(90% 0.02 60);
+  --color-border-input: oklch(88% 0.02 60);
+
+  --color-text-heading: oklch(26% 0.03 45);
+  --color-text-body: oklch(28% 0.02 50);
+  --color-text-label: oklch(30% 0.02 50);
+  --color-text-muted: oklch(45% 0.02 50);
+  --color-text-subtle: oklch(55% 0.02 50);
+  --color-text-link: oklch(40% 0.02 50);
+  --color-arrow: oklch(75% 0.02 50);
+
+  --color-primary: oklch(64% 0.17 45);
+  --color-primary-hover: oklch(58% 0.18 42);
+  --color-tone-label: oklch(55% 0.14 45);
+  --color-copy-border: oklch(70% 0.15 45);
+  --color-copy-bg: oklch(98% 0.01 45);
+  --color-copy-text: oklch(50% 0.15 45);
+
+  --color-positive-bg: oklch(90% 0.09 150);
+  --color-positive-text: oklch(35% 0.1 150);
+  --color-negative-bg: oklch(91% 0.07 25);
+  --color-negative-text: oklch(40% 0.15 25);
+  --color-neutral-bg: oklch(92% 0.01 60);
+  --color-neutral-text: oklch(45% 0.01 60);
+  --color-keyword-bg: oklch(95% 0.02 60);
+  --color-keyword-text: oklch(45% 0.02 50);
+
+  --color-warning-bg: oklch(94% 0.05 30);
+  --color-warning-border: oklch(75% 0.12 30);
+  --color-warning-text: oklch(38% 0.14 30);
+
+  --color-recurring-bg: oklch(93% 0.06 35);
+  --color-recurring-border: oklch(62% 0.18 30);
+  --color-recurring-heading: oklch(35% 0.16 30);
+  --color-recurring-item-bg: oklch(98% 0.01 30);
+  --color-recurring-item-title: oklch(35% 0.14 30);
+  --color-recurring-item-body: oklch(45% 0.1 30);
+  --color-recurring-reset-border: oklch(55% 0.15 30);
+  --color-recurring-reset-text: oklch(40% 0.15 30);
+  --color-recurring-reset-hover: oklch(88% 0.06 30);
+
+  --color-suggestion-bg: oklch(96% 0.03 35);
+  --color-suggestion-text: oklch(45% 0.1 30);
+
+  --color-spinner-track: oklch(85% 0.03 45);
+  --color-spinner-head: oklch(60% 0.17 45);
+
+  /* Typography */
+  --font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
+  --line-height-body: 1.55;
+
+  /* Spacing / radius */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  --container-hero: 720px;
+  --container-steps: 760px;
+  --container-tool: 800px;
+
+  /* Shadow */
+  --shadow-card: 0 2px 10px oklch(40% 0.02 50 / 0.05);
+  --shadow-hero-cta: 0 6px 16px oklch(64% 0.17 45 / 0.3);
+}
