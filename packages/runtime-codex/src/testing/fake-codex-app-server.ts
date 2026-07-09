@@ -36,6 +36,7 @@ export type FakeCodexAppServerScenario = {
   initializeError?: string
   initializeHang?: boolean
   exitAfterInitialize?: boolean
+  threadStartHang?: boolean
   threadStartError?: string
   turnStartError?: string
   turnInterruptError?: string
@@ -78,34 +79,7 @@ export async function withFakeCodexAppServer(
   }
 }
 
-export async function waitForRuntimeCondition<T>(
-  read: () => T | Promise<T>,
-  predicate: (value: T) => boolean,
-  options: {
-    timeoutMs?: number
-    failureMessage?: string
-  } = {},
-): Promise<T> {
-  const deadline = Date.now() + (options.timeoutMs ?? 1000)
-
-  while (Date.now() < deadline) {
-    const value = await read()
-
-    if (predicate(value)) {
-      return value
-    }
-
-    await new Promise<void>((resolve) => {
-      setImmediate(resolve)
-    })
-  }
-
-  throw new Error(
-    options.failureMessage ?? 'expected runtime condition was not observed',
-  )
-}
-
-export function readRuntimeDebugClientRequest(
+export function readCodexDebugClientRequest(
   debugLog: RuntimeRunDebugLogEntry[] | undefined,
   method: string,
 ): { method?: string; params?: unknown } | undefined {
@@ -121,14 +95,14 @@ export function readRuntimeDebugClientRequest(
     .find((message) => message.method === method)
 }
 
-export function hasRuntimeDebugClientRequest(
+export function hasCodexDebugClientRequest(
   debugLog: RuntimeRunDebugLogEntry[] | undefined,
   method: string,
 ): boolean {
-  return readRuntimeDebugClientRequest(debugLog, method) !== undefined
+  return readCodexDebugClientRequest(debugLog, method) !== undefined
 }
 
-export function hasRuntimeDebugNotification(
+export function hasCodexDebugNotification(
   debugLog: RuntimeRunDebugLogEntry[] | undefined,
   method: string,
 ): boolean {
@@ -142,7 +116,7 @@ export function hasRuntimeDebugNotification(
   )
 }
 
-export function hasRuntimeDebugTurnCompletionStatus(
+export function hasCodexDebugTurnCompletionStatus(
   debugLog: RuntimeRunDebugLogEntry[] | undefined,
   status: string,
 ): boolean {
@@ -162,6 +136,44 @@ export function hasRuntimeDebugTurnCompletionStatus(
       )
     }) ?? false
   )
+}
+
+export function readCodexAdapterDebugEntry(
+  debugLog: RuntimeRunDebugLogEntry[] | undefined,
+  input: {
+    kind: string
+    message: string
+    data?: Record<string, unknown>
+  },
+): RuntimeRunDebugLogEntry | undefined {
+  return debugLog?.find((entry) => {
+    if (
+      entry.source !== 'adapter' ||
+      entry.kind !== input.kind ||
+      entry.message !== input.message
+    ) {
+      return false
+    }
+
+    if (!input.data) {
+      return true
+    }
+
+    return Object.entries(input.data).every(
+      ([key, value]) => entry.data?.[key] === value,
+    )
+  })
+}
+
+export function hasCodexAdapterDebugEntry(
+  debugLog: RuntimeRunDebugLogEntry[] | undefined,
+  input: {
+    kind: string
+    message: string
+    data?: Record<string, unknown>
+  },
+): boolean {
+  return readCodexAdapterDebugEntry(debugLog, input) !== undefined
 }
 
 function createFakeCodexAppServerSource(
@@ -210,6 +222,7 @@ function normalizeScenario(
     initializeError: scenario.initializeError ?? null,
     initializeHang: scenario.initializeHang ?? false,
     exitAfterInitialize: scenario.exitAfterInitialize ?? false,
+    threadStartHang: scenario.threadStartHang ?? false,
     threadStartError: scenario.threadStartError ?? null,
     turnStartError: scenario.turnStartError ?? null,
     turnInterruptError: scenario.turnInterruptError ?? null,
@@ -235,6 +248,7 @@ type NormalizedFakeCodexAppServerScenario = {
   initializeError: string | null
   initializeHang: boolean
   exitAfterInitialize: boolean
+  threadStartHang: boolean
   threadStartError: string | null
   turnStartError: string | null
   turnInterruptError: string | null
@@ -292,6 +306,10 @@ reader.on('line', (line) => {
   }
 
   if (message.method === 'thread/start') {
+    if (scenario.threadStartHang) {
+      return
+    }
+
     if (scenario.threadStartError) {
       writeError(message.id, scenario.threadStartError)
       return

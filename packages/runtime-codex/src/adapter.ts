@@ -34,6 +34,12 @@ type AbortedNotificationWait = {
   pendingNotification?: Promise<IteratorResult<CodexRawServerNotification>>
 }
 
+const interruptCompletionTimeoutMs = 300
+const interruptCompletionTimeoutMessage =
+  'Codex turn interrupt did not complete before timeout'
+const missingTurnScopeCancellationMessage =
+  'Codex cancellation requested before turn scope was established; turn/interrupt was not sent'
+
 export type CodexRuntimeAdapterOptions = {
   rawClientOptions?: CodexRawClientOptions
   createClient?: () => CodexRawClient
@@ -57,6 +63,7 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
     const client = this.createClient()
     let emittedDebugEntries = 0
     let turnScope: CodexTurnScope | undefined
+    let pendingThreadId: string | null = null
     const emitDebugLog = (): RuntimeAdapterEvent | undefined => {
       const debugLog = client.getDebugLog()
       const entries = debugLog
@@ -91,14 +98,12 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
       }
 
       if (input.signal.aborted) {
-        yield {
-          type: 'failed',
-          error: 'Codex cancellation requested before turn started',
-        }
+        yield* cancellationBeforeTurnScopeFailure(null)
         return
       }
 
       const thread = await client.startThread()
+      pendingThreadId = thread.threadId
       const threadDebugLog = emitDebugLog()
 
       if (threadDebugLog) {
@@ -106,10 +111,7 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
       }
 
       if (input.signal.aborted) {
-        yield {
-          type: 'failed',
-          error: 'Codex cancellation requested before turn started',
-        }
+        yield* cancellationBeforeTurnScopeFailure(thread.threadId)
         return
       }
 
@@ -185,34 +187,15 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
           }
         }
 
-        const errorNotification = readMatchingErrorNotification(
+        const terminalEvent = readTerminalNotificationAdapterEvent(
           notification.value,
           turnScope,
+          {
+            interruptedCancellationConfirmed: false,
+          },
         )
 
-        if (errorNotification && !errorNotification.willRetry) {
-          await client.close()
-
-          const failedDebugLog = emitDebugLog()
-
-          if (failedDebugLog) {
-            yield failedDebugLog
-          }
-
-          yield {
-            type: 'failed',
-            error: errorNotification.errorMessage ?? 'Codex turn failed',
-          }
-
-          return
-        }
-
-        const completion = readMatchingTurnCompletion(
-          notification.value,
-          turnScope,
-        )
-
-        if (completion) {
+        if (terminalEvent) {
           await client.close()
 
           const completedDebugLog = emitDebugLog()
@@ -221,9 +204,7 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
             yield completedDebugLog
           }
 
-          yield toTerminalAdapterEvent(completion, {
-            interruptedCancellationConfirmed: false,
-          })
+          yield terminalEvent
 
           return
         }
@@ -233,6 +214,11 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
 
       if (failureDebugLog) {
         yield failureDebugLog
+      }
+
+      if (input.signal.aborted && !turnScope) {
+        yield* cancellationBeforeTurnScopeFailure(pendingThreadId)
+        return
       }
 
       throw error
@@ -281,8 +267,9 @@ async function* interruptTurnAndDrainNotifications(
     yield interruptDebugLog
   }
 
-  const deadline = Date.now() + 300
+  const deadline = Date.now() + interruptCompletionTimeoutMs
   let pendingNotification = initialPendingNotification
+  let streamEnded = false
 
   while (Date.now() < deadline) {
     const notification = pendingNotification
@@ -290,7 +277,12 @@ async function* interruptTurnAndDrainNotifications(
       : await nextNotificationOrTimeout(notifications, deadline - Date.now())
     pendingNotification = undefined
 
-    if (notification === 'timeout' || notification.done) {
+    if (notification === 'timeout') {
+      break
+    }
+
+    if (notification.done) {
+      streamEnded = true
       break
     }
 
@@ -300,35 +292,34 @@ async function* interruptTurnAndDrainNotifications(
       yield notificationDebugLog
     }
 
-    const errorNotification = readMatchingErrorNotification(
+    const terminalEvent = readTerminalNotificationAdapterEvent(
       notification.value,
       turnScope,
-    )
-
-    if (errorNotification && !errorNotification.willRetry) {
-      yield {
-        type: 'failed',
-        error: errorNotification.errorMessage ?? 'Codex turn failed',
-      }
-      return
-    }
-
-    const completion = readMatchingTurnCompletion(
-      notification.value,
-      turnScope,
-    )
-
-    if (completion) {
-      yield toTerminalAdapterEvent(completion, {
+      {
         interruptedCancellationConfirmed: true,
-      })
+      },
+    )
+
+    if (terminalEvent) {
+      yield terminalEvent
       return
     }
   }
 
   yield {
+    type: 'debug_log',
+    entries: [
+      createAdapterDebugLogEntry('timeout', interruptCompletionTimeoutMessage, {
+        threadId: turnScope.threadId,
+        turnId: turnScope.turnId,
+        timeoutMs: interruptCompletionTimeoutMs,
+        streamEnded,
+      }),
+    ],
+  }
+  yield {
     type: 'failed',
-    error: 'Codex turn interrupt did not complete before timeout',
+    error: interruptCompletionTimeoutMessage,
   }
 }
 
@@ -436,7 +427,7 @@ function readMatchingTurnCompletion(
 
   return {
     status,
-    errorMessage: readTurnErrorMessage(turn),
+    errorMessage: readErrorMessageFromRecord(turn),
   }
 }
 
@@ -456,8 +447,30 @@ function readMatchingErrorNotification(
 
   return {
     willRetry: params.willRetry === true,
-    errorMessage: readNotificationErrorMessage(params),
+    errorMessage: readErrorMessageFromRecord(params),
   }
+}
+
+function readTerminalNotificationAdapterEvent(
+  notification: CodexRawServerNotification,
+  turnScope: CodexTurnScope,
+  options: { interruptedCancellationConfirmed: boolean },
+): RuntimeAdapterEvent | undefined {
+  const errorNotification = readMatchingErrorNotification(
+    notification,
+    turnScope,
+  )
+
+  if (errorNotification && !errorNotification.willRetry) {
+    return {
+      type: 'failed',
+      error: errorNotification.errorMessage ?? 'Codex turn failed',
+    }
+  }
+
+  const completion = readMatchingTurnCompletion(notification, turnScope)
+
+  return completion ? toTerminalAdapterEvent(completion, options) : undefined
 }
 
 function toTerminalAdapterEvent(
@@ -494,16 +507,6 @@ function isCodexTurnTerminalStatus(
   return (
     status === 'completed' || status === 'interrupted' || status === 'failed'
   )
-}
-
-function readTurnErrorMessage(turn: Record<string, unknown>): string | undefined {
-  return readErrorMessageFromRecord(turn)
-}
-
-function readNotificationErrorMessage(
-  params: Record<string, unknown>,
-): string | undefined {
-  return readErrorMessageFromRecord(params)
 }
 
 function readErrorMessageFromRecord(
@@ -544,6 +547,39 @@ function toRuntimeDebugLogEntry(
     raw: entry.raw,
     message: entry.message,
     data: entry.data ? { ...entry.data } : undefined,
+  }
+}
+
+function* cancellationBeforeTurnScopeFailure(
+  threadId: string | null,
+): Iterable<RuntimeAdapterEvent> {
+  yield {
+    type: 'debug_log',
+    entries: [
+      createAdapterDebugLogEntry('warning', missingTurnScopeCancellationMessage, {
+        threadId,
+        canInterrupt: false,
+        reason: 'missing_turn_scope',
+      }),
+    ],
+  }
+  yield {
+    type: 'failed',
+    error: missingTurnScopeCancellationMessage,
+  }
+}
+
+function createAdapterDebugLogEntry(
+  kind: 'timeout' | 'warning',
+  message: string,
+  data: Record<string, unknown>,
+): RuntimeRunDebugLogEntry {
+  return {
+    timestamp: new Date().toISOString(),
+    source: 'adapter',
+    kind,
+    message,
+    data,
   }
 }
 

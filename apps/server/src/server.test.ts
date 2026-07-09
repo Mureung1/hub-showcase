@@ -4,11 +4,12 @@ import {
   AgentRuntimeKernel,
   type RuntimeRunDebugLogEntry,
 } from '@ay-ple/runtime-core'
+import { waitForRuntimeCondition } from '@ay-ple/runtime-core/testing'
 import { CodexRuntimeAdapter } from '@ay-ple/runtime-codex'
 import {
-  hasRuntimeDebugClientRequest,
-  hasRuntimeDebugTurnCompletionStatus,
-  waitForRuntimeCondition,
+  hasCodexAdapterDebugEntry,
+  hasCodexDebugClientRequest,
+  hasCodexDebugTurnCompletionStatus,
   withFakeCodexAppServer,
 } from '@ay-ple/runtime-codex/testing'
 import { createServerApp } from './server.js'
@@ -300,50 +301,20 @@ test('runtime API cancels a codex run through normalized cancellation', async ()
       })
 
       await withTestServer({ kernel }, async (baseUrl) => {
-        const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({
-            adapter: 'codex',
+        const { runId, streamedEventsPromise } =
+          await startCodexRunAndCancel(baseUrl, {
             prompt: 'Cancel from server API',
-          }),
-        })
-        const startedRun = (await startResponse.json()) as { runId: string }
-
-        assert.equal(startResponse.status, 201)
-
-        await waitForServerRunLog(baseUrl, startedRun.runId, (run) =>
-          hasRuntimeDebugClientRequest(run.debugLog, 'turn/start'),
-        )
-
-        const eventsPromise = fetch(
-          `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,
-        ).then(async (eventsResponse) => {
-          assert.equal(eventsResponse.status, 200)
-          return parseSseData(await eventsResponse.text())
-        })
-
-        const cancelResponse = await fetch(
-          `${baseUrl}/api/runtime/runs/${startedRun.runId}/cancel`,
-          {
-            method: 'POST',
-          },
-        )
-        const cancellingRun = await cancelResponse.json()
-
-        assert.equal(cancelResponse.status, 200)
-        assert.equal(cancellingRun.run.status, 'cancelling')
+            waitForDebugMethod: 'turn/start',
+          })
 
         const log = await waitForServerRunLog(
           baseUrl,
-          startedRun.runId,
+          runId,
           (run) =>
-            hasRuntimeDebugClientRequest(run.debugLog, 'turn/interrupt') &&
-            hasRuntimeDebugTurnCompletionStatus(run.debugLog, 'interrupted'),
+            hasCodexDebugClientRequest(run.debugLog, 'turn/interrupt') &&
+            hasCodexDebugTurnCompletionStatus(run.debugLog, 'interrupted'),
         )
-        const streamedEvents = await eventsPromise
+        const streamedEvents = await streamedEventsPromise
 
         assert.equal(log.status, 'cancelled')
         assert.deepEqual(
@@ -355,19 +326,9 @@ test('runtime API cancels a codex run through normalized cancellation', async ()
           ['started', 'cancelling', 'cancelled'],
         )
 
-        const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
-        const history = await historyResponse.json()
-
-        assert.equal(historyResponse.status, 200)
-        assert.equal(history.runs[0].runId, startedRun.runId)
-        assert.equal(history.runs[0].status, 'cancelled')
-        assert.equal(
-          history.runs.some(
-            (run: Record<string, unknown>) =>
-              run.runId === startedRun.runId && run.status === 'running',
-          ),
-          false,
-        )
+        await assertLatestHistoryStatus(baseUrl, runId, 'cancelled', {
+          noRunningResidue: true,
+        })
       })
     },
   )
@@ -391,46 +352,18 @@ test('runtime API records codex interrupt failure as normalized failure', async 
       })
 
       await withTestServer({ kernel }, async (baseUrl) => {
-        const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({
-            adapter: 'codex',
+        const { runId, streamedEventsPromise } =
+          await startCodexRunAndCancel(baseUrl, {
             prompt: 'Cancel from server API',
-          }),
-        })
-        const startedRun = (await startResponse.json()) as { runId: string }
-
-        assert.equal(startResponse.status, 201)
-
-        await waitForServerRunLog(baseUrl, startedRun.runId, (run) =>
-          hasRuntimeDebugClientRequest(run.debugLog, 'turn/start'),
-        )
-
-        const eventsPromise = fetch(
-          `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,
-        ).then(async (eventsResponse) => {
-          assert.equal(eventsResponse.status, 200)
-          return parseSseData(await eventsResponse.text())
-        })
-        const cancelResponse = await fetch(
-          `${baseUrl}/api/runtime/runs/${startedRun.runId}/cancel`,
-          {
-            method: 'POST',
-          },
-        )
-        const cancellingRun = await cancelResponse.json()
+            waitForDebugMethod: 'turn/start',
+          })
         const terminalLog = await waitForServerRunLog(
           baseUrl,
-          startedRun.runId,
+          runId,
           (run) => run.status === 'failed',
         )
-        const streamedEvents = await eventsPromise
+        const streamedEvents = await streamedEventsPromise
 
-        assert.equal(cancelResponse.status, 200)
-        assert.equal(cancellingRun.run.status, 'cancelling')
         assert.equal(terminalLog.status, 'failed')
         assert.match(
           terminalLog.error ?? '',
@@ -445,12 +378,7 @@ test('runtime API records codex interrupt failure as normalized failure', async 
           ['started', 'cancelling', 'failed'],
         )
 
-        const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
-        const history = await historyResponse.json()
-
-        assert.equal(historyResponse.status, 200)
-        assert.equal(history.runs[0].runId, startedRun.runId)
-        assert.equal(history.runs[0].status, 'failed')
+        await assertLatestHistoryStatus(baseUrl, runId, 'failed')
       })
     },
   )
@@ -473,66 +401,213 @@ test('runtime API records codex interrupt timeout as normalized failure', async 
       })
 
       await withTestServer({ kernel }, async (baseUrl) => {
-        const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({
-            adapter: 'codex',
+        const { runId, streamedEventsPromise } =
+          await startCodexRunAndCancel(baseUrl, {
             prompt: 'Cancel from server API',
-          }),
-        })
-        const startedRun = (await startResponse.json()) as { runId: string }
-
-        assert.equal(startResponse.status, 201)
-
-        await waitForServerRunLog(baseUrl, startedRun.runId, (run) =>
-          hasRuntimeDebugClientRequest(run.debugLog, 'turn/start'),
-        )
-
-        const eventsPromise = fetch(
-          `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,
-        ).then(async (eventsResponse) => {
-          assert.equal(eventsResponse.status, 200)
-          return parseSseData(await eventsResponse.text())
-        })
-        const cancelResponse = await fetch(
-          `${baseUrl}/api/runtime/runs/${startedRun.runId}/cancel`,
-          {
-            method: 'POST',
-          },
-        )
-        const cancellingRun = await cancelResponse.json()
+            waitForDebugMethod: 'turn/start',
+          })
         const terminalLog = await waitForServerRunLog(
           baseUrl,
-          startedRun.runId,
+          runId,
           (run) => run.status === 'failed',
         )
-        const streamedEvents = await eventsPromise
+        const streamedEvents = await streamedEventsPromise
 
-        assert.equal(cancelResponse.status, 200)
-        assert.equal(cancellingRun.run.status, 'cancelling')
         assert.equal(terminalLog.status, 'failed')
         assert.equal(
           terminalLog.error,
           'Codex turn interrupt did not complete before timeout',
+        )
+        assert.ok(
+          hasCodexAdapterDebugEntry(terminalLog.debugLog, {
+            kind: 'timeout',
+            message: 'Codex turn interrupt did not complete before timeout',
+            data: {
+              threadId: 'thread-server-interrupt-timeout',
+              turnId: 'turn-server-interrupt-timeout',
+              timeoutMs: 300,
+              streamEnded: false,
+            },
+          }),
         )
         assert.deepEqual(
           streamedEvents.map((event) => event.type),
           ['started', 'cancelling', 'failed'],
         )
 
-        const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
-        const history = await historyResponse.json()
-
-        assert.equal(historyResponse.status, 200)
-        assert.equal(history.runs[0].runId, startedRun.runId)
-        assert.equal(history.runs[0].status, 'failed')
+        await assertLatestHistoryStatus(baseUrl, runId, 'failed', {
+          noRunningResidue: true,
+        })
       })
     },
   )
 })
+
+test('runtime API records codex pre-turn-scope cancellation as normalized failure', async () => {
+  await withFakeCodexAppServer(
+    {
+      threadId: 'thread-server-pre-turn-cancel',
+      turnId: 'turn-server-pre-turn-cancel',
+      threadStartHang: true,
+    },
+    async ({ rawClientOptions }) => {
+      const kernel = new AgentRuntimeKernel({
+        adapters: [
+          new CodexRuntimeAdapter({
+            rawClientOptions,
+          }),
+        ],
+      })
+
+      await withTestServer({ kernel }, async (baseUrl) => {
+        const { runId, streamedEventsPromise } =
+          await startCodexRunAndCancel(baseUrl, {
+            prompt: 'Cancel before turn scope exists',
+            waitForDebugMethod: 'initialized',
+          })
+        const terminalLog = await waitForServerRunLog(
+          baseUrl,
+          runId,
+          (run) => run.status === 'failed',
+        )
+        const streamedEvents = await streamedEventsPromise
+
+        assert.equal(terminalLog.status, 'failed')
+        assert.equal(
+          terminalLog.error,
+          'Codex cancellation requested before turn scope was established; turn/interrupt was not sent',
+        )
+        assert.equal(
+          hasCodexDebugClientRequest(terminalLog.debugLog, 'turn/interrupt'),
+          false,
+        )
+        assert.ok(
+          hasCodexAdapterDebugEntry(terminalLog.debugLog, {
+            kind: 'warning',
+            message:
+              'Codex cancellation requested before turn scope was established; turn/interrupt was not sent',
+            data: {
+              threadId: null,
+              canInterrupt: false,
+              reason: 'missing_turn_scope',
+            },
+          }),
+        )
+        assert.deepEqual(
+          streamedEvents.map((event) => event.type),
+          ['started', 'cancelling', 'failed'],
+        )
+
+        await assertLatestHistoryStatus(baseUrl, runId, 'failed', {
+          noRunningResidue: true,
+        })
+      })
+    },
+  )
+})
+
+async function startCodexRunAndCancel(
+  baseUrl: string,
+  input: {
+    prompt: string
+    waitForDebugMethod: string
+  },
+): Promise<{
+  runId: string
+  streamedEventsPromise: Promise<Array<Record<string, unknown>>>
+}> {
+  const runId = await startRuntimeRun(baseUrl, {
+    adapter: 'codex',
+    prompt: input.prompt,
+  })
+
+  await waitForServerRunLog(baseUrl, runId, (run) =>
+    hasCodexDebugClientRequest(run.debugLog, input.waitForDebugMethod),
+  )
+
+  const streamedEventsPromise = collectRunEvents(baseUrl, runId)
+  const cancellingRun = await cancelRuntimeRun(baseUrl, runId)
+
+  assert.equal(cancellingRun.status, 'cancelling')
+
+  return {
+    runId,
+    streamedEventsPromise,
+  }
+}
+
+async function startRuntimeRun(
+  baseUrl: string,
+  input: Record<string, unknown>,
+): Promise<string> {
+  const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  })
+  const startedRun = (await startResponse.json()) as { runId: string }
+
+  assert.equal(startResponse.status, 201)
+
+  return startedRun.runId
+}
+
+async function collectRunEvents(
+  baseUrl: string,
+  runId: string,
+): Promise<Array<Record<string, unknown>>> {
+  const eventsResponse = await fetch(
+    `${baseUrl}/api/runtime/runs/${runId}/events?after=0`,
+  )
+
+  assert.equal(eventsResponse.status, 200)
+
+  return parseSseData(await eventsResponse.text())
+}
+
+async function cancelRuntimeRun(
+  baseUrl: string,
+  runId: string,
+): Promise<ServerRunLog> {
+  const cancelResponse = await fetch(
+    `${baseUrl}/api/runtime/runs/${runId}/cancel`,
+    {
+      method: 'POST',
+    },
+  )
+  const cancelBody = (await cancelResponse.json()) as { run: ServerRunLog }
+
+  assert.equal(cancelResponse.status, 200)
+
+  return cancelBody.run
+}
+
+async function assertLatestHistoryStatus(
+  baseUrl: string,
+  runId: string,
+  status: string,
+  options: { noRunningResidue?: boolean } = {},
+): Promise<void> {
+  const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
+  const history = (await historyResponse.json()) as {
+    runs: Array<Record<string, unknown>>
+  }
+
+  assert.equal(historyResponse.status, 200)
+  assert.equal(history.runs[0]?.runId, runId)
+  assert.equal(history.runs[0]?.status, status)
+
+  if (options.noRunningResidue) {
+    assert.equal(
+      history.runs.some(
+        (run) => run.runId === runId && run.status === 'running',
+      ),
+      false,
+    )
+  }
+}
 
 async function withTestServer(
   options: Parameters<typeof createServerApp>[0],

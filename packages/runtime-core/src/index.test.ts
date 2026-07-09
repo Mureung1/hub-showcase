@@ -20,9 +20,7 @@ class HangingAdapter implements AgentRuntimeAdapter {
   readonly name = 'test'
 
   async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
-    await new Promise<void>((resolve) => {
-      input.signal.addEventListener('abort', () => resolve(), { once: true })
-    })
+    await waitForAbort(input.signal)
     yield { type: 'output_delta', delta: 'late output' }
     yield { type: 'completed' }
   }
@@ -60,9 +58,7 @@ class CancelDebugLogAdapter implements AgentRuntimeAdapter {
   readonly name = 'test'
 
   async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
-    await new Promise<void>((resolve) => {
-      input.signal.addEventListener('abort', () => resolve(), { once: true })
-    })
+    await waitForAbort(input.signal)
 
     yield {
       type: 'debug_log',
@@ -85,9 +81,7 @@ class AdapterConfirmedCancelAdapter implements AgentRuntimeAdapter {
   readonly cancellationMode = 'adapter_confirmed'
 
   async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
-    await new Promise<void>((resolve) => {
-      input.signal.addEventListener('abort', () => resolve(), { once: true })
-    })
+    await waitForAbort(input.signal)
     yield { type: 'cancelled', reason: 'Adapter confirmed cancellation' }
   }
 }
@@ -97,9 +91,7 @@ class AdapterConfirmedCancelFailureAdapter implements AgentRuntimeAdapter {
   readonly cancellationMode = 'adapter_confirmed'
 
   async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
-    await new Promise<void>((resolve) => {
-      input.signal.addEventListener('abort', () => resolve(), { once: true })
-    })
+    await waitForAbort(input.signal)
     yield { type: 'failed', error: 'Adapter cancellation failed' }
   }
 }
@@ -111,9 +103,7 @@ class AdapterConfirmedCancelWithoutTerminalAdapter
   readonly cancellationMode = 'adapter_confirmed'
 
   async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
-    await new Promise<void>((resolve) => {
-      input.signal.addEventListener('abort', () => resolve(), { once: true })
-    })
+    await waitForAbort(input.signal)
   }
 }
 
@@ -380,4 +370,14 @@ async function waitForRunLog(
   }
 
   assert.fail('expected run log condition was not observed')
+}
+
+async function waitForAbort(signal: AbortSignal): Promise<void> {
+  if (signal.aborted) {
+    return
+  }
+
+  await new Promise<void>((resolve) => {
+    signal.addEventListener('abort', () => resolve(), { once: true })
+  })
 }
