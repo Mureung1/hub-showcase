@@ -7,13 +7,23 @@
   --color-surface: #ffffff;
   --color-surface-soft: #eef5fb;
   --color-border: #d9e3ec;
+  --color-divider: #e3eaf1;
   --color-text-primary: #2b3a53;
   --color-text-secondary: #6f7d94;
+  --color-text-muted: #9aa2ad;
   --color-accent-blue: #d6e7fb;
-  --color-accent-pink: #f5dde5;
+  --color-accent-pink: #f2dce2;
+  --color-tag-bg: #e8f1fb;
+  --color-tag-border: #cbd7e4;
   --color-heading: #1f2d44;
-  --radius-card: 16px;
-  --radius-small: 8px;
+  --color-muted-bg: #f1f6fb;
+  --radius-card: 8px;
+  --radius-small: 4px;
+  --shadow-soft: 0 1px 10px rgba(50, 80, 120, 0.06);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -23,11 +33,20 @@ body {
   color: var(--color-text-primary);
 }
 
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
 #root {
   display: flex;
   justify-content: center;
   min-height: 100vh;
-  padding: 2rem 1.25rem;
+  padding: 5.5rem 1.25rem 2rem;
   background: var(--color-bg);
 }
 
@@ -40,17 +59,78 @@ body {
   width: 100%;
 }
 
+.top-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  width: 100%;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(247, 251, 255, 0.96);
+}
+
+.top-menu-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(1080px, calc(100% - 2.5rem));
+  min-height: 4.25rem;
+  margin: 0 auto;
+}
+
+.brand-mark {
+  flex: 0 0 auto;
+  color: var(--color-heading);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.menu-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.menu-button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.menu-button:hover,
+.menu-button-active {
+  border-color: var(--color-tag-border);
+  background: var(--color-accent-blue);
+  color: var(--color-heading);
+}
+
 .intro-shell {
   display: grid;
   gap: 1.5rem;
 }
 
-.intro-header {
+.intro-header,
+.exam-section,
+.feature-section,
+.form-section,
+.diagnosis-section,
+.dashboard-section {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+}
+
+.intro-header {
   padding: 2rem;
-  box-shadow: 0 1px 15px rgba(50, 80, 120, 0.06);
 }
 
 .intro-label {
@@ -61,13 +141,13 @@ body {
   background: var(--color-accent-blue);
   color: var(--color-heading);
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 1rem;
 }
 
 .intro-header h1 {
   margin: 0 0 0.75rem;
-  font-family: 'Noto Serif KR', 'Nanum Myeongjo', serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-size: clamp(1.8rem, 3.4vw, 2.6rem);
   line-height: 1.2;
   color: var(--color-heading);
@@ -78,7 +158,7 @@ body {
   font-size: 1.02rem;
   line-height: 1.7;
   color: var(--color-text-secondary);
-  max-width: 720px;
+  max-width: 760px;
 }
 
 .intro-summary {
@@ -100,12 +180,11 @@ body {
 }
 
 .exam-section,
-.feature-section {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
+.feature-section,
+.form-section,
+.diagnosis-section,
+.dashboard-section {
   padding: 1.5rem;
-  box-shadow: 0 1px 15px rgba(50, 80, 120, 0.06);
 }
 
 .section-head {
@@ -118,7 +197,7 @@ body {
 
 .section-head h2 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   color: var(--color-heading);
 }
 
@@ -126,16 +205,20 @@ body {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 0.95rem;
-  max-width: 30rem;
+  max-width: 32rem;
 }
 
-.exam-grid {
+.exam-grid,
+.input-grid,
+.weak-grid,
+.dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
-.exam-card {
+.exam-card,
+.weak-card {
   position: relative;
   display: grid;
   gap: 0.7rem;
@@ -147,13 +230,13 @@ body {
   padding: 1rem 1.1rem 1.1rem;
   text-align: left;
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-  min-height: 220px;
+  min-height: 190px;
 }
 
-.exam-card:hover {
-  transform: translateY(-1px);
+.exam-card:hover,
+.weak-card:hover {
   border-color: #9ab7d5;
+  background: #f8fbff;
 }
 
 .exam-card::after {
@@ -170,18 +253,13 @@ body {
 
 .exam-card-selected {
   background: var(--color-accent-blue);
-  border-color: #77a6d0;
+  border-color: #9ab7d5;
 }
 
 .exam-card-selected::after {
-  content: '✓';
-  border: none;
-  background: #77a6d0;
-  color: #fff;
-  font-size: 0.8rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  content: '';
+  border: 5px solid #7fa9cf;
+  background: #ffffff;
 }
 
 .exam-title {
@@ -201,23 +279,20 @@ body {
 .exam-meta {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: auto 0 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: auto;
 }
 
 .exam-meta li {
-  border: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--color-tag-border);
+  background: rgba(255, 255, 255, 0.65);
   color: var(--color-text-secondary);
   border-radius: 999px;
   padding: 0.25rem 0.6rem;
   font-size: 0.8rem;
   line-height: 1.4;
-  white-space: normal;
-  text-align: center;
 }
 
 .feature-grid {
@@ -226,9 +301,10 @@ body {
   gap: 1rem;
 }
 
-.feature-card {
+.feature-card,
+.dashboard-card {
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-small);
+  border-radius: var(--radius-card);
   padding: 1rem;
   background: #f8fbff;
 }
@@ -253,7 +329,8 @@ body {
   font-weight: 700;
 }
 
-.feature-card h3 {
+.feature-card h3,
+.weak-card strong {
   margin: 0;
   font-size: 1rem;
   color: var(--color-heading);
@@ -266,29 +343,148 @@ body {
   line-height: 1.65;
 }
 
+.input-field {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--color-heading);
+  font-weight: 700;
+}
+
+.input-field input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background: #f8fbff;
+  color: var(--color-text-primary);
+  padding: 0.8rem 0.85rem;
+  outline: none;
+}
+
+.input-field input:focus {
+  border-color: #8faed0;
+  background: var(--color-surface);
+}
+
+.weak-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.weak-card {
+  min-height: 150px;
+}
+
+.weak-card-active {
+  background: var(--color-accent-blue);
+  border-color: #9ab7d5;
+}
+
+.weak-number {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.weak-card span:last-child {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.dashboard-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-card {
+  min-height: 150px;
+}
+
+.dashboard-card-blue {
+  background: var(--color-accent-blue);
+}
+
+.dashboard-card-pink {
+  background: var(--color-accent-pink);
+}
+
+.dashboard-card span {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.dashboard-card strong {
+  display: block;
+  margin: 0.45rem 0 0.35rem;
+  color: var(--color-heading);
+  font-size: 1.8rem;
+  line-height: 1.2;
+}
+
+.dashboard-card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
 @media (max-width: 900px) {
-  .exam-grid {
-    grid-template-columns: 1fr;
+  #root {
+    padding-top: 7rem;
   }
 
-  .feature-grid {
+  .top-menu-inner {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 0.8rem 0;
+  }
+
+  .menu-list {
+    justify-content: flex-start;
+  }
+
+  .feature-grid,
+  .weak-grid,
+  .dashboard-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px) {
   #root {
-    padding: 1rem 0.75rem;
+    padding: 8.5rem 0.75rem 1rem;
+  }
+
+  .top-menu-inner {
+    width: calc(100% - 1.5rem);
+  }
+
+  .menu-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .menu-button {
+    width: 100%;
+    padding: 0.45rem 0.5rem;
+    font-size: 0.84rem;
   }
 
   .intro-header,
   .exam-section,
-  .feature-section {
+  .feature-section,
+  .form-section,
+  .diagnosis-section,
+  .dashboard-section {
     padding: 1.15rem;
   }
 
   .section-head {
     flex-direction: column;
+  }
+
+  .exam-grid,
+  .input-grid {
+    grid-template-columns: 1fr;
   }
 
   .exam-card {
