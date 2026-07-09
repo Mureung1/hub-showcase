@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2300" height="1320" viewBox="0 0 2300 1320">
+<rect width="2300" height="1320" fill="#F4F7FB"/>
+<style>text{font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;fill:#172033}.title{font-size:54px;font-weight:700}.sub{font-size:24px;fill:#607089}.node{font-size:28px;font-weight:700;text-anchor:middle;dominant-baseline:middle}.small{font-size:22px;fill:#607089}.label{font-size:20px;font-weight:700;fill:#516174}</style>
+<rect x="60" y="140" width="610" height="1020" rx="24" fill="#EAF5FF" stroke="#D8E2F0" stroke-width="2"/>
+<text x="90" y="188" class="sub">?? ??</text>
+<rect x="690" y="140" width="690" height="250" rx="24" fill="#F6FBFF" stroke="#D8E2F0" stroke-width="2"/>
+<text x="720" y="188" class="sub">?? ??</text>
+<rect x="1360" y="140" width="370" height="1040" rx="24" fill="#F7F3FF" stroke="#D8E2F0" stroke-width="2"/>
+<text x="1390" y="188" class="sub">?? ??</text>
+<rect x="1780" y="580" width="370" height="660" rx="24" fill="#F4FFFB" stroke="#D8E2F0" stroke-width="2"/>
+<text x="1810" y="628" class="sub">??? ??</text>
+<text x="80" y="82" class="title">ICU ??? ??</text>
+<text x="80" y="130" class="sub">?? ?? ???? IDE ??, ?? ??, ?? ???? ???? MVP ?? ??</text>
+<rect x="90" y="220" width="230" height="82" rx="41" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="205.0" y="261.0" class="node">? ??</text>
+<rect x="90" y="360" width="230" height="100" rx="18" fill="#C2E5FF" stroke="#3DADFF" stroke-width="3"/>
+<text x="205.0" y="392.0" class="node">Today</text>
+<text x="205.0" y="430.0" class="node">Learning Hub</text>
+<polygon points="205,515.0 315.0,590 205,665.0 95.0,590" fill="#FFECBD" stroke="#FFC943" stroke-width="3"/>
+<text x="205.0" y="572.0" class="node">???</text>
+<text x="205.0" y="610.0" class="node">??</text>
+<polygon points="458,220 670,220 642,312 430,312" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="550.0" y="248.0" class="node">?? ??</text>
+<text x="550.0" y="286.0" class="node">??</text>
+<rect x="430" y="500" width="240" height="92" rx="18" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="550.0" y="528.0" class="node">?? ??</text>
+<text x="550.0" y="566.0" class="node">??? ??</text>
+<rect x="430" y="760" width="240" height="92" rx="18" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="550.0" y="788.0" class="node">?? ??</text>
+<text x="550.0" y="826.0" class="node">??</text>
+<rect x="750" y="220" width="250" height="92" rx="18" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="875.0" y="248.0" class="node">AI ????</text>
+<text x="875.0" y="286.0" class="node">??</text>
+<rect x="1080" y="220" width="270" height="92" rx="18" fill="#C6FAF6" stroke="#5AD8CC" stroke-width="3"/>
+<text x="1215.0" y="248.0" class="node">?? ?? ??</text>
+<text x="1215.0" y="286.0" class="node">?? ??</text>
+<rect x="1420" y="220" width="250" height="92" rx="18" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="1545.0" y="248.0" class="node">?? ??</text>
+<text x="1545.0" y="286.0" class="node">?? ??</text>
+<rect x="1420" y="450" width="270" height="104" rx="18" fill="#DCCCFF" stroke="#874FFF" stroke-width="3"/>
+<text x="1555.0" y="484.0" class="node">Learning</text>
+<text x="1555.0" y="522.0" class="node">Workspace IDE</text>
+<rect x="1420" y="650" width="270" height="82" rx="18" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="1555.0" y="691.0" class="node">?? ??</text>
+<rect x="1420" y="820" width="270" height="92" rx="18" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="1555.0" y="848.0" class="node">?? ??</text>
+<text x="1555.0" y="886.0" class="node">??</text>
+<polygon points="1555,965.0 1670.0,1040 1555,1115.0 1440.0,1040" fill="#FFECBD" stroke="#FFC943" stroke-width="3"/>
+<text x="1555.0" y="1022.0" class="node">???</text>
+<text x="1555.0" y="1060.0" class="node">???</text>
+<rect x="1080" y="1030" width="270" height="92" rx="18" fill="#FFE0C2" stroke="#FF9E42" stroke-width="3"/>
+<text x="1215.0" y="1058.0" class="node">AI ???</text>
+<text x="1215.0" y="1096.0" class="node">??</text>
+<rect x="1080" y="820" width="270" height="82" rx="18" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="1215.0" y="861.0" class="node">?? ??</text>
+<rect x="1850" y="650" width="260" height="92" rx="18" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="1980.0" y="678.0" class="node">AI ??</text>
+<text x="1980.0" y="716.0" class="node">??</text>
+<rect x="1850" y="810" width="260" height="92" rx="18" fill="#CDF4D3" stroke="#66D575" stroke-width="3"/>
+<text x="1980.0" y="838.0" class="node">?? ??</text>
+<text x="1980.0" y="876.0" class="node">??</text>
+<rect x="1850" y="970" width="260" height="92" rx="18" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="1980.0" y="998.0" class="node">?? ??</text>
+<text x="1980.0" y="1036.0" class="node">??</text>
+<rect x="1850" y="1120" width="260" height="92" rx="18" fill="#C6FAF6" stroke="#5AD8CC" stroke-width="3"/>
+<text x="1980.0" y="1148.0" class="node">Notion</text>
+<text x="1980.0" y="1186.0" class="node">??</text>
+<rect x="430" y="1010" width="240" height="92" rx="46" fill="#FFFFFF" stroke="#C9D5E5" stroke-width="3"/>
+<text x="550.0" y="1038.0" class="node">?? ??</text>
+<text x="550.0" y="1076.0" class="node">??</text>
+<text x="80" y="1290" class="small">Source: docs/user-flow.md  |  Generated for ICU Wiki and design handoff</text>
+</svg>
