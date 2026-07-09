@@ -1,0 +1,40 @@
+@import "./design-tokens.css";
+
+/* Prefix all classes with .ds- (design skill) to avoid collisions */
+.ds-container{font-family:var(--font-sans);color:var(--color-text);background:var(--color-bg);padding:20px}
+
+.ds-hero{display:flex;gap:18px;align-items:center;background:var(--color-surface);padding:16px;border-radius:var(--radius-lg);box-shadow:var(--card-shadow)}
+.ds-hero .image{flex:1 1 65%;height:140px;border-radius:10px;background:linear-gradient(135deg,#F7F2EE,#EEF7F3);display:flex;align-items:center;justify-content:center;color:var(--color-subtext)}
+.ds-hero .meta{flex:1 1 35%}
+.ds-hero h1{margin:0;font-size:20px}
+.ds-hero p{margin:6px 0 0;color:var(--color-subtext)}
+
+.ds-layout{display:flex;gap:24px;margin-top:18px}
+.ds-reviews{flex:1}
+.ds-side{width:300px}
+
+.ds-tabs{display:flex;gap:8px;margin-bottom:12px}
+.ds-tab{padding:10px 14px;border-radius:8px;border:1px solid transparent;background:transparent;cursor:pointer;font-weight:600}
+.ds-tab.ds-active{background:var(--color-primary);color:#fff;border-color:var(--color-primary-600)}
+
+.ds-list{display:flex;flex-direction:column;gap:12px}
+.ds-card{background:var(--color-surface);padding:16px;border-radius:var(--radius-md);box-shadow:var(--card-shadow);border:1px solid #F0ECEA}
+.ds-card h3{margin:0}
+.ds-badge{padding:6px 10px;border-radius:999px;font-size:13px;background:var(--color-accent-green);color:var(--color-accent-green-text)}
+.ds-rating{color:var(--color-subtext);margin-top:6px}
+.ds-text{margin:10px 0 12px;color:var(--color-subtext);line-height:1.6}
+.ds-actions{display:flex;gap:8px}
+.ds-pill{background:var(--color-muted);border:none;padding:6px 10px;border-radius:999px;cursor:pointer}
+.ds-pill.ds-muted{background:transparent;border:1px solid #EEE}
+
+.ds-detail{background:var(--color-surface);border-radius:var(--radius-md);padding:12px;box-shadow:var(--card-shadow);border:1px solid #F0ECEA}
+.ds-thumb{height:140px;border-radius:8px;background:linear-gradient(135deg,#FFF3D6,#FFFFFF);display:flex;align-items:center;justify-content:center;color:var(--color-subtext)}
+.ds-cta{display:flex;gap:10px;margin-top:12px}
+.ds-btn{padding:10px 14px;border-radius:8px;border:1px solid transparent;cursor:pointer}
+.ds-btn.ds-primary{background:var(--color-primary);color:#111;font-weight:600}
+.ds-btn.ds-outline{background:transparent;border:1px solid #EAE6E2}
+
+@media (max-width:1000px){
+  .ds-layout{flex-direction:column}
+  .ds-side{width:100%}
+}

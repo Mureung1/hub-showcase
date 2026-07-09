@@ -1,0 +1,29 @@
+/* Design tokens exported as CSS variables */
+:root{
+  --color-primary: #FFD24A;
+  --color-primary-600: #FFC107;
+  --color-bg: #FBF7F3;
+  --color-surface: #FFFFFF;
+  --color-muted: #E9E6E2;
+  --color-text: #2E2E2E;
+  --color-subtext: #6B6B6B;
+  --color-accent-green: #DFF3E8;
+  --color-accent-green-text: #1E8A59;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --fs-lg: 20px;
+  --fs-md: 16px;
+  --fs-sm: 14px;
+  --fw-regular: 400;
+  --fw-medium: 600;
+
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
+  --gap-xl: 28px;
+  --gap-lg: 20px;
+  --gap-md: 12px;
+  --gap-sm: 8px;
+
+  --card-shadow: 0 8px 20px rgba(33,33,33,0.06);
+}
