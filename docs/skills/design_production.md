@@ -10,11 +10,11 @@
 - 주색 (Primary): #005F73 (Deep Teal) / #004F5E (Header Background)
 - 강조 (Accent): #94D2BD (Sky Blue) / #E0F2FE (Active Light Blue)
 - 모서리 (Radius): 카드 및 컨테이너 12px, 인라인 버튼 및 태그 6px
-- 서체 (Font): 타이틀 위젯 Outfit, 본문 및 요약 명세 Inter
+- 서체 (Font): 타이틀 Outfit, 본문 Inter, 수치 및 메타데이터 JetBrains Mono
 
 ### Step 2. 컴포넌트 특화 레이아웃 적용
 - 논문 카드 UI: 90% 이상 고정밀 매칭 카드는 반드시 좌측 상단에 리본/책갈피 형태의 스코어 뱃지 오프셋 레이아웃을 형성한다.
-- 3줄 인사이트 패널: 요약 출력 시 서클 넘버링(1, 2, 3)과 함께 [연구 배경 및 한계 원인], [제안하는 핵심 방법론], [구체적 개선 결과 및 수치] 구획 구조와 볼드 처리를 유지한다.
+- 3줄 인사이트 패널: 요약 출력 시 서클 넘버링(1, 2, 3)과 함께 [연구 배경 및 한계 원인 / Research Background & Limitations], [제안하는 핵심 방법론 / Proposed Core Method], [구체적 개선 결과 및 수치 / Specific Results & Metrics] 구획 구조와 볼드 처리를 유기적으로 유지한다.
 
 ### Step 3. 코드 출력 전 자가 검증 (QA)
 코드를 작성하거나 수정안을 제안하기 전, 스스로 작성한 내용이 `docs/plan.md`에 정의된 구조를 충족하는지 대조 검증한다.
