@@ -117,4 +117,28 @@
   nav.bottombar button.active{ color:var(--primary1); }
   nav.bottombar .nav-ico{ font-size:18px; }
 
+  /* ---------- 로그인 화면 (기존 토큰 재사용) ---------- */
+  .login-logo{ display:flex; flex-direction:column; align-items:center; gap:6px; margin:6px 0 26px; }
+  .login-logo-badge{
+    width:56px; height:56px; border-radius:16px; background:var(--chip-bg); color:var(--primary-ink);
+    font-size:26px; display:flex; align-items:center; justify-content:center;
+  }
+  .login-logo h2{ margin:6px 0 0; font-size:16px; font-weight:700; color:var(--ink); }
+
+  .field > .ico{ font-size:15px; color:var(--sub); }
+  .login-input{
+    flex:1; border:none; outline:none; background:transparent; font-family:inherit;
+    font-size:14px; font-weight:600; color:var(--ink); text-align:left;
+  }
+  .login-input::placeholder{ color:var(--sub); font-weight:500; }
+
+  .login-links{
+    display:flex; justify-content:center; align-items:center; gap:10px; margin-top:14px;
+    font-size:12.5px; color:var(--sub);
+  }
+  .login-link{ color:var(--sub); text-decoration:none; }
+  .login-link.strong{ color:var(--primary-ink); font-weight:700; text-decoration:none; }
+  .login-divider{ color:var(--line); }
+  .login-signup{ text-align:center; font-size:12.5px; color:var(--sub); margin-top:14px; }
+
   .hidden{ display:none !important; }
