@@ -66,7 +66,7 @@ Off the main flow entirely.
 - **`/grill-me`** — the same relentless interview as `/grill-with-docs`, but for when you have **no codebase**. Stateless: it saves nothing locally, builds no `CONTEXT.md`. Reach for it to sharpen any plan or design that doesn't live in a repo.
 - **`/prototype`** — a small, throwaway program that answers one design question: does this state model feel right, or what should this UI look like. Throwaway from day one — keep the answer, delete the code. It's the detour in step 2 of the main flow, but reach for it any time a design question is hard to settle on paper.
 - **`/research`** — delegate reading legwork to a **background agent**: it investigates a question against **primary sources**, then leaves a cited Markdown file in the repo. Keep working while it reads. The file it produces is something to take *into* the main flow at `/grill-with-docs` — research feeds the thinking, it doesn't replace it.
-- **`/camp-daily-pr`** — when the day's work has accumulated on `codex/MMDD`, interview the user section by section and create the camp template PR from `codex/MMDD` to `N180_하성욱`. It creates the PR but does not merge it.
+- **`/camp-pr`** — manage the repo's camp PR flow. It creates, updates, labels, and merges fork-local integration PRs from `codex/w<week>d<day>` to `swh3467:N180_하성욱`; it only creates, updates, or merges the upstream camp submission PR to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` when the user explicitly asks for camp submission.
 - **`/teach`** — learn a concept over multiple sessions, using the current directory as a stateful workspace.
 - **`/writing-great-skills`** — reference for writing and editing skills well.
 

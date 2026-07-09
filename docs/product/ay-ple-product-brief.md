@@ -12,16 +12,6 @@ AY-PLE의 핵심은 캘린더 앱이나 AI 채팅창이 아니라, 흩어진 학
 
 내부 설계에서는 `RawMaterial`, `SourceSelection`, `StatePatch`, `TrustedState` 같은 용어를 사용하지만, 학생에게 보이는 UI는 `자료`, `선택한 자료`, `변경 제안`, `반영됨`처럼 비개발자 대학생에게 친숙한 언어를 사용한다.
 
-## 제출 기준 요약
-
-| 제출 기준 | 이 기획서에서 확인할 위치 |
-| --- | --- |
-| 사용자 관점의 동작 시나리오 | [사용자 관점 대표 시나리오](#사용자-관점-대표-시나리오), [검토 중심 학업 워크스페이스](#검토-중심-학업-워크스페이스) |
-| 화면 구조와 화면 단위 동작 | [검토 중심 학업 워크스페이스](#검토-중심-학업-워크스페이스), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md) |
-| 핵심 기능 우선 정리 | [핵심 기능 우선순위](#핵심-기능-우선순위), [MVP 범위](#mvp-범위) |
-| 순수 HTML/CSS prototype | [프로토타입 캡처](#검토-중심-학업-워크스페이스), [index.html](../../spikes/ay-ple-ui-prototype/index.html), [state-accepted.html](../../spikes/ay-ple-ui-prototype/state-accepted.html) |
-| 피드백 반영 | [프로토타입 피드백 반영](#프로토타입-피드백-반영), [Prototype Notes](../../spikes/ay-ple-ui-prototype/NOTES.md) |
-
 ## 사용자 관점 대표 시나리오
 
 대표 사용자는 모든 대학생이다. 기술에 익숙하지 않은 학생도 LMS 공지와 강의계획서를 그대로 넣고, AY가 찾은 학업 정보를 눈으로 확인한 뒤 자기 학기 상태에 반영할 수 있어야 한다.
@@ -29,26 +19,26 @@ AY-PLE의 핵심은 캘린더 앱이나 AI 채팅창이 아니라, 흩어진 학
 | 순서 | 학생이 하는 일 | AY-PLE가 보여주는 것 | 사용자가 얻는 결과 |
 | --- | --- | --- | --- |
 | 1 | `문제해결글쓰기` 과목 자료를 넣는다. | 자료 목록에 LMS 공지, 강의계획서, 수업 녹음, 이미지가 과목별로 쌓인다. | 정리 전 원본 자료가 사라지지 않고 보존된다. |
-| 2 | 정리할 자료 2개를 선택한다. | `lms-outline-notice.txt`, `problem-solving-syllabus.pdf`가 선택 자료 탭으로 열린다. | AY가 어떤 자료를 기준으로 정리할지 명확해진다. |
+| 2 | 정리할 LMS 공지와 강의계획서 등 선택 자료를 고른다. | 선택한 원본 자료가 같은 검토 화면 안에서 열린다. | AY가 어떤 자료를 기준으로 정리할지 명확해진다. |
 | 3 | `선택한 자료 정리하기`를 누른다. | AY가 원본 자료에서 과제 후보와 근거를 찾아 대화 패널에 변경 제안을 띄운다. | 학생은 AI 답변이 아니라 검토 가능한 제안을 받는다. |
-| 4 | 원본 미리보기와 하단 근거를 확인한다. | txt 원문, PDF 추출 미리보기, 값별 근거 bullet list가 분리되어 보인다. | 학생은 과제명, 마감, 제출 방식, 평가 기준이 어디서 왔는지 확인한다. |
+| 4 | 원본 미리보기와 하단 근거를 확인한다. | 원본 내용, 추출 미리보기, 값별 근거가 분리되어 보인다. | 학생은 과제명, 마감, 제출 방식, 평가 기준이 어디서 왔는지 확인한다. |
 | 5 | 제안을 수락하거나 수정·거절한다. | 수락하면 `반영됨` 상태가 되고 AY가 저장된 과제명과 마감을 브리핑한다. | 확인한 정보만 학기 상태에 들어간다. |
 | 6 | 이후 학기 상태를 조회한다. | 일정, 할 일, 읽기용 정리 문서가 같은 확인된 상태에서 파생된다. | 자료를 다시 뒤지지 않고 학기 운영에 쓸 수 있다. |
 
 ## 핵심 기능 우선순위
 
-오늘 기획과 prototype은 기능을 넓히기보다 "원본 자료에서 학업 후보를 찾고, 사용자가 근거를 확인해 반영한다"는 핵심 루프를 탄탄히 만드는 데 집중한다.
+MVP는 기능을 넓히기보다 "원본 자료에서 학업 후보를 찾고, 사용자가 근거를 확인해 반영한다"는 핵심 루프를 탄탄히 만드는 데 집중한다.
 
-| 우선순위 | 기능 | 이유 | 오늘 prototype 반영 |
+| 우선순위 | 기능 | 제품 이유 | MVP 상태 |
 | --- | --- | --- | --- |
-| 1 | 자료 넣기와 과목별 자료 목록 | 학기 자료가 정리의 출발점이다. | 과목별 자료 목록으로 표현 |
-| 2 | 선택한 자료 정리하기 | AY가 모든 자료를 임의로 처리하지 않고 사용자가 고른 자료에서 시작해야 한다. | 선택된 2개 자료만 중앙 탭으로 표시 |
-| 3 | 원본 미리보기 | 사용자가 AY 제안을 신뢰하려면 원본을 바로 봐야 한다. | txt 원문과 PDF 추출 미리보기 분리 |
-| 4 | 근거 있는 변경 제안 | AI 결과가 앱 상태로 들어가기 전 사용자 확인이 필요하다. | 하단 근거 패널과 오른쪽 변경 제안 카드 |
-| 5 | 수락·수정·거절 | 사용자가 최종 결정권을 가져야 한다. | `수락`, `수정`, `거절` 버튼과 반영됨 상태 |
-| 6 | 반영 결과 브리핑 | 상태 변화가 stdout/log가 아니라 사용자가 이해하는 말로 설명되어야 한다. | AY 대화 패널에서 과제명과 마감 브리핑 |
+| 1 | 자료 넣기와 과목별 자료 목록 | 학기 자료가 정리의 출발점이다. | MVP 필수 |
+| 2 | 선택한 자료 정리하기 | AY가 모든 자료를 임의로 처리하지 않고 사용자가 고른 자료에서 시작해야 한다. | MVP 필수 |
+| 3 | 원본 미리보기 | 사용자가 AY 제안을 신뢰하려면 원본을 바로 봐야 한다. | MVP 필수 |
+| 4 | 근거 있는 변경 제안 | AI 결과가 앱 상태로 들어가기 전 사용자 확인이 필요하다. | MVP 필수 |
+| 5 | 수락·수정·거절 | 사용자가 최종 결정권을 가져야 한다. | MVP 필수 |
+| 6 | 반영 결과 브리핑 | 상태 변화가 stdout/log가 아니라 사용자가 이해하는 말로 설명되어야 한다. | MVP 필수 |
 
-타임라인, 추천 할 일, 읽기용 정리 문서의 전체 화면 배치는 후속 설계로 남긴다. 오늘은 이들을 무시하지 않고, 검토된 학기 상태에서 파생되는 후속 표면으로 명시한다.
+타임라인, 추천 할 일, 읽기용 정리 문서의 전체 화면 배치는 후속 설계로 남긴다. 이들을 무시하지 않고, 검토된 학기 상태에서 파생되는 후속 표면으로 명시한다.
 
 ## 배경
 
@@ -278,7 +268,7 @@ MarkdownProjection 원칙:
 | LiveStateSync | GUI 결정은 AY-visible context로, AY 작업은 GUI-visible state로 동기화 |
 | UserDecisionRequest | AY가 처리 중 막힌 질문을 GUI로 요청 |
 
-필수 UX capability는 확정한다. 대표 검토 화면은 오늘 HTML/CSS prototype으로 1차 확인했고, 타임라인·추천 할 일·읽기용 정리 문서의 전체 화면 배치는 후속 설계로 남긴다.
+필수 UX capability는 확정한다. 대표 검토 화면의 핵심 구조는 첫 UX 검증으로 방향을 확인했고, 타임라인·추천 할 일·읽기용 정리 문서의 전체 화면 배치는 후속 설계로 남긴다.
 
 | Capability | 상태 |
 | --- | --- |
@@ -288,67 +278,22 @@ MarkdownProjection 원칙:
 | ModelingRun start control | MVP 필수 |
 | Review surface | MVP 필수 |
 | MarkdownProjection view | MVP 필수 |
-| 검토 워크스페이스 배치 | 오늘 prototype으로 1차 확인 |
+| 검토 워크스페이스 배치 | 첫 UX 검증으로 방향 확인 |
 | 후속 운영 화면 배치 | timeline, task, projection 화면 설계에서 결정 |
 
-오늘 prototype에서는 NotebookLM의 source-grounded workflow, Obsidian의 local-first workspace 감각, VS Code의 side panel과 co-control 패턴을 참고하되, 일반 대학생에게 과한 개발자 UI를 그대로 가져오지 않는다.
+UX 방향은 NotebookLM의 source-grounded workflow, Obsidian의 local-first workspace 감각, VS Code의 side panel과 co-control 패턴을 참고하되, 일반 대학생에게 과한 개발자 UI를 그대로 가져오지 않는다.
 
 AY-PLE의 visual direction은 기존 다크 IDE 테마가 아니라 밝은 학업 워크스페이스를 기본값으로 둔다. 구체적인 색상, surface, 컴포넌트 톤은 [AY-PLE Design System Direction](ay-ple-design-system.md)에 둔다.
 
 ## 검토 중심 학업 워크스페이스
 
-오늘 prototype과 MVP UX의 중심은 대시보드가 아니라 검토 중심 학업 워크스페이스다. 학생이 즉시 이해해야 할 규칙은 다음과 같다.
+MVP UX의 중심은 대시보드가 아니라 검토 중심 학업 워크스페이스다. 학생이 즉시 이해해야 할 규칙은 다음과 같다.
 
 > AY-PLE가 선택한 원본 자료에서 학업 객체 후보를 찾고, 사용자가 확인하면 그 과제 정보가 학기 상태에 반영된다.
 
-대표 시나리오는 "문제해결글쓰기" 과목의 "개요 작성하기" 과제다. 오늘 prototype에서 AY는 선택한 자료에서 과제명과 마감일을 찾고, 과제로 등록할 변경 제안을 만든다. 사용자가 승인하면 AY는 저장된 과제명과 마감을 대화 패널에서 브리핑한다.
+대표 시나리오는 "문제해결글쓰기" 과목의 "개요 작성하기" 과제다. AY는 선택한 자료에서 과제명과 마감일을 찾고, 과제로 등록할 변경 제안을 만든다. 사용자가 승인하면 AY는 저장된 과제명과 마감을 대화 패널에서 브리핑한다.
 
-현재 화면 단위 산출물:
-
-| Artifact | 역할 |
-| --- | --- |
-| [Review Workspace Scenario](ay-ple-review-workspace-scenario.md) | 대표 사용자 흐름과 panel contract |
-| [HTML/CSS Prototype](../../spikes/ay-ple-ui-prototype/index.html) | 검토 대기 상태에서 시작하고 [반영됨 상태](../../spikes/ay-ple-ui-prototype/state-accepted.html)로 이동하는 순수 HTML/CSS prototype |
-| [Prototype Notes](../../spikes/ay-ple-ui-prototype/NOTES.md) | prototype 질문, 탭별 의도, 피드백 후 판정 기록 |
-
-프로토타입 결과는 기획서에서 바로 확인할 수 있도록 1920x1080 desktop 기준 캡처 asset으로도 남긴다. HTML/CSS 원본은 위 링크에서 열고, 제출 문서에서는 아래 캡처로 핵심 화면 흐름을 확인한다.
-
-| 상태 | 실행 링크 | 캡처 asset |
-| --- | --- | --- |
-| 검토 대기 | [index.html](../../spikes/ay-ple-ui-prototype/index.html) | [ay-ple-prototype-review.png](assets/ay-ple-prototype-review.png) |
-| 반영됨 | [state-accepted.html](../../spikes/ay-ple-ui-prototype/state-accepted.html) | [ay-ple-prototype-accepted.png](assets/ay-ple-prototype-accepted.png) |
-
-![AY-PLE prototype review state](assets/ay-ple-prototype-review.png)
-
-![AY-PLE prototype accepted state](assets/ay-ple-prototype-accepted.png)
-
-## 프로토타입 피드백 반영
-
-오늘 prototype은 기획서의 핵심 루프를 확인하는 용도이며, 피드백을 통해 다음처럼 범위를 좁혔다.
-
-| 피드백 | 반영한 결정 |
-| --- | --- |
-| `SemesterOps`, `TrustedState`, `ReviewState` 같은 표현이 비개발자 사용자에게 딱딱하다. | 제품명은 AY-PLE, 에이전트 이름은 AY로 분리하고, 화면 표현은 `선택한 자료`, `검토 대기`, `반영됨`처럼 학생 친화적인 말로 바꾼다. |
-| 이미지 mock, app spec, HTML/CSS prototype이 따로 놀면 기획이 발산한다. | 생성 이미지 중심 mock을 줄이고, 순수 HTML/CSS prototype과 기획서 캡처 asset을 기준 산출물로 둔다. |
-| txt 파일이 Markdown처럼 보이고 PDF 내부에 편집 버튼이 있는 것이 어색하다. | 원본 preview와 편집/프리뷰 토글을 분리하고, txt는 plain text답게, PDF 추출본은 Markdown preview답게 보여준다. |
-| `AY가 참고한...` 같은 해석 문구가 원본 preview 안에 들어가면 원본이 오염된다. | AY가 찾은 값과 원본 위치는 하단 근거 패널로 분리한다. |
-| 한 화면에 모든 후속 정보 배치를 확정하면 prototype이 과하게 굳어진다. | 오늘은 선택 자료 검토와 과제 반영 브리핑만 고정하고, 타임라인·추천 할 일·읽기용 정리 문서 배치는 후속 설계로 남긴다. |
-| 모바일 레이아웃 피드백에 리소스가 흘러간다. | 프로젝트 전반에서 mobile은 deferred로 두고, 오늘 prototype은 desktop 검토 워크스페이스 기준으로 검증한다. |
-
-| 화면 영역 | 보여줄 것 | 모델링 의도 |
-| --- | --- | --- |
-| Source explorer | 과목별 RawMaterial, SourceSelection, ModelingRun 상태 | AY-PLE가 선택한 과목 자료 묶음에서 시작함을 보여준다. |
-| Center source preview | 선택한 `txt` 원문과 syllabus Markdown 추출본, `편집하기`/`프리뷰 보기` 모드 전환 | 학생이 AY 제안을 원본 자료와 분리해서 확인하게 한다. |
-| 변경 제안 브리핑 | 과제 생성 제안과 수락 후 반영 결과 | AY 제안과 사용자 확인 경계를 ChatSidecar 안에서 보여준다. |
-| Evidence bottom panel | 값별 근거 bullet list와 원본 위치 | 원본 preview를 오염시키지 않고 "왜 이 값을 믿는가"를 field-level로 검토한다. |
-| Source tabs | `lms-outline-notice.txt`, `problem-solving-syllabus.pdf` | 두 자료가 하나의 SourceSelection으로 AgentModeling에 들어감을 보여준다. |
-| ChatSidecar | 현재 선택한 자료와 변경 제안에 대한 짧은 설명, 수락/수정/거절, 반영 결과 브리핑 | GUI와 대화가 같은 검토 맥락을 다룬다. |
-
-타임라인, 추천 할 일, 읽기용 정리 문서의 실제 화면 위치는 아직 확정하지 않는다. 이 표면들은 과제 상태에서 파생되는 후속 UX로 남기되, 오늘 prototype에서는 SourceSelection 검토와 과제 반영 브리핑을 먼저 고정한다.
-
-사용자에게 보이는 UI는 비개발자 대학생에게 친숙한 언어를 쓴다. 내부 문서와 코드에서는 `SourceSelection`, `ModelingRun`, `ReviewState`, `TrustedState` 같은 용어를 유지하되, 화면에서는 `선택한 자료`, `선택한 자료 정리하기`, `검토 대기`, `반영됨`처럼 학생이 바로 이해할 수 있는 말을 쓴다.
-
-이 흐름의 세부 화면 구조는 [AY-PLE Review Workspace Scenario](ay-ple-review-workspace-scenario.md)에 둔다.
+검토 화면의 세부 panel contract, prototype 검증 산출물, 화면 단위 제출 매핑은 [AY-PLE Review Workspace Scenario](ay-ple-review-workspace-scenario.md)에 둔다.
 
 ## Agent Runtime 전략
 
@@ -475,7 +420,7 @@ AY-PLE는 학습과 운영을 보조하는 도구다.
 | RawMaterial 자동 정리 위험 | 잘못된 이동/삭제가 신뢰를 깬다. | 원본은 보존하고 정리는 Review 이후 artifact/projection으로만 한다. |
 | local history storage 증가 | PDF, PPTX, HWP/HWPX 같은 RawMaterial binary를 포함하면 디바이스 저장공간을 더 사용한다. | MVP에서는 local-only 원본 복구를 우선하고, 이후 storage usage와 retention UX를 제공한다. |
 | 기존 Git repo와 충돌 | 사용자가 이미 Git repo 안에서 workspace를 만들 수 있다. | workspace root `.git` 대신 `.ay-ple/history.git` 같은 app-managed repo를 후보로 둔다. |
-| UI 확정 과속 | early layout decision이 제품을 좁힐 수 있다. | 검토 워크스페이스만 prototype으로 1차 확인하고, timeline/task/projection 배치는 별도 설계로 남긴다. |
+| UI 확정 과속 | early layout decision이 제품을 좁힐 수 있다. | 검토 워크스페이스의 핵심 구조만 먼저 확인하고, timeline/task/projection 배치는 별도 설계로 남긴다. |
 | 로컬 앱 설치 장벽 | npm 기반 시작은 일반 학생에게 부담일 수 있다. | MVP는 one-command, 중장기적으로 macOS desktop app을 검토한다. |
 
 ## 열린 질문
@@ -487,6 +432,6 @@ AY-PLE는 학습과 운영을 보조하는 도구다.
 | WorkspaceHistory의 storage usage와 retention UX를 어떻게 보여줄 것인가? | RawMaterial binary를 포함하므로 사용자가 로컬 저장공간 사용량을 이해할 수 있어야 한다. |
 | `app.request_user_decision`의 UI와 protocol은 어떻게 설계할 것인가? | AY 중간 질문이 사용자 피로가 아니라 마법 같은 UX로 느껴져야 한다. |
 | StatePatch의 RecommendedChoice와 alternatives 표현은 어떤 UX가 좋은가? | 선택 피로를 줄이면서 사용자 통제감을 보장해야 한다. |
-| timeline, 추천 할 일, 읽기용 정리 문서는 어떤 화면에 배치할 것인가? | 오늘 prototype은 선택 자료 검토와 과제 반영 브리핑에 집중했으므로 후속 운영 화면 설계가 필요하다. |
+| timeline, 추천 할 일, 읽기용 정리 문서는 어떤 화면에 배치할 것인가? | 대표 검토 화면은 선택 자료 검토와 과제 반영 브리핑에 집중하므로 후속 운영 화면 설계가 필요하다. |
 | built-in Skills를 workspace에 projection할지 runtime context에 주입할지 어디까지 노출할 것인가? | 사용자가 로컬 매뉴얼을 볼 수 있는 정도와 runtime 격리 방식의 선택이다. |
 | WorkspaceQuery의 첫 대표 use case는 무엇으로 둘 것인가? | core modeling 이후 데모와 사용자 가치를 보여줄 entry point가 필요하다. |

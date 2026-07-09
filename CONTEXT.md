@@ -184,6 +184,18 @@ _Avoid_: Automatic choice, hidden default
 The app-owned adapter that starts, initializes, and controls an agent runtime such as Codex app-server while hiding transport and protocol details from the product.
 _Avoid_: Direct Codex dependency, model client, MCP surface
 
+**Runtime Harness**:
+An internal desktop web workspace for proving that AY-PLE can start, observe, and control a Codex-based runtime before product-specific academic logic is layered on top.
+_Avoid_: Final AY-PLE app, generic Codex client, student-facing product slice
+
+**Runtime Inspector**:
+The first Runtime Harness UI surface: a developer-facing view with prompt, transcript, runtime status, normalized events, raw/debug logs, cancellation, and run history for inspecting Codex app-server behavior. Its controls reserve runtime capabilities for later product design, but they are not commitments to expose the same controls in AY-PLE's student-facing UI.
+_Avoid_: General chat app, AY-PLE student UI, polished assistant experience, product surface contract
+
+**AgentRuntimeKernel**:
+The stable runtime module that owns run lifecycle, normalized runtime events, cancellation, failure handling, and run logs so AY-PLE-specific flows do not depend directly on Codex raw protocol events.
+_Avoid_: Product workflow, raw Codex wrapper, AY-PLE feature module
+
 **AppCapabilitySurface**:
 The small live app control surface exposed to AY for cases that need app-mediated interaction, especially requesting a user decision from the GUI.
 _Avoid_: General feature API, direct database access, everything-as-MCP
