@@ -20,7 +20,6 @@
     "noUncheckedSideEffectImports": true,
 
     "paths": {
-      "@components/*": ["./src/components/*"],
       "@/*": ["./src/*"]
     }
   },

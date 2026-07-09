@@ -27,7 +27,7 @@ import {
   IconListCategory,
   IconPlus,
 } from '@wanteddev/wds-icon';
-import './App.css';
+import './styles/global.css';
 
 type Tab = 'library' | 'home' | 'save';
 type CategoryTone = 'blue' | 'green' | 'amber' | 'rose' | 'slate';
@@ -144,7 +144,7 @@ const suggestedCategories: Category[] = [
   { name: '팀프로젝트', tone: 'slate' },
 ];
 
-export default function App() {
+export function App() {
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [insights, setInsights] = useState(initialInsights);
   const [activeCategory, setActiveCategory] = useState('All');
@@ -287,6 +287,8 @@ export default function App() {
     </div>
   );
 }
+
+export default App;
 
 function CategoryRail({
   activeCategory,
