@@ -34,7 +34,7 @@ type AbortedNotificationWait = {
   pendingNotification?: Promise<IteratorResult<CodexRawServerNotification>>
 }
 
-const interruptCompletionTimeoutMs = 300
+const defaultInterruptCompletionTimeoutMs = 15000
 const interruptCompletionTimeoutMessage =
   'Codex turn interrupt did not complete before timeout'
 const missingTurnScopeCancellationMessage =
@@ -43,6 +43,7 @@ const missingTurnScopeCancellationMessage =
 export type CodexRuntimeAdapterOptions = {
   rawClientOptions?: CodexRawClientOptions
   createClient?: () => CodexRawClient
+  interruptCompletionTimeoutMs?: number
 }
 
 export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
@@ -52,8 +53,21 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
   readonly cancellationMode = 'adapter_confirmed'
 
   private readonly createClient: () => CodexRawClient
+  private readonly interruptCompletionTimeoutMs: number
 
   constructor(options: CodexRuntimeAdapterOptions = {}) {
+    const interruptCompletionTimeoutMs =
+      options.interruptCompletionTimeoutMs ??
+      defaultInterruptCompletionTimeoutMs
+
+    if (
+      !Number.isInteger(interruptCompletionTimeoutMs) ||
+      interruptCompletionTimeoutMs < 1
+    ) {
+      throw new Error('interruptCompletionTimeoutMs must be a positive integer')
+    }
+
+    this.interruptCompletionTimeoutMs = interruptCompletionTimeoutMs
     this.createClient =
       options.createClient ??
       (() => new CodexRawClient(options.rawClientOptions))
@@ -143,6 +157,7 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
             notifications,
             turnScope,
             emitDebugLog,
+            this.interruptCompletionTimeoutMs,
           )
           return
         }
@@ -158,6 +173,7 @@ export class CodexRuntimeAdapter implements AgentRuntimeAdapter {
             notifications,
             turnScope,
             emitDebugLog,
+            this.interruptCompletionTimeoutMs,
             notification.pendingNotification,
           )
           return
@@ -240,6 +256,7 @@ async function* interruptTurnAndDrainNotifications(
   notifications: AsyncIterator<CodexRawServerNotification>,
   turnScope: CodexTurnScope,
   emitDebugLog: () => RuntimeAdapterEvent | undefined,
+  interruptCompletionTimeoutMs: number,
   initialPendingNotification?: Promise<
     IteratorResult<CodexRawServerNotification>
   >,

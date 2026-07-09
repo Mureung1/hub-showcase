@@ -79,7 +79,7 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | output stream | app-server 알림을 읽고, 일치하는 `item/agentMessage/delta`를 normalized `output_delta`로 mapping한다. |
 | run 완료 | 일치하는 `turn/completed`의 status가 `completed`이면 normalized `completed`로 mapping한다. |
 | run 실패 | failed turn completion, non-retryable `error`, spawn/init/thread/turn 실패, terminal stream loss를 normalized `failed`로 mapping한다. |
-| run 취소 | turn scope가 생긴 뒤 abort되면 `turn/interrupt`를 보내고 interrupted completion을 관측할 때까지 알림을 비워 읽은 뒤 `cancelled`를 내보낸다. interrupt request failure, missing confirmation, pre-turn-scope cancellation은 debug evidence가 있는 `failed`가 된다. |
+| run 취소 | turn scope가 생긴 뒤 abort되면 `turn/interrupt`를 보내고 interrupted completion을 관측할 때까지 알림을 비워 읽은 뒤 `cancelled`를 내보낸다. 확인 timeout은 기본 15초이며 adapter option으로 주입할 수 있다. interrupt request failure, missing confirmation, pre-turn-scope cancellation은 debug evidence가 있는 `failed`가 된다. |
 
 ## Capability Slot
 
@@ -104,17 +104,16 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | `npm run build` | package 빌드 순서와 app build |
 | `npm run lint -w @ay-ple/inspector` | Inspector lint |
 | `npm run smoke:codex -w @ay-ple/runtime-codex` | 구성된 runtime home을 대상으로 명시적으로 선택해 실행하는 live Codex app-server initialize smoke |
+| `npm run verify:codex-parity -w @ay-ple/server` | package pin과 실제 binary 일치, server HTTP/SSE를 통과하는 live prompt 완료와 adapter-confirmed cancellation |
 
-대부분의 자동화된 Codex 동작 테스트는 `packages/runtime-codex/src/testing/fake-codex-app-server.ts`를 사용한다. 이 fake app-server는 live auth나 model behavior 없이 protocol 형태와 실패 mapping을 검증한다. Live Codex 검증은 별도의 명시적인 smoke/demo 단계로 남아 있다.
+대부분의 자동화된 Codex 동작 테스트는 `packages/runtime-codex/src/testing/fake-codex-app-server.ts`를 사용한다. 이 fake app-server는 live auth나 model behavior 없이 protocol 형태와 실패 mapping을 검증한다. 실제 인증된 Codex 검증은 CI 밖의 opt-in parity command가 담당하고, 수동 Runtime Inspector demo는 보조 근거로 남는다.
 
 ## 남은 Gap
 
 | Gap | 중요한 이유 | 다음 제안 |
 | --- | --- | --- |
 | 영속 run log | PRD는 영속 log를 요구했지만 현재 log는 서버 프로세스 안에 산다. | ADR 0004에 따라 `runtime-core`가 self-contained RuntimeRunLog persistence와 recovery semantics를 소유하고, server가 per-run versioned JSON snapshot adapter를 조립하도록 구현한다. |
-| Live Codex parity 근거 | 테스트는 Codex-shaped protocol을 가진 fake app-server를 다루지만, 실제 인증된 Codex behavior는 여전히 달라질 수 있다. | ADR 0003에 따라 app-managed runtime home의 실제 Codex를 server HTTP/SSE seam으로 실행·취소하는 opt-in parity command를 추가하고, 수동 Inspector demo는 보조 증거로 확인한다. |
 | 제품 runtime handoff | Runtime Harness는 의도적으로 SourceSelection, StatePatch, Review, TrustedState가 아니다. | parity demo 이후 첫 product-facing adapter use case를 정의하되, `runtime-core`만 runtime contract로 유지한다. |
-| Cancellation timeout 정책 | Codex interrupt confirmation timeout은 현재 package constant다. | 더 느린 turn에서 live Codex cancellation behavior를 관측한 뒤 timeout/config를 재검토한다. |
 | Inspector 영속성 | Inspector history는 현재 server memory를 반영한다. | Inspector가 reload나 server restart를 견뎌야 한다면 durable run log와 history hydration을 함께 설계한다. |
 | Inspector UI-level verification | Inspector workspace에는 browser test와 `test` script가 없어 실제 HTTP/SSE wiring, terminal display, history interaction을 자동 검증하지 않는다. | ADR 0003에 따라 real server와 FakeRuntimeAdapter를 사용하는 Playwright browser integration test로 streaming, cancel, failure, history, restart hydration을 검증한다. |
 

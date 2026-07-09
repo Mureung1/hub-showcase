@@ -70,7 +70,6 @@ export type CodexDebugClientRequestMethod =
 
 const defaultThreadId = 'thread-1'
 const defaultTurnId = 'turn-1'
-const interruptCompletionTimeoutMs = 300
 const interruptCompletionTimeoutMessage =
   'Codex turn interrupt did not complete before timeout'
 const missingTurnScopeCancellationMessage =
@@ -205,6 +204,7 @@ export function hasCodexInterruptTimeoutDebugEvidence(
   input: {
     threadId: string
     turnId: string
+    timeoutMs: number
     streamEnded?: boolean
   },
 ): boolean {
@@ -214,7 +214,7 @@ export function hasCodexInterruptTimeoutDebugEvidence(
     data: {
       threadId: input.threadId,
       turnId: input.turnId,
-      timeoutMs: interruptCompletionTimeoutMs,
+      timeoutMs: input.timeoutMs,
       streamEnded: input.streamEnded ?? false,
     },
   })
@@ -440,6 +440,8 @@ reader.on('line', (line) => {
     })
 
     setImmediate(() => {
+      writeTurnStarted()
+
       for (const delta of scenario.agentMessageDeltas) {
         writeNotification('item/agentMessage/delta', {
           threadId: delta.threadId,
@@ -521,25 +523,36 @@ function writeErrorNotification(errorNotification) {
 function writeTurnCompletion(completion) {
   writeNotification('turn/completed', {
     threadId: completion.threadId,
-    turn: {
-      id: completion.turnId,
-      items: [],
-      itemsView: {
-        type: 'complete',
-      },
-      status: completion.status,
-      error: completion.errorMessage
-        ? {
-            message: completion.errorMessage,
-            codexErrorInfo: null,
-            additionalDetails: null,
-          }
-        : null,
-      startedAt: null,
-      completedAt: null,
-      durationMs: null,
-    },
+    turn: createTurn(completion.turnId, completion.status, completion.errorMessage),
   })
+}
+
+function writeTurnStarted() {
+  writeNotification('turn/started', {
+    threadId: scenario.threadId,
+    turn: createTurn(scenario.turnId, 'inProgress', null),
+  })
+}
+
+function createTurn(id, status, errorMessage) {
+  return {
+    id,
+    items: [],
+    itemsView: {
+      type: 'complete',
+    },
+    status,
+    error: errorMessage
+      ? {
+          message: errorMessage,
+          codexErrorInfo: null,
+          additionalDetails: null,
+        }
+      : null,
+    startedAt: null,
+    completedAt: null,
+    durationMs: null,
+  }
 }
 
 function createThread(options = {}) {

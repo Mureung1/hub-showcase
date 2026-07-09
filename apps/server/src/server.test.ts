@@ -158,6 +158,8 @@ test('runtime API exposes Codex binary, runtime home, and auth status', async ()
           assert.equal(body.ok, true)
           assert.equal(body.codexBinPath, process.execPath)
           assert.match(body.version, /^v\d+\./)
+          assert.equal(body.pinnedVersion, '0.144.0')
+          assert.equal(body.versionMatchesPin, false)
           assert.equal(body.cwd, rawClientOptions.cwd)
           assert.deepEqual(body.runtimeHome, {
             codexHome: rawClientOptions.codexHome,
@@ -476,6 +478,7 @@ test('runtime API records codex interrupt timeout as normalized failure', async 
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
+            interruptCompletionTimeoutMs: 50,
           }),
         ],
       })
@@ -502,6 +505,7 @@ test('runtime API records codex interrupt timeout as normalized failure', async 
           hasCodexInterruptTimeoutDebugEvidence(terminalLog.debugLog, {
             threadId: 'thread-server-interrupt-timeout',
             turnId: 'turn-server-interrupt-timeout',
+            timeoutMs: 50,
           }),
         )
         assert.deepEqual(

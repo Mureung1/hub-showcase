@@ -246,6 +246,7 @@ test('CodexRuntimeAdapter records failed run when turn interrupt completion is m
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
+            interruptCompletionTimeoutMs: 50,
           }),
         ],
         now: () => new Date('2026-07-09T00:00:00.000Z'),
@@ -279,9 +280,20 @@ test('CodexRuntimeAdapter records failed run when turn interrupt completion is m
         hasCodexInterruptTimeoutDebugEvidence(terminalLog.debugLog, {
           threadId: 'thread-interrupt-timeout',
           turnId: 'turn-interrupt-timeout',
+          timeoutMs: 50,
         }),
       )
     },
+  )
+})
+
+test('CodexRuntimeAdapter rejects invalid interrupt completion timeout', () => {
+  assert.throws(
+    () =>
+      new CodexRuntimeAdapter({
+        interruptCompletionTimeoutMs: 0,
+      }),
+    /interruptCompletionTimeoutMs must be a positive integer/,
   )
 })
 
