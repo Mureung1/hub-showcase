@@ -1,0 +1,51 @@
+flowchart LR
+    launch(["앱 실행"])
+    hub["Today Learning Hub"]
+    choose{"사용자 선택"}
+    goal[/"학습 목표 입력"/]
+    resume["이전 학습 이어서 하기"]
+    reviewStart["오늘 복습 시작"]
+    curriculum["AI 커리큘럼 제안"]
+    concept["공식 문서 기반 개념 학습"]
+    quiz["퀴즈 또는 확인 질문"]
+    workspace["Learning Workspace IDE"]
+    practice["코드 실습"]
+    run["실행 결과 확인"]
+    passed{"테스트 통과?"}
+    hint["AI 단계별 힌트"]
+    revise["코드 수정"]
+    codeReview["AI 코드 리뷰"]
+    save[("학습 상태 저장")]
+    schedule["복습 일정 생성"]
+    notion["Notion 기록"]
+    next(["다음 학습 추천"])
+
+    launch --> hub
+    hub --> choose
+    choose -->|"새 목표"| goal
+    choose -->|"이어하기"| resume
+    choose -->|"복습"| reviewStart
+    goal --> curriculum
+    resume --> workspace
+    reviewStart --> concept
+    curriculum --> concept
+    concept --> quiz
+    quiz --> workspace
+    workspace --> practice
+    practice --> run
+    run --> passed
+    passed -->|"아니오"| hint
+    hint --> revise
+    revise --> practice
+    passed -->|"예"| codeReview
+    codeReview --> save
+    save --> schedule
+    schedule --> notion
+    notion --> next
+
+    style hub fill:#C2E5FF,stroke:#3DADFF
+    style workspace fill:#DCCCFF,stroke:#874FFF
+    style passed fill:#FFECBD,stroke:#FFC943
+    style hint fill:#FFE0C2,stroke:#FF9E42
+    style save fill:#CDF4D3,stroke:#66D575
+    style notion fill:#C6FAF6,stroke:#5AD8CC

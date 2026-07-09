@@ -29,3 +29,13 @@ DevChat should open with a today-focused learning management screen, then move i
 - [concept-02-learning-list-board.png](./images/concept-02-learning-list-board.png)
 - [concept-03-learning-workspace-ide.png](./images/concept-03-learning-workspace-ide.png)
 
+## User Flow Diagram
+
+- [icu-user-flow.png](./flows/icu-user-flow.png)
+- [icu-user-flow.svg](./flows/icu-user-flow.svg)
+- [icu-user-flow.mmd](./flows/icu-user-flow.mmd)
+
+## HTML Prototype
+
+- [prototype.html](../../prototype.html)
+- [prototype.css](../../prototype.css)

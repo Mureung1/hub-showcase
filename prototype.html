@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ICU Prototype</title>
+    <link rel="stylesheet" href="./prototype.css" />
+  </head>
+  <body>
+    <header class="app-topbar" aria-label="ICU prototype navigation">
+      <a class="brand" href="#today" aria-label="ICU Today 화면으로 이동">
+        <span class="brand__mark">ICU</span>
+        <span>
+          <strong>I CODE U</strong>
+          <small>AI Coding Tutor</small>
+        </span>
+      </a>
+      <nav class="view-tabs" aria-label="프로토타입 화면 전환">
+        <a href="#today">Today Hub</a>
+        <a href="#workspace">Workspace IDE</a>
+      </nav>
+      <div class="top-actions" aria-label="학습 상태">
+        <span>React 입문</span>
+        <strong>62%</strong>
+      </div>
+    </header>
+
+    <main>
+      <section class="screen screen--workspace" id="workspace" aria-labelledby="workspace-title">
+        <aside class="rail" aria-label="Workspace navigation">
+          <a href="#today">Today</a>
+          <a class="is-active" href="#workspace">IDE</a>
+          <a href="#today">Review</a>
+          <a href="#today">Settings</a>
+        </aside>
+
+        <section class="workspace-shell">
+          <header class="workspace-header">
+            <div>
+              <p class="eyebrow">Learning Workspace IDE</p>
+              <h1 id="workspace-title">Counter 컴포넌트 실습</h1>
+            </div>
+            <div class="header-meta">
+              <span>현재 단계 3 / 5</span>
+              <a class="ghost-link" href="#today">오늘 학습으로 돌아가기</a>
+            </div>
+          </header>
+
+          <div class="workspace-grid">
+            <aside class="panel curriculum-panel" aria-label="오늘 커리큘럼">
+              <div class="panel__title">
+                <span>Curriculum</span>
+                <strong>35분 남음</strong>
+              </div>
+              <ol class="step-list">
+                <li class="is-done">
+                  <span>01</span>
+                  <p>컴포넌트 구조</p>
+                </li>
+                <li class="is-done">
+                  <span>02</span>
+                  <p>props 전달</p>
+                </li>
+                <li class="is-current">
+                  <span>03</span>
+                  <p>state와 이벤트</p>
+                </li>
+                <li>
+                  <span>04</span>
+                  <p>테스트 실행</p>
+                </li>
+                <li>
+                  <span>05</span>
+                  <p>AI 코드 리뷰</p>
+                </li>
+              </ol>
+              <div class="mission-card">
+                <span>미션</span>
+                <p>버튼을 클릭할 때마다 count가 1씩 증가하도록 구현합니다.</p>
+              </div>
+            </aside>
+
+            <section class="panel tutor-panel" aria-label="AI 튜터 설명">
+              <div class="panel__title">
+                <span>AI Tutor</span>
+                <strong>공식 문서 기반</strong>
+              </div>
+              <article class="message message--ai">
+                <span>개념 설명</span>
+                <p>
+                  state는 컴포넌트가 기억해야 하는 값입니다. 이벤트 핸들러에서 setCount를 호출하면
+                  React가 바뀐 값을 기준으로 화면을 다시 그립니다.
+                </p>
+              </article>
+              <article class="message message--hint">
+                <span>힌트</span>
+                <p>버튼의 onClick 안에서 현재 count를 읽고, 다음 값을 setCount에 전달해보세요.</p>
+              </article>
+              <div class="sources">
+                <span>참고 문서</span>
+                <a href="https://react.dev/learn/state-a-components-memory"
+                  >State: A Component Memory</a
+                >
+                <a href="https://react.dev/learn/responding-to-events">Responding to Events</a>
+              </div>
+            </section>
+
+            <section class="editor-stack" aria-label="코드 에디터와 실행 결과">
+              <div class="editor-panel">
+                <div class="editor-toolbar">
+                  <span>Counter.jsx</span>
+                  <button type="button">실행</button>
+                </div>
+                <pre><code>import { useState } from 'react'
+
+function Counter() {
+  const [count, setCount] = useState(0)
+
+  return (
+    &lt;button onClick={() =&gt; setCount(count + 1)}&gt;
+      {count}
+    &lt;/button&gt;
+  )
+}</code></pre>
+              </div>
+
+              <section class="panel result-panel" aria-label="실행 결과">
+                <div class="panel__title">
+                  <span>Test Results</span>
+                  <strong class="status-failed">failed</strong>
+                </div>
+                <p class="result-score">2 / 3 테스트 통과</p>
+                <p>
+                  클릭 이벤트는 연결되었지만 state 업데이트가 누락된 케이스를 다시 확인해야 합니다.
+                </p>
+                <div class="result-actions">
+                  <button type="button">힌트 보기</button>
+                  <button type="button">다시 실행</button>
+                </div>
+              </section>
+            </section>
+          </div>
+        </section>
+      </section>
+
+      <section class="screen screen--today" id="today" aria-labelledby="today-title">
+        <aside class="rail" aria-label="Today navigation">
+          <a class="is-active" href="#today">Today</a>
+          <a href="#today">Learning List</a>
+          <a href="#today">Review</a>
+          <a href="#today">Settings</a>
+        </aside>
+
+        <section class="today-shell">
+          <header class="today-hero">
+            <div>
+              <p class="eyebrow">Today Learning Hub</p>
+              <h1 id="today-title">오늘은 React state와 이벤트를 이어서 학습합니다</h1>
+              <p>현재 단계와 복습 항목을 먼저 확인하고, 준비되면 IDE형 학습 화면으로 이동합니다.</p>
+            </div>
+            <a class="primary-action" href="#workspace">이어서 학습하기</a>
+          </header>
+
+          <section class="today-grid">
+            <article class="panel focus-panel">
+              <div class="panel__title">
+                <span>Today's Focus</span>
+                <strong>3 / 5 단계</strong>
+              </div>
+              <h2>React 입문</h2>
+              <p>Counter.jsx 실습을 통해 state 업데이트와 이벤트 핸들러를 연결합니다.</p>
+              <div class="progress" aria-label="React 입문 진행률 62%">
+                <span style="width: 62%"></span>
+              </div>
+              <div class="focus-actions">
+                <a class="button-link" href="#workspace">워크스페이스 열기</a>
+                <a class="ghost-link" href="#today">계획 조정</a>
+              </div>
+            </article>
+
+            <article class="panel queue-panel">
+              <div class="panel__title">
+                <span>Today Queue</span>
+                <strong>38분</strong>
+              </div>
+              <ul class="queue-list">
+                <li class="is-done">
+                  <span>완료</span>
+                  React state 개념 확인
+                </li>
+                <li class="is-current">
+                  <span>현재</span>
+                  Counter.jsx 실습
+                </li>
+                <li>
+                  <span>대기</span>
+                  테스트 실행
+                </li>
+                <li>
+                  <span>대기</span>
+                  AI 코드 리뷰
+                </li>
+              </ul>
+            </article>
+
+            <article class="panel tracks-panel">
+              <div class="panel__title">
+                <span>Learning List</span>
+                <strong>4 tracks</strong>
+              </div>
+              <div class="track-row">
+                <span>React</span>
+                <strong>진행 중 · 62%</strong>
+              </div>
+              <div class="track-row">
+                <span>Python</span>
+                <strong>복습 필요 · 41%</strong>
+              </div>
+              <div class="track-row">
+                <span>FastAPI</span>
+                <strong>시작 전 · 0%</strong>
+              </div>
+              <div class="track-row">
+                <span>BFS</span>
+                <strong>연습 중 · 28%</strong>
+              </div>
+            </article>
+
+            <article class="panel review-panel">
+              <div class="panel__title">
+                <span>Review & Mistakes</span>
+                <strong>2 due</strong>
+              </div>
+              <ul class="review-list">
+                <li>props와 state 구분 복습</li>
+                <li>이벤트 핸들러 위치 확인</li>
+                <li>최근 오답: state 업데이트 누락</li>
+              </ul>
+              <a class="button-link button-link--warm" href="#workspace">오늘 복습 시작</a>
+            </article>
+          </section>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
