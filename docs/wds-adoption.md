@@ -74,7 +74,7 @@ Pretendard는 WDS README의 CDN 링크 또는 자체 font-face로 로드한다.
 2. 공통 `Button`, `Input`, `Search`, `Chip` 래퍼를 만든다.
 3. 보관함의 `CategoryRail`과 `InsightCard`부터 WDS 규격에 맞춘다.
 4. 저장 화면의 URL 입력과 액션 버튼을 WDS 기반으로 교체한다.
-5. 하단 내비게이션은 Stashby식 floating 유지 여부를 먼저 확정한 뒤 교체한다.
+5. 하단 내비게이션은 floating 형태 유지 여부를 먼저 확정한 뒤 교체한다.
 
 ## 유지할 아맞다 기준
 
