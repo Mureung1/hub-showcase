@@ -11,6 +11,8 @@ Everything from `codex/w<week>d<day>` through `swh3467:N180_하성욱` stays ins
 
 Do not create, update, or merge the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` unless the user explicitly asks to submit to camp or continue to the upstream camp submission PR. The final camp submission surface is the upstream PR, but it is not part of the default daily PR action.
 
+Treat `fork/N180_하성욱` as the source of truth for the fork integration branch. A local `N180_하성욱` branch is only a convenience checkout and must not be used for range calculations or readiness checks unless it has just been refreshed from `fork/N180_하성욱`.
+
 Use different body conventions for the two PRs:
 
 | PR | Body convention |
@@ -23,7 +25,7 @@ Use the camp week/day as the daily branch identity:
 | Concern | Convention |
 | --- | --- |
 | Daily work branch | Use `codex/w<week>d<day>`, for example `codex/w1d4`. This mirrors the camp mission day while keeping the branch ASCII and CLI-friendly. |
-| Fork integration branch | Use `swh3467:N180_하성욱`. This is still inside the participant's fork. |
+| Fork integration branch | Use `swh3467:N180_하성욱`, checked locally as `fork/N180_하성욱`. This is still inside the participant's fork. |
 | Upstream camp submission branch | Use `connect-AIAgentChallenge-26-1/hub:N180_하성욱` as the base and `swh3467:N180_하성욱` as the head. |
 | Camp mission labels | Use the camp-provided labels with the same week/day prefix, for example `[1-3] 기획완성`, `[1-3] 프로토타이핑`, or `[1-4] design-system`. Labels describe the submitted mission category on PRs. |
 
@@ -34,6 +36,8 @@ When creating or updating PRs, discover available labels before writing the PR a
 ### 1. Ground the branch and repo
 
 Read `AGENTS.md` and `docs/agents/issue-tracker.md`. Read `.github/pull_request_template.md` only before preparing or updating the upstream camp submission PR.
+
+Fetch `fork` and `origin` before comparing branches, checking labels, or checking existing PRs.
 
 Determine the daily branch without asking for confirmation:
 
@@ -48,7 +52,7 @@ Stop before PR work if:
 - The tracked working tree is dirty.
 - `fork` remote is missing.
 - `origin` remote is missing.
-- `N180_하성욱` is not available locally or on `fork`.
+- `fork/N180_하성욱` is not available after fetching `fork`.
 
 Check the current camp labels:
 
@@ -59,10 +63,10 @@ Check the current camp labels:
 
 ### 2. Gather source material
 
-Inspect the daily branch against `N180_하성욱`:
+Inspect the daily branch against the fetched fork integration branch:
 
-- `git log --oneline N180_하성욱..<daily-branch>`
-- `git diff --name-status N180_하성욱...<daily-branch>`
+- `git log --oneline fork/N180_하성욱..<daily-branch>`
+- `git diff --name-status fork/N180_하성욱...<daily-branch>`
 - Relevant existing work PR bodies, spike reports, PRDs, issues, handoff docs, and ADRs referenced by the commits or changed files
 
 Use this material to draft candidate PR content, but do not create the PR yet.
