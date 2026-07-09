@@ -29,6 +29,40 @@ body {
   line-height: 1.5;
 }
 
+.page-header .header-hint {
+  margin-top: 10px;
+  color: #1f9d55;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* ---------- 인터랙션 공통 (앵커/라디오/체크박스 트릭) ---------- */
+
+.screen a {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sr-only {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.back-link {
+  display: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f9d55;
+  margin-left: 8px;
+}
+
+.screen-flow:has(.screen:target) .back-link {
+  display: inline;
+}
+
 /* ---------- 가로 화면 갤러리 ---------- */
 
 .screen-flow {
@@ -65,6 +99,20 @@ body {
   margin-top: 160px;
   font-size: 22px;
   color: #a9d9bf;
+}
+
+/* 특정 화면이 :target 되면(=실제 링크로 이동하면) 나머지 화면은 숨기고
+   포커스 모드(단일 화면 플로우)로 전환한다 */
+.screen-flow:has(.screen:target) {
+  justify-content: center;
+}
+
+.screen-flow:has(.screen:target) .screen:not(:target) {
+  display: none;
+}
+
+.screen-flow:has(.screen:target) .flow-arrow {
+  display: none;
 }
 
 /* ---------- 브라우저 창 프레임 ---------- */
@@ -161,13 +209,13 @@ body {
   gap: 18px;
 }
 
-.gnb-menu span {
+.gnb-menu a {
   font-size: 12px;
   color: #8fa89b;
   font-weight: 600;
 }
 
-.gnb-menu span.active {
+.gnb-menu a.active {
   color: #1f9d55;
 }
 
@@ -212,6 +260,7 @@ body {
 }
 
 .pubnav-btn {
+  display: inline-block;
   background: #1f9d55;
   color: #fff;
   font-size: 12px;
@@ -400,6 +449,28 @@ body {
   color: #16261c;
 }
 
+/* 정산 요청 버튼 → 발송 완료 상태 (체크박스 트릭) */
+.btn-text-sent,
+.btn-caption-sent {
+  display: none;
+}
+
+#settle-sent:checked ~ .frame-footer .btn-text-default,
+#settle-sent:checked ~ .frame-footer .btn-caption-default {
+  display: none;
+}
+
+#settle-sent:checked ~ .frame-footer .btn-text-sent,
+#settle-sent:checked ~ .frame-footer .btn-caption-sent {
+  display: block;
+}
+
+#settle-sent:checked ~ .frame-footer label.btn-kakao {
+  background: #dcf4e7;
+  color: #1f9d55;
+  pointer-events: none;
+}
+
 .btn-toss {
   background: #0064ff;
   color: #fff;
@@ -491,6 +562,40 @@ body {
   text-align: center;
 }
 
+/* 만족도 이모지 선택 상태 + 제출 완료 메시지 (라디오 트릭) */
+.thanks-message {
+  display: none;
+  width: 100%;
+  margin: 18px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f9d55;
+  text-align: center;
+}
+
+.thanks-message a {
+  color: #1f9d55;
+  text-decoration: underline;
+}
+
+#sat-good:checked ~ .emoji-row label[for="sat-good"],
+#sat-mid:checked ~ .emoji-row label[for="sat-mid"],
+#sat-bad:checked ~ .emoji-row label[for="sat-bad"] {
+  background: #1f9d55;
+}
+
+#sat-good:checked ~ .emoji-row label[for="sat-good"] .emoji-label,
+#sat-mid:checked ~ .emoji-row label[for="sat-mid"] .emoji-label,
+#sat-bad:checked ~ .emoji-row label[for="sat-bad"] .emoji-label {
+  color: #fff;
+}
+
+#sat-good:checked ~ .thanks-message,
+#sat-mid:checked ~ .thanks-message,
+#sat-bad:checked ~ .thanks-message {
+  display: block;
+}
+
 /* ---------- 랜딩 페이지 ---------- */
 
 .hero-title {
@@ -507,6 +612,7 @@ body {
 }
 
 .hero-cta {
+  display: inline-block;
   background: #1f9d55;
   color: #fff;
   padding: 12px 22px;
@@ -595,11 +701,35 @@ body {
   color: #1f9d55;
   font-size: 16px;
   font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stepper-btn-disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
 }
 
 .stepper-count {
   font-size: 15px;
   font-weight: 700;
+}
+
+/* 인원수 라디오 상태에 따라 해당하는 스테퍼 화면만 노출 (1/n 자동계산) */
+.stepper-view {
+  display: none;
+}
+
+#m2:checked ~ .view-m2,
+#m3:checked ~ .view-m3,
+#m4:checked ~ .view-m4,
+#m5:checked ~ .view-m5,
+#m6:checked ~ .view-m6 {
+  display: block;
 }
 
 /* ---------- 차트 ---------- */
@@ -774,9 +904,21 @@ body {
   font-weight: 700;
   border-radius: 999px;
   color: #7fa38d;
+  cursor: pointer;
 }
 
-.tab-btn.active {
+/* 리포트 탭(개인/그룹) 실제 전환 (라디오 트릭) */
+.tab-panel {
+  display: none;
+}
+
+#tab-personal:checked ~ .tab-panel.panel-personal,
+#tab-group:checked ~ .tab-panel.panel-group {
+  display: block;
+}
+
+#tab-personal:checked ~ .tabs label[for="tab-personal"],
+#tab-group:checked ~ .tabs label[for="tab-group"] {
   background: #1f9d55;
   color: #fff;
 }

@@ -11,13 +11,14 @@
 <header class="page-header">
   <h1>SUBZIP 프로토타입</h1>
   <p>매달 지출하는 실제 구독료를 관리하고, 공유 구독 정산과 그룹의 구독 의사결정을 돕는 웹서비스</p>
+  <p class="header-hint">화면 안의 버튼·링크를 실제로 눌러보면서 흐름을 확인해보세요. 어느 화면에서든 "← 전체 흐름 보기"로 돌아올 수 있어요.</p>
 </header>
 
 <main class="screen-flow">
 
   <!-- 1. 랜딩 페이지 -->
-  <div class="screen">
-    <p class="screen-caption">1. 랜딩 페이지 <span>· 비회원</span></p>
+  <div class="screen" id="screen-1">
+    <p class="screen-caption">1. 랜딩 페이지 <span>· 비회원</span> <a href="#" class="back-link">← 전체 흐름 보기</a></p>
     <div class="browser-frame">
       <div class="browser-titlebar">
         <span class="traffic-dots"><span></span><span></span><span></span></span>
@@ -27,13 +28,13 @@
         <span class="gnb-logo">SUBZIP</span>
         <div class="pubnav-cta">
           <span class="pubnav-login">로그인</span>
-          <span class="pubnav-btn">무료로 시작하기</span>
+          <a href="#screen-2" class="pubnav-btn">무료로 시작하기</a>
         </div>
       </div>
       <div class="frame-body">
         <p class="hero-title">매달 반복되는 정산,<br>이제는 한 번에 끝내보세요</p>
         <p class="hero-sub">구독 서비스 비용을 간편하게 정산하고, AI 기반 만족도 리포트로 유지·해지 의사결정까지 돕는 서비스입니다.</p>
-        <button class="hero-cta">무료로 시작하기 →</button>
+        <a href="#screen-2" class="hero-cta">무료로 시작하기 →</a>
 
         <div class="mini-grid">
           <div class="mini-card"><b>정산의 번거로움</b>매달 정산 요청과 입금 확인, 이체를 반복해야 해요</div>
@@ -54,8 +55,8 @@
   <span class="flow-arrow">→</span>
 
   <!-- 2. 구독 등록 온보딩 -->
-  <div class="screen">
-    <p class="screen-caption">2. 구독 등록 <span>· 파티장 온보딩</span></p>
+  <div class="screen" id="screen-2">
+    <p class="screen-caption">2. 구독 등록 <span>· 파티장 온보딩</span> <a href="#" class="back-link">← 전체 흐름 보기</a></p>
     <div class="browser-frame">
       <div class="browser-titlebar">
         <span class="traffic-dots"><span></span><span></span><span></span></span>
@@ -81,17 +82,60 @@
           <input class="form-input" value="매달 12일" readonly>
         </div>
         <div class="form-group">
-          <label class="form-label">파티원 수 (본인 포함)</label>
-          <div class="stepper">
-            <span class="stepper-btn">−</span>
-            <span class="stepper-count">4명</span>
-            <span class="stepper-btn">＋</span>
+          <label class="form-label">파티원 수 (본인 포함) · −/＋를 눌러보세요</label>
+
+          <div class="stepper-group">
+            <input type="radio" name="members" id="m2" class="sr-only">
+            <input type="radio" name="members" id="m3" class="sr-only">
+            <input type="radio" name="members" id="m4" class="sr-only" checked>
+            <input type="radio" name="members" id="m5" class="sr-only">
+            <input type="radio" name="members" id="m6" class="sr-only">
+
+            <div class="stepper-view view-m2">
+              <div class="stepper">
+                <span class="stepper-btn stepper-btn-disabled">−</span>
+                <span class="stepper-count">2명</span>
+                <label for="m3" class="stepper-btn">＋</label>
+              </div>
+              <p class="sub-note">1인당 실제 부담 금액이 자동으로 계산돼요 · <b>8,500원</b></p>
+            </div>
+            <div class="stepper-view view-m3">
+              <div class="stepper">
+                <label for="m2" class="stepper-btn">−</label>
+                <span class="stepper-count">3명</span>
+                <label for="m4" class="stepper-btn">＋</label>
+              </div>
+              <p class="sub-note">1인당 실제 부담 금액이 자동으로 계산돼요 · <b>5,667원</b></p>
+            </div>
+            <div class="stepper-view view-m4">
+              <div class="stepper">
+                <label for="m3" class="stepper-btn">−</label>
+                <span class="stepper-count">4명</span>
+                <label for="m5" class="stepper-btn">＋</label>
+              </div>
+              <p class="sub-note">1인당 실제 부담 금액이 자동으로 계산돼요 · <b>4,250원</b></p>
+            </div>
+            <div class="stepper-view view-m5">
+              <div class="stepper">
+                <label for="m4" class="stepper-btn">−</label>
+                <span class="stepper-count">5명</span>
+                <label for="m6" class="stepper-btn">＋</label>
+              </div>
+              <p class="sub-note">1인당 실제 부담 금액이 자동으로 계산돼요 · <b>3,400원</b></p>
+            </div>
+            <div class="stepper-view view-m6">
+              <div class="stepper">
+                <label for="m5" class="stepper-btn">−</label>
+                <span class="stepper-count">6명</span>
+                <span class="stepper-btn stepper-btn-disabled">＋</span>
+              </div>
+              <p class="sub-note">1인당 실제 부담 금액이 자동으로 계산돼요 · <b>2,833원</b></p>
+            </div>
           </div>
         </div>
-        <p class="sub-note">1인당 실제 부담 금액이 자동으로 계산돼요 · 4,250원</p>
       </div>
       <div class="frame-footer">
-        <button class="btn btn-primary">등록 완료하고 시작하기</button>
+        <a href="#screen-3" class="btn btn-primary">등록 완료하고 시작하기</a>
       </div>
     </div>
   </div>
@@ -99,8 +143,8 @@
   <span class="flow-arrow">→</span>
 
   <!-- 3. 대시보드 -->
-  <div class="screen">
-    <p class="screen-caption">3. 대시보드 <span>· 홈</span></p>
+  <div class="screen" id="screen-3">
+    <p class="screen-caption">3. 대시보드 <span>· 홈</span> <a href="#" class="back-link">← 전체 흐름 보기</a></p>
     <div class="browser-frame">
       <div class="browser-titlebar">
         <span class="traffic-dots"><span></span><span></span><span></span></span>
@@ -110,9 +154,9 @@
         <div class="gnb-left">
           <span class="gnb-logo">SUBZIP</span>
           <div class="gnb-menu">
-            <span class="active">대시보드</span>
-            <span>정산</span>
-            <span>리포트</span>
+            <a href="#screen-3" class="active">대시보드</a>
+            <a href="#screen-4">정산</a>
+            <a href="#screen-8">리포트</a>
           </div>
         </div>
         <div class="gnb-right">
@@ -155,7 +199,7 @@
           </li>
         </ul>
 
-        <button class="link-btn">＋ 새 구독 등록하기</button>
+        <a href="#screen-2" class="link-btn">＋ 새 구독 등록하기</a>
       </div>
     </div>
   </div>
@@ -163,9 +207,10 @@
   <span class="flow-arrow">→</span>
 
   <!-- 4. 정산 관리 -->
-  <div class="screen">
-    <p class="screen-caption">4. 정산 관리 <span>· 파티장</span></p>
+  <div class="screen" id="screen-4">
+    <p class="screen-caption">4. 정산 관리 <span>· 파티장</span> <a href="#" class="back-link">← 전체 흐름 보기</a></p>
     <div class="browser-frame">
+      <input type="checkbox" id="settle-sent" class="sr-only">
       <div class="browser-titlebar">
         <span class="traffic-dots"><span></span><span></span><span></span></span>
         <span class="browser-urlbar"><span class="lock">🔒</span><span class="url">subzip.com/settlements</span></span>
@@ -174,9 +219,9 @@
         <div class="gnb-left">
           <span class="gnb-logo">SUBZIP</span>
           <div class="gnb-menu">
-            <span>대시보드</span>
-            <span class="active">정산</span>
-            <span>리포트</span>
+            <a href="#screen-3">대시보드</a>
+            <a href="#screen-4" class="active">정산</a>
+            <a href="#screen-8">리포트</a>
           </div>
         </div>
         <div class="gnb-right">
@@ -198,11 +243,19 @@
           <li>😎 태윤 <span class="member-status pending">대기중</span></li>
           <li>🙂 서연 <span class="member-status pending">대기중</span></li>
         </ul>
-        <p class="sub-note" style="margin-top:10px;">파티원의 이체가 확인되면 정산 상태를 ‘확인 완료’로 바꿔요</p>
+        <p class="sub-note" style="margin-top:10px;">파티원의 이체가 확인되면 정산 상태를 '확인 완료'로 바꿔요</p>
+        <p class="sub-note">
+          <a href="#screen-5">비회원에게는 이런 결제 화면이 보여요 →</a><br>
+          <a href="#screen-6">회원에게는 이런 알림이 가요 →</a>
+        </p>
       </div>
       <div class="frame-footer">
-        <button class="btn btn-kakao">💬 카카오톡으로 정산 요청 보내기</button>
-        <p class="sub-note center">버튼을 눌러 파티원 전체에게 정산 메시지를 전송해요</p>
+        <label for="settle-sent" class="btn btn-kakao">
+          <span class="btn-text-default">💬 카카오톡으로 정산 요청 보내기</span>
+          <span class="btn-text-sent">✅ 정산 요청을 보냈어요</span>
+        </label>
+        <p class="sub-note center btn-caption-default">버튼을 눌러 파티원 전체에게 정산 메시지를 전송해요</p>
+        <p class="sub-note center btn-caption-sent">파티원에게 카카오톡 메시지가 전송됐어요.</p>
       </div>
     </div>
   </div>
@@ -210,8 +263,8 @@
   <span class="flow-arrow">→</span>
 
   <!-- 5. 비회원 이체 -->
-  <div class="screen">
-    <p class="screen-caption">5. 비회원 이체 <span>· 카카오톡 링크</span></p>
+  <div class="screen" id="screen-5">
+    <p class="screen-caption">5. 비회원 이체 <span>· 카카오톡 링크</span> <a href="#" class="back-link">← 전체 흐름 보기</a></p>
     <div class="browser-frame narrow">
       <div class="browser-titlebar">
         <span class="traffic-dots"><span></span><span></span><span></span></span>
@@ -225,8 +278,8 @@
         <p class="section-label" style="margin-top:22px;">간편 이체 수단 선택</p>
       </div>
       <div class="frame-footer">
-        <button class="btn btn-toss">토스로 이체하기</button>
-        <button class="btn btn-kakaopay">카카오페이로 이체하기</button>
+        <a href="#screen-7" class="btn btn-toss">토스로 이체하기</a>
+        <a href="#screen-7" class="btn btn-kakaopay">카카오페이로 이체하기</a>
         <p class="sub-note center">회원가입 없이 바로 이체할 수 있어요</p>
       </div>
     </div>
@@ -235,8 +288,8 @@
   <span class="flow-arrow">→</span>
 
   <!-- 6. 알림 -->
-  <div class="screen">
-    <p class="screen-caption">6. 알림 <span>· 웹 푸시 · 이메일</span></p>
+  <div class="screen" id="screen-6">
+    <p class="screen-caption">6. 알림 <span>· 웹 푸시 · 이메일</span> <a href="#" class="back-link">← 전체 흐름 보기</a></p>
     <div class="browser-frame">
       <div class="browser-titlebar">
         <span class="traffic-dots"><span></span><span></span><span></span></span>
@@ -274,6 +327,7 @@
           </div>
         </div>
         <p class="sub-note center" style="margin-top:16px;">미가입 파티원에게는 카카오톡으로,<br>가입한 파티원에게는 PWA 푸시 또는 이메일로 알림을 보내요</p>
+        <p class="sub-note center"><a href="#screen-4">← 정산 화면으로 돌아가기</a></p>
       </div>
     </div>
   </div>
@@ -281,55 +335,61 @@
   <span class="flow-arrow">→</span>
 
   <!-- 7. 1초 만족도 체크 -->
-  <div class="screen">
-    <p class="screen-caption">7. 1초 만족도 체크 <span>· 이체 완료 직후</span></p>
+  <div class="screen" id="screen-7">
+    <p class="screen-caption">7. 1초 만족도 체크 <span>· 이체 완료 직후</span> <a href="#" class="back-link">← 전체 흐름 보기</a></p>
     <div class="browser-frame">
       <div class="browser-titlebar">
         <span class="traffic-dots"><span></span><span></span><span></span></span>
         <span class="browser-urlbar"><span class="lock">🔒</span><span class="url">subzip.com/pay/a1b2c3/done</span></span>
       </div>
       <div class="frame-body frame-body-center">
+        <input type="radio" name="satisfaction" id="sat-good" class="sr-only">
+        <input type="radio" name="satisfaction" id="sat-mid" class="sr-only">
+        <input type="radio" name="satisfaction" id="sat-bad" class="sr-only">
+
         <p class="check-icon">✅</p>
         <p class="section-label center">4,250원 이체가 완료되었어요</p>
         <p class="question">이번 달 넷플릭스,<br>만족하셨나요?</p>
         <div class="emoji-row">
-          <button class="emoji-btn">
+          <label for="sat-good" class="emoji-btn">
             <span class="emoji">😊</span>
             <span class="emoji-label">충분히 만족</span>
-          </button>
-          <button class="emoji-btn">
+          </label>
+          <label for="sat-mid" class="emoji-btn">
             <span class="emoji">😐</span>
             <span class="emoji-label">보통</span>
-          </button>
-          <button class="emoji-btn">
+          </label>
+          <label for="sat-bad" class="emoji-btn">
             <span class="emoji">😞</span>
             <span class="emoji-label">거의 안 씀</span>
-          </button>
+          </label>
         </div>
+
+        <p class="thanks-message">소중한 의견 감사해요! <a href="#screen-8">리포트 보기 →</a></p>
       </div>
       <div class="frame-footer">
-        <button class="link-btn">나중에 평가할게요</button>
+        <a href="#screen-8" class="link-btn">나중에 평가할게요</a>
       </div>
     </div>
   </div>
 
   <span class="flow-arrow">→</span>
 
-  <!-- 8. 개인 만족도 리포트 -->
-  <div class="screen">
-    <p class="screen-caption">8. 개인 만족도 리포트</p>
+  <!-- 8. 만족도 리포트 (개인 · 그룹 탭) -->
+  <div class="screen" id="screen-8">
+    <p class="screen-caption">8. 만족도 리포트 <span>· 개인 · 그룹 탭</span> <a href="#" class="back-link">← 전체 흐름 보기</a></p>
     <div class="browser-frame">
       <div class="browser-titlebar">
         <span class="traffic-dots"><span></span><span></span><span></span></span>
-        <span class="browser-urlbar"><span class="lock">🔒</span><span class="url">subzip.com/reports/me</span></span>
+        <span class="browser-urlbar"><span class="lock">🔒</span><span class="url">subzip.com/reports</span></span>
       </div>
       <div class="gnb">
         <div class="gnb-left">
           <span class="gnb-logo">SUBZIP</span>
           <div class="gnb-menu">
-            <span>대시보드</span>
-            <span>정산</span>
-            <span class="active">리포트</span>
+            <a href="#screen-3">대시보드</a>
+            <a href="#screen-4">정산</a>
+            <a href="#screen-8" class="active">리포트</a>
           </div>
         </div>
         <div class="gnb-right">
@@ -338,72 +398,46 @@
         </div>
       </div>
       <div class="frame-body">
+        <input type="radio" name="report-tab" id="tab-personal" class="sr-only" checked>
+        <input type="radio" name="report-tab" id="tab-group" class="sr-only">
+
         <div class="tabs">
-          <span class="tab-btn active">개인 리포트</span>
-          <span class="tab-btn">그룹 리포트</span>
+          <label for="tab-personal" class="tab-btn">개인 리포트</label>
+          <label for="tab-group" class="tab-btn">그룹 리포트</label>
         </div>
 
-        <p class="section-label">넷플릭스 · 최근 4개월 만족도 추이</p>
-        <div class="trend-row">
-          <div class="trend-item">😊<span class="trend-month">4월</span></div>
-          <div class="trend-item">😊<span class="trend-month">5월</span></div>
-          <div class="trend-item">😐<span class="trend-month">6월</span></div>
-          <div class="trend-item">😞<span class="trend-month">7월</span></div>
-        </div>
+        <div class="tab-panel panel-personal">
+          <p class="section-label">넷플릭스 · 최근 4개월 만족도 추이</p>
+          <div class="trend-row">
+            <div class="trend-item">😊<span class="trend-month">4월</span></div>
+            <div class="trend-item">😊<span class="trend-month">5월</span></div>
+            <div class="trend-item">😐<span class="trend-month">6월</span></div>
+            <div class="trend-item">😞<span class="trend-month">7월</span></div>
+          </div>
 
-        <div class="card card-warning" style="margin-top:16px;">
-          <p class="card-title">⚠️ 만족도가 낮아지고 있어요</p>
-          <p class="card-desc">최근 3개월 동안 만족도가 지속적으로 낮아졌습니다. 다음 달에도 이용 계획이 없다면 잠시 해지를 고려해 보세요.</p>
-        </div>
-        <div class="card card-suggest">
-          <p class="card-title">🔄 대체 서비스 제안</p>
-          <p class="card-desc">이번 달은 넷플릭스 대신 티빙을 이용하면 비슷한 가격으로 최신 콘텐츠를 즐길 수 있습니다.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <span class="flow-arrow">→</span>
-
-  <!-- 9. 그룹 만족도 리포트 -->
-  <div class="screen">
-    <p class="screen-caption">9. 그룹 만족도 리포트</p>
-    <div class="browser-frame">
-      <div class="browser-titlebar">
-        <span class="traffic-dots"><span></span><span></span><span></span></span>
-        <span class="browser-urlbar"><span class="lock">🔒</span><span class="url">subzip.com/reports/group</span></span>
-      </div>
-      <div class="gnb">
-        <div class="gnb-left">
-          <span class="gnb-logo">SUBZIP</span>
-          <div class="gnb-menu">
-            <span>대시보드</span>
-            <span>정산</span>
-            <span class="active">리포트</span>
+          <div class="card card-warning" style="margin-top:16px;">
+            <p class="card-title">⚠️ 만족도가 낮아지고 있어요</p>
+            <p class="card-desc">최근 3개월 동안 만족도가 지속적으로 낮아졌습니다. 다음 달에도 이용 계획이 없다면 잠시 해지를 고려해 보세요.</p>
+          </div>
+          <div class="card card-suggest">
+            <p class="card-title">🔄 대체 서비스 제안</p>
+            <p class="card-desc">이번 달은 넷플릭스 대신 티빙을 이용하면 비슷한 가격으로 최신 콘텐츠를 즐길 수 있습니다.</p>
           </div>
         </div>
-        <div class="gnb-right">
-          <span>🔔</span>
-          <span class="gnb-avatar">민</span>
-        </div>
-      </div>
-      <div class="frame-body">
-        <div class="tabs">
-          <span class="tab-btn">개인 리포트</span>
-          <span class="tab-btn active">그룹 리포트</span>
-        </div>
 
-        <div class="card">
-          <p class="card-title">👥 그룹 만족도</p>
-          <p class="card-desc">파티원 4명 중 3명이 이번 달 만족도가 낮다고 응답했습니다.</p>
-        </div>
-        <div class="card card-warning">
-          <p class="card-title">⚠️ 그룹 만족도가 지속적으로 낮아지고 있어요</p>
-          <p class="card-desc">최근 그룹 만족도가 3개월 연속 감소했습니다. 다음 결제 전에 파티원들과 구독 유지 여부를 논의해 보는 것을 추천합니다.</p>
-        </div>
-        <div class="card card-suggest">
-          <p class="card-title">🔄 대체 서비스 제안</p>
-          <p class="card-desc">이번 달은 넷플릭스 대신 티빙을 이용하면 비슷한 가격으로 최신 콘텐츠를 즐길 수 있습니다.</p>
+        <div class="tab-panel panel-group">
+          <div class="card">
+            <p class="card-title">👥 그룹 만족도</p>
+            <p class="card-desc">파티원 4명 중 3명이 이번 달 만족도가 낮다고 응답했습니다.</p>
+          </div>
+          <div class="card card-warning">
+            <p class="card-title">⚠️ 그룹 만족도가 지속적으로 낮아지고 있어요</p>
+            <p class="card-desc">최근 그룹 만족도가 3개월 연속 감소했습니다. 다음 결제 전에 파티원들과 구독 유지 여부를 논의해 보는 것을 추천합니다.</p>
+          </div>
+          <div class="card card-suggest">
+            <p class="card-title">🔄 대체 서비스 제안</p>
+            <p class="card-desc">이번 달은 넷플릭스 대신 티빙을 이용하면 비슷한 가격으로 최신 콘텐츠를 즐길 수 있습니다.</p>
+          </div>
         </div>
       </div>
     </div>
