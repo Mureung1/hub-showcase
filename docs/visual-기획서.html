@@ -1,48 +1,59 @@
 <style>
+  /* Design tokens: Toss TDS (DESIGN.md 기준)
+     - primary/interactive: Toss Blue #3182f6 (소비자 레인 = 주 인터랙션)
+     - secondary role: Info Teal #18a5a5 (사장님 레인 = 보조 분류 색)
+     - grey scale: grey50~grey900 warm undertone
+     - radius: 8 / 12 / 16, shadow: single-layer black low-opacity */
   :root {
-    --paper:#f7f5f0; --surface:#ffffff; --surface-2:#f0ece4;
-    --ink:#211f1b; --ink-2:#4c4941; --muted:#8b877c;
-    --line:#e2ded4; --line-2:#cbc6ba;
-    --owner:#2f6f6a; --owner-soft:#dcebe9;
-    --consumer:#b8661a; --consumer-soft:#f4e5d1;
-    --accent:#b8661a;
-    --wf:#e7e3d8; --wf-2:#efece4; --wf-line:#d6d1c5;
-    --good:#2f7a4f; --soldout:#b23b3b;
-    --radius:14px;
-    --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
-    --sans:system-ui,-apple-system,"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    --paper:#f9fafb; --surface:#ffffff; --surface-2:#f2f4f6;
+    --ink:#191f28; --ink-2:#4e5968; --muted:#8b95a1;
+    --line:#e5e8eb; --line-2:#d1d6db;
+    --owner:#18a5a5; --owner-soft:#e0f5f5;
+    --consumer:#3182f6; --consumer-soft:#e8f3ff;
+    --accent:#3182f6;
+    --wf:#f2f4f6; --wf-2:#f9fafb; --wf-line:#e5e8eb;
+    --good:#03b26c; --soldout:#f04452;
+    --radius:16px;
+    --shadow-1:0px 1px 3px rgba(0,0,0,0.06);
+    --shadow-2:0px 2px 8px rgba(0,0,0,0.08);
+    --mono:"SF Mono",SFMono-Regular,ui-monospace,"Roboto Mono",Menlo,Consolas,monospace;
+    --sans:"Toss Product Sans","Tossface","SF Pro KR","SF Pro Display",-apple-system,BlinkMacSystemFont,"Basier Square","Apple SD Gothic Neo",Roboto,"Noto Sans KR","Malgun Gothic",sans-serif;
   }
   @media (prefers-color-scheme:dark){
     :root{
-      --paper:#171613; --surface:#201e1a; --surface-2:#2a2822;
-      --ink:#efece4; --ink-2:#c4c0b5; --muted:#8f8b80;
-      --line:#33312b; --line-2:#454239;
-      --owner:#5aa39c; --owner-soft:#1f302e;
-      --consumer:#e0913f; --consumer-soft:#332619;
-      --accent:#e0913f;
-      --wf:#302e28; --wf-2:#282722; --wf-line:#413e37;
-      --good:#5aa877; --soldout:#d97070;
+      --paper:#0e1116; --surface:#171b22; --surface-2:#20262e;
+      --ink:#f2f4f6; --ink-2:#b0b8c1; --muted:#8b95a1;
+      --line:#2a313b; --line-2:#3a4350;
+      --owner:#3ec1c1; --owner-soft:#12302f;
+      --consumer:#5a9df8; --consumer-soft:#152740;
+      --accent:#5a9df8;
+      --wf:#242b35; --wf-2:#1d232c; --wf-line:#333d4b;
+      --good:#25c185; --soldout:#f56570;
+      --shadow-1:none; --shadow-2:none;
     }
   }
   :root[data-theme="dark"]{
-    --paper:#171613; --surface:#201e1a; --surface-2:#2a2822;
-    --ink:#efece4; --ink-2:#c4c0b5; --muted:#8f8b80;
-    --line:#33312b; --line-2:#454239;
-    --owner:#5aa39c; --owner-soft:#1f302e;
-    --consumer:#e0913f; --consumer-soft:#332619;
-    --accent:#e0913f;
-    --wf:#302e28; --wf-2:#282722; --wf-line:#413e37;
-    --good:#5aa877; --soldout:#d97070;
+    --paper:#0e1116; --surface:#171b22; --surface-2:#20262e;
+    --ink:#f2f4f6; --ink-2:#b0b8c1; --muted:#8b95a1;
+    --line:#2a313b; --line-2:#3a4350;
+    --owner:#3ec1c1; --owner-soft:#12302f;
+    --consumer:#5a9df8; --consumer-soft:#152740;
+    --accent:#5a9df8;
+    --wf:#242b35; --wf-2:#1d232c; --wf-line:#333d4b;
+    --good:#25c185; --soldout:#f56570;
+    --shadow-1:none; --shadow-2:none;
   }
   :root[data-theme="light"]{
-    --paper:#f7f5f0; --surface:#ffffff; --surface-2:#f0ece4;
-    --ink:#211f1b; --ink-2:#4c4941; --muted:#8b877c;
-    --line:#e2ded4; --line-2:#cbc6ba;
-    --owner:#2f6f6a; --owner-soft:#dcebe9;
-    --consumer:#b8661a; --consumer-soft:#f4e5d1;
-    --accent:#b8661a;
-    --wf:#e7e3d8; --wf-2:#efece4; --wf-line:#d6d1c5;
-    --good:#2f7a4f; --soldout:#b23b3b;
+    --paper:#f9fafb; --surface:#ffffff; --surface-2:#f2f4f6;
+    --ink:#191f28; --ink-2:#4e5968; --muted:#8b95a1;
+    --line:#e5e8eb; --line-2:#d1d6db;
+    --owner:#18a5a5; --owner-soft:#e0f5f5;
+    --consumer:#3182f6; --consumer-soft:#e8f3ff;
+    --accent:#3182f6;
+    --wf:#f2f4f6; --wf-2:#f9fafb; --wf-line:#e5e8eb;
+    --good:#03b26c; --soldout:#f04452;
+    --shadow-1:0px 1px 3px rgba(0,0,0,0.06);
+    --shadow-2:0px 2px 8px rgba(0,0,0,0.08);
   }
 
   *{box-sizing:border-box;}
@@ -82,7 +93,7 @@
   }
   .fact{
     background:var(--surface); border:1px solid var(--line);
-    border-radius:var(--radius); padding:16px 18px;
+    border-radius:12px; padding:16px 18px; box-shadow:var(--shadow-1);
   }
   .fact .k{font-family:var(--mono); font-size:11px; letter-spacing:.1em;
     text-transform:uppercase; color:var(--muted);}
@@ -102,7 +113,7 @@
     background:var(--consumer); color:#fff; padding:3px 9px; border-radius:20px;
     text-transform:uppercase;
   }
-  :root[data-theme="dark"] .callout .badge, .callout .badge{color:#20120a;}
+  :root[data-theme="dark"] .callout .badge, .callout .badge{color:#ffffff;}
 
   /* ---- flow ---- */
   .flow-top{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:24px;}
@@ -118,6 +129,7 @@
   .lane{
     border:1px solid var(--line); border-radius:var(--radius);
     background:var(--surface); padding:18px; overflow:hidden;
+    box-shadow:var(--shadow-2);
   }
   .lane__head{display:flex; align-items:center; gap:10px; margin-bottom:16px;}
   .dot{width:10px; height:10px; border-radius:50%;}
@@ -142,7 +154,7 @@
 
   /* ---- screen list table ---- */
   .tablewrap{overflow-x:auto; margin-top:24px; border:1px solid var(--line);
-    border-radius:var(--radius); background:var(--surface);}
+    border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow-1);}
   table{border-collapse:collapse; width:100%; min-width:640px; font-size:14px;}
   thead th{
     text-align:left; font-family:var(--mono); font-size:11px; letter-spacing:.08em;
@@ -172,8 +184,8 @@
   .anno .t span{font-size:12.5px; color:var(--muted);}
 
   /* browser frame */
-  .browser{border:1px solid var(--line-2); border-radius:12px; overflow:hidden;
-    background:var(--surface); box-shadow:0 1px 0 var(--line);}
+  .browser{border:1px solid var(--line); border-radius:12px; overflow:hidden;
+    background:var(--surface); box-shadow:var(--shadow-2);}
   .browser__bar{display:flex; align-items:center; gap:8px; padding:9px 12px;
     background:var(--surface-2); border-bottom:1px solid var(--line);}
   .browser__dots{display:flex; gap:5px;}
@@ -184,8 +196,8 @@
   .browser__body{padding:16px;}
 
   /* phone frame */
-  .phone{border:1px solid var(--line-2); border-radius:26px; overflow:hidden;
-    background:var(--surface); box-shadow:0 1px 0 var(--line); width:100%;}
+  .phone{border:1px solid var(--line); border-radius:26px; overflow:hidden;
+    background:var(--surface); box-shadow:var(--shadow-2); width:100%;}
   .phone__status{display:flex; align-items:center; justify-content:center; position:relative;
     padding:8px 0 6px; background:var(--surface-2); border-bottom:1px solid var(--line);}
   .phone__status i{width:52px; height:5px; border-radius:5px; background:var(--wf-line); display:block;}
@@ -219,11 +231,11 @@
       var(--wf-2);
     border:1px solid var(--wf-line); border-radius:8px; height:96px;}
   .thumb.sm{height:52px; width:52px; flex:none;}
-  .btn{border-radius:9px; height:38px; display:flex; align-items:center; justify-content:center;
+  .btn{border-radius:10px; height:38px; display:flex; align-items:center; justify-content:center;
     font-size:13px; font-weight:600; margin-top:4px;}
   .btn.pri{background:var(--owner); color:#fff;}
   .frames.mob .btn.pri{background:var(--consumer);}
-  :root[data-theme="dark"] .btn.pri{color:#141310;}
+  :root[data-theme="dark"] .btn.pri{color:#0e1116;}
   .btn.ghost{background:transparent; border:1px solid var(--wf-line); color:var(--ink-2);}
   .lines{display:flex; flex-direction:column; gap:6px;}
   .ln{height:9px; border-radius:5px; background:var(--wf);}
@@ -239,8 +251,8 @@
   .tag.good{color:var(--good); border:1px solid var(--good);}
   .tag.sold{color:var(--soldout); border:1px solid var(--soldout);}
   .tag.stat{background:var(--wf); color:var(--ink-2);}
-  .price{font-size:12.5px; color:var(--ink);}
-  .price s{color:var(--muted);} .price b{color:var(--consumer); font-size:14px;}
+  .price{font-size:12.5px; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .price s{color:var(--muted);} .price b{color:var(--consumer); font-size:14px; font-weight:700;}
   .frames.web .price b{color:var(--owner);}
   .banner{background:var(--consumer-soft); border:1px solid var(--wf-line); border-radius:9px;
     padding:10px 12px; font-size:11.5px; color:var(--ink-2); margin-bottom:12px; line-height:1.5;}
@@ -249,11 +261,11 @@
   .chip{font-size:11.5px; padding:5px 11px; border-radius:20px; border:1px solid var(--wf-line);
     color:var(--ink-2); background:var(--wf-2);}
   .chip.on{background:var(--consumer); color:#fff; border-color:var(--consumer);}
-  :root[data-theme="dark"] .chip.on{color:#141310;}
+  :root[data-theme="dark"] .chip.on{color:#0e1116;}
   .seg{display:flex; border:1px solid var(--wf-line); border-radius:8px; overflow:hidden; margin-bottom:12px;}
   .seg span{flex:1; text-align:center; font-size:12px; padding:7px 0; color:var(--muted);}
   .seg span.on{background:var(--consumer); color:#fff;}
-  :root[data-theme="dark"] .seg span.on{color:#141310;}
+  :root[data-theme="dark"] .seg span.on{color:#0e1116;}
   .code{font-family:var(--mono); font-weight:700; letter-spacing:.28em; font-size:26px;
     text-align:center; color:var(--ink); background:var(--wf-2); border:1px dashed var(--wf-line);
     border-radius:10px; padding:18px 0; margin-bottom:12px;}
@@ -264,7 +276,8 @@
   .slider::after{content:""; position:absolute; left:38%; top:50%; transform:translate(-50%,-50%);
     width:16px; height:16px; border-radius:50%; background:var(--consumer);}
   .kv{display:flex; justify-content:space-between; font-size:12px; padding:6px 0; border-bottom:1px solid var(--line);}
-  .kv:last-child{border-bottom:none;} .kv .kk{color:var(--muted);} .kv .vv{color:var(--ink); font-weight:600;}
+  .kv:last-child{border-bottom:none;} .kv .kk{color:var(--muted);}
+  .kv .vv{color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums;}
   .map{background:
       repeating-linear-gradient(0deg,var(--wf-2) 0 22px,var(--wf-line) 22px 23px),
       repeating-linear-gradient(90deg,var(--wf-2) 0 22px,var(--wf-line) 22px 23px);
@@ -501,7 +514,7 @@
           <div class="phone__status"><i></i></div>
           <div class="phone__body">
             <div class="seg"><span class="on">리스트</span><span>지도</span></div>
-            <div class="banner" style="background:var(--consumer-soft)"><b>🔔 ○○베이커리</b> 크루아상 <s style="color:var(--muted)">4,000</s> → <b style="color:var(--consumer)">2,000</b> · 21시까지</div>
+            <div class="banner" style="background:var(--consumer-soft)"><span class="tag on" style="margin-right:4px">알림</span> <b>○○베이커리</b> 크루아상 <s style="color:var(--muted)">4,000</s> → <b style="color:var(--consumer)">2,000</b> · 21시까지</div>
             <div class="rowcard"><div class="thumb sm"></div>
               <div class="meta"><div class="price"><b>2,000</b> <s>4,000</s></div>
                 <span style="font-size:11px;color:var(--muted)">0.4km · 2개 남음 · ~21:00</span></div></div>
@@ -583,7 +596,7 @@
     </div>
   </section>
 
-  <footer>MVP 화면 설계 · 로그인·개인정보 폼 제외 · 예약+현장결제 기준</footer>
+  <footer>MVP 화면 설계 · 로그인·개인정보 폼 제외 · 예약+현장결제 기준 · 디자인 시안: Toss TDS (DESIGN.md)</footer>
 
 </div>
 </div>

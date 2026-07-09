@@ -1,0 +1,39 @@
+/* 디자인 토큰: DESIGN.md (Toss TDS) 기준 */
+:root {
+  --color-primary: #3182f6;
+  --color-primary-hover: #2272eb;
+  --color-canvas: #ffffff;
+  --color-surface: #f2f4f6;
+  --color-ink: #191f28;
+  --color-ink-2: #4e5968;
+  --color-muted: #8b95a1;
+  --color-border: #e5e8eb;
+  --color-success: #03b26c;
+  --color-error: #f04452;
+  --color-warning: #fe9800;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --shadow-subtle: 0px 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-standard: 0px 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-elevated: 0px 4px 12px rgba(0, 0, 0, 0.12);
+
+  --font-sans:
+    'Toss Product Sans', 'SF Pro KR', -apple-system, BlinkMacSystemFont,
+    'Apple SD Gothic Neo', Roboto, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
