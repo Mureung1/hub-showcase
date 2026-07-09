@@ -3,422 +3,630 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>미리캣 — 내 출근길의 보초</title>
+<title>미리캣 — 사용 흐름 데모</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#33261A;          /* 짙은 흙색 */
-    --paper:#FBF6EE;        /* 모래빛 종이 */
-    --mist:#ECE1CF;         /* 경계선 */
-    --slate:#8B7863;        /* 보조 텍스트 */
-    --signal:#E4572E;       /* 경보 */
-    --signal-soft:#FCE8DF;
-    --fur:#DCA96E;          /* 미어캣 털 */
-    --fur-light:#F2DDB6;
-    --fur-dark:#4A3423;
-    --route:#3E7CB1;        /* 지도 경로 */
-    --route-soft:#E9F1F8;
-    --chat:#2E2823;         /* 알림 채널 배경 */
+    --ink:#33261A; --paper:#FBF6EE; --mist:#ECE1CF; --slate:#8B7863;
+    --signal:#E4572E; --signal-soft:#FCE8DF;
+    --fur:#DCA96E; --fur-light:#F2DDB6; --fur-dark:#4A3423;
+    --route:#3E7CB1; --route-soft:#E9F1F8;
+    --chat:#2E2823;
+    --good:#5B8A5A; --good-soft:#E9F1E6;
+    --warn:#C98A00; --warn-soft:#FBEFD2;
+    --card:#fff;
+    --font:'IBM Plex Sans KR',-apple-system,'Apple SD Gothic Neo',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'IBM Plex Sans KR',-apple-system,'Apple SD Gothic Neo',sans-serif;
-    background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6}
-  .mono{font-family:'IBM Plex Mono',monospace}
-  .wrap{max-width:980px;margin:0 auto;padding:0 28px}
+  body{font-family:var(--font);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55}
+  .mono{font-family:var(--mono)}
+  button{font-family:inherit;cursor:pointer}
 
-  header{padding:24px 0;display:flex;justify-content:space-between;align-items:center}
-  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:-.01em}
-  .logo svg{width:32px;height:32px;border-radius:50%;background:var(--fur-light);border:1px solid var(--mist)}
-  .header-tag{font-size:12.5px;color:var(--slate)}
+  .app{max-width:1060px;margin:0 auto;padding:0 24px 56px}
 
-  .hero{display:grid;grid-template-columns:1fr 300px;gap:44px;align-items:end;padding:40px 0 0}
-  .eyebrow{display:inline-block;font-size:12px;font-weight:600;color:var(--slate);letter-spacing:.12em;margin-bottom:16px}
-  h1{font-size:clamp(28px,4vw,38px);font-weight:700;line-height:1.36;letter-spacing:-.03em;margin-bottom:16px}
-  h1 .accent{color:var(--signal)}
-  .hero p{font-size:15.5px;color:var(--slate);margin-bottom:22px;max-width:480px}
-  .hero-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:44px}
-  .chip{font-size:12px;font-weight:500;color:var(--slate);border:1px solid var(--mist);background:#fff;padding:7px 13px;border-radius:100px}
-  .hero-mascot{display:flex;justify-content:center}
-  .hero-mascot svg{width:250px;height:auto;filter:drop-shadow(0 16px 20px rgba(51,38,26,.16))}
+  /* ---- header + stepper ---- */
+  header{display:flex;justify-content:space-between;align-items:center;padding:18px 0 16px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;letter-spacing:-.01em}
+  .logo svg{width:34px;height:34px;border-radius:50%;background:var(--fur-light);border:1px solid var(--mist)}
+  .header-tag{font-size:12px;color:var(--slate)}
 
-  .divider{border-top:1px solid var(--mist)}
+  .stepper{display:flex;gap:6px;flex-wrap:wrap;padding:14px 0 26px;border-top:1px solid var(--mist)}
+  .step{flex:1;min-width:120px;display:flex;align-items:center;gap:9px;background:none;border:none;padding:8px 6px;
+    border-radius:10px;text-align:left;color:var(--slate);transition:.2s;position:relative}
+  .step i{width:24px;height:24px;flex-shrink:0;border-radius:50%;border:1.5px solid var(--mist);background:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--mono);transition:.2s}
+  .step .st-name{font-size:12.5px;font-weight:600;line-height:1.25}
+  .step.done{color:var(--ink)} .step.done i{background:var(--good);border-color:var(--good);color:#fff}
+  .step.active{color:var(--ink)} .step.active i{background:var(--ink);border-color:var(--ink);color:#fff;box-shadow:0 0 0 4px rgba(51,38,26,.08)}
+  .step:not(.done):not(.active):disabled{opacity:.55;cursor:not-allowed}
+  .step:not(.active):not(:disabled):hover{background:var(--paper)}
 
-  .screen{padding:56px 0 24px}
-  .screen-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
-  .screen-num{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--signal);letter-spacing:.1em}
-  .screen-head h2{font-size:20px;font-weight:700;letter-spacing:-.02em}
-  .screen-cap{font-size:13.5px;color:var(--slate);margin-bottom:26px;max-width:620px}
+  /* ---- screen shell ---- */
+  .screen{display:none;animation:fade .35s ease}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .screen-head{margin-bottom:20px}
+  .screen-head .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.12em;color:var(--signal);text-transform:uppercase}
+  .screen-head h2{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:7px 0 6px}
+  .screen-head p{font-size:13.5px;color:var(--slate);max-width:640px}
 
-  .frame{background:#fff;border:1px solid var(--mist);border-radius:16px;overflow:hidden;
-    box-shadow:0 28px 56px -32px rgba(51,38,26,.28),0 2px 8px rgba(51,38,26,.05)}
+  .frame{background:var(--card);border:1px solid var(--mist);border-radius:16px;overflow:hidden;
+    box-shadow:0 24px 50px -34px rgba(51,38,26,.3)}
   .frame-bar{display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:1px solid var(--mist);background:#FDFAF4}
   .f-dot{width:9px;height:9px;border-radius:50%;background:var(--mist)}
-  .f-url{margin-left:10px;font-size:11px;color:var(--slate);background:var(--paper);border:1px solid var(--mist);border-radius:6px;padding:4px 12px;flex:1;max-width:320px}
+  .f-url{margin-left:10px;font-size:11px;color:var(--slate);background:var(--paper);border:1px solid var(--mist);border-radius:6px;padding:4px 12px;flex:1;max-width:340px}
 
-  /* screen 1: register */
-  .reg{display:grid;grid-template-columns:300px 1fr;min-height:380px}
+  .actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:22px}
+  .btn{border:none;border-radius:11px;font-size:14px;font-weight:600;padding:12px 22px;transition:.2s;display:inline-flex;align-items:center;gap:8px}
+  .btn-primary{background:var(--ink);color:#fff} .btn-primary:hover{background:#241a12}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .btn-ghost{background:transparent;color:var(--slate);border:1px solid var(--mist)} .btn-ghost:hover{background:var(--card)}
+  .hint{font-size:12px;color:var(--slate)}
+
+  /* ============ SCREEN 1 · 등록 ============ */
+  .reg{display:grid;grid-template-columns:320px 1fr;min-height:430px}
   .reg-side{padding:20px;border-right:1px solid var(--mist);display:flex;flex-direction:column;gap:12px}
   .field label{font-size:11px;font-weight:600;color:var(--slate);display:block;margin-bottom:5px}
-  .field .input{border:1px solid var(--mist);border-radius:9px;padding:9px 12px;font-size:13px;font-weight:500;background:#fff}
+  .field .input{border:1px solid var(--mist);border-radius:9px;padding:10px 12px;font-size:13px;font-weight:500;background:#fff}
   .field .input .mono{font-size:12px;color:var(--slate)}
-  .route-opt{border:1.5px solid var(--mist);border-radius:11px;padding:12px 14px}
+  .opt-label{font-size:11px;font-weight:600;color:var(--slate);margin-top:4px}
+  .route-opt{border:1.5px solid var(--mist);border-radius:11px;padding:12px 14px;cursor:pointer;transition:.15s;background:#fff;text-align:left;width:100%}
   .route-opt.on{border-color:var(--signal);background:var(--signal-soft)}
   .route-opt .r1{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600}
   .route-opt .r1 .mono{font-size:11px;background:#fff;border:1px solid var(--mist);padding:1px 7px;border-radius:4px;color:var(--route)}
   .route-opt .r2{font-size:11.5px;color:var(--slate);margin-top:3px}
-  .reg-btn{margin-top:auto;background:var(--ink);color:#fff;text-align:center;font-size:13px;font-weight:600;padding:11px;border-radius:9px}
   .reg-map{position:relative;background:#F1F4F7}
   .reg-map svg{width:100%;height:100%;display:block;position:absolute;inset:0}
+  .reg-map .r-a{stroke:var(--route);stroke-width:6;fill:none;stroke-linecap:round;transition:.3s}
+  .reg-map .r-b{stroke:var(--route);stroke-width:4;fill:none;stroke-linecap:round;stroke-dasharray:8 7;opacity:.4;transition:.3s}
+  .reg-map.show-b .r-a{stroke-width:4;stroke-dasharray:8 7;opacity:.4}
+  .reg-map.show-b .r-b{stroke-width:6;stroke-dasharray:0;opacity:1}
 
-  /* screen 2: discord-like channel */
-  .chat{background:var(--chat);padding:6px 0;min-height:330px}
-  .chat-head{padding:12px 22px;border-bottom:1px solid rgba(255,255,255,.08);color:#EDE4D6;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px}
-  .chat-head .mono{color:#9C8D79;font-size:12px;font-weight:400}
-  .msg{display:flex;gap:13px;padding:11px 22px}
-  .msg-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--fur-light)}
-  .msg-avatar svg{width:100%;height:100%}
-  .msg-body{min-width:0;flex:1}
+  /* ============ SCREEN 2 · 확인 보고 ============ */
+  .two{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+  .sentinel{background:var(--card);border:1px solid var(--mist);border-radius:16px;padding:20px;box-shadow:0 20px 40px -32px rgba(51,38,26,.35)}
+  .stage{position:relative;display:flex;justify-content:center}
+  .stage .ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-46%);width:180px;height:180px;border-radius:50%;
+    background:radial-gradient(circle,rgba(220,169,110,.16),transparent 65%)}
+  .mascot{width:150px;height:auto;transform-origin:50% 90%;filter:drop-shadow(0 12px 14px rgba(51,38,26,.18))}
+  .mascot.alarm{animation:alarm .5s ease-in-out 3}
+  @keyframes alarm{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .status{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:2px;font-size:13px;font-weight:600}
+  .status .pulse{width:8px;height:8px;border-radius:50%;background:var(--good);animation:pulse 2s infinite}
+  .status.busy{color:var(--route)} .status.busy .pulse{background:var(--route);animation:pulse 1s infinite}
+  .status.alarm{color:var(--signal)} .status.alarm .pulse{background:var(--signal);animation:pulse .8s infinite}
+  .status.notice{color:var(--warn)} .status.notice .pulse{background:var(--warn);animation:pulse 1.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(62,124,177,.45)}70%{box-shadow:0 0 0 9px rgba(62,124,177,0)}100%{box-shadow:0 0 0 0 rgba(62,124,177,0)}}
+  .status-sub{text-align:center;font-size:11.5px;color:var(--slate);margin-top:4px}
+  .src-list{margin-top:18px;display:grid;gap:7px}
+  .src-list .lbl{font-size:10px;font-weight:700;letter-spacing:.09em;color:var(--slate)}
+  .src{display:flex;align-items:center;gap:9px;font-size:12px;padding:8px 11px;border:1px solid var(--mist);border-radius:9px;background:var(--paper);transition:.25s}
+  .src .ic{width:16px;height:16px;flex-shrink:0;border-radius:50%;border:2px solid var(--mist);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;transition:.25s}
+  .src .tier{font-size:8.5px;font-weight:700;color:var(--slate);background:#fff;border:1px solid var(--mist);border-radius:4px;padding:0 4px;margin-left:auto}
+  .src.checking{border-color:var(--route)} .src.checking .ic{border-color:var(--route);border-top-color:transparent;animation:spin .7s linear infinite}
+  .src.done .ic{background:var(--good);border-color:var(--good)}
+  .src.hit{border-color:#F3C4AC;background:var(--signal-soft)} .src.hit .ic{background:var(--signal);border-color:var(--signal)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* discord channel */
+  .channel{background:var(--chat);border:1px solid #1f1a15;border-radius:16px;overflow:hidden;box-shadow:0 20px 40px -32px rgba(0,0,0,.6)}
+  .ch-head{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .ch-head .ch{color:#EDE4D6;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .ch-head .ch .hash{color:#7C6E5C}
+  .ch-head .meta{color:#9C8D79;font-size:11.5px}
+  .feed{padding:6px 0;min-height:120px}
+  .msg{display:flex;gap:12px;padding:11px 20px;animation:rise .35s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .msg-av{width:36px;height:36px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--fur-light);border:1px solid rgba(0,0,0,.15)}
+  .msg-av svg{width:100%;height:100%}
+  .msg-b{min-width:0;flex:1}
   .msg-meta{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
-  .msg-meta .name{font-size:13.5px;font-weight:600;color:#F2E9DA}
-  .msg-meta .bot{font-size:9.5px;font-weight:700;background:var(--route);color:#fff;padding:1px 5px;border-radius:4px;letter-spacing:.03em}
+  .msg-meta .name{font-size:13px;font-weight:600;color:#F2E9DA}
+  .msg-meta .bot{font-size:9px;font-weight:700;background:var(--route);color:#fff;padding:1px 5px;border-radius:4px;letter-spacing:.03em}
   .msg-meta .when{font-size:11px;color:#9C8D79}
   .msg-text{font-size:13px;color:#C9BCA9}
-  .msg-text b{color:#EDE4D6}
-  .embed{margin-top:6px;background:#3A322B;border-left:4px solid var(--signal);border-radius:6px;padding:13px 15px;max-width:460px}
+  .msg-text .src-tag{color:#9C8D79;font-size:11.5px}
+  .msg-text.alarm{color:#F5C0AC;font-weight:600}
+  .msg-text.notice{color:#EAD08A;font-weight:600}
+  .embed{margin-top:7px;background:#3A322B;border-left:4px solid var(--signal);border-radius:6px;padding:13px 15px;max-width:500px}
+  .embed.t2{border-left-color:var(--warn)}
   .embed-title{font-size:13.5px;font-weight:700;color:#F5EBDC;margin-bottom:9px}
   .embed-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px 16px;margin-bottom:12px}
   .ef{font-size:12px;color:#C9BCA9}
-  .ef b{display:block;font-size:10.5px;font-weight:700;color:#9C8D79;letter-spacing:.06em;margin-bottom:2px}
+  .ef b{display:block;font-size:10px;font-weight:700;color:#9C8D79;letter-spacing:.05em;margin-bottom:2px}
   .ef .mono{color:#F2E9DA;font-size:11.5px}
-  .embed-btn{display:inline-block;background:var(--signal);color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px}
+  .embed-btn{background:var(--signal);color:#fff;border:none;font-size:12px;font-weight:600;padding:8px 15px;border-radius:6px}
+  .embed-btn.t2{background:var(--warn)}
 
-  /* screen 3: report */
-  .report{display:grid;grid-template-columns:1fr 330px;min-height:420px}
+  /* ============ SCREEN 3 · 확인 과정 ============ */
+  .invest{display:grid;grid-template-columns:330px 1fr;gap:20px;align-items:start}
+  .seg{display:inline-flex;gap:4px;background:var(--paper);border:1px solid var(--mist);border-radius:10px;padding:4px;margin-bottom:16px}
+  .seg button{border:none;background:none;font-size:12px;font-weight:600;color:var(--slate);padding:7px 13px;border-radius:7px;transition:.15s}
+  .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(51,38,26,.12)}
+
+  .graph-card{background:var(--card);border:1px solid var(--mist);border-radius:16px;padding:18px;box-shadow:0 20px 40px -32px rgba(51,38,26,.35)}
+  .graph-card h3{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .graph-card h3 .tag{font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--route);background:var(--route-soft);border:1px solid #cfe1ef;padding:2px 7px;border-radius:5px}
+  .graph{display:grid;gap:0}
+  .node{display:flex;gap:11px;align-items:flex-start;border:1.5px solid var(--mist);border-radius:11px;padding:10px 12px;background:var(--paper);transition:.25s}
+  .ndot{width:22px;height:22px;flex-shrink:0;border-radius:7px;background:#fff;border:1.5px solid var(--mist);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--slate);font-family:var(--mono);transition:.25s}
+  .ninfo{min-width:0;flex:1}
+  .nname{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .nstate{font-size:10px;font-weight:600;color:var(--slate);margin-left:auto}
+  .nrole{font-size:10.5px;color:var(--slate);margin-top:1px}
+  .node.run{border-color:var(--route);background:var(--route-soft)}
+  .node.run .ndot{border-color:var(--route);color:var(--route);border-top-color:transparent;animation:spin .7s linear infinite}
+  .node.done{border-color:#cfe0d0} .node.done .ndot{background:var(--good);border-color:var(--good);color:#fff;animation:none} .node.done .nstate{color:var(--good)}
+  .node.flag{border-color:#F3C4AC;background:var(--signal-soft)} .node.flag .ndot{background:var(--signal);border-color:var(--signal);color:#fff;animation:none} .node.flag .nstate{color:var(--signal)}
+  .edge{height:14px;width:2px;background:var(--mist);margin:0 auto}
+  .edge.loop{display:flex;align-items:center;justify-content:center;height:24px;width:100%;background:none}
+  .edge.loop .ll{font-size:10px;color:var(--slate);border:1px dashed var(--mist);border-radius:20px;padding:2px 10px;background:var(--paper);transition:.25s}
+  .edge.loop.active .ll{color:var(--route);border-color:var(--route);border-style:solid;background:var(--route-soft);font-weight:600}
+  .sources{margin-top:9px;display:grid;gap:6px}
+
+  .invest-right{display:grid;gap:14px}
+  .doc{border:1px solid var(--mist);border-radius:14px;background:var(--card);overflow:hidden}
+  .doc-head{padding:11px 15px;border-bottom:1px solid var(--mist);background:#FDFAF4;font-size:11.5px;font-weight:700;color:var(--slate);display:flex;align-items:center;gap:7px}
+  .doc-head .badge{font-size:9px;font-weight:700;color:#fff;background:var(--slate);border-radius:4px;padding:1px 6px;letter-spacing:.03em}
+  .doc-body{padding:14px 16px;font-size:12.5px;color:var(--ink);line-height:1.6}
+  .doc-body .q{color:var(--slate)}
+  .summary{border:1px solid var(--mist);border-radius:14px;background:var(--paper);padding:14px 16px;display:flex;gap:12px;opacity:.45;transition:.4s}
+  .summary.ready{opacity:1}
+  .summary .si{font-size:20px;flex-shrink:0;line-height:1.2}
+  .summary .stext{font-size:13px;line-height:1.65}
+  .summary .stext b{font-weight:700} .summary .stext .q{color:var(--slate)}
+  .verdict{display:flex;align-items:center;gap:11px;border:1px solid var(--mist);border-radius:14px;background:var(--card);padding:14px 16px;opacity:.4;transition:.4s}
+  .verdict.ready{opacity:1}
+  .verdict .vic{width:30px;height:30px;flex-shrink:0;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;background:var(--slate)}
+  .verdict.t1 .vic{background:var(--signal)} .verdict.t2 .vic{background:var(--warn)}
+  .verdict .vt{font-size:13px;font-weight:700} .verdict .vs{font-size:11.5px;color:var(--slate);margin-top:2px}
+
+  /* ============ SCREEN 5 · 리포트 ============ */
+  .report{display:grid;grid-template-columns:1fr 340px;min-height:470px}
   .report-map{position:relative;background:#F1F4F7;overflow:hidden}
   .report-map svg{width:100%;height:100%;display:block;position:absolute;inset:0}
-  .map-legend{position:absolute;left:16px;bottom:16px;background:rgba(255,255,255,.95);border:1px solid var(--mist);
-    border-radius:10px;padding:10px 14px;font-size:11px;display:grid;gap:6px}
-  .lg{display:flex;align-items:center;gap:8px;font-weight:500}
-  .lg i{width:18px;height:0;border-top:3px solid var(--route);border-radius:2px}
+  .map-legend{position:absolute;right:14px;bottom:14px;background:rgba(255,255,255,.95);border:1px solid var(--mist);border-radius:10px;padding:9px 13px;font-size:10.5px;display:grid;gap:5px}
+  .lg{display:flex;align-items:center;gap:7px;font-weight:500}
+  .lg i{width:16px;border-top:3px solid var(--route);border-radius:2px}
   .lg.red i{border-color:var(--signal)}
   .lg.dash i{border-top:2.5px dashed var(--route);opacity:.65}
-  .report-side{padding:20px;border-left:1px solid var(--mist);display:flex;flex-direction:column;gap:12px;background:#fff}
+  .report-side{padding:20px;border-left:1px solid var(--mist);display:flex;flex-direction:column;gap:13px;background:var(--card);overflow-y:auto}
   .rp-block{border:1px solid var(--mist);border-radius:12px;padding:13px 15px}
   .rp-block.alert{border-color:#F3C4AC;background:var(--signal-soft)}
-  .rp-kicker{font-size:10.5px;font-weight:600;letter-spacing:.1em;color:var(--slate);margin-bottom:6px}
-  .rp-block.alert .rp-kicker{color:var(--signal)}
-  .rp-block h4{font-size:13px;font-weight:600;line-height:1.5;letter-spacing:-.01em}
+  .rp-block.notice{border-color:#EBD79A;background:var(--warn-soft)}
+  .rp-block.reco{border-color:#B8D0E4;background:var(--route-soft)}
+  .rp-block.reco .rp-kicker{color:var(--route)}
+  .rp-kicker{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--slate);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .rp-block.alert .rp-kicker{color:var(--signal)} .rp-block.notice .rp-kicker{color:var(--warn)}
+  .rp-kicker .lf{font-size:8.5px;color:var(--route);background:var(--route-soft);border:1px solid #cfe1ef;border-radius:4px;padding:0 5px;letter-spacing:.02em}
+  .rp-block h4{font-size:13px;font-weight:600;line-height:1.5}
   .rp-block .sub{font-size:11.5px;color:var(--slate);margin-top:4px}
-  .rp-alt{display:flex;align-items:center;gap:10px}
-  .rp-alt .ok{width:20px;height:20px;border-radius:50%;background:var(--route-soft);color:var(--route);
-    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
-  .trace-item{display:flex;gap:9px;font-size:11.5px;color:var(--slate);padding:4px 0}
-  .trace-item::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--slate);opacity:.5;flex-shrink:0;margin-top:7px}
+  .rp-alt{display:flex;align-items:flex-start;gap:10px}
+  .rp-alt .okc{width:20px;height:20px;border-radius:50%;background:var(--good-soft);color:var(--good);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+  .trace{display:grid;gap:2px}
+  .trace-item{display:flex;gap:9px;font-size:12px;color:var(--slate);padding:5px 0;opacity:.35;transition:opacity .3s}
+  .trace-item::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--slate);opacity:.45;flex-shrink:0;margin-top:6px}
+  .trace-item.show{opacity:1}
   .trace-item.found{color:var(--ink);font-weight:500}
-  .trace-item.found::before{background:var(--signal);opacity:1}
+  .trace-item.found::before{background:var(--good);opacity:1}
   .rp-link{font-size:12px;color:var(--route);font-weight:600;text-decoration:none;margin-top:auto}
 
-  .foot-strip{margin:64px 0 0;padding:28px 0;border-top:1px solid var(--mist);display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-  .foot-item{font-size:12.5px;color:var(--slate)}
-  .foot-item b{display:block;color:var(--ink);font-size:13px;font-weight:600;margin-bottom:3px}
-  footer{border-top:1px solid var(--mist);margin-top:28px;padding:26px 0 44px;display:flex;justify-content:space-between;font-size:12.5px;color:var(--slate)}
-
-  @media(max-width:860px){
-    .hero{grid-template-columns:1fr;gap:8px}
-    .hero-mascot svg{width:180px}
-    .reg{grid-template-columns:1fr}
+  @media(max-width:840px){
+    .reg,.two,.invest,.report{grid-template-columns:1fr}
     .reg-side{border-right:none;border-bottom:1px solid var(--mist)}
-    .reg-map{min-height:260px}
-    .report{grid-template-columns:1fr}
-    .report-map{min-height:260px}
+    .reg-map{min-height:260px} .report-map{min-height:280px}
     .report-side{border-left:none;border-top:1px solid var(--mist)}
-    .foot-strip{grid-template-columns:1fr}
-    .embed-fields{grid-template-columns:1fr}
   }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <g id="miricat"><!-- 꼬리 (맨 뒤) -->
-  <path d="M155 365 C 75 345, 48 265, 72 195" stroke="#DCA96E" stroke-width="36" fill="none" stroke-linecap="round"/>
-  <circle cx="74" cy="190" r="23" fill="#4A3423"/>
-  <!-- 몸통 -->
-  <path d="M152 240 C 128 320, 138 388, 210 388 C 282 388, 292 320, 268 240 Z" fill="#DCA96E"/>
-  <!-- 배 -->
-  <ellipse cx="210" cy="318" rx="47" ry="60" fill="#F5E3C0"/>
-  <!-- 팔 -->
-  <path d="M184 262 C 180 288, 180 302, 184 316" stroke="#C48F55" stroke-width="17" fill="none" stroke-linecap="round"/>
-  <path d="M236 262 C 240 288, 240 302, 236 316" stroke="#C48F55" stroke-width="17" fill="none" stroke-linecap="round"/>
-  <!-- 발 -->
-  <ellipse cx="178" cy="384" rx="21" ry="10" fill="#C48F55"/>
-  <ellipse cx="242" cy="384" rx="21" ry="10" fill="#C48F55"/>
-  <!-- 머리 그룹 -->
-  
-  <!-- 바닥 그림자 -->
-  <ellipse cx="205" cy="394" rx="95" ry="9" fill="#33261A" opacity=".08"/><g>
-    <!-- 뿔털 -->
-    <path d="M198 66 C 200 52, 206 46, 210 42 C 211 50, 210 56, 209 62 Z" fill="#C48F55"/>
-    <path d="M212 62 C 216 50, 224 46, 230 44 C 228 52, 224 60, 219 66 Z" fill="#C48F55"/>
-    <!-- 귀 -->
-    <circle cx="97" cy="102" r="25" fill="#C48F55"/>
-    <circle cx="323" cy="102" r="25" fill="#C48F55"/>
-    <circle cx="94" cy="102" r="12" fill="#4A3423"/>
-    <circle cx="326" cy="102" r="12" fill="#4A3423"/>
-    <!-- 얼굴 -->
-    <ellipse cx="210" cy="152" rx="102" ry="93" fill="#DCA96E"/>
-    <!-- 눈 패치 -->
-    <ellipse cx="164" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(-7 164 140)"/>
-    <ellipse cx="256" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(7 256 140)"/>
-    <!-- 눈 -->
-    <circle cx="165" cy="142" r="25" fill="#FFF8EC"/>
-    <circle cx="255" cy="142" r="25" fill="#FFF8EC"/>
-    <circle cx="165" cy="143" r="19" fill="#8A5A2B"/>
-    <circle cx="255" cy="143" r="19" fill="#8A5A2B"/>
-    <circle cx="165" cy="143" r="10" fill="#2A1B0F"/>
-    <circle cx="255" cy="143" r="10" fill="#2A1B0F"/>
-    <circle cx="159" cy="134" r="7" fill="#FFFFFF"/>
-    <circle cx="249" cy="134" r="7" fill="#FFFFFF"/>
-    <circle cx="172" cy="151" r="3" fill="#FFFFFF" opacity=".9"/>
-    <circle cx="262" cy="151" r="3" fill="#FFFFFF" opacity=".9"/>
-    <!-- 주둥이 -->
-    <ellipse cx="210" cy="196" rx="44" ry="32" fill="#F5E3C0"/>
-    <ellipse cx="210" cy="182" rx="11" ry="8" fill="#3A2A1B"/>
-    <path d="M210 190 V 200" stroke="#3A2A1B" stroke-width="4" stroke-linecap="round"/>
-    <path d="M192 202 Q 210 216 228 202" stroke="#3A2A1B" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-    <!-- 볼터치 -->
-    <ellipse cx="126" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/>
-    <ellipse cx="294" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/>
-  </g></g>
-    <g id="miricat-face">
-    <!-- 뿔털 -->
-    <path d="M198 66 C 200 52, 206 46, 210 42 C 211 50, 210 56, 209 62 Z" fill="#C48F55"/>
-    <path d="M212 62 C 216 50, 224 46, 230 44 C 228 52, 224 60, 219 66 Z" fill="#C48F55"/>
-    <!-- 귀 -->
-    <circle cx="97" cy="102" r="25" fill="#C48F55"/>
-    <circle cx="323" cy="102" r="25" fill="#C48F55"/>
-    <circle cx="94" cy="102" r="12" fill="#4A3423"/>
-    <circle cx="326" cy="102" r="12" fill="#4A3423"/>
-    <!-- 얼굴 -->
-    <ellipse cx="210" cy="152" rx="102" ry="93" fill="#DCA96E"/>
-    <!-- 눈 패치 -->
-    <ellipse cx="164" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(-7 164 140)"/>
-    <ellipse cx="256" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(7 256 140)"/>
-    <!-- 눈 -->
-    <circle cx="165" cy="142" r="25" fill="#FFF8EC"/>
-    <circle cx="255" cy="142" r="25" fill="#FFF8EC"/>
-    <circle cx="165" cy="143" r="19" fill="#8A5A2B"/>
-    <circle cx="255" cy="143" r="19" fill="#8A5A2B"/>
-    <circle cx="165" cy="143" r="10" fill="#2A1B0F"/>
-    <circle cx="255" cy="143" r="10" fill="#2A1B0F"/>
-    <circle cx="159" cy="134" r="7" fill="#FFFFFF"/>
-    <circle cx="249" cy="134" r="7" fill="#FFFFFF"/>
-    <circle cx="172" cy="151" r="3" fill="#FFFFFF" opacity=".9"/>
-    <circle cx="262" cy="151" r="3" fill="#FFFFFF" opacity=".9"/>
-    <!-- 주둥이 -->
-    <ellipse cx="210" cy="196" rx="44" ry="32" fill="#F5E3C0"/>
-    <ellipse cx="210" cy="182" rx="11" ry="8" fill="#3A2A1B"/>
-    <path d="M210 190 V 200" stroke="#3A2A1B" stroke-width="4" stroke-linecap="round"/>
-    <path d="M192 202 Q 210 216 228 202" stroke="#3A2A1B" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-    <!-- 볼터치 -->
-    <ellipse cx="126" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/>
-    <ellipse cx="294" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/>
-  </g>
-  </defs>
-</svg>
+<!-- 캐릭터 defs -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="miricat"><path d="M155 365 C 75 345, 48 265, 72 195" stroke="#DCA96E" stroke-width="36" fill="none" stroke-linecap="round"/><circle cx="74" cy="190" r="23" fill="#4A3423"/><path d="M152 240 C 128 320, 138 388, 210 388 C 282 388, 292 320, 268 240 Z" fill="#DCA96E"/><ellipse cx="210" cy="318" rx="47" ry="60" fill="#F5E3C0"/><path d="M184 262 C 180 288, 180 302, 184 316" stroke="#C48F55" stroke-width="17" fill="none" stroke-linecap="round"/><path d="M236 262 C 240 288, 240 302, 236 316" stroke="#C48F55" stroke-width="17" fill="none" stroke-linecap="round"/><ellipse cx="178" cy="384" rx="21" ry="10" fill="#C48F55"/><ellipse cx="242" cy="384" rx="21" ry="10" fill="#C48F55"/><ellipse cx="205" cy="394" rx="95" ry="9" fill="#33261A" opacity=".08"/><g><path d="M198 66 C 200 52, 206 46, 210 42 C 211 50, 210 56, 209 62 Z" fill="#C48F55"/><path d="M212 62 C 216 50, 224 46, 230 44 C 228 52, 224 60, 219 66 Z" fill="#C48F55"/><circle cx="97" cy="102" r="25" fill="#C48F55"/><circle cx="323" cy="102" r="25" fill="#C48F55"/><circle cx="94" cy="102" r="12" fill="#4A3423"/><circle cx="326" cy="102" r="12" fill="#4A3423"/><ellipse cx="210" cy="152" rx="102" ry="93" fill="#DCA96E"/><ellipse cx="164" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(-7 164 140)"/><ellipse cx="256" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(7 256 140)"/><circle cx="165" cy="142" r="25" fill="#FFF8EC"/><circle cx="255" cy="142" r="25" fill="#FFF8EC"/><circle cx="165" cy="143" r="19" fill="#8A5A2B"/><circle cx="255" cy="143" r="19" fill="#8A5A2B"/><circle cx="165" cy="143" r="10" fill="#2A1B0F"/><circle cx="255" cy="143" r="10" fill="#2A1B0F"/><circle cx="159" cy="134" r="7" fill="#FFFFFF"/><circle cx="249" cy="134" r="7" fill="#FFFFFF"/><circle cx="172" cy="151" r="3" fill="#FFFFFF" opacity=".9"/><circle cx="262" cy="151" r="3" fill="#FFFFFF" opacity=".9"/><ellipse cx="210" cy="196" rx="44" ry="32" fill="#F5E3C0"/><ellipse cx="210" cy="182" rx="11" ry="8" fill="#3A2A1B"/><path d="M210 190 V 200" stroke="#3A2A1B" stroke-width="4" stroke-linecap="round"/><path d="M192 202 Q 210 216 228 202" stroke="#3A2A1B" stroke-width="4.5" fill="none" stroke-linecap="round"/><ellipse cx="126" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/><ellipse cx="294" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/></g></g>
+  <g id="miricat-face"><path d="M198 66 C 200 52, 206 46, 210 42 C 211 50, 210 56, 209 62 Z" fill="#C48F55"/><path d="M212 62 C 216 50, 224 46, 230 44 C 228 52, 224 60, 219 66 Z" fill="#C48F55"/><circle cx="97" cy="102" r="25" fill="#C48F55"/><circle cx="323" cy="102" r="25" fill="#C48F55"/><circle cx="94" cy="102" r="12" fill="#4A3423"/><circle cx="326" cy="102" r="12" fill="#4A3423"/><ellipse cx="210" cy="152" rx="102" ry="93" fill="#DCA96E"/><ellipse cx="164" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(-7 164 140)"/><ellipse cx="256" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(7 256 140)"/><circle cx="165" cy="142" r="25" fill="#FFF8EC"/><circle cx="255" cy="142" r="25" fill="#FFF8EC"/><circle cx="165" cy="143" r="19" fill="#8A5A2B"/><circle cx="255" cy="143" r="19" fill="#8A5A2B"/><circle cx="165" cy="143" r="10" fill="#2A1B0F"/><circle cx="255" cy="143" r="10" fill="#2A1B0F"/><circle cx="159" cy="134" r="7" fill="#FFFFFF"/><circle cx="249" cy="134" r="7" fill="#FFFFFF"/><circle cx="172" cy="151" r="3" fill="#FFFFFF" opacity=".9"/><circle cx="262" cy="151" r="3" fill="#FFFFFF" opacity=".9"/><ellipse cx="210" cy="196" rx="44" ry="32" fill="#F5E3C0"/><ellipse cx="210" cy="182" rx="11" ry="8" fill="#3A2A1B"/><path d="M210 190 V 200" stroke="#3A2A1B" stroke-width="4" stroke-linecap="round"/><path d="M192 202 Q 210 216 228 202" stroke="#3A2A1B" stroke-width="4.5" fill="none" stroke-linecap="round"/><ellipse cx="126" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/><ellipse cx="294" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/></g>
+</defs></svg>
 
-
-
-<div class="wrap">
+<div class="app">
   <header>
-    <div class="logo">
-      <svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg>
-      미리캣
-    </div>
-    <div class="header-tag">AI Agent Challenge · <span class="mono">2026.07</span> · 정재현</div>
+    <div class="logo"><svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg>미리캣</div>
+    <div class="header-tag">내 출근길의 보초 · 사용 흐름 데모</div>
   </header>
 
-  <div class="hero">
-    <div>
-      <span class="eyebrow">이동 경로 상시 감시 에이전트</span>
-      <h1>내 출근길에<br><span class="accent">보초</span> 한 마리 세워두기</h1>
-      <p>미어캣 무리는 보초를 세웁니다. 한 마리가 망을 보는 동안 나머지는 각자 일을 하죠. 미리캣은 흩어진 게시판에 한 번 올라오고 묻히는 통제·우회 공지를 매일 대신 확인하고 — 이상 없으면 한 줄 보고, 위험이 보이면 근거가 담긴 경보를 보냅니다.</p>
-      <div class="hero-chips">
-        <span class="chip">예측 없음 · 공지된 사실만</span>
-        <span class="chip">보고는 매일 한 줄, 경보는 드물게</span>
-        <span class="chip">모든 경보에 원문 출처</span>
-      </div>
-    </div>
-    <div class="hero-mascot">
-      <svg viewBox="15 30 370 380" role="img" aria-label="미리캣 캐릭터 — 망을 보는 미어캣"><use href="#miricat"/></svg>
-    </div>
-  </div>
+  <nav class="stepper" id="stepper">
+    <button class="step active" data-step="1"><i>1</i><span class="st-name">경로 등록</span></button>
+    <button class="step" data-step="2" disabled><i>2</i><span class="st-name">확인 보고</span></button>
+    <button class="step" data-step="3" disabled><i>3</i><span class="st-name">확인 과정</span></button>
+    <button class="step" data-step="4" disabled><i>4</i><span class="st-name">알림 도착</span></button>
+    <button class="step" data-step="5" disabled><i>5</i><span class="st-name">자세히 보기</span></button>
+  </nav>
 
-  <div class="divider"></div>
-
-  <!-- 화면 01 -->
-  <div class="screen">
-    <div class="screen-head"><span class="screen-num">SCREEN 01</span><h2>경로 등록 — 한 번이면 끝</h2></div>
-    <p class="screen-cap">출발지·도착지·시간대를 넣으면 경로 후보가 뜨고, 평소 다니는 길을 고릅니다. 경유 도로·이용 노선·정류장까지 저장돼 미리캣의 감시 대상이 됩니다.</p>
-    <div class="frame" role="img" aria-label="경로 등록 화면">
-      <div class="frame-bar"><span class="f-dot"></span><span class="f-dot"></span><span class="f-dot"></span><span class="f-url mono">miricat.app/routes/new</span></div>
+  <!-- ===== SCREEN 1 ===== -->
+  <section class="screen active" data-screen="1">
+    <div class="screen-head">
+      <span class="eyebrow">Step 01 · 최초 1회</span>
+      <h2>평소 다니는 출근 경로를 등록합니다</h2>
+      <p>출발지·도착지·시간대를 넣으면 경로 후보가 뜹니다. 평소 길을 고르면 경유 도로·이용 노선·정류장까지 경로 객체로 저장돼요. 고르지 않은 후보도 나중에 '대안'으로 쓰려고 함께 저장합니다.</p>
+    </div>
+    <div class="frame">
       <div class="reg">
         <div class="reg-side">
           <div class="field"><label>출발지</label><div class="input">우리집 <span class="mono">· 유성구</span></div></div>
           <div class="field"><label>도착지</label><div class="input">회사 <span class="mono">· 대덕구</span></div></div>
           <div class="field"><label>시간대</label><div class="input">평일 <span class="mono">07:30 – 09:00</span></div></div>
-          <div class="route-opt on">
+          <div class="opt-label">경로 후보 — 평소 다니는 길을 고르세요</div>
+          <button class="route-opt on" data-pick="a">
             <div class="r1">경로 A · 43분 <span class="mono">B1</span></div>
             <div class="r2">갑천도시고속도로 경유 · 정류장 12개</div>
-          </div>
-          <div class="route-opt">
+          </button>
+          <button class="route-opt" data-pick="b">
             <div class="r1">경로 B · 51분 <span class="mono">급행2</span></div>
             <div class="r2">한밭대로 경유 · 정류장 15개</div>
-          </div>
-          <div class="reg-btn">이 경로에 보초 세우기</div>
+          </button>
         </div>
-        <div class="reg-map">
-          <svg viewBox="0 0 560 380" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-            <g stroke="#DEE4EA" stroke-width="9" stroke-linecap="round">
-              <path d="M-20 80 H580"/><path d="M-20 190 H580"/><path d="M-20 300 H580"/>
-              <path d="M100 -20 V400"/><path d="M270 -20 V400"/><path d="M430 -20 V400"/>
-            </g>
-            <path d="M490 -20 C 470 110, 545 240, 505 400" stroke="#CFE1EF" stroke-width="24" fill="none"/>
-            <path d="M55 330 H180 V240 H355 V135 H430 V80 H505" stroke="#3E7CB1" stroke-width="4" fill="none" stroke-dasharray="8 7" opacity=".45" stroke-linecap="round"/>
-            <path d="M55 330 V190 H270 V135 H430 V80 H505" stroke="#3E7CB1" stroke-width="6" fill="none" stroke-linecap="round"/>
-            <circle cx="55" cy="330" r="8" fill="#fff" stroke="#33261A" stroke-width="3.5"/>
-            <circle cx="505" cy="80" r="8" fill="#33261A" stroke="#fff" stroke-width="3"/>
-            <text x="55" y="358" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">집</text>
-            <text x="505" y="58" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">회사</text>
+        <div class="reg-map" id="regMap">
+          <svg viewBox="0 0 560 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <g stroke="#DEE4EA" stroke-width="9" stroke-linecap="round"><path d="M-20 90 H580"/><path d="M-20 220 H580"/><path d="M-20 340 H580"/><path d="M100 -20 V450"/><path d="M270 -20 V450"/><path d="M430 -20 V450"/></g>
+            <path d="M490 -20 C 470 120, 545 260, 505 450" stroke="#CFE1EF" stroke-width="24" fill="none"/>
+            <path class="r-b" d="M55 360 H180 V250 H355 V150 H430 V90 H505"/>
+            <path class="r-a" d="M55 360 V220 H270 V150 H430 V90 H505"/>
+            <circle cx="55" cy="360" r="8" fill="#fff" stroke="#33261A" stroke-width="3.5"/>
+            <circle cx="505" cy="90" r="8" fill="#33261A" stroke="#fff" stroke-width="3"/>
+            <text x="55" y="388" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">집</text>
+            <text x="505" y="68" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">회사</text>
           </svg>
         </div>
       </div>
     </div>
-  </div>
+    <div class="actions">
+      <span class="hint">선택: <b id="pickName" style="color:var(--ink)">경로 A (갑천도시고속도로 · B1)</b></span>
+      <button class="btn btn-primary" data-next="2">이 경로에 보초 세우기 →</button>
+    </div>
+  </section>
 
-  <!-- 화면 02 -->
-  <div class="screen">
-    <div class="screen-head"><span class="screen-num">SCREEN 02</span><h2>알림 채널 — 신호의 무게가 다릅니다</h2></div>
-    <p class="screen-cap">이상 없는 날은 확인한 소스가 담긴 한 줄 보고. 보초가 서 있다는 증거입니다. 영향이 있는 날만 경보가 옵니다 — 그래서 경보 한 통이 무겁습니다.</p>
-    <div class="frame" role="img" aria-label="디스코드 알림 채널 화면">
-      <div class="chat">
-        <div class="chat-head"># 출근길-보초 <span class="mono">미리캣이 매일 06:30에 보고합니다</span></div>
-        <div class="msg">
-          <div class="msg-avatar"><svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg></div>
-          <div class="msg-body">
-            <div class="msg-meta"><span class="name">미리캣</span><span class="bot">BOT</span><span class="when">3.25 오전 6:30</span></div>
-            <div class="msg-text">✅ 출근 경로 이상 없음 · 확인: 대전시 공지, 버스조합, KBO</div>
-          </div>
+  <!-- ===== SCREEN 2 ===== -->
+  <section class="screen" data-screen="2">
+    <div class="screen-head">
+      <span class="eyebrow">Step 02 · 매일 아침</span>
+      <h2>이상 없는 날에도 한 줄이 옵니다</h2>
+      <p>보초가 서 있다는 증거예요. 확인한 소스와 시각을 함께 보내서, "이상 없음"이 그냥 주장이 아니라 검증 가능한 보고가 됩니다.</p>
+    </div>
+    <div class="two">
+      <aside class="sentinel">
+        <div class="stage"><div class="ring"></div><svg class="mascot" viewBox="15 30 370 380"><use href="#miricat"/></svg></div>
+        <div class="status"><span class="pulse"></span>망 보는 중</div>
+        <div class="status-sub">매일 06:30 자동 순찰</div>
+        <div class="src-list">
+          <span class="lbl">미리캣이 매일 확인하는 곳</span>
+          <div class="src">대전광역시 교통 공지</div>
+          <div class="src">대전버스운송조합</div>
+          <div class="src">세종교통공사</div>
+          <div class="src">KBO · 대전 경기 일정</div>
         </div>
-        <div class="msg">
-          <div class="msg-avatar"><svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg></div>
-          <div class="msg-body">
-            <div class="msg-meta"><span class="name">미리캣</span><span class="bot">BOT</span><span class="when">3.26 오전 6:30</span></div>
-            <div class="msg-text">✅ 출근 경로 이상 없음 · 확인: 대전시 공지, 버스조합, KBO</div>
-          </div>
-        </div>
-        <div class="msg">
-          <div class="msg-avatar"><svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg></div>
-          <div class="msg-body">
-            <div class="msg-meta"><span class="name">미리캣</span><span class="bot">BOT</span><span class="when">3.27 오전 6:31</span></div>
-            <div class="msg-text">✅ 출근 경로 이상 없음 · 확인: 대전시 공지, 버스조합, KBO</div>
-          </div>
-        </div>
-        <div class="msg">
-          <div class="msg-avatar"><svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg></div>
-          <div class="msg-body">
-            <div class="msg-meta"><span class="name">미리캣</span><span class="bot">BOT</span><span class="when">3.28 오전 6:40</span></div>
-            <div class="msg-text"><b>🚨 경보 — 출근 경로 영향 공지를 발견했어요</b></div>
-            <div class="embed">
-              <div class="embed-title">갑천도시고속도로 전면 통제 · B1 우회</div>
-              <div class="embed-fields">
-                <div class="ef"><b>기간</b><span class="mono">3.30 (월) – 4.3 (금)</span></div>
-                <div class="ef"><b>영향</b><span class="mono">B1</span> 우회 · 오정농수산시장 미정차</div>
-                <div class="ef"><b>대안</b>후보 경로 B — 영향권 밖</div>
-                <div class="ef"><b>출처</b>대전광역시 공지 (3.27)</div>
-              </div>
-              <span class="embed-btn">브리핑 리포트 보기</span>
+      </aside>
+      <div class="channel">
+        <div class="ch-head"><div class="ch"><span class="hash">#</span> 출근길-보초</div><div class="meta">미리캣이 매일 06:30에 보고</div></div>
+        <div class="feed" id="feed2"></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-ghost" data-next="1">← 등록으로</button>
+      <button class="btn btn-primary" data-next="3">며칠 뒤, 이상 징후가 감지되면? →</button>
+    </div>
+  </section>
+
+  <!-- ===== SCREEN 3 ===== -->
+  <section class="screen" data-screen="3">
+    <div class="screen-head">
+      <span class="eyebrow">Step 03 · 미리캣이 대신 확인</span>
+      <h2>공지가 뜨면 미리캣이 대신 확인합니다</h2>
+      <p>여기저기 흩어진 게시판을 대신 둘러보고, 찾은 내용이 맞는지 원문과 다시 대조한 다음, 내 경로에 영향이 있는지 맞춰봐요. 그리고 쉬운 말로 알려줍니다.</p>
+    </div>
+    <div class="seg" id="seg">
+      <button class="on" data-sc="tier1">① 도로 통제 공지</button>
+      <button data-sc="tier2">② 야구 경기 일정</button>
+    </div>
+    <div class="invest">
+      <div class="graph-card">
+        <h3>🐾 미리캣이 확인하는 중</h3>
+        <div class="graph">
+          <div class="node" id="n-planner"><span class="ndot">1</span><div class="ninfo"><div class="nname">살펴볼 곳 정하기<span class="nstate">대기</span></div><div class="nrole">내 경로가 지나는 지역·노선 확인</div></div></div>
+          <div class="edge"></div>
+          <div class="node" id="n-scout"><span class="ndot">2</span><div class="ninfo"><div class="nname">공지·일정 찾아보기<span class="nstate">대기</span></div><div class="nrole">여러 게시판을 대신 둘러봐요</div>
+            <div class="sources" id="sources">
+              <div class="src" data-src="0"><span class="ic"></span> 대전광역시 교통 공지</div>
+              <div class="src" data-src="1"><span class="ic"></span> 대전버스운송조합</div>
+              <div class="src" data-src="2"><span class="ic"></span> 세종교통공사</div>
+              <div class="src" data-src="3"><span class="ic"></span> KBO · 대전 경기 일정</div>
             </div>
-          </div>
+          </div></div>
+          <div class="edge loop" id="loop"><span class="ll">원문과 한 번 더 대조</span></div>
+          <div class="node" id="n-verifier"><span class="ndot">3</span><div class="ninfo"><div class="nname">내용 다시 확인하기<span class="nstate">대기</span></div><div class="nrole">찾은 내용을 원문과 대조</div></div></div>
+          <div class="edge"></div>
+          <div class="node" id="n-analyst"><span class="ndot">4</span><div class="ninfo"><div class="nname">내 경로와 맞춰보기<span class="nstate">대기</span></div><div class="nrole">노선·구간·시간 비교</div></div></div>
+          <div class="edge"></div>
+          <div class="node" id="n-reporter"><span class="ndot">5</span><div class="ninfo"><div class="nname">결과 알려주기<span class="nstate">대기</span></div><div class="nrole">쉬운 말로 정리해서 전달</div></div></div>
         </div>
       </div>
+      <div class="invest-right">
+        <div class="doc" id="doc"></div>
+        <div class="summary" id="summary"><span class="si">💬</span><div class="stext" id="summaryText">확인이 끝나면 쉬운 말로 정리해 드려요.</div></div>
+        <div class="verdict" id="verdict"><div class="vic" id="vic">·</div><div><div class="vt" id="vt">확인 중…</div><div class="vs" id="vs">잠시만요, 미리캣이 살펴보고 있어요</div></div></div>
+      </div>
     </div>
-  </div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="rerun">↻ 다시 실행</button>
+      <button class="btn btn-primary" data-next="4" id="toAlert" disabled>경보 메시지 확인 →</button>
+    </div>
+  </section>
 
-  <!-- 화면 03 -->
-  <div class="screen">
-    <div class="screen-head"><span class="screen-num">SCREEN 03</span><h2>브리핑 리포트 — 경보의 근거 전부</h2></div>
-    <p class="screen-cap">경보를 열면 미리캣이 무엇을, 어디서, 어떻게 찾았는지가 남아 있습니다. 사실과 출처, 영향 구간 지도, 영향권 밖 대안 경로, 그리고 조사 과정까지.</p>
-    <div class="frame" role="img" aria-label="브리핑 리포트 화면">
-      <div class="frame-bar"><span class="f-dot"></span><span class="f-dot"></span><span class="f-dot"></span><span class="f-url mono">miricat.app/briefing/0330-b1</span></div>
+  <!-- ===== SCREEN 4 ===== -->
+  <section class="screen" data-screen="4">
+    <div class="screen-head">
+      <span class="eyebrow">Step 04 · 영향이 있는 날만</span>
+      <h2>디스코드로 경보가 도착합니다</h2>
+      <p>이상 없는 날의 한 줄과 무게가 다릅니다 — 색과 형태로 구분돼요. 경보 한 통이 무거운 이유입니다.</p>
+    </div>
+    <div class="two">
+      <aside class="sentinel">
+        <div class="stage"><div class="ring"></div><svg class="mascot" id="mascot4" viewBox="15 30 370 380"><use href="#miricat"/></svg></div>
+        <div class="status" id="status4"><span class="pulse"></span>경보 발령</div>
+        <div class="status-sub" id="statusSub4">출근 경로 영향 공지 발견</div>
+      </aside>
+      <div class="channel">
+        <div class="ch-head"><div class="ch"><span class="hash">#</span> 출근길-보초</div><div class="meta">방금 도착</div></div>
+        <div class="feed" id="feed4"></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-ghost" data-next="3">← 확인 과정으로</button>
+      <button class="btn btn-primary" data-next="5">자세히 보기 →</button>
+    </div>
+  </section>
+
+  <!-- ===== SCREEN 5 ===== -->
+  <section class="screen" data-screen="5">
+    <div class="screen-head">
+      <span class="eyebrow">Step 05 · 궁금하면 열어보세요</span>
+      <h2 id="rpTitle">미리캣이 알려드려요 — 자세히</h2>
+      <p>무슨 일이 있는지, 어디서 알게 됐는지, 지도에서 어디가 막히는지, 다른 길은 괜찮은지, 그리고 미리캣이 어떻게 확인했는지까지 한 눈에 볼 수 있어요.</p>
+    </div>
+    <div class="frame">
       <div class="report">
-        <div class="report-map">
-          <svg viewBox="0 0 620 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-            <g stroke="#DEE4EA" stroke-width="10" stroke-linecap="round">
-              <path d="M-20 90 H640"/><path d="M-20 210 H640"/><path d="M-20 330 H640"/>
-              <path d="M110 -20 V450"/><path d="M300 -20 V450"/><path d="M480 -20 V450"/>
-            </g>
-            <g stroke="#E7EDF2" stroke-width="5">
-              <path d="M-20 150 H640"/><path d="M-20 270 H640"/><path d="M200 -20 V450"/><path d="M395 -20 V450"/>
-            </g>
-            <path d="M540 -20 C 520 120, 600 260, 560 450" stroke="#CFE1EF" stroke-width="26" fill="none"/>
-            <circle cx="300" cy="150" r="72" fill="rgba(228,87,46,.09)" stroke="#E4572E" stroke-width="1.5" stroke-dasharray="4 5"/>
-            <path d="M60 372 H200 V270 H395 V150 H480 V90 H560" stroke="#3E7CB1" stroke-width="4" fill="none" stroke-dasharray="8 7" opacity=".5" stroke-linecap="round"/>
-            <path d="M60 372 V210 H240" stroke="#3E7CB1" stroke-width="6" fill="none" stroke-linecap="round"/>
-            <path d="M240 210 L360 150" stroke="#E4572E" stroke-width="7" fill="none" stroke-linecap="round"/>
-            <path d="M360 150 H480 V90 H560" stroke="#3E7CB1" stroke-width="6" fill="none" stroke-linecap="round"/>
-            <circle cx="60" cy="372" r="9" fill="#fff" stroke="#33261A" stroke-width="3.5"/>
-            <circle cx="560" cy="90" r="9" fill="#33261A" stroke="#fff" stroke-width="3"/>
-            <g transform="translate(300 118)">
-              <path d="M0 26 C -12 12, -12 -4, 0 -10 C 12 -4, 12 12, 0 26 Z" fill="#E4572E"/>
-              <circle cx="0" cy="2" r="4.5" fill="#fff"/>
-            </g>
-            <text x="60" y="404" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">집</text>
-            <text x="560" y="66" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">회사</text>
-          </svg>
-          <div class="map-legend">
-            <span class="lg"><i></i>내 경로</span>
-            <span class="lg red"><i></i>통제 구간</span>
-            <span class="lg dash"><i></i>대안 경로 B</span>
-          </div>
-        </div>
-        <div class="report-side">
-          <div class="rp-block alert">
-            <div class="rp-kicker">발견된 사실</div>
-            <h4>갑천도시고속도로 전면 통제 · B1 우회</h4>
-            <div class="sub mono">2026.3.30 – 4.3 · 출처: 대전광역시 공지</div>
-          </div>
-          <div class="rp-block">
-            <div class="rp-kicker">대안</div>
-            <div class="rp-alt"><span class="ok">✓</span><h4>후보 경로 B — 영향권 밖 <span style="color:var(--slate);font-weight:400">(B1 미이용 · 통제 구간 미경유)</span></h4></div>
-          </div>
-          <div class="rp-block">
-            <div class="rp-kicker">미리캣의 조사 과정</div>
-            <div class="trace-item">경로 분석 — 이용 노선 B1 식별</div>
-            <div class="trace-item">관할 소스 결정 — 대전시 · 버스조합</div>
-            <div class="trace-item found">대전시 공지에서 통제 공고 발견</div>
-            <div class="trace-item">추출 결과 원문 대조 — 검증 통과</div>
-            <div class="trace-item found">B1 노선 매칭 — 영향 확정</div>
-          </div>
-          <a class="rp-link" href="#">공지 원문 보기 →</a>
-        </div>
+        <div class="report-map" id="reportMap"></div>
+        <div class="report-side" id="reportSide"></div>
       </div>
     </div>
-  </div>
-
-  <div class="foot-strip">
-    <div class="foot-item"><b>예측하지 않습니다</b>공지와 일정이라는 사실, 경로와의 겹침만 전달. 모든 경보에 원문 링크</div>
-    <div class="foot-item"><b>실사례로 검증했습니다</b>원촌육교 긴급 통제, 문평동 화재 우회 등 대전·세종 실제 공지 확인</div>
-    <div class="foot-item"><b>LangGraph 멀티에이전트</b>Planner → Scout ⇄ Verifier → Analyst → Reporter · Langfuse 트레이싱 · 추출 평가셋</div>
-  </div>
-
-  <footer>
-    <span><b style="color:var(--ink)">미리캣</b> · 내 출근길의 보초</span>
-    <span>Naver AI Agent Challenge · 정재현 · <span class="mono">2026.07</span></span>
-  </footer>
+    <div class="actions">
+      <button class="btn btn-ghost" data-next="4">← 경보로</button>
+      <button class="btn btn-primary" id="restart">처음부터 다시 ↺</button>
+    </div>
+  </section>
 </div>
 
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const sleep = ms => new Promise(r=>setTimeout(r, reduce?Math.min(ms,80):ms));
+  const FACE = '<svg viewBox="85 20 250 250"><use href="#miricat-face"/></svg>';
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+
+  let scenario = 'tier1';   // 조사에서 선택
+  let maxStep = 1;
+
+  /* ---------- 스텝 네비게이션 ---------- */
+  const steps = $$('.step');
+  function gotoStep(n){
+    $$('.screen').forEach(s=>s.classList.toggle('active', +s.dataset.screen===n));
+    steps.forEach(b=>{
+      const bn=+b.dataset.step;
+      b.classList.toggle('active', bn===n);
+      b.classList.toggle('done', bn<maxStep && bn!==n);
+      b.disabled = bn>maxStep;
+    });
+    window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});
+    onEnter(n);
+  }
+  function unlock(n){ if(n>maxStep){ maxStep=n; } }
+  steps.forEach(b=> b.addEventListener('click', ()=>{ if(!b.disabled) gotoStep(+b.dataset.step); }));
+  $$('[data-next]').forEach(b=> b.addEventListener('click', ()=>{ const n=+b.dataset.next; unlock(n); gotoStep(n); }));
+
+  /* ---------- SCREEN 1 · 경로 선택 ---------- */
+  const regMap = $('#regMap'), pickName = $('#pickName');
+  $$('.route-opt').forEach(opt=> opt.addEventListener('click', ()=>{
+    $$('.route-opt').forEach(o=>o.classList.remove('on')); opt.classList.add('on');
+    const b = opt.dataset.pick==='b';
+    regMap.classList.toggle('show-b', b);
+    pickName.textContent = b ? '경로 B (한밭대로 · 급행2)' : '경로 A (갑천도시고속도로 · B1)';
+  }));
+
+  /* ---------- 공통: 확인보고 메시지 ---------- */
+  function clearMsg(when){
+    const el=document.createElement('div'); el.className='msg';
+    el.innerHTML=`<div class="msg-av">${FACE}</div><div class="msg-b">
+      <div class="msg-meta"><span class="name">미리캣</span><span class="bot">BOT</span><span class="when">${when}</span></div>
+      <div class="msg-text">✅ 출근 경로 이상 없음 <span class="src-tag">· 확인: 대전시, 버스조합, 세종교통공사, KBO</span></div></div>`;
+    return el;
+  }
+  let feed2Done=false;
+  function fillFeed2(){
+    if(feed2Done) return; feed2Done=true;
+    const f=$('#feed2'); ['3.25 오전 6:30','3.26 오전 6:30','3.27 오전 6:31'].forEach(w=>f.appendChild(clearMsg(w)));
+  }
+
+  /* ---------- SCREEN 3 · 조사 그래프 ---------- */
+  const DATA = {
+    tier1:{
+      doc:`<div class="doc-head">미리캣이 찾은 공지 · 대전광역시 · 3.27</div>
+        <div class="doc-body">「갑천도시고속도로 <b>원촌육교</b> 구간, 지반침하 긴급보수로 <b>3.30(월)~4.3(금) 전면 통제</b>. 해당 구간 경유 <b>B1</b> 노선 우회 운행, <span class="q">오정농수산시장 정류장 미정차.</span>」</div>`,
+      summary:`쉽게 말하면, <b>3/30~4/3 갑천도시고속도로가 막혀요.</b> 내가 타는 <b>B1 버스가 우회</b>하고, 오정농수산시장 정류장엔 서지 않아요.`,
+      hit:0, retry:true,
+      vt:'내 경로에 영향이 있어요', vs:'B1 노선이 통제 구간과 겹쳐요', vcls:'t1', vic:'!'
+    },
+    tier2:{
+      doc:`<div class="doc-head">미리캣이 찾은 일정 · KBO 경기</div>
+        <div class="doc-body">한화 이글스 홈경기 — <b>오늘 18:30</b> 볼파크(대전역 인근). <span class="q">통제 공지는 없지만 경로 근처에서 이동 시간대와 겹쳐요.</span></div>`,
+      summary:`쉽게 말하면, <b>오늘 저녁 6시 30분 볼파크에서 한화 경기</b>가 있어요. 퇴근 시간·경로와 겹쳐요. <span class="q">혼잡할지는 예측하지 않고, 일정이 겹친다는 사실만 알려드려요.</span>`,
+      hit:3, retry:false,
+      vt:'겹치는 일정이 있어요', vs:'퇴근 시간·경로 근처와 겹쳐요', vcls:'t2', vic:'⚾'
+    }
+  };
+  const nodes={}; ['planner','scout','verifier','analyst','reporter'].forEach(k=>{const el=$('#n-'+k);nodes[k]={el,st:el.querySelector('.nstate')};});
+  function setNode(k,cls,txt){const n=nodes[k];n.el.classList.remove('run','done','flag');if(cls)n.el.classList.add(cls);if(txt!=null)n.st.textContent=txt;}
+  const srcs3=$$('#sources .src');
+  function resetInvest(){
+    Object.keys(nodes).forEach(k=>setNode(k,'','대기'));
+    srcs3.forEach(s=>{s.className='src';s.querySelector('.ic').textContent='';});
+    $('#loop').classList.remove('active');
+    $('#summary').classList.remove('ready'); $('#summaryText').textContent='확인이 끝나면 쉬운 말로 정리해 드려요.';
+    const v=$('#verdict'); v.classList.remove('ready','t1','t2'); $('#vic').textContent='·'; $('#vt').textContent='확인 중…'; $('#vs').textContent='잠시만요, 미리캣이 살펴보고 있어요';
+    $('#toAlert').disabled=true;
+  }
+  let runId=0;
+  async function runInvest(){
+    const my=++runId; const d=DATA[scenario];
+    resetInvest();
+    $('#doc').innerHTML = d.doc;
+    // 1. 살펴볼 곳 정하기
+    setNode('planner','run','확인 중'); await sleep(700); if(my!==runId)return; setNode('planner','done','완료');
+    // 2. 공지·일정 찾아보기 (게시판 순차 확인)
+    setNode('scout','run','둘러보는 중');
+    for(let i=0;i<srcs3.length;i++){ const s=srcs3[i]; s.classList.add('checking'); await sleep(460); if(my!==runId)return; s.classList.remove('checking');
+      if(i===d.hit){s.classList.add('hit');s.querySelector('.ic').textContent='!';} else {s.classList.add('done');s.querySelector('.ic').textContent='✓';} }
+    setNode('scout','done', scenario==='tier1'?'공지 찾음':'일정 찾음');
+    $('#summaryText').innerHTML=d.summary; $('#summary').classList.add('ready');
+    // 3. 내용 다시 확인하기 (T1은 원문과 한 번 더 대조 — 꼼꼼하게)
+    setNode('verifier','run','대조 중'); await sleep(750); if(my!==runId)return;
+    if(d.retry){
+      $('#loop').classList.add('active'); setNode('verifier','run','다시 대조'); await sleep(850); if(my!==runId)return;
+      $('#loop').classList.remove('active'); setNode('verifier','done','두 번 확인');
+    } else { setNode('verifier','done','확인'); }
+    // 4. 내 경로와 맞춰보기
+    setNode('analyst','run','맞춰보는 중'); await sleep(800); if(my!==runId)return; setNode('analyst','done','완료');
+    const v=$('#verdict'); v.classList.add('ready',d.vcls); $('#vic').textContent=d.vic; $('#vt').textContent=d.vt; $('#vs').textContent=d.vs;
+    // 5. 결과 알려주기
+    setNode('reporter','run','정리 중'); await sleep(650); if(my!==runId)return; setNode('reporter','done','전달');
+    $('#toAlert').disabled=false;
+  }
+  $('#rerun').addEventListener('click', runInvest);
+  $$('#seg button').forEach(b=> b.addEventListener('click', ()=>{
+    $$('#seg button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+    scenario=b.dataset.sc; runInvest();
+  }));
+
+  /* ---------- SCREEN 4 · 경보 채널 ---------- */
+  function alertMsgT1(){
+    return `<div class="msg"><div class="msg-av">${FACE}</div><div class="msg-b">
+      <div class="msg-meta"><span class="name">미리캣</span><span class="bot">BOT</span><span class="when">오늘 오전 6:40</span></div>
+      <div class="msg-text alarm">🚨 경보 — 출근 경로 영향 공지를 발견했어요</div>
+      <div class="embed"><div class="embed-title">갑천도시고속도로 전면 통제 · B1 우회</div>
+        <div class="embed-fields">
+          <div class="ef"><b>기간</b><span class="mono">3.30 (월) – 4.3 (금)</span></div>
+          <div class="ef"><b>영향</b><span class="mono">B1</span> 우회 · 오정농수산시장 미정차</div>
+          <div class="ef"><b>대안</b>후보 경로 B — 영향권 밖</div>
+          <div class="ef"><b>출처</b>대전광역시 공지 (3.27)</div>
+        </div><button class="embed-btn" data-next="5">자세히 보기</button></div></div></div>`;
+  }
+  function alertMsgT2(){
+    return `<div class="msg"><div class="msg-av">${FACE}</div><div class="msg-b">
+      <div class="msg-meta"><span class="name">미리캣</span><span class="bot">BOT</span><span class="when">오늘 오전 6:40</span></div>
+      <div class="msg-text notice">🟡 참고 — 경로 인근 대형 일정을 확인했어요</div>
+      <div class="embed t2"><div class="embed-title">한화 홈경기 · 볼파크(대전역 인근) 경로 영향 가능</div>
+        <div class="embed-fields">
+          <div class="ef"><b>일시</b><span class="mono">오늘 18:30 시작</span></div>
+          <div class="ef"><b>위치</b>볼파크 · 대전역 인근</div>
+          <div class="ef"><b>겹침</b>퇴근 시간대 · 경로 반경 내</div>
+          <div class="ef"><b>출처</b>KBO 경기 일정</div>
+        </div><button class="embed-btn t2" data-next="5">자세히 보기</button></div></div></div>`;
+  }
+  function fillFeed4(){
+    const f=$('#feed4');
+    f.innerHTML = clearMsg('오늘 오전 6:30').outerHTML + (scenario==='tier1'?alertMsgT1():alertMsgT2());
+    f.querySelectorAll('[data-next]').forEach(b=>b.addEventListener('click',()=>{unlock(5);gotoStep(5);}));
+    const m=$('#mascot4'), st=$('#status4'), ss=$('#statusSub4');
+    if(scenario==='tier1'){ st.className='status alarm'; st.innerHTML='<span class="pulse"></span>경보 발령'; ss.textContent='출근 경로 영향 공지 발견';
+      if(!reduce){m.classList.add('alarm');setTimeout(()=>m.classList.remove('alarm'),1600);} }
+    else { st.className='status notice'; st.innerHTML='<span class="pulse"></span>참고 알림'; ss.textContent='경로 인근 한화 홈경기 · 무예측'; }
+  }
+
+  /* ---------- SCREEN 5 · 리포트 ---------- */
+  const MAP_T1 = `<svg viewBox="0 0 620 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g stroke="#DEE4EA" stroke-width="10" stroke-linecap="round"><path d="M-20 90 H640"/><path d="M-20 210 H640"/><path d="M-20 330 H640"/><path d="M110 -20 V450"/><path d="M300 -20 V450"/><path d="M480 -20 V450"/></g>
+    <g stroke="#E7EDF2" stroke-width="5"><path d="M-20 150 H640"/><path d="M-20 270 H640"/><path d="M200 -20 V450"/><path d="M395 -20 V450"/></g>
+    <circle cx="300" cy="150" r="72" fill="rgba(228,87,46,.09)" stroke="#E4572E" stroke-width="1.5" stroke-dasharray="4 5"/>
+    <path d="M60 372 H200 V270 H395 V150 H480 V90 H560" stroke="#3E7CB1" stroke-width="4" fill="none" stroke-dasharray="8 7" opacity=".5" stroke-linecap="round"/>
+    <path d="M60 372 V210 H240" stroke="#3E7CB1" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M240 210 L360 150" stroke="#E4572E" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M360 150 H480 V90 H560" stroke="#3E7CB1" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="60" cy="372" r="9" fill="#fff" stroke="#33261A" stroke-width="3.5"/><circle cx="560" cy="90" r="9" fill="#33261A" stroke="#fff" stroke-width="3"/>
+    <g transform="translate(300 118)"><path d="M0 26 C -12 12, -12 -4, 0 -10 C 12 -4, 12 12, 0 26 Z" fill="#E4572E"/><circle cx="0" cy="2" r="4.5" fill="#fff"/></g>
+    <text x="60" y="404" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">집</text>
+    <text x="560" y="66" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">회사</text>
+    <circle cx="168" cy="278" r="56" fill="#FBF6EE" opacity=".5"/>
+    <g transform="translate(114 222) scale(.26)"><use href="#miricat"/></g>
+    <text x="168" y="352" font-size="11" font-weight="600" fill="#8B7863" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">미리캣이 지켜보는 중</text>
+  </svg><div class="map-legend"><span class="lg"><i></i>내 경로</span><span class="lg red"><i></i>통제 구간</span><span class="lg dash"><i></i>대안 경로 B</span></div>`;
+  const MAP_T2 = `<svg viewBox="0 0 620 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g stroke="#DEE4EA" stroke-width="10" stroke-linecap="round"><path d="M-20 90 H640"/><path d="M-20 210 H640"/><path d="M-20 330 H640"/><path d="M110 -20 V450"/><path d="M300 -20 V450"/><path d="M480 -20 V450"/></g>
+    <g stroke="#E7EDF2" stroke-width="5"><path d="M-20 150 H640"/><path d="M-20 270 H640"/><path d="M200 -20 V450"/><path d="M395 -20 V450"/></g>
+    <circle cx="470" cy="150" r="90" fill="rgba(201,138,0,.10)" stroke="#C98A00" stroke-width="1.5" stroke-dasharray="4 5"/>
+    <path d="M60 372 H200 V270 H395 V150 H480 V90 H560" stroke="#3E7CB1" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="60" cy="372" r="9" fill="#fff" stroke="#33261A" stroke-width="3.5"/><circle cx="560" cy="90" r="9" fill="#33261A" stroke="#fff" stroke-width="3"/>
+    <g transform="translate(470 150)"><circle r="14" fill="#C98A00"/><text y="5" font-size="14" font-weight="700" fill="#fff" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">⚾</text></g>
+    <text x="60" y="404" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">집</text>
+    <text x="560" y="66" font-size="12" font-weight="600" fill="#33261A" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">회사</text>
+    <circle cx="180" cy="300" r="56" fill="#FBF6EE" opacity=".5"/>
+    <g transform="translate(126 244) scale(.26)"><use href="#miricat"/></g>
+    <text x="180" y="374" font-size="11" font-weight="600" fill="#8B7863" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">미리캣이 지켜보는 중</text>
+  </svg><div class="map-legend"><span class="lg"><i></i>내 경로</span><span class="lg"><i style="border-color:#C98A00;border-top-style:dashed"></i>행사 반경</span><span class="lg"><i style="border-color:#C98A00"></i>겹침 지점</span></div>`;
+  const SIDE_T1 = `
+    <div class="rp-block alert"><div class="rp-kicker">무슨 일이 있나요?</div><h4>갑천도시고속도로가 전면 통제돼요 · B1 우회</h4><div class="sub">2026.3.30 – 4.3 · 대전광역시 공지</div></div>
+    <div class="rp-block reco"><div class="rp-kicker">🧭 이렇게 가세요</div><div class="rp-alt"><span class="okc">✓</span><div><h4>오늘은 <b style="font-weight:700">경로 B</b>로 우회하세요</h4><div class="sub">한밭대로 · 급행2 · 약 51분 <span style="color:var(--slate)">(평소보다 +8분)</span><br>B1을 안 타고, 통제 구간도 안 지나요</div></div></div></div>
+    <div class="rp-block"><div class="rp-kicker">미리캣이 이렇게 확인했어요</div><div class="trace">
+      <div class="trace-item">내 경로가 B1 노선을 지나는 걸 확인했어요</div>
+      <div class="trace-item">대전시·버스조합 공지를 둘러봤어요</div>
+      <div class="trace-item found">대전시 공지에서 통제 안내를 찾았어요</div>
+      <div class="trace-item">찾은 내용을 원문과 한 번 더 대조했어요</div>
+      <div class="trace-item found">내가 타는 B1과 겹쳐서 영향이 있어요</div>
+    </div></div>
+    <a class="rp-link" href="#" onclick="return false">공지 원문 보기 →</a>`;
+  const SIDE_T2 = `
+    <div class="rp-block notice"><div class="rp-kicker">무슨 일이 있나요?</div><h4>오늘 저녁 볼파크에서 한화 홈경기가 있어요</h4><div class="sub">오늘 18:30 시작 · 대전역 인근 · KBO 일정</div></div>
+    <div class="rp-block"><div class="rp-kicker">미리캣의 안내</div><h4 style="font-weight:500">경로 근처에서 <b style="font-weight:700">일정이 있고 시간이 겹쳐요.</b> 혼잡할지는 예측하지 않고, 겹친다는 사실만 알려드려요.</h4></div>
+    <div class="rp-block"><div class="rp-kicker">미리캣이 이렇게 확인했어요</div><div class="trace">
+      <div class="trace-item">경로 근처 큰 시설(볼파크)을 확인했어요</div>
+      <div class="trace-item">야구 경기 일정을 살펴봤어요</div>
+      <div class="trace-item">일정이 정확한지 다시 확인했어요</div>
+      <div class="trace-item found">퇴근 시간·경로와 겹치는 걸 확인했어요</div>
+      <div class="trace-item found">겹치는 일정이 있어 알려드려요</div>
+    </div></div>
+    <a class="rp-link" href="#" onclick="return false">KBO 경기 일정 보기 →</a>`;
+  function fillReport(){
+    const t1=scenario==='tier1';
+    $('#rpTitle').textContent = t1?'미리캣이 알려드려요 — 자세히':'미리캣이 알려드려요 — 자세히';
+    $('#reportMap').innerHTML = t1?MAP_T1:MAP_T2;
+    $('#reportSide').innerHTML = t1?SIDE_T1:SIDE_T2;
+    const items=$$('#reportSide .trace-item'); items.forEach(it=>it.classList.remove('show'));
+    items.forEach((it,i)=>setTimeout(()=>it.classList.add('show'), reduce?0:200*(i+1)));
+  }
+
+  /* ---------- onEnter ---------- */
+  function onEnter(n){
+    if(n===2) fillFeed2();
+    if(n===3) runInvest();
+    if(n===4) fillFeed4();
+    if(n===5) fillReport();
+  }
+
+  $('#restart').addEventListener('click', ()=>{ maxStep=1; scenario='tier1';
+    $$('#seg button').forEach((x,i)=>x.classList.toggle('on', i===0));
+    gotoStep(1);
+  });
+})();
+</script>
 </body>
 </html>
