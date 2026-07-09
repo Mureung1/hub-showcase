@@ -9,6 +9,10 @@
     "dev:all": "concurrently -n client,server -c blue,green \"npm run dev\" \"npm run dev:server\"",
     "build": "vite build",
     "lint": "eslint .",
+    "lint:server": "npm --prefix server run lint",
+    "lint:all": "npm run lint && npm run lint:server",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "preview": "vite preview",
     "test": "vitest run"
   },
@@ -27,10 +31,12 @@
     "@vitejs/plugin-react": "^6.0.3",
     "concurrently": "^10.0.3",
     "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
+    "prettier": "^3.9.4",
     "tailwindcss": "^4.3.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.10"
