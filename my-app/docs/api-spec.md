@@ -55,6 +55,7 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
   hashtags: string[]
   images: { url: string; placement: string }[]
   thumbnailUrl: string | null
+  viewCount: number
   status: "draft" | "scheduled" | "published"
   scheduledAt: string | null
   publishedAt: string | null
@@ -75,7 +76,12 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
   industryTrend: string
   recommendedTopic: string
   reason: string[]             // 추천 근거 bullet
-  expectedEffect: string[]     // 예상 효과 bullet
+  expectedEffect: {            // 예상 효과 카드 (대시보드 확장 섹션, design-reference/main.html 기준)
+    icon: string                // Material Symbols 아이콘명
+    color: "secondary" | "tertiary"
+    title: string
+    description: string
+  }[]
 }
 ```
 
@@ -100,6 +106,7 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
   healthScore: {
     total: number               // 0~100
     level: "good" | "normal" | "warning"  // 🟢🟡🔴
+    visitorCount: number         // 대시보드 블로그 건강도 카드에 필요해 추가 (WIREFRAME.md 1번 화면)
     breakdown: {
       postingCycle: number
       contentDiversity: number

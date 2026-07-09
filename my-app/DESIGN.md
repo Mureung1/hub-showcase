@@ -12,10 +12,10 @@ colors:
   inverse-primary: '#b3c5ff'
   secondary: '#006c49'
   on-secondary: '#ffffff'
-  secondary-container: '#6cf8bb'
+  secondary-container: '#c6e4d4'
   on-secondary-container: '#00714d'
-  secondary-fixed: '#6ffbbe'
-  secondary-fixed-dim: '#4edea3'
+  secondary-fixed: '#c6e4d4'
+  secondary-fixed-dim: '#5da180'
   on-secondary-fixed: '#002113'
   on-secondary-fixed-variant: '#005236'
   tertiary: '#4345d1'
@@ -122,7 +122,8 @@ spacing:
 ## Colors
 
 - **Primary Blue (`#0050cb`)**: 버튼, 활성 탭, 포커스 링, 링크 등 주요 액션에 사용.
-- **Secondary Green (`#006c49`)**: 블로그 건강도 "양호", AI 추천 칩 등 긍정적인 상태 표시에 사용. `secondary-container`(`#6cf8bb`)는 초록 배지 배경으로 쓴다.
+- **Secondary Green (`#006c49`)**: 블로그 건강도 "양호", AI 추천 칩 등 긍정적인 상태 표시에 사용. `secondary-container`/`secondary-fixed`(`#c6e4d4`, 톤다운된 세이지 그린)는 초록 배지 배경으로, `secondary-fixed-dim`(`#5da180`, 진한 세이지 그린)은 건강도 그래프처럼 좀 더 진한 강조가 필요한 곳에 쓴다.
+  - `design-reference/*.html`의 원래 값(`#6cf8bb`/`#6fbe`/`#4edea3` 계열)은 실제 화면에서 형광 느낌이 너무 강해서 톤다운했다. design-reference를 다시 참고할 때 이 세 토큰만은 원본 HTML 값이 아니라 여기 적힌 값을 쓴다.
 - **Tertiary Purple (`#4345d1`)**: 보조 강조색. 사용 빈도는 낮음.
 - **Background (`#f7f9fc`)**: 페이지 배경. surface와 값이 같아 배경과 surface 레벨 0이 사실상 동일하다.
 - **Surface Container Lowest (`#ffffff`)**: 카드/패널의 실제 배경색. 배경보다 한 단계 밝은 흰색으로 카드를 구분한다.
