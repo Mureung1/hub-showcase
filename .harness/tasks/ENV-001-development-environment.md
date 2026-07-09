@@ -6,7 +6,7 @@
 Task: LocalTwin 개발환경과 실행 가능한 web/api scaffold 구성
 Type: chore
 Owner: Codex
-Status: in_progress
+Status: done
 ```
 
 ## 2. Goal
@@ -43,6 +43,9 @@ Gaussian Splatting viewer
 ```text
 docs/development/harness.md
 docs/development/git-workflow.md
+docs/development/environment.md
+docs/development/conventions.md
+docs/development/pre-development-decisions.md
 docs/development/validation.md
 docs/development/checklist.md
 docs/design/design-system.md
@@ -67,8 +70,8 @@ scripts: 전체 검증 진입점 확장
 - [x] `apps/web`이 typecheck, test와 production build를 통과한다.
 - [x] `apps/api`의 `/health` test가 통과한다.
 - [x] 루트 검증 명령이 docs, web와 api를 모두 확인한다.
-- [ ] directory, dependency, convention과 사전 결정이 문서화된다.
-- [ ] 제품 prototype 또는 실제 데이터 연동이 포함되지 않는다.
+- [x] directory, dependency, convention과 사전 결정이 문서화된다.
+- [x] 제품 prototype 또는 실제 데이터 연동이 포함되지 않는다.
 
 ## 7. Verification Plan
 
@@ -90,11 +93,11 @@ untracked 사용자 prototype 파일이 커밋에 포함되지 않았는지 확�
 ## 8. Documentation Updates
 
 - [x] 코드/스크립트 변경 시 관련 문서 또는 `.harness` 기록을 같은 커밋에 포함
-- [ ] README 링크 필요 여부 확인
-- [ ] 기능 spec 갱신
-- [ ] data mapping 갱신
-- [ ] checklist 갱신
-- [ ] decision/failure log 필요 여부 확인
+- [x] README와 Wiki Home에서 신규 개발문서 연결
+- [x] 이번 환경 작업에서 기능 spec 갱신이 불필요함을 확인
+- [x] 실제 데이터 연동이 없어 data mapping 갱신이 불필요함을 확인
+- [x] 개발 체크리스트 갱신
+- [x] 사전 결정 Gate 문서 추가, failure log 갱신은 불필요함을 확인
 
 ## 9. Commit Plan
 
@@ -105,12 +108,17 @@ chore(web): scaffold the React application
 chore(api): scaffold the FastAPI application
 test(tooling): add repository validation
 docs(development): document the development environment
+docs: define development conventions
+docs: record pre-development decision gates
+docs: define the develop branch workflow
+docs: link development environment guidance
 ```
 
 ## 10. Self-check
 
-- [ ] 한 기능/한 버그/한 문서 단위인가?
+- [x] 한 기능/한 버그/한 문서 단위인가?
 - [x] 관련 없는 파일을 변경하지 않았는가?
-- [ ] 검증 결과를 기록했는가?
-- [ ] 문서와 체크리스트가 실제 변경과 일치하는가?
-- [ ] known limitation이 있으면 적었는가?
+- [x] 검증 결과를 run report에 기록했는가?
+- [x] 문서와 체크리스트가 실제 변경과 일치하는가?
+- [x] local known limitation을 run report에 적었는가?
+- [ ] 원격 CI 결과와 GitHub branch protection은 push 후 별도로 확인한다.
