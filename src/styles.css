@@ -148,6 +148,7 @@ a {
 }
 
 .content-stack,
+.workspace-shell,
 .workspace-layout {
   width: min(1180px, 100%);
   margin: 0 auto;
@@ -336,6 +337,193 @@ a {
   grid-template-columns: minmax(0, 1fr) 340px;
   align-items: start;
   gap: 20px;
+}
+
+.workspace-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.workspace-anchor {
+  position: relative;
+  top: -92px;
+  display: block;
+  height: 0;
+  overflow: hidden;
+}
+
+.noticepilot-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid #dfe5ef;
+}
+
+.noticepilot-tabs a {
+  border: 1px solid #d7deea;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: #f8fafc;
+  padding: 10px 14px;
+  color: #334155;
+  font-size: 0.94rem;
+  font-weight: 800;
+}
+
+.noticepilot-tabs a.active {
+  border-color: #bfdbfe;
+  background: #ffffff;
+  color: #1d4ed8;
+}
+
+.noticepilot-tabs a:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.workspace-calendar-shell {
+  width: 100%;
+}
+
+.notice-calendar-page {
+  display: grid;
+  gap: 20px;
+}
+
+.calendar-card {
+  border: 1px solid #dfe5ef;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 24px;
+}
+
+.calendar-card-inner {
+  display: grid;
+  max-width: 760px;
+  gap: 18px;
+}
+
+.calendar-card-heading h2,
+.subscription-card-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.25rem;
+}
+
+.calendar-card-heading p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.calendar-card-description {
+  margin: 0;
+  color: #475569;
+}
+
+.campus-preference-group {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.campus-preference-group legend {
+  margin: 0 0 10px;
+  padding: 0;
+  color: #334155;
+  font-weight: 800;
+}
+
+.campus-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.campus-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  gap: 7px;
+  border: 1px solid #d7deea;
+  border-radius: 999px;
+  background: #f8fafc;
+  padding: 8px 12px;
+  color: #334155;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.campus-chip.selected {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.campus-chip input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.campus-chip:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.campus-chip-mark {
+  min-width: 1em;
+  color: inherit;
+}
+
+.campus-save-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  min-height: 1.5em;
+  margin: 0;
+  color: #64748b;
+  transition: opacity 140ms ease;
+}
+
+.campus-save-status strong {
+  color: #1e40af;
+}
+
+.campus-save-status.failure {
+  color: #b91c1c;
+}
+
+.campus-common-policy {
+  margin: 0;
+  border-top: 1px solid #dfe5ef;
+  padding-top: 18px;
+  color: #475569;
+}
+
+.subscription-card-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
+.subscription-card-header span {
+  border-radius: 999px;
+  background: #f8fafc;
+  padding: 4px 9px;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .workspace-main,

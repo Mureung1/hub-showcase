@@ -87,7 +87,7 @@ Frontend MVP 1차 구현 당시 명시적으로 추가하지 않은 항목:
 - 결제
 - Google Calendar API
 - 실제 AI API 호출
-- Express 백엔드
+- Express 백엔드 (당시 미포함, 이후 구현 완료)
 
 ## 3. 커밋별 작업 내용
 
@@ -594,7 +594,7 @@ const SECTION_LIMITS = {
 - frontend/server validation utility 공유 구조 검토
 - 실제 AI API response validation과 연결
 - AI prompt/schema hardening
-- Zod 도입 여부는 추후 결정
+- Zod는 backend schema validation에 도입 완료
 
 ### 19. Date Resolution
 
@@ -1168,3 +1168,109 @@ npm run dev
 
 - 실제 AI API integration은 server mock wiring과 분리된 다음 phase로 진행하는 것이 안전합니다.
 - 인증, DB, 결제, Google Calendar API는 아직 scope에 포함하지 않습니다.
+
+## 19. Calendar Tab + Campus Preferences 구현
+
+상태: 완료
+
+구현 파일:
+
+- `src/App.jsx`
+- `src/components/Header.jsx`
+- `src/components/NoticePilotTabs.jsx`
+- `src/components/NoticeCalendarPage.jsx`
+- `src/components/CampusPreferenceCard.jsx`
+- `src/components/SubscriptionIcsStatusCard.jsx`
+- `src/data/localizedContent.js`
+- `src/styles.css`
+- `src/utils/campusPreferences.js`
+- `src/utils/analyzeApi.js`
+- `server/src/schemas/appAnalysisSchema.js`
+- `server/src/services/mockAnalysisService.js`
+
+구현 내용:
+
+- workspace hash tab을 `#analyze`와 `#calendar`로 정리했습니다.
+- unsupported hash는 `#analyze`로 normalize합니다.
+- header brand / CTA link가 지원되는 hash만 사용하도록 정리했습니다.
+- `공지 캘린더` 탭을 추가했습니다.
+- 캘린더 탭에는 `관심 캠퍼스 설정` 카드와 `구독형 ICS` 상태 카드만 표시합니다.
+- `구독형 ICS` 카드는 neutral `준비 중` badge를 표시하지만 subscription feed URL이나 backend feed generation은 구현하지 않았습니다.
+- 캠퍼스 선택은 native checkbox 기반 chip UI로 구현했습니다.
+- 캠퍼스 순서는 `chuncheon`, `samcheok`, `dogye`, `gangneung_wonju`로 고정했습니다.
+- 캠퍼스 선호 설정은 기존 단건 분석 저장소와 분리된 `noticepilot:campus-preferences:v1` key를 사용합니다.
+- 첫 방문 시에는 campus preference localStorage를 새로 쓰지 않습니다.
+- user-initiated campus change 후에만 저장 payload에 `updatedAt`을 기록합니다.
+- invalid campus ID와 duplicate campus ID는 app state와 backend snapshot에서 normalize합니다.
+- client mock analysis result metadata에 inert `userPreferencesSnapshot`을 추가했습니다.
+- server mock `/api/analyze` request에 `userPreferencesSnapshot`을 포함합니다.
+- Express mock response는 normalized `metadata.userPreferencesSnapshot`을 echo합니다.
+- campus preferences는 analysis output, filtering, Markdown export, `.ics` export behavior를 변경하지 않습니다.
+
+기술 스택 반영:
+
+- Frontend: React + Vite
+- Backend: Express
+- Schema validation: Zod
+- State: React `useState`
+- Persistence: browser localStorage
+
+범위 제한:
+
+- 실제 학교 공지 수집 crawler는 추가하지 않았습니다.
+- 학교 selector 또는 notice filtering은 추가하지 않았습니다.
+- subscription ICS URL/backend feed generation은 추가하지 않았습니다.
+- real AI API wiring은 추가하지 않았습니다.
+- Google Calendar API, DB, auth는 추가하지 않았습니다.
+
+## 20. Calendar Tab + Campus Preferences QA 결과
+
+검증 명령 및 방식:
+
+```text
+npm run build
+git diff --check
+node --input-type=module --eval ...
+npm run dev -- --host 127.0.0.1
+npm run dev:server
+Codex in-app browser QA
+```
+
+확인 결과:
+
+- `npm run build` 통과
+- backend mock service snapshot normalization 확인
+- Express `/api/analyze` snapshot echo smoke 확인
+- `#calendar` / `#analyze` tab routing 확인
+- browser Back으로 tab history 이동 확인
+- 캠퍼스 선택 저장 완료 문구 확인
+- 새로고침 후 campus preference restore 확인
+- Markdown / `.ics` 다운로드 파일 생성 및 내용 확인
+- old saved analysis result without metadata restore/export 확인
+
+남은 수동 QA:
+
+- browser plugin read-only page scope에서 raw localStorage 직접 읽기는 제한되어 helper 직렬화 결과와 refresh restore로 대체 확인했습니다.
+- browser plugin `download` event는 Blob download를 포착하지 못해 Downloads 폴더의 최신 파일 생성과 파일 내용으로 대체 확인했습니다.
+- valid selected event가 없는 `.ics` 차단 메시지와 외부 캘린더 앱 import smoke test는 별도 수동 확인 대상으로 남았습니다.
+
+## 21. 현재 남은 작업
+
+현재 남은 핵심 작업:
+
+- Real AI API integration
+- AI prompt/schema hardening의 runtime 적용
+- Advanced file extraction: PDF / HWP / HWPX / OCR
+- Advanced date resolution
+- School-level notice parsing
+- Checkbox-based batch `.ics` export
+- Subscription calendar feed URL / backend feed generation
+
+이미 구현 완료된 이전 남은 작업:
+
+- Express `/api/analyze` skeleton
+- Frontend ↔ Server mock analyze wiring
+- Backend schema validation with Zod
+- Calendar tab
+- Campus preference storage
+- inert `userPreferencesSnapshot` metadata

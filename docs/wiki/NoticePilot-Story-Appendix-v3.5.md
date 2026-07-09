@@ -1,8 +1,8 @@
 # NoticePilot Story Appendix v3.5
 
-> Wiki version: 2026-07-08 story appendix  
-> Implementation baseline: React + Vite frontend MVP, Express mock analyze API, frontend-server mock analyze wiring  
-> Runtime scope: real AI API, PDF/HWP/HWPX/OCR extraction, batch calendar export, and subscription feed are not implemented yet.
+> Wiki version: 2026-07-08 story appendix
+> Implementation baseline: React + Vite frontend MVP, Express mock analyze API, Zod server schemas, frontend-server mock analyze wiring, calendar tab, and campus preferences
+> Runtime scope: real AI API, PDF/HWP/HWPX/OCR extraction, batch calendar export, and subscription feed URL/backend generation are not implemented yet.
 
 이 페이지는 NoticePilot의 현재 MVP 흐름과 향후 범위를 시각적으로 설명하기 위한 story appendix다.
 
@@ -14,13 +14,15 @@
 - Orange: current warning, guard, or scope note
 ```
 
-아래 이미지는 현재 구현과 future scope를 구분하기 위한 설명 자료이며, dashed gray 영역은 현재 구현 완료를 의미하지 않는다.
+아래 이미지는 현재 구현과 future scope를 구분하기 위한 설명 자료이며, dashed gray 영역은 현재 구현 완료를 의미하지 않는다. 이미지에는 최신 캘린더 탭 / 캠퍼스 설정 카드가 아직 반영되지 않았으므로, 이 문서의 텍스트 설명을 최신 기준선으로 본다.
 
 ---
 
 ## 00. Overview Map
 
 NoticePilot의 핵심 흐름은 긴 공지를 구조화된 분석 결과로 바꾸고, 사용자가 검토/수정한 뒤 체크리스트와 캘린더 후보로 export하는 것이다.
+
+현재 workspace는 `공지 캘린더`와 `단건 공지 분석` 탭으로 나뉜다. 공지 캘린더 탭은 관심 캠퍼스 설정과 구독형 ICS 준비 중 상태를 보여주며, 캠퍼스 설정은 현재 분석/내보내기 결과를 바꾸지 않는 inert metadata로만 저장된다.
 
 ![NoticePilot overview map](../assets/wiki/noticepilot-story-appendix-v3-5/noticepilot_story_00_overview_v3_5.png)
 
@@ -60,7 +62,7 @@ NoticePilot의 핵심 흐름은 긴 공지를 구조화된 분석 결과로 바�
 
 ## A1. Current MVP Responsibilities
 
-현재 MVP 책임 범위는 React client, Express mock analyze API, validation/normalization, localStorage persistence, Markdown export, selected all-day `.ics` export에 집중한다.
+현재 MVP 책임 범위는 React client, Express mock analyze API, Zod schema validation, validation/normalization, localStorage persistence, campus preference metadata, Markdown export, selected all-day `.ics` export에 집중한다.
 
 ![Current MVP responsibilities](../assets/wiki/noticepilot-story-appendix-v3-5/noticepilot_appendix_A1_current_mvp_responsibilities_v3_5.png)
 
@@ -68,6 +70,6 @@ NoticePilot의 핵심 흐름은 긴 공지를 구조화된 분석 결과로 바�
 
 ## A2. Future Scope Roadmap
 
-향후 범위에는 real AI API integration, server-side file extraction, advanced date resolution, school-level parsing, batch calendar export, subscription feed 등이 포함된다. 이 항목들은 현재 구현 완료 상태가 아니다.
+향후 범위에는 real AI API integration, server-side file extraction, advanced date resolution, school-level parsing, batch calendar export, subscription feed URL/backend generation 등이 포함된다. 이 항목들은 현재 구현 완료 상태가 아니다.
 
 ![Future scope roadmap](../assets/wiki/noticepilot-story-appendix-v3-5/noticepilot_appendix_A2_future_scope_roadmap_v3_5.png)

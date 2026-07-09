@@ -1,8 +1,8 @@
 # Architecture Overview
 
-> Wiki version: 2026-07-07 Phase 3 baseline / Phase 4 planning  
-> Implementation baseline: React + Vite frontend MVP, Express mock analyze API, frontend-server mock analyze wiring  
-> Runtime scope: real AI API, PDF/HWP/HWPX/OCR extraction, batch calendar export, and subscription feed are not implemented yet.
+> Wiki version: 2026-07-09 Calendar tab / campus preferences baseline
+> Implementation baseline: React + Vite frontend MVP, Express mock analyze API, Zod server schemas, frontend-server mock analyze wiring, calendar tab, and campus preferences
+> Runtime scope: real AI API, PDF/HWP/HWPX/OCR extraction, batch calendar export, and subscription feed URL/backend generation are not implemented yet.
 
 ## 1. Project Summary
 
@@ -24,19 +24,21 @@ NoticePilot은 단순 요약 앱이 아니다. 사용자가 실제로 해야 할
 
 ## 2. Current Implementation Status
 
-현재 프로젝트는 **React + Vite 기반 frontend MVP + Express mock analyze API** 단계다.
+현재 프로젝트는 **React + Vite 기반 frontend MVP + Express mock analyze API + Zod server schema validation + calendar tab/campus preferences** 단계다.
 
 현재 구현된 기능은 다음과 같다.
 
 ```text
 - React + Vite frontend MVP
 - Express analyze API skeleton
+- Zod-backed server schemas
 - GET /api/health
 - POST /api/analyze mock mode
 - mode: "ai" returns 501 ai_not_implemented
 - unknown explicit mode returns 400 unsupported_mode
 - Vite /api dev proxy to Express server
 - English / Korean UI toggle
+- Workspace hash tabs: #analyze and #calendar
 - Project introduction section
 - Notice title and body input UI
 - TXT / MD file upload
@@ -57,6 +59,9 @@ NoticePilot은 단순 요약 앱이 아니다. 사용자가 실제로 해야 할
 - Frontend analysis result validation/normalization
 - Server analysis result validation/normalization
 - localStorage persistence with noticepilot:v1
+- Separate campus preference persistence with noticepilot:campus-preferences:v1
+- Campus preference card and subscription ICS 준비 중 status card
+- Inert metadata.userPreferencesSnapshot on client and server mock analysis results
 - Markdown checklist download
 - Optional Markdown evidence inclusion
 - Selected all-day .ics calendar export
@@ -72,7 +77,7 @@ NoticePilot은 단순 요약 앱이 아니다. 사용자가 실제로 해야 할
 - Advanced relative date resolution
 - School-level notice parsing
 - Checkbox-based batch .ics export
-- Subscription calendar feed
+- Subscription calendar feed URL / backend feed generation
 - Multiple saved notice projects
 - Login / database / payment
 - Google Calendar API integration
@@ -86,6 +91,7 @@ NoticePilot은 단순 요약 앱이 아니다. 사용자가 실제로 해야 할
 
 ```text
 React Client
+  - workspace hash routing for #analyze and #calendar
   - notice input
   - TXT / MD file read with FileReader
   - extract preview
@@ -98,12 +104,16 @@ React Client
   - Markdown export
   - selected all-day .ics export
   - localStorage session persistence
+  - campus preference persistence
+  - inert userPreferencesSnapshot metadata attachment
 
 Express Server
   - GET /api/health
   - POST /api/analyze
   - mock analysis service
   - real AI service stub
+  - Zod app analysis schemas
+  - optional userPreferencesSnapshot normalization
   - response validation
   - response normalization
   - section limits
@@ -155,6 +165,7 @@ Manual paste, extracted text, or future /api/extract output
 - Show privacy notice and lightweight privacy pattern warnings
 - Request client-side mock analysis
 - Request server mock analysis
+- Attach inert userPreferencesSnapshot metadata to mock analysis requests/results
 - Defensively validate/normalize received analysis results
 - Render analysis result dashboard
 - Allow user edits, deletion, task completion, and event selection
@@ -162,6 +173,7 @@ Manual paste, extracted text, or future /api/extract output
 - Export Markdown checklist
 - Export selected all-day .ics calendar events
 - Persist current session in localStorage
+- Persist campus preferences separately in localStorage
 ```
 
 ### Express Server Responsibilities
@@ -174,6 +186,8 @@ Manual paste, extracted text, or future /api/extract output
 - Keep real AI mode blocked with explicit 501 ai_not_implemented until implemented
 - Reject unsupported explicit modes with 400 unsupported_mode
 - Treat model/service output as untrusted
+- Treat optional userPreferencesSnapshot as inert request metadata
+- Normalize and echo metadata.userPreferencesSnapshot in mock responses
 - Validate and normalize analysis results
 - Generate missing IDs
 - Normalize missing fields
@@ -261,7 +275,10 @@ For the current app:
 ```text
 Data model: separated arrays
 UI implementation: reusable components and generic handlers
+Optional metadata: metadata.userPreferencesSnapshot
 ```
+
+`metadata.userPreferencesSnapshot` is intentionally inert in the current MVP. It records campus preference context for future product direction, but it must not alter analysis sections, filtering, Markdown export, or `.ics` export behavior.
 
 A unified model may be reconsidered later if the app needs:
 
@@ -505,6 +522,21 @@ Use a versioned localStorage key.
 noticepilot:v1
 ```
 
+Campus preferences are stored separately so clearing or replacing the current notice analysis does not remove user preference context.
+
+```text
+noticepilot:campus-preferences:v1
+```
+
+Campus preference data:
+
+```text
+- activeInstitution: kangwon
+- selectedCampuses: chuncheon / samcheok / dogye / gangneung_wonju
+- includeCommonNotices: true
+- updatedAt under institutionPreferences.kangwon after user-initiated changes
+```
+
 If the schema changes later, use a new key.
 
 ```text
@@ -518,6 +550,8 @@ MVP rules:
 - Reset safely if parsing fails or schema version is incompatible.
 - Do not store uploaded file objects.
 - Store uploaded file name only as metadata.
+- Do not write campus preference storage before the first user-initiated campus change.
+- Keep campus preferences separate from the single-notice analysis session.
 ```
 
 ---
@@ -579,6 +613,8 @@ Early future filters should remain metadata-based.
 - deadline date
 ```
 
+The current campus preference UI is a first preference-storage step only. It does not implement school notice filtering, crawler behavior, batch export filtering, or subscription feed personalization yet.
+
 Batch export design direction:
 
 ```text
@@ -602,6 +638,8 @@ Completed:
 - Phase 2-QA: Backend analyze API QA fixes
 - Phase 3: Frontend ↔ server mock analyze wiring
 - Phase 3-QA: Server mock wiring QA
+- Calendar tab + campus preferences
+- Calendar/export QA notes
 
 Next:
 - Phase 4-A: Planning / contract documentation

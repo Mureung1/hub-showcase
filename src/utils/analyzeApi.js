@@ -59,6 +59,7 @@ export async function analyzeNoticeWithServerMock({
   userSelectedNoticeType,
   noticePublicationDate,
   uploadedFileName,
+  userPreferencesSnapshot,
 }) {
   let response
 
@@ -77,6 +78,7 @@ export async function analyzeNoticeWithServerMock({
         userSelectedNoticeType: userSelectedNoticeType || 'unknown',
         noticePublicationDate,
         uploadedFileName,
+        userPreferencesSnapshot,
       }),
     })
   } catch {

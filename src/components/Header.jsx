@@ -1,7 +1,7 @@
 export default function Header({ copy, language, languages, onLanguageChange }) {
   return (
     <header className="site-header">
-      <a className="brand" href="#top" aria-label={copy.ariaLabel}>
+      <a className="brand" href="#analyze" aria-label={copy.ariaLabel}>
         <span className="brand-mark">NP</span>
         <span>
           <strong>NoticePilot</strong>
@@ -21,7 +21,7 @@ export default function Header({ copy, language, languages, onLanguageChange }) 
             </button>
           ))}
         </div>
-        <a href="#workspace">{copy.navCta}</a>
+        <a href="#analyze">{copy.navCta}</a>
       </nav>
     </header>
   )

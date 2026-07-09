@@ -362,7 +362,81 @@ DTEND;VALUE=DATE:next day in YYYYMMDD
 
 ---
 
-## 20. QA Summary Template
+## 20. Calendar Tab / Campus Preferences QA
+
+이 섹션은 공지 캘린더 탭, 관심 캠퍼스 설정, 그리고 분석 요청 시점의 사용자 설정 snapshot이 기존 단건 공지 분석 흐름을 깨뜨리지 않는지 확인한다.
+
+### 20.1 Workspace Tab Routing
+
+| ID | Check | Expected Result | Status | Notes |
+|---|---|---|---|---|
+| CT-01 | Empty hash `/` | URL is normalized to `#analyze`; single notice analysis is shown | [ ] Pass / [ ] Fail | `replaceState`라 뒤로가기 중복 이력 없음 |
+| CT-02 | `#analyze` | single notice analysis tab is active | [ ] Pass / [ ] Fail |  |
+| CT-03 | `#calendar` | calendar tab is active and renders full-width content | [ ] Pass / [ ] Fail | sidebar 없음 |
+| CT-04 | Invalid hash | URL is normalized to `#analyze` | [ ] Pass / [ ] Fail | `replaceState` |
+| CT-05 | Tab click history | clicking tabs changes hash; browser Back returns to previous tab | [ ] Pass / [ ] Fail |  |
+| CT-06 | Header CTA | header CTA points to supported `#analyze` and reaches workspace | [ ] Pass / [ ] Fail | unsupported `#workspace` 없음 |
+| CT-07 | Header brand link | brand link does not emit unsupported `#top` | [ ] Pass / [ ] Fail |  |
+
+### 20.2 Calendar Tab UI
+
+| ID | Check | Expected Result | Status | Notes |
+|---|---|---|---|---|
+| CAL-01 | Tab label | `공지 캘린더` tab has no `준비 중` badge | [ ] Pass / [ ] Fail |  |
+| CAL-02 | Card order | calendar tab shows `관심 캠퍼스 설정` then `구독형 ICS` | [ ] Pass / [ ] Fail | only two cards |
+| CAL-03 | No notice placeholder | no notice-list placeholder such as `공지 목록 준비 중` appears | [ ] Pass / [ ] Fail |  |
+| CAL-04 | Campus subtitle | `강원대학교 기준` appears as subtitle, not a badge | [ ] Pass / [ ] Fail |  |
+| CAL-05 | ICS status badge | only `구독형 ICS` card shows neutral `준비 중` badge | [ ] Pass / [ ] Fail | no button |
+| CAL-06 | ICS body copy | body does not repeat `준비 중` and does not mention `크롤러` | [ ] Pass / [ ] Fail |  |
+| CAL-07 | Card layout | cards are full-width, white, bordered, and inner content is left-aligned | [ ] Pass / [ ] Fail | 760px max inner width |
+
+### 20.3 Campus Chip Behavior
+
+| ID | Check | Expected Result | Status | Notes |
+|---|---|---|---|---|
+| CP-01 | Default selection | all campus chips are unselected on first visit | [ ] Pass / [ ] Fail | no localStorage created before change |
+| CP-02 | Campus order | chips appear in order: 춘천, 삼척, 도계, 강릉원주 | [ ] Pass / [ ] Fail |  |
+| CP-03 | Select chip | selected chip shows check mark and soft blue selected style | [ ] Pass / [ ] Fail |  |
+| CP-04 | Deselect chip | selected chip can be deselected | [ ] Pass / [ ] Fail |  |
+| CP-05 | All unselected | all campuses can be unselected without validation text | [ ] Pass / [ ] Fail |  |
+| CP-06 | Accessibility | chips use native checkbox controls and are keyboard-focusable | [ ] Pass / [ ] Fail | visible focus style |
+| CP-07 | Hidden checkbox technique | native checkbox is not `display: none` | [ ] Pass / [ ] Fail | visually hidden technique only |
+
+### 20.4 Campus Preference Storage
+
+| ID | Check | Expected Result | Status | Notes |
+|---|---|---|---|---|
+| CPS-01 | Storage key | campus preferences use `noticepilot:campus-preferences:v1` | [ ] Pass / [ ] Fail | separate from `noticepilot:v1` |
+| CPS-02 | First visit | no campus preference localStorage is created before first campus change | [ ] Pass / [ ] Fail |  |
+| CPS-03 | First change | first campus change creates campus preference localStorage | [ ] Pass / [ ] Fail |  |
+| CPS-04 | Storage shape | payload has `version`, `activeInstitution`, and `institutionPreferences.kangwon` | [ ] Pass / [ ] Fail | no root `updatedAt` |
+| CPS-05 | updatedAt timing | `updatedAt` changes only after user-initiated campus persistence | [ ] Pass / [ ] Fail |  |
+| CPS-06 | Refresh restore | selected campuses restore after refresh | [ ] Pass / [ ] Fail |  |
+| CPS-07 | Invalid campus ID | invalid stored IDs are ignored in app state | [ ] Pass / [ ] Fail | storage is not rewritten on read |
+| CPS-08 | Duplicate campus ID | duplicates are removed in app state | [ ] Pass / [ ] Fail | fixed order |
+| CPS-09 | Broken JSON | app falls back to defaults without UI error | [ ] Pass / [ ] Fail | invalid storage not removed on read |
+| CPS-10 | Storage failure | failure text appears if persistence fails | [ ] Pass / [ ] Fail | current screen state still changes |
+| CPS-11 | Clear notice | notice clear/reset does not clear campus preferences | [ ] Pass / [ ] Fail | `noticepilot:v1` only |
+| CPS-12 | Success status | success text appears after save, refreshes on repeat save, and clears within cap | [ ] Pass / [ ] Fail | 5s / 8s cap |
+
+### 20.5 Analyze Snapshot / Non-regression
+
+| ID | Check | Expected Result | Status | Notes |
+|---|---|---|---|---|
+| SNAP-01 | Request payload | `/api/analyze` request includes `userPreferencesSnapshot` | [ ] Pass / [ ] Fail | exact field name |
+| SNAP-02 | Snapshot source | snapshot uses current in-memory App state, not localStorage re-read | [ ] Pass / [ ] Fail | storage failure case included |
+| SNAP-03 | Client mock metadata | client-side mock result includes `metadata.userPreferencesSnapshot` | [ ] Pass / [ ] Fail | output sections unchanged |
+| SNAP-04 | Server metadata | server mock response includes normalized `metadata.userPreferencesSnapshot` | [ ] Pass / [ ] Fail | after backend server is running |
+| SNAP-05 | Old saved results | saved analysis without `metadata.userPreferencesSnapshot` still restores and exports | [ ] Pass / [ ] Fail | no backfill required |
+| SNAP-06 | Top-level metadata | `userSelectedNoticeType`, `noticePublicationDate`, `uploadedFileName`, `detectedNoticeType` remain top-level | [ ] Pass / [ ] Fail |  |
+| SNAP-07 | Export unchanged | Markdown export remains unchanged by campus preferences | [ ] Pass / [ ] Fail |  |
+| SNAP-08 | ICS export unchanged | `.ics` export remains unchanged by campus preferences | [ ] Pass / [ ] Fail |  |
+| SNAP-09 | Analysis output unchanged | campus preferences do not alter mock analysis sections | [ ] Pass / [ ] Fail | inert metadata only |
+| SNAP-10 | Campus constants | frontend/backend campus IDs match exactly | [ ] Pass / [ ] Fail | chuncheon, samcheok, dogye, gangneung_wonju |
+
+---
+
+## 21. QA Summary Template
 
 QA 완료 후 아래를 작성한다.
 
@@ -401,7 +475,7 @@ Recommended Next Action:
 
 ---
 
-## 21. Suggested Git Action After Passing QA
+## 22. Suggested Git Action After Passing QA
 
 이 QA를 통과하면 현재 상태를 기준선으로 태그 처리한다.
 
@@ -417,7 +491,7 @@ git checkout -b frontend-mvp-qa
 
 ---
 
-## 22. QA Reviewer Guidance
+## 23. QA Reviewer Guidance
 
 검토자는 기능 목록만 보지 말고 다음 질문을 중심으로 확인한다.
 
@@ -431,3 +505,59 @@ git checkout -b frontend-mvp-qa
 ```
 
 이 질문에 대부분 긍정적으로 답할 수 있으면, frontend MVP follow-up v1은 QA 기준으로 통과 처리할 수 있다.
+
+---
+
+## 24. 2026-07-09 Calendar / Export QA Notes
+
+이 실행 기록은 공지 캘린더 탭, 캠퍼스 설정 저장, Markdown export, `.ics` export에 대한 Codex 브라우저 QA 결과다.
+
+### 실행 환경
+
+```text
+Date: 2026-07-09
+App URL: http://127.0.0.1:5174/
+Frontend command: npm run dev -- --host 127.0.0.1
+Browser: Codex in-app browser
+Language: Korean UI
+```
+
+### 통과 확인
+
+```text
+- #calendar 탭에서 캠퍼스 선택 UI가 렌더링됨
+- 캠퍼스 선택을 춘천 + 도계로 변경하면 저장 완료 문구가 표시됨
+- 새로고침 후에도 춘천 + 도계 선택 상태가 유지됨
+- #calendar에서 #analyze로 브라우저 Back 이동이 동작함
+- 샘플 공지 분석 전에는 Markdown / .ics 다운로드 버튼이 비활성화됨
+- 샘플 공지 분석 후 Markdown / .ics 다운로드 버튼이 활성화됨
+- Markdown 다운로드 클릭 후 최신 파일이 Downloads에 생성됨
+- .ics 다운로드 클릭 후 최신 파일이 Downloads에 생성됨
+- 다운로드 클릭 후 브라우저 콘솔 오류가 없음
+```
+
+생성 파일 확인:
+
+```text
+Markdown: /Users/chan/Downloads/noticepilot-checklist-ko (2).md
+ICS: /Users/chan/Downloads/noticepilot-calendar-ko (1).ics
+```
+
+파일 내용 확인:
+
+```text
+- Markdown 파일은 샘플 공지 제목, 요약, 마감일, 할 일, 제출물 섹션을 포함함
+- .ics 파일은 BEGIN:VCALENDAR, BEGIN:VEVENT, SUMMARY, DTSTART;VALUE=DATE, DTEND;VALUE=DATE를 포함함
+- .ics 날짜는 20260720 시작, 20260721 종료로 all-day next-day DTEND 규칙을 따름
+```
+
+### 제한사항 / 후속 확인
+
+```text
+- Codex 브라우저 플러그인의 read-only page scope에서는 localStorage가 노출되지 않아 raw browser localStorage 값을 직접 읽지 못함
+- javascript: URL 방식의 localStorage 추출은 브라우저 보안 정책으로 차단되어 우회하지 않음
+- 대신 저장 지속성은 새로고침으로 확인했고, raw payload shape는 campusPreferences helper 직렬화 결과로 검증함
+- Blob 기반 다운로드는 플러그인의 waitForEvent('download')로 잡히지 않아 timeout이 발생함
+- 대신 Downloads 폴더의 최신 생성 파일과 파일 내용을 확인해 실제 다운로드를 검증함
+- valid selected event가 없는 경우의 .ics 차단 메시지와 외부 캘린더 앱 import smoke test는 별도 수동 확인 대상으로 남김
+```

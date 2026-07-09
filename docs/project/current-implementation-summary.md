@@ -2,11 +2,11 @@
 
 ## Purpose
 
-This document summarizes the current implementation baseline of NoticePilot before Phase 4 work begins. It is intended to prevent future implementation phases from accidentally breaking the existing MVP, mock analysis flows, validation behavior, and export workflows.
+This document summarizes the current implementation baseline of NoticePilot before real AI integration begins. It is intended to prevent future implementation phases from accidentally breaking the existing MVP, mock analysis flows, validation behavior, campus preference metadata, and export workflows.
 
 ## Current Status
 
-NoticePilot is currently a React + Vite MVP UI with an Express mock analyze API. The project validates the core workflow through client-side mock analysis and server mock analysis.
+NoticePilot is currently a React + Vite MVP UI with an Express mock analyze API and Zod-backed server schemas. The project validates the core workflow through client-side mock analysis and server mock analysis.
 
 Current user-facing flow:
 
@@ -27,6 +27,17 @@ NoticePilot is not a generic summarization app. Its purpose is to extract action
 - cautions
 - calendar event candidates
 - source evidence
+
+Current technology stack:
+
+```text
+Frontend: React + Vite
+Backend: Express
+Schema validation: Zod
+State: React useState in App.jsx
+Persistence: browser localStorage
+Export: client-side Markdown and .ics generation
+```
 
 ## Completed Phases
 
@@ -130,6 +141,28 @@ Implemented capabilities:
 - privacy confirmation preserved
 - existing client-side mock flow preserved
 
+### Calendar Tab + Campus Preferences
+
+Status: Complete
+
+Implemented capabilities:
+
+- workspace hash tabs for `#analyze` and `#calendar`
+- unsupported workspace hashes normalize to `#analyze`
+- header and brand links point to supported workspace hashes
+- full-width calendar tab layout
+- campus preference card with native checkbox-based campus chips
+- campus options in fixed order: `chuncheon`, `samcheok`, `dogye`, `gangneung_wonju`
+- subscription ICS status card with neutral `준비 중` badge
+- separate campus preference storage key: `noticepilot:campus-preferences:v1`
+- no first-visit campus preference write before user change
+- campus preference normalization for invalid and duplicate campus IDs
+- `updatedAt` written only inside `institutionPreferences.kangwon` after user-initiated changes
+- client mock analysis metadata includes inert `metadata.userPreferencesSnapshot`
+- server mock request includes `userPreferencesSnapshot`
+- server mock response echoes normalized `metadata.userPreferencesSnapshot`
+- campus preferences do not alter analysis sections, filtering, Markdown export, or `.ics` export behavior
+
 ## Current App Schema Baseline
 
 The current app schema uses separate arrays:
@@ -143,6 +176,14 @@ cautions
 calendarEvents
 ```
 
+Analysis results may also contain optional metadata:
+
+```text
+metadata.userPreferencesSnapshot
+```
+
+This snapshot is inert. It records current campus preference state for future product context, but it must not change current mock analysis output, exports, or filtering.
+
 This structure should be preserved through Phase 4. UI handlers may be generic, but the app state should not be migrated to a unified `items[]` model yet.
 
 ## Current Regression Baselines
@@ -155,6 +196,8 @@ Future phases must not break the following behavior:
 - manual paste flow
 - TXT / MD upload flow
 - localStorage restore / clear
+- campus preference localStorage restore
+- `noticepilot:v1` and `noticepilot:campus-preferences:v1` remain separate
 - overwrite confirmation
 - privacy confirmation
 - validation / normalization warnings
@@ -167,6 +210,7 @@ Future phases must not break the following behavior:
 - Markdown export
 - optional Markdown evidence export
 - all-day selected `.ics` export
+- campus preferences remain inert metadata for export behavior
 - server unavailable / invalid response error UI
 
 ## Explicitly Unsupported Capabilities
@@ -182,7 +226,7 @@ The following are not implemented yet:
 - advanced relative date resolution
 - school-level notice parsing
 - checkbox-based batch `.ics` export
-- subscription calendar feed
+- subscription calendar feed URL / backend feed generation
 - multiple saved notice projects
 - login / database
 - Google Calendar API integration

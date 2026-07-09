@@ -1,0 +1,2 @@
+id	institution	notice_type	source_title	source_url	published_at	file_type	raw_file_path	extracted_text_path	expected_result_path	has_attachment	has_deadline	has_relative_date	has_vague_date	contains_personal_info	copyright_risk	notes
+example-001	example-institution	scholarship	Example notice title	https://example.edu/notice/1	2026-07-07	html		test-corpus/extracted-text/scholarship/example-001.txt	test-corpus/expected-results/scholarship/example-001.expected.json	false	true	false	false	false	low	TEMPLATE ONLY - not corpus data
