@@ -1,0 +1,30 @@
+# Render Blueprint. Render 대시보드에서 "New +" → "Blueprint" → 이 저장소를 선택하면
+# 아래 설정으로 서비스가 자동 생성된다. sync: false인 값들은 Render가 채워주지 않으므로
+# 배포 전 대시보드(Environment 탭)에서 직접 입력해야 한다.
+#
+# 주의: VITE_KAKAO_JS_KEY는 빌드 시점(vite build)에 프론트 번들에 그대로 박히는 값이라,
+# "첫 빌드가 실행되기 전에" 이 값이 등록되어 있어야 한다. 배포 이후에 값을 추가/변경했다면
+# 반드시 재배포(Manual Deploy)를 한 번 더 실행해야 프론트에 반영된다.
+services:
+  - name: cjmt
+    type: web
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: KAKAO_REST_API_KEY
+        sync: false
+      - key: VITE_KAKAO_JS_KEY
+        sync: false
+      - key: FOODSAFETY_API_KEY
+        sync: false
+      - key: FOODSAFETY_PROC_API_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
