@@ -4,13 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "client:dev": "vite",
-    "server:dev": "nodemon server/index.js",
-    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "client:dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "server:dev": "nodemon --exitcrash server/index.js",
+    "dev": "concurrently --kill-others-on-fail --names server,client --prefix-colors blue,green \"npm run server:dev\" \"npm run client:dev\"",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^2.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

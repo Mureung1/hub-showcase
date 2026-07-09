@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { analyzeOpportunity as requestAnalyzeOpportunity, getHealth } from "./api.js";
 import {
   findNewPostLinks,
@@ -32,7 +32,7 @@ const resultModes = [
 
 const sourceModes = [
   { id: "manual", label: "HTML 입력" },
-  { id: "live", label: "웹사이트 직접" },
+  { id: "live", label: "서버 프록시" },
 ];
 const sampleRawText = `2026 AI 소프트웨어 공모전 참가자 모집
 
@@ -67,6 +67,20 @@ const matchStatusLabels = {
   insufficient_info: "정보 부족",
   not_eligible: "지원 어려움",
 };
+
+const analysisModeLabels = {
+  gemini: "Gemini",
+  mock: "mock",
+  openai: "OpenAI",
+};
+
+const providerLabels = {
+  gemini: "Gemini",
+  mock: "mock",
+  openai: "OpenAI",
+};
+
+const sidebarItems = ["대시보드", "프로필", "기회 추천", "저장한 공고", "마감 태스크", "설정"];
 
 const statusLabels = {
   complete: "완료",
@@ -193,11 +207,11 @@ function AnalysisResultCard({ result }) {
           <p className="eyebrow">Analysis Result</p>
           <h3>{opportunity.title || "공고명 확인 필요"}</h3>
         </div>
-        <span className={`analysis-mode mode-${result.mode}`}>{result.mode}</span>
+        <span className={`analysis-mode mode-${result.mode}`}>{analysisModeLabels[result.mode] ?? result.mode}</span>
       </div>
 
       {result.mode === "mock" ? (
-        <p className="demo-mode-message">현재 데모 모드입니다. 실제 OpenAI API는 호출되지 않았습니다.</p>
+        <p className="demo-mode-message">현재 데모 모드입니다. 실제 AI API는 호출되지 않았습니다.</p>
       ) : null}
 
       <div className="analysis-field-grid">
@@ -263,17 +277,21 @@ function AnalysisDemoPanel({
   onChangeUrl,
   profileDraft,
 }) {
+  const canAnalyze = Boolean(analysisUrl.trim() || analysisRawText.trim());
+
   return (
     <section className="analysis-panel" aria-labelledby="analysis-title">
       <header className="analysis-panel-header">
         <div>
           <p className="eyebrow">AI Analysis</p>
-          <h2 id="analysis-title">공고 본문 분석</h2>
+          <h2 id="analysis-title">공고 링크/본문 분석</h2>
         </div>
         <span className="analysis-health">
-          {health ? `${health.aiProvider} / live ${String(health.liveOpenAIEnabled)}` : "server 확인 중"}
+          {health ? `${health.aiProvider} / live ${String(health.liveAIEnabled ?? health.liveOpenAIEnabled)}` : "server 확인 중"}
         </span>
       </header>
+
+      <p className="analysis-helper">공고 링크만 입력하면 서버가 본문을 가져와 AI 분석을 실행합니다. 본문을 붙여넣으면 붙여넣은 내용이 우선 사용됩니다.</p>
 
       <form className="analysis-form" onSubmit={onAnalyze}>
         <div className="profile-grid">
@@ -325,7 +343,7 @@ function AnalysisDemoPanel({
         </div>
 
         <label className="field">
-          <span>출처 URL</span>
+          <span>공고 링크</span>
           <input
             type="url"
             value={analysisUrl}
@@ -335,16 +353,17 @@ function AnalysisDemoPanel({
         </label>
 
         <label className="field rawtext-field">
-          <span>공고 본문</span>
+          <span>공고 본문 (선택)</span>
           <textarea
             value={analysisRawText}
             onChange={(event) => onChangeRawText(event.target.value)}
+            placeholder={sampleRawText}
             spellCheck="false"
           />
         </label>
 
-        <button className="primary-button" type="submit" disabled={isAnalyzing}>
-          {isAnalyzing ? "분석 중" : "AI 분석 실행"}
+        <button className="primary-button" type="submit" disabled={isAnalyzing || !canAnalyze}>
+          {isAnalyzing ? "분석 중" : "분석하기"}
         </button>
       </form>
 
@@ -508,7 +527,7 @@ function PipelinePanel({ config, isRunning, scan }) {
       title: "출처 설정",
     },
     {
-      copy: isBatch ? "저장된 출처 일괄 요청" : config.sourceMode === "live" ? "브라우저 직접 요청" : "입력 HTML 사용",
+      copy: isBatch ? "저장된 출처 일괄 요청" : config.sourceMode === "live" ? "서버 프록시 요청" : "입력 HTML 사용",
       state: isRunning ? "active" : scan ? "done" : "idle",
       title: "HTML 확보",
     },
@@ -681,6 +700,123 @@ function NoticeBriefPanel({ briefs }) {
   );
 }
 
+function Topbar({ health }) {
+  const provider = providerLabels[health?.aiProvider] ?? health?.aiProvider ?? "server";
+  const modeLabel = health
+    ? health.liveAIEnabled
+      ? `${provider} 실제 분석 모드`
+      : "mock 분석 모드"
+    : "서버 확인 중";
+
+  return (
+    <header className="topbar">
+      <div className="brand-lockup" aria-label="UniRadar">
+        <span className="brand-mark" aria-hidden="true"><span /></span>
+        <div>
+          <strong>UniRadar</strong>
+          <small>대학생 맞춤형 기회 탐색 에이전트</small>
+        </div>
+      </div>
+      <div className="top-search" aria-label="검색">
+        <span aria-hidden="true">⌕</span>
+        <input placeholder="키워드, 기관명, 공고명으로 검색하세요" />
+        <kbd>Ctrl K</kbd>
+      </div>
+      <div className="topbar-actions">
+        <span className={`mode-badge mode-${health?.aiProvider || "mock"}`}>{modeLabel}</span>
+        <div className="user-chip" aria-label="사용자">
+          <span>김</span>
+          <div>
+            <strong>김유나</strong>
+            <small>학생</small>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Sidebar({ status }) {
+  return (
+    <aside className="sidebar" aria-label="주요 메뉴">
+      <nav className="sidebar-nav">
+        {sidebarItems.map((item, index) => (
+          <a className={index === 0 ? "is-active" : ""} href="#agent-title" key={item}>
+            <span aria-hidden="true">{index + 1}</span>
+            {item}
+          </a>
+        ))}
+      </nav>
+      <div className="sidebar-card">
+        <strong>현재 상태</strong>
+        <p>{statusLabels[status]}</p>
+      </div>
+      <div className="sidebar-links">
+        <a href="#analysis-title">도움말</a>
+        <a href="#notice-brief-title">의견 보내기</a>
+      </div>
+    </aside>
+  );
+}
+
+function HeroSummary({ health, knownLinks, scan }) {
+  const provider = providerLabels[health?.aiProvider] ?? "mock";
+  const metrics = [
+    { label: "추출 링크", value: scan?.allLinks.length ?? 0, helper: "이번 스캔" },
+    { label: "최신 링크", value: scan?.latestLinks.length ?? 0, helper: "마지막 스캔 이후" },
+    { label: "기존 기록", value: scan?.knownCount ?? knownLinks.length, helper: "로컬 저장" },
+  ];
+
+  return (
+    <section className="hero-summary" aria-label="오늘의 추천 기회 요약">
+      <div className="hero-copy">
+        <p className="eyebrow">Today</p>
+        <h2>오늘의 공지 수집 현황</h2>
+        <p>저장한 출처에서 새 글 링크를 찾고, 필요한 공고 본문은 {provider} 분석으로 구조화합니다.</p>
+      </div>
+      <div className="hero-meta">
+        <span>업데이트: {formatScanTime(scan?.fetchedAt)}</span>
+      </div>
+      <div className="hero-metrics">
+        {metrics.map((metric) => (
+          <div className="hero-metric" key={metric.label}>
+            <span>{metric.label}</span>
+            <strong>{metric.value}</strong>
+            <small>{metric.helper}</small>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ProfileSummaryPanel({ profileDraft }) {
+  const fields = [
+    { label: "학교", value: profileDraft.school },
+    { label: "학년", value: `${profileDraft.grade}학년` },
+    { label: "전공", value: profileDraft.majors },
+    { label: "관심 분야", value: profileDraft.interests },
+    { label: "활동 가능 지역", value: profileDraft.regions },
+    { label: "팀 참여", value: profileDraft.canJoinTeam ? "가능" : "불가" },
+  ];
+
+  return (
+    <section className="profile-summary-panel" aria-label="내 프로필 요약">
+      <div className="panel-heading compact-heading">
+        <p className="eyebrow">Profile</p>
+        <h2>내 프로필 요약</h2>
+      </div>
+      <div className="profile-summary-grid">
+        {fields.map((field) => (
+          <div className="profile-summary-item" key={field.label}>
+            <span>{field.label}</span>
+            <strong>{field.value || "확인 필요"}</strong>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 function CategoryStrip() {
   return (
     <div className="category-strip" aria-label="향후 정리 대상">
@@ -698,13 +834,13 @@ export default function OpportunityAgentWorkbench() {
   const [scan, setScan] = useState(null);
   const [status, setStatus] = useState("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const [noticeMessage, setNoticeMessage] = useState("API 없이 브라우저와 로컬 기록만 사용 중입니다.");
+  const [noticeMessage, setNoticeMessage] = useState("서버 프록시와 로컬 기록으로 공지 링크를 수집합니다.");
   const [displayMode, setDisplayMode] = useState("latest");
   const [health, setHealth] = useState(null);
   const [healthError, setHealthError] = useState("");
   const [profileDraft, setProfileDraft] = useState(initialProfileDraft);
   const [analysisUrl, setAnalysisUrl] = useState("");
-  const [analysisRawText, setAnalysisRawText] = useState(sampleRawText);
+  const [analysisRawText, setAnalysisRawText] = useState("");
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analysisError, setAnalysisError] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -779,7 +915,7 @@ export default function OpportunityAgentWorkbench() {
           canJoinTeam: profileDraft.canJoinTeam,
         },
         url: analysisUrl.trim() || undefined,
-        rawText: analysisRawText,
+        rawText: analysisRawText.trim(),
       });
 
       setAnalysisResult(result);
@@ -1092,8 +1228,11 @@ export default function OpportunityAgentWorkbench() {
   }
 
   return (
-    <main className="agent-page">
-      <section className="workspace" aria-labelledby="agent-title">
+    <main className="app-shell">
+      <Topbar health={health} />
+      <div className="app-layout">
+        <Sidebar status={status} />
+        <section className="workspace" aria-labelledby="agent-title">
         <header className="workspace-header">
           <div>
             <p className="eyebrow">Opportunity Agent</p>
@@ -1105,6 +1244,8 @@ export default function OpportunityAgentWorkbench() {
             <span className={`status-pill status-${status}`}>{statusLabels[status]}</span>
           </div>
         </header>
+
+        <HeroSummary health={health} knownLinks={knownLinks} scan={scan} />
 
         <section className="tool-grid" aria-label="스캔 설정과 흐름">
           <ConfigPanel
@@ -1123,6 +1264,7 @@ export default function OpportunityAgentWorkbench() {
             sourceOptions={sourceOptions}
           />
           <div className="side-stack">
+            <ProfileSummaryPanel profileDraft={profileDraft} />
             <PipelinePanel config={config} isRunning={isRunning} scan={scan} />
             <RoadmapPanel />
           </div>
@@ -1153,7 +1295,8 @@ export default function OpportunityAgentWorkbench() {
           />
           <NoticeBriefPanel briefs={noticeBriefs} />
         </section>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }
