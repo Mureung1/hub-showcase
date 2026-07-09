@@ -15,8 +15,9 @@ const sections: MenuSection[] = [
     title: '컴퓨터공학과',
     items: [
       { label: '정렬', to: '/cs/sorting' },
-      { label: '스택' },
-      { label: '큐' },
+      { label: '스택', to: '/cs/stack' },
+      { label: '큐', to: '/cs/queue' },
+      { label: '덱', to: '/cs/deque' },
       { label: '트리' },
     ],
   },
