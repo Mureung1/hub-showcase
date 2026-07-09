@@ -50,6 +50,55 @@ export function isMealAnalysis(value) {
   )
 }
 
+// 음식 항목의 영양수치 출처. DB(가공)은 식약처 가공식품DB(편의점/포장/프랜차이즈 제품) 매칭을 뜻한다.
+export const NUTRITION_SOURCE = {
+  DB: '식약처DB',
+  DB_PROCESS: '식약처DB(가공)',
+  OFFICIAL: '공식',
+  ESTIMATED: '추정',
+}
+
+const ESTIMATED_GRAMS_MIN = 20
+const ESTIMATED_GRAMS_MAX = 1500
+
+// AI가 추정한 섭취량(g)이 비현실적인 값이면 현실적인 1인분 범위로 보정한다.
+export function clampEstimatedGrams(grams) {
+  const n = Number(grams)
+  if (!Number.isFinite(n) || n <= 0) return 100
+  return Math.min(ESTIMATED_GRAMS_MAX, Math.max(ESTIMATED_GRAMS_MIN, n))
+}
+
+// 가공식품 DB의 1회 섭취참고량(servSize)이 있으면 그걸 우선 쓰고(포장 단위라 사진 추정보다 정확한 경우가 많다),
+// 없거나 파싱 안 되면 AI가 추정한 섭취량을 쓴다.
+export function resolveConsumedGrams(match, estimatedGrams) {
+  const servValue = match?.servSize?.value
+  if (typeof servValue === 'number' && servValue > 0) return servValue
+  return clampEstimatedGrams(estimatedGrams)
+}
+
+// 식약처 DB의 기준량(baseValue, 보통 100g) 대비 실제 섭취량(grams)으로 영양소를 환산한다.
+// dbNutrients에 없는 항목(null)은 결과에서도 null로 남긴다(호출부에서 AI 추정치로 보완).
+export function scaleNutrients(dbNutrients, baseValue, grams) {
+  const base = Number(baseValue)
+  const factor = base > 0 ? grams / base : 1
+  return Object.fromEntries(
+    NUTRIENT_KEYS.map((key) => {
+      const value = dbNutrients?.[key]
+      return [key, typeof value === 'number' ? Math.round(value * factor * 10) / 10 : null]
+    }),
+  )
+}
+
+// scaled(DB 환산값)에서 null인 항목만 fallback(AI 추정치)으로 채워 완전한 NutrientSet을 만든다.
+export function fillMissingNutrients(scaled, fallback) {
+  return Object.fromEntries(
+    NUTRIENT_KEYS.map((key) => [
+      key,
+      typeof scaled?.[key] === 'number' ? scaled[key] : Number(fallback?.[key]) || 0,
+    ]),
+  )
+}
+
 // AI가 계산한 "1인분 예상 섭취량"(expected)을 "단백질 18g · 지방 4g 섭취 가능" 형태로 요약.
 // 없거나 형식이 어긋나면 null을 반환해 표시를 생략하게 한다.
 export function formatExpectedIntake(expected) {

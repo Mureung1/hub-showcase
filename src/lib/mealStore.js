@@ -1,6 +1,7 @@
 // 날짜별 "오늘 먹은 음식 목록" 저장(식단 탭용). 키: cjmt:meals:<userId>:<YYYY-MM-DD>
-// 항목 형태: { id, name, brand, nutrients(NutrientSet), source('공식'|'추정'), createdAt }
+// 항목 형태: { id, name, brand, nutrients(NutrientSet), source('공식'|'추정'), mealType('breakfast'|'lunch'|'dinner'|'etc'), createdAt }
 import { get, set } from './storage.js'
+import { normalizeMealType } from './mealType.js'
 import { NUTRIENT_LABELS } from './nutrition.js'
 
 function storageKey(userId, dateKey) {
@@ -16,7 +17,8 @@ function makeId() {
 export function getMeals(userId, dateKey) {
   if (!userId || !dateKey) return []
   const meals = get(storageKey(userId, dateKey), [])
-  return Array.isArray(meals) ? meals : []
+  // 과거에 저장된 mealType 없는 항목은 '기타'로 간주한다.
+  return Array.isArray(meals) ? meals.map((m) => ({ ...m, mealType: normalizeMealType(m.mealType) })) : []
 }
 
 export function addMeal(userId, dateKey, meal) {
@@ -28,6 +30,7 @@ export function addMeal(userId, dateKey, meal) {
     brand: meal.brand,
     nutrients: meal.nutrients,
     source: meal.source ?? (meal.brand ? '공식' : '추정'),
+    mealType: normalizeMealType(meal.mealType),
     createdAt: new Date().toISOString(),
   }
 

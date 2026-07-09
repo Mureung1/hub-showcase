@@ -8,7 +8,12 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const APP_TITLE = 'CJMT'
 const APP_REFERER = process.env.APP_URL || 'http://localhost:5173'
 const KAKAO_KEYWORD_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
-const FOODSAFETY_URL = 'https://api.data.go.kr/openapi/tn_pubr_public_nutri_food_info_api'
+
+// 식약처 식품영양성분DB: "음식"(조리식) API가 기본, "가공식품" API는 편의점/포장/프랜차이즈 제품 보완용 폴백. 파라미터·응답 구조는 동일하다.
+const FOODSAFETY_SOURCES = {
+  food: { url: 'https://api.data.go.kr/openapi/tn_pubr_public_nutri_food_info_api', envKey: 'FOODSAFETY_API_KEY' },
+  process: { url: 'https://api.data.go.kr/openapi/tn_pubr_public_nutri_process_info_api', envKey: 'FOODSAFETY_PROC_API_KEY' },
+}
 
 const RETRY_DELAYS_MS = [1000, 2000, 4000]
 const RETRYABLE_STATUS = new Set([429, 503])
@@ -151,6 +156,9 @@ function normalizeFoodItem(item) {
   return {
     name: item?.foodNm ?? null,
     baseQuantity: parseBaseQuantity(item?.nutConSrtrQua),
+    servSize: parseBaseQuantity(item?.servSize), // 가공식품의 1회 섭취참고량(음식 API는 보통 비어 있음)
+    foodSize: item?.foodSize ?? null,
+    brand: item?.mfrNm ?? null, // 가공식품 제조사명
     nutrients: {
       calories: toNumber(item?.enerc),
       protein: toNumber(item?.prot),
@@ -180,17 +188,17 @@ function isAuthError(data) {
 
 // rawKey=false: Decoding 키로 가정, URLSearchParams가 한 번만 인코딩하도록 맡긴다.
 // rawKey=true: Encoding 키(이미 퍼센트 인코딩됨)로 가정, URLSearchParams를 거치면 이중 인코딩되므로 직접 붙인다.
-function buildFoodSafetyUrl(apiKey, foodName, rawKey) {
+function buildFoodSafetyUrl(baseUrl, apiKey, foodName, rawKey) {
   const params = new URLSearchParams({ pageNo: '1', numOfRows: '10', type: 'json', foodNm: foodName })
   if (rawKey) {
-    return `${FOODSAFETY_URL}?serviceKey=${apiKey}&${params.toString()}`
+    return `${baseUrl}?serviceKey=${apiKey}&${params.toString()}`
   }
   params.set('serviceKey', apiKey)
-  return `${FOODSAFETY_URL}?${params.toString()}`
+  return `${baseUrl}?${params.toString()}`
 }
 
-async function callFoodSafetyApi(apiKey, foodName, rawKey) {
-  const url = buildFoodSafetyUrl(apiKey, foodName, rawKey)
+async function callFoodSafetyApi(baseUrl, apiKey, foodName, rawKey) {
+  const url = buildFoodSafetyUrl(baseUrl, apiKey, foodName, rawKey)
   const upstreamRes = await fetch(url)
   const raw = await upstreamRes.text()
   let data = null
@@ -202,28 +210,35 @@ async function callFoodSafetyApi(apiKey, foodName, rawKey) {
   return { upstreamRes, raw, data }
 }
 
-// POST /api/fooddb - 식약처 전국통합식품영양성분정보(음식) 검색 프록시 (FOODSAFETY_API_KEY는 서버에서만 사용)
+// POST /api/fooddb - 식약처 전국통합식품영양성분정보 검색 프록시. body.source로 "음식"(기본) / "가공식품" DB를 선택한다.
+// (FOODSAFETY_API_KEY / FOODSAFETY_PROC_API_KEY는 서버에서만 사용)
 app.post('/api/fooddb', async (req, res) => {
-  const apiKey = process.env.FOODSAFETY_API_KEY
-  if (!apiKey) {
-    return res.status(500).json({ error: 'FOODSAFETY_API_KEY is not configured on the server' })
+  const { foodName, source = 'food' } = req.body || {}
+
+  const sourceConfig = FOODSAFETY_SOURCES[source]
+  if (!sourceConfig) {
+    return res.status(400).json({ error: `source must be one of: ${Object.keys(FOODSAFETY_SOURCES).join(', ')}` })
   }
 
-  const { foodName } = req.body || {}
+  const apiKey = process.env[sourceConfig.envKey]
+  if (!apiKey) {
+    return res.status(500).json({ error: `${sourceConfig.envKey} is not configured on the server` })
+  }
+
   if (!foodName || typeof foodName !== 'string' || !foodName.trim()) {
     return res.status(400).json({ error: 'foodName is required' })
   }
 
   try {
-    let { upstreamRes, raw, data } = await callFoodSafetyApi(apiKey, foodName, false)
+    let { upstreamRes, raw, data } = await callFoodSafetyApi(sourceConfig.url, apiKey, foodName, false)
 
     // JSON 파싱 실패(보통 서비스키 인증 오류 시 XML로 응답) 또는 인증 오류 메시지면 반대 방식(raw key)으로 재시도
     if (!data || isAuthError(data)) {
-      ;({ upstreamRes, raw, data } = await callFoodSafetyApi(apiKey, foodName, true))
+      ;({ upstreamRes, raw, data } = await callFoodSafetyApi(sourceConfig.url, apiKey, foodName, true))
     }
 
     if (!data) {
-      console.error('FoodSafety API: JSON 파싱 실패, 원본 응답 일부:', raw.slice(0, 500))
+      console.error(`FoodSafety API(${source}): JSON 파싱 실패, 원본 응답 일부:`, raw.slice(0, 500))
       return res.status(502).json({ error: '식약처 API 응답을 해석할 수 없습니다' })
     }
 
@@ -237,18 +252,18 @@ app.post('/api/fooddb', async (req, res) => {
     const items = extractFoodItems(data)
 
     if (items === null) {
-      console.error('FoodSafety API: items 구조를 찾을 수 없음, 원본 응답 일부:', JSON.stringify(data).slice(0, 500))
+      console.error(`FoodSafety API(${source}): items 구조를 찾을 수 없음, 원본 응답 일부:`, JSON.stringify(data).slice(0, 500))
       return res.status(502).json({ error: `식약처 API 응답 형식이 예상과 다릅니다 (resultCode: ${resultCode ?? '알 수 없음'})` })
     }
 
     if (!upstreamRes.ok && items.length === 0) {
-      console.error('FoodSafety API error:', resultCode, data?.response?.header?.resultMsg)
+      console.error(`FoodSafety API(${source}) error:`, resultCode, data?.response?.header?.resultMsg)
       return res.status(upstreamRes.status).json({ error: data?.response?.header?.resultMsg || 'FoodSafety API error' })
     }
 
     res.json(items.map(normalizeFoodItem))
   } catch (err) {
-    console.error('FoodSafety proxy request failed:', err)
+    console.error(`FoodSafety proxy(${source}) request failed:`, err)
     res.status(500).json({ error: 'Internal proxy error' })
   }
 })

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import Card from '../components/Card.jsx'
+import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import { getManualDayStatus, setManualDayStatus } from '../lib/dayStatus.js'
 import { getMeals, sumNutrients } from '../lib/mealStore.js'
@@ -85,6 +86,7 @@ export default function Calendar() {
 
   const selectedInfo = selectedDateKey ? dayInfoMap[selectedDateKey] : null
   const selectedRecord = selectedDateKey ? records[selectedDateKey] : null
+  const selectedItems = selectedRecord?.items?.length ? selectedRecord.items : selectedDateKey ? getMeals(user?.id, selectedDateKey) : []
 
   function goMonth(delta) {
     setCursor((c) => {
@@ -221,13 +223,23 @@ export default function Calendar() {
             <h3 style={{ margin: 0, color: colors.textStrong }}>{selectedDateKey}</h3>
             <StatusBadge status={selectedInfo.status} label={`자동 판정 · ${AUTO_STATUS_LABELS[selectedInfo.status]}`} />
           </div>
-          <p style={{ margin: `0 0 ${spacing.xs}px`, color: colors.textSub, fontSize: font.size.sm }}>
-            {selectedRecord?.items?.length
-              ? selectedRecord.items.map((item) => item.name).join(', ')
-              : getMeals(user.id, selectedDateKey)
-                  .map((m) => m.name)
-                  .join(', ')}
-          </p>
+          <div style={{ marginBottom: spacing.xs }}>
+            {selectedItems.map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: spacing.sm,
+                  padding: `${spacing.xs}px 0`,
+                }}
+              >
+                <span style={{ color: colors.textSub, fontSize: font.size.sm }}>{item.name}</span>
+                <MealTypeBadge mealType={item.mealType} />
+              </div>
+            ))}
+          </div>
           <p style={{ margin: `0 0 ${spacing.sm}px`, color: colors.textSub, fontSize: font.size.xs }}>
             {NUTRIENT_LABELS.length}개 영양소 중 {countSatisfiedNutrients(user.recommended, selectedInfo.total)}개 충족
           </p>

@@ -1,4 +1,6 @@
 import Card from './Card.jsx'
+import MealTypeBadge from './MealTypeBadge.jsx'
+import SourceBadge from './SourceBadge.jsx'
 import { NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
 
@@ -48,27 +50,6 @@ export function NutrientBars({ nutrients }) {
   )
 }
 
-function SourceBadge({ brand }) {
-  const isOfficial = Boolean(brand)
-
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        fontSize: font.size.xs,
-        fontWeight: 700,
-        padding: '3px 10px',
-        borderRadius: radius.pill,
-        background: isOfficial ? colors.primarySurface : colors.bg,
-        color: isOfficial ? colors.primary : colors.textSub,
-        marginBottom: spacing.sm,
-      }}
-    >
-      {isOfficial ? '공식 영양표' : '표준 조리법 기반 추정'}
-    </span>
-  )
-}
-
 export default function NutritionCard({ analysis }) {
   if (!analysis) return null
 
@@ -91,13 +72,11 @@ export default function NutritionCard({ analysis }) {
           >
             🍽️
           </div>
-          <div>
-            <SourceBadge brand={item.brand} />
+          <div style={{ marginBottom: spacing.sm, display: 'flex', gap: spacing.xs, flexWrap: 'wrap' }}>
+            <SourceBadge source={item.source} />
+            {item.mealType && <MealTypeBadge mealType={item.mealType} />}
           </div>
-          <h3 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.md}px` }}>
-            {item.name}
-            {item.brand ? ` (${item.brand})` : ''}
-          </h3>
+          <h3 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.md}px` }}>{item.name}</h3>
           <NutrientBars nutrients={item.nutrients} />
         </Card>
       ))}

@@ -23,6 +23,10 @@ export const colors = {
   danger: '#F04452',
   dangerSurface: '#FDEEEF',
 
+  // "식약처DB"(신뢰 최상) 출처 배지 전용 블루. 포인트 컬러(그린)와 겹치지 않게 구분한다.
+  info: '#3182F6',
+  infoSurface: '#EAF2FE',
+
   // 배경/서피스: 전역은 옅은 회색, 카드는 흰색으로 대비를 준다.
   background: '#F2F4F6',
   bg: '#F2F4F6',

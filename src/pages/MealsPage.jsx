@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import Card from '../components/Card.jsx'
+import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import { NutrientBars } from '../components/NutritionCard.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
+import SourceBadge from '../components/SourceBadge.jsx'
 import { NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
@@ -57,25 +59,6 @@ function IntakeBar({ label, unit, actual, recommended, isLimit }) {
   )
 }
 
-function SourceBadge({ source }) {
-  const isOfficial = source === '공식'
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        fontSize: font.size.xs,
-        fontWeight: 700,
-        padding: '2px 8px',
-        borderRadius: radius.pill,
-        background: isOfficial ? colors.primarySurface : colors.bg,
-        color: isOfficial ? colors.primary : colors.textSub,
-      }}
-    >
-      {isOfficial ? '공식 영양표' : '추정'}
-    </span>
-  )
-}
-
 function TrashIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -94,7 +77,10 @@ function MealCard({ meal, expanded, onToggleDetail, onRemove }) {
     <Card>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.md }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <SourceBadge source={meal.source} />
+          <div style={{ display: 'flex', gap: spacing.xs, flexWrap: 'wrap' }}>
+            <SourceBadge source={meal.source} />
+            <MealTypeBadge mealType={meal.mealType} />
+          </div>
           <h3 style={{ fontSize: font.size.md, margin: `${spacing.sm}px 0 ${spacing.xs}px`, color: colors.textStrong }}>
             {meal.name}
             {meal.brand ? ` (${meal.brand})` : ''}
