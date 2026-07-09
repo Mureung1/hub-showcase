@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="대학생 대면 소통 서비스 - meetry">
+  <title>meetry — 대학생 대면 소통 서비스</title>
+
+  <!-- Google Fonts - Outfit & Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* meetry 디자인 변수 및 레이아웃 CSS 탑재 */
+    :root {
+      --color-primary:        #FF6B35;
+      --color-primary-cta:    #FF5A1F;
+      --color-primary-light:  #FFF3EC;
+      --color-text-primary:   #1A1A1A;
+      --color-text-secondary: #4B5563;
+      --color-text-tertiary:  #9CA3AF;
+      --color-text-meta:      #9CA3AF;
+      --color-bg:             #FFFFFF;
+      --color-bg-hover:       #FFFBF9;
+      --color-bg-active:      #FFF3EC;
+      --color-divider:        #F3F4F6;
+      --color-body-bg:        #F3F4F6;
+
+      --font-family: 'Noto Sans KR', sans-serif;
+      --font-family-en: 'Outfit', sans-serif;
+
+      --header-height:     64px;
+      --bottom-nav-height: 64px;
+      --max-width-mobile:  430px;
+      --max-width-web:     1060px;
+      
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 25px rgba(255, 90, 31, 0.15);
+
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    /* 상세 베이스 스타일은 base.css와 동일하게 설정 */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background-color: var(--color-body-bg); font-family: var(--font-family); color: var(--color-text-primary); -webkit-font-smoothing: antialiased; }
+    
+    .app-shell { width: 100%; margin: 0 auto; background: var(--color-bg); min-height: 100vh; position: relative; display: flex; flex-direction: column; }
+    @media (max-width: 767px) { .app-shell { max-width: var(--max-width-mobile); } }
+    @media (min-width: 768px) { .app-shell { max-width: var(--max-width-web); background-color: var(--color-body-bg); box-shadow: none; } body { padding: 0 20px; } }
+
+    .screen { display: none; flex-direction: column; flex: 1; background-color: var(--color-bg); }
+    .screen.active { display: flex; }
+    @media (min-width: 768px) { .screen { background-color: transparent; padding-top: calc(var(--header-height) + 20px); padding-bottom: 40px; } }
+
+    /* Header */
+    .app-header { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; height: var(--header-height); background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; border-bottom: 1px solid var(--color-divider); }
+    @media (max-width: 767px) { .app-header { max-width: var(--max-width-mobile); } }
+    @media (min-width: 768px) { .app-header { max-width: var(--max-width-web); border-radius: 0 0 var(--radius-md) var(--radius-md); box-shadow: var(--shadow-sm); padding: 0 40px; } }
+    .app-header__title.logo { font-family: var(--font-family-en); color: var(--color-primary-cta); font-size: 24px; font-weight: 700; cursor: pointer; }
+    
+    .web-nav { display: none; gap: 32px; height: 100%; align-items: center; }
+    .web-nav__item { color: var(--color-text-secondary); text-decoration: none; font-size: 15px; font-weight: 700; cursor: pointer; position: relative; height: 100%; display: flex; align-items: center; transition: color 0.2s; }
+    .web-nav__item:hover { color: var(--color-primary-cta); }
+    .web-nav__item.active { color: var(--color-primary-cta); }
+    .web-nav__item.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background-color: var(--color-primary-cta); border-radius: 3px 3px 0 0; }
+    @media (min-width: 768px) { .web-nav { display: flex; } }
+
+    /* Layouts & Modals 등 community.html의 코어 스타일 참조 탑재 */
+    .glist-layout { display: flex; flex-direction: column; width: 100%; }
+    @media (min-width: 768px) { .glist-layout { flex-direction: row; gap: 24px; align-items: flex-start; } }
+    .feed-column { flex: 1; display: flex; flex-direction: column; }
+    @media (min-width: 768px) { .feed-column { background: #FFFFFF; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; border: 1px solid var(--color-divider); } }
+    .sidebar-column { display: none; width: 320px; flex-shrink: 0; flex-direction: column; gap: 20px; position: sticky; top: calc(var(--header-height) + 20px); }
+    @media (min-width: 768px) { .sidebar-column { display: flex; } }
+
+    /* Bottom Navigation */
+    .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; height: var(--bottom-nav-height); background: rgba(255, 255, 255, 0.98); border-top: 1px solid var(--color-divider); display: flex; align-items: center; z-index: 100; }
+    @media (max-width: 767px) { .bottom-nav { max-width: var(--max-width-mobile); } }
+    @media (min-width: 768px) { .bottom-nav { display: none; } }
+    .bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--color-text-meta); text-decoration: none; padding: 6px 0; cursor: pointer; }
+    .bottom-nav__item.active { color: var(--color-primary-cta); }
+    .nav-label { font-size: 10px; font-weight: 700; }
+
+    /* Modal Backdrop */
+    .modal-backdrop { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 290; }
+    @media (min-width: 768px) { .modal-backdrop.active { display: block; } }
+  </style>
+</head>
+<body>
+
+  <div id="modal-backdrop" class="modal-backdrop" onclick="closeAllModals()"></div>
+
+  <div class="app-shell">
+
+    <!-- Shared Header -->
+    <header class="app-header">
+      <div class="app-header__title logo" onclick="navigateToTab('screen-glist')">meetry</div>
+      <nav class="web-nav" aria-label="데스크톱 네비게이션">
+        <span class="web-nav__item active" data-target="screen-glist">글목록</span>
+        <span class="web-nav__item" data-target="screen-talk">대화</span>
+        <span class="web-nav__item" data-target="screen-profile">프로필</span>
+      </nav>
+      <div class="app-header__actions">
+        <!-- 알림 단추 등 -->
+      </div>
+    </header>
+
+    <!-- Content Sections -->
+    <main class="main-content">
+      <!-- Screen 1 -->
+      <div id="screen-glist" class="screen active">
+        <div class="glist-layout">
+          <div class="feed-column">
+            <!-- 메인 컨텐츠 영역 -->
+          </div>
+          <div class="sidebar-column">
+            <!-- 데스크톱 전용 사이드바 영역 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Screen 2 -->
+      <div id="screen-talk" class="screen">
+        <!-- 대화 화면 영역 -->
+      </div>
+
+      <!-- Screen 3 -->
+      <div id="screen-profile" class="screen">
+        <!-- 프로필 화면 영역 -->
+      </div>
+    </main>
+
+    <!-- Shared Bottom Nav (Mobile) -->
+    <nav class="bottom-nav" aria-label="메인 내비게이션">
+      <a class="bottom-nav__item active" data-target="screen-glist">
+        <span class="nav-label">글목록</span>
+      </a>
+      <a class="bottom-nav__item" data-target="screen-talk">
+        <span class="nav-label">대화</span>
+      </a>
+      <a class="bottom-nav__item" data-target="screen-profile">
+        <span class="nav-label">프로필</span>
+      </a>
+    </nav>
+
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'meetry-app-system-data';
+
+    // 데이터 바인딩 및 탭 전환 기본 프레임워크 JS 탑재
+    let appState = {
+      posts: [],
+      chats: []
+    };
+
+    function initData() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { appState = JSON.parse(saved); } catch(e) {}
+      }
+      refreshDataBindings();
+    }
+
+    function refreshDataBindings() {
+      // 컴포넌트 렌더러 호출
+    }
+
+    function navigateToTab(targetId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const activeScreen = document.getElementById(targetId);
+      if (activeScreen) activeScreen.classList.add('active');
+
+      document.querySelectorAll('.bottom-nav__item').forEach(item => {
+        item.classList.toggle('active', item.dataset.target === targetId);
+      });
+      document.querySelectorAll('.web-nav__item').forEach(item => {
+        item.classList.toggle('active', item.dataset.target === targetId);
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initData();
+      
+      document.querySelectorAll('.bottom-nav__item').forEach(item => {
+        item.addEventListener('click', function(e) {
+          e.preventDefault();
+          navigateToTab(this.dataset.target);
+        });
+      });
+      document.querySelectorAll('.web-nav__item').forEach(item => {
+        item.addEventListener('click', function(e) {
+          e.preventDefault();
+          navigateToTab(this.dataset.target);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
