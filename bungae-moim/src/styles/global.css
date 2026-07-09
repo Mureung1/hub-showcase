@@ -1,0 +1,117 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+  background-attachment: fixed;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 20px 20px 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.5;
+}
+
+.orb--a {
+  width: 380px;
+  height: 380px;
+  left: -140px;
+  top: -100px;
+  background: radial-gradient(circle at 35% 30%, var(--accent-glow), transparent 70%);
+  filter: blur(45px);
+}
+
+.orb--b {
+  width: 320px;
+  height: 320px;
+  right: -120px;
+  bottom: 10%;
+  background: radial-gradient(circle at 60% 40%, var(--accent-soft), transparent 70%);
+  filter: blur(55px);
+  opacity: 0.35;
+}
+
+.orb--c {
+  width: 160px;
+  height: 160px;
+  right: 6%;
+  top: 14%;
+  background: radial-gradient(circle at 40% 35%, #ffffff, transparent 72%);
+  filter: blur(2px);
+  opacity: 0.4;
+}
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
