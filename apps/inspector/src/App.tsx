@@ -1,74 +1,25 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import type {
+  RuntimeAdapterDescriptor,
+  RuntimeRunEvent,
+  RuntimeRunLog,
+  RuntimeRunSummary,
+} from '@ay-ple/runtime-core'
 import './App.css'
 
 type HealthState = 'checking' | 'ok' | 'error'
 
-type RuntimeAdapterDto = {
-  name: string
-  label: string
-  description?: string
-}
-
-type RuntimeRunStatusDto = 'running' | 'completed'
-
-type RuntimeRunEventDto =
-  | {
-      type: 'started'
-      sequence: number
-      runId: string
-      adapter: string
-      timestamp: string
-      prompt: string
-    }
-  | {
-      type: 'output_delta'
-      sequence: number
-      runId: string
-      adapter: string
-      timestamp: string
-      delta: string
-    }
-  | {
-      type: 'completed'
-      sequence: number
-      runId: string
-      adapter: string
-      timestamp: string
-      output: string
-    }
-
-type RuntimeRunLogDto = {
-  runId: string
-  adapter: string
-  prompt: string
-  status: RuntimeRunStatusDto
-  output: string
-  events: RuntimeRunEventDto[]
-  startedAt: string
-  completedAt?: string
-}
-
-type RuntimeRunSummaryDto = {
-  runId: string
-  adapter: string
-  prompt: string
-  status: RuntimeRunStatusDto
-  outputPreview: string
-  startedAt: string
-  completedAt?: string
-}
-
 function App() {
   const [health, setHealth] = useState<HealthState>('checking')
-  const [adapters, setAdapters] = useState<RuntimeAdapterDto[]>([])
+  const [adapters, setAdapters] = useState<RuntimeAdapterDescriptor[]>([])
   const [selectedAdapter, setSelectedAdapter] = useState('fake')
   const [prompt, setPrompt] = useState('정리해줘')
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [activePrompt, setActivePrompt] = useState('')
   const [output, setOutput] = useState('')
-  const [events, setEvents] = useState<RuntimeRunEventDto[]>([])
-  const [history, setHistory] = useState<RuntimeRunSummaryDto[]>([])
-  const [runLog, setRunLog] = useState<RuntimeRunLogDto | null>(null)
+  const [events, setEvents] = useState<RuntimeRunEvent[]>([])
+  const [history, setHistory] = useState<RuntimeRunSummary[]>([])
+  const [runLog, setRunLog] = useState<RuntimeRunLog | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
@@ -174,7 +125,7 @@ function App() {
     eventSourceRef.current = source
 
     source.addEventListener('runtime-event', (message) => {
-      const runtimeEvent = JSON.parse(message.data) as RuntimeRunEventDto
+      const runtimeEvent = JSON.parse(message.data) as RuntimeRunEvent
 
       setEvents((currentEvents) => [...currentEvents, runtimeEvent])
 
@@ -386,7 +337,7 @@ function App() {
   )
 }
 
-async function fetchAdapters(): Promise<RuntimeAdapterDto[]> {
+async function fetchAdapters(): Promise<RuntimeAdapterDescriptor[]> {
   const response = await fetch('/api/runtime/adapters')
 
   if (!response.ok) {
@@ -394,32 +345,32 @@ async function fetchAdapters(): Promise<RuntimeAdapterDto[]> {
   }
 
   const data = (await response.json()) as {
-    adapters: RuntimeAdapterDto[]
+    adapters: RuntimeAdapterDescriptor[]
   }
 
   return data.adapters
 }
 
-async function fetchHistory(): Promise<RuntimeRunSummaryDto[]> {
+async function fetchHistory(): Promise<RuntimeRunSummary[]> {
   const response = await fetch('/api/runtime/runs')
 
   if (!response.ok) {
     throw new Error(`History fetch failed: ${response.status}`)
   }
 
-  const data = (await response.json()) as { runs: RuntimeRunSummaryDto[] }
+  const data = (await response.json()) as { runs: RuntimeRunSummary[] }
 
   return data.runs
 }
 
-async function fetchRunLog(runId: string): Promise<RuntimeRunLogDto> {
+async function fetchRunLog(runId: string): Promise<RuntimeRunLog> {
   const response = await fetch(`/api/runtime/runs/${runId}`)
 
   if (!response.ok) {
     throw new Error(`Run log fetch failed: ${response.status}`)
   }
 
-  const data = (await response.json()) as { run: RuntimeRunLogDto }
+  const data = (await response.json()) as { run: RuntimeRunLog }
 
   return data.run
 }

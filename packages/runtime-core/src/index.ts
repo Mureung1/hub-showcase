@@ -244,18 +244,16 @@ export class AgentRuntimeKernel {
           log.output = adapterEvent.output
         }
 
-        log.status = 'completed'
-        log.completedAt = this.timestamp()
-        this.appendEvent(log, {
-          type: 'completed',
-          output: log.output,
-        })
-        this.resolveTerminal(log)
+        this.completeRun(log)
 
         return
       }
     }
 
+    this.completeRun(log)
+  }
+
+  private completeRun(log: RuntimeRunLog): void {
     log.status = 'completed'
     log.completedAt = this.timestamp()
     this.appendEvent(log, {
