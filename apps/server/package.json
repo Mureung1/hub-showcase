@@ -4,12 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "NODE_OPTIONS=--conditions=development tsx watch src/server.ts",
     "build": "tsc",
+    "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@ay-ple/runtime-core": "0.0.0",
+    "@ay-ple/runtime-fake": "0.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1"

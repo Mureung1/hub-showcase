@@ -1,10 +1,77 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import './App.css'
 
 type HealthState = 'checking' | 'ok' | 'error'
 
+type RuntimeAdapterDto = {
+  name: string
+  label: string
+  description?: string
+}
+
+type RuntimeRunStatusDto = 'running' | 'completed'
+
+type RuntimeRunEventDto =
+  | {
+      type: 'started'
+      sequence: number
+      runId: string
+      adapter: string
+      timestamp: string
+      prompt: string
+    }
+  | {
+      type: 'output_delta'
+      sequence: number
+      runId: string
+      adapter: string
+      timestamp: string
+      delta: string
+    }
+  | {
+      type: 'completed'
+      sequence: number
+      runId: string
+      adapter: string
+      timestamp: string
+      output: string
+    }
+
+type RuntimeRunLogDto = {
+  runId: string
+  adapter: string
+  prompt: string
+  status: RuntimeRunStatusDto
+  output: string
+  events: RuntimeRunEventDto[]
+  startedAt: string
+  completedAt?: string
+}
+
+type RuntimeRunSummaryDto = {
+  runId: string
+  adapter: string
+  prompt: string
+  status: RuntimeRunStatusDto
+  outputPreview: string
+  startedAt: string
+  completedAt?: string
+}
+
 function App() {
   const [health, setHealth] = useState<HealthState>('checking')
+  const [adapters, setAdapters] = useState<RuntimeAdapterDto[]>([])
+  const [selectedAdapter, setSelectedAdapter] = useState('fake')
+  const [prompt, setPrompt] = useState('정리해줘')
+  const [activeRunId, setActiveRunId] = useState<string | null>(null)
+  const [activePrompt, setActivePrompt] = useState('')
+  const [output, setOutput] = useState('')
+  const [events, setEvents] = useState<RuntimeRunEventDto[]>([])
+  const [history, setHistory] = useState<RuntimeRunSummaryDto[]>([])
+  const [runLog, setRunLog] = useState<RuntimeRunLogDto | null>(null)
+  const [isRunning, setIsRunning] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const eventSourceRef = useRef<EventSource | null>(null)
 
   useEffect(() => {
     let active = true
@@ -33,25 +100,344 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    let active = true
+
+    Promise.all([fetchAdapters(), fetchHistory()])
+      .then(([adapterList, runList]) => {
+        if (!active) {
+          return
+        }
+
+        setAdapters(adapterList)
+        setHistory(runList)
+
+        if (adapterList[0]) {
+          setSelectedAdapter(adapterList[0].name)
+        }
+      })
+      .catch((fetchError: unknown) => {
+        if (active) {
+          setError(toErrorMessage(fetchError))
+        }
+      })
+
+    return () => {
+      active = false
+      eventSourceRef.current?.close()
+    }
+  }, [])
+
+  async function handleRunSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!prompt.trim() || isRunning) {
+      return
+    }
+
+    eventSourceRef.current?.close()
+    setError(null)
+    setEvents([])
+    setOutput('')
+    setRunLog(null)
+    setActivePrompt(prompt)
+    setIsRunning(true)
+
+    try {
+      const response = await fetch('/api/runtime/runs', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          adapter: selectedAdapter,
+          prompt,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Run start failed: ${response.status}`)
+      }
+
+      const startedRun = (await response.json()) as { runId: string }
+      setActiveRunId(startedRun.runId)
+      openEventStream(startedRun.runId)
+    } catch (runError) {
+      setIsRunning(false)
+      setError(toErrorMessage(runError))
+    }
+  }
+
+  function openEventStream(runId: string) {
+    const source = new EventSource(`/api/runtime/runs/${runId}/events?after=0`)
+    let completed = false
+    eventSourceRef.current = source
+
+    source.addEventListener('runtime-event', (message) => {
+      const runtimeEvent = JSON.parse(message.data) as RuntimeRunEventDto
+
+      setEvents((currentEvents) => [...currentEvents, runtimeEvent])
+
+      if (runtimeEvent.type === 'started') {
+        setActivePrompt(runtimeEvent.prompt)
+      }
+
+      if (runtimeEvent.type === 'output_delta') {
+        setOutput((currentOutput) => `${currentOutput}${runtimeEvent.delta}`)
+      }
+
+      if (runtimeEvent.type === 'completed') {
+        completed = true
+        setOutput(runtimeEvent.output)
+        setIsRunning(false)
+        source.close()
+        void refreshRunState(runId)
+      }
+    })
+
+    source.onerror = () => {
+      if (!completed) {
+        setError('Runtime event stream disconnected')
+        setIsRunning(false)
+      }
+
+      source.close()
+    }
+  }
+
+  async function refreshRunState(runId: string) {
+    const [latestLog, latestHistory] = await Promise.all([
+      fetchRunLog(runId),
+      fetchHistory(),
+    ])
+
+    setRunLog(latestLog)
+    setHistory(latestHistory)
+  }
+
+  async function handleHistorySelect(runId: string) {
+    try {
+      const latestLog = await fetchRunLog(runId)
+      setActiveRunId(runId)
+      setActivePrompt(latestLog.prompt)
+      setOutput(latestLog.output)
+      setEvents(latestLog.events)
+      setRunLog(latestLog)
+      setError(null)
+    } catch (historyError) {
+      setError(toErrorMessage(historyError))
+    }
+  }
+
+  const activeAdapter = adapters.find((adapter) => adapter.name === selectedAdapter)
+  const visibleLog =
+    runLog ??
+    (activeRunId
+      ? {
+          runId: activeRunId,
+          adapter: selectedAdapter,
+          prompt: activePrompt,
+          status: isRunning ? 'running' : 'completed',
+          output,
+          events,
+        }
+      : null)
+
   return (
-    <main className="app-shell">
-      <section className="status-panel" aria-labelledby="app-title">
-        <p className="eyebrow">Web App Starter</p>
-        <h1 id="app-title">Express + React 연결 확인</h1>
-        <p className="description">
-          아직 프로젝트 아이템을 정하기 전, 서버와 클라이언트가 연결되는지만 확인합니다.
-        </p>
+    <main className="inspector-shell">
+      <header className="top-bar">
+        <div>
+          <p className="eyebrow">Runtime Harness</p>
+          <h1>Runtime Inspector</h1>
+        </div>
         <div className={`health health-${health}`}>
           <span className="health-dot" aria-hidden="true" />
           <span>
-            {health === 'checking' && 'API 상태를 확인하는 중'}
-            {health === 'ok' && 'API 연결 정상'}
-            {health === 'error' && 'API 연결 확인 필요'}
+            {health === 'checking' && 'Checking API'}
+            {health === 'ok' && 'API connected'}
+            {health === 'error' && 'API unavailable'}
           </span>
         </div>
-      </section>
+      </header>
+
+      <div className="workspace-grid">
+        <section className="control-panel" aria-labelledby="run-controls-title">
+          <div className="panel-header">
+            <h2 id="run-controls-title">Run</h2>
+            <span className={`run-state ${isRunning ? 'running' : 'idle'}`}>
+              {isRunning ? 'Running' : 'Ready'}
+            </span>
+          </div>
+
+          <form className="run-form" onSubmit={handleRunSubmit}>
+            <label>
+              <span>Adapter</span>
+              <select
+                value={selectedAdapter}
+                onChange={(event) => setSelectedAdapter(event.target.value)}
+              >
+                {adapters.map((adapter) => (
+                  <option key={adapter.name} value={adapter.name}>
+                    {adapter.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {activeAdapter?.description && (
+              <p className="adapter-description">{activeAdapter.description}</p>
+            )}
+
+            <label>
+              <span>Prompt</span>
+              <textarea
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                rows={6}
+              />
+            </label>
+
+            <button type="submit" disabled={isRunning || !prompt.trim()}>
+              Start Run
+            </button>
+          </form>
+
+          {error && <p className="error-line">{error}</p>}
+        </section>
+
+        <section className="transcript-panel" aria-labelledby="transcript-title">
+          <div className="panel-header">
+            <h2 id="transcript-title">Transcript</h2>
+            <span>{activeRunId ?? 'No run'}</span>
+          </div>
+
+          <div className="transcript">
+            {activePrompt ? (
+              <>
+                <article className="message user-message">
+                  <p className="message-label">Prompt</p>
+                  <p>{activePrompt}</p>
+                </article>
+                <article className="message runtime-message">
+                  <p className="message-label">Output</p>
+                  <pre>{output || 'Waiting for output...'}</pre>
+                </article>
+              </>
+            ) : (
+              <p className="empty-state">No transcript yet</p>
+            )}
+          </div>
+        </section>
+
+        <section className="events-panel" aria-labelledby="events-title">
+          <div className="panel-header">
+            <h2 id="events-title">Events</h2>
+            <span>{events.length}</span>
+          </div>
+
+          <ol className="event-list">
+            {events.map((event) => (
+              <li key={`${event.runId}-${event.sequence}`}>
+                <span className="event-sequence">#{event.sequence}</span>
+                <span className="event-type">{event.type}</span>
+                <span className="event-time">{formatTime(event.timestamp)}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="log-panel" aria-labelledby="log-title">
+          <div className="panel-header">
+            <h2 id="log-title">Run Log</h2>
+            <span>{visibleLog?.status ?? 'Empty'}</span>
+          </div>
+
+          <pre className="log-output">
+            {visibleLog ? JSON.stringify(visibleLog, null, 2) : '{}'}
+          </pre>
+        </section>
+
+        <section className="history-panel" aria-labelledby="history-title">
+          <div className="panel-header">
+            <h2 id="history-title">History</h2>
+            <span>{history.length}</span>
+          </div>
+
+          <div className="history-list">
+            {history.map((run) => (
+              <button
+                key={run.runId}
+                className="history-item"
+                type="button"
+                onClick={() => void handleHistorySelect(run.runId)}
+              >
+                <span className="history-run-id">{run.runId}</span>
+                <span>{run.adapter}</span>
+                <span>{run.status}</span>
+                <span className="history-preview">
+                  {run.outputPreview || run.prompt}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
     </main>
   )
+}
+
+async function fetchAdapters(): Promise<RuntimeAdapterDto[]> {
+  const response = await fetch('/api/runtime/adapters')
+
+  if (!response.ok) {
+    throw new Error(`Adapter fetch failed: ${response.status}`)
+  }
+
+  const data = (await response.json()) as {
+    adapters: RuntimeAdapterDto[]
+  }
+
+  return data.adapters
+}
+
+async function fetchHistory(): Promise<RuntimeRunSummaryDto[]> {
+  const response = await fetch('/api/runtime/runs')
+
+  if (!response.ok) {
+    throw new Error(`History fetch failed: ${response.status}`)
+  }
+
+  const data = (await response.json()) as { runs: RuntimeRunSummaryDto[] }
+
+  return data.runs
+}
+
+async function fetchRunLog(runId: string): Promise<RuntimeRunLogDto> {
+  const response = await fetch(`/api/runtime/runs/${runId}`)
+
+  if (!response.ok) {
+    throw new Error(`Run log fetch failed: ${response.status}`)
+  }
+
+  const data = (await response.json()) as { run: RuntimeRunLogDto }
+
+  return data.run
+}
+
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return 'Unexpected runtime inspector error'
+}
+
+function formatTime(timestamp: string): string {
+  return new Intl.DateTimeFormat('en', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date(timestamp))
 }
 
 export default App
