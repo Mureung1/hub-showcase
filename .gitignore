@@ -22,3 +22,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# dependencies
+node_modules/
+
+# build outputs
+dist/
+apps/*/dist/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# local Claude settings
+.claude/settings.local.json
