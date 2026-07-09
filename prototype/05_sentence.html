@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>오늘의 핵심 문장 | 데일리 브리핑</title>
+<title>Today's Key Sentences | Daily Briefing</title>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -21,24 +21,30 @@
 
   <div class="top-nav">
     <a class="nav-icon" href="04_link.html">‹</a>
-    <span class="nav-title">오늘의 핵심 문장</span>
+    <span class="nav-title">Today's Key Sentences</span>
     <a class="nav-icon" href="01_home.html">⌂</a>
   </div>
 
-  <div class="progress-bar" data-step="5">
-    <span></span><span></span><span></span><span></span><span></span><span></span>
+  <div class="progress-section">
+    <div class="progress-meta">
+      <span class="progress-label">Key Sentences</span>
+      <span class="progress-fraction">5/6</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width: 83.33%"></div>
+    </div>
   </div>
 
   <div class="screen-content">
 
-    <p class="section-title">오늘의 핵심 문장</p>
+    <p class="section-title">Today's Key Sentences</p>
 
     <div class="level-toggle-group">
-      <p class="level-toggle-label">표현 설명 난이도</p>
+      <p class="level-toggle-label">Explanation Level</p>
       <div class="level-toggle">
-        <label for="lv-basic" class="level-btn">초급</label>
-        <label for="lv-mid" class="level-btn">중급</label>
-        <label for="lv-high" class="level-btn">고급</label>
+        <label for="lv-basic" class="level-btn">Beginner</label>
+        <label for="lv-mid" class="level-btn">Intermediate</label>
+        <label for="lv-high" class="level-btn">Advanced</label>
       </div>
     </div>
 
@@ -114,10 +120,17 @@
   </div>
 
   <div class="bottom-cta">
-    <label for="c2" class="btn-cta next-sentence-btn next-1">다음 문장</label>
-    <label for="c3" class="btn-cta next-sentence-btn next-2">다음 문장</label>
-    <a href="06_term.html" class="btn-cta next-sentence-btn next-3">다음</a>
+    <label for="c2" class="btn-cta next-sentence-btn next-1">Next Sentence <span>→</span></label>
+    <label for="c3" class="btn-cta next-sentence-btn next-2">Next Sentence <span>→</span></label>
+    <a href="06_term.html" class="btn-cta next-sentence-btn next-3">Next <span>→</span></a>
   </div>
+
+  <nav class="bottom-nav">
+    <span class="nav-item"><span class="nav-item-icon">🏠</span>Home</span>
+    <span class="nav-item"><span class="nav-item-icon">📈</span>Stocks</span>
+    <span class="nav-item active"><span class="nav-item-icon">📚</span>Learn</span>
+    <span class="nav-item"><span class="nav-item-icon">👤</span>Profile</span>
+  </nav>
 
 </div>
 </body>

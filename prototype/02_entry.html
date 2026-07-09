@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>브리핑 진입 | 데일리 브리핑</title>
+<title>Briefing Entry | Daily Briefing</title>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,12 +11,18 @@
 
   <div class="top-nav">
     <a class="nav-icon" href="01_home.html">‹</a>
-    <span class="nav-title">오늘의 브리핑</span>
+    <span class="nav-title">Today's Briefing</span>
     <a class="nav-icon" href="01_home.html">⌂</a>
   </div>
 
-  <div class="progress-bar" data-step="2">
-    <span></span><span></span><span></span><span></span><span></span><span></span>
+  <div class="progress-section">
+    <div class="progress-meta">
+      <span class="progress-label">Article</span>
+      <span class="progress-fraction">2/6</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width: 33.33%"></div>
+    </div>
   </div>
 
   <div class="screen-content">
@@ -35,13 +41,31 @@
 
     <div class="scroll-hint">
       <span class="arrow">⌄</span>
-      <span>아래로 스크롤해서 요약 보기</span>
+      <span>Scroll down for key sentences</span>
+    </div>
+
+    <div class="sentence-preview-section">
+      <p class="section-title">Today's Key Sentences</p>
+      <div class="sentence-preview-list">
+        <div class="sentence-preview-item">
+          <span class="num">1</span>
+          <p class="preview-en-text">Apple raised its guidance for iPhone production after strong demand for AI-powered features.</p>
+        </div>
+        <div class="sentence-preview-item">
+          <span class="num">2</span>
+          <p class="preview-en-text">Analysts expect the company's EPS to beat consensus estimates next quarter.</p>
+        </div>
+        <div class="sentence-preview-item">
+          <span class="num">3</span>
+          <p class="preview-en-text">The tech giant's stock surged after the announcement, extending its rally to a third session.</p>
+        </div>
+      </div>
     </div>
 
   </div>
 
   <div class="bottom-cta">
-    <a class="btn-cta" href="03_summary.html">다음</a>
+    <a class="btn-cta" href="03_summary.html">Next</a>
   </div>
 
 </div>
