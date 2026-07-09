@@ -71,7 +71,7 @@
 | [docs/user-scenarios.md](./docs/user-scenarios.md) | 사용자 시나리오 4종 (넓은 범위) |
 | [docs/spec/mvp-plan.md](./docs/spec/mvp-plan.md) | MVP 기획 (문제정의 → S1 흐름 → 핵심 기능 → 화면 설계) |
 | [docs/spec/checklist.md](./docs/spec/checklist.md) | 작업 분해 체크리스트 (F1~F4 + 파이프라인) |
-| [docs/skill.md](./docs/skill.md) | 기획 구체화 방법론 (재사용 가능한 절차) |
+| [docs/agent-workflow/planning-methodology.md](./docs/agent-workflow/planning-methodology.md) | 기획 구체화 방법론 (agent 활용 프로세스) |
 | [와이어프레임 (실물)](https://leekwanhak.github.io/hub/docs/spec/wireframes/s1-wireframe.html) | 인터랙티브 시안 (피드·상세·저장) · [소스](./docs/spec/wireframes/s1-wireframe.html) |
 
 ## 로드맵 (MVP)

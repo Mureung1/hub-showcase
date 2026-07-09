@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 논문 브리핑 — 오늘의 브리핑</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <div class="wrap">
+      <header class="topbar">
+        <p class="eyebrow">AI Briefing · S1</p>
+        <nav class="nav">
+          <button class="navbtn" data-view="feed" type="button">오늘의 브리핑</button>
+          <button class="navbtn" data-view="saved" type="button">🔖 저장 <span class="navcount" id="nav-saved-count">0</span></button>
+        </nav>
+      </header>
+
+      <main id="app" aria-live="polite">
+        <!-- JS가 뷰(feed / detail / saved)를 렌더 -->
+        <p class="loading">불러오는 중…</p>
+      </main>
+
+      <footer class="foot">
+        <span>ai-briefing-service · S1 프로토타입</span>
+        <span>목 데이터 · 파이프라인 연동 전</span>
+      </footer>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
