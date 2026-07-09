@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAppState } from '../context/AppStateContext.jsx'
 import PageHeader from '../components/PageHeader.jsx'
@@ -43,6 +44,7 @@ export default function MeetingDetailPage() {
   const isEnded = meeting.status === 'finished' || meeting.status === 'cancelled'
   const canSeeOpenChat = isHost || myParticipation?.status === 'confirmed' || myParticipation?.status === 'approved'
   const userIsAdult = isAdultBirthDate(currentUser.birthDate)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
 
   return (
     <>
@@ -153,18 +155,33 @@ export default function MeetingDetailPage() {
             </div>
           )}
 
-          {!isEnded && (
-            <PillButton
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (window.confirm('정말 이 모임을 취소할까요? 참여자 전원에게 취소로 표시됩니다.')) {
-                  cancelMeeting(meeting.id)
-                }
-              }}
-            >
+          {!isEnded && !confirmingCancel && (
+            <PillButton variant="ghost" size="sm" onClick={() => setConfirmingCancel(true)}>
               모임 취소하기
             </PillButton>
+          )}
+
+          {!isEnded && confirmingCancel && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <span style={{ fontSize: 13, color: 'var(--cream-mute)' }}>
+                정말 취소할까요? 참여자 전원에게 취소로 표시돼요.
+              </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <PillButton
+                  variant="accent"
+                  size="sm"
+                  onClick={() => {
+                    cancelMeeting(meeting.id)
+                    setConfirmingCancel(false)
+                  }}
+                >
+                  네, 취소할게요
+                </PillButton>
+                <PillButton variant="ghost" size="sm" onClick={() => setConfirmingCancel(false)}>
+                  아니요
+                </PillButton>
+              </div>
+            </div>
           )}
         </Card>
       )}
