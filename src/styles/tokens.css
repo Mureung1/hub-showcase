@@ -1,0 +1,16 @@
+:root {
+  --navy: #0a2540;
+  --navy-soft: #1e4976;
+  --blue: #2563eb;
+  --blue-soft: #eef4fc;
+  --bg: #f5f7fa;
+  --white: #ffffff;
+  --border: #e1e5eb;
+  --text: #1a1a1a;
+  --text-sub: #666;
+  --text-muted: #999;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+}
