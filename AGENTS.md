@@ -32,6 +32,7 @@
 ## 참고 문서
 
 - 기획 의도: `wiki/기획서.md`
+- 디자인: `docs/design.md`
 - 프론트 작업 분해: `docs/frontend-tasks.md`
 - 백엔드 작업 분해: `docs/backend-tasks.md`
 - DB 작업 분해: `docs/database-tasks.md`
