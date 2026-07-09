@@ -62,6 +62,32 @@ export function formatExpectedIntake(expected) {
   return parts.length > 0 ? `${parts.join(' · ')} 섭취 가능` : null
 }
 
+// ── 하루 영양 상태 3단계 판정 ──────────────────────────────────────────────
+// 목표형 영양소(칼로리·단백·탄수·지방·식이섬유)는 권장량의 NUTRIENT_SATISFY_RATIO 이상 도달 시 "충족",
+// 나트륨(상한형)은 권장 상한 이하일 때 "충족"으로 본다(식단 탭의 한도 개념과 동일).
+export const NUTRIENT_SATISFY_RATIO = 0.8
+
+// 충족 개수 → 상태 임계값: good 이상 충족이면 '좋음', normal 이상이면 '보통', 그 미만은 '위험/나쁨'
+export const DAY_STATUS_THRESHOLDS = { good: 5, normal: 2 }
+
+export function countSatisfiedNutrients(recommended, total) {
+  if (!isNutrientSet(recommended) || !isNutrientSet(total)) return 0
+  return NUTRIENT_KEYS.reduce((count, key) => {
+    const satisfied =
+      key === 'sodium' ? total[key] <= recommended[key] : total[key] >= recommended[key] * NUTRIENT_SATISFY_RATIO
+    return count + (satisfied ? 1 : 0)
+  }, 0)
+}
+
+// 'good' | 'normal' | 'bad' (판정 불가면 null)
+export function calcDayStatus(recommended, total) {
+  if (!isNutrientSet(recommended) || !isNutrientSet(total)) return null
+  const satisfied = countSatisfiedNutrients(recommended, total)
+  if (satisfied >= DAY_STATUS_THRESHOLDS.good) return 'good'
+  if (satisfied >= DAY_STATUS_THRESHOLDS.normal) return 'normal'
+  return 'bad'
+}
+
 // 영양소별 (실제/권장) 비율을 1로 캡핑해 평균낸 하루 목표 달성률(%). Result.jsx의 계산과 동일한 정의.
 export function calcAchievementPercent(recommended, total) {
   if (!isNutrientSet(recommended) || !isNutrientSet(total)) return 0
