@@ -25,7 +25,7 @@ Decision Log는 여러 AI의 답변을 동일한 구조로 받아 문단 단위�
 
 
 
-#3. 기술 스팩 및 내용 정리. 
+# 3. 기술 스팩 및 내용 정리. 
 ##React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
