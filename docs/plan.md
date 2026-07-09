@@ -2,7 +2,7 @@
 
 > AI가 사용자의 회피 이유를 분석하고, 상황에 맞는 첫 행동을 제안하여 실행을 돕는 서비스
 
-(프로토타입 링크) https://github.com/minsss42/hub/blob/work/docs/prototype.html
+📎 [prototype.html](./prototype.html)을 다운로드해서 브라우저로 열어 확인하거나, [Wiki 프로토타입 화면](https://github.com/minsss42/hub/wiki/프로토타입-화면)에서 캡처로 확인하세요.
 
 ## 1. 문제 정의
 
