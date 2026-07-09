@@ -21,6 +21,13 @@ sequenceDiagram
     Note over Frontend: 1. 완성본 미리보기 및 텍스트/음성 수정<br/>2. 원클릭 인스타그램/틱톡 자동 발행
 ```
 
+### 🛠 기술 스택 (Tech Stack)
+- **프론트엔드 (UI/UX):** React (대시보드 화면, 차트 렌더링, 드래그 앤 드롭 파일 업로드)
+- **백엔드 (API & 파이프라인 제어):** Node.js + Express (데이터 처리, AI 파이프라인 순차 실행)
+- **데이터베이스:** Supabase (PostgreSQL) (StoreInfo, GeneratedReels 테이블 관리)
+- **AI & 미디어 파이프라인:** YOLOv8 (비전/크롭), KoBERT (트렌드/문맥 매칭), FFmpeg (영상/오디오 렌더링), TTS API (음성 합성)
+- **데이터 수집:** 크롤링 스크립트 (틱톡/인스타그램 트렌드 수집)
+
 ## 🚶‍♂️ 프론트-백엔드 연동 사용자 시나리오 (User Journey)
 
 ### 🔹 [대시보드] Step 1: 목적별 소스 입력

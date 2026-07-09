@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShortsGen - Store Setup Preview</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <style>
+        :root {
+            --bg-page: #F4F7FE;
+            --bg-surface: #FFFFFF;
+            --primary-color: #5D5FEF;
+            --primary-hover: #4B4CE0;
+            --text-main: #151D48;
+            --text-muted: #737791;
+            --border-color: #F1F3F9;
+            --pastel-pink: #FFE2E5;
+            --pastel-orange: #FFF4DE;
+            --pastel-green: #DCFCE7;
+            --pastel-purple: #F3E8FF;
+
+            --radius-card: 20px;
+            --radius-btn: 12px;
+            --radius-pill: 9999px;
+
+            --padding-card: 32px;
+            --gap-layout: 24px;
+            --sidebar-width: 260px;
+
+            --shadow-card: 0px 4px 20px rgba(0, 0, 0, 0.04);
+            --shadow-btn: 0px 4px 10px rgba(93, 95, 239, 0.3);
+            
+            --font-family: 'Pretendard', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
+        body { background-color: var(--bg-page); color: var(--text-main); display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width); background-color: var(--bg-surface); padding: 32px 24px;
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        .logo { font-size: 24px; font-weight: 800; color: var(--primary-color); margin-bottom: 32px; display: flex; align-items: center; gap: 12px; }
+        .nav-item { padding: 16px 20px; border-radius: var(--radius-btn); font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease; }
+        .nav-item.active { background-color: var(--primary-color); color: white; box-shadow: var(--shadow-btn); }
+        
+        .main-content {
+            flex: 1; padding: 32px 40px; max-width: 1200px; margin: 0 auto;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        .header h1 { font-size: 28px; font-weight: 700; }
+
+        /* Setup Card */
+        .card { background-color: var(--bg-surface); padding: 48px; border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+
+        label {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .required {
+            color: #FF5B5B;
+        }
+
+        input, select {
+            padding: 16px 20px;
+            border-radius: var(--radius-btn);
+            border: 1px solid #CBD5E1;
+            font-size: 15px;
+            color: var(--text-main);
+            background-color: white;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1);
+        }
+
+        /* Photo Upload Area */
+        .photo-upload {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .photo-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            background-color: #F8FAFC;
+            border: 2px dashed #CBD5E1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .photo-preview:hover {
+            border-color: var(--primary-color);
+            background-color: #F0F4FE;
+            color: var(--primary-color);
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #5D5FEF, #8F90FF);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: var(--radius-btn);
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: var(--shadow-btn);
+            width: 100%;
+            margin-top: 24px;
+        }
+
+        .info-box {
+            background-color: var(--pastel-purple);
+            border-radius: var(--radius-btn);
+            padding: 16px;
+            margin-bottom: 32px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <span style="background-color: var(--primary-color); color: white; padding: 4px 8px; border-radius: 8px;">SG</span>
+            ShortsGen
+        </div>
+        <div class="nav-item">대시보드 홈</div>
+        <div class="nav-item">릴스 생성하기</div>
+        <div class="nav-item">내 보관함</div>
+        <div class="nav-item active">내 가게 정보 관리</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        
+        <div class="header">
+            <div>
+                <h1>내 가게 정보 관리</h1>
+                <p style="color: var(--text-muted); margin-top: 8px;">AI가 사장님 가게에 딱 맞는 릴스를 만들 수 있도록 정보를 상세히 적어주세요.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            
+            <div class="info-box">
+                <div style="font-size: 20px;">💡</div>
+                <div>
+                    <div style="font-weight: 700; color: #A064FA; margin-bottom: 4px;">가게 정보가 구체적일수록 AI 트렌드 매칭이 정확해집니다!</div>
+                    <div style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">여기에 입력하신 주력 상품과 업종을 바탕으로 매일 아침 인스타그램/틱톡 트렌드를 자동으로 분석해 드립니다.</div>
+                </div>
+            </div>
+
+            <!-- Profile Photo -->
+            <div class="form-group full-width" style="margin-bottom: 24px;">
+                <label>대표 사진 (시그니처 메뉴 또는 가게 외관) <span class="required">*</span></label>
+                <div class="photo-upload">
+                    <div class="photo-preview">
+                        <div style="font-size: 24px; margin-bottom: 8px;">📷</div>
+                        <div style="font-size: 13px; font-weight: 600;">사진 등록</div>
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 14px; line-height: 1.6;">
+                        대시보드 프로필에 보여질 대표 사진입니다.<br>JPG, PNG 형식만 지원하며, 정방형(1:1) 비율을 권장합니다.
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <!-- Basic Info -->
+                <div class="form-group">
+                    <label>매장 이름 <span class="required">*</span></label>
+                    <input type="text" placeholder="예: 달콤베이커리 연남본점">
+                </div>
+                
+                <div class="form-group">
+                    <label>업종 카테고리 <span class="required">*</span></label>
+                    <select>
+                        <option value="" disabled selected>업종을 선택해주세요</option>
+                        <option>베이커리 / 카페 / 디저트</option>
+                        <option>한식 / 고기집</option>
+                        <option>뷰티 / 네일 / 헤어</option>
+                        <option>의류 / 소품샵</option>
+                        <option>직접 입력</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>위치 (지역명) <span class="required">*</span></label>
+                    <input type="text" placeholder="예: 서울특별시 마포구 연남동">
+                </div>
+
+                <div class="form-group">
+                    <label>매장 연락처</label>
+                    <input type="text" placeholder="예: 02-1234-5678">
+                </div>
+
+                <div class="form-group">
+                    <label>홈페이지 또는 인스타그램 주소</label>
+                    <input type="text" placeholder="예: www.instagram.com/dalcom_bake">
+                </div>
+
+                <div class="form-group">
+                    <label>가입된 배달앱 / 예약 플랫폼</label>
+                    <input type="text" placeholder="예: 배달의민족, 네이버 예약">
+                </div>
+
+                <!-- AI Setup -->
+                <div class="form-group full-width">
+                    <div style="height: 1px; background-color: var(--border-color); margin: 16px 0;"></div>
+                    <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 16px;">AI 숏폼 기획 정보</h3>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>우리 가게의 '시그니처(주력)' 상품은 무엇인가요? <span class="required">*</span></label>
+                    <input type="text" placeholder="예: 매일 아침 구워내는 겉바속촉 크루아상, 100% 당도 수박주스">
+                    <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">여러 개라면 쉼표(,)로 구분해 주세요. 이 키워드들을 중심으로 트렌드를 찾습니다.</div>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>우리 가게만의 매력 포인트나 특징을 자유롭게 적어주세요.</label>
+                    <input type="text" placeholder="예: 우드톤의 따뜻한 인테리어, 사진 찍기 좋은 통창 뷰, 애견 동반 가능">
+                </div>
+
+            </div>
+
+            <button class="btn-submit" onclick="window.location.href='preview_dabang.html'">정보 저장하고 대시보드로 이동</button>
+        </div>
+
+    </div>
+
+</body>
+</html>
