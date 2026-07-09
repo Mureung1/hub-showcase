@@ -14,8 +14,14 @@
 
 - FigJam 흐름도: https://www.figma.com/board/V5Jke4dsqaoMUOiTEg57tM
 - 웹 프로토타입 디자인: https://www.figma.com/design/0XXQwlwMjFsVB8wreJpDkf?node-id=1-2
+- Figma 디자인 시스템 문서: `docs/figma-design-system.md`
+- Figma 보드 프리뷰: `docs/figma-board-preview.html`
+- 모두의 뇌 Design Skill: `docs/modu-brain-design-skill.md`
+- 개발 핸드오프: `docs/figma-handoff.md`
 
 > 참고: 최신 React 탭 화면을 Figma에 재캡처하려고 했으나, 현재 Figma Starter 플랜의 MCP 호출 한도에 걸려 자동 재캡처 검증은 중단되었습니다. 아래 PNG는 최신 로컬 구현을 기준으로 저장한 웹디자인 고정 산출물입니다.
+
+> 2026-07-09 추가: Figma MCP 호출 한도 때문에 실제 Figma 파일 자동 수정은 진행하지 못했다. 대신 같은 구조를 Figma에 옮길 수 있도록 디자인 시스템 문서, Design Skill 문서, 개발 핸드오프 문서, HTML 보드 프리뷰를 추가했다.
 
 ## 최신 웹 프로토타입 캡처
 

@@ -17,6 +17,10 @@
 - [x] Canva 편집 디자인 생성
 - [x] Figma FigJam 흐름도 생성
 - [x] README와 PR 본문에서 대표 PNG 바로 표시
+- [x] Figma 디자인 시스템 문서 작성
+- [x] 모두의 뇌 Design Skill 문서 작성
+- [x] Figma 개발 핸드오프 문서 작성
+- [x] Figma 보드 프리뷰 HTML 작성
 
 ## 2. 개발 산출물
 

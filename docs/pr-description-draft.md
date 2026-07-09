@@ -102,6 +102,10 @@ flowchart TD
 - `docs/prompt-design.md`에 LLM 프롬프트 구조와 JSON 출력 스키마를 정리했습니다.
 - `docs/market-research.md`에 Notion AI, Confluence AI, Mem, Obsidian, 회의 요약 도구와의 차이를 정리했습니다.
 - `docs/design-assets.md`에 Canva, Figma, 최신 웹 캡처 산출물을 정리했습니다.
+- `docs/figma-design-system.md`에 Figma 제작용 컬러, 타이포그래피, 컴포넌트 기준을 정리했습니다.
+- `docs/modu-brain-design-skill.md`에 앞으로 반복 적용할 나만의 Design Skill을 정리했습니다.
+- `docs/figma-handoff.md`에 Figma 화면과 React 컴포넌트 연결 기준을 정리했습니다.
+- `docs/figma-board-preview.html`에 Figma 페이지 구조를 HTML 보드 형태로 시각화했습니다.
 - React + TypeScript 기반 웹 프로토타입을 구현했습니다.
 - 입력, 분석 요약, 개요 탭, 지식맵 탭, 온보딩 탭을 구성했습니다.
 - Apple 스타일 기준으로 흰색/연회색 배경, 파란색 포인트, 8px 카드 반경을 적용했습니다.
@@ -173,5 +177,9 @@ npm run build
 - Canva 편집 디자인: https://www.canva.com/d/vv5pLSUhq50coma
 - Figma FigJam 흐름도: https://www.figma.com/board/V5Jke4dsqaoMUOiTEg57tM
 - Figma 웹 프로토타입 파일: https://www.figma.com/design/0XXQwlwMjFsVB8wreJpDkf?node-id=1-2
+- Figma 디자인 시스템 문서: `docs/figma-design-system.md`
+- Figma 보드 프리뷰: `docs/figma-board-preview.html`
+- 모두의 뇌 Design Skill: `docs/modu-brain-design-skill.md`
+- Figma 개발 핸드오프: `docs/figma-handoff.md`
 - 최신 데스크톱 캡처: `docs/images/modu-brain-web-desktop.png`
 - 최신 모바일 캡처: `docs/images/modu-brain-web-mobile.png`

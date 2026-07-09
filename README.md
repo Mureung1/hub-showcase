@@ -14,6 +14,9 @@
 - [프롬프트 디자인](docs/prompt-design.md)
 - [시장 조사 및 경쟁 분석](docs/market-research.md)
 - [디자인 산출물 링크](docs/design-assets.md)
+- [Figma 디자인 시스템](docs/figma-design-system.md)
+- [모두의 뇌 Design Skill](docs/modu-brain-design-skill.md)
+- [Figma 개발 핸드오프](docs/figma-handoff.md)
 - [작업 분해 체크리스트](docs/checklist.md)
 - [PR 설명 초안](docs/pr-description-draft.md)
 
@@ -22,6 +25,7 @@
 ![모두의 뇌 기획 대표 이미지](docs/images/modu-brain-cover.png)
 
 - [HTML 상세 보기](docs/visualization.html)
+- [Figma 보드 프리뷰](docs/figma-board-preview.html)
 - [최신 데스크톱 웹 캡처](docs/images/modu-brain-web-desktop.png)
 - [최신 모바일 웹 캡처](docs/images/modu-brain-web-mobile.png)
 
