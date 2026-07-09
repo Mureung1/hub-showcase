@@ -154,6 +154,13 @@
 
 ---
 
+## Figma
+
+- 프로토타입 파일: https://www.figma.com/design/59PrnP1sga42H0kq71hv8Y/챌린지로그-프로토타입?node-id=0-1
+- 색상 변수(Colors)·Spacing·Radius, BottomNav 컴포넌트까지 만들어둔 상태. 6화면 제작은 Figma MCP 월간 호출 한도로 중단됨 — 재개 시 이 파일을 그대로 이어서 사용.
+
+---
+
 ## Stitch 결과물
 
 > 이미지 파일은 `design-assets/stitch/`에 저장합니다.
@@ -163,7 +170,6 @@
 - [x] 캘린더 — `design-assets/stitch/calendar.png`
 - [x] 친구 방 목록 — `design-assets/stitch/rooms-list.png`
 - [x] 친구 방 상세 (완료 상태) — `design-assets/stitch/room-detail-done.png`
-- [ ] 친구 방 상세 (미완료 상태) — 아직 생성 전
 - [x] 설정 — `design-assets/stitch/settings.png`
 
 | 홈 | 기록 작성 | 캘린더 |
