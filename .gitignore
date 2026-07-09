@@ -20,6 +20,7 @@ htmlcov/
 .env
 .env.*
 !.env.example
+*.local
 
 # Local data and generated 3D assets
 data/raw/*
@@ -34,3 +35,4 @@ data/scenes/*
 .vscode/
 .DS_Store
 Thumbs.db
+.vercel/
