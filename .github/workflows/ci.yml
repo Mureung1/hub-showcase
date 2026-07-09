@@ -2,10 +2,14 @@ name: CI
 
 on:
   pull_request:
+    branches:
+      - develop
+      - main
   push:
     branches:
       - develop
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,6 +17,7 @@ permissions:
 jobs:
   docs:
     name: docs
+    if: github.repository == 'HyunKN/hub'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -25,10 +30,12 @@ jobs:
       - run: python scripts/check_task_packet.py --root .
       - run: python scripts/check_docs_index.py
       - run: python scripts/check_docs_html.py
+      - run: python scripts/check_ci_scope.py
       - run: node scripts/check_doc_viewer_normalization.js
 
   web:
     name: web
+    if: github.repository == 'HyunKN/hub'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -46,6 +53,7 @@ jobs:
 
   api:
     name: api
+    if: github.repository == 'HyunKN/hub'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
