@@ -10,7 +10,7 @@
 
 운전자가 주차 공간을 찾는 시간을 줄이고, 비싼 사설 주차장 대신 저렴한 공영주차장을 우선 고려할 수 있도록 돕습니다.
 
-📋 **[프로젝트 기획서](https://github.com/geunnseung/hub/wiki/ChaSeWar-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%B0%ED%9A%8D%EC%84%9C)**
+📋 **[프로젝트 기획서](https://github.com/geunnseung/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EC%86%8C%EA%B0%9C)**
 
 ## ✨ 주요 기능 (MVP)
 
