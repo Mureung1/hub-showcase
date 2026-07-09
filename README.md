@@ -14,15 +14,21 @@
 ## 문서
 
 - [기획서 (docs/plan.md)](docs/plan.md) — 문제·페르소나·차별점·에이전트다움·핵심 기능·아키텍처·KPI·일정
+- [디자인 시스템 (docs/design.md)](docs/design.md) — 색·타이포·간격·컴포넌트 토큰의 단일 원천
 - [작업 체크리스트 (docs/checklist.md)](docs/checklist.md)
 
-## 소개 페이지 실행
+## 폴더 구조 (npm workspaces)
 
-Vite + React로 만든 프로젝트 소개 페이지입니다.
+- `mvp/` — 동작하는 MVP ver1 (Vite+React + Supabase 실배선)
+- `prototype/` — 디자인 프로토타입 (Vite+React + 목데이터, 비동작). 디자인 시스템 시연 및 2주차 UI 토대
+
+## 실행
+
+루트에서 한 번 설치한 뒤 원하는 워크스페이스를 실행합니다.
 
 ```bash
-npm install
-npm run dev
-```
+npm install            # 루트에서 두 워크스페이스 함께 설치
 
-`http://localhost:5173`으로 접속합니다.
+npm run dev:proto      # 프로토타입 → http://localhost:5174
+npm run dev:mvp        # MVP        → http://localhost:5173
+```

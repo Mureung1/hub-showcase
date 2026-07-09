@@ -8,8 +8,17 @@
 
 - **[docs/plan.md](docs/plan.md)** — 기획서: 문제·페르소나·차별점·에이전트다움·핵심기능(MoSCoW)·화면흐름·아키텍처·KPI·일정
 - **[docs/prd.md](docs/prd.md)** — 상세 구현 스펙: DB 스키마·에이전트 도구 계약·화면 스펙·수용 기준 *(작성 예정)*
+- **[docs/design.md](docs/design.md)** — 디자인 시스템: 색·타이포·간격·컴포넌트 토큰의 단일 원천 (UI 작업 시 필독)
 - **[docs/checklist.md](docs/checklist.md)** — 작업 체크리스트 (1단계 MVP / 2단계 다중사용자)
 - **[mockups/](mockups/)** — 핵심 화면 UI 목업(HTML). 스크린샷은 `docs/images/`
+
+## 폴더 구조 (npm workspaces)
+
+루트는 워크스페이스 관리자이고, 실제 앱은 두 하위 패키지에 있다.
+
+- **[mvp/](mvp/)** — 동작하는 MVP ver1 (Vite+React SPA + Supabase Edge Functions·scripts·마이그레이션). 실배선.
+- **[prototype/](prototype/)** — 디자인 프로토타입 (Vite+React + 목데이터, 비동작). 디자인 시스템 시연용이자 2주차 개발의 UI 토대.
+- 루트 공통: `docs/`, `mockups/`, `.claude/`(스킬·launch.json), `CLAUDE.md`, `README.md`.
 
 ## 핵심 결정 (요약 — 근거는 plan.md)
 
@@ -31,13 +40,19 @@
 
 ## 명령어
 
-- `npm run dev` — Vite dev 서버 (http://localhost:5173)
-- `npm run build` / `npm run preview` / `npm run lint` (oxlint)
+루트에서 실행 (npm workspaces):
+
+- `npm install` — 루트에서 한 번. 두 워크스페이스 의존성을 함께 설치.
+- `npm run dev:mvp` — MVP dev 서버 (http://localhost:5173)
+- `npm run dev:proto` — 프로토타입 dev 서버 (http://localhost:5174)
+- `npm run build:mvp` / `build:proto` / `preview:mvp` / `preview:proto`
+- `npm run lint` — oxlint (mvp)
 
 ## 컨벤션 / 주의
 
 - 문서·UI 카피는 **한국어**.
-- 색/디자인은 [src/index.css](src/index.css)의 브랜드 토큰(accent `#aa3bff`, 다크모드 지원) 사용.
+- **디자인은 [docs/design.md](docs/design.md)가 단일 원천**. 색/라운드/그림자는 항상 CSS 토큰 변수로(하드코딩 금지). 토큰 원본: [prototype/src/index.css](prototype/src/index.css), [mvp/src/index.css](mvp/src/index.css). **Robinhood 기반**: 다크 우선(블랙 `#000`) + 브랜드 그린 accent `#00c805`(라이트 `#00a306`) + pill 버튼. 그린은 브랜드/CTA 전용이고 국내 관례색은 상승=빨강/하락=파랑 유지.
+- UI 작업 시 **`beacon-design` 스킬**([.claude/skills/beacon-design/SKILL.md](.claude/skills/beacon-design/SKILL.md))을 따른다.
 - DB는 처음부터 **RLS 전제**로 설계(2단계 다중사용자 전환 비용 최소화).
 - 복기 결과에는 인용한 `cited_trade_ids`를 함께 저장해 에이전트 판단을 검증 가능하게 한다.
-- 알려진 정리 대상: 인트로 페이지 [src/components/ProjectIntro.jsx](src/components/ProjectIntro.jsx)의 `.stack` 칩에 아직 `Next.js` 잔재가 있음(실제 스택은 Vite+React).
+- 알려진 정리 대상: 인트로 페이지 [mvp/src/components/ProjectIntro.jsx](mvp/src/components/ProjectIntro.jsx)의 `.stack` 칩에 아직 `Next.js` 잔재가 있음(실제 스택은 Vite+React).

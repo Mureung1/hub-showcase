@@ -1,0 +1,133 @@
+.journal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.symbol-switch {
+  display: flex;
+  gap: 6px;
+}
+.sym-tab {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--bg);
+}
+.sym-tab:hover {
+  border-color: var(--accent-border);
+}
+.sym-tab.active {
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+.journal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.chart-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.chart-ticker {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.chart-price {
+  font-size: 20px;
+  color: var(--text-h);
+  margin-top: 4px;
+}
+.chart-price .up {
+  font-size: 14px;
+  color: var(--up);
+}
+.chart-price .down {
+  font-size: 14px;
+  color: var(--down);
+}
+.chart-legend {
+  display: flex;
+  gap: 10px;
+}
+.chart-legend .lg.up {
+  color: var(--up);
+}
+.chart-legend .lg.down {
+  color: var(--down);
+}
+.chart-legend .lg.hold {
+  color: var(--hold);
+}
+
+.records-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.records {
+  position: sticky;
+  top: 72px;
+}
+.records .rec-card {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.rec-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rec-sub {
+  font-size: 13px;
+  color: var(--text-h);
+  margin: 8px 0;
+}
+.rec-memo {
+  font-size: 13px;
+  line-height: 145%;
+  color: var(--text);
+  background: var(--code-bg);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.rec-memo.empty {
+  font-style: italic;
+  color: var(--muted);
+}
+.rec-btn {
+  margin-top: 12px;
+  font-size: 13px;
+  padding: 9px 14px;
+}
+.records-foot {
+  margin-top: 4px;
+}
+
+@media (max-width: 860px) {
+  .journal-grid {
+    grid-template-columns: 1fr;
+  }
+  .records {
+    position: static;
+  }
+}

@@ -1,0 +1,325 @@
+/* =========================================================================
+   Beacon 디자인 토큰 — 단일 원천 (docs/design.md 와 동기화)
+   기반: Robinhood 디자인 (Lazyweb 레퍼런스). 순수 블랙 + 시그니처 그린 accent.
+   모든 화면은 이 변수만 참조한다. 색을 하드코딩하지 말 것.
+   ========================================================================= */
+
+/* 기본 = Robinhood 다크 (블랙). prefers-color-scheme:light 에서 라이트 변형. */
+:root {
+  /* 표면 / 텍스트 */
+  --text: #9ca3af; /* 본문 grey */
+  --text-h: #ffffff; /* 제목 white */
+  --muted: #6b7280;
+  --bg: #17181c; /* 카드 표면 (블랙에서 살짝 들림) */
+  --page-bg: #000000; /* 페이지 배경 = 순수 블랙 */
+  --border: #26282e;
+  --code-bg: #1c1d22;
+
+  /* 브랜드 accent = Robinhood 그린 */
+  --accent: #00c805;
+  --accent-2: #ccff00; /* 라임 하이라이트 (강조 포인트) */
+  --accent-bg: rgba(0, 200, 5, 0.12);
+  --accent-border: rgba(0, 200, 5, 0.45);
+  --on-accent: #052b0d; /* 그린 버튼 위 텍스트 (다크) */
+
+  /* 시맨틱 */
+  --green: #00c805;
+  --green-bg: rgba(0, 200, 5, 0.12);
+  --red: #ff5a52;
+  --red-bg: rgba(255, 90, 82, 0.12);
+
+  /* 시장 관례색 (국내): 상승/매수 = 빨강, 하락/매도 = 파랑, 관망 = 앰버.
+     Robinhood는 상승=그린이지만 Beacon은 한국 관례를 유지하고
+     그린은 브랜드/CTA 전용으로 쓴다. */
+  --up: #ff5b5b;
+  --down: #4d8dff;
+  --hold: #f5c451;
+
+  --shadow:
+    rgba(0, 0, 0, 0.6) 0 10px 24px -6px, rgba(0, 0, 0, 0.4) 0 4px 8px -3px;
+
+  /* 타이포 */
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  /* 라운드 — Robinhood 는 pill 버튼 + 큰 카드 라운드 */
+  --r-card: 20px;
+  --r-cell: 14px;
+  --r-pill: 999px;
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --text: #4b5563;
+    --text-h: #05060a;
+    --muted: #9aa0a6;
+    --bg: #ffffff;
+    --page-bg: #fafafa;
+    --border: #e6e7ea;
+    --code-bg: #f3f4f6;
+
+    --accent: #00a306; /* 흰 배경 대비용으로 살짝 진한 그린 */
+    --accent-2: #7bb800;
+    --accent-bg: rgba(0, 163, 6, 0.1);
+    --accent-border: rgba(0, 163, 6, 0.4);
+    --on-accent: #ffffff;
+
+    --green: #00a306;
+    --green-bg: rgba(0, 163, 6, 0.1);
+    --red: #d23b3b;
+    --red-bg: rgba(210, 59, 59, 0.1);
+
+    --up: #e0453f;
+    --down: #2f6bd6;
+    --hold: #d99a2b;
+
+    --shadow:
+      rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+    color-scheme: light;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+  color: var(--text);
+  font: 16px/150% var(--sans);
+  letter-spacing: 0.1px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--heading);
+  color: var(--text-h);
+  font-weight: 600;
+  margin: 0;
+}
+
+h1 {
+  font-size: 32px;
+  letter-spacing: -0.9px;
+  line-height: 116%;
+}
+h2 {
+  font-size: 22px;
+  letter-spacing: -0.4px;
+}
+h3 {
+  font-size: 16px;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================ 공용 컴포넌트 ============================ */
+
+/* 카드 */
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow);
+  padding: 22px 24px;
+}
+
+/* 뱃지 / pill */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+.badge.buy {
+  color: var(--up);
+  background: color-mix(in srgb, var(--up) 14%, transparent);
+}
+.badge.sell {
+  color: var(--down);
+  background: color-mix(in srgb, var(--down) 14%, transparent);
+}
+.badge.hold {
+  color: var(--hold);
+  background: color-mix(in srgb, var(--hold) 16%, transparent);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+}
+
+/* 상태 뱃지 */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.status.active {
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-color: transparent;
+}
+.status.pending {
+  color: var(--hold);
+  background: color-mix(in srgb, var(--hold) 16%, transparent);
+  border-color: transparent;
+}
+.status.done {
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+/* 버튼 — Robinhood pill */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+  transition: border-color 0.15s, background 0.15s, filter 0.15s;
+}
+.btn:hover {
+  border-color: var(--accent-border);
+}
+.btn.accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+.btn.accent:hover {
+  filter: brightness(1.08);
+}
+.btn.block {
+  width: 100%;
+}
+
+/* verdict 블록 (에이전트 판단) */
+.verdict {
+  border-left: 4px solid var(--accent);
+  background: var(--accent-bg);
+  border-radius: 4px var(--r-cell) var(--r-cell) 4px;
+  padding: 18px 20px;
+}
+.verdict .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.3px;
+  margin-bottom: 8px;
+}
+.verdict .headline {
+  font-size: 18px;
+  color: var(--text-h);
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  line-height: 145%;
+}
+
+/* 3분할 cell 그리드 */
+.cell {
+  border: 1px solid var(--border);
+  border-radius: var(--r-cell);
+  padding: 14px;
+}
+.cell .icon {
+  font-size: 18px;
+}
+.cell .label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 6px 0 4px;
+}
+.cell .desc {
+  font-size: 13px;
+  line-height: 145%;
+}
+
+/* topbar / brand */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.caption {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* 콘텐츠 폭 */
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+}
+.crumb {
+  color: var(--text);
+  font-size: 14px;
+}

@@ -1,27 +1,19 @@
 {
-  "name": "hub",
+  "name": "beacon",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "mvp",
+    "prototype"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.110.1",
-    "lightweight-charts": "^5.2.0",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "react-router-dom": "^7.18.1"
-  },
-  "devDependencies": {
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.3",
-    "oxlint": "^1.71.0",
-    "postgres": "^3.4.9",
-    "vite": "^8.1.1"
+    "dev:mvp": "npm run dev -w mvp",
+    "dev:proto": "npm run dev -w prototype",
+    "build:mvp": "npm run build -w mvp",
+    "build:proto": "npm run build -w prototype",
+    "preview:mvp": "npm run preview -w mvp",
+    "preview:proto": "npm run preview -w prototype",
+    "lint": "npm run lint -w mvp"
   }
 }
