@@ -66,7 +66,8 @@ git diff whitespace check passed.
 ## 6. Known Limitations
 
 ```text
-원격 GitHub Actions 결과는 push 전에는 확인하지 않았다.
+develop push는 성공했지만 원격 GitHub Actions 결과는 확인하지 못했다.
+현재 환경에는 gh CLI가 없고, 비인증 GitHub Actions API는 repository에 404를 반환했다.
 develop/main branch protection과 required checks는 GitHub repository 설정에서 별도 확인이 필요하다.
 현재 auto-merge workflow는 자체적으로 CI 상태를 검사하지 않는다.
 제품 endpoint, database, 실제 public data와 prototype은 의도적으로 구현하지 않았다.
