@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>매칭 후보 리스트 - 디자인 톤 테스트</title>
+  <style>
+    :root {
+      --bg-page-cream: #F2E8D8;
+      --bg-page-sage: #C6D6B8;
+      --bg-card: #FFFFFF;
+      --bg-card-soft: #FAF7F0;
+
+      --color-primary: #6FB8A8;
+      --color-secondary: #8DB4D6;
+      --color-accent-green: #A8C97E;
+      --color-accent-cream: #F0D9A8;
+
+      --text-primary: #33322E;
+      --text-secondary: #8B8A82;
+      --text-on-dark: #FFFFFF;
+
+      --font-family: 'Quicksand', 'Poppins', sans-serif;
+      --font-size-heading: 22px;
+      --font-size-body: 14px;
+      --font-size-caption: 12px;
+      --font-weight-heading: 600;
+      --font-weight-body: 400;
+
+      --radius-card: 28px;
+      --radius-small: 16px;
+      --radius-pill: 999px;
+
+      --space-card-padding: 24px;
+      --space-gap-sm: 8px;
+      --space-gap-md: 16px;
+      --space-gap-lg: 32px;
+
+      --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(160deg, var(--bg-page-cream) 0%, var(--bg-page-sage) 100%);
+      font-family: var(--font-family);
+    }
+
+    .screen {
+      width: 340px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-gap-md);
+    }
+
+    .header h1 {
+      font-size: var(--font-size-heading);
+      font-weight: var(--font-weight-heading);
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    .header .badge {
+      background: var(--color-primary);
+      color: var(--text-on-dark);
+      font-size: var(--font-size-caption);
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-card);
+      padding: var(--space-card-padding);
+      box-shadow: var(--shadow-card);
+    }
+
+    .candidate {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card-soft);
+      border-radius: var(--radius-small);
+      padding: 14px 18px;
+      margin-bottom: var(--space-gap-sm);
+    }
+
+    .candidate:last-child {
+      margin-bottom: 0;
+    }
+
+    .candidate .info .name {
+      font-size: var(--font-size-body);
+      font-weight: var(--font-weight-heading);
+      color: var(--text-primary);
+      margin: 0 0 2px;
+    }
+
+    .candidate .info .time {
+      font-size: var(--font-size-caption);
+      color: var(--text-secondary);
+      margin: 0;
+    }
+
+    .candidate .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+
+    .candidate:nth-child(1) .dot { background: var(--color-accent-green); }
+    .candidate:nth-child(2) .dot { background: var(--color-secondary); }
+    .candidate:nth-child(3) .dot { background: var(--color-accent-cream); }
+
+    .apply-btn {
+      background: var(--color-primary);
+      color: var(--text-on-dark);
+      font-size: var(--font-size-caption);
+      font-weight: var(--font-weight-heading);
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+    }
+
+    .note {
+      font-size: var(--font-size-caption);
+      color: var(--text-secondary);
+      margin-top: var(--space-gap-md);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <div class="header">
+      <h1>매칭 후보</h1>
+      <span class="badge">21:30 기준</span>
+    </div>
+
+    <div class="card">
+      <div class="candidate">
+        <div class="info">
+          <p class="name"><span class="dot"></span>익명A · 대구역</p>
+          <p class="time">21:25 출발</p>
+        </div>
+        <button class="apply-btn">신청</button>
+      </div>
+
+      <div class="candidate">
+        <div class="info">
+          <p class="name"><span class="dot"></span>익명B · 대구역</p>
+          <p class="time">21:35 출발</p>
+        </div>
+        <button class="apply-btn">신청</button>
+      </div>
+
+      <div class="candidate">
+        <div class="info">
+          <p class="name"><span class="dot"></span>익명C · 동대구역</p>
+          <p class="time">21:30 출발</p>
+        </div>
+        <button class="apply-btn">신청</button>
+      </div>
+    </div>
+
+    <p class="note">디자인 톤 테스트용 껍데기 · 기능 없음</p>
+  </div>
+</body>
+</html>
