@@ -1,0 +1,52 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  username     String   @unique
+  points       Int      @default(1000)
+  accuracyRate Float    @default(0.0)
+  votes        Vote[]
+  createdAt    DateTime @default(now())
+}
+
+model Drop {
+  id             String     @id @default(uuid())
+  title          String
+  category       String     // e.g. sneakers, streetwear, tcg, lego
+  status         DropStatus @default(UPCOMING)
+  retailPrice    Int
+  consensusPrice Int        @default(0)
+  marketPrice    Int?
+  votes          Vote[]
+  createdAt      DateTime   @default(now())
+}
+
+model Vote {
+  id        String        @id @default(uuid())
+  user      User          @relation(fields: [userId], references: [id])
+  userId    String
+  drop      Drop          @relation(fields: [dropId], references: [id])
+  dropId    String
+  direction VoteDirection
+  createdAt DateTime      @default(now())
+
+  @@unique([userId, dropId]) // Restrict one vote per user per drop
+}
+
+enum DropStatus {
+  UPCOMING
+  RELEASED
+}
+
+enum VoteDirection {
+  UP
+  DOWN
+}

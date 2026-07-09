@@ -96,11 +96,9 @@ OpenCode는 `/spec` 또는 `/plan`과 같은 슬래시 명령어를 지원하지
 이 프로젝트는 대안 자산 예측 마켓 **DropCast**의 실제 구현을 위한 개발 환경 및 코딩 컨벤션을 정의합니다.
 
 ### 1. 기술 스택 (Core Tech Stack)
-* **Frontend**: React.js (Vite 기반 개발 환경 구성 권장)
+* **Frontend**: React + TypeScript (Vite 기반 개발 환경 구성 권장)
 * **Backend**: Express.js + Node.js
 * **Database**: PostgreSQL (추천 - 사용자 포인트, 예측 레코드, 랭킹 및 이력 관리를 위한 관계형 스키마에 적합) + Prisma ORM
-* **실시간 통신**: Socket.io (실시간 버블 예측가 동기화 및 제보용)
-* **크롤링 및 스케줄러**: Puppeteer (KREAM 종가 크롤링) + Node-cron (일요일 23:59 주간 자동 정산 배치)
 
 ### 2. 코딩 컨벤션 및 커밋 로그 규칙 (Coding Conventions & Commit Rules)
 
@@ -136,15 +134,16 @@ OpenCode는 `/spec` 또는 `/plan`과 같은 슬래시 명령어를 지원하지
 │   ├── package.json
 │   └── .env
 │
-├── frontend/                 # 프론트엔드 (React + Vite)
+├── frontend/                 # 프론트엔드 (React + TypeScript + Vite)
 │   ├── src/
 │   │   ├── assets/           # 이미지 (artist_bw.png, tunnel_green.png)
-│   │   ├── components/       # 공통 UI 컴포넌트
-│   │   ├── views/            # 페이지 뷰 (대시보드, 랭킹, 상세)
+│   │   ├── components/       # 공통 UI 컴포넌트 (.tsx)
+│   │   ├── views/            # 페이지 뷰 (.tsx)
 │   │   ├── styles/           # CSS 파일 (style.css 기반)
-│   │   └── main.jsx
+│   │   └── main.tsx          # TypeScript 진입점
 │   ├── package.json
-│   └── vite.config.js
+│   ├── tsconfig.json         # TypeScript 설정 파일
+│   └── vite.config.ts        # Vite 설정 파일
 ```
 
 #### 필수 설치 라이브러리 (Required Dependencies)
@@ -158,6 +157,7 @@ OpenCode는 `/spec` 또는 `/plan`과 같은 슬래시 명령어를 지원하지
   - `react`, `react-dom`
   - `socket.io-client`
   - `canvas-confetti` (주간 정산 팝업 시 상위 랭커 축하 효과용)
+  - **DevDependencies (Types)**: `typescript`, `@types/react`, `@types/react-dom`, `@types/canvas-confetti`
 
 ### 4. 에이전트 추가 권장 사항 (Agent Recommendations)
 
