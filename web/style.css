@@ -1,0 +1,89 @@
+/* ── 팔레트 · 타이포 (s1-wireframe.html 디자인 시스템 이식) ───────── */
+:root {
+  --bg: #EDEEF0; --paper: #FFFFFF; --ink: #2B2F36; --muted: #767C87;
+  --faint: #A2A8B2; --line: #D2D6DC; --line-2: #E2E5E9;
+  --fill: #E9EBEE; --fill-2: #F1F3F5;
+  --accent: #0B7A75; --accent-soft: #E2F1EF; --accent-ink: #075853;
+  --pin: #0B7A75; --on-accent: #fff;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0C0E12; --paper: #16191F; --ink: #DDE0E5; --muted: #929AA6;
+    --faint: #626A76; --line: #2C323B; --line-2: #22272F;
+    --fill: #20252D; --fill-2: #1B2028;
+    --accent: #3FD0C9; --accent-soft: #10312F; --accent-ink: #7FE6E0; --pin: #3FD0C9;
+    --on-accent: #04211F;
+  }
+}
+:root[data-theme="light"]{ --bg:#EDEEF0; --paper:#FFFFFF; --ink:#2B2F36; --muted:#767C87; --faint:#A2A8B2; --line:#D2D6DC; --line-2:#E2E5E9; --fill:#E9EBEE; --fill-2:#F1F3F5; --accent:#0B7A75; --accent-soft:#E2F1EF; --accent-ink:#075853; --pin:#0B7A75; --on-accent:#fff; }
+:root[data-theme="dark"]{ --bg:#0C0E12; --paper:#16191F; --ink:#DDE0E5; --muted:#929AA6; --faint:#626A76; --line:#2C323B; --line-2:#22272F; --fill:#20252D; --fill-2:#1B2028; --accent:#3FD0C9; --accent-soft:#10312F; --accent-ink:#7FE6E0; --pin:#3FD0C9; --on-accent:#04211F; }
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+.page { background: var(--bg); color: var(--ink); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; min-height: 100vh; padding: clamp(1rem,4vw,2.5rem) 1.25rem 3rem; }
+.wrap { max-width: 44rem; margin: 0 auto; }
+
+/* ── 상단바 ─────────────────────────────────────────── */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
+.eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-ink); margin: 0; }
+.nav { display: flex; gap: 0.4rem; }
+.navbtn { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 0.35rem 0.8rem; cursor: pointer; transition: background .12s, color .12s, border-color .12s; }
+.navbtn:hover { border-color: var(--accent); color: var(--ink); }
+.navbtn.on { background: var(--accent-soft); color: var(--accent-ink); border-color: transparent; font-weight: 700; }
+.navcount { font-weight: 700; }
+
+/* ── 피드 헤더 ───────────────────────────────────────── */
+.feed-head { display: flex; flex-direction: column; gap: 0.7rem; padding-bottom: 0.85rem; border-bottom: 1px dashed var(--line); margin-bottom: 1.1rem; }
+.datecount { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+h1.date-lbl { font-family: var(--serif); font-weight: 600; font-size: clamp(1.3rem,3.5vw,1.7rem); letter-spacing: -0.01em; margin: 0; }
+.count-lbl { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+.tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.tab { font-size: 0.74rem; font-family: var(--mono); color: var(--muted); background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 0.2rem 0.65rem; cursor: pointer; transition: background .12s, color .12s, border-color .12s; }
+.tab:hover { border-color: var(--accent); color: var(--ink); }
+.tab.on { background: var(--accent-soft); color: var(--accent-ink); border-color: transparent; font-weight: 700; }
+
+/* ── 카드 (F2) ───────────────────────────────────────── */
+.cards { display: flex; flex-direction: column; gap: 0.7rem; }
+.card { border: 1px solid var(--line); border-radius: 10px; padding: 0.8rem 0.9rem; display: flex; flex-direction: column; gap: 0.5rem; background: var(--paper); cursor: pointer; transition: border-color .12s, box-shadow .12s, transform .06s; }
+.card:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.card:active { transform: translateY(1px); }
+.card .toprow { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.badge { font-family: var(--mono); font-size: 0.62rem; font-weight: 700; padding: 0.12rem 0.4rem; border-radius: 4px; letter-spacing: 0.03em; }
+.badge.high { background: var(--accent-soft); color: var(--accent-ink); }
+.badge.medium { background: var(--fill); color: var(--muted); }
+.badge.low { background: transparent; color: var(--faint); border: 1px solid var(--line); }
+.tag { font-family: var(--mono); font-size: 0.66rem; color: var(--muted); }
+.bk { margin-left: auto; font-size: 1rem; line-height: 1; background: none; border: none; cursor: pointer; padding: 0.1rem 0.2rem; border-radius: 6px; filter: grayscale(1) opacity(0.55); transition: filter .12s, background .12s; }
+.bk:hover { background: var(--fill); }
+.bk.on { filter: none; }
+.card .ttl { font-size: 0.92rem; font-weight: 600; line-height: 1.32; }
+.card .ttl-ko { font-size: 0.78rem; color: var(--muted); font-weight: 400; }
+.card .ko { font-size: 0.8rem; color: var(--muted); }
+
+/* ── 상세 (F3) ───────────────────────────────────────── */
+.back { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0.2rem 0; margin-bottom: 0.9rem; }
+.back:hover { color: var(--accent-ink); }
+.d-title { font-family: var(--serif); font-weight: 600; font-size: clamp(1.2rem,3.2vw,1.55rem); line-height: 1.25; margin: 0 0 0.3rem; letter-spacing: -0.01em; }
+.d-title-ko { font-size: 0.9rem; color: var(--muted); margin: 0 0 0.6rem; }
+.meta { font-family: var(--mono); font-size: 0.7rem; color: var(--faint); display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.sec { border: 1px solid var(--line-2); border-radius: 8px; padding: 0.7rem 0.8rem; margin-bottom: 0.6rem; background: var(--fill-2); }
+.sec-lbl { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); font-weight: 700; display: block; margin-bottom: 0.35rem; }
+.sec p { margin: 0; font-size: 0.88rem; }
+.toggle { width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; border: 1px dashed var(--line); border-radius: 8px; padding: 0.6rem 0.75rem; font-family: var(--mono); font-size: 0.74rem; color: var(--muted); background: none; cursor: pointer; margin: 0.4rem 0; }
+.toggle:hover { color: var(--ink); border-color: var(--accent); }
+.abstract { font-size: 0.84rem; color: var(--muted); background: var(--fill-2); border: 1px solid var(--line-2); border-radius: 8px; padding: 0.7rem 0.8rem; margin-bottom: 0.6rem; line-height: 1.6; }
+.abstract[hidden] { display: none; }
+.actionbar { display: flex; gap: 0.5rem; margin-top: 0.9rem; }
+.btn { flex: 1; text-align: center; border-radius: 8px; padding: 0.6rem; font-family: var(--mono); font-size: 0.76rem; border: 1px solid var(--line); color: var(--muted); background: var(--paper); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; transition: border-color .12s, color .12s; }
+.btn:hover { border-color: var(--accent); color: var(--ink); }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { color: var(--on-accent); filter: brightness(1.05); }
+
+/* ── 상태/기타 ───────────────────────────────────────── */
+.loading, .empty { color: var(--muted); font-family: var(--mono); font-size: 0.82rem; text-align: center; padding: 2.5rem 0; }
+.error { color: #c0392b; font-family: var(--mono); font-size: 0.82rem; padding: 1.5rem 0; }
+.foot { margin-top: 2.5rem; padding-top: 1.1rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 0.72rem; color: var(--faint); display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem; justify-content: space-between; }
+*:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
