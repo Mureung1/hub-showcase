@@ -298,7 +298,13 @@ app.post('/api/fooddb', async (req, res) => {
 
     res.json(items.map(normalizeFoodItem))
   } catch (err) {
-    respondToProxyError(res, err, `FoodSafety proxy(${source}) request`)
+    // 이 catch에 도달하는 예외는 전부 식약처 서버로의 네트워크 연결 실패(타임아웃 포함)다.
+    // 그 외 실패 케이스는 위에서 전부 명시적으로 status를 응답하고 return하기 때문이다.
+    // 배포 리전(해외 IP)에서는 api.data.go.kr 접속이 종종 막히는데, 500을 던져 전체 사진
+    // 분석을 실패시키는 대신 "검색 결과 없음"으로 응답해 프론트가 AI 추정치로 자연스럽게
+    // 폴백하게 한다. 국내(로컬)에서는 연결이 정상적이라 이 분기를 타지 않는다.
+    console.error(`FoodSafety proxy(${source}) upstream connection failed, falling back to empty result:`, err.message)
+    res.json([])
   }
 })
 
