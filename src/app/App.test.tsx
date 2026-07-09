@@ -49,15 +49,41 @@ describe('App onboarding flow', () => {
         name: '저장한 링크를 필요한 순간 다시 꺼내보세요',
       })
     ).not.toBeNull();
-    expect(screen.getByRole('button', { name: '서비스 경험하기' })).not.toBeNull();
+    expect(screen.getAllByRole('button', { name: '서비스 경험하기' })).toHaveLength(2);
     expect(screen.queryByRole('heading', { name: '홈' })).toBeNull();
+  });
+
+  it('presents a vertical onboarding story before login', () => {
+    renderApp();
+
+    expect(
+      screen.getByRole('heading', {
+        name: '저장해도 다시 찾기 어려웠던 이유',
+      })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('heading', {
+        name: '저장은 빠르게, 정리는 나중에',
+      })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('heading', {
+        name: '상황으로 다시 연결되는 꺼내보기',
+      })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('heading', {
+        name: '아맞다로 시작해보세요',
+      })
+    ).not.toBeNull();
+    expect(screen.getAllByRole('button', { name: '서비스 경험하기' })).toHaveLength(2);
   });
 
   it('moves from onboarding to login, then into the workspace', async () => {
     const user = userEvent.setup();
     renderApp();
 
-    await user.click(screen.getByRole('button', { name: '서비스 경험하기' }));
+    await user.click(screen.getAllByRole('button', { name: '서비스 경험하기' })[0]);
 
     expect(screen.getByRole('heading', { name: '환영합니다!' })).not.toBeNull();
     expect(screen.getByRole('button', { name: 'Google로 시작하기' })).not.toBeNull();
