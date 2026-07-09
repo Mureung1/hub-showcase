@@ -55,3 +55,5 @@ npm run lint     # 린트 검사
 | [docs/checklist.md](docs/checklist.md) | 주차별 작업 체크리스트 |
 | [docs/decisions.md](docs/decisions.md) | 주요 기술/기획 의사결정 기록 |
 | [docs/log.md](docs/log.md) | 날짜별 작업 로그 |
+| [docs/design.md](docs/design.md) | 디자인 시스템 (색·폰트·모서리·여백·카드 규칙) |
+| [docs/conventions.md](docs/conventions.md) | 코드 컨벤션 (프론트/백엔드 작성 규칙) |

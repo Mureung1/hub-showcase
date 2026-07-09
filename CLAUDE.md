@@ -3,12 +3,18 @@
 이 파일은 Claude Code가 이 저장소에서 작업할 때 참고하는 가이드입니다.
 
 ## 프로젝트 개요
-- `FirstPR`: 오픈소스 레포 추천 에이전트 소개용 React 프론트엔드
+- `FirstPR`: 사용자의 GitHub 활동과 선호 조건을 분석해 첫 오픈소스 기여에 적합한 레포/이슈를 추천하는 서비스
 - 현재는 프론트엔드만 존재하며, 추후 백엔드(API 서버)를 추가할 예정
 - 기획 문서: [docs/plan.md](docs/plan.md)
 - 작업 체크리스트: [docs/checklist.md](docs/checklist.md)
+- 아키텍처: [docs/architecture.md](docs/architecture.md)
+- 의사결정 기록: [docs/decisions.md](docs/decisions.md)
+- 작업 로그: [docs/log.md](docs/log.md)
+- 디자인 시스템: [docs/design.md](docs/design.md)
+- 코드 컨벤션: [docs/conventions.md](docs/conventions.md)
 
 ## 기술 스택
+
 ### Frontend
 - React 19 + Vite
 - Lint: oxlint
@@ -26,8 +32,19 @@
 ## 디렉토리 구조
 - `src/App.jsx` — 앱 엔트리 컴포넌트
 - `src/components/` — UI 컴포넌트 (`ProjectIntro`, `HeroIllustration`, `icons` 등)
+- `public/prototype/` — 화면 프로토타입 (정적 산출물)
 - `docs/` — 기획서, 체크리스트 등 프로젝트 문서
+
+## 디자인 / UI
+- UI 작업(랜딩·화면·컴포넌트 제작 및 정리)은 [docs/design.md](docs/design.md)의 CSS 변수(색·폰트·모서리·여백·카드)를 단일 진실 소스로 따를 것
+- `firstpr-ui` 스킬(`.claude/skills/firstpr-ui/`)이 이 디자인 규칙을 적용하도록 구성되어 있음
+
+## 코드 작성 규칙
+- 코드 작성·수정·리뷰는 [docs/conventions.md](docs/conventions.md)의 규칙(파일 구조·네이밍·레이어 패턴·에러 처리·스타일)을 따를 것
+- `code-convention` 스킬(`.claude/skills/code-convention/`)이 이 규칙을 적용하도록 구성되어 있음
+- 백엔드(Node.js + Express + Mongoose)는 `routes → controllers → services → models` 레이어드 구조로 시작할 것
 
 ## 작업 시 참고사항
 - 백엔드가 추가되면 이 파일에 백엔드 스택/명령어/디렉토리 구조를 함께 갱신할 것
 - 새 컴포넌트는 `src/components/`에 추가하고 필요한 경우에만 분리
+- 색상/여백 등 디자인 값은 하드코딩하지 말고 `docs/design.md`의 CSS 변수를 사용할 것
