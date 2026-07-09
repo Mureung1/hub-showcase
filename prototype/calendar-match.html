@@ -16,6 +16,13 @@
     --radius-sm: 9px;
     --radius-xl: 28px;
     --shadow-sm: 0 1px 3px rgba(26,23,38,0.03);
+    --shadow-lg: 0 14px 36px rgba(26,23,38,0.07);
+
+    --bg-dark: #1A1726;
+    --bg-dark-alt: #262238;
+    --text-on-dark: #FFFFFF;
+    --text-on-dark-muted: #A8A3BB;
+    --border-dark: rgba(255,255,255,0.07);
 
     /* 겹치는 인원수 5단계 */
     --level-0: #F2F0F4;
@@ -218,6 +225,106 @@
     font-size: 13px;
     color: var(--text-muted);
   }
+
+  /* 추천 회의 시간 (다크 카드) */
+  .dark-card {
+    margin-top: 16px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    padding: 28px 24px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--text-on-dark-muted);
+    margin-bottom: 4px;
+  }
+
+  .dark-subtitle {
+    font-size: 13px;
+    color: var(--text-on-dark-muted);
+    margin-bottom: 20px;
+  }
+
+  .recommend-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .recommend-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 4px;
+  }
+
+  .recommend-item + .recommend-item {
+    border-top: 1px solid var(--border-dark);
+  }
+
+  .recommend-rank {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-dark-alt);
+    color: var(--text-on-dark-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .recommend-rank.full {
+    background: var(--color-primary);
+    color: var(--text-on-dark);
+  }
+
+  .recommend-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .recommend-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-on-dark);
+  }
+
+  .recommend-sub {
+    font-size: 13px;
+    color: var(--text-on-dark-muted);
+    margin-top: 2px;
+  }
+
+  .recommend-divider {
+    border-top: 1px solid var(--border-dark);
+    margin: 8px 4px;
+  }
+
+  .recommend-subsection-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--text-on-dark-muted);
+    padding: 8px 4px 6px;
+  }
+
+  .recommend-empty {
+    padding: 20px 4px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-on-dark-muted);
+  }
 </style>
 </head>
 <body>
@@ -247,6 +354,12 @@
       </div>
     </div>
 
+    <div class="dark-card">
+      <div class="section-label">모두 가능한 시간</div>
+      <div class="dark-subtitle">전체 기간(3주) 중</div>
+      <div class="recommend-list" id="recommendList"></div>
+    </div>
+
     <div class="footer-note">칸을 클릭하거나 드래그해서 내 가능한 시간을 선택해보세요</div>
   </div>
 
@@ -264,6 +377,7 @@
     var gridEl = document.getElementById("grid");
     var weekTabsEl = document.getElementById("weekTabs");
     var weekRangeEl = document.getElementById("weekRange");
+    var recommendListEl = document.getElementById("recommendList");
 
     var currentWeek = 0;
     var selectedSlots = new Set(); // 날짜별로 저장: "YYYY-MM-DD_시" 형태의 key
@@ -353,6 +467,13 @@
       var names = teammateNames(key);
       if (selectedSlots.has(key)) names.push("나");
       return count + "명 가능 (" + names.join(", ") + ")";
+    }
+
+    function formatHour12(hour) {
+      var period = hour < 12 ? "오전" : "오후";
+      var h12 = hour % 12;
+      if (h12 === 0) h12 = 12;
+      return period + " " + h12 + "시";
     }
 
     function addDays(date, days) {
@@ -446,11 +567,79 @@
       gridEl.innerHTML = html;
     }
 
+    function allSlotStats() {
+      var results = [];
+      for (var w = 0; w < WEEK_COUNT; w++) {
+        getWeekDates(w).forEach(function (date) {
+          if (isOutOfProject(date)) return;
+          for (var hour = START_HOUR; hour <= END_HOUR; hour++) {
+            var key = slotKey(date, hour);
+            var count = slotCount(key);
+            if (count > 0) {
+              results.push({ date: date, hour: hour, count: count });
+            }
+          }
+        });
+      }
+      return results;
+    }
+
+    function chronoSort(a, b) {
+      if (a.date.getTime() !== b.date.getTime()) return a.date - b.date;
+      return a.hour - b.hour;
+    }
+
+    function renderRecommendItem(item, num, isFull) {
+      var subText = item.count + (isFull ? "명 모두 가능" : "명 가능");
+      var timeLabel = formatHeader(item.date) + " " + formatHour12(item.hour);
+
+      return (
+        '<div class="recommend-item">' +
+        '<div class="recommend-rank' + (isFull ? " full" : "") + '">' + num + "</div>" +
+        '<div class="recommend-info">' +
+        '<div class="recommend-time">' + timeLabel + "</div>" +
+        '<div class="recommend-sub">' + subText + "</div>" +
+        "</div>" +
+        "</div>"
+      );
+    }
+
+    function updateRecommendations() {
+      var stats = allSlotStats();
+      var fullStats = stats.filter(function (s) { return s.count === TOTAL_PEOPLE; }).sort(chronoSort);
+      var threeStats = stats.filter(function (s) { return s.count === 3; }).sort(chronoSort);
+
+      var html = "";
+
+      if (fullStats.length > 0) {
+        html += fullStats
+          .map(function (item, i) {
+            return renderRecommendItem(item, i + 1, true);
+          })
+          .join("");
+      } else {
+        html += '<div class="recommend-empty">아직 전원이 가능한 시간이 없어요</div>';
+      }
+
+      if (fullStats.length <= 2 && threeStats.length > 0) {
+        html += '<div class="recommend-divider"></div>';
+        html += '<div class="recommend-subsection-label">3명 가능</div>';
+        html += threeStats
+          .map(function (item, i) {
+            return renderRecommendItem(item, i + 1, false);
+          })
+          .join("");
+      }
+
+      recommendListEl.innerHTML = html;
+    }
+
     function render() {
       var dates = getWeekDates(currentWeek);
       weekRangeEl.textContent = formatHeader(dates[0]) + " ~ " + formatHeader(dates[6]);
       renderTabs();
       renderGrid(dates);
+      updateRecommendations();
     }
 
     function setSlotState(slotEl, key, selected) {
@@ -467,6 +656,8 @@
       var count = slotCount(key);
       slotEl.classList.add("level-" + count);
       slotEl.title = slotTitle(key, count);
+
+      updateRecommendations();
     }
 
     // 클릭 = 즉시 토글, 누른 채로 끌면(드래그) 첫 칸에서 정한 선택/해제 상태를 지나가는 칸에 그대로 적용
