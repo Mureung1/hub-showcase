@@ -4,6 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>커리어 코파일럿 — 채용 공고 적합도 대시보드 (v2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script>
+  /* 테마 초기화(플래시 방지) + 토글 (localStorage 저장, 최초엔 시스템 설정 따름) */
+  (function () {
+    var root = document.documentElement, KEY = 'cc-theme';
+    function apply(t) { t === 'light' ? root.setAttribute('data-theme', 'light') : root.removeAttribute('data-theme'); }
+    var saved; try { saved = localStorage.getItem(KEY); } catch (e) {}
+    if (!saved) saved = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    apply(saved);
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('#theme-toggle'); if (!b) return;
+      var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      apply(next);
+      try { localStorage.setItem(KEY, next); } catch (e) {}
+    });
+  })();
+</script>
 <style>
   :root {
     --bg: #0b0e14;
@@ -28,8 +48,33 @@
     --tier-red: #f87171;
     --tier-red-bg: rgba(248, 113, 113, 0.1);
 
-    --mono: 'JetBrains Mono', 'Consolas', 'SF Mono', 'Cascadia Code', monospace;
-    --sans: 'Pretendard', 'Malgun Gothic', '맑은 고딕', -apple-system, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'Fira Code', 'JetBrains Mono', 'Consolas', 'SF Mono', monospace;
+    --sans: 'Pretendard', 'Pretendard Variable', 'Malgun Gothic', '맑은 고딕', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  /* ---------- 라이트 모드 토큰 ---------- */
+  :root[data-theme="light"] {
+    --bg: #f5f7fa;
+    --bg-panel: #f3f5f9;
+    --card: #ffffff;
+    --card-hi: #eceff4;
+    --border: #dde2ea;
+    --border-soft: #e8ecf2;
+    --text: #171b24;
+    --text-dim: #55606f;
+    --text-faint: #8992a2;
+
+    --concept: #0d9488;
+    --concept-dim: rgba(13, 148, 136, 0.16);
+    --impl: #c2660a;
+    --impl-dim: rgba(194, 102, 10, 0.16);
+
+    --tier-green: #16a34a;
+    --tier-green-bg: rgba(22, 163, 74, 0.12);
+    --tier-yellow: #b45309;
+    --tier-yellow-bg: rgba(180, 83, 9, 0.12);
+    --tier-red: #dc2626;
+    --tier-red-bg: rgba(220, 38, 38, 0.12);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -681,6 +726,352 @@
     .job-detail { margin: 0 8px; padding: 4px 8px 20px; }
     .fit-mini-row { flex-direction: column; gap: 10px; }
   }
+
+  /* ══════════════════════════════════════════════════════════
+     ✦ UI/UX Pro Max 업그레이드 레이어
+       Modern Dark — Fira Code · 글래스모피즘 · 앰비언트 글로우 · 뎁스
+     ══════════════════════════════════════════════════════════ */
+
+  /* 접근성: 모션 최소화 존중 */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  /* 시네마틱 앰비언트 글로우 (느린 드리프트) */
+  body::before {
+    content: "";
+    position: fixed;
+    top: -25%; left: -10%; right: -10%;
+    height: 75vh;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(45% 55% at 18% 0%, rgba(94, 234, 212, 0.11), transparent 70%),
+      radial-gradient(45% 55% at 85% 6%, rgba(245, 158, 11, 0.09), transparent 70%);
+    filter: blur(40px);
+    animation: glow-drift 26s ease-in-out infinite alternate;
+  }
+  @keyframes glow-drift {
+    from { transform: translate3d(-2%, -1%, 0) scale(1); }
+    to   { transform: translate3d(3%, 2%, 0) scale(1.09); }
+  }
+  .wrap { position: relative; z-index: 1; }
+
+  /* 진입 애니메이션 (fade-up · Expo easing) */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: none; }
+  }
+  header.topbar, .section-label, .job-card, footer.foot-note {
+    animation: fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .job-list .job-card:nth-child(2) { animation-delay: 0.04s; }
+  .job-list .job-card:nth-child(3) { animation-delay: 0.08s; }
+  .job-list .job-card:nth-child(4) { animation-delay: 0.12s; }
+  .job-list .job-card:nth-child(5) { animation-delay: 0.16s; }
+  .job-list .job-card:nth-child(6) { animation-delay: 0.20s; }
+  .job-list .job-card:nth-child(7) { animation-delay: 0.24s; }
+
+  /* 카드 공통 뎁스 */
+  .panel {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.035),
+      0 12px 32px -22px rgba(0, 0, 0, 0.85);
+  }
+
+  /* 글래스모피즘 스티키 헤더 */
+  header.topbar {
+    position: sticky;
+    top: 12px;
+    z-index: 20;
+    background: linear-gradient(180deg, rgba(22, 27, 38, 0.78), rgba(14, 18, 26, 0.72));
+    backdrop-filter: blur(18px) saturate(1.35);
+    -webkit-backdrop-filter: blur(18px) saturate(1.35);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 10px 34px -14px rgba(0, 0, 0, 0.7);
+  }
+
+  /* 브랜드 마크 글로우 */
+  .brand-mark {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.25),
+      0 6px 20px -6px rgba(94, 234, 212, 0.55);
+  }
+
+  /* 공고 카드 hover 리프트 */
+  .job-card {
+    transition:
+      transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.24s ease,
+      border-color 0.24s ease;
+    will-change: transform;
+  }
+  .job-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 44px -24px rgba(0, 0, 0, 0.95);
+  }
+  .job-card[open] {
+    box-shadow: 0 22px 52px -26px rgba(0, 0, 0, 0.95);
+  }
+
+  /* 티어 뱃지: 이모지 → 프리미엄 글로우 인디케이터 */
+  .tier-badge {
+    font-size: 0;
+    color: transparent;
+    position: relative;
+    border: 1px solid var(--border-soft);
+  }
+  .tier-badge::after {
+    content: "";
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .tier-green .tier-badge::after {
+    background: var(--tier-green);
+    box-shadow: 0 0 0 4px var(--tier-green-bg), 0 0 14px var(--tier-green);
+  }
+  .tier-yellow .tier-badge::after {
+    background: var(--tier-yellow);
+    box-shadow: 0 0 0 4px var(--tier-yellow-bg), 0 0 14px var(--tier-yellow);
+  }
+  .tier-red .tier-badge::after {
+    background: var(--tier-red);
+    box-shadow: 0 0 0 4px var(--tier-red-bg), 0 0 14px var(--tier-red);
+  }
+
+  /* 도넛 차트 글로우 */
+  .fit-mini.concept .donut-mini { filter: drop-shadow(0 0 10px rgba(94, 234, 212, 0.28)); }
+  .fit-mini.impl .donut-mini { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.24)); }
+
+  /* 스킬바 부드러운 전환 */
+  .mini-skill-bar { transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+
+  /* 마이크로 인터랙션 */
+  .hdr-select, .badge-pill, .new-tag, .deadline-tag, .detail-block, .mini-action-item {
+    transition: all 0.18s ease;
+  }
+  .badge-pill:hover { border-color: var(--text-faint); transform: translateY(-1px); }
+  .job-card summary:hover .deadline-tag { transform: translateY(-1px); }
+  .detail-block:hover { border-color: var(--border); }
+
+  /* 키보드 포커스 접근성 */
+  :focus-visible { outline: 2px solid var(--concept); outline-offset: 2px; }
+  .job-card summary:focus-visible { outline-offset: -2px; }
+
+  /* 커스텀 스크롤바 */
+  * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  ::-webkit-scrollbar { width: 11px; height: 11px; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 8px;
+    border: 3px solid var(--bg);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+  /* 좁은 화면: 스티키 헤더 여백 보정 */
+  @media (max-width: 760px) {
+    header.topbar { top: 0; }
+  }
+
+  /* ---------- 테마 토글 버튼 ---------- */
+  .theme-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--card-hi); border: 1px solid var(--border);
+    color: var(--text-dim); cursor: pointer;
+    transition: color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  }
+  .theme-toggle:hover { color: var(--text); border-color: var(--text-faint); transform: translateY(-1px); }
+  .theme-toggle svg { width: 17px; height: 17px; }
+  .theme-toggle .icon-moon { display: none; }
+  [data-theme="light"] .theme-toggle .icon-sun { display: none; }
+  [data-theme="light"] .theme-toggle .icon-moon { display: inline-block; }
+
+  /* ---------- 라이트 모드 컴포넌트 보정 ---------- */
+  [data-theme="light"] body {
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(13, 148, 136, 0.06), transparent),
+      radial-gradient(ellipse 800px 500px at 90% 10%, rgba(194, 102, 10, 0.05), transparent);
+  }
+  [data-theme="light"] body::before {
+    background:
+      radial-gradient(45% 55% at 18% 0%, rgba(13, 148, 136, 0.08), transparent 70%),
+      radial-gradient(45% 55% at 85% 6%, rgba(194, 102, 10, 0.07), transparent 70%);
+  }
+  [data-theme="light"] header.topbar {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(244, 247, 250, 0.72));
+    border: 1px solid rgba(20, 30, 50, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 10px 30px -16px rgba(20, 30, 50, 0.22);
+  }
+  [data-theme="light"] .panel {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 8px 24px -18px rgba(20, 30, 50, 0.28);
+  }
+  [data-theme="light"] .job-card:hover { box-shadow: 0 16px 34px -22px rgba(20, 30, 50, 0.35); }
+  [data-theme="light"] .job-card[open] { box-shadow: 0 18px 40px -24px rgba(20, 30, 50, 0.35); }
+  [data-theme="light"] .brand-mark { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 6px 16px -6px rgba(13, 148, 136, 0.45); }
+  [data-theme="light"] .tier-green .tier-badge::after { box-shadow: 0 0 0 4px var(--tier-green-bg), 0 0 8px rgba(22, 163, 74, 0.45); }
+  [data-theme="light"] .tier-yellow .tier-badge::after { box-shadow: 0 0 0 4px var(--tier-yellow-bg), 0 0 8px rgba(180, 83, 9, 0.45); }
+  [data-theme="light"] .tier-red .tier-badge::after { box-shadow: 0 0 0 4px var(--tier-red-bg), 0 0 8px rgba(220, 38, 38, 0.45); }
+  [data-theme="light"] .fit-mini.concept .donut-mini { filter: drop-shadow(0 0 8px rgba(13, 148, 136, 0.22)); }
+  [data-theme="light"] .fit-mini.impl .donut-mini { filter: drop-shadow(0 0 8px rgba(194, 102, 10, 0.2)); }
+
+  /* ---------- 요구역량 항목: 클릭 → 근거 펼침 ---------- */
+  .req-hint {
+    font-size: 10.5px; color: var(--text-faint); font-family: var(--mono);
+    margin-bottom: 8px; opacity: 0.9;
+  }
+  details.req-item { display: block; padding: 0; }
+  .req-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; padding: 6px; margin: 0 -6px;
+    border-radius: 7px; cursor: pointer; list-style: none;
+    transition: background 0.15s ease;
+  }
+  .req-head::-webkit-details-marker { display: none; }
+  .req-head::marker { content: ""; }
+  .req-head:hover { background: var(--card-hi); }
+  .req-head:focus-visible { outline: 2px solid var(--concept); outline-offset: -2px; }
+  .req-head .req-status { margin-left: auto; }
+  .req-chev {
+    font-family: var(--mono); font-size: 9px; color: var(--text-faint);
+    transition: transform 0.18s ease;
+  }
+  details.req-item[open] .req-chev { transform: rotate(180deg); }
+  .req-ev {
+    margin: 6px 4px 12px 8px; padding: 10px 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-soft); border-left: 2px solid var(--concept);
+    border-radius: 8px; animation: req-ev-in 0.2s ease;
+  }
+  .req-item.is-gap .req-ev { border-left-color: var(--impl); }
+  @keyframes req-ev-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+  .req-why { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 9px; }
+  .req-why b { color: var(--text); font-weight: 700; }
+  .req-ev-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ev-tag {
+    font-family: var(--mono); font-size: 10px; padding: 3px 8px;
+    border-radius: 6px; border: 1px solid var(--border);
+    color: var(--text-dim); white-space: nowrap;
+  }
+  .ev-tag.ev-wiki { color: var(--concept); border-color: var(--concept-dim); }
+  .ev-tag.ev-repo { color: var(--impl); border-color: var(--impl-dim); }
+  .ev-tag.ev-self { color: var(--text-faint); }
+  .ev-tag.ev-gap { color: var(--impl); border-color: var(--impl-dim); border-style: dashed; }
+
+  /* ---------- 상세 근거 (프로젝트·스코프·AI 관여) ---------- */
+  .ev-proj {
+    display: flex; align-items: flex-start; gap: 9px;
+    margin-bottom: 12px; padding-bottom: 11px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .ev-proj-icon {
+    width: 27px; height: 27px; border-radius: 7px; flex-shrink: 0;
+    background: var(--concept-dim); color: var(--concept);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ev-proj-icon svg { width: 15px; height: 15px; }
+  .ev-proj-name { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
+  .ev-proj-meta { display: block; font-size: 10.5px; color: var(--text-faint); margin-top: 2px; line-height: 1.45; }
+  .ev-section { margin-top: 12px; }
+  .ev-sec-label {
+    font-family: var(--mono); font-size: 9.5px; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-faint); margin-bottom: 7px;
+  }
+  .ev-ul { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .ev-ul li { font-size: 11.5px; color: var(--text-dim); line-height: 1.5; padding-left: 14px; position: relative; }
+  .ev-ul li::before {
+    content: ""; position: absolute; left: 2px; top: 6px;
+    width: 4px; height: 4px; border-radius: 50%; background: var(--concept);
+  }
+  .ev-metrics { display: flex; flex-wrap: wrap; gap: 7px; }
+  .ev-metric {
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-dim);
+    background: var(--card-hi); border: 1px solid var(--border-soft);
+    border-radius: 6px; padding: 3px 9px;
+  }
+  .ev-metric b { color: var(--text); font-size: 12px; font-weight: 700; }
+  .ev-ai-bar {
+    display: flex; height: 24px; border-radius: 7px; overflow: hidden;
+    border: 1px solid var(--border-soft);
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+  }
+  .ev-ai-self { background: var(--concept-dim); color: var(--concept); display: flex; align-items: center; justify-content: center; min-width: 0; }
+  .ev-ai-assist { background: var(--impl-dim); color: var(--impl); display: flex; align-items: center; justify-content: center; min-width: 0; }
+  .ev-ai-note { font-size: 11px; color: var(--text-dim); line-height: 1.55; margin-top: 8px; }
+  .ev-ai-note b { color: var(--concept); font-weight: 700; }
+  .ev-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 13px; }
+  .ev-unconfirmed {
+    margin-top: 11px; padding-top: 9px; border-top: 1px dashed var(--border);
+    font-family: var(--mono); font-size: 9.5px; color: var(--text-faint);
+  }
+
+  /* ---------- 요건 상태 등급 (강함 / 평타 / 미검증 / 갭) ---------- */
+  .rs-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+  .req-status.st-strong { color: var(--concept); font-weight: 700; }
+  .st-strong .rs-dot { background: var(--concept); box-shadow: 0 0 6px var(--concept); }
+  .req-status.st-ok { color: var(--tier-green); font-weight: 600; }
+  .st-ok .rs-dot { background: var(--tier-green); }
+  .req-status.st-weak { color: var(--text-faint); font-weight: 600; }
+  .st-weak .rs-dot { background: transparent; border: 1.5px solid var(--text-faint); }
+  .req-status.st-gap { color: var(--impl); font-weight: 600; }
+  .st-gap .rs-dot { background: var(--impl); }
+  .req-item.is-weak .req-ev { border-left-color: var(--text-faint); }
+
+  .req-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 9px; font-family: var(--mono); font-size: 10px; }
+  .req-legend .lg { display: inline-flex; align-items: center; gap: 5px; }
+  .req-legend .lg .rs-dot { width: 6px; height: 6px; }
+
+  /* 강화 액션 (평타·미검증 → 강함 / 갭 → 채우기) */
+  .ev-action {
+    margin-top: 11px; padding: 8px 11px; border-radius: 7px;
+    background: var(--concept-dim); font-size: 11px; color: var(--text-dim);
+    line-height: 1.55; display: flex; gap: 8px; align-items: baseline;
+  }
+  .ev-action.gap-action { background: var(--impl-dim); }
+  .ea-label { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--concept); white-space: nowrap; flex-shrink: 0; }
+  .ev-action.gap-action .ea-label { color: var(--impl); }
+
+  /* AI 관여 추정 */
+  .ev-est { font-family: var(--mono); font-size: 9px; color: var(--text-faint); font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 6px; }
+  .ev-ai-basis { font-size: 10.5px; color: var(--text-faint); line-height: 1.55; margin-top: 8px; background: var(--card-hi); border-radius: 6px; padding: 7px 9px; }
+  .ev-ai-basis-label { font-family: var(--mono); font-size: 9px; font-weight: 700; color: var(--impl); margin-right: 5px; }
+
+  /* ---------- 학습 루프 섹션 ---------- */
+  .learn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .learn-col { padding: 16px 16px 14px; }
+  .learn-col-head {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 13px; font-weight: 700; color: var(--text);
+    padding-bottom: 12px; margin-bottom: 4px; border-bottom: 1px solid var(--border-soft);
+  }
+  .learn-ico { width: 24px; height: 24px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .learn-ico svg { width: 14px; height: 14px; }
+  .learn-ico.rev { background: var(--concept-dim); color: var(--concept); }
+  .learn-ico.new { background: var(--impl-dim); color: var(--impl); }
+  .learn-count { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text-faint); background: var(--card-hi); border-radius: 20px; padding: 1px 9px; }
+  .learn-item { padding: 11px 0; border-bottom: 1px solid var(--border-soft); }
+  .learn-item:last-child { border-bottom: none; padding-bottom: 2px; }
+  .learn-item-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .learn-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .learn-item-top .req-status { margin-left: auto; }
+  .learn-prov { font-family: var(--mono); font-size: 10px; color: var(--text-faint); margin-bottom: 6px; }
+  .learn-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .learn-chip { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 5px; border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap; }
+  .learn-chip.due { color: var(--concept); border-color: var(--concept-dim); }
+  .learn-chip.mat { color: var(--impl); border-color: var(--impl-dim); }
+  .learn-chip.vision-tag { color: var(--concept); border-color: var(--concept-dim); font-weight: 700; }
+  .learn-note { font-size: 11.5px; color: var(--text-dim); line-height: 1.5; }
+  .learn-item.vision { background: var(--concept-dim); margin-top: 8px; padding: 11px 12px; border-radius: 8px; border-bottom: none; }
+  @media (max-width: 760px) { .learn-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -718,6 +1109,10 @@
       <span class="updated-at">마지막 갱신 06:00</span>
       <span class="badge-pill"><span class="dot dot-new"></span>어제 대비 신규 <b>+3</b></span>
       <span class="badge-pill"><span class="dot dot-urgent"></span>마감 임박 <b>2</b></span>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="라이트/다크 테마 전환" title="라이트 · 다크 전환">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
     </div>
   </header>
 
@@ -729,7 +1124,7 @@
   <div class="job-list">
 
     <!-- ========== 1. 당근 · 백엔드 신입 (🟢 72) ========== -->
-    <details class="job-card panel tier-green" open>
+    <details class="job-card panel tier-yellow" open>
       <summary>
         <div class="job-summary-row">
           <div class="tier-badge">🟢</div>
@@ -744,8 +1139,8 @@
             </div>
           </div>
           <div class="job-fit-col">
-            <div class="job-fit-num">적합도 <b>72</b></div>
-            <div class="job-gap-note">갭 2개 · 필수 6/8 충족</div>
+            <div class="job-fit-num">적합도 <b>48</b></div>
+            <div class="job-gap-note">강점 0 · 기본 5 · 근거부족 1 · 미보유 2</div>
           </div>
           <div class="job-deadline-col">
             <span class="deadline-tag">D-12</span>
@@ -761,16 +1156,124 @@
           <div class="detail-block">
             <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량</div>
             <div class="req-list">
+              <div class="req-legend"><span class="lg st-strong"><span class="rs-dot"></span>강점</span><span class="lg st-ok"><span class="rs-dot"></span>기본</span><span class="lg st-weak"><span class="rs-dot"></span>근거부족</span><span class="lg st-gap"><span class="rs-dot"></span>미보유</span></div>
+              <div class="req-hint">클릭 → 근거·스코프·직접vsAI·강해지는 액션. 근거 없으면 '충족'이라 안 적음.</div>
               <div class="req-group-label">필수</div>
-              <div class="req-item"><span class="req-name">Java/Spring 기반 API 개발</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">RDB 설계·쿼리 최적화</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">자료구조·알고리즘</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">Git 협업</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">테스트 코드 작성</span><span class="req-status gap">⚠️ 갭</span></div>
+
+              <details class="req-item">
+                <summary class="req-head"><span class="req-name">Java/Spring 기반 API 개발</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span><span class="req-chev">▾</span></summary>
+                <div class="req-ev">
+                  <div class="ev-proj">
+                    <span class="ev-proj-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg></span>
+                    <div>
+                      <span class="ev-proj-name">besession0402</span>
+                      <span class="ev-proj-meta">Java · Spring · JPA · MySQL · 2026.04 (own) · 제주대 백엔드 스터디 2026_BE_Homework 병행</span>
+                    </div>
+                  </div>
+
+                  <div class="ev-section">
+                    <div class="ev-sec-label">무엇을 구현했나</div>
+                    <ul class="ev-ul">
+                      <li>Spring 의존성 주입(DI) + JPA·MySQL 연동 (besession0402)</li>
+                      <li>제주대 백엔드 스터디에서 주차별 과제 구현 (2026_BE_Homework)</li>
+                      <li>REST·CRUD 기본기 — 단, 규모는 아직 학습 수준</li>
+                    </ul>
+                  </div>
+
+                  <div class="ev-section">
+                    <div class="ev-sec-label">얼마나 (스코프)</div>
+                    <div class="ev-metrics">
+                      <span class="ev-metric"><b>452</b>줄 · <b>11</b>파일</span>
+                      <span class="ev-metric"><b>1</b>커밋 ⚠</span>
+                      <span class="ev-metric">팀 repo <b>62</b>커밋 참여</span>
+                    </div>
+                  </div>
+
+                  <div class="ev-section">
+                    <div class="ev-sec-label">직접 vs AI 관여<span class="ev-est">실측 · Co-Authored 서명 스캔</span></div>
+                    <div class="ev-ai-bar">
+                      <div class="ev-ai-assist" style="width:72%;">AI 작성 (확인·유력)</div>
+                      <div class="ev-ai-self" style="width:28%;">직접 근거 약함</div>
+                    </div>
+                    <div class="ev-ai-basis"><span class="ev-ai-basis-label">실측</span>school-meetingRoom 핵심 커밋 2개에 <b>"Co-Authored-By: Claude Opus 4.7/4.8"</b> 서명 → AI 작성 확인. besession0402·URL-shorter는 1커밋이라 판별 불가. 가장 손작업다운 건 <b>2026_BE_Homework</b>(팀 과제·Claude 서명 없음·소형 증분 커밋).</div>
+                    <p class="ev-ai-note"><b>교훈: 좋은 커밋 메시지 ≠ 손작업 증거</b>(Claude가 대신 써줌). 신뢰 신호는 ①<b>Co-Authored-By 트레일러</b> ②<b>면접에서 설명·재현 가능한가</b>. → 네 무기는 '타이핑'이 아니라 <b>개념·판단</b>(개념 82).</p>
+                  </div>
+
+                  <div class="ev-links">
+                    <span class="ev-tag ev-repo">GitHub · besession0402</span>
+                    <span class="ev-tag ev-repo">GitHub · 2026_BE_Homework (팀)</span>
+                    <span class="ev-tag ev-self">자가신고 · Java·Spring 주력</span>
+                  </div>
+
+                  <div class="ev-action"><span class="ea-label">→ 강점으로</span><span>besession0402를 증분 커밋으로 다시 쌓고 예외처리·테스트를 붙이기. 단일 커밋 습관만 고쳐도 '증명 가능한 실력'이 됨.</span></div>
+                  <div class="ev-unconfirmed">GitHub 15개 repo 실측 기반 · 규모는 besession0402(소형 학습 프로젝트) 기준</div>
+                </div>
+              </details>
+
+              <details class="req-item">
+                <summary class="req-head"><span class="req-name">RDB 설계·쿼리 최적화</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span><span class="req-chev">▾</span></summary>
+                <div class="req-ev">
+                  <p class="req-why">MySQL 스키마 설계 + JPA N+1을 fetch join으로 해결한 근거는 구체적. 다만 인덱스·실행계획 before/after <b>실측이 없어</b> '최적화'는 아직 기본 수준.</p>
+                  <div class="req-ev-tags"><span class="ev-tag ev-wiki">위키 · DB/쿼리 최적화</span><span class="ev-tag ev-self">자가신고 · MySQL</span></div>
+                  <div class="ev-action"><span class="ea-label">→ 강점으로</span><span>EXPLAIN으로 인덱스 전/후 쿼리시간 실측 1건이면 '최적화'가 증명됨.</span></div>
+                </div>
+              </details>
+
+              <details class="req-item">
+                <summary class="req-head"><span class="req-name">자료구조·알고리즘</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span><span class="req-chev">▾</span></summary>
+                <div class="req-ev">
+                  <p class="req-why"><b>실측 근거 확인됨</b> — 2026_BE_Homework에 백준류 문제풀이 제출 이력(과제 커밋 다수). 다만 solved.ac 티어 같은 <b>난이도 지표</b>가 없어 아직 '기본'.</p>
+                  <div class="req-ev-tags"><span class="ev-tag ev-repo">GitHub · BE_Homework 과제 커밋</span><span class="ev-tag ev-self">자가신고 · PS 지속</span></div>
+                  <div class="ev-action"><span class="ea-label">→ 강점으로</span><span>solved.ac 티어 연결로 '난이도'를 붙이면 강점.</span></div>
+                </div>
+              </details>
+
+              <details class="req-item">
+                <summary class="req-head"><span class="req-name">Git 협업</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span><span class="req-chev">▾</span></summary>
+                <div class="req-ev">
+                  <p class="req-why"><b>실측 근거 확인됨</b> — 2026_BE_Homework(제주대 백엔드 스터디, 6~7인)에서 <b>PR 기반 협업</b>: 62커밋·다수 Merge PR 흐름에 본인 PR 포함해 참여. 혼자 Git 아님.</p>
+                  <div class="req-ev-tags"><span class="ev-tag ev-repo">GitHub · 2026_BE_Homework (팀 62커밋)</span><span class="ev-tag ev-self">PR·머지 협업</span></div>
+                  <div class="ev-action"><span class="ea-label">→ 강점으로</span><span>내가 <b>리뷰어로</b> 남 코드를 리뷰한 PR / 이슈 논의 1건이면 강점.</span></div>
+                </div>
+              </details>
+
+              <details class="req-item is-gap">
+                <summary class="req-head"><span class="req-name">테스트 코드 작성</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span><span class="req-chev">▾</span></summary>
+                <div class="req-ev">
+                  <p class="req-why"><b>갭</b> — JUnit 개념은 알지만 습관화·커버리지가 부족. 이 카드의 유일한 <b>필수</b> 갭이라 우선순위 최상.</p>
+                  <div class="req-ev-tags"><span class="ev-tag ev-gap">필요 · 단위/슬라이스 테스트</span></div>
+                  <div class="ev-action gap-action"><span class="ea-label">→ 채우기</span><span>jeju-market-api에 @WebMvcTest·@DataJpaTest 슬라이스 테스트부터.</span></div>
+                </div>
+              </details>
+
               <div class="req-group-label">우대</div>
-              <div class="req-item"><span class="req-name">Docker·컨테이너 배포 경험</span><span class="req-status gap">⚠️ 갭</span></div>
-              <div class="req-item"><span class="req-name">대용량 트래픽 처리 경험</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">사이드 프로젝트 운영 경험</span><span class="req-status ok">✅ 충족</span></div>
+
+              <details class="req-item is-gap">
+                <summary class="req-head"><span class="req-name">Docker·컨테이너 배포 경험</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span><span class="req-chev">▾</span></summary>
+                <div class="req-ev">
+                  <p class="req-why"><b>갭</b> — 로컬 개발 위주라 컨테이너 배포 실경험이 없음. 여러 공고에 공통으로 걸리는 게이트.</p>
+                  <div class="req-ev-tags"><span class="ev-tag ev-gap">필요 · Docker 배포 1회</span></div>
+                  <div class="ev-action gap-action"><span class="ea-label">→ 채우기</span><span>Dockerfile+compose로 배포 1회. 이거 하나가 '운영' 근거까지 같이 끌어올림.</span></div>
+                </div>
+              </details>
+
+              <details class="req-item is-weak">
+                <summary class="req-head"><span class="req-name">대용량 트래픽 처리 경험</span><span class="req-status st-weak"><span class="rs-dot"></span>근거부족</span><span class="req-chev">▾</span></summary>
+                <div class="req-ev">
+                  <p class="req-why">k6 사용은 자가신고인데 <b>GitHub 15개 repo에서 k6·부하테스트 흔적을 못 찾음.</b> 실제 근거가 안 보여 '근거부족'.</p>
+                  <div class="req-ev-tags"><span class="ev-tag ev-self">자가신고 · k6</span><span class="ev-tag ev-gap">미확인 · repo 흔적 없음</span></div>
+                  <div class="ev-action"><span class="ea-label">→ 검증</span><span>k6 스크립트+결과를 repo에 올리기. 주문 API p99 개선 1건이면 단숨에 강점.</span></div>
+                </div>
+              </details>
+
+              <details class="req-item">
+                <summary class="req-head"><span class="req-name">사이드 프로젝트 운영 경험</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span><span class="req-chev">▾</span></summary>
+                <div class="req-ev">
+                  <p class="req-why">school-meetingRoom(회의실 예약 앱): 배포·PocketBase 이전·버그픽스 등 <b>실운영 흐름</b>은 있음. 단 <b>코드는 Claude 작성(Co-Authored 서명 확인)</b> — '기획·운영·판단'은 본인, '구현'은 아님. 실사용자도 미확인이라 '기본'.</p>
+                  <div class="req-ev-tags"><span class="ev-tag ev-repo">GitHub · school-meetingRoom</span><span class="ev-tag ev-self">배포·유지보수 커밋</span></div>
+                  <div class="ev-action"><span class="ea-label">→ 강점으로</span><span>실사용자 수·가동 기간을 붙이면 강점.</span></div>
+                </div>
+              </details>
             </div>
           </div>
 
@@ -885,14 +1388,14 @@
             <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량</div>
             <div class="req-list">
               <div class="req-group-label">필수</div>
-              <div class="req-item"><span class="req-name">Java/Kotlin 기반 서버 개발</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">RDB·트랜잭션 처리</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">CS 기본기(운영체제·네트워크)</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">TDD·테스트 문화 이해</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-item"><span class="req-name">Java/Kotlin 기반 서버 개발</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+              <div class="req-item"><span class="req-name">RDB·트랜잭션 처리</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+              <div class="req-item"><span class="req-name">CS 기본기(운영체제·네트워크)</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+              <div class="req-item"><span class="req-name">TDD·테스트 문화 이해</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
               <div class="req-group-label">우대</div>
-              <div class="req-item"><span class="req-name">MSA 설계 경험</span><span class="req-status gap">⚠️ 갭</span></div>
-              <div class="req-item"><span class="req-name">알고리즘 문제풀이 역량</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">기술 블로그·글쓰기</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">MSA 설계 경험</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
+              <div class="req-item"><span class="req-name">알고리즘 문제풀이 역량</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+              <div class="req-item"><span class="req-name">기술 블로그·글쓰기</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
             </div>
           </div>
 
@@ -1004,12 +1507,12 @@
             <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량</div>
             <div class="req-list">
               <div class="req-group-label">필수</div>
-              <div class="req-item"><span class="req-name">Java/Kotlin·Spring Boot</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">대용량 트래픽 대응 경험</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">RDB·NoSQL 설계</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">Java/Kotlin·Spring Boot</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+              <div class="req-item"><span class="req-name">대용량 트래픽 대응 경험</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+              <div class="req-item"><span class="req-name">RDB·NoSQL 설계</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
               <div class="req-group-label">우대</div>
-              <div class="req-item"><span class="req-name">Kubernetes 운영 경험</span><span class="req-status gap">⚠️ 갭</span></div>
-              <div class="req-item"><span class="req-name">MSA·이벤트 기반 아키텍처</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">Kubernetes 운영 경험</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
+              <div class="req-item"><span class="req-name">MSA·이벤트 기반 아키텍처</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
             </div>
           </div>
 
@@ -1121,13 +1624,13 @@
             <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량</div>
             <div class="req-list">
               <div class="req-group-label">필수</div>
-              <div class="req-item"><span class="req-name">Python 백엔드(FastAPI 등)</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">LLM·에이전트 파이프라인 이해</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">RAG 실구현 경험</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-item"><span class="req-name">Python 백엔드(FastAPI 등)</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+              <div class="req-item"><span class="req-name">LLM·에이전트 파이프라인 이해</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+              <div class="req-item"><span class="req-name">RAG 실구현 경험</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
               <div class="req-group-label">우대</div>
-              <div class="req-item"><span class="req-name">모델 서빙(vLLM·TensorRT)</span><span class="req-status gap">⚠️ 갭</span></div>
-              <div class="req-item"><span class="req-name">Kubernetes 배포</span><span class="req-status gap">⚠️ 갭</span></div>
-              <div class="req-item"><span class="req-name">프롬프트 엔지니어링</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">모델 서빙(vLLM·TensorRT)</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
+              <div class="req-item"><span class="req-name">Kubernetes 배포</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
+              <div class="req-item"><span class="req-name">프롬프트 엔지니어링</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
             </div>
           </div>
 
@@ -1247,12 +1750,12 @@
             <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량</div>
             <div class="req-list">
               <div class="req-group-label">필수</div>
-              <div class="req-item"><span class="req-name">Java/Spring 기반 개발</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">대용량 트래픽 처리 경험</span><span class="req-status gap">⚠️ 갭</span></div>
-              <div class="req-item"><span class="req-name">분산시스템 설계 이해</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-item"><span class="req-name">Java/Spring 기반 개발</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+              <div class="req-item"><span class="req-name">대용량 트래픽 처리 경험</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
+              <div class="req-item"><span class="req-name">분산시스템 설계 이해</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
               <div class="req-group-label">우대</div>
-              <div class="req-item"><span class="req-name">오픈소스 기여 경험</span><span class="req-status ok">✅ 충족</span></div>
-              <div class="req-item"><span class="req-name">CS 기본기 (네트워크·OS)</span><span class="req-status ok">✅ 충족</span></div>
+              <div class="req-item"><span class="req-name">오픈소스 기여 경험</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+              <div class="req-item"><span class="req-name">CS 기본기 (네트워크·OS)</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
             </div>
           </div>
 
@@ -1373,9 +1876,9 @@
           <div class="detail-block">
             <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량 (참고용)</div>
             <div class="req-list">
-              <div class="req-item"><span class="req-name">LLM 평가·검증 파이프라인 설계</span><span class="req-status ok">✅ 충족(개념)</span></div>
-              <div class="req-item"><span class="req-name">적대적 테스트·레드티밍</span><span class="req-status ok">✅ 충족(개념)</span></div>
-              <div class="req-item"><span class="req-name">실무 QA 프로세스 경험</span><span class="req-status gap">⚠️ 갭</span></div>
+              <div class="req-item"><span class="req-name">LLM 평가·검증 파이프라인 설계</span><span class="req-status st-weak"><span class="rs-dot"></span>개념만</span></div>
+              <div class="req-item"><span class="req-name">적대적 테스트·레드티밍</span><span class="req-status st-weak"><span class="rs-dot"></span>개념만</span></div>
+              <div class="req-item"><span class="req-name">실무 QA 프로세스 경험</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
             </div>
           </div>
           <div class="detail-block">
@@ -1445,9 +1948,9 @@
           <div class="detail-block">
             <div class="detail-block-title"><span class="n">1</span>이 공고가 요구하는 역량 (참고용)</div>
             <div class="req-list">
-              <div class="req-item"><span class="req-name">고객 현장 배포·문제해결(FDE)</span><span class="req-status gap">⚠️ 갭</span></div>
-              <div class="req-item"><span class="req-name">풀스택 프로토타이핑</span><span class="req-status ok">✅ 충족(개념)</span></div>
-              <div class="req-item"><span class="req-name">AI 솔루션 적용 경험</span><span class="req-status ok">✅ 충족(개념)</span></div>
+              <div class="req-item"><span class="req-name">고객 현장 배포·문제해결(FDE)</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
+              <div class="req-item"><span class="req-name">풀스택 프로토타이핑</span><span class="req-status st-weak"><span class="rs-dot"></span>개념만</span></div>
+              <div class="req-item"><span class="req-name">AI 솔루션 적용 경험</span><span class="req-status st-weak"><span class="rs-dot"></span>개념만</span></div>
             </div>
           </div>
           <div class="detail-block">
@@ -1476,6 +1979,76 @@
         </div>
       </div>
     </details>
+
+  </div>
+
+  <!-- ============================================================
+       3. 학습 루프
+       ============================================================ -->
+  <div class="section-label"><span class="num">02</span><h2>학습 루프</h2><span class="sub">갭은 새로 학습 · 아는 건 복습(까먹기 방지) — 전부 근거 기반</span></div>
+
+  <div class="learn-grid">
+
+    <!-- 복습 열 -->
+    <div class="learn-col panel">
+      <div class="learn-col-head">
+        <span class="learn-ico rev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+        복습 · 까먹기 방지 <span class="learn-count">3</span>
+      </div>
+
+      <div class="learn-item">
+        <div class="learn-item-top"><span class="learn-name">자료구조·알고리즘</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+        <div class="learn-prov">배운 곳: 2026_BE_Homework 과제 · 2026.05</div>
+        <div class="learn-meta"><span class="learn-chip">당근·네이버 요구</span><span class="learn-chip due">다음 복습 D+3</span></div>
+        <div class="learn-note">까먹기 쉬운 것: DP·그래프 탐색 — 3문제만 다시 풀어 감 유지.</div>
+      </div>
+
+      <div class="learn-item">
+        <div class="learn-item-top"><span class="learn-name">RDB · JPA (N+1)</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+        <div class="learn-prov">배운 곳: besession0402 · 2026.04</div>
+        <div class="learn-meta"><span class="learn-chip">백엔드 공통</span><span class="learn-chip due">다음 복습 D+7</span></div>
+        <div class="learn-note">fetch join·@EntityGraph 개념 재확인 + 인덱스 실측 1건으로 '강점' 노려.</div>
+      </div>
+
+      <div class="learn-item">
+        <div class="learn-item-top"><span class="learn-name">Git 협업 (PR·리뷰)</span><span class="req-status st-ok"><span class="rs-dot"></span>기본</span></div>
+        <div class="learn-prov">배운 곳: 2026_BE_Homework 팀 PR · 2026.05</div>
+        <div class="learn-meta"><span class="learn-chip">상시 사용 중</span><span class="learn-chip due">복습 불필요</span></div>
+        <div class="learn-note">유지 중. 리뷰어로 남 코드 리뷰한 이력만 더하면 '강점'.</div>
+      </div>
+    </div>
+
+    <!-- 새로 학습 열 -->
+    <div class="learn-col panel">
+      <div class="learn-col-head">
+        <span class="learn-ico new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+        새로 학습 · 갭 채우기 <span class="learn-count">4</span>
+      </div>
+
+      <div class="learn-item">
+        <div class="learn-item-top"><span class="learn-name">테스트 코드 (JUnit)</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
+        <div class="learn-meta"><span class="learn-chip">당근 필수 · 게이트성 높음</span><span class="learn-chip mat">자료: 스프링 슬라이스 테스트</span></div>
+        <div class="learn-note">→ besession0402에 @WebMvcTest·@DataJpaTest부터. 완료 시 미보유 → 기본.</div>
+      </div>
+
+      <div class="learn-item">
+        <div class="learn-item-top"><span class="learn-name">Docker 배포</span><span class="req-status st-gap"><span class="rs-dot"></span>미보유</span></div>
+        <div class="learn-meta"><span class="learn-chip">여러 공고 공통 게이트</span><span class="learn-chip mat">자료: Dockerfile + compose</span></div>
+        <div class="learn-note">→ 배포 1회면 '운영' 근거까지 같이 상승.</div>
+      </div>
+
+      <div class="learn-item">
+        <div class="learn-item-top"><span class="learn-name">대용량 · k6 실측</span><span class="req-status st-weak"><span class="rs-dot"></span>근거부족</span></div>
+        <div class="learn-meta"><span class="learn-chip">성능 · 당근/네이버</span><span class="learn-chip mat">자료: k6 부하 → p99</span></div>
+        <div class="learn-note">→ 부하 → 병목 프로파일 → 개선 수치 1건 = 단숨에 강점.</div>
+      </div>
+
+      <div class="learn-item vision">
+        <div class="learn-item-top"><span class="learn-name">LLM 레드티밍 · 평가 파이프라인</span><span class="learn-chip vision-tag">비전: AI 안전</span></div>
+        <div class="learn-meta"><span class="learn-chip">에임인텔리전스 정합</span><span class="learn-chip mat">자료: adversarial eval · garak</span></div>
+        <div class="learn-note">→ 작은 평가 스크립트를 <b>AI 최소로 직접</b> 구현 → "재현 가능" 증거. 네 개념 강점(개념 82)을 구현 증거로 바꾸는 핵심 한 수.</div>
+      </div>
+    </div>
 
   </div>
 
