@@ -4,176 +4,155 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>알바노트 대타 요청 화면 프로토타입</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css">
   <link rel="stylesheet" href="./style.css">
 </head>
-<body class="app-page">
-  <header class="site-header">
-    <a class="brand" href="#" aria-label="알바노트 홈">
-      <span class="brand-mark">A</span>
-      <span>알바노트</span>
-    </a>
+<body>
+  <div class="stage">
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./worker-main.html" aria-label="알바노트 홈">
+          <span class="brand-mark">A</span>
+          <span>알바노트</span>
+        </a>
 
-    <nav class="main-nav worker-nav" aria-label="알바생 메뉴">
-      <a href="#">근무표</a>
-      <a class="active" href="#">대타 요청</a>
-      <a href="#">내 근무 정보</a>
-      <a href="#">알림</a>
-    </nav>
+        <nav class="topnav" aria-label="알바생 메뉴">
+          <a href="./worker-main.html">근무표</a>
+          <a class="active" href="./worker-substitute.html">대타 요청</a>
+          <a href="#">내 근무 정보</a>
+          <a href="#">알림</a>
+        </nav>
 
-    <div class="user-actions">
-      <a class="store-select" href="#">연남점</a>
-      <a class="user-pill" href="#">
-        <span class="user-avatar">김</span>
-        <span>김민지</span>
-      </a>
-    </div>
-  </header>
-
-  <main class="app-main">
-    <section class="dashboard-hero" aria-labelledby="substitute-title">
-      <div>
-        <h1 id="substitute-title">대타 요청</h1>
-      </div>
-
-      <div class="dashboard-status compact-status">
-        <div class="status-item">
-          <span>진행 중 요청</span>
-          <strong>2건</strong>
+        <div class="top-actions">
+          <a class="store-button" href="#">연남점</a>
+          <a class="profile-chip" href="#">
+            <span>김</span>
+            <strong>김민지</strong>
+          </a>
         </div>
-        <div class="status-item point">
-          <span>내 대타 상태</span>
-          <strong>ON</strong>
-        </div>
-      </div>
-    </section>
+      </header>
 
-    <section class="substitute-layout" aria-label="대타 요청 대시보드">
-      <section class="request-panel" aria-labelledby="request-form-title">
-        <div class="panel-header">
+      <main class="dashboard">
+        <section class="page-title" aria-labelledby="substitute-title">
           <div>
-            <h2 id="request-form-title">새 요청 작성</h2>
+            <p class="kicker">SUBSTITUTE REQUEST</p>
+            <h1 id="substitute-title">대타 요청 관리</h1>
+            <p>연남점의 공개 대타 요청과 내 요청 상태를 확인합니다.</p>
           </div>
-          <span class="store-chip">연남점</span>
-        </div>
+          <div class="month-pills">
+            <strong>진행 2건</strong>
+            <span>내 요청 1건</span>
+          </div>
+        </section>
 
-        <div class="form-grid">
-          <label class="field-card">
-            <span>대타가 필요한 날짜</span>
-            <strong>2026년 7월 10일 금요일</strong>
-          </label>
-
-          <label class="field-card">
-            <span>근무 시간</span>
-            <strong>17:00 - 22:00</strong>
-          </label>
-
-          <label class="field-card wide">
-            <span>요청 사유</span>
-            <strong>개인 일정</strong>
-          </label>
-        </div>
-
-        <div class="candidate-section">
-          <div class="subsection-heading">
-            <div>
-              <p class="preview-label">후보 선택</p>
-              <h3>대타 가능 알바생</h3>
+        <section class="request-grid" aria-label="대타 요청 관리">
+          <section class="panel-card" aria-labelledby="open-request-title">
+            <div class="card-head">
+              <h2 id="open-request-title">공개 요청</h2>
+              <span class="badge">3건</span>
             </div>
-            <span>선택 2명</span>
-          </div>
 
-          <div class="candidate-grid">
-            <article class="candidate-card selected-candidate">
-              <div class="candidate-profile">
-                <span class="user-avatar">박</span>
-                <div>
-                  <strong>박서준</strong>
-                  <p>근무 없음</p>
-                </div>
-              </div>
-              <span class="available-chip">대타 가능</span>
-            </article>
-
-            <article class="candidate-card selected-candidate">
-              <div class="candidate-profile">
-                <span class="user-avatar">이</span>
-                <div>
-                  <strong>이하은</strong>
-                  <p>18시 이후</p>
-                </div>
-              </div>
-              <span class="available-chip">대타 가능</span>
-            </article>
-
-            <article class="candidate-card">
-              <div class="candidate-profile">
-                <span class="user-avatar">최</span>
-                <div>
-                  <strong>최도윤</strong>
-                  <p>오전 근무</p>
-                </div>
-              </div>
-              <span class="plain-chip">확인 필요</span>
-            </article>
-          </div>
-        </div>
-
-        <div class="request-actions">
-          <span>선택된 후보 2명</span>
-          <a class="primary-button" href="#">대타 요청 보내기</a>
-        </div>
-      </section>
-
-      <aside class="request-side" aria-label="대타 요청 현황">
-        <section class="summary-card">
-          <div class="card-row">
-            <div>
-              <p class="preview-label">보낸 요청</p>
-              <h3>상태 확인</h3>
-            </div>
-            <span class="notice-badge">2</span>
-          </div>
-
-          <div class="request-list">
-            <article class="request-item">
-              <div>
-                <strong>7월 10일 금</strong>
-                <p>17:00 - 22:00</p>
+            <article class="request-row">
+              <div class="request-main">
+                <strong>2026년 7월 10일 금요일, 17:00 - 22:00</strong>
+                <span>연남점 · 요청자 박지민</span>
               </div>
               <span class="status-chip waiting">대기</span>
+              <a class="row-action primary" href="#">대타 신청</a>
             </article>
 
-            <article class="request-item">
-              <div>
-                <strong>7월 14일 화</strong>
-                <p>18:00 - 22:00</p>
+            <article class="request-row">
+              <div class="request-main">
+                <strong>2026년 7월 12일 일요일, 12:00 - 18:00</strong>
+                <span>홍대점 · 요청자 이준호</span>
               </div>
-              <span class="status-chip progress">승인 대기</span>
+              <span class="status-chip waiting">대기</span>
+              <a class="row-action primary" href="#">대타 신청</a>
             </article>
-          </div>
-        </section>
 
-        <section class="summary-card">
-          <div class="card-row">
-            <div>
-              <p class="preview-label">받은 요청</p>
-              <h3>응답 필요</h3>
+            <article class="request-row">
+              <div class="request-main">
+                <strong>2026년 7월 15일 수요일, 18:00 - 22:00</strong>
+                <span>연남점 · 요청자 최수영</span>
+              </div>
+              <span class="status-chip waiting">대기</span>
+              <a class="row-action primary" href="#">대타 신청</a>
+            </article>
+
+            <div class="card-head spaced">
+              <h2>내 요청</h2>
+              <span class="badge">2건</span>
             </div>
-            <span class="notice-badge">1</span>
-          </div>
 
-          <div class="incoming-request">
-            <strong>7월 9일 목 · 19:00 - 23:00</strong>
-            <p>요청자 정유나</p>
-            <div class="incoming-actions">
-              <span class="accept-static">수락</span>
-              <span class="reject-static">거절</span>
-            </div>
-          </div>
+            <article class="request-row">
+              <div class="request-main">
+                <strong>2026년 7월 9일 목요일, 17:00 - 22:00</strong>
+                <span>연남점 · 대타 김민지</span>
+              </div>
+              <span class="status-chip matched">매칭됨</span>
+              <a class="row-action muted" href="#">관리</a>
+            </article>
+
+            <article class="request-row">
+              <div class="request-main">
+                <strong>2026년 7월 5일 일요일, 12:00 - 18:00</strong>
+                <span>연남점 · 대타 김민지</span>
+              </div>
+              <span class="status-chip closed">마감됨</span>
+              <a class="row-action muted" href="#">관리</a>
+            </article>
+          </section>
+
+          <aside class="side-stack" aria-label="필터 및 액션">
+            <section class="side-card">
+              <div class="card-head compact">
+                <h3>필터 및 액션</h3>
+              </div>
+              <a class="primary-button full-width" href="#">대타 요청 등록</a>
+            </section>
+
+            <section class="side-card">
+              <div class="card-head compact">
+                <h3>필터</h3>
+              </div>
+              <div class="filter-stack">
+                <div class="filter-row">
+                  <span>날짜별</span>
+                  <span class="filter-state active">적용</span>
+                </div>
+                <div class="select-static">전체 기간</div>
+                <div class="option-box">
+                  <span>이번 주</span>
+                  <span>이번 달</span>
+                </div>
+              </div>
+
+              <div class="filter-stack">
+                <div class="filter-row">
+                  <span>지점별</span>
+                  <span class="filter-state">전체</span>
+                </div>
+                <div class="select-static">전체 지점</div>
+                <div class="option-box">
+                  <span>연남점</span>
+                  <span>홍대점</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="side-card">
+              <div class="card-head compact">
+                <h3>정렬</h3>
+              </div>
+              <div class="select-static">최신순</div>
+            </section>
+          </aside>
         </section>
-
-      </aside>
-    </section>
-  </main>
+      </main>
+    </div>
+  </div>
 </body>
 </html>

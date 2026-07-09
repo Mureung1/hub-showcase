@@ -4,156 +4,158 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>알바노트 일간 근무표 프로토타입</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css">
   <link rel="stylesheet" href="./style.css">
 </head>
-<body class="app-page">
-  <header class="site-header">
-    <a class="brand" href="#" aria-label="알바노트 홈">
-      <span class="brand-mark">A</span>
-      <span>알바노트</span>
-    </a>
+<body>
+  <div class="stage">
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./worker-main.html" aria-label="알바노트 홈">
+          <span class="brand-mark">A</span>
+          <span>알바노트</span>
+        </a>
 
-    <nav class="main-nav worker-nav" aria-label="알바생 메뉴">
-      <a class="active" href="#">근무표</a>
-      <a href="#">대타 요청</a>
-      <a href="#">내 근무 정보</a>
-      <a href="#">알림</a>
-    </nav>
+        <nav class="topnav" aria-label="알바생 메뉴">
+          <a class="active" href="./worker-main.html">근무표</a>
+          <a href="./worker-substitute.html">대타 요청</a>
+          <a href="#">내 근무 정보</a>
+          <a href="#">알림</a>
+        </nav>
 
-    <div class="user-actions">
-      <a class="store-select" href="#">연남점</a>
-      <a class="user-pill" href="#">
-        <span class="user-avatar">김</span>
-        <span>김민지</span>
-      </a>
-    </div>
-  </header>
-
-  <main class="app-main">
-    <section class="day-hero" aria-labelledby="day-title">
-      <div>
-        <span class="back-link">월간 근무표에서 선택한 날짜</span>
-        <p class="eyebrow">일간 근무표</p>
-        <h1 id="day-title">2026년 7월 7일 화요일</h1>
-      </div>
-
-      <div class="day-summary-strip">
-        <div>
-          <span>내 근무</span>
-          <strong>18:00 - 22:00</strong>
+        <div class="top-actions">
+          <a class="store-button" href="#">연남점</a>
+          <a class="profile-chip" href="#">
+            <span>김</span>
+            <strong>김민지</strong>
+          </a>
         </div>
-        <div>
-          <span>총 근무 인원</span>
-          <strong>3명</strong>
-        </div>
-        <div class="point">
-          <span>대타 가능</span>
-          <strong>2명</strong>
-        </div>
-      </div>
-    </section>
+      </header>
 
-    <section class="day-detail-layout" aria-label="일간 근무표 상세">
-      <section class="timeline-panel" aria-labelledby="timeline-title">
-        <div class="panel-header">
+      <main class="dashboard">
+        <section class="page-title" aria-labelledby="day-title">
           <div>
-            <p class="preview-label">시간대별 근무</p>
-            <h2 id="timeline-title">오늘의 근무</h2>
+            <p class="kicker">DAILY SCHEDULE</p>
+            <h1 id="day-title">2026년 7월 7일 근무 상세</h1>
+            <p>연남점 · 화요일</p>
           </div>
-          <span class="store-chip">연남점</span>
-        </div>
-
-        <div class="timeline-table">
-          <div class="time-row">
-            <span class="time-label">10:00</span>
-            <div class="shift-line">
-              <article class="shift-block morning">
-                <strong>오픈 준비</strong>
-                <span>하은 · 10:00 - 14:00</span>
-              </article>
-            </div>
-          </div>
-
-          <div class="time-row">
-            <span class="time-label">14:00</span>
-            <div class="shift-line">
-              <article class="shift-block afternoon">
-                <strong>오후 근무</strong>
-                <span>서준 · 14:00 - 18:00</span>
-              </article>
-            </div>
-          </div>
-
-          <div class="time-row selected-time">
-            <span class="time-label">18:00</span>
-            <div class="shift-line">
-              <article class="shift-block my-time">
-                <strong>내 근무</strong>
-                <span>김민지 · 18:00 - 22:00</span>
-              </article>
-            </div>
-          </div>
-
-          <div class="time-row">
-            <span class="time-label">22:00</span>
-            <div class="shift-line">
-              <article class="shift-block closing">
-                <strong>마감 정리</strong>
-                <span>김민지, 서준 · 22:00</span>
-              </article>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <aside class="day-side-panel" aria-label="일간 근무 정보">
-        <section class="summary-card today-card">
-          <p class="preview-label">내 근무 상세</p>
-          <h2>18:00 - 22:00</h2>
-          <p class="summary-text">마감 · 4시간 · 40,000원</p>
-          <div class="worker-list left-align">
-            <span class="available">대타 요청 가능</span>
-          </div>
+          <a class="row-action primary" href="./worker-main.html">월간으로 돌아가기</a>
         </section>
 
-        <section class="summary-card">
-          <p class="preview-label">근무 인원</p>
-          <div class="staff-list">
-            <article>
-              <span class="user-avatar">이</span>
-              <div>
-                <strong>이하은</strong>
-                <p>10:00 - 14:00</p>
-              </div>
-            </article>
-            <article>
-              <span class="user-avatar">박</span>
-              <div>
-                <strong>박서준</strong>
-                <p>14:00 - 18:00</p>
-              </div>
-            </article>
-            <article>
-              <span class="user-avatar">김</span>
-              <div>
-                <strong>김민지</strong>
-                <p>18:00 - 22:00</p>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section class="summary-card">
-          <div class="card-row">
-            <div>
-              <p class="preview-label">대타 가능 상태</p>
-              <h3>요청 수신 가능</h3>
+        <section class="day-grid" aria-label="일간 근무 상세">
+          <section class="panel-card" aria-labelledby="work-list-title">
+            <div class="card-head">
+              <h2 id="work-list-title">7월 7일 화요일</h2>
+              <span class="badge">5명 근무</span>
             </div>
-            <span class="toggle-static">ON</span>
-          </div>
+
+            <div class="work-list">
+              <article class="work-row current">
+                <div class="work-time">
+                  <strong>18:00 - 22:00</strong>
+                  <span>현재 근무중</span>
+                </div>
+                <div class="work-person">
+                  <span class="profile-dot">김</span>
+                  <strong>김민지</strong>
+                </div>
+                <strong>마감</strong>
+                <span>재고 확인 및 정산</span>
+              </article>
+
+              <article class="work-row">
+                <div class="work-time">
+                  <strong>18:00 - 22:00</strong>
+                </div>
+                <div class="work-person">
+                  <span class="profile-dot">서</span>
+                  <strong>서준</strong>
+                </div>
+                <strong>서빙</strong>
+                <span>단체 예약 응대</span>
+              </article>
+
+              <article class="work-row">
+                <div class="work-time">
+                  <strong>18:00 - 22:00</strong>
+                </div>
+                <div class="work-person">
+                  <span class="profile-dot">하</span>
+                  <strong>하은</strong>
+                </div>
+                <strong>주방</strong>
+                <span>재료 준비</span>
+              </article>
+
+              <article class="work-row">
+                <div class="work-time">
+                  <strong>17:00 - 21:00</strong>
+                </div>
+                <div class="work-person">
+                  <span class="profile-dot">박</span>
+                  <strong>박지수</strong>
+                </div>
+                <strong>파트타임</strong>
+                <span>피크타임 지원</span>
+              </article>
+
+              <article class="work-row">
+                <div class="work-time">
+                  <strong>12:00 - 16:00</strong>
+                </div>
+                <div class="work-person">
+                  <span class="profile-dot">이</span>
+                  <strong>이현우</strong>
+                </div>
+                <strong>오픈</strong>
+                <span>매장 준비</span>
+              </article>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="오늘의 요약">
+            <section class="side-card total-card">
+              <h2>오늘의 요약</h2>
+              <span>전체 근무 합계</span>
+              <strong>24시간</strong>
+              <p>5명 근무</p>
+            </section>
+
+            <section class="side-card memo-card">
+              <div class="card-head compact">
+                <h3>운영 메모</h3>
+                <span class="badge">수정</span>
+              </div>
+              <p>저녁 피크타임은 20:00 예상. 재료 준비 철저, 신메뉴 반응 체크.</p>
+            </section>
+
+            <section class="side-card">
+              <div class="card-head compact">
+                <h3>대타 요청 현황</h3>
+                <span class="badge">2</span>
+              </div>
+              <div class="simple-list">
+                <article>
+                  <div>
+                    <strong>박지수</strong>
+                    <span>7월 9일 · 17:00</span>
+                  </div>
+                </article>
+                <article>
+                  <div>
+                    <strong>이현우</strong>
+                    <span>7월 10일 · 12:00</span>
+                  </div>
+                </article>
+              </div>
+            </section>
+          </aside>
         </section>
-      </aside>
-    </section>
-  </main>
+      </main>
+    </div>
+  </div>
 </body>
 </html>
