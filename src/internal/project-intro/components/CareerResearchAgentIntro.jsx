@@ -1,3 +1,5 @@
+import './CareerResearchAgentIntro.css'
+
 function CareerResearchAgentIntro() {
   return (
     <main className="intro-page">

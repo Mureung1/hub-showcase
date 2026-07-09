@@ -55,9 +55,18 @@ hub/
     style.css
     assets/
 
+  server/
+    src/
+      index.js
+    package.json
+
   src/
     internal/
       project-intro/
+        ProjectIntroPage.jsx
+        components/
+          CareerResearchAgentIntro.jsx
+          CareerResearchAgentIntro.css
 
     product/
       components/
@@ -65,22 +74,19 @@ hub/
       pages/
       services/
 
-    shared/
-      components/
-      utils/
-
     assets/
     App.jsx
-    App.css
     index.css
     main.jsx
 ```
 
 ## 폴더 역할 TODO
 
-- `src/internal/project-intro/`: 프로젝트 소개용 React 화면을 유지합니다.
-- `prototype/index.html`: 1주차 HTML/CSS 정적 프로토타입 위치입니다.
+- `src/internal/project-intro/`: 프로젝트 소개용 React 화면과 그 전용 스타일을 함께 둡니다.
+- `prototype/index.html`: 1주차 HTML/CSS 정적 프로토타입 위치입니다. 더 이상 기능을 확장하지 않고 필요 시 수정만 합니다.
 - `src/product/`: 이후 실제 서비스 React 구현이 들어갈 위치입니다.
+- `server/`: 실제 서비스(product)에서만 사용하는 Express 백엔드입니다. 프론트(`src/`)와는 별도의 Node 실행 환경이라 최상위에 형제 폴더로 분리했습니다. `src/`와 별도의 `package.json`을 가집니다.
+- `src/shared/`: 두 개 이상의 기능에서 실제로 재사용하는 컴포넌트/유틸이 생기면 그때 새로 만듭니다. 미리 만들어두지 않습니다.
 
 ## 현재 구현 상태
 
