@@ -109,9 +109,10 @@ function buildExpectedPrompt(places, deficientRows) {
   const nutrientText = deficientRows.map((row) => `${row.label}(${row.key})`).join(', ')
 
   return `아래는 오늘 부족한 영양소(${nutrientText})를 채우러 갈 후보 식당 목록이야.
-각 식당의 카테고리를 보고 대표 메뉴를 떠올린 뒤, 그 대표 메뉴 "한국 표준 1인분"을 먹었을 때 예상되는 주요 영양 섭취량을 계산해줘.
+각 식당의 카테고리를 보고 대표 메뉴(representativeMenu)를 하나 떠올린 뒤, 그 대표 메뉴 "한국 표준 1인분"을 먹었을 때 예상되는 주요 영양 섭취량(expected)을 계산해줘.
 
 조건:
+- representativeMenu는 그 식당 카테고리에서 실제로 흔히 파는 구체적인 메뉴명이어야 한다(예: "국밥" 카테고리 → "쇠고기국밥"). 식당 이름이나 카테고리를 그대로 반복하지 마라.
 - 수치는 식품의약품안전처 한국식품영양성분 데이터베이스(국가표준식품성분표)와 한국영양학회 기준값 수준의 표준 1인분 기준으로 계산해라. (URL 조회가 아니라 네가 아는 그 DB 수준의 기준값이라는 의미다.)
 - 과대추정 금지: 통상적인 1인분 현실 범위를 벗어나면 스스로 재검토하고 보수적인 값으로 고쳐라.
 - expected에는 부족한 영양소 키(${deficientKeys})를 반드시 포함해라.
@@ -124,7 +125,7 @@ ${placeText}
 설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
 {
   "places": [
-    { "place_name": "식당 이름", "expected": { "protein": 0 } }
+    { "place_name": "식당 이름", "representativeMenu": "대표 메뉴명", "expected": { "protein": 0 } }
   ]
 }`
 }
@@ -139,9 +140,12 @@ async function attachExpectedIntake(places, deficientRows) {
     const byName = new Map(
       (parsed?.places || [])
         .filter((p) => p && typeof p.place_name === 'string' && p.expected && typeof p.expected === 'object')
-        .map((p) => [p.place_name, p.expected]),
+        .map((p) => [
+          p.place_name,
+          { expected: p.expected, representativeMenu: typeof p.representativeMenu === 'string' ? p.representativeMenu : null },
+        ]),
     )
-    return places.map((place) => (byName.has(place.place_name) ? { ...place, expected: byName.get(place.place_name) } : place))
+    return places.map((place) => (byName.has(place.place_name) ? { ...place, ...byName.get(place.place_name) } : place))
   } catch (err) {
     console.error('expected intake calculation failed:', err)
     return places
