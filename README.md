@@ -1,6 +1,6 @@
-﻿# Opportunity Agent MVP
+# Opportunity Agent MVP
 
-대학생 맞춤형 장학금, 공모전, 대외활동, 지원사업 추천 에이전트 MVP입니다. React + Vite 프론트엔드와 Express API 서버로 구성되어 있으며, 현재 기본값은 **mock AI 모드**입니다.
+대학생 맞춤형 장학금, 공모전, 대외활동, 지원사업 추천 에이전트 MVP입니다. React + Vite 프론트엔드와 Express API 서버로 구성되어 있으며, 기본값은 **mock AI 모드**입니다. 서버 설정을 바꾸면 OpenAI 또는 Gemini 실제 분석 모드로 전환할 수 있습니다.
 
 ## 구성
 
@@ -8,7 +8,8 @@
 - Express API 서버
 - zod 기반 입력/출력 검증
 - OpenAI Responses API 연결 준비
-- 기본 mock 분석 모드
+- Gemini API 실제 분석 연결
+- 기본 mock 분석 모드와 실패 시 mock fallback
 
 ## 실행
 
@@ -29,7 +30,7 @@ npm run dev
 npm run build
 ```
 
-API 키나 OpenAI 크레딧이 없어도 빌드는 통과해야 합니다.
+API 키나 AI API 크레딧이 없어도 빌드는 통과해야 합니다.
 
 ## 환경변수
 
@@ -38,20 +39,39 @@ API 키나 OpenAI 크레딧이 없어도 빌드는 통과해야 합니다.
 ```bash
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.4-mini
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3-flash-preview
 AI_PROVIDER=mock
 ALLOW_LIVE_OPENAI=false
+ALLOW_LIVE_GEMINI=true
 PORT=3001
 ```
 
-현재 기본값은 mock AI 모드입니다. 실제 OpenAI API를 사용하려면 `.env`에서 아래처럼 명시적으로 바꿔야 합니다.
+현재 기본값은 mock AI 모드입니다. mock 모드에서는 API 키가 있어도 실제 AI API를 호출하지 않습니다.
+
+### Gemini 실제 분석 사용
+
+Gemini API를 사용하려면 로컬 `.env`에서 아래처럼 설정합니다.
+
+```bash
+AI_PROVIDER=gemini
+GEMINI_API_KEY=발급받은_키
+GEMINI_MODEL=gemini-3-flash-preview
+```
+
+`AI_PROVIDER=gemini`이고 `GEMINI_API_KEY`가 있으면 서버에서 Gemini API를 호출합니다. 기본 Gemini 모델은 `gemini-3-flash-preview`이며, 모델명이 지원되지 않는 경우 서버는 `gemini-2.5-flash`로 한 번 fallback합니다. 임시로 Gemini 호출을 막고 싶으면 `ALLOW_LIVE_GEMINI=false`를 추가합니다.
+
+### OpenAI 실제 분석 사용
+
+OpenAI API를 사용하려면 로컬 `.env`에서 아래처럼 명시적으로 바꿔야 합니다.
 
 ```bash
 AI_PROVIDER=openai
 ALLOW_LIVE_OPENAI=true
-OPENAI_API_KEY=
+OPENAI_API_KEY=발급받은_키
 ```
 
-`AI_PROVIDER=mock`이면 API 키가 있어도 실제 OpenAI API를 호출하지 않습니다. API 크레딧이 없으면 실제 분석은 실패할 수 있으므로 개발과 발표 데모는 mock 모드로 진행합니다.
+OpenAI는 `ALLOW_LIVE_OPENAI=true`일 때만 실제 호출을 시도합니다.
 
 ## API
 
@@ -60,7 +80,9 @@ OPENAI_API_KEY=
 ```json
 {
   "ok": true,
-  "aiProvider": "mock",
+  "aiProvider": "gemini",
+  "liveAIEnabled": true,
+  "liveGeminiEnabled": true,
   "liveOpenAIEnabled": false
 }
 ```
@@ -84,6 +106,8 @@ rawText 분석을 우선 지원합니다. URL만 있고 rawText가 없으면 “
 }
 ```
 
+응답의 `mode`는 `mock`, `openai`, `gemini` 중 하나입니다. 실제 provider 호출이 실패하면 서버는 앱을 중단하지 않고 mock 결과를 반환하며, 실패 이유를 요약에 포함합니다.
+
 ## 테스트용 rawText
 
 ```text
@@ -99,13 +123,13 @@ rawText 분석을 우선 지원합니다. URL만 있고 rawText가 없으면 “
 
 ## 보안 메모
 
-- OpenAI API 키는 프론트엔드 코드에 넣지 않습니다.
-- OpenAI API 키는 코드에 하드코딩하지 않습니다.
+- API 키는 프론트엔드 코드에 넣지 않습니다.
+- API 키는 코드에 하드코딩하지 않습니다.
 - `.env` 파일은 절대 커밋하지 않습니다.
 - `.env.example`만 커밋합니다.
 - 로그에 API 키나 환경변수 전체를 출력하지 않습니다.
+- Gemini/OpenAI 호출은 Express 서버에서만 수행합니다.
 
 ## 계획서
 
 https://github.com/clradtr/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%B0%ED%9A%8D%EC%84%9C
-

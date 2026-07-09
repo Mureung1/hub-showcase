@@ -1,8 +1,10 @@
-﻿const fallbackSelector = "a[href]";
+const fallbackSelector = "a[href]";
 
 const detailFallbackSelectors = [
   'a[href*="wr_id="]',
   'a[href*="doc_no="]',
+  'a[href*="viewBtin.action"]',
+  'a[onclick*="doRead"]',
   'a[href*="nttId="]',
   'a[href*="ntt_id="]',
   'a[href*="articleId="]',
@@ -19,6 +21,7 @@ const detailFallbackSelectors = [
 const detailUrlPatterns = [
   /(?:^|[?&])wr_id=/i,
   /(?:^|[?&])(?:btin\.)?doc_no=/i,
+  /\/viewBtin\.action(?:$|\?)/i,
   /(?:^|[?&])ntt_?id=/i,
   /(?:^|[?&])article_?(?:id|no)=/i,
   /(?:^|[?&])board_?(?:seq|no)=/i,
@@ -100,12 +103,108 @@ export function resolveTargetUrl(value) {
   return normalizeUrl(`https://${trimmed}`);
 }
 
+
+function sanitizeNoticeHtml(html) {
+  return String(html ?? "")
+    .replace(/(btin\.page=)\/?>(?=&btin\.)/gi, "$1")
+    .replace(/(btin\.page=)\/&gt;(?=&btin\.)/gi, "$1");
+}
+
+function getDoReadArguments(value) {
+  const match = String(value ?? "").match(/doRead\(([^)]*)\)/i);
+
+  if (!match) {
+    return [];
+  }
+
+  return match[1]
+    .split(",")
+    .map((part) => part.trim().replace(/^['"]|['"]$/g, ""));
+}
+
+function getUrlSearchParam(url, key) {
+  try {
+    return new URL(url).searchParams.get(key);
+  } catch {
+    return null;
+  }
+}
+
+function getFirstValue(...values) {
+  return values.find((value) => normalizeWhitespace(value));
+}
+
+function buildKnuBtinUrl(anchor, baseUrl) {
+  const rawHref = anchor.getAttribute("href") || "";
+  const onclick = anchor.getAttribute("onclick") || "";
+  const hasBtinSignal = /viewBtin\.action|doRead/i.test(`${rawHref} ${onclick}`);
+
+  if (!hasBtinSignal) {
+    return null;
+  }
+
+  const normalizedHref = rawHref.replace(/(btin\.page=)\/?>(?=&btin\.)/gi, "$1");
+  const hrefUrl = normalizeUrl(normalizedHref, baseUrl);
+  const doReadArgs = getDoReadArguments(onclick);
+
+  try {
+    const parsedBaseUrl = new URL(baseUrl);
+    const docNo = getFirstValue(
+      getUrlSearchParam(hrefUrl, "btin.doc_no"),
+      getUrlSearchParam(hrefUrl, "doc_no"),
+      doReadArgs[0],
+    );
+
+    if (!docNo) {
+      return null;
+    }
+
+    const bbsCode = getFirstValue(
+      getUrlSearchParam(hrefUrl, "btin.bbs_cde"),
+      getUrlSearchParam(hrefUrl, "bbs_cde"),
+      doReadArgs[2],
+      parsedBaseUrl.searchParams.get("bbs_cde"),
+    );
+    const applNo = getFirstValue(getUrlSearchParam(hrefUrl, "btin.appl_no"), doReadArgs[1], "000000");
+    const noteDiv = getFirstValue(getUrlSearchParam(hrefUrl, "btin.note_div"), doReadArgs[3], "row");
+    const menuIndex = getFirstValue(
+      getUrlSearchParam(hrefUrl, "menu_idx"),
+      parsedBaseUrl.searchParams.get("menu_idx"),
+    );
+    const targetUrl = new URL("/wbbs/wbbs/bbs/btin/viewBtin.action", parsedBaseUrl.origin);
+
+    targetUrl.searchParams.set("bbs_cde", bbsCode || "");
+    targetUrl.searchParams.set("btin.bbs_cde", bbsCode || "");
+    targetUrl.searchParams.set("btin.doc_no", docNo);
+    targetUrl.searchParams.set("btin.appl_no", applNo || "000000");
+    targetUrl.searchParams.set("btin.page", "1");
+    targetUrl.searchParams.set("btin.search_type", "");
+    targetUrl.searchParams.set("btin.search_text", "");
+    targetUrl.searchParams.set("popupDeco", "");
+    targetUrl.searchParams.set("btin.note_div", noteDiv || "row");
+
+    if (menuIndex) {
+      targetUrl.searchParams.set("menu_idx", menuIndex);
+    }
+
+    return targetUrl.toString();
+  } catch {
+    return null;
+  }
+}
+
+function cleanLinkTitle(value) {
+  return normalizeWhitespace(value)
+    .replace(/^&?btin\.[^가-힣A-Za-z0-9]+/i, "")
+    .replace(/^첨부파일\s*/i, "")
+    .trim();
+}
 function getDocumentFromHtml(html) {
   if (typeof DOMParser === "undefined") {
     throw new Error("현재 실행 환경에서 HTML 파서를 사용할 수 없습니다.");
   }
 
-  return new DOMParser().parseFromString(html, "text/html");
+  return new DOMParser().parseFromString(sanitizeNoticeHtml(html), "text/html");
 }
 
 function escapeAttributeSelectorValue(value) {
@@ -278,13 +377,14 @@ export function extractPostLinksFromHtml(html, options = {}) {
   const links = [];
 
   anchors.forEach((anchor, index) => {
-    const href = anchor.getAttribute("href");
+    const href = anchor.getAttribute("href") || "";
+    const stableUrl = buildKnuBtinUrl(anchor, baseUrl);
 
-    if (!href || isIgnoredHref(href)) {
+    if (!stableUrl && (!href || isIgnoredHref(href))) {
       return;
     }
 
-    const url = normalizeUrl(href, baseUrl);
+    const url = stableUrl || normalizeUrl(href, baseUrl);
 
     if (!url || seenUrls.has(url)) {
       return;
@@ -294,7 +394,7 @@ export function extractPostLinksFromHtml(html, options = {}) {
     const link = {
       id: url,
       index,
-      title: normalizeWhitespace(anchor.textContent) || parsedUrl.pathname,
+      title: cleanLinkTitle(anchor.textContent) || parsedUrl.pathname,
       url,
       hostname: parsedUrl.hostname,
       pathname: parsedUrl.pathname,
@@ -320,27 +420,60 @@ export function findNewPostLinks(links, knownUrls = [], baseUrl) {
   return links.filter((link) => !knownUrlSet.has(link.url));
 }
 
+function formatProxyConnectionError(error) {
+  const message = error instanceof Error ? error.message : "";
+
+  if (/failed to fetch|networkerror|load failed|원격 서버에 연결/i.test(message)) {
+    return "HTML 프록시 API에 연결하지 못했습니다. 실행 창에 API server running on http://127.0.0.1:3001 문구가 보이는지 확인한 뒤 다시 스캔해주세요.";
+  }
+
+  return message
+    ? `웹사이트 HTML을 가져오지 못했습니다. (${message})`
+    : "웹사이트 HTML을 가져오지 못했습니다. 잠시 후 다시 시도해주세요.";
+}
 async function readHtmlResponse(response) {
   if (!response.ok) {
-    throw new Error(`웹페이지 요청이 실패했습니다. 상태 코드: ${response.status}`);
+    const payload = await response.json().catch(() => null);
+    const message = payload?.message || payload?.error || `웹페이지 요청이 실패했습니다. 상태 코드: ${response.status}`;
+
+    throw new Error(message);
   }
 
   return response.text();
 }
 
-async function loadWebsiteHtmlThroughProxy(targetUrl, fetchImpl) {
-  const proxyResponse = await fetchImpl(`/api/fetch-html?url=${encodeURIComponent(targetUrl)}`, {
-    headers: {
-      Accept: "text/html,application/xhtml+xml",
-    },
-  });
-  const isLocalProxy = proxyResponse.headers.get("X-Opportunity-Agent-Proxy") === "html-fetch-proxy";
+function createProxyRequestUrls(targetUrl) {
+  const encodedTargetUrl = encodeURIComponent(targetUrl);
+  return [
+    `/api/fetch-html?url=${encodedTargetUrl}`,
+    `http://localhost:3001/api/fetch-html?url=${encodedTargetUrl}`,
+    `http://127.0.0.1:3001/api/fetch-html?url=${encodedTargetUrl}`,
+  ];
+}
 
-  if (!isLocalProxy) {
-    throw new Error("로컬 HTML 프록시가 응답하지 않았습니다.");
+async function loadWebsiteHtmlThroughProxy(targetUrl, fetchImpl) {
+  let lastError = null;
+
+  for (const requestUrl of createProxyRequestUrls(targetUrl)) {
+    try {
+      const proxyResponse = await fetchImpl(requestUrl, {
+        headers: {
+          Accept: "text/html,application/xhtml+xml",
+        },
+      });
+      const isLocalProxy = proxyResponse.headers.get("X-Opportunity-Agent-Proxy") === "html-fetch-proxy";
+
+      if (!isLocalProxy) {
+        throw new Error("로컬 HTML 프록시가 응답하지 않았습니다.");
+      }
+
+      return await readHtmlResponse(proxyResponse);
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  return readHtmlResponse(proxyResponse);
+  throw lastError || new Error("로컬 HTML 프록시가 응답하지 않았습니다.");
 }
 
 export async function loadWebsiteHtml(url, fetchImpl = globalThis.fetch) {
@@ -355,21 +488,9 @@ export async function loadWebsiteHtml(url, fetchImpl = globalThis.fetch) {
   }
 
   try {
-    const response = await fetchImpl(targetUrl, {
-      headers: {
-        Accept: "text/html,application/xhtml+xml",
-      },
-    });
-
-    return await readHtmlResponse(response);
-  } catch (directError) {
-    try {
-      return await loadWebsiteHtmlThroughProxy(targetUrl, fetchImpl);
-    } catch {
-      throw new Error(
-        "브라우저 직접 요청이 차단되었습니다. 개발 서버 프록시가 켜져 있는지 확인하거나 HTML 입력 모드를 사용해주세요.",
-      );
-    }
+    return await loadWebsiteHtmlThroughProxy(targetUrl, fetchImpl);
+  } catch (error) {
+    throw new Error(formatProxyConnectionError(error));
   }
 }
 

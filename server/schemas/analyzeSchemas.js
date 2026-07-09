@@ -42,11 +42,14 @@ export const analyzeRequestSchema = z.object({
   url: z.string().url("URL 형식이 올바르지 않습니다.").optional().or(z.literal("")),
   rawText: z.string().optional().default(""),
 }).superRefine((value, context) => {
-  if (!value.rawText?.trim()) {
+  const hasUrl = Boolean(value.url?.trim());
+  const hasRawText = Boolean(value.rawText?.trim());
+
+  if (!hasUrl && !hasRawText) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "본문을 직접 붙여넣어 주세요.",
-      path: ["rawText"],
+      message: "공고 URL을 입력하거나 본문을 직접 붙여넣어 주세요.",
+      path: ["url"],
     });
   }
 });
@@ -95,7 +98,7 @@ export const taskSchema = z.object({
 });
 
 export const analyzeResponseSchema = z.object({
-  mode: z.enum(["mock", "openai"]),
+  mode: z.enum(["mock", "openai", "gemini"]),
   opportunity: opportunitySchema,
   match: matchSchema,
   tasks: z.array(taskSchema),
@@ -106,7 +109,7 @@ export const analyzeResponseJsonSchema = {
   additionalProperties: false,
   required: ["mode", "opportunity", "match", "tasks"],
   properties: {
-    mode: { type: "string", enum: ["mock", "openai"] },
+    mode: { type: "string", enum: ["mock", "openai", "gemini"] },
     opportunity: {
       type: "object",
       additionalProperties: false,
