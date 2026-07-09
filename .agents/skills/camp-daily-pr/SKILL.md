@@ -1,21 +1,21 @@
 ---
 name: camp-daily-pr
-description: Create an agent-written local daily integration PR from the current codex/w<week>d<day> branch to N180_하성욱, then interview only for the camp submission PR that uses .github/pull_request_template.md.
+description: Create an agent-written local daily integration PR from the current codex/w<week>d<day> branch to N180_하성욱. Only create or update the upstream camp submission PR when the user explicitly asks for camp submission.
 disable-model-invocation: true
 ---
 
 # Camp Daily PR
 
-Create the local daily integration PR from the current `codex/w<week>d<day>` branch to `N180_하성욱`, then verify or create the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱`.
+Create the local daily integration PR from the current `codex/w<week>d<day>` branch to `N180_하성욱`. This daily PR is an internal integration/review artifact and can be created or updated without further approval.
 
-Do not stop after creating the fork daily PR. The final camp submission surface is the upstream PR. Do not merge PRs as part of this skill unless the user gives a separate explicit merge instruction.
+Do not create or update the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` unless the user explicitly asks to submit to camp or continue to the upstream camp submission PR. The final camp submission surface is the upstream PR, but it is not part of the default daily PR action. Do not merge PRs as part of this skill unless the user gives a separate explicit merge instruction.
 
 Use different body conventions for the two PRs:
 
 | PR | Body convention |
 | --- | --- |
 | Daily integration PR | Local/Matt-style work brief: `Summary`, `Key Changes`, `Verification`, `Risks / Follow-ups`, and links to PRDs, issues, spike reports, or handoffs. |
-| Upstream camp submission PR | `.github/pull_request_template.md` exactly, including `주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, and `새로 알게 된 것`. |
+| Upstream camp submission PR | Only when explicitly requested: `.github/pull_request_template.md` exactly, including `주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, and `새로 알게 된 것`. |
 
 Use the camp week/day as the daily branch identity:
 
@@ -93,11 +93,13 @@ Apply the relevant camp labels to the daily PR after it exists. These labels are
 
 After the PR exists, keep its URL for the final report. Do not treat this fork PR as the final camp submission.
 
-### 5. Ensure the upstream submission PR
+### 5. Report upstream submission readiness
 
 Fetch `fork` and `origin`, then check whether the daily branch is already contained in `fork/N180_하성욱`.
 
 - `git merge-base --is-ancestor <daily-branch> fork/N180_하성욱` succeeds.
+
+Always report the upstream submission readiness status, but do not create or update the upstream camp submission PR unless the user explicitly asked for camp submission in this turn.
 
 If the daily branch is not contained in `fork/N180_하성욱`, do not claim that the latest daily work has been submitted. Report:
 
@@ -105,7 +107,11 @@ If the daily branch is not contained in `fork/N180_하성욱`, do not claim that
 - Whether an upstream submission PR already exists
 - That the upstream submission PR cannot include the latest daily work until `fork/N180_하성욱` contains `<daily-branch>`
 
-If the daily branch is contained in `fork/N180_하성욱`, check for an open upstream PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱`.
+If the daily branch is contained in `fork/N180_하성욱`, check for an open upstream PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` and report whether it exists.
+
+### 6. Ensure the upstream submission PR, only when explicitly requested
+
+Run this section only when the user explicitly asks to submit to camp or continue to the upstream camp submission PR.
 
 Before creating or updating the upstream PR, read `.github/pull_request_template.md` and prepare a separate camp submission body. This is the only interview-based PR flow in this skill. Ask one question at a time for any missing or uncertain template section:
 
