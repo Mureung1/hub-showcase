@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
@@ -11,7 +11,10 @@ import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { getCurrentPosition } from '../lib/geolocation.js'
 import { searchPlaces } from '../lib/kakao.js'
 import { NUTRIENT_LABELS } from '../lib/nutrition.js'
-import { spacing, styles } from '../styles/theme.js'
+import { radius, spacing, styles } from '../styles/theme.js'
+
+// 위치 권한 거부/실패 시 지도를 띄울 기본 위치(대전 유성구 충남대학교 인근)
+const DEFAULT_POSITION = { lat: 36.3665, lng: 127.3448 }
 
 // AI 키워드 생성이 실패했을 때 쓰는 부족 영양소별 기본 식당 유형(서로 다른 유형으로 분산)
 const KEYWORD_FALLBACKS = {
@@ -166,15 +169,28 @@ export default function MapPage() {
 
   const [places, setPlaces] = useState(null)
   const [myPosition, setMyPosition] = useState(null)
+  const [locationNotice, setLocationNotice] = useState('')
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [nearbyError, setNearbyError] = useState('')
-  const [showMap, setShowMap] = useState(false)
+  const locateTriedRef = useRef(false)
+
+  // 탭 진입 시 바로 위치를 요청해 지도를 내 위치 중심으로 띄운다. 거부/실패 시 기본 위치로 폴백.
+  useEffect(() => {
+    if (locateTriedRef.current) return
+    locateTriedRef.current = true
+
+    getCurrentPosition()
+      .then(({ x, y }) => setMyPosition({ lat: y, lng: x }))
+      .catch(() => {
+        setMyPosition(DEFAULT_POSITION)
+        setLocationNotice('위치 권한을 허용하면 현재 위치를 표시해요.')
+      })
+  }, [])
 
   async function handleFindNearby() {
     setNearbyLoading(true)
     setNearbyError('')
     setPlaces(null)
-    setShowMap(false)
     try {
       const { x, y } = await getCurrentPosition()
 
@@ -202,6 +218,7 @@ export default function MapPage() {
       const withExpected = await attachExpectedIntake(results, top3Rows)
 
       setMyPosition({ lat: y, lng: x })
+      setLocationNotice('')
       setPlaces(withExpected)
     } catch (err) {
       console.error('nearby search failed:', err)
@@ -214,6 +231,17 @@ export default function MapPage() {
   return (
     <div style={styles.page}>
       <ScreenHeader title="지도" subtitle="오늘 부족한 영양소를 보충할 식당을 찾아보세요" />
+
+      <div style={{ marginBottom: spacing.md }}>
+        {myPosition ? (
+          <PlaceMap myPosition={myPosition} places={places || []} />
+        ) : (
+          <Skeleton height={320} radius={radius.lg} />
+        )}
+        {locationNotice && (
+          <p style={{ ...styles.helperText, margin: `${spacing.sm}px 0 0`, textAlign: 'center' }}>{locationNotice}</p>
+        )}
+      </div>
 
       <Card>
         <AppButton onClick={handleFindNearby} disabled={nearbyLoading}>
@@ -235,15 +263,7 @@ export default function MapPage() {
         </>
       )}
 
-      {!nearbyLoading && places && (
-        <>
-          <AppButton variant="secondary" onClick={() => setShowMap((prev) => !prev)} style={{ marginBottom: spacing.md }}>
-            {showMap ? '목록으로 보기' : '지도로 보기'}
-          </AppButton>
-          {showMap && myPosition && <PlaceMap myPosition={myPosition} places={places} />}
-          {!showMap && <PlaceList places={places} />}
-        </>
-      )}
+      {!nearbyLoading && places && <PlaceList places={places} />}
     </div>
   )
 }

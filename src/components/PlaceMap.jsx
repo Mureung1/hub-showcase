@@ -5,7 +5,7 @@ import { colors, radius, styles } from '../styles/theme.js'
 // 카카오 좌표 규약: x=경도(lng), y=위도(lat). 카카오맵 LatLng 생성자는 (위도, 경도) 순서라
 // 여기서 반드시 x↔lng, y↔lat 로 정확히 매핑해야 한다.
 
-export default function PlaceMap({ myPosition, places }) {
+export default function PlaceMap({ myPosition, places = [] }) {
   const { loaded, error: loadError } = useKakaoLoader()
   const containerRef = useRef(null)
   const mapRef = useRef(null)
@@ -50,11 +50,18 @@ export default function PlaceMap({ myPosition, places }) {
       })
     })
 
-    map.setBounds(bounds)
+    // 장소가 없을 때(내 위치 핀만)는 setBounds가 최대 줌으로 조여버리므로 중심만 잡는다.
+    if (places.length > 0) {
+      map.setBounds(bounds)
+    }
 
     const relayoutTimer = setTimeout(() => {
       map.relayout()
-      map.setBounds(bounds)
+      if (places.length > 0) {
+        map.setBounds(bounds)
+      } else {
+        map.setCenter(center)
+      }
     }, 0)
 
     return () => clearTimeout(relayoutTimer)
