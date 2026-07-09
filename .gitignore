@@ -12,7 +12,10 @@ dist
 dist-ssr
 *.local
 
-.claude/
+# .claude: 로컬 설정은 무시하되 공유용 스킬은 커밋 (포트폴리오/재사용 목적)
+.claude/*
+!.claude/skills/
+.claude/settings.local.json
 
 # Editor directories and files
 .vscode/*
