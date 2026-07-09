@@ -1,1 +1,1 @@
-이 폴더에 `logo.png` 파일을 넣어주세요. (01_login.html, 02_signup.html 등에서 `public/logo.png` 경로로 참조합니다.)
+로고는 `logo.svg`가 소스 오브 트루스입니다 (DESIGN.md 9장 참고 — 겹친 원형 링 두 개 + 사람 머리, 흰 배경 없이 투명). 모든 화면이 `public/logo.svg` 경로로 참조합니다. 기존 `logo.png`는 더 이상 사용하지 않지만 참고용으로 남겨둡니다.
