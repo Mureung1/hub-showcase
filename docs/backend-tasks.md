@@ -15,7 +15,7 @@
 | --- | --- |
 | 백엔드 위치 | 루트 `server/` |
 | 언어 | JavaScript ESM 우선 |
-| TypeScript 전환 | 후속 작업 |
+| 언어 방침 | JavaScript ESM 유지 |
 | API prefix | `/api/v1` 권장 |
 | 인증 | Supabase Auth + Express JWT 검증 권장 |
 | 도와주세요 상태 | `open` / `resolved` |
@@ -37,7 +37,7 @@
 - 댓글 API
 - 지도/주소 검색 외부 API 기반 정밀 매칭
 - Supabase Realtime/WebSocket 채팅
-- 백엔드 TypeScript 전환
+- 백엔드 언어/스택 전환
 
 공동구매는 모집, 참여, 1인 부담 금액 확인, 분배 안내, 참여자 채팅까지만 다룬다.
 
@@ -343,5 +343,4 @@ Math.ceil(totalAmount / Math.max(participantCount, 1))
 8. 참여자 채팅 REST API
 9. 나의 활동 API
 10. 테스트와 API 문서 정리
-11. 후속: 댓글, 지도 매칭, Realtime 채팅, TypeScript 전환
-
+11. 후속: 댓글, 지도 매칭, Realtime 채팅, JavaScript ESM 코드 구조 정리
