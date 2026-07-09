@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>반환 확인 - 보증금 타임키퍼</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Noto Sans KR", sans-serif;
+    background: #f5f5f4;
+    color: #2a2724;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1px solid #e5e2da;
+    border-radius: 12px;
+    padding: 32px;
+  }
+
+  /* 상단 뒤로가기 */
+  .back-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .back-btn {
+    width: 34px; height: 34px;
+    background: #fff; border: 1px solid #d5cdbb; border-radius: 8px;
+    cursor: pointer; font-size: 16px; color: #6b6558;
+  }
+  .back-row span { font-size: 13px; color: #999; }
+
+  /* 질문 영역 */
+  .question { text-align: center; padding: 24px 0 28px; }
+  .question .icon-circle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #eef3f6; margin-bottom: 16px; font-size: 28px;
+  }
+  .question .q-title { font-size: 20px; font-weight: 700; }
+  .question .q-desc { font-size: 14px; color: #6b6558; margin-top: 8px; line-height: 1.6; }
+
+  /* 두 선택지 */
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .choice {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    padding: 28px 16px;
+    background: #fff; border: 1px solid #d5cdbb; border-radius: 12px;
+    cursor: pointer; font-family: inherit;
+  }
+  .choice:hover { border-color: #35586b; background: #f7f9fa; }
+  .choice .choice-icon { font-size: 32px; }
+  .choice .choice-icon.ok { color: #3f6e4f; }
+  .choice .choice-icon.no { color: #d64545; }
+  .choice .choice-title { font-size: 16px; font-weight: 700; color: #2a2724; }
+  .choice .choice-sub { font-size: 12px; color: #6b6558; text-align: center; line-height: 1.5; }
+
+  /* 하단 안심 안내 */
+  .hint {
+    display: flex; align-items: flex-start; gap: 8px;
+    margin-top: 20px; padding: 12px;
+    background: #f5f3ee; border-radius: 8px;
+    font-size: 12px; color: #6b6558; line-height: 1.6;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 24px; }
+    .choices { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="back-row">
+      <button class="back-btn" onclick="goBack()" aria-label="뒤로">&#8592;</button>
+      <span>타임라인으로 돌아가기</span>
+    </div>
+
+    <div class="question">
+      <div class="icon-circle">&#128181;</div>
+      <div class="q-title">오늘은 계약 만료일이에요</div>
+      <div class="q-desc">
+        집주인에게 보증금을 돌려받으셨나요?<br>
+        상황에 맞게 다음 단계를 안내해드릴게요.
+      </div>
+    </div>
+
+    <div class="choices">
+      <!-- 받음 -> 타임라인 종료 + 보관함 -->
+      <button class="choice" onclick="choose('received')">
+        <span class="choice-icon ok">&#9989;</span>
+        <span class="choice-title">받았어요</span>
+        <span class="choice-sub">보증금을 돌려받았어요</span>
+      </button>
+
+      <!-- 못 받음 -> 대응 화면(4-2) -->
+      <button class="choice" onclick="choose('not_yet')">
+        <span class="choice-icon no">&#9888;</span>
+        <span class="choice-title">아직이에요</span>
+        <span class="choice-sub">아직 못 받았어요</span>
+      </button>
+    </div>
+
+    <div class="hint">
+      <span>만료일에 바로 못 받는 경우도 있어요. 당황하지 말고 다음 단계를 확인하면 돼요.</span>
+    </div>
+  </div>
+
+<script>
+  function goBack() { alert('타임라인 화면으로 돌아가기'); }
+
+  // 선택에 따라 분기
+  function choose(type) {
+    if (type === 'received') {
+      alert('보증금 수령 완료! 타임라인을 종료하고 보관함으로 이동합니다.');
+      // 실제로는 타임라인 종료 + 보관함으로
+    } else {
+      alert('미반환 대응 화면(4-2)으로 이동');
+      // 실제로는 대응 화면으로
+    }
+  }
+</script>
+</body>
+</html>
