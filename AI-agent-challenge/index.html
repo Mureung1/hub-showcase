@@ -11,7 +11,7 @@
     <section class="topbar">
       <div>
         <p class="eyebrow">AI 자취 식단 추천</p>
-        <h1>냉장고 재료로 오늘 먹을 메뉴를 추천해드려요</h1>
+        <h1>집에 있는 재료를 정리하고 오늘의 식단을 추천받아요</h1>
       </div>
       <div class="status-card">
         <span>오늘 우선 소비</span>
@@ -24,13 +24,13 @@
         <div class="workspace-header">
           <div>
             <p class="eyebrow">Step 1</p>
-            <h2>냉장고 재료 워크스페이스</h2>
-            <p>보유 재료와 소비 임박일을 정리하고 추천 기준을 한눈에 확인하세요.</p>
+            <h2>우리집 재료 워크스페이스</h2>
+            <p>냉장고, 냉동실, 실온 보관 재료를 한 곳에 추가하고 소비 임박 재료를 먼저 확인하세요.</p>
           </div>
           <button id="toggleIngredientForm" class="add-toggle" type="button" aria-expanded="false">+ 재료 추가</button>
         </div>
 
-        <div class="workspace-summary" aria-label="냉장고 재료 요약">
+        <div class="workspace-summary" aria-label="집 재료 요약">
           <div class="summary-card">
             <span>전체 재료</span>
             <strong id="totalCount">0개</strong>
@@ -45,13 +45,20 @@
           </div>
         </div>
 
+        <nav class="storage-tabs" aria-label="보관 위치 필터">
+          <button class="storage-tab active" type="button" data-storage="all">전체</button>
+          <button class="storage-tab" type="button" data-storage="fridge">냉장</button>
+          <button class="storage-tab" type="button" data-storage="freezer">냉동</button>
+          <button class="storage-tab" type="button" data-storage="pantry">실온</button>
+        </nav>
+
         <section id="ingredientFormPanel" class="form-panel" hidden>
           <div class="form-panel-title">
-            <h3 id="formPanelTitle">새 재료 타일 만들기</h3>
+            <h3 id="formPanelTitle">새 재료 등록</h3>
             <button id="closeIngredientForm" type="button" aria-label="재료 입력 닫기">닫기</button>
           </div>
           <form id="ingredientForm" class="ingredient-form">
-            <label>
+            <label class="wide-field">
               <span>재료명</span>
               <input id="ingredientInput" type="text" placeholder="예: 두부" aria-label="재료명 입력">
             </label>
@@ -60,14 +67,36 @@
               <input id="quantityInput" type="text" placeholder="예: 1모" aria-label="수량 입력">
             </label>
             <label>
+              <span>보관 위치</span>
+              <select id="storageInput" aria-label="보관 위치 선택">
+                <option value="fridge">냉장</option>
+                <option value="freezer">냉동</option>
+                <option value="pantry">실온</option>
+              </select>
+            </label>
+            <label>
+              <span>카테고리</span>
+              <select id="categoryInput" aria-label="카테고리 선택">
+                <option value="단백질">단백질</option>
+                <option value="채소">채소</option>
+                <option value="주식">주식</option>
+                <option value="소스/양념">소스/양념</option>
+                <option value="간편식">간편식</option>
+              </select>
+            </label>
+            <label>
               <span>유통기한</span>
               <input id="expiryInput" type="date" aria-label="유통기한 선택">
             </label>
-            <button id="submitIngredient" type="submit">타일 추가</button>
+            <button id="submitIngredient" type="submit">재료 등록</button>
           </form>
         </section>
 
         <div id="ingredientMessage" class="form-message" role="status"></div>
+        <div class="board-label-row">
+          <span id="boardTitle">전체 재료 보드</span>
+          <strong id="boardCount">0개</strong>
+        </div>
         <div id="ingredientTiles" class="ingredient-grid" aria-live="polite"></div>
       </aside>
 
