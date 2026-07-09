@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decision Log Prototype</title>
+  <style>
+    :root {
+      --color-bg: #f6f7f9;
+      --color-surface: #ffffff;
+      --color-border: #e5e7eb;
+      --color-text: #111827;
+      --color-muted: #6b7280;
+      --color-primary: #2563eb;
+      --color-primary-soft: #eff6ff;
+      --color-accepted-bg: #dcfce7;
+      --color-accepted-text: #166534;
+      --color-verify-bg: #fef3c7;
+      --color-verify-text: #92400e;
+      --color-rejected-bg: #fee2e2;
+      --color-rejected-text: #991b1b;
+      --color-common-bg: #dbeafe;
+      --color-common-text: #1e40af;
+      --color-conflict-bg: #ffedd5;
+      --color-conflict-text: #9a3412;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --space-md: 16px;
+      --space-lg: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Pretendard, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 220px minmax(560px, 1fr) 340px;
+      gap: var(--space-md);
+      min-height: 100vh;
+      padding: var(--space-md);
+    }
+
+    .panel {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-md);
+    }
+
+    .left-panel,
+    .right-panel {
+      position: sticky;
+      top: var(--space-md);
+      height: calc(100vh - 32px);
+      overflow: auto;
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 22px;
+      line-height: 1.2;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    p {
+      line-height: 1.55;
+    }
+
+    .muted {
+      color: var(--color-muted);
+      font-size: 13px;
+    }
+
+    .section {
+      margin-bottom: var(--space-lg);
+    }
+
+    .side-nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .side-nav-item {
+      display: block;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+      background: #f9fafb;
+      border: 1px solid transparent;
+    }
+
+    .side-nav-item.active {
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      border-color: #bfdbfe;
+    }
+
+    .side-note {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      background: #f9fafb;
+      border: 1px solid var(--color-border);
+    }
+
+    textarea {
+      width: 100%;
+      height: 110px;
+      resize: vertical;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      font: inherit;
+      line-height: 1.5;
+      outline: none;
+      background: #fff;
+    }
+
+    textarea:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .model-row {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid #bfdbfe;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 14px;
+      border: 0;
+      border-radius: var(--radius-md);
+      background: var(--color-primary);
+      color: white;
+      font-weight: 700;
+      cursor: default;
+    }
+
+    .button.dark {
+      background: #111827;
+      width: 100%;
+    }
+
+    details {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    details + details {
+      margin-top: 12px;
+    }
+
+    summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 14px 16px;
+      font-weight: 800;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid transparent;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary::after {
+      content: "열기";
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-muted);
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f3f4f6;
+    }
+
+    details[open] summary {
+      border-bottom-color: var(--color-border);
+    }
+
+    details[open] summary::after {
+      content: "닫기";
+    }
+
+    .details-body {
+      padding: 14px 16px 16px;
+    }
+
+    .answer-scroll {
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 6px;
+    }
+
+    .answer-card {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: #ffffff;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+
+    .answer-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .model-name {
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .model-badge {
+      font-size: 11px;
+      color: var(--color-muted);
+      font-weight: 700;
+      background: #f3f4f6;
+      border-radius: 999px;
+      padding: 3px 7px;
+    }
+
+    .answer-text {
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .answer-text strong {
+      color: #111827;
+    }
+
+    .card {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      padding: var(--space-md);
+    }
+
+    .manager-card {
+      border-left: 4px solid var(--color-primary);
+    }
+
+    .manager-card + .manager-card {
+      margin-top: 12px;
+    }
+
+    .label {
+      display: inline-flex;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .label-common {
+      background: var(--color-common-bg);
+      color: var(--color-common-text);
+    }
+
+    .label-conflict {
+      background: var(--color-conflict-bg);
+      color: var(--color-conflict-text);
+    }
+
+    .label-verify {
+      background: var(--color-verify-bg);
+      color: var(--color-verify-text);
+    }
+
+    .source-line {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--color-muted);
+    }
+
+    .decision-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .small-button {
+      padding: 7px 9px;
+      border: 1px solid var(--color-border);
+      background: #ffffff;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .log-group {
+      margin-bottom: 18px;
+    }
+
+    .log-group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .log-count {
+      font-size: 12px;
+      color: var(--color-muted);
+      font-weight: 700;
+    }
+
+    .log-card {
+      padding: 12px;
+      border-radius: var(--radius-md);
+      margin-bottom: 10px;
+      border: 1px solid transparent;
+    }
+
+    .log-card h3 {
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .log-card p {
+      font-size: 12px;
+      color: #374151;
+    }
+
+    .log-meta {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--color-muted);
+      font-weight: 700;
+    }
+
+    .accepted {
+      background: var(--color-accepted-bg);
+      border-color: #bbf7d0;
+    }
+
+    .verify {
+      background: var(--color-verify-bg);
+      border-color: #fde68a;
+    }
+
+    .rejected {
+      background: var(--color-rejected-bg);
+      border-color: #fecaca;
+    }
+
+    @media (max-width: 1100px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .left-panel,
+      .right-panel {
+        position: static;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <aside class="panel left-panel">
+      <section class="section">
+        <h1>Decision Log</h1>
+        <p class="muted">Multi-AI 의사결정 도구</p>
+      </section>
+
+      <nav class="side-nav" aria-label="Prototype navigation">
+        <span class="side-nav-item active">Decision Board</span>
+        <span class="side-nav-item">Question Runs</span>
+        <span class="side-nav-item">Manager Cards</span>
+        <span class="side-nav-item">Export Preview</span>
+      </nav>
+
+      <div class="side-note">
+        <h3>Prototype Goal</h3>
+        <p class="muted">
+          하나의 질문이 여러 AI 답변, 비교 카드, Decision Log로 이어지는 흐름을 확인한다.
+        </p>
+      </div>
+    </aside>
+
+    <section class="panel">
+      <section class="section">
+        <h2>Ask</h2>
+        <textarea>Next.js + Supabase로 로그인 기능을 만들 때 RLS를 어떻게 설계해야 할까?</textarea>
+
+        <div class="model-row">
+          <span class="chip">Claude</span>
+          <span class="chip">ChatGPT</span>
+          <span class="chip">Gemini</span>
+        </div>
+
+        <button class="button">여러 AI에게 질문하기</button>
+      </section>
+
+      <section class="section">
+        <details open>
+          <summary>AI Answers</summary>
+          <div class="details-body">
+            <div class="answer-scroll">
+              <article class="answer-card">
+                <div class="model-name">
+                  Claude
+                  <span class="model-badge">structured answer</span>
+                </div>
+                <p class="answer-text">
+                  <strong>결론:</strong> 클라이언트에서 접근하는 테이블은 RLS를 활성화해야 한다.
+                  사용자가 직접 접근하는 데이터에는 row 단위 정책이 필요하다.
+                  <br /><br />
+                  <strong>위험 요소:</strong> service_role key는 서버 전용으로만 사용해야 하며,
+                  클라이언트에 노출되면 전체 데이터 접근 위험이 생긴다.
+                </p>
+              </article>
+
+              <article class="answer-card">
+                <div class="model-name">
+                  ChatGPT
+                  <span class="model-badge">structured answer</span>
+                </div>
+                <p class="answer-text">
+                  <strong>결론:</strong> Supabase에서는 RLS를 기본적으로 켜고,
+                  사용자별 접근 조건을 policy로 분리하는 것이 안전하다.
+                  <br /><br />
+                  <strong>추천 방법:</strong> 일반 사용자는 본인 데이터만 접근하게 하고,
+                  관리자 권한은 서버에서 별도로 검증하는 구조가 좋다.
+                </p>
+              </article>
+
+              <article class="answer-card">
+                <div class="model-name">
+                  Gemini
+                  <span class="model-badge">structured answer</span>
+                </div>
+                <p class="answer-text">
+                  <strong>결론:</strong> 인증은 Supabase Auth로 처리하고,
+                  데이터 접근은 RLS 정책으로 제한하는 구성이 적절하다.
+                  <br /><br />
+                  <strong>검증 필요:</strong> Auth helper 패키지와 Next.js App Router 조합은
+                  최신 공식 문서를 기준으로 다시 확인해야 한다.
+                </p>
+              </article>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="section">
+        <details open>
+          <summary>Manager AI Cards</summary>
+          <div class="details-body">
+            <article class="card manager-card">
+              <span class="label label-common">공통 내용</span>
+              <h3>RLS는 기본적으로 활성화한다</h3>
+              <p class="muted">
+                여러 AI가 클라이언트 접근 테이블에는 RLS가 필요하다고 언급했다.
+                사용자가 직접 접근하는 데이터에는 정책 기반 접근 제한이 필요하다.
+              </p>
+              <p class="source-line">Source: Claude, ChatGPT, Gemini</p>
+              <div class="decision-actions">
+                <button class="small-button">Accepted</button>
+                <button class="small-button">Verify</button>
+                <button class="small-button">Rejected</button>
+              </div>
+            </article>
+
+            <article class="card manager-card">
+              <span class="label label-conflict">충돌 내용</span>
+              <h3>권한 검증 위치가 모델별로 다르다</h3>
+              <p class="muted">
+                일부 AI는 middleware를 강조했고, 일부 AI는 server action 또는 route handler를 강조했다.
+                구현 전 프로젝트 구조에 맞는 검증 위치를 다시 정해야 한다.
+              </p>
+              <p class="source-line">Source: Claude, ChatGPT</p>
+              <div class="decision-actions">
+                <button class="small-button">Accepted</button>
+                <button class="small-button">Verify</button>
+                <button class="small-button">Rejected</button>
+              </div>
+            </article>
+
+            <article class="card manager-card">
+              <span class="label label-verify">검증 필요</span>
+              <h3>Supabase Auth helper 최신 방식 확인</h3>
+              <p class="muted">
+                특정 패키지 추천이 AI별로 달라 공식 문서 확인이 필요하다.
+                오래된 auth helper를 그대로 사용하면 최신 App Router 구조와 맞지 않을 수 있다.
+              </p>
+              <p class="source-line">Source: Gemini 단독 언급</p>
+              <div class="decision-actions">
+                <button class="small-button">Accepted</button>
+                <button class="small-button">Verify</button>
+                <button class="small-button">Rejected</button>
+              </div>
+            </article>
+          </div>
+        </details>
+      </section>
+    </section>
+
+    <aside class="panel right-panel">
+      <section class="section">
+        <h2>Decision Log</h2>
+        <p class="muted">사용자가 저장한 판단 기록</p>
+      </section>
+
+      <section class="log-group">
+        <div class="log-group-header">
+          <h3>Accepted</h3>
+          <span class="log-count">3 cards</span>
+        </div>
+
+        <article class="log-card accepted">
+          <h3>RLS는 기본적으로 활성화한다</h3>
+          <p>클라이언트 접근 테이블에는 RLS를 켜고, 사용자별 정책을 명확히 작성한다.</p>
+          <div class="log-meta">근거: Claude, ChatGPT, Gemini 공통 언급</div>
+        </article>
+
+        <article class="log-card accepted">
+          <h3>service_role key는 서버 전용으로 둔다</h3>
+          <p>브라우저나 클라이언트 코드에 노출하지 않는다. 서버 API에서만 사용한다.</p>
+          <div class="log-meta">근거: 보안 위험 공통 언급</div>
+        </article>
+
+        <article class="log-card accepted">
+          <h3>사용자 데이터는 owner 기준으로 제한한다</h3>
+          <p>테이블 policy에서 user_id와 auth.uid()를 기준으로 접근 범위를 제한한다.</p>
+          <div class="log-meta">근거: RLS 정책 설계 카드</div>
+        </article>
+      </section>
+
+      <section class="log-group">
+        <div class="log-group-header">
+          <h3>Verify</h3>
+          <span class="log-count">2 cards</span>
+        </div>
+
+        <article class="log-card verify">
+          <h3>Supabase Auth helper 최신 방식 확인</h3>
+          <p>Next.js App Router 기준으로 어떤 패키지가 최신 권장 방식인지 공식 문서로 확인한다.</p>
+          <div class="log-meta">근거: Gemini 단독 언급</div>
+        </article>
+
+        <article class="log-card verify">
+          <h3>관리자 권한 검증 위치 결정</h3>
+          <p>middleware, route handler, server action 중 현재 프로젝트에 맞는 위치를 검토한다.</p>
+          <div class="log-meta">근거: 모델별 추천 방식 충돌</div>
+        </article>
+      </section>
+
+      <section class="log-group">
+        <div class="log-group-header">
+          <h3>Rejected</h3>
+          <span class="log-count">2 cards</span>
+        </div>
+
+        <article class="log-card rejected">
+          <h3>service_role key를 클라이언트에서 사용하지 않는다</h3>
+          <p>전체 데이터 접근 권한이 노출될 수 있으므로 폐기한다.</p>
+          <div class="log-meta">이유: 보안상 위험</div>
+        </article>
+
+        <article class="log-card rejected">
+          <h3>RLS 없이 클라이언트 쿼리만으로 처리하지 않는다</h3>
+          <p>클라이언트 조건문만으로 권한을 막는 방식은 우회 가능성이 있어 폐기한다.</p>
+          <div class="log-meta">이유: 서버 측 보안 경계 부재</div>
+        </article>
+      </section>
+
+      <button class="button dark">Export MD Zip</button>
+    </aside>
+  </main>
+</body>
+</html>
