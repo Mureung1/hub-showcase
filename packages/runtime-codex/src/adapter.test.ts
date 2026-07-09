@@ -6,10 +6,11 @@ import test from 'node:test'
 import { AgentRuntimeKernel, type RuntimeRunLog } from '@ay-ple/runtime-core'
 import { waitForRuntimeCondition } from '@ay-ple/runtime-core/testing'
 import {
-  hasCodexAdapterDebugEntry,
   hasCodexDebugClientRequest,
   hasCodexDebugNotification,
   hasCodexDebugTurnCompletionStatus,
+  hasCodexInterruptTimeoutDebugEvidence,
+  hasCodexMissingTurnScopeDebugEvidence,
   readCodexDebugClientRequest,
   withFakeCodexAppServer,
   type FakeCodexAppServerScenario,
@@ -275,15 +276,9 @@ test('CodexRuntimeAdapter records failed run when turn interrupt completion is m
         hasCodexDebugClientRequest(terminalLog.debugLog, 'turn/interrupt'),
       )
       assert.ok(
-        hasCodexAdapterDebugEntry(terminalLog.debugLog, {
-          kind: 'timeout',
-          message: 'Codex turn interrupt did not complete before timeout',
-          data: {
-            threadId: 'thread-interrupt-timeout',
-            turnId: 'turn-interrupt-timeout',
-            timeoutMs: 300,
-            streamEnded: false,
-          },
+        hasCodexInterruptTimeoutDebugEvidence(terminalLog.debugLog, {
+          threadId: 'thread-interrupt-timeout',
+          turnId: 'turn-interrupt-timeout',
         }),
       )
     },
@@ -333,15 +328,8 @@ test('CodexRuntimeAdapter records failed run when cancellation happens before tu
         false,
       )
       assert.ok(
-        hasCodexAdapterDebugEntry(terminalLog.debugLog, {
-          kind: 'warning',
-          message:
-            'Codex cancellation requested before turn scope was established; turn/interrupt was not sent',
-          data: {
-            threadId: null,
-            canInterrupt: false,
-            reason: 'missing_turn_scope',
-          },
+        hasCodexMissingTurnScopeDebugEvidence(terminalLog.debugLog, {
+          threadId: null,
         }),
       )
     },

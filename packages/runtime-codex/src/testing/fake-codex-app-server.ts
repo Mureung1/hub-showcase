@@ -49,8 +49,20 @@ export type FakeCodexAppServerFixture = {
   rawClientOptions: CodexRawClientOptions
 }
 
+export type CodexDebugClientRequestMethod =
+  | 'initialize'
+  | 'initialized'
+  | 'thread/start'
+  | 'turn/start'
+  | 'turn/interrupt'
+
 const defaultThreadId = 'thread-1'
 const defaultTurnId = 'turn-1'
+const interruptCompletionTimeoutMs = 300
+const interruptCompletionTimeoutMessage =
+  'Codex turn interrupt did not complete before timeout'
+const missingTurnScopeCancellationMessage =
+  'Codex cancellation requested before turn scope was established; turn/interrupt was not sent'
 
 export async function withFakeCodexAppServer(
   scenario: FakeCodexAppServerScenario,
@@ -81,7 +93,7 @@ export async function withFakeCodexAppServer(
 
 export function readCodexDebugClientRequest(
   debugLog: RuntimeRunDebugLogEntry[] | undefined,
-  method: string,
+  method: CodexDebugClientRequestMethod,
 ): { method?: string; params?: unknown } | undefined {
   return debugLog
     ?.filter((entry) => entry.source === 'client' && entry.kind === 'stdin')
@@ -97,7 +109,7 @@ export function readCodexDebugClientRequest(
 
 export function hasCodexDebugClientRequest(
   debugLog: RuntimeRunDebugLogEntry[] | undefined,
-  method: string,
+  method: CodexDebugClientRequestMethod,
 ): boolean {
   return readCodexDebugClientRequest(debugLog, method) !== undefined
 }
@@ -174,6 +186,43 @@ export function hasCodexAdapterDebugEntry(
   },
 ): boolean {
   return readCodexAdapterDebugEntry(debugLog, input) !== undefined
+}
+
+export function hasCodexInterruptTimeoutDebugEvidence(
+  debugLog: RuntimeRunDebugLogEntry[] | undefined,
+  input: {
+    threadId: string
+    turnId: string
+    streamEnded?: boolean
+  },
+): boolean {
+  return hasCodexAdapterDebugEntry(debugLog, {
+    kind: 'timeout',
+    message: interruptCompletionTimeoutMessage,
+    data: {
+      threadId: input.threadId,
+      turnId: input.turnId,
+      timeoutMs: interruptCompletionTimeoutMs,
+      streamEnded: input.streamEnded ?? false,
+    },
+  })
+}
+
+export function hasCodexMissingTurnScopeDebugEvidence(
+  debugLog: RuntimeRunDebugLogEntry[] | undefined,
+  input: {
+    threadId: string | null
+  },
+): boolean {
+  return hasCodexAdapterDebugEntry(debugLog, {
+    kind: 'warning',
+    message: missingTurnScopeCancellationMessage,
+    data: {
+      threadId: input.threadId,
+      canInterrupt: false,
+      reason: 'missing_turn_scope',
+    },
+  })
 }
 
 function createFakeCodexAppServerSource(

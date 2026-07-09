@@ -7,10 +7,12 @@ import {
 import { waitForRuntimeCondition } from '@ay-ple/runtime-core/testing'
 import { CodexRuntimeAdapter } from '@ay-ple/runtime-codex'
 import {
-  hasCodexAdapterDebugEntry,
   hasCodexDebugClientRequest,
   hasCodexDebugTurnCompletionStatus,
+  hasCodexInterruptTimeoutDebugEvidence,
+  hasCodexMissingTurnScopeDebugEvidence,
   withFakeCodexAppServer,
+  type CodexDebugClientRequestMethod,
 } from '@ay-ple/runtime-codex/testing'
 import { createServerApp } from './server.js'
 
@@ -419,15 +421,9 @@ test('runtime API records codex interrupt timeout as normalized failure', async 
           'Codex turn interrupt did not complete before timeout',
         )
         assert.ok(
-          hasCodexAdapterDebugEntry(terminalLog.debugLog, {
-            kind: 'timeout',
-            message: 'Codex turn interrupt did not complete before timeout',
-            data: {
-              threadId: 'thread-server-interrupt-timeout',
-              turnId: 'turn-server-interrupt-timeout',
-              timeoutMs: 300,
-              streamEnded: false,
-            },
+          hasCodexInterruptTimeoutDebugEvidence(terminalLog.debugLog, {
+            threadId: 'thread-server-interrupt-timeout',
+            turnId: 'turn-server-interrupt-timeout',
           }),
         )
         assert.deepEqual(
@@ -482,15 +478,8 @@ test('runtime API records codex pre-turn-scope cancellation as normalized failur
           false,
         )
         assert.ok(
-          hasCodexAdapterDebugEntry(terminalLog.debugLog, {
-            kind: 'warning',
-            message:
-              'Codex cancellation requested before turn scope was established; turn/interrupt was not sent',
-            data: {
-              threadId: null,
-              canInterrupt: false,
-              reason: 'missing_turn_scope',
-            },
+          hasCodexMissingTurnScopeDebugEvidence(terminalLog.debugLog, {
+            threadId: null,
           }),
         )
         assert.deepEqual(
@@ -510,7 +499,7 @@ async function startCodexRunAndCancel(
   baseUrl: string,
   input: {
     prompt: string
-    waitForDebugMethod: string
+    waitForDebugMethod: CodexDebugClientRequestMethod
   },
 ): Promise<{
   runId: string
