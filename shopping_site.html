@@ -1,0 +1,108 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopEase</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <div class="logo"><span class="logo-mark">S</span>ShopEase</div>
+      <nav class="nav-actions">
+        <a href="login.html">로그인</a>
+        <a href="signup.html">회원가입</a>
+        <a href="account.html" class="primary">내 계정</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1>심플하고 완성도 있는 HTML/CSS 쇼핑몰</h1>
+      <p>ShopEase는 실제 페이지 이동과 카드형 제품 목록, 로그인·회원가입·상세 페이지를 갖춘 정적 쇼핑 웹사이트입니다.</p>
+      <a class="hero-cta" href="#products">제품 보러가기</a>
+    </section>
+
+    <section class="search-card">
+      <input type="text" placeholder="제품 검색어를 입력하세요" />
+      <select>
+        <option>전체 카테고리</option>
+        <option>전자제품</option>
+        <option>패션</option>
+        <option>생활용품</option>
+      </select>
+      <select>
+        <option>정렬 기준: 인기순</option>
+        <option>가격 낮은순</option>
+        <option>가격 높은순</option>
+      </select>
+      <button type="button">검색</button>
+    </section>
+
+    <section id="products" class="products-grid">
+      <article class="product-card">
+        <a href="product_detail1.html">
+          <div class="product-image">
+            <span class="product-type">전자제품</span>
+            <div class="product-photo" style="background-image: url('https://images.unsplash.com/photo-1512446813103-2dcf9e29234d?auto=format&fit=crop&w=900&q=80');"></div>
+          </div>
+          <div class="product-content">
+            <h2 class="product-title">무선 이어폰 Pro</h2>
+            <p class="product-desc">노이즈 캔슬링과 30시간 배터리, 스마트 터치 컨트롤을 제공하는 프리미엄 무선 이어폰.</p>
+            <div class="price-row">
+              <span class="price">₩129,000</span>
+              <span class="badge">베스트</span>
+            </div>
+          </div>
+          <div class="offer">빠른 배송 가능 · 무료 반품</div>
+        </a>
+      </article>
+
+      <article class="product-card">
+        <a href="product_detail2.html">
+          <div class="product-image">
+            <span class="product-type">패션</span>
+            <div class="product-photo" style="background-image: url('https://images.unsplash.com/photo-1521334884684-d80222895322?auto=format&fit=crop&w=900&q=80');"></div>
+          </div>
+          <div class="product-content">
+            <h2 class="product-title">미니멀 슬림 재킷</h2>
+            <p class="product-desc">데일리부터 오피스까지 활용 가능한 세련된 슬림핏 재킷.</p>
+            <div class="price-row">
+              <span class="price">₩84,500</span>
+              <span class="badge">인기</span>
+            </div>
+          </div>
+          <div class="offer">한정 수량 · 사이즈 교환 무료</div>
+        </a>
+      </article>
+
+      <article class="product-card">
+        <a href="product_detail3.html">
+          <div class="product-image">
+            <span class="product-type">생활용품</span>
+            <div class="product-photo" style="background-image: url('https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=900&q=80');"></div>
+          </div>
+          <div class="product-content">
+            <h2 class="product-title">모던 식탁 매트 세트</h2>
+            <p class="product-desc">물세척 가능한 실용적인 식탁 매트로 공간을 깔끔하게 완성합니다.</p>
+            <div class="price-row">
+              <span class="price">₩29,800</span>
+              <span class="badge">추천</span>
+            </div>
+          </div>
+          <div class="offer">탄성 소재 · 물세척 가능</div>
+        </a>
+      </article>
+    </section>
+
+    <footer class="footer">
+      <p>ShopEase는 순수 HTML/CSS로 구성된 정적 데모 쇼핑몰입니다. 페이지 간 이동을 통해 실제 흐름을 체험할 수 있습니다.</p>
+      <div class="footer-links">
+        <a href="login.html">로그인</a>
+        <a href="signup.html">회원가입</a>
+        <a href="account.html">내 계정</a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
