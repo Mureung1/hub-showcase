@@ -1,0 +1,51 @@
+#!/bin/sh
+
+commit_msg_file="$1"
+first_line="$(sed -n '1p' "$commit_msg_file")"
+
+allowed_types="feat|fix|docs|refactor|test|chore|build|ci|perf"
+
+if ! printf '%s' "$first_line" | grep -Eq "^($allowed_types)(\([a-z0-9._-]+\))?: .{1,72}$"; then
+  cat <<'EOF'
+Invalid commit message summary.
+
+Expected:
+  type(scope): summary
+
+Allowed types:
+  feat, fix, docs, refactor, test, chore, build, ci, perf
+
+Rules:
+  - summary must be present
+  - summary line must be 72 characters or less after "type(scope): "
+  - scope is optional and should use lowercase letters, numbers, dot, underscore, or hyphen
+
+Example:
+  feat(market-analysis): add radius competition summary
+EOF
+  exit 1
+fi
+
+if ! grep -Eq '^why:' "$commit_msg_file"; then
+  cat <<'EOF'
+Commit message must include a "why:" section.
+
+Example:
+  why:
+  - 선택 위치 기준 동일 업종 경쟁 강도를 계산해야 한다.
+EOF
+  exit 1
+fi
+
+if ! grep -Eq '^verify:' "$commit_msg_file"; then
+  cat <<'EOF'
+Commit message must include a "verify:" section.
+
+Example:
+  verify:
+  - sample store fixture로 100m/300m/500m 집계 결과를 확인했다.
+EOF
+  exit 1
+fi
+
+exit 0
