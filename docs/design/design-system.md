@@ -307,7 +307,7 @@ error
 
 ### 구현 필요
 
-- [ ] `web/src/styles/tokens.css` 생성
+- [x] `apps/web/src/styles/tokens.css` 생성
 - [ ] 공통 button, filter, panel, score, marker component 구현
 - [ ] 임의 색상과 spacing 사용을 확인하는 lint 또는 check 추가
 - [ ] desktop/mobile visual regression 기준 화면 추가
