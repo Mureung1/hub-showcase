@@ -51,9 +51,10 @@ hub/
     images/
 
   prototype/
-    index.html
+    index.html    (01 관심 직무 선택)
+    report.html   (02 요구 역량 분석)
+    roadmap.html  (03 학습 로드맵)
     style.css
-    assets/
 
   server/
     src/
@@ -83,7 +84,7 @@ hub/
 ## 폴더 역할 TODO
 
 - `src/internal/project-intro/`: 프로젝트 소개용 React 화면과 그 전용 스타일을 함께 둡니다.
-- `prototype/index.html`: 1주차 HTML/CSS 정적 프로토타입 위치입니다. 더 이상 기능을 확장하지 않고 필요 시 수정만 합니다.
+- `prototype/`: 1주차 HTML/CSS 정적 프로토타입 위치입니다. 화면 3개(직무 선택/분석 보고서/로드맵)가 각각 별도 html 파일로 있고 `style.css`를 공유합니다. Signal Studio 디자인 스킬을 따릅니다. 더 이상 기능을 확장하지 않고 필요 시 수정만 합니다.
 - `src/product/`: 이후 실제 서비스 React 구현이 들어갈 위치입니다.
 - `server/`: 실제 서비스(product)에서만 사용하는 Express 백엔드입니다. 프론트(`src/`)와는 별도의 Node 실행 환경이라 최상위에 형제 폴더로 분리했습니다. `src/`와 별도의 `package.json`을 가집니다.
 - `src/shared/`: 두 개 이상의 기능에서 실제로 재사용하는 컴포넌트/유틸이 생기면 그때 새로 만듭니다. 미리 만들어두지 않습니다.

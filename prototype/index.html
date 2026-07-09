@@ -3,291 +3,79 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blueprint Studio - Career Agent Prototype</title>
+    <title>관심 직무 선택 | CareerSignal</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <div class="prototype-shell">
-      <aside class="progress-panel" aria-label="프로토타입 진행 단계">
-        <div class="brand-block">
-          <strong>BLUEPRINT STUDIO</strong>
-          <span>Career Research Agent</span>
-        </div>
+    <header class="top-bar">
+      <a class="top-bar__brand" href="./index.html">
+        <span class="top-bar__mark">CS</span>
+        <span>
+          <span class="top-bar__name">CareerSignal</span>
+          <span class="top-bar__tagline">채용공고 기반 진로탐색 에이전트</span>
+        </span>
+      </a>
+      <div class="top-bar__meta">
+        <span class="top-bar__step">STEP <strong>1</strong> / 3 · 직무 선택</span>
+      </div>
+    </header>
 
-        <nav class="progress-nav">
-          <a class="progress-link current" href="#job-selection">
-            <span class="step-index">01</span>
-            <span>관심 직무 선택</span>
-          </a>
-          <a class="progress-link" href="#skill-analysis">
-            <span class="step-index">02</span>
-            <span>요구 역량 분석</span>
-          </a>
-          <a class="progress-link" href="#learning-roadmap">
-            <span class="step-index">03</span>
-            <span>학습 로드맵</span>
-          </a>
-        </nav>
-      </aside>
-
-      <main class="content-flow">
-        <section class="blueprint-section hero-section" id="job-selection">
-          <div class="section-kicker">SECTION_01</div>
-          <div class="section-heading centered">
-            <p class="eyebrow">STEP 01 / Job Selection</p>
-            <h1>관심 직무 선택</h1>
+    <main class="app-shell">
+      <div class="page">
+        <section class="job-select-card">
+          <div class="card-header">
+            <span class="badge">STEP 1 · 직무 선택</span>
+            <h1>어떤 직무의 채용 신호를 분석할까요?</h1>
             <p>
-              관심 있는 직무를 선택하면 채용공고에서 반복적으로 요구되는
-              역량을 분석하고, 무엇을 어떤 순서로 준비해야 하는지 보여줍니다.
+              관심 직무를 입력하면 최근 채용공고를 읽고, 필수 조건과 우대 조건,
+              기업군별 요구 차이, 준비 우선순위를 리포트로 정리합니다.
             </p>
           </div>
 
-          <div class="selection-board">
-            <div class="input-row">
-              <label for="target-role">관심 직무 입력</label>
-              <input
-                id="target-role"
-                type="text"
-                value=""
-                placeholder="원하는 직무를 입력하세요. 예: 프론트엔드 개발자"
-                aria-label="관심 직무 입력"
-              />
-            </div>
+          <div class="input-group">
+            <label for="jobInput">관심 직무 입력</label>
+            <input
+              class="job-input"
+              type="text"
+              id="jobInput"
+              placeholder="예: 프론트엔드 개발자, 데이터 분석가, ML 엔지니어"
+              value="프론트엔드 개발자"
+            />
+          </div>
 
-            <div class="example-group" aria-label="예시 직무">
-              <p>예시 직무</p>
-              <div class="role-buttons">
-                <button type="button">프론트엔드 개발자</button>
-                <button type="button">백엔드 개발자</button>
-                <button type="button">데이터 분석가</button>
-                <button type="button">AI 엔지니어</button>
-              </div>
+          <div class="example-section">
+            <div class="example-label">빠르게 시작하기</div>
+            <div class="example-buttons">
+              <button type="button" class="example-btn">프론트엔드 개발자</button>
+              <button type="button" class="example-btn">AI 엔지니어</button>
+              <button type="button" class="example-btn">데이터 분석가</button>
+              <button type="button" class="example-btn">백엔드 개발자</button>
             </div>
           </div>
 
-          <div class="action-line">
-            <a class="primary-action" href="#skill-analysis">분석 시작</a>
+          <div class="analysis-preview" aria-label="분석 항목 미리보기">
+            <div class="preview-item">
+              <strong>필수·우대 조건 분리</strong>
+              <span>지원 전 반드시 맞춰야 할 조건과 차별화 조건을 나눕니다.</span>
+            </div>
+            <div class="preview-item">
+              <strong>학력·경력 조건</strong>
+              <span>대학생·신입 관점에서 진입 가능한 공고 비율을 봅니다.</span>
+            </div>
+            <div class="preview-item">
+              <strong>기업 규모별 요구 차이</strong>
+              <span>스타트업, 중견, 플랫폼 기업의 요구 역량을 비교합니다.</span>
+            </div>
+            <div class="preview-item">
+              <strong>공고 링크와 근거</strong>
+              <span>참고할 만한 실제 공고 유형과 원문 링크를 함께 제공합니다.</span>
+            </div>
           </div>
+
+          <a class="submit-btn" href="./report.html">프론트엔드 개발자 분석 시작하기 →</a>
+          <p class="footnote">프로토타입 데이터는 최근 3개월 주니어 프론트엔드 공고 24건을 가정한 mock 리서치입니다.</p>
         </section>
-
-        <section class="blueprint-section" id="skill-analysis">
-          <div class="section-kicker">SECTION_02</div>
-          <div class="section-heading">
-            <p class="eyebrow">STEP 02 / Skill Analysis Report</p>
-            <h2>요구 역량 분석 보고서</h2>
-            <p>
-              프론트엔드 개발자 채용공고 24개를 기준으로 반복적으로 등장한
-              기술과 경험을 구조화했습니다.
-            </p>
-          </div>
-
-          <div class="analysis-meta">
-            <div>
-              <span>분석 대상</span>
-              <strong>프론트엔드 개발자</strong>
-            </div>
-            <div>
-              <span>분석한 샘플 공고 수</span>
-              <strong>24개</strong>
-            </div>
-          </div>
-
-          <div class="analysis-grid">
-            <article class="panel wide">
-              <div class="panel-label">SECTION_02_A / Top Tech Stack</div>
-              <h3>반복적으로 요구된 기술 스택</h3>
-
-              <div class="stack-list">
-                <div class="stack-item">
-                  <div class="stack-copy">
-                    <strong>React.js</strong>
-                    <span>22 / 24개 공고</span>
-                  </div>
-                  <div class="bar-track" aria-hidden="true">
-                    <span class="bar-fill fill-92"></span>
-                  </div>
-                </div>
-                <div class="stack-item">
-                  <div class="stack-copy">
-                    <strong>TypeScript</strong>
-                    <span>20 / 24개 공고</span>
-                  </div>
-                  <div class="bar-track" aria-hidden="true">
-                    <span class="bar-fill fill-83"></span>
-                  </div>
-                </div>
-                <div class="stack-item">
-                  <div class="stack-copy">
-                    <strong>Tailwind CSS</strong>
-                    <span>15 / 24개 공고</span>
-                  </div>
-                  <div class="bar-track" aria-hidden="true">
-                    <span class="bar-fill fill-63"></span>
-                  </div>
-                </div>
-                <div class="stack-item">
-                  <div class="stack-copy">
-                    <strong>Next.js</strong>
-                    <span>14 / 24개 공고</span>
-                  </div>
-                  <div class="bar-track" aria-hidden="true">
-                    <span class="bar-fill fill-58"></span>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article class="panel insight-panel">
-              <div class="panel-label">SECTION_02_B / Core Insight</div>
-              <h3>핵심 분석 영역</h3>
-              <p>
-                React는 단순 문법 이해보다 컴포넌트 설계, 상태 관리,
-                API 연동 경험과 함께 요구되는 경우가 많다.
-              </p>
-            </article>
-
-            <article class="panel">
-              <div class="panel-label">SECTION_02_C / Responsibilities</div>
-              <h3>주요 업무 및 경험</h3>
-              <ol class="numbered-list">
-                <li>재사용 가능한 UI 컴포넌트 설계</li>
-                <li>대규모 데이터 연동 및 최적화</li>
-              </ol>
-            </article>
-
-            <article class="panel">
-              <div class="panel-label">SECTION_02_D / Qualifications</div>
-              <div class="qualification-grid">
-                <div>
-                  <h3>필수 역량</h3>
-                  <ul class="plain-list">
-                    <li>CS 기초 지식</li>
-                    <li>JavaScript/ES6+ 숙련</li>
-                    <li>SPA 프레임워크 실무 경험</li>
-                  </ul>
-                </div>
-                <div class="preferred-box">
-                  <h3>우대 역량</h3>
-                  <ul class="plain-list">
-                    <li>CI/CD 경험</li>
-                    <li>웹 성능 최적화 경험</li>
-                    <li>테스트 코드 작성 경험</li>
-                  </ul>
-                </div>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section class="blueprint-section" id="learning-roadmap">
-          <div class="section-kicker">SECTION_03</div>
-          <div class="section-heading">
-            <p class="eyebrow">STEP 03 / Learning Roadmap</p>
-            <h2>학습 로드맵</h2>
-            <p>
-              요구 역량 분석 결과를 바탕으로 먼저 준비할 역량과 학습 순서를
-              커리어 설계 흐름으로 정리했습니다.
-            </p>
-          </div>
-
-          <div class="priority-grid">
-            <article class="priority-card">
-              <span>PRIORITY 01</span>
-              <h3>React 실무 활용</h3>
-              <p>22 / 24개 공고 · 최우선</p>
-            </article>
-            <article class="priority-card">
-              <span>PRIORITY 02</span>
-              <h3>TypeScript 활용</h3>
-              <p>20 / 24개 공고 · 중요</p>
-            </article>
-            <article class="priority-card">
-              <span>PRIORITY 03</span>
-              <h3>Next.js 렌더링 이해</h3>
-              <p>14 / 24개 공고 · 권장</p>
-            </article>
-          </div>
-
-          <div class="roadmap-board">
-            <article class="roadmap-step">
-              <div class="step-badge">01</div>
-              <div class="step-content">
-                <p class="eyebrow">Step 01</p>
-                <h3>JavaScript / TypeScript 기반 강화</h3>
-                <dl>
-                  <div>
-                    <dt>주요 학습 내용</dt>
-                    <dd>ES6+ 문법, 비동기 처리, 타입 정의, 컴포넌트 props 모델링</dd>
-                  </div>
-                  <div>
-                    <dt>권장 학습 수준</dt>
-                    <dd>기초 개념을 넘어 작은 기능을 타입 안정성 있게 구현</dd>
-                  </div>
-                  <div>
-                    <dt>추천 근거</dt>
-                    <dd>TypeScript가 20개 공고에서 반복되어 React 학습의 기반으로 요구됨</dd>
-                  </div>
-                </dl>
-              </div>
-            </article>
-
-            <article class="roadmap-step">
-              <div class="step-badge orange">02</div>
-              <div class="step-content">
-                <p class="eyebrow">Step 02</p>
-                <h3>React 설계와 상태 관리</h3>
-                <dl>
-                  <div>
-                    <dt>주요 학습 내용</dt>
-                    <dd>재사용 컴포넌트 설계, 상태 흐름, API 연동, 폼과 리스트 처리</dd>
-                  </div>
-                  <div>
-                    <dt>권장 학습 수준</dt>
-                    <dd>실전 화면을 구성하고 데이터 흐름을 설명할 수 있는 수준</dd>
-                  </div>
-                  <div>
-                    <dt>추천 근거</dt>
-                    <dd>React는 최다 빈도 기술이며 주요 업무 경험과 직접 연결됨</dd>
-                  </div>
-                </dl>
-              </div>
-            </article>
-
-            <article class="roadmap-step">
-              <div class="step-badge">03</div>
-              <div class="step-content">
-                <p class="eyebrow">Step 03</p>
-                <h3>Next.js, 최적화, 테스트</h3>
-                <dl>
-                  <div>
-                    <dt>주요 학습 내용</dt>
-                    <dd>렌더링 전략, 라우팅, 성능 측정, 테스트 코드, CI/CD 기본 흐름</dd>
-                  </div>
-                  <div>
-                    <dt>권장 학습 수준</dt>
-                    <dd>프로젝트에 적용해 우대 역량을 포트폴리오 근거로 제시</dd>
-                  </div>
-                  <div>
-                    <dt>추천 근거</dt>
-                    <dd>Next.js와 성능, 테스트 경험은 우대 역량으로 함께 등장함</dd>
-                  </div>
-                </dl>
-              </div>
-            </article>
-          </div>
-
-          <aside class="reason-panel">
-            <div class="panel-label">SECTION_03_A / Analysis Mapping</div>
-            <h3>이 로드맵이 제안된 이유</h3>
-            <p>
-              채용공고에서 반복적으로 요구된 역량과 선행 학습 관계를 기준으로
-              로드맵을 구성했습니다. JavaScript와 TypeScript 기반을 먼저 다지고,
-              React 설계 경험을 쌓은 뒤 Next.js, 최적화, 테스트처럼 실무 우대
-              역량으로 확장하는 흐름입니다.
-            </p>
-          </aside>
-        </section>
-      </main>
-    </div>
+      </div>
+    </main>
   </body>
 </html>
