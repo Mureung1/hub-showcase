@@ -1,4 +1,4 @@
-# 잔소리봇 (Nagging-bot)
+# 🤖 잔소리봇 (Nagging-bot)
 
 > "미루지 마" — 이유를 알아채고, 첫 걸음을 제안하는 AI
 
@@ -8,19 +8,24 @@
 못하는지 파악하고 그 이유에 맞는 첫 행동(마이크로태스크)을
 제안해 실제로 시작할 수 있도록 돕는 AI입니다.
 
-## 📄 기획서
+## 기획 문서
 
-- [상세 기획서 (docs/plan.md)](./docs/plan.md)
-- [Wiki 페이지](https://github.com/minsss42/hub/wiki)
+- [기획서 (Wiki)](https://github.com/minsss42/hub/wiki)
+- [기획서 원본 (plan.md)](./docs/plan.md)
 
-## 🛠 기술 스택
+## 프로토타입
 
-- Frontend: React + Vite
-- (백엔드/데이터 저장 방식은 기획서 "핵심 기능" 참고)
+- [프로토타입 코드 보기](./docs/prototype.html)
+
+## 기술 스택
+
+- 프로토타입 데모: 순수 HTML / CSS / JS (`docs/prototype.html`)
+- 실제 앱: Vite + React (프로젝트 소개 컴포넌트만 구현됨)
+- 백엔드: Express 예정 (아직 미착수)
 
 ## 개발 환경 실행
 
-\`\`\`bash
+```bash
 npm install
 npm run dev
-\`\`\`
+```
