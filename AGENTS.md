@@ -2,16 +2,16 @@
 
 ## Project Structure & Module Organization
 
-This repository is an npm workspace monorepo with two apps. `server/` contains the Express API; source lives in `server/src/` and compiled output goes to `server/dist/`. `client/` contains the Vite React app; source lives in `client/src/`, static assets in `client/public/`, and the app entry point is `client/src/main.tsx`. The root `package.json` only coordinates workspace scripts. The current API surface is intentionally small: `/api/health` verifies the client-server connection through the Vite proxy.
+This repository is an npm workspace monorepo with apps under `apps/*` and runtime packages under `packages/*`. `apps/server/` contains the Express API; source lives in `apps/server/src/` and compiled output goes to `apps/server/dist/`. `apps/inspector/` contains the Vite React Runtime Inspector starter; source lives in `apps/inspector/src/`, static assets in `apps/inspector/public/`, and the app entry point is `apps/inspector/src/main.tsx`. Runtime packages live in `packages/runtime-core/`, `packages/runtime-fake/`, and `packages/runtime-codex/`; keep them as boundary-first TypeScript ESM packages until their contracts are defined. The root `package.json` only coordinates workspace scripts. The current API surface is intentionally small: `/api/health` verifies the inspector-server connection through the Vite proxy.
 
 ## Build, Test, and Development Commands
 
 - `npm install`: install root and workspace dependencies.
-- `npm run dev`: start server and client together with `concurrently`.
-- `npm run typecheck`: run TypeScript checks for both workspaces.
-- `npm run build`: build `server` first, then `client`.
-- `npm run lint -w client`: run `oxlint` for the React client.
-- `npm run start -w server`: run the compiled server after `npm run build -w server`.
+- `npm run dev`: start server and inspector together with `concurrently`.
+- `npm run typecheck`: run TypeScript checks for runtime packages and apps.
+- `npm run build`: build runtime packages first, then server and inspector.
+- `npm run lint -w @ay-ple/inspector`: run `oxlint` for the React inspector.
+- `npm run start -w @ay-ple/server`: run the compiled server after `npm run build -w @ay-ple/server`.
 
 ## Coding Style & Naming Conventions
 
@@ -27,7 +27,7 @@ Mobile and small-screen responsive layout are deferred for this project unless t
 
 ## Testing Guidelines
 
-No test framework or coverage threshold is configured yet. For now, run `npm run typecheck`, `npm run build`, and client linting before opening a PR. When adding tests, place them near the code they cover, using names like `server/src/health.test.ts` or `client/src/App.test.tsx`, and add the relevant workspace `test` script in the same change.
+No test framework or coverage threshold is configured yet. For now, run `npm run typecheck`, `npm run build`, and inspector linting before opening a PR. When adding tests, place them near the code they cover, using names like `apps/server/src/health.test.ts`, `apps/inspector/src/App.test.tsx`, or `packages/runtime-core/src/runtime.test.ts`, and add the relevant workspace `test` script in the same change.
 
 ## Commit & Pull Request Guidelines
 
@@ -60,7 +60,7 @@ The PR template in `.github/pull_request_template.md` is the camp submission tem
 
 ## Security & Configuration Tips
 
-Keep secrets in local `.env` files and out of git. The server reads `PORT` through `dotenv` and defaults to `3000`; the client should call relative `/api/...` paths so Vite can proxy them during development.
+Keep secrets in local `.env` files and out of git. The server reads `PORT` through `dotenv` and defaults to `3000`; the inspector should call relative `/api/...` paths so Vite can proxy them during development.
 
 ## Agent skills
 

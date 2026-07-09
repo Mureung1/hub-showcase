@@ -32,6 +32,9 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 ├── README.md
 ├── AGENTS.md
 ├── CONTEXT.md
+├── apps/
+│   ├── server/
+│   └── inspector/
 ├── docs/
 │   ├── README.md
 │   ├── product/
@@ -41,6 +44,10 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 │   ├── spikes/
 │   ├── adr/
 │   └── agents/
+├── packages/
+│   ├── runtime-core/
+│   ├── runtime-fake/
+│   └── runtime-codex/
 └── spikes/
     └── codex-runtime-ownership/
 ```
@@ -49,9 +56,12 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 
 | 영역 | 위치 | 설명 |
 | --- | --- | --- |
-| Server | `server/` | Express API 서버 |
-| Client | `client/` | Vite React 클라이언트 |
-| Health check | `/api/health` | 서버와 클라이언트 연결 확인용 엔드포인트 |
+| Server app | `apps/server/` | Express API 서버 |
+| Inspector app | `apps/inspector/` | Vite React Runtime Inspector starter |
+| Runtime core | `packages/runtime-core/` | Runtime contract boundary placeholder |
+| Fake runtime | `packages/runtime-fake/` | Fake adapter boundary placeholder |
+| Codex runtime | `packages/runtime-codex/` | Codex adapter boundary placeholder |
+| Health check | `/api/health` | 서버와 Inspector 연결 확인용 엔드포인트 |
 
 ## 명령어
 

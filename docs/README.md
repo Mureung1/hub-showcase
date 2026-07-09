@@ -24,6 +24,9 @@
 ├── README.md
 ├── AGENTS.md
 ├── CONTEXT.md
+├── apps/
+│   ├── server/
+│   └── inspector/
 ├── docs/
 │   ├── README.md
 │   ├── product/
@@ -33,6 +36,10 @@
 │   ├── spikes/
 │   ├── adr/
 │   └── agents/
+├── packages/
+│   ├── runtime-core/
+│   ├── runtime-fake/
+│   └── runtime-codex/
 └── spikes/
     └── codex-runtime-ownership/
 ```
