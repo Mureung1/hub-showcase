@@ -38,10 +38,6 @@
 - `dotenv`: AI API Key 등 외부 유출되면 안 되는 보안 환경 변수 격리 관리
 - `@google/generative-ai` 또는 `openai`: 소상공인 맞춤형 법률/지원금 매칭 로직을 수행할 LLM 연동 SDK
 
-## ❓ 5. 개발 전 추가 결정 사항 (Pre-development Decisions)
-- **Data 저장 방식:** 초기 프로토타입 단계에서는 무거운 RDBMS 대신 가벼운 JSON 파일 시스템이나 SQLite를 활용하여 빠르게 데이터를 영속화하기로 결정.
-- **AI Agent 호출 방식:** 실시간 스트리밍 대답보다는 지원금 조건 매칭의 정확도가 중요하므로, 단발성 구조화된 JSON(Structured Outputs) 응답 방식을 채택하기로 함.
-
 
 
 
