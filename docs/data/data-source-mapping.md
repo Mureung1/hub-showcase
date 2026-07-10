@@ -170,7 +170,23 @@ Market 경계와 지도 보강 데이터
 건물 높이 또는 층수
 ```
 
-v0.1의 2.5D 상권 지도는 MapLibre GL JS를 후보로 검토한다. 대상 상권의 건물 footprint와 높이 데이터로 PoC를 수행한 뒤 채택 여부를 결정한다. 데이터가 부족하면 2D 지도와 일부 건물 extrusion을 결합한 fallback을 사용한다.
+v0.1의 2.5D 상권 지도는 MapLibre GL JS와 프로젝트 소유 GeoJSON snapshot을 채택했다. `scripts/build_localtwin_map.py`가 Overpass API에서 상권별 720m 범위의 도로, 건물 footprint, 녹지, 물, POI를 수집한다. OSM에 높이가 있으면 사용하고, 층수가 있으면 `층수 × 3.2m`, 둘 다 없으면 재현 가능한 시각화용 기본 높이를 적용한다. 기본 높이는 실제 건물 높이라는 분석 근거로 사용하지 않는다.
+
+```mermaid
+flowchart LR
+  source["OSM 원본"] --> query["상권별 Overpass query"]
+  query --> transform["geometry · height · layer 변환"]
+  transform --> snapshot["GeoJSON + source metadata"]
+  snapshot --> map["LocalTwin MapLibre layer"]
+```
+
+표시 의무:
+
+```text
+© OpenStreetMap contributors
+snapshot 생성 시점
+ODbL 1.0
+```
 
 ### 3.6 인구와 성별 데이터 후보
 

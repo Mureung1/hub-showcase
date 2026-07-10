@@ -66,14 +66,15 @@
 
 분석용 thematic Layer는 여러 개를 동시에 겹치면 의미가 흐려질 수 있다. v0.1에서는 `유동인구 / 주거인구 / 매출 / 개폐업 변화` 중 하나를 선택하는 방식을 우선 검토한다.
 
-## 6. 지도 렌더링 후보
+## 6. 지도 렌더링 구조
 
-### v0.1 후보
+### v0.1 채택 구조
 
 ```text
 React
 → react-map-gl
 → MapLibre GL JS
+→ LocalTwin GeoJSON snapshot
 ```
 
 MapLibre를 검토하는 이유:
@@ -87,9 +88,28 @@ feature-state 기반 선택 강조
 custom style
 ```
 
-`deck.gl`은 v0.1 기본 의존성에 포함하지 않는다. 상권 한 곳과 수백 개 수준의 건물·점포·인구 symbol은 MapLibre Layer로 먼저 구현한다.
+`deck.gl`은 v0.1 기본 의존성에 포함하지 않는다. 현재 상권별 약 5,000~7,000개 도로·건물·POI feature는 MapLibre GeoJSON Layer로 렌더링한다.
 
-`LocalTwin 지도`는 지도 엔진을 새로 만드는 기능이 아니다. MapLibre 렌더러와 OSM 기반 도로·지명·건물 footprint를 유지하고, LocalTwin 전용 도로 색상과 `fill-extrusion` 건물 표현을 적용하는 지도 presentation mode다. 사용자는 같은 화면에서 `실제 지도` mode로 즉시 복귀할 수 있다.
+`LocalTwin 지도`는 지도 엔진을 새로 만드는 기능이 아니다. MapLibre는 좌표·카메라·GPU 렌더링에만 사용하고, 화면에 보이는 도로·건물·녹지·물·POI는 `scripts/build_localtwin_map.py`가 OSM/Overpass 원본에서 생성한 프로젝트 소유 GeoJSON snapshot이다. 외부 basemap tile 없이 LocalTwin 전용 색상, 도로 폭, label과 `fill-extrusion`을 적용한다. 사용자는 같은 화면에서 외부 `실제 지도` mode로 즉시 복귀해 좌표를 비교할 수 있다.
+
+```mermaid
+flowchart LR
+  osm["OpenStreetMap / Overpass"] --> builder["build_localtwin_map.py"]
+  builder --> files["market별 GeoJSON snapshot"]
+  files --> source["MapLibre GeoJSON Source"]
+  source --> layers["도로 · 건물 · 녹지 · POI Layer"]
+  layers --> ui["LocalTwin 지도"]
+```
+
+현재 snapshot:
+
+| 상권 | 반경 | feature 수 | 파일 |
+| --- | ---: | ---: | --- |
+| 연남 | 720m | 5,331 | `apps/web/public/map/yeonnam.geojson` |
+| 홍대 | 720m | 7,033 | `apps/web/public/map/hongdae.geojson` |
+| 합정 | 720m | 6,026 | `apps/web/public/map/hapjeong.geojson` |
+
+모든 파일은 `retrieved_at`, source URL, ODbL 1.0과 `© OpenStreetMap contributors` attribution을 metadata로 가진다.
 
 다음 조건이 실제 검증에서 확인될 때만 deck.gl을 재검토한다.
 
@@ -265,19 +285,19 @@ Google Earth 수준의 photorealistic 도시 지도
 2026-07-11 기준 React 프로토타입에서 다음을 조작할 수 있다.
 
 ```text
-실제 MapLibre 지도 이동과 확대/축소
-실제 건물 footprint 기반 LocalTwin 2.5D / 실제 지도 mode 전환
+LocalTwin GeoJSON 지도의 이동과 확대/축소
+외부 basemap 없는 LocalTwin 2.5D / 실제 지도 mode 전환
 건물 Layer와 후보 점포 prefab의 독립적인 표시 전환
 서로 가까운 연남·홍대·합정 상권 전환
 카페·음식점·베이커리·편의점 업종 선택
 100m / 300m / 500m 반경 선택
 경쟁 밀도 / 시간대 수요 Layer 전환
-OSM POI marker와 후보 점포 prefab 표시 전환
+OSM POI label과 후보 점포 prefab 표시 전환
 상권 비교, 점수 근거와 데이터 기준 dialog
 Docs Home 복귀
 ```
 
-현재 POI는 OpenStreetMap snapshot, 분석 수치와 점수는 시연용 fixture다. 실제 데이터 분석 API 연결은 [4주 개발 백로그](../development/tasks.md)의 `WEB-001` 이후 Task에서 진행한다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot이다. 분석 수치는 아직 화면용 fixture이고, 점수 공식 API는 구현됐지만 Front 연결 전이다. 실제 데이터 분석 API 연결은 [4주 개발 백로그](../development/tasks.md)의 후속 Task에서 진행한다.
 
 ## 15. 관련 문서
 

@@ -1,7 +1,7 @@
 # LocalTwin 시스템 아키텍처
 
 문서 상태: current
-최종 갱신: 2026-07-10
+최종 갱신: 2026-07-11
 
 이 문서는 LocalTwin의 Front, Back, Data와 외부 서비스가 어떻게 연결되는지 설명하는 아키텍처 원본이다. 구현된 현재 구조와 4주 개발 후 목표 구조를 구분한다.
 
@@ -21,25 +21,26 @@ flowchart LR
 
   subgraph front["Front"]
     web["React + Vite + TypeScript"]
-    map["MapLibre 지도"]
+    map["MapLibre LocalTwin 지도"]
     demo["화면 내 Demo Snapshot"]
   end
 
   subgraph back["Back"]
-    api["FastAPI\n/health"]
+    api["FastAPI\n/health · /api/v1/scores/evaluate"]
     collector["서울 Open API 수집기"]
   end
 
   subgraph data["Data"]
     raw["data/raw\nJSON + manifest"]
-    osm["OpenStreetMap / Map tiles"]
+    osm["OpenStreetMap / Overpass"]
+    mapdata["상권별 LocalTwin GeoJSON"]
     seoul["서울 열린데이터광장"]
   end
 
   user --> web
   web --> map
   web --> demo
-  map --> osm
+  osm --> mapdata --> map
   web -. "아직 미연결" .-> api
   collector --> seoul
   collector --> raw
@@ -49,9 +50,9 @@ flowchart LR
 
 | 영역  | 구현 상태                                                             | 제한                                            |
 | ----- | --------------------------------------------------------------------- | ----------------------------------------------- |
-| Front | 실제 지도를 움직이고 상권·업종·반경·Layer를 조작하는 React 프로토타입 | 분석 수치는 화면용 snapshot과 규칙 기반 demo 값 |
-| Back  | FastAPI 실행 환경과 `/health` endpoint                                | 상권 분석 API 미구현                            |
-| Data  | 서울 Open API pagination·snapshot 수집 코드와 raw 저장 규칙           | canonical schema와 DB 적재 미구현               |
+| Front | 자체 GeoJSON 지도와 실제 지도를 전환하고 상권·업종·반경·Layer를 조작하는 React 웹 | 분석 수치는 화면용 snapshot과 규칙 기반 demo 값 |
+| Back  | FastAPI `/health`와 근거 기반 상권 점수 endpoint                       | 실제 DB 조회와 Front API 연결 미구현             |
+| Data  | 서울 Open API 수집 코드, OSM 지도 생성기와 snapshot 저장 규칙            | canonical schema와 DB 적재 미구현                |
 | 3D    | 지도 건물과 prefab Layer를 켜고 끄는 시연                             | 실제 Gaussian Splatting scene 미연결            |
 
 ## 3. 4주 목표 구조
@@ -84,13 +85,14 @@ flowchart LR
   subgraph providers["External Data"]
     seoul["서울 열린데이터광장"]
     public["공공데이터포털"]
-    osm["OpenStreetMap / Tiles"]
+    osm["OpenStreetMap / Overpass"]
+    mapSnapshot["LocalTwin GeoJSON snapshot"]
   end
 
   user --> web
   web --> workspace
   web --> panels
-  workspace --> osm
+  osm --> mapSnapshot --> workspace
   web -->|"HTTPS JSON"| api
   api --> market
   api --> score
@@ -143,7 +145,7 @@ flowchart LR
 | Front    | React, Vite, TypeScript, MapLibre, react-map-gl | 실제 API adapter, loading/error/empty state | 대규모 Layer가 필요할 때 deck.gl 검토           |
 | Back     | FastAPI, Pydantic Settings, Uvicorn             | `/api/v1` 분석 endpoint와 service 분리      | 부하가 확인된 뒤 worker/cache 검토              |
 | Data     | JSON raw snapshot, manifest                     | canonical schema, SQLite                    | 다지역 공간 질의가 필요할 때 PostgreSQL/PostGIS |
-| Analysis | 화면용 규칙 기반 demo score                     | 근거가 보이는 경쟁·변화·시간대·입지 계산    | 충분한 데이터 이후 예측 모델 검토               |
+| Analysis | 공식 1.0.0 규칙 기반 score API                  | 실제 DB peer 분포와 Front evidence 연결      | 충분한 데이터 이후 예측 모델 검토               |
 | 3D       | MapLibre extrusion과 prefab                     | 작은 실제 scene 1개 또는 검증된 대체 데모   | Gaussian Splatting pipeline 고도화              |
 | Quality  | pytest, Vitest, TypeScript, lint, 문서 검사     | 평가 script와 시연 smoke test               | 필요 시 E2E 자동화                              |
 

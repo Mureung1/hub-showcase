@@ -117,6 +117,7 @@ Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작�
 | WEB-007 | 근거 보기와 데이터 기준 시각화            | P0       | Backlog | 3    | WEB-003               | source, period, unit, method를 화면에서 확인한다           |
 | MAP-001 | 연남·홍대·합정 상권 비교군 고정           | P0       | Done    | 3    | -                     | selector와 비교표에 가까운 3개 상권만 표시된다             |
 | MAP-002 | LocalTwin 2.5D 지도와 원본 fallback       | P0       | Done    | 3    | MAP-001               | 실제 footprint 기반 전용 지도와 원본 지도를 전환한다       |
+| MAP-003 | 상권별 LocalTwin 지도 data와 style 자체 구성 | P0       | Done    | 3    | MAP-002               | 외부 basemap 없이 로컬 도로·건물·POI GeoJSON을 렌더링한다  |
 
 ### EPIC-05. 보조 3D 장면 탐색
 
