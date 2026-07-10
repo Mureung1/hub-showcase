@@ -1,0 +1,123 @@
+{
+  "schemaVersion": "noticepilot.normalizedNotice.v0.4",
+  "noticeId": "knu-720-900001",
+  "institution": "kangwon.ac.kr",
+  "sourceSystem": "kangwon.ac.kr public bbs",
+  "board": {
+    "boardId": "720",
+    "name": "학사공지",
+    "category": "school_notice",
+    "priority": 1,
+    "aliasBoardIds": [
+      "718"
+    ]
+  },
+  "sourceUrl": "https://www.kangwon.ac.kr/ko/bbs/720/detail.do?pstSn=900001&pageIndex=9&pageItm=10&searchOrderSort=0&fixture=true",
+  "pstSn": "900001",
+  "title": "Synthetic Samcheok academic notice fixture",
+  "publishedAt": "2026-07-01",
+  "timezone": "Asia/Seoul",
+  "listMetadata": {
+    "row_index": 1,
+    "board_id": "720",
+    "pst_sn": "900001",
+    "url": "https://www.kangwon.ac.kr/ko/bbs/720/detail.do?pstSn=900001&pageIndex=9&pageItm=10&searchOrderSort=0&fixture=true",
+    "title": "Synthetic Samcheok academic notice fixture",
+    "notice_no": "SYNTHETIC",
+    "campus": "삼척",
+    "author": "Synthetic Academic Office",
+    "published_at": "2026-07-01",
+    "views": "42",
+    "is_pinned": true,
+    "parse_source": "table_row"
+  },
+  "rawHtml": {
+    "path": "excluded/raw-html-720.html",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "extractedText": "Synthetic fixture body for a Samcheok academic notice.\nStudent: submit by 2026-08-03 18:00.\nDepartment: submit by 2026-08-04 18:00.",
+  "extractedTextChars": 131,
+  "textExtractionStatus": "body_html_extracted",
+  "attachments": [
+    {
+      "index": 1,
+      "display_name": "synthetic-application-form.hwp",
+      "download_url": "https://www.kangwon.ac.kr/ko/cmmn/download.do?dn=synthetic-720-1.hwp&path=/synthetic/attachments&fn=synthetic-application-form.hwp",
+      "server_name": "synthetic-720-1.hwp",
+      "path": "/synthetic/attachments",
+      "downloaded": false,
+      "status": "metadata_only",
+      "elapsed_ms": null,
+      "size_bytes": null,
+      "detected_type": null,
+      "sha256": null,
+      "local_path": null,
+      "error": null
+    },
+    {
+      "index": 2,
+      "display_name": "synthetic-guidance.pdf",
+      "download_url": "https://www.kangwon.ac.kr/ko/cmmn/download.do?dn=synthetic-720-2.pdf&path=/synthetic/attachments&fn=synthetic-guidance.pdf",
+      "server_name": "synthetic-720-2.pdf",
+      "path": "/synthetic/attachments",
+      "downloaded": false,
+      "status": "metadata_only",
+      "elapsed_ms": null,
+      "size_bytes": null,
+      "detected_type": null,
+      "sha256": null,
+      "local_path": null,
+      "error": null
+    },
+    {
+      "index": 3,
+      "display_name": "synthetic-recommendation.xlsx",
+      "download_url": "https://www.kangwon.ac.kr/ko/cmmn/download.do?dn=synthetic-720-3.xlsx&path=/synthetic/attachments&fn=synthetic-recommendation.xlsx",
+      "server_name": "synthetic-720-3.xlsx",
+      "path": "/synthetic/attachments",
+      "downloaded": false,
+      "status": "metadata_only",
+      "elapsed_ms": null,
+      "size_bytes": null,
+      "detected_type": null,
+      "sha256": null,
+      "local_path": null,
+      "error": null
+    },
+    {
+      "index": 4,
+      "display_name": "synthetic-course-guide.pdf",
+      "download_url": "https://www.kangwon.ac.kr/ko/cmmn/download.do?dn=synthetic-720-4.pdf&path=/synthetic/attachments&fn=synthetic-course-guide.pdf",
+      "server_name": "synthetic-720-4.pdf",
+      "path": "/synthetic/attachments",
+      "downloaded": false,
+      "status": "metadata_only",
+      "elapsed_ms": null,
+      "size_bytes": null,
+      "detected_type": null,
+      "sha256": null,
+      "local_path": null,
+      "error": null
+    }
+  ],
+  "attachmentCount": 4,
+  "attachmentRequiredForFullExtraction": false,
+  "contentHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "crawler": {
+    "version": "0.4.4",
+    "userAgent": "NoticePilotBot/0.4.4 (+sanitized-fixture)",
+    "crawledAt": "2026-07-09T02:30:00+00:00"
+  },
+  "campusScope": {
+    "sourceLabel": "삼척",
+    "campuses": [
+      "samcheok"
+    ],
+    "scopeType": "campus_specific",
+    "confidence": "medium",
+    "source": "listMetadata.campus",
+    "labels": {
+      "samcheok": "삼척"
+    }
+  }
+}

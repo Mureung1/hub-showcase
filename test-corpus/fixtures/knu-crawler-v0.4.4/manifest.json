@@ -1,0 +1,43 @@
+{
+  "fixtureSet": "noticepilot.knu-crawler-v0.4.4.sanitized",
+  "fixtureVersion": 1,
+  "sourcePackage": {
+    "name": "noticepilot-knu-crawler-v0.4.4.zip",
+    "version": "0.4.4",
+    "sha256": "811bb4d3ac6dd79cd9de58ba36ecdd44985c7f37a7c81b3e87e88cfc145337f0"
+  },
+  "referencedMembers": [
+    "noticepilot-knu-crawler-v0.4.4/configs/knu_board_registry.v0.2.json",
+    "noticepilot-knu-crawler-v0.4.4/samples/normalized/notices/knu-720-2511.json",
+    "noticepilot-knu-crawler-v0.4.4/samples/normalized/notices/knu-721-2433.json"
+  ],
+  "fixtures": [
+    "knu-board-registry.v0.2.sample.json",
+    "normalized-notice-720.sample.json",
+    "normalized-notice-721.sample.json"
+  ],
+  "excludedSourceMaterial": [
+    "raw HTML snapshots",
+    "credential-like hidden authentication-token values",
+    "browser API keys",
+    "Python source code",
+    "candidate extraction and expected results",
+    "ICS output and feed profiles",
+    "real notice prose and attachment download metadata"
+  ],
+  "sanitization": {
+    "policy": "Preserve the supported v0.4.4 normalized payload key shape while replacing notice-specific and origin-sensitive values with explicit synthetic fixture values.",
+    "replacedFields": [
+      "noticeId and pstSn",
+      "title and extractedText",
+      "listMetadata author and views",
+      "source and attachment URLs",
+      "raw HTML and attachment server paths",
+      "raw and content hashes",
+      "attachment names and server names"
+    ],
+    "rawHtmlIncluded": false,
+    "sourceCodeIncluded": false,
+    "credentialLikeValuesIncluded": false
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "noticepilot.normalizedNotice.v0.4",
+  "noticeId": "knu-721-900002",
+  "institution": "kangwon.ac.kr",
+  "sourceSystem": "kangwon.ac.kr public bbs",
+  "board": {
+    "boardId": "721",
+    "name": "장학공지",
+    "category": "scholarship",
+    "priority": 1,
+    "aliasBoardIds": [
+      "750"
+    ]
+  },
+  "sourceUrl": "https://www.kangwon.ac.kr/ko/bbs/721/detail.do?pstSn=900002&pageIndex=9&pageItm=10&searchOrderSort=0&fixture=true",
+  "pstSn": "900002",
+  "title": "Synthetic Gangneung-Wonju scholarship notice fixture",
+  "publishedAt": "2026-07-02",
+  "timezone": "Asia/Seoul",
+  "listMetadata": {
+    "row_index": 2,
+    "board_id": "721",
+    "pst_sn": "900002",
+    "url": "https://www.kangwon.ac.kr/ko/bbs/721/detail.do?pstSn=900002&pageIndex=9&pageItm=10&searchOrderSort=0&fixture=true",
+    "title": "Synthetic Gangneung-Wonju scholarship notice fixture",
+    "notice_no": "SYNTHETIC",
+    "campus": "강릉 원주",
+    "author": "Synthetic Student Support Office",
+    "published_at": "2026-07-02",
+    "views": "84",
+    "is_pinned": true,
+    "parse_source": "table_row"
+  },
+  "rawHtml": {
+    "path": "excluded/raw-html-721.html",
+    "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "extractedText": "Synthetic fixture body for a Gangneung-Wonju scholarship notice.\nApply by 2026-07-15.",
+  "extractedTextChars": 85,
+  "textExtractionStatus": "body_html_extracted",
+  "attachments": [
+    {
+      "index": 1,
+      "display_name": "synthetic-scholarship-form.hwp",
+      "download_url": "https://www.kangwon.ac.kr/ko/cmmn/download.do?dn=synthetic-721-1.hwp&path=/synthetic/attachments&fn=synthetic-scholarship-form.hwp",
+      "server_name": "synthetic-721-1.hwp",
+      "path": "/synthetic/attachments",
+      "downloaded": false,
+      "status": "metadata_only",
+      "elapsed_ms": null,
+      "size_bytes": null,
+      "detected_type": null,
+      "sha256": null,
+      "local_path": null,
+      "error": null
+    },
+    {
+      "index": 2,
+      "display_name": "synthetic-card-news.pdf",
+      "download_url": "https://www.kangwon.ac.kr/ko/cmmn/download.do?dn=synthetic-721-2.pdf&path=/synthetic/attachments&fn=synthetic-card-news.pdf",
+      "server_name": "synthetic-721-2.pdf",
+      "path": "/synthetic/attachments",
+      "downloaded": false,
+      "status": "metadata_only",
+      "elapsed_ms": null,
+      "size_bytes": null,
+      "detected_type": null,
+      "sha256": null,
+      "local_path": null,
+      "error": null
+    }
+  ],
+  "attachmentCount": 2,
+  "attachmentRequiredForFullExtraction": false,
+  "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "crawler": {
+    "version": "0.4.4",
+    "userAgent": "NoticePilotBot/0.4.4 (+sanitized-fixture)",
+    "crawledAt": "2026-07-09T02:30:00+00:00"
+  },
+  "campusScope": {
+    "sourceLabel": "강릉 원주",
+    "campuses": [
+      "gangneung_wonju"
+    ],
+    "scopeType": "campus_specific",
+    "confidence": "medium",
+    "source": "listMetadata.campus",
+    "labels": {
+      "gangneung_wonju": "강릉원주"
+    }
+  }
+}
