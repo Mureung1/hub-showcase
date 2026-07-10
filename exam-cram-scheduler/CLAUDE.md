@@ -6,9 +6,11 @@
 
 | 층 | 기술 | 비고 |
 |---|---|---|
-| FE | React | CSS Modules로 스타일링 |
-| BE | Express | 계산 엔진 API + 참고 데이터 제공 API |
-| DB | Supabase (Postgres) | 음료별 카페인 함량, 반감기, 안전 섭취 한도 등 참고용 정적 데이터만 저장. 사용자 스케줄은 저장하지 않음(브라우저 localStorage 사용) |
+| FE | React (`client/`) | TypeScript + Vite + react-router-dom, CSS Modules로 스타일링 |
+| BE | Express | 계산 엔진 API + 참고 데이터 제공 API (아직 미착수) |
+| DB | Supabase (Postgres) | 음료별 카페인 함량, 반감기, 안전 섭취 한도 등 참고용 정적 데이터만 저장. 사용자 스케줄은 저장하지 않음(브라우저 localStorage 사용, 아직 미착수) |
+
+실제 개발 중인 앱 코드는 저장소 루트가 아니라 **`client/`** 폴더 안에 있다 (`client/src/components/`, `client/src/pages/`, `client/src/styles/tokens.css`). 저장소 루트에는 더 이상 별도 React 앱이 없다(예전 초기 이식 버전은 제거함).
 
 ## 컨벤션
 
@@ -40,3 +42,6 @@
 - 디자인 문서: [docs/디자인.md](docs/디자인.md)
 - 계산 모델 리서치 노트(진행 중): [docs/계산_모델_리서치.md](docs/계산_모델_리서치.md)
 - 프로토타입: https://dodeho.github.io/hub/ (소스: `docs/prototype/`)
+- 개발 일정(요일별 작업 계획): [docs/개발_일정.md](docs/개발_일정.md)
+- 백로그(전체 구조 시각화): [docs/백로그.md](docs/백로그.md)
+- 기능 명세·체크리스트: [docs/spec.md](docs/spec.md)
