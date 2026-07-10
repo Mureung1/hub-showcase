@@ -62,18 +62,19 @@ const targetSources = ['notice', 'syllabus']
 
 const params = new URLSearchParams(window.location.search)
 const requestedStep = Number.parseInt(params.get('step') || '1', 10)
-const requestedVariant = params.get('variant') || 'focus'
+const requestedVariant = params.get('variant') || 'workspace'
 const presentationMode = params.get('present') === '1'
 
 const state = {
   step: Number.isFinite(requestedStep) ? Math.min(7, Math.max(1, requestedStep)) : 1,
-  variant: variants.includes(requestedVariant) ? requestedVariant : 'focus',
+  variant: variants.includes(requestedVariant) ? requestedVariant : 'workspace',
   selected: new Set(),
   proposal: {
     title: '개요 작성하기',
     deadline: '7월 12일 23:59',
     method: 'LMS 업로드'
   },
+  activeDocument: 'notice',
   editing: false,
   rejected: false
 }
@@ -96,6 +97,11 @@ const elements = {
   stageDescription: document.querySelector('#stageDescription'),
   agentStatus: document.querySelector('#agentStatus'),
   agentMessage: document.querySelector('#agentMessage'),
+  documentTabs: [...document.querySelectorAll('[data-document-tab]')],
+  documentPreviews: [...document.querySelectorAll('[data-document-preview]')],
+  documentFinding: document.querySelector('#documentFinding'),
+  chatThread: document.querySelector('#chatThread'),
+  chatItems: [...document.querySelectorAll('[data-chat-from], [data-chat-at]')],
   previousButton: document.querySelector('#previousButton'),
   resetButton: document.querySelector('#resetButton'),
   nextButton: document.querySelector('#nextButton'),
@@ -103,6 +109,10 @@ const elements = {
   footerLabel: document.querySelector('#footerLabel'),
   showActivityButton: document.querySelector('#showActivityButton'),
   reviewProposalButton: document.querySelector('#reviewProposalButton'),
+  chatReviewProposalButton: document.querySelector('#chatReviewProposalButton'),
+  proposalCard: document.querySelector('#proposalCard'),
+  proposalSymbol: document.querySelector('#proposalSymbol'),
+  proposalStatus: document.querySelector('#proposalStatus'),
   acceptButton: document.querySelector('#acceptButton'),
   editButton: document.querySelector('#editButton'),
   rejectButton: document.querySelector('#rejectButton'),
@@ -111,6 +121,7 @@ const elements = {
   proposalEditView: document.querySelector('#proposalEditView'),
   proposalMessage: document.querySelector('#proposalMessage'),
   rejectedState: document.querySelector('#rejectedState'),
+  acceptedProposalState: document.querySelector('#acceptedProposalState'),
   restoreProposalButton: document.querySelector('#restoreProposalButton'),
   cancelEditButton: document.querySelector('#cancelEditButton'),
   titleInput: document.querySelector('#titleInput'),
@@ -152,6 +163,12 @@ function resetProposalInteraction() {
 
 function goToStep(nextStep, options = {}) {
   const clampedStep = Math.min(7, Math.max(1, nextStep))
+
+  if (clampedStep === 7 && state.step !== 7 && !options.accepted) {
+    showToast('오른쪽 AY의 변경 제안에서 ‘수락하고 반영’을 눌러 주세요.')
+    return
+  }
+
   state.step = clampedStep
 
   if (clampedStep === 1 && !options.preserveSelection) {
@@ -176,6 +193,12 @@ function advanceStep() {
 
   if (state.step === 6 && state.rejected) {
     showToast('거절한 제안은 반영되지 않습니다. 제안을 다시 보거나 이전 단계로 이동하세요.')
+    return
+  }
+
+  if (state.step === 6) {
+    showToast('확인된 정보로 만들려면 AY의 변경 제안을 직접 수락해 주세요.')
+    elements.chatThread.scrollTop = elements.chatThread.scrollHeight
     return
   }
 
@@ -229,7 +252,25 @@ function renderSources() {
   }
 }
 
+function renderDocuments() {
+  elements.documentTabs.forEach((tab) => {
+    const isActive = tab.dataset.documentTab === state.activeDocument
+    tab.classList.toggle('is-active', isActive)
+    tab.setAttribute('aria-selected', String(isActive))
+  })
+
+  elements.documentPreviews.forEach((preview) => {
+    preview.hidden = preview.dataset.documentPreview !== state.activeDocument
+  })
+
+  elements.documentFinding.textContent = state.activeDocument === 'notice'
+    ? '마감 후보 · 7월 12일 23:59'
+    : '제출 방식 · LMS 과제함 업로드'
+}
+
 function renderProposal() {
+  const accepted = state.step === 7
+
   elements.proposalTitle.textContent = state.proposal.title
   elements.proposalDeadline.textContent = state.proposal.deadline
   elements.proposalMethod.textContent = state.proposal.method
@@ -238,10 +279,16 @@ function renderProposal() {
 
   elements.proposalReadView.hidden = state.editing
   elements.proposalEditView.hidden = !state.editing
-  elements.proposalActions.hidden = state.editing || state.rejected
+  elements.proposalCard.classList.toggle('is-accepted', accepted)
+  elements.proposalSymbol.textContent = accepted ? '✓' : '✦'
+  elements.proposalStatus.textContent = accepted ? '반영됨' : '내 확인 필요'
+  elements.proposalActions.hidden = state.editing || state.rejected || accepted
   elements.rejectedState.hidden = !state.rejected
+  elements.acceptedProposalState.hidden = !accepted
 
-  if (state.rejected) {
+  if (accepted) {
+    elements.proposalMessage.textContent = '학생이 확인한 과제로 반영했습니다.'
+  } else if (state.rejected) {
     elements.proposalMessage.textContent = '거절한 제안은 내 학기 정보에 반영되지 않습니다.'
   } else if (state.editing) {
     elements.proposalMessage.textContent = '필요한 값을 고친 뒤에도 최종 반영은 다시 수락해야 합니다.'
@@ -249,16 +296,13 @@ function renderProposal() {
     elements.proposalMessage.textContent = '수락하기 전에는 학기 일정에 아무것도 추가되지 않습니다.'
   }
 
-  if (state.step === 6) {
-    elements.nextButton.disabled = state.editing || state.rejected
-  }
 }
 
 function renderConfirmedState() {
   const accepted = state.step === 7
   elements.emptyState.hidden = accepted
   elements.confirmedTask.hidden = !accepted
-  elements.stateCount.textContent = accepted ? '과제 1' : '과제 0'
+  elements.stateCount.textContent = accepted ? '1' : '0'
   elements.stateCount.classList.toggle('has-task', accepted)
 
   elements.acceptedTitle.textContent = state.proposal.title
@@ -266,6 +310,20 @@ function renderConfirmedState() {
   elements.acceptedMethod.textContent = state.proposal.method
   elements.confirmedTitle.textContent = state.proposal.title
   elements.confirmedDeadline.textContent = state.proposal.deadline
+}
+
+function renderChat() {
+  elements.chatItems.forEach((item) => {
+    const fromStep = Number(item.dataset.chatFrom)
+    const atStep = Number(item.dataset.chatAt)
+    const visibleFrom = Number.isFinite(fromStep) && state.step >= fromStep
+    const visibleAt = Number.isFinite(atStep) && state.step === atStep
+    item.hidden = !(visibleFrom || visibleAt)
+  })
+
+  window.requestAnimationFrame(() => {
+    elements.chatThread.scrollTop = elements.chatThread.scrollHeight
+  })
 }
 
 function render() {
@@ -298,19 +356,22 @@ function render() {
   })
 
   elements.previousButton.disabled = state.step === 1
-  elements.nextButton.disabled = state.step === 7
-  elements.nextButton.querySelector('span').textContent = state.step === 6 ? '수락하고 다음' : '다음'
+  elements.nextButton.disabled = state.step >= 6
+  elements.nextButton.querySelector('span').textContent = state.step === 6 ? '채팅에서 결정' : '다음'
 
   renderVariant()
   renderSources()
+  renderDocuments()
   renderProposal()
   renderConfirmedState()
+  renderChat()
 }
 
 function resetDemo() {
   state.proposal.title = '개요 작성하기'
   state.proposal.deadline = '7월 12일 23:59'
   state.proposal.method = 'LMS 업로드'
+  state.activeDocument = 'notice'
   resetProposalInteraction()
   goToStep(1)
   showToast('데모를 처음 상태로 되돌렸습니다.')
@@ -345,10 +406,18 @@ elements.sourceInputs.forEach((input) => {
   })
 })
 
+elements.documentTabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    state.activeDocument = tab.dataset.documentTab
+    renderDocuments()
+  })
+})
+
 elements.organizeButton.addEventListener('click', () => goToStep(3))
 elements.showActivityButton.addEventListener('click', () => goToStep(4))
 elements.reviewProposalButton.addEventListener('click', () => goToStep(6))
-elements.acceptButton.addEventListener('click', () => goToStep(7))
+elements.chatReviewProposalButton.addEventListener('click', () => goToStep(6))
+elements.acceptButton.addEventListener('click', () => goToStep(7, { accepted: true }))
 
 elements.editButton.addEventListener('click', () => {
   state.editing = true

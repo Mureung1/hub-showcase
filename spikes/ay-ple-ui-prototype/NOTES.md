@@ -64,7 +64,7 @@ User feedback on 2026-07-08: mobile layout feedback was pulling effort away from
 
 | Decision | Notes |
 | --- | --- |
-| Workspace shape | TBD after peer feedback |
+| Workspace shape | Persistent source list / original-material preview / AY chat, with review decisions inside the conversation |
 | Keep | TBD |
 | Change | TBD |
 | Delete | This throwaway prototype after the design answer is captured |
@@ -78,9 +78,9 @@ User feedback on 2026-07-08: mobile layout feedback was pulling effort away from
 | Supporting files | [guided-demo.css](guided-demo.css), [guided-demo.js](guided-demo.js) |
 | Run command | `npm run demo:week1`, then open `http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html` |
 | State | Deterministic in-memory presentation flow; no backend, model call, or persistence |
-| Deep link | `?variant=focus&step=1` through `?step=7` |
-| Controls | Source selection, organize, activity/proposal actions, accept/edit/reject, previous/next/reset, keyboard arrows, and URL state |
+| Presentation deep link | `?variant=workspace&step=1&present=1` through `?step=7` |
+| Controls | Source selection, organize, activity/proposal actions, explicit accept/edit/reject, previous/next/reset, keyboard arrows, and URL state; step 7 requires the proposal's accept action |
 
-The seven scenes move from scattered materials to source selection, delegated work, user-visible Agent activity, grounded evidence, user review, and finally confirmed semester state. `focus` is the default presentation view. `workspace` keeps all three product surfaces visible, while `agent` gives the action log more space. The floating switcher is part of this throwaway prototype, not the proposed product UI.
+The seven scenes move from scattered materials to source selection, delegated work, user-visible Agent activity, grounded evidence, user review, and finally confirmed semester state. `workspace` is the presentation view because it keeps the source list, original-material preview, and AY conversation visible as one product experience. `focus` emphasizes the current scene, while `agent` gives the action log more space. The floating switcher is part of this throwaway prototype, not the proposed product UI.
 
 The presentation verdict is still open: after peer feedback, record whether a first-time viewer can explain both what AY does and why user acceptance separates an AI suggestion from confirmed semester state.

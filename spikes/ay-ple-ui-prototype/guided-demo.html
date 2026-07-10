@@ -2,7 +2,7 @@
 <!--
   PROTOTYPE — throwaway presentation artifact.
   Question: Can an AI Agent beginner understand in 90 seconds why AY-PLE is an Agent product?
-  Plan: Seven deterministic states with three structural presentation variants via ?variant=.
+  Plan: Seven deterministic states inside a persistent source / preview / AY chat workspace.
   Run: open spikes/ay-ple-ui-prototype/guided-demo.html
 -->
 <html lang="ko">
@@ -13,10 +13,10 @@
     <link rel="stylesheet" href="guided-demo.css">
     <script src="guided-demo.js" defer></script>
   </head>
-  <body data-variant="focus" data-step="1">
+  <body data-variant="workspace" data-step="1">
     <div class="demo-app">
       <header class="demo-header">
-        <a class="brand" href="?variant=focus&amp;step=1" aria-label="AY-PLE 데모 처음으로">
+        <a class="brand" href="?variant=workspace&amp;step=1" aria-label="AY-PLE 데모 처음으로">
           <img src="assets/ay-ple-mark.png" alt="">
           <span>
             <strong>AY-PLE</strong>
@@ -196,39 +196,42 @@
               <button class="scene-button" id="showActivityButton" type="button">AY가 한 작업 보기 <span>→</span></button>
             </section>
 
-            <section class="scene activity-scene" data-scene="4" aria-label="AY 작업 기록">
-              <div class="activity-heading">
-                <div>
-                  <span class="live-dot" aria-hidden="true"></span>
-                  <strong>AY 작업 기록</strong>
-                </div>
-                <small>사용자에게 공개되는 동작과 결과</small>
-              </div>
-              <ol class="activity-list">
-                <li style="--delay: 0">
-                  <span class="activity-icon">1</span>
-                  <div><strong>LMS 과제 공지 열기</strong><small>‘개요 작성하기’의 마감 확인</small></div>
-                  <span class="done-label">7월 12일 23:59</span>
-                </li>
-                <li style="--delay: 1">
-                  <span class="activity-icon">2</span>
-                  <div><strong>강의계획서 PDF 읽기</strong><small>과제 제출 방식 확인</small></div>
-                  <span class="done-label">LMS 업로드</span>
-                </li>
-                <li style="--delay: 2">
-                  <span class="activity-icon">3</span>
-                  <div><strong>두 자료의 정보 연결</strong><small>과제명과 수업이 같은지 확인</small></div>
-                  <span class="done-label">연결 완료</span>
-                </li>
-                <li style="--delay: 3">
-                  <span class="activity-icon">4</span>
-                  <div><strong>변경 제안 준비</strong><small>사용자가 확인하기 전에는 저장하지 않음</small></div>
-                  <span class="done-label">검토 대기</span>
-                </li>
-              </ol>
-              <div class="agent-explainer">
-                <strong>이것이 ‘Agent’인 이유</strong>
-                <p>답변만 생성하는 대신, 앱의 도구로 자료를 읽고 여러 단계를 이어서 수행해 <em>변경 가능한 결과</em>를 준비합니다.</p>
+            <section class="scene activity-scene" data-scene="4" aria-label="AY가 읽는 원본 자료">
+              <div class="document-workspace">
+                <nav class="document-tabs" aria-label="AY가 확인 중인 자료">
+                  <button class="is-active" type="button" data-document-tab="notice" aria-selected="true"><span class="file-symbol text-file">TXT</span>lms-outline-notice.txt</button>
+                  <button type="button" data-document-tab="syllabus" aria-selected="false"><span class="file-symbol pdf-file">PDF</span>problem-solving-syllabus.pdf</button>
+                </nav>
+                <article class="document-preview" data-document-preview="notice">
+                  <header>
+                    <span><strong>LMS 과제 공지</strong><small>문제해결글쓰기 · 7월 8일</small></span>
+                    <span class="reading-badge"><i></i> AY가 읽은 원본</span>
+                  </header>
+                  <ol class="document-lines">
+                    <li>문제해결글쓰기 공지</li>
+                    <li></li>
+                    <li class="is-found">개요 작성하기 과제 마감은 7월 12일 23:59입니다.</li>
+                    <li>주제는 수업 시간에 다룬 사회 문제 중 하나를 선택하면 됩니다.</li>
+                    <li>제출 방식과 평가 기준은 강의계획서를 확인하세요.</li>
+                  </ol>
+                </article>
+                <article class="document-preview" data-document-preview="syllabus" hidden>
+                  <header>
+                    <span><strong>문제해결글쓰기 강의계획서</strong><small>4쪽 · 과제 및 평가</small></span>
+                    <span class="reading-badge"><i></i> AY가 읽은 원본</span>
+                  </header>
+                  <ol class="document-lines">
+                    <li>3주차 · 문제 정의와 논점 세우기</li>
+                    <li>과제: 개요 작성하기</li>
+                    <li>평가 기준: 논점의 명료성, 근거의 적절성, 글의 흐름</li>
+                    <li class="is-found">제출 방식: LMS 과제함 업로드</li>
+                    <li>제출된 개요는 다음 수업의 피어 리뷰에 사용합니다.</li>
+                  </ol>
+                </article>
+                <footer class="document-status">
+                  <span>오른쪽 AY 채팅에서 사용한 도구와 찾은 결과를 확인할 수 있습니다.</span>
+                  <strong id="documentFinding">마감 후보 · 7월 12일 23:59</strong>
+                </footer>
               </div>
             </section>
 
@@ -254,42 +257,26 @@
               </div>
             </section>
 
-            <section class="scene proposal-scene" data-scene="6" aria-label="과제 생성 변경 제안">
-              <article class="proposal-card" id="proposalCard">
-                <header>
-                  <div>
-                    <span class="proposal-symbol">✦</span>
-                    <span><small>AY의 변경 제안</small><strong>새 과제 1개 만들기</strong></span>
-                  </div>
-                  <span class="review-pill">내 확인 필요</span>
-                </header>
-                <div class="proposal-fields" id="proposalReadView">
-                  <dl>
-                    <div><dt>과제</dt><dd id="proposalTitle">개요 작성하기</dd></div>
-                    <div><dt>마감</dt><dd id="proposalDeadline">7월 12일 23:59</dd></div>
-                    <div><dt>제출</dt><dd id="proposalMethod">LMS 업로드</dd></div>
-                  </dl>
-                  <div class="proposal-proof"><span>↗</span><strong>원본 근거 2개</strong><small>LMS 공지 · 강의계획서</small></div>
+            <section class="scene proposal-scene" data-scene="6" aria-label="원본 근거와 변경 제안 검토">
+              <div class="review-workspace">
+                <div class="evidence-grid compact-evidence-grid">
+                  <article class="source-document notice-document">
+                    <header><span class="file-symbol text-file">TXT</span><strong>LMS 과제 공지</strong></header>
+                    <p class="highlight-line"><mark>제출 마감은 7월 12일(일) 23:59입니다.</mark></p>
+                    <small>lms-outline-notice.txt · 3번째 줄</small>
+                  </article>
+                  <article class="source-document syllabus-document">
+                    <header><span class="file-symbol pdf-file">PDF</span><strong>강의계획서</strong></header>
+                    <p class="highlight-line"><mark>제출 방식: LMS 과제함 업로드</mark></p>
+                    <small>problem-solving-syllabus.pdf · 4쪽</small>
+                  </article>
                 </div>
-                <form class="proposal-edit" id="proposalEditView" hidden>
-                  <label>과제명<input id="titleInput" type="text" value="개요 작성하기"></label>
-                  <label>마감<input id="deadlineInput" type="text" value="7월 12일 23:59"></label>
-                  <div class="edit-actions">
-                    <button type="button" id="cancelEditButton">취소</button>
-                    <button type="submit">수정안 저장</button>
-                  </div>
-                </form>
-                <p class="proposal-message" id="proposalMessage">수락하기 전에는 학기 일정에 아무것도 추가되지 않습니다.</p>
-                <div class="proposal-actions" id="proposalActions">
-                  <button class="reject-action" id="rejectButton" type="button">거절</button>
-                  <button class="edit-action" id="editButton" type="button">수정</button>
-                  <button class="accept-action" id="acceptButton" type="button">✓ 수락하고 반영</button>
+                <div class="review-handoff">
+                  <span>원본 근거 확인 완료</span>
+                  <strong>오른쪽 AY 채팅에서 변경 제안을 검토하세요.</strong>
+                  <p>수락하기 전에는 확인된 학기 정보가 바뀌지 않습니다.</p>
                 </div>
-                <div class="rejected-state" id="rejectedState" hidden>
-                  <strong>이 제안을 반영하지 않았습니다.</strong>
-                  <button type="button" id="restoreProposalButton">제안 다시 보기</button>
-                </div>
-              </article>
+              </div>
             </section>
 
             <section class="scene accepted-scene" data-scene="7" aria-label="확인된 학기 정보">
@@ -312,40 +299,110 @@
           </div>
         </section>
 
-        <aside class="companion-panel surface" aria-label="AY와 확인된 학기 정보">
-          <section class="ay-companion">
-            <header>
-              <img src="assets/ay-profile.png" alt="">
-              <span><strong>AY</strong><small>학업 정리 Agent</small></span>
-              <span class="agent-status" id="agentStatus">대기</span>
-            </header>
-            <p id="agentMessage">자료를 고르면, 필요한 정보를 직접 찾아 하나의 과제로 연결할게요.</p>
-          </section>
+        <aside class="companion-panel chat-panel surface" aria-label="AY 채팅">
+          <header class="chat-panel-head">
+            <span class="chat-agent-avatar"><img src="assets/ay-profile.png" alt=""></span>
+            <span class="chat-agent-copy"><strong>AY</strong><small>선택한 자료를 기준으로 작업 중</small></span>
+            <span class="agent-status" id="agentStatus">대기</span>
+          </header>
 
-          <section class="semester-state">
-            <header>
-              <span>
-                <small>확인된 학기 정보</small>
-                <strong>문제해결글쓰기</strong>
-              </span>
-              <span class="state-count" id="stateCount">과제 0</span>
-            </header>
-            <div class="empty-state" id="emptyState">
-              <span class="empty-calendar" aria-hidden="true">＋</span>
-              <strong>아직 추가된 과제가 없습니다</strong>
-              <p>AY가 찾은 정보는 사용자가 수락하기 전까지 이곳을 바꾸지 않습니다.</p>
+          <div class="chat-thread" id="chatThread" aria-live="polite">
+            <div class="chat-bubble agent-bubble" data-chat-from="1">
+              <p id="agentMessage">자료를 고르면, 필요한 정보를 직접 찾아 하나의 과제로 연결할게요.</p>
             </div>
-            <article class="semester-task compact-task" id="confirmedTask" hidden>
-              <header><span>새 과제</span><small>확인됨</small></header>
+
+            <div class="chat-bubble user-bubble" data-chat-from="3">
+              <p>선택한 두 자료를 읽고, 내가 챙겨야 할 과제로 정리해 줘.</p>
+            </div>
+
+            <div class="chat-bubble agent-bubble" data-chat-from="3">
+              <p>알겠어요. 공지와 강의계획서를 직접 읽고, 같은 과제의 정보인지 확인한 뒤 변경 제안을 준비할게요.</p>
+            </div>
+
+            <section class="tool-call-stack" data-chat-from="4" aria-label="AY가 사용한 도구">
+              <header><span class="tool-spark">✦</span><strong>AY가 사용한 도구</strong><small>3단계 완료</small></header>
+              <article class="tool-call">
+                <div class="tool-call-head"><span class="tool-icon">⌕</span><span><strong>자료 읽기</strong><code>lms-outline-notice.txt</code></span><small>완료</small></div>
+                <p>과제명과 마감 후보를 찾았습니다.</p>
+                <output>개요 작성하기 · 7월 12일 23:59</output>
+              </article>
+              <article class="tool-call">
+                <div class="tool-call-head"><span class="tool-icon">PDF</span><span><strong>PDF 텍스트 추출</strong><code>problem-solving-syllabus.pdf</code></span><small>완료</small></div>
+                <p>제출 방식과 평가 기준을 확인했습니다.</p>
+                <output>LMS 업로드 · 논점/근거/흐름</output>
+              </article>
+              <article class="tool-call">
+                <div class="tool-call-head"><span class="tool-icon">↔</span><span><strong>정보 연결</strong><code>문제해결글쓰기 · 과제</code></span><small>완료</small></div>
+                <p>두 자료가 같은 과제를 설명하는지 대조했습니다.</p>
+                <output>원본 2개 · 과제 후보 1개</output>
+              </article>
+            </section>
+
+            <div class="chat-bubble agent-bubble evidence-bubble" data-chat-from="5">
+              <p>원본 두 곳에서 마감과 제출 방식을 찾았어요. 가운데 표시한 문장을 확인해 주세요.</p>
+              <button id="chatReviewProposalButton" type="button">근거를 확인했어요 · 제안 보기 →</button>
+            </div>
+
+            <article class="proposal-card chat-proposal-card" id="proposalCard" data-chat-from="6">
+              <header>
+                <div>
+                  <span class="proposal-symbol" id="proposalSymbol">✦</span>
+                  <span><small>AY의 변경 제안</small><strong>새 과제 1개 만들기</strong></span>
+                </div>
+                <span class="review-pill" id="proposalStatus">내 확인 필요</span>
+              </header>
+              <div class="proposal-fields" id="proposalReadView">
+                <dl>
+                  <div><dt>과제</dt><dd id="proposalTitle">개요 작성하기</dd></div>
+                  <div><dt>마감</dt><dd id="proposalDeadline">7월 12일 23:59</dd></div>
+                  <div><dt>제출</dt><dd id="proposalMethod">LMS 업로드</dd></div>
+                </dl>
+                <div class="proposal-proof"><span>↗</span><strong>원본 근거 2개</strong><small>LMS 공지 · 강의계획서</small></div>
+              </div>
+              <form class="proposal-edit" id="proposalEditView" hidden>
+                <label>과제명<input id="titleInput" type="text" value="개요 작성하기"></label>
+                <label>마감<input id="deadlineInput" type="text" value="7월 12일 23:59"></label>
+                <div class="edit-actions">
+                  <button type="button" id="cancelEditButton">취소</button>
+                  <button type="submit">수정안 저장</button>
+                </div>
+              </form>
+              <p class="proposal-message" id="proposalMessage">수락하기 전에는 학기 일정에 아무것도 추가되지 않습니다.</p>
+              <div class="proposal-actions" id="proposalActions">
+                <button class="reject-action" id="rejectButton" type="button">거절</button>
+                <button class="edit-action" id="editButton" type="button">수정</button>
+                <button class="accept-action" id="acceptButton" type="button">✓ 수락하고 반영</button>
+              </div>
+              <div class="rejected-state" id="rejectedState" hidden>
+                <strong>이 제안을 반영하지 않았습니다.</strong>
+                <button type="button" id="restoreProposalButton">제안 다시 보기</button>
+              </div>
+              <div class="accepted-proposal-state" id="acceptedProposalState" hidden>
+                <span>✓ 수락됨</span>
+                <strong>확인된 과제에 반영했습니다.</strong>
+              </div>
+            </article>
+
+            <div class="chat-bubble agent-bubble success-bubble" data-chat-at="7">
+              <p>완료했어요. `개요 작성하기` 과제가 확인된 학기 정보에 반영됐고, 원본 2개도 계속 연결해 둘게요.</p>
+            </div>
+
+            <article class="semester-task compact-task chat-confirmed-task" id="confirmedTask" hidden>
+              <header><span>확인된 과제</span><small>반영됨</small></header>
               <strong id="confirmedTitle">개요 작성하기</strong>
               <p id="confirmedDeadline">7월 12일 23:59</p>
               <footer><span>✓ 내가 수락함</span><span>원본 2개</span></footer>
             </article>
-          </section>
+          </div>
 
-          <div class="trust-rule">
-            <span aria-hidden="true">◉</span>
-            <p><strong>AY가 제안하고, 내가 결정합니다.</strong><br>확인되지 않은 AI 결과는 내 학기 정보에 섞이지 않습니다.</p>
+          <div class="chat-state-bar">
+            <span><small>확인된 과제</small><strong id="stateCount">0</strong></span>
+            <p id="emptyState">수락하기 전에는 바뀌지 않습니다.</p>
+          </div>
+
+          <div class="chat-composer" aria-label="AY에게 메시지 보내기">
+            <span>후속 변경 사항을 부탁하세요</span>
+            <button type="button">보내기</button>
           </div>
         </aside>
       </main>

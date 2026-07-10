@@ -14,17 +14,18 @@ npm run demo:week1
 
 - 발표 자료: <http://127.0.0.1:4174/>
 - 발표 자료 직접 경로: <http://127.0.0.1:4174/artifacts/week1-demo/>
-- 발표용 동적 제품 데모: <http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html?variant=focus&step=1&present=1>
-- variant 비교용 데모: <http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html?variant=focus&step=1>
+- 발표용 동적 제품 데모: <http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html?variant=workspace&step=1&present=1>
+- variant 비교용 데모: <http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html?variant=workspace&step=1>
 
 ## 조작
 
 - 발표 자료: `←`, `→`, `Space`, `PageUp`, `PageDown`
 - 전체 화면: 오른쪽 아래 `⛶`
 - 동적 제품 데모: 화면의 버튼 또는 `←`, `→`
+- 사용자 결정 단계: 오른쪽 AY 채팅의 `수락하고 반영` 버튼으로만 다음 단계에 진입
 - 동적 제품 데모 초기화: `R`
 
-발표 자료의 네 번째 장에서 `전체 화면 데모 시작`을 누르면 동적 제품 prototype이 새 탭으로 열린다.
+발표 자료의 네 번째 장에서 `전체 화면 데모 시작`을 누르면 자료 목록, 원본 미리보기, AY 대화를 한 화면에서 잇는 3단 학업 워크스페이스 prototype이 새 탭으로 열린다.
 
 정적 백업 화면도 함께 보관한다.
 
