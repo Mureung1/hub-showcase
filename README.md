@@ -7,6 +7,7 @@
 ## 📝 프로젝트 문서 바로가기
 
 - [과제 마스터클래스 1일차 기획서 (Wiki)](<https://github.com/trudy-0/hub/wiki/Project%E2%80%90Plan:-%EB%9D%B5%EB%8F%99(ThingDong)-%EA%B8%B0%ED%9A%8D%EC%84%9C>)
+- [Task 계획 및 백로그](https://app.notion.com/p/ThingDong-Task-399d79d01a098090bd8ef664d93c3d2f?source=copy_link)
 
 ---
 
