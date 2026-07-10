@@ -36,3 +36,5 @@ data/scenes/*
 .DS_Store
 Thumbs.db
 .vercel/
+output/
+outputs/
