@@ -154,3 +154,4 @@ Conventional Commits 형식을 따른다:
 
 - 기획서: @docs/plan.md
 - 디자인: @docs/design.md
+- 작업 목록: @checklist.md
