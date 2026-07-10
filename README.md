@@ -1,43 +1,44 @@
-# 채용공고 기반 대학생 진로탐색 리서치 에이전트
+# CareerSignal
 
-대학생이 관심 직무를 준비할 때, 샘플 채용공고 데이터를 기반으로 요구 역량을 파악하고 학습 방향과 프로젝트 방향을 정리하도록 돕는 AI Agent 프로젝트입니다.
+채용공고에 반복되는 요구사항을 분석해 취업 준비 우선순위를 정리하는 대학생 진로탐색 프로젝트입니다. 기술 이름을 나열하는 데 그치지 않고, 기술을 어느 구현 범위까지 다뤄야 하는지, 필수 요구사항과 우대사항을 어떻게 구분할지, 기업군별로 어떤 프로젝트 경험을 강조할지를 제안합니다.
 
-1주차에는 실제 채용공고 수집이나 LLM API 연동보다 사용자 흐름 검증에 집중합니다. React 내부 mock data와 rule 기반 로직으로 직무 입력, 요구역량 요약, 학습 방향 추천, 프로젝트 아이디어 추천 흐름을 먼저 확인합니다.
+## 데모
+
+- [정적 프로토타입 보기](https://careersignal-prototype.vercel.app/)
+- 정적 프로토타입은 최근 3개월의 주니어 프론트엔드 공고 24건을 가정한 mock 리서치로 구성했습니다. 실제 채용공고 수집이나 AI 분석 결과가 아닙니다.
 
 ## 문서
 
-- [기획서](docs/plan.md): 문제 정의, 타깃 사용자, 핵심 기능, MVP 및 화면 흐름
-- [설계 문서](docs/architecture.md): AI Agent 구조, 시스템 흐름, 기술 구조 메모
-- [작업 체크리스트](docs/checklist.md): 1주차 React 프로토타입 구현 단위와 검증 시나리오
+- [기획서](docs/plan.md): 문제 정의, 사용자, 프로토타입과 제품 확장 계획
+- [설계 문서](docs/architecture.md): 현재 정적 프로토타입과 향후 제품 구조의 구분
+- [디자인 컨셉](docs/design-concept.md): 확정된 화면 구조와 정보 위계
+- [디자인 토큰](docs/design-tokens.md): `prototype/style.css`와 동기화하는 시각 토큰
+- [작업 체크리스트](docs/checklist.md): 프로토타입 완료 기록과 실제 제품 백로그
 - [Wiki](https://github.com/joo-hyun/hub/wiki)
 
-## 실행 방법
+## 실행 및 확인
 
-의존성 설치:
+### 정적 프로토타입
 
-```bash
+`prototype/index.html`을 브라우저에서 열면 됩니다. 세 페이지는 HTML/CSS만 사용하며 `prototype/style.css`를 공유합니다. 별도 설치, 개발 서버, JavaScript가 필요하지 않습니다.
+
+### React 개발 환경
+
+루트 Vite 환경은 프로젝트 소개 페이지와 이후 실제 제품 React 구현을 위한 영역입니다.
+
+```powershell
 npm install
-```
-
-개발 서버 실행:
-
-```bash
 npm.cmd run dev
 ```
 
-빌드 확인:
+빌드와 린트는 아래처럼 확인합니다.
 
-```bash
+```powershell
 npm.cmd run build
-```
-
-린트 확인:
-
-```bash
 npm.cmd run lint
 ```
 
-PowerShell 실행 정책 때문에 `npm run dev`가 막히는 경우 `npm.cmd run dev`처럼 실행합니다.
+PowerShell 실행 정책으로 `npm run ...`이 막히면 `npm.cmd run ...`을 사용합니다.
 
 ## 프로젝트 구조
 
@@ -47,70 +48,41 @@ hub/
     architecture.md
     checklist.md
     design-concept.md
+    design-tokens.md
     plan.md
-    images/
 
   prototype/
+    assets/
     index.html    (01 관심 직무 선택)
-    report.html   (02 요구 역량 분석)
+    report.html   (02 요구사항 분석 보고서)
     roadmap.html  (03 학습 로드맵)
     style.css
 
-  server/
-    src/
-      index.js
-    package.json
-
   src/
-    internal/
-      project-intro/
-        ProjectIntroPage.jsx
-        components/
-          CareerResearchAgentIntro.jsx
-          CareerResearchAgentIntro.css
+    internal/project-intro/  (프로젝트 소개 React 화면)
+    product/                 (향후 실제 서비스 React 코드)
+    shared/                  (실제 재사용 필요 시 생성)
 
-    product/
-      components/
-      data/
-      pages/
-      services/
-
-    assets/
-    App.jsx
-    index.css
-    main.jsx
+  server/                    (향후 product 전용 Express 서버)
 ```
-
-## 폴더 역할 TODO
-
-- `src/internal/project-intro/`: 프로젝트 소개용 React 화면과 그 전용 스타일을 함께 둡니다.
-- `prototype/`: 1주차 HTML/CSS 정적 프로토타입 위치입니다. 화면 3개(직무 선택/분석 보고서/로드맵)가 각각 별도 html 파일로 있고 `style.css`를 공유합니다. Signal Studio 디자인 스킬을 따릅니다. 더 이상 기능을 확장하지 않고 필요 시 수정만 합니다.
-- `src/product/`: 이후 실제 서비스 React 구현이 들어갈 위치입니다.
-- `server/`: 실제 서비스(product)에서만 사용하는 Express 백엔드입니다. 프론트(`src/`)와는 별도의 Node 실행 환경이라 최상위에 형제 폴더로 분리했습니다. `src/`와 별도의 `package.json`을 가집니다.
-- `src/shared/`: 두 개 이상의 기능에서 실제로 재사용하는 컴포넌트/유틸이 생기면 그때 새로 만듭니다. 미리 만들어두지 않습니다.
 
 ## 현재 구현 상태
 
-- 프로젝트 소개 React 화면 구현
-- 기획서 작성
-- 설계 문서 분리
-- 1주차 React 프로토타입 작업 체크리스트 작성
-- 최종 서비스 영역과 내부 산출물 영역 분리
+- CareerSignal 프로젝트 소개 React 화면
+- HTML/CSS 기반 정적 프로토타입 3페이지
+- 고정 상단바, 오른쪽 글래스 목차, 반응형 본문 레이아웃
+- 요구사항 분석 보고서와 4단계 학습 로드맵 정보 구조
+- Vercel 정적 배포
 
 ## 아직 구현하지 않은 범위
 
-- Express 서버
-- 실제 LLM API 호출
-- 실시간 채용공고 크롤링
-- DB 저장
-- 로그인
-- 사용자 역량 기반 Gap 분석
+- 실제 React 기반 직무 입력과 결과 상태 관리
+- mock job data 조회와 rule 기반 분석 로직
+- Express API, 실제 채용공고 수집, LLM API 연동
+- DB 저장, 로그인, 사용자 역량 기반 Gap 분석
 
-## 향후 계획
+## 다음 단계
 
-- React 기반 1주차 프로토타입 구현
-- mock job data 작성
-- rule 기반 요구역량 분석 로직 구현
-- 학습 방향 및 프로젝트 추천 로직 구현
-- Verifier 검토 문구 구현
-- 이후 Express API와 LLM API 연동
+1. 와이어프레임을 작성해 실제 제품의 화면 전환과 상태를 설계합니다.
+2. `src/product/`에 React 기반 MVP를 구현합니다.
+3. `server/`에 Express API와 분석 데이터 흐름을 추가합니다.

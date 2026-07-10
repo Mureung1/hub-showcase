@@ -1,30 +1,42 @@
 ## 프로젝트
-채용공고 기반 대학생 진로탐색 리서치 에이전트. 관심 직무 입력 → 요구역량 분석 → 학습 로드맵 제공.
 
-## 기술 스택
-- Frontend: React + Vite, JavaScript(.jsx) — `src/`
-- Backend: Express — `server/` (독립 `package.json`, product 전용)
-- 향후 검토(미설치, 기능 확정 시 설치): 에이전트 오케스트레이션(LangGraph/LangChain 후보), DB(SQLite/Postgres 후보)
+CareerSignal은 채용공고의 반복 요구사항을 분석해 대학생의 취업 준비 우선순위와 학습 로드맵을 정리하는 프로젝트다.
 
-## 폴더 구조
-- `src/internal/project-intro/` — 소개 페이지(React). 실제 서비스와 별개 산출물.
-- `prototype/` — 1주차 정적 HTML/CSS 프로토타입. 더 이상 기능 확장 안 함, 수정만.
-- `src/product/` — 실제 서비스 React 코드.
-- `server/` — Express 백엔드. product 전용, `src/`와 별개 실행환경.
-- `src/shared/` — 2개 이상 기능에서 실제로 재사용할 때만 생성. 미리 만들지 않음.
+- 정적 프로토타입 데모: https://careersignal-prototype.vercel.app/
+- 현재 프로토타입 데이터는 주니어 프론트엔드 공고 24건을 가정한 mock 리서치다.
+
+## 기술 스택과 영역
+
+- `prototype/`: HTML/CSS 전용 정적 프로토타입. JavaScript와 React를 사용하지 않으며 독립적으로 배포한다.
+- `src/internal/project-intro/`: 프로젝트 소개 페이지 React 화면. 실제 서비스와 별개 산출물이다.
+- `src/product/`: 이후 실제 서비스 React 코드.
+- `server/`: product 전용 Express 백엔드. `src/`와 별도의 실행 환경·`package.json`을 유지한다.
+- `src/shared/`: 두 개 이상 기능에서 실제 재사용이 확인될 때만 생성한다.
+- 향후 검토: Agent 오케스트레이션(LangGraph/LangChain 후보), DB(SQLite/Postgres 후보).
+
+## 프로토타입 배포
+
+- Vercel 프로젝트는 `prototype/`을 Root Directory로 사용한다.
+- 프로토타입 수정은 `day/YYMMDD` 작업 브랜치에 커밋하고 `origin`에 push한 뒤 배포 결과를 확인한다.
+- 각 프로젝트는 실행과 배포에서 서로 의존하지 않는다.
 
 ## 컨벤션
-- 커밋: Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`)
-- 브랜치: `day/YYMMDD` (그날 작업 전체를 담는 브랜치, 설명 접미사 없음. 무엇을 했는지는 커밋/PR 본문에 기록)
-- PR: upstream의 `N086_박주현` 브랜치로 PR (main 아님). 타이틀 `[N086_박주현] - 요약`
 
-## Claude 작업 방식 (세션이 바뀌어도 유지)
-- 사용자는 웹 개발이 처음이다. 새 파일/폴더 위치를 정할 때 어디에 왜 두는지 짧게 설명한다.
-- 터미널·git 명령어는 Claude가 실행하지 않고, 사용자가 직접 실행하도록 순서대로 명령어만 제시한다.
-- 파일 생성·수정은 Claude가 직접 한다. 단 삭제·이동·rename은 Claude의 샌드박스 권한상 실행할 수 없으므로, 실행할 명령어를 함께 제시해 사용자가 직접 실행하게 한다.
+- 커밋: 영어 Conventional Commit 메시지(`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`)를 사용한다.
+- 브랜치: `day/YYMMDD`. 그날 작업 전체를 담고 설명 접미사는 붙이지 않는다.
+- PR: upstream의 `N086_박주현` 브랜치로 보낸다. PR 타이틀은 `[N086_박주현] - 요약` 형식이다.
+
+## 작업 방식
+
+- 사용자는 웹 개발이 처음이다. 새 파일·폴더의 위치와 이유를 짧게 설명한다.
+- Git·터미널 명령어는 사용자가 직접 실행한다. 제시할 때는 실행 순서, 짧은 설명, 예상 결과를 함께 제공한다.
+- 파일 수정은 작업 범위 안에서 직접 수행한다. 삭제·이동·rename은 사용자의 명시적 요청과 대상 경로 확인 후 진행한다.
+- 정적 프로토타입은 기능 확장 없이 정보·스타일 수정만 허용한다. 실제 동적 기능은 `src/product/`와 `server/`에서 구현한다.
 
 ## 참고
+
 - 기획서: @docs/plan.md
 - 설계: @docs/architecture.md
 - 디자인 컨셉: @docs/design-concept.md
+- 디자인 토큰: @docs/design-tokens.md
 - 체크리스트: @docs/checklist.md
