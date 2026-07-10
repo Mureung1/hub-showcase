@@ -11,6 +11,7 @@ CareerSignal은 대학생이 관심 직무의 채용공고를 읽을 때, 무엇
 - [설계 문서](architecture.md)
 - [디자인 컨셉](design-concept.md)
 - [디자인 토큰](design-tokens.md)
+- [개발 백로그](backlog.md)
 
 ## 2. 문제 발견
 
