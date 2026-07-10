@@ -25,3 +25,25 @@
   display: flex;
   justify-content: flex-end;
 }
+
+.actionRow {
+  width: 100%;
+  text-align: left;
+  padding: 14px 4px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-900);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.actionRow:last-child {
+  border-bottom: none;
+}
+
+.actionRowDanger {
+  color: var(--danger-text);
+}

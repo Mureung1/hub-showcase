@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AppShell } from '../../layouts/AppShell/AppShell';
-import { Card, Row, Button, Field, Segmented, Switch, Slider, BottomSheet } from '../../components';
+import { Card, Row, Button, Field, Segmented, Switch, Slider, BottomSheet, WarningBanner } from '../../components';
 import text from '../../styles/text.module.css';
 import styles from './InputPage.module.css';
 
@@ -42,24 +42,54 @@ export function InputPage() {
   const [heartCondition, setHeartCondition] = useState(false);
   const [anxiety, setAnxiety] = useState(false);
   const [minSleepHours, setMinSleepHours] = useState(4);
-  const [travelMinutes, setTravelMinutes] = useState(30);
 
   const [examSheetOpen, setExamSheetOpen] = useState(false);
   const [drinkSheetOpen, setDrinkSheetOpen] = useState(false);
   const [newExam, setNewExam] = useState<Exam>({ subject: '', date: '', time: '', studyHours: 4 });
+  const [editingExamIndex, setEditingExamIndex] = useState<number | null>(null);
+  const [examActionIndex, setExamActionIndex] = useState<number | null>(null);
+  const [caffeineActionIndex, setCaffeineActionIndex] = useState<number | null>(null);
 
   const totalCaffeineMg = caffeineIntakes.reduce((sum, intake) => sum + intake.mg, 0);
 
-  function addExam() {
-    if (!newExam.subject) return;
-    setExams((prev) => [...prev, newExam]);
+  function openAddExam() {
+    setEditingExamIndex(null);
     setNewExam({ subject: '', date: '', time: '', studyHours: 4 });
+    setExamSheetOpen(true);
+  }
+
+  function openEditExam(index: number) {
+    setEditingExamIndex(index);
+    setNewExam(exams[index]);
+    setExamActionIndex(null);
+    setExamSheetOpen(true);
+  }
+
+  function saveExam() {
+    if (!newExam.subject) return;
+    if (editingExamIndex !== null) {
+      setExams((prev) => prev.map((exam, i) => (i === editingExamIndex ? newExam : exam)));
+    } else {
+      setExams((prev) => [...prev, newExam]);
+    }
+    setNewExam({ subject: '', date: '', time: '', studyHours: 4 });
+    setEditingExamIndex(null);
     setExamSheetOpen(false);
+  }
+
+  function deleteExam(index: number) {
+    setExams((prev) => prev.filter((_, i) => i !== index));
+    setExamActionIndex(null);
   }
 
   function addDrink(label: string, mg: number) {
     setCaffeineIntakes((prev) => [...prev, { label, mg, time: '방금' }]);
     setDrinkSheetOpen(false);
+  }
+
+  function deleteCaffeine(index: number) {
+    setCaffeineIntakes((prev) => prev.filter((_, i) => i !== index));
+    setCaffeineActionIndex(null);
   }
 
   return (
@@ -75,11 +105,11 @@ export function InputPage() {
     >
       <h1 className={text.headline}>상황을 알려주세요</h1>
       <p className={text.subtext} style={{ marginBottom: 20 }}>
-        직접 입력하거나, 자연어로 빠르게 채워보세요.
+        직접 입력하거나, 문장으로 설명하면 자동으로 채워드려요.
       </p>
 
       <div className={styles.nlBox}>
-        <div className={styles.nlTitle}>✨ 자연어로 빠르게 입력 (선택)</div>
+        <div className={styles.nlTitle}>✨ 문장으로 빠르게 입력 (선택)</div>
         <textarea placeholder="예) 시험이 모레 아침 9시에 있고, 평소엔 12시에 자서 7시에 일어나." />
         <div className={styles.nlActions}>
           <Button variant="secondary" size="sm">
@@ -102,9 +132,10 @@ export function InputPage() {
               title={exam.subject}
               subtitle={[exam.time, exam.date, `남은 공부 ${exam.studyHours}시간`].filter(Boolean).join(' · ')}
               chevron
+              onClick={() => setExamActionIndex(index)}
             />
           ))}
-          <Row isAdd title="시험 추가" onClick={() => setExamSheetOpen(true)} />
+          <Row isAdd title="시험 추가" onClick={openAddExam} />
         </Card>
       </div>
 
@@ -136,6 +167,8 @@ export function InputPage() {
               title={intake.label}
               subtitle={intake.time}
               value={`${intake.mg}mg`}
+              chevron
+              onClick={() => setCaffeineActionIndex(index)}
             />
           ))}
           <Row isAdd title="음료 추가" onClick={() => setDrinkSheetOpen(true)} />
@@ -201,23 +234,14 @@ export function InputPage() {
             onChange={setMinSleepHours}
           />
         </Card>
+        <WarningBanner>기상 후 준비, 이동에 필요한 시간만큼 목표 각성 시각을 조절해보세요.</WarningBanner>
       </div>
 
-      <div className={text.sectionBlock}>
-        <Field
-          label="시험장까지 이동시간"
-          hint="기상 후 준비·이동에 필요한 시간만큼 목표 각성 시각을 앞당겨 계산해요."
-        >
-          <input
-            type="number"
-            value={travelMinutes}
-            onChange={(e) => setTravelMinutes(Number(e.target.value))}
-            placeholder="분 단위로 입력"
-          />
-        </Field>
-      </div>
-
-      <BottomSheet open={examSheetOpen} onClose={() => setExamSheetOpen(false)} title="시험 추가">
+      <BottomSheet
+        open={examSheetOpen}
+        onClose={() => setExamSheetOpen(false)}
+        title={editingExamIndex !== null ? '시험 수정' : '시험 추가'}
+      >
         <Field label="과목명">
           <input
             type="text"
@@ -254,8 +278,8 @@ export function InputPage() {
             onChange={(value) => setNewExam((prev) => ({ ...prev, studyHours: value }))}
           />
         </div>
-        <Button variant="primary" onClick={addExam}>
-          추가하기
+        <Button variant="primary" onClick={saveExam}>
+          {editingExamIndex !== null ? '수정하기' : '추가하기'}
         </Button>
       </BottomSheet>
 
@@ -271,6 +295,37 @@ export function InputPage() {
           />
         ))}
         <Row isAdd title="직접 입력" onClick={() => setDrinkSheetOpen(false)} />
+      </BottomSheet>
+
+      <BottomSheet
+        open={examActionIndex !== null}
+        onClose={() => setExamActionIndex(null)}
+        title={examActionIndex !== null ? exams[examActionIndex].subject : ''}
+      >
+        <button type="button" className={styles.actionRow} onClick={() => openEditExam(examActionIndex!)}>
+          세부 사항 수정하기
+        </button>
+        <button
+          type="button"
+          className={`${styles.actionRow} ${styles.actionRowDanger}`}
+          onClick={() => deleteExam(examActionIndex!)}
+        >
+          삭제하기
+        </button>
+      </BottomSheet>
+
+      <BottomSheet
+        open={caffeineActionIndex !== null}
+        onClose={() => setCaffeineActionIndex(null)}
+        title={caffeineActionIndex !== null ? caffeineIntakes[caffeineActionIndex].label : ''}
+      >
+        <button
+          type="button"
+          className={`${styles.actionRow} ${styles.actionRowDanger}`}
+          onClick={() => deleteCaffeine(caffeineActionIndex!)}
+        >
+          삭제하기
+        </button>
       </BottomSheet>
     </AppShell>
   );
