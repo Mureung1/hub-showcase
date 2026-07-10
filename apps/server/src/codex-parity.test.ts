@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { AgentRuntimeKernel } from '@ay-ple/runtime-core'
+import { createInMemoryRuntimeKernel } from '@ay-ple/runtime-core/testing'
 import { CodexRuntimeAdapter } from '@ay-ple/runtime-codex'
 import { withFakeCodexAppServer } from '@ay-ple/runtime-codex/testing'
 import {
@@ -9,7 +9,7 @@ import {
   verifyCodexPreflight,
   verifyCodexPromptParity,
 } from './codex-parity.js'
-import { createServerApp, type CreateServerAppOptions } from './server.js'
+import { withTestServer } from './testing/test-server.js'
 
 test('parseCodexParityTimeout uses a bounded positive integer', () => {
   assert.equal(parseCodexParityTimeout(undefined), 60000)
@@ -49,7 +49,7 @@ test('Codex prompt parity verifier crosses HTTP and SSE', async () => {
       ],
     },
     async ({ rawClientOptions }) => {
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
@@ -90,7 +90,7 @@ test('Codex cancellation parity verifier waits for active output and confirms in
       },
     },
     async ({ rawClientOptions }) => {
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
@@ -115,36 +115,3 @@ test('Codex cancellation parity verifier waits for active output and confirms in
     },
   )
 })
-
-async function withTestServer(
-  options: CreateServerAppOptions,
-  testBody: (baseUrl: string) => Promise<void>,
-): Promise<void> {
-  const server = createServerApp(options).listen(0, '127.0.0.1')
-
-  await new Promise<void>((resolve) => {
-    server.once('listening', resolve)
-  })
-
-  const address = server.address()
-
-  if (!address || typeof address === 'string') {
-    throw new Error('Expected server to listen on a TCP port')
-  }
-
-  try {
-    await testBody(`http://127.0.0.1:${address.port}`)
-  } finally {
-    await new Promise<void>((resolve, reject) => {
-      server.close((error) => {
-        if (error) {
-          reject(error)
-          return
-        }
-
-        resolve()
-      })
-      server.closeAllConnections()
-    })
-  }
-}

@@ -19,16 +19,16 @@ AGENTS.md는 안정적인 작업 규칙과 이 문서로 향하는 포인터만 
 | 브라우저가 Codex app-server와 직접 통신하는가? | 아니다. `apps/server`가 kernel과 adapters를 소유하고, `apps/inspector`는 HTTP와 SSE만 사용한다. |
 | raw Codex protocol type이 제품/core로 새는가? | 현재 생성된 Codex type은 `packages/runtime-codex/src/internal/` 아래에 있고 `runtime-core`, server, inspector의 안정 계약으로 다시 export되지 않는다. |
 | Runtime Inspector는 제품 UI인가? | 아니다. prompt, transcript, status, events, raw/debug log, history, capability slots를 보는 개발자용 엔진 관측 표면이다. |
-| run log는 영속적인가? | 현재 `RuntimeRunLog` format은 정해졌지만 kernel 내부 메모리에 저장된다. 서버 재시작 이후에도 남는 영속 저장소는 아직 별도 과제다. |
+| run log는 영속적인가? | server-owned schema v1 per-run JSON snapshot으로 저장된다. 완료된 run은 같은 history directory를 사용하는 server restart 뒤 hydrate되며, streaming checkpoint와 non-terminal recovery는 Issue 003에 남아 있다. |
 
 ## 구성
 
 | 위치 | 역할 | 공개 표면 | 중요한 내부 |
 | --- | --- | --- | --- |
-| `packages/runtime-core` | runtime 생명주기의 안정 계약과 kernel | `AgentRuntimeKernel`, `AgentRuntimeAdapter`, `RuntimeRunEvent`, `RuntimeRunLog`, run summary/history | 메모리 기반 run log, subscriber 관리, cancellation mode 처리 |
+| `packages/runtime-core` | runtime 생명주기의 안정 계약과 kernel | `AgentRuntimeKernel`, `AgentRuntimeAdapter`, `RuntimeRunEvent`, `RuntimeRunLog`, `RuntimeRunLogPersistence`, run summary/history | async hydration, durability barrier, in-memory read view, subscriber 관리, cancellation mode 처리 |
 | `packages/runtime-fake` | 검사용 결정적 adapter | `FakeRuntimeAdapter` | run 시작 debug evidence, 지연된 output 조각, `failNextRun()` 실패 시나리오, abort 기반 즉시 취소 |
 | `packages/runtime-codex` | Codex app-server 통합 package | `CodexRuntimeAdapter`, `CodexRawClient` wrapper type, status/smoke helper, capability slots | 생성된 app-server protocol type, stdio JSONL transport, app-owned runtime home, raw/debug log |
-| `apps/server` | 브라우저에 안전한 로컬 companion host | `/api/runtime/*`, `/api/runtime/runs/:id/events` SSE, `/api/runtime/codex/*` | 테스트에서 kernel을 주입하지 않으면 fake/codex adapters와 kernel을 생성 |
+| `apps/server` | 브라우저에 안전한 로컬 companion host | `/api/runtime/*`, `/api/runtime/runs/:id/events` SSE, `/api/runtime/codex/*` | fake/codex adapters와 ready kernel 조립, workspace-local per-run JSON snapshot store |
 | `apps/inspector` | 개발자용 Runtime Inspector | adapter 선택, prompt, transcript, events, run log, history, Codex status, capability slots를 보는 React UI | server endpoint만 소비하며 app-server stdio와 직접 통신하지 않음 |
 
 ## Runtime 흐름
@@ -38,6 +38,7 @@ flowchart LR
   Inspector["Runtime Inspector (브라우저)"]
   Server["apps/server Express API"]
   Kernel["AgentRuntimeKernel"]
+  History["Runtime Diagnostic History<br/>per-run JSON snapshots"]
   Fake["FakeRuntimeAdapter"]
   CodexAdapter["CodexRuntimeAdapter"]
   RawClient["CodexRawClient"]
@@ -46,6 +47,7 @@ flowchart LR
   Inspector -->|"POST /api/runtime/runs"| Server
   Inspector -->|"EventSource /events"| Server
   Server --> Kernel
+  Kernel -->|"load / save / remove"| History
   Kernel -->|"AgentRuntimeAdapter"| Fake
   Kernel -->|"AgentRuntimeAdapter"| CodexAdapter
   CodexAdapter --> RawClient
@@ -66,8 +68,19 @@ flowchart LR
 | `RuntimeRunLog` | prompt, status, output, error, normalized events, optional debug evidence, timestamp를 담는 run 기록 |
 | `RuntimeAdapterEvent` | Adapter가 kernel에 전달하는 event vocabulary. Adapter는 inspector/server state에 직접 쓰지 않는다. |
 | `RuntimeAdapterCancellationMode` | `immediate`는 kernel이 취소를 즉시 표시하게 하고, `adapter_confirmed`는 adapter가 종료 확인이나 실패를 내보낼 때까지 `cancelling`에 머무르게 한다. |
+| `RuntimeRunLogPersistence` | 전체 log load, single-record save, run ID remove를 표현하는 core-owned async seam이다. Production kernel은 hydration을 마친 ready instance만 반환한다. |
 
 Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortSignal`이 아니며, adapter가 `turn/interrupt`를 보내고 Codex 종료 근거를 관측해야 run이 `cancelled`가 된다.
+
+## Runtime Diagnostic History 저장
+
+| 항목 | 현재 동작 |
+| --- | --- |
+| 기본 위치 | `.ay-ple/runtime-harness/runs/<uuid>.json`; `RUNTIME_HISTORY_DIR`로 runs directory를 바꿀 수 있다. |
+| envelope | `{ schemaVersion: 1, savedAt, log }`; `log`는 normalized events와 `debugLog`를 포함한 self-contained `RuntimeRunLog`다. |
+| atomic replace | 같은 directory의 unique temporary file에 UTF-8 JSON을 쓰고 file을 sync·close한 뒤 canonical UUID filename으로 rename한다. 실패한 replacement는 이전 canonical record를 보존한다. |
+| hydration | Store-owned stale temporary file을 best-effort 정리하고, canonical JSON의 envelope, UUID filename 일치, required log/event/debug 구조와 lifecycle sequence를 검증한 뒤 `startedAt`, `runId` 순으로 hydrate한다. |
+| durability ordering | started snapshot 저장 뒤 adapter를 실행하며, terminal snapshot 저장 뒤 terminal state를 memory, subscriber와 waiter에 공개한다. |
 
 ## Codex Adapter 책임
 
@@ -99,7 +112,7 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 
 | 명령어 | 증명하는 것 |
 | --- | --- |
-| `npm run test:e2e` | 실제 Express server와 Inspector를 통과하는 Fake prompt streaming, cancellation, failure, normalized events, debug evidence와 in-process history browser gate |
+| `npm run test:e2e` | 실제 Express server process와 Inspector를 통과하는 Fake lifecycle browser gate와 같은 history directory·같은 API port에 새 server process를 시작한 completed-run restart/reload 복원 |
 | `npm test` | fake Codex app-server scenario를 포함한 runtime-core, runtime-codex, server 생명주기 테스트 |
 | `npm run typecheck` | packages/apps 전반의 TypeScript 계약 호환성 |
 | `npm run build` | package 빌드 순서와 app build |
@@ -113,10 +126,10 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 
 | Gap | 중요한 이유 | 다음 제안 |
 | --- | --- | --- |
-| 영속 run log | PRD는 영속 log를 요구했지만 현재 log는 서버 프로세스 안에 산다. | ADR 0004에 따라 `runtime-core`가 self-contained RuntimeRunLog persistence와 recovery semantics를 소유하고, server가 per-run versioned JSON snapshot adapter를 조립하도록 구현한다. |
 | 제품 runtime handoff | Runtime Harness는 의도적으로 SourceSelection, StatePatch, Review, TrustedState가 아니다. | parity demo 이후 첫 product-facing adapter use case를 정의하되, `runtime-core`만 runtime contract로 유지한다. |
-| Inspector 영속성 | Inspector history는 현재 server memory를 반영한다. | Inspector가 reload나 server restart를 견뎌야 한다면 durable run log와 history hydration을 함께 설계한다. |
-| Inspector restart/degraded verification | Playwright browser gate는 현재 process의 lifecycle과 history를 검증하지만 durable history hydration, restart recovery와 persistence degraded UI는 아직 검증하지 않는다. | Persistence 구현 뒤 같은 real-server browser harness를 확장해 reload, restart recovery, history clear와 degraded 상태를 검증한다. |
+| streaming durability와 restart recovery (Issue 003) | Started/terminal barrier는 있지만 100ms streaming checkpoint와 restart 당시 `running`/`cancelling` run의 normalized failure recovery는 아직 없다. | Coalesced checkpoint, terminal flush와 non-terminal recovery semantics를 kernel에 구현한다. |
+| bounded history와 clear (Issue 004) | Per-run snapshot은 아직 count/byte retention을 적용하지 않으며 terminal history clear API/UI가 없다. | Terminal-only retention, remove synchronization과 clear flow를 추가한다. |
+| fail-closed degraded runtime (Issue 005) | Persistence fault를 runtime health, stable 503 contract와 Inspector degraded UI로 드러내는 동작은 아직 없다. | Fault injection을 기반으로 degraded lifecycle과 mutation rejection을 구현한다. |
 
 ## 이후 Agent 작업 규칙
 

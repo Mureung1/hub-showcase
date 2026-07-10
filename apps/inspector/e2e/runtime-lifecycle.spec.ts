@@ -6,6 +6,7 @@ const deterministicFailure = 'Fake runtime deterministic failure requested'
 const streamingPrompt = 'stream this prompt'
 const cancellationPrompt = 'cancel this prompt'
 const failurePrompt = 'fail this prompt'
+const restartPrompt = 'restore this completed run'
 
 type RunLogResponseMatch = { prompt: string } | { runId: string }
 
@@ -132,6 +133,93 @@ test('Inspector exposes deterministic fake run lifecycle through real HTTP and S
     'output_delta',
     'completed',
   ])
+})
+
+test('Inspector restores completed output, events, and debug evidence after server restart', async ({
+  inspectorHarness,
+  inspectorPage: page,
+}) => {
+  const transcript = page.getByRole('region', { name: 'Transcript' })
+  const events = page.getByRole('region', { name: 'Events' })
+  const runLog = page.getByRole('region', { name: 'Run Log' })
+  const history = page.getByRole('region', { name: 'History' })
+
+  await expect(page.getByText('API connected', { exact: true })).toBeVisible()
+
+  const completedLogResponse = waitForRunLogResponse(page, {
+    prompt: restartPrompt,
+  })
+  const completedRun = await startFakeRun(page, restartPrompt)
+
+  await expectEventTypes(events, ['started', 'output_delta'])
+  await expectEventTypes(events, [
+    'started',
+    'output_delta',
+    'output_delta',
+    'completed',
+  ])
+
+  const completedLog = await readRunLog(await completedLogResponse)
+
+  expect(completedLog.runId).toBe(completedRun.runId)
+  expect(completedLog.status).toBe('completed')
+  expect(completedLog.debugLog).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        source: 'fake-runtime',
+        kind: 'run_started',
+        message: 'Fake runtime accepted a run',
+      }),
+    ]),
+  )
+
+  const processRestart = await inspectorHarness.restartApiServer()
+
+  expect(processRestart.currentProcessId).not.toBe(
+    processRestart.previousProcessId,
+  )
+
+  const restoredHistoryResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname === '/api/runtime/runs',
+  )
+
+  await page.reload()
+
+  expect((await restoredHistoryResponse).status()).toBe(200)
+  await expect(page.getByText('API connected', { exact: true })).toBeVisible()
+
+  const restoredHistoryItem = history
+    .getByRole('button')
+    .filter({ hasText: completedRun.runId })
+
+  await expect(restoredHistoryItem).toHaveCount(1)
+  await expect(restoredHistoryItem).toContainText('completed')
+
+  const restoredLogResponse = waitForRunLogResponse(page, {
+    runId: completedRun.runId,
+  })
+  await restoredHistoryItem.click()
+  const restoredLog = await readRunLog(await restoredLogResponse)
+
+  expect(restoredLog.output).toBe(completedLog.output)
+  expect(restoredLog.events).toEqual(completedLog.events)
+  expect(restoredLog.debugLog).toEqual(completedLog.debugLog)
+  expect(restoredLog).toEqual(completedLog)
+  await expect(transcript).toContainText(restartPrompt)
+  await expect(transcript).toContainText(
+    'This deterministic response proves the inspector can observe a run end to end.',
+  )
+  await expectEventTypes(events, [
+    'started',
+    'output_delta',
+    'output_delta',
+    'completed',
+  ])
+  await expect(runLog.locator('pre')).toHaveText(
+    JSON.stringify(restoredLog, null, 2),
+  )
 })
 
 async function startFakeRun(

@@ -419,7 +419,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 async function startServer(): Promise<Server> {
-  const server = createServerApp().listen(0, '127.0.0.1')
+  const app = await createServerApp()
+  const server = app.listen(0, '127.0.0.1')
 
   await once(server, 'listening')
 
