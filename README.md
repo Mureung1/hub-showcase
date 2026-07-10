@@ -31,3 +31,11 @@ One-Step은 도전을 **아주 작은 퀘스트**로 쪼개고, 완료할 때마
 
 - **Flutter** (iOS · Android)
 - **Firebase** (Authentication · Firestore · Storage · Cloud Messaging)
+
+---
+
+## 백로그
+
+개발 백로그는 Notion에서 관리합니다.
+
+👉 [One-Step 백로그 (Notion)](https://www.notion.so/38c7e20402d080b3a1b8d4edc48d0694?source=copy_link)
