@@ -1,0 +1,16 @@
+/* Wanted Design System — webfonts
+   Source file uses "Pretendard JP" (body/UI text, all weights) and
+   "Wanted Sans" (display/wordmark contexts, used sparingly — 72px hero
+   headings, brand marks). Both are open-source and not bundled as
+   binaries here; loaded from their official CDN distributions so the
+   exact same glyphs render. If you'd rather self-host, drop the .woff2
+   files into this folder and point src: url() at them instead. */
+
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp.min.css");
+@import url("https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.1/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css");
+
+:root {
+  --font-body: "Pretendard JP Variable", "Pretendard JP", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Wanted Sans Variable", "Wanted Sans", var(--font-body);
+  --font-mono: "SF Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}

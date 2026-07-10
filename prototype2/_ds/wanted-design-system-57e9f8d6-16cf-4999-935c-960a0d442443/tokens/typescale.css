@@ -1,0 +1,37 @@
+/* Type scale — sizes/weights observed directly in the source file's
+   usage frequency table (METADATA.md "Fonts"). Wanted's UI runs almost
+   entirely on Pretendard JP; sizes below are the exact pixel values
+   used, not rounded to a generic scale. */
+:root {
+  /* weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+
+  /* body/UI sizes — Pretendard JP */
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 15px;
+  --text-lg: 16px;
+  --text-xl: 17px;
+  --text-2xl: 20px;
+
+  /* display sizes — headings/hero, occasionally Wanted Sans */
+  --text-display-sm: 21px;
+  --text-display-md: 24px;
+  --text-display-lg: 28px;
+  --text-display-xl: 36px;
+  --text-display-2xl: 56px;
+  --text-display-3xl: 72px;
+
+  --leading-tight: 1.334;
+  --leading-normal: 1.5;
+  --leading-loose: 1.6;
+
+  --tracking-tight: -0.027em;
+  --tracking-normal: 0.006em;
+}
