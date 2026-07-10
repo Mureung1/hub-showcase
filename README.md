@@ -26,9 +26,10 @@ http://localhost:5173/prototype-static.html
 
 - [문서 허브](docs/README.md)
 - [문서 관계 지도](docs/project-knowledge-map.md)
+- [개발 Task 백로그](docs/tasks.md)
 - [Codex 작업 규칙](AGENTS.md)
 
-세부 기획, 와이어프레임, MVP 기능 명세, 디자인 시스템, 에셋 프롬프트, 4주 계획은 [docs/README.md](docs/README.md)에서 접근합니다.
+세부 기획, 와이어프레임, MVP 기능 명세, 디자인 시스템, 에셋 프롬프트, 개발 Task, 4주 계획은 [docs/README.md](docs/README.md)에서 접근합니다.
 
 ## 핵심 흐름
 
@@ -47,3 +48,4 @@ Profile Setup Wizard
 GitHub Wiki는 코드 PR에 직접 포함되지 않으므로 PR 본문에 별도로 연결합니다.
 
 - Wiki: https://github.com/YIFNEN/hub/wiki
+

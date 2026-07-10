@@ -128,6 +128,7 @@ four-week-roadmap.md
 
 | 문서 | 역할 |
 |---|---|
+| `tasks.md` | 우선순위가 표시된 전체 개발 Task 백로그 |
 | `four-week-roadmap.md` | 7월 10일, 17일, 24일, 30일 기준 작업 분해 |
 | `status.md` | 완료, 검증, 다음 작업, 차단 요소만 기록 |
 | `learning/` | ChatGPT 프로젝트에 넣고 공부할 키워드와 참고 코드 위치 |
@@ -166,5 +167,6 @@ archive/
 - `public/assets/`: 실제 적용 에셋
 - `AGENTS.md`: Codex 작업 규칙
 - `xp-desktop-pet-ui skill`: Codex 반복 작업을 위한 외부 실행 규칙
+
 
 

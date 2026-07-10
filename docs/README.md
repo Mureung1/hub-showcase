@@ -23,6 +23,7 @@
 | [agent-design.md](agent-design.md) | AI Agent 역할과 MVP 규칙 기반 동작 | Agent Design |
 | [design-system.md](design-system.md) | concept.png 기반 XP 디자인 토큰과 컴포넌트 규칙 | Design System |
 | [future-expansion-plan.md](future-expansion-plan.md) | MVP 이후 기술·기능 확장 백로그 | MVP 이후 확장 계획 |
+| [tasks.md](tasks.md) | 우선순위가 표시된 개발 Task 백로그 | 개발 Task 백로그 |
 | [four-week-roadmap.md](four-week-roadmap.md) | 4주 개발 체크리스트 | 4주 개발 계획 |
 | [status.md](status.md) | 완료, 검증, 다음 작업, 차단 요소 | 진행 상황 |
 | [learning/README.md](learning/README.md) | 학습 키워드와 참고 코드 위치 | 학습 인덱스 |
@@ -81,8 +82,10 @@ GitHub Wiki는 코드 PR에 직접 포함되지 않는다. PR 본문에는 Wiki 
 - 기능 동작과 완료 조건은 `mvp-functional-spec.md`에 둔다.
 - 디자인 토큰과 스타일 규칙은 `design-system.md`에 둔다.
 - 에셋 생성 프롬프트는 `asset-prompts/`에 둔다.
+- 개발 Task 전체 목록과 우선순위는 `tasks.md`에 둔다.
 - 완료/검증/다음 작업/차단 요소는 `status.md`에 둔다.
 - 재사용 가능한 Codex skill 문서화 버전은 `codex-skills/`에 둔다.
 - 이전 아이디어와 원본 초안은 `archive/`에 둔다.
+
 
 
