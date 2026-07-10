@@ -246,10 +246,10 @@ Briefy
 
 | 화면 ID | 파일 |
 | --- | --- |
-| S1 브리핑 홈 | ![S1 브리핑 홈](./docs/wireframes/S1-briefing-home.png) |
-| S2-b 확인 카드 | ![S2-b 확인 카드](./docs/wireframes/S2b-confirm-card.png) |
-| S2-c 되묻기 선택지 | ![S2-c 되묻기 선택지](./docs/wireframes/S2c-clarify-options.png) |
-| S3 조회 결과 | ![S3 조회 결과](./docs/wireframes/S3-query-result.png) |
+| S1 브리핑 홈 | ![S1 브리핑 홈](./wireframes/S1-briefing-home.png) |
+| S2-b 확인 카드 | ![S2-b 확인 카드](./wireframes/S2b-confirm-card.png) |
+| S2-c 되묻기 선택지 | ![S2-c 되묻기 선택지](./wireframes/S2c-clarify-options.png) |
+| S3 조회 결과 | ![S3 조회 결과](./wireframes/S3-query-result.png) |
 
 원본 편집 파일: [Figma — Briefy Wireframes](https://www.figma.com/design/H4hlQh64gK4kV5avrwgOpB)
 
