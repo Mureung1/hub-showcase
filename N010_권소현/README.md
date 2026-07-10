@@ -1,3 +1,10 @@
+# 캠퍼스핏 (CampusFit)
+
+- [기획서](docs/기획서.md)
+- [개발 Task 백로그](docs/BACKLOG.md)
+
+---
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
