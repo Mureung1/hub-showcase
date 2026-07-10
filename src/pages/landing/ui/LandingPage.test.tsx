@@ -60,4 +60,16 @@ describe('LandingPage', () => {
 
     expect(onStart).toHaveBeenCalledTimes(1);
   });
+
+  it('uses the archive index structure to explain the journey', () => {
+    renderLandingPage();
+
+    expect(screen.getByText('ARCHIVE 001')).not.toBeNull();
+    expect(screen.getByText('01 문제')).not.toBeNull();
+    expect(screen.getByText('02 저장')).not.toBeNull();
+    expect(screen.getByText('03 꺼내보기')).not.toBeNull();
+    expect(
+      screen.getByText('기억에는 온기를, 다시 찾는 과정에는 질서를.')
+    ).not.toBeNull();
+  });
 });
