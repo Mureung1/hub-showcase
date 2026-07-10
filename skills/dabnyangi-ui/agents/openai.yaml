@@ -1,0 +1,4 @@
+interface:
+  display_name: "답냥이 디자인 시스템"
+  short_description: "답냥이 UI 색·폰트·카드 스타일 규칙 적용하기"
+  default_prompt: "Use $dabnyangi-ui to apply the Dabnyangi visual design rules."
