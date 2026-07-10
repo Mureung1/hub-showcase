@@ -26,7 +26,7 @@ AGENTS.md는 안정적인 작업 규칙과 이 문서로 향하는 포인터만 
 | 위치 | 역할 | 공개 표면 | 중요한 내부 |
 | --- | --- | --- | --- |
 | `packages/runtime-core` | runtime 생명주기의 안정 계약과 kernel | `AgentRuntimeKernel`, `AgentRuntimeAdapter`, `RuntimeRunEvent`, `RuntimeRunLog`, run summary/history | 메모리 기반 run log, subscriber 관리, cancellation mode 처리 |
-| `packages/runtime-fake` | 검사용 결정적 adapter | `FakeRuntimeAdapter` | 지연된 output 조각, `failNextRun()` 실패 시나리오, abort 기반 즉시 취소 |
+| `packages/runtime-fake` | 검사용 결정적 adapter | `FakeRuntimeAdapter` | run 시작 debug evidence, 지연된 output 조각, `failNextRun()` 실패 시나리오, abort 기반 즉시 취소 |
 | `packages/runtime-codex` | Codex app-server 통합 package | `CodexRuntimeAdapter`, `CodexRawClient` wrapper type, status/smoke helper, capability slots | 생성된 app-server protocol type, stdio JSONL transport, app-owned runtime home, raw/debug log |
 | `apps/server` | 브라우저에 안전한 로컬 companion host | `/api/runtime/*`, `/api/runtime/runs/:id/events` SSE, `/api/runtime/codex/*` | 테스트에서 kernel을 주입하지 않으면 fake/codex adapters와 kernel을 생성 |
 | `apps/inspector` | 개발자용 Runtime Inspector | adapter 선택, prompt, transcript, events, run log, history, Codex status, capability slots를 보는 React UI | server endpoint만 소비하며 app-server stdio와 직접 통신하지 않음 |
@@ -99,6 +99,7 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 
 | 명령어 | 증명하는 것 |
 | --- | --- |
+| `npm run test:e2e` | 실제 Express server와 Inspector를 통과하는 Fake prompt streaming, cancellation, failure, normalized events, debug evidence와 in-process history browser gate |
 | `npm test` | fake Codex app-server scenario를 포함한 runtime-core, runtime-codex, server 생명주기 테스트 |
 | `npm run typecheck` | packages/apps 전반의 TypeScript 계약 호환성 |
 | `npm run build` | package 빌드 순서와 app build |
@@ -115,7 +116,7 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | 영속 run log | PRD는 영속 log를 요구했지만 현재 log는 서버 프로세스 안에 산다. | ADR 0004에 따라 `runtime-core`가 self-contained RuntimeRunLog persistence와 recovery semantics를 소유하고, server가 per-run versioned JSON snapshot adapter를 조립하도록 구현한다. |
 | 제품 runtime handoff | Runtime Harness는 의도적으로 SourceSelection, StatePatch, Review, TrustedState가 아니다. | parity demo 이후 첫 product-facing adapter use case를 정의하되, `runtime-core`만 runtime contract로 유지한다. |
 | Inspector 영속성 | Inspector history는 현재 server memory를 반영한다. | Inspector가 reload나 server restart를 견뎌야 한다면 durable run log와 history hydration을 함께 설계한다. |
-| Inspector UI-level verification | Inspector workspace에는 browser test와 `test` script가 없어 실제 HTTP/SSE wiring, terminal display, history interaction을 자동 검증하지 않는다. | ADR 0003에 따라 real server와 FakeRuntimeAdapter를 사용하는 Playwright browser integration test로 streaming, cancel, failure, history, restart hydration을 검증한다. |
+| Inspector restart/degraded verification | Playwright browser gate는 현재 process의 lifecycle과 history를 검증하지만 durable history hydration, restart recovery와 persistence degraded UI는 아직 검증하지 않는다. | Persistence 구현 뒤 같은 real-server browser harness를 확장해 reload, restart recovery, history clear와 degraded 상태를 검증한다. |
 
 ## 이후 Agent 작업 규칙
 
