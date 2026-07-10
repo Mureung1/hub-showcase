@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# 비밀 키(API Key 등) — 절대 커밋되면 안 됨
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
