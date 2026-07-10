@@ -58,6 +58,8 @@
 
 ## 2단계 — 다중 사용자
 
+> 2주차 실행 계획(프로토타입 ↔ MVP 비교 + 우선순위 태스크)은 [docs/week2-plan.md](week2-plan.md) 참조.
+
 - [ ] Supabase Auth 가입/로그인
 - [ ] 전 테이블 Row Level Security 적용
 - [ ] Discord 계정 연결 (사용자 ↔ Discord ID 매핑, 알림 채널 등록)

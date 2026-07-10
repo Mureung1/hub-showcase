@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import AppLayout from './components/AppLayout.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import DashboardPage from './pages/DashboardPage.jsx'
 import ConditionsPage from './pages/ConditionsPage.jsx'
 import JournalPage from './pages/JournalPage.jsx'
 import ReviewPage from './pages/ReviewPage.jsx'
@@ -15,6 +16,7 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route element={<AppLayout />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/conditions" element={<ConditionsPage />} />
         <Route path="/journal" element={<JournalPage />} />
         <Route path="/journal/:symbol" element={<JournalPage />} />

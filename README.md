@@ -15,6 +15,7 @@
 
 - [기획서 (docs/plan.md)](docs/plan.md) — 문제·페르소나·차별점·에이전트다움·핵심 기능·아키텍처·KPI·일정
 - [디자인 시스템 (docs/design.md)](docs/design.md) — 색·타이포·간격·컴포넌트 토큰의 단일 원천
+- [2주차 계획 (docs/week2-plan.md)](docs/week2-plan.md) — 프로토타입 ↔ MVP 비교 평가 + 우선순위 태스크
 - [작업 체크리스트 (docs/checklist.md)](docs/checklist.md)
 
 ## 폴더 구조 (npm workspaces)

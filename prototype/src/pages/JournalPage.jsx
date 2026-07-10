@@ -1,4 +1,4 @@
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import TradeChart from '../components/TradeChart.jsx'
 import { getCandles } from '../mock/candles.js'
 import { getEntriesBySymbol, ENTRIES } from '../mock/entries.js'
@@ -21,6 +21,8 @@ function fmtPrice(symbol, price) {
 export default function JournalPage() {
   const { symbol = '005930' } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const fromDiscord = location.state?.fromDiscord
   const candles = getCandles(symbol)
   const entries = getEntriesBySymbol(symbol)
   const meta = SYMBOLS.find((s) => s.symbol === symbol) ?? SYMBOLS[0]
@@ -35,6 +37,14 @@ export default function JournalPage() {
         <span className="brand">🔦 Beacon</span>
         <span className="crumb">· 저널</span>
       </div>
+      {fromDiscord && (
+        <div className="journal-banner">
+          <span className="jb-icon">📥</span>
+          방금 Discord 알림에서{' '}
+          <strong>{TYPE_LABEL[fromDiscord] ?? '매매'}</strong> 기록을 남겼어요 —
+          메모를 보완하고 AI 복기를 요청해보세요.
+        </div>
+      )}
       <div className="journal-head">
         <h1>저널</h1>
         <div className="symbol-switch">
