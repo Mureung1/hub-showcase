@@ -182,6 +182,16 @@ Examples:
 - `docs: API 설계 문서 추가`
 - `chore: React 개발 환경 구성`
 
+## Git 규칙
+- 실제 작업 브랜치는 'feature/n099-html-css'이다.
+- main 브랜치에서 작업하지 않는다.
+- PR 방향은 `meatbest9:feature/n099-html-css` -> `connect-AIAgentChallenge-26-1/hub:N099_백승주`이다.
+- commit은 각 세션에서 하나의 작업(기능 구현, 버그 수정 등)이 끝날 때마다 자동으로 수행한다.
+- push와 PR은 사용자가 명시적으로 지시할 때만 실행한다.
+
+
+
+
 ## Business Rules
 
 - 사용자는 회원가입 시 멘티 또는 멘토 역할을 선택한다.
