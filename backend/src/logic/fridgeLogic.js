@@ -3,6 +3,7 @@
 
 export function fridgeAvailable(fridge, id) {
   const f = fridge[id];
+  if (!f) return false; // 삭제됐거나 애초에 없던 재료 — "보유 안 함"으로 취급 (레시피 매칭이 크래시하지 않도록)
   return f.levels ? f.level < f.levels.length - 1 : true;
 }
 
@@ -12,7 +13,7 @@ export function ingHave(fridge, ing) {
 }
 
 export function ingName(fridge, ing) {
-  return ing.id ? fridge[ing.id].name : ing.name;
+  return ing.id ? (fridge[ing.id]?.name ?? ing.id) : ing.name;
 }
 
 export function recipeRatio(fridge, recipes, id) {
@@ -21,7 +22,7 @@ export function recipeRatio(fridge, recipes, id) {
 }
 
 export function recipeHasImminentBadge(fridge, recipes, id) {
-  return recipes[id].ingredients.some((ing) => ing.id && fridge[ing.id].imminent && fridgeAvailable(fridge, ing.id));
+  return recipes[id].ingredients.some((ing) => ing.id && fridge[ing.id]?.imminent && fridgeAvailable(fridge, ing.id));
 }
 
 export function imminentIds(fridge) {
@@ -33,7 +34,7 @@ export function buildDeductionState(fridge, recipe, checkedAddonIds) {
   const state = [];
   function pushEntry(id, addon) {
     const f = fridge[id];
-    if (!f.levels) return; // 미추적(펜트리) 재료는 차감하지 않음
+    if (!f?.levels) return; // 삭제됐거나 미추적(펜트리) 재료는 차감하지 않음
     const remain = f.levels.length - 1 - f.level;
     if (remain <= 0) return; // 이미 소진된 재료는 차감할 게 없음
     state.push({ id, use: 1, max: remain, fixed: f.levels.length <= 2, addon: !!addon });

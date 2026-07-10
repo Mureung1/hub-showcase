@@ -6,8 +6,9 @@ export default function IngredientSheet() {
   const f = sheetItemId ? fridge[sheetItemId] : null;
 
   const handleDelete = async () => {
-    await deleteFridgeItem(sheetItemId);
-    closeSheet();
+    const id = sheetItemId;
+    await deleteFridgeItem(id);
+    closeSheet(id); // id가 여전히 열려 있는 시트일 때만 닫는다 (다른 아이템 시트를 대신 닫지 않도록)
   };
 
   return (

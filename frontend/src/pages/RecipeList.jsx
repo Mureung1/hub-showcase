@@ -3,16 +3,25 @@ import { useApp } from '../context/AppContext';
 import { api } from '../api';
 import RecipeCard from '../components/RecipeCard';
 
+// GET /api/recipes?filter= 에 전달되는 값 (store.js listRecipes filter 허용값과 일치)
+// - 'all'  : 전체 레시피
+// - 'full' : 재고가 모두 갖춰진 레시피만 ("바로 가능")
+// - 'few'  : 핵심 재료 4개 이하 간단 레시피 ("적은 재료 OK")
 const MATCH_CHIPS = [
-  { v: 'all', label: '전체' },
+  { v: 'all',  label: '전체' },
   { v: 'full', label: '✅ 바로 가능' },
-  { v: 'few', label: '🧂 적은 재료 OK' },
+  { v: 'few',  label: '🧂 적은 재료 OK' },
 ];
+
+// GET /api/recipes?level= 에 전달되는 값
+// - 'all'      : 전체
+// - 'beginner' : 초보자
+// - 'mid'      : 중급자
 const LEVEL_CHIPS = [
-  { v: 'all', label: '난이도 전체' },
+  { v: 'all',      label: '난이도 전체' },
   { v: 'beginner', label: '🟢 초보자' },
-  { v: 'mid', label: '🟡 중급자' },
-  { v: 'high', label: '🔴 상급자' },
+  { v: 'mid',      label: '🟡 중급자' },
+  { v: 'high',     label: '🔴 상급자' },
 ];
 
 export default function RecipeList() {
@@ -51,10 +60,12 @@ export default function RecipeList() {
           ))}
         </div>
 
-        <div className="notice" style={{ marginTop: 4 }}>
-          🚫 핵심 재료가 없는 레시피 <b>3개</b>(된장찌개 · 알리오 올리오 · 부대찌개)는 추천에서 제외했어요 ·{' '}
-          <a style={{ color: 'var(--green-dark)', fontWeight: 700, cursor: 'pointer' }} onClick={() => tab('shopping-sets')}>장보기 세트 보기 ›</a>
-        </div>
+        {recipes.total > 0 && (
+          <div className="notice" style={{ marginTop: 4 }}>
+            원하는 요리가 없다면 재료를 더 채워보세요 ·{' '}
+            <a style={{ color: 'var(--green-dark)', fontWeight: 700, cursor: 'pointer' }} onClick={() => tab('shopping-sets')}>장보기 세트 보기 ›</a>
+          </div>
+        )}
 
         {recipes.total === 0 && (
           <div className="card" style={{ textAlign: 'center', padding: '30px 16px' }}>

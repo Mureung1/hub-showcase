@@ -7,8 +7,14 @@ export default function ReceiptCamera() {
 
   const handleShoot = async () => {
     setLoading(true);
-    await shootReceipt();
-    setLoading(false);
+    try {
+      await shootReceipt();
+    } catch (error) {
+      console.error(error);
+      alert(error.message || '영수증 촬영 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

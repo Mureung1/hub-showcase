@@ -1,7 +1,19 @@
+import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 
 export default function CookDone() {
   const { fridge, deductionState, editingDeduction, setEditingDeduction, adjustDeduction, finishCooking } = useApp();
+  const [finishing, setFinishing] = useState(false);
+
+  const handleFinish = async () => {
+    if (finishing) return;
+    setFinishing(true);
+    try {
+      await finishCooking();
+    } finally {
+      setFinishing(false);
+    }
+  };
 
   const rows = deductionState.map((d, i) => ({ ...d, f: fridge[d.id], i }));
 
@@ -64,7 +76,9 @@ export default function CookDone() {
         )}
       </div>
       <div className="bottom-fixed">
-        <button className="btn primary" onClick={finishCooking}>냉장고 확인하기</button>
+        <button className="btn primary" disabled={finishing} onClick={handleFinish}>
+          {finishing ? '반영하는 중…' : '냉장고 확인하기'}
+        </button>
       </div>
     </section>
   );
