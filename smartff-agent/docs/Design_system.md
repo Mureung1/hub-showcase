@@ -187,6 +187,46 @@ Fallback: system-ui, sans-serif
 5. **푸터** — 데이터 기준일
    - 오른쪽 정렬, 회색 작은 텍스트 "데이터 기준일 · 판매·발주·폐기 2026.07.08"
 
+### 섹션 순서 — Upload 페이지
+
+1. **헤더** — "업로드" 제목 + 분석 상태 점 + "GS25 강남역점 · 데이터 관리" + AI 분석 가능 여부 배지 + 오늘 날짜 배지
+2. **AI 분석 가능 여부** — 틴트 파란 카드, 진행률 바(%) + "N개 데이터 중 M개 준비 완료" + 6개 데이터 종류별 ✓/⚠ 상태 라벨(판매/발주/폐기/재고/시간대/요일별)
+3. **데이터 업로드** — 3열 그리드 카드 6개(판매/발주/폐기/재고/시간대별 매출/요일별 매출)
+   - 각 카드: 아이콘 배지 + 데이터명 + "어느 페이지에서 쓰이는지"(예: Dashboard · Financial) + 점선 테두리 "파일 선택" 버튼 + 최근 업로드 일자
+   - 미업로드/문제 있는 카드(재고)는 노란색 경고 톤(border #FDE68A, 배경 #FFFBEB, 텍스트 #B45309)으로 구분
+4. **데이터 검증 결과** — 카드형 리스트, 데이터 종류별 ✓/⚠ 상태 + "N개 상품 정상 인식" 또는 "상품 N개 매칭 실패"
+5. **최근 업로드 이력** — 4열 테이블(날짜/종류/카테고리/상태), 상태는 "✓ 완료" 텍스트
+6. **푸터** — 데이터 기준일 (Dashboard와 동일 규칙)
+
+### 섹션 순서 — Financial 페이지
+
+1. **헤더** — "재무" 제목 + "GS25 강남역점 · 관리회계 기준 수익성 분석" + AI 분석 가능 여부 배지 + 오늘 날짜 배지
+2. **AI 재무 인사이트** — 틴트 파란 카드, `AI 제안` 배지 + "AI 재무 인사이트" 라벨 + 카테고리 강조 문장(예: "도시락은 현재 가장 높은 수익성") + Dashboard 추천과의 연결 설명 + 근거 3개(✓ 아이콘) + 데이터 기준 안내문
+3. **KPI 4-그리드** — 총매출 / 마진액 / 폐기손실(빨강 강조) / 추정 순이익(틴트 파란 카드로 구분)
+4. **순이익 기여도** — 카테고리별 순위 배지(①원형 숫자) + 진행률 바, 1위만 primary 색상 + "↑ 전체 순이익 1위" 라벨, 2위 이하는 회색조 bar
+5. **마진 vs 폐기 비교** — 카테고리별 그룹 막대차트(마진액=파랑, 폐기손실=연한 빨강), 범례 상단 표시, 하단에 ✓/✕ 인사이트 문장 2줄
+6. **폐기손실액 랭킹 + 폐기율(금액 기준)** — 2단 그리드
+   - 좌: 순위 리스트(1~4위) + 금액 + "전체 폐기의 N%"
+   - 우: 카테고리별 폐기율 progress bar (폐기금액 ÷ 매출액), 위험 카테고리는 빨간 바
+7. **푸터** — 데이터 기준일
+
+### 섹션 순서 — Analysis 페이지
+
+1. **헤더** — "분석" 제목 + "GS25 강남역점 · 판매 패턴 분석" + AI 분석 가능 여부 배지 + 오늘 날짜 배지
+2. **카테고리 선택 탭** — pill 버튼 그룹(도시락/김밥/샌드위치/삼각김밥), 활성 탭은 파란 배경, 특정 카테고리엔 "(추천)"/"(주의)" 배지 부착. **탭 전환 시 이하 전체 섹션이 해당 카테고리 데이터로 바뀜(클라이언트 상태)**
+3. **인사이트 스트립** — 선택된 카테고리의 상태에 따라 3가지 톤 전환:
+   - `opportunity`(기회): 틴트 파란, `AI 인사이트` 배지, ✓ 근거 3개
+   - `neutral`(보통): 연회색, `AI 인사이트` 배지, · 근거 3개
+   - `risk`(위험): 틴트 빨강, `위험 신호` 배지, ✕ 근거 3개
+4. **요일별 판매 패턴 + 시간대별 판매 패턴** — 2단 그리드, 각각 막대차트(7개 요일 / 8개 시간대), 최고값 막대만 진한 색(#2563EB), 2위는 연한 파랑(#93C5FD), 나머지는 옅은 회색. 하단에 "최고 판매 요일/시간대" + 자동 생성 요약 문장
+5. **판매 추세(최근 12주) + 폐기 추세** — 2단 그리드, SVG 라인+영역 차트, 카드 우측 상단에 "최근 4주 {추세}" 배지(상승=초록, 하락=빨강, 보합=회색). 하단에 자동 생성 요약 문장("최근 4주 지속 상승세입니다" 등)
+6. **푸터** — 데이터 기준일
+
+**Analysis 페이지 특이사항 — 카테고리별 데이터 기반 자동 인사이트:**
+- 각 카테고리(도시락/김밥/샌드위치/삼각김밥)는 요일별/시간대별 판매량, 12주 판매 추세, 12주 폐기율 추세를 원본 데이터로 가짐
+- 요약 문장(최고 요일 대비 %, 피크 시간대 판매 비중 %, 최근 4주 대비 추세)은 **하드코딩된 문구가 아니라 원본 수치에서 계산**되어야 함 — React 구현 시 순수 함수로 분리 (예: `weekdaySummary()`, `timeSummary()`, `trendSummary()`)
+- 인사이트 스트립의 타입(`opportunity`/`neutral`/`risk`)은 판매 추세·폐기 추세 방향에 따라 결정됨
+
 ---
 
 ## 지양할 것 (Do Not)
@@ -309,6 +349,69 @@ Dashboard는 **ERP 소프트웨어처럼 보이면 안 됨.** 모든 정보는 �
 - 기타 항목은 라이트 블루(#93C5FD) bar
 - 각 항목 하단: "전월 대비 ±%p" (성공/위험 색상별)
 
+### 업로드 카드 (UploadCard) — Upload 전용
+
+| 속성 | 값 |
+|------|-----|
+| background | #FFFFFF (정상) / #FFFBEB (경고) |
+| border | 1px solid #E2E8F0 (정상) / 1px solid #FDE68A (경고) |
+| border-radius | 14px |
+| padding | 20px 22px |
+
+**구조:**
+```
+[아이콘 배지] 데이터명
+사용 페이지 안내 (11px, 회색)
+┌ 점선 테두리 "파일 선택" 버튼 ┐
+최근 업로드 · YYYY.MM.DD (또는 "최근 업로드 없음")
+```
+
+**규칙:**
+- 아이콘 배지 색상은 데이터 종류별로 구분(판매=파랑, 발주=초록, 폐기=빨강, 재고=주황 경고톤)
+- 문제가 있는 데이터(예: 매칭 실패)는 카드 전체를 경고 톤(#FDE68A 보더)으로 표시
+
+### AI 분석 가능 여부 카드 (DataReadinessCard) — Upload 전용
+
+| 속성 | 값 |
+|------|-----|
+| background | primary-50 (#EFF6FF) |
+| 진행률 바 | 배경 #DBEAFE, 채움 #2563EB |
+| 하단 상태 라벨 | 데이터 종류별 ✓(정상, #1D4ED8) / ⚠(경고, #B45309) |
+
+### AI 재무 인사이트 카드 (FinancialInsightCard) — Financial 전용
+
+Dashboard의 AI 제안 카드와 동일한 시각 언어(틴트 파랑, `AI 제안` 배지)를 쓰되, **Dashboard의 추천과 Financial의 데이터를 연결하는 문장**을 반드시 포함한다 (예: "Dashboard에서 추천한 '○○ 확대 검토'는 …를 바탕으로 한 판단입니다"). 이는 페이지 간 일관성을 위한 필수 규칙이다.
+
+### 순이익 기여도 / 마진 vs 폐기 비교 (Financial 전용)
+
+- 순이익 기여도: 원형 순위 배지(①②③④) + 진행률 바, 1위만 primary 색(#2563EB), 2위 이하 회색조(#93C5FD → #CBD5E1 → #E2E8F0)
+- 마진 vs 폐기 비교: 카테고리별 그룹 막대(마진액 파랑 + 폐기손실 연빨강/빨강), 위험 카테고리만 폐기 막대를 진한 빨강(#DC2626)으로 강조
+
+### 카테고리 탭 (CategoryTabs) — Analysis 전용
+
+| 속성 | 값 |
+|------|-----|
+| 활성 | 배경 #2563EB, 텍스트 흰색, pill 모양 |
+| 비활성 | 배경 흰색, 보더 #E2E8F0, 텍스트 #475569 |
+| 부가 배지 | 활성 탭 옆 "(추천)"(파랑) 또는 "(주의)"(빨강) 텍스트 |
+
+### 인사이트 스트립 (InsightStrip) — Analysis 전용
+
+카테고리 상태에 따라 3-variant 전환(Dashboard의 AI 제안/위험 신호 카드와 같은 색 언어 재사용):
+
+| 타입 | 배경 | 배지 | 기호 |
+|------|------|------|------|
+| opportunity | #EFF6FF | `AI 인사이트` (파랑) | ✓ |
+| neutral | #F8FAFC | `AI 인사이트` (회색) | · |
+| risk | #FEF2F2 | `위험 신호` (빨강) | ✕ |
+
+### 요일별/시간대별 패턴 막대 (PatternBarChart) — Analysis 전용
+
+- 최고값 막대: 진한 파랑(#2563EB) + 라벨 굵게(#0F172A)
+- 2위 막대: 연한 파랑(#93C5FD)
+- 나머지: 옅은 회색(#EFF2F7)
+- 하단에 "최고 판매 요일/시간대" + 자동 계산 요약 문장 필수
+
 ---
 
 ## 차트 가이드라인
@@ -337,6 +440,16 @@ Dashboard는 **ERP 소프트웨어처럼 보이면 안 됨.** 모든 정보는 �
 - **모서리**: 둥근 모서리 (16px)
 - **3D 효과**: 절대 금지
 - **과도한 색상**: 3개 이상 금지 (필요시 회색조 사용)
+
+**Analysis 판매/폐기 추세 차트 (12주):**
+- Dashboard 라인 차트와 동일 사양(SVG 라인+영역, 그라디언트 언더레이, 원형 마커)이나 X축이 12주 범위
+- 라인 색상은 추세 방향에 따라 동적으로 결정: 상승/안정=파랑 계열(#2563EB) 또는 초록(#15803D), 하락/위험=빨강(#DC2626)
+- 카드 우측 상단 배지로 "최근 4주 {추세}" 표시(예: +18%, 안정적, -12%, 2주 연속 증가)
+
+**Financial 마진 vs 폐기 그룹 막대차트:**
+- 카테고리별 마진액(파랑)과 폐기손실(연빨강/빨강) 막대를 나란히 배치
+- 범례는 카드 상단 우측에 작게 표시
+- Y축 숨김, 카테고리 라벨만 하단에 표시
 
 ### 컬러 매핑
 
@@ -451,14 +564,16 @@ Dashboard는 **ERP 소프트웨어처럼 보이면 안 됨.** 모든 정보는 �
 
 ---
 
-## 다음 페이지 적용 (분석, 재무)
+## 페이지별 디자인 반영 현황
 
-이후 **분석(Analysis)** 및 **재무(Financial)** 페이지를 만들 때:
+| 페이지 | Claude Design 파일 | 이 문서 반영 | React 구현 |
+|--------|--------------------|------------|-----------|
+| Dashboard | `SmartFF Dashboard.dc.html` | ✅ 완료 (v2.0) | ❌ 미착수 |
+| Upload | `SmartFF Upload.dc.html` | ✅ 완료 (v3.0) | ❌ 미착수 |
+| Financial | `SmartFF Financial.dc.html` | ✅ 완료 (v3.0) | ❌ 미착수 |
+| Analysis | `SmartFF Analysis.dc.html` | ✅ 완료 (v3.0) | ❌ 미착수 |
 
-1. 이 문서의 **컬러**, **타이포**, **컴포넌트** 규칙을 그대로 적용
-2. 같은 사이드바, 상단바, 카드 스타일 사용
-3. 한국어 라벨 톤 유지 (GS25 점주 중심)
-4. "무엇을 할 것인가?" 중심의 카피 유지
+4개 페이지 모두 이 문서의 **컬러**, **타이포**, **아이콘 레일**, **배지 시스템** 규칙을 공유한다. 페이지별 고유 컴포넌트(위 "컴포넌트 패턴" 절 참고)만 다르다.
 
 ---
 
@@ -481,7 +596,26 @@ Dashboard는 **ERP 소프트웨어처럼 보이면 안 됨.** 모든 정보는 �
 - `<MarginBarList/>` — 카테고리별 마진율 progress bar 리스트
 - `<DashboardHeader/>` — 점포명 + 상태 + 날짜
 
-**공통 컴포넌트 (Analysis/Financial과 공유)**
+**Upload 컴포넌트 (신규)**
+- `<DataReadinessCard/>` — AI 분석 가능 여부 진행률 카드
+- `<UploadCard/>` — 데이터 종류별 업로드 카드 (판매/발주/폐기/재고/시간대/요일별)
+- `<DataValidationList/>` — 데이터 검증 결과 리스트 (✓/⚠)
+- `<UploadHistoryTable/>` — 최근 업로드 이력 테이블
+
+**Financial 컴포넌트 (신규)**
+- `<FinancialInsightCard/>` — AI 재무 인사이트 카드 (Dashboard 추천과 연결되는 문장 포함)
+- `<ProfitContributionBar/>` — 카테고리별 순이익 기여도 순위 바
+- `<MarginVsWasteChart/>` — 마진 vs 폐기 그룹 막대차트
+- `<WasteRankingList/>` — 폐기손실액 랭킹 리스트
+- `<WasteRateBar/>` — 카테고리별 폐기율(금액 기준) progress bar
+
+**Analysis 컴포넌트 (신규)**
+- `<CategoryTabs/>` — 카테고리 선택 pill 탭 (도시락/김밥/샌드위치/삼각김밥)
+- `<InsightStrip/>` — 카테고리 상태별 인사이트 배너 (opportunity/neutral/risk 3-variant)
+- `<PatternBarChart/>` — 요일별/시간대별 판매 패턴 막대차트 (공용, props로 축 전환)
+- `<TrendLineChart/>` — 판매/폐기 추세 SVG 라인차트 (12주, Dashboard `SalesTrendChart`와 사양 공유하되 기간만 다름)
+
+**공통 컴포넌트 (전 페이지 공유)**
 - `<Card/>` — 기본 카드 래퍼 (background, border, border-radius, padding)
 - `<Button/>` — CTA 버튼 (파란/빨강 아웃라인, pill 스타일)
 - `<SectionHeader/>` — 섹션 제목
@@ -512,19 +646,21 @@ Dashboard는 **ERP 소프트웨어처럼 보이면 안 됨.** 모든 정보는 �
 
 ## 파일 참고
 
-**Design Reference (최신)**
-- **Claude Design Project**: [SmartFF Dashboard.dc.html](https://claude.ai/design/p/0e087b10-9346-44e8-9c27-d2a3d22be140?file=SmartFF+Dashboard.dc.html)
-  - 최신 컬러, 레이아웃, 컴포넌트 사양 (이 문서의 근거)
-  - 생존성: 피드백 루프 진행 중, 계속 갱신됨
+**Design Reference (최신, Claude Design 프로젝트 `0e087b10-9346-44e8-9c27-d2a3d22be140`)**
+- [SmartFF Dashboard.dc.html](https://claude.ai/design/p/0e087b10-9346-44e8-9c27-d2a3d22be140?file=SmartFF+Dashboard.dc.html)
+- [SmartFF Upload.dc.html](https://claude.ai/design/p/0e087b10-9346-44e8-9c27-d2a3d22be140?file=SmartFF+Upload.dc.html)
+- [SmartFF Financial.dc.html](https://claude.ai/design/p/0e087b10-9346-44e8-9c27-d2a3d22be140?file=SmartFF+Financial.dc.html)
+- [SmartFF Analysis.dc.html](https://claude.ai/design/p/0e087b10-9346-44e8-9c27-d2a3d22be140?file=SmartFF+Analysis.dc.html)
+  - 4개 파일 모두 최신 컬러/레이아웃/컴포넌트 사양의 근거. 피드백 루프 진행 중, 계속 갱신됨
 
 **React Frontend**
 - **Tailwind Config**: `web/tailwind.config.js` (색상 토큰 정의)
 - **Constants**: `web/src/constants/` (colors.ts, typography.ts, layout.ts)
 - **Components**: `web/src/components/`
   - common/: Sidebar.tsx, Topbar.tsx (기존)
-  - 신규: AIBriefCard, RiskAlertCard, KPICard, Badge, MarginBarList, SalesTrendChart, DashboardHeader
-- **Pages**: `web/src/pages/Dashboard.tsx` (신규)
-- **Layouts**: `web/src/layouts/MainLayout.tsx` (기존, 사이드바 업데이트 필요)
+  - dashboard/, analysis/, financial/, upload/: 폴더만 존재, 컴포넌트 파일 없음 (미구현)
+- **Pages**: `web/src/pages/Dashboard`, `Analysis`, `Financial`, `Upload` — 폴더만 존재, 미구현
+- **Layouts**: `web/src/layouts/MainLayout.tsx` (기존, 아이콘 레일 사이드바로 업데이트 필요)
 
 **Project Documentation**
 - **PROJECT_PLAN.md**: 전체 프로젝트 로드맵 (이 문서보다 상위 우선순위)
@@ -532,8 +668,9 @@ Dashboard는 **ERP 소프트웨어처럼 보이면 안 됨.** 모든 정보는 �
 
 ---
 
-*SmartFF Design System v2.0 — Updated 2026-07-10*
+*SmartFF Design System v3.0 — Updated 2026-07-10*
 
 **변경 이력:**
 - v1.0 (2026-07-09): 초기 프로토타입 기반 작성
-- v2.0 (2026-07-10): Claude Design 최신 버전 반영, 배지 시스템 통일, 컴포넌트 패턴 세분화
+- v2.0 (2026-07-10): Claude Design 최신 버전 반영, 배지 시스템 통일, 컴포넌트 패턴 세분화 (Dashboard)
+- v3.0 (2026-07-10): Upload/Financial/Analysis 3개 페이지 디자인(Claude Design .dc.html) 반영. 페이지별 섹션 순서, 컴포넌트 패턴, 차트 사양 추가. React 구현은 아직 미착수.
