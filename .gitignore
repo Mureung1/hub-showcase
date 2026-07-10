@@ -25,3 +25,6 @@ dist-ssr
 
 docs/*
 !docs/skills.md
+!docs/backlog.md
+!docs/plan.md
+!docs/checklist.md
