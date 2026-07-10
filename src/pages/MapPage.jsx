@@ -153,9 +153,9 @@ async function attachExpectedIntake(places, deficientRows) {
 }
 
 export default function MapPage() {
-  const { user, todayMeal } = useUser()
+  const { user, todayMealsTotal } = useUser()
   const recommended = user?.recommended
-  const todayTotal = todayMeal?.total
+  const todayTotal = todayMealsTotal
 
   // 오늘 부족한 영양소 상위 3개. 프로필/오늘 분석 기록이 없으면 빈 배열 → 기본 키워드로 폴백.
   const top3Rows = useMemo(() => {
@@ -267,7 +267,9 @@ export default function MapPage() {
         </>
       )}
 
-      {!nearbyLoading && places && <PlaceList places={places} />}
+      {!nearbyLoading && places && (
+        <PlaceList places={places} todayTotal={todayTotal} recommended={recommended} deficientRows={top3Rows} />
+      )}
     </div>
   )
 }
