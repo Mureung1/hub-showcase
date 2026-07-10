@@ -1,18 +1,14 @@
 import {
   BarChart3,
-  Box,
   Building2,
   CalendarDays,
   ChevronDown,
   ChevronRight,
   CircleHelp,
-  Clock3,
   Coffee,
   FileText,
   Layers3,
   LocateFixed,
-  Lock,
-  MapPin,
   MapPinned,
   Minus,
   Plus,
@@ -27,12 +23,12 @@ import Map, { Layer, Marker, Source, type MapRef } from "react-map-gl/maplibre";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { SceneWorkspace } from "./components/SceneWorkspace";
 import "./styles/global.css";
 
 type Category = "카페" | "음식점" | "베이커리" | "편의점";
 type MarketKey = "연남" | "홍대" | "합정";
 type MapMode = "localtwin" | "original";
-type SceneHour = "10:00" | "13:00" | "15:00" | "18:00";
 
 const localTwinMapStyle: StyleSpecification = {
   version: 8,
@@ -342,8 +338,6 @@ const markets: Record<MarketKey, Market> = {
   },
 };
 
-const sceneHours: SceneHour[] = ["10:00", "13:00", "15:00", "18:00"];
-
 const categories: Array<{ label: Category; icon: typeof Coffee; tone: string }> = [
   { label: "카페", icon: Coffee, tone: "green" },
   { label: "음식점", icon: Store, tone: "orange" },
@@ -400,7 +394,6 @@ export function App() {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [sceneOpen, setSceneOpen] = useState(false);
-  const [sceneHour, setSceneHour] = useState<SceneHour>("13:00");
   const [layer, setLayer] = useState<"density" | "demand">("density");
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
@@ -1318,133 +1311,7 @@ export function App() {
         </div>
       )}
 
-      {sceneOpen && (
-        <div
-          className="modal-backdrop scene-modal-backdrop"
-          role="presentation"
-          onMouseDown={() => setSceneOpen(false)}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="scene-modal-title"
-            className="scene-modal"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <button
-              className="modal-close"
-              type="button"
-              aria-label="3D 장소 닫기"
-              onClick={() => setSceneOpen(false)}
-            >
-              <X size={20} />
-            </button>
-            <header className="scene-modal-header">
-              <p className="modal-eyebrow">SCENE 01 · SUPPORTING FEATURE</p>
-              <h2 id="scene-modal-title">대전 유성구 관평동</h2>
-              <p>Gaussian Splatting 촬영·복원 대상</p>
-            </header>
-
-            <div className="scene-stage" aria-label="3D 장면 준비 상태">
-              <div className="scene-stage-grid" aria-hidden="true" />
-              <div className="scene-volume-group" aria-hidden="true">
-                <span className="scene-volume volume-a" />
-                <span className="scene-volume volume-b" />
-                <span className="scene-volume volume-c" />
-                <span className="scene-capture-ring" />
-              </div>
-              <div className="scene-stage-status">
-                <span>CAPTURE STATUS</span>
-                <b>촬영 전</b>
-              </div>
-              <div className="scene-stage-caption">
-                <Box size={16} />
-                <span>실제 3DGS asset 연결 전</span>
-              </div>
-              <div className="scene-stage-time" aria-live="polite">
-                <Clock3 size={15} />
-                <span>촬영 계획</span>
-                <b>{sceneHour}</b>
-              </div>
-            </div>
-
-            <div className="scene-modal-content">
-              <div className="scene-facts">
-                <div>
-                  <MapPin size={16} />
-                  <span>장소</span>
-                  <b>관평동 한 곳</b>
-                </div>
-                <div>
-                  <ScanLine size={16} />
-                  <span>촬영 범위</span>
-                  <b>점포 전면·보도 10~20m</b>
-                </div>
-                <div>
-                  <Box size={16} />
-                  <span>화면 역할</span>
-                  <b>한 장면 현장 탐색</b>
-                </div>
-              </div>
-
-              <section className="scene-time-section">
-                <div>
-                  <span>대표 관찰 시간</span>
-                  <p>현재 버튼은 촬영 계획만 선택하며 혼잡도 측정값을 뜻하지 않습니다.</p>
-                </div>
-                <div className="scene-time-buttons" role="group" aria-label="촬영 계획 시간">
-                  {sceneHours.map((hour) => (
-                    <button
-                      key={hour}
-                      type="button"
-                      className={sceneHour === hour ? "is-selected" : ""}
-                      aria-pressed={sceneHour === hour}
-                      onClick={() => setSceneHour(hour)}
-                    >
-                      {hour}
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              <div className="scene-progress" aria-label="3D 장면 준비 단계">
-                <div className="is-complete">
-                  <i>1</i>
-                  <b>대상 확정</b>
-                  <span>관평동 한 장소</span>
-                </div>
-                <div className="is-current">
-                  <i>2</i>
-                  <b>촬영 예정</b>
-                  <span>구간·시간·privacy 확인</span>
-                </div>
-                <div>
-                  <i>3</i>
-                  <b>3DGS 연결</b>
-                  <span>촬영·정제 후 진행</span>
-                </div>
-              </div>
-
-              <div className="scene-privacy">
-                <Lock size={17} />
-                <div>
-                  <b>Privacy gate</b>
-                  <span>원본 영상은 공개하지 않고 얼굴·차량번호 등 식별 영역을 제외합니다.</span>
-                </div>
-              </div>
-
-              <footer className="scene-modal-footer">
-                <p>
-                  관평동 3D 장소는 연남·홍대·합정 상권 비교군에 포함되지 않는 별도 시연 장소입니다.
-                </p>
-                <button type="button" disabled>
-                  <Lock size={15} /> 촬영 후 장면 열기
-                </button>
-              </footer>
-            </div>
-          </section>
-        </div>
-      )}
+      {sceneOpen && <SceneWorkspace onClose={() => setSceneOpen(false)} />}
     </main>
   );
 }

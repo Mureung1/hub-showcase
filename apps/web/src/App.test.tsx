@@ -65,22 +65,22 @@ describe("App", () => {
     expect(prefabs).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("keeps the Gwanpyeong 3D site separate and marks it as capture preparation", () => {
+  it("opens the Gwanpyeong upload pipeline as a supporting feature", () => {
     render(<App />);
 
     expect(screen.queryByRole("option", { name: /관평동/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /관평동 3D 장소/ }));
 
-    expect(screen.getByRole("dialog", { name: "대전 유성구 관평동" })).toBeInTheDocument();
-    expect(screen.getByText("Gaussian Splatting 촬영·복원 대상")).toBeInTheDocument();
-    expect(screen.getByText("실제 3DGS asset 연결 전")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "관평동 3D 장소 생성" })).toBeInTheDocument();
+    expect(screen.getByText("촬영물 업로드")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "자동 변환 시작" })).toBeInTheDocument();
+    expect(screen.getByText("GPU worker")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "13:00" })).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.click(screen.getByRole("button", { name: "18:00" }));
     expect(screen.getByRole("button", { name: "18:00" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "촬영 후 장면 열기" })).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: "3D 장소 닫기" }));
-    expect(screen.queryByRole("dialog", { name: "대전 유성구 관평동" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "관평동 3D 장소 생성" })).not.toBeInTheDocument();
   });
 });
