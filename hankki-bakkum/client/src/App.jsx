@@ -4,6 +4,9 @@ import TalentFeedPage from './pages/TalentFeedPage.jsx';
 import RequestDetailPage from './pages/RequestDetailPage.jsx';
 import RequestFormPage from './pages/RequestFormPage.jsx';
 import WalletPage from './pages/WalletPage.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import SignupPage from './pages/SignupPage.jsx';
+import TicketRedeemPage from './pages/TicketRedeemPage.jsx';
 
 // 화면 구성은 docs/prototype.html, 디자인 규칙은 .claude/skills/hankki-design 참고
 export default function App() {
@@ -21,6 +24,9 @@ export default function App() {
           <Route path="/talent/:id" element={<RequestDetailPage />} />
           <Route path="/talent/new" element={<RequestFormPage />} />
           <Route path="/wallet" element={<WalletPage />} />
+        <Route path="/wallet/redeem/:ticketId" element={<TicketRedeemPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         </Routes>
       </main>
 
