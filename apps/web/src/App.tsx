@@ -951,9 +951,14 @@ export function App() {
                                   : store.category === "베이커리"
                                     ? "✦"
                                     : "+"}
-                            </i>
+                              </i>
                           </span>
+                          <span className="prefab-awning" />
+                          <span className="prefab-door" />
+                          <span className="prefab-sign" />
+                          <span className="prefab-planter" />
                           <span className="prefab-roof" />
+                          <span className="prefab-chimney" />
                         </>
                       ) : (
                         <span>
