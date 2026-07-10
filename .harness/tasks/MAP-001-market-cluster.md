@@ -79,7 +79,7 @@ python scripts/check_docs_html.py
 
 - [x] 기능 스펙의 시연 상권 목록 갱신
 - [x] 실제 OSM snapshot 기준일과 한계 유지
-- [ ] Run Report 작성
+- [x] Run Report 작성
 
 ## 9. Commit Plan
 

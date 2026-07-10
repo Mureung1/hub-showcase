@@ -89,7 +89,7 @@ disabled viewer CTA와 privacy 설명
 - [x] 관평동 단일 장소와 상권 비교 분리 명시
 - [x] 실제 3DGS asset 미연결 상태 명시
 - [x] 촬영 범위와 privacy gate 명시
-- [ ] Run Report 작성
+- [x] Run Report 작성
 
 ## 9. Commit Plan
 

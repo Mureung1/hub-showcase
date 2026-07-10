@@ -83,7 +83,7 @@ desktop/mobile canvas nonblank와 control 겹침 확인
 
 - [x] LocalTwin 지도의 기술적 경계 명시
 - [x] 현재 프로토타입 기능 목록 갱신
-- [ ] Run Report 작성
+- [x] Run Report 작성
 
 ## 9. Commit Plan
 

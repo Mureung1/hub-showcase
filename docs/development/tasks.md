@@ -16,17 +16,17 @@
 
 백로그는 다음 필드를 사용한다.
 
-| 필드 | 의미 |
-| --- | --- |
-| ID | `영역-번호` 형식의 변하지 않는 식별자 |
-| Parent | 상위 Epic ID |
-| Outcome | 구현 목록이 아니라 완료 후 달라지는 사용자/시스템 상태 |
-| Priority | `P0` 필수, `P1` 중요, `P2` 여유가 있을 때 |
-| Status | `Done`, `In Progress`, `Ready`, `Backlog`, `Blocked` |
-| Week | 목표 주차. 확정 마감일이 아니라 계획 기준 |
-| Depends on | 먼저 끝나야 하는 Task |
-| Acceptance | 완료 여부를 확인할 수 있는 최소 기준 |
-| Packet | 실행할 때 만드는 `.harness/tasks/<task-id>.md` |
+| 필드       | 의미                                                   |
+| ---------- | ------------------------------------------------------ |
+| ID         | `영역-번호` 형식의 변하지 않는 식별자                  |
+| Parent     | 상위 Epic ID                                           |
+| Outcome    | 구현 목록이 아니라 완료 후 달라지는 사용자/시스템 상태 |
+| Priority   | `P0` 필수, `P1` 중요, `P2` 여유가 있을 때              |
+| Status     | `Done`, `In Progress`, `Ready`, `Backlog`, `Blocked`   |
+| Week       | 목표 주차. 확정 마감일이 아니라 계획 기준              |
+| Depends on | 먼저 끝나야 하는 Task                                  |
+| Acceptance | 완료 여부를 확인할 수 있는 최소 기준                   |
+| Packet     | 실행할 때 만드는 `.harness/tasks/<task-id>.md`         |
 
 ## 3. 관리 방법
 
@@ -53,12 +53,12 @@ Backlog -> Ready -> In Progress -> Done
 
 ## 5. 4주 로드맵
 
-| 주차 | 목표 | 주요 결과물 | 주차 종료 시연 |
-| --- | --- | --- | --- |
+| 주차  | 목표                              | 주요 결과물                                                     | 주차 종료 시연                                         |
+| ----- | --------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------ |
 | 1주차 | 데이터와 구조를 믿을 수 있게 준비 | 아키텍처, 공식 raw snapshot, canonical schema, 데이터 품질 요약 | 실제 데이터가 어떤 과정을 거쳐 분석 입력이 되는지 설명 |
-| 2주차 | 핵심 분석과 API 완성 | 경쟁·변화·시간대 metric, 입지 점수, `/api/v1` endpoint, SQLite | 한 상권/업종/반경의 실제 분석 JSON과 근거 확인 |
-| 3주차 | 조작 가능한 지도 시연 완성 | API 연결 지도, 다중 업종, 반경·Layer·비교·리포트, 오류 상태 | 발표자가 화면의 주요 기능을 직접 조작 |
-| 4주차 | 통합·보조 기능·발표 품질 완성 | 3D 보조 장면, 평가 script, demo scenario, 배포와 문서 | 처음부터 끝까지 끊기지 않는 통합 데모 |
+| 2주차 | 핵심 분석과 API 완성              | 경쟁·변화·시간대 metric, 입지 점수, `/api/v1` endpoint, SQLite  | 한 상권/업종/반경의 실제 분석 JSON과 근거 확인         |
+| 3주차 | 조작 가능한 지도 시연 완성        | API 연결 지도, 다중 업종, 반경·Layer·비교·리포트, 오류 상태     | 발표자가 화면의 주요 기능을 직접 조작                  |
+| 4주차 | 통합·보조 기능·발표 품질 완성     | 3D 보조 장면, 평가 script, demo scenario, 배포와 문서           | 처음부터 끝까지 끊기지 않는 통합 데모                  |
 
 ## 6. Epic과 세부 Task
 
@@ -66,65 +66,67 @@ Backlog -> Ready -> In Progress -> Done
 
 Outcome: 팀원이 Home만 보고 현재 구조, 다음 작업과 문서의 원본을 찾을 수 있다.
 
-| ID | 세부 Task | Priority | Status | Week | Acceptance |
-| --- | --- | --- | --- | --- | --- |
-| ARCH-001 | 현재/목표 시스템 아키텍처 작성 | P0 | Done | 1 | Front, Back, Data와 외부 source 흐름이 구분된다 |
-| DOCS-001 | 문서 원본과 중복 문서 역할 정리 | P0 | Done | 1 | canonical/support/history/legacy 역할이 문서화된다 |
-| DOCS-003 | Home, Viewer와 Knowledge Graph 연결 | P0 | Done | 1 | Task와 Architecture를 모든 문서 진입점에서 연다 |
-| PLAN-001 | 4주 Epic/Task 백로그 확정 | P0 | Done | 1 | 모든 P0가 주차와 완료 기준을 가진다 |
+| ID       | 세부 Task                           | Priority | Status | Week | Acceptance                                         |
+| -------- | ----------------------------------- | -------- | ------ | ---- | -------------------------------------------------- |
+| ARCH-001 | 현재/목표 시스템 아키텍처 작성      | P0       | Done   | 1    | Front, Back, Data와 외부 source 흐름이 구분된다    |
+| DOCS-001 | 문서 원본과 중복 문서 역할 정리     | P0       | Done   | 1    | canonical/support/history/legacy 역할이 문서화된다 |
+| DOCS-003 | Home, Viewer와 Knowledge Graph 연결 | P0       | Done   | 1    | Task와 Architecture를 모든 문서 진입점에서 연다    |
+| PLAN-001 | 4주 Epic/Task 백로그 확정           | P0       | Done   | 1    | 모든 P0가 주차와 완료 기준을 가진다                |
 
 ### EPIC-02. 공식 데이터 수집과 Canonical Schema
 
 Outcome: 화면용 임의 수치가 아니라 출처와 기준 기간이 있는 실제 데이터를 반복해서 준비할 수 있다.
 
-| ID | 세부 Task | Priority | Status | Week | Depends on | Acceptance |
-| --- | --- | --- | --- | --- | --- | --- |
-| DATA-001 | 서울 Open API raw snapshot 준비 | P0 | In Progress | 1 | - | raw JSON과 manifest에 source, period, row count가 남는다 |
-| DATA-002 | 공공데이터포털 점포·인허가 API 실제 응답 검증 | P0 | Ready | 1 | DATA-001 | 인증키를 노출하지 않고 sample 응답과 제한을 기록한다 |
-| DATA-003 | Store·Permit·Population·Sales canonical schema 확정 | P0 | Ready | 1 | DATA-002 | field, type, nullable, source mapping과 좌표계가 정의된다 |
-| DATA-004 | provider별 raw-to-canonical importer 구현 | P0 | Backlog | 1 | DATA-003 | 같은 명령을 재실행해 동일 schema 결과를 만든다 |
-| DATA-005 | 중복·결측·좌표·기간 품질 검사 작성 | P0 | Backlog | 1 | DATA-004 | 오류 건수와 제외 이유를 표로 출력한다 |
-| DATA-006 | 시연 상권과 비교 상권 sample 확정 | P0 | Backlog | 1 | DATA-005 | 최소 2개 상권과 카페·음식점·베이커리·편의점 분석이 가능하다 |
+| ID       | 세부 Task                                           | Priority | Status      | Week | Depends on | Acceptance                                                  |
+| -------- | --------------------------------------------------- | -------- | ----------- | ---- | ---------- | ----------------------------------------------------------- |
+| DATA-001 | 서울 Open API raw snapshot 준비                     | P0       | In Progress | 1    | -          | raw JSON과 manifest에 source, period, row count가 남는다    |
+| DATA-002 | 공공데이터포털 점포·인허가 API 실제 응답 검증       | P0       | Ready       | 1    | DATA-001   | 인증키를 노출하지 않고 sample 응답과 제한을 기록한다        |
+| DATA-003 | Store·Permit·Population·Sales canonical schema 확정 | P0       | Ready       | 1    | DATA-002   | field, type, nullable, source mapping과 좌표계가 정의된다   |
+| DATA-004 | provider별 raw-to-canonical importer 구현           | P0       | Backlog     | 1    | DATA-003   | 같은 명령을 재실행해 동일 schema 결과를 만든다              |
+| DATA-005 | 중복·결측·좌표·기간 품질 검사 작성                  | P0       | Backlog     | 1    | DATA-004   | 오류 건수와 제외 이유를 표로 출력한다                       |
+| DATA-006 | 시연 상권과 비교 상권 sample 확정                   | P0       | Backlog     | 1    | DATA-005   | 최소 2개 상권과 카페·음식점·베이커리·편의점 분석이 가능하다 |
 
 ### EPIC-03. 상권 분석 엔진과 FastAPI
 
 Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API가 동작한다.
 
-| ID | 세부 Task | Priority | Status | Week | Depends on | Acceptance |
-| --- | --- | --- | --- | --- | --- | --- |
-| ANALYSIS-001 | 핵심 metric의 계산식·단위·기간 확정 | P0 | Ready | 2 | DATA-003 | 경쟁·변화·시간대·점수 정의에 source metadata가 붙는다 |
-| ANALYSIS-002 | 반경별 점포와 동일 업종 경쟁 계산 | P0 | Backlog | 2 | DATA-004, ANALYSIS-001 | 100m/300m/500m fixture 결과가 test와 일치한다 |
-| ANALYSIS-003 | 개업·폐업·영업기간 변화 계산 | P0 | Backlog | 2 | DATA-004, ANALYSIS-001 | 기간별 집계와 표본 부족 상태를 구분한다 |
-| ANALYSIS-004 | 생활인구·매출 시간대 특성 계산 | P0 | Backlog | 2 | DATA-004, ANALYSIS-001 | 시간대 값과 실제/추정/관찰 source type을 반환한다 |
-| ANALYSIS-005 | 설명 가능한 입지 점수와 템플릿 리포트 | P0 | Backlog | 2 | ANALYSIS-002~004 | 총점, 항목 점수, 근거와 제한 사항이 함께 나온다 |
-| API-001 | SQLite repository와 seed/import 연결 | P0 | Backlog | 2 | DATA-004 | canonical data를 저장하고 반복 조회한다 |
-| API-002 | `/api/v1/markets` 분석 endpoint 구현 | P0 | Backlog | 2 | API-001, ANALYSIS-002~005 | 상권·업종·반경 입력에 versioned JSON을 반환한다 |
-| API-003 | validation·empty·provider error contract 구현 | P0 | Backlog | 2 | API-002 | 오류 상태와 근거 부족 상태가 HTTP/test로 구분된다 |
+| ID           | 세부 Task                                     | Priority | Status  | Week | Depends on                | Acceptance                                            |
+| ------------ | --------------------------------------------- | -------- | ------- | ---- | ------------------------- | ----------------------------------------------------- |
+| ANALYSIS-001 | 핵심 metric의 계산식·단위·기간 확정           | P0       | Ready   | 2    | DATA-003                  | 경쟁·변화·시간대·점수 정의에 source metadata가 붙는다 |
+| ANALYSIS-002 | 반경별 점포와 동일 업종 경쟁 계산             | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 100m/300m/500m fixture 결과가 test와 일치한다         |
+| ANALYSIS-003 | 개업·폐업·영업기간 변화 계산                  | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 기간별 집계와 표본 부족 상태를 구분한다               |
+| ANALYSIS-004 | 생활인구·매출 시간대 특성 계산                | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 시간대 값과 실제/추정/관찰 source type을 반환한다     |
+| ANALYSIS-005 | 설명 가능한 입지 점수와 템플릿 리포트         | P0       | Backlog | 2    | ANALYSIS-002~004          | 총점, 항목 점수, 근거와 제한 사항이 함께 나온다       |
+| API-001      | SQLite repository와 seed/import 연결          | P0       | Backlog | 2    | DATA-004                  | canonical data를 저장하고 반복 조회한다               |
+| API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | Backlog | 2    | API-001, ANALYSIS-002~005 | 상권·업종·반경 입력에 versioned JSON을 반환한다       |
+| API-003      | validation·empty·provider error contract 구현 | P0       | Backlog | 2    | API-002                   | 오류 상태와 근거 부족 상태가 HTTP/test로 구분된다     |
 
 ### EPIC-04. 지도 중심 분석 Workspace
 
 Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작하고 결과 변화를 설명할 수 있다.
 
-| ID | 세부 Task | Priority | Status | Week | Depends on | Acceptance |
-| --- | --- | --- | --- | --- | --- | --- |
-| WEB-001 | 현재 지도 프로토타입을 API adapter에 연결 | P0 | Backlog | 3 | API-002 | 화면 내 고정 수치 대신 API 응답이 표시된다 |
-| WEB-002 | 상권·업종·반경 Filter 동기화 | P0 | Backlog | 3 | WEB-001 | 선택 변경이 URL/요청/지도/패널에 일관되게 반영된다 |
-| WEB-003 | 실제 점포 marker와 경쟁·수요 Layer 구현 | P0 | Backlog | 3 | WEB-001 | source와 기간이 있는 점포/지표가 지도에 표시된다 |
-| WEB-004 | 상권 비교와 입지 리포트 구현 | P0 | Backlog | 3 | WEB-002, ANALYSIS-005 | 최소 2개 상권을 같은 기준으로 비교한다 |
-| WEB-005 | loading·empty·error·stale state 구현 | P0 | Backlog | 3 | WEB-001 | 실패 시 빈 흰 화면 없이 다음 행동을 안내한다 |
-| WEB-006 | keyboard·mobile·contrast 접근성 검증 | P1 | Backlog | 3 | WEB-002~005 | 핵심 조작이 keyboard와 mobile viewport에서 가능하다 |
-| WEB-007 | 근거 보기와 데이터 기준 시각화 | P0 | Backlog | 3 | WEB-003 | source, period, unit, method를 화면에서 확인한다 |
+| ID      | 세부 Task                                 | Priority | Status  | Week | Depends on            | Acceptance                                           |
+| ------- | ----------------------------------------- | -------- | ------- | ---- | --------------------- | ---------------------------------------------------- |
+| WEB-001 | 현재 지도 프로토타입을 API adapter에 연결 | P0       | Backlog | 3    | API-002               | 화면 내 고정 수치 대신 API 응답이 표시된다           |
+| WEB-002 | 상권·업종·반경 Filter 동기화              | P0       | Backlog | 3    | WEB-001               | 선택 변경이 URL/요청/지도/패널에 일관되게 반영된다   |
+| WEB-003 | 실제 점포 marker와 경쟁·수요 Layer 구현   | P0       | Backlog | 3    | WEB-001               | source와 기간이 있는 점포/지표가 지도에 표시된다     |
+| WEB-004 | 상권 비교와 입지 리포트 구현              | P0       | Backlog | 3    | WEB-002, ANALYSIS-005 | 최소 2개 상권을 같은 기준으로 비교한다               |
+| WEB-005 | loading·empty·error·stale state 구현      | P0       | Backlog | 3    | WEB-001               | 실패 시 빈 흰 화면 없이 다음 행동을 안내한다         |
+| WEB-006 | keyboard·mobile·contrast 접근성 검증      | P1       | Backlog | 3    | WEB-002~005           | 핵심 조작이 keyboard와 mobile viewport에서 가능하다  |
+| WEB-007 | 근거 보기와 데이터 기준 시각화            | P0       | Backlog | 3    | WEB-003               | source, period, unit, method를 화면에서 확인한다     |
+| MAP-001 | 연남·홍대·합정 상권 비교군 고정           | P0       | Done    | 3    | -                     | selector와 비교표에 가까운 3개 상권만 표시된다       |
+| MAP-002 | LocalTwin 2.5D 지도와 원본 fallback       | P0       | Done    | 3    | MAP-001               | 실제 footprint 기반 전용 지도와 원본 지도를 전환한다 |
 
 ### EPIC-05. 보조 3D 장면 탐색
 
 Outcome: 상권 분석에서 선택한 한 위치의 현장감을 제한된 3D 장면으로 보조 설명할 수 있다.
 
-| ID | 세부 Task | Priority | Status | Week | Depends on | Acceptance |
-| --- | --- | --- | --- | --- | --- | --- |
-| SCENE-001 | 촬영 위치·범위·privacy Gate 확정 | P1 | Backlog | 4 | EPIC-04 | 한 가게 앞 또는 10~20m 거리 범위와 공개 기준이 정해진다 |
-| SCENE-002 | 사람 영역 익명화 sample pipeline 검증 | P1 | Backlog | 4 | SCENE-001 | blur/mask/exclude 결과와 실패 사례를 확인한다 |
-| SCENE-003 | 실제 scene 1개 또는 검증된 대체 viewer 연결 | P1 | Backlog | 4 | SCENE-002 | 사람 눈높이에서 nonblank 장면을 탐색한다 |
-| SCENE-004 | 대표 시간대 혼잡도 overlay 연결 | P1 | Backlog | 4 | SCENE-003 | 10시/13시/15시/18시 상태가 근거와 함께 바뀐다 |
+| ID        | 세부 Task                                   | Priority | Status  | Week | Depends on | Acceptance                                          |
+| --------- | ------------------------------------------- | -------- | ------- | ---- | ---------- | --------------------------------------------------- |
+| SCENE-001 | 관평동 촬영 위치·범위·privacy Gate 확정     | P1       | Done    | 4    | EPIC-04    | 관평동 한 장소의 10~20m 범위와 공개 기준이 정해진다 |
+| SCENE-002 | 사람 영역 익명화 sample pipeline 검증       | P1       | Backlog | 4    | SCENE-001  | blur/mask/exclude 결과와 실패 사례를 확인한다       |
+| SCENE-003 | 실제 scene 1개 또는 검증된 대체 viewer 연결 | P1       | Backlog | 4    | SCENE-002  | 사람 눈높이에서 nonblank 장면을 탐색한다            |
+| SCENE-004 | 대표 시간대 혼잡도 overlay 연결             | P1       | Backlog | 4    | SCENE-003  | 10시/13시/15시/18시 상태가 근거와 함께 바뀐다       |
 
 P0가 늦어지면 EPIC-05 범위를 줄이고 상권 분석 완성도를 우선한다.
 
@@ -132,13 +134,13 @@ P0가 늦어지면 EPIC-05 범위를 줄이고 상권 분석 완성도를 우선
 
 Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발표자는 주요 기능을 안정적으로 시연할 수 있다.
 
-| ID | 세부 Task | Priority | Status | Week | Depends on | Acceptance |
-| --- | --- | --- | --- | --- | --- | --- |
-| EVAL-001 | 핵심 분석 평가 fixture와 score script 작성 | P0 | Backlog | 4 | EPIC-03 | 정상·경계·실패 case를 수치로 재현한다 |
-| EVAL-002 | Front-API 통합 smoke test | P0 | Backlog | 4 | EPIC-04 | 주요 시연 경로가 새 환경에서 통과한다 |
-| DEMO-001 | 5분 발표 시나리오와 복구 경로 작성 | P0 | Backlog | 4 | EVAL-002 | 발표 순서, 예상 결과와 fallback이 문서화된다 |
-| DEPLOY-001 | docs/prototype 배포와 공개 경로 검증 | P0 | Backlog | 4 | EVAL-002 | Home, Tasks, Architecture와 prototype URL이 열린다 |
-| DOCS-004 | 실제 구현 결과로 스펙·아키텍처·백로그 마감 | P0 | Backlog | 4 | EPIC-03~06 | 계획 문구와 실제 구현 차이가 정리된다 |
+| ID         | 세부 Task                                  | Priority | Status  | Week | Depends on | Acceptance                                         |
+| ---------- | ------------------------------------------ | -------- | ------- | ---- | ---------- | -------------------------------------------------- |
+| EVAL-001   | 핵심 분석 평가 fixture와 score script 작성 | P0       | Backlog | 4    | EPIC-03    | 정상·경계·실패 case를 수치로 재현한다              |
+| EVAL-002   | Front-API 통합 smoke test                  | P0       | Backlog | 4    | EPIC-04    | 주요 시연 경로가 새 환경에서 통과한다              |
+| DEMO-001   | 5분 발표 시나리오와 복구 경로 작성         | P0       | Backlog | 4    | EVAL-002   | 발표 순서, 예상 결과와 fallback이 문서화된다       |
+| DEPLOY-001 | docs/prototype 배포와 공개 경로 검증       | P0       | Backlog | 4    | EVAL-002   | Home, Tasks, Architecture와 prototype URL이 열린다 |
+| DOCS-004   | 실제 구현 결과로 스펙·아키텍처·백로그 마감 | P0       | Backlog | 4    | EPIC-03~06 | 계획 문구와 실제 구현 차이가 정리된다              |
 
 ## 7. 이번 주 Ready Queue
 
@@ -169,15 +171,15 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 
 ## 10. GitHub로 옮길 때의 매핑
 
-| 문서 백로그 | GitHub |
-| --- | --- |
-| Epic | Parent Issue |
-| 세부 Task | Sub-issue |
-| Priority/Status/Week | Project field |
-| 4주 | Iteration 또는 Milestone |
-| Depends on | Issue dependency |
-| Task Packet | Issue 본문 또는 repository `.harness/tasks` 링크 |
-| Run Report | PR 설명과 `.harness/runs` 링크 |
+| 문서 백로그          | GitHub                                           |
+| -------------------- | ------------------------------------------------ |
+| Epic                 | Parent Issue                                     |
+| 세부 Task            | Sub-issue                                        |
+| Priority/Status/Week | Project field                                    |
+| 4주                  | Iteration 또는 Milestone                         |
+| Depends on           | Issue dependency                                 |
+| Task Packet          | Issue 본문 또는 repository `.harness/tasks` 링크 |
+| Run Report           | PR 설명과 `.harness/runs` 링크                   |
 
 문서가 먼저인 현재 단계에서는 `tasks.md`가 원본이다. GitHub Project를 실제 운영하기 시작하면 한 방향으로만 동기화하고, 두 곳에서 우선순위를 따로 수정하지 않는다.
 
@@ -189,6 +191,6 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 
 ## 12. 변경 기록
 
-| 날짜 | 변경 | 이유 |
-| --- | --- | --- |
+| 날짜       | 변경                           | 이유                                                                      |
+| ---------- | ------------------------------ | ------------------------------------------------------------------------- |
 | 2026-07-10 | 4주 Epic/Task 백로그 최초 작성 | 체크리스트와 실행 계획에 흩어진 다음 작업을 하나의 원본으로 통합하기 위해 |
