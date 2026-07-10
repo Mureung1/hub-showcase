@@ -15,86 +15,98 @@
     <span class="eyebrow">매칭 결과</span>
   </div>
 
-  <h1 class="page-title">당신과 생활성향이 비슷한 분들이에요!</h1>
+  <h1 class="page-title" id="listTitle">당신과 생활성향이 비슷한 분들이에요!</h1>
 
-  <div class="profile-list">
+  <div class="profile-list" id="profileList"></div>
 
-    <div class="profile-card">
-      <div class="avatar mint"></div>
-      <div class="profile-info">
-        <div class="name-text">민지 님</div>
-        <div class="tag-row">
-          <span class="tag mint">7시 기상</span>
-          <span class="tag pink">11시 취침</span>
-          <span class="tag blue">청소 주2회</span>
-          <span class="tag peach">생활용품 공동</span>
-        </div>
-      </div>
-      <button class="chat-icon" type="button" data-icon="chat"></button>
-    </div>
-
-    <div class="profile-card">
-      <div class="avatar peach"></div>
-      <div class="profile-info">
-        <div class="name-text">서연 님</div>
-        <div class="tag-row">
-          <span class="tag mint">8시 기상</span>
-          <span class="tag pink">12시 취침</span>
-          <span class="tag blue">청소 주1회</span>
-          <span class="tag peach">생활용품 개인</span>
-        </div>
-      </div>
-      <button class="chat-icon" type="button" data-icon="chat"></button>
-    </div>
-
-    <div class="profile-card">
-      <div class="avatar pink"></div>
-      <div class="profile-info">
-        <div class="name-text">하은 님</div>
-        <div class="tag-row">
-          <span class="tag mint">7시 기상</span>
-          <span class="tag pink">11시 취침</span>
-          <span class="tag blue">청소 주3회</span>
-          <span class="tag peach">생활용품 공동</span>
-        </div>
-      </div>
-      <button class="chat-icon" type="button" data-icon="chat"></button>
-    </div>
-
-    <div class="profile-card">
-      <div class="avatar blue"></div>
-      <div class="profile-info">
-        <div class="name-text">지우 님</div>
-        <div class="tag-row">
-          <span class="tag mint">9시 기상</span>
-          <span class="tag pink">1시 취침</span>
-          <span class="tag blue">청소 주1회</span>
-          <span class="tag peach">생활용품 개인</span>
-        </div>
-      </div>
-      <button class="chat-icon" type="button" data-icon="chat"></button>
-    </div>
-
-    <div class="profile-card">
-      <div class="avatar yellow"></div>
-      <div class="profile-info">
-        <div class="name-text">다은 님</div>
-        <div class="tag-row">
-          <span class="tag mint">8시 기상</span>
-          <span class="tag pink">12시 취침</span>
-          <span class="tag blue">청소 주2회</span>
-          <span class="tag peach">생활용품 공동</span>
-        </div>
-      </div>
-      <button class="chat-icon" type="button" data-icon="chat"></button>
-    </div>
-
-  </div>
-
-  <a href="03_hobby_question.html" class="btn btn-coral btn-cta">취미까지 같은 분들을 보고싶다면?</a>
+  <a href="#" class="btn btn-coral btn-cta" id="hobbyToggleBtn">취미까지 같은 분들을 보고싶다면?</a>
 
 </div>
 <script src="js/icons.js"></script>
 <script src="js/apply-icons.js"></script>
+<script>
+  var profiles = [
+    { name: "민지", avatar: "mint", tags: [
+        { cls: "mint", text: "7시 기상" },
+        { cls: "pink", text: "11시 취침" },
+        { cls: "blue", text: "청소 주2회" },
+        { cls: "peach", text: "생활용품 공동" }
+      ], hobby: "🎬 영화시청" },
+    { name: "서연", avatar: "peach", tags: [
+        { cls: "mint", text: "8시 기상" },
+        { cls: "pink", text: "12시 취침" },
+        { cls: "blue", text: "청소 주1회" },
+        { cls: "peach", text: "생활용품 개인" }
+      ], hobby: "📖 독서" },
+    { name: "하은", avatar: "pink", tags: [
+        { cls: "mint", text: "7시 기상" },
+        { cls: "pink", text: "11시 취침" },
+        { cls: "blue", text: "청소 주3회" },
+        { cls: "peach", text: "생활용품 공동" }
+      ], hobby: "🏃 러닝" },
+    { name: "지우", avatar: "blue", tags: [
+        { cls: "mint", text: "9시 기상" },
+        { cls: "pink", text: "1시 취침" },
+        { cls: "blue", text: "청소 주1회" },
+        { cls: "peach", text: "생활용품 개인" }
+      ], hobby: "☕ 카페투어" },
+    { name: "다은", avatar: "yellow", tags: [
+        { cls: "mint", text: "8시 기상" },
+        { cls: "pink", text: "12시 취침" },
+        { cls: "blue", text: "청소 주2회" },
+        { cls: "peach", text: "생활용품 공동" }
+      ], hobby: "✈️ 여행" }
+  ];
+
+  var listEl = document.getElementById("profileList");
+  var titleEl = document.getElementById("listTitle");
+  var toggleBtn = document.getElementById("hobbyToggleBtn");
+
+  function render(withHobby) {
+    listEl.innerHTML = "";
+    profiles.forEach(function (p) {
+      var card = document.createElement("div");
+      card.className = "profile-card";
+
+      var tagsHtml = p.tags.map(function (t) {
+        return '<span class="tag ' + t.cls + '">' + t.text + "</span>";
+      }).join("");
+
+      if (withHobby) {
+        tagsHtml += '<span class="tag peach">' + p.hobby + "</span>";
+      }
+
+      card.innerHTML =
+        '<div class="avatar ' + p.avatar + '"></div>' +
+        '<div class="profile-info">' +
+        '<div class="name-text">' + p.name + " 님</div>" +
+        '<div class="tag-row">' + tagsHtml + "</div>" +
+        "</div>" +
+        '<button class="chat-icon" type="button" data-icon="chat"></button>';
+
+      listEl.appendChild(card);
+      var chatBtn = card.querySelector(".chat-icon");
+      chatBtn.innerHTML = (window.ICONS && ICONS.chat) || "";
+    });
+
+    if (withHobby) {
+      titleEl.textContent = "취미까지 잘 맞는 분들이에요!";
+      toggleBtn.style.display = "none";
+    } else {
+      titleEl.textContent = "당신과 생활성향이 비슷한 분들이에요!";
+      toggleBtn.style.display = "";
+    }
+  }
+
+  var params = new URLSearchParams(window.location.search);
+  var startWithHobby = params.get("list") === "hobby";
+
+  render(startWithHobby);
+
+  toggleBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    render(true);
+  });
+</script>
 </body>
 </html>

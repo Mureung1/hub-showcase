@@ -69,7 +69,10 @@ body {
   min-height: 100vh;
   font-family: var(--font-body);
   color: var(--text-dark);
-  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 65%);
+  background:
+    linear-gradient(180deg, rgba(255, 247, 238, 0.35) 0%, rgba(255, 247, 238, 0.6) 100%),
+    url("../public/images/backgrounds/sky_bg.png") center / cover no-repeat;
+  background-attachment: fixed;
 }
 
 h1, h2, h3,
@@ -324,6 +327,42 @@ button {
   font-family: var(--font-title);
 }
 
+/* ---------- 로그인 히어로 (좌: 일러스트 / 우: 폼) ---------- */
+.login-page {
+  justify-content: center;
+}
+
+.login-hero {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 64px;
+  width: 100%;
+  flex: 1;
+}
+
+.login-illust {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.login-illust img {
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+  display: block;
+}
+
+.login-form-col {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ---------- 2지선다 카드 (취미/생활성향/이상형 테스트) ---------- */
 .choice-grid {
   display: flex;
@@ -374,6 +413,13 @@ button {
 
 .choice-card.mint .choice-label {
   color: var(--mint-dark);
+}
+
+.option-icon-inline {
+  width: 18px;
+  height: 18px;
+  vertical-align: -3px;
+  margin-right: 4px;
 }
 
 .choice-card.peach .choice-label {
@@ -499,12 +545,13 @@ button {
   color: var(--text-body);
 }
 
-/* ---------- 프로필 리스트 카드 (08, 11) ---------- */
+/* ---------- 프로필 리스트 카드 (08, 11, 13) — 당근마켓 스타일 1열 리스트 ---------- */
 .profile-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 18px;
-  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 760px;
+  margin: 0 auto 22px;
 }
 
 .profile-card {
@@ -588,17 +635,6 @@ button {
   color: var(--text-muted);
 }
 
-.invite-btn {
-  background: var(--coral);
-  color: var(--text-dark);
-  border: none;
-  border-radius: var(--radius-pill);
-  padding: 9px 16px;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: var(--font-title);
-}
-
 /* ---------- 팀 매칭 리스트 (13) ---------- */
 .team-mini-row {
   display: flex;
@@ -610,7 +646,7 @@ button {
 
 .team-mini-row .dots {
   display: flex;
-  gap: -4px;
+  gap: 8px;
 }
 
 .dot {
@@ -618,9 +654,7 @@ button {
   height: 26px;
   border-radius: 50%;
   border: 2px solid var(--bg-bottom);
-  margin-left: -8px;
 }
-.dot:first-child { margin-left: 0; }
 
 .team-mini-row .arrow {
   color: var(--text-muted);
@@ -639,6 +673,7 @@ button {
 
 .team-card .dots {
   display: flex;
+  gap: 6px;
 }
 
 .team-card .info {
@@ -760,4 +795,79 @@ button {
   font-weight: 800;
   color: var(--coral-dark);
   margin-bottom: 26px;
+}
+
+/* ---------- 페이지 상단 우측 보조 버튼 (예: 마이페이지) ---------- */
+.page-top-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+/* ---------- 하단 중앙 CTA + 보조 링크 (12) ---------- */
+.bottom-actions {
+  margin-top: auto;
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+/* ---------- 모달 (친구 코드 초대) ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(74, 46, 34, 0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+
+.modal-box {
+  background: var(--card-white);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: var(--shadow);
+  text-align: center;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 18px;
+}
+
+.modal-box .input-field {
+  margin-bottom: 18px;
+  text-align: center;
 }

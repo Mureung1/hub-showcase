@@ -11,6 +11,10 @@
 <body>
 <div class="page">
 
+  <div class="page-top-row">
+    <a class="detail-btn" href="#" id="mypageLink">마이페이지</a>
+  </div>
+
   <h1 class="page-title" style="margin-top:20px;">어떤 '우리'가 필요하신가요?</h1>
 
   <div class="branch-stack">
@@ -30,5 +34,11 @@
 </div>
 <script src="js/icons.js"></script>
 <script src="js/apply-icons.js"></script>
+<script>
+  document.getElementById('mypageLink').addEventListener('click', function (e) {
+    e.preventDefault();
+    alert('마이페이지는 준비 중이에요 🙂');
+  });
+</script>
 </body>
 </html>
