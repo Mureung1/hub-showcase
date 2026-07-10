@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+:root {
+  --green-900: #0e3a2c;
+  --green-700: #1c6b49;
+  --green-600: #279160;
+  --green-500: #4ab784;
+  --green-100: #e6f5ec;
+  --green-50: #f4faf6;
+
+  --sand: #f8f6ef;
+  --bg: #f3f6f2;
+  --card: #fff;
+
+  --ink: #132922;
+  --sub: #5f7369;
+  --line: #e0e8e1;
+
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Manrope', sans-serif;
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-pill: 22px;
+}
+
+@theme {
+  --color-green-900: var(--green-900);
+  --color-green-700: var(--green-700);
+  --color-green-600: var(--green-600);
+  --color-green-500: var(--green-500);
+  --color-green-100: var(--green-100);
+  --color-green-50: var(--green-50);
+
+  --color-sand: var(--sand);
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-sub: var(--sub);
+  --color-line: var(--line);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+
+  --radius-3xl: var(--radius);
+  --radius-md: var(--radius-md);
+  --radius-sm: var(--radius-sm);
+  --radius-pill: var(--radius-pill);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+}

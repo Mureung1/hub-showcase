@@ -1,0 +1,31 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>에코봇 · 확인</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<div class="phone">
+  <header class="top"><div class="back-row"><a href="home.html" class="back">←</a><div class="brand" style="font-size:17px">물건 확인</div></div></header>
+  <div class="content">
+    <div class="upload-preview"><div class="imgph">🧴<span class="badge-float">AI 분석 중</span></div></div>
+    <div class="confirm-title">여러 가능성을 찾았어요</div>
+    <div class="confirm-sub">아래에서 촬영된 물건을 확인해 에코봇의 정확도를 높여주세요.</div>
+
+    <div class="cand selected" onclick="sel(this)">
+      <div class="cpct">85%</div><div class="cname">플라스틱 병</div>
+      <div class="cdesc">PET 소재의 몸체가 포함된 혼합 재질</div>
+      <div class="bar"><div class="bar-fill" style="width:85%"></div></div>
+    </div>
+    <div class="cand" onclick="sel(this)">
+      <div class="cpct">10%</div><div class="cname">종이 포장재</div>
+      <div class="cdesc">겉면이 섬유질로 인식됨</div>
+      <div class="bar"><div class="bar-fill" style="width:10%;background:var(--line)"></div></div>
+    </div>
+    <div class="cand" onclick="sel(this)">
+      <div class="cpct">5%</div><div class="cname">비닐 라벨</div>
+      <div class="cdesc">얇은 필름 소재로 수동 분류가 필요함</div>
+      <div class="bar"><div class="bar-fill" style="width:5%;background:var(--line)"></div></div>
+    </div>
+
+    <a href="result.html" style="text-decoration:none"><button class="btn-primary">선택 확인</button></a>
+    <a href="home.html" style="text-decoration:none"><button class="btn-secondary">다시 촬영하기</button></a>
+  </div>
+</div>
+<script>function sel(el){document.querySelectorAll('.cand').forEach(c=>c.classList.remove('selected'));el.classList.add('selected');}</script>
+</body></html>
