@@ -94,6 +94,50 @@
       line-height: 1.6;
     }
 
+    .image-row {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .image-card {
+      background: #f5f5f7;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .image-card img {
+      max-width: 100%;
+      border-radius: 8px;
+      display: block;
+    }
+
+    .image-card .caption {
+      font-size: 13px;
+      color: #888;
+      margin-top: 8px;
+    }
+
+    .phone-frame {
+      width: 172px;
+      height: 372px;
+      overflow: hidden;
+      border-radius: 20px;
+      border: 1px solid #ddd;
+      background: #fff;
+    }
+
+    .phone-frame iframe {
+      width: 390px;
+      height: 844px;
+      border: none;
+      transform: scale(0.44);
+      transform-origin: top left;
+    }
+
     .tags {
       display: flex;
       flex-wrap: wrap;
@@ -221,7 +265,22 @@
     </section>
 
     <section class="slide">
-      <p class="eyebrow">03 · 핵심 기능 (선정 기준: 필수성 · 적합성)</p>
+      <p class="eyebrow">03 · 기획 산출물</p>
+      <h2>문제 정의부터 화면 설계까지</h2>
+      <div class="image-row">
+        <div class="image-card" style="width: 300px;">
+          <img src="../user-flow.svg" alt="User Flow 다이어그램" />
+          <p class="caption">화면 흐름 (User Flow)</p>
+        </div>
+        <div class="image-card" style="width: 480px;">
+          <img src="../wireframe.svg" alt="와이어프레임 5개 화면" />
+          <p class="caption">와이어프레임 (초기 5개 화면 스케치)</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">04 · 핵심 기능 (선정 기준: 필수성 · 적합성)</p>
       <h2>넓게 벌이지 않고, 2개만 탄탄하게</h2>
       <div class="grid">
         <div class="card">
@@ -236,7 +295,7 @@
     </section>
 
     <section class="slide">
-      <p class="eyebrow">04 · MVP 범위를 좁힌 이유</p>
+      <p class="eyebrow">05 · MVP 범위를 좁힌 이유</p>
       <h2>4주 안에 끝낼 수 있는 만큼만</h2>
       <div class="tags">
         <span class="tag">실제 결제 연동 제외</span>
@@ -248,20 +307,31 @@
     </section>
 
     <section class="slide">
-      <p class="eyebrow">05 · 프로토타입 (진행 상황)</p>
-      <h2>5개 화면, 흐름만 먼저 검증</h2>
-      <div class="flow">
-        <span>로그인</span><span class="arrow">→</span>
-        <span>출발/도착 등록</span><span class="arrow">→</span>
-        <span>매칭 후보</span><span class="arrow">→</span>
-        <span>채팅방</span><span class="arrow">→</span>
-        <span>완료 · 평가</span>
+      <p class="eyebrow">06 · 프로토타입 (진행 상황)</p>
+      <h2>5개 화면, 실제로 클릭 가능</h2>
+      <div class="image-row">
+        <div class="image-card">
+          <div class="phone-frame"><iframe src="../prototype/index.html" title="로그인 화면"></iframe></div>
+          <p class="caption">로그인</p>
+        </div>
+        <div class="image-card">
+          <div class="phone-frame"><iframe src="../prototype/register.html" title="출발/도착 등록 화면"></iframe></div>
+          <p class="caption">출발/도착 등록</p>
+        </div>
+        <div class="image-card">
+          <div class="phone-frame"><iframe src="../prototype/candidates.html" title="매칭 후보 리스트 화면"></iframe></div>
+          <p class="caption">매칭 후보 리스트</p>
+        </div>
+        <div class="image-card">
+          <div class="phone-frame"><iframe src="../prototype/chat.html" title="그룹 채팅방 화면"></iframe></div>
+          <p class="caption">그룹 채팅방</p>
+        </div>
       </div>
-      <p class="body" style="margin-top: 20px;">순수 HTML/CSS로 제작해 GitHub Pages로 배포. <strong>확정된 디자인 시스템(레드/코랄 #C8102E, Pretendard)을 실제로 적용</strong>했고, 성별 필터·정원 배지·그룹 채팅 동의 흐름 같은 세부 인터랙션까지 반영했습니다.</p>
+      <p class="body" style="margin-top: 20px;">순수 HTML/CSS로 제작해 GitHub Pages로 배포. <strong>확정된 디자인 시스템(레드/코랄 #C8102E, Pretendard)을 실제로 적용</strong>했고, 성별 필터·정원 배지·그룹 채팅 동의 흐름 같은 세부 인터랙션까지 반영했습니다. (위 화면들은 실제 프로토타입이 실시간으로 embed된 것으로, 직접 클릭도 가능합니다)</p>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">06 · 기술 스택을 이렇게 정한 이유</p>
+      <p class="eyebrow">07 · 기술 스택을 이렇게 정한 이유</p>
       <h2>React + Express + Supabase</h2>
       <table class="stack">
         <tr><td class="label">React</td><td>매칭 리스트·채팅 등 상호작용 많은 화면에 적합, 과제 기본 스택</td></tr>
@@ -272,7 +342,7 @@
     </section>
 
     <section class="slide">
-      <p class="eyebrow">07 · 개발 컨벤션</p>
+      <p class="eyebrow">08 · 개발 컨벤션</p>
       <h2>일관된 개발을 위한 규칙</h2>
       <div class="tags">
         <span class="tag">Conventional Commits</span>
@@ -284,7 +354,7 @@
     </section>
 
     <section class="slide">
-      <p class="eyebrow">08 · 다음 계획</p>
+      <p class="eyebrow">09 · 다음 계획</p>
       <h2>디자인 시스템 확정 → 2주차 본격 개발</h2>
       <p class="body">학교 색인 레드/코랄 톤으로 디자인 시스템을 확정하고 프로토타입에 실제로 적용했습니다. 2주차부터는 매칭 알고리즘과 신청/수락 플로우 API 개발에 들어갈 예정입니다.</p>
     </section>
