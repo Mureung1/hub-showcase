@@ -1,0 +1,323 @@
+.routine-page {
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.routine-page-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.member-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.member-select-wrap label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.member-select-wrap select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 0.6rem 0.875rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  outline: none;
+  min-width: 160px;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-toolbar {
+  padding: 0.5rem 0.875rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-toolbar:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-toolbar.macro {
+  font-weight: 700;
+}
+
+.btn-toolbar.reset {
+  color: var(--yellow);
+  border-color: var(--yellow);
+}
+
+.routine-page-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 1.25rem;
+}
+
+.exercise-editor {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.editor-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.btn-add-exercise {
+  padding: 0.4rem 0.875rem;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.editor-empty {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.exercise-table-head,
+.exercise-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.75fr 0.75fr 36px;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.exercise-table-head {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+
+.exercise-row {
+  margin-bottom: 0.375rem;
+}
+
+.exercise-row input {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8125rem;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.exercise-row input:focus {
+  border-color: var(--accent);
+}
+
+.btn-remove {
+  width: 32px;
+  height: 32px;
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  border-radius: var(--radius-sm);
+  color: var(--red);
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-footer {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn-save {
+  padding: 0.625rem 1.25rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-save:disabled,
+.btn-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-send {
+  padding: 0.625rem 1.25rem;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.routine-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.preview-card,
+.history-card,
+.diff-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.preview-card h3,
+.history-card h3,
+.diff-card h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.preview-empty,
+.history-empty {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.guide-preview {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  font-family: inherit;
+  background: var(--bg-elevated);
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.history-card ul,
+.diff-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-card li,
+.diff-card li {
+  padding: 0.625rem;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.history-card time {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.history-card p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.diff-card li strong {
+  display: block;
+  font-size: 0.8125rem;
+  margin-bottom: 0.125rem;
+}
+
+.diff-card li span {
+  font-size: 0.75rem;
+  color: var(--yellow);
+}
+
+@media (max-width: 1024px) {
+  .routine-page-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .routine-page {
+    padding: 1rem;
+  }
+
+  .exercise-table-head {
+    display: none;
+  }
+
+  .exercise-row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    padding: 0.75rem;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.5rem;
+  }
+
+  .exercise-row input:first-child {
+    grid-column: 1 / -1;
+  }
+}
