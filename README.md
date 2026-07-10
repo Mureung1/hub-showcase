@@ -11,4 +11,4 @@ npm run dev
 
 ## 산출물
 - [기획서](./기획서.md)
-- [개발 Task 백로그](./TASK.md)
+- [개발 Task](./TASK.md)
