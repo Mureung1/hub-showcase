@@ -1,0 +1,55 @@
+.wrap {
+  max-width: 560px;
+  margin: 0 auto;
+  padding-top: 60px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 28px;
+  color: var(--color-heading-brown);
+  margin: 0 0 24px;
+}
+
+.promptLabel {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--color-muted-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.countdown {
+  font-family: var(--font-wordmark);
+  font-weight: 700;
+  font-size: 52px;
+  color: var(--color-primary-teal);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+.fastForward {
+  margin-top: 12px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px dashed var(--color-cool-gray);
+  background: transparent;
+  color: var(--color-body-slate);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.badge {
+  margin-top: 8px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(150, 71, 53, 0.1);
+  color: var(--color-accent-terracotta);
+  font-size: 13px;
+}

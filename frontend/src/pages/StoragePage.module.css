@@ -1,0 +1,125 @@
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.tab {
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-warm);
+  background: var(--color-paper-white);
+  color: var(--color-body-slate);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tabActive {
+  background: var(--color-primary-teal);
+  border-color: var(--color-primary-teal);
+  color: var(--color-paper-white);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--color-paper-white);
+  border: 1px solid var(--color-border-warm);
+  border-radius: 6px;
+}
+
+.iconBox {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--color-cool-gray);
+  border-radius: 8px;
+  color: var(--color-primary-teal);
+}
+
+.itemBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemTitle {
+  margin: 0 0 4px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--color-ink);
+}
+
+.itemFrom {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--color-muted-gray);
+}
+
+.itemPreview {
+  margin: 0;
+  font-family: var(--font-letter);
+  font-size: 14px;
+  color: var(--color-muted-gray);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemPreviewPassed {
+  font-style: italic;
+  color: var(--color-hint-gray);
+}
+
+.itemDate {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-muted-gray);
+}
+
+.badge {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.badgeUnread {
+  background: rgba(150, 71, 53, 0.1);
+  color: var(--color-accent-terracotta);
+}
+
+.badgeRead {
+  background: var(--color-cream);
+  color: var(--color-muted-gray);
+}
+
+.badgePassed {
+  background: var(--color-cream);
+  color: var(--color-hint-gray);
+  font-style: italic;
+}
+
+.badgeLinked {
+  background: var(--color-teal-mid);
+  color: var(--color-teal-light);
+}
