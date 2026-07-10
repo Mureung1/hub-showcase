@@ -81,9 +81,13 @@ http://127.0.0.1:4177/prototype/index.html
 ## 문서
 
 - [GitHub Wiki](https://github.com/SubJeeLee/hub/wiki)
+- [문서 구조](./docs/document-map.md)
 - [PtoP 기획서](./docs/plan.md)
 - [Wiki용 기획서](./docs/wiki-home.md)
+- [프로젝트 기록](./docs/agent-record.md)
+- [개발 가이드](./docs/development-guide.md)
 - [Day4 작업 계획](./docs/day4-plan.md)
+- [Day5 개발 Task 및 백로그 계획](./docs/day5-development-tasks.md)
 - [PtoP 디자인 시스템](./docs/design-system.md)
 - [PtoP 디자인 Skill](./docs/ptop-design-skill.md)
 - [1주차 작업 체크리스트](./docs/checklist.md)
