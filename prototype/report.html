@@ -26,10 +26,10 @@
       <article class="page page--wide">
         <header class="report-header" id="summary">
           <span class="eyebrow">채용공고 24건 기반 mock 리서치</span>
-          <h1>주니어 프론트엔드 공고는 기술보다 “실무 투입 가능성”을 더 강하게 묻고 있어요.</h1>
+          <h1>주니어 프론트엔드 공고는 기술 이름보다 구현 범위와 작업 과정을 중요하게 봅니다.</h1>
           <p>
-            단순 기술명 빈도만 세지 않고, 필수 조건과 우대 조건, 학력·경력 문턱,
-            기업 규모별 요구 차이를 나눠서 분석했습니다.
+            공고 문장에서 반복되는 기술 조합, 필수·우대 조건, 프로젝트 확인 항목을 분석해
+            지원 준비에 필요한 구현 기준과 우선순위를 정리했습니다.
           </p>
           <div class="data-note">
             <span>수집 범위: 최근 3개월</span>
@@ -49,24 +49,44 @@
           </div>
           <div class="metric-card">
             <span class="num">71<small>%</small></span>
-            <span class="caption">학력보다 프로젝트 경험 강조</span>
+            <span class="caption">프로젝트 구현 경험을 주요 조건으로 언급</span>
           </div>
           <div class="metric-card">
             <span class="num">3.8<small>개</small></span>
-            <span class="caption">공고당 평균 필수 기술</span>
+            <span class="caption">공고당 평균 필수 기술 조합</span>
           </div>
           <div class="metric-card">
             <span class="num">46<small>%</small></span>
-            <span class="caption">배포·운영 경험 우대</span>
+            <span class="caption">배포 URL 또는 운영 경험 언급</span>
           </div>
         </section>
 
         <section class="section-block" id="tech">
           <div class="section-title">
-            <h2>반복 등장하는 기술 신호</h2>
-            <span class="hint">전체 24건 중 등장 건수 기준</span>
+            <h2>기술 이름보다 중요한 구현 범위 조합</h2>
+            <span class="hint">전체 24건 중 동시 출현한 요구사항 기준</span>
           </div>
           <div class="panel">
+            <div class="combination-grid" aria-label="반복되는 구현 범위 조합">
+              <article class="combination-card combination-card--primary">
+                <span class="combination-count">11 / 24건</span>
+                <h3>React + TypeScript + REST API</h3>
+                <p>응답 타입을 정의하고, 목록·상세 화면에 데이터를 연결한 뒤 로딩·오류·빈 상태와 재시도까지 처리하는 조합입니다.</p>
+                <span class="combination-level">기대 수준: 한 기능 흐름을 배포 가능한 화면으로 완성</span>
+              </article>
+              <article class="combination-card">
+                <span class="combination-count">8 / 24건</span>
+                <h3>TypeScript + Git 협업</h3>
+                <p>변경 범위를 나눈 브랜치와 PR 설명, 타입을 활용한 데이터 모델링으로 유지보수 가능한 작업 방식을 보여주는 조합입니다.</p>
+                <span class="combination-level">기대 수준: 기능 단위 PR과 변경 이유를 설명</span>
+              </article>
+              <article class="combination-card">
+                <span class="combination-count">6 / 24건</span>
+                <h3>Next.js + 품질 개선</h3>
+                <p>라우팅·초기 로딩·검색 노출 중 한 문제를 선택하고, 테스트 또는 접근성 개선으로 완성도를 높이는 우대사항 조합입니다.</p>
+                <span class="combination-level">기대 수준: 선택한 기술이 해결한 문제를 기록</span>
+              </article>
+            </div>
             <div class="skill-bars">
               <div class="skill-bar-row">
                 <div class="skill-name">
@@ -110,48 +130,48 @@
               </div>
             </div>
             <p class="panel-note">
-              해석: React 자체보다 React + TypeScript + API 연동을 묶어 “혼자 기능 단위 화면을 끝까지 구현할 수 있는지”를 보는 공고가 많습니다.
+              기술별 빈도는 출발점입니다. 지원 준비에서는 가장 많이 함께 등장한 구현 범위를 기준으로, 하나의 기능을 끝까지 완성하는 경험을 먼저 갖추는 편이 좋습니다.
             </p>
           </div>
         </section>
 
         <section class="section-block" id="requirements">
           <div class="section-title">
-            <h2>필수 조건과 우대 조건을 분리하면 준비 우선순위가 달라집니다</h2>
+            <h2>공고 문장을 필수 요구사항과 우대사항으로 나누면 우선순위가 선명해집니다</h2>
             <span class="hint">공고 문장 분류 기준</span>
           </div>
           <div class="split-grid">
             <div class="panel">
-              <span class="section-kicker">필수 요구사항</span>
+              <span class="section-kicker">먼저 맞춰야 할 필수 요구사항</span>
               <div class="requirement-list">
                 <div class="requirement-item">
-                  <strong>컴포넌트 기반 UI 구현 <span class="ratio-pill">18/24건</span></strong>
-                  <p>React 경험을 단독 키워드가 아니라 화면 구조 설계, 재사용 컴포넌트, 상태 흐름과 함께 요구합니다.</p>
+                  <strong>기능 단위 화면 완성 <span class="ratio-pill">18/24건</span></strong>
+                  <p>입력, 목록, 상세, 수정 같은 흐름을 끊기지 않게 구현하고, 실제 동작을 확인할 수 있는 배포 화면을 준비합니다.</p>
                 </div>
                 <div class="requirement-item">
-                  <strong>API 연동과 비동기 처리 <span class="ratio-pill">12/24건</span></strong>
-                  <p>fetch/axios 사용보다 요청 실패, 로딩 상태, 빈 상태까지 다루는 경험을 더 구체적으로 봅니다.</p>
+                  <strong>API 실패 상태까지 처리 <span class="ratio-pill">12/24건</span></strong>
+                  <p>로딩, 에러, 빈 결과, 재시도 흐름을 함께 구현합니다. 성공 응답만 표시하는 수준을 넘어 실제 서비스 상태를 다루는 기준입니다.</p>
                 </div>
                 <div class="requirement-item">
-                  <strong>Git 기반 협업 경험 <span class="ratio-pill">8/24건</span></strong>
-                  <p>PR, 코드 리뷰, 브랜치 전략 경험이 있으면 팀 개발 적응 가능성을 보여주기 쉽습니다.</p>
+                  <strong>작업 과정이 남은 GitHub <span class="ratio-pill">8/24건</span></strong>
+                  <p>이슈, 브랜치, PR 설명, 리뷰 반영 기록을 남기면 팀 개발 방식에 맞춰 작업한 과정을 확인할 수 있습니다.</p>
                 </div>
               </div>
             </div>
             <div class="panel">
-              <span class="section-kicker">우대사항</span>
+              <span class="section-kicker">차별화할 우대사항</span>
               <div class="requirement-list">
                 <div class="requirement-item">
-                  <strong>Next.js 또는 SSR 이해 <span class="ratio-pill">9/24건</span></strong>
-                  <p>서비스 규모가 커질수록 SEO, 라우팅, 서버 렌더링 이해를 차별화 포인트로 봅니다.</p>
+                  <strong>Next.js는 “왜 썼는지”가 핵심 <span class="ratio-pill">9/24건</span></strong>
+                  <p>라우팅, 검색 노출, 초기 로딩, 배포 구조 중 한 문제를 선택해 적용합니다. 기술 선택과 결과가 연결되면 경험의 깊이가 드러납니다.</p>
                 </div>
                 <div class="requirement-item">
-                  <strong>테스트·품질 관리 경험 <span class="ratio-pill">7/24건</span></strong>
-                  <p>Jest, Testing Library, Storybook 등은 주니어에게 필수보다 우대에 가깝지만 인상적인 신호입니다.</p>
+                  <strong>테스트는 범위를 좁혀도 효과적 <span class="ratio-pill">7/24건</span></strong>
+                  <p>검색, 필터, 폼 검증처럼 깨지기 쉬운 핵심 흐름 1~2개를 테스트합니다. 모든 화면보다 중요한 흐름을 안정적으로 관리하는 방식이 중요합니다.</p>
                 </div>
                 <div class="requirement-item">
-                  <strong>디자인 시스템·접근성 관심 <span class="ratio-pill">6/24건</span></strong>
-                  <p>프로덕트 조직에서는 디자이너와 협업해 일관된 UI를 만드는 역량을 높게 봅니다.</p>
+                  <strong>디자인 시스템은 협업 언어 <span class="ratio-pill">6/24건</span></strong>
+                  <p>상태, 간격, 색상 토큰을 정리해 반복 화면을 일관되게 만듭니다. 컴포넌트 기준을 공유할 수 있다는 점이 협업 강점이 됩니다.</p>
                 </div>
               </div>
             </div>
@@ -160,7 +180,7 @@
 
         <section class="section-block" id="conditions">
           <div class="section-title">
-            <h2>학력·경력 조건은 생각보다 유연하지만, 증명 자료를 요구합니다</h2>
+            <h2>학력·경력 조건은 유연한 편이지만, 프로젝트 확인 항목이 함께 요구됩니다</h2>
             <span class="hint">대학생·신입 관점</span>
           </div>
           <div class="condition-grid">
@@ -177,7 +197,7 @@
               <div class="condition-stat"><b>42%</b><span>2년 이상 선호</span></div>
             </div>
             <div class="condition-card">
-              <h3>증명 방식</h3>
+              <h3>프로젝트 확인 항목</h3>
               <div class="condition-stat"><b>71%</b><span>포트폴리오 요구</span></div>
               <div class="condition-stat"><b>46%</b><span>배포 URL 선호</span></div>
               <div class="condition-stat"><b>38%</b><span>GitHub 확인</span></div>
@@ -187,14 +207,14 @@
 
         <section class="section-block" id="companies">
           <div class="section-title">
-            <h2>기업 규모별로 같은 프론트엔드라도 요구하는 결이 다릅니다</h2>
-            <span class="hint">공고 톤 비교</span>
+            <h2>기업군별로 같은 프로젝트도 강조할 항목이 달라집니다</h2>
+            <span class="hint">포트폴리오 강조점 비교</span>
           </div>
           <div class="company-grid">
             <div class="company-card">
               <span class="company-size">초기·성장 스타트업</span>
               <h3>빠른 기능 구현과 제품 감각</h3>
-              <p>React, API 연동, 배포 경험을 한 번에 요구합니다. “작게라도 끝까지 만든 경험”이 강한 신호입니다.</p>
+              <p>작은 기능을 배포까지 끝낸 경험이 중요합니다. README에는 문제 정의, 배포 링크, 개선 전후를 먼저 보여주는 편이 좋습니다.</p>
               <div class="tag-list">
                 <span class="tag"><img src="./assets/logos/react.svg" alt="" />React</span>
                 <span class="tag">배포</span>
@@ -204,7 +224,7 @@
             <div class="company-card">
               <span class="company-size">중견·B2B SaaS</span>
               <h3>안정적인 코드와 협업</h3>
-              <p>TypeScript, Git 협업, 코드 품질을 강조합니다. 기능보다 유지보수 가능한 구조를 설명해야 합니다.</p>
+              <p>타입 설계, 폴더 구조, PR 단위 작업 기록이 중요합니다. 협업 방식과 변경 이유가 보이도록 프로젝트 소개를 구성하는 편이 좋습니다.</p>
               <div class="tag-list">
                 <span class="tag"><img src="./assets/logos/typescript.svg" alt="" />TypeScript</span>
                 <span class="tag"><img src="./assets/logos/git.svg" alt="" />Git</span>
@@ -214,7 +234,7 @@
             <div class="company-card">
               <span class="company-size">플랫폼·테크 기업</span>
               <h3>규모 있는 서비스 이해</h3>
-              <p>Next.js, 성능 최적화, 디자인 시스템, 접근성을 우대합니다. 사용자 규모를 고려한 판단을 봅니다.</p>
+              <p>성능, 접근성, 디자인 시스템처럼 사용자 규모가 커질 때 생기는 문제를 다룬 흔적이 차별화 포인트가 됩니다.</p>
               <div class="tag-list">
                 <span class="tag"><img src="./assets/logos/nextjs.svg" alt="" />Next.js</span>
                 <span class="tag"><img src="./assets/logos/design-system.svg" alt="" />디자인 시스템</span>
@@ -226,17 +246,17 @@
 
         <section class="section-block" id="sources">
           <div class="section-title">
-            <h2>참고하면 좋은 공고 샘플</h2>
-            <span class="hint">프로토타입용 링크</span>
+            <h2>공고를 볼 때 확인할 문장</h2>
+            <span class="hint">지원 전 체크 포인트</span>
           </div>
           <div class="source-list">
             <div class="source-card">
               <div>
                 <h3>주니어 프론트엔드 개발자 · 제품 스타트업형</h3>
-                <p>React 기반 기능 구현, REST API 연동, 배포 경험을 함께 요구하는 유형입니다.</p>
+                <p>“빠르게 제품을 개선”, “배포 경험”, “사용자 피드백 반영” 같은 문장이 있으면 실행 속도와 개선 기록을 강조합니다.</p>
                 <div class="source-card__meta">
-                  <span>필수: React, API 연동</span>
-                  <span>우대: Vercel/Netlify 배포</span>
+                  <span>강조: 배포 URL</span>
+                  <span>보강: 개선 전후 기록</span>
                 </div>
               </div>
               <a class="source-link" href="https://www.wanted.co.kr/search?query=%EC%A3%BC%EB%8B%88%EC%96%B4%20%ED%94%84%EB%A1%A0%ED%8A%B8%EC%97%94%EB%93%9C" target="_blank" rel="noreferrer">공고 검색</a>
@@ -244,10 +264,10 @@
             <div class="source-card">
               <div>
                 <h3>프론트엔드 개발자 · B2B SaaS형</h3>
-                <p>TypeScript, 컴포넌트 설계, 협업 프로세스를 강조하는 유형입니다.</p>
+                <p>“컴포넌트 설계”, “유지보수”, “협업 프로세스”가 반복되면 타입, 상태 분리, PR 설명을 포트폴리오 앞쪽에 둡니다.</p>
                 <div class="source-card__meta">
-                  <span>필수: TypeScript</span>
-                  <span>우대: 코드 리뷰, 테스트</span>
+                  <span>강조: 타입 설계</span>
+                  <span>보강: PR/리뷰 기록</span>
                 </div>
               </div>
               <a class="source-link" href="https://www.wanted.co.kr/search?query=TypeScript%20%ED%94%84%EB%A1%A0%ED%8A%B8%EC%97%94%EB%93%9C" target="_blank" rel="noreferrer">공고 검색</a>
@@ -255,10 +275,10 @@
             <div class="source-card">
               <div>
                 <h3>웹 프론트엔드 · 플랫폼 서비스형</h3>
-                <p>Next.js, 성능 최적화, 디자인 시스템 경험을 우대하는 유형입니다.</p>
+                <p>“성능”, “SEO”, “접근성”, “디자인 시스템”이 보이면 사용자 규모를 고려한 판단과 개선 결과를 설명합니다.</p>
                 <div class="source-card__meta">
-                  <span>필수: React 실무 경험</span>
-                  <span>우대: Next.js, 접근성</span>
+                  <span>강조: 성능·접근성</span>
+                  <span>보강: 측정/개선 결과</span>
                 </div>
               </div>
               <a class="source-link" href="https://www.wanted.co.kr/search?query=Next.js%20%ED%94%84%EB%A1%A0%ED%8A%B8%EC%97%94%EB%93%9C" target="_blank" rel="noreferrer">공고 검색</a>

@@ -1,85 +1,75 @@
-# 채용공고 기반 대학생 진로탐색 리서치 에이전트 설계 문서
+# CareerSignal 설계 문서
 
 ## 1. 문서 목적
 
-이 문서는 `docs/plan.md`에서 분리한 기술 구조와 시스템 흐름을 정리합니다. 기획 문서는 문제, 사용자, 기능, 화면 흐름에 집중하고, 이 문서는 AI Agent 구조와 이후 확장 가능한 시스템 흐름을 다룹니다.
+이 문서는 현재 정적 프로토타입과 이후 실제 제품의 기술 구조를 구분해 기록합니다. 문제 정의와 화면 목적은 [기획서](plan.md)에서, 확정된 시각 구조는 [디자인 컨셉](design-concept.md)에서 확인합니다.
 
-<!-- TODO: plan.md와 상호 참조 링크를 문서 내 네비게이션 형식으로 정리합니다. -->
+## 2. 현재: 정적 프로토타입
 
-## 2. AI Agent 구조
+현재 `prototype/`은 사용자 흐름과 정보 구조를 시연하기 위한 HTML/CSS 정적 프로토타입입니다.
 
-초기 프로토타입은 mock data와 rule 기반 로직으로 시작하지만, 전체 구조는 Agent 역할을 분리해 확장 가능하게 설계합니다.
+- 페이지: `index.html`, `report.html`, `roadmap.html`
+- 공통 스타일: `style.css`
+- 배포: [Vercel 정적 데모](https://careersignal-prototype.vercel.app/)
+- 데이터 표기: 최근 3개월 주니어 프론트엔드 공고 24건을 가정한 mock 리서치
+
+현재 프로토타입에는 React UI, JavaScript 이벤트 처리, mock data 조회, rule 기반 분석, Verifier, Express API가 구현되어 있지 않습니다. 예시 직무 버튼과 분석 결과는 화면 흐름을 보여 주는 정적 표현입니다.
+
+```mermaid
+flowchart LR
+    A[관심 직무 선택 화면] --> B[정적 분석 보고서 화면]
+    B --> C[정적 학습 로드맵 화면]
+```
+
+## 3. 다음: 실제 제품 MVP
+
+실제 제품은 `src/product/`의 React UI와 `server/`의 Express API를 독립적으로 운영합니다. 초기 MVP에서는 샘플 공고 데이터를 사용하되, 입력 직무에 따라 분석 결과와 로드맵이 달라지도록 구현합니다.
 
 ```mermaid
 flowchart TD
-    A[사용자 직무 입력] --> B[Job Research Agent]
-    B --> C[Requirement Extractor]
-    C --> D[Roadmap Generator]
-    D --> E[Verifier]
-    E --> F[분석 결과 응답]
+    A[사용자 직무 입력] --> B[React UI]
+    B --> C[Express API]
+    C --> D[Job Research Agent]
+    D --> E[Requirement Extractor]
+    E --> F[Roadmap Generator]
+    F --> G[Verifier]
+    G --> B
 
-    C -. 2차 MVP .-> G[Gap Analyzer]
-    G -. 2차 MVP .-> D
+    E -. 후속 확장 .-> H[Gap Analyzer]
 ```
 
-### 2.1 Agent 역할
-
-| 역할 | 설명 | 1주차 포함 여부 |
+| 역할 | MVP 책임 | 현재 상태 |
 | --- | --- | --- |
-| Job Research Agent | 직무에 맞는 샘플 공고를 선택 | mock data 기반 포함 |
-| Requirement Extractor | 기술, 경험, 자격요건, 우대사항 추출 | rule/mock 기반 포함 |
-| Roadmap Generator | 학습 방향과 프로젝트 아이디어 생성 | rule/mock 기반 포함 |
-| Verifier | 결과가 입력 직무와 공고 근거에 맞는지 확인 | 간단한 검토 문구로 포함 |
-| Gap Analyzer | 사용자 역량과 요구 역량 비교 | 2차 MVP로 제외 |
+| React UI | 입력, 결과, 로딩·오류 상태 표시 | 미구현 |
+| Express API | 분석 요청과 응답 계약 분리 | 미구현 |
+| Job Research Agent | 직무에 맞는 샘플 공고 선택 | 미구현 |
+| Requirement Extractor | 필수·우대사항과 구현 범위 추출 | 미구현 |
+| Roadmap Generator | 우선순위와 학습 로드맵 생성 | 미구현 |
+| Verifier | 입력·데이터·추천 결과의 일관성 확인 | 미구현 |
+| Gap Analyzer | 사용자 역량과 요구 역량 비교 | 후속 확장 |
 
-Verifier를 포함하는 이유는 결과가 단순 AI 조언이 아니라 입력 직무와 채용공고 근거에 맞는지 확인하는 Agent 흐름을 보여주기 위해서입니다.
-
-## 3. 시스템 흐름
-
-1주차 프로토타입은 React 내부 mock data 기반으로 구현합니다. Express API는 이후 단계에서 추가합니다.
-
-### 3.1 1주차 프로토타입 흐름
-
-```mermaid
-sequenceDiagram
-    participant User as 사용자
-    participant UI as React UI
-    participant Mock as Mock Data
-    participant Logic as Rule-based Agent Logic
-
-    User->>UI: 관심 직무 입력
-    UI->>Mock: 직무에 맞는 샘플 공고 조회
-    Mock-->>UI: 샘플 공고 데이터
-    UI->>Logic: 요구역량 요약 요청
-    Logic-->>UI: 요약/추천 결과
-    UI-->>User: 요구역량 카드와 추천 카드 표시
-```
-
-### 3.2 이후 Express 연동 흐름
+## 4. 목표 데이터 흐름
 
 ```mermaid
 sequenceDiagram
     participant User as 사용자
     participant UI as React UI
     participant API as Express API
-    participant Agent as AI Agent
-    participant Data as 채용공고 데이터
+    participant Logic as 분석 로직
+    participant Data as 샘플/실제 공고 데이터
 
     User->>UI: 관심 직무 입력
     UI->>API: POST /api/analyze
-    API->>Agent: 직무 기반 분석 요청
-    Agent->>Data: 관련 채용공고 조회/분석
-    Data-->>Agent: 채용공고 정보
-    Agent-->>API: 요구역량 요약 및 추천
+    API->>Logic: 직무 기반 분석 요청
+    Logic->>Data: 관련 공고 조회
+    Data-->>Logic: 공고 데이터
+    Logic-->>API: 요구사항·로드맵 결과
     API-->>UI: 분석 결과 JSON
-    UI-->>User: 진로 준비 전략 표시
+    UI-->>User: 보고서와 로드맵 표시
 ```
 
-## 4. 기술 구조 관련 메모
+실제 API 엔드포인트, 데이터 스키마, LLM 도입 여부는 와이어프레임과 MVP 요구사항을 확정한 뒤 정의합니다.
 
-- 1주차 프로토타입은 React 내부 mock data와 rule 기반 로직으로 핵심 흐름을 검증한다.
-- 이후 단계에서 Express API를 추가하고, UI와 분석 로직의 책임을 분리한다.
-- 실제 LLM API 호출, 채용공고 수집, DB 저장, 로그인 기능은 1주차 프로토타입 범위에서 제외한다.
-- Gap Analyzer는 사용자 현재 역량 입력 기능과 함께 2차 MVP 이후로 분리한다.
+## 5. 제외 및 확장
 
-<!-- TODO: 실제 폴더 구조와 API 엔드포인트가 정해지면 기술 구조 다이어그램을 보강합니다. -->
+MVP 이후 실제 채용공고 수집, LLM 분석, DB 저장, 로그인, 사용자 역량 기반 Gap 분석을 단계적으로 추가합니다. 이 기능들은 현재 정적 프로토타입이나 MVP 완료 기능으로 표현하지 않습니다.
