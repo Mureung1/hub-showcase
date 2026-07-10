@@ -1,0 +1,5 @@
+node_modules/
+.env
+usage-log.jsonl
+server-out.log
+server-err.log

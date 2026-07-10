@@ -1,0 +1,82 @@
+/* docs/design.md의 "Night Sky" 다크 핀테크 토큰 재사용 */
+:root {
+  --bg-hero-start: #4b3f8f;
+  --bg-hero-mid: #2e3a7a;
+  --bg-hero-end: #141a3a;
+  --text-heading: #ffffff;
+  --text-body: #9aa5c4;
+  --accent-cyan: #4fc3e8;
+  --btn-solid-bg: #12183a;
+  --btn-solid-text: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 280px;
+  margin: 0;
+  padding: 20px;
+  background: linear-gradient(160deg, var(--bg-hero-start), var(--bg-hero-mid) 55%, var(--bg-hero-end) 100%);
+  color: var(--text-body);
+  font-family: "Poppins", "Pretendard", sans-serif;
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.body-text {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0 0 18px;
+}
+
+.goal-input {
+  width: 100%;
+  resize: none;
+  border-radius: 12px;
+  border: 1px solid rgba(79, 195, 232, 0.4);
+  background: rgba(10, 13, 34, 0.5);
+  color: var(--text-heading);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.goal-input::placeholder {
+  color: var(--text-body);
+}
+
+.goal-input:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+}
+
+.btn-solid {
+  width: 100%;
+  border: none;
+  border-radius: 9999px;
+  background: var(--btn-solid-bg);
+  color: var(--btn-solid-text);
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-solid:hover {
+  filter: brightness(1.15);
+}
+
+.status-text {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--accent-cyan);
+  min-height: 16px;
+}
