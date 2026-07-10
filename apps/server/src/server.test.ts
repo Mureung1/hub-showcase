@@ -5,12 +5,16 @@ import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import {
+  AgentRuntimeKernel,
   isRuntimeRunId,
   type RuntimeRunDebugLogEntry,
   type RuntimeRunLog,
+  type RuntimeRunLogPersistence,
+  type RuntimeRunLogPersistenceMutationResult,
 } from '@ay-ple/runtime-core'
 import {
   createInMemoryRuntimeKernel,
+  InMemoryRuntimeRunLogPersistence,
   waitForRuntimeCondition,
 } from '@ay-ple/runtime-core/testing'
 import { CodexRuntimeAdapter } from '@ay-ple/runtime-codex'
@@ -22,6 +26,7 @@ import {
   withFakeCodexAppServer,
   type CodexDebugClientRequestMethod,
 } from '@ay-ple/runtime-codex/testing'
+import { FakeRuntimeAdapter } from '@ay-ple/runtime-fake'
 import { RuntimeRunJsonStore } from './runtime-run-json-store.js'
 import {
   resolveRuntimeHistoryDirectory,
@@ -37,6 +42,50 @@ type ServerRunLog = {
 }
 
 const restartRecoveryError = 'Runtime interrupted by server restart'
+
+class InitialSaveFailingPersistence
+  extends InMemoryRuntimeRunLogPersistence
+{
+  override async save(
+    _log: RuntimeRunLog,
+  ): Promise<RuntimeRunLogPersistenceMutationResult> {
+    throw new Error('Injected initial persistence failure')
+  }
+}
+
+class CheckpointFailingPersistence implements RuntimeRunLogPersistence {
+  private readonly delegate = new InMemoryRuntimeRunLogPersistence()
+  private checkpointFailed = false
+
+  load(): Promise<RuntimeRunLog[]> {
+    return this.delegate.load()
+  }
+
+  applyRetention(): Promise<RuntimeRunLogPersistenceMutationResult> {
+    return this.delegate.applyRetention()
+  }
+
+  save(
+    log: RuntimeRunLog,
+  ): Promise<RuntimeRunLogPersistenceMutationResult> {
+    if (
+      this.checkpointFailed ||
+      (log.status === 'running' &&
+        log.events.some((event) => event.type === 'output_delta'))
+    ) {
+      this.checkpointFailed = true
+      return Promise.reject(
+        new Error('Injected checkpoint persistence failure'),
+      )
+    }
+
+    return this.delegate.save(log)
+  }
+
+  remove(runId: string): Promise<void> {
+    return this.delegate.remove(runId)
+  }
+}
 
 test('runtime history default is anchored to the workspace root', () => {
   const workspaceRoot = fileURLToPath(new URL('../../../', import.meta.url))
@@ -80,6 +129,188 @@ test('runtime history limits use production defaults and positive safe integer e
       new RegExp(`${name} must be a positive safe integer`),
     )
   }
+})
+
+test('runtime API reports ready persistence health', async () => {
+  await withTestServer({ fakeDelayMs: 0 }, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/health`)
+
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), {
+      ok: true,
+      persistence: { status: 'ready' },
+    })
+  })
+})
+
+test('runtime API returns the stable persistence error when initial save fails', async () => {
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [new FakeRuntimeAdapter({ delayMs: 0 })],
+    persistence: new InitialSaveFailingPersistence(),
+  })
+
+  await withTestServer({ kernel }, async (baseUrl) => {
+    const startResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ adapter: 'fake', prompt: 'do not start' }),
+    })
+    const startBody = (await startResponse.json()) as {
+      code: string
+      error: string
+    }
+
+    assert.equal(startResponse.status, 503)
+    assert.equal(startBody.code, 'runtime_persistence_unavailable')
+    assert.match(startBody.error, /initial_save/)
+    assert.match(startBody.error, /Injected initial persistence failure/)
+
+    const healthResponse = await fetch(`${baseUrl}/api/health`)
+
+    assert.equal(healthResponse.status, 503)
+    assert.deepEqual(await healthResponse.json(), {
+      ok: false,
+      persistence: {
+        status: 'degraded',
+        error: startBody.error,
+      },
+    })
+
+    const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
+
+    assert.equal(historyResponse.status, 200)
+    assert.deepEqual(await historyResponse.json(), { runs: [] })
+  })
+})
+
+test('runtime API fails persistence mutations closed while degraded reads remain available', async () => {
+  const persistence = new CheckpointFailingPersistence()
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [new FakeRuntimeAdapter({ delayMs: 300 })],
+    persistence,
+  })
+
+  await withTestServer({ kernel }, async (baseUrl) => {
+    const runId = await startRuntimeRun(baseUrl, {
+      adapter: 'fake',
+      prompt: 'degrade after partial output',
+    })
+    const streamedEvents = await collectRunEvents(baseUrl, runId)
+
+    assert.deepEqual(
+      streamedEvents.map((event) => event.type),
+      ['started', 'output_delta', 'failed'],
+    )
+
+    const healthResponse = await fetch(`${baseUrl}/api/health`)
+    const healthBody = (await healthResponse.json()) as {
+      ok: boolean
+      persistence: { error: string; status: string }
+    }
+
+    assert.equal(healthResponse.status, 503)
+    assert.equal(healthBody.ok, false)
+    assert.equal(healthBody.persistence.status, 'degraded')
+    assert.match(healthBody.persistence.error, /checkpoint_save/)
+    assert.match(
+      healthBody.persistence.error,
+      /Injected checkpoint persistence failure/,
+    )
+
+    const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
+    const historyBody = (await historyResponse.json()) as {
+      runs: Array<{ runId: string; status: string }>
+    }
+
+    assert.equal(historyResponse.status, 200)
+    assert.equal(historyBody.runs[0]?.runId, runId)
+    assert.equal(historyBody.runs[0]?.status, 'failed')
+    assert.equal(
+      historyBody.runs.some(
+        (run) => run.status === 'running' || run.status === 'cancelling',
+      ),
+      false,
+    )
+
+    const logResponse = await fetch(`${baseUrl}/api/runtime/runs/${runId}`)
+    const logBody = (await logResponse.json()) as { run: RuntimeRunLog }
+    const persistenceDebugEntry = logBody.run.debugLog?.at(-1)
+
+    assert.equal(logResponse.status, 200)
+    assert.equal(logBody.run.status, 'failed')
+    assert.match(logBody.run.output, /Fake runtime received/)
+    assert.deepEqual(persistenceDebugEntry, {
+      timestamp: logBody.run.completedAt,
+      source: 'kernel',
+      kind: 'persistence_error',
+      message: healthBody.persistence.error,
+      data: {
+        code: 'runtime_persistence_unavailable',
+        operation: 'checkpoint_save',
+        cause: 'Injected checkpoint persistence failure',
+        durable: false,
+      },
+    })
+
+    const adaptersResponse = await fetch(`${baseUrl}/api/runtime/adapters`)
+
+    assert.equal(adaptersResponse.status, 200)
+
+    for (const mutation of [
+      {
+        method: 'POST',
+        path: '/api/runtime/runs',
+        body: { adapter: 'fake', prompt: 'reject another run' },
+      },
+      {
+        method: 'POST',
+        path: `/api/runtime/runs/${runId}/cancel`,
+      },
+      {
+        method: 'DELETE',
+        path: '/api/runtime/runs',
+      },
+    ]) {
+      const response = await fetch(`${baseUrl}${mutation.path}`, {
+        method: mutation.method,
+        headers: mutation.body
+          ? { 'content-type': 'application/json' }
+          : undefined,
+        body: mutation.body ? JSON.stringify(mutation.body) : undefined,
+      })
+      const body = (await response.json()) as { code: string; error: string }
+
+      assert.equal(response.status, 503)
+      assert.equal(body.code, 'runtime_persistence_unavailable')
+      assert.equal(body.error, healthBody.persistence.error)
+    }
+
+    const invalidStartResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ adapter: 'fake', prompt: '' }),
+    })
+    const unknownAdapterResponse = await fetch(
+      `${baseUrl}/api/runtime/runs`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ adapter: 'unknown', prompt: 'validate first' }),
+      },
+    )
+    const unknownCancelResponse = await fetch(
+      `${baseUrl}/api/runtime/runs/unknown-run/cancel`,
+      { method: 'POST' },
+    )
+    const unknownLogResponse = await fetch(
+      `${baseUrl}/api/runtime/runs/unknown-run`,
+    )
+
+    assert.equal(invalidStartResponse.status, 400)
+    assert.equal(unknownAdapterResponse.status, 400)
+    assert.equal(unknownCancelResponse.status, 404)
+    assert.equal(unknownLogResponse.status, 404)
+  })
 })
 
 test('runtime API starts a fake run and streams normalized events', async () => {
@@ -717,6 +948,14 @@ test('runtime API records deterministic fake failure in stream, log, and history
     assert.equal(logResponse.status, 200)
     assert.equal(log.run.status, 'failed')
     assert.equal(log.run.error, 'Fake runtime deterministic failure requested')
+
+    const healthResponse = await fetch(`${baseUrl}/api/health`)
+
+    assert.equal(healthResponse.status, 200)
+    assert.deepEqual(await healthResponse.json(), {
+      ok: true,
+      persistence: { status: 'ready' },
+    })
   })
 })
 

@@ -3,6 +3,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
   AgentRuntimeKernel,
   isTerminalRuntimeRunEvent,
+  RuntimePersistenceUnavailableError,
   type RuntimeRunEvent,
 } from '@ay-ple/runtime-core'
 import {
@@ -41,24 +42,25 @@ type FakeRuntimeScenario = 'failure'
 export async function createServerApp(
   options: CreateServerAppOptions = {},
 ): Promise<Express> {
-  const app = express()
   const codexRawClientOptions =
     options.codexRawClientOptions ?? readCodexRawClientOptionsFromEnv()
-  const fakeAdapter = new FakeRuntimeAdapter({
-    delayMs: options.fakeDelayMs ?? readFakeRuntimeDelayFromEnv(),
-  })
-  const codexAdapter = new CodexRuntimeAdapter({
-    rawClientOptions: codexRawClientOptions,
-  })
-  const runtimeHistoryLimits =
-    options.kernel === undefined &&
-    (options.runtimeHistoryMaxRuns === undefined ||
-      options.runtimeHistoryMaxBytes === undefined)
-      ? resolveRuntimeHistoryLimits()
-      : undefined
-  const kernel =
-    options.kernel ??
-    (await AgentRuntimeKernel.create({
+  let fakeAdapter: FakeRuntimeAdapter | undefined
+  let kernel = options.kernel
+
+  if (!kernel) {
+    fakeAdapter = new FakeRuntimeAdapter({
+      delayMs: options.fakeDelayMs ?? readFakeRuntimeDelayFromEnv(),
+    })
+    const codexAdapter = new CodexRuntimeAdapter({
+      rawClientOptions: codexRawClientOptions,
+    })
+    const runtimeHistoryLimits =
+      options.runtimeHistoryMaxRuns === undefined ||
+      options.runtimeHistoryMaxBytes === undefined
+        ? resolveRuntimeHistoryLimits()
+        : undefined
+
+    kernel = await AgentRuntimeKernel.create({
       adapters: [fakeAdapter, codexAdapter],
       persistence: new RuntimeRunJsonStore({
         directory:
@@ -69,14 +71,20 @@ export async function createServerApp(
         maxTerminalBytes:
           options.runtimeHistoryMaxBytes ?? runtimeHistoryLimits?.maxBytes,
       }),
-    }))
-  const canControlFakeAdapter = options.kernel === undefined
+    })
+  }
+
+  const app = express()
 
   app.use(cors())
   app.use(express.json())
 
   app.get('/api/health', (_req, res) => {
-    res.json({ ok: true })
+    const persistence = kernel.getPersistenceState()
+
+    res
+      .status(persistence.status === 'ready' ? 200 : 503)
+      .json({ ok: persistence.status === 'ready', persistence })
   })
 
   app.get('/api/runtime/adapters', (_req, res) => {
@@ -112,7 +120,7 @@ export async function createServerApp(
     }
 
     if (fakeScenario === 'failure') {
-      if (!canControlFakeAdapter || adapter !== fakeAdapter.name) {
+      if (!fakeAdapter || adapter !== fakeAdapter.name) {
         res.status(400).json({
           error: 'fakeScenario is only supported by the fake adapter',
         })
@@ -126,6 +134,10 @@ export async function createServerApp(
       const run = await kernel.startRun({ adapter, prompt })
       res.status(201).json({ runId: run.runId })
     } catch (error) {
+      if (sendRuntimePersistenceUnavailable(res, error)) {
+        return
+      }
+
       res.status(400).json({
         error: error instanceof Error ? error.message : 'Unable to start run',
       })
@@ -137,9 +149,17 @@ export async function createServerApp(
   })
 
   app.delete('/api/runtime/runs', async (_req, res) => {
-    const clearedRunIds = await kernel.clearTerminalHistory()
+    try {
+      const clearedRunIds = await kernel.clearTerminalHistory()
 
-    res.json({ clearedRunIds })
+      res.json({ clearedRunIds })
+    } catch (error) {
+      if (sendRuntimePersistenceUnavailable(res, error)) {
+        return
+      }
+
+      throw error
+    }
   })
 
   app.get('/api/runtime/runs/:runId', (req, res) => {
@@ -154,14 +174,22 @@ export async function createServerApp(
   })
 
   app.post('/api/runtime/runs/:runId/cancel', async (req, res) => {
-    const run = await kernel.cancelRun(req.params.runId)
+    try {
+      const run = await kernel.cancelRun(req.params.runId)
 
-    if (!run) {
-      res.status(404).json({ error: 'runtime run not found' })
-      return
+      if (!run) {
+        res.status(404).json({ error: 'runtime run not found' })
+        return
+      }
+
+      res.json({ run })
+    } catch (error) {
+      if (sendRuntimePersistenceUnavailable(res, error)) {
+        return
+      }
+
+      throw error
     }
-
-    res.json({ run })
   })
 
   app.get('/api/runtime/runs/:runId/events', (req, res) => {
@@ -299,6 +327,22 @@ function isFakeRuntimeScenario(
   fakeScenario: unknown,
 ): fakeScenario is FakeRuntimeScenario | undefined {
   return fakeScenario === undefined || fakeScenario === 'failure'
+}
+
+function sendRuntimePersistenceUnavailable(
+  response: Response,
+  error: unknown,
+): boolean {
+  if (!(error instanceof RuntimePersistenceUnavailableError)) {
+    return false
+  }
+
+  response.status(503).json({
+    error: error.message,
+    code: error.code,
+  })
+
+  return true
 }
 
 async function startServer(): Promise<void> {

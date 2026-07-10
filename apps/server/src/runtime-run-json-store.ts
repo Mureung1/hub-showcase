@@ -6,7 +6,7 @@ import {
   readdir,
   rename,
   rm,
-  type FileHandle,
+  writeFile,
 } from 'node:fs/promises'
 import path from 'node:path'
 import {
@@ -35,7 +35,14 @@ export type RuntimeRunJsonStoreOptions = {
   maxTerminalRuns?: number
   maxTerminalBytes?: number
   now?: () => Date
-  renameFile?: (sourcePath: string, destinationPath: string) => Promise<void>
+  fileOperations?: Partial<RuntimeRunJsonStoreFileOperations>
+}
+
+export type RuntimeRunJsonStoreFileOperations = {
+  writeFile: (filePath: string, contents: Buffer) => Promise<void>
+  syncFile: (filePath: string) => Promise<void>
+  renameFile: (sourcePath: string, destinationPath: string) => Promise<void>
+  removeFile: (filePath: string) => Promise<void>
 }
 
 type StoredRuntimeRunRecord = {
@@ -43,15 +50,31 @@ type StoredRuntimeRunRecord = {
   log: RuntimeRunLog
 }
 
+const defaultFileOperations: RuntimeRunJsonStoreFileOperations = {
+  writeFile: async (filePath, contents) => {
+    await writeFile(filePath, contents, { flag: 'wx' })
+  },
+  syncFile: async (filePath) => {
+    const fileHandle = await open(filePath, 'r+')
+
+    try {
+      await fileHandle.sync()
+    } finally {
+      await fileHandle.close()
+    }
+  },
+  renameFile: rename,
+  removeFile: async (filePath) => {
+    await rm(filePath, { force: true })
+  },
+}
+
 export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
   private readonly directory: string
   private readonly maxTerminalRuns: number
   private readonly maxTerminalBytes: number
   private readonly now: () => Date
-  private readonly renameFile: (
-    sourcePath: string,
-    destinationPath: string,
-  ) => Promise<void>
+  private readonly fileOperations: RuntimeRunJsonStoreFileOperations
   private readonly removedRunIds = new Set<string>()
   private operationQueue: Promise<void> = Promise.resolve()
   private startupRetentionPending = false
@@ -67,7 +90,10 @@ export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
       'maxTerminalBytes',
     )
     this.now = options.now ?? (() => new Date())
-    this.renameFile = options.renameFile ?? rename
+    this.fileOperations = {
+      ...defaultFileOperations,
+      ...options.fileOperations,
+    }
   }
 
   async load(): Promise<RuntimeRunLog[]> {
@@ -132,7 +158,7 @@ export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
     parseRuntimeRunId(runId, 'run ID')
 
     await this.runOperation(async () => {
-      await rm(this.canonicalPath(runId), { force: true })
+      await this.fileOperations.removeFile(this.canonicalPath(runId))
       this.removedRunIds.add(runId)
     })
   }
@@ -140,7 +166,7 @@ export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
   private async loadRecords(options: {
     cleanTemporaryFiles: boolean
   }): Promise<StoredRuntimeRunRecord[]> {
-    await mkdir(this.directory, { recursive: true })
+    await this.prepareDirectory()
 
     const directoryEntries = await readdir(this.directory, {
       withFileTypes: true,
@@ -155,7 +181,7 @@ export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
         const temporaryPath = path.join(this.directory, entry.name)
 
         try {
-          await rm(temporaryPath, { force: true })
+          await this.fileOperations.removeFile(temporaryPath)
         } catch (error) {
           console.warn(
             `Unable to remove stale runtime history temporary file ${temporaryPath}: ${toErrorMessage(error)}`,
@@ -187,20 +213,14 @@ export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
       `.${runId}.${randomUUID()}.tmp`,
     )
 
-    await mkdir(this.directory, { recursive: true })
-
-    let fileHandle: FileHandle | undefined
+    await this.prepareDirectory()
 
     try {
-      fileHandle = await open(temporaryPath, 'wx')
-      await fileHandle.writeFile(contents)
-      await fileHandle.sync()
-      await fileHandle.close()
-      fileHandle = undefined
-      await this.renameFile(temporaryPath, canonicalPath)
+      await this.fileOperations.writeFile(temporaryPath, contents)
+      await this.fileOperations.syncFile(temporaryPath)
+      await this.fileOperations.renameFile(temporaryPath, canonicalPath)
     } catch (error) {
-      await fileHandle?.close().catch(() => {})
-      await rm(temporaryPath, { force: true }).catch(() => {})
+      await this.fileOperations.removeFile(temporaryPath).catch(() => {})
       throw error
     }
   }
@@ -225,7 +245,9 @@ export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
         break
       }
 
-      await rm(this.canonicalPath(record.log.runId), { force: true })
+      await this.fileOperations.removeFile(
+        this.canonicalPath(record.log.runId),
+      )
       this.removedRunIds.add(record.log.runId)
       removedRunIds.push(record.log.runId)
       terminalCount -= 1
@@ -271,6 +293,17 @@ export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
 
   private canonicalPath(runId: string): string {
     return path.join(this.directory, `${runId}.json`)
+  }
+
+  private async prepareDirectory(): Promise<void> {
+    try {
+      await mkdir(this.directory, { recursive: true })
+    } catch (error) {
+      throw new Error(
+        `Unable to prepare runtime history directory ${this.directory}: ${toErrorMessage(error)}`,
+        { cause: error },
+      )
+    }
   }
 
   private runOperation<T>(operation: () => Promise<T>): Promise<T> {

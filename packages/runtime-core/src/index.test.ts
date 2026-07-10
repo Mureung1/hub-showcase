@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   AgentRuntimeKernel,
+  RuntimePersistenceUnavailableError,
   isRuntimeRunId,
   isTerminalRuntimeRunStatus,
   parseRuntimeRunId,
@@ -9,6 +10,7 @@ import {
   type RuntimeCheckpointScheduler,
   type RuntimeAdapterEvent,
   type RuntimeAdapterRunInput,
+  type RuntimeRunEvent,
   type RuntimeRunLog,
   type RuntimeRunLogPersistence,
 } from './index.js'
@@ -239,6 +241,35 @@ class PushRuntimeAdapter implements AgentRuntimeAdapter {
 }
 
 class AdapterConfirmedPushRuntimeAdapter extends PushRuntimeAdapter {
+  readonly cancellationMode = 'adapter_confirmed'
+}
+
+class AbortObservingPushRuntimeAdapter extends PushRuntimeAdapter {
+  readonly aborted: Promise<void>
+
+  private readonly abortedDeferred = createDeferred<void>()
+
+  constructor() {
+    super()
+    this.aborted = this.abortedDeferred.promise
+  }
+
+  override run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
+    if (input.signal.aborted) {
+      this.abortedDeferred.resolve()
+    } else {
+      input.signal.addEventListener(
+        'abort',
+        () => this.abortedDeferred.resolve(),
+        { once: true },
+      )
+    }
+
+    return super.run(input)
+  }
+}
+
+class AbortObservingAdapterConfirmedPushRuntimeAdapter extends AbortObservingPushRuntimeAdapter {
   readonly cancellationMode = 'adapter_confirmed'
 }
 
@@ -495,6 +526,81 @@ class GatedRuntimeRunLogPersistence implements RuntimeRunLogPersistence {
 
   releaseBlockedSave(): void {
     this.releaseBlockedSaveDeferred.resolve()
+  }
+}
+
+class FaultInjectingRuntimeRunLogPersistence extends RecordingRuntimeRunLogPersistence {
+  private nextSaveFailure: Error | undefined
+  private nextSaveFailureGate:
+    | {
+        failure: Error
+        release: Promise<void>
+        started: (log: RuntimeRunLog) => void
+      }
+    | undefined
+  private nextRemoveFailure: Error | undefined
+
+  override async save(
+    log: RuntimeRunLog,
+  ): Promise<{ removedRunIds: string[] }> {
+    const failureGate = this.nextSaveFailureGate
+    this.nextSaveFailureGate = undefined
+
+    if (failureGate) {
+      this.operations.push(`save:${log.runId}:${log.status}`)
+      failureGate.started(cloneTestLog(log))
+      await failureGate.release
+      throw failureGate.failure
+    }
+
+    const failure = this.nextSaveFailure
+    this.nextSaveFailure = undefined
+
+    if (failure) {
+      this.operations.push(`save:${log.runId}:${log.status}`)
+      throw failure
+    }
+
+    return super.save(log)
+  }
+
+  override async remove(runId: string): Promise<void> {
+    const failure = this.nextRemoveFailure
+    this.nextRemoveFailure = undefined
+
+    if (failure) {
+      this.operations.push(`remove:${runId}`)
+      throw failure
+    }
+
+    await super.remove(runId)
+  }
+
+  failNextSave(failure: Error): void {
+    this.nextSaveFailure = failure
+  }
+
+  blockAndFailNextSave(failure: Error): {
+    release: () => void
+    started: Promise<RuntimeRunLog>
+  } {
+    const release = createDeferred<void>()
+    const started = createDeferred<RuntimeRunLog>()
+
+    this.nextSaveFailureGate = {
+      failure,
+      release: release.promise,
+      started: started.resolve,
+    }
+
+    return {
+      release: () => release.resolve(),
+      started: started.promise,
+    }
+  }
+
+  failNextRemove(failure: Error): void {
+    this.nextRemoveFailure = failure
   }
 }
 
@@ -813,6 +919,72 @@ test('AgentRuntimeKernel keeps disk and memory aligned for successful removals b
   )
 })
 
+test('AgentRuntimeKernel degrades on clear removal failure while preserving reads and unknown lookup semantics', async () => {
+  const terminalLog = createCompletedLog({
+    runId: '11111111-1111-4111-8111-111111111111',
+    prompt: 'preserve after failed clear',
+    startedAt: '2026-07-10T00:00:00.000Z',
+  })
+  const persistence = new FaultInjectingRuntimeRunLogPersistence([
+    terminalLog,
+  ])
+  const storageFailure = new Error('history unlink failed')
+  persistence.failNextRemove(storageFailure)
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [new InvocationCountingAdapter()],
+    persistence,
+  })
+
+  await assert.rejects(kernel.clearTerminalHistory(), (error: unknown) => {
+    assert.ok(error instanceof RuntimePersistenceUnavailableError)
+    assert.equal(error.operation, 'clear_remove')
+    assert.equal(error.cause, storageFailure)
+    return true
+  })
+
+  assert.deepEqual(kernel.getPersistenceState(), {
+    status: 'degraded',
+    error:
+      'Runtime persistence unavailable during clear_remove: history unlink failed',
+  })
+  assert.deepEqual(kernel.getRunLog(terminalLog.runId), terminalLog)
+  assert.deepEqual(kernel.listRuns(), [
+    {
+      runId: terminalLog.runId,
+      adapter: terminalLog.adapter,
+      prompt: terminalLog.prompt,
+      status: terminalLog.status,
+      outputPreview: terminalLog.output,
+      error: undefined,
+      startedAt: terminalLog.startedAt,
+      completedAt: terminalLog.completedAt,
+    },
+  ])
+  assert.equal(kernel.listAdapters().length, 1)
+  assert.equal(
+    await kernel.cancelRun('22222222-2222-4222-8222-222222222222'),
+    undefined,
+  )
+  await assert.rejects(
+    kernel.cancelRun(terminalLog.runId),
+    (error: unknown) =>
+      error instanceof RuntimePersistenceUnavailableError &&
+      error.operation === 'clear_remove',
+  )
+  await assert.rejects(
+    kernel.startRun({ adapter: 'missing', prompt: 'invalid adapter wins' }),
+    /Unknown runtime adapter: missing/,
+  )
+  await assert.rejects(
+    kernel.startRun({ adapter: 'test', prompt: 'known adapter is rejected' }),
+    (error: unknown) => error instanceof RuntimePersistenceUnavailableError,
+  )
+  await assert.rejects(
+    kernel.clearTerminalHistory(),
+    (error: unknown) => error instanceof RuntimePersistenceUnavailableError,
+  )
+})
+
 test('AgentRuntimeKernel drains a terminal checkpoint before clear and prevents late evidence from recreating it', async () => {
   const adapter = new PostTerminalDebugAdapter()
   const persistence = new RecordingRuntimeRunLogPersistence()
@@ -1034,6 +1206,47 @@ test('AgentRuntimeKernel saves a started snapshot before invoking the adapter', 
   assert.deepEqual(persistence.persistedStatuses, ['running', 'completed'])
 })
 
+test('AgentRuntimeKernel degrades and keeps an initial save failure private', async () => {
+  const persistence = new FaultInjectingRuntimeRunLogPersistence()
+  const adapter = new InvocationCountingAdapter()
+  const storageFailure = new Error('initial disk write failed')
+  persistence.failNextSave(storageFailure)
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    generateRunId: () => '11111111-1111-4111-8111-111111111111',
+    persistence,
+  })
+
+  assert.deepEqual(kernel.getPersistenceState(), { status: 'ready' })
+  await assert.rejects(
+    kernel.startRun({ adapter: 'test', prompt: 'must remain private' }),
+    (error: unknown) => {
+      assert.ok(error instanceof RuntimePersistenceUnavailableError)
+      assert.equal(error.code, 'runtime_persistence_unavailable')
+      assert.equal(error.operation, 'initial_save')
+      assert.equal(error.causeMessage, storageFailure.message)
+      assert.equal(error.cause, storageFailure)
+      return true
+    },
+  )
+
+  assert.equal(adapter.runCount, 0)
+  assert.deepEqual(kernel.listRuns(), [])
+  assert.deepEqual(kernel.getPersistenceState(), {
+    status: 'degraded',
+    error:
+      'Runtime persistence unavailable during initial_save: initial disk write failed',
+  })
+  await assert.rejects(
+    kernel.startRun({ adapter: 'test', prompt: 'reject while degraded' }),
+    (error: unknown) =>
+      error instanceof RuntimePersistenceUnavailableError &&
+      error.operation === 'initial_save' &&
+      error.cause === storageFailure,
+  )
+  assert.equal(persistence.savedLogs.length, 0)
+})
+
 test('AgentRuntimeKernel coalesces rapid streaming evidence without delaying the in-memory view', async () => {
   const adapter = new PushRuntimeAdapter()
   const persistence = new RecordingRuntimeRunLogPersistence()
@@ -1156,6 +1369,159 @@ test('AgentRuntimeKernel checkpoints each fixed window during continuous streami
 
   adapter.push(startedRun.runId, { type: 'completed' })
   await kernel.waitForRun(startedRun.runId)
+})
+
+test('AgentRuntimeKernel aborts and publishes a non-durable emergency failure when a streaming checkpoint fails', async () => {
+  const runId = '11111111-1111-4111-8111-111111111111'
+  const adapter = new AbortObservingPushRuntimeAdapter()
+  const persistence = new FaultInjectingRuntimeRunLogPersistence()
+  const scheduler = new ManualCheckpointScheduler()
+  const failureAt = '2026-07-10T02:00:00.000Z'
+  const storageFailure = new Error('checkpoint fsync failed')
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    checkpointScheduler: scheduler,
+    generateRunId: () => runId,
+    now: () => new Date(failureAt),
+    persistence,
+  })
+  const startedRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'stream before storage failure',
+  })
+  const publishedEvents: RuntimeRunEvent[] = []
+  kernel.subscribeToRun(startedRun.runId, 1, (event) => {
+    publishedEvents.push(event)
+  })
+
+  adapter.push(startedRun.runId, {
+    type: 'output_delta',
+    delta: 'partial output',
+  })
+  await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => log.output === 'partial output',
+  )
+  persistence.failNextSave(storageFailure)
+  scheduler.runNext()
+
+  await adapter.aborted
+  const failedLog = await kernel.waitForRun(startedRun.runId)
+  const failedEvent = failedLog.events.at(-1)
+  const persistenceEntry = failedLog.debugLog?.at(-1)
+
+  assert.equal(failedLog.status, 'failed')
+  assert.equal(
+    failedLog.error,
+    'Runtime persistence unavailable during checkpoint_save: checkpoint fsync failed',
+  )
+  assert.equal(failedLog.completedAt, failureAt)
+  assert.equal(failedLog.output, 'partial output')
+  assert.deepEqual(
+    failedLog.events.map((event) => event.type),
+    ['started', 'output_delta', 'failed'],
+  )
+  assert.equal(failedEvent?.sequence, 3)
+  assert.deepEqual(persistenceEntry, {
+    timestamp: failureAt,
+    source: 'kernel',
+    kind: 'persistence_error',
+    message:
+      'Runtime persistence unavailable during checkpoint_save: checkpoint fsync failed',
+    data: {
+      code: 'runtime_persistence_unavailable',
+      operation: 'checkpoint_save',
+      cause: storageFailure.message,
+      durable: false,
+    },
+  })
+  assert.deepEqual(
+    publishedEvents.map((event) => event.type),
+    ['output_delta', 'failed'],
+  )
+  assert.deepEqual(kernel.getPersistenceState(), {
+    status: 'degraded',
+    error:
+      'Runtime persistence unavailable during checkpoint_save: checkpoint fsync failed',
+  })
+  assert.equal(persistence.savedLogs.length, 1)
+  assert.equal(persistence.savedLogs[0]?.status, 'running')
+  assert.equal(persistence.savedLogs[0]?.output, '')
+
+  adapter.push(startedRun.runId, { type: 'completed' })
+  await new Promise<void>((resolve) => setImmediate(resolve))
+  assert.equal(kernel.getRunLog(startedRun.runId)?.events.length, 3)
+  assert.equal(persistence.savedLogs.length, 1)
+
+  const restartedKernel = await AgentRuntimeKernel.create({
+    adapters: [new InvocationCountingAdapter()],
+    now: () => new Date('2026-07-10T02:01:00.000Z'),
+    persistence,
+  })
+  const recoveredLog = restartedKernel.getRunLog(runId)
+
+  assert.equal(recoveredLog?.status, 'failed')
+  assert.equal(recoveredLog?.error, 'Runtime interrupted by server restart')
+  assert.deepEqual(
+    recoveredLog?.events.map((event) => event.type),
+    ['started', 'failed'],
+  )
+  assert.equal(recoveredLog?.debugLog?.at(-1)?.kind, 'restart_recovery')
+})
+
+test('AgentRuntimeKernel avoids a checkpoint-worker and terminal-flush deadlock', async () => {
+  const adapter = new AbortObservingPushRuntimeAdapter()
+  const persistence = new FaultInjectingRuntimeRunLogPersistence()
+  const scheduler = new ManualCheckpointScheduler()
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    checkpointScheduler: scheduler,
+    generateRunId: () => '11111111-1111-4111-8111-111111111111',
+    persistence,
+  })
+  const startedRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'race checkpoint with terminal flush',
+  })
+
+  adapter.push(startedRun.runId, {
+    type: 'output_delta',
+    delta: 'partial',
+  })
+  await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => log.output === 'partial',
+  )
+  const checkpointFailure = persistence.blockAndFailNextSave(
+    new Error('in-flight checkpoint failed'),
+  )
+  scheduler.runNext()
+  await checkpointFailure.started
+
+  adapter.push(startedRun.runId, { type: 'completed' })
+  await new Promise<void>((resolve) => setImmediate(resolve))
+  assert.equal(kernel.getRunLog(startedRun.runId)?.status, 'running')
+
+  checkpointFailure.release()
+  const failedLog = await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => log.status === 'failed',
+  )
+  await adapter.aborted
+
+  assert.deepEqual(
+    failedLog.events.map((event) => event.type),
+    ['started', 'output_delta', 'failed'],
+  )
+  assert.equal(
+    failedLog.debugLog?.at(-1)?.data?.operation,
+    'checkpoint_save',
+  )
+  assert.equal(
+    failedLog.events.filter((event) => event.type === 'failed').length,
+    1,
+  )
+  assert.deepEqual(await kernel.waitForRun(startedRun.runId), failedLog)
 })
 
 test('AgentRuntimeKernel keeps checkpoint ordering independent between runs', async () => {
@@ -1431,6 +1797,96 @@ test('AgentRuntimeKernel serializes cancellation against adapter completion', as
   )
 })
 
+test('AgentRuntimeKernel fails in memory without publishing cancelling when the cancelling save fails', async () => {
+  const adapter = new AbortObservingAdapterConfirmedPushRuntimeAdapter()
+  const persistence = new FaultInjectingRuntimeRunLogPersistence()
+  const storageFailure = new Error('cancelling snapshot failed')
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    generateRunId: () => '11111111-1111-4111-8111-111111111111',
+    now: () => new Date('2026-07-10T03:00:00.000Z'),
+    persistence,
+  })
+  const startedRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'cancel durably',
+  })
+  const publishedEventTypes: string[] = []
+  kernel.subscribeToRun(startedRun.runId, 1, (event) => {
+    publishedEventTypes.push(event.type)
+  })
+  persistence.failNextSave(storageFailure)
+
+  await assert.rejects(kernel.cancelRun(startedRun.runId), (error: unknown) => {
+    assert.ok(error instanceof RuntimePersistenceUnavailableError)
+    assert.equal(error.operation, 'cancelling_save')
+    assert.equal(error.cause, storageFailure)
+    return true
+  })
+  await adapter.aborted
+  const failedLog = await kernel.waitForRun(startedRun.runId)
+
+  assert.equal(failedLog.status, 'failed')
+  assert.deepEqual(
+    failedLog.events.map((event) => event.type),
+    ['started', 'failed'],
+  )
+  assert.equal(failedLog.debugLog?.at(-1)?.kind, 'persistence_error')
+  assert.equal(
+    failedLog.debugLog?.at(-1)?.data?.operation,
+    'cancelling_save',
+  )
+  assert.deepEqual(publishedEventTypes, ['failed'])
+  assert.deepEqual(
+    persistence.savedLogs.map((log) => log.status),
+    ['running'],
+  )
+})
+
+test('AgentRuntimeKernel aborts and publishes one emergency failure when a terminal save fails', async () => {
+  const adapter = new AbortObservingPushRuntimeAdapter()
+  const persistence = new FaultInjectingRuntimeRunLogPersistence()
+  const storageFailure = new Error('terminal rename failed')
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    generateRunId: () => '11111111-1111-4111-8111-111111111111',
+    now: () => new Date('2026-07-10T03:01:00.000Z'),
+    persistence,
+  })
+  const startedRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'finish durably',
+  })
+  const publishedEventTypes: string[] = []
+  kernel.subscribeToRun(startedRun.runId, 1, (event) => {
+    publishedEventTypes.push(event.type)
+  })
+  persistence.failNextSave(storageFailure)
+
+  adapter.push(startedRun.runId, { type: 'completed' })
+  await adapter.aborted
+  const failedLog = await kernel.waitForRun(startedRun.runId)
+
+  assert.equal(failedLog.status, 'failed')
+  assert.deepEqual(
+    failedLog.events.map((event) => event.type),
+    ['started', 'failed'],
+  )
+  assert.equal(failedLog.events.at(-1)?.sequence, 2)
+  assert.equal(
+    failedLog.debugLog?.at(-1)?.data?.operation,
+    'terminal_save',
+  )
+  assert.equal(failedLog.debugLog?.at(-1)?.data?.durable, false)
+  assert.deepEqual(publishedEventTypes, ['failed'])
+  assert.deepEqual(
+    persistence.savedLogs.map((log) => log.status),
+    ['running'],
+  )
+  await new Promise<void>((resolve) => setImmediate(resolve))
+  assert.equal(kernel.getRunLog(startedRun.runId)?.events.length, 2)
+})
+
 test('AgentRuntimeKernel drains checkpoints before cancelling and terminal cancellation transitions', async () => {
   const adapter = new AdapterConfirmedPushRuntimeAdapter()
   const persistence = new RecordingRuntimeRunLogPersistence()
@@ -1693,6 +2149,7 @@ test('AgentRuntimeKernel records a failed run lifecycle and log', async () => {
     assert.equal(failedEvent.error, 'Adapter exploded')
   }
 
+  assert.deepEqual(kernel.getPersistenceState(), { status: 'ready' })
   assert.deepEqual(kernel.listRuns(), [
     {
       adapter: 'test',

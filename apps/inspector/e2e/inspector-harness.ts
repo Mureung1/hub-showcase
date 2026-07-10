@@ -19,10 +19,21 @@ const serverEntryPath = path.join(
   'src',
   'server.ts',
 )
+const persistenceFaultServerEntryPath = path.join(
+  workspaceRoot,
+  'apps',
+  'server',
+  'src',
+  'testing',
+  'persistence-fault-server.ts',
+)
+
+type PersistenceFailure = 'none' | 'checkpoint-after-output'
 
 type InspectorFixtures = {
   inspectorHarness: InspectorHarness
   inspectorPage: Page
+  persistenceFailure: PersistenceFailure
 }
 
 type InspectorHarness = {
@@ -43,8 +54,12 @@ type ManagedApiServer = {
 }
 
 export const test = base.extend<InspectorFixtures>({
-  inspectorHarness: async ({ browserName: _browserName }, provideHarness) => {
-    const harness = await startInspectorHarness()
+  persistenceFailure: ['none', { option: true }],
+  inspectorHarness: async (
+    { browserName: _browserName, persistenceFailure },
+    provideHarness,
+  ) => {
+    const harness = await startInspectorHarness(persistenceFailure)
 
     try {
       await provideHarness(harness)
@@ -62,7 +77,9 @@ export const test = base.extend<InspectorFixtures>({
   },
 })
 
-async function startInspectorHarness(): Promise<InspectorHarness> {
+async function startInspectorHarness(
+  persistenceFailure: PersistenceFailure,
+): Promise<InspectorHarness> {
   const temporaryRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-inspector-e2e-'),
   )
@@ -84,11 +101,20 @@ async function startInspectorHarness(): Promise<InspectorHarness> {
       CODEX_RUNTIME_CWD: temporaryRoot,
       CODEX_SQLITE_HOME: path.join(temporaryRoot, 'codex-sqlite-home'),
       PORT: String(apiPort),
-      RUNTIME_FAKE_DELAY_MS: '5000',
+      RUNTIME_FAKE_DELAY_MS:
+        persistenceFailure === 'checkpoint-after-output' ? '300' : '5000',
       RUNTIME_HISTORY_DIR: runtimeHistoryDirectory,
     }
+    const apiServerEntryPath =
+      persistenceFailure === 'checkpoint-after-output'
+        ? persistenceFaultServerEntryPath
+        : serverEntryPath
 
-    apiServer = await startApiServerProcess(apiUrl, apiEnvironment)
+    apiServer = await startApiServerProcess(
+      apiUrl,
+      apiEnvironment,
+      apiServerEntryPath,
+    )
     viteServer = await createViteServer({
       root: inspectorRoot,
       cacheDir: path.join(temporaryRoot, 'vite-cache'),
@@ -117,7 +143,11 @@ async function startInspectorHarness(): Promise<InspectorHarness> {
 
         await closeApiServerProcess(apiServer)
 
-        apiServer = await startApiServerProcess(apiUrl, apiEnvironment)
+        apiServer = await startApiServerProcess(
+          apiUrl,
+          apiEnvironment,
+          apiServerEntryPath,
+        )
         const canonicalRunLogAtReadiness = await readCanonicalRunLog(
           runtimeHistoryDirectory,
           runId,
@@ -235,12 +265,13 @@ async function reservePort(): Promise<number> {
 async function startApiServerProcess(
   apiUrl: string,
   environment: NodeJS.ProcessEnv,
+  entryPath: string,
 ): Promise<ManagedApiServer> {
   let output = ''
   let processError: Error | undefined
   const childProcess = spawn(
     process.execPath,
-    ['--conditions=development', '--import', 'tsx', serverEntryPath],
+    ['--conditions=development', '--import', 'tsx', entryPath],
     {
       cwd: workspaceRoot,
       env: environment,

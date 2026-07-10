@@ -11,7 +11,10 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import type { RuntimeRunLog } from '@ay-ple/runtime-core'
-import { RuntimeRunJsonStore } from './runtime-run-json-store.js'
+import {
+  RuntimeRunJsonStore,
+  type RuntimeRunJsonStoreFileOperations,
+} from './runtime-run-json-store.js'
 
 const firstRunId = '11111111-1111-4111-8111-111111111111'
 const secondRunId = '22222222-2222-4222-8222-222222222222'
@@ -71,37 +74,76 @@ test('RuntimeRunJsonStore rejects invalid run IDs for persistence operations', a
   })
 })
 
-test('RuntimeRunJsonStore preserves the canonical record when atomic rename fails', async () => {
-  await withTemporaryDirectory(async (directory) => {
-    const store = new RuntimeRunJsonStore({ directory })
-    const startedLog = createRunLog({
-      runId: firstRunId,
-      prompt: 'preserve me',
-      startedAt: '2026-07-10T01:00:00.000Z',
-    })
-
-    await store.save(startedLog)
-
-    const failingStore = new RuntimeRunJsonStore({
-      directory,
-      renameFile: async () => {
-        throw new Error('rename blocked for test')
+test('RuntimeRunJsonStore preserves the canonical record across atomic write stages', async (context) => {
+  const failureCases: Array<{
+    name: string
+    fileOperations: Partial<RuntimeRunJsonStoreFileOperations>
+  }> = [
+    {
+      name: 'write',
+      fileOperations: {
+        writeFile: async (filePath, contents) => {
+          await writeFile(filePath, contents.subarray(0, 8), { flag: 'wx' })
+          throw new Error('write blocked for test')
+        },
       },
+    },
+    {
+      name: 'sync',
+      fileOperations: {
+        syncFile: async () => {
+          throw new Error('sync blocked for test')
+        },
+      },
+    },
+    {
+      name: 'rename',
+      fileOperations: {
+        renameFile: async () => {
+          throw new Error('rename blocked for test')
+        },
+      },
+    },
+  ]
+
+  for (const failureCase of failureCases) {
+    await context.test(failureCase.name, async () => {
+      await withTemporaryDirectory(async (directory) => {
+        const store = new RuntimeRunJsonStore({ directory })
+        const startedLog = createRunLog({
+          runId: firstRunId,
+          prompt: 'preserve me',
+          startedAt: '2026-07-10T01:00:00.000Z',
+        })
+
+        await store.save(startedLog)
+
+        const canonicalPath = path.join(directory, `${firstRunId}.json`)
+        const canonicalBeforeFailure = await readFile(canonicalPath)
+        const failingStore = new RuntimeRunJsonStore({
+          directory,
+          fileOperations: failureCase.fileOperations,
+        })
+
+        await assert.rejects(
+          failingStore.save(
+            completeRunLog(startedLog, {
+              completedAt: '2026-07-10T01:01:00.000Z',
+              output: 'must not replace canonical',
+            }),
+          ),
+          new RegExp(`${failureCase.name} blocked for test`),
+        )
+
+        assert.deepEqual(
+          await readFile(canonicalPath),
+          canonicalBeforeFailure,
+        )
+        assert.deepEqual(await store.load(), [startedLog])
+        assert.deepEqual(await readdir(directory), [`${firstRunId}.json`])
+      })
     })
-
-    await assert.rejects(
-      failingStore.save(
-        completeRunLog(startedLog, {
-          completedAt: '2026-07-10T01:01:00.000Z',
-          output: 'must not replace canonical',
-        }),
-      ),
-      /rename blocked for test/,
-    )
-
-    assert.deepEqual(await store.load(), [startedLog])
-    assert.deepEqual(await readdir(directory), [`${firstRunId}.json`])
-  })
+  }
 })
 
 test('RuntimeRunJsonStore removes stale same-directory temporary files during load', async () => {
@@ -115,6 +157,55 @@ test('RuntimeRunJsonStore removes stale same-directory temporary files during lo
 
     assert.deepEqual(await store.load(), [])
     assert.deepEqual(await readdir(directory), [unrelatedFilename])
+  })
+})
+
+test('RuntimeRunJsonStore warns and continues canonical hydration when stale temporary cleanup fails', async () => {
+  await withTemporaryDirectory(async (directory) => {
+    const seedStore = new RuntimeRunJsonStore({ directory })
+    const log = createRunLog({
+      runId: firstRunId,
+      prompt: 'hydrate despite stale temporary file',
+      startedAt: '2026-07-10T01:00:00.000Z',
+    })
+    const temporaryFilename = `.${firstRunId}.${secondRunId}.tmp`
+    const temporaryPath = path.join(directory, temporaryFilename)
+
+    await seedStore.save(log)
+    await writeFile(temporaryPath, '{partial', 'utf8')
+
+    const warnings: string[] = []
+    const originalWarn = console.warn
+    console.warn = (message?: unknown) => {
+      warnings.push(String(message))
+    }
+
+    try {
+      const store = new RuntimeRunJsonStore({
+        directory,
+        fileOperations: {
+          removeFile: async (filePath) => {
+            if (filePath === temporaryPath) {
+              throw new Error('cleanup blocked for test')
+            }
+
+            await rm(filePath, { force: true })
+          },
+        },
+      })
+
+      assert.deepEqual(await store.load(), [log])
+    } finally {
+      console.warn = originalWarn
+    }
+
+    assert.deepEqual(warnings, [
+      `Unable to remove stale runtime history temporary file ${temporaryPath}: cleanup blocked for test`,
+    ])
+    assert.deepEqual(
+      (await readdir(directory)).sort(),
+      [temporaryFilename, `${firstRunId}.json`].sort(),
+    )
   })
 })
 
@@ -169,10 +260,19 @@ test('RuntimeRunJsonStore rejects a filename and run ID mismatch', async () => {
       'utf8',
     )
 
-    await assert.rejects(
-      store.load(),
-      new RegExp(`filename run ID ${firstRunId} does not match log run ID`),
-    )
+    const recordPath = path.join(directory, `${firstRunId}.json`)
+
+    await assert.rejects(store.load(), (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.match(error.message, /Invalid runtime history record/)
+      assert.ok(error.message.includes(recordPath))
+      assert.match(
+        error.message,
+        new RegExp(`filename run ID ${firstRunId} does not match log run ID`),
+      )
+
+      return true
+    })
   })
 })
 
@@ -186,21 +286,72 @@ test('RuntimeRunJsonStore rejects a non-UUID canonical filename', async () => {
   })
 })
 
-test('RuntimeRunJsonStore rejects malformed canonical records', async () => {
-  await withTemporaryDirectory(async (directory) => {
-    const store = new RuntimeRunJsonStore({ directory })
-
-    await writeFile(
-      path.join(directory, `${firstRunId}.json`),
-      JSON.stringify({
+test('RuntimeRunJsonStore rejects malformed JSON, invalid envelopes, and unsupported schemas with the record path', async (context) => {
+  const invalidRecords = [
+    {
+      name: 'malformed JSON',
+      contents: '{not-json',
+      expectedError: /malformed JSON/,
+    },
+    {
+      name: 'invalid envelope',
+      contents: JSON.stringify({
+        schemaVersion: 1,
+        savedAt: '2026-07-10T02:00:00.000Z',
+      }),
+      expectedError: /snapshot envelope is missing log/,
+    },
+    {
+      name: 'unsupported schema',
+      contents: JSON.stringify({
         schemaVersion: 2,
-        savedAt: 'not-an-iso-time',
+        savedAt: '2026-07-10T02:00:00.000Z',
         log: {},
       }),
-      'utf8',
-    )
+      expectedError: /unsupported schemaVersion: 2/,
+    },
+  ]
 
-    await assert.rejects(store.load(), /unsupported schemaVersion/)
+  for (const invalidRecord of invalidRecords) {
+    await context.test(invalidRecord.name, async () => {
+      await withTemporaryDirectory(async (directory) => {
+        const store = new RuntimeRunJsonStore({ directory })
+        const recordPath = path.join(directory, `${firstRunId}.json`)
+
+        await writeFile(recordPath, invalidRecord.contents, 'utf8')
+
+        await assert.rejects(store.load(), (error: unknown) => {
+          assert.ok(error instanceof Error)
+          assert.match(error.message, /Invalid runtime history record/)
+          assert.ok(error.message.includes(recordPath))
+          assert.match(error.message, invalidRecord.expectedError)
+
+          return true
+        })
+      })
+    })
+  }
+})
+
+test('RuntimeRunJsonStore wraps history directory preparation failures with the directory path', async () => {
+  await withTemporaryDirectory(async (temporaryDirectory) => {
+    const directory = path.join(temporaryDirectory, 'history-is-a-file')
+
+    await writeFile(directory, 'not a directory', 'utf8')
+
+    const store = new RuntimeRunJsonStore({ directory })
+
+    await assert.rejects(store.load(), (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.equal(
+        error.message.startsWith(
+          `Unable to prepare runtime history directory ${directory}:`,
+        ),
+        true,
+      )
+
+      return true
+    })
   })
 })
 
@@ -594,10 +745,12 @@ test('RuntimeRunJsonStore serializes remove after save and blocks later saves fo
     let renameStarted = false
     const store = new RuntimeRunJsonStore({
       directory,
-      renameFile: async (sourcePath, destinationPath) => {
-        renameStarted = true
-        await renameGate.promise
-        await rename(sourcePath, destinationPath)
+      fileOperations: {
+        renameFile: async (sourcePath, destinationPath) => {
+          renameStarted = true
+          await renameGate.promise
+          await rename(sourcePath, destinationPath)
+        },
       },
     })
     const log = createRunLog({

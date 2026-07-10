@@ -306,17 +306,41 @@ button {
 }
 
 .health-dot {
+  flex: 0 0 9px;
   width: 9px;
   height: 9px;
   border-radius: 999px;
   background: #e0a72f;
 }
 
-.health-ok .health-dot {
+.health-copy {
+  display: grid;
+  gap: 2px;
+  max-width: 520px;
+}
+
+.health-error {
+  overflow-wrap: anywhere;
+  color: #9f3324;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.health-ready .health-dot {
   background: #3f7f68;
 }
 
-.health-error .health-dot {
+.health-degraded {
+  align-items: flex-start;
+}
+
+.health-degraded .health-dot {
+  margin-top: 4px;
+  background: #d95c42;
+}
+
+.health-unavailable .health-dot {
   background: #d95c42;
 }
 

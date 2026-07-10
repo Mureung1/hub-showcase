@@ -1,4 +1,10 @@
-import { expect, type Locator, type Page, type Response } from 'playwright/test'
+import {
+  expect,
+  type APIResponse,
+  type Locator,
+  type Page,
+  type Response,
+} from 'playwright/test'
 import type { RuntimeRunLog } from '@ay-ple/runtime-core'
 import { test } from './inspector-harness.js'
 
@@ -10,6 +16,9 @@ const failurePrompt = 'fail this prompt'
 const restartPrompt = 'restore this completed run'
 const interruptedPrompt = 'recover this interrupted stream'
 const activeClearPrompt = 'keep streaming while history clears'
+const checkpointFailureCause = 'Injected checkpoint persistence failure'
+const persistenceFailurePrompt = 'preserve partial output on checkpoint failure'
+const persistenceUnavailableCode = 'runtime_persistence_unavailable'
 
 type RunLogResponseMatch = { prompt: string } | { runId: string }
 
@@ -536,6 +545,143 @@ test('Inspector recovers checkpointed streaming evidence after server restart', 
   await expect(runLog.locator('pre')).toContainText('restart_recovery')
 })
 
+test.describe('persistence checkpoint failure', () => {
+  test.use({ persistenceFailure: 'checkpoint-after-output' })
+
+  test('Inspector preserves diagnostic reads while degraded mutations fail closed', async ({
+    inspectorPage: page,
+  }) => {
+    const run = page.getByRole('region', { name: 'Run', exact: true })
+    const transcript = page.getByRole('region', { name: 'Transcript' })
+    const events = page.getByRole('region', { name: 'Events' })
+    const runLog = page.getByRole('region', { name: 'Run Log' })
+    const history = page.getByRole('region', { name: 'History' })
+    const firstOutput =
+      `Fake runtime received: "${persistenceFailurePrompt}".\n`
+
+    await expect(page.getByText('API connected', { exact: true })).toBeVisible()
+
+    const degradedHealthResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'GET' &&
+        new URL(response.url()).pathname === '/api/health' &&
+        response.status() === 503,
+    )
+    const failedLogResponse = waitForRunLogResponse(page, {
+      prompt: persistenceFailurePrompt,
+    })
+    const failedRun = await startFakeRun(page, persistenceFailurePrompt)
+
+    await expectEventTypes(events, ['started', 'output_delta', 'failed'])
+
+    const healthResponse = await degradedHealthResponse
+    const healthPayload = (await healthResponse.json()) as {
+      ok: boolean
+      persistence: { status: string; error: string }
+    }
+    const failedLog = await readRunLog(await failedLogResponse)
+
+    expect(healthPayload).toEqual({
+      ok: false,
+      persistence: {
+        status: 'degraded',
+        error: failedLog.error,
+      },
+    })
+    expect(failedLog).toEqual(
+      expect.objectContaining({
+        runId: failedRun.runId,
+        status: 'failed',
+        output: firstOutput,
+        completedAt: expect.any(String),
+        error: expect.stringContaining(checkpointFailureCause),
+      }),
+    )
+    expect(failedLog.events.map((event) => event.type)).toEqual([
+      'started',
+      'output_delta',
+      'failed',
+    ])
+    expect(failedLog.debugLog).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: 'kernel',
+          kind: 'persistence_error',
+          data: expect.objectContaining({
+            code: persistenceUnavailableCode,
+            operation: 'checkpoint_save',
+            cause: checkpointFailureCause,
+            durable: false,
+          }),
+        }),
+      ]),
+    )
+
+    const healthIndicator = page.getByRole('status')
+
+    await expect(healthIndicator).toContainText('Persistence degraded')
+    await expect(healthIndicator).toContainText(failedLog.error ?? '')
+    await expect(run).toContainText('Failed')
+    await expect(transcript).toContainText(firstOutput.trim())
+    await expect(transcript).toContainText(`Run failed: ${failedLog.error}`)
+    await expect(runLog.locator('pre')).toHaveText(
+      JSON.stringify(failedLog, null, 2),
+    )
+    await expect(runLog.locator('pre')).toContainText('persistence_error')
+    await expect(runLog.locator('pre')).toContainText('"durable": false')
+
+    const historyItems = history.locator('.history-item')
+    const failedHistoryItem = historyItems.filter({ hasText: failedRun.runId })
+
+    await expect(failedHistoryItem).toHaveCount(1)
+    await expect(failedHistoryItem).toContainText('failed')
+    await expect(
+      historyItems.filter({ hasText: /\b(?:running|cancelling)\b/ }),
+    ).toHaveCount(0)
+
+    const runsUrl = new URL('/api/runtime/runs', page.url()).href
+    const runUrl = `${runsUrl}/${failedRun.runId}`
+    const listResponse = await page.request.get(runsUrl)
+    const logResponse = await page.request.get(runUrl)
+
+    expect(listResponse.status()).toBe(200)
+    expect(logResponse.status()).toBe(200)
+    expect((await logResponse.json()) as { run: RuntimeRunLog }).toEqual({
+      run: failedLog,
+    })
+
+    const mutationResponses = await Promise.all([
+      page.request.post(runsUrl, {
+        data: {
+          adapter: 'fake',
+          prompt: 'must reject a new run while persistence is degraded',
+        },
+      }),
+      page.request.post(`${runUrl}/cancel`),
+      page.request.delete(runsUrl),
+    ])
+
+    for (const mutationResponse of mutationResponses) {
+      await expectPersistenceUnavailableResponse(mutationResponse)
+    }
+
+    await expect(run.getByRole('button', { name: 'Start Run' })).toBeDisabled()
+    await expect(run.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+    await expect(
+      history.getByRole('button', { name: 'Clear terminal history' }),
+    ).toBeDisabled()
+
+    const selectedLogResponse = waitForRunLogResponse(page, {
+      runId: failedRun.runId,
+    })
+
+    await failedHistoryItem.click()
+    expect(await readRunLog(await selectedLogResponse)).toEqual(failedLog)
+    await expect(transcript).toContainText(firstOutput.trim())
+    await expectEventTypes(events, ['started', 'output_delta', 'failed'])
+  })
+})
+
 async function startFakeRun(
   page: Page,
   prompt: string,
@@ -598,6 +744,22 @@ async function readRunLog(response: Response): Promise<RuntimeRunLog> {
   const body = (await response.json()) as { run: RuntimeRunLog }
 
   return body.run
+}
+
+async function expectPersistenceUnavailableResponse(
+  response: APIResponse,
+): Promise<void> {
+  expect(response.status()).toBe(503)
+
+  const payload = (await response.json()) as {
+    error?: unknown
+    code?: unknown
+  }
+
+  expect(payload).toEqual({
+    error: expect.any(String),
+    code: persistenceUnavailableCode,
+  })
 }
 
 async function clearTerminalHistory(
