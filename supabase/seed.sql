@@ -1,0 +1,2 @@
+-- DB 전용 로컬 seed 데이터는 여기에 작성합니다.
+-- Supabase Auth 데모 계정은 scripts/seed-demo.mjs에서 생성합니다.

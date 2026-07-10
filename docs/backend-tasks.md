@@ -1,90 +1,98 @@
 # 사이사이 백엔드 작업 문서
 
-## 1. 현재 상태
+## 1. 목표와 현재 상태
 
-- 현재 저장소에는 Express 백엔드 코드가 없다.
-- `package.json`에는 Express, Supabase client, 서버 검증/로깅 의존성이 없다.
-- 백엔드 실행 스크립트도 아직 없다.
-- 현재 앱은 React + Vite 소개형 MVP 화면 중심이다.
-- `prototype/`은 localStorage 기반으로 글 작성, 도움 요청, 공동구매 생성/참여/마감, 나의 활동 흐름을 보여준다.
-- 백엔드 작업은 아직 구현되지 않은 기능을 있는 것처럼 작성하지 않고, 새 `server/`를 도입하는 것으로 시작한다.
+- `server/src/{modules,middleware,lib,config,errors}`와 `server/test` 골격은 있으나 실행 가능한 Express 코드는 없다.
+- 루트 `package.json`에는 서버 의존성과 API 실행·테스트 스크립트가 없다.
+- 백엔드는 Supabase Auth의 사용자 JWT를 검증하고, 커뮤니티·작성자·참여자 경계를 지키는 `/api/v1` JSON API를 제공한다.
+- 공개 데모는 Vercel 프론트, Render API, Supabase Auth/Postgres 조합을 사용한다.
 
-## 2. 결정된 기본값
+## 2. 확정 기술과 운영 원칙
 
-| 항목 | 기본값 |
+| 항목 | 결정 |
 | --- | --- |
-| 백엔드 위치 | 루트 `server/` |
-| 언어 | JavaScript ESM 우선 |
-| 언어 방침 | JavaScript ESM 유지 |
-| API prefix | `/api/v1` 권장 |
-| 인증 | Supabase Auth + Express JWT 검증 권장 |
-| 도와주세요 상태 | `open` / `resolved` |
-| 공동구매 목표 인원 도달 | 추가 참여 차단 |
-| 커뮤니티 매칭 1차 | 시드/단순 규칙 기반 |
-| 채팅 1차 | REST polling |
-| 댓글 | MVP 1차 제외, P2 후속 |
+| 언어/모듈 | JavaScript ESM |
+| 서버 | Express |
+| 입력 검증 | Zod |
+| 보안/로그 | Helmet, CORS, Morgan, express-rate-limit |
+| DB/Auth | `@supabase/supabase-js` |
+| 테스트 | Node test runner + Supertest |
+| API prefix | `/api/v1` |
+| 채팅 | REST polling |
+| 배포 | Render |
 
-## 3. 제외 범위
+- 프론트는 Supabase Auth로 로그인한 뒤 access token을 `Authorization: Bearer <token>`으로 보낸다.
+- `requireAuth`는 Supabase `auth.getUser(token)`으로 토큰과 사용자를 검증한다. 별도 `JWT_SECRET`을 사용하지 않는다.
+- 일반 앱 요청은 사용자 JWT가 반영된 Supabase client로 실행해 RLS를 유지한다.
+- service role은 데모 seed와 제한된 운영 작업에만 사용하고 일반 요청 처리에 사용하지 않는다.
+- 회원가입, 비밀번호 재설정, 별도 logout API는 만들지 않는다. 로그아웃은 프론트의 Supabase `signOut`으로 처리한다.
 
-- 결제 연동
-- 송금
-- 정산 상태 머신
-- 에스크로
-- 관리자 페이지/API
-- 리뷰/신고
-- 차단
-- 푸시 알림
-- 댓글 API
-- 지도/주소 검색 외부 API 기반 정밀 매칭
-- Supabase Realtime/WebSocket 채팅
-- 백엔드 언어/스택 전환
+## 3. MVP 범위
 
-공동구매는 모집, 참여, 1인 부담 금액 확인, 분배 안내, 참여자 채팅까지만 다룬다.
+### 포함
 
-## 4. 작업 체크리스트
+- 데모 계정 인증과 내 프로필
+- 커뮤니티 추천·가입과 활성 커뮤니티 스코프
+- 자유게시판·도와주세요 목록/상세/작성과 댓글 목록/작성
+- 도움 요청 작성자 완료 처리
+- 공동구매 목록/상세/생성/참여/수동 마감
+- 공동구매 참여자 REST 채팅
+- 나의 활동 집계
 
-### Phase 0. 서버 구조 준비
+### 제외
 
-- [ ] 루트에 `server/` 디렉터리를 만든다.
-- [ ] 기본 구조를 만든다.
-  - `server/src/app.js`
-  - `server/src/server.js`
-  - `server/src/routes/`
-  - `server/src/controllers/`
-  - `server/src/services/`
-  - `server/src/middleware/`
-  - `server/src/lib/supabase.js`
-  - `server/src/validators/`
-  - `server/src/errors/`
-  - `server/.env.example`
-- [ ] 프론트와 API 포트를 분리한다.
-  - 프론트: `5173`
-  - API: `3001`
-- [ ] CORS, JSON body parser, 공통 에러 핸들러 정책을 정한다.
-- [ ] 프론트 대규모 리팩터와 백엔드 도입 작업을 섞지 않는다.
+- 댓글 수정·삭제와 대댓글
+- 게시글·도움 요청 수정·삭제
+- 결제·송금·정산 상태, 에스크로
+- 이미지 업로드와 Storage API
+- 지도/지오코딩 기반 매칭, Realtime/WebSocket
+- 푸시 알림, 리뷰·신고, 차단, 관리자 API
 
-### Phase 1. 최소 Express 서버
+## 4. 서버 기반 작업
 
-- [ ] 의존성을 추가한다.
-  - `express`
-  - `cors`
-  - `dotenv`
-  - `@supabase/supabase-js`
-  - 검증 라이브러리 1개: `zod` 또는 `express-validator`
-- [ ] 선택 의존성을 검토한다.
-  - `helmet`
-  - `morgan` 또는 간단 로거
-- [ ] `GET /health`를 구현한다.
-- [ ] 스크립트를 추가한다.
-  - `npm run dev:api`
-  - `npm run server`
-- [ ] 공통 응답 포맷을 정한다.
+### 구조와 의존성
+
+- [ ] 디렉터리 책임은 `docs/directory-structure.md`를 따른다.
+- [ ] `server/src/app.js`에 Express 앱 설정을, `server/src/server.js`에 부팅과 종료 처리를 둔다.
+- [ ] 기능별 `server/src/modules/<feature>/` 안에 `<feature>.routes.js`, `<feature>.controller.js`, `<feature>.service.js`, `<feature>.schema.js`를 함께 둔다.
+- [ ] 모듈 내부에서 routes → controller → service → Supabase client/RPC의 단방향 의존을 유지한다.
+- [ ] 공통 인증·오류 처리는 `middleware/`와 `errors/`, Supabase client와 범용 유틸은 `lib/`, 환경 설정은 `config/`에 둔다.
+- [ ] 단위 테스트는 구현 파일 옆 `*.test.js`, API 통합 테스트는 `server/test/`에 둔다.
+- [ ] `express`, `cors`, `dotenv`, `@supabase/supabase-js`, `zod`, `helmet`, `morgan`, `express-rate-limit`을 추가한다.
+- [ ] API 테스트용 `supertest`를 devDependency로 추가한다.
+- [ ] `dev:api`, `server`, `test:api` 스크립트를 루트 `package.json`에 추가한다.
+- [ ] `GET /health`는 인증 없이 200과 최소 상태만 반환하고 DB 비밀값은 노출하지 않는다.
+
+### 환경 변수
+
+```bash
+PORT=3001
+NODE_ENV=development
+CORS_ORIGINS=http://localhost:5173
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+LOG_LEVEL=info
+```
+
+- [ ] 일반 서버 부팅에는 URL과 anon key가 필수다.
+- [ ] `SUPABASE_SERVICE_ROLE_KEY`는 seed 전용 환경에만 설정하고 일반 Render 서버 환경에는 넣지 않는다.
+- [ ] 프로덕션 `CORS_ORIGINS`에는 정확한 Vercel URL을 쉼표 구분 allowlist로 추가한다.
+- [ ] 토큰, 비밀번호, service role, 사용자의 주소 원문을 로그에 기록하지 않는다.
+
+### 공통 미들웨어
+
+- [ ] JSON body 크기 제한, Helmet, CORS allowlist, Morgan 로그, 404와 중앙 에러 핸들러를 구성한다.
+- [ ] 쓰기 endpoint에 IP 기반 rate limit을 적용하고 조회 polling에는 별도 완화 한도를 둔다.
+- [ ] `requireAuth`와 활성 커뮤니티 확인 미들웨어를 분리한다.
+- [ ] Zod validation 오류와 Supabase 오류를 공통 에러로 변환한다.
+
+성공 응답:
 
 ```json
-{
-  "data": {}
-}
+{ "data": {} }
 ```
+
+실패 응답:
 
 ```json
 {
@@ -95,252 +103,131 @@
 }
 ```
 
-### Phase 2. 환경 변수
+## 5. API 계약
 
-- [ ] `server/.env.example`을 작성한다.
+### 사용자와 커뮤니티
 
-```bash
-PORT=3001
-NODE_ENV=development
-CORS_ORIGIN=http://localhost:5173
+- `GET /api/v1/me`: 공개 프로필, 온보딩 상태, 활성 커뮤니티 조회
+- `PATCH /api/v1/me`: 닉네임, 주거 유형, 주소/건물명 갱신
+- `POST /api/v1/communities/match`: `housingType`, `addressText`로 시드 후보 추천
+- `POST /api/v1/communities/:id/join`: 활성 커뮤니티 가입 또는 전환
 
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+규칙:
 
-JWT_SECRET=
-AUTH_MODE=supabase
+- 데모 계정은 Supabase Dashboard 또는 seed 스크립트로 미리 만든다.
+- 주거 유형은 `apartment_officetel` 또는 `house_villa`만 허용한다.
+- 매칭은 건물/지역 키워드 기반이며 거주 사실 검증 기능으로 표현하지 않는다.
+- 정확한 주소는 `/me`의 본인 응답 외 다른 리소스에 포함하지 않는다.
 
-LOG_LEVEL=info
-```
+### 자유게시판과 댓글
 
-- [ ] 필수 env가 없으면 서버가 명확한 메시지와 함께 부팅 실패하게 한다.
-- [ ] `SUPABASE_SERVICE_ROLE_KEY`를 프론트 번들에 노출하지 않는다.
-- [ ] 로컬 개발용 `AUTH_MODE=dev`가 필요하면 프로덕션에서 사용할 수 없게 한다.
+- `GET /api/v1/posts`: 활성 커뮤니티 게시글 최신순 목록
+- `POST /api/v1/posts`: 게시글 작성
+- `GET /api/v1/posts/:id`: 상세와 작성자 공개 정보
+- `GET /api/v1/posts/:id/comments`: 댓글 오래된 순 목록
+- `POST /api/v1/posts/:id/comments`: 댓글 작성
 
-### Phase 3. 인증 / 사용자
+### 도와주세요와 댓글
 
-- [ ] Supabase Auth JWT를 Express에서 검증하는 `requireAuth` 미들웨어를 만든다.
-- [ ] `GET /api/v1/me`를 만든다.
-  - 내 프로필
-  - 현재 커뮤니티
-- [ ] `PATCH /api/v1/me`를 만든다.
-  - 닉네임 수정
-- [ ] `POST /api/v1/auth/logout`를 검토한다.
-- [ ] 프로토타입의 `currentUser` 문자열을 `user_id`와 `nickname`으로 분리한다.
-- [ ] 인증과 커뮤니티 선택을 분리한다.
+- `GET /api/v1/help-requests`: 활성 커뮤니티 요청 최신순 목록
+- `POST /api/v1/help-requests`: `open` 상태로 작성
+- `GET /api/v1/help-requests/:id`: 상세 조회
+- `POST /api/v1/help-requests/:id/resolve`: 작성자만 `open` → `resolved`; 재요청은 멱등 성공
+- `GET /api/v1/help-requests/:id/comments`: 댓글 오래된 순 목록
+- `POST /api/v1/help-requests/:id/comments`: 댓글 작성
 
-완료 기준:
+댓글은 생성과 조회만 지원한다. 부모 리소스와 같은 커뮤니티의 활성 멤버만 접근할 수 있다.
 
-- 비로그인 보호 API 요청은 `401`을 반환한다.
-- 로그인 사용자는 자신의 프로필을 조회할 수 있다.
+### 공동구매
 
-### Phase 4. 커뮤니티 매칭 / 가입
+- `GET /api/v1/group-buys`: 활성 커뮤니티 목록 최신순
+- `POST /api/v1/group-buys`: DB `create_group_buy` RPC로 모집과 host 참여 행을 원자적으로 생성
+- `GET /api/v1/group-buys/:id`: 상세, 참여 정보, 분배 안내 조회
+- `POST /api/v1/group-buys/:id/join`: DB `join_group_buy` RPC로 원자적 참여
+- `POST /api/v1/group-buys/:id/close`: 모집자만 수동 마감
+- `GET /api/v1/group-buys/:id/messages`: 참여자만 cursor 이후 메시지 조회
+- `POST /api/v1/group-buys/:id/messages`: 참여자만 메시지 작성
 
-- [ ] 커뮤니티 타입을 고정한다.
-  - `building`
-  - `block`
-- [ ] 시드 커뮤니티 목록을 준비한다.
-- [ ] `POST /api/v1/communities/match`를 만든다.
-  - 입력: `housingType`, `addressText`
-  - 처리: 시드 데이터와 단순 문자열/키워드 규칙으로 후보 추천
-  - 출력: 추천 커뮤니티 목록
-- [ ] `POST /api/v1/communities/:id/join`을 만든다.
-- [ ] `GET /api/v1/me/community`를 만든다.
-- [ ] MVP에서는 사용자당 활성 커뮤니티 1개를 기본값으로 둔다.
-
-1차 매칭 규칙:
-
-- 아파트/오피스텔은 `building` 후보를 우선 추천한다.
-- 주택/빌라는 `block` 후보를 우선 추천한다.
-- 주소/건물명과 시드 커뮤니티의 이름, 키, 지역 라벨을 단순 매칭한다.
-- 지도 API와 좌표 기반 nearest block은 후속으로 둔다.
-
-완료 기준:
-
-- 주소/주거 유형 입력 후 추천 목록을 받고, 선택한 커뮤니티에 가입할 수 있다.
-- 가입 후 게시판/공동구매 API가 해당 커뮤니티 스코프로 동작한다.
-
-### Phase 5. 자유게시판
-
-- [ ] `GET /api/v1/posts`를 만든다.
-  - 기본: 내 커뮤니티
-  - 정렬: 최신순
-- [ ] `POST /api/v1/posts`를 만든다.
-  - `title`
-  - `body`
-- [ ] `GET /api/v1/posts/:id`를 만든다.
-- [ ] 응답에 작성자 닉네임, 생성 시각, 커뮤니티 정보를 포함한다.
-- [ ] 본인 글 수정/삭제는 후속으로 둔다.
-- [ ] 댓글 API는 MVP 1차에서 만들지 않는다.
-
-검증:
-
-- `title`과 `body`는 필수다.
-- 같은 커뮤니티 멤버만 조회/작성할 수 있다.
-
-### Phase 6. 도와주세요
-
-- [ ] `GET /api/v1/help-requests`를 만든다.
-- [ ] `POST /api/v1/help-requests`를 만든다.
-  - `title`
-  - `body`
-  - 생성 상태: `open`
-- [ ] `GET /api/v1/help-requests/:id`를 만든다.
-- [ ] `POST /api/v1/help-requests/:id/resolve`를 만든다.
-  - 작성자만 가능
-  - `open` -> `resolved`
-- [ ] 이미 `resolved`인 요청 재처리는 멱등 성공으로 처리하는 것을 권장한다.
-- [ ] 댓글/도움 수락 API는 MVP 1차에서 제외한다.
-
-상태값:
-
-| DB/API | UI |
-| --- | --- |
-| `open` | 진행중 |
-| `resolved` | 완료 |
-
-완료 기준:
-
-- 도움 요청 생성 시 `open`으로 저장된다.
-- 작성자가 완료 처리하면 `resolved`가 된다.
-- 다른 사용자의 완료 처리는 `403`을 반환한다.
-- 응답에는 `done` 상태가 없다.
-
-### Phase 7. 공동구매
-
-- [ ] `GET /api/v1/group-buys`를 만든다.
-  - 카드 요약
-  - 총액
-  - 현재 인원
-  - 목표 인원
-  - 마감 시각
-  - 1인 부담금
-  - 상태
-- [ ] `GET /api/v1/group-buys/:id`를 만든다.
-  - 설명
-  - 분배/픽업 안내
-  - 참여자 목록
-  - 1인 부담금
-- [ ] `POST /api/v1/group-buys`를 만든다.
-  - 생성자는 자동으로 참여자로 등록한다.
-- [ ] `POST /api/v1/group-buys/:id/join`을 만든다.
-- [ ] `POST /api/v1/group-buys/:id/close`를 만든다.
-  - 모집자만 가능
-- [ ] `POST /api/v1/group-buys/:id/cancel`은 선택 기능으로 둔다.
-- [ ] 모든 공동구매 응답에 `shareAmount`를 포함한다.
-
-1인 부담금:
+공동구매 응답에는 다음 파생 필드를 포함한다.
 
 ```js
-Math.ceil(totalAmount / Math.max(participantCount, 1))
+{
+  participantCount,
+  shareAmount,
+  isParticipant,
+  isHost,
+  isJoinable,
+  joinBlockedReason
+}
 ```
 
-참여 차단 조건:
+- `shareAmount = ceil(totalAmount / max(participantCount, 1))`이며 예상 부담금이다.
+- 생성자는 자동 참여하고 `host` 역할을 가진다.
+- 상태가 `open`이어도 목표 인원 도달 또는 기한 만료 시 `isJoinable`은 거짓이다.
+- 중복 참여, 목표 인원 도달, 기한 만료, 이미 마감된 참여 요청은 모두 HTTP 409로 반환하고 구체적인 error code를 구분한다.
+- 목표 인원 도달은 자동 마감하지 않는다. host가 `/close`를 호출해야 `closed`가 된다.
+- 상품 이미지는 선택적 `imageUrl` 문자열만 받고 파일 업로드는 지원하지 않는다.
 
-- `status !== 'open'`
-- 마감 시간이 지남
-- 이미 참여함
-- 현재 참여 인원 >= 목표 인원
+### 채팅 cursor
 
-완료 기준:
+- cursor는 마지막 메시지의 `(createdAt, id)`를 URL-safe 문자열로 인코딩한다.
+- `GET .../messages?cursor=<cursor>&limit=50`은 cursor 이후 메시지를 오래된 순으로 반환한다.
+- 응답은 `{ data: { items, nextCursor } }` 형태를 사용한다.
+- 빈 문자열은 거부하며 비참여자는 403을 반환한다.
 
-- 공동구매 생성 시 생성자가 자동 참여한다.
-- 참여 시 인원과 1인 부담금이 갱신된다.
-- 중복 참여는 `409`를 반환한다.
-- 목표 인원 도달 후 참여는 `409`를 반환한다.
-- 마감 후 참여는 `409` 또는 `403`을 반환한다.
-- 결제/송금 상태는 저장하지 않는다.
+### 나의 활동
 
-### Phase 8. 참여자 관계
+- `GET /api/v1/me/activity`: 내가 쓴 게시글, 도움 요청, 참여 공동구매를 그룹별로 반환한다.
+- 공동구매 항목에는 `role: 'host' | 'member'`, 상태, 예상 부담금을 포함한다.
 
-- [ ] `group_buy_participants`를 별도 테이블로 저장한다.
-- [ ] `GET /api/v1/group-buys/:id/participants`를 만든다.
-- [ ] unique(`group_buy_id`, `user_id`)로 중복 참여를 막는다.
-- [ ] join 서비스에서 마감 여부, 목표 인원, 중복 참여를 함께 검사한다.
-- [ ] `isParticipant(userId, groupBuyId)` 헬퍼를 만든다.
+## 6. 에러와 정렬 규칙
 
-완료 기준:
-
-- 참여 인원과 참여자 목록이 항상 일치한다.
-- 동시 요청에도 중복 참여 행이 생기지 않는다.
-- 목표 인원을 초과하지 않는다.
-
-### Phase 9. 참여자 채팅
-
-- [ ] 채팅 1차는 REST polling으로 구현한다.
-- [ ] `GET /api/v1/group-buys/:id/messages`를 만든다.
-- [ ] `POST /api/v1/group-buys/:id/messages`를 만든다.
-- [ ] 참여자만 조회/작성할 수 있게 한다.
-- [ ] 비참여자는 `403`을 반환한다.
-- [ ] 메시지 길이와 빈 문자열을 검증한다.
-- [ ] Supabase Realtime/WebSocket은 후속으로 둔다.
-
-### Phase 10. 나의 활동
-
-- [ ] `GET /api/v1/me/activity`를 만든다.
-- [ ] 응답에 다음을 포함한다.
-  - 내가 쓴 자유게시글
-  - 내가 쓴 도움 요청
-  - 내가 참여한 공동구매
-- [ ] 공동구매 항목에는 `shareAmount`, 상태, 내 역할을 포함한다.
-  - `owner`
-  - `participant`
-
-## 5. 에러 코드
-
-| HTTP | code | 사용처 |
+| HTTP | code 예시 | 사용처 |
 | --- | --- | --- |
-| 400 | `VALIDATION_ERROR` | 입력값 오류 |
-| 401 | `UNAUTHORIZED` | 미인증 |
-| 403 | `FORBIDDEN` | 커뮤니티/참여자/작성자 권한 없음 |
+| 400 | `VALIDATION_ERROR` | 입력 형식 오류 |
+| 401 | `UNAUTHORIZED` | 토큰 없음·만료·위조 |
+| 403 | `FORBIDDEN` | 커뮤니티·작성자·참여자 권한 없음 |
 | 404 | `NOT_FOUND` | 리소스 없음 |
-| 409 | `CONFLICT` | 중복 참여, 목표 인원 도달, 이미 마감 |
-| 500 | `INTERNAL_ERROR` | 서버 오류 |
+| 409 | `ALREADY_JOINED`, `GROUP_FULL`, `DEADLINE_PASSED`, `GROUP_CLOSED` | 참여 충돌 |
+| 429 | `RATE_LIMITED` | 공개 데모 요청 제한 |
+| 500 | `INTERNAL_ERROR` | 예상하지 못한 오류 |
 
-작업:
+- 게시글, 도움 요청, 공동구매는 `createdAt desc, id desc`로 정렬한다.
+- 댓글은 `createdAt asc, id asc`로 정렬한다.
+- 채팅은 cursor 이후 `createdAt asc, id asc`로 정렬한다.
+- API는 DB snake_case를 camelCase로 변환한다.
+- 프로덕션 오류에 stack trace와 내부 Supabase 메시지를 노출하지 않는다.
 
-- [ ] 중앙 에러 핸들러를 만든다.
-- [ ] `AppError` 같은 도메인 에러를 만든다.
-- [ ] 프로덕션에서 stack trace를 노출하지 않는다.
-- [ ] Supabase 오류를 공통 에러 포맷으로 매핑한다.
+## 7. 구현 순서
 
-## 6. 검증 기준
+1. Express 부팅, health, env, 보안·에러 미들웨어
+2. Supabase client와 `requireAuth`, `/me`
+3. 커뮤니티 match/join
+4. 자유게시판·댓글
+5. 도와주세요·댓글·resolve
+6. 공동구매 생성·목록·상세·참여·마감 RPC 연동
+7. 참여자 채팅 polling
+8. 나의 활동
+9. 테스트, OpenAPI 수준의 endpoint 예시, Render 배포 설정
 
-### 단위 테스트 후보
+## 8. 테스트와 완료 기준
 
-- 1인 부담금 계산
-- help `open` -> `resolved`
-- 목표 인원 도달 시 join 차단
-- 마감 후 join 차단
-- 작성자/참여자 권한 헬퍼
+### 자동 테스트
 
-### 통합 테스트 후보
+- [ ] 토큰 없음·유효·만료 요청의 401 처리
+- [ ] 다른 커뮤니티 게시글·댓글·도움 요청 접근의 403/404 처리
+- [ ] 작성자만 도움 요청을 완료할 수 있음
+- [ ] 공동구매 생성 시 host 참여가 함께 생성됨
+- [ ] 중복·정원 초과·기한 만료·마감 후 참여가 409임
+- [ ] host가 아닌 사용자의 마감이 403임
+- [ ] 비참여자의 채팅 조회·작성이 403임
+- [ ] cursor polling이 메시지를 누락·중복하지 않음
+- [ ] 나의 활동이 사용자별로 올바르게 집계됨
 
-- 인증 -> 커뮤니티 가입 -> 자유게시글 작성
-- 도움 요청 작성 -> 작성자 완료 처리
-- 공동구매 생성 -> 참여 -> 금액 갱신 -> 목표 도달 차단 -> 마감
-- 비참여자 채팅 접근 거부
-- 나의 활동 조회
+### 배포 완료 기준
 
-### 수동 검증
-
-- `npm run dev:api`로 API 서버가 켜진다.
-- `GET /health`가 200을 반환한다.
-- 필수 env 누락 시 서버가 명확한 메시지로 실패한다.
-- 다른 커뮤니티 리소스 접근이 차단된다.
-- 댓글/결제/송금/관리자/신고/차단/푸시 API가 없다.
-
-## 7. 추천 구현 순서
-
-1. `server/` 골격, health, env, 공통 에러
-2. Supabase 최소 스키마와 시드 커뮤니티
-3. 인증 미들웨어와 `/me`
-4. 커뮤니티 match/join
-5. 공동구매 생성/목록/상세/참여/마감/목표 인원 차단
-6. 자유게시판 목록/작성/상세
-7. 도와주세요 목록/작성/상세/resolve
-8. 참여자 채팅 REST API
-9. 나의 활동 API
-10. 테스트와 API 문서 정리
-11. 후속: 댓글, 지도 매칭, Realtime 채팅, JavaScript ESM 코드 구조 정리
+- `npm run dev:api`, `npm run test:api`, 프론트 `npm run build`가 통과한다.
+- Render `/health`가 HTTPS로 200을 반환한다.
+- localhost와 지정 Vercel origin만 CORS를 통과한다.
+- 공개 데모 계정으로 로그인부터 채팅까지 핵심 시나리오를 실행할 수 있다.
+- 로그와 응답에 주소, 토큰, 비밀번호, service role이 노출되지 않는다.
