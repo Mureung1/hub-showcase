@@ -20,3 +20,10 @@ src/components/fonts/**/TTF/
 src/components/fonts/**/eot/
 src/components/fonts/**/woff/
 src/components/fonts/**/Web/index.html
+# Unconfirmed generated design assets
+docs/design/generated/
+docs/design/images/ig_*.png
+docs/design/figma/export/icu-onboarding-reference*.png
+docs/design/figma/export/icu-profile-setup-reference*.png
+docs/design/figma/export/icu-profile-setup-dark-preview.png
+docs/design/figma/export/icu-profile-setup-wizard.png
