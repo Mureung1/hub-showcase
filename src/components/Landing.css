@@ -1,0 +1,419 @@
+/* 랜딩 — FirstPR-Landing/index.html 레이아웃을 design.md 토큰으로 재작성 */
+
+.landing {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.landing-container {
+  width: 100%;
+  max-width: var(--max-width-landing);
+  margin: 0 auto;
+  padding: 0 var(--screen-padding);
+}
+
+/* ── 헤더 ─────────────────────────────── */
+.landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--color-divider);
+}
+.landing-nav {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.landing-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-subtitle);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.landing-logo-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: 800;
+}
+.landing-nav-cta {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  transition: background 0.15s ease;
+}
+.landing-nav-cta:hover {
+  background: var(--color-primary-hover);
+}
+
+/* ── 히어로 ───────────────────────────── */
+.landing-hero {
+  text-align: center;
+  padding: var(--space-10) 0 var(--space-8);
+}
+.landing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-primary-weak);
+  color: var(--color-primary-text);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-5);
+}
+.landing-hero-title {
+  font-size: clamp(32px, 6vw, 56px);
+  font-weight: var(--weight-bold);
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-5);
+}
+.landing-accent {
+  color: var(--color-primary);
+}
+.landing-hero-sub {
+  font-size: clamp(16px, 2.5vw, 19px);
+  color: var(--color-text-secondary);
+  max-width: 560px;
+  margin: 0 auto var(--space-8);
+  font-weight: var(--weight-medium);
+}
+.landing-hero-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.landing-btn-primary {
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  font-size: var(--text-subtitle);
+  font-weight: var(--weight-bold);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.landing-btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+.landing-btn-primary:active {
+  background: var(--color-primary-pressed);
+  transform: scale(0.98);
+}
+.landing-btn-secondary {
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  color: var(--color-text-secondary);
+  font-size: var(--text-subtitle);
+  font-weight: var(--weight-bold);
+  transition: background 0.15s ease;
+}
+.landing-btn-secondary:hover {
+  background: var(--color-surface-sunken);
+}
+
+/* ── 히어로 목업 카드 ─────────────────── */
+.landing-mock {
+  margin: var(--space-10) auto 0;
+  max-width: 400px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-modal);
+  border: 1px solid var(--color-border);
+  padding: var(--space-5);
+  text-align: left;
+}
+.landing-mock-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.landing-mock-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-weak);
+  color: var(--color-primary);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 18px;
+}
+.landing-mock-name {
+  font-weight: var(--weight-bold);
+  font-size: var(--text-body);
+}
+.landing-mock-sub {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-caption);
+}
+.landing-repo-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  margin-bottom: var(--space-2);
+}
+.landing-repo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+.landing-repo-name {
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-body);
+}
+.landing-repo-meta {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-caption);
+}
+.landing-tag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-weak);
+  color: var(--color-primary-text);
+  white-space: nowrap;
+}
+.landing-tag-easy {
+  background: var(--demo-green-soft);
+  color: var(--demo-green);
+}
+
+/* ── 섹션 공통 ───────────────────────── */
+.landing section {
+  padding: var(--space-10) 0;
+}
+.landing-section-head {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+.landing-eyebrow {
+  color: var(--color-primary-text);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-2);
+}
+.landing-section-head h2 {
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+}
+.landing-section-head p {
+  margin-top: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-subtitle);
+  font-weight: var(--weight-medium);
+}
+
+/* ── 문제 정의 카드 ──────────────────── */
+.landing-problem {
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-xl);
+  padding: var(--space-10) var(--space-6);
+}
+.landing-quote {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: var(--weight-bold);
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+}
+.landing-muted {
+  color: var(--color-text-tertiary);
+}
+
+/* ── 기능 그리드 ─────────────────────── */
+.landing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+.landing-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.landing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-float);
+}
+.landing-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-weak);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  margin-bottom: var(--space-4);
+}
+.landing-card h3 {
+  font-size: var(--text-subtitle);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-2);
+}
+.landing-card p {
+  color: var(--color-text-secondary);
+  font-size: var(--text-body);
+}
+
+/* ── 흐름(스텝) ──────────────────────── */
+.landing-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+.landing-step {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+.landing-step-num {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  display: grid;
+  place-items: center;
+  font-weight: var(--weight-bold);
+  font-size: var(--text-subtitle);
+  margin: 0 auto var(--space-4);
+}
+.landing-step h4 {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  margin-bottom: 6px;
+}
+.landing-step p {
+  font-size: var(--text-caption);
+  color: var(--color-text-tertiary);
+}
+
+/* ── CTA ─────────────────────────────── */
+.landing-cta {
+  background: var(--color-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-10) var(--space-6);
+  text-align: center;
+  color: var(--color-text-on-primary);
+}
+.landing-cta h2 {
+  font-size: clamp(26px, 4vw, 38px);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-3);
+}
+.landing-cta p {
+  font-size: var(--text-subtitle);
+  opacity: 0.9;
+  margin-bottom: var(--space-6);
+  font-weight: var(--weight-medium);
+}
+.landing-btn-white {
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: var(--text-subtitle);
+  font-weight: var(--weight-bold);
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+.landing-btn-white:hover {
+  background: var(--color-surface-sunken);
+}
+.landing-btn-white:active {
+  transform: scale(0.98);
+}
+.landing-cta-note {
+  margin-top: var(--space-4);
+  font-size: var(--text-caption);
+  opacity: 0.8;
+}
+
+/* ── 푸터 ────────────────────────────── */
+.landing-footer {
+  padding: var(--space-8) 0;
+  border-top: 1px solid var(--color-divider);
+  margin-top: var(--space-10);
+}
+.landing-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  color: var(--color-text-tertiary);
+  font-size: var(--text-caption);
+}
+.landing-footer-inner .landing-logo {
+  color: var(--color-text-secondary);
+  font-size: var(--text-body);
+}
+
+/* ── 반응형 ──────────────────────────── */
+@media (max-width: 860px) {
+  .landing-grid {
+    grid-template-columns: 1fr;
+  }
+  .landing-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .landing-steps {
+    grid-template-columns: 1fr;
+  }
+  .landing-hero-actions .landing-btn-primary,
+  .landing-hero-actions .landing-btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}

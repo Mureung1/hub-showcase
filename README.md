@@ -46,11 +46,19 @@ npm run preview  # 빌드 결과 미리보기
 npm run lint     # 린트 검사
 ```
 
+## 태스크 관리
+
+개발 태스크는 Notion **개발 Task 관리** 보드에서 Week/영역(FE·BE)별로 관리합니다. (원본 소스: [`docs/checklist.md`](docs/checklist.md))
+
+> 📌 **Notion 태스크 보드**: [개발 Task 관리](https://app.notion.com/p/a6b24df210c142798f852c67eaafae73)
+> (상위 페이지: [Naver AI Agent Challenge](https://app.notion.com/p/395d15ed99be8029a792d34ec343ee9c))
+
 ## 프로젝트 문서
 
 | 문서 | 설명 |
 | --- | --- |
 | [docs/plan.md](docs/plan.md) | 기획서 (요약) |
+| [docs/checklist.md](docs/checklist.md) | 주차별 작업 체크리스트 (Notion 태스크 보드 원본) |
 | [docs/architecture.md](docs/architecture.md) | 아키텍처 설계 |
 | [docs/checklist.md](docs/checklist.md) | 주차별 작업 체크리스트 |
 | [docs/decisions.md](docs/decisions.md) | 주요 기술/기획 의사결정 기록 |
