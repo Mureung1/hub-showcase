@@ -1,30 +1,19 @@
-﻿# Reward Object Sheet
+# Reward Object Sheet Prompt
 
 ## 목적
 
-경험치와 레벨 외 보상을 방 안에 남는 물건, 기억 조각, 회복 보상으로 표현하기 위한 프롬프트다.
+경험치 외 보상으로 방 꾸미기, 창 테마 변경, 배경 해금에 사용할 오브젝트를 만든다.
 
-## 출력 규격
+## Prompt
 
-- 권장 크기: `1024x1024`
-- 구성: 5행 x 5열 object sheet
-- 배경: transparent
-- 텍스트: 없음
+Create a cozy Windows XP pixel art reward object sheet for a desktop pet quest app. Transparent background, 8 objects in a clean grid: small desk lamp, potted plant, pixel curtain, tiny CRT monitor, wallpaper roll, window theme chip, meadow flower badge, glowing memory fragment. Warm beige, blue, green and gold palette, crisp pixel edges, readable at 48px, consistent outline, no text.
 
-## 기본 프롬프트
+## Negative Prompt
 
-```text
-Create a transparent pixel art reward object sheet for a cozy self-growth electronic pet manager web app. Include unlockable room objects and memory rewards: warm desk lamp, tiny potted plant, soft rug, pixel blanket, small TV, bookshelf, sticker card, glowing memory shard, tiny star, seed of recovery, repaired gear part, study badge, exercise badge, hobby badge, portfolio badge, calm music cassette, small photo card, quest trophy, night lamp, window charm, desktop folder, journal card, tea cup, calendar pin, and gentle sparkle effect. Warm muted lofi palette, readable silhouettes, no text, no logo, consistent pixel style, transparent background.
-```
+realistic object, 3d render, neon, cyberpunk, complex clutter, text labels, watermark, blurry, huge shadows, modern flat vector
 
-## 네거티브 프롬프트
+## 확장 연결
 
-```text
-text, letters, logo, watermark, coins, gambling reward, gacha capsule, aggressive trophy, realistic objects, 3d render, too much gold, cyberpunk neon, cluttered sheet
-```
-
-## 회복 보상 변형
-
-```text
-Create small recovery reward items that feel gentle and non-punitive: a tiny warm light, repaired pixel gear, small seed sprout, soft blanket patch, calm blue memory shard, and quiet lamp flame. Transparent background, no text, cozy pixel art.
-```
+- 완료 보상: 작은 식물, 기억 조각
+- 복구 퀘스트 보상: 작은 불빛, 수리 부품
+- 레벨 보상: 배경, 창 테마, 작업표시줄 색상

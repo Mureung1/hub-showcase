@@ -6,6 +6,7 @@
 
 - 작업 전 `git status --short`와 현재 브랜치를 확인한다.
 - 작업 전 @docs/status.md와 요청 관련 문서를 읽는다.
+- 문서 구조를 바꾸는 작업은 @docs/project-knowledge-map.md를 먼저 확인한다.
 - 실제 코드가 문서와 다르면 차이를 먼저 보고한다.
 - React + TypeScript + Vite 구조를 유지한다.
 - 빌드 및 검증은 사용자에게 맡긴다. 임의로 매번 빌드하지 않는다.
@@ -26,18 +27,30 @@
 - 첫 접속은 Profile Setup Wizard다.
 - 기본 창은 오늘의 퀘스트와 매니저다.
 - 창 상태 변화로 레이아웃 크기가 흔들리지 않게 한다.
+- 미구현 확장 기능을 visible UI에 노출하지 않는다.
+
+## 디자인·에셋 규칙
+
+- 디자인 작업 전 @docs/design-system.md를 확인한다.
+- 에셋 생성 작업 전 @docs/asset-prompts/README.md를 확인한다.
+- 참고 이미지의 역할은 @docs/design-references/README.md를 따른다.
+- `public/assets/`는 실제 화면에 적용되는 에셋 위치다.
+- `xp-desktop-pet-ui` skill은 Git 문서가 아니라 Codex 개인 환경의 외부 실행 규칙이다.
 
 ## 문서
 
+- 문서 허브: @docs/README.md
+- 문서 관계 지도: @docs/project-knowledge-map.md
 - 제품 기획: @docs/product-plan.md
 - 사용자 흐름과 와이어프레임: @docs/user-flow-wireframes.md
-- 디자인 토큰과 스타일: @docs/design-system.md
 - MVP 동작 계약: @docs/mvp-functional-spec.md
 - Agent 로직: @docs/agent-design.md
+- 디자인 토큰과 스타일: @docs/design-system.md
+- 에셋 프롬프트: @docs/asset-prompts/README.md
+- 디자인 참고 이미지: @docs/design-references/README.md
 - MVP 이후 확장: @docs/future-expansion-plan.md
 - 4주 일정: @docs/four-week-roadmap.md
 - 현재 상태: @docs/status.md
-- 문서 지도: @docs/README.md
+- 학습 인덱스: @docs/learning/README.md
 
 문서는 `한 파일 = 한 역할`을 지킨다. 기획, 명세, 현황, 확장 계획을 서로 복사하지 않는다.
-
