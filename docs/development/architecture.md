@@ -51,8 +51,8 @@ flowchart LR
 | 영역  | 구현 상태                                                             | 제한                                            |
 | ----- | --------------------------------------------------------------------- | ----------------------------------------------- |
 | Front | 자체 GeoJSON 지도와 실제 지도를 전환하고 상권·업종·반경·Layer를 조작하는 React 웹 | 분석 수치는 화면용 snapshot과 규칙 기반 demo 값 |
-| Back  | FastAPI `/health`와 근거 기반 상권 점수 endpoint                       | 실제 DB 조회와 Front API 연결 미구현             |
-| Data  | 서울 Open API 수집 코드, OSM 지도 생성기와 snapshot 저장 규칙            | canonical schema와 DB 적재 미구현                |
+| Back  | FastAPI `/health`와 근거 기반 상권 점수 endpoint                       | 실제 DB 조회 endpoint와 Front API 연결 미구현    |
+| Data  | 서울·공공데이터 수집기, canonical SQLite와 OSM 지도 생성기               | 주기적 자동 갱신과 좌표 변환 미구현              |
 | 3D    | 지도 건물과 prefab Layer를 켜고 끄는 시연                             | 실제 Gaussian Splatting scene 미연결            |
 
 ## 3. 4주 목표 구조
@@ -144,7 +144,7 @@ flowchart LR
 | -------- | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------- |
 | Front    | React, Vite, TypeScript, MapLibre, react-map-gl | 실제 API adapter, loading/error/empty state | 대규모 Layer가 필요할 때 deck.gl 검토           |
 | Back     | FastAPI, Pydantic Settings, Uvicorn             | `/api/v1` 분석 endpoint와 service 분리      | 부하가 확인된 뒤 worker/cache 검토              |
-| Data     | JSON raw snapshot, manifest                     | canonical schema, SQLite                    | 다지역 공간 질의가 필요할 때 PostgreSQL/PostGIS |
+| Data     | JSON raw snapshot, manifest, canonical SQLite   | 실제 API query repository                   | 다지역 공간 질의가 필요할 때 PostgreSQL/PostGIS |
 | Analysis | 공식 1.0.0 규칙 기반 score API                  | 실제 DB peer 분포와 Front evidence 연결      | 충분한 데이터 이후 예측 모델 검토               |
 | 3D       | MapLibre extrusion과 prefab                     | 작은 실제 scene 1개 또는 검증된 대체 데모   | Gaussian Splatting pipeline 고도화              |
 | Quality  | pytest, Vitest, TypeScript, lint, 문서 검사     | 평가 script와 시연 smoke test               | 필요 시 E2E 자동화                              |

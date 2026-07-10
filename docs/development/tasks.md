@@ -79,10 +79,10 @@ Outcome: 화면용 임의 수치가 아니라 출처와 기준 기간이 있는 
 
 | ID       | 세부 Task                                           | Priority | Status      | Week | Depends on | Acceptance                                                  |
 | -------- | --------------------------------------------------- | -------- | ----------- | ---- | ---------- | ----------------------------------------------------------- |
-| DATA-001 | 서울 Open API raw snapshot 준비                     | P0       | In Progress | 1    | -          | raw JSON과 manifest에 source, period, row count가 남는다    |
-| DATA-002 | 공공데이터포털 점포·인허가 API 실제 응답 검증       | P0       | Ready       | 1    | DATA-001   | 인증키를 노출하지 않고 sample 응답과 제한을 기록한다        |
-| DATA-003 | Store·Permit·Population·Sales canonical schema 확정 | P0       | Ready       | 1    | DATA-002   | field, type, nullable, source mapping과 좌표계가 정의된다   |
-| DATA-004 | provider별 raw-to-canonical importer 구현           | P0       | Backlog     | 1    | DATA-003   | 같은 명령을 재실행해 동일 schema 결과를 만든다              |
+| DATA-001 | 서울 Open API raw snapshot 준비                     | P0       | Done        | 1    | -          | 20251 기준 101,110행과 manifest를 저장했다                  |
+| DATA-002 | 공공데이터포털 점포·인허가 API 실제 응답 검증       | P0       | Done        | 1    | DATA-001   | 3개 API 60행 sample과 secret 미포함을 확인했다              |
+| DATA-003 | Store·Permit·Population·Sales canonical schema 확정 | P0       | Done        | 1    | DATA-002   | 7개 SQLite table, source FK와 좌표계를 정의했다             |
+| DATA-004 | provider별 raw-to-canonical importer 구현           | P0       | Done        | 1    | DATA-003   | 같은 명령을 2회 실행해 동일 row count를 확인했다            |
 | DATA-005 | 중복·결측·좌표·기간 품질 검사 작성                  | P0       | Backlog     | 1    | DATA-004   | 오류 건수와 제외 이유를 표로 출력한다                       |
 | DATA-006 | 시연 상권과 비교 상권 sample 확정                   | P0       | Backlog     | 1    | DATA-005   | 최소 2개 상권과 카페·음식점·베이커리·편의점 분석이 가능하다 |
 
