@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "홈택스 환급금 조회 가이드",
+  "version": "0.1.0",
+  "description": "홈택스 화면 위에 다음에 눌러야 할 버튼을 강조해, 환급금 조회를 사용자가 직접 완료하도록 안내합니다.",
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.hometax.go.kr/*", "https://hometax.go.kr/*"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": [
+    "https://www.hometax.go.kr/*",
+    "https://hometax.go.kr/*",
+    "http://localhost:4000/*"
+  ],
+  "permissions": ["activeTab", "scripting"]
+}
