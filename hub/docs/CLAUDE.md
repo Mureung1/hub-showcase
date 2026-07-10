@@ -10,9 +10,9 @@
 → 3. 성분 중복 체크(경고 배지) → 4. 제품 추천(카드 목록) → 5. 상세(인증 정보 + 구매 연결)
 → 6. 스마트스토어 이동 전환
 
-각 화면의 상세 마크업/스타일 참고는 `docs/prototype/` 내 `0-start.html` ~ `6-transition.html`,
+각 화면의 상세 마크업/스타일 참고는 `hub/prototype/` 내 `0-start.html` ~ `6-transition.html`,
 `style.css` 참고 (디자인 톤: 라벤더/퍼플 계열 `#7C6AE8` — `design-system-lavender` 스킬 기준, Noto Sans KR 폰트,
-375px 모바일 카드형 레이아웃, 상세 토큰은 `hub/Agent/design skill.css` 참고).
+375px 모바일 카드형 레이아웃, 상세 토큰은 `hub/docs/design skill.css` 참고).
 
 ## 기술 스택
 - FE: React + TypeScript
@@ -34,9 +34,10 @@
   성분 데이터의 신뢰성에 유의)
 
 ## 참고 문서
-- 기획서: `docs/planning.md`, `docs/service_concept_design.md`
-- 작업 분해: `docs/작업_분해.md`
-- 프로토타입/디자인: `docs/prototype/` (0-start.html ~ 6-transition.html, prototype.html, style.css)
+- 기획서: `hub/planning.md`, `service_concept_design.md`
+- 작업 분해: `hub/작업 분해.md`
+- 백로그: `hub/docs/green-connect-backlog.md`
+- 프로토타입/디자인: `hub/prototype/` (0-start.html ~ 6-transition.html, prototype.html, style.css)
 
 ## 개발 단계 참고 (작업 분해 기준)
 1. 정적 UI 화면 먼저 구현 (헤더, 증상 체크 카드, 성분 분석 결과, 중복 체크 대시보드, 제품 카드, 구매 버튼)
