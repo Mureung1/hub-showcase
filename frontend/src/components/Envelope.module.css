@@ -1,0 +1,26 @@
+.envelope {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  transition: transform 0.2s ease;
+  filter: drop-shadow(0 6px 14px rgba(27, 28, 26, 0.08));
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.selected {
+  transform: translateY(-8px);
+}
+
+.floating {
+  animation: floatp 5s ease-in-out infinite;
+}
+
+.pulsing {
+  animation: pulsew 2.2s ease-in-out infinite;
+  border-radius: 8px;
+}
