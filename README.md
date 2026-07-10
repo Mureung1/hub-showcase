@@ -23,6 +23,8 @@
 ## 계획 문서
 
 - 상위 로드맵과 단계별 우선순위는 [프로젝트 Wiki](https://github.com/Tapha-K/hub/wiki)에서 관리합니다.
+- 남은 3주 MVP 실행 계획은 [Sprint Backlog](https://github.com/Tapha-K/hub/wiki/Sprint-Backlog)의 Week 2~4 작업을 기준으로 합니다.
+- 장기 제품 백로그는 [Product Backlog](https://github.com/Tapha-K/hub/wiki/Product-Backlog)에서 관리합니다.
 - 프론트엔드 로드맵은 [Frontend Priority Roadmap](https://github.com/Tapha-K/hub/wiki/Frontend-Priority-Roadmap)을 기준으로 합니다.
 - 백엔드 로드맵은 [Backend Priority Roadmap](https://github.com/Tapha-K/hub/wiki/Backend-Priority-Roadmap)을 기준으로 합니다.
 - 코드와 함께 유지해야 하는 MVP 구현 상세 문서는 이 저장소에 남깁니다.

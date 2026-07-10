@@ -68,7 +68,7 @@ const quickStartTemplates = [
     beginnerFriendly: true,
     description: '공강이나 저녁에 방해 없이 한 챕터를 읽기 좋은 기본 세션입니다.',
     recommendedFor: '읽을 책은 정했지만 시작이 늦어질 때',
-    accent: 'bg-emerald-900',
+    accent: 'bg-[var(--moss)]',
   },
   {
     id: 'short-15',
@@ -78,7 +78,7 @@ const quickStartTemplates = [
     beginnerFriendly: true,
     description: '부담을 낮추고 첫 장을 넘기는 데 집중하는 짧은 세션입니다.',
     recommendedFor: '과제 사이에 잠깐 읽고 싶을 때',
-    accent: 'bg-stone-800',
+    accent: 'bg-[var(--sage-strong)]',
   },
   {
     id: 'one-line-30',
@@ -88,7 +88,7 @@ const quickStartTemplates = [
     beginnerFriendly: false,
     description: '읽고 난 뒤 한 줄 감상만 남기며 흐름을 가볍게 이어갑니다.',
     recommendedFor: '생각을 길게 정리할 힘은 없지만 기록은 남기고 싶을 때',
-    accent: 'bg-amber-800',
+    accent: 'bg-[var(--oak)]',
   },
   {
     id: 'starter-60',
@@ -98,7 +98,7 @@ const quickStartTemplates = [
     beginnerFriendly: true,
     description: '긴 호흡으로 읽되, 처음 참여해도 부담 없는 분위기의 세션입니다.',
     recommendedFor: '주말에 충분한 시간을 두고 읽고 싶을 때',
-    accent: 'bg-slate-800',
+    accent: 'bg-[var(--moss-deep)]',
   },
 ];
 
@@ -586,8 +586,8 @@ export default function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(119,142,97,0.16),transparent_32rem),linear-gradient(180deg,#f8f6ee,#f2efe4)] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-5 lg:px-8">
+    <main className="lounge-page text-foreground">
+      <div className="lounge-shell flex flex-col">
         {store.user?.hasOnboarded && (
           <AppHeader
             activeSession={activeSession}
@@ -633,7 +633,7 @@ export default function App() {
           />
         )}
 
-        <section className="flex flex-1 py-5">
+        <section className="flex flex-1 py-6">
           {view.name === 'onboarding' && (
             <OnboardingScreen
               lastUsedNickname={store.user?.lastUsedNickname}
@@ -772,23 +772,23 @@ function AppHeader({
   user,
 }) {
   return (
-    <header className="flex flex-col gap-3 border-b border-border/80 pb-4 lg:flex-row lg:items-center lg:justify-between">
+    <header className="lounge-header flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
       <button
-        className="flex w-fit items-center gap-3 text-left"
+        className="flex w-fit items-center gap-3 rounded-full text-left focus-visible:ring-3 focus-visible:ring-ring/45 focus-visible:outline-none"
         type="button"
         onClick={onGoRooms}
       >
-        <span className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+        <span className="brand-mark flex size-11 items-center justify-center">
           <BookOpen className="size-5" />
         </span>
         <span>
-          <span className="block text-lg font-semibold">읽는 방</span>
-          <span className="block text-sm text-muted-foreground">짧게 시작하고 기록으로 돌아오기</span>
+          <span className="editorial-title block text-xl leading-none">읽는 방</span>
+          <span className="block text-xs text-muted-foreground">Quiet Reading Lounge</span>
         </span>
       </button>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Badge className="h-8 rounded-lg border-stone-300 bg-white/70 text-stone-700" variant="outline">
+        <Badge className="eyebrow-badge h-8" variant="outline">
           <User className="size-3.5" />
           {user.nickname}
         </Badge>
@@ -821,17 +821,19 @@ function NoticeBanner({ actionLabel, description, icon: Icon, onAction, title, t
   return (
     <div
       className={cn(
-        'mt-4 flex flex-col gap-3 rounded-lg border p-4 shadow-sm md:flex-row md:items-center md:justify-between',
+        'mt-4 flex flex-col gap-3 rounded-[1.35rem] border p-4 shadow-sm md:flex-row md:items-center md:justify-between',
         tone === 'danger'
           ? 'border-red-200 bg-red-50 text-red-950'
-          : 'border-emerald-200 bg-emerald-50 text-emerald-950',
+          : 'border-[rgba(63,86,50,0.18)] bg-[rgba(255,250,241,0.78)] text-[var(--moss-deep)]',
       )}
     >
       <div className="flex gap-3">
-        <Icon className="mt-0.5 size-5 shrink-0" />
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+          <Icon className="size-5" />
+        </span>
         <div>
           <p className="mb-1 font-semibold">{title}</p>
-          <p className="mb-0 text-sm opacity-80">{description}</p>
+          <p className="mb-0 text-sm leading-6 opacity-80">{description}</p>
         </div>
       </div>
       {actionLabel && (
@@ -866,49 +868,64 @@ function OnboardingScreen({ lastUsedNickname, onCreateSampleData, onReset, onSta
   }
 
   return (
-    <div className="grid w-full items-center gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,0.7fr)]">
-      <section className="max-w-3xl">
-        <Badge className="mb-5 h-7 rounded-lg border-emerald-200 bg-emerald-50 text-emerald-900" variant="outline">
+    <div className="grid w-full items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.58fr)]">
+      <section className="paper-panel relative overflow-hidden p-7 lg:p-10">
+        <Badge className="eyebrow-badge mb-6 h-8" variant="outline">
           <Sparkles className="size-3.5" />
           14일 내 3회 세션
         </Badge>
-        <h1 className="mb-5 max-w-2xl text-5xl font-semibold leading-tight text-stone-950 lg:text-7xl">
-          읽기 시작을 가볍게 만드는 독서방
+        <h1 className="editorial-title mb-5 max-w-3xl text-5xl leading-[0.95] lg:text-7xl">
+          오늘 읽을 자리를 먼저 정해요
         </h1>
-        <p className="max-w-xl text-lg leading-8 text-stone-700">
-          닉네임만 정하고 방에 들어가 정해진 시간 동안 읽은 뒤, 바로 책과 감상을 남깁니다.
+        <p className="lounge-copy max-w-2xl text-lg leading-8">
+          혼자 켜는 타이머보다 조금 더 따뜻하게. 닉네임만 정하고 조용한 독서방에 들어가
+          정해진 시간 동안 읽은 뒤, 책을 덮기 전에 한 줄을 남깁니다.
         </p>
-        <div className="mt-9 grid max-w-2xl gap-3 sm:grid-cols-3">
+        <div className="mt-8 grid max-w-3xl gap-3 sm:grid-cols-3">
           {[
-            ['짧게 시작', '15분 또는 30분 템플릿'],
-            ['기록 대기', '나중에 작성해도 복귀'],
-            ['샘플 제외', '목표는 실제 기록만 반영'],
+            ['짧게 시작', '15분 또는 30분 리듬 선택'],
+            ['기록 대기', '책을 덮고 나중에 이어 작성'],
+            ['샘플 제외', '목표에는 실제 기록만 반영'],
           ].map(([title, text]) => (
-            <div className="rounded-lg border border-stone-200 bg-white/65 p-4" key={title}>
-              <p className="mb-1 text-sm font-semibold text-stone-950">{title}</p>
-              <p className="mb-0 text-sm leading-6 text-stone-600">{text}</p>
+            <div className="metric-tile p-4" key={title}>
+              <p className="mb-1 text-sm font-semibold text-[var(--ink)]">{title}</p>
+              <p className="mb-0 text-sm leading-6 text-muted-foreground">{text}</p>
             </div>
           ))}
         </div>
+
+        <div className="shelf-visual mt-8" aria-hidden="true">
+          <div className="book-spines">
+            <span className="book-spine" />
+            <span className="book-spine" />
+            <span className="book-spine" />
+            <span className="book-spine" />
+            <span className="book-spine" />
+          </div>
+        </div>
       </section>
 
-      <Card className="rounded-lg bg-card/95 shadow-xl shadow-stone-900/5">
+      <Card className="paper-card justify-between">
         <CardHeader>
-          <CardTitle className="text-xl">바로 시작하기</CardTitle>
-          <CardDescription>회원가입 없이 이 브라우저에만 저장됩니다.</CardDescription>
+          <CardTitle className="editorial-title text-3xl">바로 시작하기</CardTitle>
+          <CardDescription className="leading-6">
+            회원가입 없이 이 브라우저에만 저장됩니다.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-5" onSubmit={submit}>
             <div className="space-y-2">
               <Label htmlFor="nickname">닉네임</Label>
               <Input
+                aria-describedby="nickname-help"
+                aria-invalid={Boolean(error)}
                 id="nickname"
-                maxLength={24}
+                maxLength={20}
                 onChange={(event) => setNickname(event.target.value)}
                 placeholder="예: 공강독서"
                 value={nickname}
               />
-              <div className="flex items-center justify-between gap-3 text-xs">
+              <div id="nickname-help" className="flex items-center justify-between gap-3 text-xs">
                 <span className={cn(error ? 'text-destructive' : 'text-muted-foreground')}>
                   {error || '20자 이내로 입력해 주세요.'}
                 </span>
@@ -953,7 +970,7 @@ function OnboardingScreen({ lastUsedNickname, onCreateSampleData, onReset, onSta
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col items-stretch gap-2 bg-muted/35">
+        <CardFooter className="flex flex-col items-stretch gap-2 bg-secondary/30">
           <Button onClick={onCreateSampleData} variant="outline">
             <BookMarked />
             샘플 데이터로 둘러보기
@@ -1012,15 +1029,17 @@ function RoomListScreen({
   return (
     <div className="w-full space-y-6">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="rounded-lg border border-stone-200 bg-white/70 p-5 shadow-sm">
+        <section className="paper-panel p-6 lg:p-7">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <Badge className="mb-3 rounded-lg border-emerald-200 bg-emerald-50 text-emerald-900" variant="outline">
+              <Badge className="eyebrow-badge mb-3" variant="outline">
                 방 목록
               </Badge>
-              <h2 className="mb-2 text-3xl font-semibold text-stone-950">오늘 들어갈 독서방</h2>
-              <p className="mb-0 max-w-2xl text-sm leading-6 text-stone-600">
-                빠른 시작으로 방을 준비하거나 직접 방을 만들 수 있습니다.
+              <h2 className="editorial-title mb-2 text-4xl leading-none md:text-5xl">
+                오늘 들어갈 독서방
+              </h2>
+              <p className="lounge-copy mb-0 max-w-2xl text-sm leading-6">
+                빠른 시작으로 오늘의 리듬을 고르거나, 직접 조용한 독서 자리를 만들 수 있습니다.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -1040,17 +1059,17 @@ function RoomListScreen({
           </div>
         </section>
 
-        <Card className="rounded-lg">
+        <Card className="paper-card">
           <CardHeader>
-            <CardTitle>14일 목표</CardTitle>
+            <CardTitle className="editorial-title text-2xl">14일 목표</CardTitle>
             <CardDescription>실제 완료 기록만 반영, 샘플 제외</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-end justify-between">
-              <span className="text-3xl font-semibold">{completedUserRecords.length}/3</span>
+              <span className="editorial-title text-5xl leading-none">{completedUserRecords.length}/3</span>
               <span className="text-sm text-muted-foreground">세션</span>
             </div>
-            <Progress className="h-2 bg-stone-200" value={goalPercent} />
+            <Progress className="h-2 bg-secondary/70" value={goalPercent} />
           </CardContent>
         </Card>
       </div>
@@ -1078,7 +1097,7 @@ function RoomListScreen({
         </div>
       )}
 
-      <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white/60 p-3 md:flex-row md:items-center md:justify-between">
+      <div className="action-surface flex flex-col gap-3 p-3 md:flex-row md:items-center md:justify-between">
         <Tabs onValueChange={setFilter} value={filter}>
           <TabsList className="h-auto flex-wrap" variant="line">
             <TabsTrigger value="all">전체</TabsTrigger>
@@ -1088,7 +1107,7 @@ function RoomListScreen({
         </Tabs>
 
         <Select onValueChange={setSort} value={sort}>
-          <SelectTrigger className="w-full bg-white md:w-44">
+          <SelectTrigger className="w-full md:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1144,12 +1163,14 @@ function RoomListScreen({
 
 function ActionStrip({ description, icon: Icon, label, onClick, title }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 md:flex-row md:items-center md:justify-between">
+    <div className="action-surface flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
       <div className="flex gap-3">
-        <Icon className="mt-0.5 size-5 text-emerald-900" />
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <Icon className="size-5" />
+        </span>
         <div>
-          <p className="mb-1 font-semibold text-emerald-950">{title}</p>
-          <p className="mb-0 text-sm text-emerald-800">{description}</p>
+          <p className="mb-1 font-semibold text-[var(--ink)]">{title}</p>
+          <p className="mb-0 text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
       </div>
       <Button onClick={onClick} variant="outline">
@@ -1163,7 +1184,8 @@ function ActionStrip({ description, icon: Icon, label, onClick, title }) {
 function RoomCard({ onOpen, room }) {
   return (
     <Card
-      className="cursor-pointer rounded-lg bg-white/85 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-stone-900/6"
+      aria-label={`${room.title} 방 상세 열기`}
+      className="room-card cursor-pointer"
       onClick={onOpen}
       role="button"
       tabIndex={0}
@@ -1178,14 +1200,14 @@ function RoomCard({ onOpen, room }) {
           <div>
             <div className="mb-2 flex flex-wrap gap-1.5">
               {room.source === 'sample' && <Badge variant="secondary">샘플</Badge>}
-              {room.source === 'quickStart' && <Badge variant="outline">템플릿</Badge>}
-              {room.beginnerFriendly && <Badge variant="outline">입문자 환영</Badge>}
+              {room.source === 'quickStart' && <Badge className="oak-badge" variant="outline">템플릿</Badge>}
+              {room.beginnerFriendly && <Badge className="eyebrow-badge" variant="outline">입문자 환영</Badge>}
             </div>
-            <CardTitle>{room.title}</CardTitle>
+            <CardTitle className="editorial-title text-2xl">{room.title}</CardTitle>
           </div>
           <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
         </div>
-        <CardDescription className="line-clamp-2 min-h-10">{room.description}</CardDescription>
+        <CardDescription className="line-clamp-2 min-h-10 leading-6">{room.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-3 gap-2">
@@ -1193,12 +1215,12 @@ function RoomCard({ onOpen, room }) {
           <Metric icon={Users} label={`${room.participantCount}회`} />
           <Metric icon={MessageSquareText} label={`${room.impressionCount}개`} />
         </div>
-        <div className="rounded-lg bg-stone-50 p-3">
-          <p className="mb-1 text-xs font-medium text-stone-500">최근 완료 기록</p>
-          <p className="mb-0 text-sm text-stone-800">{room.recentCompletionText}</p>
+        <div className="rounded-2xl bg-secondary/35 p-3">
+          <p className="mb-1 text-xs font-medium text-muted-foreground">최근 완료 기록</p>
+          <p className="mb-0 text-sm text-[var(--ink)]">{room.recentCompletionText}</p>
         </div>
       </CardContent>
-      <CardFooter className="flex flex-wrap gap-2 bg-muted/35">
+      <CardFooter className="flex flex-wrap gap-2 bg-secondary/25">
         {getRoomTone(room).map((tone) => (
           <Badge key={tone} variant="outline">
             {tone}
@@ -1211,9 +1233,9 @@ function RoomCard({ onOpen, room }) {
 
 function Metric({ icon: Icon, label }) {
   return (
-    <div className="flex min-h-16 flex-col justify-center rounded-lg border border-stone-200 bg-white px-3">
-      <Icon className="mb-1 size-4 text-stone-500" />
-      <span className="text-sm font-semibold text-stone-900">{label}</span>
+    <div className="metric-tile flex min-h-16 flex-col justify-center px-3">
+      <Icon className="mb-1 size-4 text-muted-foreground" />
+      <span className="text-sm font-semibold text-[var(--ink)]">{label}</span>
     </div>
   );
 }
@@ -1243,21 +1265,21 @@ function QuickStartScreen({ activeSession, onBack, onSelectTemplate, pendingReco
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {quickStartTemplates.map((template) => (
-          <Card key={template.id} className="rounded-lg bg-white/85">
-            <div className={cn('h-1.5', template.accent)} />
+          <Card key={template.id} className="paper-card relative">
+            <div className={cn('absolute inset-x-5 top-0 h-1.5 rounded-b-full', template.accent)} />
             <CardHeader>
-              <CardTitle>{template.title}</CardTitle>
-              <CardDescription>{template.description}</CardDescription>
+              <CardTitle className="editorial-title pt-2 text-2xl">{template.title}</CardTitle>
+              <CardDescription className="leading-6">{template.description}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">{template.durationMinutes}분</Badge>
+                <Badge className="eyebrow-badge" variant="secondary">{template.durationMinutes}분</Badge>
                 <Badge variant="outline">
                   {template.discussionEnabled ? '짧은 대화' : '토론 없음'}
                 </Badge>
                 {template.beginnerFriendly && <Badge variant="outline">입문자 환영</Badge>}
               </div>
-              <p className="mb-0 rounded-lg bg-stone-50 p-3 text-sm leading-6 text-stone-700">
+              <p className="mb-0 rounded-2xl bg-secondary/35 p-3 text-sm leading-6 text-muted-foreground">
                 {template.recommendedFor}
               </p>
             </CardContent>
@@ -1311,30 +1333,34 @@ function RoomCreateScreen({ onBack, onSubmit }) {
         description="직접 만든 방은 목록에 남아 다음 세션에서도 다시 사용할 수 있습니다."
       />
 
-      <Card className="mt-5 rounded-lg bg-white/90">
+      <Card className="paper-card mt-5">
         <CardContent>
           <form className="space-y-5" onSubmit={submit}>
             <div className="space-y-2">
               <Label htmlFor="room-title">제목</Label>
               <Input
+                aria-describedby={errors.title ? 'room-title-error' : undefined}
+                aria-invalid={Boolean(errors.title)}
                 id="room-title"
                 onChange={(event) => updateDraft('title', event.target.value)}
                 placeholder="예: 공강 30분 소설 읽기"
                 value={draft.title}
               />
-              {errors.title && <p className="mb-0 text-sm text-destructive">{errors.title}</p>}
+              {errors.title && <p id="room-title-error" className="mb-0 text-sm text-destructive">{errors.title}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="room-description">설명</Label>
               <Textarea
+                aria-describedby={errors.description ? 'room-description-error' : undefined}
+                aria-invalid={Boolean(errors.description)}
                 id="room-description"
                 onChange={(event) => updateDraft('description', event.target.value)}
                 placeholder="어떤 책이나 분위기에 어울리는 방인지 적어 주세요."
                 value={draft.description}
               />
               {errors.description && (
-                <p className="mb-0 text-sm text-destructive">{errors.description}</p>
+                <p id="room-description-error" className="mb-0 text-sm text-destructive">{errors.description}</p>
               )}
             </div>
 
@@ -1345,7 +1371,7 @@ function RoomCreateScreen({ onBack, onSubmit }) {
                   onValueChange={(value) => updateDraft('durationMinutes', value)}
                   value={draft.durationMinutes}
                 >
-                  <SelectTrigger className="w-full bg-white">
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1386,7 +1412,7 @@ function RoomCreateScreen({ onBack, onSubmit }) {
 
 function ToggleField({ checked, label, onCheckedChange }) {
   return (
-    <div className="flex min-h-20 items-center justify-between rounded-lg border border-stone-200 bg-white px-4">
+    <div className="metric-tile flex min-h-20 items-center justify-between px-4">
       <Label className="text-sm font-medium">{label}</Label>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </div>
@@ -1444,10 +1470,10 @@ function RoomDetailScreen({
       />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Card className="rounded-lg bg-white/90">
+        <Card className="paper-card">
           <CardHeader>
-            <CardTitle>세션 조건</CardTitle>
-            <CardDescription>{room.description}</CardDescription>
+            <CardTitle className="editorial-title text-3xl">세션 조건</CardTitle>
+            <CardDescription className="leading-6">{room.description}</CardDescription>
             <CardAction>
               {room.source === 'sample' && <Badge variant="secondary">샘플</Badge>}
             </CardAction>
@@ -1467,7 +1493,7 @@ function RoomDetailScreen({
               <Stat label="방 감상" value={`${room.impressionCount}개`} />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col items-stretch gap-2 bg-muted/35 sm:flex-row sm:justify-end">
+          <CardFooter className="flex flex-col items-stretch gap-2 bg-secondary/25 sm:flex-row sm:justify-end">
             {room.source === 'quickStart' && !hasStartedSession && (
               <Button onClick={() => onDiscardQuickStart(room.id)} variant="outline">
                 <RefreshCcw />
@@ -1493,15 +1519,15 @@ function RoomDetailScreen({
           </CardFooter>
         </Card>
 
-        <Card className="rounded-lg bg-white/90">
+        <Card className="paper-card">
           <CardHeader>
-            <CardTitle>이 방의 기록</CardTitle>
-            <CardDescription>저장된 감상은 내 기록에서 다시 열 수 있습니다.</CardDescription>
+            <CardTitle className="editorial-title text-3xl">이 방의 기록</CardTitle>
+            <CardDescription className="leading-6">저장된 감상은 내 기록에서 다시 열 수 있습니다.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {records.length > 0 ? (
               records.slice(0, 3).map((record) => (
-                <div className="rounded-lg border border-stone-200 bg-white p-3" key={record.id}>
+                <div className="journal-card p-3 pl-5" key={record.id}>
                   <div className="mb-1 flex items-center justify-between gap-2">
                     <p className="mb-0 font-medium">{record.bookTitle}</p>
                     {record.source === 'sample' && <Badge variant="secondary">샘플</Badge>}
@@ -1512,7 +1538,7 @@ function RoomDetailScreen({
                 </div>
               ))
             ) : (
-              <p className="mb-0 rounded-lg bg-stone-50 p-4 text-sm leading-6 text-stone-600">
+              <p className="mb-0 rounded-2xl bg-secondary/35 p-4 text-sm leading-6 text-muted-foreground">
                 아직 완료 기록이 없습니다.
               </p>
             )}
@@ -1569,16 +1595,21 @@ function TimerScreen({ now, onAbandon, onBack, onRecord, room, session }) {
         description={isReady ? '읽은 책과 감상을 남길 차례입니다.' : '정해진 시간 동안 책에만 집중합니다.'}
       />
 
-      <Card className="rounded-lg bg-white/95">
+      <Card className="paper-card">
         <CardContent className="py-8">
           <div className="mx-auto max-w-xl text-center">
-            <Badge className="mb-5 rounded-lg" variant={isReady ? 'default' : 'outline'}>
+            <Badge className={cn('mb-5', isReady ? '' : 'eyebrow-badge')} variant={isReady ? 'default' : 'outline'}>
               {isReady ? '기록 대기' : `${room.durationMinutes}분 집중`}
             </Badge>
-            <div className="mb-4 font-mono text-7xl font-semibold tabular-nums text-stone-950 md:text-8xl">
-              {formatRemaining(remaining)}
+            <div className="timer-orb mx-auto mb-6 flex aspect-square w-full max-w-[22rem] flex-col items-center justify-center px-6">
+              <span className="mb-3 text-xs font-medium text-muted-foreground">
+                {isReady ? '책을 덮고 기록할 시간' : '남은 독서 시간'}
+              </span>
+              <div className="font-mono text-6xl font-semibold tabular-nums text-[var(--ink)] md:text-7xl">
+                {formatRemaining(remaining)}
+              </div>
             </div>
-            <Progress className="mb-6 h-2 bg-stone-200" value={isReady ? 100 : progress} />
+            <Progress className="mb-6 h-2 bg-secondary/70" value={isReady ? 100 : progress} />
             <div className="grid gap-3 text-left md:grid-cols-3">
               <Stat label="시작" value={formatDateTime(session.startedAt)} />
               <Stat label="종료 예정" value={formatDateTime(session.endsAt)} />
@@ -1586,7 +1617,7 @@ function TimerScreen({ now, onAbandon, onBack, onRecord, room, session }) {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col gap-2 bg-muted/35 sm:flex-row sm:justify-end">
+        <CardFooter className="flex flex-col gap-2 bg-secondary/25 sm:flex-row sm:justify-end">
           {isReady ? (
             <>
               <Button onClick={onBack} variant="outline">
@@ -1708,10 +1739,10 @@ function RecordFormScreen({ onBack, onSave, room, session }) {
         description="정확하지 않아도 괜찮아요. 오늘 읽은 범위를 대략 남겨주세요."
       />
 
-      <Card className="rounded-lg bg-white/95">
+      <Card className="paper-card">
         <CardHeader>
-          <CardTitle>세션 요약</CardTitle>
-          <CardDescription>
+          <CardTitle className="editorial-title text-3xl">세션 요약</CardTitle>
+          <CardDescription className="leading-6">
             {room.title} · {room.durationMinutes}분 · {formatDate(session.startedAt)}
           </CardDescription>
         </CardHeader>
@@ -1720,29 +1751,35 @@ function RecordFormScreen({ onBack, onSave, room, session }) {
             <div className="space-y-2">
               <Label htmlFor="book-title">책 제목</Label>
               <Input
+                aria-describedby={errors.bookTitle ? 'book-title-error' : undefined}
+                aria-invalid={Boolean(errors.bookTitle)}
                 id="book-title"
                 onChange={(event) => updateDraft('bookTitle', event.target.value)}
                 placeholder="오늘 읽은 책"
                 value={draft.bookTitle}
               />
-              {errors.bookTitle && <p className="mb-0 text-sm text-destructive">{errors.bookTitle}</p>}
+              {errors.bookTitle && <p id="book-title-error" className="mb-0 text-sm text-destructive">{errors.bookTitle}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="impression">감상</Label>
               <Textarea
+                aria-describedby={errors.impression ? 'impression-error' : undefined}
+                aria-invalid={Boolean(errors.impression)}
                 id="impression"
                 onChange={(event) => updateDraft('impression', event.target.value)}
                 placeholder="읽고 난 직후 남는 생각을 짧게 적어 주세요."
                 value={draft.impression}
               />
-              {errors.impression && <p className="mb-0 text-sm text-destructive">{errors.impression}</p>}
+              {errors.impression && <p id="impression-error" className="mb-0 text-sm text-destructive">{errors.impression}</p>}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="start-page">시작 페이지</Label>
                 <Input
+                  aria-describedby={errors.startPage ? 'start-page-error' : undefined}
+                  aria-invalid={Boolean(errors.startPage)}
                   id="start-page"
                   inputMode="numeric"
                   onChange={(event) => updateDraft('startPage', event.target.value)}
@@ -1750,11 +1787,13 @@ function RecordFormScreen({ onBack, onSave, room, session }) {
                   type="number"
                   value={draft.startPage}
                 />
-                {errors.startPage && <p className="mb-0 text-sm text-destructive">{errors.startPage}</p>}
+                {errors.startPage && <p id="start-page-error" className="mb-0 text-sm text-destructive">{errors.startPage}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="end-page">끝 페이지</Label>
                 <Input
+                  aria-describedby={errors.endPage ? 'end-page-error' : undefined}
+                  aria-invalid={Boolean(errors.endPage)}
                   id="end-page"
                   inputMode="numeric"
                   onChange={(event) => updateDraft('endPage', event.target.value)}
@@ -1762,7 +1801,7 @@ function RecordFormScreen({ onBack, onSave, room, session }) {
                   type="number"
                   value={draft.endPage}
                 />
-                {errors.endPage && <p className="mb-0 text-sm text-destructive">{errors.endPage}</p>}
+                {errors.endPage && <p id="end-page-error" className="mb-0 text-sm text-destructive">{errors.endPage}</p>}
               </div>
             </div>
 
@@ -1817,10 +1856,10 @@ function RecordsScreen({
       />
 
       <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <Card className="h-fit rounded-lg bg-white/90">
+        <Card className="paper-card h-fit">
           <CardHeader>
-            <CardTitle>필터</CardTitle>
-            <CardDescription>목표 진행률은 실제 완료 기록만 계산합니다.</CardDescription>
+            <CardTitle className="editorial-title text-3xl">필터</CardTitle>
+            <CardDescription className="leading-6">목표 진행률은 실제 완료 기록만 계산합니다.</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs onValueChange={setFilter} orientation="vertical" value={filter}>
@@ -1846,13 +1885,13 @@ function RecordsScreen({
                 const room = roomsById.get(session.roomId);
                 return (
                   <div
-                    className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 md:flex-row md:items-center md:justify-between"
+                    className="action-surface flex flex-col gap-3 border-[rgba(184,137,85,0.32)] bg-[rgba(184,137,85,0.12)] p-4 md:flex-row md:items-center md:justify-between"
                     key={session.id}
                   >
                     <div>
-                      <Badge className="mb-2 rounded-lg bg-amber-900 text-white">기록 대기</Badge>
-                      <p className="mb-1 font-semibold text-amber-950">{room?.title ?? '삭제된 방'}</p>
-                      <p className="mb-0 text-sm text-amber-800">
+                      <Badge className="oak-badge mb-2">기록 대기</Badge>
+                      <p className="mb-1 font-semibold text-[var(--ink)]">{room?.title ?? '삭제된 방'}</p>
+                      <p className="mb-0 text-sm text-muted-foreground">
                         {formatDateTime(session.endsAt)} 종료 · 저장 전까지 목표에 포함되지 않음
                       </p>
                     </div>
@@ -1871,7 +1910,7 @@ function RecordsScreen({
               {visibleRecords.map((record) => {
                 const room = roomsById.get(record.roomId);
                 return (
-                  <Card className="rounded-lg bg-white/90" key={record.id}>
+                  <Card className="journal-card pl-2" key={record.id}>
                     <CardHeader>
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -1879,8 +1918,8 @@ function RecordsScreen({
                             {record.source === 'sample' && <Badge variant="secondary">샘플</Badge>}
                             <Badge variant="outline">{record.startPage}-{record.endPage}쪽</Badge>
                           </div>
-                          <CardTitle>{record.bookTitle}</CardTitle>
-                          <CardDescription>
+                          <CardTitle className="editorial-title text-2xl">{record.bookTitle}</CardTitle>
+                          <CardDescription className="leading-6">
                             {room?.title ?? '삭제된 방'} · {formatDate(record.createdAt)}
                           </CardDescription>
                         </div>
@@ -1888,9 +1927,9 @@ function RecordsScreen({
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="mb-0 line-clamp-3 leading-7 text-stone-700">{record.impression}</p>
+                      <p className="mb-0 line-clamp-3 leading-7 text-muted-foreground">{record.impression}</p>
                     </CardContent>
-                    <CardFooter className="flex flex-col gap-2 bg-muted/35 sm:flex-row sm:justify-end">
+                    <CardFooter className="flex flex-col gap-2 bg-secondary/25 sm:flex-row sm:justify-end">
                       <Button onClick={() => onOpenRecord(record.id)} variant="outline">
                         상세
                       </Button>
@@ -1920,22 +1959,22 @@ function RecordsScreen({
 
 function Stat({ label, value }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white p-4">
-      <p className="mb-1 text-xs font-medium text-stone-500">{label}</p>
-      <p className="mb-0 text-sm font-semibold leading-6 text-stone-950">{value}</p>
+    <div className="stat-tile p-4">
+      <p className="mb-1 text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mb-0 text-sm font-semibold leading-6 text-[var(--ink)]">{value}</p>
     </div>
   );
 }
 
 function PageTop({ action, description, eyebrow, title }) {
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-stone-200 bg-white/70 p-5 shadow-sm md:flex-row md:items-start md:justify-between">
+    <div className="paper-panel flex flex-col gap-4 p-6 md:flex-row md:items-start md:justify-between">
       <div>
-        <Badge className="mb-3 rounded-lg border-emerald-200 bg-emerald-50 text-emerald-900" variant="outline">
+        <Badge className="eyebrow-badge mb-3" variant="outline">
           {eyebrow}
         </Badge>
-        <h2 className="mb-2 text-3xl font-semibold leading-tight text-stone-950 md:text-4xl">{title}</h2>
-        <p className="mb-0 max-w-2xl text-sm leading-6 text-stone-600">{description}</p>
+        <h2 className="editorial-title mb-2 text-4xl leading-none md:text-5xl">{title}</h2>
+        <p className="lounge-copy mb-0 max-w-2xl text-sm leading-6">{description}</p>
       </div>
       {action}
     </div>
@@ -1944,11 +1983,13 @@ function PageTop({ action, description, eyebrow, title }) {
 
 function EmptyState({ actions, description, icon: Icon, title }) {
   return (
-    <div className="flex min-h-80 w-full items-center justify-center rounded-lg border border-dashed border-stone-300 bg-white/55 p-6 text-center">
+    <div className="paper-panel flex min-h-80 w-full items-center justify-center border-dashed p-6 text-center">
       <div className="max-w-md">
-        <Icon className="mx-auto mb-4 size-10 text-stone-500" />
-        <h3 className="mb-2 text-xl font-semibold text-stone-950">{title}</h3>
-        <p className="mb-5 text-sm leading-6 text-stone-600">{description}</p>
+        <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+          <Icon className="size-6" />
+        </span>
+        <h3 className="editorial-title mb-2 text-3xl">{title}</h3>
+        <p className="lounge-copy mb-5 text-sm leading-6">{description}</p>
         {actions && <div className="flex flex-wrap justify-center gap-2">{actions}</div>}
       </div>
     </div>
@@ -2016,13 +2057,13 @@ function RecordDetailDialog({ onOpenChange, onReenterRoom, record, room }) {
                   {record.startPage}-{record.endPage}쪽
                 </Badge>
               </div>
-              <DialogTitle>{record.bookTitle}</DialogTitle>
+              <DialogTitle className="editorial-title text-3xl">{record.bookTitle}</DialogTitle>
               <DialogDescription>
                 {room?.title ?? '삭제된 방'} · {formatDateTime(record.createdAt)}
               </DialogDescription>
             </DialogHeader>
-            <div className="rounded-lg bg-stone-50 p-4">
-              <p className="mb-0 leading-7 text-stone-800">{record.impression}</p>
+            <div className="journal-card p-4 pl-6">
+              <p className="mb-0 leading-7 text-[var(--ink)]">{record.impression}</p>
             </div>
             <DialogFooter>
               <Button onClick={() => onOpenChange(false)} variant="outline">
