@@ -11,6 +11,7 @@
 - [경쟁사 분석](docs/경쟁사분석.md) — 유사 서비스 기능 조사 및 채택/미채택 근거
 - [사용자 흐름 다이어그램](docs/diagrams/user-flow.html) — 화면·동작 플로우차트 (다운로드 후 브라우저로 열람)
 - [개발 Task 목록](docs/PLAN.md) — 2~4주차 개발 task 체크리스트
+- [개발 백로그](docs/BACKLOG.md) — 주차별 우선순위(P0/P1/P2)와 DoD
 
 ## 개발 환경
 
