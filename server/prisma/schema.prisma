@@ -1,0 +1,11 @@
+// Turso(libSQL)를 driver adapter로 연결하는 Prisma 스키마.
+// 모델(tasks/avoidance_reasons/task_events/feedbacks)은 다음 단계에서 추가한다 — 여기서는 연결 설정만.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}

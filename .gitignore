@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Env files (.env.example은 예외로 커밋)
+.env
+.env.*
+!.env.example
+
+# 로컬에서 잠깐 붙여보는 sqlite 파일
+*.db
+*.db-journal
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
