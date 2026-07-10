@@ -7,18 +7,19 @@
     <style>
       :root {
         --font-ui: Tahoma, "Malgun Gothic", "Gulim", sans-serif;
-        --font-pixel: "Gulim", monospace;
+        --font-pixel: "Gulim", "Dotum", monospace;
         --text-primary: #1f1f1f;
         --text-secondary: #55514a;
+        --text-muted: #77736c;
         --text-on-blue: #ffffff;
         --surface-window: #ece9d8;
         --surface-raised: #f8f6ee;
         --surface-dialog: #f1ede2;
         --surface-inset: #d6d0c4;
+        --surface-selected: #d7e8ff;
         --border-window: #003c74;
         --border-dark: #716f64;
         --border-mid: #aca899;
-        --border-light: #ffffff;
         --border-control: #7f9db9;
         --xp-blue-950: #003c74;
         --xp-blue-900: #0645a5;
@@ -36,68 +37,39 @@
         --window-title-height: 27px;
         --shadow-window: 3px 4px 0 rgb(0 35 84 / 28%);
       }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
-      body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        overflow: hidden;
-      }
-
-      body,
-      button,
-      input,
-      select {
+      * { box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+      body, button, input, select, textarea {
         color: var(--text-primary);
         font-family: var(--font-ui);
         font-size: 12px;
         letter-spacing: 0;
       }
-
-      button {
-        font: inherit;
-      }
-
+      button { font: inherit; }
       .desktop {
         position: relative;
         width: 100vw;
         height: 100dvh;
         overflow: hidden;
         background-color: #59c5ef;
-        background-image: url("./assets/xp-pixel-wallpaper.png");
+        background-image: url("./assets/background/background.png");
         background-position: center bottom;
         background-size: cover;
         image-rendering: pixelated;
         isolation: isolate;
       }
-
-      .desktop::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        pointer-events: none;
-        background: linear-gradient(180deg, rgb(255 255 255 / 3%), transparent 45%);
-      }
-
       .desktop-icons {
         position: absolute;
         top: 14px;
         left: 12px;
         z-index: 10;
         display: grid;
-        gap: 10px;
+        gap: 8px;
         width: 78px;
       }
-
       .desktop-icon {
         width: 74px;
-        min-height: 70px;
+        min-height: 67px;
         display: grid;
         justify-items: center;
         align-content: start;
@@ -110,13 +82,10 @@
         background: transparent;
         border: 0;
       }
-
-      .desktop-icon:hover,
-      .desktop-icon:focus-visible {
+      .desktop-icon:hover, .desktop-icon:focus-visible {
         background: rgb(49 106 197 / 44%);
         outline: 1px dotted #ffffff;
       }
-
       .desktop-icon__graphic {
         width: 40px;
         height: 40px;
@@ -124,24 +93,14 @@
         place-items: center;
         filter: drop-shadow(2px 2px 0 rgb(0 35 84 / 30%));
       }
-
-      .desktop-icon__graphic svg {
-        width: 38px;
-        height: 38px;
-        shape-rendering: crispEdges;
-      }
-
-      .desktop-icon__graphic--lumi {
-        overflow: hidden;
-      }
-
+      .desktop-icon__graphic svg { width: 38px; height: 38px; shape-rendering: crispEdges; }
+      .desktop-icon__graphic--lumi { overflow: hidden; }
       .desktop-icon__graphic--lumi img {
         width: 70px;
         height: 70px;
         object-fit: contain;
         image-rendering: pixelated;
       }
-
       .window {
         position: absolute;
         z-index: 100;
@@ -151,27 +110,21 @@
         border-radius: 7px 7px 3px 3px;
         box-shadow: var(--shadow-window);
       }
-
-      .window.is-active {
-        z-index: 200;
+      .window.is-active { z-index: 200; }
+      .window[hidden] { display: none; }
+      .window--setup { top: 58px; left: 50%; width: min(520px, calc(100vw - 40px)); transform: translateX(-50%); }
+      .window--created { top: 72px; left: 50%; width: 360px; transform: translateX(-50%); }
+      .window--quest { top: 64px; left: clamp(106px, 17vw, 210px); width: 360px; }
+      .window--runner { top: 258px; left: clamp(116px, 20vw, 250px); width: 386px; }
+      .window--manager { top: 118px; left: clamp(482px, 58vw, 790px); width: 328px; }
+      .window--profile { top: 82px; left: clamp(118px, 20vw, 260px); width: 346px; }
+      .window--notes { top: 274px; left: clamp(490px, 54vw, 740px); width: 364px; }
+      .window--failure, .window--recovery {
+        top: 160px;
+        left: 50%;
+        width: min(390px, calc(100vw - 32px));
+        transform: translateX(-50%);
       }
-
-      .window[hidden] {
-        display: none;
-      }
-
-      .window--quest {
-        top: 68px;
-        left: clamp(106px, 18vw, 210px);
-        width: 360px;
-      }
-
-      .window--manager {
-        top: 134px;
-        left: clamp(485px, 58vw, 790px);
-        width: 328px;
-      }
-
       .titlebar {
         height: var(--window-title-height);
         display: flex;
@@ -182,22 +135,12 @@
         font-size: 12px;
         font-weight: 700;
         text-shadow: 1px 1px 0 #00356b;
-        background: linear-gradient(
-          180deg,
-          var(--xp-blue-600) 0%,
-          var(--xp-blue-700) 18%,
-          var(--xp-blue-800) 72%,
-          var(--xp-blue-900) 100%
-        );
+        background: linear-gradient(180deg, var(--xp-blue-600) 0%, var(--xp-blue-700) 18%, var(--xp-blue-800) 72%, var(--xp-blue-900) 100%);
         border-bottom: 1px solid var(--xp-blue-950);
         cursor: move;
         user-select: none;
       }
-
-      .window:not(.is-active) .titlebar {
-        background: linear-gradient(180deg, #93a3bb, #6f84a3);
-      }
-
+      .window:not(.is-active) .titlebar { background: linear-gradient(180deg, #93a3bb, #6f84a3); }
       .titlebar__icon {
         width: 16px;
         height: 16px;
@@ -209,20 +152,8 @@
         background: #fff8da;
         border: 1px solid #d29d28;
       }
-
-      .titlebar__name {
-        min-width: 0;
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .window-controls {
-        display: flex;
-        gap: 2px;
-      }
-
+      .titlebar__name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .window-controls { display: flex; gap: 2px; }
       .window-control {
         width: 19px;
         height: 19px;
@@ -238,110 +169,62 @@
         background: var(--xp-blue-600);
         border: 1px solid #ffffff;
         border-radius: 2px;
-        box-shadow:
-          inset 1px 1px 0 var(--xp-blue-highlight),
-          inset -1px -1px 0 var(--xp-blue-950);
+        box-shadow: inset 1px 1px 0 var(--xp-blue-highlight), inset -1px -1px 0 var(--xp-blue-950);
       }
-
-      .window-control--close {
-        background: var(--status-danger);
-      }
-
-      .window-body {
-        padding: 12px;
-        background: var(--surface-window);
-      }
-
-      .quest-summary {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 10px;
-        color: var(--text-secondary);
-        font-size: 11px;
-      }
-
-      .quest-form {
+      .window-control--close { background: var(--status-danger); }
+      .window-body { padding: 12px; background: var(--surface-window); }
+      .wizard-lead, .created-lead { margin: 0 0 12px; color: #1f3152; font-weight: 700; }
+      .wizard-grid, .quest-form, .profile-form {
         display: grid;
-        grid-template-columns: 64px minmax(0, 1fr);
-        gap: 8px;
+        grid-template-columns: 92px minmax(0, 1fr);
+        gap: 9px 10px;
         align-items: center;
       }
-
-      .quest-form label {
-        color: #37352f;
-        font-weight: 700;
-      }
-
-      .xp-input,
-      .xp-select {
+      .quest-form, .profile-form { grid-template-columns: 64px minmax(0, 1fr); gap: 8px; }
+      .wizard-grid label, .quest-form label, .profile-form label { color: #37352f; font-weight: 700; }
+      .xp-input, .xp-select, .xp-textarea {
         width: 100%;
-        height: 26px;
+        min-height: 26px;
         padding: 3px 6px;
         background: #ffffff;
         border: 1px solid var(--border-control);
         border-radius: 0;
         box-shadow: inset 1px 1px 0 rgb(0 0 0 / 12%);
       }
-
-      .form-pair {
-        display: grid;
-        grid-template-columns: 1fr 82px;
-        gap: 6px;
-      }
-
-      .difficulty {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 4px;
-      }
-
-      .difficulty input {
-        position: absolute;
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      .difficulty label {
-        height: 26px;
+      .xp-textarea { min-height: 58px; resize: none; }
+      .segmented, .difficulty { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+      .segmented input, .difficulty input, .failure-list input { position: absolute; opacity: 0; pointer-events: none; }
+      .segmented label, .difficulty label {
+        min-height: 26px;
         display: grid;
         place-items: center;
         color: var(--text-primary);
         font-weight: 400;
+        text-align: center;
         background: var(--surface-raised);
         border: 1px solid var(--border-dark);
-        box-shadow:
-          inset 1px 1px 0 #ffffff,
-          inset -1px -1px 0 #716f64;
+        box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #716f64;
       }
-
-      .difficulty input:checked + label {
+      .segmented input:checked + label, .difficulty input:checked + label {
         color: #ffffff;
         font-weight: 700;
         background: var(--xp-blue-700);
-        box-shadow:
-          inset 1px 1px 0 var(--xp-blue-950),
-          inset -1px -1px 0 var(--xp-blue-highlight);
+        box-shadow: inset 1px 1px 0 var(--xp-blue-950), inset -1px -1px 0 var(--xp-blue-highlight);
       }
-
-      .quest-footer {
+      .form-pair { display: grid; grid-template-columns: 1fr 82px; gap: 6px; }
+      .window-footer, .quest-footer {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
+        justify-content: flex-end;
+        gap: 8px;
         margin-top: 12px;
         padding-top: 10px;
         border-top: 1px solid var(--border-mid);
         box-shadow: 0 -1px 0 #ffffff;
       }
-
-      .reward {
-        color: var(--reward-exp);
-        font-size: 11px;
-        font-weight: 700;
-      }
-
+      .quest-footer { justify-content: space-between; }
+      .quest-summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; color: var(--text-secondary); font-size: 11px; }
+      .reward { color: var(--reward-exp); font-size: 11px; font-weight: 700; }
       .xp-button {
         min-width: 82px;
         height: 27px;
@@ -350,50 +233,22 @@
         background: var(--surface-raised);
         border: 1px solid var(--border-dark);
         border-radius: 2px;
-        box-shadow:
-          inset 1px 1px 0 #ffffff,
-          inset -1px -1px 0 #716f64;
+        box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #716f64;
       }
-
-      .xp-button:active {
-        background: var(--surface-inset);
-        box-shadow:
-          inset 1px 1px 0 #716f64,
-          inset -1px -1px 0 #ffffff;
-      }
-
-      .manager-stage {
-        min-height: 238px;
-        display: grid;
-        grid-template-rows: auto 126px auto auto;
-        justify-items: center;
-        position: relative;
-        padding: 4px 8px 10px;
-      }
-
-      .manager-name {
-        color: #1f3152;
-        font-family: var(--font-pixel);
-        font-size: 15px;
+      .xp-button--primary {
+        color: #ffffff;
         font-weight: 700;
+        background: #316ac5;
+        border-color: #0d3f8d;
+        box-shadow: inset 1px 1px 0 #8dc2ff, inset -1px -1px 0 #06377f;
       }
-
-      .manager-visual {
-        width: 160px;
-        height: 126px;
-        display: grid;
-        place-items: center;
-        position: relative;
-      }
-
-      .manager-sprite {
-        width: 184px;
-        height: 184px;
-        object-fit: contain;
-        image-rendering: pixelated;
-        animation: idle 1.8s steps(2, end) infinite;
-      }
-
+      .created-card { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; align-items: center; }
+      .created-card img { width: 102px; height: 102px; object-fit: contain; image-rendering: pixelated; }
+      .created-card strong { display: block; margin-bottom: 4px; color: #1f3152; font-size: 15px; }
+      .manager-stage { min-height: 238px; display: grid; grid-template-rows: auto 126px auto auto; justify-items: center; position: relative; padding: 4px 8px 10px; }
+      .manager-name { color: #1f3152; font-family: var(--font-pixel); font-size: 15px; font-weight: 700; }
+      .manager-visual { width: 160px; height: 126px; display: grid; place-items: center; position: relative; }
+      .manager-sprite { width: 184px; height: 184px; object-fit: contain; image-rendering: pixelated; animation: idle 1.8s steps(2, end) infinite; }
       .reaction-bubble {
         width: 38px;
         height: 28px;
@@ -408,70 +263,14 @@
         box-shadow: 2px 2px 0 rgb(77 55 44 / 24%);
         pointer-events: none;
       }
-
-      .reaction-bubble::after {
-        content: "";
-        width: 8px;
-        height: 8px;
-        position: absolute;
-        right: 5px;
-        bottom: -6px;
-        background: #ffffff;
-        border-right: 2px solid #4d372c;
-        border-bottom: 2px solid #4d372c;
-        transform: rotate(45deg);
-      }
-
-      .reaction-bubble.is-visible {
-        animation: react 900ms steps(3, end);
-      }
-
-      .manager-progress {
-        width: 100%;
-        display: grid;
-        grid-template-columns: auto 1fr auto;
-        align-items: center;
-        gap: 7px;
-        margin-top: 3px;
-      }
-
-      .level {
-        font-family: var(--font-pixel);
-        font-size: 17px;
-        font-weight: 700;
-      }
-
-      .exp-bar {
-        height: 10px;
-        overflow: hidden;
-        background: var(--exp-track);
-        border: 1px solid var(--border-dark);
-        border-radius: 999px;
-        box-shadow: inset 1px 1px 0 rgb(0 0 0 / 20%);
-      }
-
-      .exp-bar__fill {
-        width: 20%;
-        height: 100%;
-        background: var(--exp-fill);
-        border-right: 1px solid #17752c;
-        transition: width 180ms steps(4, end);
-      }
-
-      .exp-value {
-        color: var(--text-secondary);
-        font-size: 10px;
-        white-space: nowrap;
-      }
-
-      .manager-status {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 9px;
-        font-weight: 700;
-      }
-
+      .reaction-bubble::after { content: ""; width: 8px; height: 8px; position: absolute; right: 5px; bottom: -6px; background: #ffffff; border-right: 2px solid #4d372c; border-bottom: 2px solid #4d372c; transform: rotate(45deg); }
+      .reaction-bubble.is-visible { animation: react 900ms steps(3, end); }
+      .manager-progress { width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px; margin-top: 3px; }
+      .level { font-family: var(--font-pixel); font-size: 17px; font-weight: 700; }
+      .exp-bar { height: 10px; overflow: hidden; background: var(--exp-track); border: 1px solid var(--border-dark); border-radius: 999px; box-shadow: inset 1px 1px 0 rgb(0 0 0 / 20%); }
+      .exp-bar__fill { width: 20%; height: 100%; background: var(--exp-fill); border-right: 1px solid #17752c; transition: width 180ms steps(4, end); }
+      .exp-value { color: var(--text-secondary); font-size: 10px; white-space: nowrap; }
+      .manager-status { display: flex; align-items: center; gap: 6px; margin-top: 9px; font-weight: 700; }
       .status-pixel {
         width: 18px;
         height: 18px;
@@ -483,35 +282,35 @@
         line-height: 1;
         background: var(--status-warning);
         border: 1px solid #6f4c00;
-        box-shadow:
-          inset 1px 1px 0 #ffd36d,
-          inset -1px -1px 0 #7c5200;
+        box-shadow: inset 1px 1px 0 #ffd36d, inset -1px -1px 0 #7c5200;
       }
-
-      .status-pixel.is-complete {
-        background: var(--status-success);
-        border-color: #176625;
-        box-shadow:
-          inset 1px 1px 0 #7cda88,
-          inset -1px -1px 0 #176625;
-      }
-
-      .dialogue-panel {
-        min-height: 58px;
-        max-height: 58px;
-        display: flex;
-        align-items: center;
-        padding: 8px 10px;
-        overflow: hidden;
-        line-height: 1.55;
+      .status-pixel.is-complete { background: var(--status-success); border-color: #176625; box-shadow: inset 1px 1px 0 #7cda88, inset -1px -1px 0 #176625; }
+      .status-pixel.is-rebalance { background: var(--xp-blue-700); border-color: #0d3f8d; box-shadow: inset 1px 1px 0 #8dc2ff, inset -1px -1px 0 #06377f; }
+      .dialogue-panel, .inset-panel {
         background: var(--surface-dialog);
         border: 1px solid var(--border-mid);
         border-radius: 4px;
-        box-shadow:
-          inset 1px 1px 0 #c8c2b5,
-          inset -1px -1px 0 #ffffff;
+        box-shadow: inset 1px 1px 0 #c8c2b5, inset -1px -1px 0 #ffffff;
       }
-
+      .dialogue-panel { min-height: 58px; max-height: 58px; display: flex; align-items: center; padding: 8px 10px; overflow: hidden; line-height: 1.55; }
+      .runner-menu { display: flex; gap: 16px; margin: -4px -4px 10px; padding: 4px 6px; border-bottom: 1px solid var(--border-mid); }
+      .runner-banner { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: #113f75; font-weight: 700; }
+      .run-badge { padding: 2px 6px; color: #ffffff; background: #0e6fc7; border: 1px solid #064184; }
+      .runner-grid { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 8px; }
+      .progress-pixels { height: 18px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin-top: 12px; }
+      .progress-pixels span { background: #d6d0c4; border: 1px solid #8d897f; box-shadow: inset 1px 1px 0 #ffffff; }
+      .progress-pixels span:nth-child(-n + 5) { background: #2f8e2f; border-color: #176625; box-shadow: inset 1px 1px 0 #7cda88; }
+      .failure-list { display: grid; gap: 7px; }
+      .failure-list label { min-height: 27px; display: flex; align-items: center; gap: 8px; padding: 4px 7px; background: var(--surface-raised); border: 1px solid var(--border-mid); }
+      .failure-list label::before { content: ""; width: 12px; height: 12px; border: 1px solid var(--border-dark); border-radius: 999px; background: #ffffff; }
+      .failure-list input:checked + label { background: var(--surface-selected); }
+      .failure-list input:checked + label::before { box-shadow: inset 0 0 0 3px #ffffff; background: var(--xp-blue-700); }
+      .recovery-title { margin: 0 0 10px; padding: 10px; color: #113f75; font-size: 15px; font-weight: 700; }
+      .notes-list { display: grid; gap: 6px; }
+      .note-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; align-items: center; min-height: 30px; padding: 4px 6px; background: var(--surface-raised); border: 1px solid var(--border-mid); }
+      .note-row small { color: var(--text-secondary); }
+      .note-row strong { color: var(--reward-exp); font-size: 11px; }
+      .trash-body { min-height: 96px; display: grid; place-items: center; color: var(--text-muted); }
       .taskbar {
         position: fixed;
         right: 0;
@@ -527,7 +326,6 @@
         border-top: 1px solid #6eb8ff;
         box-shadow: 0 -1px 0 #003c74;
       }
-
       .start-button {
         height: 100%;
         display: flex;
@@ -544,44 +342,17 @@
         border-right: 1px solid #1c6f25;
         border-radius: 0 11px 11px 0;
       }
-
-      .start-mark {
-        width: 17px;
-        height: 17px;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1px;
-        transform: skewY(-5deg);
-      }
-
-      .start-mark span:nth-child(1) {
-        background: #ef4d34;
-      }
-
-      .start-mark span:nth-child(2) {
-        background: #64ac43;
-      }
-
-      .start-mark span:nth-child(3) {
-        background: #2d84db;
-      }
-
-      .start-mark span:nth-child(4) {
-        background: #f4c442;
-      }
-
-      .task-buttons {
-        min-width: 0;
-        display: flex;
-        gap: 4px;
-        padding: 0 8px;
-      }
-
+      .start-mark { width: 17px; height: 17px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; transform: skewY(-5deg); }
+      .start-mark span:nth-child(1) { background: #ef4d34; }
+      .start-mark span:nth-child(2) { background: #64ac43; }
+      .start-mark span:nth-child(3) { background: #2d84db; }
+      .start-mark span:nth-child(4) { background: #f4c442; }
+      .task-buttons { min-width: 0; display: flex; gap: 4px; padding: 0 8px; overflow: hidden; }
       .task-button {
-        width: 154px;
-        max-width: 34vw;
+        width: 142px;
+        max-width: 24vw;
         height: 27px;
-        display: flex;
+        display: none;
         align-items: center;
         gap: 6px;
         padding: 0 9px;
@@ -594,505 +365,149 @@
         border-radius: 2px;
         box-shadow: inset 1px 1px 0 #61a8ef;
       }
-
-      .task-button.is-active {
-        background: #1553b0;
-        box-shadow: inset 1px 1px 2px #073d91;
-      }
-
-      .task-button[hidden] {
-        display: none;
-      }
-
-      .tray {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        padding: 0 10px;
-        background: #1681d8;
-        border-left: 1px solid #4db1ef;
-        box-shadow: inset 1px 0 0 #0a62ba;
-        white-space: nowrap;
-      }
-
-      .tray-level {
-        font-weight: 700;
-      }
-
-      @keyframes idle {
-        0%,
-        100% {
-          transform: translateY(0);
-        }
-        50% {
-          transform: translateY(-3px);
-        }
-      }
-
-      @keyframes react {
-        0% {
-          opacity: 0;
-          transform: translateY(6px) scale(0.8);
-        }
-        22%,
-        72% {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-        100% {
-          opacity: 0;
-          transform: translateY(-3px) scale(0.9);
-        }
-      }
-
-      @media (min-width: 561px) and (max-width: 900px) {
-        .window--quest {
-          top: 68px;
-          left: 96px;
-          width: 340px;
-        }
-
-        .window--manager {
-          top: 182px;
-          right: 14px;
-          left: auto;
-          width: 316px;
-        }
-      }
-
-      @media (min-width: 561px) and (max-width: 900px) and (max-height: 620px) {
-        .desktop-icons {
-          transform: scale(0.86);
-          transform-origin: top left;
-        }
-
-        .window--quest {
-          top: 54px;
-          left: 80px;
-          transform: scale(0.78);
-          transform-origin: top left;
-        }
-
-        .window--manager {
-          top: 168px;
-          right: 6px;
-          transform: scale(0.78);
-          transform-origin: top right;
-        }
-      }
-
+      .task-button.is-open { display: flex; }
+      .task-button.is-active { background: #1553b0; box-shadow: inset 1px 1px 2px #073d91; }
+      .tray { height: 100%; display: flex; align-items: center; gap: 9px; padding: 0 10px; background: #1681d8; border-left: 1px solid #4db1ef; box-shadow: inset 1px 0 0 #0a62ba; white-space: nowrap; }
+      .tray-level { font-weight: 700; }
+      @keyframes idle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+      @keyframes react { 0% { opacity: 0; transform: translateY(6px) scale(0.8); } 22%, 72% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-3px) scale(0.9); } }
       @media (max-width: 560px) {
-        html,
-        body {
-          overflow: auto;
-        }
-
-        .desktop {
-          min-height: 760px;
-          height: auto;
-          overflow: visible;
-          padding: 8px 8px calc(var(--taskbar-height) + 16px) 90px;
-        }
-
-        .desktop-icons {
-          position: fixed;
-          top: 8px;
-          left: 5px;
-          transform: scale(0.88);
-          transform-origin: top left;
-        }
-
-        .window,
-        .window--quest,
-        .window--manager {
+        html, body { overflow: auto; }
+        .desktop { min-height: 980px; height: auto; overflow: visible; padding: 8px 8px calc(var(--taskbar-height) + 16px) 90px; }
+        .desktop-icons { position: fixed; top: 8px; left: 5px; transform: scale(0.88); transform-origin: top left; }
+        .window, .window--setup, .window--created, .window--quest, .window--runner, .window--manager, .window--profile, .window--notes, .window--failure, .window--recovery {
           position: relative;
           top: auto !important;
+          right: auto !important;
           left: auto !important;
           width: min(100%, 390px);
           margin: 8px auto 12px;
+          transform: none;
         }
-
-        .titlebar {
-          cursor: default;
-        }
-
-        .task-button {
-          width: 44px;
-          padding: 0 7px;
-        }
-
-        .task-button span:last-child {
-          display: none;
-        }
-
-        .tray-level {
-          display: none;
-        }
+        .titlebar { cursor: default; }
+        .wizard-grid, .quest-form, .profile-form { grid-template-columns: 1fr; }
+        .task-button { width: 42px; padding: 0 7px; }
+        .task-button span:last-child { display: none; }
+        .tray-level { display: none; }
       }
-
       @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-          animation-duration: 1ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 1ms !important;
-        }
+        *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
       }
     </style>
   </head>
   <body>
-    <main class="desktop" aria-label="XP ?�스?�톱">
-      <nav class="desktop-icons" aria-label="바탕?�면 ?�이�?>
-        <button class="desktop-icon" type="button" data-open="quest">
-          <span class="desktop-icon__graphic" aria-hidden="true">
-            <svg viewBox="0 0 38 38">
-              <path fill="#8f5b21" d="M4 3h26v4h4v28H4z" />
-              <path fill="#edc46e" d="M7 5h20v4h4v23H7z" />
-              <path fill="#fff4ca" d="M10 10h18v19H10z" />
-              <path fill="#2e8b42" d="M12 13h4v4h-4zM12 21h4v4h-4z" />
-              <path fill="#4c4a43" d="M18 14h8v2h-8zM18 22h8v2h-8z" />
-            </svg>
-          </span>
-          <span>?�늘???�스??/span>
-        </button>
-
-        <button class="desktop-icon" type="button" data-open="manager">
-          <span class="desktop-icon__graphic desktop-icon__graphic--lumi" aria-hidden="true">
-            <img src="./assets/lumi-manager.png" alt="" />
-          </span>
-          <span>매니?�</span>
-        </button>
-
-        <button class="desktop-icon" type="button">
-          <span class="desktop-icon__graphic" aria-hidden="true">
-            <svg viewBox="0 0 38 38">
-              <path fill="#164b88" d="M5 4h28v30H5z" />
-              <path fill="#3b8b55" d="M8 6h22v26H8z" />
-              <path fill="#d9efc5" d="M12 10h14v16H12z" />
-              <path fill="#56756a" d="M14 13h10v2H14zM14 18h10v2H14zM14 23h7v2h-7z" />
-            </svg>
-          </span>
-          <span>기록 ?�트</span>
-        </button>
-
-        <button class="desktop-icon" type="button">
-          <span class="desktop-icon__graphic" aria-hidden="true">
-            <svg viewBox="0 0 38 38">
-              <path fill="#778d91" d="M8 10h22l-2 25H10z" />
-              <path fill="#d9eef0" d="M11 13h16l-2 18H13z" />
-              <path fill="#597276" d="M5 7h28v5H5zM13 3h12v4H13z" />
-              <path fill="#63a68b" d="M15 17h3v10h-3zM21 17h3v10h-3z" />
-            </svg>
-          </span>
-          <span>?��???/span>
-        </button>
+    <main class="desktop" aria-label="XP 데스크톱">
+      <nav class="desktop-icons" aria-label="바탕화면 아이콘">
+        <button class="desktop-icon" type="button" data-open="profile"><span class="desktop-icon__graphic" aria-hidden="true"><svg viewBox="0 0 38 38"><path fill="#e0b66c" d="M5 7h28v27H5z"/><path fill="#fff0c7" d="M8 10h22v21H8z"/><path fill="#2f78c4" d="M13 13h12v3H13z"/><path fill="#4c4a43" d="M13 19h13v2H13zM13 24h10v2H13z"/></svg></span><span>내 프로필</span></button>
+        <button class="desktop-icon" type="button" data-open="quest"><span class="desktop-icon__graphic" aria-hidden="true"><svg viewBox="0 0 38 38"><path fill="#8f5b21" d="M4 3h26v4h4v28H4z"/><path fill="#edc46e" d="M7 5h20v4h4v23H7z"/><path fill="#fff4ca" d="M10 10h18v19H10z"/><path fill="#2e8b42" d="M12 13h4v4h-4zM12 21h4v4h-4z"/><path fill="#4c4a43" d="M18 14h8v2h-8zM18 22h8v2h-8z"/></svg></span><span>오늘의 퀘스트</span></button>
+        <button class="desktop-icon" type="button" data-open="notes"><span class="desktop-icon__graphic" aria-hidden="true"><svg viewBox="0 0 38 38"><path fill="#164b88" d="M5 4h28v30H5z"/><path fill="#3b8b55" d="M8 6h22v26H8z"/><path fill="#d9efc5" d="M12 10h14v16H12z"/><path fill="#56756a" d="M14 13h10v2H14zM14 18h10v2H14zM14 23h7v2h-7z"/></svg></span><span>기록 노트</span></button>
+        <button class="desktop-icon" type="button" data-open="manager"><span class="desktop-icon__graphic desktop-icon__graphic--lumi" aria-hidden="true"><img src="./assets/lumi-manager.png" alt="" /></span><span>매니저</span></button>
+        <button class="desktop-icon" type="button" data-open="trash"><span class="desktop-icon__graphic" aria-hidden="true"><svg viewBox="0 0 38 38"><path fill="#778d91" d="M8 10h22l-2 25H10z"/><path fill="#d9eef0" d="M11 13h16l-2 18H13z"/><path fill="#597276" d="M5 7h28v5H5zM13 3h12v4H13z"/><path fill="#63a68b" d="M15 17h3v10h-3zM21 17h3v10h-3z"/></svg></span><span>휴지통</span></button>
       </nav>
-
-      <section class="window window--quest is-active" id="quest-window" data-window="quest">
-        <header class="titlebar">
-          <span class="titlebar__icon" aria-hidden="true">Q</span>
-          <span class="titlebar__name">?�늘???�스??/span>
-          <div class="window-controls">
-            <button class="window-control" type="button" aria-label="최소??>_</button>
-            <button class="window-control" type="button" aria-label="최�???>??/button>
-            <button class="window-control window-control--close" type="button" data-close="quest" aria-label="?�기">×</button>
-          </div>
-        </header>
-
-        <div class="window-body">
-          <div class="quest-summary">
-            <span>?�늘 ?�행???�스??초안</span>
-            <strong>3 / 4 ?�료</strong>
-          </div>
-
-          <form class="quest-form" id="quest-form">
-            <label for="quest-title">?�목</label>
-            <input class="xp-input" id="quest-title" value="?�이?�베?�스 개념 15�?공�?" />
-
-            <label for="quest-type">?�형</label>
-            <select class="xp-select" id="quest-type">
-              <option>?�간??/option>
-              <option>?�적??/option>
-              <option>?�동??/option>
-            </select>
-
-            <label for="quest-amount">분량</label>
-            <div class="form-pair">
-              <input class="xp-input" id="quest-amount" type="number" min="5" value="15" />
-              <select class="xp-select" aria-label="분량 ?�위">
-                <option>�?/option>
-                <option>?�이지</option>
-                <option>??/option>
-              </select>
-            </div>
-
-            <span aria-hidden="true">?�이??/span>
-            <div class="difficulty" role="radiogroup" aria-label="?�이??>
-              <input id="difficulty-easy" name="difficulty" type="radio" />
-              <label for="difficulty-easy">?��?</label>
-              <input id="difficulty-normal" name="difficulty" type="radio" checked />
-              <label for="difficulty-normal">보통</label>
-              <input id="difficulty-hard" name="difficulty" type="radio" />
-              <label for="difficulty-hard">?�려?�</label>
-            </div>
-
-            <label for="quest-deadline">?�한 ?�간</label>
-            <select class="xp-select" id="quest-deadline">
-              <option>?�늘 23:59</option>
-              <option>2?�간 ??/option>
-              <option>?�일 ?�전 9:00</option>
-            </select>
-          </form>
-
-          <div class="quest-footer">
-            <span class="reward">?�상 보상: EXP 20</span>
-            <button class="xp-button" id="complete-demo" type="button">?�료 ?�연</button>
-          </div>
-        </div>
+      <section class="window window--setup is-active" data-window="setup">
+        <header class="titlebar"><span class="titlebar__icon">M</span><span class="titlebar__name">Manager.exe 설치 마법사</span><div class="window-controls"><button class="window-control">_</button><button class="window-control">□</button><button class="window-control window-control--close" data-close="setup">×</button></div></header>
+        <div class="window-body"><p class="wizard-lead">전자 생물 매니저를 깨울 준비를 할게요.</p><form class="wizard-grid"><label>이름</label><input class="xp-input" value="김동민" /><label>닉네임</label><input class="xp-input" value="루카스" /><label>함께 키울 목표</label><textarea class="xp-textarea">정보처리기사 자격증 취득</textarea><label>하루 가능 시간</label><select class="xp-select"><option>15분</option><option selected>30분</option><option>60분</option></select><span>퀘스트 크기</span><div class="segmented"><input id="size-small" name="size" type="radio" checked /><label for="size-small">아주 작게</label><input id="size-normal" name="size" type="radio" /><label for="size-normal">보통</label><input id="size-hard" name="size" type="radio" /><label for="size-hard">도전적</label></div><span>매니저 말투</span><div class="segmented"><input id="tone-calm" name="tone" type="radio" checked /><label for="tone-calm">차분함</label><input id="tone-friend" name="tone" type="radio" /><label for="tone-friend">친구 같음</label><input id="tone-firm" name="tone" type="radio" /><label for="tone-firm">단호함</label></div></form><div class="window-footer"><button class="xp-button">이전</button><button class="xp-button xp-button--primary" data-action="wake-manager">매니저 깨우기</button></div></div>
       </section>
-
-      <section class="window window--manager" id="manager-window" data-window="manager">
-        <header class="titlebar">
-          <span class="titlebar__icon" aria-hidden="true">??/span>
-          <span class="titlebar__name">매니?�</span>
-          <div class="window-controls">
-            <button class="window-control" type="button" aria-label="최소??>_</button>
-            <button class="window-control" type="button" aria-label="최�???>??/button>
-            <button class="window-control window-control--close" type="button" data-close="manager" aria-label="?�기">×</button>
-          </div>
-        </header>
-
-        <div class="window-body">
-          <div class="manager-stage">
-            <div class="manager-name">??루�? ??/div>
-
-            <div class="manager-visual">
-              <div class="reaction-bubble" id="reaction-bubble" aria-hidden="true"></div>
-              <img class="manager-sprite" src="./assets/lumi-manager.png" alt="분홍???�자 ?�물 매니?� 루�?" />
-            </div>
-
-            <div class="manager-progress">
-              <span class="level">Lv.1</span>
-              <div
-                class="exp-bar"
-                role="progressbar"
-                aria-label="루�? 경험�?
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow="20"
-              >
-                <div class="exp-bar__fill" id="exp-fill"></div>
-              </div>
-              <span class="exp-value" id="exp-value">20 / 100 EXP</span>
-            </div>
-
-            <div class="manager-status">
-              <span class="status-pixel" id="status-icon" aria-hidden="true">..</span>
-              <span id="status-label">기다리는 �?/span>
-            </div>
-          </div>
-
-          <div class="dialogue-panel" id="dialogue">
-            기다리고 ?�었?? ?�늘 ??분량?� ?��? ?�해????
-          </div>
-        </div>
-      </section>
+      <section class="window window--created" data-window="created" hidden><header class="titlebar"><span class="titlebar__icon">◇</span><span class="titlebar__name">Manager Created</span><div class="window-controls"><button class="window-control">_</button><button class="window-control">□</button><button class="window-control window-control--close" data-close="created">×</button></div></header><div class="window-body"><p class="created-lead">매니저가 깨어났어요.</p><div class="created-card"><img src="./assets/lumi-manager.png" alt="루미" /><div><strong>◇ 루미 ◇</strong><span>전자 생물형 페이스메이커</span><br /><small>목표를 오늘의 퀘스트로 나누고 실패하면 다음 분량을 다시 맞춰요.</small></div></div><div class="window-footer"><button class="xp-button xp-button--primary" data-action="enter-desktop">데스크톱으로 이동</button></div></div></section>
+      <section class="window window--quest" data-window="quest" hidden><header class="titlebar"><span class="titlebar__icon">Q</span><span class="titlebar__name">오늘의 퀘스트</span><div class="window-controls"><button class="window-control">_</button><button class="window-control">□</button><button class="window-control window-control--close" data-close="quest">×</button></div></header><div class="window-body"><div class="quest-summary"><span>오늘 수행할 퀘스트 초안</span><strong>3 / 4 완료</strong></div><form class="quest-form"><label>제목</label><input class="xp-input" id="quest-title" value="데이터베이스 개념 15분 공부" /><label>유형</label><select class="xp-select"><option>시간형</option><option>양적형</option><option>행동형</option></select><label>분량</label><div class="form-pair"><input class="xp-input" type="number" min="5" value="15" /><select class="xp-select"><option>분</option><option>페이지</option><option>회</option></select></div><span>난이도</span><div class="difficulty"><input id="difficulty-easy" name="difficulty" type="radio" /><label for="difficulty-easy">쉬움</label><input id="difficulty-normal" name="difficulty" type="radio" checked /><label for="difficulty-normal">보통</label><input id="difficulty-hard" name="difficulty" type="radio" /><label for="difficulty-hard">어려움</label></div><label>제한 시간</label><select class="xp-select"><option>오늘 23:59</option><option>2시간 뒤</option><option>내일 오전 9:00</option></select></form><div class="quest-footer"><span class="reward">예상 보상: EXP 20</span><button class="xp-button xp-button--primary" data-action="accept-quest">수락</button></div></div></section>
+      <section class="window window--runner" data-window="runner" hidden><header class="titlebar"><span class="titlebar__icon">▶</span><span class="titlebar__name">QuestRunner.exe</span><div class="window-controls"><button class="window-control">_</button><button class="window-control">□</button><button class="window-control window-control--close" data-close="runner">×</button></div></header><div class="window-body"><div class="runner-menu"><span>File</span><span>Quest</span><span>Help</span></div><div class="runner-banner"><span class="run-badge">RUN</span><span id="runner-title">데이터베이스 개념 15분 공부</span></div><div class="runner-grid"><strong>남은 시간</strong><span>04:21:33</span><strong>종료 조건</strong><span>15분 달성</span><strong>보상</strong><span class="reward" id="runner-reward">EXP 20</span></div><div class="progress-pixels"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="window-footer"><button class="xp-button xp-button--primary" data-action="complete-quest">완료했어</button><button class="xp-button" data-action="fail-quest">실패 처리</button></div></div></section>
+      <section class="window window--failure" data-window="failure" hidden><header class="titlebar"><span class="titlebar__icon">!</span><span class="titlebar__name">퀘스트가 소멸했어</span><div class="window-controls"><button class="window-control">_</button><button class="window-control">□</button><button class="window-control window-control--close" data-close="failure">×</button></div></header><div class="window-body"><div class="failure-list"><input id="fail-time" name="failure" type="radio" checked /><label for="fail-time">시간이 부족했다</label><input id="fail-big" name="failure" type="radio" /><label for="fail-big">목표가 너무 컸다</label><input id="fail-focus" name="failure" type="radio" /><label for="fail-focus">집중이 안 됐다</label><input id="fail-health" name="failure" type="radio" /><label for="fail-health">컨디션이 좋지 않았다</label><input id="fail-forget" name="failure" type="radio" /><label for="fail-forget">까먹었다</label></div><div class="window-footer"><button class="xp-button xp-button--primary" data-action="request-recovery">복구 퀘스트 받기</button></div></div></section>
+      <section class="window window--recovery" data-window="recovery" hidden><header class="titlebar"><span class="titlebar__icon">+</span><span class="titlebar__name">복구 퀘스트</span><div class="window-controls"><button class="window-control">_</button><button class="window-control">□</button><button class="window-control window-control--close" data-close="recovery">×</button></div></header><div class="window-body"><p class="recovery-title inset-panel">데이터베이스 핵심 개념 5분 읽기</p><div class="runner-grid"><strong>유형</strong><span>시간형</span><strong>분량</strong><span>5분</span><strong>보상</strong><span class="reward">EXP 5</span></div><div class="window-footer"><button class="xp-button" data-action="edit-recovery">수정</button><button class="xp-button xp-button--primary" data-action="accept-recovery">수락하기</button></div></div></section>
+      <section class="window window--manager" data-window="manager" hidden><header class="titlebar"><span class="titlebar__icon">◇</span><span class="titlebar__name">매니저</span><div class="window-controls"><button class="window-control">_</button><button class="window-control">□</button><button class="window-control window-control--close" data-close="manager">×</button></div></header><div class="window-body"><div class="manager-stage"><div class="manager-name">◇ 루미 ◇</div><div class="manager-visual"><div class="reaction-bubble" id="reaction-bubble"></div><img class="manager-sprite" src="./assets/lumi-manager.png" alt="분홍색 전자 생물 매니저 루미" /></div><div class="manager-progress"><span class="level">Lv.1</span><div class="exp-bar" role="progressbar" aria-label="루미 경험치" aria-valuemin="0" aria-valuemax="100" aria-valuenow="20"><div class="exp-bar__fill" id="exp-fill"></div></div><span class="exp-value" id="exp-value">20 / 100 EXP</span></div><div class="manager-status"><span class="status-pixel" id="status-icon">..</span><span id="status-label">기다리는 중</span></div></div><div class="dialogue-panel" id="dialogue">기다리고 있었어. 오늘 할 분량은 네가 정해도 돼.</div></div></section>
+      <section class="window window--profile" data-window="profile" hidden><header class="titlebar"><span class="titlebar__icon">P</span><span class="titlebar__name">내 프로필</span><div class="window-controls"><button class="window-control">_</button><button class="window-control">□</button><button class="window-control window-control--close" data-close="profile">×</button></div></header><div class="window-body"><form class="profile-form"><label>이름</label><input class="xp-input" value="김동민" /><label>닉네임</label><input class="xp-input" value="루카스" /><label>주요 목표</label><textarea class="xp-textarea">정보처리기사 자격증 취득</textarea><label>가능 시간</label><select class="xp-select"><option selected>30분</option><option>60분</option></select></form><div class="window-footer"><button class="xp-button xp-button--primary">저장</button></div></div></section>
+      <section class="window window--notes" data-window="notes" hidden><header class="titlebar"><span class="titlebar__icon">N</span><span class="titlebar__name">기록 노트</span><div class="window-controls"><button class="window-control">_</button><button class="window-control">□</button><button class="window-control window-control--close" data-close="notes">×</button></div></header><div class="window-body"><div class="notes-list" id="notes-list"><div class="note-row"><span>✓</span><span>온보딩 완료 <small>매니저 생성</small></span><strong>EXP +0</strong></div><div class="note-row"><span>↺</span><span>퀘스트 초안 생성 <small>시간형</small></span><strong>EXP +0</strong></div></div></div></section>
+      <section class="window window--profile" data-window="trash" hidden><header class="titlebar"><span class="titlebar__icon">T</span><span class="titlebar__name">휴지통</span><div class="window-controls"><button class="window-control">_</button><button class="window-control">□</button><button class="window-control window-control--close" data-close="trash">×</button></div></header><div class="window-body trash-body">비어 있음</div></section>
     </main>
-
-    <footer class="taskbar">
-      <button class="start-button" type="button">
-        <span class="start-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
-        ?�작
-      </button>
-
-      <div class="task-buttons" aria-label="?�린 �?>
-        <button class="task-button is-active" type="button" data-task="quest">
-          <span aria-hidden="true">Q</span>
-          <span>?�늘???�스??/span>
-        </button>
-        <button class="task-button" type="button" data-task="manager">
-          <span aria-hidden="true">??/span>
-          <span>매니?�</span>
-        </button>
-      </div>
-
-      <div class="tray">
-        <span class="tray-level">Lv.1</span>
-        <time id="clock">14:30</time>
-      </div>
-    </footer>
-
+    <footer class="taskbar"><button class="start-button"><span class="start-mark"><span></span><span></span><span></span><span></span></span>시작</button><div class="task-buttons"><button class="task-button is-open is-active" data-task="setup"><span>M</span><span>설치 마법사</span></button><button class="task-button" data-task="created"><span>◇</span><span>Manager Created</span></button><button class="task-button" data-task="profile"><span>P</span><span>내 프로필</span></button><button class="task-button" data-task="quest"><span>Q</span><span>오늘의 퀘스트</span></button><button class="task-button" data-task="runner"><span>▶</span><span>QuestRunner.exe</span></button><button class="task-button" data-task="manager"><span>◇</span><span>매니저</span></button><button class="task-button" data-task="failure"><span>!</span><span>실패 이유</span></button><button class="task-button" data-task="recovery"><span>+</span><span>복구 퀘스트</span></button><button class="task-button" data-task="notes"><span>N</span><span>기록 노트</span></button><button class="task-button" data-task="trash"><span>T</span><span>휴지통</span></button></div><div class="tray"><span class="tray-level">Lv.1</span><time id="clock">14:30</time></div></footer>
     <script>
       (() => {
-        const windows = new Map(
-          [...document.querySelectorAll("[data-window]")].map((element) => [
-            element.dataset.window,
-            element,
-          ]),
-        );
-        const taskButtons = new Map(
-          [...document.querySelectorAll("[data-task]")].map((element) => [
-            element.dataset.task,
-            element,
-          ]),
-        );
+        const windows = new Map([...document.querySelectorAll("[data-window]")].map((element) => [element.dataset.window, element]));
+        const taskButtons = new Map([...document.querySelectorAll("[data-task]")].map((element) => [element.dataset.task, element]));
         let topLayer = 200;
-
+        let exp = 20;
         function activateWindow(id) {
           const target = windows.get(id);
           if (!target) return;
-
           target.hidden = false;
           topLayer += 1;
           target.style.zIndex = String(topLayer);
-
           windows.forEach((windowElement) => windowElement.classList.remove("is-active"));
           taskButtons.forEach((taskButton) => taskButton.classList.remove("is-active"));
-
           target.classList.add("is-active");
           const taskButton = taskButtons.get(id);
-          if (taskButton) {
-            taskButton.hidden = false;
-            taskButton.classList.add("is-active");
-          }
+          if (taskButton) taskButton.classList.add("is-open", "is-active");
         }
-
         function closeWindow(id) {
           const target = windows.get(id);
           if (!target) return;
           target.hidden = true;
-
           const taskButton = taskButtons.get(id);
-          if (taskButton) taskButton.hidden = true;
-
-          const remaining = [...windows.entries()]
-            .filter(([, element]) => !element.hidden)
-            .sort((a, b) => Number(b[1].style.zIndex || 0) - Number(a[1].style.zIndex || 0));
-
+          if (taskButton) taskButton.classList.remove("is-open", "is-active");
+          const remaining = [...windows.entries()].filter(([, element]) => !element.hidden).sort((a, b) => Number(b[1].style.zIndex || 0) - Number(a[1].style.zIndex || 0));
           if (remaining[0]) activateWindow(remaining[0][0]);
         }
-
+        function setManager(statusIconText, label, message, modifier) {
+          const icon = document.querySelector("#status-icon");
+          icon.textContent = statusIconText;
+          icon.className = ("status-pixel " + (modifier || "")).trim();
+          document.querySelector("#status-label").textContent = label;
+          document.querySelector("#dialogue").textContent = message;
+        }
+        function addNote(symbol, title, meta, reward) {
+          const row = document.createElement("div");
+          row.className = "note-row";
+          row.innerHTML = "<span>" + symbol + "</span><span>" + title + " <small>" + meta + "</small></span><strong>" + reward + "</strong>";
+          document.querySelector("#notes-list").prepend(row);
+        }
+        function updateExp(nextExp) {
+          exp = nextExp;
+          document.querySelector("#exp-fill").style.width = exp + "%";
+          document.querySelector("#exp-value").textContent = exp + " / 100 EXP";
+          document.querySelector(".exp-bar").setAttribute("aria-valuenow", String(exp));
+        }
         document.querySelectorAll("[data-open]").forEach((button) => {
           button.addEventListener("dblclick", () => activateWindow(button.dataset.open));
           button.addEventListener("click", () => activateWindow(button.dataset.open));
         });
-
-        document.querySelectorAll("[data-close]").forEach((button) => {
-          button.addEventListener("click", (event) => {
-            event.stopPropagation();
-            closeWindow(button.dataset.close);
-          });
-        });
-
-        taskButtons.forEach((button, id) => {
-          button.addEventListener("click", () => activateWindow(id));
-        });
-
+        document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", (event) => { event.stopPropagation(); closeWindow(button.dataset.close); }));
+        taskButtons.forEach((button, id) => button.addEventListener("click", () => activateWindow(id)));
+        document.querySelector("[data-action='wake-manager']").addEventListener("click", () => { closeWindow("setup"); activateWindow("created"); });
+        document.querySelector("[data-action='enter-desktop']").addEventListener("click", () => { closeWindow("created"); activateWindow("quest"); activateWindow("manager"); });
+        document.querySelector("[data-action='accept-quest']").addEventListener("click", () => { closeWindow("quest"); document.querySelector("#runner-title").textContent = document.querySelector("#quest-title").value; document.querySelector("#runner-reward").textContent = "EXP 20"; setManager("▶", "진행 중", "얼른 해치워버리자!", ""); activateWindow("runner"); activateWindow("manager"); });
+        document.querySelector("[data-action='complete-quest']").addEventListener("click", () => { closeWindow("runner"); const reactionBubble = document.querySelector("#reaction-bubble"); reactionBubble.classList.remove("is-visible"); void reactionBubble.offsetWidth; reactionBubble.classList.add("is-visible"); updateExp(Math.min(100, exp + 20)); setManager("★", "함께 성장했어", "오늘의 한걸음을 축하해! 다음에도 여기서 기다릴게.", "is-complete"); addNote("✓", document.querySelector("#runner-title").textContent, "완료", "EXP +20"); activateWindow("manager"); activateWindow("notes"); });
+        document.querySelector("[data-action='fail-quest']").addEventListener("click", () => { closeWindow("runner"); setManager("↻", "리밸런싱", "이번 기록을 보고 다음 분량을 다시 맞춰볼게.", "is-rebalance"); activateWindow("failure"); activateWindow("manager"); });
+        document.querySelector("[data-action='request-recovery']").addEventListener("click", () => { closeWindow("failure"); addNote("×", document.querySelector("#runner-title").textContent, "시간 부족", "EXP +0"); setManager("+", "복구 준비", "다시 시작할 수 있는 작은 분량으로 준비했어.", "is-rebalance"); activateWindow("recovery"); activateWindow("manager"); });
+        document.querySelector("[data-action='edit-recovery']").addEventListener("click", () => { closeWindow("recovery"); activateWindow("quest"); });
+        document.querySelector("[data-action='accept-recovery']").addEventListener("click", () => { closeWindow("recovery"); document.querySelector("#runner-title").textContent = "데이터베이스 핵심 개념 5분 읽기"; document.querySelector("#runner-reward").textContent = "EXP 5"; setManager("▶", "복구 진행", "이번에는 더 가벼운 마음으로 가보자!", ""); activateWindow("runner"); activateWindow("manager"); });
         windows.forEach((windowElement, id) => {
           windowElement.addEventListener("pointerdown", () => activateWindow(id));
           const titlebar = windowElement.querySelector(".titlebar");
           let dragState = null;
-          let mouseDragState = null;
-
           titlebar.addEventListener("pointerdown", (event) => {
             if (event.target.closest("button") || window.matchMedia("(max-width: 560px)").matches) return;
-
             const rect = windowElement.getBoundingClientRect();
-            dragState = {
-              pointerId: event.pointerId,
-              offsetX: event.clientX - rect.left,
-              offsetY: event.clientY - rect.top,
-            };
+            dragState = { pointerId: event.pointerId, offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top };
             titlebar.setPointerCapture(event.pointerId);
           });
-
           titlebar.addEventListener("pointermove", (event) => {
             if (!dragState || dragState.pointerId !== event.pointerId) return;
-
             const maxX = window.innerWidth - windowElement.offsetWidth;
             const maxY = window.innerHeight - windowElement.offsetHeight - 42;
-            const nextX = Math.min(Math.max(0, event.clientX - dragState.offsetX), Math.max(0, maxX));
-            const nextY = Math.min(Math.max(0, event.clientY - dragState.offsetY), Math.max(0, maxY));
-
-            windowElement.style.left = `${nextX}px`;
-            windowElement.style.top = `${nextY}px`;
+            windowElement.style.left = Math.min(Math.max(0, event.clientX - dragState.offsetX), Math.max(0, maxX)) + "px";
+            windowElement.style.top = Math.min(Math.max(0, event.clientY - dragState.offsetY), Math.max(0, maxY)) + "px";
+            windowElement.style.right = "auto";
+            windowElement.style.transform = "none";
           });
-
           titlebar.addEventListener("pointerup", (event) => {
-            if (dragState?.pointerId === event.pointerId) {
+            if (dragState && dragState.pointerId === event.pointerId) {
               dragState = null;
               titlebar.releasePointerCapture(event.pointerId);
             }
           });
-
-          titlebar.addEventListener("mousedown", (event) => {
-            if (
-              event.button !== 0 ||
-              event.target.closest("button") ||
-              window.matchMedia("(max-width: 560px)").matches
-            ) {
-              return;
-            }
-
-            const rect = windowElement.getBoundingClientRect();
-            mouseDragState = {
-              offsetX: event.clientX - rect.left,
-              offsetY: event.clientY - rect.top,
-            };
-            event.preventDefault();
-          });
-
-          document.addEventListener("mousemove", (event) => {
-            if (!mouseDragState) return;
-
-            const maxX = window.innerWidth - windowElement.offsetWidth;
-            const maxY = window.innerHeight - windowElement.offsetHeight - 42;
-            const nextX = Math.min(Math.max(0, event.clientX - mouseDragState.offsetX), Math.max(0, maxX));
-            const nextY = Math.min(Math.max(0, event.clientY - mouseDragState.offsetY), Math.max(0, maxY));
-
-            windowElement.style.left = `${nextX}px`;
-            windowElement.style.top = `${nextY}px`;
-            windowElement.style.right = "auto";
-          });
-
-          document.addEventListener("mouseup", () => {
-            mouseDragState = null;
-          });
         });
-
-        const completeButton = document.querySelector("#complete-demo");
-        const reactionBubble = document.querySelector("#reaction-bubble");
-        const statusIcon = document.querySelector("#status-icon");
-        const statusLabel = document.querySelector("#status-label");
-        const dialogue = document.querySelector("#dialogue");
-        const expFill = document.querySelector("#exp-fill");
-        const expValue = document.querySelector("#exp-value");
-        const progress = document.querySelector(".exp-bar");
-
-        completeButton.addEventListener("click", () => {
-          activateWindow("manager");
-          reactionBubble.classList.remove("is-visible");
-          void reactionBubble.offsetWidth;
-          reactionBubble.classList.add("is-visible");
-
-          statusIcon.textContent = "??;
-          statusIcon.classList.add("is-complete");
-          statusLabel.textContent = "?�께 ?�장?�어";
-          dialogue.textContent = "?�늘???��? 걸음???�았?? ?�음?�도 ?�기??기다릴게.";
-          expFill.style.width = "40%";
-          expValue.textContent = "40 / 100 EXP";
-          progress.setAttribute("aria-valuenow", "40");
-        });
-
         const clock = document.querySelector("#clock");
         function updateClock() {
-          clock.textContent = new Intl.DateTimeFormat("ko-KR", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          }).format(new Date());
+          clock.textContent = new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
         }
         updateClock();
         window.setInterval(updateClock, 30000);
@@ -1100,4 +515,3 @@
     </script>
   </body>
 </html>
-
