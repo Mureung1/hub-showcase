@@ -2,7 +2,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server/server.mjs",
+    "api": "node server/server.mjs"
   },
   "dependencies": {
     "react": "^19.2.7",

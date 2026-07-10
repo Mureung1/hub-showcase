@@ -36,7 +36,7 @@
   -> OnboardingSummary
 ```
 
-초기 구현에서는 `analyzeContext()`가 더미 데이터를 반환한다. 이후 같은 함수 내부만 API 호출로 교체한다.
+현재 구현에서는 `analyzeContext()`가 `/api/context-analysis`를 호출한다. Vite 개발 서버와 `server/server.mjs`가 같은 API 계약을 제공하며, API 키가 없는 환경에서는 `local-heuristic` mock provider가 동작한다.
 
 ## 5. 디렉터리 구조 제안
 
@@ -56,6 +56,10 @@ src/
     context.ts
   services/
     analyzeContext.ts
+server/
+  contextAnalysisCore.mjs
+  contextAnalysisApi.mjs
+  server.mjs
 ```
 
 ## 6. 핵심 타입 정의
@@ -86,7 +90,12 @@ export type PerspectiveItem = {
 
 export type ContextAnalysisResult = {
   projectTitle: string;
-  contextSummary: string[];
+  summary: {
+    projectTitle: string;
+    overview: string[];
+    sourceLength: number;
+    generatedAt: string;
+  };
   keyTerms: {
     term: string;
     meaning: string;
@@ -96,43 +105,73 @@ export type ContextAnalysisResult = {
     reason: string;
     status: "confirmed" | "tentative" | "unclear";
   }[];
-  perspectives: PerspectiveItem[];
-  unresolvedQuestions: string[];
+  participants: PerspectiveItem[];
+  questions: {
+    question: string;
+    reason: string;
+    ownerHint: string;
+  }[];
   knowledgeMap: {
     nodes: KnowledgeNode[];
     links: KnowledgeLink[];
   };
-  onboardingSummary: string[];
+  onboardingSummary: {
+    items: string[];
+    currentDecisions: string[];
+    remainingQuestions: string[];
+    shareText: string;
+  };
 };
 ```
 
 ## 7. 서비스 함수
 
-### 7.1 초기 더미 분석 함수
+### 7.1 현재 API 연동 함수
 
 ```ts
-export async function analyzeContext(input: string): Promise<ContextAnalysisResult> {
-  return sampleAnalysis;
+export async function analyzeContext(
+  projectTitle: string,
+  inputText: string,
+): Promise<ContextAnalysisResult>
+```
+
+### 7.2 API 계약
+
+```http
+POST /api/context-analysis
+Content-Type: application/json
+```
+
+요청:
+
+```json
+{
+  "projectTitle": "프로젝트 이름",
+  "rawText": "회의록, 조사 메모, 피드백, 결정사항"
 }
 ```
 
-### 7.2 추후 API 연동 함수
+오류 응답:
 
-```ts
-export async function analyzeContext(input: string): Promise<ContextAnalysisResult> {
-  const response = await fetch("/api/analyze-context", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ input }),
-  });
-
-  if (!response.ok) {
-    throw new Error("맥락 분석에 실패했습니다.");
+```json
+{
+  "error": {
+    "code": "RAW_TEXT_TOO_SHORT",
+    "message": "회의록, 메모, 피드백을 120자 이상 입력하세요.",
+    "details": {
+      "minLength": 120,
+      "currentLength": 30
+    }
   }
-
-  return response.json();
 }
 ```
+
+환경변수:
+
+| 이름 | 설명 |
+| --- | --- |
+| `MODU_BRAIN_ANALYSIS_PROVIDER` | 현재는 `mock` 또는 미설정 사용 |
+| `MODU_BRAIN_LLM_API_KEY` | 추후 외부 LLM 연동 시 서버에서만 사용 |
 
 ## 8. 화면 요구사항
 
@@ -177,15 +216,33 @@ type AnalyzeState =
 | API 실패 | 다시 시도 버튼 표시 |
 | JSON 파싱 실패 | 원문 응답을 보여주지 않고 오류 메시지 표시 |
 | 결과 일부 누락 | 빈 상태 UI 표시 |
+| API 미실행 | 샘플 데이터를 몰래 표시하지 않고 연결 오류를 표시 |
 
-## 11. 보안 및 개인정보
+## 11. 팀원별 관점 에이전트 확장
+
+MVP에서는 별도의 자율 에이전트 프레임워크를 도입하지 않는다. 대신 입력 기록에서 확인 가능한 발언과 역할만 근거로 `participantAgents` 결과를 생성한다.
+
+분석 순서:
+
+1. 참여자 이름과 발언 문장을 찾는다.
+2. 각 참여자의 역할, 우선순위, 우려, 질문을 구조화한다.
+3. 참여자별 해석 차이와 공통 합의점을 비교한다.
+4. 공유 에이전트가 다음 회의 질문과 온보딩 요약으로 종합한다.
+
+개인정보 원칙:
+
+- 팀원의 성격을 추정하지 않는다.
+- 말투나 인격 자체를 단정하지 않는다.
+- 입력 기록에 근거가 있는 `프로젝트 관점`만 UI에 표시한다.
+
+## 12. 보안 및 개인정보
 
 - 사용자가 민감한 개인정보를 입력하지 않도록 안내한다.
 - API 키는 클라이언트에 노출하지 않는다.
 - 실제 API 연동 시 서버 또는 서버리스 함수에서 LLM 요청을 처리한다.
 - 입력 원문 저장은 MVP에서 제외한다.
 
-## 12. 테스트 계획
+## 13. 테스트 계획
 
 - `npm run build`가 통과해야 한다.
 - 빈 입력 상태에서 분석 버튼이 비활성화되는지 확인한다.
@@ -193,7 +250,7 @@ type AnalyzeState =
 - 더미 분석 결과가 모든 섹션에 렌더링되는지 확인한다.
 - 긴 텍스트가 모바일 화면에서 레이아웃을 깨지 않는지 확인한다.
 
-## 13. 구현 순서
+## 14. 구현 순서
 
 1. `types/context.ts` 작성
 2. `data/sampleAnalysis.ts` 작성

@@ -1,10 +1,10 @@
 import type { PerspectiveItem } from "../types/context";
 
 type PerspectiveTableProps = {
-  perspectives: PerspectiveItem[];
+  participants: PerspectiveItem[];
 };
 
-function PerspectiveTable({ perspectives }: PerspectiveTableProps) {
+function PerspectiveTable({ participants }: PerspectiveTableProps) {
   return (
     <section className="result-panel wide" aria-labelledby="perspective-title">
       <div className="panel-heading compact">
@@ -24,7 +24,7 @@ function PerspectiveTable({ perspectives }: PerspectiveTableProps) {
             </tr>
           </thead>
           <tbody>
-            {perspectives.map((item) => (
+            {participants.map((item) => (
               <tr key={item.actor}>
                 <td>{item.actor}</td>
                 <td>{item.role}</td>

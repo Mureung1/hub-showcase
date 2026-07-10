@@ -106,6 +106,9 @@ flowchart TD
 - `docs/modu-brain-design-skill.md`에 앞으로 반복 적용할 나만의 Design Skill을 정리했습니다.
 - `docs/figma-handoff.md`에 Figma 화면과 React 컴포넌트 연결 기준을 정리했습니다.
 - `docs/figma-board-preview.html`에 Figma 페이지 구조를 HTML 보드 형태로 시각화했습니다.
+- `/api/context-analysis` 개발용 API를 추가해 실제 분석 버튼이 API를 호출하도록 연결했습니다.
+- API 입력 검증, 오류 응답, UI 오류 상태를 구분했습니다.
+- 팀원별 관점 에이전트 확장 타입과 문서 기준을 추가했습니다.
 - React + TypeScript 기반 웹 프로토타입을 구현했습니다.
 - 입력, 분석 요약, 개요 탭, 지식맵 탭, 온보딩 탭을 구성했습니다.
 - Apple 스타일 기준으로 흰색/연회색 배경, 파란색 포인트, 8px 카드 반경을 적용했습니다.
@@ -126,6 +129,9 @@ flowchart TD
 | 샘플 분석 데이터 | `src/data/sampleAnalysis.ts` |
 | 분석 서비스 함수 | `src/services/analyzeContext.ts` |
 | 타입 정의 | `src/types/context.ts` |
+| API 분석 코어 | `server/contextAnalysisCore.mjs` |
+| API 핸들러 | `server/contextAnalysisApi.mjs` |
+| 빌드 결과 서버 | `server/server.mjs` |
 
 ## 9. 내가 설명할 수 있는 부분
 
@@ -142,37 +148,56 @@ flowchart TD
 
 이 순서가 이 서비스의 차별점입니다. 사용자가 바로 `아, 이건 회의 내용을 줄이는 앱이 아니라 팀의 생각 차이를 정리하는 앱이구나`라고 이해하도록 만들고 싶었습니다.
 
-## 10. 아직 이해 못 한 부분
+## 10. API 구현 상태
+
+현재 `맥락 분석하기` 버튼은 더미 함수를 직접 호출하지 않고 `/api/context-analysis`를 호출합니다.
+
+요청:
+
+```json
+{
+  "projectTitle": "프로젝트 이름",
+  "rawText": "회의록, 조사 메모, 피드백, 결정사항"
+}
+```
+
+응답에는 `summary`, `participants`, `decisions`, `questions`, `keyTerms`, `knowledgeMap`, `onboardingSummary`, `participantAgents`가 포함됩니다.
+
+현재 provider는 API 키 없이 동작하는 `local-heuristic` mock provider입니다. 외부 LLM API 키는 클라이언트에 넣지 않고, 추후 서버 환경변수 `MODU_BRAIN_LLM_API_KEY`로만 연결하도록 문서화했습니다.
+
+## 11. 아직 이해 못 한 부분
 
 - 실제 LLM API를 붙였을 때 결정사항, 의견, 미결 질문을 안정적으로 구분하는 방법은 더 실험이 필요합니다.
 - 지식맵 노드가 많아질 경우 어떤 기준으로 줄여야 가장 이해하기 쉬운지 더 검증해야 합니다.
 - 팀 문서를 실제로 입력받을 때 개인정보와 권한 관리를 어떻게 해야 하는지 더 공부가 필요합니다.
 - Figma MCP는 Starter 플랜 호출 한도 때문에 최신 React 탭 화면을 자동 재캡처하는 과정이 제한되었습니다.
 
-## 11. 로컬 확인 방법
+## 12. 로컬 확인 방법
 
 ```bash
 npm install
 npm run dev
 npm run build
+npm run start
 ```
 
 확인 시나리오:
 
 1. 홈 화면에서 `팀의 흩어진 맥락을 하나의 뇌로.` 제목이 보이는지 확인합니다.
-2. `예시 불러오기`를 누르면 입력창이 채워지고 `맥락 분석하기` 버튼이 활성화되는지 확인합니다.
-3. 결과 화면의 `개요 / 지식맵 / 온보딩 요약` 탭이 전환되는지 확인합니다.
-4. 개요 탭에서 `참여자별 관점 차이 → 다음 회의 질문 → 결정사항 → 핵심 용어` 순서로 보이는지 확인합니다.
-5. 모바일 폭에서도 텍스트와 카드가 가로로 넘치지 않는지 확인합니다.
+2. `예시 불러오기`를 누르면 입력창이 채워지고 샘플 결과가 표시되는지 확인합니다.
+3. `맥락 분석하기`를 누르면 `/api/context-analysis` 응답으로 결과가 갱신되는지 확인합니다.
+4. 입력이 너무 짧으면 API 오류 메시지가 샘플 결과로 덮이지 않고 화면에 표시되는지 확인합니다.
+5. 결과 화면의 `개요 / 지식맵 / 온보딩 요약` 탭이 전환되는지 확인합니다.
+6. 모바일 폭에서도 텍스트와 카드가 가로로 넘치지 않는지 확인합니다.
 
-## 12. 새로 알게 된 것
+## 13. 새로 알게 된 것
 
 - 회의 요약만으로는 협업 문제를 충분히 해결하기 어렵고, 결정 배경과 관점 차이를 구조화해야 차별화된 기획이 된다는 점을 알게 되었습니다.
 - Notion AI, Confluence AI, Mem, Obsidian 같은 지식관리 도구와 비교하면서 모두의 뇌가 `문서 저장`이 아니라 `맥락 구조화`에 집중해야 한다는 점을 알게 되었습니다.
 - React 컴포넌트를 화면 단위로 나누면 기획서의 화면 구조를 실제 구현 구조와 연결하기 쉽다는 점을 배웠습니다.
 - Figma나 이미지 산출물은 PR 본문에서 먼저 보일 때 프로젝트를 훨씬 빠르게 이해시킨다는 점을 다른 기획서 사례를 통해 배웠습니다.
 
-## 13. 디자인 산출물
+## 14. 디자인 산출물
 
 - Canva 편집 디자인: https://www.canva.com/d/vv5pLSUhq50coma
 - Figma FigJam 흐름도: https://www.figma.com/board/V5Jke4dsqaoMUOiTEg57tM

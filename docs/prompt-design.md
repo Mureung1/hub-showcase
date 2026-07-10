@@ -12,6 +12,7 @@ LLM은 입력 텍스트를 읽고 다음 정보를 구조화해야 한다.
 - 중요한 용어와 설명
 - 결정사항과 결정 배경
 - 참여자별 관점
+- 참여자별 관점 에이전트 결과
 - 서로 이해가 갈린 지점
 - 미결 질문
 - 공유 지식맵 노드와 연결
@@ -36,9 +37,10 @@ LLM은 입력 텍스트를 읽고 다음 정보를 구조화해야 한다.
 1. 입력에 없는 사실을 만들지 않는다.
 2. 결정된 내용, 의견, 미결 질문을 구분한다.
 3. 사람별 관점 차이를 중립적으로 정리한다.
-4. 불확실한 내용은 status를 "unclear"로 표시한다.
-5. 출력은 반드시 지정된 JSON 스키마만 사용한다.
-6. Markdown 설명을 추가하지 않는다.
+4. 팀원의 성격이나 인격을 추정하지 않고, 입력 기록에 근거가 있는 프로젝트 관점만 정리한다.
+5. 불확실한 내용은 status를 "unclear"로 표시한다.
+6. 출력은 반드시 지정된 JSON 스키마만 사용한다.
+7. Markdown 설명을 추가하지 않는다.
 ```
 
 ## 5. 사용자 프롬프트 템플릿
@@ -57,6 +59,7 @@ LLM은 입력 텍스트를 읽고 다음 정보를 구조화해야 한다.
 - 중요한 용어
 - 결정사항과 이유
 - 참여자별 관점
+- 팀원별 관점 에이전트 결과
 - 미결 질문
 - 공유 지식맵 노드와 연결
 - 새 참여자 온보딩 요약
@@ -69,7 +72,12 @@ LLM은 입력 텍스트를 읽고 다음 정보를 구조화해야 한다.
 ```json
 {
   "projectTitle": "string",
-  "contextSummary": ["string"],
+  "summary": {
+    "projectTitle": "string",
+    "overview": ["string"],
+    "sourceLength": 0,
+    "generatedAt": "string"
+  },
   "keyTerms": [
     {
       "term": "string",
@@ -83,7 +91,7 @@ LLM은 입력 텍스트를 읽고 다음 정보를 구조화해야 한다.
       "status": "confirmed | tentative | unclear"
     }
   ],
-  "perspectives": [
+  "participants": [
     {
       "actor": "string",
       "role": "string",
@@ -92,7 +100,13 @@ LLM은 입력 텍스트를 읽고 다음 정보를 구조화해야 한다.
       "question": "string"
     }
   ],
-  "unresolvedQuestions": ["string"],
+  "questions": [
+    {
+      "question": "string",
+      "reason": "string",
+      "ownerHint": "string"
+    }
+  ],
   "knowledgeMap": {
     "nodes": [
       {
@@ -110,7 +124,27 @@ LLM은 입력 텍스트를 읽고 다음 정보를 구조화해야 한다.
       }
     ]
   },
-  "onboardingSummary": ["string"]
+  "onboardingSummary": {
+    "items": ["string"],
+    "currentDecisions": ["string"],
+    "remainingQuestions": ["string"],
+    "shareText": "string"
+  },
+  "participantAgents": {
+    "views": [
+      {
+        "actor": "string",
+        "role": "string",
+        "priority": "string",
+        "interpretation": "string",
+        "evidence": ["string"],
+        "risk": "string"
+      }
+    ],
+    "agreementPoints": ["string"],
+    "tensionPoints": ["string"],
+    "privacyNote": "string"
+  }
 }
 ```
 
@@ -129,11 +163,16 @@ LLM은 입력 텍스트를 읽고 다음 정보를 구조화해야 한다.
 ```json
 {
   "projectTitle": "모두의 뇌 MVP 기획",
-  "contextSummary": [
-    "팀은 MVP 화면 구성과 발표 방향을 논의했다.",
-    "입력 화면과 분석 결과 화면을 먼저 만드는 방향이 제안되었다.",
-    "서비스 차별점을 시각적으로 보여주는 방식은 아직 결정되지 않았다."
-  ],
+  "summary": {
+    "projectTitle": "모두의 뇌 MVP 기획",
+    "overview": [
+      "팀은 MVP 화면 구성과 발표 방향을 논의했다.",
+      "입력 화면과 분석 결과 화면을 먼저 만드는 방향이 제안되었다.",
+      "서비스 차별점을 시각적으로 보여주는 방식은 아직 결정되지 않았다."
+    ],
+    "sourceLength": 238,
+    "generatedAt": "2026-07-10T00:00:00.000Z"
+  },
   "keyTerms": [
     {
       "term": "MVP",
@@ -151,7 +190,7 @@ LLM은 입력 텍스트를 읽고 다음 정보를 구조화해야 한다.
       "status": "tentative"
     }
   ],
-  "perspectives": [
+  "participants": [
     {
       "actor": "팀원 A",
       "role": "사용자 경험 관점",
@@ -167,9 +206,17 @@ LLM은 입력 텍스트를 읽고 다음 정보를 구조화해야 한다.
       "question": "어떤 기능을 제외할 것인가"
     }
   ],
-  "unresolvedQuestions": [
-    "첫 화면에서 입력창을 먼저 보여줄 것인가, 예시 결과를 먼저 보여줄 것인가?",
-    "분석 결과는 표, 카드, 지식맵 중 무엇을 중심으로 보여줄 것인가?"
+  "questions": [
+    {
+      "question": "첫 화면에서 입력창을 먼저 보여줄 것인가, 예시 결과를 먼저 보여줄 것인가?",
+      "reason": "첫 화면 구성은 사용자가 서비스 목적을 이해하는 속도에 영향을 준다.",
+      "ownerHint": "사용자 흐름 담당"
+    },
+    {
+      "question": "분석 결과는 표, 카드, 지식맵 중 무엇을 중심으로 보여줄 것인가?",
+      "reason": "결과 표현 방식은 서비스 차별점을 보여주는 핵심 화면이다.",
+      "ownerHint": "시각화 담당"
+    }
   ],
   "knowledgeMap": {
     "nodes": [
@@ -194,12 +241,32 @@ LLM은 입력 텍스트를 읽고 다음 정보를 구조화해야 한다.
       }
     ]
   },
-  "onboardingSummary": [
-    "현재 팀은 MVP 화면 구성과 발표 차별점을 논의하고 있다.",
-    "입력 화면과 분석 결과 화면을 먼저 구현하는 방향이 제안되었다.",
-    "결과 표현 방식은 아직 확정되지 않았다.",
-    "다음 회의에서는 첫 화면 구성과 지식맵 표현 방식을 결정해야 한다."
-  ]
+  "onboardingSummary": {
+    "items": [
+      "현재 팀은 MVP 화면 구성과 발표 차별점을 논의하고 있다.",
+      "입력 화면과 분석 결과 화면을 먼저 구현하는 방향이 제안되었다.",
+      "결과 표현 방식은 아직 확정되지 않았다.",
+      "다음 회의에서는 첫 화면 구성과 지식맵 표현 방식을 결정해야 한다."
+    ],
+    "currentDecisions": ["입력 화면과 분석 결과 화면을 우선 구현한다."],
+    "remainingQuestions": ["결과 표현 방식", "첫 화면 구성"],
+    "shareText": "현재 모두의 뇌 MVP는 입력 화면과 분석 결과 화면을 중심으로 기획 중이다."
+  },
+  "participantAgents": {
+    "views": [
+      {
+        "actor": "팀원 A",
+        "role": "사용자 경험 관점",
+        "priority": "첫 화면 이해도",
+        "interpretation": "사용자가 처음 들어왔을 때 바로 이해하는 화면을 가장 중요하게 본다.",
+        "evidence": ["사용자가 처음 들어왔을 때 무엇을 해야 하는지 바로 보여주는 화면이 중요하다고 말했다."],
+        "risk": "첫 화면이 복잡해질 수 있음"
+      }
+    ],
+    "agreementPoints": ["입력 화면과 분석 결과 화면을 우선 구현한다."],
+    "tensionPoints": ["결과 표현 방식을 아직 확정하지 못했다."],
+    "privacyNote": "팀원의 성격을 추정하지 않고 입력 기록에 근거가 있는 프로젝트 관점만 표현한다."
+  }
 }
 ```
 
@@ -235,3 +302,4 @@ LLM 응답을 받은 뒤 프론트엔드 또는 서버에서 다음을 확인한
 - 실제 API 연동 시 이 프롬프트를 서버 함수에 적용한다.
 - 결과 품질을 비교하기 위해 같은 입력으로 여러 번 테스트한다.
 - 지식맵 노드가 너무 많아질 경우 상위 8개만 표시하는 규칙을 추가한다.
+- 팀원별 관점 에이전트는 성격 추론이 아니라 근거 기반 프로젝트 관점으로 제한한다.

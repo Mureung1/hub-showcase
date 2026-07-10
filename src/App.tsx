@@ -8,32 +8,61 @@ import PerspectiveTable from "./components/PerspectiveTable";
 import QuestionList from "./components/QuestionList";
 import SummaryPanel from "./components/SummaryPanel";
 import { sampleAnalysis, sampleInput } from "./data/sampleAnalysis";
-import { analyzeContext } from "./services/analyzeContext";
+import { ContextAnalysisRequestError, analyzeContext } from "./services/analyzeContext";
 import type { ContextAnalysisResult } from "./types/context";
 
 type ResultTab = "overview" | "map" | "onboarding";
+type AnalysisStatus = "sample" | "loading" | "success" | "error";
 
 function App() {
   const [projectTitle, setProjectTitle] = useState("모두의 뇌 MVP");
   const [inputText, setInputText] = useState("");
   const [analysisResult, setAnalysisResult] = useState<ContextAnalysisResult>(sampleAnalysis);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>("sample");
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ResultTab>("overview");
 
   const handleLoadSample = () => {
     setProjectTitle(sampleAnalysis.projectTitle);
     setInputText(sampleInput);
     setAnalysisResult(sampleAnalysis);
+    setAnalysisStatus("sample");
+    setAnalysisError(null);
     setActiveTab("overview");
   };
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
-    const result = await analyzeContext(projectTitle, inputText);
-    setAnalysisResult(result);
-    setActiveTab("overview");
-    setIsAnalyzing(false);
+    setAnalysisStatus("loading");
+    setAnalysisError(null);
+
+    try {
+      const result = await analyzeContext(projectTitle, inputText);
+      setAnalysisResult(result);
+      setAnalysisStatus("success");
+      setActiveTab("overview");
+    } catch (error) {
+      setAnalysisStatus("error");
+      setAnalysisError(getAnalysisErrorMessage(error));
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
+
+  const badgeLabel =
+    analysisStatus === "loading"
+      ? "API 분석 중"
+      : analysisStatus === "success"
+        ? `${analysisResult.provider.name} 분석 결과`
+        : analysisStatus === "error"
+          ? "분석 오류"
+          : "예시 데이터 데모";
+
+  const analysisNotice =
+    analysisStatus === "success"
+      ? "분석 API 응답을 기준으로 결과가 갱신되었습니다."
+      : "예시는 샘플 데이터이며, 분석 버튼은 실제 /api/context-analysis를 호출합니다.";
 
   return (
     <main className="app-shell">
@@ -99,6 +128,8 @@ function App() {
           projectTitle={projectTitle}
           inputText={inputText}
           isAnalyzing={isAnalyzing}
+          analysisError={analysisError}
+          analysisNotice={analysisNotice}
           onProjectTitleChange={setProjectTitle}
           onInputTextChange={setInputText}
           onLoadSample={handleLoadSample}
@@ -112,7 +143,7 @@ function App() {
           <div>
             <p className="section-kicker">Result View</p>
             <h2>분석 결과</h2>
-            <span className="demo-badge">더미 데이터 데모</span>
+            <span className={`demo-badge ${analysisStatus}`}>{badgeLabel}</span>
           </div>
 
           <div className="tab-list" role="tablist" aria-label="결과 보기 방식">
@@ -148,8 +179,8 @@ function App() {
 
         {activeTab === "overview" ? (
           <div className="results-grid overview-grid" role="tabpanel">
-            <PerspectiveTable perspectives={analysisResult.perspectives} />
-            <QuestionList questions={analysisResult.unresolvedQuestions} />
+            <PerspectiveTable participants={analysisResult.participants} />
+            <QuestionList questions={analysisResult.questions} />
             <DecisionList decisions={analysisResult.decisions} />
             <KeyTerms terms={analysisResult.keyTerms} />
           </div>
@@ -163,12 +194,24 @@ function App() {
 
         {activeTab === "onboarding" ? (
           <div className="results-grid single-grid" role="tabpanel">
-            <OnboardingSummary items={analysisResult.onboardingSummary} />
+            <OnboardingSummary summary={analysisResult.onboardingSummary} />
           </div>
         ) : null}
       </section>
     </main>
   );
+}
+
+function getAnalysisErrorMessage(error: unknown) {
+  if (error instanceof ContextAnalysisRequestError) {
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "알 수 없는 분석 오류가 발생했습니다.";
 }
 
 export default App;

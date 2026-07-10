@@ -1,8 +1,10 @@
+import type { OnboardingSummary as OnboardingSummaryResult } from "../types/context";
+
 type OnboardingSummaryProps = {
-  items: string[];
+  summary: OnboardingSummaryResult;
 };
 
-function OnboardingSummary({ items }: OnboardingSummaryProps) {
+function OnboardingSummary({ summary }: OnboardingSummaryProps) {
   return (
     <section className="result-panel" aria-labelledby="onboarding-title">
       <div className="panel-heading compact">
@@ -11,10 +13,15 @@ function OnboardingSummary({ items }: OnboardingSummaryProps) {
       </div>
 
       <ol className="onboarding-list">
-        {items.map((item) => (
+        {summary.items.map((item) => (
           <li key={item}>{item}</li>
         ))}
       </ol>
+
+      <div className="onboarding-share">
+        <strong>공유 문장</strong>
+        <p>{summary.shareText}</p>
+      </div>
     </section>
   );
 }

@@ -62,6 +62,33 @@ npm install
 npm run dev
 ```
 
+Vite 개발 서버는 `/api/context-analysis` 개발용 API를 함께 제공합니다.
+
+빌드 결과를 같은 API와 함께 확인하려면 다음 순서로 실행합니다.
+
+```bash
+npm run build
+npm run start
+```
+
+## 맥락 분석 API
+
+```http
+POST /api/context-analysis
+Content-Type: application/json
+```
+
+요청:
+
+```json
+{
+  "projectTitle": "프로젝트 이름",
+  "rawText": "회의록, 조사 메모, 피드백, 결정사항"
+}
+```
+
+응답은 `summary`, `participants`, `decisions`, `questions`, `keyTerms`, `knowledgeMap`, `onboardingSummary`, `participantAgents`를 포함합니다. 현재는 API 키 없이 동작하는 `local-heuristic` mock provider이며, 외부 LLM 키는 클라이언트 코드에 넣지 않습니다.
+
 ## npm run dev 확인 시나리오
 
 1. 홈 화면에서 `팀의 흩어진 맥락을 하나의 뇌로.` 제목이 보이는지 확인합니다.

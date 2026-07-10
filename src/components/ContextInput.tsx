@@ -2,22 +2,26 @@ type ContextInputProps = {
   projectTitle: string;
   inputText: string;
   isAnalyzing: boolean;
+  analysisError: string | null;
+  analysisNotice: string;
   onProjectTitleChange: (value: string) => void;
   onInputTextChange: (value: string) => void;
   onLoadSample: () => void;
-  onAnalyze: () => void;
+  onAnalyze: () => void | Promise<void>;
 };
 
 function ContextInput({
   projectTitle,
   inputText,
   isAnalyzing,
+  analysisError,
+  analysisNotice,
   onProjectTitleChange,
   onInputTextChange,
   onLoadSample,
   onAnalyze,
 }: ContextInputProps) {
-  const canAnalyze = inputText.trim().length > 0 && !isAnalyzing;
+  const canAnalyze = projectTitle.trim().length > 0 && inputText.trim().length > 0 && !isAnalyzing;
   const textLength = inputText.trim().length;
   const showShortGuide = textLength > 0 && textLength < 500;
 
@@ -60,6 +64,14 @@ function ContextInput({
       <p className="privacy-note">
         민감한 개인정보나 비밀번호는 입력하지 않는 것을 권장합니다.
       </p>
+
+      {analysisError ? (
+        <p className="analysis-message error" role="alert">
+          {analysisError}
+        </p>
+      ) : (
+        <p className="analysis-message">{analysisNotice}</p>
+      )}
 
       <div className="action-row">
         <button className="button secondary" type="button" onClick={onLoadSample}>

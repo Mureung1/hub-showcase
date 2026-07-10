@@ -15,21 +15,21 @@ function SummaryPanel({ result }: SummaryPanelProps) {
 
       <div className="metric-row" aria-label="분석 결과 요약">
         <div>
-          <strong>{result.contextSummary.length}</strong>
+          <strong>{result.summary.overview.length}</strong>
           <span>핵심 요약</span>
         </div>
         <div>
-          <strong>{result.perspectives.length}</strong>
+          <strong>{result.participants.length}</strong>
           <span>관점</span>
         </div>
         <div>
-          <strong>{result.unresolvedQuestions.length}</strong>
+          <strong>{result.questions.length}</strong>
           <span>미결 질문</span>
         </div>
       </div>
 
       <ol className="summary-list">
-        {result.contextSummary.map((item) => (
+        {result.summary.overview.map((item) => (
           <li key={item}>{item}</li>
         ))}
       </ol>

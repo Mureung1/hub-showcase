@@ -21,9 +21,51 @@ export type PerspectiveItem = {
   question: string;
 };
 
+export type ParticipantAgentView = {
+  actor: string;
+  role: string;
+  priority: string;
+  interpretation: string;
+  evidence: string[];
+  risk: string;
+};
+
+export type ParticipantAgentSynthesis = {
+  views: ParticipantAgentView[];
+  agreementPoints: string[];
+  tensionPoints: string[];
+  privacyNote: string;
+};
+
+export type ContextSummary = {
+  projectTitle: string;
+  overview: string[];
+  sourceLength: number;
+  generatedAt: string;
+};
+
+export type QuestionItem = {
+  question: string;
+  reason: string;
+  ownerHint: string;
+};
+
+export type OnboardingSummary = {
+  items: string[];
+  currentDecisions: string[];
+  remainingQuestions: string[];
+  shareText: string;
+};
+
+export type ProviderInfo = {
+  mode: "mock" | "llm";
+  name: string;
+  usedExternalModel: boolean;
+};
+
 export type ContextAnalysisResult = {
   projectTitle: string;
-  contextSummary: string[];
+  summary: ContextSummary;
   keyTerms: {
     term: string;
     meaning: string;
@@ -33,11 +75,13 @@ export type ContextAnalysisResult = {
     reason: string;
     status: "confirmed" | "tentative" | "unclear";
   }[];
-  perspectives: PerspectiveItem[];
-  unresolvedQuestions: string[];
+  participants: PerspectiveItem[];
+  questions: QuestionItem[];
   knowledgeMap: {
     nodes: KnowledgeNode[];
     links: KnowledgeLink[];
   };
-  onboardingSummary: string[];
+  onboardingSummary: OnboardingSummary;
+  participantAgents: ParticipantAgentSynthesis;
+  provider: ProviderInfo;
 };

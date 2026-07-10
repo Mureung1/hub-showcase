@@ -1,5 +1,7 @@
+import type { QuestionItem } from "../types/context";
+
 type QuestionListProps = {
-  questions: string[];
+  questions: QuestionItem[];
 };
 
 function QuestionList({ questions }: QuestionListProps) {
@@ -12,7 +14,11 @@ function QuestionList({ questions }: QuestionListProps) {
 
       <ul className="question-list">
         {questions.map((question) => (
-          <li key={question}>{question}</li>
+          <li key={question.question}>
+            <strong>{question.question}</strong>
+            <span>{question.reason}</span>
+            <small>{question.ownerHint}</small>
+          </li>
         ))}
       </ul>
     </section>
