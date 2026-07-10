@@ -2,10 +2,17 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { seedProducts } from "../seed";
 import { productRepository } from "../repository/DexieProductRepository";
 import { scanReducer, initialScanState } from "../session/scanReducer";
+import type { SessionMode } from "../session/types";
+import { SessionHeader } from "./SessionHeader";
 import { DevScanInput } from "./DevScanInput";
 import { ScanLineList } from "./ScanLineList";
 
-// 홈 = 스캔 화면. 세션 상태(lines)를 useReducer로 소유하고 레이아웃을 조립한다.
+const MODE_LABEL: Record<SessionMode, string> = {
+  inbound: "입고",
+  outbound: "출고",
+};
+
+// 홈 = 스캔 화면. 세션 상태(mode + lines)를 useReducer로 소유하고 레이아웃을 조립한다.
 export function ScanScreen() {
   const [state, dispatch] = useReducer(scanReducer, initialScanState);
   const [toast, setToast] = useState<string | null>(null);
@@ -24,14 +31,33 @@ export function ScanScreen() {
     toastTimer.current = window.setTimeout(() => setToast(null), 2500);
   }
 
+  // 모드 전환 = 새 세션 시작(lines 리셋). 진행 중 항목이 있으면 확인 후 전환(파괴적 동작 보호).
+  function handleModeChange(next: SessionMode) {
+    if (next === state.mode) return;
+    if (state.lines.length > 0) {
+      const ok = window.confirm(
+        `현재 ${MODE_LABEL[state.mode]} 세션의 ${state.lines.length}개 항목이 초기화됩니다. ` +
+          `${MODE_LABEL[next]}로 전환할까요?`
+      );
+      if (!ok) return;
+    }
+    dispatch({ type: "SET_MODE", mode: next });
+  }
+
   async function handleScan(raw: string) {
     const barcode = raw.trim();
     if (barcode === "") return;
     const product = await productRepository.findByBarcode(barcode);
     if (product) {
       dispatch({ type: "SCAN_KNOWN", product });
+      return;
+    }
+    // 미등록 분기 (모두 세션에 추가하지 않음)
+    if (state.mode === "outbound") {
+      // 재고에 없는 유령 물량 차감 방지 — 경고만.
+      showToast("등록·입고 이력이 없는 상품입니다");
     } else {
-      // S1: 미등록은 세션에 넣지 않고 안내만. pending 행·등록 모달은 S4.
+      // 입고 미등록: S4에서 pending 행 + 등록 모달로 대체될 자리. 지금은 안내만.
       showToast(`미등록 상품입니다 · ${barcode}`);
     }
   }
@@ -39,11 +65,13 @@ export function ScanScreen() {
   const totalQty = state.lines.reduce((sum, l) => sum + l.quantity, 0);
 
   return (
-    <div className="app">
+    <div className={`app app--${state.mode}`}>
       <header className="topbar">
         <span className="topbar__brand">셰르파</span>
         <span className="topbar__sub">스캔</span>
       </header>
+
+      <SessionHeader mode={state.mode} onChange={handleModeChange} />
 
       <main className="stage">
         <DevScanInput onScan={handleScan} />

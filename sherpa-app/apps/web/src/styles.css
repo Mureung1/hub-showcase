@@ -14,6 +14,15 @@
   /* 브랜드/크롬 — 어둡게, 오직 하나 (sherpa-pos-design 확정) */
   --brand: #1f4436;
 
+  /* 세션 모드 — 입고=밝은 초록(브랜드 딥그린과 명도 구분) / 출고=빨강.
+     -ink는 흰 글씨가 대비를 통과하도록 어둡게 한 텍스트/칩 전용 셰이드. */
+  --inbound: #1f8a54;
+  --inbound-ink: #14663b;
+  --inbound-wash: #eef7f1;
+  --outbound: #d6482f;
+  --outbound-ink: #a5361f;
+  --outbound-wash: #fdefec;
+
   /* 콘텐츠 카테고리 · CTA — 확정만, S1 미사용 */
   --cat-orange: #d98a4e;
   --cat-green: #8cb56a;
@@ -52,6 +61,19 @@ button {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--mode-wash, var(--paper));
+  transition: background 0.25s ease;
+}
+/* 세션 모드에 따라 화면 전체를 물들임 — 현재 모드를 못 놓치게 */
+.app--inbound {
+  --mode: var(--inbound);
+  --mode-ink: var(--inbound-ink);
+  --mode-wash: var(--inbound-wash);
+}
+.app--outbound {
+  --mode: var(--outbound);
+  --mode-ink: var(--outbound-ink);
+  --mode-wash: var(--outbound-wash);
 }
 
 /* ---------- 브랜드/크롬 상단바 ---------- */
@@ -71,6 +93,43 @@ button {
 .topbar__sub {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.72);
+}
+
+/* ---------- 세션 모드 바 ---------- */
+.session-header {
+  border-top: 6px solid var(--mode);
+  background: var(--mode-wash);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.session-header__label {
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--mode-ink);
+}
+.segmented {
+  display: inline-flex;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+}
+.segmented__btn {
+  min-width: 64px;
+  padding: 7px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--inkSoft);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+}
+.segmented__btn.is-active {
+  color: #fff;
+  background: var(--mode-ink);
 }
 
 /* ---------- 스캔 무대 ---------- */
