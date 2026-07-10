@@ -1,0 +1,196 @@
+:root {
+  /* 중립 — 화면 기본 바탕 (기존 src/styles.css 재사용) */
+  --paper: #fbfcf9;
+  --ink: #16241c;
+  --inkSoft: #4c5c52;
+  --line: #dde7df;
+  --mint: #e9f3ec;
+
+  /* 시맨틱 — 상태 신호 (기존 재사용) */
+  --fresh: #1f8a54; /* 성공/정상 */
+  --amber: #e0912a; /* 주의/임박 */
+  --red: #d6482f; /* 재고부족 */
+
+  /* 브랜드/크롬 — 어둡게, 오직 하나 (sherpa-pos-design 확정) */
+  --brand: #1f4436;
+
+  /* 콘텐츠 카테고리 · CTA — 확정만 해두고 Slice 0에서는 미사용 */
+  --cat-orange: #d98a4e;
+  --cat-green: #8cb56a;
+  --cta: #3182f6;
+
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow-card: 0 1px 2px rgba(22, 36, 28, 0.04),
+    0 10px 30px rgba(22, 36, 28, 0.06);
+
+  --font-sans: "IBM Plex Sans KR", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+* {
+  margin: 0;
+}
+body {
+  font-family: var(--font-sans);
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- 브랜드/크롬 상단바 ---------- */
+.topbar {
+  background: var(--brand);
+  color: #fff;
+  padding: 16px 24px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.topbar__brand {
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+.topbar__sub {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* ---------- 스캔 무대 ---------- */
+.stage {
+  flex: 1;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.scan-form {
+  margin: 0;
+}
+.scan-input {
+  width: 100%;
+  padding: 18px 20px;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.scan-input::placeholder {
+  font-family: var(--font-sans);
+  color: var(--inkSoft);
+  opacity: 0.7;
+}
+.scan-input:focus {
+  border-color: var(--brand);
+}
+
+/* ---------- 조회 결과 ---------- */
+.result-idle {
+  color: var(--inkSoft);
+  font-size: 15px;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.result-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left-width: 6px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+}
+.result-card--found {
+  border-left-color: var(--fresh);
+}
+.result-card--notfound {
+  border-left-color: var(--amber);
+}
+
+.result-tag {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.result-tag--found {
+  color: var(--fresh);
+  background: var(--mint);
+}
+.result-tag--notfound {
+  color: #a5641a; /* amber를 배경 대비 통과하도록 살짝 어둡게 (텍스트용) */
+  background: #fbefd8;
+}
+
+.result-name {
+  margin-top: 12px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.result-barcode {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--inkSoft);
+  font-variant-numeric: tabular-nums;
+}
+.result-barcode--lead {
+  margin-top: 12px;
+  font-size: 20px;
+  color: var(--ink);
+}
+.result-next {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+  font-size: 13px;
+  color: var(--inkSoft);
+}
+
+/* ---------- Slice 0 검증용 임시 안내 (실사용 UI 아님) ---------- */
+.devhint {
+  border-top: 1px solid var(--line);
+  padding: 14px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--inkSoft);
+}
+.devhint__label {
+  font-weight: 600;
+}
+.devhint__code {
+  font-family: var(--font-mono);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+}
+.devhint__note {
+  opacity: 0.85;
+}

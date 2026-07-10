@@ -1,0 +1,13 @@
+{
+  "name": "sherpa",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@11.11.0",
+  "description": "셰르파(Sherpa) — 소형 마트용 재고·유통기한 관리 웹앱 워크스페이스",
+  "scripts": {
+    "dev": "pnpm --filter @sherpa/web dev",
+    "build": "pnpm --filter @sherpa/web build",
+    "typecheck": "pnpm --filter @sherpa/web typecheck",
+    "dev:landing": "pnpm --filter freshkeep-landing dev"
+  }
+}
