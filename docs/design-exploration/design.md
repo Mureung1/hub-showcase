@@ -1,6 +1,8 @@
-# 디자인 톤 (탐색용)
+# 디자인 톤 (탐색용, 채택되지 않음)
 
-> 아직 서비스에 최종 채택된 디자인은 아님. 참고 무드보드에서 톤을 추출해 CSS 변수로 정리해둔 것이며, 실제 화면 적용 예시는 [candidates-tone-test.html](candidates-tone-test.html) 참고.
+> **이 톤은 최종 채택되지 않았습니다.** 실제 확정된 디자인 시스템은 [design_handoff_ridesplit/README.md](../../design_handoff_ridesplit/README.md) 참고 (레드/코랄 `#C8102E` 기반). 아래 내용은 초기 무드보드 탐색 기록으로 남겨둠.
+
+참고 무드보드에서 톤을 추출해 CSS 변수로 정리해둔 것이며, 실제 화면 적용 예시는 [candidates-tone-test.html](candidates-tone-test.html) 참고.
 
 ## 특징
 - 배경: 크림/베이지 계열과 세이지 그린 계열의 은은한 그라데이션

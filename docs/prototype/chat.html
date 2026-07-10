@@ -2,20 +2,81 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>그룹 채팅방</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>그룹 채팅방 - RideSplit</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="card">
-    <p class="step">4 / 5 · 그룹 채팅방</p>
-    <h1>그룹이 확정되었어요</h1>
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo-sm">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+            <circle cx="8" cy="10" r="6" fill="#fff" opacity="0.9"></circle>
+            <circle cx="15" cy="10" r="6" fill="#fff" opacity="0.55"></circle>
+            <circle cx="17.5" cy="17.5" r="5.5" fill="#fff"></circle>
+            <text x="17.5" y="20.3" font-size="7" font-weight="800" text-anchor="middle" fill="#8C0E22">₩</text>
+          </svg>
+        </div>
+        <span class="brand-name">RideSplit</span>
+      </div>
+      <div class="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot active"></div>
+        <div class="dot"></div>
+      </div>
+    </div>
 
-    <div class="bubble left">정문에서 만나요</div>
-    <div class="bubble right">네 5분 뒤 도착</div>
+    <div class="screen">
+      <a class="back-btn" href="candidates.html">‹ 이전</a>
 
-    <div class="cost-box">예상 요금: 1인당 4,000원 (3명 기준)</div>
+      <div style="display: flex; align-items: center; gap: 10px; margin: 14px 0 10px;">
+        <div class="avatars-row">
+          <div class="avatar-stack avatar-c1">나</div>
+          <div class="avatar-stack avatar-c2">서</div>
+        </div>
+        <span class="occupancy-badge" id="occupancyBadge">2/4명 모임</span>
+      </div>
+      <h1 class="title sm" id="roomTitle">동행자를 모으는 중이에요</h1>
 
-    <a class="button" href="done.html">탑승 확인</a>
+      <div class="bubble-col">
+        <div class="bubble left">정문에서 만나요</div>
+        <div class="bubble right">네 좋아요, 5분 뒤 도착이에요</div>
+        <div class="bubble left">저도 거의 다 왔어요</div>
+      </div>
+
+      <div class="agree-card" id="agreeCard">
+        <div class="agree-title">정원이 다 차지 않았어요</div>
+        <div class="agree-desc">모두 동의하면 지금 인원(2/4)으로 바로 출발할 수 있어요</div>
+        <button type="button" class="btn-primary" id="agreeBtn">동의하고 출발 확정</button>
+      </div>
+
+      <div class="cost-card" id="costCard" style="display: none;">
+        <div class="cost-label">예상 택시요금</div>
+        <div class="cost-amount">1인당 6,000원</div>
+        <div class="cost-note">총 12,000원 · 2명 기준 · 예상치이며 실제와 다를 수 있어요</div>
+      </div>
+
+      <div class="spacer"></div>
+      <a class="btn-disabled" id="confirmBtnDisabled">전원 동의 후 탑승 확인이 가능해요</a>
+      <a class="btn-primary" id="confirmBtnActive" href="done.html" style="display: none;">탑승 확인</a>
+    </div>
   </div>
+
+  <script>
+    document.getElementById('agreeBtn').addEventListener('click', () => {
+      document.getElementById('agreeCard').style.display = 'none'
+      document.getElementById('costCard').style.display = 'block'
+      document.getElementById('roomTitle').textContent = '그룹이 확정됐어요'
+      const badge = document.getElementById('occupancyBadge')
+      badge.textContent = '2/4명 모임'
+      badge.classList.add('full')
+      document.getElementById('confirmBtnDisabled').style.display = 'none'
+      document.getElementById('confirmBtnActive').style.display = 'block'
+    })
+  </script>
 </body>
 </html>
