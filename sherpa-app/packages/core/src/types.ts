@@ -10,6 +10,8 @@ export interface Product {
   barcode: string;
   /** 상품명 */
   name: string;
+  /** 카테고리 (예: 유제품, 가공식품, 음료 …) */
+  category: string;
   /** 생성 시각, epoch ms */
   createdAt: number;
   /** 수정 시각, epoch ms — 이후 동기화 판단용 */

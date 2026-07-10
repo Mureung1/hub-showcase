@@ -3,10 +3,12 @@ import { db } from "./db";
 
 // 등록됨/미등록 두 분기를 눈으로 확인하기 위한 seed 상품.
 // 여기 없는 바코드를 스캔하면 '미등록' 분기로 갈라진다.
-export const SEED_PRODUCTS: ReadonlyArray<Pick<Product, "barcode" | "name">> = [
-  { barcode: "8801234567890", name: "서울우유 1L" },
-  { barcode: "8809876543210", name: "농심 신라면 (5개입)" },
-  { barcode: "8801111222333", name: "빙그레 바나나맛우유 240ml" },
+export const SEED_PRODUCTS: ReadonlyArray<
+  Pick<Product, "barcode" | "name" | "category">
+> = [
+  { barcode: "8801234567890", name: "서울우유 1L", category: "유제품" },
+  { barcode: "8809876543210", name: "농심 신라면 (5개입)", category: "가공식품" },
+  { barcode: "8801111222333", name: "빙그레 바나나맛우유 240ml", category: "음료" },
 ];
 
 // StrictMode의 이펙트 중복 실행 등으로 seed가 두 번 돌아도
@@ -29,6 +31,7 @@ async function runSeed(): Promise<void> {
       id: newId(),
       barcode: p.barcode,
       name: p.name,
+      category: p.category,
       createdAt: t,
       updatedAt: t,
     })
