@@ -290,37 +290,6 @@ class RecordingRuntimeRunLogPersistence implements RuntimeRunLogPersistence {
   readonly savedLogs: RuntimeRunLog[] = []
 
   private readonly logs = new Map<string, RuntimeRunLog>()
-
-  constructor(initialLogs: RuntimeRunLog[] = []) {
-    for (const log of initialLogs) {
-      this.logs.set(log.runId, cloneTestLog(log))
-    }
-  }
-
-  async load(): Promise<RuntimeRunLog[]> {
-    return [...this.logs.values()].map(cloneTestLog)
-  }
-
-  async save(log: RuntimeRunLog): Promise<{ removedRunIds: string[] }> {
-    const savedLog = cloneTestLog(log)
-
-    this.savedLogs.push(savedLog)
-    this.logs.set(log.runId, savedLog)
-
-    return { removedRunIds: [] }
-  }
-
-  async remove(runId: string): Promise<void> {
-    this.logs.delete(runId)
-  }
-}
-
-class BlockingRecordingRuntimeRunLogPersistence
-  implements RuntimeRunLogPersistence
-{
-  readonly savedLogs: RuntimeRunLog[] = []
-
-  private readonly logs = new Map<string, RuntimeRunLog>()
   private nextSaveGate:
     | {
         release: Promise<void>
@@ -537,7 +506,7 @@ test('AgentRuntimeKernel does not become ready or invoke adapters before recover
     startedAt: '2026-07-10T01:00:00.000Z',
     status: 'running',
   })
-  const persistence = new BlockingRecordingRuntimeRunLogPersistence([
+  const persistence = new RecordingRuntimeRunLogPersistence([
     interruptedLog,
   ])
   const recoverySaveGate = persistence.blockNextSave()
@@ -813,7 +782,7 @@ test('AgentRuntimeKernel checkpoints each fixed window during continuous streami
 
 test('AgentRuntimeKernel keeps checkpoint ordering independent between runs', async () => {
   const adapter = new PushRuntimeAdapter()
-  const persistence = new BlockingRecordingRuntimeRunLogPersistence()
+  const persistence = new RecordingRuntimeRunLogPersistence()
   const scheduler = new ManualCheckpointScheduler()
   const generatedRunIds = [
     '11111111-1111-4111-8111-111111111111',
@@ -939,7 +908,7 @@ test('AgentRuntimeKernel saves completed output and debug evidence before publis
 
 test('AgentRuntimeKernel drains an in-flight checkpoint and latest evidence before terminal publication', async () => {
   const adapter = new PushRuntimeAdapter()
-  const persistence = new BlockingRecordingRuntimeRunLogPersistence()
+  const persistence = new RecordingRuntimeRunLogPersistence()
   const scheduler = new ManualCheckpointScheduler()
   const kernel = await AgentRuntimeKernel.create({
     adapters: [adapter],
@@ -1086,7 +1055,7 @@ test('AgentRuntimeKernel serializes cancellation against adapter completion', as
 
 test('AgentRuntimeKernel drains checkpoints before cancelling and terminal cancellation transitions', async () => {
   const adapter = new AdapterConfirmedPushRuntimeAdapter()
-  const persistence = new BlockingRecordingRuntimeRunLogPersistence()
+  const persistence = new RecordingRuntimeRunLogPersistence()
   const scheduler = new ManualCheckpointScheduler()
   const kernel = await AgentRuntimeKernel.create({
     adapters: [adapter],
