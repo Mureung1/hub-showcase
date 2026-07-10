@@ -1,3 +1,9 @@
+## 프로젝트 문서
+
+- [기획서 (Plan)](./plan.md) — 문제 정의, 경쟁 서비스 분석, 핵심 기능 아키텍처
+- [개발 Task 백로그](./backlog.md) — 주차별 Task와 우선순위
+
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
