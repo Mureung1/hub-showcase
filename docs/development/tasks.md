@@ -127,8 +127,8 @@ Outcome: 상권 분석에서 선택한 한 위치의 현장감을 제한된 3D �
 | ID        | 세부 Task                                   | Priority | Status  | Week | Depends on | Acceptance                                          |
 | --------- | ------------------------------------------- | -------- | ------- | ---- | ---------- | --------------------------------------------------- |
 | SCENE-001 | 관평동 촬영 위치·범위·privacy Gate 확정     | P1       | Done    | 4    | EPIC-04    | 관평동 한 장소의 10~20m 범위와 공개 기준이 정해진다 |
-| SCENE-002 | 사람 영역 익명화 sample pipeline 검증       | P1       | Backlog | 4    | SCENE-001  | blur/mask/exclude 결과와 실패 사례를 확인한다       |
-| SCENE-003 | 실제 scene 1개 또는 검증된 대체 viewer 연결 | P1       | Backlog | 4    | SCENE-002  | 사람 눈높이에서 nonblank 장면을 탐색한다            |
+| SCENE-002 | 사람 영역 익명화 sample pipeline 검증       | P1       | In Progress | 4 | SCENE-001 | upload/job은 구현, 실제 blur/mask/exclude 검증이 남았다 |
+| SCENE-003 | 실제 scene 1개 또는 검증된 대체 viewer 연결 | P1       | In Progress | 4 | SCENE-002 | Spark viewer는 구현, CUDA worker의 실제 PLY 검증이 남았다 |
 | SCENE-004 | 대표 시간대 혼잡도 overlay 연결             | P1       | Backlog | 4    | SCENE-003  | 10시/13시/15시/18시 상태가 근거와 함께 바뀐다       |
 
 P0가 늦어지면 EPIC-05 범위를 줄이고 상권 분석 완성도를 우선한다.
@@ -197,3 +197,4 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 | 날짜       | 변경                           | 이유                                                                      |
 | ---------- | ------------------------------ | ------------------------------------------------------------------------- |
 | 2026-07-10 | 4주 Epic/Task 백로그 최초 작성 | 체크리스트와 실행 계획에 흩어진 다음 작업을 하나의 원본으로 통합하기 위해 |
+| 2026-07-11 | SCENE-002~004 구현·검증 경계 반영 | upload/viewer 코드 완료와 실제 GPU 학습 미완료를 구분하기 위해 |

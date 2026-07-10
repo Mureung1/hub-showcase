@@ -5,7 +5,7 @@
 ```text
 구분: 보조/추가기능
 우선순위: P1
-상태: 관평동 촬영 준비 UI 구현, 실제 3DGS asset 연결 전
+상태: upload/job/viewer 구현, 실제 3DGS asset 생성 전
 대상: 대전 유성구 관평동 한 장소
 ```
 
@@ -23,8 +23,11 @@
 ```mermaid
 flowchart LR
     A["연남·홍대·합정"] --> B["2.5D 상권 분석"]
-    C["대전 유성구 관평동"] --> D["촬영 준비"]
-    D --> E["3DGS 한 장면"]
+    C["대전 유성구 관평동"] --> D["360 영상·사진 upload"]
+    D --> E["검증·카메라 복원"]
+    E --> F["Splatfacto 학습"]
+    F --> G["PLY export"]
+    G --> H["Spark web viewer"]
 ```
 
 ```text
@@ -103,6 +106,38 @@ flowchart LR
 → 정제 이미지로 Gaussian Splatting 생성
 → 웹 3DGS viewer에 장면 로드
 ```
+
+현재 자동화된 명령 경계는 다음과 같다.
+
+```text
+ns-process-data images|video
+-> ns-train splatfacto
+-> ns-export gaussian-splat
+```
+
+사용자가 입력한 값은 shell 문자열로 조합하지 않고 고정된 argument list에만 전달한다. 각 job은 `data/scenes/jobs/<uuid>`에 입력 hash, 크기, stage 상태와 실행 log를 분리해 저장한다.
+
+```mermaid
+stateDiagram-v2
+    [*] --> uploaded
+    uploaded --> queued
+    queued --> running: worker ready
+    queued --> blocked: tool 또는 GPU 부족
+    running --> failed: command 오류
+    running --> ready: PLY 확인
+    blocked --> queued: worker에서 재실행
+    failed --> queued: 원인 수정 후 재실행
+```
+
+API 계약:
+
+| Method | Path | 역할 |
+| --- | --- | --- |
+| `GET` | `/api/v1/scenes/toolchain` | FFmpeg, Nerfstudio와 CUDA worker 상태 확인 |
+| `POST` | `/api/v1/scenes/jobs` | 촬영물 저장, 검증과 자동 실행 예약 |
+| `GET` | `/api/v1/scenes/jobs/{id}` | job과 네 단계 상태 조회 |
+| `POST` | `/api/v1/scenes/jobs/{id}/run` | worker 준비 후 재실행 |
+| `GET` | `/api/v1/scenes/jobs/{id}/asset` | 준비된 `scene.ply` 제공 |
 
 ### 6.2 현장 좌표 설정
 
@@ -216,12 +251,15 @@ idle animation
 
 출발지·도착지 또는 이동 방향 데이터가 확보된 경우에만 연속적인 flow animation을 별도 검토한다.
 
-## 9. 렌더링 구조 후보
+## 9. 렌더링 구조
+
+웹은 Three.js와 Spark `SplatMesh`를 lazy-load한다. asset이 준비된 job에서만 renderer bundle을 내려받으며, OrbitControls로 회전·확대·축소한다.
 
 ```text
-Web Gaussian Splatting renderer
-+ 같은 camera를 공유하는 mesh layer
-+ 반복 사람 model의 instanced rendering
+Scene PLY endpoint
+-> SparkRenderer + SplatMesh
+-> Three.js PerspectiveCamera
+-> OrbitControls
 ```
 
 `deck.gl`은 현장 상세보기의 기본 기술이 아니다. 현장 사람 오브젝트는 지도 Layer가 아니라 3DGS 장면의 local coordinate 안에서 렌더링한다.
@@ -280,17 +318,19 @@ AR
 
 ## 13. 현재 프로토타입 상태
 
-2026-07-11 기준 지도 화면에서 `관평동 3D 장소`를 열어 다음 준비 상태를 조작할 수 있다.
+2026-07-11 기준 지도 화면에서 `관평동 3D 장소`를 열어 다음 기능을 조작할 수 있다.
 
 ```text
 촬영 대상: 대전 유성구 관평동 한 장소
 촬영 범위: 점포 전면과 보도 약 10~20m
 대표 관찰 시간: 10:00 / 13:00 / 15:00 / 18:00
-진행 상태: 대상 확정 → 촬영 예정 → 3DGS 연결
+입력: 360 영상·사진, 일반 영상·사진 묶음
+진행 상태: 입력 검증 → 카메라 복원 → Splatfacto 학습 → PLY export
+worker 상태: GPU 이름·VRAM·필수 tool과 blocked reason 표시
 privacy gate: 원본 비공개, 얼굴·차량번호 등 식별 영역 제외
 ```
 
-현재 화면은 실제 Gaussian Splatting 장면을 흉내 낸 demo asset이 아니다. 촬영 전 준비 상태를 보여주며 `촬영 후 장면 열기`는 실제 자산을 연결하기 전까지 비활성화한다. 관평동은 연남·홍대·합정 상권 비교 목록에도 포함하지 않는다.
+현재 화면은 실제 Gaussian Splatting 장면을 흉내 낸 demo asset이 아니다. upload와 job 상태는 실제 API를 사용하며, PLY가 준비되면 Spark viewer를 연다. 이 개발 PC는 `NVIDIA GeForce MX450 2048MB`이고 Nerfstudio가 설치되지 않아 실제 sample job은 `blocked`로 확인됐다. 최소 기준은 6000MB VRAM이며, 실제 촬영물 학습·비식별화·nonblank canvas 검증은 CUDA worker에서 수행해야 한다. 관평동은 연남·홍대·합정 상권 비교 목록에도 포함하지 않는다.
 
 ## 14. 관련 문서
 

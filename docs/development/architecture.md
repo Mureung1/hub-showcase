@@ -26,8 +26,9 @@ flowchart LR
   end
 
   subgraph back["Back"]
-    api["FastAPI\n/health · /api/v1/scores/evaluate"]
+    api["FastAPI\nscore · scene job API"]
     collector["서울 Open API 수집기"]
+    sceneWorker["Nerfstudio worker\nprocess · train · export"]
   end
 
   subgraph data["Data"]
@@ -35,6 +36,7 @@ flowchart LR
     osm["OpenStreetMap / Overpass"]
     mapdata["상권별 LocalTwin GeoJSON"]
     seoul["서울 열린데이터광장"]
+    sceneJobs["data/scenes/jobs\ninput · job.json · PLY"]
   end
 
   user --> web
@@ -44,6 +46,10 @@ flowchart LR
   web -. "아직 미연결" .-> api
   collector --> seoul
   collector --> raw
+  web -->|"upload · poll"| api
+  api --> sceneWorker
+  sceneWorker --> sceneJobs
+  sceneJobs -->|"Spark viewer"| web
 ```
 
 현재 확인된 상태:
@@ -53,7 +59,7 @@ flowchart LR
 | Front | 자체 GeoJSON 지도와 실제 지도를 전환하고 상권·업종·반경·Layer를 조작하는 React 웹 | 분석 수치는 화면용 snapshot과 규칙 기반 demo 값 |
 | Back  | FastAPI `/health`와 근거 기반 상권 점수 endpoint                       | 실제 DB 조회 endpoint와 Front API 연결 미구현    |
 | Data  | 서울·공공데이터 수집기, canonical SQLite와 OSM 지도 생성기               | 주기적 자동 갱신과 좌표 변환 미구현              |
-| 3D    | 지도 건물과 prefab Layer를 켜고 끄는 시연                             | 실제 Gaussian Splatting scene 미연결            |
+| 3D    | 촬영물 upload, file-backed job, Nerfstudio 명령 pipeline과 Spark viewer | MX450 2GB에서는 학습 불가, 실제 PLY 시각 검증 전 |
 
 ## 3. 4주 목표 구조
 
@@ -133,10 +139,14 @@ flowchart LR
 
 ```text
 지도에서 선택 위치 상세보기
--> 익명화된 scene asset 로드
--> 사람 눈높이 탐색
--> 10시 / 13시 / 15시 / 18시 대표 혼잡도 표시
+-> 360 영상·사진 upload와 hash 검증
+-> worker readiness 확인
+-> ns-process-data -> ns-train splatfacto -> ns-export
+-> PLY asset을 Spark/Three.js로 로드
+-> 10시 / 13시 / 15시 / 18시 관찰 metadata 선택
 ```
+
+원본과 job은 브라우저 정적 bundle이 아니라 API의 scene storage에 둔다. 익명화 검증 전 asset은 외부 공개 대상으로 취급하지 않는다.
 
 ## 5. 기술 스택과 도입 시점
 
@@ -146,7 +156,7 @@ flowchart LR
 | Back     | FastAPI, Pydantic Settings, Uvicorn             | `/api/v1` 분석 endpoint와 service 분리      | 부하가 확인된 뒤 worker/cache 검토              |
 | Data     | JSON raw snapshot, manifest, canonical SQLite   | 실제 API query repository                   | 다지역 공간 질의가 필요할 때 PostgreSQL/PostGIS |
 | Analysis | 공식 1.0.0 규칙 기반 score API                  | 실제 DB peer 분포와 Front evidence 연결      | 충분한 데이터 이후 예측 모델 검토               |
-| 3D       | MapLibre extrusion과 prefab                     | 작은 실제 scene 1개 또는 검증된 대체 데모   | Gaussian Splatting pipeline 고도화              |
+| 3D       | upload/job API, Nerfstudio pipeline, Spark/Three.js viewer | CUDA worker에서 실제 scene 1개 학습·익명화 검증 | 혼잡도 mesh overlay와 pipeline 고도화           |
 | Quality  | pytest, Vitest, TypeScript, lint, 문서 검사     | 평가 script와 시연 smoke test               | 필요 시 E2E 자동화                              |
 
 ## 6. 배포 구조
@@ -187,3 +197,4 @@ Local demo runtime
 | 날짜       | 변경                                         | 이유                                                       |
 | ---------- | -------------------------------------------- | ---------------------------------------------------------- |
 | 2026-07-10 | 현재 구조와 4주 목표 구조를 분리해 최초 작성 | 구현된 기능과 계획을 같은 구조도로 오해하지 않게 하기 위해 |
+| 2026-07-11 | scene job API, Nerfstudio worker와 Spark viewer 반영 | 구현 코드와 실제 GPU 제약을 구조에 함께 표시하기 위해 |
