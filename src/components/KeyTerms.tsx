@@ -12,14 +12,18 @@ function KeyTerms({ terms }: KeyTermsProps) {
         <h2 id="terms-title">핵심 용어</h2>
       </div>
 
-      <div className="term-grid">
-        {terms.map((item) => (
-          <article key={item.term}>
-            <strong>{item.term}</strong>
-            <p>{item.meaning}</p>
-          </article>
-        ))}
-      </div>
+      {terms.length > 0 ? (
+        <div className="term-grid">
+          {terms.map((item) => (
+            <article key={item.term}>
+              <strong>{item.term}</strong>
+              <p>{item.meaning}</p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="result-empty-state">입력 기록에서 별도로 정의할 핵심 용어가 없습니다.</p>
+      )}
     </section>
   );
 }

@@ -1,10 +1,17 @@
+import { ContextAnalysisApiError } from "./contextAnalysisErrors.mjs";
+import { analyzeWithOpenAI } from "./providers/openaiContextAnalysis.mjs";
+
 const MIN_TITLE_LENGTH = 2;
+const MAX_TITLE_LENGTH = 120;
 const MIN_RAW_TEXT_LENGTH = 120;
 const MAX_RAW_TEXT_LENGTH = 20000;
 
 const COMMON_NON_ACTORS = new Set([
   "오늘",
   "팀은",
+  "팀",
+  "모든",
+  "참여자",
   "사용자",
   "서비스",
   "프로젝트",
@@ -12,30 +19,39 @@ const COMMON_NON_ACTORS = new Set([
   "멘토",
   "다음",
   "아직",
+  "논의",
+  "기록",
+  "결정",
+  "분석",
+  "기능",
+  "화면",
+  "개발",
+  "내용",
+  "의견",
+  "이번",
+  "현재",
 ]);
 
-export class ContextAnalysisApiError extends Error {
-  constructor(status, code, message, details = {}) {
-    super(message);
-    this.name = "ContextAnalysisApiError";
-    this.status = status;
-    this.code = code;
-    this.details = details;
-  }
-}
+export { ContextAnalysisApiError } from "./contextAnalysisErrors.mjs";
 
 export function validateContextAnalysisRequest(payload) {
-  if (!payload || typeof payload !== "object") {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new ContextAnalysisApiError(400, "INVALID_JSON", "요청 본문은 JSON 객체여야 합니다.");
   }
 
   const projectTitle = typeof payload.projectTitle === "string" ? payload.projectTitle.trim() : "";
   const rawText = typeof payload.rawText === "string" ? payload.rawText.trim() : "";
 
-  if (projectTitle.length < MIN_TITLE_LENGTH) {
-    throw new ContextAnalysisApiError(400, "INVALID_PROJECT_TITLE", "프로젝트 이름을 2자 이상 입력하세요.", {
-      minLength: MIN_TITLE_LENGTH,
-    });
+  if (projectTitle.length < MIN_TITLE_LENGTH || projectTitle.length > MAX_TITLE_LENGTH) {
+    throw new ContextAnalysisApiError(
+      400,
+      "INVALID_PROJECT_TITLE",
+      "프로젝트 이름을 2자 이상 120자 이하로 입력하세요.",
+      {
+        minLength: MIN_TITLE_LENGTH,
+        maxLength: MAX_TITLE_LENGTH,
+      },
+    );
   }
 
   if (rawText.length < MIN_RAW_TEXT_LENGTH) {
@@ -55,55 +71,113 @@ export function validateContextAnalysisRequest(payload) {
   return { projectTitle, rawText };
 }
 
-export function analyzeProjectContext(payload, options = {}) {
+export async function analyzeProjectContext(payload, options = {}) {
   const { projectTitle, rawText } = validateContextAnalysisRequest(payload);
-  const provider = resolveProvider(options);
+  const providerName = resolveProviderName(options.provider);
+
+  if (providerName === "openai") {
+    const { analysis, provider } = await analyzeWithOpenAI(
+      { projectTitle, rawText },
+      {
+        apiKey: options.apiKey,
+        model: options.model,
+        client: options.openAIClient,
+        timeoutMs: options.timeoutMs,
+        signal: options.signal,
+      },
+    );
+
+    return assembleAnalysisResult(projectTitle, rawText, analysis, provider);
+  }
+
+  const analysis = analyzeProjectContextLocally(projectTitle, rawText);
+  return assembleAnalysisResult(projectTitle, rawText, analysis, {
+    mode: "mock",
+    name: "local-heuristic",
+    usedExternalModel: false,
+  });
+}
+
+export function analyzeProjectContextLocally(projectTitle, rawText) {
   const sentences = splitSentences(rawText);
   const overview = buildOverview(sentences, rawText);
   const participants = buildParticipants(sentences);
   const decisions = buildDecisions(sentences);
-  const questions = buildQuestions(sentences, rawText);
+  const questions = buildQuestions(sentences);
   const keyTerms = buildKeyTerms(rawText);
-  const knowledgeMap = buildKnowledgeMap(projectTitle, participants, decisions, questions);
-  const onboardingSummary = buildOnboardingSummary(projectTitle, overview, decisions, questions);
-  const participantAgents = buildParticipantAgents(participants, questions);
+  const participantAgents = buildParticipantAgents(participants, questions, sentences, decisions);
+
+  return {
+    overview,
+    keyTerms,
+    decisions,
+    participants,
+    questions,
+    participantAgents,
+  };
+}
+
+function assembleAnalysisResult(projectTitle, rawText, analysis, provider) {
+  const participants = analysis.participants.map((participant) => ({
+    actor: participant.actor,
+    role: participant.role,
+    focus: participant.focus,
+    concern: participant.concern,
+    question: participant.question,
+  }));
+  const knowledgeMap = buildKnowledgeMap(
+    projectTitle,
+    participants,
+    analysis.decisions,
+    analysis.questions,
+  );
+  const onboardingSummary = buildOnboardingSummary(
+    projectTitle,
+    analysis.overview,
+    analysis.decisions,
+    analysis.questions,
+  );
 
   return {
     projectTitle,
     summary: {
       projectTitle,
-      overview,
+      overview: analysis.overview,
       sourceLength: rawText.length,
       generatedAt: new Date().toISOString(),
     },
-    keyTerms,
-    decisions,
+    keyTerms: analysis.keyTerms,
+    decisions: analysis.decisions,
     participants,
-    questions,
+    questions: analysis.questions,
     knowledgeMap,
     onboardingSummary,
-    participantAgents,
+    participantAgents: analysis.participantAgents,
     provider,
   };
 }
 
-function resolveProvider(options) {
-  const requestedProvider = options.provider || process.env.MODU_BRAIN_ANALYSIS_PROVIDER || "mock";
-  const hasApiKey = Boolean(process.env.MODU_BRAIN_LLM_API_KEY);
+function resolveProviderName(requestedProvider) {
+  const normalized = String(
+    requestedProvider || process.env.MODU_BRAIN_ANALYSIS_PROVIDER || "local-heuristic",
+  )
+    .trim()
+    .toLowerCase();
 
-  if (requestedProvider !== "mock" && !hasApiKey) {
-    return {
-      mode: "mock",
-      name: "local-heuristic",
-      usedExternalModel: false,
-    };
+  if (["mock", "local", "local-heuristic"].includes(normalized)) {
+    return "local-heuristic";
   }
 
-  return {
-    mode: "mock",
-    name: "local-heuristic",
-    usedExternalModel: false,
-  };
+  if (normalized === "openai") {
+    return "openai";
+  }
+
+  throw new ContextAnalysisApiError(
+    503,
+    "PROVIDER_NOT_SUPPORTED",
+    `지원하지 않는 분석 provider입니다: ${normalized}`,
+    { supported: ["local-heuristic", "openai"] },
+  );
 }
 
 function splitSentences(rawText) {
@@ -149,6 +223,7 @@ function buildParticipants(sentences) {
       focus: existing?.focus || focus,
       concern: existing?.concern || concern,
       question: existing?.question || question,
+      evidence: uniqueByText([...(existing?.evidence || []), summarizeSentence(sentence)]).slice(0, 3),
     });
   }
 
@@ -158,20 +233,16 @@ function buildParticipants(sentences) {
     return participants;
   }
 
-  return [
-    {
-      actor: "팀",
-      role: "프로젝트 참여자",
-      focus: "입력 기록을 바탕으로 협업 맥락을 정리해야 한다.",
-      concern: "참여자별 발언이 충분히 드러나지 않아 관점 차이가 약할 수 있다.",
-      question: "다음 기록에는 누가 어떤 관점에서 말했는지 더 명확히 남길 것인가?",
-    },
-  ];
+  return [];
 }
 
 function buildDecisions(sentences) {
   const decisions = sentences
-    .filter((sentence) => /결정|하기로|정했다|선택|제외|우선|확정|보류/.test(sentence))
+    .filter((sentence) =>
+      /하기로|결정했다|결정하였다|정했다|확정했다|선택했다|보류했다|제외하기로|우선하기로/.test(
+        sentence,
+      ),
+    )
     .map((sentence) => ({
       decision: summarizeSentence(sentence),
       reason: inferDecisionReason(sentence),
@@ -183,22 +254,19 @@ function buildDecisions(sentences) {
     return decisions;
   }
 
-  return [
-    {
-      decision: "입력 기록을 기반으로 프로젝트 맥락을 구조화한다.",
-      reason: "회의록과 메모만으로는 결정 배경과 관점 차이가 쉽게 사라지기 때문이다.",
-      status: "unclear",
-    },
-  ];
+  return [];
 }
 
-function buildQuestions(sentences, rawText) {
+function buildQuestions(sentences) {
   const explicitQuestions = sentences
     .flatMap((sentence) => sentence.split(/(?<=\?)/))
     .map((sentence) => sentence.trim())
     .filter((sentence) => sentence.includes("?"));
 
-  const unresolvedSentences = sentences.filter((sentence) => /아직|질문|불확실|논의|검토|정해야|어떻게/.test(sentence));
+  const unresolvedSentences = sentences.filter((sentence) =>
+    /아직|불확실|논의|검토|정해야|확인해야|미정/.test(sentence) ||
+    /(어떻게|무엇|어떤|왜).*(할지|할까|정할지|선택할지)/.test(sentence),
+  );
   const selected = uniqueByText([...explicitQuestions, ...unresolvedSentences]).slice(0, 5);
 
   if (selected.length > 0) {
@@ -209,13 +277,7 @@ function buildQuestions(sentences, rawText) {
     }));
   }
 
-  return [
-    {
-      question: "다음 회의에서 가장 먼저 확정해야 할 결정사항은 무엇인가?",
-      reason: `입력 기록 ${rawText.length.toLocaleString()}자에서 명시적인 질문이 적게 발견되었습니다.`,
-      ownerHint: "팀 전체",
-    },
-  ];
+  return [];
 }
 
 function buildKeyTerms(rawText) {
@@ -227,8 +289,16 @@ function buildKeyTerms(rawText) {
     ["온보딩 요약", "새 팀원이 긴 기록을 읽기 전에 먼저 알아야 할 프로젝트 현재 상태입니다."],
   ];
 
+  const termSignals = {
+    "협업 맥락": /협업|맥락/,
+    "관점 차이": /관점|의견/,
+    "미결 질문": /미결|질문|아직/,
+    "공유 지식맵": /지식맵|노드|연결/,
+    "온보딩 요약": /온보딩|새 팀원/,
+  };
+
   return candidates
-    .filter(([term]) => rawText.includes(term) || ["협업 맥락", "관점 차이", "미결 질문"].includes(term))
+    .filter(([term]) => termSignals[term].test(rawText))
     .slice(0, 5)
     .map(([term, meaning]) => ({ term, meaning }));
 }
@@ -289,10 +359,12 @@ function buildOnboardingSummary(projectTitle, overview, decisions, questions) {
     .map((decision) => decision.decision);
   const remainingQuestions = questions.slice(0, 3).map((question) => question.question);
   const items = [
-    `${projectTitle}는 팀 기록에서 결정 배경과 관점 차이를 구조화하는 흐름으로 정리되었습니다.`,
+    `${projectTitle}${getTopicParticle(projectTitle)} 팀 기록에서 결정 배경과 관점 차이를 구조화하는 흐름으로 정리되었습니다.`,
     overview[0] || "현재 기록에서 핵심 맥락을 추출했습니다.",
     currentDecisions[0] ? `현재 확정된 내용은 ${currentDecisions[0]}` : "아직 확정된 결정은 제한적으로 확인됩니다.",
-    remainingQuestions[0] ? `다음 회의에서는 ${remainingQuestions[0]}를 먼저 확인해야 합니다.` : "다음 회의에서 미결 질문을 더 명확히 정해야 합니다.",
+    remainingQuestions[0]
+      ? `다음 회의에서는 "${remainingQuestions[0]}" 항목을 먼저 확인해야 합니다.`
+      : "다음 회의에서 미결 질문을 더 명확히 정해야 합니다.",
   ];
 
   return {
@@ -303,31 +375,46 @@ function buildOnboardingSummary(projectTitle, overview, decisions, questions) {
   };
 }
 
-function buildParticipantAgents(participants, questions) {
+function buildParticipantAgents(participants, questions, sentences, decisions) {
   const views = participants.slice(0, 6).map((participant) => ({
     actor: participant.actor,
     role: participant.role,
     priority: participant.focus,
-    interpretation: `${participant.actor} 관점에서는 ${participant.focus}가 프로젝트 판단의 우선순위로 보입니다.`,
-    evidence: [participant.focus].filter(Boolean),
+    interpretation: `${participant.actor} 관점에서는 "${stripSentenceEnding(participant.focus)}"를 프로젝트 판단의 우선순위로 봅니다.`,
+    evidence: participant.evidence?.length ? participant.evidence : [participant.focus].filter(Boolean),
     risk: participant.concern,
   }));
 
+  const agreementPoints = uniqueByText(
+    [
+      ...sentences
+        .filter((sentence) => /합의|동의|공통|모두|함께|찬성/.test(sentence))
+        .map((sentence) => summarizeSentence(sentence)),
+      ...decisions
+        .filter((decision) => decision.status === "confirmed")
+        .map((decision) => decision.decision),
+    ],
+  ).slice(0, 3);
+  const tensionPoints = uniqueByText([
+    ...sentences
+      .filter((sentence) => /반대|이견|충돌|우려|그러나|하지만|보류/.test(sentence))
+      .map((sentence) => summarizeSentence(sentence)),
+    ...questions.map((question) => question.question),
+  ]).slice(0, 4);
+
   return {
     views,
-    agreementPoints: ["입력 기록에 근거해 결정 배경과 미결 질문을 분리해야 한다."],
-    tensionPoints: questions.slice(0, 2).map((question) => question.question),
+    agreementPoints,
+    tensionPoints,
     privacyNote: "팀원의 성격을 추정하지 않고 입력 기록에 근거가 있는 프로젝트 관점만 표현합니다.",
   };
 }
 
 function extractActor(sentence) {
-  const matches = [...sentence.matchAll(/([가-힣A-Za-z0-9]{2,12})(?:은|는|이|가|께서|님은|님이)\s/g)];
-  for (const match of matches) {
-    const actor = match[1].trim();
-    if (!COMMON_NON_ACTORS.has(actor)) return actor;
-  }
-  return "";
+  const cleaned = sentence.replace(/^[-*•\d.)\s]+/, "").trim();
+  const match = cleaned.match(/^([가-힣A-Za-z][가-힣A-Za-z0-9]{1,11})(?:님)?(?:은|는|이|가|께서)\s/);
+  const actor = match?.[1]?.trim() || "";
+  return actor && !COMMON_NON_ACTORS.has(actor) ? actor : "";
 }
 
 function extractFocus(sentence) {
@@ -343,14 +430,16 @@ function extractConcern(sentence) {
 
 function extractQuestionFromSentence(sentence) {
   if (sentence.includes("?")) return normalizeQuestion(sentence);
-  if (/어떻게|무엇|어떤|왜|질문/.test(sentence)) return normalizeQuestion(sentence);
+  if (/(어떻게|무엇|어떤|왜).*(확인|정해야|논의|질문|물었)/.test(sentence)) {
+    return normalizeQuestion(sentence);
+  }
   return "이 관점이 다음 결정에 어떤 영향을 주는가?";
 }
 
 function inferRole(sentence) {
+  if (/사용자|UX|흐름|입력/.test(sentence)) return "사용자 흐름 관점";
   if (/디자인|화면|Figma|시각/.test(sentence)) return "시각화 관점";
   if (/API|서버|개발|구현|기술/.test(sentence)) return "구현 관점";
-  if (/사용자|UX|흐름|입력/.test(sentence)) return "사용자 흐름 관점";
   if (/발표|기획|차별/.test(sentence)) return "기획 관점";
   return "프로젝트 참여자";
 }
@@ -376,6 +465,21 @@ function normalizeQuestion(sentence) {
 function summarizeSentence(sentence) {
   const compact = sentence.replace(/\s+/g, " ").trim();
   return compact.length > 120 ? `${compact.slice(0, 117)}...` : compact;
+}
+
+function stripSentenceEnding(sentence) {
+  return sentence.replace(/[.!?。]+$/, "").trim();
+}
+
+function getTopicParticle(text) {
+  const lastCharacter = [...text.trim()].at(-1);
+  if (!lastCharacter) return "는";
+
+  const codePoint = lastCharacter.codePointAt(0);
+  const isHangulSyllable = codePoint >= 0xac00 && codePoint <= 0xd7a3;
+  if (!isHangulSyllable) return "는";
+
+  return (codePoint - 0xac00) % 28 === 0 ? "는" : "은";
 }
 
 function uniqueByText(items) {

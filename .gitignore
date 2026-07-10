@@ -8,3 +8,6 @@ yarn-error.log*
 pnpm-debug.log*
 dev-server.log
 *.tsbuildinfo
+coverage/
+playwright-report/
+test-results/

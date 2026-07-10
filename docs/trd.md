@@ -2,13 +2,13 @@
 
 ## 1. 문서 목적
 
-이 문서는 모두의 뇌 MVP를 구현하기 위한 기술 요구사항을 정리한다. 현재 단계에서는 실제 AI API 연동 전, React 기반 화면과 데이터 구조를 먼저 고정한다.
+이 문서는 모두의 뇌 MVP를 구현하기 위한 기술 요구사항을 정리한다. React 화면, 서버 API, 로컬 분석기, 선택형 OpenAI provider가 같은 응답 계약을 사용하도록 고정한다.
 
 ## 2. 기술 목표
 
 - React + TypeScript 기반으로 MVP 화면을 구현한다.
 - AI 응답은 JSON 스키마로 고정해 UI가 안정적으로 렌더링되게 한다.
-- 초기에는 더미 데이터를 사용하고, 이후 LLM API로 교체 가능하게 만든다.
+- 기본 실행은 API 키가 필요 없는 로컬 휴리스틱을 사용하고, 설정 시 OpenAI Responses API로 교체한다.
 - 외부 UI 라이브러리 없이 CSS Modules 또는 일반 CSS로 구성한다.
 
 ## 3. 기술 스택
@@ -17,10 +17,11 @@
 | --- | --- |
 | Frontend | React, TypeScript, Vite |
 | Styling | CSS Modules, CSS |
-| Data | Static JSON, 이후 API 응답 JSON |
+| Data | 사용자 입력 기반 API 응답 JSON, 명시적으로 선택한 샘플 JSON |
 | Visualization | SVG 또는 React 컴포넌트 기반 노드 그래프 |
-| AI 연동 예정 | LLM API |
-| Build | `npm run build` |
+| AI 연동 | local-heuristic, 선택형 OpenAI Responses API 구조화 출력 |
+| Validation | Zod(서버 provider 응답), 클라이언트 런타임 응답 검증 |
+| Quality | ESLint, Vitest, TypeScript, Vite build |
 
 ## 4. MVP 아키텍처
 
@@ -30,13 +31,14 @@
   -> analyzeContext()
   -> ContextAnalysisResult
   -> SummaryPanel
+  -> ParticipantAgentPanel
   -> PerspectiveTable
   -> QuestionList
   -> KnowledgeMap
   -> OnboardingSummary
 ```
 
-현재 구현에서는 `analyzeContext()`가 `/api/context-analysis`를 호출한다. Vite 개발 서버와 `server/server.mjs`가 같은 API 계약을 제공하며, API 키가 없는 환경에서는 `local-heuristic` mock provider가 동작한다.
+현재 구현에서는 `analyzeContext()`가 `/api/context-analysis`를 호출한다. Vite 개발 서버와 `server/server.mjs`가 같은 API 계약을 제공한다. 기본 `local-heuristic` provider는 키 없이 동작하고, `openai` provider는 서버 환경변수가 모두 있을 때만 OpenAI Responses API의 구조화 출력을 요청한다. 키나 모델이 없거나 응답 스키마가 잘못되면 샘플로 대체하지 않고 구조화된 API 오류를 반환한다.
 
 ## 5. 디렉터리 구조 제안
 
@@ -57,8 +59,11 @@ src/
   services/
     analyzeContext.ts
 server/
+  contextAnalysisErrors.mjs
+  contextAnalysisSchema.mjs
   contextAnalysisCore.mjs
   contextAnalysisApi.mjs
+  providers/openaiContextAnalysis.mjs
   server.mjs
 ```
 
@@ -170,14 +175,19 @@ Content-Type: application/json
 
 | 이름 | 설명 |
 | --- | --- |
-| `MODU_BRAIN_ANALYSIS_PROVIDER` | 현재는 `mock` 또는 미설정 사용 |
-| `MODU_BRAIN_LLM_API_KEY` | 추후 외부 LLM 연동 시 서버에서만 사용 |
+| `MODU_BRAIN_ANALYSIS_PROVIDER` | `local-heuristic`(기본값) 또는 `openai` |
+| `MODU_BRAIN_OPENAI_MODEL` | `openai` 사용 시 명시하는 구조화 출력 지원 모델 ID |
+| `OPENAI_API_KEY` | `openai` 사용 시 서버에서만 읽는 API 키 |
+| `HOST` | 빌드 결과 서버 바인딩 주소. 기본값은 `127.0.0.1` |
+
+OpenAI provider는 비용을 임의로 발생시키지 않도록 provider, 모델, 키를 모두 명시해야 활성화된다. API 키는 Vite 클라이언트 환경에 노출하지 않는다. 외부 공개 배포는 이 MVP의 기본 범위가 아니며, `HOST`를 외부 주소로 바꾸기 전에 인증과 요청 제한을 추가해야 한다. 사용자가 입력을 수정하거나 새 분석을 시작해 브라우저 요청을 취소하면 서버의 AbortSignal을 OpenAI SDK 호출까지 전달한다.
 
 ## 8. 화면 요구사항
 
 ### 8.1 입력 화면
 
 - 프로젝트 이름 입력
+- 프로젝트 이름 2~120자 제한
 - 문서 텍스트 입력
 - 예시 입력 버튼
 - 분석 버튼
@@ -238,25 +248,39 @@ MVP에서는 별도의 자율 에이전트 프레임워크를 도입하지 않�
 ## 12. 보안 및 개인정보
 
 - 사용자가 민감한 개인정보를 입력하지 않도록 안내한다.
+- OpenAI provider 활성화 시 원문이 외부로 전송된다는 조건을 제출 전에 안내한다.
 - API 키는 클라이언트에 노출하지 않는다.
-- 실제 API 연동 시 서버 또는 서버리스 함수에서 LLM 요청을 처리한다.
+- OpenAI 요청은 `server/providers/openaiContextAnalysis.mjs`에서만 처리한다.
+- 외부 provider 오류 원문이나 API 키를 클라이언트 응답과 로그에 포함하지 않는다.
 - 입력 원문 저장은 MVP에서 제외한다.
+- 빌드 결과 서버는 기본적으로 `127.0.0.1`에만 바인딩한다.
+- 정적 응답에 CSP, frame 차단, referrer 제한, `nosniff` 보안 헤더를 적용한다.
 
-## 13. 테스트 계획
+## 13. 품질 게이트
 
-- `npm run build`가 통과해야 한다.
-- 빈 입력 상태에서 분석 버튼이 비활성화되는지 확인한다.
-- 예시 입력을 불러오면 분석 버튼이 활성화되는지 확인한다.
-- 더미 분석 결과가 모든 섹션에 렌더링되는지 확인한다.
-- 긴 텍스트가 모바일 화면에서 레이아웃을 깨지 않는지 확인한다.
+`npm run check`는 아래 검증을 순서대로 실행한다.
+
+1. ESLint 정적 검사
+2. Vitest 서버·클라이언트 회귀 테스트
+3. TypeScript 타입 검사와 Vite 프로덕션 빌드
+
+필수 회귀 범위:
+
+- 2~120자 제목, 120~20,000자 원문 경계와 잘못된 JSON/HTTP 메서드
+- 20,001자 및 100KB 초과 요청이 연결 종료가 아닌 구조화 413을 반환하는지
+- local/OpenAI provider 선택, 설정 누락, 외부 응답 스키마 오류
+- provider를 포함한 클라이언트 전체 응답 계약
+- idle/sample/loading/success/error 상태와 샘플의 명시적 선택
+- 실제 API가 생성하는 동적 노드 ID의 지식맵 렌더링
+- 정적 서버의 잘못 인코딩된 URL과 디렉터리 요청 복구
+- 클라이언트 연결 종료가 진행 중 provider 요청까지 취소되는지
+- Windows encoded traversal 차단과 정적 응답 보안 헤더
 
 ## 14. 구현 순서
 
-1. `types/context.ts` 작성
-2. `data/sampleAnalysis.ts` 작성
-3. `services/analyzeContext.ts` 작성
-4. 입력 컴포넌트 구현
-5. 결과 패널 컴포넌트 구현
-6. 지식맵 컴포넌트 구현
-7. 더미 데이터 연결
-8. 빌드 검증
+1. 요청·응답 타입과 런타임 스키마 고정
+2. local-heuristic 및 OpenAI provider 분리
+3. 입력·결과·참여자 관점·동적 지식맵 UI 구현
+4. idle/sample/loading/success/error 상태 분리
+5. 서버·클라이언트 회귀 테스트와 lint 추가
+6. `npm run check` 및 실제 브라우저 검증

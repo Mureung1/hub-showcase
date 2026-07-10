@@ -1,0 +1,179 @@
+// @vitest-environment node
+
+import { createServer } from "node:http";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { handleContextAnalysisRequest } from "./contextAnalysisApi.mjs";
+
+const validRawText = `민지는 입력 흐름을 단순하게 만들자고 제안했다. 서준은 결정 배경과 질문을 함께 보여줘야 한다고 말했다.
+현우는 지식맵이 복잡해질 수 있다고 우려했다. 팀은 직접 입력 방식으로 MVP를 시작하기로 결정했다.
+다음 회의에서는 개인정보 안내와 노드 수를 어떻게 정할지 검토하기로 했다.`;
+
+let server;
+let baseUrl;
+
+beforeAll(async () => {
+  server = createServer((request, response) => {
+    void handleContextAnalysisRequest(request, response, {
+      analysisOptions: { provider: "local-heuristic" },
+    });
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  baseUrl = `http://127.0.0.1:${address.port}`;
+});
+
+afterAll(async () => {
+  await new Promise((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+  });
+});
+
+describe("context analysis HTTP API", () => {
+  it("returns a structured local analysis with no-store JSON headers", async () => {
+    const response = await request({
+      method: "POST",
+      body: JSON.stringify({ projectTitle: "API 검증", rawText: validRawText }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
+    expect(body).toMatchObject({
+      projectTitle: "API 검증",
+      provider: { mode: "mock", name: "local-heuristic", usedExternalModel: false },
+    });
+    expect(body.participantAgents.views.length).toBeGreaterThan(0);
+  });
+
+  it("rejects malformed JSON with a stable 400 payload", async () => {
+    const response = await request({ method: "POST", body: "{" });
+
+    await expectError(response, 400, "INVALID_JSON");
+  });
+
+  it("rejects unsupported methods and advertises the allowed methods", async () => {
+    const response = await request({ method: "GET" });
+
+    expect(response.headers.get("allow")).toBe("POST, OPTIONS");
+    await expectError(response, 405, "METHOD_NOT_ALLOWED");
+  });
+
+  it("handles OPTIONS without an analysis body", async () => {
+    const response = await request({ method: "OPTIONS" });
+
+    expect(response.status).toBe(204);
+    expect(await response.text()).toBe("");
+  });
+
+  it("rejects non-JSON request content types", async () => {
+    const response = await fetch(`${baseUrl}/api/context-analysis`, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: "plain text",
+    });
+
+    await expectError(response, 415, "UNSUPPORTED_MEDIA_TYPE");
+  });
+
+  it("accepts 20,000 Korean characters even though UTF-8 exceeds 25KB", async () => {
+    const response = await request({
+      method: "POST",
+      body: JSON.stringify({ projectTitle: "한글 경계", rawText: "가".repeat(20_000) }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.summary.sourceLength).toBe(20_000);
+  });
+
+  it("returns RAW_TEXT_TOO_LONG for 25,001 ASCII characters without resetting the socket", async () => {
+    const response = await request({
+      method: "POST",
+      body: JSON.stringify({ projectTitle: "문자 경계", rawText: "a".repeat(25_001) }),
+    });
+
+    await expectError(response, 413, "RAW_TEXT_TOO_LONG");
+  });
+
+  it("returns REQUEST_TOO_LARGE as JSON only when the complete body exceeds the transport cap", async () => {
+    const response = await request({
+      method: "POST",
+      body: JSON.stringify({ projectTitle: "본문 경계", rawText: "a".repeat(120_000) }),
+    });
+
+    await expectError(response, 413, "REQUEST_TOO_LARGE");
+  });
+
+  it("aborts provider work when the requesting client disconnects", async () => {
+    let resolveStarted;
+    const started = new Promise((resolve) => {
+      resolveStarted = resolve;
+    });
+    let providerSignal;
+    let resolveProviderAborted;
+    const providerAborted = new Promise((resolve) => {
+      resolveProviderAborted = resolve;
+    });
+    const cancellationServer = createServer((request, response) => {
+      void handleContextAnalysisRequest(request, response, {
+        analyze: async (_payload, analysisOptions) => {
+          providerSignal = analysisOptions.signal;
+          resolveStarted();
+          return new Promise((_resolve, reject) => {
+            providerSignal.addEventListener(
+              "abort",
+              () => {
+                resolveProviderAborted();
+                reject(Object.assign(new Error("cancelled"), { name: "AbortError" }));
+              },
+              { once: true },
+            );
+          });
+        },
+      });
+    });
+
+    await new Promise((resolve) => cancellationServer.listen(0, "127.0.0.1", resolve));
+    const address = cancellationServer.address();
+    const controller = new AbortController();
+    const pendingRequest = fetch(`http://127.0.0.1:${address.port}/api/context-analysis`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectTitle: "취소 검증", rawText: validRawText }),
+      signal: controller.signal,
+    });
+
+    try {
+      await started;
+      controller.abort();
+      await expect(pendingRequest).rejects.toMatchObject({ name: "AbortError" });
+      await Promise.race([
+        providerAborted,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("provider abort was not propagated")), 1_000),
+        ),
+      ]);
+      expect(providerSignal.aborted).toBe(true);
+    } finally {
+      await new Promise((resolve, reject) => {
+        cancellationServer.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  });
+});
+
+function request({ method, body }) {
+  return fetch(`${baseUrl}/api/context-analysis`, {
+    method,
+    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    body,
+  });
+}
+
+async function expectError(response, status, code) {
+  expect(response.status).toBe(status);
+  await expect(response.json()).resolves.toMatchObject({ error: { code } });
+}

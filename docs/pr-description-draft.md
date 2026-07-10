@@ -2,6 +2,8 @@
 
 기획서 단독 링크: https://gist.github.com/tjwnsdhfz/12289f2fbf66eb6e54f0edc5e0ac0dce
 
+PR 벤치마크와 적용 근거: https://github.com/tjwnsdhfz/hub/blob/N031_%EA%B9%80%EC%84%9C%EC%A4%80/docs/benchmark-prs.md
+
 참고한 점: 프로젝트 주제, 해결하려는 문제, 유저 플로우, 화면 구상이 장표처럼 먼저 보여서 서비스를 빠르게 이해할 수 있었습니다. 이 PR도 같은 방식으로 **문제 → 사용자 흐름 → 화면 구조 → 핵심 기능 → 구현 결과** 순서로 정리했습니다.
 
 ## 1. 프로젝트 한눈에 보기
@@ -35,10 +37,11 @@
 1. 사용자는 프로젝트 이름을 입력합니다.
 2. 회의록, 조사 메모, 멘토 피드백, 팀원 의견을 텍스트 입력창에 붙여넣습니다.
 3. `맥락 분석하기` 버튼을 누릅니다.
-4. AI 에이전트가 입력 기록에서 핵심 주제, 결정사항, 결정 이유, 참여자별 관점, 미결 질문을 분리합니다.
-5. 사용자는 `개요` 탭에서 참여자별 관점 차이와 다음 회의 질문을 먼저 확인합니다.
-6. 사용자는 `지식맵` 탭에서 사람, 주제, 결정사항, 질문의 연결 구조를 확인합니다.
-7. 사용자는 `온보딩 요약` 탭에서 새 팀원에게 공유할 4~5줄 요약을 확인합니다.
+4. 분석 중에는 대기 상태가 표시되고, 성공·오류·사용자가 직접 불러온 샘플이 서로 다른 상태로 구분됩니다.
+5. AI 에이전트가 입력 기록에서 핵심 주제, 결정사항, 결정 이유, 참여자별 관점, 근거 문장, 미결 질문을 분리합니다.
+6. 사용자는 `개요` 탭에서 참여자별 관점과 입력 근거, 공통 합의, 관점 충돌·확인 필요 항목을 먼저 확인합니다.
+7. 사용자는 `지식맵` 탭에서 API가 생성한 사람, 주제, 결정사항, 질문 노드와 연결 구조를 확인합니다.
+8. 사용자는 `온보딩 요약` 탭에서 새 팀원에게 공유할 4~5줄 요약을 확인합니다.
 
 ```mermaid
 flowchart TD
@@ -70,8 +73,8 @@ flowchart TD
 | --- | --- | --- | --- |
 | 홈 | 서비스 목적 확인 | 기록 입력, 분석, 지식화 흐름 제시 | 서비스 이해 |
 | 입력 | 회의록과 메모 붙여넣기 | 글자 수 표시, 민감정보 안내, 분석 버튼 활성화 | 진입 장벽 감소 |
-| 개요 | 분석 결과 확인 | 관점 차이, 질문, 결정사항, 용어 표시 | 차별점 증명 |
-| 지식맵 | 관계 구조 확인 | 사람/주제/결정/질문 연결 표시 | 맥락 시각화 |
+| 개요 | 분석 결과 확인 | 관점, 입력 근거, 합의, 충돌, 질문, 결정사항, 용어 표시 | 차별점과 추적 가능성 증명 |
+| 지식맵 | 관계 구조 확인 | API node type별 lane과 link를 사용한 동적 SVG 및 텍스트 상세 표시 | 맥락 시각화 |
 | 온보딩 | 새 팀원 요약 확인 | 4~5줄 공유용 요약 표시 | 반복 설명 감소 |
 
 ## 5. 핵심 기능
@@ -81,8 +84,8 @@ flowchart TD
 | 핵심 기능 | 설명 | 에이전트가 필요한 이유 |
 | --- | --- | --- |
 | 프로젝트 기록 입력과 맥락 분석 | 회의록, 메모, 피드백에서 핵심 주제, 결정사항, 결정 배경, 미결 질문을 분리합니다. | 긴 자연어 기록 안에서 사실, 의견, 결정, 질문을 구분해야 하기 때문입니다. |
-| 관점 차이와 미결 질문 구조화 | 참여자별 역할, 중점, 우려, 질문을 표로 보여줍니다. | 사람의 의도와 관점은 정해진 입력 칸보다 자연어 문장 속에 흩어져 있기 때문입니다. |
-| 공유 지식맵과 온보딩 요약 생성 | 사람, 주제, 결정사항, 질문을 연결하고 새 팀원용 요약을 제공합니다. | 어떤 노드를 만들고 무엇을 먼저 설명해야 하는지 AI가 우선순위를 판단해야 하기 때문입니다. |
+| 관점 차이와 미결 질문 구조화 | 참여자별 역할, 중점, 우려, 질문을 입력 근거 문장과 함께 보여주고 합의점과 충돌을 분리합니다. | 사람의 관점을 과장하지 않고 원문에서 확인할 수 있어야 하기 때문입니다. |
+| 공유 지식맵과 온보딩 요약 생성 | API가 만든 사람, 주제, 결정사항, 질문 노드와 link를 동적으로 배치하고 새 팀원용 요약을 제공합니다. | 어떤 노드를 만들고 무엇을 먼저 설명해야 하는지 분석 결과에 따라 달라지기 때문입니다. |
 
 ## 6. 기존 웹 서비스와의 차별점
 
@@ -106,21 +109,32 @@ flowchart TD
 - `docs/modu-brain-design-skill.md`에 앞으로 반복 적용할 나만의 Design Skill을 정리했습니다.
 - `docs/figma-handoff.md`에 Figma 화면과 React 컴포넌트 연결 기준을 정리했습니다.
 - `docs/figma-board-preview.html`에 Figma 페이지 구조를 HTML 보드 형태로 시각화했습니다.
+- `docs/benchmark-prs.md`에 PR #209와 구현 수준이 높은 5개 PR의 지표, 한계, 채택 패턴을 기록했습니다.
 - `/api/context-analysis` 개발용 API를 추가해 실제 분석 버튼이 API를 호출하도록 연결했습니다.
-- API 입력 검증, 오류 응답, UI 오류 상태를 구분했습니다.
-- 팀원별 관점 에이전트 확장 타입과 문서 기준을 추가했습니다.
+- API 입력 검증, provider 설정·응답 스키마, 오류 응답과 클라이언트 계약 테스트를 추가했습니다.
+- `local-heuristic`과 선택형 OpenAI Responses API provider를 명시적으로 분리했습니다.
+- OpenAI 키와 모델 선택을 서버 환경변수에만 두고 자동 fallback하지 않도록 구성했습니다.
+- 근거 없는 결정·참여자·질문·용어는 최소 개수를 억지로 채우지 않고 빈 배열과 명시적 빈 상태로 표시합니다.
+- OpenAI 활성화 시 외부 전송 조건을 제출 전에 고지하고, 입력 수정·재분석·연결 종료 시 요청 취소를 SDK까지 전파합니다.
+- preview 서버를 기본 `127.0.0.1`로 제한하고 CSP·frame·referrer 보안 헤더와 Windows 경로 탈출 방어를 추가했습니다.
+- 첫 진입, 분석 중, 명시적 샘플, 실제 성공, 오류 상태를 분리했습니다.
+- 팀원별 관점 에이전트 결과를 입력 근거, 합의점, 관점 충돌과 함께 표시하는 별도 UI를 추가했습니다.
+- 모바일에서는 참여자 비교 표를 행별 카드로 전환해 390px 폭에서도 모든 필드를 가로 스크롤 없이 읽을 수 있게 했습니다.
 - React + TypeScript 기반 웹 프로토타입을 구현했습니다.
-- 입력, 분석 요약, 개요 탭, 지식맵 탭, 온보딩 탭을 구성했습니다.
+- 입력, 분석 요약, 개요 탭, 동적 지식맵 탭, 온보딩 탭을 구성했습니다.
+- 서버·HTTP API·클라이언트·상태 UI·지식맵 회귀 테스트와 `npm run check` 품질 게이트를 추가했습니다.
+- `.github/workflows/modu-brain-quality.yml` workflow를 로컬로 준비했지만 GitHub CLI OAuth의 `workflow` scope 재인증 전이라 이 PR 브랜치에서는 제외했습니다.
 - Apple 스타일 기준으로 흰색/연회색 배경, 파란색 포인트, 8px 카드 반경을 적용했습니다.
-- `npm run build`로 TypeScript와 Vite 빌드를 검증했습니다.
 
 ## 8. 구현한 React 구조
 
 | 영역 | 파일 |
 | --- | --- |
 | 입력 화면 | `src/components/ContextInput.tsx` |
+| 대기·진행·오류 상태 | `src/components/AnalysisPlaceholder.tsx` |
 | 분석 요약 | `src/components/SummaryPanel.tsx` |
 | 참여자 관점 표 | `src/components/PerspectiveTable.tsx` |
+| 참여자 근거·합의·충돌 | `src/components/ParticipantAgentPanel.tsx` |
 | 미결 질문 | `src/components/QuestionList.tsx` |
 | 결정사항 | `src/components/DecisionList.tsx` |
 | 핵심 용어 | `src/components/KeyTerms.tsx` |
@@ -131,7 +145,10 @@ flowchart TD
 | 타입 정의 | `src/types/context.ts` |
 | API 분석 코어 | `server/contextAnalysisCore.mjs` |
 | API 핸들러 | `server/contextAnalysisApi.mjs` |
+| OpenAI provider | `server/providers/openaiContextAnalysis.mjs` |
+| 구조화 스키마·오류 | `server/contextAnalysisSchema.mjs`, `server/contextAnalysisErrors.mjs` |
 | 빌드 결과 서버 | `server/server.mjs` |
+| 품질 CI 준비본(로컬, 미게시) | `.github/workflows/modu-brain-quality.yml` |
 
 ## 9. 내가 설명할 수 있는 부분
 
@@ -141,10 +158,11 @@ flowchart TD
 
 그래서 모두의 뇌는 요약을 먼저 보여주지 않고, 결과 화면의 개요 탭에서 다음 순서로 보여주도록 설계했습니다.
 
-1. 참여자별 관점 차이
-2. 다음 회의 질문
-3. 결정사항
-4. 핵심 용어
+1. 참여자별 관점과 입력 근거
+2. 공통 합의와 관점 충돌·확인 필요
+3. 다음 회의 질문
+4. 결정사항
+5. 핵심 용어
 
 이 순서가 이 서비스의 차별점입니다. 사용자가 바로 `아, 이건 회의 내용을 줄이는 앱이 아니라 팀의 생각 차이를 정리하는 앱이구나`라고 이해하도록 만들고 싶었습니다.
 
@@ -161,34 +179,57 @@ flowchart TD
 }
 ```
 
-응답에는 `summary`, `participants`, `decisions`, `questions`, `keyTerms`, `knowledgeMap`, `onboardingSummary`, `participantAgents`가 포함됩니다.
+응답에는 `summary`, `participants`, `decisions`, `questions`, `keyTerms`, `knowledgeMap`, `onboardingSummary`, `participantAgents`, `provider`가 포함됩니다.
 
-현재 provider는 API 키 없이 동작하는 `local-heuristic` mock provider입니다. 외부 LLM API 키는 클라이언트에 넣지 않고, 추후 서버 환경변수 `MODU_BRAIN_LLM_API_KEY`로만 연결하도록 문서화했습니다.
+| provider | 동작 계약 | 서버 환경변수 |
+| --- | --- | --- |
+| `local-heuristic` | 기본값. 외부 모델을 호출하지 않으며 `usedExternalModel: false`를 반환합니다. | 없음 |
+| `openai` | OpenAI Responses API와 Zod 구조화 출력을 사용합니다. 키·모델 누락, 인증·rate limit·timeout, 스키마 오류를 구조화된 API 오류로 반환하며 local 결과로 조용히 대체하지 않습니다. | `MODU_BRAIN_ANALYSIS_PROVIDER=openai`, `MODU_BRAIN_OPENAI_MODEL`, `OPENAI_API_KEY` |
+
+API 키는 `server/providers/openaiContextAnalysis.mjs`에서만 읽고, 클라이언트 요청·응답이나 Vite 번들에는 전달하지 않습니다. OpenAI 요청은 `store: false`로 구성했습니다.
+
+**OpenAI live paid call은 아직 실행하지 않았습니다.** 현재 OpenAI 범위에서 확인한 것은 mock client를 사용한 provider 계약, 구조화 응답 조립과 오류 매핑입니다. 실제 모델 출력 품질, 비용, 계정 권한은 별도 검증 대상입니다.
 
 ## 11. 아직 이해 못 한 부분
 
-- 실제 LLM API를 붙였을 때 결정사항, 의견, 미결 질문을 안정적으로 구분하는 방법은 더 실험이 필요합니다.
+- 실제 OpenAI 모델 출력에서 결정사항, 의견, 미결 질문과 근거 문장을 안정적으로 구분하는 품질은 아직 live paid call로 검증하지 못했습니다.
 - 지식맵 노드가 많아질 경우 어떤 기준으로 줄여야 가장 이해하기 쉬운지 더 검증해야 합니다.
 - 팀 문서를 실제로 입력받을 때 개인정보와 권한 관리를 어떻게 해야 하는지 더 공부가 필요합니다.
+- 품질 GitHub Actions는 로컬 workflow 준비본만 있으며, OAuth `workflow` scope를 재인증해 파일을 게시한 뒤 실제 check 결과를 확인해야 합니다.
 - Figma MCP는 Starter 플랜 호출 한도 때문에 최신 React 탭 화면을 자동 재캡처하는 과정이 제한되었습니다.
 
 ## 12. 로컬 확인 방법
 
 ```bash
 npm install
+npm run check
 npm run dev
 npm run build
 npm run start
 ```
 
+`npm run check`는 ESLint, Vitest 서버·클라이언트 회귀 테스트, TypeScript typecheck와 Vite production build를 순서대로 실행합니다. 로컬 workflow 준비본도 관련 PR 또는 `N031_김서준` 브랜치 push에서 `npm ci` 후 같은 명령을 실행하도록 작성했지만, **OAuth `workflow` scope 재인증 전이라 이 PR 커밋에는 포함하지 않았고 GitHub Actions 결과도 없습니다.**
+
+2026-07-11 로컬 검증 결과:
+
+- `npm run check` 종료 코드 0
+- Vitest 7개 파일, 55개 테스트 통과
+- coverage: statements 84.93%, branches 78.90%, functions 92.10%, lines 87.98%
+- `npm audit --omit=dev`: 취약점 0건
+- 실제 브라우저에서 대기, 명시적 샘플, API 성공, 참여자 근거·합의·충돌, 동적 지식맵, 온보딩, 서버 중단 오류 상태 확인
+- 키보드 화살표 탭 이동, OpenAI 외부 전송 사전 고지, CSP·frame·referrer 응답 헤더 확인
+- 1280×720 데스크톱과 390×844 모바일에서 캡처 갱신, 모바일 가로 넘침 없음 확인
+
 확인 시나리오:
 
-1. 홈 화면에서 `팀의 흩어진 맥락을 하나의 뇌로.` 제목이 보이는지 확인합니다.
-2. `예시 불러오기`를 누르면 입력창이 채워지고 샘플 결과가 표시되는지 확인합니다.
-3. `맥락 분석하기`를 누르면 `/api/context-analysis` 응답으로 결과가 갱신되는지 확인합니다.
-4. 입력이 너무 짧으면 API 오류 메시지가 샘플 결과로 덮이지 않고 화면에 표시되는지 확인합니다.
-5. 결과 화면의 `개요 / 지식맵 / 온보딩 요약` 탭이 전환되는지 확인합니다.
-6. 모바일 폭에서도 텍스트와 카드가 가로로 넘치지 않는지 확인합니다.
+1. 첫 진입에서 `분석 대기`가 보이고 샘플 결과가 자동 표시되지 않는지 확인합니다.
+2. `예시 불러오기`를 누른 뒤에만 입력과 `예시 데이터 데모` 결과가 표시되는지 확인합니다.
+3. `맥락 분석하기`를 누르면 중복 제출이 막히고 `/api/context-analysis` 성공 후 provider가 표시되는지 확인합니다.
+4. 개요에서 참여자별 입력 근거, 공통 합의, 관점 충돌·확인 필요, 개인정보 제한 문구가 보이는지 확인합니다.
+5. 지식맵에서 API node·link가 동적으로 표시되고 텍스트 상세 목록도 제공되는지 확인합니다.
+6. 입력 수정이나 API 오류 시 이전 결과·샘플이 숨겨지고 대기·오류 상태가 표시되는지 확인합니다.
+7. 결과 화면의 `개요 / 지식맵 / 온보딩 요약` 탭이 전환되는지 확인합니다.
+8. 모바일 폭에서도 텍스트, 참여자 카드와 지식맵이 가로로 넘치지 않는지 확인합니다.
 
 ## 13. 새로 알게 된 것
 

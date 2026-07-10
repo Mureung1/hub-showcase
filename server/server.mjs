@@ -1,14 +1,13 @@
 import { createReadStream, existsSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
-import { extname, join, normalize, resolve } from "node:path";
+import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { handleContextAnalysisRequest } from "./contextAnalysisApi.mjs";
 
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
-const rootDir = resolve(__dirname, "..");
-const distDir = join(rootDir, "dist");
-const port = Number(process.env.PORT || 4173);
+const moduleUrl = new URL(import.meta.url);
+const modulePath = moduleUrl.protocol === "file:" ? fileURLToPath(moduleUrl) : "";
+const defaultRootDir = modulePath ? resolve(dirname(modulePath), "..") : process.cwd();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -21,46 +20,136 @@ const mimeTypes = {
   ".json": "application/json; charset=utf-8",
 };
 
-const server = createServer(async (req, res) => {
-  const pathname = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`).pathname;
+export function createModuBrainServer(options = {}) {
+  const rootDir = options.rootDir || defaultRootDir;
+  const distDir = options.distDir || join(rootDir, "dist");
 
-  if (pathname === "/api/context-analysis") {
-    await handleContextAnalysisRequest(req, res);
-    return;
-  }
+  return createServer(async (req, res) => {
+    let pathname;
 
-  await serveStatic(pathname, res);
-});
+    try {
+      pathname = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`).pathname;
+    } catch {
+      writeText(res, 400, "잘못된 요청 URL입니다.");
+      return;
+    }
 
-server.listen(port, () => {
-  console.log(`Modu Brain preview server running at http://localhost:${port}`);
-});
+    try {
+      if (pathname === "/api/context-analysis") {
+        await handleContextAnalysisRequest(req, res, options.apiOptions);
+        return;
+      }
 
-async function serveStatic(pathname, res) {
+      await serveStatic(pathname, res, { distDir });
+    } catch {
+      if (!res.headersSent) {
+        writeText(res, 500, "서버에서 요청을 처리하지 못했습니다.");
+      } else if (!res.writableEnded) {
+        res.end();
+      }
+    }
+  });
+}
+
+export async function serveStatic(pathname, res, options = {}) {
+  const distDir = options.distDir || join(defaultRootDir, "dist");
+
   if (!existsSync(distDir)) {
-    res.statusCode = 503;
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.end("dist directory not found. Run npm run build first.");
+    writeText(res, 503, "dist directory not found. Run npm run build first.");
     return;
   }
 
-  const safePath = normalize(decodeURIComponent(pathname)).replace(/^(\.\.[/\\])+/, "");
-  let filePath = join(distDir, safePath === "/" ? "index.html" : safePath);
-
-  if (!filePath.startsWith(distDir)) {
-    res.statusCode = 403;
-    res.end("Forbidden");
-    return;
-  }
-
+  let decodedPath;
   try {
-    const fileStat = await stat(filePath);
-    if (fileStat.isDirectory()) filePath = join(filePath, "index.html");
+    decodedPath = decodeURIComponent(pathname);
   } catch {
-    filePath = join(distDir, "index.html");
+    writeText(res, 400, "잘못 인코딩된 요청 경로입니다.");
+    return;
+  }
+
+  const relativePath = decodedPath.replace(/^[/\\]+/, "") || "index.html";
+  let filePath = resolve(distDir, relativePath);
+  const resolvedDistDir = resolve(distDir);
+
+  if (filePath !== resolvedDistDir && !filePath.startsWith(`${resolvedDistDir}${sep}`)) {
+    writeText(res, 403, "Forbidden");
+    return;
+  }
+
+  let fileStat = await tryStat(filePath);
+
+  if (fileStat?.isDirectory()) {
+    filePath = join(filePath, "index.html");
+    fileStat = await tryStat(filePath);
+    if (!fileStat?.isFile()) {
+      writeText(res, 404, "Not found");
+      return;
+    }
+  } else if (!fileStat?.isFile()) {
+    if (extname(relativePath)) {
+      writeText(res, 404, "Not found");
+      return;
+    }
+
+    filePath = join(resolvedDistDir, "index.html");
+    fileStat = await tryStat(filePath);
+    if (!fileStat?.isFile()) {
+      writeText(res, 503, "dist index not found. Run npm run build first.");
+      return;
+    }
   }
 
   res.statusCode = 200;
   res.setHeader("Content-Type", mimeTypes[extname(filePath)] || "application/octet-stream");
-  createReadStream(filePath).pipe(res);
+  setSecurityHeaders(res);
+  await pipeFile(filePath, res);
+}
+
+function tryStat(filePath) {
+  return stat(filePath).catch(() => null);
+}
+
+function pipeFile(filePath, res) {
+  return new Promise((resolvePromise) => {
+    const stream = createReadStream(filePath);
+
+    stream.on("error", () => {
+      if (!res.headersSent) {
+        writeText(res, 500, "정적 파일을 읽을 수 없습니다.");
+      } else if (!res.writableEnded) {
+        res.end();
+      }
+      resolvePromise();
+    });
+    stream.on("end", resolvePromise);
+    stream.pipe(res);
+  });
+}
+
+function writeText(res, statusCode, message) {
+  res.statusCode = statusCode;
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  setSecurityHeaders(res);
+  res.end(message);
+}
+
+function setSecurityHeaders(res) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+  );
+}
+
+if (modulePath && process.argv[1] && resolve(process.argv[1]) === modulePath) {
+  const port = Number(process.env.PORT || 4173);
+  const host = process.env.HOST || "127.0.0.1";
+  const server = createModuBrainServer();
+  server.listen(port, host, () => {
+    console.log(`Modu Brain preview server running at http://${host}:${port}`);
+  });
 }

@@ -25,6 +25,7 @@ export class ContextAnalysisRequestError extends Error {
 export async function analyzeContext(
   projectTitle: string,
   inputText: string,
+  options: { signal?: AbortSignal } = {},
 ): Promise<ContextAnalysisResult> {
   let response: Response;
 
@@ -36,8 +37,11 @@ export async function analyzeContext(
         projectTitle,
         rawText: inputText,
       }),
+      signal: options.signal,
     });
-  } catch {
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
+
     throw new ContextAnalysisRequestError(
       "분석 API에 연결할 수 없습니다. 개발 서버에서 /api/context-analysis가 실행 중인지 확인하세요.",
     );
@@ -78,25 +82,142 @@ async function parseJson(response: Response): Promise<unknown> {
   }
 }
 
-function isContextAnalysisResult(value: unknown): value is ContextAnalysisResult {
-  if (!value || typeof value !== "object") return false;
-
-  const result = value as Partial<ContextAnalysisResult>;
+export function isContextAnalysisResult(value: unknown): value is ContextAnalysisResult {
+  if (!isRecord(value)) return false;
 
   return (
-    typeof result.projectTitle === "string" &&
-    Boolean(result.summary) &&
-    Array.isArray(result.summary?.overview) &&
-    Array.isArray(result.keyTerms) &&
-    Array.isArray(result.decisions) &&
-    Array.isArray(result.participants) &&
-    Array.isArray(result.questions) &&
-    Boolean(result.knowledgeMap) &&
-    Array.isArray(result.knowledgeMap?.nodes) &&
-    Array.isArray(result.knowledgeMap?.links) &&
-    Boolean(result.onboardingSummary) &&
-    Array.isArray(result.onboardingSummary?.items) &&
-    Boolean(result.participantAgents) &&
-    Array.isArray(result.participantAgents?.views)
+    isNonEmptyString(value.projectTitle) &&
+    isSummary(value.summary) &&
+    isArrayOf(value.keyTerms, isKeyTerm) &&
+    isArrayOf(value.decisions, isDecision) &&
+    isArrayOf(value.participants, isPerspective) &&
+    isArrayOf(value.questions, isQuestion) &&
+    isKnowledgeMap(value.knowledgeMap) &&
+    isOnboardingSummary(value.onboardingSummary) &&
+    isParticipantAgentSynthesis(value.participantAgents) &&
+    isProviderInfo(value.provider)
   );
+}
+
+function isSummary(value: unknown) {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.projectTitle) &&
+    isStringArray(value.overview) &&
+    typeof value.sourceLength === "number" &&
+    Number.isFinite(value.sourceLength) &&
+    value.sourceLength >= 0 &&
+    isNonEmptyString(value.generatedAt)
+  );
+}
+
+function isKeyTerm(value: unknown) {
+  return isRecord(value) && isNonEmptyString(value.term) && isNonEmptyString(value.meaning);
+}
+
+function isDecision(value: unknown) {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.decision) &&
+    isNonEmptyString(value.reason) &&
+    ["confirmed", "tentative", "unclear"].includes(String(value.status))
+  );
+}
+
+function isPerspective(value: unknown) {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.actor) &&
+    isNonEmptyString(value.role) &&
+    isNonEmptyString(value.focus) &&
+    isNonEmptyString(value.concern) &&
+    isNonEmptyString(value.question)
+  );
+}
+
+function isQuestion(value: unknown) {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.question) &&
+    isNonEmptyString(value.reason) &&
+    isNonEmptyString(value.ownerHint)
+  );
+}
+
+function isKnowledgeMap(value: unknown) {
+  return (
+    isRecord(value) &&
+    isArrayOf(
+      value.nodes,
+      (node) =>
+        isRecord(node) &&
+        isNonEmptyString(node.id) &&
+        isNonEmptyString(node.label) &&
+        ["topic", "person", "role", "decision", "question"].includes(String(node.type)) &&
+        isNonEmptyString(node.summary),
+    ) &&
+    isArrayOf(
+      value.links,
+      (link) =>
+        isRecord(link) &&
+        isNonEmptyString(link.from) &&
+        isNonEmptyString(link.to) &&
+        isNonEmptyString(link.relation),
+    )
+  );
+}
+
+function isOnboardingSummary(value: unknown) {
+  return (
+    isRecord(value) &&
+    isStringArray(value.items) &&
+    isStringArray(value.currentDecisions) &&
+    isStringArray(value.remainingQuestions) &&
+    isNonEmptyString(value.shareText)
+  );
+}
+
+function isParticipantAgentSynthesis(value: unknown) {
+  return (
+    isRecord(value) &&
+    isArrayOf(
+      value.views,
+      (view) =>
+        isRecord(view) &&
+        isNonEmptyString(view.actor) &&
+        isNonEmptyString(view.role) &&
+        isNonEmptyString(view.priority) &&
+        isNonEmptyString(view.interpretation) &&
+        isStringArray(view.evidence) &&
+        isNonEmptyString(view.risk),
+    ) &&
+    isStringArray(value.agreementPoints) &&
+    isStringArray(value.tensionPoints) &&
+    isNonEmptyString(value.privacyNote)
+  );
+}
+
+function isProviderInfo(value: unknown) {
+  return (
+    isRecord(value) &&
+    ["mock", "llm"].includes(String(value.mode)) &&
+    isNonEmptyString(value.name) &&
+    typeof value.usedExternalModel === "boolean"
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(isNonEmptyString);
+}
+
+function isArrayOf(value: unknown, predicate: (item: unknown) => boolean) {
+  return Array.isArray(value) && value.every(predicate);
 }
