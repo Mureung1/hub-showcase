@@ -19,6 +19,7 @@
 | `text-primary` | `#17182B` | 제목·본문·가격 |
 | `text-secondary` | `#9A9DAE` | 부제·캡션 |
 | `accent-heart` | `#F0455C` | 찜/하트 아이콘 등 포인트 액센트 |
+| `bg-cream` | `#FCF0DC` | 냉장고 씬(홈 진입 화면) 배경 — 일러스트 배경색과 맞춤 |
 | `border` | `#EFEFF4` | 구분선, 카드 테두리 |
 
 ## 타이포그래피
@@ -71,6 +72,7 @@
   --color-primary-soft: #FDE9B9;
   --color-primary-text: #8A5A08;
   --color-bg-page: #E9EBF2;
+  --color-bg-cream: #FCF0DC;
   --color-bg-surface: #FFFFFF;
   --color-bg-muted: #F4F5F9;
   --color-text-primary: #17182B;

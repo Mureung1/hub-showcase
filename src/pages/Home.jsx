@@ -5,8 +5,6 @@ import { getCategoriesWithCheapest, getRecipesByOwnedIngredients } from '../data
 import { fridgeIngredients } from '../data/fridgeIngredients'
 import { loadFridgeSelection } from '../data/fridgeStorage'
 import MenuCard from '../components/MenuCard'
-import logoEmblem from '../assets/logo-emblem.png'
-import logoWordmark from '../assets/logo-wordmark.png'
 
 const TYPES = ['main', 'side', 'snack']
 const PREVIEW_COUNT = 4
@@ -21,11 +19,6 @@ function Home() {
   return (
     <main className="min-h-screen bg-bg-page px-4 py-10">
       <div className="mx-auto max-w-3xl">
-        <div className="flex items-center gap-3">
-          <img src={logoEmblem} alt="" className="h-12 w-12 object-contain" />
-          <img src={logoWordmark} alt="끼니픽" className="h-10 object-contain" />
-        </div>
-
         {matchedRecipes.length > 0 && (
           <section className="mt-6">
             <div className="flex items-baseline justify-between">
