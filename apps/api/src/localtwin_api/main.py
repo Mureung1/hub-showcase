@@ -5,6 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from localtwin_api.config import get_settings
+from localtwin_api.market_score import (
+    MarketScoreRequest,
+    MarketScoreResponse,
+    evaluate_market_score,
+)
 
 
 class HealthResponse(BaseModel):
@@ -25,6 +30,14 @@ def create_app() -> FastAPI:
     @app.get("/health", response_model=HealthResponse, tags=["system"])
     async def health() -> HealthResponse:
         return HealthResponse(status="ok")
+
+    @app.post(
+        "/api/v1/scores/evaluate",
+        response_model=MarketScoreResponse,
+        tags=["analysis"],
+    )
+    async def score_market(request: MarketScoreRequest) -> MarketScoreResponse:
+        return evaluate_market_score(request)
 
     return app
 
