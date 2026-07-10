@@ -3,6 +3,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react()],
+  base: process.env.VITE_DEPLOY_BASE ?? "/",
   server: {
     host: "127.0.0.1",
     port: 5173,
