@@ -96,7 +96,7 @@ Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API�
 | ANALYSIS-002 | 반경별 점포와 동일 업종 경쟁 계산             | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 100m/300m/500m fixture 결과가 test와 일치한다         |
 | ANALYSIS-003 | 개업·폐업·영업기간 변화 계산                  | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 기간별 집계와 표본 부족 상태를 구분한다               |
 | ANALYSIS-004 | 생활인구·매출 시간대 특성 계산                | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 시간대 값과 실제/추정/관찰 source type을 반환한다     |
-| ANALYSIS-005 | 설명 가능한 입지 점수와 템플릿 리포트         | P0       | Backlog | 2    | ANALYSIS-002~004          | 총점, 항목 점수, 근거와 제한 사항이 함께 나온다       |
+| ANALYSIS-005 | 설명 가능한 입지 점수와 템플릿 리포트         | P0       | Done    | 2    | ANALYSIS-002~004          | SCORE-001에서 총점, 신뢰도, 근거와 제한 API를 구현했다 |
 | API-001      | SQLite repository와 seed/import 연결          | P0       | Backlog | 2    | DATA-004                  | canonical data를 저장하고 반복 조회한다               |
 | API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | Backlog | 2    | API-001, ANALYSIS-002~005 | 상권·업종·반경 입력에 versioned JSON을 반환한다       |
 | API-003      | validation·empty·provider error contract 구현 | P0       | Backlog | 2    | API-002                   | 오류 상태와 근거 부족 상태가 HTTP/test로 구분된다     |
