@@ -18,8 +18,20 @@
 
   <div class="team-build-row" id="teamRow"></div>
 
-  <a href="13_oppositegroup_matching.html" class="btn btn-coral btn-cta" style="margin-top:auto;">팀 확정</a>
+  <div class="bottom-actions">
+    <a href="13_oppositegroup_matching.html" class="btn btn-coral btn-cta">팀 확정</a>
+    <button type="button" class="link-button link-accent" id="openInviteModal">친구 코드로 초대하기</button>
+  </div>
 
+</div>
+
+<div class="modal-overlay" id="inviteModal">
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="closeInviteModal">&times;</button>
+    <p class="modal-title">친구 코드를 입력해주세요</p>
+    <input class="input-field" type="text" placeholder="친구 코드 입력">
+    <a href="#" class="btn btn-coral btn-block" id="submitInviteCode">확인</a>
+  </div>
 </div>
 
 <script>
@@ -64,6 +76,8 @@
     return wrap;
   }
 
+  var inviteSlotWrap = null;
+
   function makeInviteSlot() {
     var wrap = document.createElement('div');
     wrap.className = 'team-slot';
@@ -71,18 +85,40 @@
       '<button type="button" class="slot-circle empty">+</button>' +
       '<div class="slot-label">초대하기</div>';
 
+    inviteSlotWrap = wrap;
+
     wrap.querySelector('button').addEventListener('click', function () {
-      var name = invitePool[Math.floor(Math.random() * invitePool.length)];
-      var colors = ['mint', 'peach', 'pink', 'blue', 'yellow'];
-      var color = colors[Math.floor(Math.random() * colors.length)];
-      wrap.innerHTML =
-        '<div class="slot-circle filled ' + color + '"></div>' +
-        '<div class="slot-label">' + name + '</div>';
+      modal.classList.add('show');
     });
     return wrap;
   }
 
   buildSlots();
+
+  var modal = document.getElementById('inviteModal');
+  document.getElementById('openInviteModal').addEventListener('click', function () {
+    modal.classList.add('show');
+  });
+  document.getElementById('closeInviteModal').addEventListener('click', function () {
+    modal.classList.remove('show');
+  });
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) modal.classList.remove('show');
+  });
+  document.getElementById('submitInviteCode').addEventListener('click', function (e) {
+    e.preventDefault();
+    if (inviteSlotWrap) {
+      var name = invitePool[Math.floor(Math.random() * invitePool.length)];
+      var colors = ['mint', 'peach', 'pink', 'blue', 'yellow'];
+      var color = colors[Math.floor(Math.random() * colors.length)];
+      inviteSlotWrap.innerHTML =
+        '<div class="slot-circle filled ' + color + '"></div>' +
+        '<div class="slot-label">' + name + '</div>';
+      inviteSlotWrap = null;
+    }
+    alert('친구에게 초대를 보냈어요! 🎉');
+    modal.classList.remove('show');
+  });
 </script>
 </body>
 </html>
