@@ -146,7 +146,7 @@ GeoJSON coordinate order: [longitude, latitude]
 
 - test는 구현 세부사항보다 사용자가 관찰할 behavior와 contract를 확인한다.
 - 외부 API에 의존하는 test는 작은 fixture나 adapter boundary를 사용한다.
-- 실제 API key와 네트워크 상태에 따라 결과가 달라지는 test를 기본 CI에 넣지 않는다.
+- 실제 API key와 네트워크 상태에 따라 결과가 달라지는 test를 기본 로컬 검증에 넣지 않는다.
 
 ## 8. Dependency 컨벤션
 

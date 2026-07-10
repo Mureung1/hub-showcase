@@ -32,6 +32,9 @@ docs/
     environment.md
     conventions.md
     pre-development-decisions.md
+    architecture.md
+    tasks.md
+    document-management.md
     checklist.md
     git-workflow.md
     harness.md
@@ -58,6 +61,7 @@ docs/
 ```text
 LocalTwin/
   README.md
+  intro-page/ (legacy: 이전 소개 페이지, 현재 프로토타입 배포 대상 아님)
   apps/
     web/
     api/
@@ -95,15 +99,24 @@ LocalTwin/
 
 - [프로젝트 기획서: 화면 구조와 핵심 기능](./localtwin-project-proposal.md)
 - [제품 기획서: 문제 정의, 사용자 시나리오, 기능 구성](./localtwin-product-plan.md)
-- [LocalTwin v0.1 전체 실행 계획](./localtwin-v0.1-execution-plan.md)
+- [이전 LocalTwin v0.1 전체 실행 계획 (Legacy)](./localtwin-v0.1-execution-plan.md)
+
+## Tasks
+
+- [4주 개발 백로그: Epic과 세부 Task](../development/tasks.md)
+- [시스템 아키텍처: 현재 구조와 4주 목표 구조](../development/architecture.md)
+- [문서 관리 기준: 원본과 중복 문서 역할](../development/document-management.md)
 
 ## Development
 
 - [전체 개발문서](../development/overview.md)
+- [4주 개발 백로그](../development/tasks.md)
+- [시스템 아키텍처](../development/architecture.md)
+- [문서 관리 기준](../development/document-management.md)
 - [개발환경](../development/environment.md)
 - [개발 컨벤션](../development/conventions.md)
 - [개발 전 결정 Gate](../development/pre-development-decisions.md)
-- [전체 개발 체크리스트](../development/checklist.md)
+- [개발 완료 체크리스트](../development/checklist.md)
 - [Git 작업 규칙](../development/git-workflow.md)
 - [LocalTwin Dev Harness](../development/harness.md)
 - [검증 가이드](../development/validation.md)

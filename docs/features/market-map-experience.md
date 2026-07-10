@@ -258,10 +258,26 @@ v0.1의 필수 deck.gl 의존성
 Google Earth 수준의 photorealistic 도시 지도
 ```
 
-## 14. 관련 문서
+## 14. 현재 프로토타입 상태
+
+2026-07-10 기준 React 프로토타입에서 다음을 조작할 수 있다.
+
+```text
+실제 MapLibre 지도 이동과 확대/축소
+연남·홍대·신촌·성수 상권 전환
+카페·음식점·베이커리·편의점 업종 선택
+100m / 300m / 500m 반경 선택
+경쟁 밀도 / 시간대 수요 Layer 전환
+OSM POI marker와 prefab 건물 표시 전환
+상권 비교, 점수 근거와 데이터 기준 dialog
+Docs Home 복귀
+```
+
+현재 POI는 OpenStreetMap snapshot, 분석 수치와 점수는 시연용 fixture다. 실제 데이터 분석 API 연결은 [4주 개발 백로그](../development/tasks.md)의 `WEB-001` 이후 Task에서 진행한다.
+
+## 15. 관련 문서
 
 - [공공데이터 기반 상권 분석](./market-analysis.md)
 - [혼잡도 3D 기반 탐색](./3d-congestion-explorer.md)
 - [LocalTwin 디자인 시스템](../design/design-system.md)
 - [데이터 소스 매핑](../data/data-source-mapping.md)
-

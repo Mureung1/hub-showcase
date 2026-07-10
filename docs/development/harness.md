@@ -37,6 +37,18 @@ LocalTwin Dev Harness는 개발 작업을 다음 순서로 고정한다.
 | Check scripts | `scripts/` | 자동 검증 진입점 |
 | Evaluation docs | `docs/evaluation/` | agent/human 평가 기준과 실패 로그 |
 
+제품 백로그와 Task Packet은 역할이 다르다.
+
+```text
+docs/development/tasks.md
+  무엇을 어떤 순서로 할지 관리하는 Epic/Task 백로그
+
+.harness/tasks/<task-id>.md
+  선택한 세부 Task 하나를 실제로 실행하기 위한 범위와 검증 계약
+```
+
+백로그에서 `Ready` Task를 고른 뒤 같은 ID로 Task Packet을 만들고, 완료 뒤 Run Report와 백로그 상태를 함께 갱신한다.
+
 ## 3. 작업 시작 규칙
 
 새 기능, 버그 수정, 데이터 파이프라인, 문서 구조 변경을 시작하기 전에는 task packet을 만든다.
@@ -55,6 +67,8 @@ Acceptance Criteria
 Verification Plan
 Commit Plan
 ```
+
+가능하면 Summary에 `Backlog ID`와 `Parent Epic`을 적어 [4주 개발 백로그](./tasks.md)까지 추적할 수 있게 한다.
 
 ## 4. 작업 중 규칙
 

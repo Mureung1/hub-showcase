@@ -143,6 +143,21 @@
         padding: 0;
       }
 
+      .content pre.mermaid {
+        min-height: 220px;
+        border: 1px solid var(--line);
+        background: #f8fbf9;
+        color: #07120d;
+        white-space: pre;
+      }
+
+      .content pre.mermaid svg {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        margin: 0 auto;
+      }
+
       .content table {
         width: 100%;
         border-collapse: collapse;
@@ -171,6 +186,65 @@
         background: #f2fbf6;
         color: #244237;
         padding: 12px 16px;
+      }
+
+      .document-toc {
+        margin: 0 0 30px;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        padding: 18px 0;
+      }
+
+      .document-toc strong {
+        display: block;
+        margin-bottom: 12px;
+        color: #07120d;
+        font-size: 0.82rem;
+      }
+
+      .document-toc .document-flowchart {
+        min-height: 170px;
+        margin: 0 0 16px;
+        padding: 12px;
+      }
+
+      .document-toc ol {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px 22px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: document-section;
+      }
+
+      .document-toc li {
+        min-width: 0;
+        counter-increment: document-section;
+      }
+
+      .document-toc a {
+        display: grid;
+        grid-template-columns: 2rem minmax(0, 1fr);
+        gap: 8px;
+        align-items: baseline;
+        color: #34443c;
+        font-size: 0.88rem;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .document-toc a::before {
+        content: counter(document-section, decimal-leading-zero);
+        color: var(--green-dark);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.72rem;
+      }
+
+      .document-toc a:hover,
+      .document-toc a:focus-visible {
+        color: var(--green-dark);
+        text-decoration: underline;
       }
 
       .content .prototype-link {
@@ -233,7 +307,7 @@
       }
 
       .home-actions {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         margin-bottom: 22px;
       }
 
@@ -376,6 +450,7 @@
         color: var(--muted);
         font-size: 0.76rem;
         font-weight: 700;
+        line-height: 1.45;
       }
 
       .doc-files {
@@ -411,6 +486,15 @@
           grid-template-columns: 1fr;
         }
 
+        .document-toc ol {
+          grid-template-columns: 1fr;
+        }
+
+        .doc-folder summary small {
+          display: block;
+          margin: 4px 0 0 20px;
+        }
+
         .document-tree__header {
           align-items: start;
           flex-direction: column;
@@ -441,6 +525,7 @@
       </article>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     <script>
       const params = new URLSearchParams(window.location.search);
       const rawDocParam = params.get("doc") || "Home.md";
@@ -534,8 +619,9 @@
           </section>
 
           <nav class="home-actions" aria-label="주요 문서 바로가기">
+            <a class="home-action" href="./doc-viewer.html?doc=../development/tasks.md"><span>Tasks</span><strong>4주 개발 백로그</strong><small>Epic, 세부 Task, 주차별 목표</small></a>
             <a class="home-action" href="./doc-viewer.html?doc=localtwin-project-proposal.md"><span>Proposal</span><strong>프로젝트 기획서</strong><small>사용자 시나리오, 화면 구조, 핵심 기능</small></a>
-            <a class="home-action" href="../prototypes/core-market-analysis-prototype.html"><span>Prototype</span><strong>상권 분석 프로토타입</strong><small>지도 중심 핵심 화면</small></a>
+            <a class="home-action" href="/prototype/"><span>Prototype</span><strong>상권 분석 프로토타입</strong><small>실제 지도·POI·프리팹 시연 화면</small></a>
             <a class="home-action" href="./knowledge-graph.html"><span>Graph</span><strong>Knowledge Graph</strong><small>문서 간 연결 구조</small></a>
           </nav>
 
@@ -546,7 +632,8 @@
               <p>문제 정의부터 v0.1 개발 순서까지 확인합니다.</p>
               <ul>
                 <li><a href="./doc-viewer.html?doc=localtwin-product-plan.md">제품 기획서</a><em>problem</em></li>
-                <li><a href="./doc-viewer.html?doc=localtwin-v0.1-execution-plan.md">v0.1 실행 계획</a><em>plan</em></li>
+                <li><a href="./doc-viewer.html?doc=../development/tasks.md">4주 개발 백로그</a><em>tasks</em></li>
+                <li><a href="./doc-viewer.html?doc=../development/architecture.md">시스템 아키텍처</a><em>structure</em></li>
                 <li><a href="./doc-viewer.html?doc=../module-notes/localtwin-v0.1-scope.md">범위 고정 메모</a><em>scope</em></li>
               </ul>
             </article>
@@ -572,17 +659,12 @@
             <article class="home-card">
               <span>Development</span>
               <strong>개발 운영과 검증</strong>
-              <p>작업 단위, 검증, 평가, 문서 동기화 규칙을 확인합니다.</p>
+              <p>핵심 개발 기준만 먼저 보고, 세부 문서는 아래 Document Tree에서 확인합니다.</p>
               <ul>
                 <li><a href="./doc-viewer.html?doc=../development/overview.md">전체 개발문서</a><em>overview</em></li>
-                <li><a href="./doc-viewer.html?doc=../development/environment.md">개발환경</a><em>setup</em></li>
-                <li><a href="./doc-viewer.html?doc=../development/conventions.md">개발 컨벤션</a><em>rules</em></li>
-                <li><a href="./doc-viewer.html?doc=../development/pre-development-decisions.md">개발 전 결정 Gate</a><em>gates</em></li>
-                <li><a href="./doc-viewer.html?doc=../design/design-system.md">디자인 시스템</a><em>UI</em></li>
-                <li><a href="./doc-viewer.html?doc=../development/harness.md">Dev Harness</a><em>workflow</em></li>
+                <li><a href="./doc-viewer.html?doc=../development/tasks.md">4주 개발 백로그</a><em>tasks</em></li>
+                <li><a href="./doc-viewer.html?doc=../development/architecture.md">시스템 아키텍처</a><em>structure</em></li>
                 <li><a href="./doc-viewer.html?doc=../development/validation.md">검증 가이드</a><em>check</em></li>
-                <li><a href="./doc-viewer.html?doc=../development/week1-thursday-progress-report.md">1주차 목요일 진행 보고서</a><em>report</em></li>
-                <li><a href="./doc-viewer.html?doc=../evaluation/agent-rubric.md">Agent Rubric</a><em>review</em></li>
               </ul>
             </article>
           </section>
@@ -612,36 +694,39 @@
             </div>
 
             <details class="doc-folder" open>
-              <summary>data <small>1 file</small></summary>
+              <summary>data <small>1 file · 데이터 출처와 스키마</small></summary>
               <ul class="doc-files">
                 <li><a data-doc-path="data/data-source-mapping.md" href="./doc-viewer.html?doc=../data/data-source-mapping.md">data-source-mapping.md</a></li>
               </ul>
             </details>
 
             <details class="doc-folder" open>
-              <summary>design <small>1 file</small></summary>
+              <summary>design <small>1 file · UI 디자인 기준</small></summary>
               <ul class="doc-files">
                 <li><a data-doc-path="design/design-system.md" href="./doc-viewer.html?doc=../design/design-system.md">design-system.md</a></li>
               </ul>
             </details>
 
             <details class="doc-folder" open>
-              <summary>development <small>9 files</small></summary>
+              <summary>development <small>12 files · 개발 계획, 구조와 검증</small></summary>
               <ul class="doc-files">
+                <li><a data-doc-path="development/architecture.md" href="./doc-viewer.html?doc=../development/architecture.md">architecture.md</a></li>
                 <li><a data-doc-path="development/checklist.md" href="./doc-viewer.html?doc=../development/checklist.md">checklist.md</a></li>
                 <li><a data-doc-path="development/conventions.md" href="./doc-viewer.html?doc=../development/conventions.md">conventions.md</a></li>
+                <li><a data-doc-path="development/document-management.md" href="./doc-viewer.html?doc=../development/document-management.md">document-management.md</a></li>
                 <li><a data-doc-path="development/environment.md" href="./doc-viewer.html?doc=../development/environment.md">environment.md</a></li>
                 <li><a data-doc-path="development/git-workflow.md" href="./doc-viewer.html?doc=../development/git-workflow.md">git-workflow.md</a></li>
                 <li><a data-doc-path="development/harness.md" href="./doc-viewer.html?doc=../development/harness.md">harness.md</a></li>
                 <li><a data-doc-path="development/overview.md" href="./doc-viewer.html?doc=../development/overview.md">overview.md</a></li>
                 <li><a data-doc-path="development/pre-development-decisions.md" href="./doc-viewer.html?doc=../development/pre-development-decisions.md">pre-development-decisions.md</a></li>
+                <li><a data-doc-path="development/tasks.md" href="./doc-viewer.html?doc=../development/tasks.md">tasks.md</a></li>
                 <li><a data-doc-path="development/validation.md" href="./doc-viewer.html?doc=../development/validation.md">validation.md</a></li>
                 <li><a data-doc-path="development/week1-thursday-progress-report.md" href="./doc-viewer.html?doc=../development/week1-thursday-progress-report.md">week1-thursday-progress-report.md</a></li>
               </ul>
             </details>
 
             <details class="doc-folder">
-              <summary>evaluation <small>4 files</small></summary>
+              <summary>evaluation <small>4 files · 평가와 실패 기록</small></summary>
               <ul class="doc-files">
                 <li><a data-doc-path="evaluation/agent-rubric.md" href="./doc-viewer.html?doc=../evaluation/agent-rubric.md">agent-rubric.md</a></li>
                 <li><a data-doc-path="evaluation/evaluation-log.md" href="./doc-viewer.html?doc=../evaluation/evaluation-log.md">evaluation-log.md</a></li>
@@ -651,7 +736,7 @@
             </details>
 
             <details class="doc-folder" open>
-              <summary>features <small>4 files</small></summary>
+              <summary>features <small>4 files · 기능별 요구사항</small></summary>
               <ul class="doc-files">
                 <li><a data-doc-path="features/3d-congestion-explorer.md" href="./doc-viewer.html?doc=../features/3d-congestion-explorer.md">3d-congestion-explorer.md</a></li>
                 <li><a data-doc-path="features/market-analysis.md" href="./doc-viewer.html?doc=../features/market-analysis.md">market-analysis.md</a></li>
@@ -661,14 +746,14 @@
             </details>
 
             <details class="doc-folder">
-              <summary>module-notes <small>1 file</small></summary>
+              <summary>module-notes <small>1 file · 범위와 결정 메모</small></summary>
               <ul class="doc-files">
                 <li><a data-doc-path="module-notes/localtwin-v0.1-scope.md" href="./doc-viewer.html?doc=../module-notes/localtwin-v0.1-scope.md">localtwin-v0.1-scope.md</a></li>
               </ul>
             </details>
 
             <details class="doc-folder">
-              <summary>prototypes <small>2 files</small></summary>
+              <summary>prototypes <small>2 files · 실행 가능한 시연 화면</small></summary>
               <ul class="doc-files">
                 <li><a data-doc-path="prototypes/core-market-analysis-prototype.html" href="../prototypes/core-market-analysis-prototype.html">core-market-analysis-prototype.html</a></li>
                 <li><a data-doc-path="prototypes/design-guide-visual-comparison.html" href="../prototypes/design-guide-visual-comparison.html">design-guide-visual-comparison.html</a></li>
@@ -676,7 +761,7 @@
             </details>
 
             <details class="doc-folder" open>
-              <summary>wiki <small>6 files</small></summary>
+              <summary>wiki <small>6 files · 문서 홈과 제품 기획</small></summary>
               <ul class="doc-files">
                 <li><a data-doc-path="wiki/Home.md" href="./doc-viewer.html?doc=Home.md">Home.md</a></li>
                 <li><a data-doc-path="wiki/doc-viewer.html" href="./doc-viewer.html?doc=Home.md">doc-viewer.html</a></li>
@@ -724,6 +809,7 @@
         let list = [];
         let table = [];
         let code = [];
+        let codeLanguage = "";
         let inCode = false;
 
         function flushParagraph() {
@@ -747,14 +833,20 @@
         for (const line of lines) {
           if (line.startsWith("```")) {
             if (inCode) {
-              blocks.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+              if (codeLanguage === "mermaid") {
+                blocks.push(`<pre class="mermaid">${escapeHtml(code.join("\n"))}</pre>`);
+              } else {
+                blocks.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+              }
               code = [];
+              codeLanguage = "";
               inCode = false;
             } else {
               flushParagraph();
               flushList();
               flushTable();
               inCode = true;
+              codeLanguage = line.slice(3).trim().toLowerCase();
             }
             continue;
           }
@@ -804,6 +896,86 @@
         return blocks.join("\n");
       }
 
+      function insertDocumentToc() {
+        const headings = Array.from(content.querySelectorAll("h2"));
+        if (!headings.length) return;
+
+        const labels = headings.map((heading, index) => {
+          const id = `section-${index + 1}`;
+          const label = heading.textContent.trim();
+          heading.id = id;
+          return { id, label };
+        });
+
+        const items = labels.map(({ id, label }) => `<li><a href="#${id}">${escapeHtml(label)}</a></li>`);
+        const mermaidNode = ({ label }, index) => {
+          const safeLabel = label.replace(/["\[\]{}]/g, "").trim();
+          return `section${index + 1}["${safeLabel}"]`;
+        };
+        const diagramLines = [];
+
+        if (labels.length <= 4) {
+          diagramLines.push("flowchart LR");
+          diagramLines.push(`  ${labels.map(mermaidNode).join(" --> ")}`);
+        } else {
+          const rowSize = 4;
+          const rows = Array.from({ length: Math.ceil(labels.length / rowSize) }, (_, rowIndex) =>
+            labels.slice(rowIndex * rowSize, (rowIndex + 1) * rowSize),
+          );
+          diagramLines.push("flowchart TB");
+          rows.forEach((row, rowIndex) => {
+            const offset = rowIndex * rowSize;
+            diagramLines.push(`  subgraph row${rowIndex + 1}[" "]`);
+            diagramLines.push("    direction LR");
+            diagramLines.push(`    ${row.map((item, index) => mermaidNode(item, offset + index)).join(" --> ")}`);
+            diagramLines.push("  end");
+            diagramLines.push(`  style row${rowIndex + 1} fill:transparent,stroke:transparent`);
+          });
+          rows.slice(0, -1).forEach((row, rowIndex) => {
+            const lastIndex = rowIndex * rowSize + row.length;
+            diagramLines.push(`  section${lastIndex} --> section${lastIndex + 1}`);
+          });
+        }
+
+        const toc = document.createElement("nav");
+        toc.className = "document-toc";
+        toc.setAttribute("aria-label", "문서 흐름");
+        toc.innerHTML = `<strong>문서 흐름</strong><pre class="mermaid document-flowchart">${escapeHtml(
+          diagramLines.join("\n"),
+        )}</pre><ol>${items.join("")}</ol>`;
+
+        const title = content.querySelector("h1");
+        if (title) {
+          title.insertAdjacentElement("afterend", toc);
+        } else {
+          content.prepend(toc);
+        }
+      }
+
+      async function renderMermaidDiagrams() {
+        const diagrams = content.querySelectorAll("pre.mermaid");
+        if (!diagrams.length || !window.mermaid) return;
+        window.mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: "strict",
+          theme: "base",
+          themeVariables: {
+            primaryColor: "#eef8f1",
+            primaryTextColor: "#07120d",
+            primaryBorderColor: "#62ad7d",
+            lineColor: "#60746a",
+            secondaryColor: "#edf4ff",
+            tertiaryColor: "#ffffff",
+            fontFamily: "Inter, Pretendard, system-ui, sans-serif",
+          },
+        });
+        try {
+          await window.mermaid.run({ nodes: diagrams });
+        } catch (error) {
+          console.warn("Mermaid render failed; raw diagram kept visible.", error);
+        }
+      }
+
       async function loadDocument() {
         const canonicalUrl = `./doc-viewer.html?doc=${encodeURIComponent(requestedDoc)}`;
         if (rawDocParam !== requestedDoc && window.history.replaceState) {
@@ -822,6 +994,8 @@
           }
           const markdown = await response.text();
           content.innerHTML = renderMarkdown(markdown, requestedDoc);
+          insertDocumentToc();
+          await renderMermaidDiagrams();
         } catch (error) {
           content.innerHTML = `<div class="error">문서를 불러오지 못했습니다: ${escapeHtml(
             requestedDoc,

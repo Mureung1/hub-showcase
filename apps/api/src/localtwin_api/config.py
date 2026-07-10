@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,6 +9,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     database_url: str = "sqlite:///./data/localtwin.db"
     cors_origins: str = "http://127.0.0.1:5173,http://localhost:5173"
+    public_data_service_key: SecretStr | None = None
+    seoul_open_data_key: SecretStr | None = None
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../../.env"),

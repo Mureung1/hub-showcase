@@ -534,3 +534,108 @@ v0.1에는 다음 조합이면 충분하다.
 - [행정안전부 식품 휴게음식점 조회서비스](https://www.data.go.kr/data/15154921/openapi.do)
 - [행정동 단위 서울 생활인구](https://data.seoul.go.kr/dataList/OA-14991/S/1/datasetView.do)
 - [브이월드 2D 데이터 API](https://www.vworld.kr/dev/v4dv_2ddataguide2_s002.do)
+
+## 12. API 신청 및 수집 준비
+
+2026-07-10에 실제 API 수집 전 공식 제공 항목을 다시 확인했다. 이 절의
+`준비 완료`는 인증키를 받기 전의 코드와 문서 준비 상태를 뜻하며, 실제 데이터
+확보 완료를 뜻하지 않는다.
+
+### 12.1 서울 상권분석 Open API: 데모 우선 조합
+
+서울에서 상권 분석 데모를 먼저 만들 때는 상권영역 API로 상권 코드를 얻고,
+나머지 지표를 같은 `기준_년분기_코드`로 묶는다. 상권영역 API에는 기간 filter를
+붙이지 않는다.
+
+| 용도 | 서울 Open API service | 데이터셋 |
+| --- | --- | --- |
+| 상권 코드와 영역 | `TbgisTrdarRelm` | [영역-상권](https://data.seoul.go.kr/dataList/OA-15560/A/1/datasetView.do) |
+| 업종별 점포, 개업/폐업, 프랜차이즈 | `VwsmTrdarStorQq` | [점포-상권](https://data.seoul.go.kr/dataList/OA-15577/A/1/datasetView.do) |
+| 업종별 추정매출 | `VwsmTrdarSelngQq` | [추정매출-상권](https://data.seoul.go.kr/dataList/OA-15572/A/1/datasetView.do) |
+| 상권 생활인구 | `VwsmTrdarFlpopQq` | [길단위인구-상권](https://data.seoul.go.kr/dataList/OA-15568/A/1/datasetView.do) |
+| 상권 상주인구 | `VwsmTrdarRepopQq` | [상주인구-상권](https://data.seoul.go.kr/dataList/OA-15584/A/1/datasetView.do) |
+| 상권 직장인구 | `VwsmTrdarWrcPopltnQq` | [직장인구-상권](https://data.seoul.go.kr/dataList/OA-15569/A/1/datasetView.do) |
+
+서울시 상권 추정매출은 개별 카드 결제 원본이 아니다. 카드사 기반의 집계·추정
+매출이며, 화면에는 `카드사 기반 추정매출`로 표시한다. 서울시가 2026-07-03에
+고지한 기준에 따르면 표준단위구역 매출은 2021년 이후 자료를 제공한다.
+
+생활인구도 실제 개인의 이동 위치나 정확한 보행자 수가 아니라 집계된 생활인구다.
+따라서 지도와 리포트에서 `생활인구`라는 명칭과 집계 단위를 함께 표시한다.
+
+### 12.2 공공데이터포털: 점포 marker와 인허가 보강
+
+아래 세 항목은 공공데이터포털에서 같은 계정으로 활용신청한다.
+
+| 용도 | 데이터셋 | 신청 후 사용 |
+| --- | --- | --- |
+| 개별 점포 marker와 업종 분류 | [소상공인시장진흥공단 상가(상권)정보 API](https://www.data.go.kr/data/15012005/openapi.do) | 반경 조회, 업종 코드, 위도/경도 |
+| 일반음식점 인허가·영업 상태 | [행정안전부 식품 일반음식점 조회서비스](https://www.data.go.kr/data/15154916/openapi.do) | 개업/폐업 흐름, 영업 상태 |
+| 카페·휴게음식점 인허가·영업 상태 | [행정안전부 식품 휴게음식점 조회서비스](https://www.data.go.kr/data/15154921/openapi.do) | 카페 계열 개업/폐업 흐름 |
+
+2026-07-10 조사 기준으로 세 공공데이터포털 API는 개발계정 자동승인과 일 10,000
+트래픽을 안내한다. 실제 승인 조건과 응답 필드는 신청 뒤 Swagger와 첫 응답으로 다시
+검증한다.
+
+### 12.3 신청과 로컬 설정 순서
+
+1. 공공데이터포털에서 표의 세 API에 `활용신청`한다.
+2. 서울 열린데이터광장에서 Open API 인증키를 발급한다.
+3. 프로젝트 루트에서 `.env.example`을 복사해 `.env`를 만들고 키를 넣는다.
+
+```powershell
+Copy-Item .env.example .env
+```
+
+```text
+PUBLIC_DATA_SERVICE_KEY=<공공데이터포털 service key>
+SEOUL_OPEN_DATA_KEY=<서울 열린데이터광장 인증키>
+```
+
+키는 이 채팅, source code, Git commit, `VITE_` 환경변수에 넣지 않는다. 브라우저는
+향후 FastAPI의 분석 API만 호출하며, provider API를 직접 호출하지 않는다.
+
+### 12.4 첫 raw snapshot 수집
+
+인증키를 넣은 뒤 먼저 기간 filter 없이 첫 응답을 받아 현재 제공되는
+`STDR_YYQU_CD` 값을 확인한다. 서울 Open API 안내의 서비스별 추가 요청 인자는
+선택 사항이므로, `--period`를 생략한 호출은 최신 제공 상태를 탐색하는 용도로 쓴다.
+아래의 `20251`은 기간 filter 형식 예시일 뿐 최신 데이터라고 가정하지 않는다.
+
+```powershell
+uv run --directory apps/api python -m localtwin_api.seoul_open_data --allow-official-http
+
+# 특정 분기만 다시 수집할 때
+uv run --directory apps/api python -m localtwin_api.seoul_open_data --period 20251 --allow-official-http
+
+# pagination으로 선택 source의 전체 row를 저장할 때
+uv run --directory apps/api python -m localtwin_api.seoul_open_data --period 20251 --all --allow-official-http
+```
+
+수집기는 다음 경로에 각 API의 원본 row와 manifest를 저장한다.
+
+```text
+data/raw/seoul-market/<UTC timestamp>/
+  areas.json
+  stores.json
+  sales.json
+  flow.json
+  manifest.json
+```
+
+기본값은 source 하나당 최대 1,000 rows만 저장하는 탐색 snapshot이다. `manifest.json`의
+`truncated`가 `true`이면 전체 데이터가 아니므로 분석 결과나 전체 상권 수로 사용하지
+않는다. `--all`을 명시하면 provider의 page를 끝까지 호출하고, `truncated: false`와
+provider row 수 일치가 확인된 snapshot만 전체 분석 입력으로 사용한다.
+
+서울 열린데이터광장이 현재 문서화한 Open API endpoint는 `http://`와 port `8088`을
+사용하며 인증키를 URL 경로에 포함한다. 그래서 수집기는 browser route가 아니라 로컬
+CLI로만 제공하고, `--allow-official-http`을 명시해야 실제 요청을 보낸다. 공용 또는
+신뢰할 수 없는 네트워크에서는 이 명령을 실행하지 않는다.
+
+### 12.5 변경 기록
+
+| 날짜 | Task | 변경 | 상태 |
+| --- | --- | --- | --- |
+| 2026-07-10 | DATA-001 | 공식 API 서비스명, 신청 목록, local raw snapshot 절차를 추가 | 인증키 대기 |
+| 2026-07-10 | DATA-001 | 서울 상권영역·점포·추정매출·생활인구 `20251` 전체 101,110행 raw snapshot 저장 | 서울 수집 완료, 공공데이터포털 key 대기 |

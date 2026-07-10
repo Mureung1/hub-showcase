@@ -16,15 +16,18 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 - [Document Viewer](docs/wiki/doc-viewer.html?doc=Home.md)
 - [프로젝트 기획서: 화면 구조와 핵심 기능](docs/wiki/localtwin-project-proposal.md)
 - [제품 기획서: 문제 정의, 사용자 시나리오, 기능 구성](docs/wiki/localtwin-product-plan.md)
-- [LocalTwin v0.1 전체 실행 계획](docs/wiki/localtwin-v0.1-execution-plan.md)
+- [이전 LocalTwin v0.1 전체 실행 계획 (Legacy)](docs/wiki/localtwin-v0.1-execution-plan.md)
 
 ### 개발 문서
 
 - [전체 개발문서](docs/development/overview.md)
+- [4주 개발 백로그](docs/development/tasks.md)
+- [시스템 아키텍처](docs/development/architecture.md)
+- [문서 관리 기준](docs/development/document-management.md)
 - [개발환경](docs/development/environment.md)
 - [개발 컨벤션](docs/development/conventions.md)
 - [개발 전 결정 Gate](docs/development/pre-development-decisions.md)
-- [전체 개발 체크리스트](docs/development/checklist.md)
+- [개발 완료 체크리스트](docs/development/checklist.md)
 - [Git 작업 규칙](docs/development/git-workflow.md)
 - [LocalTwin Dev Harness](docs/development/harness.md)
 - [검증 가이드](docs/development/validation.md)
