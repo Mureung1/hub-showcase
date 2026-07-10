@@ -1,6 +1,8 @@
 ﻿# LocalTwin 제품 기획서
 
-이 문서는 fork한 Wiki 페이지에 옮기기 위한 제품 기획 문서다.
+문서 역할: 상세 제품 기획의 원본
+
+이 문서는 문제 정의, 사용자 시나리오와 제품 기능을 관리한다. 개발 순서와 상태는 [4주 개발 백로그](../development/tasks.md), 기술 연결은 [시스템 아키텍처](../development/architecture.md)를 기준으로 한다.
 
 LocalTwin의 주기능은 공공데이터 기반 상권 분석이다. 혼잡도 3D 기반 탐색은 상권 분석을 보조하는 추가 기능으로 둔다.
 
@@ -46,7 +48,7 @@ v0.1은 전국 서비스나 자동 창업 성공 예측을 목표로 하지 않�
 대상: 특정 상권 1곳
 업종: 카페 또는 음식점 1개 업종부터
 분석: 반경 내 경쟁 강도, 개폐업 흐름, 시간대별 유동 특성, 입지 점수
-보조: 한 가게 앞 또는 거리 10~20m의 정적 3D 탐색
+보조: 한 가게 앞 또는 거리 10~20m의 사람 눈높이 3DGS 현장 상세보기
 ```
 
 ## 2. 사용자 시나리오
@@ -283,21 +285,22 @@ LLM 연동 후에도 점수 근거와 데이터 출처를 함께 표시한다.
 
 서브 기능은 핵심 상권 분석을 보조한다. v0.1에서는 핵심 기능이 먼저 동작한 뒤 연결한다.
 
-### 4.1 혼잡도 3D 기반 탐색
+### 4.1 Gaussian Splatting 현장 상세보기
 
 목적:
 
 ```text
-상권 분석 결과를 실제 거리 구간의 정적 3D map 위에서 보조적으로 확인한다.
+상권 지도에서 선택한 위치를 사람이 실제로 서 있는 눈높이의 3DGS 장면에서 확인한다.
 ```
 
 범위:
 
 ```text
 한 가게 앞 또는 한 거리 10~20m
-정적 3D map 1개
+Gaussian Splatting 현장 1개
 가게/관찰 지점 마커
-시간대별 혼잡도 카드
+시간대별 혼잡도 control
+통계 기반의 추상적 사람 오브젝트
 ```
 
 제외:
@@ -314,7 +317,7 @@ AR
 목적:
 
 ```text
-정적 3D map 생성을 위한 입력 이미지에서 사람 영역과 개인정보 노출 위험을 줄인다.
+Gaussian Splatting 장면 생성을 위한 입력 이미지에서 사람 영역과 개인정보 노출 위험을 줄인다.
 ```
 
 방식:
@@ -365,7 +368,7 @@ P0:
 상권 해석 리포트
 
 P1:
-혼잡도 3D 기반 탐색
+Gaussian Splatting 현장 상세보기
 사람 영역 익명화 전처리
 시간대별 관찰 입력 고도화
 
@@ -380,5 +383,6 @@ P2:
 - [전체 개발문서](../development/overview.md)
 - [전체 개발 체크리스트](../development/checklist.md)
 - [공공데이터 기반 상권 분석 스펙](../features/market-analysis.md)
-- [혼잡도 3D 기반 탐색 스펙](../features/3d-congestion-explorer.md)
+- [2.5D 상권 지도와 유동인구 Layer 스펙](../features/market-map-experience.md)
+- [Gaussian Splatting 현장 상세보기 스펙](../features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리 스펙](../features/person-anonymization-preprocessing.md)

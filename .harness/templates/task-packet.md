@@ -4,6 +4,8 @@
 
 ```text
 Task:
+Backlog ID:
+Parent Epic:
 Type: feature | bug | docs | refactor | data | test | chore
 Owner:
 Status: draft | ready | in_progress | blocked | done

@@ -1,0 +1,17 @@
+{
+  "buildCommand": "pnpm --dir apps/web build && node scripts/copy-docs.mjs",
+  "outputDirectory": "apps/web/dist",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/docs/wiki/doc-viewer.html?doc=Home.md",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    { "source": "/prototype", "destination": "/index.html" },
+    { "source": "/prototype/(.*)", "destination": "/index.html" }
+  ]
+}

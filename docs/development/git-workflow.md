@@ -12,7 +12,36 @@ LocalTwin 개발은 작은 단위로 진행한다.
 
 커밋은 작업 기록이 아니라 의사결정과 검증 기록이다. 나중에 포트폴리오, 회고, 디버깅에서 다시 읽을 수 있어야 한다.
 
-## 2. 커밋 단위
+## 2. Branch 전략
+
+```text
+main:
+공개 release 기준 branch
+
+develop:
+검증된 개발 작업을 통합하는 기본 branch
+
+작업 branch:
+feat/<task-id>-<short-slug>
+fix/<task-id>-<short-slug>
+docs/<task-id>-<short-slug>
+chore/<task-id>-<short-slug>
+```
+
+일반 작업 PR은 `develop`을 대상으로 한다. `main`에는 release를 준비하는 PR만 보낸다.
+
+예시:
+
+```text
+feat/MARKET-001-radius-summary
+fix/MAP-003-marker-selection
+docs/ENV-001-conventions
+chore/CI-002-api-cache
+```
+
+작업 branch에는 서로 독립적인 기능이나 버그를 함께 넣지 않는다.
+
+## 3. 커밋 단위
 
 ### 좋은 커밋 단위
 
@@ -34,7 +63,7 @@ person bbox metadata 저장 버그 수정
 의미 없는 메시지로 커밋
 ```
 
-## 3. 커밋 전 체크
+## 4. 커밋 전 체크
 
 커밋 전에는 항상 다음을 확인한다.
 
@@ -46,9 +75,10 @@ person bbox metadata 저장 버그 수정
 5. 커밋 메시지에 변경 이유와 검증 내용을 남겼는가?
 ```
 
-## 4. 커밋 메시지 형식
+## 5. 커밋 메시지 형식
 
 커밋 메시지는 Conventional Commit에 가깝게 작성한다.
+subject, `why`와 `verify` 내용은 영어로 작성한다.
 
 ```text
 type(scope): summary
@@ -80,23 +110,23 @@ perf
 feat(market-analysis): add radius competition summary
 
 why:
-- 선택 위치 기준 동일 업종 경쟁 강도를 계산해야 한다.
+- calculate same-category competition around the selected location
 
 verify:
-- sample store fixture로 100m/300m/500m 집계 결과를 확인했다.
+- verified 100m, 300m, and 500m totals with the store fixture
 ```
 
 ```text
 fix(anonymization): exclude frames with large person bbox
 
 why:
-- 사람이 장면 중심을 크게 가리면 3D 복원 품질이 떨어진다.
+- prevent heavily occluded frames from reducing reconstruction quality
 
 verify:
-- sample frames에서 large bbox frame이 output exclude list에 기록되는지 확인했다.
+- confirmed large bounding boxes are written to the exclusion list
 ```
 
-## 5. Hook으로 강제할 수 있는 것
+## 6. Hook으로 강제할 수 있는 것
 
 Git hook으로 강제할 수 있는 항목:
 
@@ -134,7 +164,7 @@ commit-msg hook:
 한 기능/한 버그 단위로 stage 후 commit
 ```
 
-## 6. 여러 기능 동시 구현 방지 규칙
+## 7. 여러 기능 동시 구현 방지 규칙
 
 완전한 의미 판별은 자동화하기 어렵다. 예를 들어 어떤 변경이 "하나의 기능"인지 "두 기능을 섞은 것"인지는 코드 의미와 작업 의도를 봐야 한다.
 
@@ -154,10 +184,10 @@ commit-msg hook:
 
 ```text
 local hook은 git commit --no-verify로 우회할 수 있다.
-팀/원격 저장소에서 강제하려면 branch protection, required CI, PR review 규칙이 필요하다.
+팀/원격 저장소에서 강제하려면 branch protection과 PR review 규칙이 필요하다.
 ```
 
-## 7. Hook 설정
+## 8. Hook 설정
 
 이 저장소에는 hook 샘플을 `.githooks/pre-commit`과 `.githooks/commit-msg`에 둔다.
 
@@ -179,7 +209,7 @@ git config --get core.hooksPath
 .githooks
 ```
 
-## 8. 작업 루프
+## 9. 작업 루프
 
 기능 구현 루프:
 
@@ -203,7 +233,17 @@ git config --get core.hooksPath
 6. fix 커밋으로 분리한다.
 ```
 
-## 9. 권장 명령
+## 10. PR과 원격 보호
+
+```text
+일반 PR base: develop
+release PR base: main
+검증: PR 작성 전 로컬 명령 실행 결과를 기록
+```
+
+local hook은 `--no-verify`로 우회할 수 있으므로, 원격 병합 전에는 PR 설명의 로컬 검증 결과와 리뷰를 확인한다.
+
+## 11. 권장 명령
 
 현재 변경 확인:
 

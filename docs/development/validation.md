@@ -26,6 +26,8 @@ task packet 형식 검사
 README/docs 주요 링크 존재 확인
 문서 링크 검사
 docs HTML 문법과 그래프 문서 대상 존재 확인
+web Prettier / typecheck / lint / unit test / production build
+api Ruff lint / format check / pytest
 ```
 
 ## 3. 작업 유형별 검증
@@ -33,11 +35,13 @@ docs HTML 문법과 그래프 문서 대상 존재 확인
 | 작업 유형 | 최소 검증 |
 | --- | --- |
 | docs | 링크 확인, 문서 경로 확인 |
-| web | `npm run build`, 화면 smoke screenshot |
-| api | unit/integration test, endpoint smoke |
+| web | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, 화면 변경 시 screenshot |
+| api | `uv run --directory apps/api ruff check .`, `pytest`, endpoint smoke |
 | data | sample fixture 변환 확인, schema check |
 | bug | 재현 케이스 확인, 수정 후 동일 케이스 재검증 |
 | harness | check script 자체 통과, 실패 케이스 수동 확인 |
+
+GitHub Actions CI는 사용하지 않는다. 검증은 개발자가 로컬에서 필요한 범위만 실행하고, PR 설명에 실제 실행 결과를 기록한다.
 
 ## 4. Run Report에 남길 내용
 
@@ -59,3 +63,10 @@ docs HTML 문법과 그래프 문서 대상 존재 확인
 테스트 없이 버그 수정 완료라고 말함
 화면 변경 후 screenshot 또는 수동 확인이 없음
 ```
+
+## 6. 관련 문서
+
+- [개발환경](./environment.md)
+- [개발 컨벤션](./conventions.md)
+- [개발 전 결정 Gate](./pre-development-decisions.md)
+- [Git 작업 규칙](./git-workflow.md)
