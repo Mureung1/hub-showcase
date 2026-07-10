@@ -25,6 +25,12 @@ export type FakeCodexErrorNotification = {
   message: string
 }
 
+export type FakeCodexAuthStatus = {
+  authMethod?: string | null
+  authToken?: string | null
+  requiresOpenaiAuth?: boolean | null
+}
+
 export type FakeCodexAppServerScenario = {
   userAgent?: string
   threadId?: string
@@ -41,6 +47,7 @@ export type FakeCodexAppServerScenario = {
   turnStartError?: string
   turnInterruptError?: string
   endBeforeTerminal?: boolean
+  authStatus?: FakeCodexAuthStatus
 }
 
 export type FakeCodexAppServerFixture = {
@@ -52,6 +59,7 @@ export type FakeCodexAppServerFixture = {
 export type CodexDebugClientRequestMethod =
   | 'initialize'
   | 'initialized'
+  | 'getAuthStatus'
   | 'thread/list'
   | 'thread/loaded/list'
   | 'thread/read'
@@ -62,7 +70,6 @@ export type CodexDebugClientRequestMethod =
 
 const defaultThreadId = 'thread-1'
 const defaultTurnId = 'turn-1'
-const interruptCompletionTimeoutMs = 300
 const interruptCompletionTimeoutMessage =
   'Codex turn interrupt did not complete before timeout'
 const missingTurnScopeCancellationMessage =
@@ -197,6 +204,7 @@ export function hasCodexInterruptTimeoutDebugEvidence(
   input: {
     threadId: string
     turnId: string
+    timeoutMs: number
     streamEnded?: boolean
   },
 ): boolean {
@@ -206,7 +214,7 @@ export function hasCodexInterruptTimeoutDebugEvidence(
     data: {
       threadId: input.threadId,
       turnId: input.turnId,
-      timeoutMs: interruptCompletionTimeoutMs,
+      timeoutMs: input.timeoutMs,
       streamEnded: input.streamEnded ?? false,
     },
   })
@@ -280,6 +288,11 @@ function normalizeScenario(
     turnStartError: scenario.turnStartError ?? null,
     turnInterruptError: scenario.turnInterruptError ?? null,
     endBeforeTerminal: scenario.endBeforeTerminal ?? false,
+    authStatus: {
+      authMethod: scenario.authStatus?.authMethod ?? null,
+      authToken: scenario.authStatus?.authToken ?? null,
+      requiresOpenaiAuth: scenario.authStatus?.requiresOpenaiAuth ?? true,
+    },
   }
 }
 
@@ -306,6 +319,7 @@ type NormalizedFakeCodexAppServerScenario = {
   turnStartError: string | null
   turnInterruptError: string | null
   endBeforeTerminal: boolean
+  authStatus: Required<FakeCodexAuthStatus>
 }
 
 function normalizeCompletion(
@@ -355,6 +369,17 @@ reader.on('line', (line) => {
   }
 
   if (message.method === 'initialized') {
+    return
+  }
+
+  if (message.method === 'getAuthStatus') {
+    writeResponse(message.id, {
+      authMethod: scenario.authStatus.authMethod,
+      authToken: message.params?.includeToken === true
+        ? scenario.authStatus.authToken
+        : null,
+      requiresOpenaiAuth: scenario.authStatus.requiresOpenaiAuth,
+    })
     return
   }
 
@@ -415,6 +440,8 @@ reader.on('line', (line) => {
     })
 
     setImmediate(() => {
+      writeTurnStarted()
+
       for (const delta of scenario.agentMessageDeltas) {
         writeNotification('item/agentMessage/delta', {
           threadId: delta.threadId,
@@ -496,25 +523,36 @@ function writeErrorNotification(errorNotification) {
 function writeTurnCompletion(completion) {
   writeNotification('turn/completed', {
     threadId: completion.threadId,
-    turn: {
-      id: completion.turnId,
-      items: [],
-      itemsView: {
-        type: 'complete',
-      },
-      status: completion.status,
-      error: completion.errorMessage
-        ? {
-            message: completion.errorMessage,
-            codexErrorInfo: null,
-            additionalDetails: null,
-          }
-        : null,
-      startedAt: null,
-      completedAt: null,
-      durationMs: null,
-    },
+    turn: createTurn(completion.turnId, completion.status, completion.errorMessage),
   })
+}
+
+function writeTurnStarted() {
+  writeNotification('turn/started', {
+    threadId: scenario.threadId,
+    turn: createTurn(scenario.turnId, 'inProgress', null),
+  })
+}
+
+function createTurn(id, status, errorMessage) {
+  return {
+    id,
+    items: [],
+    itemsView: {
+      type: 'complete',
+    },
+    status,
+    error: errorMessage
+      ? {
+          message: errorMessage,
+          codexErrorInfo: null,
+          additionalDetails: null,
+        }
+      : null,
+    startedAt: null,
+    completedAt: null,
+    durationMs: null,
+  }
 }
 
 function createThread(options = {}) {

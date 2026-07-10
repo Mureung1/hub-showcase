@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "NODE_OPTIONS=--conditions=development tsx watch src/server.ts",
     "build": "tsc",
+    "verify:codex-parity": "NODE_OPTIONS=--conditions=development tsx src/codex-parity.ts",
     "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
     "start": "node dist/server.js"

@@ -25,6 +25,22 @@ export class FakeRuntimeAdapter implements AgentRuntimeAdapter {
   }
 
   async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
+    yield {
+      type: 'debug_log',
+      entries: [
+        {
+          timestamp: new Date().toISOString(),
+          source: 'fake-runtime',
+          kind: 'run_started',
+          message: 'Fake runtime accepted a run',
+          data: {
+            runId: input.runId,
+            prompt: input.prompt,
+          },
+        },
+      ],
+    }
+
     if (this.consumePendingFailureRun()) {
       throw new Error('Fake runtime deterministic failure requested')
     }

@@ -17,12 +17,36 @@ type HealthState = 'checking' | 'ok' | 'error'
 type InspectorRunStatus = RuntimeRunStatus | 'idle'
 type FakeScenario = 'normal' | 'failure'
 
+type CodexRuntimeStatus = {
+  ok: boolean
+  codexBinPath: string | null
+  version: string | null
+  pinnedVersion: string
+  versionMatchesPin: boolean | null
+  cwd: string | null
+  runtimeHome: {
+    codexHome: string
+    codexSqliteHome: string
+  } | null
+  config?: {
+    configPath: string
+    authCredentialsStore: string | null
+    fileAuthConfigPresent: boolean
+  } | null
+  auth?: {
+    authMethod: string | null
+    requiresOpenaiAuth: boolean | null
+  }
+  error?: string
+}
+
 function App() {
   const [health, setHealth] = useState<HealthState>('checking')
   const [adapters, setAdapters] = useState<RuntimeAdapterDescriptor[]>([])
   const [capabilitySlots, setCapabilitySlots] = useState<CodexCapabilitySlot[]>(
     [],
   )
+  const [codexStatus, setCodexStatus] = useState<CodexRuntimeStatus | null>(null)
   const [selectedAdapter, setSelectedAdapter] = useState('fake')
   const [fakeScenario, setFakeScenario] = useState<FakeScenario>('normal')
   const [prompt, setPrompt] = useState('정리해줘')
@@ -69,8 +93,13 @@ function App() {
   useEffect(() => {
     let active = true
 
-    Promise.all([fetchAdapters(), fetchHistory(), fetchCodexCapabilities()])
-      .then(([adapterList, runList, codexCapabilitySlots]) => {
+    Promise.all([
+      fetchAdapters(),
+      fetchHistory(),
+      fetchCodexCapabilities(),
+      fetchCodexStatus(),
+    ])
+      .then(([adapterList, runList, codexCapabilitySlots, status]) => {
         if (!active) {
           return
         }
@@ -78,6 +107,7 @@ function App() {
         setAdapters(adapterList)
         setHistory(runList)
         setCapabilitySlots(codexCapabilitySlots)
+        setCodexStatus(status)
 
         if (adapterList[0]) {
           setSelectedAdapter(adapterList[0].name)
@@ -227,6 +257,14 @@ function App() {
     }
   }
 
+  async function refreshCodexStatus() {
+    try {
+      setCodexStatus(await fetchCodexStatus())
+    } catch (statusError) {
+      setError(toErrorMessage(statusError))
+    }
+  }
+
   async function refreshRunState(runId: string) {
     const [latestLog, latestHistory] = await Promise.all([
       fetchRunLog(runId),
@@ -332,6 +370,72 @@ function App() {
                   <option value="failure">Deterministic failure</option>
                 </select>
               </label>
+            )}
+
+            {selectedAdapter === 'codex' && (
+              <div className="codex-status" aria-label="Codex runtime status">
+                <div className="codex-status-header">
+                  <span>Codex Status</span>
+                  <button
+                    className="status-refresh"
+                    type="button"
+                    onClick={() => void refreshCodexStatus()}
+                  >
+                    Refresh
+                  </button>
+                </div>
+
+                <dl className="status-list">
+                  <div>
+                    <dt>Auth</dt>
+                    <dd className={`auth-${readCodexAuthState(codexStatus)}`}>
+                      {formatCodexAuthStatus(codexStatus)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Credentials</dt>
+                    <dd
+                      className={
+                        codexStatus?.config?.fileAuthConfigPresent
+                          ? 'auth-ok'
+                          : 'auth-missing'
+                      }
+                    >
+                      {codexStatus?.config?.authCredentialsStore ?? 'Unset'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Version</dt>
+                    <dd>{codexStatus?.version ?? 'Unknown'}</dd>
+                  </div>
+                  <div>
+                    <dt>Package pin</dt>
+                    <dd>{formatCodexVersionPin(codexStatus)}</dd>
+                  </div>
+                  <div>
+                    <dt>Binary</dt>
+                    <dd>{codexStatus?.codexBinPath ?? 'Unknown'}</dd>
+                  </div>
+                  <div>
+                    <dt>Home</dt>
+                    <dd>{codexStatus?.runtimeHome?.codexHome ?? 'Unknown'}</dd>
+                  </div>
+                  <div>
+                    <dt>SQLite</dt>
+                    <dd>
+                      {codexStatus?.runtimeHome?.codexSqliteHome ?? 'Unknown'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>CWD</dt>
+                    <dd>{codexStatus?.cwd ?? 'Unknown'}</dd>
+                  </div>
+                </dl>
+
+                {codexStatus && !codexStatus.ok && (
+                  <p className="status-error">{codexStatus.error}</p>
+                )}
+              </div>
             )}
 
             <label>
@@ -513,6 +617,16 @@ async function fetchCodexCapabilities(): Promise<CodexCapabilitySlot[]> {
   return data.slots
 }
 
+async function fetchCodexStatus(): Promise<CodexRuntimeStatus> {
+  const response = await fetch('/api/runtime/codex/status')
+
+  if (!response.ok) {
+    throw new Error(`Codex status fetch failed: ${response.status}`)
+  }
+
+  return (await response.json()) as CodexRuntimeStatus
+}
+
 async function fetchHistory(): Promise<RuntimeRunSummary[]> {
   const response = await fetch('/api/runtime/runs')
 
@@ -572,6 +686,46 @@ function formatCapabilityStatus(status: CodexCapabilitySlot['status']): string {
   }
 
   return 'Reserved'
+}
+
+function readCodexAuthState(
+  status: CodexRuntimeStatus | null,
+): 'checking' | 'ok' | 'missing' | 'error' {
+  if (!status) {
+    return 'checking'
+  }
+
+  if (!status.ok) {
+    return 'error'
+  }
+
+  return status.auth?.authMethod ? 'ok' : 'missing'
+}
+
+function formatCodexAuthStatus(status: CodexRuntimeStatus | null): string {
+  const authState = readCodexAuthState(status)
+
+  if (authState === 'checking') {
+    return 'Checking'
+  }
+
+  if (authState === 'error') {
+    return 'Unavailable'
+  }
+
+  return status?.auth?.authMethod ?? 'Missing'
+}
+
+function formatCodexVersionPin(status: CodexRuntimeStatus | null): string {
+  if (!status) {
+    return 'Unknown'
+  }
+
+  if (status.versionMatchesPin === null) {
+    return `${status.pinnedVersion} / Unknown`
+  }
+
+  return `${status.pinnedVersion} / ${status.versionMatchesPin ? 'Matched' : 'Mismatch'}`
 }
 
 function formatEventDetail(event: RuntimeRunEvent): string {

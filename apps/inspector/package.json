@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "npm run test:e2e",
+    "test:e2e": "NODE_OPTIONS=--conditions=development playwright test --config playwright.config.ts",
     "typecheck": "tsc -b",
     "lint": "oxlint",
     "preview": "vite preview"

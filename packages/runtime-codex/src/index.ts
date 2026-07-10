@@ -8,11 +8,20 @@ export {
   type CodexCapabilitySlotStatus,
 } from './capability-slots.js'
 export {
+  readCodexRuntimeConfigStatus,
+  readCodexRuntimeStatus,
+  type CodexRuntimeConfigStatus,
+  type CodexRuntimeStatus,
+} from './status.js'
+export {
   CodexRawClient,
   ensureCodexRuntimeHome,
   resolveDefaultCodexRuntimeHome,
   resolvePackageCodexBinPath,
   runCodexInitializeSmoke,
+  type CodexAuthStatusInput,
+  type CodexAuthStatusResult,
+  type EnsureCodexRuntimeHomeOptions,
   type CodexInitializeResponse,
   type CodexInitializeResult,
   type CodexInitializeSmokeResult,
