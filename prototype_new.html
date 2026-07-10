@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decision Log — 프로토타입</title>
+  <style>
+    /* ============================================================
+       Design Tokens  (DESIGN.md 기준)
+       ============================================================ */
+    :root {
+      /* Color */
+      --color-bg: #F6F7F9;
+      --color-surface: #FFFFFF;
+      --color-border: #E5E7EB;
+      --color-text: #111827;
+      --color-muted: #6B7280;
+      --color-primary: #2563EB;
+      --color-primary-hover: #1D4ED8;
+      --color-accepted: #DCFCE7;
+      --color-verify: #FEF3C7;
+      --color-rejected: #FEE2E2;
+
+      /* 상태 텍스트 톤 (연한 배경 위 라벨용) */
+      --color-accepted-text: #166534;
+      --color-verify-text: #92400E;
+      --color-rejected-text: #991B1B;
+
+      /* 모델 식별 색 (점 표시용, 그라데이션 지양) */
+      --model-gemini: #1A73E8;
+      --model-claude: #D97757;
+      --model-chatgpt: #10A37F;
+
+      /* Spacing */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+
+      /* Radius */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+
+      --header-h: 60px;
+    }
+
+    /* ============================================================
+       Reset / Base
+       ============================================================ */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: "Pretendard", system-ui, -apple-system, sans-serif;
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4 { font-weight: 700; margin: 0; }
+    button { font-family: inherit; cursor: pointer; }
+    textarea { font-family: inherit; }
+    ::selection { background: #DBEAFE; }
+
+    /* 스크롤바 (도구다운 절제된 스타일) */
+    .scroll-y { overflow-y: auto; }
+    .scroll-y::-webkit-scrollbar { width: 8px; }
+    .scroll-y::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 8px; }
+    .scroll-y::-webkit-scrollbar-track { background: transparent; }
+
+    /* ============================================================
+       Header
+       ============================================================ */
+    .app-header {
+      height: var(--header-h);
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: 0 var(--space-lg);
+    }
+    .app-header .brand {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .app-header .brand .dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      margin-right: var(--space-sm);
+      vertical-align: middle;
+    }
+    .app-header .tagline {
+      color: var(--color-muted);
+      font-size: 13px;
+    }
+
+    /* ============================================================
+       3단 레이아웃
+       ============================================================ */
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr) 320px;
+      height: 100vh;
+    }
+    .col {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .col-left { background: var(--color-surface); border-right: 1px solid var(--color-border); }
+    .col-center { background: var(--color-bg); }
+    .col-right { background: var(--color-surface); border-left: 1px solid var(--color-border); }
+
+    .col-head {
+      padding: var(--space-md) var(--space-md) var(--space-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+    }
+    .col-head .col-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+    }
+
+    /* ============================================================
+       Left : Chat List
+       ============================================================ */
+    .new-chat-btn {
+      margin: 0 var(--space-md) var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--color-surface);
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      transition: border-color .15s, background .15s;
+    }
+    .new-chat-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+    .chat-list { padding: var(--space-xs) var(--space-sm) var(--space-md); }
+    .chat-item {
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-sm);
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      cursor: pointer;
+      margin-bottom: 2px;
+      transition: background .12s;
+    }
+    .chat-item:hover { background: var(--color-bg); }
+    .chat-item.active { background: #EFF6FF; color: var(--color-primary); font-weight: 700; }
+    .chat-item .ci-icon { color: var(--color-muted); font-size: 13px; }
+    .chat-item.active .ci-icon { color: var(--color-primary); }
+    .chat-item .ci-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ============================================================
+       Center : Ask & Multi-AI Compare
+       상단 고정(sticky) 영역 + 스크롤(최종 답변) 영역 분리
+       ============================================================ */
+    .center-top {
+      padding: var(--space-md) var(--space-lg) var(--space-md);
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-bg);
+      flex-shrink: 0;      /* 상단 고정 */
+    }
+    .center-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: var(--space-lg);
+    }
+
+    /* 검색창 */
+    .ask-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      display: flex;
+      gap: var(--space-md);
+      align-items: stretch;
+    }
+    .ask-card:focus-within { border-color: var(--color-primary); }
+    #questionInput {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      resize: none;
+      outline: none;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--color-text);
+      background: transparent;
+      height: 52px;
+    }
+    #questionInput::placeholder { color: #9CA3AF; }
+
+    .search-action {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-width: 96px;
+    }
+    .btn-primary {
+      background: var(--color-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm) var(--space-md);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-primary:disabled { background: #9CA3AF; cursor: not-allowed; }
+    .btn-ghost {
+      background: var(--color-surface);
+      color: var(--color-primary);
+      border: 1px solid var(--color-primary);
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm) var(--space-md);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+    .btn-ghost:hover { background: #EFF6FF; }
+
+    /* 로딩 스피너 */
+    .spinner {
+      width: 22px; height: 22px;
+      border: 3px solid var(--color-border);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-label { font-size: 12px; color: var(--color-muted); }
+
+    /* 모델 뱃지 한 줄 */
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-top: var(--space-md);
+      flex-wrap: wrap;
+    }
+    .badge-answer-btn { margin-left: auto; }
+    .model-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: 6px var(--space-md);
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      background: var(--color-surface);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-text);
+      transition: border-color .12s, opacity .12s, background .12s;
+    }
+    .model-badge .m-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .model-badge[data-selected="false"] { opacity: .45; background: var(--color-bg); }
+    .model-badge[data-selected="true"] { border-color: #C7D2FE; }
+    .m-dot.gemini { background: var(--model-gemini); }
+    .m-dot.claude { background: var(--model-claude); }
+    .m-dot.chatgpt { background: var(--model-chatgpt); }
+
+    /* 충돌 섹션 */
+    .conflict-section { margin-top: var(--space-lg); }
+    .conflict-head {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-sm);
+    }
+    .conflict-head h3 { font-size: 14px; }
+    .conflict-counter {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-verify-text);
+      background: var(--color-verify);
+      padding: 2px var(--space-sm);
+      border-radius: 999px;
+    }
+    .conflict-counter.done { color: var(--color-accepted-text); background: var(--color-accepted); }
+    .conflict-hint { font-size: 12px; color: var(--color-muted); margin-left: auto; }
+
+    .conflict-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+    .conflict-item {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-left: 4px solid #FCD34D;   /* verify 톤 강조 */
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      overflow: hidden;
+      transition: opacity .25s ease, transform .25s ease, max-height .25s ease, margin .25s ease, padding .25s ease;
+      max-height: 120px;
+    }
+    .conflict-item.removing {
+      opacity: 0;
+      transform: translateX(8px);
+      max-height: 0;
+      padding-top: 0; padding-bottom: 0;
+      margin-top: -8px;
+      border-width: 0 0 0 4px;
+    }
+    .conflict-item .ci-main { min-width: 0; flex: 1; }
+    .conflict-item .ci-name { font-weight: 700; font-size: 14px; }
+    .conflict-item .ci-sub {
+      font-size: 12px; color: var(--color-muted);
+      margin-top: 2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .badge-open {
+      font-size: 11px; font-weight: 700;
+      color: var(--color-verify-text); background: var(--color-verify);
+      padding: 2px var(--space-sm); border-radius: 999px; white-space: nowrap;
+    }
+
+    .placeholder-box {
+      border: 1px dashed var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      color: var(--color-muted);
+      font-size: 13px;
+      text-align: center;
+      background: var(--color-surface);
+    }
+
+    /* 최종 답변 카드 */
+    .final-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      max-width: 760px;
+    }
+    .final-card .fc-q {
+      display: flex; gap: var(--space-sm);
+      padding-bottom: var(--space-md);
+      margin-bottom: var(--space-md);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .final-card .fc-q .q-mark {
+      color: var(--color-primary); font-weight: 700; flex-shrink: 0;
+    }
+    .final-card .fc-q .q-text { font-weight: 700; font-size: 16px; }
+    /* 종합 답변 도입부 (각 AI 공통 기반) */
+    .final-card .fc-intro {
+      font-size: 14px; color: var(--color-text);
+      line-height: 1.6;
+      margin-bottom: var(--space-lg);
+    }
+    .final-card h4 { font-size: 14px; margin-bottom: var(--space-xs); }
+
+    /* 답변 블록 (공통 권장 / 결정 사항) */
+    .final-block { margin-bottom: var(--space-lg); }
+    .final-block .fb-head {
+      font-size: 12px; font-weight: 700; letter-spacing: .02em;
+      color: var(--color-muted);
+      padding-bottom: var(--space-xs);
+      margin-bottom: var(--space-sm);
+      border-bottom: 1px solid var(--color-border);
+      display: flex; align-items: baseline; gap: var(--space-sm); flex-wrap: wrap;
+    }
+    .final-block .fb-note { font-weight: 400; color: var(--color-muted); font-size: 11px; }
+    .final-block .fb-list { margin: 0; padding-left: 18px; }
+    .final-block .fb-list li { font-size: 14px; margin-bottom: var(--space-xs); }
+
+    .final-decision {
+      background: #F0FDF4; border: 1px solid #BBF7D0;
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm) var(--space-md);
+      margin-bottom: var(--space-sm);
+    }
+    .final-decision .fd-title { display: flex; align-items: center; gap: var(--space-sm); }
+    .final-decision .fd-title .tick { color: var(--color-accepted-text); font-weight: 700; }
+    .final-decision .fd-name { font-weight: 700; font-size: 14px; }
+    .final-decision p { margin: var(--space-xs) 0 0; color: #14532D; font-size: 13px; }
+    .final-excluded {
+      margin-top: var(--space-lg);
+      font-size: 12px; color: var(--color-muted);
+      border-top: 1px dashed var(--color-border);
+      padding-top: var(--space-md);
+    }
+    .final-sources {
+      margin-top: var(--space-lg);
+      display: flex; align-items: center; gap: var(--space-sm);
+      font-size: 12px; color: var(--color-muted);
+      flex-wrap: wrap;
+    }
+
+    /* ============================================================
+       Right : Decision Notes
+       ============================================================ */
+    .notes-wrap { flex: 1; min-height: 0; overflow-y: auto; padding: 0 var(--space-md) var(--space-md); }
+    .note-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-left: 4px solid #86EFAC;   /* accepted 톤 */
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      margin-bottom: var(--space-md);
+      animation: notein .3s ease;
+    }
+    @keyframes notein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .note-card .n-badge {
+      display: inline-block;
+      font-size: 11px; font-weight: 700;
+      color: var(--color-accepted-text); background: var(--color-accepted);
+      padding: 2px var(--space-sm); border-radius: 999px;
+      margin-bottom: var(--space-sm);
+    }
+    .note-card h4 { font-size: 14px; margin-bottom: var(--space-sm); }
+    .note-card ul { margin: 0; padding-left: 18px; }
+    .note-card ul li { font-size: 13px; margin-bottom: var(--space-xs); }
+    .note-card .n-sources {
+      margin-top: var(--space-sm);
+      font-size: 11px; color: var(--color-muted);
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+
+    .notes-empty {
+      color: var(--color-muted); font-size: 13px;
+      text-align: center; padding: var(--space-xl) var(--space-md);
+      border: 1px dashed var(--color-border);
+      border-radius: var(--radius-md);
+      margin: var(--space-sm) 0;
+    }
+
+    .export-footer {
+      border-top: 1px solid var(--color-border);
+      padding: var(--space-md);
+      flex-shrink: 0;
+    }
+    .btn-export {
+      width: 100%;
+      background: var(--color-primary);
+      color: #fff; border: none;
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+      font-size: 14px; font-weight: 700;
+      transition: background .15s;
+    }
+    .btn-export:hover { background: var(--color-primary-hover); }
+    .btn-export:disabled { background: #9CA3AF; cursor: not-allowed; }
+
+    .mini-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+
+    /* ============================================================
+       Modal (팝업)
+       ============================================================ */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex; align-items: center; justify-content: center;
+      padding: var(--space-lg);
+      z-index: 50;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 560px;
+      max-height: 84vh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 48px rgba(17,24,39,0.18);
+    }
+    .modal-head {
+      padding: var(--space-lg) var(--space-lg) var(--space-md);
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: var(--space-md);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .modal-head h3 { font-size: 16px; }
+    .modal-head .m-sub { font-size: 12px; color: var(--color-muted); margin-top: var(--space-xs); }
+    .modal-close {
+      background: transparent; border: none;
+      font-size: 20px; line-height: 1; color: var(--color-muted);
+      padding: var(--space-xs);
+    }
+    .modal-close:hover { color: var(--color-text); }
+    .modal-body { padding: var(--space-lg); overflow-y: auto; }
+    .modal-foot {
+      padding: var(--space-md) var(--space-lg) var(--space-lg);
+      display: flex; gap: var(--space-sm); flex-wrap: wrap;
+    }
+
+    /* 답변 전문 팝업: 탭 */
+    .answer-tabs { display: flex; gap: var(--space-sm); margin-bottom: var(--space-md); }
+    .answer-tab {
+      display: inline-flex; align-items: center; gap: var(--space-sm);
+      padding: 6px var(--space-md);
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      background: var(--color-surface);
+      font-size: 13px; font-weight: 700; color: var(--color-text);
+    }
+    .answer-tab.active { background: #EFF6FF; border-color: #C7D2FE; color: var(--color-primary); }
+    .answer-section { margin-bottom: var(--space-md); }
+    .answer-section .as-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .04em;
+      text-transform: uppercase; color: var(--color-muted);
+      margin-bottom: var(--space-xs);
+    }
+    .answer-section p { margin: 0; }
+
+    /* 충돌 팝업: 입장 */
+    .stance {
+      display: flex; gap: var(--space-sm);
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .stance:last-child { border-bottom: none; }
+    .stance .s-model {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-weight: 700; font-size: 13px; min-width: 92px; flex-shrink: 0;
+    }
+    .stance .s-text { font-size: 13px; }
+
+    .requery-box {
+      margin-top: var(--space-md);
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+      font-size: 13px; color: #1E3A8A;
+    }
+    .requery-box .rq-label { font-weight: 700; margin-bottom: var(--space-xs); display: block; }
+    .decide-input {
+      width: 100%;
+      margin-top: var(--space-md);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+      font-size: 13px;
+      resize: vertical;
+      min-height: 72px;
+      outline: none;
+    }
+    .decide-input:focus { border-color: var(--color-primary); }
+
+    .btn-neutral {
+      background: var(--color-surface);
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm) var(--space-md);
+      font-size: 13px; font-weight: 700;
+    }
+    .btn-neutral:hover { border-color: var(--color-muted); }
+    .btn-reject {
+      background: var(--color-rejected);
+      color: var(--color-rejected-text);
+      border: 1px solid #FCA5A5;
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm) var(--space-md);
+      font-size: 13px; font-weight: 700;
+    }
+    .btn-accept {
+      background: var(--color-accepted);
+      color: var(--color-accepted-text);
+      border: 1px solid #86EFAC;
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm) var(--space-md);
+      font-size: 13px; font-weight: 700;
+    }
+
+    .md-note {
+      font-size: 12px; color: var(--color-muted); margin-top: var(--space-sm);
+      line-height: 1.5;
+    }
+
+    /* 다운로드 완료 팝업 */
+    .modal.modal-sm { max-width: 380px; }
+    .dl-body { text-align: center; }
+    .dl-check {
+      width: 52px; height: 52px; margin: var(--space-sm) auto var(--space-md);
+      border-radius: 50%;
+      background: var(--color-accepted);
+      color: var(--color-accepted-text);
+      font-size: 26px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dl-msg { font-size: 15px; margin: 0 0 var(--space-md); line-height: 1.6; }
+    .dl-foot { justify-content: center; }
+
+    /* ============================================================
+       V2 : 채팅형 레이아웃
+       ============================================================ */
+    /* 왼쪽 네비 로고 (ChatGPT 스타일) */
+    .nav-logo {
+      display: flex; align-items: center; gap: var(--space-sm);
+      font-size: 16px; font-weight: 700; letter-spacing: -0.01em;
+      padding: var(--space-lg) var(--space-md) var(--space-md);
+    }
+    .nav-logo .dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--color-primary);
+    }
+
+    /* 중앙 컬럼: [상단 충돌 바] · [트랜스크립트 스크롤] · [하단 컴포저] */
+    .col-center { display: flex; flex-direction: column; }
+
+    /* 상단 고정 : 충돌 지점 섹션만 */
+    .conflict-bar {
+      flex-shrink: 0;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-md) var(--space-lg);
+      margin: 0;
+    }
+    .conflict-bar .conflict-head { margin-bottom: var(--space-sm); }
+    .cs-answer-btn { padding: 4px var(--space-md); font-size: 12px; }
+
+    /* 중앙 : 채팅 트랜스크립트 */
+    .transcript {
+      flex: 1; min-height: 0; overflow-y: auto;
+      padding: var(--space-lg);
+      display: flex; flex-direction: column; gap: var(--space-md);
+    }
+    .transcript-empty {
+      margin: auto; text-align: center;
+      color: var(--color-muted); font-size: 14px; line-height: 1.7;
+      max-width: 420px;
+    }
+
+    /* 말풍선 */
+    .msg { display: flex; }
+    .msg-user { justify-content: flex-end; }
+    .msg-assistant { justify-content: flex-start; }
+    .msg .bubble {
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      max-width: 88%;
+    }
+    .msg-user .bubble {
+      background: var(--color-primary); color: #fff;
+      max-width: 70%; font-size: 14px; line-height: 1.5;
+      border-bottom-right-radius: var(--radius-sm);
+    }
+    .msg-assistant .bubble {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-bottom-left-radius: var(--radius-sm);
+    }
+    .bubble-loading {
+      display: flex; align-items: center; gap: var(--space-sm);
+      color: var(--color-muted); font-size: 13px;
+    }
+    /* 어시스턴트 답변 본문 (조합 답변) */
+    .msg-assistant .a-intro { font-size: 14px; line-height: 1.6; margin-bottom: var(--space-lg); }
+    .msg-assistant h4 { font-size: 14px; margin-bottom: var(--space-xs); }
+
+    /* 답변 카드 : 상단(충돌 지점/AI별 답변 보기) → 하단(최종 답변 작성) */
+    .answer-card { min-width: 420px; }
+    .card-top {
+      display: flex; align-items: center; gap: var(--space-sm);
+      padding-bottom: var(--space-sm);
+      margin-bottom: var(--space-md);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .card-top .ct-title { font-size: 14px; font-weight: 700; }
+    .card-top .cs-answer-btn { margin-left: auto; padding: 4px var(--space-md); font-size: 12px; }
+    .card-hint { font-size: 12px; color: var(--color-muted); margin-bottom: var(--space-md); }
+    .done-badge {
+      font-size: 12px; font-weight: 700;
+      color: var(--color-accepted-text); background: var(--color-accepted);
+      padding: 3px var(--space-md); border-radius: 999px;
+    }
+    .answer-pending {
+      margin-top: var(--space-md);
+      padding: var(--space-md);
+      border: 1px dashed var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-muted); font-size: 13px; text-align: center;
+    }
+
+    /* 하단 고정 : 컴포저 (뱃지 위 · 텍스트 아래) */
+    .composer {
+      flex-shrink: 0;
+      border-top: 1px solid var(--color-border);
+      background: var(--color-surface);
+      padding: var(--space-md) var(--space-lg);
+    }
+    .composer-inner { max-width: 860px; margin: 0 auto; }
+    .composer .badge-row { margin-top: 0; margin-bottom: var(--space-sm); }
+    .composer-input {
+      display: flex; align-items: flex-end; gap: var(--space-sm);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md);
+      background: var(--color-surface);
+    }
+    .composer-input:focus-within { border-color: var(--color-primary); }
+    .composer-input textarea {
+      flex: 1; min-width: 0;
+      border: none; outline: none; resize: none;
+      font-size: 14px; line-height: 1.5;
+      background: transparent; color: var(--color-text);
+      height: 40px; max-height: 120px;
+    }
+    .composer-input textarea::placeholder { color: #9CA3AF; }
+    .btn-send {
+      background: var(--color-primary); color: #fff; border: none;
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm) var(--space-lg);
+      font-size: 13px; font-weight: 700; white-space: nowrap;
+      transition: background .15s;
+    }
+    .btn-send:hover { background: var(--color-primary-hover); }
+    .btn-send:disabled { background: #9CA3AF; cursor: not-allowed; }
+
+    /* ============================================================
+       반응형 (좁은 화면 세로 스택 — 최소 대응)
+       ============================================================ */
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; height: auto; }
+      .col { overflow: visible; }
+      .col-center { order: -1; height: 80vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- ===== Left : Nav + Chat List ===== -->
+    <aside class="col col-left">
+      <div class="nav-logo"><span class="dot"></span>Decision Log</div>
+      <button class="new-chat-btn" onclick="resetAll()"><span>＋</span> 새 채팅</button>
+      <div class="col-head"><span class="col-title">Chat List</span></div>
+      <div class="chat-list scroll-y" id="chatList"></div>
+    </aside>
+
+    <!-- ===== Center : 채팅형 Multi-AI Compare ===== -->
+    <main class="col col-center">
+      <!-- 채팅 트랜스크립트 (충돌 지점 → 최종 답변이 답변 카드 안에서 진행) -->
+      <div class="transcript scroll-y" id="transcript"></div>
+
+      <!-- 하단 고정 : 컴포저 (뱃지 위 · 텍스트 아래) -->
+      <div class="composer">
+        <div class="composer-inner">
+          <div class="badge-row" id="badgeRow"></div>
+          <div class="composer-input">
+            <textarea id="questionInput" placeholder="질문을 입력하세요 (Enter 전송)"></textarea>
+            <button class="btn-send" id="sendBtn" onclick="sendMessage()">전송</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===== Right : Decision Notes ===== -->
+    <aside class="col col-right">
+      <div class="col-head"><span class="col-title">Decision Notes</span></div>
+      <div class="notes-wrap scroll-y" id="notesArea"></div>
+      <div class="export-footer">
+        <button class="btn-export" id="exportBtn" onclick="downloadZip()" disabled>MD Zip 다운로드</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ===== 답변 전문 팝업 ===== -->
+  <div class="modal-overlay hidden" id="answersModal" onclick="closeOnOverlay(event,'answersModal')">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3>AI 답변 전문</h3>
+          <div class="m-sub">뱃지를 눌러 AI별 답변을 확인하세요</div>
+        </div>
+        <button class="modal-close" onclick="hideModal('answersModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="answer-tabs" id="answerTabs"></div>
+        <div id="answerContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 충돌 해소 팝업 ===== -->
+  <div class="modal-overlay hidden" id="conflictModal" onclick="closeOnOverlay(event,'conflictModal')">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3 id="cmTitle">충돌</h3>
+          <div class="m-sub">각 AI 입장을 확인하고 해소 방식을 선택하세요</div>
+        </div>
+        <button class="modal-close" onclick="hideModal('conflictModal')">×</button>
+      </div>
+      <div class="modal-body" id="cmBody"></div>
+      <div class="modal-foot" id="cmFoot"></div>
+    </div>
+  </div>
+
+  <!-- ===== 다운로드 완료 팝업 ===== -->
+  <div class="modal-overlay hidden" id="downloadModal" onclick="closeOnOverlay(event,'downloadModal')">
+    <div class="modal modal-sm">
+      <div class="modal-head">
+        <div><h3>다운로드 완료</h3></div>
+        <button class="modal-close" onclick="hideModal('downloadModal')">×</button>
+      </div>
+      <div class="modal-body dl-body">
+        <div class="dl-check">✓</div>
+        <p class="dl-msg">Decision Log <strong><span id="dlCount">0</span>개</strong>를<br/>Zip 파일로 다운로드했습니다.</p>
+        <div class="md-note">데모에서는 실제 파일 저장 없이 완료 안내만 표시합니다.<br/>실제 서비스에서는 각 노트를 <code>.md</code>로 만들어 JSZip으로 묶어 저장합니다.</div>
+      </div>
+      <div class="modal-foot dl-foot">
+        <button class="btn-primary" onclick="hideModal('downloadModal')">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================================
+       Mock Data (고정 1세트)  — PROTOTYPE.md 데이터 구조 기준
+       ============================================================ */
+    const MOCK = {
+      question: "Supabase에서 RLS(Row Level Security)를 어떻게 설정하는 게 좋을까?",
+
+      chatList: [
+        { id: "chat_01", title: "Supabase RLS 설정", active: true },
+        { id: "chat_02", title: "배포 전략 비교" },
+        { id: "chat_03", title: "상태관리 라이브러리 선택" }
+      ],
+
+      models: [
+        { id: "gemini",  label: "Gemini",  selected: true },
+        { id: "claude",  label: "Claude",  selected: true },
+        { id: "chatgpt", label: "ChatGPT", selected: true }
+      ],
+
+      answers: {
+        gemini: {
+          summary: "RLS는 Postgres의 행 수준 보안을 Supabase에서 그대로 활용하는 방식으로, 테이블마다 접근 규칙을 세밀하게 정의할 수 있습니다.",
+          recommend: "public 테이블에 RLS를 켜고 정책은 SQL 파일로 관리하되, select/insert/update/delete를 나눠 정의하는 것을 권장합니다.",
+          caution: "service_role 키를 클라이언트에 노출하면 안 되며, 프론트엔드에는 익명 키(anon)만 두어야 합니다."
+        },
+        claude: {
+          summary: "RLS는 사용자별 데이터 접근을 테이블 단위로 제어하는 핵심 보안 기능입니다. 정책이 없으면 기본적으로 모든 접근이 차단됩니다.",
+          recommend: "모든 public 테이블에 RLS를 기본 ON으로 켜고, 정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것을 권장합니다.",
+          caution: "service_role 키는 RLS를 우회하므로 반드시 서버 환경에서만 사용해야 합니다."
+        },
+        chatgpt: {
+          summary: "RLS를 켜면 정책이 정의되기 전까지는 모든 행 접근이 막히므로, 켜는 즉시 정책을 함께 준비해야 합니다.",
+          recommend: "먼저 Supabase 대시보드 UI에서 정책을 만들어 빠르게 검증하고, auth.uid() 기준으로 행을 제한하는 방식으로 시작하길 권장합니다.",
+          caution: "정책 없이 RLS만 켜면 앱이 데이터를 읽지 못해 오류가 날 수 있으니 주의해야 합니다."
+        }
+      },
+
+      conflicts: [
+        {
+          id: "conflict_01",
+          title: "정책 작성 위치",
+          stances: [
+            { model: "gemini",  text: "SQL 파일로 관리하는 것을 권장" },
+            { model: "claude",  text: "SQL 마이그레이션 파일에 작성해 버전 관리" },
+            { model: "chatgpt", text: "대시보드 UI에서 먼저 만들어 검증" }
+          ],
+          reQuery: "공식 문서 기준으로 정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것이 권장됩니다."
+        },
+        {
+          id: "conflict_02",
+          title: "service_role 키 취급",
+          stances: [
+            { model: "gemini",  text: "클라이언트에 노출 금지, anon 키만 사용" },
+            { model: "claude",  text: "RLS를 우회하므로 서버에서만 사용" },
+            { model: "chatgpt", text: "제한적으로 클라이언트에서도 사용 가능" }
+          ],
+          reQuery: "공식 문서 기준으로 service_role 키는 서버 전용이며 클라이언트에 노출하지 않는 것이 권장됩니다."
+        }
+      ],
+
+      consensus: "세 AI 모두 public 스키마의 모든 테이블에 RLS를 기본 ON으로 켜고, 정책이 없으면 접근이 차단된다는 점에 동의했습니다.",
+
+      // 각 AI 답변을 종합한 공통 기반 (최종 답변 도입부)
+      consensusIntro: "세 AI 답변을 종합하면, Supabase에서는 public 스키마의 모든 테이블에 RLS를 기본 ON으로 켜는 것이 출발점입니다. RLS를 켜면 정책이 정의되기 전까지 모든 접근이 차단되므로, RLS를 켜는 즉시 접근 정책을 함께 정의해야 합니다.",
+
+      // 충돌이 아니었던 공통 권장 사항 (각 AI 답변에서 추출)
+      commonPoints: [
+        "행 접근은 auth.uid()를 기준으로 제한합니다.",
+        "select · insert · update · delete 정책을 목적에 맞게 나눠 정의합니다."
+      ]
+    };
+
+    const MODEL_LABEL = { gemini: "Gemini", claude: "Claude", chatgpt: "ChatGPT" };
+
+    /* ============================================================
+       State
+       ============================================================ */
+    let state = {};
+    // Decision Notes는 여러 개가 누적되어야 하므로 세션(state) 리셋과 분리해 보관한다.
+    let decisionNotes = [];
+    // 채팅 트랜스크립트 (user/assistant/loading 메시지 누적)
+    let messages = [];
+    function initState() {
+      state = {
+        phase: "idle",                                   // idle | loading | resolving | done
+        models: MOCK.models.map(m => ({ ...m })),
+        conflicts: [],                                   // 전송(send) 시 채워짐
+        currentQuestion: "",
+        activeAnswerModel: "gemini",
+        activeMsg: null,                                 // 현재 해결 중인 어시스턴트 답변 카드
+        modal: { conflictId: null, view: "main" }        // view: main | requery | decide
+      };
+    }
+
+    /* ============================================================
+       Helpers
+       ============================================================ */
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+    const selectedModels = () => state.models.filter(m => m.selected);
+    const openConflicts = () => state.conflicts.filter(c => c.status === "open");
+    const modelDot = (id) => `<span class="mini-dot" style="background:var(--model-${id})"></span>`;
+
+    /* ============================================================
+       Render : Chat List
+       ============================================================ */
+    function renderChatList() {
+      $("chatList").innerHTML = MOCK.chatList.map(c => `
+        <div class="chat-item ${c.active ? "active" : ""}">
+          <span class="ci-icon">💬</span>
+          <span class="ci-title">${esc(c.title)}</span>
+        </div>
+      `).join("");
+    }
+
+    /* ============================================================
+       Render : Model Badges (검색창 바로 아래 한 줄)
+       ============================================================ */
+    function renderModelBadges() {
+      $("badgeRow").innerHTML = state.models.map(m => `
+        <button class="model-badge" data-selected="${m.selected}" onclick="toggleModel('${m.id}')">
+          <span class="m-dot ${m.id}"></span>${esc(m.label)}
+        </button>
+      `).join("");
+    }
+    function toggleModel(id) {
+      const m = state.models.find(x => x.id === id);
+      m.selected = !m.selected;
+      if (selectedModels().length === 0) m.selected = true; // 최소 1개 유지
+      renderModelBadges();
+      renderComposer();
+    }
+
+    /* ============================================================
+       Render : Composer (하단 입력) / 전송
+       ============================================================ */
+    function renderComposer() {
+      const busy = state.phase === "loading" || state.phase === "resolving";
+      const sendBtn = $("sendBtn");
+      sendBtn.disabled = busy || selectedModels().length === 0;
+      sendBtn.textContent = state.phase === "resolving" ? "충돌 해결 중" : "전송";
+      $("questionInput").disabled = busy;
+    }
+    function scrollTranscriptBottom() {
+      const t = $("transcript");
+      t.scrollTop = t.scrollHeight;
+    }
+
+    function sendMessage() {
+      if (state.phase === "loading" || state.phase === "resolving") return;
+      const q = ($("questionInput").value || "").trim();
+      if (!q || selectedModels().length === 0) return;
+
+      messages.push({ role: "user", text: q });
+      messages.push({ role: "loading" });
+      $("questionInput").value = "";
+      state.phase = "loading";
+      renderTranscript();
+      renderComposer();
+      scrollTranscriptBottom();
+
+      setTimeout(() => {
+        messages = messages.filter(m => m.role !== "loading");
+        state.currentQuestion = q;
+        state.conflicts = MOCK.conflicts.map(c => ({
+          ...c, status: "open", resolutionType: null, resolution: null
+        }));
+        state.phase = "resolving";
+        // 답변 카드: 상단에 충돌 지점, 해결되면 최종 답변이 채워진다
+        const asst = { role: "assistant", status: "resolving", answer: null };
+        state.activeMsg = asst;
+        messages.push(asst);
+        renderTranscript();
+        renderComposer();
+        scrollTranscriptBottom();
+      }, 650);
+    }
+
+    /* ============================================================
+       Render : 답변 전문 팝업
+       ============================================================ */
+    function openAnswersModal() {
+      const first = selectedModels()[0];
+      if (first) state.activeAnswerModel = first.id;
+      renderAnswerTabs();
+      renderAnswerContent();
+      showModal("answersModal");
+    }
+    function renderAnswerTabs() {
+      $("answerTabs").innerHTML = selectedModels().map(m => `
+        <button class="answer-tab ${state.activeAnswerModel === m.id ? "active" : ""}" onclick="setAnswerTab('${m.id}')">
+          <span class="m-dot ${m.id}"></span>${esc(m.label)}
+        </button>
+      `).join("");
+    }
+    function setAnswerTab(id) {
+      state.activeAnswerModel = id;
+      renderAnswerTabs();
+      renderAnswerContent();
+    }
+    function renderAnswerContent() {
+      const a = MOCK.answers[state.activeAnswerModel];
+      $("answerContent").innerHTML = `
+        <div class="answer-section"><div class="as-label">요약</div><p>${esc(a.summary)}</p></div>
+        <div class="answer-section"><div class="as-label">권장</div><p>${esc(a.recommend)}</p></div>
+        <div class="answer-section"><div class="as-label">주의</div><p>${esc(a.caution)}</p></div>
+      `;
+    }
+
+    /* ============================================================
+       충돌 리스트 HTML (답변 카드 상단에 렌더)
+       ============================================================ */
+    function conflictItemsHtml(open) {
+      return open.map(c => {
+        const sub = c.stances.map(s => `${MODEL_LABEL[s.model]}: ${s.text}`).join(" · ");
+        return `
+          <div class="conflict-item" id="ci-${c.id}">
+            <div class="ci-main">
+              <div class="ci-name">${esc(c.title)}</div>
+              <div class="ci-sub">${esc(sub)}</div>
+            </div>
+            <span class="badge-open">미해소</span>
+            <button class="btn-primary" onclick="openConflictModal('${c.id}')">해결</button>
+          </div>`;
+      }).join("");
+    }
+
+    /* ============================================================
+       Render : 충돌 해소 팝업
+       ============================================================ */
+    function openConflictModal(id) {
+      state.modal = { conflictId: id, view: "main" };
+      renderConflictModal();
+      showModal("conflictModal");
+    }
+    function renderConflictModal() {
+      const c = state.conflicts.find(x => x.id === state.modal.conflictId);
+      $("cmTitle").textContent = "충돌 · " + c.title;
+      const body = $("cmBody");
+      const foot = $("cmFoot");
+
+      const stancesHtml = c.stances.map(s => `
+        <div class="stance">
+          <span class="s-model">${modelDot(s.model)}${MODEL_LABEL[s.model]}</span>
+          <span class="s-text">${esc(s.text)}</span>
+        </div>`).join("");
+
+      if (state.modal.view === "main") {
+        body.innerHTML = stancesHtml;
+        foot.innerHTML = `
+          <button class="btn-reject" onclick="resolveConflict('exclude')">내용 제외</button>
+          <button class="btn-neutral" onclick="startRequery()">재질문</button>
+          <button class="btn-neutral" onclick="showDecideView()">내 결정</button>`;
+      } else if (state.modal.view === "requery-loading") {
+        body.innerHTML = stancesHtml + `
+          <div class="requery-box" style="display:flex;align-items:center;gap:8px;">
+            <div class="spinner" style="width:18px;height:18px;border-width:2px;"></div>
+            Manager AI가 재검색 중…
+          </div>`;
+        foot.innerHTML = "";
+      } else if (state.modal.view === "requery") {
+        body.innerHTML = stancesHtml + `
+          <div class="requery-box">
+            <span class="rq-label">🔎 Manager AI 재검색 결과</span>
+            ${esc(c.reQuery)}
+          </div>`;
+        foot.innerHTML = `
+          <button class="btn-accept" onclick="resolveConflict('requery')">이 결과로 결정</button>
+          <button class="btn-reject" onclick="resolveConflict('exclude')">내용 제외</button>
+          <button class="btn-neutral" onclick="showDecideView()">내 결정</button>`;
+      } else if (state.modal.view === "decide") {
+        body.innerHTML = stancesHtml + `
+          <textarea class="decide-input" id="decideInput" placeholder="이 충돌에 대한 나의 결정을 입력하세요&#10;예) SQL 마이그레이션 파일로 통일한다"></textarea>`;
+        foot.innerHTML = `
+          <button class="btn-accept" onclick="resolveConflict('decide')">결정 반영</button>
+          <button class="btn-neutral" onclick="backToMain()">뒤로</button>`;
+        setTimeout(() => { const i = $("decideInput"); if (i) i.focus(); }, 0);
+      }
+    }
+    function startRequery() {
+      state.modal.view = "requery-loading";
+      renderConflictModal();
+      setTimeout(() => { state.modal.view = "requery"; renderConflictModal(); }, 650);
+    }
+    function showDecideView() { state.modal.view = "decide"; renderConflictModal(); }
+    function backToMain() { state.modal.view = "main"; renderConflictModal(); }
+
+    /* ============================================================
+       충돌 해소 처리
+       ============================================================ */
+    function resolveConflict(kind) {
+      const c = state.conflicts.find(x => x.id === state.modal.conflictId);
+      if (kind === "exclude") {
+        c.status = "excluded";
+        c.resolutionType = null;
+        c.resolution = null;
+      } else if (kind === "requery") {
+        c.status = "resolved";
+        c.resolutionType = "requery";
+        c.resolution = c.reQuery;
+      } else if (kind === "decide") {
+        const val = ($("decideInput").value || "").trim();
+        if (!val) { $("decideInput").focus(); return; }
+        c.status = "resolved";
+        c.resolutionType = "decided";
+        c.resolution = val;
+      }
+      hideModal("conflictModal");
+
+      // 리스트에서 제거 애니메이션 후 갱신
+      const item = $("ci-" + c.id);
+      const finish = () => {
+        if (openConflicts().length === 0) {
+          maybeFinalize();       // 모두 해결 → 이 카드에 최종 답변 작성
+        } else {
+          renderTranscript();    // 남은 충돌만 카드에 갱신
+        }
+        scrollTranscriptBottom();
+      };
+      if (item) {
+        item.classList.add("removing");
+        setTimeout(finish, 260);
+      } else {
+        finish();
+      }
+    }
+
+    /* ============================================================
+       모든 충돌 해소 → 최종 답변 + 노트 자동 생성
+       ============================================================ */
+    function maybeFinalize() {
+      if (state.phase !== "resolving") return;
+      if (openConflicts().length > 0) return;
+
+      state.phase = "done";
+
+      const resolved = state.conflicts.filter(c => c.status === "resolved");
+      const excluded = state.conflicts.filter(c => c.status === "excluded");
+      const sources = selectedModels().map(m => m.id);
+
+      // 최종 답변 = 각 AI 답변의 공통 내용 + 해결된 충돌 결정 조합.
+      // 공통 주제에서 의견이 갈렸던 부분은 해결된 충돌 답변을 우선 적용한다.
+      const answer = {
+        intro: MOCK.consensusIntro,
+        commonPoints: MOCK.commonPoints.slice(),
+        decisions: resolved.map(c => ({ title: c.title, text: c.resolution })),
+        excluded: excluded.map(c => c.title),
+        sources: sources
+      };
+      // 현재 해결 중이던 답변 카드에 최종 답변을 채운다 (같은 카드 상단→하단)
+      if (state.activeMsg) {
+        state.activeMsg.status = "done";
+        state.activeMsg.answer = answer;
+        state.activeMsg = null;
+      } else {
+        messages.push({ role: "assistant", status: "done", answer: answer });
+      }
+
+      // 노트 생성 (오른쪽 Decision Notes) — 개조식 요약으로 누적
+      const seq = decisionNotes.length + 1;
+      const bullets = [MOCK.consensus]
+        .concat(MOCK.commonPoints)
+        .concat(resolved.map(c => `${c.title}: ${c.resolution} (결정 우선)`));
+      decisionNotes.push({
+        id: "note_" + seq,
+        seq: seq,
+        title: "Supabase RLS 설정",
+        bullets: bullets,
+        sources: sources
+      });
+
+      renderTranscript();
+      renderComposer();          // 입력 재활성화
+      renderNotes();
+      $("exportBtn").disabled = decisionNotes.length === 0;
+      scrollTranscriptBottom();
+    }
+
+    /* ============================================================
+       Render : 채팅 트랜스크립트 (질문/답변 말풍선)
+       ============================================================ */
+    function renderTranscript() {
+      const t = $("transcript");
+      if (messages.length === 0) {
+        t.innerHTML = `<div class="transcript-empty">질문을 입력하면 여러 AI의 답변을 비교하고,<br/>충돌을 해결해 하나의 최종 답변을 만들어 드립니다.</div>`;
+        return;
+      }
+      t.innerHTML = messages.map(m => {
+        if (m.role === "user") {
+          return `<div class="msg msg-user"><div class="bubble">${esc(m.text)}</div></div>`;
+        }
+        if (m.role === "loading") {
+          return `<div class="msg msg-assistant"><div class="bubble bubble-loading">
+            <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>여러 AI 답변을 비교하는 중…
+          </div></div>`;
+        }
+        if (m.role === "assistant") {
+          return `<div class="msg msg-assistant"><div class="bubble answer-card">${assistantCardHtml(m)}</div></div>`;
+        }
+        return "";
+      }).join("");
+    }
+    // 답변 카드: 상단(충돌 지점 or 해결 완료 + AI별 답변 보기), 하단(대기 or 최종 답변)
+    function assistantCardHtml(m) {
+      if (m.status === "resolving") {
+        const open = openConflicts();
+        return `
+          <div class="card-top">
+            <span class="ct-title">충돌 지점</span>
+            <span class="conflict-counter">(${open.length}/${state.conflicts.length})</span>
+            <button class="btn-ghost cs-answer-btn" onclick="openAnswersModal()">AI 별 답변 보기</button>
+          </div>
+          <div class="card-hint">각 충돌을 해결하면 아래에 최종 답변이 작성됩니다</div>
+          <div class="conflict-list">${conflictItemsHtml(open)}</div>
+          <div class="answer-pending">충돌을 모두 해결하면 최종 답변이 여기에 작성됩니다.</div>`;
+      }
+      // done
+      return `
+        <div class="card-top">
+          <span class="done-badge">✓ 충돌 해결 완료</span>
+          <button class="btn-ghost cs-answer-btn" onclick="openAnswersModal()">AI 별 답변 보기</button>
+        </div>
+        <div class="answer-body">${answerHtml(m.answer)}</div>`;
+    }
+    // 어시스턴트 답변 본문 (도입부 + 공통 권장 + 결정 사항 + 제외 + 출처)
+    function answerHtml(f) {
+      const common = f.commonPoints.length ? `
+        <div class="final-block">
+          <h4 class="fb-head">공통 권장 사항</h4>
+          <ul class="fb-list">${f.commonPoints.map(p => `<li>${esc(p)}</li>`).join("")}</ul>
+        </div>` : "";
+      const decisions = f.decisions.length ? `
+        <div class="final-block">
+          <h4 class="fb-head">결정 사항 <span class="fb-note">공통 주제에서 의견이 갈렸던 부분 · 사용자 결정을 우선 적용</span></h4>
+          ${f.decisions.map(d => `
+            <div class="final-decision">
+              <div class="fd-title"><span class="tick">✓</span><span class="fd-name">${esc(d.title)}</span></div>
+              <p>${esc(d.text)}</p>
+            </div>`).join("")}
+        </div>` : "";
+      const excluded = f.excluded.length
+        ? `<div class="final-excluded">최종 답변에서 제외한 항목: ${f.excluded.map(esc).join(", ")}</div>`
+        : "";
+      const sources = f.sources.map(id => `${modelDot(id)}${MODEL_LABEL[id]}`).join("&nbsp;&nbsp;");
+      return `
+        <div class="a-intro">${esc(f.intro)}</div>
+        ${common}
+        ${decisions}
+        ${excluded}
+        <div class="final-sources">출처 · ${sources}</div>`;
+    }
+
+    /* ============================================================
+       Render : Decision Notes (오른쪽)
+       ============================================================ */
+    function renderNotes() {
+      const area = $("notesArea");
+      if (decisionNotes.length === 0) {
+        area.innerHTML = `<div class="notes-empty">아직 저장된 노트가 없습니다.<br/>충돌을 모두 해결하면 최종 노트가 여기 쌓입니다.</div>`;
+        return;
+      }
+      // 최근 노트가 위로 오도록 역순 표시
+      area.innerHTML = decisionNotes.slice().reverse().map(n => `
+        <div class="note-card">
+          <span class="n-badge">최종 결론 #${n.seq}</span>
+          <h4>${esc(n.title)}</h4>
+          <ul>${n.bullets.map(b => `<li>${esc(b)}</li>`).join("")}</ul>
+          <div class="n-sources">출처 ${n.sources.map(id => `${modelDot(id)}${MODEL_LABEL[id]}`).join("&nbsp;")}</div>
+        </div>
+      `).join("");
+    }
+
+    /* ============================================================
+       MD Export (미리보기)
+       ============================================================ */
+    function buildMarkdown() {
+      let md = "# Decision Log\n\n";
+      decisionNotes.forEach(n => {
+        md += `## ${n.title}\n\n`;
+        n.bullets.forEach(b => { md += `- ${b}\n`; });
+        md += `\n출처: ${n.sources.map(id => MODEL_LABEL[id]).join(", ")}\n\n`;
+      });
+      return md.trim();
+    }
+    // 데모: 실제 Zip 저장 없이 "다운로드되었습니다" 확인 팝업만 표시
+    function downloadZip() {
+      if (decisionNotes.length === 0) return;
+      $("dlCount").textContent = decisionNotes.length;
+      showModal("downloadModal");
+    }
+
+    /* ============================================================
+       Modal utils
+       ============================================================ */
+    function showModal(id) { $(id).classList.remove("hidden"); }
+    function hideModal(id) { $(id).classList.add("hidden"); }
+    function closeOnOverlay(e, id) { if (e.target === $(id)) hideModal(id); }
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") document.querySelectorAll(".modal-overlay:not(.hidden)").forEach(m => m.classList.add("hidden"));
+    });
+
+    /* ============================================================
+       초기화 / 부트스트랩
+       ============================================================ */
+    // 새 채팅: 대화(트랜스크립트)와 비교 세션을 초기화하고, 누적된 Decision Notes는 유지한다.
+    function resetAll() {
+      initState();
+      messages = [];
+      $("questionInput").value = MOCK.question;   // 데모 편의를 위한 프리필
+      $("exportBtn").disabled = decisionNotes.length === 0;
+      renderChatList();
+      renderModelBadges();
+      renderComposer();
+      renderTranscript();        // 빈 상태 안내
+      renderNotes();
+      document.querySelectorAll(".modal-overlay").forEach(m => m.classList.add("hidden"));
+    }
+
+    // 컴포저 Enter(Shift 제외)로 전송
+    document.addEventListener("DOMContentLoaded", () => {
+      resetAll();
+      $("questionInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
