@@ -29,13 +29,16 @@ npm run demo:week1
 | 제품 기획 | [Review Workspace Scenario](docs/product/ay-ple-review-workspace-scenario.md) | 사용자 시나리오와 화면 단위 prototype 구조 |
 | 제품 기획 | [AY-PLE Design System Direction](docs/product/ay-ple-design-system.md) | 밝은 학업 워크스페이스 중심의 브랜드/UI 기준 |
 | 개발 계획 | [AY-PLE 4주 개발 백로그](docs/product/ay-ple-development-backlog.md) | 4주 개발 로드맵, 우선순위, 다음 주 확정 Task와 기능 후보 |
-| 기술 구조 | [Codex Runtime Isolation](docs/architecture/codex-runtime-isolation.md) | Codex runtime 격리와 실행 경계 |
+| 기술 구조 | [Codex Runtime 격리](docs/architecture/codex-runtime-isolation.md) | Codex runtime 격리와 실행 경계 |
 | 기술 구조 | [Runtime Harness 구현 지도](docs/architecture/runtime-harness-implementation-map.md) | Runtime Harness 구현 이후의 모듈 지도와 parity/gap 정리 |
 | Spike 계획 | [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | Codex 실행환경 소유권 PoC 계획 |
+| 스파이크 조사 | [에이전트 실행 엔진 재사용 후보 조사](docs/spikes/agent-runtime-reuse-landscape/research.md) | 실행 엔진 재사용 후보 조사와 Codex 우선 사용 후속 판단 |
 | ADR | [0001. Use file auth store for runtime spike](docs/adr/0001-use-file-auth-store-for-runtime-spike.md) | runtime spike의 인증 저장소 결정 |
 | ADR | [0002. Use first-class academic objects](docs/adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam canonical model과 derived operational view 결정 |
 | ADR | [0003. Build runtime harness before product layer](docs/adr/0003-build-runtime-harness-before-product-layer.md) | Runtime Harness 선행과 CodexRuntimeAdapter parity gate 결정 |
 | ADR | [0004. Split runtime history semantics from workspace storage](docs/adr/0004-split-runtime-history-semantics-from-workspace-storage.md) | Runtime Diagnostic History의 lifecycle 의미와 workspace storage 구현 책임 분리 |
+| ADR | [0005. 4주 제품 수직 흐름에 Codex App Server 우선 사용](docs/adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) | 4주 동안 Codex의 제어 기능과 CoControl 구현을 우선하고 다중 엔진 중립화를 미루는 결정 |
+| ADR | [0006. 제품 실행 경로의 소유권 분리](docs/adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | 패키지, 기기별 앱 데이터, 사용자가 소유한 학기 작업공간의 경로와 수명 분리 |
 | Agent 운영 | [Issue Tracker](docs/agents/issue-tracker.md) | issue, PRD, PR 요청 표면 규칙 |
 | Agent 운영 | [Triage Labels](docs/agents/triage-labels.md) | triage 상태 마커 규칙 |
 | Agent 운영 | [Domain Docs](docs/agents/domain.md) | domain docs와 ADR 위치 규칙 |
@@ -75,7 +78,7 @@ npm run demo:week1
 | --- | --- | --- |
 | Server app | `apps/server/` | Express companion API, runtime kernel 소유자, SSE event stream host |
 | Inspector app | `apps/inspector/` | prompt run, events, logs, history, Codex status, capability slots를 보는 Vite React Runtime Inspector |
-| Runtime core | `packages/runtime-core/` | `AgentRuntimeKernel`, 정규화된 run 생명주기, adapter 계약, run logs/history |
+| Runtime core | `packages/runtime-core/` | Runtime Harness용 `AgentRuntimeKernel`, 단일 실행 생명주기, 어댑터 계약, 실행 기록·이력 |
 | Fake runtime | `packages/runtime-fake/` | happy path, cancellation, failure scenario를 위한 결정적 adapter |
 | Codex runtime | `packages/runtime-codex/` | Codex app-server raw client, adapter, 생성된 internal protocol type, status/smoke helper |
 | Runtime API | `/api/runtime/*` | 브라우저에 안전한 runtime run, cancel, history, SSE, Codex status, capability metadata endpoint |
@@ -99,4 +102,4 @@ Codex app-server initialize smoke는 live runtime 상태를 건드릴 수 있으
 npm run smoke:codex -w @ay-ple/runtime-codex
 ```
 
-아직 라우터, DB, 제품 인증, 상태관리 선택지는 고정하지 않습니다. Runtime Harness는 developer-facing 기반이며, SourceSelection, StatePatch, Review, TrustedState 같은 AY-PLE product behavior는 runtime parity 이후 별도 product layer에서 구현합니다.
+아직 라우터, DB, 제품 인증, 상태관리 선택지는 고정하지 않습니다. Runtime Harness의 여섯 가지 이벤트 생명주기는 개발자용 단일 실행 진단 기반이며 제품 전체 상호작용 계약이 아닙니다. 4주 제품 경로는 Codex App Server를 우선 지원하고, SourceSelection, CoControl, StatePatch, Review, TrustedState를 별도 제품 계층에서 구현합니다.

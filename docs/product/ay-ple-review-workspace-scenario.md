@@ -2,11 +2,13 @@
 
 작성일: 2026-07-08
 상태: Draft
-관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Design System Direction](ay-ple-design-system.md), [ADR 0002](../adr/0002-use-first-class-academic-objects-with-derived-operational-views.md)
+관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Design System Direction](ay-ple-design-system.md), [ADR 0002](../adr/0002-use-first-class-academic-objects-with-derived-operational-views.md), [ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md)
 
 ## 목적
 
 이 문서는 AY-PLE MVP의 첫 사용자 시나리오와 화면 구조를 정리한다. 핵심 방향은 **검토 중심 학업 워크스페이스**다.
+
+이 시나리오와 기존 시제품은 StatePatch 검토와 반영 결과를 검증한다. 이어지는 Codex 세션, AY의 진행 활동, 진행 중 정정·중단, 실행 권한 요청, UserDecisionRequest를 포함한 CoControl은 [Product Brief의 CoControl UX](ay-ple-product-brief.md#cocontrol-ux)와 4주 백로그에서 별도로 정의한다. 따라서 이 항목들을 정적 시제품의 제품 제외 범위로 해석하지 않는다.
 
 AY-PLE의 첫 검토 화면은 대시보드가 아니라 검토 중심 작업공간이어야 한다. 학생이 이해해야 할 한 문장은 다음과 같다.
 
@@ -168,7 +170,7 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 워크스페이스를 따�
 | --- | --- |
 | 사용자 관점의 동작 시나리오 | [대표 시나리오](#대표-시나리오), [사용자 흐름](#사용자-흐름) |
 | 화면 구조와 화면 단위 동작 | [화면 구조](#화면-구조), [Panel Contract](#panel-contract) |
-| 핵심 기능 우선 정리 | [AY-PLE Product Brief](ay-ple-product-brief.md#핵심-기능-우선순위), [MVP 범위](ay-ple-product-brief.md#mvp-범위) |
+| 핵심 기능 우선 정리 | [AY-PLE Product Brief](ay-ple-product-brief.md#핵심-기능-우선순위), [제품 MVP와 4주 캠프 범위](ay-ple-product-brief.md#제품-mvp-범위와-4주-캠프-범위) |
 | 순수 HTML/CSS prototype | [검증 산출물](#검증-산출물), [index.html](../../spikes/ay-ple-ui-prototype/index.html), [state-accepted.html](../../spikes/ay-ple-ui-prototype/state-accepted.html) |
 | 피드백 반영 | [Prototype Notes](../../spikes/ay-ple-ui-prototype/NOTES.md#current-read) |
 

@@ -83,10 +83,10 @@ AY-PLE는 이 구조를 학생에게 그대로 노출하지 않고 다음처럼 
 | `item/agentMessage/delta`와 `turn/completed` | `output_delta`, `completed`로 정규화 | AY의 진행·완료 상태를 제품 화면에 전달하는 최소 lifecycle |
 | `turn/interrupt` | 종료 확인을 기다리는 취소로 구현 | 학생이 진행 중인 AY 작업을 멈추는 기능의 기반 |
 | `commandExecution`, `fileChange`, `mcpToolCall`, `dynamicToolCall` Item | 공식 protocol에는 있지만 제품 event로 아직 연결하지 않음 | 자료 읽기, PDF 추출, LMS·캘린더 연결을 설명 가능한 활동과 근거로 보여줄 후보 |
-| `thread/read`, `thread/list`, `turn/steer` | 개발자용 raw inspection wrapper만 존재 | 과목별 작업 이어가기와 진행 중 정정의 후보이며, 제품 UX는 미정 |
+| `thread/read`, `thread/list`, `turn/steer` | 개발자용 원본 관측 기능만 존재 | 같은 Codex `thread`를 이어 쓰는 작업 맥락과 진행 중 정정을 위한 4주 CoControl 검증 대상 |
 | command·file change approval | capability 근거만 확인했고 학생용 UX는 미구현 | Agent의 실행환경을 보호하는 별도 권한 경계 |
 
-여기서 `Thread`가 곧 과목이나 학기 데이터베이스인 것은 아니며, `Item` 하나가 곧 신뢰할 수 있는 근거인 것도 아니다. 현재 adapter는 run마다 새 app-server process와 client, 새 Thread와 Turn을 만들고 종료한다. 즉 지금 구현된 것은 새 실행을 시작하고, 텍스트 출력을 streaming하며, 완료·실패·취소를 기록하는 Runtime Harness까지이며, 지속적인 multi-turn 학업 Agent나 특정 모델에 고정된 제품 구조는 아직 아니다. 자료 선택, 도구 결과의 출처화, 변경안, 확인된 학기 정보는 그 위에 별도의 AY-PLE 제품 계약으로 만들어야 한다.
+여기서 `Thread`가 곧 과목이나 학기 데이터베이스인 것은 아니며, `Item` 하나가 곧 신뢰할 수 있는 근거인 것도 아니다. 현재 어댑터는 실행마다 새 `app-server` 프로세스와 클라이언트, 새 `Thread`와 `Turn`을 만들고 종료한다. 즉 지금 구현된 것은 새 실행을 시작하고, 텍스트 출력을 스트리밍하며, 완료·실패·취소를 기록하는 Runtime Harness까지다. 4주 캠프 범위에서는 이 기반을 범용 에이전트 프로토콜로 확장하지 않고 Codex App Server를 우선 지원한다. 같은 `thread`를 이어 쓰는 작업 맥락, 세부 작업 활동, 진행 중 정정, 중단, 실행 권한 요청, 사용자 질문을 먼저 제품 경험으로 연결한다. 자료 선택, 도구 결과의 출처화, 변경안, 확인된 학기 정보는 여전히 별도의 AY-PLE 제품 계약이 소유한다. 자세한 범위는 [ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md)를 따른다.
 
 또한 AY-PLE에는 서로 다른 두 종류의 승인이 필요하다.
 

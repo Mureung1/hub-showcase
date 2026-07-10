@@ -1,10 +1,17 @@
 # Runtime Harness Hardening
 
-## Agent triage
+## 기존 에이전트 작업 분류 기록
 
 - State: ready-for-agent
 - Surface: local-prd
 - Next actor: agent
+
+## 현재 구현 상태
+
+- 상태: 2026-07-10 일부 구현 후 우선순위 재조정.
+- 이슈 001의 결정적 브라우저 생명주기 검증과 이슈 002의 완료 실행 재시작 복원은 구현되어 있다.
+- 이슈 003–005의 스트리밍·종료 전 실행 복구, 제한된 진단 이력, 저장 실패 시 안전한 거절은 여전히 유효하지만, 제품 수직 흐름이나 데모 안정성을 직접 막지 않는 한 4주 P0에서 제외한다.
+- 아래 `Problem Statement` 절은 안정화 이전 기준선을 기록한다. 현재 동작은 [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md)를, 우선순위는 [4주 개발 백로그](../product/ay-ple-development-backlog.md)와 [ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md)를 따른다.
 
 ## Problem Statement
 

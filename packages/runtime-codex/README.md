@@ -29,6 +29,18 @@ The package pin fixes the app-server binary and generated protocol contract. It
 does not force a model such as `gpt-5.6-sol`; thread creation currently follows
 the configured Codex default model.
 
+## 현재 Harness 범위
+
+현재 어댑터는 단일 실행 Runtime Harness 통합이며, AY-PLE 제품의 전체 상호작용 호스트가 아니다.
+
+- 각 실행은 새 `app-server` 프로세스, `thread`, `turn`을 시작하고 작업이 끝나면 종료한다.
+- 정규화한 어댑터 출력은 세부 작업 활동이 아니라 텍스트와 실행 종료 생명주기를 다룬다.
+- `turn/steer`는 원본 호출만 가능하며 제품의 충돌·제어 정책은 아직 없다.
+- `CodexRawClient`는 App Server가 시작한 `request`를 아직 전달하거나 형식이 지정된 `response`로 응답하지 못한다. `approval`, Codex 사용자 입력, `elicitation`, 동적 도구 왕복보다 App Server 요청 왕복 경로가 먼저 필요하다.
+- 작업공간 내부 `.ay-ple/runtime-codex/*` 기본 경로는 개발자용 Harness를 위한 것이다. 제품에서는 실행 엔진 인증과 세션 상태를 학기 작업공간 밖의 운영체제 앱 데이터 디렉터리로 옮긴다.
+
+4주 제품 연결에서는 Codex App Server를 우선 지원하면서 같은 `thread`를 이어 쓰는 생명주기, `thread`/`turn`/`item`/`request` 식별자를 보존하는 이벤트 관측, App Server 요청 왕복, `turn/steer`, `turn/interrupt`, AY-PLE 제품 의미로의 변환을 추가한다. 자세한 결정은 [ADR 0005](../../docs/adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md)와 [Runtime Harness 구현 지도](../../docs/architecture/runtime-harness-implementation-map.md)를 따른다.
+
 ## Raw Initialize Smoke
 
 Run the opt-in app-server initialize smoke with:

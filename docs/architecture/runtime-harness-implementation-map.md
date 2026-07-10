@@ -2,7 +2,7 @@
 
 작성일: 2026-07-09
 상태: 활성
-관련 문서: [Runtime Harness와 Codex Adapter 기반 PRD](../prds/2026-07-09-runtime-harness-codex-adapter-foundation.md), [Runtime Harness ADR](../adr/0003-build-runtime-harness-before-product-layer.md), [Runtime history storage ADR](../adr/0004-split-runtime-history-semantics-from-workspace-storage.md)
+관련 문서: [Runtime Harness와 Codex Adapter 기반 PRD](../prds/2026-07-09-runtime-harness-codex-adapter-foundation.md), [Runtime Harness ADR](../adr/0003-build-runtime-harness-before-product-layer.md), [실행 이력 저장소 ADR](../adr/0004-split-runtime-history-semantics-from-workspace-storage.md), [4주 제품의 Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)
 
 ## 목적
 
@@ -14,12 +14,13 @@ AGENTS.md는 안정적인 작업 규칙과 이 문서로 향하는 포인터만 
 
 | 질문 | 현재 답 |
 | --- | --- |
-| Runtime Harness의 중심 seam은 어디인가? | `packages/runtime-core`의 `AgentRuntimeKernel`이다. 외부는 `RuntimeRunEvent`, `RuntimeRunLog`, adapter 설명, run 이력을 본다. |
+| Runtime Harness의 중심 경계는 어디인가? | `packages/runtime-core`의 `AgentRuntimeKernel`이다. 외부는 `RuntimeRunEvent`, `RuntimeRunLog`, 어댑터 설명, 실행 이력을 본다. 이 답은 단일 실행 개발자 Harness 범위이며 제품 전체 상호작용 경계를 뜻하지 않는다. |
 | Fake와 Codex는 같은 계약을 만족하는가? | 둘 다 `AgentRuntimeAdapter`를 구현하고 kernel에 `output_delta`, `completed`, `cancelled`, `failed`, `debug_log` adapter event를 전달한다. |
 | 브라우저가 Codex app-server와 직접 통신하는가? | 아니다. `apps/server`가 kernel과 adapters를 소유하고, `apps/inspector`는 HTTP와 SSE만 사용한다. |
 | raw Codex protocol type이 제품/core로 새는가? | 현재 생성된 Codex type은 `packages/runtime-codex/src/internal/` 아래에 있고 `runtime-core`, server, inspector의 안정 계약으로 다시 export되지 않는다. |
 | Runtime Inspector는 제품 UI인가? | 아니다. prompt, transcript, status, events, raw/debug log, history, capability slots를 보는 개발자용 엔진 관측 표면이다. |
 | run log는 영속적인가? | server-owned schema v1 per-run JSON snapshot으로 저장된다. 완료된 run은 같은 history directory를 사용하는 server restart 뒤 hydrate되며, streaming checkpoint와 non-terminal recovery는 Issue 003에 남아 있다. |
+| 4주 제품 실행 엔진 방향은 무엇인가? | Codex App Server만 우선 지원한다. ACP와 다중 엔진 동작 일치는 미루고, 이어지는 세션과 세부 제어·이벤트를 CoControl 제품 수직 흐름에 연결한다. |
 
 ## 구성
 
@@ -72,6 +73,8 @@ flowchart LR
 
 Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortSignal`이 아니며, adapter가 `turn/interrupt`를 보내고 Codex 종료 근거를 관측해야 run이 `cancelled`가 된다.
 
+`RuntimeRunEvent`는 요청 시작부터 종료 상태까지의 진단 생명주기만 표현한다. 이어지는 작업 맥락, AY의 진행 활동, 진행 중 정정, 실행 권한 요청, UserDecisionRequest, 재연결·재개를 포함하는 AY-PLE의 전체 제품 상호작용 계약이 아니다. 새 제품 동작을 이 여섯 가지 이벤트 계약에 억지로 추가하지 않는다.
+
 ## Runtime Diagnostic History 저장
 
 | 항목 | 현재 동작 |
@@ -108,6 +111,20 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | `attachment-input` | reserved | input/file capability는 schema에 있지만 SourceSelection과 parsing은 product layer 작업으로 남아 있다. |
 | `account-profile` | reserved | auth/account 관측은 있지만 계정 관리 UX는 범위 밖이다. |
 
+## 4주 제품 연결 방향
+
+[ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md)는 현재 Harness 구현을 폐기하지 않고 역할을 단일 실행 진단으로 좁힌다. 제품은 Codex App Server를 직접 사용하되 생성된 프로토콜 형식을 제품 계약으로 노출하지 않는다. Skills, MCP, 파일, 스크립트는 이식성을 지킬 우선 수단으로 유지하고, ACP와 다중 실행 엔진 추상화는 실제 두 번째 실행 엔진이 필요해질 때 검토한다. 패키지·앱 데이터·학기 작업공간의 경로 소유권은 [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)을 따른다.
+
+아래 항목은 2주차 제품 연결을 위해 확인된 구현 차이이며, 새 도메인 정보 모델을 정의하는 표가 아니다.
+
+| 영역 | 현재 Harness | 다음 구현 |
+| --- | --- | --- |
+| 작업 지속 | 실행마다 새 App Server 프로세스, `Thread`, `Turn`을 만들고 닫음 | 같은 Codex `thread`를 여러 `turn`에 이어 쓰고, 이후에는 저장된 대응 관계로 작업 재개 |
+| 이벤트 관측 | `output_delta`, 종료 생명주기, `debug_log` 중심 | 알 수 없는 이벤트를 조용히 버리지 않고 `thread`/`turn`/`item`/`request` 식별자를 보존한 뒤 필요한 내용만 제품 의미로 변환 |
+| 진행 중 제어 | 실행 시작, 취소 확인, `raw-callable` 상태의 `turn/steer` 기능 | 현재 작업의 식별자를 검증한 `turn/steer`와 `turn/interrupt`를 CoControl에 연결 |
+| App Server 요청 | 현재 `CodexRawClient`가 서버 `request`를 `response`와 구분해 왕복하지 못함 | 요청과 응답의 전달·연결을 먼저 구현하고 실행 권한 요청, Codex 사용자 입력 요청, MCP 기반 UserDecisionRequest를 GUI에서 구분 |
+| 실행 상태 위치 | 저장소 작업공간 아래 `.ay-ple/runtime-codex/*`가 Harness의 의도적인 개발 기본값 | `npx ay-ple` 또는 실제 사용자 학기 작업공간 활성화를 구현할 때 학기 작업공간 밖 운영체제 앱 데이터 디렉터리에 `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 두고, 경로 상태 정보와 스모크 테스트로 검증 |
+
 ## 검증 표면
 
 | 명령어 | 증명하는 것 |
@@ -126,15 +143,20 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 
 | Gap | 중요한 이유 | 다음 제안 |
 | --- | --- | --- |
-| 제품 runtime handoff | Runtime Harness는 의도적으로 SourceSelection, StatePatch, Review, TrustedState가 아니다. | parity demo 이후 첫 product-facing adapter use case를 정의하되, `runtime-core`만 runtime contract로 유지한다. |
+| 제품 실행 엔진 연결 | Runtime Harness는 의도적으로 SourceSelection, StatePatch, Review, TrustedState가 아니며 여섯 가지 이벤트 실행 계약은 세부 CoControl을 표현하지 못한다. | 이어지는 Codex `thread`, 식별자를 보존하는 이벤트 관측, `turn/steer`, `turn/interrupt`, 진행 중 요청을 첫 제품 수직 흐름에 연결한다. 제품 상태로의 변환은 AY-PLE가 소유한다. |
+| App Server 요청 왕복 | 현재 `CodexRawClient`는 App Server가 보낸 `request`를 클라이언트 `response`와 구분해 형식이 지정된 응답을 보내지 못한다. 따라서 `approval`, Codex 사용자 입력, `elicitation`, 동적 도구 왕복의 기반이 없다. | `notification`, `request`, `response` 전달과 연결, 명시적인 `sandbox`·`approval` 정책, 중단·연결 해제 시 안전한 거절을 제품 요청 UI보다 먼저 구현한다. |
 | streaming durability와 restart recovery (Issue 003) | Started/terminal barrier는 있지만 100ms streaming checkpoint와 restart 당시 `running`/`cancelling` run의 normalized failure recovery는 아직 없다. | Coalesced checkpoint, terminal flush와 non-terminal recovery semantics를 kernel에 구현한다. |
 | bounded history와 clear (Issue 004) | Per-run snapshot은 아직 count/byte retention을 적용하지 않으며 terminal history clear API/UI가 없다. | Terminal-only retention, remove synchronization과 clear flow를 추가한다. |
 | fail-closed degraded runtime (Issue 005) | Persistence fault를 runtime health, stable 503 contract와 Inspector degraded UI로 드러내는 동작은 아직 없다. | Fault injection을 기반으로 degraded lifecycle과 mutation rejection을 구현한다. |
+| 제품 실행 상태 위치 | 현재 Harness 기본값은 저장소 작업공간 아래 `.ay-ple/runtime-codex/*`이며 개발 환경에서는 그대로 유효하다. | `npx ay-ple` 또는 실제 사용자 학기 작업공간 활성화에 착수할 때 경로 배치 모듈, 명시적인 재정의, 경로 상태 정보와 격리 스모크 테스트를 함께 추가한다. 현재 Harness 데이터를 미리 이전하지 않는다. |
+
+이슈 003~005는 유효한 Runtime Harness 안정화 백로그지만 ADR 0005 이후 4주 P0는 아니다. 제품 수직 흐름이나 데모 안정성을 직접 막는 경우에만 승격하며, 범용 `AgentRuntimeKernel` 완성을 위해 선행하지 않는다.
 
 ## 이후 Agent 작업 규칙
 
-- `AgentRuntimeKernel`을 runtime seam으로 취급한다. Adapter 내부로 들어가기 전에 이 seam에서 동작 테스트를 추가한다.
+- `AgentRuntimeKernel`을 단일 실행 Runtime Harness 경계로 취급한다. Harness 생명주기 변경은 이 경계에서 테스트하되, 이어지는 제품 상호작용을 이 경계 하나에 강제로 통과시키지 않는다.
 - 생성된 Codex app-server type은 `packages/runtime-codex/src/internal/` 안에 둔다. `runtime-core`, `apps/server`, product package에서 다시 export하지 않는다.
-- `CodexRawClient`는 엔진 관측과 adapter 구현에 사용하고, AY-PLE product semantics로 취급하지 않는다.
+- `CodexRawClient`와 후속 Codex 세션 구현은 `thread`/`turn`/`item`/`request` 식별자를 보존하고 알 수 없는 이벤트도 관측할 수 있게 한다. 필요한 내용만 제품 의미로 변환하며 원본 프로토콜을 제품 계약이나 SemesterModel·WorkspaceHistory의 영속 상태로 사용하지 않는다.
 - broad raw capability evidence는 non-productized 상태를 유지할 때만 capability slot에 추가한다.
-- storage가 server restart를 견딜 때까지 run history를 영속적이라고 설명하지 않는다.
+- `FakeRuntimeAdapter`를 두 번째 제품 실행 엔진의 증거로 사용하지 않는다. ACP 또는 다른 실행 엔진 어댑터 경계는 실제 제품 시나리오를 수행하는 두 번째 엔진이 생긴 뒤 추출한다.
+- Runtime Diagnostic History의 내구성 주장은 현재 증명된 완료 실행의 재시작 복원 범위로 한정하고, 스트리밍 중간 저장과 종료 전 실행 복구를 구현 전부터 보장한다고 설명하지 않는다.

@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 | --- | --- |
 | 작성일 | 2026-07-10 |
-| 상태 | 초안 v0.1 |
+| 상태 | 초안 v0.3 |
 | 계획 기간 | 2026-07-06 ~ 2026-07-31 |
 
 ## 문서 목적
@@ -29,12 +29,16 @@
 
 1. 학생이 `문제해결글쓰기` 과목의 학업 자료를 넣는다.
 2. 정리할 자료를 명시적으로 선택한다.
-3. AY가 선택 자료에서 과제 후보와 값별 근거를 만든다.
-4. 학생이 원본, 근거, 변경 제안을 함께 확인한다.
-5. 학생이 제안을 수락하거나 수정·거절한다.
-6. 수락한 결과만 확인된 상태로 저장되고, AY가 반영 결과를 설명한다.
+3. AY가 선택 자료를 읽는 중 학생이 “두 번째 자료는 다른 분반이니 제외해줘”라고 정정하고, 앱이 이를 진행 중 작업에 `turn/steer`로 전달한다.
+4. AY가 모호한 과제 날짜를 UserDecisionRequest로 묻고 학생의 답변 뒤 같은 ModelingRun을 이어간다.
+5. AY가 과제 후보와 값별 근거를 만든다.
+6. 학생이 원본, 근거, 변경 제안을 함께 확인한다.
+7. 학생이 제안을 수락하거나 수정·거절한다.
+8. 수락한 결과만 확인된 상태로 저장되고, AY가 반영 결과를 설명한다.
 
 Runtime Inspector는 이 학생용 데모 자체가 아니라, 위 흐름이 안정된 runtime 계약 위에서 실행된다는 것을 검증하는 개발 도구로 유지한다.
+
+실제 중단 완료와 실행 권한 요청의 종료는 핵심 흐름을 끊지 않도록 별도의 제어·실패 시나리오로 시연한다. `turn/interrupt`는 진행 중 작업을 멈추지만 이미 생성된 DraftState를 되돌리거나 Codex 세션을 삭제하지 않아야 한다.
 
 ## 계획 원칙
 
@@ -72,9 +76,14 @@ Runtime Inspector는 이 학생용 데모 자체가 아니라, 위 흐름이 안
 | 주차 | 기간 | 주간 목표 | 주요 결과 | 확정도 |
 | --- | --- | --- | --- | --- |
 | 1주차 | 07-06 ~ 07-10 | 제품 방향과 runtime 위험을 먼저 검증한다. | Product Brief, Review Workspace prototype, Runtime Harness, Fake/Codex parity, hardening 계획 | 완료 |
-| 2주차 | 07-13 ~ 07-17 | Runtime Harness를 제품 기능이 올라갈 수 있는 안정된 기반으로 닫고, 첫 제품 수직 흐름의 결정을 끝낸다. | restart-safe runtime history, bounded/degraded behavior, product handoff 결정 문서 | 확정 |
-| 3주차 | 07-20 ~ 07-24 | Fake runtime으로 자료 선택부터 사용자 확인까지 결정적인 제품 수직 흐름을 완성한다. | 최소 workspace 상태, 자료 intake/selection, 변경 제안·근거, Review 수락 흐름 | 예측 |
-| 4주차 | 07-27 ~ 07-31 | 실제 Codex 경로와 사용자 결정 흐름을 연결하고 데모를 안정화한다. | Codex-backed golden path, 수정·거절, 대표 자료 지원, 회귀 검증과 발표 시나리오 | 예측 |
+| 2주차 | 07-13 ~ 07-17 | Codex App Server를 4주 주력 실행 엔진으로 삼고 CoControl에 필요한 상호작용을 증명한다. | 이어지는 세션, 세부 활동, 진행 중 정정, 실제 중단 완료, 요청 유형 분리, Codex 이벤트 관측 | 확정 |
+| 3주차 | 07-20 ~ 07-24 | 처음부터 Codex를 사용하는 자료 선택→모델링→검토 제품 수직 흐름을 완성한다. | 최소 작업공간 상태, 자료 반입·선택, 진행 중 정정·질문, 변경 제안·근거, Review 수락 | 예측 |
+| 4주차 | 07-27 ~ 07-31 | 대표 자료와 실패·재연결 상황에서 CoControl UX를 다듬고 반복 가능한 데모를 완성한다. | 수정·거절, 재연결, 충돌·실패 UX, 대표 테스트 자료, 회귀 검증과 발표 시나리오 | 예측 |
+
+작업 지속과 재개의 4주 범위는 다음과 같이 고정한다.
+
+- 2주차의 이어지는 작업 맥락은 같은 로컬 중계 서버와 App Server 자식 프로세스 안에서 동일 Codex `thread`로 여러 `turn`과 제어 요청을 이어가는 것을 뜻한다.
+- 4주차의 재연결·재개는 브라우저 SSE 재연결과 로컬 중계 서버 또는 App Server 자식 프로세스 재시작 뒤 저장된 AY 작업 맥락과 Codex `thread`의 대응 관계로 작업을 다시 여는 것을 뜻한다.
 
 ## 1주차 완료 기준선
 
@@ -89,52 +98,52 @@ Runtime Inspector는 이 학생용 데모 자체가 아니라, 위 흐름이 안
 
 ## 2주차 확정 백로그
 
-다음 주 목표는 **Runtime Harness hardening을 완료하고, 3주차에 구현할 첫 제품 수직 흐름의 경계를 확정하는 것**이다.
+다음 주 목표는 **Codex App Server의 상세한 상호작용을 학생·앱·AY의 CoControl로 연결하는 첫 수직 흐름을 증명하는 것**이다. 결정 근거는 [ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md)에 둔다.
 
 | 순서 | ID | Task | 유형 | 우선순위 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | W2-01 | 첫 제품 수직 흐름의 구현 경계 결정 | 조사·설계 | P0 | 첫 지원 자료, workspace 저장 경계, product state contract, runtime handoff, 이번 4주 제외 범위를 한 문서에서 결정한다. | 탐색 필요 |
-| 2 | W2-02 | Streaming checkpoint와 중단 run 복구 | 개발 | P0 | 실행 중 output/debug evidence가 주기적으로 저장되고, 재시작 때 `running`/`cancelling` run이 근거를 보존한 `failed`로 복구된다. | 준비됨 |
-| 3 | W2-03 | Runtime history 상한과 terminal clear | 개발 | P0 | terminal history에 개수·용량 상한이 적용되고, active run을 보존한 채 API와 Inspector에서 terminal history를 비울 수 있다. | 준비됨 |
-| 4 | W2-04 | Persistence failure의 fail-closed 동작 | 개발 | P0 | 저장 실패 시 runtime이 degraded가 되고 새 mutation을 거부하며, health/API/Inspector가 원인을 명확히 표시한다. | 준비됨 |
-| 5 | W2-05 | Runtime hardening 통합 검증 | 검증 | P0 | test, E2E, typecheck, build, lint가 통과하고 구현 지도와 package 문서가 최종 동작과 일치한다. | W2-02~04 대기 |
-| 6 | W2-06 | 3주차 product slice를 작은 실행 Task로 분할 | 계획 | P1 | 각 Task가 독립된 완료 조건을 갖고 0.5~2일 안에 검증 가능한 크기로 나뉜다. | W2-01 대기 |
+| 1 | W2-01 | Codex 우선 제품 연결 결정 반영 | 문서·설계 | P0 | Product Brief, ADR, 구현 지도, 4주 제외 범위가 Codex 직접 통합 우선 방향으로 일치한다. | 완료 |
+| 2 | W2-02 | Codex 프로세스와 이어지는 `thread` 생명주기 | 개발 | P0 | 같은 로컬 중계 서버와 App Server 자식 프로세스 안에서 프로세스와 `thread`를 실행마다 닫지 않고 여러 `turn`과 제어 요청에 재사용한다. AY 작업 맥락과 Codex `thread`의 대응 관계를 유지하고, 프로세스 재시작 뒤 재개는 W4 범위로 남긴다. | 준비됨 |
+| 3 | W2-03 | Codex 이벤트와 App Server 요청 왕복 경로 | 개발 | P0 | `notification`과 서버 `request`를 `response`와 구분해 전달하고 `thread`/`turn`/`item`/`request` 식별자를 보존한다. 형식이 지정된 응답, 취소, 알 수 없는 요청의 안전한 거절, 명시적인 `sandbox`·`approval` 정책을 계약 테스트로 고정한다. 원본 내용은 기본적으로 저장하지 않는다. | W2-02 대기 |
+| 4 | W2-04 | AY 진행 활동 표시 | 개발 | P0 | 메시지, 계획, 도구·파일 활동, 대기 상태, 종료 결과를 텍스트 중심 실행 생명주기와 별도로 Inspector에서 관측한다. | W2-03 대기 |
+| 5 | W2-05 | 진행 중 정정과 실제 중단 완료 확인 | 개발 | P0 | 진행 중 작업의 예상 식별자를 확인해 `turn/steer`를 전달하고, `turn/interrupt`는 실제 `interrupted` 완료 이벤트를 관측한 뒤 UI가 안정 상태로 돌아간다. | W2-03 대기 |
+| 6 | W2-06 | 실행 권한과 Codex 사용자 입력 요청 왕복 | 개발·UX | P0 | 실행 권한 요청과 Codex가 요구하는 짧은 입력을 서로 다른 `request` 형식과 안내 문구로 표시하고 정확한 `request`에 응답한다. 중단·연결 해제 시 미처리 요청은 안전하게 거절하며, UserDecisionRequest의 MCP 경로는 W3에서 연결한다. | W2-03 대기 |
+| 7 | W2-07 | CoControl 반복 검증 | 검증 | P0 | Inspector에서 SourceSelection 형태의 앱 상태 변경→`turn/steer`→Codex 사용자 입력 응답→`turn/interrupt` 시나리오를 실행한다. 이때 학생·앱·AY 중 누가 어떤 행동을 일으켰는지 반복 가능한 테스트와 실제 Codex 스모크 테스트로 확인한다. | W2-04~06 대기 |
+| 8 | W2-08 | 3주차 제품 수직 흐름을 작은 실행 작업으로 분할 | 계획 | P1 | 각 작업이 Codex 경로를 기본으로 사용하고 `FakeRuntimeAdapter`는 전송 계층 테스트 대역으로만 쓰며 0.5~2일 크기의 완료 조건을 갖는다. | W2-07 대기 |
 
-상세 구현 기준은 기존 local issue를 따른다.
-
-- [W2-02 상세: streaming checkpoints and interrupted recovery](../issues/2026-07-10-runtime-harness-hardening/003-streaming-checkpoints-and-interrupted-run-recovery.md)
-- [W2-03 상세: bounded history and terminal clear](../issues/2026-07-10-runtime-harness-hardening/004-bounded-history-and-terminal-clear.md)
-- [W2-04 상세: fail-closed persistence and degraded runtime](../issues/2026-07-10-runtime-harness-hardening/005-fail-closed-persistence-and-degraded-runtime.md)
+기존 Runtime Harness 안정화 이슈 003~005는 폐기하지 않지만, 4주 제품 수직 흐름이나 데모 안정성을 직접 막는 경우에만 승격한다. 스트리밍 중간 저장, 용량 제한 진단 이력, 저장소 장애 처리를 범용 `AgentRuntimeKernel` 완성 목적으로 먼저 구현하지 않는다.
 
 ### 다음 주 종료 시 확인할 결과
 
-- Runtime history가 실행 중 checkpoint, server restart, retention, clear, storage failure를 일관된 계약으로 다룬다.
-- 제품 코드가 raw Codex protocol 대신 `runtime-core`의 안정 계약만 사용한다는 경계가 유지된다.
-- 첫 제품 slice가 어떤 입력을 받고 어떤 상태를 만들며 어디까지 저장하는지 설명할 수 있다.
+- 같은 프로세스에서 이어지는 Codex 세션, 상세한 작업 활동, `turn/steer`, `turn/interrupt`, App Server 요청 왕복이 실제 경로에서 동작한다.
+- 제품 코드는 생성된 Codex 타입을 직접 사용하지 않으면서도 Codex 상호작용을 여섯 가지 이벤트의 `RuntimeRunEvent`로 평탄화하지 않는다.
+- 첫 제품 수직 흐름이 학생·앱·AY의 상호작용을 어떤 정책으로 연결하고 어떤 결과만 SemesterModel에 저장하는지 설명할 수 있다.
 - 3주차 첫날 바로 구현을 시작할 수 있는 Task 목록이 준비되어 있다.
 
 ## 3주차 예측 백로그
 
-3주차 항목은 W2-05 결정에 따라 세부 shape와 저장 기술이 달라질 수 있다. 목표는 실제 Codex 결과의 변동성에 의존하기 전에 Fake runtime으로 핵심 제품 흐름을 결정적으로 완성하는 것이다.
+3주차 항목은 W2-06 결과에 따라 세부 형태와 저장 기술이 달라질 수 있다. 목표는 실제 Codex 경로를 첫 제품 수직 흐름의 기본 경로로 사용하되, 결정적인 테스트용 App Server로 상호작용 계약을 반복 검증하는 것이다.
 
 | 순서 | ID | Task | 유형 | 우선순위 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | W3-01 | 최소 학기 workspace와 Course 기준선 | 개발 | P0 | 사용자가 한 학기 workspace와 `문제해결글쓰기` 과목을 만들고 다시 열 수 있다. | 예측 |
-| 2 | W3-02 | RawMaterial intake와 SourceSelection | 개발 | P0 | 원본을 보존해 목록에 표시하고, 처리할 자료를 사용자가 명시적으로 선택할 수 있다. | 예측 |
-| 3 | W3-03 | Product modeling contract | 설계·개발 | P0 | 선택 자료가 ModelingRun 입력이 되고, 결과가 schema 검증된 과제 변경 제안과 field-level evidence로 변환된다. | 예측 |
-| 4 | W3-04 | Review Workspace의 검토 대기 상태 | UI 개발 | P0 | 원본 미리보기, 근거, 변경 제안을 한 화면에서 확인할 수 있다. | 예측 |
-| 5 | W3-05 | 수락 후 확인된 상태 반영 | 개발 | P0 | 사용자 수락 전에는 trusted 상태가 바뀌지 않고, 수락 후 과제명·마감과 확인 기록이 저장된다. | 예측 |
-| 6 | W3-06 | Fake product golden-path E2E | 검증 | P0 | 자료 선택부터 수락과 reload 후 상태 확인까지 browser test가 결정적으로 통과한다. | 예측 |
+| 1 | W3-01 | 최소 학기 작업공간과 Course 기준선 | 개발 | P0 | 사용자가 한 학기 작업공간과 `문제해결글쓰기` 과목을 만들고 다시 열 수 있다. | 예측 |
+| 2 | W3-02 | RawMaterial 반입과 SourceSelection | 개발 | P0 | 원본을 보존해 목록에 표시하고, 처리할 자료를 사용자가 명시적으로 선택할 수 있다. | 예측 |
+| 3 | W3-03 | Codex를 사용한 ModelingRun과 진행 활동 | 개발 | P0 | 선택 자료를 이어지는 Codex 세션에서 처리하고, AY의 진행 활동을 화면에 보여준다. 결과는 스키마로 검증한 과제 변경 제안과 필드별 근거로 변환한다. | 예측 |
+| 4 | W3-04 | 진행 중 정정과 UserDecisionRequest | 개발·UX | P0 | 학생의 자료 제외 정정을 `turn/steer`로 반영하고, AY의 학업 판단 질문은 `app.request_user_decision` MCP 도구를 통해 GUI에서 응답한 뒤 같은 작업을 계속한다. Codex가 실행 중 요구하는 짧은 입력과 섞지 않는다. | 예측 |
+| 5 | W3-05 | Review Workspace와 확인된 상태 반영 | 개발·UI | P0 | 원본, 근거, 변경 제안을 한 화면에서 확인하고 수락 전에는 TrustedState가 바뀌지 않으며 수락 후 과제명·마감과 확인 기록이 저장된다. | 예측 |
+| 6 | W3-06 | 제품 핵심 흐름 E2E와 실제 Codex 검증 | 검증 | P0 | 자료 선택부터 CoControl, 수락, 브라우저 새로고침 뒤 상태 확인까지 결정적인 브라우저 테스트가 통과하고 같은 의미의 흐름을 선택 실행 Codex 검증이 확인한다. | 예측 |
+
+W3-01 또는 W3-03에서 저장소 내부 데모 경로를 넘어 사용자가 선택한 실제 학기 작업공간을 받기 시작하면, C-09 전체 패키징과 무관하게 [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)의 경로 배치 부분만 해당 주차로 승격한다. 그 전까지는 현재 `.ay-ple/runtime-*` 개발 기본값을 유지한다.
 
 ## 4주차 예측 백로그
 
 | 순서 | ID | Task | 유형 | 우선순위 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | W4-01 | Codex-backed product golden path | 개발 | P0 | 같은 제품 contract를 사용해 실제 Codex run이 대표 자료에서 검토 가능한 과제 제안을 만든다. | 예측 |
-| 2 | W4-02 | 변경 제안 수정·거절 | 개발 | P0 | 사용자가 제안을 수정하거나 거절할 수 있고, 선택 결과만 확인된 상태에 반영된다. | 예측 |
-| 3 | W4-03 | 대표 입력 자료 범위 확정과 지원 | 개발 | P1 | W2-05에서 고른 대표 자료 형식이 end-to-end 데모에서 원본과 근거를 잃지 않고 처리된다. | 예측 |
-| 4 | W4-04 | 실패·재시도·빈 상태 UX | 개선 | P1 | 대표 실패 상황에서 데이터가 잘못 확정되지 않고 사용자가 다음 행동을 이해할 수 있다. | 예측 |
-| 5 | W4-05 | 전체 회귀 검증과 데모 fixture | 검증 | P0 | 핵심 Fake E2E와 Codex opt-in 검증을 실행하고 반복 가능한 발표용 자료와 시나리오를 준비한다. | 예측 |
+| 1 | W4-01 | 변경 제안 수정·거절과 충돌 처리 | 개발 | P0 | 사용자가 제안을 수정하거나 거절할 수 있고, 같은 객체의 새 제안이 기존 UserConfirmation을 덮어쓰지 않으며 선택 결과만 TrustedState에 반영된다. | 예측 |
+| 2 | W4-02 | 재연결·재개와 실패 UX | 개발·개선 | P0 | 브라우저 SSE와 로컬 중계 서버 또는 App Server 자식 프로세스 재시작 뒤 저장된 AY 작업 맥락과 Codex `thread`의 대응 관계로 작업을 다시 연다. 오래된 `turn/steer`, 중단 실패, 미처리 `request` 상황에서도 사용자가 다음 행동을 이해한다. | 예측 |
+| 3 | W4-03 | 대표 입력 자료 범위 확정과 지원 | 개발 | P1 | 선정한 대표 자료 형식이 전체 데모 경로에서 원본과 필드별 근거를 잃지 않고 처리된다. | 예측 |
+| 4 | W4-04 | AY 진행 활동과 실행 권한 UX 정리 | 개선 | P1 | 일반 학생이 도구와 실행 환경의 세부사항에 압도되지 않으면서 AY가 무엇을 하는지와 왜 승인이 필요한지 이해한다. | 예측 |
+| 5 | W4-05 | 전체 회귀 검증과 데모 테스트 자료 | 검증 | P0 | 결정적인 테스트용 App Server E2E와 선택 실행 Codex 검증을 실행하고 반복 가능한 발표용 자료와 시나리오를 준비한다. | 예측 |
 | 6 | W4-06 | 설치·실행·아키텍처 문서 정리 | 문서·배포 | P1 | 새로운 사용자가 README만 보고 로컬 데모를 실행하고 핵심 구조를 이해할 수 있다. | 예측 |
 
 ## 기능 후보 백로그
@@ -151,10 +160,14 @@ Runtime Inspector는 이 학생용 데모 자체가 아니라, 위 흐름이 안
 | 6 | C-06 | WorkspaceHistory checkpoint/diff/rollback | P2 | Runtime Diagnostic History와 구분되는 학생용 history 의미를 별도 설계했을 때 | 후보 |
 | 7 | C-07 | WorkspaceQuery | P2 | 확인된 상태와 evidence query contract가 준비되고 첫 대표 질문을 정했을 때 | 후보 |
 | 8 | C-08 | HWP/HWPX parsing과 OCR | P2 | 핵심 흐름이 안정되고 실제 사용자 자료 검증에서 우선 필요성이 확인될 때 | 후보 |
-| 9 | C-09 | `npx ay-ple` 배포 흐름 | P2 | 로컬 개발 실행과 데이터 경로가 안정되어 packaging이 재작업을 만들지 않을 때 | 후보 |
+| 9 | C-09 | 제품 진입점과 `npx ay-ple` 배포 흐름 | P2 | 실제 사용자 학기 작업공간 또는 패키징을 구현할 때 패키지·앱 데이터·작업공간 루트를 분리하는 경로 배치 모듈까지 함께 만들 수 있을 때 | 후보 · [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md) |
 
 다음 항목은 이번 4주 범위에서 제외한다.
 
+- ACP 어댑터 도입 또는 `codex-acp` 포크
+- Claude Code, OpenCode, Pi 등 다중 엔진 동작 일치
+- 범용 실행 엔진 기능 분류와 엔진 선택 UI
+- Open WebUI나 ACP UI를 제품 외곽 UI로 채택하는 작업
 - LMS 로그인 자동화
 - 클라우드 계정과 동기화
 - 외부 캘린더 자동 업로드
@@ -165,10 +178,13 @@ Runtime Inspector는 이 학생용 데모 자체가 아니라, 위 흐름이 안
 
 | 결정 | 목표 시점 | 결정 전 기본 가정 |
 | --- | --- | --- |
-| 첫 product slice의 입력 형식 | 2주차 | TXT 한 종류로 먼저 수직 흐름을 닫고 PDF는 후보로 둔다. |
+| 첫 제품 수직 흐름의 입력 형식 | 2주차 | TXT 한 종류로 먼저 수직 흐름을 닫고 PDF는 후보로 둔다. |
 | 학기 상태 저장 schema와 repository 경계 | 2주차 | 제품 상태는 runtime history와 분리하고, raw Codex protocol을 저장 계약으로 사용하지 않는다. |
 | RawMaterial 원본 위치와 app-managed metadata 위치 | 2주차 | 원본은 자동 수정·삭제하지 않고 workspace-local metadata와 분리한다. |
 | StatePatch, EvidenceRef, UserConfirmation의 최소 필드 | 2주차 | Review prototype에서 실제로 사용하는 과제명, 마감, 제출 방식, 근거만 먼저 다룬다. |
+| 이어지는 AY 작업 맥락과 ModelingRun의 저장 관계 | 2주차 | Codex `thread`는 실행 맥락으로 사용하되 SemesterModel이나 WorkspaceHistory의 SSOT로 취급하지 않는다. |
+| 앱의 자료 선택·상태 변경을 즉시 전달하거나 대기시키고, 새 `turn`으로 시작할 조건 | 2주차 | 학생의 명시적 의도와 진행 중 작업의 식별자를 확인하지 못하면 자동으로 `turn/steer`하지 않는다. |
+| 운영체제별 `appDataRoot` 기본 위치, 작업공간 선택 방식과 기존 제품 데이터 이전 UX | C-09 또는 실제 학기 작업공간 활성화 착수 전 | 현재 저장소 내부 `.ay-ple/runtime-*`는 개발 기본값으로 유지한다. 제품에서는 [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)의 세 루트를 경로 배치 모듈이 분리하고 환경 변수는 재정의 수단으로만 사용한다. |
 | PDF를 4주 핵심 데모에 포함할지 | 3주차 시작 | TXT golden path 완성도를 우선한다. |
 | timeline, 할 일, 정리 문서 중 후속 표면 | 3주차 말 | 핵심 검토 루프가 끝나기 전에는 별도 화면을 추가하지 않는다. |
 
@@ -196,4 +212,6 @@ Runtime Inspector는 이 학생용 데모 자체가 아니라, 위 흐름이 안
 
 | 날짜 | 버전 | 변경 |
 | --- | --- | --- |
+| 2026-07-10 | v0.3 | 현재 저장소 내부 `.ay-ple/runtime-*`를 유효한 개발 기본값으로 유지하고, 제품 진입점에서 패키지·앱 데이터·학기 작업공간 루트를 분리하는 후속 과제를 C-09와 미결정 표에 연결했다. |
+| 2026-07-10 | v0.2 | Codex App Server를 4주 주력 실행 엔진으로 확정하고 W2를 필수 상호작용 검증, W3를 Codex 제품 수직 흐름, W4를 CoControl 안정화 중심으로 재배치했다. ACP·다중 엔진 중립화와 비차단 Runtime Harness 안정화는 캠프 이후로 미뤘다. |
 | 2026-07-10 | v0.1 | 1주차 기준선, 2주차 확정 Task, 3~4주차 예측, 기능 후보와 운영 규칙을 작성했다. |
