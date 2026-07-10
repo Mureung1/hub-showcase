@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>TeamFlow 화면 모음</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; font-family: -apple-system, sans-serif; }
+  .page {
+    page-break-after: always;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .page:last-child { page-break-after: auto; }
+  .page h2 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    color: #3D4A63;
+  }
+  .page img {
+    width: 100%;
+    max-width: 1400px;
+    border: 1px solid #e6e5e1;
+    border-radius: 8px;
+  }
+  @media print {
+    .page { padding: 0; }
+    .page h2 { display: none; }
+    .page img { border: none; border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+  <div class="page"><h2>1. 홈 (프로젝트 목록)</h2><img src="images/Home.png" /></div>
+  <div class="page"><h2>2. 프로젝트 대시보드</h2><img src="images/Project Dashboard.png" /></div>
+  <div class="page"><h2>3. 할 일 관리</h2><img src="images/Task Management.png" /></div>
+  <div class="page"><h2>4. 회의록</h2><img src="images/Meeting Notes.png" /></div>
+  <div class="page"><h2>5. 자료실</h2><img src="images/Resources.png" /></div>
+  <div class="page"><h2>6. 팀원 관리</h2><img src="images/Team.png" /></div>
+  <div class="page"><h2>7. AI 팀원</h2><img src="images/AI Teammate.png" /></div>
+</body>
+</html>
