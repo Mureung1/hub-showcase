@@ -5,6 +5,7 @@
 - [기획서](docs/wiki/기획서.md)
 - [Wiki](https://github.com/culyrh/hub/wiki/%ED%83%91%ED%9E%88%EC%96%B4(%EA%B0%80%EB%AA%85)-%E2%80%94-%EB%8C%80%ED%95%99%EA%B5%90-%EC%A3%BC%EB%B3%80-%EC%9E%90%EC%B7%A8-%EC%A7%80%EC%97%AD-%EC%B6%94%EC%B2%9C-%EC%84%9C%EB%B9%84%EC%8A%A4)
 - [개발 환경 구성 (CLAUDE.md)](CLAUDE.md)
+- [개발 Task 백로그](docs/wiki/backlog.md)
 
 ## 코드 컨벤션
 
