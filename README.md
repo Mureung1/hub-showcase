@@ -89,8 +89,8 @@ AI 요약은 제공하지 않는다. 요약만 보고 원문을 안 읽는 문�
 
 ## 개발 문서
 
-- [MVP 개발 태스크 관리](development_tasks.md)
-- [하네스 엔지니어링 환경 구축 태스크 관리](harness_engineering_tasks.md)
+- [MVP 개발 태스크 관리](https://thorn-nation-e97.notion.site/Task-399a6f69fbb38067845ec8fb00791de8?source=copy_link)
+- [하네스 엔지니어링 환경 구축 태스크 관리](https://thorn-nation-e97.notion.site/Task-399a6f69fbb3807ba71aef5bf6baa2d6?source=copy_link)
 
 ## 더 알아보기
 
