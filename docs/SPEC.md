@@ -119,6 +119,26 @@
 - 오류 body는 `{ "error": "<code>" }` — 사용자 표시 문구는 클라이언트가 code로 매핑한다(서버 문구를 그대로 노출하지 않음).
 - **비저장 원칙**: 요청의 `receivedMessage`/`situation`은 생성 호출에만 사용, 서버 로그에 남기지 않는다 (EDGE_CASES 1-5).
 
+### 서버 내부 구조화 출력·정규화 (T3)
+
+AI provider에는 UI 라벨·출처를 맡기지 않는다. provider 내부 출력은 아래 `GeneratedReply`만 반환하도록 structured output(JSON Schema)을 적용하고, 프록시가 검증 뒤 200 응답 형태로 정규화한다.
+
+```ts
+type GeneratedReply = {
+  candidates: Array<{
+    toneLevel: 1 | 2 | 3
+    text: string
+  }>
+  situationSummary?: string
+  warning?: string
+}
+```
+
+- 검증: 후보 정확히 3개, toneLevel 1·2·3 각각 1개, 공백·중복 없음, 후보 600자 이하, 선택 메타데이터 180자 이하.
+- `toneLabel`은 모델 출력이 아니라 서버의 확정 상수에서 부여한다. 모델이 임의 라벨을 보내도 UI 계약에 영향을 주지 않는다.
+- 파싱 실패·빈 응답·구조 불일치·검증 실패는 외부 API에서는 `generation_failed`로 매핑한다. `timeout`, `invalid_response`, `unsafe_response`은 서비스 내부 판별 코드로만 사용해 원인을 사용자에게 노출하지 않는다.
+- 명백한 협박성 표현은 1차 방어로 차단하되, 완전한 안전 판별은 프롬프트 안전 규칙·사용자 최종 검토와 함께 다룬다.
+
 ### 목(mock) 모듈 요건
 
 - 위 계약과 동일한 타입으로 응답(`source: "ai"` 고정 — 목은 AI 경로의 대역). 시나리오·톤별 고정 샘플 텍스트 반환.
