@@ -1,14 +1,51 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 import {
   CodexRawClient,
+  ensureCodexRuntimeHome,
+  resolveDefaultCodexRuntimeHome,
   runCodexInitializeSmoke,
   type CodexRawDebugLogEntry,
 } from './index.js'
 import { withFakeCodexAppServer } from './testing/fake-codex-app-server.js'
+
+test('default Codex runtime home is workspace-local', () => {
+  const workspaceRoot = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    '../../..',
+  )
+  const runtimeHome = resolveDefaultCodexRuntimeHome()
+
+  assert.deepEqual(runtimeHome, {
+    codexHome: join(workspaceRoot, '.ay-ple/runtime-codex/codex-home'),
+    codexSqliteHome: join(workspaceRoot, '.ay-ple/runtime-codex/sqlite'),
+  })
+})
+
+test('ensureCodexRuntimeHome can prepare file-based auth config', async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), 'ay-ple-codex-runtime-home-'))
+  const runtimeHome = {
+    codexHome: join(tempDir, 'codex-home'),
+    codexSqliteHome: join(tempDir, 'sqlite'),
+  }
+
+  try {
+    ensureCodexRuntimeHome(runtimeHome, { fileAuthConfig: true })
+
+    const config = await readFile(
+      join(runtimeHome.codexHome, 'config.toml'),
+      'utf8',
+    )
+
+    assert.match(config, /^cli_auth_credentials_store = "file"$/m)
+  } finally {
+    await rm(tempDir, { recursive: true, force: true })
+  }
+})
 
 test('CodexRawClient interrupts a turn over stdio JSONL', async () => {
   await withFakeCodexAppServer(
@@ -137,6 +174,45 @@ test('CodexRawClient exposes broad shallow raw capability wrappers over stdio JS
           {
             threadId: 'thread-raw-slots',
             includeTurns: true,
+          },
+        )
+      } finally {
+        await client.close()
+      }
+    },
+  )
+})
+
+test('CodexRawClient reads auth status without exposing tokens by default', async () => {
+  await withFakeCodexAppServer(
+    {
+      authStatus: {
+        authMethod: 'chatgpt',
+        authToken: 'fake-token',
+        requiresOpenaiAuth: true,
+      },
+    },
+    async ({ rawClientOptions }) => {
+      const client = new CodexRawClient(rawClientOptions)
+
+      try {
+        await client.initialize()
+
+        const status = await client.getAuthStatus()
+        const outboundMessages = readOutboundClientMessages(client.getDebugLog())
+
+        assert.deepEqual(status, {
+          authMethod: 'chatgpt',
+          authToken: null,
+          requiresOpenaiAuth: true,
+        })
+        assert.deepEqual(
+          outboundMessages.find(
+            (message) => message.method === 'getAuthStatus',
+          )?.params,
+          {
+            includeToken: false,
+            refreshToken: false,
           },
         )
       } finally {

@@ -8,7 +8,8 @@
   ],
   "scripts": {
     "dev": "concurrently -n server,inspector -c blue,green \"npm run dev -w @ay-ple/server\" \"npm run dev -w @ay-ple/inspector\"",
-    "test": "npm run test -w @ay-ple/runtime-core && npm run test -w @ay-ple/runtime-codex && npm run test -w @ay-ple/server",
+    "test": "npm run test -w @ay-ple/runtime-core && npm run test -w @ay-ple/runtime-codex && npm run test -w @ay-ple/server && npm run test -w @ay-ple/inspector",
+    "test:e2e": "npm run test:e2e -w @ay-ple/inspector",
     "build": "npm run build -w @ay-ple/runtime-core && npm run build -w @ay-ple/runtime-fake && npm run build -w @ay-ple/runtime-codex && npm run build -w @ay-ple/server && npm run build -w @ay-ple/inspector",
     "typecheck": "npm run typecheck -w @ay-ple/runtime-core && npm run typecheck -w @ay-ple/runtime-fake && npm run typecheck -w @ay-ple/runtime-codex && npm run typecheck -w @ay-ple/server && npm run typecheck -w @ay-ple/inspector"
   },

@@ -3,8 +3,11 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { AgentRuntimeKernel, type RuntimeRunLog } from '@ay-ple/runtime-core'
-import { waitForRuntimeCondition } from '@ay-ple/runtime-core/testing'
+import type { AgentRuntimeKernel, RuntimeRunLog } from '@ay-ple/runtime-core'
+import {
+  createInMemoryRuntimeKernel,
+  waitForRuntimeCondition,
+} from '@ay-ple/runtime-core/testing'
 import {
   hasCodexDebugClientRequest,
   hasCodexDebugNotification,
@@ -61,12 +64,12 @@ test('CodexRuntimeAdapter maps Codex turn notifications to normalized run output
       const adapter = new CodexRuntimeAdapter({
         rawClientOptions,
       })
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [adapter],
         now: () => new Date('2026-07-09T00:00:00.000Z'),
       })
 
-      const startedLog = kernel.startRun({
+      const startedLog = await kernel.startRun({
         adapter: 'codex',
         prompt: 'Explain runtime parity',
       })
@@ -142,7 +145,7 @@ test('CodexRuntimeAdapter sends turn interrupt and preserves normalized cancella
       },
     },
     async ({ rawClientOptions }) => {
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
@@ -150,7 +153,7 @@ test('CodexRuntimeAdapter sends turn interrupt and preserves normalized cancella
         ],
         now: () => new Date('2026-07-09T00:00:00.000Z'),
       })
-      const startedLog = kernel.startRun({
+      const startedLog = await kernel.startRun({
         adapter: 'codex',
         prompt: 'Cancel this Codex run',
       })
@@ -159,7 +162,7 @@ test('CodexRuntimeAdapter sends turn interrupt and preserves normalized cancella
         hasCodexDebugClientRequest(log.debugLog, 'turn/start'),
       )
 
-      const cancellingLog = kernel.cancelRun(startedLog.runId)
+      const cancellingLog = await kernel.cancelRun(startedLog.runId)
       const logWithInterrupt = await waitForRunLog(
         kernel,
         startedLog.runId,
@@ -197,7 +200,7 @@ test('CodexRuntimeAdapter records failed run when turn interrupt request fails',
       turnInterruptError: 'interrupt unavailable',
     },
     async ({ rawClientOptions }) => {
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
@@ -205,7 +208,7 @@ test('CodexRuntimeAdapter records failed run when turn interrupt request fails',
         ],
         now: () => new Date('2026-07-09T00:00:00.000Z'),
       })
-      const startedLog = kernel.startRun({
+      const startedLog = await kernel.startRun({
         adapter: 'codex',
         prompt: 'Cancel this Codex run',
       })
@@ -214,7 +217,7 @@ test('CodexRuntimeAdapter records failed run when turn interrupt request fails',
         hasCodexDebugClientRequest(log.debugLog, 'turn/start'),
       )
 
-      const cancellingLog = kernel.cancelRun(startedLog.runId)
+      const cancellingLog = await kernel.cancelRun(startedLog.runId)
       const terminalLog = await kernel.waitForRun(startedLog.runId)
 
       assert.equal(cancellingLog?.status, 'cancelling')
@@ -242,15 +245,16 @@ test('CodexRuntimeAdapter records failed run when turn interrupt completion is m
       turnCompletions: [],
     },
     async ({ rawClientOptions }) => {
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
+            interruptCompletionTimeoutMs: 50,
           }),
         ],
         now: () => new Date('2026-07-09T00:00:00.000Z'),
       })
-      const startedLog = kernel.startRun({
+      const startedLog = await kernel.startRun({
         adapter: 'codex',
         prompt: 'Cancel this Codex run',
       })
@@ -259,7 +263,7 @@ test('CodexRuntimeAdapter records failed run when turn interrupt completion is m
         hasCodexDebugClientRequest(log.debugLog, 'turn/start'),
       )
 
-      const cancellingLog = kernel.cancelRun(startedLog.runId)
+      const cancellingLog = await kernel.cancelRun(startedLog.runId)
       const terminalLog = await kernel.waitForRun(startedLog.runId)
 
       assert.equal(cancellingLog?.status, 'cancelling')
@@ -279,9 +283,20 @@ test('CodexRuntimeAdapter records failed run when turn interrupt completion is m
         hasCodexInterruptTimeoutDebugEvidence(terminalLog.debugLog, {
           threadId: 'thread-interrupt-timeout',
           turnId: 'turn-interrupt-timeout',
+          timeoutMs: 50,
         }),
       )
     },
+  )
+})
+
+test('CodexRuntimeAdapter rejects invalid interrupt completion timeout', () => {
+  assert.throws(
+    () =>
+      new CodexRuntimeAdapter({
+        interruptCompletionTimeoutMs: 0,
+      }),
+    /interruptCompletionTimeoutMs must be a positive integer/,
   )
 })
 
@@ -293,7 +308,7 @@ test('CodexRuntimeAdapter records failed run when cancellation happens before tu
       threadStartHang: true,
     },
     async ({ rawClientOptions }) => {
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
@@ -301,7 +316,7 @@ test('CodexRuntimeAdapter records failed run when cancellation happens before tu
         ],
         now: () => new Date('2026-07-09T00:00:00.000Z'),
       })
-      const startedLog = kernel.startRun({
+      const startedLog = await kernel.startRun({
         adapter: 'codex',
         prompt: 'Cancel before turn scope exists',
       })
@@ -310,7 +325,7 @@ test('CodexRuntimeAdapter records failed run when cancellation happens before tu
         hasCodexDebugClientRequest(log.debugLog, 'initialized'),
       )
 
-      const cancellingLog = kernel.cancelRun(startedLog.runId)
+      const cancellingLog = await kernel.cancelRun(startedLog.runId)
       const terminalLog = await kernel.waitForRun(startedLog.runId)
 
       assert.equal(cancellingLog?.status, 'cancelling')
@@ -522,11 +537,11 @@ test('CodexRuntimeAdapter records failed run for missing Codex binary', async ()
         timeoutMs: 100,
       },
     })
-    const kernel = new AgentRuntimeKernel({
+    const kernel = await createInMemoryRuntimeKernel({
       adapters: [adapter],
       now: () => new Date('2026-07-09T00:00:00.000Z'),
     })
-    const startedLog = kernel.startRun({
+    const startedLog = await kernel.startRun({
       adapter: 'codex',
       prompt: 'This cannot spawn',
     })
@@ -549,7 +564,7 @@ async function runCodexScenario(
   let terminalLog: RuntimeRunLog | undefined
 
   await withFakeCodexAppServer(scenario, async ({ rawClientOptions }) => {
-    const kernel = new AgentRuntimeKernel({
+    const kernel = await createInMemoryRuntimeKernel({
       adapters: [
         new CodexRuntimeAdapter({
           rawClientOptions,
@@ -557,7 +572,7 @@ async function runCodexScenario(
       ],
       now: () => new Date('2026-07-09T00:00:00.000Z'),
     })
-    const startedLog = kernel.startRun({
+    const startedLog = await kernel.startRun({
       adapter: 'codex',
       prompt: 'Exercise Codex failure mapping',
     })

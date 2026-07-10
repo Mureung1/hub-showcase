@@ -2,16 +2,19 @@
 
 ## Project Structure & Module Organization
 
-This repository is an npm workspace monorepo with apps under `apps/*` and runtime packages under `packages/*`. `apps/server/` contains the Express API; source lives in `apps/server/src/` and compiled output goes to `apps/server/dist/`. `apps/inspector/` contains the Vite React Runtime Inspector starter; source lives in `apps/inspector/src/`, static assets in `apps/inspector/public/`, and the app entry point is `apps/inspector/src/main.tsx`. Runtime packages live in `packages/runtime-core/`, `packages/runtime-fake/`, and `packages/runtime-codex/`; keep them as boundary-first TypeScript ESM packages until their contracts are defined. The root `package.json` only coordinates workspace scripts. The current API surface is intentionally small: `/api/health` verifies the inspector-server connection through the Vite proxy.
+This repository is an npm workspace monorepo with apps under `apps/*` and packages under `packages/*`. App source lives under each app's `src/`, package source lives under each package's `src/`, and compiled output goes to each workspace's `dist/` when applicable. The root `package.json` only coordinates workspace scripts. For current runtime-harness topology, API surfaces, implementation gaps, and package responsibilities, read `docs/architecture/runtime-harness-implementation-map.md` and then verify against the live code.
 
 ## Build, Test, and Development Commands
 
 - `npm install`: install root and workspace dependencies.
 - `npm run dev`: start server and inspector together with `concurrently`.
-- `npm run typecheck`: run TypeScript checks for runtime packages and apps.
-- `npm run build`: build runtime packages first, then server and inspector.
+- `npm test`: run configured workspace test suites.
+- `npm run typecheck`: run TypeScript checks across configured workspaces.
+- `npm run build`: build configured workspaces.
 - `npm run lint -w @ay-ple/inspector`: run `oxlint` for the React inspector.
 - `npm run start -w @ay-ple/server`: run the compiled server after `npm run build -w @ay-ple/server`.
+
+Runtime-specific package commands, live smoke commands, and generated-artifact commands should be documented in the relevant package README or architecture note rather than expanded here.
 
 ## Coding Style & Naming Conventions
 
@@ -25,9 +28,19 @@ When writing Markdown planning, technical, or product documents, prefer tables f
 
 Mobile and small-screen responsive layout are deferred for this project unless the user explicitly asks for mobile work. Do not spend implementation, review, or verification time optimizing mobile breakpoints, raising mobile-only layout issues, or reshaping interfaces for phones. Use desktop workspaces as the validation target, especially widths around 1440px to 1920px.
 
+## Runtime Harness Conventions
+
+Runtime implementation details should live in primary docs, package README files, and the code itself, not in this agent instruction file. Before changing Runtime Harness behavior, read `docs/adr/0003-build-runtime-harness-before-product-layer.md`, `docs/architecture/runtime-harness-implementation-map.md`, the relevant package README, and the current code/tests.
+
+Keep AGENTS.md limited to stable operating rules. If runtime topology, endpoints, adapter behavior, generated protocol details, or known gaps change, update the implementation map or package docs instead of expanding this section.
+
+Do not leak raw engine protocol shapes into AY-PLE product-facing contracts without a deliberate architecture update. Keep app-managed runtime state and secrets out of git, including workspace-local runtime homes such as `.ay-ple/`.
+
 ## Testing Guidelines
 
-No test framework or coverage threshold is configured yet. For now, run `npm run typecheck`, `npm run build`, and inspector linting before opening a PR. When adding tests, place them near the code they cover, using names like `apps/server/src/health.test.ts`, `apps/inspector/src/App.test.tsx`, or `packages/runtime-core/src/runtime.test.ts`, and add the relevant workspace `test` script in the same change.
+For PR-ready verification, run `npm test`, `npm run typecheck`, `npm run build`, and `npm run lint -w @ay-ple/inspector`. Run live smoke commands only when the relevant package docs say they are appropriate for the task.
+
+When adding tests, place them near the code they cover, using names like `apps/server/src/health.test.ts`, `apps/inspector/src/App.test.tsx`, or `packages/runtime-core/src/runtime.test.ts`, and add the relevant workspace `test` script in the same change if the workspace does not already have one.
 
 ## Commit & Pull Request Guidelines
 

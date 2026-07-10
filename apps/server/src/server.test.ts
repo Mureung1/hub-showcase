@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import test from 'node:test'
-import {
-  AgentRuntimeKernel,
-  type RuntimeRunDebugLogEntry,
+import { fileURLToPath } from 'node:url'
+import type {
+  RuntimeRunDebugLogEntry,
+  RuntimeRunLog,
 } from '@ay-ple/runtime-core'
-import { waitForRuntimeCondition } from '@ay-ple/runtime-core/testing'
+import {
+  createInMemoryRuntimeKernel,
+  waitForRuntimeCondition,
+} from '@ay-ple/runtime-core/testing'
 import { CodexRuntimeAdapter } from '@ay-ple/runtime-codex'
 import {
   hasCodexDebugClientRequest,
@@ -14,7 +21,8 @@ import {
   withFakeCodexAppServer,
   type CodexDebugClientRequestMethod,
 } from '@ay-ple/runtime-codex/testing'
-import { createServerApp } from './server.js'
+import { resolveRuntimeHistoryDirectory } from './server.js'
+import { withTestServer } from './testing/test-server.js'
 
 type ServerRunLog = {
   runId: string
@@ -22,6 +30,15 @@ type ServerRunLog = {
   events: Array<Record<string, unknown>>
   debugLog?: RuntimeRunDebugLogEntry[]
 }
+
+test('runtime history default is anchored to the workspace root', () => {
+  const workspaceRoot = fileURLToPath(new URL('../../../', import.meta.url))
+
+  assert.equal(
+    resolveRuntimeHistoryDirectory({}),
+    path.join(workspaceRoot, '.ay-ple', 'runtime-harness', 'runs'),
+  )
+})
 
 test('runtime API starts a fake run and streams normalized events', async () => {
   await withTestServer({ fakeDelayMs: 0 }, async (baseUrl) => {
@@ -57,7 +74,10 @@ test('runtime API starts a fake run and streams normalized events', async () => 
     const startedRun = (await startResponse.json()) as { runId: string }
 
     assert.equal(startResponse.status, 201)
-    assert.match(startedRun.runId, /^run-\d{4}$/)
+    assert.match(
+      startedRun.runId,
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    )
 
     const eventsResponse = await fetch(
       `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,
@@ -99,6 +119,71 @@ test('runtime API starts a fake run and streams normalized events', async () => 
   })
 })
 
+test('runtime API hydrates completed history after a server restart', async () => {
+  const temporaryRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-server-restart-test-'),
+  )
+  const runtimeHistoryDirectory = path.join(temporaryRoot, 'runs')
+
+  try {
+    let completedLog: RuntimeRunLog | undefined
+
+    await withTestServer(
+      { fakeDelayMs: 0, runtimeHistoryDirectory },
+      async (baseUrl) => {
+        const runId = await startRuntimeRun(baseUrl, {
+          adapter: 'fake',
+          prompt: 'survive restart',
+        })
+
+        await collectRunEvents(baseUrl, runId)
+
+        const response = await fetch(`${baseUrl}/api/runtime/runs/${runId}`)
+        const body = (await response.json()) as { run: RuntimeRunLog }
+
+        assert.equal(response.status, 200)
+        assert.equal(body.run.status, 'completed')
+        assert.ok(body.run.debugLog?.length)
+        completedLog = body.run
+      },
+    )
+
+    assert.ok(completedLog)
+
+    await withTestServer(
+      { fakeDelayMs: 0, runtimeHistoryDirectory },
+      async (baseUrl) => {
+        const healthResponse = await fetch(`${baseUrl}/api/health`)
+        const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
+        const historyBody = (await historyResponse.json()) as {
+          runs: Array<{ runId: string; status: string }>
+        }
+        const logResponse = await fetch(
+          `${baseUrl}/api/runtime/runs/${completedLog.runId}`,
+        )
+        const logBody = (await logResponse.json()) as { run: RuntimeRunLog }
+
+        assert.equal(healthResponse.status, 200)
+        assert.deepEqual(historyBody.runs, [
+          {
+            adapter: completedLog.adapter,
+            completedAt: completedLog.completedAt,
+            outputPreview:
+              'Fake runtime received: "survive restart". This deterministic response proves the inspector can observe a run end to end.',
+            prompt: completedLog.prompt,
+            runId: completedLog.runId,
+            startedAt: completedLog.startedAt,
+            status: 'completed',
+          },
+        ])
+        assert.deepEqual(logBody.run, completedLog)
+      },
+    )
+  } finally {
+    await rm(temporaryRoot, { force: true, recursive: true })
+  }
+})
+
 test('runtime API exposes Codex capability slots as engine inspection metadata', async () => {
   await withTestServer({}, async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/runtime/codex/capabilities`)
@@ -130,6 +215,53 @@ test('runtime API exposes Codex capability slots as engine inspection metadata',
       )
     }
   })
+})
+
+test('runtime API exposes Codex binary, runtime home, and auth status', async () => {
+  await withFakeCodexAppServer(
+    {
+      userAgent: 'fake-codex-status-test',
+      authStatus: {
+        authMethod: 'chatgpt',
+        authToken: 'hidden-token',
+        requiresOpenaiAuth: true,
+      },
+    },
+    async ({ rawClientOptions }) => {
+      await withTestServer(
+        {
+          codexRawClientOptions: {
+            ...rawClientOptions,
+            ensureFileAuthConfig: true,
+          },
+        },
+        async (baseUrl) => {
+          const response = await fetch(`${baseUrl}/api/runtime/codex/status`)
+          const body = await response.json()
+
+          assert.equal(response.status, 200)
+          assert.equal(body.ok, true)
+          assert.equal(body.codexBinPath, process.execPath)
+          assert.match(body.version, /^v\d+\./)
+          assert.equal(body.pinnedVersion, '0.144.0')
+          assert.equal(body.versionMatchesPin, false)
+          assert.equal(body.cwd, rawClientOptions.cwd)
+          assert.deepEqual(body.runtimeHome, {
+            codexHome: rawClientOptions.codexHome,
+            codexSqliteHome: rawClientOptions.codexSqliteHome,
+          })
+          assert.equal(body.config.authCredentialsStore, 'file')
+          assert.equal(body.config.fileAuthConfigPresent, true)
+          assert.equal(body.initialize.userAgent, 'fake-codex-status-test')
+          assert.deepEqual(body.auth, {
+            authMethod: 'chatgpt',
+            requiresOpenaiAuth: true,
+          })
+          assert.equal('authToken' in body.auth, false)
+        },
+      )
+    },
+  )
 })
 
 test('runtime API cancels a running fake run and streams normalized cancellation', async () => {
@@ -261,7 +393,7 @@ test('runtime API streams a codex adapter run through normalized events and log'
       ],
     },
     async ({ rawClientOptions }) => {
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
@@ -327,7 +459,7 @@ test('runtime API cancels a codex run through normalized cancellation', async ()
       },
     },
     async ({ rawClientOptions }) => {
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
@@ -378,7 +510,7 @@ test('runtime API records codex interrupt failure as normalized failure', async 
       turnInterruptError: 'interrupt unavailable',
     },
     async ({ rawClientOptions }) => {
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
@@ -427,10 +559,11 @@ test('runtime API records codex interrupt timeout as normalized failure', async 
       turnCompletions: [],
     },
     async ({ rawClientOptions }) => {
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
+            interruptCompletionTimeoutMs: 50,
           }),
         ],
       })
@@ -457,6 +590,7 @@ test('runtime API records codex interrupt timeout as normalized failure', async 
           hasCodexInterruptTimeoutDebugEvidence(terminalLog.debugLog, {
             threadId: 'thread-server-interrupt-timeout',
             turnId: 'turn-server-interrupt-timeout',
+            timeoutMs: 50,
           }),
         )
         assert.deepEqual(
@@ -480,7 +614,7 @@ test('runtime API records codex pre-turn-scope cancellation as normalized failur
       threadStartHang: true,
     },
     async ({ rawClientOptions }) => {
-      const kernel = new AgentRuntimeKernel({
+      const kernel = await createInMemoryRuntimeKernel({
         adapters: [
           new CodexRuntimeAdapter({
             rawClientOptions,
@@ -628,41 +762,6 @@ async function assertLatestHistoryStatus(
       ),
       false,
     )
-  }
-}
-
-async function withTestServer(
-  options: Parameters<typeof createServerApp>[0],
-  testBody: (baseUrl: string) => Promise<void>,
-): Promise<void> {
-  const app = createServerApp(options)
-  const server = app.listen(0)
-
-  await new Promise<void>((resolve) => {
-    server.once('listening', resolve)
-  })
-
-  const address = server.address()
-
-  if (!address || typeof address === 'string') {
-    throw new Error('Expected server to listen on a TCP port')
-  }
-
-  const baseUrl = `http://127.0.0.1:${address.port}`
-
-  try {
-    await testBody(baseUrl)
-  } finally {
-    await new Promise<void>((resolve, reject) => {
-      server.close((error) => {
-        if (error) {
-          reject(error)
-          return
-        }
-
-        resolve()
-      })
-    })
   }
 }
 

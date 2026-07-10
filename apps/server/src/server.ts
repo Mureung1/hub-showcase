@@ -1,4 +1,5 @@
-import { pathToFileURL } from 'node:url'
+import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
   AgentRuntimeKernel,
   isTerminalRuntimeRunEvent,
@@ -7,34 +8,51 @@ import {
 import {
   CodexRuntimeAdapter,
   listCodexCapabilitySlots,
+  readCodexRuntimeStatus,
+  type CodexRawClientOptions,
 } from '@ay-ple/runtime-codex'
 import { FakeRuntimeAdapter } from '@ay-ple/runtime-fake'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express, { type Express, type Response } from 'express'
+import { RuntimeRunJsonStore } from './runtime-run-json-store.js'
 
 dotenv.config()
 
 const port = Number(process.env.PORT ?? 3000)
+const workspaceRoot = fileURLToPath(new URL('../../..', import.meta.url))
 
 export type CreateServerAppOptions = {
   fakeDelayMs?: number
   kernel?: AgentRuntimeKernel
+  codexRawClientOptions?: CodexRawClientOptions
+  runtimeHistoryDirectory?: string
 }
 
 type FakeRuntimeScenario = 'failure'
 
-export function createServerApp(options: CreateServerAppOptions = {}): Express {
+export async function createServerApp(
+  options: CreateServerAppOptions = {},
+): Promise<Express> {
   const app = express()
+  const codexRawClientOptions =
+    options.codexRawClientOptions ?? readCodexRawClientOptionsFromEnv()
   const fakeAdapter = new FakeRuntimeAdapter({
-    delayMs: options.fakeDelayMs,
+    delayMs: options.fakeDelayMs ?? readFakeRuntimeDelayFromEnv(),
   })
-  const codexAdapter = new CodexRuntimeAdapter()
+  const codexAdapter = new CodexRuntimeAdapter({
+    rawClientOptions: codexRawClientOptions,
+  })
   const kernel =
     options.kernel ??
-    new AgentRuntimeKernel({
+    (await AgentRuntimeKernel.create({
       adapters: [fakeAdapter, codexAdapter],
-    })
+      persistence: new RuntimeRunJsonStore({
+        directory:
+          options.runtimeHistoryDirectory ??
+          resolveRuntimeHistoryDirectory(),
+      }),
+    }))
   const canControlFakeAdapter = options.kernel === undefined
 
   app.use(cors())
@@ -52,7 +70,11 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
     res.json({ slots: listCodexCapabilitySlots() })
   })
 
-  app.post('/api/runtime/runs', (req, res) => {
+  app.get('/api/runtime/codex/status', async (_req, res) => {
+    res.json(await readCodexRuntimeStatus(codexRawClientOptions))
+  })
+
+  app.post('/api/runtime/runs', async (req, res) => {
     const adapter = req.body?.adapter
     const prompt = req.body?.prompt
     const fakeScenario = req.body?.fakeScenario
@@ -84,7 +106,7 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
     }
 
     try {
-      const run = kernel.startRun({ adapter, prompt })
+      const run = await kernel.startRun({ adapter, prompt })
       res.status(201).json({ runId: run.runId })
     } catch (error) {
       res.status(400).json({
@@ -108,8 +130,8 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
     res.json({ run })
   })
 
-  app.post('/api/runtime/runs/:runId/cancel', (req, res) => {
-    const run = kernel.cancelRun(req.params.runId)
+  app.post('/api/runtime/runs/:runId/cancel', async (req, res) => {
+    const run = await kernel.cancelRun(req.params.runId)
 
     if (!run) {
       res.status(404).json({ error: 'runtime run not found' })
@@ -182,6 +204,40 @@ export function createServerApp(options: CreateServerAppOptions = {}): Express {
   return app
 }
 
+function readCodexRawClientOptionsFromEnv(): CodexRawClientOptions {
+  return {
+    codexBinPath: process.env.CODEX_BIN_PATH,
+    cwd: process.env.CODEX_RUNTIME_CWD,
+    codexHome: process.env.CODEX_HOME,
+    codexSqliteHome: process.env.CODEX_SQLITE_HOME,
+  }
+}
+
+export function resolveRuntimeHistoryDirectory(
+  environment: NodeJS.ProcessEnv = process.env,
+): string {
+  return (
+    environment.RUNTIME_HISTORY_DIR ??
+    path.join(workspaceRoot, '.ay-ple', 'runtime-harness', 'runs')
+  )
+}
+
+function readFakeRuntimeDelayFromEnv(): number | undefined {
+  const configuredDelay = process.env.RUNTIME_FAKE_DELAY_MS
+
+  if (configuredDelay === undefined) {
+    return undefined
+  }
+
+  const delayMs = Number(configuredDelay)
+
+  if (!Number.isInteger(delayMs) || delayMs < 0) {
+    throw new Error('RUNTIME_FAKE_DELAY_MS must be a non-negative integer')
+  }
+
+  return delayMs
+}
+
 function writeSseEvent(res: Response, event: RuntimeRunEvent): void {
   res.write('event: runtime-event\n')
   res.write(`data: ${JSON.stringify(event)}\n\n`)
@@ -193,8 +249,8 @@ function isFakeRuntimeScenario(
   return fakeScenario === undefined || fakeScenario === 'failure'
 }
 
-function startServer(): void {
-  const app = createServerApp()
+async function startServer(): Promise<void> {
+  const app = await createServerApp()
 
   app.listen(port, () => {
     console.log(`server listening on http://localhost:${port}`)
@@ -202,5 +258,10 @@ function startServer(): void {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  startServer()
+  void startServer().catch((error: unknown) => {
+    console.error(
+      `Unable to start server: ${error instanceof Error ? error.message : String(error)}`,
+    )
+    process.exitCode = 1
+  })
 }
