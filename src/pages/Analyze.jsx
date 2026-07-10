@@ -16,6 +16,8 @@ import { getRecommendedMealType } from '../lib/mealType.js'
 import { sumNutrients } from '../lib/mealStore.js'
 import {
   calcAchievementPercent,
+  clampEstimatedGrams,
+  clampToPlausibleNutrients,
   fillMissingNutrients,
   isMealAnalysis,
   isNutrientSet,
@@ -31,12 +33,14 @@ import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 const IDENTIFICATION_SYSTEM_PROMPT = `당신은 한국 음식 인식·영양 분석 전문가다. 사진 속 음식을 정확히 식별하고, 식약처 식품영양성분DB 검색에 쓸 표준 식품명과 사용자에게 보여줄 이름, 섭취량을 판단한다. DB 매칭이 실패할 경우를 대비해 참고용 영양성분 추정치도 함께 낸다. 다음 절차를 반드시 내부적으로 따른다(최종 출력은 JSON만):
 
 1. 음식 식별: 사진 속 음식이 정확히 무엇인지, 단일 메뉴인지 여러 반찬이 있는 상차림인지 판단한다. 여러 개면 각각 분리한다. 사용자가 준 메뉴명/브랜드 힌트는 강하게 참고하되, 사진과 명백히 모순되면 사진을 우선한다.
-2. DB 검색명 결정: 각 음식마다 식약처 식품영양성분DB에서 검색할 표준 일반 명칭(dbSearchName)을 정한다. 브랜드명·수식어(맵게/곱빼기 등)는 빼고 가장 일반적인 음식명으로 쓴다(예: "죠스떡볶이 매운맛" → "떡볶이"). dbSearchName 검색이 실패할 경우에 대비해, 더 넓은 범주의 대체 검색명(fallbackSearchName)도 함께 정한다.
+2. DB 검색명 결정: 각 음식마다 식약처 식품영양성분DB에서 검색할 표준 일반 명칭(dbSearchName)을 정한다. 이 DB는 이름이 정확히 일치해야만 검색되고 부분(포함) 일치는 지원하지 않으니, 메뉴판 표현이 아니라 그 DB에 실제로 등록돼 있을 법한 짧고 표준적인 한식명을 써야 한다(예: "짜장면", "비빔밥", "김치찌개" 같은 대표 표준명). 브랜드명·강도 수식어(맵게/곱빼기 등)는 반드시 뺀다(예: "죠스떡볶이 매운맛" → "떡볶이"). 조리도구/재료가 붙은 변형 메뉴(예: "돌솥비빔밥", "참치김치찌개")는 dbSearchName엔 그 변형명을 그대로 쓰되, fallbackSearchName에는 반드시 그 상위 표준 카테고리명(각각 "비빔밥", "김치찌개")을 넣어 dbSearchName 검색이 실패해도 기본 음식으로는 매칭되게 한다. fallbackSearchName은 항상 dbSearchName보다 더 일반적인 이름이어야 한다.
 3. 표시 이름: 사용자에게 보여줄 이름(displayName)을 정한다. 브랜드/프랜차이즈가 식별되면 "음식명 (브랜드명)" 형식으로 괄호에 브랜드를 표기하고, 아니면 음식명만 쓴다.
-4. 양 추정: 사진에 보이는 양을 그램(g) 단위로 추정한다(estimatedGrams). 한국 표준 1인분 기준량을 기준점으로, 그릇 크기·음식 높이를 근거로 보수적으로 추정한다. 비현실적으로 크거나 작은 값(예: 떡볶이 1000g)은 현실적인 1인분 범위로 스스로 보정한다.
+4. 양 추정: 사진에 보이는 양을 그램(g) 단위로 추정한다(estimatedGrams). 아래 한식 표준 1인분 기준량(그릇에 담긴 상태 기준, 국물 포함)을 기준점으로 그릇 크기·음식 높이를 보고 보수적으로 추정하고, 이 범위를 크게 벗어나지 않게 한다: 짜장면/자장면 약 650g, 비빔밥류 약 500g, 찌개류(김치찌개 등) 1인분 약 400g, 라면(국물 포함) 약 500g, 공기밥 약 210g. 목록에 없는 음식은 일반적인 한국 1인분 상식 범위로 추정한다. 비현실적으로 크거나 작은 값(예: 떡볶이 1000g)은 현실적인 1인분 범위로 스스로 보정한다.
 5. 참고용 영양성분 추정(estimatedNutrients): DB 매칭이 실패하거나 일부 항목이 없을 때만 쓰이는 참고값이다. calories, protein, carbs, fat, fiber, sodium 여섯 키를 반드시 모두 포함하고, 어떤 값도 누락하거나 0으로 비워두지 말고 한국 표준 1인분 기준값으로 채운다. 나트륨과 식이섬유도 절대 생략하지 않는다.
-6. 검증(sanity check): 각 값이 한국 표준 1인분의 현실 범위를 벗어나면 재조정한다. 특히 단백질을 과대추정하지 않는다. 참고 기준(1인분, 대략):
-   - 짜장면: 단백질 12~16g, 탄수 110~130g, 열량 650~800kcal, 나트륨 1200~1800mg
+6. 검증(sanity check): 각 값이 한국 표준 1인분의 현실 범위를 벗어나면 재조정한다. 특히 단백질과 지방을 과대추정하지 않는다. 참고 기준(1인분, 대략):
+   - 짜장면/자장면: 단백질 12~16g, 탄수 110~130g, 지방 12~18g, 열량 650~800kcal, 나트륨 1200~1800mg
+   - 돌솥비빔밥/비빔밥: 단백질 12~16g, 지방 8~14g, 탄수 90~110g, 열량 550~700kcal
+   - 김치찌개: 단백질 12~18g, 나트륨 1500~2000mg
    - 김밥 1줄: 단백질 6~9g, 열량 320~450kcal
    - 삼겹살 1인분(150g): 단백질 25~30g, 지방 40~50g
    - 라면 1개: 단백질 10~12g, 나트륨 1500~1900mg
@@ -88,12 +92,23 @@ function extractBrand(displayName) {
   return match ? match[1] : null
 }
 
-// DB 검색 우선순위: ① dbSearchName-음식 ② dbSearchName-가공식품 ③ fallbackSearchName-음식 ④ fallbackSearchName-가공식품.
-// 가공식품 DB는 편의점/포장/프랜차이즈 제품처럼 "음식"(조리식) DB에 없는 제품을 보완하는 폴백이다.
+// 식약처 DB는 이름이 정확히 일치해야만 검색되고(부분/포함 일치 없음) 접두 수식어의 띄어쓰기까지 등록된
+// 표기와 달라도 실패한다(예: "돌솥비빔밥"은 0건, DB에는 "돌솥 비빔밥"으로 등록). dbSearchName이 2글자
+// 수식어+기본 음식명 형태의 복합어(예: "돌솥비빔밥", "참치김치찌개")인데 그 자체로 매칭되지 않으면, 앞
+// 2글자를 뗀 기본 음식명("비빔밥", "김치찌개")으로도 한 번 더 시도해 AI의 fallbackSearchName이 충분히
+// 일반적이지 않은 경우까지 보완한다.
+function stripLeadingModifier(term) {
+  return typeof term === 'string' && term.length >= 5 ? term.slice(2) : null
+}
+
+// DB 검색 우선순위: ① dbSearchName-음식 ② dbSearchName-가공식품 ③ dbSearchName 수식어 제거-음식
+// ④ fallbackSearchName-음식 ⑤ fallbackSearchName-가공식품. 가공식품 DB는 편의점/포장/프랜차이즈 제품처럼
+// "음식"(조리식) DB에 없는 제품을 보완하는 폴백이다.
 async function findFoodMatch(idItem) {
   const attempts = [
     { term: idItem.dbSearchName, dbSource: 'food' },
     { term: idItem.dbSearchName, dbSource: 'process' },
+    { term: stripLeadingModifier(idItem.dbSearchName), dbSource: 'food' },
     { term: idItem.fallbackSearchName, dbSource: 'food' },
     { term: idItem.fallbackSearchName, dbSource: 'process' },
   ]
@@ -102,7 +117,7 @@ async function findFoodMatch(idItem) {
     if (!attempt.term) continue
     try {
       const results = await searchFoodDB(attempt.term, attempt.dbSource)
-      const match = pickBestFoodMatch(results, attempt.term)
+      const match = pickBestFoodMatch(results, attempt.term, { averageExactMatches: attempt.dbSource === 'food' })
       if (match) return { match, dbSource: attempt.dbSource }
     } catch (err) {
       console.error(`fooddb search failed (${attempt.dbSource}, ${attempt.term}):`, err)
@@ -125,15 +140,18 @@ async function resolveFoodItem(idItem) {
   if (found) {
     const { match, dbSource } = found
     const baseValue = match.baseQuantity?.value > 0 ? match.baseQuantity.value : 100
-    const grams = resolveConsumedGrams(match, idItem.estimatedGrams)
+    const grams = resolveConsumedGrams(match, idItem.estimatedGrams, idItem.dbSearchName)
     const scaled = scaleNutrients(match.nutrients, baseValue, grams)
     const source = dbSource === 'process' ? NUTRITION_SOURCE.DB_PROCESS : NUTRITION_SOURCE.DB
-    return { name, nutrients: fillMissingNutrients(scaled, idItem.estimatedNutrients), source }
+    const nutrients = clampToPlausibleNutrients(fillMissingNutrients(scaled, idItem.estimatedNutrients), idItem.dbSearchName, grams)
+    return { name, nutrients, source }
   }
 
   const brand = extractBrand(name)
   const source = brand ? NUTRITION_SOURCE.OFFICIAL : NUTRITION_SOURCE.ESTIMATED
-  return { name, nutrients: fillMissingNutrients({}, idItem.estimatedNutrients), source }
+  const grams = clampEstimatedGrams(idItem.estimatedGrams, idItem.dbSearchName)
+  const nutrients = clampToPlausibleNutrients(fillMissingNutrients({}, idItem.estimatedNutrients), idItem.dbSearchName, grams)
+  return { name, nutrients, source }
 }
 
 function AnalyzingSkeleton() {

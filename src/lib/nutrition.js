@@ -61,19 +61,90 @@ export const NUTRITION_SOURCE = {
 const ESTIMATED_GRAMS_MIN = 20
 const ESTIMATED_GRAMS_MAX = 1500
 
+// 흔한 한식의 표준 1인분(그릇 기준, 국물 포함) 참고 범위(g). AI의 estimatedGrams가 이 범위를 크게
+// 벗어나면(예: 음식은 맞게 인식했는데 양만 과대/과소 추정한 경우) 영양소가 뻥튀기/과소평가되지 않도록
+// 이 범위로 보정한다. 곱빼기/소식 등 정상 변주는 허용하도록 폭을 넉넉히 잡았다. foodName에 키워드가
+// 포함되는지로 느슨하게 매칭하고, 매칭되는 게 없으면 기존 범용 범위([20, 1500])를 그대로 쓴다.
+const PORTION_REFERENCE_G = [
+  { keywords: ['짜장면', '자장면'], min: 450, max: 900 },
+  { keywords: ['비빔밥'], min: 350, max: 700 },
+  { keywords: ['찌개'], min: 250, max: 600 },
+  { keywords: ['라면'], min: 350, max: 700 },
+  { keywords: ['공기밥', '쌀밥', '흰밥'], min: 150, max: 300 },
+]
+
+function findPortionReference(foodName) {
+  if (!foodName) return null
+  return PORTION_REFERENCE_G.find(({ keywords }) => keywords.some((k) => foodName.includes(k))) ?? null
+}
+
 // AI가 추정한 섭취량(g)이 비현실적인 값이면 현실적인 1인분 범위로 보정한다.
-export function clampEstimatedGrams(grams) {
+// foodName이 PORTION_REFERENCE_G의 흔한 한식 키워드에 걸리면 그 음식 전용 범위로, 아니면 기존 범용 범위로 clamp한다.
+export function clampEstimatedGrams(grams, foodName) {
   const n = Number(grams)
-  if (!Number.isFinite(n) || n <= 0) return 100
-  return Math.min(ESTIMATED_GRAMS_MAX, Math.max(ESTIMATED_GRAMS_MIN, n))
+  const ref = findPortionReference(foodName)
+  const min = ref?.min ?? ESTIMATED_GRAMS_MIN
+  const max = ref?.max ?? ESTIMATED_GRAMS_MAX
+  if (!Number.isFinite(n) || n <= 0) return ref ? Math.round((ref.min + ref.max) / 2) : 100
+  return Math.min(max, Math.max(min, n))
 }
 
 // 가공식품 DB의 1회 섭취참고량(servSize)이 있으면 그걸 우선 쓰고(포장 단위라 사진 추정보다 정확한 경우가 많다),
-// 없거나 파싱 안 되면 AI가 추정한 섭취량을 쓴다.
-export function resolveConsumedGrams(match, estimatedGrams) {
+// 없거나 파싱 안 되면 AI가 추정한 섭취량을 쓴다(foodName이 있으면 음식별 표준 1인분 범위로 보정).
+export function resolveConsumedGrams(match, estimatedGrams, foodName) {
   const servValue = match?.servSize?.value
   if (typeof servValue === 'number' && servValue > 0) return servValue
-  return clampEstimatedGrams(estimatedGrams)
+  return clampEstimatedGrams(estimatedGrams, foodName)
+}
+
+// PORTION_REFERENCE_G와 짝을 이루는 "표준 1인분" 현실 영양 범위(IDENTIFICATION_SYSTEM_PROMPT 6번
+// 검증 기준과 동일한 값). DB 매칭에 성공해도 그 레코드 자체의 수치가(예: 특정 산출 레시피가 실제보다
+// 고단백/고지방으로 계산된 경우) 이 범위를 크게 벗어날 수 있다 — 식약처 DB "짜장면" 레코드들은 여러 건이
+// 모두 100g당 단백질 4g 안팎으로 일관되는데, 이를 표준 1인분(650g)으로 환산하면 약 26~28g으로 실제
+// 통념(12~16g)보다 크게 높다. 이런 "DB는 찾았지만 그 값 자체가 튀는" 경우를 잡기 위해, 하한의 50%
+// 미만이거나 상한의 150% 초과인 영양소만 경계값으로 눌러 DB와 현실 감각을 함께 반영한다.
+// referenceGrams는 실제 사용된 grams에 비례해 범위를 스케일하는 기준량이다(예: 포장식품처럼 표준보다
+// 작은 1회분을 쓰면 범위도 비례해 줄어들어, 정상적으로 작은 서빙을 오탐하지 않는다).
+const NUTRIENT_PLAUSIBILITY = [
+  {
+    keywords: ['짜장면', '자장면'],
+    referenceGrams: 650,
+    ranges: { protein: [12, 16], carbs: [110, 130], fat: [12, 18], calories: [650, 800], sodium: [1200, 1800] },
+  },
+  {
+    keywords: ['비빔밥'],
+    referenceGrams: 500,
+    ranges: { protein: [12, 16], fat: [8, 14], carbs: [90, 110], calories: [550, 700] },
+  },
+  {
+    keywords: ['찌개'],
+    referenceGrams: 400,
+    ranges: { protein: [12, 18], sodium: [1500, 2000] },
+  },
+]
+
+const PLAUSIBILITY_OUTLIER_LOW = 0.5
+const PLAUSIBILITY_OUTLIER_HIGH = 1.5
+
+// NUTRIENT_PLAUSIBILITY에 걸리는 음식이면, 실제 사용된 grams에 비례해 범위를 스케일한 뒤 그 범위를
+// 크게 벗어나는 영양소만 경계값으로 보정한다. 걸리지 않는 음식/영양소는 손대지 않고 그대로 둔다.
+export function clampToPlausibleNutrients(nutrients, foodName, grams) {
+  const entry = foodName && NUTRIENT_PLAUSIBILITY.find(({ keywords }) => keywords.some((k) => foodName.includes(k)))
+  if (!entry) return nutrients
+
+  const scale = entry.referenceGrams > 0 && Number(grams) > 0 ? Number(grams) / entry.referenceGrams : 1
+  const result = { ...nutrients }
+
+  for (const [key, [min, max]] of Object.entries(entry.ranges)) {
+    const value = result[key]
+    if (typeof value !== 'number') continue
+    const scaledMin = min * scale
+    const scaledMax = max * scale
+    if (value < scaledMin * PLAUSIBILITY_OUTLIER_LOW) result[key] = Math.round(scaledMin * 10) / 10
+    else if (value > scaledMax * PLAUSIBILITY_OUTLIER_HIGH) result[key] = Math.round(scaledMax * 10) / 10
+  }
+
+  return result
 }
 
 // 식약처 DB의 기준량(baseValue, 보통 100g) 대비 실제 섭취량(grams)으로 영양소를 환산한다.

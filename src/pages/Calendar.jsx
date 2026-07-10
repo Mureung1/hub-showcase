@@ -7,7 +7,7 @@ import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import { getManualDayStatus, setManualDayStatus } from '../lib/dayStatus.js'
 import { flattenMealItems, getMeals, sumMealRecordsNutrients } from '../lib/mealStore.js'
-import { calcDayStatus, formatNutrient } from '../lib/nutrition.js'
+import { calcDayStatus, formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { getAllRecords, toDateKey } from '../lib/records.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
@@ -43,7 +43,7 @@ function StatusBadge({ status, label }) {
   )
 }
 
-// 식단 탭의 큰 카드와 달리, 이름 + 핵심 영양정보(열량·단백·탄수·지방·나트륨)만 압축해 2열 그리드에 촘촘히 배치하는 용도.
+// 화면 가로를 꽉 채우는 1열 카드. 이름 + 시간대 배지 + 6개 영양소(정수)를 모두 보여준다.
 function MiniMealCard({ item }) {
   const n = item.nutrients || {}
   return (
@@ -53,13 +53,12 @@ function MiniMealCard({ item }) {
         border: `1px solid ${colors.border}`,
         borderRadius: radius.sm,
         padding: spacing.md,
-        minWidth: 0,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.xs, marginBottom: spacing.xs }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm, marginBottom: spacing.md }}>
         <span
           style={{
-            fontSize: font.size.sm,
+            fontSize: font.size.md,
             fontWeight: 700,
             color: colors.textStrong,
             overflow: 'hidden',
@@ -72,11 +71,17 @@ function MiniMealCard({ item }) {
         </span>
         <MealTypeBadge mealType={item.mealType} />
       </div>
-      <p style={{ margin: 0, fontSize: font.size.xs, color: colors.textSub, lineHeight: 1.5 }}>
-        {formatNutrient(n.calories)}kcal · 단백 {formatNutrient(n.protein)}g · 탄수 {formatNutrient(n.carbs)}g
-        <br />
-        지방 {formatNutrient(n.fat)}g · 나트륨 {formatNutrient(n.sodium)}mg
-      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', rowGap: spacing.sm, columnGap: spacing.xs }}>
+        {NUTRIENT_LABELS.map(({ key, label, unit }) => (
+          <div key={key}>
+            <span style={{ display: 'block', fontSize: font.size.xs, color: colors.muted }}>{label}</span>
+            <span style={{ fontSize: font.size.sm, fontWeight: 700, color: colors.textStrong }}>
+              {formatNutrient(n[key])}
+              {unit}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -127,11 +132,12 @@ export default function Calendar() {
 
   const selectedInfo = selectedDateKey ? dayInfoMap[selectedDateKey] : null
   const selectedRecord = selectedDateKey ? records[selectedDateKey] : null
-  const selectedItems = selectedRecord?.items?.length
-    ? selectedRecord.items
-    : selectedDateKey
-      ? flattenMealItems(getMeals(user?.id, selectedDateKey))
-      : []
+  // mealStore(그날 저장된 모든 끼니 기록)를 항상 우선한다. records[dateKey]는 저장할 때마다 그 순간의
+  // 분석 1건으로 통째로 덮어써지는 legacy 스냅샷이라, 하루에 여러 번 저장하면 마지막 1건만 남는다
+  // (dayInfoMap의 total 계산과 동일한 우선순위). mealStore에 그 날짜 기록이 아예 없을 때만(마이그레이션
+  // 이전의 오래된 날짜) legacy records로 폴백한다.
+  const selectedMeals = selectedDateKey ? getMeals(user?.id, selectedDateKey) : []
+  const selectedItems = selectedMeals.length > 0 ? flattenMealItems(selectedMeals) : selectedRecord?.items || []
 
   function goMonth(delta) {
     setCursor((c) => {
@@ -303,10 +309,12 @@ export default function Calendar() {
                 그날 먹은 음식 기록이 없어요.
               </p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: spacing.sm, marginTop: spacing.md }}>
-                {selectedItems.map((item, i) => (
-                  <MiniMealCard key={i} item={item} />
-                ))}
+              <div style={{ maxHeight: 480, overflowY: 'auto', marginTop: spacing.md }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
+                  {selectedItems.map((item, i) => (
+                    <MiniMealCard key={i} item={item} />
+                  ))}
+                </div>
               </div>
             )
           )}
