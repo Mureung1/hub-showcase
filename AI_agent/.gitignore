@@ -11,8 +11,14 @@ node_modules
 dist
 dist-ssr
 *.local
+
+# Dotfiles are not committed by default.
+# Add an explicit allowlist only when a dotfile is required for the repo.
+.*
+**/.*
+!.gitignore
 .env
-. env.example
+.env.*
 
 # Editor directories and files
 .vscode/*

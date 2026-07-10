@@ -8,6 +8,7 @@ import {
   saveCareerSpec,
   specFields,
 } from "../features/career/careerStorage";
+import { searchQualifications } from "../features/career/qualificationApi";
 import { navigate, routes } from "../router";
 
 function SpecRegister() {
@@ -15,11 +16,63 @@ function SpecRegister() {
   const savedSpec = getCareerSpec(session?.id);
   const [form, setForm] = useState({ ...initialSpec, ...savedSpec });
   const [message, setMessage] = useState("");
+  const [certificateKeyword, setCertificateKeyword] = useState("");
+  const [certificateResults, setCertificateResults] = useState([]);
+  const [certificateSearchMessage, setCertificateSearchMessage] = useState("");
+  const [isSearchingCertificates, setIsSearchingCertificates] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setMessage("");
     setForm((currentForm) => ({ ...currentForm, [name]: value }));
+  };
+
+  const handleCertificateSearch = async () => {
+    const keyword = certificateKeyword.trim();
+
+    if (keyword.length < 2) {
+      setCertificateResults([]);
+      setCertificateSearchMessage("자격증명은 두 글자 이상 입력해 주세요.");
+      return;
+    }
+
+    setIsSearchingCertificates(true);
+    setCertificateSearchMessage("");
+
+    try {
+      const results = await searchQualifications(keyword);
+      setCertificateResults(results);
+      setCertificateSearchMessage(
+        results.length === 0
+          ? "검색 결과가 없습니다. 자격증명을 다시 확인해 주세요."
+          : "검색 결과에서 자격증을 선택해 주세요."
+      );
+    } catch (error) {
+      setCertificateResults([]);
+      setCertificateSearchMessage(error.message);
+    } finally {
+      setIsSearchingCertificates(false);
+    }
+  };
+
+  const handleCertificateSelect = (certificate) => {
+    const currentCertificates = form.certificates
+      .split(/[,;\n]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    const nextCertificates = Array.from(
+      new Set([...currentCertificates, certificate.name])
+    );
+
+    setForm((currentForm) => ({
+      ...currentForm,
+      certificates: nextCertificates.join(", "),
+    }));
+    setCertificateKeyword("");
+    setCertificateResults([]);
+    setCertificateSearchMessage(`${certificate.name}을 선택했습니다.`);
+    setMessage("");
   };
 
   const handleSubmit = (event) => {
@@ -43,8 +96,8 @@ function SpecRegister() {
           <p style={styles.badge}>Career Mission</p>
           <h1 style={styles.title}>스펙 등록</h1>
           <p style={styles.description}>
-            로그인 후 전공, 학점, 자격증, 어학 점수, 프로젝트 경험, 대외활동,
-            보유 기술, 목표 직무를 등록할 수 있습니다.
+            로그인 후 목표 직무, 학점, 프로젝트 경험, 대외활동을 등록할 수 있습니다.
+            자격증, 어학 점수, 보유 기술 / 활용 도구는 선택 입력입니다.
           </p>
           <button
             type="button"
@@ -66,19 +119,89 @@ function SpecRegister() {
           <p style={styles.badge}>Career Mission</p>
           <h1 style={styles.title}>스펙 등록</h1>
           <p style={styles.description}>
-            핵심 기능 분석에 필요한 항목을 등록합니다. 저장 후 분석하기를 누르면
-            현재 기준 준비도 퍼센트가 확정됩니다.
+            핵심 분석에 필요한 항목을 등록합니다. 자격증, 어학 점수, 보유 기술 / 활용 도구는
+            입력하면 추가 역량으로 반영되고, 비워도 분석을 진행할 수 있습니다.
           </p>
         </div>
 
         <form style={styles.form} onSubmit={handleSubmit}>
           <div style={styles.fieldGrid}>
             {specFields.map((field) => (
-              <label key={field.name} style={styles.field}>
+              <label
+                key={field.name}
+                style={
+                  field.name === "certificates"
+                    ? { ...styles.field, ...styles.lookupField }
+                    : styles.field
+                }
+              >
                 <span style={styles.label}>{field.label}</span>
-                {["projects", "activities", "skills", "certificates"].includes(
-                  field.name
-                ) ? (
+                {field.name === "certificates" ? (
+                  <>
+                    <div style={styles.lookupSearch}>
+                      <input
+                        value={certificateKeyword}
+                        onChange={(event) => {
+                          setCertificateKeyword(event.target.value);
+                          setCertificateResults([]);
+                          setCertificateSearchMessage("");
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            handleCertificateSearch();
+                          }
+                        }}
+                        style={styles.input}
+                        placeholder="자격증명을 검색하세요"
+                      />
+                      <button
+                        type="button"
+                        style={styles.lookupButton}
+                        onClick={handleCertificateSearch}
+                        disabled={isSearchingCertificates}
+                      >
+                        {isSearchingCertificates ? "검색 중" : "자격증 찾기"}
+                      </button>
+                    </div>
+                    <textarea
+                      name={field.name}
+                      value={form[field.name]}
+                      onChange={handleChange}
+                      style={styles.textarea}
+                      placeholder={placeholderByField[field.name]}
+                    />
+                    {certificateSearchMessage && (
+                      <span style={styles.lookupMessage}>
+                        {certificateSearchMessage}
+                      </span>
+                    )}
+                    {certificateResults.length > 0 && (
+                      <div style={styles.lookupResultList}>
+                        {certificateResults.map((certificate) => (
+                          <button
+                            key={certificate.id}
+                            type="button"
+                            style={styles.lookupResultItem}
+                            onClick={() => handleCertificateSelect(certificate)}
+                          >
+                            <strong>{certificate.name}</strong>
+                            <span>
+                              {[
+                                certificate.type,
+                                certificate.series,
+                                certificate.field,
+                                certificate.subField,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : ["projects", "activities", "skills"].includes(field.name) ? (
                   <textarea
                     name={field.name}
                     value={form[field.name]}
@@ -123,11 +246,11 @@ const placeholderByField = {
   targetRole: "예: 프론트엔드 개발자",
   grade: "예: 3학년 또는 졸업예정",
   gpa: "예: 3.8 / 4.5",
-  certificates: "예: 정보처리기사, SQLD",
-  languageScore: "예: TOEIC 850, OPIc IM2",
+  certificates: "선택: 정보처리기사, SQLD, ADsP",
+  languageScore: "선택: TOEIC 850, OPIc IM2",
   projects: "프로젝트명, 역할, 사용 기술, 결과를 적어주세요.",
   activities: "대외활동, 인턴, 동아리, 공모전 경험을 적어주세요.",
-  skills: "예: React, JavaScript, Python, SQL",
+  skills: "선택: React, Excel, Figma, Notion, PowerPoint, 한글",
 };
 
 const styles = {
@@ -181,8 +304,12 @@ const styles = {
     gap: "16px",
   },
   field: {
+    position: "relative",
     display: "grid",
     gap: "8px",
+  },
+  lookupField: {
+    zIndex: 2,
   },
   label: {
     color: "#334155",
@@ -204,6 +331,57 @@ const styles = {
     fontSize: "15px",
     resize: "vertical",
     fontFamily: "inherit",
+  },
+  lookupSearch: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: "8px",
+  },
+  lookupButton: {
+    minHeight: "46px",
+    padding: "0 12px",
+    border: "1px solid #bfdbfe",
+    borderRadius: "12px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    fontSize: "13px",
+    fontWeight: 800,
+    whiteSpace: "nowrap",
+    cursor: "pointer",
+  },
+  lookupMessage: {
+    color: "#64748b",
+    fontSize: "13px",
+    lineHeight: 1.4,
+  },
+  lookupResultList: {
+    position: "absolute",
+    top: "76px",
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    display: "grid",
+    gap: "8px",
+    maxHeight: "142px",
+    overflowY: "auto",
+    padding: "8px",
+    borderRadius: "14px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    boxShadow: "0 18px 34px rgba(15, 23, 42, 0.14)",
+  },
+  lookupResultItem: {
+    display: "grid",
+    gap: "3px",
+    width: "100%",
+    minHeight: "40px",
+    padding: "7px 10px",
+    border: 0,
+    borderRadius: "10px",
+    background: "#ffffff",
+    color: "#0f172a",
+    textAlign: "left",
+    cursor: "pointer",
   },
   success: {
     margin: "18px 0 0",
