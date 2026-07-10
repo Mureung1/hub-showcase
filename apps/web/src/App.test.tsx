@@ -52,10 +52,12 @@ describe("App", () => {
 
     expect(localTwinMode).toHaveAttribute("aria-pressed", "true");
     expect(originalMode).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText(/LocalTwin map data/)).toBeInTheDocument();
 
     fireEvent.click(originalMode);
     expect(localTwinMode).toHaveAttribute("aria-pressed", "false");
     expect(originalMode).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/OpenFreeMap/)).toBeInTheDocument();
 
     fireEvent.click(buildings);
     fireEvent.click(prefabs);

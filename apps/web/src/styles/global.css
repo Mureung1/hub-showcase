@@ -698,6 +698,20 @@ select:focus-visible {
   height: 7px;
   border-radius: 50%;
 }
+.map-attribution {
+  position: absolute;
+  z-index: 7;
+  right: 18px;
+  bottom: 62px;
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 4px;
+  color: #667169;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  font-size: 9px;
+  line-height: 1.35;
+}
 .low {
   background: #9aa49d;
 }
