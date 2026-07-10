@@ -77,7 +77,7 @@ Patch release driven by the 2026-07-03 full satellite system-files audit (multi-
 ### Fixed — Sanitization sync (Codex 미러가 Claude gold 와 어긋나 있던 부분)
 
 - **`.agents/skills/refresh-context/SKILL.md`** — 하드코딩돼 있던 5개 실제 개인 에세이 제목을 generic 패턴 (`Read("<essay path>")` + `{PATH_TO_YOUR_ESSAYS}`) 으로 교체. Claude command 는 이미 genericize 돼 있었으나 Codex skill 만 누락됐던 단일 spot.
-- **`AGENTS.md` CJK Person Naming 예시** — 실명(`Yohan Koo`)·핸들(`johnfkoo951`)·제3자(`안창현/Changhyun Ahn`, `Andy Suh`)·실제 저자(`zhanghandong`) 를 CLAUDE.md gold (`홍길동`/`Gildong Hong`/`johndoe`) 로 동기화.
+- **`AGENTS.md` CJK Person Naming 예시** — 실제 인물 예시를 템플릿용 중립 예시로 동기화.
 - **`collectionPurpose` 예시의 실제 클라이언트명** → `기업 임원교육 사례` 로 generic 화 (CLAUDE.md + AGENTS.md 양쪽).
 
 ### Fixed — Doc accuracy (제품과 어긋난 사용자 문서)
@@ -101,7 +101,7 @@ Patch release driven by the 2026-07-03 full satellite system-files audit (multi-
 ### Deliberately NOT changed
 
 - `.codex/hooks/validate-raw-source.sh` 의 stub-skip 순서 (Check 1 뒤) 는 Claude 와 다르지만 **의도적·문서화된 설계** (stub 도 heading 은 필요). 양 harness 모두 well-formed stub 을 정상 통과하므로 유지.
-- Karpathy X-thread 데모 wiki 페이지의 실제 공개 인물명 (Karpathy·kepano·Changhyun Ahn·Yohan Koo) 은 의도된 예시 출처라 유지 (sanitization 대상 아님).
+- Karpathy X-thread 데모 wiki 페이지의 실제 공개 인물명은 의도된 예시 출처라 유지 (sanitization 대상 아님).
 
 ### No schema/structure breaking changes
 
@@ -136,7 +136,7 @@ Patch release driven by the 2026-07-03 full satellite system-files audit (multi-
 
 ### Notes
 
-- Codex hook 경로는 `C:\Users\user\Desktop\cmds-llm-wiki` placeholder — 셋업 시 절대 경로로 치환 (또는 `/onboard` 가 처리). Claude hook 은 `$CLAUDE_PROJECT_DIR` 라 치환 불필요.
+- Codex hook 경로는 `C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki` placeholder — 셋업 시 절대 경로로 치환 (또는 `/onboard` 가 처리). Claude hook 은 `$CLAUDE_PROJECT_DIR` 라 치환 불필요.
 
 ---
 
@@ -197,7 +197,7 @@ Documented in parent vault's `CMDS_LLM_Wiki/CLAUDE.md` "Starter Kit Distribution
 
 ### Placeholder coverage
 
-13 files carry placeholder tokens (~10 require user substitution before operation). Placeholder types: `김규태`, `김규태`, `C:\Users\user\Desktop\cmds-llm-wiki`, `{PATH_TO_YOUR_MOTHERSHIP_VAULT}`, `{your-mothership-vault-name}`, `2026-07-07`. Run the `sed` commands in `90. Settings/Sharing/Setup Guide.md` to replace all in one shot per Mode A (standalone) or Mode B (mothership-satellite).
+13 files carry placeholder tokens (~10 require user substitution before operation). Placeholder types: `김규태`, `김규태`, `C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki`, `{PATH_TO_YOUR_MOTHERSHIP_VAULT}`, `{your-mothership-vault-name}`, `2026-07-07`. Run the `sed` commands in `90. Settings/Sharing/Setup Guide.md` to replace all in one shot per Mode A (standalone) or Mode B (mothership-satellite).
 
 ### Files changed
 
@@ -368,7 +368,7 @@ Karpathy "지식은 스크랩이 아니라 독서 시점에 컴파일" 원칙의
 
 ## v1.0.0 — 2026-04-14 (Initial Template Release)
 
-**Source**: Extracted and sanitized from Yohan Koo's personal LLM Wiki satellite vault, active since 2026-04-10.
+**Source**: Extracted and sanitized from the original personal LLM Wiki satellite vault template.
 
 ### Architecture
 
@@ -423,5 +423,5 @@ Karpathy "지식은 스크랩이 아니라 독서 시점에 컴파일" 원칙의
 
 ### Notes
 
-- Template uses `김규태`, `김규태`, `C:\Users\user\Desktop\cmds-llm-wiki`, `{PATH_TO_YOUR_MOTHERSHIP_VAULT}`, `{your-mothership-vault-name}` placeholders per the `cmds-system-files` convention.
+- Template uses `김규태`, `김규태`, `C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki`, `{PATH_TO_YOUR_MOTHERSHIP_VAULT}`, `{your-mothership-vault-name}` placeholders per the `cmds-system-files` convention.
 - Mothership integration is **optional** — this wiki operates standalone or as satellite to any Obsidian PKM vault.

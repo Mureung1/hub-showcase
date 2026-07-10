@@ -138,7 +138,7 @@ status: active
 ### 1. 일괄 등록
 
 ```bash
-open "C:\Users\user\Desktop\cmds-llm-wiki/90. Settings/Sharing/"
+open "C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki/90. Settings/Sharing/"
 ```
 
 Obsidian Web Clipper → **Settings** → **Templates** → **Import** → 14개 JSON 각각 선택.

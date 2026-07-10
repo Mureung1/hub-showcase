@@ -63,7 +63,7 @@ status: active
 
 **Karpathy의 선호**: source를 하나씩 ingest하면서 관여하기 (요약 확인, 방향 제시). 단, batch ingest도 가능.
 
-**Purpose gate**: KIST 강의는 ingest 전에 "왜 수집했는가"를 묻는 절차를 강조한다. 이 질문은 단순한 확인이 아니라, source를 미래의 학습·연구·제품·에세이 맥락으로 재사용하기 위한 metadata 생성 단계다. 이 vault에서는 그 답을 `collectionPurpose`에 기록한다.
+**Purpose gate**: 이 vault는 ingest 전에 "왜 수집했는가"를 묻는 절차를 강조한다. 이 질문은 단순한 확인이 아니라, source를 미래의 학습·연구·제품·에세이 맥락으로 재사용하기 위한 metadata 생성 단계다. 이 vault에서는 그 답을 `collectionPurpose`에 기록한다.
 
 ### 2. Query (지식 검색+합성)
 

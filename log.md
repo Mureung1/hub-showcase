@@ -8,7 +8,7 @@ description: Chronological log of all wiki operations — ingests, queries, lint
 author:
   - "[[김규태]]"
 date created: 2026-07-07
-date modified: 2026-07-07
+date modified: 2026-07-10
 tags:
   - system
   - log
@@ -59,7 +59,7 @@ status: active
 - Mode: A standalone — mothership search skipped, `mainVaultRelated` / `mainVaultCmds` left empty
 - Wiki 페이지 생성 (7):
 	- Concepts (4): [[LLM Wiki as Learning Base]], [[Mothership-Satellite Vault Pattern]], [[Agent-Readable Metadata]], [[Human-AI Knowledge Boundary]]
-	- Entities (2): [[구요한]], [[한국과학기술연구원]]
+	- Entities (2): source-specific lecture entities later removed during local owner cleanup
 	- Guides (1): [[Web Clipper to Inbox Workflow]]
 - Wiki 페이지 업데이트 (6):
 	- Concepts (3): [[LLM Wiki Pattern]], [[3-Layer Architecture]], [[Ingest-Query-Lint Cycle]]
@@ -82,3 +82,41 @@ status: active
 - Purpose: 이 vault를 취업 포트폴리오 관리용 Evidence Wiki로 운영하기 위한 재활용 축, 프로젝트 spine, ingest/query 기준 정렬
 - Portfolio spine: `financial-order-latency-lab -> cuee -> harness`
 - Reuse axis: 취업/포트폴리오
+
+## [2026-07-10] update | Local setup placeholders filled
+
+- Updated: [[Core Context]], [[AGENTS]], [[CLAUDE]], [[index]], settings templates
+- Replaced author placeholder with `김규태`
+- Replaced local vault path placeholders with `C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki`
+- Copied qmd config to `C:\Users\kym70\.config\qmd\index.yml`
+- Mode: A standalone — mothership placeholders intentionally left only in optional Mode B documentation/examples
+
+## [2026-07-10] cleanup | Owner identity and inherited entities corrected
+
+- Restored owner display name to [[김규태]]
+- Removed inherited lecture/source entity pages from active Wiki
+- Created [[김규태]] owner entity draft
+- Updated [[index]] and [[MOC-Knowledge Management]] to point to [[김규태]]
+- Left raw source transcripts intact unless a separate purge is requested
+
+## [2026-07-10] update | 김규태 취업 포트폴리오 맥락 고도화
+
+- Updated: [[Core Context]], [[김규태]], [[MOC-Portfolio]]
+- Added current profile: 개발자 취업준비생, 대학교 3학년, 학부연구생, 경남 진주시 거주
+- Added public profiles: GitHub, Velog, LinkedIn, Instagram
+- Clarified portfolio purpose: 개발자 취업
+- Expanded project spine:
+	- `financial-order-latency-lab`: 데이터베이스 수업 프로젝트, 설계·성능 개발
+	- `cuee`: 경남권 창업동아리 대상작, 노인 모빌리티 예약 길잡이 앱
+	- `harness`: 커서맛피아님 harness를 참고해 앱 개발용으로 개인화한 Codex workflow
+- Added positioning tone: 취업준비생 입장에서 열정과 성장가능성이 드러나되, 설계·성능·개발·팀 리딩 근거를 우선
+
+## [2026-07-10] update | GitHub 기반 백엔드 포트폴리오 재정렬
+
+- Updated: [[Core Context]], [[김규태]], [[MOC-Portfolio]], [[index]]
+- Created project pages: [[financial-order-latency-lab]], [[Graduation-elasticsearch]], [[cuee]], [[harness]]
+- Source reviewed: GitHub profile `gyutaetae` public repositories and README files
+- Repositioned target role: 백엔드 개발자 취업, 장기적으로 풀스택 개발자로 성장
+- Clarified primary language: Python
+- GitHub-based stack: Python, Java, Kotlin, TypeScript/React, JavaScript, C, Shell/PowerShell, Dockerfile, PLpgSQL
+- Added `Graduation-elasticsearch` as research/backend evidence between `financial-order-latency-lab` and `cuee`

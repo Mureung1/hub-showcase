@@ -8,7 +8,7 @@ description: The 3-layer architecture of the LLM Wiki — Raw Sources (immutable
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-07-07
+date modified: 2026-07-10
 tags:
   - llm-wiki
   - architecture
@@ -129,7 +129,7 @@ Wiki ◀──── compile ──── Raw Sources
 
 ### 볼트 단위 확장
 
-KIST 강의는 이 경계 설정을 vault 단위로 확장한다. [[Mothership-Satellite Vault Pattern]]에서는 사용자가 직접 쓰고 설명할 수 있는 지식은 mothership에, LLM이 source를 읽어 컴파일한 학습용 지식은 satellite LLM Wiki에 둔다. 이는 Raw/Wiki/Schema의 내부 분리와 같은 원리를 더 큰 단위에 적용한 것이다.
+[[Mothership-Satellite Vault Pattern]]은 이 경계 설정을 vault 단위로 확장한다. 사용자가 직접 쓰고 설명할 수 있는 지식은 mothership에, LLM이 source를 읽어 컴파일한 학습용 지식은 satellite LLM Wiki에 둔다. 이는 Raw/Wiki/Schema의 내부 분리와 같은 원리를 더 큰 단위에 적용한 것이다.
 
 ---
 

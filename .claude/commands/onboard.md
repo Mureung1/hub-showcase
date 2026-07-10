@@ -17,7 +17,7 @@ Turn a freshly-cloned `cmds-llm-wiki` into *your* wiki in ~10 minutes by intervi
 ## Pre-flight (detect whether onboarding is needed)
 ```bash
 echo "PWD: $(pwd)"
-echo "남은 placeholder 파일 수: $(grep -rl '김규태\|C:\Users\user\Desktop\cmds-llm-wiki\|{your-mothership-vault-name}' --include='*.md' --include='*.yml' --include='*.json' . 2>/dev/null | grep -v '/.git/' | wc -l | tr -d ' ')"
+echo "남은 placeholder 파일 수: $(grep -rl 'kym70\|C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki\|{your-mothership-vault-name}' --include='*.md' --include='*.yml' --include='*.json' . 2>/dev/null | grep -v '/.git/' | wc -l | tr -d ' ')"
 echo "Core Context status: $(grep -m1 '^status:' 'Core Context.md' 2>/dev/null)"
 ```
 - placeholder 파일 0개 + `status: active` → 이미 온보딩됨. 사용자에게 알리고 재실행 여부 확인.
@@ -28,7 +28,7 @@ echo "Core Context status: $(grep -m1 '^status:' 'Core Context.md' 2>/dev/null)"
 > 음성 모드면 한 번에 1문항, 텍스트면 배치로. 각 답 후 1–2문장 요약 confirm.
 
 **Q1 — 위치 & 이름**
-- 볼트 절대경로는 `pwd` 로 자동 확보(= `C:\Users\user\Desktop\cmds-llm-wiki`).
+- 볼트 절대경로는 `pwd` 로 자동 확보(= `C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki`).
 - 물어볼 것: "이 위키에서 쓸 이름은? (실명·핸들·한국어 다 가능 — wikilink로 들어감)" → `김규태` / `김규태`.
 
 **Q2 — 운영 모드** *(AskUserQuestion 권장, 없으면 평문)*
@@ -58,7 +58,7 @@ echo "Core Context status: $(grep -m1 '^status:' 'Core Context.md' 2>/dev/null)"
 LC_ALL=C find . -type f \( -name "*.md" -o -name "*.yml" -o -name "*.json" -o -name "*.sh" \) \
   -not -path "./.git/*" -exec sed -i '' \
   -e 's|김규태|<NAME>|g' -e 's|김규태|<NAME>|g' \
-  -e "s|C:\Users\user\Desktop\cmds-llm-wiki|$PWD|g" \
+  -e "s|C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki|$PWD|g" \
   -e "s|2026-07-07|$(date +%Y-%m-%d)|g" {} +
 
 # Mode B — 위에 더해 모선 경로·이름도

@@ -90,7 +90,7 @@ Obsidian → `Open folder as vault` → `~/DEV/my-llm-wiki/` 선택.
 |---|---|---|
 | `김규태` | `홍길동` | wikilink 친화 (한국어·핸들·실명 모두 가능). YAML 안에서 `"[[홍길동]]"` 형태로 들어감 |
 | `김규태` | `Jane Doe` 또는 `홍길동` | 표시용 이름 (Core Context §1) |
-| `C:\Users\user\Desktop\cmds-llm-wiki` | `/Users/foo/DEV/my-llm-wiki` | 절대경로. `pwd` 결과 그대로 |
+| `C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki` | `/Users/foo/DEV/my-llm-wiki` | 절대경로. `pwd` 결과 그대로 |
 | `{PATH_TO_YOUR_MOTHERSHIP_VAULT}` | `/Users/foo/Vaults/Main-PKM` | Mode B 전용. Mode A 면 무시 |
 | `{PATH_TO_YOUR_MOTHERSHIP}` | (위와 동일) | 일부 파일에서 다른 키 이름 사용 |
 | `{your-mothership-vault-name}` | `Main-PKM` | Mode B. 모선 폴더명만 (경로 X). `obsidian://open?vault=` URL 에 들어감 |
@@ -106,7 +106,7 @@ LC_ALL=C find . -type f \( -name "*.md" -o -name "*.yml" -o -name "*.json" -o -n
   -exec sed -i '' \
   -e 's|김규태|홍길동|g' \
   -e 's|김규태|홍길동|g' \
-  -e "s|C:\Users\user\Desktop\cmds-llm-wiki|$PWD|g" \
+  -e "s|C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki|$PWD|g" \
   -e "s|2026-07-07|$(date +%Y-%m-%d)|g" \
   {} +
 ```
@@ -179,7 +179,7 @@ brew install qmd-search/qmd/qmd
 mkdir -p ~/.config/qmd
 cp "90. Settings/qmd-config-template.yml" ~/.config/qmd/index.yml
 
-# index.yml 안의 C:\Users\user\Desktop\cmds-llm-wiki 가 Step 4 에서 이미 치환됐는지 확인
+# index.yml 안의 C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki 가 Step 4 에서 이미 치환됐는지 확인
 grep "{PATH_TO" ~/.config/qmd/index.yml  # 출력 없어야 정상
 
 # 임베딩 모델 (한국어 지원)
@@ -240,7 +240,7 @@ claude
 
 - [ ] 폴더 이름 본인 볼트명으로 변경 (`my-llm-wiki` 등)
 - [ ] `git init` 으로 git 이력 fresh start
-- [ ] Placeholder 7 종 치환 (`김규태`, `김규태`, `C:\Users\user\Desktop\cmds-llm-wiki`, `2026-07-07` 4 종 + Mode B 면 모선 3 종)
+- [ ] Placeholder 7 종 치환 (`김규태`, `김규태`, `C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki`, `2026-07-07` 4 종 + Mode B 면 모선 3 종)
 - [ ] `grep -rn "김규태\|{PATH_TO" ...` 로 치환 누락 검증
 - [ ] `Core Context.md` §1 정체성 작성
 - [ ] `Core Context.md` §2 재활용 축 5~9 개 정의

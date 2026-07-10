@@ -6,7 +6,7 @@
 
 **🌐 Live Showcase**: **[llm-wiki.cmdspace.work](https://llm-wiki.cmdspace.work)** — 10 섹션 상세 페이지 (아키텍처 · 11 commands · 미래의 나에게 보내는 편지 · Quick Start)
 
-**제작**: Yohan Koo ([@YohanKoo](https://x.com/YohanKoo)) · CMDSPACE 에서 운영 중인 satellite 볼트를 템플릿화
+**운영자**: [[김규태]] · 개인 LLM Wiki / 포트폴리오 Evidence Wiki로 커스터마이즈
 
 ---
 
@@ -68,7 +68,7 @@ Obsidian → Open folder as vault → `my-llm-wiki/` 선택.
 |---|---|
 | `김규태` | `[[홍길동]]` 같은 wikilink 친화 이름 |
 | `김규태` | `Jane Doe` 표시용 이름 |
-| `C:\Users\user\Desktop\cmds-llm-wiki` | `/Users/foo/DEV/my-llm-wiki` |
+| `C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki` | `/Users/foo/DEV/my-llm-wiki` |
 | `{PATH_TO_YOUR_MOTHERSHIP_VAULT}` | (옵션) 별도 PKM 볼트 경로 |
 | `{your-mothership-vault-name}` | (옵션) mothership 폴더 이름 |
 
@@ -78,7 +78,7 @@ cd my-llm-wiki
 LC_ALL=C find . -name "*.md" -o -name "*.sh" -o -name "*.yml" -o -name "*.json" | xargs sed -i '' \
   -e 's|김규태|홍길동|g' \
   -e 's|김규태|Jane Doe|g' \
-  -e 's|C:\Users\user\Desktop\cmds-llm-wiki|/Users/foo/DEV/my-llm-wiki|g'
+  -e 's|C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki|/Users/foo/DEV/my-llm-wiki|g'
 ```
 
 ### 4. Core Context 채우기
@@ -96,7 +96,7 @@ brew install qmd-search/qmd/qmd
 
 # 설정 파일 복사
 cp "90. Settings/qmd-config-template.yml" ~/.config/qmd/index.yml
-# ~/.config/qmd/index.yml 의 C:\Users\user\Desktop\cmds-llm-wiki 를 실제 경로로 수정
+# ~/.config/qmd/index.yml 의 C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki 를 실제 경로로 수정
 
 # 인덱싱
 export QMD_EMBED_MODEL="hf:Qwen/Qwen3-Embedding-0.6B-GGUF/Qwen3-Embedding-0.6B-Q8_0.gguf"

@@ -7,7 +7,7 @@ description: Andrej Karpathy — AI researcher, former Tesla AI Director, OpenAI
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-04-14T16:00
+date modified: 2026-07-10
 tags:
   - person
   - ai-researcher
@@ -23,7 +23,6 @@ related:
   - "[[qmd]]"
   - "[[Sovereign PKM]]"
   - "Changhyun Ahn"
-  - "Yohan Koo"
 confidence: high
 layer: entities
 status: active
@@ -58,7 +57,7 @@ Andrej Karpathy는 슬로바키아 출신의 AI 연구자, 교육자, 엔지니�
 
 | 시점 | 형태 | 비고 |
 |------|------|------|
-| **2026-04-02** | X 포스트 → [[2026-04-02-Karpathy-LLM-Knowledge-Bases-X-Thread]] | 825 words, 패턴의 최초 공개. kepano·YohanKoo·Beomsu 답글 획득 |
+| **2026-04-02** | X 포스트 → [[2026-04-02-Karpathy-LLM-Knowledge-Bases-X-Thread]] | 825 words, 패턴의 최초 공개 |
 | **2026-04-06** | 공식 Gist → [[2026-04-12-Karpathy-LLM-Wiki]] | X 버전을 확장, "Optional CLI tools"에서 [[qmd]] 권장 추가 |
 
 이 볼트(cmds-llm-wiki)가 그 패턴의 구현체이다.
@@ -72,14 +71,13 @@ Andrej Karpathy는 슬로바키아 출신의 AI 연구자, 교육자, 엔지니�
 
 ### 커뮤니티 반응
 
-X 스레드에서 주목할 답글 3개:
+X 스레드에서 주목할 답글:
 - [[kepano (Steph Ango)]] (Obsidian CEO): [[Contamination Mitigation]] 개념 제시
-- **YohanKoo** (Yohan Koo): 10,000+ 노트 CMDS 볼트가 동일 패턴에 독립 도달했다고 보고 (3년간)
 - **Beomsu** (@BeromArtDev): [[qmd]] 실사용 확인
 
 **한국 PKM 커뮤니티의 reframing** (2026-04-13):
 
-Changhyun Ahn의 LinkedIn Pulse 에세이는 Karpathy의 LLM Wiki를 **"혁신의 출발점이 아니라, 이미 앞서 가던 흐름이 AI 본류의 입에서 재확인된 signal"** 로 해석. "Markdown Is All You Need"라는 슬로건 아래 더배러·Yohan Koo 등 한국 PKM 실천자들이 동일 방향에 먼저 도달해 있었다는 주장. Karpathy의 발화가 **도구의 정당성**보다 **구조적 정당성**의 확인으로 기능.
+Changhyun Ahn의 LinkedIn Pulse 에세이는 Karpathy의 LLM Wiki를 **"혁신의 출발점이 아니라, 이미 앞서 가던 흐름이 AI 본류의 입에서 재확인된 signal"** 로 해석한다. 이 관점은 Karpathy의 발화를 **도구의 정당성**보다 **구조적 정당성**의 확인으로 읽는다.
 
 ### 교육 기여
 
@@ -98,7 +96,6 @@ Changhyun Ahn의 LinkedIn Pulse 에세이는 Karpathy의 LLM Wiki를 **"혁신�
 - [[qmd]] — Karpathy가 권장한 search tool
 - [[Sovereign PKM]] — Karpathy 패턴을 Korean PKM 관점에서 reframe
 - Changhyun Ahn — Sovereign PKM 관점의 에세이 저자
-- Yohan Koo — 본 vault 소유자, X 스레드에서 회신
 
 ---
 

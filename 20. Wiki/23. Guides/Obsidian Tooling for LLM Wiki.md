@@ -7,7 +7,7 @@ description: Practical guide to Obsidian plugins, extensions, and CLI tools reco
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-07-07
+date modified: 2026-07-10
 tags:
   - guide
   - obsidian
@@ -50,7 +50,7 @@ status: active
 - **설치**: Obsidian Community Plugins → "Web Clipper" 또는 브라우저 확장
 - **워크플로**: 브라우저에서 기사 발견 → 클리핑 → `00. Inbox/`에 저장 → LLM에게 ingest 요청
 
-KIST 강의 기준으로는 Web Clipper가 곧바로 Wiki page를 만드는 도구가 아니다. 먼저 `00. Inbox/`에 capture하고, `/inbox`와 `/ingest`를 통해 목적 질문을 받은 뒤 Raw Source와 Wiki로 승격한다. 상세 절차는 [[Web Clipper to Inbox Workflow]]에 정리한다.
+이 vault에서는 Web Clipper가 곧바로 Wiki page를 만드는 도구가 아니다. 먼저 `00. Inbox/`에 capture하고, `/inbox`와 `/ingest`를 통해 목적 질문을 받은 뒤 Raw Source와 Wiki로 승격한다. 상세 절차는 [[Web Clipper to Inbox Workflow]]에 정리한다.
 
 ### 이미지 로컬 다운로드
 

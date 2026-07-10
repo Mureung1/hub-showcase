@@ -8,7 +8,7 @@ description: The LLM Wiki pattern proposed by Andrej Karpathy — LLMs increment
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-07-07
+date modified: 2026-07-10
 tags:
   - llm-wiki
   - knowledge-management
@@ -126,7 +126,7 @@ Karpathy 본인의 deployment (2026-04-02 X 공개): **~100 articles, ~400K word
 
 ### 학습 전초기지로서의 LLM Wiki
 
-KIST 강의는 LLM Wiki를 [[LLM Wiki as Learning Base|학습 전초기지]]로 재해석한다. 사용자가 어떤 자료를 캡처했다는 것은 그 자료를 이미 아는 것이 아니라, 적어도 그 주제에 관심을 보였다는 신호다. LLM Wiki는 이 관심 신호를 source-backed 개념 페이지로 바꾸어, 나중에 사용자가 직접 읽고 검증할 수 있는 학습 지도로 만든다.
+이 vault에서는 LLM Wiki를 [[LLM Wiki as Learning Base|학습 전초기지]]로 사용한다. 사용자가 어떤 자료를 캡처했다는 것은 그 자료를 이미 아는 것이 아니라, 적어도 그 주제에 관심을 보였다는 신호다. LLM Wiki는 이 관심 신호를 source-backed 개념 페이지로 바꾸어, 나중에 사용자가 직접 읽고 검증할 수 있는 학습 지도로 만든다.
 
 이 관점에서는 [[Human-AI Knowledge Boundary]]가 중요하다. LLM이 쓴 Wiki page는 사용자가 이해한 지식과 동일하지 않다. `explored`, `verificationStatus`, `confidence` 같은 필드는 이 경계를 드러내기 위한 장치다.
 
@@ -142,7 +142,7 @@ Changhyun Ahn의 [[2026-04-13-Changhyun-Ahn-Soverign-PKM|LinkedIn Pulse 에세�
 
 > "Karpathy의 글은 혁신의 출발점이 아니라, 이미 앞서 가던 흐름이 이제 AI 본류의 입에서 다시 확인되었다는 signal에 가깝다."
 
-"Markdown Is All You Need" 슬로건 아래 Yohan Koo·더배러 등 한국 PKM 실천자들이 동일한 방향에 먼저 도달해 있었다는 주장. 본 vault(cmds-llm-wiki)가 그 실증 사례이며, [[Sovereign PKM]] 관점에서 LLM Wiki는 **"원본 포맷 주권 + LLM 협업 자동화"** 의 교집합이다.
+"Markdown Is All You Need" 슬로건 아래 한국 PKM 실천자들이 동일한 방향에 먼저 도달해 있었다는 주장이다. [[Sovereign PKM]] 관점에서 LLM Wiki는 **"원본 포맷 주권 + LLM 협업 자동화"** 의 교집합이다.
 
 ---
 
@@ -174,7 +174,7 @@ Changhyun Ahn의 [[2026-04-13-Changhyun-Ahn-Soverign-PKM|LinkedIn Pulse 에세�
 - [[2026-04-12-Karpathy-LLM-Wiki]] — 확장된 Gist (2026-04-06)
 - [[2026-04-02-Harnessing-Claudes-Intelligence-3-Patterns]] — Lance Martin의 agent harness 3 patterns
 - [[2026-04-13-Changhyun-Ahn-Soverign-PKM]] — 안창현의 Sovereign PKM 에세이
-- [[2026-07-07-에이전트를-위한-지식-베이스-LLM-Wiki-활용]] — KIST LLM Wiki 활용 강의 transcript
+- [[2026-07-07-에이전트를-위한-지식-베이스-LLM-Wiki-활용]] — LLM Wiki 활용 강의 transcript
 
 ---
 

@@ -37,7 +37,7 @@ status: active
 
 ## Overview
 
-KIST 강의는 LLM Wiki 운영의 위험 중 하나로 "AI가 만든 결과물을 내가 이미 아는 것처럼 행세하는 문제"를 든다. 이 문제를 줄이는 장치가 [[Mothership-Satellite Vault Pattern]]이다. 사용자가 직접 알고 설명할 수 있는 지식은 mothership에, 아직 학습 중인 source-backed 지식은 LLM Wiki에 둔다.
+LLM Wiki 운영의 위험 중 하나는 "AI가 만든 결과물을 내가 이미 아는 것처럼 행세하는 문제"다. 이 문제를 줄이는 장치가 [[Mothership-Satellite Vault Pattern]]이다. 사용자가 직접 알고 설명할 수 있는 지식은 mothership에, 아직 학습 중인 source-backed 지식은 LLM Wiki에 둔다.
 
 이 vault의 `explored`와 `verificationStatus`도 같은 경계 관리를 위해 존재한다.
 

@@ -7,7 +7,7 @@ description: Master index of the LLM Wiki. Central navigation hub listing all Wi
 author:
   - "[[김규태]]"
 date created: 2026-07-07
-date modified: 2026-07-07
+date modified: 2026-07-10
 tags:
   - index
   - moc
@@ -30,9 +30,9 @@ status: active
 | Metric | Count |
 |--------|-------|
 | Raw Sources | 3 |
-| Wiki Pages | 25 |
+| Wiki Pages | 28 |
 | Concepts | 13 |
-| Entities | 5 |
+| Entities | 8 |
 | Guides | 4 |
 | MOCs | 3 |
 | Queries | 1 |
@@ -65,8 +65,11 @@ status: active
 - [[Andrej Karpathy]] — AI 연구자, LLM Wiki 패턴 제안자
 - [[Vannevar Bush]] — Memex 개념 제안자 (1945)
 - [[Memex]] — 문서 간 associative trail 을 가진 개인 지식 저장소 구상
-- [[구요한]] — KIST LLM Wiki 활용 강의 발표자로 기록된 Obsidian/LLM Wiki 실천자
-- [[한국과학기술연구원]] — 이번 YouTube source의 channel/organization entity
+- [[김규태]] — 이 standalone LLM Wiki의 소유자이자 운영자
+- [[financial-order-latency-lab]] — 금융 주문 서버 p99 latency 성능 실험 프로젝트
+- [[Graduation-elasticsearch]] — JavaParser 기반 Elasticsearch source-test traceability 분석 프로젝트
+- [[cuee]] — 노인 모빌리티 예약 길잡이 접근성 앱 프로젝트
+- [[harness]] — Codex CLI 기반 개인화 개발 workflow harness
 
 ### Guides
 

@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-VAULT="C:\Users\user\Desktop\cmds-llm-wiki"
+VAULT="C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki"
 LOCK="/tmp/qmd-reindex-cmds-llm-wiki.lock"
 LOG="/tmp/qmd-reindex-cmds-llm-wiki.log"
 DEBOUNCE_SEC=8

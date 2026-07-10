@@ -8,7 +8,7 @@ description: A multi-vault knowledge architecture that separates a user's primar
 author:
   - Codex
 date created: 2026-07-07
-date modified: 2026-07-07
+date modified: 2026-07-10
 tags:
   - obsidian
   - llm-wiki
@@ -37,7 +37,7 @@ status: active
 
 ## Overview
 
-KIST 강의는 Obsidian을 단일 vault가 아니라 여러 vault의 생태계로 설명한다. [[구요한]]은 자신의 메인 볼트를 mothership vault로, LLM Wiki vault를 satellite vault로 부른다. 이 구분은 [[Human-AI Knowledge Boundary]]를 지키기 위한 운영 장치다.
+Mothership-Satellite 패턴은 Obsidian을 단일 vault가 아니라 여러 vault의 생태계로 운영하는 방식이다. 메인 볼트는 사용자가 직접 쓰고 설명할 수 있는 지식을 담고, LLM Wiki vault는 LLM이 raw source를 읽어 학습 재료로 컴파일하는 별도 작업 공간이 된다. 이 구분은 [[Human-AI Knowledge Boundary]]를 지키기 위한 운영 장치다.
 
 이 vault는 현재 `operationMode: standalone`이므로 실제 mothership 연결은 쓰지 않는다. 다만 패턴 자체는 나중에 Mode B로 전환할 때의 설계 기준이 된다.
 

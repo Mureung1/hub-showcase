@@ -38,7 +38,7 @@ status: active
 
 ## Overview
 
-KIST 강의는 Obsidian note의 상단 metadata를 컨텍스트 윈도우 관리와 연결한다. 에이전트는 모든 본문을 처음부터 다 읽기보다 title, description, source, category, related 같은 frontmatter를 먼저 읽고 관련성을 판단할 수 있다.
+이 vault는 Obsidian note의 상단 metadata를 컨텍스트 윈도우 관리와 연결한다. 에이전트는 모든 본문을 처음부터 다 읽기보다 title, description, source, category, related 같은 frontmatter를 먼저 읽고 관련성을 판단할 수 있다.
 
 이것은 [[LLM Wiki Pattern]]의 progressive disclosure와 맞닿아 있다. 짧은 metadata가 note의 "빙산의 일각" 역할을 하고, 필요할 때만 본문으로 drill down한다.
 

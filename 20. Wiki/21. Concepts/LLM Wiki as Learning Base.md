@@ -8,7 +8,7 @@ description: The use of an LLM Wiki as a learning base for concepts that the use
 author:
   - Codex
 date created: 2026-07-07
-date modified: 2026-07-07
+date modified: 2026-07-10
 tags:
   - llm-wiki
   - learning
@@ -37,7 +37,7 @@ status: active
 
 ## Overview
 
-KIST 강의에서 [[구요한]]은 LLM Wiki를 "학습 전초기지"로 설명한다. 사용자가 어떤 기사, 논문, 영상, GitHub 저장소를 캡처했다는 사실 자체가 관심의 신호다. [[LLM Wiki Pattern]]은 이 관심 신호를 raw source로 보존하고, LLM이 이를 [[Agent-Readable Metadata]]와 cross-reference가 있는 Wiki page로 컴파일하게 만든다.
+이 vault에서는 LLM Wiki를 "학습 전초기지"로 사용한다. 사용자가 어떤 기사, 논문, 영상, GitHub 저장소를 캡처했다는 사실 자체가 관심의 신호다. [[LLM Wiki Pattern]]은 이 관심 신호를 raw source로 보존하고, LLM이 이를 [[Agent-Readable Metadata]]와 cross-reference가 있는 Wiki page로 컴파일하게 만든다.
 
 핵심 구분은 다음과 같다.
 

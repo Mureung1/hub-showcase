@@ -104,7 +104,7 @@ mothership 이 없다면 이 LLM Wiki 단독으로 운영한다 — Core Context
 | 항목 | 값 |
 |------|-----|
 | 메인 볼트 경로 | `{PATH_TO_YOUR_MOTHERSHIP_VAULT}` |
-| 이 볼트 경로 | `C:\Users\user\Desktop\cmds-llm-wiki` |
+| 이 볼트 경로 | `C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki` |
 | Cross-reference | `source-vault` 프로퍼티로 메인 볼트 노트 참조 |
 
 Mothership pattern 예시: [cmds-system-files](https://github.com/johnfkoo951/cmds-system-files) (Karpathy Wiki pattern 과 분리된 PKM harness).
@@ -195,7 +195,7 @@ Mothership pattern 예시: [cmds-system-files](https://github.com/johnfkoo951/cm
 - File edits use patch-style changes; Raw Sources remain immutable except ingest/update policy.
 - qmd search (`qmd query`, `qmd vsearch`) is the preferred local retrieval fallback when MCP tools are unavailable.
 - Browser/Computer Use capture may be used for visible tab groups, but public share links, uploads, sends, and account-setting changes need action-time user confirmation.
-- Hooks: `.claude/hooks/*.sh` are wired via `.claude/settings.json` (uses `$CLAUDE_PROJECT_DIR`); `.codex/hooks/*.sh` are wired via `.codex/hooks.json` (set the `C:\Users\user\Desktop\cmds-llm-wiki` placeholder to your absolute vault path). Both enforce `## Original Content` on Raw Sources and keep qmd fresh after writes.
+- Hooks: `.claude/hooks/*.sh` are wired via `.claude/settings.json` (uses `$CLAUDE_PROJECT_DIR`); `.codex/hooks/*.sh` are wired via `.codex/hooks.json` (set the `C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki` placeholder to your absolute vault path). Both enforce `## Original Content` on Raw Sources and keep qmd fresh after writes.
 
 ### 1. Ingest (새 자료 흡수)
 
@@ -495,7 +495,7 @@ aliases:
 | 역할 | 볼트 | 경로 |
 |------|------|------|
 | Mothership | `{your-mothership-vault-name}` | `{PATH_TO_YOUR_MOTHERSHIP_VAULT}` |
-| Satellite (this) | `{your-llm-wiki}` | `C:\Users\user\Desktop\cmds-llm-wiki` |
+| Satellite (this) | `{your-llm-wiki}` | `C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki` |
 
 ### 메인 볼트 참조하기 (위성 → 모선)
 

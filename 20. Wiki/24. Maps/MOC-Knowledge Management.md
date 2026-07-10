@@ -8,7 +8,7 @@ description: Map of Content for knowledge management concepts — LLM Wiki patte
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-07-07
+date modified: 2026-07-10
 tags:
   - moc
   - knowledge-management
@@ -49,19 +49,13 @@ status: active
 ## People & History
 
 - [[Andrej Karpathy]] — LLM Wiki 패턴 제안자
-- [[kepano (Steph Ango)]] — Obsidian CEO, contamination mitigation 개념화
-- Changhyun Ahn — Sovereign PKM, Harness Literacy 개념화 (Korean PKM)
-- Yohan Koo — Korean PKM 실천자, 본 vault 소유자
-- [[구요한]] — KIST LLM Wiki 활용 강의 발표자로 기록된 Obsidian/LLM Wiki 실천자
-- [[한국과학기술연구원]] — KIST 강의 source channel/entity
+- [[김규태]] — 이 standalone LLM Wiki의 소유자이자 운영자
 - [[Vannevar Bush]] — Memex 개념 제안자 (1945)
 - [[Memex]] — 문서 간 associative trail을 가진 개인 지식 저장소 구상
 
 ## Tools
 
 - [[qmd]] — 로컬 markdown 검색 엔진 (Karpathy 권장)
-- obsidian-hwp-writer — MD→HWPX 변환 (안창현 제작)
-- achmage-markdown-renderer — Tauri 기반 로컬 MD 렌더러 (안창현 제작)
 
 ## Practical Guides
 

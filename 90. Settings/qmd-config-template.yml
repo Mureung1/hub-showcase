@@ -21,7 +21,7 @@ global_context: |
 
 collections:
   wiki:
-    path: C:/Users/user/Desktop/cmds-llm-wiki/20. Wiki
+    path: C:/Users/kym70/OneDrive/Desktop/cmds-llm-wiki-work/cmds-llm-wiki/20. Wiki
     pattern: "**/*.md"
     context:
       "/": "LLM-maintained wiki pages. The primary synthesized knowledge layer."
@@ -31,7 +31,7 @@ collections:
       "/24. Maps": "Map of Content (MOC) — topic-based indexes."
 
   raw_sources:
-    path: C:/Users/user/Desktop/cmds-llm-wiki/10. Raw Sources
+    path: C:/Users/kym70/OneDrive/Desktop/cmds-llm-wiki-work/cmds-llm-wiki/10. Raw Sources
     pattern: "**/*.md"
     context:
       "/": "Immutable source documents — Wiki references these via `source:` frontmatter."
@@ -42,7 +42,7 @@ collections:
       "/15. Clippings": "Short snippets and excerpts."
 
   queries:
-    path: C:/Users/user/Desktop/cmds-llm-wiki/30. Queries
+    path: C:/Users/kym70/OneDrive/Desktop/cmds-llm-wiki-work/cmds-llm-wiki/30. Queries
     pattern: "**/*.md"
     context:
       "/": "Synthesized query results — compounding wiki artifacts per Karpathy's pattern."
