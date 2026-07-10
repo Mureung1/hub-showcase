@@ -2,11 +2,29 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-prd
-- Next actor: agent
+- Next actor: none
+
+## Completion
+
+2026-07-11에 Issue 001-005의 구현, 회귀 검증과 후속 code review를 완료했다. 최종 구현 기준점은 `0b9c33b4`이며, 현재 구조와 남은 gap은 [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md)에서 관리한다.
+
+| Slice | 완료 결과 | 구현 근거 |
+| --- | --- | --- |
+| Issue 001 | Real Express server와 Vite Inspector를 통과하는 deterministic Playwright lifecycle gate | `6306d27`, `47d3c6e` |
+| Issue 002 | Schema v1 per-run JSON snapshot, async hydration과 completed-run restart 복원 | `d0bbf18`, `93357a0` |
+| Issue 003 | 100ms streaming checkpoint, durability ordering과 interrupted-run recovery | `d8cd251`, `3f22320` |
+| Issue 004 | Count/byte retention, terminal history clear와 active-run 보존 | `ff15054` |
+| Issue 005 | Fail-closed startup/mid-run persistence, degraded HTTP/UI와 emergency diagnostic failure | `dd8fa41`, `673e318`, `0b9c33b` |
+
+최종 검증에서 `npm test`, `npm run typecheck`, `npm run build`, Inspector lint와 Chromium desktop Playwright 6개 시나리오가 통과했다. 구성된 기존 인증을 사용한 live Codex HTTP/SSE parity도 prompt completion과 adapter-confirmed cancellation을 통과했으며 로그인이나 OAuth는 실행하지 않았다. Standards와 Spec 재검토의 actionable finding은 0건이다.
+
+제품 runtime handoff는 이 PRD의 미완료 항목이 아니라 명시적인 후속 범위다.
 
 ## Problem Statement
+
+> 이 절은 구현 기준점 `25c3c45` 당시의 문제 상태를 기록한다. 완료 후 live behavior는 구현 지도와 현재 코드 및 테스트에서 확인한다.
 
 AY-PLE의 Runtime Harness는 FakeRuntimeAdapter와 CodexRuntimeAdapter로 prompt를 실행하고 취소하며, normalized lifecycle과 debug evidence를 HTTP/SSE를 통해 Runtime Inspector에 보여준다. Pinned Codex `0.144.0`을 사용하는 live parity command도 prompt 완료와 adapter-confirmed cancellation을 실제 server 경계에서 증명한다.
 
@@ -162,6 +180,7 @@ Runtime Inspector는 hydrate된 history를 조회하고 terminal history를 명�
 - ADR 0004가 storage architecture의 source of truth다. 이 PRD는 ADR이 의도적으로 미룬 schema version, batching, retention, failure HTTP contract와 browser acceptance를 구체화한다.
 - CodexRuntimeAdapter Parity Gate는 pinned Codex `0.144.0`을 대상으로 이미 repeatable server HTTP/SSE command로 통과했다. Hardening은 parity를 대체하지 않고 그 diagnostic evidence를 restart-surviving하게 만든다.
 - 이 PRD의 구현 기준점은 commit `25c3c45`다.
+- 최종 구현 기준점은 commit `0b9c33b4`다.
 - 작성 시 working branch는 `codex/w1d5`이며 worktree는 clean하다.
 - 구현은 여러 session으로 나누고, 이 PRD에서 생성한 각 local issue를 fresh context의 `/implement`에 전달한다.
 - Product runtime handoff는 hardening과 deterministic browser gate가 끝난 뒤 별도 `/grill-with-docs`에서 다룬다.

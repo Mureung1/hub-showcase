@@ -50,6 +50,20 @@ The PR template in `.github/pull_request_template.md` is the upstream camp submi
 
 Local Matt PRDs and issue briefs are agent workflow artifacts. They do not create upstream camp-visible GitHub noise and do not use `.github/pull_request_template.md`.
 
+## Closing local Matt artifacts
+
+When implementation and review are complete, close the existing local artifacts
+instead of creating a separate completion document:
+
+1. Mark verified acceptance criteria as checked.
+2. Set `State: completed` and `Next actor: none`.
+3. Add a concise implementation outcome with the relevant commits and final verification.
+4. Update the primary architecture note or package README when the live implementation map changed.
+
+Keep the original problem statement and design decisions as historical context.
+Completion evidence records what shipped, while primary architecture documents
+and the current code/tests remain the source of truth for live behavior.
+
 ## When a skill says "publish to the issue tracker"
 
 For `/to-prd` and `/to-issues`, publish local Markdown as described above. Do not create GitHub Issues unless the user explicitly asks for GitHub publication and confirms the target repo/surface.
