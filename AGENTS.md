@@ -18,6 +18,9 @@
 - React 컴포넌트는 간결한 함수형 컴포넌트를 선호합니다.
 - 반복 UI는 배열 데이터와 `map` 렌더링을 우선 사용합니다.
 - CSS는 기존 전역 변수, 색상, 반응형 패턴을 먼저 재사용합니다.
+- 프론트와 백엔드는 기능 중심 디렉터리를 사용하고, 기능 폴더 이름은 kebab-case를 사용합니다.
+- 프론트 공통 UI만 `src/components/ui/`에 두고 기능 전용 UI는 해당 `src/features/` 아래에 둡니다.
+- 백엔드의 route, controller, service, schema는 같은 `server/src/modules/<feature>/` 안에 둡니다.
 - 한글 UI 문구는 자연스럽고 서비스 톤에 맞게 작성합니다.
 - 새 문서와 한글 파일은 UTF-8로 작성합니다.
 
@@ -31,8 +34,10 @@
 
 ## 참고 문서
 
-- 기획 의도: `wiki/기획서.md`
+- 기획 의도: `docs/product-plan.md`
 - 디자인: `docs/design.md`
+- 디렉터리 구조: `docs/directory-structure.md`
+- 일정 및 실행 Backlog: `docs/4-week-plan.md`
 - 프론트 작업 분해: `docs/frontend-tasks.md`
 - 백엔드 작업 분해: `docs/backend-tasks.md`
 - DB 작업 분해: `docs/database-tasks.md`
@@ -42,16 +47,18 @@
 
 1. 구현 상태: 실제 코드/디렉터리 구조
 2. 작업 분해: `docs/frontend-tasks.md`, `docs/backend-tasks.md`, `docs/database-tasks.md`
-3. 기획 의도: `wiki/기획서.md`
+3. 기획 의도: `docs/product-plan.md`
 4. 실행/개요: `README.md`
 
 세부 구현 스펙은 `docs/*-tasks.md`를 기준으로 합니다. `AGENTS.md`는 진입점 요약만 제공합니다.
 
 ## 작업 범위와 기준
 
-- 프론트엔드: `src/`
-- 백엔드 골격: `server/src/{routes,controllers,services,middleware,lib,validators,errors}`
-- DB 골격: `supabase/migrations`, `supabase/seed`
+- 프론트엔드: `src/{app,components,features,repositories,mocks,lib,styles}`
+- 백엔드 골격: `server/src/{modules,middleware,lib,config,errors}`, `server/test`
+- DB 골격: `supabase/migrations`, `supabase/tests`, `supabase/seed.sql`
+- Auth 데모 seed 스크립트: `scripts/seed-demo.mjs`(DB 구현 시 추가)
+- 루트 `package.json`과 `package-lock.json` 하나를 프론트·백엔드가 함께 사용합니다.
 - `prototype/`은 기존 HTML/CSS/JS 프로토타입 참고용입니다.
 - 문서와 실제 구현 상태가 충돌하면 현재 코드/디렉터리 구조를 먼저 확인합니다.
 - 공동구매는 결제/송금을 직접 처리하지 않고, 모집, 참여, 1인 부담 금액 확인, 분배 안내를 중심으로 설계합니다.
