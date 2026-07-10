@@ -1,10 +1,10 @@
-import { NUTRIENT_LABELS } from '../lib/nutrition.js'
+import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing } from '../styles/theme.js'
 
 // 막대 없이 글자만으로 정보를 전달한다: 영양소명(Typography 4) → 내 권장량/표준 평균 수치(Typography 6, 내 권장량은 Bold 강조)
 // → 차이 문장(Typography 5, Bold). 색이 아니라 문장 자체가 의미를 담도록 한다.
 function ComparisonRow({ label, unit, mine, standard, isLast }) {
-  const diff = Math.round(mine - standard)
+  const diff = formatNutrient(mine - standard)
   const diffText =
     diff === 0
       ? '표준 평균과 같아요'
@@ -34,11 +34,11 @@ function ComparisonRow({ label, unit, mine, standard, isLast }) {
       <p style={{ margin: `0 0 ${spacing.xs}px`, fontSize: font.size.md, color: colors.textSub }}>
         내 권장량{' '}
         <strong style={{ fontSize: font.size.lg, fontWeight: 700, color: colors.primary }}>
-          {Math.round(mine)}
+          {formatNutrient(mine)}
           {unit}
         </strong>
         {'  ·  표준 평균 '}
-        {Math.round(standard)}
+        {formatNutrient(standard)}
         {unit}
       </p>
       <p style={{ margin: 0, fontSize: font.size.lg, fontWeight: 700, color: colors.textStrong }}>{diffText}</p>

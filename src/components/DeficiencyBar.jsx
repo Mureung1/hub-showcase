@@ -1,3 +1,4 @@
+import { formatNutrient } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 export default function DeficiencyBar({ label, unit, recommended, actual, deficiency, highlighted }) {
@@ -32,7 +33,7 @@ export default function DeficiencyBar({ label, unit, recommended, actual, defici
           )}
         </span>
         <span style={{ color: colors.body, fontSize: font.size.sm }}>
-          {actual} / {recommended} {unit}
+          {formatNutrient(actual)} / {formatNutrient(recommended)} {unit}
         </span>
       </div>
       <div style={{ height: 8, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>

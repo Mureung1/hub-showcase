@@ -1,7 +1,7 @@
 import Card from './Card.jsx'
 import MealTypeBadge from './MealTypeBadge.jsx'
 import SourceBadge from './SourceBadge.jsx'
-import { NUTRIENT_LABELS } from '../lib/nutrition.js'
+import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
 
 // 막대 시각화를 위한 "한 끼 기준" 참고 상한값(진단 RDA가 아님). 이 컴포넌트 전용 표시 스케일이라 로컬로 둔다.
@@ -28,7 +28,7 @@ export function NutrientBars({ nutrients }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: spacing.xs }}>
               <span style={{ color: colors.textSub, fontSize: font.size.sm }}>{label}</span>
               <span style={{ fontWeight: 700, color: colors.textStrong, fontSize: font.size.sm }}>
-                {value}
+                {formatNutrient(value)}
                 <span style={{ fontWeight: 400, color: colors.muted, marginLeft: 2 }}>{unit}</span>
               </span>
             </div>

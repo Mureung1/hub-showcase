@@ -99,13 +99,21 @@ export function fillMissingNutrients(scaled, fallback) {
   )
 }
 
+// 영양소 표시값을 화면에 보여줄 때만 정수로 반올림한다(내부 계산·저장값은 그대로 정밀도를 유지하고,
+// 렌더링 직전에만 이 함수를 거친다). scaleNutrients 등에서 소수점을 남겨두는 계산을 그대로 합산하면
+// 부동소수점 오차로 24.999999999 같은 값이 나올 수 있는데, 표시 단계에서 여기로 한 번 걸러 정리한다.
+// 숫자가 아니면(누락/NaN 등) 0으로 표시한다.
+export function formatNutrient(value) {
+  return Math.round(Number(value) || 0)
+}
+
 // AI가 계산한 "1인분 예상 섭취량"(expected)을 "단백질 18g · 지방 4g 섭취 가능" 형태로 요약.
 // 없거나 형식이 어긋나면 null을 반환해 표시를 생략하게 한다.
 export function formatExpectedIntake(expected) {
   if (!expected || typeof expected !== 'object') return null
 
   const parts = NUTRIENT_LABELS.filter(({ key }) => typeof expected[key] === 'number').map(
-    ({ key, label, unit }) => `${label} ${Math.round(expected[key])}${unit}`,
+    ({ key, label, unit }) => `${label} ${formatNutrient(expected[key])}${unit}`,
   )
 
   return parts.length > 0 ? `${parts.join(' · ')} 섭취 가능` : null

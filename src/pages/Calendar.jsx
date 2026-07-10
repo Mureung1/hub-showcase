@@ -7,7 +7,7 @@ import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import { getManualDayStatus, setManualDayStatus } from '../lib/dayStatus.js'
 import { flattenMealItems, getMeals, sumMealRecordsNutrients } from '../lib/mealStore.js'
-import { calcDayStatus } from '../lib/nutrition.js'
+import { calcDayStatus, formatNutrient } from '../lib/nutrition.js'
 import { getAllRecords, toDateKey } from '../lib/records.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
@@ -73,9 +73,9 @@ function MiniMealCard({ item }) {
         <MealTypeBadge mealType={item.mealType} />
       </div>
       <p style={{ margin: 0, fontSize: font.size.xs, color: colors.textSub, lineHeight: 1.5 }}>
-        {Math.round(n.calories) || 0}kcal · 단백 {Math.round(n.protein) || 0}g · 탄수 {Math.round(n.carbs) || 0}g
+        {formatNutrient(n.calories)}kcal · 단백 {formatNutrient(n.protein)}g · 탄수 {formatNutrient(n.carbs)}g
         <br />
-        지방 {Math.round(n.fat) || 0}g · 나트륨 {Math.round(n.sodium) || 0}mg
+        지방 {formatNutrient(n.fat)}g · 나트륨 {formatNutrient(n.sodium)}mg
       </p>
     </div>
   )

@@ -8,14 +8,14 @@ import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import SourceBadge from '../components/SourceBadge.jsx'
 import { isSetMeal, sumNutrients } from '../lib/mealStore.js'
-import { NUTRIENT_LABELS } from '../lib/nutrition.js'
+import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 나트륨은 "채워야 할 목표"가 아니라 "넘기면 안 되는 한도"라서 막대 색/문구를 반대로 다룬다.
 function IntakeBar({ label, unit, actual, recommended, isLimit }) {
-  const value = Math.round(actual)
+  const value = formatNutrient(actual)
   const percent = recommended > 0 ? Math.min(100, Math.round((actual / recommended) * 100)) : 0
-  const remaining = Math.round(recommended - actual)
+  const remaining = formatNutrient(recommended - actual)
   const over = remaining < 0
 
   let barColor
@@ -41,7 +41,7 @@ function IntakeBar({ label, unit, actual, recommended, isLimit }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: spacing.xs }}>
         <span style={{ color: colors.textStrong, fontSize: font.size.sm, fontWeight: 600 }}>{label}</span>
         <span style={{ color: colors.textSub, fontSize: font.size.xs }}>
-          {value} / {recommended} {unit}
+          {value} / {formatNutrient(recommended)} {unit}
         </span>
       </div>
       <div style={{ height: 8, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>
@@ -102,8 +102,8 @@ function NutrientSummaryLine({ nutrients }) {
   const n = nutrients || {}
   return (
     <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.xs }}>
-      {Math.round(n.calories) || 0}kcal · 단백질 {Math.round(n.protein) || 0}g · 탄수 {Math.round(n.carbs) || 0}g · 지방{' '}
-      {Math.round(n.fat) || 0}g · 나트륨 {Math.round(n.sodium) || 0}mg · 식이섬유 {Math.round(n.fiber) || 0}g
+      {formatNutrient(n.calories)}kcal · 단백질 {formatNutrient(n.protein)}g · 탄수 {formatNutrient(n.carbs)}g · 지방{' '}
+      {formatNutrient(n.fat)}g · 나트륨 {formatNutrient(n.sodium)}mg · 식이섬유 {formatNutrient(n.fiber)}g
     </p>
   )
 }
