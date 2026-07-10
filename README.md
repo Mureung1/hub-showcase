@@ -1,6 +1,6 @@
 # hub
 
-# 1일차 - PlaceSync React 프로젝트
+# PlaceSync React 프로젝트
 
 PlaceSync의 화면을 구현한 React 프로젝트입니다.
 
@@ -59,7 +59,7 @@ react/
 └─ vite.config.js
 ```
 
-# 2일차 - 주제 선정 및 기획 시작
+# 주제 선정 및 기획 시작
 
 ## 프로젝트 문서
 
@@ -71,7 +71,9 @@ react/
 
 * [개발 작업 체크리스트](./docs/checklist.md)
 
-# 3일차 - HTML/CSS 프로토타입 구현
+* [개발 Task 및 백로그](./docs/tasks.md)
+
+# HTML/CSS 프로토타입 구현
 
 PlaceSync의 핵심 기능과 사용자 흐름을 확인하기 위해 순수 HTML과 CSS를 사용한 정적 프로토타입을 구현했습니다.
 
@@ -179,7 +181,7 @@ prototype/
 
 현재 프로토타입은 PlaceSync의 핵심 기능과 사용자 흐름을 확인하기 위한 정적 화면입니다.
 
-# 4일차 - 디자인 시스템 및 개발 환경 구성
+# 디자인 시스템 및 개발 환경 구성
 
 PlaceSync의 화면 디자인 기준을 정리하고, 2주차 본격 개발을 위한 React + Express 개발 환경을 구성했습니다.
 
