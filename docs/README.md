@@ -11,6 +11,7 @@
 | [../README.md](../README.md) | 저장소 첫 화면, 프로젝트 소개, 실행 방법 |
 | [../AGENTS.md](../AGENTS.md) | Codex 작업 규칙, 금지사항, 필수 참고 문서 |
 | [project-knowledge-map.md](project-knowledge-map.md) | 문서 간 관계, skill/asset 연결성, 계층 지도 |
+| [codex-skills/xp-desktop-pet-ui/SKILL.md](codex-skills/xp-desktop-pet-ui/SKILL.md) | XP 데스크톱 전자 매니저 UI 작업을 반복하기 위한 Codex skill 문서화 버전 |
 
 ## 공식 문서 목록
 
@@ -81,4 +82,7 @@ GitHub Wiki는 코드 PR에 직접 포함되지 않는다. PR 본문에는 Wiki 
 - 디자인 토큰과 스타일 규칙은 `design-system.md`에 둔다.
 - 에셋 생성 프롬프트는 `asset-prompts/`에 둔다.
 - 완료/검증/다음 작업/차단 요소는 `status.md`에 둔다.
+- 재사용 가능한 Codex skill 문서화 버전은 `codex-skills/`에 둔다.
 - 이전 아이디어와 원본 초안은 `archive/`에 둔다.
+
+

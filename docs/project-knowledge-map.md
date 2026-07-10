@@ -36,7 +36,8 @@ docs/project-knowledge-map.md
 │  └─ agent-design.md
 ├─ 실행 규칙 줄기
 │  ├─ AGENTS.md
-│  └─ xp-desktop-pet-ui skill
+│  ├─ xp-desktop-pet-ui skill
+│  └─ docs/codex-skills/xp-desktop-pet-ui/
 ├─ 운영·학습 줄기
 │  ├─ four-week-roadmap.md
 │  ├─ status.md
@@ -111,10 +112,11 @@ design-system.md + mvp-functional-spec.md + user-flow-wireframes.md + asset-prom
 |---|---|
 | `AGENTS.md` | 저장소 안에서 Codex가 따라야 할 작업 규칙 |
 | `xp-desktop-pet-ui skill` | Codex 개인 환경에 있는 XP 전자펫 UI 전용 실행 규칙 |
+| `docs/codex-skills/xp-desktop-pet-ui/` | 다른 환경에서도 skill을 재사용할 수 있도록 보관한 repo 문서화 버전 |
 
 중요한 점은 `xp-desktop-pet-ui skill`이 `asset-prompts`에서만 유래한 것이 아니라는 것이다. 이 skill은 `design-system.md`, `mvp-functional-spec.md`, `user-flow-wireframes.md`의 핵심 규칙과 `asset-prompts` 구조를 짧게 압축한 외부 실행 규칙이다.
 
-skill은 Git PR에 포함되는 공식 문서가 아니다. 다른 세션에서 Codex가 같은 맥락을 빠르게 회복하도록 돕는 작업 보조 장치다.
+로컬 skill은 Git PR에 자동 포함되지 않는다. 그래서 `docs/codex-skills/xp-desktop-pet-ui/`에 문서화 버전을 두어 다른 컴퓨터에서도 복사해 재사용할 수 있게 한다.
 
 ## 5. 운영·학습 줄기
 
@@ -164,3 +166,5 @@ archive/
 - `public/assets/`: 실제 적용 에셋
 - `AGENTS.md`: Codex 작업 규칙
 - `xp-desktop-pet-ui skill`: Codex 반복 작업을 위한 외부 실행 규칙
+
+
