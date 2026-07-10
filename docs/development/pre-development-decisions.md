@@ -192,13 +192,12 @@ backup과 rollback
 
 ```text
 develop과 main branch protection
-required checks: docs, web, api
 PR review 요구 여부
 force push와 branch deletion 제한
-auto-merge workflow가 required checks를 기다리는지 확인
+auto-merge workflow 사용 여부와 병합 조건 확인
 ```
 
-현재 `.github/workflows/auto-merge.yml`은 자체적으로 CI 결과를 검사하지 않는다. branch protection 없이 사용하면 검증 전 merge 위험이 있으므로 운영 설정 확인 전에는 안전하다고 간주하지 않는다.
+현재 `.github/workflows/auto-merge.yml`은 로컬 검증 결과를 알 수 없다. branch protection 없이 사용하면 검증 전 merge 위험이 있으므로 운영 설정 확인 전에는 안전하다고 간주하지 않는다.
 
 ## 6. Deferred
 

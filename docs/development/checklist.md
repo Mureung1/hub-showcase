@@ -44,7 +44,6 @@
 - [x] pnpm/uv 기반 dependency와 lockfile 정책을 정한다.
 - [x] 코드, API, 데이터, test와 Git 컨벤션을 문서화한다.
 - [x] 개발 전 결정 Gate를 문서화한다.
-- [x] 개인 fork `HyunKN/hub` 전용 docs/web/api GitHub Actions 검증 workflow를 구성한다.
 
 ## 2. 대상 상권 선정
 
