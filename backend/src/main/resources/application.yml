@@ -9,3 +9,7 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: none
+
+devpulse:
+  github:
+    token: ${DEVPULSE_GITHUB_TOKEN:}
