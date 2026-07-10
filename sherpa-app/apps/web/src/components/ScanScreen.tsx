@@ -3,11 +3,13 @@ import { newId, now, type Product } from "@sherpa/core";
 import { seedProducts } from "../seed";
 import { productRepository } from "../repository/DexieProductRepository";
 import { scanReducer, initialScanState } from "../session/scanReducer";
+import { commitSession } from "../session/commitSession";
 import type { SessionMode } from "../session/types";
 import { useScanner } from "../scan/useScanner";
 import { SessionHeader } from "./SessionHeader";
 import { DevScanInput } from "./DevScanInput";
 import { ScanLineList } from "./ScanLineList";
+import { CommitBar } from "./CommitBar";
 import { RegisterModal } from "./RegisterModal";
 
 const MODE_LABEL: Record<SessionMode, string> = {
@@ -85,12 +87,31 @@ export function ScanScreen() {
     dispatch({ type: "PROMOTE", lineId: line.id, name, category });
   }
 
+  // 오스캔 취소 = 명시적 삭제. 파괴적 동작이라 확인 절차를 둔다.
+  function handleDeleteLine(lineId: string) {
+    const ok = window.confirm("이 미등록 항목을 삭제할까요? (오스캔 취소)");
+    if (!ok) return;
+    dispatch({ type: "REMOVE_LINE", lineId });
+  }
+
+  // 커밋 = 세션 전체를 단일 트랜잭션으로 반영(지금은 stub) 후 세션 리셋.
+  // pending이 남아있으면 커밋 불가(강제 등록) — 버튼 비활성으로 이미 막히지만 방어.
+  async function handleCommit() {
+    if (state.lines.length === 0 || pendingCount > 0) return;
+    const result = await commitSession(state.mode, state.lines);
+    dispatch({ type: "RESET_SESSION" });
+    showToast(
+      `${MODE_LABEL[state.mode]} 확정 · ${result.itemCount}품목 ${result.totalQuantity}개`
+    );
+  }
+
   const editingLine =
     state.editingLineId != null
       ? state.lines.find((l) => l.id === state.editingLineId) ?? null
       : null;
 
   const totalQty = state.lines.reduce((sum, l) => sum + l.quantity, 0);
+  const pendingCount = state.lines.filter((l) => l.status === "pending").length;
 
   return (
     <div className={`app app--${state.mode}`}>
@@ -112,11 +133,13 @@ export function ScanScreen() {
         />
       </main>
 
-      <footer className="commitbar">
-        <span className="commitbar__count">
-          총 <strong>{totalQty}</strong>개 · {state.lines.length}품목
-        </span>
-      </footer>
+      <CommitBar
+        mode={state.mode}
+        totalQty={totalQty}
+        itemCount={state.lines.length}
+        pendingCount={pendingCount}
+        onCommit={handleCommit}
+      />
 
       {toast && (
         <div className="toast" role="status">
@@ -129,6 +152,7 @@ export function ScanScreen() {
           key={editingLine.id}
           line={editingLine}
           onSave={handleRegister}
+          onDelete={() => handleDeleteLine(editingLine.id)}
           onClose={() => dispatch({ type: "CLOSE_EDIT" })}
         />
       )}

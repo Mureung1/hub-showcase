@@ -5,6 +5,7 @@ import type { ScanLine } from "../session/types";
 interface RegisterModalProps {
   line: ScanLine; // 편집 대상 pending 행
   onSave: (name: string, category: string) => void;
+  onDelete: () => void; // 오스캔 취소(행 삭제)
   onClose: () => void;
 }
 
@@ -14,7 +15,7 @@ interface RegisterModalProps {
 // 이름 필드는 autofocus 하지 않는다: 모달이 열려도 document 스캔 리스너가 계속 도는
 // non-blocking 구조에서, 포커스된 입력이 없어야 스캐너 버스트 첫 글자가 이름 필드로
 // 새지 않는다(2번째 글자부터는 useScanner가 capture-preventDefault로 이미 차단).
-export function RegisterModal({ line, onSave, onClose }: RegisterModalProps) {
+export function RegisterModal({ line, onSave, onDelete, onClose }: RegisterModalProps) {
   const [name, setName] = useState(line.productName);
   const [category, setCategory] = useState(line.category || CATEGORIES[0]);
   const canSave = name.trim() !== "";
@@ -65,6 +66,10 @@ export function RegisterModal({ line, onSave, onClose }: RegisterModalProps) {
         </label>
 
         <div className="modal__actions">
+          <button type="button" className="btn btn--danger" onClick={onDelete}>
+            삭제
+          </button>
+          <span className="modal__spacer" />
           <button type="button" className="btn btn--ghost" onClick={onClose}>
             취소
           </button>

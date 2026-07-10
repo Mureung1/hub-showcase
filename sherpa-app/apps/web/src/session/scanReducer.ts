@@ -17,6 +17,8 @@ export type ScanAction =
   | { type: "PROMOTE"; lineId: string; name: string; category: string }
   | { type: "OPEN_EDIT"; lineId: string }
   | { type: "CLOSE_EDIT" }
+  | { type: "REMOVE_LINE"; lineId: string }
+  | { type: "RESET_SESSION" }
   | { type: "INC"; lineId: string }
   | { type: "DEC"; lineId: string };
 
@@ -106,9 +108,24 @@ export function scanReducer(state: ScanState, action: ScanAction): ScanState {
     case "OPEN_EDIT":
       return { ...state, editingLineId: action.lineId };
 
-    // 모달 취소 → 편집만 닫음. pending 행은 리스트에 그대로 남는다(삭제는 S5).
+    // 모달 취소 → 편집만 닫음. pending 행은 리스트에 그대로 남는다.
     case "CLOSE_EDIT":
       return { ...state, editingLineId: null };
+
+    // 오스캔 취소 → 행 명시적 삭제(잘못 찍은 미등록 제거, 교착 방지). pending 소멸의
+    // 두 경로(등록 승격 / 명시적 삭제) 중 하나 — 조용히 사라지는 일이 없게 이것만 연다.
+    case "REMOVE_LINE":
+      return {
+        ...state,
+        lines: state.lines.filter((l) => l.id !== action.lineId),
+        editingLineId:
+          state.editingLineId === action.lineId ? null : state.editingLineId,
+        lastLineId: state.lastLineId === action.lineId ? null : state.lastLineId,
+      };
+
+    // 커밋 완료 → 세션 리셋(모드는 유지, 새 세션 시작).
+    case "RESET_SESSION":
+      return { ...state, lines: [], lastLineId: null, editingLineId: null };
 
     case "INC":
       return {

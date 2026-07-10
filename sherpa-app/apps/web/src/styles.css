@@ -300,9 +300,11 @@ button {
   background: rgba(251, 252, 249, 0.92);
   backdrop-filter: blur(6px);
   border-top: 1px solid var(--line);
-  padding: 16px 24px;
+  padding: 14px 24px;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 .commitbar__count {
   font-size: 15px;
@@ -311,6 +313,16 @@ button {
 .commitbar__count strong {
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+.commitbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.commitbar__pending {
+  font-size: 13px;
+  font-weight: 600;
+  color: #a5641a; /* amber(대비 통과 셰이드) — 커밋이 왜 잠겼는지 설명 */
 }
 
 /* ---------- 토스트 (미등록 안내) ---------- */
@@ -411,4 +423,13 @@ button {
 .btn--cta:disabled {
   background: #a8c7f5;
   cursor: not-allowed;
+}
+/* 파괴적 동작(삭제) — 빨강 텍스트, 확인 절차는 호출부(window.confirm)에서 */
+.btn--danger {
+  color: var(--red);
+  background: #fff;
+  border-color: var(--line);
+}
+.modal__spacer {
+  flex: 1;
 }
