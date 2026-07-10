@@ -44,6 +44,10 @@
 - `code-convention` 스킬(`.claude/skills/code-convention/`)이 이 규칙을 적용하도록 구성되어 있음
 - 백엔드(Node.js + Express + Mongoose)는 `routes → controllers → services → models` 레이어드 구조로 시작할 것
 
+## 작업 규칙
+- 작은 단위로 주기적으로 커밋을 해야한다.
+- 기능별로 브랜치를 나누고 dev브랜치에 머지한뒤 하루에 한번 dev -> main으로 푸쉬한다.
+
 ## 작업 시 참고사항
 - 백엔드가 추가되면 이 파일에 백엔드 스택/명령어/디렉토리 구조를 함께 갱신할 것
 - 새 컴포넌트는 `src/components/`에 추가하고 필요한 경우에만 분리
