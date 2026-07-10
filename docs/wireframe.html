@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보쇼 — 와이어프레임 (S1~S4)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+    background: #e8e8e8;
+    padding: 32px 24px;
+    color: #333;
+  }
+  .sheet-title { text-align: center; margin-bottom: 4px; font-size: 20px; }
+  .sheet-sub { text-align: center; color: #888; font-size: 12px; margin-bottom: 28px; }
+  .screens {
+    display: flex;
+    gap: 28px;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .screen-block { width: 270px; }
+  .screen-label {
+    font-weight: 700; font-size: 13px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .screen-label .tag {
+    background: #555; color: #fff; font-size: 11px;
+    padding: 2px 7px; border-radius: 3px;
+  }
+  .phone {
+    background: #fff;
+    border: 2px solid #999;
+    border-radius: 14px;
+    height: 540px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* 공통 와이어프레임 요소 */
+  .wf-header {
+    padding: 12px 14px;
+    border-bottom: 1.5px solid #bbb;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0;
+  }
+  .wf-logo { background: #ccc; width: 56px; height: 18px; border-radius: 3px;
+    display:flex; align-items:center; justify-content:center; font-size:10px; color:#666; }
+  .wf-date { color: #999; font-size: 11px; }
+  .wf-body { flex: 1; padding: 12px; overflow: hidden; display: flex; flex-direction: column; gap: 10px; }
+  .wf-tabbar {
+    border-top: 1.5px solid #bbb;
+    display: flex; flex-shrink: 0;
+  }
+  .wf-tabbar div {
+    flex: 1; text-align: center; padding: 9px 0; font-size: 11px; color: #888;
+  }
+  .wf-tabbar div.active { color: #333; font-weight: 700; background: #f0f0f0; }
+
+  .box { background: #ddd; border-radius: 4px; }
+  .line { background: #ddd; height: 10px; border-radius: 3px; }
+  .line.short { width: 55%; }
+  .line.mid { width: 75%; }
+  .dashed {
+    border: 1.5px dashed #aaa; border-radius: 6px;
+    color: #999; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 10px;
+  }
+
+  /* S1 온보딩 */
+  .step-dots { display: flex; gap: 5px; justify-content: center; margin-bottom: 4px; }
+  .step-dots span { width: 7px; height: 7px; border-radius: 50%; background: #ccc; }
+  .step-dots span.on { background: #555; }
+  .big-btn {
+    border: 1.5px solid #888; border-radius: 6px; text-align: center;
+    padding: 11px; font-size: 12px; color: #555; background: #f2f2f2;
+  }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    border: 1.5px solid #aaa; border-radius: 14px; padding: 4px 11px;
+    font-size: 11px; color: #777; background: #fff;
+  }
+  .chip.on { background: #555; color: #fff; border-color: #555; }
+  .field {
+    border: 1.5px solid #bbb; border-radius: 5px; padding: 9px 10px;
+    font-size: 11px; color: #999; background: #fafafa;
+  }
+
+  /* S2 카드 */
+  .filter-row { display: flex; gap: 6px; }
+  .card {
+    border: 1.5px solid #bbb; border-radius: 7px; padding: 10px;
+    display: flex; flex-direction: column; gap: 6px; background: #fafafa;
+  }
+  .card-top { display: flex; gap: 6px; align-items: center; }
+  .badge {
+    font-size: 10px; padding: 2px 7px; border-radius: 3px;
+    background: #555; color: #fff; font-weight: 700;
+  }
+  .badge.light { background: #ddd; color: #666; font-weight: 400; }
+  .src { margin-left: auto; font-size: 10px; color: #999; border: 1px solid #ccc; padding: 1px 6px; border-radius: 3px; }
+  .card.done { opacity: 0.45; }
+
+  /* S3 상세 */
+  .summary-box {
+    border: 1.5px solid #bbb; border-left: 4px solid #888;
+    border-radius: 5px; padding: 10px; background: #f5f5f5;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  .kv { display: flex; gap: 8px; font-size: 11px; }
+  .kv b { color: #666; min-width: 44px; font-weight: 700; }
+  .kv span { color: #999; flex: 1; }
+  .btn-row { display: flex; gap: 8px; margin-top: auto; }
+  .btn-row .big-btn { flex: 1; }
+  .btn-row .big-btn.primary { background: #555; color: #fff; border-color: #555; }
+
+  /* S4 설정 */
+  .setting-group { display: flex; flex-direction: column; gap: 7px; }
+  .setting-title { font-size: 11px; font-weight: 700; color: #666; }
+  .setting-row {
+    border: 1.5px solid #ccc; border-radius: 5px; padding: 9px 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; color: #777; background: #fafafa;
+  }
+  .toggle { width: 30px; height: 16px; border-radius: 8px; background: #ccc; position: relative; }
+  .toggle.on { background: #555; }
+  .toggle::after {
+    content:''; position: absolute; width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; top: 2px; left: 2px;
+  }
+  .toggle.on::after { left: 16px; }
+
+  /* 설계 근거 주석 */
+  .notes { margin-top: 10px; font-size: 11px; color: #555; line-height: 1.6; }
+  .notes b { display: inline-block; background:#555; color:#fff; border-radius:50%;
+    width:15px; height:15px; text-align:center; line-height:15px; font-size:10px; margin-right:5px; }
+  .notes p { margin-bottom: 5px; }
+</style>
+</head>
+<body>
+
+<h1 class="sheet-title">보쇼 — 와이어프레임</h1>
+<p class="sheet-sub">S1~S4 · 무채색 저해상도 (디자인은 프로토타입 단계에서) · AI Agent Challenge N146</p>
+
+<div class="screens">
+
+  <!-- ═══════════ S1 온보딩 ═══════════ -->
+  <div class="screen-block">
+    <div class="screen-label"><span class="tag">S1</span> 온보딩 (최초 1회)</div>
+    <div class="phone">
+      <div class="wf-header">
+        <div class="wf-logo">보쇼</div>
+        <div class="wf-date">시작하기</div>
+      </div>
+      <div class="wf-body">
+        <div class="step-dots"><span class="on"></span><span></span><span></span></div>
+        <div class="line mid" style="height:14px"></div>
+        <div class="line short"></div>
+
+        <div class="big-btn">🅶 학교 이메일 연동 (읽기 전용)</div>
+
+        <div style="height:6px"></div>
+        <div class="setting-title" style="font-size:11px;font-weight:700;color:#666">관심 키워드 선택</div>
+        <div class="chip-row">
+          <span class="chip on">장학금</span><span class="chip on">취업</span>
+          <span class="chip">교환학생</span><span class="chip">공모전</span>
+          <span class="chip">현장실습</span><span class="chip">+ 직접입력</span>
+        </div>
+
+        <div style="height:6px"></div>
+        <div class="setting-title" style="font-size:11px;font-weight:700;color:#666">꼭 알림 받을 발신처</div>
+        <div class="field">예: 학과 사무실, 장학팀…</div>
+
+        <div style="margin-top:auto"></div>
+        <div class="big-btn primary" style="background:#555;color:#fff;border-color:#555">시작하기</div>
+      </div>
+    </div>
+    <div class="notes">
+      <p><b>1</b>이메일 연동은 읽기 전용 권한만 — 개인정보 최소 수집 원칙을 UI에서도 명시</p>
+      <p><b>2</b>키워드는 선택식 칩 + 직접입력 — 신입생이 뭘 입력할지 모르는 상태를 배려</p>
+      <p><b>3</b>발신처 등록 = 기능 A의 사용자 규칙 (AI가 틀려도 동작하는 안전망)</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ S2 홈 ═══════════ -->
+  <div class="screen-block">
+    <div class="screen-label"><span class="tag">S2</span> 알림 리스트 (홈) ★핵심</div>
+    <div class="phone">
+      <div class="wf-header">
+        <div class="wf-logo">보쇼</div>
+        <div class="wf-date">7월 9일 (목)</div>
+      </div>
+      <div class="wf-body">
+        <div class="filter-row">
+          <span class="chip on">전체</span><span class="chip">장학금</span>
+          <span class="chip">취업</span><span class="chip">학사</span>
+        </div>
+
+        <div class="card">
+          <div class="card-top">
+            <span class="badge">D-2</span><span class="badge" style="background:#888">중요</span>
+            <span class="src">포털</span>
+          </div>
+          <div class="line mid" style="height:12px"></div>
+          <div class="line" style="height:8px"></div>
+          <div class="line short" style="height:8px"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-top">
+            <span class="badge light">D-5</span>
+            <span class="src">이메일</span>
+          </div>
+          <div class="line mid" style="height:12px"></div>
+          <div class="line" style="height:8px"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-top">
+            <span class="badge light">D-9</span>
+            <span class="src">포털</span>
+          </div>
+          <div class="line mid" style="height:12px"></div>
+          <div class="line short" style="height:8px"></div>
+        </div>
+
+        <div class="card done">
+          <div class="card-top">
+            <span class="badge light">완료 ✓</span>
+            <span class="src">이메일</span>
+          </div>
+          <div class="line mid" style="height:10px"></div>
+        </div>
+      </div>
+      <div class="wf-tabbar">
+        <div class="active">홈</div><div>설정</div>
+      </div>
+    </div>
+    <div class="notes">
+      <p><b>1</b>기본 정렬 = 마감 임박순 — "놓친다"는 문제 정의를 직접 해결하는 배치</p>
+      <p><b>2</b>카드 요약 한 줄 = 에이전트(기능 B)의 얼굴, 원문 안 열어도 판단 가능</p>
+      <p><b>3</b>출처 태그 = 다중 소스 통합(기능 A)이 사용자 눈에 보이는 지점</p>
+      <p><b>4</b>완료 항목은 흐리게 유지 — 처리 이력이 보여야 "다 챙겼다" 안심</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ S3 상세 ═══════════ -->
+  <div class="screen-block">
+    <div class="screen-label"><span class="tag">S3</span> 알림 상세</div>
+    <div class="phone">
+      <div class="wf-header">
+        <div class="wf-date">← 뒤로</div>
+        <div class="wf-date">공유</div>
+      </div>
+      <div class="wf-body">
+        <div class="card-top">
+          <span class="badge">D-2</span><span class="badge" style="background:#888">중요</span>
+          <span class="src">포털 · 장학안내</span>
+        </div>
+        <div class="line" style="height:16px"></div>
+        <div class="line mid" style="height:16px"></div>
+
+        <div class="summary-box">
+          <div class="setting-title">에이전트 요약</div>
+          <div class="line" style="height:8px"></div>
+          <div class="line" style="height:8px"></div>
+          <div class="line mid" style="height:8px"></div>
+        </div>
+
+        <div class="kv"><b>마감일</b><span>2026-07-11 (금) 18:00</span></div>
+        <div class="kv"><b>출처</b><span>학교 포털 &gt; 장학안내</span></div>
+        <div class="kv"><b>관련 키워드</b><span>장학금</span></div>
+
+        <div class="dashed" style="height:44px">원문 보러가기 (외부 링크) ↗</div>
+
+        <div class="btn-row">
+          <div class="big-btn">나중에</div>
+          <div class="big-btn primary">완료로 표시 ✓</div>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <p><b>1</b>요약 박스가 최상단 — 상세에서도 원문보다 에이전트 판단이 먼저</p>
+      <p><b>2</b>원문은 저장하지 않고 링크로만 — 개인정보 설계 원칙과 일치</p>
+      <p><b>3</b>완료 처리 = 핵심 루프(리스트→상세→완료→리스트)의 마무리 동작</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ S4 설정 ═══════════ -->
+  <div class="screen-block">
+    <div class="screen-label"><span class="tag">S4</span> 설정</div>
+    <div class="phone">
+      <div class="wf-header">
+        <div class="wf-logo">설정</div>
+      </div>
+      <div class="wf-body">
+        <div class="setting-group">
+          <div class="setting-title">관심 키워드</div>
+          <div class="chip-row">
+            <span class="chip on">장학금 ✕</span><span class="chip on">취업 ✕</span>
+            <span class="chip">+ 추가</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-title">꼭 알림 받을 발신처</div>
+          <div class="setting-row"><span>학과 사무실</span><span>✕</span></div>
+          <div class="setting-row"><span>+ 발신처 추가</span></div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-title">확인 주기</div>
+          <div class="setting-row"><span>1시간마다</span><span>▾</span></div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-title">연동 계정</div>
+          <div class="setting-row"><span>학교 이메일 (연결됨)</span><div class="toggle on"></div></div>
+          <div class="setting-row"><span>포털 공지</span><div class="toggle on"></div></div>
+          <div class="setting-row"><span>취업진로포털 (검증 중)</span><div class="toggle"></div></div>
+        </div>
+      </div>
+      <div class="wf-tabbar">
+        <div>홈</div><div class="active">설정</div>
+      </div>
+    </div>
+    <div class="notes">
+      <p><b>1</b>온보딩(S1)에서 등록한 것을 여기서 수정 — 같은 데이터의 두 입구</p>
+      <p><b>2</b>확인 주기 = 폴링 간격을 사용자가 제어 (토큰 비용 설계와 연결)</p>
+      <p><b>3</b>채널별 토글 — 취업진로포털은 "검증 중" 상태를 정직하게 노출</p>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
