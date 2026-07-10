@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>사장님 화면 프로토타입</title>
+    <link rel="stylesheet" href="./owner-prototype.css" />
+  </head>
+  <body>
+    <main class="owner-app" aria-label="사장님 화면 프로토타입">
+      <aside class="sidebar" aria-label="사장님 메뉴">
+        <div class="brand">
+          <span aria-hidden="true">CS</span>
+          <div>
+            <strong>멜로우 브루</strong>
+            <small>사장님 테스트 로그인</small>
+          </div>
+        </div>
+        <nav>
+          <a class="active" href="#dashboard">홈</a>
+          <a href="#scan">QR 적립</a>
+          <a href="#settings">내 카페 관리</a>
+          <a href="#alerts">알림</a>
+        </nav>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p>사장님 모드</p>
+            <h1>오늘의 스탬프 운영</h1>
+          </div>
+          <button type="button">로그아웃</button>
+        </header>
+
+        <section class="panel dashboard-panel" id="dashboard" aria-label="운영 현황">
+          <div class="metric-grid">
+            <article class="metric-card">
+              <span>오늘 적립</span>
+              <strong>24</strong>
+              <small>어제보다 6개 증가</small>
+            </article>
+            <article class="metric-card">
+              <span>이번 주 적립</span>
+              <strong>138</strong>
+              <small>최근 7일 기준</small>
+            </article>
+            <article class="metric-card">
+              <span>오늘 쿠폰 발급</span>
+              <strong>5</strong>
+              <small>자동 발급 완료</small>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="card scan-card" id="scan">
+              <div>
+                <p>직원용 적립</p>
+                <h2>손님 QR 값을 입력하면 즉시 스탬프가 적립됩니다</h2>
+              </div>
+              <label for="qr-code">QR/바코드 스캐너 입력</label>
+              <div class="scan-input">
+                <input id="qr-code" type="text" value="CUSTOMER-1024" />
+                <button type="button">적립하기</button>
+              </div>
+              <div class="success-box">
+                <strong>적립 완료</strong>
+                <span>민지님에게 스탬프 1개가 적립되었습니다.</span>
+              </div>
+            </article>
+
+            <article class="card rule-card" id="settings">
+              <div class="section-head">
+                <div>
+                  <p>내 카페 관리</p>
+                  <h2>스탬프 규칙</h2>
+                </div>
+                <button type="button">저장</button>
+              </div>
+              <form>
+                <label>
+                  카페명
+                  <input type="text" value="멜로우 브루" />
+                </label>
+                <label>
+                  목표 스탬프
+                  <input type="number" value="10" />
+                </label>
+                <label>
+                  1회 적립 개수
+                  <input type="number" value="1" />
+                </label>
+                <label>
+                  보상 이름
+                  <input type="text" value="아메리카노 1잔 무료" />
+                </label>
+                <label class="wide">
+                  쿠폰 유효기간
+                  <input type="text" value="발급일로부터 30일" />
+                </label>
+              </form>
+            </article>
+          </div>
+
+          <article class="card activity-card" id="alerts">
+            <div class="section-head">
+              <div>
+                <p>알림</p>
+                <h2>최근 적립과 쿠폰 발급</h2>
+              </div>
+              <span>오늘 14:20 업데이트</span>
+            </div>
+            <div class="activity-list">
+              <div>
+                <strong>민지님 스탬프 1개 적립</strong>
+                <span>오늘 14:20</span>
+              </div>
+              <div>
+                <strong>지훈님 아메리카노 쿠폰 자동 발급</strong>
+                <span>오늘 13:48</span>
+              </div>
+              <div>
+                <strong>수아님 스탬프 1개 적립</strong>
+                <span>오늘 12:09</span>
+              </div>
+            </div>
+          </article>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
