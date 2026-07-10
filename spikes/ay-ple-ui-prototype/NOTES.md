@@ -68,3 +68,19 @@ User feedback on 2026-07-08: mobile layout feedback was pulling effort away from
 | Keep | TBD |
 | Change | TBD |
 | Delete | This throwaway prototype after the design answer is captured |
+
+## Presentation guided demo
+
+| Item | Answer |
+| --- | --- |
+| Question | Can an AI Agent beginner understand in 90 seconds why AY-PLE is an Agent product? |
+| Main artifact | [guided-demo.html](guided-demo.html) |
+| Supporting files | [guided-demo.css](guided-demo.css), [guided-demo.js](guided-demo.js) |
+| Run command | `npm run demo:week1`, then open `http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html` |
+| State | Deterministic in-memory presentation flow; no backend, model call, or persistence |
+| Deep link | `?variant=focus&step=1` through `?step=7` |
+| Controls | Source selection, organize, activity/proposal actions, accept/edit/reject, previous/next/reset, keyboard arrows, and URL state |
+
+The seven scenes move from scattered materials to source selection, delegated work, user-visible Agent activity, grounded evidence, user review, and finally confirmed semester state. `focus` is the default presentation view. `workspace` keeps all three product surfaces visible, while `agent` gives the action log more space. The floating switcher is part of this throwaway prototype, not the proposed product UI.
+
+The presentation verdict is still open: after peer feedback, record whether a first-time viewer can explain both what AY does and why user acceptance separates an AI suggestion from confirmed semester state.

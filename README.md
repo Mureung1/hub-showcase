@@ -2,7 +2,20 @@
 
 AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입니다.
 
-현재 프로젝트 아이템은 **AY-PLE(에이플)**입니다. AY-PLE는 사용자의 컴퓨터에 학기 작업환경을 만들고, 시간표·자료·과제·시험 준비를 AY와 함께 운영하는 local-first 학업 에이전트 앱을 목표로 합니다.
+현재 프로젝트 아이템은 **AY-PLE(에이플)**입니다. 학생이 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾아 원본 근거와 함께 변경안을 제시하고, 학생이 확인한 내용만 과제·일정·할 일로 이어주는 local-first 학업 Agent 앱을 만들고 있습니다.
+
+## 처음 보는 분은 여기부터
+
+> **[AY-PLE는 어떤 앱인가](docs/product/ay-ple-overview.md)** — AI Agent가 앱 안에서 학생을 위해 어떻게 일하는지, 실제 사용 장면을 따라 이해하는 소개입니다.
+
+## 발표와 동적 데모
+
+```bash
+npm run demo:week1
+```
+
+- [Week 1 발표 자료와 실행 안내](artifacts/week1-demo/README.md)
+- [동적 제품 prototype](spikes/ay-ple-ui-prototype/guided-demo.html)
 
 ## 문서
 
@@ -10,6 +23,7 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 
 | 구분 | 문서 | 용도 |
 | --- | --- | --- |
+| 제품 소개 | [AY-PLE는 어떤 앱인가](docs/product/ay-ple-overview.md) | 처음 보는 사람을 위한 제품 소개와 동작 시나리오 |
 | 문서 컨벤션 | [docs/README.md](docs/README.md) | 프로젝트 문서 위치와 관리 규칙 |
 | 제품 기획 | [AY-PLE Product Brief](docs/product/ay-ple-product-brief.md) | 문제 정의, 제품 테제, MVP 방향 |
 | 제품 기획 | [Review Workspace Scenario](docs/product/ay-ple-review-workspace-scenario.md) | 사용자 시나리오와 화면 단위 prototype 구조 |
@@ -72,6 +86,7 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 ```bash
 npm install
 npm run dev
+npm run demo:week1
 npm test
 npm run typecheck
 npm run build

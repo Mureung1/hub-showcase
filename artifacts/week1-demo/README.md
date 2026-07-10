@@ -1,0 +1,42 @@
+# AY-PLE Week 1 Demo
+
+AI Agent를 처음 접하는 청중에게 AY-PLE가 어떤 제품인지 설명하기 위한 발표용 artifact다. 내부 Runtime Harness 구조가 아니라 학생 문제, Agent가 하는 일, 원본 근거, 사용자 결정과 확인된 학기 정보 반영을 중심으로 구성한다.
+
+## 실행
+
+저장소 루트에서 실행한다.
+
+```bash
+npm run demo:week1
+```
+
+브라우저에서 다음 주소를 연다.
+
+- 발표 자료: <http://127.0.0.1:4174/artifacts/week1-demo/>
+- 발표용 동적 제품 데모: <http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html?variant=focus&step=1&present=1>
+- variant 비교용 데모: <http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html?variant=focus&step=1>
+
+## 조작
+
+- 발표 자료: `←`, `→`, `Space`, `PageUp`, `PageDown`
+- 전체 화면: 오른쪽 아래 `⛶`
+- 동적 제품 데모: 화면의 버튼 또는 `←`, `→`
+- 동적 제품 데모 초기화: `R`
+
+발표 자료의 네 번째 장에서 `전체 화면 데모 시작`을 누르면 동적 제품 prototype이 새 탭으로 열린다.
+
+정적 백업 화면도 함께 보관한다.
+
+- [원본 근거 확인](assets/guided-demo-evidence.png)
+- [확인된 학기 정보 반영](assets/guided-demo-confirmed.png)
+
+## 발표 전 확인
+
+1. `npm run demo:week1`로 서버를 시작한다.
+2. 발표 자료 1~5장을 한 번 순서대로 넘긴다.
+3. 네 번째 장의 `전체 화면으로 열기`가 새 탭에서 열리는지 확인한다.
+4. 동적 데모를 처음부터 수락까지 진행하고 `R`로 초기화한다.
+5. 정적 백업 화면 두 장이 열리는지 확인한다.
+6. [speaker-notes.md](speaker-notes.md)를 기준으로 5분 안에 끝나는지 확인한다.
+
+제품 데모는 상호작용과 설명을 검증하기 위한 throwaway prototype이다. 실제 파일·Agent·확인된 학기 정보가 연결된 완성 제품으로 설명하지 않는다.

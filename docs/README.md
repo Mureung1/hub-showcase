@@ -55,6 +55,7 @@ Root companion docs:
 
 | 문서 | 위치 | 상태 |
 | --- | --- | --- |
+| AY-PLE는 어떤 앱인가 | [product/ay-ple-overview.md](product/ay-ple-overview.md) | 소개 문서 |
 | AY-PLE Product Brief | [product/ay-ple-product-brief.md](product/ay-ple-product-brief.md) | Draft |
 | AY-PLE Review Workspace Scenario | [product/ay-ple-review-workspace-scenario.md](product/ay-ple-review-workspace-scenario.md) | Draft |
 | AY-PLE Design System Direction | [product/ay-ple-design-system.md](product/ay-ple-design-system.md) | Draft |
