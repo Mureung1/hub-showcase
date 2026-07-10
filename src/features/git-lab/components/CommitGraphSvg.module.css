@@ -1,0 +1,102 @@
+.graph {
+  display: block;
+  width: 100%;
+  min-height: 320px;
+  overflow: visible;
+}
+
+.emptyState {
+  display: grid;
+  min-height: 320px;
+  place-items: center;
+  color: #62708a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.edge,
+.currentBranchPointer {
+  fill: none;
+  stroke: #000000;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.edge {
+  stroke-width: 2;
+}
+
+.currentBranchPointer {
+  stroke-width: 1.8;
+}
+
+.arrowHead {
+  fill: #000000;
+}
+
+.nodeGroup {
+  animation: nodeEnter 260ms ease-out both;
+  transition: transform 240ms ease;
+}
+
+.nodeCircle {
+  fill: #90ee90;
+  stroke: #000000;
+  stroke-width: 2;
+}
+
+.nodeText {
+  fill: #102346;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  font-weight: 800;
+  text-anchor: middle;
+  user-select: none;
+}
+
+.branchLabelGroup {
+  animation: labelEnter 220ms ease-out both;
+}
+
+.branchBubble {
+  transition: transform 240ms ease;
+}
+
+.branchBubble rect {
+  fill: #ffffff;
+  stroke: #000000;
+  stroke-width: 1.5;
+}
+
+.branchBubble text {
+  fill: #102346;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  font-weight: 800;
+  text-anchor: middle;
+  user-select: none;
+}
+
+.currentBranchBubble rect {
+  fill: #90ee90;
+}
+
+@keyframes nodeEnter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes labelEnter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

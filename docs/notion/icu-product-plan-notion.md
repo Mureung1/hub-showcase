@@ -139,7 +139,7 @@ Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입�
 - `이어서 학습하기` 또는 `Workspace IDE` 링크로 학습 화면 구조를 확인합니다.
 - Learning Workspace IDE에서 커리큘럼, AI 튜터 설명, 코드 에디터, 실행 결과 패널의 배치를 확인합니다.
 - JavaScript 없이 HTML 앵커와 CSS만으로 화면 전환 흐름을 표현합니다.
-## 7. MVP 핵심 기능
+## 8. MVP 핵심 기능
 
 ### AI 튜터 채팅
 
@@ -211,7 +211,7 @@ MVP 학습 데이터는 라이선스와 출처가 명확한 공식 문서만 사
 | --- | --- | --- |
 | 데스크탑 프레임워크 | Electron | Windows/macOS/Linux 데스크탑 앱 배포 |
 | UI | React + TypeScript | 채팅, 에디터, 상태 기반 UI 구현 |
-| 스타일링 | Tailwind CSS | 빠른 UI 개발, 라이트/다크모드 대응 |
+| 스타일링 | CSS Modules + `src/styles` 토큰 | 컴포넌트 단위 스타일링, 라이트/다크모드 토큰 관리 |
 | 코드 에디터 | Monaco Editor | VS Code 기반 편집 경험 |
 | 상태 관리 | Zustand | 가벼운 전역 상태 관리 |
 | 로컬 DB | SQLite, better-sqlite3 | 진도, 오답, 문제, 설정 저장 |
@@ -317,6 +317,10 @@ Renderer와 Main은 IPC로 통신합니다. Renderer는 화면과 사용자 입�
 - 기능별 설계 문서 작성
 - GitHub Wiki 정리
 - Notion import용 기획서 작성
+- React + TypeScript + TSX 개발 환경 설정
+- React Router, Zustand, CSS Modules 기준 확정
+- `AGENTS.md` 개발 컨벤션 작성
+- `skills/design/SKILL.md` 디자인 작업 가이드 정리
 
 현재 단계:
 
@@ -335,7 +339,7 @@ Renderer와 Main은 IPC로 통신합니다. Renderer는 화면과 사용자 입�
 
 - 공식 문서 데이터를 어떻게 수집하고 청크로 나눌지 결정해야 합니다.
 - 공식 문서 RAG 데이터와 사용자 학습 데이터를 분리해서 저장해야 합니다.
-- 라이트/다크모드 테마 토큰을 실제 CSS 구조로 옮겨야 합니다.
+- 라이트/다크모드 테마 토큰을 `src/styles`와 CSS Modules 구조로 옮겨야 합니다.
 - Figma 디자인과 실제 React 구현 사이의 밀도, 반응형, 접근성을 검증해야 합니다.
 
 ## 16. 원본 링크

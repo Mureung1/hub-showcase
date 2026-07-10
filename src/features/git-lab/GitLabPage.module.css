@@ -1,0 +1,196 @@
+.page {
+  width: 100%;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 20px;
+  padding: 20px 24px 28px;
+  color: #102346;
+  background:
+    radial-gradient(circle at 7% 16%, rgb(255 138 28 / 62%), transparent 30%),
+    radial-gradient(circle at 39% 0%, rgb(243 184 216 / 42%), transparent 30%),
+    radial-gradient(circle at 58% 8%, rgb(53 200 244 / 54%), transparent 34%),
+    radial-gradient(circle at 91% 4%, rgb(11 75 179 / 72%), transparent 36%),
+    linear-gradient(115deg, #fff2d9 0%, #eef9ff 42%, #d8f4ff 66%, #c4dbff 100%);
+}
+
+.levelBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #0b4bb3;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.levelBar h1 {
+  margin: 0;
+  color: #102346;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 850;
+}
+
+.toggleButton,
+.modalButton {
+  min-height: 42px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 18px;
+  background: #0b4bb3;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.toggleButton:focus-visible,
+.modalButton:focus-visible {
+  outline: 3px solid rgb(53 200 244 / 42%);
+  outline-offset: 2px;
+}
+
+.workspace {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(360px, 0.95fr) minmax(420px, 1.2fr) minmax(320px, 0.85fr);
+  gap: 20px;
+}
+
+.graphPanel {
+  min-height: 640px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  border: 1px solid rgb(179 196 220 / 74%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 86%);
+  box-shadow: 0 18px 60px rgb(17 43 95 / 10%);
+  backdrop-filter: blur(12px);
+}
+
+.graphHeader {
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgb(179 196 220 / 54%);
+}
+
+.graphHeader h2 {
+  margin: 0;
+  color: #102346;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.graphHeader p {
+  margin: 6px 0 0;
+  color: #62708a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.clearState,
+.pendingState {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.clearState {
+  background: #90ee90;
+  color: #102346;
+}
+
+.pendingState {
+  background: #e7f6fb;
+  color: #0b4bb3;
+}
+
+.graphCanvas {
+  overflow: auto;
+  padding: 18px;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(10 20 35 / 44%);
+  z-index: 20;
+}
+
+.clearModal {
+  width: min(100%, 430px);
+  border: 1px solid rgb(179 196 220 / 74%);
+  border-radius: 8px;
+  padding: 24px;
+  background: #ffffff;
+  box-shadow: 0 28px 90px rgb(17 43 95 / 22%);
+}
+
+.modalBadge {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  margin: 0 0 16px;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: #90ee90;
+  color: #102346;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.clearModal h2 {
+  margin: 0;
+  color: #102346;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.clearModal p {
+  margin: 12px 0 0;
+  color: #4b566b;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.modalButton {
+  margin-top: 22px;
+}
+
+@media (max-width: 1180px) {
+  .workspace {
+    grid-template-columns: minmax(340px, 0.95fr) minmax(420px, 1.25fr);
+  }
+}
+
+@media (max-width: 820px) {
+  .page {
+    padding: 16px;
+  }
+
+  .levelBar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}
