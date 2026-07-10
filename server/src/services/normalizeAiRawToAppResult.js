@@ -1,5 +1,16 @@
+import { z } from 'zod'
+import {
+  AdapterContextSchema,
+  LegacyAiExtractionMetadataSchema,
+  normalizeAiRawToExtractionResult,
+  projectExtractionResultToAppAnalysis,
+} from '../domain/adapters/index.js'
+import { CanonicalNoticeSchema } from '../domain/schemas/canonicalNoticeSchema.js'
 import { safeParseAiRawAnalysis } from '../schemas/aiRawSchema.js'
-import { safeParseAppAnalysis } from '../schemas/appAnalysisSchema.js'
+import {
+  parseAppAnalysis,
+  safeParseAppAnalysis,
+} from '../schemas/appAnalysisSchema.js'
 import { createValidationError } from '../utils/validationResult.js'
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/
@@ -11,6 +22,14 @@ const sectionByKind = {
   requirement: 'requirements',
   caution: 'cautions',
 }
+
+const DomainAdapterCompatibilityOptionsSchema = z
+  .object({
+    canonicalNotice: CanonicalNoticeSchema,
+    context: AdapterContextSchema,
+    extractionMetadata: LegacyAiExtractionMetadataSchema,
+  })
+  .strict()
 
 function isValidDate(value) {
   if (!datePattern.test(value)) {
@@ -171,7 +190,7 @@ function createEmptyAppResult(aiRaw, options) {
   }
 }
 
-export function normalizeAiRawToAppResult(aiRawInput, options = {}) {
+function normalizeAiRawToAppResultLegacy(aiRawInput, options) {
   const aiRawResult = safeParseAiRawAnalysis(aiRawInput)
 
   if (!aiRawResult.success) {
@@ -207,4 +226,44 @@ export function normalizeAiRawToAppResult(aiRawInput, options = {}) {
   }
 
   return appValidationResult.data
+}
+
+function normalizeAiRawToAppResultWithDomainAdapters(aiRawInput, options) {
+  const domainAdapter = DomainAdapterCompatibilityOptionsSchema.parse(
+    options.domainAdapter,
+  )
+  const extractionResult = normalizeAiRawToExtractionResult({
+    aiRawAnalysis: aiRawInput,
+    canonicalNotice: domainAdapter.canonicalNotice,
+    extractionMetadata: domainAdapter.extractionMetadata,
+    context: domainAdapter.context,
+  })
+  const appResult = projectExtractionResultToAppAnalysis({
+    extractionResult,
+    projectionContext: {
+      title: options.title || options.noticeTitle || '',
+      userSelectedNoticeType: options.userSelectedNoticeType || 'unknown',
+      noticePublicationDate: options.noticePublicationDate || '',
+      uploadedFileName: options.uploadedFileName || '',
+      referenceDate: options.referenceDate || options.noticePublicationDate || '',
+      userPreferencesSnapshot: options.userPreferencesSnapshot,
+    },
+  })
+
+  if (!options.detectedNoticeType) {
+    return appResult
+  }
+
+  return parseAppAnalysis({
+    ...appResult,
+    detectedNoticeType: options.detectedNoticeType,
+  })
+}
+
+export function normalizeAiRawToAppResult(aiRawInput, options = {}) {
+  if (options.domainAdapter === undefined) {
+    return normalizeAiRawToAppResultLegacy(aiRawInput, options)
+  }
+
+  return normalizeAiRawToAppResultWithDomainAdapters(aiRawInput, options)
 }
