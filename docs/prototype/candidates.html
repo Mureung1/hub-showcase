@@ -2,39 +2,105 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>매칭 후보 리스트</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>매칭 후보 리스트 - RideSplit</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="card">
-    <p class="step">3 / 5 · 매칭 후보 리스트</p>
-    <h1>같은 시간대 · 방향 후보</h1>
-
-    <div class="candidate">
-      <div>
-        <p class="name">익명A · 대구역</p>
-        <p class="time">21:25 출발</p>
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo-sm">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+            <circle cx="8" cy="10" r="6" fill="#fff" opacity="0.9"></circle>
+            <circle cx="15" cy="10" r="6" fill="#fff" opacity="0.55"></circle>
+            <circle cx="17.5" cy="17.5" r="5.5" fill="#fff"></circle>
+            <text x="17.5" y="20.3" font-size="7" font-weight="800" text-anchor="middle" fill="#8C0E22">₩</text>
+          </svg>
+        </div>
+        <span class="brand-name">RideSplit</span>
       </div>
-      <a class="apply-btn" href="chat.html">신청</a>
+      <div class="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot active"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
     </div>
 
-    <div class="candidate">
-      <div>
-        <p class="name">익명B · 대구역</p>
-        <p class="time">21:35 출발</p>
-      </div>
-      <a class="apply-btn" href="chat.html">신청</a>
-    </div>
+    <div class="screen">
+      <a class="back-btn" href="register.html">‹ 이전</a>
+      <span class="summary-badge">정문 → 대구역 · 21:30 기준</span>
+      <h1 class="title sm">같은 방향 동행자 후보</h1>
 
-    <div class="candidate">
-      <div>
-        <p class="name">익명C · 동대구역</p>
-        <p class="time">21:30 출발</p>
+      <div class="candidate-row">
+        <div class="candidate-left">
+          <div class="avatar avatar-c1">도</div>
+          <div>
+            <div class="candidate-name-row">
+              <span class="candidate-name">도윤</span>
+              <span class="candidate-rating">★ 4.7</span>
+            </div>
+            <div class="candidate-sub">경영대학 · 남학생</div>
+            <div class="candidate-meta">대구역 · 21:20 출발 · 10분 차이</div>
+            <span class="group-badge active">3/4</span>
+          </div>
+        </div>
+        <button type="button" class="candidate-btn apply">신청</button>
       </div>
-      <a class="apply-btn" href="chat.html">신청</a>
-    </div>
 
-    <p class="note">신청 버튼을 누르면, 실제로는 상대방 수락을 기다리지만 프로토타입에서는 바로 수락된 것으로 가정하고 다음 화면으로 넘어갑니다.</p>
+      <div class="candidate-row joined">
+        <div class="candidate-left">
+          <div class="avatar avatar-c2">서</div>
+          <div>
+            <div class="candidate-name-row">
+              <span class="candidate-name">서연</span>
+              <span class="candidate-rating">★ 4.8</span>
+            </div>
+            <div class="candidate-sub">경상대학 · 여학생</div>
+            <div class="candidate-meta">대구역 · 21:25 출발 · 5분 차이</div>
+            <span class="group-badge">1/4</span>
+          </div>
+        </div>
+        <a href="chat.html" class="candidate-btn joined">채팅방 보기</a>
+      </div>
+
+      <div class="candidate-row">
+        <div class="candidate-left">
+          <div class="avatar avatar-c3">하</div>
+          <div>
+            <div class="candidate-name-row">
+              <span class="candidate-name">하은</span>
+              <span class="candidate-rating">★ 4.9</span>
+            </div>
+            <div class="candidate-sub">사범대학 · 여학생</div>
+            <div class="candidate-meta">동대구역 · 21:30 출발 · 같은 시간</div>
+            <span class="group-badge">1/4</span>
+          </div>
+        </div>
+        <button type="button" class="candidate-btn disabled" disabled>참여 불가</button>
+      </div>
+
+      <div class="candidate-row">
+        <div class="candidate-left">
+          <div class="avatar avatar-c4">민</div>
+          <div>
+            <div class="candidate-name-row">
+              <span class="candidate-name">민준</span>
+              <span class="candidate-rating">★ 4.6</span>
+            </div>
+            <div class="candidate-sub">공과대학 · 남학생</div>
+            <div class="candidate-meta">대구역 · 21:35 출발 · 5분 차이</div>
+            <span class="group-badge active">4/4</span>
+          </div>
+        </div>
+        <button type="button" class="candidate-btn disabled" disabled>정원 마감</button>
+      </div>
+
+      <p class="note">신청하면 바로 그 방의 채팅방으로 이동해요. 택시 정원(4인)을 넘으면 신청할 수 없어요. (이 화면은 버튼 상태 4종을 한 번에 보여주기 위한 정적 예시입니다)</p>
+    </div>
   </div>
 </body>
 </html>

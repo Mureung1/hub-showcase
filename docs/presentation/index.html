@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>대학생 이동 경로 기반 동행자 매칭 서비스 - 발표자료</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #1c1c1e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .deck {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      padding: 8vh 10vw;
+      background: #ffffff;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    .eyebrow {
+      font-size: 15px;
+      color: #888;
+      letter-spacing: 0.08em;
+      margin: 0 0 16px;
+      font-weight: 500;
+    }
+
+    h1 {
+      font-size: 44px;
+      margin: 0 0 24px;
+      color: #1c1c1e;
+      line-height: 1.3;
+    }
+
+    h2 {
+      font-size: 32px;
+      margin: 0 0 20px;
+      color: #1c1c1e;
+      line-height: 1.3;
+    }
+
+    p.body {
+      font-size: 20px;
+      line-height: 1.7;
+      color: #444;
+      margin: 0 0 14px;
+      max-width: 900px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: #f5f5f7;
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .card p.title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 8px;
+      color: #1c1c1e;
+    }
+
+    .card p.desc {
+      font-size: 15px;
+      color: #666;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .tag {
+      background: #FCE4E2;
+      color: #8C0E22;
+      font-size: 14px;
+      padding: 6px 14px;
+      border-radius: 999px;
+    }
+
+    table.stack {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 900px;
+      margin-top: 10px;
+    }
+
+    table.stack td {
+      padding: 12px 0;
+      font-size: 17px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+
+    table.stack td.label {
+      color: #888;
+      width: 130px;
+      font-weight: 500;
+    }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 15px;
+      color: #666;
+      margin-top: 16px;
+    }
+
+    .flow .arrow {
+      color: #bbb;
+    }
+
+    .footer {
+      position: fixed;
+      bottom: 24px;
+      left: 10vw;
+      right: 10vw;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      color: #999;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-buttons button {
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      color: #333;
+    }
+
+    .nav-buttons button:hover {
+      background: #f5f5f5;
+    }
+
+    .dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ddd;
+    }
+
+    .dot.active {
+      background: #1c1c1e;
+    }
+
+    strong {
+      color: #1c1c1e;
+      font-weight: 600;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.85em;
+      background: #f0f0f0;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="deck">
+
+    <section class="slide active">
+      <p class="eyebrow">01 · 프로젝트 선정 계기</p>
+      <h1>관찰에서 시작된 아이디어</h1>
+      <p class="body">조모임이나 수업이 끝나고 귀가할 때, 같이 있던 사람들끼리도 귀가 방향은 제각각입니다. 그래서 다들 혼자 대중교통을 타거나, 편하지만 비싼 택시를 포기하게 됩니다.</p>
+      <p class="body">그런데 방향이 겹치는 사람끼리 택시를 나눠 타면, 거리에 따라 대중교통보다 오히려 저렴해지는 경우도 있습니다. <strong>"타고 싶은 잠재 수요는 있는데, 동행자를 찾을 방법이 없어서 실행되지 않는다"</strong>는 지점에서 이 프로젝트가 출발했습니다.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">02 · 문제 정의</p>
+      <h2>대학생 이동 경로 기반 동행자 매칭 서비스</h2>
+      <p class="body">대학생은 이동이 필요한 순간 주변에 방향이 겹치는 동행자가 있어도 이를 알 방법이 없어서, 비용을 절감할 수 있는 택시 동승 기회를 놓치고 있다.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">03 · 핵심 기능 (선정 기준: 필수성 · 적합성)</p>
+      <h2>넓게 벌이지 않고, 2개만 탄탄하게</h2>
+      <div class="grid">
+        <div class="card">
+          <p class="title">A. 매칭 알고리즘</p>
+          <p class="desc">같은 거점 + 희망 시간 ±15분 이내 자동 그룹핑. "동행자를 알 방법이 없다"는 문제를 직접 해결</p>
+        </div>
+        <div class="card">
+          <p class="title">B. 신청/수락 플로우</p>
+          <p class="desc">신청 → 수락 → 그룹 확정. "잠재 수요가 실행되지 않는 현실"을 실행으로 전환</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">04 · MVP 범위를 좁힌 이유</p>
+      <h2>4주 안에 끝낼 수 있는 만큼만</h2>
+      <div class="tags">
+        <span class="tag">실제 결제 연동 제외</span>
+        <span class="tag">실시간 위치 공유 제외</span>
+        <span class="tag">카풀 모드 제외</span>
+        <span class="tag">지도 SDK 제외</span>
+      </div>
+      <p class="body">고정 거점 리스트로 매칭 밀도를 확보하고(콜드스타트 대응), 자기 신고형 시간 입력으로 GPS 없이 우선순위를 처리하는 등, 핵심 기능 2개를 탄탄히 만드는 데 자원을 집중했습니다.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">05 · 프로토타입 (진행 상황)</p>
+      <h2>5개 화면, 흐름만 먼저 검증</h2>
+      <div class="flow">
+        <span>로그인</span><span class="arrow">→</span>
+        <span>출발/도착 등록</span><span class="arrow">→</span>
+        <span>매칭 후보</span><span class="arrow">→</span>
+        <span>채팅방</span><span class="arrow">→</span>
+        <span>완료 · 평가</span>
+      </div>
+      <p class="body" style="margin-top: 20px;">순수 HTML/CSS로 제작해 GitHub Pages로 배포. <strong>확정된 디자인 시스템(레드/코랄 #C8102E, Pretendard)을 실제로 적용</strong>했고, 성별 필터·정원 배지·그룹 채팅 동의 흐름 같은 세부 인터랙션까지 반영했습니다.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">06 · 기술 스택을 이렇게 정한 이유</p>
+      <h2>React + Express + Supabase</h2>
+      <table class="stack">
+        <tr><td class="label">React</td><td>매칭 리스트·채팅 등 상호작용 많은 화면에 적합, 과제 기본 스택</td></tr>
+        <tr><td class="label">Express</td><td>Node.js 기반으로 API(요청-응답 창구)를 빠르게 구성 가능</td></tr>
+        <tr><td class="label">Supabase</td><td>사용자↔요청↔그룹처럼 관계형 데이터 구조에 적합 + 팀원과 대시보드로 데이터 공유·피드백 용이</td></tr>
+        <tr><td class="label">모노레포</td><td>FE/BE 동시 수정을 PR 하나로 관리할 수 있어 소규모 팀에 적합</td></tr>
+      </table>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">07 · 개발 컨벤션</p>
+      <h2>일관된 개발을 위한 규칙</h2>
+      <div class="tags">
+        <span class="tag">Conventional Commits</span>
+        <span class="tag">PascalCase 컴포넌트</span>
+        <span class="tag">camelCase 파일</span>
+        <span class="tag">REST 스타일 API</span>
+      </div>
+      <p class="body" style="margin-top: 10px;">모두 <code>CLAUDE.md</code>에 기록해, 이후 개발 시 일관되게 참고</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">08 · 다음 계획</p>
+      <h2>디자인 시스템 확정 → 2주차 본격 개발</h2>
+      <p class="body">학교 색인 레드/코랄 톤으로 디자인 시스템을 확정하고 프로토타입에 실제로 적용했습니다. 2주차부터는 매칭 알고리즘과 신청/수락 플로우 API 개발에 들어갈 예정입니다.</p>
+    </section>
+
+  </div>
+
+  <div class="footer">
+    <div class="dots" id="dots"></div>
+    <div class="nav-buttons">
+      <button id="prevBtn">이전</button>
+      <button id="nextBtn">다음</button>
+    </div>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide')
+    const dotsContainer = document.getElementById('dots')
+    let current = 0
+
+    slides.forEach((_, i) => {
+      const dot = document.createElement('div')
+      dot.className = 'dot' + (i === 0 ? ' active' : '')
+      dotsContainer.appendChild(dot)
+    })
+    const dots = document.querySelectorAll('.dot')
+
+    function show(index) {
+      slides[current].classList.remove('active')
+      dots[current].classList.remove('active')
+      current = (index + slides.length) % slides.length
+      slides[current].classList.add('active')
+      dots[current].classList.add('active')
+    }
+
+    document.getElementById('nextBtn').addEventListener('click', () => show(current + 1))
+    document.getElementById('prevBtn').addEventListener('click', () => show(current - 1))
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') show(current + 1)
+      if (e.key === 'ArrowLeft') show(current - 1)
+    })
+  </script>
+</body>
+</html>

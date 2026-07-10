@@ -2,20 +2,80 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>완료 및 평가</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>완료 및 평가 - RideSplit</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="card">
-    <p class="step">5 / 5 · 완료 및 평가</p>
-    <h1>이동이 끝났어요</h1>
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo-sm">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+            <circle cx="8" cy="10" r="6" fill="#fff" opacity="0.9"></circle>
+            <circle cx="15" cy="10" r="6" fill="#fff" opacity="0.55"></circle>
+            <circle cx="17.5" cy="17.5" r="5.5" fill="#fff"></circle>
+            <text x="17.5" y="20.3" font-size="7" font-weight="800" text-anchor="middle" fill="#8C0E22">₩</text>
+          </svg>
+        </div>
+        <span class="brand-name">RideSplit</span>
+      </div>
+      <div class="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot active"></div>
+      </div>
+    </div>
 
-    <div class="stars">★★★☆☆</div>
+    <div class="screen">
+      <h1 class="title sm">이동이 끝났어요</h1>
+      <p class="subtitle">함께한 동행자를 평가해주세요</p>
 
-    <input class="field" value="☐ 노쇼 신고" readonly />
+      <div class="rating-row">
+        <div class="rating-name">서연</div>
+        <div class="rating-line">
+          <div class="stars" data-member="seoyeon">
+            <span class="star" data-value="1">★</span>
+            <span class="star" data-value="2">★</span>
+            <span class="star" data-value="3">★</span>
+            <span class="star" data-value="4">★</span>
+            <span class="star" data-value="5">★</span>
+          </div>
+          <div class="noshow-row" id="noshow-seoyeon">
+            <div class="noshow-check"></div>
+            <span class="noshow-label">노쇼 신고하기</span>
+          </div>
+        </div>
+      </div>
 
-    <a class="button" href="index.html">완료</a>
-    <p class="note">완료를 누르면 처음(로그인) 화면으로 돌아가는 것으로 프로토타입 흐름을 마무리합니다.</p>
+      <div class="spacer"></div>
+      <a class="btn-primary" href="index.html">완료</a>
+    </div>
   </div>
+
+  <script>
+    document.querySelectorAll('.stars').forEach((starsEl) => {
+      const stars = starsEl.querySelectorAll('.star')
+      stars.forEach((star) => {
+        star.addEventListener('click', () => {
+          const value = Number(star.dataset.value)
+          stars.forEach((s) => {
+            s.classList.toggle('filled', Number(s.dataset.value) <= value)
+          })
+        })
+      })
+    })
+
+    document.querySelectorAll('.noshow-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        const check = row.querySelector('.noshow-check')
+        const checked = check.classList.toggle('checked')
+        check.textContent = checked ? '✓' : ''
+      })
+    })
+  </script>
 </body>
 </html>

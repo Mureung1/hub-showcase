@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet data-dc-atomics>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css">
+  <style>
+    body { margin: 0; }
+    a { color: inherit; }
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402,874">
+  <div style="height:100%;overflow-y:auto;background:#FBF5F1;font-family:'Pretendard',-apple-system,system-ui,sans-serif;color:#241512;box-sizing:border-box;padding-top:60px;display:flex;flex-direction:column">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px 14px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="{{ logoStyle }}">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+            <circle cx="8" cy="10" r="6" fill="#fff" opacity="0.9"></circle>
+            <circle cx="15" cy="10" r="6" fill="#fff" opacity="0.55"></circle>
+            <circle cx="17.5" cy="17.5" r="5.5" fill="#fff"></circle>
+            <text x="17.5" y="20.3" font-size="7" font-weight="800" text-anchor="middle" fill="{{ primaryDark }}">₩</text>
+          </svg>
+        </div>
+        <span style="font-size:15px;font-weight:700;letter-spacing:-0.3px">RideSplit</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <sc-for list="{{ progressDots }}" as="dot" hint-placeholder-count="5">
+          <div style="{{ dot.style }}"></div>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-if value="{{ isStep0 }}" hint-placeholder-val="{{ true }}">
+      <div data-screen-label="로그인" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 28px 40px;text-align:center">
+        <div style="{{ bigLogoStyle }}">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none">
+            <circle cx="8" cy="10" r="6" fill="#fff" opacity="0.9"></circle>
+            <circle cx="15" cy="10" r="6" fill="#fff" opacity="0.55"></circle>
+            <circle cx="17.5" cy="17.5" r="5.5" fill="#fff"></circle>
+            <text x="17.5" y="20.3" font-size="7" font-weight="800" text-anchor="middle" fill="{{ primaryDark }}">₩</text>
+          </svg>
+        </div>
+        <h1 style="font-size:22px;font-weight:800;margin:20px 0 6px;letter-spacing:-0.3px">학교 이메일로 로그인</h1>
+        <p style="font-size:13px;color:#8A7A76;margin:0 0 28px;line-height:1.5">대학교 학생만 이용할 수 있는<br/>택시 동승 매칭 서비스예요</p>
+        <div style="background:#fff;border:1px solid rgba(36,21,18,0.08);border-radius:16px;padding:16px;text-align:left;margin-bottom:14px">
+          <div style="font-size:11px;color:#8A7A76;margin-bottom:6px;font-weight:600">학교 이메일</div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:15px;font-weight:600">jieun@univ.ac.kr</span>
+            <span style="{{ tintBadgeStyle }}">.ac.kr 인증</span>
+          </div>
+        </div>
+        <button style="{{ primaryButtonStyle }}" onClick="{{ goLogin }}">인증 메일 받기</button>
+        <p style="font-size:11px;color:#8A7A76;margin-top:14px;line-height:1.5">프로토타입이라 인증 없이 바로 다음 화면으로 이동해요</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isStep1 }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="출발/도착 등록" style="padding:0 20px 28px;display:flex;flex-direction:column;flex:1">
+        <button style="{{ backBtnStyle }}" onClick="{{ goBack1 }}">‹ 이전</button>
+        <h1 style="font-size:20px;font-weight:800;margin:14px 0 4px">오늘의 이동을 등록해요</h1>
+        <p style="font-size:13px;color:#8A7A76;margin:0 0 20px;line-height:1.5">비슷한 시간, 비슷한 방향으로 가는<br/>동행자를 찾아드릴게요</p>
+
+        <div style="margin-bottom:18px">
+          <div style="font-size:12px;font-weight:700;color:#8A7A76;margin-bottom:8px">이동 방향</div>
+          <div style="display:flex;gap:8px">
+            <sc-for list="{{ directionOptions }}" as="opt" hint-placeholder-count="2">
+              <button style="{{ opt.style }}" onClick="{{ opt.onClick }}">{{ opt.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="margin-bottom:10px">
+          <div style="font-size:12px;font-weight:700;color:#8A7A76;margin-bottom:8px">출발 · {{ start }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ startOptions }}" as="opt" hint-placeholder-count="7">
+              <button style="{{ opt.style }}" onClick="{{ opt.onClick }}">{{ opt.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="margin-bottom:18px">
+          <div style="font-size:12px;font-weight:700;color:#8A7A76;margin-bottom:8px">목적지 · {{ dest }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ destOptions }}" as="opt" hint-placeholder-count="7">
+              <button style="{{ opt.style }}" onClick="{{ opt.onClick }}">{{ opt.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="margin-bottom:18px">
+          <div style="font-size:12px;font-weight:700;color:#8A7A76;margin-bottom:8px">희망 출발 시간</div>
+          <div style="display:flex;gap:8px">
+            <sc-for list="{{ timeOptions }}" as="opt" hint-placeholder-count="3">
+              <button style="{{ opt.style }}" onClick="{{ opt.onClick }}">{{ opt.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px">
+          <div style="font-size:12px;font-weight:700;color:#8A7A76;margin-bottom:8px">도착 소요시간 (거점까지)</div>
+          <div style="display:flex;gap:8px">
+            <sc-for list="{{ arrivalOptions }}" as="opt" hint-placeholder-count="3">
+              <button style="{{ opt.style }}" onClick="{{ opt.onClick }}">{{ opt.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid rgba(36,21,18,0.08);border-radius:14px;padding:14px 16px;margin-bottom:8px">
+          <div>
+            <div style="font-size:13px;font-weight:700">동성끼리만 매칭 희망</div>
+            <div style="font-size:11px;color:#8A7A76;margin-top:2px">안전을 위한 선택 옵션이에요</div>
+          </div>
+          <div style="{{ toggleTrackStyle }}" onClick="{{ toggleGenderHandler }}">
+            <div style="{{ toggleKnobStyle }}"></div>
+          </div>
+        </div>
+
+        <div style="flex:1"></div>
+        <button style="{{ primaryButtonStyle }}" onClick="{{ goRegister }}">동행자 찾기</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isStep2 }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="매칭 후보 리스트" style="padding:0 20px 24px;display:flex;flex-direction:column;flex:1">
+        <button style="{{ backBtnStyle }}" onClick="{{ goBack2 }}">‹ 이전</button>
+        <div style="{{ summaryBadgeStyle }}">{{ start }} → {{ dest }} · {{ time }} 기준</div>
+        <h1 style="font-size:20px;font-weight:800;margin:14px 0 16px">같은 방향 동행자 후보</h1>
+
+        <sc-for list="{{ candidateItems }}" as="c" hint-placeholder-count="3">
+          <div style="{{ c.rowStyle }}">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="{{ c.avatarStyle }}">{{ c.initial }}</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:14px;font-weight:700">{{ c.name }}</span>
+                  <span style="font-size:11px;color:#C98A1F;font-weight:700">★ {{ c.ratingLabel }}</span>
+                </div>
+                <div style="font-size:11px;color:#8A7A76;margin-top:2px">{{ c.college }} · {{ c.genderLabel }}</div>
+                <div style="font-size:12px;color:#8A7A76;margin-top:2px">{{ c.dest }} · {{ c.time }} 출발 · {{ c.diffLabel }}</div>
+                <span style="{{ c.groupBadgeStyle }}">{{ c.groupLabel }}</span>
+              </div>
+            </div>
+            <button style="{{ c.buttonStyle }}" onClick="{{ c.onApply }}" disabled="{{ c.buttonDisabled }}">{{ c.buttonLabel }}</button>
+          </div>
+        </sc-for>
+
+        <p style="font-size:11px;color:#8A7A76;margin:8px 0 0;line-height:1.5">신청하면 바로 그 방의 채팅방으로 이동해요. 택시 정원(4인)을 넘으면 신청할 수 없어요.</p>
+
+        <div style="flex:1;min-height:12px"></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isStep3 }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="그룹 채팅방" style="padding:0 20px 24px;display:flex;flex-direction:column;flex:1">
+        <button style="{{ backBtnStyle }}" onClick="{{ goBack3 }}">‹ 이전</button>
+        <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px">
+          <div style="display:flex">
+            <sc-for list="{{ matchedAvatars }}" as="av" hint-placeholder-count="3">
+              <div style="{{ av.style }}">{{ av.initial }}</div>
+            </sc-for>
+          </div>
+          <span style="{{ occupancyBadgeStyle }}">{{ roomSize }}/4명 모임</span>
+        </div>
+        <h1 style="font-size:20px;font-weight:800;margin:0 0 16px">{{ roomTitle }}</h1>
+
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+          <div style="{{ bubbleLeftStyle }}">정문에서 만나요</div>
+          <div style="{{ bubbleRightStyle }}">네 좋아요, 5분 뒤 도착이에요</div>
+          <div style="{{ bubbleLeftStyle }}">저도 거의 다 왔어요</div>
+        </div>
+
+        <sc-if value="{{ needsAgreement }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ agreeCardStyle }}">
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px">정원이 다 차지 않았어요</div>
+            <div style="font-size:12px;color:#8A7A76;margin-bottom:12px;line-height:1.5">모두 동의하면 지금 인원({{ roomSize }}/4)으로 바로 출발할 수 있어요</div>
+            <button style="{{ primaryButtonStyle }}" onClick="{{ confirmWithoutFullHandler }}">동의하고 출발 확정</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ canGoChat }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ costCardStyle }}">
+            <div style="font-size:12px;font-weight:700;color:#8A7A76;margin-bottom:6px">예상 택시요금</div>
+            <div style="font-size:22px;font-weight:800;margin-bottom:4px">1인당 {{ perPersonLabel }}원</div>
+            <div style="font-size:12px;color:#8A7A76">총 {{ totalLabel }}원 · {{ groupSize }}명 기준 · 예상치이며 실제와 다를 수 있어요</div>
+          </div>
+        </sc-if>
+
+        <div style="flex:1"></div>
+        <sc-if value="{{ canGoChat }}" hint-placeholder-val="{{ false }}">
+          <button style="{{ primaryButtonStyle }}" onClick="{{ goConfirm }}">탑승 확인</button>
+        </sc-if>
+        <sc-if value="{{ needsAgreement }}" hint-placeholder-val="{{ false }}">
+          <button style="{{ disabledButtonStyle }}" disabled="{{ true }}">전원 동의 후 탑승 확인이 가능해요</button>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isStep4 }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="완료 및 평가" style="padding:0 20px 28px;display:flex;flex-direction:column;flex:1">
+        <h1 style="font-size:20px;font-weight:800;margin:14px 0 4px">이동이 끝났어요</h1>
+        <p style="font-size:13px;color:#8A7A76;margin:0 0 20px">함께한 동행자를 평가해주세요</p>
+
+        <sc-for list="{{ ratingMembers }}" as="m" hint-placeholder-count="2">
+          <div style="{{ ratingRowStyle }}">
+            <div style="font-size:14px;font-weight:700;margin-bottom:8px">{{ m.name }}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;gap:4px">
+                <sc-for list="{{ m.stars }}" as="s" hint-placeholder-count="5">
+                  <span style="{{ s.style }}" onClick="{{ s.onClick }}">★</span>
+                </sc-for>
+              </div>
+              <div style="{{ m.noshowRowStyle }}" onClick="{{ m.toggleNoshowHandler }}">
+                <div style="{{ m.checkboxStyle }}">{{ m.noshowCheckMark }}</div>
+                <span style="font-size:12.5px;font-weight:600">노쇼 신고하기</span>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+
+        <div style="flex:1"></div>
+        <button style="{{ primaryButtonStyle }}" onClick="{{ finishHandler }}">완료</button>
+      </div>
+    </sc-if>
+
+  </div>
+</x-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: {&quot;width&quot;: 480, &quot;height&quot;: 920},
+  &quot;matchFilterDefault&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;매칭 옵션&quot;},
+  &quot;primaryColor&quot;: {&quot;editor&quot;: &quot;color&quot;, &quot;default&quot;: &quot;#C8102E&quot;, &quot;options&quot;: [&quot;#C8102E&quot;, &quot;#A6192E&quot;, &quot;#D93025&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;테마&quot;}
+}">
+
+class Component extends DCLogic {
+  state = {
+    step: 0,
+    direction: 'from_school',
+    schoolGate: '정문',
+    cityPoint: '대구역',
+    time: '21:30',
+    arrival: '5분 이내',
+    genderOnly: false,
+    noshow: {},
+    ratings: {},
+    joinedId: null,
+    confirmed: false,
+    candidates: [
+      { id: 1, name: '서연', college: '경상대학', gender: 'F', rating: 4.8, dest: '대구역', time: '21:25', groupCount: 1, status: 'idle' },
+      { id: 2, name: '민준', college: '공과대학', gender: 'M', rating: 4.6, dest: '대구역', time: '21:35', groupCount: 2, status: 'idle' },
+      { id: 3, name: '하은', college: '사범대학', gender: 'F', rating: 4.9, dest: '동대구역', time: '21:30', groupCount: 1, status: 'idle' },
+      { id: 4, name: '도윤', college: '경영대학', gender: 'M', rating: 4.7, dest: '대구역', time: '21:20', groupCount: 3, status: 'idle' },
+    ],
+  };
+
+  componentDidMount() {
+    if (this.props.matchFilterDefault) this.setState({ genderOnly: true });
+  }
+
+  toMinutes(t) {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  goTo(step) { this.setState({ step }); }
+  setDirection(v) { this.setState({ direction: v }); }
+  setSchoolGate(v) { this.setState({ schoolGate: v }); }
+  setCityPoint(v) { this.setState({ cityPoint: v }); }
+  setTime(v) { this.setState({ time: v }); }
+  setArrival(v) { this.setState({ arrival: v }); }
+  toggleGender() { this.setState(s => ({ genderOnly: !s.genderOnly })); }
+
+  apply(id) {
+    this.setState(s => {
+      if (s.joinedId !== null) return { step: 3 };
+      const target = s.candidates.find(c => c.id === id);
+      if (!target || target.groupCount >= 4) return {};
+      return {
+        joinedId: id,
+        step: 3,
+        candidates: s.candidates.map(c => c.id === id ? { ...c, groupCount: c.groupCount + 1 } : c),
+      };
+    });
+  }
+
+  setRating(id, val) { this.setState(s => ({ ratings: { ...s.ratings, [id]: val } })); }
+  confirmWithoutFull() { this.setState({ confirmed: true }); }
+  toggleNoshow(id) { this.setState(s => ({ noshow: { ...s.noshow, [id]: !s.noshow[id] } })); }
+
+  finish() {
+    this.setState(s => ({
+      step: 0,
+      ratings: {},
+      noshow: {},
+      joinedId: null,
+      confirmed: false,
+      candidates: s.candidates.map(c => ({ ...c, groupCount: Math.max(1, c.groupCount - (s.joinedId === c.id ? 1 : 0)) })),
+    }));
+  }
+
+  renderVals() {
+    const s = this.state;
+    const primary = this.props.primaryColor || '#C8102E';
+    const darkMap = { '#C8102E': '#8C0E22', '#A6192E': '#7A1023', '#D93025': '#9E1F19' };
+    const primaryDark = darkMap[primary] || '#8C0E22';
+    const stepLabels = ['로그인', '출발/도착 등록', '매칭 후보', '그룹 채팅방', '완료 및 평가'];
+    const progressDots = stepLabels.map((_, i) => ({
+      style: {
+        width: i === s.step ? 16 : 6, height: 6, borderRadius: 999,
+        background: i === s.step ? primary : 'rgba(36,21,18,0.15)',
+        transition: 'all .2s',
+      },
+    }));
+
+    const logoStyle = { width: 28, height: 28, borderRadius: 8, background: primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, flexShrink: 0 };
+    const bigLogoStyle = { width: 64, height: 64, borderRadius: 20, background: primary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800, margin: '0 auto' };
+    const tintBadgeStyle = { fontSize: 11, fontWeight: 700, color: primaryDark, background: '#FCE4E2', padding: '4px 8px', borderRadius: 999 };
+    const primaryButtonStyle = { width: '100%', padding: '15px', background: primary, color: '#fff', border: 'none', borderRadius: 999, fontSize: 15, fontWeight: 700, cursor: 'pointer' };
+    const disabledButtonStyle = { width: '100%', padding: '15px', background: '#EFE7E3', color: '#8A7A76', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700 };
+    const backBtnStyle = { background: 'none', border: 'none', color: '#8A7A76', fontSize: 13, fontWeight: 600, padding: 0, cursor: 'pointer', alignSelf: 'flex-start', marginBottom: 4 };
+
+    const summaryBadgeStyle = { alignSelf: 'flex-start', fontSize: 12, fontWeight: 700, color: primaryDark, background: '#FCE4E2', padding: '6px 12px', borderRadius: 999 };
+
+    const chipStyle = (label, current, onClick) => ({
+      label, onClick,
+      style: label === current
+        ? { padding: '10px 12px', borderRadius: 999, border: '1.5px solid ' + primary, background: primary, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', flex: 1, textAlign: 'center' }
+        : { padding: '10px 12px', borderRadius: 999, border: '1.5px solid rgba(36,21,18,0.12)', background: '#fff', color: '#241512', fontSize: 13, fontWeight: 600, cursor: 'pointer', flex: 1, textAlign: 'center' },
+    });
+
+    const chipWrap = (label, current, onClick) => ({
+      label, onClick,
+      style: label === current
+        ? { padding: '10px 14px', borderRadius: 999, border: '1.5px solid ' + primary, background: primary, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }
+        : { padding: '10px 14px', borderRadius: 999, border: '1.5px solid rgba(36,21,18,0.12)', background: '#fff', color: '#241512', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' },
+    });
+
+    const directionOptions = [
+      { key: 'from_school', label: '학교 → 거점' },
+      { key: 'to_school', label: '거점 → 학교' },
+    ].map(d => {
+      const opt = chipWrap(d.label, s.direction === d.key ? d.label : null, () => this.setDirection(d.key));
+      opt.style = { ...opt.style, flex: 1, textAlign: 'center' };
+      return opt;
+    });
+
+    const schoolGateOptions = ['정문', '북문'].map(v => chipWrap(v, s.schoolGate, () => this.setSchoolGate(v)));
+    const cityOptions = ['대구역', '동대구역', '동성로', '대구공항', '서부정류장', '반월당', '기타'].map(v => chipWrap(v, s.cityPoint, () => this.setCityPoint(v)));
+
+    const isFromSchool = s.direction === 'from_school';
+    const start = isFromSchool ? s.schoolGate : s.cityPoint;
+    const dest = isFromSchool ? s.cityPoint : s.schoolGate;
+    const startOptions = isFromSchool ? schoolGateOptions : cityOptions;
+    const destOptions = isFromSchool ? cityOptions : schoolGateOptions;
+    const timeOptions = ['21:15', '21:30', '21:45'].map(v => chipStyle(v, s.time, () => this.setTime(v)));
+    const arrivalOptions = ['5분 이내', '10분 이내', '15분 이내'].map(v => chipStyle(v, s.arrival, () => this.setArrival(v)));
+
+    const toggleTrackStyle = { width: 44, height: 26, borderRadius: 999, background: s.genderOnly ? primary : 'rgba(36,21,18,0.15)', position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background .2s' };
+    const toggleKnobStyle = { width: 20, height: 20, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: s.genderOnly ? 21 : 3, transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' };
+
+    const avatarColors = [primary, '#2F8F5B', '#C98A1F', '#5B6472'];
+    const visibleCandidates = s.candidates
+      .filter(c => !s.genderOnly || c.gender === 'F')
+      .slice()
+      .sort((a, b) => this.toMinutes(a.time) - this.toMinutes(b.time));
+
+    const candidateItems = visibleCandidates.map((c, i) => {
+      const diff = Math.abs(this.toMinutes(c.time) - this.toMinutes(s.time));
+      const diffLabel = diff === 0 ? '같은 시간' : diff + '분 차이';
+      const initial = c.name.slice(0, 1);
+      const genderLabel = c.gender === 'F' ? '여학생' : '남학생';
+      const ratingLabel = c.rating.toFixed(1);
+      const groupLabel = c.groupCount + '/4';
+      const groupBadgeStyle = c.groupCount <= 1
+        ? { fontSize: 10, fontWeight: 700, color: '#8A7A76', background: '#F1ECE8', padding: '2px 7px', borderRadius: 999, display: 'inline-block', marginTop: 5 }
+        : { fontSize: 10, fontWeight: 700, color: primaryDark, background: '#FCE4E2', padding: '2px 7px', borderRadius: 999, display: 'inline-block', marginTop: 5 };
+      let rowStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', border: '1px solid rgba(36,21,18,0.08)', borderRadius: 14, padding: '12px 14px', marginBottom: 10 };
+      let buttonStyle, buttonLabel, buttonDisabled;
+      const baseBtnStyle = { padding: '8px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 };
+      const isFull = c.groupCount >= 4;
+      if (s.joinedId === c.id) {
+        rowStyle = { ...rowStyle, background: '#F2FAF5', border: '1px solid rgba(47,143,91,0.3)' };
+        buttonStyle = { ...baseBtnStyle, border: '1.5px solid #2F8F5B', background: '#2F8F5B', color: '#fff', cursor: 'pointer' };
+        buttonLabel = '채팅방 보기';
+        buttonDisabled = false;
+      } else if (s.joinedId !== null) {
+        buttonStyle = { ...baseBtnStyle, border: '1.5px solid rgba(36,21,18,0.15)', background: '#F5F1EE', color: '#8A7A76' };
+        buttonLabel = '참여 불가';
+        buttonDisabled = true;
+      } else if (isFull) {
+        buttonStyle = { ...baseBtnStyle, border: '1.5px solid rgba(36,21,18,0.15)', background: '#F5F1EE', color: '#8A7A76' };
+        buttonLabel = '정원 마감';
+        buttonDisabled = true;
+      } else {
+        buttonStyle = { ...baseBtnStyle, border: '1.5px solid ' + primary, background: '#fff', color: primary, cursor: 'pointer' };
+        buttonLabel = '신청';
+        buttonDisabled = false;
+      }
+      return {
+        name: c.name, college: c.college, genderLabel, ratingLabel, groupLabel, groupBadgeStyle, dest: c.dest, time: c.time, diffLabel, initial,
+        avatarStyle: { width: 40, height: 40, borderRadius: '50%', background: avatarColors[i % avatarColors.length], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, flexShrink: 0 },
+        rowStyle, buttonStyle, buttonLabel, buttonDisabled,
+        onApply: !buttonDisabled ? () => this.apply(c.id) : () => {},
+      };
+    });
+
+    const joinedCandidate = s.candidates.find(c => c.id === s.joinedId) || null;
+    const isJoined = !!joinedCandidate;
+    const activeRoom = joinedCandidate || s.candidates[0];
+    const roomSize = activeRoom.groupCount;
+    const isFull = roomSize >= 4;
+    const canGoChat = isJoined && (isFull || s.confirmed);
+    const needsAgreement = isJoined && !isFull && !s.confirmed;
+    const roomTitle = canGoChat ? '그룹이 확정됐어요' : '동행자를 모으는 중이에요';
+    const occupancyBadgeStyle = { fontSize: 11, fontWeight: 700, color: isFull ? '#2F8F5B' : primaryDark, background: isFull ? '#E6F5EC' : '#FCE4E2', padding: '3px 9px', borderRadius: 999 };
+    const agreeCardStyle = { background: '#FCE4E2', border: '1px solid rgba(200,16,46,0.15)', borderRadius: 16, padding: '16px 18px', marginBottom: 16 };
+    const extraMembers = Math.max(0, roomSize - 2);
+
+    const matchedAvatars = [
+      { initial: '나', bg: primary },
+      { initial: activeRoom.name.slice(0, 1), bg: avatarColors[1] },
+    ].concat(
+      Array.from({ length: extraMembers }, (_, i) => ({ initial: '+' + (i + 1), bg: avatarColors[(i + 2) % avatarColors.length] }))
+    ).map(a => ({
+      initial: a.initial,
+      style: { width: 36, height: 36, borderRadius: '50%', background: a.bg, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, marginLeft: -8, border: '2px solid #FBF5F1' },
+    }));
+
+    const perPerson = Math.round(12000 / roomSize / 100) * 100;
+    const total = perPerson * roomSize;
+
+    const bubbleLeftStyle = { alignSelf: 'flex-start', background: '#F1ECE8', color: '#241512', padding: '10px 14px', borderRadius: '16px 16px 16px 4px', fontSize: 13, maxWidth: '75%' };
+    const bubbleRightStyle = { alignSelf: 'flex-end', background: primary, color: '#fff', padding: '10px 14px', borderRadius: '16px 16px 4px 16px', fontSize: 13, maxWidth: '75%' };
+    const costCardStyle = { background: '#fff', border: '1.5px solid ' + primary, borderRadius: 16, padding: '16px 18px', marginBottom: 8 };
+
+    const ratingRowStyle = { background: '#fff', border: '1px solid rgba(36,21,18,0.08)', borderRadius: 14, padding: '14px 16px', marginBottom: 10 };
+    const noshowRowStyle = { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' };
+    const checkboxStyleFor = id => ({ width: 18, height: 18, borderRadius: 5, border: '1.5px solid ' + (s.noshow[id] ? primary : 'rgba(36,21,18,0.25)'), background: s.noshow[id] ? primary : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 800, flexShrink: 0 });
+    const ratingMembers = [{ id: 'host', name: activeRoom.name }].concat(
+      Array.from({ length: extraMembers }, (_, i) => ({ id: 'extra' + i, name: '동행자 ' + (i + 2) }))
+    ).map(m => ({
+      name: m.name,
+      stars: [1, 2, 3, 4, 5].map(n => ({
+        style: { fontSize: 22, cursor: 'pointer', color: (s.ratings[m.id] || 0) >= n ? '#C98A1F' : 'rgba(36,21,18,0.15)' },
+        onClick: () => this.setRating(m.id, n),
+      })),
+      noshowRowStyle,
+      checkboxStyle: checkboxStyleFor(m.id),
+      noshowCheckMark: s.noshow[m.id] ? '✓' : '',
+      toggleNoshowHandler: () => this.toggleNoshow(m.id),
+    }));
+
+    return {
+      isStep0: s.step === 0, isStep1: s.step === 1, isStep2: s.step === 2, isStep3: s.step === 3, isStep4: s.step === 4,
+      logoStyle, bigLogoStyle, tintBadgeStyle, primaryButtonStyle, disabledButtonStyle, backBtnStyle, summaryBadgeStyle, primaryDark,
+      progressDots,
+      goLogin: () => this.goTo(1),
+      goBack1: () => this.goTo(0),
+      goBack2: () => this.goTo(1),
+      goBack3: () => this.goTo(2),
+      start, dest, time: s.time,
+      directionOptions, startOptions, destOptions, timeOptions, arrivalOptions,
+      toggleTrackStyle, toggleKnobStyle, toggleGenderHandler: () => this.toggleGender(),
+      goRegister: () => this.goTo(2),
+      candidateItems,
+      canGoChat, needsAgreement, roomSize, isFull, roomTitle, occupancyBadgeStyle, agreeCardStyle,
+      confirmWithoutFullHandler: () => this.confirmWithoutFull(),
+      matchedAvatars,
+      bubbleLeftStyle, bubbleRightStyle, costCardStyle,
+      perPersonLabel: perPerson.toLocaleString(), totalLabel: total.toLocaleString(), groupSize: roomSize,
+      goConfirm: () => this.goTo(4),
+      ratingRowStyle, ratingMembers,
+      finishHandler: () => this.finish(),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -16,7 +16,8 @@
 ## 참고
 - 기획서: @docs/plan.md
 - 작업 체크리스트: @docs/checklist.md
-- 프로토타입: `docs/prototype/` (순수 HTML/CSS, 배포: https://gyu-young-04.github.io/hub/prototype/)
+- 디자인 시스템(확정안): @design_handoff_ridesplit/README.md — 레드/코랄(`#C8102E`) 기반, Pretendard 폰트. 실제 개발 시 색상·타이포그래피·간격 값은 이 문서 기준으로 맞출 것
+- 프로토타입: `docs/prototype/` (순수 HTML/CSS, 위 디자인 시스템 적용됨, 배포: https://gyu-young-04.github.io/hub/prototype/)
 
 ## 컨벤션
 - 커밋: Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `style:`, `test:`, `chore:`)
