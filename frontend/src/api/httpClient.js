@@ -28,8 +28,9 @@ export const getRecipes = ({ filter = 'all', level = 'all' } = {}) =>
 export const getRecipeDetail = (id) => request('GET', `/api/recipes/${id}`);
 export const cookDone = (recipeId, body) => request('POST', `/api/recipes/${recipeId}/cook-done`, body);
 
-export const getShoppingSets = () => request('GET', '/api/shopping/sets');
-export const getShoppingList = () => request('GET', '/api/shopping/list');
+export const getShoppingSets = ({ match = 'all', level = 'all' } = {}) =>
+  request('GET', `/api/shopping/sets?match=${encodeURIComponent(match)}&level=${encodeURIComponent(level)}`);
+export const getShoppingList = (setId) => request('GET', `/api/shopping/list?setId=${encodeURIComponent(setId ?? '')}`);
 
 export const getPrices = () => request('GET', '/api/prices');
 

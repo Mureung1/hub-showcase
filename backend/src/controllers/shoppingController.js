@@ -1,9 +1,10 @@
 import * as store from '../store.js';
 
 export function getShoppingSets(req, res) {
-  res.json(store.getShoppingSets());
+  const { match = 'all', level = 'all' } = req.query;
+  res.json(store.getShoppingSets({ match, level }));
 }
 
 export function getShoppingList(req, res) {
-  res.json(store.getShoppingList());
+  res.json(store.getShoppingList(req.query.setId));
 }

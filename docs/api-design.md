@@ -53,7 +53,7 @@
 | `DELETE` | `/api/fridge/:id` | 재고 아이템 삭제 |
 | `POST` | `/api/receipts` | 영수증 이미지 업로드 → OCR 인식 결과 반환 |
 | `POST` | `/api/receipts/:id/confirm` | 인식 결과(보정 포함) 확정 → 냉장고에 일괄 반영 |
-| `GET` | `/api/recipes?filter=maxUse\|complete100&level=beginner` | 냉장고 재고 매칭 기반 레시피 목록 |
+| `GET` | `/api/recipes?filter=all\|full\|few&level=all\|beginner\|mid` | 냉장고 재고 매칭 기반 레시피 목록 |
 | `GET` | `/api/recipes/:id` | 레시피 상세(재료·애드온·조리 스텝) |
 | `POST` | `/api/recipes/:id/cook-done` | 조리 완료 → 재고 일괄 차감(사용량 보정 값 포함 가능) |
 
@@ -81,8 +81,8 @@
 
 | 화면 동작 | 요청(메서드+경로) | 서버 처리 | DB | 응답 | 화면 변화 |
 |---|---|---|---|---|---|
-| 레시피 화면 진입(기본 필터) | `GET /api/recipes?filter=maxUse` | 현재 재고와 `recipe_ingredients` 대조해 보유율(`recipeRatio`) 계산, 정렬 | `recipes` JOIN `recipe_ingredients` + 현재 `fridge_items` 대조 | 레시피 배열(보유율·임박재료 소진 뱃지 포함) | 레시피 카드 리스트 렌더 |
-| 필터 전환(100% 완성/난이도) | `GET /api/recipes?filter=complete100&level=beginner` | 조건에 맞는 레시피만 필터링 | 동일 | 필터링된 배열 | 리스트 갱신 |
+| 레시피 화면 진입(기본 필터) | `GET /api/recipes?filter=all` | 현재 재고와 `recipe_ingredients` 대조해 보유율(`recipeRatio`) 계산, 정렬 | `recipes` JOIN `recipe_ingredients` + 현재 `fridge_items` 대조 | 레시피 배열(보유율·임박재료 소진 뱃지 포함) | 레시피 카드 리스트 렌더 |
+| 필터 전환(바로 가능/적은 재료) | `GET /api/recipes?filter=full\|few&level=beginner\|mid` | 조건에 맞는 레시피만 필터링 | 동일 | 필터링된 배열 | 리스트 갱신 |
 | 레시피 카드 클릭 | `GET /api/recipes/:id` | 재료·애드온·조리 스텝 조회 | `recipes`, `recipe_ingredients`, `recipe_addons`, `recipe_steps` SELECT | 레시피 상세 객체 | 레시피 상세 화면 렌더 |
 
 ### 4.4 요리완료 재고차감
@@ -191,7 +191,7 @@ receipt_items (영수증 인식 품목)
 
 | 기능 | 엔드포인트(안) | 핵심 로직 |
 |---|---|---|
-| 7.1 추천 재료 세트 | `GET /api/shopping-sets?filter=maxVariety\|complete100&level=` | 현재 재고 + 목표 레시피 수를 최대화하는 최소 구매 조합 계산(장바구니 최적화) |
+| 7.1 추천 재료 세트 | `GET /api/shopping-sets?filter=maxVariety\|full&level=` | 현재 재고 + 목표 레시피 수를 최대화하는 최소 구매 조합 계산(장바구니 최적화) |
 | 7.2 유통기한 임박 알림 | `GET /api/fridge/alerts` (+ 서버 푸시: 예 FCM) | `expiry_date` 임박 항목 조회 후 크론으로 푸시 발송 |
 | 7.3 일주일 식단 루틴 추천 | `GET /api/meal-plan/weekly` | 레시피 매칭 결과가 없을 때 대체 루틴(일반 식단 템플릿) 반환 |
 | 7.4 식자재 가격 정보 | `GET /api/prices?ingredientId=` | 외부 시세 API를 주기적으로 수집해 `price_snapshots`에 캐싱 후 서빙(실시간 직접 호출은 비용/속도상 비권장) |

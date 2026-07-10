@@ -3,6 +3,8 @@ import { api } from '../api';
 import { tipDefs } from '../data/tips';
 import { buildDeductionState, buildSteps } from '../logic/fridgeLogic';
 
+/* eslint-disable react-refresh/only-export-components */
+
 // 화면 흐름 전체(냉장고 상태 + 현재 화면 스택 + 조리/식단/영수증 플로우의 임시 상태)를
 // 하나의 컨텍스트로 관리한다. index.html 프로토타입의 전역 var들을 그대로 옮긴 것에 가깝다 —
 // 화면이 17개라 컨텍스트를 기능별로 잘게 쪼갤 수도 있지만, 조리 흐름(레시피 상세→조리모드→
@@ -60,7 +62,11 @@ export function AppProvider({ children }) {
   // ── 재료 상세 바텀시트 ──
   const [sheetItemId, setSheetItemId] = useState(null);
   const openSheet = useCallback((id) => setSheetItemId(id), []);
-  const closeSheet = useCallback(() => setSheetItemId(null), []);
+  // id를 넘기면 "그 id의 시트가 지금도 열려 있을 때만" 닫는다 — 비동기 작업(삭제 등) 도중
+  // 사용자가 다른 아이템의 시트를 열었다면 그걸 대신 닫아버리지 않도록 함수형 업데이트로 최신 상태와 비교.
+  const closeSheet = useCallback((id) => {
+    setSheetItemId((current) => (id === undefined || current === id ? null : current));
+  }, []);
 
   // ── 왕초보 팁 바텀시트 ──
   const [tipKey, setTipKey] = useState(null);
@@ -167,6 +173,13 @@ export function AppProvider({ children }) {
     go('meal-shopping-list');
   }, [weekPlan, go]);
 
+  // ── 추천 재료 세트 → 장보기 리스트 ──
+  const [selectedSetId, setSelectedSetId] = useState(null);
+  const openShoppingList = useCallback((setId) => {
+    setSelectedSetId(setId);
+    go('shopping-list');
+  }, [go]);
+
   const value = {
     screen, go, back, tab, activeTab,
     fridge, refreshFridge, addFridgeItem, updateFridgeItem, deleteFridgeItem,
@@ -178,6 +191,7 @@ export function AppProvider({ children }) {
     cookIdx, startCooking, cookStep,
     deductionState, editingDeduction, setEditingDeduction, adjustDeduction, openCookDone, finishCooking,
     pickedDishes, togglePick, weekPlan, buildMealPlan, mealShoppingList, openMealShoppingList,
+    selectedSetId, openShoppingList,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

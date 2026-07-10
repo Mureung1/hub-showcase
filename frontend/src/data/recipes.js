@@ -2,6 +2,7 @@
 export const recipeOrder = [
   'tofu-braise', 'tofu-pan', 'kimchi-jjigae', 'jeyuk-bokkeum',
   'egg-steam', 'egg-roll', 'kimchi-fried-rice', 'pajeon', 'omelette',
+  'kimchi-pork-jjim',
 ];
 
 export const recipes = {
@@ -158,6 +159,25 @@ export const recipes = {
       { emoji: '🥚', text: '계란을 풀고<br>우유를 살짝 섞어요', sum: '계란물을 만든다', tips: [] },
       { emoji: '🍳', text: '약불로 달군 팬에 부어<br>반숙으로 익혀요', sum: '반숙으로 익힌다', tips: ['heat'] },
       { emoji: '🧅', text: '양파를 올리고<br>반으로 접으면 완성!', sum: '접어서 마무리한다', tips: ['knife'] },
+    ],
+  },
+  'kimchi-pork-jjim': {
+    name: '돼지고기 김치찜', emoji: '🍖', level: 'high', levelLabel: '🔴 상급자', time: 40,
+    note: '초벌 볶음 후 오래 끓여 완성하는 난이도 있는 요리예요',
+    ingredients: [
+      { id: 'pork', amt: '200g' },
+      { id: 'kimchi', amt: '1/3통' },
+      { id: 'onion', amt: '1/4쪽' },
+      { id: 'pa', amt: '1/4단' },
+      { id: 'soy', amt: '2큰술', untracked: true },
+      { name: '설탕', amt: '1큰술', untracked: true },
+    ],
+    addons: [],
+    steps: [
+      { emoji: '🔪', text: '돼지고기와 김치를<br>큼직하게 썰어 준비해요', sum: '재료를 손질한다', tips: ['knife'] },
+      { emoji: '🍳', text: '팬에 김치를 먼저 볶아<br>기름이 배게 해요', sum: '김치를 먼저 볶는다', tips: ['oil'] },
+      { emoji: '🍲', text: '돼지고기와 양념을 넣고<br>물을 부어 약불로 30분 이상 끓여요', sum: '약불로 오래 끓인다', tips: ['heat', 'season'] },
+      { emoji: '🥬', text: '대파를 올려<br>한소끔 더 끓이면 완성!', sum: '대파를 올려 마무리한다', tips: ['knife'] },
     ],
   },
 };

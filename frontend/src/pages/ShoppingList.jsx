@@ -3,10 +3,10 @@ import { useApp } from '../context/AppContext';
 import { api } from '../api';
 
 export default function ShoppingList() {
-  const { back, go } = useApp();
+  const { back, go, selectedSetId } = useApp();
   const [list, setList] = useState(null);
 
-  useEffect(() => { api.getShoppingList().then(setList); }, []);
+  useEffect(() => { api.getShoppingList(selectedSetId).then(setList); }, [selectedSetId]);
   if (!list) return null;
 
   return (

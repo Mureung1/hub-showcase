@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 
 const DEFAULT_EXPIRY = { onion: '2026-07-17', pork: '2026-07-10', tofu: '2026-07-13' };
@@ -12,6 +12,17 @@ function ddayLabel(isoDate) {
 
 export default function ExpiryCheck() {
   const { back, receipt, expiryOverrides, setExpiryOverride, confirmReceipt } = useApp();
+  const [confirming, setConfirming] = useState(false);
+
+  const handleConfirm = async () => {
+    if (confirming) return;
+    setConfirming(true);
+    try {
+      await confirmReceipt();
+    } finally {
+      setConfirming(false);
+    }
+  };
 
   useEffect(() => {
     if (!receipt) return;
@@ -66,7 +77,9 @@ export default function ExpiryCheck() {
         )}
       </div>
       <div className="bottom-fixed">
-        <button className="btn primary" onClick={confirmReceipt}>냉장고에 담기 ({matchedCount})</button>
+        <button className="btn primary" disabled={confirming} onClick={handleConfirm}>
+          {confirming ? '담는 중…' : `냉장고에 담기 (${matchedCount})`}
+        </button>
       </div>
     </section>
   );
