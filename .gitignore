@@ -4,3 +4,19 @@ dist/
 vite-dev.log
 vite-dev.err
 vite-dev.pid
+
+# OS/archive byproducts
+.DS_Store
+**/.DS_Store
+__MACOSX/
+**/__MACOSX/
+
+# Local temporary design references
+.tmp-devchat-design-ref/
+
+# Keep only webfont files that are referenced by the app
+src/components/fonts/**/OTF/
+src/components/fonts/**/TTF/
+src/components/fonts/**/eot/
+src/components/fonts/**/woff/
+src/components/fonts/**/Web/index.html
