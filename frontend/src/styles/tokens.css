@@ -1,0 +1,46 @@
+/*
+ * Bridge 디자인 토큰
+ * 출처: .claude/skills/bridge-design/references/extracted-source.md (확정 규칙만 반영)
+ * 임의의 값 추가 금지 — 새 색/폰트가 필요하면 스킬 문서를 먼저 갱신할 것.
+ */
+:root {
+  /* 색상 팔레트 */
+  --color-primary-teal: #11434c;
+  --color-accent-terracotta: #964735;
+  --color-teal-mid: #2d5a64;
+  --color-teal-light: #a2d0db;
+  --color-ink: #1b1c1a;
+  --color-body-slate: #40484a;
+  --color-muted-gray: #71787b;
+  --color-heading-brown: #463b2d;
+  --color-cool-gray: #c0c8ca;
+  --color-border-warm: #e4e2de;
+  --color-paper-bg: #fbf9f5;
+  --color-paper-white: #ffffff;
+  --color-cream: #f5f3ef;
+  --color-tan-dot: #d5c4b1;
+  --color-warn-rust: #772f1f;
+  --color-toast-bg: #30312e;
+  --color-toast-fg: #f2f0ed;
+  --color-selection: #bceaf6;
+  --color-hint-gray: #9a9a9a;
+  --color-caption-gray: #a9adad;
+  --color-toast-icon: #a1ced9;
+
+  /* 사이드바 */
+  --sidebar-bg: rgba(239, 238, 234, 0.82);
+  --sidebar-blur: 6px;
+  --sidebar-width: 236px;
+
+  /* 폰트 스택 */
+  --font-body: 'Work Sans', system-ui, sans-serif;
+  --font-heading: 'Source Serif 4', serif;
+  --font-letter: 'Literata', serif;
+  --font-wordmark: 'Bricolage Grotesque', sans-serif;
+  --font-icon: 'Material Symbols Outlined';
+
+  /* 사용자 커스터마이즈 기본값 (props) */
+  --seal-color: #964735;
+  --letter-font: var(--font-letter);
+  --lined: 1; /* 1 = true */
+}
