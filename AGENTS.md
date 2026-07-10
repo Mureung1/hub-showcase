@@ -64,6 +64,7 @@ Use Korean Conventional Commit messages:
 - Main MVP plan: `docs/plan.md`.
 - User flow: `docs/user-flow.md`.
 - Design and handoff: `docs/design`.
+- ICU design workflow skill: `skills/design/SKILL.md`.
 - Feature specs: `docs/features`.
 - Static prototype: `prototype.html` and `prototype.css`.
 

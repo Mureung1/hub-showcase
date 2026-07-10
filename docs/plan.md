@@ -1,10 +1,10 @@
-﻿# DevChat MVP 개발 계획
+# DevChat MVP 개발 계획
 
 ## 1. 프로젝트 개요
 
 DevChat은 새로운 기술을 배워야 하지만 무엇부터 시작해야 할지 막막한 사용자를 위한 AI 코딩 튜터 데스크탑 앱입니다. 사용자에게 노출되는 데스크톱 앱 이름은 `ICU`이며, `I CODE U`의 약자입니다. ChatGPT처럼 자연스럽게 질문하면서도, AI가 커리큘럼을 제안하고 오른쪽 코드 에디터에서 바로 실습, 실행, 검증까지 이어지는 학습 경험을 목표로 합니다.
 
-현재 저장소는 DevChat/ICU 전체 MVP 중 프로젝트 소개와 커리큘럼 데모 UI를 구현한 React 프론트엔드 단계입니다. 여기에 Product Design 기반 화면 설계와 Figma 1차 프레임을 추가했으며, 최종 제품은 Electron 기반 데스크탑 앱으로 확장하는 것을 목표로 합니다.
+현재 저장소는 DevChat/ICU 전체 MVP 중 프로젝트 소개와 커리큘럼 데모 UI를 React + TypeScript 기반으로 정리한 프론트엔드 단계입니다. 여기에 Product Design 기반 화면 설계, Figma 라이트/다크 프레임, 정적 HTML/CSS 프로토타입을 추가했으며, 최종 제품은 Electron 기반 데스크탑 앱으로 확장하는 것을 목표로 합니다.
 
 사용자 관점의 상세 흐름은 [DevChat 사용자 흐름](./user-flow.md)을 참고합니다.
 제품 화면 설계와 Figma 핸드오프 기준은 [DevChat Design](./design/README.md)을 참고합니다.
@@ -137,7 +137,7 @@ AI 튜터는 검색된 공식 문서 근거가 있을 때만 확정적으로 답
 | --- | --- | --- |
 | 데스크탑 프레임워크 | Electron | Windows/macOS/Linux 데스크탑 앱 배포 |
 | UI | React + TypeScript | 채팅, 에디터, 상태 기반 UI 구현 |
-| 스타일링 | Tailwind CSS | 빠른 UI 개발, 라이트/다크모드 대응 |
+| 스타일링 | CSS Modules + `src/styles` 토큰 | 컴포넌트 단위 스타일링, 라이트/다크모드 토큰 관리 |
 | 코드 에디터 | Monaco Editor | VS Code 기반 편집 경험 |
 | 상태 관리 | Zustand | 가벼운 전역 상태 관리 |
 | 로컬 DB | SQLite, better-sqlite3 | 진도, 오답, 문제, 설정 저장 |
@@ -240,7 +240,7 @@ MVP에서는 다음 항목을 제외하고 2차 기능으로 분리합니다.
 
 ## 11. 현재 구현 상태
 
-현재 저장소에는 Vite + React 기반 소개 화면이 구현되어 있습니다.
+현재 저장소에는 Vite + React + TypeScript 기반 소개 화면과 ICU 제품 설계 문서가 정리되어 있습니다.
 
 - DevChat 프로젝트 주제 소개
 - 새 기술 입력 기반 로컬 커리큘럼 데모
@@ -248,10 +248,13 @@ MVP에서는 다음 항목을 제외하고 2차 기능으로 분리합니다.
 - AI 튜터 채팅과 코드 에디터 형태의 미리보기
 - README의 프로젝트 소개와 실행 방법 정리
 - `docs/design/` 디자인 산출물 작성
-- Product Design 컨셉 이미지 3개 저장
-- Figma 1차 프레임 2개 생성
-  - Today Learning Hub
-  - Learning Workspace IDE
+- Figma 기반 ICU 라이트/다크 화면 이미지 반영
+  - Today Learning Hub Light/Dark
+  - Learning Workspace IDE Light/Dark
+- React + TypeScript + TSX 개발 환경 정리
+- React Router, Zustand, CSS Modules 기준 확정
+- `AGENTS.md` 개발 컨벤션 작성
+- `skills/design/SKILL.md` 디자인 작업 가이드 정리
 
 선택된 제품 화면 방향은 `Today Learning Hub + Learning Workspace IDE` 조합입니다. 앱 첫 화면은 AI 채팅만 여는 구조가 아니라 오늘 학습, 학습 목록, 복습 항목, 이어하기 액션을 관리하는 허브로 시작합니다. 학습을 시작하면 커리큘럼, AI 튜터, 코드 에디터, 실행 결과가 결합된 IDE형 워크스페이스로 이동합니다.
 
