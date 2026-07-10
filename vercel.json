@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/index.js": {
+      "regions": ["icn1"],
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api?vercelSubpath=$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

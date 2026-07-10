@@ -80,6 +80,22 @@ app.use(express.json({ limit: '15mb' }))
 // TODO(공개 확대 시): CORS 정책 자리 (예: cors 미들웨어로 허용 오리진 제한).
 // 현재는 프론트/프록시가 동일 오리진으로 서빙되어 생략.
 
+// Vercel 배포에서는 vercel.json의 rewrite가 /api/* 전체를 이 함수 하나(api/index.js)로 보낸다.
+// destination이 실제로 원래 하위 경로(/api/gemini 등)를 그대로 유지해주는지는 Vercel 내부
+// 라우팅 구현에 따라 달라질 수 있어, 안전하게 원래 경로를 vercelSubpath 쿼리 파라미터로도 함께
+// 실어 보내고(rewrite destination 참고), 여기서 req.url을 그 값으로 복원한다. 이미 원래 경로가
+// 유지되고 있었다면 이 복원은 같은 값으로 덮어쓰는 것이라 무해하다. 로컬 개발/Render에서는
+// 이 rewrite 자체가 없어 vercelSubpath가 없으므로 이 분기를 타지 않는다.
+if (process.env.VERCEL) {
+  app.use((req, res, next) => {
+    const subpath = req.query?.vercelSubpath
+    if (typeof subpath === 'string') {
+      req.url = `/api/${subpath}`
+    }
+    next()
+  })
+}
+
 app.post('/api/gemini', async (req, res) => {
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) {
@@ -318,9 +334,12 @@ app.post('/api/fooddb', async (req, res) => {
   }
 })
 
-// 프로덕션(Render)에서는 이 서버가 빌드된 프론트(dist)까지 함께 서빙한다.
-// 개발 환경(vite dev + node server)에서는 이 블록이 실행되지 않고 프록시 프론트는 vite dev server가 담당한다.
-if (process.env.NODE_ENV === 'production') {
+// Render처럼 이 서버 프로세스 하나가 빌드된 프론트(dist)까지 함께 서빙하는 배포에서만 켠다.
+// 로컬 개발(vite dev + node server)에서는 NODE_ENV가 production이 아니라 이 블록이 실행되지
+// 않고, 프론트는 vite dev server가 담당한다. Vercel(process.env.VERCEL)에서는 정적 파일과 SPA
+// 폴백을 vercel.json/Vercel 플랫폼이 직접 처리하므로 이 블록이 필요 없다 — 오히려 이 함수의
+// 배포 번들에는 dist/가 없어 sendFile이 깨질 수 있으므로 명시적으로 건너뛴다.
+if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
   const distDir = path.join(__dirname, '..', 'dist')
 
   app.use(express.static(distDir))
@@ -336,6 +355,14 @@ if (process.env.NODE_ENV === 'production') {
   })
 }
 
-app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`)
-})
+// Vercel 서버리스 환경(process.env.VERCEL은 Vercel이 배포 시 자동으로 심어주는 값)에서는
+// app.listen()으로 직접 서버를 띄우지 않고 Express 앱 자체를 핸들러로 export한다 — api/index.js가
+// 이 export를 그대로 가져다 쓴다. 로컬 개발(npm run server)과 Render 배포에서는 지금처럼
+// listen해서 동작한다(둘 다 process.env.VERCEL이 없다).
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server listening on http://localhost:${PORT}`)
+  })
+}
+
+export default app

@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Vercel CLI local project link (project/org IDs, not secrets, but local-only)
+.vercel
+
 # Environment variables
 .env
 
