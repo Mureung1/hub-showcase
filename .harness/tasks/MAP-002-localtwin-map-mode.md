@@ -104,3 +104,4 @@ verify:
 - [x] 실제 지명과 도로 정보가 사라지지 않았는가?
 - [x] 건물과 점포 prefab을 같은 toggle로 묶지 않았는가?
 - [x] 지도 수치나 geometry를 실제 이상으로 주장하지 않았는가?
+- [ ] 후속: MapLibre bundle code splitting은 측정 후 별도 Task로 진행한다.

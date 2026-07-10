@@ -100,3 +100,4 @@ verify:
 - [x] 실제로 확인한 POI만 사용했는가?
 - [x] 기존 category/radius/layer 동작을 보존했는가?
 - [x] 관련 없는 디자인을 변경하지 않았는가?
+- [ ] 후속: 실제 API adapter 연결 후 demo fixture 수치를 공식 데이터로 교체한다.
