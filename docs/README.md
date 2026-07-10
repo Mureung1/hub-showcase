@@ -58,6 +58,7 @@ Root companion docs:
 | AY-PLE Product Brief | [product/ay-ple-product-brief.md](product/ay-ple-product-brief.md) | Draft |
 | AY-PLE Review Workspace Scenario | [product/ay-ple-review-workspace-scenario.md](product/ay-ple-review-workspace-scenario.md) | Draft |
 | AY-PLE Design System Direction | [product/ay-ple-design-system.md](product/ay-ple-design-system.md) | Draft |
+| AY-PLE 4주 개발 백로그 | [product/ay-ple-development-backlog.md](product/ay-ple-development-backlog.md) | Draft v0.1 |
 | Codex Runtime Isolation | [architecture/codex-runtime-isolation.md](architecture/codex-runtime-isolation.md) | Draft |
 | Runtime Harness 구현 지도 | [architecture/runtime-harness-implementation-map.md](architecture/runtime-harness-implementation-map.md) | 활성 |
 | Runtime Harness and Codex Adapter Foundation PRD | [prds/2026-07-09-runtime-harness-codex-adapter-foundation.md](prds/2026-07-09-runtime-harness-codex-adapter-foundation.md) | Ready for agent |

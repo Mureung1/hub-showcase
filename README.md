@@ -14,6 +14,7 @@ AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입
 | 제품 기획 | [AY-PLE Product Brief](docs/product/ay-ple-product-brief.md) | 문제 정의, 제품 테제, MVP 방향 |
 | 제품 기획 | [Review Workspace Scenario](docs/product/ay-ple-review-workspace-scenario.md) | 사용자 시나리오와 화면 단위 prototype 구조 |
 | 제품 기획 | [AY-PLE Design System Direction](docs/product/ay-ple-design-system.md) | 밝은 학업 워크스페이스 중심의 브랜드/UI 기준 |
+| 개발 계획 | [AY-PLE 4주 개발 백로그](docs/product/ay-ple-development-backlog.md) | 4주 개발 로드맵, 우선순위, 다음 주 확정 Task와 기능 후보 |
 | 기술 구조 | [Codex Runtime Isolation](docs/architecture/codex-runtime-isolation.md) | Codex runtime 격리와 실행 경계 |
 | 기술 구조 | [Runtime Harness 구현 지도](docs/architecture/runtime-harness-implementation-map.md) | Runtime Harness 구현 이후의 모듈 지도와 parity/gap 정리 |
 | Spike 계획 | [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | Codex 실행환경 소유권 PoC 계획 |
