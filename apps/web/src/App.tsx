@@ -23,7 +23,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./styles/global.css";
 
 type Category = "카페" | "음식점" | "베이커리" | "편의점";
-type MarketKey = "연남" | "홍대" | "신촌" | "성수";
+type MarketKey = "연남" | "홍대" | "합정";
 
 type Market = {
   name: string;
@@ -220,175 +220,89 @@ const markets: Record<MarketKey, Market> = {
       { name: "홍익대학교", longitude: 126.9252, latitude: 37.5515 },
     ],
   },
-  신촌: {
-    name: "신촌역 상권",
-    address: "서대문구 연세로 일대",
-    center: [126.9369, 37.5552],
-    score: 71,
-    grade: "상위 37%",
-    footfall: "45,210명",
-    workPopulation: "28,760명",
-    residentPopulation: "12,543명",
-    opening: 5,
-    closing: 3,
-    demand: [25, 18, 10, 7, 9, 29, 58, 80, 84, 79, 70, 61, 40, 27],
-    insight: "점심과 저녁 모두 수요가 있으며, 음식점 후보지의 회전율을 함께 확인해야 합니다.",
-    stores: [
-      {
-        name: "아티제 신촌역점",
-        category: "카페",
-        distance: "54m",
-        score: 71,
-        longitude: 126.9371941,
-        latitude: 37.5556231,
-      },
-      {
-        name: "빽다방",
-        category: "카페",
-        distance: "80m",
-        score: 70,
-        longitude: 126.937103,
-        latitude: 37.5559021,
-      },
-      {
-        name: "버거옥 신촌직영점",
-        category: "음식점",
-        distance: "79m",
-        score: 67,
-        longitude: 126.9361666,
-        latitude: 37.5556038,
-      },
-      {
-        name: "무교동낙지 신촌점",
-        category: "음식점",
-        distance: "81m",
-        score: 66,
-        longitude: 126.9361938,
-        latitude: 37.5556549,
-      },
-      {
-        name: "더베이크 본사",
-        category: "베이커리",
-        distance: "54m",
-        score: 64,
-        longitude: 126.9371306,
-        latitude: 37.555646,
-      },
-      {
-        name: "로이드브랑제리",
-        category: "베이커리",
-        distance: "70m",
-        score: 63,
-        longitude: 126.9362743,
-        latitude: 37.555585,
-      },
-      {
-        name: "CU",
-        category: "편의점",
-        distance: "102m",
-        score: 60,
-        longitude: 126.936838,
-        latitude: 37.5542886,
-      },
-      {
-        name: "GS25",
-        category: "편의점",
-        distance: "137m",
-        score: 59,
-        longitude: 126.9363592,
-        latitude: 37.556353,
-      },
-    ],
-    landmarks: [
-      { name: "신촌역", longitude: 126.9369, latitude: 37.5552 },
-      { name: "연세대학교", longitude: 126.9385, latitude: 37.562 },
-      { name: "연세로", longitude: 126.9361, latitude: 37.556 },
-    ],
-  },
-  성수: {
-    name: "성수동 카페거리",
-    address: "성동구 연무장길 일대",
-    center: [127.0554, 37.5447],
-    score: 77,
-    grade: "상위 24%",
-    footfall: "38,950명",
-    workPopulation: "31,420명",
-    residentPopulation: "8,970명",
-    opening: 10,
-    closing: 4,
-    demand: [16, 12, 10, 11, 20, 43, 72, 81, 79, 73, 76, 81, 63, 39],
-    insight: "평일 업무 수요와 주말 체류 수요가 함께 나타나는 성장형 상권입니다.",
+  합정: {
+    name: "합정역 상권",
+    address: "마포구 양화로 45 일대",
+    center: [126.914, 37.5505],
+    score: 72,
+    grade: "상위 34%",
+    footfall: "49,880명",
+    workPopulation: "22,310명",
+    residentPopulation: "11,740명",
+    opening: 8,
+    closing: 5,
+    demand: [21, 14, 9, 8, 13, 33, 60, 76, 82, 86, 88, 83, 61, 38],
+    insight: "홍대와 연남의 방문 수요가 이어지고, 저녁 음식점 경쟁이 강한 연결형 상권입니다.",
     stores: [
       {
         name: "스타벅스",
         category: "카페",
-        distance: "25m",
-        score: 77,
-        longitude: 127.0554497,
-        latitude: 37.5444766,
+        distance: "3m",
+        score: 72,
+        longitude: 126.9140273,
+        latitude: 37.5504836,
       },
       {
-        name: "이디야커피",
+        name: "카페 산티아고",
         category: "카페",
-        distance: "127m",
-        score: 76,
-        longitude: 127.0539654,
-        latitude: 37.5446897,
-      },
-      {
-        name: "스케줄 성수",
-        category: "음식점",
-        distance: "29m",
+        distance: "158m",
         score: 71,
-        longitude: 127.0554581,
-        latitude: 37.5444425,
+        longitude: 126.9152735,
+        latitude: 37.5514951,
       },
       {
-        name: "일일향",
+        name: "스파카 나폴리 합정",
         category: "음식점",
-        distance: "50m",
-        score: 70,
-        longitude: 127.0551317,
-        latitude: 37.5443045,
+        distance: "228m",
+        score: 69,
+        longitude: 126.9156154,
+        latitude: 37.5489059,
       },
       {
-        name: "뚜레쥬르",
-        category: "베이커리",
-        distance: "165m",
+        name: "스케줄합정",
+        category: "음식점",
+        distance: "247m",
         score: 68,
-        longitude: 127.057184,
-        latitude: 37.5451012,
+        longitude: 126.91617,
+        latitude: 37.5490965,
       },
       {
-        name: "오로라 베이커리 카페",
+        name: "롤링핀",
         category: "베이커리",
-        distance: "242m",
-        score: 67,
-        longitude: 127.0577327,
-        latitude: 37.5435847,
+        distance: "31m",
+        score: 66,
+        longitude: 126.913958,
+        latitude: 37.5507747,
       },
       {
-        name: "이마트24 트랜드랩 성수점",
-        category: "편의점",
-        distance: "29m",
-        score: 63,
-        longitude: 127.055458,
-        latitude: 37.544443,
+        name: "야미요밀 Vegan Bakery",
+        category: "베이커리",
+        distance: "161m",
+        score: 65,
+        longitude: 126.9153065,
+        latitude: 37.5515126,
       },
       {
-        name: "세븐일레븐",
+        name: "GS25 합정프리미엄점",
         category: "편의점",
-        distance: "109m",
+        distance: "198m",
         score: 62,
-        longitude: 127.0542191,
-        latitude: 37.544953,
+        longitude: 126.915214,
+        latitude: 37.549008,
+      },
+      {
+        name: "CU 마포한강푸르지오점",
+        category: "편의점",
+        distance: "178m",
+        score: 61,
+        longitude: 126.912061,
+        latitude: 37.55005,
       },
     ],
     landmarks: [
-      { name: "성수역", longitude: 127.0556, latitude: 37.5446 },
-      { name: "대림창고", longitude: 127.0546, latitude: 37.5442 },
-      { name: "어니언 성수", longitude: 127.0562, latitude: 37.5436 },
-      { name: "서울숲", longitude: 127.0372, latitude: 37.5445 },
+      { name: "합정역", longitude: 126.9139, latitude: 37.5495 },
+      { name: "메세나폴리스", longitude: 126.9138, latitude: 37.5509 },
+      { name: "양화진문화원", longitude: 126.9115, latitude: 37.5488 },
     ],
   },
 };
@@ -441,11 +355,11 @@ function isTestEnvironment() {
 }
 
 export function App() {
-  const [marketKey, setMarketKey] = useState<MarketKey>("성수");
+  const [marketKey, setMarketKey] = useState<MarketKey>("연남");
   const [category, setCategory] = useState<Category>("카페");
   const [radius, setRadius] = useState(300);
   const [activeHour, setActiveHour] = useState(6);
-  const [selectedStore, setSelectedStore] = useState<string>("스타벅스");
+  const [selectedStore, setSelectedStore] = useState<string>("아스테룸 433-10");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [layer, setLayer] = useState<"density" | "demand">("density");
@@ -1059,7 +973,7 @@ export function App() {
                 <span>점포 위치</span>
                 <b>OpenStreetMap POI snapshot</b>
                 <p>
-                  2026.07.10에 조회한 카페·음식점·베이커리·편의점 이름과 좌표입니다. 전체 점포와
+                  2026.07.11에 조회한 카페·음식점·베이커리·편의점 이름과 좌표입니다. 전체 점포와
                   영업 상태를 완전하게 보장하지는 않습니다.
                 </p>
               </div>

@@ -22,9 +22,10 @@ describe("App", () => {
   it("updates the selected candidate and opens the major analysis dialogs", () => {
     render(<App />);
 
+    fireEvent.change(screen.getByLabelText("상권 선택"), { target: { value: "합정" } });
     fireEvent.click(screen.getByRole("button", { name: "음식점" }));
-    expect(screen.getAllByText("스케줄 성수")).toHaveLength(2);
-    expect(screen.getByText("음식점 · 성동구 연무장길 일대")).toBeInTheDocument();
+    expect(screen.getAllByText("스파카 나폴리 합정")).toHaveLength(2);
+    expect(screen.getByText("음식점 · 마포구 양화로 45 일대")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "500m" }));
     expect(screen.getByText("반경 500m")).toBeInTheDocument();
