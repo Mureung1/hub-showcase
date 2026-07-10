@@ -1,1 +1,1 @@
-# hub
+https://app.notion.com/p/AI-Task-3999ae31e6ce8022bcabcf9da7233436?source=copy_link#3999ae31e6ce808ebb6bec1da950b573# hub
