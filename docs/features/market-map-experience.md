@@ -174,6 +174,21 @@ Canonical GeoJSON 예시:
 
 반경 검색은 분석 중심점과 점포 좌표 사이의 Haversine 거리를 사용한다.
 
+### 후보 점포 prefab
+
+분석 후보 점포는 실제 좌표 위에 작은 low-poly storefront prefab으로 표시한다. prefab의 facade는 실제 촬영 외관을 복제한 것이 아니라 지도에서 업종과 선택 상태를 빠르게 구분하기 위한 시각화다.
+
+```mermaid
+flowchart LR
+  point["실제 점포 좌표"] --> marker["MapLibre HTML marker"]
+  category["업종"] --> palette["지붕 · 차양 · 간판 palette"]
+  marker --> prefab["창문 · 문 · 간판 · 화분 prefab"]
+  palette --> prefab
+  prefab --> selection["선택 · hover · focus 상태"]
+```
+
+배경 건물은 수천 개를 동시에 렌더링하므로 단순 extrusion을 유지한다. 지붕·차양·창문·문·간판·화분 디테일은 후보 점포에만 적용해 지도 조작 성능과 정보 가독성을 지킨다.
+
 ## 9. 유동인구 Layer
 
 ### 입력
