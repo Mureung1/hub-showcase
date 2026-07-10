@@ -9,7 +9,6 @@ import {
   isRuntimeRunId,
   type RuntimeRunDebugLogEntry,
   type RuntimeRunLog,
-  type RuntimeRunLogPersistence,
   type RuntimeRunLogPersistenceMutationResult,
 } from '@ay-ple/runtime-core'
 import {
@@ -32,6 +31,9 @@ import {
   resolveRuntimeHistoryDirectory,
   resolveRuntimeHistoryLimits,
 } from './server.js'
+import {
+  CheckpointFailingRuntimeRunLogPersistence,
+} from './testing/checkpoint-failing-persistence.js'
 import { withTestServer } from './testing/test-server.js'
 
 type ServerRunLog = {
@@ -50,40 +52,6 @@ class InitialSaveFailingPersistence
     _log: RuntimeRunLog,
   ): Promise<RuntimeRunLogPersistenceMutationResult> {
     throw new Error('Injected initial persistence failure')
-  }
-}
-
-class CheckpointFailingPersistence implements RuntimeRunLogPersistence {
-  private readonly delegate = new InMemoryRuntimeRunLogPersistence()
-  private checkpointFailed = false
-
-  load(): Promise<RuntimeRunLog[]> {
-    return this.delegate.load()
-  }
-
-  applyRetention(): Promise<RuntimeRunLogPersistenceMutationResult> {
-    return this.delegate.applyRetention()
-  }
-
-  save(
-    log: RuntimeRunLog,
-  ): Promise<RuntimeRunLogPersistenceMutationResult> {
-    if (
-      this.checkpointFailed ||
-      (log.status === 'running' &&
-        log.events.some((event) => event.type === 'output_delta'))
-    ) {
-      this.checkpointFailed = true
-      return Promise.reject(
-        new Error('Injected checkpoint persistence failure'),
-      )
-    }
-
-    return this.delegate.save(log)
-  }
-
-  remove(runId: string): Promise<void> {
-    return this.delegate.remove(runId)
   }
 }
 
@@ -184,7 +152,9 @@ test('runtime API returns the stable persistence error when initial save fails',
 })
 
 test('runtime API fails persistence mutations closed while degraded reads remain available', async () => {
-  const persistence = new CheckpointFailingPersistence()
+  const persistence = new CheckpointFailingRuntimeRunLogPersistence(
+    new InMemoryRuntimeRunLogPersistence(),
+  )
   const kernel = await AgentRuntimeKernel.create({
     adapters: [new FakeRuntimeAdapter({ delayMs: 300 })],
     persistence,
