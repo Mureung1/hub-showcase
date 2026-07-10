@@ -5,12 +5,14 @@ export const specFields = [
   { name: "targetRole", label: "목표 직무" },
   { name: "grade", label: "학년" },
   { name: "gpa", label: "학점" },
-  { name: "certificates", label: "자격증" },
-  { name: "languageScore", label: "어학 점수" },
+  { name: "certificates", label: "자격증 (선택)" },
+  { name: "languageScore", label: "어학 점수 (선택)" },
   { name: "projects", label: "프로젝트 경험" },
   { name: "activities", label: "대외활동/인턴 경험" },
-  { name: "skills", label: "보유 기술" },
+  { name: "skills", label: "보유 기술 / 활용 도구 (선택)" },
 ];
+
+const optionalSpecFieldNames = new Set(["certificates", "languageScore", "skills"]);
 
 export const initialSpec = specFields.reduce(
   (spec, field) => ({ ...spec, [field.name]: "" }),
@@ -111,7 +113,11 @@ export const clearCareerAnalysis = (userId) => {
 };
 
 export const getMissingSpecFields = (spec) => {
-  return specFields.filter((field) => !String(spec?.[field.name] || "").trim());
+  return specFields.filter(
+    (field) =>
+      !optionalSpecFieldNames.has(field.name) &&
+      !String(spec?.[field.name] || "").trim()
+  );
 };
 
 export const isCareerSpecComplete = (spec) => {
@@ -156,20 +162,19 @@ export const createCareerAnalysis = ({ user, spec }) => {
       skillScore
   );
 
+  const hasSkills = countItems(spec.skills) > 0;
+  const hasCertificatesOrLanguage = certificateScore + languageScore > 0;
+
   const strengths = [
     projectScore >= 12 ? "프로젝트 경험이 목표 직무와 연결될 가능성이 높습니다." : null,
-    skillScore >= 8 ? "보유 기술 스택이 분석에 충분히 반영되었습니다." : null,
-    certificateScore + languageScore >= 10
-      ? "자격증과 어학 정보가 기본 역량 근거로 활용됩니다."
+    hasSkills ? "보유 기술이나 활용 도구가 추가 역량 근거로 반영되었습니다." : null,
+    hasCertificatesOrLanguage
+      ? "자격증과 어학 정보가 선택 역량 근거로 활용됩니다."
       : null,
   ].filter(Boolean);
 
   const gaps = [
     projectScore < 12 ? "프로젝트 경험을 더 구체적으로 적으면 준비도가 올라갑니다." : null,
-    skillScore < 8 ? "목표 직무와 맞는 기술 스택을 추가 등록해 주세요." : null,
-    certificateScore + languageScore < 10
-      ? "자격증 또는 어학 점수를 보완하면 기본 역량 점수가 올라갑니다."
-      : null,
   ].filter(Boolean);
 
   return {

@@ -24,7 +24,7 @@ const specDisplayFields = [
   { name: "languageScore", label: "어학 점수" },
   { name: "projects", label: "프로젝트 경험" },
   { name: "activities", label: "대외활동 / 인턴 경험" },
-  { name: "skills", label: "보유 기술" },
+  { name: "skills", label: "보유 기술 / 활용 도구" },
 ];
 
 const formatDate = (dateValue) => {
@@ -635,7 +635,7 @@ function MyPage() {
           ) : (
             <EmptyBlock
               title="등록된 스펙 정보가 없습니다."
-              text="목표 직무, 프로젝트, 기술 역량을 입력하면 AI 분석과 미션 추천에 활용됩니다."
+              text="목표 직무와 경험을 입력하면 AI 분석과 미션 추천에 활용됩니다. 기술 / 활용 도구는 선택 입력입니다."
               actionLabel="스펙 등록하기"
               onAction={() => navigate(routes.specs)}
             />

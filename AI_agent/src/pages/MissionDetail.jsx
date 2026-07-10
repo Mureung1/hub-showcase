@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import Header from "../components/layout/Header";
 import { getSession } from "../features/auth/authStorage";
@@ -27,12 +27,9 @@ const saveProgress = (userId, missionId, progress) => {
 function MissionDetail() {
   const session = getSession();
   const missionId = window.location.pathname.split("/").filter(Boolean)[1];
+  const userId = session?.id || "";
   const mission = getMissionById(missionId);
-  const initialProgress = useMemo(
-    () => readProgress(session?.id, missionId),
-    [session?.id, missionId]
-  );
-  const [checkedItems, setCheckedItems] = useState(initialProgress);
+  const [checkedItems, setCheckedItems] = useState(() => readProgress(userId, missionId));
 
   const progressRate = mission
     ? Math.round((checkedItems.length / mission.checklist.length) * 100)
