@@ -172,13 +172,14 @@ export type StartRuntimeRunInput = {
   prompt: string
 }
 
-export type RuntimeRunLogPersistenceSaveResult = {
+export type RuntimeRunLogPersistenceMutationResult = {
   removedRunIds: string[]
 }
 
 export type RuntimeRunLogPersistence = {
   load(): Promise<RuntimeRunLog[]>
-  save(log: RuntimeRunLog): Promise<RuntimeRunLogPersistenceSaveResult>
+  applyRetention(): Promise<RuntimeRunLogPersistenceMutationResult>
+  save(log: RuntimeRunLog): Promise<RuntimeRunLogPersistenceMutationResult>
   remove(runId: string): Promise<void>
 }
 
@@ -280,6 +281,10 @@ export class AgentRuntimeKernel {
 
       kernel.removePersistedRunIds(saveResult.removedRunIds)
     }
+
+    const retentionResult = await options.persistence.applyRetention()
+
+    kernel.removePersistedRunIds(retentionResult.removedRunIds)
 
     return kernel
   }
@@ -443,6 +448,35 @@ export class AgentRuntimeKernel {
 
       return cloneLog(log)
     })
+  }
+
+  async clearTerminalHistory(): Promise<string[]> {
+    const targetRunIds = [...this.logs.values()]
+      .filter((log) => isTerminalRuntimeRunStatus(log.status))
+      .map((log) => log.runId)
+    const clearedRunIds: string[] = []
+
+    for (const runId of targetRunIds) {
+      const cleared = await this.withRunMutation(runId, async () => {
+        const log = this.logs.get(runId)
+
+        if (!log || !isTerminalRuntimeRunStatus(log.status)) {
+          return false
+        }
+
+        await this.finishRunCheckpointing(log)
+        await this.persistence.remove(runId)
+        this.removePersistedRunIds([runId])
+
+        return true
+      })
+
+      if (cleared) {
+        clearedRunIds.push(runId)
+      }
+    }
+
+    return clearedRunIds
   }
 
   private async runAdapter(
@@ -711,10 +745,6 @@ export class AgentRuntimeKernel {
     const transitionedLog = cloneLog(log)
     transitionedLog.status = transition.type
 
-    if (transition.type === 'completed') {
-      transitionedLog.completedAt = this.timestamp()
-    }
-
     if (transition.type === 'failed') {
       transitionedLog.error = transition.error
     }
@@ -724,6 +754,11 @@ export class AgentRuntimeKernel {
       transition,
       false,
     )
+
+    if (isTerminalRuntimeRunStatus(transition.type)) {
+      transitionedLog.completedAt = transitionEvent.timestamp
+    }
+
     const saveResult = await this.persistence.save(cloneLog(transitionedLog))
 
     if (checkpointState) {
@@ -860,6 +895,13 @@ export class AgentRuntimeKernel {
 
   private removePersistedRunIds(runIds: string[]): void {
     for (const runId of runIds) {
+      const checkpointState = this.runCheckpoints.get(runId)
+
+      if (checkpointState) {
+        this.pauseCheckpointing(checkpointState)
+        checkpointState.requested = false
+      }
+
       this.logs.delete(runId)
       this.runCheckpoints.delete(runId)
     }

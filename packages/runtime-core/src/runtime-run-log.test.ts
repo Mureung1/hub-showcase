@@ -163,6 +163,33 @@ test('parseRuntimeRunLog accepts output and terminal transitions while cancellin
   assert.deepEqual(parseRuntimeRunLog(log), log)
 })
 
+test('parseRuntimeRunLog remains compatible with legacy cancelled and failed logs without completedAt', () => {
+  const cancelledLog = createStartedLog()
+  cancelledLog.status = 'cancelled'
+  cancelledLog.events.push({
+    type: 'cancelled',
+    sequence: 2,
+    runId,
+    adapter,
+    timestamp: completedAt,
+    reason: 'legacy cancellation',
+  })
+  const failedLog = createStartedLog()
+  failedLog.status = 'failed'
+  failedLog.error = 'legacy failure'
+  failedLog.events.push({
+    type: 'failed',
+    sequence: 2,
+    runId,
+    adapter,
+    timestamp: completedAt,
+    error: 'legacy failure',
+  })
+
+  assert.deepEqual(parseRuntimeRunLog(cancelledLog), cancelledLog)
+  assert.deepEqual(parseRuntimeRunLog(failedLog), failedLog)
+})
+
 function createStartedLog(): RuntimeRunLog {
   return {
     runId,

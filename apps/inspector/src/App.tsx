@@ -11,6 +11,7 @@ import type {
   RuntimeRunSummary,
 } from '@ay-ple/runtime-core'
 import type { CodexCapabilitySlot } from '@ay-ple/runtime-codex/capabilities'
+import { Trash2 } from 'lucide-react'
 import './App.css'
 
 type HealthState = 'checking' | 'ok' | 'error'
@@ -57,6 +58,7 @@ function App() {
   const [history, setHistory] = useState<RuntimeRunSummary[]>([])
   const [runLog, setRunLog] = useState<RuntimeRunLog | null>(null)
   const [activeStatus, setActiveStatus] = useState<InspectorRunStatus>('idle')
+  const [isClearingHistory, setIsClearingHistory] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
   const terminalRunIdsRef = useRef(new Set<string>())
@@ -291,10 +293,54 @@ function App() {
     }
   }
 
+  async function handleClearTerminalHistory() {
+    if (isClearingHistory || !hasTerminalHistory) {
+      return
+    }
+
+    setIsClearingHistory(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/runtime/runs', {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error(`History clear failed: ${response.status}`)
+      }
+
+      const data = (await response.json()) as { clearedRunIds: string[] }
+      const latestHistory = await fetchHistory()
+
+      setHistory(latestHistory)
+
+      for (const runId of data.clearedRunIds) {
+        terminalRunIdsRef.current.delete(runId)
+      }
+
+      if (activeRunId && data.clearedRunIds.includes(activeRunId)) {
+        setActiveRunId(null)
+        setActivePrompt('')
+        setOutput('')
+        setEvents([])
+        setRunLog(null)
+        setActiveStatus('idle')
+      }
+    } catch (clearError) {
+      setError(toErrorMessage(clearError))
+    } finally {
+      setIsClearingHistory(false)
+    }
+  }
+
   const activeAdapter = adapters.find((adapter) => adapter.name === selectedAdapter)
   const isFakeAdapter = selectedAdapter === 'fake'
   const isFakeFailureScenario = isFakeAdapter && fakeScenario === 'failure'
   const canStartRun = !isActiveRun && prompt.trim().length > 0
+  const hasTerminalHistory = history.some((run) =>
+    isTerminalRuntimeRunStatus(run.status),
+  )
   const terminalMessage = getTerminalMessage(activeStatus, events, runLog)
   const visibleLog =
     runLog ??
@@ -516,9 +562,22 @@ function App() {
         </section>
 
         <section className="history-panel" aria-labelledby="history-title">
-          <div className="panel-header">
+          <div className="panel-header history-header">
             <h2 id="history-title">History</h2>
-            <span>{history.length}</span>
+            <div className="history-header-actions">
+              <span className="history-count">{history.length}</span>
+              <button
+                aria-busy={isClearingHistory}
+                aria-label="Clear terminal history"
+                className="history-clear"
+                disabled={!hasTerminalHistory || isClearingHistory}
+                title="Clear terminal history"
+                type="button"
+                onClick={() => void handleClearTerminalHistory()}
+              >
+                <Trash2 aria-hidden="true" size={16} />
+              </button>
+            </div>
           </div>
 
           <div className="history-list">

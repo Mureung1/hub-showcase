@@ -9,6 +9,7 @@ const cancellationPrompt = 'cancel this prompt'
 const failurePrompt = 'fail this prompt'
 const restartPrompt = 'restore this completed run'
 const interruptedPrompt = 'recover this interrupted stream'
+const activeClearPrompt = 'keep streaming while history clears'
 
 type RunLogResponseMatch = { prompt: string } | { runId: string }
 
@@ -108,7 +109,7 @@ test('Inspector exposes deterministic fake run lifecycle through real HTTP and S
     JSON.stringify(failedLog, null, 2),
   )
 
-  const historyItems = history.getByRole('button')
+  const historyItems = history.locator('.history-item')
 
   await expect(historyItems).toHaveCount(3)
   await expect(historyItems.filter({ hasText: 'completed' })).toHaveCount(1)
@@ -135,6 +136,177 @@ test('Inspector exposes deterministic fake run lifecycle through real HTTP and S
     'output_delta',
     'completed',
   ])
+
+  const clearButton = history.getByRole('button', {
+    name: 'Clear terminal history',
+  })
+
+  await expect(clearButton).toHaveAttribute('title', 'Clear terminal history')
+  await expect(clearButton.locator('svg.lucide-trash-2')).toHaveCount(1)
+  await expect(clearButton).toHaveText('')
+  await expect(clearButton).toBeEnabled()
+  await expect(clearButton).toHaveCSS('width', '32px')
+  await expect(clearButton).toHaveCSS('height', '32px')
+  await expectLocatorsNotToOverlap(
+    history.getByRole('heading', { name: 'History' }),
+    clearButton,
+  )
+  await expectLocatorsNotToOverlap(history.locator('.history-count'), clearButton)
+
+  let releaseClearRequest = () => {}
+  const clearRequestGate = new Promise<void>((resolve) => {
+    releaseClearRequest = resolve
+  })
+
+  await page.route('**/api/runtime/runs', async (route) => {
+    if (route.request().method() === 'DELETE') {
+      await clearRequestGate
+    }
+
+    await route.continue()
+  })
+
+  const clearRequest = clearTerminalHistory(page, clearButton)
+
+  await expect(clearButton).toBeDisabled()
+  await expect(clearButton).toHaveAttribute('aria-busy', 'true')
+  releaseClearRequest()
+
+  const clearedRunIds = await clearRequest
+
+  await page.unroute('**/api/runtime/runs')
+
+  expect(new Set(clearedRunIds)).toEqual(
+    new Set([completedRun.runId, cancelledRun.runId, failedRun.runId]),
+  )
+  await expect(historyItems).toHaveCount(0)
+  await expect(history.locator('.history-count')).toHaveText('0')
+  await expect(clearButton).toBeDisabled()
+  await expect(clearButton).toHaveAttribute('aria-busy', 'false')
+  await expect(transcript).toContainText('No transcript yet')
+  await expect(events.getByRole('listitem')).toHaveCount(0)
+  await expect(runLog.locator('pre')).toHaveText('{}')
+  await expect(run).toContainText('Ready')
+})
+
+test('Inspector clears terminal history without interrupting the selected active run', async ({
+  inspectorPage: page,
+}) => {
+  const run = page.getByRole('region', { name: 'Run', exact: true })
+  const transcript = page.getByRole('region', { name: 'Transcript' })
+  const events = page.getByRole('region', { name: 'Events' })
+  const runLog = page.getByRole('region', { name: 'Run Log' })
+  const history = page.getByRole('region', { name: 'History' })
+  const historyItems = history.locator('.history-item')
+  const clearButton = history.getByRole('button', {
+    name: 'Clear terminal history',
+  })
+  const eventStreamRequests = trackRuntimeEventStreamRequests(page)
+
+  await expect(page.getByText('API connected', { exact: true })).toBeVisible()
+  await expect(clearButton).toBeDisabled()
+  await run.getByLabel('Fake Scenario').selectOption('failure')
+
+  const terminalRun = await startFakeRun(page, 'terminal history to clear')
+
+  await expectEventTypes(events, ['started', 'failed'])
+  await expect(historyItems).toHaveCount(1)
+  await expect(clearButton).toBeEnabled()
+
+  await run.getByLabel('Fake Scenario').selectOption('normal')
+  const activeRun = await startFakeRun(page, activeClearPrompt)
+  const activeEventPath = `/api/runtime/runs/${activeRun.runId}/events`
+
+  await expect(run).toContainText('Running')
+  await expect(transcript).toContainText(activeClearPrompt)
+  await expectEventTypes(events, ['started'])
+  await expect(runLog.locator('pre')).toContainText(activeRun.runId)
+  await expect(run.getByRole('button', { name: 'Cancel' })).toBeEnabled()
+
+  const clearedRunIds = await clearTerminalHistory(page, clearButton)
+
+  expect(clearedRunIds).toEqual([terminalRun.runId])
+  await expect(historyItems).toHaveCount(1)
+  await expect(historyItems).toContainText(activeRun.runId)
+  await expect(historyItems).toContainText('running')
+  await expect(clearButton).toBeDisabled()
+  await expect(run).toContainText('Running')
+  await expect(transcript).toContainText(activeClearPrompt)
+  await expectEventTypes(events, ['started'])
+  await expect(runLog.locator('pre')).toContainText(activeRun.runId)
+  await expect(run.getByRole('button', { name: 'Cancel' })).toBeEnabled()
+  expect(eventStreamRequests.count(activeEventPath)).toBe(1)
+
+  await expectEventTypes(events, ['started', 'output_delta'])
+  await expect(transcript).toContainText(
+    `Fake runtime received: "${activeClearPrompt}".`,
+  )
+  await expectEventTypes(events, [
+    'started',
+    'output_delta',
+    'output_delta',
+    'completed',
+  ])
+  await expect(run).toContainText('Completed')
+  await expect(transcript).toContainText(
+    'This deterministic response proves the inspector can observe a run end to end.',
+  )
+  expect(eventStreamRequests.count(activeEventPath)).toBe(1)
+  await expect(clearButton).toBeEnabled()
+
+  expect(await clearTerminalHistory(page, clearButton)).toEqual([
+    activeRun.runId,
+  ])
+  await expect(historyItems).toHaveCount(0)
+  await expect(history.locator('.history-count')).toHaveText('0')
+  await expect(clearButton).toBeDisabled()
+  await expect(transcript).toContainText('No transcript yet')
+  await expect(events.getByRole('listitem')).toHaveCount(0)
+  await expect(runLog.locator('pre')).toHaveText('{}')
+})
+
+test('Inspector clearing a selected terminal run does not close another run\'s active SSE', async ({
+  inspectorPage: page,
+}) => {
+  const run = page.getByRole('region', { name: 'Run', exact: true })
+  const history = page.getByRole('region', { name: 'History' })
+  const clearButton = history.getByRole('button', {
+    name: 'Clear terminal history',
+  })
+  const eventStreamRequests = trackRuntimeEventStreamRequests(page)
+
+  await run.getByLabel('Fake Scenario').selectOption('failure')
+  const terminalRun = await startFakeRun(page, 'select terminal during active run')
+
+  await expect(clearButton).toBeEnabled()
+
+  await run.getByLabel('Fake Scenario').selectOption('normal')
+  const activeRun = await startFakeRun(page, 'active SSE survives terminal selection')
+  const activeEventPath = `/api/runtime/runs/${activeRun.runId}/events`
+
+  await expect(run).toContainText('Running')
+  await history
+    .locator('.history-item')
+    .filter({ hasText: terminalRun.runId })
+    .click()
+  await expect(run).toContainText('Failed')
+
+  const activeTerminalResponse = waitForRunLogResponse(page, {
+    runId: activeRun.runId,
+  })
+
+  expect(await clearTerminalHistory(page, clearButton)).toEqual([
+    terminalRun.runId,
+  ])
+  expect(eventStreamRequests.count(activeEventPath)).toBe(1)
+
+  const activeTerminalLog = await readRunLog(await activeTerminalResponse)
+
+  expect(activeTerminalLog.status).toBe('completed')
+  expect(activeTerminalLog.output).toContain(
+    'This deterministic response proves the inspector can observe a run end to end.',
+  )
+  expect(eventStreamRequests.count(activeEventPath)).toBe(1)
 })
 
 test('Inspector restores completed output, events, and debug evidence after server restart', async ({
@@ -196,7 +368,7 @@ test('Inspector restores completed output, events, and debug evidence after serv
   await expect(page.getByText('API connected', { exact: true })).toBeVisible()
 
   const restoredHistoryItem = history
-    .getByRole('button')
+    .locator('.history-item')
     .filter({ hasText: completedRun.runId })
 
   await expect(restoredHistoryItem).toHaveCount(1)
@@ -329,7 +501,7 @@ test('Inspector recovers checkpointed streaming evidence after server restart', 
   expect((await restoredHistoryResponse).status()).toBe(200)
   await expect(page.getByText('API connected', { exact: true })).toBeVisible()
 
-  const historyItems = history.getByRole('button')
+  const historyItems = history.locator('.history-item')
   const recoveredHistoryItem = historyItems.filter({
     hasText: interruptedRun.runId,
   })
@@ -426,6 +598,75 @@ async function readRunLog(response: Response): Promise<RuntimeRunLog> {
   const body = (await response.json()) as { run: RuntimeRunLog }
 
   return body.run
+}
+
+async function clearTerminalHistory(
+  page: Page,
+  clearButton: Locator,
+): Promise<string[]> {
+  const clearResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'DELETE' &&
+      new URL(response.url()).pathname === '/api/runtime/runs',
+  )
+  const refreshedHistoryPromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname === '/api/runtime/runs',
+  )
+
+  await clearButton.click()
+
+  const clearResponse = await clearResponsePromise
+  const refreshedHistoryResponse = await refreshedHistoryPromise
+
+  expect(clearResponse.status()).toBe(200)
+  expect(refreshedHistoryResponse.status()).toBe(200)
+
+  const body = (await clearResponse.json()) as { clearedRunIds: string[] }
+
+  return body.clearedRunIds
+}
+
+async function expectLocatorsNotToOverlap(
+  first: Locator,
+  second: Locator,
+): Promise<void> {
+  const firstBox = await first.boundingBox()
+  const secondBox = await second.boundingBox()
+
+  expect(firstBox).not.toBeNull()
+  expect(secondBox).not.toBeNull()
+
+  if (!firstBox || !secondBox) {
+    return
+  }
+
+  expect(
+    firstBox.x + firstBox.width <= secondBox.x ||
+      secondBox.x + secondBox.width <= firstBox.x ||
+      firstBox.y + firstBox.height <= secondBox.y ||
+      secondBox.y + secondBox.height <= firstBox.y,
+  ).toBe(true)
+}
+
+function trackRuntimeEventStreamRequests(page: Page): {
+  count: (pathname: string) => number
+} {
+  const pathnames: string[] = []
+
+  page.on('request', (request) => {
+    const pathname = new URL(request.url()).pathname
+
+    if (request.method() === 'GET' && pathname.endsWith('/events')) {
+      pathnames.push(pathname)
+    }
+  })
+
+  return {
+    count: (pathname) =>
+      pathnames.filter((candidate) => candidate === pathname).length,
+  }
 }
 
 async function expectEventTypes(

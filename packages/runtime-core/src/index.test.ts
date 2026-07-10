@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   AgentRuntimeKernel,
   isRuntimeRunId,
+  isTerminalRuntimeRunStatus,
   parseRuntimeRunId,
   type AgentRuntimeAdapter,
   type RuntimeCheckpointScheduler,
@@ -241,6 +242,33 @@ class AdapterConfirmedPushRuntimeAdapter extends PushRuntimeAdapter {
   readonly cancellationMode = 'adapter_confirmed'
 }
 
+class PostTerminalDebugAdapter implements AgentRuntimeAdapter {
+  readonly name = 'post-terminal'
+
+  private readonly allowFinishDeferred = createDeferred<void>()
+
+  async *run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
+    await waitForAbort(input.signal)
+    yield {
+      type: 'debug_log',
+      entries: [
+        {
+          timestamp: '2026-07-10T01:00:00.000Z',
+          source: 'test-runtime',
+          kind: 'post_terminal_evidence',
+          message: 'evidence received after terminal cancellation',
+        },
+      ],
+    }
+    await this.allowFinishDeferred.promise
+    yield { type: 'completed' }
+  }
+
+  allowFinish(): void {
+    this.allowFinishDeferred.resolve()
+  }
+}
+
 class ManualCheckpointScheduler implements RuntimeCheckpointScheduler {
   readonly scheduledDelays: number[] = []
 
@@ -288,12 +316,22 @@ class ManualCheckpointScheduler implements RuntimeCheckpointScheduler {
 
 class RecordingRuntimeRunLogPersistence implements RuntimeRunLogPersistence {
   readonly savedLogs: RuntimeRunLog[] = []
+  readonly operations: string[] = []
 
   private readonly logs = new Map<string, RuntimeRunLog>()
+  private retentionRemovedRunIds: string[] = []
+  private terminalSaveRemovedRunIds: string[] = []
+  private removeFailureRunId: string | undefined
   private nextSaveGate:
     | {
         release: Promise<void>
         started: (log: RuntimeRunLog) => void
+      }
+    | undefined
+  private nextRemoveGate:
+    | {
+        release: Promise<void>
+        started: (runId: string) => void
       }
     | undefined
 
@@ -304,10 +342,24 @@ class RecordingRuntimeRunLogPersistence implements RuntimeRunLogPersistence {
   }
 
   async load(): Promise<RuntimeRunLog[]> {
+    this.operations.push('load')
     return [...this.logs.values()].map(cloneTestLog)
   }
 
+  async applyRetention(): Promise<{ removedRunIds: string[] }> {
+    this.operations.push('applyRetention')
+    const removedRunIds = this.retentionRemovedRunIds
+    this.retentionRemovedRunIds = []
+
+    for (const runId of removedRunIds) {
+      this.logs.delete(runId)
+    }
+
+    return { removedRunIds: [...removedRunIds] }
+  }
+
   async save(log: RuntimeRunLog): Promise<{ removedRunIds: string[] }> {
+    this.operations.push(`save:${log.runId}:${log.status}`)
     const saveGate = this.nextSaveGate
     this.nextSaveGate = undefined
 
@@ -321,11 +373,48 @@ class RecordingRuntimeRunLogPersistence implements RuntimeRunLogPersistence {
     this.savedLogs.push(savedLog)
     this.logs.set(log.runId, savedLog)
 
-    return { removedRunIds: [] }
+    const removedRunIds = isTerminalRuntimeRunStatus(log.status)
+      ? this.terminalSaveRemovedRunIds
+      : []
+
+    if (removedRunIds.length > 0) {
+      this.terminalSaveRemovedRunIds = []
+
+      for (const runId of removedRunIds) {
+        this.logs.delete(runId)
+      }
+    }
+
+    return { removedRunIds: [...removedRunIds] }
   }
 
   async remove(runId: string): Promise<void> {
+    this.operations.push(`remove:${runId}`)
+    const removeGate = this.nextRemoveGate
+    this.nextRemoveGate = undefined
+
+    if (removeGate) {
+      removeGate.started(runId)
+      await removeGate.release
+    }
+
+    if (this.removeFailureRunId === runId) {
+      throw new Error(`remove failed for ${runId}`)
+    }
+
     this.logs.delete(runId)
+  }
+
+  pruneOnRetention(runIds: string[]): void {
+    this.retentionRemovedRunIds = [...runIds]
+  }
+
+  pruneOnNextTerminalSave(runIds: string[]): void {
+    this.terminalSaveRemovedRunIds = [...runIds]
+  }
+
+  failRemove(runId: string): void {
+    this.removeFailureRunId = runId
   }
 
   blockNextSave(): {
@@ -336,6 +425,24 @@ class RecordingRuntimeRunLogPersistence implements RuntimeRunLogPersistence {
     const started = createDeferred<RuntimeRunLog>()
 
     this.nextSaveGate = {
+      release: release.promise,
+      started: started.resolve,
+    }
+
+    return {
+      release: () => release.resolve(),
+      started: started.promise,
+    }
+  }
+
+  blockNextRemove(): {
+    release: () => void
+    started: Promise<string>
+  } {
+    const release = createDeferred<void>()
+    const started = createDeferred<string>()
+
+    this.nextRemoveGate = {
       release: release.promise,
       started: started.resolve,
     }
@@ -362,6 +469,10 @@ class GatedRuntimeRunLogPersistence implements RuntimeRunLogPersistence {
 
   async load(): Promise<RuntimeRunLog[]> {
     return [...this.logs.values()].map(cloneTestLog)
+  }
+
+  async applyRetention(): Promise<{ removedRunIds: string[] }> {
+    return { removedRunIds: [] }
   }
 
   async save(log: RuntimeRunLog): Promise<{ removedRunIds: string[] }> {
@@ -537,6 +648,270 @@ test('AgentRuntimeKernel does not become ready or invoke adapters before recover
   assert.equal((await persistence.load())[0]?.status, 'failed')
 })
 
+test('AgentRuntimeKernel applies startup retention after every interrupted run is recovered and removes pruned memory records', async () => {
+  const interruptedLog = createInterruptedLog({
+    runId: '11111111-1111-4111-8111-111111111111',
+    prompt: 'recover before retention',
+    startedAt: '2026-07-10T01:00:00.000Z',
+    status: 'running',
+  })
+  const oldTerminalLog = createCompletedLog({
+    runId: '22222222-2222-4222-8222-222222222222',
+    prompt: 'prune after recovery',
+    startedAt: '2026-07-10T00:00:00.000Z',
+  })
+  const persistence = new RecordingRuntimeRunLogPersistence([
+    interruptedLog,
+    oldTerminalLog,
+  ])
+  persistence.pruneOnRetention([oldTerminalLog.runId])
+
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [new InvocationCountingAdapter()],
+    now: () => new Date('2026-07-10T03:00:00.000Z'),
+    persistence,
+  })
+
+  assert.deepEqual(persistence.operations.slice(0, 3), [
+    'load',
+    `save:${interruptedLog.runId}:failed`,
+    'applyRetention',
+  ])
+  assert.equal(kernel.getRunLog(oldTerminalLog.runId), undefined)
+  assert.equal(kernel.getRunLog(interruptedLog.runId)?.status, 'failed')
+  assert.deepEqual(
+    kernel.listRuns().map((run) => run.runId),
+    [interruptedLog.runId],
+  )
+})
+
+test('AgentRuntimeKernel synchronizes terminal-save retention before resolving the terminal run', async () => {
+  const oldTerminalLog = createCompletedLog({
+    runId: '11111111-1111-4111-8111-111111111111',
+    prompt: 'old terminal run',
+    startedAt: '2026-07-10T00:00:00.000Z',
+  })
+  const persistence = new RecordingRuntimeRunLogPersistence([oldTerminalLog])
+  persistence.pruneOnNextTerminalSave([oldTerminalLog.runId])
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [new HappyPathAdapter()],
+    generateRunId: () => '22222222-2222-4222-8222-222222222222',
+    persistence,
+  })
+
+  const startedRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'new terminal run',
+  })
+  const terminalRun = await kernel.waitForRun(startedRun.runId)
+
+  assert.equal(terminalRun.status, 'completed')
+  assert.equal(kernel.getRunLog(oldTerminalLog.runId), undefined)
+  assert.deepEqual(
+    kernel.listRuns().map((run) => run.runId),
+    [startedRun.runId],
+  )
+})
+
+test('AgentRuntimeKernel clears the invocation-time terminal snapshot only after disk removal while an active run continues', async () => {
+  const terminalLog = createCompletedLog({
+    runId: '11111111-1111-4111-8111-111111111111',
+    prompt: 'clear this terminal run',
+    startedAt: '2026-07-10T00:00:00.000Z',
+  })
+  const activeRunId = '22222222-2222-4222-8222-222222222222'
+  const adapter = new PushRuntimeAdapter()
+  const persistence = new RecordingRuntimeRunLogPersistence([terminalLog])
+  const scheduler = new ManualCheckpointScheduler()
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    checkpointScheduler: scheduler,
+    generateRunId: () => activeRunId,
+    persistence,
+  })
+  const activeRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'continue through clear',
+  })
+  const publishedTypes: string[] = []
+  kernel.subscribeToRun(activeRun.runId, 1, (event) => {
+    publishedTypes.push(event.type)
+  })
+  const removeGate = persistence.blockNextRemove()
+  let clearResolved = false
+  const clearPromise = kernel.clearTerminalHistory().then((clearedRunIds) => {
+    clearResolved = true
+    return clearedRunIds
+  })
+
+  assert.equal(await removeGate.started, terminalLog.runId)
+  assert.equal(clearResolved, false)
+  assert.deepEqual(kernel.getRunLog(terminalLog.runId), terminalLog)
+
+  adapter.push(activeRun.runId, {
+    type: 'output_delta',
+    delta: 'streamed while clear awaited disk',
+  })
+  await waitForRunLog(
+    () => kernel.getRunLog(activeRun.runId),
+    (log) => log.output === 'streamed while clear awaited disk',
+  )
+  adapter.push(activeRun.runId, { type: 'completed' })
+  const terminalActiveRun = await kernel.waitForRun(activeRun.runId)
+
+  assert.equal(terminalActiveRun.status, 'completed')
+  assert.deepEqual(publishedTypes, ['output_delta', 'completed'])
+  assert.equal(clearResolved, false)
+
+  removeGate.release()
+  const clearedRunIds = await clearPromise
+
+  assert.deepEqual(clearedRunIds, [terminalLog.runId])
+  assert.equal(kernel.getRunLog(terminalLog.runId), undefined)
+  assert.deepEqual(kernel.getRunLog(activeRun.runId), terminalActiveRun)
+  assert.deepEqual(
+    (await persistence.load()).map((log) => log.runId),
+    [activeRun.runId],
+  )
+  assert.equal(scheduler.pendingTaskCount(), 0)
+})
+
+test('AgentRuntimeKernel keeps disk and memory aligned for successful removals before a later clear failure', async () => {
+  const firstTerminalLog = createCompletedLog({
+    runId: '11111111-1111-4111-8111-111111111111',
+    prompt: 'remove successfully',
+    startedAt: '2026-07-10T00:00:00.000Z',
+  })
+  const secondTerminalLog = createCompletedLog({
+    runId: '22222222-2222-4222-8222-222222222222',
+    prompt: 'fail removal',
+    startedAt: '2026-07-10T00:01:00.000Z',
+  })
+  const persistence = new RecordingRuntimeRunLogPersistence([
+    firstTerminalLog,
+    secondTerminalLog,
+  ])
+  persistence.failRemove(secondTerminalLog.runId)
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [],
+    persistence,
+  })
+
+  await assert.rejects(
+    kernel.clearTerminalHistory(),
+    new RegExp(`remove failed for ${secondTerminalLog.runId}`),
+  )
+
+  assert.equal(kernel.getRunLog(firstTerminalLog.runId), undefined)
+  assert.deepEqual(
+    kernel.getRunLog(secondTerminalLog.runId),
+    secondTerminalLog,
+  )
+  assert.deepEqual(
+    (await persistence.load()).map((log) => log.runId),
+    [secondTerminalLog.runId],
+  )
+})
+
+test('AgentRuntimeKernel drains a terminal checkpoint before clear and prevents late evidence from recreating it', async () => {
+  const adapter = new PostTerminalDebugAdapter()
+  const persistence = new RecordingRuntimeRunLogPersistence()
+  const scheduler = new ManualCheckpointScheduler()
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    checkpointScheduler: scheduler,
+    generateRunId: () => '11111111-1111-4111-8111-111111111111',
+    persistence,
+  })
+  const startedRun = await kernel.startRun({
+    adapter: 'post-terminal',
+    prompt: 'drain before clear',
+  })
+  await kernel.cancelRun(startedRun.runId)
+  await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => (log.debugLog?.length ?? 0) === 1,
+  )
+
+  assert.equal(scheduler.pendingTaskCount(), 1)
+
+  assert.deepEqual(await kernel.clearTerminalHistory(), [startedRun.runId])
+  assert.equal(scheduler.pendingTaskCount(), 0)
+  assert.equal(
+    persistence.savedLogs.some(
+      (log) =>
+        log.runId === startedRun.runId &&
+        log.debugLog?.[0]?.kind === 'post_terminal_evidence',
+    ),
+    true,
+  )
+
+  scheduler.runCancelledTasks()
+  adapter.allowFinish()
+  await new Promise<void>((resolve) => {
+    setImmediate(resolve)
+  })
+
+  assert.equal(kernel.getRunLog(startedRun.runId), undefined)
+  assert.equal(
+    (await persistence.load()).some((log) => log.runId === startedRun.runId),
+    false,
+  )
+})
+
+test('AgentRuntimeKernel cancels removed-run checkpoint timers so late terminal evidence cannot recreate history', async () => {
+  const adapter = new PostTerminalDebugAdapter()
+  const completingAdapter = new PushRuntimeAdapter()
+  const persistence = new RecordingRuntimeRunLogPersistence()
+  const scheduler = new ManualCheckpointScheduler()
+  const generatedRunIds = [
+    '11111111-1111-4111-8111-111111111111',
+    '22222222-2222-4222-8222-222222222222',
+  ]
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter, completingAdapter],
+    checkpointScheduler: scheduler,
+    generateRunId: () => generatedRunIds.shift() ?? 'invalid',
+    persistence,
+  })
+  const cancelledRun = await kernel.startRun({
+    adapter: 'post-terminal',
+    prompt: 'receive late debug evidence',
+  })
+  await kernel.cancelRun(cancelledRun.runId)
+  await waitForRunLog(
+    () => kernel.getRunLog(cancelledRun.runId),
+    (log) => (log.debugLog?.length ?? 0) === 1,
+  )
+
+  assert.equal(scheduler.pendingTaskCount(), 1)
+
+  const completingRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'trigger terminal retention',
+  })
+  persistence.pruneOnNextTerminalSave([cancelledRun.runId])
+  completingAdapter.push(completingRun.runId, { type: 'completed' })
+  await kernel.waitForRun(completingRun.runId)
+
+  assert.equal(kernel.getRunLog(cancelledRun.runId), undefined)
+  assert.equal(scheduler.pendingTaskCount(), 0)
+
+  scheduler.runCancelledTasks()
+  await new Promise<void>((resolve) => {
+    setImmediate(resolve)
+  })
+
+  assert.equal(
+    (await persistence.load()).some(
+      (log) => log.runId === cancelledRun.runId,
+    ),
+    false,
+  )
+
+  adapter.allowFinish()
+})
+
 test('AgentRuntimeKernel avoids hydrated UUID collisions when starting a run', async () => {
   const hydratedRun = createCompletedLog({
     runId: '11111111-1111-4111-8111-111111111111',
@@ -606,6 +981,9 @@ test('AgentRuntimeKernel rejects an invalid generated run ID before save or adap
   const persistence: RuntimeRunLogPersistence = {
     async load() {
       return []
+    },
+    async applyRetention() {
+      return { removedRunIds: [] }
     },
     async save() {
       saveCount += 1
@@ -1258,6 +1636,7 @@ test('AgentRuntimeKernel records a cancelled run lifecycle and log', async () =>
 
   assert.equal(cancelledLog?.status, 'cancelled')
   assert.equal(waitedLog.status, 'cancelled')
+  assert.equal(waitedLog.completedAt, waitedLog.events.at(-1)?.timestamp)
   assert.deepEqual(
     waitedLog.events.map((event) => event.type),
     ['started', 'cancelled'],
@@ -1274,7 +1653,7 @@ test('AgentRuntimeKernel records a cancelled run lifecycle and log', async () =>
   assert.deepEqual(kernel.listRuns(), [
     {
       adapter: 'test',
-      completedAt: undefined,
+      completedAt: '2026-07-09T00:00:00.000Z',
       error: undefined,
       outputPreview: '',
       prompt: '멈춰줘',
@@ -1301,6 +1680,7 @@ test('AgentRuntimeKernel records a failed run lifecycle and log', async () => {
 
   assert.equal(failedLog.status, 'failed')
   assert.equal(failedLog.error, 'Adapter exploded')
+  assert.equal(failedLog.completedAt, failedLog.events.at(-1)?.timestamp)
   assert.deepEqual(
     failedLog.events.map((event) => event.type),
     ['started', 'failed'],
@@ -1316,7 +1696,7 @@ test('AgentRuntimeKernel records a failed run lifecycle and log', async () => {
   assert.deepEqual(kernel.listRuns(), [
     {
       adapter: 'test',
-      completedAt: undefined,
+      completedAt: '2026-07-09T00:00:00.000Z',
       error: 'Adapter exploded',
       outputPreview: '',
       prompt: '실패해줘',
@@ -1325,6 +1705,56 @@ test('AgentRuntimeKernel records a failed run lifecycle and log', async () => {
       status: 'failed',
     },
   ])
+})
+
+test('AgentRuntimeKernel uses each terminal event timestamp as completedAt', async (t) => {
+  const cases: Array<{
+    name: string
+    event: RuntimeAdapterEvent
+    status: RuntimeRunLog['status']
+  }> = [
+    {
+      name: 'completed',
+      event: { type: 'completed' },
+      status: 'completed',
+    },
+    {
+      name: 'cancelled',
+      event: { type: 'cancelled', reason: 'terminal cancellation' },
+      status: 'cancelled',
+    },
+    {
+      name: 'failed',
+      event: { type: 'failed', error: 'terminal failure' },
+      status: 'failed',
+    },
+  ]
+
+  for (const [index, entry] of cases.entries()) {
+    await t.test(entry.name, async () => {
+      const adapter = new PushRuntimeAdapter()
+      let timestampIndex = 0
+      const baseTime = Date.parse(`2026-07-10T0${index + 1}:00:00.000Z`)
+      const kernel = await AgentRuntimeKernel.create({
+        adapters: [adapter],
+        generateRunId: () =>
+          `${index + 1}1111111-1111-4111-8111-111111111111`,
+        now: () => new Date(baseTime + timestampIndex++ * 1_000),
+        persistence: new InMemoryRuntimeRunLogPersistence(),
+      })
+      const startedRun = await kernel.startRun({
+        adapter: 'test',
+        prompt: `${entry.name} timestamp`,
+      })
+
+      adapter.push(startedRun.runId, entry.event)
+      const terminalRun = await kernel.waitForRun(startedRun.runId)
+      const terminalEvent = terminalRun.events.at(-1)
+
+      assert.equal(terminalRun.status, entry.status)
+      assert.equal(terminalRun.completedAt, terminalEvent?.timestamp)
+    })
+  }
 })
 
 test('AgentRuntimeKernel records adapter debug log entries outside normalized events', async () => {

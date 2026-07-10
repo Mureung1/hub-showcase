@@ -23,7 +23,10 @@ import {
   type CodexDebugClientRequestMethod,
 } from '@ay-ple/runtime-codex/testing'
 import { RuntimeRunJsonStore } from './runtime-run-json-store.js'
-import { resolveRuntimeHistoryDirectory } from './server.js'
+import {
+  resolveRuntimeHistoryDirectory,
+  resolveRuntimeHistoryLimits,
+} from './server.js'
 import { withTestServer } from './testing/test-server.js'
 
 type ServerRunLog = {
@@ -42,6 +45,41 @@ test('runtime history default is anchored to the workspace root', () => {
     resolveRuntimeHistoryDirectory({}),
     path.join(workspaceRoot, '.ay-ple', 'runtime-harness', 'runs'),
   )
+})
+
+test('runtime history limits use production defaults and positive safe integer environment overrides', () => {
+  assert.deepEqual(resolveRuntimeHistoryLimits({}), {
+    maxBytes: 104_857_600,
+    maxRuns: 100,
+  })
+  assert.deepEqual(
+    resolveRuntimeHistoryLimits({
+      RUNTIME_HISTORY_MAX_BYTES: '4096',
+      RUNTIME_HISTORY_MAX_RUNS: '7',
+    }),
+    {
+      maxBytes: 4096,
+      maxRuns: 7,
+    },
+  )
+
+  for (const [name, value] of [
+    ['RUNTIME_HISTORY_MAX_RUNS', '0'],
+    ['RUNTIME_HISTORY_MAX_RUNS', '-1'],
+    ['RUNTIME_HISTORY_MAX_RUNS', '1.5'],
+    ['RUNTIME_HISTORY_MAX_RUNS', 'not-a-number'],
+    ['RUNTIME_HISTORY_MAX_RUNS', '9007199254740992'],
+    ['RUNTIME_HISTORY_MAX_BYTES', '0'],
+    ['RUNTIME_HISTORY_MAX_BYTES', '-1'],
+    ['RUNTIME_HISTORY_MAX_BYTES', '1.5'],
+    ['RUNTIME_HISTORY_MAX_BYTES', 'not-a-number'],
+    ['RUNTIME_HISTORY_MAX_BYTES', '9007199254740992'],
+  ] as const) {
+    assert.throws(
+      () => resolveRuntimeHistoryLimits({ [name]: value }),
+      new RegExp(`${name} must be a positive safe integer`),
+    )
+  }
 })
 
 test('runtime API starts a fake run and streams normalized events', async () => {
@@ -305,6 +343,186 @@ test('runtime API recovers persisted running and cancelling history before readi
   } finally {
     await rm(temporaryRoot, { force: true, recursive: true })
   }
+})
+
+test('runtime API applies configured retention after startup hydration', async () => {
+  const temporaryRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-server-startup-retention-test-'),
+  )
+  const runtimeHistoryDirectory = path.join(temporaryRoot, 'runs')
+  const oldRun = createCompletedRunLog({
+    runId: '11111111-1111-4111-8111-111111111111',
+    prompt: 'prune on startup',
+    startedAt: '2026-07-10T01:00:00.000Z',
+    completedAt: '2026-07-10T01:01:00.000Z',
+  })
+  const newRun = createCompletedRunLog({
+    runId: '22222222-2222-4222-8222-222222222222',
+    prompt: 'keep on startup',
+    startedAt: '2026-07-10T02:00:00.000Z',
+    completedAt: '2026-07-10T02:01:00.000Z',
+  })
+
+  try {
+    const seedStore = new RuntimeRunJsonStore({
+      directory: runtimeHistoryDirectory,
+    })
+    await seedStore.save(oldRun)
+    await seedStore.save(newRun)
+
+    await withTestServer(
+      {
+        fakeDelayMs: 0,
+        runtimeHistoryDirectory,
+        runtimeHistoryMaxBytes: 1_000_000,
+        runtimeHistoryMaxRuns: 1,
+      },
+      async (baseUrl) => {
+        const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
+        const history = (await historyResponse.json()) as {
+          runs: Array<{ runId: string }>
+        }
+
+        assert.equal(historyResponse.status, 200)
+        assert.deepEqual(history.runs.map((run) => run.runId), [newRun.runId])
+        assert.equal(
+          (await fetch(`${baseUrl}/api/runtime/runs/${oldRun.runId}`)).status,
+          404,
+        )
+      },
+    )
+
+    assert.deepEqual(
+      (
+        await new RuntimeRunJsonStore({
+          directory: runtimeHistoryDirectory,
+        }).load()
+      ).map((run) => run.runId),
+      [newRun.runId],
+    )
+  } finally {
+    await rm(temporaryRoot, { force: true, recursive: true })
+  }
+})
+
+test('runtime API synchronizes recovery-triggered retention between disk and memory before readiness', async () => {
+  const temporaryRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-server-recovery-retention-test-'),
+  )
+  const runtimeHistoryDirectory = path.join(temporaryRoot, 'runs')
+  const oldRun = createCompletedRunLog({
+    runId: '11111111-1111-4111-8111-111111111111',
+    prompt: 'prune after recovery',
+    startedAt: '2026-07-10T01:00:00.000Z',
+    completedAt: '2026-07-10T01:01:00.000Z',
+  })
+  const interruptedRun = createInterruptedRunLogs()[0]
+
+  try {
+    const seedStore = new RuntimeRunJsonStore({
+      directory: runtimeHistoryDirectory,
+    })
+    await seedStore.save(oldRun)
+    await seedStore.save(interruptedRun)
+
+    await withTestServer(
+      {
+        fakeDelayMs: 0,
+        runtimeHistoryDirectory,
+        runtimeHistoryMaxBytes: 1_000_000,
+        runtimeHistoryMaxRuns: 1,
+      },
+      async (baseUrl) => {
+        const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
+        const history = (await historyResponse.json()) as {
+          runs: Array<{ runId: string; status: string }>
+        }
+
+        assert.equal(historyResponse.status, 200)
+        assert.deepEqual(
+          history.runs.map((run) => ({
+            runId: run.runId,
+            status: run.status,
+          })),
+          [{ runId: interruptedRun.runId, status: 'failed' }],
+        )
+        assert.equal(
+          (await fetch(`${baseUrl}/api/runtime/runs/${oldRun.runId}`)).status,
+          404,
+        )
+      },
+    )
+
+    const persistedLogs = await new RuntimeRunJsonStore({
+      directory: runtimeHistoryDirectory,
+    }).load()
+
+    assert.equal(persistedLogs.length, 1)
+    assert.equal(persistedLogs[0]?.runId, interruptedRun.runId)
+    assert.equal(persistedLogs[0]?.status, 'failed')
+  } finally {
+    await rm(temporaryRoot, { force: true, recursive: true })
+  }
+})
+
+test('runtime API clears terminal history without interrupting an active run or its SSE stream', async () => {
+  await withTestServer({ fakeDelayMs: 150 }, async (baseUrl) => {
+    const terminalRunId = await startRuntimeRun(baseUrl, {
+      adapter: 'fake',
+      prompt: 'clear this terminal run',
+    })
+    await collectRunEvents(baseUrl, terminalRunId)
+
+    const activeRunId = await startRuntimeRun(baseUrl, {
+      adapter: 'fake',
+      prompt: 'keep this active run',
+    })
+    const activeEventsPromise = collectRunEvents(baseUrl, activeRunId)
+    const clearResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
+      method: 'DELETE',
+    })
+    const clearBody = (await clearResponse.json()) as {
+      clearedRunIds: string[]
+    }
+
+    assert.equal(clearResponse.status, 200)
+    assert.deepEqual(clearBody, { clearedRunIds: [terminalRunId] })
+
+    const activeLogResponse = await fetch(
+      `${baseUrl}/api/runtime/runs/${activeRunId}`,
+    )
+    const activeLogBody = (await activeLogResponse.json()) as {
+      run: RuntimeRunLog
+    }
+
+    assert.equal(activeLogResponse.status, 200)
+    assert.equal(activeLogBody.run.status, 'running')
+    assert.equal(activeLogBody.run.prompt, 'keep this active run')
+    assert.deepEqual(
+      activeLogBody.run.events.map((event) => event.type),
+      ['started'],
+    )
+
+    const activeEvents = await activeEventsPromise
+
+    assert.deepEqual(
+      activeEvents.map((event) => event.type),
+      ['started', 'output_delta', 'output_delta', 'completed'],
+    )
+    assert.match(String(activeEvents[1]?.delta), /keep this active run/)
+
+    const finalClearResponse = await fetch(`${baseUrl}/api/runtime/runs`, {
+      method: 'DELETE',
+    })
+    const finalClearBody = await finalClearResponse.json()
+
+    assert.equal(finalClearResponse.status, 200)
+    assert.deepEqual(finalClearBody, { clearedRunIds: [activeRunId] })
+    assert.deepEqual(
+      await (await fetch(`${baseUrl}/api/runtime/runs`)).json(),
+      { runs: [] },
+    )
+  })
 })
 
 test('runtime API exposes Codex capability slots as engine inspection metadata', async () => {
@@ -1013,4 +1231,41 @@ function createInterruptedRunLogs(): RuntimeRunLog[] {
       startedAt: '2026-07-10T03:01:00.000Z',
     },
   ]
+}
+
+function createCompletedRunLog(input: {
+  completedAt: string
+  prompt: string
+  runId: string
+  startedAt: string
+}): RuntimeRunLog {
+  const output = `completed: ${input.prompt}`
+
+  return {
+    runId: input.runId,
+    adapter: 'fake',
+    prompt: input.prompt,
+    status: 'completed',
+    output,
+    events: [
+      {
+        type: 'started',
+        sequence: 1,
+        runId: input.runId,
+        adapter: 'fake',
+        timestamp: input.startedAt,
+        prompt: input.prompt,
+      },
+      {
+        type: 'completed',
+        sequence: 2,
+        runId: input.runId,
+        adapter: 'fake',
+        timestamp: input.completedAt,
+        output,
+      },
+    ],
+    startedAt: input.startedAt,
+    completedAt: input.completedAt,
+  }
 }

@@ -15,7 +15,12 @@ import { FakeRuntimeAdapter } from '@ay-ple/runtime-fake'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express, { type Express, type Response } from 'express'
-import { RuntimeRunJsonStore } from './runtime-run-json-store.js'
+import {
+  defaultRuntimeHistoryMaxBytes,
+  defaultRuntimeHistoryMaxRuns,
+  parsePositiveSafeInteger,
+  RuntimeRunJsonStore,
+} from './runtime-run-json-store.js'
 
 dotenv.config()
 
@@ -27,6 +32,8 @@ export type CreateServerAppOptions = {
   kernel?: AgentRuntimeKernel
   codexRawClientOptions?: CodexRawClientOptions
   runtimeHistoryDirectory?: string
+  runtimeHistoryMaxRuns?: number
+  runtimeHistoryMaxBytes?: number
 }
 
 type FakeRuntimeScenario = 'failure'
@@ -43,6 +50,12 @@ export async function createServerApp(
   const codexAdapter = new CodexRuntimeAdapter({
     rawClientOptions: codexRawClientOptions,
   })
+  const runtimeHistoryLimits =
+    options.kernel === undefined &&
+    (options.runtimeHistoryMaxRuns === undefined ||
+      options.runtimeHistoryMaxBytes === undefined)
+      ? resolveRuntimeHistoryLimits()
+      : undefined
   const kernel =
     options.kernel ??
     (await AgentRuntimeKernel.create({
@@ -51,6 +64,10 @@ export async function createServerApp(
         directory:
           options.runtimeHistoryDirectory ??
           resolveRuntimeHistoryDirectory(),
+        maxTerminalRuns:
+          options.runtimeHistoryMaxRuns ?? runtimeHistoryLimits?.maxRuns,
+        maxTerminalBytes:
+          options.runtimeHistoryMaxBytes ?? runtimeHistoryLimits?.maxBytes,
       }),
     }))
   const canControlFakeAdapter = options.kernel === undefined
@@ -117,6 +134,12 @@ export async function createServerApp(
 
   app.get('/api/runtime/runs', (_req, res) => {
     res.json({ runs: kernel.listRuns() })
+  })
+
+  app.delete('/api/runtime/runs', async (_req, res) => {
+    const clearedRunIds = await kernel.clearTerminalHistory()
+
+    res.json({ clearedRunIds })
   })
 
   app.get('/api/runtime/runs/:runId', (req, res) => {
@@ -220,6 +243,35 @@ export function resolveRuntimeHistoryDirectory(
     environment.RUNTIME_HISTORY_DIR ??
     path.join(workspaceRoot, '.ay-ple', 'runtime-harness', 'runs')
   )
+}
+
+export function resolveRuntimeHistoryLimits(
+  environment: NodeJS.ProcessEnv = process.env,
+): { maxBytes: number; maxRuns: number } {
+  return {
+    maxBytes: parsePositiveSafeIntegerSetting(
+      environment.RUNTIME_HISTORY_MAX_BYTES,
+      defaultRuntimeHistoryMaxBytes,
+      'RUNTIME_HISTORY_MAX_BYTES',
+    ),
+    maxRuns: parsePositiveSafeIntegerSetting(
+      environment.RUNTIME_HISTORY_MAX_RUNS,
+      defaultRuntimeHistoryMaxRuns,
+      'RUNTIME_HISTORY_MAX_RUNS',
+    ),
+  }
+}
+
+function parsePositiveSafeIntegerSetting(
+  configuredValue: string | undefined,
+  defaultValue: number,
+  settingName: string,
+): number {
+  if (configuredValue === undefined) {
+    return defaultValue
+  }
+
+  return parsePositiveSafeInteger(Number(configuredValue), settingName)
 }
 
 function readFakeRuntimeDelayFromEnv(): number | undefined {

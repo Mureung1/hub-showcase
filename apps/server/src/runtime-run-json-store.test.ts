@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -9,6 +16,7 @@ import { RuntimeRunJsonStore } from './runtime-run-json-store.js'
 const firstRunId = '11111111-1111-4111-8111-111111111111'
 const secondRunId = '22222222-2222-4222-8222-222222222222'
 const thirdRunId = '33333333-3333-4333-8333-333333333333'
+const fourthRunId = '44444444-4444-4444-8444-444444444444'
 
 test('RuntimeRunJsonStore saves a versioned envelope and atomically replaces one canonical record', async () => {
   await withTemporaryDirectory(async (directory) => {
@@ -251,6 +259,370 @@ test('RuntimeRunJsonStore removes a canonical record by run ID', async () => {
   })
 })
 
+test('RuntimeRunJsonStore prunes oldest terminal runs by count and preserves active records', async () => {
+  await withTemporaryDirectory(async (directory) => {
+    const store = new RuntimeRunJsonStore({
+      directory,
+      maxTerminalRuns: 2,
+      maxTerminalBytes: 1_000_000,
+    })
+    const activeLog = createRunLog({
+      runId: fourthRunId,
+      prompt: 'keep active',
+      startedAt: '2026-07-10T00:00:00.000Z',
+    })
+    const terminalLogs = [
+      completeRunLog(
+        createRunLog({
+          runId: firstRunId,
+          prompt: 'oldest terminal',
+          startedAt: '2026-07-10T01:00:00.000Z',
+        }),
+        {
+          completedAt: '2026-07-10T01:01:00.000Z',
+          output: 'first',
+        },
+      ),
+      completeRunLog(
+        createRunLog({
+          runId: secondRunId,
+          prompt: 'middle terminal',
+          startedAt: '2026-07-10T02:00:00.000Z',
+        }),
+        {
+          completedAt: '2026-07-10T02:01:00.000Z',
+          output: 'second',
+        },
+      ),
+      completeRunLog(
+        createRunLog({
+          runId: thirdRunId,
+          prompt: 'newest terminal',
+          startedAt: '2026-07-10T03:00:00.000Z',
+        }),
+        {
+          completedAt: '2026-07-10T03:01:00.000Z',
+          output: 'third',
+        },
+      ),
+    ]
+
+    await store.save(activeLog)
+    await store.save(terminalLogs[0])
+    await store.save(terminalLogs[1])
+    const saveResult = await store.save(terminalLogs[2])
+
+    assert.deepEqual(saveResult, { removedRunIds: [firstRunId] })
+    assert.deepEqual(
+      (await store.load()).map((log) => log.runId),
+      [fourthRunId, secondRunId, thirdRunId],
+    )
+  })
+})
+
+test('RuntimeRunJsonStore defers startup pruning until recovery saves are complete', async () => {
+  await withTemporaryDirectory(async (directory) => {
+    const oldTerminalLog = completeRunLog(
+      createRunLog({
+        runId: firstRunId,
+        prompt: 'keep until recovery completes',
+        startedAt: '2026-07-10T01:00:00.000Z',
+      }),
+      {
+        completedAt: '2026-07-10T01:01:00.000Z',
+        output: 'old terminal output',
+      },
+    )
+    const interruptedLog = createRunLog({
+      runId: secondRunId,
+      prompt: 'recover before pruning',
+      startedAt: '2026-07-10T02:00:00.000Z',
+    })
+    const seedStore = new RuntimeRunJsonStore({ directory })
+
+    await seedStore.save(oldTerminalLog)
+    await seedStore.save(interruptedLog)
+
+    const startupStore = new RuntimeRunJsonStore({
+      directory,
+      maxTerminalRuns: 1,
+      maxTerminalBytes: 1_000_000,
+    })
+    await startupStore.load()
+
+    const recoveredAt = '2026-07-10T03:00:00.000Z'
+    const recoveredLog: RuntimeRunLog = {
+      ...failRunLog(interruptedLog, {
+        error: 'Runtime interrupted by server restart',
+        failedAt: recoveredAt,
+      }),
+      completedAt: recoveredAt,
+    }
+
+    assert.deepEqual(await startupStore.save(recoveredLog), {
+      removedRunIds: [],
+    })
+    assert.deepEqual(
+      (await readdir(directory)).sort(),
+      [`${firstRunId}.json`, `${secondRunId}.json`],
+    )
+
+    assert.deepEqual(await startupStore.applyRetention(), {
+      removedRunIds: [firstRunId],
+    })
+    assert.deepEqual(await startupStore.load(), [recoveredLog])
+  })
+})
+
+test('RuntimeRunJsonStore measures aggregate terminal envelopes as canonical UTF-8 bytes', async () => {
+  await withTemporaryDirectory(async (directory) => {
+    const savedAt = '2026-07-10T04:00:00.000Z'
+    const firstLog = completeRunLog(
+      createRunLog({
+        runId: firstRunId,
+        prompt: '한글 terminal prompt',
+        startedAt: '2026-07-10T01:00:00.000Z',
+      }),
+      {
+        completedAt: '2026-07-10T01:01:00.000Z',
+        output: '첫 번째 출력 😀',
+      },
+    )
+    const secondLog = completeRunLog(
+      createRunLog({
+        runId: secondRunId,
+        prompt: '두 번째 terminal prompt',
+        startedAt: '2026-07-10T02:00:00.000Z',
+      }),
+      {
+        completedAt: '2026-07-10T02:01:00.000Z',
+        output: '두 번째 출력 🚀',
+      },
+    )
+    const firstContents = canonicalEnvelopeContents(firstLog, savedAt)
+    const secondContents = canonicalEnvelopeContents(secondLog, savedAt)
+    const javascriptStringLengthLimit =
+      firstContents.length + secondContents.length
+
+    assert.ok(
+      Buffer.byteLength(firstContents, 'utf8') < javascriptStringLengthLimit,
+    )
+    assert.ok(
+      Buffer.byteLength(secondContents, 'utf8') < javascriptStringLengthLimit,
+    )
+    assert.ok(
+      Buffer.byteLength(firstContents + secondContents, 'utf8') >
+        javascriptStringLengthLimit,
+    )
+
+    const store = new RuntimeRunJsonStore({
+      directory,
+      maxTerminalRuns: 10,
+      maxTerminalBytes: javascriptStringLengthLimit,
+      now: () => new Date(savedAt),
+    })
+
+    await store.save(firstLog)
+    const saveResult = await store.save(secondLog)
+
+    assert.deepEqual(saveResult, { removedRunIds: [firstRunId] })
+    assert.deepEqual(await store.load(), [secondLog])
+  })
+})
+
+test('RuntimeRunJsonStore applies completed, started, and run ID retention ordering with legacy terminal timestamps', async () => {
+  await withTemporaryDirectory(async (directory) => {
+    const seedStore = new RuntimeRunJsonStore({ directory })
+    const terminalLogs = [
+      failRunLog(
+        createRunLog({
+          runId: firstRunId,
+          prompt: 'run ID tie break one',
+          startedAt: '2026-07-10T01:00:00.000Z',
+        }),
+        {
+          failedAt: '2026-07-10T02:00:00.000Z',
+          error: 'legacy failure',
+        },
+      ),
+      cancelRunLog(
+        createRunLog({
+          runId: secondRunId,
+          prompt: 'run ID tie break two',
+          startedAt: '2026-07-10T01:00:00.000Z',
+        }),
+        {
+          cancelledAt: '2026-07-10T02:00:00.000Z',
+          reason: 'legacy cancellation',
+        },
+      ),
+      completeRunLog(
+        createRunLog({
+          runId: thirdRunId,
+          prompt: 'oldest completion',
+          startedAt: '2026-07-10T03:00:00.000Z',
+        }),
+        {
+          completedAt: '2026-07-10T01:00:00.000Z',
+          output: 'completed first',
+        },
+      ),
+      completeRunLog(
+        createRunLog({
+          runId: fourthRunId,
+          prompt: 'started time tie break',
+          startedAt: '2026-07-10T00:30:00.000Z',
+        }),
+        {
+          completedAt: '2026-07-10T02:00:00.000Z',
+          output: 'completed at tied time',
+        },
+      ),
+    ]
+
+    for (const log of terminalLogs.toReversed()) {
+      await seedStore.save(log)
+    }
+
+    const boundedStore = new RuntimeRunJsonStore({
+      directory,
+      maxTerminalRuns: 2,
+      maxTerminalBytes: 1_000_000,
+    })
+
+    const retentionResult = await boundedStore.applyRetention()
+
+    assert.deepEqual(retentionResult, {
+      removedRunIds: [thirdRunId, fourthRunId],
+    })
+    assert.deepEqual(
+      (await boundedStore.load()).map((log) => log.runId),
+      [firstRunId, secondRunId],
+    )
+
+    const singleRunStore = new RuntimeRunJsonStore({
+      directory,
+      maxTerminalRuns: 1,
+      maxTerminalBytes: 1_000_000,
+    })
+
+    assert.deepEqual(await singleRunStore.applyRetention(), {
+      removedRunIds: [firstRunId],
+    })
+    assert.deepEqual(await singleRunStore.load(), [terminalLogs[1]])
+  })
+})
+
+test('RuntimeRunJsonStore excludes running and cancelling envelope bytes from retention', async () => {
+  await withTemporaryDirectory(async (directory) => {
+    const runningLog = createRunLog({
+      runId: firstRunId,
+      prompt: 'large running prompt 😀'.repeat(100),
+      startedAt: '2026-07-10T01:00:00.000Z',
+    })
+    const cancellingStartedLog = createRunLog({
+      runId: secondRunId,
+      prompt: 'large cancelling prompt 한글'.repeat(100),
+      startedAt: '2026-07-10T02:00:00.000Z',
+    })
+    const cancellingLog: RuntimeRunLog = {
+      ...cancellingStartedLog,
+      status: 'cancelling',
+      events: [
+        ...cancellingStartedLog.events,
+        {
+          type: 'cancelling',
+          sequence: 2,
+          runId: cancellingStartedLog.runId,
+          adapter: cancellingStartedLog.adapter,
+          timestamp: '2026-07-10T02:01:00.000Z',
+          reason: 'keep cancelling active',
+        },
+      ],
+    }
+    const store = new RuntimeRunJsonStore({
+      directory,
+      maxTerminalRuns: 1,
+      maxTerminalBytes: 1,
+    })
+
+    await store.save(runningLog)
+    await store.save(cancellingLog)
+
+    assert.deepEqual(await store.applyRetention(), { removedRunIds: [] })
+    assert.deepEqual(await store.load(), [runningLog, cancellingLog])
+  })
+})
+
+test('RuntimeRunJsonStore rejects an oversized terminal envelope before replacing its active snapshot', async () => {
+  await withTemporaryDirectory(async (directory) => {
+    const savedAt = '2026-07-10T04:00:00.000Z'
+    const activeLog = createRunLog({
+      runId: firstRunId,
+      prompt: 'preserve active snapshot',
+      startedAt: '2026-07-10T01:00:00.000Z',
+    })
+    const oversizedLog = completeRunLog(activeLog, {
+      completedAt: '2026-07-10T01:01:00.000Z',
+      output: '큰 출력 😀'.repeat(200),
+    })
+    const oversizedBytes = Buffer.byteLength(
+      canonicalEnvelopeContents(oversizedLog, savedAt),
+      'utf8',
+    )
+    const store = new RuntimeRunJsonStore({
+      directory,
+      maxTerminalRuns: 10,
+      maxTerminalBytes: oversizedBytes - 1,
+      now: () => new Date(savedAt),
+    })
+
+    await store.save(activeLog)
+
+    await assert.rejects(
+      store.save(oversizedLog),
+      /terminal envelope.*exceeds.*byte limit/i,
+    )
+    assert.deepEqual(await store.load(), [activeLog])
+    assert.deepEqual(await readdir(directory), [`${firstRunId}.json`])
+  })
+})
+
+test('RuntimeRunJsonStore serializes remove after save and blocks later saves for the removed run ID', async () => {
+  await withTemporaryDirectory(async (directory) => {
+    const renameGate = createDeferred<void>()
+    let renameStarted = false
+    const store = new RuntimeRunJsonStore({
+      directory,
+      renameFile: async (sourcePath, destinationPath) => {
+        renameStarted = true
+        await renameGate.promise
+        await rename(sourcePath, destinationPath)
+      },
+    })
+    const log = createRunLog({
+      runId: firstRunId,
+      prompt: 'serialize persistence operations',
+      startedAt: '2026-07-10T01:00:00.000Z',
+    })
+
+    const savePromise = store.save(log)
+
+    while (!renameStarted) {
+      await new Promise<void>((resolve) => setImmediate(resolve))
+    }
+
+    const removePromise = store.remove(firstRunId)
+    renameGate.resolve()
+    await Promise.all([savePromise, removePromise])
+
+    const lateSaveResult = await store.save(log)
+
+    assert.deepEqual(lateSaveResult, { removedRunIds: [firstRunId] })
+    assert.deepEqual(await store.load(), [])
+  })
+})
+
 function createRunLog(input: {
   runId: string
   prompt: string
@@ -317,6 +689,65 @@ function completeRunLog(
     ],
     completedAt: input.completedAt,
   }
+}
+
+function cancelRunLog(
+  startedLog: RuntimeRunLog,
+  input: { cancelledAt: string; reason: string },
+): RuntimeRunLog {
+  return {
+    ...startedLog,
+    status: 'cancelled',
+    events: [
+      ...startedLog.events,
+      {
+        type: 'cancelled',
+        sequence: startedLog.events.length + 1,
+        runId: startedLog.runId,
+        adapter: startedLog.adapter,
+        timestamp: input.cancelledAt,
+        reason: input.reason,
+      },
+    ],
+  }
+}
+
+function failRunLog(
+  startedLog: RuntimeRunLog,
+  input: { error: string; failedAt: string },
+): RuntimeRunLog {
+  return {
+    ...startedLog,
+    status: 'failed',
+    error: input.error,
+    events: [
+      ...startedLog.events,
+      {
+        type: 'failed',
+        sequence: startedLog.events.length + 1,
+        runId: startedLog.runId,
+        adapter: startedLog.adapter,
+        timestamp: input.failedAt,
+        error: input.error,
+      },
+    ],
+  }
+}
+
+function canonicalEnvelopeContents(log: RuntimeRunLog, savedAt: string): string {
+  return `${JSON.stringify({ schemaVersion: 1, savedAt, log })}\n`
+}
+
+function createDeferred<T>(): {
+  promise: Promise<T>
+  resolve: (value: T) => void
+} {
+  let resolvePromise: (value: T) => void = () => {}
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve
+  })
+
+  return { promise, resolve: resolvePromise }
 }
 
 async function withTemporaryDirectory(
