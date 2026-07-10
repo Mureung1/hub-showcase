@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="680" viewBox="0 0 1180 680" role="img" aria-labelledby="title desc">
+  <title id="title">카페 스탬프 MVP 저장 데이터 구조</title>
+  <desc id="desc">profiles, customers, cafes, stamp_cards, coupons, notifications 테이블의 관계 다이어그램</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <style>
+      .bg { fill: #f8fafc; }
+      .title { font: 700 32px Arial, 'Malgun Gothic', sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 16px Arial, 'Malgun Gothic', sans-serif; fill: #475569; }
+      .table { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 18; filter: url(#shadow); }
+      .table.profiles { stroke: #6366f1; stroke-width: 3; }
+      .table.core { stroke: #0ea5e9; stroke-width: 3; }
+      .table.event { stroke: #10b981; stroke-width: 3; }
+      .name { font: 700 21px Arial, 'Malgun Gothic', sans-serif; fill: #0f172a; text-anchor: middle; }
+      .desc { font: 400 16px Arial, 'Malgun Gothic', sans-serif; fill: #475569; text-anchor: middle; }
+      .tag { font: 700 12px Arial, 'Malgun Gothic', sans-serif; fill: #ffffff; text-anchor: middle; }
+      .tag-bg { rx: 10; }
+      .arrow { stroke: #334155; stroke-width: 2.6; fill: none; marker-end: url(#arrow); }
+      .arrow-soft { stroke: #64748b; stroke-width: 2.2; fill: none; marker-end: url(#arrow); }
+      .label { font: 600 13px Arial, 'Malgun Gothic', sans-serif; fill: #64748b; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1180" height="680"/>
+  <text class="title" x="64" y="64">저장되는 데이터</text>
+  <text class="subtitle" x="64" y="94">로그인 역할, 손님, 카페, 스탬프, 쿠폰, 알림을 같은 Supabase 데이터베이스에 저장합니다.</text>
+
+  <rect class="table profiles" x="80" y="220" width="210" height="112"/>
+  <rect class="tag-bg" x="137" y="237" width="96" height="24" fill="#6366f1"/>
+  <text class="tag" x="185" y="254">역할 연결</text>
+  <text class="name" x="185" y="288">profiles</text>
+  <text class="desc" x="185" y="314">로그인 역할 연결</text>
+
+  <rect class="table core" x="405" y="135" width="220" height="112"/>
+  <rect class="tag-bg" x="462" y="152" width="106" height="24" fill="#0ea5e9"/>
+  <text class="tag" x="515" y="169">손님 정보</text>
+  <text class="name" x="515" y="203">customers</text>
+  <text class="desc" x="515" y="229">손님·회원번호</text>
+
+  <rect class="table core" x="405" y="390" width="220" height="112"/>
+  <rect class="tag-bg" x="467" y="407" width="96" height="24" fill="#0ea5e9"/>
+  <text class="tag" x="515" y="424">카페 정보</text>
+  <text class="name" x="515" y="458">cafes</text>
+  <text class="desc" x="515" y="484">카페·목표·보상</text>
+
+  <rect class="table event" x="755" y="95" width="250" height="112"/>
+  <rect class="tag-bg" x="815" y="112" width="130" height="24" fill="#10b981"/>
+  <text class="tag" x="880" y="129">현재 진행 상태</text>
+  <text class="name" x="880" y="163">stamp_cards</text>
+  <text class="desc" x="880" y="189">카페별 현재 스탬프</text>
+
+  <rect class="table event" x="755" y="285" width="250" height="112"/>
+  <rect class="tag-bg" x="817" y="302" width="126" height="24" fill="#10b981"/>
+  <text class="tag" x="880" y="319">목표 달성 결과</text>
+  <text class="name" x="880" y="353">coupons</text>
+  <text class="desc" x="880" y="379">발행된 쿠폰</text>
+
+  <rect class="table event" x="755" y="475" width="250" height="112"/>
+  <rect class="tag-bg" x="821" y="492" width="118" height="24" fill="#10b981"/>
+  <text class="tag" x="880" y="509">고객 안내</text>
+  <text class="name" x="880" y="543">notifications</text>
+  <text class="desc" x="880" y="569">적립·쿠폰 알림</text>
+
+  <path class="arrow" d="M 290 252 C 340 225, 360 190, 405 190"/>
+  <path class="arrow" d="M 290 302 C 345 342, 360 446, 405 446"/>
+  <path class="arrow" d="M 625 190 C 675 180, 705 150, 755 150"/>
+  <path class="arrow" d="M 625 446 C 685 420, 710 160, 755 150"/>
+  <path class="arrow-soft" d="M 625 190 C 690 205, 710 340, 755 340"/>
+  <path class="arrow-soft" d="M 625 446 C 680 420, 710 360, 755 340"/>
+  <path class="arrow-soft" d="M 625 190 C 690 240, 710 530, 755 530"/>
+
+  <text class="label" x="345" y="202">손님 계정</text>
+  <text class="label" x="342" y="430">사장님 계정</text>
+  <text class="label" x="690" y="134">누가 어느 카페에</text>
+  <text class="label" x="700" y="318">쿠폰 발행</text>
+  <text class="label" x="700" y="515">알림 생성</text>
+
+  <rect x="78" y="610" width="1024" height="42" rx="14" fill="#e2e8f0"/>
+  <text class="subtitle" x="590" y="636" text-anchor="middle">핵심 관계: 손님 + 카페 조합으로 스탬프 카드가 생기고, 목표 달성 시 쿠폰과 알림이 함께 생성됩니다.</text>
+</svg>

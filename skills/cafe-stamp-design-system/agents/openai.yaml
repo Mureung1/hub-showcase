@@ -1,0 +1,4 @@
+interface:
+  display_name: "카페 스탬프 디자인 시스템"
+  short_description: "카페 스탬프 화면을 일관되게 설계하고 구현하며 검수합니다"
+  default_prompt: "Use $cafe-stamp-design-system to design, implement, or review a Cafe Stamp screen consistently."
