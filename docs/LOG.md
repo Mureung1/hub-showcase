@@ -258,7 +258,67 @@
 ### 남은 작업
 - 상황 카드 템플릿 72개 실제 작성·검수(T25)
 - 시드 2차 12개 작성 + 블라인드 검수(T16)
+
+## 2026-07-10 15:xx
+### 처리한 TODO
+- MVP 구현·문서 정합성 및 핵심 사용자 흐름 점검
+- 복사 실패 시 텍스트 선택 폴백 추가
+- 현재 탭의 입력·결과 `sessionStorage` 복원 추가
+- 직접 입력 목적 선택 검증, 글자 수, 비활성 안내 추가
+- 관계 변경 시 직접 작성한 입력 유지
+### 사용한 자료
+- docs/PRD.md, docs/MVP.md, docs/SCREENS.md, docs/SPEC.md, docs/CHECKLIST.md
+### 만든 결과물
+- `src/ProjectIntro.tsx` 핵심 과업 복사 폴백·세션 복원·입력 검증 보완
+- `src/App.css` 보조 안내 스타일
+- `src/App.test.tsx` 복사 폴백·세션 복원·입력 유지 테스트 추가
+### 검토 결과
+- `npm test`(7건), `npm run lint`, `npm run build` 통과
+- 실제 AI 생성 API, 로딩·오류 상태, 72개 템플릿의 블라인드 검수는 아직 미구현/미완료
+### 남은 작업
+- T2~T14의 미완료 항목을 의존성 순서대로 구현
+- T16 시드 전수 검수, T25 템플릿 콘텐츠 검수
+- T18~T20 AI 프록시·생성 파이프라인 구현 전 별도 구조 작업 제안
 - S0~S3 실 구현(T5~T14, T27)
 - 이번 세션의 문서·코드 변경 커밋
 ### 다음 추천 작업
 - 지금까지의 변경사항을 논리 단위로 커밋(`/commit`)
+
+## 2026-07-10 15:xx (AI 설계·기반 구현)
+### 처리한 TODO
+- AI 사용 경계, 구조화 응답, 실패·비용·개인정보·평가 관점으로 프로젝트 재감사
+- T2 도메인 카탈로그·타입 분리
+- T3 공용 생성 계약과 런타임 응답 검증 구현
+- T4 개발용 목 생성기(normal/delay/error500/error429) 구현
+- 탭 임시 보관 30분 만료·즉시 삭제 동선 보완
+- 관계별 AI 평가 케이스·포트폴리오 문서 작성
+### 사용한 자료
+- docs/SPEC.md, docs/MVP.md, docs/SCREENS.md, docs/EDGE_CASES.md, docs/CHECKLIST.md
+### 만든 결과물
+- `src/domain/message.ts` 및 카탈로그 테스트
+- `src/services/generation/contracts.ts`, `mockGenerator.ts` 및 계약·목 테스트
+- `src/evaluation/generationCases.ts` 및 평가 자산 테스트
+- `docs/AI_DESIGN.md`, README AI 설계 설명
+### 검토 결과
+- T2, T3, T4 체크리스트 완료 처리
+- 실제 AI API·Vercel 함수·프롬프트 코드(T18~T20)는 의존성 및 서버 구조 작업이 남아 있어 미착수
+- 세션 원문 임시 보관은 카톡 전환 복원과 개인정보 최소화의 절충이며, 영구 히스토리는 도입하지 않음
+### 남은 작업
+- T5~T14, T25~T26의 UI·템플릿·라우터 구현을 의존성 순서대로 완성
+- T16 시드 블라인드 검수와 T25 템플릿 전수 검수
+- T17 승인/배포 준비 뒤 T18~T20 프록시·프롬프트·실 API 연결
+
+## 2026-07-10 17:xx (S1 고양이 조력자 UI)
+### 처리한 TODO
+- S1 관계 카드의 고양이 조력자 에셋 도입 준비 및 UI/UX 개선
+### 사용한 자료
+- `skills/dabnyangi-ui/SKILL.md`, `docs/DESIGN.md`, `docs/SCREENS.md`
+### 만든 결과물
+- 관계별 고양이 미디어 슬롯(팀플냥·교수냥·선배냥·연인냥)과 에셋 경로 설정 지점
+- 에셋 파일 규격·경로 안내(`public/cats/README.md`)
+- S1 카드의 스캔성·키보드 포커스·모바일 크기 보완
+### 검토 결과
+- 실제 에셋 없이도 브랜드 배지로 자연스럽게 보이며, 에셋 투입 후 카드 레이아웃이 변하지 않음
+- `npm test`(34건), `npm run lint`, `npm run build` 통과
+### 남은 작업
+- 관계별 고양이 PNG/WebP 에셋을 준비한 뒤 `src/domain/message.ts`의 `assetPath` 연결
