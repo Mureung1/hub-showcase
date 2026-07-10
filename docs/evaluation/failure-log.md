@@ -50,6 +50,8 @@ Follow-up:
 GitHub required checks와 branch protection을 설정해 local hook 우회를 원격에서 차단한다.
 ```
 
+현재 상태 (2026-07-10): 위 Follow-up은 당시 기록이다. Hub 제출 규칙에 따라 GitHub Actions workflow 파일을 제거했으며, 현재 검증 기준은 [Validation Guide](../development/validation.md)의 로컬 검사와 PR 리뷰다.
+
 ### 2026-07-08
 
 ```text
