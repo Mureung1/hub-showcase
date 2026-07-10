@@ -7,6 +7,10 @@ class DexieProductRepository implements ProductRepository {
   findByBarcode(barcode: string): Promise<Product | undefined> {
     return db.products.where("barcode").equals(barcode).first();
   }
+
+  async save(product: Product): Promise<void> {
+    await db.products.put(product);
+  }
 }
 
 export const productRepository: ProductRepository = new DexieProductRepository();

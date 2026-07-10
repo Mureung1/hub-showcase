@@ -4,4 +4,6 @@ import type { Product } from "@sherpa/core";
 // UI는 이 인터페이스에만 의존한다.
 export interface ProductRepository {
   findByBarcode(barcode: string): Promise<Product | undefined>;
+  /** 상품 마스터 저장(신규/갱신). 등록 모달 저장 시 호출 → 이후 스캔부터 등록됨으로 인식. */
+  save(product: Product): Promise<void>;
 }

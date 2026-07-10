@@ -197,11 +197,33 @@ button {
   border-color: var(--fresh);
   background: var(--mint);
 }
+/* 미등록(pending) — amber 주의 액센트. recent보다 미등록 표시가 우선. */
+.line-row--pending {
+  border-left: 4px solid var(--amber);
+  background: #fff;
+}
 .line-row__main {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+/* pending 행의 탭 영역(등록 모달 열기) — 버튼이지만 행 텍스트처럼 보이게 리셋 */
+.line-row__tap {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.line-row__name--mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.line-row__hint {
+  font-size: 12px;
+  color: var(--inkSoft);
 }
 .line-row__name {
   font-weight: 600;
@@ -231,6 +253,10 @@ button {
 .badge--ready {
   color: var(--fresh);
   background: var(--mint);
+}
+.badge--pending {
+  color: #a5641a; /* amber를 배경 대비 통과하도록 어둡게 (텍스트용) */
+  background: #fbefd8;
 }
 
 /* 수량 조절 */
@@ -299,4 +325,90 @@ button {
   padding: 10px 18px;
   border-radius: 999px;
   box-shadow: var(--shadow-card);
+}
+
+/* ---------- 등록 모달 ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 36, 28, 0.35);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 10;
+}
+.modal {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop, 0 18px 50px rgba(22, 36, 28, 0.24));
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.modal__title {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--inkSoft);
+}
+.field__input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+.field__input:focus {
+  border-color: var(--brand);
+}
+.field__input[readonly] {
+  background: var(--paper);
+  color: var(--inkSoft);
+}
+.field__input--mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+.btn {
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+.btn--ghost {
+  color: var(--inkSoft);
+  background: #fff;
+  border-color: var(--line);
+}
+/* 핵심 액션(CTA) — 브랜드/콘텐츠 초록과 구분되는 파랑. 흰 글씨는 크고 굵게(대비 통과). */
+.btn--cta {
+  color: #fff;
+  background: var(--cta);
+}
+.btn--cta:disabled {
+  background: #a8c7f5;
+  cursor: not-allowed;
 }
