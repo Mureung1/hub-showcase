@@ -2,6 +2,9 @@
 
 LocalTwin Wiki는 프로젝트 기획, 기능 정의, 개발 운영 문서를 연결하는 진입점이다.
 
+제품 웹:
+[LocalTwin 상권 분석](https://hub-localtwin-docs-vercel.vercel.app/)
+
 ## Knowledge Graph
 
 - [Interactive Knowledge Graph](./knowledge-graph.html)
@@ -23,7 +26,7 @@ docs/
     localtwin-project-proposal.md
     localtwin-product-plan.md
     localtwin-v0.1-execution-plan.md
-  prototypes/
+  prototypes/ (legacy: 이전 정적 시연 기록)
     core-market-analysis-prototype.html
   design/
     design-system.md
