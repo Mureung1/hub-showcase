@@ -1,111 +1,156 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import {
+  catAssistantAssets,
+  purposes,
+  scenarios,
+  situationCardsFor,
+  toneLabels,
+  type Candidate,
+  type Mode,
+  type PurposeId,
+  type Scenario,
+  type ScenarioId,
+  type SituationId,
+  type Source,
+  type Step,
+  type ToneLevel,
+} from './domain/message'
+import { hasPlaceholder, isPlaceholder, splitPlaceholderText } from './domain/placeholders'
+import {
+  isValidGenerationResponse,
+  type GenerationErrorCode,
+  type GenerationResult,
+} from './services/generation/contracts'
+import {
+  generateWithMock,
+  type MockGenerationCase,
+} from './services/generation/mockGenerator'
 
-type ScenarioId = 'groupwork' | 'professor' | 'senior' | 'friend'
-type PurposeId = 'ask' | 'apologize' | 'decline' | 'question' | 'suggest' | 'other'
-type ToneLevel = 1 | 2 | 3
-type Mode = 'reply' | 'initiate'
-type Step = 'mode' | 'scenario' | 'situation' | 'manual' | 'result'
-type Source = 'template' | 'ai'
-type SituationId =
-  | 'schedule'
-  | 'thanks_check'
-  | 'ask'
-  | 'apologize'
-  | 'decline'
-  | 'contribution_check'
-  | 'absence_inquiry'
-  | 'casual_request'
-  | 'express_feelings'
-
-type Scenario = {
-  id: ScenarioId
-  helper: string
-  name: string
-  summary: string
-  example: string
+type FlowState = {
+  step: Step
+  mode: Mode | null
+  selectedScenarioId: ScenarioId | null
+  selectedPurposeId: PurposeId | null
+  receivedMessage: string
+  situation: string
+  candidates: Candidate[]
+  source: Source
 }
 
-type Purpose = {
-  id: PurposeId
-  label: string
+type StoredFlowState = FlowState & {
+  savedAt: number
 }
 
-type SituationCard = {
-  id: SituationId
-  label: string
+type GenerationStatus = 'idle' | 'loading' | 'error'
+
+const storageKey = 'dabnyangi:flow'
+const flowStorageTtlMs = 30 * 60 * 1000
+const generationTimeoutMs = 20_000
+const developmentGenerationCase: MockGenerationCase = 'normal'
+const loadingMessages = ['상황을 읽고 있어요.', '톤 3가지로 쓰고 있어요.', '거의 다 됐어요.']
+
+const generationErrorMessage: Record<GenerationErrorCode, string> = {
+  invalid_request: '입력 내용을 다시 확인해주세요.',
+  rate_limited: '요청이 많아요. 잠시 후 다시 시도해주세요.',
+  generation_failed: '보낼 말을 만들지 못했어요. 입력은 그대로 두었어요.',
+  timeout: '응답이 오래 걸리고 있어요. 잠시 후 다시 시도해주세요.',
+  invalid_response: '안전하게 확인할 수 없는 응답이에요. 다시 시도해주세요.',
+  unsafe_response: '안전하지 않은 표현이 감지됐어요. 상황을 조금 바꿔 다시 시도해주세요.',
 }
 
-type Candidate = {
-  toneLevel: ToneLevel
-  toneLabel: string
-  text: string
+const renderCandidateText = (value: string) =>
+  splitPlaceholderText(value).map((part, index) =>
+    isPlaceholder(part) ? (
+      <mark className="placeholder" key={`${part}-${index}`}>
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  )
+
+const generateWithTimeout = (
+  request: Parameters<typeof generateWithMock>[0],
+  generationCase: MockGenerationCase,
+): Promise<GenerationResult> =>
+  new Promise((resolve) => {
+    const timeout = window.setTimeout(() => {
+      resolve({ ok: false, error: 'timeout' })
+    }, generationTimeoutMs)
+
+    void generateWithMock(request, generationCase)
+      .then((result) => {
+        window.clearTimeout(timeout)
+        resolve(result)
+      })
+      .catch(() => {
+        window.clearTimeout(timeout)
+        resolve({ ok: false, error: 'generation_failed' })
+      })
+  })
+
+const initialFlowState: FlowState = {
+  step: 'mode',
+  mode: null,
+  selectedScenarioId: null,
+  selectedPurposeId: null,
+  receivedMessage: '',
+  situation: '',
+  candidates: [],
+  source: 'template',
 }
 
-const scenarios: Scenario[] = [
-  {
-    id: 'groupwork',
-    helper: '팀플냥',
-    name: '팀플·조모임',
-    summary: '할 말은 해야 할 때',
-    example: '자료 마감이 오늘인데 팀원이 아직 공유를 안 했어요.',
-  },
-  {
-    id: 'professor',
-    helper: '교수냥',
-    name: '교수님·조교님',
-    summary: '결석·기한 연장·질문, 정중하게',
-    example: '과제 제출 기한을 하루만 연장 가능한지 여쭤보고 싶어요.',
-  },
-  {
-    id: 'senior',
-    helper: '선배냥',
-    name: '선배·동기',
-    summary: '존댓말 수위가 애매할 때',
-    example: '동아리 회의 시간을 다시 확인하고 싶어요.',
-  },
-  {
-    id: 'friend',
-    helper: '연인냥',
-    name: '친구·연인',
-    summary: '마음은 있는데 말이 안 나올 때',
-    example: '약속을 미뤄야 하는데 서운하지 않게 말하고 싶어요.',
-  },
-]
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
-const purposes: Purpose[] = [
-  { id: 'ask', label: '부탁하기' },
-  { id: 'apologize', label: '사과하기' },
-  { id: 'decline', label: '거절하기' },
-  { id: 'question', label: '질문하기' },
-  { id: 'suggest', label: '제안·확인하기' },
-  { id: 'other', label: '기타' },
-]
+const loadFlowState = (): FlowState => {
+  if (typeof window === 'undefined') return initialFlowState
 
-const toneLabels: Record<ToneLevel, string> = {
-  1: '기본',
-  2: '더 부드럽게',
-  3: '더 분명하게',
+  try {
+    const savedValue: unknown = JSON.parse(window.sessionStorage.getItem(storageKey) ?? 'null')
+    if (
+      !isRecord(savedValue) ||
+      !['mode', 'scenario', 'situation', 'manual', 'result'].includes(String(savedValue.step)) ||
+      ![null, 'reply', 'initiate'].includes(savedValue.mode as Mode | null) ||
+      ![null, 'groupwork', 'professor', 'senior', 'friend'].includes(savedValue.selectedScenarioId as ScenarioId | null) ||
+      ![null, 'ask', 'apologize', 'decline', 'question', 'suggest', 'other'].includes(
+        savedValue.selectedPurposeId as PurposeId | null,
+      ) ||
+      typeof savedValue.receivedMessage !== 'string' ||
+      typeof savedValue.situation !== 'string' ||
+      typeof savedValue.savedAt !== 'number' ||
+      !Number.isFinite(savedValue.savedAt) ||
+      savedValue.savedAt > Date.now() ||
+      Date.now() - savedValue.savedAt > flowStorageTtlMs ||
+      !Array.isArray(savedValue.candidates) ||
+      (savedValue.candidates.length > 0 &&
+        !isValidGenerationResponse({
+          source: savedValue.source,
+          candidates: savedValue.candidates,
+        }))
+    ) {
+      return initialFlowState
+    }
+
+    const savedFlow: FlowState = {
+      step: savedValue.step as Step,
+      mode: savedValue.mode as Mode | null,
+      selectedScenarioId: savedValue.selectedScenarioId as ScenarioId | null,
+      selectedPurposeId: savedValue.selectedPurposeId as PurposeId | null,
+      receivedMessage: savedValue.receivedMessage,
+      situation: savedValue.situation,
+      candidates: savedValue.candidates,
+      source: savedValue.source as Source,
+    }
+
+    if ((savedFlow.step === 'result' && savedFlow.candidates.length !== 3) || (savedFlow.step !== 'mode' && !savedFlow.mode)) {
+      return initialFlowState
+    }
+
+    return savedFlow
+  } catch {
+    return initialFlowState
+  }
 }
-
-const commonSituations: SituationCard[] = [
-  { id: 'schedule', label: '일정 조율' },
-  { id: 'thanks_check', label: '감사·확인' },
-  { id: 'ask', label: '부탁' },
-  { id: 'apologize', label: '사과' },
-  { id: 'decline', label: '거절' },
-]
-
-const specificSituation: Record<ScenarioId, SituationCard> = {
-  groupwork: { id: 'contribution_check', label: '몫 확인·재촉' },
-  professor: { id: 'absence_inquiry', label: '결석·과제 문의' },
-  senior: { id: 'casual_request', label: '말 편하게 하자고 하기' },
-  friend: { id: 'express_feelings', label: '마음 표현하기' },
-}
-
-const situationCardsFor = (scenarioId: ScenarioId): SituationCard[] => [
-  ...commonSituations,
-  specificSituation[scenarioId],
-]
 
 const templates: Record<ScenarioId, Partial<Record<SituationId, Record<ToneLevel, string>>>> = {
   groupwork: {
@@ -238,29 +283,6 @@ const templates: Record<ScenarioId, Partial<Record<SituationId, Record<ToneLevel
   },
 }
 
-const aiDemoMessages: Record<ScenarioId, Record<ToneLevel, string>> = {
-  groupwork: {
-    1: '[상황]을 반영해서 답냥이가 새로 써준 문장이에요 — 기본 톤.',
-    2: '[상황]을 반영해서 답냥이가 새로 써준 문장이에요 — 더 부드러운 톤.',
-    3: '[상황]을 반영해서 답냥이가 새로 써준 문장이에요 — 더 분명한 톤.',
-  },
-  professor: {
-    1: '안녕하세요 교수님. [상황]을 반영해 답냥이가 새로 써준 문장이에요 — 기본 톤.',
-    2: '안녕하세요 교수님. [상황]을 반영해 답냥이가 새로 써준 문장이에요 — 더 부드러운 톤.',
-    3: '안녕하세요 교수님. [상황]을 반영해 답냥이가 새로 써준 문장이에요 — 더 분명한 톤.',
-  },
-  senior: {
-    1: '선배님, [상황]을 반영해서 답냥이가 새로 써준 문장이에요 — 기본 톤.',
-    2: '선배님, [상황]을 반영해서 답냥이가 새로 써준 문장이에요 — 더 부드러운 톤.',
-    3: '선배님, [상황]을 반영해서 답냥이가 새로 써준 문장이에요 — 더 분명한 톤.',
-  },
-  friend: {
-    1: '[상황]을 반영해서 답냥이가 새로 써준 문장이에요 — 기본 톤.',
-    2: '[상황]을 반영해서 답냥이가 새로 써준 문장이에요 — 더 부드러운 톤.',
-    3: '[상황]을 반영해서 답냥이가 새로 써준 문장이에요 — 더 분명한 톤.',
-  },
-}
-
 const buildCandidates = (source: Record<ToneLevel, string>): Candidate[] =>
   ([1, 2, 3] as const).map((toneLevel) => ({
     toneLevel,
@@ -268,31 +290,118 @@ const buildCandidates = (source: Record<ToneLevel, string>): Candidate[] =>
     text: source[toneLevel],
   }))
 
-function ProjectIntro() {
-  const [step, setStep] = useState<Step>('mode')
-  const [mode, setMode] = useState<Mode | null>(null)
-  const [selectedScenarioId, setSelectedScenarioId] = useState<ScenarioId | null>(null)
-  const [selectedPurposeId, setSelectedPurposeId] = useState<PurposeId>('ask')
-  const [receivedMessage, setReceivedMessage] = useState('')
-  const [situation, setSituation] = useState('')
-  const [candidates, setCandidates] = useState<Candidate[]>([])
-  const [source, setSource] = useState<Source>('template')
+type ProjectIntroProps = {
+  mockGenerationCase?: MockGenerationCase
+}
+
+function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: ProjectIntroProps) {
+  const [initialFlow] = useState<FlowState>(loadFlowState)
+  const [step, setStep] = useState<Step>(initialFlow.step)
+  const [mode, setMode] = useState<Mode | null>(initialFlow.mode)
+  const [selectedScenarioId, setSelectedScenarioId] = useState<ScenarioId | null>(initialFlow.selectedScenarioId)
+  const [selectedPurposeId, setSelectedPurposeId] = useState<PurposeId | null>(initialFlow.selectedPurposeId)
+  const [receivedMessage, setReceivedMessage] = useState(initialFlow.receivedMessage)
+  const [situation, setSituation] = useState(initialFlow.situation)
+  const [candidates, setCandidates] = useState<Candidate[]>(initialFlow.candidates)
+  const [source, setSource] = useState<Source>(initialFlow.source)
   const [copiedTone, setCopiedTone] = useState<ToneLevel | null>(null)
+  const [fallbackTone, setFallbackTone] = useState<ToneLevel | null>(null)
+  const [copyFailedTone, setCopyFailedTone] = useState<ToneLevel | null>(null)
+  const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('idle')
+  const [generationError, setGenerationError] = useState<GenerationErrorCode | null>(null)
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
+  const [isLongWait, setIsLongWait] = useState(false)
+  const resultTextRefs = useRef(new Map<ToneLevel, HTMLParagraphElement>())
+  const generationRequestId = useRef(0)
 
   const selectedScenario = scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null
 
   const canGenerate =
-    mode !== null && (mode === 'reply' ? receivedMessage.trim().length > 0 : situation.trim().length > 0)
+    selectedPurposeId !== null &&
+    mode !== null &&
+    (mode === 'reply' ? receivedMessage.trim().length > 0 : situation.trim().length > 0)
+
+  const generateGuide =
+    selectedPurposeId === null
+      ? '메시지 목적을 골라주세요.'
+      : mode === 'reply' && receivedMessage.trim().length === 0
+        ? '받은 메시지를 붙여넣어주세요.'
+        : mode === 'initiate' && situation.trim().length === 0
+          ? '상황을 적어주세요.'
+          : null
+
+  const isGenerating = generationStatus === 'loading'
+  const isRerolling = step === 'result' && isGenerating
+
+  useEffect(() => {
+    if (step === 'mode' && mode === null) {
+      window.sessionStorage.removeItem(storageKey)
+      return
+    }
+
+    const flowState: StoredFlowState = {
+      step,
+      mode,
+      selectedScenarioId,
+      selectedPurposeId,
+      receivedMessage,
+      situation,
+      candidates,
+      source,
+      savedAt: Date.now(),
+    }
+    window.sessionStorage.setItem(storageKey, JSON.stringify(flowState))
+    const expiryTimer = window.setTimeout(() => {
+      window.sessionStorage.removeItem(storageKey)
+    }, flowStorageTtlMs)
+
+    return () => {
+      window.clearTimeout(expiryTimer)
+    }
+  }, [candidates, mode, receivedMessage, selectedPurposeId, selectedScenarioId, situation, source, step])
+
+  useEffect(
+    () => () => {
+      generationRequestId.current += 1
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (!isGenerating) {
+      setLoadingMessageIndex(0)
+      setIsLongWait(false)
+      return
+    }
+
+    const messageInterval = window.setInterval(() => {
+      setLoadingMessageIndex((currentIndex) => (currentIndex + 1) % loadingMessages.length)
+    }, 4_500)
+    const longWaitTimer = window.setTimeout(() => {
+      setIsLongWait(true)
+    }, 10_000)
+
+    return () => {
+      window.clearInterval(messageInterval)
+      window.clearTimeout(longWaitTimer)
+    }
+  }, [isGenerating])
+
+  const cancelGeneration = () => {
+    generationRequestId.current += 1
+    setGenerationStatus('idle')
+    setGenerationError(null)
+  }
 
   const chooseMode = (nextMode: Mode) => {
+    cancelGeneration()
     setMode(nextMode)
     setStep('scenario')
   }
 
   const selectScenario = (scenario: Scenario) => {
+    cancelGeneration()
     setSelectedScenarioId(scenario.id)
-    setReceivedMessage('')
-    setSituation('')
     setStep('situation')
   }
 
@@ -300,64 +409,131 @@ function ProjectIntro() {
     if (!selectedScenarioId) return
     const toneTexts = templates[selectedScenarioId][situationId]
     if (!toneTexts) return
+    cancelGeneration()
     setSource('template')
     setCandidates(buildCandidates(toneTexts))
     setCopiedTone(null)
+    setFallbackTone(null)
+    setCopyFailedTone(null)
     setStep('result')
   }
 
-  const goToManual = () => setStep('manual')
+  const goToManual = () => {
+    cancelGeneration()
+    setStep('manual')
+  }
 
-  const generateFromManual = () => {
-    if (!selectedScenarioId || !canGenerate) return
-    setSource('ai')
-    setCandidates(buildCandidates(aiDemoMessages[selectedScenarioId]))
+  const generateFromManual = async () => {
+    if (!selectedScenarioId || selectedPurposeId === null || !canGenerate || isGenerating) return
+
+    const requestId = generationRequestId.current + 1
+    generationRequestId.current = requestId
+    setGenerationStatus('loading')
+    setGenerationError(null)
+
+    const result = await generateWithTimeout(
+      {
+        scenarioId: selectedScenarioId,
+        purpose: selectedPurposeId,
+        ...(receivedMessage.trim() ? { receivedMessage } : {}),
+        ...(situation.trim() ? { situation } : {}),
+      },
+      mockGenerationCase,
+    )
+
+    if (requestId !== generationRequestId.current) return
+
+    if (!result.ok) {
+      setGenerationStatus('error')
+      setGenerationError(result.error)
+      return
+    }
+
+    setSource(result.response.source)
+    setCandidates(result.response.candidates)
     setCopiedTone(null)
+    setFallbackTone(null)
+    setCopyFailedTone(null)
+    setGenerationStatus('idle')
+    setGenerationError(null)
     setStep('result')
+  }
+
+  const selectCandidateText = (toneLevel: ToneLevel) => {
+    try {
+      const resultText = resultTextRefs.current.get(toneLevel)
+      const selection = window.getSelection()
+      if (!resultText || !selection) return false
+
+      const range = document.createRange()
+      range.selectNodeContents(resultText)
+      selection.removeAllRanges()
+      selection.addRange(range)
+      return true
+    } catch {
+      return false
+    }
   }
 
   const copyCandidate = async (candidate: Candidate) => {
     try {
+      if (!navigator.clipboard) throw new Error('Clipboard API를 사용할 수 없습니다.')
       await navigator.clipboard.writeText(candidate.text)
       setCopiedTone(candidate.toneLevel)
+      setFallbackTone(null)
+      setCopyFailedTone(null)
     } catch {
-      setCopiedTone(candidate.toneLevel)
+      setCopiedTone(null)
+      if (selectCandidateText(candidate.toneLevel)) {
+        setFallbackTone(candidate.toneLevel)
+        setCopyFailedTone(null)
+        return
+      }
+      setFallbackTone(null)
+      setCopyFailedTone(candidate.toneLevel)
     }
   }
 
   const backToMode = () => {
+    cancelGeneration()
     setMode(null)
     setReceivedMessage('')
     setSituation('')
+    setSelectedPurposeId(null)
     setStep('mode')
   }
 
   const backToScenario = () => {
-    setReceivedMessage('')
-    setSituation('')
+    cancelGeneration()
     setStep('scenario')
   }
 
-  const backToSituation = () => setStep('situation')
+  const backToSituation = () => {
+    cancelGeneration()
+    setStep('situation')
+  }
 
   const reroll = () => {
     if (source === 'template') {
+      cancelGeneration()
       setStep('manual')
       return
     }
-    if (!selectedScenarioId) return
-    setCandidates(buildCandidates(aiDemoMessages[selectedScenarioId]))
-    setCopiedTone(null)
+    void generateFromManual()
   }
 
   const restart = () => {
+    cancelGeneration()
     setStep('mode')
     setMode(null)
     setSelectedScenarioId(null)
+    setSelectedPurposeId(null)
     setReceivedMessage('')
     setSituation('')
     setCandidates([])
     setCopiedTone(null)
+    setFallbackTone(null)
+    setCopyFailedTone(null)
   }
 
   return (
@@ -412,14 +588,30 @@ function ProjectIntro() {
               {scenarios.map((scenario) => (
                 <button
                   className="scenario-card"
+                  data-scenario={scenario.id}
                   data-selected={scenario.id === selectedScenarioId}
                   key={scenario.id}
                   onClick={() => selectScenario(scenario)}
                   type="button"
                 >
-                  <strong>{scenario.helper}</strong>
-                  <span>{scenario.name}</span>
+                  <span className="scenario-card-main">
+                    <span className="scenario-card-copy">
+                      <strong>{scenario.helper}</strong>
+                      <span className="scenario-card-name">{scenario.name}</span>
+                    </span>
+                    <span aria-hidden="true" className="scenario-card-art" data-asset-slot="cat">
+                      {catAssistantAssets[scenario.id].assetPath ? (
+                        <img
+                          alt={catAssistantAssets[scenario.id].alt}
+                          src={catAssistantAssets[scenario.id].assetPath ?? undefined}
+                        />
+                      ) : (
+                        <span className="scenario-card-art-placeholder">냥</span>
+                      )}
+                    </span>
+                  </span>
                   <small>{scenario.summary}</small>
+                  <span className="scenario-card-cta">이 냥이와 말 고르기 →</span>
                 </button>
               ))}
             </div>
@@ -466,7 +658,7 @@ function ProjectIntro() {
               <span>S2</span>
               <div>
                 <h2>{mode === 'reply' ? '받은 메시지 붙여넣기' : '상황 설명'}</h2>
-                <p>맞는 카드가 없을 때만 여기서 직접 알려주세요 — 답냥이가 AI로 새로 써줘요.</p>
+                <p>맞는 카드가 없을 때만 직접 알려주세요. AI 연결 전에는 검증용 예시 후보를 보여줘요.</p>
               </div>
             </div>
 
@@ -476,7 +668,11 @@ function ProjectIntro() {
                   className="purpose-chip"
                   data-selected={purpose.id === selectedPurposeId}
                   key={purpose.id}
-                  onClick={() => setSelectedPurposeId(purpose.id)}
+                  onClick={() => {
+                    setSelectedPurposeId(purpose.id)
+                    setGenerationStatus('idle')
+                    setGenerationError(null)
+                  }}
                   type="button"
                 >
                   {purpose.label}
@@ -489,37 +685,96 @@ function ProjectIntro() {
                 <label className="field">
                   <span>받은 메시지 붙여넣기</span>
                   <textarea
+                    aria-label="받은 메시지 붙여넣기"
                     maxLength={500}
-                    onChange={(event) => setReceivedMessage(event.target.value)}
+                    onChange={(event) => {
+                      setReceivedMessage(event.target.value)
+                      setGenerationStatus('idle')
+                      setGenerationError(null)
+                    }}
                     placeholder="여기에 상대방이 보낸 메시지를 붙여넣어요"
                     value={receivedMessage}
                   />
+                  <span className="field-count" aria-live="polite">
+                    {receivedMessage.length}/500자
+                  </span>
                 </label>
                 <label className="field">
                   <span>상황 설명 (선택)</span>
                   <textarea
+                    aria-label="상황 설명 (선택)"
                     maxLength={300}
-                    onChange={(event) => setSituation(event.target.value)}
+                    onChange={(event) => {
+                      setSituation(event.target.value)
+                      setGenerationStatus('idle')
+                      setGenerationError(null)
+                    }}
                     placeholder="더 알려주고 싶은 상황이 있다면 적어주세요"
                     value={situation}
                   />
+                  <span className="field-count" aria-live="polite">
+                    {situation.length}/300자
+                  </span>
                 </label>
               </>
             ) : (
               <label className="field">
                 <span>상황 설명</span>
                 <textarea
+                  aria-label="상황 설명"
                   maxLength={300}
-                  onChange={(event) => setSituation(event.target.value)}
+                  onChange={(event) => {
+                    setSituation(event.target.value)
+                    setGenerationStatus('idle')
+                    setGenerationError(null)
+                  }}
                   placeholder={selectedScenario.example}
                   value={situation}
                 />
+                <span className="field-count" aria-live="polite">
+                  {situation.length}/300자
+                </span>
               </label>
             )}
 
-            <p className="privacy-note">실명 대신 “교수님”, “팀원”처럼 적어주세요.</p>
-            <button className="generate-button" disabled={!canGenerate} onClick={generateFromManual} type="button">
-              보낼 말 3가지 만들기
+            <p className="privacy-note">
+              실명·연락처·학번은 빼고 적어주세요. 입력 내용은 마지막 선택 후 30분 동안 이 탭에만 임시 보관돼요.
+            </p>
+            <button
+              className="generate-button"
+              disabled={!canGenerate || isGenerating}
+              onClick={() => void generateFromManual()}
+              type="button"
+            >
+              {isGenerating ? '보낼 말을 만들고 있어요…' : '보낼 말 3가지 만들기'}
+            </button>
+            {generateGuide && (
+              <p className="generate-guide" role="status">
+                {generateGuide}
+              </p>
+            )}
+            {isGenerating && (
+              <>
+                <p className="generation-status" role="status">
+                  {isLongWait ? '조금만 더 기다려주세요.' : loadingMessages[loadingMessageIndex]}
+                </p>
+                <div aria-label="보낼 말 후보를 준비하고 있어요" className="result-list generation-skeleton">
+                  {[1, 2, 3].map((skeletonIndex) => (
+                    <div className="generation-skeleton-card" key={skeletonIndex} />
+                  ))}
+                </div>
+              </>
+            )}
+            {generationStatus === 'error' && generationError && (
+              <div className="generation-error" role="alert">
+                <p>{generationErrorMessage[generationError]}</p>
+                <button onClick={() => void generateFromManual()} type="button">
+                  다시 시도
+                </button>
+              </div>
+            )}
+            <button className="privacy-clear" onClick={restart} type="button">
+              이 탭의 작성 내용 지우기
             </button>
           </div>
         )}
@@ -536,27 +791,64 @@ function ProjectIntro() {
                 <p>{selectedScenario.name} 상황에 맞춘 톤 3단계예요.</p>
               </div>
             </div>
+            {source === 'ai' && (
+              <p className="mock-note">현재는 AI 연결 전 검증용 예시 후보입니다.</p>
+            )}
+            {generationStatus === 'error' && generationError && (
+              <div className="generation-error" role="alert">
+                <p>{generationErrorMessage[generationError]}</p>
+                <button onClick={() => void generateFromManual()} type="button">
+                  다시 시도
+                </button>
+              </div>
+            )}
 
             <div className="result-list">
               {candidates.map((candidate) => (
                 <article className="result-card" key={candidate.toneLevel}>
                   <div className="result-meta">
                     <span>{candidate.toneLabel}</span>
-                    {candidate.text.includes('[') && <em>빈칸을 채워주세요</em>}
+                    {hasPlaceholder(candidate.text) && <em>빈칸을 채워주세요</em>}
                   </div>
-                  <p>{candidate.text}</p>
-                  <button onClick={() => void copyCandidate(candidate)} type="button">
-                    {copiedTone === candidate.toneLevel ? '복사됨' : '복사'}
+                  <p
+                    ref={(element) => {
+                      if (element) {
+                        resultTextRefs.current.set(candidate.toneLevel, element)
+                        return
+                      }
+                      resultTextRefs.current.delete(candidate.toneLevel)
+                    }}
+                  >
+                    {renderCandidateText(candidate.text)}
+                  </p>
+                  <button disabled={isRerolling} onClick={() => void copyCandidate(candidate)} type="button">
+                    {copiedTone === candidate.toneLevel
+                      ? '복사됨'
+                      : fallbackTone === candidate.toneLevel
+                        ? '텍스트 선택됨'
+                        : copyFailedTone === candidate.toneLevel
+                          ? '복사 실패'
+                          : '복사'}
                   </button>
+                  {fallbackTone === candidate.toneLevel && (
+                    <p className="copy-feedback" role="status">
+                      텍스트를 선택했어요. 길게 눌러 복사해주세요.
+                    </p>
+                  )}
+                  {copyFailedTone === candidate.toneLevel && (
+                    <p className="copy-feedback copy-feedback--error" role="alert">
+                      복사하지 못했어요. 텍스트를 길게 눌러 복사해주세요.
+                    </p>
+                  )}
                 </article>
               ))}
             </div>
 
-            <button className="wizard-back wizard-reroll" onClick={reroll} type="button">
-              다시 만들기
+            <button className="wizard-back wizard-reroll" disabled={isRerolling} onClick={reroll} type="button">
+              {isRerolling ? '다시 만들고 있어요…' : '다시 만들기'}
             </button>
             <button className="wizard-restart" onClick={restart} type="button">
-              처음으로
+              처음으로 (작성 내용 지우기)
             </button>
           </div>
         )}
