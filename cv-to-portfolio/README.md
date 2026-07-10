@@ -8,6 +8,8 @@
 
 - 📄 **[기획서 (Wiki)](https://github.com/dolphin1404/NaverConnect_wm/wiki/기획서)** — 문제 정의 · 사용자 시나리오 · 화면 구조 · 핵심 기능 (스크린샷 포함 최신본)
 - 📄 [기획서 (repo 사본)](docs/기획서.md)
+- 🗂️ **[개발 백로그 — 4주 계획](docs/BACKLOG.md)** — Task · 우선순위(P0~P2) · 주차별 목표 · 2주차 Must-Finish
+- 📊 [1주차 발표 자료](docs/CV2PF_발표.pptx)
 - 🧭 [개발 컨텍스트 (CLAUDE.md)](CLAUDE.md) — 아키텍처 · 구조 · 라이브러리 · 컨벤션 · 커밋/PR 규칙
 - 🎨 [디자인 명세 (DESIGN.md 6종)](client/designs) · [디자인 리뷰](docs/design-review-2026-07-09.md)
 - 🖼️ [예시 결과 + 스크린샷](examples)
