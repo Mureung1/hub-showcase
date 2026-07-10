@@ -1,5 +1,7 @@
 # 작업 체크리스트
 
+> 우선순위·주차별 일정은 [task.md](task.md) 참고 — 이 문서는 영역별 세부 작업과 완료 여부만 추적한다.
+
 ## 리브랜딩 (식비구조대 → 끼니픽)
 - [x] 기니 캐릭터 일러스트 리소스 정리 — 빈 냉장고 씬(`src/assets/fridge-empty.png`) 확보 (제공된 시트 기준 — 계속 수정될 예정이라 확정본 나올 때까지 임시 리소스로 취급)
 - [x] 홈 화면을 "원룸 + 문 열린 냉장고 + 냉장고를 들여다보는 기니" 씬으로 재설계 (`Home.jsx` 상단 히어로 이미지로 적용)
@@ -9,8 +11,8 @@
 - [ ] 폰트를 Pretendard 기본에서 좀 더 귀여운 느낌의 폰트로 교체 (마스코트 톤에 맞는 폰트 후보 조사 필요)
 - [ ] 기존 컴포넌트(`MenuCard`, `IngredientList`, `PurchaseLinkPanel`, `Thumbnail` 등)의 오렌지 톤을 `DESIGN_SYSTEM.md` 공식 토큰(`primary` 등)으로 전체 교체
 - [ ] 레시피 상세 화면에 재료별 "보유"/"구매 필요" 배지 추가, "구매 필요" 재료만 구매 링크 노출
-- [ ] `README.md`, 로고 이미지(`src/assets/logo-*.png`), `prototype/` 파일 제목·워드마크, `package.json` name 등 "식비구조대" 표기를 "끼니픽"으로 교체
-- [ ] `prototype/`도 냉장고 씬 + 보유/구매 필요 구분에 맞게 다시 제작 (지금은 리브랜딩 전 필터+랭킹 버전)
+- [x] 화면에 보이는 "식비구조대" 로고(이미지 로고 → 텍스트 로고 "끼니픽"으로 교체 후 전부 삭제) 제거 — `README.md`·`package.json` name은 아직 남음. `src/assets/logo-*.png`는 미사용이지만 파일은 그대로 있음(삭제 여부는 나중에 결정)
+- [x] `prototype/`을 냉장고 씬 + 재료 칩 선택 + 추천 흐름으로 재구성 — 옛 필터+랭킹 홈(`index-warm.html`, `filter.js`)은 제거하고 `index.html`(냉장고 화면, `fridge.js`) → `home.html`(추천+둘러보기, `home.js`)로 재구축, React `FridgePage`/`Home`과 동일한 흐름. 레시피 상세 페이지의 보유/구매 필요 구분은 아직 미반영(React 쪽도 미완성이라 함께 남은 작업)
 - [ ] `src/assets/fridge-empty.png` 용량 최적화 (현재 5MB대로 너무 큼 — 압축·WebP 변환 검토)
 
 ## 프론트엔드 (화면)
