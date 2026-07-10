@@ -1,0 +1,304 @@
+/* ============================================================
+   prototype_v2 전용 컴포넌트 스타일
+   색상/폰트/여백/radius 값은 전부 ../variables.css 의 변수만 사용한다.
+   body / a / .btn-primary / .btn-ghost / .field-input / .card /
+   .tag / .tag--primary / .tag--accent 는 variables.css 에서 이미 제공하므로 재정의하지 않는다.
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+/* variables.css의 .btn-primary/.btn-ghost는 <a>/<span>에 씌우므로 인라인 레이아웃 보정만 추가 */
+.btn-primary,
+.btn-ghost {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.page {
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: var(--container-padding-top) var(--container-padding-x) var(--container-padding-bottom);
+}
+
+/* 상단 4단계 스텝퍼 */
+.steps {
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  margin: 0 0 var(--space-12);
+  padding: 0;
+}
+
+.steps li {
+  flex: 1;
+}
+
+.steps a {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-caption);
+  padding: var(--space-4) var(--space-1);
+  border-bottom: 3px solid var(--color-border);
+}
+
+.steps a .num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-badge);
+  font-weight: var(--font-weight-bold);
+  margin-right: var(--space-2);
+}
+
+.steps a:hover {
+  color: var(--color-primary-hover);
+}
+
+.steps a.active {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+  border-bottom-color: var(--color-primary);
+}
+
+.steps a.active .num {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+/* 메인 카드 */
+.card {
+  padding: var(--space-16);
+}
+
+.label {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-eyebrow);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+}
+
+h1 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.35;
+  color: var(--color-text-primary);
+}
+
+h1.title-display {
+  font-size: var(--font-size-display);
+}
+
+.subtitle {
+  margin: 0 0 var(--space-12);
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+}
+
+.note {
+  margin: calc(var(--space-9) * -1) 0 var(--space-12);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-placeholder);
+}
+
+.section {
+  margin-top: var(--space-11);
+  padding-top: var(--space-9);
+  border-top: 1px solid var(--color-border);
+}
+
+.section:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+h2 {
+  margin: 0 0 var(--space-5);
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+/* 근거/설명 박스 (추천 이유 = primary, AI 분석 = accent) */
+.info-box {
+  border-radius: var(--radius-card-md);
+  padding: var(--space-7) var(--space-9);
+  font-size: var(--font-size-body);
+  margin: 0;
+}
+
+.info-box--primary {
+  background: var(--color-primary-tint-bg);
+  color: var(--color-primary-tint-text);
+}
+
+.info-box--accent {
+  background: var(--color-accent-tint-bg);
+  color: var(--color-accent-tint-text);
+  font-size: var(--font-size-caption);
+}
+
+/* 폼 요소 */
+.field {
+  margin-bottom: var(--space-8);
+}
+
+.field label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.field .hint {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-placeholder);
+  margin-left: var(--space-1);
+}
+
+.field textarea.field-input {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.error-text {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-caption);
+  color: var(--color-error);
+}
+
+.field-row {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.field-row .field-input {
+  flex: 1;
+}
+
+/* 버튼 */
+.btn-block {
+  display: block;
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+}
+
+.btn-link {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  text-decoration: none;
+}
+
+.btn-link:hover {
+  color: var(--color-primary-hover);
+}
+
+.actions {
+  margin-top: var(--space-12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+/* 공고 카드 목록 */
+.job-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.job-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card-md);
+  padding: var(--space-9) var(--space-10);
+  background: var(--color-bg-surface);
+  transition: border-color 0.15s ease;
+}
+
+.job-card:hover {
+  border-color: var(--color-primary-tint-border);
+}
+
+.job-card .org {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-tertiary);
+}
+
+.job-card h3 {
+  margin: var(--space-1) 0 var(--space-3);
+  font-size: var(--font-size-h2);
+  color: var(--color-text-primary);
+}
+
+.job-card .deadline {
+  font-size: var(--font-size-caption);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+}
+
+.job-card .tag {
+  margin-top: var(--space-4);
+}
+
+/* 상세 화면 */
+.meta-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+}
+
+.meta-list li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.meta-list li:last-child {
+  border-bottom: none;
+}
+
+ul.condition-list {
+  margin: 0;
+  padding-left: var(--space-9);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+}
+
+ul.condition-list li + li {
+  margin-top: var(--space-2);
+}
+
+/* 자소서 초안 화면 */
+.question-block {
+  margin-bottom: var(--space-11);
+}
+
+.question-block h3 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.question-block .field-input {
+  margin-top: var(--space-4);
+  background: var(--color-bg-textarea);
+}
