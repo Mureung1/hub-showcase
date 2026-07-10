@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한끼바꿈 — 로그인 · 식사권 사용확인 (Polished)</title>
+<style>
+  :root{
+    --primary:#5B6CF5; --primary-soft:#EAEDFB; --primary-deep:#4354D8;
+    --bg-page:#F6F3EC; --bg-card:#FFFEFB; --bg-section:#F5F1E8;
+    --ink:#2B2620; --body:#5A544B; --muted:#A39A8C; --line:#EDE7DB;
+    --ticket-bg:#FFF3D6; --ticket-ink:#8A6A1B;
+    --ok-soft:#E9F4EA; --ok:#3E9A64;
+    --hot-soft:#FDEEE9; --hot:#E85D3D;
+    --r-card:20px; --r-inner:14px; --r-pill:999px;
+    --shadow-card:0 8px 24px rgba(88,68,32,.07);
+    --shadow-float:0 18px 44px rgba(88,68,32,.12);
+    font-size:16px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:var(--bg-page);color:var(--body);min-height:100vh;padding:48px 20px 72px}
+  input[type=radio].nav{position:absolute;opacity:0;pointer-events:none}
+  label{cursor:pointer}
+  .intro{max-width:980px;margin:0 auto 30px}
+  .intro .eyebrow{font-size:.76rem;letter-spacing:.2em;color:var(--primary);font-weight:700}
+  .intro h1{font-size:1.7rem;font-weight:800;letter-spacing:-.02em;margin:.3em 0;color:var(--ink)}
+  .wrap{max-width:980px;margin:0 auto;display:flex;gap:32px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+
+  .phone{width:390px;background:var(--bg-card);border-radius:40px;box-shadow:var(--shadow-float);overflow:hidden;min-height:800px;display:flex;flex-direction:column;position:relative}
+  .phone::before,.phone::after{content:"";position:absolute;border-radius:50%;filter:blur(30px);z-index:0;pointer-events:none}
+  .phone::before{width:220px;height:220px;background:var(--primary-soft);top:-70px;right:-70px;opacity:.7}
+  .phone::after{width:180px;height:180px;background:var(--ticket-bg);bottom:-50px;left:-60px;opacity:.55}
+
+  .statusbar{display:flex;justify-content:space-between;padding:14px 24px 6px;font-size:.72rem;color:var(--muted);font-weight:600;position:relative;z-index:1}
+  .stage{flex:1;padding:8px 24px 28px;display:flex;flex-direction:column;position:relative;z-index:1}
+  .screen{display:none;flex:1;flex-direction:column;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  #r-login:checked ~ .wrap .screen-login,
+  #r-signup:checked ~ .wrap .screen-signup,
+  #r-redeem:checked ~ .wrap .screen-redeem{display:flex}
+
+  .brand-mark{
+    width:64px;height:64px;border-radius:50%;margin:26px auto 14px;
+    background:radial-gradient(circle at 32% 28%,#fff,var(--primary-soft) 60%);
+    display:flex;align-items:center;justify-content:center;font-size:1.9rem;
+    box-shadow:0 10px 22px rgba(91,108,245,.18), inset 0 0 0 1px rgba(91,108,245,.12);
+  }
+  .brand-name{text-align:center;font-weight:800;font-size:1.15rem;color:var(--ink);letter-spacing:-.02em}
+  .brand-head{text-align:center;font-size:1.3rem;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin:14px 0 4px}
+  .brand-cap{text-align:center;font-size:.82rem;color:var(--muted);margin:0 0 30px;font-weight:500}
+
+  .field{margin-bottom:15px}
+  .field .lb{display:block;font-size:.8rem;font-weight:700;margin-bottom:8px;color:var(--ink)}
+  .field-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .field-row .lb{margin-bottom:0}
+  .field-row .fp{font-size:.74rem;color:var(--primary);font-weight:700}
+  .input-icon{
+    display:flex;align-items:center;gap:10px;width:100%;border-radius:var(--r-inner);
+    background:var(--bg-section);padding:0 14px;
+  }
+  .input-icon .ic{font-size:.95rem;opacity:.7;flex:0 0 auto}
+  .input-icon .val{flex:1;padding:14px 0;font-size:.9rem;color:var(--ink);font-weight:500}
+  .input-icon .eye{font-size:.9rem;opacity:.5}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;border:none;border-radius:var(--r-inner);min-height:52px;font-size:.95rem;font-weight:700;font-family:inherit;cursor:pointer;background:var(--primary);color:#fff;margin-top:6px;box-shadow:0 10px 22px rgba(91,108,245,.28)}
+  .btn.outline{background:var(--bg-card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+  .btn.big{min-height:58px;font-size:1rem}
+
+  .switch{text-align:center;font-size:.82rem;color:var(--muted);margin-top:20px;font-weight:500}
+  .switch label{color:var(--primary);font-weight:700}
+  .trust-line{text-align:center;font-size:.72rem;color:var(--muted);margin-top:14px;font-weight:500}
+
+  .divider-or{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--muted);font-size:.74rem;font-weight:600}
+  .divider-or::before,.divider-or::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .step-badge{display:inline-flex;align-self:center;margin:26px auto 12px;font-size:.7rem;font-weight:800;letter-spacing:.08em;color:var(--primary);background:var(--primary-soft);padding:6px 14px;border-radius:var(--r-pill)}
+  .role-pick{display:flex;gap:12px;margin-bottom:18px}
+  .role-card{flex:1;border-radius:var(--r-inner);background:var(--bg-section);padding:20px 12px;text-align:center}
+  .role-card .ico-circle{width:52px;height:52px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 10px;box-shadow:var(--shadow-card)}
+  .role-card .rt{font-size:.86rem;font-weight:800;color:var(--muted)}
+  .role-card .rd{font-size:.68rem;color:var(--muted);margin-top:4px;line-height:1.4}
+  .role-card.on{background:var(--primary-soft);box-shadow:inset 0 0 0 2px var(--primary)}
+  .role-card.on .ico-circle{background:#fff;box-shadow:0 6px 14px rgba(91,108,245,.25)}
+  .role-card.on .rt{color:var(--primary)}
+  .role-card.on .rd{color:var(--primary-deep);opacity:.8}
+
+  .agree-row{display:flex;align-items:center;gap:10px;background:var(--bg-section);border-radius:var(--r-inner);padding:13px 15px;margin:18px 0 4px}
+  .agree-row .chk{width:20px;height:20px;border-radius:6px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;flex:0 0 auto}
+  .agree-row .tx{font-size:.78rem;color:var(--body);font-weight:500}
+  .agree-row .tx a{color:var(--primary);font-weight:700}
+
+  .redeem-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding-top:6px}
+  .redeem-store{display:flex;align-items:center;gap:9px;background:var(--bg-card);box-shadow:var(--shadow-card);padding:9px 16px 9px 9px;border-radius:var(--r-pill);margin-bottom:26px}
+  .redeem-store .av{width:32px;height:32px;border-radius:50%;background:var(--bg-section);display:flex;align-items:center;justify-content:center;font-size:1rem}
+  .redeem-store .tx{font-size:.82rem;font-weight:700;color:var(--ink)}
+  .redeem-store .tx small{display:block;font-size:.66rem;font-weight:500;color:var(--muted);margin-top:1px}
+
+  .seal-wrap{position:relative;width:190px;height:190px;margin:6px auto 26px}
+  .seal-ring{position:absolute;inset:0;border-radius:50%;border:2px dashed rgba(138,106,27,.32);animation:spin 40s linear infinite}
+  .seal-pulse{position:absolute;inset:-10px;border-radius:50%;background:radial-gradient(circle,rgba(255,201,60,.35),transparent 70%);animation:pulse 2.6s ease-in-out infinite}
+  .seal{
+    position:absolute;inset:14px;border-radius:50%;
+    background:radial-gradient(circle at 35% 28%,#FFFBEF,var(--ticket-bg) 75%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    box-shadow:0 16px 32px rgba(138,106,27,.16), inset 0 0 0 1px rgba(255,255,255,.6);
+  }
+  .seal .n{font-size:2.5rem;font-weight:800;color:var(--ticket-ink);line-height:1}
+  .seal .u{font-size:.72rem;font-weight:700;letter-spacing:.1em;color:var(--ticket-ink);opacity:.6;margin-top:2px}
+  .seal .who{font-size:.86rem;font-weight:700;color:var(--ticket-ink);margin-top:8px}
+  @keyframes pulse{0%,100%{transform:scale(.96);opacity:.5}50%{transform:scale(1.04);opacity:.9}}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.seal-ring,.seal-pulse{animation:none}}
+
+  .waiting-badge{display:inline-flex;align-items:center;gap:7px;font-size:.76rem;font-weight:700;color:var(--hot);background:var(--hot-soft);padding:7px 14px;border-radius:var(--r-pill);margin-bottom:22px}
+  .waiting-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--hot);animation:blink 1.4s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  @media (prefers-reduced-motion:reduce){.waiting-badge .dot{animation:none}}
+
+  .redeem-msg{font-size:.9rem;color:var(--body);line-height:1.75;margin-bottom:24px;padding:0 6px}
+  .redeem-msg strong{color:var(--ink)}
+  .redeem-msg .hl{color:var(--primary);font-weight:700}
+
+  .redeem-actions{width:100%;margin-top:auto}
+  .redeem-sub{
+    display:flex;align-items:center;gap:8px;background:var(--bg-section);border-radius:var(--r-inner);
+    padding:12px 14px;font-size:.74rem;color:var(--muted);font-weight:500;margin-top:12px;line-height:1.6
+  }
+  .redeem-cancel{text-align:center;font-size:.78rem;color:var(--muted);margin-top:16px;font-weight:600}
+
+  .notes{flex:1 1 330px;max-width:440px;position:sticky;top:32px}
+  .notes h2{font-size:.78rem;letter-spacing:.18em;color:var(--primary);font-weight:700;margin-bottom:14px}
+  .note{display:none;background:var(--bg-card);border-radius:var(--r-card);padding:24px 26px;box-shadow:var(--shadow-card)}
+  .note h3{font-size:1.05rem;font-weight:800;margin-bottom:14px;color:var(--ink)}
+  .note ul{list-style:none}
+  .note li{font-size:.86rem;line-height:1.7;padding-left:20px;position:relative;margin-bottom:10px;color:var(--body)}
+  .note li::before{content:"—";position:absolute;left:0;color:var(--primary)}
+  .note li strong{color:var(--ink)}
+  .note .ref{font-size:.72rem;color:var(--muted);margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-weight:500}
+  #r-login:checked ~ .wrap .note-login,
+  #r-signup:checked ~ .wrap .note-signup,
+  #r-redeem:checked ~ .wrap .note-redeem{display:block}
+
+  .tabs2{display:flex;gap:8px;justify-content:center;margin-top:18px}
+  .tabs2 label{font-size:.76rem;font-weight:700;color:var(--muted);background:var(--bg-card);box-shadow:var(--shadow-card);padding:9px 16px;border-radius:var(--r-pill)}
+  #r-login:checked ~ .wrap .tabs2 label[for=r-login],
+  #r-signup:checked ~ .wrap .tabs2 label[for=r-signup],
+  #r-redeem:checked ~ .wrap .tabs2 label[for=r-redeem]{background:var(--primary);color:#fff;box-shadow:0 8px 18px rgba(91,108,245,.28)}
+
+  @media (max-width:880px){body{padding:28px 12px 48px}.wrap{gap:24px}.notes{position:static;max-width:390px}.phone{flex:0 1 390px;width:100%}}
+</style>
+</head>
+<body>
+
+<input class="nav" type="radio" name="screen2" id="r-login" checked>
+<input class="nav" type="radio" name="screen2" id="r-signup">
+<input class="nav" type="radio" name="screen2" id="r-redeem">
+
+<header class="intro">
+  <div class="eyebrow">ADDENDUM v2 · SCREENS 7–9 · WARM PAPER</div>
+  <h1>한끼바꿈 — 로그인 · 식사권 사용확인</h1>
+</header>
+
+<div class="wrap">
+  <div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+      <div class="stage">
+
+        <section class="screen screen-login">
+          <div class="brand-mark">🍚</div>
+          <div class="brand-head">다시 만나 반가워요</div>
+          <div class="brand-cap">한끼<em style="font-style:normal;color:var(--primary)">바꿈</em>과 함께 오늘도 한 끼</div>
+
+          <div class="field">
+            <span class="lb">이메일</span>
+            <div class="input-icon"><span class="ic">📧</span><span class="val">student@pusan.ac.kr</span></div>
+          </div>
+          <div class="field">
+            <div class="field-row"><span class="lb">비밀번호</span><span class="fp">비밀번호 찾기</span></div>
+            <div class="input-icon"><span class="ic">🔒</span><span class="val">••••••••</span><span class="eye">👁</span></div>
+          </div>
+
+          <label class="btn" for="r-login" role="button">로그인 →</label>
+
+          <div class="divider-or">또는</div>
+          <button class="btn outline" type="button">🍎 Apple로 계속하기</button>
+
+          <div class="switch">아직 계정이 없으신가요? <label for="r-signup">회원가입</label></div>
+          <div class="trust-line">🔒 안전하게 보호되는 정보예요</div>
+        </section>
+
+        <section class="screen screen-signup">
+          <span class="step-badge">STEP 1 · 역할 선택</span>
+          <div class="brand-head" style="margin-top:4px">어떤 역할로 시작하시나요?</div>
+          <div class="brand-cap">역할에 따라 보여드리는 화면이 달라져요</div>
+
+          <div class="role-pick">
+            <div class="role-card on">
+              <div class="ico-circle">🎓</div>
+              <div class="rt">학생 헬퍼</div>
+              <div class="rd">재능으로<br>밥을 벌어요</div>
+            </div>
+            <div class="role-card">
+              <div class="ico-circle">🍚</div>
+              <div class="rt">사장님</div>
+              <div class="rd">재능으로<br>도움을 받아요</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="lb">이름</span>
+            <div class="input-icon"><span class="ic">👤</span><span class="val">박지훈</span></div>
+          </div>
+          <div class="field">
+            <span class="lb">이메일</span>
+            <div class="input-icon"><span class="ic">📧</span><span class="val">student@pusan.ac.kr</span></div>
+          </div>
+          <div class="field">
+            <span class="lb">비밀번호</span>
+            <div class="input-icon"><span class="ic">🔒</span><span class="val">••••••••</span></div>
+          </div>
+          <div class="field">
+            <span class="lb">활동 지역</span>
+            <div class="input-icon"><span class="ic">📍</span><span class="val">부산대 앞</span></div>
+          </div>
+
+          <div class="agree-row">
+            <span class="chk">✓</span>
+            <span class="tx"><a>이용약관</a> 및 <a>개인정보 처리방침</a>에 동의해요</span>
+          </div>
+
+          <label class="btn" for="r-login" role="button">가입하고 시작하기 →</label>
+          <div class="switch">이미 계정이 있으신가요? <label for="r-login">로그인</label></div>
+        </section>
+
+        <section class="screen screen-redeem">
+          <div class="redeem-wrap">
+            <div class="redeem-store">
+              <div class="av">🍚</div>
+              <div class="tx">순자네 백반<small>부산대 앞 · 도보 4분</small></div>
+            </div>
+
+            <div class="seal-wrap">
+              <div class="seal-pulse"></div>
+              <div class="seal-ring"></div>
+              <div class="seal">
+                <div class="n">1</div>
+                <div class="u">TICKET</div>
+                <div class="who">백반 식사권</div>
+              </div>
+            </div>
+
+            <div class="waiting-badge"><span class="dot"></span>사장님 확인 대기중</div>
+
+            <div class="redeem-msg">
+              이 화면을 <strong>사장님께 보여주세요.</strong><br>
+              사장님이 아래 버튼을 누르면<br>
+              식사권 1장이 <span class="hl">바로 차감</span>돼요.
+            </div>
+
+            <div class="redeem-actions">
+              <button class="btn big" type="button">🧑‍🍳 사장님, 여기를 눌러주세요</button>
+              <div class="redeem-sub">
+                <span>ℹ️</span>
+                <span>차감 후엔 되돌릴 수 없어요. 잘못 눌렀다면 아래에서 취소해주세요.</span>
+              </div>
+              <div class="redeem-cancel">취소하고 지갑으로 돌아가기</div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <div class="tabs2">
+      <label for="r-login">로그인</label>
+      <label for="r-signup">회원가입</label>
+      <label for="r-redeem">사용확인</label>
+    </div>
+  </div>
+
+  <aside class="notes">
+    <h2>이 화면이 보여주는 것</h2>
+
+    <div class="note note-login">
+      <h3>⑦ 로그인</h3>
+      <ul>
+        <li>필드 앞 아이콘(📧🔒)으로 무엇을 입력하는지 <strong>한눈에</strong> — 텍스트 라벨 없이도 이해되게</li>
+        <li>배경의 은은한 블러 블롭 두 개로 <strong>화면에 공기감</strong>을 줌 — 스킬 원칙(여백이 구분선 대체)의 확장</li>
+        <li>맨 아래 신뢰 문구로 로그인 정보 보호에 대한 안심을 짧게 전달</li>
+      </ul>
+      <div class="ref">CLAUDE.md 미확정 → 인증 방식(Supabase Auth) 화면 구현</div>
+    </div>
+
+    <div class="note note-signup">
+      <h3>⑧ 회원가입</h3>
+      <ul>
+        <li><strong>STEP 배지</strong>로 진행 감각을 주고, 역할 카드에 짧은 설명("재능으로 밥을 벌어요")을 붙여 <strong>왜 고르는지</strong>까지 전달</li>
+        <li>선택된 역할 카드만 흰 배경 + 파란 테두리로 도드라지게 — 상태가 명확히 구분됨</li>
+        <li>약관 동의를 체크박스 텍스트로 넣어 실제 가입 폼의 완결성을 높임</li>
+      </ul>
+      <div class="ref">DB users 테이블 role 컬럼과 연결</div>
+    </div>
+
+    <div class="note note-redeem">
+      <h3>⑨ 식사권 사용확인 — 이 서비스의 감정적 클라이맥스</h3>
+      <ul>
+        <li><strong>원형 스탬프</strong>로 디자인 — 사각 카드보다 "도장 찍듯 확정된다"는 느낌을 주기 위한 의도적 선택</li>
+        <li>은은한 펄스·회전 애니메이션으로 <strong>"대기 중"</strong>이라는 상태를 말이 아니라 움직임으로 전달 (순수 CSS, JS 없음 — 조건 유지)</li>
+        <li>사장님이 직접 눌러야 하는 원칙은 요청 완료확인과 <strong>동일한 신뢰 언어</strong> 재사용</li>
+        <li>"되돌릴 수 없다"는 안내를 추가해 오조작을 방지 — 실제 서비스라면 꼭 필요한 안전장치</li>
+      </ul>
+      <div class="ref">CLAUDE.md 핵심 도메인 규칙 · tickets/redemptions 테이블 필요</div>
+    </div>
+  </aside>
+</div>
+
+</body>
+</html>

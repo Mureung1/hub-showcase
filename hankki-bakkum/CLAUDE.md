@@ -23,6 +23,7 @@
 - 수정 요청은 1회 포함이 기본값
 - 무응답 매칭은 자동취소 처리
 - Tab2 완료 결과물 이미지는 Tab1 게시글 썸네일로 재사용 가능해야 함
+- 식사권 사용(차감)은 헬퍼 혼자 처리 불가: 헬퍼가 "사용하기" 클릭 → 대기 상태 → 사장님이 확인해야 차감 완료 (완료 확인과 동일한 "상대방 확인 필수" 원칙 재사용)
 
 ## 컨벤션
 - 컴포넌트: PascalCase / 페이지: ~Page.jsx / 함수·변수: camelCase
@@ -48,5 +49,6 @@
 - 기획서 최종본 (노션): https://app.notion.com/p/v0-2-397dee17209c802d9495f20edf723b95
 - 기획서 레포 사본: @docs/plan.md — `한끼바꿈_기획서.md`를 이 경로에 넣은 뒤 사용
 - 프로토타입: @docs/prototype.html — `한끼바꿈_프로토타입_웜.html`을 이 경로에 넣은 뒤 사용
+- 추가 화면(로그인·회원가입·식사권 사용확인): @docs/prototype-auth-redeem.html
 - 디자인 기준 화면: @docs/wallet-warm.html / 디자인 규칙: .claude/skills/hankki-design/SKILL.md
 - 노션이 최신본, 레포 사본은 노션 수정 시 함께 갱신할 것
