@@ -1,0 +1,137 @@
+/* =========================================================
+   WeatherPilot — Design Tokens (Wurly 블루 톤)
+   :root에 넣어 전역 사용. 하드코딩 hex 대신 이 변수를 쓴다.
+   ========================================================= */
+
+:root {
+  /* COLOR — Brand */
+  --color-primary:            #4A90E2;
+  --color-primary-light:      #6FB1F5;
+  --color-primary-dark:       #3B7DD8;
+  --gradient-primary:         linear-gradient(160deg, #62A8F5 0%, #4A90E2 100%);
+
+  /* COLOR — Background / Surface */
+  --color-bg:                 #EEF3F8;
+  --color-surface:            #FFFFFF;
+  --color-surface-alt:        #F4F7FA;
+  --color-border:             #E4EAF1;
+
+  /* COLOR — Text */
+  --color-text:               #253449;
+  --color-text-secondary:     #8B95A5;
+  --color-text-muted:         #B0B8C4;
+  --color-text-on-primary:    #FFFFFF;
+
+  /* COLOR — Accent (알약 전용) */
+  --color-accent-down:        #FF7A45;  /* 매출 하락·경고 (▼) */
+  --color-accent-up:          #2FB37A;  /* 매출 상승·긍정 (▲) */
+
+  /* TYPOGRAPHY */
+  --font-family:              "Poppins", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-weight-regular:      400;
+  --font-weight-medium:       500;
+  --font-weight-semibold:     600;
+  --font-weight-bold:         700;
+
+  --font-size-caption:        12px;
+  --font-size-label:          14px;
+  --font-size-body:           16px;
+  --font-size-title:          17px;
+  --font-size-display:        28px;
+  --font-size-temp:           40px;  /* 히어로 온도 */
+
+  --line-height-tight:        1.2;
+  --line-height-normal:       1.5;
+
+  /* RADIUS */
+  --radius-sm:                8px;
+  --radius-md:                12px;
+  --radius-lg:                16px;
+  --radius-xl:                20px;
+  --radius-pill:              999px;
+
+  /* SPACING — 4px 스케일 */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px;
+
+  /* SHADOW */
+  --shadow-card:      0 8px 24px rgba(74, 144, 226, 0.10);
+  --shadow-card-blue: 0 10px 28px rgba(74, 144, 226, 0.28);
+  --shadow-soft:      0 2px 8px  rgba(37, 52, 73, 0.05);
+}
+
+/* =========================================================
+   COMPONENT CLASSES
+   ========================================================= */
+
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-card);
+}
+
+.card--primary {
+  background: var(--gradient-primary);
+  color: var(--color-text-on-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-card-blue);
+}
+
+.tile {
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+/* 세그먼트 토글 — 활성 탭은 불투명 블루 + 흰 글씨(반투명 금지) */
+.toggle {
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-4);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+.toggle--active {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  box-shadow: var(--shadow-card-blue);
+}
+
+.input {
+  background: var(--color-surface-alt);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-label);
+  color: var(--color-text);
+}
+
+/* 진단 알약 — 핵심 수치 강조 */
+.diag-pill {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-on-primary);
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.2px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+}
+.diag-pill--down { background: var(--color-accent-down); box-shadow: 0 6px 16px rgba(224, 90, 45, 0.35); }
+.diag-pill--up   { background: var(--color-accent-up);   box-shadow: 0 6px 16px rgba(30, 140, 92, 0.35); }
+.diag-pill .caret { font-size: 19px; line-height: 1; margin-right: 8px; }  /* ▼/▲ 옆 글씨와 대등하게 */
+
+/* 주 버튼 */
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 100%; border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  padding: 14px;
+  box-shadow: var(--shadow-card-blue);
+}

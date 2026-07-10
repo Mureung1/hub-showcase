@@ -1,0 +1,97 @@
+<!--
+WeatherPilot 검증된 컴포넌트 스니펫
+tokens.css를 함께 로드한 상태에서 사용. 폰트는 Poppins(CDN 또는 임베드).
+-->
+
+<!-- ============ 1. 히어로 카드 (날씨 + 진단) ============ -->
+<!-- 정보 위계: 섹션라벨 → 온도+아이콘 → 소스뱃지 → (구분선) → 진단라벨 → 진단알약 -->
+<div class="card--primary">
+  <p style="font-size:var(--font-size-label);font-weight:var(--font-weight-bold);color:#fff;margin:0 0 var(--space-3)">오늘의 날씨</p>
+
+  <div style="display:flex;align-items:flex-end">
+    <!-- 왼쪽 날씨 아이콘: 약 76px, 흰색 -->
+    <svg width="76" height="76" viewBox="0 0 64 64" fill="none" style="margin-right:var(--space-3);flex-shrink:0">
+      <path d="M20 34C14.48 34 10 29.52 10 24C10 18.8 13.98 14.53 19.06 14.05C20.53 9.9 24.48 6.9 29.13 6.9C34.6 6.9 39.16 10.98 39.83 16.28C43.86 16.83 47 20.29 47 24.47C47 29.04 43.29 32.75 38.72 32.75H20Z" fill="white" fill-opacity="0.92"/>
+      <path d="M20 40L18 45M29 40L27 45M38 40L36 45" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <!-- 온도: 40px bold, 단위까지 같은 크기 한 덩어리 -->
+      <div style="font-size:var(--font-size-temp);font-weight:var(--font-weight-bold);line-height:1.2;letter-spacing:-0.5px">18°C</div>
+      <p style="font-size:var(--font-size-label);font-weight:var(--font-weight-medium);color:#fff;margin:var(--space-2) 0 0">비 · 습도 85% · 강수 6mm/h</p>
+    </div>
+  </div>
+
+  <!-- 소스 평균 뱃지: 날씨 영역 안(온도 아래) -->
+  <div style="display:inline-flex;align-items:center;margin-top:var(--space-3);padding:5px var(--space-3);border-radius:var(--radius-pill);background:rgba(255,255,255,0.28);font-size:11px;font-weight:var(--font-weight-semibold);color:#fff">
+    ✓&nbsp; 기상청 · OpenWeather · AccuWeather 평균
+  </div>
+
+  <!-- 구분선 + 진단 -->
+  <div style="margin-top:var(--space-5);padding-top:var(--space-4);border-top:1px solid rgba(255,255,255,0.4)">
+    <p style="font-size:var(--font-size-label);font-weight:var(--font-weight-bold);color:#fff;margin:0 0 var(--space-3)">이 가게 매출 진단</p>
+
+    <!-- 하락(경고): 주황 + ▼ -->
+    <span class="diag-pill diag-pill--down">
+      <span class="caret">▼</span> 비 오는 날 평균 −18%
+    </span>
+
+    <!-- 상승(긍정)일 때는 아래처럼 초록 + ▲ 로 교체:
+    <span class="diag-pill diag-pill--up">
+      <span class="caret">▲</span> 맑은 날 평균 +12%
+    </span>
+    -->
+  </div>
+</div>
+
+
+<!-- ============ 2. 보조 타일 2개 (예측 매출 / 방어 목표) ============ -->
+<div style="display:flex;margin-bottom:var(--space-4)">
+  <div class="tile" style="flex:1">
+    <p style="font-size:var(--font-size-caption);color:var(--color-text-secondary);margin:0 0 4px">오늘 예측 매출</p>
+    <div style="font-size:var(--font-size-title);font-weight:var(--font-weight-semibold)">689,000원</div>
+    <p style="font-size:11px;font-weight:var(--font-weight-medium);color:#E0704F;margin-top:4px">평상시 840,000원</p>
+  </div>
+  <div class="tile" style="flex:1;margin-left:var(--space-3)">
+    <p style="font-size:var(--font-size-caption);color:var(--color-text-secondary);margin:0 0 4px">캠페인 방어 목표</p>
+    <div style="font-size:var(--font-size-title);font-weight:var(--font-weight-semibold)">780,000원</div>
+    <p style="font-size:11px;font-weight:var(--font-weight-medium);color:#3FA772;margin-top:4px">+91,000원 방어</p>
+  </div>
+</div>
+
+
+<!-- ============ 3. 세그먼트 토글 ============ -->
+<div style="display:flex;background:var(--color-surface-alt);border-radius:var(--radius-pill);padding:4px;margin:var(--space-5) 0">
+  <div class="toggle toggle--active" style="flex:1;text-align:center;font-size:var(--font-size-label)">오늘</div>
+  <div class="toggle" style="flex:1;text-align:center;font-size:var(--font-size-label)">성과</div>
+</div>
+
+
+<!-- ============ 4. 추천 카드 (이모지 적극 사용 + 🎟️ 쿠폰 표기) ============ -->
+<div class="card">
+  <p style="font-size:11px;font-weight:var(--font-weight-semibold);letter-spacing:0.6px;color:var(--color-primary);text-transform:uppercase;margin:0 0 var(--space-2)">에이전트 추천 · 오늘의 액션</p>
+  <div style="font-size:var(--font-size-title);font-weight:var(--font-weight-semibold);margin:0 0 var(--space-3)">비 오는 날 픽업 할인 캠페인</div>
+  <div style="background:var(--color-surface-alt);border-radius:var(--radius-md);padding:var(--space-4);font-size:var(--font-size-label);line-height:1.5;white-space:pre-line;margin:0 0 var(--space-4)">☔ 비 오는 오늘, 굳이 나오지 마세요! 🙅‍♀️
+따뜻한 아메리카노 ☕ 생각날 땐 미리 주문하고 픽업하세요 🏃‍♂️💨
+지금 주문하면 10% 할인 🎉✨</div>
+  <div style="display:flex;align-items:center;font-size:var(--font-size-caption);font-weight:var(--font-weight-medium);color:var(--color-primary-dark);margin:0 0 var(--space-5)">
+    <span style="margin-right:6px;font-size:15px">🎟️</span> 픽업 주문 10% 할인 (오늘 하루)
+  </div>
+  <button class="btn-primary" type="button">제안 검토하기 →</button>
+</div>
+
+
+<!-- ============ 5. 리스트 셀 (캠페인 이력) ============ -->
+<div class="card">
+  <div style="display:flex;align-items:center;padding:var(--space-3) 0;border-bottom:1px solid var(--color-border)">
+    <div style="width:38px;height:38px;border-radius:var(--radius-md);background:var(--color-surface-alt);margin-right:var(--space-3);flex-shrink:0"></div>
+    <div style="flex:1;min-width:0">
+      <p style="font-size:var(--font-size-label);font-weight:var(--font-weight-medium);margin:0 0 2px">비 오는 날 픽업 할인</p>
+      <p style="font-size:11px;color:var(--color-text-muted);margin:0">어제 · 쿠폰 37/142명 사용</p>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <p style="font-size:var(--font-size-label);font-weight:var(--font-weight-semibold);color:#3FA772;margin:0 0 2px">+48,100원</p>
+      <p style="font-size:11px;color:var(--color-text-muted);margin:0">사용률 26%</p>
+    </div>
+  </div>
+  <!-- 마지막 셀은 border-bottom:none -->
+</div>
