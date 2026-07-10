@@ -1,1582 +1,2503 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>대학생 대면 소통 서비스</title>
-    <style>
-        :root {
-            --primary-color: #4A90E2;
-            --secondary-color: #7B68EE;
-            --background: #F5F5F5;
-            --card-background: #FFFFFF;
-            --text-primary: #333333;
-            --text-secondary: #777777;
-            --border-color: #E0E0E0;
-            --coffee-color: #FF9800;
-            --meal-color: #F44336;
-            --success-color: #4CAF50;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background: var(--background);
-            color: var(--text-primary);
-            line-height: 1.5;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .screen {
-            display: none;
-            min-height: 100vh;
-            background: var(--background);
-        }
-
-        .screen.active {
-            display: block;
-        }
-
-        /* Header */
-        .header {
-            background: white;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-title {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .header-back {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: var(--text-primary);
-            padding: 4px 8px;
-        }
-
-        .header-action {
-            background: none;
-            border: none;
-            font-size: 16px;
-            color: var(--primary-color);
-            cursor: pointer;
-            font-weight: 600;
-            padding: 4px 8px;
-        }
-
-        /* Tag Filter Bar */
-        .tag-filter-bar {
-            background: white;
-            padding: 12px 16px;
-            overflow-x: auto;
-            white-space: nowrap;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .tag-filter-bar::-webkit-scrollbar {
-            height: 4px;
-        }
-
-        .tag-filter-bar::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 4px;
-        }
-
-        .tag-btn {
-            display: inline-block;
-            padding: 6px 14px;
-            margin-right: 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            background: white;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .tag-btn.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        /* Sort Toggle */
-        .sort-bar {
-            background: white;
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .sort-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 14px;
-            cursor: pointer;
-            padding: 4px 8px;
-        }
-
-        .sort-btn.active {
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-
-        /* Post Card */
-        .post-list {
-            padding: 16px;
-            padding-bottom: 100px;
-        }
-
-        .post-card {
-            background: var(--card-background);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .post-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-
-        .post-card-reward {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .post-card-reward.coffee {
-            background: #FFF3E0;
-            color: var(--coffee-color);
-        }
-
-        .post-card-reward.meal {
-            background: #FFEBEE;
-            color: var(--meal-color);
-        }
-
-        .post-card-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-
-        .post-card-content {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .post-card-tags {
-            margin-bottom: 10px;
-        }
-
-        .post-tag {
-            display: inline-block;
-            padding: 4px 10px;
-            margin-right: 6px;
-            margin-bottom: 4px;
-            border-radius: 12px;
-            font-size: 12px;
-            background: #E3F2FD;
-            color: #1976D2;
-        }
-
-        .post-card-meta {
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-
-        /* Floating Button */
-        .floating-btn {
-            position: fixed;
-            bottom: 80px;
-            right: calc(50% - 276px);
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            font-size: 28px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
-            transition: transform 0.2s;
-            z-index: 50;
-        }
-
-        @media (max-width: 600px) {
-            .floating-btn {
-                right: 24px;
-            }
-        }
-
-        .floating-btn:hover {
-            transform: scale(1.1);
-        }
-
-        /* Form Elements */
-        .form-container {
-            padding: 16px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        .form-input,
-        .form-textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 15px;
-            font-family: inherit;
-            background: white;
-        }
-
-        .form-input:focus,
-        .form-textarea:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-
-        .form-textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .char-counter {
-            text-align: right;
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
-
-        /* Tag Selection */
-        .tag-selection {
-            margin-bottom: 20px;
-        }
-
-        .tag-category {
-            margin-bottom: 16px;
-        }
-
-        .tag-category-title {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-
-        .tag-option {
-            display: inline-block;
-            padding: 8px 14px;
-            margin-right: 8px;
-            margin-bottom: 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            background: white;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .tag-option.selected {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        .selected-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .selected-tag {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 12px;
-            background: #E3F2FD;
-            color: #1976D2;
-            border-radius: 20px;
-            font-size: 14px;
-        }
-
-        .selected-tag-remove {
-            margin-left: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        /* Reward Options */
-        .reward-options {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .reward-option {
-            display: flex;
-            align-items: center;
-            padding: 14px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .reward-option input[type="radio"] {
-            margin-right: 10px;
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .reward-option.selected {
-            border-color: var(--primary-color);
-            background: #F0F7FF;
-        }
-
-        /* Button */
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #3A7BC8;
-        }
-
-        .btn-primary:disabled {
-            background: var(--border-color);
-            cursor: not-allowed;
-        }
-
-        .btn-fixed {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: 600px;
-            width: 100%;
-            border-radius: 0;
-            padding: 16px;
-        }
-
-        /* Post Detail */
-        .post-detail {
-            background: white;
-            min-height: 100vh;
-            padding-bottom: 80px;
-        }
-
-        .post-detail-header {
-            padding: 20px 16px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .post-detail-author {
-            display: flex;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .author-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: 600;
-            margin-right: 12px;
-        }
-
-        .author-info {
-            flex: 1;
-        }
-
-        .author-name {
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .author-meta {
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-
-        .post-detail-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            line-height: 1.4;
-        }
-
-        .post-detail-content {
-            padding: 20px 16px;
-            font-size: 15px;
-            line-height: 1.7;
-            white-space: pre-wrap;
-        }
-
-        .post-detail-tags {
-            padding: 0 16px 20px;
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 500px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 16px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .modal-buttons .btn {
-            flex: 1;
-        }
-
-        .btn-secondary {
-            background: var(--border-color);
-            color: var(--text-primary);
-        }
-
-        /* Chat Room */
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            background: #F0F4F8;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-            padding-bottom: 80px;
-        }
-
-        .chat-date {
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 12px;
-            margin: 16px 0;
-        }
-
-        .message {
-            display: flex;
-            margin-bottom: 12px;
-        }
-
-        .message.mine {
-            justify-content: flex-end;
-        }
-
-        .message-bubble {
-            max-width: 70%;
-            padding: 10px 14px;
-            border-radius: 16px;
-            font-size: 15px;
-            line-height: 1.4;
-        }
-
-        .message.mine .message-bubble {
-            background: var(--primary-color);
-            color: white;
-            border-bottom-right-radius: 4px;
-        }
-
-        .message.other .message-bubble {
-            background: white;
-            color: var(--text-primary);
-            border-bottom-left-radius: 4px;
-        }
-
-        .message-time {
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
-
-        .message.mine .message-time {
-            text-align: right;
-        }
-
-        .message-read {
-            font-size: 11px;
-            color: var(--success-color);
-        }
-
-        .chat-input-bar {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: 600px;
-            width: 100%;
-            background: white;
-            padding: 12px 16px;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 8px;
-        }
-
-        .chat-input {
-            flex: 1;
-            padding: 10px 14px;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            font-size: 15px;
-            font-family: inherit;
-        }
-
-        .chat-send-btn {
-            padding: 10px 20px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 20px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 14px;
-            z-index: 2000;
-            display: none;
-        }
-
-        .toast.active {
-            display: block;
-            animation: toast-fade 3s forwards;
-        }
-
-        @keyframes toast-fade {
-            0%, 80% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
-        }
-
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-
-        .empty-state-text {
-            font-size: 15px;
-        }
-
-        /* Chat List */
-        .chat-list {
-            padding: 0;
-            padding-bottom: 80px;
-        }
-
-        .chat-list-item {
-            background: white;
-            padding: 16px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .chat-list-item:hover {
-            background: #F9F9F9;
-        }
-
-        .chat-list-item-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 6px;
-        }
-
-        .chat-list-item-name {
-            font-weight: 600;
-        }
-
-        .chat-list-item-time {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .chat-list-item-message {
-            font-size: 14px;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .unread-badge {
-            display: inline-block;
-            background: var(--primary-color);
-            color: white;
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            margin-left: 8px;
-        }
-
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: 600px;
-            width: 100%;
-            background: white;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-around;
-            padding: 8px 0;
-        }
-
-        .nav-item {
-            flex: 1;
-            text-align: center;
-            padding: 8px;
-            cursor: pointer;
-            color: var(--text-secondary);
-            font-size: 12px;
-        }
-
-        .nav-item.active {
-            color: var(--primary-color);
-        }
-
-        .nav-icon {
-            font-size: 24px;
-            margin-bottom: 4px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="대학생 대면 소통 서비스 - meetry">
+  <title>meetry — 대학생 대면 소통 서비스</title>
+
+  <!-- Google Fonts - Outfit & Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ─── CSS 변수 (Design Tokens) ────────────────── */
+    :root {
+      --color-primary:        #FF6B35;   /* 브랜드 오렌지 */
+      --color-primary-cta:    #FF5A1F;   /* 진한 오렌지-레드 */
+      --color-primary-light:  #FFF3EC;   /* 연한 오렌지 틴트 */
+      --color-text-primary:   #1A1A1A;   /* 거의 검정 */
+      --color-text-secondary: #4B5563;   /* 중간 회색 (cool gray) */
+      --color-text-tertiary:  #9CA3AF;   /* 연한 회색 */
+      --color-text-meta:      #9CA3AF;   /* 메타 정보 회색 */
+      --color-bg:             #FFFFFF;   /* 카드/화면 백그라운드 */
+      --color-bg-hover:       #FFFBF9;   /* 오버 시 미세 오렌지 */
+      --color-bg-active:      #FFF3EC;
+      --color-divider:        #F3F4F6;   /* 경계선 */
+      --color-body-bg:        #F3F4F6;   /* 데스크톱 웹 배경색 */
+
+      --font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', -apple-system, sans-serif;
+      --font-family-en: 'Outfit', sans-serif;
+
+      --header-height:     64px;
+      --max-width-mobile:  430px;
+      --max-width-web:     1060px;
+
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 25px rgba(255, 90, 31, 0.15);
+      
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    /* ─── Reset & Base ────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      height: 100%;
+      overscroll-behavior: none;
+      background-color: var(--color-body-bg);
+    }
+    body {
+      font-family: var(--font-family);
+      color: var(--color-text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── App Shell (반응형 쉘) ───────────────────── */
+    .app-shell {
+      width: 100%;
+      margin: 0 auto;
+      background: var(--color-bg);
+      min-height: 100vh;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
+      transition: max-width 0.2s;
+    }
+
+    @media (max-width: 767px) {
+      .app-shell {
+        max-width: var(--max-width-mobile);
+      }
+    }
+    @media (min-width: 768px) {
+      .app-shell {
+        max-width: var(--max-width-web);
+        background-color: var(--color-body-bg);
+        box-shadow: none;
+      }
+      body {
+        padding: 0 20px;
+      }
+    }
+
+    /* ─── Screens ─────────────────────────────────── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      background-color: var(--color-bg);
+      padding-top: var(--header-height);
+    }
+    .screen.active {
+      display: flex;
+    }
+
+    @media (min-width: 768px) {
+      .screen {
+        background-color: transparent;
+        padding-top: calc(var(--header-height) + 20px);
+        padding-bottom: 40px;
+      }
+    }
+
+    /* ─── App Header & Responsive Nav ────────────── */
+    .app-header {
+      position: fixed;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; height: var(--header-height);
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; z-index: 100;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    @media (max-width: 767px) {
+      .app-header { max-width: var(--max-width-mobile); }
+    }
+    @media (min-width: 768px) {
+      .app-header {
+        max-width: var(--max-width-web);
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        padding: 0 40px;
+      }
+    }
+
+    .app-header__title.logo {
+      font-family: var(--font-family-en);
+      color: var(--color-primary-cta);
+      font-size: 21px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: -0.5px;
+    }
+    @media (min-width: 768px) {
+      .app-header__title.logo {
+        font-size: 26px;
+      }
+    }
+
+    /* 상단 탭 네비게이션: 모바일과 PC 전체에서 노출 */
+    .web-nav {
+      display: flex;
+      gap: 16px;
+      height: 100%;
+      align-items: center;
+    }
+    @media (min-width: 768px) {
+      .web-nav {
+        gap: 32px;
+      }
+    }
+
+    .web-nav__item {
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: 14.5px;
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+    .web-nav__item:hover { color: var(--color-primary-cta); }
+    .web-nav__item.active { color: var(--color-primary-cta); }
+    .web-nav__item.active::after {
+      content: ''; position: absolute; bottom: 0; left: 0;
+      width: 100%; height: 3px;
+      background-color: var(--color-primary-cta);
+      border-radius: 3px 3px 0 0;
+    }
+    @media (min-width: 768px) {
+      .web-nav__item {
+        font-size: 15px;
+      }
+    }
+
+    .app-header__actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      color: var(--color-text-secondary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+      position: relative;
+    }
+    .icon-btn:hover {
+      background: var(--color-divider);
+      color: var(--color-text-primary);
+    }
+    .badge-dot {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 6px;
+      height: 6px;
+      background-color: var(--color-primary-cta);
+      border-radius: 50%;
+    }
+
+    /* ─── Glist 2-Column Grid Layout ──────────────── */
+    .glist-layout {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    @media (min-width: 768px) {
+      .glist-layout {
+        flex-direction: row;
+        gap: 24px;
+        align-items: flex-start;
+      }
+    }
+
+    .feed-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    @media (min-width: 768px) {
+      .feed-column {
+        background: #FFFFFF;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        border: 1px solid var(--color-divider);
+      }
+    }
+
+    .sidebar-column {
+      display: none;
+      width: 320px;
+      flex-shrink: 0;
+      flex-direction: column;
+      gap: 20px;
+      position: sticky;
+      top: calc(var(--header-height) + 20px);
+    }
+    @media (min-width: 768px) {
+      .sidebar-column { display: flex; }
+    }
+
+    /* ─── Search and Tag Filter (접이식) ─────────── */
+    .search-box {
+      padding: 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: var(--color-bg);
+    }
+    .search-input-wrapper {
+      position: relative;
+      flex: 1;
+    }
+    .search-icon-inside {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-tertiary);
+      display: flex;
+      align-items: center;
+    }
+    .search-input {
+      width: 100%;
+      padding: 10px 12px 10px 38px;
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      outline: none;
+      background-color: var(--color-divider);
+      transition: all 0.2s;
+    }
+    .search-input:focus {
+      background-color: white;
+      border-color: var(--color-primary);
+    }
+    .toggle-filter-btn {
+      background: white;
+      border: 1px solid var(--color-divider);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--color-text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .toggle-filter-btn:hover {
+      background-color: var(--color-divider);
+    }
+    .toggle-filter-btn.active {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background-color: var(--color-primary-light);
+    }
+
+    .tag-filter-container {
+      padding: 4px 16px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border-top: 1px dashed var(--color-divider);
+      overflow: hidden;
+      max-height: 500px;
+      background: var(--color-bg);
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s, border 0.3s;
+    }
+    .tag-filter-container.hidden {
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-top-color: transparent;
+      border-bottom: none;
+    }
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-text-secondary);
+      width: 50px;
+    }
+    .filter-chip {
+      background: white;
+      border: 1px solid var(--color-divider);
+      color: var(--color-text-secondary);
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 12.5px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .filter-chip:hover {
+      background: var(--color-divider);
+    }
+    .filter-chip.active {
+      background: var(--color-primary-light);
+      border-color: var(--color-primary);
+      color: var(--color-primary-cta);
+      font-weight: 700;
+    }
+
+    .sort-bar {
+      padding: 12px 16px;
+      background: var(--color-bg);
+      border-top: 1px solid var(--color-divider);
+      border-bottom: 1px solid var(--color-divider);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .post-count-label {
+      font-size: 13px;
+      color: var(--color-text-secondary);
+    }
+    .sort-options {
+      display: flex;
+      gap: 12px;
+    }
+    .sort-btn {
+      background: none;
+      border: none;
+      color: var(--color-text-tertiary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      position: relative;
+    }
+    .sort-btn.active {
+      color: var(--color-text-primary);
+      font-weight: 700;
+    }
+
+    /* ─── Feed Card (피드 카드) ────────────────────── */
+    .feed-list {
+      background: var(--color-bg);
+      display: flex;
+      flex-direction: column;
+    }
+    .feed-card {
+      padding: 20px;
+      border-bottom: 1px solid var(--color-divider);
+      cursor: pointer;
+      transition: background-color 0.2s;
+      background: white;
+    }
+    .feed-card:hover {
+      background-color: var(--color-bg-hover);
+    }
+    .feed-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .category-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid var(--color-primary);
+      background: var(--color-primary-light);
+      color: var(--color-primary-cta);
+    }
+    .reward-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .reward-badge.drink {
+      background: #FFF3E0;
+      color: #EF6C00;
+    }
+    .reward-badge.meal {
+      background: #FFEBEE;
+      color: #C62828;
+    }
+    .feed-card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      line-height: 1.4;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bullet-point {
+      color: var(--color-primary);
+      font-size: 12px;
+    }
+    .feed-card-body {
+      font-size: 14.5px;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+      margin-bottom: 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .feed-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--color-text-meta);
+    }
+    .author-info {
+      font-weight: 500;
+      color: var(--color-text-secondary);
+    }
+    .card-meta-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ─── Sidebar widgets (Desktop Only) ──────────── */
+    .sidebar-column {
+      display: none;
+      width: 320px;
+      flex-shrink: 0;
+      flex-direction: column;
+      gap: 20px;
+      position: sticky;
+      top: calc(var(--header-height) + 20px);
+    }
+    @media (min-width: 768px) {
+      .sidebar-column { display: flex; }
+    }
+    .sidebar-widget {
+      background: white;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-divider);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .profile-summary-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .profile-avatar {
+      width: 68px;
+      height: 68px;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-cta));
+      border-radius: 50%;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-lg);
+    }
+    .profile-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin-bottom: 4px;
+    }
+    .profile-meta {
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      margin-bottom: 16px;
+    }
+    .profile-stats {
+      display: flex;
+      width: 100%;
+      border-top: 1px solid var(--color-divider);
+      padding-top: 16px;
+    }
+    .stat-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+    .stat-item:first-child {
+      border-right: 1px solid var(--color-divider);
+    }
+    .stat-val {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-primary-cta);
+    }
+    .stat-lbl {
+      font-size: 12px;
+      color: var(--color-text-meta);
+      margin-top: 2px;
+    }
+
+    /* ─── Modals dialog & Backdrop (클릭 관통 완벽 적용) ────── */
+    .modal-view {
+      position: fixed;
+      top: 0; left: 50%; transform: translate(-50%, 100%);
+      width: 100%; max-width: var(--max-width-mobile); height: 100%;
+      background: white; z-index: 300;
+      transition: transform 0.3s cubic-bezier(0.1, 0.76, 0.55, 0.94), visibility 0.3s;
+      display: flex; flex-direction: column;
+      
+      /* 비활성 상태에서는 클릭 관통 & 숨김 처리 */
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .modal-view.active {
+      transform: translate(-50%, 0);
+      visibility: visible;
+      pointer-events: auto;
+    }
+    @media (min-width: 768px) {
+      .modal-view {
+        max-width: 600px; height: 85vh;
+        top: 50%; transform: translate(-50%, 100%);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+      }
+      .modal-view.active {
+        transform: translate(-50%, -50%);
+        visibility: visible;
+        pointer-events: auto;
+      }
+    }
+
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 290;
+    }
+    .modal-backdrop.active { display: block; }
+
+    .modal-header {
+      height: 60px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--color-divider);
+    }
+    .modal-header-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--color-text-secondary);
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+    .close-btn:hover {
+      background-color: var(--color-divider);
+    }
+
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--color-divider);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      background: white;
+    }
+
+    /* ─── Form Elements ──────────────────────────── */
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--color-text-primary);
+    }
+    .form-input, .form-textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-sm);
+      font-size: 14.5px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-textarea:focus {
+      border-color: var(--color-primary);
+    }
+    .form-textarea {
+      height: 150px;
+      resize: none;
+    }
+    .char-count {
+      text-align: right;
+      font-size: 12px;
+      color: var(--color-text-meta);
+      margin-top: 4px;
+    }
+    .chip-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .selectable-chip {
+      background: white;
+      border: 1px solid var(--color-divider);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      transition: all 0.15s;
+    }
+    .selectable-chip:hover {
+      background: var(--color-divider);
+    }
+    .selectable-chip.active {
+      background: var(--color-primary-light);
+      border-color: var(--color-primary);
+      color: var(--color-primary-cta);
+      font-weight: 700;
+    }
+    .radio-group {
+      display: flex;
+      gap: 16px;
+    }
+    .radio-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .radio-label input {
+      accent-color: var(--color-primary-cta);
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-secondary {
+      background: var(--color-divider);
+      color: var(--color-text-secondary);
+    }
+    .btn-secondary:hover {
+      background: #E5E7EB;
+    }
+    .btn-primary {
+      background: var(--color-primary-cta);
+      color: white;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-primary:hover {
+      background: #E04E15;
+    }
+
+    /* ─── Post Detail Modal ───────────────────────── */
+    .post-detail-header-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--color-text-meta);
+      margin-bottom: 12px;
+    }
+    .post-detail-title {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 16px;
+      color: var(--color-text-primary);
+    }
+    .post-detail-body {
+      font-size: 15.5px;
+      line-height: 1.6;
+      color: var(--color-text-secondary);
+      white-space: pre-wrap;
+      margin-bottom: 24px;
+    }
+    .post-detail-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+    .author-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--color-divider);
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+    }
+    .author-avatar {
+      width: 44px;
+      height: 44px;
+      background: var(--color-primary);
+      border-radius: 50%;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .author-name-text {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+    .author-major-text {
+      font-size: 12.5px;
+      color: var(--color-text-secondary);
+      margin-top: 2px;
+    }
+
+    /* ─── Chat View Components ────────────────────── */
+    .chat-list-container {
+      display: flex;
+      flex-direction: column;
+      background: white;
+      height: 100%;
+    }
+    .chat-list-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--color-divider);
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .chat-list-item:hover {
+      background-color: var(--color-bg-hover);
+    }
+    .chat-list-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .chat-list-item-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .unread-badge {
+      background: var(--color-primary-cta);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+    .chat-list-item-time {
+      font-size: 12px;
+      color: var(--color-text-meta);
+    }
+    .chat-list-item-message {
+      font-size: 13.5px;
+      color: var(--color-text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background-color: var(--color-divider);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .chat-date {
+      align-self: center;
+      background-color: rgba(0, 0, 0, 0.08);
+      color: white;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 10px;
+      margin: 8px 0;
+    }
+    .message {
+      display: flex;
+      max-width: 75%;
+    }
+    .message.mine {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .message.other {
+      align-self: flex-start;
+    }
+    .message-bubble {
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+    .message.mine .message-bubble {
+      background-color: var(--color-primary-cta);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .message.other .message-bubble {
+      background-color: white;
+      color: var(--color-text-primary);
+      border-bottom-left-radius: 4px;
+      box-shadow: var(--shadow-sm);
+    }
+    .message-time {
+      font-size: 10px;
+      color: var(--color-text-meta);
+      margin-top: 4px;
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .message.mine .message-time {
+      justify-content: flex-end;
+    }
+    .message-read {
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    .chat-input-area {
+      padding: 12px 16px;
+      background: white;
+      border-top: 1px solid var(--color-divider);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .chat-input {
+      flex: 1;
+      border: 1px solid var(--color-divider);
+      border-radius: 20px;
+      padding: 10px 16px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .chat-input:focus {
+      border-color: var(--color-primary);
+    }
+    .chat-send-btn {
+      background: var(--color-primary-cta);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s;
+    }
+    .chat-send-btn:hover {
+      opacity: 0.9;
+    }
+
+    /* ─── 약속 확정 UI ────────────────────────────── */
+    .appointment-bar {
+      background: #FFF3EC;
+      border-bottom: 1px solid #FFE0D3;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .appointment-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--color-text-primary);
+    }
+    .appointment-icon {
+      font-size: 16px;
+    }
+    .appointment-text strong {
+      color: var(--color-primary-cta);
+    }
+    .appointment-btn {
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .appointment-btn:hover {
+      background-color: var(--color-primary-cta);
+    }
+    .appointment-btn.fixed {
+      background: #E5E7EB;
+      color: #9CA3AF;
+      cursor: default;
+    }
+
+    .appointment-form {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ─── Floating Action Button (FAB) ────────────── */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--color-primary-cta);
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-lg);
+      z-index: 90;
+      transition: transform 0.2s, background-color 0.2s;
+    }
+    .fab:hover {
+      background-color: #E04E15;
+      transform: translateY(-2px);
+    }
+
+    /* ─── Profile Screen Style ───────────────────── */
+    .profile-card {
+      background: white;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-divider);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .profile-info-details {
+      flex: 1;
+    }
+    .profile-info-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+    .profile-info-meta {
+      font-size: 13.5px;
+      color: var(--color-text-secondary);
+      margin-top: 4px;
+    }
+    .profile-section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+    .profile-stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-box {
+      background: var(--color-divider);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-box-val {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--color-primary-cta);
+    }
+    .stat-box-lbl {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      margin-top: 4px;
+    }
+
+    /* ─── Toast and Utilities ────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 13.5px;
+      font-weight: 500;
+      z-index: 999;
+      opacity: 0;
+      transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .toast.active {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--color-text-tertiary);
+    }
+    .empty-state-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+    .empty-state-text {
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Main Feed Screen -->
-    <div id="main-feed" class="screen active">
-        <div class="header">
-            <div class="header-title">대학생 소통</div>
-        </div>
+  <!-- 암전 처리 백드롭 -->
+  <div id="modal-backdrop" class="modal-backdrop" onclick="closeAllModals()"></div>
 
-        <div class="tag-filter-bar" id="tag-filter-bar">
-            <button class="tag-btn" data-tag="all">전체</button>
-            <button class="tag-btn" data-tag="1학년">#1학년</button>
-            <button class="tag-btn" data-tag="2학년">#2학년</button>
-            <button class="tag-btn" data-tag="3학년">#3학년</button>
-            <button class="tag-btn" data-tag="4학년">#4학년</button>
-            <button class="tag-btn" data-tag="컴퓨터공학과">#컴퓨터공학과</button>
-            <button class="tag-btn" data-tag="경영학과">#경영학과</button>
-            <button class="tag-btn" data-tag="디자인학과">#디자인학과</button>
-            <button class="tag-btn" data-tag="고민상담">#고민상담</button>
-            <button class="tag-btn" data-tag="취업이야기">#취업이야기</button>
-            <button class="tag-btn" data-tag="학교생활">#학교생활</button>
-        </div>
+  <!-- 토스트 알림 -->
+  <div id="toast" class="toast">메시지 내용</div>
 
-        <div class="sort-bar">
-            <button class="sort-btn active" data-sort="latest">최신순</button>
-            <button class="sort-btn" data-sort="reward">보상 있는 글 우선</button>
-        </div>
+  <div class="app-shell">
 
-        <div class="post-list" id="post-list"></div>
+    <!-- Shared Header -->
+    <header class="app-header">
+      <div class="app-header__title logo" onclick="navigateToTab('screen-glist')">meetry</div>
+      <nav class="web-nav" aria-label="메인 네비게이션">
+        <span class="web-nav__item active" data-target="screen-glist" id="web-nav-glist">글목록</span>
+        <span class="web-nav__item" data-target="screen-talk" id="web-nav-talk">
+          대화
+          <span id="web-talk-badge" style="background: var(--color-primary-cta); color: white; border-radius: 10px; font-size: 9px; padding: 2px 6px; margin-left: 6px; display: none;">0</span>
+        </span>
+        <span class="web-nav__item" data-target="screen-profile" id="web-nav-profile">프로필</span>
+      </nav>
+      <div class="app-header__actions">
+        <!-- 상단 헤더 글쓰기 버튼 -->
+        <button class="icon-btn" aria-label="글쓰기" onclick="openCreateModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="icon-btn" aria-label="알림" onclick="showToast('알림 기능은 준비 중입니다.')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="badge-dot"></span>
+        </button>
+      </div>
+    </header>
 
-        <button class="floating-btn" onclick="navigateTo('post-create')">+</button>
-
-        <div class="bottom-nav">
-            <div class="nav-item active">
-                <div class="nav-icon">🏠</div>
-                <div>홈</div>
-            </div>
-            <div class="nav-item" onclick="navigateTo('chat-list')">
-                <div class="nav-icon">💬</div>
-                <div>채팅</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Post Create Screen -->
-    <div id="post-create" class="screen">
-        <div class="header">
-            <button class="header-back" onclick="navigateTo('main-feed')">←</button>
-            <div class="header-title">글 작성</div>
-            <button class="header-action" onclick="submitPost()">등록</button>
-        </div>
-
-        <div class="form-container">
-            <div class="form-group">
-                <label class="form-label">제목</label>
-                <input type="text" id="post-title" class="form-input" placeholder="제목을 입력하세요 (최대 50자)" maxlength="50">
-                <div class="char-counter"><span id="title-count">0</span>/50</div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">본문</label>
-                <textarea id="post-content" class="form-textarea" placeholder="만나고 싶은 이유, 이야기하고 싶은 주제 등을 작성하세요 (최대 500자)" maxlength="500"></textarea>
-                <div class="char-counter"><span id="content-count">0</span>/500</div>
+    <!-- Content Sections -->
+    <main class="main-content">
+      
+      <!-- Screen 1: 피드 글목록 -->
+      <div id="screen-glist" class="screen active">
+        <div class="glist-layout">
+          
+          <!-- 왼쪽: 피드 리스트 컬럼 (70%) -->
+          <div class="feed-column">
+            
+            <!-- 검색 및 토글 필터 영역 -->
+            <div class="search-box">
+              <div class="search-input-wrapper">
+                <span class="search-icon-inside">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                </span>
+                <input type="text" id="search-input" class="search-input" placeholder="관심 학과, 키워드 검색..." oninput="handleSearch()">
+              </div>
+              <button class="toggle-filter-btn active" id="btn-toggle-filter" aria-label="필터 접기">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                <span>필터 접기</span>
+              </button>
             </div>
 
-            <div class="form-group tag-selection">
-                <label class="form-label">태그 선택 (최소 1개, 최대 5개)</label>
-                
-                <div class="tag-category">
-                    <div class="tag-category-title">학년</div>
-                    <div id="grade-tags">
-                        <span class="tag-option" data-tag="1학년" data-category="grade">#1학년</span>
-                        <span class="tag-option" data-tag="2학년" data-category="grade">#2학년</span>
-                        <span class="tag-option" data-tag="3학년" data-category="grade">#3학년</span>
-                        <span class="tag-option" data-tag="4학년" data-category="grade">#4학년</span>
-                    </div>
+            <!-- 접이식 필터 바 -->
+            <div class="tag-filter-container" id="tag-filter-panel">
+              <div class="tag-row">
+                <span class="filter-label">학년</span>
+                <button class="filter-chip" data-group="grade" data-tag="1학년">#1학년</button>
+                <button class="filter-chip" data-group="grade" data-tag="2학년">#2학년</button>
+                <button class="filter-chip" data-group="grade" data-tag="3학년">#3학년</button>
+                <button class="filter-chip" data-group="grade" data-tag="4학년">#4학년</button>
+              </div>
+              <div class="tag-row">
+                <span class="filter-label">학과</span>
+                <button class="filter-chip" data-group="major" data-tag="컴퓨터공학과">#컴퓨터공학과</button>
+                <button class="filter-chip" data-group="major" data-tag="경영학과">#경영학과</button>
+                <button class="filter-chip" data-group="major" data-tag="디자인학과">#디자인학과</button>
+                <button class="filter-chip" data-group="major" data-tag="전자공학과">#전자공학과</button>
+              </div>
+              <div class="tag-row">
+                <span class="filter-label">주제</span>
+                <button class="filter-chip" data-group="topic" data-tag="학교생활">#학교생활</button>
+                <button class="filter-chip" data-group="topic" data-tag="고민상담">#고민상담</button>
+                <button class="filter-chip" data-group="topic" data-tag="진로고민">#진로고민</button>
+                <button class="filter-chip" data-group="topic" data-tag="대외활동">#대외활동</button>
+                <button class="filter-chip" data-group="topic" data-tag="꿀팁공유">#꿀팁공유</button>
+              </div>
+              <div class="tag-row">
+                <span class="filter-label">보상</span>
+                <button class="filter-chip" data-group="reward" data-tag="음료 제공">☕ 음료 제공</button>
+                <button class="filter-chip" data-group="reward" data-tag="식사 제공">🍽️ 식사 제공</button>
+              </div>
+            </div>
+
+            <!-- 정렬 및 글 갯수 정보 바 -->
+            <div class="sort-bar">
+              <span class="post-count-label" id="post-count">검색 결과 0건</span>
+              <div class="sort-options">
+                <button class="sort-btn active" id="sort-latest" onclick="setSort('latest')">최신순</button>
+                <button class="sort-btn" id="sort-reward" onclick="setSort('reward')">보상우선</button>
+              </div>
+            </div>
+
+            <!-- 피드 카드 리스트 -->
+            <div class="feed-list" id="feed-list">
+              <!-- 피드 동적 렌더링 -->
+            </div>
+
+          </div>
+
+          <!-- 오른쪽: 웹 전용 사이드바 컬럼 (30%) -->
+          <div class="sidebar-column">
+            
+            <!-- 내 프로필 카드 위젯 -->
+            <div class="sidebar-widget profile-summary-card">
+              <div class="profile-avatar" id="sidebar-avatar">김</div>
+              <div class="profile-name" id="sidebar-name">김새내기</div>
+              <div class="profile-meta" id="sidebar-meta">1학년 · 컴퓨터공학과</div>
+              <div class="profile-stats">
+                <div class="stat-item" onclick="navigateToTab('screen-profile')">
+                  <div class="stat-val" id="sidebar-posts-count">0</div>
+                  <div class="stat-lbl">올린 글</div>
                 </div>
-
-                <div class="tag-category">
-                    <div class="tag-category-title">전공</div>
-                    <div id="major-tags">
-                        <span class="tag-option" data-tag="컴퓨터공학과" data-category="major">#컴퓨터공학과</span>
-                        <span class="tag-option" data-tag="경영학과" data-category="major">#경영학과</span>
-                        <span class="tag-option" data-tag="디자인학과" data-category="major">#디자인학과</span>
-                    </div>
+                <div class="stat-item" onclick="navigateToTab('screen-talk')">
+                  <div class="stat-val" id="sidebar-chats-count">0</div>
+                  <div class="stat-lbl">참여 대화</div>
                 </div>
-
-                <div class="tag-category">
-                    <div class="tag-category-title">주제</div>
-                    <div id="topic-tags">
-                        <span class="tag-option" data-tag="고민상담" data-category="topic">#고민상담</span>
-                        <span class="tag-option" data-tag="취업이야기" data-category="topic">#취업이야기</span>
-                        <span class="tag-option" data-tag="학교생활" data-category="topic">#학교생활</span>
-                        <span class="tag-option" data-tag="동아리추천" data-category="topic">#동아리추천</span>
-                        <span class="tag-option" data-tag="대외활동" data-category="topic">#대외활동</span>
-                    </div>
-                </div>
-
-                <div class="selected-tags" id="selected-tags"></div>
+              </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">보상 옵션</label>
-                <div class="reward-options" id="reward-options">
-                    <label class="reward-option selected">
-                        <input type="radio" name="reward" value="none" checked>
-                        <span>없음</span>
-                    </label>
-                    <label class="reward-option">
-                        <input type="radio" name="reward" value="coffee">
-                        <span>☕ 음료 제공</span>
-                    </label>
-                    <label class="reward-option">
-                        <input type="radio" name="reward" value="meal">
-                        <span>🍽️ 식사 제공</span>
-                    </label>
-                </div>
-            </div>
-
-            <div style="height: 80px;"></div>
+          </div>
         </div>
+      </div>
+
+      <!-- Screen 2: 대화 목록 -->
+      <div id="screen-talk" class="screen">
+        <div class="chat-list-container">
+          <div class="sort-bar" style="border-top:none;">
+            <span class="post-count-label" style="font-weight:700;">참여 중인 1:1 대화방</span>
+          </div>
+          <div id="chat-list-content">
+            <!-- 채팅 목록 동적 렌더링 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Screen 3: 프로필 정보 -->
+      <div id="screen-profile" class="screen">
+        <div class="profile-card">
+          <div class="profile-header">
+            <div class="profile-avatar" style="width:60px; height:60px; font-size:24px; margin-bottom:0;" id="my-profile-avatar">김</div>
+            <div class="profile-info-details">
+              <div class="profile-info-name" id="my-profile-name">김새내기</div>
+              <div class="profile-info-meta" id="my-profile-meta">1학년 · 컴퓨터공학과 (학교 이메일 인증 완료)</div>
+            </div>
+          </div>
+          <div class="profile-stat-grid">
+            <div class="stat-box">
+              <div class="stat-box-val" id="my-profile-posts-count">0</div>
+              <div class="stat-box-lbl">내가 올린 글</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-val" id="my-profile-chats-count">0</div>
+              <div class="stat-box-lbl">진행 중인 채팅</div>
+            </div>
+          </div>
+
+          <div class="profile-section-title">내가 작성한 글 목록</div>
+          <div class="feed-list" id="my-posts-list">
+            <!-- 내가 쓴 글 목록 -->
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- 플로팅 액션 버튼 (FAB) -->
+    <button class="fab" aria-label="고민글 올리기" onclick="openCreateModal()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+
+  </div>
+
+  <!-- ─── MODALS ──────────────────────────────────── -->
+
+  <!-- 1. 글 작성 모달 -->
+  <div id="modal-create-post" class="modal-view">
+    <div class="modal-header">
+      <span class="modal-header-title">고민글 올리기</span>
+      <button class="close-btn" onclick="closeModal('modal-create-post')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label" for="post-title">제목</label>
+        <input type="text" id="post-title" class="form-input" placeholder="만나고 싶은 선배/후배 조건을 한 줄로 요약해 주세요. (50자 이내)" maxlength="50" oninput="updateCharCount('post-title', 'title-count', 50)">
+        <div class="char-count" id="title-count">0/50</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="post-content">내용</label>
+        <textarea id="post-content" class="form-textarea" placeholder="만나고 싶은 이유와 나누고 싶은 구체적인 이야기를 작성해 주세요. (500자 이내)" maxlength="500" oninput="updateCharCount('post-content', 'content-count', 500)"></textarea>
+        <div class="char-count" id="content-count">0/500</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">학년 태그 (1개만 선택 가능)</label>
+        <div class="chip-container" id="form-grade-tags">
+          <span class="selectable-chip" data-val="1학년">#1학년</span>
+          <span class="selectable-chip" data-val="2학년">#2학년</span>
+          <span class="selectable-chip" data-val="3학년">#3학년</span>
+          <span class="selectable-chip" data-val="4학년">#4학년</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">학과 태그 (1개만 선택 가능)</label>
+        <div class="chip-container" id="form-major-tags">
+          <span class="selectable-chip" data-val="컴퓨터공학과">#컴퓨터공학과</span>
+          <span class="selectable-chip" data-val="경영학과">#경영학과</span>
+          <span class="selectable-chip" data-val="디자인학과">#디자인학과</span>
+          <span class="selectable-chip" data-val="전자공학과">#전자공학과</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">관심 주제 태그 (최대 3개 선택 가능)</label>
+        <div class="chip-container" id="form-topic-tags">
+          <span class="selectable-chip" data-val="학교생활">#학교생활</span>
+          <span class="selectable-chip" data-val="고민상담">#고민상담</span>
+          <span class="selectable-chip" data-val="진로고민">#진로고민</span>
+          <span class="selectable-chip" data-val="대외활동">#대외활동</span>
+          <span class="selectable-chip" data-val="꿀팁공유">#꿀팁공유</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">대화 감사 보상 선택</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="post-reward" value="음료 제공" checked>
+            ☕ 음료 제공 (제가 살게요)
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="post-reward" value="식사 제공">
+            🍽️ 식사 제공 (대접해 드릴게요)
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="post-reward" value="없음">
+            대화만
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-create-post')">취소</button>
+      <button class="btn btn-primary" onclick="submitPost()">고민글 게시하기</button>
+    </div>
+  </div>
+
+  <!-- 2. 글 상세 조회 모달 -->
+  <div id="modal-post-detail" class="modal-view">
+    <div class="modal-header">
+      <span class="modal-header-title">고민글 상세 보기</span>
+      <button class="close-btn" onclick="closeModal('modal-post-detail')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="post-detail-header-info">
+        <span id="detail-author-meta">3학년 · 디자인학과</span>
+        <span id="detail-time">방금 전</span>
+      </div>
+      <div class="post-detail-title" id="detail-title">피드 고민글 제목</div>
+      <div class="post-detail-body" id="detail-body">고민글의 상세 정보 및 본문 내용이 출력됩니다.</div>
+      <div class="post-detail-tags" id="detail-tags">
+        <!-- 뱃지들 -->
+      </div>
+      
+      <div class="author-card">
+        <div class="author-avatar" id="detail-author-avatar">이</div>
+        <div class="profile-info-details">
+          <div class="author-name-text" id="detail-author-name">이선배</div>
+          <div class="author-major-text" id="detail-author-major">디자인학과 · 학생 인증 완료</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px; color:var(--color-primary-cta); font-weight:700; background: var(--color-primary-light); padding: 12px; border-radius: 8px; border:1px solid #FFE0D3;" id="detail-reward-notice">
+        ☕ 대화 완료 시 음료 보상이 약속된 글입니다.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-post-detail')">닫기</button>
+      <button class="btn btn-primary" id="detail-action-btn" onclick="openChatRequestModal()">1:1 대화 신청하기</button>
+    </div>
+  </div>
+
+  <!-- 3. 대화 신청 메시지 모달 -->
+  <div id="modal-chat-request" class="modal-view" style="z-index: 310;">
+    <div class="modal-header">
+      <span class="modal-header-title">1:1 대화 신청</span>
+      <button class="close-btn" onclick="closeModal('modal-chat-request')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">자기소개 및 관심 사유</label>
+        <textarea id="chat-request-message" class="form-textarea" placeholder="선배/후배님에게 성의 있는 메시지를 작성해 주세요. 대화 장소, 나누고 싶은 핵심 질문 등을 포함하면 매칭 확률이 높아집니다. (최소 20자 이상)" maxlength="500" oninput="updateCharCount('chat-request-message', 'chat-req-count', 500)"></textarea>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+          <span style="font-size:11.5px; color:var(--color-primary-cta); font-weight:700;" id="chat-req-warning">최소 20자를 입력해 주세요. (0자 입력됨)</span>
+          <span class="char-count" id="chat-req-count">0/500</span>
+        </div>
+      </div>
+      
+      <div style="font-size:12px; color:var(--color-text-secondary); background:var(--color-divider); padding:12px; border-radius:var(--radius-sm); line-height:1.5;">
+        ⚠️ <strong>안전 수칙 안내</strong>: 첫 오프라인 대면 만남은 가급적 도서관, 학교 내 카페 등 유동 인구가 많고 공인된 교내 공간에서 진행하시길 권장합니다.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-chat-request')">취소</button>
+      <button class="btn btn-primary" onclick="submitChatRequest()">대화 신청 메시지 전송</button>
+    </div>
+  </div>
+
+  <!-- 4. 1:1 채팅방 화면 모달 -->
+  <div id="modal-chat-room" class="modal-view">
+    <div class="modal-header">
+      <span class="modal-header-title" id="chat-room-title">김선배 (3학년 · 컴퓨터공학과)</span>
+      <button class="close-btn" onclick="closeModal('modal-chat-room')">&times;</button>
     </div>
 
-    <!-- Post Detail Screen -->
-    <div id="post-detail" class="screen">
-        <div class="header">
-            <button class="header-back" onclick="navigateTo('main-feed')">←</button>
-            <div class="header-title">게시글</div>
-            <div></div>
+    <!-- 약속 고정 알림바 -->
+    <div class="appointment-bar" id="chat-appointment-banner" style="display:none;">
+      <div class="appointment-info">
+        <span class="appointment-icon">📅</span>
+        <div class="appointment-text" id="appointment-banner-text">
+          약속 조율 중입니다. 장소와 시간을 잡아보세요.
         </div>
-
-        <div class="post-detail" id="post-detail-content"></div>
-
-        <button class="btn btn-primary btn-fixed" id="chat-request-btn" onclick="openChatModal()">1:1 채팅 신청</button>
+      </div>
+      <button class="appointment-btn" id="appointment-banner-action-btn" onclick="openAppointmentModal()">약속 잡기</button>
     </div>
 
-    <!-- Chat Modal -->
-    <div id="chat-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-title">첫 메시지를 작성하세요</div>
-            <textarea id="first-message" class="form-textarea" placeholder="자기소개 및 관심을 갖게 된 이유를 작성해주세요 (최소 20자)" style="min-height: 150px;"></textarea>
-            <div class="char-counter"><span id="first-message-count">0</span>자</div>
-            <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="closeChatModal()">취소</button>
-                <button class="btn btn-primary" onclick="sendFirstMessage()">전송</button>
-            </div>
-        </div>
+    <!-- 실시간 메시지 영역 -->
+    <div class="chat-messages" id="chat-messages">
+      <!-- 동적 렌더링 -->
     </div>
 
-    <!-- Chat Room Screen -->
-    <div id="chat-room" class="screen">
-        <div class="header">
-            <button class="header-back" onclick="navigateTo('chat-list')">←</button>
-            <div class="header-title" id="chat-room-title">채팅</div>
-            <div></div>
-        </div>
-
-        <div class="chat-container">
-            <div class="chat-messages" id="chat-messages"></div>
-
-            <div class="chat-input-bar">
-                <input type="text" id="chat-input" class="chat-input" placeholder="메시지를 입력하세요..." maxlength="1000">
-                <button class="chat-send-btn" onclick="sendMessage()">전송</button>
-            </div>
-        </div>
+    <!-- 입력바 -->
+    <div class="chat-input-area">
+      <input type="text" id="chat-input-text" class="chat-input" placeholder="대화를 시작해보세요..." onkeypress="handleChatEnter(event)">
+      <button class="chat-send-btn" onclick="sendChatMessage()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
     </div>
+  </div>
 
-    <!-- Chat List Screen -->
-    <div id="chat-list" class="screen">
-        <div class="header">
-            <div class="header-title">채팅</div>
-        </div>
-
-        <div class="chat-list" id="chat-list-content"></div>
-
-        <div class="bottom-nav">
-            <div class="nav-item" onclick="navigateTo('main-feed')">
-                <div class="nav-icon">🏠</div>
-                <div>홈</div>
-            </div>
-            <div class="nav-item active">
-                <div class="nav-icon">💬</div>
-                <div>채팅</div>
-            </div>
-        </div>
+  <!-- 5. 약속 잡기 폼 모달 -->
+  <div id="modal-appointment" class="modal-view" style="z-index: 310;">
+    <div class="modal-header">
+      <span class="modal-header-title">약속 확정하기</span>
+      <button class="close-btn" onclick="closeModal('modal-appointment')">&times;</button>
     </div>
+    <div class="modal-body appointment-form">
+      <div class="form-group">
+        <label class="form-label" for="appt-time">일시</label>
+        <input type="datetime-local" id="appt-time" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="appt-place">만남 장소</label>
+        <input type="text" id="appt-place" class="form-input" placeholder="예: 정문 앞 스타벅스, 중앙도서관 1층">
+      </div>
+      <div style="font-size:12.5px; color:var(--color-text-secondary); line-height:1.5;">
+        * 약속이 확정되면 채팅방 상단에 일정이 영구 고정되어 서로 확인할 수 있습니다.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-appointment')">취소</button>
+      <button class="btn btn-primary" onclick="submitAppointment()">약속 확정하기</button>
+    </div>
+  </div>
 
-    <!-- Toast -->
-    <div id="toast" class="toast"></div>
+  <!-- ─── APP LOGIC (JAVASCRIPT) ────────────────── -->
+  <script>
+    const STORAGE_KEY = 'meetry-app-system-data';
 
-    <script>
-        // Storage
-        const STORAGE_KEY = 'campus-connect-data';
+    // ─── 초기 샘플 데이터 정의 ─────────────────────
+    const DEFAULT_DATA = {
+      user: {
+        id: 'u_mine',
+        name: '김새내기',
+        grade: '1학년',
+        major: '컴퓨터공학과',
+        isCertified: true
+      },
+      posts: [
+        {
+          id: 'p_1',
+          title: '컴공과 학과 생활 꿀팁이나 전공 책 관련 조언을 해주실 선배님 계신가요?',
+          content: '안녕하세요 이번에 신입학한 1학년 새내기입니다. 코딩이 처음이라 파이썬이나 C언어 배울 때 어떻게 준비해야 하는지 막막하고, 선배님들의 추천 동아리나 대외활동 팁을 듣고 싶어요. 학교 내 카페에서 시원한 커피 한 잔 사드리고 편하게 오프라인에서 이야기 나누고 싶습니다!',
+          grade: '1학년',
+          major: '컴퓨터공학과',
+          topic: '학교생활',
+          reward: '음료 제공',
+          authorId: 'u_mine',
+          authorName: '김새내기',
+          authorGrade: '1학년',
+          authorMajor: '컴퓨터공학과',
+          views: 34,
+          likes: 8,
+          timestamp: Date.now() - 3600000 * 2
+        },
+        {
+          id: 'p_2',
+          title: '대기업 IT 서비스 기획자로 조기 취업 성공했는데 진로 상담이 필요하신 후배를 찾아요!',
+          content: '안녕하세요, 디자인학과 4학년이고 최근 IT 플랫폼 대기업 기획 파트로 조기 합격하여 근무를 시작했습니다. UX/UI 디자이너나 기획자로 포트폴리오를 준비 중이거나 취업 프로세스(자소서, 면접 등)가 막막한 디자인학과 후배분이 계시다면 커피 한 잔 마시면서 제가 겪었던 시행착오나 실무 노하우를 편하게 나눠 드릴게요. 부담 없이 연락 주세요.',
+          grade: '4학년',
+          major: '디자인학과',
+          topic: '진로고민',
+          reward: '음료 제공',
+          authorId: 'u_park',
+          authorName: '박합격 선배',
+          authorGrade: '4학년',
+          authorMajor: '디자인학과',
+          views: 128,
+          likes: 42,
+          timestamp: Date.now() - 3600000 * 5
+        },
+        {
+          id: 'p_3',
+          title: '경영학과 마케팅 공모전 멤버나 관련 정보 교류할 동료 구해요!',
+          content: '마케팅 학회 소속 3학년 학생입니다. 이번 여름방학 공모전에 같이 나갈 멤버를 찾고 있어요. 마케팅 기획서 작성 프로세스를 겪어보고 싶거나 타과 학생이어도 콘텐츠 제작 능력이 있으신 분이라면 대환영입니다. 점심 식사 대접하면서 구체적인 공모전 이야기를 맞춰가고 싶어요.',
+          grade: '3학년',
+          major: '경영학과',
+          topic: '대외활동',
+          reward: '식사 제공',
+          authorId: 'u_lee',
+          authorName: '이마케터',
+          authorGrade: '3학년',
+          authorMajor: '경영학과',
+          views: 64,
+          likes: 12,
+          timestamp: Date.now() - 3600000 * 24
+        },
+        {
+          id: 'p_4',
+          title: '전자공학과 회로설계 기사 자격증 스터디 및 팁 공유하실 분',
+          content: '전자공학과 3학년입니다. 이번 방학 때 회로설계 자격증 필기를 준비하고 있는데 혼자 하니 진도가 안 나가네요. 주 1~2회 오프라인으로 만나서 진행 상항 체크하고 꿀팁 공유하실 동기나 선후배 구합니다. 각자 먹을 음료 마시면서 진지하게 공부하실 분만 와주세요.',
+          grade: '3학년',
+          major: '전자공학과',
+          topic: '꿀팁공유',
+          reward: '없음',
+          authorId: 'u_choi',
+          authorName: '최회로',
+          authorGrade: '3학년',
+          authorMajor: '전자공학과',
+          views: 19,
+          likes: 3,
+          timestamp: Date.now() - 3600000 * 30
+        }
+      ],
+      chats: []
+    };
+
+    let appState = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    let activeFilters = {
+      grade: [],
+      major: [],
+      topic: [],
+      reward: []
+    };
+    let currentSearchQuery = '';
+    let currentSort = 'latest'; // latest, reward
+    let selectedPost = null;
+    let activeChat = null;
+
+    // ─── 초기 데이터 바인딩 및 세팅 (방어 코드 대폭 보강) ──────────
+    function initData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          appState = JSON.parse(saved);
+          
+          // 1. 유저 정보가 깨졌거나 없는 경우 복구
+          if (!appState || typeof appState !== 'object' || !appState.user || !appState.user.grade) {
+            appState = JSON.parse(JSON.stringify(DEFAULT_DATA));
+          }
+          // 2. 고민글 필드 무결성 확보
+          if (!appState.posts || !Array.isArray(appState.posts) || appState.posts.length === 0) {
+            appState.posts = JSON.parse(JSON.stringify(DEFAULT_DATA.posts));
+          } else {
+            // 개별 포스트 내 유실된 속성 복구
+            appState.posts.forEach((post, index) => {
+              if (!post.id) post.id = 'p_miggraded_' + index;
+              if (!post.title) post.title = '제목 없음';
+              if (!post.content) post.content = '내용 없음';
+              if (!post.authorName) post.authorName = '익명';
+              if (!post.timestamp || isNaN(post.timestamp)) {
+                post.timestamp = Date.now() - (index * 3600000);
+              }
+              if (!post.reward) post.reward = '없음';
+            });
+          }
+          // 3. 채팅방 리스트 확보
+          if (!appState.chats || !Array.isArray(appState.chats)) {
+            appState.chats = [];
+          }
+        } else {
+          appState = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+      } catch (err) {
+        console.error('로컬스토리지 복구 중 에러:', err);
+        appState = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      }
+
+      // 최종 클렌징된 데이터로 강제 재저장을 진행하여 데이터 정합성 완비
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (err) {}
+
+      refreshStats();
+      renderFeed();
+      renderChatList();
+    }
+
+    function saveData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (err) {}
+      refreshStats();
+    }
+
+    function refreshStats() {
+      try {
+        const myPostsCount = appState.posts.filter(p => p.authorId === appState.user.id).length;
+        const myChatsCount = appState.chats.length;
+
+        document.getElementById('sidebar-posts-count').textContent = myPostsCount;
+        document.getElementById('sidebar-chats-count').textContent = myChatsCount;
+        document.getElementById('my-profile-posts-count').textContent = myPostsCount;
+        document.getElementById('my-profile-chats-count').textContent = myChatsCount;
+
+        const unreadTotal = appState.chats.reduce((acc, c) => acc + (Number(c.unreadCount) || 0), 0);
+        const webBadge = document.getElementById('web-talk-badge');
         
-        let appData = {
-            user: {
-                id: 'user1',
-                name: '김철수',
-                grade: '3학년',
-                major: '컴퓨터공학과',
-                status: '재학'
-            },
-            posts: [],
-            chats: []
+        if (unreadTotal > 0) {
+          webBadge.textContent = unreadTotal;
+          webBadge.style.display = 'inline-block';
+        } else {
+          webBadge.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('통계 갱신 에러:', err);
+      }
+    }
+
+    // ─── 화면(탭) 전환 ────────────────────────────
+    function navigateToTab(targetId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const activeScreen = document.getElementById(targetId);
+      if (activeScreen) activeScreen.classList.add('active');
+
+      document.querySelectorAll('.web-nav__item').forEach(item => {
+        item.classList.toggle('active', item.getAttribute('data-target') === targetId);
+      });
+
+      if (targetId === 'screen-glist') {
+        renderFeed();
+      } else if (targetId === 'screen-talk') {
+        renderChatList();
+      } else if (targetId === 'screen-profile') {
+        renderMyPosts();
+      }
+
+      window.scrollTo(0, 0);
+    }
+
+    // ─── 피드 카드 목록 렌더링 (보상 매칭 확장 및 NaN 정렬 방어) ───
+    function renderFeed() {
+      const container = document.getElementById('feed-list');
+      if (!container) return;
+
+      try {
+        let filteredPosts = appState.posts.filter(post => {
+          // 1. 키워드 검색
+          if (currentSearchQuery) {
+            const query = currentSearchQuery.toLowerCase();
+            const matchTitle = (post.title || '').toLowerCase().includes(query);
+            const matchContent = (post.content || '').toLowerCase().includes(query);
+            const matchMajor = (post.major || '').toLowerCase().includes(query);
+            if (!matchTitle && !matchContent && !matchMajor) return false;
+          }
+
+          // 2. 다중 필터 조합 (AND 조건)
+          if (activeFilters.grade.length > 0 && !activeFilters.grade.includes(post.grade)) return false;
+          if (activeFilters.major.length > 0 && !activeFilters.major.includes(post.major)) return false;
+          if (activeFilters.topic.length > 0 && !activeFilters.topic.includes(post.topic)) return false;
+          
+          if (activeFilters.reward.length > 0) {
+            const rVal = (post.reward || '').trim();
+            const isDrink = rVal === '음료 제공' || rVal === 'coffee' || rVal === '음료' || rVal === '음료는 제가 살게요' || rVal === '음료 제공 (제가 살게요)';
+            const isMeal = rVal === '식사 제공' || rVal === 'meal' || rVal === '식사' || rVal === '식사 제공 (대접해 드릴게요)';
+
+            if (activeFilters.reward.includes('음료 제공') && activeFilters.reward.includes('식사 제공')) {
+              if (!isDrink && !isMeal) return false;
+            } else if (activeFilters.reward.includes('음료 제공') && !isDrink) {
+              return false;
+            } else if (activeFilters.reward.includes('식사 제공') && !isMeal) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+
+        // 정렬 적용 (NaN 방어)
+        if (currentSort === 'latest') {
+          filteredPosts.sort((a, b) => {
+            const tA = Number(a.timestamp) || 0;
+            const tB = Number(b.timestamp) || 0;
+            return tB - tA;
+          });
+        } else if (currentSort === 'reward') {
+          filteredPosts.sort((a, b) => {
+            const rA = (a.reward || '').trim();
+            const rB = (b.reward || '').trim();
+            const aHasReward = (rA !== '없음' && rA !== '') ? 1 : 0;
+            const bHasReward = (rB !== '없음' && rB !== '') ? 1 : 0;
+            
+            if (aHasReward !== bHasReward) return bHasReward - aHasReward;
+            
+            const tA = Number(a.timestamp) || 0;
+            const tB = Number(b.timestamp) || 0;
+            return tB - tA;
+          });
+        }
+
+        document.getElementById('post-count').textContent = `검색 결과 ${filteredPosts.length}건`;
+
+        if (filteredPosts.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🔍</div>
+              <div class="empty-state-text">선택 조건에 맞는 고민글이 존재하지 않습니다.</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = filteredPosts.map(post => {
+          const timeStr = getTimeAgoString(post.timestamp);
+          
+          // 보상 상태 통합 유연하게 분석
+          const rVal = (post.reward || '').trim();
+          const isDrink = rVal === '음료 제공' || rVal === 'coffee' || rVal === '음료' || rVal === '음료는 제가 살게요' || rVal === '음료 제공 (제가 살게요)';
+          const isMeal = rVal === '식사 제공' || rVal === 'meal' || rVal === '식사' || rVal === '식사 제공 (대접해 드릴게요)';
+
+          const rewardHtml = isDrink 
+            ? `<span class="reward-badge drink">☕ 음료 제공</span>` 
+            : isMeal 
+              ? `<span class="reward-badge meal">🍽️ 식사 제공</span>` 
+              : '';
+
+          return `
+            <div class="feed-card" onclick="openPostDetailModal('${post.id}')">
+              <div class="feed-card-header">
+                <div class="category-badges">
+                  <span class="badge">#${post.major || '전공'}</span>
+                  <span class="badge">#${post.topic || '주제'}</span>
+                </div>
+                ${rewardHtml}
+              </div>
+              <div class="feed-card-title">
+                <span class="bullet-point">●</span>
+                <span>${escapeHtml(post.title || '제목 없음')}</span>
+              </div>
+              <div class="feed-card-body">
+                ${escapeHtml(post.content || '본문 내용이 없습니다.')}
+              </div>
+              <div class="feed-card-footer">
+                <span class="author-info">${escapeHtml(post.authorName || '익명')} (${post.authorGrade || '학년'})</span>
+                <div class="card-meta-right">
+                  <span class="meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    ${post.views || 0}
+                  </span>
+                  <span>${timeStr}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('피드 렌더링 중 에러:', err);
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">렌더링 중 오류 발생</div></div>`;
+      }
+    }
+
+    // ─── 내가 쓴 글 목록 렌더링 (프로필 스크린) ─────────
+    function renderMyPosts() {
+      const container = document.getElementById('my-posts-list');
+      if (!container) return;
+
+      try {
+        const myPosts = appState.posts.filter(p => p.authorId === appState.user.id);
+
+        if (myPosts.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state" style="padding:20px 0;">
+              <div class="empty-state-icon" style="font-size:24px;">📝</div>
+              <div class="empty-state-text">아직 작성한 고민글이 없습니다.</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = myPosts.map(post => {
+          const timeStr = getTimeAgoString(post.timestamp);
+          return `
+            <div class="feed-card" onclick="openPostDetailModal('${post.id}')" style="border: 1px solid var(--color-divider); border-radius: var(--radius-md); margin-bottom: 12px; padding: 16px;">
+              <div class="feed-card-header">
+                <div class="category-badges">
+                  <span class="badge">#${post.major || '전공'}</span>
+                </div>
+                <span style="font-size:11px; color:var(--color-primary-cta); font-weight:700;">${post.reward || '없음'}</span>
+              </div>
+              <div class="feed-card-title" style="font-size:15px;">
+                <span>${escapeHtml(post.title || '제목 없음')}</span>
+              </div>
+              <div class="feed-card-footer">
+                <span>조회수 ${post.views || 0}</span>
+                <span>${timeStr}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('내가 쓴 글 렌더링 중 에러:', err);
+      }
+    }
+
+    // ─── 검색 및 다중 필터 기능 조작 ─────────────────
+    function handleSearch() {
+      currentSearchQuery = document.getElementById('search-input').value;
+      renderFeed();
+    }
+
+    // ─── 고민글 올리기 양식 열기 ─────────────────────
+    function openCreateModal() {
+      try {
+        document.getElementById('post-title').value = '';
+        document.getElementById('post-content').value = '';
+        document.getElementById('title-count').textContent = '0/50';
+        document.getElementById('content-count').textContent = '0/500';
+
+        document.querySelectorAll('.selectable-chip').forEach(c => c.classList.remove('active'));
+        
+        const gradeChips = document.querySelectorAll('#form-grade-tags .selectable-chip');
+        const majorChips = document.querySelectorAll('#form-major-tags .selectable-chip');
+        
+        const myGrade = (appState.user && appState.user.grade) || '1학년';
+        const myMajor = (appState.user && appState.user.major) || '컴퓨터공학과';
+
+        Array.from(gradeChips).forEach(chip => {
+          if (chip.dataset.val === myGrade) chip.classList.add('active');
+        });
+        Array.from(majorChips).forEach(chip => {
+          if (chip.dataset.val === myMajor) chip.classList.add('active');
+        });
+
+        openModal('modal-create-post');
+      } catch (err) {
+        console.error('글작성 폼 모달 오픈 에러:', err);
+      }
+    }
+
+    function submitPost() {
+      try {
+        const title = document.getElementById('post-title').value.trim();
+        const content = document.getElementById('post-content').value.trim();
+        const reward = document.querySelector('input[name="post-reward"]:checked').value;
+
+        const activeGradeChip = document.querySelector('#form-grade-tags .selectable-chip.active');
+        const activeMajorChip = document.querySelector('#form-major-tags .selectable-chip.active');
+        const activeTopicChips = document.querySelectorAll('#form-topic-tags .selectable-chip.active');
+
+        if (!title || !content) {
+          showToast('제목과 내용을 모두 작성해 주세요.');
+          return;
+        }
+        if (!activeGradeChip) {
+          showToast('학년 태그를 선택해 주세요.');
+          return;
+        }
+        if (!activeMajorChip) {
+          showToast('학과 태그를 선택해 주세요.');
+          return;
+        }
+        if (activeTopicChips.length === 0) {
+          showToast('관심 주제를 최소 1개 이상 선택해 주세요.');
+          return;
+        }
+
+        const newPost = {
+          id: 'p_' + Date.now(),
+          title: title,
+          content: content,
+          grade: activeGradeChip.dataset.val,
+          major: activeMajorChip.dataset.val,
+          topic: activeTopicChips[0].dataset.val,
+          reward: reward,
+          authorId: appState.user.id || 'u_mine',
+          authorName: appState.user.name || '김새내기',
+          authorGrade: appState.user.grade || '1학년',
+          authorMajor: appState.user.major || '컴퓨터공학과',
+          views: 0,
+          likes: 0,
+          timestamp: Date.now()
         };
 
-        // Sample Posts
-        const samplePosts = [
-            {
-                id: 'post1',
-                authorId: 'user2',
-                authorName: '이영희',
-                authorGrade: '1학년',
-                authorMajor: '컴퓨터공학과',
-                title: '학교 프로그램 정보나 새내기 생활 팁 알려주실 선배님 찾아요!',
-                content: '컴공과 1학년인데 학과 생활이 막막해서 조언을 듣고 싶어요. 대외활동이나 공모전 정보도 알려주시면 감사하겠습니다.',
-                tags: ['1학년', '컴퓨터공학과', '학교생활'],
-                reward: 'coffee',
-                timestamp: Date.now() - 3 * 60 * 60 * 1000
+        appState.posts.unshift(newPost);
+        saveData();
+        closeModal('modal-create-post');
+        renderFeed();
+        showToast('고민글이 성공적으로 등록되었습니다.');
+      } catch (err) {
+        console.error('고민글 제출 중 에러:', err);
+        showToast('등록 중 오류 발생');
+      }
+    }
+
+    // ─── 글 상세 및 대화 신청 처리 ───────────────────
+    function openPostDetailModal(postId) {
+      try {
+        const post = appState.posts.find(p => p.id === postId);
+        if (!post) return;
+
+        selectedPost = post;
+        post.views = (Number(post.views) || 0) + 1;
+        saveData();
+
+        document.getElementById('detail-title').textContent = post.title || '제목 없음';
+        document.getElementById('detail-body').textContent = post.content || '내용 없음';
+        document.getElementById('detail-author-meta').textContent = `${post.grade || '1학년'} · ${post.major || '학과 정보 없음'}`;
+        document.getElementById('detail-time').textContent = getTimeAgoString(post.timestamp);
+        
+        const authorName = post.authorName || '익명';
+        document.getElementById('detail-author-name').textContent = authorName;
+        document.getElementById('detail-author-major').textContent = `${post.major || '학과'} · 학생 인증 완료`;
+        document.getElementById('detail-author-avatar').textContent = authorName.charAt(0);
+
+        const tagsContainer = document.getElementById('detail-tags');
+        tagsContainer.innerHTML = `
+          <span class="badge">#${post.grade || '학년'}</span>
+          <span class="badge">#${post.major || '전공'}</span>
+          <span class="badge">#${post.topic || '주제'}</span>
+        `;
+
+        // 보상 뱃지 통합 대응 파싱
+        const rVal = (post.reward || '').trim();
+        const isDrink = rVal === '음료 제공' || rVal === 'coffee' || rVal === '음료' || rVal === '음료는 제가 살게요' || rVal === '음료 제공 (제가 살게요)';
+        const isMeal = rVal === '식사 제공' || rVal === 'meal' || rVal === '식사' || rVal === '식사 제공 (대접해 드릴게요)';
+
+        const rewardNotice = document.getElementById('detail-reward-notice');
+        if (isDrink) {
+          rewardNotice.innerHTML = '☕ 대화 완료 시 음료 보상(커피 등)이 약속된 글입니다.';
+          rewardNotice.style.display = 'block';
+        } else if (isMeal) {
+          rewardNotice.innerHTML = '🍽️ 대화 완료 시 따뜻한 식사 한 끼 보상이 약속된 글입니다.';
+          rewardNotice.style.display = 'block';
+        } else {
+          rewardNotice.style.display = 'none';
+        }
+
+        const actionBtn = document.getElementById('detail-action-btn');
+        if (post.authorId === appState.user.id) {
+          actionBtn.textContent = '내 글 대화 목록 보기';
+          actionBtn.onclick = () => {
+            closeModal('modal-post-detail');
+            navigateToTab('screen-talk');
+          };
+        } else {
+          actionBtn.textContent = '1:1 대화 신청하기';
+          actionBtn.onclick = () => openChatRequestModal();
+        }
+
+        openModal('modal-post-detail');
+      } catch (err) {
+        console.error('글 상세 모달 오픈 에러:', err);
+      }
+    }
+
+    function openChatRequestModal() {
+      try {
+        document.getElementById('chat-request-message').value = '';
+        document.getElementById('chat-req-warning').textContent = '최소 20자를 입력해 주세요. (0자 입력됨)';
+        document.getElementById('chat-req-count').textContent = '0/500';
+        openModal('modal-chat-request');
+      } catch (err) {
+        console.error('대화 신청 모달 오픈 에러:', err);
+      }
+    }
+
+    function submitChatRequest() {
+      try {
+        const messageText = document.getElementById('chat-request-message').value.trim();
+        
+        if (messageText.length < 20) {
+          showToast('성의 있는 대화를 위해 최소 20자 이상 작성해 주세요.');
+          return;
+        }
+
+        let chat = appState.chats.find(c => c.postId === selectedPost.id && c.otherUser.id === selectedPost.authorId);
+        
+        if (!chat) {
+          chat = {
+            id: 'chat_' + Date.now(),
+            postId: selectedPost.id,
+            postTitle: selectedPost.title || '제목 없음',
+            reward: selectedPost.reward || '없음',
+            otherUser: {
+              id: selectedPost.authorId || 'u_other',
+              name: selectedPost.authorName || '상대방',
+              grade: selectedPost.authorGrade || '학년',
+              major: selectedPost.authorMajor || '학과'
             },
-            {
-                id: 'post2',
-                authorId: 'user3',
-                authorName: '박민수',
-                authorGrade: '4학년',
-                authorMajor: '경영학과',
-                title: '취업 준비 같이 하실 분 구해요',
-                content: '이번 하반기 공채 준비하고 있는데 같이 스터디하면서 정보 공유하실 분 찾습니다. 자소서 첨삭이나 면접 스터디도 같이 해요!',
-                tags: ['4학년', '경영학과', '취업이야기'],
-                reward: 'none',
-                timestamp: Date.now() - 5 * 60 * 60 * 1000
-            },
-            {
-                id: 'post3',
-                authorId: 'user4',
-                authorName: '최지원',
-                authorGrade: '2학년',
-                authorMajor: '디자인학과',
-                title: '동아리 추천 받고 싶어요',
-                content: '디자인 관련 동아리나 사진 동아리 알려주실 분 계실까요? 동아리 활동 경험담도 듣고 싶습니다.',
-                tags: ['2학년', '디자인학과', '동아리추천'],
-                reward: 'meal',
-                timestamp: Date.now() - 8 * 60 * 60 * 1000
-            }
-        ];
-
-        // Auto-reply messages
-        const autoReplyMessages = [
-            "네, 좋아요!",
-            "그 시간 괜찮습니다",
-            "어디서 만날까요?",
-            "학교 앞 카페 어떠세요?",
-            "이야기 나눠봐요!",
-            "언제가 편하세요?"
-        ];
-
-        // Initialize
-        function init() {
-            loadData();
-            if (appData.posts.length === 0) {
-                appData.posts = [...samplePosts];
-                saveData();
-            }
-            renderPosts();
-            setupEventListeners();
+            messages: [],
+            appointment: null,
+            unreadCount: 0
+          };
+          appState.chats.unshift(chat);
         }
 
-        // Data management
-        function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        chat.messages.push({
+          id: 'm_' + Date.now(),
+          senderId: appState.user.id || 'u_mine',
+          text: messageText,
+          timestamp: Date.now(),
+          read: false
+        });
+
+        saveData();
+        closeModal('modal-chat-request');
+        closeModal('modal-post-detail');
+        showToast('대화 신청을 보냈습니다.');
+        
+        openChatRoom(chat.id);
+
+        triggerBotReply(chat.id, 2500, [
+          `안녕하세요! 제 고민글 보고 연락 주셔서 정말 기쁘네요. 😄`,
+          `네 선배님! 작성해주신 내용 보니 너무 든든합니다. 시간 되실 때 대면해서 여러 꿀팁 듣고 싶어요. 언제 시간 편하신가요?`
+        ]);
+      } catch (err) {
+        console.error('대화 신청 전송 중 에러:', err);
+      }
+    }
+
+    // ─── 채팅방 로직 ──────────────────────────────
+    function openChatRoom(chatId) {
+      try {
+        const chat = appState.chats.find(c => c.id === chatId);
+        if (!chat) return;
+
+        activeChat = chat;
+        
+        chat.messages.forEach(m => {
+          if (m.senderId !== appState.user.id) m.read = true;
+        });
+        chat.unreadCount = 0;
+        saveData();
+
+        const nameStr = chat.otherUser.name || '대화 상대';
+        const gradeStr = chat.otherUser.grade || '학년';
+        const majorStr = chat.otherUser.major || '학과';
+        document.getElementById('chat-room-title').textContent = `${nameStr} (${gradeStr} · ${majorStr})`;
+        
+        renderAppointmentBanner();
+        renderChatMessages();
+
+        openModal('modal-chat-room');
+        
+        setTimeout(() => {
+          const msgContainer = document.getElementById('chat-messages');
+          if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+        }, 50);
+      } catch (err) {
+        console.error('채팅방 진입 에러:', err);
+      }
+    }
+
+    function renderChatMessages() {
+      const container = document.getElementById('chat-messages');
+      if (!container) return;
+
+      try {
+        if (activeChat.messages.length === 0) {
+          container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-text">대화 기록이 없습니다.</div></div>`;
+          return;
         }
 
-        function loadData() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                appData = JSON.parse(saved);
-            }
-        }
+        let lastDateString = '';
+        let html = '';
 
-        // Navigation
-        function navigateTo(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
+        activeChat.messages.forEach(msg => {
+          const msgDateStr = new Date(msg.timestamp).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+          if (msgDateStr !== lastDateString) {
+            html += `<div class="chat-date">${msgDateStr}</div>`;
+            lastDateString = msgDateStr;
+          }
 
-            if (screenId === 'main-feed') {
-                renderPosts();
-            } else if (screenId === 'chat-list') {
-                renderChatList();
-            } else if (screenId === 'post-create') {
-                resetPostForm();
-            }
-        }
+          const isMine = msg.senderId === appState.user.id;
+          const timeStr = new Date(msg.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-        // Toast
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('active');
-            setTimeout(() => {
-                toast.classList.remove('active');
-            }, 3000);
-        }
-
-        // Post List
-        let selectedFilters = [];
-        let currentSort = 'latest';
-
-        function renderPosts() {
-            let posts = [...appData.posts];
-
-            // Filter
-            if (selectedFilters.length > 0 && !selectedFilters.includes('all')) {
-                posts = posts.filter(post => 
-                    selectedFilters.every(filter => post.tags.includes(filter))
-                );
-            }
-
-            // Sort
-            if (currentSort === 'latest') {
-                posts.sort((a, b) => b.timestamp - a.timestamp);
-            } else if (currentSort === 'reward') {
-                posts.sort((a, b) => {
-                    if (a.reward !== 'none' && b.reward === 'none') return -1;
-                    if (a.reward === 'none' && b.reward !== 'none') return 1;
-                    return b.timestamp - a.timestamp;
-                });
-            }
-
-            const postList = document.getElementById('post-list');
-            
-            if (posts.length === 0) {
-                postList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📭</div>
-                        <div class="empty-state-text">게시글이 없습니다</div>
-                    </div>
-                `;
-                return;
-            }
-
-            postList.innerHTML = posts.map(post => `
-                <div class="post-card" onclick="viewPost('${post.id}')">
-                    ${post.reward !== 'none' ? `
-                        <span class="post-card-reward ${post.reward}">
-                            ${post.reward === 'coffee' ? '☕ 음료 제공' : '🍽️ 식사 제공'}
-                        </span>
-                    ` : ''}
-                    <div class="post-card-title">${post.title}</div>
-                    <div class="post-card-content">${post.content}</div>
-                    <div class="post-card-tags">
-                        ${post.tags.map(tag => `<span class="post-tag">#${tag}</span>`).join('')}
-                    </div>
-                    <div class="post-card-meta">
-                        ${post.authorGrade} ${post.authorMajor} · ${getTimeAgo(post.timestamp)}
-                    </div>
+          html += `
+            <div class="message ${isMine ? 'mine' : 'other'}">
+              <div>
+                <div class="message-bubble">${escapeHtml(msg.text)}</div>
+                <div class="message-time">
+                  ${timeStr}
+                  ${isMine ? `<span class="message-read">${msg.read ? '읽음' : '1'}</span>` : ''}
                 </div>
-            `).join('');
+              </div>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+      } catch (err) {
+        console.error('메시지 렌더링 중 에러:', err);
+      }
+    }
+
+    function sendChatMessage() {
+      try {
+        const input = document.getElementById('chat-input-text');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const newMsg = {
+          id: 'm_' + Date.now(),
+          senderId: appState.user.id || 'u_mine',
+          text: text,
+          timestamp: Date.now(),
+          read: false
+        };
+
+        activeChat.messages.push(newMsg);
+        saveData();
+        input.value = '';
+        renderChatMessages();
+
+        const msgContainer = document.getElementById('chat-messages');
+        if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+
+        if (activeChat.messages.filter(m => m.senderId === appState.user.id).length === 2) {
+          triggerBotReply(activeChat.id, 2000, [
+            `아, 정말이요? 알려주신 장소 스타벅스 좋네요!`,
+            `시간은 오후 3시 이후면 다 괜찮을 것 같은데 선배님 일정은 어떠신가요?`
+          ]);
+        } else {
+          triggerBotReply(activeChat.id, 3000, [
+            `감사합니다! 오프라인에서 만나뵙고 더 깊게 대화하면 정말 많은 도움이 될 것 같습니다.`,
+            `약속 잡기 폼으로 시간과 장소 확정해 주시면 저도 캘린더에 적어두겠습니다. 😄`
+          ]);
+        }
+      } catch (err) {
+        console.error('메시지 발송 에러:', err);
+      }
+    }
+
+    function handleChatEnter(event) {
+      if (event.key === 'Enter') {
+        sendChatMessage();
+      }
+    }
+
+    function triggerBotReply(chatId, delay, textPool) {
+      setTimeout(() => {
+        try {
+          const targetChat = appState.chats.find(c => c.id === chatId);
+          if (!targetChat) return;
+
+          const randomText = textPool[Math.floor(Math.random() * textPool.length)];
+          const newMsg = {
+            id: 'm_bot_' + Date.now(),
+            senderId: targetChat.otherUser.id || 'u_other',
+            text: randomText,
+            timestamp: Date.now(),
+            read: activeChat && activeChat.id === chatId
+          };
+
+          targetChat.messages.push(newMsg);
+
+          if (!activeChat || activeChat.id !== chatId) {
+            targetChat.unreadCount = (Number(targetChat.unreadCount) || 0) + 1;
+          }
+
+          saveData();
+
+          if (activeChat && activeChat.id === chatId) {
+            renderChatMessages();
+            const msgContainer = document.getElementById('chat-messages');
+            if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+          } else {
+            renderChatList();
+          }
+        } catch (err) {
+          console.error('봇 응답 타이머 에러:', err);
+        }
+      }, delay);
+    }
+
+    // ─── 약속 조율 기능 ────────────────────────────
+    function renderAppointmentBanner() {
+      const banner = document.getElementById('chat-appointment-banner');
+      const text = document.getElementById('appointment-banner-text');
+      const btn = document.getElementById('appointment-banner-action-btn');
+
+      if (!activeChat || !banner) return;
+
+      banner.style.display = 'flex';
+
+      if (activeChat.appointment) {
+        const apptDate = new Date(activeChat.appointment.time);
+        const formatStr = `${apptDate.getMonth() + 1}월 ${apptDate.getDate()}일 ${apptDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+        text.innerHTML = `📅 약속 확정됨: <strong>${formatStr}</strong> | 장소: <strong>${escapeHtml(activeChat.appointment.place)}</strong>`;
+        btn.textContent = '약속 변경';
+      } else {
+        text.innerHTML = `📅 대면 미팅 약속을 조율하고 확정해보세요.`;
+        btn.textContent = '약속 잡기';
+      }
+    }
+
+    function openAppointmentModal() {
+      try {
+        const now = new Date();
+        now.setHours(now.getHours() + 24);
+        now.setMinutes(0);
+        document.getElementById('appt-time').value = now.toISOString().slice(0, 16);
+        document.getElementById('appt-place').value = '';
+
+        openModal('modal-appointment');
+      } catch (err) {
+        console.error('약속 모달 오픈 에러:', err);
+      }
+    }
+
+    function submitAppointment() {
+      try {
+        const timeVal = document.getElementById('appt-time').value;
+        const placeVal = document.getElementById('appt-place').value.trim();
+
+        if (!timeVal || !placeVal) {
+          showToast('일시와 장소를 입력해 주세요.');
+          return;
         }
 
-        function getTimeAgo(timestamp) {
-            const diff = Date.now() - timestamp;
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const days = Math.floor(hours / 24);
+        activeChat.appointment = {
+          time: timeVal,
+          place: placeVal
+        };
 
-            if (days > 0) return `${days}일 전`;
-            if (hours > 0) return `${hours}시간 전`;
-            return '방금 전';
+        saveData();
+        closeModal('modal-appointment');
+        renderAppointmentBanner();
+        showToast('미팅 약속이 확정되었습니다.');
+
+        const apptDate = new Date(timeVal);
+        const formatStr = `${apptDate.getMonth() + 1}월 ${apptDate.getDate()}일 ${apptDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+        activeChat.messages.push({
+          id: 'm_system_' + Date.now(),
+          senderId: appState.user.id || 'u_mine',
+          text: `📢 약속을 확정했습니다. (${formatStr} / 장소: ${placeVal})`,
+          timestamp: Date.now(),
+          read: true
+        });
+        saveData();
+        renderChatMessages();
+
+        triggerBotReply(activeChat.id, 1500, [
+          `확인했습니다! 시간 맞춰 나갈게요. 감사합니다. 😄`,
+          `네 선배님 약속 등록 확인했습니다. 장소에서 뵙겠습니다!`
+        ]);
+      } catch (err) {
+        console.error('약속 확정 제출 에러:', err);
+      }
+    }
+
+    // ─── 채팅 목록 렌더링 ──────────────────────────
+    function renderChatList() {
+      const container = document.getElementById('chat-list-content');
+      if (!container) return;
+
+      try {
+        if (appState.chats.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">💬</div>
+              <div class="empty-state-text">진행 중인 1:1 대화방이 없습니다. 고민글 하단의 대화 신청을 클릭해 보세요!</div>
+            </div>
+          `;
+          return;
         }
 
-        // Tag filtering
-        function setupEventListeners() {
-            // Tag filters
-            document.querySelectorAll('#tag-filter-bar .tag-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const tag = this.dataset.tag;
-                    
-                    if (tag === 'all') {
-                        selectedFilters = [];
-                        document.querySelectorAll('#tag-filter-bar .tag-btn').forEach(b => b.classList.remove('active'));
-                        this.classList.add('active');
-                    } else {
-                        document.querySelector('[data-tag="all"]').classList.remove('active');
-                        
-                        if (selectedFilters.includes(tag)) {
-                            selectedFilters = selectedFilters.filter(f => f !== tag);
-                            this.classList.remove('active');
-                        } else {
-                            selectedFilters.push(tag);
-                            this.classList.add('active');
-                        }
-                    }
-                    
-                    renderPosts();
-                });
-            });
+        container.innerHTML = appState.chats.map(chat => {
+          const lastMsg = chat.messages[chat.messages.length - 1];
+          const lastMsgText = lastMsg ? lastMsg.text : '대화 신청 메시지를 작성해 보세요.';
+          const lastMsgTime = lastMsg ? getTimeAgoString(lastMsg.timestamp) : '';
+          const unreadHtml = (Number(chat.unreadCount) || 0) > 0 ? `<span class="unread-badge">${chat.unreadCount}</span>` : '';
 
-            // Sort buttons
-            document.querySelectorAll('.sort-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    currentSort = this.dataset.sort;
-                    renderPosts();
-                });
-            });
-
-            // Post form character counters
-            document.getElementById('post-title').addEventListener('input', function() {
-                document.getElementById('title-count').textContent = this.value.length;
-            });
-
-            document.getElementById('post-content').addEventListener('input', function() {
-                document.getElementById('content-count').textContent = this.value.length;
-            });
-
-            // Tag selection in post form
-            document.querySelectorAll('.tag-option').forEach(option => {
-                option.addEventListener('click', function() {
-                    const tag = this.dataset.tag;
-                    const category = this.dataset.category;
-                    
-                    // For grade and major, allow only one selection per category
-                    if (category === 'grade' || category === 'major') {
-                        document.querySelectorAll(`.tag-option[data-category="${category}"]`).forEach(o => {
-                            o.classList.remove('selected');
-                        });
-                    }
-                    
-                    this.classList.toggle('selected');
-                    updateSelectedTags();
-                });
-            });
-
-            // Reward options
-            document.querySelectorAll('.reward-option').forEach(option => {
-                option.addEventListener('click', function() {
-                    document.querySelectorAll('.reward-option').forEach(o => o.classList.remove('selected'));
-                    this.classList.add('selected');
-                    this.querySelector('input').checked = true;
-                });
-            });
-
-            // First message counter
-            document.getElementById('first-message').addEventListener('input', function() {
-                document.getElementById('first-message-count').textContent = this.value.length;
-            });
-
-            // Chat input enter key
-            document.getElementById('chat-input').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    sendMessage();
-                }
-            });
-        }
-
-        function updateSelectedTags() {
-            const selected = Array.from(document.querySelectorAll('.tag-option.selected'))
-                .map(el => el.dataset.tag);
-            
-            const container = document.getElementById('selected-tags');
-            
-            if (selected.length === 0) {
-                container.innerHTML = '';
-                return;
-            }
-
-            container.innerHTML = selected.map(tag => `
-                <span class="selected-tag">
-                    #${tag}
-                    <span class="selected-tag-remove" onclick="removeTag('${tag}')">×</span>
+          return `
+            <div class="chat-list-item" onclick="openChatRoom('${chat.id}')">
+              <div class="chat-list-item-header">
+                <span class="chat-list-item-name">
+                  ${escapeHtml(chat.otherUser.name || '상대방')}
+                  <span style="font-size:12px; font-weight:normal; color:var(--color-text-secondary);">${chat.otherUser.grade || ''}</span>
+                  ${unreadHtml}
                 </span>
-            `).join('');
+                <span class="chat-list-item-time">${lastMsgTime}</span>
+              </div>
+              <div class="chat-list-item-message">${escapeHtml(lastMsgText)}</div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('채팅 목록 렌더링 에러:', err);
+      }
+    }
+
+    // ─── 유틸리티 함수 ────────────────────────────
+    function updateCharCount(inputId, countId, maxLen) {
+      const val = document.getElementById(inputId).value;
+      document.getElementById(countId).textContent = `${val.length}/${maxLen}`;
+      
+      if (inputId === 'chat-request-message') {
+        const reqWarning = document.getElementById('chat-req-warning');
+        if (val.length < 20) {
+          reqWarning.textContent = `최소 20자를 입력해 주세요. (${val.length}자 입력됨)`;
+          reqWarning.style.color = 'var(--color-primary-cta)';
+        } else {
+          reqWarning.textContent = '조건 충족 완료! 메시지 전송이 가능합니다.';
+          reqWarning.style.color = 'green';
         }
+      }
+    }
 
-        function removeTag(tag) {
-            document.querySelector(`.tag-option[data-tag="${tag}"]`).classList.remove('selected');
-            updateSelectedTags();
-        }
+    // 클래스 기반 모달 제어
+    function openModal(modalId) {
+      document.getElementById('modal-backdrop').classList.add('active');
+      document.getElementById(modalId).classList.add('active');
+    }
 
-        function resetPostForm() {
-            document.getElementById('post-title').value = '';
-            document.getElementById('post-content').value = '';
-            document.getElementById('title-count').textContent = '0';
-            document.getElementById('content-count').textContent = '0';
-            document.querySelectorAll('.tag-option').forEach(o => o.classList.remove('selected'));
-            document.querySelectorAll('.reward-option').forEach(o => o.classList.remove('selected'));
-            document.querySelector('.reward-option').classList.add('selected');
-            document.querySelector('input[value="none"]').checked = true;
-            updateSelectedTags();
-        }
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+      const activeModals = document.querySelectorAll('.modal-view.active');
+      if (activeModals.length === 0) {
+        document.getElementById('modal-backdrop').classList.remove('active');
+      }
+      if (modalId === 'modal-chat-room') activeChat = null;
+    }
 
-        // Post submission
-        function submitPost() {
-            const title = document.getElementById('post-title').value.trim();
-            const content = document.getElementById('post-content').value.trim();
-            const tags = Array.from(document.querySelectorAll('.tag-option.selected')).map(el => el.dataset.tag);
-            const reward = document.querySelector('input[name="reward"]:checked').value;
+    function closeAllModals() {
+      document.querySelectorAll('.modal-view').forEach(m => m.classList.remove('active'));
+      document.getElementById('modal-backdrop').classList.remove('active');
+      activeChat = null;
+    }
 
-            if (!title) {
-                showToast('제목을 입력해주세요');
-                return;
-            }
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.add('active');
+      setTimeout(() => toast.classList.remove('active'), 2500);
+    }
 
-            if (content.length < 10) {
-                showToast('본문을 10자 이상 입력해주세요');
-                return;
-            }
+    function getTimeAgoString(timestamp) {
+      const ts = Number(timestamp) || Date.now();
+      const diffMs = Date.now() - ts;
+      const diffMin = Math.floor(diffMs / 60000);
+      const diffHr = Math.floor(diffMin / 60);
+      const diffDay = Math.floor(diffHr / 24);
 
-            if (tags.length === 0) {
-                showToast('최소 1개의 태그를 선택해주세요');
-                return;
-            }
+      if (diffMin < 1) return '방금 전';
+      if (diffMin < 60) return `${diffMin}분 전`;
+      if (diffHr < 24) return `${diffHr}시간 전`;
+      return `${diffDay}일 전`;
+    }
 
-            if (tags.length > 5) {
-                showToast('태그는 최대 5개까지 선택 가능합니다');
-                return;
-            }
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return String(text || '').replace(/[&<>"']/g, m => map[m]);
+    }
 
-            const newPost = {
-                id: 'post' + Date.now(),
-                authorId: appData.user.id,
-                authorName: appData.user.name,
-                authorGrade: appData.user.grade,
-                authorMajor: appData.user.major,
-                title,
-                content,
-                tags,
-                reward,
-                timestamp: Date.now()
-            };
+    // ─── 이벤트 리스너 설정 ────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+      initData();
 
-            appData.posts.unshift(newPost);
-            saveData();
-            showToast('게시글이 등록되었습니다');
-            navigateTo('main-feed');
-        }
+      // 상단 탭 스위칭 바인딩
+      document.querySelectorAll('.web-nav__item').forEach(item => {
+        item.addEventListener('click', function(e) {
+          e.preventDefault();
+          const target = this.getAttribute('data-target') || e.currentTarget.getAttribute('data-target');
+          navigateToTab(target);
+        });
+      });
 
-        // Post detail
-        let currentPostId = null;
+      // 접이식 필터 토글 버튼 바인딩
+      const toggleFilterBtn = document.getElementById('btn-toggle-filter');
+      const filterPanel = document.getElementById('tag-filter-panel');
+      if (toggleFilterBtn && filterPanel) {
+        toggleFilterBtn.addEventListener('click', () => {
+          const isHidden = filterPanel.classList.toggle('hidden');
+          toggleFilterBtn.querySelector('span').textContent = isHidden ? '필터 열기' : '필터 접기';
+          toggleFilterBtn.classList.toggle('active', !isHidden);
+        });
+      }
 
-        function viewPost(postId) {
-            currentPostId = postId;
-            const post = appData.posts.find(p => p.id === postId);
-            
-            if (!post) return;
+      // 필터 칩 다중 AND 선택 바인딩
+      document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+          const group = this.dataset.group;
+          const tag = this.dataset.tag;
+          const isActive = this.classList.toggle('active');
 
-            const content = document.getElementById('post-detail-content');
-            content.innerHTML = `
-                <div class="post-detail-header">
-                    ${post.reward !== 'none' ? `
-                        <span class="post-card-reward ${post.reward}">
-                            ${post.reward === 'coffee' ? '☕ 음료 제공' : '🍽️ 식사 제공'}
-                        </span>
-                    ` : ''}
-                    <div class="post-detail-author">
-                        <div class="author-avatar">${post.authorName[0]}</div>
-                        <div class="author-info">
-                            <div class="author-name">${post.authorName}</div>
-                            <div class="author-meta">${post.authorGrade} ${post.authorMajor} · ${getTimeAgo(post.timestamp)}</div>
-                        </div>
-                    </div>
-                    <div class="post-detail-title">${post.title}</div>
-                </div>
-                <div class="post-detail-content">${post.content}</div>
-                <div class="post-detail-tags">
-                    ${post.tags.map(tag => `<span class="post-tag">#${tag}</span>`).join('')}
-                </div>
-            `;
+          if (isActive) {
+            activeFilters[group].push(tag);
+          } else {
+            activeFilters[group] = activeFilters[group].filter(t => t !== tag);
+          }
+          renderFeed();
+        });
+      });
 
-            // Hide button if it's my post
-            const chatBtn = document.getElementById('chat-request-btn');
-            if (post.authorId === appData.user.id) {
-                chatBtn.style.display = 'none';
-            } else {
-                chatBtn.style.display = 'block';
-            }
-
-            navigateTo('post-detail');
-        }
-
-        // Chat modal
-        function openChatModal() {
-            document.getElementById('chat-modal').classList.add('active');
-            document.getElementById('first-message').value = '';
-            document.getElementById('first-message-count').textContent = '0';
-        }
-
-        function closeChatModal() {
-            document.getElementById('chat-modal').classList.remove('active');
-        }
-
-        function sendFirstMessage() {
-            const message = document.getElementById('first-message').value.trim();
-
-            if (message.length < 20) {
-                showToast('20자 이상 입력해주세요');
-                return;
-            }
-
-            const post = appData.posts.find(p => p.id === currentPostId);
-            if (!post) return;
-
-            // Create or find chat
-            let chat = appData.chats.find(c => c.postId === currentPostId);
-            
-            if (!chat) {
-                chat = {
-                    id: 'chat' + Date.now(),
-                    postId: currentPostId,
-                    postTitle: post.title,
-                    otherUser: {
-                        id: post.authorId,
-                        name: post.authorName,
-                        grade: post.authorGrade,
-                        major: post.authorMajor
-                    },
-                    messages: [],
-                    unreadCount: 0
-                };
-                appData.chats.push(chat);
-            }
-
-            // Add message
-            chat.messages.push({
-                id: 'msg' + Date.now(),
-                senderId: appData.user.id,
-                text: message,
-                timestamp: Date.now(),
-                read: false
-            });
-
-            saveData();
-            closeChatModal();
-            showToast('메시지를 전송했습니다');
-            
-            // Schedule auto-reply
-            scheduleAutoReply(chat.id);
-            
-            // Go to chat room
-            openChatRoom(chat.id);
-        }
-
-        // Chat room
-        let currentChatId = null;
-
-        function openChatRoom(chatId) {
-            currentChatId = chatId;
-            const chat = appData.chats.find(c => c.id === chatId);
-            
-            if (!chat) return;
-
-            // Mark messages as read
-            chat.messages.forEach(msg => msg.read = true);
-            chat.unreadCount = 0;
-            saveData();
-
-            // Update header
-            document.getElementById('chat-room-title').textContent = 
-                `${chat.otherUser.name} (${chat.otherUser.grade} ${chat.otherUser.major})`;
-
-            renderChatMessages(chatId);
-            navigateTo('chat-room');
-
-            // Scroll to bottom
-            setTimeout(() => {
-                const messagesContainer = document.getElementById('chat-messages');
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, 100);
-        }
-
-        function renderChatMessages(chatId) {
-            const chat = appData.chats.find(c => c.id === chatId);
-            if (!chat) return;
-
-            const container = document.getElementById('chat-messages');
-            
-            if (chat.messages.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">💬</div>
-                        <div class="empty-state-text">메시지가 없습니다</div>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '<div class="chat-date">' + formatDate(chat.messages[0].timestamp) + '</div>';
-
-            chat.messages.forEach(msg => {
-                const isMine = msg.senderId === appData.user.id;
-                html += `
-                    <div class="message ${isMine ? 'mine' : 'other'}">
-                        <div>
-                            <div class="message-bubble">${msg.text}</div>
-                            <div class="message-time">
-                                ${formatTime(msg.timestamp)}
-                                ${isMine ? '<span class="message-read">' + (msg.read ? '읽음' : '1') + '</span>' : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        function formatDate(timestamp) {
-            const date = new Date(timestamp);
-            return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
-        }
-
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            const hours = date.getHours();
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            const ampm = hours >= 12 ? '오후' : '오전';
-            const displayHours = hours % 12 || 12;
-            return `${ampm} ${displayHours}:${minutes}`;
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-
-            if (!text) return;
-
-            const chat = appData.chats.find(c => c.id === currentChatId);
-            if (!chat) return;
-
-            chat.messages.push({
-                id: 'msg' + Date.now(),
-                senderId: appData.user.id,
-                text: text,
-                timestamp: Date.now(),
-                read: false
-            });
-
-            saveData();
-            input.value = '';
-            renderChatMessages(currentChatId);
-
-            // Scroll to bottom
-            const messagesContainer = document.getElementById('chat-messages');
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-            // Schedule auto-reply
-            scheduleAutoReply(currentChatId);
-        }
-
-        function scheduleAutoReply(chatId) {
-            setTimeout(() => {
-                const chat = appData.chats.find(c => c.id === chatId);
-                if (!chat) return;
-
-                const randomReply = autoReplyMessages[Math.floor(Math.random() * autoReplyMessages.length)];
-                
-                chat.messages.push({
-                    id: 'msg' + Date.now(),
-                    senderId: chat.otherUser.id,
-                    text: randomReply,
-                    timestamp: Date.now(),
-                    read: false
-                });
-
-                // Update unread count if not in chat room
-                if (currentChatId !== chatId) {
-                    chat.unreadCount++;
-                }
-
-                saveData();
-
-                // Re-render if currently viewing this chat
-                if (currentChatId === chatId) {
-                    renderChatMessages(chatId);
-                    const messagesContainer = document.getElementById('chat-messages');
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
-            }, 5000);
-        }
-
-        // Chat list
-        function renderChatList() {
-            const container = document.getElementById('chat-list-content');
-            
-            if (appData.chats.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">💬</div>
-                        <div class="empty-state-text">채팅이 없습니다</div>
-                    </div>
-                `;
-                return;
-            }
-
-            // Sort by latest message
-            const sortedChats = [...appData.chats].sort((a, b) => {
-                const aTime = a.messages.length > 0 ? a.messages[a.messages.length - 1].timestamp : 0;
-                const bTime = b.messages.length > 0 ? b.messages[b.messages.length - 1].timestamp : 0;
-                return bTime - aTime;
-            });
-
-            container.innerHTML = sortedChats.map(chat => {
-                const lastMessage = chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
-                const lastMessageText = lastMessage ? lastMessage.text : '메시지 없음';
-                const lastMessageTime = lastMessage ? getTimeAgo(lastMessage.timestamp) : '';
-
-                return `
-                    <div class="chat-list-item" onclick="openChatRoom('${chat.id}')">
-                        <div class="chat-list-item-header">
-                            <span class="chat-list-item-name">
-                                ${chat.otherUser.name} (${chat.otherUser.grade} ${chat.otherUser.major})
-                                ${chat.unreadCount > 0 ? `<span class="unread-badge">${chat.unreadCount}</span>` : ''}
-                            </span>
-                            <span class="chat-list-item-time">${lastMessageTime}</span>
-                        </div>
-                        <div class="chat-list-item-message">${lastMessageText}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Initialize app
-        init();
-    </script>
+      // 다중 선택 칩 (글작성 폼 전용) 바인딩
+      document.querySelectorAll('#form-grade-tags .selectable-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+          document.querySelectorAll('#form-grade-tags .selectable-chip').forEach(c => c.classList.remove('active'));
+          this.classList.add('active');
+        });
+      });
+      document.querySelectorAll('#form-major-tags .selectable-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+          document.querySelectorAll('#form-major-tags .selectable-chip').forEach(c => c.classList.remove('active'));
+          this.classList.add('active');
+        });
+      });
+      document.querySelectorAll('#form-topic-tags .selectable-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+          const activeTopicChips = document.querySelectorAll('#form-topic-tags .selectable-chip.active');
+          if (!this.classList.contains('active') && activeTopicChips.length >= 3) {
+            showToast('주제 태그는 최대 3개까지만 선택 가능합니다.');
+            return;
+          }
+          this.classList.toggle('active');
+        });
+      });
+    });
+  </script>
 </body>
 </html>
