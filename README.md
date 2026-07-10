@@ -49,4 +49,6 @@
 
 - [기획서 (plan)](../../wiki/plan) — 문제 정의, 경쟁 분석, v0→v3 리프레임 과정, 아키텍처, 검증 기록
 - [작업 체크리스트 (checklist)](../../wiki/checklist) — 4주 개발 작업 단위 체크리스트 (P0/P1)
-- [프로토타입 (index.html)](./index.html) — 핵심 화면 3개 (경로 등록, 알림 채널, 브리핑 리포트)
+- [개발 Task 백로그 (Notion)](https://app.notion.com/p/fafdc66e08344022a2463c1d332cde58?v=654d112e13e84220aca84d295f280643) — 에픽 7개 · 티켓 33개 · 스프린트 보드. **진행 상태는 여기서 관리** ✅
+- [백로그 마크다운 원본 (tasks)](../../wiki/tasks) — 백로그 정의 및 운영 규칙 포함
+- [프로토타입](https://jaehyun429.github.io/hub/) — 핵심 화면 원페이저 · [동작 데모](https://jaehyun429.github.io/hub/miricat-app.html)
