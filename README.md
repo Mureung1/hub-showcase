@@ -46,4 +46,4 @@ SpecFit은 사용자의 학력, 경력, 자격증, 전공, 외국어 등의 정�
 
 👉 **[기획서 보기](https://github.com/minnnnju/hub/wiki/프로젝트-기획서)**
 
-
+👉 **[개발 task 보기](https://jazzy-kitten-7a0.notion.site/SpecFit-Task-399ffa5e71548073a69ddecdbd83c1bc?source=copy_link)**
