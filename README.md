@@ -17,6 +17,7 @@
 
 ## 문서
 - [기획서](docs/plan.md) ([위키](https://github.com/Yooseunghyeok/hub/wiki/기획서))
+- [개발 백로그](docs/backlog.md)
 - [프로토타입](docs/prototype.html) — 순수 HTML/CSS, 목데이터
 - [프로토타입 디자인 가이드 (토스 참고)](docs/toss-design.md)
 - [소개 페이지](docs/intro.html)

@@ -62,6 +62,13 @@
 
 **프로토타입**: [prototype.html](prototype.html) — 위 화면구조를 그대로 구현한 순수 HTML/CSS 프로토타입 (목데이터). 디자인은 [toss-design.md](toss-design.md) 참고.
 
+## API 설계 초안
+- POST /api/checkins
+- 요청: { "text": "원시 입력 텍스트" }
+- 응답: { "emotion": string, "cause": string, "action": string, "createdAt": string, "id": string }
+- 서버가 AI를 스키마 강제(structured output)로 호출해 세 필드를 받고, 저장 후 반환
+- 모델 선정 기준: 스키마 강제 출력 지원 + 비용 (GCP Vertex 크레딧 / LiteLLM 프록시 검토 중)
+
 ## 사용자 흐름
 ```mermaid
 flowchart TD
