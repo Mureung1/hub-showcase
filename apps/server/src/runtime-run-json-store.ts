@@ -11,6 +11,8 @@ import {
 import path from 'node:path'
 import {
   compareRuntimeRunLogs,
+  isRuntimeRunId,
+  parseRuntimeRunId,
   parseRuntimeRunLog,
   type RuntimeRunLog,
   type RuntimeRunLogPersistence,
@@ -18,13 +20,6 @@ import {
 } from '@ay-ple/runtime-core'
 
 const schemaVersion = 1
-const uuidPatternSource =
-  '[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
-const uuidPattern = new RegExp(`^${uuidPatternSource}$`, 'i')
-const temporaryFilenamePattern = new RegExp(
-  `^\\.${uuidPatternSource}\\.${uuidPatternSource}\\.tmp$`,
-  'i',
-)
 
 type RuntimeRunSnapshotEnvelope = {
   schemaVersion: 1
@@ -60,7 +55,7 @@ export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
     })
 
     for (const entry of directoryEntries) {
-      if (!entry.isFile() || !temporaryFilenamePattern.test(entry.name)) {
+      if (!entry.isFile() || !isRuntimeRunTemporaryFilename(entry.name)) {
         continue
       }
 
@@ -91,7 +86,7 @@ export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
   async save(
     log: RuntimeRunLog,
   ): Promise<RuntimeRunLogPersistenceSaveResult> {
-    assertUuid(log.runId, 'run ID')
+    parseRuntimeRunId(log.runId, 'run ID')
 
     const envelope: RuntimeRunSnapshotEnvelope = {
       schemaVersion,
@@ -126,7 +121,7 @@ export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
   }
 
   async remove(runId: string): Promise<void> {
-    assertUuid(runId, 'run ID')
+    parseRuntimeRunId(runId, 'run ID')
     await rm(this.canonicalPath(runId), { force: true })
   }
 
@@ -134,8 +129,10 @@ export class RuntimeRunJsonStore implements RuntimeRunLogPersistence {
     const recordPath = path.join(this.directory, filename)
 
     try {
-      const runId = filename.slice(0, -'.json'.length)
-      assertUuid(runId, 'filename run ID')
+      const runId = parseRuntimeRunId(
+        filename.slice(0, -'.json'.length),
+        'filename run ID',
+      )
 
       const contents = await readFile(recordPath, 'utf8')
       const envelope = parseRuntimeRunSnapshotEnvelope(contents)
@@ -239,10 +236,16 @@ function assertIsoTimestamp(
   }
 }
 
-function assertUuid(value: unknown, label: string): asserts value is string {
-  if (typeof value !== 'string' || !uuidPattern.test(value)) {
-    throw new Error(`${label} must be a UUID`)
-  }
+function isRuntimeRunTemporaryFilename(filename: string): boolean {
+  const segments = filename.split('.')
+
+  return (
+    segments.length === 4 &&
+    segments[0] === '' &&
+    isRuntimeRunId(segments[1]) &&
+    isRuntimeRunId(segments[2]) &&
+    segments[3] === 'tmp'
+  )
 }
 
 function toErrorMessage(error: unknown): string {

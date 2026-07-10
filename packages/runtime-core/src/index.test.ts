@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   AgentRuntimeKernel,
+  isRuntimeRunId,
+  parseRuntimeRunId,
   type AgentRuntimeAdapter,
   type RuntimeAdapterEvent,
   type RuntimeAdapterRunInput,
@@ -260,6 +262,70 @@ test('AgentRuntimeKernel avoids hydrated UUID collisions when starting a run', a
   assert.equal(kernel.listRuns().length, 2)
 })
 
+test('isRuntimeRunId recognizes the shared runtime run ID invariant', () => {
+  const validRunId = '11111111-1111-4111-8111-111111111111'
+
+  assert.equal(parseRuntimeRunId(validRunId), validRunId)
+  assert.equal(
+    isRuntimeRunId(validRunId),
+    true,
+  )
+  assert.equal(
+    isRuntimeRunId('AAAAAAAA-AAAA-5AAA-BAAA-AAAAAAAAAAAA'),
+    true,
+  )
+  assert.equal(
+    isRuntimeRunId('11111111-1111-0111-8111-111111111111'),
+    false,
+  )
+  assert.equal(
+    isRuntimeRunId('11111111-1111-4111-7111-111111111111'),
+    false,
+  )
+  assert.equal(isRuntimeRunId('not-a-uuid'), false)
+  assert.equal(isRuntimeRunId(undefined), false)
+  assert.throws(
+    () => parseRuntimeRunId('not-a-uuid'),
+    /runtime run ID must be a UUID/,
+  )
+})
+
+test('AgentRuntimeKernel rejects an invalid generated run ID before save or adapter execution', async () => {
+  let adapterRunCount = 0
+  let saveCount = 0
+  const adapter: AgentRuntimeAdapter = {
+    name: 'test',
+    async *run(): AsyncIterable<RuntimeAdapterEvent> {
+      adapterRunCount += 1
+      yield { type: 'completed' }
+    },
+  }
+  const persistence: RuntimeRunLogPersistence = {
+    async load() {
+      return []
+    },
+    async save() {
+      saveCount += 1
+      return { removedRunIds: [] }
+    },
+    async remove() {},
+  }
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    generateRunId: () => 'not-a-uuid',
+    persistence,
+  })
+
+  await assert.rejects(
+    kernel.startRun({ adapter: 'test', prompt: 'must not run' }),
+    /generated runtime run ID must be a UUID/i,
+  )
+
+  assert.equal(adapterRunCount, 0)
+  assert.equal(saveCount, 0)
+  assert.deepEqual(kernel.listRuns(), [])
+})
+
 test('AgentRuntimeKernel saves a started snapshot before invoking the adapter', async () => {
   const persistence = new GatedRuntimeRunLogPersistence(1)
   const adapter = new ObservedStartAdapter(
@@ -390,10 +456,7 @@ test('AgentRuntimeKernel creates UUID run IDs by default', async () => {
     prompt: 'uuid run',
   })
 
-  assert.match(
-    startedRun.runId,
-    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-  )
+  assert.equal(isRuntimeRunId(startedRun.runId), true)
 })
 
 test('AgentRuntimeKernel records a completed run lifecycle and log', async () => {

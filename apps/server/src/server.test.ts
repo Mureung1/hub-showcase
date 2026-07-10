@@ -4,9 +4,10 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import type {
-  RuntimeRunDebugLogEntry,
-  RuntimeRunLog,
+import {
+  isRuntimeRunId,
+  type RuntimeRunDebugLogEntry,
+  type RuntimeRunLog,
 } from '@ay-ple/runtime-core'
 import {
   createInMemoryRuntimeKernel,
@@ -74,10 +75,7 @@ test('runtime API starts a fake run and streams normalized events', async () => 
     const startedRun = (await startResponse.json()) as { runId: string }
 
     assert.equal(startResponse.status, 201)
-    assert.match(
-      startedRun.runId,
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-    )
+    assert.equal(isRuntimeRunId(startedRun.runId), true)
 
     const eventsResponse = await fetch(
       `${baseUrl}/api/runtime/runs/${startedRun.runId}/events?after=0`,

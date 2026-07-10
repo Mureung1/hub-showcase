@@ -3,10 +3,16 @@ import {
   isTerminalRuntimeRunStatus,
   parseRuntimeRunLog,
 } from './runtime-run-log.js'
+import {
+  isRuntimeRunId,
+  parseRuntimeRunId,
+} from './runtime-run-id.js'
 
 export {
   compareRuntimeRunLogs,
+  isRuntimeRunId,
   isTerminalRuntimeRunStatus,
+  parseRuntimeRunId,
   parseRuntimeRunLog,
 }
 
@@ -619,7 +625,10 @@ export class AgentRuntimeKernel {
 
   private createRunId(): string {
     for (let attempt = 0; attempt < 1000; attempt += 1) {
-      const runId = this.generateRunId()
+      const runId = parseRuntimeRunId(
+        this.generateRunId(),
+        'generated runtime run ID',
+      )
 
       if (!this.logs.has(runId) && !this.reservedRunIds.has(runId)) {
         this.reservedRunIds.add(runId)

@@ -47,6 +47,22 @@ test('RuntimeRunJsonStore saves a versioned envelope and atomically replaces one
   })
 })
 
+test('RuntimeRunJsonStore rejects invalid run IDs for persistence operations', async () => {
+  await withTemporaryDirectory(async (directory) => {
+    const store = new RuntimeRunJsonStore({ directory })
+    const invalidLog = createRunLog({
+      runId: 'not-a-uuid',
+      prompt: 'must not persist',
+      startedAt: '2026-07-10T01:00:00.000Z',
+    })
+
+    await assert.rejects(store.save(invalidLog), /run ID must be a UUID/)
+    await assert.rejects(store.remove('not-a-uuid'), /run ID must be a UUID/)
+
+    assert.deepEqual(await readdir(directory), [])
+  })
+})
+
 test('RuntimeRunJsonStore preserves the canonical record when atomic rename fails', async () => {
   await withTemporaryDirectory(async (directory) => {
     const store = new RuntimeRunJsonStore({ directory })
@@ -84,11 +100,13 @@ test('RuntimeRunJsonStore removes stale same-directory temporary files during lo
   await withTemporaryDirectory(async (directory) => {
     const store = new RuntimeRunJsonStore({ directory })
     const temporaryFilename = `.${firstRunId}.${secondRunId}.tmp`
+    const unrelatedFilename = `.${firstRunId}.not-a-uuid.tmp`
 
     await writeFile(path.join(directory, temporaryFilename), '{partial', 'utf8')
+    await writeFile(path.join(directory, unrelatedFilename), '{partial', 'utf8')
 
     assert.deepEqual(await store.load(), [])
-    assert.deepEqual(await readdir(directory), [])
+    assert.deepEqual(await readdir(directory), [unrelatedFilename])
   })
 })
 
@@ -147,6 +165,16 @@ test('RuntimeRunJsonStore rejects a filename and run ID mismatch', async () => {
       store.load(),
       new RegExp(`filename run ID ${firstRunId} does not match log run ID`),
     )
+  })
+})
+
+test('RuntimeRunJsonStore rejects a non-UUID canonical filename', async () => {
+  await withTemporaryDirectory(async (directory) => {
+    const store = new RuntimeRunJsonStore({ directory })
+
+    await writeFile(path.join(directory, 'not-a-uuid.json'), '{}', 'utf8')
+
+    await assert.rejects(store.load(), /filename run ID must be a UUID/)
   })
 })
 
