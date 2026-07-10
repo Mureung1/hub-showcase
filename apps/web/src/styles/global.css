@@ -421,6 +421,12 @@ select:focus-visible {
   justify-content: space-between;
   pointer-events: none;
 }
+.map-toolbar-actions {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .map-search,
 .glass-button {
   pointer-events: auto;
@@ -443,6 +449,44 @@ select:focus-visible {
 .glass-button {
   padding: 0 12px;
   border-radius: 7px;
+}
+.map-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  height: 38px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 5px 16px rgba(31, 62, 40, 0.13);
+  backdrop-filter: blur(14px);
+}
+.map-mode-switch button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 94px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+  color: #56635a;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+}
+.map-mode-switch button.is-selected {
+  color: #174f2b;
+  background: rgba(235, 247, 237, 0.96);
+  box-shadow:
+    0 1px 3px rgba(24, 72, 39, 0.16),
+    inset 0 0 0 1px rgba(54, 139, 78, 0.16);
+}
+.map-mode-switch button:focus-visible {
+  outline: 2px solid #267c45;
+  outline-offset: 1px;
 }
 .map-fallback {
   position: absolute;
@@ -1206,6 +1250,17 @@ select:focus-visible {
   .map-search span {
     display: none;
   }
+  .map-toolbar-actions {
+    gap: 5px;
+  }
+  .map-mode-switch button {
+    width: 34px;
+    min-width: 34px;
+    padding: 0;
+  }
+  .map-mode-switch button span {
+    display: none;
+  }
   .glass-button {
     display: none;
   }
@@ -1219,7 +1274,7 @@ select:focus-visible {
   }
   .map-controls {
     right: 11px;
-    bottom: 12px;
+    bottom: calc(43vh + 12px);
   }
   .inspector-panel {
     position: absolute;
@@ -1233,7 +1288,7 @@ select:focus-visible {
     border: 1px solid #dce3dd;
     border-radius: 10px 10px 0 0;
   }
-  .selected-location {
+  .live-map .selected-location {
     display: none;
   }
   .evidence-modal,

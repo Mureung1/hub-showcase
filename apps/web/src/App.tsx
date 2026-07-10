@@ -24,6 +24,7 @@ import "./styles/global.css";
 
 type Category = "카페" | "음식점" | "베이커리" | "편의점";
 type MarketKey = "연남" | "홍대" | "합정";
+type MapMode = "localtwin" | "original";
 
 type Market = {
   name: string;
@@ -307,6 +308,24 @@ const markets: Record<MarketKey, Market> = {
   },
 };
 
+const localTwinPaintTargets = [
+  { id: "background", property: "background-color", value: "#eef2eb" },
+  { id: "park", property: "fill-color", value: "#b9d6b3" },
+  { id: "landcover_wood", property: "fill-color", value: "#9fc9a8" },
+  { id: "landcover_grass", property: "fill-color", value: "#c9dfbd" },
+  { id: "water", property: "fill-color", value: "#9fcfe0" },
+  { id: "road_service_track_casing", property: "line-color", value: "#d7d9d2" },
+  { id: "road_minor_casing", property: "line-color", value: "#d7d9d2" },
+  { id: "road_secondary_tertiary_casing", property: "line-color", value: "#d9caa9" },
+  { id: "road_trunk_primary_casing", property: "line-color", value: "#d7bd8e" },
+  { id: "road_motorway_casing", property: "line-color", value: "#d7bd8e" },
+  { id: "road_service_track", property: "line-color", value: "#fffdf7" },
+  { id: "road_minor", property: "line-color", value: "#fffdf7" },
+  { id: "road_secondary_tertiary", property: "line-color", value: "#f4d49c" },
+  { id: "road_trunk_primary", property: "line-color", value: "#f3c87e" },
+  { id: "road_motorway", property: "line-color", value: "#edb36a" },
+] as const;
+
 const categories: Array<{ label: Category; icon: typeof Coffee; tone: string }> = [
   { label: "카페", icon: Coffee, tone: "green" },
   { label: "음식점", icon: Store, tone: "orange" },
@@ -363,9 +382,11 @@ export function App() {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [layer, setLayer] = useState<"density" | "demand">("density");
+  const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
   const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
   const mapRef = useRef<MapRef>(null);
+  const originalMapPaint = useRef<Record<string, unknown>>({});
 
   const market = markets[marketKey];
   const score = formatMarketScore(market.score, category, radius);
@@ -398,12 +419,12 @@ export function App() {
     mapRef.current?.flyTo({
       center: market.center,
       zoom: 15.4,
-      pitch: 38,
-      bearing: -18,
+      pitch: mapMode === "localtwin" ? 52 : 38,
+      bearing: mapMode === "localtwin" ? -24 : -18,
       duration: 900,
       essential: true,
     });
-  }, [market.center]);
+  }, [market.center, mapMode]);
 
   useEffect(() => {
     const categoryStore = market.stores.find((store) => store.category === category);
@@ -412,18 +433,58 @@ export function App() {
     }
   }, [market, category]);
 
+  useEffect(() => {
+    applyMapAppearance(mapMode);
+  }, [mapMode]);
+
   function chooseMarket(nextMarket: MarketKey) {
     setMarketKey(nextMarket);
     setSelectedStore(markets[nextMarket].stores[0].name);
   }
 
-  function setBaseBuildingVisibility(visible: boolean) {
+  function applyMapAppearance(nextMode: MapMode) {
     const map = mapRef.current?.getMap();
     if (!map?.isStyleLoaded()) return;
 
     if (map.getLayer("building-3d")) {
-      map.setLayoutProperty("building-3d", "visibility", visible ? "visible" : "none");
+      map.setLayoutProperty("building-3d", "visibility", "none");
     }
+
+    localTwinPaintTargets.forEach(({ id, property, value }) => {
+      if (!map.getLayer(id)) return;
+
+      const key = `${id}.${property}`;
+      if (!(key in originalMapPaint.current)) {
+        originalMapPaint.current[key] = map.getPaintProperty(id, property);
+      }
+
+      map.setPaintProperty(
+        id,
+        property,
+        nextMode === "localtwin" ? value : originalMapPaint.current[key],
+      );
+    });
+  }
+
+  function chooseMapMode(nextMode: MapMode) {
+    setMapMode(nextMode);
+  }
+
+  function resetAnalysis() {
+    setCategory("카페");
+    setRadius(300);
+    setLayer("density");
+    setMapMode("localtwin");
+    setPrefabMode(true);
+    setBaseBuildingsVisible(true);
+    mapRef.current?.easeTo({
+      center: market.center,
+      zoom: 15.4,
+      pitch: 52,
+      bearing: -24,
+      duration: 650,
+      essential: true,
+    });
   }
 
   return (
@@ -485,18 +546,7 @@ export function App() {
         <aside className="filter-panel">
           <div className="panel-heading">
             <p>분석 범위</p>
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => {
-                setCategory("카페");
-                setRadius(300);
-                setLayer("density");
-                setPrefabMode(true);
-                setBaseBuildingsVisible(true);
-                setBaseBuildingVisibility(true);
-              }}
-            >
+            <button type="button" className="text-button" onClick={resetAnalysis}>
               초기화
             </button>
           </div>
@@ -595,13 +645,35 @@ export function App() {
               <Search size={17} />
               <span>{market.address}</span>
             </div>
-            <button
-              type="button"
-              className="glass-button"
-              onClick={() => setLayer(layer === "density" ? "demand" : "density")}
-            >
-              <Layers3 size={16} /> {densityLabel}
-            </button>
+            <div className="map-toolbar-actions">
+              <div className="map-mode-switch" role="group" aria-label="지도 표현 방식">
+                <button
+                  type="button"
+                  className={mapMode === "localtwin" ? "is-selected" : ""}
+                  aria-pressed={mapMode === "localtwin"}
+                  title="LocalTwin 2.5D 지도"
+                  onClick={() => chooseMapMode("localtwin")}
+                >
+                  <Layers3 size={15} /> <span>LocalTwin</span>
+                </button>
+                <button
+                  type="button"
+                  className={mapMode === "original" ? "is-selected" : ""}
+                  aria-pressed={mapMode === "original"}
+                  title="실제 지도 원본"
+                  onClick={() => chooseMapMode("original")}
+                >
+                  <MapPinned size={15} /> <span>실제 지도</span>
+                </button>
+              </div>
+              <button
+                type="button"
+                className="glass-button"
+                onClick={() => setLayer(layer === "density" ? "demand" : "density")}
+              >
+                <Layers3 size={16} /> {densityLabel}
+              </button>
+            </div>
           </div>
           {isTestEnvironment() ? (
             <div className="map-fallback">실제 지도는 브라우저 환경에서 표시됩니다.</div>
@@ -621,8 +693,39 @@ export function App() {
                 dragPan
                 scrollZoom
                 touchZoomRotate
-                onLoad={() => setBaseBuildingVisibility(baseBuildingsVisible)}
+                onLoad={() => applyMapAppearance(mapMode)}
               >
+                <Layer
+                  id="market-building-3d"
+                  type="fill-extrusion"
+                  source="openmaptiles"
+                  source-layer="building"
+                  minzoom={14}
+                  beforeId="boundary_3"
+                  layout={{
+                    visibility: baseBuildingsVisible ? "visible" : "none",
+                  }}
+                  paint={{
+                    "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+                    "fill-extrusion-color":
+                      mapMode === "localtwin"
+                        ? [
+                            "step",
+                            ["coalesce", ["get", "render_height"], 8],
+                            "#f3ead8",
+                            9,
+                            "#d5e3c5",
+                            18,
+                            "#a8cfd0",
+                            32,
+                            "#91b3c7",
+                          ]
+                        : "hsl(35, 8%, 85%)",
+                    "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
+                    "fill-extrusion-opacity": mapMode === "localtwin" ? 0.94 : 0.8,
+                    "fill-extrusion-vertical-gradient": true,
+                  }}
+                />
                 <Source id="analysis-area" type="geojson" data={circle}>
                   <Layer
                     id="analysis-area-fill"
@@ -779,15 +882,10 @@ export function App() {
             <button
               type="button"
               className={baseBuildingsVisible ? "is-active" : ""}
-              title="기본 지도 건물 표시"
+              title="건물 레이어 표시"
+              aria-label="건물 레이어 표시"
               aria-pressed={baseBuildingsVisible}
-              onClick={() =>
-                setBaseBuildingsVisible((current) => {
-                  const next = !current;
-                  setBaseBuildingVisibility(next);
-                  return next;
-                })
-              }
+              onClick={() => setBaseBuildingsVisible((current) => !current)}
             >
               <Building2 size={17} />
             </button>

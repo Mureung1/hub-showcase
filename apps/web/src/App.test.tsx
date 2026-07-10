@@ -9,7 +9,7 @@ describe("App", () => {
   it("renders the interactive market analysis demo", () => {
     render(<App />);
 
-    expect(screen.getByText("LocalTwin")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "LocalTwin 상권 분석 홈" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Docs" })).toHaveAttribute(
       "href",
       "/docs/wiki/doc-viewer.html?doc=Home.md",
@@ -39,5 +39,26 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "다른 상권과 비교" }));
     expect(screen.getByRole("dialog", { name: "상권 비교" })).toBeInTheDocument();
+  });
+
+  it("switches between the LocalTwin and original map presentations", () => {
+    render(<App />);
+
+    const localTwinMode = screen.getByRole("button", { name: "LocalTwin" });
+    const originalMode = screen.getByRole("button", { name: "실제 지도" });
+    const buildings = screen.getByRole("button", { name: "건물 레이어 표시" });
+    const prefabs = screen.getByRole("button", { name: "3D" });
+
+    expect(localTwinMode).toHaveAttribute("aria-pressed", "true");
+    expect(originalMode).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(originalMode);
+    expect(localTwinMode).toHaveAttribute("aria-pressed", "false");
+    expect(originalMode).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(buildings);
+    fireEvent.click(prefabs);
+    expect(buildings).toHaveAttribute("aria-pressed", "false");
+    expect(prefabs).toHaveAttribute("aria-pressed", "false");
   });
 });
