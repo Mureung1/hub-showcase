@@ -70,7 +70,7 @@
 ![화면별 UI 동작 시각화](assets/ui-flow.png)
 > 이 이미지는 리브랜딩 전(식비구조대 시절) 버전이라 냉장고 씬·기니 캐릭터·보유/구매 필요 구분이 반영돼 있지 않음 — 캐릭터 디자인이 정리되는 대로 다시 그려야 함
 
-**핵심 기능 프로토타입:** [pyojung.github.io/hub/prototype/index.html](https://pyojung.github.io/hub/prototype/index.html) — 필터→랭킹→상세→구매 링크 흐름을 순수 HTML/CSS로 구현 (필터는 JS 없이 CSS `:has()`로 실제 동작, Chrome/Edge/Safari·Firefox 121+ 권장). GitHub Pages로 배포돼 있어 클릭하면 바로 동작하는 화면을 확인할 수 있음. (저장소 안에서는 [`prototype/index.html`](prototype/index.html) 경로)
+**핵심 기능 프로토타입:** [pyojung.github.io/hub/prototype/index.html](https://pyojung.github.io/hub/prototype/index.html) — 냉장고 재료 선택→추천→상세→구매 링크 흐름을 HTML/CSS/약간의 JS로 구현 (`style-warm.css`가 `DESIGN_SYSTEM.md` 공식 토큰 기준, 실제 React 앱과 동일한 흐름). GitHub Pages로 배포돼 있어 클릭하면 바로 동작하는 화면을 확인할 수 있음. (저장소 안에서는 [`prototype/index.html`](prototype/index.html) 경로)
 
 ## 데이터 흐름
 1. 사용자가 홈 화면에서 냉장고 속 재료를 고르면 그 목록을 저장

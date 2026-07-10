@@ -5,6 +5,7 @@
   --color-primary-text: #8A5A08;   /* primary-soft 배경 위 텍스트 */
 
   --color-bg-page: #E9EBF2;
+  --color-bg-cream: #FCF0DC;   /* 냉장고 씬 일러스트 배경색과 맞춘 톤 */
   --color-bg-surface: #FFFFFF;
   --color-bg-muted: #F4F5F9;
 
@@ -34,6 +35,7 @@
 
 * { box-sizing: border-box; }
 
+/* 실제 React 앱과 동일하게: 카드 형태로 띄우지 않고, 배경색 위에 콘텐츠가 바로 놓이는 풀블리드 레이아웃 */
 body {
   margin: 0;
   background: var(--color-bg-page);
@@ -42,22 +44,17 @@ body {
   font-weight: 400;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  display: flex;
-  justify-content: center;
-  padding: 40px 16px;
 }
+/* 냉장고 화면(index.html)은 일러스트 배경색(크림톤)을 그대로 씀 */
+body.fridge { background: var(--color-bg-cream); }
 
 a { color: inherit; text-decoration: none; }
 :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
-/* ---- container: 스크린샷의 둥근 흰 패널 느낌 ---- */
 .app {
   width: 100%;
   max-width: 960px;
-  background: var(--color-bg-surface);
-  border-radius: var(--radius-container);
-  box-shadow: var(--shadow-panel);
-  overflow: hidden;
+  margin: 0 auto;
 }
 
 /* ---- nav ---- */
@@ -66,7 +63,7 @@ a { color: inherit; text-decoration: none; }
   border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
-  background: var(--color-bg-surface);
+  background: inherit;
   z-index: 10;
 }
 .nav-inner {
@@ -76,8 +73,6 @@ a { color: inherit; text-decoration: none; }
   padding: 20px var(--space-5);
 }
 .brand { display: flex; align-items: center; gap: 12px; flex: none; }
-.logo-emblem { height: 44px; width: auto; object-fit: contain; display: block; }
-.logo-wordmark { height: 32px; width: auto; object-fit: contain; display: block; }
 
 .nav-search {
   display: flex;
@@ -311,3 +306,86 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ---- 필터 로직: 그룹 내 다중 선택(OR)이 필요해져서 filter.js로 이동 ---- */
+
+/* ---- 냉장고 화면 (fridge.html→index.html) ---- */
+
+.fridge-hero { margin: 0; }
+.fridge-hero img { display: block; width: 100%; }
+
+.fridge-card {
+  position: relative;
+  margin: var(--space-4) var(--space-5) var(--space-5);
+  padding: var(--space-4);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+.fridge-card-tail {
+  position: absolute;
+  top: -7px;
+  right: 16%;
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  background: var(--color-bg-surface);
+  border-left: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
+}
+.fridge-header { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+.fridge-header h1 { margin: 0; font-size: 16px; font-weight: 700; }
+.fridge-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary-text);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+}
+.fridge-clear {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.fridge-clear:hover { color: var(--color-text-primary); }
+
+.btn-complete {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-4);
+  padding: 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+.btn-complete:hover { filter: brightness(0.96); }
+
+/* ---- 홈(추천 + 둘러보기) 화면 ---- */
+
+.recommend-section { margin: var(--space-4) var(--space-5) 0; }
+.recommend-header { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.recommend-header h2 { margin: 0; font-size: 14px; font-weight: 700; }
+.recommend-header a { font-size: 12px; color: var(--color-text-secondary); text-decoration: underline; }
+.recommend-header a:hover { color: var(--color-text-primary); }
+.recommend-empty {
+  grid-column: 1 / -1;
+  list-style: none;
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+.browse-heading { margin: var(--space-5) var(--space-5) 0; font-size: 14px; font-weight: 700; }
