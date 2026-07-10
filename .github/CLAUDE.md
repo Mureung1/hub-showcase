@@ -15,3 +15,48 @@
 - `fix:` 버그 수정
 - `docs:` 문서 수정 및 추가
 - `style:` 스타일시트 및 CSS 변경
+## 📦 4. 필수 라이브러리 조사 및 정의 (Investigated Libraries)
+### Client (React)
+- `axios`: 백엔드 Express 서버와의 비동기 API 통신을 위해 사용
+- `react-router-dom`: 입력창/로딩/결과 페이지의 명확한 라우팅 처리를 위해 도입 검토
+
+### Server (Express)
+- `cors`: 프론트엔드(Port 3000)와 백엔드(Port 5000) 간의 교차 출처 자원 공유 에러 방지
+- `dotenv`: AI API Key 등 외부 유출되면 안 되는 보안 환경 변수 격리 관리
+- `@google/generative-ai` 또는 `openai`: 소상공인 맞춤형 법률/지원금 매칭 로직을 수행할 LLM 연동 SDK
+
+## ❓ 5. 개발 전 추가 결정 사항 (Pre-development Decisions)
+- **Data 저장 방식:** 초기 프로토타입 단계에서는 무거운 RDBMS 대신 가벼운 JSON 파일 시스템이나 SQLite를 활용하여 빠르게 데이터를 영속화하기로 결정.
+- **AI Agent 호출 방식:** 실시간 스트리밍 대답보다는 지원금 조건 매칭의 정확도가 중요하므로, 단발성 구조화된 JSON(Structured Outputs) 응답 방식을 채택하기로 함.
+## 📦 4. 필수 라이브러리 조사 및 정의 (Investigated Libraries)
+### Client (React)
+- `axios`: 백엔드 Express 서버와의 비동기 API 통신을 위해 사용
+- `react-router-dom`: 입력창/로딩/결과 페이지의 명확한 라우팅 처리를 위해 도입 검토
+
+### Server (Express)
+- `cors`: 프론트엔드(Port 3000)와 백엔드(Port 5000) 간의 교차 출처 자원 공유 에러 방지
+- `dotenv`: AI API Key 등 외부 유출되면 안 되는 보안 환경 변수 격리 관리
+- `@google/generative-ai` 또는 `openai`: 소상공인 맞춤형 법률/지원금 매칭 로직을 수행할 LLM 연동 SDK
+
+## ❓ 5. 개발 전 추가 결정 사항 (Pre-development Decisions)
+- **Data 저장 방식:** 초기 프로토타입 단계에서는 무거운 RDBMS 대신 가벼운 JSON 파일 시스템이나 SQLite를 활용하여 빠르게 데이터를 영속화하기로 결정.
+- **AI Agent 호출 방식:** 실시간 스트리밍 대답보다는 지원금 조건 매칭의 정확도가 중요하므로, 단발성 구조화된 JSON(Structured Outputs) 응답 방식을 채택하기로 함.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
