@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --dir apps/web build && cp -r docs apps/web/dist/docs",
+  "buildCommand": "pnpm --dir apps/web build && node scripts/copy-docs.mjs",
   "outputDirectory": "apps/web/dist",
   "installCommand": "pnpm install",
   "framework": null
