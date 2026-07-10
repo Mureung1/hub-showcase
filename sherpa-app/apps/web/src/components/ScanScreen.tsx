@@ -3,6 +3,7 @@ import { seedProducts } from "../seed";
 import { productRepository } from "../repository/DexieProductRepository";
 import { scanReducer, initialScanState } from "../session/scanReducer";
 import type { SessionMode } from "../session/types";
+import { useScanner } from "../scan/useScanner";
 import { SessionHeader } from "./SessionHeader";
 import { DevScanInput } from "./DevScanInput";
 import { ScanLineList } from "./ScanLineList";
@@ -61,6 +62,9 @@ export function ScanScreen() {
       showToast(`미등록 상품입니다 · ${barcode}`);
     }
   }
+
+  // 실물 스캐너(keyboard-wedge) 버스트를 document 레벨에서 감지 → 수동 입력과 병행.
+  useScanner(handleScan);
 
   const totalQty = state.lines.reduce((sum, l) => sum + l.quantity, 0);
 
