@@ -211,10 +211,9 @@ export default function Analyze() {
 
     setTodayMeal(parsed)
 
-    // 분석된 각 음식을 오늘 식단 목록(mealStore)에 추가
-    parsed.items.forEach((item) => {
-      addTodayMeal({ name: item.name, nutrients: item.nutrients, source: item.source, mealType: item.mealType })
-    })
+    // 이번 분석에서 나온 음식 전체를 하나의 끼니 기록으로 오늘 식단 목록(mealStore)에 추가
+    // (음식이 1개면 단일 메뉴, 2개 이상이면 한 끼 세트로 식단 탭에서 구분해 보여준다)
+    addTodayMeal(parsed.items, mealType)
 
     if (user) {
       const achievementPercent = calcAchievementPercent(user.recommended, parsed.total)
@@ -234,7 +233,7 @@ export default function Analyze() {
     <div style={styles.page}>
       <ScreenHeader title={`안녕하세요, ${user?.id ?? ''}님 👋`} subtitle="오늘 점심을 찍어볼까요?" />
 
-      <Card>
+      <Card style={pendingAnalysis ? { background: colors.infoSurface, boxShadow: 'none' } : undefined}>
         <PhotoUpload onChange={setPhoto} />
 
         <div style={{ marginTop: spacing.lg }}>
@@ -242,21 +241,25 @@ export default function Analyze() {
           <TextField label="브랜드 (선택)" id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
         </div>
 
-        <AppButton
-          variant={pendingAnalysis ? 'secondary' : 'primary'}
-          onClick={handleAnalyze}
-          disabled={loading}
-          style={{ marginTop: spacing.sm }}
-        >
-          {loading && <Spinner size={16} />}
-          {loading
-            ? '분석 중...'
-            : pendingAnalysis
-              ? '다른 사진으로 다시 분석'
-              : error && photo
-                ? '다시 시도'
-                : '촬영 후 분석하기'}
-        </AppButton>
+        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}>
+          <AppButton
+            variant={pendingAnalysis ? 'secondary' : 'primary'}
+            onClick={handleAnalyze}
+            disabled={loading}
+          >
+            {loading && <Spinner size={16} />}
+            {loading
+              ? '분석 중...'
+              : pendingAnalysis
+                ? '다른 사진으로 다시 분석'
+                : error && photo
+                  ? '다시 시도'
+                  : '촬영 후 분석하기'}
+          </AppButton>
+          {!loading && pendingAnalysis && (
+            <span style={{ color: colors.info, fontSize: font.size.sm, fontWeight: 700 }}>분석 완료</span>
+          )}
+        </div>
 
         {error && <p style={styles.errorText}>{error}</p>}
       </Card>
@@ -271,16 +274,15 @@ export default function Analyze() {
         <MealTypePicker value={mealType} recommended={getRecommendedMealType()} onChange={setMealType} />
       </Card>
 
+      {!loading && pendingAnalysis && (
+        <AppButton onClick={handleConfirmSave} style={{ marginTop: spacing.md }}>
+          저장하기
+        </AppButton>
+      )}
+
       {loading && <AnalyzingSkeleton />}
 
-      {!loading && pendingAnalysis && (
-        <>
-          <NutritionCard analysis={pendingAnalysis} />
-          <AppButton onClick={handleConfirmSave} style={{ marginTop: spacing.md }}>
-            저장하기
-          </AppButton>
-        </>
-      )}
+      {!loading && pendingAnalysis && <NutritionCard analysis={pendingAnalysis} />}
 
       {!loading && !pendingAnalysis && lastAnalysis && (
         <>

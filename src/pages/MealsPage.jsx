@@ -7,6 +7,7 @@ import { NutrientBars } from '../components/NutritionCard.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import SourceBadge from '../components/SourceBadge.jsx'
+import { isSetMeal, sumNutrients } from '../lib/mealStore.js'
 import { NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
@@ -71,46 +72,77 @@ function TrashIcon() {
   )
 }
 
-function MealCard({ meal, expanded, onToggleDetail, onRemove }) {
-  const n = meal.nutrients || {}
+function DeleteButton({ onClick, label }) {
+  return (
+    <button
+      type="button"
+      className="tds-press"
+      onClick={onClick}
+      aria-label={`${label} 삭제`}
+      style={{
+        border: 'none',
+        background: colors.bg,
+        color: colors.muted,
+        borderRadius: radius.sm,
+        width: 36,
+        height: 36,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        flexShrink: 0,
+      }}
+    >
+      <TrashIcon />
+    </button>
+  )
+}
+
+function NutrientSummaryLine({ nutrients }) {
+  const n = nutrients || {}
+  return (
+    <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.xs }}>
+      {Math.round(n.calories) || 0}kcal · 단백질 {Math.round(n.protein) || 0}g · 탄수 {Math.round(n.carbs) || 0}g · 지방{' '}
+      {Math.round(n.fat) || 0}g · 나트륨 {Math.round(n.sodium) || 0}mg · 식이섬유 {Math.round(n.fiber) || 0}g
+    </p>
+  )
+}
+
+// 한 끼 세트를 펼쳤을 때 보여주는 개별 음식 한 줄. 삭제는 끼니 단위로만 가능해서 개별 삭제 버튼은 없다.
+function MealItemRow({ item }) {
+  return (
+    <div style={{ padding: `${spacing.sm}px 0`, borderTop: `1px solid ${colors.border}` }}>
+      <div style={{ marginBottom: spacing.xs }}>
+        <SourceBadge source={item.source} />
+      </div>
+      <h4 style={{ fontSize: font.size.sm, margin: `0 0 ${spacing.xs}px`, color: colors.textStrong }}>
+        {item.name}
+        {item.brand ? ` (${item.brand})` : ''}
+      </h4>
+      <NutrientSummaryLine nutrients={item.nutrients} />
+    </div>
+  )
+}
+
+// 단일 메뉴 끼니: 음식이 1개뿐이라 기존과 동일하게 카드 하나 + "자세한 영양"(막대 그래프) 토글로 보여준다.
+function SingleMealCard({ record, expanded, onToggleDetail, onRemove }) {
+  const item = record.items[0]
+
   return (
     <Card>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.md }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', gap: spacing.xs, flexWrap: 'wrap' }}>
-            <SourceBadge source={meal.source} />
-            <MealTypeBadge mealType={meal.mealType} />
+            <SourceBadge source={item.source} />
+            <MealTypeBadge mealType={record.mealType} />
           </div>
           <h3 style={{ fontSize: font.size.md, margin: `${spacing.sm}px 0 ${spacing.xs}px`, color: colors.textStrong }}>
-            {meal.name}
-            {meal.brand ? ` (${meal.brand})` : ''}
+            {item.name}
+            {item.brand ? ` (${item.brand})` : ''}
           </h3>
-          <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.xs }}>
-            {Math.round(n.calories) || 0}kcal · 단백질 {Math.round(n.protein) || 0}g · 탄수 {Math.round(n.carbs) || 0}g · 지방{' '}
-            {Math.round(n.fat) || 0}g · 나트륨 {Math.round(n.sodium) || 0}mg · 식이섬유 {Math.round(n.fiber) || 0}g
-          </p>
+          <NutrientSummaryLine nutrients={item.nutrients} />
         </div>
-        <button
-          type="button"
-          className="tds-press"
-          onClick={onRemove}
-          aria-label={`${meal.name} 삭제`}
-          style={{
-            border: 'none',
-            background: colors.bg,
-            color: colors.muted,
-            borderRadius: radius.sm,
-            width: 36,
-            height: 36,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            flexShrink: 0,
-          }}
-        >
-          <TrashIcon />
-        </button>
+        <DeleteButton onClick={onRemove} label={item.name} />
       </div>
 
       <button
@@ -125,10 +157,58 @@ function MealCard({ meal, expanded, onToggleDetail, onRemove }) {
 
       {expanded && (
         <div style={{ marginTop: spacing.md }}>
-          <NutrientBars nutrients={n} />
+          <NutrientBars nutrients={item.nutrients} />
         </div>
       )}
     </Card>
+  )
+}
+
+// 다중 메뉴 끼니(한 끼 세트): 학식·급식처럼 한 번에 여러 음식을 찍은 경우, 개별 카드로 흩어놓지 않고
+// "대표 음식명 + 외 N개" 제목 + 끼니 전체 합계로 먼저 요약하고, "자세한 식사"로 펼쳐야 개별 음식이 보인다.
+function SetMealCard({ record, expanded, onToggleDetail, onRemove }) {
+  const total = sumNutrients(record.items)
+  const title = `${record.items[0].name} 외 ${record.items.length - 1}개`
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.md }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', gap: spacing.xs, flexWrap: 'wrap' }}>
+            <MealTypeBadge mealType={record.mealType} />
+          </div>
+          <h3 style={{ fontSize: font.size.md, margin: `${spacing.sm}px 0 ${spacing.xs}px`, color: colors.textStrong }}>{title}</h3>
+          <NutrientSummaryLine nutrients={total} />
+        </div>
+        <DeleteButton onClick={onRemove} label={title} />
+      </div>
+
+      <button
+        type="button"
+        className="tds-press"
+        onClick={onToggleDetail}
+        aria-expanded={expanded}
+        style={{ ...styles.linkButton, marginTop: spacing.md }}
+      >
+        {expanded ? '접기' : '자세한 식사'}
+      </button>
+
+      {expanded && (
+        <div style={{ marginTop: spacing.sm }}>
+          {record.items.map((item, i) => (
+            <MealItemRow key={item.id ?? i} item={item} />
+          ))}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+function MealRecordCard({ record, expanded, onToggleDetail, onRemove }) {
+  return isSetMeal(record) ? (
+    <SetMealCard record={record} expanded={expanded} onToggleDetail={onToggleDetail} onRemove={onRemove} />
+  ) : (
+    <SingleMealCard record={record} expanded={expanded} onToggleDetail={onToggleDetail} onRemove={onRemove} />
   )
 }
 
@@ -137,13 +217,13 @@ export default function MealsPage() {
   const recommended = user?.recommended
   const [expandedIds, setExpandedIds] = useState(() => new Set())
 
-  function toggleDetail(mealId) {
+  function toggleDetail(mealRecordId) {
     setExpandedIds((prev) => {
       const next = new Set(prev)
-      if (next.has(mealId)) {
-        next.delete(mealId)
+      if (next.has(mealRecordId)) {
+        next.delete(mealRecordId)
       } else {
-        next.add(mealId)
+        next.add(mealRecordId)
       }
       return next
     })
@@ -194,13 +274,13 @@ export default function MealsPage() {
           </Link>
         </Card>
       ) : (
-        todayMeals.map((meal) => (
-          <MealCard
-            key={meal.id}
-            meal={meal}
-            expanded={expandedIds.has(meal.id)}
-            onToggleDetail={() => toggleDetail(meal.id)}
-            onRemove={() => removeTodayMeal(meal.id)}
+        todayMeals.map((record) => (
+          <MealRecordCard
+            key={record.id}
+            record={record}
+            expanded={expandedIds.has(record.id)}
+            onToggleDetail={() => toggleDetail(record.id)}
+            onRemove={() => removeTodayMeal(record.id)}
           />
         ))
       )}

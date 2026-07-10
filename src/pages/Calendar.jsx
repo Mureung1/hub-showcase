@@ -6,7 +6,7 @@ import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import { getManualDayStatus, setManualDayStatus } from '../lib/dayStatus.js'
-import { getMeals, sumNutrients } from '../lib/mealStore.js'
+import { flattenMealItems, getMeals, sumMealRecordsNutrients } from '../lib/mealStore.js'
 import { calcDayStatus } from '../lib/nutrition.js'
 import { getAllRecords, toDateKey } from '../lib/records.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
@@ -109,7 +109,7 @@ export default function Calendar() {
       if (dateKey > todayKey) continue
 
       const meals = getMeals(user.id, dateKey)
-      const total = meals.length > 0 ? sumNutrients(meals) : records[dateKey]?.total
+      const total = meals.length > 0 ? sumMealRecordsNutrients(meals) : records[dateKey]?.total
       const autoStatus = total ? calcDayStatus(user.recommended, total) : null
 
       if (autoStatus) {
@@ -127,7 +127,11 @@ export default function Calendar() {
 
   const selectedInfo = selectedDateKey ? dayInfoMap[selectedDateKey] : null
   const selectedRecord = selectedDateKey ? records[selectedDateKey] : null
-  const selectedItems = selectedRecord?.items?.length ? selectedRecord.items : selectedDateKey ? getMeals(user?.id, selectedDateKey) : []
+  const selectedItems = selectedRecord?.items?.length
+    ? selectedRecord.items
+    : selectedDateKey
+      ? flattenMealItems(getMeals(user?.id, selectedDateKey))
+      : []
 
   function goMonth(delta) {
     setCursor((c) => {

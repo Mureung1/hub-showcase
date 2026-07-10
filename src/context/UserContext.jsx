@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { get, set, remove } from '../lib/storage.js'
-import { addMeal, getMeals, removeMeal, sumNutrients } from '../lib/mealStore.js'
+import { addMealRecord, getMeals, removeMealRecord, sumMealRecordsNutrients } from '../lib/mealStore.js'
 import { toDateKey } from '../lib/records.js'
 
 export const UserContext = createContext(null)
@@ -12,7 +12,7 @@ export function UserProvider({ children }) {
   const [users, setUsers] = useState(() => get(USERS_KEY, []))
   const [currentUserId, setCurrentUserId] = useState(() => get(SESSION_KEY, null))
   const [todayMeal, setTodayMeal] = useState(null) // MealAnalysis, /analyze -> /result 전달용(메모리만)
-  const [todayMeals, setTodayMeals] = useState([]) // 오늘 먹은 음식 목록(mealStore, localStorage 영속)
+  const [todayMeals, setTodayMeals] = useState([]) // 오늘 먹은 끼니 목록(meal record[], mealStore, localStorage 영속)
 
   useEffect(() => {
     set(USERS_KEY, users)
@@ -73,28 +73,30 @@ export function UserProvider({ children }) {
     [currentUserId],
   )
 
+  // items: 한 번의 분석에서 나온 음식 전체(1개면 단일 메뉴, 2개 이상이면 한 끼 세트) — 하나의 끼니 기록으로 저장한다.
   const addTodayMeal = useCallback(
-    (meal) => {
+    (items, mealType) => {
       if (!currentUserId) return null
       const dateKey = toDateKey(new Date())
-      const entry = addMeal(currentUserId, dateKey, meal)
+      const entry = addMealRecord(currentUserId, dateKey, { items, mealType })
       setTodayMeals(getMeals(currentUserId, dateKey))
       return entry
     },
     [currentUserId],
   )
 
+  // mealRecordId: 끼니 단위 삭제(그 끼니를 구성하는 음식 전체가 함께 제거된다).
   const removeTodayMeal = useCallback(
-    (mealId) => {
+    (mealRecordId) => {
       if (!currentUserId) return
       const dateKey = toDateKey(new Date())
-      removeMeal(currentUserId, dateKey, mealId)
+      removeMealRecord(currentUserId, dateKey, mealRecordId)
       setTodayMeals(getMeals(currentUserId, dateKey))
     },
     [currentUserId],
   )
 
-  const todayMealsTotal = useMemo(() => sumNutrients(todayMeals), [todayMeals])
+  const todayMealsTotal = useMemo(() => sumMealRecordsNutrients(todayMeals), [todayMeals])
 
   const value = useMemo(
     () => ({
