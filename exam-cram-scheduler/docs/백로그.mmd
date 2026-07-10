@@ -1,0 +1,46 @@
+flowchart LR
+  ROOT["시험 벼락치기 스케줄러<br/>남은 3주"]
+
+  ROOT --> W2["2주차 · 계산 엔진"]
+  ROOT --> W3["3주차 · 연동"]
+  ROOT --> W4["4주차 · 마무리"]
+
+  W2 --> W2A["Express 서버 스캐폴딩"]
+  W2 --> W2B["Two-Process Model<br/>Process S + Process C"]
+  W2 --> W2C["카페인 근사 모델<br/>Hill/Michaelis-Menten"]
+  W2 --> W2D["안전 섭취 한도 로직"]
+  W2 --> W2E["목표 각성 시각 역산<br/>이동시간 반영"]
+
+  W3 --> W3A["다중 시험 통합 최적화<br/>그리드 탐색"]
+  W3 --> W3B["Supabase 프로젝트<br/>+ 테이블 3종"]
+  W3 --> W3C["POST /api/schedule/calculate"]
+  W3 --> W3D["정보 입력 → 실제 API 연결"]
+  W3 --> W3E["처리 중 → 실제 응답 대기"]
+  W3 --> W3F["결과 화면 → 실제 데이터 렌더링"]
+  W3 --> W3G["localStorage 저장/조회"]
+
+  W4 --> W4A["스케줄 조정 → 재계산 연동"]
+  W4 --> W4B["조정 대상 날짜 선택 UI"]
+  W4 --> W4C["공통 컴포넌트 정리<br/>Chart/ProgressTrack/Legend"]
+  W4 --> W4D["자연어 보조 입력 (선택)"]
+  W4 --> W4E["엣지 케이스 테스트"]
+  W4 --> W4F["반응형 점검"]
+  W4 --> W4G["발표 자료·데모 준비"]
+
+  DONE["1주차 완료분<br/>참고용"]
+  DONE --> D1["기획서 v1→v2"]
+  DONE --> D2["디자인 시스템 확정"]
+  DONE --> D3["5개 화면 UI 구현<br/>client/, mock 데이터"]
+  DONE --> D4["정보 입력 수정·삭제 UX"]
+
+  classDef root fill:#7A4720,stroke:#7A4720,color:#FFFFFF,font-weight:bold;
+  classDef w2 fill:#FBEEDC,stroke:#D99A3D,color:#201409;
+  classDef w3 fill:#F1E0C9,stroke:#9A5B28,color:#201409;
+  classDef w4 fill:#EFE7DA,stroke:#B98A55,color:#201409;
+  classDef done fill:#F6F1E9,stroke:#786A5C,color:#786A5C;
+
+  class ROOT root;
+  class W2,W2A,W2B,W2C,W2D,W2E w2;
+  class W3,W3A,W3B,W3C,W3D,W3E,W3F,W3G w3;
+  class W4,W4A,W4B,W4C,W4D,W4E,W4F,W4G w4;
+  class DONE,D1,D2,D3,D4 done;
