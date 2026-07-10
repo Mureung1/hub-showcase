@@ -6,6 +6,8 @@
 
 - [프로젝트 기획서 (Wiki, 최신 버전)](https://github.com/geulcho/hub/wiki/Core-Loop-Builder-기획서)
 - [프로젝트 기획서 (저장소 내 기록용 사본)](./project-plan.md)
+- [개발 백로그](./docs/BACKLOG.md)
+- [디자인 시스템](./design/DESIGN_SYSTEM.md)
 
 ## 실행 방법
 

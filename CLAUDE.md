@@ -51,13 +51,6 @@ cd client && npm install && npm run dev      # http://localhost:5173
 cd server && npm install && npm run dev      # http://localhost:4000
 ```
 
-## 현재 상태 (2026-07-09 기준)
+## 진행 상태와 다음 할 일
 
-- [x] 서비스 소개 랜딩 페이지 (`client/src/components/CoreLoopBuilderIntro.jsx`)
-- [x] 핵심 흐름 정적 프로토타입 (`prototype/`)
-- [x] 디자인 시스템(토큰/문서/skill) + 입력·후보선택·루프시각화 3화면 목업
-- [x] client/server 폴더 분리, 라이브러리·컨벤션 확정
-- [ ] 장르/참고게임/플레이경험 입력 폼을 실제 React 컴포넌트로 구현 (목업 → 프로덕션 코드 전환)
-- [ ] LLM API 연동 및 코어 루프 후보 생성 엔드포인트 (`docs/api-design-core-loop-candidates.md` 참고)
-- [ ] 코어 루프 시각화 컴포넌트, 포트폴리오 초안 생성, AI 피드백 기능
-- [ ] 사용자 테스트, 배포
+단일 출처는 [`docs/BACKLOG.md`](./docs/BACKLOG.md)다. 우선순위(P0/P1/P2)와 주차별 Task, "이번 주까지 끝낼 것"이 전부 거기 있으니 여기에 따로 체크리스트를 중복 유지하지 않는다.
