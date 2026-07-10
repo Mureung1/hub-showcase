@@ -241,12 +241,12 @@ Agent는 하나의 규칙으로 Tool을 선택하지 않고, 여러 소비 신�
 
 ## 8. 기술 스택 
 
-* **백엔드**: Node.js + Express (TypeScript)
-* **AI Agent / Tool Use**: Claude API (tool use) — Anthropic Node SDK(`@anthropic-ai/sdk`)로 연동, 소비 신호를 Context로 받아 Tool 선택·실행 판단
+* **백엔드**: Spring Boot (Java)
+* **AI Agent / Tool Use**: Claude API (tool use) — Spring AI 라이브러리로 연동, 소비 신호를 Context로 받아 Tool 선택·실행 판단
 * **OCR**: 네이버 클로바 OCR (1주차에 업스테이지 Document AI와 비교 테스트 후 최종 결정)
 * **Smart Purchase Tool 데이터 소스**: 네이버 쇼핑 검색 API (구조화된 가격 데이터 제공 여부 1주차 PoC로 검증)
 * **Recipe Tool 데이터 소스**: 공공데이터포털 레시피 API (1주차 PoC로 검증)
-* **DB**: PostgreSQL + Prisma — 영수증 원본 메타데이터 + 파싱된 지출 내역 테이블 분리
+* **DB**: PostgreSQL + JPA/Hibernate — 영수증 원본 메타데이터 + 파싱된 지출 내역 테이블 분리
 * **프론트엔드**: React — 대시보드 차트 라이브러리 활용
 
 ---
