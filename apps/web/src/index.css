@@ -1,8 +1,10 @@
 * { margin: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
-  background: #F4F6FB;
+  /* Poppins(숫자·라틴) + Pretendard/시스템(한글) — weatherpilot-design 스킬 토큰 */
+  font-family: "Poppins", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic",
+    -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #EEF3F8;
   -webkit-font-smoothing: antialiased;
 }
 

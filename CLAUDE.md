@@ -33,9 +33,21 @@ packages/shared FE·BE 공용 타입 (Scenario, Proposal 등)
 ## 컨벤션
 
 - 컴포넌트: PascalCase / 함수·변수: camelCase / 타입·인터페이스: PascalCase
-- 커밋: `feat` / `fix` / `refactor` / `docs` / `chore`
+- 커밋 메시지: `feat` / `fix` / `refactor` / `docs` / `chore` 중 하나를 접두로 + 한국어로 바뀐 것 요약 (예: `feat: 프로토타입 화면에 디자인 토큰 적용`)
 - 브랜치·PR 제출: fork(`shyang0319/hub`)의 `N111_양서형` 브랜치 → 운영진 저장소 동일 브랜치로 PR
 - FE·BE가 주고받는 데이터 타입은 `packages/shared`에 정의하고 양쪽이 import (양쪽에 중복 정의 금지)
+
+### "커밋해줘" 요청 처리 (자동 실행)
+
+사용자가 **"커밋해줘"**(또는 같은 뜻의 요청)라고 하면, 되묻지 말고 아래 3단계를 순서대로 실행한다. 이 지침 자체가 add·commit·push에 대한 사전 승인이다.
+
+1. `git add .`
+2. `git commit -m "<타입>: <바뀐 것 요약>"` — 타입은 위 커밋 규칙을 따르고, 메시지는 실제 변경(diff)을 보고 직접 작성한다. 플레이스홀더 금지.
+3. `git push origin N111_양서형`
+
+- 대상 브랜치는 항상 `N111_양서형` 고정. 현재 다른 브랜치에 있으면 실행 전에 먼저 알린다.
+- `git add .`는 `.gitignore`를 따르므로 `.env` 등 시크릿은 스테이징되지 않는다(위 "하지 말 것" 참고).
+- 커밋 메시지에 `Co-Authored-By: Claude ...` 트레일러를 붙이지 않는다. (사용자 요청)
 
 ## 하지 말 것
 
