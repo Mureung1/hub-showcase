@@ -44,3 +44,7 @@ npm run build  # 프로덕션 빌드
 ## 더 자세한 내용
 
 전체 기획서(문제 정의, 유사 서비스 분석, Use Case, 사용자 시나리오, 법적 검토 등)는 [프로젝트 기획서](https://github.com/maeumum/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%B0%ED%9A%8D%EC%84%9C)에서 확인할 수 있습니다.
+
+
+## 향후 개발 진행 상황
+개발 Task 및 진행 상황은 [진행 상황](https://app.notion.com/p/AI-Agent-Challenge-39594b113eb280fa96dada92ba9df29c?source=copy_link)에서 확인할 수 있습니다.
