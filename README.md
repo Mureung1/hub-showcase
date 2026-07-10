@@ -133,3 +133,7 @@ rawText 분석을 우선 지원합니다. URL만 있고 rawText가 없으면 “
 ## 계획서
 
 https://github.com/clradtr/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%B0%ED%9A%8D%EC%84%9C
+
+## 개발 Task
+
+기획서와 현재 구현 상태를 기준으로 정리한 우선순위별 개발 백로그는 [TASKS.md](./TASKS.md)에서 확인할 수 있습니다.
