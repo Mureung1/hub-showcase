@@ -43,6 +43,30 @@ class FailingAdapter implements AgentRuntimeAdapter {
   }
 }
 
+class GatedFailingAdapter implements AgentRuntimeAdapter {
+  readonly name = 'test'
+  readonly started: Promise<AbortSignal>
+
+  private readonly startedDeferred = createDeferred<AbortSignal>()
+  private readonly throwDeferred = createDeferred<void>()
+
+  constructor() {
+    this.started = this.startedDeferred.promise
+  }
+
+  async *run(
+    input: RuntimeAdapterRunInput,
+  ): AsyncIterable<RuntimeAdapterEvent> {
+    this.startedDeferred.resolve(input.signal)
+    await this.throwDeferred.promise
+    throw new Error('Adapter exploded')
+  }
+
+  explode(): void {
+    this.throwDeferred.resolve()
+  }
+}
+
 class DebugLogAdapter implements AgentRuntimeAdapter {
   readonly name = 'test'
 
@@ -1885,6 +1909,99 @@ test('AgentRuntimeKernel aborts and publishes one emergency failure when a termi
   )
   await new Promise<void>((resolve) => setImmediate(resolve))
   assert.equal(kernel.getRunLog(startedRun.runId)?.events.length, 2)
+})
+
+test('AgentRuntimeKernel contains persistence failure after adapter error', async (testContext) => {
+  const adapter = new GatedFailingAdapter()
+  const persistence = new FaultInjectingRuntimeRunLogPersistence()
+  const storageFailure = new Error(
+    'terminal save failed after adapter error',
+  )
+  const failureMessage =
+    'Runtime persistence unavailable during terminal_save: terminal save failed after adapter error'
+  const failureAt = '2026-07-10T03:02:00.000Z'
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    generateRunId: () => '11111111-1111-4111-8111-111111111111',
+    now: () => new Date(failureAt),
+    persistence,
+  })
+  const startedRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'explode before terminal persistence',
+  })
+  const signal = await adapter.started
+  const publishedEventTypes: string[] = []
+  kernel.subscribeToRun(startedRun.runId, 1, (event) => {
+    publishedEventTypes.push(event.type)
+  })
+  let terminalResolutionCount = 0
+  const terminalRun = kernel.waitForRun(startedRun.runId).then((log) => {
+    terminalResolutionCount += 1
+    return log
+  })
+  const unhandledRejections: unknown[] = []
+  const captureUnhandledRejection = (reason: unknown): void => {
+    unhandledRejections.push(reason)
+  }
+  process.on('unhandledRejection', captureUnhandledRejection)
+  testContext.after(() => {
+    process.off('unhandledRejection', captureUnhandledRejection)
+  })
+  persistence.failNextSave(storageFailure)
+
+  adapter.explode()
+  const failedLog = await terminalRun
+  await new Promise<void>((resolve) => setImmediate(resolve))
+
+  assert.equal(signal.aborted, true)
+  assert.equal(failedLog.status, 'failed')
+  assert.equal(failedLog.error, failureMessage)
+  assert.deepEqual(
+    failedLog.events.map((event) => event.type),
+    ['started', 'failed'],
+  )
+  assert.equal(
+    failedLog.events.filter((event) => event.type === 'failed').length,
+    1,
+  )
+  assert.deepEqual(failedLog.debugLog?.at(-1), {
+    timestamp: failureAt,
+    source: 'kernel',
+    kind: 'persistence_error',
+    message: failureMessage,
+    data: {
+      code: 'runtime_persistence_unavailable',
+      operation: 'terminal_save',
+      cause: storageFailure.message,
+      durable: false,
+    },
+  })
+  assert.deepEqual(kernel.getPersistenceState(), {
+    status: 'degraded',
+    error: failureMessage,
+  })
+  assert.deepEqual(publishedEventTypes, ['failed'])
+  assert.equal(terminalResolutionCount, 1)
+  assert.deepEqual(
+    persistence.savedLogs.map((log) => log.status),
+    ['running'],
+  )
+  assert.deepEqual(
+    (await persistence.load()).map((log) => ({
+      runId: log.runId,
+      status: log.status,
+      eventTypes: log.events.map((event) => event.type),
+    })),
+    [
+      {
+        runId: startedRun.runId,
+        status: 'running',
+        eventTypes: ['started'],
+      },
+    ],
+  )
+  assert.deepEqual(unhandledRejections, [])
 })
 
 test('AgentRuntimeKernel drains checkpoints before cancelling and terminal cancellation transitions', async () => {

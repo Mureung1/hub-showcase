@@ -581,11 +581,17 @@ export class AgentRuntimeKernel {
         return
       }
 
-      await this.withRunMutation(log.runId, async () => {
-        if (!isTerminalRuntimeRunStatus(log.status)) {
-          await this.failRun(log, toErrorMessage(error))
+      try {
+        await this.withRunMutation(log.runId, async () => {
+          if (!isTerminalRuntimeRunStatus(log.status)) {
+            await this.failRun(log, toErrorMessage(error))
+          }
+        })
+      } catch (failureError) {
+        if (!(failureError instanceof RuntimePersistenceUnavailableError)) {
+          throw failureError
         }
-      })
+      }
     } finally {
       try {
         await this.finishRunCheckpointing(log)
