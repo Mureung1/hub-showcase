@@ -40,3 +40,4 @@
 - 기획서 명세: @docs/plan.md
 - 디자인 시스템 명세: @docs/design_system.md
 - 활성화된 스킬 절차서: @docs/skills/design_production.md
+- 제품 백로그 명세: @docs/backlog.md
