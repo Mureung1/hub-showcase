@@ -10,9 +10,10 @@ AI Agent를 처음 접하는 청중에게 AY-PLE가 어떤 제품인지 설명�
 npm run demo:week1
 ```
 
-브라우저에서 다음 주소를 연다.
+명령을 실행하면 발표 자료가 브라우저에서 자동으로 열린다. 자동으로 열리지 않으면 다음 주소를 사용한다.
 
-- 발표 자료: <http://127.0.0.1:4174/artifacts/week1-demo/>
+- 발표 자료: <http://127.0.0.1:4174/>
+- 발표 자료 직접 경로: <http://127.0.0.1:4174/artifacts/week1-demo/>
 - 발표용 동적 제품 데모: <http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html?variant=focus&step=1&present=1>
 - variant 비교용 데모: <http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html?variant=focus&step=1>
 
@@ -34,7 +35,7 @@ npm run demo:week1
 
 1. `npm run demo:week1`로 서버를 시작한다.
 2. 발표 자료 1~5장을 한 번 순서대로 넘긴다.
-3. 네 번째 장의 `전체 화면으로 열기`가 새 탭에서 열리는지 확인한다.
+3. 네 번째 장의 `전체 화면 데모 시작`이 새 탭에서 열리는지 확인한다.
 4. 동적 데모를 처음부터 수락까지 진행하고 `R`로 초기화한다.
 5. 정적 백업 화면 두 장이 열리는지 확인한다.
 6. [speaker-notes.md](speaker-notes.md)를 기준으로 5분 안에 끝나는지 확인한다.
