@@ -9,7 +9,7 @@ LocalTwin은 제품 기능 구현 전 단계다. 현재 저장소에는 실행 �
 React application shell
 FastAPI health endpoint
 format / lint / typecheck / test / build
-Git hooks와 CI
+Git hooks와 로컬 검증
 
 제외:
 상권 분석 prototype
@@ -221,6 +221,7 @@ pnpm build
 실제 secret은 .env 또는 GitHub Secret에만 저장한다.
 .env는 commit하지 않는다.
 PUBLIC_DATA_SERVICE_KEY를 log나 문서에 출력하지 않는다.
+SEOUL_OPEN_DATA_KEY를 log나 문서에 출력하지 않는다.
 VITE_ prefix 값은 browser에 노출된다고 간주한다.
 browser에서 사용할 수 없는 secret에 VITE_ prefix를 붙이지 않는다.
 ```

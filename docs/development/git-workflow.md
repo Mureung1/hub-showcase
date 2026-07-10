@@ -184,7 +184,7 @@ commit-msg hook:
 
 ```text
 local hook은 git commit --no-verify로 우회할 수 있다.
-팀/원격 저장소에서 강제하려면 branch protection, required CI, PR review 규칙이 필요하다.
+팀/원격 저장소에서 강제하려면 branch protection과 PR review 규칙이 필요하다.
 ```
 
 ## 8. Hook 설정
@@ -238,12 +238,10 @@ git config --get core.hooksPath
 ```text
 일반 PR base: develop
 release PR base: main
-required checks: docs, web, api
+검증: PR 작성 전 로컬 명령 실행 결과를 기록
 ```
 
-local hook은 `--no-verify`로 우회할 수 있으므로 원격 강제는 GitHub branch protection과 required checks가 담당해야 한다.
-
-현재 자동 병합 workflow는 자체적으로 CI 결과를 검사하지 않는다. 팀 작업 전 `develop`과 `main`의 required checks가 설정됐는지 확인한다.
+local hook은 `--no-verify`로 우회할 수 있으므로, 원격 병합 전에는 PR 설명의 로컬 검증 결과와 리뷰를 확인한다.
 
 ## 11. 권장 명령
 
