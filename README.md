@@ -101,6 +101,17 @@ AI가 카테고리·색상·스타일을 자동 태깅하고, **지금 바로 �
 
 ---
 
+## 📄 Project Documents
+
+- [Development Task](./project-docs/task.md)
+- [Backlog](./project-docs/BACKLOG.md)
+- [Planning](./project-docs/PLANNING.md)
+- [Design Skill](./project-docs/design-skill.md)
+- [CLAUDE.md](./CLAUDE.md)
+
+---
+
+
 ## 🛠️ 기술 스택
 
 - React
