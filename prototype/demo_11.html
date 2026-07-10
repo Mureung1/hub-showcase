@@ -1008,19 +1008,30 @@ function renderInsightModal(){
   const topTip = improvementRanking[0];
   const hasTip = topTip && topTip.delta > 0;
   const noJobs = stats.totalJobs === 0;
+  // "이미 다 갖췄다"는 hasTip(=한 항목만 고치면 뚫리는 공고가 있는지)이 false라고 해서
+  // 곧바로 참이 되는 게 아니다. 보완 우선순위 막대그래프는 "항목 하나만 미충족인 공고"만 세고
+  // 2개 이상 항목이 동시에 미충족인 공고는 일부러 제외하기 때문에, 필터링된 공고가
+  // 전부(또는 유일하게 있는 1건) 여러 항목을 동시에 놓치고 있으면 hasTip은 false이지만
+  // 실제 지원 가능 비율은 0%일 수 있다. 그래서 "다 갖췄다"는 반드시 matchRate(=matchedJobs
+  // === totalJobs)로만 판단하고, hasTip=false는 별도의 "복합 미충족" 상태로 분리한다.
+  const allMatched = !noJobs && stats.matchedJobs === stats.totalJobs;
 
-  const emoji = noJobs ? "💪" : hasTip ? "😊" : "🎉";
+  const emoji = noJobs ? "💪" : allMatched ? "🎉" : hasTip ? "😊" : "🧩";
   const title = noJobs
     ? "지금 조건엔 맞는 공고가 없어요"
-    : hasTip
-      ? `<b>${topTip.category}</b>만 채우면 지원 가능한 공고가 <b>+${topTip.delta}건</b> 더 늘어나요!`
-      : "이미 모든 항목을 꽉 채우고 있어요!";
+    : allMatched
+      ? "이미 모든 항목을 꽉 채우고 있어요!"
+      : hasTip
+        ? `<b>${topTip.category}</b>만 채우면 지원 가능한 공고가 <b>+${topTip.delta}건</b> 더 늘어나요!`
+        : "여러 항목을 함께 보완해야 하는 공고가 있어요";
   const sub = noJobs
     ? "조건을 조금 넓히거나 스펙을 하나씩 더 채워보면 새로운 기회가 열릴 거예요. 조금만 더 힘내봐요!"
-    : hasTip
-      ? `졸업 전에 ${topTip.category}부터 준비해두면 선택지가 훨씬 넓어질 거예요.`
-      : `지금 스펙이면 지원 가능 공고 비율이 ${stats.matchRate}%예요. 정말 잘 준비했어요.`;
-  const btnLabel = noJobs ? "확인하기" : hasTip ? "결과 자세히 보기" : "결과 자세히 보기";
+    : allMatched
+      ? `지금 스펙이면 지원 가능 공고 비율이 ${stats.matchRate}%예요. 정말 잘 준비했어요.`
+      : hasTip
+        ? `졸업 전에 ${topTip.category}부터 준비해두면 선택지가 훨씬 넓어질 거예요.`
+        : "항목 하나만 바꿔서 새로 열리는 공고는 없지만, 아래 목록에서 공고별로 어떤 항목들이 함께 부족한지 확인해보세요.";
+  const btnLabel = noJobs ? "확인하기" : "결과 자세히 보기";
 
   return `
     <div class="modal-overlay" onclick="closeInsightModal()">
