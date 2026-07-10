@@ -14,6 +14,7 @@
 - [디자인 컨셉](docs/design-concept.md): 확정된 화면 구조와 정보 위계
 - [디자인 토큰](docs/design-tokens.md): `prototype/style.css`와 동기화하는 시각 토큰
 - [작업 체크리스트](docs/checklist.md): 프로토타입 완료 기록과 실제 제품 백로그
+- [개발 백로그](docs/backlog.md): 우선순위, 4주 개발 로드맵, MVP Task
 - [Wiki](https://github.com/joo-hyun/hub/wiki)
 
 ## 실행 및 확인
