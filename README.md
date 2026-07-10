@@ -255,4 +255,4 @@
 
 - [기획서 바로가기](https://app.notion.com/p/v-02-397dee17209c802d9495f20edf723b95?source=copy_link)
 
-- 개발 Task 백로그: [docs/tasks.md](./docs/tasks.md)
+- 개발 Task 백로그: [hankki-bakkum/docs/tasks.md](./hankki-bakkum/docs/tasks.md)
