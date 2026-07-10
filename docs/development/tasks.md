@@ -105,17 +105,18 @@ Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API�
 
 Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작하고 결과 변화를 설명할 수 있다.
 
-| ID      | 세부 Task                                 | Priority | Status  | Week | Depends on            | Acceptance                                           |
-| ------- | ----------------------------------------- | -------- | ------- | ---- | --------------------- | ---------------------------------------------------- |
-| WEB-001 | 현재 지도 프로토타입을 API adapter에 연결 | P0       | Backlog | 3    | API-002               | 화면 내 고정 수치 대신 API 응답이 표시된다           |
-| WEB-002 | 상권·업종·반경 Filter 동기화              | P0       | Backlog | 3    | WEB-001               | 선택 변경이 URL/요청/지도/패널에 일관되게 반영된다   |
-| WEB-003 | 실제 점포 marker와 경쟁·수요 Layer 구현   | P0       | Backlog | 3    | WEB-001               | source와 기간이 있는 점포/지표가 지도에 표시된다     |
-| WEB-004 | 상권 비교와 입지 리포트 구현              | P0       | Backlog | 3    | WEB-002, ANALYSIS-005 | 최소 2개 상권을 같은 기준으로 비교한다               |
-| WEB-005 | loading·empty·error·stale state 구현      | P0       | Backlog | 3    | WEB-001               | 실패 시 빈 흰 화면 없이 다음 행동을 안내한다         |
-| WEB-006 | keyboard·mobile·contrast 접근성 검증      | P1       | Backlog | 3    | WEB-002~005           | 핵심 조작이 keyboard와 mobile viewport에서 가능하다  |
-| WEB-007 | 근거 보기와 데이터 기준 시각화            | P0       | Backlog | 3    | WEB-003               | source, period, unit, method를 화면에서 확인한다     |
-| MAP-001 | 연남·홍대·합정 상권 비교군 고정           | P0       | Done    | 3    | -                     | selector와 비교표에 가까운 3개 상권만 표시된다       |
-| MAP-002 | LocalTwin 2.5D 지도와 원본 fallback       | P0       | Done    | 3    | MAP-001               | 실제 footprint 기반 전용 지도와 원본 지도를 전환한다 |
+| ID      | 세부 Task                                 | Priority | Status  | Week | Depends on            | Acceptance                                                 |
+| ------- | ----------------------------------------- | -------- | ------- | ---- | --------------------- | ---------------------------------------------------------- |
+| APP-001 | 제품 웹과 문서 public route 분리          | P0       | Done    | 3    | -                     | `/`는 제품, `/docs`는 문서, `/prototype`은 legacy redirect |
+| WEB-001 | 현재 지도 프로토타입을 API adapter에 연결 | P0       | Backlog | 3    | API-002               | 화면 내 고정 수치 대신 API 응답이 표시된다                 |
+| WEB-002 | 상권·업종·반경 Filter 동기화              | P0       | Backlog | 3    | WEB-001               | 선택 변경이 URL/요청/지도/패널에 일관되게 반영된다         |
+| WEB-003 | 실제 점포 marker와 경쟁·수요 Layer 구현   | P0       | Backlog | 3    | WEB-001               | source와 기간이 있는 점포/지표가 지도에 표시된다           |
+| WEB-004 | 상권 비교와 입지 리포트 구현              | P0       | Backlog | 3    | WEB-002, ANALYSIS-005 | 최소 2개 상권을 같은 기준으로 비교한다                     |
+| WEB-005 | loading·empty·error·stale state 구현      | P0       | Backlog | 3    | WEB-001               | 실패 시 빈 흰 화면 없이 다음 행동을 안내한다               |
+| WEB-006 | keyboard·mobile·contrast 접근성 검증      | P1       | Backlog | 3    | WEB-002~005           | 핵심 조작이 keyboard와 mobile viewport에서 가능하다        |
+| WEB-007 | 근거 보기와 데이터 기준 시각화            | P0       | Backlog | 3    | WEB-003               | source, period, unit, method를 화면에서 확인한다           |
+| MAP-001 | 연남·홍대·합정 상권 비교군 고정           | P0       | Done    | 3    | -                     | selector와 비교표에 가까운 3개 상권만 표시된다             |
+| MAP-002 | LocalTwin 2.5D 지도와 원본 fallback       | P0       | Done    | 3    | MAP-001               | 실제 footprint 기반 전용 지도와 원본 지도를 전환한다       |
 
 ### EPIC-05. 보조 3D 장면 탐색
 

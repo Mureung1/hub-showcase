@@ -47,12 +47,12 @@ flowchart LR
 
 현재 확인된 상태:
 
-| 영역 | 구현 상태 | 제한 |
-| --- | --- | --- |
+| 영역  | 구현 상태                                                             | 제한                                            |
+| ----- | --------------------------------------------------------------------- | ----------------------------------------------- |
 | Front | 실제 지도를 움직이고 상권·업종·반경·Layer를 조작하는 React 프로토타입 | 분석 수치는 화면용 snapshot과 규칙 기반 demo 값 |
-| Back | FastAPI 실행 환경과 `/health` endpoint | 상권 분석 API 미구현 |
-| Data | 서울 Open API pagination·snapshot 수집 코드와 raw 저장 규칙 | canonical schema와 DB 적재 미구현 |
-| 3D | 지도 건물과 prefab Layer를 켜고 끄는 시연 | 실제 Gaussian Splatting scene 미연결 |
+| Back  | FastAPI 실행 환경과 `/health` endpoint                                | 상권 분석 API 미구현                            |
+| Data  | 서울 Open API pagination·snapshot 수집 코드와 raw 저장 규칙           | canonical schema와 DB 적재 미구현               |
+| 3D    | 지도 건물과 prefab Layer를 켜고 끄는 시연                             | 실제 Gaussian Splatting scene 미연결            |
 
 ## 3. 4주 목표 구조
 
@@ -138,21 +138,22 @@ flowchart LR
 
 ## 5. 기술 스택과 도입 시점
 
-| 계층 | 현재 사용 | 4주 안에 추가 | 4주 이후 후보 |
-| --- | --- | --- | --- |
-| Front | React, Vite, TypeScript, MapLibre, react-map-gl | 실제 API adapter, loading/error/empty state | 대규모 Layer가 필요할 때 deck.gl 검토 |
-| Back | FastAPI, Pydantic Settings, Uvicorn | `/api/v1` 분석 endpoint와 service 분리 | 부하가 확인된 뒤 worker/cache 검토 |
-| Data | JSON raw snapshot, manifest | canonical schema, SQLite | 다지역 공간 질의가 필요할 때 PostgreSQL/PostGIS |
-| Analysis | 화면용 규칙 기반 demo score | 근거가 보이는 경쟁·변화·시간대·입지 계산 | 충분한 데이터 이후 예측 모델 검토 |
-| 3D | MapLibre extrusion과 prefab | 작은 실제 scene 1개 또는 검증된 대체 데모 | Gaussian Splatting pipeline 고도화 |
-| Quality | pytest, Vitest, TypeScript, lint, 문서 검사 | 평가 script와 시연 smoke test | 필요 시 E2E 자동화 |
+| 계층     | 현재 사용                                       | 4주 안에 추가                               | 4주 이후 후보                                   |
+| -------- | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------- |
+| Front    | React, Vite, TypeScript, MapLibre, react-map-gl | 실제 API adapter, loading/error/empty state | 대규모 Layer가 필요할 때 deck.gl 검토           |
+| Back     | FastAPI, Pydantic Settings, Uvicorn             | `/api/v1` 분석 endpoint와 service 분리      | 부하가 확인된 뒤 worker/cache 검토              |
+| Data     | JSON raw snapshot, manifest                     | canonical schema, SQLite                    | 다지역 공간 질의가 필요할 때 PostgreSQL/PostGIS |
+| Analysis | 화면용 규칙 기반 demo score                     | 근거가 보이는 경쟁·변화·시간대·입지 계산    | 충분한 데이터 이후 예측 모델 검토               |
+| 3D       | MapLibre extrusion과 prefab                     | 작은 실제 scene 1개 또는 검증된 대체 데모   | Gaussian Splatting pipeline 고도화              |
+| Quality  | pytest, Vitest, TypeScript, lint, 문서 검사     | 평가 script와 시연 smoke test               | 필요 시 E2E 자동화                              |
 
 ## 6. 배포 구조
 
 ```text
 Vercel
-  /docs/       문서 허브
-  /prototype/  React 시연 화면
+  /             React 제품 웹
+  /docs/        문서 허브
+  /prototype    /로 이동하는 legacy 호환 주소
 
 Local demo runtime
   React -> FastAPI -> SQLite
@@ -181,6 +182,6 @@ Local demo runtime
 
 ## 9. 변경 기록
 
-| 날짜 | 변경 | 이유 |
-| --- | --- | --- |
+| 날짜       | 변경                                         | 이유                                                       |
+| ---------- | -------------------------------------------- | ---------------------------------------------------------- |
 | 2026-07-10 | 현재 구조와 4주 목표 구조를 분리해 최초 작성 | 구현된 기능과 계획을 같은 구조도로 오해하지 않게 하기 위해 |

@@ -8,7 +8,7 @@ Backlog ID: APP-001
 Parent Epic: EPIC-04
 Type: feature
 Owner: N187_정현우
-Status: in_progress
+Status: done
 ```
 
 ## 2. Goal
@@ -53,11 +53,11 @@ docs: 제품/문서 링크와 legacy 표기
 
 ## 6. Acceptance Criteria
 
-- [ ] Vercel 루트가 React 제품 웹을 연다.
-- [ ] Docs 버튼과 문서 URL은 `/docs/...`에서 유지된다.
-- [ ] `/prototype`은 제품 루트로 이동한다.
-- [ ] Docs Home의 주 CTA가 제품 웹으로 연결된다.
-- [ ] 정적 prototype 파일은 legacy 기록으로 남는다.
+- [x] Vercel 루트가 React 제품 웹을 연다.
+- [x] Docs 버튼과 문서 URL은 `/docs/...`에서 유지된다.
+- [x] `/prototype`은 제품 루트로 이동한다.
+- [x] Docs Home의 주 CTA가 제품 웹으로 연결된다.
+- [x] 정적 prototype 파일은 legacy 기록으로 남는다.
 
 ## 7. Verification Plan
 
@@ -81,7 +81,7 @@ legacy /prototype redirect
 - [x] README에 제품 웹과 문서 URL 분리
 - [x] Docs Home CTA를 Product로 변경
 - [x] 정적 prototype을 legacy로 표기
-- [ ] Run Report 작성
+- [x] Run Report 작성
 
 ## 9. Commit Plan
 
@@ -99,7 +99,7 @@ verify:
 
 ## 10. Self-check
 
-- [ ] 제품 화면을 문서 사이트의 부속 prototype처럼 표기하지 않았는가?
-- [ ] 문서 URL과 Docs 복귀 link를 유지했는가?
-- [ ] legacy 파일을 현재 제품과 혼동하지 않게 했는가?
+- [x] 제품 화면을 문서 사이트의 부속 prototype처럼 표기하지 않았는가?
+- [x] 문서 URL과 Docs 복귀 link를 유지했는가?
+- [x] legacy 파일을 현재 제품과 혼동하지 않게 했는가?
 - [ ] 후속: 실제 분석 API 연결 전까지 demo fixture 표시는 유지한다.
