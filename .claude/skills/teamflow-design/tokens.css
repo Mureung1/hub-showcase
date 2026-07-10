@@ -1,0 +1,72 @@
+/* TeamFlow design tokens — the single source of truth for the UI.
+   Import once (e.g. in the app entry CSS) and reference var(--...) everywhere.
+   Do not hardcode hex values in components. */
+
+:root {
+  /* Core */
+  --color-bg: #f4f4f2;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #fafaf8;
+  --color-border: #e6e5e1;
+  --color-border-strong: #ece9e2;
+  --color-text: #1c1c1e;
+  --color-text-secondary: #55555c;
+  --color-text-body: #475467;
+  --color-text-body-soft: #667085;
+  --color-text-muted: #8a8a92;
+
+  /* Accent — slate navy (final) */
+  --color-accent: #3d4a63;
+  --color-accent-tint: #eaecf1;
+
+  /* Status: fg / bg / dot */
+  --status-progress-fg: #3860c9;
+  --status-progress-bg: #eaf1ff;
+  --status-progress-dot: #4d7df0;
+
+  --status-done-fg: #22704a;
+  --status-done-bg: #e8f5ee;
+  --status-done-dot: #3fae6a;
+
+  --status-review-fg: #8a5a00;
+  --status-review-bg: #fff4d8;
+  --status-review-dot: #c98a1f;
+
+  --status-blocked-fg: #a3323a;
+  --status-blocked-bg: #fbe9e9;
+  --status-blocked-dot: #d1555a;
+
+  --status-todo-fg: #5c5c66;
+  --status-todo-bg: #f0f0f2;
+  --status-todo-dot: #9a9aa2;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Spacing (4px scale) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-10: 40px;
+
+  /* Shadow — cards use border only; these are for hover / overlays */
+  --shadow-hover: 0 1px 2px rgba(28, 28, 30, 0.06);
+  --shadow-overlay: 0 8px 24px rgba(28, 28, 30, 0.12);
+
+  /* Type */
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Digits-only helper. NEVER wrap Korean units in this — IBM Plex Mono has no
+   Korean glyphs, so mixed digit+Korean strings render broken. Wrap the number
+   only: 할 일 <span class="mono">3</span>개 */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
