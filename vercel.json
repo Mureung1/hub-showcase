@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --dir apps/web build",
+  "buildCommand": "pnpm --dir apps/web build && cp -r docs apps/web/dist/docs",
   "outputDirectory": "apps/web/dist",
   "installCommand": "pnpm install",
   "framework": null
