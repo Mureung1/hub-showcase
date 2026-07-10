@@ -9,11 +9,11 @@
 - AI 소비 코치 Agent: 소비 상황을 종합 판단해 레시피 추천 / 최저가 비교를 스스로 선택·실행
 
 ## 기술 스택
-- **Backend**: Node.js (Express, TypeScript)
+- **Backend**: Spring Boot (Java)
 - **Frontend**: React
 - **AI**: Claude API (Tool Use)
 - **OCR**: 네이버 클로바 OCR
-- **DB**: PostgreSQL (Prisma)
+- **DB**: PostgreSQL
 
 ## 구조
 모노레포로 `SpendMate/be`(백엔드), `SpendMate/fe`(프론트엔드) 두 프로젝트를 함께 관리한다.
@@ -23,6 +23,7 @@
 
 - **기획서** ([plan.md](./docs/plan.md)) — 문제 정의, 경쟁 서비스 분석, 핵심 사용자 시나리오, AI Agent 작동 구조, MVP 범위
 - **개발 체크리스트** ([checklist.md](./docs/checklist.md)) — 4주 개발 작업을 주차별로 나눈 단위 체크리스트
+- **개발 Task 백로그** ([Notion](https://www.notion.so/d51ee876a0778399965e8125be81487d?source=copy_link)) — 우선순위(P0/P1/P2)별 Task 목록과 주차별 진행 상태
 - **디자인 가이드** ([design.md](./docs/design.md)) — 프론트 프로토타입(React)에서 확정된 디자인 토큰·레이아웃·톤앤매너
 
 화면 구성과 프로토타입은 작업 PR에서 확인할 수 있다.
