@@ -23,6 +23,8 @@ v0.1에서는 지역을 서울로 고정하지 않는다. 실제 구현 시 데�
 | 보조/추가기능 | Gaussian Splatting 현장 상세보기 | P1 | [3d-congestion-explorer.md](../features/3d-congestion-explorer.md) |
 | 보조/추가기능 | 사람 영역 익명화 전처리 | P1 | [person-anonymization-preprocessing.md](../features/person-anonymization-preprocessing.md) |
 
+개발 순서와 현재 상태는 [4주 개발 백로그](./tasks.md), Front/Back/Data 연결은 [시스템 아키텍처](./architecture.md)를 원본으로 사용한다.
+
 ## 4. 사용자 흐름
 
 ```text
@@ -59,7 +61,29 @@ v0.1에서는 지역을 서울로 고정하지 않는다. 실제 구현 시 데�
 → 지도 Layer와 현장 상세보기에 서로 다른 방식으로 집계값 표시
 ```
 
-## 6. v0.1 제외 범위
+## 6. 시스템 구조
+
+```text
+React + MapLibre
+-> FastAPI /api/v1
+-> 분석 Service
+-> SQLite canonical data
+```
+
+공식 API는 별도 수집기가 raw snapshot과 manifest로 저장하고, 정규화·품질 검사를 거쳐 SQLite에 적재한다. 브라우저는 provider 인증키를 직접 사용하지 않는다. 현재 구현과 4주 목표의 차이는 [시스템 아키텍처](./architecture.md)에서 확인한다.
+
+## 7. 4주 개발 순서
+
+| 주차 | 중심 작업 |
+| --- | --- |
+| 1주차 | 공식 데이터, canonical schema, 아키텍처와 Task 정리 |
+| 2주차 | 상권 metric, 입지 점수, SQLite와 FastAPI |
+| 3주차 | 실제 API를 사용하는 지도 Workspace와 리포트 |
+| 4주차 | P1 3D 보조 장면, 통합 평가, 발표와 배포 |
+
+세부 Task, 선행 관계와 완료 기준은 [4주 개발 백로그](./tasks.md)에서만 관리한다.
+
+## 8. v0.1 제외 범위
 
 ```text
 도시 전체 3D 복원
@@ -74,7 +98,7 @@ Occlusion 고급 복원
 모든 시간대 영상을 3D 학습에 혼합
 ```
 
-## 7. 완료 기준
+## 9. 완료 기준
 
 ```text
 특정 상권 1곳을 선정했다.
@@ -88,10 +112,13 @@ Occlusion 고급 복원
 규칙 기반 입지 점수와 AI 해석 리포트를 생성할 수 있다.
 ```
 
-## 8. 관련 문서
+## 10. 관련 문서
 
 - [제품 기획서](../wiki/localtwin-product-plan.md)
 - [Wiki Home](../wiki/Home.md)
+- [4주 개발 백로그](./tasks.md)
+- [시스템 아키텍처](./architecture.md)
+- [문서 관리 기준](./document-management.md)
 - [개발환경](./environment.md)
 - [개발 컨벤션](./conventions.md)
 - [개발 전 결정 Gate](./pre-development-decisions.md)
