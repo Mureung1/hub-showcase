@@ -11,6 +11,8 @@
 
 > **사진 한 장으로, 한국의 올바른 분리배출 방법을 공식 데이터와 AI를 통해 쉽고 정확하게 안내하는 서비스**
 
+개발 컨벤션(코드 스타일, 커밋 메시지 규칙)은 [CONTRIBUTING.md](./CONTRIBUTING.md) 참고.
+
 ---
 
 # 프로젝트 배경
@@ -440,8 +442,10 @@ LLM은
 
 ## Backend
 
-* Python
-* FastAPI
+* Node.js
+* Express
+* TypeScript
+* Prisma
 
 ---
 
