@@ -5,6 +5,7 @@ import {
   isRuntimeRunId,
   parseRuntimeRunId,
   type AgentRuntimeAdapter,
+  type RuntimeCheckpointScheduler,
   type RuntimeAdapterEvent,
   type RuntimeAdapterRunInput,
   type RuntimeRunLog,
@@ -124,6 +125,19 @@ class ObservedStartAdapter implements AgentRuntimeAdapter {
   }
 }
 
+class InvocationCountingAdapter implements AgentRuntimeAdapter {
+  readonly name = 'test'
+  runCount = 0
+
+  run(): AsyncIterable<RuntimeAdapterEvent> {
+    this.runCount += 1
+
+    return {
+      async *[Symbol.asyncIterator]() {},
+    }
+  }
+}
+
 class OutputAndDebugAdapter implements AgentRuntimeAdapter {
   readonly name = 'test'
 
@@ -163,6 +177,204 @@ class CompletionRaceAdapter implements AgentRuntimeAdapter {
 
   allowCompletion(): void {
     this.allowCompletionDeferred.resolve()
+  }
+}
+
+class PushRuntimeAdapter implements AgentRuntimeAdapter {
+  readonly name = 'test'
+
+  private readonly streams = new Map<
+    string,
+    {
+      events: RuntimeAdapterEvent[]
+      nextEvent?: (event: RuntimeAdapterEvent) => void
+    }
+  >()
+
+  run(input: RuntimeAdapterRunInput): AsyncIterable<RuntimeAdapterEvent> {
+    const stream = {
+      events: [],
+    } as {
+      events: RuntimeAdapterEvent[]
+      nextEvent?: (event: RuntimeAdapterEvent) => void
+    }
+
+    this.streams.set(input.runId, stream)
+
+    return {
+      [Symbol.asyncIterator]: () => ({
+        next: async () => {
+          const queuedEvent = stream.events.shift()
+
+          if (queuedEvent) {
+            return { done: false, value: queuedEvent }
+          }
+
+          return new Promise<IteratorResult<RuntimeAdapterEvent>>((resolve) => {
+            stream.nextEvent = (event) => {
+              delete stream.nextEvent
+              resolve({ done: false, value: event })
+            }
+          })
+        },
+      }),
+    }
+  }
+
+  push(runId: string, event: RuntimeAdapterEvent): void {
+    const stream = this.streams.get(runId)
+
+    if (!stream) {
+      throw new Error(`Runtime stream is not ready: ${runId}`)
+    }
+
+    if (stream.nextEvent) {
+      stream.nextEvent(event)
+      return
+    }
+
+    stream.events.push(event)
+  }
+}
+
+class AdapterConfirmedPushRuntimeAdapter extends PushRuntimeAdapter {
+  readonly cancellationMode = 'adapter_confirmed'
+}
+
+class ManualCheckpointScheduler implements RuntimeCheckpointScheduler {
+  readonly scheduledDelays: number[] = []
+
+  private readonly tasks: Array<{
+    cancelled: boolean
+    task: () => void
+  }> = []
+
+  schedule(delayMs: number, task: () => void): () => void {
+    const scheduledTask = { cancelled: false, task }
+
+    this.scheduledDelays.push(delayMs)
+    this.tasks.push(scheduledTask)
+
+    return () => {
+      scheduledTask.cancelled = true
+    }
+  }
+
+  runNext(): void {
+    const taskIndex = this.tasks.findIndex((task) => !task.cancelled)
+
+    if (taskIndex < 0) {
+      throw new Error('No checkpoint task is ready')
+    }
+
+    const [scheduledTask] = this.tasks.splice(taskIndex, 1)
+
+    scheduledTask?.task()
+  }
+
+  runCancelledTasks(): void {
+    const cancelledTasks = this.tasks.filter((task) => task.cancelled)
+    this.tasks.splice(0, this.tasks.length)
+
+    for (const scheduledTask of cancelledTasks) {
+      scheduledTask.task()
+    }
+  }
+
+  pendingTaskCount(): number {
+    return this.tasks.filter((task) => !task.cancelled).length
+  }
+}
+
+class RecordingRuntimeRunLogPersistence implements RuntimeRunLogPersistence {
+  readonly savedLogs: RuntimeRunLog[] = []
+
+  private readonly logs = new Map<string, RuntimeRunLog>()
+
+  constructor(initialLogs: RuntimeRunLog[] = []) {
+    for (const log of initialLogs) {
+      this.logs.set(log.runId, cloneTestLog(log))
+    }
+  }
+
+  async load(): Promise<RuntimeRunLog[]> {
+    return [...this.logs.values()].map(cloneTestLog)
+  }
+
+  async save(log: RuntimeRunLog): Promise<{ removedRunIds: string[] }> {
+    const savedLog = cloneTestLog(log)
+
+    this.savedLogs.push(savedLog)
+    this.logs.set(log.runId, savedLog)
+
+    return { removedRunIds: [] }
+  }
+
+  async remove(runId: string): Promise<void> {
+    this.logs.delete(runId)
+  }
+}
+
+class BlockingRecordingRuntimeRunLogPersistence
+  implements RuntimeRunLogPersistence
+{
+  readonly savedLogs: RuntimeRunLog[] = []
+
+  private readonly logs = new Map<string, RuntimeRunLog>()
+  private nextSaveGate:
+    | {
+        release: Promise<void>
+        started: (log: RuntimeRunLog) => void
+      }
+    | undefined
+
+  constructor(initialLogs: RuntimeRunLog[] = []) {
+    for (const log of initialLogs) {
+      this.logs.set(log.runId, cloneTestLog(log))
+    }
+  }
+
+  async load(): Promise<RuntimeRunLog[]> {
+    return [...this.logs.values()].map(cloneTestLog)
+  }
+
+  async save(log: RuntimeRunLog): Promise<{ removedRunIds: string[] }> {
+    const saveGate = this.nextSaveGate
+    this.nextSaveGate = undefined
+
+    if (saveGate) {
+      saveGate.started(cloneTestLog(log))
+      await saveGate.release
+    }
+
+    const savedLog = cloneTestLog(log)
+
+    this.savedLogs.push(savedLog)
+    this.logs.set(log.runId, savedLog)
+
+    return { removedRunIds: [] }
+  }
+
+  async remove(runId: string): Promise<void> {
+    this.logs.delete(runId)
+  }
+
+  blockNextSave(): {
+    release: () => void
+    started: Promise<RuntimeRunLog>
+  } {
+    const release = createDeferred<void>()
+    const started = createDeferred<RuntimeRunLog>()
+
+    this.nextSaveGate = {
+      release: release.promise,
+      started: started.resolve,
+    }
+
+    return {
+      release: () => release.resolve(),
+      started: started.promise,
+    }
   }
 }
 
@@ -232,6 +444,128 @@ test('AgentRuntimeKernel hydrates persisted logs before exposing a ready instanc
     [newerRun.runId, olderRun.runId],
   )
   assert.deepEqual(kernel.getRunLog(olderRun.runId), olderRun)
+})
+
+test('AgentRuntimeKernel recovers interrupted running and cancelling logs without changing terminal history', async () => {
+  const recoveredAt = '2026-07-10T03:00:00.000Z'
+  const runningLog = createInterruptedLog({
+    runId: '11111111-1111-4111-8111-111111111111',
+    prompt: 'running before restart',
+    startedAt: '2026-07-10T01:00:00.000Z',
+    status: 'running',
+  })
+  const cancellingLog = createInterruptedLog({
+    runId: '22222222-2222-4222-8222-222222222222',
+    prompt: 'cancelling before restart',
+    startedAt: '2026-07-10T01:01:00.000Z',
+    status: 'cancelling',
+  })
+  const terminalLog = createCompletedLog({
+    runId: '33333333-3333-4333-8333-333333333333',
+    prompt: 'already complete',
+    startedAt: '2026-07-10T01:02:00.000Z',
+  })
+  const persistence = new RecordingRuntimeRunLogPersistence([
+    terminalLog,
+    cancellingLog,
+    runningLog,
+  ])
+  const adapter = new InvocationCountingAdapter()
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    now: () => new Date(recoveredAt),
+    persistence,
+  })
+
+  assert.equal(adapter.runCount, 0)
+  assert.deepEqual(kernel.getRunLog(terminalLog.runId), terminalLog)
+  assert.deepEqual(
+    persistence.savedLogs.map((log) => log.runId),
+    [runningLog.runId, cancellingLog.runId],
+  )
+
+  for (const interruptedLog of [runningLog, cancellingLog]) {
+    const recoveredLog = kernel.getRunLog(interruptedLog.runId)
+    const failedEvent = recoveredLog?.events.at(-1)
+    const recoveryDebugEntry = recoveredLog?.debugLog?.at(-1)
+
+    assert.equal(recoveredLog?.status, 'failed')
+    assert.equal(
+      recoveredLog?.error,
+      'Runtime interrupted by server restart',
+    )
+    assert.equal(recoveredLog?.completedAt, recoveredAt)
+    assert.equal(recoveredLog?.prompt, interruptedLog.prompt)
+    assert.equal(recoveredLog?.output, interruptedLog.output)
+    assert.deepEqual(
+      recoveredLog?.events.slice(0, -1),
+      interruptedLog.events,
+    )
+    assert.equal(failedEvent?.type, 'failed')
+    assert.equal(failedEvent?.sequence, interruptedLog.events.length + 1)
+    assert.equal(failedEvent?.timestamp, recoveredAt)
+
+    if (failedEvent?.type === 'failed') {
+      assert.equal(failedEvent.error, 'Runtime interrupted by server restart')
+    }
+
+    assert.deepEqual(
+      recoveredLog?.debugLog?.slice(0, -1),
+      interruptedLog.debugLog,
+    )
+    assert.deepEqual(recoveryDebugEntry, {
+      timestamp: recoveredAt,
+      source: 'kernel',
+      kind: 'restart_recovery',
+      message: 'Runtime interrupted by server restart',
+      data: {
+        previousStatus: interruptedLog.status,
+        recoveryReason: 'Runtime interrupted by server restart',
+      },
+    })
+    assert.deepEqual(
+      await kernel.waitForRun(interruptedLog.runId),
+      recoveredLog,
+    )
+  }
+})
+
+test('AgentRuntimeKernel does not become ready or invoke adapters before recovery is saved', async () => {
+  const interruptedLog = createInterruptedLog({
+    runId: '11111111-1111-4111-8111-111111111111',
+    prompt: 'wait for recovery save',
+    startedAt: '2026-07-10T01:00:00.000Z',
+    status: 'running',
+  })
+  const persistence = new BlockingRecordingRuntimeRunLogPersistence([
+    interruptedLog,
+  ])
+  const recoverySaveGate = persistence.blockNextSave()
+  const adapter = new InvocationCountingAdapter()
+  let factoryResolved = false
+  const factoryPromise = AgentRuntimeKernel.create({
+    adapters: [adapter],
+    now: () => new Date('2026-07-10T03:00:00.000Z'),
+    persistence,
+  }).then((kernel) => {
+    factoryResolved = true
+    return kernel
+  })
+  const recoverySnapshot = await recoverySaveGate.started
+
+  await Promise.resolve()
+
+  assert.equal(recoverySnapshot.status, 'failed')
+  assert.equal(factoryResolved, false)
+  assert.equal(adapter.runCount, 0)
+
+  recoverySaveGate.release()
+  const kernel = await factoryPromise
+
+  assert.equal(factoryResolved, true)
+  assert.equal(adapter.runCount, 0)
+  assert.equal(kernel.getRunLog(interruptedLog.runId)?.status, 'failed')
+  assert.equal((await persistence.load())[0]?.status, 'failed')
 })
 
 test('AgentRuntimeKernel avoids hydrated UUID collisions when starting a run', async () => {
@@ -353,6 +687,201 @@ test('AgentRuntimeKernel saves a started snapshot before invoking the adapter', 
   assert.deepEqual(persistence.persistedStatuses, ['running', 'completed'])
 })
 
+test('AgentRuntimeKernel coalesces rapid streaming evidence without delaying the in-memory view', async () => {
+  const adapter = new PushRuntimeAdapter()
+  const persistence = new RecordingRuntimeRunLogPersistence()
+  const scheduler = new ManualCheckpointScheduler()
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    checkpointScheduler: scheduler,
+    persistence,
+  })
+  const startedRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'checkpoint quickly',
+  })
+  const publishedEventTypes: string[] = []
+
+  kernel.subscribeToRun(startedRun.runId, 1, (event) => {
+    publishedEventTypes.push(event.type)
+  })
+
+  adapter.push(startedRun.runId, {
+    type: 'debug_log',
+    entries: [
+      {
+        timestamp: '2026-07-10T01:00:00.000Z',
+        source: 'test-runtime',
+        kind: 'evidence',
+        message: 'checkpoint evidence',
+      },
+    ],
+  })
+  adapter.push(startedRun.runId, {
+    type: 'output_delta',
+    delta: 'first ',
+  })
+  adapter.push(startedRun.runId, {
+    type: 'output_delta',
+    delta: 'second',
+  })
+
+  const liveLog = await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => log.output === 'first second',
+  )
+
+  assert.equal(persistence.savedLogs.length, 1)
+  assert.deepEqual(scheduler.scheduledDelays, [100])
+  assert.equal(scheduler.pendingTaskCount(), 1)
+  assert.deepEqual(publishedEventTypes, ['output_delta', 'output_delta'])
+  assert.deepEqual(
+    liveLog.events.map((event) => event.type),
+    ['started', 'output_delta', 'output_delta'],
+  )
+  assert.deepEqual(liveLog.debugLog, [
+    {
+      timestamp: '2026-07-10T01:00:00.000Z',
+      source: 'test-runtime',
+      kind: 'evidence',
+      message: 'checkpoint evidence',
+    },
+  ])
+
+  scheduler.runNext()
+  await waitForSavedLogCount(persistence, 2)
+
+  const checkpointLog = persistence.savedLogs[1]
+
+  assert.equal(checkpointLog?.status, 'running')
+  assert.equal(checkpointLog?.output, 'first second')
+  assert.deepEqual(checkpointLog?.events, liveLog.events)
+  assert.deepEqual(checkpointLog?.debugLog, liveLog.debugLog)
+
+  adapter.push(startedRun.runId, { type: 'completed' })
+  await kernel.waitForRun(startedRun.runId)
+})
+
+test('AgentRuntimeKernel checkpoints each fixed window during continuous streaming', async () => {
+  const adapter = new PushRuntimeAdapter()
+  const persistence = new RecordingRuntimeRunLogPersistence()
+  const scheduler = new ManualCheckpointScheduler()
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    checkpointScheduler: scheduler,
+    persistence,
+  })
+  const startedRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'stream continuously',
+  })
+
+  adapter.push(startedRun.runId, {
+    type: 'output_delta',
+    delta: 'window one',
+  })
+  await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => log.output === 'window one',
+  )
+  scheduler.runNext()
+  await waitForSavedLogCount(persistence, 2)
+
+  adapter.push(startedRun.runId, {
+    type: 'output_delta',
+    delta: ' and two',
+  })
+  await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => log.output === 'window one and two',
+  )
+
+  assert.deepEqual(scheduler.scheduledDelays, [100, 100])
+  assert.equal(scheduler.pendingTaskCount(), 1)
+
+  scheduler.runNext()
+  await waitForSavedLogCount(persistence, 3)
+
+  assert.deepEqual(
+    persistence.savedLogs.slice(1).map((log) => log.output),
+    ['window one', 'window one and two'],
+  )
+
+  adapter.push(startedRun.runId, { type: 'completed' })
+  await kernel.waitForRun(startedRun.runId)
+})
+
+test('AgentRuntimeKernel keeps checkpoint ordering independent between runs', async () => {
+  const adapter = new PushRuntimeAdapter()
+  const persistence = new BlockingRecordingRuntimeRunLogPersistence()
+  const scheduler = new ManualCheckpointScheduler()
+  const generatedRunIds = [
+    '11111111-1111-4111-8111-111111111111',
+    '22222222-2222-4222-8222-222222222222',
+  ]
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    checkpointScheduler: scheduler,
+    generateRunId: () => generatedRunIds.shift() ?? 'invalid',
+    persistence,
+  })
+  const firstRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'blocked run',
+  })
+  const secondRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'independent run',
+  })
+
+  adapter.push(firstRun.runId, {
+    type: 'output_delta',
+    delta: 'blocked output',
+  })
+  adapter.push(secondRun.runId, {
+    type: 'output_delta',
+    delta: 'independent output',
+  })
+  await waitForRunLog(
+    () => kernel.getRunLog(secondRun.runId),
+    (log) => log.output === 'independent output',
+  )
+
+  const firstCheckpointGate = persistence.blockNextSave()
+  scheduler.runNext()
+  const blockedCheckpoint = await firstCheckpointGate.started
+
+  assert.equal(blockedCheckpoint.runId, firstRun.runId)
+
+  scheduler.runNext()
+  await waitForPersistedRun(
+    persistence,
+    (log) =>
+      log.runId === secondRun.runId && log.output === 'independent output',
+  )
+
+  assert.equal(
+    persistence.savedLogs.some(
+      (log) =>
+        log.runId === firstRun.runId && log.output === 'blocked output',
+    ),
+    false,
+  )
+
+  firstCheckpointGate.release()
+  await waitForPersistedRun(
+    persistence,
+    (log) => log.runId === firstRun.runId && log.output === 'blocked output',
+  )
+
+  adapter.push(firstRun.runId, { type: 'completed' })
+  adapter.push(secondRun.runId, { type: 'completed' })
+  await Promise.all([
+    kernel.waitForRun(firstRun.runId),
+    kernel.waitForRun(secondRun.runId),
+  ])
+})
+
 test('AgentRuntimeKernel saves completed output and debug evidence before publishing terminal state', async () => {
   const persistence = new GatedRuntimeRunLogPersistence(2)
   const kernel = await AgentRuntimeKernel.create({
@@ -408,6 +937,116 @@ test('AgentRuntimeKernel saves completed output and debug evidence before publis
   )
 })
 
+test('AgentRuntimeKernel drains an in-flight checkpoint and latest evidence before terminal publication', async () => {
+  const adapter = new PushRuntimeAdapter()
+  const persistence = new BlockingRecordingRuntimeRunLogPersistence()
+  const scheduler = new ManualCheckpointScheduler()
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    checkpointScheduler: scheduler,
+    persistence,
+  })
+  const startedRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'drain before terminal',
+  })
+
+  adapter.push(startedRun.runId, {
+    type: 'output_delta',
+    delta: 'first ',
+  })
+  await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => log.output === 'first ',
+  )
+
+  const checkpointGate = persistence.blockNextSave()
+  scheduler.runNext()
+  const inFlightSnapshot = await checkpointGate.started
+
+  assert.equal(inFlightSnapshot.status, 'running')
+  assert.equal(inFlightSnapshot.output, 'first ')
+
+  adapter.push(startedRun.runId, {
+    type: 'debug_log',
+    entries: [
+      {
+        timestamp: '2026-07-10T01:00:01.000Z',
+        source: 'test-runtime',
+        kind: 'evidence',
+        message: 'arrived during checkpoint',
+      },
+    ],
+  })
+  adapter.push(startedRun.runId, {
+    type: 'output_delta',
+    delta: 'second',
+  })
+
+  const liveLog = await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => log.output === 'first second',
+  )
+
+  assert.equal(liveLog.status, 'running')
+  assert.equal(persistence.savedLogs.length, 1)
+
+  const publishedTerminalTypes: string[] = []
+  kernel.subscribeToRun(startedRun.runId, liveLog.events.length, (event) => {
+    if (event.type === 'completed') {
+      publishedTerminalTypes.push(event.type)
+    }
+  })
+
+  adapter.push(startedRun.runId, { type: 'completed' })
+
+  let waiterResolved = false
+  const terminalPromise = kernel.waitForRun(startedRun.runId).then((log) => {
+    waiterResolved = true
+    return log
+  })
+
+  await new Promise<void>((resolve) => {
+    setImmediate(resolve)
+  })
+
+  assert.equal(waiterResolved, false)
+  assert.deepEqual(publishedTerminalTypes, [])
+
+  checkpointGate.release()
+  const terminalLog = await terminalPromise
+  const [persistedLog] = await persistence.load()
+
+  assert.equal(terminalLog.status, 'completed')
+  assert.equal(terminalLog.output, 'first second')
+  assert.deepEqual(publishedTerminalTypes, ['completed'])
+  assert.equal(persistedLog?.status, 'completed')
+  assert.equal(persistedLog?.output, 'first second')
+  assert.deepEqual(
+    persistence.savedLogs.map((log) => ({
+      output: log.output,
+      status: log.status,
+    })),
+    [
+      { output: '', status: 'running' },
+      { output: 'first ', status: 'running' },
+      { output: 'first second', status: 'running' },
+      { output: 'first second', status: 'completed' },
+    ],
+  )
+  assert.equal(scheduler.pendingTaskCount(), 0)
+
+  const saveCountAfterTerminal = persistence.savedLogs.length
+
+  scheduler.runCancelledTasks()
+  await new Promise<void>((resolve) => {
+    setImmediate(resolve)
+  })
+
+  assert.equal(persistence.savedLogs.length, saveCountAfterTerminal)
+  assert.equal((await persistence.load())[0]?.status, 'completed')
+})
+
 test('AgentRuntimeKernel serializes cancellation against adapter completion', async () => {
   const persistence = new GatedRuntimeRunLogPersistence(2)
   const adapter = new CompletionRaceAdapter()
@@ -443,6 +1082,130 @@ test('AgentRuntimeKernel serializes cancellation against adapter completion', as
     waitedRun.events.map((event) => event.type),
     ['started', 'cancelled'],
   )
+})
+
+test('AgentRuntimeKernel drains checkpoints before cancelling and terminal cancellation transitions', async () => {
+  const adapter = new AdapterConfirmedPushRuntimeAdapter()
+  const persistence = new BlockingRecordingRuntimeRunLogPersistence()
+  const scheduler = new ManualCheckpointScheduler()
+  const kernel = await AgentRuntimeKernel.create({
+    adapters: [adapter],
+    checkpointScheduler: scheduler,
+    persistence,
+  })
+  const startedRun = await kernel.startRun({
+    adapter: 'test',
+    prompt: 'cancel with checkpoint evidence',
+  })
+
+  adapter.push(startedRun.runId, {
+    type: 'output_delta',
+    delta: 'before checkpoint',
+  })
+  await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => log.output === 'before checkpoint',
+  )
+
+  const checkpointGate = persistence.blockNextSave()
+  scheduler.runNext()
+  await checkpointGate.started
+
+  adapter.push(startedRun.runId, {
+    type: 'output_delta',
+    delta: ' before cancel',
+  })
+  await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => log.output === 'before checkpoint before cancel',
+  )
+
+  const publishedEventTypes: string[] = []
+  kernel.subscribeToRun(startedRun.runId, 3, (event) => {
+    publishedEventTypes.push(event.type)
+  })
+
+  let cancelResolved = false
+  const cancelPromise = kernel.cancelRun(startedRun.runId).then((log) => {
+    cancelResolved = true
+    return log
+  })
+
+  await new Promise<void>((resolve) => {
+    setImmediate(resolve)
+  })
+
+  assert.equal(cancelResolved, false)
+  assert.deepEqual(publishedEventTypes, [])
+
+  checkpointGate.release()
+  const cancellingLog = await cancelPromise
+
+  assert.equal(cancellingLog?.status, 'cancelling')
+  assert.deepEqual(publishedEventTypes, ['cancelling'])
+
+  adapter.push(startedRun.runId, {
+    type: 'debug_log',
+    entries: [
+      {
+        timestamp: '2026-07-10T01:00:02.000Z',
+        source: 'test-runtime',
+        kind: 'evidence',
+        message: 'adapter cancellation evidence',
+      },
+    ],
+  })
+  adapter.push(startedRun.runId, {
+    type: 'output_delta',
+    delta: ' while cancelling',
+  })
+  await waitForRunLog(
+    () => kernel.getRunLog(startedRun.runId),
+    (log) => log.output.endsWith('while cancelling'),
+  )
+
+  adapter.push(startedRun.runId, {
+    type: 'cancelled',
+    reason: 'Adapter confirmed cancellation',
+  })
+  const terminalLog = await kernel.waitForRun(startedRun.runId)
+  const [persistedLog] = await persistence.load()
+
+  assert.equal(terminalLog.status, 'cancelled')
+  assert.equal(persistedLog?.status, 'cancelled')
+  assert.deepEqual(publishedEventTypes, [
+    'cancelling',
+    'output_delta',
+    'cancelled',
+  ])
+  assert.deepEqual(
+    persistence.savedLogs.map((log) => ({
+      output: log.output,
+      status: log.status,
+    })),
+    [
+      { output: '', status: 'running' },
+      { output: 'before checkpoint', status: 'running' },
+      { output: 'before checkpoint before cancel', status: 'running' },
+      { output: 'before checkpoint before cancel', status: 'cancelling' },
+      {
+        output: 'before checkpoint before cancel while cancelling',
+        status: 'cancelling',
+      },
+      {
+        output: 'before checkpoint before cancel while cancelling',
+        status: 'cancelled',
+      },
+    ],
+  )
+  assert.deepEqual(persistedLog?.debugLog, [
+    {
+      timestamp: '2026-07-10T01:00:02.000Z',
+      source: 'test-runtime',
+      kind: 'evidence',
+      message: 'adapter cancellation evidence',
+    },
+  ])
 })
 
 test('AgentRuntimeKernel creates UUID run IDs by default', async () => {
@@ -624,10 +1387,13 @@ test('AgentRuntimeKernel records adapter debug log entries outside normalized ev
 })
 
 test('AgentRuntimeKernel retains debug log entries yielded after cancellation', async () => {
+  const persistence = new RecordingRuntimeRunLogPersistence()
+  const scheduler = new ManualCheckpointScheduler()
   const kernel = await AgentRuntimeKernel.create({
     adapters: [new CancelDebugLogAdapter()],
+    checkpointScheduler: scheduler,
     now: () => new Date('2026-07-09T00:00:00.000Z'),
-    persistence: new InMemoryRuntimeRunLogPersistence(),
+    persistence,
   })
 
   const startedLog = await kernel.startRun({
@@ -655,6 +1421,14 @@ test('AgentRuntimeKernel retains debug log entries yielded after cancellation', 
       data: { method: 'turn/interrupt' },
     },
   ])
+  await waitForPersistedRun(
+    persistence,
+    (log) =>
+      log.status === 'cancelled' &&
+      log.debugLog?.some(
+        (entry) => entry.data?.method === 'turn/interrupt',
+      ) === true,
+  )
 })
 
 test('AgentRuntimeKernel supports adapter-confirmed cancellation', async () => {
@@ -773,6 +1547,64 @@ function createCompletedLog(input: {
   }
 }
 
+function createInterruptedLog(input: {
+  runId: string
+  prompt: string
+  startedAt: string
+  status: 'running' | 'cancelling'
+}): RuntimeRunLog {
+  const outputAt = new Date(
+    new Date(input.startedAt).getTime() + 1_000,
+  ).toISOString()
+  const events: RuntimeRunLog['events'] = [
+    {
+      type: 'started',
+      sequence: 1,
+      runId: input.runId,
+      adapter: 'test',
+      timestamp: input.startedAt,
+      prompt: input.prompt,
+    },
+    {
+      type: 'output_delta',
+      sequence: 2,
+      runId: input.runId,
+      adapter: 'test',
+      timestamp: outputAt,
+      delta: 'partial evidence',
+    },
+  ]
+
+  if (input.status === 'cancelling') {
+    events.push({
+      type: 'cancelling',
+      sequence: 3,
+      runId: input.runId,
+      adapter: 'test',
+      timestamp: outputAt,
+      reason: 'Runtime run cancellation requested',
+    })
+  }
+
+  return {
+    runId: input.runId,
+    adapter: 'test',
+    prompt: input.prompt,
+    status: input.status,
+    output: 'partial evidence',
+    events,
+    debugLog: [
+      {
+        timestamp: outputAt,
+        source: 'test-runtime',
+        kind: 'evidence',
+        message: `debug before ${input.status} restart`,
+      },
+    ],
+    startedAt: input.startedAt,
+  }
+}
+
 function cloneTestLog(log: RuntimeRunLog): RuntimeRunLog {
   return structuredClone(log)
 }
@@ -811,6 +1643,44 @@ async function waitForRunLog(
   }
 
   assert.fail('expected run log condition was not observed')
+}
+
+async function waitForSavedLogCount(
+  persistence: RecordingRuntimeRunLogPersistence,
+  expectedCount: number,
+): Promise<void> {
+  const deadline = Date.now() + 500
+
+  while (Date.now() < deadline) {
+    if (persistence.savedLogs.length >= expectedCount) {
+      return
+    }
+
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve)
+    })
+  }
+
+  assert.fail(`expected at least ${expectedCount} persisted runtime logs`)
+}
+
+async function waitForPersistedRun(
+  persistence: { savedLogs: RuntimeRunLog[] },
+  predicate: (log: RuntimeRunLog) => boolean,
+): Promise<void> {
+  const deadline = Date.now() + 500
+
+  while (Date.now() < deadline) {
+    if (persistence.savedLogs.some(predicate)) {
+      return
+    }
+
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve)
+    })
+  }
+
+  assert.fail('expected persisted runtime run was not observed')
 }
 
 async function waitForAbort(signal: AbortSignal): Promise<void> {

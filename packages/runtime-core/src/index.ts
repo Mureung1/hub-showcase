@@ -182,9 +182,14 @@ export type RuntimeRunLogPersistence = {
   remove(runId: string): Promise<void>
 }
 
+export type RuntimeCheckpointScheduler = {
+  schedule(delayMs: number, task: () => void): () => void
+}
+
 export type AgentRuntimeKernelOptions = {
   adapters: AgentRuntimeAdapter[]
   persistence: RuntimeRunLogPersistence
+  checkpointScheduler?: RuntimeCheckpointScheduler
   generateRunId?: () => string
   now?: () => Date
 }
@@ -209,6 +214,20 @@ type TerminalResolver = {
   resolve: (log: RuntimeRunLog) => void
 }
 
+type RunCheckpointState = {
+  dirtyRevision: number
+  durableRevision: number
+  requested: boolean
+  paused: boolean
+  timerGeneration: number
+  cancelTimer?: () => void
+  worker?: Promise<void>
+  error?: unknown
+}
+
+const runtimeCheckpointIntervalMs = 100
+const runtimeRestartRecoveryError = 'Runtime interrupted by server restart'
+
 export class AgentRuntimeKernel {
   private readonly adapters = new Map<string, AgentRuntimeAdapter>()
   private readonly logs = new Map<string, RuntimeRunLog>()
@@ -217,12 +236,16 @@ export class AgentRuntimeKernel {
   private readonly abortControllers = new Map<string, AbortController>()
   private readonly reservedRunIds = new Set<string>()
   private readonly runMutationLocks = new Map<string, Promise<void>>()
+  private readonly runCheckpoints = new Map<string, RunCheckpointState>()
   private readonly persistence: RuntimeRunLogPersistence
+  private readonly checkpointScheduler: RuntimeCheckpointScheduler
   private readonly generateRunId: () => string
   private readonly now: () => Date
 
   private constructor(options: AgentRuntimeKernelOptions) {
     this.persistence = options.persistence
+    this.checkpointScheduler =
+      options.checkpointScheduler ?? createDefaultCheckpointScheduler()
     this.generateRunId =
       options.generateRunId ?? (() => globalThis.crypto.randomUUID())
     this.now = options.now ?? (() => new Date())
@@ -237,9 +260,25 @@ export class AgentRuntimeKernel {
   ): Promise<AgentRuntimeKernel> {
     const kernel = new AgentRuntimeKernel(options)
     const persistedLogs = await options.persistence.load()
+    const sortedLogs = [...persistedLogs].sort(compareRuntimeRunLogs)
 
-    for (const log of [...persistedLogs].sort(compareRuntimeRunLogs)) {
+    for (const log of sortedLogs) {
       kernel.logs.set(log.runId, cloneLog(log))
+    }
+
+    for (const persistedLog of sortedLogs) {
+      const log = kernel.logs.get(persistedLog.runId)
+
+      if (!log || isTerminalRuntimeRunStatus(log.status)) {
+        continue
+      }
+
+      const recoveredLog = kernel.recoverInterruptedRun(log)
+      kernel.logs.set(recoveredLog.runId, recoveredLog)
+
+      const saveResult = await options.persistence.save(cloneLog(recoveredLog))
+
+      kernel.removePersistedRunIds(saveResult.removedRunIds)
     }
 
     return kernel
@@ -285,6 +324,7 @@ export class AgentRuntimeKernel {
 
       this.removePersistedRunIds(saveResult.removedRunIds)
       this.logs.set(runId, log)
+      this.runCheckpoints.set(runId, this.createRunCheckpointState())
       this.terminalResolvers.set(runId, this.createTerminalResolver())
       this.abortControllers.set(runId, new AbortController())
       this.publishEvent(log.runId, startedEvent)
@@ -447,6 +487,8 @@ export class AgentRuntimeKernel {
           await this.failRun(log, toErrorMessage(error))
         }
       })
+    } finally {
+      await this.finishRunCheckpointing(log)
     }
   }
 
@@ -455,7 +497,10 @@ export class AgentRuntimeKernel {
     adapterEvent: RuntimeAdapterEvent,
   ): Promise<boolean> {
     if (adapterEvent.type === 'debug_log') {
-      this.appendDebugLog(log, adapterEvent.entries)
+      if (this.appendDebugLog(log, adapterEvent.entries)) {
+        this.markCheckpointDirty(log)
+      }
+
       return false
     }
 
@@ -469,6 +514,7 @@ export class AgentRuntimeKernel {
         type: 'output_delta',
         delta: adapterEvent.delta,
       })
+      this.markCheckpointDirty(log)
       return false
     }
 
@@ -493,12 +539,138 @@ export class AgentRuntimeKernel {
   private appendDebugLog(
     log: RuntimeRunLog,
     entries: RuntimeRunDebugLogEntry[],
-  ): void {
+  ): boolean {
     if (entries.length < 1) {
-      return
+      return false
     }
 
     log.debugLog = [...(log.debugLog ?? []), ...entries.map(cloneDebugLogEntry)]
+
+    return true
+  }
+
+  private markCheckpointDirty(log: RuntimeRunLog): void {
+    const state = this.runCheckpoints.get(log.runId)
+
+    if (!state) {
+      return
+    }
+
+    state.dirtyRevision += 1
+
+    if (state.paused || state.cancelTimer || state.error) {
+      return
+    }
+
+    const timerGeneration = state.timerGeneration + 1
+    state.timerGeneration = timerGeneration
+    state.cancelTimer = this.checkpointScheduler.schedule(
+      runtimeCheckpointIntervalMs,
+      () => {
+        if (state.timerGeneration !== timerGeneration) {
+          return
+        }
+
+        delete state.cancelTimer
+        this.requestCheckpoint(log, state)
+      },
+    )
+  }
+
+  private requestCheckpoint(
+    log: RuntimeRunLog,
+    state: RunCheckpointState,
+  ): void {
+    if (state.error || state.dirtyRevision <= state.durableRevision) {
+      return
+    }
+
+    state.requested = true
+
+    if (state.worker) {
+      return
+    }
+
+    const worker = this.runCheckpointWorker(log, state).catch((error) => {
+      state.error = error
+    })
+    state.worker = worker
+
+    void worker.finally(() => {
+      if (state.worker === worker) {
+        delete state.worker
+      }
+    })
+  }
+
+  private async runCheckpointWorker(
+    log: RuntimeRunLog,
+    state: RunCheckpointState,
+  ): Promise<void> {
+    while (state.requested && !state.error) {
+      state.requested = false
+
+      if (state.dirtyRevision <= state.durableRevision) {
+        continue
+      }
+
+      const checkpointRevision = state.dirtyRevision
+      const saveResult = await this.persistence.save(cloneLog(log))
+
+      state.durableRevision = checkpointRevision
+      this.removePersistedRunIds(saveResult.removedRunIds)
+    }
+  }
+
+  private pauseCheckpointing(state: RunCheckpointState): void {
+    state.paused = true
+    state.timerGeneration += 1
+    state.cancelTimer?.()
+    delete state.cancelTimer
+  }
+
+  private async flushRunCheckpoint(
+    log: RuntimeRunLog,
+    state: RunCheckpointState,
+  ): Promise<void> {
+    this.pauseCheckpointing(state)
+
+    while (state.dirtyRevision > state.durableRevision || state.worker) {
+      if (state.error) {
+        throw state.error
+      }
+
+      if (state.dirtyRevision > state.durableRevision) {
+        this.requestCheckpoint(log, state)
+      }
+
+      const worker = state.worker
+
+      if (!worker) {
+        continue
+      }
+
+      await worker
+    }
+
+    if (state.error) {
+      throw state.error
+    }
+  }
+
+  private async finishRunCheckpointing(log: RuntimeRunLog): Promise<void> {
+    const state = this.runCheckpoints.get(log.runId)
+
+    if (!state) {
+      return
+    }
+
+    try {
+      await this.flushRunCheckpoint(log, state)
+    } finally {
+      this.pauseCheckpointing(state)
+      this.runCheckpoints.delete(log.runId)
+    }
   }
 
   private async completeRun(log: RuntimeRunLog): Promise<void> {
@@ -530,6 +702,12 @@ export class AgentRuntimeKernel {
     log: RuntimeRunLog,
     transition: PersistedRuntimeRunTransition,
   ): Promise<void> {
+    const checkpointState = this.runCheckpoints.get(log.runId)
+
+    if (checkpointState) {
+      await this.flushRunCheckpoint(log, checkpointState)
+    }
+
     const transitionedLog = cloneLog(log)
     transitionedLog.status = transition.type
 
@@ -548,9 +726,17 @@ export class AgentRuntimeKernel {
     )
     const saveResult = await this.persistence.save(cloneLog(transitionedLog))
 
+    if (checkpointState) {
+      checkpointState.durableRevision = checkpointState.dirtyRevision
+    }
+
     replaceLog(log, transitionedLog)
     this.removePersistedRunIds(saveResult.removedRunIds)
     this.publishEvent(log.runId, transitionEvent)
+
+    if (checkpointState) {
+      checkpointState.paused = false
+    }
 
     if (isTerminalRuntimeRunStatus(log.status)) {
       this.resolveTerminal(log)
@@ -639,9 +825,43 @@ export class AgentRuntimeKernel {
     throw new Error('Unable to create a unique runtime run ID')
   }
 
+  private recoverInterruptedRun(log: RuntimeRunLog): RuntimeRunLog {
+    const previousStatus = log.status
+    const recoveredAt = this.timestamp()
+    const recoveredLog = cloneLog(log)
+
+    recoveredLog.status = 'failed'
+    recoveredLog.error = runtimeRestartRecoveryError
+    recoveredLog.completedAt = recoveredAt
+    recoveredLog.events.push({
+      type: 'failed',
+      sequence: recoveredLog.events.length + 1,
+      runId: recoveredLog.runId,
+      adapter: recoveredLog.adapter,
+      timestamp: recoveredAt,
+      error: runtimeRestartRecoveryError,
+    })
+    recoveredLog.debugLog = [
+      ...(recoveredLog.debugLog ?? []),
+      {
+        timestamp: recoveredAt,
+        source: 'kernel',
+        kind: 'restart_recovery',
+        message: runtimeRestartRecoveryError,
+        data: {
+          previousStatus,
+          recoveryReason: runtimeRestartRecoveryError,
+        },
+      },
+    ]
+
+    return recoveredLog
+  }
+
   private removePersistedRunIds(runIds: string[]): void {
     for (const runId of runIds) {
       this.logs.delete(runId)
+      this.runCheckpoints.delete(runId)
     }
   }
 
@@ -659,6 +879,28 @@ export class AgentRuntimeKernel {
       promise,
       resolve: resolveTerminal,
     }
+  }
+
+  private createRunCheckpointState(): RunCheckpointState {
+    return {
+      dirtyRevision: 0,
+      durableRevision: 0,
+      requested: false,
+      paused: false,
+      timerGeneration: 0,
+    }
+  }
+}
+
+function createDefaultCheckpointScheduler(): RuntimeCheckpointScheduler {
+  return {
+    schedule(delayMs, task) {
+      const timeout = setTimeout(task, delayMs)
+
+      return () => {
+        clearTimeout(timeout)
+      }
+    },
   }
 }
 

@@ -3,10 +3,12 @@ import type { RuntimeRunLog } from '@ay-ple/runtime-core'
 import { test } from './inspector-harness.js'
 
 const deterministicFailure = 'Fake runtime deterministic failure requested'
+const restartRecoveryError = 'Runtime interrupted by server restart'
 const streamingPrompt = 'stream this prompt'
 const cancellationPrompt = 'cancel this prompt'
 const failurePrompt = 'fail this prompt'
 const restartPrompt = 'restore this completed run'
+const interruptedPrompt = 'recover this interrupted stream'
 
 type RunLogResponseMatch = { prompt: string } | { runId: string }
 
@@ -173,11 +175,14 @@ test('Inspector restores completed output, events, and debug evidence after serv
     ]),
   )
 
-  const processRestart = await inspectorHarness.restartApiServer()
+  const processRestart = await inspectorHarness.restartApiServer(
+    completedRun.runId,
+  )
 
   expect(processRestart.currentProcessId).not.toBe(
     processRestart.previousProcessId,
   )
+  expect(processRestart.canonicalRunLogAtReadiness).toEqual(completedLog)
 
   const restoredHistoryResponse = page.waitForResponse(
     (response) =>
@@ -220,6 +225,143 @@ test('Inspector restores completed output, events, and debug evidence after serv
   await expect(runLog.locator('pre')).toHaveText(
     JSON.stringify(restoredLog, null, 2),
   )
+})
+
+test('Inspector recovers checkpointed streaming evidence after server restart', async ({
+  inspectorHarness,
+  inspectorPage: page,
+}) => {
+  const run = page.getByRole('region', { name: 'Run', exact: true })
+  const transcript = page.getByRole('region', { name: 'Transcript' })
+  const events = page.getByRole('region', { name: 'Events' })
+  const runLog = page.getByRole('region', { name: 'Run Log' })
+  const history = page.getByRole('region', { name: 'History' })
+  const firstOutput = `Fake runtime received: "${interruptedPrompt}".\n`
+
+  await expect(page.getByText('API connected', { exact: true })).toBeVisible()
+
+  const interruptedRun = await startFakeRun(page, interruptedPrompt)
+
+  await expectEventTypes(events, ['started', 'output_delta'])
+  await expect(run).toContainText('Running')
+  await expect(transcript).toContainText(firstOutput.trim())
+
+  await expect
+    .poll(async () => {
+      const checkpoint = await inspectorHarness.readCanonicalRunLog(
+        interruptedRun.runId,
+      )
+
+      return {
+        debugKinds: checkpoint.debugLog?.map((entry) => entry.kind),
+        eventTypes: checkpoint.events.map((event) => event.type),
+        output: checkpoint.output,
+        status: checkpoint.status,
+      }
+    })
+    .toEqual({
+      debugKinds: ['run_started'],
+      eventTypes: ['started', 'output_delta'],
+      output: firstOutput,
+      status: 'running',
+    })
+
+  const checkpointedLog = await inspectorHarness.readCanonicalRunLog(
+    interruptedRun.runId,
+  )
+
+  expect(checkpointedLog.debugLog).toEqual([
+    expect.objectContaining({
+      source: 'fake-runtime',
+      kind: 'run_started',
+      message: 'Fake runtime accepted a run',
+      data: {
+        prompt: interruptedPrompt,
+        runId: interruptedRun.runId,
+      },
+    }),
+  ])
+
+  const processRestart = await inspectorHarness.restartApiServer(
+    interruptedRun.runId,
+  )
+  const recoveredAtReadiness = processRestart.canonicalRunLogAtReadiness
+
+  expect(processRestart.currentProcessId).not.toBe(
+    processRestart.previousProcessId,
+  )
+  expect(recoveredAtReadiness.status).toBe('failed')
+  expect(recoveredAtReadiness.error).toBe(restartRecoveryError)
+  expect(recoveredAtReadiness.output).toBe(firstOutput)
+  expect(recoveredAtReadiness.events.slice(0, -1)).toEqual(
+    checkpointedLog.events,
+  )
+  expect(recoveredAtReadiness.events.at(-1)).toEqual(
+    expect.objectContaining({
+      type: 'failed',
+      sequence: checkpointedLog.events.length + 1,
+      error: restartRecoveryError,
+    }),
+  )
+  expect(recoveredAtReadiness.debugLog?.slice(0, -1)).toEqual(
+    checkpointedLog.debugLog,
+  )
+  expect(recoveredAtReadiness.debugLog?.at(-1)).toEqual(
+    expect.objectContaining({
+      source: 'kernel',
+      kind: 'restart_recovery',
+      message: restartRecoveryError,
+      data: {
+        previousStatus: 'running',
+        recoveryReason: restartRecoveryError,
+      },
+    }),
+  )
+
+  const restoredHistoryResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname === '/api/runtime/runs',
+  )
+
+  await page.reload()
+
+  expect((await restoredHistoryResponse).status()).toBe(200)
+  await expect(page.getByText('API connected', { exact: true })).toBeVisible()
+
+  const historyItems = history.getByRole('button')
+  const recoveredHistoryItem = historyItems.filter({
+    hasText: interruptedRun.runId,
+  })
+
+  await expect(recoveredHistoryItem).toHaveCount(1)
+  await expect(recoveredHistoryItem).toContainText('failed')
+  await expect(recoveredHistoryItem).toContainText(restartRecoveryError)
+  await expect(
+    historyItems.filter({ hasText: /\b(?:running|cancelling)\b/ }),
+  ).toHaveCount(0)
+
+  const restoredLogResponse = waitForRunLogResponse(page, {
+    runId: interruptedRun.runId,
+  })
+  await recoveredHistoryItem.click()
+  const restoredLog = await readRunLog(await restoredLogResponse)
+
+  expect(restoredLog).toEqual(recoveredAtReadiness)
+  await expect(run).toContainText('Failed')
+  await expect(transcript).toContainText(firstOutput.trim())
+  await expectEventTypes(events, ['started', 'output_delta', 'failed'])
+  await expect(events.getByRole('listitem').last()).toContainText(
+    `#${checkpointedLog.events.length + 1}`,
+  )
+  await expect(events.getByRole('listitem').last()).toContainText(
+    restartRecoveryError,
+  )
+  await expect(runLog.locator('pre')).toHaveText(
+    JSON.stringify(restoredLog, null, 2),
+  )
+  await expect(runLog.locator('pre')).toContainText('run_started')
+  await expect(runLog.locator('pre')).toContainText('restart_recovery')
 })
 
 async function startFakeRun(

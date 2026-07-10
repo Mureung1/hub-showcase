@@ -22,6 +22,7 @@ import {
   withFakeCodexAppServer,
   type CodexDebugClientRequestMethod,
 } from '@ay-ple/runtime-codex/testing'
+import { RuntimeRunJsonStore } from './runtime-run-json-store.js'
 import { resolveRuntimeHistoryDirectory } from './server.js'
 import { withTestServer } from './testing/test-server.js'
 
@@ -31,6 +32,8 @@ type ServerRunLog = {
   events: Array<Record<string, unknown>>
   debugLog?: RuntimeRunDebugLogEntry[]
 }
+
+const restartRecoveryError = 'Runtime interrupted by server restart'
 
 test('runtime history default is anchored to the workspace root', () => {
   const workspaceRoot = fileURLToPath(new URL('../../../', import.meta.url))
@@ -177,6 +180,128 @@ test('runtime API hydrates completed history after a server restart', async () =
         assert.deepEqual(logBody.run, completedLog)
       },
     )
+  } finally {
+    await rm(temporaryRoot, { force: true, recursive: true })
+  }
+})
+
+test('runtime API recovers persisted running and cancelling history before readiness', async () => {
+  const temporaryRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-server-interrupted-recovery-test-'),
+  )
+  const runtimeHistoryDirectory = path.join(temporaryRoot, 'runs')
+  const interruptedLogs = createInterruptedRunLogs()
+  const recoveredLogs = new Map<string, RuntimeRunLog>()
+
+  try {
+    const seedStore = new RuntimeRunJsonStore({
+      directory: runtimeHistoryDirectory,
+    })
+
+    for (const interruptedLog of interruptedLogs) {
+      await seedStore.save(interruptedLog)
+    }
+
+    await withTestServer(
+      { fakeDelayMs: 0, runtimeHistoryDirectory },
+      async (baseUrl) => {
+        const healthResponse = await fetch(`${baseUrl}/api/health`)
+        const historyResponse = await fetch(`${baseUrl}/api/runtime/runs`)
+        const historyBody = (await historyResponse.json()) as {
+          runs: Array<{
+            error?: string
+            runId: string
+            status: string
+          }>
+        }
+
+        assert.equal(healthResponse.status, 200)
+        assert.equal(historyResponse.status, 200)
+        assert.deepEqual(
+          historyBody.runs.map((run) => run.runId).sort(),
+          interruptedLogs.map((run) => run.runId).sort(),
+        )
+        assert.equal(
+          historyBody.runs.some(
+            (run) => run.status === 'running' || run.status === 'cancelling',
+          ),
+          false,
+        )
+
+        for (const interruptedLog of interruptedLogs) {
+          const summary = historyBody.runs.find(
+            (run) => run.runId === interruptedLog.runId,
+          )
+          const logResponse = await fetch(
+            `${baseUrl}/api/runtime/runs/${interruptedLog.runId}`,
+          )
+          const logBody = (await logResponse.json()) as { run: RuntimeRunLog }
+          const recoveredLog = logBody.run
+          const failedEvent = recoveredLog.events.at(-1)
+          const recoveryDebugEntry = recoveredLog.debugLog?.at(-1)
+
+          assert.equal(summary?.status, 'failed')
+          assert.equal(summary?.error, restartRecoveryError)
+          assert.equal(logResponse.status, 200)
+          assert.equal(recoveredLog.status, 'failed')
+          assert.equal(recoveredLog.error, restartRecoveryError)
+          assert.equal(recoveredLog.prompt, interruptedLog.prompt)
+          assert.equal(recoveredLog.output, interruptedLog.output)
+          assert.deepEqual(
+            recoveredLog.events.slice(0, interruptedLog.events.length),
+            interruptedLog.events,
+          )
+          assert.deepEqual(
+            recoveredLog.debugLog?.slice(
+              0,
+              interruptedLog.debugLog?.length,
+            ),
+            interruptedLog.debugLog,
+          )
+          assert.ok(recoveredLog.completedAt)
+          assert.deepEqual(failedEvent, {
+            type: 'failed',
+            sequence: interruptedLog.events.length + 1,
+            runId: interruptedLog.runId,
+            adapter: interruptedLog.adapter,
+            timestamp: recoveredLog.completedAt,
+            error: restartRecoveryError,
+          })
+          assert.deepEqual(recoveryDebugEntry, {
+            timestamp: recoveredLog.completedAt,
+            source: 'kernel',
+            kind: 'restart_recovery',
+            message: restartRecoveryError,
+            data: {
+              previousStatus: interruptedLog.status,
+              recoveryReason: restartRecoveryError,
+            },
+          })
+          assert.equal(
+            recoveredLog.debugLog?.length,
+            (interruptedLog.debugLog?.length ?? 0) + 1,
+          )
+
+          recoveredLogs.set(recoveredLog.runId, recoveredLog)
+        }
+      },
+    )
+
+    const persistedLogs = await new RuntimeRunJsonStore({
+      directory: runtimeHistoryDirectory,
+    }).load()
+
+    assert.equal(persistedLogs.length, interruptedLogs.length)
+    assert.equal(
+      persistedLogs.some(
+        (run) => run.status === 'running' || run.status === 'cancelling',
+      ),
+      false,
+    )
+
+    for (const persistedLog of persistedLogs) {
+      assert.deepEqual(persistedLog, recoveredLogs.get(persistedLog.runId))
+    }
   } finally {
     await rm(temporaryRoot, { force: true, recursive: true })
   }
@@ -787,4 +912,105 @@ async function waitForServerRunLog(
       failureMessage: 'expected server run log condition was not observed',
     },
   )
+}
+
+function createInterruptedRunLogs(): RuntimeRunLog[] {
+  const runningRunId = '44444444-4444-4444-8444-444444444444'
+  const cancellingRunId = '55555555-5555-4555-8555-555555555555'
+
+  return [
+    {
+      runId: runningRunId,
+      adapter: 'fake',
+      prompt: 'recover a running snapshot',
+      status: 'running',
+      output: 'partial running transcript',
+      events: [
+        {
+          type: 'started',
+          sequence: 1,
+          runId: runningRunId,
+          adapter: 'fake',
+          timestamp: '2026-07-10T03:00:00.000Z',
+          prompt: 'recover a running snapshot',
+        },
+        {
+          type: 'output_delta',
+          sequence: 2,
+          runId: runningRunId,
+          adapter: 'fake',
+          timestamp: '2026-07-10T03:00:01.000Z',
+          delta: 'partial running transcript',
+        },
+      ],
+      debugLog: [
+        {
+          timestamp: '2026-07-10T03:00:01.000Z',
+          source: 'fake-runtime',
+          kind: 'stream_checkpoint',
+          message: 'running evidence before restart',
+          data: { chunk: 1 },
+        },
+      ],
+      startedAt: '2026-07-10T03:00:00.000Z',
+    },
+    {
+      runId: cancellingRunId,
+      adapter: 'fake',
+      prompt: 'recover a cancelling snapshot',
+      status: 'cancelling',
+      output: 'partial before cancel and after request',
+      events: [
+        {
+          type: 'started',
+          sequence: 1,
+          runId: cancellingRunId,
+          adapter: 'fake',
+          timestamp: '2026-07-10T03:01:00.000Z',
+          prompt: 'recover a cancelling snapshot',
+        },
+        {
+          type: 'output_delta',
+          sequence: 2,
+          runId: cancellingRunId,
+          adapter: 'fake',
+          timestamp: '2026-07-10T03:01:01.000Z',
+          delta: 'partial before cancel',
+        },
+        {
+          type: 'cancelling',
+          sequence: 3,
+          runId: cancellingRunId,
+          adapter: 'fake',
+          timestamp: '2026-07-10T03:01:02.000Z',
+          reason: 'Runtime run cancellation requested',
+        },
+        {
+          type: 'output_delta',
+          sequence: 4,
+          runId: cancellingRunId,
+          adapter: 'fake',
+          timestamp: '2026-07-10T03:01:03.000Z',
+          delta: ' and after request',
+        },
+      ],
+      debugLog: [
+        {
+          timestamp: '2026-07-10T03:01:01.000Z',
+          source: 'fake-runtime',
+          kind: 'stream_checkpoint',
+          message: 'cancelling evidence before restart',
+          data: { chunk: 1 },
+        },
+        {
+          timestamp: '2026-07-10T03:01:03.000Z',
+          source: 'fake-runtime',
+          kind: 'stream_checkpoint',
+          message: 'cancelling evidence after request',
+          data: { chunk: 2 },
+        },
+      ],
+      startedAt: '2026-07-10T03:01:00.000Z',
+    },
+  ]
 }
