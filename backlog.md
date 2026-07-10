@@ -4,7 +4,7 @@ Priority: `P0` foundational/blocking (prerequisite for other work) · `P1` MVP c
 
 ## P0 — Foundation
 
-- [ ] **Backend server skeleton** — write `src/server.ts`/`app.ts`, wire up cors/morgan/express.json middleware, shared `errorHandler`, health-check route (`backend/` currently has only dependencies + tsconfig, no entry point)
+- [x] **Backend server skeleton** — write `src/server.ts`/`app.ts`, wire up cors/morgan/express.json middleware, shared `errorHandler`, health-check route (`backend/` currently has only dependencies + tsconfig, no entry point)
 
 - [ ] **DB schema design (Prisma)** — define models for items / disposal rules / regional rules, `prisma init` + write `schema.prisma`
 
