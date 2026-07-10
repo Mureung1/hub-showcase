@@ -3,10 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scholar-Sync Prototype Layout</title>
+    <title>Scholar-Sync AI</title>
+    <!-- Google Fonts Import -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- 글로벌 상단 헤더 -->
+    <header class="global-header">
+        <div class="header-left">
+            <svg class="icon-sparkles" viewBox="0 0 24 24" width="20" height="20">
+                <path fill="currentColor" d="M19 10.5l1.2-2.7L23 6.6l-2.8-1.2L19 2.7l-1.2 2.7L15 6.6l2.8 1.2zm-9-1.9L12.5 3 15 8.6 20.6 11l-5.6 2.4L12.5 19 10 13.4 4.4 11zm-5.5 9.8l1.2-2.7L8.4 14.5l-2.7-1.2-1.2-2.7-1.2 2.7L.6 14.5l2.7 1.2z"/>
+            </svg>
+            <span class="brand-title">Scholar-Sync AI</span>
+        </div>
+        <nav class="header-nav">
+            <a href="#" class="nav-item active">Dashboard</a>
+            <a href="#" class="nav-item">My Library</a>
+            <a href="#" class="nav-item">Discover</a>
+            <a href="#" class="nav-item">Settings</a>
+        </nav>
+        <div class="header-right">
+            <button class="btn-lang-toggle" aria-label="언어 변경">🌐 KO / EN</button>
+            <div class="user-profile">
+                <div class="profile-avatar">JK</div>
+            </div>
+        </div>
+    </header>
+
     <div class="grid-container">
         <!-- 상단 좌측: Profile (3/4 너비 차지) -->
         <section class="grid-item profile">
@@ -94,9 +120,9 @@
                     </div>
                     <div class="paper-list">
                         <!-- 논문 카드 1 (선택 활성화 상태, 고정밀도) -->
-                        <div class="paper-card active" data-id="paper-1">
+                        <div class="paper-card active high-match" data-id="paper-1">
+                            <div class="ribbon-badge">94% 매칭</div>
                             <div class="paper-card-header">
-                                <span class="match-badge high">94% 매칭</span>
                                 <span class="paper-journal">NeurIPS 2025</span>
                             </div>
                             <h3 class="paper-title">LoRA-RAG: Parameter-Efficient Fine-Tuning for Context-Aware Retrieval Augmentation</h3>
@@ -144,21 +170,21 @@
                                 <li>
                                     <span class="num">1</span>
                                     <div class="text">
-                                        <strong>연구 배경 및 한계 원인:</strong> 
+                                        <strong>연구 배경 및 한계 원인 / Research Background & Limitations</strong> 
                                         기존의 RAG 시스템은 대규모 컨텍스트를 주입할 때 메모리 부하가 심해지며, 특정 도메인에 대한 미세조정(Fine-tuning) 비용이 크다는 한계가 있었습니다.
                                     </div>
                                 </li>
                                 <li>
                                     <span class="num">2</span>
                                     <div class="text">
-                                        <strong>제안하는 핵심 방법론:</strong> 
+                                        <strong>제안하는 핵심 방법론 / Proposed Core Method</strong> 
                                         본 논문은 검색 쿼리 인코더와 생성 LLM 모듈에 독립적인 LoRA 어댑터를 설계하여 가중치 파라미터를 0.1%만 업데이트하면서도 컨텍스트 정렬도를 극대화하는 LoRA-RAG 프레임워크를 제안합니다.
                                     </div>
                                 </li>
                                 <li>
                                     <span class="num">3</span>
                                     <div class="text">
-                                        <strong>구체적 개선 결과 및 수치:</strong> 
+                                        <strong>구체적 개선 결과 및 수치 / Specific Results & Metrics</strong> 
                                         실험 결과, 기존 RAG 파이프라인 대비 훈련 시간은 78% 단축되었으며 학술 QA 벤치마크 데이터셋에서 정밀도(Precision)는 14.5% 향상되는 유의미한 성능 개선을 보였습니다.
                                     </div>
                                 </li>

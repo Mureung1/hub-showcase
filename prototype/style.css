@@ -5,129 +5,555 @@
     padding: 0;
 }
 
-/* 학술적 신뢰성 테마 (Deep Teal & Sky Blue) */
+/* 디자인 시스템 규격 및 컬러 토큰 */
 :root {
-    --color-bg-main: #f4f7f6;
-    --color-bg-card: #ffffff;
-    --color-border: #e2e8f0;
-    --color-text-primary: #1e293b;
-    --color-text-secondary: #64748b;
-    
-    /* Academic Theme Colors */
-    --color-deep-teal-dark: #0f4c5c;
-    --color-deep-teal: #005f73;
-    --color-deep-teal-light: #0a9396;
-    --color-sky-blue: #94d2bd;
-    --color-sky-blue-light: #e0f2fe;
-    --color-sky-blue-hover: #bae6fd;
-    --color-sky-blue-active: #0284c7;
-    
-    --transition-fast: 0.2s ease;
+    /* 폰트 정의 */
+    --font-title: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* 컬러 팔레트 */
+    --color-primary-teal-dark: #004F5E; /* Prussian Slate - 헤더 배경색 및 강조 텍스트 */
+    --color-primary-teal: #005F73;      /* Deep Teal - 마스터 액션 버튼, 컨테이너 타이틀 등 */
+    --color-accent-sky: #94D2BD;        /* Sky Blue - 프로그레스 바 활성, 키워드 배지 라인 등 */
+    --color-accent-light: #E0F2FE;      /* Active Light Blue - 활성 논문 카드, 분석 상태 박스 배경 */
+    --color-bg-global: #F3F7F8;         /* 애플리케이션 프레임 전체 기본 배경색 */
+    --color-bg-card: #FFFFFF;           /* 격자 내 개별 카드 배경색 */
+    --color-border: #E2E8F0;            /* 경계선 */
+    --color-text-primary: #1E293B;      /* 기본 본문 텍스트 */
+    --color-text-muted: #64748B;        /* 메타데이터 등 부차적 텍스트 */
+
+    /* 모서리 곡률 (Radius) */
+    --radius-container: 12px;           /* 카드 및 컨테이너 라디우스 */
+    --radius-inline: 6px;               /* 인라인 버튼, 태그 등 */
+    --radius-pill: 20px;                /* 필 형태 버튼 */
+
+    /* 효과 */
+    --shadow-card: 0 4px 20px rgba(0, 95, 115, 0.08);
+    --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--color-bg-main);
+    font-family: var(--font-body);
+    background-color: var(--color-bg-global);
     color: var(--color-text-primary);
     width: 100vw;
     height: 100vh;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-/* CSS Grid layout implementation based on the 2x2 asymmetric structure */
+/* 1. 글로벌 헤더 (Variant 1 Baseline) */
+.global-header {
+    height: 60px;
+    background-color: var(--color-primary-teal-dark);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    box-shadow: 0 2px 10px rgba(0, 79, 94, 0.15);
+    z-index: 100;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #FFFFFF;
+}
+
+.icon-sparkles {
+    color: var(--color-accent-sky);
+    animation: sparkle-glow 3s infinite alternate;
+}
+
+@keyframes sparkle-glow {
+    0% { transform: scale(0.9); filter: drop-shadow(0 0 2px rgba(148, 210, 189, 0.4)); }
+    100% { transform: scale(1.1); filter: drop-shadow(0 0 6px rgba(148, 210, 189, 0.8)); }
+}
+
+.brand-title {
+    font-family: var(--font-title);
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.header-nav {
+    display: flex;
+    gap: 24px;
+    height: 100%;
+    align-items: center;
+}
+
+.nav-item {
+    font-family: var(--font-title);
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: color var(--transition-fast);
+    padding: 6px 12px;
+    border-radius: var(--radius-inline);
+}
+
+.nav-item:hover {
+    color: #FFFFFF;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.nav-item.active {
+    color: #FFFFFF;
+    background-color: rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.btn-lang-toggle {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #FFFFFF;
+    padding: 6px 12px;
+    border-radius: var(--radius-inline);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-lang-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: #FFFFFF;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--color-accent-sky);
+    color: var(--color-primary-teal-dark);
+    font-family: var(--font-title);
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+
+/* 2. 2x2 Bento Grid 레이아웃 */
 .grid-container {
+    flex: 1;
     display: grid;
-    /* Top row is 40vh, bottom row is 60vh. We use a 4fr to 6fr ratio within the screen height minus margins. */
+    /* 상단 행(40%), 하단 행(60%) 비중 준수 */
     grid-template-rows: 4fr 6fr;
-    /* 3:1 column ratio for Profile vs Curation */
+    /* 3:1 비율로 연구 프로필(30%) 대 큐레이션 보드(10%) */
     grid-template-columns: 3fr 1fr;
-    height: calc(100vh - 32px); /* 100vh minus margins (16px top + 16px bottom) */
+    height: calc(100vh - 60px);
     gap: 16px;
     margin: 16px;
+    min-height: 0;
 }
 
-/* Base grid item styling */
+/* 개별 격자 아이템 스타일 */
 .grid-item {
-    border-radius: 12px;
+    border-radius: var(--radius-container);
     background-color: var(--color-bg-card);
     border: 1px solid var(--color-border);
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-    transition: all 0.3s ease;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
-/* Specific background tones/styling for un-implemented sections */
+/* Container A: 연구 프로필 */
 .profile {
     grid-column: 1 / 2;
     grid-row: 1 / 2;
-    display: flex;
-    flex-direction: column;
-    padding: 24px;
+    padding: 20px;
     overflow-y: auto;
 }
 
+/* Container B: 큐레이션 보드 */
 .curation {
     grid-column: 2 / 3;
     grid-row: 1 / 2;
-    display: flex;
-    flex-direction: column;
-    padding: 24px;
-    background-color: var(--color-bg-card);
-    border: 1px solid var(--color-border);
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+    padding: 20px;
     overflow-y: auto;
 }
 
+/* Container C: 데일리 인사이트 & 서재 */
 .insights-library {
-    grid-column: 1 / -1; /* Spans full width */
+    grid-column: 1 / -1;
     grid-row: 2 / 3;
-    display: flex;
-    flex-direction: column;
-    background-color: var(--color-bg-card);
-    border: 1px solid var(--color-border);
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-    overflow: hidden;
 }
 
 .insights-container {
     display: flex;
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    min-height: 0;
 }
 
-/* Panel Headers */
+
+/* 3. 컴포넌트 내부 세부 마크업 & 스타일링 */
+
+/* 섹션 헤더 공통 */
 .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 10px;
+}
+
+.panel-header h2 {
+    font-family: var(--font-title);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-primary-teal-dark);
+}
+
+/* Container A: 연구 프로필 세부 */
+.profile-header {
     margin-bottom: 16px;
     border-bottom: 1px solid var(--color-border);
     padding-bottom: 12px;
 }
 
-.panel-header h2 {
-    font-size: 1.15rem;
+.profile-header h2 {
+    font-family: var(--font-title);
+    font-size: 1.2rem;
     font-weight: 700;
-    color: var(--color-deep-teal-dark);
+    color: var(--color-primary-teal-dark);
+    margin-bottom: 4px;
 }
 
-/* Left Panel: Curation List Panel (45% Width) */
+.academic-identity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.academic-identity .label {
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.academic-identity .value {
+    color: var(--color-primary-teal);
+    font-weight: 600;
+}
+
+.profile-section {
+    margin-bottom: 16px;
+}
+
+.profile-section h3 {
+    font-family: var(--font-title);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 8px;
+}
+
+.toggle-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.toggle-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background-color: var(--color-bg-global);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.toggle-btn:hover {
+    border-color: var(--color-primary-teal);
+    color: var(--color-primary-teal);
+}
+
+.toggle-btn.active {
+    background-color: var(--color-accent-light);
+    border-color: var(--color-primary-teal);
+    color: var(--color-primary-teal);
+    font-weight: 600;
+}
+
+.keyword-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.keyword-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.keyword-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    background-color: var(--color-bg-global);
+    color: var(--color-primary-teal-dark);
+    border: 1px solid var(--color-accent-sky);
+    border-radius: var(--radius-inline);
+}
+
+.keyword-delete {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: color var(--transition-fast);
+}
+
+.keyword-delete:hover {
+    color: #EF4444;
+}
+
+.keyword-form {
+    display: flex;
+    gap: 8px;
+}
+
+.keyword-form input {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-inline);
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+
+.keyword-form input:focus {
+    border-color: var(--color-primary-teal);
+}
+
+.btn-add-keyword {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background-color: var(--color-primary-teal);
+    color: white;
+    border: none;
+    border-radius: var(--radius-inline);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.btn-add-keyword:hover {
+    background-color: var(--color-primary-teal-dark);
+}
+
+
+/* Container B: 큐레이션 보드 세부 */
+.curation-header {
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 8px;
+}
+
+.curation-header h2 {
+    font-family: var(--font-title);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-primary-teal-dark);
+}
+
+.curation-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.query-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.query-section label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.query-section textarea {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    font-family: var(--font-body);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-inline);
+    resize: none;
+    outline: none;
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-global);
+    transition: border-color var(--transition-fast), background-color var(--transition-fast);
+    line-height: 1.4;
+}
+
+.query-section textarea:focus {
+    border-color: var(--color-primary-teal);
+    background-color: var(--color-bg-card);
+}
+
+.btn-start-curation {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    background-color: var(--color-primary-teal);
+    border: none;
+    border-radius: var(--radius-inline);
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 95, 115, 0.2);
+    transition: all var(--transition-fast);
+}
+
+.btn-start-curation:hover {
+    background-color: var(--color-primary-teal-dark);
+    box-shadow: 0 6px 16px rgba(0, 79, 94, 0.3);
+    transform: translateY(-1px);
+}
+
+.btn-start-curation:active {
+    transform: translateY(0);
+}
+
+.analysis-status {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: auto;
+    padding: 10px;
+    background-color: var(--color-accent-light);
+    border: 1px solid var(--color-accent-sky);
+    border-radius: var(--radius-inline);
+}
+
+.status-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-primary-teal-dark);
+}
+
+.status-percent {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--color-primary-teal-dark);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 5px;
+    background-color: rgba(0, 95, 115, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: var(--color-primary-teal);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.status-subtask {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+.pulse-indicator {
+    width: 6px;
+    height: 6px;
+    background-color: var(--color-primary-teal);
+    border-radius: 50%;
+    display: inline-block;
+    animation: status-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes status-pulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(0.8); opacity: 0.5; }
+}
+
+
+/* Container C: 결과 목록, 인사이트 & 서재 */
+
+/* 좌측 패널 - 결과 목록 (45%) */
 .curation-list-panel {
     width: 45%;
     border-right: 1px solid var(--color-border);
-    padding: 24px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
 .paper-count {
-    font-size: 0.8rem;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
     font-weight: 600;
-    color: var(--color-text-secondary);
-    background-color: var(--color-bg-main);
-    padding: 4px 10px;
-    border-radius: 12px;
+    color: var(--color-text-muted);
+    background-color: var(--color-bg-global);
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
 }
 
 .paper-list {
@@ -139,10 +565,10 @@ body {
     padding-right: 4px;
 }
 
-/* Paper Cards in List */
+/* 논문 카드 공통 */
 .paper-card {
     border: 1px solid var(--color-border);
-    border-radius: 10px;
+    border-radius: var(--radius-container);
     padding: 16px;
     cursor: pointer;
     background-color: var(--color-bg-card);
@@ -150,14 +576,14 @@ body {
 }
 
 .paper-card:hover {
-    border-color: var(--color-sky-blue);
+    border-color: var(--color-accent-sky);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .paper-card.active {
-    border-color: var(--color-deep-teal-light);
-    background-color: var(--color-sky-blue-light);
+    border-color: var(--color-primary-teal);
+    background-color: var(--color-accent-light);
     box-shadow: 0 4px 12px rgba(10, 147, 150, 0.08);
 }
 
@@ -165,51 +591,91 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
-}
-
-/* Match Badges (Green / Yellow) */
-.match-badge {
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 4px 8px;
-    border-radius: 6px;
-}
-
-.match-badge.high {
-    background-color: #d1fae5;
-    color: #065f46;
-}
-
-.match-badge.medium {
-    background-color: #fef3c7;
-    color: #92400e;
-}
-
-.paper-journal {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-}
-
-.paper-title {
-    font-size: 0.95rem;
-    font-weight: 700;
-    line-height: 1.4;
-    color: var(--color-text-primary);
     margin-bottom: 8px;
 }
 
+.paper-journal {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.paper-title {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--color-text-primary);
+    margin-bottom: 6px;
+}
+
 .paper-card.active .paper-title {
-    color: var(--color-deep-teal-dark);
+    color: var(--color-primary-teal-dark);
 }
 
 .paper-authors {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
 }
 
-/* Right Panel: Detail & Library Area (55% Width) */
+/* 일반 매칭 점수 배지 */
+.match-badge {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 6px;
+    border-radius: var(--radius-inline);
+}
+
+.match-badge.medium {
+    background-color: #FEF3C7;
+    color: #92400E;
+}
+
+/* 고정밀 (90% 이상) 매칭 카드 오프셋 리본/책갈피 뱃지 */
+.paper-card.high-match {
+    position: relative;
+    overflow: visible; /* 오프셋 배지가 밖으로 나오도록 설정 */
+    border-color: var(--color-accent-sky);
+}
+
+.ribbon-badge {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    background-color: var(--color-primary-teal);
+    color: #FFFFFF;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px 6px 6px 0;
+    box-shadow: 0 2px 6px rgba(0, 95, 115, 0.25);
+    z-index: 10;
+}
+
+/* 리본 꺾임 구현 */
+.ribbon-badge::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 100%;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 8px 8px 0;
+    border-color: transparent #002D36 transparent transparent;
+}
+
+.paper-card.high-match .paper-card-header {
+    margin-top: 6px; /* 리본 영역 확보를 위해 헤더 여백 조정 */
+    justify-content: flex-end; /* 배지가 오프셋되었으므로 학회명만 우측 정렬 */
+}
+
+
+/* 우측 패널 - 상세 내용 & 내 서재 (55%) */
 .detail-library-panel {
     width: 55%;
     display: flex;
@@ -218,10 +684,10 @@ body {
     overflow: hidden;
 }
 
-/* Top: 3-line Insight Panel */
+/* 3줄 인사이트 패널 */
 .insight-panel {
-    flex: 1.3;
-    padding: 24px;
+    flex: 1.4;
+    padding: 20px;
     border-bottom: 1px solid var(--color-border);
     display: flex;
     flex-direction: column;
@@ -233,19 +699,19 @@ body {
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 600;
-    color: var(--color-deep-teal);
-    background-color: var(--color-sky-blue-light);
-    border: 1px solid var(--color-sky-blue);
-    border-radius: 6px;
+    color: var(--color-primary-teal);
+    background-color: var(--color-accent-light);
+    border: 1px solid var(--color-accent-sky);
+    border-radius: var(--radius-inline);
     cursor: pointer;
     transition: all var(--transition-fast);
 }
 
 .btn-archive-paper:hover {
-    background-color: var(--color-sky-blue-hover);
-    color: var(--color-deep-teal-dark);
+    background-color: #BBE6FD;
+    color: var(--color-primary-teal-dark);
 }
 
 .insight-content {
@@ -255,18 +721,19 @@ body {
 }
 
 .insight-title {
-    font-size: 1.05rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
     font-weight: 700;
-    color: var(--color-deep-teal-dark);
+    color: var(--color-primary-teal-dark);
     line-height: 1.4;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .insight-list {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .insight-list li {
@@ -275,74 +742,84 @@ body {
     align-items: flex-start;
 }
 
+/* 넘버링 서클 */
 .insight-list .num {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 22px;
-    height: 22px;
-    background-color: var(--color-deep-teal-light);
-    color: #ffffff;
+    min-width: 20px;
+    height: 20px;
+    background-color: var(--color-primary-teal);
+    color: #FFFFFF;
     border-radius: 50%;
-    font-size: 0.8rem;
+    font-family: var(--font-title);
+    font-size: 0.75rem;
     font-weight: 700;
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
+/* 요약 본문 및 병기 타이틀 */
 .insight-list .text {
-    font-size: 0.875rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
     line-height: 1.5;
     color: var(--color-text-primary);
 }
 
 .insight-list .text strong {
-    color: var(--color-deep-teal-dark);
+    font-family: var(--font-body);
+    font-weight: 700;
+    color: var(--color-primary-teal-dark);
     display: block;
     margin-bottom: 2px;
 }
 
-/* Bottom: My Library Archiving Library */
+
+/* 내 서재 보관함 컴팩트 리스트 뷰 */
 .library-panel {
-    flex: 0.7;
-    padding: 24px;
+    flex: 0.8;
+    padding: 16px 20px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background-color: var(--color-bg-main);
+    background-color: var(--color-bg-global);
 }
 
 .library-count {
-    font-size: 0.8rem;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
     font-weight: 600;
-    color: var(--color-text-secondary);
+    color: var(--color-text-muted);
 }
 
 .library-list-container {
     flex: 1;
     overflow-y: auto;
+    padding-right: 2px;
 }
 
 .library-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px; /* 타이트하게 조정 */
 }
 
-/* Library Item Card */
+/* 컴팩트 리스트 아이템 */
 .library-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background-color: var(--color-bg-card);
     border: 1px solid var(--color-border);
-    border-radius: 8px;
-    padding: 10px 16px;
-    gap: 12px;
+    border-radius: var(--radius-inline);
+    padding: 6px 12px; /* 패딩 축소 */
+    gap: 10px;
     transition: all var(--transition-fast);
 }
 
 .library-item:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 2px 8px rgba(0, 95, 115, 0.04);
+    border-color: var(--color-accent-sky);
 }
 
 .library-item-info {
@@ -351,347 +828,36 @@ body {
 }
 
 .library-item-title {
-    font-size: 0.85rem;
-    font-weight: 700;
+    font-family: var(--font-body);
+    font-size: 0.8rem; /* 폰트 축소 */
+    font-weight: 600;
     color: var(--color-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
 }
 
 .library-item-meta {
-    font-size: 0.75rem;
-    color: var(--color-text-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.7rem; /* 메타데이터 축소 */
+    color: var(--color-text-muted);
 }
 
 .btn-remove-library {
     background: none;
     border: none;
-    color: var(--color-text-secondary);
+    color: var(--color-text-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4px;
+    padding: 2px;
     border-radius: 4px;
     transition: all var(--transition-fast);
 }
 
 .btn-remove-library:hover {
-    color: #ef4444;
-    background-color: rgba(239, 68, 68, 0.05);
-}
-
-/* Container B: Curation Board Section Specific Styles */
-.curation-header {
-    margin-bottom: 16px;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 12px;
-}
-
-.curation-header h2 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--color-deep-teal-dark);
-}
-
-.curation-body {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    flex: 1;
-}
-
-.query-section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.query-section label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-}
-
-.query-section textarea {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 0.875rem;
-    font-family: inherit;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    resize: none;
-    outline: none;
-    color: var(--color-text-primary);
-    background-color: var(--color-bg-main);
-    transition: border-color var(--transition-fast);
-    line-height: 1.4;
-}
-
-.query-section textarea:focus {
-    border-color: var(--color-deep-teal-light);
-    background-color: var(--color-bg-card);
-}
-
-/* 마스터 버튼 스타일 (시각적으로 강조된 Deep Teal 배경) */
-.btn-start-curation {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 12px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #ffffff;
-    background-color: var(--color-deep-teal);
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 95, 115, 0.25);
-    transition: all var(--transition-fast);
-}
-
-.btn-start-curation:hover {
-    background-color: var(--color-deep-teal-dark);
-    box-shadow: 0 6px 16px rgba(15, 76, 92, 0.35);
-    transform: translateY(-1px);
-}
-
-.btn-start-curation:active {
-    transform: translateY(0);
-}
-
-/* 분석 상태 및 프로그레스 바 스타일 */
-.analysis-status {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: auto; /* Push to the bottom of the section */
-    padding: 12px;
-    background-color: var(--color-sky-blue-light);
-    border: 1px solid var(--color-sky-blue);
-    border-radius: 8px;
-}
-
-.status-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.status-label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--color-deep-teal-dark);
-}
-
-.status-percent {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--color-deep-teal-dark);
-}
-
-.progress-bar-container {
-    width: 100%;
-    height: 6px;
-    background-color: rgba(0, 95, 115, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.progress-bar {
-    height: 100%;
-    background-color: var(--color-deep-teal-light);
-    border-radius: 3px;
-    transition: width 0.4s ease;
-}
-
-.status-subtask {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.75rem;
-    color: var(--color-text-secondary);
-}
-
-/* Pulse 애니메이션 효과 */
-.pulse-indicator {
-    width: 8px;
-    height: 8px;
-    background-color: var(--color-deep-teal-light);
-    border-radius: 50%;
-    display: inline-block;
-    animation: status-pulse 1.5s infinite ease-in-out;
-}
-
-@keyframes status-pulse {
-    0% {
-        transform: scale(0.8);
-        opacity: 0.5;
-    }
-    50% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(0.8);
-        opacity: 0.5;
-    }
-}
-
-/* Container A: Profile Section Specific Styles */
-.profile-header {
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 16px;
-}
-
-.profile-header h2 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--color-deep-teal-dark);
-    margin-bottom: 8px;
-}
-
-.academic-identity {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.875rem;
-}
-
-.academic-identity .label {
-    color: var(--color-text-secondary);
-    font-weight: 500;
-}
-
-.academic-identity .value {
-    color: var(--color-deep-teal-light);
-    font-weight: 600;
-}
-
-.profile-section {
-    margin-bottom: 20px;
-}
-
-.profile-section h3 {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin-bottom: 12px;
-}
-
-/* Toggle buttons styling */
-.toggle-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.toggle-btn {
-    padding: 6px 14px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    border: 1px solid var(--color-border);
-    border-radius: 20px;
-    background-color: var(--color-bg-main);
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.toggle-btn:hover {
-    border-color: var(--color-deep-teal-light);
-    color: var(--color-deep-teal-light);
-}
-
-.toggle-btn.active {
-    background-color: var(--color-sky-blue-light);
-    border-color: var(--color-sky-blue-active);
-    color: var(--color-sky-blue-active);
-    font-weight: 600;
-}
-
-/* Keyword Badge Styling */
-.keyword-container {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.keyword-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.keyword-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    background-color: var(--color-sky-blue-light);
-    color: var(--color-deep-teal-dark);
-    border: 1px solid var(--color-sky-blue);
-    border-radius: 6px;
-}
-
-.keyword-delete {
-    background: none;
-    border: none;
-    color: var(--color-text-secondary);
-    font-size: 1.1rem;
-    cursor: pointer;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    transition: color var(--transition-fast);
-}
-
-.keyword-delete:hover {
-    color: #ef4444;
-}
-
-/* Keyword Form Styling */
-.keyword-form {
-    display: flex;
-    gap: 8px;
-    margin-top: 4px;
-}
-
-.keyword-form input {
-    flex: 1;
-    padding: 8px 12px;
-    font-size: 0.875rem;
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    outline: none;
-    transition: border-color var(--transition-fast);
-}
-
-.keyword-form input:focus {
-    border-color: var(--color-deep-teal-light);
-}
-
-.btn-add-keyword {
-    padding: 8px 16px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    background-color: var(--color-deep-teal);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color var(--transition-fast);
-}
-
-.btn-add-keyword:hover {
-    background-color: var(--color-deep-teal-dark);
+    color: #EF4444;
+    background-color: rgba(239, 68, 68, 0.08);
 }
