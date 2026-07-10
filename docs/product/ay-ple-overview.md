@@ -68,6 +68,38 @@ AY-PLE는 Codex app-server를 AY의 실행 엔진으로 사용하려 한다. 쉽
 
 따라서 Codex 자체가 제품은 아니다. Codex는 AY가 일할 수 있게 하는 엔진이고, AY-PLE는 그 능력을 학기 자료, 학생의 결정, 일정과 할 일에 연결하는 제품이다.
 
+<details>
+<summary><strong>Codex·Claude Code 같은 터미널 Agent에 익숙한 독자를 위한 기술적 해석</strong></summary>
+
+Codex 공식 문서는 app-server를 인증, 대화 기록, 승인, Agent event stream이 필요한 **제품 내부의 깊은 통합**에 사용하는 인터페이스로 설명한다. 자동화 작업이나 CI가 중심이라면 SDK가 더 알맞지만, AY-PLE처럼 Agent의 진행과 사용자 결정을 자체 화면으로 구성하려면 app-server가 제공하는 실행 primitive를 제품 의미로 번역해야 한다. ([Codex App Server](https://learn.chatgpt.com/docs/app-server))
+
+app-server의 기본 작업 단위는 `Thread → Turn → Item`이다. Thread는 여러 Turn을 담는 대화 맥락이고, Turn은 한 번의 사용자 요청과 그 뒤에 이어지는 Agent 작업이며, Item은 메시지·명령 실행·파일 변경·도구 호출 같은 개별 입력과 출력이다. 각 Item은 시작과 완료 event를 내보내고, Turn은 완료되거나 `turn/interrupt`로 중단될 수 있다. ([Core primitives](https://learn.chatgpt.com/docs/app-server#core-primitives), [Lifecycle overview](https://learn.chatgpt.com/docs/app-server#lifecycle-overview), [Items](https://learn.chatgpt.com/docs/app-server#items))
+
+AY-PLE는 이 구조를 학생에게 그대로 노출하지 않고 다음처럼 번역하려 한다.
+
+| Codex app-server primitive | 현재 Runtime Harness | AY-PLE에서의 제품 의미 |
+| --- | --- | --- |
+| `initialize → thread/start → turn/start` | 실제 Codex adapter가 구현 | 학생이 맡긴 한 번의 학업 정리 작업을 시작하는 실행 기반 |
+| `item/agentMessage/delta`와 `turn/completed` | `output_delta`, `completed`로 정규화 | AY의 진행·완료 상태를 제품 화면에 전달하는 최소 lifecycle |
+| `turn/interrupt` | 종료 확인을 기다리는 취소로 구현 | 학생이 진행 중인 AY 작업을 멈추는 기능의 기반 |
+| `commandExecution`, `fileChange`, `mcpToolCall`, `dynamicToolCall` Item | 공식 protocol에는 있지만 제품 event로 아직 연결하지 않음 | 자료 읽기, PDF 추출, LMS·캘린더 연결을 설명 가능한 활동과 근거로 보여줄 후보 |
+| `thread/read`, `thread/list`, `turn/steer` | 개발자용 raw inspection wrapper만 존재 | 과목별 작업 이어가기와 진행 중 정정의 후보이며, 제품 UX는 미정 |
+| command·file change approval | capability 근거만 확인했고 학생용 UX는 미구현 | Agent의 실행환경을 보호하는 별도 권한 경계 |
+
+여기서 `Thread`가 곧 과목이나 학기 데이터베이스인 것은 아니며, `Item` 하나가 곧 신뢰할 수 있는 근거인 것도 아니다. 현재 adapter는 run마다 새 app-server process와 client, 새 Thread와 Turn을 만들고 종료한다. 즉 지금 구현된 것은 새 실행을 시작하고, 텍스트 출력을 streaming하며, 완료·실패·취소를 기록하는 Runtime Harness까지이며, 지속적인 multi-turn 학업 Agent나 특정 모델에 고정된 제품 구조는 아직 아니다. 자료 선택, 도구 결과의 출처화, 변경안, 확인된 학기 정보는 그 위에 별도의 AY-PLE 제품 계약으로 만들어야 한다.
+
+또한 AY-PLE에는 서로 다른 두 종류의 승인이 필요하다.
+
+| 실행 권한 · Codex approval | 학업 정보 확인 · AY-PLE review |
+| --- | --- |
+| “이 명령·파일 변경·네트워크 접근을 실행해도 되는가?” | “이 과제 정보를 내 학기에 반영해도 되는가?” |
+| Agent가 행동하기 전이나 행동 중에 실행환경을 보호한다. | Agent가 해석한 뒤 앱의 신뢰 상태가 바뀌기 전에 학생의 판단을 보호한다. |
+| app-server가 client에 approval request를 보내고 client가 결정한다. | AY-PLE가 원본 근거와 변경안을 보여주고 학생이 수락·수정·거절한다. |
+
+Codex의 command approval은 과제 정보가 사실인지 보증하지 않는다. 반대로 학생이 과제를 수락했다고 해서 Agent에게 임의의 시스템 권한을 허용한 것도 아니다. 두 경계를 합치지 않는 것이 AY-PLE가 단순한 Codex 채팅 wrapper가 되지 않기 위한 중요한 제품·아키텍처 원칙이다. ([Command execution approvals](https://learn.chatgpt.com/docs/app-server#command-execution-approvals))
+
+</details>
+
 ## 왜 학생의 확인을 거치는가
 
 학업 정보에는 틀리면 곤란한 내용이 많다. 마감 시간을 잘못 읽거나, 예시 일정을 실제 일정으로 착각하거나, 서로 다른 분반의 공지를 섞으면 안 된다. 그래서 AY-PLE는 AI가 찾은 내용을 조용히 확정하지 않는다.

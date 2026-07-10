@@ -2481,15 +2481,19 @@ body[data-variant='agent'] .demo-shell {
 }
 
 .chat-agent-copy strong {
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .chat-agent-copy small {
   overflow: hidden;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.chat-panel .agent-status {
+  font-size: 11px;
 }
 
 .chat-thread {
@@ -2515,7 +2519,8 @@ body[data-variant='agent'] .demo-shell {
   border-radius: 4px 12px 12px;
   background: #f8fcfa;
   color: var(--ink-soft);
-  font-size: 10px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .chat-bubble p {
@@ -2555,12 +2560,12 @@ body[data-variant='agent'] .demo-shell {
 }
 
 .tool-call-stack > header strong {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .tool-call-stack > header small {
   color: #25745f;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
 }
 
@@ -2599,14 +2604,15 @@ body[data-variant='agent'] .demo-shell {
 }
 
 .tool-call-head strong {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .tool-call-head code {
   overflow: hidden;
   color: var(--muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 8px;
+  font-size: 10px;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2616,7 +2622,7 @@ body[data-variant='agent'] .demo-shell {
   border-radius: 999px;
   background: var(--green-soft);
   color: #27794e;
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 850;
 }
 
@@ -2628,14 +2634,15 @@ body[data-variant='agent'] .demo-shell {
   border-radius: 8px;
   background: var(--blue-soft);
   color: var(--blue);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 900;
 }
 
 .tool-call p {
   margin: 0 0 0 36px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .tool-call output {
@@ -2644,8 +2651,9 @@ body[data-variant='agent'] .demo-shell {
   border-radius: 6px;
   background: var(--mint-soft);
   color: #246c5c;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 780;
+  line-height: 1.35;
 }
 
 .evidence-bubble {
@@ -2661,7 +2669,7 @@ body[data-variant='agent'] .demo-shell {
   background: var(--coral);
   color: #fff;
   cursor: pointer;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 780;
 }
 
@@ -2693,11 +2701,11 @@ body[data-variant='agent'] .demo-shell {
 }
 
 .chat-proposal-card > header small {
-  font-size: 7px;
+  font-size: 10px;
 }
 
 .chat-proposal-card > header strong {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .chat-proposal-card .proposal-symbol {
@@ -2709,7 +2717,7 @@ body[data-variant='agent'] .demo-shell {
 
 .chat-proposal-card .review-pill {
   padding: 4px 6px;
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .chat-proposal-card .proposal-fields {
@@ -2721,6 +2729,14 @@ body[data-variant='agent'] .demo-shell {
 .chat-proposal-card .proposal-fields dl > div {
   grid-template-columns: 54px minmax(0, 1fr);
   padding: 5px 0;
+}
+
+.chat-proposal-card .proposal-fields dt {
+  font-size: 11px;
+}
+
+.chat-proposal-card .proposal-fields dd {
+  font-size: 13px;
 }
 
 .chat-proposal-card .proposal-proof {
@@ -2742,10 +2758,19 @@ body[data-variant='agent'] .demo-shell {
   white-space: nowrap;
 }
 
+.chat-proposal-card .proposal-proof strong {
+  font-size: 12px;
+}
+
+.chat-proposal-card .proposal-proof small {
+  font-size: 10px;
+}
+
 .chat-proposal-card .proposal-message {
   margin: 0 12px 9px;
   padding: 7px 8px;
-  font-size: 8px;
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .chat-proposal-card .proposal-actions {
@@ -2755,7 +2780,7 @@ body[data-variant='agent'] .demo-shell {
 
 .chat-proposal-card .proposal-actions button {
   min-height: 34px;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .chat-proposal-card .proposal-edit {
@@ -2770,6 +2795,11 @@ body[data-variant='agent'] .demo-shell {
 
 .chat-proposal-card .proposal-edit input {
   height: 36px;
+  font-size: 13px;
+}
+
+.chat-proposal-card .proposal-edit label {
+  font-size: 11px;
 }
 
 .accepted-proposal-state {
@@ -2779,16 +2809,36 @@ body[data-variant='agent'] .demo-shell {
   border-top: 1px solid #b8ddc4;
   background: var(--green-soft);
   color: #246c47;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .accepted-proposal-state strong {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .chat-confirmed-task {
   width: 100%;
   margin-top: 0;
+}
+
+.chat-confirmed-task > header span {
+  font-size: 11px;
+}
+
+.chat-confirmed-task > header small {
+  font-size: 10px;
+}
+
+.chat-confirmed-task > strong {
+  font-size: 18px;
+}
+
+.chat-confirmed-task > p {
+  font-size: 12px;
+}
+
+.chat-confirmed-task > footer {
+  font-size: 10px;
 }
 
 .chat-state-bar {
@@ -2810,18 +2860,18 @@ body[data-variant='agent'] .demo-shell {
 
 .chat-state-bar small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .chat-state-bar strong {
   color: var(--green);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .chat-state-bar p {
   margin: 0;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
   text-align: right;
 }
 
@@ -2841,7 +2891,7 @@ body[data-variant='agent'] .demo-shell {
   border: 1px solid #ded8ce;
   border-radius: 8px;
   color: #9a958d;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .chat-composer button {
@@ -2852,7 +2902,7 @@ body[data-variant='agent'] .demo-shell {
   background: var(--ink);
   color: #fff;
   cursor: pointer;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 750;
 }
 
@@ -2860,7 +2910,7 @@ body[data-variant='agent'] .demo-shell {
   body[data-variant] .demo-shell,
   body[data-variant='focus'] .demo-shell,
   body[data-variant='agent'] .demo-shell {
-    grid-template-columns: 240px minmax(500px, 1fr) 370px;
+    grid-template-columns: 240px minmax(500px, 1fr) 400px;
     gap: 8px;
     padding-inline: 10px;
   }

@@ -1,20 +1,26 @@
 # AY-PLE Week 1 발표 대본
 
-목표 시간: 4분 30초
+기본 발표 목표 시간: 4분 50초
+
+선택 심화 슬라이드 6~7: 약 1분 30초 추가. 기본 발표에서는 5번에서 마치고, Codex·Claude Code 경험자가 있거나 Q&A에서 구현 경계를 묻는 경우에만 연다.
 
 핵심 주장: AY-PLE는 AI로 만든 웹앱이 아니라, AI Agent가 앱 안에서 학생을 위해 일하는 제품이다.
 
-## 슬라이드 1 · 방향 전환 (약 40초)
+## 슬라이드 1 · 방향 전환과 이름 소개 (약 50초)
 
 “이번 캠프에서 많은 분들이 Codex나 Claude Code를 이용해 웹앱을 만들고 있습니다. 저도 AI로 개발하지만, 제가 만들려는 제품의 중심은 조금 다릅니다.
 
-AY-PLE는 AI를 앱을 만드는 도구로만 쓰지 않습니다. 개발이 끝난 뒤에도 학생이 버튼을 누르면 AY가 앱 안에서 파일을 읽고 일을 수행하게 만드는 프로젝트입니다.”
+AY-PLE이라는 이름은 성적의 `A+`, 그러니까 ‘에이플’을 떠올리는 언어유희입니다. 그리고 AY는 AY-PLE 안에서 학생을 위해 일하는 Agent의 이름입니다. 학생이 ‘AY, 이 자료 좀 정리해줘’라고 부르는 모습에는, ‘에이, 이것 좀 해줘’ 또는 영어의 ‘Hey’처럼 자연스럽게 Agent에게 말을 거는 느낌도 담았습니다.
 
-## 슬라이드 2 · 학생 문제 (약 40초)
+AY-PLE는 Codex의 활용을 개발자의 코딩 작업에만 머물게 하지 않습니다. 개발자가 터미널에서 사용하던 Agent의 능력을, 비개발자인 학생도 익숙한 앱 화면에서 사용할 수 있도록 확장합니다. 학생은 Codex의 사용법이나 명령어를 배울 필요 없이, AY에게 자료를 맡기면 AY가 앱 안에서 파일을 읽고 필요한 일을 수행합니다.”
+
+## 슬라이드 2 · 학생 문제와 개인 경험 (약 50초)
 
 “대학생이 받는 자료를 보면 과제 하나의 정보도 한곳에 있지 않습니다. LMS 공지에는 과제명과 마감이 있고, 강의계획서에는 제출 방식이 있고, 수업 중 설명에는 평가 기준이 있습니다.
 
-지금은 학생이 이 파일을 하나씩 열고, 관련 내용을 찾고, 서로 맞는지 판단한 뒤, 캘린더와 할 일 앱에 다시 옮깁니다. AY-PLE가 줄이고 싶은 것은 파일 저장이 아니라 이 읽기, 연결, 판단, 옮겨 적기의 반복입니다.”
+이 문제는 가정해서 만든 것이 아닙니다. 왼쪽 화면은 제가 직전 학기에 실제로 사용하던 자료 폴더입니다. 공지와 강의계획서, 수업 자료를 하나씩 확인하고, 필요한 내용을 일정과 할 일에 직접 옮기며 학기를 관리했습니다. 새로운 공지가 올라오거나 조건이 바뀔 때마다 다시 읽고, 서로 대조하고, 기존 정보를 갱신하는 과정을 수동으로 반복했습니다.
+
+AY-PLE는 바로 그 경험에서 출발했습니다. 줄이고 싶은 것은 파일을 저장하는 일이 아니라, 학기 내내 반복되는 읽기, 연결, 판단, 옮겨 적기와 갱신입니다.”
 
 ## 슬라이드 3 · 제품 작동 방식 (약 55초)
 
@@ -52,6 +58,34 @@ AY-PLE는 AI를 앱을 만드는 도구로만 쓰지 않습니다. 개발이 끝
 
 Codex 자체가 제품은 아닙니다. Codex는 AY가 일할 수 있게 하는 엔진이고, AY-PLE는 그 능력을 학생의 자료와 결정에 연결하는 제품입니다.”
 
+여기서 기본 발표를 마친다. 심화 설명이 필요하면 화면 아래의 `선택 심화 · Q&A`를 눌러 6번으로 이동한다.
+
+## 슬라이드 6 · Codex primitive에서 제품 의미로 (선택 · 약 50초)
+
+“터미널 Agent에 익숙한 분들을 위해 한 층 더 내려가 보겠습니다. Codex App Server는 rich client가 Agent를 깊게 통합할 수 있도록 Thread, Turn, Item과 event stream을 제공합니다.
+
+현재 AY-PLE의 Runtime Harness는 run마다 새 Codex app-server process와 Thread, Turn을 시작하고, 텍스트 delta와 완료·실패·취소 lifecycle을 공통 event로 바꿔 기록합니다. 중단할 때는 `turn/interrupt`를 보낸 뒤 실제 interrupted 완료까지 확인합니다.
+
+하지만 이 primitive를 학생에게 그대로 보여주는 것이 제품은 아닙니다. command나 tool call Item은 앞으로 자료 읽기 활동과 근거로 번역해야 하고, Thread도 학기 데이터베이스 자체가 아닙니다. 다음 수직 slice는 자료 선택부터 변경안과 학생 확인까지 이 실행 기반 위에 연결하는 작업입니다.”
+
+짚을 상태 구분:
+
+- 현재 연결됨: text prompt, streaming output, 완료·실패, 확인된 취소, diagnostic history
+- App Server protocol에는 존재하지만 제품 계약이 아님: tool Item, approval, steering, thread read. 이 가운데 일부만 raw inspection 호출이 가능하다.
+- 다음 제품 연결: `SourceSelection → Activity/Evidence → StatePatch/Review → TrustedState`
+
+## 슬라이드 7 · 두 종류의 승인 (선택 · 약 40초)
+
+“여기서 승인이라는 단어도 두 가지로 나눠야 합니다. Codex의 command approval은 Agent가 명령, 파일 변경, 네트워크 접근을 실행해도 되는지 판단해 실행환경을 보호합니다.
+
+반면 AY-PLE의 학생 확인은 Agent가 만든 과제 정보를 내 학기에 반영해도 되는지 판단하는 제품의 신뢰 경계입니다. 원본 근거와 변경안을 보고 수락하거나 수정하거나 거절합니다.
+
+오늘 데모에서 누른 `수락하고 반영`은 이 두 번째 제품 흐름을 보여주는 prototype이지, App Server의 command approval을 실제로 호출한 화면은 아닙니다. 실행 권한과 학업 정보의 신뢰를 분리하는 것이 단순한 Codex 채팅 wrapper를 넘어서는 핵심 설계입니다.”
+
+심화 설명의 한 문장 결론:
+
+> Engine approval은 실행 경계를 보호하고, AY-PLE의 product confirmation은 의미와 신뢰의 경계를 보호한다.
+
 ## 데모 실패 시
 
 - 네 번째 장의 `전체 화면 데모 시작`을 눌러 새 탭에서 진행한다.
@@ -61,3 +95,11 @@ Codex 자체가 제품은 아닙니다. Codex는 AY가 일할 수 있게 하는 
 > “제품 연결은 아직 prototype이지만, 검증하려는 흐름은 자료 선택, Agent 작업, 근거 검토, 사용자 결정, 확인된 학기 정보 반영의 다섯 단계입니다.”
 
 - 실제 Codex나 네트워크 호출은 본 데모에 사용하지 않는다. 발표용 흐름은 항상 같은 결과가 나오는 결정적 prototype이다.
+
+## 공식 참고 자료
+
+- [Codex App Server](https://learn.chatgpt.com/docs/app-server)
+- [Core primitives](https://learn.chatgpt.com/docs/app-server#core-primitives)
+- [Lifecycle overview](https://learn.chatgpt.com/docs/app-server#lifecycle-overview)
+- [Items](https://learn.chatgpt.com/docs/app-server#items)
+- [Command execution approvals](https://learn.chatgpt.com/docs/app-server#command-execution-approvals)
