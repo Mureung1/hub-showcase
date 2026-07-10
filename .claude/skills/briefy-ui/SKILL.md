@@ -1,6 +1,6 @@
 ---
-name: glossy-red-auto-ui
-description: "Use this skill when Codex needs to design or implement UI pages, components, CSS variables, or frontend prototypes in a glossy red automotive style inspired by a red sports car: high-gloss red primary actions, charcoal wheel/tire surfaces, cool metallic light backgrounds, sharp modern typography, precise spacing, and polished card/button/input styling."
+name: briefy-ui
+description: "Use this skill when designing or implementing UI pages, components, CSS variables, or frontend prototypes in a glossy red automotive style inspired by a red sports car: high-gloss red primary actions, charcoal wheel/tire surfaces, cool metallic light backgrounds, sharp modern typography, precise spacing, and polished card/button/input styling."
 ---
 
 # Glossy Red Auto UI
