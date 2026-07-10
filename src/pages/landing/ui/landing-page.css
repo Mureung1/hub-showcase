@@ -813,12 +813,12 @@
   }
 
   .landing-nav nav {
-    max-width: 190px;
+    max-width: 220px;
     gap: 9px 14px;
   }
 
   .landing-nav nav a {
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .landing-brand {
