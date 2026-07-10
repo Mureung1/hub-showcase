@@ -6,9 +6,9 @@
 
 ## 스크린샷
 
-![분석 결과 화면](./docs/2026-07-08 204238.png)
-(./docs/2026-07-08 204244.png)
-(./docs/2026-07-08 204248.png)
+![초기 화면](./docs/screenshot1.png)
+![감성 분석 결과](./docs/screenshot2.png)
+![키워드 및 리뷰 목록](./docs/screenshot3.png)
 
 ## 주요 기능
 
@@ -25,16 +25,21 @@
 | Frontend | React (Vite), Tailwind CSS v4 |
 | Backend | FastAPI, Python |
 | AI | LangChain, Google Gemini (gemini-2.5-flash) |
-| Database | SQLite (MVP 단계) → MySQL 전환 예정 |
+| Database | SQLite (로컬 개발) / MySQL (Docker) |
 | ORM | SQLAlchemy |
 | Data Collection | Naver Blog Search API (공식) |
+| Infra | Docker, Docker Compose (MySQL + FastAPI + React/Nginx) |
+
+## 디자인
+
+다크 대시보드 레이아웃에 네이버 그린(#03C75A)을 포인트 컬러로 적용했습니다. 색상·간격·컴포넌트 규칙은 [`design-skill.md`](./design-skill.md)에 정리되어 있으며, 새 화면을 만들 때도 이 문서를 기준으로 톤을 통일합니다.
 
 ## 아키텍처
 
 ```
 [React Dashboard] --fetch--> [FastAPI]
                                 ├── collector.py (네이버 블로그 검색)
-                                ├── LangChain + Gemini (구조화된 출력)
+                                ├── LangChain + Gemini 2.5 Flash (분석·리포트)
                                 └── SQLAlchemy ──> [SQLite/MySQL]
 ```
 
@@ -47,8 +52,8 @@
 
 네이버 플레이스 리뷰는 공식 API가 제공되지 않으며, 크롤링은 네이버 이용약관이 금지하는 자동화 수집에 해당합니다. 이에 따라 본 프로젝트는:
 
-1. **MVP 단계(현재)**: 가상 리뷰 데이터로 분석 파이프라인을 검증
-2. **고도화 단계(1주차 완료)**: 네이버 블로그 검색 API(공식) 기반 후기 텍스트 수집으로 교체 완료
+1. **MVP 단계(완료)**: 가상 리뷰 데이터로 분석 파이프라인을 검증
+2. **고도화 단계(완료)**: 네이버 블로그 검색 API(공식) 기반 후기 텍스트 수집으로 교체
 
 수집 계층은 `collector.py`로 완전히 분리하여, 데이터 소스를 교체할 때 나머지 코드 수정이 불필요합니다.
 
@@ -84,6 +89,8 @@
 }
 ```
 
+`source` 필드로 데이터 출처를 구분합니다: `naver_blog`(실시간 수집) / `database`(캐시) / `fallback_dummy`(네이버 API 미설정) / `mock`(개발용 목 데이터).
+
 ### GET /api/report/{competitor_id}
 
 저장된 리뷰 기반 통계(총 리뷰 수, 긍정/부정 비율, 키워드 순위)를 반환합니다.
@@ -104,9 +111,12 @@
 GOOGLE_API_KEY=발급받은_Gemini_API_키
 NAVER_CLIENT_ID=발급받은_네이버_Client_ID
 NAVER_CLIENT_SECRET=발급받은_네이버_Client_Secret
+USE_MOCK=false
 ```
 
 **주의**: `.env` 파일은 GitHub에 올리지 마세요. `.gitignore` 파일에 `.env`를 추가했습니다.
+
+**목(Mock) 모드**: `USE_MOCK=true`로 설정하면 LLM을 호출하지 않고 고정 데이터를 즉시 반환합니다. Gemini API 할당량과 무관하게 화면·기능 개발을 진행할 때 사용합니다. 실제 분석 결과를 확인하려면 `false`로 되돌리세요.
 
 **2. Python 패키지 설치**
 
@@ -119,7 +129,7 @@ pip install fastapi uvicorn langchain langchain-google-genai pydantic sqlalchemy
 - [Google AI Studio](https://aistudio.google.com) → API 키 생성 (무료)
 - [네이버 개발자센터](https://developers.naver.com) → Application 등록 → 검색 API 활성화
 
-### 실행 (매번)
+### 실행 — 로컬 개발
 
 **터미널 1 - 백엔드:**
 
@@ -133,11 +143,20 @@ uvicorn main:app --reload --port 8000
 **터미널 2 - 프론트엔드:**
 
 ```bash
-cd C:\AI_Agent\hub\frontend
+cd C:\AI_Agent\hub
 npm run dev
 ```
 
 브라우저에서 `http://localhost:5173` 접속.
+
+### 실행 — Docker (MySQL 포함 전체 스택)
+
+```bash
+cd C:\AI_Agent\hub
+docker compose up --build
+```
+
+`http://localhost`에서 확인. MySQL, FastAPI, React(Nginx)가 컨테이너 3개로 함께 실행됩니다.
 
 ## 데이터베이스 스키마
 
@@ -151,24 +170,30 @@ npm run dev
 | 데이터 수집 | 네이버 블로그 검색 API | 공식, 약관 준수 |
 | AI 모델 | Gemini 2.5 Flash | 무료 사용 가능, 구조화된 출력 지원 |
 | 프론트엔드 | React + Vite | 프론트-백 분리, 포트폴리오 활용도 |
-| DB | SQLite(MVP) → MySQL | 개발 속도 vs 본 배포 |
+| DB | SQLite(로컬) / MySQL(Docker) | 개발 속도 vs 배포 환경 재현 |
+| 개발 중 목 모드 | USE_MOCK 환경변수 | LLM 할당량과 무관하게 화면 개발 진행 |
+
+## 개발 Task
+
+4주간의 개발 일정과 우선순위는 [TASKS.md](./TASKS.md)에서 관리합니다.
 
 ## 로드맵
 
 - [x] 분석 파이프라인 및 대시보드 MVP
-- [x] 네이버 블로그 검색 API 연동 (1주차)
-- [x] 환경변수 `.env` 자동 로드 (1주차)
+- [x] 네이버 블로그 검색 API 연동
+- [x] 환경변수 `.env` 자동 로드
+- [x] Docker 컨테이너화 (MySQL, FastAPI, React+Nginx)
+- [x] 다크 대시보드 디자인 적용 (design-skill.md)
 - [ ] 동일 매장 재조회 시 완전 캐싱 (컨설팅 리포트 DB 저장)
-- [ ] Docker 컨테이너화 (docker-compose) (2주차)
-- [ ] GitHub Actions CI/CD (3주차)
-- [ ] 네이버 클라우드 플랫폼 배포 (3주차)
-- [ ] 모니터링 대시보드 (4주차)
+- [ ] GitHub Actions CI/CD
+- [ ] 네이버 클라우드 플랫폼 배포
+- [ ] 모니터링 대시보드
 
 ## 트러블슈팅
 
 **Gemini API 429 에러 (할당량 초과)**
-- 무료 등급: 일일 20회 요청 제한
-- 해결: 1) 내일 리셋 대기 또는 2) Google Cloud 결제 연결 (pay-as-you-go)
+- 무료 등급: 일일 20회, 분당 5회 요청 제한
+- 해결: 1) 리셋 대기 2) Google Cloud 결제 연결 3) `.env`에서 `USE_MOCK=true`로 개발 계속 진행
 
 **네이버 API 401 에러**
 - 원인: `.env` 파일이 없거나 `python-dotenv`가 설치되지 않음
