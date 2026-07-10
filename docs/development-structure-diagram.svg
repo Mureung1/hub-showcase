@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="860" viewBox="0 0 1280 860" role="img" aria-labelledby="title desc">
+  <title id="title">카페 스탬프 MVP 전체 개발 구조</title>
+  <desc id="desc">손님 브라우저와 사장님 브라우저가 React 웹을 거쳐 Supabase와 연결되고, Vercel로 배포되는 구조 다이어그램</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <style>
+      .bg { fill: #f8fafc; }
+      .title { font: 700 32px Arial, 'Malgun Gothic', sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 16px Arial, 'Malgun Gothic', sans-serif; fill: #475569; }
+      .group { stroke-width: 2; rx: 22; filter: url(#shadow); }
+      .group-title { font: 700 19px Arial, 'Malgun Gothic', sans-serif; fill: #0f172a; }
+      .node { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 16; filter: url(#shadow); }
+      .node-accent { stroke-width: 3; }
+      .node-title { font: 700 18px Arial, 'Malgun Gothic', sans-serif; fill: #0f172a; text-anchor: middle; }
+      .node-text { font: 400 15px Arial, 'Malgun Gothic', sans-serif; fill: #475569; text-anchor: middle; }
+      .arrow { stroke: #334155; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .arrow-soft { stroke: #64748b; stroke-width: 2.3; fill: none; marker-end: url(#arrow); }
+      .label { font: 600 13px Arial, 'Malgun Gothic', sans-serif; fill: #64748b; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1280" height="860"/>
+  <text class="title" x="70" y="64">전체 개발 구조</text>
+  <text class="subtitle" x="70" y="94">손님 모바일 화면과 사장님 넓은 화면이 같은 Supabase 데이터를 사용합니다.</text>
+
+  <rect class="group" x="60" y="145" width="270" height="245" fill="#ecfeff" stroke="#67e8f9"/>
+  <text class="group-title" x="92" y="185">손님의 모바일 브라우저</text>
+  <rect class="node node-accent" x="100" y="215" width="190" height="62" stroke="#06b6d4"/>
+  <text class="node-title" x="195" y="252">로그인 화면</text>
+  <rect class="node node-accent" x="100" y="305" width="190" height="66" stroke="#06b6d4"/>
+  <text class="node-title" x="195" y="332">손님 화면</text>
+  <text class="node-text" x="195" y="356">카페·쿠폰·알림</text>
+
+  <rect class="group" x="60" y="470" width="270" height="190" fill="#f0fdf4" stroke="#86efac"/>
+  <text class="group-title" x="92" y="510">사장님의 넓은 화면</text>
+  <rect class="node node-accent" x="100" y="540" width="190" height="76" stroke="#22c55e"/>
+  <text class="node-title" x="195" y="570">사장님 화면</text>
+  <text class="node-text" x="195" y="594">회원번호 조회·적립</text>
+
+  <rect class="group" x="440" y="250" width="300" height="270" fill="#eff6ff" stroke="#93c5fd"/>
+  <text class="group-title" x="475" y="292">React 웹</text>
+  <rect class="node node-accent" x="495" y="325" width="190" height="68" stroke="#3b82f6"/>
+  <text class="node-title" x="590" y="353">화면 이동</text>
+  <text class="node-text" x="590" y="376">역할 보호</text>
+  <rect class="node node-accent" x="495" y="425" width="190" height="68" stroke="#3b82f6"/>
+  <text class="node-title" x="590" y="453">데이터 요청</text>
+  <text class="node-text" x="590" y="476">services 담당</text>
+
+  <rect class="group" x="850" y="145" width="350" height="410" fill="#fff7ed" stroke="#fdba74"/>
+  <text class="group-title" x="890" y="185">Supabase</text>
+  <rect class="node node-accent" x="895" y="215" width="120" height="74" stroke="#f97316"/>
+  <text class="node-title" x="955" y="244">Auth</text>
+  <text class="node-text" x="955" y="268">로그인·세션</text>
+  <rect class="node node-accent" x="1038" y="215" width="120" height="74" stroke="#f97316"/>
+  <text class="node-title" x="1098" y="244">RLS</text>
+  <text class="node-text" x="1098" y="268">접근 권한</text>
+  <ellipse cx="955" cy="390" rx="72" ry="48" fill="#ffffff" stroke="#f97316" stroke-width="3" filter="url(#shadow)"/>
+  <text class="node-title" x="955" y="382">PostgreSQL</text>
+  <text class="node-text" x="955" y="407">공유 데이터</text>
+  <rect class="node node-accent" x="1038" y="352" width="120" height="76" stroke="#f97316"/>
+  <text class="node-title" x="1098" y="380">적립 RPC</text>
+  <text class="node-text" x="1098" y="404">원자적 처리</text>
+
+  <rect class="group" x="850" y="635" width="350" height="125" fill="#fdf2f8" stroke="#f9a8d4"/>
+  <text class="group-title" x="890" y="675">배포</text>
+  <rect class="node node-accent" x="940" y="695" width="170" height="48" stroke="#ec4899"/>
+  <text class="node-title" x="1025" y="726">Vercel 웹 주소</text>
+
+  <path class="arrow" d="M 290 246 C 360 246, 410 330, 495 358"/>
+  <path class="arrow" d="M 290 338 C 360 338, 410 348, 495 358"/>
+  <path class="arrow" d="M 290 578 C 360 578, 410 440, 495 358"/>
+  <path class="arrow" d="M 590 393 L 590 425"/>
+  <path class="arrow" d="M 685 459 C 760 459, 810 253, 895 253"/>
+  <path class="arrow" d="M 685 459 C 770 459, 850 253, 1038 253"/>
+  <path class="arrow" d="M 1098 289 L 985 358"/>
+  <path class="arrow" d="M 685 459 C 785 470, 890 390, 1038 390"/>
+  <path class="arrow" d="M 1038 390 L 1028 390"/>
+  <path class="arrow-soft" d="M 1025 695 C 950 620, 440 610, 305 390"/>
+  <path class="arrow-soft" d="M 1025 695 C 920 655, 410 690, 300 590"/>
+
+  <text class="label" x="390" y="235">접속</text>
+  <text class="label" x="775" y="235">로그인 확인</text>
+  <text class="label" x="775" y="445">데이터 요청</text>
+  <text class="label" x="1030" y="615">배포된 주소로 사용</text>
+</svg>
