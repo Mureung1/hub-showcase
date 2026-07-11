@@ -61,6 +61,19 @@ describe("compareAnalyses", () => {
     ]);
   });
 
+  it("reports a participant perspective change", () => {
+    const participant = sampleAnalysis.participants[0];
+    const previous = { ...sampleAnalysis, participants: [participant] };
+    const latest = {
+      ...sampleAnalysis,
+      participants: [{ ...participant, concern: "새로운 개인정보 노출 위험을 먼저 확인해야 한다." }],
+    };
+
+    expect(compareAnalyses(previous, latest)).toContainEqual(
+      expect.objectContaining({ kind: "changed", label: `관점 · ${participant.actor}` }),
+    );
+  });
+
   it("returns no changes without a comparable pair", () => {
     expect(compareAnalyses(undefined, sampleAnalysis)).toEqual([]);
   });

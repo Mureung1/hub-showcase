@@ -25,6 +25,7 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
   const [session, setSession] = useState<AuthSession | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -80,9 +81,18 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
   }, [pathname]);
 
   const signOut = async () => {
-    await auth.signOut(session);
-    setSession(null);
-    navigate("/");
+    if (signingOut) return;
+    setSigningOut(true);
+    setAuthError(null);
+    try {
+      await auth.signOut(session);
+      setSession(null);
+      navigate("/");
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "로그아웃을 완료하지 못했습니다.");
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   let page: React.ReactNode;
@@ -110,7 +120,7 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
       <a className="skip-link" href="#main-content">
         본문으로 건너뛰기
       </a>
-      <SiteHeader session={session} pathname={pathname} navigate={navigate} onSignOut={() => void signOut()} />
+      <SiteHeader session={session} pathname={pathname} navigate={navigate} signingOut={signingOut} onSignOut={() => void signOut()} />
       {authError && <div className="global-notice notice error" role="alert">{authError}<button type="button" onClick={() => setAuthError(null)}>닫기</button></div>}
       <div id="main-content" tabIndex={-1}>
         {page}

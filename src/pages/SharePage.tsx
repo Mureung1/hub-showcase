@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import DecisionList from "../components/DecisionList";
 import KnowledgeMap from "../components/KnowledgeMap";
 import OnboardingSummary from "../components/OnboardingSummary";
+import ParticipantAgentPanel from "../components/ParticipantAgentPanel";
+import PerspectiveTable from "../components/PerspectiveTable";
 import QuestionList from "../components/QuestionList";
 import SummaryPanel from "../components/SummaryPanel";
 import type { PlatformApi } from "../services/platformApi";
@@ -39,12 +41,14 @@ function SharePage({ api }: { api: PlatformApi }) {
         <span className="read-only-badge">수정 불가</span>
       </header>
       <div className="notice info">이 페이지는 원문 전체나 계정 정보를 포함하지 않는 공유용 분석 화면입니다.</div>
-      <SummaryPanel result={result} />
       <div className="results-grid overview-grid">
-        <DecisionList decisions={result.decisions} />
-        <QuestionList questions={result.questions} />
-        <KnowledgeMap map={result.knowledgeMap} />
         <OnboardingSummary summary={result.onboardingSummary} />
+        <PerspectiveTable participants={result.participants} />
+        <ParticipantAgentPanel synthesis={result.participantAgents} />
+        <QuestionList questions={result.questions} />
+        <DecisionList decisions={result.decisions} />
+        <KnowledgeMap map={result.knowledgeMap} />
+        <SummaryPanel result={result} />
       </div>
     </main>
   );

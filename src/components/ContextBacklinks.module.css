@@ -28,10 +28,10 @@
 }
 
 .heading > span {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 7px 10px;
-  background: #f0f0f0;
-  color: #6e6e73;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
   font-size: 11px;
   font-weight: 750;
 }
@@ -52,7 +52,7 @@
 .card {
   min-width: 0;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   padding: 18px;
   background: var(--color-surface-subtle);
 }
@@ -62,6 +62,12 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.card header > div,
+.card h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .card header span {
@@ -78,7 +84,7 @@
 
 .card header strong {
   flex: 0 0 auto;
-  color: #58728a;
+  color: var(--color-primary-muted);
   font-size: 11px;
 }
 
@@ -97,6 +103,11 @@
   overflow-wrap: anywhere;
 }
 
+.card li.more {
+  color: var(--color-primary);
+  font-weight: 750;
+}
+
 .card button {
   display: inline-flex;
   min-height: 44px;
@@ -112,7 +123,7 @@
 }
 
 .card button:focus-visible {
-  outline: 3px solid rgba(0, 102, 204, 0.2);
+  outline: 2px solid var(--color-primary);
   outline-offset: 4px;
 }
 
@@ -130,10 +141,10 @@
 
 .empty {
   margin: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   padding: 18px;
-  background: #fafafc;
-  color: #8e8e93;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 

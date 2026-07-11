@@ -40,6 +40,17 @@ describe("public landing prototype", () => {
     expect(screen.getByText("샘플 데이터")).toBeInTheDocument();
   });
 
+  it("loads the sample from the primary hero action and surfaces context before summary", async () => {
+    const user = userEvent.setup();
+    render(<App auth={anonymousAuth()} />);
+
+    await user.click(screen.getByRole("button", { name: "샘플 직접 체험" }));
+
+    expect(screen.getByText("샘플 데이터")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "요약 전에 확인할 맥락" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: sampleAnalysis.projectTitle })).toBeInTheDocument();
+  });
+
   it("prevents duplicate submission while loading and renders the provider on success", async () => {
     const user = userEvent.setup();
     let resolveAnalysis: (result: ContextAnalysisResult) => void = () => undefined;

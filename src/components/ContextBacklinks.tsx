@@ -69,6 +69,7 @@ function ContextBacklinks({ sources, result, onOpenEvidence }: ContextBacklinksP
                   {items.slice(0, 5).map((item, index) => (
                     <li key={`${item.label}-${index}`}>{item.label}</li>
                   ))}
+                  {items.length > 5 && <li className={styles.more}>외 {items.length - 5}개 연결</li>}
                 </ul>
                 <button type="button" onClick={() => onOpenEvidence(evidence)}>
                   원문 인용문 열기

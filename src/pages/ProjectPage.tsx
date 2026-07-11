@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type KeyboardEvent,
 } from "react";
 import AnalysisComparison from "../components/AnalysisComparison";
 import ContextBacklinks from "../components/ContextBacklinks";
@@ -34,7 +35,8 @@ import type {
   SourceSegmentResource,
 } from "../types/platform";
 
-type ProjectTab = "overview" | "records" | "history" | "map" | "onboarding";
+type ProjectTab = "overview" | "map" | "onboarding";
+type OverviewView = "analysis" | "records" | "history";
 
 type ProjectPageProps = {
   api: PlatformApi;
@@ -64,6 +66,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   const [selectedSourceIds, setSelectedSourceIds] = useState<Set<string>>(new Set());
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
+  const [overviewView, setOverviewView] = useState<OverviewView>("analysis");
   const [openaiEnabled, setOpenaiEnabled] = useState(false);
   const [evidence, setEvidence] = useState<EvidenceRef[] | null>(null);
   const [evidenceSegments, setEvidenceSegments] = useState<SourceSegmentResource[]>([]);
@@ -121,7 +124,9 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   );
   const selectedRun = runs.find((run) => run.id === selectedRunId) ?? successfulRuns[0] ?? null;
   const latestSuccessful = successfulRuns[0];
-  const previousSuccessful = successfulRuns[1];
+  const selectedSuccessfulIndex = successfulRuns.findIndex((run) => run.id === selectedRun?.id);
+  const comparisonLatest = selectedSuccessfulIndex >= 0 ? successfulRuns[selectedSuccessfulIndex] : latestSuccessful;
+  const comparisonPrevious = selectedSuccessfulIndex >= 0 ? successfulRuns[selectedSuccessfulIndex + 1] : successfulRuns[1];
 
   const openEvidence = (nextEvidence: EvidenceRef[]) => {
     const sourceIds = [...new Set(nextEvidence.map((item) => item.sourceRecordId))];
@@ -160,11 +165,43 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
 
   const tabs: { id: ProjectTab; label: string }[] = [
     { id: "overview", label: "개요" },
+    { id: "map", label: "지식맵" },
+    { id: "onboarding", label: "온보딩 요약" },
+  ];
+  const overviewViews: { id: OverviewView; label: string }[] = [
+    { id: "analysis", label: "분석 실행" },
     { id: "records", label: "기록" },
     { id: "history", label: "분석 이력" },
-    { id: "map", label: "지식맵" },
-    { id: "onboarding", label: "온보딩" },
   ];
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, tab: ProjectTab) => {
+    const current = tabs.findIndex((item) => item.id === tab);
+    let next = current;
+    if (event.key === "ArrowRight") next = (current + 1) % tabs.length;
+    else if (event.key === "ArrowLeft") next = (current - 1 + tabs.length) % tabs.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = tabs.length - 1;
+    else return;
+    event.preventDefault();
+    const nextTab = tabs[next].id;
+    setActiveTab(nextTab);
+    if (nextTab === "overview") setOverviewView("analysis");
+    document.getElementById(`project-tab-${nextTab}`)?.focus();
+  };
+
+  const handleOverviewKeyDown = (event: KeyboardEvent<HTMLButtonElement>, view: OverviewView) => {
+    const current = overviewViews.findIndex((item) => item.id === view);
+    let next = current;
+    if (event.key === "ArrowRight") next = (current + 1) % overviewViews.length;
+    else if (event.key === "ArrowLeft") next = (current - 1 + overviewViews.length) % overviewViews.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = overviewViews.length - 1;
+    else return;
+    event.preventDefault();
+    const nextView = overviewViews[next].id;
+    setOverviewView(nextView);
+    document.getElementById(`overview-view-${nextView}`)?.focus();
+  };
 
   return (
     <main className="app-page project-page">
@@ -177,73 +214,118 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
           <h1>{project.title}</h1>
           <p>{project.description || "이 프로젝트의 설명을 개요 탭에서 추가할 수 있습니다."}</p>
         </div>
-        <div className="project-heading-metrics">
-          <span><strong>{sources.filter((item) => !item.archivedAt).length}</strong>기록</span>
-          <span><strong>{successfulRuns.length}</strong>성공 분석</span>
-        </div>
       </header>
+
+      {latestSuccessful?.result ? (
+        <ProjectContextPulse
+          run={latestSuccessful}
+          onOpen={() => {
+            setSelectedRunId(latestSuccessful.id);
+            setActiveTab("overview");
+            setOverviewView("history");
+          }}
+        />
+      ) : (
+        <section className="project-context-empty" aria-label="프로젝트 맥락 준비 상태">
+          <div><strong>아직 구조화된 프로젝트 맥락이 없습니다.</strong><p>기록을 추가한 뒤 첫 분석을 실행하면 관점 차이와 미결 질문이 여기에 표시됩니다.</p></div>
+          <button className="button secondary" type="button" onClick={() => { setActiveTab("overview"); setOverviewView("records"); }}>기록 추가하기</button>
+        </section>
+      )}
 
       {error && <div className="notice error" role="alert">{error}<button type="button" onClick={() => setError(null)}>닫기</button></div>}
 
       <div className="project-tabs" role="tablist" aria-label="프로젝트 보기">
         {tabs.map((tab) => (
           <button
+            id={`project-tab-${tab.id}`}
             key={tab.id}
             className={activeTab === tab.id ? "active" : ""}
             type="button"
             role="tab"
             aria-selected={activeTab === tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            aria-controls={`project-panel-${tab.id}`}
+            tabIndex={activeTab === tab.id ? 0 : -1}
+            onClick={() => { setActiveTab(tab.id); if (tab.id === "overview") setOverviewView("analysis"); }}
+            onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
-      <section className="project-tab-panel" role="tabpanel">
+      <section
+        id={`project-panel-${activeTab}`}
+        className="project-tab-panel"
+        role="tabpanel"
+        aria-labelledby={`project-tab-${activeTab}`}
+      >
         {activeTab === "overview" && (
-          <OverviewTab
-            api={api}
-            token={token}
-            project={project}
-            sources={sources}
-            runs={runs}
-            selectedSourceIds={selectedSourceIds}
-            openaiEnabled={openaiEnabled}
-            onToggleSource={(id) => setSelectedSourceIds(toggleSet(selectedSourceIds, id))}
-            onProjectChange={setProject}
-            onProjectDeleted={() => navigate("/projects")}
-            onRunCreated={(run) => {
-              setRuns((current) => orderRuns([run, ...current.filter((item) => item.id !== run.id)]));
-              setSelectedRunId(run.id);
-              setActiveTab("history");
-            }}
-            onError={setError}
-            analysisAbortRef={analysisAbort}
-          />
-        )}
-        {activeTab === "records" && (
-          <RecordsTab
-            api={api}
-            token={token}
-            projectId={projectId}
-            sources={sources}
-            onSourcesChange={(updateSources, updateSelection) => {
-              setSources(updateSources);
-              setSelectedSourceIds(updateSelection);
-            }}
-            onError={setError}
-          />
-        )}
-        {activeTab === "history" && (
-          <HistoryTab
-            runs={runs}
-            selectedRun={selectedRun}
-            latest={latestSuccessful}
-            previous={previousSuccessful}
-            onSelectRun={setSelectedRunId}
-            onOpenEvidence={openEvidence}
-          />
+          <div className="overview-workspace">
+            <div className="overview-view-tabs" role="tablist" aria-label="개요 작업">
+              {overviewViews.map((view) => (
+                <button
+                  id={`overview-view-${view.id}`}
+                  key={view.id}
+                  className={overviewView === view.id ? "active" : ""}
+                  type="button"
+                  role="tab"
+                  aria-selected={overviewView === view.id}
+                  aria-controls={`overview-panel-${view.id}`}
+                  tabIndex={overviewView === view.id ? 0 : -1}
+                  onClick={() => setOverviewView(view.id)}
+                  onKeyDown={(event) => handleOverviewKeyDown(event, view.id)}
+                >
+                  {view.label}
+                </button>
+              ))}
+            </div>
+            <div id={`overview-panel-${overviewView}`} role="tabpanel" aria-labelledby={`overview-view-${overviewView}`}>
+              {overviewView === "analysis" && (
+                <OverviewTab
+                  api={api}
+                  token={token}
+                  project={project}
+                  sources={sources}
+                  runs={runs}
+                  selectedSourceIds={selectedSourceIds}
+                  openaiEnabled={openaiEnabled}
+                  onToggleSource={(id) => setSelectedSourceIds(toggleSet(selectedSourceIds, id))}
+                  onProjectChange={setProject}
+                  onProjectDeleted={() => navigate("/projects")}
+                  onRunCreated={(run) => {
+                    setRuns((current) => orderRuns([run, ...current.filter((item) => item.id !== run.id)]));
+                    setSelectedRunId(run.id);
+                    setOverviewView("history");
+                  }}
+                  onError={setError}
+                  analysisAbortRef={analysisAbort}
+                />
+              )}
+              {overviewView === "records" && (
+                <RecordsTab
+                  api={api}
+                  token={token}
+                  projectId={projectId}
+                  sources={sources}
+                  onSourcesChange={(updateSources, updateSelection) => {
+                    setSources(updateSources);
+                    setSelectedSourceIds(updateSelection);
+                  }}
+                  onError={setError}
+                />
+              )}
+              {overviewView === "history" && (
+                <HistoryTab
+                  runs={runs}
+                  selectedRun={selectedRun}
+                  latest={comparisonLatest}
+                  previous={comparisonPrevious}
+                  onSelectRun={setSelectedRunId}
+                  onOpenEvidence={openEvidence}
+                />
+              )}
+            </div>
+          </div>
         )}
         {activeTab === "map" && (
           selectedRun?.result ? (
@@ -273,6 +355,32 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
         onClose={closeEvidence}
       />
     </main>
+  );
+}
+
+function ProjectContextPulse({ run, onOpen }: { run: AnalysisRunResource; onOpen: () => void }) {
+  if (!run.result) return null;
+  const result = run.result;
+  const priorityQuestion = result.questions[0]?.question;
+  const lead = priorityQuestion
+    ? `먼저 답할 질문: ${priorityQuestion}`
+    : result.summary.overview[0] ?? "최근 분석에서 확인된 프로젝트 맥락을 살펴보세요.";
+
+  return (
+    <section className="project-context-pulse" aria-labelledby="project-context-title">
+      <div className="project-context-copy">
+        <p className="section-kicker">Latest context</p>
+        <h2 id="project-context-title">지금 팀이 먼저 볼 맥락</h2>
+        <p>{lead}</p>
+        <time dateTime={run.completedAt ?? run.createdAt}>{formatDateTime(run.completedAt ?? run.createdAt)} 분석</time>
+      </div>
+      <dl className="project-context-metrics">
+        <div><dt>관점</dt><dd>{result.participants.length}</dd></div>
+        <div><dt>미결 질문</dt><dd>{result.questions.length}</dd></div>
+        <div><dt>결정</dt><dd>{result.decisions.length}</dd></div>
+      </dl>
+      <button className="button secondary" type="button" onClick={onOpen}>최근 분석 자세히</button>
+    </section>
   );
 }
 
@@ -525,7 +633,7 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
           <label className="field"><span>제목</span><input data-testid="source-create-title" value={title} maxLength={120} onChange={(event) => setTitle(event.target.value)} placeholder="예: 7월 11일 기획 회의" required /></label>
           <label className="field"><span>원문</span><textarea data-testid="source-create-content" value={content} maxLength={100_000} onChange={(event) => setContent(event.target.value)} placeholder="회의록, 조사 메모 또는 피드백을 붙여넣으세요" required /></label>
           <div className="counter">{content.length.toLocaleString("ko-KR")} / 100,000자</div>
-          <button data-testid="source-create-submit" className="button primary full-button" type="submit" disabled={saving || !title.trim() || !content.trim()}>{saving ? "저장 중…" : "기록 저장"}</button>
+          <button data-testid="source-create-submit" className="button secondary full-button" type="submit" disabled={saving || !title.trim() || !content.trim()}>{saving ? "저장 중…" : "기록 저장"}</button>
         </form>
         </section>
         <section className="source-list-panel">
@@ -555,6 +663,10 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
                   </div>
                 )}
                 <p>{source.content}</p>
+                <details className="source-content-details">
+                  <summary>원문 전체 보기</summary>
+                  <div>{source.content}</div>
+                </details>
                 <footer><span>{source.charCount.toLocaleString("ko-KR")}자</span><button className="text-button danger" type="button" onClick={() => void archive(source)}>보관</button></footer>
               </article>
             ))}
@@ -588,15 +700,22 @@ function HistoryTab({ runs, selectedRun, latest, previous, onSelectRun, onOpenEv
         ))}
       </aside>
       <div className="run-detail">
-        <AnalysisComparison previous={previous?.result} latest={latest?.result} />
         {selectedRun?.status === "failed" ? <div className="notice error">{selectedRun.error?.message ?? "분석 실행이 실패했습니다."}</div> : selectedRun?.status === "running" ? <div className="loading-card">분석이 진행 중입니다.</div> : selectedRun?.result ? (
           <>
-            <SummaryPanel result={selectedRun.result} />
-            <div className="results-grid overview-grid">
+            <header className="history-context-heading">
+              <p className="section-kicker">Context first</p>
+              <h2>관점과 미결 질문부터 확인하세요</h2>
+              <p>요약보다 먼저 누가 무엇을 중요하게 보는지, 다음 회의에서 무엇을 답해야 하는지 보여줍니다.</p>
+            </header>
+            <div className="history-priority-stack">
               <PerspectiveTable participants={selectedRun.result.participants} onOpenEvidence={onOpenEvidence} />
-              <ParticipantAgentPanel synthesis={selectedRun.result.participantAgents} />
+              <div className="priority-pair">
               <QuestionList questions={selectedRun.result.questions} onOpenEvidence={onOpenEvidence} />
               <DecisionList decisions={selectedRun.result.decisions} onOpenEvidence={onOpenEvidence} />
+              </div>
+              <ParticipantAgentPanel synthesis={selectedRun.result.participantAgents} />
+              <AnalysisComparison previous={previous?.result} latest={latest?.result} />
+              <SummaryPanel result={selectedRun.result} />
               <KeyTerms terms={selectedRun.result.keyTerms} />
             </div>
           </>

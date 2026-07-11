@@ -54,6 +54,17 @@ function toSnapshot(result: ContextAnalysisResultV2): SnapshotItem[] {
         canonicalText(item.ownerHint),
       ]),
     })),
+    ...result.participants.map((item) => ({
+      id: `perspective:${stableKey(canonicalText(item.actor))}`,
+      label: `관점 · ${item.actor}`,
+      fingerprint: JSON.stringify([
+        canonicalText(item.actor),
+        canonicalText(item.role),
+        canonicalText(item.focus),
+        canonicalText(item.concern),
+        canonicalText(item.question),
+      ]),
+    })),
   ];
 }
 

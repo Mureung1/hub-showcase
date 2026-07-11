@@ -5,10 +5,11 @@ type SiteHeaderProps = {
   session: AuthSession | null;
   pathname: string;
   navigate: Navigate;
+  signingOut: boolean;
   onSignOut: () => void;
 };
 
-function SiteHeader({ session, pathname, navigate, onSignOut }: SiteHeaderProps) {
+function SiteHeader({ session, pathname, navigate, signingOut, onSignOut }: SiteHeaderProps) {
   const go = (path: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     navigate(path);
@@ -39,8 +40,8 @@ function SiteHeader({ session, pathname, navigate, onSignOut }: SiteHeaderProps)
             >
               프로젝트
             </a>
-            <button className="nav-action" type="button" onClick={onSignOut}>
-              로그아웃
+            <button className="nav-action" type="button" disabled={signingOut} onClick={onSignOut}>
+              {signingOut ? "로그아웃 중…" : "로그아웃"}
             </button>
           </>
         ) : (

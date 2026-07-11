@@ -137,6 +137,38 @@ function ProjectsPage({ api, token, navigate }: ProjectsPageProps) {
     }
   };
 
+  const projectListSection = (
+    <section className="project-list-section" aria-labelledby="project-list-title">
+      <div className="section-row">
+        <div><p className="section-kicker">Saved projects</p><h2 id="project-list-title">최근 프로젝트</h2></div>
+        <span>{projects.length}개</span>
+      </div>
+      {loading ? (
+        <div className="loading-card" role="status">프로젝트를 불러오는 중…</div>
+      ) : projects.length === 0 ? (
+        <div className="empty-card"><strong>아직 저장된 프로젝트가 없습니다.</strong><p>아래 양식으로 첫 프로젝트를 만들어 보세요.</p></div>
+      ) : (
+        <div className="project-card-grid">
+          {projects.map((project) => (
+            <button
+              className="project-card"
+              type="button"
+              key={project.id}
+              onClick={() => navigate(`/projects/${encodeURIComponent(project.id)}`)}
+            >
+              <span className="project-card-date">{formatDate(project.updatedAt)}</span>
+              <strong>{project.title}</strong>
+              <p>{project.description || "설명이 아직 없습니다."}</p>
+              <span className="project-card-metrics">
+                기록 {project.sourceCount ?? "–"} · 분석 {project.analysisCount ?? "–"}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+
   return (
     <main className="app-page">
       <header className="page-heading">
@@ -148,6 +180,7 @@ function ProjectsPage({ api, token, navigate }: ProjectsPageProps) {
       </header>
 
       {error && <div className="notice error" role="alert">{error}<button type="button" onClick={() => void loadProjects()}>다시 시도</button></div>}
+      {!loading && projects.length > 0 && projectListSection}
 
       <section className="demo-copy-card" aria-labelledby="demo-copy-title">
         <div>
@@ -157,7 +190,7 @@ function ProjectsPage({ api, token, navigate }: ProjectsPageProps) {
         </div>
         <button
           data-testid="demo-project-copy"
-          className="button primary"
+          className="button secondary"
           type="button"
           disabled={demoCopying}
           onClick={() => void copyDemoProject()}
@@ -222,35 +255,7 @@ function ProjectsPage({ api, token, navigate }: ProjectsPageProps) {
         </form>
       </section>
 
-      <section className="project-list-section" aria-labelledby="project-list-title">
-        <div className="section-row">
-          <div><p className="section-kicker">Saved projects</p><h2 id="project-list-title">최근 프로젝트</h2></div>
-          <span>{projects.length}개</span>
-        </div>
-        {loading ? (
-          <div className="loading-card" role="status">프로젝트를 불러오는 중…</div>
-        ) : projects.length === 0 ? (
-          <div className="empty-card"><strong>아직 저장된 프로젝트가 없습니다.</strong><p>위 양식으로 첫 프로젝트를 만들어 보세요.</p></div>
-        ) : (
-          <div className="project-card-grid">
-            {projects.map((project) => (
-              <button
-                className="project-card"
-                type="button"
-                key={project.id}
-                onClick={() => navigate(`/projects/${encodeURIComponent(project.id)}`)}
-              >
-                <span className="project-card-date">{formatDate(project.updatedAt)}</span>
-                <strong>{project.title}</strong>
-                <p>{project.description || "설명이 아직 없습니다."}</p>
-                <span className="project-card-metrics">
-                  기록 {project.sourceCount ?? "–"} · 분석 {project.analysisCount ?? "–"}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </section>
+      {(loading || projects.length === 0) && projectListSection}
     </main>
   );
 }

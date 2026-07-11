@@ -22,6 +22,9 @@ describe("SharePage", () => {
     expect(await screen.findByRole("heading", { name: "공유 프로젝트" })).toBeInTheDocument();
     expect(screen.getByText("수정 불가")).toBeInTheDocument();
     expect(screen.getByText(/원문 전체나 계정 정보를 포함하지 않는/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "참여자별 관점 차이" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "현재 확정된 결정" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "아직 열린 질문" })).toBeInTheDocument();
     expect(api.resolveSharedAnalysis).toHaveBeenCalledWith("share-secret-abcdefghijklmnopqrstuvwxyz123456");
   });
 

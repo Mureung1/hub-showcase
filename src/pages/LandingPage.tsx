@@ -53,6 +53,20 @@ function LandingPage({ navigate }: { navigate: Navigate }) {
     setAnalysisState({ status: "sample", result: sampleAnalysis });
   };
 
+  const experienceSample = () => {
+    loadSample();
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById("prototype");
+      if (!target?.scrollIntoView) return;
+      const prefersReducedMotion = typeof window.matchMedia === "function"
+        && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      target.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+  };
+
   const runAnalysis = async () => {
     activeAbortController.current?.abort();
     const controller = new AbortController();
@@ -100,18 +114,44 @@ function LandingPage({ navigate }: { navigate: Navigate }) {
   return (
     <main className="app-shell landing-shell">
       <section className="hero" id="top">
-        <p className="eyebrow">Shared Context Agent</p>
-        <h1>흩어진 팀의 맥락을 하나의 뇌로.</h1>
-        <p className="hero-copy">
-          회의록, 조사 메모, 피드백 속 결정 배경과 관점 차이를 연결해 팀 전체가 같은
-          맥락에서 움직이도록 돕습니다.
-        </p>
-        <div className="hero-actions">
-          <a className="button primary" href="#prototype">샘플 직접 체험</a>
-          <button className="button ghost" type="button" onClick={() => navigate("/login")}>
-            내 프로젝트 시작
-          </button>
+        <div className="hero-message">
+          <p className="eyebrow">회의 뒤 사라지는 맥락</p>
+          <h1>결론은 남지만, 왜 그렇게 정했는지는 사라집니다.</h1>
+          <p className="hero-copy">
+            Modu Brain은 흩어진 회의록과 피드백에서 사람별 관점, 아직 답하지 못한 질문,
+            결정의 실제 근거를 연결합니다.
+          </p>
+          <div className="hero-actions">
+            <button className="button primary" type="button" onClick={experienceSample}>샘플 직접 체험</button>
+            <button className="button ghost" type="button" onClick={() => navigate("/login")}>
+              내 프로젝트 시작
+            </button>
+          </div>
         </div>
+
+        <aside className="hero-context-card" aria-labelledby="hero-context-title">
+          <div className="hero-context-heading">
+            <div>
+              <p className="section-kicker">Current context</p>
+              <h2 id="hero-context-title">지금 팀이 놓치기 쉬운 것</h2>
+            </div>
+            <span>근거 7개</span>
+          </div>
+          <ol className="hero-context-list">
+            <li>
+              <span>01</span>
+              <div><strong>관점 차이</strong><p>근거 공개를 먼저 할지, 시연 속도를 먼저 확보할지 의견이 갈립니다.</p></div>
+            </li>
+            <li>
+              <span>02</span>
+              <div><strong>미결 질문</strong><p>읽기 전용 공유에서 어떤 분석 정보까지 보여줄까요?</p></div>
+            </li>
+            <li>
+              <span>03</span>
+              <div><strong>결정 배경</strong><p>개인 계정 연결 없이 사용자가 선택한 자료만 가져오기로 했습니다.</p></div>
+            </li>
+          </ol>
+        </aside>
       </section>
 
       <section className="workflow" aria-label="Modu Brain 작동 흐름">
@@ -144,7 +184,7 @@ function LandingPage({ navigate }: { navigate: Navigate }) {
           onLoadSample={loadSample}
           onAnalyze={runAnalysis}
         />
-        {analysisResult ? <SummaryPanel result={analysisResult} /> : (
+        {analysisResult ? <ContextPriorityPreview result={analysisResult} /> : (
           <AnalysisPlaceholder
             status={analysisState.status === "loading" || analysisState.status === "error" ? analysisState.status : "idle"}
             message={error}
@@ -193,6 +233,7 @@ function LandingPage({ navigate }: { navigate: Navigate }) {
             <ParticipantAgentPanel synthesis={analysisResult.participantAgents} />
             <QuestionList questions={analysisResult.questions} />
             <DecisionList decisions={analysisResult.decisions} />
+            <SummaryPanel result={analysisResult} />
             <KeyTerms terms={analysisResult.keyTerms} />
           </div>
         ) : activeTab === "map" ? (
@@ -206,6 +247,45 @@ function LandingPage({ navigate }: { navigate: Navigate }) {
         )}
       </section>
     </main>
+  );
+}
+
+function ContextPriorityPreview({ result }: { result: ContextAnalysisResult }) {
+  const signals = [
+    {
+      label: "관점 차이",
+      count: result.participants.length,
+      detail: result.participants[0]?.concern ?? "구분된 참여자 관점이 없습니다.",
+    },
+    {
+      label: "미결 질문",
+      count: result.questions.length,
+      detail: result.questions[0]?.question ?? "명시적으로 남은 질문이 없습니다.",
+    },
+    {
+      label: "결정 배경",
+      count: result.decisions.length,
+      detail: result.decisions[0]?.reason ?? "확인된 결정 배경이 없습니다.",
+    },
+  ];
+
+  return (
+    <section className="context-priority-preview" aria-labelledby="context-priority-title">
+      <div className="panel-heading compact">
+        <p className="section-kicker">Context first</p>
+        <h2 id="context-priority-title">요약 전에 확인할 맥락</h2>
+        <p>팀의 판단이 갈리는 지점과 다음 대화를 먼저 보여줍니다.</p>
+      </div>
+      <ol className="priority-preview-list">
+        {signals.map((signal, index) => (
+          <li key={signal.label}>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <div><strong>{signal.label}</strong><p>{signal.detail}</p></div>
+            <b>{signal.count}</b>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 

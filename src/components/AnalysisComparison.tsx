@@ -19,7 +19,7 @@ function AnalysisComparison({
       {!previous ? (
         <p className="empty-card">비교할 이전 성공 분석이 없습니다.</p>
       ) : changes.length === 0 ? (
-        <p className="empty-card">결정과 질문에서 확인된 변화가 없습니다.</p>
+        <p className="empty-card">관점, 결정, 질문에서 확인된 변화가 없습니다.</p>
       ) : (
         <ul className="comparison-list">
           {changes.map((change) => (

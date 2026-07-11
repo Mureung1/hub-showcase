@@ -38,7 +38,7 @@ function LoginPage({ auth }: LoginPageProps) {
 
         {!configured && (
           <div className="notice warning" role="status">
-            데모 인증 구성이 아직 연결되지 않았습니다. 배포 환경에 Supabase URL과 publishable key가 필요합니다.
+            현재 로그인 서비스를 사용할 수 없습니다. 잠시 후 다시 시도하거나 서비스 관리자에게 알려 주세요.
           </div>
         )}
 
@@ -63,10 +63,12 @@ function LoginPage({ auth }: LoginPageProps) {
                 placeholder="team@example.com"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                aria-invalid={Boolean(error)}
+                aria-describedby={error ? "login-email-error" : undefined}
                 required
               />
             </label>
-            {error && <p className="form-error" role="alert">{error}</p>}
+            {error && <p id="login-email-error" className="form-error" role="alert">{error}</p>}
             <button
               data-testid="login-submit"
               className="button primary full-button"

@@ -85,6 +85,8 @@ describe("ProjectPage", () => {
 
     render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
     expect(await screen.findByRole("heading", { name: project.title })).toBeInTheDocument();
+    expect(within(screen.getByRole("tablist", { name: "프로젝트 보기" })).getAllByRole("tab")).toHaveLength(3);
+    expect(screen.getByRole("heading", { name: "지금 팀이 먼저 볼 맥락" })).toBeInTheDocument();
     expect(screen.getByTestId("analysis-mode-openai")).toBeDisabled();
     expect(screen.getByText(/로컬 분석만 사용할 수 있습니다/)).toBeInTheDocument();
 
@@ -120,7 +122,7 @@ describe("ProjectPage", () => {
     await user.click(screen.getByRole("tab", { name: "지식맵" }));
     expect(screen.getByRole("heading", { name: "공유 지식맵" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("tab", { name: "온보딩" }));
+    await user.click(screen.getByRole("tab", { name: "온보딩 요약" }));
     expect(await screen.findByRole("heading", { name: "온보딩 링크 공유" })).toBeInTheDocument();
     await user.click(screen.getByTestId("share-create"));
     const shareInput = await screen.findByLabelText("새 공유 링크");
