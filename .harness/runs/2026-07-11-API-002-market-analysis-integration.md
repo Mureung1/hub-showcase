@@ -23,6 +23,7 @@ API: 28 tests passed, Ruff passed.
 Front: 4 tests, lint, TypeScript와 production build passed.
 Actual endpoint: 연남 카페 64개, 유동 1,013,523명/분기, score 39.5, confidence 49.6.
 Browser: 카페 64개/점수 40 -> 베이커리 18개/점수 28 전환 확인.
+Evidence modal: confidence 49.6%, 특화상권 판단 보류, 긍정·주의 근거와 누락 지표 표시 확인.
 ```
 
 ## Known Limitations

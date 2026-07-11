@@ -377,6 +377,13 @@ function demandFromFlow(flow: number[]) {
   return bucketByChartIndex.map((bucket) => Math.round((flow[bucket] / maximum) * 100));
 }
 
+const clusterLabels: Record<string, string> = {
+  ordinary: "일반 상권",
+  productive_cluster: "생산적 집적상권",
+  specialized_watch: "특화상권 · 판단 보류",
+  saturated_cluster: "과포화 후보",
+};
+
 function circleFeature([longitude, latitude]: [number, number], radiusMeters: number) {
   const points = 64;
   const coordinates = Array.from({ length: points + 1 }, (_, index) => {
@@ -1288,6 +1295,48 @@ export function App() {
             <p className="modal-eyebrow">EVIDENCE · 2025.1Q</p>
             <h2>이 화면의 숫자는 이렇게 읽습니다.</h2>
             <div className="evidence-grid">
+              {analysis && (
+                <>
+                  <div>
+                    <span>현재 판정</span>
+                    <b>
+                      {analysis.score.band} · 신뢰도 {analysis.score.confidence}%
+                    </b>
+                    <p>
+                      {analysis.score.decision_status === "supported"
+                        ? "현재 근거 범위에서 비교 판단을 지원합니다."
+                        : "근거가 충분하지 않아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."}
+                    </p>
+                  </div>
+                  <div>
+                    <span>특수상권 판정</span>
+                    <b>
+                      {clusterLabels[analysis.score.cluster.classification] ??
+                        analysis.score.cluster.classification}
+                    </b>
+                    <p>{analysis.score.cluster.explanation}</p>
+                  </div>
+                  {analysis.score.reasons.slice(0, 3).map((reason) => (
+                    <div key={`${reason.label}-${reason.tone}`}>
+                      <span>{reason.tone === "positive" ? "긍정 근거" : reason.tone === "caution" ? "주의 근거" : "참고 근거"}</span>
+                      <b>
+                        {reason.label} · {reason.value.toLocaleString("ko-KR")}
+                        {reason.unit}
+                      </b>
+                      <p>
+                        {reason.message} 출처: {reason.source_name}, {reason.period}.
+                      </p>
+                    </div>
+                  ))}
+                  {analysis.score.limitations.length > 0 && (
+                    <div>
+                      <span>데이터 한계</span>
+                      <b>누락 지표를 0점으로 처리하지 않음</b>
+                      <p>{analysis.score.limitations.join(" ")}</p>
+                    </div>
+                  )}
+                </>
+              )}
               <div>
                 <span>점포 위치</span>
                 <b>OpenStreetMap POI snapshot</b>

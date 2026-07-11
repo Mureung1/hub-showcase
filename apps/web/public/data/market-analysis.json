@@ -73,22 +73,22 @@
             "tone": "positive",
             "metric_key": "foot_traffic",
             "label": "유동 수요",
-            "message": "유동 수요 peer 백분위가 70로 높아 긍정적합니다.",
+            "message": "유동 수요 peer 백분위가 70로 높아 긍정적입니다.",
             "value": 1013523.0,
             "unit": "명/분기",
             "percentile": 69.5,
-            "source_name": "flow",
+            "source_name": "서울시 상권분석서비스 길단위인구",
             "period": "20251"
           },
           {
             "tone": "positive",
             "metric_key": "sales_per_store",
             "label": "점포당 추정매출",
-            "message": "점포당 추정매출 peer 백분위가 67로 높아 긍정적합니다.",
+            "message": "점포당 추정매출 peer 백분위가 67로 높아 긍정적입니다.",
             "value": 12723060.1875,
             "unit": "원/분기",
             "percentile": 66.5,
-            "source_name": "sales",
+            "source_name": "서울시 상권분석서비스 추정매출",
             "period": "20251"
           },
           {
@@ -99,7 +99,7 @@
             "value": 665.9452260051611,
             "unit": "개/km²",
             "percentile": 99.2,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -110,7 +110,7 @@
             "value": 3.125,
             "unit": "%",
             "percentile": 71.7,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -151,21 +151,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
@@ -242,11 +242,11 @@
             "tone": "positive",
             "metric_key": "foot_traffic",
             "label": "유동 수요",
-            "message": "유동 수요 peer 백분위가 71로 높아 긍정적합니다.",
+            "message": "유동 수요 peer 백분위가 71로 높아 긍정적입니다.",
             "value": 1013523.0,
             "unit": "명/분기",
             "percentile": 71.4,
-            "source_name": "flow",
+            "source_name": "서울시 상권분석서비스 길단위인구",
             "period": "20251"
           },
           {
@@ -257,7 +257,7 @@
             "value": -3.225806451612903,
             "unit": "%",
             "percentile": 22.0,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -268,7 +268,7 @@
             "value": 645.1344376924998,
             "unit": "개/km²",
             "percentile": 64.2,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           }
         ],
@@ -298,21 +298,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
@@ -389,11 +389,11 @@
             "tone": "positive",
             "metric_key": "sales_per_store",
             "label": "점포당 추정매출",
-            "message": "점포당 추정매출 peer 백분위가 70로 높아 긍정적합니다.",
+            "message": "점포당 추정매출 peer 백분위가 70로 높아 긍정적입니다.",
             "value": 6666666.666666667,
             "unit": "원/분기",
             "percentile": 69.7,
-            "source_name": "sales",
+            "source_name": "서울시 상권분석서비스 추정매출",
             "period": "20251"
           },
           {
@@ -404,7 +404,7 @@
             "value": 187.29709481395156,
             "unit": "개/km²",
             "percentile": 98.0,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -415,7 +415,7 @@
             "value": 5.555555555555555,
             "unit": "%",
             "percentile": 88.0,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -456,21 +456,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
@@ -547,22 +547,22 @@
             "tone": "positive",
             "metric_key": "sales_per_store",
             "label": "점포당 추정매출",
-            "message": "점포당 추정매출 peer 백분위가 66로 높아 긍정적합니다.",
+            "message": "점포당 추정매출 peer 백분위가 66로 높아 긍정적입니다.",
             "value": 77002419.66666667,
             "unit": "원/분기",
             "percentile": 66.0,
-            "source_name": "sales",
+            "source_name": "서울시 상권분석서비스 추정매출",
             "period": "20251"
           },
           {
             "tone": "positive",
             "metric_key": "foot_traffic",
             "label": "유동 수요",
-            "message": "유동 수요 peer 백분위가 65로 높아 긍정적합니다.",
+            "message": "유동 수요 peer 백분위가 65로 높아 긍정적입니다.",
             "value": 1013523.0,
             "unit": "명/분기",
             "percentile": 65.0,
-            "source_name": "flow",
+            "source_name": "서울시 상권분석서비스 길단위인구",
             "period": "20251"
           },
           {
@@ -573,7 +573,7 @@
             "value": 62.432364937983856,
             "unit": "개/km²",
             "percentile": 75.3,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           }
         ],
@@ -603,21 +603,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
@@ -694,22 +694,22 @@
             "tone": "positive",
             "metric_key": "foot_traffic",
             "label": "유동 수요",
-            "message": "유동 수요 peer 백분위가 99로 높아 긍정적합니다.",
+            "message": "유동 수요 peer 백분위가 99로 높아 긍정적입니다.",
             "value": 4215817.0,
             "unit": "명/분기",
             "percentile": 98.8,
-            "source_name": "flow",
+            "source_name": "서울시 상권분석서비스 길단위인구",
             "period": "20251"
           },
           {
             "tone": "positive",
             "metric_key": "sales_per_store",
             "label": "점포당 추정매출",
-            "message": "점포당 추정매출 peer 백분위가 91로 높아 긍정적합니다.",
+            "message": "점포당 추정매출 peer 백분위가 91로 높아 긍정적입니다.",
             "value": 40430649.2189781,
             "unit": "원/분기",
             "percentile": 90.5,
-            "source_name": "sales",
+            "source_name": "서울시 상권분석서비스 추정매출",
             "period": "20251"
           },
           {
@@ -720,7 +720,7 @@
             "value": 593.1724551494514,
             "unit": "개/km²",
             "percentile": 98.9,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -731,7 +731,7 @@
             "value": -0.36496350364963503,
             "unit": "%",
             "percentile": 20.9,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -772,21 +772,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
@@ -863,22 +863,22 @@
             "tone": "positive",
             "metric_key": "foot_traffic",
             "label": "유동 수요",
-            "message": "유동 수요 peer 백분위가 99로 높아 긍정적합니다.",
+            "message": "유동 수요 peer 백분위가 99로 높아 긍정적입니다.",
             "value": 4215817.0,
             "unit": "명/분기",
             "percentile": 98.9,
-            "source_name": "flow",
+            "source_name": "서울시 상권분석서비스 길단위인구",
             "period": "20251"
           },
           {
             "tone": "positive",
             "metric_key": "sales_per_store",
             "label": "점포당 추정매출",
-            "message": "점포당 추정매출 peer 백분위가 89로 높아 긍정적합니다.",
+            "message": "점포당 추정매출 peer 백분위가 89로 높아 긍정적입니다.",
             "value": 68774310.57088487,
             "unit": "원/분기",
             "percentile": 88.7,
-            "source_name": "sales",
+            "source_name": "서울시 상권분석서비스 추정매출",
             "period": "20251"
           },
           {
@@ -889,7 +889,7 @@
             "value": 2275.2709867228955,
             "unit": "개/km²",
             "percentile": 96.8,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -900,7 +900,7 @@
             "value": 5.32825880114177,
             "unit": "%",
             "percentile": 73.7,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -941,21 +941,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
@@ -1032,22 +1032,22 @@
             "tone": "positive",
             "metric_key": "foot_traffic",
             "label": "유동 수요",
-            "message": "유동 수요 peer 백분위가 98로 높아 긍정적합니다.",
+            "message": "유동 수요 peer 백분위가 98로 높아 긍정적입니다.",
             "value": 4215817.0,
             "unit": "명/분기",
             "percentile": 98.4,
-            "source_name": "flow",
+            "source_name": "서울시 상권분석서비스 길단위인구",
             "period": "20251"
           },
           {
             "tone": "positive",
             "metric_key": "sales_per_store",
             "label": "점포당 추정매출",
-            "message": "점포당 추정매출 peer 백분위가 80로 높아 긍정적합니다.",
+            "message": "점포당 추정매출 peer 백분위가 80로 높아 긍정적입니다.",
             "value": 28437394.184210528,
             "unit": "원/분기",
             "percentile": 80.0,
-            "source_name": "sales",
+            "source_name": "서울시 상권분석서비스 추정매출",
             "period": "20251"
           },
           {
@@ -1058,7 +1058,7 @@
             "value": -5.263157894736842,
             "unit": "%",
             "percentile": 9.9,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -1069,7 +1069,7 @@
             "value": 5.263157894736842,
             "unit": "%",
             "percentile": 87.8,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           }
         ],
@@ -1099,21 +1099,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
@@ -1190,22 +1190,22 @@
             "tone": "positive",
             "metric_key": "foot_traffic",
             "label": "유동 수요",
-            "message": "유동 수요 peer 백분위가 99로 높아 긍정적합니다.",
+            "message": "유동 수요 peer 백분위가 99로 높아 긍정적입니다.",
             "value": 4215817.0,
             "unit": "명/분기",
             "percentile": 98.6,
-            "source_name": "flow",
+            "source_name": "서울시 상권분석서비스 길단위인구",
             "period": "20251"
           },
           {
             "tone": "positive",
             "metric_key": "sales_per_store",
             "label": "점포당 추정매출",
-            "message": "점포당 추정매출 peer 백분위가 90로 높아 긍정적합니다.",
+            "message": "점포당 추정매출 peer 백분위가 90로 높아 긍정적입니다.",
             "value": 177105180.93617022,
             "unit": "원/분기",
             "percentile": 89.7,
-            "source_name": "sales",
+            "source_name": "서울시 상권분석서비스 추정매출",
             "period": "20251"
           },
           {
@@ -1216,7 +1216,7 @@
             "value": 101.74855982490588,
             "unit": "개/km²",
             "percentile": 92.9,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -1227,7 +1227,7 @@
             "value": -2.127659574468085,
             "unit": "%",
             "percentile": 8.3,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           }
         ],
@@ -1257,21 +1257,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
@@ -1348,22 +1348,22 @@
             "tone": "positive",
             "metric_key": "sales_per_store",
             "label": "점포당 추정매출",
-            "message": "점포당 추정매출 peer 백분위가 86로 높아 긍정적합니다.",
+            "message": "점포당 추정매출 peer 백분위가 86로 높아 긍정적입니다.",
             "value": 30078831.296296295,
             "unit": "원/분기",
             "percentile": 85.9,
-            "source_name": "sales",
+            "source_name": "서울시 상권분석서비스 추정매출",
             "period": "20251"
           },
           {
             "tone": "positive",
             "metric_key": "foot_traffic",
             "label": "유동 수요",
-            "message": "유동 수요 peer 백분위가 82로 높아 긍정적합니다.",
+            "message": "유동 수요 peer 백분위가 82로 높아 긍정적입니다.",
             "value": 1430747.0,
             "unit": "명/분기",
             "percentile": 81.8,
-            "source_name": "flow",
+            "source_name": "서울시 상권분석서비스 길단위인구",
             "period": "20251"
           },
           {
@@ -1374,7 +1374,7 @@
             "value": 322.0535085940575,
             "unit": "개/km²",
             "percentile": 93.2,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -1385,7 +1385,7 @@
             "value": 2.4691358024691357,
             "unit": "%",
             "percentile": 69.7,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -1426,21 +1426,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
@@ -1517,22 +1517,22 @@
             "tone": "positive",
             "metric_key": "sales_per_store",
             "label": "점포당 추정매출",
-            "message": "점포당 추정매출 peer 백분위가 87로 높아 긍정적합니다.",
+            "message": "점포당 추정매출 peer 백분위가 87로 높아 긍정적입니다.",
             "value": 65398300.53030303,
             "unit": "원/분기",
             "percentile": 86.7,
-            "source_name": "sales",
+            "source_name": "서울시 상권분석서비스 추정매출",
             "period": "20251"
           },
           {
             "tone": "positive",
             "metric_key": "foot_traffic",
             "label": "유동 수요",
-            "message": "유동 수요 peer 백분위가 83로 높아 긍정적합니다.",
+            "message": "유동 수요 peer 백분위가 83로 높아 긍정적입니다.",
             "value": 1430747.0,
             "unit": "명/분기",
             "percentile": 83.0,
-            "source_name": "flow",
+            "source_name": "서울시 상권분석서비스 길단위인구",
             "period": "20251"
           },
           {
@@ -1543,7 +1543,7 @@
             "value": 1049.6558798621134,
             "unit": "개/km²",
             "percentile": 80.6,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -1554,7 +1554,7 @@
             "value": -1.1363636363636365,
             "unit": "%",
             "percentile": 35.5,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           }
         ],
@@ -1584,21 +1584,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
@@ -1675,22 +1675,22 @@
             "tone": "positive",
             "metric_key": "sales_per_store",
             "label": "점포당 추정매출",
-            "message": "점포당 추정매출 peer 백분위가 88로 높아 긍정적합니다.",
+            "message": "점포당 추정매출 peer 백분위가 88로 높아 긍정적입니다.",
             "value": 54252530.69565217,
             "unit": "원/분기",
             "percentile": 88.5,
-            "source_name": "sales",
+            "source_name": "서울시 상권분석서비스 추정매출",
             "period": "20251"
           },
           {
             "tone": "positive",
             "metric_key": "foot_traffic",
             "label": "유동 수요",
-            "message": "유동 수요 peer 백분위가 78로 높아 긍정적합니다.",
+            "message": "유동 수요 peer 백분위가 78로 높아 긍정적입니다.",
             "value": 1430747.0,
             "unit": "명/분기",
             "percentile": 78.3,
-            "source_name": "flow",
+            "source_name": "서울시 상권분석서비스 길단위인구",
             "period": "20251"
           },
           {
@@ -1701,7 +1701,7 @@
             "value": -8.695652173913043,
             "unit": "%",
             "percentile": 8.6,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -1712,7 +1712,7 @@
             "value": 8.695652173913043,
             "unit": "%",
             "percentile": 89.6,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           }
         ],
@@ -1742,21 +1742,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
@@ -1833,22 +1833,22 @@
             "tone": "positive",
             "metric_key": "net_opening_rate",
             "label": "점포 순증률",
-            "message": "점포 순증률 peer 백분위가 96로 높아 긍정적합니다.",
+            "message": "점포 순증률 peer 백분위가 96로 높아 긍정적입니다.",
             "value": 4.0,
             "unit": "%",
             "percentile": 95.8,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
             "tone": "positive",
             "metric_key": "foot_traffic",
             "label": "유동 수요",
-            "message": "유동 수요 peer 백분위가 79로 높아 긍정적합니다.",
+            "message": "유동 수요 peer 백분위가 79로 높아 긍정적입니다.",
             "value": 1430747.0,
             "unit": "명/분기",
             "percentile": 79.0,
-            "source_name": "flow",
+            "source_name": "서울시 상권분석서비스 길단위인구",
             "period": "20251"
           },
           {
@@ -1859,7 +1859,7 @@
             "value": 99.39923104754862,
             "unit": "개/km²",
             "percentile": 91.2,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           },
           {
@@ -1870,7 +1870,7 @@
             "value": 4.0,
             "unit": "%",
             "percentile": 90.2,
-            "source_name": "stores",
+            "source_name": "서울시 상권분석서비스 점포",
             "period": "20251"
           }
         ],
@@ -1900,21 +1900,21 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "stores",
+          "source_name": "서울시 상권분석서비스 점포",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "추정매출",
-          "source_name": "sales",
+          "source_name": "서울시 상권분석서비스 추정매출",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
         },
         {
           "metric": "길단위인구",
-          "source_name": "flow",
+          "source_name": "서울시 상권분석서비스 길단위인구",
           "source_url": "https://data.seoul.go.kr",
           "period": "20251",
           "source_type": "official"
