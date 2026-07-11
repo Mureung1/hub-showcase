@@ -1,34 +1,35 @@
 # CI/CD 파이프라인
 
-> **상태: 확정 (2026-07-08).** CI는 `.github/workflows/ci.yml`로 구축 완료. CD(Vercel)는 설계만 확정하고 실행은 CHECKLIST T17에서 한다 — 코드 착수 전이므로 배포할 산출물이 아직 없다.
+> **상태: 설계 확정·CI 미설치 (2026-07-11 확인).** `.github/workflows/ci.yml`은 2026-07-08 추가됐다가 PR 범위에서 제외되어 현재 저장소에는 없다. 아래 CI 구성은 도입 목표이며 원격 게이트는 아직 동작하지 않는다. CD(Vercel)는 설계만 확정했고 실행은 CHECKLIST T17에서 한다.
 
 ## 전체 흐름
 
 ```
 로컬 커밋 (훅: 일괄 스테이징 차단 + oxlint)
-   → push → GitHub Actions CI (린트 → 타입체크+빌드 → 테스트)
+   → push → GitHub Actions CI (도입 예정: 린트 → 타입체크+빌드 → 테스트)
       → PR (과제 템플릿 + 리뷰)
          → 머지 → Vercel 자동 배포 (T17 이후 — 프리뷰/프로덕션)
 ```
 
-세 겹의 검증이 각자 다른 시점을 지킨다: **로컬 훅**(커밋 순간) → **CI**(push/PR마다, 깨끗한 환경에서 재현) → **배포 전 프리뷰**(머지 전 실물 확인).
+목표 검증 구조는 세 겹이다: **로컬 훅**(커밋 순간) → **CI**(push/PR마다, 깨끗한 환경에서 재현) → **배포 전 프리뷰**(머지 전 실물 확인). 현재는 로컬 훅만 구성돼 있으며 CI와 프리뷰는 아직 활성화되지 않았다.
 
-## CI — GitHub Actions (`.github/workflows/ci.yml`)
+## CI 설계 — GitHub Actions (`.github/workflows/ci.yml`, 현재 미설치)
 
 | 항목 | 내용 |
 |---|---|
 | 트리거 | 모든 브랜치 push + 모든 PR. 같은 브랜치에 연속 push 시 이전 실행 취소(concurrency) |
-| 단계 | `npm ci` → `npm run lint`(oxlint) → `npm run build`(tsc -b + vite build = 타입체크 겸용) → 테스트 |
-| 테스트 단계 | `package.json`에 `test` 스크립트가 **있을 때만 실행**. T1(Vitest 도입)에서 스크립트가 생기면 CI가 자동으로 테스트를 돌리기 시작한다 — 워크플로 수정 불필요 |
-| 통과 기준 | 전 단계 성공. CLAUDE.md 커밋 규칙("각 커밋은 독립적으로 빌드·린트 통과")의 원격 강제판 |
+| 런타임 | Vite 8 호환 Node(`^20.19.0 || >=22.12.0`)를 저장소와 CI에서 같은 버전으로 고정 |
+| 단계 | `npm ci` → `npm run lint` → 클라이언트+API 타입검사 → `npm run build` → `npm test` |
+| API 경계 | 현재 tsconfig는 `src`와 Vite 설정만 포함한다. T18에서 `api/` 전용 tsconfig·핸들러 테스트를 추가해 서버 함수도 CI 대상에 포함 |
+| 통과 기준 | 전 단계 성공 + 대상 브랜치의 required status check 지정. 워크플로 파일 존재만으로 원격 강제라고 부르지 않음 |
 
-기존 `auto-merge.yml`(과제 제공 워크플로 — 매일 13:00 UTC에 비-main 타겟 PR 자동 머지)은 건드리지 않는다. CI는 그와 독립적으로 동작한다.
+기존 `auto-merge.yml`(과제 제공 워크플로 — 매일 13:00 UTC에 비-main 타겟 PR 자동 머지)은 건드리지 않는다. CI를 도입할 때 required status check가 자동 머지에도 적용되는지 확인한다. 워크플로 추가는 원격 동작을 바꾸는 구조 변경이므로 별도 제안·승인 후 수행하고, 실제 GitHub Actions 성공과 브랜치 규칙을 확인한 뒤에만 설치 완료로 기록한다.
 
 ## 브랜치 · PR (과제 컨벤션)
 
 - 작업 브랜치: `N166_진현지` (origin = 개인 fork `Catsmanager/hub`, upstream = 과제 조직 저장소)
 - PR 타이틀: `[N166_진현지] 한 문장 요약`, 본문은 `.github/pull_request_template.md`의 4개 섹션 — 작성 절차는 `/pr` 스킬을 따른다
-- 커밋·푸시는 사용자가 요청할 때만 (CLAUDE.md 규칙)
+- 커밋·푸시는 사용자가 요청할 때만 (AGENTS.md 규칙)
 
 ## CD — Vercel (T17에서 실행)
 
@@ -44,10 +45,13 @@
 
 ### T17 실행 체크리스트 (그 시점에 이 표대로)
 
-1. Vercel에 GitHub 저장소 연결, 프레임워크 Vite 자동 감지 확인
-2. Production Branch 지정 + 프리뷰 배포 동작 확인 (목 상태 1차 배포 — CHECKLIST T17)
-3. `ANTHROPIC_API_KEY` 환경변수 등록은 T18(프록시 함수) 시점에
-4. 배포된 프리뷰 URL을 PR에 첨부하는 습관 — 리뷰어가 실물 확인
+1. Node 버전을 저장소에 고정하고 깨끗한 환경에서 `npm ci`·전체 검증 재현
+2. 별도 승인 후 CI 추가, 실제 성공 실행과 required status check·자동 머지 관계 확인
+3. Vercel에 GitHub 저장소 연결, 프레임워크 Vite 자동 감지 확인
+4. Production Branch 지정 + 프리뷰 배포 동작 확인 (목 상태 1차 배포 — CHECKLIST T17)
+5. 현재 Vercel 플랜의 custom events 지원 여부를 기록(T24 판단 근거). 새 유료 플랜은 자동 도입하지 않음
+6. `ANTHROPIC_API_KEY` 환경변수 등록은 T18(프록시 함수) 시점에
+7. 배포된 프리뷰 URL을 PR에 첨부해 리뷰어가 실물을 확인
 
 ## 이후 단계 (MVP Out)
 
