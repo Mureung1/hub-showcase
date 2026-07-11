@@ -7,7 +7,7 @@ description: Master index of the LLM Wiki. Central navigation hub listing all Wi
 author:
   - "[[김규태]]"
 date created: 2026-07-07
-date modified: 2026-07-10
+date modified: 2026-07-12
 tags:
   - index
   - moc
@@ -29,11 +29,11 @@ status: active
 
 | Metric | Count |
 |--------|-------|
-| Raw Sources | 3 |
-| Wiki Pages | 28 |
-| Concepts | 13 |
+| Raw Sources | 6 |
+| Wiki Pages | 31 |
+| Concepts | 14 |
 | Entities | 8 |
-| Guides | 4 |
+| Guides | 6 |
 | MOCs | 3 |
 | Queries | 1 |
 
@@ -57,6 +57,7 @@ status: active
 - [[Mothership-Satellite Vault Pattern]] — 메인 지식 볼트와 LLM-managed Wiki 볼트의 역할 분리
 - [[Agent-Readable Metadata]] — 에이전트가 먼저 읽는 YAML metadata 설계
 - [[Human-AI Knowledge Boundary]] — AI가 생성한 지식과 사용자가 실제로 아는 지식의 경계
+- [[AI-Augmented Developer Positioning]] — AI 의존이 아니라 AI를 개발 역량의 증폭기로 설명하는 포트폴리오 프레임
 
 ### Entities
 
@@ -78,6 +79,8 @@ status: active
 - [[Obsidian Tooling for LLM Wiki]] — Web Clipper, Dataview, qmd 등 실용 도구 가이드
 - [[Web Clipper to Inbox Workflow]] — Web Clipper capture에서 purpose-gated ingest까지의 실전 절차
 - [[Citation Manager Integration for LLM Wiki]] — Zotero/Bookends 서지정보와 Raw Source/Wiki를 연결하기 위한 가이드 stub
+- [[김규태 Career Narrative]] — 자기소개, 목표 도메인, 성장 과제, 면접용 내러티브 정리
+- [[김규태 Leadership and Teaching Evidence]] — 실리콘밸리 대표, 멋쟁이사자처럼 부대표, 백엔드 세션, 해커톤 템플릿 증거
 
 ### Maps (MOC)
 
@@ -101,6 +104,9 @@ status: active
 
 | Date | Source | Pages Touched |
 |------|--------|---------------|
+| 2026-07-12 | [[2026-07-12-Velog-Leadership-Product-Hackathon-Bundle]] | 4 pages |
+| 2026-07-12 | [[2026-07-12-Kim-Gyutae-Leadership-Product-Context-v2]] | 6 pages |
+| 2026-07-11 | [[2026-07-11-Kim-Gyutae-Personal-Raw-Context-v1]] | 7 pages |
 | 2026-07-07 | [[2026-07-07-에이전트를-위한-지식-베이스-LLM-Wiki-활용]] | 13 pages |
 | 2026-04-12 | [[2026-04-12-Karpathy-LLM-Wiki\|Karpathy LLM Wiki Gist]] | 10 pages (예시) |
 

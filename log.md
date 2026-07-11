@@ -8,7 +8,7 @@ description: Chronological log of all wiki operations — ingests, queries, lint
 author:
   - "[[김규태]]"
 date created: 2026-07-07
-date modified: 2026-07-10
+date modified: 2026-07-12
 tags:
   - system
   - log
@@ -120,3 +120,73 @@ status: active
 - Clarified primary language: Python
 - GitHub-based stack: Python, Java, Kotlin, TypeScript/React, JavaScript, C, Shell/PowerShell, Dockerfile, PLpgSQL
 - Added `Graduation-elasticsearch` as research/backend evidence between `financial-order-latency-lab` and `cuee`
+
+## [2026-07-11] ingest | 김규태 Personal Raw Context v1
+
+- Source: [[2026-07-11-Kim-Gyutae-Personal-Raw-Context-v1]]
+- Origin: User-provided raw terminal/chat text in Codex session
+- Collection purpose: 나에 대한 장기 컨텍스트를 축적해 이력서, 면접, 포트폴리오, 블로그, 프로젝트 설명에 반복 재사용하기 위한 개인 원본 프로필
+- Raw Source 저장: `10. Raw Sources/15. Clippings/`
+- Mode: A standalone — mothership search skipped, `mainVaultRelated` / `mainVaultCmds` left empty
+- Wiki 페이지 생성 (2):
+	- Concepts (1): [[AI-Augmented Developer Positioning]]
+	- Guides (1): [[김규태 Career Narrative]]
+- Wiki 페이지 업데이트 (5):
+	- [[Core Context]]
+	- [[김규태]]
+	- [[MOC-Portfolio]]
+	- [[financial-order-latency-lab]]
+	- [[harness]]
+- Key context captured:
+	- 목표 직무는 아직 단일 확정이 아니며 백엔드 / 금융 / 드론 / 반도체 도메인 탐색 중
+	- 경상국립대학교 소프트웨어공학과 3학년, SEALAB 학부연구생
+	- AI 의존 개발자가 아니라 AI를 개발 역량의 증폭기로 활용하는 개발자로 포지셔닝
+	- `financial-order-latency-lab`의 시작 동기: 운영체제 수업 CPU latency와 금융 주문 처리 관심
+	- Codex 기반 Threads 자동 리서치/업로드 workflow와 팔로워 약 400명 성과는 추가 증빙 필요
+- Reuse axis: 취업/포트폴리오, 프로젝트 증거, Codex 개발 워크플로, 에세이/블로그
+
+## [2026-07-12] ingest | 김규태 Leadership Product Context v2
+
+- Source: [[2026-07-12-Kim-Gyutae-Leadership-Product-Context-v2]]
+- Origin: User-provided raw chat text in Codex session, plus public Velog/GitHub links
+- Collection purpose: 취업/포트폴리오 — 리더십, 교육, 창업/제품 문제정의, 해커톤 템플릿, 향후 보강할 증거를 원본 맥락으로 보존해 이력서와 면접 답변에 재사용
+- Raw Source 저장: `10. Raw Sources/15. Clippings/`
+- Mode: A standalone — mothership search skipped, `mainVaultRelated` / `mainVaultCmds` left empty
+- Wiki 페이지 생성 (1):
+	- Guides (1): [[김규태 Leadership and Teaching Evidence]]
+- Wiki 페이지 업데이트 (5):
+	- [[Core Context]]
+	- [[김규태]]
+	- [[cuee]]
+	- [[MOC-Portfolio]]
+	- [[index]]
+- Key context captured:
+	- `cuee`는 `배우담`의 후속 방향이며, 학습 과정 자체가 고통스럽다는 문제를 보고 현재 화면의 다음 버튼을 마스킹/안내하는 접근성 오버레이로 전환
+	- `cuee` 팀 규모는 5명: 디자이너 2명, 기획 2명, 김규태 1명(개발자/팀장)
+	- 김규태는 2026년 `실리콘밸리` 취업동아리 대표(20명: 학부생 15명, 교수 5명)
+	- 김규태는 2026년 경상국립대학교 멋쟁이사자처럼 14기 부대표
+	- GNU 해커톤 템플릿은 다음 달 대회에서 사용할 예정이며, 실제 결과/피드백은 추후 보강
+	- 회의록, 예산/지원금 자료, 책 수요조사, 교수 피드백, 백엔드 세션 자료는 추후 Raw Source로 보강 예정
+- Reuse axis: 취업/포트폴리오, 프로젝트 증거, 강의/수업/교육, 제품/창업
+
+## [2026-07-12] ingest | Velog Leadership Product Hackathon Bundle
+
+- Source: [[2026-07-12-Velog-Leadership-Product-Hackathon-Bundle]]
+- Origin: Public Velog posts and GitHub README
+- Collection purpose: 취업/포트폴리오 — 리더십, 제품 문제정의, 해커톤 준비, 백엔드 교육, 실제 고객 문제 해결 경험을 원문 증거로 보존해 이력서와 면접 답변에 재사용
+- Raw Source 저장: `10. Raw Sources/15. Clippings/`
+- Included sources:
+	- `what is leadership?`
+	- `실리콘밸리 1주차`
+	- `실리콘밸리2`
+	- `week2. silicon valley`
+	- `멋쟁이사자 아이디어톤(1)`
+	- `배우담 개발일지1`
+	- `크몽 외주 일지`
+	- `GNU_hackathon_templete` README
+- Wiki 페이지 업데이트 (4):
+	- [[김규태 Leadership and Teaching Evidence]]
+	- [[cuee]]
+	- [[MOC-Portfolio]]
+	- [[index]]
+- Reuse axis: 취업/포트폴리오, 강의/수업/교육, 제품/창업, 프로젝트 증거
