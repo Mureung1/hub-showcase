@@ -42,7 +42,7 @@ Modu Brain은 단순 회의 요약이 아니라 **원문 기록 → 근거가 �
 8. 1~30일 읽기 전용 링크를 만들고 필요하면 즉시 폐기합니다.
 9. 새로고침 뒤에도 프로젝트·원문·분석 이력이 유지됩니다.
 
-로그인하지 않은 사용자는 `/demo`에서 계정 없이 저장되지 않는 결정론적 샘플을 바로 체험할 수 있습니다.
+로그인하지 않은 사용자는 `/`에서 붙여넣기·카카오톡 TXT·Teams JSON·Notion JSON을 계정 연결이나 저장 없이 정규화·분석하거나, `/demo`에서 결정론적 샘플을 바로 체험할 수 있습니다.
 
 ## 주요 구현
 
@@ -55,6 +55,8 @@ Modu Brain은 단순 회의 요약이 아니라 **원문 기록 → 근거가 �
 - 결과·오류·빈 상태·진행 상태를 숨김 없이 분리
 - 모바일에서도 기록, 이력, 지식맵, 공유 흐름을 유지
 - 관점 차이 → 미결 질문 → 결정 배경 → 요약의 고정 정보 위계
+- `DESIGN-notion.md` 기반의 warm-paper 표면, 딥 인디고 히어로, hairline 카드와 KoPubWorld 돋움 로컬 우선 타이포그래피
+- 로그인 없이 계속, 자동 파일 형식 판별, 모바일 접이식 메뉴와 `Esc` 포커스 복귀
 - 375/768/1024/1440px, 44px 터치 영역, focus trap·skip link, reduced motion 검증
 
 ### 인증·데이터베이스
@@ -95,6 +97,7 @@ Modu Brain은 단순 회의 요약이 아니라 **원문 기록 → 근거가 �
 - 기본 7일, 최대 30일, 즉시 폐기
 - 공유 projection은 프로젝트 제목·정제된 결과·분석/만료 시각만 반환하고 원문·이메일·내부 ID·provider/token 정보 제외
 - 사용자당 AI 동시 1건·시간 10건·일 30건, IP당 공유 조회 시간 60건
+- 공개 가져오기는 same-origin, IP당 시간 20건, JSON 256KB·정규화 후 20,000자로 제한하고 DB에 저장하지 않음
 
 ## API
 
@@ -111,6 +114,7 @@ GET|POST         /api/v1/analysis-runs/:runId/annotations
 GET|POST         /api/v1/analysis-runs/:runId/share-links
 DELETE           /api/v1/share-links/:shareLinkId
 POST             /api/v1/shared/resolve
+POST             /api/context-analysis/import
 GET              /api/health/live
 GET              /api/health/ready
 ```
@@ -141,7 +145,7 @@ npm run test:e2e
 - GitHub Actions의 lint/typecheck/coverage/build/audit/secret scan/public smoke·axe 접근성 검사
 - 내부 PR·브랜치에서 로컬 Supabase reset/pgTAP/authenticated E2E
 
-현재 로컬 검증은 Vitest 242개 통과, statements 84.19%, branches 77.01%, functions 88.25%, lines 87.39%, 공개 axe/반응형/skip-link 9개 통과, `npm audit` 취약점 0건입니다.
+현재 로컬 검증은 Vitest 251개 통과, statements 83.68%, branches 76.67%, functions 87.44%, lines 87.06%, 공개 axe/반응형/skip-link/모바일 메뉴 10개 통과, `npm audit` 취약점 0건입니다.
 
 실제 OpenAI 유료 호출은 CI에서 수행하지 않습니다. 모델 출력 품질·비용·preview 권한은 별도 승인된 데모 계정에서 검증해야 합니다.
 
@@ -165,7 +169,7 @@ npm run test:e2e
 
 ## 제외 범위
 
-팀 초대·역할 관리, 공동 편집, Slack/Notion 연동, 파일 파싱, 결제, 실시간 동기화, 백그라운드 작업 큐, 임의 두 분석 간 비교는 후속 버전으로 미룹니다.
+팀 초대·역할 관리, 공동 편집, Slack·Notion·Teams 계정/OAuth 직접 연결, 결제, 실시간 동기화, 백그라운드 작업 큐, 임의 두 분석 간 비교는 후속 버전으로 미룹니다. 사용자가 직접 선택한 내보내기 파일과 붙여넣기는 이번 버전에서 지원합니다.
 
 ## 디자인·기획 자료
 

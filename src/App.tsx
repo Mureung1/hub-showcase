@@ -106,18 +106,18 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
   } else if (pathname === "/demo") {
     page = <LandingPage key="public-demo" navigate={navigate} initialDemo />;
   } else if (pathname === "/login") {
-    page = session ? <AlreadySignedIn email={session.user.email} onContinue={() => navigate("/projects")} /> : <LoginPage auth={auth} />;
+    page = session ? <AlreadySignedIn email={session.user.email} onContinue={() => navigate("/projects")} /> : <LoginPage auth={auth} onGuestContinue={() => navigate("/demo")} />;
   } else if (pathname === "/share") {
     page = <SharePage api={api} />;
   } else if (pathname === "/projects") {
-    page = authReady ? (session ? <ProjectsPage api={api} token={session.accessToken} navigate={navigate} /> : <LoginRequired navigate={() => navigate("/login")} />) : <AuthLoader />;
+    page = authReady ? (session ? <ProjectsPage api={api} token={session.accessToken} navigate={navigate} /> : <LoginRequired onLogin={() => navigate("/login")} onGuestContinue={() => navigate("/demo")} />) : <AuthLoader />;
   } else {
     const projectMatch = pathname.match(/^\/projects\/([^/]+)$/);
     page = projectMatch
       ? authReady
         ? session
           ? <ProjectPage api={api} token={session.accessToken} projectId={decodeURIComponent(projectMatch[1])} navigate={navigate} />
-          : <LoginRequired navigate={() => navigate("/login")} />
+          : <LoginRequired onLogin={() => navigate("/login")} onGuestContinue={() => navigate("/demo")} />
         : <AuthLoader />
       : <NotFound navigate={() => navigate("/")} />;
   }
@@ -132,7 +132,15 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
       <div id="main-content" tabIndex={-1}>
         {page}
       </div>
-      <footer className="site-footer"><span>Modu Brain</span><span>결정을 요약하는 것을 넘어, 근거와 변화를 연결합니다.</span></footer>
+      <footer className="site-footer">
+        <div className="site-footer-inner">
+          <div><strong>Modu Brain</strong><p>결정을 요약하는 것을 넘어, 근거와 변화를 연결합니다.</p></div>
+          <nav aria-label="하단 메뉴">
+            <a href="/demo">로그인 없이 체험</a>
+            <a href="/login">프로젝트 저장 시작</a>
+          </nav>
+        </div>
+      </footer>
     </>
   );
 }
@@ -141,8 +149,8 @@ function AuthLoader() {
   return <main className="app-page"><div className="loading-card page-loader" role="status">로그인 상태를 확인하는 중…</div></main>;
 }
 
-function LoginRequired({ navigate }: { navigate: () => void }) {
-  return <main className="narrow-page"><section className="auth-card"><p className="section-kicker">Authentication required</p><h1>로그인이 필요한 공간입니다</h1><p>프로젝트와 원문은 계정별로 격리되어 있습니다.</p><button className="button primary" type="button" onClick={navigate}>이메일로 로그인</button></section></main>;
+function LoginRequired({ onLogin, onGuestContinue }: { onLogin: () => void; onGuestContinue: () => void }) {
+  return <main className="narrow-page"><section className="auth-card"><p className="section-kicker">Saved workspace</p><h1>저장할 때만 로그인하세요</h1><p>공개 체험은 계정 없이 사용할 수 있고, 저장 프로젝트와 원문만 계정별로 안전하게 격리됩니다.</p><div className="auth-choice-row"><button className="button primary" type="button" onClick={onLogin}>이메일로 로그인</button><button className="button secondary" type="button" onClick={onGuestContinue}>공개 데모 계속</button></div></section></main>;
 }
 
 function AlreadySignedIn({ email, onContinue }: { email: string; onContinue: () => void }) {

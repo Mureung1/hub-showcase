@@ -15,7 +15,7 @@ test("public landing keeps the sample explicit and deterministic", async ({
   expect(socialPreview.headers()["content-type"]).toContain("image/png");
 
   await expect(
-    page.getByRole("heading", { name: "결론은 남지만, 왜 그렇게 정했는지는 사라집니다." }),
+    page.getByRole("heading", { name: "결론보다 오래 남아야 할 이유를 연결합니다." }),
   ).toBeVisible();
   await expect(page.getByText("분석 대기", { exact: true })).toBeVisible();
   await expect(page.getByText("샘플 데이터", { exact: true })).toHaveCount(0);
@@ -29,6 +29,17 @@ test("public landing keeps the sample explicit and deterministic", async ({
   await expect(
     page.getByRole("heading", { name: "참여자별 관점 차이" }),
   ).toBeVisible();
+});
+
+test("exported context can be normalized and analyzed without an account", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "가져오기 샘플 채우기" }).click();
+  await page.getByRole("button", { name: "가져와 바로 분석" }).click();
+
+  await expect(page.getByText(/맥락을 정리해 분석했습니다/)).toBeVisible();
+  await expect(page.getByText("local-heuristic 분석 결과", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "붙여넣은 후속 회의" })).toBeVisible();
 });
 
 test("public demo is one click away and requires no account", async ({ page }) => {
@@ -62,4 +73,14 @@ test("SPA routes and process health are available without a database", async ({
     page.getByRole("heading", { name: "이메일로 안전하게 시작하세요" }),
   ).toBeVisible();
   await expect(page.getByTestId("login-email")).toBeVisible();
+});
+
+test("login can be skipped when the user only needs the public demo", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "로그인 없이 공개 데모 계속" }).click();
+
+  await expect(page).toHaveURL(/\/demo$/);
+  await expect(
+    page.getByRole("heading", { name: "로그인 없이 확인하는 근거 기반 맥락 분석" }),
+  ).toBeVisible();
 });

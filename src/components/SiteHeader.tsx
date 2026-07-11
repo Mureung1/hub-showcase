@@ -1,3 +1,4 @@
+import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import type { AuthSession } from "../services/auth";
 import type { Navigate } from "../hooks/useRoute";
 
@@ -10,8 +11,25 @@ type SiteHeaderProps = {
 };
 
 function SiteHeader({ session, pathname, navigate, signingOut, onSignOut }: SiteHeaderProps) {
-  const go = (path: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
+  const [menuPath, setMenuPath] = useState<string | null>(null);
+  const menuId = useId();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuOpen = menuPath === pathname;
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMenuPath(null);
+      menuButtonRef.current?.focus();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [menuOpen]);
+
+  const go = (path: string) => (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
+    setMenuPath(null);
     navigate(path);
   };
 
@@ -21,7 +39,18 @@ function SiteHeader({ session, pathname, navigate, signingOut, onSignOut }: Site
         <span className="brand-mark" aria-hidden="true">M</span>
         <span>Modu Brain</span>
       </a>
-      <nav aria-label="주요 메뉴">
+      <button
+        ref={menuButtonRef}
+        className="nav-menu-button"
+        type="button"
+        aria-expanded={menuOpen}
+        aria-controls={menuId}
+        onClick={() => setMenuPath((current) => current === pathname ? null : pathname)}
+      >
+        <span className="nav-menu-icon" aria-hidden="true"><i /><i /><i /></span>
+        메뉴
+      </button>
+      <nav id={menuId} className={menuOpen ? "menu-open" : ""} aria-label="주요 메뉴">
         <a
           aria-current={pathname === "/" ? "page" : undefined}
           className={pathname === "/" ? "active" : ""}

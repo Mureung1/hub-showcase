@@ -30,7 +30,7 @@ function SharePage({ api }: { api: PlatformApi }) {
 
   if (loading) return <main className="app-page"><div className="loading-card page-loader" role="status">공유 분석을 불러오는 중…</div></main>;
   if (error || !shared?.result) {
-    return <main className="narrow-page"><section className="auth-card"><p className="section-kicker">Share unavailable</p><h1>공유 내용을 열 수 없습니다</h1><div className="notice error" role="alert">{error ?? "공유 결과가 없거나 링크가 만료되었습니다."}</div></section></main>;
+    return <main className="narrow-page"><section className="auth-card"><p className="section-kicker">Share unavailable</p><h1>공유 내용을 열 수 없습니다</h1><div className="notice error" role="alert">{error ?? "공유 결과가 없거나 링크가 만료되었습니다."}</div><div className="auth-choice-row"><a className="button primary" href="/demo">공개 데모 열기</a><a className="button secondary" href="/">홈으로 이동</a></div></section></main>;
   }
 
   const result = shared.result;
@@ -42,13 +42,13 @@ function SharePage({ api }: { api: PlatformApi }) {
       </header>
       <div className="notice info">이 페이지는 원문 전체나 계정 정보를 포함하지 않는 공유용 분석 화면입니다.</div>
       <div className="results-grid overview-grid">
-        <OnboardingSummary summary={result.onboardingSummary} />
+        <SummaryPanel result={result} />
+        <DecisionList decisions={result.decisions} />
+        <QuestionList questions={result.questions} />
         <PerspectiveTable participants={result.participants} />
         <ParticipantAgentPanel synthesis={result.participantAgents} />
-        <QuestionList questions={result.questions} />
-        <DecisionList decisions={result.decisions} />
+        <OnboardingSummary summary={result.onboardingSummary} />
         <KnowledgeMap map={result.knowledgeMap} />
-        <SummaryPanel result={result} />
       </div>
     </main>
   );

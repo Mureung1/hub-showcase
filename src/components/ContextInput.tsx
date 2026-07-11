@@ -26,19 +26,19 @@ function ContextInput({ projectTitle, inputText, isAnalyzing, analysisError, ana
   return (
     <section className="input-panel" aria-labelledby="input-title">
       <div className="panel-heading">
-        <p className="section-kicker">Step 01</p>
-        <h2 id="input-title">프로젝트 기록 입력</h2>
-        <p>회의록, 조사 메모, 피드백을 붙여 넣으면 팀이 함께 알아야 할 맥락을 구조화합니다.</p>
+        <p className="section-kicker">Quick paste</p>
+        <h2 id="input-title">내용을 바로 붙여넣기</h2>
+        <p>파일이 없어도 회의록, 조사 메모, 피드백을 붙여 넣으면 즉시 구조화합니다.</p>
       </div>
       <label className="field">
-        <span>프로젝트 이름</span>
-        <input aria-label="프로젝트 이름" value={projectTitle} maxLength={MAX_PROJECT_TITLE_LENGTH} onChange={(event) => onProjectTitleChange(event.target.value)} placeholder="예: 캠퍼스 공모전 서비스 기획" aria-invalid={titleLength > 0 && !validTitle} />
-        {titleLength > 0 && !validTitle && <small className="field-guide error">프로젝트 이름은 2자 이상 120자 이하로 입력하세요.</small>}
-      </label>
-      <label className="field">
         <span>회의록 / 메모 / 피드백</span>
-        <textarea aria-label="회의록 / 메모 / 피드백" value={inputText} onChange={(event) => onInputTextChange(event.target.value)} placeholder="팀 회의 내용, 결정 이유, 각자의 의견, 남은 질문을 입력하세요." maxLength={MAX_RAW_TEXT_LENGTH} aria-invalid={shortText || longText} />
+        <textarea id="public-context-text" aria-label="회의록 / 메모 / 피드백" value={inputText} onChange={(event) => onInputTextChange(event.target.value)} placeholder="카카오톡, Teams, Notion 등에서 필요한 대화와 회의 내용을 복사해 붙여넣으세요." maxLength={MAX_RAW_TEXT_LENGTH} aria-invalid={shortText || longText} />
         <small className={`counter ${longText ? "error" : ""}`}>{textLength.toLocaleString("ko-KR")} / {MAX_RAW_TEXT_LENGTH.toLocaleString("ko-KR")}자</small>
+      </label>
+      <label className="field compact-title-field">
+        <span>분석 제목 <small>선택</small></span>
+        <input aria-label="프로젝트 이름" value={projectTitle} maxLength={MAX_PROJECT_TITLE_LENGTH} onChange={(event) => onProjectTitleChange(event.target.value)} placeholder="예: 캠퍼스 공모전 서비스 기획" aria-invalid={titleLength > 0 && !validTitle} />
+        {titleLength > 0 && !validTitle && <small className="field-guide error">분석 제목은 2자 이상 120자 이하로 입력하세요.</small>}
       </label>
       {shortText && <p className="short-guide">분석에 필요한 맥락을 위해 {MIN_RAW_TEXT_LENGTH - textLength}자 더 입력해 주세요.</p>}
       {longText && <p className="short-guide error">입력 기록을 {MAX_RAW_TEXT_LENGTH.toLocaleString("ko-KR")}자 이하로 줄여 주세요.</p>}

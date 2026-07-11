@@ -13,6 +13,7 @@
     "test:eval": "vitest run tests/eval/korean-context-eval.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
+    "render:og": "node scripts/render-og.mjs",
     "check": "npm run lint && npm run test:coverage && npm run build"
   },
   "dependencies": {

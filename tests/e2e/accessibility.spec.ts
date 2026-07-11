@@ -37,7 +37,11 @@ for (const width of [375, 768, 1024, 1440]) {
       .locator("a[href]:visible, button:visible, input:visible, textarea:visible, select:visible, [role='tab']:visible")
       .evaluateAll((elements) => elements
         .map((element) => {
-          const rect = element.getBoundingClientRect();
+          const input = element instanceof HTMLInputElement ? element : null;
+          const target = input && ["checkbox", "radio"].includes(input.type)
+            ? input.closest("label") || input
+            : element;
+          const rect = target.getBoundingClientRect();
           return {
             label: element.getAttribute("aria-label") || element.textContent?.trim() || element.tagName,
             width: Math.round(rect.width),
@@ -60,4 +64,20 @@ test("skip link moves keyboard focus to the main content", async ({ page }) => {
   await expect(skipLink).toBeVisible();
   await page.keyboard.press("Enter");
   await expect(page.locator("#main-content")).toBeFocused();
+});
+
+test("mobile navigation exposes state and closes with Escape", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/");
+
+  const menu = page.getByRole("button", { name: "메뉴" });
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await menu.click();
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("navigation", { name: "주요 메뉴" })).toBeVisible();
+
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await expect(menu).toBeFocused();
 });

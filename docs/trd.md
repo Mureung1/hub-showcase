@@ -189,6 +189,7 @@ annotation 생성은 8~128자의 `Idempotency-Key`를 요구한다. 같은 키·
 - `GET /api/health/ready`: 필수 Supabase 설정과 DB 쿼리가 성공하면 `200`, 아니면 `503`
 - `GET /api/v1/capabilities`: OpenAI 기능 플래그와 기본 로컬 provider를 비밀정보 없이 반환
 - `POST /api/context-analysis`: 로컬 provider로 고정한 비영속 V1 호환 API. 이번 릴리스 뒤 제거 예정
+- `POST /api/context-analysis/import`: same-origin 공개 요청에서 카카오톡 TXT·Teams JSON·Notion JSON·일반 텍스트를 정규화하고 로컬 분석한다. DB에는 저장하지 않으며 IP당 시간당 20회, JSON 256KB, 정규화 후 20,000자 제한을 적용한다.
 
 ## 7. OpenAI provider
 

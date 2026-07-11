@@ -48,6 +48,78 @@ describe("context analysis HTTP API", () => {
     expect(body.participantAgents.views.length).toBeGreaterThan(0);
   });
 
+  it("normalizes an account-free context export and analyzes it without persistence", async () => {
+    const response = await requestImport({
+      provider: "teams",
+      title: "Teams 접근성 회의",
+      text: JSON.stringify([
+        {
+          id: "message-1",
+          createdDateTime: "2026-07-11T05:01:00Z",
+          from: { user: { displayName: "민지" } },
+          body: {
+            contentType: "text",
+            content: `${validRawText} 결정: 로그인하지 않은 사용자도 내보낸 기록을 바로 분석할 수 있게 한다.`,
+          },
+        },
+      ]),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.import).toMatchObject({
+      provider: "teams",
+      title: "Teams 접근성 회의",
+      participantCount: 1,
+      segmentCount: 1,
+    });
+    expect(body.import.content).toContain("로그인하지 않은 사용자도");
+    expect(body.result).toMatchObject({
+      projectTitle: "Teams 접근성 회의",
+      provider: { mode: "mock", name: "local-heuristic", usedExternalModel: false },
+    });
+  });
+
+  it("rejects malformed public imports and cross-origin browser requests", async () => {
+    const malformed = await requestImport({ provider: "notion", text: "{not json" });
+    await expectError(malformed, 400, "MALFORMED_IMPORT_PAYLOAD");
+
+    const crossOrigin = await fetch(`${baseUrl}/api/context-analysis/import`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "https://untrusted.example",
+      },
+      body: JSON.stringify({ provider: "paste", text: validRawText }),
+    });
+    await expectError(crossOrigin, 403, "INVALID_ORIGIN");
+  });
+
+  it("returns Retry-After when the public import budget is exhausted", async () => {
+    const limitedServer = createServer((request, response) => {
+      void handleContextAnalysisRequest(request, response, {
+        analysisOptions: { provider: "local-heuristic" },
+        consumeImportRateLimit: () => false,
+      });
+    });
+    await new Promise((resolve) => limitedServer.listen(0, "127.0.0.1", resolve));
+    const address = limitedServer.address();
+
+    try {
+      const response = await fetch(`http://127.0.0.1:${address.port}/api/context-analysis/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: "paste", text: validRawText }),
+      });
+      expect(response.headers.get("retry-after")).toBe("3600");
+      await expectError(response, 429, "PUBLIC_IMPORT_RATE_LIMITED");
+    } finally {
+      await new Promise((resolve, reject) => {
+        limitedServer.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  });
+
   it("rejects malformed JSON with a stable 400 payload", async () => {
     const response = await request({ method: "POST", body: "{" });
 
@@ -170,6 +242,14 @@ function request({ method, body }) {
     method,
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body,
+  });
+}
+
+function requestImport(body) {
+  return fetch(`${baseUrl}/api/context-analysis/import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
 }
 

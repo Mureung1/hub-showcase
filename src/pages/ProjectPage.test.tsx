@@ -280,7 +280,7 @@ describe("ProjectPage", () => {
     await screen.findByRole("heading", { name: project.title });
     await user.click(screen.getByRole("tab", { name: "기록" }));
     await user.click(screen.getByRole("button", { name: "보관" }));
-    await user.click(screen.getByRole("radio", { name: /직접 붙여넣기/ }));
+    await user.click(screen.getByRole("radio", { name: /바로 붙여넣기/ }));
     await user.type(screen.getByLabelText(/기록 제목/), "동시 가져오기");
     await user.type(screen.getByLabelText("회의 맥락 붙여넣기"), "새 맥락");
     await user.click(screen.getByRole("button", { name: "파싱하고 가져오기" }));

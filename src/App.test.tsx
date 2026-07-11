@@ -1,22 +1,28 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { sampleAnalysis, sampleInput } from "./data/sampleAnalysis";
 import type { AuthService, AuthSession } from "./services/auth";
-import { ContextAnalysisRequestError, analyzeContext } from "./services/analyzeContext";
+import {
+  ContextAnalysisRequestError,
+  analyzeContext,
+  analyzeImportedContext,
+} from "./services/analyzeContext";
 import type { PlatformApi } from "./services/platformApi";
 import type { ContextAnalysisResult } from "./types/context";
 
 vi.mock("./services/analyzeContext", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./services/analyzeContext")>();
-  return { ...actual, analyzeContext: vi.fn() };
+  return { ...actual, analyzeContext: vi.fn(), analyzeImportedContext: vi.fn() };
 });
 
 const analyzeContextMock = vi.mocked(analyzeContext);
+const analyzeImportedContextMock = vi.mocked(analyzeImportedContext);
 
 beforeEach(() => {
   analyzeContextMock.mockReset();
+  analyzeImportedContextMock.mockReset();
   window.history.replaceState(null, "", "/");
   window.localStorage.clear();
 });
@@ -65,6 +71,32 @@ describe("public landing prototype", () => {
     expect(screen.getByLabelText("프로젝트 이름")).toHaveValue(sampleAnalysis.projectTitle);
     expect(screen.getByLabelText("회의록 / 메모 / 피드백")).toHaveValue(sampleInput);
     expect(screen.getByText("샘플 데이터")).toBeInTheDocument();
+  });
+
+  it("imports and analyzes external context without requiring a login", async () => {
+    const user = userEvent.setup();
+    analyzeImportedContextMock.mockResolvedValue({
+      import: {
+        provider: "paste",
+        title: "붙여넣은 후속 회의",
+        content: sampleInput,
+        participantCount: 3,
+        segmentCount: 1,
+      },
+      result: sampleAnalysis,
+    });
+    render(<App auth={anonymousAuth()} />);
+
+    fireEvent.change(screen.getByLabelText("회의 맥락 붙여넣기"), { target: { value: sampleInput } });
+    await user.click(screen.getByRole("button", { name: "가져와 바로 분석" }));
+
+    expect(analyzeImportedContextMock).toHaveBeenCalledWith({
+      provider: "paste",
+      text: sampleInput,
+    }, expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(await screen.findByText(/맥락을 정리해 분석했습니다/)).toBeInTheDocument();
+    expect(screen.queryByText("샘플 데이터")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: sampleAnalysis.projectTitle })).toBeInTheDocument();
   });
 
   it("loads the sample from the primary hero action and surfaces context before summary", async () => {
@@ -182,6 +214,17 @@ describe("application routes", () => {
 
     expect(sendMagicLink).toHaveBeenCalledWith("team@example.com", `${window.location.origin}/login`);
     expect(await screen.findByText("로그인 링크를 보냈습니다")).toBeInTheDocument();
+  });
+
+  it("continues to the public demo from login without creating an account", async () => {
+    window.history.replaceState(null, "", "/login");
+    const user = userEvent.setup();
+    render(<App auth={anonymousAuth({ configured: true })} />);
+
+    await user.click(screen.getByRole("button", { name: "로그인 없이 공개 데모 계속" }));
+
+    expect(window.location.pathname).toBe("/demo");
+    expect(screen.getByRole("heading", { name: "로그인 없이 확인하는 근거 기반 맥락 분석" })).toBeInTheDocument();
   });
 
   it("loads the authenticated project list through the injected API", async () => {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import AnalysisPlaceholder from "../components/AnalysisPlaceholder";
+import ContextImportPanel, { type ContextImportInput } from "../components/ContextImportPanel";
 import ContextInput from "../components/ContextInput";
 import DecisionList from "../components/DecisionList";
 import KeyTerms from "../components/KeyTerms";
@@ -11,7 +12,11 @@ import QuestionList from "../components/QuestionList";
 import SummaryPanel from "../components/SummaryPanel";
 import { sampleAnalysis, sampleInput } from "../data/sampleAnalysis";
 import type { Navigate } from "../hooks/useRoute";
-import { ContextAnalysisRequestError, analyzeContext } from "../services/analyzeContext";
+import {
+  ContextAnalysisRequestError,
+  analyzeContext,
+  analyzeImportedContext,
+} from "../services/analyzeContext";
 import { trackProductEvent } from "../services/productTelemetry";
 import type { ContextAnalysisResult } from "../types/context";
 
@@ -93,6 +98,11 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
     });
   };
 
+  const startWithOwnContext = () => {
+    document.getElementById("prototype")?.scrollIntoView({ block: "start" });
+    window.requestAnimationFrame(() => document.getElementById("public-context-text")?.focus());
+  };
+
   const runAnalysis = async () => {
     activeAbortController.current?.abort();
     const controller = new AbortController();
@@ -118,6 +128,40 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
           ? requestError.code
           : "UNEXPECTED_ERROR",
       });
+    } finally {
+      if (activeAbortController.current === controller) activeAbortController.current = null;
+    }
+  };
+
+  const importAndAnalyze = async (input: ContextImportInput) => {
+    activeAbortController.current?.abort();
+    const controller = new AbortController();
+    activeAbortController.current = controller;
+    const version = ++requestVersion.current;
+    setAnalysisState({ status: "loading" });
+    setActiveTab("overview");
+    trackProductEvent("analysis_started", {
+      mode: "public-import",
+      inputCharacters: input.text.length,
+    });
+
+    try {
+      const imported = await analyzeImportedContext(input, { signal: controller.signal });
+      if (requestVersion.current !== version) return;
+      setProjectTitle(imported.import.title);
+      setInputText(imported.import.content);
+      setAnalysisState({ status: "success", result: imported.result });
+      trackProductEvent("analysis_succeeded", { provider: imported.result.provider.name });
+    } catch (requestError) {
+      if (controller.signal.aborted || requestVersion.current !== version) return;
+      const message = getErrorMessage(requestError);
+      setAnalysisState({ status: "error", message });
+      trackProductEvent("analysis_failed", {
+        code: requestError instanceof ContextAnalysisRequestError
+          ? requestError.code
+          : "UNEXPECTED_ERROR",
+      });
+      throw requestError;
     } finally {
       if (activeAbortController.current === controller) activeAbortController.current = null;
     }
@@ -166,18 +210,29 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
       {!initialDemo && (
         <>
       <section className="hero" id="top">
+        <div className="hero-stickers" aria-hidden="true">
+          <span className="sticker sky" />
+          <span className="sticker purple" />
+          <span className="sticker pink" />
+          <span className="sticker orange" />
+        </div>
         <div className="hero-message">
-          <p className="eyebrow">회의 뒤 사라지는 맥락</p>
-          <h1>결론은 남지만, 왜 그렇게 정했는지는 사라집니다.</h1>
+          <p className="eyebrow">어디서 회의했든, 한 장의 맥락으로</p>
+          <h1>결론보다 오래 남아야 할 이유를 연결합니다.</h1>
           <p className="hero-copy">
-            Modu Brain은 흩어진 회의록과 피드백에서 사람별 관점, 아직 답하지 못한 질문,
-            결정의 실제 근거를 연결합니다.
+            카카오톡, Teams, Notion, 메모에 흩어진 기록을 계정 연결 없이 가져와
+            사람별 관점, 열린 질문, 결정의 실제 근거로 정리합니다.
           </p>
+          <ul className="integration-pills" aria-label="지원하는 기록 형식">
+            <li>카카오톡 TXT</li>
+            <li>Teams JSON</li>
+            <li>Notion JSON</li>
+            <li>일반 텍스트</li>
+          </ul>
           <div className="hero-actions">
-            <button className="button primary" type="button" onClick={experienceSample}>샘플 직접 체험</button>
-            <button className="button ghost" type="button" onClick={() => navigate("/login")}>
-              내 프로젝트 시작
-            </button>
+            <button className="button primary" type="button" onClick={startWithOwnContext}>내 기록 바로 정리</button>
+            <button className="button secondary" type="button" onClick={experienceSample}>샘플 직접 체험</button>
+            <button className="text-button hero-login" type="button" onClick={() => navigate("/login")}>저장하며 사용하기</button>
           </div>
         </div>
 
@@ -215,10 +270,14 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
       )}
 
       <section className="section-intro" id="prototype">
-        <p className="section-kicker">Public prototype</p>
-        <h2>로그인 없이 결정론적 샘플을 살펴보세요</h2>
-        <p>이 화면의 직접 입력 분석은 저장되지 않습니다. 영속 프로젝트와 OpenAI 분석은 로그인 후 사용할 수 있습니다.</p>
+        <p className="section-kicker">Open workspace</p>
+        <h2>로그인 없이 붙여넣고, 파일을 열고, 바로 분석하세요</h2>
+        <p>공개 체험의 입력과 결과는 저장되지 않습니다. 프로젝트 보관과 읽기 전용 공유가 필요할 때만 로그인하면 됩니다.</p>
       </section>
+
+      <div className="public-import-workspace">
+        <ContextImportPanel mode="ephemeral" onImport={importAndAnalyze} />
+      </div>
 
       <div className="prototype-grid">
         <ContextInput

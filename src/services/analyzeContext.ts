@@ -1,4 +1,5 @@
 import type { ContextAnalysisResult } from "../types/context";
+import type { ExternalContextProvider, ImportContextInput } from "../types/platform";
 
 type ContextAnalysisErrorPayload = {
   error?: {
@@ -21,6 +22,17 @@ export class ContextAnalysisRequestError extends Error {
     this.details = details;
   }
 }
+
+export type PublicImportedContextAnalysis = {
+  import: {
+    provider: ExternalContextProvider;
+    title: string;
+    content: string;
+    participantCount: number;
+    segmentCount: number;
+  };
+  result: ContextAnalysisResult;
+};
 
 export async function analyzeContext(
   projectTitle: string,
@@ -70,6 +82,48 @@ export async function analyzeContext(
   return payload;
 }
 
+export async function analyzeImportedContext(
+  input: ImportContextInput,
+  options: { signal?: AbortSignal } = {},
+): Promise<PublicImportedContextAnalysis> {
+  let response: Response;
+
+  try {
+    response = await fetch("/api/context-analysis/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+      signal: options.signal,
+    });
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
+    throw new ContextAnalysisRequestError(
+      "공개 가져오기 API에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+    );
+  }
+
+  const payload = (await parseJson(response)) as PublicImportedContextAnalysis | ContextAnalysisErrorPayload;
+  if (!response.ok) {
+    const errorPayload = payload as ContextAnalysisErrorPayload;
+    throw new ContextAnalysisRequestError(
+      errorPayload.error?.message || "외부 맥락 가져오기에 실패했습니다.",
+      response.status,
+      errorPayload.error?.code || "CONTEXT_IMPORT_FAILED",
+      errorPayload.error?.details || null,
+    );
+  }
+
+  if (!isPublicImportedContextAnalysis(payload)) {
+    throw new ContextAnalysisRequestError(
+      "공개 가져오기 API 응답 형식이 올바르지 않습니다.",
+      response.status,
+      "INVALID_IMPORT_ANALYSIS_RESPONSE",
+    );
+  }
+
+  return payload;
+}
+
 async function parseJson(response: Response): Promise<unknown> {
   try {
     return await response.json();
@@ -96,6 +150,21 @@ export function isContextAnalysisResult(value: unknown): value is ContextAnalysi
     isOnboardingSummary(value.onboardingSummary) &&
     isParticipantAgentSynthesis(value.participantAgents) &&
     isProviderInfo(value.provider)
+  );
+}
+
+function isPublicImportedContextAnalysis(value: unknown): value is PublicImportedContextAnalysis {
+  if (!isRecord(value) || !isRecord(value.import)) return false;
+  const imported = value.import;
+  return (
+    ["kakaotalk", "teams", "notion", "paste"].includes(String(imported.provider)) &&
+    isNonEmptyString(imported.title) &&
+    isNonEmptyString(imported.content) &&
+    typeof imported.participantCount === "number" &&
+    Number.isFinite(imported.participantCount) &&
+    typeof imported.segmentCount === "number" &&
+    Number.isFinite(imported.segmentCount) &&
+    isContextAnalysisResult(value.result)
   );
 }
 

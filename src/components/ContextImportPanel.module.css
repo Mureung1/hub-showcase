@@ -2,9 +2,9 @@
   min-width: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  padding: 26px;
+  padding: 28px;
   background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .headingRow {
@@ -72,26 +72,26 @@
 .field > label {
   margin-bottom: 9px;
   color: var(--color-text-body);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .providerGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .providerOption {
   display: flex;
   min-width: 0;
-  min-height: 84px;
-  align-items: flex-start;
-  gap: 11px;
+  min-height: 64px;
+  align-items: center;
+  gap: 9px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
-  padding: 14px;
-  background: var(--color-surface-subtle);
+  padding: 10px 12px;
+  background: var(--color-surface);
   cursor: pointer;
   transition: border-color var(--motion-fast) ease, background-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
 }
@@ -124,7 +124,7 @@
   min-width: 0;
   gap: 6px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
@@ -144,9 +144,9 @@
   border-radius: var(--radius-pill);
   padding: 4px 7px;
   background: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-size: 10px;
-  font-weight: 800;
+  color: var(--color-link);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .field {
@@ -166,8 +166,8 @@
 .fileInput {
   width: 100%;
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-control);
-  background: var(--color-surface-subtle);
+  border-radius: var(--radius-input);
+  background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
   outline: none;
@@ -227,7 +227,7 @@
 .counter {
   margin-top: 7px;
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
@@ -248,7 +248,7 @@
   padding: 14px 16px;
   background: var(--color-primary-subtle);
   color: var(--color-primary-muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -296,7 +296,7 @@
 
 .actions > span {
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -310,14 +310,14 @@
 .sampleButton {
   min-height: 44px;
   border: 1px solid var(--color-primary-border);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   padding: 0 16px;
   background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  color: var(--color-link);
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
-  font-weight: 750;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .sampleButton:focus-visible {
@@ -349,7 +349,7 @@
   cursor: pointer;
   font: inherit;
   font-size: 14px;
-  font-weight: 750;
+  font-weight: 700;
   transition: background-color var(--motion-fast) ease, opacity var(--motion-fast) ease;
 }
 
@@ -365,6 +365,12 @@
 .importButton:disabled {
   cursor: not-allowed;
   opacity: 0.46;
+}
+
+@media (max-width: 900px) {
+  .providerGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {

@@ -46,7 +46,7 @@ export function createModuBrainServer(options = {}) {
     }
 
     try {
-      if (pathname === "/api/context-analysis") {
+      if (["/api/context-analysis", "/api/context-analysis/import"].includes(pathname)) {
         await handleContextAnalysisRequest(req, res, {
           ...(options.apiOptions || {}),
           analysisOptions: {

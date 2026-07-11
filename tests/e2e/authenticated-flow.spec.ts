@@ -184,7 +184,7 @@ async function importPastedContext(
   page: Page,
   source: { title: string; content: string },
 ) {
-  await page.getByRole("radio", { name: /직접 붙여넣기/ }).click();
+  await page.getByRole("radio", { name: /바로 붙여넣기/ }).click();
   await page.getByLabel(/기록 제목/).first().fill(source.title);
   await page.getByLabel("회의 맥락 붙여넣기").fill(source.content);
   await page.getByRole("button", { name: "파싱하고 가져오기" }).click();

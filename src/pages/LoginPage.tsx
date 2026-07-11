@@ -3,9 +3,10 @@ import type { AuthService } from "../services/auth";
 
 type LoginPageProps = {
   auth: AuthService;
+  onGuestContinue: () => void;
 };
 
-function LoginPage({ auth }: LoginPageProps) {
+function LoginPage({ auth, onGuestContinue }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -79,8 +80,12 @@ function LoginPage({ auth }: LoginPageProps) {
             </button>
           </form>
         )}
+        <div className="auth-divider" aria-hidden="true"><span>또는</span></div>
+        <button className="button secondary full-button guest-button" type="button" onClick={onGuestContinue}>
+          로그인 없이 공개 데모 계속
+        </button>
         <p className="privacy-copy">
-          로그인 후 저장한 프로젝트는 계정별로 격리되며, 명시적으로 만든 읽기 전용 링크만 외부에 공개됩니다.
+          붙여넣기와 비영속 분석은 로그인 없이 사용할 수 있습니다. 프로젝트 저장과 공유 링크 생성이 필요할 때만 로그인하세요.
         </p>
       </section>
     </main>

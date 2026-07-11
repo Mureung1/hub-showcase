@@ -3,6 +3,7 @@ import { sampleAnalysis } from "../data/sampleAnalysis";
 import {
   ContextAnalysisRequestError,
   analyzeContext,
+  analyzeImportedContext,
   isContextAnalysisResult,
 } from "./analyzeContext";
 
@@ -143,6 +144,51 @@ describe("analyzeContext", () => {
     await expect(
       analyzeContext("프로젝트", "기록 본문", { signal: controller.signal }),
     ).rejects.toBe(abortError);
+  });
+});
+
+describe("analyzeImportedContext", () => {
+  it("posts an account-free export and returns normalized context with its analysis", async () => {
+    const payload = {
+      import: {
+        provider: "notion" as const,
+        title: "Notion 회의",
+        content: "정규화한 회의 맥락입니다.",
+        participantCount: 2,
+        segmentCount: 3,
+      },
+      result: sampleAnalysis,
+    };
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(mockResponse(payload));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(analyzeImportedContext({
+      provider: "notion",
+      title: "Notion 회의",
+      text: "{\"blocks\":[]}",
+    })).resolves.toEqual(payload);
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/context-analysis/import");
+    expect(init).toMatchObject({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    expect(JSON.parse(String(init?.body))).toEqual({
+      provider: "notion",
+      title: "Notion 회의",
+      text: "{\"blocks\":[]}",
+    });
+  });
+
+  it("rejects malformed successful import responses", async () => {
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(mockResponse({
+      import: { provider: "notion", title: "회의", content: "본문" },
+      result: sampleAnalysis,
+    })));
+
+    await expect(analyzeImportedContext({ provider: "paste", text: "회의 맥락" }))
+      .rejects.toMatchObject({ code: "INVALID_IMPORT_ANALYSIS_RESPONSE" });
   });
 });
 

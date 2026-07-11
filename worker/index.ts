@@ -31,7 +31,7 @@ const worker = {
   async fetch(request: Request, env: SitesEnvironment) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/api/context-analysis") {
+    if (["/api/context-analysis", "/api/context-analysis/import"].includes(url.pathname)) {
       return runNodeHandler(request, async (nodeRequest, nodeResponse) => {
         await handleContextAnalysisRequest(nodeRequest, nodeResponse, {
           analysisOptions: { provider: "local-heuristic" },

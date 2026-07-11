@@ -14,11 +14,12 @@ describe("ContextImportPanel", () => {
 
     expect(screen.getByText("계정 연결 없음")).toBeInTheDocument();
     expect(screen.getByText("내 계정과 연동하지 않습니다.")).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /카카오톡 내보내기/ })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /바로 붙여넣기/ })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /카카오톡 내보내기/ })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Teams JSON/ })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Notion JSON/ })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("radio", { name: /직접 붙여넣기/ }));
+    await user.click(screen.getByRole("radio", { name: /바로 붙여넣기/ }));
     await user.type(screen.getByLabelText(/기록 제목/), "  주간 제품 회의  ");
     await user.type(screen.getByLabelText("회의 맥락 붙여넣기"), "  결정: 금요일까지 시안을 검토한다.  ");
     await user.click(screen.getByRole("button", { name: "파싱하고 가져오기" }));
@@ -64,7 +65,7 @@ describe("ContextImportPanel", () => {
     render(<ContextImportPanel onImport={onImport} />);
     const file = new File(["2026-07-11, 서준 : 안건을 확정합니다."], "기획회의.txt", { type: "text/plain" });
 
-    await user.upload(screen.getByLabelText("내보내기 파일"), file);
+    await user.upload(screen.getByLabelText(/내보내기 파일/), file);
     expect(await screen.findByDisplayValue("2026-07-11, 서준 : 안건을 확정합니다.")).toBeInTheDocument();
     expect(screen.getByLabelText(/기록 제목/)).toHaveValue("기획회의");
     await user.click(screen.getByRole("button", { name: "파싱하고 가져오기" }));
@@ -74,6 +75,36 @@ describe("ContextImportPanel", () => {
       title: "기획회의",
       text: "2026-07-11, 서준 : 안건을 확정합니다.",
     });
+  });
+
+  it("detects a Notion JSON file without requiring a provider choice", async () => {
+    const user = userEvent.setup();
+    const onImport = vi.fn<(input: ContextImportInput) => Promise<void>>().mockResolvedValue();
+    render(<ContextImportPanel onImport={onImport} />);
+    const file = new File([
+      JSON.stringify({
+        page: { url: "https://www.notion.so/demo" },
+        blocks: [{ paragraph: { rich_text: [{ plain_text: "근거를 연결해 확인합니다." }] } }],
+      }),
+    ], "회의정리.json", { type: "application/json" });
+
+    await user.upload(screen.getByLabelText(/내보내기 파일/), file);
+    expect(screen.getByRole("radio", { name: /Notion JSON/ })).toBeChecked();
+    await user.click(screen.getByRole("button", { name: "파싱하고 가져오기" }));
+
+    expect(onImport).toHaveBeenCalledWith(expect.objectContaining({
+      provider: "notion",
+      title: "회의정리",
+    }));
+  });
+
+  it("explains that ephemeral imports are analyzed without being stored", () => {
+    render(<ContextImportPanel mode="ephemeral" onImport={vi.fn().mockResolvedValue(undefined)} />);
+
+    expect(screen.getByRole("heading", { name: "계정 없이 외부 기록 바로 정리" })).toBeInTheDocument();
+    expect(screen.getByText("저장 안 함")).toBeInTheDocument();
+    expect(screen.getByText("이 기록은 저장하지 않습니다.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "가져와 바로 분석" })).toBeDisabled();
   });
 
   it("rejects files larger than 256KB before importing", async () => {
@@ -86,7 +117,7 @@ describe("ContextImportPanel", () => {
       { type: "text/plain" },
     );
 
-    await user.upload(screen.getByLabelText("내보내기 파일"), oversizedFile);
+    await user.upload(screen.getByLabelText(/내보내기 파일/), oversizedFile);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("파일은 256KB 이하");
     expect(screen.getByRole("button", { name: "파싱하고 가져오기" })).toBeDisabled();
@@ -101,7 +132,7 @@ describe("ContextImportPanel", () => {
     );
     render(<ContextImportPanel onImport={onImport} />);
 
-    await user.click(screen.getByRole("radio", { name: /직접 붙여넣기/ }));
+    await user.click(screen.getByRole("radio", { name: /바로 붙여넣기/ }));
     await user.type(screen.getByLabelText("회의 맥락 붙여넣기"), "다음 회의에서 예산을 확정한다.");
     await user.click(screen.getByRole("button", { name: "파싱하고 가져오기" }));
 

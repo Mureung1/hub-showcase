@@ -17,13 +17,15 @@ flowchart LR
     B --> L["읽기 전용 공유 화면"]
 ```
 
-- `/`: 로그인 없이 사용하는 비영속 로컬 샘플
+- `/`: 로그인 없이 붙여넣기·카카오톡 TXT·Teams JSON·Notion JSON을 정규화하고 분석하는 비영속 워크스페이스
+- `/demo`: 사전 구성된 한국어 기록과 분석 결과를 바로 여는 공개 데모
 - `/login`: Supabase 이메일 Magic Link 로그인
 - `/projects`: 사용자 소유 프로젝트 목록과 생성
 - `/projects/:id`: 외부 맥락 가져오기, 기록, 분석 이력, 지식맵·백링크, 온보딩, 공유
 - `/share#token=…`: 원문을 제외한 읽기 전용 분석 결과
 - `/api/v1/**`: 인증·RLS가 적용된 영속 API
 - `/api/context-analysis`: 한 릴리스 동안 유지하는 비영속 호환 API
+- `/api/context-analysis/import`: 계정 없이 내보낸 기록을 정규화한 뒤 로컬 분석하는 same-origin 비영속 API
 
 ## 로컬 실행
 
@@ -122,6 +124,7 @@ GET|POST       /api/v1/analysis-runs/:runId/annotations
 GET|POST       /api/v1/analysis-runs/:runId/share-links
 DELETE         /api/v1/share-links/:shareLinkId
 POST           /api/v1/shared/resolve
+POST           /api/context-analysis/import
 GET            /api/v1/capabilities
 GET            /api/health/live
 GET            /api/health/ready
@@ -143,7 +146,7 @@ npm run test:e2e
 - Vitest: 서버·클라이언트 계약, 보안 경계, 로컬 분석 회귀
 - SQL/pgTAP: 빈 DB 적용·down rollback·재적용과 92개 RLS/권한 계약
 - 한국어 eval 30건: 회의·리서치·피드백·빈 근거·개인정보·prompt injection 문구를 유료 호출 없이 검증
-- Playwright: 공개 샘플과 `로그인 → 프로젝트 → 외부 맥락 가져오기 → 분석 → 근거·백링크 → 이력 → 공유 → 새로고침`
+- Playwright: 공개 가져오기·모바일 메뉴·리플로우와 `로그인 → 프로젝트 → 외부 맥락 가져오기 → 분석 → 근거·백링크 → 이력 → 공유 → 새로고침`
 - GitHub Actions: lint, typecheck, coverage, build, production audit, secret scan, 공개 스모크, 내부 PR의 로컬 Supabase/E2E
 
 ## Sites 배포
@@ -177,14 +180,14 @@ Render는 `npm ci --include=dev && npm run build`, `npm start`, `HOST=0.0.0.0`�
 - 공유 링크 기본 만료는 7일, 최대 30일이며 즉시 폐기할 수 있습니다.
 - 공유 결과에는 원문 전체, 사용자 이메일, 내부 provider 오류를 포함하지 않습니다.
 - AI 실행은 사용자당 동시 1건·시간당 10건·일당 30건, 공유 조회는 IP당 시간당 60건으로 제한합니다.
-- JSON 본문은 256KB, 분석 입력 합계는 100,000자 이하로 제한합니다.
+- JSON 본문은 256KB, 영속 분석 입력 합계는 100,000자 이하로 제한합니다. 공개 가져오기는 IP당 시간당 20회, 정규화 후 20,000자까지 허용합니다.
 - 비밀정보·JWT·원문은 애플리케이션 로그에 기록하지 않습니다.
 - 단계 이벤트에는 원문·prompt·provider 응답·hidden reasoning을 저장하지 않으며 annotation도 모델 입력으로 자동 사용하지 않습니다.
 - 공개 전 Supabase RLS, Auth redirect allowlist, Sites·Render secrets, OpenAI 모델 권한을 다시 확인합니다.
 
 ## 현재 제외 범위
 
-팀 초대·역할 관리, 공동 편집, Slack/Notion 연동, 파일 파싱, 결제, 실시간 동기화, 백그라운드 작업 큐, 임의 두 분석 간 비교는 이번 공개 데모에서 제외합니다.
+팀 초대·역할 관리, 공동 편집, Slack·Notion·Teams 계정/OAuth 직접 연결, 결제, 실시간 동기화, 백그라운드 작업 큐, 임의 두 분석 간 비교는 이번 공개 데모에서 제외합니다. 사용자가 선택한 카카오톡 TXT와 Teams·Notion JSON 가져오기는 계정 연결 없이 지원합니다.
 
 ## 문서와 디자인
 
@@ -193,5 +196,6 @@ Render는 `npm ci --include=dev && npm run build`, `npm start`, `HOST=0.0.0.0`�
 - [에이전트 워크플로 계약](docs/agent-workflow-contract.md)
 - [프롬프트 설계](docs/prompt-design.md)
 - [Figma 개발 핸드오프](docs/figma-handoff.md)
+- [KoPubWorld 돋움 웹 임베딩 안내](docs/kopub-font-embedding.md)
 - [PR 벤치마크](docs/benchmark-prs.md)
 - [PR 설명 초안](docs/pr-description-draft.md)

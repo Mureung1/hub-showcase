@@ -17,6 +17,7 @@ export type ContextImportInput = {
 
 export type ContextImportPanelProps = {
   onImport: (input: ContextImportInput) => Promise<void>;
+  mode?: "project" | "ephemeral";
 };
 
 export const CONTEXT_IMPORT_FILE_LIMIT_BYTES = 256 * 1024;
@@ -29,6 +30,12 @@ const providerOptions: Array<{
   description: string;
   format: string;
 }> = [
+  {
+    id: "paste",
+    label: "바로 붙여넣기",
+    description: "어디서든 복사한 회의 맥락을 바로 붙여넣습니다.",
+    format: "TEXT",
+  },
   {
     id: "kakaotalk",
     label: "카카오톡 내보내기",
@@ -46,12 +53,6 @@ const providerOptions: Array<{
     label: "Notion JSON",
     description: "내보낸 페이지와 블록 내용을 가져옵니다.",
     format: "JSON",
-  },
-  {
-    id: "paste",
-    label: "직접 붙여넣기",
-    description: "어디서든 복사한 회의 맥락을 바로 붙여넣습니다.",
-    format: "TEXT",
   },
 ];
 
@@ -103,8 +104,8 @@ const providerSamples: Record<ContextImportProvider, { title: string; text: stri
   },
 };
 
-function ContextImportPanel({ onImport }: ContextImportPanelProps) {
-  const [provider, setProvider] = useState<ContextImportProvider>("kakaotalk");
+function ContextImportPanel({ onImport, mode = "project" }: ContextImportPanelProps) {
+  const [provider, setProvider] = useState<ContextImportProvider>("paste");
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
@@ -146,11 +147,11 @@ function ContextImportPanel({ onImport }: ContextImportPanelProps) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const expectedExtension = provider === "kakaotalk" ? ".txt" : ".json";
-    if (!file.name.toLocaleLowerCase("en-US").endsWith(expectedExtension)) {
+    const lowerName = file.name.toLocaleLowerCase("en-US");
+    if (!lowerName.endsWith(".txt") && !lowerName.endsWith(".json")) {
       setFileName(null);
       setStatus("error");
-      setMessage(`${selectedProvider.label}에는 ${expectedExtension} 파일을 선택해 주세요.`);
+      setMessage("카카오톡 TXT 또는 Teams·Notion JSON 파일을 선택해 주세요.");
       event.target.value = "";
       return;
     }
@@ -171,6 +172,8 @@ function ContextImportPanel({ onImport }: ContextImportPanelProps) {
     try {
       const fileText = await readFileText(file);
       if (fileReadVersion.current !== readVersion) return;
+      const detectedProvider = detectContextProvider(file.name, fileText);
+      if (detectedProvider) setProvider(detectedProvider);
       setText(removeByteOrderMark(fileText));
       setFileName(file.name);
       setTitle((current) => current || file.name.replace(/\.[^.]+$/, ""));
@@ -199,7 +202,9 @@ function ContextImportPanel({ onImport }: ContextImportPanelProps) {
         text: text.trim(),
       });
       setStatus("success");
-      setMessage("맥락을 가져왔습니다. 이제 다른 기록과 함께 분석할 수 있습니다.");
+      setMessage(mode === "ephemeral"
+        ? "맥락을 정리해 분석했습니다. 이 기록은 프로젝트에 저장되지 않습니다."
+        : "맥락을 가져왔습니다. 이제 다른 기록과 함께 분석할 수 있습니다.");
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error && error.message
@@ -224,10 +229,14 @@ function ContextImportPanel({ onImport }: ContextImportPanelProps) {
       <div className={styles.headingRow}>
         <div className={styles.heading}>
           <p className={styles.kicker}>External context</p>
-          <h2 id={`${titleId}-heading`}>다른 곳의 회의 맥락 가져오기</h2>
-          <p>내보낸 기록을 한곳에 모아 연결된 지식처럼 정리합니다.</p>
+          <h2 id={`${titleId}-heading`}>
+            {mode === "ephemeral" ? "계정 없이 외부 기록 바로 정리" : "다른 곳의 회의 맥락 가져오기"}
+          </h2>
+          <p>{mode === "ephemeral"
+            ? "파일을 선택하거나 내용을 붙여넣으면 저장 없이 바로 구조화합니다."
+            : "내보낸 기록을 한곳에 모아 연결된 지식처럼 정리합니다."}</p>
         </div>
-        <span className={styles.noLinkBadge}>계정 연결 없음</span>
+        <span className={styles.noLinkBadge}>{mode === "ephemeral" ? "저장 안 함" : "계정 연결 없음"}</span>
       </div>
 
       <form className={styles.form} onSubmit={submitImport}>
@@ -278,24 +287,23 @@ function ContextImportPanel({ onImport }: ContextImportPanelProps) {
           />
         </div>
 
-        {provider !== "paste" && (
-          <div className={styles.field}>
-            <label htmlFor={fileId}>내보내기 파일</label>
-            <input
-              ref={fileInputRef}
-              id={fileId}
-              className={styles.fileInput}
-              type="file"
-              accept={provider === "kakaotalk" ? ".txt,text/plain" : ".json,application/json"}
-              disabled={busy}
-              aria-describedby={`${fileId}-guide ${privacyId}`}
-              onChange={(event) => void handleFileChange(event)}
-            />
-            <small id={`${fileId}-guide`} className={styles.guide}>
-              {selectedProvider.format} · 최대 256KB{fileName ? ` · 선택됨: ${fileName}` : ""}
-            </small>
-          </div>
-        )}
+        <div className={styles.field}>
+          <label htmlFor={fileId}>내보내기 파일 <small>선택 · 자동 판별</small></label>
+          <input
+            ref={fileInputRef}
+            id={fileId}
+            className={styles.fileInput}
+            type="file"
+            accept=".txt,.json,text/plain,application/json"
+            disabled={busy}
+            aria-describedby={`${fileId}-guide ${privacyId}`}
+            onChange={(event) => void handleFileChange(event)}
+          />
+          <small id={`${fileId}-guide`} className={styles.guide}>
+            카카오톡 TXT · Teams/Notion JSON · 최대 256KB
+            {fileName ? ` · ${selectedProvider.label}로 확인: ${fileName}` : ""}
+          </small>
+        </div>
 
         <div className={styles.field}>
           <label htmlFor={textId}>{provider === "paste" ? "회의 맥락 붙여넣기" : "가져올 내용 확인"}</label>
@@ -324,8 +332,10 @@ function ContextImportPanel({ onImport }: ContextImportPanelProps) {
         </div>
 
         <div id={privacyId} className={styles.privacyNote}>
-          <strong>내 계정과 연동하지 않습니다.</strong>
-          <span>카카오·Microsoft·Notion 로그인을 요구하지 않으며, 여기서 직접 선택한 파일과 붙여넣은 내용만 가져옵니다. 민감정보는 먼저 제거해 주세요.</span>
+          <strong>{mode === "ephemeral" ? "이 기록은 저장하지 않습니다." : "내 계정과 연동하지 않습니다."}</strong>
+          <span>{mode === "ephemeral"
+            ? "카카오·Microsoft·Notion 로그인 없이 이 요청에서만 정리합니다. 민감정보는 먼저 제거해 주세요."
+            : "카카오·Microsoft·Notion 로그인을 요구하지 않으며, 여기서 직접 선택한 파일과 붙여넣은 내용만 가져옵니다. 민감정보는 먼저 제거해 주세요."}</span>
         </div>
 
         {status !== "idle" && (
@@ -340,7 +350,9 @@ function ContextImportPanel({ onImport }: ContextImportPanelProps) {
         )}
 
         <div className={styles.actions}>
-          <span>원본 형식은 유지하고, 저장 단계에서 공통 기록으로 변환합니다.</span>
+          <span>{mode === "ephemeral"
+            ? "공개 체험은 DB에 쓰지 않고 정규화된 결과만 화면에 표시합니다."
+            : "원본 형식은 유지하고, 저장 단계에서 공통 기록으로 변환합니다."}</span>
           <div className={styles.actionButtons}>
             <button
               className={styles.sampleButton}
@@ -348,7 +360,7 @@ function ContextImportPanel({ onImport }: ContextImportPanelProps) {
               disabled={busy}
               onClick={loadSample}
             >
-              샘플 불러오기
+              {mode === "ephemeral" ? "가져오기 샘플 채우기" : "샘플 불러오기"}
             </button>
             <button
               className={styles.importButton}
@@ -356,7 +368,9 @@ function ContextImportPanel({ onImport }: ContextImportPanelProps) {
               disabled={!canImport}
               aria-describedby={`${privacyId}${status !== "idle" ? ` ${statusId}` : ""}`}
             >
-              {status === "pending" ? "가져오는 중…" : "파싱하고 가져오기"}
+              {status === "pending"
+                ? (mode === "ephemeral" ? "정리하는 중…" : "가져오는 중…")
+                : (mode === "ephemeral" ? "가져와 바로 분석" : "파싱하고 가져오기")}
             </button>
           </div>
         </div>
@@ -388,6 +402,25 @@ function formatBytes(bytes: number) {
 
 function removeByteOrderMark(value: string) {
   return value.charCodeAt(0) === 0xfeff ? value.slice(1) : value;
+}
+
+function detectContextProvider(fileName: string, value: string): ContextImportProvider | null {
+  const lowerName = fileName.toLocaleLowerCase("en-US");
+  if (lowerName.endsWith(".txt")) return "kakaotalk";
+  if (!lowerName.endsWith(".json")) return null;
+
+  const normalized = value.toLocaleLowerCase("en-US");
+  if (
+    normalized.includes("notion.so") ||
+    normalized.includes("plain_text") ||
+    /"(?:blocks|paragraph|heading_\d|to_do)"/.test(normalized)
+  ) return "notion";
+  if (
+    normalized.includes("teams.microsoft.com") ||
+    normalized.includes("createddatetime") ||
+    /"body"\s*:\s*\{[^}]*"content"/.test(normalized)
+  ) return "teams";
+  return null;
 }
 
 function readFileText(file: File) {
