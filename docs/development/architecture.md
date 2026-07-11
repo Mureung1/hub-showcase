@@ -29,7 +29,7 @@ flowchart LR
     api["FastAPI\nmarket · score · scene API"]
     marketRepo["Canonical market repository"]
     collector["서울 Open API 수집기"]
-    sceneWorker["Nerfstudio worker\nprocess · train · export"]
+    sceneWorker["Nerfstudio host / Docker worker\nprocess · train · export"]
   end
 
   subgraph data["Data"]
@@ -63,7 +63,7 @@ flowchart LR
 | Front | 자체 지도, API adapter와 canonical fallback으로 상권·업종·Layer를 조작하는 React 웹 | 반경은 아직 지도 탐색 범위이며 공간 재집계 전 |
 | Back  | FastAPI market/score/scene API와 canonical SQLite repository            | 반경별 공간 query와 주기적 운영 배포 미구현   |
 | Data  | 서울·공공데이터 수집기, canonical SQLite와 OSM 지도 생성기               | 주기적 자동 갱신과 좌표 변환 미구현              |
-| 3D    | 촬영물 upload, file-backed job, Nerfstudio 명령 pipeline과 Spark viewer | MX450 2GB에서는 학습 불가, 실제 PLY 시각 검증 전 |
+| 3D    | 촬영물 job, host/Docker worker, Nerfstudio pipeline과 Spark viewer | synthetic PLY canvas는 검증, MX450 2GB에서 실제 학습 불가 |
 
 ## 3. 4주 목표 구조
 
@@ -203,3 +203,4 @@ Local demo runtime
 | 2026-07-10 | 현재 구조와 4주 목표 구조를 분리해 최초 작성 | 구현된 기능과 계획을 같은 구조도로 오해하지 않게 하기 위해 |
 | 2026-07-11 | scene job API, Nerfstudio worker와 Spark viewer 반영 | 구현 코드와 실제 GPU 제약을 구조에 함께 표시하기 위해 |
 | 2026-07-11 | canonical market API와 Front fallback 반영 | 로컬 API와 정적 배포의 실제 데이터 경로를 구분하기 위해 |
+| 2026-07-11 | Docker scene worker와 renderer QA 반영 | worker 재현성과 실제 capture 미검증을 구분하기 위해 |

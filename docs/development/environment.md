@@ -202,7 +202,7 @@ pnpm build
 | 공간 계산 | Shapely, pyproj | footprint/좌표계 PoC 시작 시 |
 | chart | Recharts 또는 Apache ECharts | chart 요구사항과 dataset 크기 확정 후 |
 | browser E2E | Playwright | 첫 사용자 workflow 구현 시 |
-| 3DGS | viewer 후보 미정 | scene format과 mesh occlusion PoC 전 |
+| 3DGS | Spark 2.1 + Three.js, Nerfstudio 1.1.5 | 실제 capture 품질·익명화 검증 전 |
 | LLM | provider SDK 미정 | Template report 검증 후 |
 
 한 번만 사용할 가능성이 있는 library는 미리 설치하지 않는다.
@@ -225,6 +225,23 @@ SEOUL_OPEN_DATA_KEY를 log나 문서에 출력하지 않는다.
 VITE_ prefix 값은 browser에 노출된다고 간주한다.
 browser에서 사용할 수 없는 secret에 VITE_ prefix를 붙이지 않는다.
 ```
+
+Scene worker:
+
+| 변수 | 기본값 | 역할 |
+| --- | --- | --- |
+| `SCENE_WORKER_MODE` | `host` | `host`의 `ns-*` 도구 또는 `docker` runner 선택 |
+| `SCENE_DOCKER_IMAGE` | `ghcr.io/nerfstudio-project/nerfstudio:1.1.5` | 재현 가능한 Nerfstudio image pin |
+
+CUDA worker 준비:
+
+```powershell
+docker pull ghcr.io/nerfstudio-project/nerfstudio:1.1.5
+$env:SCENE_WORKER_MODE="docker"
+pnpm dev
+```
+
+`/api/v1/scenes/toolchain`에서 `ready=true`, image, GPU 이름과 VRAM을 확인한 뒤 upload를 시작한다.
 
 ## 10. Dependency 변경
 

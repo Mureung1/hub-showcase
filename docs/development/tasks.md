@@ -130,6 +130,7 @@ Outcome: 상권 분석에서 선택한 한 위치의 현장감을 제한된 3D �
 | SCENE-002 | 사람 영역 익명화 sample pipeline 검증       | P1       | In Progress | 4 | SCENE-001 | upload/job은 구현, 실제 blur/mask/exclude 검증이 남았다 |
 | SCENE-003 | 실제 scene 1개 또는 검증된 대체 viewer 연결 | P1       | In Progress | 4 | SCENE-002 | Spark viewer는 구현, CUDA worker의 실제 PLY 검증이 남았다 |
 | SCENE-004 | 대표 시간대 혼잡도 overlay 연결             | P1       | Backlog | 4    | SCENE-003  | 10시/13시/15시/18시 상태가 근거와 함께 바뀐다       |
+| SCENE-005 | Docker GPU worker와 Spark renderer QA       | P1       | Done    | 4    | SCENE-001  | Docker path와 synthetic PLY nonblank canvas를 검증한다 |
 
 P0가 늦어지면 EPIC-05 범위를 줄이고 상권 분석 완성도를 우선한다.
 
@@ -200,3 +201,4 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 | 2026-07-11 | SCENE-002~004 구현·검증 경계 반영 | upload/viewer 코드 완료와 실제 GPU 학습 미완료를 구분하기 위해 |
 | 2026-07-11 | API-002와 WEB-001/007 실데이터 연결 반영 | 상권 경계 분석 완료와 반경 query 미완료를 구분하기 위해 |
 | 2026-07-11 | EVAL-001 결과 반영 | 재현성 gate 통과와 confidence 부족을 함께 추적하기 위해 |
+| 2026-07-11 | SCENE-005 worker와 renderer QA 반영 | 실제 학습 blocker와 web renderer 검증을 분리하기 위해 |
