@@ -581,7 +581,9 @@ function bearerToken(req) {
 function assertSameOrigin(req) {
   const origin = req.headers.origin;
   if (!origin) return;
-  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  // Host is defined by the actual HTTP request target. A client-controlled
+  // X-Forwarded-Host must never redefine the same-origin security boundary.
+  const host = req.headers.host;
   const protocol = req.headers["x-forwarded-proto"] || (req.socket?.encrypted ? "https" : "http");
   let expected;
   try {

@@ -413,6 +413,17 @@ describe("v1 API", () => {
     });
     expect(crossOrigin.status).toBe(403);
 
+    const spoofedForwardedHost = await api("/api/v1/projects", {
+      method: "POST",
+      headers: {
+        Origin: "https://attacker.example",
+        "X-Forwarded-Host": "attacker.example",
+        "X-Forwarded-Proto": "https",
+      },
+      body: { title: "프로젝트", description: "" },
+    });
+    expect(spoofedForwardedHost.status).toBe(403);
+
     const invalid = await api(`/api/v1/projects/${PROJECT_ID}/sources`, {
       method: "POST",
       body: { kind: "unknown", title: "x", content: "x" },
