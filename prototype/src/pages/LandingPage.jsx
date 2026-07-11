@@ -50,7 +50,7 @@ export default function LandingPage() {
           <Link to="/login" className="btn accent">
             무료로 시작하기
           </Link>
-          <Link to="/journal" className="btn">
+          <Link to="/dashboard" className="btn">
             데모 둘러보기 →
           </Link>
         </div>

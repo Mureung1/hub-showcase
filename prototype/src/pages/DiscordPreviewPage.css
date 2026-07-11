@@ -1,15 +1,32 @@
-/* Discord 자체 다크 팔레트 (Discord 브랜드 재현 — Beacon 토큰 아님) */
+/* Discord 자체 다크 팔레트 (Discord 브랜드 재현 — Beacon 토큰 아님).
+   Beacon accent(그린)만 var(--accent)로 흘려보낸다. */
 .discord-preview {
   --dc-bg: #313338;
   --dc-embed: #2b2d31;
+  --dc-input: #383a40;
   --dc-text: #dbdee1;
   --dc-muted: #949ba4;
   --dc-heading: #f2f3f5;
   --dc-green: #248046;
   --dc-red: #da373c;
+  --dc-grey: #4e5058;
+}
+.dp-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dp-reset {
+  font-size: 13px;
+  padding: 7px 14px;
 }
 .dp-intro {
-  margin: 4px 0 20px;
+  margin: 6px 0 20px;
+  max-width: 640px;
+}
+.dp-foot {
+  margin-top: 14px;
 }
 
 .channel {
@@ -17,7 +34,7 @@
   max-width: 100%;
   background: var(--dc-bg);
   border-radius: 12px;
-  padding: 20px 20px 24px;
+  padding: 20px 20px 16px;
   color: var(--dc-text);
 }
 .channel-name {
@@ -26,25 +43,38 @@
   font-weight: 600;
   border-bottom: 1px solid #3f4147;
   padding-bottom: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .channel-name span {
   color: #7d818a;
 }
+
+.dp-log {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .msg {
   display: flex;
   gap: 16px;
+}
+.msg.user {
+  justify-content: flex-end;
 }
 .dp-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #7d2bd6);
+  background: linear-gradient(135deg, var(--accent), #04a304);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   flex-shrink: 0;
+}
+.dp-avatar.user {
+  background: #5865f2; /* Discord blurple = 일반 사용자 */
 }
 .dp-body {
   flex: 1;
@@ -57,13 +87,13 @@
   margin-bottom: 6px;
 }
 .dp-name {
-  color: #f6a5ff;
+  color: #7ee787; /* Beacon 봇 = 그린 계열 */
   font-weight: 600;
   font-size: 16px;
 }
 .dp-bot {
   background: var(--accent);
-  color: #fff;
+  color: #04240a;
   font-size: 10px;
   font-weight: 700;
   padding: 1px 5px;
@@ -74,13 +104,67 @@
   color: var(--dc-muted);
   font-size: 12px;
 }
+.dp-text {
+  font-size: 14.5px;
+  line-height: 150%;
+  color: var(--dc-text);
+  margin-bottom: 10px;
+}
+
+/* 사용자 말풍선 */
+.dp-bubble.user {
+  background: #3a5bd9;
+  color: #fff;
+  padding: 9px 14px;
+  border-radius: 16px 16px 4px 16px;
+  font-size: 14.5px;
+  line-height: 145%;
+  max-width: 70%;
+}
+
+/* 타이핑 인디케이터 */
+.dp-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--dc-embed);
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+.dp-typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dc-muted);
+  animation: dp-blink 1.2s infinite ease-in-out;
+}
+.dp-typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dp-typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes dp-blink {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* embed */
 .embed {
   background: var(--dc-embed);
   border-left: 4px solid var(--accent);
   border-radius: 4px;
   padding: 14px 16px;
-  margin-top: 4px;
-  max-width: 460px;
+  max-width: 480px;
+}
+.embed.parse {
+  border-left-color: var(--dc-muted);
 }
 .embed-title {
   color: var(--dc-heading);
@@ -105,22 +189,24 @@
   font-family: var(--mono);
 }
 .field-value.up {
-  color: #f2555a;
+  color: #ff5b5b; /* 국내 관례: 상승=빨강 */
 }
 .memory {
   display: flex;
   gap: 8px;
-  background: rgba(170, 59, 255, 0.12);
-  border: 1px solid rgba(170, 59, 255, 0.35);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
   border-radius: 6px;
   padding: 10px 12px;
   font-size: 13.5px;
   line-height: 150%;
-  color: #e8d9ff;
+  color: #d7f7d9;
 }
 .memory b {
-  color: #f6a5ff;
+  color: #7ee787;
 }
+
+/* 버튼 */
 .dp-buttons {
   display: flex;
   gap: 8px;
@@ -129,7 +215,7 @@
 }
 .dp-btn {
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 9px 16px;
   font-size: 14px;
   font-weight: 600;
@@ -145,6 +231,110 @@
 .dp-btn.sell {
   background: var(--dc-red);
 }
+.dp-btn.hold {
+  background: var(--dc-grey);
+}
 .dp-btn.link {
-  background: #4e5058;
+  background: transparent;
+  color: var(--dc-text);
+  border: 1px solid #4e5058;
+}
+.dp-btn.confirm {
+  background: var(--accent);
+  color: #04240a;
+}
+.dp-btn.ghost {
+  background: transparent;
+  color: var(--dc-muted);
+  border: 1px solid #4e5058;
+}
+.dp-btn.continue {
+  background: var(--accent);
+  color: #04240a;
+  margin-top: 4px;
+}
+
+/* 선택 후 상태 표시 */
+.dp-chosen {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7ee787;
+}
+
+/* 진행 힌트 펄스 */
+.pulse {
+  position: relative;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent);
+  animation: dp-pulse 1.6s infinite;
+}
+@keyframes dp-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* 시간 구분선 */
+.dp-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--dc-muted);
+  font-size: 12px;
+  margin: 2px 0;
+}
+.dp-divider::before,
+.dp-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #3f4147;
+}
+
+/* 컴포저 */
+.dp-composer {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #3f4147;
+}
+.dp-composer input {
+  flex: 1;
+  background: var(--dc-input);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--dc-heading);
+  font-family: var(--sans);
+  font-size: 14.5px;
+}
+.dp-composer input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-border);
+}
+.dp-send {
+  border: none;
+  border-radius: 8px;
+  padding: 0 20px;
+  font-weight: 700;
+  font-size: 14px;
+  color: #04240a;
+  background: var(--accent);
+  font-family: var(--sans);
+}
+
+@media (max-width: 640px) {
+  .fields {
+    gap: 24px;
+  }
+  .dp-bubble.user {
+    max-width: 82%;
+  }
 }

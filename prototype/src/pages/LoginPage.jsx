@@ -1,12 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom'
 import './LoginPage.css'
 
-// 목: 실제 인증 없음. 어떤 입력이든 /journal 로 이동.
+// 목: 실제 인증 없음. 어떤 입력이든 /dashboard 로 이동.
 export default function LoginPage() {
   const navigate = useNavigate()
   const submit = (e) => {
     e.preventDefault()
-    navigate('/journal')
+    navigate('/dashboard')
   }
   return (
     <div className="login">

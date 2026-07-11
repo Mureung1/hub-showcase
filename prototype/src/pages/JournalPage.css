@@ -1,3 +1,22 @@
+.journal-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-h);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--r-cell);
+  padding: 12px 16px;
+  margin: 12px 0 4px;
+}
+.journal-banner .jb-icon {
+  font-size: 16px;
+}
+.journal-banner strong {
+  color: var(--accent);
+}
+
 .journal-head {
   display: flex;
   align-items: center;
