@@ -1582,6 +1582,11 @@ select:focus-visible {
   border-bottom: 1px solid #dfe7e1;
   background: #e9efeb;
 }
+
+.splat-viewer-canvas {
+  position: absolute;
+  inset: 0;
+}
 .splat-viewer canvas {
   display: block;
   width: 100%;

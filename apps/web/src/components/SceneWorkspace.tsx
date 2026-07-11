@@ -19,6 +19,8 @@ type JobStatus = "uploaded" | "queued" | "running" | "blocked" | "failed" | "rea
 
 type Toolchain = {
   ready: boolean;
+  mode: "host" | "docker";
+  image: string | null;
   gpu_name: string | null;
   gpu_memory_mb: number | null;
   minimum_gpu_memory_mb: number;
@@ -209,7 +211,7 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
                   <b>GPU worker</b>
                   <span>
                     {toolchain
-                      ? `${toolchain.gpu_name ?? "GPU 없음"} · ${toolchain.gpu_memory_mb ?? 0}MB`
+                      ? `${toolchain.mode === "docker" ? "Docker" : "Host"} · ${toolchain.gpu_name ?? "GPU 없음"} · ${toolchain.gpu_memory_mb ?? 0}MB`
                       : "연결 확인 중"}
                   </span>
                 </div>
@@ -220,6 +222,7 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
               {toolchain && !toolchain.ready && (
                 <p>
                   최소 {toolchain.minimum_gpu_memory_mb}MB VRAM과 Nerfstudio toolchain이 필요합니다.
+                  {toolchain.mode === "docker" && toolchain.image ? ` Image: ${toolchain.image}` : ""}
                 </p>
               )}
               {job && (
