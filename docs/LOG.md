@@ -322,3 +322,67 @@
 - `npm test`(34건), `npm run lint`, `npm run build` 통과
 ### 남은 작업
 - 관계별 고양이 PNG/WebP 에셋을 준비한 뒤 `src/domain/message.ts`의 `assetPath` 연결
+
+## 2026-07-11 (하네스 기본 골격)
+### 처리한 TODO
+- 하네스 엔지니어링을 위한 비코드 작업 골격 추가
+### 사용한 자료
+- `AGENTS.md`, `docs/CHECKLIST.md`, `docs/LOG.md` 및 기존 작업 절차 스킬
+### 만든 결과물
+- `harness/README.md` 작업 하네스 진입점
+- 작업 계획·검증 보고서 템플릿 2종
+### 검토 결과
+- 기존 PRD·SPEC·CHECKLIST·LOG를 정본으로 유지하고, 별도 요구사항·상태·누적 로그를 만들지 않음
+- 제품 코드, 테스트, CI·배포 설정은 변경하지 않음
+- `npm test` 34건, `npm run lint`, `npm run build`, `git diff --check` 통과
+### 남은 작업
+- 다음 기능 작업부터 해당 템플릿을 필요에 따라 복사해 계획과 검증 근거를 남김
+### 다음 추천 작업
+- 의존성이 충족된 CHECKLIST 항목을 선택해 `/task-start` 절차로 착수
+
+## 2026-07-11 (하네스 전반 검토·피드백 반영)
+### 처리한 TODO
+- 초기 하네스의 저장 위치·상태 전이·승인·완료 판정·인계 규칙 검토
+- 계획 완료조건과 검증 증거의 추적성 보완
+- 하네스가 참조하는 기존 문서의 정합성 점검
+### 사용한 자료
+- `AGENTS.md`, `.claude/skills/task-start/SKILL.md`, `docs/CHECKLIST.md`, `docs/CICD.md`, `docs/UX.md`
+- 현재 `.github/workflows/` 상태와 CI 파일 Git 이력
+### 만든 결과물
+- 작업별 기록 규칙과 첫 비-T 검토 기록(`harness/tasks/2026-07-11-harness-review/`)
+- AC 기반 계획·검증 템플릿과 작업 유형별 검증 게이트
+- T10 UX 참조, T25 선행관계, CI 설치 상태 문서 정정
+### 검토 결과
+- [계획서](../harness/tasks/2026-07-11-harness-review/plan.md) AC 6개 전부 충족
+- [검증 보고서](../harness/tasks/2026-07-11-harness-review/verification.md) 통과
+- 테스트 파일 6개·테스트 34개, 린트, 빌드, diff·링크·경로 검증 통과
+- 제품 코드·테스트 코드·CI 실행 설정은 변경하지 않음
+### 남은 작업
+- 원격 CI는 현재 미설치이며, 실제 추가는 별도 구조 변경 제안·승인 필요
+### 다음 추천 작업
+- 다음 T항목 착수 시 `harness/tasks/T<번호>-<이름>/`에 계획·검증 기록을 생성해 새 절차 적용
+
+## 2026-07-11 (제품 6축 감사·피드백 반영)
+### 처리한 TODO
+- 서비스 가치, 지속 사용 가능성, AI 활용, UX, 기술 완성도, 포트폴리오 가치의 현재 근거와 출시 차단 항목 감사
+- 검수·실 AI·효과·재방문을 완료처럼 보이게 하던 표현과 잘못된 계측·모델 선택 가정 정정
+- 콘텐츠, 모바일·접근성, API·CI, 개인정보, 외부 파일럿의 검증 기준을 MVP 범위 안에서 보강
+### 사용한 자료
+- `README.md`, PRD/MVP/SPEC/AI_DESIGN/SCREENS/UX/DESIGN/CHECKLIST/PLAN/CICD 및 현재 소스·테스트
+- Anthropic 모델·Structured Outputs·API 보존 공식 문서, Vercel Custom Events 공식 문서, WCAG 2.2
+### 만든 결과물
+- [제품 6축 점검표](PRODUCT_REVIEW.md)
+- [작업 계획](../harness/tasks/2026-07-11-product-audit/plan.md)과 [검증 보고서](../harness/tasks/2026-07-11-product-audit/verification.md)
+- 구현/설계/검증 대기 분리, 사건 발생형 재사용 가설, holdout 모델 선택, 조건부 계측, 모바일·접근성·provider 고지 기준
+### 검토 결과
+- 내부 점수: 서비스 가치 4.0, 지속 사용 2.0, AI 3.5, UX 3.0, 기술 3.0, 포트폴리오 3.5/5
+- 시드 표본에서 G-B 내용 변경, P-A 행동 단정, F-A 입력 없는 약속을 발견해 기존 자체 검수 통과를 철회하고 T15·T16을 다시 열었음
+- 테스트 파일 6개·테스트 34개, 린트, 빌드, diff·Markdown 로컬 링크, AGENTS/CLAUDE 동기화 검증 통과
+- 제품 코드·테스트 코드·패키지·실제 AI·CI·배포 설정은 변경하지 않음
+- 연결 가능한 브라우저가 없어 실제 모바일 클릭 검증은 보완 필요이며, 계획을 종료하지 않음
+### 남은 작업
+- T14·T23에서 375×667·320×568, 키보드·초점·스크린리더·카톡 인앱 복사 실증
+- T15→T16 시드 재작성·블라인드 검수와 T25 카드 72문구 전수 검수
+- T17~T21에서 Node·CI·API 타입검사·서버 취소·provider 고지·holdout 모델 비교를 순서대로 수행
+### 다음 추천 작업
+- 코드보다 먼저 `/seed`로 T15 문제 시드를 수정·재검수하고, 독립 가능한 T25 카드 콘텐츠 감사를 병행
