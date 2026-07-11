@@ -128,7 +128,7 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
       page.getByRole("img", { name: /프로젝트 맥락 지도/ }),
     ).toBeVisible();
 
-    await page.getByRole("tab", { name: "온보딩", exact: true }).click();
+    await page.getByRole("tab", { name: "온보딩 요약", exact: true }).click();
     await page.getByTestId("share-create").click();
     const shareUrlInput = page.getByLabel("새 공유 링크");
     await expect(shareUrlInput).toBeVisible();
