@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -19,7 +20,13 @@ from pydantic import BaseModel, Field
 from localtwin_api.config import get_settings
 from localtwin_api.seoul_open_data import repository_root
 
-CaptureType = Literal["images", "video", "equirectangular_images", "equirectangular_video"]
+CaptureType = Literal[
+    "images",
+    "video",
+    "equirectangular_images",
+    "equirectangular_video",
+    "gaussian_ply",
+]
 JobStatus = Literal["uploaded", "queued", "running", "blocked", "failed", "ready"]
 StageStatus = Literal["pending", "running", "passed", "blocked", "failed"]
 WorkerMode = Literal["host", "docker"]
@@ -46,6 +53,12 @@ class SceneStage(BaseModel):
     message: str | None = None
 
 
+class SceneCameraPose(BaseModel):
+    position: tuple[float, float, float]
+    target: tuple[float, float, float]
+    up: tuple[float, float, float]
+
+
 class SceneJob(BaseModel):
     id: str
     scene_name: str
@@ -58,6 +71,7 @@ class SceneJob(BaseModel):
     blocked_reason: str | None = None
     next_action: str | None = None
     asset_url: str | None = None
+    camera_pose: SceneCameraPose | None = None
     commands: list[list[str]] = Field(default_factory=list)
 
 
@@ -93,18 +107,128 @@ def safe_name(filename: str | None, index: int) -> str:
 
 
 def allowed_suffixes(capture_type: CaptureType) -> set[str]:
+    if capture_type == "gaussian_ply":
+        return {".ply"}
     return VIDEO_SUFFIXES if capture_type.endswith("video") else IMAGE_SUFFIXES
 
 
 def validate_file_set(capture_type: CaptureType, filenames: list[str]) -> None:
     if not filenames:
         raise ValueError("At least one capture file is required.")
-    if capture_type.endswith("video") and len(filenames) != 1:
-        raise ValueError("Video capture accepts exactly one file.")
+    if (capture_type.endswith("video") or capture_type == "gaussian_ply") and len(filenames) != 1:
+        raise ValueError("Video and Gaussian PLY inputs accept exactly one file.")
     allowed = allowed_suffixes(capture_type)
     invalid = [name for name in filenames if Path(name).suffix.lower() not in allowed]
     if invalid:
         raise ValueError(f"Unsupported capture file type: {', '.join(invalid)}")
+
+
+def validate_gaussian_ply(path: Path) -> None:
+    with path.open("rb") as stream:
+        header = stream.read(64 * 1024)
+    if not header.startswith(b"ply\n") or b"end_header" not in header:
+        raise ValueError("Asset is not a valid PLY file.")
+    required = (
+        b"element vertex",
+        b"property float opacity",
+        b"property float scale_0",
+        b"property float rot_0",
+    )
+    missing = [item.decode("ascii") for item in required if item not in header]
+    if missing:
+        raise ValueError(f"PLY is missing Gaussian properties: {', '.join(missing)}")
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        while chunk := stream.read(CHUNK_SIZE):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def load_nerfstudio_camera_pose(
+    transforms_path: Path,
+    dataparser_transforms_path: Path,
+) -> SceneCameraPose:
+    transforms = json.loads(transforms_path.read_text(encoding="utf-8"))
+    dataparser = json.loads(dataparser_transforms_path.read_text(encoding="utf-8"))
+    frames = transforms.get("frames", [])
+    transform = dataparser.get("transform")
+    scale = float(dataparser.get("scale", 1.0))
+    if not frames or not isinstance(transform, list) or len(transform) != 3:
+        raise ValueError("Nerfstudio camera metadata is incomplete.")
+    camera_to_world = frames[0].get("transform_matrix")
+    if not isinstance(camera_to_world, list) or len(camera_to_world) != 4:
+        raise ValueError("Nerfstudio camera transform is invalid.")
+    applied = transforms.get("applied_transform")
+    if isinstance(applied, list) and len(applied) == 3:
+        rotation = [[float(applied[row][column]) for column in range(3)] for row in range(3)]
+        translation = [float(applied[row][3]) for row in range(3)]
+        inverse_applied = [
+            [rotation[column][row] for column in range(3)]
+            + [-sum(rotation[column][row] * translation[column] for column in range(3))]
+            for row in range(3)
+        ]
+        inverse_applied.append([0.0, 0.0, 0.0, 1.0])
+        camera_to_world = [
+            [
+                sum(
+                    float(inverse_applied[row][index]) * float(camera_to_world[index][column])
+                    for index in range(4)
+                )
+                for column in range(4)
+            ]
+            for row in range(4)
+        ]
+    oriented = [
+        [
+            sum(
+                float(transform[row][index]) * float(camera_to_world[index][column])
+                for index in range(4)
+            )
+            for column in range(4)
+        ]
+        for row in range(3)
+    ]
+    position = tuple(oriented[row][3] * scale for row in range(3))
+    forward = tuple(-oriented[row][2] for row in range(3))
+    target = tuple(position[row] + forward[row] for row in range(3))
+    up = tuple(oriented[row][1] for row in range(3))
+    return SceneCameraPose(position=position, target=target, up=up)
+
+
+def import_gaussian_asset(
+    source: Path,
+    scene_name: str,
+    root: Path | None = None,
+    camera_pose: SceneCameraPose | None = None,
+) -> SceneJob:
+    source = source.resolve()
+    if not source.is_file():
+        raise FileNotFoundError(source)
+    validate_gaussian_ply(source)
+    store = SceneJobStore(root)
+    job = store.create(scene_name, "gaussian_ply")
+    destination = store.job_dir(job.id) / "asset" / "scene.ply"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+    job.files = [
+        SceneInputFile(
+            name="scene.ply",
+            content_type="application/octet-stream",
+            size_bytes=destination.stat().st_size,
+            sha256=file_sha256(destination),
+        )
+    ]
+    for stage in job.stages:
+        stage.status = "passed"
+        stage.finished_at = utc_now()
+        stage.message = "Completed on an external GPU worker."
+    job.status = "ready"
+    job.asset_url = f"/api/v1/scenes/jobs/{job.id}/asset"
+    job.camera_pose = camera_pose
+    return store.save(job)
 
 
 class SceneJobStore:
@@ -271,6 +395,8 @@ def toolchain_status(
 
 
 def build_pipeline_commands(job: SceneJob, directory: Path) -> list[list[str]]:
+    if job.capture_type == "gaussian_ply":
+        raise ValueError("Imported Gaussian PLY assets do not run the capture pipeline.")
     input_dir = directory / "input"
     processed_dir = directory / "processed"
     training_dir = directory / "training"

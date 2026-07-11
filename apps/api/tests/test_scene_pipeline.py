@@ -11,6 +11,8 @@ from localtwin_api.scene_pipeline import (
     ToolchainStatus,
     build_execution_command,
     build_pipeline_commands,
+    import_gaussian_asset,
+    load_nerfstudio_camera_pose,
     run_scene_job,
     safe_name,
     save_uploads,
@@ -125,3 +127,77 @@ def test_job_blocks_before_training_when_worker_is_not_ready(
     assert blocked.stages[1].status == "blocked"
     assert blocked.blocked_reason == "missing_tool:ns-train, gpu_memory_below_minimum"
     assert "CUDA worker" in (blocked.next_action or "")
+
+
+def test_import_gaussian_asset_creates_ready_local_job(tmp_path: Path) -> None:
+    source = tmp_path / "server-scene.ply"
+    source.write_bytes(
+        b"ply\nformat binary_little_endian 1.0\n"
+        b"element vertex 1\n"
+        b"property float opacity\n"
+        b"property float scale_0\n"
+        b"property float rot_0\n"
+        b"end_header\n"
+        b"placeholder"
+    )
+    job_root = tmp_path / "jobs"
+
+    job = import_gaussian_asset(source, "server validation", job_root)
+
+    assert job.status == "ready"
+    assert job.capture_type == "gaussian_ply"
+    assert all(stage.status == "passed" for stage in job.stages)
+    assert (job_root / job.id / "asset" / "scene.ply").read_bytes() == source.read_bytes()
+
+
+def test_import_gaussian_asset_rejects_plain_point_cloud(tmp_path: Path) -> None:
+    source = tmp_path / "point-cloud.ply"
+    source.write_bytes(b"ply\nformat ascii 1.0\nelement vertex 1\nend_header\n")
+
+    with pytest.raises(ValueError, match="Gaussian properties"):
+        import_gaussian_asset(source, "invalid", tmp_path / "jobs")
+
+
+def test_nerfstudio_camera_pose_applies_dataparser_transform_and_scale(
+    tmp_path: Path,
+) -> None:
+    transforms = tmp_path / "transforms.json"
+    dataparser = tmp_path / "dataparser_transforms.json"
+    transforms.write_text(
+        '{"frames":[{"transform_matrix":[[1,0,0,1],[0,1,0,2],[0,0,1,3],[0,0,0,1]]}]}',
+        encoding="utf-8",
+    )
+    dataparser.write_text(
+        '{"transform":[[1,0,0,0],[0,1,0,0],[0,0,1,0]],"scale":0.5}',
+        encoding="utf-8",
+    )
+
+    pose = load_nerfstudio_camera_pose(transforms, dataparser)
+
+    assert pose.position == (0.5, 1.0, 1.5)
+    assert pose.target == (0.5, 1.0, 0.5)
+    assert pose.up == (0.0, 1.0, 0.0)
+
+
+def test_nerfstudio_camera_pose_does_not_apply_saved_transform_twice(
+    tmp_path: Path,
+) -> None:
+    transforms = tmp_path / "transforms.json"
+    dataparser = tmp_path / "dataparser_transforms.json"
+    transforms.write_text(
+        '{"applied_transform":[[0,-1,0,0],[1,0,0,0],[0,0,1,0]],'
+        '"frames":[{"transform_matrix":['
+        "[0,-1,0,-2],[1,0,0,1],[0,0,1,3],[0,0,0,1]"
+        "]}]}",
+        encoding="utf-8",
+    )
+    dataparser.write_text(
+        '{"transform":[[0,-1,0,0],[1,0,0,0],[0,0,1,0]],"scale":1}',
+        encoding="utf-8",
+    )
+
+    pose = load_nerfstudio_camera_pose(transforms, dataparser)
+
+    assert pose.position == (-2.0, 1.0, 3.0)
+    assert pose.target == (-2.0, 1.0, 2.0)
+    assert pose.up == (-1.0, 0.0, 0.0)
