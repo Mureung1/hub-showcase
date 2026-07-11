@@ -24,7 +24,10 @@ describe("AnalysisComparison", () => {
     render(<AnalysisComparison previous={previous} latest={latest} />);
 
     expect(screen.getByRole("status")).toHaveTextContent("새로 등장 1건, 내용 변경 1건, 해결 1건");
-    const metrics = screen.getByRole("group", { name: "최근 분석 변화 요약" });
+    const metrics = screen.getByLabelText("최근 분석 변화 요약");
+    expect(metrics.tagName).toBe("DL");
+    expect(metrics).not.toHaveAttribute("role");
+    expect(metrics.querySelectorAll(":scope > div > dt, :scope > div > dd")).toHaveLength(6);
     expect(within(metrics).getByText("새로 등장").nextSibling).toHaveTextContent("1");
     expect(screen.getAllByText(/추가|변경|해결/, { selector: ".change-chip" })).toHaveLength(3);
   });

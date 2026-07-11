@@ -35,7 +35,7 @@ function AnalysisComparison({
             <strong>지난 성공 분석 이후</strong>
             <p>{narrative}</p>
           </div>
-          <dl className="comparison-metrics" role="group" aria-label="최근 분석 변화 요약">
+          <dl className="comparison-metrics" aria-label="최근 분석 변화 요약">
             <div className="added"><dt>새로 등장</dt><dd>{counts.added}</dd></div>
             <div className="changed"><dt>내용 변경</dt><dd>{counts.changed}</dd></div>
             <div className="resolved"><dt>해결</dt><dd>{counts.resolved}</dd></div>
