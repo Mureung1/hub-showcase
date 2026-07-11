@@ -180,6 +180,11 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
 
     const revokeButton = page.locator('[data-testid^="share-revoke-"]').first();
     await revokeButton.click();
+    const revokeDialog = page.getByRole("alertdialog", {
+      name: "이 공유 링크를 폐기할까요?",
+    });
+    await expect(revokeDialog).toBeVisible();
+    await revokeDialog.getByRole("button", { name: "폐기 확인" }).click();
     await expect(page.getByText("폐기됨", { exact: true })).toBeVisible();
     await sharedPage.reload();
     await expect(
