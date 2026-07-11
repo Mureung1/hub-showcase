@@ -73,9 +73,26 @@ const worker = {
       });
     }
 
-    return secureAssetResponse(await env.ASSETS.fetch(request), request, env);
+    return serveAssetOrSpa(request, env);
   },
 };
+
+async function serveAssetOrSpa(request: Request, env: SitesEnvironment) {
+  let response = await env.ASSETS.fetch(request);
+
+  if (
+    response.status === 404 &&
+    request.method === "GET" &&
+    (request.headers.get("accept") || "").includes("text/html")
+  ) {
+    const indexUrl = new URL("/index.html", request.url);
+    response = await env.ASSETS.fetch(
+      new Request(indexUrl, { method: "GET", headers: request.headers }),
+    );
+  }
+
+  return secureAssetResponse(response, request, env);
+}
 
 async function runNodeHandler(
   request: Request,
