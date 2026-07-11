@@ -107,7 +107,7 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
     await page.getByTestId("analysis-submit").click();
 
     await expect(
-      page.getByRole("heading", { name: "최근 분석 변화" }),
+      page.getByRole("heading", { name: "최근 분석의 변화 서사" }),
     ).toBeVisible();
     await expect(
       page.getByText("비교할 이전 성공 분석이 없습니다."),
