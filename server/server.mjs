@@ -85,7 +85,18 @@ export async function serveStatic(pathname, res, options = {}) {
     return;
   }
 
-  const relativePath = decodedPath.replace(/^[/\\]+/, "") || "index.html";
+  const portablePath = decodedPath.replace(/\\/g, "/");
+  const relativePath = portablePath.replace(/^\/+/, "") || "index.html";
+
+  if (
+    portablePath.startsWith("//") ||
+    /^[A-Za-z]:(?:\/|$)/.test(relativePath) ||
+    relativePath.split("/").includes("..")
+  ) {
+    writeText(res, 403, "Forbidden");
+    return;
+  }
+
   let filePath = resolve(distDir, relativePath);
   const resolvedDistDir = resolve(distDir);
 
