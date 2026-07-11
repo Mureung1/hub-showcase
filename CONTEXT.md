@@ -193,7 +193,7 @@ The first Runtime Harness UI surface: a developer-facing view with prompt, trans
 _Avoid_: General chat app, AY-PLE student UI, polished assistant experience, product surface contract
 
 **AgentRuntimeKernel**:
-The stable runtime module that owns run lifecycle, normalized runtime events, cancellation, failure handling, and run logs so AY-PLE-specific flows do not depend directly on Codex raw protocol events.
+단일 RuntimeRun의 진단 생명주기, normalized event, cancellation, failure와 run log를 소유하는 안정적인 Runtime Harness module이다. 이어지는 제품 session과 CoControl 전체를 소유하지 않으며, AY-PLE 제품 기능은 raw Codex protocol 대신 제품 의미로 번역된 경계를 사용한다.
 _Avoid_: Product workflow, raw Codex wrapper, AY-PLE feature module
 
 **RuntimeRun**:
@@ -201,7 +201,7 @@ A single run-centric interaction with an agent runtime, started from a prompt or
 _Avoid_: Chat message, Codex thread, background import
 
 **RuntimeRunEvent**:
-A normalized lifecycle event for a RuntimeRun, such as started, output delta, cancelling, completed, cancelled, or failed, used instead of exposing raw runtime protocol notifications to AY-PLE flows.
+단일 RuntimeRun의 `started`, `output_delta`, `cancelling`, `completed`, `cancelled`, `failed`를 나타내는 normalized diagnostic event다. Session 지속, activity, request/response, steering, reconnect를 포함하는 제품 상호작용 계약이 아니다.
 _Avoid_: Raw Codex notification, UI event, log line
 
 **RuntimeRunLog**:
@@ -209,7 +209,7 @@ The canonical record of a RuntimeRun's prompt, status, output, error, normalized
 _Avoid_: Chat transcript, raw protocol dump, durable storage guarantee
 
 **Runtime Diagnostic History**:
-The workspace-local, restart-surviving, bounded collection of RuntimeRunLogs kept for developer inspection and parity diagnosis. Each RuntimeRunLog is a self-contained diagnostic record that does not depend on adapter-owned history; it is not student-facing WorkspaceHistory or a permanent audit record.
+개발자 inspection과 parity 진단을 위해 workspace-local에 저장하는 restart-surviving, bounded RuntimeRunLog 모음이다. Prompt와 raw/debug protocol evidence처럼 민감할 수 있는 값을 포함하므로 제품 session, WorkspaceHistory 또는 영구 audit record로 재사용하지 않는다.
 _Avoid_: WorkspaceHistory, adapter-owned history reference, permanent audit log, student history, global runtime archive
 
 **CodexCapabilitySlot**:

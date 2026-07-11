@@ -56,14 +56,14 @@ Root companion docs:
 | 문서 | 위치 | 상태 |
 | --- | --- | --- |
 | AY-PLE는 어떤 앱인가 | [product/ay-ple-overview.md](product/ay-ple-overview.md) | 소개 문서 |
-| AY-PLE Product Brief | [product/ay-ple-product-brief.md](product/ay-ple-product-brief.md) | Draft |
+| AY-PLE Product Brief | [product/ay-ple-product-brief.md](product/ay-ple-product-brief.md) | 제출 준비 |
 | AY-PLE Review Workspace Scenario | [product/ay-ple-review-workspace-scenario.md](product/ay-ple-review-workspace-scenario.md) | Draft |
 | AY-PLE Design System Direction | [product/ay-ple-design-system.md](product/ay-ple-design-system.md) | Draft |
-| AY-PLE 4주 개발 백로그 | [product/ay-ple-development-backlog.md](product/ay-ple-development-backlog.md) | 초안 v0.3 |
+| AY-PLE 4주 개발 백로그 | [product/ay-ple-development-backlog.md](product/ay-ple-development-backlog.md) | 초안 v0.4 |
 | Codex Runtime 격리 | [architecture/codex-runtime-isolation.md](architecture/codex-runtime-isolation.md) | 초안 |
 | Runtime Harness 구현 지도 | [architecture/runtime-harness-implementation-map.md](architecture/runtime-harness-implementation-map.md) | 활성 |
 | Runtime Harness and Codex Adapter Foundation PRD | [prds/2026-07-09-runtime-harness-codex-adapter-foundation.md](prds/2026-07-09-runtime-harness-codex-adapter-foundation.md) | 구현 완료 · 1주차 기록 |
-| Runtime Harness Hardening PRD | [prds/2026-07-10-runtime-harness-hardening.md](prds/2026-07-10-runtime-harness-hardening.md) | 일부 구현 · 이슈 003–005 보류 |
+| Runtime Harness Hardening PRD | [prds/2026-07-10-runtime-harness-hardening.md](prds/2026-07-10-runtime-harness-hardening.md) | 구현 완료 · 이슈 001–005 완료 |
 | Runtime Ownership Spike Plan | [spikes/codex-runtime-ownership/plan.md](spikes/codex-runtime-ownership/plan.md) | Draft |
 | 에이전트 실행 엔진 재사용 후보 조사 | [spikes/agent-runtime-reuse-landscape/research.md](spikes/agent-runtime-reuse-landscape/research.md) | 조사 완료 · 결정은 ADR 0005 |
 | Runtime auth ADR | [adr/0001-use-file-auth-store-for-runtime-spike.md](adr/0001-use-file-auth-store-for-runtime-spike.md) | Accepted |

@@ -1,8 +1,8 @@
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-issue
-- Next actor: agent
+- Next actor: none
 
 ## Parent
 
@@ -16,13 +16,13 @@ CodexRuntimeAdapter의 cancellation과 주요 failure mapping을 Fake runtime과
 
 ## Acceptance criteria
 
-- [ ] Inspector에서 진행 중인 Codex run에 cancel을 요청할 수 있다.
-- [ ] Codex cancel은 공식 App Server lifecycle의 `turn/interrupt` 기반으로 수행된다.
-- [ ] cancel 이후 Codex final status 또는 interrupt completion이 normalized `cancelled` state로 기록된다.
-- [ ] missing binary, spawn failure, initialize failure, turn failure 중 구현 가능한 주요 failure가 normalized `failed` state로 mapping된다.
-- [ ] Fake와 Codex run log가 같은 normalized log format을 사용한다.
-- [ ] Inspector가 cancel/failure 이후 running state를 남기지 않는다.
-- [ ] 이 slice 완료 후 PRD의 CodexRuntimeAdapter parity gate를 만족했다는 demo 기준이 문서화된다.
+- [x] Inspector에서 진행 중인 Codex run에 cancel을 요청할 수 있다.
+- [x] Codex cancel은 공식 App Server lifecycle의 `turn/interrupt` 기반으로 수행된다.
+- [x] cancel 이후 Codex final status 또는 interrupt completion이 normalized `cancelled` state로 기록된다.
+- [x] missing binary, spawn failure, initialize failure, turn failure 중 구현 가능한 주요 failure가 normalized `failed` state로 mapping된다.
+- [x] Fake와 Codex run log가 같은 normalized log format을 사용한다.
+- [x] Inspector가 cancel/failure 이후 running state를 남기지 않는다.
+- [x] 이 slice 완료 후 PRD의 CodexRuntimeAdapter parity gate를 만족했다는 demo 기준이 문서화된다.
 
 ## Completion / demo 기준
 

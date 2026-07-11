@@ -1,8 +1,8 @@
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-issue
-- Next actor: agent
+- Next actor: none
 
 ## Parent
 
@@ -16,12 +16,12 @@ Fake runtime에서 cancellation과 failure lifecycle을 deterministic하게 재�
 
 ## Acceptance criteria
 
-- [ ] 실행 중인 fake run을 Inspector에서 취소하면 normalized `cancelled` state가 기록된다.
-- [ ] 취소 후 Inspector가 더 이상 해당 run을 running 상태로 표시하지 않는다.
-- [ ] fake failure 시나리오가 normalized `failed` state와 사람이 읽을 수 있는 error message를 남긴다.
-- [ ] cancel/failure 모두 run log와 run history에서 확인 가능하다.
-- [ ] AgentRuntimeKernel 테스트 또는 이에 준하는 검증이 external run lifecycle behavior를 기준으로 통과한다.
-- [ ] 이 slice는 Codex adapter cancellation 구현을 포함하지 않는다.
+- [x] 실행 중인 fake run을 Inspector에서 취소하면 normalized `cancelled` state가 기록된다.
+- [x] 취소 후 Inspector가 더 이상 해당 run을 running 상태로 표시하지 않는다.
+- [x] fake failure 시나리오가 normalized `failed` state와 사람이 읽을 수 있는 error message를 남긴다.
+- [x] cancel/failure 모두 run log와 run history에서 확인 가능하다.
+- [x] AgentRuntimeKernel 테스트 또는 이에 준하는 검증이 external run lifecycle behavior를 기준으로 통과한다.
+- [x] 이 slice는 Codex adapter cancellation 구현을 포함하지 않는다.
 
 ## Blocked by
 

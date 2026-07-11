@@ -1,7 +1,7 @@
 # AY-PLE Product Brief
 
 작성일: 2026-07-07
-최종 업데이트: 2026-07-10
+최종 업데이트: 2026-07-11
 상태: 제출 준비
 
 ## 한 줄 요약
@@ -194,7 +194,7 @@ MVP의 source of truth는 SQLite와 원본 RawMaterial이다. Markdown은 사람
 | 원본 자료 | `sources/` | 사용자가 넣은 RawMaterial 원본을 보존한다. |
 | 구조화 상태 | `.ay-ple/semester.sqlite` | RawState, DraftState, ReviewState, TrustedState, ArtifactState를 저장한다. |
 | Agent context | `.ay-ple/agent-context/` | Agent turn에 주입할 snapshot, source manifest, recent patch log를 둔다. |
-| Agent run 기록 | `.ay-ple/runs/*` | ModelingRun의 prompt, logs, script output, evidence를 보존한다. |
+| ModelingRun 제품 기록 | `.ay-ple/runs/*` | 제품이 소유한 입력·산출물·evidence와 정제된 activity를 보존하며 Codex raw protocol과 debug log는 복사하지 않는다. |
 | WorkspaceHistory | `.ay-ple/history.git` 후보 | UserConfirmation, ModelingRun, Projection 갱신의 의미 있는 checkpoint를 기록한다. |
 | built-in Skills | `.ay-ple/skills/`, `.agents/skills/ay-ple-*` | Agent workflow 매뉴얼을 제공한다. |
 | local scripts | `.ay-ple/scripts/` 또는 package 내부 scripts | PDF, OCR, HWP/HWPX, projection rendering 같은 deterministic 처리를 담당한다. |
@@ -340,7 +340,7 @@ Codex 실행 환경 격리, 설치, 상태 분리의 세부 정책은 [Codex Run
 | --- | --- |
 | 우선 지원 실행 엔진 | Codex App Server를 앱이 소유하는 실행 엔진으로 직접 사용하고 App Server가 제공하는 상호작용 의미를 기준으로 삼는다. |
 | 제품 상호작용 | 사용자, 앱, AY의 CoControl 정책과 상태 변환을 제품이 소유하며 생성된 Codex 타입을 제품 계약으로 노출하지 않는다. |
-| Codex 이벤트 관측 | 알려지지 않은 Codex 이벤트도 실행 중에는 관측할 수 있게 하되 원본 내용은 기본적으로 저장하지 않는다. 장기 진단 기록은 허용 목록, 민감 정보 제거, 크기·기간 제한을 통과한 근거만 허용하고 필요한 이벤트만 AY 작업 활동과 제품 상태로 번역한다. |
+| Codex 이벤트 관측 | 알려지지 않은 Codex 이벤트도 실행 중에는 관측한다. 현재 Runtime Harness의 developer-only Runtime Diagnostic History는 parity 진단을 위해 prompt와 raw/debug evidence를 저장할 수 있지만 제품 상호작용 계약이나 감사 기록이 아니다. 제품 계층은 필요한 이벤트만 AY 활동과 상태로 번역하고, 진단 데이터를 제품 기록에 재사용하기 전에 allowlist와 redaction을 적용한다. |
 | AY 작업 방식 | built-in Skills가 처리 전략과 산출물 형식을 안내한다. |
 | RawMaterial 접근 | Codex의 작업공간 파일 접근과 자료 목록을 사용한다. |
 | 결정적 처리 | PDF 텍스트 추출, OCR, HWP/HWPX 해석, 문서 렌더링은 로컬 스크립트로 제공한다. |
@@ -427,7 +427,7 @@ AY-PLE의 기능 확장은 built-in Skills와 local scripts를 늘리는 방식�
 - TrustedState는 UserConfirmation을 통해서만 확정된다.
 - RawMaterial 원본은 자동 수정하거나 삭제하지 않는다.
 - WorkspaceHistory는 앱이 소유하며, AY가 직접 Git history를 확정하지 않는다.
-- Codex 원본 내용은 기본적으로 저장하지 않는다. 프롬프트, 경로, 도구 인자, 환경 값처럼 비밀 정보를 포함할 수 있는 값은 허용 목록과 민감 정보 제거 없이 Runtime Diagnostic History나 제품 감사 기록에 저장하지 않는다.
+- Runtime Diagnostic History는 developer-only 로컬 진단 기록이므로 prompt, 경로, 도구 인자와 raw protocol처럼 민감할 수 있는 값을 포함한다. 이를 제품 감사 기록이나 WorkspaceHistory로 복사하지 않으며, 제품 기록에는 제품이 정의한 필드만 저장한다. 진단 데이터를 제품에서 재사용하기 전 allowlist, redaction, 크기와 보존 기간 정책을 구현한다.
 - 파일 대량 변경, 삭제, 외부 공유, 외부 연동은 별도 confirmation이 필요하다.
 
 ## Academic Integrity

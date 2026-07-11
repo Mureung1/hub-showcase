@@ -1,8 +1,8 @@
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-issue
-- Next actor: agent
+- Next actor: none
 
 ## Parent
 
@@ -16,12 +16,12 @@ Codex App Server endpoint와 일반 AI agent capability를 제품화하지 않�
 
 ## Acceptance criteria
 
-- [ ] `turn/steer`는 raw endpoint slot 또는 Inspector experiment slot으로 호출 가능하거나, generated schema상 확인된 상태로 명시된다.
-- [ ] thread read/list 계열 capability는 raw endpoint slot 또는 Inspector experiment slot으로 관측 가능하거나, generated schema상 확인된 상태로 명시된다.
-- [ ] approval, profile, attachment, settings, thread/session 관련 capability는 Inspector UI나 runtime model에서 예약 slot으로 표현되며 학생-facing product contract로 오해되지 않는다.
-- [ ] 각 slot은 raw/debug log 또는 generated schema reference를 통해 확인 가능하다.
-- [ ] runtime-core의 stable semantics는 run lifecycle 중심으로 유지되고, broad-shallow raw capability가 product-facing contract로 새지 않는다.
-- [ ] conflict algorithm, full approval UX, attachment parsing, AY-PLE SourceSelection 연결은 구현하지 않는다.
+- [x] `turn/steer`는 raw endpoint slot 또는 Inspector experiment slot으로 호출 가능하거나, generated schema상 확인된 상태로 명시된다.
+- [x] thread read/list 계열 capability는 raw endpoint slot 또는 Inspector experiment slot으로 관측 가능하거나, generated schema상 확인된 상태로 명시된다.
+- [x] approval, profile, attachment, settings, thread/session 관련 capability는 Inspector UI나 runtime model에서 예약 slot으로 표현되며 학생-facing product contract로 오해되지 않는다.
+- [x] 각 slot은 raw/debug log 또는 generated schema reference를 통해 확인 가능하다.
+- [x] runtime-core의 stable semantics는 run lifecycle 중심으로 유지되고, broad-shallow raw capability가 product-facing contract로 새지 않는다.
+- [x] conflict algorithm, full approval UX, attachment parsing, AY-PLE SourceSelection 연결은 구현하지 않는다.
 
 ## Blocked by
 

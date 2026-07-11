@@ -82,6 +82,7 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | --- | --- |
 | 기본 위치 | `.ay-ple/runtime-harness/runs/<uuid>.json`; `RUNTIME_HISTORY_DIR`로 runs directory를 바꿀 수 있다. |
 | envelope | `{ schemaVersion: 1, savedAt, log }`; `log`는 normalized events와 `debugLog`를 포함한 self-contained `RuntimeRunLog`다. |
+| 민감 정보 경계 | 현재 developer-only 로컬 record는 prompt, output과 raw protocol을 포함할 수 있는 debug evidence를 저장한다. 제품 session, WorkspaceHistory 또는 감사 기록이 아니며 그 용도로 재사용하지 않는다. |
 | atomic replace | 같은 directory의 unique temporary file에 UTF-8 JSON을 쓰고 file을 sync·close한 뒤 canonical UUID filename으로 rename한다. 실패한 replacement는 이전 canonical record를 보존한다. |
 | hydration | Store-owned stale temporary file을 best-effort 정리하고, canonical JSON의 envelope, UUID filename 일치, required log/event/debug 구조와 lifecycle sequence를 검증한 뒤 `startedAt`, `runId` 순으로 hydrate한다. Hydrated terminal record는 그대로 유지한다. |
 | streaming checkpoint | Output delta와 debug evidence는 in-memory view에 즉시 반영되고, output normalized event만 subscriber에 즉시 공개된다. Dirty snapshot은 run별 직렬 queue에서 최대 100ms fixed window마다 최신 revision 하나로 coalesce되며, 지속적인 stream도 timer를 trailing debounce하지 않고 주기적으로 checkpoint한다. |
@@ -153,6 +154,7 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | 제품 실행 엔진 연결 | Runtime Harness는 의도적으로 SourceSelection, StatePatch, Review, TrustedState가 아니며 여섯 가지 이벤트 실행 계약은 세부 CoControl을 표현하지 못한다. | 이어지는 Codex `thread`, 식별자를 보존하는 이벤트 관측, `turn/steer`, `turn/interrupt`, 진행 중 요청을 첫 제품 수직 흐름에 연결한다. 제품 상태로의 변환은 AY-PLE가 소유한다. |
 | App Server 요청 왕복 | 현재 `CodexRawClient`는 App Server가 보낸 `request`를 클라이언트 `response`와 구분해 형식이 지정된 응답을 보내지 못한다. 따라서 `approval`, Codex 사용자 입력, `elicitation`, 동적 도구 왕복의 기반이 없다. | `notification`, `request`, `response` 전달과 연결, 명시적인 `sandbox`·`approval` 정책, 중단·연결 해제 시 안전한 거절을 제품 요청 UI보다 먼저 구현한다. |
 | 제품 실행 상태 위치 | 현재 Harness 기본값은 저장소 작업공간 아래 `.ay-ple/runtime-codex/*`이며 개발 환경에서는 그대로 유효하다. | `npx ay-ple` 또는 실제 사용자 학기 작업공간 활성화에 착수할 때 경로 배치 모듈, 명시적인 재정의, 경로 상태 정보와 격리 스모크 테스트를 함께 추가한다. 현재 Harness 데이터를 미리 이전하지 않는다. |
+| 제품 기록용 진단 데이터 정제 | Developer-only Runtime Diagnostic History는 prompt와 raw/debug evidence를 포함할 수 있어 제품 기록의 privacy contract를 만족하지 않는다. | 제품 session이나 감사 기록에 재사용하기 전에 P1 gate로 allowlist, redaction, 크기와 보존 기간 정책을 구현한다. |
 
 ## 이후 Agent 작업 규칙
 
@@ -162,3 +164,4 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 - broad raw capability evidence는 non-productized 상태를 유지할 때만 capability slot에 추가한다.
 - `FakeRuntimeAdapter`를 두 번째 제품 실행 엔진의 증거로 사용하지 않는다. ACP 또는 다른 실행 엔진 어댑터 경계는 실제 제품 시나리오를 수행하는 두 번째 엔진이 생긴 뒤 추출한다.
 - Restart recovery는 kernel-owned history semantics로 유지한다. Adapter resume, Codex thread 재연결 또는 raw-engine status를 recovery contract에 섞지 않는다.
+- Runtime Diagnostic History를 제품 session, WorkspaceHistory 또는 감사 기록으로 복사하지 않는다. 제품 재사용은 allowlist와 redaction을 구현한 뒤 별도 제품 계약을 통해서만 허용한다.

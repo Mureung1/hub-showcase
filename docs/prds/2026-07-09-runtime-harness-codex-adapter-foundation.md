@@ -2,9 +2,9 @@
 
 ## 기존 에이전트 작업 분류 기록
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-prd
-- Next actor: agent
+- Next actor: none
 
 ## 현재 구현 상태
 

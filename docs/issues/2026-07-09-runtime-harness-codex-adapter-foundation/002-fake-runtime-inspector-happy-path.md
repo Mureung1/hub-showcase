@@ -1,8 +1,8 @@
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-issue
-- Next actor: agent
+- Next actor: none
 
 ## Parent
 
@@ -16,12 +16,12 @@ FakeRuntimeAdapter를 사용해 Runtime Inspector에서 첫 run happy path를 �
 
 ## Acceptance criteria
 
-- [ ] Runtime Inspector에서 `fake` adapter를 선택하고 prompt run을 시작할 수 있다.
-- [ ] Fake run이 `started`, output delta 또는 incremental output, `completed`에 해당하는 normalized event를 발생시킨다.
-- [ ] Inspector가 prompt와 output을 transcript-like 형태로 보여준다.
-- [ ] Inspector가 normalized event stream과 run log/history를 보여준다.
-- [ ] 새 topology에서 관련 package/app의 typecheck 또는 build 검증이 통과한다.
-- [ ] 이 slice는 Codex app-server, SourceSelection, StatePatch, Review, TrustedState를 구현하지 않는다.
+- [x] Runtime Inspector에서 `fake` adapter를 선택하고 prompt run을 시작할 수 있다.
+- [x] Fake run이 `started`, output delta 또는 incremental output, `completed`에 해당하는 normalized event를 발생시킨다.
+- [x] Inspector가 prompt와 output을 transcript-like 형태로 보여준다.
+- [x] Inspector가 normalized event stream과 run log/history를 보여준다.
+- [x] 새 topology에서 관련 package/app의 typecheck 또는 build 검증이 통과한다.
+- [x] 이 slice는 Codex app-server, SourceSelection, StatePatch, Review, TrustedState를 구현하지 않는다.
 
 ## Blocked by
 

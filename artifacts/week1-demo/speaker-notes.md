@@ -54,7 +54,7 @@ AY-PLE는 바로 그 경험에서 출발했습니다. 줄이고 싶은 것은 �
 
 “이번 주에는 AY-PLE가 어떤 제품이어야 하는지와 검토 경험을 prototype으로 만들었고, 그 아래에서 Agent를 실행하고 관찰하고 중단하고 기록하는 기반을 실제 코드로 만들었습니다.
 
-아직 이 제품 화면과 앱 안에서 Agent를 실행하는 코드는 끝까지 연결되지 않았습니다. 다음 주에는 자료 선택부터 승인한 과제가 실제로 반영될 때까지 처음부터 끝까지 연결할 예정입니다.
+아직 이 제품 화면과 앱 안에서 Agent를 실행하는 코드는 끝까지 연결되지 않았습니다. 2주차에는 먼저 같은 Codex session에서 AY의 세부 활동을 관찰하고, 진행 중 정정·입력 요청·실제 중단을 앱과 왕복시키는 상호작용을 검증합니다. 자료 선택부터 변경안 검토와 반영까지의 제품 수직 흐름은 3주차에 연결합니다.
 
 Codex 자체가 제품은 아닙니다. Codex는 AY가 일할 수 있게 하는 엔진이고, AY-PLE는 그 능력을 학생의 자료와 결정에 연결하는 제품입니다.”
 
@@ -66,13 +66,14 @@ Codex 자체가 제품은 아닙니다. Codex는 AY가 일할 수 있게 하는 
 
 현재 AY-PLE의 Runtime Harness는 run마다 새 Codex app-server process와 Thread, Turn을 시작하고, 텍스트 delta와 완료·실패·취소 lifecycle을 공통 event로 바꿔 기록합니다. 중단할 때는 `turn/interrupt`를 보낸 뒤 실제 interrupted 완료까지 확인합니다.
 
-하지만 이 primitive를 학생에게 그대로 보여주는 것이 제품은 아닙니다. command나 tool call Item은 앞으로 자료 읽기 활동과 근거로 번역해야 하고, Thread도 학기 데이터베이스 자체가 아닙니다. 다음 수직 slice는 자료 선택부터 변경안과 학생 확인까지 이 실행 기반 위에 연결하는 작업입니다.”
+하지만 이 primitive를 학생에게 그대로 보여주는 것이 제품은 아닙니다. command나 tool call Item은 앞으로 자료 읽기 활동과 근거로 번역해야 하고, Thread도 학기 데이터베이스 자체가 아닙니다. 2주차에는 이어지는 session과 정정·요청·중단 왕복을 검증하고, 그 결과를 바탕으로 3주차에 자료 선택부터 변경안과 학생 확인까지 제품 수직 흐름을 연결합니다.”
 
 짚을 상태 구분:
 
 - 현재 연결됨: text prompt, streaming output, 완료·실패, 확인된 취소, diagnostic history
 - App Server protocol에는 존재하지만 제품 계약이 아님: tool Item, approval, steering, thread read. 이 가운데 일부만 raw inspection 호출이 가능하다.
-- 다음 제품 연결: `SourceSelection → Activity/Evidence → StatePatch/Review → TrustedState`
+- 2주차 상호작용 검증: 이어지는 session → Activity/Request → steer/interrupt
+- 3주차 제품 연결: `SourceSelection → Activity/Evidence → StatePatch/Review → TrustedState`
 
 ## 슬라이드 7 · 두 종류의 승인 (선택 · 약 40초)
 

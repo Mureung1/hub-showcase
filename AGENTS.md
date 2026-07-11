@@ -20,6 +20,8 @@ Runtime-specific package commands, live smoke commands, and generated-artifact c
 
 Use TypeScript ESM throughout. Match the existing style: two-space indentation, single quotes, no semicolons, and strict TypeScript settings. Use `PascalCase` for React components and exported types, `camelCase` for functions and variables, and kebab-case for CSS class names. Keep imports simple: external packages first, then local files. Avoid locking in routers, databases, auth, or state-management libraries until the project needs them.
 
+Static throwaway presentation artifacts under `artifacts/` and `spikes/`, plus their root demo entrypoint, may use browser-native ESM JavaScript when they are not imported by production workspaces. Load those scripts with `type="module"`, document their standalone run path, and migrate them to TypeScript before promoting the code into `apps/*` or `packages/*`.
+
 ## Documentation Style
 
 When writing Markdown planning, technical, or product documents, prefer tables for structured information and bullet points for scannable lists. Use prose for context and decisions, but model comparable items, options, tradeoffs, risks, and open questions in tables when practical. Follow `docs/README.md` for formal project document placement, and update the root `README.md` whenever adding or moving a formal project document under `docs/`. Local Matt Pocock artifacts under `docs/prds/` and `docs/issues/` are an exception and should not be indexed in the root `README.md`.

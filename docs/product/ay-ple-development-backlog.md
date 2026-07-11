@@ -3,7 +3,7 @@
 | 항목 | 내용 |
 | --- | --- |
 | 작성일 | 2026-07-10 |
-| 상태 | 초안 v0.3 |
+| 상태 | 초안 v0.4 |
 | 계획 기간 | 2026-07-06 ~ 2026-07-31 |
 
 ## 문서 목적
@@ -75,7 +75,7 @@ Runtime Inspector는 이 학생용 데모 자체가 아니라, 위 흐름이 안
 
 | 주차 | 기간 | 주간 목표 | 주요 결과 | 확정도 |
 | --- | --- | --- | --- | --- |
-| 1주차 | 07-06 ~ 07-10 | 제품 방향과 runtime 위험을 먼저 검증한다. | Product Brief, Review Workspace prototype, Runtime Harness, Fake/Codex parity, hardening 계획 | 완료 |
+| 1주차 | 07-06 ~ 07-10 | 제품 방향과 runtime 위험을 먼저 검증한다. | Product Brief, Review Workspace prototype, Runtime Harness, Fake/Codex parity, Runtime Diagnostic History hardening 완료 | 완료 |
 | 2주차 | 07-13 ~ 07-17 | Codex App Server를 4주 주력 실행 엔진으로 삼고 CoControl에 필요한 상호작용을 증명한다. | 이어지는 세션, 세부 활동, 진행 중 정정, 실제 중단 완료, 요청 유형 분리, Codex 이벤트 관측 | 확정 |
 | 3주차 | 07-20 ~ 07-24 | 처음부터 Codex를 사용하는 자료 선택→모델링→검토 제품 수직 흐름을 완성한다. | 최소 작업공간 상태, 자료 반입·선택, 진행 중 정정·질문, 변경 제안·근거, Review 수락 | 예측 |
 | 4주차 | 07-27 ~ 07-31 | 대표 자료와 실패·재연결 상황에서 CoControl UX를 다듬고 반복 가능한 데모를 완성한다. | 수정·거절, 재연결, 충돌·실패 UX, 대표 테스트 자료, 회귀 검증과 발표 시나리오 | 예측 |
@@ -93,8 +93,8 @@ Runtime Inspector는 이 학생용 데모 자체가 아니라, 위 흐름이 안
 | W1-02 | 검토 대기와 반영됨 상태의 화면 구조를 prototype으로 검증했다. | [Review Workspace Scenario](ay-ple-review-workspace-scenario.md) |
 | W1-03 | Fake/Codex adapter가 같은 kernel 계약으로 실행·취소·실패를 표현한다. | [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md) |
 | W1-04 | 실제 HTTP/SSE와 browser를 통과하는 결정적 lifecycle 검증을 추가했다. | `npm run test:e2e` |
-| W1-05 | 완료된 runtime run이 server 재시작 뒤 복원되는 최소 영속 history를 추가했다. | [Runtime Harness Hardening PRD](../prds/2026-07-10-runtime-harness-hardening.md) |
-| W1-06 | 남은 runtime hardening 작업을 독립 실행 가능한 local issue로 나눴다. | [Runtime hardening issues](../issues/2026-07-10-runtime-harness-hardening/) |
+| W1-05 | Runtime Diagnostic History에 100ms checkpoint, interrupted-run recovery, count/byte retention과 terminal clear를 구현했다. | [Runtime Harness Hardening PRD](../prds/2026-07-10-runtime-harness-hardening.md) |
+| W1-06 | Runtime persistence 실패를 fail-closed로 처리하고 degraded HTTP/UI와 함께 local issues 001–005를 구현·검증했다. | [Runtime hardening issues](../issues/2026-07-10-runtime-harness-hardening/) |
 
 ## 2주차 확정 백로그
 
@@ -104,14 +104,14 @@ Runtime Inspector는 이 학생용 데모 자체가 아니라, 위 흐름이 안
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | W2-01 | Codex 우선 제품 연결 결정 반영 | 문서·설계 | P0 | Product Brief, ADR, 구현 지도, 4주 제외 범위가 Codex 직접 통합 우선 방향으로 일치한다. | 완료 |
 | 2 | W2-02 | Codex 프로세스와 이어지는 `thread` 생명주기 | 개발 | P0 | 같은 로컬 중계 서버와 App Server 자식 프로세스 안에서 프로세스와 `thread`를 실행마다 닫지 않고 여러 `turn`과 제어 요청에 재사용한다. AY 작업 맥락과 Codex `thread`의 대응 관계를 유지하고, 프로세스 재시작 뒤 재개는 W4 범위로 남긴다. | 준비됨 |
-| 3 | W2-03 | Codex 이벤트와 App Server 요청 왕복 경로 | 개발 | P0 | `notification`과 서버 `request`를 `response`와 구분해 전달하고 `thread`/`turn`/`item`/`request` 식별자를 보존한다. 형식이 지정된 응답, 취소, 알 수 없는 요청의 안전한 거절, 명시적인 `sandbox`·`approval` 정책을 계약 테스트로 고정한다. 원본 내용은 기본적으로 저장하지 않는다. | W2-02 대기 |
+| 3 | W2-03 | Codex 이벤트와 App Server 요청 왕복 경로 | 개발 | P0 | `notification`과 서버 `request`를 `response`와 구분해 전달하고 `thread`/`turn`/`item`/`request` 식별자를 보존한다. 형식이 지정된 응답, 취소, 알 수 없는 요청의 안전한 거절, 명시적인 `sandbox`·`approval` 정책을 계약 테스트로 고정한다. 제품 상태나 감사 기록에는 Codex 원본 내용을 기본적으로 저장하지 않는다. | W2-02 대기 |
 | 4 | W2-04 | AY 진행 활동 표시 | 개발 | P0 | 메시지, 계획, 도구·파일 활동, 대기 상태, 종료 결과를 텍스트 중심 실행 생명주기와 별도로 Inspector에서 관측한다. | W2-03 대기 |
 | 5 | W2-05 | 진행 중 정정과 실제 중단 완료 확인 | 개발 | P0 | 진행 중 작업의 예상 식별자를 확인해 `turn/steer`를 전달하고, `turn/interrupt`는 실제 `interrupted` 완료 이벤트를 관측한 뒤 UI가 안정 상태로 돌아간다. | W2-03 대기 |
 | 6 | W2-06 | 실행 권한과 Codex 사용자 입력 요청 왕복 | 개발·UX | P0 | 실행 권한 요청과 Codex가 요구하는 짧은 입력을 서로 다른 `request` 형식과 안내 문구로 표시하고 정확한 `request`에 응답한다. 중단·연결 해제 시 미처리 요청은 안전하게 거절하며, UserDecisionRequest의 MCP 경로는 W3에서 연결한다. | W2-03 대기 |
 | 7 | W2-07 | CoControl 반복 검증 | 검증 | P0 | Inspector에서 SourceSelection 형태의 앱 상태 변경→`turn/steer`→Codex 사용자 입력 응답→`turn/interrupt` 시나리오를 실행한다. 이때 학생·앱·AY 중 누가 어떤 행동을 일으켰는지 반복 가능한 테스트와 실제 Codex 스모크 테스트로 확인한다. | W2-04~06 대기 |
 | 8 | W2-08 | 3주차 제품 수직 흐름을 작은 실행 작업으로 분할 | 계획 | P1 | 각 작업이 Codex 경로를 기본으로 사용하고 `FakeRuntimeAdapter`는 전송 계층 테스트 대역으로만 쓰며 0.5~2일 크기의 완료 조건을 갖는다. | W2-07 대기 |
 
-기존 Runtime Harness 안정화 이슈 003~005는 폐기하지 않지만, 4주 제품 수직 흐름이나 데모 안정성을 직접 막는 경우에만 승격한다. 스트리밍 중간 저장, 용량 제한 진단 이력, 저장소 장애 처리를 범용 `AgentRuntimeKernel` 완성 목적으로 먼저 구현하지 않는다.
+Runtime Harness 안정화 이슈 001~005는 2026-07-11에 모두 완료했다. 이후 4주 P0는 ADR 0005의 Codex CoControl 제품 연결이며, 추가 범용 hardening은 제품 수직 흐름이나 데모 안정성을 직접 막는 문제가 확인될 때만 승격한다.
 
 ### 다음 주 종료 시 확인할 결과
 
@@ -161,6 +161,7 @@ W3-01 또는 W3-03에서 저장소 내부 데모 경로를 넘어 사용자가 �
 | 7 | C-07 | WorkspaceQuery | P2 | 확인된 상태와 evidence query contract가 준비되고 첫 대표 질문을 정했을 때 | 후보 |
 | 8 | C-08 | HWP/HWPX parsing과 OCR | P2 | 핵심 흐름이 안정되고 실제 사용자 자료 검증에서 우선 필요성이 확인될 때 | 후보 |
 | 9 | C-09 | 제품 진입점과 `npx ay-ple` 배포 흐름 | P2 | 실제 사용자 학기 작업공간 또는 패키징을 구현할 때 패키지·앱 데이터·작업공간 루트를 분리하는 경로 배치 모듈까지 함께 만들 수 있을 때 | 후보 · [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md) |
+| 10 | C-10 | 제품용 진단 근거 allowlist와 redaction | P1 | Runtime Diagnostic History의 prompt 또는 raw/debug evidence를 제품 session이나 감사 기록에 재사용하기 전 | 후보 · 제품 재사용 gate |
 
 다음 항목은 이번 4주 범위에서 제외한다.
 
@@ -212,6 +213,7 @@ W3-01 또는 W3-03에서 저장소 내부 데모 경로를 넘어 사용자가 �
 
 | 날짜 | 버전 | 변경 |
 | --- | --- | --- |
+| 2026-07-11 | v0.4 | Runtime Harness issues 001–005 완료를 기준선에 반영하고, developer-only 진단 기록을 제품에서 재사용하기 전 allowlist와 redaction을 P1 보안 gate로 추가했다. |
 | 2026-07-10 | v0.3 | 현재 저장소 내부 `.ay-ple/runtime-*`를 유효한 개발 기본값으로 유지하고, 제품 진입점에서 패키지·앱 데이터·학기 작업공간 루트를 분리하는 후속 과제를 C-09와 미결정 표에 연결했다. |
 | 2026-07-10 | v0.2 | Codex App Server를 4주 주력 실행 엔진으로 확정하고 W2를 필수 상호작용 검증, W3를 Codex 제품 수직 흐름, W4를 CoControl 안정화 중심으로 재배치했다. ACP·다중 엔진 중립화와 비차단 Runtime Harness 안정화는 캠프 이후로 미뤘다. |
 | 2026-07-10 | v0.1 | 1주차 기준선, 2주차 확정 Task, 3~4주차 예측, 기능 후보와 운영 규칙을 작성했다. |

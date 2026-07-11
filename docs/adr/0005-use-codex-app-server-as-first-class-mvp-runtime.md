@@ -20,4 +20,6 @@ AY-PLE는 4주 캠프 동안 Codex App Server 직접 통합을 유일한 우선 
 - 제품 모듈은 생성된 Codex 프로토콜 형식을 `import`하지 않고 ModelingRun 시작, 진행 중 정정, 중단, 작업 중 요청 응답, StatePatch 검토 같은 AY-PLE 제품 기능을 사용해야 한다.
 - 향후 중립화는 실제 두 번째 실행 엔진과 의미를 비교한 뒤 추출한다. ACP는 다른 실행 엔진을 붙일 때 비교할 후보이며 현재 Codex 기능의 기준이 아니다.
 
-이 결정은 [ADR 0003](0003-build-runtime-harness-before-product-layer.md)의 1주차 Runtime Harness 검증 단계를 이어받는다. [Codex Runtime Isolation](../architecture/codex-runtime-isolation.md)에서는 앱이 소유한 실행 파일, 전역 설치와 분리된 `CODEX_HOME`, 학기 작업공간과 실행 상태의 분리 원칙만 채택한다. [에이전트 실행 엔진 재사용 후보 조사](../spikes/agent-runtime-reuse-landscape/research.md)의 후보 조사 사실은 보존하지만 ACP 우선 권고는 이 결정으로 대체한다. [ADR 0004](0004-split-runtime-history-semantics-from-workspace-storage.md)는 Runtime Diagnostic History에만 계속 적용되며 제품 세션이나 상호작용 이력을 결정하지 않는다.
+이 결정은 [ADR 0003](0003-build-runtime-harness-before-product-layer.md)의 Fake/Codex parity gate와 그 뒤 완료된 Runtime Harness hardening을 폐기하지 않는다. `AgentRuntimeKernel`, `RuntimeRunEvent`, Runtime Diagnostic History는 검증된 developer-only 단일 실행 진단 기반으로 유지한다. 이 결정은 parity gate 이후 제품 세션과 CoControl을 그 경계 하나로 확장하지 않고 별도의 제품 기능으로 번역하도록 후속 책임을 좁힌다.
+
+[Codex Runtime Isolation](../architecture/codex-runtime-isolation.md)에서는 앱이 소유한 실행 파일, 전역 설치와 분리된 `CODEX_HOME`, 학기 작업공간과 실행 상태의 분리 원칙만 채택한다. [에이전트 실행 엔진 재사용 후보 조사](../spikes/agent-runtime-reuse-landscape/research.md)의 후보 조사 사실은 보존하지만 ACP 우선 권고는 이 결정으로 대체한다. [ADR 0004](0004-split-runtime-history-semantics-from-workspace-storage.md)는 Runtime Diagnostic History에만 계속 적용되며 제품 세션이나 상호작용 이력을 결정하지 않는다.

@@ -168,16 +168,16 @@ const child = spawn(resolvePackagedCodexBin(), ['app-server', '--listen', 'stdio
 | project config 오해 | `.codex/config.toml`은 일부 민감 설정을 override하지 못한다. | provider/auth/profile 설정은 app-managed `CODEX_HOME`에서 관리한다. |
 | Harness 저장 위치를 제품 기본값으로 오해 | 현재 작업공간 내부 `.ay-ple/runtime-codex/*`는 저장소 개발용이며 제품용 Codex 상태 경로가 아니다. | 현재 경로는 유지한다. `npx ay-ple` 또는 실제 학기 작업공간 활성화 시 경로 배치 모듈, 재정의 정책과 경로 검증을 함께 구현한다. |
 
-## 다음 조사/구현 과제
+## 격리 조사/구현 상태
 
-| 우선순위 | 과제 | 산출물 |
-| --- | --- | --- |
-| P0 | app-managed `CODEX_HOME` 로그인/세션 UX 확인 | 전역 `~/.codex`와 분리된 로그인 플로우 |
-| P0 | app-server stdio smoke test | `initialize`, `thread/start`, `turn/start` 최소 왕복 테스트 |
-| P1 | pinned version schema generation | generated schema와 runtime adapter type |
-| P1 | packaging 조사 | macOS desktop packaging 시 native Codex package 포함 확인 |
-| P1 | security note | local-first MVP와 cloud/multi-user 전환 시 필요한 격리 경계 비교 |
-| P2 | 제품용 경로 배치 모듈과 재정의 정책 | `npx ay-ple` 또는 실제 학기 작업공간 활성화 시 패키지·앱 데이터·작업공간 루트 분리, 패키지가 소유한 Codex 실행 파일 경로 해석기, `AY_PLE_DATA_DIR`, 실제 경로 진단과 격리 스모크 테스트 |
+| 우선순위 | 상태 | 과제 | 산출물 |
+| --- | --- | --- | --- |
+| P0 | 후속 | app-managed `CODEX_HOME` 로그인/세션 UX 확인 | 전역 `~/.codex`와 분리된 로그인 플로우 |
+| P0 | 완료 | app-server stdio smoke와 parity gate | Package smoke가 `initialize`/`initialized`를, server parity gate가 `thread/start`, `turn/start`, prompt completion과 cancellation을 검증 |
+| P1 | 완료 | pinned version schema generation | `@openai/codex@0.144.0` exact pin, `generate:codex-types`, generated internal TypeScript contract |
+| P1 | 후속 | packaging 조사 | macOS desktop packaging 시 native Codex package 포함 확인 |
+| P1 | 후속 | security note | local-first MVP와 cloud/multi-user 전환 시 필요한 격리 경계 비교 |
+| P2 | 후속 | 제품용 경로 배치 모듈과 재정의 정책 | `npx ay-ple` 또는 실제 학기 작업공간 활성화 시 패키지·앱 데이터·작업공간 루트 분리, 패키지가 소유한 Codex 실행 파일 경로 해석기, `AY_PLE_DATA_DIR`, 실제 경로 진단과 격리 스모크 테스트 |
 
 ## 근거 링크
 
