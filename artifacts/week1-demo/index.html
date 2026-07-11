@@ -1,0 +1,273 @@
+<!doctype html>
+<!--
+  PRESENTATION ARTIFACT — Week 1 product story, not a product implementation.
+  Run: npm run demo:week1
+  Open: http://127.0.0.1:4174/artifacts/week1-demo/
+-->
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AY-PLE Week 1 — 제품 발표</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="presentation.js"></script>
+  </head>
+  <body>
+    <main class="deck" aria-label="AY-PLE Week 1 발표 자료">
+      <section class="slide hero-slide is-active" data-slide="1" aria-labelledby="slide-1-title">
+        <header class="slide-brand">
+          <span class="brand-lockup">
+            <img src="../../spikes/ay-ple-ui-prototype/assets/ay-ple-mark.png" alt="">
+            <strong>AY-PLE</strong>
+          </span>
+          <span>AI Agent Challenge · Week 1</span>
+        </header>
+
+        <div class="hero-copy">
+          <p class="eyebrow">이번 주에 답하고 싶었던 질문</p>
+          <h1 id="slide-1-title">AI로 앱을 만드는 데서,<br><em>AI가 앱 안에서 일하게</em></h1>
+          <p class="hero-lead">AY-PLE는 학생의 자료를 읽고 연결해, <br>확인 가능한 학기 정보로 바꾸는 학업 Agent 앱입니다.</p>
+        </div>
+
+        <div class="direction-compare" aria-label="AI로 앱 만들기와 AI가 앱 안에서 일하기 비교">
+          <article>
+            <span class="compare-label">많은 AI 프로젝트</span>
+            <div class="mini-flow"><strong>개발자</strong><span>→ Codex →</span><strong>웹앱</strong></div>
+            <p>AI는 앱을 만드는 과정에서 일합니다.</p>
+          </article>
+          <span class="versus">VS</span>
+          <article class="is-ay-ple">
+            <span class="compare-label">AY-PLE</span>
+            <div class="mini-flow"><strong>학생</strong><span>→ AY-PLE 안의 AY →</span><strong>확인된 학기 정보</strong></div>
+            <p>학생이 버튼을 누르면 AY가 앱 안에서 자료를 읽고 일을 수행합니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="slide problem-slide" data-slide="2" aria-labelledby="slide-2-title" hidden>
+        <header class="slide-heading">
+          <p class="eyebrow">학생이 실제로 겪는 문제</p>
+          <h2 id="slide-2-title">과제 하나의 정보가<br>여러 자료에 흩어져 있습니다</h2>
+        </header>
+
+        <div class="problem-story">
+          <figure class="semester-evidence">
+            <div class="semester-shot">
+              <img src="assets/semester-materials-folder.png" alt="직전 학기의 과목별 PDF, 녹음, 노트가 담긴 실제 폴더 구조">
+            </div>
+            <figcaption>
+              <span>직전 학기 · 실제 자료</span>
+              <strong>정리해 두어도,<br>계속 읽고 갱신해야 했습니다</strong>
+              <p>강의계획서부터 주차별 PDF와 수업 녹음까지, 자료의 형식과 위치가 모두 달랐습니다.</p>
+              <ul aria-label="실제 자료 유형">
+                <li>강의계획서</li>
+                <li>주차별 PDF</li>
+                <li>수업 녹음</li>
+                <li>개인 노트</li>
+              </ul>
+            </figcaption>
+          </figure>
+
+          <div class="manual-work">
+            <p>지금 학생이 하는 일</p>
+            <ol>
+              <li><span>1</span>자료를 하나씩 연다</li>
+              <li><span>2</span>관련 내용을 직접 찾는다</li>
+              <li><span>3</span>서로 비교해 판단한다</li>
+              <li><span>4</span>캘린더·할 일·메모에 다시 적는다</li>
+            </ol>
+            <strong>파일 저장보다, 읽고 연결하고 옮기는 일이 더 어렵습니다.</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide flow-slide" data-slide="3" aria-labelledby="slide-3-title" hidden>
+        <header class="slide-heading compact-heading">
+          <p class="eyebrow">AY-PLE가 바꾸는 흐름</p>
+          <h2 id="slide-3-title">AY가 먼저 일하고,<br>학생이 마지막 결정을 합니다</h2>
+        </header>
+
+        <div class="product-flow" aria-label="AY-PLE 제품 흐름">
+          <article><span>1</span><small>학생</small><strong>정리할 자료를 고릅니다</strong><p>AI가 멋대로 모든 파일을 읽지 않습니다.</p></article>
+          <span class="flow-arrow">→</span>
+          <article class="agent-step"><span>2</span><small>AY</small><strong>파일과 도구를 사용합니다</strong><p>형식에 맞게 읽고 여러 자료를 연결합니다.</p></article>
+          <span class="flow-arrow">→</span>
+          <article class="agent-step"><span>3</span><small>AY</small><strong>근거 있는 변경안을 냅니다</strong><p>답변이 아니라 앱이 반영할 수 있는 제안입니다.</p></article>
+          <span class="flow-arrow">→</span>
+          <article><span>4</span><small>학생</small><strong>수락·수정·거절합니다</strong><p>확인한 내용만 학기 정보가 됩니다.</p></article>
+        </div>
+
+        <aside class="agent-meaning">
+          <img src="../../spikes/ay-ple-ui-prototype/assets/ay-profile.png" alt="">
+          <div>
+            <p>왜 ‘Agent’인가?</p>
+            <strong>한 번 답하고 끝나는 대신, 목표를 받고 파일을 열고 도구를 사용하며 여러 단계를 이어서 수행하기 때문입니다.</strong>
+          </div>
+        </aside>
+      </section>
+
+      <section class="slide demo-slide" data-slide="4" aria-labelledby="slide-4-title" hidden>
+        <header class="demo-heading">
+          <span>
+            <p class="eyebrow">90초 제품 흐름 prototype</p>
+            <h2 id="slide-4-title">학생이 맡기고, AY가 일하고, 함께 확인합니다</h2>
+          </span>
+          <a class="launch-demo" href="../../spikes/ay-ple-ui-prototype/guided-demo.html?variant=workspace&amp;step=1&amp;present=1" target="_blank" rel="noreferrer">전체 화면 데모 시작 ↗</a>
+        </header>
+        <p class="demo-disclosure"><strong>실제 연결 전의 제품 prototype입니다.</strong> 실제 파일이나 Agent 호출 대신, 만들고 있는 사용자 흐름을 항상 같은 결과로 보여줍니다.</p>
+        <a class="demo-preview" href="../../spikes/ay-ple-ui-prototype/guided-demo.html?variant=workspace&amp;step=1&amp;present=1" target="_blank" rel="noreferrer" aria-label="3단 학업 워크스페이스 동적 제품 데모 시작">
+          <img src="assets/guided-demo-evidence.png" alt="AY가 두 원본 자료에서 과제 마감과 제출 방식의 근거를 연결한 화면">
+          <span>▶ 전체 화면에서 동적 데모 시작</span>
+        </a>
+      </section>
+
+      <section class="slide closing-slide" data-slide="5" aria-labelledby="slide-5-title" hidden>
+        <header class="slide-heading compact-heading">
+          <p class="eyebrow">이번 주에 정한 제품의 중심</p>
+          <h2 id="slide-5-title">대화가 아니라,<br><em>확인된 학기 정보</em>를 만듭니다</h2>
+        </header>
+
+        <div class="closing-grid">
+          <article class="promise-card">
+            <span>AY가 하는 일</span>
+            <ul>
+              <li>자료를 직접 읽고</li>
+              <li>필요한 도구를 고르고</li>
+              <li>서로 다른 정보를 연결해</li>
+              <li>근거 있는 변경안을 준비합니다</li>
+            </ul>
+          </article>
+          <article class="promise-card student-card">
+            <span>학생이 지키는 권한</span>
+            <ul>
+              <li>어떤 자료를 맡길지 고르고</li>
+              <li>원본 근거를 확인하고</li>
+              <li>수락·수정·거절하며</li>
+              <li>확인된 내용만 학기에 반영합니다</li>
+            </ul>
+          </article>
+          <article class="now-next-card">
+            <div><small>지금</small><strong>제품 경험 prototype<br>+ 앱 안에서 Agent를 실행하는 기반</strong></div>
+            <span>→</span>
+            <div><small>다음</small><strong>W2 · Codex 상호작용 검증<br>W3 · 제품 수직 흐름 연결</strong></div>
+          </article>
+        </div>
+
+        <blockquote>Codex가 제품은 아닙니다. Codex는 AY가 일하는 엔진이고,<br><strong>AY-PLE는 그 능력을 학생의 자료와 결정에 연결하는 제품입니다.</strong></blockquote>
+
+        <a class="appendix-jump" href="#slide-6">
+          <span>선택 심화 · Q&amp;A</span>
+          <strong>Codex App Server가 제품 안에 들어오는 방식 →</strong>
+        </a>
+      </section>
+
+      <section class="slide appendix-slide runtime-slide" data-slide="6" aria-labelledby="slide-6-title" hidden>
+        <header class="slide-heading appendix-heading">
+          <p class="eyebrow">선택 심화 · Codex / Claude Code 사용자용</p>
+          <h2 id="slide-6-title">Codex의 실행 primitive를,<br><em>학업 제품의 의미로 번역합니다</em></h2>
+          <p class="appendix-lead">App Server는 rich client를 위한 Thread·Turn·Item과 event stream을 제공합니다. AY-PLE는 raw protocol 대신 학생이 이해할 작업·근거·변경안으로 바꿉니다.</p>
+        </header>
+
+        <div class="runtime-translation" aria-label="Codex App Server에서 AY-PLE 제품 계층으로의 번역">
+          <article class="translation-card official-card">
+            <span class="card-kicker">OFFICIAL APP SERVER</span>
+            <strong>Thread → Turn → Item</strong>
+            <dl>
+              <div><dt>Thread</dt><dd>여러 Turn을 담는 Agent 맥락</dd></div>
+              <div><dt>Turn</dt><dd>한 번의 요청과 이어지는 작업</dd></div>
+              <div><dt>Item</dt><dd>메시지·명령·파일·도구 호출</dd></div>
+            </dl>
+            <code>item/started → item/completed</code>
+          </article>
+
+          <span class="translation-arrow" aria-hidden="true">→</span>
+
+          <article class="translation-card current-card">
+            <span class="card-kicker">IMPLEMENTED RUNTIME</span>
+            <strong>CodexRuntimeAdapter</strong>
+            <ul>
+              <li><code>initialize</code> 후 새 thread·turn 시작</li>
+              <li>agent delta를 공통 output event로 변환</li>
+              <li>완료·실패·취소 lifecycle과 run 기록</li>
+              <li><code>turn/interrupt</code> 종료 확인</li>
+            </ul>
+          </article>
+
+          <span class="translation-arrow" aria-hidden="true">→</span>
+
+          <article class="translation-card product-card">
+            <span class="card-kicker">NEXT PRODUCT SEAM</span>
+            <strong>AY-PLE Product Layer</strong>
+            <ul>
+              <li><code>SourceSelection</code> · 맡길 자료</li>
+              <li><code>Activity / Evidence</code> · 설명 가능한 작업</li>
+              <li><code>StatePatch / Review</code> · 검토할 변경안</li>
+              <li><code>TrustedState</code> · 확인된 학기 정보</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="runtime-status-band">
+          <article><span class="status-dot is-live"></span><div><strong>현재 연결됨</strong><p>text prompt · streaming output · 완료/실패 · 확인된 취소 · diagnostic history</p></div></article>
+          <article><span class="status-dot is-inspection"></span><div><strong>App Server capability</strong><p>protocol에 존재 · 일부 raw 호출 가능 — 아직 제품 계약은 아님</p></div></article>
+          <article><span class="status-dot is-next"></span><div><strong>W2 검증 → W3 연결</strong><p>Session·event/request·steer/interrupt를 검증한 뒤 자료 선택부터 Review까지 제품 수직 흐름 연결</p></div></article>
+        </div>
+
+        <p class="expert-caveat"><strong>Thread ≠ 학기 DB</strong><span>·</span><strong>Item ≠ 검증된 근거</strong><span>·</span><strong>turn/completed ≠ 확인된 학기 정보</strong></p>
+
+        <footer class="source-links">공식 근거 · <a href="https://learn.chatgpt.com/docs/app-server#core-primitives" target="_blank" rel="noreferrer">Core primitives</a> · <a href="https://learn.chatgpt.com/docs/app-server#lifecycle-overview" target="_blank" rel="noreferrer">Lifecycle</a> · <a href="https://learn.chatgpt.com/docs/app-server#items" target="_blank" rel="noreferrer">Items</a></footer>
+      </section>
+
+      <section class="slide appendix-slide approval-slide" data-slide="7" aria-labelledby="slide-7-title" hidden>
+        <header class="slide-heading appendix-heading">
+          <p class="eyebrow">선택 심화 · 권한과 신뢰의 경계</p>
+          <h2 id="slide-7-title">AY-PLE에서 ‘승인’은<br><em>두 개의 다른 결정</em>입니다</h2>
+          <p class="appendix-lead">Agent가 무엇을 실행해도 되는지와, 그 결과를 학생의 학기 정보로 믿어도 되는지는 같은 질문이 아닙니다.</p>
+        </header>
+
+        <div class="approval-boundary-grid">
+          <article class="approval-boundary engine-boundary">
+            <header><span>ENGINE SAFETY</span><strong>Codex 실행 권한</strong></header>
+            <blockquote>“이 명령·파일 변경·네트워크 접근을<br>실행해도 되는가?”</blockquote>
+            <ul>
+              <li>Agent 행동 전·중에 실행환경을 보호</li>
+              <li>app-server가 client에 approval request</li>
+              <li>결과는 completed · failed · declined</li>
+            </ul>
+            <footer><span class="boundary-status is-reserved">현재 · capability 확인 / 제품 UX 미구현</span></footer>
+          </article>
+
+          <article class="approval-boundary product-boundary">
+            <header><span>SEMANTIC TRUST</span><strong>AY-PLE 학생 확인</strong></header>
+            <blockquote>“이 과제 정보를 내 학기에<br>반영해도 되는가?”</blockquote>
+            <ul>
+              <li>Agent 작업 후, 앱 상태 반영 전에 검토</li>
+              <li>원본 근거와 변경안을 함께 제시</li>
+              <li>학생이 수락 · 수정 · 거절</li>
+            </ul>
+            <footer><span class="boundary-status is-prototype">현재 · guided prototype / 실제 연결 전</span></footer>
+          </article>
+        </div>
+
+        <div class="dual-approval-flow" aria-label="AY-PLE의 두 승인 경계">
+          <span>자료 선택</span><i>→</i><span>AY 작업</span><i>→</i><strong>필요 시 실행 권한</strong><i>→</i><span>근거 있는 변경안</span><i>→</i><strong>학생 확인</strong><i>→</i><span>확인된 학기 정보</span>
+        </div>
+
+        <aside class="expert-takeaway">
+          <code>Engine approval ≠ Product confirmation</code>
+          <strong>App Server는 실행 경계를 보호하고, AY-PLE는 의미와 신뢰의 경계를 설계합니다.</strong>
+        </aside>
+
+        <footer class="source-links">공식 근거 · <a href="https://learn.chatgpt.com/docs/app-server#command-execution-approvals" target="_blank" rel="noreferrer">Command execution approvals</a> · 현재 구현 상태 · <code>docs/architecture/runtime-harness-implementation-map.md</code></footer>
+      </section>
+    </main>
+
+    <nav class="deck-controls" aria-label="슬라이드 이동">
+      <button id="previousSlide" type="button" aria-label="이전 슬라이드">←</button>
+      <div class="slide-dots" id="slideDots" aria-label="현재 슬라이드"></div>
+      <span id="slideCounter">1 / 7</span>
+      <button id="nextSlide" type="button" aria-label="다음 슬라이드">→</button>
+      <button id="fullscreenButton" type="button" aria-label="전체 화면">⛶</button>
+    </nav>
+  </body>
+</html>

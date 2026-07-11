@@ -1,8 +1,8 @@
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-issue
-- Next actor: agent
+- Next actor: none
 
 ## Parent
 
@@ -16,11 +16,11 @@ Runtime Harness를 제품 layer와 분리해서 키울 수 있도록 repository�
 
 ## Acceptance criteria
 
-- [ ] npm workspace가 `apps/server`, `apps/inspector`, `packages/runtime-core`, `packages/runtime-fake`, `packages/runtime-codex`를 포함하는 구조를 인식한다.
-- [ ] 기존 Express health API와 Vite React 화면에 해당하는 기능이 새 topology에서도 동작하거나, 새 app 이름으로 동일한 smoke path가 제공된다.
-- [ ] root `dev`, `build`, `typecheck` 계열 명령이 새 workspace 이름을 기준으로 동작한다.
-- [ ] root `README.md`에는 `docs/issues/` 산출물을 인덱싱하지 않는다.
-- [ ] AY-PLE product package가 생성되더라도 behavior 구현 없이 boundary reservation 수준에 머문다.
+- [x] npm workspace가 `apps/server`, `apps/inspector`, `packages/runtime-core`, `packages/runtime-fake`, `packages/runtime-codex`를 포함하는 구조를 인식한다.
+- [x] 기존 Express health API와 Vite React 화면에 해당하는 기능이 새 topology에서도 동작하거나, 새 app 이름으로 동일한 smoke path가 제공된다.
+- [x] root `dev`, `build`, `typecheck` 계열 명령이 새 workspace 이름을 기준으로 동작한다.
+- [x] root `README.md`에는 `docs/issues/` 산출물을 인덱싱하지 않는다.
+- [x] AY-PLE product package가 생성되더라도 behavior 구현 없이 boundary reservation 수준에 머문다.
 
 ## Blocked by
 

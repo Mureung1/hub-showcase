@@ -1,6 +1,6 @@
 # Runtime history 의미와 workspace storage 구현을 분리한다
 
-Status: accepted
+상태: 채택 · Runtime Harness 한정
 
 Runtime Diagnostic History는 server 재시작을 견디는 bounded developer diagnostic data다. Lifecycle 의미와 저장 구현이 여러 module로 흩어지지 않도록 `runtime-core`가 persistence seam과 recovery semantics를 소유하고, `apps/server`가 workspace 환경에 맞는 concrete storage adapter를 조립한다.
 

@@ -1,8 +1,8 @@
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-issue
-- Next actor: agent
+- Next actor: none
 
 ## Parent
 
@@ -16,13 +16,13 @@ Codex App Server의 공식 계약을 pinned Codex version의 generated schema/ty
 
 ## Acceptance criteria
 
-- [ ] pinned Codex version에서 `codex app-server generate-ts`를 실행해 runtime-codex 내부 generated type을 생성하는 경로가 마련된다.
-- [ ] generated Codex app-server type은 adapter-internal로 유지되고 runtime-core 또는 AY-PLE product-facing contract로 노출되지 않는다.
-- [ ] app-server는 `--listen stdio://` 또는 기본 stdio transport를 사용하며 browser가 stdio에 직접 연결하지 않는다.
-- [ ] `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 app-managed 위치로 주입하는 smoke path가 있다.
-- [ ] raw client가 `initialize` request 후 `initialized` notification을 보내는 handshake를 수행한다.
-- [ ] raw/debug message와 initialize result 또는 error가 run/debug log에서 관측 가능하다.
-- [ ] 관련 구현은 Runtime Ownership Spike의 app-owned binary와 isolated runtime proof를 참고하되, spike artifact를 그대로 제품 code로 간주하지 않는다.
+- [x] pinned Codex version에서 `codex app-server generate-ts`를 실행해 runtime-codex 내부 generated type을 생성하는 경로가 마련된다.
+- [x] generated Codex app-server type은 adapter-internal로 유지되고 runtime-core 또는 AY-PLE product-facing contract로 노출되지 않는다.
+- [x] app-server는 `--listen stdio://` 또는 기본 stdio transport를 사용하며 browser가 stdio에 직접 연결하지 않는다.
+- [x] `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 app-managed 위치로 주입하는 smoke path가 있다.
+- [x] raw client가 `initialize` request 후 `initialized` notification을 보내는 handshake를 수행한다.
+- [x] raw/debug message와 initialize result 또는 error가 run/debug log에서 관측 가능하다.
+- [x] 관련 구현은 Runtime Ownership Spike의 app-owned binary와 isolated runtime proof를 참고하되, spike artifact를 그대로 제품 code로 간주하지 않는다.
 
 ## Blocked by
 

@@ -1,10 +1,16 @@
 # Runtime Harness and Codex Adapter Foundation
 
-## Agent triage
+## 기존 에이전트 작업 분류 기록
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-prd
-- Next actor: agent
+- Next actor: none
+
+## 현재 구현 상태
+
+- 상태: 2026-07-10 구현 완료.
+- 이슈 001–007에서 정의한 패키지 구성, Runtime Inspector, Fake/Codex 단일 실행 동작 일치, 실제 프롬프트·취소 검증, `capability-slots.ts`는 현재 구현 지도에 반영되어 있다.
+- 이 PRD는 1주차 요구사항을 기록하는 과거 문서이며 남은 에이전트 작업은 없다. [ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md)는 제품 연결 단계에서 `AgentRuntimeKernel`의 역할을 Runtime Harness 범위로 한정한다.
 
 ## Problem Statement
 

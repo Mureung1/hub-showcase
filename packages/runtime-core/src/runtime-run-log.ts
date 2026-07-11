@@ -4,9 +4,8 @@ import type {
   RuntimeRunLog,
   RuntimeRunStatus,
 } from './index.js'
+import { parseRuntimeRunId } from './runtime-run-id.js'
 
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const runtimeRunStatuses = new Set<RuntimeRunStatus>([
   'running',
   'cancelling',
@@ -14,6 +13,55 @@ const runtimeRunStatuses = new Set<RuntimeRunStatus>([
   'cancelled',
   'failed',
 ])
+
+type RuntimeRunLifecycleState = 'initial' | RuntimeRunStatus
+type RuntimeRunEventDetailKey =
+  | 'prompt'
+  | 'delta'
+  | 'reason'
+  | 'output'
+  | 'error'
+type RuntimeRunEventDescriptor = {
+  detailKey: RuntimeRunEventDetailKey
+  allowedFrom: readonly RuntimeRunLifecycleState[]
+  nextStatus: RuntimeRunStatus | 'unchanged'
+}
+
+const runtimeRunEventDescriptors = {
+  started: {
+    detailKey: 'prompt',
+    allowedFrom: ['initial'],
+    nextStatus: 'running',
+  },
+  output_delta: {
+    detailKey: 'delta',
+    allowedFrom: ['running', 'cancelling'],
+    nextStatus: 'unchanged',
+  },
+  cancelling: {
+    detailKey: 'reason',
+    allowedFrom: ['running'],
+    nextStatus: 'cancelling',
+  },
+  completed: {
+    detailKey: 'output',
+    allowedFrom: ['running', 'cancelling'],
+    nextStatus: 'completed',
+  },
+  cancelled: {
+    detailKey: 'reason',
+    allowedFrom: ['running', 'cancelling'],
+    nextStatus: 'cancelled',
+  },
+  failed: {
+    detailKey: 'error',
+    allowedFrom: ['running', 'cancelling'],
+    nextStatus: 'failed',
+  },
+} as const satisfies Record<
+  RuntimeRunEvent['type'],
+  RuntimeRunEventDescriptor
+>
 
 export function parseRuntimeRunLog(value: unknown): RuntimeRunLog {
   assertRecord(value, 'log')
@@ -23,14 +71,13 @@ export function parseRuntimeRunLog(value: unknown): RuntimeRunLog {
     ['error', 'debugLog', 'completedAt'],
     'log',
   )
-  assertUuid(value.runId, 'log runId')
+  const runId = parseRuntimeRunId(value.runId, 'log runId')
   assertString(value.adapter, 'log adapter')
   assertString(value.prompt, 'log prompt')
   assertRuntimeRunStatus(value.status)
   assertString(value.output, 'log output')
   assertIsoTimestamp(value.startedAt, 'log startedAt')
 
-  const runId = value.runId
   const adapter = value.adapter
   const prompt = value.prompt
   const status = value.status
@@ -131,7 +178,8 @@ function parseRuntimeRunEvent(
   assertRecord(value, `event ${expected.expectedSequence}`)
   assertString(value.type, `event ${expected.expectedSequence} type`)
 
-  const detailKey = eventDetailKey(value.type)
+  const descriptor = runtimeRunEventDescriptor(value.type)
+  const detailKey = descriptor.detailKey
   assertExactKeys(
     value,
     ['type', 'sequence', 'runId', 'adapter', 'timestamp', detailKey],
@@ -204,31 +252,35 @@ function assertStatusMatchesEvents(
   },
   events: RuntimeRunEvent[],
 ): void {
-  let observedStatus: RuntimeRunStatus = 'running'
+  let observedStatus: RuntimeRunLifecycleState = 'initial'
 
-  for (const event of events.slice(1)) {
-    if (isTerminalRuntimeRunStatus(observedStatus)) {
+  for (const event of events) {
+    if (
+      observedStatus !== 'initial' &&
+      isTerminalRuntimeRunStatus(observedStatus)
+    ) {
       throw new Error('log events cannot continue after terminal')
     }
 
-    if (event.type === 'started') {
-      throw new Error('started event may only appear first')
-    }
+    const descriptor = runtimeRunEventDescriptors[event.type]
 
-    if (event.type === 'output_delta') {
-      continue
-    }
+    if (!isAllowedLifecycleTransition(descriptor, observedStatus)) {
+      if (event.type === 'started') {
+        throw new Error('started event may only appear first')
+      }
 
-    if (event.type === 'cancelling') {
-      if (observedStatus !== 'running') {
+      if (event.type === 'cancelling') {
         throw new Error('cancelling event may only appear once')
       }
 
-      observedStatus = 'cancelling'
-      continue
+      throw new Error(
+        `runtime event ${event.type} cannot follow ${observedStatus}`,
+      )
     }
 
-    observedStatus = event.type
+    if (descriptor.nextStatus !== 'unchanged') {
+      observedStatus = descriptor.nextStatus
+    }
   }
 
   if (observedStatus !== log.status) {
@@ -272,30 +324,19 @@ function assertStatusMatchesEvents(
   }
 }
 
-function eventDetailKey(
-  type: string,
-): 'prompt' | 'delta' | 'reason' | 'output' | 'error' {
-  if (type === 'started') {
-    return 'prompt'
+function runtimeRunEventDescriptor(type: string): RuntimeRunEventDescriptor {
+  if (!Object.hasOwn(runtimeRunEventDescriptors, type)) {
+    throw new Error(`unsupported runtime event type: ${type}`)
   }
 
-  if (type === 'output_delta') {
-    return 'delta'
-  }
+  return runtimeRunEventDescriptors[type as RuntimeRunEvent['type']]
+}
 
-  if (type === 'cancelling' || type === 'cancelled') {
-    return 'reason'
-  }
-
-  if (type === 'completed') {
-    return 'output'
-  }
-
-  if (type === 'failed') {
-    return 'error'
-  }
-
-  throw new Error(`unsupported runtime event type: ${type}`)
+function isAllowedLifecycleTransition(
+  descriptor: RuntimeRunEventDescriptor,
+  state: RuntimeRunLifecycleState,
+): boolean {
+  return descriptor.allowedFrom.some((allowedState) => allowedState === state)
 }
 
 function assertRuntimeRunStatus(
@@ -363,11 +404,5 @@ function assertIsoTimestamp(
 
   if (Number.isNaN(parsedTime.getTime()) || parsedTime.toISOString() !== value) {
     throw new Error(`${label} must be an ISO 8601 UTC timestamp`)
-  }
-}
-
-function assertUuid(value: unknown, label: string): asserts value is string {
-  if (typeof value !== 'string' || !uuidPattern.test(value)) {
-    throw new Error(`${label} must be a UUID`)
   }
 }
