@@ -262,6 +262,19 @@ Scene PLY endpoint
 -> OrbitControls
 ```
 
+renderer는 loading/error canvas mount를 React 상태와 분리하고, 준비된 asset의 splat count와 bounds를 진단 metadata로 남긴다. synthetic binary Gaussian PLY 330개를 사용한 QA에서는 desktop canvas의 26.43%가 배경과 다른 pixel이었고, 390px mobile에서도 nonblank와 가로 overflow 없음을 확인했다. 이 결과는 renderer 검증이며 실제 촬영 복원 품질 검증이 아니다.
+
+### Worker mode
+
+```text
+SCENE_WORKER_MODE=host
+또는
+SCENE_WORKER_MODE=docker
+SCENE_DOCKER_IMAGE=ghcr.io/nerfstudio-project/nerfstudio:1.1.5
+```
+
+Docker mode는 job directory만 `/workspace`에 mount하고 `--gpus all --shm-size=12gb`로 고정된 Nerfstudio argument list를 실행한다. host에 `ns-*` 도구가 없어도 되지만 Docker, NVIDIA driver, image와 최소 6000MB VRAM은 필요하다.
+
 `deck.gl`은 현장 상세보기의 기본 기술이 아니다. 현장 사람 오브젝트는 지도 Layer가 아니라 3DGS 장면의 local coordinate 안에서 렌더링한다.
 
 PoC에서 검증해야 할 핵심:
