@@ -2,13 +2,15 @@
 
 AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입니다.
 
-현재 프로젝트 아이템은 **AY-PLE(에이플)**입니다. 학생이 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾아 원본 근거와 함께 변경안을 제시하고, 학생이 확인한 내용만 과제·일정·할 일로 이어주는 local-first 학업 Agent 앱을 만들고 있습니다.
+현재 프로젝트 아이템은 **AY-PLE(에이플)**입니다. 학생이 한 학기 작업공간에서 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾아 원본 근거와 함께 변경안을 제시하고, 학생이 확인한 내용만 학기 상태에 반영하는 local-first 학업 Agent 앱을 만들고 있습니다.
 
 ## 처음 보는 분은 여기부터
 
 > **[AY-PLE는 어떤 앱인가](docs/product/ay-ple-overview.md)** — AI Agent가 앱 안에서 학생을 위해 어떻게 일하는지, 실제 사용 장면을 따라 이해하는 소개입니다.
 
-## 발표와 동적 데모
+## 1주차 발표 기록
+
+아래 발표와 prototype은 1주차 당시의 산출물로 보존한다. 현재 제품·아키텍처 기준은 활성 문서를 우선하며, 내부 아키텍처가 안정된 뒤 발표 서사를 별도로 갱신한다.
 
 ```bash
 npm run demo:week1
@@ -21,29 +23,53 @@ npm run demo:week1
 
 기획서를 포함한 formal project docs는 이 README에서 링크로 접근할 수 있게 관리합니다. 문서 추가 위치와 분류 기준은 [docs/README.md](docs/README.md)를 따릅니다.
 
+### 활성 문서
+
 | 구분 | 문서 | 용도 |
 | --- | --- | --- |
-| 제품 소개 | [AY-PLE는 어떤 앱인가](docs/product/ay-ple-overview.md) | 처음 보는 사람을 위한 제품 소개와 동작 시나리오 |
-| 문서 컨벤션 | [docs/README.md](docs/README.md) | 프로젝트 문서 위치와 관리 규칙 |
-| 제품 기획 | [AY-PLE Product Brief](docs/product/ay-ple-product-brief.md) | 문제 정의, 제품 테제, MVP 방향 |
-| 제품 기획 | [Review Workspace Scenario](docs/product/ay-ple-review-workspace-scenario.md) | 사용자 시나리오와 화면 단위 prototype 구조 |
-| 제품 기획 | [AY-PLE Design System Direction](docs/product/ay-ple-design-system.md) | 밝은 학업 워크스페이스 중심의 브랜드/UI 기준 |
-| 개발 계획 | [AY-PLE 4주 개발 백로그](docs/product/ay-ple-development-backlog.md) | 4주 개발 로드맵, 우선순위, 다음 주 확정 Task와 기능 후보 |
-| 기술 구조 | [Codex Runtime 격리](docs/architecture/codex-runtime-isolation.md) | Codex runtime 격리와 실행 경계 |
-| 기술 구조 | [Runtime Harness 구현 지도](docs/architecture/runtime-harness-implementation-map.md) | Runtime Harness 구현 이후의 모듈 지도와 parity/gap 정리 |
-| Spike 계획 | [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | Codex 실행환경 소유권 PoC 계획 |
-| 스파이크 조사 | [에이전트 실행 엔진 재사용 후보 조사](docs/spikes/agent-runtime-reuse-landscape/research.md) | 실행 엔진 재사용 후보 조사와 Codex 우선 사용 후속 판단 |
-| ADR | [0001. Use file auth store for runtime spike](docs/adr/0001-use-file-auth-store-for-runtime-spike.md) | runtime spike의 인증 저장소 결정 |
-| ADR | [0002. Use first-class academic objects](docs/adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam canonical model과 derived operational view 결정 |
-| ADR | [0003. Build runtime harness before product layer](docs/adr/0003-build-runtime-harness-before-product-layer.md) | Runtime Harness 선행과 CodexRuntimeAdapter parity gate 결정 |
-| ADR | [0004. Split runtime history semantics from workspace storage](docs/adr/0004-split-runtime-history-semantics-from-workspace-storage.md) | Runtime Diagnostic History의 lifecycle 의미와 workspace storage 구현 책임 분리 |
-| ADR | [0005. 4주 제품 수직 흐름에 Codex App Server 우선 사용](docs/adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) | 4주 동안 Codex의 제어 기능과 CoControl 구현을 우선하고 다중 엔진 중립화를 미루는 결정 |
-| ADR | [0006. 제품 실행 경로의 소유권 분리](docs/adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | 패키지, 기기별 앱 데이터, 사용자가 소유한 학기 작업공간의 경로와 수명 분리 |
-| Agent 운영 | [Issue Tracker](docs/agents/issue-tracker.md) | issue, PRD, PR 요청 표면 규칙 |
-| Agent 운영 | [Triage Labels](docs/agents/triage-labels.md) | triage 상태 마커 규칙 |
-| Agent 운영 | [Domain Docs](docs/agents/domain.md) | domain docs와 ADR 위치 규칙 |
-| Root companion | [AGENTS.md](AGENTS.md) | Codex 작업 규칙과 브랜치/PR 컨벤션 |
-| Root companion | [CONTEXT.md](CONTEXT.md) | AY-PLE 핵심 용어와 피해야 할 표현 |
+| 제품 소개 | [AY-PLE는 어떤 앱인가](docs/product/ay-ple-overview.md) | 처음 보는 사람을 위한 제품 소개와 대표 사용 흐름 |
+| 제품 기획 | [AY-PLE Product Brief](docs/product/ay-ple-product-brief.md) | 문제 정의, 제품 테제, MVP 경계 |
+| 제품 시나리오 | [Review Workspace Scenario](docs/product/ay-ple-review-workspace-scenario.md) | 자료 선택부터 Review까지의 사용자 시나리오 |
+| 제품 디자인 | [AY-PLE Design System Direction](docs/product/ay-ple-design-system.md) | 밝은 학업 워크스페이스 중심의 브랜드/UI 기준 |
+| 개발 계획 | [AY-PLE 4주 개발 백로그](docs/product/ay-ple-development-backlog.md) | Codex-native composition과 Review 수직 흐름 중심의 4주 계획 |
+| 제품↔Codex 구조 | [Codex-native product composition](docs/architecture/codex-native-product-composition.md) | SemesterWorkspace, ModelingRecipe, source mention, ModelingRun receipt의 현재 mapping |
+| Runtime 구조 | [Codex Runtime 격리](docs/architecture/codex-runtime-isolation.md) | Codex runtime, app data, 사용자 workspace의 실행 경계 |
+| 구현 현황 | [Runtime Harness 구현 지도](docs/architecture/runtime-harness-implementation-map.md) | 개발자용 Harness의 현재 모듈 지도와 구현 gap |
+| ADR | [0002. First-class academic objects](docs/adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam canonical model과 derived view 결정 |
+| ADR | [0004. Runtime history와 workspace storage 분리](docs/adr/0004-split-runtime-history-semantics-from-workspace-storage.md) | 개발자 진단 이력과 제품 저장 책임 분리 |
+| ADR | [0005. Codex App Server 우선 사용](docs/adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) | 4주 MVP의 실행 엔진과 protocol isolation 결정 |
+| ADR | [0006. 제품 실행 경로 소유권 분리](docs/adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | package, app data, SemesterWorkspace 경로와 수명 분리 |
+| ADR | [0007. Native Codex composition으로 제품 작업 실행](docs/adr/0007-use-native-codex-composition-for-product-actions.md) | 별도 orchestration framework 없이 Recipe를 native turn input으로 조합하는 결정 |
+
+### 기술 참고 문서
+
+| 문서 | 용도 |
+| --- | --- |
+| [Codex App Server context delivery capability 조사](docs/spikes/codex-app-server-context-delivery/research.md) | context·request·tool·Hook 전달 경로와 case별 선택 근거 |
+| [Codex session topology 조사](docs/spikes/codex-session-topology/research.md) | thread·turn·item·compaction·resume의 저수준 의미와 topology 위험 |
+| [Codex local Memories 아키텍처 조사](docs/spikes/codex-memory-architecture/research.md) | built-in memory pipeline, personalization surface, scope·privacy 제약 |
+| [에이전트 실행 엔진 재사용 후보 조사](docs/spikes/agent-runtime-reuse-landscape/research.md) | Codex 직접 사용과 ACP·대체 실행 엔진 비교 근거 |
+
+### 완료·역사 기록
+
+| 문서 | 용도 |
+| --- | --- |
+| [Week 1 발표 자료](artifacts/week1-demo/README.md) | 1주차 당시 발표 서사와 실행 안내 |
+| [동적 제품 prototype](spikes/ay-ple-ui-prototype/guided-demo.html) | 1주차 Review Workspace UI 검증 기록 |
+| [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | 완료된 실행환경 소유권 Spike의 당시 계획 |
+| [0001. Runtime Spike file auth store](docs/adr/0001-use-file-auth-store-for-runtime-spike.md) | Runtime Ownership Spike의 인증 저장 결정 |
+| [0003. Runtime Harness 선행](docs/adr/0003-build-runtime-harness-before-product-layer.md) | 1주차 Runtime Harness 선행 결정과 구현 기준선 |
+
+### 문서·Agent 운영
+
+| 문서 | 용도 |
+| --- | --- |
+| [docs/README.md](docs/README.md) | 프로젝트 문서 위치, 상태 분류와 관리 규칙 |
+| [Issue Tracker](docs/agents/issue-tracker.md) | issue, PRD, PR 요청 표면 규칙 |
+| [Triage Labels](docs/agents/triage-labels.md) | triage 상태 마커 규칙 |
+| [Domain Docs](docs/agents/domain.md) | domain docs와 ADR 위치 규칙 |
+| [AGENTS.md](AGENTS.md) | Codex 작업 규칙과 브랜치/PR 컨벤션 |
+| [CONTEXT.md](CONTEXT.md) | AY-PLE의 현재 domain glossary |
 
 ## 문서 구조
 
@@ -102,4 +128,4 @@ Codex app-server initialize smoke는 live runtime 상태를 건드릴 수 있으
 npm run smoke:codex -w @ay-ple/runtime-codex
 ```
 
-아직 라우터, DB, 제품 인증, 상태관리 선택지는 고정하지 않습니다. Runtime Harness의 여섯 가지 이벤트 생명주기는 개발자용 단일 실행 진단 기반이며 제품 전체 상호작용 계약이 아닙니다. 4주 제품 경로는 Codex App Server를 우선 지원하고, SourceSelection, CoControl, StatePatch, Review, TrustedState를 별도 제품 계층에서 구현합니다.
+아직 DB, 제품 인증, 상태관리 선택지는 고정하지 않습니다. Runtime Harness의 여섯 가지 이벤트 생명주기는 개발자용 단일 실행 진단 기반이며 제품 전체 상호작용 계약이 아닙니다. 4주 제품 경로는 Codex App Server를 우선 사용하고, 새 thread를 만들거나 기존 thread를 선택한 뒤 ModelingRecipe를 `Skill + PromptTemplate + arguments + source mentions + outputSchema`로 조합해 native `turn/start(threadId)`로 실행합니다. AY-PLE는 `RawMaterial`, `EvidenceRef`, `StatePatch`, `UserConfirmation`, `SemesterModel` 같은 학업 상태와 Review 경험을 소유합니다.

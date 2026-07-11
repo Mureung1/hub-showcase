@@ -1,5 +1,7 @@
 # 에이전트 실행 엔진 재사용 후보 조사
 
+> **현재 판정 (2026-07-11): 기술 참고 문서.** Codex App Server 직접 사용과 Runtime Harness의 developer-only 범위는 유지하지만, 후속 제품 작업을 “모든 CoControl capability를 먼저 구현하는 일”로 해석하지 않는다. AY-PLE는 [Codex-native product composition](../../architecture/codex-native-product-composition.md)에 따라 native thread를 선택하고 `turn/start(threadId)` 입력을 얇게 조합하며 학업 상태와 Review만 소유한다. ACP와 다른 실행 엔진은 실제 두 번째 엔진 요구가 생길 때 다시 비교한다. 아래 후보 조사와 기능 손실 근거는 유효하지만, 상세 capability의 우선순위와 과거 제품 용어는 현재 문서를 따르지 않는다.
+
 | 항목 | 내용 |
 | --- | --- |
 | 조사 질문 | AY-PLE가 `AgentRuntimeKernel`과 Codex App Server 상위 계층을 계속 직접 만들 필요가 있는가? 이미 포크하거나 의존할 수 있는 구현은 무엇인가? |
@@ -9,7 +11,7 @@
 | 결론 상태 | **후속 결정으로 갱신됨:** 4주 제품 범위에서는 Codex App Server를 직접 우선 지원한다. ACP 전환은 미룬다. |
 | 결정 문서 | [ADR 0005 — 4주 제품 수직 흐름에 Codex App Server 우선 사용](../../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) |
 
-## 후속 결론
+## 조사 당시 후속 결론
 
 이 보고서의 후보 조사와 소스 비교는 유효하지만, 최초의 ACP 우선 권고는 후속 기능 보존 감사와 4주 제품 범위 결정으로 대체됐다. `@agentclientprotocol/codex-acp`는 Codex App Server를 실행하는 유용한 구현이지만 투명한 상위 계층은 아니며 일부 기능을 잃는 ACP 변환 계층이다.
 
@@ -228,11 +230,11 @@ Codex를 직접 사용하는 제품 수직 흐름이 완성되고 두 번째 실
 | Vercel Harness를 검증 없이 새 핵심 계층으로 채택 | 명시적으로 실험적이며 Codex 어댑터가 App Server·승인 요구를 충족하지 않는다. |
 | ACP와 별도로 여섯 가지 이벤트 범용 프로토콜을 계속 확대 | 도구, 권한, 추론, 검토가 추가될수록 표준 ACP와 같은 프로토콜을 다시 만들게 된다. 제품 계층에는 범용 이벤트보다 AY-PLE 제품 기능을 노출해야 한다. |
 
-## 최종 추천
+## 조사 당시 최종 추천
 
 현재 1주차 Runtime Harness는 “Codex를 실제로 구동하고 중단과 이력의 위험을 발견했다”는 점에서 가치가 있었다. 다음 단계는 범용 실행 기반을 더 단단하게 만들거나 ACP로 즉시 교체하는 것이 아니라 **Codex가 직접 제공하는 상호작용을 AY-PLE의 CoControl로 제품화하는 것**이다.
 
-**현재 결정:** Codex App Server를 4주 제품의 주 실행 기반으로 직접 사용한다. `AgentRuntimeKernel`은 단일 실행 진단 모듈로 한정한다. 제품에서는 같은 Codex `thread`를 이어 쓰는 작업 맥락, Codex 이벤트 관측, 진행 중 정정·중단, 작업 중 요청, AY-PLE 상태로의 변환을 구현한다. AY-PLE는 CoControl 정책, 근거 변환, Review와 UserConfirmation의 감사 기록, TrustedState를 소유한다.
+**조사 당시 결정:** Codex App Server를 4주 제품의 주 실행 기반으로 직접 사용한다. `AgentRuntimeKernel`은 단일 실행 진단 모듈로 한정한다. 제품에서는 같은 Codex `thread`를 이어 쓰는 작업 맥락, Codex 이벤트 관측, 진행 중 정정·중단, 작업 중 요청, AY-PLE 상태로의 변환을 구현한다. AY-PLE는 CoControl 정책, 근거 변환, Review와 UserConfirmation의 감사 기록, TrustedState를 소유한다.
 
 ACP와 `acp-ui`는 캠프 이후 이식성 검증 후보로 남긴다. 제품 UI는 현재 Review Workspace와 ChatSidecar를 유지하며, Open WebUI는 보조 채팅 또는 운영 화면이 필요할 때만 별도로 검토한다.
 
