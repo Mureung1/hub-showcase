@@ -5,6 +5,10 @@ const sourceSelect =
   "id,project_id,kind,title,content,content_sha256,char_count,occurred_at,archived_at,created_at,updated_at,source_imports(id,provider,participants,segment_count,imported_at,metadata)";
 const runSelect =
   "id,project_id,created_by,idempotency_key,status,provider_mode,provider_model,schema_version,result_jsonb,error_code,error_message,latency_ms,input_tokens,output_tokens,created_at,started_at,completed_at,analysis_run_sources(source_record_id)";
+const runStepEventSelect =
+  "id,analysis_run_id,sequence,event_key,step_name,status,validation_outcome,code,duration_ms,source_count,input_characters,output_item_count,evidence_reference_count,created_at";
+const runAnnotationSelect =
+  "id,analysis_run_id,annotation_type,target_type,target_id,body,created_at";
 const shareSelect = "id,analysis_run_id,expires_at,revoked_at,created_at";
 
 export function createModuBrainRepository(client) {
@@ -162,6 +166,44 @@ export function createModuBrainRepository(client) {
         `analysis_run_sources?analysis_run_id=eq.${encode(runId)}&select=source_record_id,source_title,source_kind,content_snapshot,content_sha256,char_count&order=created_at.asc`,
       );
     },
+    async listRunStepEvents(runId) {
+      await this.getRun(runId);
+      return client.request(
+        `analysis_run_step_events?analysis_run_id=eq.${encode(runId)}&select=${runStepEventSelect}&order=sequence.asc`,
+      );
+    },
+    async listRunAnnotations(runId) {
+      await this.getRun(runId);
+      return client.request(
+        `analysis_run_annotations?analysis_run_id=eq.${encode(runId)}&select=${runAnnotationSelect}&order=created_at.desc`,
+      );
+    },
+    async createRunAnnotation(runId, values) {
+      const result = single(
+        await client.request("rpc/create_analysis_run_annotation", {
+          method: "POST",
+          body: {
+            p_analysis_run_id: runId,
+            p_idempotency_key: values.idempotencyKey,
+            p_annotation_type: values.annotationType,
+            p_target_type: values.targetType,
+            p_target_id: values.targetId,
+            p_body: values.body,
+          },
+        }),
+      );
+      if (!result?.annotation) {
+        throw new ApiError(
+          503,
+          "DATABASE_UNAVAILABLE",
+          "The annotation could not be persisted.",
+        );
+      }
+      return {
+        reused: result.outcome === "reused",
+        annotation: result.annotation,
+      };
+    },
 
     async listShareLinks(runId) {
       await this.getRun(runId);
@@ -186,6 +228,41 @@ export function createModuBrainRepository(client) {
 
 export function createModuBrainServiceRepository(client) {
   return {
+    async appendRunStepEvent(runId, userId, values) {
+      requireSingle(
+        await client.request(
+          `analysis_runs?id=eq.${encode(runId)}&created_by=eq.${encode(userId)}&select=id`,
+        ),
+      );
+      const rows = await client.request(
+        `analysis_run_step_events?on_conflict=analysis_run_id,event_key&select=${runStepEventSelect}`,
+        {
+          method: "POST",
+          prefer: "resolution=ignore-duplicates,return=representation",
+          body: {
+            analysis_run_id: runId,
+            sequence: values.sequence,
+            event_key: values.eventKey,
+            step_name: values.step,
+            status: values.status,
+            validation_outcome: values.validationOutcome ?? null,
+            code: values.code ?? null,
+            duration_ms: values.durationMs ?? null,
+            source_count: values.sourceCount ?? null,
+            input_characters: values.inputCharacters ?? null,
+            output_item_count: values.outputItemCount ?? null,
+            evidence_reference_count: values.evidenceReferenceCount ?? null,
+          },
+        },
+      );
+      const inserted = single(rows);
+      if (inserted) return inserted;
+      return requireSingle(
+        await client.request(
+          `analysis_run_step_events?analysis_run_id=eq.${encode(runId)}&event_key=eq.${encode(values.eventKey)}&select=${runStepEventSelect}`,
+        ),
+      );
+    },
     async completeRun(runId, userId, values) {
       return requireSingle(
         await client.request(

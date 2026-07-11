@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { EvidenceRef } from "../types/context";
 import type { SourceSegmentResource } from "../types/platform";
+import EvidenceCoverageBadge from "./EvidenceCoverageBadge";
 
 type EvidenceDrawerProps = {
   evidence: EvidenceRef[] | null;
@@ -16,6 +17,8 @@ function EvidenceDrawer({ evidence, segments = [], segmentsLoading = false, onCl
 
   useEffect(() => {
     if (!evidence) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
@@ -42,11 +45,14 @@ function EvidenceDrawer({ evidence, segments = [], segmentsLoading = false, onCl
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
       openerRef.current?.focus();
     };
   }, [evidence, onClose]);
 
   if (!evidence) return null;
+  const matchedSegments = evidence.map((item) => findMatchingSegment(item, segments));
+  const externalLocationCount = matchedSegments.filter((segment) => segment?.sourceUrl).length;
 
   return (
     <div className="drawer-backdrop">
@@ -60,9 +66,15 @@ function EvidenceDrawer({ evidence, segments = [], segmentsLoading = false, onCl
         aria-describedby="evidence-drawer-guide"
       >
         <header>
-          <div>
+          <div className="evidence-drawer-heading">
             <p className="section-kicker">Source evidence</p>
             <h2 id="evidence-drawer-title">분석 근거</h2>
+            <EvidenceCoverageBadge
+              evidenceCount={evidence.length}
+              coveredItems={evidence.length}
+              totalItems={evidence.length}
+              label="스냅숏 검증"
+            />
           </div>
           <button ref={closeRef} className="icon-button" type="button" onClick={onClose}>
             닫기
@@ -71,15 +83,26 @@ function EvidenceDrawer({ evidence, segments = [], segmentsLoading = false, onCl
         <p id="evidence-drawer-guide" className="drawer-guide">
           분석 실행 당시 저장된 기록에서 실제로 확인된 문장입니다.
         </p>
-        {segmentsLoading && <p className="evidence-link-status" role="status">원본 위치를 찾는 중…</p>}
+        <div className="evidence-link-status" role="status" aria-live="polite">
+          {segmentsLoading
+            ? "원본 위치를 찾는 중…"
+            : `${evidence.length}개 근거가 분석 스냅숏에서 검증됨 · 외부 원본 위치 ${externalLocationCount}개`}
+        </div>
         {evidence.length > 0 ? (
           <ol className="evidence-list">
             {evidence.map((item, index) => {
-              const segment = findMatchingSegment(item, segments);
+              const segment = matchedSegments[index];
               return (
                 <li key={`${item.sourceRecordId}-${index}`}>
-                  <span>{item.sourceTitle}</span>
-                  <blockquote>{item.quote}</blockquote>
+                  <article>
+                    <header className="evidence-item-heading">
+                      <div>
+                        <span className="evidence-item-index">근거 {String(index + 1).padStart(2, "0")}</span>
+                        <strong>{item.sourceTitle}</strong>
+                      </div>
+                      <span className="evidence-snapshot-badge">분석 스냅숏</span>
+                    </header>
+                    <blockquote>{item.quote}</blockquote>
                   {segment && (
                     <div className="evidence-segment-meta">
                       <span>
@@ -94,6 +117,10 @@ function EvidenceDrawer({ evidence, segments = [], segmentsLoading = false, onCl
                       )}
                     </div>
                   )}
+                    {!segmentsLoading && !segment && (
+                      <p className="evidence-origin-note">저장된 분석 스냅숏에서 검증됨 · 외부 원본 위치 없음</p>
+                    )}
+                  </article>
                 </li>
               );
             })}

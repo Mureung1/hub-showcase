@@ -86,6 +86,8 @@ SQL migration은 `supabase/migrations/`가 유일한 스키마 원본입니다. 
 - `source_records`: 회의·리서치·피드백·메모 원문
 - `analysis_runs`: 실행 상태, provider, 버전별 JSON 결과와 안전한 오류
 - `analysis_run_sources`: 분석 당시 원문의 불변 스냅숏
+- `analysis_run_step_events`: 원문·prompt·사고과정 없이 4단계 상태와 검증·소요 지표만 보관하는 append-only 이벤트
+- `analysis_run_annotations`: 성공 결과에 사용자가 남기는 idempotent·불변 검토 기록
 - `share_links`: SHA-256으로 해시된 만료·폐기 가능 토큰
 - `rate_limit_buckets`: 사용자·IP별 AI/공유 조회 제한
 
@@ -93,15 +95,16 @@ SQL migration은 `supabase/migrations/`가 유일한 스키마 원본입니다. 
 
 ## 분석 계약
 
-영속 분석은 선택한 기록 ID와 `Idempotency-Key`를 받습니다.
+영속 분석은 선택한 기록 ID와 `Idempotency-Key`를 받습니다. 소유권·입력 길이·요청 키를 먼저 검증한 뒤 다음 4단계를 append-only 이벤트로 추적합니다.
 
-1. 소유권, 입력 길이, 요청 키를 검증합니다.
-2. `running` 실행과 선택 원문 스냅숏을 저장합니다.
-3. DB 트랜잭션 밖에서 로컬 또는 OpenAI provider를 호출합니다.
-4. 결과 스키마와 모든 인용문이 스냅숏의 실제 부분 문자열인지 검증합니다.
-5. 실행을 `succeeded`, `failed`, `cancelled` 중 하나로 갱신합니다.
+1. `source_snapshot`: `running` 실행과 선택 원문의 불변 스냅숏을 저장합니다.
+2. `provider_analysis`: DB 트랜잭션 밖에서 로컬 또는 OpenAI provider를 호출합니다.
+3. `evidence_validation`: 결과 스키마와 모든 인용문이 스냅숏의 실제 부분 문자열인지 검증합니다.
+4. `result_persistence`: 실행을 `succeeded`, `failed`, `cancelled` 중 하나로 확정합니다.
 
 같은 프로젝트·같은 키·같은 입력은 기존 실행을 반환합니다. 같은 키에 다른 입력은 `409`이며, 실패한 실행은 최근 성공 결과를 덮어쓰지 않습니다. OpenAI 요청은 서버에서만 실행하고 `store: false`, 비식별 `safety_identifier`, 30초 제한을 적용합니다.
+
+프로젝트 이름과 모든 원문은 provider 관점에서 신뢰하지 않는 데이터입니다. 원문 안의 역할 변경·비밀 공개·출력 변경 지시는 따르지 않으며 hidden reasoning 또는 chain-of-thought를 요청·저장·반환하지 않습니다. 원문은 사용자가 선택한 `source_records`와 실행 스냅숏에만 보관하고 단계 이벤트·annotation·로그에는 복제하지 않습니다. 성공 실행에는 수정 불가능한 annotation을 추가할 수 있지만 annotation은 후속 분석 입력이나 공유 결과에 자동 포함되지 않습니다.
 
 ## API 요약
 
@@ -114,6 +117,8 @@ PATCH|DELETE   /api/v1/sources/:sourceId
 GET            /api/v1/sources/:sourceId/segments
 GET|POST       /api/v1/projects/:projectId/analysis-runs
 GET|DELETE     /api/v1/analysis-runs/:runId
+GET            /api/v1/analysis-runs/:runId/step-events
+GET|POST       /api/v1/analysis-runs/:runId/annotations
 GET|POST       /api/v1/analysis-runs/:runId/share-links
 DELETE         /api/v1/share-links/:shareLinkId
 POST           /api/v1/shared/resolve
@@ -122,7 +127,7 @@ GET            /api/health/live
 GET            /api/health/ready
 ```
 
-성공 응답은 `{ "data": … }`, 실패 응답은 `{ "error": { "code", "message", "details" } }` 형식입니다. 자세한 계약은 [TRD](docs/trd.md)를 참고합니다.
+성공 응답은 `{ "data": … }`, 실패 응답은 `{ "error": { "code", "message", "details" } }` 형식입니다. 자세한 계약은 [TRD](docs/trd.md)와 [에이전트 워크플로 계약](docs/agent-workflow-contract.md)을 참고합니다.
 
 ## 품질 확인
 
@@ -136,8 +141,8 @@ npm run test:e2e
 ```
 
 - Vitest: 서버·클라이언트 계약, 보안 경계, 로컬 분석 회귀
-- SQL/pgTAP: 빈 DB 적용·down rollback·재적용과 32개 RLS/권한 계약
-- 한국어 eval 20건: 회의·리서치·피드백·빈 근거·개인정보 문구를 유료 호출 없이 검증
+- SQL/pgTAP: 빈 DB 적용·down rollback·재적용과 92개 RLS/권한 계약
+- 한국어 eval 30건: 회의·리서치·피드백·빈 근거·개인정보·prompt injection 문구를 유료 호출 없이 검증
 - Playwright: 공개 샘플과 `로그인 → 프로젝트 → 외부 맥락 가져오기 → 분석 → 근거·백링크 → 이력 → 공유 → 새로고침`
 - GitHub Actions: lint, typecheck, coverage, build, production audit, secret scan, 공개 스모크, 내부 PR의 로컬 Supabase/E2E
 
@@ -174,6 +179,7 @@ Render는 `npm ci --include=dev && npm run build`, `npm start`, `HOST=0.0.0.0`�
 - AI 실행은 사용자당 동시 1건·시간당 10건·일당 30건, 공유 조회는 IP당 시간당 60건으로 제한합니다.
 - JSON 본문은 256KB, 분석 입력 합계는 100,000자 이하로 제한합니다.
 - 비밀정보·JWT·원문은 애플리케이션 로그에 기록하지 않습니다.
+- 단계 이벤트에는 원문·prompt·provider 응답·hidden reasoning을 저장하지 않으며 annotation도 모델 입력으로 자동 사용하지 않습니다.
 - 공개 전 Supabase RLS, Auth redirect allowlist, Sites·Render secrets, OpenAI 모델 권한을 다시 확인합니다.
 
 ## 현재 제외 범위
@@ -184,6 +190,7 @@ Render는 `npm ci --include=dev && npm run build`, `npm start`, `HOST=0.0.0.0`�
 
 - [PRD](docs/prd.md)
 - [TRD](docs/trd.md)
+- [에이전트 워크플로 계약](docs/agent-workflow-contract.md)
 - [프롬프트 설계](docs/prompt-design.md)
 - [Figma 개발 핸드오프](docs/figma-handoff.md)
 - [PR 벤치마크](docs/benchmark-prs.md)

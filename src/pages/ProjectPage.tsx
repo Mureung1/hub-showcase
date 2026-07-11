@@ -8,6 +8,8 @@ import {
   type KeyboardEvent,
 } from "react";
 import AnalysisComparison from "../components/AnalysisComparison";
+import AnalysisFeedbackPanel from "../components/AnalysisFeedbackPanel";
+import AgentExecutionRail from "../components/AgentExecutionRail";
 import ContextBacklinks from "../components/ContextBacklinks";
 import ContextImportPanel, {
   type ContextImportInput as ContextImportPanelInput,
@@ -23,10 +25,14 @@ import QuestionList from "../components/QuestionList";
 import SummaryPanel from "../components/SummaryPanel";
 import type { Navigate } from "../hooks/useRoute";
 import { PlatformApiError, type PlatformApi } from "../services/platformApi";
+import { trackProductEvent } from "../services/productTelemetry";
 import type { EvidenceRef } from "../types/context";
 import type {
   AnalysisMode,
+  AnalysisRunAnnotationResource,
   AnalysisRunResource,
+  AnalysisRunStepEventResource,
+  CreateAnalysisRunAnnotationInput,
   ExternalContextProvider,
   ProjectResource,
   ShareLinkResource,
@@ -71,6 +77,10 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   const [evidence, setEvidence] = useState<EvidenceRef[] | null>(null);
   const [evidenceSegments, setEvidenceSegments] = useState<SourceSegmentResource[]>([]);
   const [evidenceSegmentsLoading, setEvidenceSegmentsLoading] = useState(false);
+  const [selectedRunStepEvents, setSelectedRunStepEvents] = useState<AnalysisRunStepEventResource[]>([]);
+  const [selectedRunAnnotations, setSelectedRunAnnotations] = useState<AnalysisRunAnnotationResource[]>([]);
+  const [runArtifactsLoading, setRunArtifactsLoading] = useState(false);
+  const [runArtifactsError, setRunArtifactsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const analysisAbort = useRef<AbortController | null>(null);
@@ -128,6 +138,40 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   const comparisonLatest = selectedSuccessfulIndex >= 0 ? successfulRuns[selectedSuccessfulIndex] : latestSuccessful;
   const comparisonPrevious = selectedSuccessfulIndex >= 0 ? successfulRuns[selectedSuccessfulIndex + 1] : successfulRuns[1];
 
+  useEffect(() => {
+    let active = true;
+    const timer = window.setTimeout(() => {
+      const runId = selectedRun?.id;
+      if (!runId) {
+        setSelectedRunStepEvents([]);
+        setSelectedRunAnnotations([]);
+        setRunArtifactsError(null);
+        return;
+      }
+      setRunArtifactsLoading(true);
+      setRunArtifactsError(null);
+      void Promise.all([
+        api.listAnalysisRunStepEvents(token, runId),
+        api.listAnalysisRunAnnotations(token, runId),
+      ]).then(([events, annotations]) => {
+        if (!active) return;
+        setSelectedRunStepEvents(events);
+        setSelectedRunAnnotations(annotations);
+      }).catch((artifactError) => {
+        if (!active) return;
+        setSelectedRunStepEvents([]);
+        setSelectedRunAnnotations([]);
+        setRunArtifactsError(messageFrom(artifactError));
+      }).finally(() => {
+        if (active) setRunArtifactsLoading(false);
+      });
+    }, 0);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [api, selectedRun?.id, token]);
+
   const openEvidence = (nextEvidence: EvidenceRef[]) => {
     const sourceIds = [...new Set(nextEvidence.map((item) => item.sourceRecordId))];
     const version = evidenceLoadVersion.current + 1;
@@ -135,6 +179,10 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
     setEvidence(nextEvidence);
     setEvidenceSegments([]);
     setEvidenceSegmentsLoading(sourceIds.length > 0);
+    trackProductEvent("evidence_opened", {
+      referenceCount: nextEvidence.length,
+      sourceCount: sourceIds.length,
+    });
     void Promise.all(
       sourceIds.map((sourceId) => api.listSourceSegments(token, sourceId).catch(() => [])),
     ).then((groups) => {
@@ -320,8 +368,30 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
                   selectedRun={selectedRun}
                   latest={comparisonLatest}
                   previous={comparisonPrevious}
-                  onSelectRun={setSelectedRunId}
+                  stepEvents={selectedRunStepEvents}
+                  annotations={selectedRunAnnotations}
+                  artifactsLoading={runArtifactsLoading}
+                  artifactsError={runArtifactsError}
+                  onSelectRun={(id) => {
+                    setSelectedRunId(id);
+                    trackProductEvent("comparison_opened", {
+                      hasPrevious: successfulRuns.some((run) => run.id !== id),
+                    });
+                  }}
                   onOpenEvidence={openEvidence}
+                  onCreateAnnotation={async (input, idempotencyKey) => {
+                    const created = await api.createAnalysisRunAnnotation(
+                      token,
+                      selectedRun?.id ?? "",
+                      input,
+                      idempotencyKey,
+                    );
+                    setSelectedRunAnnotations((current) => [
+                      created,
+                      ...current.filter((item) => item.id !== created.id),
+                    ]);
+                    return created;
+                  }}
                 />
               )}
             </div>
@@ -678,13 +748,33 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
   );
 }
 
-function HistoryTab({ runs, selectedRun, latest, previous, onSelectRun, onOpenEvidence }: {
+function HistoryTab({
+  runs,
+  selectedRun,
+  latest,
+  previous,
+  stepEvents,
+  annotations,
+  artifactsLoading,
+  artifactsError,
+  onSelectRun,
+  onOpenEvidence,
+  onCreateAnnotation,
+}: {
   runs: AnalysisRunResource[];
   selectedRun: AnalysisRunResource | null;
   latest?: AnalysisRunResource;
   previous?: AnalysisRunResource;
+  stepEvents: AnalysisRunStepEventResource[];
+  annotations: AnalysisRunAnnotationResource[];
+  artifactsLoading: boolean;
+  artifactsError: string | null;
   onSelectRun: (id: string) => void;
   onOpenEvidence: (evidence: EvidenceRef[]) => void;
+  onCreateAnnotation: (
+    input: CreateAnalysisRunAnnotationInput,
+    idempotencyKey: string,
+  ) => Promise<AnalysisRunAnnotationResource>;
 }) {
   if (runs.length === 0) return <EmptyAnalysis />;
   return (
@@ -700,6 +790,14 @@ function HistoryTab({ runs, selectedRun, latest, previous, onSelectRun, onOpenEv
         ))}
       </aside>
       <div className="run-detail">
+        {selectedRun && (
+          <AgentExecutionRail
+            events={stepEvents}
+            runStatus={selectedRun.status}
+            loading={artifactsLoading}
+          />
+        )}
+        {artifactsError && <div className="notice error" role="alert">{artifactsError}</div>}
         {selectedRun?.status === "failed" ? <div className="notice error">{selectedRun.error?.message ?? "분석 실행이 실패했습니다."}</div> : selectedRun?.status === "running" ? <div className="loading-card">분석이 진행 중입니다.</div> : selectedRun?.result ? (
           <>
             <header className="history-context-heading">
@@ -718,6 +816,12 @@ function HistoryTab({ runs, selectedRun, latest, previous, onSelectRun, onOpenEv
               <SummaryPanel result={selectedRun.result} />
               <KeyTerms terms={selectedRun.result.keyTerms} />
             </div>
+            <AnalysisFeedbackPanel
+              result={selectedRun.result}
+              annotations={annotations}
+              loading={artifactsLoading}
+              onCreate={onCreateAnnotation}
+            />
           </>
         ) : <div className="empty-card">이 실행에는 표시할 결과가 없습니다.</div>}
       </div>
@@ -743,6 +847,7 @@ function SharePanel({ api, token, run, onError }: { api: PlatformApi; token: str
     try {
       const link = await api.createShareLink(token, run.id, days);
       setLinks((current) => [link, ...current]);
+      trackProductEvent("share_link_created", { expiresInDays: days });
       if (link.token) setFreshUrls((current) => ({ ...current, [link.id]: `${window.location.origin}/share#token=${encodeURIComponent(link.token ?? "")}` }));
     } catch (createError) {
       onError(messageFrom(createError));

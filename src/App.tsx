@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SiteHeader from "./components/SiteHeader";
 import { useRoute } from "./hooks/useRoute";
 import LandingPage from "./pages/LandingPage";
@@ -26,6 +26,7 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
   const [authReady, setAuthReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const hasRenderedRoute = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -77,6 +78,10 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
   }, [auth, navigate, pathname, session]);
 
   useEffect(() => {
+    if (!hasRenderedRoute.current) {
+      hasRenderedRoute.current = true;
+      return;
+    }
     document.getElementById("main-content")?.focus({ preventScroll: true });
   }, [pathname]);
 
@@ -97,7 +102,9 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
 
   let page: React.ReactNode;
   if (pathname === "/") {
-    page = <LandingPage navigate={navigate} />;
+    page = <LandingPage key="landing" navigate={navigate} />;
+  } else if (pathname === "/demo") {
+    page = <LandingPage key="public-demo" navigate={navigate} initialDemo />;
   } else if (pathname === "/login") {
     page = session ? <AlreadySignedIn email={session.user.email} onContinue={() => navigate("/projects")} /> : <LoginPage auth={auth} />;
   } else if (pathname === "/share") {

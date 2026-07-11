@@ -10,9 +10,9 @@ const fixtures = JSON.parse(
 );
 
 describe("Korean context evaluation fixtures", () => {
-  it("contains 20 stable, non-billable scenarios", () => {
-    expect(fixtures).toHaveLength(20);
-    expect(new Set(fixtures.map((fixture) => fixture.id)).size).toBe(20);
+  it("contains 30 stable, non-billable scenarios", () => {
+    expect(fixtures).toHaveLength(30);
+    expect(new Set(fixtures.map((fixture) => fixture.id)).size).toBe(30);
 
     for (const fixture of fixtures) {
       expect(fixture.projectTitle.length).toBeGreaterThanOrEqual(2);
@@ -62,6 +62,16 @@ describe("Korean context evaluation fixtures", () => {
       for (const view of result.participantAgents.views) {
         expect(view.evidence.length).toBeGreaterThan(0);
         for (const evidence of view.evidence) {
+          expect(fixture.rawText).toContain(evidence);
+        }
+      }
+
+      for (const item of [
+        ...result.participants,
+        ...result.decisions,
+        ...result.questions,
+      ]) {
+        for (const evidence of item.evidence || []) {
           expect(fixture.rawText).toContain(evidence);
         }
       }

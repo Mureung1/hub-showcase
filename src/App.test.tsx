@@ -24,6 +24,33 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("public landing prototype", () => {
+  it("opens a deterministic sample directly from the public demo route", () => {
+    window.history.replaceState(null, "", "/demo");
+    render(<App auth={anonymousAuth()} />);
+
+    expect(screen.getByRole("heading", { name: "로그인 없이 확인하는 근거 기반 맥락 분석" })).toBeInTheDocument();
+    expect(screen.getByText("샘플 데이터")).toBeInTheDocument();
+    expect(screen.getByLabelText("프로젝트 이름")).toHaveValue(sampleAnalysis.projectTitle);
+    expect(screen.getByRole("link", { name: "공개 데모" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("restores the deterministic sample after leaving and reopening the demo route", async () => {
+    window.history.replaceState(null, "", "/demo");
+    const user = userEvent.setup();
+    render(<App auth={anonymousAuth()} />);
+
+    const input = screen.getByLabelText("회의록 / 메모 / 피드백");
+    await user.clear(input);
+    await user.type(input, "편집 중인 임시 내용");
+    expect(input).toHaveValue("편집 중인 임시 내용");
+
+    await user.click(screen.getByRole("link", { name: "Modu Brain 홈" }));
+    await user.click(screen.getByRole("link", { name: "공개 데모" }));
+
+    expect(screen.getByLabelText("회의록 / 메모 / 피드백")).toHaveValue(sampleInput);
+    expect(screen.getByText("샘플 데이터")).toBeInTheDocument();
+  });
+
   it("starts empty and labels data as sample only after an explicit load", async () => {
     const user = userEvent.setup();
     render(<App auth={anonymousAuth()} />);
@@ -46,6 +73,7 @@ describe("public landing prototype", () => {
 
     await user.click(screen.getByRole("button", { name: "샘플 직접 체험" }));
 
+    expect(window.location.pathname).toBe("/demo");
     expect(screen.getByText("샘플 데이터")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "요약 전에 확인할 맥락" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: sampleAnalysis.projectTitle })).toBeInTheDocument();
@@ -227,6 +255,7 @@ function emptyApi(): PlatformApi {
     listProjects: vi.fn(), createProject: vi.fn(), getProject: vi.fn(), updateProject: vi.fn(), deleteProject: vi.fn(),
     listSources: vi.fn(), createSource: vi.fn(), importContext: vi.fn(), updateSource: vi.fn(), deleteSource: vi.fn(), listSourceSegments: vi.fn(),
     listAnalysisRuns: vi.fn(), createAnalysisRun: vi.fn(), getAnalysisRun: vi.fn(), deleteAnalysisRun: vi.fn(),
+    listAnalysisRunStepEvents: vi.fn().mockResolvedValue([]), listAnalysisRunAnnotations: vi.fn().mockResolvedValue([]), createAnalysisRunAnnotation: vi.fn(),
     listShareLinks: vi.fn(), createShareLink: vi.fn(), revokeShareLink: vi.fn(), resolveSharedAnalysis: vi.fn(),
   };
 }

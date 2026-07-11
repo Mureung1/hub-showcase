@@ -106,6 +106,39 @@ export function analysisRunResource(row) {
   };
 }
 
+export function analysisRunStepEventResource(row) {
+  return {
+    id: row.id,
+    analysisRunId: row.analysis_run_id,
+    sequence: row.sequence,
+    eventKey: row.event_key,
+    step: row.step_name,
+    status: row.status,
+    validationOutcome: row.validation_outcome,
+    code: row.code,
+    durationMs: row.duration_ms,
+    sourceCount: row.source_count,
+    inputCharacters: row.input_characters,
+    outputItemCount: row.output_item_count,
+    evidenceReferenceCount: row.evidence_reference_count,
+    createdAt: row.created_at,
+  };
+}
+
+export function analysisRunAnnotationResource(row) {
+  return {
+    id: row.id,
+    analysisRunId: row.analysis_run_id,
+    annotationType: row.annotation_type,
+    target: {
+      type: row.target_type,
+      ...(row.target_id ? { id: row.target_id } : {}),
+    },
+    body: row.body,
+    createdAt: row.created_at,
+  };
+}
+
 export function shareLinkResource(row) {
   return {
     id: row.id,

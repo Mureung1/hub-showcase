@@ -126,6 +126,30 @@ function mapPostgrestError(status, payload) {
   if (message.includes("IDEMPOTENCY_CONFLICT")) {
     return new ApiError(409, "IDEMPOTENCY_CONFLICT", "같은 키가 다른 분석 요청에 사용되었습니다.");
   }
+  if (message.includes("RUN_NOT_ANNOTATABLE")) {
+    return new ApiError(
+      409,
+      "RUN_NOT_ANNOTATABLE",
+      "Only a succeeded analysis run can receive feedback.",
+    );
+  }
+  if (
+    message.includes("INVALID_ANNOTATION_") ||
+    message.includes("ANNOTATION_TARGET_NOT_FOUND")
+  ) {
+    return new ApiError(
+      400,
+      "INVALID_ANNOTATION",
+      "The feedback annotation is not valid for this analysis run.",
+    );
+  }
+  if (message.includes("ANALYSIS_ARTIFACT_IMMUTABLE")) {
+    return new ApiError(
+      409,
+      "ANALYSIS_ARTIFACT_IMMUTABLE",
+      "Analysis workflow records are immutable.",
+    );
+  }
   if (message.includes("ANALYSIS_ALREADY_RUNNING") || payload?.code === "23505") {
     return new ApiError(409, "ANALYSIS_ALREADY_RUNNING", "이미 실행 중인 분석이 있습니다.");
   }

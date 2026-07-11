@@ -22,6 +22,8 @@ describe("EvidenceDrawer external backlinks", () => {
       "href",
       "https://example.test/1",
     );
+    expect(screen.getByLabelText("스냅숏 검증 전체 연결 · 1/1 · 인용 1개")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("외부 원본 위치 1개");
   });
 
   it("does not guess when the same quote appears in multiple segments", () => {

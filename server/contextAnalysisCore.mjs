@@ -27,6 +27,8 @@ const COMMON_NON_ACTORS = new Set([
   "화면",
   "개발",
   "내용",
+  "보고서",
+  "근거",
   "의견",
   "이번",
   "현재",
@@ -247,7 +249,7 @@ function buildParticipants(sentences) {
 function buildDecisions(sentences) {
   const decisions = sentences
     .filter((sentence) =>
-      /하기로|결정했다|결정하였다|정했다|확정했다|선택했다|보류했다|제외하기로|우선하기로/.test(
+      /하기로|기로\s*(?:결정)?했|결정했다|결정하였다|정했다|확정했다|선택했다|보류했다|제외하기로|우선하기로/.test(
         sentence,
       ),
     )
@@ -424,7 +426,10 @@ function extractActor(sentence) {
   const cleaned = sentence.replace(/^[-*•\d.)\s]+/, "").trim();
   const match = cleaned.match(/^([가-힣A-Za-z][가-힣A-Za-z0-9]{1,11})(?:님)?(?:은|는|이|가|께서)\s/);
   const actor = match?.[1]?.trim() || "";
-  return actor && !COMMON_NON_ACTORS.has(actor) ? actor : "";
+  const documentNoun = actor.endsWith("에") ? actor.slice(0, -1) : actor;
+  return actor && !COMMON_NON_ACTORS.has(actor) && !COMMON_NON_ACTORS.has(documentNoun)
+    ? actor
+    : "";
 }
 
 function extractFocus(sentence) {

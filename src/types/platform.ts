@@ -4,6 +4,21 @@ export type SourceKind = "meeting" | "research" | "feedback" | "note";
 export type ExternalContextProvider = "kakaotalk" | "teams" | "notion" | "paste";
 export type AnalysisMode = "local" | "openai";
 export type AnalysisRunStatus = "running" | "succeeded" | "failed" | "cancelled";
+export type AnalysisRunStep =
+  | "source_snapshot"
+  | "provider_analysis"
+  | "evidence_validation"
+  | "result_persistence";
+export type AnalysisRunStepStatus = "started" | "succeeded" | "failed" | "cancelled";
+export type AnalysisAnnotationType = "confirmation" | "correction" | "question" | "note";
+export type AnalysisAnnotationTargetType =
+  | "run"
+  | "decision"
+  | "participant"
+  | "question"
+  | "term"
+  | "knowledge_node"
+  | "participant_view";
 
 export type CapabilitiesResource = {
   openaiEnabled: boolean;
@@ -87,6 +102,42 @@ export type AnalysisRunResource = {
   };
   createdAt: string;
   completedAt?: string | null;
+};
+
+export type AnalysisRunStepEventResource = {
+  id: string;
+  analysisRunId: string;
+  sequence: number;
+  eventKey: string;
+  step: AnalysisRunStep;
+  status: AnalysisRunStepStatus;
+  validationOutcome: "passed" | "failed" | null;
+  code: string | null;
+  durationMs: number | null;
+  sourceCount: number | null;
+  inputCharacters: number | null;
+  outputItemCount: number | null;
+  evidenceReferenceCount: number | null;
+  createdAt: string;
+};
+
+export type AnalysisRunAnnotationResource = {
+  id: string;
+  analysisRunId: string;
+  annotationType: AnalysisAnnotationType;
+  target: {
+    type: AnalysisAnnotationTargetType;
+    id?: string;
+  };
+  body: string;
+  createdAt: string;
+};
+
+export type CreateAnalysisRunAnnotationInput = {
+  annotationType: AnalysisAnnotationType;
+  targetType: AnalysisAnnotationTargetType;
+  targetId?: string;
+  body: string;
 };
 
 export type ShareLinkResource = {

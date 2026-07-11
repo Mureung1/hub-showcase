@@ -89,6 +89,51 @@ describe("platformApi", () => {
     );
   });
 
+  it("loads the immutable execution trace for an analysis run", async () => {
+    const events = [{ id: "event-1", step: "source_snapshot", status: "succeeded" }];
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(response({ data: events }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(platformApi.listAnalysisRunStepEvents("access-token", "run-1")).resolves.toEqual(events);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/analysis-runs/run-1/step-events",
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer access-token" }),
+      }),
+    );
+  });
+
+  it("creates a targeted annotation with an idempotency key", async () => {
+    const annotation = { id: "annotation-1", target: { type: "decision", id: "decision-1" } };
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(response({ data: annotation }, 201));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await platformApi.createAnalysisRunAnnotation(
+      "access-token",
+      "run-1",
+      {
+        annotationType: "correction",
+        targetType: "decision",
+        targetId: "decision-1",
+        body: "제안으로 정정합니다.",
+      },
+      "annotation-idempotency-key",
+    );
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/v1/analysis-runs/run-1/annotations");
+    expect(init).toMatchObject({ method: "POST" });
+    expect(init?.headers).toEqual(expect.objectContaining({
+      Authorization: "Bearer access-token",
+      "Idempotency-Key": "annotation-idempotency-key",
+    }));
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      annotationType: "correction",
+      targetType: "decision",
+      targetId: "decision-1",
+    });
+  });
+
   it("preserves structured errors", async () => {
     vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(response({ error: { code: "RATE_LIMITED", message: "잠시 후 다시 시도하세요.", details: { retryAfter: 60 } } }, 429)));
     await expect(platformApi.listProjects("token")).rejects.toEqual(expect.objectContaining<Partial<PlatformApiError>>({ status: 429, code: "RATE_LIMITED", details: { retryAfter: 60 } }));

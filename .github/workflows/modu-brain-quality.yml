@@ -9,10 +9,17 @@ on:
       - "package.json"
       - "package-lock.json"
       - "render.yaml"
+      - "index.html"
+      - ".openai/**"
+      - "build/**"
+      - "public/**"
+      - "scripts/**"
       - "server/**"
       - "src/**"
       - "supabase/**"
       - "tests/**"
+      - "worker/**"
+      - "wrangler.sites.jsonc"
       - "playwright.config.ts"
       - "tsconfig.json"
       - "vite.config.ts"
@@ -111,10 +118,10 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run public smoke test
+      - name: Run public smoke and accessibility tests
         env:
           MODU_BRAIN_ANALYSIS_PROVIDER: local-heuristic
-        run: npx playwright test tests/e2e/public-smoke.spec.ts
+        run: npx playwright test tests/e2e/public-smoke.spec.ts tests/e2e/accessibility.spec.ts
 
       - name: Upload browser diagnostics
         if: failure()
@@ -152,7 +159,7 @@ jobs:
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.109.1
 
       - name: Start local Supabase
         run: supabase start
@@ -164,8 +171,12 @@ jobs:
         shell: bash
         run: |
           source <(supabase status -o env)
-          psql "$DB_URL" --set ON_ERROR_STOP=1 --file supabase/rollback/202607110001_modu_brain_core.down.sql
-          psql "$DB_URL" --set ON_ERROR_STOP=1 --file supabase/migrations/202607110001_modu_brain_core.sql
+          while IFS= read -r file; do
+            psql "$DB_URL" --set ON_ERROR_STOP=1 --file "$file"
+          done < <(find supabase/rollback -maxdepth 1 -name '*.down.sql' -print | sort -r)
+          while IFS= read -r file; do
+            psql "$DB_URL" --set ON_ERROR_STOP=1 --file "$file"
+          done < <(find supabase/migrations -maxdepth 1 -name '*.sql' -print | sort)
 
       - name: Run pgTAP database policy tests
         run: supabase test db

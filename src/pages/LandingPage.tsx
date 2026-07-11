@@ -12,6 +12,7 @@ import SummaryPanel from "../components/SummaryPanel";
 import { sampleAnalysis, sampleInput } from "../data/sampleAnalysis";
 import type { Navigate } from "../hooks/useRoute";
 import { ContextAnalysisRequestError, analyzeContext } from "../services/analyzeContext";
+import { trackProductEvent } from "../services/productTelemetry";
 import type { ContextAnalysisResult } from "../types/context";
 
 type ResultTab = "overview" | "map" | "onboarding";
@@ -21,15 +22,38 @@ type AnalysisState =
   | { status: "error"; message: string }
   | { status: "sample" | "success"; result: ContextAnalysisResult };
 
-function LandingPage({ navigate }: { navigate: Navigate }) {
-  const [projectTitle, setProjectTitle] = useState("Modu Brain MVP");
-  const [inputText, setInputText] = useState("");
-  const [analysisState, setAnalysisState] = useState<AnalysisState>({ status: "idle" });
+function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; initialDemo?: boolean }) {
+  const [projectTitle, setProjectTitle] = useState(
+    initialDemo ? sampleAnalysis.projectTitle : "Modu Brain MVP",
+  );
+  const [inputText, setInputText] = useState(initialDemo ? sampleInput : "");
+  const [analysisState, setAnalysisState] = useState<AnalysisState>(
+    initialDemo ? { status: "sample", result: sampleAnalysis } : { status: "idle" },
+  );
   const [activeTab, setActiveTab] = useState<ResultTab>("overview");
   const requestVersion = useRef(0);
   const activeAbortController = useRef<AbortController | null>(null);
+  const demoRouteApplied = useRef(initialDemo);
 
   useEffect(() => () => activeAbortController.current?.abort(), []);
+
+  useEffect(() => {
+    if (!initialDemo || demoRouteApplied.current) return;
+    demoRouteApplied.current = true;
+    setProjectTitle(sampleAnalysis.projectTitle);
+    setInputText(sampleInput);
+    setAnalysisState({ status: "sample", result: sampleAnalysis });
+    setActiveTab("overview");
+  }, [initialDemo]);
+
+  useEffect(() => {
+    if (!initialDemo) return undefined;
+    trackProductEvent("demo_opened", { sampleReady: true });
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("prototype")?.scrollIntoView?.({ block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [initialDemo]);
 
   const analysisResult =
     analysisState.status === "sample" || analysisState.status === "success"
@@ -46,15 +70,17 @@ function LandingPage({ navigate }: { navigate: Navigate }) {
     setActiveTab("overview");
   };
 
-  const loadSample = () => {
+  const loadSample = (entryPoint: "hero" | "input" = "input") => {
     clearForEdit();
     setProjectTitle(sampleAnalysis.projectTitle);
     setInputText(sampleInput);
     setAnalysisState({ status: "sample", result: sampleAnalysis });
+    trackProductEvent("sample_loaded", { entryPoint });
   };
 
   const experienceSample = () => {
-    loadSample();
+    loadSample("hero");
+    if (window.location.pathname !== "/demo") navigate("/demo");
     window.requestAnimationFrame(() => {
       const target = document.getElementById("prototype");
       if (!target?.scrollIntoView) return;
@@ -74,12 +100,24 @@ function LandingPage({ navigate }: { navigate: Navigate }) {
     const version = ++requestVersion.current;
     setAnalysisState({ status: "loading" });
     setActiveTab("overview");
+    trackProductEvent("analysis_started", {
+      mode: "public-local",
+      inputCharacters: inputText.length,
+    });
     try {
       const result = await analyzeContext(projectTitle, inputText, { signal: controller.signal });
-      if (requestVersion.current === version) setAnalysisState({ status: "success", result });
+      if (requestVersion.current === version) {
+        setAnalysisState({ status: "success", result });
+        trackProductEvent("analysis_succeeded", { provider: result.provider.name });
+      }
     } catch (requestError) {
       if (controller.signal.aborted || requestVersion.current !== version) return;
       setAnalysisState({ status: "error", message: getErrorMessage(requestError) });
+      trackProductEvent("analysis_failed", {
+        code: requestError instanceof ContextAnalysisRequestError
+          ? requestError.code
+          : "UNEXPECTED_ERROR",
+      });
     } finally {
       if (activeAbortController.current === controller) activeAbortController.current = null;
     }
@@ -113,6 +151,20 @@ function LandingPage({ navigate }: { navigate: Navigate }) {
 
   return (
     <main className="app-shell landing-shell">
+      {initialDemo && (
+        <section className="public-demo-banner" aria-labelledby="public-demo-title">
+          <div>
+            <p className="section-kicker">Public demo</p>
+            <h1 id="public-demo-title">로그인 없이 확인하는 근거 기반 맥락 분석</h1>
+            <p>사전 구성된 기록과 결과입니다. 이 화면에서 실행한 분석은 계정이나 데이터베이스에 저장되지 않습니다.</p>
+          </div>
+          <button className="button secondary" type="button" onClick={() => navigate("/login")}>
+            내 프로젝트로 저장
+          </button>
+        </section>
+      )}
+      {!initialDemo && (
+        <>
       <section className="hero" id="top">
         <div className="hero-message">
           <p className="eyebrow">회의 뒤 사라지는 맥락</p>
@@ -159,6 +211,8 @@ function LandingPage({ navigate }: { navigate: Navigate }) {
         <div><span>02</span><strong>맥락 분석</strong><p>결정, 관점, 질문을 원문 근거와 함께 구조화합니다.</p></div>
         <div><span>03</span><strong>변화와 공유</strong><p>분석 이력을 비교하고 읽기 전용 링크로 온보딩합니다.</p></div>
       </section>
+        </>
+      )}
 
       <section className="section-intro" id="prototype">
         <p className="section-kicker">Public prototype</p>
@@ -209,7 +263,7 @@ function LandingPage({ navigate }: { navigate: Navigate }) {
                 type="button"
                 role="tab"
                 aria-selected={activeTab === tab}
-                aria-controls={`landing-panel-${tab}`}
+                aria-controls={analysisResult ? `landing-panel-${tab}` : undefined}
                 tabIndex={activeTab === tab ? 0 : -1}
                 disabled={!analysisResult}
                 onClick={() => setActiveTab(tab)}

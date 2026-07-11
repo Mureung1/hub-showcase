@@ -4,7 +4,7 @@
 
 이 문서는 Modu Brain 공개 데모의 구현 계약을 정의한다. 브라우저, 같은 출처의 Worker/Node API, Supabase Auth/PostgreSQL/RLS, 선택형 OpenAI Responses API 사이의 경계를 고정한다.
 
-이번 범위는 개인 소유 프로젝트, 원문 기록, 불변 분석 이력, 최근 두 성공 결과 비교, 근거 확인, 읽기 전용 공유까지다. 팀 초대·역할, 공동 편집, 파일 파싱, 외부 협업 도구 연동, 결제, 백그라운드 작업 큐는 제외한다.
+이번 범위는 개인 소유 프로젝트, 원문 기록, 불변 분석 이력, 4단계 실행 추적, 불변 결과 annotation, 최근 두 성공 결과 비교, 근거 확인, 읽기 전용 공유까지다. 팀 초대·역할, 공동 편집, 파일 파싱, 외부 협업 도구 자동 연동, 결제, 백그라운드 작업 큐는 제외한다.
 
 ## 2. 시스템 구조
 
@@ -55,6 +55,8 @@ flowchart LR
 | `source_records` | 프로젝트, `meeting/research/feedback/note`, 제목, 원문, SHA-256, 글자 수, 발생·보관 시각 |
 | `analysis_runs` | 프로젝트, 생성자, idempotency/fingerprint, 상태, provider/model, `2.0` 결과 JSONB, 안전한 오류·지연·토큰 정보 |
 | `analysis_run_sources` | 실행과 연결된 source ID, 제목·종류·내용·해시·글자 수의 불변 스냅숏 |
+| `analysis_run_step_events` | 실행별 4단계의 append-only 시작·terminal 이벤트. 원문·prompt·모델 응답·사고과정 필드 없음 |
+| `analysis_run_annotations` | 성공 결과 target에 사용자가 추가하는 idempotent 검토 기록. 직접 수정·삭제 불가 |
 | `share_links` | 실행, 생성자, 32바이트 토큰의 SHA-256, 만료·폐기 시각 |
 | `rate_limit_buckets` | scope, 비식별 subject, 시간 구간, 누적 횟수 |
 
@@ -65,6 +67,8 @@ flowchart LR
 - 프로젝트: `(owner_id, updated_at desc)`
 - 원문: `(project_id, created_at desc)`
 - 분석: `(project_id, created_at desc)`, `(project_id, idempotency_key)` unique
+- 실행 이벤트: `(analysis_run_id, sequence)`, `(analysis_run_id, event_key)` unique
+- annotation: `(analysis_run_id, created_by, idempotency_key)` unique, FK용 `analysis_run_id`·`created_by` 선두 인덱스
 - 공유: `token_hash` unique, `(analysis_run_id, created_at desc)`
 - 모든 앱 테이블에서 RLS 활성화
 - 프로젝트 소유자는 자신의 프로젝트와 하위 리소스만 CRUD
@@ -95,6 +99,10 @@ type AnalysisRunResource = {
   completedAt?: string | null;
 };
 ```
+
+실행 추적은 `source_snapshot`, `provider_analysis`, `evidence_validation`, `result_persistence` 네 단계로 제한한다. 각 단계는 `started`와 terminal 이벤트를 append-only로 기록하며 단계 이벤트가 포함할 수 있는 값은 안전한 코드, 검증 결과, 소요 시간, 원문·결과·인용 개수뿐이다. 원문, prompt, provider 응답, hidden reasoning 또는 chain-of-thought는 저장하지 않는다.
+
+성공한 실행에는 `confirmation`, `correction`, `question`, `note` annotation을 추가할 수 있다. target은 실행 전체 또는 결과의 안정적인 decision·participant·question·term·knowledge node·participant view ID다. annotation은 생성 후 수정하지 않으며 공유 projection과 후속 모델 입력에서 제외한다. 세부 필드와 상태 전이는 [에이전트 워크플로 계약](agent-workflow-contract.md)을 따른다.
 
 `ContextAnalysisResultV2`는 기존 요약, 참여자 관점, 결정, 질문, 핵심 용어, 지식맵, 온보딩 구조를 유지하면서 안정적인 항목 ID와 `EvidenceRef[]`를 추가한다. 서버는 다음을 검증한다.
 
@@ -151,9 +159,21 @@ Content-Type: application/json
 - 새 실행 성공은 `201`; provider 실패도 실행을 `failed`로 보존
 - `GET /api/v1/projects/:id/analysis-runs`, `GET|DELETE /api/v1/analysis-runs/:runId`
 
-실행 순서는 `start_analysis_run RPC → snapshot 저장 → provider 호출 → 결과 검증 → 짧은 PATCH`다. 네트워크 호출 중 DB 트랜잭션을 유지하지 않는다. 클라이언트 연결 종료는 AbortSignal로 provider까지 전달되며 실행은 `cancelled`가 된다.
+실행 순서는 `start_analysis_run RPC → source_snapshot → provider_analysis → evidence_validation → result_persistence`다. 네트워크 호출 중 DB 트랜잭션을 유지하지 않는다. 클라이언트 연결 종료는 AbortSignal로 provider까지 전달되며 실행과 활성 단계는 `cancelled`가 된다.
 
-### 6.3 공유
+### 6.3 단계 이벤트와 annotation
+
+| Method | 경로 | 설명 |
+| --- | --- | --- |
+| `GET` | `/api/v1/analysis-runs/:runId/step-events` | 소유한 실행의 단계 이벤트를 `sequence` 순으로 조회 |
+| `GET` | `/api/v1/analysis-runs/:runId/annotations` | 소유한 실행의 불변 검토 기록 조회 |
+| `POST` | `/api/v1/analysis-runs/:runId/annotations` | 성공 실행의 실제 결과 target에 검토 기록 생성 |
+
+annotation 생성은 8~128자의 `Idempotency-Key`를 요구한다. 같은 키·같은 payload는 기존 행과 `200`, 같은 키·다른 payload는 `409 IDEMPOTENCY_CONFLICT`다. `run` target은 `targetId`가 없어야 하고 다른 target은 실제 결과에 존재하는 안정적 ID가 필요하다. 인증 사용자는 event를 직접 쓰거나 annotation table에 직접 insert/update/delete할 수 없고 `create_analysis_run_annotation` RPC만 사용할 수 있다. 개별 annotation `PATCH`·`DELETE` API는 제공하지 않으며 부모 실행·프로젝트 삭제 시에만 cascade한다.
+
+두 리소스는 공유 응답에 포함되지 않는다. API 응답도 annotation의 `created_by`, idempotency key, request fingerprint를 노출하지 않는다.
+
+### 6.4 공유
 
 | Method | 경로 | 설명 |
 | --- | --- | --- |
@@ -163,9 +183,9 @@ Content-Type: application/json
 
 생성 응답에서 평문 토큰은 한 번만 반환한다. UI는 `/share#token=…`을 만들며 fragment는 HTTP 요청·접근 로그에 전달되지 않는다. 공개 조회는 토큰을 JSON body로 보내고 IP당 시간당 60건으로 제한한다. 공유 응답은 `projectTitle`, 정제된 `result`, `completedAt`, `expiresAt`만 제공한다. 결과 내부의 프로젝트·실행·원문 ID, provider/model, token·latency 정보도 재귀적으로 제거한다.
 
-### 6.4 상태 확인과 호환 API
+### 6.5 상태 확인과 호환 API
 
-- `GET /api/health/live`: 프로세스가 요청을 처리하면 `200`
+- `GET /api/health/live`: 프로세스가 요청을 처리하면 `200`; `commit`은 `options.buildCommit`, `RENDER_GIT_COMMIT`, `SOURCE_VERSION` 중 검증된 7~40자 hex 또는 `null`
 - `GET /api/health/ready`: 필수 Supabase 설정과 DB 쿼리가 성공하면 `200`, 아니면 `503`
 - `GET /api/v1/capabilities`: OpenAI 기능 플래그와 기본 로컬 provider를 비밀정보 없이 반환
 - `POST /api/context-analysis`: 로컬 provider로 고정한 비영속 V1 호환 API. 이번 릴리스 뒤 제거 예정
@@ -180,6 +200,8 @@ Content-Type: application/json
 - 서버 제한 30초; 키·인증·rate limit·timeout·스키마 실패를 안정적인 오류 코드로 변환
 - OpenAI 실패를 로컬 결과로 조용히 대체하지 않음
 - 브라우저는 원문 외부 전송 동의 후에만 OpenAI 모드를 실행
+- 프로젝트 이름과 원문은 신뢰하지 않는 데이터로 표시하며 원문 안의 역할 변경·비밀 공개·출력 형식 변경 지시를 따르지 않음
+- hidden reasoning·chain-of-thought를 요청하거나 결과·단계 이벤트·로그에 저장하지 않음
 
 공식 모델 목록과 계정 권한이 다를 수 있으므로 배포 전에 [OpenAI 모델 문서](https://developers.openai.com/api/docs/models)를 확인한다.
 
@@ -189,6 +211,8 @@ Content-Type: application/json
 - JSON body 256KB, 분석 원문 합계 100,000자 제한
 - CSP, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`, 엄격한 referrer·permissions 헤더
 - API 키, service role, JWT, 원문, 공유 평문 토큰을 로그에 기록하지 않음
+- 원문은 `source_records`와 명시적 분석 스냅숏에만 보관하며 단계 이벤트·annotation에 중복 저장하지 않음
+- annotation은 사용자 검토 데이터로만 취급하고 후속 모델 입력이나 공개 공유 결과에 자동 포함하지 않음
 - service role은 `VITE_` 변수나 브라우저 응답에 포함하지 않음
 - provider 오류 원문과 PostgREST 내부 상세를 사용자 응답에 포함하지 않음
 - 공유 링크 기본 7일·최대 30일·즉시 폐기
@@ -216,15 +240,15 @@ Sites 계약:
 - Supabase/OpenAI 비밀은 Sites 런타임 환경에만 설정
 - Node 요청·응답 어댑터로 기존 API 계약과 Render fallback을 공유
 
-배포 순서는 `Supabase migration → Sites/Render secret 설정 → build·테스트 → 소스 push → Sites/Render deploy → Auth /login redirect allowlist → readiness → 브라우저 E2E`다. Seoul Supabase 데모 프로젝트에는 migration 적용·down rollback·재적용과 32개 pgTAP 계약 검증을 완료했고, workerd에서 실제 영속 브라우저 흐름도 확인했다.
+배포 순서는 `Supabase migration → Sites/Render secret 설정 → build·테스트 → 소스 push → Sites/Render deploy → Auth /login redirect allowlist → readiness → 브라우저 E2E`다. Seoul Supabase 데모 프로젝트에는 core·외부 맥락 migration과 에이전트 워크플로 migration이 적용되어 있다. 워크플로 migration은 원격 스키마의 단일 트랜잭션 안에서 적용·92개 pgTAP·down rollback·재적용을 먼저 검증한 뒤 영구 적용했고, 적용 직후 security·performance advisor를 확인했다.
 
 ## 10. 테스트와 승인 기준
 
 | 계층 | 필수 시나리오 |
 | --- | --- |
 | Vitest | 입력 경계, CRUD routing, auth 실패, IDOR `404`, idempotency, provider 성공·실패·취소, 잘못된 근거, DB `503`, 공유 만료·폐기 |
-| SQL + pgTAP | 빈 DB migration 적용·down rollback·재적용, FK cascade, RLS 사용자 격리, RPC idempotency·rate limit, 공개 share projection |
-| 한국어 eval | 20개 회의·리서치·피드백·질문-only·결정-only·빈 근거·개인정보·prompt injection fixture; 외부 호출 없음 |
+| SQL + pgTAP | 빈 DB migration 적용·down rollback·재적용, 92개 FK·RLS·권한·annotation idempotency·rate limit·공개 share 계약 |
+| 한국어 eval | 30개 회의·리서치·피드백·질문-only·결정-only·빈 근거·개인정보·prompt injection fixture; 외부 호출 없음 |
 | Playwright | 공개 샘플, Magic Link, 프로젝트·기록 2건, 분석 2회, 근거 drawer, 최근 변화, 지식맵, 공유·새로고침·폐기 |
 | CI | lint, typecheck, coverage, build, production audit, secret scan, 공개 smoke, 내부 PR Supabase/E2E |
 

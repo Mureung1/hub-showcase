@@ -9,7 +9,9 @@ import {
   createPublicShareRepository,
 } from "./moduBrainRepository.mjs";
 import {
+  analysisRunAnnotationResource,
   analysisRunResource,
+  analysisRunStepEventResource,
   contextImportResource,
   projectResource,
   shareLinkResource,
@@ -27,6 +29,16 @@ import {
 import { createSupabaseGateway } from "./supabaseGateway.mjs";
 
 const SOURCE_KINDS = new Set(["meeting", "research", "feedback", "note"]);
+const ANNOTATION_TYPES = new Set(["confirmation", "correction", "question", "note"]);
+const ANNOTATION_TARGET_TYPES = new Set([
+  "run",
+  "decision",
+  "participant",
+  "question",
+  "term",
+  "knowledge_node",
+  "participant_view",
+]);
 const INPUT_CHARACTER_LIMIT = 100_000;
 const OPENAI_TIMEOUT_MS = 30_000;
 
@@ -38,7 +50,7 @@ export function createApiV1Handler(options = {}) {
     if (pathname === "/api/health/live") {
       try {
         if (!allowOnly(req, res, ["GET"])) return true;
-        writeData(res, 200, { status: "ok" });
+        writeData(res, 200, { status: "ok", commit: resolveBuildCommit(options) });
       } catch (error) {
         writeApiError(res, toApiError(error));
       }
@@ -158,6 +170,28 @@ export function createApiV1Handler(options = {}) {
       match = pathname.match(/^\/api\/v1\/analysis-runs\/([^/]+)$/);
       if (match) {
         await handleAnalysisRun(req, res, repository, requireUuid(match[1], "runId"));
+        return true;
+      }
+
+      match = pathname.match(/^\/api\/v1\/analysis-runs\/([^/]+)\/step-events$/);
+      if (match) {
+        await handleAnalysisRunStepEvents(
+          req,
+          res,
+          repository,
+          requireUuid(match[1], "runId"),
+        );
+        return true;
+      }
+
+      match = pathname.match(/^\/api\/v1\/analysis-runs\/([^/]+)\/annotations$/);
+      if (match) {
+        await handleAnalysisRunAnnotations(
+          req,
+          res,
+          repository,
+          requireUuid(match[1], "runId"),
+        );
         return true;
       }
 
@@ -367,6 +401,38 @@ async function handleAnalysisRuns(req, res, context) {
   const startedAt = Date.now();
   let createdRunId = null;
   let terminal = false;
+  let stepSequence = 0;
+  let activeStep = null;
+  let activeStepStartedAt = null;
+
+  const appendStepEvent = async (step, status, values = {}) => {
+    if (!createdRunId) return null;
+    stepSequence += 1;
+    return context.serviceRepository.appendRunStepEvent(
+      createdRunId,
+      context.user.id,
+      {
+        sequence: stepSequence,
+        eventKey: `${step}:${status}`,
+        step,
+        status,
+        ...values,
+      },
+    );
+  };
+  const beginStep = async (step) => {
+    activeStep = step;
+    activeStepStartedAt = Date.now();
+    await appendStepEvent(step, "started");
+  };
+  const finishStep = async (status, code, values = {}) => {
+    const step = activeStep;
+    if (!step) return;
+    const durationMs = Math.max(0, Date.now() - activeStepStartedAt);
+    await appendStepEvent(step, status, { code, durationMs, ...values });
+    activeStep = null;
+    activeStepStartedAt = null;
+  };
 
   try {
     throwIfAborted(controller, req, res);
@@ -412,12 +478,27 @@ async function handleAnalysisRuns(req, res, context) {
       providerMode: mode,
       providerModel: model,
     });
-    if (!started.reused) createdRunId = started.run.id;
+    if (!started.reused) {
+      createdRunId = started.run.id;
+      await beginStep("source_snapshot");
+    }
     throwIfAborted(controller, req, res);
     if (started.reused) {
       writeData(res, 200, analysisRunResource(started.run));
       return;
     }
+
+    const snapshots = await context.repository.getRunSnapshots(createdRunId);
+    throwIfAborted(controller, req, res);
+    await finishStep("succeeded", "SNAPSHOT_READY", {
+      sourceCount: snapshots.length,
+      inputCharacters: snapshots.reduce(
+        (sum, source) => sum + unicodeLength(String(source.content_snapshot || "")),
+        0,
+      ),
+    });
+
+    await beginStep("provider_analysis");
 
     if (mode === "openai") {
       const [globalAllowed, ipAllowed] = await Promise.all([
@@ -438,8 +519,6 @@ async function handleAnalysisRuns(req, res, context) {
         );
       }
     }
-    const snapshots = await context.repository.getRunSnapshots(createdRunId);
-    throwIfAborted(controller, req, res);
     const rawText = snapshots
       .map(
         (source) =>
@@ -463,7 +542,17 @@ async function handleAnalysisRuns(req, res, context) {
       },
     );
     throwIfAborted(controller, req, res);
+    await finishStep("succeeded", "PROVIDER_COMPLETED");
+
+    await beginStep("evidence_validation");
     const resultV2 = buildContextAnalysisResultV2(result, snapshots, createdRunId);
+    await finishStep("succeeded", "EVIDENCE_VERIFIED", {
+      validationOutcome: "passed",
+      outputItemCount: countAnalysisItems(resultV2),
+      evidenceReferenceCount: countEvidenceReferences(resultV2),
+    });
+
+    await beginStep("result_persistence");
     const completed = await context.serviceRepository.completeRun(
       createdRunId,
       context.user.id,
@@ -475,6 +564,13 @@ async function handleAnalysisRuns(req, res, context) {
       },
     );
     terminal = true;
+    try {
+      await finishStep("succeeded", "RUN_PERSISTED");
+    } catch {
+      // The succeeded run is authoritative; observability must not turn it into an HTTP failure.
+      activeStep = null;
+      activeStepStartedAt = null;
+    }
     if (!res.destroyed) {
       writeData(res, 201, analysisRunResource(completed), {
         Location: `/api/v1/analysis-runs/${createdRunId}`,
@@ -482,6 +578,19 @@ async function handleAnalysisRuns(req, res, context) {
     }
   } catch (error) {
     const cancelled = controller.signal.aborted;
+    if (createdRunId && activeStep) {
+      try {
+        await finishStep(
+          cancelled ? "cancelled" : "failed",
+          cancelled ? "REQUEST_CANCELLED" : safeAnalysisCode(error),
+          !cancelled && activeStep === "evidence_validation"
+            ? { validationOutcome: "failed" }
+            : {},
+        );
+      } catch {
+        // The run terminal state remains authoritative if event persistence is unavailable.
+      }
+    }
     if (createdRunId && !terminal) {
       try {
         await context.serviceRepository.completeRun(createdRunId, context.user.id, {
@@ -511,6 +620,34 @@ async function handleAnalysisRun(req, res, repository, runId) {
   }
   await repository.deleteRun(runId);
   writeData(res, 200, { id: runId, deleted: true });
+}
+
+async function handleAnalysisRunStepEvents(req, res, repository, runId) {
+  if (!allowOnly(req, res, ["GET"])) return;
+  const rows = await repository.listRunStepEvents(runId);
+  writeData(res, 200, rows.map(analysisRunStepEventResource));
+}
+
+async function handleAnalysisRunAnnotations(req, res, repository, runId) {
+  if (!allowOnly(req, res, ["GET", "POST"])) return;
+  if (req.method === "GET") {
+    const rows = await repository.listRunAnnotations(runId);
+    writeData(res, 200, rows.map(analysisRunAnnotationResource));
+    return;
+  }
+
+  const idempotencyKey = requireIdempotencyKey(req);
+  const values = validateRunAnnotation(await readJson(req));
+  const created = await repository.createRunAnnotation(runId, {
+    idempotencyKey,
+    ...values,
+  });
+  writeData(
+    res,
+    created.reused ? 200 : 201,
+    analysisRunAnnotationResource(created.annotation),
+    { Location: `/api/v1/analysis-runs/${runId}/annotations` },
+  );
 }
 
 async function handleShareLinks(req, res, repository, serviceRepository, user, runId) {
@@ -622,6 +759,49 @@ function validateAnalysisRequest(body) {
   return { sourceIds, mode };
 }
 
+function validateRunAnnotation(body) {
+  assertObject(body);
+  const allowedKeys = new Set(["annotationType", "targetType", "targetId", "body"]);
+  if (Object.keys(body).some((key) => !allowedKeys.has(key))) {
+    throw new ApiError(
+      400,
+      "INVALID_ANNOTATION",
+      "Feedback accepts only annotationType, targetType, targetId, and body.",
+    );
+  }
+  if (!ANNOTATION_TYPES.has(body.annotationType)) {
+    throw new ApiError(400, "INVALID_ANNOTATION", "The annotation type is not supported.");
+  }
+  if (!ANNOTATION_TARGET_TYPES.has(body.targetType)) {
+    throw new ApiError(400, "INVALID_ANNOTATION", "The annotation target is not supported.");
+  }
+  const targetId = boundedOptionalString(body.targetId, "targetId", 160);
+  if (
+    (body.targetType === "run" && targetId !== null) ||
+    (body.targetType !== "run" && targetId === null)
+  ) {
+    throw new ApiError(400, "INVALID_ANNOTATION", "The annotation target is incomplete.");
+  }
+  return {
+    annotationType: body.annotationType,
+    targetType: body.targetType,
+    targetId,
+    body: boundedString(body.body, "body", 1, 2_000),
+  };
+}
+
+function requireIdempotencyKey(req) {
+  const idempotencyKey = String(req.headers["idempotency-key"] || "").trim();
+  if (idempotencyKey.length < 8 || idempotencyKey.length > 128) {
+    throw new ApiError(
+      400,
+      "IDEMPOTENCY_KEY_REQUIRED",
+      "An 8-128 character Idempotency-Key header is required.",
+    );
+  }
+  return idempotencyKey;
+}
+
 function boundedString(value, field, min, max, trim = true) {
   if (typeof value !== "string") {
     throw new ApiError(400, "INVALID_FIELD", `${field} 값이 올바르지 않습니다.`);
@@ -688,6 +868,35 @@ function safeAnalysisCode(error) {
   return /^[A-Z0-9_]{3,80}$/.test(code) ? code : "ANALYSIS_FAILED";
 }
 
+function countAnalysisItems(result) {
+  return [
+    result?.keyTerms,
+    result?.decisions,
+    result?.participants,
+    result?.questions,
+    result?.knowledgeMap?.nodes,
+    result?.participantAgents?.views,
+  ].reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0);
+}
+
+function countEvidenceReferences(value) {
+  if (Array.isArray(value)) {
+    return value.reduce((sum, item) => sum + countEvidenceReferences(item), 0);
+  }
+  if (!value || typeof value !== "object") return 0;
+  if (
+    typeof value.sourceRecordId === "string" &&
+    typeof value.sourceTitle === "string" &&
+    typeof value.quote === "string"
+  ) {
+    return 1;
+  }
+  return Object.values(value).reduce(
+    (sum, item) => sum + countEvidenceReferences(item),
+    0,
+  );
+}
+
 function throwIfAborted(controller, req, res) {
   if (
     !controller.signal.aborted &&
@@ -716,6 +925,19 @@ function openAIEnabled(options) {
     Boolean(process.env.OPENAI_API_KEY) &&
     Boolean(process.env.MODU_BRAIN_OPENAI_MODEL)
   );
+}
+
+function resolveBuildCommit(options) {
+  const candidates = [
+    options.buildCommit,
+    process.env.RENDER_GIT_COMMIT,
+    process.env.SOURCE_VERSION,
+  ];
+  for (const candidate of candidates) {
+    const normalized = String(candidate || "").trim().toLowerCase();
+    if (/^[0-9a-f]{7,40}$/.test(normalized)) return normalized;
+  }
+  return null;
 }
 
 function resolveServiceRepository(options, gateway, user, req) {

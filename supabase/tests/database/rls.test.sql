@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(69);
+select plan(92);
 
 select has_table('public', 'projects', 'projects table exists');
 select has_table('public', 'analysis_runs', 'analysis_runs table exists');
@@ -9,6 +9,8 @@ select has_table('public', 'source_segments', 'source segments table exists');
 select has_table('public', 'context_entities', 'context entities table exists');
 select has_table('public', 'context_entity_aliases', 'context entity aliases table exists');
 select has_table('public', 'context_edges', 'context edges table exists');
+select has_table('public', 'analysis_run_step_events', 'analysis step events table exists');
+select has_table('public', 'analysis_run_annotations', 'analysis annotations table exists');
 select ok((select relrowsecurity from pg_class where oid = 'public.projects'::regclass), 'projects RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.source_records'::regclass), 'sources RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.source_imports'::regclass), 'source imports RLS enabled');
@@ -16,6 +18,14 @@ select ok((select relrowsecurity from pg_class where oid = 'public.source_segmen
 select ok((select relrowsecurity from pg_class where oid = 'public.context_entities'::regclass), 'context entities RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.context_entity_aliases'::regclass), 'context aliases RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.context_edges'::regclass), 'context edges RLS enabled');
+select ok(
+  (select relrowsecurity from pg_class where oid = 'public.analysis_run_step_events'::regclass),
+  'analysis step events RLS enabled'
+);
+select ok(
+  (select relrowsecurity from pg_class where oid = 'public.analysis_run_annotations'::regclass),
+  'analysis annotations RLS enabled'
+);
 select function_privs_are(
   'public', 'resolve_shared_analysis', array['text'], 'anon', array[]::text[],
   'anonymous users cannot resolve token hashes directly'
@@ -37,6 +47,20 @@ select function_privs_are(
 select function_privs_are(
   'public', 'prevent_imported_source_mutation', array[]::text[],
   'authenticated', array[]::text[], 'trigger helper is not directly executable by clients'
+);
+select function_privs_are(
+  'public', 'create_analysis_run_annotation',
+  array['uuid','text','text','text','text','text'],
+  'authenticated', array['EXECUTE'], 'authenticated owners can create immutable feedback'
+);
+select function_privs_are(
+  'public', 'create_analysis_run_annotation',
+  array['uuid','text','text','text','text','text'],
+  'anon', array[]::text[], 'anonymous users cannot create analysis feedback'
+);
+select function_privs_are(
+  'public', 'prevent_analysis_artifact_update', array[]::text[],
+  'authenticated', array[]::text[], 'analysis immutability trigger is not client executable'
 );
 
 insert into auth.users (
@@ -356,6 +380,80 @@ select lives_ok($$
   where project_id = '22222222-2222-4222-8222-222222222222'
 $$, 'service role can complete an owned running analysis');
 
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+select is(
+  (select outcome from public.create_analysis_run_annotation(
+    (select id from public.analysis_runs where idempotency_key = 'idempotency-key'),
+    'annotation-key-1', 'correction', 'decision', 'decision_public',
+    'Confirm the source evidence for this decision.'
+  )),
+  'created',
+  'owner can create immutable feedback for a succeeded result item'
+);
+select is(
+  (select outcome from public.create_analysis_run_annotation(
+    (select id from public.analysis_runs where idempotency_key = 'idempotency-key'),
+    'annotation-key-1', 'correction', 'decision', 'decision_public',
+    'Confirm the source evidence for this decision.'
+  )),
+  'reused',
+  'same annotation idempotency key and payload reuses the immutable record'
+);
+select throws_ok($$
+  select * from public.create_analysis_run_annotation(
+    (select id from public.analysis_runs where idempotency_key = 'idempotency-key'),
+    'annotation-key-1', 'correction', 'decision', 'decision_public',
+    'A different body under the same key.'
+  )
+$$, 'P0001', 'IDEMPOTENCY_CONFLICT', 'annotation idempotency conflicts are rejected');
+select is(
+  (select count(*) from public.analysis_run_annotations),
+  1::bigint,
+  'idempotent annotation creation stores exactly one row'
+);
+select throws_ok($$
+  select * from public.create_analysis_run_annotation(
+    (select id from public.analysis_runs where idempotency_key = 'idempotency-key'),
+    'annotation-key-2', 'note', 'decision', 'decision_missing', 'Missing target.'
+  )
+$$, 'P0001', 'ANNOTATION_TARGET_NOT_FOUND', 'annotation targets must exist in the run result');
+select throws_like($$
+  insert into public.analysis_run_annotations(
+    analysis_run_id, created_by, idempotency_key, request_fingerprint,
+    annotation_type, target_type, body
+  ) select id, auth.uid(), 'direct-annotation', repeat('a', 64), 'note', 'run', 'forged'
+    from public.analysis_runs where idempotency_key = 'idempotency-key'
+$$, '%permission denied%', 'authenticated users cannot bypass the annotation RPC');
+select throws_like($$
+  insert into public.analysis_run_step_events(
+    analysis_run_id, sequence, event_key, step_name, status, code
+  ) select id, 1, 'source_snapshot:succeeded', 'source_snapshot', 'succeeded', 'FORGED'
+    from public.analysis_runs where idempotency_key = 'idempotency-key'
+$$, '%permission denied%', 'authenticated users cannot forge workflow events');
+
+set local role service_role;
+select lives_ok($$
+  insert into public.analysis_run_step_events(
+    analysis_run_id, sequence, event_key, step_name, status
+  ) select id, 1, 'source_snapshot:started', 'source_snapshot', 'started'
+    from public.analysis_runs where idempotency_key = 'idempotency-key'
+$$, 'service role can append a bounded workflow start event');
+select lives_ok($$
+  insert into public.analysis_run_step_events(
+    analysis_run_id, sequence, event_key, step_name, status, code,
+    duration_ms, source_count, input_characters
+  ) select id, 2, 'source_snapshot:succeeded', 'source_snapshot', 'succeeded',
+      'SNAPSHOT_READY', 5, 1, 10
+    from public.analysis_runs where idempotency_key = 'idempotency-key'
+$$, 'service role can append safe step metrics without source content');
+select throws_ok($$
+  update public.analysis_run_step_events set duration_ms = 999
+$$, '23514', 'ANALYSIS_ARTIFACT_IMMUTABLE', 'workflow events cannot be edited');
+select throws_ok($$
+  update public.analysis_run_annotations set body = 'rewritten'
+$$, '23514', 'ANALYSIS_ARTIFACT_IMMUTABLE', 'feedback annotations cannot be edited');
+
 insert into public.projects(id, owner_id, title)
 values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '99999999-9999-4999-8999-999999999999', 'Other project');
 insert into public.analysis_runs(
@@ -410,6 +508,16 @@ insert into public.analysis_runs(
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+select is(
+  (select count(*) from public.analysis_run_step_events),
+  2::bigint,
+  'owner can read safe workflow events for an owned run'
+);
+select is(
+  (select count(*) from public.analysis_run_annotations),
+  1::bigint,
+  'owner can read immutable feedback for an owned run'
+);
 select throws_like($$
   update public.share_links
   set analysis_run_id = 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa'
@@ -437,6 +545,22 @@ select is(
 set local "request.jwt.claim.sub" = '99999999-9999-4999-8999-999999999999';
 select is((select count(*) from public.analysis_runs where created_by <> auth.uid()), 0::bigint, 'another user cannot read owner runs');
 select is((select count(*) from public.share_links), 0::bigint, 'another user cannot read owner share links');
+select is(
+  (select count(*) from public.analysis_run_step_events),
+  0::bigint,
+  'another user cannot read owner workflow events'
+);
+select is(
+  (select count(*) from public.analysis_run_annotations),
+  0::bigint,
+  'another user cannot read owner annotations'
+);
+select throws_ok($$
+  select * from public.create_analysis_run_annotation(
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    'cross-user-annotation', 'note', 'run', null, 'forbidden'
+  )
+$$, '42501', 'insufficient_privilege', 'another user cannot annotate an owner run');
 
 select * from finish(true);
 rollback;

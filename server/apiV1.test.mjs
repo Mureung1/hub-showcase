@@ -13,6 +13,8 @@ const RUN_ID = "44444444-4444-4444-8444-444444444444";
 const SHARE_ID = "55555555-5555-4555-8555-555555555555";
 const IMPORT_ID = "66666666-6666-4666-8666-666666666666";
 const SEGMENT_ID = "77777777-7777-4777-8777-777777777777";
+const STEP_EVENT_ID = "88888888-8888-4888-8888-888888888888";
+const ANNOTATION_ID = "99999999-9999-4999-8999-999999999999";
 const now = "2026-07-11T00:00:00.000Z";
 const content = "민지는 입력 흐름을 단순하게 만들자고 제안했다. 서준은 결정 근거와 질문을 함께 보여주자고 말했다. 팀은 직접 입력 방식으로 시작하기로 결정했다. 다음 회의에서 공유 범위를 검토하기로 했다.";
 
@@ -22,6 +24,7 @@ let repository;
 let publicRepository;
 let analyze;
 let openAIFlag;
+let buildCommit;
 let activeResponse;
 
 beforeEach(() => {
@@ -46,6 +49,7 @@ beforeEach(() => {
   };
   analyze = vi.fn().mockResolvedValue(sampleAnalysis());
   openAIFlag = true;
+  buildCommit = null;
 });
 
 beforeAll(async () => {
@@ -64,6 +68,9 @@ beforeAll(async () => {
     analyze: (...args) => analyze(...args),
     get openAIEnabled() {
       return openAIFlag;
+    },
+    get buildCommit() {
+      return buildCommit;
     },
     readyCheck: async () => true,
   });
@@ -88,7 +95,26 @@ describe("v1 API", () => {
   it("reports liveness/readiness and returns JSON 405/OPTIONS responses", async () => {
     const live = await fetch(`${baseUrl}/api/health/live`);
     expect(live.status).toBe(200);
-    await expect(live.json()).resolves.toEqual({ data: { status: "ok" } });
+    await expect(live.json()).resolves.toEqual({ data: { status: "ok", commit: null } });
+
+    buildCommit = "ABCDEF1234567";
+    const versionedLive = await fetch(`${baseUrl}/api/health/live`);
+    await expect(versionedLive.json()).resolves.toEqual({
+      data: { status: "ok", commit: "abcdef1234567" },
+    });
+
+    const previousRenderCommit = process.env.RENDER_GIT_COMMIT;
+    try {
+      buildCommit = "not-a-commit";
+      process.env.RENDER_GIT_COMMIT = "F".repeat(40);
+      const renderLive = await fetch(`${baseUrl}/api/health/live`);
+      await expect(renderLive.json()).resolves.toEqual({
+        data: { status: "ok", commit: "f".repeat(40) },
+      });
+    } finally {
+      if (previousRenderCommit === undefined) delete process.env.RENDER_GIT_COMMIT;
+      else process.env.RENDER_GIT_COMMIT = previousRenderCommit;
+    }
 
     const wrongMethod = await fetch(`${baseUrl}/api/health/live`, { method: "POST" });
     expect(wrongMethod.status).toBe(405);
@@ -293,6 +319,48 @@ describe("v1 API", () => {
     expect(repository.startRun).toHaveBeenCalledWith(
       expect.objectContaining({ idempotencyKey: "analysis-key-1", providerMode: "local" }),
     );
+    const events = repository.appendRunStepEvent.mock.calls.map((call) => call[2]);
+    expect(events.map((event) => `${event.step}:${event.status}`)).toEqual([
+      "source_snapshot:started",
+      "source_snapshot:succeeded",
+      "provider_analysis:started",
+      "provider_analysis:succeeded",
+      "evidence_validation:started",
+      "evidence_validation:succeeded",
+      "result_persistence:started",
+      "result_persistence:succeeded",
+    ]);
+    expect(events.find((event) => event.step === "source_snapshot" && event.status === "succeeded"))
+      .toMatchObject({ sourceCount: 1, inputCharacters: Array.from(content).length });
+    expect(events.find((event) => event.step === "evidence_validation" && event.status === "succeeded"))
+      .toMatchObject({ validationOutcome: "passed", evidenceReferenceCount: expect.any(Number) });
+    expect(JSON.stringify(events)).not.toContain(content);
+    expect(JSON.stringify(events)).not.toMatch(/prompt|chain.?of.?thought|reasoning/i);
+  });
+
+  it("returns the succeeded run when the final observability event cannot be stored", async () => {
+    repository.appendRunStepEvent.mockImplementation(async (_runId, _userId, values) => {
+      if (values.eventKey === "result_persistence:succeeded") {
+        throw new Error("event store unavailable");
+      }
+      return { id: `event-${values.sequence}`, ...values };
+    });
+
+    const response = await api(`/api/v1/projects/${PROJECT_ID}/analysis-runs`, {
+      method: "POST",
+      headers: { "Idempotency-Key": "final-event-failure" },
+      body: { sourceIds: [SOURCE_ID], mode: "local" },
+    });
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({
+      data: { id: RUN_ID, status: "succeeded" },
+    });
+    expect(repository.completeRun).toHaveBeenCalledWith(
+      RUN_ID,
+      USER_ID,
+      expect.objectContaining({ status: "succeeded" }),
+    );
   });
 
   it("returns an idempotently reused run without invoking the provider", async () => {
@@ -395,6 +463,11 @@ describe("v1 API", () => {
       error_message: "분석을 완료하지 못했습니다.",
     });
     expect(JSON.stringify(failureUpdate)).not.toContain("secret provider response");
+    const failedEvent = repository.appendRunStepEvent.mock.calls
+      .map((call) => call[2])
+      .find((event) => event.step === "provider_analysis" && event.status === "failed");
+    expect(failedEvent).toMatchObject({ code: "PROVIDER_FAILED" });
+    expect(JSON.stringify(failedEvent)).not.toContain("secret provider response");
   });
 
   it("terminalizes a new run when snapshot loading fails before provider execution", async () => {
@@ -436,6 +509,94 @@ describe("v1 API", () => {
     expect((await (await api(`/api/v1/analysis-runs/${RUN_ID}/share-links`)).json()).data).toHaveLength(1);
     expect((await (await api(`/api/v1/share-links/${SHARE_ID}`, { method: "DELETE" })).json()).data.revokedAt).toBeTruthy();
     expect((await (await api(`/api/v1/analysis-runs/${RUN_ID}`, { method: "DELETE" })).json()).data.deleted).toBe(true);
+  });
+
+  it("lists safe workflow events and creates immutable idempotent annotations", async () => {
+    await repository.appendRunStepEvent(RUN_ID, USER_ID, {
+      sequence: 1,
+      eventKey: "source_snapshot:succeeded",
+      step: "source_snapshot",
+      status: "succeeded",
+      code: "SNAPSHOT_READY",
+      durationMs: 4,
+      sourceCount: 1,
+      inputCharacters: 120,
+    });
+
+    const events = await api(`/api/v1/analysis-runs/${RUN_ID}/step-events`);
+    expect(events.status).toBe(200);
+    await expect(events.json()).resolves.toMatchObject({
+      data: [
+        {
+          analysisRunId: RUN_ID,
+          step: "source_snapshot",
+          status: "succeeded",
+          sourceCount: 1,
+          inputCharacters: 120,
+        },
+      ],
+    });
+
+    const missingKey = await api(`/api/v1/analysis-runs/${RUN_ID}/annotations`, {
+      method: "POST",
+      body: {
+        annotationType: "correction",
+        targetType: "decision",
+        targetId: "decision_public",
+        body: "근거를 다시 확인해 주세요.",
+      },
+    });
+    expect(missingKey.status).toBe(400);
+
+    const rejectedReasoning = await api(`/api/v1/analysis-runs/${RUN_ID}/annotations`, {
+      method: "POST",
+      headers: { "Idempotency-Key": "annotation-reasoning" },
+      body: {
+        annotationType: "note",
+        targetType: "run",
+        body: "공개 가능한 피드백",
+        reasoning: "저장하면 안 되는 내부 사고과정",
+      },
+    });
+    expect(rejectedReasoning.status).toBe(400);
+    expect(repository.createRunAnnotation).not.toHaveBeenCalled();
+
+    const request = {
+      method: "POST",
+      headers: { "Idempotency-Key": "annotation-key-1" },
+      body: {
+        annotationType: "correction",
+        targetType: "decision",
+        targetId: "decision_public",
+        body: "근거를 다시 확인해 주세요.",
+      },
+    };
+    const created = await api(`/api/v1/analysis-runs/${RUN_ID}/annotations`, request);
+    expect(created.status).toBe(201);
+    await expect(created.json()).resolves.toMatchObject({
+      data: {
+        id: ANNOTATION_ID,
+        analysisRunId: RUN_ID,
+        annotationType: "correction",
+        target: { type: "decision", id: "decision_public" },
+      },
+    });
+
+    const reused = await api(`/api/v1/analysis-runs/${RUN_ID}/annotations`, request);
+    expect(reused.status).toBe(200);
+    const conflict = await api(`/api/v1/analysis-runs/${RUN_ID}/annotations`, {
+      ...request,
+      body: { ...request.body, body: "같은 키의 다른 내용" },
+    });
+    expect(conflict.status).toBe(409);
+
+    const annotations = await api(`/api/v1/analysis-runs/${RUN_ID}/annotations`);
+    expect((await annotations.json()).data).toHaveLength(1);
+    const patchAttempt = await api(`/api/v1/analysis-runs/${RUN_ID}/annotations`, {
+      method: "PATCH",
+      body: {},
+    });
+    expect(patchAttempt.status).toBe(405);
   });
 
   it("resolves only a hashed public token to the sanitized shared run contract", async () => {
@@ -540,6 +701,8 @@ function createFakeRepository() {
   let run = runRow();
   let share = shareRow();
   const snapshots = [snapshotRow()];
+  const stepEvents = [];
+  const annotations = [];
   return {
     listProjects: vi.fn(async () => [project]),
     createProject: vi.fn(async (_userId, values) => (project = projectRow(values))),
@@ -587,6 +750,50 @@ function createFakeRepository() {
     getRun: vi.fn(async () => run),
     startRun: vi.fn(async () => ({ reused: false, run })),
     getRunSnapshots: vi.fn(async () => snapshots),
+    appendRunStepEvent: vi.fn(async (_runId, _userId, values) => {
+      const event = stepEventRow({
+        sequence: values.sequence,
+        event_key: values.eventKey,
+        step_name: values.step,
+        status: values.status,
+        validation_outcome: values.validationOutcome ?? null,
+        code: values.code ?? null,
+        duration_ms: values.durationMs ?? null,
+        source_count: values.sourceCount ?? null,
+        input_characters: values.inputCharacters ?? null,
+        output_item_count: values.outputItemCount ?? null,
+        evidence_reference_count: values.evidenceReferenceCount ?? null,
+      });
+      stepEvents.push(event);
+      return event;
+    }),
+    listRunStepEvents: vi.fn(async () => stepEvents),
+    listRunAnnotations: vi.fn(async () => annotations),
+    createRunAnnotation: vi.fn(async (_runId, values) => {
+      const existing = annotations.find(
+        (annotation) => annotation.idempotency_key === values.idempotencyKey,
+      );
+      if (existing) {
+        if (
+          existing.annotation_type !== values.annotationType ||
+          existing.target_type !== values.targetType ||
+          existing.target_id !== values.targetId ||
+          existing.body !== values.body
+        ) {
+          throw new ApiError(409, "IDEMPOTENCY_CONFLICT", "conflicting feedback");
+        }
+        return { reused: true, annotation: existing };
+      }
+      const annotation = annotationRow({
+        idempotency_key: values.idempotencyKey,
+        annotation_type: values.annotationType,
+        target_type: values.targetType,
+        target_id: values.targetId,
+        body: values.body,
+      });
+      annotations.push(annotation);
+      return { reused: false, annotation };
+    }),
     completeRun: vi.fn(async (_id, _userId, values) => (run = { ...run, ...values })),
     deleteRun: vi.fn(async () => undefined),
     listShareLinks: vi.fn(async () => [share]),
@@ -667,6 +874,41 @@ function shareRow(values = {}) {
     analysis_run_id: RUN_ID,
     expires_at: "2026-07-18T00:00:00.000Z",
     revoked_at: null,
+    created_at: now,
+    ...values,
+  };
+}
+
+function stepEventRow(values = {}) {
+  return {
+    id: STEP_EVENT_ID,
+    analysis_run_id: RUN_ID,
+    sequence: 1,
+    event_key: "source_snapshot:started",
+    step_name: "source_snapshot",
+    status: "started",
+    validation_outcome: null,
+    code: null,
+    duration_ms: null,
+    source_count: null,
+    input_characters: null,
+    output_item_count: null,
+    evidence_reference_count: null,
+    created_at: now,
+    ...values,
+  };
+}
+
+function annotationRow(values = {}) {
+  return {
+    id: ANNOTATION_ID,
+    analysis_run_id: RUN_ID,
+    created_by: USER_ID,
+    idempotency_key: "annotation-key-1",
+    annotation_type: "correction",
+    target_type: "decision",
+    target_id: "decision_public",
+    body: "결정 근거를 다시 확인해 주세요.",
     created_at: now,
     ...values,
   };

@@ -1,10 +1,13 @@
 import type {
   AnalysisMode,
+  AnalysisRunAnnotationResource,
   AnalysisRunResource,
+  AnalysisRunStepEventResource,
   CapabilitiesResource,
   CreateProjectInput,
   CreateSourceInput,
   ContextImportResource,
+  CreateAnalysisRunAnnotationInput,
   ImportContextInput,
   ProjectResource,
   ShareLinkResource,
@@ -76,6 +79,20 @@ export interface PlatformApi {
   ): Promise<AnalysisRunResource>;
   getAnalysisRun(token: string, runId: string): Promise<AnalysisRunResource>;
   deleteAnalysisRun(token: string, runId: string): Promise<void>;
+  listAnalysisRunStepEvents(
+    token: string,
+    runId: string,
+  ): Promise<AnalysisRunStepEventResource[]>;
+  listAnalysisRunAnnotations(
+    token: string,
+    runId: string,
+  ): Promise<AnalysisRunAnnotationResource[]>;
+  createAnalysisRunAnnotation(
+    token: string,
+    runId: string,
+    input: CreateAnalysisRunAnnotationInput,
+    idempotencyKey: string,
+  ): Promise<AnalysisRunAnnotationResource>;
   listShareLinks(token: string, runId: string): Promise<ShareLinkResource[]>;
   createShareLink(
     token: string,
@@ -208,6 +225,37 @@ class HttpPlatformApi implements PlatformApi {
       token,
       method: "DELETE",
     });
+  }
+
+  listAnalysisRunStepEvents(token: string, runId: string) {
+    return this.request<AnalysisRunStepEventResource[]>(
+      `/api/v1/analysis-runs/${encodeURIComponent(runId)}/step-events`,
+      { token },
+    );
+  }
+
+  listAnalysisRunAnnotations(token: string, runId: string) {
+    return this.request<AnalysisRunAnnotationResource[]>(
+      `/api/v1/analysis-runs/${encodeURIComponent(runId)}/annotations`,
+      { token },
+    );
+  }
+
+  createAnalysisRunAnnotation(
+    token: string,
+    runId: string,
+    input: CreateAnalysisRunAnnotationInput,
+    idempotencyKey: string,
+  ) {
+    return this.request<AnalysisRunAnnotationResource>(
+      `/api/v1/analysis-runs/${encodeURIComponent(runId)}/annotations`,
+      {
+        token,
+        method: "POST",
+        body: input,
+        headers: { "Idempotency-Key": idempotencyKey },
+      },
+    );
   }
 
   listShareLinks(token: string, runId: string) {

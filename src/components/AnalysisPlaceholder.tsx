@@ -9,7 +9,8 @@ const copy: Record<Status, { kicker: string; title: string; description: string 
 function AnalysisPlaceholder({ status, message, surface }: { status: Status; message?: string | null; surface: "summary" | "workspace" }) {
   const text = copy[status];
   const id = `placeholder-${surface}-${status}`;
-  return <section className={`${surface === "summary" ? "summary-panel" : "result-placeholder"} analysis-placeholder ${status}`} aria-labelledby={id} aria-live={status === "loading" ? "polite" : undefined} aria-busy={status === "loading"}><span className="placeholder-mark" aria-hidden="true" /><p className="section-kicker">{text.kicker}</p><h2 id={id}>{text.title}</h2><p>{message || text.description}</p></section>;
+  const surfaceLabel = surface === "summary" ? "맥락 우선 미리보기" : "분석 결과 작업공간";
+  return <section className={`${surface === "summary" ? "summary-panel" : "result-placeholder"} analysis-placeholder ${status}`} aria-label={`${surfaceLabel}: ${text.title}`} aria-live={status === "loading" ? "polite" : undefined} aria-busy={status === "loading"}><span className="placeholder-mark" aria-hidden="true" /><p className="section-kicker">{text.kicker}</p><h2 id={id}>{text.title}</h2><p>{message || text.description}</p></section>;
 }
 
 export default AnalysisPlaceholder;

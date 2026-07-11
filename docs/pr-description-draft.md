@@ -42,23 +42,25 @@ Modu Brain은 단순 회의 요약이 아니라 **원문 기록 → 근거가 �
 8. 1~30일 읽기 전용 링크를 만들고 필요하면 즉시 폐기합니다.
 9. 새로고침 뒤에도 프로젝트·원문·분석 이력이 유지됩니다.
 
-로그인하지 않은 사용자는 `/`에서 저장되지 않는 결정론적 샘플만 체험할 수 있습니다.
+로그인하지 않은 사용자는 `/demo`에서 계정 없이 저장되지 않는 결정론적 샘플을 바로 체험할 수 있습니다.
 
 ## 주요 구현
 
 ### 웹 워크스페이스
 
-- `/`, `/login`, `/projects`, `/projects/:id`, `/share#token=…` SPA 라우트
+- `/`, `/demo`, `/login`, `/projects`, `/projects/:id`, `/share#token=…` SPA 라우트
 - 프로젝트 상세 `개요 | 기록 | 분석 이력 | 지식맵 | 온보딩` 탭
 - 분석 당시 스냅숏에 연결된 근거 drawer
 - 최근 성공 분석과 바로 이전 성공 분석 비교
 - 결과·오류·빈 상태·진행 상태를 숨김 없이 분리
 - 모바일에서도 기록, 이력, 지식맵, 공유 흐름을 유지
+- 관점 차이 → 미결 질문 → 결정 배경 → 요약의 고정 정보 위계
+- 375/768/1024/1440px, 44px 터치 영역, focus trap·skip link, reduced motion 검증
 
 ### 인증·데이터베이스
 
 - Supabase 이메일 Magic Link Auth
-- `projects`, `source_records`, `analysis_runs`, `analysis_run_sources`, `share_links`, `rate_limit_buckets`
+- `projects`, `source_records`, `analysis_runs`, `analysis_run_sources`, `analysis_run_step_events`, `analysis_run_annotations`, `share_links`, `rate_limit_buckets`
 - SQL migration과 안전한 seed를 저장소에서 관리
 - 모든 앱 테이블 RLS와 사용자 간 IDOR 차단
 - 일반 삭제는 보관, 확인 헤더가 있는 프로젝트 영구 삭제는 하위 데이터 cascade
@@ -72,6 +74,9 @@ Modu Brain은 단순 회의 요약이 아니라 **원문 기록 → 근거가 �
 - provider 호출을 DB 트랜잭션 밖에서 실행
 - 실패한 실행이 최근 성공 결과를 덮어쓰지 않음
 - 모든 `EvidenceRef.quote`가 실제 실행 스냅숏에 존재하는지 서버 검증
+- `source_snapshot → provider_analysis → evidence_validation → result_persistence`의 append-only 실행 추적
+- 성공 결과의 실제 항목에만 idempotent·immutable annotation을 추가하는 사용자 검토 레이어
+- 단계 이벤트·annotation에는 원문, prompt, provider 응답, hidden reasoning을 저장하지 않음
 
 ### OpenAI 경계
 
@@ -101,6 +106,8 @@ GET|POST         /api/v1/projects/:projectId/sources
 GET|PATCH|DELETE /api/v1/sources/:sourceId
 GET|POST         /api/v1/projects/:projectId/analysis-runs
 GET|DELETE       /api/v1/analysis-runs/:runId
+GET              /api/v1/analysis-runs/:runId/step-events
+GET|POST         /api/v1/analysis-runs/:runId/annotations
 GET|POST         /api/v1/analysis-runs/:runId/share-links
 DELETE           /api/v1/share-links/:shareLinkId
 POST             /api/v1/shared/resolve
@@ -128,11 +135,13 @@ npm run test:e2e
 
 추가된 품질 범위:
 
-- 20개 한국어 회의·리서치·피드백 fixture의 결정·질문·참여자·근거·개인정보 회귀
-- migration 적용·down rollback·재적용과 RLS 사용자 격리, FK cascade, idempotency, rate limit, share expiry/revoke pgTAP
+- 30개 한국어 회의·리서치·피드백 fixture의 결정·질문·참여자·근거·개인정보·prompt injection 회귀
+- migration 적용·down rollback·재적용과 92개 RLS/권한/FK/idempotency/rate limit/share pgTAP 계약
 - Magic Link부터 프로젝트·기록 2건·분석 2회·근거·변화·공유·새로고침·폐기까지 Playwright
-- GitHub Actions의 lint/typecheck/coverage/build/audit/secret scan/public smoke
+- GitHub Actions의 lint/typecheck/coverage/build/audit/secret scan/public smoke·axe 접근성 검사
 - 내부 PR·브랜치에서 로컬 Supabase reset/pgTAP/authenticated E2E
+
+현재 로컬 검증은 Vitest 241개 통과, statements 84.19%, branches 77.00%, functions 88.25%, lines 87.39%, 공개 axe/반응형/skip-link 9개 통과, `npm audit` 취약점 0건입니다.
 
 실제 OpenAI 유료 호출은 CI에서 수행하지 않습니다. 모델 출력 품질·비용·preview 권한은 별도 승인된 데모 계정에서 검증해야 합니다.
 
@@ -140,7 +149,7 @@ npm run test:e2e
 
 - `render.yaml`: Singapore 단일 Node Web Service, CI 성공 후 배포, `/api/health/ready`
 - Sites: React SPA와 Worker API를 동일 버전으로 패키징하고 기존 Supabase PostgreSQL/RLS를 공유
-- Supabase 데모 프로젝트: Seoul 리전에 migration 적용·rollback·재적용, 32개 RLS/권한 계약 통과
+- Supabase 데모 프로젝트: Seoul 리전에 워크플로 migration 영구 적용, 사전 적용·rollback·재적용과 92개 RLS/권한 계약 통과, advisor 확인
 - 실제 브라우저: Magic Link 세션 → 데모 원문 3건/첫 분석 → 후속 피드백 → 두 번째 분석 → 근거/변화/지식맵 → 공유/새로고침/폐기까지 workerd에서 검증 후 테스트 계정 정리
 - Sites와 Render의 배포 origin은 Supabase Auth redirect allowlist에 각각 등록하고, 서버 전용 값은 각 호스팅 런타임에만 설정
 
@@ -152,6 +161,7 @@ npm run test:e2e
 4. 분석 근거가 실행 당시 스냅숏의 실제 문장인가
 5. 공유 응답에 원문·이메일·token hash·내부 오류가 없는가
 6. DB/OpenAI 실패가 최근 성공 결과나 샘플로 위장되지 않는가
+7. 실행 추적과 annotation에 원문·prompt·hidden reasoning이 복제되지 않는가
 
 ## 제외 범위
 

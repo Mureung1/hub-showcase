@@ -1,5 +1,8 @@
 import type { EvidenceRef, PerspectiveItem } from "../types/context";
+import ContextSectionHeader from "./ContextSectionHeader";
 import EvidenceButton from "./EvidenceButton";
+import EvidenceCoverageBadge from "./EvidenceCoverageBadge";
+import { summarizeEvidenceCoverage } from "./evidenceCoverage";
 
 type PerspectiveTableProps = {
   participants: PerspectiveItem[];
@@ -7,12 +10,18 @@ type PerspectiveTableProps = {
 };
 
 function PerspectiveTable({ participants, onOpenEvidence }: PerspectiveTableProps) {
+  const coverage = summarizeEvidenceCoverage(participants);
+
   return (
-    <section className="result-panel wide" aria-labelledby="perspective-title">
-      <div className="panel-heading compact">
-        <p className="section-kicker">Perspective</p>
-        <h2 id="perspective-title">참여자별 관점 차이</h2>
-      </div>
+    <section className="result-panel wide context-sequence-panel" aria-labelledby="perspective-title">
+      <ContextSectionHeader
+        step="01"
+        kicker="Perspective differences"
+        title="참여자별 관점 차이"
+        titleId="perspective-title"
+        intro="같은 기록을 두고 무엇을 중요하게 보고, 어디에서 우려가 갈리는지 먼저 확인합니다."
+        aside={<EvidenceCoverageBadge {...coverage} />}
+      />
 
       {participants.length > 0 ? (
         <div className="table-wrap">
@@ -28,7 +37,7 @@ function PerspectiveTable({ participants, onOpenEvidence }: PerspectiveTableProp
             </thead>
             <tbody>
               {participants.map((item) => (
-                <tr key={item.id ?? item.actor}>
+                <tr key={item.id ?? item.actor} aria-label={`${item.actor}의 관점`}>
                   <td data-label="참여자">{item.actor}</td>
                   <td data-label="역할">{item.role}</td>
                   <td data-label="중점">{item.focus}</td>

@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import {
   expect,
   test,
@@ -111,6 +112,16 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
     await expect(
       page.getByText("비교할 이전 성공 분석이 없습니다."),
     ).toHaveCount(0);
+
+    const projectAccessibility = await new AxeBuilder({ page })
+      .include("#main-content")
+      .analyze();
+    expect(
+      projectAccessibility.violations,
+      projectAccessibility.violations
+        .map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(" ")).join(", ")}`)
+        .join("\n"),
+    ).toEqual([]);
 
     await page.getByRole("tab", { name: "지식맵", exact: true }).click();
     await expect(

@@ -31,11 +31,13 @@ export type PerspectiveItem = {
 };
 
 export type ParticipantAgentView = {
+  id?: string;
   actor: string;
   role: string;
   priority: string;
   interpretation: string;
   evidence: string[];
+  evidenceRefs?: EvidenceRef[];
   risk: string;
 };
 

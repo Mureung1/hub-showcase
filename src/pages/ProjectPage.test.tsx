@@ -131,6 +131,77 @@ describe("ProjectPage", () => {
     await waitFor(() => expect(api.revokeShareLink).toHaveBeenCalledWith("access", "77777777-7777-4777-8777-777777777777"));
   });
 
+  it("shows the verified agent trace and persists human review annotations", async () => {
+    const user = userEvent.setup();
+    const api = apiMock();
+    vi.mocked(api.getProject).mockResolvedValue(project);
+    vi.mocked(api.listSources).mockResolvedValue([source]);
+    vi.mocked(api.listAnalysisRuns).mockResolvedValue([latestRun]);
+    vi.mocked(api.listAnalysisRunStepEvents).mockResolvedValue([
+      {
+        id: "event-1",
+        analysisRunId: latestRun.id,
+        sequence: 1,
+        eventKey: "source_snapshot:succeeded",
+        step: "source_snapshot",
+        status: "succeeded",
+        validationOutcome: null,
+        code: "SNAPSHOT_READY",
+        durationMs: 4,
+        sourceCount: 1,
+        inputCharacters: 124,
+        outputItemCount: null,
+        evidenceReferenceCount: null,
+        createdAt: latestRun.createdAt,
+      },
+      {
+        id: "event-2",
+        analysisRunId: latestRun.id,
+        sequence: 2,
+        eventKey: "evidence_validation:succeeded",
+        step: "evidence_validation",
+        status: "succeeded",
+        validationOutcome: "passed",
+        code: "EVIDENCE_VERIFIED",
+        durationMs: 3,
+        sourceCount: null,
+        inputCharacters: null,
+        outputItemCount: 12,
+        evidenceReferenceCount: 7,
+        createdAt: latestRun.createdAt,
+      },
+    ]);
+    vi.mocked(api.listAnalysisRunAnnotations).mockResolvedValue([]);
+    vi.mocked(api.createAnalysisRunAnnotation).mockResolvedValue({
+      id: "annotation-1",
+      analysisRunId: latestRun.id,
+      annotationType: "correction",
+      target: { type: "run" },
+      body: "참여자 화자를 다시 확인해야 합니다.",
+      createdAt: latestRun.createdAt,
+    });
+
+    render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
+    await screen.findByRole("heading", { name: project.title });
+    await user.click(screen.getByRole("tab", { name: "분석 이력" }));
+
+    expect(await screen.findByRole("heading", { name: "에이전트가 확인한 단계" })).toBeInTheDocument();
+    expect(await screen.findByText("7개", { selector: ".agent-execution-metrics dd" })).toBeInTheDocument();
+    await user.type(screen.getByLabelText("메모"), "참여자 화자를 다시 확인해야 합니다.");
+    await user.click(screen.getByRole("button", { name: "검토 이력 저장" }));
+
+    expect(api.createAnalysisRunAnnotation).toHaveBeenCalledWith(
+      "access",
+      latestRun.id,
+      expect.objectContaining({
+        annotationType: "correction",
+        targetType: "run",
+      }),
+      "55555555-5555-4555-8555-555555555555",
+    );
+    expect(await screen.findByText("참여자 화자를 다시 확인해야 합니다.")).toBeInTheDocument();
+  });
+
   it("imports account-free external context and exposes its provenance", async () => {
     const user = userEvent.setup();
     const api = apiMock();
@@ -356,6 +427,7 @@ function apiMock(): PlatformApi {
     listProjects: vi.fn(), createProject: vi.fn(), getProject: vi.fn(), updateProject: vi.fn(), deleteProject: vi.fn(),
     listSources: vi.fn(), createSource: vi.fn(), importContext: vi.fn(), updateSource: vi.fn(), deleteSource: vi.fn(), listSourceSegments: vi.fn().mockResolvedValue([]),
     listAnalysisRuns: vi.fn(), createAnalysisRun: vi.fn(), getAnalysisRun: vi.fn(), deleteAnalysisRun: vi.fn(),
+    listAnalysisRunStepEvents: vi.fn().mockResolvedValue([]), listAnalysisRunAnnotations: vi.fn().mockResolvedValue([]), createAnalysisRunAnnotation: vi.fn(),
     listShareLinks: vi.fn(), createShareLink: vi.fn(), revokeShareLink: vi.fn(), resolveSharedAnalysis: vi.fn(),
   };
 }

@@ -30,6 +30,14 @@ function SiteHeader({ session, pathname, navigate, signingOut, onSignOut }: Site
         >
           소개
         </a>
+        <a
+          aria-current={pathname === "/demo" ? "page" : undefined}
+          className={pathname === "/demo" ? "active" : ""}
+          href="/demo"
+          onClick={go("/demo")}
+        >
+          공개 데모
+        </a>
         {session ? (
           <>
             <a

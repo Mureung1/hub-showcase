@@ -16,9 +16,14 @@ describe("Modu Brain PostgREST repository", () => {
     const run = { id: ID, project_id: ID, analysis_run_sources: [{ source_record_id: ID }] };
     const snapshot = { source_record_id: ID, content_snapshot: "text" };
     const segment = { id: ID, source_record_id: ID, ordinal: 0, text: "text" };
+    const stepEvent = { id: ID, analysis_run_id: ID, event_key: "source_snapshot:succeeded" };
+    const annotation = { id: ID, analysis_run_id: ID, annotation_type: "note" };
     const share = { id: ID, analysis_run_id: ID };
     const request = vi.fn(async (path) => {
       if (path === "rpc/start_analysis_run") return [{ outcome: "created", run: { id: ID } }];
+      if (path === "rpc/create_analysis_run_annotation") {
+        return [{ outcome: "created", annotation }];
+      }
       if (path === "rpc/import_source_context") {
         return { source, import_id: ID, provider: "paste", segment_count: 1 };
       }
@@ -28,6 +33,8 @@ describe("Modu Brain PostgREST repository", () => {
       if (path.startsWith("source_segments")) return [segment];
       if (path.startsWith("analysis_runs")) return [run];
       if (path.startsWith("analysis_run_sources")) return [snapshot];
+      if (path.startsWith("analysis_run_step_events")) return [stepEvent];
+      if (path.startsWith("analysis_run_annotations")) return [annotation];
       if (path.startsWith("share_links")) return [share];
       return [];
     });
@@ -77,6 +84,17 @@ describe("Modu Brain PostgREST repository", () => {
     ).resolves.toEqual({ reused: false, run });
     await expect(repository.deleteRun(ID)).resolves.toBeUndefined();
     await expect(repository.getRunSnapshots(ID)).resolves.toEqual([snapshot]);
+    await expect(repository.listRunStepEvents(ID)).resolves.toEqual([stepEvent]);
+    await expect(repository.listRunAnnotations(ID)).resolves.toEqual([annotation]);
+    await expect(
+      repository.createRunAnnotation(ID, {
+        idempotencyKey: "annotation-key",
+        annotationType: "note",
+        targetType: "run",
+        targetId: null,
+        body: "feedback",
+      }),
+    ).resolves.toEqual({ reused: false, annotation });
 
     await expect(repository.listShareLinks(ID)).resolves.toEqual([share]);
     await expect(repository.consumeRateLimit("analysis:hour", "user", 10, 3600)).resolves.toBe(true);
@@ -92,19 +110,41 @@ describe("Modu Brain PostgREST repository", () => {
         body: expect.objectContaining({ p_project_id: ID, p_provider: "paste" }),
       }),
     );
+    expect(request).toHaveBeenCalledWith(
+      "rpc/create_analysis_run_annotation",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.objectContaining({ p_analysis_run_id: ID, p_target_type: "run" }),
+      }),
+    );
   });
 
   it("uses narrowly filtered service-role writes for completion and share mutations", async () => {
     const run = { id: ID, status: "succeeded" };
+    const stepEvent = { id: ID, analysis_run_id: ID, event_key: "source_snapshot:succeeded" };
     const share = { id: ID, analysis_run_id: ID };
     const request = vi.fn(async (path) => {
       if (path === "rpc/consume_openai_rate_limit") return true;
+      if (path.startsWith("analysis_run_step_events")) return [stepEvent];
       if (path.startsWith("analysis_runs")) return [run];
       if (path.startsWith("share_links")) return [share];
       return [];
     });
     const repository = createModuBrainServiceRepository({ request });
     const completedAt = new Date().toISOString();
+
+    await expect(
+      repository.appendRunStepEvent(ID, "user-id", {
+        sequence: 1,
+        eventKey: "source_snapshot:succeeded",
+        step: "source_snapshot",
+        status: "succeeded",
+        code: "SNAPSHOT_READY",
+        durationMs: 3,
+        sourceCount: 1,
+        inputCharacters: 4,
+      }),
+    ).resolves.toBe(stepEvent);
 
     await expect(
       repository.completeRun(ID, "user-id", {
@@ -134,6 +174,14 @@ describe("Modu Brain PostgREST repository", () => {
     expect(request).toHaveBeenCalledWith(
       expect.stringContaining(`id=eq.${ID}&created_by=eq.user-id&status=eq.running`),
       expect.objectContaining({ method: "PATCH" }),
+    );
+    expect(request).toHaveBeenCalledWith(
+      expect.stringContaining("analysis_run_step_events?on_conflict=analysis_run_id,event_key"),
+      expect.objectContaining({
+        method: "POST",
+        prefer: "resolution=ignore-duplicates,return=representation",
+        body: expect.not.objectContaining({ rawText: expect.anything(), reasoning: expect.anything() }),
+      }),
     );
     expect(request).toHaveBeenCalledWith(
       expect.stringContaining(`id=eq.${ID}&created_by=eq.user-id&status=eq.succeeded`),
