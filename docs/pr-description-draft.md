@@ -141,7 +141,7 @@ npm run test:e2e
 - GitHub Actions의 lint/typecheck/coverage/build/audit/secret scan/public smoke·axe 접근성 검사
 - 내부 PR·브랜치에서 로컬 Supabase reset/pgTAP/authenticated E2E
 
-현재 로컬 검증은 Vitest 241개 통과, statements 84.19%, branches 77.00%, functions 88.25%, lines 87.39%, 공개 axe/반응형/skip-link 9개 통과, `npm audit` 취약점 0건입니다.
+현재 로컬 검증은 Vitest 242개 통과, statements 84.19%, branches 77.01%, functions 88.25%, lines 87.39%, 공개 axe/반응형/skip-link 9개 통과, `npm audit` 취약점 0건입니다.
 
 실제 OpenAI 유료 호출은 CI에서 수행하지 않습니다. 모델 출력 품질·비용·preview 권한은 별도 승인된 데모 계정에서 검증해야 합니다.
 

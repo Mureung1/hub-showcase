@@ -53,6 +53,22 @@ describe("external context import normalization", () => {
     expect(result.content).toBe("JSON으로 전달된 메모");
   });
 
+  it("omits empty optional segment fields before database validation", () => {
+    const result = normalizeContextImport({
+      provider: "paste",
+      text: "선택한 회의 맥락을 직접 붙여넣습니다.",
+    });
+
+    expect(result.segments).toHaveLength(1);
+    expect(result.segments[0]).toMatchObject({
+      externalId: expect.stringMatching(/^paste:segment:[a-f0-9]{24}$/),
+      text: "선택한 회의 맥락을 직접 붙여넣습니다.",
+    });
+    expect(result.segments[0]).not.toHaveProperty("speaker");
+    expect(result.segments[0]).not.toHaveProperty("occurredAt");
+    expect(result.segments[0]).not.toHaveProperty("sourceUrl");
+  });
+
   it("rejects unsupported, ambiguous, empty, and malformed imports with ApiError", () => {
     const cases = [
       [{ provider: "slack", text: "hello" }, "UNSUPPORTED_IMPORT_PROVIDER"],

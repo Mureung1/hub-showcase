@@ -863,7 +863,9 @@ function validateOptionalStringField(input, field) {
 }
 
 function compactRecord(value) {
-  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined && item !== null));
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined && item !== null && item !== ""),
+  );
 }
 
 function optionalString(value) {
