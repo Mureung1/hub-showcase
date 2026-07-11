@@ -3,10 +3,16 @@ import {
   isTerminalRuntimeRunStatus,
   parseRuntimeRunLog,
 } from './runtime-run-log.js'
+import {
+  isRuntimeRunId,
+  parseRuntimeRunId,
+} from './runtime-run-id.js'
 
 export {
   compareRuntimeRunLogs,
+  isRuntimeRunId,
   isTerminalRuntimeRunStatus,
+  parseRuntimeRunId,
   parseRuntimeRunLog,
 }
 
@@ -166,19 +172,57 @@ export type StartRuntimeRunInput = {
   prompt: string
 }
 
-export type RuntimeRunLogPersistenceSaveResult = {
+export type RuntimeRunLogPersistenceMutationResult = {
   removedRunIds: string[]
 }
 
 export type RuntimeRunLogPersistence = {
   load(): Promise<RuntimeRunLog[]>
-  save(log: RuntimeRunLog): Promise<RuntimeRunLogPersistenceSaveResult>
+  applyRetention(): Promise<RuntimeRunLogPersistenceMutationResult>
+  save(log: RuntimeRunLog): Promise<RuntimeRunLogPersistenceMutationResult>
   remove(runId: string): Promise<void>
+}
+
+export type RuntimePersistenceOperation =
+  | 'initial_save'
+  | 'checkpoint_save'
+  | 'cancelling_save'
+  | 'terminal_save'
+  | 'clear_remove'
+
+export type RuntimePersistenceState =
+  | { status: 'ready' }
+  | { status: 'degraded'; error: string }
+
+export class RuntimePersistenceUnavailableError extends Error {
+  readonly code = 'runtime_persistence_unavailable'
+  readonly causeMessage: string
+  readonly operation: RuntimePersistenceOperation
+
+  constructor(
+    operation: RuntimePersistenceOperation,
+    cause: unknown,
+  ) {
+    const causeMessage = toPersistenceCauseMessage(cause)
+
+    super(
+      `Runtime persistence unavailable during ${operation}: ${causeMessage}`,
+      { cause },
+    )
+    this.name = 'RuntimePersistenceUnavailableError'
+    this.operation = operation
+    this.causeMessage = causeMessage
+  }
+}
+
+export type RuntimeCheckpointScheduler = {
+  schedule(delayMs: number, task: () => void): () => void
 }
 
 export type AgentRuntimeKernelOptions = {
   adapters: AgentRuntimeAdapter[]
   persistence: RuntimeRunLogPersistence
+  checkpointScheduler?: RuntimeCheckpointScheduler
   generateRunId?: () => string
   now?: () => Date
 }
@@ -203,6 +247,20 @@ type TerminalResolver = {
   resolve: (log: RuntimeRunLog) => void
 }
 
+type RunCheckpointState = {
+  dirtyRevision: number
+  durableRevision: number
+  requested: boolean
+  paused: boolean
+  timerGeneration: number
+  cancelTimer?: () => void
+  worker?: Promise<void>
+  error?: unknown
+}
+
+const runtimeCheckpointIntervalMs = 100
+const runtimeRestartRecoveryError = 'Runtime interrupted by server restart'
+
 export class AgentRuntimeKernel {
   private readonly adapters = new Map<string, AgentRuntimeAdapter>()
   private readonly logs = new Map<string, RuntimeRunLog>()
@@ -210,13 +268,19 @@ export class AgentRuntimeKernel {
   private readonly terminalResolvers = new Map<string, TerminalResolver>()
   private readonly abortControllers = new Map<string, AbortController>()
   private readonly reservedRunIds = new Set<string>()
+  private readonly emergencyRunIds = new Set<string>()
   private readonly runMutationLocks = new Map<string, Promise<void>>()
+  private readonly runCheckpoints = new Map<string, RunCheckpointState>()
   private readonly persistence: RuntimeRunLogPersistence
+  private readonly checkpointScheduler: RuntimeCheckpointScheduler
   private readonly generateRunId: () => string
   private readonly now: () => Date
+  private persistenceError: RuntimePersistenceUnavailableError | undefined
 
   private constructor(options: AgentRuntimeKernelOptions) {
     this.persistence = options.persistence
+    this.checkpointScheduler =
+      options.checkpointScheduler ?? createDefaultCheckpointScheduler()
     this.generateRunId =
       options.generateRunId ?? (() => globalThis.crypto.randomUUID())
     this.now = options.now ?? (() => new Date())
@@ -231,10 +295,30 @@ export class AgentRuntimeKernel {
   ): Promise<AgentRuntimeKernel> {
     const kernel = new AgentRuntimeKernel(options)
     const persistedLogs = await options.persistence.load()
+    const sortedLogs = [...persistedLogs].sort(compareRuntimeRunLogs)
 
-    for (const log of [...persistedLogs].sort(compareRuntimeRunLogs)) {
+    for (const log of sortedLogs) {
       kernel.logs.set(log.runId, cloneLog(log))
     }
+
+    for (const persistedLog of sortedLogs) {
+      const log = kernel.logs.get(persistedLog.runId)
+
+      if (!log || isTerminalRuntimeRunStatus(log.status)) {
+        continue
+      }
+
+      const recoveredLog = kernel.recoverInterruptedRun(log)
+      kernel.logs.set(recoveredLog.runId, recoveredLog)
+
+      const saveResult = await options.persistence.save(cloneLog(recoveredLog))
+
+      kernel.removePersistedRunIds(saveResult.removedRunIds)
+    }
+
+    const retentionResult = await options.persistence.applyRetention()
+
+    kernel.removePersistedRunIds(retentionResult.removedRunIds)
 
     return kernel
   }
@@ -247,12 +331,25 @@ export class AgentRuntimeKernel {
     }))
   }
 
+  getPersistenceState(): RuntimePersistenceState {
+    if (!this.persistenceError) {
+      return { status: 'ready' }
+    }
+
+    return {
+      status: 'degraded',
+      error: this.persistenceError.message,
+    }
+  }
+
   async startRun(input: StartRuntimeRunInput): Promise<RuntimeRunLog> {
     const adapter = this.adapters.get(input.adapter)
 
     if (!adapter) {
       throw new Error(`Unknown runtime adapter: ${input.adapter}`)
     }
+
+    this.assertPersistenceReady()
 
     const runId = this.createRunId()
     const startedAt = this.timestamp()
@@ -275,10 +372,17 @@ export class AgentRuntimeKernel {
     )
 
     try {
-      const saveResult = await this.persistence.save(cloneLog(log))
+      let saveResult: RuntimeRunLogPersistenceMutationResult
+
+      try {
+        saveResult = await this.persistence.save(cloneLog(log))
+      } catch (cause) {
+        throw this.markPersistenceUnavailable('initial_save', cause)
+      }
 
       this.removePersistedRunIds(saveResult.removedRunIds)
       this.logs.set(runId, log)
+      this.runCheckpoints.set(runId, this.createRunCheckpointState())
       this.terminalResolvers.set(runId, this.createTerminalResolver())
       this.abortControllers.set(runId, new AbortController())
       this.publishEvent(log.runId, startedEvent)
@@ -370,6 +474,8 @@ export class AgentRuntimeKernel {
         return undefined
       }
 
+      this.assertPersistenceReady()
+
       if (isTerminalRuntimeRunStatus(log.status)) {
         return cloneLog(log)
       }
@@ -397,6 +503,41 @@ export class AgentRuntimeKernel {
 
       return cloneLog(log)
     })
+  }
+
+  async clearTerminalHistory(): Promise<string[]> {
+    this.assertPersistenceReady()
+
+    const targetRunIds = [...this.logs.values()]
+      .filter((log) => isTerminalRuntimeRunStatus(log.status))
+      .map((log) => log.runId)
+    const clearedRunIds: string[] = []
+
+    for (const runId of targetRunIds) {
+      const cleared = await this.withRunMutation(runId, async () => {
+        const log = this.logs.get(runId)
+
+        if (!log || !isTerminalRuntimeRunStatus(log.status)) {
+          return false
+        }
+
+        await this.finishRunCheckpointing(log)
+        try {
+          await this.persistence.remove(runId)
+        } catch (cause) {
+          throw this.markPersistenceUnavailable('clear_remove', cause)
+        }
+        this.removePersistedRunIds([runId])
+
+        return true
+      })
+
+      if (cleared) {
+        clearedRunIds.push(runId)
+      }
+    }
+
+    return clearedRunIds
   }
 
   private async runAdapter(
@@ -436,11 +577,29 @@ export class AgentRuntimeKernel {
         await this.completeRun(log)
       })
     } catch (error) {
-      await this.withRunMutation(log.runId, async () => {
-        if (!isTerminalRuntimeRunStatus(log.status)) {
-          await this.failRun(log, toErrorMessage(error))
+      if (error instanceof RuntimePersistenceUnavailableError) {
+        return
+      }
+
+      try {
+        await this.withRunMutation(log.runId, async () => {
+          if (!isTerminalRuntimeRunStatus(log.status)) {
+            await this.failRun(log, toErrorMessage(error))
+          }
+        })
+      } catch (failureError) {
+        if (!(failureError instanceof RuntimePersistenceUnavailableError)) {
+          throw failureError
         }
-      })
+      }
+    } finally {
+      try {
+        await this.finishRunCheckpointing(log)
+      } catch (error) {
+        if (!(error instanceof RuntimePersistenceUnavailableError)) {
+          throw error
+        }
+      }
     }
   }
 
@@ -449,7 +608,10 @@ export class AgentRuntimeKernel {
     adapterEvent: RuntimeAdapterEvent,
   ): Promise<boolean> {
     if (adapterEvent.type === 'debug_log') {
-      this.appendDebugLog(log, adapterEvent.entries)
+      if (this.appendDebugLog(log, adapterEvent.entries)) {
+        this.markCheckpointDirty(log)
+      }
+
       return false
     }
 
@@ -463,6 +625,7 @@ export class AgentRuntimeKernel {
         type: 'output_delta',
         delta: adapterEvent.delta,
       })
+      this.markCheckpointDirty(log)
       return false
     }
 
@@ -487,12 +650,144 @@ export class AgentRuntimeKernel {
   private appendDebugLog(
     log: RuntimeRunLog,
     entries: RuntimeRunDebugLogEntry[],
-  ): void {
+  ): boolean {
     if (entries.length < 1) {
-      return
+      return false
     }
 
     log.debugLog = [...(log.debugLog ?? []), ...entries.map(cloneDebugLogEntry)]
+
+    return true
+  }
+
+  private markCheckpointDirty(log: RuntimeRunLog): void {
+    const state = this.runCheckpoints.get(log.runId)
+
+    if (!state) {
+      return
+    }
+
+    state.dirtyRevision += 1
+
+    if (state.paused || state.cancelTimer || state.error) {
+      return
+    }
+
+    const timerGeneration = state.timerGeneration + 1
+    state.timerGeneration = timerGeneration
+    state.cancelTimer = this.checkpointScheduler.schedule(
+      runtimeCheckpointIntervalMs,
+      () => {
+        if (state.timerGeneration !== timerGeneration) {
+          return
+        }
+
+        delete state.cancelTimer
+        this.requestCheckpoint(log, state)
+      },
+    )
+  }
+
+  private requestCheckpoint(
+    log: RuntimeRunLog,
+    state: RunCheckpointState,
+  ): void {
+    if (state.error || state.dirtyRevision <= state.durableRevision) {
+      return
+    }
+
+    state.requested = true
+
+    if (state.worker) {
+      return
+    }
+
+    const worker = this.runCheckpointWorker(log, state).catch((cause) => {
+      const persistenceError = this.markPersistenceUnavailable(
+        'checkpoint_save',
+        cause,
+      )
+
+      state.error = persistenceError
+      this.queueEmergencyRunFailure(log, persistenceError)
+    })
+    state.worker = worker
+
+    void worker.finally(() => {
+      if (state.worker === worker) {
+        delete state.worker
+      }
+    })
+  }
+
+  private async runCheckpointWorker(
+    log: RuntimeRunLog,
+    state: RunCheckpointState,
+  ): Promise<void> {
+    while (state.requested && !state.error) {
+      state.requested = false
+
+      if (state.dirtyRevision <= state.durableRevision) {
+        continue
+      }
+
+      const checkpointRevision = state.dirtyRevision
+      const saveResult = await this.persistence.save(cloneLog(log))
+
+      state.durableRevision = checkpointRevision
+      this.removePersistedRunIds(saveResult.removedRunIds)
+    }
+  }
+
+  private pauseCheckpointing(state: RunCheckpointState): void {
+    state.paused = true
+    state.timerGeneration += 1
+    state.cancelTimer?.()
+    delete state.cancelTimer
+  }
+
+  private async flushRunCheckpoint(
+    log: RuntimeRunLog,
+    state: RunCheckpointState,
+  ): Promise<void> {
+    this.pauseCheckpointing(state)
+
+    while (state.dirtyRevision > state.durableRevision || state.worker) {
+      if (state.error) {
+        throw state.error
+      }
+
+      if (state.dirtyRevision > state.durableRevision) {
+        this.requestCheckpoint(log, state)
+      }
+
+      const worker = state.worker
+
+      if (!worker) {
+        continue
+      }
+
+      await worker
+    }
+
+    if (state.error) {
+      throw state.error
+    }
+  }
+
+  private async finishRunCheckpointing(log: RuntimeRunLog): Promise<void> {
+    const state = this.runCheckpoints.get(log.runId)
+
+    if (!state) {
+      return
+    }
+
+    try {
+      await this.flushRunCheckpoint(log, state)
+    } finally {
+      this.pauseCheckpointing(state)
+      this.runCheckpoints.delete(log.runId)
+    }
   }
 
   private async completeRun(log: RuntimeRunLog): Promise<void> {
@@ -524,12 +819,14 @@ export class AgentRuntimeKernel {
     log: RuntimeRunLog,
     transition: PersistedRuntimeRunTransition,
   ): Promise<void> {
+    const checkpointState = this.runCheckpoints.get(log.runId)
+
+    if (checkpointState) {
+      await this.flushRunCheckpoint(log, checkpointState)
+    }
+
     const transitionedLog = cloneLog(log)
     transitionedLog.status = transition.type
-
-    if (transition.type === 'completed') {
-      transitionedLog.completedAt = this.timestamp()
-    }
 
     if (transition.type === 'failed') {
       transitionedLog.error = transition.error
@@ -540,11 +837,40 @@ export class AgentRuntimeKernel {
       transition,
       false,
     )
-    const saveResult = await this.persistence.save(cloneLog(transitionedLog))
+
+    if (isTerminalRuntimeRunStatus(transition.type)) {
+      transitionedLog.completedAt = transitionEvent.timestamp
+    }
+
+    let saveResult: RuntimeRunLogPersistenceMutationResult
+
+    try {
+      saveResult = await this.persistence.save(cloneLog(transitionedLog))
+    } catch (cause) {
+      const operation: RuntimePersistenceOperation =
+        transition.type === 'cancelling'
+          ? 'cancelling_save'
+          : 'terminal_save'
+      const persistenceError = this.markPersistenceUnavailable(
+        operation,
+        cause,
+      )
+
+      this.queueEmergencyRunFailure(log, persistenceError)
+      throw persistenceError
+    }
+
+    if (checkpointState) {
+      checkpointState.durableRevision = checkpointState.dirtyRevision
+    }
 
     replaceLog(log, transitionedLog)
     this.removePersistedRunIds(saveResult.removedRunIds)
     this.publishEvent(log.runId, transitionEvent)
+
+    if (checkpointState) {
+      checkpointState.paused = false
+    }
 
     if (isTerminalRuntimeRunStatus(log.status)) {
       this.resolveTerminal(log)
@@ -619,7 +945,10 @@ export class AgentRuntimeKernel {
 
   private createRunId(): string {
     for (let attempt = 0; attempt < 1000; attempt += 1) {
-      const runId = this.generateRunId()
+      const runId = parseRuntimeRunId(
+        this.generateRunId(),
+        'generated runtime run ID',
+      )
 
       if (!this.logs.has(runId) && !this.reservedRunIds.has(runId)) {
         this.reservedRunIds.add(runId)
@@ -630,9 +959,50 @@ export class AgentRuntimeKernel {
     throw new Error('Unable to create a unique runtime run ID')
   }
 
+  private recoverInterruptedRun(log: RuntimeRunLog): RuntimeRunLog {
+    const previousStatus = log.status
+    const recoveredAt = this.timestamp()
+    const recoveredLog = cloneLog(log)
+
+    recoveredLog.status = 'failed'
+    recoveredLog.error = runtimeRestartRecoveryError
+    recoveredLog.completedAt = recoveredAt
+    recoveredLog.events.push({
+      type: 'failed',
+      sequence: recoveredLog.events.length + 1,
+      runId: recoveredLog.runId,
+      adapter: recoveredLog.adapter,
+      timestamp: recoveredAt,
+      error: runtimeRestartRecoveryError,
+    })
+    recoveredLog.debugLog = [
+      ...(recoveredLog.debugLog ?? []),
+      {
+        timestamp: recoveredAt,
+        source: 'kernel',
+        kind: 'restart_recovery',
+        message: runtimeRestartRecoveryError,
+        data: {
+          previousStatus,
+          recoveryReason: runtimeRestartRecoveryError,
+        },
+      },
+    ]
+
+    return recoveredLog
+  }
+
   private removePersistedRunIds(runIds: string[]): void {
     for (const runId of runIds) {
+      const checkpointState = this.runCheckpoints.get(runId)
+
+      if (checkpointState) {
+        this.pauseCheckpointing(checkpointState)
+        checkpointState.requested = false
+      }
+
       this.logs.delete(runId)
+      this.runCheckpoints.delete(runId)
     }
   }
 
@@ -650,6 +1020,121 @@ export class AgentRuntimeKernel {
       promise,
       resolve: resolveTerminal,
     }
+  }
+
+  private createRunCheckpointState(): RunCheckpointState {
+    return {
+      dirtyRevision: 0,
+      durableRevision: 0,
+      requested: false,
+      paused: false,
+      timerGeneration: 0,
+    }
+  }
+
+  private assertPersistenceReady(): void {
+    if (this.persistenceError) {
+      throw this.persistenceError
+    }
+  }
+
+  private markPersistenceUnavailable(
+    operation: RuntimePersistenceOperation,
+    cause: unknown,
+  ): RuntimePersistenceUnavailableError {
+    const persistenceError = new RuntimePersistenceUnavailableError(
+      operation,
+      cause,
+    )
+
+    this.persistenceError = persistenceError
+
+    return persistenceError
+  }
+
+  private queueEmergencyRunFailure(
+    log: RuntimeRunLog,
+    persistenceError: RuntimePersistenceUnavailableError,
+  ): void {
+    if (
+      !isTerminalRuntimeRunStatus(log.status) &&
+      !this.emergencyRunIds.has(log.runId)
+    ) {
+      this.emergencyRunIds.add(log.runId)
+      const emergencyTransition = this.withRunMutation(log.runId, () => {
+        if (!isTerminalRuntimeRunStatus(log.status)) {
+          this.applyEmergencyRunFailure(log, persistenceError)
+        }
+      })
+
+      void emergencyTransition.then(
+        () => this.emergencyRunIds.delete(log.runId),
+        () => this.emergencyRunIds.delete(log.runId),
+      )
+    }
+
+    this.abortControllers.get(log.runId)?.abort()
+    this.stopRunCheckpointing(log.runId)
+  }
+
+  private stopRunCheckpointing(runId: string): void {
+    const state = this.runCheckpoints.get(runId)
+
+    if (!state) {
+      return
+    }
+
+    this.pauseCheckpointing(state)
+    state.requested = false
+    this.runCheckpoints.delete(runId)
+  }
+
+  private applyEmergencyRunFailure(
+    log: RuntimeRunLog,
+    persistenceError: RuntimePersistenceUnavailableError,
+  ): void {
+    log.status = 'failed'
+    log.error = persistenceError.message
+    const failedEvent = this.appendEvent(
+      log,
+      { type: 'failed', error: persistenceError.message },
+      false,
+    )
+    log.completedAt = failedEvent.timestamp
+    log.debugLog = [
+      ...(log.debugLog ?? []),
+      {
+        timestamp: failedEvent.timestamp,
+        source: 'kernel',
+        kind: 'persistence_error',
+        message: persistenceError.message,
+        data: {
+          code: persistenceError.code,
+          operation: persistenceError.operation,
+          cause: persistenceError.causeMessage,
+          durable: false,
+        },
+      },
+    ]
+
+    try {
+      this.publishEvent(log.runId, failedEvent)
+    } finally {
+      this.resolveTerminal(log)
+      this.abortControllers.delete(log.runId)
+    }
+  }
+}
+
+function createDefaultCheckpointScheduler(): RuntimeCheckpointScheduler {
+  return {
+    schedule(delayMs, task) {
+      const timeout = setTimeout(task, delayMs)
+
+      return () => {
+        clearTimeout(timeout)
+      }
+    },
   }
 }
 
@@ -734,4 +1219,12 @@ function toErrorMessage(error: unknown): string {
   }
 
   return 'Runtime run failed'
+}
+
+function toPersistenceCauseMessage(cause: unknown): string {
+  if (cause instanceof Error) {
+    return cause.message
+  }
+
+  return String(cause)
 }

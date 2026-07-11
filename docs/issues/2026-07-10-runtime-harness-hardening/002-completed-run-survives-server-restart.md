@@ -1,8 +1,8 @@
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-issue
-- Next actor: agent
+- Next actor: none
 
 ## Parent
 
@@ -16,19 +16,29 @@ Completed Fake run 하나가 AgentRuntimeKernel에서 server-owned per-run JSON 
 
 ## Acceptance criteria
 
-- [ ] Runtime-core가 full RuntimeRunLog load, single-record save와 지정 run ID remove를 표현하는 persistence seam을 제공하고, deterministic in-memory implementation으로 kernel behavior를 테스트할 수 있다.
-- [ ] AgentRuntimeKernel의 production construction은 async hydration을 완료한 뒤 ready instance를 반환하고, durability mutation은 async contract를 사용한다.
-- [ ] 신규 run ID는 UUID이며 hydrate된 record나 process restart와 충돌하지 않는다.
-- [ ] Started snapshot은 adapter 실행 전에 저장되고 completed snapshot은 terminal event 공개 및 waiter resolve 전에 저장된다.
-- [ ] Server store가 `.ay-ple/runtime-harness/runs/<uuid>.json`에 schema version 1, ISO saved time과 self-contained RuntimeRunLog envelope를 저장한다.
-- [ ] Snapshot은 same-directory temporary write, file flush와 rename을 통해 canonical record를 atomic하게 교체한다.
-- [ ] Loader가 canonical JSON envelope와 filename/run ID 일치를 구조적으로 검증하며 started time 순서로 history를 hydrate한다.
-- [ ] Server는 hydration이 성공하기 전에 listen하거나 ready response를 제공하지 않는다.
-- [ ] 기존 run start success는 HTTP `201`과 `{ runId }` shape를 유지하고 history/log read API는 hydrate된 completed run을 반환한다.
-- [ ] Runtime Inspector는 browser reload 뒤 server history를 다시 읽고 restart 전 completed run의 output, normalized events와 debug evidence를 표시한다.
-- [ ] Playwright가 Fake run 완료, server stop/start, browser reload와 restored history selection을 같은 temporary history directory로 검증한다.
-- [ ] FakeRuntimeAdapter와 CodexRuntimeAdapter는 persistence API에 의존하지 않으며 Codex-owned history나 SQLite를 읽지 않는다.
-- [ ] Issue 001의 browser lifecycle scenario와 기존 live Codex parity command가 계속 통과한다.
+- [x] Runtime-core가 full RuntimeRunLog load, single-record save와 지정 run ID remove를 표현하는 persistence seam을 제공하고, deterministic in-memory implementation으로 kernel behavior를 테스트할 수 있다.
+- [x] AgentRuntimeKernel의 production construction은 async hydration을 완료한 뒤 ready instance를 반환하고, durability mutation은 async contract를 사용한다.
+- [x] 신규 run ID는 UUID이며 hydrate된 record나 process restart와 충돌하지 않는다.
+- [x] Started snapshot은 adapter 실행 전에 저장되고 completed snapshot은 terminal event 공개 및 waiter resolve 전에 저장된다.
+- [x] Server store가 `.ay-ple/runtime-harness/runs/<uuid>.json`에 schema version 1, ISO saved time과 self-contained RuntimeRunLog envelope를 저장한다.
+- [x] Snapshot은 same-directory temporary write, file flush와 rename을 통해 canonical record를 atomic하게 교체한다.
+- [x] Loader가 canonical JSON envelope와 filename/run ID 일치를 구조적으로 검증하며 started time 순서로 history를 hydrate한다.
+- [x] Server는 hydration이 성공하기 전에 listen하거나 ready response를 제공하지 않는다.
+- [x] 기존 run start success는 HTTP `201`과 `{ runId }` shape를 유지하고 history/log read API는 hydrate된 completed run을 반환한다.
+- [x] Runtime Inspector는 browser reload 뒤 server history를 다시 읽고 restart 전 completed run의 output, normalized events와 debug evidence를 표시한다.
+- [x] Playwright가 Fake run 완료, server stop/start, browser reload와 restored history selection을 같은 temporary history directory로 검증한다.
+- [x] FakeRuntimeAdapter와 CodexRuntimeAdapter는 persistence API에 의존하지 않으며 Codex-owned history나 SQLite를 읽지 않는다.
+- [x] Issue 001의 browser lifecycle scenario와 기존 live Codex parity command가 계속 통과한다.
+
+## Implementation outcome
+
+| 항목 | 결과 |
+| --- | --- |
+| 완료일 | 2026-07-11 |
+| 구현 | Kernel persistence seam, async hydration, UUID invariant와 server-owned schema v1 JSON store를 연결하고 실제 server process restart 뒤 completed history를 복원한다. |
+| 커밋 | `d0bbf18`, `93357a0` |
+| 검증 | Runtime-core/server persistence test, same-directory process restart Playwright, 전체 test/typecheck/build와 live Codex parity 통과 |
+| 리뷰 | Standards 및 Spec actionable finding 0건 |
 
 ## Blocked by
 

@@ -306,17 +306,41 @@ button {
 }
 
 .health-dot {
+  flex: 0 0 9px;
   width: 9px;
   height: 9px;
   border-radius: 999px;
   background: #e0a72f;
 }
 
-.health-ok .health-dot {
+.health-copy {
+  display: grid;
+  gap: 2px;
+  max-width: 520px;
+}
+
+.health-error {
+  overflow-wrap: anywhere;
+  color: #9f3324;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.health-ready .health-dot {
   background: #3f7f68;
 }
 
-.health-error .health-dot {
+.health-degraded {
+  align-items: flex-start;
+}
+
+.health-degraded .health-dot {
+  margin-top: 4px;
+  background: #d95c42;
+}
+
+.health-unavailable .health-dot {
   background: #d95c42;
 }
 
@@ -422,6 +446,49 @@ pre {
   gap: 8px;
   height: 260px;
   overflow: auto;
+}
+
+.history-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.history-count {
+  min-width: 2ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-clear {
+  display: inline-flex;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d8d0c2;
+  padding: 0;
+  color: #53605a;
+  background: #fffdf8;
+}
+
+.history-clear:hover:not(:disabled) {
+  border-color: #d95c42;
+  color: #9f3324;
+}
+
+.history-clear:focus-visible {
+  outline: 2px solid #3f7f68;
+  outline-offset: 2px;
+}
+
+.history-clear:disabled {
+  cursor: not-allowed;
+  color: #a59b8d;
+  background: #ece5d9;
 }
 
 .history-item {

@@ -11,9 +11,14 @@ import type {
   RuntimeRunSummary,
 } from '@ay-ple/runtime-core'
 import type { CodexCapabilitySlot } from '@ay-ple/runtime-codex/capabilities'
+import { Trash2 } from 'lucide-react'
 import './App.css'
 
-type HealthState = 'checking' | 'ok' | 'error'
+type HealthState =
+  | { status: 'checking' }
+  | { status: 'ready' }
+  | { status: 'degraded'; error: string }
+  | { status: 'unavailable' }
 type InspectorRunStatus = RuntimeRunStatus | 'idle'
 type FakeScenario = 'normal' | 'failure'
 
@@ -41,7 +46,7 @@ type CodexRuntimeStatus = {
 }
 
 function App() {
-  const [health, setHealth] = useState<HealthState>('checking')
+  const [health, setHealth] = useState<HealthState>({ status: 'checking' })
   const [adapters, setAdapters] = useState<RuntimeAdapterDescriptor[]>([])
   const [capabilitySlots, setCapabilitySlots] = useState<CodexCapabilitySlot[]>(
     [],
@@ -57,6 +62,7 @@ function App() {
   const [history, setHistory] = useState<RuntimeRunSummary[]>([])
   const [runLog, setRunLog] = useState<RuntimeRunLog | null>(null)
   const [activeStatus, setActiveStatus] = useState<InspectorRunStatus>('idle')
+  const [isClearingHistory, setIsClearingHistory] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
   const terminalRunIdsRef = useRef(new Set<string>())
@@ -66,24 +72,11 @@ function App() {
   useEffect(() => {
     let active = true
 
-    fetch('/api/health')
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Health check failed: ${response.status}`)
-        }
-
-        return response.json() as Promise<{ ok: boolean }>
-      })
-      .then((data) => {
-        if (active) {
-          setHealth(data.ok ? 'ok' : 'error')
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setHealth('error')
-        }
-      })
+    fetchHealthState().then((nextHealth) => {
+      if (active) {
+        setHealth(nextHealth)
+      }
+    })
 
     return () => {
       active = false
@@ -100,17 +93,15 @@ function App() {
       fetchCodexStatus(),
     ])
       .then(([adapterList, runList, codexCapabilitySlots, status]) => {
-        if (!active) {
-          return
-        }
+        if (active) {
+          setAdapters(adapterList)
+          setHistory(runList)
+          setCapabilitySlots(codexCapabilitySlots)
+          setCodexStatus(status)
 
-        setAdapters(adapterList)
-        setHistory(runList)
-        setCapabilitySlots(codexCapabilitySlots)
-        setCodexStatus(status)
-
-        if (adapterList[0]) {
-          setSelectedAdapter(adapterList[0].name)
+          if (adapterList[0]) {
+            setSelectedAdapter(adapterList[0].name)
+          }
         }
       })
       .catch((fetchError: unknown) => {
@@ -125,12 +116,16 @@ function App() {
     }
   }, [])
 
+  async function refreshHealth() {
+    setHealth(await fetchHealthState())
+  }
+
   async function handleRunSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const requestPrompt = prompt
 
-    if (!requestPrompt.trim() || isActiveRun) {
+    if (!requestPrompt.trim() || isActiveRun || health.status !== 'ready') {
       return
     }
 
@@ -157,7 +152,7 @@ function App() {
       })
 
       if (!response.ok) {
-        throw new Error(`Run start failed: ${response.status}`)
+        throw await readMutationError(response, 'Run start')
       }
 
       const startedRun = (await response.json()) as { runId: string }
@@ -166,6 +161,7 @@ function App() {
     } catch (runError) {
       setActiveStatus('idle')
       setError(toErrorMessage(runError))
+      await refreshHealth()
     }
   }
 
@@ -205,7 +201,7 @@ function App() {
         }
 
         source.close()
-        void refreshRunState(runId)
+        void refreshTerminalState(runId, runtimeEvent.type === 'failed')
       }
     })
 
@@ -220,7 +216,7 @@ function App() {
   }
 
   async function handleCancelRun() {
-    if (!activeRunId || !isRunning) {
+    if (!activeRunId || !isRunning || health.status !== 'ready') {
       return
     }
 
@@ -233,7 +229,7 @@ function App() {
       })
 
       if (!response.ok) {
-        throw new Error(`Run cancel failed: ${response.status}`)
+        throw await readMutationError(response, 'Run cancel')
       }
 
       const data = (await response.json()) as { run: RuntimeRunLog }
@@ -254,6 +250,7 @@ function App() {
     } catch (cancelError) {
       terminalRunIdsRef.current.delete(runId)
       setError(toErrorMessage(cancelError))
+      await refreshHealth()
     }
   }
 
@@ -276,6 +273,17 @@ function App() {
     setActiveStatus(latestLog.status)
   }
 
+  async function refreshTerminalState(runId: string, refreshHealthState: boolean) {
+    try {
+      await Promise.all([
+        refreshRunState(runId),
+        refreshHealthState ? refreshHealth() : Promise.resolve(),
+      ])
+    } catch (refreshError) {
+      setError(toErrorMessage(refreshError))
+    }
+  }
+
   async function handleHistorySelect(runId: string) {
     try {
       const latestLog = await fetchRunLog(runId)
@@ -291,11 +299,67 @@ function App() {
     }
   }
 
+  async function handleClearTerminalHistory() {
+    if (
+      isClearingHistory ||
+      !hasTerminalHistory ||
+      health.status !== 'ready'
+    ) {
+      return
+    }
+
+    setIsClearingHistory(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/runtime/runs', {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw await readMutationError(response, 'History clear')
+      }
+
+      const data = (await response.json()) as { clearedRunIds: string[] }
+      const latestHistory = await fetchHistory()
+
+      setHistory(latestHistory)
+
+      for (const runId of data.clearedRunIds) {
+        terminalRunIdsRef.current.delete(runId)
+      }
+
+      if (activeRunId && data.clearedRunIds.includes(activeRunId)) {
+        setActiveRunId(null)
+        setActivePrompt('')
+        setOutput('')
+        setEvents([])
+        setRunLog(null)
+        setActiveStatus('idle')
+      }
+    } catch (clearError) {
+      setError(toErrorMessage(clearError))
+      await refreshHealth()
+    } finally {
+      setIsClearingHistory(false)
+    }
+  }
+
   const activeAdapter = adapters.find((adapter) => adapter.name === selectedAdapter)
   const isFakeAdapter = selectedAdapter === 'fake'
   const isFakeFailureScenario = isFakeAdapter && fakeScenario === 'failure'
-  const canStartRun = !isActiveRun && prompt.trim().length > 0
+  const canMutateRuntime = health.status === 'ready'
+  const canStartRun =
+    canMutateRuntime && !isActiveRun && prompt.trim().length > 0
+  const hasTerminalHistory = history.some((run) =>
+    isTerminalRuntimeRunStatus(run.status),
+  )
   const terminalMessage = getTerminalMessage(activeStatus, events, runLog)
+  const transcriptOutput = formatTranscriptOutput(
+    output,
+    terminalMessage,
+    activeStatus,
+  )
   const visibleLog =
     runLog ??
     (activeRunId
@@ -316,12 +380,22 @@ function App() {
           <p className="eyebrow">Runtime Harness</p>
           <h1>Runtime Inspector</h1>
         </div>
-        <div className={`health health-${health}`}>
+        <div
+          aria-live="polite"
+          className={`health health-${health.status}`}
+          role="status"
+        >
           <span className="health-dot" aria-hidden="true" />
-          <span>
-            {health === 'checking' && 'Checking API'}
-            {health === 'ok' && 'API connected'}
-            {health === 'error' && 'API unavailable'}
+          <span className="health-copy">
+            <span>
+              {health.status === 'checking' && 'Checking API'}
+              {health.status === 'ready' && 'API connected'}
+              {health.status === 'degraded' && 'Persistence degraded'}
+              {health.status === 'unavailable' && 'API unavailable'}
+            </span>
+            {health.status === 'degraded' && (
+              <span className="health-error">{health.error}</span>
+            )}
           </span>
         </div>
       </header>
@@ -451,7 +525,11 @@ function App() {
               <button type="submit" disabled={!canStartRun}>
                 Start Run
               </button>
-              <button type="button" disabled={!isRunning} onClick={handleCancelRun}>
+              <button
+                type="button"
+                disabled={!isRunning || !canMutateRuntime}
+                onClick={handleCancelRun}
+              >
                 Cancel
               </button>
             </div>
@@ -475,7 +553,7 @@ function App() {
                 </article>
                 <article className="message runtime-message">
                   <p className="message-label">Output</p>
-                  <pre>{output || terminalMessage}</pre>
+                  <pre>{transcriptOutput}</pre>
                 </article>
               </>
             ) : (
@@ -516,9 +594,26 @@ function App() {
         </section>
 
         <section className="history-panel" aria-labelledby="history-title">
-          <div className="panel-header">
+          <div className="panel-header history-header">
             <h2 id="history-title">History</h2>
-            <span>{history.length}</span>
+            <div className="history-header-actions">
+              <span className="history-count">{history.length}</span>
+              <button
+                aria-busy={isClearingHistory}
+                aria-label="Clear terminal history"
+                className="history-clear"
+                disabled={
+                  !hasTerminalHistory ||
+                  isClearingHistory ||
+                  !canMutateRuntime
+                }
+                title="Clear terminal history"
+                type="button"
+                onClick={() => void handleClearTerminalHistory()}
+              >
+                <Trash2 aria-hidden="true" size={16} />
+              </button>
+            </div>
           </div>
 
           <div className="history-list">
@@ -589,6 +684,58 @@ function App() {
       </div>
     </main>
   )
+}
+
+async function fetchHealthState(): Promise<HealthState> {
+  try {
+    const response = await fetch('/api/health')
+    const payload = (await response.json()) as unknown
+
+    if (!isRecord(payload) || !isRecord(payload.persistence)) {
+      return { status: 'unavailable' }
+    }
+
+    if (
+      response.status === 200 &&
+      payload.ok === true &&
+      payload.persistence.status === 'ready'
+    ) {
+      return { status: 'ready' }
+    }
+
+    if (
+      response.status === 503 &&
+      payload.ok === false &&
+      payload.persistence.status === 'degraded' &&
+      typeof payload.persistence.error === 'string'
+    ) {
+      return {
+        status: 'degraded',
+        error: payload.persistence.error,
+      }
+    }
+
+    return { status: 'unavailable' }
+  } catch {
+    return { status: 'unavailable' }
+  }
+}
+
+async function readMutationError(
+  response: Response,
+  operation: string,
+): Promise<Error> {
+  try {
+    const payload = (await response.json()) as unknown
+
+    if (isRecord(payload) && typeof payload.error === 'string') {
+      return new Error(payload.error)
+    }
+  } catch {
+    // Fall through to the status-based error when the response is not JSON.
+  }
+
+  return new Error(`${operation} failed: ${response.status}`)
 }
 
 async function fetchAdapters(): Promise<RuntimeAdapterDescriptor[]> {
@@ -764,6 +911,22 @@ function getTerminalMessage(
   return 'Waiting for output...'
 }
 
+function formatTranscriptOutput(
+  output: string,
+  terminalMessage: string,
+  status: InspectorRunStatus,
+): string {
+  if (!output) {
+    return terminalMessage
+  }
+
+  if (status === 'failed' || status === 'cancelled') {
+    return `${output.trimEnd()}\n\n${terminalMessage}`
+  }
+
+  return output
+}
+
 function findCancelledReason(events: RuntimeRunEvent[]): string {
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index]
@@ -794,6 +957,10 @@ function toErrorMessage(error: unknown): string {
   }
 
   return 'Unexpected runtime inspector error'
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
 
 function formatTime(timestamp: string): string {
