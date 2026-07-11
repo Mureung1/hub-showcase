@@ -10,7 +10,8 @@
     "test:e2e": "NODE_OPTIONS=--conditions=development playwright test --config playwright.config.ts",
     "typecheck": "tsc -b",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "serve:week1-demo": "vite ../.. --host 127.0.0.1 --port 4174 --strictPort --open /"
   },
   "dependencies": {
     "@ay-ple/runtime-codex": "0.0.0",

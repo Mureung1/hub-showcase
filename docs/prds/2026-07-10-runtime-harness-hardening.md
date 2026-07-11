@@ -1,6 +1,6 @@
 # Runtime Harness Hardening
 
-## Agent triage
+## 기존 에이전트 작업 분류 기록
 
 - State: completed
 - Surface: local-prd
