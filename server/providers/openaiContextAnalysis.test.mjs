@@ -16,6 +16,7 @@ const validAnalysis = {
       decision: "직접 입력 MVP를 먼저 검증한다.",
       reason: "자동 연동보다 핵심 가치 검증이 우선이기 때문이다.",
       status: "confirmed",
+      evidence: ["민지는 입력 흐름을 먼저 검증하자고 말했다."],
     },
   ],
   participants: [
@@ -25,6 +26,7 @@ const validAnalysis = {
       focus: "첫 입력 경험",
       concern: "초기 화면이 복잡해질 수 있다.",
       question: "어떤 예시가 입력을 가장 잘 설명하는가?",
+      evidence: ["민지는 입력 흐름을 먼저 검증하자고 말했다."],
     },
   ],
   questions: [
@@ -32,6 +34,7 @@ const validAnalysis = {
       question: "어떤 예시가 입력을 가장 잘 설명하는가?",
       reason: "첫 입력 경험의 검증 기준이 아직 정해지지 않았다.",
       ownerHint: "사용자 흐름 담당",
+      evidence: ["민지는 입력 흐름을 먼저 검증하자고 말했다."],
     },
   ],
   participantAgents: {
@@ -71,8 +74,28 @@ describe("OpenAI context analysis provider", () => {
       expect.objectContaining({
         model: "test-model",
         store: false,
+        reasoning: { effort: "low" },
         input: expect.stringContaining(input.rawText),
         text: { format: expect.any(Object) },
+      }),
+    );
+  });
+
+  it("uses the approved cost-balanced model and privacy-safe identifier by default", async () => {
+    const parse = vi.fn().mockResolvedValue({ output_parsed: validAnalysis });
+
+    await analyzeWithOpenAI(input, {
+      apiKey: "test-key",
+      client: { responses: { parse } },
+      safetyIdentifier: "stable-user-hash",
+    });
+
+    expect(parse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "gpt-5.6-terra",
+        store: false,
+        reasoning: { effort: "low" },
+        safety_identifier: "stable-user-hash",
       }),
     );
   });

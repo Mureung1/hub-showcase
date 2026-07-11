@@ -1,16 +1,18 @@
-import type { ContextAnalysisResult } from "../types/context";
+import type { ContextAnalysisResult, EvidenceRef } from "../types/context";
+import EvidenceButton from "./EvidenceButton";
 
 type DecisionListProps = {
   decisions: ContextAnalysisResult["decisions"];
+  onOpenEvidence?: (evidence: EvidenceRef[]) => void;
 };
 
 const statusLabel = {
   confirmed: "확정",
-  tentative: "논의중",
+  tentative: "논의 중",
   unclear: "불확실",
 } satisfies Record<ContextAnalysisResult["decisions"][number]["status"], string>;
 
-function DecisionList({ decisions }: DecisionListProps) {
+function DecisionList({ decisions, onOpenEvidence }: DecisionListProps) {
   return (
     <section className="result-panel" aria-labelledby="decision-title">
       <div className="panel-heading compact">
@@ -21,10 +23,11 @@ function DecisionList({ decisions }: DecisionListProps) {
       {decisions.length > 0 ? (
         <ul className="decision-list">
           {decisions.map((item) => (
-            <li key={item.decision}>
+            <li key={item.id ?? item.decision}>
               <div>
                 <strong>{item.decision}</strong>
                 <p>{item.reason}</p>
+                <EvidenceButton evidence={item.evidence} onOpen={onOpenEvidence} />
               </div>
               <span className={`status-badge ${item.status}`}>{statusLabel[item.status]}</span>
             </li>

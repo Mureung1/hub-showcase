@@ -1,10 +1,12 @@
-import type { QuestionItem } from "../types/context";
+import type { EvidenceRef, QuestionItem } from "../types/context";
+import EvidenceButton from "./EvidenceButton";
 
 type QuestionListProps = {
   questions: QuestionItem[];
+  onOpenEvidence?: (evidence: EvidenceRef[]) => void;
 };
 
-function QuestionList({ questions }: QuestionListProps) {
+function QuestionList({ questions, onOpenEvidence }: QuestionListProps) {
   return (
     <section className="result-panel" aria-labelledby="question-title">
       <div className="panel-heading compact">
@@ -15,15 +17,16 @@ function QuestionList({ questions }: QuestionListProps) {
       {questions.length > 0 ? (
         <ul className="question-list">
           {questions.map((question) => (
-            <li key={question.question}>
+            <li key={question.id ?? question.question}>
               <strong>{question.question}</strong>
               <span>{question.reason}</span>
               <small>{question.ownerHint}</small>
+              <EvidenceButton evidence={question.evidence} onOpen={onOpenEvidence} />
             </li>
           ))}
         </ul>
       ) : (
-        <p className="result-empty-state">입력 기록에서 명시적으로 확인된 미결 질문이 없습니다.</p>
+        <p className="result-empty-state">입력 기록에서 명시적으로 확인된 미해결 질문이 없습니다.</p>
       )}
     </section>
   );

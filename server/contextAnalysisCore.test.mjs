@@ -68,6 +68,16 @@ describe("validateContextAnalysisRequest", () => {
 });
 
 describe("analyzeProjectContext", () => {
+  it("uses Unicode code points for limits and reported source length", async () => {
+    const rawText = "😀".repeat(120);
+    const result = await analyzeProjectContext(
+      { projectTitle: "🧠".repeat(61), rawText },
+      { provider: "local-heuristic", maxRawTextLength: 120 },
+    );
+
+    expect(result.summary.sourceLength).toBe(120);
+  });
+
   it("uses the local provider and returns a connected, evidence-based result", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-11T00:00:00.000Z"));

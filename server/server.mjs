@@ -3,6 +3,7 @@ import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createApiV1Handler } from "./apiV1.mjs";
 import { handleContextAnalysisRequest } from "./contextAnalysisApi.mjs";
 
 const moduleUrl = new URL(import.meta.url);
@@ -23,8 +24,13 @@ const mimeTypes = {
 export function createModuBrainServer(options = {}) {
   const rootDir = options.rootDir || defaultRootDir;
   const distDir = options.distDir || join(rootDir, "dist");
+  const handleApiV1 = createApiV1Handler(options.apiV1Options);
 
   return createServer(async (req, res) => {
+    if (isSecureRequest(req)) {
+      res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    }
+
     let pathname;
 
     try {
@@ -36,11 +42,23 @@ export function createModuBrainServer(options = {}) {
 
     try {
       if (pathname === "/api/context-analysis") {
-        await handleContextAnalysisRequest(req, res, options.apiOptions);
+        await handleContextAnalysisRequest(req, res, {
+          ...(options.apiOptions || {}),
+          analysisOptions: {
+            ...(options.apiOptions?.analysisOptions || {}),
+            provider: "local-heuristic",
+          },
+        });
         return;
       }
 
-      await serveStatic(pathname, res, { distDir });
+      if (await handleApiV1(req, res, pathname)) return;
+
+      await serveStatic(pathname, res, {
+        distDir,
+        supabaseUrl:
+          options.supabaseUrl || process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+      });
     } catch {
       if (!res.headersSent) {
         writeText(res, 500, "서버에서 요청을 처리하지 못했습니다.");
@@ -101,7 +119,7 @@ export async function serveStatic(pathname, res, options = {}) {
 
   res.statusCode = 200;
   res.setHeader("Content-Type", mimeTypes[extname(filePath)] || "application/octet-stream");
-  setSecurityHeaders(res);
+  setSecurityHeaders(res, options);
   await pipeFile(filePath, res);
 }
 
@@ -134,15 +152,29 @@ function writeText(res, statusCode, message) {
   res.end(message);
 }
 
-function setSecurityHeaders(res) {
+function setSecurityHeaders(res, options = {}) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "no-referrer");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  let connectSource = "'self'";
+  try {
+    if (options.supabaseUrl) connectSource += ` ${new URL(options.supabaseUrl).origin}`;
+  } catch {
+    // Invalid optional configuration must not weaken the default same-origin CSP.
+  }
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+    `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ${connectSource}; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`,
   );
+}
+
+function isSecureRequest(req) {
+  const forwardedProtocol = String(req.headers["x-forwarded-proto"] || "")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  return Boolean(req.socket?.encrypted) || forwardedProtocol === "https";
 }
 
 if (modulePath && process.argv[1] && resolve(process.argv[1]) === modulePath) {

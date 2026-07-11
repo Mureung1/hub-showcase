@@ -1,10 +1,17 @@
 export type NodeType = "topic" | "person" | "role" | "decision" | "question";
 
+export type EvidenceRef = {
+  sourceRecordId: string;
+  sourceTitle: string;
+  quote: string;
+};
+
 export type KnowledgeNode = {
   id: string;
   label: string;
   type: NodeType;
   summary: string;
+  evidence?: EvidenceRef[];
 };
 
 export type KnowledgeLink = {
@@ -14,11 +21,13 @@ export type KnowledgeLink = {
 };
 
 export type PerspectiveItem = {
+  id?: string;
   actor: string;
   role: string;
   focus: string;
   concern: string;
   question: string;
+  evidence?: EvidenceRef[];
 };
 
 export type ParticipantAgentView = {
@@ -45,9 +54,11 @@ export type ContextSummary = {
 };
 
 export type QuestionItem = {
+  id?: string;
   question: string;
   reason: string;
   ownerHint: string;
+  evidence?: EvidenceRef[];
 };
 
 export type OnboardingSummary = {
@@ -67,13 +78,17 @@ export type ContextAnalysisResult = {
   projectTitle: string;
   summary: ContextSummary;
   keyTerms: {
+    id?: string;
     term: string;
     meaning: string;
+    evidence?: EvidenceRef[];
   }[];
   decisions: {
+    id?: string;
     decision: string;
     reason: string;
     status: "confirmed" | "tentative" | "unclear";
+    evidence?: EvidenceRef[];
   }[];
   participants: PerspectiveItem[];
   questions: QuestionItem[];
@@ -84,4 +99,8 @@ export type ContextAnalysisResult = {
   onboardingSummary: OnboardingSummary;
   participantAgents: ParticipantAgentSynthesis;
   provider: ProviderInfo;
+};
+
+export type ContextAnalysisResultV2 = ContextAnalysisResult & {
+  schemaVersion?: "2.0";
 };

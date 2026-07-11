@@ -34,7 +34,7 @@ const COMMON_NON_ACTORS = new Set([
 
 export { ContextAnalysisApiError } from "./contextAnalysisErrors.mjs";
 
-export function validateContextAnalysisRequest(payload) {
+export function validateContextAnalysisRequest(payload, options = {}) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new ContextAnalysisApiError(400, "INVALID_JSON", "요청 본문은 JSON 객체여야 합니다.");
   }
@@ -42,7 +42,8 @@ export function validateContextAnalysisRequest(payload) {
   const projectTitle = typeof payload.projectTitle === "string" ? payload.projectTitle.trim() : "";
   const rawText = typeof payload.rawText === "string" ? payload.rawText.trim() : "";
 
-  if (projectTitle.length < MIN_TITLE_LENGTH || projectTitle.length > MAX_TITLE_LENGTH) {
+  const projectTitleLength = unicodeLength(projectTitle);
+  if (projectTitleLength < MIN_TITLE_LENGTH || projectTitleLength > MAX_TITLE_LENGTH) {
     throw new ContextAnalysisApiError(
       400,
       "INVALID_PROJECT_TITLE",
@@ -54,17 +55,19 @@ export function validateContextAnalysisRequest(payload) {
     );
   }
 
-  if (rawText.length < MIN_RAW_TEXT_LENGTH) {
+  const rawTextLength = unicodeLength(rawText);
+  if (rawTextLength < MIN_RAW_TEXT_LENGTH) {
     throw new ContextAnalysisApiError(400, "RAW_TEXT_TOO_SHORT", "회의록, 메모, 피드백을 120자 이상 입력하세요.", {
       minLength: MIN_RAW_TEXT_LENGTH,
-      currentLength: rawText.length,
+      currentLength: rawTextLength,
     });
   }
 
-  if (rawText.length > MAX_RAW_TEXT_LENGTH) {
+  const maxRawTextLength = options.maxRawTextLength || MAX_RAW_TEXT_LENGTH;
+  if (rawTextLength > maxRawTextLength) {
     throw new ContextAnalysisApiError(413, "RAW_TEXT_TOO_LONG", "입력 기록은 20,000자 이하로 줄여주세요.", {
-      maxLength: MAX_RAW_TEXT_LENGTH,
-      currentLength: rawText.length,
+      maxLength: maxRawTextLength,
+      currentLength: rawTextLength,
     });
   }
 
@@ -72,7 +75,9 @@ export function validateContextAnalysisRequest(payload) {
 }
 
 export async function analyzeProjectContext(payload, options = {}) {
-  const { projectTitle, rawText } = validateContextAnalysisRequest(payload);
+  const { projectTitle, rawText } = validateContextAnalysisRequest(payload, {
+    maxRawTextLength: options.maxRawTextLength,
+  });
   const providerName = resolveProviderName(options.provider);
 
   if (providerName === "openai") {
@@ -84,6 +89,8 @@ export async function analyzeProjectContext(payload, options = {}) {
         client: options.openAIClient,
         timeoutMs: options.timeoutMs,
         signal: options.signal,
+        safetyIdentifier: options.safetyIdentifier,
+        reasoningEffort: options.reasoningEffort,
       },
     );
 
@@ -124,6 +131,7 @@ function assembleAnalysisResult(projectTitle, rawText, analysis, provider) {
     focus: participant.focus,
     concern: participant.concern,
     question: participant.question,
+    evidence: participant.evidence,
   }));
   const knowledgeMap = buildKnowledgeMap(
     projectTitle,
@@ -143,7 +151,7 @@ function assembleAnalysisResult(projectTitle, rawText, analysis, provider) {
     summary: {
       projectTitle,
       overview: analysis.overview,
-      sourceLength: rawText.length,
+      sourceLength: unicodeLength(rawText),
       generatedAt: new Date().toISOString(),
     },
     keyTerms: analysis.keyTerms,
@@ -223,7 +231,7 @@ function buildParticipants(sentences) {
       focus: existing?.focus || focus,
       concern: existing?.concern || concern,
       question: existing?.question || question,
-      evidence: uniqueByText([...(existing?.evidence || []), summarizeSentence(sentence)]).slice(0, 3),
+      evidence: uniqueByText([...(existing?.evidence || []), exactEvidence(sentence)]).slice(0, 3),
     });
   }
 
@@ -247,6 +255,7 @@ function buildDecisions(sentences) {
       decision: summarizeSentence(sentence),
       reason: inferDecisionReason(sentence),
       status: /아직|검토|보류|논의|미정|필요/.test(sentence) ? "tentative" : "confirmed",
+      evidence: [exactEvidence(sentence)],
     }))
     .slice(0, 5);
 
@@ -274,6 +283,7 @@ function buildQuestions(sentences) {
       question: normalizeQuestion(sentence),
       reason: "입력 기록에서 아직 합의나 결정이 필요한 내용으로 감지되었습니다.",
       ownerHint: inferOwnerHint(sentence),
+      evidence: [exactEvidence(sentence)],
     }));
   }
 
@@ -467,6 +477,10 @@ function summarizeSentence(sentence) {
   return compact.length > 120 ? `${compact.slice(0, 117)}...` : compact;
 }
 
+function exactEvidence(sentence) {
+  return sentence.trim().slice(0, 600);
+}
+
 function stripSentenceEnding(sentence) {
   return sentence.replace(/[.!?。]+$/, "").trim();
 }
@@ -490,4 +504,8 @@ function uniqueByText(items) {
     seen.add(key);
     return true;
   });
+}
+
+function unicodeLength(value) {
+  return Array.from(value).length;
 }

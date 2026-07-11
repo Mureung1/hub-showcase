@@ -19,6 +19,7 @@ export const structuredContextAnalysisSchema = z.strictObject({
         decision: mediumText,
         reason: mediumText,
         status: z.enum(["confirmed", "tentative", "unclear"]),
+        evidence: z.array(mediumText).min(1).max(4),
       }),
     )
     .max(8),
@@ -30,6 +31,7 @@ export const structuredContextAnalysisSchema = z.strictObject({
         focus: mediumText,
         concern: mediumText,
         question: mediumText,
+        evidence: z.array(mediumText).min(1).max(4),
       }),
     )
     .max(8),
@@ -39,6 +41,7 @@ export const structuredContextAnalysisSchema = z.strictObject({
         question: mediumText,
         reason: mediumText,
         ownerHint: shortText,
+        evidence: z.array(mediumText).min(1).max(4),
       }),
     )
     .max(8),

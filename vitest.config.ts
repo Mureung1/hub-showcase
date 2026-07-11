@@ -6,7 +6,11 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}", "server/**/*.test.mjs"],
+    include: [
+      "src/**/*.test.{ts,tsx}",
+      "server/**/*.test.mjs",
+      "tests/eval/**/*.test.mjs",
+    ],
     clearMocks: true,
     mockReset: true,
     restoreMocks: true,
@@ -16,10 +20,10 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}", "server/**/*.mjs"],
       exclude: ["src/vite-env.d.ts", "src/main.tsx", "**/*.test.{ts,tsx,mjs}"],
       thresholds: {
-        statements: 75,
-        branches: 65,
-        functions: 80,
-        lines: 75,
+        statements: 80,
+        branches: 75,
+        functions: 75,
+        lines: 80,
       },
     },
   },

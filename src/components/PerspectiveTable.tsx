@@ -1,10 +1,12 @@
-import type { PerspectiveItem } from "../types/context";
+import type { EvidenceRef, PerspectiveItem } from "../types/context";
+import EvidenceButton from "./EvidenceButton";
 
 type PerspectiveTableProps = {
   participants: PerspectiveItem[];
+  onOpenEvidence?: (evidence: EvidenceRef[]) => void;
 };
 
-function PerspectiveTable({ participants }: PerspectiveTableProps) {
+function PerspectiveTable({ participants, onOpenEvidence }: PerspectiveTableProps) {
   return (
     <section className="result-panel wide" aria-labelledby="perspective-title">
       <div className="panel-heading compact">
@@ -21,17 +23,20 @@ function PerspectiveTable({ participants }: PerspectiveTableProps) {
                 <th>역할</th>
                 <th>중점</th>
                 <th>우려</th>
-                <th>질문</th>
+                <th>질문과 근거</th>
               </tr>
             </thead>
             <tbody>
               {participants.map((item) => (
-                <tr key={item.actor}>
+                <tr key={item.id ?? item.actor}>
                   <td data-label="참여자">{item.actor}</td>
                   <td data-label="역할">{item.role}</td>
                   <td data-label="중점">{item.focus}</td>
                   <td data-label="우려">{item.concern}</td>
-                  <td data-label="질문">{item.question}</td>
+                  <td data-label="질문과 근거">
+                    {item.question}
+                    <EvidenceButton evidence={item.evidence} onOpen={onOpenEvidence} />
+                  </td>
                 </tr>
               ))}
             </tbody>

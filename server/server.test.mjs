@@ -3,7 +3,7 @@
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createModuBrainServer } from "./server.mjs";
 
 let rootDir;
@@ -53,6 +53,41 @@ describe("static preview server", () => {
 
     expect(response.status).toBe(200);
     expect(await response.text()).toContain("모두의 뇌");
+  });
+
+  it("sets HSTS only when the original request used HTTPS", async () => {
+    const localResponse = await fetch(`${baseUrl}/`);
+    const forwardedHttpsResponse = await fetch(`${baseUrl}/`, {
+      headers: { "X-Forwarded-Proto": "https" },
+    });
+
+    expect(localResponse.headers.get("strict-transport-security")).toBeNull();
+    expect(forwardedHttpsResponse.headers.get("strict-transport-security")).toBe(
+      "max-age=31536000; includeSubDomains",
+    );
+  });
+
+  it("keeps the unauthenticated legacy analysis endpoint local even when the env requests OpenAI", async () => {
+    vi.stubEnv("MODU_BRAIN_ANALYSIS_PROVIDER", "openai");
+    vi.stubEnv("OPENAI_API_KEY", "");
+    try {
+      const response = await fetch(`${baseUrl}/api/context-analysis`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectTitle: "레거시 안전성",
+          rawText:
+            "민지는 공개 엔드포인트에서는 유료 모델을 호출하지 말자고 말했다. 팀은 로컬 분석만 사용하기로 결정했다. " +
+            "다음 회의에서는 인증된 프로젝트 분석 흐름을 별도로 검증해야 한다. 이 기록은 충분한 입력 길이를 확보하기 위한 안전성 테스트 문장이다.",
+        }),
+      });
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toMatchObject({
+        provider: { name: "local-heuristic", usedExternalModel: false },
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("returns 404 for missing assets instead of serving HTML", async () => {

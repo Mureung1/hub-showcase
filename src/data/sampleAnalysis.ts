@@ -2,182 +2,126 @@ import type { ContextAnalysisResult } from "../types/context";
 
 export const sampleInput = `프로젝트명: 캠퍼스 공모전 서비스 기획
 
-오늘 회의에서 팀은 대학생이 공모전과 팀 프로젝트를 진행할 때 회의록, 자료 조사, 피드백이 여러 곳에 흩어져 맥락을 놓치는 문제가 크다고 정리했다.
+오늘 회의에서 우리 팀은 대학생 공모전 준비 과정에 흩어진 회의록, 자료 조사, 멘토 피드백을 한곳에서 이해할 수 있게 만드는 서비스를 논의했다.
 
-민지는 첫 화면에서 사용자가 무엇을 입력해야 하는지 바로 이해해야 한다고 말했다. 서준은 단순 회의 요약처럼 보이면 차별점이 약하므로 결정 배경과 미결 질문을 연결해 보여줘야 한다고 했다. 현우는 발표 때 지식맵이 가장 중요하니 사람, 주제, 결정사항, 질문이 연결되는 화면이 필요하다고 말했다.
+민지는 첫 화면에서 사용자가 무엇을 입력해야 하는지 바로 이해해야 한다고 말했다. 서준은 단순한 회의 요약처럼 보이면 차별점이 약하므로 결정 배경과 미해결 질문을 함께 보여줘야 한다고 제안했다. 현우는 발표 때 지식맵이 중요하지만 노드가 많으면 복잡해질 수 있다고 우려했다.
 
-팀은 MVP에서 자동 메신저 연동과 실시간 녹음은 제외하고, 사용자가 직접 붙여넣은 회의록과 메모를 분석하는 방식으로 시작하기로 결정했다. 다음 회의 전까지 입력 화면, 분석 결과 화면, 새 팀원 온보딩 요약을 프로토타입으로 준비하기로 했다.
+팀은 MVP에서 메신저 자동 연동과 실시간 녹음은 제외하고, 사용자가 직접 붙여 넣은 기록을 분석하기로 결정했다. 다음 회의까지 입력 화면, 분석 결과, 신규 팀원 온보딩 요약을 준비하기로 했다.
 
-아직 남은 질문은 지식맵이 너무 복잡해지지 않게 어떻게 줄일지, 개인정보 입력 주의 문구를 어디에 둘지, 발표에서 실제 AI처럼 보이게 하려면 어떤 예시 데이터를 써야 하는지이다.`;
+아직 지식맵 노드 수 제한, 개인정보 안내 위치, 발표용 예시 데이터 범위는 결정되지 않았다.`;
+
+const evidence = (quote: string) => [{
+  sourceRecordId: "sample-meeting",
+  sourceTitle: "공모전 기획 회의",
+  quote,
+}];
 
 export const sampleAnalysis: ContextAnalysisResult = {
   projectTitle: "캠퍼스 공모전 서비스 기획",
   summary: {
     projectTitle: "캠퍼스 공모전 서비스 기획",
     overview: [
-      "팀은 흩어진 회의록, 조사 메모, 피드백 때문에 프로젝트 맥락이 사라지는 문제를 핵심으로 정의했다.",
-      "서비스 차별점은 할 일 요약이 아니라 결정 배경, 관점 차이, 미결 질문을 연결해 보여주는 데 있다.",
-      "MVP는 자동 연동 없이 사용자가 직접 붙여넣은 텍스트를 분석하는 방식으로 제한한다.",
+      "팀 기록이 여러 곳에 흩어져 공동 맥락을 잃는 문제를 해결한다.",
+      "결정 배경, 참여자 관점, 미해결 질문을 원문 근거와 연결한다.",
+      "MVP는 사용자가 직접 붙여 넣은 텍스트 분석에 집중한다.",
     ],
     sourceLength: sampleInput.length,
-    generatedAt: "2026-07-10T00:00:00.000Z",
+    generatedAt: "2026-07-11T00:00:00.000Z",
   },
   keyTerms: [
-    {
-      term: "협업 맥락",
-      meaning: "팀원이 같은 프로젝트를 이해하기 위해 공유해야 하는 배경, 결정 이유, 관점 차이이다.",
-    },
-    {
-      term: "공유 지식맵",
-      meaning: "사람, 주제, 결정사항, 질문을 노드와 연결 관계로 보여주는 화면이다.",
-    },
-    {
-      term: "온보딩 요약",
-      meaning: "새 팀원이 긴 문서를 모두 읽기 전에 먼저 알아야 할 핵심 흐름이다.",
-    },
+    { term: "공동 맥락", meaning: "팀이 함께 알아야 하는 배경, 결정 이유, 관점 차이" },
+    { term: "지식맵", meaning: "사람, 주제, 결정, 질문의 연결 관계를 보여주는 화면" },
+    { term: "온보딩 요약", meaning: "새 팀원이 빠르게 현재 상태를 파악하는 핵심 정보" },
   ],
   decisions: [
     {
-      decision: "MVP에서는 사용자가 직접 텍스트를 붙여넣는 입력 방식을 사용한다.",
-      reason: "메신저 자동 연동과 실시간 녹음은 구현 범위가 커서 초기 프로토타입에 적합하지 않다.",
+      id: "decision-direct-input",
+      decision: "MVP는 사용자가 직접 텍스트를 붙여 넣는 방식으로 시작한다.",
+      reason: "자동 연동과 실시간 녹음은 초기 구현 범위를 크게 늘린다.",
+      status: "confirmed",
+      evidence: evidence("팀은 MVP에서 메신저 자동 연동과 실시간 녹음은 제외하고, 사용자가 직접 붙여 넣은 기록을 분석하기로 결정했다."),
+    },
+    {
+      id: "decision-result-scope",
+      decision: "분석 결과는 결정 배경과 미해결 질문을 중심으로 구성한다.",
+      reason: "일반 회의 요약과 구분되는 핵심 가치이기 때문이다.",
       status: "confirmed",
     },
     {
-      decision: "분석 결과 화면의 핵심은 지식맵과 미결 질문으로 둔다.",
-      reason: "단순 회의 요약 앱과 구분되는 가장 강한 시각적 차별점이기 때문이다.",
-      status: "confirmed",
-    },
-    {
-      decision: "개인정보 안내 문구 위치는 입력 화면 근처로 검토한다.",
-      reason: "문서 입력 전 사용자가 민감 정보를 의식할 수 있어야 한다.",
+      id: "decision-privacy-copy",
+      decision: "개인정보 안내 문구 위치는 다음 회의에서 확정한다.",
+      reason: "원문 저장 전에 민감정보 취급을 명확히 알려야 한다.",
       status: "tentative",
     },
   ],
   participants: [
     {
+      id: "participant-minji",
       actor: "민지",
-      role: "사용자 흐름 담당",
-      focus: "첫 화면에서 입력 행동을 쉽게 이해시키기",
-      concern: "사용자가 무엇을 넣어야 하는지 모르면 바로 이탈할 수 있음",
-      question: "예시 입력 버튼을 얼마나 눈에 띄게 둘 것인가?",
+      role: "사용자 흐름",
+      focus: "첫 화면의 입력 행동을 쉽게 이해시키기",
+      concern: "사용자가 무엇을 넣어야 하는지 모르면 이탈할 수 있음",
+      question: "샘플 입력을 어느 시점에 보여줄 것인가?",
+      evidence: evidence("민지는 첫 화면에서 사용자가 무엇을 입력해야 하는지 바로 이해해야 한다고 말했다."),
     },
     {
+      id: "participant-seojun",
       actor: "서준",
-      role: "서비스 차별점 담당",
-      focus: "회의 요약이 아니라 맥락 공유로 보이게 만들기",
-      concern: "기존 회의 요약 에이전트와 차이가 약해질 수 있음",
-      question: "결정 배경과 미결 질문을 어떻게 한 화면에서 강조할 것인가?",
+      role: "서비스 차별화",
+      focus: "요약을 넘어 결정 배경과 질문을 보여주기",
+      concern: "기존 회의 요약 도구와 차이가 약해질 수 있음",
+      question: "결정 배경을 한 화면에서 어떻게 강조할 것인가?",
     },
     {
+      id: "participant-hyunwoo",
       actor: "현우",
-      role: "시각화 담당",
-      focus: "사람, 주제, 결정사항, 질문을 지식맵으로 연결하기",
-      concern: "노드가 많아지면 오히려 이해하기 어려울 수 있음",
-      question: "프로토타입에서는 몇 개의 노드만 보여줄 것인가?",
+      role: "시각화",
+      focus: "사람, 주제, 결정, 질문을 지식맵으로 연결하기",
+      concern: "노드가 많아지면 맵을 이해하기 어려워질 수 있음",
+      question: "MVP 지식맵의 노드 수를 몇 개로 제한할 것인가?",
     },
   ],
   questions: [
-    {
-      question: "지식맵이 복잡해지지 않도록 노드 수를 어떻게 제한할 것인가?",
-      reason: "노드가 많아지면 핵심 맥락보다 화면 복잡도가 먼저 보일 수 있다.",
-      ownerHint: "시각화 담당",
-    },
-    {
-      question: "개인정보 입력 주의 문구를 입력창 위와 아래 중 어디에 둘 것인가?",
-      reason: "사용자가 민감 정보를 입력하기 전에 안내를 인지해야 한다.",
-      ownerHint: "사용자 흐름 담당",
-    },
-    {
-      question: "발표용 예시 데이터는 공모전, 팀플, 연구 프로젝트 중 무엇으로 통일할 것인가?",
-      reason: "서비스 대상이 넓어도 MVP 데모는 하나의 상황에 집중해야 이해가 쉽다.",
-      ownerHint: "서비스 차별점 담당",
-    },
+    { id: "question-node-limit", question: "지식맵 노드 수를 어떻게 제한할 것인가?", reason: "복잡도가 핵심 맥락보다 먼저 보일 수 있다.", ownerHint: "시각화 담당" },
+    { id: "question-privacy", question: "개인정보 주의 문구를 어디에 배치할 것인가?", reason: "원문 저장 전에 이용자가 위험을 인지해야 한다.", ownerHint: "사용자 흐름 담당" },
+    { id: "question-demo-data", question: "발표용 예시 데이터는 어떤 프로젝트로 통일할 것인가?", reason: "시연이 하나의 상황에 집중되어야 이해하기 쉽다.", ownerHint: "서비스 차별화 담당" },
   ],
   knowledgeMap: {
     nodes: [
-      {
-        id: "topic",
-        label: "협업 맥락 손실",
-        type: "topic",
-        summary: "회의록과 메모가 흩어져 팀원이 서로 다른 이해를 갖는 문제",
-      },
-      {
-        id: "decision",
-        label: "직접 입력 MVP",
-        type: "decision",
-        summary: "초기 범위를 텍스트 붙여넣기 기반 분석으로 제한",
-      },
-      {
-        id: "person-seojun",
-        label: "서준",
-        type: "person",
-        summary: "서비스 차별점과 발표 메시지를 담당",
-      },
-      {
-        id: "person-hyunwoo",
-        label: "현우",
-        type: "person",
-        summary: "지식맵 시각화와 화면 흐름을 담당",
-      },
-      {
-        id: "question",
-        label: "남은 질문",
-        type: "question",
-        summary: "노드 수, 개인정보 안내, 예시 데이터 선택",
-      },
+      { id: "topic", label: "공동 맥락 손실", type: "topic", summary: "기록이 흩어져 팀이 서로 다른 이해를 갖는 문제" },
+      { id: "decision", label: "직접 입력 MVP", type: "decision", summary: "초기 범위를 텍스트 붙여넣기 분석으로 제한" },
+      { id: "person-seojun", label: "서준", type: "person", summary: "서비스 차별화와 발표 메시지 담당" },
+      { id: "person-hyunwoo", label: "현우", type: "person", summary: "지식맵 시각화와 화면 흐름 담당" },
+      { id: "question", label: "남은 질문", type: "question", summary: "노드 수, 개인정보 안내, 예시 데이터" },
     ],
     links: [
       { from: "topic", to: "decision", relation: "MVP 범위로 축소" },
-      { from: "person-seojun", to: "topic", relation: "차별점 제안" },
-      { from: "person-hyunwoo", to: "question", relation: "시각화 리스크 제기" },
-      { from: "decision", to: "question", relation: "다음 검토 필요" },
+      { from: "person-seojun", to: "topic", relation: "차별화 제안" },
+      { from: "person-hyunwoo", to: "question", relation: "시각화 위험 제기" },
+      { from: "decision", to: "question", relation: "다음 검증 필요" },
     ],
   },
   onboardingSummary: {
     items: [
-      "이 프로젝트는 회의 내용을 줄이는 앱이 아니라, 팀이 같은 맥락을 이해하도록 돕는 협업 지식 에이전트이다.",
-      "초기 MVP는 회의록과 메모를 직접 붙여넣고, AI가 결정사항과 미결 질문을 구조화하는 방식으로 시작한다.",
-      "가장 중요한 화면은 지식맵, 관점 차이, 새 팀원 온보딩 요약이다.",
-      "다음 회의에서는 지식맵 노드 수와 개인정보 안내 문구 위치를 결정해야 한다.",
+      "Modu Brain은 팀 기록을 요약하는 것을 넘어 결정 배경과 관점 차이를 연결한다.",
+      "초기 MVP는 직접 붙여 넣은 텍스트를 분석한다.",
+      "핵심 화면은 관점, 결정, 질문, 지식맵, 온보딩 요약이다.",
     ],
     currentDecisions: [
-      "MVP는 직접 텍스트 입력 기반 분석으로 시작한다.",
-      "결과 화면은 지식맵과 미결 질문을 중심으로 구성한다.",
+      "자동 연동 없이 직접 입력 기반으로 시작한다.",
+      "분석 결과는 결정 배경과 미해결 질문을 강조한다.",
     ],
-    remainingQuestions: [
-      "지식맵 노드 수 제한 기준",
-      "개인정보 안내 문구 위치",
-      "발표용 예시 데이터 범위",
-    ],
-    shareText:
-      "모두의 뇌는 회의 요약이 아니라 결정 배경, 관점 차이, 미결 질문을 연결해 팀의 공유 맥락을 만드는 서비스입니다.",
+    remainingQuestions: ["지식맵 노드 수", "개인정보 안내 위치", "발표용 예시 범위"],
+    shareText: "현재 MVP는 흩어진 팀 기록에서 결정, 관점, 질문을 구조화해 새 팀원이 빠르게 맥락을 파악하도록 돕습니다.",
   },
   participantAgents: {
     views: [
-      {
-        actor: "민지",
-        role: "사용자 흐름 담당",
-        priority: "사용자가 입력 행동을 바로 이해하는지",
-        interpretation: "서비스의 첫 진입 장벽을 낮추는 것이 MVP 검증의 핵심이라고 본다.",
-        evidence: ["첫 화면에서 사용자가 무엇을 입력해야 하는지 바로 이해해야 한다고 말했다."],
-        risk: "입력 화면이 복잡하면 사용자가 분석 결과까지 도달하지 못할 수 있다.",
-      },
-      {
-        actor: "서준",
-        role: "서비스 차별점 담당",
-        priority: "회의 요약 앱과 구분되는 결정 배경과 미결 질문",
-        interpretation: "모두의 뇌는 할 일 정리보다 팀의 생각 차이를 드러내야 한다고 본다.",
-        evidence: ["단순 회의 요약처럼 보이면 차별점이 약하다고 했다."],
-        risk: "결과 화면이 요약 중심이면 기존 서비스와 차별화가 약해진다.",
-      },
+      { actor: "민지", role: "사용자 흐름", priority: "첫 진입 이해도", interpretation: "입력 행동이 명확해야 사용자가 결과까지 도달한다.", evidence: ["사용자가 무엇을 입력해야 하는지 바로 이해해야 한다."], risk: "입력 안내가 복잡하면 분석 전에 이탈할 수 있다." },
+      { actor: "서준", role: "서비스 차별화", priority: "결정 배경과 질문", interpretation: "단순 요약이 아닌 생각의 차이를 드러내야 한다.", evidence: ["단순한 회의 요약처럼 보이면 차별점이 약하다."], risk: "결과가 요약 중심이면 기존 서비스와 구분되지 않는다." },
     ],
-    agreementPoints: ["자동 연동보다 직접 입력 기반 MVP로 시작한다.", "결과 화면에서 지식맵과 미결 질문을 강조한다."],
-    tensionPoints: ["입력 화면의 단순함과 분석 결과의 충분한 정보량 사이 균형이 필요하다."],
-    privacyNote: "팀원의 성격을 추정하지 않고, 입력 기록에 근거가 있는 프로젝트 관점만 표현한다.",
+    agreementPoints: ["직접 입력 기반 MVP로 시작한다.", "결정 배경과 미해결 질문을 강조한다."],
+    tensionPoints: ["간단한 입력 화면과 충분한 개인정보 안내 사이의 균형이 필요하다."],
+    privacyNote: "참여자의 성격을 추정하지 않고 입력 기록에서 확인되는 프로젝트 관점만 표현한다.",
   },
-  provider: {
-    mode: "mock",
-    name: "sample",
-    usedExternalModel: false,
-  },
+  provider: { mode: "mock", name: "sample", usedExternalModel: false },
 };

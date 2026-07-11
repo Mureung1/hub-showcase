@@ -1,344 +1,130 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
-import AnalysisPlaceholder from "./components/AnalysisPlaceholder";
-import ContextInput from "./components/ContextInput";
-import DecisionList from "./components/DecisionList";
-import KeyTerms from "./components/KeyTerms";
-import KnowledgeMap from "./components/KnowledgeMap";
-import OnboardingSummary from "./components/OnboardingSummary";
-import ParticipantAgentPanel from "./components/ParticipantAgentPanel";
-import PerspectiveTable from "./components/PerspectiveTable";
-import QuestionList from "./components/QuestionList";
-import SummaryPanel from "./components/SummaryPanel";
-import { sampleAnalysis, sampleInput } from "./data/sampleAnalysis";
-import { ContextAnalysisRequestError, analyzeContext } from "./services/analyzeContext";
-import type { ContextAnalysisResult } from "./types/context";
+import { useEffect, useState } from "react";
+import SiteHeader from "./components/SiteHeader";
+import { useRoute } from "./hooks/useRoute";
+import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/LoginPage";
+import ProjectPage from "./pages/ProjectPage";
+import ProjectsPage from "./pages/ProjectsPage";
+import SharePage from "./pages/SharePage";
+import {
+  authService as defaultAuthService,
+  type AuthService,
+  type AuthSession,
+} from "./services/auth";
+import { platformApi as defaultPlatformApi, type PlatformApi } from "./services/platformApi";
 
-type ResultTab = "overview" | "map" | "onboarding";
-type AnalysisState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "sample" | "success"; result: ContextAnalysisResult };
+const SESSION_REFRESH_LEAD_MS = 60_000;
 
-function App() {
-  const [projectTitle, setProjectTitle] = useState("모두의 뇌 MVP");
-  const [inputText, setInputText] = useState("");
-  const [analysisState, setAnalysisState] = useState<AnalysisState>({ status: "idle" });
-  const [activeTab, setActiveTab] = useState<ResultTab>("overview");
-  const requestVersion = useRef(0);
-  const activeAbortController = useRef<AbortController | null>(null);
+type AppProps = {
+  auth?: AuthService;
+  api?: PlatformApi;
+};
 
-  useEffect(
-    () => () => {
-      activeAbortController.current?.abort();
-    },
-    [],
-  );
+function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) {
+  const { pathname, navigate } = useRoute();
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  const analysisResult =
-    analysisState.status === "sample" || analysisState.status === "success"
-      ? analysisState.result
-      : null;
-  const isAnalyzing = analysisState.status === "loading";
-  const analysisError = analysisState.status === "error" ? analysisState.message : null;
-  const placeholderStatus =
-    analysisState.status === "loading" || analysisState.status === "error"
-      ? analysisState.status
-      : "idle";
-
-  const clearAnalysisForEdit = () => {
-    activeAbortController.current?.abort();
-    activeAbortController.current = null;
-    requestVersion.current += 1;
-    setAnalysisState({ status: "idle" });
-    setActiveTab("overview");
-  };
-
-  const handleProjectTitleChange = (value: string) => {
-    setProjectTitle(value);
-    clearAnalysisForEdit();
-  };
-
-  const handleInputTextChange = (value: string) => {
-    setInputText(value);
-    clearAnalysisForEdit();
-  };
-
-  const handleLoadSample = () => {
-    activeAbortController.current?.abort();
-    activeAbortController.current = null;
-    requestVersion.current += 1;
-    setProjectTitle(sampleAnalysis.projectTitle);
-    setInputText(sampleInput);
-    setAnalysisState({ status: "sample", result: sampleAnalysis });
-    setActiveTab("overview");
-  };
-
-  const handleAnalyze = async () => {
-    activeAbortController.current?.abort();
-    const controller = new AbortController();
-    activeAbortController.current = controller;
-    const currentRequest = requestVersion.current + 1;
-    requestVersion.current = currentRequest;
-    setAnalysisState({ status: "loading" });
-    setActiveTab("overview");
-
-    try {
-      const result = await analyzeContext(projectTitle, inputText, { signal: controller.signal });
-      if (requestVersion.current !== currentRequest) return;
-
-      setAnalysisState({ status: "success", result });
-      setActiveTab("overview");
-    } catch (error) {
-      if (controller.signal.aborted) return;
-      if (requestVersion.current !== currentRequest) return;
-
-      setAnalysisState({ status: "error", message: getAnalysisErrorMessage(error) });
-    } finally {
-      if (activeAbortController.current === controller) {
-        activeAbortController.current = null;
+  useEffect(() => {
+    let active = true;
+    const restore = async () => {
+      try {
+        const callbackSession = await auth.consumeCallback(window.location.hash);
+        const nextSession = callbackSession ?? await auth.restoreSession();
+        if (!active) return;
+        setSession(nextSession);
+        if (callbackSession) {
+          window.history.replaceState(null, "", "/projects");
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }
+      } catch (error) {
+        if (active) setAuthError(error instanceof Error ? error.message : "로그인을 완료하지 못했습니다.");
+      } finally {
+        if (active) setAuthReady(true);
       }
-    }
+    };
+    void restore();
+    return () => { active = false; };
+  }, [auth]);
+
+  useEffect(() => {
+    if (!session) return undefined;
+    let active = true;
+    const refreshDelay = Math.max(
+      0,
+      session.expiresAt - Date.now() - SESSION_REFRESH_LEAD_MS,
+    );
+    const timer = window.setTimeout(() => {
+      void auth
+        .refreshSession(session)
+        .then((refreshed) => {
+          if (active) setSession(refreshed);
+        })
+        .catch(() => {
+          if (!active) return;
+          setSession(null);
+          setAuthError("로그인 세션을 갱신하지 못했습니다. 다시 로그인해 주세요.");
+          if (pathname.startsWith("/projects")) navigate("/login");
+        });
+    }, refreshDelay);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [auth, navigate, pathname, session]);
+
+  const signOut = async () => {
+    await auth.signOut(session);
+    setSession(null);
+    navigate("/");
   };
 
-  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, currentTab: ResultTab) => {
-    if (!analysisResult) return;
-
-    const tabs: ResultTab[] = ["overview", "map", "onboarding"];
-    const currentIndex = tabs.indexOf(currentTab);
-    let nextIndex = currentIndex;
-
-    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
-    else if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-    else if (event.key === "Home") nextIndex = 0;
-    else if (event.key === "End") nextIndex = tabs.length - 1;
-    else return;
-
-    event.preventDefault();
-    const nextTab = tabs[nextIndex];
-    setActiveTab(nextTab);
-    document.getElementById(`tab-${nextTab}`)?.focus();
-  };
-
-  const handleMapNavigation = (event: MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
-    if (analysisResult) setActiveTab("map");
-    document
-      .getElementById("result-workspace")
-      ?.scrollIntoView?.({ behavior: "smooth", block: "start" });
-  };
-
-  const badgeLabel =
-    analysisState.status === "loading"
-      ? "API 분석 중"
-      : analysisState.status === "success"
-        ? `${analysisState.result.provider.name} 분석 결과`
-        : analysisState.status === "error"
-          ? "분석 오류"
-          : analysisState.status === "sample"
-            ? "예시 데이터 데모"
-            : "분석 대기";
-
-  const analysisNotice =
-    analysisState.status === "success"
-      ? "분석 API 응답을 기준으로 결과가 갱신되었습니다."
-      : analysisState.status === "sample"
-        ? "사용자가 직접 불러온 예시 데이터입니다. 분석 버튼을 누르면 API 결과로 교체됩니다."
-        : analysisState.status === "loading"
-          ? "입력 기록에서 결정 배경과 참여자 관점을 분석하고 있습니다."
-          : "기록을 입력해 분석하거나 예시 데이터를 직접 불러오세요.";
+  let page: React.ReactNode;
+  if (pathname === "/") {
+    page = <LandingPage navigate={navigate} />;
+  } else if (pathname === "/login") {
+    page = session ? <AlreadySignedIn email={session.user.email} onContinue={() => navigate("/projects")} /> : <LoginPage auth={auth} />;
+  } else if (pathname === "/share") {
+    page = <SharePage api={api} />;
+  } else if (pathname === "/projects") {
+    page = authReady ? (session ? <ProjectsPage api={api} token={session.accessToken} navigate={navigate} /> : <LoginRequired navigate={() => navigate("/login")} />) : <AuthLoader />;
+  } else {
+    const projectMatch = pathname.match(/^\/projects\/([^/]+)$/);
+    page = projectMatch
+      ? authReady
+        ? session
+          ? <ProjectPage api={api} token={session.accessToken} projectId={decodeURIComponent(projectMatch[1])} navigate={navigate} />
+          : <LoginRequired navigate={() => navigate("/login")} />
+        : <AuthLoader />
+      : <NotFound navigate={() => navigate("/")} />;
+  }
 
   return (
-    <main className="app-shell">
-      <nav className="top-nav" aria-label="주요 메뉴">
-        <a href="#top" aria-label="모두의 뇌 홈">
-          모두의 뇌
-        </a>
-        <div>
-          <a href="#input-title">입력</a>
-          <a href="#result-workspace">분석</a>
-          <a href="#result-workspace" onClick={handleMapNavigation}>
-            지식맵
-          </a>
-        </div>
-      </nav>
-
-      <section className="hero" id="top">
-        <p className="eyebrow">Shared Context Agent</p>
-        <h1 aria-label="팀의 흩어진 맥락을 하나의 뇌로.">
-          <span className="title-wide" aria-hidden="true">
-            팀의 흩어진 맥락을 하나의 뇌로.
-          </span>
-          <span className="title-small" aria-hidden="true">
-            팀의 흩어진
-            <br />
-            맥락을 하나의
-            <br />
-            뇌로.
-          </span>
-        </h1>
-        <p className="hero-copy">
-          모두의 뇌는 회의록, 조사 메모, 피드백에 흩어진 결정 배경과 관점 차이를
-          연결해 팀 전체가 같은 배경지식 위에서 움직이도록 돕습니다.
-        </p>
-        <div className="hero-actions">
-          <a className="button primary" href="#input-title">
-            프로토타입 사용
-          </a>
-          <a className="button ghost" href="#result-workspace" onClick={handleMapNavigation}>
-            지식맵 보기
-          </a>
-        </div>
-      </section>
-
-      <section className="workflow" aria-label="모두의 뇌 작동 흐름">
-        <div>
-          <span>01</span>
-          <strong>기록 입력</strong>
-          <p>회의록과 메모를 한 곳에 붙여넣습니다.</p>
-        </div>
-        <div>
-          <span>02</span>
-          <strong>맥락 분석</strong>
-          <p>결정 배경, 관점, 질문을 분리합니다.</p>
-        </div>
-        <div>
-          <span>03</span>
-          <strong>공유 지식화</strong>
-          <p>새 팀원이 이해할 수 있는 구조로 보여줍니다.</p>
-        </div>
-      </section>
-
-      <div className="prototype-grid">
-        <ContextInput
-          projectTitle={projectTitle}
-          inputText={inputText}
-          isAnalyzing={isAnalyzing}
-          analysisError={analysisError}
-          analysisNotice={analysisNotice}
-          onProjectTitleChange={handleProjectTitleChange}
-          onInputTextChange={handleInputTextChange}
-          onLoadSample={handleLoadSample}
-          onAnalyze={handleAnalyze}
-        />
-        {analysisResult ? (
-          <SummaryPanel result={analysisResult} />
-        ) : (
-          <AnalysisPlaceholder
-            status={placeholderStatus}
-            message={analysisError}
-            surface="summary"
-          />
-        )}
-      </div>
-
-      <section className="result-workspace" id="result-workspace" aria-labelledby="results-heading">
-        <div className="result-header">
-          <div>
-            <p className="section-kicker">Result View</p>
-            <h2 id="results-heading">분석 결과</h2>
-            <span className={`demo-badge ${analysisState.status}`}>{badgeLabel}</span>
-          </div>
-
-          <div className="tab-list" role="tablist" aria-label="결과 보기 방식">
-            <button
-              id="tab-overview"
-              className={activeTab === "overview" ? "active" : ""}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "overview"}
-              aria-controls="panel-overview"
-              tabIndex={activeTab === "overview" ? 0 : -1}
-              disabled={!analysisResult}
-              onClick={() => setActiveTab("overview")}
-              onKeyDown={(event) => handleTabKeyDown(event, "overview")}
-            >
-              개요
-            </button>
-            <button
-              id="tab-map"
-              className={activeTab === "map" ? "active" : ""}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "map"}
-              aria-controls="panel-map"
-              tabIndex={activeTab === "map" ? 0 : -1}
-              disabled={!analysisResult}
-              onClick={() => setActiveTab("map")}
-              onKeyDown={(event) => handleTabKeyDown(event, "map")}
-            >
-              지식맵
-            </button>
-            <button
-              id="tab-onboarding"
-              className={activeTab === "onboarding" ? "active" : ""}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "onboarding"}
-              aria-controls="panel-onboarding"
-              tabIndex={activeTab === "onboarding" ? 0 : -1}
-              disabled={!analysisResult}
-              onClick={() => setActiveTab("onboarding")}
-              onKeyDown={(event) => handleTabKeyDown(event, "onboarding")}
-            >
-              온보딩 요약
-            </button>
-          </div>
-        </div>
-
-        {!analysisResult ? (
-          <AnalysisPlaceholder
-            status={placeholderStatus}
-            message={analysisError}
-            surface="workspace"
-          />
-        ) : activeTab === "overview" ? (
-          <div
-            className="results-grid overview-grid"
-            id="panel-overview"
-            role="tabpanel"
-            aria-labelledby="tab-overview"
-          >
-            <PerspectiveTable participants={analysisResult.participants} />
-            <ParticipantAgentPanel synthesis={analysisResult.participantAgents} />
-            <QuestionList questions={analysisResult.questions} />
-            <DecisionList decisions={analysisResult.decisions} />
-            <KeyTerms terms={analysisResult.keyTerms} />
-          </div>
-        ) : activeTab === "map" ? (
-          <div
-            className="results-grid single-grid"
-            id="panel-map"
-            role="tabpanel"
-            aria-labelledby="tab-map"
-          >
-            <KnowledgeMap map={analysisResult.knowledgeMap} />
-          </div>
-        ) : (
-          <div
-            className="results-grid single-grid"
-            id="panel-onboarding"
-            role="tabpanel"
-            aria-labelledby="tab-onboarding"
-          >
-            <OnboardingSummary summary={analysisResult.onboardingSummary} />
-          </div>
-        )}
-      </section>
-    </main>
+    <>
+      <SiteHeader session={session} pathname={pathname} navigate={navigate} onSignOut={() => void signOut()} />
+      {authError && <div className="global-notice notice error" role="alert">{authError}<button type="button" onClick={() => setAuthError(null)}>닫기</button></div>}
+      {page}
+      <footer className="site-footer"><span>Modu Brain</span><span>결정을 요약하는 것을 넘어, 근거와 변화를 연결합니다.</span></footer>
+    </>
   );
 }
 
-function getAnalysisErrorMessage(error: unknown) {
-  if (error instanceof ContextAnalysisRequestError) {
-    return error.message;
-  }
+function AuthLoader() {
+  return <main className="app-page"><div className="loading-card page-loader" role="status">로그인 상태를 확인하는 중…</div></main>;
+}
 
-  if (error instanceof Error) {
-    return error.message;
-  }
+function LoginRequired({ navigate }: { navigate: () => void }) {
+  return <main className="narrow-page"><section className="auth-card"><p className="section-kicker">Authentication required</p><h1>로그인이 필요한 공간입니다</h1><p>프로젝트와 원문은 계정별로 격리되어 있습니다.</p><button className="button primary" type="button" onClick={navigate}>이메일로 로그인</button></section></main>;
+}
 
-  return "알 수 없는 분석 오류가 발생했습니다.";
+function AlreadySignedIn({ email, onContinue }: { email: string; onContinue: () => void }) {
+  return <main className="narrow-page"><section className="auth-card"><p className="section-kicker">Signed in</p><h1>이미 로그인되어 있습니다</h1><p>{email || "현재 계정"}으로 프로젝트를 계속할 수 있습니다.</p><button className="button primary" type="button" onClick={onContinue}>프로젝트로 이동</button></section></main>;
+}
+
+function NotFound({ navigate }: { navigate: () => void }) {
+  return <main className="narrow-page"><section className="auth-card"><p className="section-kicker">404</p><h1>페이지를 찾을 수 없습니다</h1><p>주소가 변경되었거나 존재하지 않는 경로입니다.</p><button className="button secondary" type="button" onClick={navigate}>홈으로 돌아가기</button></section></main>;
 }
 
 export default App;
