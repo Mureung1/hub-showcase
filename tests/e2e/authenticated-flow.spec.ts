@@ -21,7 +21,6 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
 }) => {
   const appBaseUrl = String(test.info().project.use.baseURL);
   const projectTitle = `E2E 맥락 프로젝트 ${Date.now()}`;
-  let userId: string | undefined;
 
   try {
     await page.goto("/login");
@@ -35,7 +34,6 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
       redirectTo: `${appBaseUrl}/projects`,
       email: testEmail!,
     });
-    userId = generated.userId;
 
     await page.goto(generated.actionLink);
     await expect(page).toHaveURL(/\/projects$/);
@@ -148,7 +146,7 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
       sharedPage.getByRole("heading", { name: "공유 내용을 열 수 없습니다" }),
     ).toBeVisible();
   } finally {
-    if (userId) await deleteTestUser(request, userId);
+    await deleteTestUsersByEmail(request, testEmail!);
   }
 });
 
@@ -203,25 +201,42 @@ async function generateMagicLink(
     actionLink,
     "Supabase generate_link response should contain an action link",
   ).toBeTruthy();
-  expect(
-    body.user?.id,
-    "Supabase generate_link response should contain a user id",
-  ).toBeTruthy();
-  return { actionLink: actionLink!, userId: body.user!.id! };
+  return { actionLink: actionLink! };
 }
 
-async function deleteTestUser(request: APIRequestContext, userId: string) {
-  const response = await request.delete(
-    `${supabaseUrl}/auth/v1/admin/users/${userId}`,
-    {
-      headers: {
-        apikey: serviceRoleKey!,
-        Authorization: `Bearer ${serviceRoleKey}`,
-      },
-    },
+async function deleteTestUsersByEmail(
+  request: APIRequestContext,
+  email: string,
+) {
+  const headers = {
+    apikey: serviceRoleKey!,
+    Authorization: `Bearer ${serviceRoleKey}`,
+  };
+  const listResponse = await request.get(
+    `${supabaseUrl}/auth/v1/admin/users?page=1&per_page=1000`,
+    { headers },
   );
   expect(
-    response.ok(),
-    "Supabase should delete the disposable E2E user",
+    listResponse.ok(),
+    "Supabase should list disposable E2E users",
   ).toBeTruthy();
+
+  const body = (await listResponse.json()) as
+    | Array<{ id?: string; email?: string }>
+    | { users?: Array<{ id?: string; email?: string }> };
+  const users = Array.isArray(body) ? body : (body.users ?? []);
+  const userIds = users
+    .filter((user) => user.email === email && user.id)
+    .map((user) => user.id!);
+
+  for (const userId of userIds) {
+    const response = await request.delete(
+      `${supabaseUrl}/auth/v1/admin/users/${userId}`,
+      { headers },
+    );
+    expect(
+      response.ok(),
+      "Supabase should delete the disposable E2E user",
+    ).toBeTruthy();
+  }
 }
