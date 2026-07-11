@@ -259,10 +259,10 @@ def _reason_message(key: str, metric: ScoreMetric, tone: ReasonTone) -> str:
     label, direction = METRIC_DEFINITIONS[key]
     percentile = round(metric.percentile * 100)
     if direction == "lower":
-        comparison = "낮아 긍정적" if tone == "positive" else "높아 주의가 필요"
+        comparison = "낮아 긍정적입니다" if tone == "positive" else "높아 주의가 필요합니다"
     else:
-        comparison = "높아 긍정적" if tone == "positive" else "낮아 주의가 필요"
-    return f"{label} peer 백분위가 {percentile}로 {comparison}합니다."
+        comparison = "높아 긍정적입니다" if tone == "positive" else "낮아 주의가 필요합니다"
+    return f"{label} peer 백분위가 {percentile}로 {comparison}."
 
 
 def _build_reasons(request: MarketScoreRequest, cluster: ClusterResult) -> list[ScoreReason]:

@@ -1,6 +1,6 @@
 {
   "evaluation": "market-analysis-v1",
-  "evaluated_at": "2026-07-11T07:23:44+00:00",
+  "evaluated_at": "2026-07-11T07:36:21+00:00",
   "status": "passed",
   "gates": {
     "expected_cases": 12,

@@ -34,6 +34,12 @@ CATEGORY_CODES: dict[Category, tuple[str, ...]] = {
     "편의점": ("CS300002",),
 }
 
+SOURCE_LABELS = {
+    "stores": "서울시 상권분석서비스 점포",
+    "sales": "서울시 상권분석서비스 추정매출",
+    "flow": "서울시 상권분석서비스 길단위인구",
+}
+
 
 class MarketEvidence(BaseModel):
     metric: str
@@ -144,14 +150,10 @@ def _source(connection: sqlite3.Connection, snapshot_id: str | None) -> tuple[st
         "SELECT dataset, source_url FROM data_sources WHERE snapshot_id = ?",
         (snapshot_id,),
     ).fetchone()
-    return (
-        (str(row[0]), str(row[1]))
-        if row
-        else (
-            "서울 열린데이터광장",
-            "https://data.seoul.go.kr/",
-        )
-    )
+    if row:
+        dataset = str(row[0])
+        return SOURCE_LABELS.get(dataset, dataset), str(row[1])
+    return "서울 열린데이터광장", "https://data.seoul.go.kr/"
 
 
 def analyze_market(
