@@ -1,0 +1,1925 @@
+{
+  "schema_version": "1.0.0",
+  "generated_from": "data/processed/localtwin.db",
+  "period": "20251",
+  "analyses": {
+    "연남:카페": {
+      "market_id": "3110562",
+      "market_name": "연트럴파크(연남동주민센터)",
+      "market_type": "골목상권",
+      "district_name": "마포구",
+      "admin_dong_name": "연남동",
+      "category": "카페",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3110562",
+        "market_name": "연트럴파크(연남동주민센터)",
+        "category": "카페",
+        "peer_group": "서울 골목상권 2025.1Q",
+        "score": 39.5,
+        "band": "주의 필요",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 67.8,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 28.3,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 0.8,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 53.2,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "specialized_watch",
+          "local_quotient": 4.16,
+          "adjustment": 0.0,
+          "explanation": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "foot_traffic",
+            "label": "유동 수요",
+            "message": "유동 수요 peer 백분위가 70로 높아 긍정적합니다.",
+            "value": 1013523.0,
+            "unit": "명/분기",
+            "percentile": 69.5,
+            "source_name": "flow",
+            "period": "20251"
+          },
+          {
+            "tone": "positive",
+            "metric_key": "sales_per_store",
+            "label": "점포당 추정매출",
+            "message": "점포당 추정매출 peer 백분위가 67로 높아 긍정적합니다.",
+            "value": 12723060.1875,
+            "unit": "원/분기",
+            "percentile": 66.5,
+            "source_name": "sales",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "same_category_density",
+            "label": "동일 업종 밀도",
+            "message": "동일 업종 밀도 peer 백분위가 99로 높아 주의가 필요합니다.",
+            "value": 665.9452260051611,
+            "unit": "개/km²",
+            "percentile": 99.2,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "closure_rate",
+            "label": "폐업률",
+            "message": "폐업률 peer 백분위가 72로 높아 주의가 필요합니다.",
+            "value": 3.125,
+            "unit": "%",
+            "percentile": 71.7,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "info",
+            "metric_key": "category_local_quotient",
+            "label": "업종 집적효과",
+            "message": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다.",
+            "value": 4.16,
+            "unit": "LQ",
+            "percentile": 0.0,
+            "source_name": "점포 분포 파생지표",
+            "period": "입력 지표와 동일"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 64,
+        "total_store_count": 306,
+        "opening_count": 2,
+        "closure_count": 2,
+        "monthly_sales_amount": 814275852.0,
+        "monthly_sales_count": 55418.0,
+        "total_flow": 1013523.0,
+        "flow_by_time": [
+          225865.0,
+          183201.0,
+          125697.0,
+          145352.0,
+          203408.0,
+          130000.0
+        ],
+        "area_sqm": 96104.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    },
+    "연남:음식점": {
+      "market_id": "3110562",
+      "market_name": "연트럴파크(연남동주민센터)",
+      "market_type": "골목상권",
+      "district_name": "마포구",
+      "admin_dong_name": "연남동",
+      "category": "음식점",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3110562",
+        "market_name": "연트럴파크(연남동주민센터)",
+        "category": "음식점",
+        "peer_group": "서울 골목상권 2025.1Q",
+        "score": 41.1,
+        "band": "주의 필요",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 51.5,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 44.2,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 35.8,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 22.0,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "ordinary",
+          "local_quotient": 0.95,
+          "adjustment": 0.0,
+          "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "foot_traffic",
+            "label": "유동 수요",
+            "message": "유동 수요 peer 백분위가 71로 높아 긍정적합니다.",
+            "value": 1013523.0,
+            "unit": "명/분기",
+            "percentile": 71.4,
+            "source_name": "flow",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "net_opening_rate",
+            "label": "점포 순증률",
+            "message": "점포 순증률 peer 백분위가 22로 낮아 주의가 필요합니다.",
+            "value": -3.225806451612903,
+            "unit": "%",
+            "percentile": 22.0,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "same_category_density",
+            "label": "동일 업종 밀도",
+            "message": "동일 업종 밀도 peer 백분위가 64로 높아 주의가 필요합니다.",
+            "value": 645.1344376924998,
+            "unit": "개/km²",
+            "percentile": 64.2,
+            "source_name": "stores",
+            "period": "20251"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 62,
+        "total_store_count": 306,
+        "opening_count": 0,
+        "closure_count": 2,
+        "monthly_sales_amount": 1166492780.0,
+        "monthly_sales_count": 22061.0,
+        "total_flow": 1013523.0,
+        "flow_by_time": [
+          225865.0,
+          183201.0,
+          125697.0,
+          145352.0,
+          203408.0,
+          130000.0
+        ],
+        "area_sqm": 96104.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    },
+    "연남:베이커리": {
+      "market_id": "3110562",
+      "market_name": "연트럴파크(연남동주민센터)",
+      "market_type": "골목상권",
+      "district_name": "마포구",
+      "admin_dong_name": "연남동",
+      "category": "베이커리",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3110562",
+        "market_name": "연트럴파크(연남동주민센터)",
+        "category": "베이커리",
+        "peer_group": "서울 골목상권 2025.1Q",
+        "score": 28.3,
+        "band": "높은 위험",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 67.3,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 12.0,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 2.0,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 50.9,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "saturated_cluster",
+          "local_quotient": 3.61,
+          "adjustment": -6.4,
+          "explanation": "동일 업종 집적과 함께 점포당 매출 희석 또는 높은 폐업 신호가 나타나는 과포화 후보입니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "sales_per_store",
+            "label": "점포당 추정매출",
+            "message": "점포당 추정매출 peer 백분위가 70로 높아 긍정적합니다.",
+            "value": 6666666.666666667,
+            "unit": "원/분기",
+            "percentile": 69.7,
+            "source_name": "sales",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "same_category_density",
+            "label": "동일 업종 밀도",
+            "message": "동일 업종 밀도 peer 백분위가 98로 높아 주의가 필요합니다.",
+            "value": 187.29709481395156,
+            "unit": "개/km²",
+            "percentile": 98.0,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "closure_rate",
+            "label": "폐업률",
+            "message": "폐업률 peer 백분위가 88로 높아 주의가 필요합니다.",
+            "value": 5.555555555555555,
+            "unit": "%",
+            "percentile": 88.0,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "category_local_quotient",
+            "label": "업종 집적효과",
+            "message": "동일 업종 집적과 함께 점포당 매출 희석 또는 높은 폐업 신호가 나타나는 과포화 후보입니다.",
+            "value": 3.61,
+            "unit": "LQ",
+            "percentile": 0.0,
+            "source_name": "점포 분포 파생지표",
+            "period": "입력 지표와 동일"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 18,
+        "total_store_count": 306,
+        "opening_count": 1,
+        "closure_count": 1,
+        "monthly_sales_amount": 120000000.0,
+        "monthly_sales_count": 6175.0,
+        "total_flow": 1013523.0,
+        "flow_by_time": [
+          225865.0,
+          183201.0,
+          125697.0,
+          145352.0,
+          203408.0,
+          130000.0
+        ],
+        "area_sqm": 96104.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    },
+    "연남:편의점": {
+      "market_id": "3110562",
+      "market_name": "연트럴파크(연남동주민센터)",
+      "market_type": "골목상권",
+      "district_name": "마포구",
+      "admin_dong_name": "연남동",
+      "category": "편의점",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3110562",
+        "market_name": "연트럴파크(연남동주민센터)",
+        "category": "편의점",
+        "peer_group": "서울 골목상권 2025.1Q",
+        "score": 51.4,
+        "band": "혼합 신호",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 65.6,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 55.4,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 24.7,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 51.8,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "ordinary",
+          "local_quotient": 0.97,
+          "adjustment": 0.0,
+          "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "sales_per_store",
+            "label": "점포당 추정매출",
+            "message": "점포당 추정매출 peer 백분위가 66로 높아 긍정적합니다.",
+            "value": 77002419.66666667,
+            "unit": "원/분기",
+            "percentile": 66.0,
+            "source_name": "sales",
+            "period": "20251"
+          },
+          {
+            "tone": "positive",
+            "metric_key": "foot_traffic",
+            "label": "유동 수요",
+            "message": "유동 수요 peer 백분위가 65로 높아 긍정적합니다.",
+            "value": 1013523.0,
+            "unit": "명/분기",
+            "percentile": 65.0,
+            "source_name": "flow",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "same_category_density",
+            "label": "동일 업종 밀도",
+            "message": "동일 업종 밀도 peer 백분위가 75로 높아 주의가 필요합니다.",
+            "value": 62.432364937983856,
+            "unit": "개/km²",
+            "percentile": 75.3,
+            "source_name": "stores",
+            "period": "20251"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 6,
+        "total_store_count": 306,
+        "opening_count": 0,
+        "closure_count": 0,
+        "monthly_sales_amount": 462014518.0,
+        "monthly_sales_count": 67548.0,
+        "total_flow": 1013523.0,
+        "flow_by_time": [
+          225865.0,
+          183201.0,
+          125697.0,
+          145352.0,
+          203408.0,
+          130000.0
+        ],
+        "area_sqm": 96104.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    },
+    "홍대:카페": {
+      "market_id": "3120103",
+      "market_name": "홍대입구역(홍대)",
+      "market_type": "발달상권",
+      "district_name": "마포구",
+      "admin_dong_name": "서교동",
+      "category": "카페",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3120103",
+        "market_name": "홍대입구역(홍대)",
+        "category": "카페",
+        "peer_group": "서울 발달상권 2025.1Q",
+        "score": 41.7,
+        "band": "주의 필요",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 94.1,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 23.9,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 1.1,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 20.9,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "specialized_watch",
+          "local_quotient": 1.67,
+          "adjustment": 0.0,
+          "explanation": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "foot_traffic",
+            "label": "유동 수요",
+            "message": "유동 수요 peer 백분위가 99로 높아 긍정적합니다.",
+            "value": 4215817.0,
+            "unit": "명/분기",
+            "percentile": 98.8,
+            "source_name": "flow",
+            "period": "20251"
+          },
+          {
+            "tone": "positive",
+            "metric_key": "sales_per_store",
+            "label": "점포당 추정매출",
+            "message": "점포당 추정매출 peer 백분위가 91로 높아 긍정적합니다.",
+            "value": 40430649.2189781,
+            "unit": "원/분기",
+            "percentile": 90.5,
+            "source_name": "sales",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "same_category_density",
+            "label": "동일 업종 밀도",
+            "message": "동일 업종 밀도 peer 백분위가 99로 높아 주의가 필요합니다.",
+            "value": 593.1724551494514,
+            "unit": "개/km²",
+            "percentile": 98.9,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "net_opening_rate",
+            "label": "점포 순증률",
+            "message": "점포 순증률 peer 백분위가 21로 낮아 주의가 필요합니다.",
+            "value": -0.36496350364963503,
+            "unit": "%",
+            "percentile": 20.9,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "info",
+            "metric_key": "category_local_quotient",
+            "label": "업종 집적효과",
+            "message": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다.",
+            "value": 1.67,
+            "unit": "LQ",
+            "percentile": 0.0,
+            "source_name": "점포 분포 파생지표",
+            "period": "입력 지표와 동일"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 274,
+        "total_store_count": 3263,
+        "opening_count": 12,
+        "closure_count": 13,
+        "monthly_sales_amount": 11077997886.0,
+        "monthly_sales_count": 1061783.0,
+        "total_flow": 4215817.0,
+        "flow_by_time": [
+          775839.0,
+          543036.0,
+          559565.0,
+          713131.0,
+          1040818.0,
+          583427.0
+        ],
+        "area_sqm": 461923.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    },
+    "홍대:음식점": {
+      "market_id": "3120103",
+      "market_name": "홍대입구역(홍대)",
+      "market_type": "발달상권",
+      "district_name": "마포구",
+      "admin_dong_name": "서교동",
+      "category": "음식점",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3120103",
+        "market_name": "홍대입구역(홍대)",
+        "category": "음식점",
+        "peer_group": "서울 발달상권 2025.1Q",
+        "score": 44.5,
+        "band": "주의 필요",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 93.2,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 26.3,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 3.2,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 32.6,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "specialized_watch",
+          "local_quotient": 1.52,
+          "adjustment": 0.0,
+          "explanation": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "foot_traffic",
+            "label": "유동 수요",
+            "message": "유동 수요 peer 백분위가 99로 높아 긍정적합니다.",
+            "value": 4215817.0,
+            "unit": "명/분기",
+            "percentile": 98.9,
+            "source_name": "flow",
+            "period": "20251"
+          },
+          {
+            "tone": "positive",
+            "metric_key": "sales_per_store",
+            "label": "점포당 추정매출",
+            "message": "점포당 추정매출 peer 백분위가 89로 높아 긍정적합니다.",
+            "value": 68774310.57088487,
+            "unit": "원/분기",
+            "percentile": 88.7,
+            "source_name": "sales",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "same_category_density",
+            "label": "동일 업종 밀도",
+            "message": "동일 업종 밀도 peer 백분위가 97로 높아 주의가 필요합니다.",
+            "value": 2275.2709867228955,
+            "unit": "개/km²",
+            "percentile": 96.8,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "closure_rate",
+            "label": "폐업률",
+            "message": "폐업률 peer 백분위가 74로 높아 주의가 필요합니다.",
+            "value": 5.32825880114177,
+            "unit": "%",
+            "percentile": 73.7,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "info",
+            "metric_key": "category_local_quotient",
+            "label": "업종 집적효과",
+            "message": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다.",
+            "value": 1.52,
+            "unit": "LQ",
+            "percentile": 0.0,
+            "source_name": "점포 분포 파생지표",
+            "period": "입력 지표와 동일"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 1051,
+        "total_store_count": 3263,
+        "opening_count": 39,
+        "closure_count": 56,
+        "monthly_sales_amount": 72281800410.0,
+        "monthly_sales_count": 1955080.0,
+        "total_flow": 4215817.0,
+        "flow_by_time": [
+          775839.0,
+          543036.0,
+          559565.0,
+          713131.0,
+          1040818.0,
+          583427.0
+        ],
+        "area_sqm": 461923.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    },
+    "홍대:베이커리": {
+      "market_id": "3120103",
+      "market_name": "홍대입구역(홍대)",
+      "market_type": "발달상권",
+      "district_name": "마포구",
+      "admin_dong_name": "서교동",
+      "category": "베이커리",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3120103",
+        "market_name": "홍대입구역(홍대)",
+        "category": "베이커리",
+        "peer_group": "서울 발달상권 2025.1Q",
+        "score": 38.0,
+        "band": "주의 필요",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 88.1,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 12.2,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 16.3,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 9.9,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "ordinary",
+          "local_quotient": 0.71,
+          "adjustment": 0.0,
+          "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "foot_traffic",
+            "label": "유동 수요",
+            "message": "유동 수요 peer 백분위가 98로 높아 긍정적합니다.",
+            "value": 4215817.0,
+            "unit": "명/분기",
+            "percentile": 98.4,
+            "source_name": "flow",
+            "period": "20251"
+          },
+          {
+            "tone": "positive",
+            "metric_key": "sales_per_store",
+            "label": "점포당 추정매출",
+            "message": "점포당 추정매출 peer 백분위가 80로 높아 긍정적합니다.",
+            "value": 28437394.184210528,
+            "unit": "원/분기",
+            "percentile": 80.0,
+            "source_name": "sales",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "net_opening_rate",
+            "label": "점포 순증률",
+            "message": "점포 순증률 peer 백분위가 10로 낮아 주의가 필요합니다.",
+            "value": -5.263157894736842,
+            "unit": "%",
+            "percentile": 9.9,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "closure_rate",
+            "label": "폐업률",
+            "message": "폐업률 peer 백분위가 88로 높아 주의가 필요합니다.",
+            "value": 5.263157894736842,
+            "unit": "%",
+            "percentile": 87.8,
+            "source_name": "stores",
+            "period": "20251"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 38,
+        "total_store_count": 3263,
+        "opening_count": 0,
+        "closure_count": 2,
+        "monthly_sales_amount": 1080620979.0,
+        "monthly_sales_count": 88982.0,
+        "total_flow": 4215817.0,
+        "flow_by_time": [
+          775839.0,
+          543036.0,
+          559565.0,
+          713131.0,
+          1040818.0,
+          583427.0
+        ],
+        "area_sqm": 461923.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    },
+    "홍대:편의점": {
+      "market_id": "3120103",
+      "market_name": "홍대입구역(홍대)",
+      "market_type": "발달상권",
+      "district_name": "마포구",
+      "admin_dong_name": "서교동",
+      "category": "편의점",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3120103",
+        "market_name": "홍대입구역(홍대)",
+        "category": "편의점",
+        "peer_group": "서울 발달상권 2025.1Q",
+        "score": 37.1,
+        "band": "주의 필요",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 93.6,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 10.6,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 7.1,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 8.3,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "ordinary",
+          "local_quotient": 0.71,
+          "adjustment": 0.0,
+          "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "foot_traffic",
+            "label": "유동 수요",
+            "message": "유동 수요 peer 백분위가 99로 높아 긍정적합니다.",
+            "value": 4215817.0,
+            "unit": "명/분기",
+            "percentile": 98.6,
+            "source_name": "flow",
+            "period": "20251"
+          },
+          {
+            "tone": "positive",
+            "metric_key": "sales_per_store",
+            "label": "점포당 추정매출",
+            "message": "점포당 추정매출 peer 백분위가 90로 높아 긍정적합니다.",
+            "value": 177105180.93617022,
+            "unit": "원/분기",
+            "percentile": 89.7,
+            "source_name": "sales",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "same_category_density",
+            "label": "동일 업종 밀도",
+            "message": "동일 업종 밀도 peer 백분위가 93로 높아 주의가 필요합니다.",
+            "value": 101.74855982490588,
+            "unit": "개/km²",
+            "percentile": 92.9,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "net_opening_rate",
+            "label": "점포 순증률",
+            "message": "점포 순증률 peer 백분위가 8로 낮아 주의가 필요합니다.",
+            "value": -2.127659574468085,
+            "unit": "%",
+            "percentile": 8.3,
+            "source_name": "stores",
+            "period": "20251"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 47,
+        "total_store_count": 3263,
+        "opening_count": 0,
+        "closure_count": 1,
+        "monthly_sales_amount": 8323943504.0,
+        "monthly_sales_count": 824999.0,
+        "total_flow": 4215817.0,
+        "flow_by_time": [
+          775839.0,
+          543036.0,
+          559565.0,
+          713131.0,
+          1040818.0,
+          583427.0
+        ],
+        "area_sqm": 461923.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    },
+    "합정:카페": {
+      "market_id": "3120101",
+      "market_name": "합정역",
+      "market_type": "발달상권",
+      "district_name": "마포구",
+      "admin_dong_name": "서교동",
+      "category": "카페",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3120101",
+        "market_name": "합정역",
+        "category": "카페",
+        "peer_group": "서울 발달상권 2025.1Q",
+        "score": 46.8,
+        "band": "주의 필요",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 84.1,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 30.3,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 6.8,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 53.2,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "specialized_watch",
+          "local_quotient": 1.34,
+          "adjustment": 0.0,
+          "explanation": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "sales_per_store",
+            "label": "점포당 추정매출",
+            "message": "점포당 추정매출 peer 백분위가 86로 높아 긍정적합니다.",
+            "value": 30078831.296296295,
+            "unit": "원/분기",
+            "percentile": 85.9,
+            "source_name": "sales",
+            "period": "20251"
+          },
+          {
+            "tone": "positive",
+            "metric_key": "foot_traffic",
+            "label": "유동 수요",
+            "message": "유동 수요 peer 백분위가 82로 높아 긍정적합니다.",
+            "value": 1430747.0,
+            "unit": "명/분기",
+            "percentile": 81.8,
+            "source_name": "flow",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "same_category_density",
+            "label": "동일 업종 밀도",
+            "message": "동일 업종 밀도 peer 백분위가 93로 높아 주의가 필요합니다.",
+            "value": 322.0535085940575,
+            "unit": "개/km²",
+            "percentile": 93.2,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "closure_rate",
+            "label": "폐업률",
+            "message": "폐업률 peer 백분위가 70로 높아 주의가 필요합니다.",
+            "value": 2.4691358024691357,
+            "unit": "%",
+            "percentile": 69.7,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "info",
+            "metric_key": "category_local_quotient",
+            "label": "업종 집적효과",
+            "message": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다.",
+            "value": 1.34,
+            "unit": "LQ",
+            "percentile": 0.0,
+            "source_name": "점포 분포 파생지표",
+            "period": "입력 지표와 동일"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 81,
+        "total_store_count": 1202,
+        "opening_count": 2,
+        "closure_count": 2,
+        "monthly_sales_amount": 2436385335.0,
+        "monthly_sales_count": 379130.0,
+        "total_flow": 1430747.0,
+        "flow_by_time": [
+          201522.0,
+          250954.0,
+          233154.0,
+          243002.0,
+          336036.0,
+          166075.0
+        ],
+        "area_sqm": 251511.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    },
+    "합정:음식점": {
+      "market_id": "3120101",
+      "market_name": "합정역",
+      "market_type": "발달상권",
+      "district_name": "마포구",
+      "admin_dong_name": "서교동",
+      "category": "음식점",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3120101",
+        "market_name": "합정역",
+        "category": "음식점",
+        "peer_group": "서울 발달상권 2025.1Q",
+        "score": 51.5,
+        "band": "혼합 신호",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 85.1,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 46.4,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 19.4,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 35.5,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "ordinary",
+          "local_quotient": 1.03,
+          "adjustment": 0.0,
+          "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "sales_per_store",
+            "label": "점포당 추정매출",
+            "message": "점포당 추정매출 peer 백분위가 87로 높아 긍정적합니다.",
+            "value": 65398300.53030303,
+            "unit": "원/분기",
+            "percentile": 86.7,
+            "source_name": "sales",
+            "period": "20251"
+          },
+          {
+            "tone": "positive",
+            "metric_key": "foot_traffic",
+            "label": "유동 수요",
+            "message": "유동 수요 peer 백분위가 83로 높아 긍정적합니다.",
+            "value": 1430747.0,
+            "unit": "명/분기",
+            "percentile": 83.0,
+            "source_name": "flow",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "same_category_density",
+            "label": "동일 업종 밀도",
+            "message": "동일 업종 밀도 peer 백분위가 81로 높아 주의가 필요합니다.",
+            "value": 1049.6558798621134,
+            "unit": "개/km²",
+            "percentile": 80.6,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "net_opening_rate",
+            "label": "점포 순증률",
+            "message": "점포 순증률 peer 백분위가 35로 낮아 주의가 필요합니다.",
+            "value": -1.1363636363636365,
+            "unit": "%",
+            "percentile": 35.5,
+            "source_name": "stores",
+            "period": "20251"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 264,
+        "total_store_count": 1202,
+        "opening_count": 5,
+        "closure_count": 8,
+        "monthly_sales_amount": 17265151340.0,
+        "monthly_sales_count": 550220.0,
+        "total_flow": 1430747.0,
+        "flow_by_time": [
+          201522.0,
+          250954.0,
+          233154.0,
+          243002.0,
+          336036.0,
+          166075.0
+        ],
+        "area_sqm": 251511.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    },
+    "합정:베이커리": {
+      "market_id": "3120101",
+      "market_name": "합정역",
+      "market_type": "발달상권",
+      "district_name": "마포구",
+      "admin_dong_name": "서교동",
+      "category": "베이커리",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3120101",
+        "market_name": "합정역",
+        "category": "베이커리",
+        "peer_group": "서울 발달상권 2025.1Q",
+        "score": 35.3,
+        "band": "주의 필요",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 84.0,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 10.4,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 13.4,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 8.6,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "ordinary",
+          "local_quotient": 1.17,
+          "adjustment": 0.0,
+          "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "sales_per_store",
+            "label": "점포당 추정매출",
+            "message": "점포당 추정매출 peer 백분위가 88로 높아 긍정적합니다.",
+            "value": 54252530.69565217,
+            "unit": "원/분기",
+            "percentile": 88.5,
+            "source_name": "sales",
+            "period": "20251"
+          },
+          {
+            "tone": "positive",
+            "metric_key": "foot_traffic",
+            "label": "유동 수요",
+            "message": "유동 수요 peer 백분위가 78로 높아 긍정적합니다.",
+            "value": 1430747.0,
+            "unit": "명/분기",
+            "percentile": 78.3,
+            "source_name": "flow",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "net_opening_rate",
+            "label": "점포 순증률",
+            "message": "점포 순증률 peer 백분위가 9로 낮아 주의가 필요합니다.",
+            "value": -8.695652173913043,
+            "unit": "%",
+            "percentile": 8.6,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "closure_rate",
+            "label": "폐업률",
+            "message": "폐업률 peer 백분위가 90로 높아 주의가 필요합니다.",
+            "value": 8.695652173913043,
+            "unit": "%",
+            "percentile": 89.6,
+            "source_name": "stores",
+            "period": "20251"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 23,
+        "total_store_count": 1202,
+        "opening_count": 0,
+        "closure_count": 2,
+        "monthly_sales_amount": 1247808206.0,
+        "monthly_sales_count": 126830.0,
+        "total_flow": 1430747.0,
+        "flow_by_time": [
+          201522.0,
+          250954.0,
+          233154.0,
+          243002.0,
+          336036.0,
+          166075.0
+        ],
+        "area_sqm": 251511.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    },
+    "합정:편의점": {
+      "market_id": "3120101",
+      "market_name": "합정역",
+      "market_type": "발달상권",
+      "district_name": "마포구",
+      "admin_dong_name": "서교동",
+      "category": "편의점",
+      "period": "20251",
+      "score": {
+        "formula_version": "1.0.0",
+        "market_id": "3120101",
+        "market_name": "합정역",
+        "category": "편의점",
+        "peer_group": "서울 발달상권 2025.1Q",
+        "score": 46.9,
+        "band": "주의 필요",
+        "decision_status": "insufficient_evidence",
+        "confidence": 49.6,
+        "confidence_label": "낮음",
+        "data_coverage": 55.0,
+        "components": [
+          {
+            "key": "demand",
+            "label": "수요",
+            "score": 78.6,
+            "weight_percent": 33.3,
+            "evidence_keys": [
+              "sales_per_store",
+              "foot_traffic"
+            ]
+          },
+          {
+            "key": "stability",
+            "label": "영업 안정성",
+            "score": 9.8,
+            "weight_percent": 27.8,
+            "evidence_keys": [
+              "closure_rate"
+            ]
+          },
+          {
+            "key": "competition_fit",
+            "label": "경쟁 적합성",
+            "score": 8.8,
+            "weight_percent": 22.2,
+            "evidence_keys": [
+              "same_category_density"
+            ]
+          },
+          {
+            "key": "growth",
+            "label": "성장성",
+            "score": 95.8,
+            "weight_percent": 16.7,
+            "evidence_keys": [
+              "net_opening_rate"
+            ]
+          }
+        ],
+        "cluster": {
+          "classification": "ordinary",
+          "local_quotient": 1.03,
+          "adjustment": 0.0,
+          "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
+        },
+        "reasons": [
+          {
+            "tone": "positive",
+            "metric_key": "net_opening_rate",
+            "label": "점포 순증률",
+            "message": "점포 순증률 peer 백분위가 96로 높아 긍정적합니다.",
+            "value": 4.0,
+            "unit": "%",
+            "percentile": 95.8,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "positive",
+            "metric_key": "foot_traffic",
+            "label": "유동 수요",
+            "message": "유동 수요 peer 백분위가 79로 높아 긍정적합니다.",
+            "value": 1430747.0,
+            "unit": "명/분기",
+            "percentile": 79.0,
+            "source_name": "flow",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "same_category_density",
+            "label": "동일 업종 밀도",
+            "message": "동일 업종 밀도 peer 백분위가 91로 높아 주의가 필요합니다.",
+            "value": 99.39923104754862,
+            "unit": "개/km²",
+            "percentile": 91.2,
+            "source_name": "stores",
+            "period": "20251"
+          },
+          {
+            "tone": "caution",
+            "metric_key": "closure_rate",
+            "label": "폐업률",
+            "message": "폐업률 peer 백분위가 90로 높아 주의가 필요합니다.",
+            "value": 4.0,
+            "unit": "%",
+            "percentile": 90.2,
+            "source_name": "stores",
+            "period": "20251"
+          }
+        ],
+        "limitations": [
+          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
+        ]
+      },
+      "raw": {
+        "category_store_count": 25,
+        "total_store_count": 1202,
+        "opening_count": 2,
+        "closure_count": 1,
+        "monthly_sales_amount": 2810154929.0,
+        "monthly_sales_count": 423194.0,
+        "total_flow": 1430747.0,
+        "flow_by_time": [
+          201522.0,
+          250954.0,
+          233154.0,
+          243002.0,
+          336036.0,
+          166075.0
+        ],
+        "area_sqm": 251511.0
+      },
+      "evidence": [
+        {
+          "metric": "점포·개폐업",
+          "source_name": "stores",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "추정매출",
+          "source_name": "sales",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        },
+        {
+          "metric": "길단위인구",
+          "source_name": "flow",
+          "source_url": "https://data.seoul.go.kr",
+          "period": "20251",
+          "source_type": "official"
+        }
+      ]
+    }
+  }
+}

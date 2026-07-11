@@ -24,6 +24,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { SceneWorkspace } from "./components/SceneWorkspace";
+import {
+  loadMarketAnalysis,
+  loadMarketComparison,
+  type AnalysisSource,
+  type MarketAnalysis,
+} from "./marketAnalysis";
 import "./styles/global.css";
 
 type Category = "카페" | "음식점" | "베이커리" | "편의점";
@@ -364,6 +370,13 @@ function formatMarketScore(score: number, category: Category, radius: number) {
   return Math.max(0, Math.min(100, score + categoryShift + radiusShift));
 }
 
+function demandFromFlow(flow: number[]) {
+  if (flow.length !== 6 || Math.max(...flow) <= 0) return Array(14).fill(0) as number[];
+  const maximum = Math.max(...flow);
+  const bucketByChartIndex = [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 0];
+  return bucketByChartIndex.map((bucket) => Math.round((flow[bucket] / maximum) * 100));
+}
+
 function circleFeature([longitude, latitude]: [number, number], radiusMeters: number) {
   const points = 64;
   const coordinates = Array.from({ length: points + 1 }, (_, index) => {
@@ -398,10 +411,31 @@ export function App() {
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
   const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
+  const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
+  const [analysisSource, setAnalysisSource] = useState<AnalysisSource | null>(null);
+  const [analysisState, setAnalysisState] = useState<"loading" | "ready" | "error">("loading");
+  const [comparison, setComparison] = useState<Record<MarketKey, MarketAnalysis> | null>(null);
   const mapRef = useRef<MapRef>(null);
 
-  const market = markets[marketKey];
-  const score = formatMarketScore(market.score, category, radius);
+  const market = useMemo(() => {
+    const base = markets[marketKey];
+    if (!analysis) return base;
+    const flow = analysis.raw.total_flow;
+    const reason = analysis.score.reasons.slice(0, 2).map((item) => item.message).join(" ");
+    return {
+      ...base,
+      score: Math.round(analysis.score.score),
+      grade: `${analysis.score.band} · 신뢰도 ${analysis.score.confidence_label}`,
+      footfall: flow == null ? "미수집" : `${Math.round(flow).toLocaleString("ko-KR")}명/분기`,
+      workPopulation: "미수집",
+      residentPopulation: "미수집",
+      opening: analysis.raw.opening_count,
+      closing: analysis.raw.closure_count,
+      demand: demandFromFlow(analysis.raw.flow_by_time),
+      insight: reason || analysis.score.cluster.explanation,
+    };
+  }, [analysis, marketKey]);
+  const score = analysis ? Math.round(analysis.score.score) : formatMarketScore(market.score, category, radius);
   const selected = market.stores.find((store) => store.name === selectedStore) ?? market.stores[0];
   const visibleStores = useMemo(
     () => [
@@ -410,7 +444,7 @@ export function App() {
     ],
     [market, category],
   );
-  const sameCategoryCount = radius === 100 ? 6 : radius === 300 ? 19 : 34;
+  const sameCategoryCount = analysis?.raw.category_store_count ?? (radius === 100 ? 6 : radius === 300 ? 19 : 34);
   const densityLabel = layer === "density" ? "동일 업종 밀도" : "대표 시간대 수요";
   const circle = useMemo(() => circleFeature(market.center, radius), [market.center, radius]);
   const activeDemand = market.demand[activeHour];
@@ -426,6 +460,37 @@ export function App() {
       ),
     [activeDemand, market.center],
   );
+
+  useEffect(() => {
+    if (isTestEnvironment() || typeof fetch === "undefined") return;
+    const controller = new AbortController();
+    setAnalysis(null);
+    setAnalysisSource(null);
+    setAnalysisState("loading");
+    loadMarketAnalysis(marketKey, category, controller.signal)
+      .then((result) => {
+        setAnalysis(result.analysis);
+        setAnalysisSource(result.source);
+        setAnalysisState("ready");
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setAnalysisState("error");
+      });
+    return () => controller.abort();
+  }, [category, marketKey]);
+
+  useEffect(() => {
+    if (isTestEnvironment() || typeof fetch === "undefined") return;
+    const controller = new AbortController();
+    loadMarketComparison(category, controller.signal)
+      .then(setComparison)
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setComparison(null);
+      });
+    return () => controller.abort();
+  }, [category]);
 
   useEffect(() => {
     mapRef.current?.flyTo({
@@ -519,8 +584,12 @@ export function App() {
       </header>
 
       <section className="demo-note" aria-label="데모 데이터 안내">
-        <span className="pulse-dot" /> 서울 상권분석 Open API 2025년 1분기 snapshot을 기준으로
-        구성한 시연 화면입니다.{" "}
+        <span className="pulse-dot" />
+        {analysisState === "loading"
+          ? "서울 상권분석 공식 데이터를 불러오는 중입니다."
+          : analysisState === "error"
+            ? "분석 데이터를 열지 못해 화면 예시 값을 표시합니다."
+            : `서울 상권분석 2025년 1분기 ${analysisSource === "api" ? "API" : "검증 snapshot"} 결과입니다.`}{" "}
         <button type="button" onClick={() => setEvidenceOpen(true)}>
           데이터 범위 보기
         </button>
@@ -617,7 +686,7 @@ export function App() {
                     {store.category} · {store.distance}
                   </small>
                 </span>
-                <strong>{store.score}</strong>
+                <strong>{analysis ? "POI" : store.score}</strong>
               </button>
             ))}
           </div>
@@ -1102,7 +1171,7 @@ export function App() {
           <section className="metric-section">
             <div className="section-title">
               <span>경쟁 현황</span>
-              <small>반경 {radius}m</small>
+              <small>{analysis ? "서울시 상권 경계" : `반경 ${radius}m`}</small>
             </div>
             <div className="competition-chart">
               <div className="donut">
@@ -1112,15 +1181,15 @@ export function App() {
               </div>
               <div className="legend-list">
                 <span>
-                  <i className="green" /> 카페 <b>{category === "카페" ? sameCategoryCount : 12}</b>
+                  <i className="green" /> 카페 <b>{category === "카페" ? sameCategoryCount : "-"}</b>
                 </span>
                 <span>
                   <i className="orange" /> 음식점{" "}
-                  <b>{category === "음식점" ? sameCategoryCount : 9}</b>
+                  <b>{category === "음식점" ? sameCategoryCount : "-"}</b>
                 </span>
                 <span>
                   <i className="blue" /> 베이커리{" "}
-                  <b>{category === "베이커리" ? sameCategoryCount : 4}</b>
+                  <b>{category === "베이커리" ? sameCategoryCount : "-"}</b>
                 </span>
               </div>
             </div>
@@ -1237,20 +1306,26 @@ export function App() {
               </div>
               <div>
                 <span>시간대 수요</span>
-                <b>생활인구 집계</b>
-                <p>대표 시간대 수요를 정규화한 시연 값입니다. 개인 이동 정보가 아닙니다.</p>
+                <b>서울시 길단위인구 집계</b>
+                <p>6개 시간대 공식 집계를 0~100으로 정규화해 표시합니다. 개인 이동 정보가 아닙니다.</p>
               </div>
               <div>
                 <span>입지 점수</span>
-                <b>규칙 기반 demo score</b>
-                <p>수요, 동일 업종 경쟁, 개폐업 흐름을 합산한 설명용 점수입니다.</p>
+                <b>LocalTwin score v{analysis?.score.formula_version ?? "1.0.0"}</b>
+                <p>
+                  서울 peer 백분위의 수요·점포당 매출·폐업·업종 밀도·순증률만 반영합니다.
+                  {analysis ? ` 현재 근거 신뢰도는 ${analysis.score.confidence}%입니다.` : ""}
+                </p>
               </div>
               <div>
                 <span>분석 범위</span>
                 <b>
                   {market.name} · {category}
                 </b>
-                <p>반경 {radius}m, 기준 기간 2025년 1분기를 화면 상태와 함께 기록합니다.</p>
+                <p>
+                  지도 탐색 반경은 {radius}m이며, 우측 집계는 서울시 상권 경계와 2025년 1분기를
+                  기준으로 합니다.
+                </p>
               </div>
             </div>
             <button type="button" className="primary-action" onClick={() => setEvidenceOpen(false)}>
@@ -1284,7 +1359,14 @@ export function App() {
             <div className="compare-table">
               {(Object.keys(markets) as MarketKey[]).map((key) => {
                 const item = markets[key];
-                const itemScore = formatMarketScore(item.score, category, radius);
+                const actual = comparison?.[key];
+                const itemScore = actual
+                  ? Math.round(actual.score.score)
+                  : formatMarketScore(item.score, category, radius);
+                const itemFlow = actual?.raw.total_flow;
+                const netOpening = actual
+                  ? actual.raw.opening_count - actual.raw.closure_count
+                  : item.opening - item.closing;
                 return (
                   <button
                     key={key}
@@ -1298,7 +1380,7 @@ export function App() {
                     <span>{item.name}</span>
                     <b>{itemScore}</b>
                     <small>
-                      유동 {item.footfall} · 순증 +{item.opening - item.closing}
+                      유동 {itemFlow == null ? item.footfall : `${Math.round(itemFlow).toLocaleString("ko-KR")}명/분기`} · 순증 {netOpening > 0 ? "+" : ""}{netOpening}
                     </small>
                   </button>
                 );
