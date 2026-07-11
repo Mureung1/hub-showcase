@@ -123,7 +123,7 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
     const sharedPage = await page.context().newPage();
     await sharedPage.goto(shareUrl);
     await expect(
-      sharedPage.getByRole("heading", { name: projectTitle }),
+      sharedPage.getByRole("heading", { name: projectTitle, level: 1 }),
     ).toBeVisible();
     await expect(
       sharedPage.getByText(
@@ -135,7 +135,7 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
     ).toHaveCount(0);
     await sharedPage.reload();
     await expect(
-      sharedPage.getByRole("heading", { name: projectTitle }),
+      sharedPage.getByRole("heading", { name: projectTitle, level: 1 }),
     ).toBeVisible();
 
     const revokeButton = page.locator('[data-testid^="share-revoke-"]').first();
