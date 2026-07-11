@@ -29,41 +29,10 @@ export function createModuBrainRepository(client) {
         `projects?select=${projectSelect}&archived_at=${archived ? "not.is.null" : "is.null"}&order=updated_at.desc`,
       );
     },
-    async createProject(userId, values) {
-      return single(
-        await client.request(`projects?select=${projectSelect}`, {
-          method: "POST",
-          prefer: "return=representation",
-          body: { owner_id: userId, title: values.title, description: values.description },
-        }),
-      );
-    },
     async getProject(projectId) {
       return requireSingle(
         await client.request(`projects?id=eq.${encode(projectId)}&select=${projectSelect}`),
       );
-    },
-    async updateProject(projectId, values) {
-      return requireSingle(
-        await client.request(`projects?id=eq.${encode(projectId)}&select=${projectSelect}`, {
-          method: "PATCH",
-          prefer: "return=representation",
-          body: values,
-        }),
-      );
-    },
-    async archiveProject(projectId) {
-      return this.updateProject(projectId, { archived_at: new Date().toISOString() });
-    },
-    async restoreProject(projectId) {
-      return this.updateProject(projectId, { archived_at: null });
-    },
-    async deleteProject(projectId) {
-      const result = await client.request(`projects?id=eq.${encode(projectId)}&select=id`, {
-        method: "DELETE",
-        prefer: "return=representation",
-      });
-      requireSingle(result);
     },
 
     async listSources(projectId) {
@@ -79,16 +48,6 @@ export function createModuBrainRepository(client) {
         `source_records?project_id=eq.${encode(projectId)}&archived_at=is.null&select=${sourceListSelect}&order=occurred_at.desc.nullslast,created_at.desc,id.desc`,
         page,
         sourceCursorFilter(page.cursor),
-      );
-    },
-    async createSource(projectId, values) {
-      await this.getProject(projectId);
-      return single(
-        await client.request(`source_records?select=${sourceSelect}`, {
-          method: "POST",
-          prefer: "return=representation",
-          body: { project_id: projectId, ...values },
-        }),
       );
     },
     async importSourceContext(projectId, values) {
@@ -125,21 +84,6 @@ export function createModuBrainRepository(client) {
       return client.request(
         `source_records?project_id=eq.${encode(projectId)}&id=in.(${values})&archived_at=is.null&select=${sourceSelect}&order=created_at.asc`,
       );
-    },
-    async updateSource(sourceId, values) {
-      return requireSingle(
-        await client.request(`source_records?id=eq.${encode(sourceId)}&select=${sourceSelect}`, {
-          method: "PATCH",
-          prefer: "return=representation",
-          body: values,
-        }),
-      );
-    },
-    async archiveSource(sourceId) {
-      return this.updateSource(sourceId, { archived_at: new Date().toISOString() });
-    },
-    async restoreSource(sourceId) {
-      return this.updateSource(sourceId, { archived_at: null });
     },
     async listSourceSegments(sourceId) {
       await this.getSource(sourceId);
@@ -183,28 +127,6 @@ export function createModuBrainRepository(client) {
       return requireSingle(
         await client.request(`analysis_runs?id=eq.${encode(runId)}&select=${runSelect}`),
       );
-    },
-    async startRun(values) {
-      const rows = await client.request("rpc/start_analysis_run", {
-        method: "POST",
-        body: {
-          p_project_id: values.projectId,
-          p_source_ids: values.sourceIds,
-          p_idempotency_key: values.idempotencyKey,
-          p_request_fingerprint: values.requestFingerprint,
-          p_provider_mode: values.providerMode,
-          p_provider_model: values.providerModel,
-        },
-      });
-      const row = single(rows);
-      return { reused: row.outcome === "reused", run: await this.getRun(row.run.id) };
-    },
-    async deleteRun(runId) {
-      const result = await client.request(`analysis_runs?id=eq.${encode(runId)}&select=id`, {
-        method: "DELETE",
-        prefer: "return=representation",
-      });
-      requireSingle(result);
     },
     async getRunSnapshots(runId) {
       await this.getRun(runId);
@@ -256,18 +178,6 @@ export function createModuBrainRepository(client) {
       return client.request(
         `share_links?analysis_run_id=eq.${encode(runId)}&select=${shareSelect}&order=created_at.desc`,
       );
-    },
-    async consumeRateLimit(scope, subject, limit, windowSeconds) {
-      const rows = await client.request("rpc/consume_rate_limit", {
-        method: "POST",
-        body: {
-          p_scope: scope,
-          p_subject: subject,
-          p_limit: limit,
-          p_window_seconds: windowSeconds,
-        },
-      });
-      return rows === true || rows?.[0]?.consume_rate_limit === true;
     },
   };
 }

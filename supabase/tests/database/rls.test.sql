@@ -3,7 +3,10 @@ create extension if not exists pgtap with schema extensions;
 select plan(92);
 
 select has_table('public', 'projects', 'projects table exists');
-select has_table('public', 'analysis_runs', 'analysis_runs table exists');
+select table_privs_are(
+  'public', 'analysis_runs', 'authenticated', array['SELECT'],
+  'authenticated analysis-run access is read-only after the mutation-boundary contract'
+);
 select has_table('public', 'source_imports', 'source imports table exists');
 select has_table('public', 'source_segments', 'source segments table exists');
 select has_table('public', 'context_entities', 'context entities table exists');
@@ -32,7 +35,7 @@ select function_privs_are(
 );
 select function_privs_are(
   'public', 'start_analysis_run', array['uuid','uuid[]','text','text','text','text'],
-  'authenticated', array['EXECUTE'], 'authenticated users can start an owned analysis'
+  'authenticated', array[]::text[], 'authenticated users cannot execute the legacy analysis RPC'
 );
 select function_privs_are(
   'public', 'import_source_context',
@@ -45,8 +48,8 @@ select function_privs_are(
   'anon', array[]::text[], 'anonymous users cannot import source context'
 );
 select function_privs_are(
-  'public', 'prevent_imported_source_mutation', array[]::text[],
-  'authenticated', array[]::text[], 'trigger helper is not directly executable by clients'
+  'public', 'consume_rate_limit', array['text','text','integer','integer'],
+  'authenticated', array[]::text[], 'authenticated users cannot execute the legacy rate-limit RPC'
 );
 select function_privs_are(
   'public', 'create_analysis_run_annotation',
@@ -76,11 +79,18 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
 set local "request.jwt.claim.role" = 'authenticated';
 
-select lives_ok($$
-  insert into public.projects(id, owner_id, title)
-  values ('22222222-2222-4222-8222-222222222222', auth.uid(), 'Owner project')
-$$, 'owner can create a project');
+select table_privs_are(
+  'public', 'projects', 'authenticated', array['SELECT'],
+  'authenticated project access is read-only after the mutation-boundary contract'
+);
 
+set local role service_role;
+insert into public.projects(id, owner_id, title)
+values (
+  '22222222-2222-4222-8222-222222222222',
+  '11111111-1111-4111-8111-111111111111',
+  'Owner project'
+);
 insert into public.source_records(
   id, project_id, kind, title, content, content_sha256, char_count
 ) values (
@@ -89,21 +99,30 @@ insert into public.source_records(
   'meeting', 'Owner source', 'source one',
   encode(extensions.digest('source one', 'sha256'), 'hex'), 10
 );
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+set local "request.jwt.claim.role" = 'authenticated';
 
 select is(
   (select count(*) from public.projects where id = '22222222-2222-4222-8222-222222222222'),
   1::bigint,
   'owner can read own project'
 );
-select lives_ok($$
-  insert into public.source_records(
-    id, project_id, kind, title, content, content_sha256, char_count
-  ) values (
-    '88888888-8888-4888-8888-888888888888',
-    '22222222-2222-4222-8222-222222222222',
-    'note', 'Emoji source', '😀', encode(extensions.digest('😀', 'sha256'), 'hex'), 1
-  )
-$$, 'Postgres char_length accepts one Unicode code point');
+select table_privs_are(
+  'public', 'source_records', 'authenticated', array['SELECT'],
+  'authenticated source access is read-only after the mutation-boundary contract'
+);
+set local role service_role;
+insert into public.source_records(
+  id, project_id, kind, title, content, content_sha256, char_count
+) values (
+  '88888888-8888-4888-8888-888888888888',
+  '22222222-2222-4222-8222-222222222222',
+  'note', 'Emoji source', '😀', encode(extensions.digest('😀', 'sha256'), 'hex'), 1
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+set local "request.jwt.claim.role" = 'authenticated';
 select is(
   (select char_count from public.source_records where id = '88888888-8888-4888-8888-888888888888'),
   1,
@@ -190,6 +209,7 @@ select ok(
   ),
   'database separates external import identity from the canonical content hash'
 );
+set local role service_role;
 select throws_ok($$
   update public.source_records
   set content = 'tampered',
@@ -200,6 +220,9 @@ select throws_ok($$
     where provider = 'kakaotalk' and external_id = 'chat-room-1'
   )
 $$, '23514', 'IMPORTED_SOURCE_IMMUTABLE', 'imported source content is immutable');
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+set local "request.jwt.claim.role" = 'authenticated';
 select throws_like($$
   insert into public.source_segments(project_id, source_record_id, ordinal, text)
   select project_id, id, 99, 'forged segment'
@@ -241,12 +264,16 @@ select is(
   'external identifiers prevent cross-chat content conflation'
 );
 
+set local role service_role;
 update public.source_records
 set archived_at = now()
 where id = (
   select source_record_id from public.source_imports
   where provider = 'kakaotalk' and external_id = 'chat-room-1'
 );
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+set local "request.jwt.claim.role" = 'authenticated';
 select ok(
   (select
     duplicate
@@ -260,37 +287,57 @@ select ok(
   'reimport atomically restores an archived duplicate and refreshes its title'
 );
 
-select lives_ok($$
-  insert into public.context_entities(id, project_id, type, label, normalized_label)
-  values
-    ('44444444-4444-4444-8444-444444444441', '22222222-2222-4222-8222-222222222222', 'person', 'Alice', 'alice'),
-    ('44444444-4444-4444-8444-444444444442', '22222222-2222-4222-8222-222222222222', 'decision', 'Launch', 'launch')
-$$, 'owner can create canonical context entities');
-select lives_ok($$
-  insert into public.context_entity_aliases(
-    id, project_id, entity_id, alias, normalized_alias
-  ) values (
-    '44444444-4444-4444-8444-444444444443',
-    '22222222-2222-4222-8222-222222222222',
-    '44444444-4444-4444-8444-444444444441',
-    'A. Kim', 'a. kim'
-  )
-$$, 'owner can add an entity alias');
-select lives_ok($$
-  insert into public.context_edges(
-    id, project_id, from_entity_id, to_entity_id, relation,
-    source_segment_id, evidence
-  )
-  select
-    '44444444-4444-4444-8444-444444444444',
-    '22222222-2222-4222-8222-222222222222',
-    '44444444-4444-4444-8444-444444444441',
-    '44444444-4444-4444-8444-444444444442',
-    'decided', s.id, jsonb_build_object('quote', s.text)
-  from public.source_segments s
-  join public.source_imports i on i.source_record_id = s.source_record_id
-  where i.provider = 'kakaotalk' and i.external_id = 'chat-room-1' and s.ordinal = 0
-$$, 'owner can create an evidence-backed context edge');
+select table_privs_are(
+  'public', 'context_entities', 'authenticated', array['SELECT'],
+  'authenticated context-entity access is read-only after the mutation-boundary contract'
+);
+set local role service_role;
+insert into public.context_entities(id, project_id, type, label, normalized_label)
+values
+  ('44444444-4444-4444-8444-444444444441', '22222222-2222-4222-8222-222222222222', 'person', 'Alice', 'alice'),
+  ('44444444-4444-4444-8444-444444444442', '22222222-2222-4222-8222-222222222222', 'decision', 'Launch', 'launch');
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+set local "request.jwt.claim.role" = 'authenticated';
+
+select table_privs_are(
+  'public', 'context_entity_aliases', 'authenticated', array['SELECT'],
+  'authenticated context-alias access is read-only after the mutation-boundary contract'
+);
+set local role service_role;
+insert into public.context_entity_aliases(
+  id, project_id, entity_id, alias, normalized_alias
+) values (
+  '44444444-4444-4444-8444-444444444443',
+  '22222222-2222-4222-8222-222222222222',
+  '44444444-4444-4444-8444-444444444441',
+  'A. Kim', 'a. kim'
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+set local "request.jwt.claim.role" = 'authenticated';
+
+select table_privs_are(
+  'public', 'context_edges', 'authenticated', array['SELECT'],
+  'authenticated context-edge access is read-only after the mutation-boundary contract'
+);
+set local role service_role;
+insert into public.context_edges(
+  id, project_id, from_entity_id, to_entity_id, relation,
+  source_segment_id, evidence
+)
+select
+  '44444444-4444-4444-8444-444444444444',
+  '22222222-2222-4222-8222-222222222222',
+  '44444444-4444-4444-8444-444444444441',
+  '44444444-4444-4444-8444-444444444442',
+  'decided', s.id, jsonb_build_object('quote', s.text)
+from public.source_segments s
+join public.source_imports i on i.source_record_id = s.source_record_id
+where i.provider = 'kakaotalk' and i.external_id = 'chat-room-1' and s.ordinal = 0;
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+set local "request.jwt.claim.role" = 'authenticated';
 select is(
   (select count(*) from public.context_edges where project_id = '22222222-2222-4222-8222-222222222222'),
   1::bigint,
@@ -313,18 +360,29 @@ select is((select count(*) from public.source_segments), 0::bigint, 'another use
 select is((select count(*) from public.context_entities), 0::bigint, 'another user cannot read context entities');
 select is((select count(*) from public.context_entity_aliases), 0::bigint, 'another user cannot read entity aliases');
 select is((select count(*) from public.context_edges), 0::bigint, 'another user cannot read context edges');
-select throws_like($$
-  insert into public.context_entities(project_id, type, label, normalized_label)
-  values ('22222222-2222-4222-8222-222222222222', 'topic', 'Stolen', 'stolen')
-$$, '%row-level security%', 'another user cannot add graph data to the owner project');
-select is_empty($$
-  update public.projects set title = 'stolen'
-  where id = '22222222-2222-4222-8222-222222222222' returning id
-$$, 'another user cannot update project');
+select throws_ok($$
+  select * from public.import_source_context(
+    '22222222-2222-4222-8222-222222222222',
+    'note', 'Stolen import', 'must not persist', 'paste'
+  )
+$$, '42501', 'insufficient_privilege', 'another user cannot import context into the owner project');
+set local role service_role;
+select throws_ok($$
+  select public.app_update_project(
+    '99999999-9999-4999-8999-999999999999',
+    '22222222-2222-4222-8222-222222222222',
+    '{"title":"stolen"}'::jsonb
+  )
+$$, '42501', 'insufficient_privilege', 'service-role mutation RPC enforces the supplied user ownership boundary');
+set local role authenticated;
+set local "request.jwt.claim.sub" = '99999999-9999-4999-8999-999999999999';
+set local "request.jwt.claim.role" = 'authenticated';
 
 set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+set local role service_role;
 select is(
-  (select outcome from public.start_analysis_run(
+  (select outcome from public.app_start_analysis_run(
+    '11111111-1111-4111-8111-111111111111',
     '22222222-2222-4222-8222-222222222222',
     array['33333333-3333-4333-8333-333333333333'::uuid],
     'idempotency-key', repeat('b', 64), 'local', null
@@ -333,7 +391,8 @@ select is(
   'first request atomically creates run and snapshots'
 );
 select is(
-  (select outcome from public.start_analysis_run(
+  (select outcome from public.app_start_analysis_run(
+    '11111111-1111-4111-8111-111111111111',
     '22222222-2222-4222-8222-222222222222',
     array['33333333-3333-4333-8333-333333333333'::uuid],
     'idempotency-key', repeat('b', 64), 'local', null
@@ -342,12 +401,16 @@ select is(
   'same key and fingerprint reuses the run'
 );
 select throws_ok($$
-  select * from public.start_analysis_run(
+  select * from public.app_start_analysis_run(
+    '11111111-1111-4111-8111-111111111111',
     '22222222-2222-4222-8222-222222222222',
     array['33333333-3333-4333-8333-333333333333'::uuid],
     'idempotency-key', repeat('c', 64), 'local', null
   )
 $$, 'P0001', 'IDEMPOTENCY_CONFLICT', 'same key with different semantic input is rejected');
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+set local "request.jwt.claim.role" = 'authenticated';
 select is((select count(*) from public.analysis_run_sources), 1::bigint, 'reuse does not duplicate snapshots');
 
 select throws_like($$
@@ -527,8 +590,10 @@ select throws_like($$
   update public.share_links set revoked_at = now()
   where id = '55555555-5555-4555-8555-555555555555'
 $$, '%permission denied%', 'authenticated users cannot revoke shares directly');
+set local role service_role;
 select is(
-  (select outcome from public.start_analysis_run(
+  (select outcome from public.app_start_analysis_run(
+    '11111111-1111-4111-8111-111111111111',
     '22222222-2222-4222-8222-222222222222',
     array['33333333-3333-4333-8333-333333333333'::uuid],
     'fresh-after-stale', repeat('7',64), 'local', null
@@ -536,6 +601,9 @@ select is(
   'created',
   'a stale running lease no longer blocks a new analysis'
 );
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11111111-1111-4111-8111-111111111111';
+set local "request.jwt.claim.role" = 'authenticated';
 select is(
   (select status from public.analysis_runs where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
   'cancelled',

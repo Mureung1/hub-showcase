@@ -10,7 +10,7 @@ import {
 const ID = "22222222-2222-4222-8222-222222222222";
 
 describe("Modu Brain PostgREST repository", () => {
-  it("covers owner-scoped CRUD, transactional runs, shares, readiness, and limits", async () => {
+  it("covers owner-scoped reads and the two authenticated compatibility RPCs", async () => {
     const project = { id: ID, title: "project" };
     const source = { id: ID, project_id: ID, content: "text" };
     const run = { id: ID, project_id: ID, analysis_run_sources: [{ source_record_id: ID }] };
@@ -20,14 +20,12 @@ describe("Modu Brain PostgREST repository", () => {
     const annotation = { id: ID, analysis_run_id: ID, annotation_type: "note" };
     const share = { id: ID, analysis_run_id: ID };
     const request = vi.fn(async (path) => {
-      if (path === "rpc/start_analysis_run") return [{ outcome: "created", run: { id: ID } }];
       if (path === "rpc/create_analysis_run_annotation") {
         return [{ outcome: "created", annotation }];
       }
       if (path === "rpc/import_source_context") {
         return { source, import_id: ID, provider: "paste", segment_count: 1 };
       }
-      if (path === "rpc/consume_rate_limit") return true;
       if (path.startsWith("projects")) return [project];
       if (path.startsWith("source_records")) return [source];
       if (path.startsWith("source_segments")) return [segment];
@@ -43,15 +41,9 @@ describe("Modu Brain PostgREST repository", () => {
     await expect(repository.ready()).resolves.toBe(true);
     await expect(repository.listProjects()).resolves.toEqual([project]);
     await expect(repository.listProjects({ archived: true })).resolves.toEqual([project]);
-    await expect(repository.createProject("user", { title: "p", description: "d" })).resolves.toBe(project);
     await expect(repository.getProject(ID)).resolves.toBe(project);
-    await expect(repository.updateProject(ID, { title: "updated" })).resolves.toBe(project);
-    await expect(repository.archiveProject(ID)).resolves.toBe(project);
-    await expect(repository.restoreProject(ID)).resolves.toBe(project);
-    await expect(repository.deleteProject(ID)).resolves.toBeUndefined();
 
     await expect(repository.listSources(ID)).resolves.toEqual([source]);
-    await expect(repository.createSource(ID, { title: "source" })).resolves.toBe(source);
     await expect(
       repository.importSourceContext(ID, {
         kind: "note",
@@ -68,24 +60,10 @@ describe("Modu Brain PostgREST repository", () => {
     await expect(repository.getSource(ID)).resolves.toBe(source);
     await expect(repository.getSources(ID, [ID])).resolves.toEqual([source]);
     await expect(repository.getSources(ID, [])).resolves.toEqual([]);
-    await expect(repository.updateSource(ID, { title: "updated" })).resolves.toBe(source);
-    await expect(repository.archiveSource(ID)).resolves.toBe(source);
-    await expect(repository.restoreSource(ID)).resolves.toBe(source);
     await expect(repository.listSourceSegments(ID)).resolves.toEqual([segment]);
 
     await expect(repository.listRuns(ID)).resolves.toEqual([run]);
     await expect(repository.getRun(ID)).resolves.toBe(run);
-    await expect(
-      repository.startRun({
-        projectId: ID,
-        sourceIds: [ID],
-        idempotencyKey: "abcdefgh",
-        requestFingerprint: "a".repeat(64),
-        providerMode: "local",
-        providerModel: null,
-      }),
-    ).resolves.toEqual({ reused: false, run });
-    await expect(repository.deleteRun(ID)).resolves.toBeUndefined();
     await expect(repository.getRunSnapshots(ID)).resolves.toEqual([snapshot]);
     await expect(repository.listRunStepEvents(ID)).resolves.toEqual([stepEvent]);
     await expect(repository.listRunAnnotations(ID)).resolves.toEqual([annotation]);
@@ -100,12 +78,6 @@ describe("Modu Brain PostgREST repository", () => {
     ).resolves.toEqual({ reused: false, annotation });
 
     await expect(repository.listShareLinks(ID)).resolves.toEqual([share]);
-    await expect(repository.consumeRateLimit("analysis:hour", "user", 10, 3600)).resolves.toBe(true);
-
-    expect(request).toHaveBeenCalledWith(
-      "rpc/start_analysis_run",
-      expect.objectContaining({ method: "POST", body: expect.objectContaining({ p_project_id: ID }) }),
-    );
     expect(request).toHaveBeenCalledWith(
       "rpc/import_source_context",
       expect.objectContaining({
@@ -326,7 +298,7 @@ describe("Modu Brain PostgREST repository", () => {
   it("turns empty owner-scoped results into a non-enumerating 404", async () => {
     const repository = createModuBrainRepository({ request: vi.fn().mockResolvedValue([]) });
     await expect(repository.getProject(ID)).rejects.toMatchObject({ status: 404, code: "NOT_FOUND" });
-    await expect(repository.deleteRun(ID)).rejects.toMatchObject({ status: 404, code: "NOT_FOUND" });
+    await expect(repository.getRun(ID)).rejects.toMatchObject({ status: 404, code: "NOT_FOUND" });
   });
 
   it("uses service-only RPCs for public share resolution and IP limits", async () => {

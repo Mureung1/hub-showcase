@@ -12,9 +12,9 @@ PR 벤치마크: https://github.com/tjwnsdhfz/hub/blob/N031_%EA%B9%80%EC%84%9C%E
 
 ```mermaid
 flowchart LR
-    A["React 브라우저"] --> B["Render Node API"]
+    A["React 브라우저"] --> B["Sites Worker / Render Node API"]
     B --> C["Supabase Auth + PostgreSQL + RLS"]
-    B --> D["local-heuristic / OpenAI Responses API"]
+    B --> D["local-heuristic (OpenAI 비활성)"]
     A --> E["#token 읽기 전용 공유"]
 ```
 
@@ -61,10 +61,12 @@ Modu Brain은 단순 회의 요약이 아니라 **원문 기록 → 근거가 �
 
 ### 인증·데이터베이스
 
-- Supabase 이메일 Magic Link Auth
+- Supabase 이메일 Magic Link와 same-origin HttpOnly 세션 BFF
+- callback token 즉시 제거, refresh rotation, `SameSite=Strict`·`Secure` 쿠키와 Web Storage 무토큰 계약
 - `projects`, `source_records`, `analysis_runs`, `analysis_run_sources`, `analysis_run_step_events`, `analysis_run_annotations`, `share_links`, `rate_limit_buckets`
 - SQL migration과 안전한 seed를 저장소에서 관리
 - 모든 앱 테이블 RLS와 사용자 간 IDOR 차단
+- 읽기는 사용자 JWT+RLS, 쓰기는 사용자 ID와 소유권을 다시 검증하는 service-only `app_*` RPC로 분리
 - 일반 삭제는 보관, 확인 헤더가 있는 프로젝트 영구 삭제는 하위 데이터 cascade
 - DB 장애 시 메모리 fallback 없이 구조화 `503`
 
@@ -102,11 +104,15 @@ Modu Brain은 단순 회의 요약이 아니라 **원문 기록 → 근거가 �
 ## API
 
 ```text
+GET|POST|DELETE  /api/v1/auth/session
+POST             /api/v1/auth/refresh
 GET|POST         /api/v1/projects
 GET              /api/v1/capabilities
 GET|PATCH|DELETE /api/v1/projects/:projectId
+POST             /api/v1/projects/:projectId/restore
 GET|POST         /api/v1/projects/:projectId/sources
 GET|PATCH|DELETE /api/v1/sources/:sourceId
+POST             /api/v1/sources/:sourceId/restore
 GET|POST         /api/v1/projects/:projectId/analysis-runs
 GET|DELETE       /api/v1/analysis-runs/:runId
 GET              /api/v1/analysis-runs/:runId/step-events
@@ -114,6 +120,9 @@ GET|POST         /api/v1/analysis-runs/:runId/annotations
 GET|POST         /api/v1/analysis-runs/:runId/share-links
 DELETE           /api/v1/share-links/:shareLinkId
 POST             /api/v1/shared/resolve
+GET              /api/v1/account/export
+DELETE           /api/v1/account
+POST             /api/v1/telemetry
 POST             /api/context-analysis/import
 GET              /api/health/live
 GET              /api/health/ready
@@ -145,21 +154,21 @@ npm run test:e2e
 - GitHub Actions의 lint/typecheck/coverage/build/audit/secret scan/public smoke·axe 접근성 검사
 - 내부 PR·브랜치에서 로컬 Supabase reset/pgTAP/authenticated E2E
 
-현재 로컬 검증은 Vitest 251개 통과, statements 83.68%, branches 76.67%, functions 87.44%, lines 87.06%, 공개 axe/반응형/skip-link/모바일 메뉴 10개 통과, `npm audit` 취약점 0건입니다.
+현재 로컬 검증은 Vitest 338개 통과, statements 83.04%, branches 75.64%, functions 85.29%, lines 86.70%, 한국어 평가 31개 통과, Playwright 15개 통과·인증 전용 1개 환경 미설정 skip, `npm audit` 취약점 0건입니다. 375/768/1024/1440px, axe, 키보드, reduced-motion과 프로덕션 빌드도 통과했습니다.
 
-실제 OpenAI 유료 호출은 CI에서 수행하지 않습니다. 모델 출력 품질·비용·preview 권한은 별도 승인된 데모 계정에서 검증해야 합니다.
+실제 OpenAI 유료 호출은 CI와 두 공개 배포에서 모두 비활성화했습니다. 현재 데모는 외부 모델 비용이 없는 `local-heuristic`만 사용하며, 향후 별도 예산 승인이 있을 때만 서버 환경에서 명시적으로 활성화합니다.
 
 ## 배포 상태
 
-- `render.yaml`: Singapore 단일 Node Web Service, CI 성공 후 배포, `/api/health/ready`
-- Sites: React SPA와 Worker API를 동일 버전으로 패키징하고 기존 Supabase PostgreSQL/RLS를 공유
-- Supabase 데모 프로젝트: Seoul 리전에 워크플로 migration 영구 적용, 사전 적용·rollback·재적용과 92개 RLS/권한 계약 통과, advisor 확인
-- 실제 브라우저: Magic Link 세션 → 데모 원문 3건/첫 분석 → 후속 피드백 → 두 번째 분석 → 근거/변화/지식맵 → 공유/새로고침/폐기까지 workerd에서 검증 후 테스트 계정 정리
+- `render.yaml`: 무료 Node Web Service, fork 승인 대기와 독립된 commit 자동 배포, `/api/health/live`와 DB readiness 정상
+- Sites: 버전 13에 React SPA와 Worker API를 동일 커밋으로 배포하고 기존 Supabase PostgreSQL/RLS를 공유
+- Supabase 데모 프로젝트: Seoul·PostgreSQL 17, 일곱 migration 정합화, service-only mutation 경계와 전체 공개 테이블 RLS 확인
+- 실제 브라우저: 공개 샘플 분석 → 근거 → 데스크톱 그래프 → 375px 의미 목록을 배포 주소에서 확인했으며 콘솔 경고·오류 0건
 - Sites와 Render의 배포 origin은 Supabase Auth redirect allowlist에 각각 등록하고, 서버 전용 값은 각 호스팅 런타임에만 설정
 
 ## 리뷰 포인트
 
-1. 사용자 JWT가 서비스 역할로 대체되지 않고 RLS까지 전달되는가
+1. 읽기는 사용자 JWT+RLS를 유지하고, 쓰기는 검증된 사용자 ID를 받은 service-only RPC가 소유권을 다시 확인하는가
 2. 다른 사용자 리소스가 일관된 `404`로 숨겨지는가
 3. idempotency 충돌과 동시 실행 제한이 외부 모델 중복 비용을 막는가
 4. 분석 근거가 실행 당시 스냅숏의 실제 문장인가

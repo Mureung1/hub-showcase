@@ -245,6 +245,7 @@ jobs:
         env:
           E2E_TEST_EMAIL: modu-brain-e2e@example.test
           MODU_BRAIN_ANALYSIS_PROVIDER: local-heuristic
+          IP_HASH_SECRET: ci-only-ip-hash-secret-not-for-production
         run: npx playwright test tests/e2e/authenticated-flow.spec.ts
 
       - name: Upload browser diagnostics

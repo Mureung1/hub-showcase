@@ -54,6 +54,52 @@ select ok(
   'anonymous role cannot execute app-server RPCs'
 );
 
+select ok(
+  not has_table_privilege('authenticated', 'public.projects', 'INSERT')
+  and not has_table_privilege('authenticated', 'public.projects', 'UPDATE')
+  and not has_table_privilege('authenticated', 'public.projects', 'DELETE')
+  and not has_table_privilege('authenticated', 'public.source_records', 'INSERT')
+  and not has_table_privilege('authenticated', 'public.source_records', 'UPDATE')
+  and not has_table_privilege('authenticated', 'public.source_records', 'DELETE')
+  and not has_table_privilege('authenticated', 'public.analysis_runs', 'DELETE')
+  and not has_table_privilege('authenticated', 'public.context_entities', 'INSERT')
+  and not has_table_privilege('authenticated', 'public.context_entities', 'UPDATE')
+  and not has_table_privilege('authenticated', 'public.context_entities', 'DELETE')
+  and not has_table_privilege('authenticated', 'public.context_entity_aliases', 'INSERT')
+  and not has_table_privilege('authenticated', 'public.context_entity_aliases', 'UPDATE')
+  and not has_table_privilege('authenticated', 'public.context_entity_aliases', 'DELETE')
+  and not has_table_privilege('authenticated', 'public.context_edges', 'INSERT')
+  and not has_table_privilege('authenticated', 'public.context_edges', 'UPDATE')
+  and not has_table_privilege('authenticated', 'public.context_edges', 'DELETE'),
+  'authenticated clients cannot mutate persistence tables directly'
+);
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.start_analysis_run(uuid,uuid[],text,text,text,text)',
+    'EXECUTE'
+  )
+  and not has_function_privilege(
+    'authenticated',
+    'public.consume_rate_limit(text,text,integer,integer)',
+    'EXECUTE'
+  ),
+  'authenticated clients cannot execute superseded mutation RPCs'
+);
+select ok(
+  has_function_privilege(
+    'authenticated',
+    'public.import_source_context(uuid,text,text,text,text,text,timestamptz,jsonb,jsonb,jsonb)',
+    'EXECUTE'
+  )
+  and has_function_privilege(
+    'authenticated',
+    'public.create_analysis_run_annotation(uuid,text,text,text,text,text)',
+    'EXECUTE'
+  ),
+  'ownership-checking compatibility RPCs remain available for one release'
+);
+
 insert into auth.users(
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at

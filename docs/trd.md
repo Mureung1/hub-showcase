@@ -12,7 +12,7 @@
 flowchart LR
     U["브라우저"] -->|"SPA + /api/v1"| C["Sites Worker 또는 Render Node"]
     C -->|"사용자 JWT"| A["Supabase Auth"]
-    C -->|"사용자 범위 PostgREST"| D["Supabase PostgreSQL + RLS"]
+    C -->|"JWT+RLS 읽기 / service-only RPC 쓰기"| D["Supabase PostgreSQL + RLS"]
     C -->|"명시적 OpenAI 모드"| O["OpenAI Responses API"]
     U -->|"#token fragment"| S["읽기 전용 공유 화면"]
     S -->|"토큰 POST"| C
@@ -29,7 +29,7 @@ flowchart LR
 | 품질 | ESLint, TypeScript, Vitest/V8, pgTAP, Playwright, Gitleaks |
 | 배포 | Sites Worker + Render Node Web Service, Supabase Seoul 프로젝트 |
 
-브라우저가 서비스 역할 키로 DB를 직접 수정하지 않는다. 인증 사용자의 일반 CRUD와 실행 시작은 API 런타임이 access token을 검증한 뒤 같은 토큰으로 PostgREST/RPC를 호출하므로 RLS가 최종 권한 경계로 유지된다. 서비스 역할은 readiness, 실행의 terminal 갱신, 소유권 재검증을 거친 공유 생성·폐기, 서버 전용 rate limit과 해시된 공유 토큰 조회에만 사용한다.
+브라우저가 서비스 역할 키로 DB를 직접 수정하지 않는다. API 런타임은 access token을 검증한 뒤 읽기를 같은 사용자 JWT의 PostgREST와 RLS로 수행한다. 쓰기는 서비스 역할만 호출할 수 있는 `app_*` RPC가 검증된 사용자 ID와 리소스 소유권을 다시 확인한 뒤 수행한다. 로그인 사용자의 테이블 직접 쓰기와 구형 분석 시작·일반 rate-limit RPC 실행 권한은 contract migration에서 제거한다. 원문 가져오기와 분석 annotation 호환 RPC만 내부 `auth.uid()`·소유권·크기·멱등성 검증을 전제로 한 릴리스 동안 유지한다.
 
 ## 3. 라우팅과 상태
 
@@ -71,7 +71,7 @@ flowchart LR
 - annotation: `(analysis_run_id, created_by, idempotency_key)` unique, FK용 `analysis_run_id`·`created_by` 선두 인덱스
 - 공유: `token_hash` unique, `(analysis_run_id, created_at desc)`
 - 모든 앱 테이블에서 RLS 활성화
-- 프로젝트 소유자는 자신의 프로젝트와 하위 리소스만 CRUD
+- 프로젝트 소유자는 API를 통해 자신의 프로젝트와 하위 리소스만 읽고 변경하며, 브라우저 DB 역할에는 직접 mutation grant가 없음
 - 공개 역할에는 테이블 직접 조회 권한 없음
 - 공유 결과는 `security definer` RPC가 토큰 해시·만료·폐기만 확인해 제한된 projection 반환
 

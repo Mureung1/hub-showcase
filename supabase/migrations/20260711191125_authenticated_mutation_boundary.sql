@@ -1,8 +1,6 @@
--- PENDING CONTRACT PHASE.
--- Do not move this file into supabase/migrations until every deployed API
--- runtime uses the app_* service-role RPCs introduced by
--- 20260711185902_operations_hardening_expand.sql.
--- Applying it early will break the legacy user-token repository.
+-- Contract phase applied after Sites and Render were verified on the app_*
+-- service-role RPCs introduced by 20260711185902_operations_hardening_expand.
+-- Authenticated reads and the two ownership-checking compatibility RPCs remain.
 
 begin;
 

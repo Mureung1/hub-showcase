@@ -23,7 +23,7 @@ flowchart LR
 - `/projects`: 사용자 소유 프로젝트 목록과 생성
 - `/projects/:id`: 외부 맥락 가져오기, 기록, 분석 이력, 검색·필터·근거 탐색이 가능한 브레인 캔버스, 백링크, 온보딩, 공유
 - `/share#token=…`: 원문을 제외한 읽기 전용 분석 결과
-- `/api/v1/**`: 인증·RLS가 적용된 영속 API
+- `/api/v1/**`: HttpOnly 세션, 사용자 범위 RLS 읽기와 service-only 소유권 검증 쓰기가 적용된 영속 API
 - `/api/context-analysis`: 한 릴리스 동안 유지하는 비영속 호환 API
 - `/api/context-analysis/import`: 계정 없이 내보낸 기록을 정규화한 뒤 로컬 분석하는 same-origin 비영속 API
 
@@ -64,7 +64,7 @@ npm run start
 | --- | --- | --- |
 | `SUPABASE_URL` | 서버 | Supabase 프로젝트 API URL |
 | `SUPABASE_PUBLISHABLE_KEY` | 서버 | 사용자 JWT와 함께 보내는 공개 PostgREST API key |
-| `SUPABASE_SECRET_KEY` | 서버 전용 | readiness, 실행 완료, 공유 조회처럼 제한된 서버 작업. 브라우저에 절대 노출하지 않음 |
+| `SUPABASE_SECRET_KEY` | 서버 전용 | 소유권 재검증 `app_*` 쓰기 RPC, admin Auth, 공유 조회와 유지보수. 브라우저에 절대 노출하지 않음 |
 | `VITE_SUPABASE_URL` | 공개 번들 | 브라우저 Magic Link Auth URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | 공개 번들 | RLS로 보호되는 공개 publishable key |
 | `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_ANON_KEY` | 호환 | 로컬 Supabase CLI의 legacy JWT key fallback |
@@ -94,7 +94,7 @@ SQL migration은 `supabase/migrations/`가 유일한 스키마 원본입니다. 
 - `share_links`: SHA-256으로 해시된 만료·폐기 가능 토큰
 - `rate_limit_buckets`: 사용자·IP별 AI/공유 조회 제한
 
-모든 앱 테이블은 RLS를 사용합니다. 인증 API는 Supabase access token을 `Authorization: Bearer …`로 요구하며, 다른 사용자 리소스는 존재 여부가 노출되지 않도록 `404`로 응답합니다. 공개 공유 API만 토큰 해시와 만료·폐기 상태를 서버에서 검증한 뒤 원문을 제외한 결과를 반환합니다.
+모든 앱 테이블은 RLS를 사용합니다. Magic Link token은 same-origin BFF가 즉시 HttpOnly 쿠키로 교환하며 Web Storage에 보관하지 않습니다. 읽기는 검증된 사용자 JWT와 RLS, 쓰기는 service-only `app_*` RPC의 사용자 ID·소유권 재검증을 함께 사용합니다. legacy Bearer 인증은 한 릴리스 동안만 호환하며, 다른 사용자 리소스는 존재 여부가 노출되지 않도록 `404`로 응답합니다. 공개 공유 API만 토큰 해시와 만료·폐기 상태를 서버에서 검증한 뒤 원문을 제외한 결과를 반환합니다.
 
 ## 분석 계약
 
