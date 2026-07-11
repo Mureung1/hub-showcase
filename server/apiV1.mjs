@@ -1,6 +1,7 @@
 import { analyzeProjectContext } from "./contextAnalysisCore.mjs";
 import { ApiError, toApiError } from "./apiErrors.mjs";
 import { buildContextAnalysisResultV2 } from "./analysisResultV2.mjs";
+import { normalizeContextImport } from "./contextImport.mjs";
 import { allowOnly, readJson, writeApiError, writeData } from "./httpJson.mjs";
 import {
   createModuBrainRepository,
@@ -9,9 +10,11 @@ import {
 } from "./moduBrainRepository.mjs";
 import {
   analysisRunResource,
+  contextImportResource,
   projectResource,
   shareLinkResource,
   sharedAnalysisResource,
+  sourceSegmentResource,
   sourceResource,
 } from "./resourceMappers.mjs";
 import {
@@ -105,9 +108,31 @@ export function createApiV1Handler(options = {}) {
         return true;
       }
 
+      match = pathname.match(/^\/api\/v1\/projects\/([^/]+)\/imports$/);
+      if (match) {
+        await handleContextImport(
+          req,
+          res,
+          repository,
+          requireUuid(match[1], "projectId"),
+        );
+        return true;
+      }
+
       match = pathname.match(/^\/api\/v1\/sources\/([^/]+)$/);
       if (match) {
         await handleSource(req, res, repository, requireUuid(match[1], "sourceId"));
+        return true;
+      }
+
+      match = pathname.match(/^\/api\/v1\/sources\/([^/]+)\/segments$/);
+      if (match) {
+        await handleSourceSegments(
+          req,
+          res,
+          repository,
+          requireUuid(match[1], "sourceId"),
+        );
         return true;
       }
 
@@ -242,12 +267,69 @@ async function handleSource(req, res, repository, sourceId) {
     writeData(res, 200, sourceResource(await repository.archiveSource(sourceId)));
     return;
   }
-  const values = validateSource(await readJson(req), true);
+  const body = await readJson(req);
+  const values = validateSource(body, true);
+  if (
+    body.kind !== undefined ||
+    body.content !== undefined ||
+    body.occurredAt !== undefined
+  ) {
+    const current = await repository.getSource(sourceId);
+    if (hasSourceImport(current)) {
+      throw new ApiError(
+        409,
+        "IMPORTED_SOURCE_IMMUTABLE",
+        "가져온 원문의 내용과 시각은 변경할 수 없습니다. 제목만 수정하거나 새로 가져와 주세요.",
+      );
+    }
+  }
   if (values.content !== undefined) {
     values.content_sha256 = sha256(values.content);
     values.char_count = unicodeLength(values.content);
   }
   writeData(res, 200, sourceResource(await repository.updateSource(sourceId, values)));
+}
+
+function hasSourceImport(source) {
+  return Array.isArray(source?.source_imports)
+    ? source.source_imports.length > 0
+    : Boolean(source?.source_imports);
+}
+
+async function handleContextImport(req, res, repository, projectId) {
+  if (!allowOnly(req, res, ["POST"])) return;
+  const normalized = normalizeContextImport(await readJson(req));
+  const title = boundedString(normalized.title, "title", 1, 120);
+  const content = boundedString(
+    normalized.content,
+    "content",
+    1,
+    INPUT_CHARACTER_LIMIT,
+    false,
+  );
+  const imported = await repository.importSourceContext(projectId, {
+    kind: normalized.kind,
+    title,
+    content,
+    occurredAt: normalized.occurredAt,
+    provider: normalized.provider,
+    externalId: boundedOptionalString(normalized.externalId, "externalId", 500),
+    participants: normalized.participants.slice(0, 200),
+    metadata: normalized.metadata,
+    segments: normalized.segments,
+  });
+  writeData(
+    res,
+    imported.duplicate ? 200 : 201,
+    contextImportResource(imported),
+    { Location: `/api/v1/sources/${imported.source.id}` },
+  );
+}
+
+async function handleSourceSegments(req, res, repository, sourceId) {
+  if (!allowOnly(req, res, ["GET"])) return;
+  const rows = await repository.listSourceSegments(sourceId);
+  writeData(res, 200, rows.map(sourceSegmentResource));
 }
 
 async function handleAnalysisRuns(req, res, context) {
@@ -554,6 +636,11 @@ function boundedString(value, field, min, max, trim = true) {
     });
   }
   return normalized;
+}
+
+function boundedOptionalString(value, field, max) {
+  if (value === null || value === undefined || value === "") return null;
+  return boundedString(value, field, 1, max);
 }
 
 function optionalIsoDate(value) {

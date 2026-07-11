@@ -54,8 +54,7 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
     ).toBeVisible();
 
     await page.getByRole("tab", { name: "기록", exact: true }).click();
-    await createSource(page, {
-      kind: "meeting",
+    await importPastedContext(page, {
       title: "첫 기획 회의",
       content:
         "민지는 저장된 기록을 새로고침 뒤에도 확인할 수 있어야 한다고 말했다. 서준은 분석 결과에서 결정 배경과 참여자 관점을 원문 근거와 함께 보여줘야 한다고 제안했다. 팀은 공개 데모에서 로컬 분석을 기본으로 사용하기로 결정했다. 다음 회의에서는 공유 링크의 만료 기간을 어떻게 안내할지 확인해야 한다. 모든 참여자는 실패한 실행이 최근 성공 결과를 덮어쓰면 안 된다는 데 동의했다.",
@@ -167,6 +166,18 @@ async function createSource(
   await page.getByTestId("source-create-title").fill(source.title);
   await page.getByTestId("source-create-content").fill(source.content);
   await page.getByTestId("source-create-submit").click();
+  await expect(page.getByRole("heading", { name: source.title })).toBeVisible();
+}
+
+async function importPastedContext(
+  page: Page,
+  source: { title: string; content: string },
+) {
+  await page.getByRole("radio", { name: /직접 붙여넣기/ }).click();
+  await page.getByLabel(/기록 제목/).first().fill(source.title);
+  await page.getByLabel("회의 맥락 붙여넣기").fill(source.content);
+  await page.getByRole("button", { name: "파싱하고 가져오기" }).click();
+  await expect(page.getByText("맥락을 가져왔습니다.", { exact: false })).toBeVisible();
   await expect(page.getByRole("heading", { name: source.title })).toBeVisible();
 }
 

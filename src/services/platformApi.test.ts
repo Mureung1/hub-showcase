@@ -53,6 +53,42 @@ describe("platformApi", () => {
     expect(JSON.parse(String(init?.body))).toEqual({ sourceIds: ["s1", "s2"], mode: "local" });
   });
 
+  it("sends exported context to the project import endpoint", async () => {
+    const imported = { source: { id: "s1" }, importId: "i1", provider: "kakaotalk" };
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(response({ data: imported }, 201));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await platformApi.importContext("access-token", "p1", {
+      provider: "kakaotalk",
+      title: "기획 회의",
+      text: "2026년 7월 11일, 서준 : 시안을 검토합니다.",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/v1/projects/p1/imports");
+    expect(init).toMatchObject({ method: "POST" });
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      provider: "kakaotalk",
+      title: "기획 회의",
+    });
+  });
+
+  it("loads exact external source segments for evidence backlinks", async () => {
+    const segments = [{ id: "segment-1", sourceUrl: "https://example.test/message/1" }];
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(response({ data: segments }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(platformApi.listSourceSegments("access-token", "source-1")).resolves.toEqual(
+      segments,
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/sources/source-1/segments",
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer access-token" }),
+      }),
+    );
+  });
+
   it("preserves structured errors", async () => {
     vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(response({ error: { code: "RATE_LIMITED", message: "잠시 후 다시 시도하세요.", details: { retryAfter: 60 } } }, 429)));
     await expect(platformApi.listProjects("token")).rejects.toEqual(expect.objectContaining<Partial<PlatformApiError>>({ status: 429, code: "RATE_LIMITED", details: { retryAfter: 60 } }));

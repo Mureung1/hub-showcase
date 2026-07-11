@@ -7,6 +7,10 @@ import {
   type FormEvent,
 } from "react";
 import AnalysisComparison from "../components/AnalysisComparison";
+import ContextBacklinks from "../components/ContextBacklinks";
+import ContextImportPanel, {
+  type ContextImportInput as ContextImportPanelInput,
+} from "../components/ContextImportPanel";
 import DecisionList from "../components/DecisionList";
 import EvidenceDrawer from "../components/EvidenceDrawer";
 import KeyTerms from "../components/KeyTerms";
@@ -22,10 +26,12 @@ import type { EvidenceRef } from "../types/context";
 import type {
   AnalysisMode,
   AnalysisRunResource,
+  ExternalContextProvider,
   ProjectResource,
   ShareLinkResource,
   SourceKind,
   SourceRecordResource,
+  SourceSegmentResource,
 } from "../types/platform";
 
 type ProjectTab = "overview" | "records" | "history" | "map" | "onboarding";
@@ -44,6 +50,13 @@ const sourceKindLabels: Record<SourceKind, string> = {
   note: "메모",
 };
 
+const importProviderLabels: Record<ExternalContextProvider, string> = {
+  kakaotalk: "카카오톡",
+  teams: "Teams",
+  notion: "Notion",
+  paste: "붙여넣기",
+};
+
 function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   const [project, setProject] = useState<ProjectResource | null>(null);
   const [sources, setSources] = useState<SourceRecordResource[]>([]);
@@ -53,9 +66,12 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
   const [openaiEnabled, setOpenaiEnabled] = useState(false);
   const [evidence, setEvidence] = useState<EvidenceRef[] | null>(null);
+  const [evidenceSegments, setEvidenceSegments] = useState<SourceSegmentResource[]>([]);
+  const [evidenceSegmentsLoading, setEvidenceSegmentsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const analysisAbort = useRef<AbortController | null>(null);
+  const evidenceLoadVersion = useRef(0);
 
   const loadWorkspace = useCallback(async () => {
     setLoading(true);
@@ -106,6 +122,29 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   const selectedRun = runs.find((run) => run.id === selectedRunId) ?? successfulRuns[0] ?? null;
   const latestSuccessful = successfulRuns[0];
   const previousSuccessful = successfulRuns[1];
+
+  const openEvidence = (nextEvidence: EvidenceRef[]) => {
+    const sourceIds = [...new Set(nextEvidence.map((item) => item.sourceRecordId))];
+    const version = evidenceLoadVersion.current + 1;
+    evidenceLoadVersion.current = version;
+    setEvidence(nextEvidence);
+    setEvidenceSegments([]);
+    setEvidenceSegmentsLoading(sourceIds.length > 0);
+    void Promise.all(
+      sourceIds.map((sourceId) => api.listSourceSegments(token, sourceId).catch(() => [])),
+    ).then((groups) => {
+      if (evidenceLoadVersion.current !== version) return;
+      setEvidenceSegments(groups.flat());
+      setEvidenceSegmentsLoading(false);
+    });
+  };
+
+  const closeEvidence = () => {
+    evidenceLoadVersion.current += 1;
+    setEvidence(null);
+    setEvidenceSegments([]);
+    setEvidenceSegmentsLoading(false);
+  };
 
   if (loading && !project) {
     return <main className="app-page"><div className="loading-card page-loader" role="status">프로젝트를 불러오는 중…</div></main>;
@@ -189,9 +228,9 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
             token={token}
             projectId={projectId}
             sources={sources}
-            onSourcesChange={(nextSources) => {
-              setSources(nextSources);
-              setSelectedSourceIds(new Set(nextSources.filter((item) => !item.archivedAt).map((item) => item.id)));
+            onSourcesChange={(updateSources, updateSelection) => {
+              setSources(updateSources);
+              setSelectedSourceIds(updateSelection);
             }}
             onError={setError}
           />
@@ -203,11 +242,20 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
             latest={latestSuccessful}
             previous={previousSuccessful}
             onSelectRun={setSelectedRunId}
-            onOpenEvidence={setEvidence}
+            onOpenEvidence={openEvidence}
           />
         )}
         {activeTab === "map" && (
-          selectedRun?.result ? <KnowledgeMap map={selectedRun.result.knowledgeMap} /> : <EmptyAnalysis />
+          selectedRun?.result ? (
+            <div className="map-workspace">
+              <KnowledgeMap map={selectedRun.result.knowledgeMap} />
+              <ContextBacklinks
+                sources={sources}
+                result={selectedRun.result}
+                onOpenEvidence={openEvidence}
+              />
+            </div>
+          ) : <EmptyAnalysis />
         )}
         {activeTab === "onboarding" && (
           selectedRun?.result ? (
@@ -218,7 +266,12 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
           ) : <EmptyAnalysis />
         )}
       </section>
-      <EvidenceDrawer evidence={evidence} onClose={() => setEvidence(null)} />
+      <EvidenceDrawer
+        evidence={evidence}
+        segments={evidenceSegments}
+        segmentsLoading={evidenceSegmentsLoading}
+        onClose={closeEvidence}
+      />
     </main>
   );
 }
@@ -398,7 +451,10 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
   token: string;
   projectId: string;
   sources: SourceRecordResource[];
-  onSourcesChange: (sources: SourceRecordResource[]) => void;
+  onSourcesChange: (
+    update: (sources: SourceRecordResource[]) => SourceRecordResource[],
+    updateSelection: (selected: Set<string>) => Set<string>,
+  ) => void;
   onError: (message: string | null) => void;
 }) {
   const [kind, setKind] = useState<SourceKind>("meeting");
@@ -413,7 +469,10 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
     onError(null);
     try {
       const created = await api.createSource(token, projectId, { kind, title: title.trim(), content: content.trim() });
-      onSourcesChange([created, ...sources]);
+      onSourcesChange(
+        (current) => [created, ...current],
+        (selected) => new Set(selected).add(created.id),
+      );
       setTitle("");
       setContent("");
     } catch (saveError) {
@@ -427,15 +486,39 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
     onError(null);
     try {
       await api.deleteSource(token, source.id);
-      onSourcesChange(sources.map((item) => item.id === source.id ? { ...item, archivedAt: new Date().toISOString() } : item));
+      onSourcesChange(
+        (current) => current.map((item) =>
+          item.id === source.id
+            ? { ...item, archivedAt: new Date().toISOString() }
+            : item,
+        ),
+        (selected) => {
+          const next = new Set(selected);
+          next.delete(source.id);
+          return next;
+        },
+      );
     } catch (deleteError) {
       onError(messageFrom(deleteError));
     }
   };
 
+  const importContext = async (input: ContextImportPanelInput) => {
+    const imported = await api.importContext(token, projectId, input);
+    onSourcesChange(
+      (current) => [
+        imported.source,
+        ...current.filter((item) => item.id !== imported.source.id),
+      ],
+      (selected) => new Set(selected).add(imported.source.id),
+    );
+  };
+
   return (
-    <div className="records-layout">
-      <section className="workspace-card sticky-card">
+    <div className="records-workspace">
+      <ContextImportPanel onImport={importContext} />
+      <div className="records-layout">
+        <section className="workspace-card sticky-card">
         <div className="panel-heading compact"><p className="section-kicker">New source</p><h2>원문 기록 추가</h2><p>민감정보를 제거한 뒤 필요한 맥락만 저장해 주세요.</p></div>
         <form onSubmit={createSource}>
           <label className="field"><span>기록 유형</span><select data-testid="source-create-kind" value={kind} onChange={(event) => setKind(event.target.value as SourceKind)}>{Object.entries(sourceKindLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
@@ -444,22 +527,41 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
           <div className="counter">{content.length.toLocaleString("ko-KR")} / 100,000자</div>
           <button data-testid="source-create-submit" className="button primary full-button" type="submit" disabled={saving || !title.trim() || !content.trim()}>{saving ? "저장 중…" : "기록 저장"}</button>
         </form>
-      </section>
-      <section className="source-list-panel">
+        </section>
+        <section className="source-list-panel">
         <div className="section-row"><div><p className="section-kicker">Source library</p><h2>저장된 기록</h2></div><span>{sources.filter((item) => !item.archivedAt).length}개</span></div>
         {sources.filter((item) => !item.archivedAt).length === 0 ? <p className="empty-card">아직 저장된 원문이 없습니다.</p> : (
           <div className="source-card-list">
             {sources.filter((item) => !item.archivedAt).map((source) => (
               <article key={source.id} className="source-card">
-                <header><span className={`source-kind ${source.kind}`}>{sourceKindLabels[source.kind]}</span><time>{formatDateTime(source.occurredAt ?? source.createdAt)}</time></header>
+                <header>
+                  <div className="source-card-tags">
+                    <span className={`source-kind ${source.kind}`}>{sourceKindLabels[source.kind]}</span>
+                    {source.import && (
+                      <span className="source-import-badge">
+                        {importProviderLabels[source.import.provider] ?? "외부 기록"}
+                      </span>
+                    )}
+                  </div>
+                  <time>{formatDateTime(source.occurredAt ?? source.createdAt)}</time>
+                </header>
                 <h3>{source.title}</h3>
+                {source.import && (
+                  <div className="source-import-meta">
+                    <span>맥락 {source.import.segmentCount.toLocaleString("ko-KR")}개</span>
+                    {source.import.participants.length > 0 && (
+                      <span>참여자 {source.import.participants.slice(0, 4).join(" · ")}</span>
+                    )}
+                  </div>
+                )}
                 <p>{source.content}</p>
                 <footer><span>{source.charCount.toLocaleString("ko-KR")}자</span><button className="text-button danger" type="button" onClick={() => void archive(source)}>보관</button></footer>
               </article>
             ))}
           </div>
         )}
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

@@ -21,12 +21,18 @@ function SiteHeader({ session, pathname, navigate, onSignOut }: SiteHeaderProps)
         <span>Modu Brain</span>
       </a>
       <nav aria-label="주요 메뉴">
-        <a className={pathname === "/" ? "active" : ""} href="/" onClick={go("/")}>
+        <a
+          aria-current={pathname === "/" ? "page" : undefined}
+          className={pathname === "/" ? "active" : ""}
+          href="/"
+          onClick={go("/")}
+        >
           소개
         </a>
         {session ? (
           <>
             <a
+              aria-current={pathname.startsWith("/projects") ? "page" : undefined}
               className={pathname.startsWith("/projects") ? "active" : ""}
               href="/projects"
               onClick={go("/projects")}
@@ -39,6 +45,7 @@ function SiteHeader({ session, pathname, navigate, onSignOut }: SiteHeaderProps)
           </>
         ) : (
           <a
+            aria-current={pathname === "/login" ? "page" : undefined}
             className={pathname === "/login" ? "active" : ""}
             href="/login"
             onClick={go("/login")}

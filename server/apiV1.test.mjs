@@ -11,6 +11,8 @@ const PROJECT_ID = "22222222-2222-4222-8222-222222222222";
 const SOURCE_ID = "33333333-3333-4333-8333-333333333333";
 const RUN_ID = "44444444-4444-4444-8444-444444444444";
 const SHARE_ID = "55555555-5555-4555-8555-555555555555";
+const IMPORT_ID = "66666666-6666-4666-8666-666666666666";
+const SEGMENT_ID = "77777777-7777-4777-8777-777777777777";
 const now = "2026-07-11T00:00:00.000Z";
 const content = "민지는 입력 흐름을 단순하게 만들자고 제안했다. 서준은 결정 근거와 질문을 함께 보여주자고 말했다. 팀은 직접 입력 방식으로 시작하기로 결정했다. 다음 회의에서 공유 범위를 검토하기로 했다.";
 
@@ -174,6 +176,96 @@ describe("v1 API", () => {
     });
     expect((await emoji.json()).data.charCount).toBe(1);
     expect(repository.createSource.mock.calls.at(-1)[1].char_count).toBe(1);
+  });
+
+  it("normalizes and atomically imports account-free Teams context", async () => {
+    const response = await api(`/api/v1/projects/${PROJECT_ID}/imports`, {
+      method: "POST",
+      body: {
+        provider: "teams",
+        title: "Teams 제품 회의",
+        text: JSON.stringify([
+          {
+            id: "message-1",
+            createdDateTime: now,
+            from: { user: { displayName: "민지" } },
+            body: { contentType: "html", content: "<p>금요일까지 시안을 검토합니다.</p>" },
+            webUrl: "https://teams.microsoft.com/l/message/message-1",
+          },
+        ]),
+      },
+    });
+    const payload = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(payload.data).toMatchObject({
+      importId: IMPORT_ID,
+      provider: "teams",
+      participants: ["민지"],
+      segmentCount: 1,
+      duplicate: false,
+      source: {
+        title: "Teams 제품 회의",
+        content: "민지: 금요일까지 시안을 검토합니다.",
+        import: { provider: "teams", participants: ["민지"], segmentCount: 1 },
+      },
+    });
+    expect(repository.importSourceContext).toHaveBeenCalledWith(
+      PROJECT_ID,
+      expect.objectContaining({
+        provider: "teams",
+        segments: [
+          expect.objectContaining({
+            externalId: "message-1",
+            speaker: "민지",
+            text: "금요일까지 시안을 검토합니다.",
+          }),
+        ],
+      }),
+    );
+  });
+
+  it("keeps imported source content immutable while allowing title changes", async () => {
+    repository.getSource.mockResolvedValue({
+      ...sourceRow(),
+      source_imports: [{ id: IMPORT_ID, provider: "teams" }],
+    });
+
+    const rejected = await api(`/api/v1/sources/${SOURCE_ID}`, {
+      method: "PATCH",
+      body: { content: "변조된 원문" },
+    });
+    expect(rejected.status).toBe(409);
+    await expect(rejected.json()).resolves.toMatchObject({
+      error: { code: "IMPORTED_SOURCE_IMMUTABLE" },
+    });
+    expect(repository.updateSource).not.toHaveBeenCalled();
+
+    const renamed = await api(`/api/v1/sources/${SOURCE_ID}`, {
+      method: "PATCH",
+      body: { title: "표시 제목만 변경" },
+    });
+    expect(renamed.status).toBe(200);
+    expect(repository.updateSource).toHaveBeenCalledWith(SOURCE_ID, {
+      title: "표시 제목만 변경",
+    });
+  });
+
+  it("returns ordered source segments with exact external links", async () => {
+    const response = await api(`/api/v1/sources/${SOURCE_ID}/segments`);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      data: [
+        {
+          id: SEGMENT_ID,
+          sourceRecordId: SOURCE_ID,
+          ordinal: 0,
+          speaker: "민지",
+          text: "금요일까지 시안을 검토합니다.",
+          sourceUrl: "https://teams.microsoft.com/l/message/message-1",
+        },
+      ],
+    });
   });
 
   it("persists an immutable analysis run, v2 evidence, and sourceIds", async () => {
@@ -457,10 +549,40 @@ function createFakeRepository() {
     deleteProject: vi.fn(async () => undefined),
     listSources: vi.fn(async () => [source]),
     createSource: vi.fn(async (_projectId, values) => (source = sourceRow(values))),
+    importSourceContext: vi.fn(async (_projectId, values) => {
+      source = sourceRow({
+        kind: values.kind,
+        title: values.title,
+        content: values.content,
+        occurred_at: values.occurredAt,
+      });
+      return {
+        source,
+        import_id: IMPORT_ID,
+        provider: values.provider,
+        participants: values.participants,
+        segment_count: values.segments.length,
+        imported_at: now,
+        metadata: values.metadata,
+        duplicate: false,
+      };
+    }),
     getSource: vi.fn(async () => source),
     getSources: vi.fn(async () => [source]),
     updateSource: vi.fn(async (_id, values) => (source = { ...source, ...values })),
     archiveSource: vi.fn(async () => (source = { ...source, archived_at: now })),
+    listSourceSegments: vi.fn(async () => [
+      {
+        id: SEGMENT_ID,
+        source_record_id: SOURCE_ID,
+        ordinal: 0,
+        speaker: "민지",
+        text: "금요일까지 시안을 검토합니다.",
+        occurred_at: now,
+        external_id: "message-1",
+        source_url: "https://teams.microsoft.com/l/message/message-1",
+      },
+    ]),
     listRuns: vi.fn(async () => [run]),
     getRun: vi.fn(async () => run),
     startRun: vi.fn(async () => ({ reused: false, run })),

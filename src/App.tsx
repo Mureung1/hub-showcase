@@ -75,6 +75,10 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
     };
   }, [auth, navigate, pathname, session]);
 
+  useEffect(() => {
+    document.getElementById("main-content")?.focus({ preventScroll: true });
+  }, [pathname]);
+
   const signOut = async () => {
     await auth.signOut(session);
     setSession(null);
@@ -103,9 +107,14 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
 
   return (
     <>
+      <a className="skip-link" href="#main-content">
+        본문으로 건너뛰기
+      </a>
       <SiteHeader session={session} pathname={pathname} navigate={navigate} onSignOut={() => void signOut()} />
       {authError && <div className="global-notice notice error" role="alert">{authError}<button type="button" onClick={() => setAuthError(null)}>닫기</button></div>}
-      {page}
+      <div id="main-content" tabIndex={-1}>
+        {page}
+      </div>
       <footer className="site-footer"><span>Modu Brain</span><span>결정을 요약하는 것을 넘어, 근거와 변화를 연결합니다.</span></footer>
     </>
   );

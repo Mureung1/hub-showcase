@@ -2,7 +2,7 @@ import { ApiError } from "./apiErrors.mjs";
 
 const projectSelect = "id,owner_id,title,description,archived_at,created_at,updated_at";
 const sourceSelect =
-  "id,project_id,kind,title,content,content_sha256,char_count,occurred_at,archived_at,created_at,updated_at";
+  "id,project_id,kind,title,content,content_sha256,char_count,occurred_at,archived_at,created_at,updated_at,source_imports(id,provider,participants,segment_count,imported_at,metadata)";
 const runSelect =
   "id,project_id,created_by,idempotency_key,status,provider_mode,provider_model,schema_version,result_jsonb,error_code,error_message,latency_ms,input_tokens,output_tokens,created_at,started_at,completed_at,analysis_run_sources(source_record_id)";
 const shareSelect = "id,analysis_run_id,expires_at,revoked_at,created_at";
@@ -69,6 +69,29 @@ export function createModuBrainRepository(client) {
         }),
       );
     },
+    async importSourceContext(projectId, values) {
+      const result = single(
+        await client.request("rpc/import_source_context", {
+          method: "POST",
+          body: {
+            p_project_id: projectId,
+            p_kind: values.kind,
+            p_title: values.title,
+            p_content: values.content,
+            p_provider: values.provider,
+            p_external_id: values.externalId || null,
+            p_occurred_at: values.occurredAt,
+            p_participants: values.participants || [],
+            p_metadata: values.metadata || {},
+            p_segments: values.segments || [],
+          },
+        }),
+      );
+      if (!result?.source) {
+        throw new ApiError(503, "DATABASE_UNAVAILABLE", "가져오기 결과를 저장하지 못했습니다.");
+      }
+      return result;
+    },
     async getSource(sourceId) {
       return requireSingle(
         await client.request(`source_records?id=eq.${encode(sourceId)}&select=${sourceSelect}`),
@@ -92,6 +115,12 @@ export function createModuBrainRepository(client) {
     },
     async archiveSource(sourceId) {
       return this.updateSource(sourceId, { archived_at: new Date().toISOString() });
+    },
+    async listSourceSegments(sourceId) {
+      await this.getSource(sourceId);
+      return client.request(
+        `source_segments?source_record_id=eq.${encode(sourceId)}&select=id,source_record_id,ordinal,speaker,text,occurred_at,external_id,source_url&order=ordinal.asc`,
+      );
     },
 
     async listRuns(projectId) {

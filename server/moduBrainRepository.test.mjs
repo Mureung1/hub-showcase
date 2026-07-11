@@ -15,12 +15,17 @@ describe("Modu Brain PostgREST repository", () => {
     const source = { id: ID, project_id: ID, content: "text" };
     const run = { id: ID, project_id: ID, analysis_run_sources: [{ source_record_id: ID }] };
     const snapshot = { source_record_id: ID, content_snapshot: "text" };
+    const segment = { id: ID, source_record_id: ID, ordinal: 0, text: "text" };
     const share = { id: ID, analysis_run_id: ID };
     const request = vi.fn(async (path) => {
       if (path === "rpc/start_analysis_run") return [{ outcome: "created", run: { id: ID } }];
+      if (path === "rpc/import_source_context") {
+        return { source, import_id: ID, provider: "paste", segment_count: 1 };
+      }
       if (path === "rpc/consume_rate_limit") return true;
       if (path.startsWith("projects")) return [project];
       if (path.startsWith("source_records")) return [source];
+      if (path.startsWith("source_segments")) return [segment];
       if (path.startsWith("analysis_runs")) return [run];
       if (path.startsWith("analysis_run_sources")) return [snapshot];
       if (path.startsWith("share_links")) return [share];
@@ -38,11 +43,25 @@ describe("Modu Brain PostgREST repository", () => {
 
     await expect(repository.listSources(ID)).resolves.toEqual([source]);
     await expect(repository.createSource(ID, { title: "source" })).resolves.toBe(source);
+    await expect(
+      repository.importSourceContext(ID, {
+        kind: "note",
+        title: "import",
+        content: "text",
+        occurredAt: null,
+        provider: "paste",
+        externalId: "paste:source:1",
+        participants: [],
+        metadata: {},
+        segments: [{ externalId: "segment-1", text: "text" }],
+      }),
+    ).resolves.toMatchObject({ import_id: ID, provider: "paste" });
     await expect(repository.getSource(ID)).resolves.toBe(source);
     await expect(repository.getSources(ID, [ID])).resolves.toEqual([source]);
     await expect(repository.getSources(ID, [])).resolves.toEqual([]);
     await expect(repository.updateSource(ID, { title: "updated" })).resolves.toBe(source);
     await expect(repository.archiveSource(ID)).resolves.toBe(source);
+    await expect(repository.listSourceSegments(ID)).resolves.toEqual([segment]);
 
     await expect(repository.listRuns(ID)).resolves.toEqual([run]);
     await expect(repository.getRun(ID)).resolves.toBe(run);
@@ -65,6 +84,13 @@ describe("Modu Brain PostgREST repository", () => {
     expect(request).toHaveBeenCalledWith(
       "rpc/start_analysis_run",
       expect.objectContaining({ method: "POST", body: expect.objectContaining({ p_project_id: ID }) }),
+    );
+    expect(request).toHaveBeenCalledWith(
+      "rpc/import_source_context",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.objectContaining({ p_project_id: ID, p_provider: "paste" }),
+      }),
     );
   });
 

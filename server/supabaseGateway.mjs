@@ -135,6 +135,24 @@ function mapPostgrestError(status, payload) {
   if (message.includes("ANALYSIS_INPUT_TOO_LARGE")) {
     return new ApiError(413, "ANALYSIS_INPUT_TOO_LARGE", "분석 입력은 총 100,000자 이하여야 합니다.");
   }
+  if (message.includes("IMPORTED_SOURCE_IMMUTABLE")) {
+    return new ApiError(
+      409,
+      "IMPORTED_SOURCE_IMMUTABLE",
+      "가져온 원문의 내용과 시각은 변경할 수 없습니다.",
+    );
+  }
+  if (
+    message.includes("INVALID_IMPORT") ||
+    message.includes("INVALID_SOURCE_SEGMENT") ||
+    message.includes("INVALID_SEGMENT_") ||
+    message.includes("INVALID_PARTICIPANTS") ||
+    message.includes("INVALID_EXTERNAL_ID") ||
+    message.includes("INVALID_SOURCE_") ||
+    message.includes("SOURCE_SEGMENTS_TOO_LARGE")
+  ) {
+    return new ApiError(400, "INVALID_CONTEXT_IMPORT", "가져오기 데이터 형식이 올바르지 않습니다.");
+  }
   if (message.includes("RATE_LIMITED")) {
     return new ApiError(429, "RATE_LIMITED", "요청 한도를 초과했습니다.", undefined, {
       "Retry-After": "3600",

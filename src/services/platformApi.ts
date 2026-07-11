@@ -4,10 +4,13 @@ import type {
   CapabilitiesResource,
   CreateProjectInput,
   CreateSourceInput,
+  ContextImportResource,
+  ImportContextInput,
   ProjectResource,
   ShareLinkResource,
   SharedAnalysisResource,
   SourceRecordResource,
+  SourceSegmentResource,
   UpdateProjectInput,
   UpdateSourceInput,
 } from "../types/platform";
@@ -51,12 +54,18 @@ export interface PlatformApi {
     projectId: string,
     input: CreateSourceInput,
   ): Promise<SourceRecordResource>;
+  importContext(
+    token: string,
+    projectId: string,
+    input: ImportContextInput,
+  ): Promise<ContextImportResource>;
   updateSource(
     token: string,
     sourceId: string,
     input: UpdateSourceInput,
   ): Promise<SourceRecordResource>;
   deleteSource(token: string, sourceId: string): Promise<void>;
+  listSourceSegments(token: string, sourceId: string): Promise<SourceSegmentResource[]>;
   listAnalysisRuns(token: string, projectId: string): Promise<AnalysisRunResource[]>;
   createAnalysisRun(
     token: string,
@@ -133,6 +142,13 @@ class HttpPlatformApi implements PlatformApi {
     );
   }
 
+  importContext(token: string, projectId: string, input: ImportContextInput) {
+    return this.request<ContextImportResource>(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/imports`,
+      { token, method: "POST", body: input },
+    );
+  }
+
   updateSource(token: string, sourceId: string, input: UpdateSourceInput) {
     return this.request<SourceRecordResource>(`/api/v1/sources/${encodeURIComponent(sourceId)}`, {
       token,
@@ -146,6 +162,13 @@ class HttpPlatformApi implements PlatformApi {
       token,
       method: "DELETE",
     });
+  }
+
+  listSourceSegments(token: string, sourceId: string) {
+    return this.request<SourceSegmentResource[]>(
+      `/api/v1/sources/${encodeURIComponent(sourceId)}/segments`,
+      { token },
+    );
   }
 
   listAnalysisRuns(token: string, projectId: string) {

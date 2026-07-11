@@ -1,6 +1,6 @@
 # Modu Brain
 
-Modu Brain은 회의록, 리서치, 피드백에 흩어진 결정 배경과 참여자 관점, 미결 질문을 원문 근거와 함께 구조화하는 협업 맥락 웹 앱입니다. 로그인 사용자는 프로젝트와 기록을 저장하고 분석 이력을 비교할 수 있으며, 특정 분석 결과만 만료 가능한 읽기 전용 링크로 공유할 수 있습니다.
+Modu Brain은 회의록, 리서치, 피드백에 흩어진 결정 배경과 참여자 관점, 미결 질문을 원문 근거와 함께 구조화하는 협업 맥락 웹 앱입니다. 로그인 사용자는 프로젝트와 기록을 저장하고 분석 이력을 비교할 수 있으며, 특정 분석 결과만 만료 가능한 읽기 전용 링크로 공유할 수 있습니다. 카카오톡 TXT, Teams·Notion JSON, 직접 붙여넣기도 개인 계정 연결 없이 공통 기록으로 가져와 지식맵과 원문 백링크에서 함께 확인할 수 있습니다.
 
 ![Modu Brain 웹 화면](docs/images/modu-brain-web-desktop.png)
 
@@ -20,7 +20,7 @@ flowchart LR
 - `/`: 로그인 없이 사용하는 비영속 로컬 샘플
 - `/login`: Supabase 이메일 Magic Link 로그인
 - `/projects`: 사용자 소유 프로젝트 목록과 생성
-- `/projects/:id`: 기록, 분석 이력, 지식맵, 온보딩, 공유
+- `/projects/:id`: 외부 맥락 가져오기, 기록, 분석 이력, 지식맵·백링크, 온보딩, 공유
 - `/share#token=…`: 원문을 제외한 읽기 전용 분석 결과
 - `/api/v1/**`: 인증·RLS가 적용된 영속 API
 - `/api/context-analysis`: 한 릴리스 동안 유지하는 비영속 호환 API
@@ -109,7 +109,9 @@ SQL migration은 `supabase/migrations/`가 유일한 스키마 원본입니다. 
 GET|POST       /api/v1/projects
 GET|PATCH|DELETE /api/v1/projects/:projectId
 GET|POST       /api/v1/projects/:projectId/sources
+POST           /api/v1/projects/:projectId/imports
 PATCH|DELETE   /api/v1/sources/:sourceId
+GET            /api/v1/sources/:sourceId/segments
 GET|POST       /api/v1/projects/:projectId/analysis-runs
 GET|DELETE     /api/v1/analysis-runs/:runId
 GET|POST       /api/v1/analysis-runs/:runId/share-links
@@ -136,7 +138,7 @@ npm run test:e2e
 - Vitest: 서버·클라이언트 계약, 보안 경계, 로컬 분석 회귀
 - SQL/pgTAP: 빈 DB 적용·down rollback·재적용과 32개 RLS/권한 계약
 - 한국어 eval 20건: 회의·리서치·피드백·빈 근거·개인정보 문구를 유료 호출 없이 검증
-- Playwright: 공개 샘플과 `로그인 → 프로젝트 → 기록 → 분석 → 근거 → 이력 → 공유 → 새로고침`
+- Playwright: 공개 샘플과 `로그인 → 프로젝트 → 외부 맥락 가져오기 → 분석 → 근거·백링크 → 이력 → 공유 → 새로고침`
 - GitHub Actions: lint, typecheck, coverage, build, production audit, secret scan, 공개 스모크, 내부 PR의 로컬 Supabase/E2E
 
 ## Sites 배포

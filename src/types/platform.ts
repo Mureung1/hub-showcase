@@ -1,6 +1,7 @@
 import type { ContextAnalysisResultV2 } from "./context";
 
 export type SourceKind = "meeting" | "research" | "feedback" | "note";
+export type ExternalContextProvider = "kakaotalk" | "teams" | "notion" | "paste";
 export type AnalysisMode = "local" | "openai";
 export type AnalysisRunStatus = "running" | "succeeded" | "failed" | "cancelled";
 
@@ -32,6 +33,40 @@ export type SourceRecordResource = {
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  import?: {
+    id: string;
+    provider: ExternalContextProvider;
+    participants: string[];
+    segmentCount: number;
+    importedAt: string;
+    metadata?: Record<string, unknown>;
+  };
+};
+
+export type ImportContextInput = {
+  provider: ExternalContextProvider;
+  title?: string;
+  text: string;
+};
+
+export type ContextImportResource = {
+  source: SourceRecordResource;
+  importId: string;
+  provider: ExternalContextProvider;
+  participants: string[];
+  segmentCount: number;
+  duplicate: boolean;
+};
+
+export type SourceSegmentResource = {
+  id: string;
+  sourceRecordId: string;
+  ordinal: number;
+  speaker: string | null;
+  text: string;
+  occurredAt: string | null;
+  externalId: string | null;
+  sourceUrl: string | null;
 };
 
 export type AnalysisRunResource = {

@@ -59,6 +59,19 @@ describe("ProjectPage", () => {
     };
     vi.mocked(api.createSource).mockResolvedValue(feedback);
     vi.mocked(api.createAnalysisRun).mockResolvedValue(latestRun);
+    const linkedEvidence = latestRun.result!.decisions[0].evidence![0];
+    vi.mocked(api.listSourceSegments).mockResolvedValue([
+      {
+        id: "abababab-abab-4bab-8bab-abababababab",
+        sourceRecordId: linkedEvidence.sourceRecordId,
+        ordinal: 0,
+        speaker: "서준",
+        text: linkedEvidence.quote,
+        occurredAt: "2026-07-11T00:30:00Z",
+        externalId: "message-1",
+        sourceUrl: "https://teams.microsoft.com/l/message/message-1",
+      },
+    ]);
     vi.mocked(api.listShareLinks).mockResolvedValue([]);
     vi.mocked(api.createShareLink).mockResolvedValue({
       id: "77777777-7777-4777-8777-777777777777",
@@ -98,6 +111,10 @@ describe("ProjectPage", () => {
     await user.click(within(screen.getByRole("region", { name: "결정사항" })).getByRole("button", { name: "근거 1개" }));
     expect(screen.getByRole("dialog", { name: "분석 근거" })).toBeInTheDocument();
     expect(screen.getByText(/팀은 MVP에서 메신저 자동 연동/)).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "외부 원문 위치 열기" })).toHaveAttribute(
+      "href",
+      "https://teams.microsoft.com/l/message/message-1",
+    );
     await user.click(screen.getByRole("button", { name: "닫기" }));
 
     await user.click(screen.getByRole("tab", { name: "지식맵" }));
@@ -110,6 +127,106 @@ describe("ProjectPage", () => {
     expect((shareInput as HTMLInputElement).value).toContain("/share#token=");
     await user.click(screen.getByTestId("share-revoke-77777777-7777-4777-8777-777777777777"));
     await waitFor(() => expect(api.revokeShareLink).toHaveBeenCalledWith("access", "77777777-7777-4777-8777-777777777777"));
+  });
+
+  it("imports account-free external context and exposes its provenance", async () => {
+    const user = userEvent.setup();
+    const api = apiMock();
+    const importedSource: SourceRecordResource = {
+      ...source,
+      id: "99999999-9999-4999-8999-999999999999",
+      title: "Teams 제품 회의",
+      content: "서준: 이번 주에 사용자 테스트를 진행합니다.",
+      charCount: 27,
+      import: {
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        provider: "teams",
+        participants: ["서준", "민지"],
+        segmentCount: 2,
+        importedAt: "2026-07-11T02:00:00Z",
+      },
+    };
+    vi.mocked(api.getProject).mockResolvedValue(project);
+    vi.mocked(api.listSources).mockResolvedValue([]);
+    vi.mocked(api.listAnalysisRuns).mockResolvedValue([]);
+    vi.mocked(api.importContext).mockResolvedValue({
+      source: importedSource,
+      importId: importedSource.import!.id,
+      provider: "teams",
+      participants: importedSource.import!.participants,
+      segmentCount: 2,
+      duplicate: false,
+    });
+
+    render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
+    await screen.findByRole("heading", { name: project.title });
+    await user.click(screen.getByRole("tab", { name: "기록" }));
+    expect(screen.getByText("계정 연결 없음")).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: /Teams JSON/ }));
+    await user.type(screen.getByLabelText(/기록 제목/), "Teams 제품 회의");
+    await user.click(screen.getByLabelText("가져올 내용 확인"));
+    await user.paste('[{"body":{"content":"이번 주에 사용자 테스트를 진행합니다."}}]');
+    await user.click(screen.getByRole("button", { name: "파싱하고 가져오기" }));
+
+    expect(api.importContext).toHaveBeenCalledWith("access", project.id, {
+      provider: "teams",
+      title: "Teams 제품 회의",
+      text: '[{"body":{"content":"이번 주에 사용자 테스트를 진행합니다."}}]',
+    });
+    expect(await screen.findByRole("heading", { name: "Teams 제품 회의" })).toBeInTheDocument();
+    expect(screen.getByText("Teams")).toBeInTheDocument();
+    expect(screen.getByText(/참여자 서준 · 민지/)).toBeInTheDocument();
+  });
+
+  it("merges concurrent archive and import results without reviving stale local rows", async () => {
+    const user = userEvent.setup();
+    const api = apiMock();
+    const archiveRequest = deferred<void>();
+    const importRequest = deferred<Awaited<ReturnType<PlatformApi["importContext"]>>>();
+    const importedSource: SourceRecordResource = {
+      ...source,
+      id: "12121212-1212-4212-8212-121212121212",
+      title: "동시 가져오기",
+      content: "새 맥락",
+      charCount: 4,
+      import: {
+        id: "13131313-1313-4313-8313-131313131313",
+        provider: "paste",
+        participants: [],
+        segmentCount: 1,
+        importedAt: "2026-07-11T02:00:00Z",
+      },
+    };
+    vi.mocked(api.getProject).mockResolvedValue(project);
+    vi.mocked(api.listSources).mockResolvedValue([source]);
+    vi.mocked(api.listAnalysisRuns).mockResolvedValue([]);
+    vi.mocked(api.deleteSource).mockReturnValue(archiveRequest.promise);
+    vi.mocked(api.importContext).mockReturnValue(importRequest.promise);
+
+    render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
+    await screen.findByRole("heading", { name: project.title });
+    await user.click(screen.getByRole("tab", { name: "기록" }));
+    await user.click(screen.getByRole("button", { name: "보관" }));
+    await user.click(screen.getByRole("radio", { name: /직접 붙여넣기/ }));
+    await user.type(screen.getByLabelText(/기록 제목/), "동시 가져오기");
+    await user.type(screen.getByLabelText("회의 맥락 붙여넣기"), "새 맥락");
+    await user.click(screen.getByRole("button", { name: "파싱하고 가져오기" }));
+
+    archiveRequest.resolve();
+    await waitFor(() => expect(screen.queryByRole("heading", { name: source.title })).not.toBeInTheDocument());
+    importRequest.resolve({
+      source: importedSource,
+      importId: importedSource.import!.id,
+      provider: "paste",
+      participants: [],
+      segmentCount: 1,
+      duplicate: false,
+    });
+    expect(await screen.findByRole("heading", { name: "동시 가져오기" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "개요" }));
+    expect(screen.getAllByTestId(/^analysis-source-/)).toHaveLength(1);
+    expect(screen.getByTestId(`analysis-source-${importedSource.id}`)).toBeChecked();
   });
 
   it("shows load errors and preserves the project-not-found boundary", async () => {
@@ -235,8 +352,18 @@ function apiMock(): PlatformApi {
   return {
     getCapabilities: vi.fn().mockResolvedValue({ openaiEnabled: false }),
     listProjects: vi.fn(), createProject: vi.fn(), getProject: vi.fn(), updateProject: vi.fn(), deleteProject: vi.fn(),
-    listSources: vi.fn(), createSource: vi.fn(), updateSource: vi.fn(), deleteSource: vi.fn(),
+    listSources: vi.fn(), createSource: vi.fn(), importContext: vi.fn(), updateSource: vi.fn(), deleteSource: vi.fn(), listSourceSegments: vi.fn().mockResolvedValue([]),
     listAnalysisRuns: vi.fn(), createAnalysisRun: vi.fn(), getAnalysisRun: vi.fn(), deleteAnalysisRun: vi.fn(),
     listShareLinks: vi.fn(), createShareLink: vi.fn(), revokeShareLink: vi.fn(), resolveSharedAnalysis: vi.fn(),
   };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
 }

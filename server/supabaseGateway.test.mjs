@@ -102,6 +102,8 @@ describe("PostgREST client", () => {
     [409, { code: "23505" }, 409, "ANALYSIS_ALREADY_RUNNING"],
     [400, { message: "INVALID_SOURCE_SELECTION" }, 400, "INVALID_SOURCE_SELECTION"],
     [400, { message: "RATE_LIMITED" }, 429, "RATE_LIMITED"],
+    [400, { message: "INVALID_SOURCE_SEGMENT_TEXT" }, 400, "INVALID_CONTEXT_IMPORT"],
+    [400, { message: "IMPORTED_SOURCE_IMMUTABLE" }, 409, "IMPORTED_SOURCE_IMMUTABLE"],
     [406, { code: "PGRST116" }, 404, "NOT_FOUND"],
     [404, { code: "PGRST205" }, 503, "DATABASE_UNAVAILABLE"],
     [404, { message: "missing API route" }, 503, "DATABASE_UNAVAILABLE"],
