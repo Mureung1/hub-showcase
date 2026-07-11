@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ApiError, toApiError } from "./apiErrors.mjs";
 import {
   analysisRunResource,
@@ -9,7 +9,16 @@ import {
   sharedAnalysisResource,
   sourceResource,
 } from "./resourceMappers.mjs";
-import { clientIp, createShareToken, privacyIdentifier, requireUuid, sha256 } from "./security.mjs";
+import {
+  clientIp,
+  createShareToken,
+  privacyIdentifier,
+  rateLimitIdentifier,
+  requireUuid,
+  sanitizeAccountExportPayload,
+  sha256,
+  writeStructuredLog,
+} from "./security.mjs";
 
 describe("backend resource mappers", () => {
   it("maps optional project/source fields without leaking database naming", () => {
@@ -135,15 +144,27 @@ describe("backend security utilities", () => {
     expect(createShareToken()).toMatch(/^[A-Za-z0-9_-]{43}$/);
   });
 
-  it("validates UUIDs and derives a proxy-aware client address", () => {
+  it("validates UUIDs and trusts forwarding headers only for the declared platform", () => {
     const uuid = "33333333-3333-4333-8333-333333333333";
     expect(requireUuid(uuid)).toBe(uuid);
     expect(() => requireUuid("not-an-id", "sourceId")).toThrow(
       expect.objectContaining({ status: 400, code: "INVALID_IDENTIFIER" }),
     );
-    expect(clientIp({ headers: { "x-forwarded-for": "198.51.100.9, 203.0.113.1" }, socket: {} })).toBe(
-      "203.0.113.1",
-    );
+    expect(
+      clientIp({ headers: { "x-forwarded-for": "198.51.100.9, 203.0.113.1" }, socket: {} }),
+    ).toBe("unknown");
+    expect(
+      clientIp(
+        { headers: { "x-forwarded-for": "198.51.100.9, 203.0.113.1" }, socket: {} },
+        { platform: "trusted-proxy" },
+      ),
+    ).toBe("203.0.113.1");
+    expect(
+      clientIp(
+        { headers: { "x-forwarded-for": "198.51.100.9, 203.0.113.1" }, socket: {} },
+        { platform: "render" },
+      ),
+    ).toBe("198.51.100.9");
     expect(
       clientIp({
         headers: {
@@ -151,18 +172,81 @@ describe("backend security utilities", () => {
           "x-forwarded-for": "198.51.100.9, 203.0.113.1",
         },
         socket: {},
-      }),
+      }, { platform: "cloudflare" }),
     ).toBe("192.0.2.8");
-    expect(clientIp({
-      headers: {
-        "cf-connecting-ip": "198.51.100.7",
-        "x-forwarded-for": "192.0.2.99, 198.51.100.7",
-      },
-      socket: {},
-    })).toBe("198.51.100.7");
+    expect(
+      clientIp({
+        trustedProxyPlatform: "cloudflare",
+        headers: {
+          "cf-connecting-ip": "198.51.100.7",
+          "x-forwarded-for": "192.0.2.99, 198.51.100.7",
+        },
+        socket: {},
+      }),
+    ).toBe("198.51.100.7");
     expect(clientIp({ headers: { "x-forwarded-for": "spoofed" }, socket: {} })).toBe("unknown");
     expect(clientIp({ headers: {}, socket: { remoteAddress: "127.0.0.1" } })).toBe("127.0.0.1");
     expect(clientIp({ headers: {}, socket: {} })).toBe("unknown");
+  });
+
+  it("uses secret-keyed identifiers and fails closed without a production secret", () => {
+    const request = {
+      headers: { "cf-connecting-ip": "203.0.113.7" },
+      socket: {},
+      trustedProxyPlatform: "cloudflare",
+    };
+    const identifier = rateLimitIdentifier(request, { secret: "test-secret" });
+    expect(identifier).toHaveLength(64);
+    expect(identifier).toBe(rateLimitIdentifier(request, { secret: "test-secret" }));
+    expect(identifier).not.toContain("203.0.113.7");
+
+    vi.stubEnv("IP_HASH_SECRET", "");
+    vi.stubEnv("RATE_LIMIT_IDENTIFIER_SECRET", "");
+    vi.stubEnv("SAFETY_IDENTIFIER_SECRET", "");
+    try {
+      expect(() => rateLimitIdentifier(request, { nodeEnv: "production" })).toThrow(
+        expect.objectContaining({ status: 503, code: "RATE_LIMIT_IDENTIFIER_SECRET_MISSING" }),
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("writes structured logs without request content or high-cardinality identifiers", () => {
+    const logger = { info: vi.fn() };
+    const payload = writeStructuredLog(
+      {
+        requestId: "request-1",
+        cfRay: "ray-1",
+        rndrId: "render-1",
+        method: "POST",
+        route: "/api/v1/projects/33333333-3333-4333-8333-333333333333?email=private@example.com",
+        status: 201,
+        durationMs: 3.14159,
+      },
+      { logger },
+    );
+    expect(payload.route).toBe("/api/v1/projects/:id");
+    expect(JSON.stringify(payload)).not.toContain("private@example.com");
+    expect(logger.info).toHaveBeenCalledOnce();
+  });
+
+  it("removes credentials from account exports and adds only the verified email", () => {
+    expect(
+      sanitizeAccountExportPayload(
+        {
+          projects: [{ id: "p1", token_hash: "private" }],
+          refresh_token: "private",
+          nested: { serviceRoleKey: "private", content: "kept" },
+          email: "unverified@example.com",
+        },
+        "verified@example.com",
+      ),
+    ).toEqual({
+      projects: [{ id: "p1" }],
+      nested: { content: "kept" },
+      email: "verified@example.com",
+    });
   });
 });
 

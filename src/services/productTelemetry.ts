@@ -43,7 +43,8 @@ export function trackProductEvent(
 
   window.dispatchEvent(new CustomEvent<ProductEvent>(eventType, { detail: event }));
 
-  const endpoint = import.meta.env.VITE_PRODUCT_ANALYTICS_ENDPOINT?.trim();
+  const endpoint = import.meta.env.VITE_PRODUCT_ANALYTICS_ENDPOINT?.trim()
+    || (import.meta.env.PROD ? "/api/v1/telemetry" : "");
   const collectorPath = sameOriginCollectorPath(endpoint);
   if (!collectorPath) return;
   const payload = JSON.stringify(event);

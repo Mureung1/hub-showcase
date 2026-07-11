@@ -3,20 +3,28 @@ import type {
   AnalysisRunAnnotationResource,
   AnalysisRunResource,
   AnalysisRunStepEventResource,
+  AccountExportResource,
   CapabilitiesResource,
   CreateProjectInput,
   CreateSourceInput,
   ContextImportResource,
+  CursorPage,
+  CursorPageMetadata,
+  CursorPageOptions,
   CreateAnalysisRunAnnotationInput,
   ImportContextInput,
   ProjectResource,
   ShareLinkResource,
   SharedAnalysisResource,
+  SourceRecordListResource,
   SourceRecordResource,
   SourceSegmentResource,
   UpdateProjectInput,
   UpdateSourceInput,
 } from "../types/platform";
+import { COOKIE_SESSION_SENTINEL } from "./auth";
+
+export const AUTH_REQUIRED_EVENT = "modu-brain:auth-required";
 
 type ErrorPayload = {
   error?: {
@@ -30,19 +38,27 @@ export class PlatformApiError extends Error {
   status: number;
   code: string;
   details: unknown;
+  retryAfterSeconds: number | null;
 
-  constructor(message: string, status: number, code: string, details: unknown = null) {
+  constructor(
+    message: string,
+    status: number,
+    code: string,
+    details: unknown = null,
+    retryAfterSeconds: number | null = null,
+  ) {
     super(message);
     this.name = "PlatformApiError";
     this.status = status;
     this.code = code;
     this.details = details;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
 export interface PlatformApi {
   getCapabilities(token: string): Promise<CapabilitiesResource>;
-  listProjects(token: string): Promise<ProjectResource[]>;
+  listProjects(token: string, options?: { archived?: boolean }): Promise<ProjectResource[]>;
   createProject(token: string, input: CreateProjectInput): Promise<ProjectResource>;
   getProject(token: string, projectId: string): Promise<ProjectResource>;
   updateProject(
@@ -51,7 +67,14 @@ export interface PlatformApi {
     input: UpdateProjectInput,
   ): Promise<ProjectResource>;
   deleteProject(token: string, projectId: string, permanent?: boolean): Promise<void>;
-  listSources(token: string, projectId: string): Promise<SourceRecordResource[]>;
+  restoreProject?(token: string, projectId: string): Promise<ProjectResource>;
+  listSources(token: string, projectId: string): Promise<SourceRecordListResource[]>;
+  listSourcesPage?(
+    token: string,
+    projectId: string,
+    options?: CursorPageOptions,
+  ): Promise<CursorPage<SourceRecordListResource>>;
+  getSource?(token: string, sourceId: string): Promise<SourceRecordResource>;
   createSource(
     token: string,
     projectId: string,
@@ -68,8 +91,20 @@ export interface PlatformApi {
     input: UpdateSourceInput,
   ): Promise<SourceRecordResource>;
   deleteSource(token: string, sourceId: string): Promise<void>;
+  restoreSource?(token: string, sourceId: string): Promise<SourceRecordResource>;
   listSourceSegments(token: string, sourceId: string): Promise<SourceSegmentResource[]>;
+  listSourceSegmentsPage?(
+    token: string,
+    sourceId: string,
+    options?: CursorPageOptions,
+  ): Promise<CursorPage<SourceSegmentResource>>;
+  getSourceSegment?(token: string, segmentId: string): Promise<SourceSegmentResource>;
   listAnalysisRuns(token: string, projectId: string): Promise<AnalysisRunResource[]>;
+  listAnalysisRunsPage?(
+    token: string,
+    projectId: string,
+    options?: CursorPageOptions,
+  ): Promise<CursorPage<AnalysisRunResource>>;
   createAnalysisRun(
     token: string,
     projectId: string,
@@ -101,6 +136,8 @@ export interface PlatformApi {
   ): Promise<ShareLinkResource>;
   revokeShareLink(token: string, shareLinkId: string): Promise<void>;
   resolveSharedAnalysis(token: string): Promise<SharedAnalysisResource>;
+  exportAccount?(token: string): Promise<AccountExportResource>;
+  deleteAccount?(token: string, confirmation: "delete my account"): Promise<void>;
 }
 
 class HttpPlatformApi implements PlatformApi {
@@ -108,8 +145,11 @@ class HttpPlatformApi implements PlatformApi {
     return this.request<CapabilitiesResource>("/api/v1/capabilities", { token });
   }
 
-  listProjects(token: string) {
-    return this.request<ProjectResource[]>("/api/v1/projects", { token });
+  listProjects(token: string, options: { archived?: boolean } = {}) {
+    return this.request<ProjectResource[]>(
+      `/api/v1/projects${options.archived ? "?archived=true" : ""}`,
+      { token },
+    );
   }
 
   createProject(token: string, input: CreateProjectInput) {
@@ -145,9 +185,29 @@ class HttpPlatformApi implements PlatformApi {
     );
   }
 
+  restoreProject(token: string, projectId: string) {
+    return this.request<ProjectResource>(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/restore`,
+      { token, method: "POST" },
+    );
+  }
+
   listSources(token: string, projectId: string) {
-    return this.request<SourceRecordResource[]>(
-      `/api/v1/projects/${encodeURIComponent(projectId)}/sources`,
+    return collectCursorPages((cursor) =>
+      this.listSourcesPage(token, projectId, { cursor }),
+    );
+  }
+
+  listSourcesPage(token: string, projectId: string, options: CursorPageOptions = {}) {
+    return this.requestPage<SourceRecordListResource>(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/sources${pageQuery(options)}`,
+      { token },
+    );
+  }
+
+  getSource(token: string, sourceId: string) {
+    return this.request<SourceRecordResource>(
+      `/api/v1/sources/${encodeURIComponent(sourceId)}`,
       { token },
     );
   }
@@ -181,16 +241,42 @@ class HttpPlatformApi implements PlatformApi {
     });
   }
 
+  restoreSource(token: string, sourceId: string) {
+    return this.request<SourceRecordResource>(
+      `/api/v1/sources/${encodeURIComponent(sourceId)}/restore`,
+      { token, method: "POST" },
+    );
+  }
+
   listSourceSegments(token: string, sourceId: string) {
-    return this.request<SourceSegmentResource[]>(
-      `/api/v1/sources/${encodeURIComponent(sourceId)}/segments`,
+    return collectCursorPages((cursor) =>
+      this.listSourceSegmentsPage(token, sourceId, { cursor }),
+    );
+  }
+
+  listSourceSegmentsPage(token: string, sourceId: string, options: CursorPageOptions = {}) {
+    return this.requestPage<SourceSegmentResource>(
+      `/api/v1/sources/${encodeURIComponent(sourceId)}/segments${pageQuery(options)}`,
+      { token },
+    );
+  }
+
+  getSourceSegment(token: string, segmentId: string) {
+    return this.request<SourceSegmentResource>(
+      `/api/v1/source-segments/${encodeURIComponent(segmentId)}`,
       { token },
     );
   }
 
   listAnalysisRuns(token: string, projectId: string) {
-    return this.request<AnalysisRunResource[]>(
-      `/api/v1/projects/${encodeURIComponent(projectId)}/analysis-runs`,
+    return collectCursorPages((cursor) =>
+      this.listAnalysisRunsPage(token, projectId, { cursor }),
+    );
+  }
+
+  listAnalysisRunsPage(token: string, projectId: string, options: CursorPageOptions = {}) {
+    return this.requestPage<AnalysisRunResource>(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/analysis-runs${pageQuery(options)}`,
       { token },
     );
   }
@@ -286,6 +372,18 @@ class HttpPlatformApi implements PlatformApi {
     });
   }
 
+  exportAccount(token: string) {
+    return this.request<AccountExportResource>("/api/v1/account/export", { token });
+  }
+
+  async deleteAccount(token: string, confirmation: "delete my account") {
+    await this.request<unknown>("/api/v1/account", {
+      token,
+      method: "DELETE",
+      headers: { "X-Confirm-Account-Delete": confirmation },
+    });
+  }
+
   private async request<T>(
     path: string,
     options: {
@@ -296,15 +394,53 @@ class HttpPlatformApi implements PlatformApi {
       headers?: Record<string, string>;
     },
   ): Promise<T> {
+    return (await this.requestEnvelope<T>(path, options)).data;
+  }
+
+  private async requestPage<T>(
+    path: string,
+    options: {
+      token?: string;
+      method?: string;
+      body?: unknown;
+      signal?: AbortSignal;
+      headers?: Record<string, string>;
+    },
+  ): Promise<CursorPage<T>> {
+    const envelope = await this.requestEnvelope<T[]>(path, options);
+    return {
+      items: envelope.data,
+      page: envelope.page ?? {
+        limit: envelope.data.length,
+        count: envelope.data.length,
+        hasMore: false,
+        nextCursor: null,
+      },
+    };
+  }
+
+  private async requestEnvelope<T>(
+    path: string,
+    options: {
+      token?: string;
+      method?: string;
+      body?: unknown;
+      signal?: AbortSignal;
+      headers?: Record<string, string>;
+    },
+  ): Promise<{ data: T; page?: CursorPageMetadata }> {
     let response: Response;
     try {
       response = await fetch(path, {
         method: options.method ?? "GET",
+        credentials: "same-origin",
         signal: options.signal,
         headers: {
           Accept: "application/json",
           ...(options.body === undefined ? {} : { "Content-Type": "application/json" }),
-          ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+          ...(options.token && options.token !== COOKIE_SESSION_SENTINEL
+            ? { Authorization: `Bearer ${options.token}` }
+            : {}),
           ...options.headers,
         },
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
@@ -318,18 +454,36 @@ class HttpPlatformApi implements PlatformApi {
       );
     }
 
-    if (response.status === 204) return undefined as T;
+    if (response.status === 204) return { data: undefined as T };
     const payload = (await response.json().catch(() => null)) as
-      | { data?: T }
+      | { data?: T; page?: CursorPageMetadata }
       | ErrorPayload
       | null;
     if (!response.ok) {
+      if (
+        response.status === 401 &&
+        options.token === COOKIE_SESSION_SENTINEL &&
+        typeof window !== "undefined"
+      ) {
+        window.dispatchEvent(new Event(AUTH_REQUIRED_EVENT));
+      }
       const error = (payload as ErrorPayload | null)?.error;
+      const retryAfterHeader = Number(response.headers?.get?.("Retry-After") ?? NaN);
+      const retryAfterDetail = Number(
+        error?.details && typeof error.details === "object" && "retryAfter" in error.details
+          ? error.details.retryAfter
+          : NaN,
+      );
       throw new PlatformApiError(
         error?.message ?? "요청을 처리하지 못했습니다.",
         response.status,
         error?.code ?? "REQUEST_FAILED",
         error?.details,
+        Number.isFinite(retryAfterHeader)
+          ? retryAfterHeader
+          : Number.isFinite(retryAfterDetail)
+            ? retryAfterDetail
+            : null,
       );
     }
     if (!payload || !("data" in payload)) {
@@ -339,8 +493,43 @@ class HttpPlatformApi implements PlatformApi {
         "INVALID_RESPONSE",
       );
     }
-    return payload.data as T;
+    return {
+      data: payload.data as T,
+      ...("page" in payload && payload.page ? { page: payload.page } : {}),
+    };
   }
+}
+
+function pageQuery(options: CursorPageOptions) {
+  const params = new URLSearchParams();
+  params.set("limit", String(options.limit ?? 50));
+  if (options.cursor) params.set("cursor", options.cursor);
+  return `?${params.toString()}`;
+}
+
+async function collectCursorPages<T>(
+  load: (cursor: string | null) => Promise<CursorPage<T>>,
+) {
+  const items: T[] = [];
+  let cursor: string | null = null;
+  for (let pageCount = 0; pageCount < 100; pageCount += 1) {
+    const page = await load(cursor);
+    items.push(...page.items);
+    if (!page.page.nextCursor) return items;
+    if (page.page.nextCursor === cursor) {
+      throw new PlatformApiError(
+        "서버가 같은 페이지 커서를 반복했습니다.",
+        502,
+        "INVALID_PAGINATION",
+      );
+    }
+    cursor = page.page.nextCursor;
+  }
+  throw new PlatformApiError(
+    "한 번에 불러올 수 있는 목록 범위를 초과했습니다.",
+    413,
+    "PAGINATION_LIMIT_EXCEEDED",
+  );
 }
 
 export const platformApi: PlatformApi = new HttpPlatformApi();

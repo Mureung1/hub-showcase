@@ -40,7 +40,10 @@ function SharePage({ api }: { api: PlatformApi }) {
         <div><p className="section-kicker">Read-only onboarding</p><h1>{shared.projectTitle}</h1><p>읽기 전용 분석 · {formatDate(shared.completedAt)}</p></div>
         <span className="read-only-badge">수정 불가</span>
       </header>
-      <div className="notice info">이 페이지는 원문 전체나 계정 정보를 포함하지 않는 공유용 분석 화면입니다.</div>
+      <div className="notice warning" role="note" aria-label="공유 개인정보 주의">
+        분석 결과의 근거 인용문에는 입력 원문의 일부, 사람 이름 또는 개인정보가 남아 있을 수 있습니다.
+        링크를 다시 전달하기 전에 아래 내용을 확인해 주세요. 원문 전체와 계정 이메일은 표시하지 않습니다.
+      </div>
       <div className="results-grid overview-grid">
         <SummaryPanel result={result} />
         <DecisionList decisions={result.decisions} />

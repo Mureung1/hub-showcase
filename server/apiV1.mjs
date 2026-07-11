@@ -1,8 +1,20 @@
-import { analyzeProjectContext } from "./contextAnalysisCore.mjs";
+import {
+  analyzeProjectContext,
+  providerTelemetrySymbol,
+} from "./contextAnalysisCore.mjs";
 import { ApiError, toApiError } from "./apiErrors.mjs";
+import {
+  AUTH_REFRESH_LEAD_MS,
+  authSessionCacheHeaders,
+  clearAuthSessionCookies,
+  deriveAccessExpiresAt,
+  readAuthSessionCookies,
+  setAuthSessionCacheHeaders,
+  writeAuthSessionCookies,
+} from "./authSession.mjs";
 import { buildContextAnalysisResultV2 } from "./analysisResultV2.mjs";
 import { normalizeContextImport } from "./contextImport.mjs";
-import { allowOnly, readJson, writeApiError, writeData } from "./httpJson.mjs";
+import { allowOnly, readJson, setApiHeaders, writeApiError, writeData } from "./httpJson.mjs";
 import {
   createModuBrainRepository,
   createModuBrainServiceRepository,
@@ -20,9 +32,9 @@ import {
   sourceResource,
 } from "./resourceMappers.mjs";
 import {
-  clientIp,
   createShareToken,
   privacyIdentifier,
+  rateLimitIdentifier,
   requireUuid,
   sha256,
 } from "./security.mjs";
@@ -41,6 +53,33 @@ const ANNOTATION_TARGET_TYPES = new Set([
 ]);
 const INPUT_CHARACTER_LIMIT = 100_000;
 const OPENAI_TIMEOUT_MS = 30_000;
+const DEFAULT_PAGE_LIMIT = 50;
+const MAX_PAGE_LIMIT = 100;
+const TELEMETRY_BODY_LIMIT = 16 * 1024;
+const AUTH_SESSION_BODY_LIMIT = 16 * 1024;
+// Leave headroom for the cookie name and security attributes below the common
+// 4 KiB per-cookie implementation limit. The limit applies after encoding,
+// because an otherwise short value may expand when serialized.
+const AUTH_COOKIE_VALUE_LIMIT = 3_500;
+const TELEMETRY_PROPERTIES = {
+  demo_opened: new Set(["sampleReady"]),
+  sample_loaded: new Set(["entryPoint"]),
+  analysis_started: new Set(["mode", "inputCharacters", "sourceCount"]),
+  analysis_succeeded: new Set(["provider", "durationMs", "evidenceCount"]),
+  analysis_failed: new Set(["code", "stage"]),
+  evidence_opened: new Set(["referenceCount", "sourceCount"]),
+  comparison_opened: new Set(["hasPrevious", "addedCount", "changedCount", "resolvedCount"]),
+  share_link_created: new Set(["expiresInDays"]),
+};
+const TELEMETRY_PATHS = new Set([
+  "/",
+  "/demo",
+  "/login",
+  "/projects",
+  "/projects/:projectId",
+  "/share",
+]);
+const telemetryRateBuckets = new Map();
 
 export function createApiV1Handler(options = {}) {
   const gateway = options.gateway || createSupabaseGateway(options.supabase);
@@ -84,18 +123,45 @@ export function createApiV1Handler(options = {}) {
       }
       if (isMutation(req.method)) assertSameOrigin(req);
 
+      if (pathname === "/api/v1/telemetry") {
+        await handleTelemetry(req, res, options);
+        return true;
+      }
+
+      if (pathname === "/api/v1/auth/session") {
+        await handleAuthSession(req, res, options, gateway);
+        return true;
+      }
+
+      if (pathname === "/api/v1/auth/refresh") {
+        await handleAuthRefresh(req, res, options, gateway);
+        return true;
+      }
+
       if (pathname === "/api/v1/shared/resolve") {
         await handleSharedResolve(req, res, options, gateway);
         return true;
       }
 
-      const user = options.authenticate
-        ? await options.authenticate(req)
-        : await gateway.authenticate(bearerToken(req));
+      const user = await authenticateApiRequest(req, res, options, gateway);
 
       if (pathname === "/api/v1/capabilities") {
         if (!allowOnly(req, res, ["GET"])) return true;
-        writeData(res, 200, { openaiEnabled: openAIEnabled(options) });
+        writeData(res, 200, {
+          openaiEnabled: openAIEnabled(options),
+          accountExportEnabled: typeof options.accountDataOperations?.export === "function",
+          accountDeletionEnabled: typeof options.accountDataOperations?.delete === "function",
+        });
+        return true;
+      }
+
+      if (pathname === "/api/v1/account/export") {
+        await handleAccountExport(req, res, options, user);
+        return true;
+      }
+
+      if (pathname === "/api/v1/account") {
+        await handleAccountDelete(req, res, options, user);
         return true;
       }
 
@@ -104,19 +170,57 @@ export function createApiV1Handler(options = {}) {
         : createModuBrainRepository(gateway.forUser(user.accessToken));
 
       if (pathname === "/api/v1/projects") {
-        await handleProjects(req, res, repository, user);
+        await handleProjects(
+          req,
+          res,
+          repository,
+          req.method === "POST"
+            ? await resolveServiceRepository(options, gateway, user, req)
+            : null,
+          user,
+        );
         return true;
       }
 
       let match = pathname.match(/^\/api\/v1\/projects\/([^/]+)$/);
       if (match) {
-        await handleProject(req, res, repository, requireUuid(match[1], "projectId"));
+        await handleProject(
+          req,
+          res,
+          repository,
+          isMutation(req.method)
+            ? await resolveServiceRepository(options, gateway, user, req)
+            : null,
+          user,
+          requireUuid(match[1], "projectId"),
+        );
+        return true;
+      }
+
+      match = pathname.match(/^\/api\/v1\/projects\/([^/]+)\/restore$/);
+      if (match) {
+        await handleProjectRestore(
+          req,
+          res,
+          await resolveServiceRepository(options, gateway, user, req),
+          user,
+          requireUuid(match[1], "projectId"),
+        );
         return true;
       }
 
       match = pathname.match(/^\/api\/v1\/projects\/([^/]+)\/sources$/);
       if (match) {
-        await handleProjectSources(req, res, repository, requireUuid(match[1], "projectId"));
+        await handleProjectSources(
+          req,
+          res,
+          repository,
+          req.method === "POST"
+            ? await resolveServiceRepository(options, gateway, user, req)
+            : null,
+          user,
+          requireUuid(match[1], "projectId"),
+        );
         return true;
       }
 
@@ -133,7 +237,28 @@ export function createApiV1Handler(options = {}) {
 
       match = pathname.match(/^\/api\/v1\/sources\/([^/]+)$/);
       if (match) {
-        await handleSource(req, res, repository, requireUuid(match[1], "sourceId"));
+        await handleSource(
+          req,
+          res,
+          repository,
+          isMutation(req.method)
+            ? await resolveServiceRepository(options, gateway, user, req)
+            : null,
+          user,
+          requireUuid(match[1], "sourceId"),
+        );
+        return true;
+      }
+
+      match = pathname.match(/^\/api\/v1\/sources\/([^/]+)\/restore$/);
+      if (match) {
+        await handleSourceRestore(
+          req,
+          res,
+          await resolveServiceRepository(options, gateway, user, req),
+          user,
+          requireUuid(match[1], "sourceId"),
+        );
         return true;
       }
 
@@ -144,6 +269,17 @@ export function createApiV1Handler(options = {}) {
           res,
           repository,
           requireUuid(match[1], "sourceId"),
+        );
+        return true;
+      }
+
+      match = pathname.match(/^\/api\/v1\/source-segments\/([^/]+)$/);
+      if (match) {
+        await handleSourceSegment(
+          req,
+          res,
+          repository,
+          requireUuid(match[1], "segmentId"),
         );
         return true;
       }
@@ -169,7 +305,16 @@ export function createApiV1Handler(options = {}) {
 
       match = pathname.match(/^\/api\/v1\/analysis-runs\/([^/]+)$/);
       if (match) {
-        await handleAnalysisRun(req, res, repository, requireUuid(match[1], "runId"));
+        await handleAnalysisRun(
+          req,
+          res,
+          repository,
+          req.method === "DELETE"
+            ? await resolveServiceRepository(options, gateway, user, req)
+            : null,
+          user,
+          requireUuid(match[1], "runId"),
+        );
         return true;
       }
 
@@ -233,21 +378,35 @@ export function createApiV1Handler(options = {}) {
   };
 }
 
-async function handleProjects(req, res, repository, user) {
+async function handleProjects(req, res, repository, serviceRepository, user) {
   if (!allowOnly(req, res, ["GET", "POST"])) return;
   if (req.method === "GET") {
-    const rows = await repository.listProjects();
+    const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+    const archivedParam = url.searchParams.get("archived");
+    if (archivedParam !== null && archivedParam !== "true" && archivedParam !== "false") {
+      throw new ApiError(400, "INVALID_ARCHIVE_FILTER", "보관함 필터가 올바르지 않습니다.");
+    }
+    const rows = await repository.listProjects({ archived: archivedParam === "true" });
     writeData(res, 200, rows.map(projectResource));
     return;
   }
 
   const body = await readJson(req);
   const values = validateProject(body, false);
-  const row = await repository.createProject(user.id, values);
+  const row = await serviceRepository.createProject(user.id, values);
   writeData(res, 201, projectResource(row), { Location: `/api/v1/projects/${row.id}` });
 }
 
-async function handleProject(req, res, repository, projectId) {
+async function handleProjectRestore(req, res, serviceRepository, user, projectId) {
+  if (!allowOnly(req, res, ["POST"])) return;
+  writeData(
+    res,
+    200,
+    projectResource(await serviceRepository.restoreProject(user.id, projectId)),
+  );
+}
+
+async function handleProject(req, res, repository, serviceRepository, user, projectId) {
   if (!allowOnly(req, res, ["GET", "PATCH", "DELETE"])) return;
   if (req.method === "GET") {
     writeData(res, 200, projectResource(await repository.getProject(projectId)));
@@ -255,7 +414,11 @@ async function handleProject(req, res, repository, projectId) {
   }
   if (req.method === "PATCH") {
     const values = validateProject(await readJson(req), true);
-    writeData(res, 200, projectResource(await repository.updateProject(projectId, values)));
+    writeData(
+      res,
+      200,
+      projectResource(await serviceRepository.updateProject(user.id, projectId, values)),
+    );
     return;
   }
 
@@ -268,22 +431,36 @@ async function handleProject(req, res, repository, projectId) {
         "영구 삭제에는 X-Confirm-Permanent-Delete: delete 헤더가 필요합니다.",
       );
     }
-    await repository.deleteProject(projectId);
+    await serviceRepository.deleteProject(user.id, projectId, "delete");
   } else {
-    await repository.archiveProject(projectId);
+    await serviceRepository.archiveProject(user.id, projectId);
   }
   writeData(res, 200, { id: projectId, deleted: true, permanent: url.searchParams.get("permanent") === "true" });
 }
 
-async function handleProjectSources(req, res, repository, projectId) {
+async function handleProjectSources(req, res, repository, serviceRepository, user, projectId) {
   if (!allowOnly(req, res, ["GET", "POST"])) return;
   if (req.method === "GET") {
-    const rows = await repository.listSources(projectId);
-    writeData(res, 200, rows.map(sourceResource));
+    const page = readCursorPage(req, "sources");
+    const result = await listRepositoryPage(
+      repository,
+      "listSourcesPage",
+      "listSources",
+      [projectId],
+      page,
+    );
+    writePageData(
+      res,
+      result.rows.map(sourceListResource),
+      page,
+      result.hasMore,
+      "sources",
+      result.rows.at(-1),
+    );
     return;
   }
   const values = validateSource(await readJson(req), false);
-  const row = await repository.createSource(projectId, {
+  const row = await serviceRepository.createSource(user.id, projectId, {
     ...values,
     content_sha256: sha256(values.content),
     char_count: unicodeLength(values.content),
@@ -291,14 +468,18 @@ async function handleProjectSources(req, res, repository, projectId) {
   writeData(res, 201, sourceResource(row), { Location: `/api/v1/sources/${row.id}` });
 }
 
-async function handleSource(req, res, repository, sourceId) {
+async function handleSource(req, res, repository, serviceRepository, user, sourceId) {
   if (!allowOnly(req, res, ["GET", "PATCH", "DELETE"])) return;
   if (req.method === "GET") {
     writeData(res, 200, sourceResource(await repository.getSource(sourceId)));
     return;
   }
   if (req.method === "DELETE") {
-    writeData(res, 200, sourceResource(await repository.archiveSource(sourceId)));
+    writeData(
+      res,
+      200,
+      sourceResource(await serviceRepository.archiveSource(user.id, sourceId)),
+    );
     return;
   }
   const body = await readJson(req);
@@ -321,7 +502,20 @@ async function handleSource(req, res, repository, sourceId) {
     values.content_sha256 = sha256(values.content);
     values.char_count = unicodeLength(values.content);
   }
-  writeData(res, 200, sourceResource(await repository.updateSource(sourceId, values)));
+  writeData(
+    res,
+    200,
+    sourceResource(await serviceRepository.updateSource(user.id, sourceId, values)),
+  );
+}
+
+async function handleSourceRestore(req, res, serviceRepository, user, sourceId) {
+  if (!allowOnly(req, res, ["POST"])) return;
+  writeData(
+    res,
+    200,
+    sourceResource(await serviceRepository.restoreSource(user.id, sourceId)),
+  );
 }
 
 function hasSourceImport(source) {
@@ -362,15 +556,51 @@ async function handleContextImport(req, res, repository, projectId) {
 
 async function handleSourceSegments(req, res, repository, sourceId) {
   if (!allowOnly(req, res, ["GET"])) return;
-  const rows = await repository.listSourceSegments(sourceId);
-  writeData(res, 200, rows.map(sourceSegmentResource));
+  const page = readCursorPage(req, "segments");
+  const result = await listRepositoryPage(
+    repository,
+    "listSourceSegmentsPage",
+    "listSourceSegments",
+    [sourceId],
+    page,
+  );
+  writePageData(
+    res,
+    result.rows.map(sourceSegmentResource),
+    page,
+    result.hasMore,
+    "segments",
+    result.rows.at(-1),
+  );
+}
+
+async function handleSourceSegment(req, res, repository, segmentId) {
+  if (!allowOnly(req, res, ["GET"])) return;
+  if (typeof repository.getSourceSegment !== "function") {
+    throw new ApiError(503, "FEATURE_NOT_AVAILABLE", "원문 구간 상세 조회를 사용할 수 없습니다.");
+  }
+  writeData(res, 200, sourceSegmentResource(await repository.getSourceSegment(segmentId)));
 }
 
 async function handleAnalysisRuns(req, res, context) {
   if (!allowOnly(req, res, ["GET", "POST"])) return;
   if (req.method === "GET") {
-    const rows = await context.repository.listRuns(context.projectId);
-    writeData(res, 200, rows.map(analysisRunResource));
+    const page = readCursorPage(context.req, "runs");
+    const result = await listRepositoryPage(
+      context.repository,
+      "listRunsPage",
+      "listRuns",
+      [context.projectId],
+      page,
+    );
+    writePageData(
+      res,
+      result.rows.map(analysisRunListResource),
+      page,
+      result.hasMore,
+      "runs",
+      result.rows.at(-1),
+    );
     return;
   }
 
@@ -470,7 +700,7 @@ async function handleAnalysisRuns(req, res, context) {
       }),
     );
 
-    const started = await context.repository.startRun({
+    const started = await context.serviceRepository.startRun(context.user.id, {
       projectId: context.projectId,
       sourceIds: body.sourceIds,
       idempotencyKey,
@@ -478,6 +708,26 @@ async function handleAnalysisRuns(req, res, context) {
       providerMode: mode,
       providerModel: model,
     });
+    if (started.outcome === "rate_limited" || started.outcome === "already_running") {
+      const retryAfter = Math.max(
+        1,
+        Number(started.retryAfterSeconds) || (started.outcome === "already_running" ? 5 : 3600),
+      );
+      throw new ApiError(
+        429,
+        started.outcome === "already_running"
+          ? "ANALYSIS_ALREADY_RUNNING"
+          : "ANALYSIS_RATE_LIMITED",
+        started.outcome === "already_running"
+          ? "이 프로젝트의 분석이 이미 진행 중입니다. 잠시 후 다시 확인해 주세요."
+          : "분석 사용량 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.",
+        { retryAfter },
+        { "Retry-After": String(retryAfter) },
+      );
+    }
+    if (!started.run?.id) {
+      throw new ApiError(503, "DATABASE_UNAVAILABLE", "분석 실행을 저장하지 못했습니다.");
+    }
     if (!started.reused) {
       createdRunId = started.run.id;
       await beginStep("source_snapshot");
@@ -505,7 +755,9 @@ async function handleAnalysisRuns(req, res, context) {
         context.serviceRepository.consumeOpenAIRateLimit("openai:global:day", "global"),
         context.serviceRepository.consumeOpenAIRateLimit(
           "openai:ip:hour",
-          sha256(clientIp(context.req)),
+          rateLimitIdentifier(context.req, {
+            secret: context.analysisOptions?.rateLimitIdentifierSecret,
+          }),
         ),
       ]);
       throwIfAborted(controller, req, res);
@@ -541,6 +793,7 @@ async function handleAnalysisRuns(req, res, context) {
         signal: controller.signal,
       },
     );
+    const providerTelemetry = result?.[providerTelemetrySymbol] || {};
     throwIfAborted(controller, req, res);
     await finishStep("succeeded", "PROVIDER_COMPLETED");
 
@@ -560,6 +813,10 @@ async function handleAnalysisRuns(req, res, context) {
         status: "succeeded",
         result_jsonb: resultV2,
         latency_ms: Date.now() - startedAt,
+        input_tokens: providerTelemetry.usage?.inputTokens ?? null,
+        output_tokens: providerTelemetry.usage?.outputTokens ?? null,
+        reasoning_tokens: providerTelemetry.usage?.reasoningTokens ?? null,
+        provider_request_id: providerTelemetry.requestId ?? null,
         completed_at: new Date().toISOString(),
       },
     );
@@ -612,13 +869,13 @@ async function handleAnalysisRuns(req, res, context) {
   }
 }
 
-async function handleAnalysisRun(req, res, repository, runId) {
+async function handleAnalysisRun(req, res, repository, serviceRepository, user, runId) {
   if (!allowOnly(req, res, ["GET", "DELETE"])) return;
   if (req.method === "GET") {
     writeData(res, 200, analysisRunResource(await repository.getRun(runId)));
     return;
   }
-  await repository.deleteRun(runId);
+  await serviceRepository.deleteRun(runId, user.id);
   writeData(res, 200, { id: runId, deleted: true });
 }
 
@@ -682,6 +939,136 @@ async function handleShareLink(req, res, serviceRepository, user, shareLinkId) {
   writeData(res, 200, shareLinkResource(row));
 }
 
+async function handleTelemetry(req, res, options) {
+  if (!allowOnly(req, res, ["POST"])) return;
+  if (!consumeTelemetryRateLimit(rateLimitIdentifier(req, options.rateLimitIdentifierOptions))) {
+    throw new ApiError(429, "RATE_LIMITED", "이벤트 요청 한도를 초과했습니다.", undefined, {
+      "Retry-After": "3600",
+    });
+  }
+  const event = validateTelemetryEvent(await readJson(req, { maxBytes: TELEMETRY_BODY_LIMIT }));
+  if (typeof options.recordProductEvent === "function") {
+    try {
+      await options.recordProductEvent(event, req);
+    } catch {
+      // Product analytics must never block the product flow or persist a retry payload.
+    }
+  }
+  writeData(res, 202, { accepted: true });
+}
+
+async function handleAuthSession(req, res, options, gateway) {
+  if (!allowOnly(req, res, ["GET", "POST", "DELETE"])) return;
+
+  if (req.method === "POST") {
+    const body = validateAuthSessionPayload(
+      await readJson(req, { maxBytes: AUTH_SESSION_BODY_LIMIT }),
+    );
+    const user = await gateway.authenticate(body.accessToken, {
+      signal: req.moduBrainSignal,
+    });
+    const expiresAt = writeAuthSessionCookies(req, res, body, {
+      now: options.authNow || Date.now,
+    });
+    writeData(
+      res,
+      201,
+      publicAuthSession(user, expiresAt),
+      authSessionCacheHeaders(),
+    );
+    return;
+  }
+
+  if (req.method === "GET") {
+    const session = await restoreCookieSession(req, res, options, gateway);
+    writeData(
+      res,
+      200,
+      publicAuthSession(session.user, session.expiresAt),
+      authSessionCacheHeaders(),
+    );
+    return;
+  }
+
+  const cookies = readAuthSessionCookies(req);
+  clearAuthSessionCookies(req, res);
+  if (cookies.accessToken) {
+    const logout = gateway
+      .logout(cookies.accessToken, { signal: req.moduBrainSignal })
+      .catch(() => undefined);
+    await settleWithin(logout, options.authLogoutWaitMs);
+  }
+  setApiHeaders(res);
+  setAuthSessionCacheHeaders(res);
+  res.statusCode = 204;
+  res.end();
+}
+
+async function handleAuthRefresh(req, res, options, gateway) {
+  if (!allowOnly(req, res, ["POST"])) return;
+  const session = await rotateCookieSession(req, res, options, gateway);
+  writeData(
+    res,
+    200,
+    publicAuthSession(session.user, session.expiresAt),
+    authSessionCacheHeaders(),
+  );
+}
+
+async function restoreCookieSession(req, res, options, gateway) {
+  const cookies = readAuthSessionCookies(req);
+  if (!cookies.accessToken && !cookies.refreshToken) {
+    throw new ApiError(401, "AUTH_REQUIRED", "A login session is required.");
+  }
+  const now = (options.authNow || Date.now)();
+  if (
+    cookies.refreshToken &&
+    (!cookies.accessToken || !cookies.expiresAt || cookies.expiresAt <= now + AUTH_REFRESH_LEAD_MS)
+  ) {
+    return rotateCookieSession(req, res, options, gateway, cookies);
+  }
+
+  try {
+    const user = await gateway.authenticate(cookies.accessToken, {
+      signal: req.moduBrainSignal,
+    });
+    return {
+      user,
+      accessToken: cookies.accessToken,
+      expiresAt: cookies.expiresAt || deriveAccessExpiresAt(cookies.accessToken, 3600, now),
+    };
+  } catch (error) {
+    if (error?.status === 401 && cookies.refreshToken) {
+      return rotateCookieSession(req, res, options, gateway, cookies);
+    }
+    if (error?.status === 401) clearAuthSessionCookies(req, res);
+    throw error;
+  }
+}
+
+async function rotateCookieSession(req, res, options, gateway, existingCookies = undefined) {
+  const cookies = existingCookies || readAuthSessionCookies(req);
+  if (!cookies.refreshToken) {
+    clearAuthSessionCookies(req, res);
+    throw new ApiError(401, "AUTH_REQUIRED", "A refresh session is required.");
+  }
+  try {
+    const rotated = await gateway.refreshSession(cookies.refreshToken, {
+      signal: req.moduBrainSignal,
+    });
+    const user = await gateway.authenticate(rotated.accessToken, {
+      signal: req.moduBrainSignal,
+    });
+    const expiresAt = writeAuthSessionCookies(req, res, rotated, {
+      now: options.authNow || Date.now,
+    });
+    return { user, accessToken: rotated.accessToken, expiresAt };
+  } catch (error) {
+    if (error?.status === 401) clearAuthSessionCookies(req, res);
+    throw error;
+  }
+}
+
 async function handleSharedResolve(req, res, options, gateway) {
   if (!allowOnly(req, res, ["POST"])) return;
   const body = await readJson(req);
@@ -692,15 +1079,215 @@ async function handleSharedResolve(req, res, options, gateway) {
   const repository = options.publicRepository
     ? options.publicRepository
     : createPublicShareRepository(gateway.asServiceRole());
-  const allowed = await repository.consumeRateLimit("share:hour", sha256(clientIp(req)), 60, 3600);
-  if (!allowed) {
+  const tokenHash = sha256(token);
+  const ipHash = rateLimitIdentifier(req, options.rateLimitIdentifierOptions);
+  const [ipAllowed, tokenIpAllowed] = await Promise.all([
+    repository.consumeRateLimit("share:ip:hour", ipHash, 600, 3600),
+    repository.consumeRateLimit(
+      "share:token-ip:hour",
+      sha256(`${ipHash}:${tokenHash}`),
+      60,
+      3600,
+    ),
+  ]);
+  if (!ipAllowed || !tokenIpAllowed) {
     throw new ApiError(429, "RATE_LIMITED", "요청 한도를 초과했습니다.", undefined, {
       "Retry-After": "3600",
     });
   }
-  const shared = await repository.resolveShare(sha256(token));
+  const shared = await repository.resolveShare(tokenHash);
   if (!shared) throw new ApiError(404, "SHARE_NOT_FOUND", "공유 링크를 찾을 수 없습니다.");
   writeData(res, 200, sharedAnalysisResource(shared));
+}
+
+async function handleAccountExport(req, res, options, user) {
+  if (!allowOnly(req, res, ["GET"])) return;
+  const exporter = options.accountDataOperations?.export;
+  if (typeof exporter !== "function") {
+    throw new ApiError(
+      503,
+      "ACCOUNT_EXPORT_NOT_ENABLED",
+      "계정 데이터 내보내기는 아직 준비 중입니다. 데이터베이스 기능이 활성화된 뒤 사용할 수 있습니다.",
+    );
+  }
+  writeData(res, 200, await exporter({ user, req }));
+}
+
+async function handleAccountDelete(req, res, options, user) {
+  if (!allowOnly(req, res, ["DELETE"])) return;
+  if (req.headers["x-confirm-account-delete"] !== "delete my account") {
+    throw new ApiError(
+      400,
+      "ACCOUNT_DELETE_CONFIRMATION_REQUIRED",
+      "계정 삭제에는 X-Confirm-Account-Delete: delete my account 헤더가 필요합니다.",
+    );
+  }
+  const deleter = options.accountDataOperations?.delete;
+  if (typeof deleter !== "function") {
+    throw new ApiError(
+      503,
+      "ACCOUNT_DELETE_NOT_ENABLED",
+      "계정 삭제는 아직 준비 중입니다. 데이터베이스 기능이 활성화된 뒤 사용할 수 있습니다.",
+    );
+  }
+  await deleter({ user, req });
+  clearAuthSessionCookies(req, res);
+  writeData(res, 200, { deleted: true }, authSessionCacheHeaders());
+}
+
+function readCursorPage(req, kind) {
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const requestedLimit = url.searchParams.get("limit");
+  const limit = requestedLimit === null ? DEFAULT_PAGE_LIMIT : Number(requestedLimit);
+  if (!Number.isInteger(limit) || limit < 1 || limit > MAX_PAGE_LIMIT) {
+    throw new ApiError(
+      400,
+      "INVALID_PAGE_LIMIT",
+      `페이지 크기는 1~${MAX_PAGE_LIMIT} 사이의 정수여야 합니다.`,
+    );
+  }
+  const cursor = url.searchParams.get("cursor");
+  return { limit, cursor: cursor ? decodePageCursor(cursor, kind) : null };
+}
+
+function decodePageCursor(cursor, expectedKind) {
+  try {
+    if (cursor.length > 1_024) throw new Error("invalid cursor");
+    const value = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
+    if (value?.version !== 1 || value.kind !== expectedKind || !validCursorKeys(value)) {
+      throw new Error("invalid cursor");
+    }
+    return value;
+  } catch {
+    throw new ApiError(400, "INVALID_CURSOR", "페이지 커서가 올바르지 않습니다.");
+  }
+}
+
+function encodePageCursor(value) {
+  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
+}
+
+async function listRepositoryPage(repository, pageMethod, legacyMethod, args, page) {
+  if (typeof repository[pageMethod] === "function") {
+    return repository[pageMethod](...args, page);
+  }
+  const rows = await repository[legacyMethod](...args);
+  const normalized = Array.isArray(rows) ? rows : [];
+  const remaining = page.cursor
+    ? normalized.filter((row) => rowIsAfterCursor(row, page.cursor))
+    : normalized;
+  return {
+    rows: remaining.slice(0, page.limit),
+    hasMore: remaining.length > page.limit,
+  };
+}
+
+function writePageData(res, rows, page, hasMore, kind, lastRow) {
+  const nextCursor = hasMore && lastRow
+    ? encodePageCursor(cursorFromRow(kind, lastRow))
+    : null;
+  setApiHeaders(res);
+  if (nextCursor) res.setHeader("X-Next-Cursor", nextCursor);
+  res.statusCode = 200;
+  res.end(
+    JSON.stringify({
+      data: rows,
+      page: {
+        limit: page.limit,
+        count: rows.length,
+        hasMore,
+        nextCursor,
+      },
+    }),
+  );
+}
+
+function validCursorKeys(cursor) {
+  if (typeof cursor.id !== "string" || !cursor.id) return false;
+  if (cursor.kind === "segments") {
+    return Number.isSafeInteger(cursor.ordinal) && cursor.ordinal >= 0;
+  }
+  if (!validIsoCursorDate(cursor.createdAt)) return false;
+  if (cursor.kind === "sources") {
+    return cursor.occurredAt === null || validIsoCursorDate(cursor.occurredAt);
+  }
+  return cursor.kind === "runs";
+}
+
+function validIsoCursorDate(value) {
+  return typeof value === "string" && !Number.isNaN(new Date(value).valueOf());
+}
+
+function cursorFromRow(kind, row) {
+  const common = { version: 1, kind, id: row.id };
+  if (kind === "segments") return { ...common, ordinal: row.ordinal };
+  if (kind === "sources") {
+    return {
+      ...common,
+      occurredAt: row.occurred_at ?? null,
+      createdAt: row.created_at,
+    };
+  }
+  return { ...common, createdAt: row.created_at };
+}
+
+function rowIsAfterCursor(row, cursor) {
+  if (cursor.kind === "segments") {
+    return row.ordinal > cursor.ordinal ||
+      (row.ordinal === cursor.ordinal && String(row.id) > cursor.id);
+  }
+  if (cursor.kind === "runs") {
+    return row.created_at < cursor.createdAt ||
+      (row.created_at === cursor.createdAt && String(row.id) < cursor.id);
+  }
+  const occurredAt = row.occurred_at ?? null;
+  if (cursor.occurredAt === null) {
+    return occurredAt === null && (
+      row.created_at < cursor.createdAt ||
+      (row.created_at === cursor.createdAt && String(row.id) < cursor.id)
+    );
+  }
+  if (occurredAt === null) return true;
+  if (occurredAt < cursor.occurredAt) return true;
+  if (occurredAt > cursor.occurredAt) return false;
+  return row.created_at < cursor.createdAt ||
+    (row.created_at === cursor.createdAt && String(row.id) < cursor.id);
+}
+
+function sourceListResource(row) {
+  const resource = sourceResource(row, { includeContent: false });
+  delete resource.contentSha256;
+  if (!resource.import) return resource;
+  const safeImport = { ...resource.import };
+  delete safeImport.participants;
+  delete safeImport.metadata;
+  return { ...resource, import: safeImport };
+}
+
+function analysisRunListResource(row) {
+  const resource = analysisRunResource(row);
+  delete resource.result;
+  return resource;
+}
+
+function consumeTelemetryRateLimit(subjectHash) {
+  const now = Date.now();
+  const windowStart = now - 3_600_000;
+  const recent = (telemetryRateBuckets.get(subjectHash) ?? []).filter(
+    (timestamp) => timestamp > windowStart,
+  );
+  if (recent.length >= 120) return false;
+  recent.push(now);
+  telemetryRateBuckets.set(subjectHash, recent);
+  if (telemetryRateBuckets.size > 10_000) {
+    for (const [key, timestamps] of telemetryRateBuckets) {
+      if (timestamps.every((timestamp) => timestamp <= windowStart)) {
+        telemetryRateBuckets.delete(key);
+      }
+      if (telemetryRateBuckets.size <= 8_000) break;
+    }
+  }
+  return true;
 }
 
 function validateProject(body, partial) {
@@ -716,6 +1303,58 @@ function validateProject(body, partial) {
     throw new ApiError(400, "EMPTY_UPDATE", "변경할 값을 입력해 주세요.");
   }
   return values;
+}
+
+function validateTelemetryEvent(body) {
+  assertObject(body);
+  const topLevel = new Set(["name", "occurredAt", "path", "properties"]);
+  if (Object.keys(body).some((key) => !topLevel.has(key))) {
+    throw new ApiError(400, "INVALID_TELEMETRY_EVENT", "허용되지 않은 이벤트 필드가 있습니다.");
+  }
+  if (typeof body.name !== "string" || !Object.hasOwn(TELEMETRY_PROPERTIES, body.name)) {
+    throw new ApiError(400, "INVALID_TELEMETRY_EVENT", "허용되지 않은 이벤트 이름입니다.");
+  }
+  if (typeof body.path !== "string" || !TELEMETRY_PATHS.has(body.path)) {
+    throw new ApiError(400, "INVALID_TELEMETRY_EVENT", "허용되지 않은 화면 경로입니다.");
+  }
+  const occurredAt = new Date(body.occurredAt);
+  if (typeof body.occurredAt !== "string" || Number.isNaN(occurredAt.valueOf())) {
+    throw new ApiError(400, "INVALID_TELEMETRY_EVENT", "이벤트 시각이 올바르지 않습니다.");
+  }
+  assertObject(body.properties);
+  const allowedProperties = TELEMETRY_PROPERTIES[body.name];
+  if (Object.keys(body.properties).some((key) => !allowedProperties.has(key))) {
+    throw new ApiError(
+      400,
+      "INVALID_TELEMETRY_EVENT",
+      "원문, 이메일, 토큰, 식별자 또는 허용되지 않은 속성은 수집하지 않습니다.",
+    );
+  }
+  const properties = Object.fromEntries(
+    Object.entries(body.properties).map(([key, value]) => {
+      if (
+        value !== null &&
+        typeof value !== "string" &&
+        typeof value !== "number" &&
+        typeof value !== "boolean"
+      ) {
+        throw new ApiError(400, "INVALID_TELEMETRY_EVENT", "이벤트 속성 값이 올바르지 않습니다.");
+      }
+      if (typeof value === "string" && value.length > 120) {
+        throw new ApiError(400, "INVALID_TELEMETRY_EVENT", "이벤트 문자열이 너무 깁니다.");
+      }
+      if (typeof value === "number" && !Number.isFinite(value)) {
+        throw new ApiError(400, "INVALID_TELEMETRY_EVENT", "이벤트 숫자 값이 올바르지 않습니다.");
+      }
+      return [key, value];
+    }),
+  );
+  return {
+    name: body.name,
+    occurredAt: occurredAt.toISOString(),
+    path: body.path,
+    properties,
+  };
 }
 
 function validateSource(body, partial) {
@@ -838,6 +1477,83 @@ function assertObject(value) {
   }
 }
 
+async function authenticateApiRequest(req, res, options, gateway) {
+  const hasAuthorization = typeof req.headers.authorization === "string";
+  if (!hasAuthorization) {
+    const cookies = readAuthSessionCookies(req);
+    if (cookies.accessToken || cookies.refreshToken) {
+      const session = await restoreCookieSession(req, res, options, gateway);
+      return {
+        ...session.user,
+        accessToken: session.accessToken,
+      };
+    }
+  }
+  const accessToken = bearerToken(req);
+  const user = options.authenticate
+    ? await options.authenticate(req, accessToken)
+    : await gateway.authenticate(accessToken, { signal: req.moduBrainSignal });
+  return {
+    ...user,
+    accessToken: user?.accessToken || accessToken,
+  };
+}
+
+function validateAuthSessionPayload(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new ApiError(400, "INVALID_AUTH_SESSION", "The login session is invalid.");
+  }
+  const keys = Object.keys(value);
+  if (keys.some((key) => !["accessToken", "refreshToken", "expiresIn"].includes(key))) {
+    throw new ApiError(400, "INVALID_AUTH_SESSION", "The login session contains unsupported fields.");
+  }
+  const accessToken = validateCookieToken(value.accessToken);
+  const refreshToken = validateCookieToken(value.refreshToken);
+  const expiresIn = Number(value.expiresIn);
+  if (!accessToken || !refreshToken || !Number.isInteger(expiresIn) || expiresIn < 1 || expiresIn > 86_400) {
+    throw new ApiError(400, "INVALID_AUTH_SESSION", "The login session is invalid.");
+  }
+  return { accessToken, refreshToken, expiresIn };
+}
+
+function validateCookieToken(value) {
+  if (typeof value !== "string" || value.length < 1 || value.length > AUTH_COOKIE_VALUE_LIMIT) {
+    return null;
+  }
+  if (/\s/.test(value) || value.includes(String.fromCharCode(127))) return null;
+  try {
+    return encodeURIComponent(value).length <= AUTH_COOKIE_VALUE_LIMIT ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function publicAuthSession(user, expiresAt) {
+  return {
+    user: {
+      id: String(user?.id || ""),
+      email: typeof user?.email === "string" ? user.email : "",
+    },
+    expiresAt,
+  };
+}
+
+async function settleWithin(promise, requestedTimeoutMs) {
+  const timeoutMs = Math.min(2_000, Math.max(10, Number(requestedTimeoutMs) || 750));
+  let timer;
+  try {
+    await Promise.race([
+      promise,
+      new Promise((resolvePromise) => {
+        timer = setTimeout(resolvePromise, timeoutMs);
+        timer.unref?.();
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function bearerToken(req) {
   const authorization = String(req.headers.authorization || "");
   const match = authorization.match(/^Bearer\s+(.+)$/i);
@@ -847,18 +1563,27 @@ function bearerToken(req) {
 
 function assertSameOrigin(req) {
   const origin = req.headers.origin;
-  if (!origin) return;
+  if (!origin) {
+    const hasAuthorization = typeof req.headers.authorization === "string";
+    const cookies = readAuthSessionCookies(req);
+    if (!hasAuthorization && (cookies.accessToken || cookies.refreshToken)) {
+      throw new ApiError(403, "ORIGIN_NOT_ALLOWED", "요청 출처가 허용되지 않습니다.");
+    }
+    return;
+  }
   // Host is defined by the actual HTTP request target. A client-controlled
   // X-Forwarded-Host must never redefine the same-origin security boundary.
   const host = req.headers.host;
   const protocol = req.headers["x-forwarded-proto"] || (req.socket?.encrypted ? "https" : "http");
   let expected;
+  let supplied;
   try {
     expected = new URL(`${protocol}://${host}`).origin;
+    supplied = new URL(origin).origin;
   } catch {
     throw new ApiError(403, "ORIGIN_NOT_ALLOWED", "요청 출처가 허용되지 않습니다.");
   }
-  if (new URL(origin).origin !== expected) {
+  if (supplied !== expected) {
     throw new ApiError(403, "ORIGIN_NOT_ALLOWED", "요청 출처가 허용되지 않습니다.");
   }
 }

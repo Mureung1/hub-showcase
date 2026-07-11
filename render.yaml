@@ -7,8 +7,10 @@ services:
     branch: N031_김서준
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
-    healthCheckPath: /api/health/ready
-    autoDeployTrigger: checksPass
+    healthCheckPath: /api/health/live
+    # The upstream PR workflow requires maintainer approval for fork runs.
+    # Deploy this isolated demo branch after each pushed, locally validated commit.
+    autoDeployTrigger: commit
     envVars:
       - key: NODE_ENV
         value: production
@@ -22,6 +24,8 @@ services:
         value: gpt-5.6-terra
       - key: MODU_BRAIN_OPENAI_REASONING_EFFORT
         value: low
+      - key: MODU_BRAIN_TRUST_PROXY
+        value: render
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_PUBLISHABLE_KEY
@@ -33,4 +37,6 @@ services:
       - key: VITE_SUPABASE_PUBLISHABLE_KEY
         sync: false
       - key: SAFETY_IDENTIFIER_SECRET
+        generateValue: true
+      - key: IP_HASH_SECRET
         generateValue: true

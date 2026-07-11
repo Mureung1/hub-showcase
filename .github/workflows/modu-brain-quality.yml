@@ -68,6 +68,9 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Validate free-tier operations tooling
+        run: npm run ops:validate
+
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
@@ -95,6 +98,50 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  resilience-smoke:
+    name: Local resilience and load smoke
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Exercise the local production server
+        shell: bash
+        env:
+          HOST: 127.0.0.1
+          PORT: 4173
+          MODU_BRAIN_ANALYSIS_PROVIDER: local-heuristic
+          MODU_BRAIN_OPENAI_ENABLED: "false"
+          LOAD_TEST_PHASES: "5:2,25:2"
+          LOAD_TEST_P95_MS: "500"
+        run: |
+          npm start > /tmp/modu-brain-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/api/health/live > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail http://127.0.0.1:4173/api/health/live
+          npm run ops:load
 
   public-smoke:
     name: Public browser smoke

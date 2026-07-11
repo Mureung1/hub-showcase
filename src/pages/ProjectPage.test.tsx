@@ -40,11 +40,32 @@ const latestRun = run("44444444-4444-4444-8444-444444444444", "2026-07-11T01:00:
 
 describe("ProjectPage", () => {
   beforeEach(() => {
+    window.history.replaceState(null, "", `/projects/${project.id}`);
     Object.defineProperty(globalThis.crypto, "randomUUID", { value: vi.fn(() => "55555555-5555-4555-8555-555555555555"), configurable: true });
+  });
+
+  it("opens a deep-linked project view and keeps tab state in the URL", async () => {
+    window.history.replaceState(null, "", `/projects/${project.id}?tab=map`);
+    const api = apiMock();
+    vi.mocked(api.getProject).mockResolvedValue(project);
+    vi.mocked(api.listSources).mockResolvedValue([source]);
+    vi.mocked(api.listAnalysisRuns).mockResolvedValue([latestRun]);
+    vi.mocked(api.listShareLinks).mockResolvedValue([]);
+
+    const user = userEvent.setup();
+    render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
+
+    expect(await screen.findByRole("tab", { name: "지식맵" })).toHaveAttribute("aria-selected", "true");
+    await user.click(screen.getByRole("tab", { name: "온보딩 요약" }));
+    expect(window.location.search).toBe("?tab=onboarding");
+    await user.click(screen.getByRole("tab", { name: "개요" }));
+    await user.click(screen.getByRole("tab", { name: "분석 이력" }));
+    expect(window.location.search).toBe("?view=history");
   });
 
   it("supports the persistent source → analysis → evidence → share workflow", async () => {
     const user = userEvent.setup();
+    const clipboardWrite = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
     const api = apiMock();
     vi.mocked(api.getProject).mockResolvedValue(project);
     vi.mocked(api.listSources).mockResolvedValue([source]);
@@ -134,7 +155,12 @@ describe("ProjectPage", () => {
     await user.click(screen.getByTestId("share-create"));
     const shareInput = await screen.findByLabelText("새 공유 링크");
     expect((shareInput as HTMLInputElement).value).toContain("/share#token=");
+    await user.click(screen.getByRole("button", { name: "링크 복사" }));
+    expect(clipboardWrite).toHaveBeenCalledWith((shareInput as HTMLInputElement).value);
+    expect(screen.getByText("공유 링크를 클립보드에 복사했습니다.")).toBeInTheDocument();
     await user.click(screen.getByTestId("share-revoke-77777777-7777-4777-8777-777777777777"));
+    expect(screen.getByRole("alertdialog", { name: "이 공유 링크를 폐기할까요?" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "폐기 확인" }));
     await waitFor(() => expect(api.revokeShareLink).toHaveBeenCalledWith("access", "77777777-7777-4777-8777-777777777777"));
   });
 
@@ -411,6 +437,58 @@ describe("ProjectPage", () => {
     await user.click(screen.getByRole("button", { name: "프로젝트 보관" }));
     expect(api.deleteProject).toHaveBeenCalledWith("access", project.id, false);
     expect(navigate).toHaveBeenCalledWith("/projects");
+  });
+
+  it("loads projected source and run details only when the user needs them", async () => {
+    const user = userEvent.setup();
+    const api = apiMock();
+    const sourceSummary = { ...source };
+    const runSummary = { ...latestRun };
+    const previousSummary = { ...previousRun };
+    Reflect.deleteProperty(sourceSummary, "content");
+    Reflect.deleteProperty(runSummary, "result");
+    Reflect.deleteProperty(previousSummary, "result");
+    api.listSourcesPage = vi.fn().mockResolvedValue({
+      items: [sourceSummary],
+      page: { limit: 50, count: 1, hasMore: false, nextCursor: null },
+    });
+    api.listAnalysisRunsPage = vi.fn().mockResolvedValue({
+      items: [runSummary, previousSummary],
+      page: { limit: 50, count: 2, hasMore: false, nextCursor: null },
+    });
+    api.getSource = vi.fn().mockResolvedValue(source);
+    vi.mocked(api.getProject).mockResolvedValue(project);
+    vi.mocked(api.getAnalysisRun).mockImplementation(async (_token, runId) => (
+      runId === latestRun.id ? latestRun : previousRun
+    ));
+
+    render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
+    await screen.findByRole("heading", { name: project.title });
+    await waitFor(() => expect(api.getAnalysisRun).toHaveBeenCalledWith("access", latestRun.id));
+    expect(api.getSource).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("tab", { name: "개요" }));
+    await user.click(screen.getByRole("tab", { name: "분석 이력" }));
+    await waitFor(() => expect(api.getAnalysisRun).toHaveBeenCalledWith("access", previousRun.id));
+    await user.click(screen.getByRole("tab", { name: "기록" }));
+    await user.click(screen.getByRole("button", { name: "원문 상세 불러오기" }));
+    expect(api.getSource).toHaveBeenCalledWith("access", source.id);
+    expect(await screen.findByText(source.content.trim())).toBeInTheDocument();
+  });
+
+  it("keeps the project usable when one paginated list fails", async () => {
+    const api = apiMock();
+    api.listSourcesPage = vi.fn().mockRejectedValue(new Error("기록 저장소 지연"));
+    api.listAnalysisRunsPage = vi.fn().mockResolvedValue({
+      items: [],
+      page: { limit: 50, count: 0, hasMore: false, nextCursor: null },
+    });
+    vi.mocked(api.getProject).mockResolvedValue(project);
+
+    render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
+    expect(await screen.findByRole("heading", { name: project.title })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("기록 목록 일부를 불러오지 못했습니다");
+    expect(screen.getByRole("button", { name: "다시 불러오기" })).toBeInTheDocument();
   });
 });
 

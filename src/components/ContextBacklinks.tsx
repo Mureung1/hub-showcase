@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import type { ContextAnalysisResultV2, EvidenceRef } from "../types/context";
-import type { ExternalContextProvider, SourceRecordResource } from "../types/platform";
+import type { ExternalContextProvider, SourceRecordListResource } from "../types/platform";
 import styles from "./ContextBacklinks.module.css";
 
 type ContextBacklinksProps = {
-  sources: SourceRecordResource[];
+  sources: SourceRecordListResource[];
   result: ContextAnalysisResultV2;
   onOpenEvidence: (evidence: EvidenceRef[]) => void;
 };
@@ -71,7 +71,11 @@ function ContextBacklinks({ sources, result, onOpenEvidence }: ContextBacklinksP
                   ))}
                   {items.length > 5 && <li className={styles.more}>외 {items.length - 5}개 연결</li>}
                 </ul>
-                <button type="button" onClick={() => onOpenEvidence(evidence)}>
+                <button
+                  type="button"
+                  aria-label={`${snapshotTitle} 원문 인용문 열기`}
+                  onClick={() => onOpenEvidence(evidence)}
+                >
                   원문 인용문 열기
                 </button>
               </article>

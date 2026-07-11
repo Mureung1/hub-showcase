@@ -14,6 +14,14 @@ export class NodeRequestAdapter extends EventEmitter implements AsyncIterable<Bu
   readonly url: string;
   readonly headers: Record<string, string>;
   readonly socket: NodeSocketLike;
+  readonly trustedProxyPlatform = "cloudflare";
+  readonly moduBrainSignal: AbortSignal;
+  moduBrainTrace?: {
+    requestId: string;
+    cfRay: string | null;
+    rndrId: string | null;
+    runtime: string;
+  };
   aborted = false;
 
   readonly #body: Buffer;
@@ -23,6 +31,7 @@ export class NodeRequestAdapter extends EventEmitter implements AsyncIterable<Bu
     super();
     const url = new URL(request.url);
     this.method = request.method.toUpperCase();
+    this.moduBrainSignal = request.signal;
     this.url = `${url.pathname}${url.search}`;
     this.headers = Object.fromEntries(
       [...request.headers.entries()].map(([name, value]) => [name.toLowerCase(), value]),
@@ -79,6 +88,7 @@ export class NodeResponseAdapter extends EventEmitter {
   headersSent = false;
   writableEnded = false;
   destroyed = false;
+  moduBrainErrorCode: string | null = null;
 
   readonly #headers = new Headers();
   readonly #chunks: Buffer[] = [];
@@ -111,10 +121,15 @@ export class NodeResponseAdapter extends EventEmitter {
   toResponse() {
     if (!this.writableEnded && !this.destroyed) this.end();
     const body = Buffer.concat(this.#chunks);
-    return new Response(this.statusCode === 204 ? null : new Uint8Array(body), {
+    const response = new Response(this.statusCode === 204 ? null : new Uint8Array(body), {
       status: this.statusCode,
       headers: this.#headers,
     });
+    Object.defineProperty(response, "moduBrainErrorCode", {
+      value: this.moduBrainErrorCode,
+      enumerable: false,
+    });
+    return response;
   }
 }
 

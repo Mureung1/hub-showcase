@@ -7,6 +7,29 @@ import ContextImportPanel, {
 } from "./ContextImportPanel";
 
 describe("ContextImportPanel", () => {
+  it("prefills the single public composer with a deterministic demo payload", async () => {
+    const onImport = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ContextImportPanel
+        mode="ephemeral"
+        textareaId="public-context-text"
+        initialInput={{ provider: "paste", title: "공개 데모", text: "샘플 회의 맥락" }}
+        onImport={onImport}
+      />,
+    );
+
+    expect(screen.getByLabelText("회의 맥락 붙여넣기")).toHaveAttribute("id", "public-context-text");
+    expect(screen.getByLabelText("회의 맥락 붙여넣기")).toHaveValue("샘플 회의 맥락");
+    expect(screen.getByLabelText(/기록 제목/)).toHaveValue("공개 데모");
+    await user.click(screen.getByRole("button", { name: "가져와 바로 분석" }));
+    expect(onImport).toHaveBeenCalledWith({
+      provider: "paste",
+      title: "공개 데모",
+      text: "샘플 회의 맥락",
+    });
+  });
+
   it("offers account-free provider choices and imports pasted context", async () => {
     const user = userEvent.setup();
     const onImport = vi.fn<(input: ContextImportInput) => Promise<void>>().mockResolvedValue();

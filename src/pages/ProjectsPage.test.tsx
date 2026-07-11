@@ -49,6 +49,26 @@ describe("ProjectsPage", () => {
     expect(api.listProjects).toHaveBeenCalledTimes(2);
   });
 
+  it("loads the archive on demand and restores an owned project", async () => {
+    const archived = { ...project, archivedAt: "2026-07-12T00:00:00Z" };
+    const api = apiMock();
+    vi.mocked(api.listProjects).mockImplementation(async (_token, options) =>
+      options?.archived ? [archived] : [project],
+    );
+    api.restoreProject = vi.fn().mockResolvedValue({ ...project, archivedAt: null });
+    const user = userEvent.setup();
+
+    render(<ProjectsPage api={api} token="access" navigate={vi.fn()} />);
+    await screen.findByRole("button", { name: /캠퍼스 공모전/ });
+    await user.click(screen.getByRole("button", { name: "보관함 보기" }));
+
+    expect(await screen.findByRole("heading", { name: archived.title, level: 3 })).toBeInTheDocument();
+    expect(api.listProjects).toHaveBeenLastCalledWith("access", { archived: true });
+    await user.click(screen.getByRole("button", { name: "프로젝트 복원" }));
+    expect(api.restoreProject).toHaveBeenCalledWith("access", archived.id);
+    expect(await screen.findByRole("status")).toHaveTextContent("프로젝트를 복원했습니다");
+  });
+
   it("copies the deterministic three-source demo once and opens the analyzed project", async () => {
     const user = userEvent.setup();
     const api = apiMock();

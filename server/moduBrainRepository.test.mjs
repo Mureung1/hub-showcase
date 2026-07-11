@@ -42,10 +42,12 @@ describe("Modu Brain PostgREST repository", () => {
 
     await expect(repository.ready()).resolves.toBe(true);
     await expect(repository.listProjects()).resolves.toEqual([project]);
+    await expect(repository.listProjects({ archived: true })).resolves.toEqual([project]);
     await expect(repository.createProject("user", { title: "p", description: "d" })).resolves.toBe(project);
     await expect(repository.getProject(ID)).resolves.toBe(project);
     await expect(repository.updateProject(ID, { title: "updated" })).resolves.toBe(project);
     await expect(repository.archiveProject(ID)).resolves.toBe(project);
+    await expect(repository.restoreProject(ID)).resolves.toBe(project);
     await expect(repository.deleteProject(ID)).resolves.toBeUndefined();
 
     await expect(repository.listSources(ID)).resolves.toEqual([source]);
@@ -68,6 +70,7 @@ describe("Modu Brain PostgREST repository", () => {
     await expect(repository.getSources(ID, [])).resolves.toEqual([]);
     await expect(repository.updateSource(ID, { title: "updated" })).resolves.toBe(source);
     await expect(repository.archiveSource(ID)).resolves.toBe(source);
+    await expect(repository.restoreSource(ID)).resolves.toBe(source);
     await expect(repository.listSourceSegments(ID)).resolves.toEqual([segment]);
 
     await expect(repository.listRuns(ID)).resolves.toEqual([run]);
@@ -119,15 +122,16 @@ describe("Modu Brain PostgREST repository", () => {
     );
   });
 
-  it("uses narrowly filtered service-role writes for completion and share mutations", async () => {
+  it("uses owner-checking service-role RPCs for completion and share mutations", async () => {
     const run = { id: ID, status: "succeeded" };
     const stepEvent = { id: ID, analysis_run_id: ID, event_key: "source_snapshot:succeeded" };
     const share = { id: ID, analysis_run_id: ID };
     const request = vi.fn(async (path) => {
       if (path === "rpc/consume_openai_rate_limit") return true;
-      if (path.startsWith("analysis_run_step_events")) return [stepEvent];
-      if (path.startsWith("analysis_runs")) return [run];
-      if (path.startsWith("share_links")) return [share];
+      if (path === "rpc/app_append_analysis_run_step_event") return [stepEvent];
+      if (path === "rpc/app_complete_analysis_run") return run;
+      if (path === "rpc/app_create_share_link") return [share];
+      if (path === "rpc/app_revoke_share_link") return [share];
       return [];
     });
     const repository = createModuBrainServiceRepository({ request });
@@ -150,6 +154,8 @@ describe("Modu Brain PostgREST repository", () => {
       repository.completeRun(ID, "user-id", {
         status: "succeeded",
         result_jsonb: { ok: true },
+        provider_request_id: "req-safe-id",
+        reasoning_tokens: 12,
         latency_ms: 5,
         completed_at: completedAt,
       }),
@@ -172,24 +178,149 @@ describe("Modu Brain PostgREST repository", () => {
     ).resolves.toBe(true);
 
     expect(request).toHaveBeenCalledWith(
-      expect.stringContaining(`id=eq.${ID}&created_by=eq.user-id&status=eq.running`),
-      expect.objectContaining({ method: "PATCH" }),
-    );
-    expect(request).toHaveBeenCalledWith(
-      expect.stringContaining("analysis_run_step_events?on_conflict=analysis_run_id,event_key"),
+      "rpc/app_complete_analysis_run",
       expect.objectContaining({
         method: "POST",
-        prefer: "resolution=ignore-duplicates,return=representation",
-        body: expect.not.objectContaining({ rawText: expect.anything(), reasoning: expect.anything() }),
+        body: expect.objectContaining({
+          p_user_id: "user-id",
+          p_run_id: ID,
+          p_provider_request_id: "req-safe-id",
+          p_reasoning_tokens: 12,
+        }),
       }),
     );
     expect(request).toHaveBeenCalledWith(
-      expect.stringContaining(`id=eq.${ID}&created_by=eq.user-id&status=eq.succeeded`),
+      "rpc/app_append_analysis_run_step_event",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.objectContaining({
+          p_user_id: "user-id",
+          p_run_id: ID,
+          p_event_key: "source_snapshot:succeeded",
+        }),
+      }),
     );
     expect(request).toHaveBeenCalledWith(
-      expect.stringContaining(`id=eq.${ID}&created_by=eq.user-id&revoked_at=is.null`),
-      expect.objectContaining({ method: "PATCH" }),
+      "rpc/app_create_share_link",
+      expect.objectContaining({ method: "POST" }),
     );
+    expect(request).toHaveBeenCalledWith(
+      "rpc/app_revoke_share_link",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("routes project, source, and run mutations through owner-checking app RPCs", async () => {
+    const project = { id: ID, title: "project" };
+    const source = { id: ID, project_id: ID };
+    const run = { id: ID, project_id: ID };
+    const request = vi.fn(async (path) => {
+      if (path === "rpc/app_delete_project") return ID;
+      if (path.includes("project")) return [project];
+      if (path.includes("source_record")) return [source];
+      if (path === "rpc/app_start_analysis_run") {
+        return [{ outcome: "created", run, retry_after_seconds: null }];
+      }
+      if (path === "rpc/app_delete_analysis_run") return ID;
+      return [];
+    });
+    const repository = createModuBrainServiceRepository({ request });
+
+    await expect(repository.createProject("user-id", { title: "p", description: "d" })).resolves.toBe(project);
+    await expect(repository.updateProject("user-id", ID, { title: "u" })).resolves.toBe(project);
+    await expect(repository.archiveProject("user-id", ID)).resolves.toBe(project);
+    await expect(repository.restoreProject("user-id", ID)).resolves.toBe(project);
+    await expect(repository.deleteProject("user-id", ID, "delete")).resolves.toBe(ID);
+    await expect(repository.createSource("user-id", ID, {
+      kind: "note",
+      title: "source",
+      content: "text",
+      content_sha256: "a".repeat(64),
+      char_count: 4,
+      occurred_at: null,
+    })).resolves.toBe(source);
+    await expect(repository.updateSource("user-id", ID, { title: "updated" })).resolves.toBe(source);
+    await expect(repository.archiveSource("user-id", ID)).resolves.toBe(source);
+    await expect(repository.restoreSource("user-id", ID)).resolves.toBe(source);
+    await expect(repository.startRun("user-id", {
+      projectId: ID,
+      sourceIds: [ID],
+      idempotencyKey: "abcdefgh",
+      requestFingerprint: "b".repeat(64),
+      providerMode: "local",
+      providerModel: null,
+    })).resolves.toMatchObject({ outcome: "created", reused: false, run });
+    await expect(repository.deleteRun(ID, "user-id")).resolves.toBe(ID);
+
+    expect(request).toHaveBeenCalledWith(
+      "rpc/app_start_analysis_run",
+      expect.objectContaining({ body: expect.objectContaining({ p_user_id: "user-id", p_project_id: ID }) }),
+    );
+  });
+
+  it("requests one extra projected row for keyset cursor pages", async () => {
+    const project = { id: ID };
+    const rows = Array.from({ length: 3 }, (_, index) => ({ id: `${ID}-${index}` }));
+    const request = vi.fn(async (path) => path.startsWith("projects") ? [project] : rows);
+    const repository = createModuBrainRepository({ request });
+
+    await expect(repository.listSourcesPage(ID, { cursor: null, limit: 2 })).resolves.toEqual({
+      rows: rows.slice(0, 2),
+      hasMore: true,
+    });
+    expect(request.mock.calls.at(-1)[0]).toContain("limit=3");
+    expect(request.mock.calls.at(-1)[0]).not.toContain("content,");
+    expect(request.mock.calls.at(-1)[0]).not.toContain("result_jsonb");
+  });
+
+  it("builds deterministic tie-break filters for run, segment, and source cursors", async () => {
+    const request = vi.fn(async (path) => path.startsWith("projects") || path.startsWith("source_records?id=") ? [{ id: ID }] : []);
+    const repository = createModuBrainRepository({ request });
+    const createdAt = "2026-07-11T00:00:00.000Z";
+
+    await repository.listRunsPage(ID, { limit: 50, cursor: { createdAt, id: ID } });
+    expect(request.mock.calls.at(-1)[0]).toContain(
+      `or=(created_at.lt.${encodeURIComponent(createdAt)},and(created_at.eq.${encodeURIComponent(createdAt)},id.lt.${ID}))`,
+    );
+
+    await repository.listSourceSegmentsPage(ID, { limit: 50, cursor: { ordinal: 7, id: ID } });
+    expect(request.mock.calls.at(-1)[0]).toContain(
+      `or=(ordinal.gt.7,and(ordinal.eq.7,id.gt.${ID}))`,
+    );
+
+    await repository.listSourcesPage(ID, { limit: 50, cursor: { occurredAt: null, createdAt, id: ID } });
+    expect(request.mock.calls.at(-1)[0]).toContain("occurred_at=is.null");
+    expect(request.mock.calls.at(-1)[0]).toContain(`id.lt.${ID}`);
+
+    await repository.listSourcesPage(ID, { limit: 50, cursor: { occurredAt: createdAt, createdAt, id: ID } });
+    expect(request.mock.calls.at(-1)[0]).toContain("occurred_at.is.null");
+    expect(request.mock.calls.at(-1)[0]).toContain(`occurred_at.lt.${encodeURIComponent(createdAt)}`);
+  });
+
+  it("uses the id tie-breaker so a same-timestamp insert does not duplicate or skip older runs", async () => {
+    const createdAt = "2026-07-11T00:00:00.000Z";
+    const ids = [
+      "00000000-0000-4000-8000-000000000004",
+      "00000000-0000-4000-8000-000000000003",
+      "00000000-0000-4000-8000-000000000002",
+    ];
+    const rows = ids.map((id) => ({ id, created_at: createdAt }));
+    const request = vi.fn(async (path) => {
+      if (path.startsWith("projects")) return [{ id: ID }];
+      if (path.includes(`id.lt.${ids[1]}`)) return [rows[2]];
+      return rows;
+    });
+    const repository = createModuBrainRepository({ request });
+
+    const first = await repository.listRunsPage(ID, { limit: 2, cursor: null });
+    const second = await repository.listRunsPage(ID, {
+      limit: 2,
+      cursor: { createdAt, id: first.rows.at(-1).id },
+    });
+
+    expect([...first.rows, ...second.rows].map((row) => row.id)).toEqual(ids);
+    expect(request.mock.calls.at(-1)[0]).toContain(`created_at.eq.${encodeURIComponent(createdAt)}`);
+    expect(request.mock.calls.at(-1)[0]).toContain(`id.lt.${ids[1]}`);
   });
 
   it("turns empty owner-scoped results into a non-enumerating 404", async () => {
@@ -201,10 +332,14 @@ describe("Modu Brain PostgREST repository", () => {
   it("uses service-only RPCs for public share resolution and IP limits", async () => {
     const request = vi.fn(async (path) => {
       if (path === "rpc/resolve_shared_analysis") return [{ project_title: "project" }];
-      return [{ consume_public_rate_limit: true }];
+      return [{ app_consume_public_rate_limit: true }];
     });
     const repository = createPublicShareRepository({ request });
     await expect(repository.resolveShare("hash")).resolves.toEqual({ project_title: "project" });
-    await expect(repository.consumeRateLimit("share:hour", "iphash", 60, 3600)).resolves.toBe(true);
+    await expect(repository.consumeRateLimit("share:ip:hour", "iphash", 600, 3600)).resolves.toBe(true);
+    expect(request).toHaveBeenCalledWith(
+      "rpc/app_consume_public_rate_limit",
+      expect.objectContaining({ body: expect.objectContaining({ p_subject_hash: "iphash" }) }),
+    );
   });
 });

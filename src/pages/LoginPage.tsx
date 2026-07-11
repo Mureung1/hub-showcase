@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import type { AuthService } from "../services/auth";
+import { useEffect, useState, type FormEvent } from "react";
+import { AuthRequestError, type AuthService } from "../services/auth";
 
 type LoginPageProps = {
   auth: AuthService;
@@ -11,21 +11,42 @@ function LoginPage({ auth, onGuestContinue }: LoginPageProps) {
   const [pending, setPending] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const configured = auth.isConfigured();
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!email.trim() || !configured || pending) return;
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return undefined;
+    const timer = window.setTimeout(
+      () => setCooldownSeconds((current) => Math.max(0, current - 1)),
+      1_000,
+    );
+    return () => window.clearTimeout(timer);
+  }, [cooldownSeconds]);
+
+  const send = async (targetEmail: string) => {
+    if (!targetEmail || !configured || pending || cooldownSeconds > 0) return;
     setPending(true);
     setError(null);
     try {
-      const result = await auth.sendMagicLink(email.trim(), `${window.location.origin}/login`);
+      const result = await auth.sendMagicLink(targetEmail, `${window.location.origin}/login`);
       setSentTo(result.email);
+      setCooldownSeconds(60);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "로그인 링크를 보내지 못했습니다.");
+      if (requestError instanceof AuthRequestError && requestError.status === 429) {
+        const retryAfter = Math.max(1, requestError.retryAfterSeconds ?? 60);
+        setCooldownSeconds(retryAfter);
+        setError(`요청이 너무 잦습니다. ${retryAfter}초 후 로그인 링크를 다시 요청해 주세요.`);
+      } else {
+        setError(requestError instanceof Error ? requestError.message : "로그인 링크를 보내지 못했습니다.");
+      }
     } finally {
       setPending(false);
     }
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    await send(email.trim());
   };
 
   return (
@@ -48,7 +69,20 @@ function LoginPage({ auth, onGuestContinue }: LoginPageProps) {
             <span aria-hidden="true">✓</span>
             <h2>로그인 링크를 보냈습니다</h2>
             <p><strong>{sentTo}</strong>의 받은 편지함과 스팸함을 확인해 주세요.</p>
-            <button className="button secondary" type="button" onClick={() => setSentTo(null)}>
+            {error && <p className="form-error" role="alert">{error}</p>}
+            <button
+              className="button primary full-button"
+              type="button"
+              disabled={pending || cooldownSeconds > 0}
+              onClick={() => void send(sentTo)}
+            >
+              {pending
+                ? "링크 보내는 중…"
+                : cooldownSeconds > 0
+                  ? `${cooldownSeconds}초 후 다시 보내기`
+                  : "로그인 링크 다시 보내기"}
+            </button>
+            <button className="button secondary full-button" type="button" onClick={() => setSentTo(null)}>
               다른 이메일 사용
             </button>
           </div>
@@ -74,9 +108,13 @@ function LoginPage({ auth, onGuestContinue }: LoginPageProps) {
               data-testid="login-submit"
               className="button primary full-button"
               type="submit"
-              disabled={!configured || pending || !email.trim()}
+              disabled={!configured || pending || cooldownSeconds > 0 || !email.trim()}
             >
-              {pending ? "링크 보내는 중…" : "로그인 링크 받기"}
+              {pending
+                ? "링크 보내는 중…"
+                : cooldownSeconds > 0
+                  ? `${cooldownSeconds}초 후 다시 요청 가능`
+                  : "로그인 링크 받기"}
             </button>
           </form>
         )}

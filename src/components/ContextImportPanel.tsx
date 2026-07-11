@@ -18,6 +18,8 @@ export type ContextImportInput = {
 export type ContextImportPanelProps = {
   onImport: (input: ContextImportInput) => Promise<void>;
   mode?: "project" | "ephemeral";
+  initialInput?: ContextImportInput;
+  textareaId?: string;
 };
 
 export const CONTEXT_IMPORT_FILE_LIMIT_BYTES = 256 * 1024;
@@ -104,17 +106,23 @@ const providerSamples: Record<ContextImportProvider, { title: string; text: stri
   },
 };
 
-function ContextImportPanel({ onImport, mode = "project" }: ContextImportPanelProps) {
-  const [provider, setProvider] = useState<ContextImportProvider>("paste");
-  const [title, setTitle] = useState("");
-  const [text, setText] = useState("");
+function ContextImportPanel({
+  onImport,
+  mode = "project",
+  initialInput,
+  textareaId,
+}: ContextImportPanelProps) {
+  const [provider, setProvider] = useState<ContextImportProvider>(initialInput?.provider ?? "paste");
+  const [title, setTitle] = useState(initialInput?.title ?? "");
+  const [text, setText] = useState(initialInput?.text ?? "");
   const [fileName, setFileName] = useState<string | null>(null);
   const [status, setStatus] = useState<ImportStatus>("idle");
   const [message, setMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileReadVersion = useRef(0);
   const titleId = useId();
-  const textId = useId();
+  const generatedTextId = useId();
+  const textId = textareaId ?? generatedTextId;
   const fileId = useId();
   const privacyId = useId();
   const statusId = useId();
@@ -174,11 +182,14 @@ function ContextImportPanel({ onImport, mode = "project" }: ContextImportPanelPr
       if (fileReadVersion.current !== readVersion) return;
       const detectedProvider = detectContextProvider(file.name, fileText);
       if (detectedProvider) setProvider(detectedProvider);
+      const resolvedProvider = detectedProvider ?? provider;
+      const resolvedProviderLabel = providerOptions.find((option) => option.id === resolvedProvider)?.label
+        ?? resolvedProvider;
       setText(removeByteOrderMark(fileText));
       setFileName(file.name);
       setTitle((current) => current || file.name.replace(/\.[^.]+$/, ""));
-      setStatus("idle");
-      setMessage("");
+      setStatus("success");
+      setMessage(`${file.name} 파일을 ${resolvedProviderLabel} 형식으로 불러왔습니다.`);
     } catch {
       if (fileReadVersion.current !== readVersion) return;
       setFileName(null);
@@ -325,7 +336,6 @@ function ContextImportPanel({ onImport, mode = "project" }: ContextImportPanelPr
           <small
             id={`${textId}-counter`}
             className={`${styles.counter} ${payloadTooLarge ? styles.counterError : ""}`}
-            aria-live="polite"
           >
             요청 {formatBytes(payloadBytes)} / 256KB{payloadTooLarge ? " · 허용 크기를 초과했습니다." : ""}
           </small>

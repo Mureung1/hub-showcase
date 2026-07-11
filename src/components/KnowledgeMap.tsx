@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useId,
   useMemo,
   useRef,
@@ -8,12 +9,16 @@ import {
 import type { ContextAnalysisResult, EvidenceRef } from "../types/context";
 import {
   BRAIN_VIEWBOX,
+  MAX_THOUGHT_EDGES,
+  MAX_THOUGHT_NODES,
+  MOBILE_THOUGHT_SUMMARY_LIMIT,
   buildThoughtGraph,
   layoutThoughtNodes,
   type ThoughtEdge,
   type ThoughtGraphResult,
   type ThoughtKind,
   type ThoughtNode,
+  type ThoughtPosition,
 } from "../utils/thoughtGraph";
 
 type KnowledgeMapProps = {
@@ -23,6 +28,14 @@ type KnowledgeMapProps = {
 };
 
 type ThoughtFilter = "all" | Exclude<ThoughtKind, "topic">;
+type BrainViewMode = "graph" | "list";
+type DirectionKey = "ArrowRight" | "ArrowDown" | "ArrowLeft" | "ArrowUp";
+
+const COMPACT_BRAIN_QUERY = "(max-width: 640px)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+const MIN_ZOOM = 75;
+const MAX_ZOOM = 175;
+const ZOOM_STEP = 25;
 
 const filters: { id: ThoughtFilter; label: string }[] = [
   { id: "all", label: "전체" },
@@ -44,8 +57,11 @@ function KnowledgeMap({ map, result, onOpenEvidence }: KnowledgeMapProps) {
   const headingId = useId();
   const graphTitleId = useId();
   const graphDescriptionId = useId();
+  const graphHelpId = useId();
   const inspectorId = useId();
   const outlineId = useId();
+  const compactView = useMediaQuery(COMPACT_BRAIN_QUERY);
+  const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
   const graph = useMemo(
     () => buildThoughtGraph(result ?? map ?? { nodes: [], links: [] }),
     [map, result],
@@ -53,44 +69,133 @@ function KnowledgeMap({ map, result, onOpenEvidence }: KnowledgeMapProps) {
   const [activeFilter, setActiveFilter] = useState<ThoughtFilter>("all");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(graph.nodes[0]?.id ?? "");
+  const [focusId, setFocusId] = useState(graph.nodes[0]?.id ?? "");
+  const [preferredView, setPreferredView] = useState<BrainViewMode | null>(null);
+  const [zoom, setZoom] = useState(100);
   const nodeRefs = useRef(new Map<string, HTMLButtonElement>());
+  const stageRef = useRef<HTMLDivElement>(null);
+  const viewMode = preferredView ?? (compactView ? "list" : "graph");
 
   const matchingNodes = useMemo(
     () => filterThoughts(graph.nodes, activeFilter, query),
     [activeFilter, graph.nodes, query],
   );
   const visualNodes = useMemo(
-    () => chooseVisualNodes(matchingNodes, activeFilter, Boolean(query.trim())),
-    [activeFilter, matchingNodes, query],
+    () => chooseVisualNodes(
+      matchingNodes,
+      compactView ? MOBILE_THOUGHT_SUMMARY_LIMIT : MAX_THOUGHT_NODES,
+    ),
+    [compactView, matchingNodes],
   );
+  const outlineNodes = compactView
+    ? matchingNodes.slice(0, MOBILE_THOUGHT_SUMMARY_LIMIT)
+    : matchingNodes;
   const visualIds = new Set(visualNodes.map((node) => node.id));
-  const visualEdges = graph.edges.filter((edge) => visualIds.has(edge.from) && visualIds.has(edge.to));
-  const selectedNode = matchingNodes.find((node) => node.id === selectedId)
-    ?? matchingNodes.find((node) => node.kind === "topic")
-    ?? matchingNodes[0];
+  const visualEdges = graph.edges
+    .filter((edge) => visualIds.has(edge.from) && visualIds.has(edge.to))
+    .slice(0, MAX_THOUGHT_EDGES);
+  const selectedNode = selectedId
+    ? matchingNodes.find((node) => node.id === selectedId)
+      ?? matchingNodes.find((node) => node.kind === "topic")
+      ?? matchingNodes[0]
+    : undefined;
   const effectiveSelectedId = selectedNode?.id ?? "";
   const selectedEdges = selectedNode
     ? graph.edges.filter((edge) => edge.from === selectedNode.id || edge.to === selectedNode.id)
     : [];
-  const connectedIds = new Set([
-    effectiveSelectedId,
-    ...selectedEdges.flatMap((edge) => [edge.from, edge.to]),
-  ]);
-  const positions = layoutThoughtNodes(visualNodes, activeFilter === "all" && !query.trim());
+  const connectedIds = selectedNode
+    ? new Set([
+      selectedNode.id,
+      ...selectedEdges.flatMap((edge) => [edge.from, edge.to]),
+    ])
+    : new Set<string>();
+  const clustered = activeFilter === "all" && !query.trim();
+  const positions = useMemo(
+    () => layoutThoughtNodes(visualNodes, clustered),
+    [clustered, visualNodes],
+  );
+  const rovingId = visualNodes.some((node) => node.id === focusId)
+    ? focusId
+    : visualNodes.some((node) => node.id === effectiveSelectedId)
+      ? effectiveSelectedId
+      : visualNodes[0]?.id ?? "";
   const thoughtCount = graph.nodes.length;
   const hiddenVisualCount = Math.max(0, matchingNodes.length - visualNodes.length);
+  const hiddenOutlineCount = Math.max(0, matchingNodes.length - outlineNodes.length);
+  const worldSize = brainWorldSize(visualNodes, zoom);
 
-  const selectNode = (id: string) => setSelectedId(id);
+  useEffect(() => {
+    if (reducedMotion || viewMode !== "graph" || !effectiveSelectedId) return;
+    const stage = stageRef.current;
+    const node = nodeRefs.current.get(effectiveSelectedId);
+    if (!stage || !node || typeof stage.scrollTo !== "function") return;
+
+    const timer = window.setTimeout(() => {
+      const stageBounds = stage.getBoundingClientRect();
+      const nodeBounds = node.getBoundingClientRect();
+      const comfortablyVisible = nodeBounds.left >= stageBounds.left + 24
+        && nodeBounds.right <= stageBounds.right - 24
+        && nodeBounds.top >= stageBounds.top + 24
+        && nodeBounds.bottom <= stageBounds.bottom - 24;
+      if (comfortablyVisible) return;
+
+      stage.scrollTo({
+        left: Math.max(0, stage.scrollLeft + nodeBounds.left - stageBounds.left - (stageBounds.width - nodeBounds.width) / 2),
+        top: Math.max(0, stage.scrollTop + nodeBounds.top - stageBounds.top - (stageBounds.height - nodeBounds.height) / 2),
+        behavior: "smooth",
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [effectiveSelectedId, reducedMotion, viewMode, worldSize.height, worldSize.width]);
+
+  const selectNode = (id: string) => {
+    setSelectedId(id);
+    setFocusId(id);
+  };
+
+  const changeZoom = (next: number | ((current: number) => number)) => {
+    setZoom((current) => {
+      const requested = typeof next === "function" ? next(current) : next;
+      return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, requested));
+    });
+  };
+
+  const handleGraphShortcut = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return false;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setSelectedId("");
+    } else if (event.key === "+" || event.key === "=") {
+      event.preventDefault();
+      changeZoom((current) => current + ZOOM_STEP);
+    } else if (event.key === "-") {
+      event.preventDefault();
+      changeZoom((current) => current - ZOOM_STEP);
+    } else if (event.key === "0") {
+      event.preventDefault();
+      changeZoom(100);
+    } else return false;
+    return true;
+  };
+
   const handleNodeKeyDown = (event: KeyboardEvent<HTMLButtonElement>, id: string) => {
-    const index = visualNodes.findIndex((node) => node.id === id);
-    let next = index;
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (index + 1) % visualNodes.length;
-    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (index - 1 + visualNodes.length) % visualNodes.length;
-    else if (event.key === "Home") next = 0;
-    else if (event.key === "End") next = visualNodes.length - 1;
+    if (handleGraphShortcut(event)) return;
+    if (event.key === "Enter") {
+      event.preventDefault();
+      selectNode(id);
+      return;
+    }
+
+    let nextId: string | undefined;
+    if (isDirectionKey(event.key)) nextId = findDirectionalNode(id, event.key, visualNodes, positions);
+    else if (event.key === "Home") nextId = visualNodes[0]?.id;
+    else if (event.key === "End") nextId = visualNodes.at(-1)?.id;
     else return;
+
+    if (!nextId) return;
     event.preventDefault();
-    nodeRefs.current.get(visualNodes[next]?.id)?.focus();
+    setFocusId(nextId);
+    nodeRefs.current.get(nextId)?.focus();
   };
 
   return (
@@ -126,127 +231,75 @@ function KnowledgeMap({ map, result, onOpenEvidence }: KnowledgeMapProps) {
                 onChange={(event) => setQuery(event.target.value)}
               />
             </label>
-            <div className="brain-filters" role="group" aria-label="생각 유형 필터">
-              {filters.map((filter) => {
-                const count = filter.id === "all"
-                  ? graph.nodes.length
-                  : graph.nodes.filter((node) => node.kind === filter.id).length;
-                return (
-                  <button
-                    key={filter.id}
-                    className={activeFilter === filter.id ? "active" : ""}
-                    type="button"
-                    aria-pressed={activeFilter === filter.id}
-                    onClick={() => setActiveFilter(filter.id)}
-                  >
-                    {filter.label} <span>{count}</span>
-                  </button>
-                );
-              })}
+            <div className="brain-toolbar-groups">
+              <div className="brain-view-switch" role="group" aria-label="지식맵 보기 방식">
+                <button
+                  type="button"
+                  aria-pressed={viewMode === "graph"}
+                  onClick={() => setPreferredView("graph")}
+                >
+                  그래프 보기
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={viewMode === "list"}
+                  onClick={() => setPreferredView("list")}
+                >
+                  의미 목록
+                </button>
+              </div>
+              <div className="brain-filters" role="group" aria-label="생각 유형 필터">
+                {filters.map((filter) => {
+                  const count = filter.id === "all"
+                    ? graph.nodes.length
+                    : graph.nodes.filter((node) => node.kind === filter.id).length;
+                  return (
+                    <button
+                      key={filter.id}
+                      className={activeFilter === filter.id ? "active" : ""}
+                      type="button"
+                      aria-pressed={activeFilter === filter.id}
+                      onClick={() => setActiveFilter(filter.id)}
+                    >
+                      {filter.label} <span>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          <p className="brain-result-status" role="status">
+          <p className="brain-result-status" role="status" aria-live="polite" aria-atomic="true">
             {matchingNodes.length === 0
               ? "검색 조건과 일치하는 생각이 없습니다."
-              : hiddenVisualCount > 0
-                ? `${matchingNodes.length}개 중 ${visualNodes.length}개를 캔버스에 표시합니다. 아래 생각 목록에서는 모두 확인할 수 있습니다.`
-                : `${matchingNodes.length}개 생각을 표시합니다.`}
+              : viewMode === "list" && hiddenOutlineCount > 0
+                ? `${matchingNodes.length}개 중 ${outlineNodes.length}개를 모바일 의미 목록에 표시합니다.`
+                : viewMode === "graph" && hiddenVisualCount > 0
+                  ? `${matchingNodes.length}개 중 ${visualNodes.length}개를 그래프에 표시합니다.`
+                  : `${matchingNodes.length}개 생각을 표시합니다.`}
+          </p>
+          <p className="brain-live" aria-live="polite" aria-atomic="true">
+            {selectedNode ? `${kindLabels[selectedNode.kind]} ${selectedNode.label} 선택됨` : "선택 해제됨"}
           </p>
 
-          <div className="brain-content">
-            <div className="brain-stage-wrap">
-              {visualNodes.length > 0 ? (
-                <div className="brain-stage" data-testid="brain-stage">
-                  <svg
-                    className="brain-connections"
-                    viewBox={`0 0 ${BRAIN_VIEWBOX.width} ${BRAIN_VIEWBOX.height}`}
-                    role="img"
-                    aria-labelledby={`${graphTitleId} ${graphDescriptionId}`}
-                  >
-                    <title id={graphTitleId}>프로젝트 맥락 지도</title>
-                    <desc id={graphDescriptionId}>
-                      {`${visualNodes.length}개 노드와 ${visualEdges.length}개 연결로 구성된 프로젝트 맥락 지도입니다. 연결 관계는 아래 생각 목록에서도 확인할 수 있습니다.`}
-                    </desc>
-                    {visualEdges.map((edge) => {
-                      const from = positions.get(edge.from);
-                      const to = positions.get(edge.to);
-                      if (!from || !to) return null;
-                      const active = edge.from === effectiveSelectedId || edge.to === effectiveSelectedId;
-                      return (
-                        <g key={edge.id} className={active ? "is-active" : connectedIds.size > 1 ? "is-muted" : ""}>
-                          <path d={connectionPath(from, to)} />
-                          {active && (
-                            <text x={(from.x + to.x) / 2} y={(from.y + to.y) / 2 - 8} textAnchor="middle">
-                              {edge.relation}
-                            </text>
-                          )}
-                        </g>
-                      );
-                    })}
-                  </svg>
-                  <div className="brain-hemisphere left" aria-hidden="true" />
-                  <div className="brain-hemisphere right" aria-hidden="true" />
-                  <div className="brain-node-layer">
-                    {visualNodes.map((node) => {
-                      const position = positions.get(node.id);
-                      if (!position) return null;
-                      const selected = node.id === effectiveSelectedId;
-                      const muted = !selected && connectedIds.size > 1 && !connectedIds.has(node.id);
-                      return (
-                        <button
-                          key={node.id}
-                          ref={(element) => {
-                            if (element) nodeRefs.current.set(node.id, element);
-                            else nodeRefs.current.delete(node.id);
-                          }}
-                          className={`brain-node brain-kind-${node.kind}${selected ? " is-selected" : ""}${muted ? " is-muted" : ""}`}
-                          style={{
-                            left: `${(position.x / BRAIN_VIEWBOX.width) * 100}%`,
-                            top: `${(position.y / BRAIN_VIEWBOX.height) * 100}%`,
-                          }}
-                          type="button"
-                          aria-label={`${kindLabels[node.kind]} 생각: ${node.label}`}
-                          aria-pressed={selected}
-                          aria-controls={inspectorId}
-                          data-testid={`brain-node-${node.id}`}
-                          onClick={() => selectNode(node.id)}
-                          onKeyDown={(event) => handleNodeKeyDown(event, node.id)}
-                        >
-                          <span>{kindLabels[node.kind]}</span>
-                          <strong>{clipLabel(node.label)}</strong>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <div className="brain-no-results">필터나 검색어를 바꿔 다른 생각을 찾아보세요.</div>
-              )}
-            </div>
-
-            <BrainInspector
-              id={inspectorId}
-              node={selectedNode}
-              edges={selectedEdges}
-              nodes={graph.nodes}
-              onSelect={selectNode}
-              onOpenEvidence={onOpenEvidence}
-            />
-
-            <section className="brain-outline" aria-labelledby={outlineId}>
+          <div className="brain-content" data-view={viewMode}>
+            <section className="brain-outline" aria-labelledby={outlineId} hidden={viewMode !== "list"}>
               <div className="brain-outline-heading">
                 <div>
                   <p>Accessible thought outline</p>
-                  <h3 id={outlineId}>생각과 연결 전체 보기</h3>
+                  <h3 id={outlineId}>생각과 연결 의미 목록</h3>
                 </div>
-                <span>{matchingNodes.length}개</span>
+                <span>
+                  {hiddenOutlineCount > 0
+                    ? `${outlineNodes.length}/${matchingNodes.length}개`
+                    : `${outlineNodes.length}개`}
+                </span>
               </div>
-              {matchingNodes.length === 0 ? (
+              {outlineNodes.length === 0 ? (
                 <p className="brain-outline-empty">일치하는 생각이 없습니다.</p>
               ) : (
                 <ul aria-label="생각과 연결 관계 목록">
-                  {matchingNodes.map((node) => {
+                  {outlineNodes.map((node) => {
                     const relationships = graph.edges.filter((edge) => edge.from === node.id || edge.to === node.id);
                     return (
                       <li key={`outline-${node.id}`} className={`brain-kind-${node.kind}`}>
@@ -267,6 +320,136 @@ function KnowledgeMap({ map, result, onOpenEvidence }: KnowledgeMapProps) {
                 </ul>
               )}
             </section>
+
+            <div
+              className="brain-stage-wrap"
+              hidden={viewMode !== "graph"}
+            >
+              <div className="brain-graph-controls">
+                <p id={graphHelpId}>방향키로 생각을 이동하고 Enter로 선택합니다. Esc는 선택 해제, +/−/0은 배율 조절입니다.</p>
+                <div className="brain-zoom" role="group" aria-label="그래프 배율 조절">
+                  <button
+                    type="button"
+                    aria-label="그래프 축소"
+                    disabled={zoom === MIN_ZOOM}
+                    onClick={() => changeZoom((current) => current - ZOOM_STEP)}
+                    onKeyDown={handleGraphShortcut}
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="그래프 배율 초기화"
+                    onClick={() => changeZoom(100)}
+                    onKeyDown={handleGraphShortcut}
+                  >
+                    0
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="그래프 확대"
+                    disabled={zoom === MAX_ZOOM}
+                    onClick={() => changeZoom((current) => current + ZOOM_STEP)}
+                    onKeyDown={handleGraphShortcut}
+                  >
+                    +
+                  </button>
+                  <span className="brain-zoom-value" aria-live="polite" aria-atomic="true">{zoom}%</span>
+                </div>
+              </div>
+
+              {visualNodes.length > 0 ? (
+                <div
+                  ref={stageRef}
+                  className="brain-stage"
+                  data-testid="brain-stage"
+                  role="group"
+                  aria-label="생각 그래프"
+                  aria-describedby={graphHelpId}
+                >
+                  <div
+                    className={`brain-world${visualNodes.length > 24 ? " is-dense" : ""}`}
+                    style={{ width: worldSize.width, height: worldSize.height }}
+                  >
+                    <svg
+                      className="brain-connections"
+                      viewBox={`0 0 ${BRAIN_VIEWBOX.width} ${BRAIN_VIEWBOX.height}`}
+                      role="img"
+                      aria-labelledby={`${graphTitleId} ${graphDescriptionId}`}
+                    >
+                      <title id={graphTitleId}>프로젝트 맥락 지도</title>
+                      <desc id={graphDescriptionId}>
+                        {`${visualNodes.length}개 노드와 ${visualEdges.length}개 연결로 구성된 프로젝트 맥락 지도입니다. 의미 목록 보기에서도 관계를 확인할 수 있습니다.`}
+                      </desc>
+                      {visualEdges.map((edge) => {
+                        const from = positions.get(edge.from);
+                        const to = positions.get(edge.to);
+                        if (!from || !to) return null;
+                        const active = edge.from === effectiveSelectedId || edge.to === effectiveSelectedId;
+                        return (
+                          <g key={edge.id} className={active ? "is-active" : connectedIds.size > 1 ? "is-muted" : ""}>
+                            <path d={connectionPath(from, to)} />
+                            {active && visualEdges.length <= 24 && (
+                              <text x={(from.x + to.x) / 2} y={(from.y + to.y) / 2 - 8} textAnchor="middle">
+                                {edge.relation}
+                              </text>
+                            )}
+                          </g>
+                        );
+                      })}
+                    </svg>
+                    <div className="brain-hemisphere left" aria-hidden="true" />
+                    <div className="brain-hemisphere right" aria-hidden="true" />
+                    <div className="brain-node-layer">
+                      {visualNodes.map((node) => {
+                        const position = positions.get(node.id);
+                        if (!position) return null;
+                        const selected = node.id === effectiveSelectedId;
+                        const muted = !selected && connectedIds.size > 1 && !connectedIds.has(node.id);
+                        return (
+                          <button
+                            key={node.id}
+                            ref={(element) => {
+                              if (element) nodeRefs.current.set(node.id, element);
+                              else nodeRefs.current.delete(node.id);
+                            }}
+                            className={`brain-node brain-kind-${node.kind}${selected ? " is-selected" : ""}${muted ? " is-muted" : ""}`}
+                            style={{
+                              left: `${(position.x / BRAIN_VIEWBOX.width) * 100}%`,
+                              top: `${(position.y / BRAIN_VIEWBOX.height) * 100}%`,
+                            }}
+                            type="button"
+                            tabIndex={node.id === rovingId ? 0 : -1}
+                            aria-label={`${kindLabels[node.kind]} 생각: ${node.label}`}
+                            aria-pressed={selected}
+                            aria-controls={inspectorId}
+                            aria-describedby={graphHelpId}
+                            data-testid={`brain-node-${node.id}`}
+                            onClick={() => selectNode(node.id)}
+                            onFocus={() => setFocusId(node.id)}
+                            onKeyDown={(event) => handleNodeKeyDown(event, node.id)}
+                          >
+                            <span>{kindLabels[node.kind]}</span>
+                            <strong>{clipLabel(node.label)}</strong>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="brain-no-results">필터나 검색어를 바꿔 다른 생각을 찾아보세요.</div>
+              )}
+            </div>
+
+            <BrainInspector
+              id={inspectorId}
+              node={selectedNode}
+              edges={selectedEdges}
+              nodes={graph.nodes}
+              onSelect={selectNode}
+              onOpenEvidence={onOpenEvidence}
+            />
           </div>
         </div>
       )}
@@ -306,8 +489,12 @@ function BrainInspector({
                   if (!related) return null;
                   return (
                     <li key={`${node.id}-${edge.id}`}>
-                      <button type="button" onClick={() => onSelect(related.id)}>
-                        <span>{edge.relation}</span>
+                      <button
+                        type="button"
+                        aria-label={`${edge.relation}: ${kindLabels[related.kind]} ${related.label}`}
+                        onClick={() => onSelect(related.id)}
+                      >
+                        <span>{edge.relation} · {kindLabels[related.kind]}</span>
                         <strong>{related.label}</strong>
                       </button>
                     </li>
@@ -340,18 +527,84 @@ function filterThoughts(nodes: ThoughtNode[], filter: ThoughtFilter, query: stri
   return [topic, ...matches];
 }
 
-function chooseVisualNodes(nodes: ThoughtNode[], filter: ThoughtFilter, searching: boolean) {
+function chooseVisualNodes(nodes: ThoughtNode[], limit: number) {
+  if (nodes.length <= limit) return nodes;
   const topic = nodes.find((node) => node.kind === "topic");
-  const nonRoot = nodes.filter((node) => node.kind !== "topic");
-  if (filter !== "all" || searching) return [...(topic ? [topic] : []), ...nonRoot.slice(0, 10)];
-  return [
-    ...(topic ? [topic] : []),
-    ...(["perspective", "term", "decision", "question"] as const)
-      .flatMap((kind) => nonRoot.filter((node) => node.kind === kind).slice(0, 4)),
-  ];
+  const remaining = nodes.filter((node) => node.id !== topic?.id);
+  return [...(topic ? [topic] : []), ...remaining.slice(0, Math.max(0, limit - (topic ? 1 : 0)))];
 }
 
-function connectionPath(from: { x: number; y: number }, to: { x: number; y: number }) {
+function brainWorldSize(nodes: ThoughtNode[], zoom: number) {
+  const largestCluster = Math.max(
+    1,
+    ...(["perspective", "term", "decision", "question"] as const)
+      .map((kind) => nodes.filter((node) => node.kind === kind).length),
+  );
+  const densityScale = Math.min(5, Math.max(1, Math.sqrt(largestCluster / 4)));
+  const zoomScale = zoom / 100;
+  return {
+    width: Math.round(BRAIN_VIEWBOX.width * densityScale * zoomScale),
+    height: Math.round(BRAIN_VIEWBOX.height * densityScale * zoomScale),
+  };
+}
+
+function findDirectionalNode(
+  currentId: string,
+  direction: DirectionKey,
+  nodes: ThoughtNode[],
+  positions: Map<string, ThoughtPosition>,
+) {
+  const current = positions.get(currentId);
+  if (!current) return undefined;
+
+  const candidates = nodes.flatMap((node) => {
+    if (node.id === currentId) return [];
+    const position = positions.get(node.id);
+    if (!position) return [];
+    const dx = position.x - current.x;
+    const dy = position.y - current.y;
+    const inDirection = direction === "ArrowRight"
+      ? dx > 0
+      : direction === "ArrowLeft"
+        ? dx < 0
+        : direction === "ArrowDown"
+          ? dy > 0
+          : dy < 0;
+    if (!inDirection) return [];
+    const primaryDistance = direction === "ArrowRight" || direction === "ArrowLeft" ? Math.abs(dx) : Math.abs(dy);
+    const crossDistance = direction === "ArrowRight" || direction === "ArrowLeft" ? Math.abs(dy) : Math.abs(dx);
+    return [{ id: node.id, score: primaryDistance + crossDistance * 0.42 }];
+  }).sort((left, right) => left.score - right.score);
+  if (candidates[0]) return candidates[0].id;
+
+  const index = nodes.findIndex((node) => node.id === currentId);
+  const offset = direction === "ArrowRight" || direction === "ArrowDown" ? 1 : -1;
+  return nodes[(index + offset + nodes.length) % nodes.length]?.id;
+}
+
+function isDirectionKey(value: string): value is DirectionKey {
+  return value === "ArrowRight" || value === "ArrowDown" || value === "ArrowLeft" || value === "ArrowUp";
+}
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() => (
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+      ? window.matchMedia(query).matches
+      : false
+  ));
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia(query);
+    const handleChange = (event: MediaQueryListEvent) => setMatches(event.matches);
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, [query]);
+
+  return matches;
+}
+
+function connectionPath(from: ThoughtPosition, to: ThoughtPosition) {
   const midpoint = (from.x + to.x) / 2;
   return `M ${from.x} ${from.y} C ${midpoint} ${from.y}, ${midpoint} ${to.y}, ${to.x} ${to.y}`;
 }

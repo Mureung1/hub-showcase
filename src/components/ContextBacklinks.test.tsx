@@ -42,7 +42,7 @@ describe("ContextBacklinks", () => {
     expect(screen.getByText("카카오톡")).toBeInTheDocument();
     expect(screen.getByText(sampleAnalysis.decisions[0].evidence![0].sourceTitle)).toBeInTheDocument();
     expect(screen.queryByText("나중에 변경된 실시간 제목")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "원문 인용문 열기" }));
+    await user.click(screen.getByRole("button", { name: /원문 인용문 열기$/ }));
     expect(onOpenEvidence).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({ sourceRecordId: sourceId }),

@@ -1,3 +1,4 @@
+-- LOCAL/EMPTY DATABASE ONLY. Production rollback uses restore or forward-fix.
 -- Roll back the matching 20260711113201 migration atomically.
 begin;
 

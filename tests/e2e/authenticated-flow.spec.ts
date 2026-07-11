@@ -46,6 +46,21 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
     await expect(
       page.getByRole("heading", { name: "내 프로젝트" }),
     ).toBeVisible();
+    const authCookies = (await page.context().cookies(appBaseUrl)).filter((cookie) =>
+      /modu_brain_(?:access|refresh|expires)$/.test(cookie.name),
+    );
+    expect(authCookies).toHaveLength(3);
+    for (const cookie of authCookies) {
+      expect(cookie.httpOnly).toBe(true);
+      expect(cookie.sameSite).toBe("Strict");
+      expect(cookie.path).toBe("/");
+      expect(cookie.secure).toBe(new URL(appBaseUrl).protocol === "https:");
+    }
+    const browserStorage = await page.evaluate(() => ({
+      local: { ...window.localStorage },
+      session: { ...window.sessionStorage },
+    }));
+    expect(JSON.stringify(browserStorage)).not.toMatch(/access[_-]?token|refresh[_-]?token|eyJ[a-zA-Z0-9_-]+\./i);
 
     await page.getByTestId("project-create-title").fill(projectTitle);
     await page.getByTestId("project-create-submit").click();

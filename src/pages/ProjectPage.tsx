@@ -33,10 +33,12 @@ import type {
   AnalysisRunResource,
   AnalysisRunStepEventResource,
   CreateAnalysisRunAnnotationInput,
+  CursorPageMetadata,
   ExternalContextProvider,
   ProjectResource,
   ShareLinkResource,
   SourceKind,
+  SourceRecordListResource,
   SourceRecordResource,
   SourceSegmentResource,
 } from "../types/platform";
@@ -65,14 +67,27 @@ const importProviderLabels: Record<ExternalContextProvider, string> = {
   paste: "붙여넣기",
 };
 
+const completedPage: CursorPageMetadata = {
+  limit: 50,
+  count: 0,
+  hasMore: false,
+  nextCursor: null,
+};
+
 function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   const [project, setProject] = useState<ProjectResource | null>(null);
-  const [sources, setSources] = useState<SourceRecordResource[]>([]);
+  const [sources, setSources] = useState<SourceRecordListResource[]>([]);
   const [runs, setRuns] = useState<AnalysisRunResource[]>([]);
+  const [sourcePage, setSourcePage] = useState<CursorPageMetadata>(completedPage);
+  const [runPage, setRunPage] = useState<CursorPageMetadata>(completedPage);
+  const [sourcesError, setSourcesError] = useState<string | null>(null);
+  const [runsError, setRunsError] = useState<string | null>(null);
+  const [loadingMoreSources, setLoadingMoreSources] = useState(false);
+  const [loadingMoreRuns, setLoadingMoreRuns] = useState(false);
   const [selectedSourceIds, setSelectedSourceIds] = useState<Set<string>>(new Set());
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
-  const [overviewView, setOverviewView] = useState<OverviewView>("analysis");
+  const [activeTab, setActiveTab] = useState<ProjectTab>(() => readProjectViewState().tab);
+  const [overviewView, setOverviewView] = useState<OverviewView>(() => readProjectViewState().view);
   const [openaiEnabled, setOpenaiEnabled] = useState(false);
   const [evidence, setEvidence] = useState<EvidenceRef[] | null>(null);
   const [evidenceSegments, setEvidenceSegments] = useState<SourceSegmentResource[]>([]);
@@ -81,35 +96,91 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   const [selectedRunAnnotations, setSelectedRunAnnotations] = useState<AnalysisRunAnnotationResource[]>([]);
   const [runArtifactsLoading, setRunArtifactsLoading] = useState(false);
   const [runArtifactsError, setRunArtifactsError] = useState<string | null>(null);
+  const [runDetailLoading, setRunDetailLoading] = useState(false);
+  const [runDetailError, setRunDetailError] = useState<string | null>(null);
+  const [comparisonDetailLoading, setComparisonDetailLoading] = useState(false);
+  const [comparisonDetailError, setComparisonDetailError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const analysisAbort = useRef<AbortController | null>(null);
   const evidenceLoadVersion = useRef(0);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const syncFromUrl = () => {
+      const next = readProjectViewState();
+      setActiveTab(next.tab);
+      setOverviewView(next.view);
+    };
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (activeTab === "overview") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", activeTab);
+    if (activeTab === "overview" && overviewView !== "analysis") {
+      url.searchParams.set("view", overviewView);
+    } else {
+      url.searchParams.delete("view");
+    }
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }, [activeTab, overviewView]);
+
   const loadWorkspace = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setSourcesError(null);
+    setRunsError(null);
     try {
-      const [nextProject, nextSources, nextRuns, capabilities] = await Promise.all([
+      const [projectResult, sourcesResult, runsResult, capabilitiesResult] = await Promise.allSettled([
         api.getProject(token, projectId),
-        api.listSources(token, projectId),
-        api.listAnalysisRuns(token, projectId),
-        api.getCapabilities(token).catch(() => ({ openaiEnabled: false })),
+        api.listSourcesPage
+          ? api.listSourcesPage(token, projectId)
+          : api.listSources(token, projectId).then(legacyCursorPage),
+        api.listAnalysisRunsPage
+          ? api.listAnalysisRunsPage(token, projectId)
+          : api.listAnalysisRuns(token, projectId).then(legacyCursorPage),
+        api.getCapabilities(token),
       ]);
-      const orderedRuns = orderRuns(nextRuns);
-      setProject(nextProject);
-      setSources(nextSources);
-      setRuns(orderedRuns);
-      setOpenaiEnabled(capabilities.openaiEnabled);
-      setSelectedSourceIds((current) =>
-        current.size > 0
-          ? new Set([...current].filter((id) => nextSources.some((item) => item.id === id && !item.archivedAt)))
-          : new Set(nextSources.filter((item) => !item.archivedAt).map((item) => item.id)),
-      );
-      setSelectedRunId((current) =>
-        current && orderedRuns.some((run) => run.id === current)
-          ? current
-          : orderedRuns.find((run) => run.status === "succeeded")?.id ?? orderedRuns[0]?.id ?? null,
+      if (projectResult.status === "rejected") throw projectResult.reason;
+      setProject(projectResult.value);
+
+      if (sourcesResult.status === "fulfilled") {
+        const nextSources = sourcesResult.value.items;
+        setSources(nextSources);
+        setSourcePage(sourcesResult.value.page);
+        setSelectedSourceIds((current) =>
+          current.size > 0
+            ? new Set([...current].filter((id) => nextSources.some((item) => item.id === id && !item.archivedAt)))
+            : new Set(nextSources.filter((item) => !item.archivedAt).map((item) => item.id)),
+        );
+      } else {
+        setSourcesError(messageFrom(sourcesResult.reason));
+      }
+
+      if (runsResult.status === "fulfilled") {
+        const orderedRuns = orderRuns(runsResult.value.items);
+        setRuns(orderedRuns);
+        setRunPage(runsResult.value.page);
+        setSelectedRunId((current) =>
+          current && orderedRuns.some((run) => run.id === current)
+            ? current
+            : orderedRuns.find((run) => run.status === "succeeded")?.id ?? orderedRuns[0]?.id ?? null,
+        );
+      } else {
+        setRunsError(messageFrom(runsResult.reason));
+      }
+      setOpenaiEnabled(
+        capabilitiesResult.status === "fulfilled"
+          ? capabilitiesResult.value.openaiEnabled
+          : false,
       );
     } catch (loadError) {
       setError(messageFrom(loadError));
@@ -129,7 +200,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   }, [loadWorkspace]);
 
   const successfulRuns = useMemo(
-    () => runs.filter((run) => run.status === "succeeded" && run.result),
+    () => runs.filter((run) => run.status === "succeeded"),
     [runs],
   );
   const selectedRun = runs.find((run) => run.id === selectedRunId) ?? successfulRuns[0] ?? null;
@@ -138,11 +209,67 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   const comparisonLatest = selectedSuccessfulIndex >= 0 ? successfulRuns[selectedSuccessfulIndex] : latestSuccessful;
   const comparisonPrevious = selectedSuccessfulIndex >= 0 ? successfulRuns[selectedSuccessfulIndex + 1] : successfulRuns[1];
 
+  const loadRunDetail = useCallback(async (runId: string) => {
+    if (!api.getAnalysisRun) {
+      setRunDetailError("이 실행의 상세 결과를 불러오는 API를 사용할 수 없습니다.");
+      return;
+    }
+    setRunDetailLoading(true);
+    setRunDetailError(null);
+    try {
+      const detail = await api.getAnalysisRun(token, runId);
+      setRuns((current) => current.map((run) => run.id === detail.id ? detail : run));
+    } catch (detailError) {
+      setRunDetailError(messageFrom(detailError));
+    } finally {
+      setRunDetailLoading(false);
+    }
+  }, [api, token]);
+
+  useEffect(() => {
+    if (!selectedRun || selectedRun.status !== "succeeded" || selectedRun.result) return undefined;
+    const timer = window.setTimeout(() => void loadRunDetail(selectedRun.id), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadRunDetail, selectedRun]);
+
+  const loadComparisonDetail = useCallback(async (runId: string) => {
+    if (!api.getAnalysisRun) {
+      setComparisonDetailError("이전 분석의 상세 결과를 불러오는 API를 사용할 수 없습니다.");
+      return;
+    }
+    setComparisonDetailLoading(true);
+    setComparisonDetailError(null);
+    try {
+      const detail = await api.getAnalysisRun(token, runId);
+      setRuns((current) => current.map((run) => run.id === detail.id ? detail : run));
+    } catch (detailError) {
+      setComparisonDetailError(messageFrom(detailError));
+    } finally {
+      setComparisonDetailLoading(false);
+    }
+  }, [api, token]);
+
+  useEffect(() => {
+    if (
+      activeTab !== "overview" ||
+      overviewView !== "history" ||
+      !comparisonPrevious ||
+      comparisonPrevious.result
+    ) {
+      return undefined;
+    }
+    const timer = window.setTimeout(
+      () => void loadComparisonDetail(comparisonPrevious.id),
+      0,
+    );
+    return () => window.clearTimeout(timer);
+  }, [activeTab, comparisonPrevious, loadComparisonDetail, overviewView]);
+
   useEffect(() => {
     let active = true;
     const timer = window.setTimeout(() => {
       const runId = selectedRun?.id;
-      if (!runId) {
+      if (!runId || activeTab !== "overview" || overviewView !== "history") {
         setSelectedRunStepEvents([]);
         setSelectedRunAnnotations([]);
         setRunArtifactsError(null);
@@ -170,7 +297,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [api, selectedRun?.id, token]);
+  }, [activeTab, api, overviewView, selectedRun?.id, token]);
 
   const openEvidence = (nextEvidence: EvidenceRef[]) => {
     const sourceIds = [...new Set(nextEvidence.map((item) => item.sourceRecordId))];
@@ -197,6 +324,42 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
     setEvidence(null);
     setEvidenceSegments([]);
     setEvidenceSegmentsLoading(false);
+  };
+
+  const loadMoreSources = async () => {
+    if (!api.listSourcesPage || !sourcePage.nextCursor || loadingMoreSources) return;
+    setLoadingMoreSources(true);
+    setSourcesError(null);
+    try {
+      const next = await api.listSourcesPage(token, projectId, {
+        cursor: sourcePage.nextCursor,
+        limit: sourcePage.limit,
+      });
+      setSources((current) => mergeById(current, next.items));
+      setSourcePage(next.page);
+    } catch (loadError) {
+      setSourcesError(messageFrom(loadError));
+    } finally {
+      setLoadingMoreSources(false);
+    }
+  };
+
+  const loadMoreRuns = async () => {
+    if (!api.listAnalysisRunsPage || !runPage.nextCursor || loadingMoreRuns) return;
+    setLoadingMoreRuns(true);
+    setRunsError(null);
+    try {
+      const next = await api.listAnalysisRunsPage(token, projectId, {
+        cursor: runPage.nextCursor,
+        limit: runPage.limit,
+      });
+      setRuns((current) => orderRuns(mergeById(current, next.items)));
+      setRunPage(next.page);
+    } catch (loadError) {
+      setRunsError(messageFrom(loadError));
+    } finally {
+      setLoadingMoreRuns(false);
+    }
   };
 
   if (loading && !project) {
@@ -273,6 +436,15 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
             setOverviewView("history");
           }}
         />
+      ) : latestSuccessful && runDetailLoading ? (
+        <section className="project-context-empty" aria-label="최근 분석 상세 로딩" aria-live="polite">
+          <div><strong>최근 분석의 상세 결과를 불러오는 중입니다.</strong><p>목록은 준비되었으며 결과 본문만 안전하게 나중에 불러옵니다.</p></div>
+        </section>
+      ) : latestSuccessful && runDetailError ? (
+        <section className="project-context-empty" aria-label="최근 분석 상세 오류">
+          <div><strong>최근 분석의 상세 결과를 불러오지 못했습니다.</strong><p>{runDetailError}</p></div>
+          <button className="button secondary" type="button" onClick={() => void loadRunDetail(latestSuccessful.id)}>다시 시도</button>
+        </section>
       ) : (
         <section className="project-context-empty" aria-label="프로젝트 맥락 준비 상태">
           <div><strong>아직 구조화된 프로젝트 맥락이 없습니다.</strong><p>기록을 추가한 뒤 첫 분석을 실행하면 관점 차이와 미결 질문이 여기에 표시됩니다.</p></div>
@@ -281,6 +453,18 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
       )}
 
       {error && <div className="notice error" role="alert">{error}<button type="button" onClick={() => setError(null)}>닫기</button></div>}
+      {sourcesError && (
+        <div className="notice warning" role="alert">
+          기록 목록 일부를 불러오지 못했습니다. {sourcesError}
+          <button type="button" onClick={() => void loadWorkspace()}>다시 불러오기</button>
+        </div>
+      )}
+      {runsError && (
+        <div className="notice warning" role="alert">
+          분석 이력 일부를 불러오지 못했습니다. {runsError}
+          <button type="button" onClick={() => void loadWorkspace()}>다시 불러오기</button>
+        </div>
+      )}
 
       <div className="project-tabs" role="tablist" aria-label="프로젝트 보기">
         {tabs.map((tab) => (
@@ -337,6 +521,9 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
                   runs={runs}
                   selectedSourceIds={selectedSourceIds}
                   openaiEnabled={openaiEnabled}
+                  hasMoreSources={Boolean(sourcePage.nextCursor)}
+                  loadingMoreSources={loadingMoreSources}
+                  onLoadMoreSources={loadMoreSources}
                   onToggleSource={(id) => setSelectedSourceIds(toggleSet(selectedSourceIds, id))}
                   onProjectChange={setProject}
                   onProjectDeleted={() => navigate("/projects")}
@@ -355,6 +542,9 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
                   token={token}
                   projectId={projectId}
                   sources={sources}
+                  hasMore={Boolean(sourcePage.nextCursor)}
+                  loadingMore={loadingMoreSources}
+                  onLoadMore={loadMoreSources}
                   onSourcesChange={(updateSources, updateSelection) => {
                     setSources(updateSources);
                     setSelectedSourceIds(updateSelection);
@@ -372,6 +562,15 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
                   annotations={selectedRunAnnotations}
                   artifactsLoading={runArtifactsLoading}
                   artifactsError={runArtifactsError}
+                  detailLoading={runDetailLoading}
+                  detailError={runDetailError}
+                  comparisonLoading={comparisonDetailLoading}
+                  comparisonError={comparisonDetailError}
+                  hasMore={Boolean(runPage.nextCursor)}
+                  loadingMore={loadingMoreRuns}
+                  onLoadMore={loadMoreRuns}
+                  onRetryDetail={loadRunDetail}
+                  onRetryComparison={loadComparisonDetail}
                   onSelectRun={(id) => {
                     setSelectedRunId(id);
                     trackProductEvent("comparison_opened", {
@@ -407,7 +606,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
                 onOpenEvidence={openEvidence}
               />
             </div>
-          ) : <EmptyAnalysis />
+          ) : <RunDetailFallback run={selectedRun} loading={runDetailLoading} error={runDetailError} onRetry={loadRunDetail} />
         )}
         {activeTab === "onboarding" && (
           selectedRun?.result ? (
@@ -415,7 +614,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
               <OnboardingSummary summary={selectedRun.result.onboardingSummary} />
               <SharePanel api={api} token={token} run={selectedRun} onError={setError} />
             </div>
-          ) : <EmptyAnalysis />
+          ) : <RunDetailFallback run={selectedRun} loading={runDetailLoading} error={runDetailError} onRetry={loadRunDetail} />
         )}
       </section>
       <EvidenceDrawer
@@ -458,10 +657,13 @@ type OverviewTabProps = {
   api: PlatformApi;
   token: string;
   project: ProjectResource;
-  sources: SourceRecordResource[];
+  sources: SourceRecordListResource[];
   runs: AnalysisRunResource[];
   selectedSourceIds: Set<string>;
   openaiEnabled: boolean;
+  hasMoreSources: boolean;
+  loadingMoreSources: boolean;
+  onLoadMoreSources: () => Promise<void>;
   onToggleSource: (id: string) => void;
   onProjectChange: (project: ProjectResource) => void;
   onProjectDeleted: () => void;
@@ -478,6 +680,9 @@ function OverviewTab({
   runs,
   selectedSourceIds,
   openaiEnabled,
+  hasMoreSources,
+  loadingMoreSources,
+  onLoadMoreSources,
   onToggleSource,
   onProjectChange,
   onProjectDeleted,
@@ -594,6 +799,16 @@ function OverviewTab({
                 <span><strong>{source.title}</strong><small>{sourceKindLabels[source.kind]} · {source.charCount.toLocaleString("ko-KR")}자</small></span>
               </label>
             ))}
+            {hasMoreSources && (
+              <button
+                className="button secondary"
+                type="button"
+                disabled={loadingMoreSources}
+                onClick={() => void onLoadMoreSources()}
+              >
+                {loadingMoreSources ? "기록 더 불러오는 중…" : "이전 기록 더 불러오기"}
+              </button>
+            )}
           </div>
         )}
         <fieldset className="mode-selector">
@@ -624,13 +839,16 @@ function OverviewTab({
   );
 }
 
-function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }: {
+function RecordsTab({ api, token, projectId, sources, hasMore, loadingMore, onLoadMore, onSourcesChange, onError }: {
   api: PlatformApi;
   token: string;
   projectId: string;
-  sources: SourceRecordResource[];
+  sources: SourceRecordListResource[];
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => Promise<void>;
   onSourcesChange: (
-    update: (sources: SourceRecordResource[]) => SourceRecordResource[],
+    update: (sources: SourceRecordListResource[]) => SourceRecordListResource[],
     updateSelection: (selected: Set<string>) => Set<string>,
   ) => void;
   onError: (message: string | null) => void;
@@ -639,6 +857,30 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [sourceDetails, setSourceDetails] = useState<Record<string, SourceRecordResource>>({});
+  const [sourceDetailLoading, setSourceDetailLoading] = useState<string | null>(null);
+  const [sourceDetailErrors, setSourceDetailErrors] = useState<Record<string, string>>({});
+
+  const loadSourceDetail = async (source: SourceRecordListResource) => {
+    if (isSourceDetail(source)) {
+      setSourceDetails((current) => ({ ...current, [source.id]: source }));
+      return;
+    }
+    if (!api.getSource || sourceDetailLoading === source.id) return;
+    setSourceDetailLoading(source.id);
+    setSourceDetailErrors((current) => ({ ...current, [source.id]: "" }));
+    try {
+      const detail = await api.getSource(token, source.id);
+      setSourceDetails((current) => ({ ...current, [source.id]: detail }));
+    } catch (detailError) {
+      setSourceDetailErrors((current) => ({
+        ...current,
+        [source.id]: messageFrom(detailError),
+      }));
+    } finally {
+      setSourceDetailLoading(null);
+    }
+  };
 
   const createSource = async (event: FormEvent) => {
     event.preventDefault();
@@ -647,6 +889,7 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
     onError(null);
     try {
       const created = await api.createSource(token, projectId, { kind, title: title.trim(), content: content.trim() });
+      setSourceDetails((current) => ({ ...current, [created.id]: created }));
       onSourcesChange(
         (current) => [created, ...current],
         (selected) => new Set(selected).add(created.id),
@@ -660,7 +903,7 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
     }
   };
 
-  const archive = async (source: SourceRecordResource) => {
+  const archive = async (source: SourceRecordListResource) => {
     onError(null);
     try {
       await api.deleteSource(token, source.id);
@@ -683,6 +926,7 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
 
   const importContext = async (input: ContextImportPanelInput) => {
     const imported = await api.importContext(token, projectId, input);
+    setSourceDetails((current) => ({ ...current, [imported.source.id]: imported.source }));
     onSourcesChange(
       (current) => [
         imported.source,
@@ -710,7 +954,10 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
         <div className="section-row"><div><p className="section-kicker">Source library</p><h2>저장된 기록</h2></div><span>{sources.filter((item) => !item.archivedAt).length}개</span></div>
         {sources.filter((item) => !item.archivedAt).length === 0 ? <p className="empty-card">아직 저장된 원문이 없습니다.</p> : (
           <div className="source-card-list">
-            {sources.filter((item) => !item.archivedAt).map((source) => (
+            {sources.filter((item) => !item.archivedAt).map((source) => {
+              const detail = sourceDetails[source.id] ?? (isSourceDetail(source) ? source : null);
+              const participants = detail?.import?.participants ?? [];
+              return (
               <article key={source.id} className="source-card">
                 <header>
                   <div className="source-card-tags">
@@ -727,20 +974,43 @@ function RecordsTab({ api, token, projectId, sources, onSourcesChange, onError }
                 {source.import && (
                   <div className="source-import-meta">
                     <span>맥락 {source.import.segmentCount.toLocaleString("ko-KR")}개</span>
-                    {source.import.participants.length > 0 && (
-                      <span>참여자 {source.import.participants.slice(0, 4).join(" · ")}</span>
+                    {participants.length > 0 && (
+                      <span>참여자 {participants.slice(0, 4).join(" · ")}</span>
                     )}
                   </div>
                 )}
-                <p>{source.content}</p>
-                <details className="source-content-details">
-                  <summary>원문 전체 보기</summary>
-                  <div>{source.content}</div>
-                </details>
+                {detail?.content !== undefined ? (
+                  <details className="source-content-details">
+                    <summary>원문 전체 보기</summary>
+                    <div>{detail.content}</div>
+                  </details>
+                ) : (
+                  <div>
+                    <button
+                      className="button secondary"
+                      type="button"
+                      disabled={sourceDetailLoading === source.id}
+                      onClick={() => void loadSourceDetail(source)}
+                    >
+                      {sourceDetailLoading === source.id ? "원문 불러오는 중…" : "원문 상세 불러오기"}
+                    </button>
+                    {sourceDetailErrors[source.id] && (
+                      <p className="form-error" role="alert">
+                        {sourceDetailErrors[source.id]}
+                        <button type="button" onClick={() => void loadSourceDetail(source)}>다시 시도</button>
+                      </p>
+                    )}
+                  </div>
+                )}
                 <footer><span>{source.charCount.toLocaleString("ko-KR")}자</span><button className="text-button danger" type="button" onClick={() => void archive(source)}>보관</button></footer>
               </article>
-            ))}
+            );})}
           </div>
+        )}
+        {hasMore && (
+          <button className="button secondary full-button" type="button" disabled={loadingMore} onClick={() => void onLoadMore()}>
+            {loadingMore ? "기록 더 불러오는 중…" : "기록 50개 더 불러오기"}
+          </button>
         )}
         </section>
       </div>
@@ -757,6 +1027,15 @@ function HistoryTab({
   annotations,
   artifactsLoading,
   artifactsError,
+  detailLoading,
+  detailError,
+  comparisonLoading,
+  comparisonError,
+  hasMore,
+  loadingMore,
+  onLoadMore,
+  onRetryDetail,
+  onRetryComparison,
   onSelectRun,
   onOpenEvidence,
   onCreateAnnotation,
@@ -769,6 +1048,15 @@ function HistoryTab({
   annotations: AnalysisRunAnnotationResource[];
   artifactsLoading: boolean;
   artifactsError: string | null;
+  detailLoading: boolean;
+  detailError: string | null;
+  comparisonLoading: boolean;
+  comparisonError: string | null;
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => Promise<void>;
+  onRetryDetail: (runId: string) => Promise<void>;
+  onRetryComparison: (runId: string) => Promise<void>;
   onSelectRun: (id: string) => void;
   onOpenEvidence: (evidence: EvidenceRef[]) => void;
   onCreateAnnotation: (
@@ -788,6 +1076,11 @@ function HistoryTab({
             <small>{run.provider.mode === "openai" ? run.provider.model ?? "OpenAI" : "로컬 분석"} · 기록 {run.sourceIds.length}개</small>
           </button>
         ))}
+        {hasMore && (
+          <button className="button secondary" type="button" disabled={loadingMore} onClick={() => void onLoadMore()}>
+            {loadingMore ? "이력 더 불러오는 중…" : "분석 이력 50건 더 불러오기"}
+          </button>
+        )}
       </aside>
       <div className="run-detail">
         {selectedRun && (
@@ -798,7 +1091,7 @@ function HistoryTab({
           />
         )}
         {artifactsError && <div className="notice error" role="alert">{artifactsError}</div>}
-        {selectedRun?.status === "failed" ? <div className="notice error">{selectedRun.error?.message ?? "분석 실행이 실패했습니다."}</div> : selectedRun?.status === "running" ? <div className="loading-card">분석이 진행 중입니다.</div> : selectedRun?.result ? (
+        {selectedRun?.status === "failed" ? <div className="notice error">{selectedRun.error?.message ?? "분석 실행이 실패했습니다."}</div> : selectedRun?.status === "running" ? <div className="loading-card">분석이 진행 중입니다.</div> : detailLoading ? <div className="loading-card" role="status">선택한 분석의 상세 결과를 불러오는 중…</div> : detailError && selectedRun ? <div className="notice error" role="alert">{detailError}<button type="button" onClick={() => void onRetryDetail(selectedRun.id)}>다시 시도</button></div> : selectedRun?.result ? (
           <>
             <header className="history-context-heading">
               <p className="section-kicker">Context first</p>
@@ -812,6 +1105,13 @@ function HistoryTab({
               <DecisionList decisions={selectedRun.result.decisions} onOpenEvidence={onOpenEvidence} />
               </div>
               <ParticipantAgentPanel synthesis={selectedRun.result.participantAgents} />
+              {comparisonLoading && <div className="loading-card" role="status">비교할 이전 성공 분석을 불러오는 중…</div>}
+              {comparisonError && previous && (
+                <div className="notice warning" role="alert">
+                  이전 분석 비교를 불러오지 못했습니다. {comparisonError}
+                  <button type="button" onClick={() => void onRetryComparison(previous.id)}>다시 시도</button>
+                </div>
+              )}
               <AnalysisComparison previous={previous?.result} latest={latest?.result} />
               <SummaryPanel result={selectedRun.result} />
               <KeyTerms terms={selectedRun.result.keyTerms} />
@@ -834,12 +1134,21 @@ function SharePanel({ api, token, run, onError }: { api: PlatformApi; token: str
   const [days, setDays] = useState(7);
   const [creating, setCreating] = useState(false);
   const [freshUrls, setFreshUrls] = useState<Record<string, string>>({});
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const [confirmingRevokeId, setConfirmingRevokeId] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+  const confirmRevokeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     let active = true;
     api.listShareLinks(token, run.id).then((items) => { if (active) setLinks(items); }).catch((loadError) => { if (active) onError(messageFrom(loadError)); });
     return () => { active = false; };
   }, [api, onError, run.id, token]);
+
+  useEffect(() => {
+    if (confirmingRevokeId) confirmRevokeButtonRef.current?.focus();
+  }, [confirmingRevokeId]);
 
   const create = async () => {
     setCreating(true);
@@ -857,17 +1166,42 @@ function SharePanel({ api, token, run, onError }: { api: PlatformApi; token: str
   };
 
   const revoke = async (linkId: string) => {
+    setRevokingId(linkId);
     try {
       await api.revokeShareLink(token, linkId);
       setLinks((current) => current.map((link) => link.id === linkId ? { ...link, revokedAt: new Date().toISOString() } : link));
+      setConfirmingRevokeId(null);
     } catch (revokeError) {
       onError(messageFrom(revokeError));
+    } finally {
+      setRevokingId(null);
+    }
+  };
+
+  const cancelRevoke = (linkId: string) => {
+    setConfirmingRevokeId(null);
+    window.setTimeout(() => document.getElementById(`share-revoke-${linkId}`)?.focus(), 0);
+  };
+
+  const copyLink = async (linkId: string, url: string) => {
+    setCopiedLinkId(null);
+    setCopyError(null);
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
+      await navigator.clipboard.writeText(url);
+      setCopiedLinkId(linkId);
+    } catch {
+      setCopyError("자동 복사가 지원되지 않습니다. 링크 입력란을 선택해 직접 복사해 주세요.");
     }
   };
 
   return (
     <section className="share-panel workspace-card" aria-labelledby="share-title">
-      <div className="panel-heading compact"><p className="section-kicker">Read-only share</p><h2 id="share-title">온보딩 링크 공유</h2><p>원문 전체와 계정 정보는 공개되지 않습니다. 토큰은 생성 직후 한 번만 확인할 수 있습니다.</p></div>
+      <div className="panel-heading compact"><p className="section-kicker">Read-only share</p><h2 id="share-title">온보딩 링크 공유</h2><p>토큰은 생성 직후 한 번만 확인할 수 있습니다.</p></div>
+      <div className="notice warning" role="note">
+        공유 분석에는 근거 인용문, 사람 이름 또는 입력 원문의 개인정보 일부가 포함될 수 있습니다.
+        링크를 만들기 전에 현재 분석 결과를 확인하고 필요한 경우 원문을 정리해 주세요.
+      </div>
       <div className="share-create-row">
         <label><span>만료</span><select value={days} onChange={(event) => setDays(Number(event.target.value))}><option value={1}>1일</option><option value={7}>7일</option><option value={14}>14일</option><option value={30}>30일</option></select></label>
         <button data-testid="share-create" className="button primary" type="button" disabled={creating} onClick={() => void create()}>{creating ? "만드는 중…" : "읽기 전용 링크 만들기"}</button>
@@ -877,12 +1211,83 @@ function SharePanel({ api, token, run, onError }: { api: PlatformApi; token: str
           {links.map((link) => {
             const url = freshUrls[link.id];
             const revoked = Boolean(link.revokedAt);
-            return <li key={link.id} className={revoked ? "revoked" : ""}><div><strong>{revoked ? "폐기됨" : `${formatDateTime(link.expiresAt)} 만료`}</strong>{url ? <input aria-label="새 공유 링크" readOnly value={url} onFocus={(event) => event.currentTarget.select()} /> : <small>보안을 위해 기존 토큰은 다시 표시되지 않습니다.</small>}</div>{!revoked && <button data-testid={`share-revoke-${link.id}`} className="text-button danger" type="button" onClick={() => void revoke(link.id)}>링크 폐기</button>}</li>;
+            const confirming = confirmingRevokeId === link.id;
+            return (
+              <li key={link.id} className={revoked ? "revoked" : ""}>
+                <div>
+                  <strong>{revoked ? "폐기됨" : `${formatDateTime(link.expiresAt)} 만료`}</strong>
+                  {url ? (
+                    <div>
+                      <input aria-label="새 공유 링크" readOnly value={url} onFocus={(event) => event.currentTarget.select()} />
+                      <button className="button secondary" type="button" onClick={() => void copyLink(link.id, url)}>링크 복사</button>
+                    </div>
+                  ) : <small>보안을 위해 기존 토큰은 다시 표시되지 않습니다.</small>}
+                </div>
+                {!revoked && !confirming && (
+                  <button
+                    id={`share-revoke-${link.id}`}
+                    data-testid={`share-revoke-${link.id}`}
+                    className="text-button danger"
+                    type="button"
+                    aria-expanded="false"
+                    aria-controls={`share-revoke-confirm-${link.id}`}
+                    onClick={() => setConfirmingRevokeId(link.id)}
+                  >
+                    링크 폐기
+                  </button>
+                )}
+                {confirming && (
+                  <div
+                    id={`share-revoke-confirm-${link.id}`}
+                    role="alertdialog"
+                    aria-labelledby={`share-revoke-title-${link.id}`}
+                    aria-describedby={`share-revoke-description-${link.id}`}
+                  >
+                    <strong id={`share-revoke-title-${link.id}`}>이 공유 링크를 폐기할까요?</strong>
+                    <p id={`share-revoke-description-${link.id}`}>즉시 열 수 없게 되며 되돌릴 수 없습니다.</p>
+                    <button
+                      ref={confirmRevokeButtonRef}
+                      className="button destructive"
+                      type="button"
+                      disabled={revokingId === link.id}
+                      onClick={() => void revoke(link.id)}
+                    >
+                      {revokingId === link.id ? "폐기하는 중…" : "폐기 확인"}
+                    </button>
+                    <button className="button secondary" type="button" disabled={revokingId === link.id} onClick={() => cancelRevoke(link.id)}>취소</button>
+                  </div>
+                )}
+              </li>
+            );
           })}
         </ul>
       )}
+      <p className={`copy-status ${copiedLinkId ? "copied" : copyError ? "error" : ""}`} aria-live="polite">
+        {copiedLinkId ? "공유 링크를 클립보드에 복사했습니다." : copyError ?? ""}
+      </p>
     </section>
   );
+}
+
+function RunDetailFallback({
+  run,
+  loading,
+  error,
+  onRetry,
+}: {
+  run: AnalysisRunResource | null;
+  loading: boolean;
+  error: string | null;
+  onRetry: (runId: string) => Promise<void>;
+}) {
+  if (!run) return <EmptyAnalysis />;
+  if (loading) {
+    return <div className="loading-card" role="status">선택한 분석의 상세 결과를 불러오는 중…</div>;
+  }
+  if (error) {
+    return <div className="notice error" role="alert">{error}<button type="button" onClick={() => void onRetry(run.id)}>다시 시도</button></div>;
+  }
+  return <div className="empty-card">이 실행에는 표시할 상세 결과가 없습니다.</div>;
 }
 
 function EmptyAnalysis() {
@@ -897,6 +1302,23 @@ function toggleSet(current: Set<string>, value: string) {
 
 function orderRuns(runs: AnalysisRunResource[]) {
   return [...runs].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+}
+
+function mergeById<T extends { id: string }>(current: T[], incoming: T[]) {
+  const byId = new Map(current.map((item) => [item.id, item]));
+  incoming.forEach((item) => byId.set(item.id, item));
+  return [...byId.values()];
+}
+
+function isSourceDetail(source: SourceRecordListResource): source is SourceRecordResource {
+  return "content" in source && typeof source.content === "string";
+}
+
+function legacyCursorPage<T>(items: T[]) {
+  return {
+    items,
+    page: { ...completedPage, limit: Math.max(1, items.length), count: items.length },
+  };
 }
 
 function statusLabel(status: AnalysisRunResource["status"]) {
@@ -918,6 +1340,20 @@ function shouldRetainAnalysisKey(error: unknown) {
 
 function messageFrom(error: unknown) {
   return error instanceof Error ? error.message : "요청을 처리하지 못했습니다.";
+}
+
+function readProjectViewState(): { tab: ProjectTab; view: OverviewView } {
+  if (typeof window === "undefined") return { tab: "overview", view: "analysis" };
+  const params = new URLSearchParams(window.location.search);
+  const tabValue = params.get("tab");
+  const viewValue = params.get("view");
+  const tab: ProjectTab = tabValue === "map" || tabValue === "onboarding"
+    ? tabValue
+    : "overview";
+  const view: OverviewView = viewValue === "records" || viewValue === "history"
+    ? viewValue
+    : "analysis";
+  return { tab, view };
 }
 
 export default ProjectPage;

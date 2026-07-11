@@ -74,6 +74,7 @@ npm run start
 | `MODU_BRAIN_OPENAI_REASONING_EFFORT` | 서버 | 기본 `low` |
 | `OPENAI_API_KEY` | 서버 전용 | 로그인 사용자가 명시적으로 OpenAI 분석을 선택할 때만 필요 |
 | `SAFETY_IDENTIFIER_SECRET` | 서버 전용 | 사용자 UUID를 비식별 `safety_identifier`로 해시할 때 사용하는 salt |
+| `IP_HASH_SECRET` | 서버 전용 | rate limit용 IP를 복원하기 어려운 HMAC으로 변환하는 별도 비밀키 |
 | `HOST` | 서버 | 로컬 기본 `127.0.0.1`, Render는 `0.0.0.0` |
 | `PORT` | 서버 | 로컬 기본 `4173`, Render가 배포 시 제공 |
 
@@ -138,6 +139,7 @@ GET            /api/health/ready
 npm run lint
 npm run typecheck
 npm run test:coverage
+npm run ops:validate
 npm run build
 npm run test:e2e:install
 npm run test:e2e
@@ -199,3 +201,5 @@ Render는 `npm ci --include=dev && npm run build`, `npm start`, `HOST=0.0.0.0`�
 - [KoPubWorld 돋움 웹 임베딩 안내](docs/kopub-font-embedding.md)
 - [PR 벤치마크](docs/benchmark-prs.md)
 - [PR 설명 초안](docs/pr-description-draft.md)
+- [무료 운영·백업·장애 대응 런북](docs/operations/free-tier-runbook.md)
+- [Supabase migration ledger 정합화 절차](docs/operations/migration-ledger-reconciliation.md)

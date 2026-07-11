@@ -1,3 +1,4 @@
+-- LOCAL/EMPTY DATABASE ONLY. Production rollback uses restore or forward-fix.
 begin;
 
 -- Content-only hashes cannot represent two external sources with identical text.

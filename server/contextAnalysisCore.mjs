@@ -5,6 +5,7 @@ const MIN_TITLE_LENGTH = 2;
 const MAX_TITLE_LENGTH = 120;
 const MIN_RAW_TEXT_LENGTH = 120;
 const MAX_RAW_TEXT_LENGTH = 20000;
+export const providerTelemetrySymbol = Symbol.for("modu-brain.provider-telemetry");
 
 const COMMON_NON_ACTORS = new Set([
   "오늘",
@@ -83,7 +84,7 @@ export async function analyzeProjectContext(payload, options = {}) {
   const providerName = resolveProviderName(options.provider);
 
   if (providerName === "openai") {
-    const { analysis, provider } = await analyzeWithOpenAI(
+    const { analysis, provider, usage, requestId } = await analyzeWithOpenAI(
       { projectTitle, rawText },
       {
         apiKey: options.apiKey,
@@ -96,7 +97,14 @@ export async function analyzeProjectContext(payload, options = {}) {
       },
     );
 
-    return assembleAnalysisResult(projectTitle, rawText, analysis, provider);
+    const result = assembleAnalysisResult(projectTitle, rawText, analysis, provider);
+    Object.defineProperty(result, providerTelemetrySymbol, {
+      value: { usage, requestId },
+      enumerable: false,
+      configurable: false,
+      writable: false,
+    });
+    return result;
   }
 
   const analysis = analyzeProjectContextLocally(projectTitle, rawText);

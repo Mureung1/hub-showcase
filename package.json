@@ -13,10 +13,17 @@
     "test:eval": "vitest run tests/eval/korean-context-eval.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
+    "ops:backup": "node scripts/ops/backup-supabase.mjs",
+    "ops:restore": "node scripts/ops/restore-supabase.mjs",
+    "ops:load": "node scripts/ops/load-test.mjs",
+    "ops:monitor": "node scripts/ops/monitor-health.mjs",
+    "ops:migrations:check": "node scripts/ops/check-migrations.mjs",
+    "ops:validate": "node --check scripts/ops/backup-supabase.mjs && node --check scripts/ops/restore-supabase.mjs && node --check scripts/ops/load-test.mjs && node --check scripts/ops/monitor-health.mjs && npm run ops:migrations:check",
     "render:og": "node scripts/render-og.mjs",
-    "check": "npm run lint && npm run test:coverage && npm run build"
+    "check": "npm run lint && npm run test:coverage && npm run ops:validate && npm run build"
   },
   "dependencies": {
+    "jose": "6.2.3",
     "openai": "^6.46.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

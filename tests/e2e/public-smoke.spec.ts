@@ -20,10 +20,10 @@ test("public landing keeps the sample explicit and deterministic", async ({
   await expect(page.getByText("분석 대기", { exact: true })).toBeVisible();
   await expect(page.getByText("샘플 데이터", { exact: true })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "샘플 불러오기" }).click();
+  await page.getByRole("button", { name: "샘플 직접 체험" }).click();
 
   await expect(page.getByText("샘플 데이터", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("프로젝트 이름")).toHaveValue(
+  await expect(page.getByLabel(/기록 제목/)).toHaveValue(
     "캠퍼스 공모전 서비스 기획",
   );
   await expect(
@@ -51,7 +51,7 @@ test("public demo is one click away and requires no account", async ({ page }) =
     page.getByRole("heading", { name: "로그인 없이 확인하는 근거 기반 맥락 분석" }),
   ).toBeVisible();
   await expect(page.getByText("샘플 데이터", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("프로젝트 이름")).toHaveValue(
+  await expect(page.getByLabel(/기록 제목/)).toHaveValue(
     "캠퍼스 공모전 서비스 기획",
   );
 });

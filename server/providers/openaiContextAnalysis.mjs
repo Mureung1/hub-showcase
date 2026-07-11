@@ -19,6 +19,24 @@ export async function analyzeWithOpenAI({ projectTitle, rawText }, options = {})
   const model = options.model || process.env.MODU_BRAIN_OPENAI_MODEL || "gpt-5.6-terra";
   const reasoningEffort =
     options.reasoningEffort || process.env.MODU_BRAIN_OPENAI_REASONING_EFFORT || "low";
+  const timeoutMs = boundedInteger(
+    options.timeoutMs || process.env.MODU_BRAIN_OPENAI_TIMEOUT_MS,
+    10,
+    120_000,
+    30_000,
+  );
+  const maxRetries = boundedInteger(
+    options.maxRetries ?? process.env.MODU_BRAIN_OPENAI_MAX_RETRIES,
+    0,
+    2,
+    1,
+  );
+  const maxOutputTokens = boundedInteger(
+    options.maxOutputTokens || process.env.MODU_BRAIN_OPENAI_MAX_OUTPUT_TOKENS,
+    256,
+    16_000,
+    8_192,
+  );
 
   if (!apiKey) {
     throw new ContextAnalysisApiError(
@@ -29,12 +47,20 @@ export async function analyzeWithOpenAI({ projectTitle, rawText }, options = {})
     );
   }
 
-  const client = options.client || new OpenAI({ apiKey, timeout: options.timeoutMs || 30_000 });
+  const client = options.client || new OpenAI({ apiKey, timeout: timeoutMs, maxRetries });
+  const deadlineController = new AbortController();
+  const deadline = setTimeout(
+    () => deadlineController.abort(new DOMException("OpenAI deadline exceeded", "TimeoutError")),
+    timeoutMs,
+  );
+  deadline.unref?.();
+  const requestSignal = combineAbortSignals(options.signal, deadlineController.signal);
 
   try {
     const request = {
       model,
       store: false,
+      max_output_tokens: maxOutputTokens,
       reasoning: { effort: reasoningEffort },
       ...(options.safetyIdentifier ? { safety_identifier: options.safetyIdentifier } : {}),
       instructions: SYSTEM_INSTRUCTIONS,
@@ -43,9 +69,7 @@ export async function analyzeWithOpenAI({ projectTitle, rawText }, options = {})
         format: zodTextFormat(structuredContextAnalysisSchema, "modu_brain_context_analysis"),
       },
     };
-    const response = options.signal
-      ? await client.responses.parse(request, { signal: options.signal })
-      : await client.responses.parse(request);
+    const response = await client.responses.parse(request, { signal: requestSignal });
 
     if (!response.output_parsed) {
       throw new ContextAnalysisApiError(
@@ -62,6 +86,8 @@ export async function analyzeWithOpenAI({ projectTitle, rawText }, options = {})
         name: `openai:${model}`,
         usedExternalModel: true,
       },
+      usage: normalizeUsage(response.usage),
+      requestId: safeProviderRequestId(response._request_id || response.request_id),
     };
   } catch (error) {
     if (error instanceof ContextAnalysisApiError) {
@@ -76,6 +102,65 @@ export async function analyzeWithOpenAI({ projectTitle, rawText }, options = {})
       );
     }
 
+    if (deadlineController.signal.aborted && !options.signal?.aborted) {
+      throw new ContextAnalysisApiError(
+        504,
+        "EXTERNAL_PROVIDER_TIMEOUT",
+        "The external analysis provider exceeded its total deadline.",
+      );
+    }
+
+    if (options.signal?.aborted) {
+      throw new ContextAnalysisApiError(
+        499,
+        "REQUEST_CANCELLED",
+        "The analysis request was cancelled.",
+      );
+    }
+
     throw toContextAnalysisApiError(error);
+  } finally {
+    clearTimeout(deadline);
   }
+}
+
+function combineAbortSignals(first, second) {
+  if (!first) return second;
+  if (typeof AbortSignal.any === "function") return AbortSignal.any([first, second]);
+  const controller = new AbortController();
+  const abort = (signal) => {
+    if (!controller.signal.aborted) controller.abort(signal.reason);
+  };
+  if (first.aborted) abort(first);
+  else first.addEventListener("abort", () => abort(first), { once: true });
+  if (second.aborted) abort(second);
+  else second.addEventListener("abort", () => abort(second), { once: true });
+  return controller.signal;
+}
+
+function normalizeUsage(usage) {
+  const inputTokens = safeTokenCount(usage?.input_tokens);
+  const outputTokens = safeTokenCount(usage?.output_tokens);
+  return {
+    inputTokens,
+    outputTokens,
+    totalTokens: safeTokenCount(usage?.total_tokens) || inputTokens + outputTokens,
+    reasoningTokens: safeTokenCount(usage?.output_tokens_details?.reasoning_tokens),
+  };
+}
+
+function safeTokenCount(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 0 ? number : 0;
+}
+
+function safeProviderRequestId(value) {
+  const requestId = String(value || "").trim();
+  return /^[A-Za-z0-9._:-]{1,128}$/.test(requestId) ? requestId : null;
+}
+
+function boundedInteger(value, minimum, maximum, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(maximum, Math.max(minimum, Math.round(number)));
 }

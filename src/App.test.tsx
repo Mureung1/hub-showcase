@@ -4,9 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { sampleAnalysis, sampleInput } from "./data/sampleAnalysis";
 import type { AuthService, AuthSession } from "./services/auth";
+import { COOKIE_SESSION_SENTINEL } from "./services/auth";
 import {
   ContextAnalysisRequestError,
-  analyzeContext,
   analyzeImportedContext,
 } from "./services/analyzeContext";
 import type { PlatformApi } from "./services/platformApi";
@@ -14,14 +14,12 @@ import type { ContextAnalysisResult } from "./types/context";
 
 vi.mock("./services/analyzeContext", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./services/analyzeContext")>();
-  return { ...actual, analyzeContext: vi.fn(), analyzeImportedContext: vi.fn() };
+  return { ...actual, analyzeImportedContext: vi.fn() };
 });
 
-const analyzeContextMock = vi.mocked(analyzeContext);
 const analyzeImportedContextMock = vi.mocked(analyzeImportedContext);
 
 beforeEach(() => {
-  analyzeContextMock.mockReset();
   analyzeImportedContextMock.mockReset();
   window.history.replaceState(null, "", "/");
   window.localStorage.clear();
@@ -36,7 +34,8 @@ describe("public landing prototype", () => {
 
     expect(screen.getByRole("heading", { name: "로그인 없이 확인하는 근거 기반 맥락 분석" })).toBeInTheDocument();
     expect(screen.getByText("샘플 데이터")).toBeInTheDocument();
-    expect(screen.getByLabelText("프로젝트 이름")).toHaveValue(sampleAnalysis.projectTitle);
+    expect(screen.getByLabelText(/기록 제목/)).toHaveValue(sampleAnalysis.projectTitle);
+    expect(screen.getByLabelText("회의 맥락 붙여넣기")).toHaveValue(sampleInput);
     expect(screen.getByRole("link", { name: "공개 데모" })).toHaveAttribute("aria-current", "page");
   });
 
@@ -45,7 +44,7 @@ describe("public landing prototype", () => {
     const user = userEvent.setup();
     render(<App auth={anonymousAuth()} />);
 
-    const input = screen.getByLabelText("회의록 / 메모 / 피드백");
+    const input = screen.getByLabelText("회의 맥락 붙여넣기");
     await user.clear(input);
     await user.type(input, "편집 중인 임시 내용");
     expect(input).toHaveValue("편집 중인 임시 내용");
@@ -53,7 +52,7 @@ describe("public landing prototype", () => {
     await user.click(screen.getByRole("link", { name: "Modu Brain 홈" }));
     await user.click(screen.getByRole("link", { name: "공개 데모" }));
 
-    expect(screen.getByLabelText("회의록 / 메모 / 피드백")).toHaveValue(sampleInput);
+    expect(screen.getByLabelText("회의 맥락 붙여넣기")).toHaveValue(sampleInput);
     expect(screen.getByText("샘플 데이터")).toBeInTheDocument();
   });
 
@@ -63,13 +62,13 @@ describe("public landing prototype", () => {
 
     expect(screen.getByText("분석 대기")).toBeInTheDocument();
     expect(screen.queryByText("샘플 데이터")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("프로젝트 이름")).toHaveValue("Modu Brain MVP");
-    expect(screen.getByLabelText("회의록 / 메모 / 피드백")).toHaveValue("");
+    expect(screen.getByLabelText(/기록 제목/)).toHaveValue("");
+    expect(screen.getByLabelText("회의 맥락 붙여넣기")).toHaveValue("");
 
-    await user.click(screen.getByRole("button", { name: "샘플 불러오기" }));
+    await user.click(screen.getByRole("button", { name: "샘플 직접 체험" }));
 
-    expect(screen.getByLabelText("프로젝트 이름")).toHaveValue(sampleAnalysis.projectTitle);
-    expect(screen.getByLabelText("회의록 / 메모 / 피드백")).toHaveValue(sampleInput);
+    expect(screen.getByLabelText(/기록 제목/)).toHaveValue(sampleAnalysis.projectTitle);
+    expect(screen.getByLabelText("회의 맥락 붙여넣기")).toHaveValue(sampleInput);
     expect(screen.getByText("샘플 데이터")).toBeInTheDocument();
   });
 
@@ -113,54 +112,64 @@ describe("public landing prototype", () => {
 
   it("prevents duplicate submission while loading and renders the provider on success", async () => {
     const user = userEvent.setup();
-    let resolveAnalysis: (result: ContextAnalysisResult) => void = () => undefined;
-    const pending = new Promise<ContextAnalysisResult>((resolve) => { resolveAnalysis = resolve; });
     const liveResult: ContextAnalysisResult = {
       ...sampleAnalysis,
       projectTitle: "실시간 분석 결과",
       summary: { ...sampleAnalysis.summary, projectTitle: "실시간 분석 결과" },
       provider: { mode: "mock", name: "local-heuristic", usedExternalModel: false },
     };
-    analyzeContextMock.mockReturnValue(pending);
+    const importedResult = {
+      import: {
+        provider: "paste" as const,
+        title: sampleAnalysis.projectTitle,
+        content: sampleInput,
+        participantCount: 3,
+        segmentCount: 1,
+      },
+      result: liveResult,
+    };
+    let resolveAnalysis: (result: typeof importedResult) => void = () => undefined;
+    const pending = new Promise<typeof importedResult>((resolve) => { resolveAnalysis = resolve; });
+    analyzeImportedContextMock.mockReturnValue(pending);
     render(<App auth={anonymousAuth()} />);
 
-    await user.click(screen.getByRole("button", { name: "샘플 불러오기" }));
-    await user.click(screen.getByRole("button", { name: "맥락 분석하기" }));
+    await user.click(screen.getByRole("button", { name: "샘플 직접 체험" }));
+    await user.click(screen.getByRole("button", { name: "가져와 바로 분석" }));
 
-    expect(screen.getByRole("button", { name: "분석 중…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "정리하는 중…" })).toBeDisabled();
     expect(screen.getByText("분석 중")).toBeInTheDocument();
-    expect(analyzeContextMock).toHaveBeenCalledTimes(1);
+    expect(analyzeImportedContextMock).toHaveBeenCalledTimes(1);
 
-    await act(async () => { resolveAnalysis(liveResult); await pending; });
+    await act(async () => { resolveAnalysis(importedResult); await pending; });
     expect(await screen.findByText("local-heuristic 분석 결과")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "실시간 분석 결과" })).toBeInTheDocument();
   });
 
-  it("cancels an in-flight request when the input changes", async () => {
+  it("cancels an in-flight request when leaving the public demo", async () => {
     const user = userEvent.setup();
     let signal: AbortSignal | undefined;
-    analyzeContextMock.mockImplementation((_title, _text, options) => {
+    analyzeImportedContextMock.mockImplementation((_input, options) => {
       signal = options?.signal;
-      return new Promise<ContextAnalysisResult>(() => undefined);
+      return new Promise(() => undefined);
     });
     render(<App auth={anonymousAuth()} />);
 
-    await user.click(screen.getByRole("button", { name: "샘플 불러오기" }));
-    await user.click(screen.getByRole("button", { name: "맥락 분석하기" }));
+    await user.click(screen.getByRole("button", { name: "샘플 직접 체험" }));
+    await user.click(screen.getByRole("button", { name: "가져와 바로 분석" }));
     expect(signal?.aborted).toBe(false);
-    await user.type(screen.getByLabelText("프로젝트 이름"), " 수정");
+    await user.click(screen.getByRole("link", { name: "Modu Brain 홈" }));
     expect(signal?.aborted).toBe(true);
     expect(screen.getByText("분석 대기")).toBeInTheDocument();
   });
 
   it("announces a structured API failure and never labels it as success", async () => {
     const user = userEvent.setup();
-    analyzeContextMock.mockRejectedValue(new ContextAnalysisRequestError("회의록을 120자 이상 입력하세요.", 400, "RAW_TEXT_TOO_SHORT"));
+    analyzeImportedContextMock.mockRejectedValue(new ContextAnalysisRequestError("회의록을 120자 이상 입력하세요.", 400, "RAW_TEXT_TOO_SHORT"));
     render(<App auth={anonymousAuth()} />);
 
-    await user.click(screen.getByRole("button", { name: "샘플 불러오기" }));
-    await user.click(screen.getByRole("button", { name: "맥락 분석하기" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("회의록을 120자 이상 입력하세요.");
+    await user.click(screen.getByRole("button", { name: "샘플 직접 체험" }));
+    await user.click(screen.getByRole("button", { name: "가져와 바로 분석" }));
+    expect((await screen.findAllByRole("alert")).some((alert) => alert.textContent?.includes("회의록을 120자 이상 입력하세요."))).toBe(true);
     expect(screen.getByText("분석 오류")).toBeInTheDocument();
     expect(screen.queryByText(/분석 결과$/, { selector: ".demo-badge.success" })).not.toBeInTheDocument();
   });
@@ -168,7 +177,7 @@ describe("public landing prototype", () => {
   it("switches result panels and supports keyboard navigation", async () => {
     const user = userEvent.setup();
     render(<App auth={anonymousAuth()} />);
-    await user.click(screen.getByRole("button", { name: "샘플 불러오기" }));
+    await user.click(screen.getByRole("button", { name: "샘플 직접 체험" }));
 
     const overview = screen.getByRole("tab", { name: "개요" });
     overview.focus();
@@ -186,14 +195,23 @@ describe("public landing prototype", () => {
 
   it("shows honest empty states when the provider finds no structured items", async () => {
     const user = userEvent.setup();
-    analyzeContextMock.mockResolvedValue({
-      ...sampleAnalysis,
-      keyTerms: [], participants: [], decisions: [], questions: [],
-      participantAgents: { ...sampleAnalysis.participantAgents, views: [], agreementPoints: [], tensionPoints: [] },
+    analyzeImportedContextMock.mockResolvedValue({
+      import: {
+        provider: "paste",
+        title: sampleAnalysis.projectTitle,
+        content: sampleInput,
+        participantCount: 0,
+        segmentCount: 1,
+      },
+      result: {
+        ...sampleAnalysis,
+        keyTerms: [], participants: [], decisions: [], questions: [],
+        participantAgents: { ...sampleAnalysis.participantAgents, views: [], agreementPoints: [], tensionPoints: [] },
+      },
     });
     render(<App auth={anonymousAuth()} />);
-    await user.click(screen.getByRole("button", { name: "샘플 불러오기" }));
-    await user.click(screen.getByRole("button", { name: "맥락 분석하기" }));
+    await user.click(screen.getByRole("button", { name: "샘플 직접 체험" }));
+    await user.click(screen.getByRole("button", { name: "가져와 바로 분석" }));
 
     expect(await screen.findByText("입력 기록에서 명시적으로 확인된 결정사항이 없습니다.")).toBeInTheDocument();
     expect(screen.getByText("입력 기록에서 명시적으로 확인된 미해결 질문이 없습니다.")).toBeInTheDocument();
@@ -240,6 +258,20 @@ describe("application routes", () => {
     expect(api.listProjects).toHaveBeenCalledWith(session.accessToken);
   });
 
+  it("clears a cookie-backed session immediately after an authenticated API 401", async () => {
+    window.history.replaceState(null, "", "/projects");
+    const session = signedInSession();
+    const api = emptyApi();
+    vi.mocked(api.listProjects).mockResolvedValue([]);
+    render(<App auth={anonymousAuth({ session })} api={api} />);
+    expect(await screen.findByRole("heading", { name: "내 프로젝트" })).toBeInTheDocument();
+
+    act(() => window.dispatchEvent(new Event("modu-brain:auth-required")));
+
+    expect(window.location.pathname).toBe("/login");
+    expect(screen.getByRole("alert")).toHaveTextContent("로그인 세션이 만료되었습니다");
+  });
+
   it("refreshes the session before expiry and clears it with a login notice on failure", async () => {
     vi.useFakeTimers();
     const now = new Date("2026-07-11T00:00:00Z");
@@ -250,7 +282,6 @@ describe("application routes", () => {
     };
     const refreshed = {
       ...initial,
-      accessToken: "refreshed-access-token",
       expiresAt: now.getTime() + 180_000,
     };
     const refreshSession = vi
@@ -289,7 +320,7 @@ function anonymousAuth(options: {
 }
 
 function signedInSession(): AuthSession {
-  return { accessToken: "access-token", refreshToken: "refresh-token", expiresAt: Date.now() + 3_600_000, user: { id: "u1", email: "team@example.com" } };
+  return { accessToken: COOKIE_SESSION_SENTINEL, expiresAt: Date.now() + 3_600_000, user: { id: "u1", email: "team@example.com" } };
 }
 
 function emptyApi(): PlatformApi {

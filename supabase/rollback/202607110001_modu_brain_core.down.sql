@@ -1,3 +1,4 @@
+-- LOCAL/EMPTY DATABASE ONLY. Production rollback uses restore or forward-fix.
 begin;
 
 drop function if exists public.resolve_shared_analysis(text);

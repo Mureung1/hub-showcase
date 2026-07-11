@@ -1,3 +1,4 @@
+-- LOCAL/EMPTY DATABASE ONLY. Production rollback uses restore or forward-fix.
 begin;
 
 drop index if exists public.context_edges_project_segment_idx;

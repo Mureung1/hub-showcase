@@ -2,14 +2,22 @@ import { analyzeProjectContext } from "./contextAnalysisCore.mjs";
 import { ContextAnalysisApiError } from "./contextAnalysisErrors.mjs";
 import { ApiError } from "./apiErrors.mjs";
 import { normalizeContextImport } from "./contextImport.mjs";
+import { createRequestAbortContext, setApiHeaders } from "./httpJson.mjs";
+import { rateLimitIdentifier } from "./security.mjs";
 
 // rawText is limited by characters in the domain validator. Keep enough byte
 // headroom for 20,000 Korean characters plus the surrounding JSON payload.
 const MAX_REQUEST_BODY_BYTES = 100_000;
 const MAX_IMPORT_REQUEST_BODY_BYTES = 256 * 1024;
+const PUBLIC_ANALYSIS_LIMIT = 30;
 const PUBLIC_IMPORT_LIMIT = 20;
-const PUBLIC_IMPORT_WINDOW_MS = 60 * 60 * 1000;
-const publicImportBuckets = new Map();
+const PUBLIC_WINDOW_SECONDS = 60 * 60;
+const PUBLIC_WINDOW_MS = PUBLIC_WINDOW_SECONDS * 1000;
+const MAX_MEMORY_BUCKETS = 10_000;
+const MAX_CLEANUP_DELETIONS = 128;
+const CLEANUP_INTERVAL_MS = 60_000;
+const publicRateLimitBuckets = new Map();
+let nextMemoryCleanupAt = 0;
 
 export function createContextAnalysisApiMiddleware(options = {}) {
   return async function contextAnalysisApiMiddleware(req, res, next) {
@@ -25,7 +33,7 @@ export function createContextAnalysisApiMiddleware(options = {}) {
 }
 
 export async function handleContextAnalysisRequest(req, res, options = {}) {
-  setJsonHeaders(res);
+  setApiHeaders(res);
   const pathname = (req.url || "").split("?")[0];
   const isImportRequest = pathname === "/api/context-analysis/import";
 
@@ -46,14 +54,9 @@ export async function handleContextAnalysisRequest(req, res, options = {}) {
     return;
   }
 
-  const abortController = new AbortController();
-  const abortRequest = () => abortController.abort();
-  const abortOnClose = () => {
-    if (!res.writableEnded) abortRequest();
-  };
-
-  req.once("aborted", abortRequest);
-  res.once("close", abortOnClose);
+  const abortContext = createRequestAbortContext(req, res, {
+    timeoutMs: options.requestTimeoutMs || process.env.MODU_BRAIN_PUBLIC_REQUEST_TIMEOUT_MS || 45_000,
+  });
 
   try {
     const contentType = String(req.headers?.["content-type"] || "").toLowerCase();
@@ -67,16 +70,12 @@ export async function handleContextAnalysisRequest(req, res, options = {}) {
 
     if (isImportRequest) {
       assertSameOrigin(req);
-      const consumeRateLimit = options.consumeImportRateLimit || consumePublicImportRateLimit;
-      const allowed = await consumeRateLimit(clientIp(req), Date.now());
-      if (!allowed) {
-        throw new ContextAnalysisApiError(
-          429,
-          "PUBLIC_IMPORT_RATE_LIMITED",
-          "공개 가져오기는 시간당 20회까지 사용할 수 있습니다. 잠시 후 다시 시도해 주세요.",
-        );
-      }
     }
+
+    await enforcePublicRateLimit(req, options, {
+      isImportRequest,
+      signal: abortContext.signal,
+    });
 
     const payload = await readJsonBody(
       req,
@@ -89,9 +88,9 @@ export async function handleContextAnalysisRequest(req, res, options = {}) {
       : payload;
     const result = await analyze(analysisPayload, {
       ...(options.analysisOptions || {}),
-      signal: abortController.signal,
+      signal: abortContext.signal,
     });
-    if (abortController.signal.aborted || res.destroyed) return;
+    if (abortContext.signal.aborted || res.destroyed) return;
     writeJson(
       res,
       200,
@@ -109,7 +108,27 @@ export async function handleContextAnalysisRequest(req, res, options = {}) {
         : result,
     );
   } catch (error) {
-    if (abortController.signal.aborted && (req.aborted || res.destroyed)) return;
+    if (abortContext.signal.aborted && (req.aborted || res.destroyed)) return;
+
+    if (abortContext.timedOut) {
+      writeJson(res, 504, {
+        error: {
+          code: "ANALYSIS_DEADLINE_EXCEEDED",
+          message: "The analysis request exceeded its total deadline.",
+        },
+      });
+      return;
+    }
+
+    if (abortContext.signal.aborted) {
+      writeJson(res, 503, {
+        error: {
+          code: "REQUEST_CANCELLED",
+          message: "The server stopped the request before completion.",
+        },
+      });
+      return;
+    }
 
     const apiError = error instanceof ApiError
       ? new ContextAnalysisApiError(
@@ -121,7 +140,7 @@ export async function handleContextAnalysisRequest(req, res, options = {}) {
       : error;
 
     if (apiError instanceof ContextAnalysisApiError) {
-      if (apiError.code === "PUBLIC_IMPORT_RATE_LIMITED") {
+      if (["PUBLIC_IMPORT_RATE_LIMITED", "PUBLIC_ANALYSIS_RATE_LIMITED"].includes(apiError.code)) {
         res.setHeader("Retry-After", "3600");
       }
       writeJson(res, apiError.status, {
@@ -141,20 +160,13 @@ export async function handleContextAnalysisRequest(req, res, options = {}) {
       },
     });
   } finally {
-    req.off("aborted", abortRequest);
-    res.off("close", abortOnClose);
+    abortContext.dispose();
   }
 }
 
-function setJsonHeaders(res) {
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Cache-Control", "no-store");
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Referrer-Policy", "no-referrer");
-}
-
 function writeJson(res, statusCode, payload) {
+  setApiHeaders(res);
+  res.moduBrainErrorCode = payload?.error?.code || null;
   res.statusCode = statusCode;
   res.end(JSON.stringify(payload));
 }
@@ -209,9 +221,15 @@ function assertSameOrigin(req) {
   const origin = String(req.headers?.origin || "").trim();
   if (!origin) return;
 
-  const forwardedHost = String(req.headers?.["x-forwarded-host"] || "").split(",")[0].trim();
+  const trustForwardedHeaders =
+    req.trustedProxyPlatform && req.trustedProxyPlatform !== "direct";
+  const forwardedHost = trustForwardedHeaders
+    ? String(req.headers?.["x-forwarded-host"] || "").split(",")[0].trim()
+    : "";
   const host = forwardedHost || String(req.headers?.host || "").trim();
-  const forwardedProtocol = String(req.headers?.["x-forwarded-proto"] || "").split(",")[0].trim();
+  const forwardedProtocol = trustForwardedHeaders
+    ? String(req.headers?.["x-forwarded-proto"] || "").split(",")[0].trim()
+    : "";
   const protocol = forwardedProtocol || (req.socket?.encrypted ? "https" : "http");
 
   let expectedOrigin;
@@ -233,28 +251,107 @@ function assertSameOrigin(req) {
   }
 }
 
-function clientIp(req) {
-  return String(
-    req.headers?.["cf-connecting-ip"] ||
-      req.headers?.["x-forwarded-for"] ||
-      req.socket?.remoteAddress ||
-      "unknown",
-  )
-    .split(",")[0]
-    .trim();
+async function enforcePublicRateLimit(req, options, context) {
+  const scope = context.isImportRequest ? "public-import:hour" : "public-analysis:hour";
+  const limit = context.isImportRequest ? PUBLIC_IMPORT_LIMIT : PUBLIC_ANALYSIS_LIMIT;
+  const now = Date.now();
+  const subjectHash = rateLimitIdentifier(req, {
+    platform: options.trustedProxyPlatform,
+    secret: options.rateLimitIdentifierSecret,
+    nodeEnv: options.production === true ? "production" : process.env.NODE_ENV,
+    allowDevelopmentFallback: options.allowDevelopmentIdentifierFallback === true,
+  });
+
+  let allowed;
+  if (typeof options.consumePublicRateLimit === "function") {
+    allowed = await options.consumePublicRateLimit({
+      scope,
+      subjectHash,
+      limit,
+      windowSeconds: PUBLIC_WINDOW_SECONDS,
+      now,
+      signal: context.signal,
+    });
+  } else if (context.isImportRequest && typeof options.consumeImportRateLimit === "function") {
+    allowed = await options.consumeImportRateLimit(subjectHash, now);
+  } else if (allowMemoryFallback(options)) {
+    allowed = consumeMemoryRateLimit(`${scope}:${subjectHash}`, limit, now);
+  } else {
+    throw new ContextAnalysisApiError(
+      503,
+      "PUBLIC_RATE_LIMIT_BACKEND_UNAVAILABLE",
+      "The public request limiter is not configured.",
+    );
+  }
+
+  if (!allowed) {
+    throw new ContextAnalysisApiError(
+      429,
+      context.isImportRequest ? "PUBLIC_IMPORT_RATE_LIMITED" : "PUBLIC_ANALYSIS_RATE_LIMITED",
+      "The hourly public request limit has been reached. Try again later.",
+    );
+  }
 }
 
-function consumePublicImportRateLimit(key, now) {
-  for (const [bucketKey, bucket] of publicImportBuckets) {
-    if (bucket.resetAt <= now) publicImportBuckets.delete(bucketKey);
-  }
-
-  const current = publicImportBuckets.get(key);
-  if (!current || current.resetAt <= now) {
-    publicImportBuckets.set(key, { count: 1, resetAt: now + PUBLIC_IMPORT_WINDOW_MS });
+function allowMemoryFallback(options) {
+  if (options.allowInMemoryRateLimit === true) return true;
+  if (String(process.env.MODU_BRAIN_ALLOW_IN_MEMORY_PUBLIC_LIMITER || "").toLowerCase() === "true") {
     return true;
   }
-  if (current.count >= PUBLIC_IMPORT_LIMIT) return false;
+  if (options.production === true) return false;
+  return String(process.env.NODE_ENV || "development").toLowerCase() !== "production";
+}
+
+function consumeMemoryRateLimit(key, limit, now) {
+  cleanupExpiredMemoryBuckets(now);
+  const current = publicRateLimitBuckets.get(key);
+  if (!current || current.resetAt <= now) {
+    if (!current && publicRateLimitBuckets.size >= MAX_MEMORY_BUCKETS) {
+      const oldestKey = publicRateLimitBuckets.keys().next().value;
+      if (oldestKey !== undefined) publicRateLimitBuckets.delete(oldestKey);
+    }
+    publicRateLimitBuckets.set(key, { count: 1, resetAt: now + PUBLIC_WINDOW_MS });
+    return true;
+  }
+  if (current.count >= limit) return false;
   current.count += 1;
   return true;
+}
+
+function cleanupExpiredMemoryBuckets(now, force = false) {
+  if (!force && now < nextMemoryCleanupAt) return 0;
+  nextMemoryCleanupAt = now + CLEANUP_INTERVAL_MS;
+  let deleted = 0;
+  for (const [key, bucket] of publicRateLimitBuckets) {
+    if (bucket.resetAt <= now) {
+      publicRateLimitBuckets.delete(key);
+      deleted += 1;
+      if (deleted >= MAX_CLEANUP_DELETIONS) break;
+    }
+  }
+  return deleted;
+}
+
+export async function runPublicRateLimitMaintenance(options = {}) {
+  const memoryBucketsDeleted = cleanupExpiredMemoryBuckets(Date.now(), true);
+  let persistentBucketsDeleted = 0;
+  if (typeof options.cleanupPublicRateLimits === "function") {
+    persistentBucketsDeleted = Number(
+      await options.cleanupPublicRateLimits({
+        retentionSeconds: 172_800,
+        batchSize: 5_000,
+        signal: options.signal,
+      }),
+    ) || 0;
+  }
+  return { memoryBucketsDeleted, persistentBucketsDeleted };
+}
+
+export function resetPublicRateLimitBucketsForTest() {
+  publicRateLimitBuckets.clear();
+  nextMemoryCleanupAt = 0;
+}
+
+export function publicRateLimitBucketCountForTest() {
+  return publicRateLimitBuckets.size;
 }

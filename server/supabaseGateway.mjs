@@ -1,4 +1,9 @@
 import { ApiError } from "./apiErrors.mjs";
+import { createLocalJWKSet, decodeProtectedHeader, jwtVerify } from "jose";
+
+const DEFAULT_TIMEOUT_MS = 10_000;
+const JWKS_CACHE_MS = 10 * 60 * 1000;
+const TRANSIENT_STATUSES = new Set([502, 503, 504]);
 
 export function createSupabaseGateway(options = {}) {
   const url = String(options.url || process.env.SUPABASE_URL || "").replace(/\/$/, "");
@@ -15,6 +20,8 @@ export function createSupabaseGateway(options = {}) {
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     "";
   const fetchImpl = options.fetch || globalThis.fetch;
+  const circuit = options.circuit || createCircuitState(options.circuitOptions);
+  let jwksCache = null;
 
   function assertConfigured({ serviceRole = false } = {}) {
     const missing = [];
@@ -28,17 +35,20 @@ export function createSupabaseGateway(options = {}) {
     }
   }
 
-  async function authenticate(accessToken) {
+  async function authenticate(accessToken, requestOptions = {}) {
     assertConfigured();
     if (!accessToken) {
       throw new ApiError(401, "AUTH_REQUIRED", "로그인이 필요합니다.");
     }
 
+    const locallyVerified = await verifyAsymmetricJwt(accessToken, requestOptions.signal);
+    if (locallyVerified) return locallyVerified;
+
     let response;
     try {
       response = await fetchImpl(`${url}/auth/v1/user`, {
         headers: { apikey: publishableKey, Authorization: `Bearer ${accessToken}` },
-        signal: AbortSignal.timeout(10_000),
+        signal: combineSignals(requestOptions.signal, DEFAULT_TIMEOUT_MS),
       });
     } catch {
       throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "인증 서비스를 사용할 수 없습니다.");
@@ -56,9 +66,150 @@ export function createSupabaseGateway(options = {}) {
     return { id: user.id, email: user.email || null, accessToken };
   }
 
+  async function refreshSession(refreshToken, requestOptions = {}) {
+    assertConfigured();
+    if (!refreshToken) {
+      throw new ApiError(401, "AUTH_REQUIRED", "A refresh session is required.");
+    }
+
+    let response;
+    try {
+      response = await fetchImpl(`${url}/auth/v1/token?grant_type=refresh_token`, {
+        method: "POST",
+        headers: {
+          apikey: publishableKey,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+        signal: combineSignals(requestOptions.signal, DEFAULT_TIMEOUT_MS),
+      });
+    } catch {
+      throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "The authentication service is unavailable.");
+    }
+
+    if (response.status === 400 || response.status === 401 || response.status === 403) {
+      throw new ApiError(401, "INVALID_REFRESH_TOKEN", "The login session can no longer be refreshed.");
+    }
+    if (!response.ok) {
+      throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "The authentication service is unavailable.");
+    }
+    const payload = await response.json().catch(() => null);
+    const expiresIn = Number(payload?.expires_in);
+    if (
+      !payload?.access_token ||
+      !payload?.refresh_token ||
+      !Number.isInteger(expiresIn) ||
+      expiresIn < 1 ||
+      expiresIn > 86_400
+    ) {
+      throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "The authentication service returned an invalid session.");
+    }
+    return {
+      accessToken: payload.access_token,
+      refreshToken: payload.refresh_token,
+      expiresIn,
+    };
+  }
+
+  async function logout(accessToken, requestOptions = {}) {
+    assertConfigured();
+    if (!accessToken) return { loggedOut: false };
+    let response;
+    try {
+      response = await fetchImpl(`${url}/auth/v1/logout?scope=local`, {
+        method: "POST",
+        headers: {
+          apikey: publishableKey,
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
+        },
+        signal: combineSignals(requestOptions.signal, DEFAULT_TIMEOUT_MS),
+      });
+    } catch {
+      throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "The authentication service is unavailable.");
+    }
+    if (response.status === 401 || response.status === 403) {
+      return { loggedOut: true, alreadyExpired: true };
+    }
+    if (!response.ok) {
+      throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "The authentication service is unavailable.");
+    }
+    return { loggedOut: true, alreadyExpired: false };
+  }
+
+  async function verifyAsymmetricJwt(accessToken, signal) {
+    let header;
+    try {
+      header = decodeProtectedHeader(accessToken);
+    } catch {
+      return null;
+    }
+    if (!header.kid || !["ES256", "RS256"].includes(String(header.alg))) return null;
+
+    try {
+      const now = Date.now();
+      if (!jwksCache || jwksCache.expiresAt <= now) {
+        jwksCache = await fetchJwks(signal);
+      }
+      let verified;
+      try {
+        verified = await verifyWith(jwksCache.keys);
+      } catch (error) {
+        if (String(error?.code || "") !== "ERR_JWKS_NO_MATCHING_KEY") throw error;
+        jwksCache = await fetchJwks(signal);
+        verified = await verifyWith(jwksCache.keys);
+      }
+      const claims = verified.payload;
+      if (!claims.sub || claims.role !== "authenticated") {
+        throw new Error("JWT claims are not an authenticated Supabase session.");
+      }
+      return {
+        id: claims.sub,
+        email: typeof claims.email === "string" ? claims.email : null,
+        accessToken,
+      };
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      if (error?.name === "TimeoutError" || error?.name === "AbortError") {
+        throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "인증 서비스를 사용할 수 없습니다.");
+      }
+      throw new ApiError(401, "INVALID_ACCESS_TOKEN", "로그인 세션이 유효하지 않습니다.");
+    }
+
+    async function verifyWith(keys) {
+      return jwtVerify(accessToken, createLocalJWKSet(keys), {
+        algorithms: ["ES256", "RS256"],
+        issuer: `${url}/auth/v1`,
+        audience: "authenticated",
+        clockTolerance: 5,
+      });
+    }
+  }
+
+  async function fetchJwks(signal) {
+    let response;
+    try {
+      response = await fetchImpl(`${url}/auth/v1/.well-known/jwks.json`, {
+        headers: { apikey: publishableKey, Accept: "application/json" },
+        signal: combineSignals(signal, DEFAULT_TIMEOUT_MS),
+      });
+    } catch {
+      throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "인증 서비스를 사용할 수 없습니다.");
+    }
+    if (!response.ok) {
+      throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "인증 서비스를 사용할 수 없습니다.");
+    }
+    const keys = await response.json().catch(() => null);
+    if (!Array.isArray(keys?.keys)) {
+      throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "인증 서비스를 사용할 수 없습니다.");
+    }
+    return { keys, expiresAt: Date.now() + JWKS_CACHE_MS };
+  }
+
   function forUser(accessToken) {
     assertConfigured();
-    return createPostgrestClient({ url, apiKey: publishableKey, accessToken, fetchImpl });
+    return createPostgrestClient({ url, apiKey: publishableKey, accessToken, fetchImpl, circuit });
   }
 
   function asServiceRole() {
@@ -68,13 +219,52 @@ export function createSupabaseGateway(options = {}) {
       apiKey: secretKey,
       accessToken: looksLikeJwt(secretKey) ? secretKey : undefined,
       fetchImpl,
+      circuit,
     });
   }
 
-  return { authenticate, forUser, asServiceRole, assertConfigured };
+  async function deleteAuthUser(userId, requestOptions = {}) {
+    assertConfigured({ serviceRole: true });
+    const headers = { apikey: secretKey, Accept: "application/json" };
+    if (looksLikeJwt(secretKey)) headers.Authorization = `Bearer ${secretKey}`;
+    let response;
+    try {
+      response = await fetchImpl(`${url}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+        method: "DELETE",
+        headers,
+        signal: combineSignals(requestOptions.signal, DEFAULT_TIMEOUT_MS),
+      });
+    } catch {
+      throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "인증 서비스를 사용할 수 없습니다.");
+    }
+    if (response.status === 404) return { deleted: true, alreadyMissing: true };
+    if (!response.ok) {
+      throw new ApiError(503, "ACCOUNT_DELETE_UNAVAILABLE", "계정을 삭제할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+    }
+    return { deleted: true, alreadyMissing: false };
+  }
+
+  return {
+    authenticate,
+    refreshSession,
+    logout,
+    forUser,
+    asServiceRole,
+    deleteAuthUser,
+    assertConfigured,
+    purgeJwksCache() {
+      jwksCache = null;
+    },
+  };
 }
 
-export function createPostgrestClient({ url, apiKey, accessToken, fetchImpl = globalThis.fetch }) {
+export function createPostgrestClient({
+  url,
+  apiKey,
+  accessToken,
+  fetchImpl = globalThis.fetch,
+  circuit = createCircuitState(),
+}) {
   return {
     async request(path, options = {}) {
       const headers = {
@@ -86,16 +276,36 @@ export function createPostgrestClient({ url, apiKey, accessToken, fetchImpl = gl
       if (options.body !== undefined) headers["Content-Type"] = "application/json";
       if (options.prefer) headers.Prefer = options.prefer;
 
+      const method = String(options.method || "GET").toUpperCase();
+      const attempts = ["GET", "HEAD"].includes(method) ? 2 : 1;
       let response;
-      try {
-        response = await fetchImpl(`${url}/rest/v1/${path}`, {
-          method: options.method || "GET",
-          headers,
-          body: options.body === undefined ? undefined : JSON.stringify(options.body),
-          signal: options.signal || AbortSignal.timeout(10_000),
+
+      if (circuit.isOpen()) {
+        throw new ApiError(503, "DATABASE_UNAVAILABLE", "데이터베이스를 사용할 수 없습니다.", undefined, {
+          "Retry-After": String(circuit.retryAfterSeconds()),
         });
-      } catch {
-        throw new ApiError(503, "DATABASE_UNAVAILABLE", "데이터베이스를 사용할 수 없습니다.");
+      }
+
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        try {
+          response = await fetchImpl(`${url}/rest/v1/${path}`, {
+            method,
+            headers,
+            body: options.body === undefined ? undefined : JSON.stringify(options.body),
+            signal: combineSignals(options.signal, options.timeoutMs || DEFAULT_TIMEOUT_MS),
+          });
+          if (!TRANSIENT_STATUSES.has(response.status) || attempt === attempts - 1) break;
+        } catch {
+          if (options.signal?.aborted || attempt === attempts - 1) break;
+        }
+        await retryPause(options.signal, options.retryDelayMs ?? 25);
+      }
+
+      if (!response) {
+        circuit.recordFailure();
+        throw new ApiError(503, "DATABASE_UNAVAILABLE", "데이터베이스를 사용할 수 없습니다.", undefined, {
+          ...(circuit.isOpen() ? { "Retry-After": String(circuit.retryAfterSeconds()) } : {}),
+        });
       }
 
       const text = await response.text();
@@ -108,10 +318,64 @@ export function createPostgrestClient({ url, apiKey, accessToken, fetchImpl = gl
         }
       }
 
-      if (!response.ok) throw mapPostgrestError(response.status, payload);
+      if (!response.ok) {
+        if (TRANSIENT_STATUSES.has(response.status)) circuit.recordFailure();
+        else circuit.recordSuccess();
+        throw mapPostgrestError(response.status, payload);
+      }
+      circuit.recordSuccess();
       return payload;
     },
   };
+}
+
+export function createCircuitState(options = {}) {
+  const threshold = Math.max(1, Number(options.threshold || 5));
+  const cooldownMs = Math.max(100, Number(options.cooldownMs || 10_000));
+  const now = options.now || Date.now;
+  let failures = 0;
+  let openUntil = 0;
+  return {
+    isOpen() {
+      return openUntil > now();
+    },
+    retryAfterSeconds() {
+      return Math.max(1, Math.ceil((openUntil - now()) / 1000));
+    },
+    recordFailure() {
+      failures += 1;
+      if (failures >= threshold) openUntil = now() + cooldownMs;
+    },
+    recordSuccess() {
+      failures = 0;
+      openUntil = 0;
+    },
+  };
+}
+
+function combineSignals(signal, timeoutMs) {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  return signal && typeof AbortSignal.any === "function"
+    ? AbortSignal.any([signal, timeout])
+    : signal || timeout;
+}
+
+function retryPause(signal, delayMs) {
+  if (delayMs <= 0) return Promise.resolve();
+  return new Promise((resolvePromise) => {
+    const onAbort = () => {
+      clearTimeout(timer);
+      finish();
+    };
+    const finish = () => {
+      signal?.removeEventListener("abort", onAbort);
+      resolvePromise();
+    };
+    const timer = setTimeout(finish, delayMs);
+    if (signal) {
+      signal.addEventListener("abort", onAbort, { once: true });
+    }
+  });
 }
 
 function looksLikeJwt(value) {
@@ -158,6 +422,9 @@ function mapPostgrestError(status, payload) {
   }
   if (message.includes("ANALYSIS_INPUT_TOO_LARGE")) {
     return new ApiError(413, "ANALYSIS_INPUT_TOO_LARGE", "분석 입력은 총 100,000자 이하여야 합니다.");
+  }
+  if (message.includes("STORAGE_QUOTA_EXCEEDED") || message.includes("CONTEXT_GRAPH_QUOTA_EXCEEDED")) {
+    return new ApiError(409, "STORAGE_QUOTA_EXCEEDED", "무료 데모 저장 한도에 도달했습니다. 보관 데이터를 삭제한 뒤 다시 시도해 주세요.");
   }
   if (message.includes("IMPORTED_SOURCE_IMMUTABLE")) {
     return new ApiError(

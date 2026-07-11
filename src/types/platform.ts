@@ -22,6 +22,25 @@ export type AnalysisAnnotationTargetType =
 
 export type CapabilitiesResource = {
   openaiEnabled: boolean;
+  accountExportEnabled?: boolean;
+  accountDeletionEnabled?: boolean;
+};
+
+export type CursorPageOptions = {
+  cursor?: string | null;
+  limit?: number;
+};
+
+export type CursorPageMetadata = {
+  limit: number;
+  count: number;
+  hasMore: boolean;
+  nextCursor: string | null;
+};
+
+export type CursorPage<T> = {
+  items: T[];
+  page: CursorPageMetadata;
 };
 
 export type ProjectResource = {
@@ -36,18 +55,30 @@ export type ProjectResource = {
   analysisCount?: number;
 };
 
-export type SourceRecordResource = {
+type SourceRecordBaseResource = {
   id: string;
   projectId: string;
   kind: SourceKind;
   title: string;
-  content: string;
   contentSha256?: string;
   charCount: number;
   occurredAt: string | null;
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type SourceRecordListResource = SourceRecordBaseResource & {
+  import?: {
+    id: string;
+    provider: ExternalContextProvider;
+    segmentCount: number;
+    importedAt: string;
+  };
+};
+
+export type SourceRecordResource = SourceRecordBaseResource & {
+  content: string;
   import?: {
     id: string;
     provider: ExternalContextProvider;
@@ -156,6 +187,12 @@ export type SharedAnalysisResource = {
   result: PublicContextAnalysisResult;
   completedAt: string;
   expiresAt: string;
+};
+
+export type AccountExportResource = {
+  schemaVersion: "1.0";
+  generatedAt: string;
+  data: unknown;
 };
 
 export type CreateProjectInput = {

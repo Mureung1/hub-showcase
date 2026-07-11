@@ -32,6 +32,8 @@ describe("Cloudflare Request to Node HTTP adapter", () => {
     expect(adapters.request.headers["x-forwarded-proto"]).toBe("https");
     expect(adapters.request.socket.encrypted).toBe(true);
     expect(adapters.request.socket.remoteAddress).toBe("203.0.113.9");
+    expect(adapters.request.trustedProxyPlatform).toBe("cloudflare");
+    expect(adapters.request.moduBrainSignal).toBeInstanceOf(AbortSignal);
     expect(JSON.parse(Buffer.concat(chunks).toString("utf8"))).toEqual({
       title: "Worker project",
     });
@@ -77,12 +79,33 @@ describe("Cloudflare Request to Node HTTP adapter", () => {
     adapters.response.statusCode = 201;
     adapters.response.setHeader("Content-Type", "application/json");
     adapters.response.setHeader("Retry-After", 60);
+    adapters.response.moduBrainErrorCode = "TEST_ERROR";
     adapters.response.end(JSON.stringify({ data: { status: "ok" } }));
 
     const response = adapters.response.toResponse();
     expect(response.status).toBe(201);
     expect(response.headers.get("retry-after")).toBe("60");
+    expect(adapters.response.moduBrainErrorCode).toBe("TEST_ERROR");
     expect(await response.json()).toEqual({ data: { status: "ok" } });
+  });
+
+  it("preserves multiple Set-Cookie headers for the Sites worker response", async () => {
+    const adapters = await createNodeHttpAdapters(
+      new Request("https://modu-brain.example/api/v1/auth/session", { method: "POST" }),
+    );
+    adapters.response.setHeader("Set-Cookie", [
+      "__Host-modu_brain_access=access; Path=/; HttpOnly; SameSite=Strict; Secure",
+      "__Host-modu_brain_refresh=refresh; Path=/; HttpOnly; SameSite=Strict; Secure",
+      "__Host-modu_brain_expires=1; Path=/; HttpOnly; SameSite=Strict; Secure",
+    ]);
+    adapters.response.end(JSON.stringify({ data: { authenticated: true } }));
+
+    const response = adapters.response.toResponse();
+    expect(response.headers.getSetCookie()).toEqual([
+      "__Host-modu_brain_access=access; Path=/; HttpOnly; SameSite=Strict; Secure",
+      "__Host-modu_brain_refresh=refresh; Path=/; HttpOnly; SameSite=Strict; Secure",
+      "__Host-modu_brain_expires=1; Path=/; HttpOnly; SameSite=Strict; Secure",
+    ]);
   });
 
   it("propagates request aborts to both adapters", async () => {

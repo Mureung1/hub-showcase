@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import AnalysisPlaceholder from "../components/AnalysisPlaceholder";
 import ContextImportPanel, { type ContextImportInput } from "../components/ContextImportPanel";
-import ContextInput from "../components/ContextInput";
 import DecisionList from "../components/DecisionList";
 import KeyTerms from "../components/KeyTerms";
 import KnowledgeMap from "../components/KnowledgeMap";
@@ -14,7 +13,6 @@ import { sampleAnalysis, sampleInput } from "../data/sampleAnalysis";
 import type { Navigate } from "../hooks/useRoute";
 import {
   ContextAnalysisRequestError,
-  analyzeContext,
   analyzeImportedContext,
 } from "../services/analyzeContext";
 import { trackProductEvent } from "../services/productTelemetry";
@@ -28,26 +26,35 @@ type AnalysisState =
   | { status: "sample" | "success"; result: ContextAnalysisResult };
 
 function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; initialDemo?: boolean }) {
-  const [projectTitle, setProjectTitle] = useState(
-    initialDemo ? sampleAnalysis.projectTitle : "Modu Brain MVP",
+  const [composerInput, setComposerInput] = useState<ContextImportInput | undefined>(
+    initialDemo
+      ? { provider: "paste", title: sampleAnalysis.projectTitle, text: sampleInput }
+      : undefined,
   );
-  const [inputText, setInputText] = useState(initialDemo ? sampleInput : "");
+  const [composerRevision, setComposerRevision] = useState(0);
   const [analysisState, setAnalysisState] = useState<AnalysisState>(
     initialDemo ? { status: "sample", result: sampleAnalysis } : { status: "idle" },
   );
   const [activeTab, setActiveTab] = useState<ResultTab>("overview");
   const requestVersion = useRef(0);
   const activeAbortController = useRef<AbortController | null>(null);
-  const demoRouteApplied = useRef(initialDemo);
+  const previousDemoRoute = useRef(initialDemo);
 
   useEffect(() => () => activeAbortController.current?.abort(), []);
 
   useEffect(() => {
-    if (!initialDemo || demoRouteApplied.current) return;
-    demoRouteApplied.current = true;
-    setProjectTitle(sampleAnalysis.projectTitle);
-    setInputText(sampleInput);
-    setAnalysisState({ status: "sample", result: sampleAnalysis });
+    if (previousDemoRoute.current === initialDemo) return;
+    previousDemoRoute.current = initialDemo;
+    activeAbortController.current?.abort();
+    activeAbortController.current = null;
+    requestVersion.current += 1;
+    setComposerInput(initialDemo
+      ? { provider: "paste", title: sampleAnalysis.projectTitle, text: sampleInput }
+      : undefined);
+    setComposerRevision((revision) => revision + 1);
+    setAnalysisState(initialDemo
+      ? { status: "sample", result: sampleAnalysis }
+      : { status: "idle" });
     setActiveTab("overview");
   }, [initialDemo]);
 
@@ -64,7 +71,6 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
     analysisState.status === "sample" || analysisState.status === "success"
       ? analysisState.result
       : null;
-  const isAnalyzing = analysisState.status === "loading";
   const error = analysisState.status === "error" ? analysisState.message : null;
 
   const clearForEdit = () => {
@@ -77,8 +83,12 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
 
   const loadSample = (entryPoint: "hero" | "input" = "input") => {
     clearForEdit();
-    setProjectTitle(sampleAnalysis.projectTitle);
-    setInputText(sampleInput);
+    setComposerInput({
+      provider: "paste",
+      title: sampleAnalysis.projectTitle,
+      text: sampleInput,
+    });
+    setComposerRevision((revision) => revision + 1);
     setAnalysisState({ status: "sample", result: sampleAnalysis });
     trackProductEvent("sample_loaded", { entryPoint });
   };
@@ -103,36 +113,6 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
     window.requestAnimationFrame(() => document.getElementById("public-context-text")?.focus());
   };
 
-  const runAnalysis = async () => {
-    activeAbortController.current?.abort();
-    const controller = new AbortController();
-    activeAbortController.current = controller;
-    const version = ++requestVersion.current;
-    setAnalysisState({ status: "loading" });
-    setActiveTab("overview");
-    trackProductEvent("analysis_started", {
-      mode: "public-local",
-      inputCharacters: inputText.length,
-    });
-    try {
-      const result = await analyzeContext(projectTitle, inputText, { signal: controller.signal });
-      if (requestVersion.current === version) {
-        setAnalysisState({ status: "success", result });
-        trackProductEvent("analysis_succeeded", { provider: result.provider.name });
-      }
-    } catch (requestError) {
-      if (controller.signal.aborted || requestVersion.current !== version) return;
-      setAnalysisState({ status: "error", message: getErrorMessage(requestError) });
-      trackProductEvent("analysis_failed", {
-        code: requestError instanceof ContextAnalysisRequestError
-          ? requestError.code
-          : "UNEXPECTED_ERROR",
-      });
-    } finally {
-      if (activeAbortController.current === controller) activeAbortController.current = null;
-    }
-  };
-
   const importAndAnalyze = async (input: ContextImportInput) => {
     activeAbortController.current?.abort();
     const controller = new AbortController();
@@ -148,8 +128,6 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
     try {
       const imported = await analyzeImportedContext(input, { signal: controller.signal });
       if (requestVersion.current !== version) return;
-      setProjectTitle(imported.import.title);
-      setInputText(imported.import.content);
       setAnalysisState({ status: "success", result: imported.result });
       trackProductEvent("analysis_succeeded", { provider: imported.result.provider.name });
     } catch (requestError) {
@@ -276,27 +254,16 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
       </section>
 
       <div className="public-import-workspace">
-        <ContextImportPanel mode="ephemeral" onImport={importAndAnalyze} />
+        <ContextImportPanel
+          key={`public-context-composer-${composerRevision}`}
+          mode="ephemeral"
+          initialInput={composerInput}
+          textareaId="public-context-text"
+          onImport={importAndAnalyze}
+        />
       </div>
 
-      <div className="prototype-grid">
-        <ContextInput
-          projectTitle={projectTitle}
-          inputText={inputText}
-          isAnalyzing={isAnalyzing}
-          analysisError={error}
-          analysisNotice={
-            analysisState.status === "sample"
-              ? "직접 불러온 샘플입니다. 분석 버튼을 누르면 비영속 API 결과로 교체됩니다."
-              : analysisState.status === "success"
-                ? "비영속 분석 API 응답으로 결과가 갱신되었습니다."
-                : "기록을 입력해 분석하거나 샘플을 불러오세요."
-          }
-          onProjectTitleChange={(value) => { setProjectTitle(value); clearForEdit(); }}
-          onInputTextChange={(value) => { setInputText(value); clearForEdit(); }}
-          onLoadSample={loadSample}
-          onAnalyze={runAnalysis}
-        />
+      <div className="public-analysis-summary">
         {analysisResult ? <ContextPriorityPreview result={analysisResult} /> : (
           <AnalysisPlaceholder
             status={analysisState.status === "loading" || analysisState.status === "error" ? analysisState.status : "idle"}

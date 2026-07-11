@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PlatformApiError, platformApi } from "./platformApi";
+import { AUTH_REQUIRED_EVENT, PlatformApiError, platformApi } from "./platformApi";
+import { COOKIE_SESSION_SENTINEL } from "./auth";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -30,6 +31,38 @@ describe("platformApi", () => {
       method: "GET",
       headers: expect.objectContaining({ Authorization: "Bearer access-token" }),
     }));
+  });
+
+  it("uses same-origin cookies for the BFF sentinel without an Authorization header", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(response({ data: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await platformApi.listProjects(COOKIE_SESSION_SENTINEL);
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init).toMatchObject({ method: "GET", credentials: "same-origin" });
+    expect(init?.headers).not.toHaveProperty("Authorization");
+  });
+
+  it("lists the archive and restores projects and sources through explicit routes", async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response({ data: [] }))
+      .mockResolvedValueOnce(response({ data: { id: "p1", archivedAt: null } }))
+      .mockResolvedValueOnce(response({ data: { id: "s1", archivedAt: null } }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await platformApi.listProjects(COOKIE_SESSION_SENTINEL, { archived: true });
+    if (!platformApi.restoreProject || !platformApi.restoreSource) {
+      throw new Error("restore APIs unavailable");
+    }
+    await platformApi.restoreProject(COOKIE_SESSION_SENTINEL, "p1");
+    await platformApi.restoreSource(COOKIE_SESSION_SENTINEL, "s1");
+
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/projects?archived=true");
+    expect(fetchMock.mock.calls[1]).toEqual([
+      "/api/v1/projects/p1/restore",
+      expect.objectContaining({ method: "POST", credentials: "same-origin" }),
+    ]);
+    expect(fetchMock.mock.calls[2][0]).toBe("/api/v1/sources/s1/restore");
   });
 
   it("sends analysis mode, selected sources, abort signal, and idempotency key", async () => {
@@ -82,7 +115,7 @@ describe("platformApi", () => {
       segments,
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/v1/sources/source-1/segments",
+      "/api/v1/sources/source-1/segments?limit=50",
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: "Bearer access-token" }),
       }),
@@ -135,8 +168,58 @@ describe("platformApi", () => {
   });
 
   it("preserves structured errors", async () => {
-    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(response({ error: { code: "RATE_LIMITED", message: "잠시 후 다시 시도하세요.", details: { retryAfter: 60 } } }, 429)));
-    await expect(platformApi.listProjects("token")).rejects.toEqual(expect.objectContaining<Partial<PlatformApiError>>({ status: 429, code: "RATE_LIMITED", details: { retryAfter: 60 } }));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(response({ error: { code: "RATE_LIMITED", message: "잠시 후 다시 시도하세요.", details: { retryAfter: 60 } } }, 429, { "Retry-After": "90" })));
+    await expect(platformApi.listProjects("token")).rejects.toEqual(expect.objectContaining<Partial<PlatformApiError>>({ status: 429, code: "RATE_LIMITED", details: { retryAfter: 60 }, retryAfterSeconds: 90 }));
+  });
+
+  it("notifies the app when a cookie-backed API session expires", async () => {
+    const listener = vi.fn();
+    window.addEventListener(AUTH_REQUIRED_EVENT, listener);
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(response({
+      error: { code: "AUTH_REQUIRED", message: "로그인이 필요합니다." },
+    }, 401)));
+
+    await expect(platformApi.listProjects(COOKIE_SESSION_SENTINEL)).rejects.toMatchObject({
+      status: 401,
+      code: "AUTH_REQUIRED",
+    });
+    expect(listener).toHaveBeenCalledTimes(1);
+    window.removeEventListener(AUTH_REQUIRED_EVENT, listener);
+  });
+
+  it("reads cursor metadata, follows pages for legacy list calls, and lazy-loads source detail", async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response({
+        data: [{ id: "s1", title: "요약 1" }],
+        page: { limit: 50, count: 1, hasMore: true, nextCursor: "cursor-2" },
+      }))
+      .mockResolvedValueOnce(response({
+        data: [{ id: "s2", title: "요약 2" }],
+        page: { limit: 50, count: 1, hasMore: false, nextCursor: null },
+      }))
+      .mockResolvedValueOnce(response({ data: { id: "s1", title: "요약 1", content: "원문" } }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(platformApi.listSources("token", "p1")).resolves.toHaveLength(2);
+    if (!platformApi.getSource) throw new Error("getSource unavailable");
+    await expect(platformApi.getSource("token", "s1")).resolves.toMatchObject({ content: "원문" });
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/projects/p1/sources?limit=50");
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/v1/projects/p1/sources?limit=50&cursor=cursor-2");
+    expect(fetchMock.mock.calls[2][0]).toBe("/api/v1/sources/s1");
+  });
+
+  it("sends the explicit account-delete confirmation contract", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(response({ data: { deleted: true } }));
+    vi.stubGlobal("fetch", fetchMock);
+    if (!platformApi.deleteAccount) throw new Error("deleteAccount unavailable");
+    await platformApi.deleteAccount("token", "delete my account");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/account",
+      expect.objectContaining({
+        method: "DELETE",
+        headers: expect.objectContaining({ "X-Confirm-Account-Delete": "delete my account" }),
+      }),
+    );
   });
 
   it("requires the explicit permanent-delete confirmation header", async () => {
@@ -163,11 +246,12 @@ describe("platformApi", () => {
     vi.stubGlobal("fetch", fetchMock);
     await platformApi.resolveSharedAnalysis("plain-token");
     const [, init] = fetchMock.mock.calls[0];
+    expect(init?.credentials).toBe("same-origin");
     expect(init?.headers).not.toHaveProperty("Authorization");
     expect(JSON.parse(String(init?.body))).toEqual({ token: "plain-token" });
   });
 });
 
-function response(payload: unknown, status = 200) {
-  return { ok: status >= 200 && status < 300, status, json: vi.fn().mockResolvedValue(payload) } as unknown as Response;
+function response(payload: unknown, status = 200, headers: Record<string, string> = {}) {
+  return { ok: status >= 200 && status < 300, status, headers: new Headers(headers), json: vi.fn().mockResolvedValue(payload) } as unknown as Response;
 }

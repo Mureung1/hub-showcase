@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import AccountSafetyPanel from "../components/AccountSafetyPanel";
 import type { Navigate } from "../hooks/useRoute";
 import type { PlatformApi } from "../services/platformApi";
 import type { CreateSourceInput, ProjectResource, SourceKind } from "../types/platform";
@@ -33,10 +34,17 @@ type ProjectsPageProps = {
   api: PlatformApi;
   token: string;
   navigate: Navigate;
+  onAccountDeleted?: () => Promise<void> | void;
 };
 
-function ProjectsPage({ api, token, navigate }: ProjectsPageProps) {
+function ProjectsPage({ api, token, navigate, onAccountDeleted }: ProjectsPageProps) {
   const [projects, setProjects] = useState<ProjectResource[]>([]);
+  const [archivedProjects, setArchivedProjects] = useState<ProjectResource[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
+  const [restoringProjectId, setRestoringProjectId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(true);
@@ -62,6 +70,45 @@ function ProjectsPage({ api, token, navigate }: ProjectsPageProps) {
     const timer = window.setTimeout(() => void loadProjects(), 0);
     return () => window.clearTimeout(timer);
   }, [loadProjects]);
+
+  const loadArchivedProjects = useCallback(async () => {
+    setArchiveLoading(true);
+    setArchiveError(null);
+    try {
+      setArchivedProjects(await api.listProjects(token, { archived: true }));
+    } catch (loadError) {
+      setArchiveError(messageFrom(loadError));
+    } finally {
+      setArchiveLoading(false);
+    }
+  }, [api, token]);
+
+  const toggleArchive = async () => {
+    if (showArchived) {
+      setShowArchived(false);
+      return;
+    }
+    setShowArchived(true);
+    setArchiveStatus(null);
+    await loadArchivedProjects();
+  };
+
+  const restoreProject = async (project: ProjectResource) => {
+    if (!api.restoreProject || restoringProjectId) return;
+    setRestoringProjectId(project.id);
+    setArchiveError(null);
+    setArchiveStatus(null);
+    try {
+      const restored = await api.restoreProject(token, project.id);
+      setArchivedProjects((current) => current.filter((item) => item.id !== project.id));
+      setProjects((current) => [restored, ...current.filter((item) => item.id !== restored.id)]);
+      setArchiveStatus(`${restored.title} 프로젝트를 복원했습니다.`);
+    } catch (restoreError) {
+      setArchiveError(messageFrom(restoreError));
+    } finally {
+      setRestoringProjectId(null);
+    }
+  };
 
   const createProject = async (event: FormEvent) => {
     event.preventDefault();
@@ -180,7 +227,60 @@ function ProjectsPage({ api, token, navigate }: ProjectsPageProps) {
       </header>
 
       {error && <div className="notice error" role="alert">{error}<button type="button" onClick={() => void loadProjects()}>다시 시도</button></div>}
-      {!loading && projects.length > 0 && projectListSection}
+      {projectListSection}
+
+      <section className="archive-section" aria-labelledby="archive-section-title">
+        <div className="section-row">
+          <div>
+            <p className="section-kicker">Archive</p>
+            <h2 id="archive-section-title">보관한 프로젝트</h2>
+          </div>
+          <button
+            className="button secondary"
+            type="button"
+            aria-expanded={showArchived}
+            aria-controls="archived-project-list"
+            onClick={() => void toggleArchive()}
+          >
+            {showArchived ? "보관함 닫기" : "보관함 보기"}
+          </button>
+        </div>
+        {showArchived && (
+          <div id="archived-project-list" className="archive-content">
+            {archiveLoading ? (
+              <div className="loading-card" role="status">보관함을 불러오는 중…</div>
+            ) : archiveError ? (
+              <div className="notice error" role="alert">
+                {archiveError}
+                <button type="button" onClick={() => void loadArchivedProjects()}>다시 시도</button>
+              </div>
+            ) : archivedProjects.length === 0 ? (
+              <div className="empty-card"><strong>보관한 프로젝트가 없습니다.</strong><p>프로젝트를 보관하면 여기에서 복원할 수 있습니다.</p></div>
+            ) : (
+              <div className="archived-project-list">
+                {archivedProjects.map((project) => (
+                  <article className="archived-project-card" key={project.id}>
+                    <div>
+                      <span>{project.archivedAt ? `${formatDate(project.archivedAt)} 보관` : "보관됨"}</span>
+                      <h3>{project.title}</h3>
+                      <p>{project.description || "설명이 아직 없습니다."}</p>
+                    </div>
+                    <button
+                      className="button secondary"
+                      type="button"
+                      disabled={!api.restoreProject || restoringProjectId !== null}
+                      onClick={() => void restoreProject(project)}
+                    >
+                      {restoringProjectId === project.id ? "복원하는 중…" : "프로젝트 복원"}
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
+            {archiveStatus && <p className="notice success" role="status">{archiveStatus}</p>}
+          </div>
+        )}
+      </section>
 
       <section className="demo-copy-card" aria-labelledby="demo-copy-title">
         <div>
@@ -255,7 +355,11 @@ function ProjectsPage({ api, token, navigate }: ProjectsPageProps) {
         </form>
       </section>
 
-      {(loading || projects.length === 0) && projectListSection}
+      <AccountSafetyPanel
+        api={api}
+        token={token}
+        onAccountDeleted={onAccountDeleted ?? (() => navigate("/"))}
+      />
     </main>
   );
 }

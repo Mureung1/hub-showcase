@@ -32,6 +32,9 @@ export type ThoughtGraphResult = Omit<ContextAnalysisResult, "provider">;
 export type ThoughtPosition = { x: number; y: number };
 
 export const BRAIN_VIEWBOX = { width: 960, height: 600 } as const;
+export const MAX_THOUGHT_NODES = 100;
+export const MAX_THOUGHT_EDGES = 180;
+export const MOBILE_THOUGHT_SUMMARY_LIMIT = 21;
 
 const kindForMapNode: Record<NodeType, ThoughtKind> = {
   topic: "topic",
@@ -41,31 +44,16 @@ const kindForMapNode: Record<NodeType, ThoughtKind> = {
   question: "question",
 };
 
-const clusteredSlots: Record<Exclude<ThoughtKind, "topic">, ThoughtPosition[]> = {
-  perspective: [
-    { x: 142, y: 128 },
-    { x: 314, y: 116 },
-    { x: 148, y: 258 },
-    { x: 326, y: 252 },
-  ],
-  term: [
-    { x: 146, y: 392 },
-    { x: 320, y: 382 },
-    { x: 166, y: 512 },
-    { x: 334, y: 500 },
-  ],
-  decision: [
-    { x: 640, y: 116 },
-    { x: 816, y: 132 },
-    { x: 632, y: 250 },
-    { x: 814, y: 258 },
-  ],
-  question: [
-    { x: 636, y: 382 },
-    { x: 814, y: 394 },
-    { x: 648, y: 502 },
-    { x: 816, y: 510 },
-  ],
+const clusterBounds: Record<Exclude<ThoughtKind, "topic">, {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}> = {
+  perspective: { left: 72, right: 374, top: 132, bottom: 528 },
+  decision: { left: 586, right: 888, top: 132, bottom: 528 },
+  term: { left: 226, right: 734, top: 52, bottom: 206 },
+  question: { left: 226, right: 734, top: 394, bottom: 548 },
 };
 
 export function buildThoughtGraph(
@@ -150,7 +138,7 @@ export function buildThoughtGraph(
     addEdge(edges, root.id, node.id, defaultRelation(node.kind));
   }
 
-  return { nodes: uniqueNodes(nodes), edges };
+  return capThoughtGraph({ nodes, edges });
 }
 
 export function layoutThoughtNodes(nodes: ThoughtNode[], clustered = true) {
@@ -173,13 +161,31 @@ export function layoutThoughtNodes(nodes: ThoughtNode[], clustered = true) {
   }
 
   for (const kind of ["perspective", "term", "decision", "question"] as const) {
-    nodes
-      .filter((node) => node.kind === kind)
-      .forEach((node, index) => {
-        const slots = clusteredSlots[kind];
-        positions.set(node.id, slots[index % slots.length]);
+    const kindNodes = nodes.filter((node) => node.kind === kind);
+    const bounds = clusterBounds[kind];
+    const width = bounds.right - bounds.left;
+    const height = bounds.bottom - bounds.top;
+    const columns = Math.max(1, Math.ceil(Math.sqrt(kindNodes.length * (width / height))));
+    const rows = Math.max(1, Math.ceil(kindNodes.length / columns));
+
+    kindNodes.forEach((node, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      positions.set(node.id, {
+        x: bounds.left + ((column + 0.5) * width) / columns,
+        y: bounds.top + ((row + 0.5) * height) / rows,
       });
+    });
   }
+
+  const unpositioned = nodes.filter((node) => !positions.has(node.id));
+  unpositioned.forEach((node, index) => {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * index) / Math.max(unpositioned.length, 1);
+    positions.set(node.id, {
+      x: BRAIN_VIEWBOX.width / 2 + Math.cos(angle) * 92,
+      y: BRAIN_VIEWBOX.height / 2 + Math.sin(angle) * 82,
+    });
+  });
   return positions;
 }
 
@@ -198,6 +204,33 @@ function buildFromKnowledgeMap(map: ContextAnalysisResult["knowledgeMap"]): Thou
     const to = idMap.get(link.to);
     if (from && to && from !== to) addEdge(edges, from, to, link.relation || "연결");
   });
+  return capThoughtGraph({ nodes, edges });
+}
+
+export function capThoughtGraph(graph: ThoughtGraph): ThoughtGraph {
+  const unique = uniqueNodes(graph.nodes);
+  const root = unique.find((node) => node.kind === "topic");
+  const remaining = unique.filter((node) => node.id !== root?.id);
+  const buckets = (["perspective", "term", "decision", "question", "topic"] as const)
+    .map((kind) => remaining.filter((node) => node.kind === kind));
+  const prioritizedNodes = root ? [root] : [];
+
+  while (prioritizedNodes.length < MAX_THOUGHT_NODES && buckets.some((bucket) => bucket.length > 0)) {
+    for (const bucket of buckets) {
+      const next = bucket.shift();
+      if (next) prioritizedNodes.push(next);
+      if (prioritizedNodes.length === MAX_THOUGHT_NODES) break;
+    }
+  }
+  const nodes = prioritizedNodes.slice(0, MAX_THOUGHT_NODES);
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  const edgeIds = new Set<string>();
+  const edges = graph.edges.filter((edge) => {
+    if (!nodeIds.has(edge.from) || !nodeIds.has(edge.to) || edge.from === edge.to) return false;
+    if (edgeIds.has(edge.id)) return false;
+    edgeIds.add(edge.id);
+    return true;
+  }).slice(0, MAX_THOUGHT_EDGES);
   return { nodes, edges };
 }
 

@@ -11,7 +11,11 @@ import {
   type AuthService,
   type AuthSession,
 } from "./services/auth";
-import { platformApi as defaultPlatformApi, type PlatformApi } from "./services/platformApi";
+import {
+  AUTH_REQUIRED_EVENT,
+  platformApi as defaultPlatformApi,
+  type PlatformApi,
+} from "./services/platformApi";
 
 const SESSION_REFRESH_LEAD_MS = 60_000;
 
@@ -78,6 +82,16 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
   }, [auth, navigate, pathname, session]);
 
   useEffect(() => {
+    const handleAuthRequired = () => {
+      setSession(null);
+      setAuthError("로그인 세션이 만료되었습니다. 새 로그인 링크를 요청해 주세요.");
+      if (window.location.pathname.startsWith("/projects")) navigate("/login");
+    };
+    window.addEventListener(AUTH_REQUIRED_EVENT, handleAuthRequired);
+    return () => window.removeEventListener(AUTH_REQUIRED_EVENT, handleAuthRequired);
+  }, [navigate]);
+
+  useEffect(() => {
     if (!hasRenderedRoute.current) {
       hasRenderedRoute.current = true;
       return;
@@ -110,7 +124,7 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
   } else if (pathname === "/share") {
     page = <SharePage api={api} />;
   } else if (pathname === "/projects") {
-    page = authReady ? (session ? <ProjectsPage api={api} token={session.accessToken} navigate={navigate} /> : <LoginRequired onLogin={() => navigate("/login")} onGuestContinue={() => navigate("/demo")} />) : <AuthLoader />;
+    page = authReady ? (session ? <ProjectsPage api={api} token={session.accessToken} navigate={navigate} onAccountDeleted={() => { setSession(null); navigate("/"); }} /> : <LoginRequired onLogin={() => navigate("/login")} onGuestContinue={() => navigate("/demo")} />) : <AuthLoader />;
   } else {
     const projectMatch = pathname.match(/^\/projects\/([^/]+)$/);
     page = projectMatch

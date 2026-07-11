@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { createServer } from "node:http";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { handleContextAnalysisRequest } from "./contextAnalysisApi.mjs";
 
 const validRawText = `민지는 입력 흐름을 단순하게 만들자고 제안했다. 서준은 결정 배경과 질문을 함께 보여줘야 한다고 말했다.
@@ -41,6 +41,9 @@ describe("context analysis HTTP API", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(response.headers.get("x-frame-options")).toBe("DENY");
+    expect(response.headers.get("strict-transport-security")).toContain("max-age=31536000");
+    expect(response.headers.get("content-security-policy")).toContain("default-src 'none'");
+    expect(response.headers.get("cross-origin-resource-policy")).toBe("same-origin");
     expect(body).toMatchObject({
       projectTitle: "API 검증",
       provider: { mode: "mock", name: "local-heuristic", usedExternalModel: false },
@@ -93,6 +96,18 @@ describe("context analysis HTTP API", () => {
       body: JSON.stringify({ provider: "paste", text: validRawText }),
     });
     await expectError(crossOrigin, 403, "INVALID_ORIGIN");
+
+    const spoofedProxyOrigin = await fetch(`${baseUrl}/api/context-analysis/import`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "https://untrusted.example",
+        "X-Forwarded-Host": "untrusted.example",
+        "X-Forwarded-Proto": "https",
+      },
+      body: JSON.stringify({ provider: "paste", text: validRawText }),
+    });
+    await expectError(spoofedProxyOrigin, 403, "INVALID_ORIGIN");
   });
 
   it("returns Retry-After when the public import budget is exhausted", async () => {
@@ -118,6 +133,97 @@ describe("context analysis HTTP API", () => {
         limitedServer.close((error) => (error ? reject(error) : resolve()));
       });
     }
+  });
+
+  it("uses one persistent limiter contract for anonymous analysis and imports", async () => {
+    const consumePublicRateLimit = vi.fn().mockResolvedValue(true);
+    await withContextServer(
+      {
+        production: true,
+        rateLimitIdentifierSecret: "test-secret",
+        consumePublicRateLimit,
+        analysisOptions: { provider: "local-heuristic" },
+      },
+      async (url) => {
+        const analysis = await fetch(`${url}/api/context-analysis`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectTitle: "Limiter test", rawText: validRawText }),
+        });
+        const imported = await fetch(`${url}/api/context-analysis/import`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider: "paste", text: validRawText }),
+        });
+        expect(analysis.status).toBe(200);
+        expect(imported.status).toBe(200);
+      },
+    );
+
+    expect(consumePublicRateLimit).toHaveBeenCalledTimes(2);
+    expect(consumePublicRateLimit.mock.calls.map(([call]) => call.scope)).toEqual([
+      "public-analysis:hour",
+      "public-import:hour",
+    ]);
+    for (const [call] of consumePublicRateLimit.mock.calls) {
+      expect(call.subjectHash).toMatch(/^[a-f0-9]{64}$/);
+      expect(call.subjectHash).not.toContain("127.0.0.1");
+      expect(call.windowSeconds).toBe(3600);
+      expect(call.signal).toBeInstanceOf(AbortSignal);
+    }
+  });
+
+  it("fails closed in production when the persistent limiter is unavailable", async () => {
+    await withContextServer(
+      { production: true, rateLimitIdentifierSecret: "test-secret" },
+      async (url) => {
+        const response = await fetch(`${url}/api/context-analysis`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectTitle: "Limiter test", rawText: validRawText }),
+        });
+        await expectError(response, 503, "PUBLIC_RATE_LIMIT_BACKEND_UNAVAILABLE");
+      },
+    );
+  });
+
+  it("rate limits ordinary anonymous analysis with Retry-After", async () => {
+    await withContextServer(
+      {
+        production: true,
+        rateLimitIdentifierSecret: "test-secret",
+        consumePublicRateLimit: () => false,
+      },
+      async (url) => {
+        const response = await fetch(`${url}/api/context-analysis`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectTitle: "Limiter test", rawText: validRawText }),
+        });
+        expect(response.headers.get("retry-after")).toBe("3600");
+        await expectError(response, 429, "PUBLIC_ANALYSIS_RATE_LIMITED");
+      },
+    );
+  });
+
+  it("cancels analysis at the total public request deadline", async () => {
+    await withContextServer(
+      {
+        requestTimeoutMs: 15,
+        analyze: async (_payload, { signal }) =>
+          new Promise((_resolve, reject) => {
+            signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+          }),
+      },
+      async (url) => {
+        const response = await fetch(`${url}/api/context-analysis`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectTitle: "Deadline test", rawText: validRawText }),
+        });
+        await expectError(response, 504, "ANALYSIS_DEADLINE_EXCEEDED");
+      },
+    );
   });
 
   it("rejects malformed JSON with a stable 400 payload", async () => {
@@ -256,4 +362,19 @@ function requestImport(body) {
 async function expectError(response, status, code) {
   expect(response.status).toBe(status);
   await expect(response.json()).resolves.toMatchObject({ error: { code } });
+}
+
+async function withContextServer(options, callback) {
+  const temporaryServer = createServer((request, response) => {
+    void handleContextAnalysisRequest(request, response, options);
+  });
+  await new Promise((resolve) => temporaryServer.listen(0, "127.0.0.1", resolve));
+  const address = temporaryServer.address();
+  try {
+    await callback(`http://127.0.0.1:${address.port}`);
+  } finally {
+    await new Promise((resolve, reject) => {
+      temporaryServer.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
 }

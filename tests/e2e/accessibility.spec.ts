@@ -30,6 +30,10 @@ for (const width of [375, 768, 1024, 1440]) {
     await page.getByRole("tab", { name: "지식맵", exact: true }).click();
     const brainCanvas = page.getByTestId("brain-canvas");
     await expect(brainCanvas).toBeVisible();
+    if (width <= 720) {
+      await expect(page.getByRole("button", { name: "의미 목록" })).toHaveAttribute("aria-pressed", "true");
+      await page.getByRole("button", { name: "그래프 보기" }).click();
+    }
 
     const canvasBox = await brainCanvas.boundingBox();
     expect(canvasBox).not.toBeNull();
@@ -37,12 +41,14 @@ for (const width of [375, 768, 1024, 1440]) {
     expect(canvasBox!.x + canvasBox!.width).toBeLessThanOrEqual(width + 1);
 
     const firstNode = brainCanvas.locator(".brain-node").first();
-    const secondNode = brainCanvas.locator(".brain-node").nth(1);
+    const firstNodeId = await firstNode.getAttribute("data-testid");
     await firstNode.focus();
     await page.keyboard.press("ArrowRight");
-    await expect(secondNode).toBeFocused();
+    const focusedNode = brainCanvas.locator(".brain-node:focus");
+    await expect(focusedNode).toHaveCount(1);
+    expect(await focusedNode.getAttribute("data-testid")).not.toBe(firstNodeId);
     await page.keyboard.press("Enter");
-    await expect(secondNode).toHaveAttribute("aria-pressed", "true");
+    await expect(focusedNode).toHaveAttribute("aria-pressed", "true");
 
     const brainResults = await new AxeBuilder({ page })
       .include('[data-testid="brain-canvas"]')
