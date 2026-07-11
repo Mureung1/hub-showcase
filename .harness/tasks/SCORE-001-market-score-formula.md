@@ -107,4 +107,5 @@ verify:
 - [x] 점수와 confidence를 분리했는가?
 - [x] 집적효과 가점에 복수 근거 gate가 있는가?
 - [x] 실제·추정·fixture source를 구분했는가?
-- [ ] 후속: 실제 DB peer distribution과 Front 설명 UI를 연결한다.
+- [x] 실제 DB peer distribution과 Front 설명 UI를 연결했다.
+- [ ] 후속: 반경별 peer distribution과 추가 지표 coverage를 연결한다.

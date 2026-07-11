@@ -7,6 +7,11 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from localtwin_api.config import get_settings
+from localtwin_api.market_analysis import (
+    Category,
+    MarketAnalysisResponse,
+    analyze_market,
+)
 from localtwin_api.market_score import (
     MarketScoreRequest,
     MarketScoreResponse,
@@ -49,6 +54,25 @@ def create_app() -> FastAPI:
     )
     async def score_market(request: MarketScoreRequest) -> MarketScoreResponse:
         return evaluate_market_score(request)
+
+    @app.get(
+        "/api/v1/markets/{market_id}",
+        response_model=MarketAnalysisResponse,
+        tags=["analysis"],
+    )
+    async def market_analysis(
+        market_id: str, category: Category, period: str = "20251"
+    ) -> MarketAnalysisResponse:
+        try:
+            return analyze_market(market_id, category, period)
+        except FileNotFoundError:
+            raise HTTPException(
+                status_code=503, detail="Canonical market database is not prepared."
+            ) from None
+        except LookupError:
+            raise HTTPException(
+                status_code=404, detail="Market analysis is not available for this input."
+            ) from None
 
     @app.get("/api/v1/scenes/toolchain", response_model=ToolchainStatus, tags=["scenes"])
     async def scene_toolchain() -> ToolchainStatus:
