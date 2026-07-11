@@ -92,13 +92,13 @@ Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API�
 
 | ID           | 세부 Task                                     | Priority | Status  | Week | Depends on                | Acceptance                                            |
 | ------------ | --------------------------------------------- | -------- | ------- | ---- | ------------------------- | ----------------------------------------------------- |
-| ANALYSIS-001 | 핵심 metric의 계산식·단위·기간 확정           | P0       | Ready   | 2    | DATA-003                  | 경쟁·변화·시간대·점수 정의에 source metadata가 붙는다 |
+| ANALYSIS-001 | 핵심 metric의 계산식·단위·기간 확정           | P0       | Done    | 2    | DATA-003                  | 경쟁·변화·시간대·점수 정의에 source metadata가 붙는다 |
 | ANALYSIS-002 | 반경별 점포와 동일 업종 경쟁 계산             | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 100m/300m/500m fixture 결과가 test와 일치한다         |
 | ANALYSIS-003 | 개업·폐업·영업기간 변화 계산                  | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 기간별 집계와 표본 부족 상태를 구분한다               |
 | ANALYSIS-004 | 생활인구·매출 시간대 특성 계산                | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 시간대 값과 실제/추정/관찰 source type을 반환한다     |
 | ANALYSIS-005 | 설명 가능한 입지 점수와 템플릿 리포트         | P0       | Done    | 2    | ANALYSIS-002~004          | SCORE-001에서 총점, 신뢰도, 근거와 제한 API를 구현했다 |
-| API-001      | SQLite repository와 seed/import 연결          | P0       | Backlog | 2    | DATA-004                  | canonical data를 저장하고 반복 조회한다               |
-| API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | Backlog | 2    | API-001, ANALYSIS-002~005 | 상권·업종·반경 입력에 versioned JSON을 반환한다       |
+| API-001      | SQLite repository와 seed/import 연결          | P0       | Done    | 2    | DATA-004                  | canonical data를 저장하고 반복 조회한다               |
+| API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | In Progress | 2 | API-001, ANALYSIS-002~005 | 상권·업종은 연결, 반경별 query가 남았다               |
 | API-003      | validation·empty·provider error contract 구현 | P0       | Backlog | 2    | API-002                   | 오류 상태와 근거 부족 상태가 HTTP/test로 구분된다     |
 
 ### EPIC-04. 지도 중심 분석 Workspace
@@ -108,13 +108,13 @@ Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작�
 | ID      | 세부 Task                                 | Priority | Status  | Week | Depends on            | Acceptance                                                 |
 | ------- | ----------------------------------------- | -------- | ------- | ---- | --------------------- | ---------------------------------------------------------- |
 | APP-001 | 제품 웹과 문서 public route 분리          | P0       | Done    | 3    | -                     | `/`는 제품, `/docs`는 문서, `/prototype`은 legacy redirect |
-| WEB-001 | 현재 지도 프로토타입을 API adapter에 연결 | P0       | Backlog | 3    | API-002               | 화면 내 고정 수치 대신 API 응답이 표시된다                 |
+| WEB-001 | 현재 지도 프로토타입을 API adapter에 연결 | P0       | Done    | 3    | API-002               | API 우선·canonical snapshot fallback으로 실제 집계를 표시한다 |
 | WEB-002 | 상권·업종·반경 Filter 동기화              | P0       | Backlog | 3    | WEB-001               | 선택 변경이 URL/요청/지도/패널에 일관되게 반영된다         |
 | WEB-003 | 실제 점포 marker와 경쟁·수요 Layer 구현   | P0       | Backlog | 3    | WEB-001               | source와 기간이 있는 점포/지표가 지도에 표시된다           |
 | WEB-004 | 상권 비교와 입지 리포트 구현              | P0       | Backlog | 3    | WEB-002, ANALYSIS-005 | 최소 2개 상권을 같은 기준으로 비교한다                     |
 | WEB-005 | loading·empty·error·stale state 구현      | P0       | Backlog | 3    | WEB-001               | 실패 시 빈 흰 화면 없이 다음 행동을 안내한다               |
 | WEB-006 | keyboard·mobile·contrast 접근성 검증      | P1       | Backlog | 3    | WEB-002~005           | 핵심 조작이 keyboard와 mobile viewport에서 가능하다        |
-| WEB-007 | 근거 보기와 데이터 기준 시각화            | P0       | Backlog | 3    | WEB-003               | source, period, unit, method를 화면에서 확인한다           |
+| WEB-007 | 근거 보기와 데이터 기준 시각화            | P0       | Done    | 3    | WEB-003               | source, period, unit, method를 화면에서 확인한다           |
 | MAP-001 | 연남·홍대·합정 상권 비교군 고정           | P0       | Done    | 3    | -                     | selector와 비교표에 가까운 3개 상권만 표시된다             |
 | MAP-002 | LocalTwin 2.5D 지도와 원본 fallback       | P0       | Done    | 3    | MAP-001               | 실제 footprint 기반 전용 지도와 원본 지도를 전환한다       |
 | MAP-003 | 상권별 LocalTwin 지도 data와 style 자체 구성 | P0       | Done    | 3    | MAP-002               | 외부 basemap 없이 로컬 도로·건물·POI GeoJSON을 렌더링한다  |
@@ -198,3 +198,4 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 | ---------- | ------------------------------ | ------------------------------------------------------------------------- |
 | 2026-07-10 | 4주 Epic/Task 백로그 최초 작성 | 체크리스트와 실행 계획에 흩어진 다음 작업을 하나의 원본으로 통합하기 위해 |
 | 2026-07-11 | SCENE-002~004 구현·검증 경계 반영 | upload/viewer 코드 완료와 실제 GPU 학습 미완료를 구분하기 위해 |
+| 2026-07-11 | API-002와 WEB-001/007 실데이터 연결 반영 | 상권 경계 분석 완료와 반경 query 미완료를 구분하기 위해 |

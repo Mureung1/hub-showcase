@@ -278,6 +278,40 @@ LLM 출력에도 사용한 데이터의 기간, 출처와 추정 여부를 함�
 성격: 통신데이터 기반 추정 생활인구
 ```
 
+### 현재 API와 화면 연결
+
+2026-07-11 기준 다음 흐름이 실제 구현됐다.
+
+```mermaid
+flowchart LR
+    DB[("canonical SQLite\n2025.1Q")]
+    API["GET /api/v1/markets/{id}"]
+    Score["score 1.0.0\npeer percentile"]
+    Snapshot["12개 검증 snapshot"]
+    Web["React 분석 Workspace"]
+
+    DB --> API --> Score --> Web
+    DB --> Snapshot --> Web
+```
+
+```text
+지원 상권: 연트럴파크(연남동주민센터), 홍대입구역(홍대), 합정역
+지원 업종: 카페, 음식점, 베이커리, 편의점
+실제 지표: 점포 수, 개폐업, 추정매출, 길단위인구 6개 시간대
+화면: API 우선, API가 없는 정적 배포에서는 같은 DB 생성 snapshot 사용
+```
+
+현재 score는 사용 가능한 5개 지표만 사용하므로 coverage와 confidence가 낮을 수 있다. 이 경우 화면에 `신뢰도 낮음`을 그대로 표시한다.
+
+중요한 공간 단위:
+
+```text
+우측 분석 지표: 서울시 상권 경계
+지도 100m/300m/500m: 현재 탐색·표시 범위
+```
+
+반경 selector가 아직 서울시 상권 집계를 원형 반경으로 다시 계산하지는 않는다. 개별 점포 목록은 OSM POI이며 점포별 성공 점수 대신 `POI`로 구분한다.
+
 ## 11. 구현 우선순위
 
 ### 필수 지표
@@ -336,3 +370,9 @@ LLM 출력에도 사용한 데이터의 기간, 출처와 추정 여부를 함�
 - [Gaussian Splatting 현장 상세보기](./3d-congestion-explorer.md)
 - [데이터 소스 매핑](../data/data-source-mapping.md)
 - [LocalTwin 디자인 시스템](../design/design-system.md)
+
+## 15. 변경 기록
+
+| 날짜 | 변경 | 이유 |
+| --- | --- | --- |
+| 2026-07-11 | canonical market API와 deploy snapshot 구현 상태 추가 | 실제 지표와 아직 구현하지 않은 반경 분석을 구분하기 위해 |

@@ -22,17 +22,19 @@ flowchart LR
   subgraph front["Front"]
     web["React + Vite + TypeScript"]
     map["MapLibre LocalTwin 지도"]
-    demo["화면 내 Demo Snapshot"]
+    fallback["Canonical deploy snapshot"]
   end
 
   subgraph back["Back"]
-    api["FastAPI\nscore · scene job API"]
+    api["FastAPI\nmarket · score · scene API"]
+    marketRepo["Canonical market repository"]
     collector["서울 Open API 수집기"]
     sceneWorker["Nerfstudio worker\nprocess · train · export"]
   end
 
   subgraph data["Data"]
     raw["data/raw\nJSON + manifest"]
+    db[("canonical SQLite")]
     osm["OpenStreetMap / Overpass"]
     mapdata["상권별 LocalTwin GeoJSON"]
     seoul["서울 열린데이터광장"]
@@ -41,12 +43,14 @@ flowchart LR
 
   user --> web
   web --> map
-  web --> demo
+  db --> fallback --> web
   osm --> mapdata --> map
-  web -. "아직 미연결" .-> api
   collector --> seoul
   collector --> raw
   web -->|"upload · poll"| api
+  web -->|"market query"| api
+  raw --> db
+  api --> marketRepo --> db
   api --> sceneWorker
   sceneWorker --> sceneJobs
   sceneJobs -->|"Spark viewer"| web
@@ -56,8 +60,8 @@ flowchart LR
 
 | 영역  | 구현 상태                                                             | 제한                                            |
 | ----- | --------------------------------------------------------------------- | ----------------------------------------------- |
-| Front | 자체 GeoJSON 지도와 실제 지도를 전환하고 상권·업종·반경·Layer를 조작하는 React 웹 | 분석 수치는 화면용 snapshot과 규칙 기반 demo 값 |
-| Back  | FastAPI `/health`와 근거 기반 상권 점수 endpoint                       | 실제 DB 조회 endpoint와 Front API 연결 미구현    |
+| Front | 자체 지도, API adapter와 canonical fallback으로 상권·업종·Layer를 조작하는 React 웹 | 반경은 아직 지도 탐색 범위이며 공간 재집계 전 |
+| Back  | FastAPI market/score/scene API와 canonical SQLite repository            | 반경별 공간 query와 주기적 운영 배포 미구현   |
 | Data  | 서울·공공데이터 수집기, canonical SQLite와 OSM 지도 생성기               | 주기적 자동 갱신과 좌표 변환 미구현              |
 | 3D    | 촬영물 upload, file-backed job, Nerfstudio 명령 pipeline과 Spark viewer | MX450 2GB에서는 학습 불가, 실제 PLY 시각 검증 전 |
 
@@ -152,10 +156,10 @@ flowchart LR
 
 | 계층     | 현재 사용                                       | 4주 안에 추가                               | 4주 이후 후보                                   |
 | -------- | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------- |
-| Front    | React, Vite, TypeScript, MapLibre, react-map-gl | 실제 API adapter, loading/error/empty state | 대규모 Layer가 필요할 때 deck.gl 검토           |
-| Back     | FastAPI, Pydantic Settings, Uvicorn             | `/api/v1` 분석 endpoint와 service 분리      | 부하가 확인된 뒤 worker/cache 검토              |
-| Data     | JSON raw snapshot, manifest, canonical SQLite   | 실제 API query repository                   | 다지역 공간 질의가 필요할 때 PostgreSQL/PostGIS |
-| Analysis | 공식 1.0.0 규칙 기반 score API                  | 실제 DB peer 분포와 Front evidence 연결      | 충분한 데이터 이후 예측 모델 검토               |
+| Front    | React, Vite, TypeScript, MapLibre, API/snapshot adapter | 반경 query와 source-aware empty state | 대규모 Layer가 필요할 때 deck.gl 검토           |
+| Back     | FastAPI market/score/scene endpoint, Uvicorn    | 반경 공간 query와 service 배포            | 부하가 확인된 뒤 worker/cache 검토              |
+| Data     | raw manifest, canonical SQLite, deploy snapshot | 좌표 통일과 품질 report                    | 다지역 공간 질의가 필요할 때 PostgreSQL/PostGIS |
+| Analysis | score 1.0.0과 실제 DB peer percentile          | 추가 지표로 confidence coverage 개선       | 충분한 데이터 이후 예측 모델 검토               |
 | 3D       | upload/job API, Nerfstudio pipeline, Spark/Three.js viewer | CUDA worker에서 실제 scene 1개 학습·익명화 검증 | 혼잡도 mesh overlay와 pipeline 고도화           |
 | Quality  | pytest, Vitest, TypeScript, lint, 문서 검사     | 평가 script와 시연 smoke test               | 필요 시 E2E 자동화                              |
 
@@ -198,3 +202,4 @@ Local demo runtime
 | ---------- | -------------------------------------------- | ---------------------------------------------------------- |
 | 2026-07-10 | 현재 구조와 4주 목표 구조를 분리해 최초 작성 | 구현된 기능과 계획을 같은 구조도로 오해하지 않게 하기 위해 |
 | 2026-07-11 | scene job API, Nerfstudio worker와 Spark viewer 반영 | 구현 코드와 실제 GPU 제약을 구조에 함께 표시하기 위해 |
+| 2026-07-11 | canonical market API와 Front fallback 반영 | 로컬 API와 정적 배포의 실제 데이터 경로를 구분하기 위해 |
