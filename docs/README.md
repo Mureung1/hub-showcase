@@ -106,13 +106,10 @@ Root companion docs:
 | Agent triage marker rules | [agents/triage-labels.md](agents/triage-labels.md) | 활성 |
 | Agent domain docs layout | [agents/domain.md](agents/domain.md) | 활성 |
 
-## 작성 규칙
+## 문서 유형별 책임
 
-- 문장 구조와 일반 설명어는 한국어로 작성한다. 프로젝트에서 이미 정한 도메인 용어와 프로토콜 메서드·타입, 패키지명, 파일 경로, 코드 식별자 같은 고유 식별자는 원문 표기를 유지한다.
-- 비교 항목, 선택지, 장단점, 위험, 열린 질문, 정보 모델은 가능한 한 표로 정리한다.
-- 빠르게 훑어볼 목록은 글머리표로 정리한다.
+문서를 작성하거나 변경할 때 적용하는 공통 언어·형식, 루트 README 인덱스와 로컬 산출물 운영 규칙은 [AGENTS.md의 Documentation Style](../AGENTS.md#documentation-style)을 따른다. 이 문서는 문서 배치, 상태 분류와 문서 유형별 책임을 정의한다.
+
 - 제품 문서는 사용자 문제, 흐름, 범위에 집중한다.
 - 아키텍처 문서는 오래 유지될 기술 경계에 집중한다.
 - 스파이크 문서는 질문, 성공 기준, 관찰 결과, 후속 결정에 집중한다.
-- Matt Pocock PRD와 이슈 브리프는 사용자가 GitHub 게시를 명시적으로 요청하지 않는 한 `docs/prds/`와 `docs/issues/`에 로컬 문서로 둔다.
-- `docs/` 아래 공식 프로젝트 문서를 추가하거나 옮기면 같은 변경에서 루트 README 링크 표도 갱신한다.

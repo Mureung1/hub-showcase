@@ -2,14 +2,13 @@
 
 Matt Pocock PRDs and implementation issue briefs for this repo live in local Markdown by default. GitHub Issues are used only when the user explicitly requests GitHub publication and confirms the target repository/surface. Pull requests are also a limited request and triage surface.
 
-This repo is PR-based, but implementation work should use the layered branch model in `AGENTS.md`, not `main` or the fork personal integration branch as a working branch. The default working branch is the current daily branch, named by camp week/day as `codex/w<week>d<day>`, such as `codex/w1d4`.
+This repo is PR-based, but normal work happens on a `codex/...` branch rather than `main` or either `N180_하성욱` branch. The default name is the current camp day, `codex/w<week>d<day>`, such as `codex/w1d4`. An explicitly chosen `codex/<work>` name is still just a working branch; it does not introduce another required merge level.
 
-| Branch level | Example | Role |
-| --- | --- | --- |
-| Daily work branch | `codex/w1d4` | Default branch for the camp day's implementation, docs, spikes, and internal merges. |
-| Individual work branch | `codex/runtime-ownership-spike-poc` | Optional branch for one feature, spike, fix, or document change before merging back to the current daily branch. |
-| Fork personal integration branch | `N180_하성욱` | The participant's fork-owned integration branch; this is the head branch for upstream camp submission. |
-| Upstream target branch | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | The final upstream branch that receives submitted work. |
+| Role | GitHub repository and branch | Local Git ref | Purpose |
+| --- | --- | --- | --- |
+| Working branch | `swh3467/hub`의 `codex/w1d4` 또는 `codex/<work>` | `codex/...`, 게시 후 `fork/codex/...` | 구현, 문서, spike 작업 |
+| Fork integration | `swh3467/hub`의 `N180_하성욱` | `fork/N180_하성욱` | 완료한 working branch를 모으는 개인 통합 브랜치 |
+| Upstream target | `connect-AIAgentChallenge-26-1/hub`의 `N180_하성욱` | `origin/N180_하성욱` | 캠프 제출을 받는 최종 브랜치 |
 
 For PRs, `base` is the destination branch that receives changes, and `head` is the source branch that contains the changes.
 
@@ -23,23 +22,22 @@ PRs as a request surface: yes, limited to external PRs or PRs explicitly named f
 
 Collaborator in-flight PRs for this participant are review artifacts, not triage input. For those PRs, connect the work to the source PRD, issue, agent brief, spike report, or handoff document rather than forcing the camp submission template into the PR body.
 
-Internal work PRs should follow the branch flow in `AGENTS.md`:
+PR 흐름은 두 단계뿐이다. `/camp-pr`가 두 단계를 모두 소유한다.
 
-| Purpose | Base | Head |
-| --- | --- | --- |
-| Work-scoped review | `swh3467:<daily-branch>` | `swh3467:codex/<work>` |
-| Fork daily integration PR | `swh3467:N180_하성욱` | `swh3467:<daily-branch>` |
-| Upstream camp submission PR | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | `swh3467:N180_하성욱` |
+| Purpose | PR repository | Base | Head |
+| --- | --- | --- | --- |
+| Working branch integration | `swh3467/hub` | `N180_하성욱` | 현재 `codex/...` working branch |
+| Upstream camp submission | `connect-AIAgentChallenge-26-1/hub` | `N180_하성욱` | `swh3467:N180_하성욱` |
 
-Daily branches use the camp week/day identity (`codex/w<week>d<day>`). Camp labels use the matching upstream week/day mission names, for example `[1-3] 기획완성`, `[1-3] 프로토타이핑`, or `[1-4] design-system`.
+Daily branch names keep the camp week/day identity. Camp labels are upstream submission metadata and do not create another branch level or need to be copied to fork-local integration PRs.
 
-Use `fork/N180_하성욱` as the source of truth for the fork personal integration branch. Do not compare daily work or report upstream submission readiness from a stale local `N180_하성욱` branch.
+Use `fork/N180_하성욱` as the source of truth for the fork integration branch and `origin/N180_하성욱` as the fetched upstream target. Do not calculate readiness from a stale local `N180_하성욱` checkout.
 
 When triaging PRs, read the PR body, comments, and diff. Use `gh pr view <number> --comments` and `gh pr diff <number>`.
 
 The workflow `.github/workflows/auto-merge.yml` is template-provided but active in the repo. It attempts scheduled PR merges, skips PRs targeting `main`, skips PRs with the GitHub `review` label, defers changes-requested PRs, and closes conflicting PRs. Treat the GitHub `review` label as an auto-merge control, not as an agent triage state.
 
-The PR template in `.github/pull_request_template.md` is the upstream camp submission template only. Create the fork daily integration PR from the daily branch to `swh3467:N180_하성욱` only through `/camp-pr`; that skill writes and creates or updates the fork-local PR directly with a local/Matt-style work brief, not the camp reflection template. The fork daily integration PR is not the camp submission surface and should be merged automatically into `swh3467:N180_하성욱` unless blocked by conflicts, branch protection, missing permissions, or another hard blocker. Section-by-section interview is reserved for the upstream camp submission PR. `/camp-pr` reports whether the daily work is ready for upstream submission, but it must not create, update, or merge the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` unless the user explicitly asks to submit to camp or continue to the upstream camp submission PR. Matt Pocock skill templates are the PRD, issue, agent brief, and two-axis review artifact shapes described by the skills; they are not GitHub PR templates.
+The PR template in `.github/pull_request_template.md` is only for the upstream camp submission PR. `/camp-pr` writes and merges the fork-local integration PR with a concise work brief, then reports upstream readiness. It creates or updates the upstream submission PR only when the user explicitly asks to submit to camp, and merges that PR only on a separate explicit merge request. Matt Pocock skill templates remain PRD, issue, agent brief, and review artifact shapes rather than GitHub PR templates.
 
 ## Local Matt artifacts
 
