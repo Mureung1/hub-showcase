@@ -5,7 +5,7 @@ services:
     plan: free
     region: singapore
     branch: N031_김서준
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health/ready
     autoDeployTrigger: checksPass

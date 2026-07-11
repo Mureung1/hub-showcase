@@ -2,7 +2,7 @@
 
 ## 1. 목적과 범위
 
-이 문서는 Modu Brain 공개 데모의 구현 계약을 정의한다. 브라우저, 같은 출처의 Node API, Supabase Auth/PostgreSQL/RLS, 선택형 OpenAI Responses API 사이의 경계를 고정한다.
+이 문서는 Modu Brain 공개 데모의 구현 계약을 정의한다. 브라우저, 같은 출처의 Worker/Node API, Supabase Auth/PostgreSQL/RLS, 선택형 OpenAI Responses API 사이의 경계를 고정한다.
 
 이번 범위는 개인 소유 프로젝트, 원문 기록, 불변 분석 이력, 최근 두 성공 결과 비교, 근거 확인, 읽기 전용 공유까지다. 팀 초대·역할, 공동 편집, 파일 파싱, 외부 협업 도구 연동, 결제, 백그라운드 작업 큐는 제외한다.
 
@@ -10,26 +10,26 @@
 
 ```mermaid
 flowchart LR
-    U["브라우저"] -->|"SPA + /api/v1"| N["Render Node Web Service"]
-    N -->|"사용자 JWT"| A["Supabase Auth"]
-    N -->|"사용자 범위 PostgREST"| D["Supabase PostgreSQL + RLS"]
-    N -->|"명시적 OpenAI 모드"| O["OpenAI Responses API"]
+    U["브라우저"] -->|"SPA + /api/v1"| C["Sites Worker 또는 Render Node"]
+    C -->|"사용자 JWT"| A["Supabase Auth"]
+    C -->|"사용자 범위 PostgREST"| D["Supabase PostgreSQL + RLS"]
+    C -->|"명시적 OpenAI 모드"| O["OpenAI Responses API"]
     U -->|"#token fragment"| S["읽기 전용 공유 화면"]
-    S -->|"토큰 POST"| N
+    S -->|"토큰 POST"| C
 ```
 
 | 영역 | 선택 |
 | --- | --- |
 | 프런트엔드 | React 19, TypeScript, Vite, 브라우저 History 라우팅 |
-| 서버 | Node.js HTTP, 같은 출처 정적 SPA + JSON API |
+| 서버 | Cloudflare Worker와 Node.js HTTP, 같은 출처 정적 SPA + JSON API |
 | 인증 | Supabase 이메일 Magic Link, access/refresh token |
 | 저장소 | Supabase PostgreSQL, SQL migration, PostgREST, RLS |
 | 분석 | 결정론적 `local-heuristic`, 선택형 OpenAI Responses API 구조화 출력 |
 | 검증 | Zod, 서버 입력 검증, 근거 부분 문자열 검증 |
 | 품질 | ESLint, TypeScript, Vitest/V8, pgTAP, Playwright, Gitleaks |
-| 배포 | Render 단일 Node Web Service, Supabase Seoul 프로젝트 |
+| 배포 | Sites Worker + Render Node Web Service, Supabase Seoul 프로젝트 |
 
-브라우저가 서비스 역할 키로 DB를 직접 수정하지 않는다. 인증 사용자의 일반 CRUD와 실행 시작은 Node가 access token을 검증한 뒤 같은 토큰으로 PostgREST/RPC를 호출하므로 RLS가 최종 권한 경계로 유지된다. 서비스 역할은 readiness, 실행의 terminal 갱신, 소유권 재검증을 거친 공유 생성·폐기, 서버 전용 rate limit과 해시된 공유 토큰 조회에만 사용한다.
+브라우저가 서비스 역할 키로 DB를 직접 수정하지 않는다. 인증 사용자의 일반 CRUD와 실행 시작은 API 런타임이 access token을 검증한 뒤 같은 토큰으로 PostgREST/RPC를 호출하므로 RLS가 최종 권한 경계로 유지된다. 서비스 역할은 readiness, 실행의 terminal 갱신, 소유권 재검증을 거친 공유 생성·폐기, 서버 전용 rate limit과 해시된 공유 토큰 조회에만 사용한다.
 
 ## 3. 라우팅과 상태
 
@@ -202,14 +202,21 @@ Content-Type: application/json
 `render.yaml` 계약:
 
 - branch `N031_김서준`, Singapore, Node Web Service
-- build `npm ci && npm run build`
+- build `npm ci --include=dev && npm run build`
 - start `npm start`
 - `HOST=0.0.0.0`, Render 제공 `PORT`
 - health check `/api/health/ready`
 - CI checks 통과 후 auto deploy
 - secret 값은 `sync: false`이며 Render Dashboard에만 입력
 
-배포 순서는 `Supabase migration → Auth Site URL 및 /login redirect allowlist → Render secret 설정 → build/deploy → readiness → 브라우저 E2E`다. Seoul Supabase 데모 프로젝트에는 migration 적용·down rollback·재적용과 32개 pgTAP 계약 검증을 완료했고, 로컬 redirect allowlist와 실제 영속 브라우저 흐름도 확인했다. Render 서비스 생성은 계정 hCaptcha 완료 전이므로 공개 URL이 있다고 간주하지 않는다.
+Sites 계약:
+
+- `.openai/hosting.json`의 프로젝트 ID를 재사용하고 D1/R2는 사용하지 않음
+- `dist/server/index.js` Worker와 `dist/client` SPA를 같은 버전으로 배포
+- Supabase/OpenAI 비밀은 Sites 런타임 환경에만 설정
+- Node 요청·응답 어댑터로 기존 API 계약과 Render fallback을 공유
+
+배포 순서는 `Supabase migration → Sites/Render secret 설정 → build·테스트 → 소스 push → Sites/Render deploy → Auth /login redirect allowlist → readiness → 브라우저 E2E`다. Seoul Supabase 데모 프로젝트에는 migration 적용·down rollback·재적용과 32개 pgTAP 계약 검증을 완료했고, workerd에서 실제 영속 브라우저 흐름도 확인했다.
 
 ## 10. 테스트와 승인 기준
 

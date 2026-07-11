@@ -9,6 +9,7 @@ export default defineConfig({
     include: [
       "src/**/*.test.{ts,tsx}",
       "server/**/*.test.mjs",
+      "worker/**/*.test.ts",
       "tests/eval/**/*.test.mjs",
     ],
     clearMocks: true,

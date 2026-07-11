@@ -139,12 +139,10 @@ npm run test:e2e
 ## 배포 상태
 
 - `render.yaml`: Singapore 단일 Node Web Service, CI 성공 후 배포, `/api/health/ready`
+- Sites: React SPA와 Worker API를 동일 버전으로 패키징하고 기존 Supabase PostgreSQL/RLS를 공유
 - Supabase 데모 프로젝트: Seoul 리전에 migration 적용·rollback·재적용, 32개 RLS/권한 계약 통과
-- 실제 브라우저: Magic Link → 데모 원문 3건/첫 분석 → 후속 피드백 → 두 번째 분석 → 근거/변화/지식맵 → 공유/새로고침/폐기까지 검증 후 테스트 계정 정리
-- Render 공개 URL: 계정 hCaptcha 완료 전이므로 아직 생성되지 않음
-- Render 연결 전 Supabase migration, Auth redirect allowlist, `sync: false` secrets 설정 필요
-
-공개 URL이 생기기 전까지 배포 완료로 표시하지 않습니다.
+- 실제 브라우저: Magic Link 세션 → 데모 원문 3건/첫 분석 → 후속 피드백 → 두 번째 분석 → 근거/변화/지식맵 → 공유/새로고침/폐기까지 workerd에서 검증 후 테스트 계정 정리
+- Sites와 Render의 배포 origin은 Supabase Auth redirect allowlist에 각각 등록하고, 서버 전용 값은 각 호스팅 런타임에만 설정
 
 ## 리뷰 포인트
 

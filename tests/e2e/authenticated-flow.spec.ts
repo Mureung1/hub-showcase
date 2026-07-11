@@ -8,6 +8,7 @@ import {
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const testEmail = process.env.E2E_TEST_EMAIL;
+const skipLoginEmailSend = process.env.E2E_SKIP_LOGIN_EMAIL_SEND === "true";
 const hasAuthEnvironment = Boolean(supabaseUrl && serviceRoleKey && testEmail);
 
 test.skip(
@@ -25,10 +26,14 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
   try {
     await page.goto("/login");
     await page.getByTestId("login-email").fill(testEmail!);
-    await page.getByTestId("login-submit").click();
-    await expect(
-      page.getByRole("heading", { name: "로그인 링크를 보냈습니다" }),
-    ).toBeVisible();
+    if (skipLoginEmailSend) {
+      await expect(page.getByTestId("login-submit")).toBeEnabled();
+    } else {
+      await page.getByTestId("login-submit").click();
+      await expect(
+        page.getByRole("heading", { name: "로그인 링크를 보냈습니다" }),
+      ).toBeVisible();
+    }
 
     const generated = await generateMagicLink(request, {
       redirectTo: `${appBaseUrl}/projects`,
@@ -175,6 +180,7 @@ async function generateMagicLink(
       headers: {
         apikey: serviceRoleKey!,
         Authorization: `Bearer ${serviceRoleKey}`,
+        "User-Agent": "modu-brain-e2e/1.0",
       },
       data: {
         type: "magiclink",
@@ -211,6 +217,7 @@ async function deleteTestUsersByEmail(
   const headers = {
     apikey: serviceRoleKey!,
     Authorization: `Bearer ${serviceRoleKey}`,
+    "User-Agent": "modu-brain-e2e/1.0",
   };
   const listResponse = await request.get(
     `${supabaseUrl}/auth/v1/admin/users?page=1&per_page=1000`,

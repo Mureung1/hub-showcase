@@ -23,7 +23,12 @@ const mimeTypes = {
 
 export function createModuBrainServer(options = {}) {
   const rootDir = options.rootDir || defaultRootDir;
-  const distDir = options.distDir || join(rootDir, "dist");
+  const buildRoot = join(rootDir, "dist");
+  const distDir =
+    options.distDir ||
+    (existsSync(join(buildRoot, "client", "index.html"))
+      ? join(buildRoot, "client")
+      : buildRoot);
   const handleApiV1 = createApiV1Handler(options.apiV1Options);
 
   return createServer(async (req, res) => {

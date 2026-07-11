@@ -8,9 +8,12 @@ Modu Brain은 회의록, 리서치, 피드백에 흩어진 결정 배경과 참�
 
 ```mermaid
 flowchart LR
-    B["브라우저"] --> R["Render · React + Node API"]
-    R --> S["Supabase Auth + PostgreSQL + RLS"]
-    R --> O["OpenAI Responses API · 선택형"]
+    B["브라우저"] --> C["Sites · React + Worker API"]
+    B --> R["Render · React + Node API"]
+    C --> S["Supabase Auth + PostgreSQL + RLS"]
+    R --> S
+    C --> O["OpenAI Responses API · 선택형"]
+    R --> O
     B --> L["읽기 전용 공유 화면"]
 ```
 
@@ -44,7 +47,7 @@ supabase db reset
 supabase test db
 ```
 
-`supabase status -o env`의 `API_URL`, `ANON_KEY`, `SERVICE_ROLE_KEY`는 로컬 CLI용 legacy 변수에 매핑할 수 있습니다. 호스팅 프로젝트에서는 새 `publishable`/`secret` 키를 우선 사용합니다. 프로젝트 전체 흐름은 Node 서버가 빌드된 SPA와 API를 같은 출처에서 제공할 때 확인합니다.
+`supabase status -o env`의 `API_URL`, `ANON_KEY`, `SERVICE_ROLE_KEY`는 로컬 CLI용 legacy 변수에 매핑할 수 있습니다. 호스팅 프로젝트에서는 새 `publishable`/`secret` 키를 우선 사용합니다. `npm run build`는 Sites용 Worker와 SPA를 `dist/server`, `dist/client`에 만들며, Node 서버는 같은 SPA와 API를 Render 및 로컬에서 제공합니다.
 
 ```bash
 npm run build
@@ -136,6 +139,18 @@ npm run test:e2e
 - Playwright: 공개 샘플과 `로그인 → 프로젝트 → 기록 → 분석 → 근거 → 이력 → 공유 → 새로고침`
 - GitHub Actions: lint, typecheck, coverage, build, production audit, secret scan, 공개 스모크, 내부 PR의 로컬 Supabase/E2E
 
+## Sites 배포
+
+이 저장소는 `.openai/hosting.json`의 기존 Sites 프로젝트 ID를 재사용합니다. Supabase가 인증·PostgreSQL·RLS 영속 계층이므로 Sites의 D1/R2는 사용하지 않습니다.
+
+1. `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`로 `npm run build`를 실행합니다.
+2. `dist/server/index.js`, `dist/client/index.html`, `dist/.openai/hosting.json`이 생성됐는지 확인합니다.
+3. Sites 런타임에는 `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, 분석 provider 변수와 `SAFETY_IDENTIFIER_SECRET`을 설정합니다.
+4. 정확히 커밋·푸시한 소스와 그 커밋에서 만든 archive로 버전을 저장하고 배포합니다.
+5. 배포 origin의 `/login`을 Supabase Auth redirect allowlist에 추가한 뒤 readiness와 Magic Link 흐름을 확인합니다.
+
+`npm run preview`는 Sites와 동일한 workerd 경로를 로컬에서 실행합니다. 비밀키는 Worker 런타임 환경에만 두고 `VITE_*` 변수로 전달하지 않습니다.
+
 ## Render 배포
 
 `render.yaml`은 단일 Node Web Service를 정의합니다. Render에서 Blueprint를 연결하기 전에 다음을 완료합니다.
@@ -146,7 +161,7 @@ npm run test:e2e
 4. `VITE_SUPABASE_*`와 서버용 Supabase URL·anon key가 같은 프로젝트를 가리키는지 확인합니다.
 5. `GET /api/health/ready`가 `200`인지 확인한 뒤 공개합니다.
 
-Render는 `npm ci && npm run build`, `npm start`, `HOST=0.0.0.0`을 사용하며 CI 성공 후 자동 배포합니다. readiness는 DB/config를 확인하므로 필수 환경변수가 없으면 의도적으로 `503`을 반환하고 배포 트래픽을 받지 않습니다. [Render Blueprint 문서](https://render.com/docs/blueprint-spec)
+Render는 `npm ci --include=dev && npm run build`, `npm start`, `HOST=0.0.0.0`을 사용하며 CI 성공 후 자동 배포합니다. build 단계에는 TypeScript/Vite 도구를 포함하고 runtime은 `NODE_ENV=production`을 유지합니다. readiness는 DB/config를 확인하므로 필수 환경변수가 없으면 의도적으로 `503`을 반환하고 배포 트래픽을 받지 않습니다. [Render Blueprint 문서](https://render.com/docs/blueprint-spec)
 
 ## 보안·개인정보 운영 기준
 
@@ -157,7 +172,7 @@ Render는 `npm ci && npm run build`, `npm start`, `HOST=0.0.0.0`을 사용하며
 - AI 실행은 사용자당 동시 1건·시간당 10건·일당 30건, 공유 조회는 IP당 시간당 60건으로 제한합니다.
 - JSON 본문은 256KB, 분석 입력 합계는 100,000자 이하로 제한합니다.
 - 비밀정보·JWT·원문은 애플리케이션 로그에 기록하지 않습니다.
-- 공개 전 Supabase RLS, Auth redirect allowlist, Render secrets, OpenAI 모델 권한을 다시 확인합니다.
+- 공개 전 Supabase RLS, Auth redirect allowlist, Sites·Render secrets, OpenAI 모델 권한을 다시 확인합니다.
 
 ## 현재 제외 범위
 

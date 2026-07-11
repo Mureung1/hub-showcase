@@ -272,7 +272,12 @@ async function handleAnalysisRuns(req, res, context) {
   if (mode === "openai" && !context.openAIEnabled) {
     throw new ApiError(503, "OPENAI_NOT_ENABLED", "OpenAI 분석이 활성화되지 않았습니다.");
   }
-  const model = mode === "openai" ? process.env.MODU_BRAIN_OPENAI_MODEL || "gpt-5.6-terra" : null;
+  const model =
+    mode === "openai"
+      ? context.analysisOptions?.model ||
+        process.env.MODU_BRAIN_OPENAI_MODEL ||
+        "gpt-5.6-terra"
+      : null;
   const controller = new AbortController();
   const abort = () => controller.abort();
   req.once("aborted", abort);
@@ -368,7 +373,10 @@ async function handleAnalysisRuns(req, res, context) {
         reasoningEffort: "low",
         timeoutMs: OPENAI_TIMEOUT_MS,
         maxRawTextLength: INPUT_CHARACTER_LIMIT + body.sourceIds.length * 150,
-        safetyIdentifier: privacyIdentifier(context.user.id),
+        safetyIdentifier: privacyIdentifier(
+          context.user.id,
+          context.analysisOptions?.safetyIdentifierSecret,
+        ),
         signal: controller.signal,
       },
     );
