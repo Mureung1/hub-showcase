@@ -131,7 +131,7 @@ select is(
 );
 select is(
   (
-    select array_agg(response_key order by response_key)
+    select array_agg(response_key order by response_key collate "C")
     from public.import_source_context(
       '22222222-2222-4222-8222-222222222222',
       'meeting', 'Imported meeting',
