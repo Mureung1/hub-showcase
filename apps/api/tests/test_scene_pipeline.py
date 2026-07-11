@@ -9,6 +9,7 @@ from localtwin_api.scene_pipeline import (
     SceneInputFile,
     SceneJobStore,
     ToolchainStatus,
+    build_execution_command,
     build_pipeline_commands,
     run_scene_job,
     safe_name,
@@ -48,11 +49,35 @@ def test_equirectangular_video_command_uses_official_split_options(tmp_path: Pat
 
 
 def test_toolchain_reports_missing_fixed_tools() -> None:
-    status = toolchain_status(which=lambda name: "C:/ffmpeg.exe" if name == "ffmpeg" else None)
+    status = toolchain_status(
+        which=lambda name: "C:/ffmpeg.exe" if name == "ffmpeg" else None,
+        mode="host",
+    )
 
     assert status.ready is False
     assert "missing_tool:ns-process-data" in status.blockers
     assert "missing_tool:ns-train" in status.blockers
+
+
+def test_docker_command_mounts_only_the_job_directory(tmp_path: Path) -> None:
+    job_dir = tmp_path / "job"
+    input_path = job_dir / "input" / "capture.mp4"
+
+    command = build_execution_command(
+        ["ns-process-data", "video", "--data", str(input_path)],
+        job_dir,
+        "docker",
+        "ghcr.io/nerfstudio-project/nerfstudio:1.1.5",
+    )
+
+    assert command[:6] == ["docker", "run", "--rm", "--gpus", "all", "--shm-size=12gb"]
+    assert command[6:9] == [
+        "-v",
+        f"{job_dir.resolve()}:/workspace",
+        "ghcr.io/nerfstudio-project/nerfstudio:1.1.5",
+    ]
+    assert command[-1] == "/workspace/input/capture.mp4"
+    assert "shell" not in command
 
 
 def test_job_store_rejects_path_traversal(tmp_path: Path) -> None:
@@ -83,6 +108,8 @@ def test_job_blocks_before_training_when_worker_is_not_ready(
     asyncio.run(save_uploads(store, job, [upload]))
     unavailable = ToolchainStatus(
         ready=False,
+        mode="host",
+        image=None,
         tools=[],
         gpu_name="NVIDIA GeForce MX450",
         gpu_memory_mb=2_048,

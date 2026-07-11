@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import shutil
 import subprocess
@@ -15,11 +16,13 @@ from uuid import UUID, uuid4
 from fastapi import UploadFile
 from pydantic import BaseModel, Field
 
+from localtwin_api.config import get_settings
 from localtwin_api.seoul_open_data import repository_root
 
 CaptureType = Literal["images", "video", "equirectangular_images", "equirectangular_video"]
 JobStatus = Literal["uploaded", "queued", "running", "blocked", "failed", "ready"]
 StageStatus = Literal["pending", "running", "passed", "blocked", "failed"]
+WorkerMode = Literal["host", "docker"]
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".heic"}
 VIDEO_SUFFIXES = {".mp4", ".mov", ".mkv"}
@@ -66,6 +69,8 @@ class ToolStatus(BaseModel):
 
 class ToolchainStatus(BaseModel):
     ready: bool
+    mode: WorkerMode
+    image: str | None
     tools: list[ToolStatus]
     gpu_name: str | None
     gpu_memory_mb: int | None
@@ -200,12 +205,34 @@ async def save_uploads(
     return store.save(job)
 
 
-def toolchain_status(which: Callable[[str], str | None] = shutil.which) -> ToolchainStatus:
-    tool_names = ["ffmpeg", "ns-process-data", "ns-train", "ns-export", "nvidia-smi"]
+def toolchain_status(
+    which: Callable[[str], str | None] = shutil.which,
+    mode: WorkerMode | None = None,
+    image: str | None = None,
+) -> ToolchainStatus:
+    settings = get_settings()
+    selected_mode = mode or settings.scene_worker_mode
+    selected_image = image or settings.scene_docker_image
+    tool_names = (
+        ["docker", "nvidia-smi"]
+        if selected_mode == "docker"
+        else ["ffmpeg", "ns-process-data", "ns-train", "ns-export", "nvidia-smi"]
+    )
     tools = [
         ToolStatus(name=name, available=bool(path := which(name)), path=path) for name in tool_names
     ]
     blockers = [f"missing_tool:{tool.name}" for tool in tools if not tool.available]
+    if selected_mode == "docker" and not blockers and selected_image:
+        docker = next(tool for tool in tools if tool.name == "docker")
+        result = subprocess.run(
+            [docker.path or "docker", "image", "inspect", selected_image],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=15,
+        )
+        if result.returncode != 0:
+            blockers.append("missing_docker_image")
     gpu_name: str | None = None
     gpu_memory_mb: int | None = None
     nvidia = next(tool for tool in tools if tool.name == "nvidia-smi")
@@ -233,6 +260,8 @@ def toolchain_status(which: Callable[[str], str | None] = shutil.which) -> Toolc
         blockers.append("gpu_memory_below_minimum")
     return ToolchainStatus(
         ready=not blockers,
+        mode=selected_mode,
+        image=selected_image if selected_mode == "docker" else None,
         tools=tools,
         gpu_name=gpu_name,
         gpu_memory_mb=gpu_memory_mb,
@@ -270,11 +299,44 @@ def build_pipeline_commands(job: SceneJob, directory: Path) -> list[list[str]]:
     return [preprocess, train]
 
 
-def run_command(command: list[str], cwd: Path, log_path: Path) -> None:
+def build_execution_command(
+    command: list[str], directory: Path, mode: WorkerMode, image: str
+) -> list[str]:
+    if mode == "host":
+        return command
+    root = str(directory.resolve())
+    mapped = [
+        argument.replace(root, "/workspace").replace(os.sep, "/")
+        if argument.startswith(root)
+        else argument
+        for argument in command
+    ]
+    return [
+        "docker",
+        "run",
+        "--rm",
+        "--gpus",
+        "all",
+        "--shm-size=12gb",
+        "-v",
+        f"{root}:/workspace",
+        image,
+        *mapped,
+    ]
+
+
+def run_command(
+    command: list[str],
+    cwd: Path,
+    log_path: Path,
+    mode: WorkerMode = "host",
+    image: str = "ghcr.io/nerfstudio-project/nerfstudio:1.1.5",
+) -> None:
+    execution_command = build_execution_command(command, cwd, mode, image)
     with log_path.open("a", encoding="utf-8") as log:
-        log.write(f"\n$ {' '.join(command)}\n")
+        log.write(f"\n$ {' '.join(execution_command)}\n")
         subprocess.run(
-            command,
+            execution_command,
             cwd=cwd,
             stdout=log,
             stderr=subprocess.STDOUT,
@@ -304,11 +366,23 @@ def run_scene_job(job_id: str, root: Path | None = None) -> SceneJob:
     store.save(job)
     try:
         store.set_stage(job, "preprocess", "running")
-        run_command(commands[0], directory, log_path)
+        run_command(
+            commands[0],
+            directory,
+            log_path,
+            capability.mode,
+            capability.image or "",
+        )
         store.set_stage(job, "preprocess", "passed")
 
         store.set_stage(job, "train", "running")
-        run_command(commands[1], directory, log_path)
+        run_command(
+            commands[1],
+            directory,
+            log_path,
+            capability.mode,
+            capability.image or "",
+        )
         configs = sorted((directory / "training").rglob("config.yml"))
         if not configs:
             raise RuntimeError("Nerfstudio training finished without config.yml.")
@@ -325,7 +399,13 @@ def run_scene_job(job_id: str, root: Path | None = None) -> SceneJob:
         ]
         job.commands.append(export_command)
         store.set_stage(job, "export", "running")
-        run_command(export_command, directory, log_path)
+        run_command(
+            export_command,
+            directory,
+            log_path,
+            capability.mode,
+            capability.image or "",
+        )
         ply_files = sorted(export_dir.rglob("*.ply"))
         if not ply_files:
             raise RuntimeError("Nerfstudio export finished without a PLY asset.")

@@ -63,6 +63,7 @@ docs: hardware gate와 운영 절차
 - [x] tool/GPU 부족 시 정확한 blocked reason과 다음 명령을 반환한다.
 - [ ] PLY asset이 준비되면 Spark viewer에서 열 수 있다.
 - [x] API와 Front test/build가 통과한다.
+- [x] 표준 Gaussian PLY로 Spark canvas nonblank 렌더링을 검증한다.
 
 ## 7. Verification Plan
 
