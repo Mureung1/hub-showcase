@@ -139,7 +139,7 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 
 | ID         | 세부 Task                                  | Priority | Status  | Week | Depends on | Acceptance                                         |
 | ---------- | ------------------------------------------ | -------- | ------- | ---- | ---------- | -------------------------------------------------- |
-| EVAL-001   | 핵심 분석 평가 fixture와 score script 작성 | P0       | Backlog | 4    | EPIC-03    | 정상·경계·실패 case를 수치로 재현한다              |
+| EVAL-001   | 핵심 분석 평가 fixture와 score script 작성 | P0       | Done    | 4    | EPIC-03    | 12개 canonical case와 정상·경계·실패 test를 재현한다 |
 | EVAL-002   | Front-API 통합 smoke test                  | P0       | Backlog | 4    | EPIC-04    | 주요 시연 경로가 새 환경에서 통과한다              |
 | DEMO-001   | 5분 발표 시나리오와 복구 경로 작성         | P0       | Backlog | 4    | EVAL-002   | 발표 순서, 예상 결과와 fallback이 문서화된다       |
 | DEPLOY-001 | docs/prototype 배포와 공개 경로 검증       | P0       | Backlog | 4    | EVAL-002   | Home, Tasks, Architecture와 prototype URL이 열린다 |
@@ -199,3 +199,4 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 | 2026-07-10 | 4주 Epic/Task 백로그 최초 작성 | 체크리스트와 실행 계획에 흩어진 다음 작업을 하나의 원본으로 통합하기 위해 |
 | 2026-07-11 | SCENE-002~004 구현·검증 경계 반영 | upload/viewer 코드 완료와 실제 GPU 학습 미완료를 구분하기 위해 |
 | 2026-07-11 | API-002와 WEB-001/007 실데이터 연결 반영 | 상권 경계 분석 완료와 반경 query 미완료를 구분하기 위해 |
+| 2026-07-11 | EVAL-001 결과 반영 | 재현성 gate 통과와 confidence 부족을 함께 추적하기 위해 |
