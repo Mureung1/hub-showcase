@@ -168,10 +168,8 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
       sharedPage.getByRole("heading", { name: projectTitle, level: 1 }),
     ).toBeVisible();
     await expect(
-      sharedPage.getByText(
-        "원문 전체나 계정 정보를 포함하지 않는 공유용 분석 화면입니다.",
-      ),
-    ).toBeVisible();
+      sharedPage.getByRole("note", { name: "공유 개인정보 주의" }),
+    ).toContainText("원문 전체와 계정 이메일은 표시하지 않습니다.");
     await expect(
       sharedPage.getByText(testEmail!, { exact: false }),
     ).toHaveCount(0);
