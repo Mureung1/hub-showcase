@@ -27,6 +27,32 @@ for (const width of [375, 768, 1024, 1440]) {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/demo");
     await expect(page.getByText("샘플 데이터", { exact: true })).toBeVisible();
+    await page.getByRole("tab", { name: "지식맵", exact: true }).click();
+    const brainCanvas = page.getByTestId("brain-canvas");
+    await expect(brainCanvas).toBeVisible();
+
+    const canvasBox = await brainCanvas.boundingBox();
+    expect(canvasBox).not.toBeNull();
+    expect(canvasBox!.x).toBeGreaterThanOrEqual(0);
+    expect(canvasBox!.x + canvasBox!.width).toBeLessThanOrEqual(width + 1);
+
+    const firstNode = brainCanvas.locator(".brain-node").first();
+    const secondNode = brainCanvas.locator(".brain-node").nth(1);
+    await firstNode.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(secondNode).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(secondNode).toHaveAttribute("aria-pressed", "true");
+
+    const brainResults = await new AxeBuilder({ page })
+      .include('[data-testid="brain-canvas"]')
+      .analyze();
+    expect(
+      brainResults.violations,
+      brainResults.violations
+        .map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(" ")).join(", ")}`)
+        .join("\n"),
+    ).toEqual([]);
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -34,7 +60,7 @@ for (const width of [375, 768, 1024, 1440]) {
     expect(overflow).toBeLessThanOrEqual(1);
 
     const undersizedControls = await page
-      .locator("a[href]:visible, button:visible, input:visible, textarea:visible, select:visible, [role='tab']:visible")
+      .locator("a[href]:visible, button:visible, input:visible, textarea:visible, select:visible, [role='tab']:visible, [role='button']:visible")
       .evaluateAll((elements) => elements
         .map((element) => {
           const input = element instanceof HTMLInputElement ? element : null;

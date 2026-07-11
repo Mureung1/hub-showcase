@@ -351,7 +351,7 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
           </div>
         ) : activeTab === "map" ? (
           <div className="results-grid single-grid" id="landing-panel-map" role="tabpanel" aria-labelledby="landing-tab-map">
-            <KnowledgeMap map={analysisResult.knowledgeMap} />
+            <KnowledgeMap result={analysisResult} />
           </div>
         ) : (
           <div className="results-grid single-grid" id="landing-panel-onboarding" role="tabpanel" aria-labelledby="landing-tab-onboarding">

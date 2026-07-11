@@ -400,7 +400,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
         {activeTab === "map" && (
           selectedRun?.result ? (
             <div className="map-workspace">
-              <KnowledgeMap map={selectedRun.result.knowledgeMap} />
+              <KnowledgeMap result={selectedRun.result} onOpenEvidence={openEvidence} />
               <ContextBacklinks
                 sources={sources}
                 result={selectedRun.result}

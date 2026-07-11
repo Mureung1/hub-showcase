@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { sampleAnalysis } from "../data/sampleAnalysis";
 import type { PlatformApi } from "../services/platformApi";
@@ -9,6 +10,7 @@ afterEach(() => window.history.replaceState(null, "", "/"));
 
 describe("SharePage", () => {
   it("resolves the fragment token and renders only the sanitized analysis", async () => {
+    const user = userEvent.setup();
     window.history.replaceState(null, "", "/share#token=share-secret-abcdefghijklmnopqrstuvwxyz123456");
     const api = apiMock();
     vi.mocked(api.resolveSharedAnalysis).mockResolvedValue({
@@ -25,6 +27,10 @@ describe("SharePage", () => {
     expect(screen.getByRole("heading", { name: "참여자별 관점 차이" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "현재 확정된 결정" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "아직 열린 질문" })).toBeInTheDocument();
+    const canvas = screen.getByTestId("brain-canvas");
+    await user.click(within(canvas).getByTestId("brain-node-brain-decision-decision-direct-input"));
+    expect(screen.getByRole("complementary", { name: "선택한 생각 상세" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /근거 \d+개 열기/ })).not.toBeInTheDocument();
     expect(api.resolveSharedAnalysis).toHaveBeenCalledWith("share-secret-abcdefghijklmnopqrstuvwxyz123456");
   });
 

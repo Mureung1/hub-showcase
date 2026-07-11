@@ -124,9 +124,21 @@ test("login, persist two analyses, inspect evidence, share, refresh, and revoke"
     ).toEqual([]);
 
     await page.getByRole("tab", { name: "지식맵", exact: true }).click();
-    await expect(
-      page.getByRole("img", { name: /프로젝트 맥락 지도/ }),
-    ).toBeVisible();
+    const brainCanvas = page.getByTestId("brain-canvas");
+    await expect(brainCanvas).toBeVisible();
+    await expect(page.getByRole("img", { name: /프로젝트 맥락 지도/ })).toBeVisible();
+    await brainCanvas.getByRole("button", { name: /결정 생각:/ }).first().click();
+    await expect(brainCanvas.getByRole("complementary", { name: "선택한 생각 상세" })).toBeVisible();
+
+    const brainAccessibility = await new AxeBuilder({ page })
+      .include('[data-testid="brain-canvas"]')
+      .analyze();
+    expect(
+      brainAccessibility.violations,
+      brainAccessibility.violations
+        .map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(" ")).join(", ")}`)
+        .join("\n"),
+    ).toEqual([]);
 
     await page.getByRole("tab", { name: "온보딩 요약", exact: true }).click();
     await page.getByTestId("share-create").click();

@@ -48,7 +48,7 @@ function SharePage({ api }: { api: PlatformApi }) {
         <PerspectiveTable participants={result.participants} />
         <ParticipantAgentPanel synthesis={result.participantAgents} />
         <OnboardingSummary summary={result.onboardingSummary} />
-        <KnowledgeMap map={result.knowledgeMap} />
+        <KnowledgeMap result={result} />
       </div>
     </main>
   );

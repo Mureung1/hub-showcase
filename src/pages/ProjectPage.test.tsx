@@ -121,6 +121,13 @@ describe("ProjectPage", () => {
 
     await user.click(screen.getByRole("tab", { name: "지식맵" }));
     expect(screen.getByRole("heading", { name: "공유 지식맵" })).toBeInTheDocument();
+    await user.click(screen.getByTestId("brain-node-brain-decision-decision-direct-input"));
+    const brainInspector = screen.getByRole("complementary", { name: "선택한 생각 상세" });
+    expect(within(brainInspector).getByRole("heading", { name: sampleAnalysis.decisions[0].decision })).toBeInTheDocument();
+    await user.click(within(brainInspector).getByRole("button", { name: "근거 1개 열기" }));
+    expect(screen.getByRole("dialog", { name: "분석 근거" })).toBeInTheDocument();
+    expect(api.listSourceSegments).toHaveBeenCalledWith("access", "sample-meeting");
+    await user.click(screen.getByRole("button", { name: "닫기" }));
 
     await user.click(screen.getByRole("tab", { name: "온보딩 요약" }));
     expect(await screen.findByRole("heading", { name: "온보딩 링크 공유" })).toBeInTheDocument();
