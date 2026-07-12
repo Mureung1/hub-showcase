@@ -18,11 +18,7 @@ Write generated spec content in Korean. Preserve established domain terms, proto
 
 Read `AGENTS.md`, `docs/README.md`, `docs/agents/issue-tracker.md`, the relevant owning documents, ADRs, package READMEs, and live code/tests.
 
-Work from the conversation unless the user passes a reference:
-
-- A local Markdown path means that exact local artifact.
-- A URL means that exact remote artifact.
-- A bare number is not a GitHub issue or PR unless the user explicitly names GitHub and the target surface.
+Work from the conversation unless the user passes a reference. Resolve that reference exactly as `docs/agents/issue-tracker.md` defines; do not reinterpret a local path, URL, or bare number with a different tracker convention.
 
 When the reference is a Wayfinder map:
 
@@ -54,7 +50,7 @@ Specific file paths are allowed only as non-normative current-state references. 
 
 A spec is not an implementation ticket and must not use `ready-for-agent`.
 
-### 5. Save locally
+### 5. Save locally and reconcile a source map
 
 Write the spec under the compatibility path:
 
@@ -64,7 +60,10 @@ docs/prds/YYYY-MM-DD-<short-slug>.md
 
 If the path exists, append a short numeric suffix. Report the path and the readiness state. In the default local flow, do not create, edit, close, or delete GitHub Issues. If the user explicitly requests GitHub publication, preserve the local spec and follow `docs/agents/issue-tracker.md` for the confirmed target.
 
-When the source was a `ready-for-spec` Wayfinder map, link the new spec from the map and set the map to `complete` after the spec file has been written successfully.
+When the source was a Wayfinder map, link the written spec from the map and reconcile the map state with the actual spec readiness:
+
+- If the spec is `ready-for-ticketing`, set the map to `State: complete`, set `Next actor: /to-tickets`, and retain the final spec link under `Resulting spec`.
+- If the spec is `draft`, do **not** complete the map. Set the map back to `State: active` and `Next actor: /wayfinder`; record each newly discovered blocking uncertainty as an `open` Wayfinder ticket when it is precise, or under `Not yet specified` when it is still fog. Link the draft spec as evidence and report the next Wayfinder action.
 
 <spec-template>
 
