@@ -38,6 +38,14 @@ Generated Markdown은 직접 수정하지 않는다. Decision JSON에 없는 met
 
 Package pin은 App Server binary와 생성 protocol 계약을 고정한다. `gpt-5.6-sol` 같은 model까지 고정하지 않으며 thread 생성은 현재 Codex 기본 model 설정을 따른다.
 
+## Bidirectional stdio transport
+
+Package 내부 `CodexStdioTransport`는 이후 Headless Codex Client Host가 사용할 generated-schema-backed lower transport다. Client request·notification, Server request·notification을 stdio JSONL에서 방향별로 분류하고 `RequestId`의 `string | number` type과 exact value를 보존한다. Outbound Client request와 inbound Server request는 별도 namespace이므로 반대 방향의 같은 numeric ID가 동시에 존재해도 서로 resolve하지 않는다.
+
+Known Server request는 generated response type에 맞는 `respond`와 protocol-level `respondError`를 제공하며 한 request에는 한 번만 쓸 수 있다. Unknown·duplicate·ambiguous response와 malformed message는 다른 pending request에 귀속하지 않고 sanitized `protocol_error` observation으로 connection을 닫는다. Spawn error, child exit, stdout EOF, stdout failure와 stdin write failure는 구분된 `transport_lost` observation이다. 이 observation에는 raw stdio line, child environment, stderr와 debug payload를 넣지 않는다.
+
+Actual-child contract fixture는 별도 JSONL journal로 spawn과 Client outbound protocol·Server response를 확인하며 success, assertion failure와 transport failure에서 child 종료 deadline, force-kill과 temporary directory cleanup을 소유한다. 이 lower transport를 읽는 것만으로 raw method가 제품 Host에 연결된 것은 아니므로 method inventory의 integration 단계는 바꾸지 않는다.
+
 ## 제품 runtime layout
 
 `prepareProductRuntimeLayout()`은 Headless Codex Client Host가 사용할 spawn 전 제품 layout seam이다. 호출자는 `packageRoot`, `appDataRoot`, `workspaceRoot`를 모두 absolute·normalized path로 전달해야 하며, API는 symlink를 포함한 실제 대상 기준으로 세 root가 서로 같거나 포함 관계가 아닌지 확인한다.
@@ -63,7 +71,7 @@ Package pin은 App Server binary와 생성 protocol 계약을 고정한다. `gpt
 - 공개 raw wrapper의 `CodexRawTurnInput`은 현재 text만 지원한다. 생성 protocol에 존재하는 `skill`, `mention`, `outputSchema`는 아직 wrapper와 제품 composer에 연결되지 않았다.
 - 정규화한 Adapter 출력은 세부 작업 활동이 아니라 text와 실행 종료 lifecycle을 다룬다.
 - `turn/steer`는 raw 호출만 가능하며 제품의 target·conflict 정책은 아직 없다.
-- `CodexRawClient`는 App Server가 시작한 `request`를 아직 전달하거나 typed `response`로 응답하지 못한다.
+- 기존 Harness의 `CodexRawClient`는 App Server가 시작한 `request`를 아직 전달하거나 typed `response`로 응답하지 않는다. 별도 `CodexStdioTransport`가 bidirectional lower seam을 제공하지만 Headless Codex Client Host와 pending interaction에는 아직 연결되지 않았다.
 - repository-root `.ay-ple/runtime-codex/*` 기본 경로는 developer-only Harness용이다. `CODEX_HOME`과 `CODEX_SQLITE_HOME`은 현재 각각 독립 override되며 product runtime-home pair validation은 없다.
 - Runtime-home 초기화는 `CODEX_HOME`과 `CODEX_SQLITE_HOME` directory를 만든다. File auth config는 기본 repository-local Harness pair 또는 `ensureFileAuthConfig: true`를 명시한 경우에만 보장하며, built-in Memories는 켜지 않는다.
 

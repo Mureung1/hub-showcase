@@ -4,6 +4,14 @@ import { join } from 'node:path'
 import type { RuntimeRunDebugLogEntry } from '@ay-ple/runtime-core'
 import type { CodexRawClientOptions } from '../raw-client.js'
 
+export {
+  withFakeCodexStdioTransport,
+  type FakeCodexStdioJournalEntry,
+  type FakeCodexStdioScenario,
+  type FakeCodexStdioTransportFixture,
+  type FakeCodexStdioTransportInput,
+} from './fake-codex-stdio-transport.js'
+
 export type FakeCodexAgentMessageDelta = {
   threadId?: string
   turnId?: string
