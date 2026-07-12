@@ -60,9 +60,21 @@
 - `npm run generate:codex-methods -w @ay-ple/runtime-codex` 뒤 generated diff 확인 — 통과
 - Manual/live smoke — 티켓 결정에 따라 실행하지 않음
 
+2026-07-13 follow-up review 수정 검증:
+
+- `npm run test -w @ay-ple/runtime-codex` — 통과, 67개 test와 네 actual-child 회귀 포함
+- `npm test` — 통과, Inspector Playwright 6개 test 포함
+- `npm run typecheck` — 통과
+- `npm run build` — 통과
+- `npm run lint -w @ay-ple/inspector` — 통과
+- `npm run generate:codex-methods -w @ay-ple/runtime-codex` — 통과, aggregate response schema 재생성 전후 SHA-256 동일, 예상 밖 generated inventory diff 없음
+- 고정점 `d04efe587592c892cdbd762a9288ba98684e2f51` 기준 committed diff `346af09e` Standards/Spec 재리뷰 — 양축 findings 없음
+
 ## Result
 
 `CodexStdioTransport`가 네 protocol direction을 stdio JSONL에서 분리하고 direction·ID type·exact value로 Client response와 Server request를 독립적으로 연결한다. Pinned Codex가 생성한 Server request JSON Schema와 response type을 package 내부에서 검증·사용하며 one-shot success/error writer, sanitized protocol/transport observation과 request-scoped timeout을 제공한다. Actual-child fixture journal은 spawn과 outbound protocol을 독립 관측하고 success, assertion failure와 transport failure의 child reaping·temporary directory cleanup을 소유한다. 기존 `CodexRawClient`와 `CodexRuntimeAdapter` 경로는 그대로 유지했다.
+
+Follow-up review의 네 finding도 actual-child seam에서 보강했다. Raw numeric ID는 `Number()` 변환 전에 exact safe JSON integer token인지 검사하고, 중복 top-level protocol key는 ambiguous message로 connection을 fail-closed 처리한다. Timed-out Client identity는 completed response와 별도 fence에 보존해 known late response만 폐기하며 다른 pending request와 connection은 유지한다. Shared internal response contract가 10개 Server request method의 generated response type과 schema name을 한 roster에서 소유하고, generator가 만든 aggregate response schema로 success result를 wire write 전에 검증한다. Invalid result는 one-shot 상태를 소비하지 않으며 fixture journal에도 기록되지 않는다.
 
 구현 commits:
 
@@ -72,6 +84,7 @@
 - `00dc5792` — Server request params와 transport-failure PID cleanup 검증 추가
 - `6ef7f49f` — pinned generated JSON Schema로 nested Server request params validation을 일원화
 - `3329f5b9` — unsafe numeric ID를 parse 전 거부하고 Server request params를 untrusted 상태로 유지
+- `346af09e` — raw envelope, late response fencing과 generated Server success response 검증을 보강
 
 ## Blocked By
 
