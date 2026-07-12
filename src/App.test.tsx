@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import App from './App'
-import ProjectIntro from './ProjectIntro'
+import MessageFlow from './MessageFlow'
 
 afterEach(() => {
   cleanup()
@@ -330,7 +330,7 @@ describe('App', () => {
   })
 
   it('리롤이 실패하면 기존 후보 3개를 유지한 채 오류 문구를 보여준다', async () => {
-    const { rerender } = render(<ProjectIntro mockGenerationCase="normal" />)
+    const { rerender } = render(<MessageFlow mockGenerationCase="normal" />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
@@ -341,7 +341,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: '보낼 말 3가지 만들기' }))
     await waitFor(() => expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3))
 
-    rerender(<ProjectIntro mockGenerationCase="error429" />)
+    rerender(<MessageFlow mockGenerationCase="error429" />)
     fireEvent.click(screen.getByRole('button', { name: '다시 만들기' }))
 
     expect(await screen.findByText('요청이 많아요. 잠시 후 다시 시도해주세요.')).toBeInTheDocument()
@@ -351,7 +351,7 @@ describe('App', () => {
   })
 
   it('리롤 중에는 리롤·복사 버튼이 비활성화되고 기존 후보가 유지된다', async () => {
-    const { rerender } = render(<ProjectIntro mockGenerationCase="normal" />)
+    const { rerender } = render(<MessageFlow mockGenerationCase="normal" />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
@@ -362,7 +362,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: '보낼 말 3가지 만들기' }))
     await waitFor(() => expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3))
 
-    rerender(<ProjectIntro mockGenerationCase="delay" />)
+    rerender(<MessageFlow mockGenerationCase="delay" />)
     fireEvent.click(screen.getByRole('button', { name: '다시 만들기' }))
 
     expect(await screen.findByRole('button', { name: '다시 만들고 있어요…' })).toBeDisabled()
@@ -393,7 +393,7 @@ describe('App', () => {
   })
 
   it('생성 실패 시 입력을 유지하고 다시 시도 동선을 보여준다', async () => {
-    render(<ProjectIntro mockGenerationCase="error429" />)
+    render(<MessageFlow mockGenerationCase="error429" />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
@@ -412,7 +412,7 @@ describe('App', () => {
 
   it('20초 안에 응답이 없으면 타임아웃 안내와 입력을 유지한다', async () => {
     vi.useFakeTimers()
-    render(<ProjectIntro mockGenerationCase="delay" />)
+    render(<MessageFlow mockGenerationCase="delay" />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))

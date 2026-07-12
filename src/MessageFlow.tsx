@@ -290,11 +290,11 @@ const buildCandidates = (source: Record<ToneLevel, string>): Candidate[] =>
     text: source[toneLevel],
   }))
 
-type ProjectIntroProps = {
+type MessageFlowProps = {
   mockGenerationCase?: MockGenerationCase
 }
 
-function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: ProjectIntroProps) {
+function MessageFlow({ mockGenerationCase = developmentGenerationCase }: MessageFlowProps) {
   const [initialFlow] = useState<FlowState>(loadFlowState)
   const [step, setStep] = useState<Step>(initialFlow.step)
   const [mode, setMode] = useState<Mode | null>(initialFlow.mode)
@@ -894,4 +894,4 @@ function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: Projec
   )
 }
 
-export default ProjectIntro
+export default MessageFlow

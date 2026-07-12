@@ -1,8 +1,8 @@
-import ProjectIntro from './ProjectIntro'
+import MessageFlow from './MessageFlow'
 import './App.css'
 
 function App() {
-  return <ProjectIntro />
+  return <MessageFlow />
 }
 
 export default App
