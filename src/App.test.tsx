@@ -287,14 +287,90 @@ describe('App', () => {
     expect(screen.getByText('23/500자')).toBeInTheDocument()
   })
 
-  it('템플릿 결과에서 다시 만들기를 누르면 다른 상황이냥 화면으로 전환된다', () => {
+  it('템플릿 결과는 내 상황에 더 맞추기로 표시하고 누르면 다른 상황이냥 입력으로 전환된다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /교수냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '결석·과제 문의' }))
-    fireEvent.click(screen.getByRole('button', { name: '다시 만들기' }))
+
+    expect(screen.queryByRole('button', { name: '다시 만들기' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '내 상황에 더 맞추기' }))
 
     expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeDisabled()
+  })
+
+  it('템플릿 결과의 상황 수정은 상황 카드 화면으로 돌아간다', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /교수냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '결석·과제 문의' }))
+    fireEvent.click(screen.getByRole('button', { name: '상황 수정' }))
+
+    expect(screen.getByRole('button', { name: '결석·과제 문의' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '다른 상황이냥?' })).toBeInTheDocument()
+  })
+
+  it('AI 결과의 상황 수정은 목적과 입력이 보존된 다른 상황이냥 입력으로 돌아간다', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    fireEvent.change(screen.getByLabelText('상황 설명'), {
+      target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '보낼 말 3가지 만들기' }))
+    await waitFor(() => expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3))
+
+    fireEvent.click(screen.getByRole('button', { name: '상황 수정' }))
+
+    expect(screen.getByLabelText('상황 설명')).toHaveValue('동아리 회의 시간을 다시 확인하고 싶어요.')
+    expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeEnabled()
+  })
+
+  it('리롤이 실패하면 기존 후보 3개를 유지한 채 오류 문구를 보여준다', async () => {
+    const { rerender } = render(<ProjectIntro mockGenerationCase="normal" />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    fireEvent.change(screen.getByLabelText('상황 설명'), {
+      target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '보낼 말 3가지 만들기' }))
+    await waitFor(() => expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3))
+
+    rerender(<ProjectIntro mockGenerationCase="error429" />)
+    fireEvent.click(screen.getByRole('button', { name: '다시 만들기' }))
+
+    expect(await screen.findByText('요청이 많아요. 잠시 후 다시 시도해주세요.')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3)
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '다시 만들기' })).toBeEnabled()
+  })
+
+  it('리롤 중에는 리롤·복사 버튼이 비활성화되고 기존 후보가 유지된다', async () => {
+    const { rerender } = render(<ProjectIntro mockGenerationCase="normal" />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    fireEvent.change(screen.getByLabelText('상황 설명'), {
+      target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '보낼 말 3가지 만들기' }))
+    await waitFor(() => expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3))
+
+    rerender(<ProjectIntro mockGenerationCase="delay" />)
+    fireEvent.click(screen.getByRole('button', { name: '다시 만들기' }))
+
+    expect(await screen.findByRole('button', { name: '다시 만들고 있어요…' })).toBeDisabled()
+    const copyButtons = screen.getAllByRole('button', { name: '복사' })
+    expect(copyButtons).toHaveLength(3)
+    for (const copyButton of copyButtons) {
+      expect(copyButton).toBeDisabled()
+    }
   })
 
   it('직접입력은 목 생성기의 대기 상태를 거쳐 구조화된 후보를 보여준다', async () => {

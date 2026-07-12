@@ -791,7 +791,11 @@ function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: Projec
 
         {step === 'result' && selectedScenario && (
           <div className="demo-panel wizard-panel">
-            <button className="wizard-back" onClick={backToSituation} type="button">
+            <button
+              className="wizard-back"
+              onClick={source === 'template' ? backToSituation : goToManual}
+              type="button"
+            >
               상황 수정
             </button>
             <div className="section-heading">
@@ -865,7 +869,7 @@ function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: Projec
             </div>
 
             <button className="wizard-back wizard-reroll" disabled={isRerolling} onClick={reroll} type="button">
-              {isRerolling ? '다시 만들고 있어요…' : '다시 만들기'}
+              {source === 'template' ? '내 상황에 더 맞추기' : isRerolling ? '다시 만들고 있어요…' : '다시 만들기'}
             </button>
             <button className="wizard-restart" onClick={restart} type="button">
               처음으로 (작성 내용 지우기)
