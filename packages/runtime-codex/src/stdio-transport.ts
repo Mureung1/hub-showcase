@@ -972,11 +972,15 @@ function isExactSafeJsonIntegerValue(source: string): boolean {
     return sign !== '-'
   }
 
-  if ((exponentDigits?.length ?? 0) > 6) {
+  const normalizedExponentDigits = exponentDigits?.replace(/^0+/, '') ?? ''
+
+  if (normalizedExponentDigits.length > 6) {
     return false
   }
 
-  const exponentMagnitude = exponentDigits ? Number(exponentDigits) : 0
+  const exponentMagnitude = normalizedExponentDigits
+    ? Number(normalizedExponentDigits)
+    : 0
   const exponent = exponentSign === '-' ? -exponentMagnitude : exponentMagnitude
   const scale = exponent - fractionPart.length
   let integerDigits: string

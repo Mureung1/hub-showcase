@@ -129,6 +129,7 @@ test('CodexStdioTransport keeps numeric and string Client request IDs distinct',
 test('CodexStdioTransport accepts exact safe integer values across JSON number representations', async (t) => {
   const cases = [
     { id: 1, expected: { identity: 'decimal' } },
+    { id: 2, expected: { identity: 'zero-padded-exponent' } },
     { id: 1000, expected: { identity: 'exponent' } },
   ] as const
 

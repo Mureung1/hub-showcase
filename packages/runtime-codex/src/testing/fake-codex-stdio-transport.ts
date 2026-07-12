@@ -265,6 +265,13 @@ reader.on('line', (line) => {
       return
     }
 
+    if (message.id === 2) {
+      process.stdout.write(
+        '{"id":2e0000000,"result":{"identity":"zero-padded-exponent"}}\n',
+      )
+      return
+    }
+
     if (message.id === 1000) {
       process.stdout.write('{"id":1e3,"result":{"identity":"exponent"}}\n')
       return
@@ -324,18 +331,14 @@ reader.on('line', (line) => {
     message.method === 'initialize'
   ) {
     globalThis.pendingClientResponseId = message.id
-    write({
+    write(commandApprovalRequest({
       id: 'approval-response-validation',
-      method: 'item/commandExecution/requestApproval',
-      params: {
-        threadId: 'thread-response-validation',
-        turnId: 'turn-response-validation',
-        itemId: 'item-response-validation',
-        startedAtMs: 1,
-        environmentId: null,
-        command: 'echo validate response',
-      },
-    })
+      threadId: 'thread-response-validation',
+      turnId: 'turn-response-validation',
+      itemId: 'item-response-validation',
+      startedAtMs: 1,
+      command: 'echo validate response',
+    }))
     return
   }
 
@@ -344,18 +347,14 @@ reader.on('line', (line) => {
     message.method === 'initialize'
   ) {
     globalThis.pendingClientResponseId = message.id
-    write({
+    write(commandApprovalRequest({
       id: 'reused-server-request',
-      method: 'item/commandExecution/requestApproval',
-      params: {
-        threadId: 'thread-server-reuse',
-        turnId: 'turn-server-reuse',
-        itemId: 'item-server-reuse-1',
-        startedAtMs: 1,
-        environmentId: null,
-        command: 'echo first',
-      },
-    })
+      threadId: 'thread-server-reuse',
+      turnId: 'turn-server-reuse',
+      itemId: 'item-server-reuse-1',
+      startedAtMs: 1,
+      command: 'echo first',
+    }))
     return
   }
 
@@ -364,18 +363,14 @@ reader.on('line', (line) => {
     message.method === 'initialize'
   ) {
     globalThis.pendingClientResponseId = message.id
-    write({
+    write(commandApprovalRequest({
       id: 'dismissed-server-request',
-      method: 'item/commandExecution/requestApproval',
-      params: {
-        threadId: 'thread-server-dismiss',
-        turnId: 'turn-server-dismiss',
-        itemId: 'item-server-dismiss-1',
-        startedAtMs: 1,
-        environmentId: null,
-        command: 'echo dismissed',
-      },
-    })
+      threadId: 'thread-server-dismiss',
+      turnId: 'turn-server-dismiss',
+      itemId: 'item-server-dismiss-1',
+      startedAtMs: 1,
+      command: 'echo dismissed',
+    }))
     return
   }
 
@@ -383,18 +378,14 @@ reader.on('line', (line) => {
     scenario === 'duplicate_active_server_requests' &&
     message.method === 'initialize'
   ) {
-    const request = {
+    const request = commandApprovalRequest({
       id: 'duplicate-active-server-request',
-      method: 'item/commandExecution/requestApproval',
-      params: {
-        threadId: 'thread-server-duplicate',
-        turnId: 'turn-server-duplicate',
-        itemId: 'item-server-duplicate',
-        startedAtMs: 1,
-        environmentId: null,
-        command: 'echo duplicate',
-      },
-    }
+      threadId: 'thread-server-duplicate',
+      turnId: 'turn-server-duplicate',
+      itemId: 'item-server-duplicate',
+      startedAtMs: 1,
+      command: 'echo duplicate',
+    })
     write(request)
     write(request)
     return
@@ -404,18 +395,14 @@ reader.on('line', (line) => {
     scenario === 'dismissed_server_request_reuse' &&
     message.method === 'initialized'
   ) {
-    write({
+    write(commandApprovalRequest({
       id: 'dismissed-server-request',
-      method: 'item/commandExecution/requestApproval',
-      params: {
-        threadId: 'thread-server-dismiss',
-        turnId: 'turn-server-dismiss',
-        itemId: 'item-server-dismiss-2',
-        startedAtMs: 2,
-        environmentId: null,
-        command: 'echo reused after dismiss',
-      },
-    })
+      threadId: 'thread-server-dismiss',
+      turnId: 'turn-server-dismiss',
+      itemId: 'item-server-dismiss-2',
+      startedAtMs: 2,
+      command: 'echo reused after dismiss',
+    }))
     return
   }
 
@@ -438,18 +425,14 @@ reader.on('line', (line) => {
   ) {
     if (globalThis.serverResponseCount === undefined) {
       globalThis.serverResponseCount = 1
-      write({
+      write(commandApprovalRequest({
         id: 'reused-server-request',
-        method: 'item/commandExecution/requestApproval',
-        params: {
-          threadId: 'thread-server-reuse',
-          turnId: 'turn-server-reuse',
-          itemId: 'item-server-reuse-2',
-          startedAtMs: 2,
-          environmentId: null,
-          command: 'echo second',
-        },
-      })
+        threadId: 'thread-server-reuse',
+        turnId: 'turn-server-reuse',
+        itemId: 'item-server-reuse-2',
+        startedAtMs: 2,
+        command: 'echo second',
+      }))
       return
     }
 
@@ -502,30 +485,22 @@ reader.on('line', (line) => {
   }
 
   if (scenario === 'bidirectional' && message.method === 'initialize') {
-    write({
+    write(commandApprovalRequest({
       id: message.id,
-      method: 'item/commandExecution/requestApproval',
-      params: {
-        threadId: 'thread-transport',
-        turnId: 'turn-transport',
-        itemId: 'item-transport',
-        startedAtMs: 1,
-        environmentId: null,
-        command: 'echo fixture',
-      },
-    })
-    write({
+      threadId: 'thread-transport',
+      turnId: 'turn-transport',
+      itemId: 'item-transport',
+      startedAtMs: 1,
+      command: 'echo fixture',
+    }))
+    write(commandApprovalRequest({
       id: String(message.id),
-      method: 'item/commandExecution/requestApproval',
-      params: {
-        threadId: 'thread-transport',
-        turnId: 'turn-transport',
-        itemId: 'item-transport-string',
-        startedAtMs: 2,
-        environmentId: null,
-        command: 'echo string fixture',
-      },
-    })
+      threadId: 'thread-transport',
+      turnId: 'turn-transport',
+      itemId: 'item-transport-string',
+      startedAtMs: 2,
+      command: 'echo string fixture',
+    }))
     write({ method: 'warning', params: { message: 'fixture warning' } })
     return
   }
@@ -538,6 +513,28 @@ reader.on('line', (line) => {
     write({ id: message.id, result: { userAgent: 'fake-bidirectional-codex' } })
   }
 })
+
+function commandApprovalRequest({
+  id,
+  threadId,
+  turnId,
+  itemId,
+  startedAtMs,
+  command,
+}) {
+  return {
+    id,
+    method: 'item/commandExecution/requestApproval',
+    params: {
+      threadId,
+      turnId,
+      itemId,
+      startedAtMs,
+      environmentId: null,
+      command,
+    },
+  }
+}
 
 function write(message) {
   process.stdout.write(JSON.stringify(message) + '\n')
