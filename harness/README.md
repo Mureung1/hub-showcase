@@ -13,6 +13,8 @@
 | 디자인·UX·엣지케이스 | [`docs/DESIGN.md`](../docs/DESIGN.md), [`docs/UX.md`](../docs/UX.md), [`docs/EDGE_CASES.md`](../docs/EDGE_CASES.md) |
 | AI 설계 경계 | [`docs/AI_DESIGN.md`](../docs/AI_DESIGN.md) |
 | 제품 가치·품질 내부 진단 | [`docs/PRODUCT_REVIEW.md`](../docs/PRODUCT_REVIEW.md) |
+| 문헌 기반 제품·검수 근거 | [`docs/RESEARCH_REVIEW.md`](../docs/RESEARCH_REVIEW.md) |
+| 범용 AI 대비 가치 검증 절차 | [`docs/COMPETITIVE_VALIDATION.md`](../docs/COMPETITIVE_VALIDATION.md) — 문헌→무참여자 벤치마크→T22 짧은 과업 |
 | 기능 의존성·완료 여부 | [`docs/CHECKLIST.md`](../docs/CHECKLIST.md) |
 | 주차 일정 | [`docs/PLAN.md`](../docs/PLAN.md) |
 | CI/CD 설계·실행 절차 | [`docs/CICD.md`](../docs/CICD.md) |

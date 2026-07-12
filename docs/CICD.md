@@ -51,7 +51,7 @@
 4. Production Branch 지정 + 프리뷰 배포 동작 확인 (목 상태 1차 배포 — CHECKLIST T17)
 5. 현재 Vercel 플랜의 custom events 지원 여부를 기록(T24 판단 근거). 새 유료 플랜은 자동 도입하지 않음
 6. `ANTHROPIC_API_KEY` 환경변수 등록은 T18(프록시 함수) 시점에
-7. 배포된 프리뷰 URL을 PR에 첨부해 리뷰어가 실물을 확인
+7. 배포된 프리뷰 URL을 PR에 첨부해 리뷰어가 실물을 확인하고, COMPETITIVE_VALIDATION의 T22 짧은 사람 대상 비교는 같은 버전의 고정 URL에서만 수행. T18 전 무참여자 모델 벤치마크는 T25 통과 콘텐츠 버전을 별도로 고정
 
 ## 이후 단계 (MVP Out)
 

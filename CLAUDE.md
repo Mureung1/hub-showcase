@@ -48,3 +48,5 @@
 - 시드 예시 원본 24개 + 검수 현황: docs/SEEDS.md (블라인드 정렬 검수지: docs/SEEDS_REVIEW.md)
 - 작업 진행 기록 (일자별 TODO/결과물/검토/남은 작업): docs/LOG.md — 각 문서 안의 개정 이력이 아니라 여기에 "언제 무엇을 왜 했는지"를 남긴다
 - 제품 6축 점검(가치·지속 사용·AI·UX·기술·포트폴리오): docs/PRODUCT_REVIEW.md — 내부 진단이며 완료 상태는 CHECKLIST를 따른다
+- 문헌 기반 제품·검수 근거(효과·관계·어려운 대화·구조화 UI·한국어 공손성): docs/RESEARCH_REVIEW.md — 문헌을 사용자 검증으로 표현하지 않는다
+- 범용 AI 대비 가치 검증(문헌→무참여자 모델 벤치마크→T22 짧은 과업): docs/COMPETITIVE_VALIDATION.md — 실제 결과 전에는 우월성을 주장하지 않는다

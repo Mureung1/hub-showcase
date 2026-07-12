@@ -386,3 +386,62 @@
 - T17~T21에서 Node·CI·API 타입검사·서버 취소·provider 고지·holdout 모델 비교를 순서대로 수행
 ### 다음 추천 작업
 - 코드보다 먼저 `/seed`로 T15 문제 시드를 수정·재검수하고, 독립 가능한 T25 카드 콘텐츠 감사를 병행
+
+## 2026-07-12 (범용 AI 대비 경쟁가치 검증 준비)
+### 처리한 TODO
+- ChatGPT·Gemini 대신 답냥이를 선택할 이유를 백엔드 투자 전에 검증하는 탐색 파일럿 설계
+- 최근 실제 행동 인터뷰, 카드 A/B 과업, 실 AI 후속 과업, 공정한 교차 배정·중단·개인정보 규칙 정의
+- 앱 내부 복사가 아니라 도구 실행부터 복사 후 수정·최종 전송 가능 문구 확정까지의 E2E 측정과 블라인드 품질 판정 정의
+### 사용한 자료
+- `docs/PRD.md`, `docs/MVP.md`, `docs/PRODUCT_REVIEW.md`, `docs/SPEC.md`, `docs/CHECKLIST.md`
+- 현재 `src/ProjectIntro.tsx` 카드 초안, `docs/SEEDS.md`, `src/evaluation/generationCases.ts`
+- ChatGPT 개인화·Projects·GPTs, Gemini Gems 공식 문서
+### 만든 결과물
+- [범용 AI 대비 경쟁가치 검증 절차](COMPETITIVE_VALIDATION.md)
+- [작업 계획](../harness/tasks/2026-07-12-competitive-value-validation/plan.md)과 [검증 보고서](../harness/tasks/2026-07-12-competitive-value-validation/verification.md)
+- PRD/MVP/CHECKLIST/PLAN/CICD/PRODUCT_REVIEW의 대표 12문구 gate, T18 Go 전 보류, T22 교차 비교 연결
+### 검토 결과
+- 인터뷰 11문항, 카드 C1~C4 A/B 8개 변형, 실 AI A1~A4, P01~P05 교차 배정, 원시 필드·5항목 블라인드 루브릭·Go/Iterate/No-go 준비 완료
+- 현재 C2는 조교 과업에 교수님 호칭을 고정하고, C3 tone3은 명령형, C4 tone3은 입력 없는 다음 약속을 추가하므로 참여자 모집을 보류
+- 실제 인터뷰·비교·시장 우월성 결과는 생성하거나 주장하지 않음
+- 테스트 파일 6개·테스트 34개, 린트, 빌드, diff·Markdown 37개 로컬 링크, AGENTS/CLAUDE 동기화 검증 통과
+- 제품 코드·테스트 코드·패키지·백엔드·실 AI·CI·배포 설정은 변경하지 않음
+### 남은 작업
+- `/task-start T25`로 대표 C1~C4 12문구를 수정하고 관계·톤·사실 hard gate 재검수
+- T10~T14와 T17 프리뷰 준비 후 대학생 5명 카드 교차 비교 수행
+- Go일 때만 T18~T21 최소 백엔드·실 AI 단계로 진행
+### 다음 추천 작업
+- T25 계획에서 C1~C4 대표 12문구를 첫 검증 단위로 삼고, 하나라도 hard fail이면 사용자 비교를 열지 않음
+
+## 2026-07-12 (인터뷰 선행조건을 문헌 우선 검증으로 전환)
+### 처리한 TODO
+- 인터뷰가 어려운 현재 조건을 반영해 T18 전 경쟁가치 검증을 `집중 문헌 검토 → T25 대표 12문구 → 무참여자 모델 벤치마크`로 재설계
+- AI 글쓰기 효과, AI 매개 관계 커뮤니케이션, 어려운 대화, 구조화 추천 UI, 한국어 공손성의 5개 연구 축 검토
+- 문헌의 직접 근거, 답냥이에 대한 제품 추론, 실제 사용자만 답할 수 있는 미검증 가설 분리
+### 사용한 자료
+- Science·QJE·Science Advances의 AI 글쓰기·현장 생산성·동질화 연구
+- Scientific Reports·TOCHI·JSPR·JCMC의 AI 매개 관계·진정성·ownership 연구
+- CHI의 메시지 단위 추천·후보 수·프롬프트 사용성 연구와 어려운 대화·peer support 실험
+- KCI의 한국 대학생 교수 이메일·모바일 메신저·사과화행·ChatGPT 공손성 연구
+- ChatGPT 개인화·Projects·GPTs와 Gemini Gems 공식 기능 문서(효과 근거가 아닌 경쟁 기능 기준선)
+### 만든 결과물
+- [문헌 기반 제품·검수 근거](RESEARCH_REVIEW.md): 연구 유형·표본·맥락·결과·한계·제품 적용·과해석 금지 매트릭스
+- [경쟁가치 검증 절차](COMPETITIVE_VALIDATION.md): 무참여자 C1~C4 반복 모델 벤치마크와 `Pending | Provisional Go | Iterate | No-go`
+- [작업 계획](../harness/tasks/2026-07-12-research-first-validation/plan.md)과 [검증 보고서](../harness/tasks/2026-07-12-research-first-validation/verification.md)
+- PRD/MVP/PRODUCT_REVIEW/CHECKLIST/PLAN/CICD의 T18 선행조건과 T21·T22 평가 기준 동기화
+### 검토 결과
+- 문헌은 제한된 글쓰기의 시간·평균 품질 이득과 추천 UI의 입력 절감을 지지하지만, 표현 유도·동질화·agency·진정성 위험도 함께 보고함
+- 현재 `교수님·조교님`, `선배·동기`, `친구·연인` 묶음은 문헌에서 직접 도출된 taxonomy가 아니라 MVP 제품 가설임
+- 긴 인터뷰를 T18 선행조건에서 제거하고, 실제 속도·선택·“내 말 같다”는 T22의 짧은 사람 대상 과업에 유지
+- T25는 2인 독립·제3자 판정, hard fail 0, 톤 24/24, 그대로 전송 58/72, 자리 표시자만 채워 72/72로 고정하고 미정 `mode` 예외를 제거
+- R2 분모는 답냥이 12고유/24판단, ChatGPT·Gemini 각 72판단으로 고정하고 format fail·refusal·technical Pending 처리 규칙을 추가
+- T22는 카드만 각 참여자의 평소 범용 AI와 비교하고 실 AI는 답냥이 단독 사용성으로 분리. 유효 짝비교 5명 미만이면 `Pending`
+- 대기 UX 효과 과장과 구조화 출력/스트리밍 충돌 표현을 바로잡고, Android 중복 toast 대신 버튼 상태 전환+T23 플랫폼 확인으로 수정
+- 문헌 검토만으로 범용 AI 우월성·관계 개선·지속 사용을 주장하지 않음
+- 독립 문헌·한국어·제품가치 재감사, 테스트 파일 6개·테스트 34개, 린트, 빌드, diff·Markdown 32개 파일/로컬 링크 49개, AGENTS/CLAUDE 동기화 검증 통과
+- 제품 코드·테스트 코드·패키지·백엔드·실 AI·CI·배포 설정은 변경하지 않음
+### 남은 작업
+- `/task-start T25`로 C1~C4 대표 12문구 source preflight와 hard fail 수정
+- 대표 문구 통과 뒤 고정 프롬프트로 ChatGPT·Gemini 무참여자 모델 벤치마크 실행
+### 다음 추천 작업
+- 제품 코드를 늘리기 전에 T25 대표 12문구의 잘못된 호칭·강압 표현·입력 없는 약속부터 수정하고 같은 콘텐츠 버전으로 무참여자 벤치마크를 수행
