@@ -31,7 +31,7 @@ AGENTS.md는 안정적인 작업 규칙과 이 문서로 향하는 포인터만 
 | --- | --- | --- | --- |
 | `packages/runtime-core` | runtime 생명주기의 안정 계약과 kernel | `AgentRuntimeKernel`, `AgentRuntimeAdapter`, `RuntimeRunEvent`, `RuntimeRunLog`, `RuntimeRunLogPersistence`, persistence state, run summary/history | async hydration/recovery gate, run별 coalesced checkpoint, durability barrier, sticky degraded state, non-durable emergency failure, in-memory read view, subscriber 관리, cancellation mode 처리 |
 | `packages/runtime-fake` | 검사용 결정적 adapter | `FakeRuntimeAdapter` | run 시작 debug evidence, 지연된 output 조각, `failNextRun()` 실패 시나리오, abort 기반 즉시 취소 |
-| `packages/runtime-codex` | Codex app-server 통합 package | `CodexRuntimeAdapter`, `CodexRawClient` wrapper type, status/smoke helper, capability slots | 생성된 app-server protocol type, stdio JSONL transport, Harness-managed repository-local runtime home, raw/debug log |
+| `packages/runtime-codex` | Codex app-server 통합 package | `CodexRuntimeAdapter`, `CodexRawClient` wrapper type, product runtime layout preflight, status/smoke helper, capability slots | 생성된 app-server protocol type, stdio JSONL transport, Harness-managed repository-local runtime home, product root·binary·runtime-home pair validation, raw/debug log |
 | `apps/server` | 브라우저에 안전한 로컬 companion host | `/api/runtime/*`, `/api/runtime/runs/:id/events` SSE, `/api/runtime/codex/*` | fake/codex adapters와 ready kernel 조립, repository-local developer diagnostic store |
 | `apps/inspector` | 개발자용 Runtime Inspector | adapter 선택, prompt, transcript, events, run log, history, Codex status, capability slots를 보는 React UI | server endpoint만 소비하며 app-server stdio와 직접 통신하지 않음 |
 
@@ -148,5 +148,5 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | --- | --- | --- |
 | ModelingInvocation 번역 | Public wrapper는 text input과 `cwd`만 지원하고 Skill, mention, `outputSchema`를 함께 전달하지 않는다. ModelingRun도 생성하지 않는다. | [제품 작업 조합](codex-native-product-composition.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
 | App Server 요청 왕복 | Server request를 client response와 구분해 typed response로 돌려보내지 못한다. | [Method 목록](codex-app-server-method-inventory.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
-| 제품 runtime layout | `packageRoot/appDataRoot/workspaceRoot` seam과 pair validation이 없고 `cwd` 기본값은 process 실행 위치다. | [Runtime 격리](codex-runtime-isolation.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
+| 제품 Host의 validated layout 사용 | `packages/runtime-codex`에 명시적 세 root, package-owned pinned binary와 app-managed runtime-home pair를 spawn 전에 검증하는 `prepareProductRuntimeLayout()`이 구현됐다. 아직 App Server child와 Host lifecycle은 이 layout을 소비하지 않으며, 기존 Harness `cwd`와 home default/override는 그대로다. | [runtime-codex README](../../packages/runtime-codex/README.md), [Runtime 격리](codex-runtime-isolation.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
 | 제품 기록용 진단 정제 | Diagnostic History는 prompt와 raw/debug evidence를 포함할 수 있다. | [개발 백로그](../product/ay-ple-development-backlog.md) |

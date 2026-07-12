@@ -38,6 +38,20 @@ Generated Markdown은 직접 수정하지 않는다. Decision JSON에 없는 met
 
 Package pin은 App Server binary와 생성 protocol 계약을 고정한다. `gpt-5.6-sol` 같은 model까지 고정하지 않으며 thread 생성은 현재 Codex 기본 model 설정을 따른다.
 
+## 제품 runtime layout
+
+`prepareProductRuntimeLayout()`은 Headless Codex Client Host가 사용할 spawn 전 제품 layout seam이다. Caller는 `packageRoot`, `appDataRoot`, `workspaceRoot`를 모두 absolute·normalized path로 전달해야 하며, API는 symlink를 포함한 실제 target 기준으로 세 root가 서로 같거나 포함 관계가 아닌지 확인한다.
+
+| 결과 | 현재 동작 |
+| --- | --- |
+| `packageRoot`·`codexBinPath`·`codexVersion` | Existing package directory의 `node_modules/.bin/codex`만 사용한다. Binary target이 package 밖으로 빠지는 경우, missing·non-executable 상태와 package pin 불일치를 거부하며 전역 `PATH`로 fallback하지 않는다. |
+| `appDataRoot`·`codexHome`·`codexSqliteHome` | Canonical app data 아래 `codex/home`과 `codex/sqlite`를 하나의 pair로 준비한다. 내부 symlink가 app data 밖으로 빠지거나 두 home이 겹치면 거부하며 한쪽만 바꾸는 product override는 없다. |
+| `workspaceRoot`·`cwd` | Caller가 명시한 existing directory의 canonical target을 그대로 반환한다. `process.cwd()` fallback이나 per-call workspace override를 만들지 않는다. |
+
+모든 layout failure는 `ProductRuntimeLayoutError`이며 stable `code`와 `recoverable: false`를 제공한다. 같은 configuration으로 재시도할 수 없는 root·binary·pin·runtime-home 준비 실패를 이후 Host lifecycle이 자유 형식 message 대신 이 type으로 분류할 수 있다.
+
+이 API는 layout과 runtime-home pair만 준비한다. App Server child process, initialize handshake, Host lifecycle과 thread·turn은 아직 만들지 않으며, 아래 Runtime Harness resolver와 default/override 동작도 바꾸지 않는다.
+
 ## 현재 Harness 범위
 
 현재 Adapter는 단일 실행 Runtime Harness 통합이며 AY-PLE 제품 전체의 상호작용 호스트가 아니다.
