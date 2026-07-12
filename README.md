@@ -99,7 +99,7 @@ npm run demo:week1
 | 문서 | 용도 |
 | --- | --- |
 | [docs/README.md](docs/README.md) | 프로젝트 문서 위치, 상태 분류와 관리 규칙 |
-| [Issue Tracker](docs/agents/issue-tracker.md) | issue, PRD, PR 요청 표면 규칙 |
+| [Issue Tracker](docs/agents/issue-tracker.md) | spec, implementation ticket, PR 요청 표면 규칙 |
 | [Triage Labels](docs/agents/triage-labels.md) | triage 상태 마커 규칙 |
 | [Domain Docs](docs/agents/domain.md) | domain docs와 ADR 위치 규칙 |
 | [AGENTS.md](AGENTS.md) | Codex 작업 규칙과 브랜치/PR 컨벤션 |

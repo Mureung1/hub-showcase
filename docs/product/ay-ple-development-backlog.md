@@ -15,7 +15,7 @@
 
 - 목록에서 위에 있는 상위 todo를 먼저 진행한다. 별도 우선순위 label은 사용하지 않는다.
 - 동시에 진행 중인 상위 todo는 하나로 제한한다. 막히면 local issue에 원인과 해제 조건을 기록하고 다음 독립 todo로 이동한다.
-- 상위 todo는 사용자가 얻는 capability, 하위 todo는 독립적으로 검증할 수 있는 동작이다. 파일, 타입, endpoint, 세부 구현 순서는 [local issue brief](../issues/)에서 관리한다.
+- 상위 todo는 사용자가 얻는 capability, 하위 todo는 독립적으로 검증할 수 있는 동작이다. 파일, 타입, endpoint, 세부 구현 순서는 [local implementation ticket](../tickets/)에서 관리한다.
 - `raw:` 표기는 해당 동작의 근거가 되는 Codex App Server method다. Raw method 자체를 최상위 작업 단위로 사용하지 않는다.
 - 완료한 작업은 `[x]`, 남은 작업은 `[ ]`로만 표현한다. 새 정보로 우선순위가 바뀌면 label을 추가하지 않고 목록 순서를 옮긴다.
 - 외부 제출 시점이 필요하면 별도 milestone으로 관리하며, 백로그의 구조나 ID에 반영하지 않는다.

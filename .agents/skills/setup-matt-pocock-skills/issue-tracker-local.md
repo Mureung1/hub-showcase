@@ -6,8 +6,8 @@
 
 | 산출물 | 기본 경로 | 생성 시 상태 | Lifecycle owner |
 | --- | --- | --- | --- |
-| Spec | `docs/prds/YYYY-MM-DD-<slug>.md` | `draft` 또는 `ready-for-ticketing` | `/to-spec` |
-| Implementation ticket | `docs/issues/<spec-slug>/NNN-<slug>.md` | `ready-for-agent` | `/to-tickets`, `/implement` |
+| Spec | `docs/specs/YYYY-MM-DD-<slug>.md` | `draft` 또는 `ready-for-ticketing` | `/to-spec` |
+| Implementation ticket | `docs/tickets/<spec-slug>/NNN-<slug>.md` | `ready-for-agent` | `/to-tickets`, `/implement` |
 | Wayfinder map | `docs/wayfinding/<effort>/map.md` | `active` | `/wayfinder`, `/to-spec` |
 | Wayfinder ticket | `docs/wayfinding/<effort>/tickets/NNN-<slug>.md` | `open` | `/wayfinder` |
 | Wayfinder asset | `docs/wayfinding/<effort>/assets/<name>` | 해당 없음 | owning Wayfinder ticket |

@@ -1,12 +1,12 @@
 ## Agent triage
 
 - State: completed
-- Surface: local-issue
+- Surface: local-ticket
 - Next actor: none
 
 ## Parent
 
-`docs/prds/2026-07-09-runtime-harness-codex-adapter-foundation.md`
+`docs/specs/2026-07-09-runtime-harness-codex-adapter-foundation.md`
 
 ## What to build
 
@@ -39,5 +39,5 @@ CodexRuntimeAdapter parity gate는 AY-PLE product-specific SourceSelection, Stat
 
 ## Blocked by
 
-- `docs/issues/2026-07-09-runtime-harness-codex-adapter-foundation/003-fake-runtime-cancel-and-failure.md`
-- `docs/issues/2026-07-09-runtime-harness-codex-adapter-foundation/005-codex-runtime-adapter-prompt-parity.md`
+- `docs/tickets/2026-07-09-runtime-harness-codex-adapter-foundation/003-fake-runtime-cancel-and-failure.md`
+- `docs/tickets/2026-07-09-runtime-harness-codex-adapter-foundation/005-codex-runtime-adapter-prompt-parity.md`

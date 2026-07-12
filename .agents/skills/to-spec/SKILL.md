@@ -52,10 +52,10 @@ A spec is not an implementation ticket and must not use `ready-for-agent`.
 
 ### 5. Save locally and reconcile a source map
 
-Write the spec under the compatibility path:
+Write the spec under the repository's canonical spec path:
 
 ```text
-docs/prds/YYYY-MM-DD-<short-slug>.md
+docs/specs/YYYY-MM-DD-<short-slug>.md
 ```
 
 If the path exists, append a short numeric suffix. Report the path and the readiness state. In the default local flow, do not create, edit, close, or delete GitHub Issues. If the user explicitly requests GitHub publication, preserve the local spec and follow `docs/agents/issue-tracker.md` for the confirmed target.

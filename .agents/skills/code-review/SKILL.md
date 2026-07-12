@@ -27,8 +27,8 @@ Before going further, confirm the fixed point resolves (`git rev-parse <fixed-po
 Look for the originating implementation contract in this order:
 
 1. A local implementation ticket or spec path the user passed as an argument.
-2. A local ticket referenced by the branch, commits, or changed files. In this repo, follow `docs/agents/issue-tracker.md` and look under `docs/issues/`; then read the ticket's parent spec under `docs/prds/`.
-3. A local spec under `docs/prds/` matching the branch name or feature when there is no ticket.
+2. A local ticket referenced by the branch, commits, or changed files. In this repo, follow `docs/agents/issue-tracker.md` and look under `docs/tickets/`; then read the ticket's parent spec under `docs/specs/`.
+3. A local spec under `docs/specs/` matching the branch name or feature when there is no ticket.
 4. An explicit GitHub issue or PR reference in commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), but only when the tracker rules treat that remote surface as authoritative. Fetch it through `docs/agents/issue-tracker.md`.
 5. If nothing is found, ask the user where the contract is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
 

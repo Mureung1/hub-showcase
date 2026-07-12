@@ -1,12 +1,12 @@
 ## Agent triage
 
 - State: completed
-- Surface: local-issue
+- Surface: local-ticket
 - Next actor: none
 
 ## Parent
 
-`docs/prds/2026-07-09-runtime-harness-codex-adapter-foundation.md`
+`docs/specs/2026-07-09-runtime-harness-codex-adapter-foundation.md`
 
 ## What to build
 
@@ -25,4 +25,4 @@ Fake runtime에서 cancellation과 failure lifecycle을 deterministic하게 재�
 
 ## Blocked by
 
-- `docs/issues/2026-07-09-runtime-harness-codex-adapter-foundation/002-fake-runtime-inspector-happy-path.md`
+- `docs/tickets/2026-07-09-runtime-harness-codex-adapter-foundation/002-fake-runtime-inspector-happy-path.md`

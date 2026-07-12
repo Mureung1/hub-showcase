@@ -3,7 +3,7 @@
 ## 기존 에이전트 작업 분류 기록
 
 - State: completed
-- Surface: local-prd
+- Surface: local-spec
 - Next actor: none
 
 ## Completion

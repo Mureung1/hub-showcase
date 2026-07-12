@@ -14,8 +14,8 @@ A **flow** is a path through the skills. Most paths run along one **main flow**,
 
 Matt planning artifacts are local Markdown by default:
 
-- `/to-spec` writes specs under `docs/prds/` (the legacy directory name is retained for link compatibility).
-- `/to-tickets` writes one implementation ticket per file under `docs/issues/`.
+- `/to-spec` writes specs under `docs/specs/`.
+- `/to-tickets` writes one implementation ticket per file under `docs/tickets/`.
 - `/wayfinder` writes maps, decision tickets, and linked assets under `docs/wayfinding/`.
 - GitHub Issues are used only when the user explicitly requests publication and confirms the target repository or request surface.
 

@@ -1,12 +1,12 @@
 ## Agent triage
 
 - State: completed
-- Surface: local-issue
+- Surface: local-ticket
 - Next actor: none
 
 ## Parent
 
-`docs/prds/2026-07-09-runtime-harness-codex-adapter-foundation.md`
+`docs/specs/2026-07-09-runtime-harness-codex-adapter-foundation.md`
 
 ## What to build
 
@@ -25,5 +25,5 @@ Codex App Server endpoint와 일반 AI agent capability를 제품화하지 않�
 
 ## Blocked by
 
-- `docs/issues/2026-07-09-runtime-harness-codex-adapter-foundation/004-codex-schema-and-raw-client-smoke.md`
-- `docs/issues/2026-07-09-runtime-harness-codex-adapter-foundation/005-codex-runtime-adapter-prompt-parity.md`
+- `docs/tickets/2026-07-09-runtime-harness-codex-adapter-foundation/004-codex-schema-and-raw-client-smoke.md`
+- `docs/tickets/2026-07-09-runtime-harness-codex-adapter-foundation/005-codex-runtime-adapter-prompt-parity.md`

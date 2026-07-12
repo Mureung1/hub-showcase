@@ -72,11 +72,11 @@ Approval in this step is required before publishing. It does not override the re
 Write one file per approved ticket, in dependency order (blockers first):
 
 ```text
-docs/issues/<spec-slug>/001-<ticket-slug>.md
-docs/issues/<spec-slug>/002-<ticket-slug>.md
+docs/tickets/<spec-slug>/001-<ticket-slug>.md
+docs/tickets/<spec-slug>/002-<ticket-slug>.md
 ```
 
-When there is no obvious spec slug, use `docs/issues/YYYY-MM-DD-<short-plan-slug>/`.
+When there is no obvious spec slug, use `docs/tickets/YYYY-MM-DD-<short-plan-slug>/`.
 
 Never combine tickets into one file. Use exact relative paths and titles for local blocking references, not bare numbers alone. Do not modify or close the parent spec.
 

@@ -1,12 +1,12 @@
 ## Agent triage
 
 - State: completed
-- Surface: local-issue
+- Surface: local-ticket
 - Next actor: none
 
 ## Parent
 
-`docs/prds/2026-07-10-runtime-harness-hardening.md`
+`docs/specs/2026-07-10-runtime-harness-hardening.md`
 
 ## What to build
 
@@ -40,4 +40,4 @@
 
 ## Blocked by
 
-- `docs/issues/2026-07-10-runtime-harness-hardening/002-completed-run-survives-server-restart.md`
+- `docs/tickets/2026-07-10-runtime-harness-hardening/002-completed-run-survives-server-restart.md`

@@ -8,8 +8,8 @@
 | --- | --- | --- |
 | `docs/product/` | 제품 문제정의, 사용자, MVP 범위, UX 원칙과 제품 계획 | `ay-ple-product-brief.md` |
 | `docs/architecture/` | 오래 유지될 기술 구조와 시스템 경계 | `codex-runtime-isolation.md` |
-| `docs/prds/` | Matt Pocock `/to-spec`이 생성하는 local spec artifact. 기존 링크 호환을 위해 디렉터리 이름은 유지한다. | `2026-07-09-runtime-harness.md` |
-| `docs/issues/` | Matt Pocock `/to-tickets`가 생성하는 local implementation ticket 묶음 | `runtime-harness/001-runtime-core.md` |
+| `docs/specs/` | Matt Pocock `/to-spec`이 생성하는 local spec artifact | `2026-07-09-runtime-harness.md` |
+| `docs/tickets/` | Matt Pocock `/to-tickets`가 생성하는 local implementation ticket 묶음 | `runtime-harness/001-runtime-core.md` |
 | `docs/wayfinding/<effort>/` | Matt Pocock `/wayfinder`의 map, decision ticket과 evidence asset | `runtime-client/map.md` |
 | `docs/spikes/<slug>/` | spike 계획, 질문, 성공 기준, handoff 가능한 조사 기록 | `codex-runtime-ownership/plan.md` |
 | `docs/adr/` | 되돌리기 어려운 기술/제품 결정 | `0001-use-file-auth-store-for-runtime-spike.md` |
@@ -32,8 +32,8 @@
 │   ├── README.md
 │   ├── product/
 │   ├── architecture/
-│   ├── prds/
-│   ├── issues/
+│   ├── specs/
+│   ├── tickets/
 │   ├── wayfinding/
 │   ├── spikes/
 │   ├── adr/
@@ -104,8 +104,8 @@ Root companion docs:
 
 | 문서 | 위치 | 기록 |
 | --- | --- | --- |
-| Runtime Harness Foundation PRD | [prds/2026-07-09-runtime-harness-codex-adapter-foundation.md](prds/2026-07-09-runtime-harness-codex-adapter-foundation.md) | 구현 완료 · 1주차 기준선 |
-| Runtime Harness Hardening PRD | [prds/2026-07-10-runtime-harness-hardening.md](prds/2026-07-10-runtime-harness-hardening.md) | 구현 완료 · issues 001–005 완료 |
+| Runtime Harness Foundation Spec | [specs/2026-07-09-runtime-harness-codex-adapter-foundation.md](specs/2026-07-09-runtime-harness-codex-adapter-foundation.md) | 구현 완료 · 1주차 기준선 |
+| Runtime Harness Hardening Spec | [specs/2026-07-10-runtime-harness-hardening.md](specs/2026-07-10-runtime-harness-hardening.md) | 구현 완료 · tickets 001–005 완료 |
 | AY-PLE 4주 제출 백로그 | [archive/2026-07-ay-ple-4-week-submission-backlog.md](archive/2026-07-ay-ple-4-week-submission-backlog.md) | 최초 캠프 제출 일정과 당시 우선순위 보존 |
 | Runtime Ownership Spike Plan | [spikes/codex-runtime-ownership/plan.md](spikes/codex-runtime-ownership/plan.md) | 실행 완료 · 당시 범위와 성공 기준 |
 | Runtime auth ADR | [adr/0001-use-file-auth-store-for-runtime-spike.md](adr/0001-use-file-auth-store-for-runtime-spike.md) | Runtime Ownership Spike의 인증 저장 결정 |

@@ -1,12 +1,12 @@
 ## Agent triage
 
 - State: completed
-- Surface: local-issue
+- Surface: local-ticket
 - Next actor: none
 
 ## Parent
 
-`docs/prds/2026-07-09-runtime-harness-codex-adapter-foundation.md`
+`docs/specs/2026-07-09-runtime-harness-codex-adapter-foundation.md`
 
 ## What to build
 
@@ -26,4 +26,4 @@ Codex App Server의 공식 계약을 pinned Codex version의 generated schema/ty
 
 ## Blocked by
 
-- `docs/issues/2026-07-09-runtime-harness-codex-adapter-foundation/001-package-first-workspace-topology.md`
+- `docs/tickets/2026-07-09-runtime-harness-codex-adapter-foundation/001-package-first-workspace-topology.md`

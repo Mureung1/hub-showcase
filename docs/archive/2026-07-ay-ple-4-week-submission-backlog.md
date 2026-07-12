@@ -96,8 +96,8 @@ Runtime Inspector는 학생용 제품이 아니라, 위 흐름이 안정된 Code
 | W1-02 | 검토 대기와 반영됨 상태의 화면 구조를 prototype으로 검증했다. | [Review Workspace Scenario](../product/ay-ple-review-workspace-scenario.md) |
 | W1-03 | Fake/Codex adapter가 같은 kernel 계약으로 실행·취소·실패를 표현한다. | [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md) |
 | W1-04 | 실제 HTTP/SSE와 browser를 통과하는 결정적 lifecycle 검증을 추가했다. | `npm run test:e2e` |
-| W1-05 | Runtime Diagnostic History에 100ms checkpoint, interrupted-run recovery, count/byte retention과 terminal clear를 구현했다. | [Runtime Harness Hardening PRD](../prds/2026-07-10-runtime-harness-hardening.md) |
-| W1-06 | Runtime persistence 실패를 fail-closed로 처리하고 degraded HTTP/UI와 함께 local issues 001–005를 구현·검증했다. | [Runtime hardening issues](../issues/2026-07-10-runtime-harness-hardening/) |
+| W1-05 | Runtime Diagnostic History에 100ms checkpoint, interrupted-run recovery, count/byte retention과 terminal clear를 구현했다. | [Runtime Harness Hardening Spec](../specs/2026-07-10-runtime-harness-hardening.md) |
+| W1-06 | Runtime persistence 실패를 fail-closed로 처리하고 degraded HTTP/UI와 함께 local tickets 001–005를 구현·검증했다. | [Runtime hardening tickets](../tickets/2026-07-10-runtime-harness-hardening/) |
 
 ## 2주차 확정 백로그
 

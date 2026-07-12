@@ -1,12 +1,12 @@
 ## Agent triage
 
 - State: completed
-- Surface: local-issue
+- Surface: local-ticket
 - Next actor: none
 
 ## Parent
 
-`docs/prds/2026-07-09-runtime-harness-codex-adapter-foundation.md`
+`docs/specs/2026-07-09-runtime-harness-codex-adapter-foundation.md`
 
 ## What to build
 
@@ -26,5 +26,5 @@ CodexRuntimeAdapter가 Codex App Server의 thread/turn lifecycle을 사용해 Ru
 
 ## Blocked by
 
-- `docs/issues/2026-07-09-runtime-harness-codex-adapter-foundation/002-fake-runtime-inspector-happy-path.md`
-- `docs/issues/2026-07-09-runtime-harness-codex-adapter-foundation/004-codex-schema-and-raw-client-smoke.md`
+- `docs/tickets/2026-07-09-runtime-harness-codex-adapter-foundation/002-fake-runtime-inspector-happy-path.md`
+- `docs/tickets/2026-07-09-runtime-harness-codex-adapter-foundation/004-codex-schema-and-raw-client-smoke.md`

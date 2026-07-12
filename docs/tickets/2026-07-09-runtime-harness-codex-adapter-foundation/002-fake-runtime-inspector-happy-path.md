@@ -1,12 +1,12 @@
 ## Agent triage
 
 - State: completed
-- Surface: local-issue
+- Surface: local-ticket
 - Next actor: none
 
 ## Parent
 
-`docs/prds/2026-07-09-runtime-harness-codex-adapter-foundation.md`
+`docs/specs/2026-07-09-runtime-harness-codex-adapter-foundation.md`
 
 ## What to build
 
@@ -25,4 +25,4 @@ FakeRuntimeAdapter를 사용해 Runtime Inspector에서 첫 run happy path를 �
 
 ## Blocked by
 
-- `docs/issues/2026-07-09-runtime-harness-codex-adapter-foundation/001-package-first-workspace-topology.md`
+- `docs/tickets/2026-07-09-runtime-harness-codex-adapter-foundation/001-package-first-workspace-topology.md`

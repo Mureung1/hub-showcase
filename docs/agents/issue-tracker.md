@@ -44,12 +44,12 @@ PR을 triage할 때는 body, comments, diff를 함께 읽는다. CLI를 사용�
 
 ## Local Matt artifact mapping
 
-`docs/prds/`라는 directory 이름은 기존 link 호환을 위해 유지한다. 새 파일의 의미는 `/to-spec`이 만드는 spec이다.
+Spec은 `docs/specs/`, implementation ticket은 `docs/tickets/`에 저장한다.
 
 | 산출물 | 기본 경로 | 생성 시 상태 | 다음 actor |
 | --- | --- | --- | --- |
-| Spec | `docs/prds/YYYY-MM-DD-<slug>.md` | `draft` 또는 `ready-for-ticketing` | `/grill-with-docs`, `/wayfinder`, `/to-tickets`, 또는 user |
-| Implementation ticket | `docs/issues/<spec-slug>/NNN-<slug>.md` | `ready-for-agent` | `/implement` |
+| Spec | `docs/specs/YYYY-MM-DD-<slug>.md` | `draft` 또는 `ready-for-ticketing` | `/grill-with-docs`, `/wayfinder`, `/to-tickets`, 또는 user |
+| Implementation ticket | `docs/tickets/<spec-slug>/NNN-<slug>.md` | `ready-for-agent` | `/implement` |
 | Wayfinder map | `docs/wayfinding/<effort>/map.md` | `active` | `/wayfinder` |
 | Wayfinder decision ticket | `docs/wayfinding/<effort>/tickets/NNN-<slug>.md` | `open` | `/wayfinder` |
 | Wayfinder evidence asset | `docs/wayfinding/<effort>/assets/<name>` | 해당 없음 | owning Wayfinder ticket에서 link |
