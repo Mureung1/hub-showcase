@@ -4,6 +4,8 @@ import express, {
   type Response,
 } from "express";
 
+import recipesRouter from "./routes/recipes.routes.js";
+
 const app = express();
 
 app.use(express.json());
@@ -12,6 +14,15 @@ app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: "Recipebook API is running",
+  });
+});
+
+app.use("/api/recipes", recipesRouter);
+
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    message: "요청한 API를 찾을 수 없습니다.",
   });
 });
 
