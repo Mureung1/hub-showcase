@@ -12,13 +12,13 @@ Codex App Server 통합 실험을 담당하는 runtime package다. raw Codex pro
 | 시작 명령 | `codex app-server --listen stdio://` |
 | 생성 protocol 경로 | `src/internal/codex-app-server-protocol/generated/` |
 
-내부 Codex App Server TypeScript protocol 파일과 Server request runtime-validation JSON Schema는 다음 명령으로 다시 생성한다.
+내부 Codex App Server TypeScript protocol 파일과 transport가 사용하는 Server request·method별 success response runtime-validation JSON Schema는 다음 명령으로 다시 생성한다.
 
 ```bash
 npm run generate:codex-types -w @ay-ple/runtime-codex
 ```
 
-Generator는 package-owned Codex binary의 `generate-ts`와 `generate-json-schema`를 실행하고, `NodeNext` ESM compile을 위해 생성된 relative import에 `.js` 확장자를 붙인다. 전체 JSON Schema output 중 transport가 사용하는 `ServerRequest.schema.json`을 같은 generated directory에 둔다. 생성 파일은 internal이며 AY-PLE 제품 계약으로 다시 export하지 않는다.
+Generator는 package-owned Codex binary의 `generate-ts`와 `generate-json-schema`를 실행하고, `NodeNext` ESM compile을 위해 생성된 relative import에 `.js` 확장자를 붙인다. 전체 JSON Schema output 중 transport가 사용하는 `ServerRequest.schema.json`과 method별 response schema를 모은 `ServerRequestResponses.schema.json`을 같은 generated directory에 둔다. 생성 파일은 internal이며 AY-PLE 제품 계약으로 다시 export하지 않는다.
 
 ## Raw method 목록
 
@@ -42,7 +42,7 @@ Package pin은 App Server binary와 생성 protocol 계약을 고정한다. `gpt
 
 Package 내부 `CodexStdioTransport`는 이후 Headless Codex Client Host가 사용할 generated-schema-backed lower transport다. Client request·notification, Server request·notification을 stdio JSONL에서 방향별로 분류하고 `RequestId`의 `string | number` type과 exact value를 보존한다. Outbound Client request와 inbound Server request는 별도 namespace이므로 반대 방향의 같은 numeric ID가 동시에 존재해도 서로 resolve하지 않는다.
 
-Known Server request는 pinned generated JSON Schema로 nested params까지 검증한 뒤 generated response type에 맞는 `respond`와 protocol-level `respondError`를 제공하며 한 request에는 한 번만 쓸 수 있다. Unknown·duplicate·ambiguous response와 malformed message는 다른 pending request에 귀속하지 않고 sanitized `protocol_error` observation으로 connection을 닫는다. Individual Client request timeout은 connection loss와 구분된 request-scoped error다. Spawn error, child exit, stdout EOF, stdout failure와 stdin write failure는 구분된 `transport_lost` observation이다. 이 observation에는 raw stdio line, child environment, stderr와 debug payload를 넣지 않는다.
+Known Server request는 pinned generated JSON Schema로 nested params를 검증하고 method별 generated response schema로 success result를 검증한 뒤에만 wire에 쓴다. Generated response type에 맞는 `respond`와 protocol-level `respondError`는 한 request에 한 번만 쓸 수 있고, invalid success result는 one-shot 상태를 소비하지 않는다. Raw numeric ID는 parse 전에 exact safe JSON integer인지 확인하며 중복 top-level protocol key를 ambiguous message로 거부한다. Unknown·duplicate·ambiguous response와 malformed message는 다른 pending request에 귀속하지 않고 sanitized `protocol_error` observation으로 connection을 닫는다. Individual Client request timeout은 connection loss와 구분된 request-scoped error이며, timed-out identity의 known late response는 폐기해 다른 pending request와 connection을 유지한다. Spawn error, child exit, stdout EOF, stdout failure와 stdin write failure는 구분된 `transport_lost` observation이다. 이 observation에는 raw stdio line, child environment, stderr와 debug payload를 넣지 않는다.
 
 Actual-child contract fixture는 별도 JSONL journal로 spawn과 Client outbound protocol·Server response를 확인하며 success, assertion failure와 transport failure에서 child 종료 deadline, force-kill과 temporary directory cleanup을 소유한다. 이 lower transport를 읽는 것만으로 raw method가 제품 Host에 연결된 것은 아니므로 method inventory의 integration 단계는 바꾸지 않는다.
 

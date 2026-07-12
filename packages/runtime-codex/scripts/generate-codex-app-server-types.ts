@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolvePackageCodexBinPath } from '../src/raw-client.js'
+import { serverRequestResponseContracts } from '../src/internal/codex-app-server-protocol/server-request-response-contract.js'
 
 const scriptPath = fileURLToPath(import.meta.url)
 const packageRoot = resolve(dirname(scriptPath), '..')
@@ -24,7 +25,6 @@ const outputDir = join(
   'generated',
 )
 const codexBinPath = resolvePackageCodexBinPath(packageRoot)
-
 rmSync(outputDir, { recursive: true, force: true })
 
 runCodexGenerator(['app-server', 'generate-ts', '--out', outputDir])
@@ -43,6 +43,10 @@ try {
   copyFileSync(
     join(schemaOutputDir, 'ServerRequest.json'),
     join(outputDir, 'ServerRequest.schema.json'),
+  )
+  writeFileSync(
+    join(outputDir, 'ServerRequestResponses.schema.json'),
+    `${JSON.stringify(readServerRequestResponseSchemas(schemaOutputDir), null, 2)}\n`,
   )
 } finally {
   rmSync(schemaOutputDir, { recursive: true, force: true })
@@ -101,6 +105,21 @@ function listTypeScriptFiles(dir: string): string[] {
   }
 
   return files
+}
+
+function readServerRequestResponseSchemas(
+  schemaOutputDir: string,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(serverRequestResponseContracts).map(
+      ([method, { schemaName }]) => [
+        method,
+        JSON.parse(
+          readFileSync(join(schemaOutputDir, `${schemaName}.json`), 'utf8'),
+        ) as unknown,
+      ],
+    ),
+  )
 }
 
 function toNodeNextImportPath(filePath: string, importPath: string): string {

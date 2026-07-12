@@ -13,8 +13,12 @@ export type FakeCodexStdioScenario =
   | 'unknown_response'
   | 'malformed_json'
   | 'ambiguous_message'
+  | 'duplicate_protocol_key'
   | 'invalid_server_request_params'
   | 'unsafe_numeric_id'
+  | 'unsafe_numeric_id_underflow'
+  | 'late_response_after_timeout'
+  | 'server_response_validation'
   | 'exit_after_request'
   | 'stdout_eof'
   | 'stdin_failure'
@@ -180,6 +184,13 @@ reader.on('line', (line) => {
     return
   }
 
+  if (scenario === 'duplicate_protocol_key') {
+    process.stdout.write(
+      '{"id":1,"id":"1","result":{"ambiguous":true}}\n',
+    )
+    return
+  }
+
   if (scenario === 'invalid_server_request_params') {
     write({
       id: message.id,
@@ -208,6 +219,61 @@ reader.on('line', (line) => {
     process.stdout.write(
       '{"id":9007199254740993,"result":{"unsafe":true}}\n',
     )
+    return
+  }
+
+  if (scenario === 'unsafe_numeric_id_underflow') {
+    process.stdout.write('{"id":1e-324,"result":{"unsafe":true}}\n')
+    return
+  }
+
+  if (scenario === 'late_response_after_timeout') {
+    if (!Object.hasOwn(message, 'id')) {
+      return
+    }
+
+    if (globalThis.timedOutClientRequestId === undefined) {
+      globalThis.timedOutClientRequestId = message.id
+      return
+    }
+
+    write({
+      id: globalThis.timedOutClientRequestId,
+      result: { arrived: 'late' },
+    })
+    write({ id: message.id, result: { request: message.id } })
+    return
+  }
+
+  if (
+    scenario === 'server_response_validation' &&
+    message.method === 'initialize'
+  ) {
+    globalThis.pendingClientResponseId = message.id
+    write({
+      id: 'approval-response-validation',
+      method: 'item/commandExecution/requestApproval',
+      params: {
+        threadId: 'thread-response-validation',
+        turnId: 'turn-response-validation',
+        itemId: 'item-response-validation',
+        startedAtMs: 1,
+        environmentId: null,
+        command: 'echo validate response',
+      },
+    })
+    return
+  }
+
+  if (
+    scenario === 'server_response_validation' &&
+    message.id === 'approval-response-validation' &&
+    message.result
+  ) {
+    write({
+      id: globalThis.pendingClientResponseId,
+      result: { userAgent: 'fake-response-validation-codex' },
+    })
     return
   }
 

@@ -1,23 +1,15 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import readline from 'node:readline'
-import { Ajv } from 'ajv'
+import { Ajv, type ValidateFunction } from 'ajv'
 import serverRequestSchema from './internal/codex-app-server-protocol/generated/ServerRequest.schema.json' with { type: 'json' }
+import serverRequestResponseSchemas from './internal/codex-app-server-protocol/generated/ServerRequestResponses.schema.json' with { type: 'json' }
 import type {
   ClientNotification,
   ClientRequest,
   RequestId,
   ServerRequest,
 } from './internal/codex-app-server-protocol/generated/index.js'
-import type { ApplyPatchApprovalResponse } from './internal/codex-app-server-protocol/generated/ApplyPatchApprovalResponse.js'
-import type { ExecCommandApprovalResponse } from './internal/codex-app-server-protocol/generated/ExecCommandApprovalResponse.js'
-import type { AttestationGenerateResponse } from './internal/codex-app-server-protocol/generated/v2/AttestationGenerateResponse.js'
-import type { ChatgptAuthTokensRefreshResponse } from './internal/codex-app-server-protocol/generated/v2/ChatgptAuthTokensRefreshResponse.js'
-import type { CommandExecutionRequestApprovalResponse } from './internal/codex-app-server-protocol/generated/v2/CommandExecutionRequestApprovalResponse.js'
-import type { DynamicToolCallResponse } from './internal/codex-app-server-protocol/generated/v2/DynamicToolCallResponse.js'
-import type { FileChangeRequestApprovalResponse } from './internal/codex-app-server-protocol/generated/v2/FileChangeRequestApprovalResponse.js'
-import type { McpServerElicitationRequestResponse } from './internal/codex-app-server-protocol/generated/v2/McpServerElicitationRequestResponse.js'
-import type { PermissionsRequestApprovalResponse } from './internal/codex-app-server-protocol/generated/v2/PermissionsRequestApprovalResponse.js'
-import type { ToolRequestUserInputResponse } from './internal/codex-app-server-protocol/generated/v2/ToolRequestUserInputResponse.js'
+import type { ServerRequestResponseByMethod } from './internal/codex-app-server-protocol/server-request-response-contract.js'
 
 export type CodexStdioTransportOptions = {
   command: string
@@ -81,22 +73,7 @@ export class CodexStdioRequestError extends Error {
 
 type ServerRequestMethod = ServerRequest['method']
 
-const serverRequestResponseTypes = {
-  'item/commandExecution/requestApproval': null as unknown as CommandExecutionRequestApprovalResponse,
-  'item/fileChange/requestApproval': null as unknown as FileChangeRequestApprovalResponse,
-  'item/tool/requestUserInput': null as unknown as ToolRequestUserInputResponse,
-  'mcpServer/elicitation/request': null as unknown as McpServerElicitationRequestResponse,
-  'item/permissions/requestApproval': null as unknown as PermissionsRequestApprovalResponse,
-  'item/tool/call': null as unknown as DynamicToolCallResponse,
-  'account/chatgptAuthTokens/refresh': null as unknown as ChatgptAuthTokensRefreshResponse,
-  'attestation/generate': null as unknown as AttestationGenerateResponse,
-  applyPatchApproval: null as unknown as ApplyPatchApprovalResponse,
-  execCommandApproval: null as unknown as ExecCommandApprovalResponse,
-} satisfies Record<ServerRequestMethod, unknown>
-
-type ServerRequestResponseByMethod = typeof serverRequestResponseTypes
-
-const validateGeneratedServerRequest = new Ajv({
+const generatedProtocolValidator = new Ajv({
   strict: false,
   formats: {
     double: true,
@@ -105,7 +82,21 @@ const validateGeneratedServerRequest = new Ajv({
     uint32: true,
     uint64: true,
   },
-}).compile(serverRequestSchema)
+})
+
+const validateGeneratedServerRequest =
+  generatedProtocolValidator.compile(serverRequestSchema)
+
+type ServerRequestContract = {
+  validateResponse: ValidateFunction
+}
+
+const serverRequestContracts = Object.fromEntries(
+  Object.entries(serverRequestResponseSchemas).map(([method, schema]) => [
+    method,
+    { validateResponse: generatedProtocolValidator.compile(schema) },
+  ]),
+) as Record<ServerRequestMethod, ServerRequestContract>
 
 export type CodexStdioServerRequestFor<Method extends ServerRequestMethod> = {
   id: RequestId
@@ -184,6 +175,7 @@ export class CodexStdioTransport {
     PendingClientResponse
   >()
   private readonly completedClientResponseIds = new Set<string>()
+  private readonly timedOutClientResponseIds = new Set<string>()
   private readonly serverRequestIds = new Set<string>()
   private readonly observationQueue: CodexStdioObservation[] = []
   private readonly observationResolvers: ObservationResolver[] = []
@@ -211,7 +203,8 @@ export class CodexStdioTransport {
 
     if (
       this.pendingClientResponses.has(requestKey) ||
-      this.completedClientResponseIds.has(requestKey)
+      this.completedClientResponseIds.has(requestKey) ||
+      this.timedOutClientResponseIds.has(requestKey)
     ) {
       throw new CodexStdioProtocolError(
         'duplicate_response',
@@ -222,7 +215,7 @@ export class CodexStdioTransport {
     const response = new Promise<unknown>((resolvePromise, reject) => {
       const timeout = setTimeout(() => {
         this.pendingClientResponses.delete(requestKey)
-        this.completedClientResponseIds.add(requestKey)
+        this.timedOutClientResponseIds.add(requestKey)
         reject(
           new CodexStdioRequestError(
             `${request.method} timed out waiting for a response`,
@@ -412,10 +405,20 @@ export class CodexStdioTransport {
   }
 
   private handleStdoutLine(line: string): void {
-    if (hasUnsafeTopLevelNumericId(line)) {
+    const rawProtocolFailure = inspectRawProtocolEnvelope(line)
+
+    if (rawProtocolFailure === 'unsafe_numeric_id') {
       this.failProtocol(
         'invalid_message',
         'Codex app-server emitted an unsafe numeric request identity',
+      )
+      return
+    }
+
+    if (rawProtocolFailure === 'duplicate_protocol_key') {
+      this.failProtocol(
+        'ambiguous_message',
+        'Codex app-server emitted duplicate top-level protocol keys',
       )
       return
     }
@@ -516,6 +519,10 @@ export class CodexStdioTransport {
     const pending = this.pendingClientResponses.get(key)
 
     if (!pending) {
+      if (this.timedOutClientResponseIds.has(key)) {
+        return
+      }
+
       const duplicate = this.completedClientResponseIds.has(key)
       this.failProtocol(
         duplicate ? 'duplicate_response' : 'unknown_response',
@@ -611,7 +618,16 @@ export class CodexStdioTransport {
       id,
       method,
       params: message.params,
-      respond: async (result: unknown) => respondOnce({ id, result }),
+      respond: async (result: unknown) => {
+        if (!serverRequestContracts[method].validateResponse(result)) {
+          throw new CodexStdioProtocolError(
+            'invalid_message',
+            'Server success response does not match the generated schema',
+          )
+        }
+
+        await respondOnce({ id, result })
+      },
       respondError,
     } as CodexStdioServerRequest
 
@@ -754,8 +770,11 @@ function isRequestId(value: unknown): value is RequestId {
   )
 }
 
-function hasUnsafeTopLevelNumericId(source: string): boolean {
+function inspectRawProtocolEnvelope(
+  source: string,
+): 'unsafe_numeric_id' | 'duplicate_protocol_key' | undefined {
   let depth = 0
+  const topLevelKeys = new Set<string>()
 
   for (let index = 0; index < source.length; index += 1) {
     const character = source[index]
@@ -764,14 +783,25 @@ function hasUnsafeTopLevelNumericId(source: string): boolean {
       const stringEnd = findJsonStringEnd(source, index)
 
       if (stringEnd === -1) {
-        return false
+        return undefined
       }
 
       if (depth === 1) {
         const key = readJsonString(source.slice(index, stringEnd + 1))
         let valueStart = skipWhitespace(source, stringEnd + 1)
 
-        if (key === 'id' && source[valueStart] === ':') {
+        if (key !== undefined && source[valueStart] === ':') {
+          if (topLevelKeys.has(key)) {
+            return 'duplicate_protocol_key'
+          }
+
+          topLevelKeys.add(key)
+
+          if (key !== 'id') {
+            index = stringEnd
+            continue
+          }
+
           valueStart = skipWhitespace(source, valueStart + 1)
           const firstValueCharacter = source[valueStart]
 
@@ -790,11 +820,11 @@ function hasUnsafeTopLevelNumericId(source: string): boolean {
               valueEnd += 1
             }
 
-            const numericId = Number(source.slice(valueStart, valueEnd))
-
-            return (
-              !Number.isSafeInteger(numericId) || Object.is(numericId, -0)
-            )
+            if (
+              !isExactSafeJsonIntegerToken(source.slice(valueStart, valueEnd))
+            ) {
+              return 'unsafe_numeric_id'
+            }
           }
         }
       }
@@ -810,7 +840,20 @@ function hasUnsafeTopLevelNumericId(source: string): boolean {
     }
   }
 
-  return false
+  return undefined
+}
+
+function isExactSafeJsonIntegerToken(source: string): boolean {
+  if (!/^-?(?:0|[1-9][0-9]*)$/.test(source) || source === '-0') {
+    return false
+  }
+
+  const value = BigInt(source)
+
+  return (
+    value >= BigInt(Number.MIN_SAFE_INTEGER) &&
+    value <= BigInt(Number.MAX_SAFE_INTEGER)
+  )
 }
 
 function findJsonStringEnd(source: string, start: number): number {
@@ -858,7 +901,7 @@ function skipWhitespace(source: string, start: number): number {
 }
 
 function isServerRequestMethod(method: string): method is ServerRequestMethod {
-  return Object.hasOwn(serverRequestResponseTypes, method)
+  return Object.hasOwn(serverRequestContracts, method)
 }
 
 function identityKey(id: RequestId): string {

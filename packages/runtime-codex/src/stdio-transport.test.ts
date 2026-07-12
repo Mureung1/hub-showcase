@@ -179,18 +179,25 @@ test('CodexStdioTransport fails closed on malformed and ambiguous messages', asy
       FakeCodexStdioScenario,
       | 'malformed_json'
       | 'ambiguous_message'
+      | 'duplicate_protocol_key'
       | 'invalid_server_request_params'
       | 'unsafe_numeric_id'
+      | 'unsafe_numeric_id_underflow'
     >
     code: 'malformed_json' | 'ambiguous_message' | 'invalid_message'
   }> = [
     { scenario: 'malformed_json', code: 'malformed_json' },
     { scenario: 'ambiguous_message', code: 'ambiguous_message' },
+    { scenario: 'duplicate_protocol_key', code: 'ambiguous_message' },
     {
       scenario: 'invalid_server_request_params',
       code: 'invalid_message',
     },
     { scenario: 'unsafe_numeric_id', code: 'invalid_message' },
+    {
+      scenario: 'unsafe_numeric_id_underflow',
+      code: 'invalid_message',
+    },
   ]
 
   for (const fixtureCase of cases) {
@@ -199,7 +206,15 @@ test('CodexStdioTransport fails closed on malformed and ambiguous messages', asy
         { scenario: fixtureCase.scenario },
         async ({ transport }) => {
           const observations = transport.observations()[Symbol.asyncIterator]()
-          const pending = transport.sendRequest(createInitializeRequest(1))
+          const pending = transport.sendRequest(
+            createInitializeRequest(
+              fixtureCase.scenario === 'unsafe_numeric_id_underflow'
+                ? 0
+                : fixtureCase.scenario === 'duplicate_protocol_key'
+                  ? '1'
+                  : 1,
+            ),
+          )
           const rejection = assert.rejects(
             pending,
             isProtocolFailure(fixtureCase.code),
@@ -363,6 +378,78 @@ test('CodexStdioTransport keeps an individual request timeout scoped to that req
           .filter((entry) => entry.kind === 'client_message')
           .map((entry) => entry.message),
         [createInitializeRequest(1), { method: 'initialized' }],
+      )
+    },
+  )
+})
+
+test('CodexStdioTransport discards a known late response without terminating another request', async () => {
+  await withFakeCodexStdioTransport(
+    {
+      scenario: 'late_response_after_timeout',
+      requestTimeoutMs: 20,
+    },
+    async ({ transport }) => {
+      await assert.rejects(
+        transport.sendRequest(createInitializeRequest(1)),
+        (error: unknown) =>
+          error instanceof CodexStdioRequestError &&
+          error.code === 'request_timeout',
+      )
+
+      assert.deepEqual(
+        await transport.sendRequest(createInitializeRequest(2)),
+        { request: 2 },
+      )
+      await transport.sendNotification({ method: 'initialized' })
+    },
+  )
+})
+
+test('CodexStdioTransport validates Server success responses before writing to the child', async () => {
+  await withFakeCodexStdioTransport(
+    { scenario: 'server_response_validation' },
+    async ({ transport, readJournal }) => {
+      const observations = transport.observations()[Symbol.asyncIterator]()
+      const initialize = transport.sendRequest(createInitializeRequest(1))
+      void initialize.catch(() => {})
+      const observation = await nextObservation(observations)
+      assert.equal(observation.kind, 'server_request')
+
+      if (
+        observation.kind !== 'server_request' ||
+        observation.request.method !==
+          'item/commandExecution/requestApproval'
+      ) {
+        assert.fail('expected command approval Server request')
+      }
+
+      await assert.rejects(
+        observation.request.respond({ decision: 'allow' } as never),
+        isProtocolFailure('invalid_message'),
+      )
+      assert.deepEqual(
+        (await readJournal({ minimumEntries: 2 }))
+          .filter((entry) => entry.kind === 'client_message')
+          .map((entry) => entry.message),
+        [createInitializeRequest(1)],
+      )
+
+      await observation.request.respond({ decision: 'accept' })
+      assert.deepEqual(await initialize, {
+        userAgent: 'fake-response-validation-codex',
+      })
+      assert.deepEqual(
+        (await readJournal({ minimumEntries: 3 }))
+          .filter((entry) => entry.kind === 'client_message')
+          .map((entry) => entry.message),
+        [
+          createInitializeRequest(1),
+          {
+            id: 'approval-response-validation',
+            result: { decision: 'accept' },
+          },
+        ],
       )
     },
   )
