@@ -182,8 +182,23 @@ reader.on('line', (line) => {
   if (scenario === 'invalid_server_request_params') {
     write({
       id: message.id,
-      method: 'item/commandExecution/requestApproval',
-      params: {},
+      method: 'item/tool/requestUserInput',
+      params: {
+        threadId: 'thread-invalid-params',
+        turnId: 'turn-invalid-params',
+        itemId: 'item-invalid-params',
+        questions: [
+          {
+            id: 'question-invalid-params',
+            header: 'Invalid',
+            question: 'Should nested schema validation reject this?',
+            isOther: false,
+            isSecret: false,
+            options: [42],
+          },
+        ],
+        autoResolutionMs: null,
+      },
     })
     return
   }

@@ -1,5 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import readline from 'node:readline'
+import { Ajv } from 'ajv'
+import serverRequestSchema from './internal/codex-app-server-protocol/generated/ServerRequest.schema.json' with { type: 'json' }
 import type {
   ClientNotification,
   ClientRequest,
@@ -87,60 +89,31 @@ type ServerRequestFor<Method extends ServerRequestMethod> = Extract<
 type ServerRequestParams<Method extends ServerRequestMethod> =
   ServerRequestFor<Method>['params']
 
-type ServerRequestDefinition<Method extends ServerRequestMethod, Response> = {
-  responseType: Response
-  isParams: (value: unknown) => value is ServerRequestParams<Method>
-}
+const serverRequestResponseTypes = {
+  'item/commandExecution/requestApproval': null as unknown as CommandExecutionRequestApprovalResponse,
+  'item/fileChange/requestApproval': null as unknown as FileChangeRequestApprovalResponse,
+  'item/tool/requestUserInput': null as unknown as ToolRequestUserInputResponse,
+  'mcpServer/elicitation/request': null as unknown as McpServerElicitationRequestResponse,
+  'item/permissions/requestApproval': null as unknown as PermissionsRequestApprovalResponse,
+  'item/tool/call': null as unknown as DynamicToolCallResponse,
+  'account/chatgptAuthTokens/refresh': null as unknown as ChatgptAuthTokensRefreshResponse,
+  'attestation/generate': null as unknown as AttestationGenerateResponse,
+  applyPatchApproval: null as unknown as ApplyPatchApprovalResponse,
+  execCommandApproval: null as unknown as ExecCommandApprovalResponse,
+} satisfies Record<ServerRequestMethod, unknown>
 
-const serverRequestDefinitions = {
-  'item/commandExecution/requestApproval': {
-    responseType: null as unknown as CommandExecutionRequestApprovalResponse,
-    isParams: isCommandExecutionApprovalParams,
-  },
-  'item/fileChange/requestApproval': {
-    responseType: null as unknown as FileChangeRequestApprovalResponse,
-    isParams: isFileChangeApprovalParams,
-  },
-  'item/tool/requestUserInput': {
-    responseType: null as unknown as ToolRequestUserInputResponse,
-    isParams: isToolRequestUserInputParams,
-  },
-  'mcpServer/elicitation/request': {
-    responseType: null as unknown as McpServerElicitationRequestResponse,
-    isParams: isMcpServerElicitationParams,
-  },
-  'item/permissions/requestApproval': {
-    responseType: null as unknown as PermissionsRequestApprovalResponse,
-    isParams: isPermissionsApprovalParams,
-  },
-  'item/tool/call': {
-    responseType: null as unknown as DynamicToolCallResponse,
-    isParams: isDynamicToolCallParams,
-  },
-  'account/chatgptAuthTokens/refresh': {
-    responseType: null as unknown as ChatgptAuthTokensRefreshResponse,
-    isParams: isChatgptAuthTokensRefreshParams,
-  },
-  'attestation/generate': {
-    responseType: null as unknown as AttestationGenerateResponse,
-    isParams: isAttestationGenerateParams,
-  },
-  applyPatchApproval: {
-    responseType: null as unknown as ApplyPatchApprovalResponse,
-    isParams: isApplyPatchApprovalParams,
-  },
-  execCommandApproval: {
-    responseType: null as unknown as ExecCommandApprovalResponse,
-    isParams: isExecCommandApprovalParams,
-  },
-} satisfies {
-  [Method in ServerRequestMethod]: ServerRequestDefinition<Method, unknown>
-}
+type ServerRequestResponseByMethod = typeof serverRequestResponseTypes
 
-type ServerRequestResponseByMethod = {
-  [Method in ServerRequestMethod]:
-    (typeof serverRequestDefinitions)[Method]['responseType']
-}
+const validateGeneratedServerRequest = new Ajv({
+  strict: false,
+  formats: {
+    double: true,
+    int64: true,
+    uint: true,
+    uint32: true,
+    uint64: true,
+  },
+}).compile<ServerRequest>(serverRequestSchema)
 
 export type CodexStdioServerRequestFor<Method extends ServerRequestMethod> = {
   id: RequestId
@@ -504,10 +477,7 @@ export class CodexStdioTransport {
       if (
         isServerRequestMethod(value.method as string) &&
         (!Object.hasOwn(value, 'params') ||
-          !isServerRequestParams(
-            value.method as ServerRequestMethod,
-            value.params,
-          ))
+          !validateGeneratedServerRequest(value))
       ) {
         this.failProtocol(
           'invalid_message',
@@ -783,218 +753,7 @@ function isRequestId(value: unknown): value is RequestId {
 }
 
 function isServerRequestMethod(method: string): method is ServerRequestMethod {
-  return Object.hasOwn(serverRequestDefinitions, method)
-}
-
-function isServerRequestParams<Method extends ServerRequestMethod>(
-  method: Method,
-  value: unknown,
-): value is ServerRequestParams<Method> {
-  return serverRequestDefinitions[method].isParams(value)
-}
-
-function isCommandExecutionApprovalParams(
-  value: unknown,
-): value is ServerRequestParams<'item/commandExecution/requestApproval'> {
-  return (
-    hasStringFields(value, ['threadId', 'turnId', 'itemId']) &&
-    isFiniteNumber(value.startedAtMs) &&
-    isNullableString(value.environmentId) &&
-    isOptionalNullableString(value, 'approvalId') &&
-    isOptionalNullableString(value, 'reason') &&
-    isOptionalNullableString(value, 'command') &&
-    isOptionalNullableString(value, 'cwd') &&
-    isOptionalNullableArray(value, 'commandActions') &&
-    isOptionalNullableArray(value, 'proposedNetworkPolicyAmendments') &&
-    isOptionalNullableRecord(value, 'networkApprovalContext') &&
-    isOptionalNullableRecord(value, 'proposedExecpolicyAmendment')
-  )
-}
-
-function isFileChangeApprovalParams(
-  value: unknown,
-): value is ServerRequestParams<'item/fileChange/requestApproval'> {
-  return (
-    hasStringFields(value, ['threadId', 'turnId', 'itemId']) &&
-    isFiniteNumber(value.startedAtMs) &&
-    isOptionalNullableString(value, 'reason') &&
-    isOptionalNullableString(value, 'grantRoot')
-  )
-}
-
-function isToolRequestUserInputParams(
-  value: unknown,
-): value is ServerRequestParams<'item/tool/requestUserInput'> {
-  return (
-    hasStringFields(value, ['threadId', 'turnId', 'itemId']) &&
-    Array.isArray(value.questions) &&
-    value.questions.every(isUserInputQuestion) &&
-    (value.autoResolutionMs === null || isFiniteNumber(value.autoResolutionMs))
-  )
-}
-
-function isMcpServerElicitationParams(
-  value: unknown,
-): value is ServerRequestParams<'mcpServer/elicitation/request'> {
-  if (
-    !hasStringFields(value, ['threadId', 'serverName', 'message']) ||
-    !isNullableString(value.turnId) ||
-    !isJsonValue(value._meta)
-  ) {
-    return false
-  }
-
-  if (value.mode === 'url') {
-    return hasStringFields(value, ['url', 'elicitationId'])
-  }
-
-  if (value.mode === 'form') {
-    return isRecord(value.requestedSchema)
-  }
-
-  return value.mode === 'openai/form' && isJsonValue(value.requestedSchema)
-}
-
-function isPermissionsApprovalParams(
-  value: unknown,
-): value is ServerRequestParams<'item/permissions/requestApproval'> {
-  return (
-    hasStringFields(value, ['threadId', 'turnId', 'itemId', 'cwd']) &&
-    isNullableString(value.environmentId) &&
-    isFiniteNumber(value.startedAtMs) &&
-    isNullableString(value.reason) &&
-    isRecord(value.permissions) &&
-    isNullableRecord(value.permissions.network) &&
-    isNullableRecord(value.permissions.fileSystem)
-  )
-}
-
-function isDynamicToolCallParams(
-  value: unknown,
-): value is ServerRequestParams<'item/tool/call'> {
-  return (
-    hasStringFields(value, ['threadId', 'turnId', 'callId', 'tool']) &&
-    isNullableString(value.namespace) &&
-    isJsonValue(value.arguments)
-  )
-}
-
-function isChatgptAuthTokensRefreshParams(
-  value: unknown,
-): value is ServerRequestParams<'account/chatgptAuthTokens/refresh'> {
-  return (
-    isRecord(value) &&
-    value.reason === 'unauthorized' &&
-    isOptionalNullableString(value, 'previousAccountId')
-  )
-}
-
-function isAttestationGenerateParams(
-  value: unknown,
-): value is ServerRequestParams<'attestation/generate'> {
-  return isRecord(value) && Object.keys(value).length === 0
-}
-
-function isApplyPatchApprovalParams(
-  value: unknown,
-): value is ServerRequestParams<'applyPatchApproval'> {
-  return (
-    hasStringFields(value, ['conversationId', 'callId']) &&
-    isRecord(value.fileChanges) &&
-    isNullableString(value.reason) &&
-    isNullableString(value.grantRoot)
-  )
-}
-
-function isExecCommandApprovalParams(
-  value: unknown,
-): value is ServerRequestParams<'execCommandApproval'> {
-  return (
-    hasStringFields(value, ['conversationId', 'callId', 'cwd']) &&
-    isNullableString(value.approvalId) &&
-    isNullableString(value.reason) &&
-    isStringArray(value.command) &&
-    Array.isArray(value.parsedCmd)
-  )
-}
-
-function isUserInputQuestion(value: unknown): boolean {
-  return (
-    hasStringFields(value, ['id', 'header', 'question']) &&
-    typeof value.isOther === 'boolean' &&
-    typeof value.isSecret === 'boolean' &&
-    (value.options === null || Array.isArray(value.options))
-  )
-}
-
-function hasStringFields(
-  value: unknown,
-  fields: string[],
-): value is Record<string, unknown> {
-  return (
-    isRecord(value) &&
-    fields.every((field) => typeof value[field] === 'string')
-  )
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value)
-}
-
-function isNullableString(value: unknown): value is string | null {
-  return value === null || typeof value === 'string'
-}
-
-function isNullableRecord(
-  value: unknown,
-): value is Record<string, unknown> | null {
-  return value === null || isRecord(value)
-}
-
-function isOptionalNullableString(
-  value: Record<string, unknown>,
-  field: string,
-): boolean {
-  return !Object.hasOwn(value, field) || isNullableString(value[field])
-}
-
-function isOptionalNullableArray(
-  value: Record<string, unknown>,
-  field: string,
-): boolean {
-  return (
-    !Object.hasOwn(value, field) ||
-    value[field] === null ||
-    Array.isArray(value[field])
-  )
-}
-
-function isOptionalNullableRecord(
-  value: Record<string, unknown>,
-  field: string,
-): boolean {
-  return !Object.hasOwn(value, field) || isNullableRecord(value[field])
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string')
-}
-
-function isJsonValue(value: unknown): boolean {
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'boolean' ||
-    isFiniteNumber(value)
-  ) {
-    return true
-  }
-
-  if (Array.isArray(value)) {
-    return value.every(isJsonValue)
-  }
-
-  return isRecord(value) && Object.values(value).every(isJsonValue)
+  return Object.hasOwn(serverRequestResponseTypes, method)
 }
 
 function identityKey(id: RequestId): string {
