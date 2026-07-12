@@ -1,4 +1,4 @@
-import MessageFlow from './MessageFlow'
+import MessageFlow from '../pages/message-flow'
 import './App.css'
 
 function App() {

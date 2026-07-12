@@ -1,4 +1,4 @@
-import type { ScenarioId } from '../../domain/message'
+import type { ScenarioId } from '../../entities/message'
 import {
   createGenerationResponse,
   isValidGenerationRequest,

@@ -1,4 +1,4 @@
-import type { Mode, PurposeId, ScenarioId } from '../domain/message'
+import type { Mode, PurposeId, ScenarioId } from '../entities/message'
 
 export type EvaluationCase = {
   id: string

@@ -10,7 +10,7 @@ import {
   type SituationId,
   type Source,
   type ToneLevel,
-} from '../../domain/message'
+} from '../../entities/message'
 
 export const receivedMessageMaxLength = 500
 export const situationMaxLength = 300
