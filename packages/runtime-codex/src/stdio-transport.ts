@@ -18,6 +18,7 @@ export type CodexStdioTransportOptions = {
   env: NodeJS.ProcessEnv
   requestTimeoutMs?: number
   closeTimeoutMs?: number
+  maxClientRequestIdentities?: number
 }
 
 export type CodexProtocolErrorResponse = {
@@ -40,6 +41,7 @@ export type CodexStdioTransportFailureCode =
   | 'stdout_eof'
   | 'stdout_error'
   | 'stdin_error'
+  | 'request_identity_limit'
   | 'transport_closed'
 
 export class CodexStdioProtocolError extends Error {
@@ -106,6 +108,7 @@ export type CodexStdioServerRequestFor<Method extends ServerRequestMethod> = {
     result: ServerRequestResponseByMethod[Method],
   ) => Promise<void>
   respondError: (error: CodexProtocolErrorResponse) => Promise<void>
+  dismiss: () => boolean
 }
 
 export type CodexStdioServerRequest = {
@@ -117,6 +120,7 @@ export type CodexStdioUnknownServerRequest = {
   method: string
   params?: unknown
   respondError: (error: CodexProtocolErrorResponse) => Promise<void>
+  dismiss: () => boolean
 }
 
 export type CodexStdioObservation =
@@ -146,12 +150,16 @@ export type CodexStdioObservation =
       signal?: NodeJS.Signals | null
     }
 
-type PendingClientResponse = {
-  method: string
-  timeout: NodeJS.Timeout
-  resolve: (result: unknown) => void
-  reject: (error: Error) => void
-}
+type ClientRequestLifecycle =
+  | {
+      state: 'pending'
+      method: string
+      timeout: NodeJS.Timeout
+      resolve: (result: unknown) => void
+      reject: (error: Error) => void
+    }
+  | { state: 'completed' }
+  | { state: 'timed_out' }
 
 type ObservationResolver = (
   observation: CodexStdioObservation | undefined,
@@ -161,69 +169,100 @@ type ParsedMessage = Record<string, unknown>
 
 const defaultRequestTimeoutMs = 15000
 const defaultCloseTimeoutMs = 1000
+const defaultMaxClientRequestIdentities = 65536
 
 export class CodexStdioTransport {
   private readonly options: Required<
-    Pick<CodexStdioTransportOptions, 'args' | 'requestTimeoutMs' | 'closeTimeoutMs'>
+    Pick<
+      CodexStdioTransportOptions,
+      | 'args'
+      | 'requestTimeoutMs'
+      | 'closeTimeoutMs'
+      | 'maxClientRequestIdentities'
+    >
   > &
     Omit<
       CodexStdioTransportOptions,
-      'args' | 'requestTimeoutMs' | 'closeTimeoutMs'
+      | 'args'
+      | 'requestTimeoutMs'
+      | 'closeTimeoutMs'
+      | 'maxClientRequestIdentities'
     >
-  private readonly pendingClientResponses = new Map<
-    string,
-    PendingClientResponse
-  >()
-  private readonly completedClientResponseIds = new Set<string>()
-  private readonly timedOutClientResponseIds = new Set<string>()
-  private readonly serverRequestIds = new Set<string>()
+  private readonly clientRequests = new Map<string, ClientRequestLifecycle>()
+  private readonly activeServerRequests = new Map<string, symbol>()
   private readonly observationQueue: CodexStdioObservation[] = []
   private readonly observationResolvers: ObservationResolver[] = []
   private child: ChildProcessWithoutNullStreams | undefined
   private stdoutReader: readline.Interface | undefined
+  private startPromise: Promise<void> | undefined
+  private closePromise: Promise<void> | undefined
   private observationStreamClosed = false
   private connectionFailure: Error | undefined
   private closing = false
 
   constructor(options: CodexStdioTransportOptions) {
+    const maxClientRequestIdentities =
+      options.maxClientRequestIdentities ?? defaultMaxClientRequestIdentities
+
+    if (
+      !Number.isSafeInteger(maxClientRequestIdentities) ||
+      maxClientRequestIdentities <= 0
+    ) {
+      throw new RangeError(
+        'maxClientRequestIdentities must be a positive safe integer',
+      )
+    }
+
     this.options = {
       ...options,
       args: options.args ?? [],
       requestTimeoutMs: options.requestTimeoutMs ?? defaultRequestTimeoutMs,
       closeTimeoutMs: options.closeTimeoutMs ?? defaultCloseTimeoutMs,
+      maxClientRequestIdentities,
     }
   }
 
   async sendRequest(request: ClientRequest): Promise<unknown> {
     assertRequestId(request.id)
-    this.start()
+    await this.start()
     this.assertWritable()
 
     const requestKey = identityKey(request.id)
 
-    if (
-      this.pendingClientResponses.has(requestKey) ||
-      this.completedClientResponseIds.has(requestKey) ||
-      this.timedOutClientResponseIds.has(requestKey)
-    ) {
+    if (this.clientRequests.has(requestKey)) {
       throw new CodexStdioProtocolError(
         'duplicate_response',
         'Client request identity has already been used on this connection',
       )
     }
 
+    if (
+      this.clientRequests.size >= this.options.maxClientRequestIdentities
+    ) {
+      throw this.reportTransportLoss(
+        'request_identity_limit',
+        'Codex stdio transport reached its Client request identity limit',
+      )
+    }
+
     const response = new Promise<unknown>((resolvePromise, reject) => {
       const timeout = setTimeout(() => {
-        this.pendingClientResponses.delete(requestKey)
-        this.timedOutClientResponseIds.add(requestKey)
-        reject(
+        const lifecycle = this.clientRequests.get(requestKey)
+
+        if (!lifecycle || lifecycle.state !== 'pending') {
+          return
+        }
+
+        this.clientRequests.set(requestKey, { state: 'timed_out' })
+        lifecycle.reject(
           new CodexStdioRequestError(
             `${request.method} timed out waiting for a response`,
           ),
         )
       }, this.options.requestTimeoutMs)
 
-      this.pendingClientResponses.set(requestKey, {
+      this.clientRequests.set(requestKey, {
+        state: 'pending',
         method: request.method,
         timeout,
         resolve: resolvePromise,
@@ -234,12 +273,12 @@ export class CodexStdioTransport {
     try {
       await this.writeMessage(request)
     } catch (error) {
-      const pending = this.pendingClientResponses.get(requestKey)
+      const lifecycle = this.clientRequests.get(requestKey)
 
-      if (pending) {
-        clearTimeout(pending.timeout)
-        this.pendingClientResponses.delete(requestKey)
-        pending.reject(toError(error))
+      if (lifecycle?.state === 'pending') {
+        clearTimeout(lifecycle.timeout)
+        this.clientRequests.delete(requestKey)
+        lifecycle.reject(toError(error))
       }
     }
 
@@ -247,9 +286,31 @@ export class CodexStdioTransport {
   }
 
   async sendNotification(notification: ClientNotification): Promise<void> {
-    this.start()
+    await this.start()
     this.assertWritable()
     await this.writeMessage(notification)
+  }
+
+  start(): Promise<void> {
+    if (this.startPromise) {
+      return this.startPromise
+    }
+
+    if (this.closing || this.connectionFailure) {
+      try {
+        this.assertWritable()
+      } catch (error) {
+        return Promise.reject(error)
+      }
+    }
+
+    try {
+      this.startPromise = this.spawnChild()
+    } catch (error) {
+      this.startPromise = Promise.reject(toError(error))
+    }
+
+    return this.startPromise
   }
 
   async *observations(): AsyncIterable<CodexStdioObservation> {
@@ -264,11 +325,15 @@ export class CodexStdioTransport {
     }
   }
 
-  async close(): Promise<void> {
-    if (this.closing) {
-      return
+  close(): Promise<void> {
+    if (!this.closePromise) {
+      this.closePromise = this.closeConnection()
     }
 
+    return this.closePromise
+  }
+
+  private async closeConnection(): Promise<void> {
     this.closing = true
     const child = this.child
     this.child = undefined
@@ -280,6 +345,7 @@ export class CodexStdioTransport {
         'Codex stdio transport was closed',
       ),
     )
+    this.activeServerRequests.clear()
     this.closeObservationStream()
 
     if (!child || child.exitCode !== null || child.signalCode !== null) {
@@ -301,15 +367,7 @@ export class CodexStdioTransport {
     await Promise.race([exited, delay(this.options.closeTimeoutMs)])
   }
 
-  private start(): void {
-    if (this.child) {
-      return
-    }
-
-    if (this.closing || this.connectionFailure) {
-      this.assertWritable()
-    }
-
+  private spawnChild(): Promise<void> {
     let child: ChildProcessWithoutNullStreams
 
     try {
@@ -331,11 +389,15 @@ export class CodexStdioTransport {
     child.stderr.on('error', () => {})
     this.stdoutReader.on('line', (line) => this.handleStdoutLine(line))
 
-    child.once('error', () => {
-      this.reportTransportLoss(
-        'spawn_error',
-        'Codex app-server process emitted an error',
-      )
+    const started = new Promise<void>((resolvePromise, reject) => {
+      child.once('spawn', resolvePromise)
+      child.once('error', () => {
+        const error = this.reportTransportLoss(
+          'spawn_error',
+          'Codex app-server process emitted an error',
+        )
+        reject(error)
+      })
     })
     child.once('exit', (exitCode, signal) => {
       this.reportTransportLoss(
@@ -373,6 +435,8 @@ export class CodexStdioTransport {
         'Codex app-server stdin failed',
       )
     })
+
+    return started
   }
 
   private async writeMessage(message: object): Promise<void> {
@@ -405,6 +469,10 @@ export class CodexStdioTransport {
   }
 
   private handleStdoutLine(line: string): void {
+    if (this.connectionFailure || this.closing) {
+      return
+    }
+
     const rawProtocolFailure = inspectRawProtocolEnvelope(line)
 
     if (rawProtocolFailure === 'unsafe_numeric_id') {
@@ -516,19 +584,24 @@ export class CodexStdioTransport {
   private handleClientResponse(message: ParsedMessage, hasError: boolean): void {
     const id = message.id as RequestId
     const key = identityKey(id)
-    const pending = this.pendingClientResponses.get(key)
+    const lifecycle = this.clientRequests.get(key)
 
-    if (!pending) {
-      if (this.timedOutClientResponseIds.has(key)) {
-        return
-      }
-
-      const duplicate = this.completedClientResponseIds.has(key)
+    if (!lifecycle) {
       this.failProtocol(
-        duplicate ? 'duplicate_response' : 'unknown_response',
-        duplicate
-          ? 'Codex app-server emitted a duplicate Client response'
-          : 'Codex app-server emitted a response for an unknown Client request',
+        'unknown_response',
+        'Codex app-server emitted a response for an unknown Client request',
+      )
+      return
+    }
+
+    if (lifecycle.state === 'timed_out') {
+      return
+    }
+
+    if (lifecycle.state === 'completed') {
+      this.failProtocol(
+        'duplicate_response',
+        'Codex app-server emitted a duplicate Client response',
       )
       return
     }
@@ -541,21 +614,20 @@ export class CodexStdioTransport {
       return
     }
 
-    clearTimeout(pending.timeout)
-    this.pendingClientResponses.delete(key)
-    this.completedClientResponseIds.add(key)
+    clearTimeout(lifecycle.timeout)
+    this.clientRequests.set(key, { state: 'completed' })
 
     if (hasError) {
       const responseError = message.error as CodexProtocolErrorResponse
-      pending.reject(
+      lifecycle.reject(
         new Error(
-          `${pending.method} returned protocol error ${responseError.code}: ${responseError.message}`,
+          `${lifecycle.method} returned protocol error ${responseError.code}: ${responseError.message}`,
         ),
       )
       return
     }
 
-    pending.resolve(message.result)
+    lifecycle.resolve(message.result)
   }
 
   private handleServerRequest(message: ParsedMessage): void {
@@ -563,7 +635,7 @@ export class CodexStdioTransport {
     const method = message.method as string
     const key = identityKey(id)
 
-    if (this.serverRequestIds.has(key)) {
+    if (this.activeServerRequests.has(key)) {
       this.failProtocol(
         'duplicate_server_request',
         'Codex app-server reused an active Server request identity',
@@ -571,19 +643,43 @@ export class CodexStdioTransport {
       return
     }
 
-    this.serverRequestIds.add(key)
-    let responded = false
+    const token = Symbol(key)
+    this.activeServerRequests.set(key, token)
+    let state: 'active' | 'responding' | 'settled' = 'active'
+
+    const release = (): void => {
+      if (this.activeServerRequests.get(key) === token) {
+        this.activeServerRequests.delete(key)
+      }
+    }
+
+    const dismiss = (): boolean => {
+      if (state !== 'active') {
+        return false
+      }
+
+      state = 'settled'
+      release()
+
+      return true
+    }
 
     const respondOnce = async (response: object): Promise<void> => {
-      if (responded) {
+      if (state !== 'active') {
         throw new CodexStdioProtocolError(
           'duplicate_response',
           'Server request has already been answered',
         )
       }
 
-      responded = true
-      await this.writeMessage(response)
+      state = 'responding'
+
+      try {
+        await this.writeMessage(response)
+      } finally {
+        state = 'settled'
+        release()
+      }
     }
 
     const respondError = async (
@@ -609,6 +705,7 @@ export class CodexStdioTransport {
             ? { params: message.params }
             : {}),
           respondError,
+          dismiss,
         },
       })
       return
@@ -629,6 +726,7 @@ export class CodexStdioTransport {
         await respondOnce({ id, result })
       },
       respondError,
+      dismiss,
     } as CodexStdioServerRequest
 
     this.pushObservation({ kind: 'server_request', request })
@@ -686,17 +784,23 @@ export class CodexStdioTransport {
 
     this.connectionFailure = error
     this.rejectPendingClientResponses(error)
+    this.activeServerRequests.clear()
     this.pushObservation(observation)
     this.closeObservationStream()
     this.child?.kill('SIGTERM')
   }
 
   private rejectPendingClientResponses(error: Error): void {
-    for (const [key, pending] of this.pendingClientResponses) {
-      clearTimeout(pending.timeout)
-      pending.reject(error)
-      this.pendingClientResponses.delete(key)
+    for (const lifecycle of this.clientRequests.values()) {
+      if (lifecycle.state !== 'pending') {
+        continue
+      }
+
+      clearTimeout(lifecycle.timeout)
+      lifecycle.reject(error)
     }
+
+    this.clientRequests.clear()
   }
 
   private nextObservation(): Promise<CodexStdioObservation | undefined> {
@@ -716,6 +820,10 @@ export class CodexStdioTransport {
   }
 
   private pushObservation(observation: CodexStdioObservation): void {
+    if (this.observationStreamClosed) {
+      return
+    }
+
     const resolver = this.observationResolvers.shift()
 
     if (resolver) {
@@ -821,7 +929,7 @@ function inspectRawProtocolEnvelope(
             }
 
             if (
-              !isExactSafeJsonIntegerToken(source.slice(valueStart, valueEnd))
+              !isExactSafeJsonIntegerValue(source.slice(valueStart, valueEnd))
             ) {
               return 'unsafe_numeric_id'
             }
@@ -843,12 +951,56 @@ function inspectRawProtocolEnvelope(
   return undefined
 }
 
-function isExactSafeJsonIntegerToken(source: string): boolean {
-  if (!/^-?(?:0|[1-9][0-9]*)$/.test(source) || source === '-0') {
+function isExactSafeJsonIntegerValue(source: string): boolean {
+  const match =
+    /^(-?)(0|[1-9][0-9]*)(?:\.([0-9]+))?(?:[eE]([+-]?)([0-9]+))?$/.exec(
+      source,
+    )
+
+  if (!match) {
     return false
   }
 
-  const value = BigInt(source)
+  const [, sign, integerPart, fractionPart = '', exponentSign, exponentDigits] =
+    match
+  const coefficientDigits = `${integerPart}${fractionPart}`.replace(
+    /^0+/,
+    '',
+  )
+
+  if (coefficientDigits.length === 0) {
+    return sign !== '-'
+  }
+
+  if ((exponentDigits?.length ?? 0) > 6) {
+    return false
+  }
+
+  const exponentMagnitude = exponentDigits ? Number(exponentDigits) : 0
+  const exponent = exponentSign === '-' ? -exponentMagnitude : exponentMagnitude
+  const scale = exponent - fractionPart.length
+  let integerDigits: string
+
+  if (scale >= 0) {
+    if (coefficientDigits.length + scale > 16) {
+      return false
+    }
+
+    integerDigits = `${coefficientDigits}${'0'.repeat(scale)}`
+  } else {
+    const discardedDigits = -scale
+
+    if (
+      discardedDigits >= coefficientDigits.length ||
+      !coefficientDigits.endsWith('0'.repeat(discardedDigits))
+    ) {
+      return false
+    }
+
+    integerDigits = coefficientDigits.slice(0, -discardedDigits)
+  }
+
+  const value = BigInt(`${sign}${integerDigits}`)
 
   return (
     value >= BigInt(Number.MIN_SAFE_INTEGER) &&

@@ -27,11 +27,13 @@ Reconnect는 최신 snapshot과 pending interaction에 수렴하지만 disconnec
 - Server composition은 injected Host 또는 ticket 001의 validated `packageRoot`, `appDataRoot`, `workspaceRoot` product configuration을 명시적으로 받는다. Harness의 `CodexRawClientOptions`, `CODEX_RUNTIME_CWD`, 독립 `CODEX_HOME`/`CODEX_SQLITE_HOME` override와 repository-local default를 product Host 구성에 재사용하지 않는다.
 - Host subscription은 subscriber 등록, current snapshot과 snapshot에 포함된 마지막 sequence cursor 취득을 하나의 atomic operation으로 제공한다.
 - SSE는 initial `{ snapshot, cursor }`를 먼저 flush한 뒤 buffered `sequence > cursor` event와 live event를 순서대로 보낸다.
+- Subscriber-local pending queue는 fixed event-count 또는 byte budget으로 bounded한다. Slow writer의 backpressure가 해소되지 않거나 overflow되면 해당 subscriber만 unsubscribe하고 SSE를 닫으며, event를 건너뛰고 cursor가 연속인 것처럼 보이지 않는다. Reconnect는 최신 atomic snapshot으로 수렴한다.
 - Basic HTTP/SSE integration은 actual Host + fake child를 통과한다. Snapshot flush 직전 event를 삽입하는 race는 timing에 의존하지 않도록 gated Host subscription 또는 같은 public contract의 deterministic test double로 제어한다.
 - Snapshot과 event는 product-safe DTO만 사용한다. Raw JSON-RPC, generated type, raw IDs, token, environment, roots, stderr와 debug history를 포함하지 않는다.
 - Opaque Host refs는 허용하지만 browser가 그 값에서 native identity나 filesystem 정보를 유추할 수 없어야 한다.
 - Product Host diagnostic은 allowlisted bounded metadata만 사용하며 Runtime Diagnostic History를 재사용하지 않는다.
 - Product snapshot/SSE read route도 wildcard CORS 대상이 아니다. Middleware/mount ordering은 foreign origin에 pending interaction display state와 Host state를 공개하지 않는다.
+- Product listener는 explicit loopback address에만 bind한다. Host를 생략하거나 `0.0.0.0`·`::` wildcard interface에 bind하지 않는다.
 - Browser contract/client는 browser-compatible dependency boundary에 두고 server module이나 `@ay-ple/runtime-codex` Node entry에 의존하지 않는다.
 - 이 ticket은 read-only state/event stream만 만든다. Mutation command와 React shell은 후속 ticket이다.
 - 기존 `createServerApp(): Express` seam을 불필요한 repository-wide migration으로 바꾸지 않되 composition owner가 Host cleanup을 호출할 수 있어야 한다.
@@ -42,10 +44,12 @@ Reconnect는 최신 snapshot과 pending interaction에 수렴하지만 disconnec
 - [ ] Server test가 injected Host 또는 validated three-root product configuration만으로 Host를 구성하고 Harness env/default를 product child cwd/home/binary resolution에 사용하지 않음을 증명한다.
 - [ ] Initial SSE event가 항상 `{ snapshot, cursor }`이고 어떤 live event보다 먼저 전달된다.
 - [ ] Gated Host subscription 또는 deterministic contract test double이 snapshot flush 직전 event를 주입하고 cursor 이후 event가 빠짐없이 sequence 순서로 전달됨을 timing 의존 없이 증명한다.
+- [ ] Injected small queue budget과 deterministic slow writer가 overflow 시 해당 SSE subscriber만 끊고 Host·다른 subscriber는 유지하며, reconnect가 최신 snapshot/cursor로 수렴함을 증명한다.
 - [ ] Reconnect가 최신 connection/thread/active-turn/pending-interaction snapshot으로 수렴한다.
 - [ ] Disconnect 동안 text delta와 completed activity를 durable replay하지 않는 계약이 test와 adapter 문서에 명확하다.
 - [ ] Recursive DTO audit가 raw protocol, raw IDs, secret, environment, roots, stderr와 debug/history field 부재를 검증한다.
 - [ ] Same-origin local read stream은 연결되고 foreign-origin request에는 wildcard CORS header나 readable product snapshot/SSE payload를 제공하지 않는다.
+- [ ] Actual listener의 `server.address()`와 접속 test가 explicit loopback bind를 확인하고 wildcard/non-loopback interface 노출을 허용하지 않는다.
 - [ ] SSE disconnect는 Host process와 pending interaction을 종료하지 않으며 server/test shutdown은 child를 정리한다.
 - [ ] Existing `/api/runtime/*` server tests와 Inspector desktop gate가 회귀하지 않는다.
 - [ ] 실제 stream에 연결된 normalized method만 sparse decision의 `web-adapter` 단계로 승격하고 inventory를 재생성한다.

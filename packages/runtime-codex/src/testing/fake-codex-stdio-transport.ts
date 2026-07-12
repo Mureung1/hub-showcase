@@ -9,16 +9,25 @@ import {
 export type FakeCodexStdioScenario =
   | 'bidirectional'
   | 'typed_client_responses'
+  | 'safe_numeric_id_representations'
+  | 'safe_numeric_server_request_representation'
   | 'duplicate_responses'
   | 'unknown_response'
   | 'malformed_json'
+  | 'protocol_failure_then_messages'
   | 'ambiguous_message'
   | 'duplicate_protocol_key'
   | 'invalid_server_request_params'
   | 'unsafe_numeric_id'
   | 'unsafe_numeric_id_underflow'
+  | 'unsafe_numeric_id_precision_loss'
+  | 'unsafe_numeric_id_negative_zero'
   | 'late_response_after_timeout'
   | 'server_response_validation'
+  | 'sequential_server_request_reuse'
+  | 'dismissed_server_request_reuse'
+  | 'duplicate_active_server_requests'
+  | 'client_request_identity_limit'
   | 'exit_after_request'
   | 'stdout_eof'
   | 'stdin_failure'
@@ -29,6 +38,7 @@ export type FakeCodexStdioTransportInput = {
   ignoreSigterm?: boolean
   requestTimeoutMs?: number
   closeTimeoutMs?: number
+  maxClientRequestIdentities?: number
 }
 
 export type FakeCodexStdioJournalEntry =
@@ -68,6 +78,7 @@ export async function withFakeCodexStdioTransport(
     },
     requestTimeoutMs: input.requestTimeoutMs ?? 1000,
     closeTimeoutMs: input.closeTimeoutMs ?? 100,
+    maxClientRequestIdentities: input.maxClientRequestIdentities,
   }
   const transport = new CodexStdioTransport(transportOptions)
   const readJournal = createJournalReader(journalPath)
@@ -179,6 +190,15 @@ reader.on('line', (line) => {
     return
   }
 
+  if (scenario === 'protocol_failure_then_messages') {
+    process.stdout.write(
+      '{malformed\n' +
+        '{"method":"warning","params":{"message":"must not publish"}}\n' +
+        '{"id":"late-server-request","method":"item/commandExecution/requestApproval","params":{"threadId":"thread-late","turnId":"turn-late","itemId":"item-late","startedAtMs":1,"environmentId":null,"command":"echo late"}}\n',
+    )
+    return
+  }
+
   if (scenario === 'ambiguous_message') {
     write({ id: message.id, method: 'warning', result: {} })
     return
@@ -227,6 +247,53 @@ reader.on('line', (line) => {
     return
   }
 
+  if (scenario === 'unsafe_numeric_id_precision_loss') {
+    process.stdout.write(
+      '{"id":1.0000000000000001,"result":{"unsafe":true}}\n',
+    )
+    return
+  }
+
+  if (scenario === 'unsafe_numeric_id_negative_zero') {
+    process.stdout.write('{"id":-0.0,"result":{"unsafe":true}}\n')
+    return
+  }
+
+  if (scenario === 'safe_numeric_id_representations') {
+    if (message.id === 1) {
+      process.stdout.write('{"id":1.0,"result":{"identity":"decimal"}}\n')
+      return
+    }
+
+    if (message.id === 1000) {
+      process.stdout.write('{"id":1e3,"result":{"identity":"exponent"}}\n')
+      return
+    }
+  }
+
+  if (
+    scenario === 'safe_numeric_server_request_representation' &&
+    message.method === 'initialize'
+  ) {
+    globalThis.pendingClientResponseId = message.id
+    process.stdout.write(
+      '{"id":1e3,"method":"item/commandExecution/requestApproval","params":{"threadId":"thread-numeric-server","turnId":"turn-numeric-server","itemId":"item-numeric-server","startedAtMs":1,"environmentId":null,"command":"echo numeric"}}\n',
+    )
+    return
+  }
+
+  if (
+    scenario === 'safe_numeric_server_request_representation' &&
+    message.id === 1000 &&
+    message.result
+  ) {
+    write({
+      id: globalThis.pendingClientResponseId,
+      result: { userAgent: 'fake-numeric-server-codex' },
+    })
+    return
+  }
+
   if (scenario === 'late_response_after_timeout') {
     if (!Object.hasOwn(message, 'id')) {
       return
@@ -242,6 +309,13 @@ reader.on('line', (line) => {
       result: { arrived: 'late' },
     })
     write({ id: message.id, result: { request: message.id } })
+    return
+  }
+
+  if (scenario === 'client_request_identity_limit') {
+    if (message.id === 1 || message.id === 3) {
+      write({ id: message.id, result: { request: message.id } })
+    }
     return
   }
 
@@ -261,6 +335,127 @@ reader.on('line', (line) => {
         environmentId: null,
         command: 'echo validate response',
       },
+    })
+    return
+  }
+
+  if (
+    scenario === 'sequential_server_request_reuse' &&
+    message.method === 'initialize'
+  ) {
+    globalThis.pendingClientResponseId = message.id
+    write({
+      id: 'reused-server-request',
+      method: 'item/commandExecution/requestApproval',
+      params: {
+        threadId: 'thread-server-reuse',
+        turnId: 'turn-server-reuse',
+        itemId: 'item-server-reuse-1',
+        startedAtMs: 1,
+        environmentId: null,
+        command: 'echo first',
+      },
+    })
+    return
+  }
+
+  if (
+    scenario === 'dismissed_server_request_reuse' &&
+    message.method === 'initialize'
+  ) {
+    globalThis.pendingClientResponseId = message.id
+    write({
+      id: 'dismissed-server-request',
+      method: 'item/commandExecution/requestApproval',
+      params: {
+        threadId: 'thread-server-dismiss',
+        turnId: 'turn-server-dismiss',
+        itemId: 'item-server-dismiss-1',
+        startedAtMs: 1,
+        environmentId: null,
+        command: 'echo dismissed',
+      },
+    })
+    return
+  }
+
+  if (
+    scenario === 'duplicate_active_server_requests' &&
+    message.method === 'initialize'
+  ) {
+    const request = {
+      id: 'duplicate-active-server-request',
+      method: 'item/commandExecution/requestApproval',
+      params: {
+        threadId: 'thread-server-duplicate',
+        turnId: 'turn-server-duplicate',
+        itemId: 'item-server-duplicate',
+        startedAtMs: 1,
+        environmentId: null,
+        command: 'echo duplicate',
+      },
+    }
+    write(request)
+    write(request)
+    return
+  }
+
+  if (
+    scenario === 'dismissed_server_request_reuse' &&
+    message.method === 'initialized'
+  ) {
+    write({
+      id: 'dismissed-server-request',
+      method: 'item/commandExecution/requestApproval',
+      params: {
+        threadId: 'thread-server-dismiss',
+        turnId: 'turn-server-dismiss',
+        itemId: 'item-server-dismiss-2',
+        startedAtMs: 2,
+        environmentId: null,
+        command: 'echo reused after dismiss',
+      },
+    })
+    return
+  }
+
+  if (
+    scenario === 'dismissed_server_request_reuse' &&
+    message.id === 'dismissed-server-request' &&
+    message.result
+  ) {
+    write({
+      id: globalThis.pendingClientResponseId,
+      result: { userAgent: 'fake-server-dismiss-codex' },
+    })
+    return
+  }
+
+  if (
+    scenario === 'sequential_server_request_reuse' &&
+    message.id === 'reused-server-request' &&
+    (message.result || message.error)
+  ) {
+    if (globalThis.serverResponseCount === undefined) {
+      globalThis.serverResponseCount = 1
+      write({
+        id: 'reused-server-request',
+        method: 'item/commandExecution/requestApproval',
+        params: {
+          threadId: 'thread-server-reuse',
+          turnId: 'turn-server-reuse',
+          itemId: 'item-server-reuse-2',
+          startedAtMs: 2,
+          environmentId: null,
+          command: 'echo second',
+        },
+      })
+      return
+    }
+
+    write({
+      id: globalThis.pendingClientResponseId,
+      result: { userAgent: 'fake-server-reuse-codex' },
     })
     return
   }

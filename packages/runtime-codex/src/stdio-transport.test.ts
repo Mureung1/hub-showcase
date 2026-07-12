@@ -126,6 +126,56 @@ test('CodexStdioTransport keeps numeric and string Client request IDs distinct',
   )
 })
 
+test('CodexStdioTransport accepts exact safe integer values across JSON number representations', async (t) => {
+  const cases = [
+    { id: 1, expected: { identity: 'decimal' } },
+    { id: 1000, expected: { identity: 'exponent' } },
+  ] as const
+
+  for (const fixtureCase of cases) {
+    await t.test(String(fixtureCase.id), async () => {
+      await withFakeCodexStdioTransport(
+        { scenario: 'safe_numeric_id_representations' },
+        async ({ transport }) => {
+          assert.deepEqual(
+            await transport.sendRequest(
+              createInitializeRequest(fixtureCase.id),
+            ),
+            fixtureCase.expected,
+          )
+        },
+      )
+    })
+  }
+})
+
+test('CodexStdioTransport preserves an exponent-form Server request identity through its response', async () => {
+  await withFakeCodexStdioTransport(
+    { scenario: 'safe_numeric_server_request_representation' },
+    async ({ transport }) => {
+      const observations = transport.observations()[Symbol.asyncIterator]()
+      const initialize = transport.sendRequest(createInitializeRequest(1))
+      const observation = await nextObservation(observations)
+
+      assert.equal(observation.kind, 'server_request')
+
+      if (
+        observation.kind !== 'server_request' ||
+        observation.request.method !==
+          'item/commandExecution/requestApproval'
+      ) {
+        assert.fail('expected exponent-form command approval request')
+      }
+
+      assert.equal(observation.request.id, 1000)
+      await observation.request.respond({ decision: 'accept' })
+      assert.deepEqual(await initialize, {
+        userAgent: 'fake-numeric-server-codex',
+      })
+    },
+  )
+})
+
 test('CodexStdioTransport rejects duplicate and unknown responses without resolving another request', async (t) => {
   await t.test('duplicate response', async () => {
     await withFakeCodexStdioTransport(
@@ -183,6 +233,8 @@ test('CodexStdioTransport fails closed on malformed and ambiguous messages', asy
       | 'invalid_server_request_params'
       | 'unsafe_numeric_id'
       | 'unsafe_numeric_id_underflow'
+      | 'unsafe_numeric_id_precision_loss'
+      | 'unsafe_numeric_id_negative_zero'
     >
     code: 'malformed_json' | 'ambiguous_message' | 'invalid_message'
   }> = [
@@ -198,6 +250,14 @@ test('CodexStdioTransport fails closed on malformed and ambiguous messages', asy
       scenario: 'unsafe_numeric_id_underflow',
       code: 'invalid_message',
     },
+    {
+      scenario: 'unsafe_numeric_id_precision_loss',
+      code: 'invalid_message',
+    },
+    {
+      scenario: 'unsafe_numeric_id_negative_zero',
+      code: 'invalid_message',
+    },
   ]
 
   for (const fixtureCase of cases) {
@@ -208,7 +268,8 @@ test('CodexStdioTransport fails closed on malformed and ambiguous messages', asy
           const observations = transport.observations()[Symbol.asyncIterator]()
           const pending = transport.sendRequest(
             createInitializeRequest(
-              fixtureCase.scenario === 'unsafe_numeric_id_underflow'
+              fixtureCase.scenario === 'unsafe_numeric_id_underflow' ||
+                fixtureCase.scenario === 'unsafe_numeric_id_negative_zero'
                 ? 0
                 : fixtureCase.scenario === 'duplicate_protocol_key'
                   ? '1'
@@ -232,6 +293,31 @@ test('CodexStdioTransport fails closed on malformed and ambiguous messages', asy
       )
     })
   }
+})
+
+test('CodexStdioTransport publishes nothing after a terminal protocol failure', async () => {
+  await withFakeCodexStdioTransport(
+    { scenario: 'protocol_failure_then_messages' },
+    async ({ transport }) => {
+      const observations = transport.observations()[Symbol.asyncIterator]()
+      const pending = transport.sendRequest(createInitializeRequest(1))
+      const rejection = assert.rejects(
+        pending,
+        isProtocolFailure('malformed_json'),
+      )
+
+      assert.deepEqual(await nextObservation(observations), {
+        kind: 'protocol_error',
+        code: 'malformed_json',
+        message: 'Codex app-server emitted malformed JSON',
+      })
+      assert.deepEqual(await observations.next(), {
+        done: true,
+        value: undefined,
+      })
+      await rejection
+    },
+  )
 })
 
 test('CodexStdioTransport distinguishes child exit, stdout EOF, and stdin failure', async (t) => {
@@ -334,9 +420,11 @@ test('CodexStdioTransport reports a child spawn error distinctly', async () => {
 
   try {
     const observations = transport.observations()[Symbol.asyncIterator]()
-    const pending = transport.sendRequest(createInitializeRequest(1))
+    const firstStart = transport.start()
+    const secondStart = transport.start()
+    assert.strictEqual(firstStart, secondStart)
     const rejection = assert.rejects(
-      pending,
+      firstStart,
       isTransportFailure('spawn_error'),
     )
     const observation = await nextObservation(observations)
@@ -351,6 +439,53 @@ test('CodexStdioTransport reports a child spawn error distinctly', async () => {
   } finally {
     await transport.close()
   }
+})
+
+test('CodexStdioTransport exposes one coalesced successful-spawn promise before requests', async () => {
+  await withFakeCodexStdioTransport(
+    { scenario: 'hang' },
+    async ({ transport, readJournal }) => {
+      const firstStart = transport.start()
+      const secondStart = transport.start()
+
+      assert.ok(firstStart instanceof Promise)
+      assert.strictEqual(firstStart, secondStart)
+      await firstStart
+
+      const journal = await readJournal({ minimumEntries: 1 })
+      assert.equal(
+        journal.filter((entry) => entry.kind === 'spawn').length,
+        1,
+      )
+      assert.equal(
+        journal.filter((entry) => entry.kind === 'client_message').length,
+        0,
+      )
+    },
+  )
+})
+
+test('CodexStdioTransport coalesces concurrent close through child cleanup', async () => {
+  await withFakeCodexStdioTransport(
+    {
+      scenario: 'hang',
+      ignoreSigterm: true,
+      closeTimeoutMs: 20,
+    },
+    async ({ transport, readJournal }) => {
+      await transport.start()
+      const journal = await readJournal({ minimumEntries: 1 })
+      const spawnEntry = journal.find((entry) => entry.kind === 'spawn')
+      assert.ok(spawnEntry && spawnEntry.kind === 'spawn')
+
+      const firstClose = transport.close()
+      const secondClose = transport.close()
+
+      assert.strictEqual(firstClose, secondClose)
+      await Promise.all([firstClose, secondClose])
+      assertProcessMissing(spawnEntry.pid)
+    },
+  )
 })
 
 test('CodexStdioTransport keeps an individual request timeout scoped to that request', async () => {
@@ -406,6 +541,48 @@ test('CodexStdioTransport discards a known late response without terminating ano
   )
 })
 
+test('CodexStdioTransport bounds settled Client identities without evicting routing tombstones', async () => {
+  await withFakeCodexStdioTransport(
+    {
+      scenario: 'client_request_identity_limit',
+      requestTimeoutMs: 50,
+      maxClientRequestIdentities: 2,
+    },
+    async ({ transport, readJournal }) => {
+      const observations = transport.observations()[Symbol.asyncIterator]()
+
+      assert.deepEqual(
+        await transport.sendRequest(createInitializeRequest(1)),
+        { request: 1 },
+      )
+      await assert.rejects(
+        transport.sendRequest(createInitializeRequest(2)),
+        (error: unknown) =>
+          error instanceof CodexStdioRequestError &&
+          error.code === 'request_timeout',
+      )
+      await assert.rejects(
+        transport.sendRequest(createInitializeRequest(3)),
+        isTransportFailure('request_identity_limit'),
+      )
+
+      const observation = await nextObservation(observations)
+      assert.equal(observation.kind, 'transport_lost')
+
+      if (observation.kind === 'transport_lost') {
+        assert.equal(observation.code, 'request_identity_limit')
+      }
+
+      assert.deepEqual(
+        (await readJournal({ minimumEntries: 3 }))
+          .filter((entry) => entry.kind === 'client_message')
+          .map((entry) => entry.message),
+        [createInitializeRequest(1), createInitializeRequest(2)],
+      )
+    },
+  )
+})
+
 test('CodexStdioTransport validates Server success responses before writing to the child', async () => {
   await withFakeCodexStdioTransport(
     { scenario: 'server_response_validation' },
@@ -451,6 +628,126 @@ test('CodexStdioTransport validates Server success responses before writing to t
           },
         ],
       )
+    },
+  )
+})
+
+test('CodexStdioTransport releases a Server request identity after its response', async () => {
+  await withFakeCodexStdioTransport(
+    { scenario: 'sequential_server_request_reuse' },
+    async ({ transport }) => {
+      const observations = transport.observations()[Symbol.asyncIterator]()
+      const initialize = transport.sendRequest(createInitializeRequest(1))
+      const first = await nextObservation(observations)
+
+      assert.equal(first.kind, 'server_request')
+
+      if (
+        first.kind !== 'server_request' ||
+        first.request.method !== 'item/commandExecution/requestApproval'
+      ) {
+        assert.fail('expected first command approval Server request')
+      }
+
+      await first.request.respondError({
+        code: -32601,
+        message: 'first request dismissed by protocol response',
+      })
+
+      const second = await nextObservation(observations)
+      assert.equal(second.kind, 'server_request')
+
+      if (
+        second.kind !== 'server_request' ||
+        second.request.method !== 'item/commandExecution/requestApproval'
+      ) {
+        assert.fail('expected reused command approval Server request')
+      }
+
+      assert.equal(second.request.id, first.request.id)
+      await second.request.respond({ decision: 'accept' })
+      assert.deepEqual(await initialize, {
+        userAgent: 'fake-server-reuse-codex',
+      })
+    },
+  )
+})
+
+test('CodexStdioTransport dismisses a Server request without writing and safely reuses its identity', async () => {
+  await withFakeCodexStdioTransport(
+    { scenario: 'dismissed_server_request_reuse' },
+    async ({ transport, readJournal }) => {
+      const observations = transport.observations()[Symbol.asyncIterator]()
+      const initialize = transport.sendRequest(createInitializeRequest(1))
+      const first = await nextObservation(observations)
+
+      assert.equal(first.kind, 'server_request')
+
+      if (
+        first.kind !== 'server_request' ||
+        first.request.method !== 'item/commandExecution/requestApproval'
+      ) {
+        assert.fail('expected dismissible command approval Server request')
+      }
+
+      assert.equal(first.request.dismiss(), true)
+      assert.equal(first.request.dismiss(), false)
+      await assert.rejects(
+        first.request.respond({ decision: 'accept' }),
+        isProtocolFailure('duplicate_response'),
+      )
+
+      await transport.sendNotification({ method: 'initialized' })
+      const second = await nextObservation(observations)
+      assert.equal(second.kind, 'server_request')
+
+      if (
+        second.kind !== 'server_request' ||
+        second.request.method !== 'item/commandExecution/requestApproval'
+      ) {
+        assert.fail('expected reused Server request after dismiss')
+      }
+
+      await second.request.respond({ decision: 'decline' })
+      assert.deepEqual(await initialize, {
+        userAgent: 'fake-server-dismiss-codex',
+      })
+
+      assert.deepEqual(
+        (await readJournal({ minimumEntries: 3 }))
+          .filter((entry) => entry.kind === 'client_message')
+          .map((entry) => entry.message),
+        [
+          createInitializeRequest(1),
+          { method: 'initialized' },
+          {
+            id: 'dismissed-server-request',
+            result: { decision: 'decline' },
+          },
+        ],
+      )
+    },
+  )
+})
+
+test('CodexStdioTransport rejects a duplicate concurrently active Server request identity', async () => {
+  await withFakeCodexStdioTransport(
+    { scenario: 'duplicate_active_server_requests' },
+    async ({ transport }) => {
+      const observations = transport.observations()[Symbol.asyncIterator]()
+      const initialize = transport.sendRequest(createInitializeRequest(1))
+      const rejection = assert.rejects(
+        initialize,
+        isProtocolFailure('duplicate_server_request'),
+      )
+
+      assert.equal((await nextObservation(observations)).kind, 'server_request')
+      assert.deepEqual(await nextObservation(observations), {
+        kind: 'protocol_error',
+        code: 'duplicate_server_request',
+        message: 'Codex app-server reused an active Server request identity',
+      })
+      await rejection
     },
   )
 })

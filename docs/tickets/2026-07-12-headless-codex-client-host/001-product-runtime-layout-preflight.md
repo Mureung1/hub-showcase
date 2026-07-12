@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: completed
+- State: claimed
 - Surface: local-ticket
-- Next actor: none
+- Next actor: implementation agent
 
 ## Parent Spec
 
@@ -30,6 +30,7 @@
 - `CODEX_HOME`과 `CODEX_SQLITE_HOME`은 `appDataRoot` 아래의 분리할 수 없는 pair로 계산한다. 한쪽만 바꾸는 product override를 추가하지 않는다.
 - 이 ticket은 child process, Host lifecycle, thread·turn과 browser adapter를 구현하지 않는다.
 - Layout만 구현했다는 이유로 method integration을 `client-host`로 승격하지 않는다.
+- Root·binary의 canonical inspection과 package metadata read/parse·pin lookup을 포함한 모든 internal failure는 stable `ProductRuntimeLayoutError`로 wrapping한다.
 
 ## Acceptance Criteria
 
@@ -41,6 +42,7 @@
 - [x] Product layout API 어디에도 `process.cwd()`, 전역 `PATH`, 독립적인 home override fallback이 없다.
 - [x] 기존 `CodexRawClient`와 Runtime Harness의 default/override 동작과 테스트가 회귀하지 않는다.
 - [x] 구현된 현재 동작을 관련 package README 또는 구현 지도에 반영하되 미래 Host 동작을 구현된 것처럼 기록하지 않는다.
+- [x] Root·binary의 `realpath()` 뒤 `stat()` failure와 package metadata read/parse 또는 dependency pin 누락이 plain `Error`로 빠지지 않는다.
 
 ## Verification
 
@@ -53,6 +55,8 @@
 ## Result
 
 `prepareProductRuntimeLayout()`과 `ProductRuntimeLayoutError`를 `@ay-ple/runtime-codex` 공개 API로 추가했다. 이 seam은 명시적인 세 root를 canonical 대상으로 검증하고, package 안의 실행 가능한 Codex binary가 정확한 package pin과 일치하는지 확인하며, `appDataRoot` 아래에서 빠져나갈 수 없는 `codex/home`·`codex/sqlite` pair를 준비한다. 모든 구성 실패는 `recoverable: false`인 안정적인 code로 분류된다.
+
+Follow-up hardening은 root·binary의 canonical target을 읽은 뒤 발생하는 filesystem inspection failure도 기존 stable code로 wrapping하고, package metadata read/parse와 `@openai/codex` dependency pin 누락을 `package_pin_unreadable`로 분류한다.
 
 기존 `CodexRawClient`와 Runtime Harness의 repository-local default, 독립 override와 단일-run 동작은 변경하지 않았다. 현재 구현 범위와 아직 연결하지 않은 Host lifecycle은 package README와 Runtime Harness 구현 지도에 구분해 기록했다.
 

@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: completed
+- State: claimed
 - Surface: local-ticket
-- Next actor: none
+- Next actor: implementation agent
 
 ## Parent Spec
 
@@ -31,6 +31,8 @@
 - Runtime Harness의 raw/debug evidence는 보존하지만 새 Host-facing transport 결과에 raw stdio payload나 secret을 기본 노출하지 않는다.
 - Actual-child fixture는 success, assertion failure와 transport failure 모두에서 child close, deadline 뒤 force-kill과 temporary journal cleanup을 소유한다.
 - Generic transport가 method를 읽었다는 사실만으로 `codex-method-decisions.json` integration을 승격하지 않는다.
+- Package-internal `start()`는 actual child `spawn` event에서 resolve하고 async spawn error에서 reject하는 coalesced Promise다. Concurrent `close()`도 첫 cleanup Promise를 함께 기다린다.
+- Server request identity는 active 동안만 예약하고 response write 또는 internal-only `dismiss()` 뒤 해제한다. Client request lifecycle은 tombstone을 evict하지 않는 bounded registry가 소유한다.
 
 ## Acceptance Criteria
 
@@ -43,6 +45,12 @@
 - [x] Fixture-owned journal이 spawn, outbound protocol과 Server response를 관측하며 제품 Interface의 debug log에 의존하지 않는다.
 - [x] Actual-child test가 정상 완료, assertion failure와 transport failure에서 child를 close하거나 deadline 뒤 force-kill하고 temporary process·journal directory를 항상 정리한다.
 - [x] 기존 `CodexRawClient` wrapper, `CodexRuntimeAdapter`와 관련 테스트가 변경 없이 또는 호환 확장으로 계속 통과한다.
+- [x] Raw `1.0`과 `1e3`처럼 수학적으로 exact safe integer인 JSON number 표기를 허용하면서 precision loss, underflow와 negative zero는 parse 전에 거부한다.
+- [x] Terminal protocol/transport observation 뒤 같은 stdout buffer의 notification이나 Server request를 더 publish하지 않는다.
+- [x] Successful spawn Promise가 concurrent start를 한 child spawn으로 coalesce하고 async spawn failure와 initialize 전 단계를 구분할 수 있다.
+- [x] Server request response/error 또는 `dismiss()` 뒤 같은 ID의 순차 reuse는 허용하고 동시에 active인 reuse는 fatal duplicate로 거부한다.
+- [x] Client request lifecycle은 `pending | completed | timed_out` registry 하나가 소유하며 hard cap에서 tombstone eviction 없이 새 wire write 전에 connection을 안전하게 닫는다.
+- [x] Concurrent `close()` caller가 graceful deadline과 force-kill을 포함한 같은 cleanup 완료를 기다린다.
 
 ## Verification
 
@@ -68,13 +76,14 @@
 - `npm run build` — 통과
 - `npm run lint -w @ay-ple/inspector` — 통과
 - `npm run generate:codex-methods -w @ay-ple/runtime-codex` — 통과, aggregate response schema 재생성 전후 SHA-256 동일, 예상 밖 generated inventory diff 없음
-- 고정점 `d04efe587592c892cdbd762a9288ba98684e2f51` 기준 committed diff `346af09e` Standards/Spec 재리뷰 — 양축 findings 없음
 
 ## Result
 
 `CodexStdioTransport`가 네 protocol direction을 stdio JSONL에서 분리하고 direction·ID type·exact value로 Client response와 Server request를 독립적으로 연결한다. Pinned Codex가 생성한 Server request JSON Schema와 response type을 package 내부에서 검증·사용하며 one-shot success/error writer, sanitized protocol/transport observation과 request-scoped timeout을 제공한다. Actual-child fixture journal은 spawn과 outbound protocol을 독립 관측하고 success, assertion failure와 transport failure의 child reaping·temporary directory cleanup을 소유한다. 기존 `CodexRawClient`와 `CodexRuntimeAdapter` 경로는 그대로 유지했다.
 
-Follow-up review의 네 finding도 actual-child seam에서 보강했다. Raw numeric ID는 `Number()` 변환 전에 exact safe JSON integer token인지 검사하고, 중복 top-level protocol key는 ambiguous message로 connection을 fail-closed 처리한다. Timed-out Client identity는 completed response와 별도 fence에 보존해 known late response만 폐기하며 다른 pending request와 connection은 유지한다. Shared internal response contract가 10개 Server request method의 generated response type과 schema name을 한 roster에서 소유하고, generator가 만든 aggregate response schema로 success result를 wire write 전에 검증한다. Invalid result는 one-shot 상태를 소비하지 않으며 fixture journal에도 기록되지 않는다.
+Follow-up review의 첫 네 finding도 actual-child seam에서 보강했다. Raw numeric ID는 `Number()` 변환 전에 unsafe precision loss·underflow와 duplicate top-level protocol key를 차단한다. Timed-out Client identity는 completed response와 별도 state로 보존해 known late response만 폐기하며 다른 pending request와 connection은 유지한다. Shared internal response contract가 10개 Server request method의 generated response type과 schema name을 한 roster에서 소유하고, generator가 만든 aggregate response schema로 success result를 wire write 전에 검증한다. Invalid result는 one-shot 상태를 소비하지 않으며 fixture journal에도 기록되지 않는다.
+
+전체 review 재대조 hardening은 수학적으로 같은 safe integer value인 decimal/exponent JSON 표기를 수용하고 terminal observation 뒤 publication을 차단했다. Actual child `spawn`과 concurrent close는 각각 하나의 Promise로 coalesce한다. Active Server request는 tokenized lifecycle과 `dismiss()`를 사용해 response 또는 native resolution 뒤 identity를 안전하게 해제하고, Client request lifecycle은 tombstone을 evict하지 않는 65,536-entry hard cap으로 memory를 제한한다.
 
 구현 commits:
 

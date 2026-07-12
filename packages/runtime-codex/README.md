@@ -42,7 +42,11 @@ Package pin은 App Server binary와 생성 protocol 계약을 고정한다. `gpt
 
 Package 내부 `CodexStdioTransport`는 이후 Headless Codex Client Host가 사용할 generated-schema-backed lower transport다. Client request·notification, Server request·notification을 stdio JSONL에서 방향별로 분류하고 `RequestId`의 `string | number` type과 exact value를 보존한다. Outbound Client request와 inbound Server request는 별도 namespace이므로 반대 방향의 같은 numeric ID가 동시에 존재해도 서로 resolve하지 않는다.
 
-Known Server request는 pinned generated JSON Schema로 nested params를 검증하고 method별 generated response schema로 success result를 검증한 뒤에만 wire에 쓴다. Generated response type에 맞는 `respond`와 protocol-level `respondError`는 한 request에 한 번만 쓸 수 있고, invalid success result는 one-shot 상태를 소비하지 않는다. Raw numeric ID는 parse 전에 exact safe JSON integer인지 확인하며 중복 top-level protocol key를 ambiguous message로 거부한다. Unknown·duplicate·ambiguous response와 malformed message는 다른 pending request에 귀속하지 않고 sanitized `protocol_error` observation으로 connection을 닫는다. Individual Client request timeout은 connection loss와 구분된 request-scoped error이며, timed-out identity의 known late response는 폐기해 다른 pending request와 connection을 유지한다. Spawn error, child exit, stdout EOF, stdout failure와 stdin write failure는 구분된 `transport_lost` observation이다. 이 observation에는 raw stdio line, child environment, stderr와 debug payload를 넣지 않는다.
+Known Server request는 pinned generated JSON Schema로 nested params를 검증하고 method별 generated response schema로 success result를 검증한 뒤에만 wire에 쓴다. Generated response type에 맞는 `respond`와 protocol-level `respondError`는 한 request에 한 번만 쓸 수 있고, invalid success result는 one-shot 상태를 소비하지 않는다. Response write 또는 internal-only `dismiss()`가 끝나면 active Server request identity를 해제하며, 같은 ID의 동시 request는 거부하고 순차 reuse는 허용한다.
+
+Raw numeric ID는 parse 전에 수학적으로 exact safe integer value인지 확인하므로 `1.0`과 `1e3` 같은 유효 표기는 각각 `1`과 `1000`으로 보존하고 precision loss, underflow와 모든 negative-zero 표기는 거부한다. 중복 top-level protocol key는 ambiguous message로 거부한다. Unknown·duplicate·ambiguous response와 malformed message는 다른 pending request에 귀속하지 않고 sanitized `protocol_error` observation으로 connection을 닫으며 terminal observation 뒤의 buffered stdout message는 publish하지 않는다. Individual Client request timeout은 connection loss와 구분된 request-scoped error이며, timed-out identity의 known late response는 폐기해 다른 pending request와 connection을 유지한다.
+
+Client request lifecycle은 `pending | completed | timed_out` registry 하나가 소유한다. Routing tombstone을 evict해 old response를 새 request에 오연결하지 않으며 connection당 기본 65,536개 identity hard cap에 도달하면 새 request를 wire에 쓰기 전에 `request_identity_limit` transport failure로 안전하게 닫는다. Package-internal `start()`는 실제 child `spawn` event를 기다리는 coalesced Promise를 제공하고, concurrent `close()`도 같은 cleanup Promise를 기다린다. Spawn error, child exit, stdout EOF, stdout failure와 stdin write failure는 구분된 `transport_lost` observation이다. 이 observation에는 raw stdio line, child environment, stderr와 debug payload를 넣지 않는다.
 
 Actual-child contract fixture는 별도 JSONL journal로 spawn과 Client outbound protocol·Server response를 확인하며 success, assertion failure와 transport failure에서 child 종료 deadline, force-kill과 temporary directory cleanup을 소유한다. 이 lower transport를 읽는 것만으로 raw method가 제품 Host에 연결된 것은 아니므로 method inventory의 integration 단계는 바꾸지 않는다.
 
@@ -56,7 +60,7 @@ Actual-child contract fixture는 별도 JSONL journal로 spawn과 Client outboun
 | `appDataRoot`·`codexHome`·`codexSqliteHome` | Canonical `appDataRoot` 아래 `codex/home`과 `codex/sqlite`를 하나의 pair로 준비한다. 내부 symlink가 `appDataRoot` 밖으로 빠지거나 두 home이 겹치면 거부하며 한쪽만 바꾸는 product override는 없다. |
 | `workspaceRoot`·`cwd` | 호출자가 명시한 기존 디렉터리의 canonical 대상을 그대로 반환한다. `process.cwd()`를 대체값으로 사용하거나 호출별 workspace override를 만들지 않는다. |
 
-모든 layout 실패는 `ProductRuntimeLayoutError`이며 안정적인 `code`와 `recoverable: false`를 제공한다. 같은 구성으로 재시도할 수 없는 root·binary·pin·runtime-home 준비 실패를 이후 Host lifecycle이 자유 형식 message 대신 이 type으로 분류할 수 있다.
+모든 layout 실패는 `ProductRuntimeLayoutError`이며 안정적인 `code`와 `recoverable: false`를 제공한다. Root·binary filesystem inspection과 package metadata read/parse 또는 pin 누락도 각각 기존 root/binary code와 `package_pin_unreadable`로 wrapping한다. 같은 구성으로 재시도할 수 없는 root·binary·pin·runtime-home 준비 실패를 이후 Host lifecycle이 자유 형식 message 대신 이 type으로 분류할 수 있다.
 
 이 API는 layout과 runtime-home pair만 준비한다. App Server child process, initialize handshake, Host lifecycle과 thread·turn은 아직 만들지 않으며, 아래 Runtime Harness resolver와 default/override 동작도 바꾸지 않는다.
 

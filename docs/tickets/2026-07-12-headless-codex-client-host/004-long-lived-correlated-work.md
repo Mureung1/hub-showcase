@@ -30,13 +30,14 @@
 - `item/completed`는 item terminal이고 `turn/completed`만 turn terminal이다. `error` notification이나 transport 상태로 turn terminal을 합성하지 않는다.
 - Snapshot은 known thread의 ephemeral status와 active turn만 유지한다. Text delta, completed transcript와 activity log를 누적·영속화하지 않는다.
 - `thread/start`와 `turn/start`는 non-idempotent이며 timeout 또는 connection loss 뒤 자동 retry하지 않는다.
+- 같은 thread의 `startTurn`은 raw dispatch 전에 execution-slot reservation을 획득한다. Concurrent caller를 같은 turn Promise로 coalesce하지 않는다.
 - Restart, pending interaction, transcript restoration, interrupt와 thread list/read/resume은 이번 slice에 포함하지 않는다.
 
 ## Acceptance Criteria
 
 - [ ] 같은 PID와 initialize handshake 하나에서 Thread A/B, A1/B1과 A1 terminal 뒤 A2가 실행된다.
 - [ ] Public thread/turn command가 `cwd`를 받지 않고 fixture journal의 native request는 exact `workspaceRoot`를 사용하거나 contract상 optional turn cwd를 omit한다.
-- [ ] 같은 thread에는 active turn 하나만 허용되고 충돌한 turn start는 raw request를 보내기 전에 `operation_conflict`로 거부된다.
+- [ ] 같은 thread에 active turn이 있으면 새 turn을 raw request 전에 거부하고, idle 상태의 동시 `startTurn` 두 호출도 정확히 하나만 raw `turn/start`를 보내며 나머지는 `operation_conflict`가 된다.
 - [ ] A1/B1의 text, activity와 terminal event를 의도적으로 interleave해도 모든 event와 snapshot state가 정확한 refs에만 연결된다.
 - [ ] Start response와 matching started notification의 중복이 thread나 turn을 두 번 만들지 않는다.
 - [ ] Agent delta는 matching active turn에만 publish되고 terminal 뒤 late delta/item event가 A2나 다른 thread로 이동하지 않는다.

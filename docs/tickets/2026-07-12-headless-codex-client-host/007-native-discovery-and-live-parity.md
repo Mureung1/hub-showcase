@@ -26,6 +26,7 @@ Host caller가 bound `workspaceRoot`의 native `skills/list` 결과를 product-s
 - `skills/list`는 bound `workspaceRoot` 하나만 `cwds`에 보내고 caller가 per-call cwd를 바꿀 수 없게 한다.
 - Public result는 Skill의 product-safe allowlisted summary와 typed discovery error만 제공한다. Raw generated shape, absolute internal roots와 debug payload를 노출하지 않는다.
 - `instructionSources`는 fixture/transport-level evidence와 live `thread/start` response에서 확인한다. Sentinel workspace `AGENTS.md`가 native instruction source에 포함되는지 verifier가 검사하되, spec에 없는 public Host field나 browser DTO로 추가하지 않는다.
+- Live verifier는 public Host path를 실행하는 package-internal composition에서만 `thread/start`의 `instructionSources`를 관측한다. 실행 중 memory에서 allowlisted assertion만 수행하며 package root export, server/browser composition, 파일과 Runtime Diagnostic History에 raw response를 노출하거나 저장하지 않는다. 정확한 probe type 이름은 고정하지 않는다.
 - Native `AGENTS.md`와 Skill discovery 의미를 fake에서 재구현하지 않는다. Fake는 request/response와 cwd 전달만 결정적으로 증명한다.
 - Discovery failure는 Host connection을 닫지 않고 operation-scoped error로 끝난다.
 - Live command는 login/OAuth를 시작하지 않고 existing auth availability만 preflight한다. Token과 raw protocol 내용을 출력하지 않는다.
@@ -43,6 +44,7 @@ Host caller가 bound `workspaceRoot`의 native `skills/list` 결과를 product-s
 - [ ] Live verifier 자체가 deterministic fake child를 사용하는 기본 자동화에서 root/timeout parsing, A/B/A2 event correlation, sentinel Skill success/failure와 Host/child cleanup을 검증한다.
 - [ ] Opt-in live command가 package-owned pinned binary와 명시적인 세 root를 사용하고 auth가 없으면 login을 시작하지 않은 채 안전하게 중단한다.
 - [ ] Live command가 한 generation에서 Thread A/B와 A1 terminal 뒤 A2를 실행하고 streaming/terminal refs, `thread/start`의 sentinel `AGENTS.md` `instructionSources` evidence 및 sentinel Skill discovery를 확인한다.
+- [ ] Internal evidence composition audit가 package root와 server/browser export에 verifier seam이 없고 raw `instructionSources` response를 파일·diagnostic history에 저장하지 않음을 확인한다.
 - [ ] Live 실행 조건, 비결정적 제외 범위와 안전한 root/auth 준비 방법을 관련 package README가 소유한다.
 - [ ] `skills/list`가 실제 Host path에 연결된 단계로 sparse method decision과 generated inventory를 갱신한다.
 

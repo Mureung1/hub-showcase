@@ -42,6 +42,7 @@ export type ProductRuntimeLayoutFailureCode =
   | 'binary_not_executable'
   | 'binary_not_package_owned'
   | 'binary_version_unreadable'
+  | 'package_pin_unreadable'
   | 'binary_pin_mismatch'
   | 'runtime_home_preparation_failed'
 
@@ -114,7 +115,11 @@ export async function prepareProductRuntimeLayout(
 }
 
 function validateRootInput(root: ProductRuntimeRootName, value: string): void {
-  if (!isAbsolute(value) || normalize(value) !== value) {
+  if (
+    typeof value !== 'string' ||
+    !isAbsolute(value) ||
+    normalize(value) !== value
+  ) {
     throw new ProductRuntimeLayoutError(
       'invalid_root',
       `${root} must be an absolute normalized path`,
@@ -131,22 +136,25 @@ async function canonicalExistingDirectory(
 
   try {
     canonicalPath = await realpath(value)
+    const pathStat = await stat(canonicalPath)
+
+    if (!pathStat.isDirectory()) {
+      throw new ProductRuntimeLayoutError(
+        'root_not_directory',
+        `${root} must be an existing directory`,
+        root,
+      )
+    }
   } catch (cause) {
+    if (cause instanceof ProductRuntimeLayoutError) {
+      throw cause
+    }
+
     throw new ProductRuntimeLayoutError(
       'root_not_directory',
       `${root} must be an existing directory`,
       root,
       { cause },
-    )
-  }
-
-  const pathStat = await stat(canonicalPath)
-
-  if (!pathStat.isDirectory()) {
-    throw new ProductRuntimeLayoutError(
-      'root_not_directory',
-      `${root} must be an existing directory`,
-      root,
     )
   }
 
@@ -282,15 +290,32 @@ async function resolveProductCodexBinary(
     )
   }
 
-  const binaryStat = await stat(canonicalPath)
+  try {
+    const binaryStat = await stat(canonicalPath)
 
-  if (!binaryStat.isFile()) {
+    if (binaryStat.isFile()) {
+      return await assertExecutableBinary(canonicalPath)
+    }
+
     throw new ProductRuntimeLayoutError(
       'binary_not_executable',
       'The package-owned Codex binary must be an executable file',
     )
-  }
+  } catch (cause) {
+    if (cause instanceof ProductRuntimeLayoutError) {
+      throw cause
+    }
 
+    throw new ProductRuntimeLayoutError(
+      'binary_not_executable',
+      'The package-owned Codex binary could not be inspected',
+      undefined,
+      { cause },
+    )
+  }
+}
+
+async function assertExecutableBinary(canonicalPath: string): Promise<string> {
   try {
     await access(canonicalPath, constants.X_OK)
   } catch (cause) {
@@ -410,17 +435,26 @@ async function readProductCodexVersion(
   }
 }
 
-function readPinnedCodexVersion(): string {
-  const packageJson = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-  ) as {
-    dependencies?: Record<string, unknown>
-  }
-  const version = packageJson.dependencies?.['@openai/codex']
+export function readPinnedCodexVersion(
+  packageJsonUrl: URL = new URL('../package.json', import.meta.url),
+): string {
+  try {
+    const packageJson = JSON.parse(readFileSync(packageJsonUrl, 'utf8')) as {
+      dependencies?: Record<string, unknown>
+    }
+    const version = packageJson.dependencies?.['@openai/codex']
 
-  if (typeof version !== 'string' || version.length === 0) {
-    throw new Error('Unable to read pinned @openai/codex version')
-  }
+    if (typeof version !== 'string' || version.length === 0) {
+      throw new Error('Pinned @openai/codex version is missing')
+    }
 
-  return version
+    return version
+  } catch (cause) {
+    throw new ProductRuntimeLayoutError(
+      'package_pin_unreadable',
+      'Unable to read the pinned @openai/codex package version',
+      undefined,
+      { cause },
+    )
+  }
 }

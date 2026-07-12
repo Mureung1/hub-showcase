@@ -109,10 +109,11 @@ Host snapshot은 최소한 `status`, monotonic `generation`, 마지막 sanitized
 
 | Failure class | `recoverable` | 규칙 |
 | --- | --- | --- |
-| invalid layout, missing/non-executable binary, pin mismatch, runtime-home preparation failure | `false` | 같은 Host configuration으로 restart하지 않는다. Caller가 configuration 또는 외부 filesystem 상태를 고쳐 새 Host를 구성해야 한다. |
+| invalid layout, missing/non-executable binary, unreadable package pin metadata, pin mismatch, runtime-home preparation failure | `false` | 같은 Host configuration으로 restart하지 않는다. Caller가 configuration 또는 외부 filesystem 상태를 고쳐 새 Host를 구성해야 한다. |
 | unsafe protocol/schema/identity failure | `false` | 같은 pinned contract에서 자동·명시적 restart loop를 만들지 않는다. Binary/schema를 다시 검증한 뒤 새 Host를 구성한다. |
 | transient spawn failure after successful preflight, initialize timeout/error | `true` | mutating product command가 시작되기 전이므로 같은 validated layout으로 명시적 restart할 수 있다. |
 | unexpected child exit, stdout EOF, stdin/transport failure | `true` | 이전 generation을 fence한 뒤 명시적 restart할 수 있으나 in-flight operation은 replay하지 않는다. |
+| bounded Client request identity registry exhaustion | `true` | Tombstone을 evict해 old response를 오연결하지 않고 generation을 닫는다. 새 generation에서만 명시적으로 다시 시작하며 mutation을 replay하지 않는다. |
 | individual command error/timeout, turn failure, Skills discovery error | Host state 불변 | connection이 살아 있으면 `ready`를 유지하고 operation-scoped recovery만 제공한다. |
 
 `recoverable: false`인 `failed` state의 `restart` 요청은 raw process를 시작하지 않고 `operation_conflict`로 거부한다.
@@ -125,7 +126,7 @@ Host snapshot은 최소한 `status`, monotonic `generation`, 마지막 sanitized
 | --- | --- |
 | lifecycle | `start`, `stop`, 명시적 `restart`, current snapshot read와 subscription |
 | thread start | bound `workspaceRoot`에서 persistent thread를 시작하고 opaque `threadRef`를 반환한다. ephemeral thread와 per-call workspace override는 허용하지 않는다. |
-| turn start | Host가 발급하거나 검증한 `threadRef`에 최소 text input으로 turn을 시작하고 opaque `turnRef`를 반환한다. 같은 thread의 turn은 앞선 active turn이 terminal에 도달한 뒤 순차로 시작한다. |
+| turn start | Host가 발급하거나 검증한 `threadRef`에 최소 text input으로 turn을 시작하고 opaque `turnRef`를 반환한다. 같은 thread의 turn은 앞선 active turn이 terminal에 도달한 뒤 순차로 시작한다. Dispatch 전 per-thread reservation을 획득하므로 동시 `startTurn` 중 정확히 하나만 raw `turn/start`를 보내고 나머지는 `operation_conflict`가 된다. Non-idempotent command를 coalesce하지 않는다. |
 | cross-thread execution | 서로 다른 thread의 active turn과 interleave되는 event를 지원한다. 선택된 UI thread나 가장 최근 turn을 기준으로 event를 추론하지 않는다. |
 | native Skills | `skills/list`를 bound `workspaceRoot` 하나에 대해 호출하고 product-safe summary와 discovery error를 반환한다. Host는 filesystem을 직접 scan하거나 `SKILL.md` parser를 구현하지 않는다. |
 | pending interaction response | Host가 공개한 current-generation opaque `interactionRef`와 variant에 맞는 typed answer를 받아 원래 Server request에 정확히 한 번 응답한다. |
@@ -144,7 +145,7 @@ Host snapshot은 최소한 `status`, monotonic `generation`, 마지막 sanitized
 - inbound message는 `id + method` Server request, `method only` Server notification, `id + result/error` Client request response로 분류한다. `id` 존재 여부만으로 response라고 판단하지 않는다.
 - normalized event는 Host instance 안에서 monotonic sequence, generation, kind, timestamp와 variant에 필요한 opaque thread·turn·item·interaction refs를 가진다. raw method명과 raw params를 browser event로 전달하지 않는다.
 - stdio에서 읽은 순서는 같은 generation의 publication 순서로 보존한다. 여러 thread의 event interleaving은 정상이며 subscriber는 correlation refs로 구분한다.
-- terminal 성공은 matching native terminal notification이 있을 때만 공개한다. transport loss나 parse failure를 turn 성공·실패로 꾸미지 않고 `connection_lost`와 reconciliation이 필요한 불확실한 operation으로 표현한다.
+- terminal 성공은 matching native terminal notification이 있을 때만 공개한다. Transport loss나 parse failure를 turn 성공·실패로 꾸미지 않는다. 별도 `connection_lost` event를 추가하지 않고 authoritative `host_state_changed`의 `status: failed` snapshot으로 표현하며, 직전 active turn은 `outcome: unknown`인 reconciliation-needed marker로 남긴다.
 - missing identity, orphan event, duplicate/conflicting response와 duplicate terminal을 현재 선택 thread에 임의 귀속하지 않는다. 상태를 안전하게 유지할 수 없으면 sanitized protocol failure로 connection을 닫는다.
 - 지원하지 않는 well-formed notification은 internal diagnostic으로만 남기고 browser에 raw passthrough하지 않는다. method별 product 연결 상태는 실제 normalized mapping이 생긴 경우에만 승격한다.
 - Product Host composition은 raw stdio payload를 기본 debug history로 축적하거나 저장하지 않는다. Transport diagnostic이 필요하면 method direction, generation과 sanitized error code 같은 allowlisted metadata만 bounded sink에 기록하고, 기존 Runtime Harness의 raw/debug evidence와 분리한다.
@@ -153,7 +154,7 @@ Host snapshot은 최소한 `status`, monotonic `generation`, 마지막 sanitized
 
 | Host event | 근거가 되는 native observation | 필수 correlation | State effect |
 | --- | --- | --- | --- |
-| `host_state_changed` | Host lifecycle transition | generation | current connection snapshot을 교체한다. |
+| `host_state_changed` | Host lifecycle transition과 connection loss | generation | current connection snapshot을 교체한다. Connection loss에서는 `status: failed`와 sanitized failure를 authoritative하게 전달하고 별도 loss event를 중복 발행하지 않는다. |
 | `thread_started` | `thread/start` response와 `thread/started` | thread | opaque thread를 한 번 등록한다. 같은 native identity의 notification은 중복 thread를 만들지 않는다. |
 | `thread_status_changed` | `thread/status/changed` | thread | 해당 thread의 ephemeral status만 갱신한다. |
 | `turn_started` | `turn/start` response와 `turn/started` | thread, turn | 해당 thread의 active turn을 한 번 등록한다. |
@@ -166,7 +167,7 @@ Host snapshot은 최소한 `status`, monotonic `generation`, 마지막 sanitized
 | `pending_interaction_expired` | generation 종료 | interaction | response할 수 없는 이전-generation interaction을 만료한다. |
 | `host_warning` | `warning`, `configWarning`, `error` 또는 sanitized protocol anomaly | 가능한 경우 thread, turn | scope가 있으면 해당 operation, 없으면 Host에 warning/error를 기록한다. turn terminal을 합성하지 않는다. |
 
-- Host snapshot은 connection state, known thread의 ephemeral status와 active turn, pending interaction을 포함한다. Agent text delta, activity log와 completed transcript는 snapshot에 축적하지 않는다.
+- Host snapshot은 connection state, known thread의 ephemeral status와 execution slot, pending interaction을 포함한다. Execution slot은 dispatch 전 `starting`, 실행 중 `active`, connection loss 뒤 reconciliation이 필요한 `unknown`을 구분하며 `unknown`은 원래 `turnRef`를 보존하되 active 또는 terminal로 표현하지 않는다. Agent text delta, activity log와 completed transcript는 snapshot에 축적하지 않는다.
 - `turn/start` response로 turn을 먼저 등록하고 같은 identity의 `turn/started`가 뒤따르면 하나의 `turn_started` 의미로 수렴한다. 같은 규칙을 `thread/start` response와 `thread/started`에 적용한다.
 - `agent_message_delta`와 item event는 matching active turn에만 연결한다. `turn_completed` 뒤의 late delta/item event는 새 turn이나 현재 선택 thread에 붙이지 않는다.
 - `item/completed`는 item terminal이고 `turn/completed`만 turn terminal이다. `error` notification만으로 native completion을 추정하지 않는다.
@@ -198,9 +199,11 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 - 첫 browser adapter는 기존 코드베이스의 외부 seam을 재사용해 dedicated HTTP JSON command와 SSE snapshot/event stream으로 구현한다. `/api/runtime/*`와 namespace, state와 lifecycle owner를 공유하지 않는다.
 - Host subscription은 subscriber 등록, current snapshot과 그 snapshot이 포함한 마지막 sequence `cursor` 취득을 하나의 atomic operation으로 제공한다. 등록 중 발생한 `sequence > cursor` event는 subscriber-local buffer에 보관한다.
 - SSE 연결은 `{ snapshot, cursor }` initial event를 먼저 flush한 뒤 buffered event와 이후 live event를 sequence 순서로 전달한다. Snapshot 취득과 live subscription 사이에 event를 잃거나 snapshot보다 앞서 event를 보내지 않는다.
+- Subscriber-local pending queue는 고정 event-count 또는 byte budget으로 bounded한다. Writer backpressure가 해소되지 않거나 overflow되면 해당 subscriber만 unsubscribe하고 SSE를 닫으며, 중간 event를 버린 뒤 cursor가 연속인 것처럼 전달하지 않는다. Reconnect는 최신 atomic snapshot으로 수렴한다.
 - Reconnect는 같은 atomic subscription으로 최신 snapshot에 수렴하지만 disconnect 동안의 agent text delta나 completed activity를 durable replay한다고 약속하지 않는다. 후속 `thread/read` transcript restoration이 이 간극을 소유한다.
-- command validation failure, stale ref, lifecycle conflict와 Host unavailable을 stable error envelope로 구분한다. 최소 error code는 `invalid_request`, `host_not_ready`, `stale_reference`, `operation_conflict`, `transport_lost`, `protocol_error`를 표현할 수 있어야 한다.
+- command validation failure, stale ref, lifecycle conflict와 Host unavailable을 stable error envelope로 구분한다. 최소 error code는 `invalid_request`, `host_not_ready`, `stale_reference`, `operation_conflict`, `request_timeout`, `operation_failed`, `transport_lost`, `protocol_error`를 표현할 수 있어야 한다. 앞의 두 operation-scoped failure는 connection이 살아 있으면 같은 generation의 `ready` snapshot을 유지한다.
 - product route는 same-origin local shell만 mutation할 수 있게 제한한다. wildcard CORS로 product command나 interaction response를 임의 웹 origin에 노출하지 않는다.
+- Product HTTP/SSE listener는 explicit loopback 주소에만 bind하고 wildcard interface bind를 사용하지 않는다.
 - Browser DTO와 network response에는 raw JSON-RPC, generated type, raw IDs, auth token, environment, `packageRoot`·`appDataRoot`, child stderr와 Runtime Diagnostic History debug evidence가 없어야 한다.
 - 최소 제품 React shell은 browser-safe adapter만 import하고 Host connection/loading/error 상태를 렌더링한다. thread 목록, transcript, approval controls와 학업 UI는 후속이다.
 
@@ -219,13 +222,14 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 
 | 실패 | Host 동작 | Caller/browser 관측 |
 | --- | --- | --- |
-| invalid/missing/overlapping root, missing binary, pin mismatch | child spawn 전에 fail closed | `failed`, non-recoverable until configuration changes |
+| invalid/missing/overlapping root, missing binary, unreadable package pin metadata, pin mismatch | child spawn 전에 fail closed | `failed`, non-recoverable until configuration changes |
 | spawn 또는 initialize timeout/error | child를 정리하고 start를 실패 | sanitized failure와 명시적 restart 가능 여부 |
 | command validation 또는 wrong workspace/thread ref | raw request를 보내지 않음 | `invalid_request` 또는 `stale_reference` |
 | same-thread active turn 중 새 turn | queue나 steer로 바꾸지 않고 거부 | `operation_conflict` |
 | individual App Server request error/timeout | 해당 operation만 실패시키고 transport가 살아 있으면 Host는 `ready` 유지 | scoped typed error; mutating request 자동 retry 없음 |
 | malformed JSON, ID type 손실, 안전하게 route할 수 없는 protocol message | pending operation을 종료하고 connection을 unsafe로 닫음 | `protocol_error`, non-recoverable; binary/schema 재검증 뒤 새 Host 필요 |
-| unexpected exit, stdout EOF, stdin failure | generation을 종료하고 모든 pending Client request를 reject하며 pending interaction을 expire | `transport_lost`; active turn 결과는 unknown/reconciliation-needed, 성공·실패를 합성하지 않음 |
+| unexpected exit, stdout EOF, stdin failure | generation을 종료하고 모든 pending Client request를 reject하며 pending interaction을 expire | `transport_lost` error와 authoritative `host_state_changed(status: failed)`; active turn은 snapshot의 unknown/reconciliation-needed marker로 남기고 terminal을 합성하지 않음 |
+| Client request identity hard cap 도달 | 새 request를 wire에 쓰기 전에 generation을 종료하고 tombstone registry를 정리 | recoverable `transport_lost`; explicit restart만 허용하고 거부된 mutation을 자동 replay하지 않음 |
 | stale/duplicate interaction response | App Server에 아무것도 보내지 않음 | `operation_conflict` 또는 `stale_reference` |
 | unsupported Server request | 자동 승인·무시하지 않고 protocol-level unsupported response | scoped sanitized failure; raw payload 비노출 |
 | Skills discovery error | Host 연결을 끊지 않고 workspace-scoped discovery failure로 반환 | 빈 결과와 구분되는 typed error |
@@ -268,7 +272,7 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 | Pending interaction | command/file/permission/user-input answer union과 generated mapping, 같은 item의 여러 callback, 역순 response, one-shot answer, policy amendment 거부, `serverRequest/resolved` race, browser disconnect 동안 pending 유지 |
 | Failure/restart | failure class별 `recoverable` mapping, initialize 전·ready·active turns·pending interaction 중 process exit, pending Promise 종료, unknown active outcome, old generation ref fencing, explicit restart 후 새 command 가능, 자동 replay 부재 |
 | Native context | exact workspace child/thread/skills cwd, `instructionSources`와 sentinel Skill의 native result, Host-owned parser 부재, discovery error |
-| Browser adapter | real loopback command/SSE, subscribe-snapshot race 중 atomic `{ snapshot, cursor }`와 buffered sequence ordering, stable error mapping, same-origin mutation, recursive DTO 검사로 raw IDs·protocol·secret·debug field 부재, product diagnostic sink의 raw payload 부재 |
+| Browser adapter | explicit loopback-only listener의 real command/SSE, subscribe-snapshot race 중 atomic `{ snapshot, cursor }`와 buffered sequence ordering, deterministic slow-subscriber overflow disconnect와 reconnect convergence, operation-scoped error 뒤 같은 generation `ready` 유지, stable error mapping, same-origin mutation, recursive DTO 검사로 raw IDs·protocol·secret·debug field 부재, product diagnostic sink의 raw payload 부재 |
 | Product shell | desktop browser에서 loading→ready와 forced failure→recoverable error 상태를 adapter를 통해 표시하며 Runtime Inspector state를 import하지 않음 |
 
 Host 전용 opt-in live parity는 package-owned pinned binary와 명시적 세 root를 사용한다. Login이나 OAuth를 시작하지 않고 기존 인증을 preflight한 뒤, 한 Host generation에서 thread 두 개와 같은 thread의 순차 turn 두 개, streaming/terminal correlation과 workspace sentinel Skill discovery를 확인한다. Model 응답 문구의 정확 일치, 실제 approval 유발과 process crash는 비결정적이므로 fake contract test가 소유한다. Live 명령과 안전한 실행 조건은 구현되는 package README가 소유한다.

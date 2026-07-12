@@ -29,6 +29,7 @@ Validated product layout에 bound된 one-workspace Headless Codex Client Host가
 - Lifecycle snapshot은 최소 `status`, monotonic `generation`, sanitized failure와 `recoverable`을 제공한다.
 - `ready`는 matching `initialize` response 뒤 `initialized`를 전송한 다음에만 공개한다.
 - Successful child spawn마다 generation을 한 번 발급한다. Explicit restart와 thread·turn은 후속 ticket 범위다.
+- Generation은 Ticket 002 transport의 coalesced `start()` Promise가 actual child `spawn` event에서 resolve한 직후 발급한다. Request dispatch 시점이나 initialize response 시점으로 추측하지 않는다.
 - Product Host는 raw stdio, child stderr, environment, root path와 Runtime Diagnostic History evidence를 공개하거나 축적하지 않는다.
 - Host와 generated-schema-backed transport는 같은 Node-side Codex integration boundary 안에 둔다. 별도 package를 선택하더라도 generated/raw type을 public export해 두 module 사이의 seam으로 만들지 않는다.
 - 기존 Runtime Harness의 `CodexRawClient`, `CodexRuntimeAdapter`와 Inspector contract를 Host contract로 바꾸지 않는다.
@@ -40,6 +41,7 @@ Validated product layout에 bound된 one-workspace Headless Codex Client Host가
 - [ ] 이미 `ready`인 `start`와 반복 `stop`은 idempotent다.
 - [ ] Invalid layout은 child spawn 전에 non-recoverable `failed` snapshot으로 수렴한다.
 - [ ] Preflight 뒤 transient spawn failure와 initialize timeout/error는 recoverable `failed`로 수렴하고 child·pending operation을 정리한다.
+- [ ] Async spawn error는 generation을 소비하지 않고, successful spawn 뒤 initialize timeout/error는 generation을 정확히 한 번 소비한다.
 - [ ] Stop 중 신규 operation을 받지 않으며 graceful deadline이 끝나면 강제 종료해 orphan process를 남기지 않는다.
 - [ ] Lifecycle event는 generation, monotonic sequence, timestamp와 allowlisted state만 포함한다.
 - [ ] Host public snapshot/event를 재귀 검사했을 때 raw JSON-RPC, raw ID, token, environment, roots, stderr와 debug payload가 없다.

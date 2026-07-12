@@ -10,11 +10,13 @@ import {
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import test from 'node:test'
 import {
   prepareProductRuntimeLayout,
   ProductRuntimeLayoutError,
 } from './index.js'
+import { readPinnedCodexVersion } from './product-runtime-layout.js'
 
 test('product runtime layout prepares a canonical package-owned runtime pair', async () => {
   await withProductLayoutFixture(async ({
@@ -60,6 +62,69 @@ test('product runtime layout rejects relative roots as non-recoverable configura
       },
     )
   })
+})
+
+test('product runtime layout wraps a non-string root as invalid configuration', async () => {
+  await withProductLayoutFixture(async ({ appDataRoot, workspaceRoot }) => {
+    await assert.rejects(
+      prepareProductRuntimeLayout({
+        packageRoot: undefined as never,
+        appDataRoot,
+        workspaceRoot,
+      }),
+      (error: unknown) => {
+        assert.ok(error instanceof ProductRuntimeLayoutError)
+        assert.equal(error.code, 'invalid_root')
+        assert.equal(error.root, 'packageRoot')
+
+        return true
+      },
+    )
+  })
+})
+
+test('product runtime layout wraps unreadable package pin metadata in a stable failure', async (t) => {
+  const tempRoot = await mkdtemp(join(tmpdir(), 'ay-ple-package-pin-'))
+
+  try {
+    const cases = [
+      {
+        name: 'missing package metadata',
+        path: join(tempRoot, 'missing-package.json'),
+      },
+      {
+        name: 'malformed package metadata',
+        path: join(tempRoot, 'malformed-package.json'),
+        contents: '{malformed',
+      },
+      {
+        name: 'missing Codex dependency pin',
+        path: join(tempRoot, 'unpinned-package.json'),
+        contents: JSON.stringify({ dependencies: {} }),
+      },
+    ]
+
+    for (const fixtureCase of cases) {
+      await t.test(fixtureCase.name, async () => {
+        if (fixtureCase.contents !== undefined) {
+          await writeFile(fixtureCase.path, fixtureCase.contents)
+        }
+
+        assert.throws(
+          () => readPinnedCodexVersion(pathToFileURL(fixtureCase.path)),
+          (error: unknown) => {
+            assert.ok(error instanceof ProductRuntimeLayoutError)
+            assert.equal(error.code, 'package_pin_unreadable')
+            assert.equal(error.recoverable, false)
+
+            return true
+          },
+        )
+      })
+    }
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true })
+  }
 })
 
 test('product runtime layout rejects a missing package root with a typed failure', async () => {
