@@ -470,6 +470,70 @@ describe('App', () => {
     expect(screen.getByLabelText('상황 설명')).toHaveValue('다음 모임 시간을 다시 확인하고 싶어요.')
   })
 
+  it('S0로 돌아가 같은 방식을 다시 고르면 입력과 목적이 유지된다', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    fireEvent.change(screen.getByLabelText('상황 설명'), {
+      target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /상황 카드로 돌아가기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /다른 관계 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /방식 다시 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+
+    expect(screen.getByLabelText('상황 설명')).toHaveValue('동아리 회의 시간을 다시 확인하고 싶어요.')
+    expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeEnabled()
+  })
+
+  it('방식을 바꾸면 입력을 초기화하고 고른 관계는 유지한다', () => {
+    const { container } = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    fireEvent.change(screen.getByLabelText('상황 설명'), {
+      target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /상황 카드로 돌아가기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /다른 관계 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /방식 다시 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /답장할래요/ }))
+
+    const keptScenarioCard = container.querySelector('.scenario-card[data-selected="true"]')
+    expect(keptScenarioCard?.textContent).toContain('선배냥')
+
+    fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+
+    expect(screen.getByLabelText('상황 설명 (선택)')).toHaveValue('')
+    expect(screen.getByLabelText('받은 메시지 붙여넣기')).toHaveValue('')
+    expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeDisabled()
+  })
+
+  it('관계를 바꾸면 이전 결과를 폐기한다', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '감사·확인' }))
+
+    const storedBefore: unknown = JSON.parse(window.sessionStorage.getItem('dabnyangi:flow') ?? '{}')
+    expect((storedBefore as { candidates: unknown[] }).candidates).toHaveLength(3)
+
+    fireEvent.click(screen.getByRole('button', { name: '상황 수정' }))
+    fireEvent.click(screen.getByRole('button', { name: /다른 관계 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /교수냥/ }))
+
+    const storedAfter: unknown = JSON.parse(window.sessionStorage.getItem('dabnyangi:flow') ?? '{}')
+    expect((storedAfter as { candidates: unknown[] }).candidates).toHaveLength(0)
+  })
+
   it('사용자가 이 탭에 임시 보관한 작성 내용을 즉시 지울 수 있다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))

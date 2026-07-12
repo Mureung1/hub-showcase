@@ -397,14 +397,31 @@ function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: Projec
     setGenerationError(null)
   }
 
+  const discardResult = () => {
+    setCandidates([])
+    setCopiedTone(null)
+    setCopiedNoticeTone(null)
+    setFallbackTone(null)
+    setCopyFailedTone(null)
+  }
+
   const chooseMode = (nextMode: Mode) => {
     cancelGeneration()
+    if (nextMode !== mode) {
+      setReceivedMessage('')
+      setSituation('')
+      setSelectedPurposeId(null)
+      discardResult()
+    }
     setMode(nextMode)
     setStep('scenario')
   }
 
   const selectScenario = (scenario: Scenario) => {
     cancelGeneration()
+    if (scenario.id !== selectedScenarioId) {
+      discardResult()
+    }
     setSelectedScenarioId(scenario.id)
     setStep('situation')
   }
@@ -506,10 +523,6 @@ function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: Projec
 
   const backToMode = () => {
     cancelGeneration()
-    setMode(null)
-    setReceivedMessage('')
-    setSituation('')
-    setSelectedPurposeId(null)
     setStep('mode')
   }
 
