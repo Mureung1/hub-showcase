@@ -20,6 +20,22 @@ npm run generate:codex-types -w @ay-ple/runtime-codex
 
 Generator는 package-owned Codex binary를 실행하고, `NodeNext` ESM compile을 위해 생성된 relative import에 `.js` 확장자를 붙인다. 생성 파일은 internal이며 AY-PLE 제품 계약으로 다시 export하지 않는다.
 
+## Raw method 목록
+
+Pinned stable schema와 별도로 생성한 experimental schema의 모든 client request·notification과 server request·notification method는 다음 명령으로 Markdown 목록을 다시 만든다.
+
+```bash
+npm run generate:codex-methods -w @ay-ple/runtime-codex
+```
+
+| 위치 | 역할 |
+| --- | --- |
+| [`codex-method-decisions.json`](codex-method-decisions.json) | 검토한 method의 연결 단계, 채택 판단과 비고만 기록하는 sparse overlay |
+| [`scripts/render-codex-app-server-methods.ts`](scripts/render-codex-app-server-methods.ts) | Stable·experimental schema와 decision JSON을 합치는 renderer |
+| [Codex App Server 전체 raw method 목록](../../docs/architecture/codex-app-server-method-inventory.md) | 미기록 method까지 `schema-only`·`unreviewed`로 표시하는 generated 문서 |
+
+Generated Markdown은 직접 수정하지 않는다. Decision JSON에 없는 method도 raw schema에서 자동으로 나타나며, 존재하지 않는 method를 decision에 적거나 허용하지 않은 값을 사용하면 renderer가 실패한다. 이 목록은 method 존재와 AY-PLE의 현재 판단을 보여주지만 raw protocol을 제품 Interface로 승격하지 않는다.
+
 Package pin은 App Server binary와 생성 protocol 계약을 고정한다. `gpt-5.6-sol` 같은 model까지 고정하지 않으며 thread 생성은 현재 Codex 기본 model 설정을 따른다.
 
 ## 현재 Harness 범위

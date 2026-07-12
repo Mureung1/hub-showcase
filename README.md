@@ -62,15 +62,17 @@ npm run demo:week1
 | 제품 기획 | [AY-PLE Product Brief](docs/product/ay-ple-product-brief.md) | 문제 정의, 제품 테제, MVP 경계 |
 | 제품 시나리오 | [Review Workspace Scenario](docs/product/ay-ple-review-workspace-scenario.md) | 자료 선택부터 Review까지의 사용자 시나리오 |
 | 제품 디자인 | [AY-PLE Design System Direction](docs/product/ay-ple-design-system.md) | 밝은 학업 워크스페이스 중심의 브랜드/UI 기준 |
-| 개발 계획 | [AY-PLE 4주 개발 백로그](docs/product/ay-ple-development-backlog.md) | Codex-native composition과 Review 수직 흐름 중심의 4주 계획 |
+| 개발 계획 | [AY-PLE 개발 백로그](docs/product/ay-ple-development-backlog.md) | 날짜 없는 계층형 task list와 작업 순서·완료 조건 |
 | 제품↔Codex 구조 | [Codex-native product composition](docs/architecture/codex-native-product-composition.md) | `ModelingRecipe → ModelingInvocation → ModelingRun`과 native Codex의 mapping |
 | Runtime 구조 | [Codex Runtime 격리](docs/architecture/codex-runtime-isolation.md) | Codex runtime, app data, 사용자 workspace의 실행 경계 |
 | 구현 현황 | [Runtime Harness 구현 지도](docs/architecture/runtime-harness-implementation-map.md) | 개발자용 Harness의 현재 모듈 지도와 구현 gap |
+| Capability 현황 | [Codex App Server method 목록](docs/architecture/codex-app-server-method-inventory.md) | pinned stable·experimental raw method와 AY-PLE 연결·채택 현황 |
 | ADR | [0002. First-class academic objects](docs/adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam canonical model과 derived view 결정 |
 | ADR | [0004. Runtime history와 workspace storage 분리](docs/adr/0004-split-runtime-history-semantics-from-workspace-storage.md) | 개발자 진단 이력과 제품 저장 책임 분리 |
 | ADR | [0005. Codex App Server 우선 사용](docs/adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) | 4주 MVP의 실행 엔진과 protocol isolation 결정 |
 | ADR | [0006. 제품 실행 경로 소유권 분리](docs/adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | package, app data, SemesterWorkspace 경로와 수명 분리 |
 | ADR | [0007. Native Codex composition으로 제품 작업 실행](docs/adr/0007-use-native-codex-composition-for-product-actions.md) | Recipe·Invocation·Run의 제품 실행 경계를 나누는 결정 |
+| ADR | [0008. Headless Codex Client Host와 제품 UI adapter 분리](docs/adr/0008-separate-headless-codex-client-host-from-product-ui.md) | headless module과 제품 UI adapter의 seam을 나누는 결정 |
 
 ### 기술 참고 문서
 
@@ -87,6 +89,7 @@ npm run demo:week1
 | --- | --- |
 | [Week 1 발표 자료](artifacts/week1-demo/README.md) | 1주차 당시 발표 서사와 실행 안내 |
 | [동적 제품 prototype](spikes/ay-ple-ui-prototype/guided-demo.html) | 1주차 Review Workspace UI 검증 기록 |
+| [AY-PLE 4주 제출 백로그](docs/archive/2026-07-ay-ple-4-week-submission-backlog.md) | 최초 캠프 제출 일정과 당시 우선순위 보존 |
 | [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | 완료된 실행환경 소유권 Spike의 당시 계획 |
 | [0001. Runtime Spike file auth store](docs/adr/0001-use-file-auth-store-for-runtime-spike.md) | Runtime Ownership Spike의 인증 저장 결정 |
 | [0003. Runtime Harness 선행](docs/adr/0003-build-runtime-harness-before-product-layer.md) | 1주차 Runtime Harness 선행 결정과 구현 기준선 |

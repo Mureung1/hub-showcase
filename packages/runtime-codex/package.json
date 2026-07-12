@@ -25,8 +25,9 @@
   "scripts": {
     "build": "tsc",
     "generate:codex-types": "tsx scripts/generate-codex-app-server-types.ts",
+    "generate:codex-methods": "npm run generate:codex-types && tsx scripts/render-codex-app-server-methods.ts",
     "smoke:codex": "tsx src/smoke.ts",
-    "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
+    "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\" \"scripts/**/*.test.ts\"",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json"
   },
   "devDependencies": {

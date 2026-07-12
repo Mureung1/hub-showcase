@@ -64,4 +64,4 @@ Runtime home, native instructions·Skills discovery와 Memory policy는 [Codex R
 
 생성된 pinned Codex protocol은 `UserInput`의 `text`, `skill`, `mention`과 `TurnStartParams.outputSchema`를 제공한다. 각 variant의 실제 필수 필드는 generated type을 따르며 위 표의 표기는 축약 설명이다.
 
-현재 `CodexRawClient`의 공개 raw wrapper는 text input과 `cwd`만 받아 이 mapping을 아직 제품 기능으로 구현하지 않는다. 현재 package 책임과 확인된 구현 gap은 [Runtime Harness 구현 지도](runtime-harness-implementation-map.md)와 [runtime-codex README](../../packages/runtime-codex/README.md), 우선순위와 작업 상태는 [4주 개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다. raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.
+현재 `CodexRawClient`의 공개 raw wrapper는 text input과 `cwd`만 받아 이 mapping을 아직 제품 기능으로 구현하지 않는다. 현재 package 책임과 확인된 구현 gap은 [Runtime Harness 구현 지도](runtime-harness-implementation-map.md)와 [runtime-codex README](../../packages/runtime-codex/README.md), 작업 순서와 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다. raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.

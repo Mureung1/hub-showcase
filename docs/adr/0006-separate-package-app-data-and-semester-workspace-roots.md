@@ -23,4 +23,4 @@ Developer-only Runtime Harness 상태와 제품 실행 상태는 수명과 복�
 
 첫 제품 연결은 테스트나 명시적 설정으로 주입한 세 root를 받는 최소 layout seam을 구현해야 한다. 운영체제별 기본 경로, override·migration, packaged entrypoint와 여러 학기 사이의 runtime-home 수명 정책은 이 불변 조건 뒤에서 결정한다.
 
-이 ADR은 [ADR 0004](0004-split-runtime-history-semantics-from-workspace-storage.md)의 developer-only Runtime Diagnostic History 위치를 바꾸지 않는다. 현재 구현, 채택한 제품 목표와 후속 기술 항목은 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 구분해 관리하고, 우선순위는 [4주 개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
+이 ADR은 [ADR 0004](0004-split-runtime-history-semantics-from-workspace-storage.md)의 developer-only Runtime Diagnostic History 위치를 바꾸지 않는다. 현재 구현, 채택한 제품 목표와 후속 기술 항목은 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 구분해 관리하고, 작업 순서는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.

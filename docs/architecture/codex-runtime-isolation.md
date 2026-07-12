@@ -5,7 +5,7 @@
 
 성숙도: 채택
 
-관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [Runtime Harness 구현 지도](runtime-harness-implementation-map.md), [4주 개발 백로그](../product/ay-ple-development-backlog.md)
+관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [Runtime Harness 구현 지도](runtime-harness-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
 
 ## 목적
 
@@ -104,7 +104,7 @@ semester-workspace/
 
 ## 구현과 계획 연결
 
-현재 package 동작과 검증 명령은 [Runtime Harness 구현 지도](runtime-harness-implementation-map.md)와 [runtime-codex README](../../packages/runtime-codex/README.md)가 소유한다. 위 표의 후속 항목에 대한 우선순위, acceptance criteria와 일정은 [4주 개발 백로그](../product/ay-ple-development-backlog.md)에서만 관리한다.
+현재 package 동작과 검증 명령은 [Runtime Harness 구현 지도](runtime-harness-implementation-map.md)와 [runtime-codex README](../../packages/runtime-codex/README.md)가 소유한다. 위 표의 후속 항목에 대한 작업 순서, 상태와 완료 조건은 [개발 백로그](../product/ay-ple-development-backlog.md)에서만 관리한다.
 
 ## 근거 링크
 

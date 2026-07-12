@@ -1,12 +1,12 @@
 # Runtime Harness 구현 지도
 
 작성일: 2026-07-09
-최근 검증: 2026-07-11
+최근 검증: 2026-07-12
 분류: 활성
 
 성숙도: 구현됨
 
-관련 문서: [Runtime Harness와 Codex Adapter 기반 PRD](../prds/2026-07-09-runtime-harness-codex-adapter-foundation.md), [Runtime Harness Hardening PRD](../prds/2026-07-10-runtime-harness-hardening.md), [Runtime Harness ADR](../adr/0003-build-runtime-harness-before-product-layer.md), [실행 이력 저장소 ADR](../adr/0004-split-runtime-history-semantics-from-workspace-storage.md), [server README](../../apps/server/README.md), [Codex-native 제품 작업 조합](codex-native-product-composition.md), [Codex Runtime 격리](codex-runtime-isolation.md)
+관련 문서: [Runtime Harness와 Codex Adapter 기반 PRD](../prds/2026-07-09-runtime-harness-codex-adapter-foundation.md), [Runtime Harness Hardening PRD](../prds/2026-07-10-runtime-harness-hardening.md), [Runtime Harness ADR](../adr/0003-build-runtime-harness-before-product-layer.md), [실행 이력 저장소 ADR](../adr/0004-split-runtime-history-semantics-from-workspace-storage.md), [Headless Codex Client Host ADR](../adr/0008-separate-headless-codex-client-host-from-product-ui.md), [server README](../../apps/server/README.md), [Codex-native 제품 작업 조합](codex-native-product-composition.md), [Codex Runtime 격리](codex-runtime-isolation.md), [Codex App Server method 목록](codex-app-server-method-inventory.md)
 
 ## 목적
 
@@ -108,9 +108,11 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | run 실패 | failed turn completion, non-retryable `error`, spawn/init/thread/turn 실패, terminal stream loss를 normalized `failed`로 mapping한다. |
 | run 취소 | turn scope가 생긴 뒤 abort되면 `turn/interrupt`를 보내고 interrupted completion을 관측할 때까지 알림을 비워 읽은 뒤 `cancelled`를 내보낸다. 확인 timeout은 기본 15초이며 adapter option으로 주입할 수 있다. interrupt request failure, missing confirmation, pre-turn-scope cancellation은 debug evidence가 있는 `failed`가 된다. |
 
-## Capability Slot
+## Capability 가시성
 
-`packages/runtime-codex/src/capability-slots.ts`는 의도적으로 broad-shallow하게 둔다. 이 파일은 엔진 capability 근거를 기록하지만, 해당 capability를 AY-PLE 제품 약속으로 바꾸지는 않는다.
+[Codex App Server 전체 raw method 목록](codex-app-server-method-inventory.md)은 pinned stable·experimental schema의 모든 method와 AY-PLE의 연결·채택 판단을 기록한다. 전체 method 존재 여부와 method별 연결·채택 판단은 이 generated 목록이 보여준다.
+
+`packages/runtime-codex/src/capability-slots.ts`는 Runtime Inspector에서 몇 가지 capability family를 빠르게 살펴보기 위한 broad-shallow projection이다. 전체 목록의 대체 정본이 아니며, engine capability를 AY-PLE 제품 약속으로 바꾸지도 않는다.
 
 | Slot | 상태 | 의미 |
 | --- | --- | --- |
@@ -144,7 +146,7 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 
 | Gap | 현재 사실 | 정본·계획 |
 | --- | --- | --- |
-| ModelingInvocation 번역 | Public wrapper는 text input과 `cwd`만 지원하고 Skill, mention, `outputSchema`를 함께 전달하지 않는다. ModelingRun도 생성하지 않는다. | [제품 작업 조합](codex-native-product-composition.md), Backlog W2-03~05 |
-| App Server 요청 왕복 | Server request를 client response와 구분해 typed response로 돌려보내지 못한다. | Backlog C-12 |
-| 제품 runtime layout | `packageRoot/appDataRoot/workspaceRoot` seam과 pair validation이 없고 `cwd` 기본값은 process 실행 위치다. | [Runtime 격리](codex-runtime-isolation.md), Backlog W2-02·C-09 |
-| 제품 기록용 진단 정제 | Diagnostic History는 prompt와 raw/debug evidence를 포함할 수 있다. | Backlog C-10 |
+| ModelingInvocation 번역 | Public wrapper는 text input과 `cwd`만 지원하고 Skill, mention, `outputSchema`를 함께 전달하지 않는다. ModelingRun도 생성하지 않는다. | [제품 작업 조합](codex-native-product-composition.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
+| App Server 요청 왕복 | Server request를 client response와 구분해 typed response로 돌려보내지 못한다. | [Method 목록](codex-app-server-method-inventory.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
+| 제품 runtime layout | `packageRoot/appDataRoot/workspaceRoot` seam과 pair validation이 없고 `cwd` 기본값은 process 실행 위치다. | [Runtime 격리](codex-runtime-isolation.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
+| 제품 기록용 진단 정제 | Diagnostic History는 prompt와 raw/debug evidence를 포함할 수 있다. | [개발 백로그](../product/ay-ple-development-backlog.md) |
