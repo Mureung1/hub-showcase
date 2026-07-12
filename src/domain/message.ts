@@ -127,7 +127,7 @@ const commonSituations: SituationCard[] = [
   { id: 'schedule', label: '일정 조율' },
   { id: 'thanks_check', label: '감사·확인' },
   { id: 'ask', label: '부탁' },
-  { id: 'apologize', label: '사과' },
+  { id: 'apologize', label: '답장이 늦었을 때 사과' },
   { id: 'decline', label: '거절' },
 ]
 

@@ -7,6 +7,7 @@ describe('메시지 도메인 카탈로그', () => {
 
     for (const scenario of scenarios) {
       expect(situationCardsFor(scenario.id)).toHaveLength(6)
+      expect(situationCardsFor(scenario.id)).toContainEqual({ id: 'apologize', label: '답장이 늦었을 때 사과' })
     }
   })
 

@@ -23,11 +23,10 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /교수냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '결석·과제 문의' }))
+    fireEvent.click(screen.getByRole('button', { name: '부탁' }))
 
-    expect(screen.getByText(/결석 사유를 말씀드리고 과제 제출 기한을 여쭙고 싶습니다/)).toBeInTheDocument()
     expect(screen.getAllByText('빈칸을 채워주세요')).toHaveLength(3)
-    expect(screen.getAllByText('[과목명]')).toHaveLength(3)
+    expect(screen.getAllByText('[부탁할 내용]')).toHaveLength(3)
     expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3)
     expect(screen.getByText('기본')).toBeInTheDocument()
     expect(screen.getByText('더 부드럽게')).toBeInTheDocument()
@@ -44,21 +43,225 @@ describe('App', () => {
 
   it('노출되는 모든 상황 카드는 API 없이 세 개의 템플릿 후보를 반환한다', () => {
     const templateRoutes = [
-      { helper: /팀플냥/, cards: ['일정 조율', '감사·확인', '부탁', '사과', '거절', '몫 확인·재촉'] },
-      { helper: /교수냥/, cards: ['일정 조율', '감사·확인', '부탁', '사과', '거절', '결석·과제 문의'] },
-      { helper: /선배냥/, cards: ['일정 조율', '감사·확인', '부탁', '사과', '거절', '말 편하게 하자고 하기'] },
-      { helper: /연인냥/, cards: ['일정 조율', '감사·확인', '부탁', '사과', '거절', '마음 표현하기'] },
+      {
+        helper: /팀플냥/,
+        cards: ['일정 조율', '감사·확인', '부탁', '답장이 늦었을 때 사과', '거절', '몫 확인·재촉'],
+        avoidsPeriods: true,
+        isProfessor: false,
+      },
+      {
+        helper: /교수냥/,
+        cards: ['일정 조율', '감사·확인', '부탁', '답장이 늦었을 때 사과', '거절', '결석·과제 문의'],
+        avoidsPeriods: false,
+        isProfessor: true,
+      },
+      {
+        helper: /선배냥/,
+        cards: ['일정 조율', '감사·확인', '부탁', '답장이 늦었을 때 사과', '거절', '말 편하게 하자고 하기'],
+        avoidsPeriods: true,
+        isProfessor: false,
+      },
+      {
+        helper: /연인냥/,
+        cards: ['일정 조율', '감사·확인', '부탁', '답장이 늦었을 때 사과', '거절', '마음 표현하기'],
+        avoidsPeriods: true,
+        isProfessor: false,
+      },
     ]
+    const stiffPhrases = [
+      '확인했습니다',
+      '감사하겠습니다',
+      '여쭙고 싶습니다',
+      '연락드립니다',
+      '사과드립니다',
+      '확인 부탁드립니다',
+      '감사드립니다',
+      '요청드릴 사항',
+    ]
+    const inventedDetails = [
+      '오늘 안으로',
+      '이번 주',
+      '다음부터',
+      '앞으로는',
+      '다음에',
+      '바쁜 거',
+      '바쁘신',
+      '사정이 있어서',
+      '부득이한 사정',
+    ]
+    const hardCodedTitles = ['교수님', '조교님', '선배님']
+    const conditionalApologies = ['다면 미안', '다면 죄송', '기다렸으면']
+    const cushionExpressions = [
+      '편하실 때',
+      '덕분에',
+      '부담되지 않으시면',
+      '죄송하지만',
+      '죄송한데',
+      '가능하실 때',
+      '괜찮으시다면',
+      '괜찮으실 때',
+      '정말',
+      '괜찮으시면',
+      '원하시면',
+      '괜찮으면',
+      '미안한데',
+      'ㅎㅎ',
+      '기다리게 해서',
+      '기다리게 해드려',
+      '시간 되실 때',
+      '바쁘지 않으시면',
+      '편하신 시간',
+    ]
+    const allTemplateCandidateTexts: string[] = []
+    let placeholderCandidateCount = 0
+    let casualYongCount = 0
+    let laughMarkerCount = 0
+    let cryMarkerCount = 0
+    let exclamationCount = 0
 
     for (const route of templateRoutes) {
       for (const card of route.cards) {
         window.sessionStorage.clear()
-        const { unmount } = render(<App />)
+        const { container, unmount } = render(<App />)
         fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
         fireEvent.click(screen.getByRole('button', { name: route.helper }))
         fireEvent.click(screen.getByRole('button', { name: card }))
 
+        const candidateTexts = Array.from(container.querySelectorAll('.result-card > p'), (element) =>
+          element.textContent?.trim() ?? '',
+        )
         expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3)
+        expect(candidateTexts).toHaveLength(3)
+        expect(new Set(candidateTexts)).toHaveProperty('size', 3)
+        allTemplateCandidateTexts.push(...candidateTexts)
+
+        if (route.avoidsPeriods) {
+          for (const candidateText of candidateTexts) {
+            expect(candidateText).not.toContain('.')
+          }
+        }
+
+        const allCandidateText = candidateTexts.join(' ')
+        for (const bannedPhrase of [...stiffPhrases, ...inventedDetails, ...hardCodedTitles, ...conditionalApologies]) {
+          expect(allCandidateText).not.toContain(bannedPhrase)
+        }
+        placeholderCandidateCount += candidateTexts.filter((candidateText) => candidateText.includes('[부탁할 내용]')).length
+        const cushionCounts = candidateTexts.map(
+          (candidateText) => cushionExpressions.filter((expression) => candidateText.includes(expression)).length,
+        )
+        expect(cushionCounts).toEqual([0, 1, 0])
+        expect(candidateTexts[2].length).toBeLessThanOrEqual(candidateTexts[1].length)
+
+        if (card === '답장이 늦었을 때 사과') {
+          for (const candidateText of candidateTexts) {
+            expect(candidateText).toMatch(/답/)
+          }
+        } else {
+          expect(allCandidateText).not.toMatch(/답장.*늦|답 늦/)
+        }
+
+        if (route.isProfessor) {
+          for (const candidateText of candidateTexts) {
+            expect(candidateText).not.toMatch(/감사해요|죄송해요|어려워요|ㅎㅎ|ㅠ/)
+            expect(candidateText).toMatch(/합니다|습니다|드립니다|까요\?/)
+          }
+        }
+
+        casualYongCount += candidateTexts.reduce(
+          (count, candidateText) => count + (candidateText.match(/용(?=[!?]|$)/g)?.length ?? 0),
+          0,
+        )
+        laughMarkerCount += candidateTexts.reduce(
+          (count, candidateText) => count + (candidateText.match(/ㅎㅎ/g)?.length ?? 0),
+          0,
+        )
+        cryMarkerCount += candidateTexts.reduce(
+          (count, candidateText) => count + (candidateText.match(/ㅠ/g)?.length ?? 0),
+          0,
+        )
+        exclamationCount += candidateTexts.reduce(
+          (count, candidateText) => count + (candidateText.match(/!/g)?.length ?? 0),
+          0,
+        )
+
+        unmount()
+      }
+    }
+
+    expect(placeholderCandidateCount).toBe(12)
+    expect(allTemplateCandidateTexts).toHaveLength(72)
+    expect(new Set(allTemplateCandidateTexts)).toHaveProperty('size', 72)
+    expect(casualYongCount).toBe(0)
+    expect(laughMarkerCount).toBe(1)
+    expect(cryMarkerCount).toBe(0)
+    expect(exclamationCount).toBe(0)
+  })
+
+  it('대표 네 상황은 세 말투와 금지 표현 회귀를 확인한다', () => {
+    const representativeRoutes = [
+      {
+        modes: [/답장할래요/, /먼저 연락할래요/],
+        helper: /팀플냥/,
+        card: '감사·확인',
+        messages: [
+          '확인했어요 알려주셔서 고마워요',
+          '챙겨주신 덕분에 잘 확인했어요 고마워요',
+          '내용 확인했어요 고마워요',
+        ],
+        forbidden: ['할게', '해줘'],
+      },
+      {
+        modes: [/먼저 연락할래요/, /답장할래요/],
+        helper: /교수냥/,
+        card: '일정 조율',
+        messages: [
+          '안녕하세요 면담 가능한 시간을 여쭤봐도 될까요?',
+          '안녕하세요 편하신 시간에 맞추겠습니다 면담 가능한 시간을 여쭤봐도 될까요?',
+          '안녕하세요 면담 가능한 시간이 언제일까요?',
+        ],
+        forbidden: ['교수님', '조교님', '요일', '시까지', '감사해요', '죄송해요', '어려워요'],
+      },
+      {
+        modes: [/먼저 연락할래요/, /답장할래요/],
+        helper: /선배냥/,
+        card: '말 편하게 하자고 하기',
+        messages: [
+          '저한테는 편하게 말씀하셔도 괜찮아요',
+          '원하시면 저한테는 편하게 말씀하셔도 돼요',
+          '말 편하게 하셔도 돼요 존댓말도 괜찮아요',
+        ],
+        forbidden: ['선배님', '놓으세요', '해야'],
+      },
+      {
+        modes: [/답장할래요/, /먼저 연락할래요/],
+        helper: /연인냥/,
+        card: '거절',
+        messages: [
+          '이번에는 어려울 것 같아 미안해',
+          '미안한데 이번에는 어려울 것 같아',
+          '이번에는 어려워',
+        ],
+        forbidden: ['다음에', '때문에', '약속할게', '미안하지만', '마음 쓰인 부분'],
+      },
+    ]
+
+    for (const route of representativeRoutes) {
+      for (const forbiddenPhrase of route.forbidden) {
+        expect(route.messages.join(' ')).not.toContain(forbiddenPhrase)
+      }
+
+      for (const mode of route.modes) {
+        window.sessionStorage.clear()
+        const { unmount } = render(<App />)
+        fireEvent.click(screen.getByRole('button', { name: mode }))
+        fireEvent.click(screen.getByRole('button', { name: route.helper }))
+        fireEvent.click(screen.getByRole('button', { name: route.card }))
+
+        for (const message of route.messages) {
+          expect(screen.getByText(message)).toBeInTheDocument()
+        }
+        expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3)
+
         unmount()
       }
     }
@@ -216,6 +419,6 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: '텍스트 선택됨' })).toBeInTheDocument()
     })
-    expect(window.getSelection()?.toString()).toContain('결석 사유를 말씀드리고')
+    expect(window.getSelection()?.toString()).toContain('결석하게 되어 과제 제출 방법을 여쭤봐도 될까요')
   })
 })
