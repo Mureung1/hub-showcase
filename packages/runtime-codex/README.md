@@ -26,17 +26,18 @@ Package pin은 App Server binary와 생성 protocol 계약을 고정한다. `gpt
 
 현재 Adapter는 단일 실행 Runtime Harness 통합이며 AY-PLE 제품 전체의 상호작용 호스트가 아니다.
 
+- 기본 binary는 이 package에서 시작해 가장 가까운 조상 `node_modules/.bin/codex`를 찾는다. `CODEX_BIN_PATH` override의 version 일치는 status에서 관측하고 live parity gate에서 검증한다.
 - 각 실행은 새 `app-server` process와 fresh persistent `thread`·`turn`을 시작한다.
 - 실행 종료 시 `CodexRawClient.close()`는 process를 닫지만 `thread/archive`, `thread/delete` 또는 `thread/unsubscribe`를 보내지 않는다. 생성된 thread와 rollout은 Codex state에 남을 수 있다.
-- `thread/start`에는 `cwd`를 보내고, 반환된 필수 `threadId`와 text input으로 `turn/start`를 호출한다.
+- `thread/start`에는 `cwd`를 보내고, 반환된 필수 `threadId`와 text input으로 `turn/start`를 호출한다. `CodexRawClient`의 기본 `cwd`는 `process.cwd()`이며 server는 `CODEX_RUNTIME_CWD`로 바꿀 수 있다.
 - 공개 raw wrapper의 `CodexRawTurnInput`은 현재 text만 지원한다. 생성 protocol에 존재하는 `skill`, `mention`, `outputSchema`는 아직 wrapper와 제품 composer에 연결되지 않았다.
 - 정규화한 Adapter 출력은 세부 작업 활동이 아니라 text와 실행 종료 lifecycle을 다룬다.
 - `turn/steer`는 raw 호출만 가능하며 제품의 target·conflict 정책은 아직 없다.
-- `CodexRawClient`는 App Server가 시작한 `request`를 아직 전달하거나 typed `response`로 응답하지 못한다. approval, Codex 사용자 입력, elicitation과 동적 도구 왕복은 구체적인 제품 case가 필요할 때 이 correlation 경계부터 구현한다.
-- 작업공간 내부 `.ay-ple/runtime-codex/*` 기본 경로는 developer-only Harness를 위한 것이다. 제품에서는 config, 인증, session과 memory 상태를 학기 작업공간 밖의 운영체제 app data에 둔다.
+- `CodexRawClient`는 App Server가 시작한 `request`를 아직 전달하거나 typed `response`로 응답하지 못한다.
+- repository `.ay-ple/runtime-codex/*` 기본 경로는 developer-only Harness용이다. `CODEX_HOME`과 `CODEX_SQLITE_HOME`은 현재 각각 독립 override되며 product runtime-home pair validation은 없다.
 - Runtime-home 초기화는 `CODEX_HOME`과 `CODEX_SQLITE_HOME` directory를 만든다. File auth config는 기본 workspace-local pair 또는 `ensureFileAuthConfig: true`를 명시한 경우에만 보장하며, built-in Memories는 켜지 않는다.
 
-4주 제품 연결의 첫 gap은 persistent session manager가 아니다. 새 thread를 만들거나 기존 thread를 선택한 뒤 `ModelingRecipe`를 Skill, rendered prompt text, source mention과 `outputSchema`로 조합해 `turn/start(threadId)`하고, 결과를 얇은 ModelingRun receipt와 `StatePatch` 후보에 연결하는 것이다. 자세한 결정은 [ADR 0005](../../docs/adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [ADR 0007](../../docs/adr/0007-use-native-codex-composition-for-product-actions.md), [Codex-native 제품 작업 조합](../../docs/architecture/codex-native-product-composition.md)을 따른다.
+현재 package는 ModelingInvocation을 Skill·text·mention·`outputSchema`로 번역하거나 ModelingRun을 생성하지 않는다. 현재 구현 gap은 [Runtime Harness 구현 지도](../../docs/architecture/runtime-harness-implementation-map.md), 채택한 mapping과 product runtime layout은 각각 [Codex-native 제품 작업 조합](../../docs/architecture/codex-native-product-composition.md)과 [Codex Runtime 격리](../../docs/architecture/codex-runtime-isolation.md)를 따른다.
 
 ## Raw initialize smoke
 
