@@ -24,6 +24,8 @@ AI 시대에 잃기 쉬운 비판적 사고 습관을 되찾는 서비스
 - [네 가지 사고 행동](#네-가지-사고-행동)
 - [설계 인사이트](#설계-인사이트)
 - [MVP 범위](#mvp-범위)
+- [프로젝트 구조](#프로젝트-구조)
+- [개발 환경 설정](#개발-환경-설정)
 - [개발 문서](#개발-문서)
 - [더 알아보기](#더-알아보기)
 
@@ -86,6 +88,47 @@ AI 요약은 제공하지 않는다. 요약만 보고 원문을 안 읽는 문�
 | `P0` | 오늘의 깸 (사고 미션 + 한 줄 사고 기록) |
 | `P1` | 오늘의 글 추천 |
 | `P1` | 나의 깸 (사고 로그 아카이브) |
+
+## 프로젝트 구조
+
+```text
+hub-clone/
+├── frontend/          # React 19 + TypeScript + Vite
+│   ├── src/
+│   ├── index.html
+│   └── vite.config.ts
+├── backend/           # FastAPI + uv
+│   ├── app/
+│   │   ├── api/routes/
+│   │   └── main.py
+│   └── pyproject.toml
+└── docs/
+    ├── plan/          # 기획·설계 문서
+    ├── prototype/     # HTML 프로토타입
+    └── notes/         # 작업 메모
+```
+
+## 개발 환경 설정
+
+**요구 사항** — Node.js 22 이상, [uv](https://docs.astral.sh/uv/), Python 3.13
+
+**프론트엔드**
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173
+```
+
+**백엔드**
+
+```bash
+cd backend
+uv sync
+uv run fastapi dev app/main.py   # http://localhost:8000
+```
+
+개발 서버는 두 개를 동시에 띄운다. 프론트엔드의 `/api` 요청은 Vite 프록시를 통해 백엔드(`localhost:8000`)로 전달되므로, 프론트엔드에서는 `/api/...` 경로만 호출하면 된다.
 
 ## 개발 문서
 

@@ -2,6 +2,18 @@
 
 이 파일은 이 프로젝트에서 Claude Code가 따라야 할 작업 규칙입니다.
 
+## 프로젝트 구조
+
+- `frontend/` — React 19 + TypeScript + Vite. 개발 서버는 `cd frontend && npm run dev` (5173 포트).
+- `backend/` — FastAPI + uv (Python 3.13). 개발 서버는 `cd backend && uv run fastapi dev app/main.py` (8000 포트).
+- `docs/plan/` — 기획·설계 문서.
+- `docs/prototype/` — HTML 프로토타입. 빌드 대상이 아니다.
+- `docs/notes/` — Claude Code와 논의한 내용을 정리해 저장하는 메모.
+
+프론트엔드의 `/api` 요청은 Vite 프록시를 통해 백엔드로 전달된다. 프론트엔드 코드에서는 백엔드 주소를 직접 쓰지 않고 `/api/...` 경로만 사용한다.
+
+프론트엔드 타입 검사는 `cd frontend && npm run typecheck`로 확인한다.
+
 ## 작업 범위
 
 - 요청받은 파일/섹션/기능만 수정한다. 관련 있어 보인다는 이유로 요청하지 않은 다른 파일이나 섹션을 함께 고치지 않는다.
