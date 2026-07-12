@@ -582,3 +582,34 @@
 - 컴포넌트·Props 타입·App/테스트 import 동기화. 동작 변화 없음. 하위 컴포넌트 분리는 T14에서 필요한 만큼만 진행
 ### 검토 결과
 - 테스트 45개·린트·빌드 통과, `src/` 내 ProjectIntro 참조 0건. 과거 작업 기록 문서의 옛 파일명 언급은 이력이므로 유지
+
+## 2026-07-12 (T14 모바일·접근성 마감 완료 + FSD 구조 개편)
+### 처리한 TODO
+- T14 간극 15개 수정: 내부 S0~S3 라벨 비노출(단계 번호로 교체), 목적 칩 `aria-pressed`+보이는 legend(fieldset), 생성 영역 `aria-busy`, 단계 전환 시 제목 초점+상단 스크롤, S2-a 답장 모드 "카드는 원문을 읽지 않아요" 안내, 진행 가장 대기 문구('거의 다 됐어요') 제거
+- DESIGN.md AA 토큰 코드 반영(primary #357b9e·hover·pressed·muted #5f6e77·danger #9b453f), 전역 `:focus-visible`, `prefers-reduced-motion`, 44px 터치 타깃 4곳, 결과 카드 3장 동일 표면(SCREENS 126), 상황 카드 375 2열 유지(420 이하 1열 강제 제거), `overflow-wrap:anywhere`, 생성 CTA sticky+safe-area
+- 사용자 요청으로 컴포넌트 분리 + FSD-lite 계층 구조 적용: `app / pages/message-flow / features(mode-select·scenario-select·situation-select·manual-input·copy-result) / entities/message / shared/generation`, 슬라이스별 index.ts 공개 API. 상황 카드 템플릿 72문구는 `entities/message/situationTemplates.ts`로 분리(T26 라우터·엔진의 선행 정리)
+### 검토 결과
+- 테스트 50개(신규 5: 단계 비노출·초점 이동·aria-pressed/legend·aria-busy/대기 문구·답장 안내)·린트·빌드·`git diff --check` 통과
+- Playwright 실측: 320 scrollWidth 320(무넘침)·2열, 375 S0 두 선택 노출·2열, 대비 CTA 4.69:1·muted 5.27:1·톤 배지 6.25:1(DESIGN 목표치 일치), 결과 카드 단일 표면, 뒤로 버튼 44px, Tab 순회·Enter 진행·초점 이동 확인
+- 구조 개편 후 이동 규칙·복사 실브라우저 스모크 재통과(동작 변화 0). CHECKLIST T14 체크
+- 입력 삭제 동선은 S2-b(작성 내용 지우기)·S3(처음으로) 기존 노출 확인. sticky CTA로 S2-b에서 스크롤에 묻히지 않음
+### 남은 작업
+- 1단계 코드 전부 완료. 남은 항목: T15~T16(시드), T25(평가자 2인 재검수 — 외부 블로커), T26(T25 의존), T17~(3단계)
+
+## 2026-07-12 (T15 시드 재검수 완료 + T16 검수지 준비)
+### 처리한 TODO
+- 감사 발견 3건 수정: G-B tone3(목요일 확정→목·금 선택 요청 복원), P-A 전 톤(첨부 행동 단정→"바로 보내드릴 수 있는데"로 의사 표현화), F-A tone3(입력 없는 "밥 살게" 약속 제거)
+- 24개 전수 자체 스크리닝 재수행: 금지 항목 0건·사실 근거·세트 내용 동일성·톤 정합 통과. P-B tone3의 보충 문장 생략은 간결성(태도)으로 판정하고 블라인드 정렬에서 재확인하도록 기록
+- `docs/SEEDS_REVIEW.md` 재생성(수정 문구 반영, 셔플·정답표 유지) — 사용 가능 상태로 전환
+### 검토 결과
+- CHECKLIST T15 체크. T16은 제3자 블라인드 정렬·전송 가능성 판정이 남아 **외부 검수자 확보 전까지 블로커**
+### 남은 작업
+- 남은 미완료 항목은 전부 외부 의존: T16(제3자 1인), T25(한국어 평가자 2인), T26(T25 통과), T17(Vercel 계정·사용자 승인), T18(R2 벤치마크 Provisional Go)
+
+## 2026-07-12 (T17 비배포 준비 + R2 실행 킷)
+### 처리한 TODO
+- T17 실행 체크리스트 1번 완료: Node 버전 고정(`package.json` engines `^20.19.0 || >=22.12.0` + `.nvmrc` 22.12.0), `npm ci` 클린 설치 후 테스트 50·린트·빌드 전체 재현 확인
+- CI 워크플로(`ci.yml`) 초안 작성 — CICD.md 규칙(워크플로 추가는 별도 제안·승인 후 수행)에 따라 저장소에 넣지 않고 승인 대기
+- R2 무참여자 벤치마크 실행 킷 작성(`harness/tasks/2026-07-12-competitive-value-validation/r2-execution-kit.md`): 실행 전 조건, 답냥이 고정 12문구, C1~C4 A/B 복붙용 완성 프롬프트 8개, run 기록표 골격 — R1 통과 즉시 준비 지연 없이 실행 가능
+### 남은 작업 (외부 의존)
+- CI 설치 승인, Vercel 계정 연결(T17 2~7번), T16 제3자 1인, T25/R1 평가자 2인
