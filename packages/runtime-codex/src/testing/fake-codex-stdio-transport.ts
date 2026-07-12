@@ -183,7 +183,7 @@ reader.on('line', (line) => {
     write({
       id: message.id,
       method: 'item/commandExecution/requestApproval',
-      params: null,
+      params: {},
     })
     return
   }

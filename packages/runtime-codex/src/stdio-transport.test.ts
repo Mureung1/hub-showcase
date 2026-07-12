@@ -266,16 +266,23 @@ test('CodexStdioTransport distinguishes child exit, stdout EOF, and stdin failur
   }
 
   await t.test('stdin_failure', async () => {
+    let cleanedTempDir = ''
+    let childPid = 0
+
     await withFakeCodexStdioTransport(
       { scenario: 'stdin_failure' },
-      async ({ transport, readJournal }) => {
+      async ({ transport, tempDir, readJournal }) => {
+        cleanedTempDir = tempDir
         const observations = transport.observations()[Symbol.asyncIterator]()
         const pending = transport.sendRequest(createInitializeRequest(1))
         let pendingError: unknown
         const pendingSettled = pending.catch((error: unknown) => {
           pendingError = error
         })
-        await readJournal({ minimumEntries: 2 })
+        const journal = await readJournal({ minimumEntries: 2 })
+        const spawnEntry = journal.find((entry) => entry.kind === 'spawn')
+        assert.ok(spawnEntry && spawnEntry.kind === 'spawn')
+        childPid = spawnEntry.pid
         await delay(20)
 
         await assert.rejects(
@@ -293,6 +300,9 @@ test('CodexStdioTransport distinguishes child exit, stdout EOF, and stdin failur
         assert.equal(isTransportFailure('stdin_error')(pendingError), true)
       },
     )
+
+    await assertPathMissing(cleanedTempDir)
+    assertProcessMissing(childPid)
   })
 })
 
