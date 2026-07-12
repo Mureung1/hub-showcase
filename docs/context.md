@@ -6,7 +6,7 @@ MBTI 기반 공부법 및 스트레스 관리 웹앱
 
 ## One-Line Definition
 
-사용자가 MBTI와 공부·스트레스 설문을 입력하면, 학습 선호와 피로 패턴을 행동지표로 정리하고, 인지과학 기반 학습법과 오늘 바로 실행할 공부·회복 루틴을 추천하는 웹앱.
+사용자가 MBTI와 공부·스트레스 설문을 입력하면, MBTI를 약한 선호 가설로만 사용해 학습 행동과 피로 맥락을 정리하고, 설명 가능한 인지과학 학습 전략과 오늘 실행할 공부·회복 루틴을 제안한 뒤 추천 적합도 피드백으로 개선 가설을 축적하는 웹앱.
 
 ## User Problem
 
@@ -28,6 +28,7 @@ Help users understand their current study preference and fatigue signals, then t
 1. 성향·상태 점검
 2. 인지과학 학습법 매칭
 3. 오늘의 공부·회복 루틴
+4. 추천 적합도 평가와 설명 가능한 개선 루프
 
 ## MVP Includes
 
@@ -41,6 +42,7 @@ Help users understand their current study preference and fatigue signals, then t
 - Fatigue signals and recovery routine
 - 20-30 minute routine card
 - localStorage result and record saving
+- localStorage recommendation-fit feedback
 
 ## MVP Excludes
 
@@ -54,6 +56,8 @@ Help users understand their current study preference and fatigue signals, then t
 - Comparison/ranking
 - Study proof features
 - Payment
+- User responses stored in Git repositories
+- Unverified big-data or AI accuracy claims
 
 ## Expression Principles
 
@@ -61,6 +65,9 @@ Help users understand their current study preference and fatigue signals, then t
 - Use stress language as fatigue signals, recovery routines, and caution patterns.
 - Use possibility-based result language.
 - Prefer behavior signals over type labels.
+- Treat scores as recommendation signals, not ability, diagnosis, or standardized assessment results.
+- Separate literature evidence from product usage observations.
+- Do not describe the current rule weights as validated accuracy.
 
 ## Recommended Expressions
 
@@ -88,6 +95,8 @@ Help users understand their current study preference and fatigue signals, then t
 - Use study survey answers and stress response answers together.
 - Keep recommendations rule-based for the MVP.
 - Explain why each recommendation was selected.
+- Record recommendation-fit feedback locally and connect future changes to an algorithm version.
+- Evaluate missingness and drop-off before interpreting beta feedback; non-response may be NMAR.
 - Choose study methods from:
   - 인출 연습
   - 분산 학습
@@ -96,6 +105,29 @@ Help users understand their current study preference and fatigue signals, then t
   - 오답 분석
   - 환경 설계
   - 짧은 집중 블록
+
+## Product Stages
+
+| Stage | Scope |
+| --- | --- |
+| MVP | Rule-based recommendation, routine card, localStorage result and feedback |
+| Validation beta | Evidence catalog, usability measures, algorithm versioning, missingness analysis |
+| Consent-based beta | Account and server storage only after consent, deletion, retention, and security design |
+| Long-term | Research-task guidance and official university-platform/OpenAI integrations only when justified |
+
+## Data Boundary
+
+- Current user data stays in the browser.
+- Users can delete saved results, routine records, and recommendation feedback from the app.
+- Free-text responses and survey records must not be committed to Git or stored in GitHub issues.
+- Server collection requires a separate consent and governance design.
+- “Big data” is a future validation strategy, not a current product capability.
+
+## Related Planning Documents
+
+- Product plan: [`plan.md`](./plan.md)
+- Execution checklist: [`checklist.md`](./checklist.md)
+- Evidence and data roadmap: [`evidence-data-roadmap.md`](./evidence-data-roadmap.md)
 
 ## Basic URLs
 

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { MBTI_TYPES, SCORE_LABELS, STUDY_QUESTIONS, STRESS_QUESTIONS } from "./data/questions";
-import { createRecommendations } from "./lib/recommendations";
+import { ALGORITHM_VERSION, createRecommendations } from "./lib/recommendations";
 import { calculateScores, getSelectedOptionLabels } from "./lib/scoring";
-import { loadRecords, loadResult, saveRecord, saveResult } from "./lib/storage";
+import { clearStoredData, loadFeedback, loadRecords, loadResult, saveFeedback, saveRecord, saveResult } from "./lib/storage";
 
 const STEPS = ["소개", "MBTI", "공부 설문", "스트레스 설문", "결과", "실천 카드"];
 
@@ -64,9 +64,16 @@ function ScoreBar({ label, value }) {
   );
 }
 
+function isCompleteAnswers(questions, answers) {
+  return questions.every((question) =>
+    question.options.some((option) => option.id === answers[question.id]),
+  );
+}
+
 export default function ProjectIntro() {
   const [storedSnapshot] = useState(() => loadResult());
   const [storedRecords] = useState(() => loadRecords());
+  const [storedFeedback] = useState(() => loadFeedback());
   const [step, setStep] = useState(0);
   const [mbti, setMbti] = useState(() =>
     storedSnapshot?.profile?.mbti === "UNKNOWN" ? "" : (storedSnapshot?.profile?.mbti ?? ""),
@@ -78,6 +85,9 @@ export default function ProjectIntro() {
   const [focusLevel, setFocusLevel] = useState(3);
   const [fatigueLevel, setFatigueLevel] = useState(3);
   const [records, setRecords] = useState(storedRecords);
+  const [fitScore, setFitScore] = useState(0);
+  const [feedbackNote, setFeedbackNote] = useState("");
+  const [feedbackCount, setFeedbackCount] = useState(storedFeedback.length);
 
   const result = useMemo(() => {
     const scores = calculateScores({ mbti, mbtiKnown, studyAnswers, stressAnswers });
@@ -89,8 +99,12 @@ export default function ProjectIntro() {
     };
   }, [mbti, mbtiKnown, studyAnswers, stressAnswers]);
 
+  const canContinueStudy = isCompleteAnswers(STUDY_QUESTIONS, studyAnswers);
+  const canContinueStress = isCompleteAnswers(STRESS_QUESTIONS, stressAnswers);
+  const hasCompleteResult = (!mbtiKnown || Boolean(mbti)) && canContinueStudy && canContinueStress;
+
   useEffect(() => {
-    if (Object.keys(studyAnswers).length === 4 && Object.keys(stressAnswers).length === 4) {
+    if (hasCompleteResult) {
       saveResult({
         profile: {
           mbti: mbtiKnown ? mbti : "UNKNOWN",
@@ -102,10 +116,8 @@ export default function ProjectIntro() {
         result,
       });
     }
-  }, [mbti, mbtiKnown, result, stressAnswers, studyAnswers]);
+  }, [hasCompleteResult, mbti, mbtiKnown, result, stressAnswers, studyAnswers]);
 
-  const canContinueStudy = Object.keys(studyAnswers).length === STUDY_QUESTIONS.length;
-  const canContinueStress = Object.keys(stressAnswers).length === STRESS_QUESTIONS.length;
   const topScores = Object.entries(result.scores)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5);
@@ -119,6 +131,51 @@ export default function ProjectIntro() {
   function handleRecordSave() {
     const next = saveRecord({ completed, focusLevel, fatigueLevel });
     setRecords(next);
+  }
+
+  function handleFeedbackSave() {
+    if (!fitScore) {
+      return;
+    }
+
+    const next = saveFeedback({
+      algorithmVersion: ALGORITHM_VERSION,
+      fitScore,
+      note: feedbackNote.trim(),
+      topRecommendations: result.recommendations.map((item) => item.title),
+    });
+    setFeedbackCount(next.length);
+    setFeedbackNote("");
+  }
+
+  function resetFlow() {
+    setMbti("");
+    setMbtiKnown(true);
+    setStudyAnswers({});
+    setStressAnswers({});
+    setFitScore(0);
+    setFeedbackNote("");
+    setStep(1);
+  }
+
+  function handleStoredDataClear() {
+    if (!window.confirm("이 브라우저에 저장된 결과, 루틴 기록, 추천 평가를 모두 삭제할까요?")) {
+      return;
+    }
+
+    clearStoredData();
+    setMbti("");
+    setMbtiKnown(true);
+    setStudyAnswers({});
+    setStressAnswers({});
+    setCompleted(false);
+    setFocusLevel(3);
+    setFatigueLevel(3);
+    setRecords([]);
+    setFitScore(0);
+    setFeedbackNote("");
+    setFeedbackCount(0);
+    setStep(0);
   }
 
   return (
@@ -218,6 +275,11 @@ export default function ProjectIntro() {
         .range-row{display:grid;grid-template-columns:64px 1fr 28px;gap:10px;align-items:center;color:var(--text-strong);font-weight:600;}
         input[type="range"]{accent-color:var(--primary);}
         .saved{margin-top:14px;color:var(--accent-strong);font-weight:700;font-size:14px;}
+        .feedback-card{margin-top:16px;border:1px solid var(--border);background:var(--surface-muted);border-radius:var(--r-lg);padding:20px;}
+        .rating-grid{display:grid;grid-template-columns:repeat(5,minmax(44px,1fr));gap:8px;margin-top:14px;}
+        .rating-grid .option-card{text-align:center;padding:10px;min-height:44px;}
+        textarea{width:100%;min-height:84px;margin-top:12px;resize:vertical;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);color:var(--text-strong);font:inherit;padding:12px;box-sizing:border-box;}
+        textarea:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
         /* ── 칩 ── */
         .answers{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
         .answer-chip{background:var(--tint-blue);color:var(--on-tint-blue);border-radius:var(--r-pill);padding:6px 11px;font-size:12px;font-weight:600;}
@@ -243,10 +305,21 @@ export default function ProjectIntro() {
               <div className="notice">
                 MBTI는 사람을 고정적으로 판단하는 도구가 아니라 학습 선호를 탐색하는 출발점입니다. 스트레스 기능은 피로 신호와 회복 루틴을 다루는 생활관리 기능입니다.
               </div>
+              <p className="hint">현재 점수와 추천은 검증된 심리검사나 진단 결과가 아니라, 설명 가능한 규칙 기반 프로토타입의 시도 제안입니다.</p>
               <div className="actions">
                 <button className="primary" onClick={() => setStep(1)} type="button">
                   시작하기
                 </button>
+                {hasCompleteResult && (
+                  <button className="secondary" onClick={() => setStep(4)} type="button">
+                    이전 결과 이어보기
+                  </button>
+                )}
+                {(hasCompleteResult || records.length > 0 || feedbackCount > 0) && (
+                  <button className="secondary" onClick={handleStoredDataClear} type="button">
+                    이 브라우저의 저장 데이터 삭제
+                  </button>
+                )}
               </div>
             </div>
             <div className="hero-card">
@@ -335,7 +408,7 @@ export default function ProjectIntro() {
           </section>
         )}
 
-        {step === 4 && (
+        {step === 4 && hasCompleteResult && (
           <section className="panel">
             <p className="eyebrow">Result</p>
             <h2>나의 공부 성향 요약</h2>
@@ -383,6 +456,30 @@ export default function ProjectIntro() {
               </div>
             </div>
 
+            <div className="feedback-card">
+              <p className="eyebrow">Recommendation feedback · {ALGORITHM_VERSION}</p>
+              <h3>이 추천이 현재 상황에 얼마나 맞나요?</h3>
+              <p>이 평가는 사용자가 아니라 추천 시스템의 적합도를 확인합니다. MVP에서는 이 브라우저의 localStorage에만 저장되며 서버나 GitHub로 전송되지 않습니다.</p>
+              <div className="rating-grid" aria-label="추천 적합도">
+                {[1, 2, 3, 4, 5].map((score) => (
+                  <OptionCard active={fitScore === score} key={score} onClick={() => setFitScore(score)}>
+                    {score}
+                  </OptionCard>
+                ))}
+              </div>
+              <textarea
+                aria-label="추천에 대한 선택 의견"
+                maxLength={300}
+                onChange={(event) => setFeedbackNote(event.target.value)}
+                placeholder="선택 사항: 맞았던 점이나 조정이 필요한 점을 적어주세요. 개인정보는 입력하지 마세요."
+                value={feedbackNote}
+              />
+              <button className="secondary" disabled={!fitScore} onClick={handleFeedbackSave} style={{ marginTop: 12 }} type="button">
+                추천 평가를 이 브라우저에 저장
+              </button>
+              {feedbackCount > 0 && <div className="saved">추천 평가 {feedbackCount}개가 이 브라우저에 저장되어 있습니다.</div>}
+            </div>
+
             <div className="actions">
               <button className="secondary" onClick={() => setStep(3)} type="button">
                 이전
@@ -394,7 +491,7 @@ export default function ProjectIntro() {
           </section>
         )}
 
-        {step === 5 && (
+        {step === 5 && hasCompleteResult && (
           <section className="panel">
             <p className="eyebrow">Routine</p>
             <h2>{result.routine.title}</h2>
@@ -433,8 +530,8 @@ export default function ProjectIntro() {
               <button className="secondary" onClick={() => setStep(4)} type="button">
                 결과로 돌아가기
               </button>
-              <button className="secondary" onClick={() => setStep(0)} type="button">
-                처음으로
+              <button className="secondary" onClick={resetFlow} type="button">
+                처음부터 다시하기
               </button>
             </div>
           </section>

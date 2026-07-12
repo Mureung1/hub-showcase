@@ -1,3 +1,5 @@
+export const ALGORITHM_VERSION = "rules-v1";
+
 const METHODS = [
   {
     title: "인출 연습",
@@ -132,6 +134,7 @@ export function createRecommendations(scores) {
     }));
 
   return {
+    algorithmVersion: ALGORITHM_VERSION,
     summary:
       "응답을 보면 학습 선호와 피로 신호를 함께 보며 루틴을 작게 설계하는 방식이 더 편할 수 있습니다.",
     recommendations,

@@ -45,6 +45,8 @@ MBTI는 사람을 고정적으로 분류하는 도구가 아니라 학습 선호
 - 추천 로직은 MBTI 유형명만으로 결정하지 않는다.
 - localStorage 기반 MVP를 유지한다.
 - 회원가입, AI API, 성적 예측, 커뮤니티, 캘린더/알림을 추가하지 않는다.
+- 사용자 응답과 자유의견을 Git repository나 GitHub issue에 저장하지 않는다.
+- 로그인·서버 저장·외부 플랫폼·OpenAI 기능은 `docs/evidence-data-roadmap.md`의 게이트를 통과한 뒤 별도 작업으로 검토한다.
 
 ## Review rules
 
@@ -57,6 +59,7 @@ MBTI는 사람을 고정적으로 분류하는 도구가 아니라 학습 선호
 - 성적 예측 기능이 들어가지 않았는가
 - 결과가 오늘 바로 실행 가능한가
 - README, plan, checklist가 서로 모순되지 않는가
+- context, evidence-data-roadmap, 실제 저장 구조와 알고리즘 버전이 서로 모순되지 않는가
 - build/lint가 통과했는가
 
 ## PR rules
@@ -147,4 +150,5 @@ hub/
 - API 경계: 서버 도입 시 `/api` 프리픽스. 프론트→서버 호출은 도입 후에만.
 - 환경변수: `.env` 사용, 프론트 노출 값은 `VITE_` 프리픽스. `.env`는 커밋하지 않는다.
 - 데이터 소유권: MVP 단계에서 결과·기록의 원천은 localStorage다. 서버는 도입 후 보조 저장소로만 검토한다.
+- 데이터 삭제: 앱에서 결과·루틴 기록·추천 평가를 한 번에 삭제할 수 있어야 한다.
 - CORS: 서버 도입 시 개발 origin만 허용.

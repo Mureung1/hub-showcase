@@ -13,9 +13,10 @@
 1. `docs/context.md`
 2. `docs/plan.md`
 3. `docs/checklist.md`
-4. `docs/design.md` — 디자인/화면 구현 시 (색·크기·레이아웃 토큰과 컴포넌트 규칙)
-5. `docs/pr-guide.md` — PR 작업 시
-6. `docs/prompt-guide.md` — 새 작업 지시 작성 시
+4. `docs/evidence-data-roadmap.md` — 근거·측정·데이터·확장 작업 시
+5. `docs/design.md` — 디자인/화면 구현 시 (색·크기·레이아웃 토큰과 컴포넌트 규칙)
+6. `docs/pr-guide.md` — PR 작업 시
+7. `docs/prompt-guide.md` — 새 작업 지시 작성 시
 
 ## Hard rules
 
@@ -31,6 +32,8 @@
 - `package.json`, `package-lock.json`은 필요할 때만 수정한다.
 - `node_modules`, `.DS_Store`, 임시파일은 커밋하지 않는다.
 - force push는 사용자 명시 허가 없이 사용하지 않는다.
+- 사용자 응답과 자유의견을 Git repository나 GitHub issue에 저장하지 않는다.
+- 검증 전 점수·가중치를 정확도, 진단, 표준화된 평가처럼 표현하지 않는다.
 
 ## Tech stack
 
@@ -84,6 +87,8 @@ Next.js로 바꾸지 않는다.
 - 추천 로직은 MVP에서 규칙 기반으로 유지한다.
 - MBTI는 선호 탐색의 힌트로만 사용하고, 공부 설문과 스트레스 설문 응답을 함께 반영한다.
 - MVP 데이터 저장은 localStorage를 사용한다.
+- 결과와 피드백에 같은 알고리즘 버전을 기록하고, 앱에서 로컬 데이터를 삭제할 수 있게 한다.
+- 로그인·서버 저장·외부 플랫폼·OpenAI 기능은 `docs/evidence-data-roadmap.md`의 게이트를 통과하기 전 구현하지 않는다.
 - 화면 흐름은 소개, MBTI 선택, 공부 설문, 스트레스 설문, 결과, 오늘의 실천 카드 중심으로 유지한다.
 - `README.md`, `docs/plan.md`, `docs/checklist.md`의 설명이 서로 충돌하지 않게 한다.
 
