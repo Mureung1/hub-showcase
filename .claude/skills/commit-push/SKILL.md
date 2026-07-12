@@ -14,4 +14,4 @@ description: git 커밋 메시지 작성, 브랜치 명명, push를 수행할 �
 - `type/short-description` 형식을 사용한다. (예: `feat/schedule-form`)
 
 ## push
-- 최종 push 이전에 .env, api 등 유출하면 안되는 사항이 push에 포함 되었는지 보안 확인을 수행하고, 발견 시 push를 멈춘다.
+- 최종 push 이전에 .env, api, 개인정보 등 유출하면 안되는 사항이 push에 포함 되었는지 보안 확인을 수행하고, 발견 시 push를 멈춘 뒤 사용자에게 알린다.

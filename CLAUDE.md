@@ -29,10 +29,10 @@
 
 ## 하지 말 것
 - docs 폴더는 별도의 요청이 없는 경우 읽지 않는다.
+- any 타입 금지.
+- 외부 UI 라이브러리 금지. (필요시 사용자에게 확인)
 
 ## 작업 원칙
-
-**Tradeoff:** These guidelines below bias toward caution over speed. For trivial tasks, use judgment.
 
 ## 1. Think Before Coding
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
