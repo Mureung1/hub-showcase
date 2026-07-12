@@ -4,7 +4,7 @@
 
 이 저장소는 `MBTI 기반 공부법 및 스트레스 관리 웹앱` 프로젝트다.
 
-사용자가 MBTI와 공부·스트레스 설문을 입력하면, 성향을 고정적으로 단정하지 않고 학습 선호와 피로 패턴을 행동지표로 정리한 뒤, 인지과학 기반 학습법과 오늘 바로 실행할 공부·회복 루틴을 추천한다.
+사용자가 외부 공식 MBTI 평가에서 받은 결과를 직접 입력하거나 공식 결과 없이 진행하고, 독자적인 공부습관·스트레스 점검에서 행동·상태와 공식 판정이 아닌 탐색 신호를 분리한다. task/state-only baseline과 MBTI 힌트 추가 추천을 비교해 인지과학 학습전략과 실행 루틴을 제안하고 후속 결과로 검증한다.
 
 ## Read first
 
@@ -13,9 +13,10 @@
 1. `docs/context.md`
 2. `docs/plan.md`
 3. `docs/checklist.md`
-4. `docs/design.md` — 디자인/화면 구현 시 (색·크기·레이아웃 토큰과 컴포넌트 규칙)
-5. `docs/pr-guide.md` — PR 작업 시
-6. `docs/prompt-guide.md` — 새 작업 지시 작성 시
+4. `docs/evidence-data-roadmap.md` — 근거·측정·데이터·확장 작업 시
+5. `docs/design.md` — 디자인/화면 구현 시 (색·크기·레이아웃 토큰과 컴포넌트 규칙)
+6. `docs/pr-guide.md` — PR 작업 시
+7. `docs/prompt-guide.md` — 새 작업 지시 작성 시
 
 ## Hard rules
 
@@ -31,6 +32,12 @@
 - `package.json`, `package-lock.json`은 필요할 때만 수정한다.
 - `node_modules`, `.DS_Store`, 임시파일은 커밋하지 않는다.
 - force push는 사용자 명시 허가 없이 사용하지 않는다.
+- 사용자 응답과 자유의견을 Git repository나 GitHub issue에 저장하지 않는다.
+- 검증 전 점수·가중치를 정확도, 진단, 표준화된 평가처럼 표현하지 않는다.
+- 공식 MBTI 문항을 복제·번역·표현 변경해 자체 문항으로 사용하지 않는다.
+- 공부습관 기반 4축 코드를 공식 MBTI 판정으로 표시하지 않는다.
+- 사용자 만족도를 알고리즘 정확도나 학습효과로 해석하지 않는다.
+- 선호에 맞춘 공부법이 효과도 높다는 learning-styles matching 가정을 기본값으로 사용하지 않는다.
 
 ## Tech stack
 
@@ -83,9 +90,14 @@ Next.js로 바꾸지 않는다.
 - Vite + React 구조를 유지한다.
 - 추천 로직은 MVP에서 규칙 기반으로 유지한다.
 - MBTI는 선호 탐색의 힌트로만 사용하고, 공부 설문과 스트레스 설문 응답을 함께 반영한다.
+- 공식 MBTI 신호는 사용자가 외부 공식 결과를 직접 입력한 경우에만 약한 힌트로 사용한다.
+- task/state-only baseline을 항상 함께 산출하고, 공부습관 탐색 코드는 추천 입력에서 분리한다.
 - MVP 데이터 저장은 localStorage를 사용한다.
+- 결과와 피드백에 같은 알고리즘 버전을 기록하고, 앱에서 로컬 데이터를 삭제할 수 있게 한다.
+- 로그인·서버 저장·외부 플랫폼·OpenAI 기능은 `docs/evidence-data-roadmap.md`의 게이트를 통과하기 전 구현하지 않는다.
 - 화면 흐름은 소개, MBTI 선택, 공부 설문, 스트레스 설문, 결과, 오늘의 실천 카드 중심으로 유지한다.
 - `README.md`, `docs/plan.md`, `docs/checklist.md`의 설명이 서로 충돌하지 않게 한다.
+- 추천 적합도·이해도·실행 가능성과 실행률·지연 학습성과를 구분한다.
 
 ## Validation commands
 

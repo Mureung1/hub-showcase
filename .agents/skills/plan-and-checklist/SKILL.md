@@ -7,7 +7,7 @@ description: Maintain the planning documents for the MBTI study and stress manag
 
 ## Read First
 
-Read `docs/context.md`, `docs/plan.md`, `docs/checklist.md`, and `README.md`.
+Read `docs/context.md`, `docs/plan.md`, `docs/checklist.md`, `docs/evidence-data-roadmap.md`, and `README.md`.
 
 ## Plan Document Role
 
@@ -15,7 +15,7 @@ Read `docs/context.md`, `docs/plan.md`, `docs/checklist.md`, and `README.md`.
 
 ## Checklist Role
 
-`docs/checklist.md` is the 4-week execution checklist. Keep it structured by planning and logic skeleton, core implementation, reliability and usability, then QA/docs/demo preparation.
+`docs/checklist.md` contains the 4-week MVP plus validation-beta, consent-based-beta, and long-term gates. Keep completed implementation separate from unverified research tasks.
 
 ## Expression Rules
 
@@ -29,6 +29,8 @@ Read `docs/context.md`, `docs/plan.md`, `docs/checklist.md`, and `README.md`.
 Keep MVP centered on preference/status check, cognitive-science study method matching, and today's study/recovery routine.
 
 Exclude sign-up, AI chatbot, external AI API, grade forecasting, medical judgment, community, calendar/notification, comparison/ranking, and payment.
+
+Keep official MBTI result self-entry, original exploratory preference signals, task/state-only baseline, and MBTI-added models distinct. Document satisfaction and learning outcomes separately, and preserve the learning-styles matching falsification criterion.
 
 ## Validation
 

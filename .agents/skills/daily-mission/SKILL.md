@@ -10,6 +10,7 @@ description: Run the daily workflow for the MBTI study and stress management web
 1. Work only in `/Users/bricepark/Documents/hub`.
 2. Confirm `pwd`, `git branch --show-current`, and `git status --short --branch`.
 3. Read `AGENTS.md`, `docs/context.md`, `docs/plan.md`, and `docs/checklist.md`.
+4. Read `docs/evidence-data-roadmap.md` for assessment, scoring, feedback, data, research, or integration work.
 
 ## Scope
 
@@ -22,6 +23,10 @@ Keep the current Vite + React structure. Do not migrate frameworks or add new de
 - Use fatigue signal, recovery routine, and caution pattern language.
 - Use possibility-based result wording.
 - Do not add sign-up, AI chatbot, external AI API, community, calendar, notification, payment, grade forecasting, comparison, ranking, or study proof features.
+- Keep official MBTI self-entry separate from the original study-habit preference signal.
+- Never present the exploratory four-axis code as an official MBTI result.
+- Compare task/state-only and MBTI-added recommendations instead of assuming a matching benefit.
+- Keep satisfaction separate from behavioral and delayed-learning outcomes.
 
 ## Work Pattern
 

@@ -13,6 +13,7 @@ PR 작업 전 아래 문서를 읽는다.
 2. `docs/context.md`
 3. `docs/plan.md`
 4. `docs/checklist.md`
+5. `docs/evidence-data-roadmap.md` when the PR changes assessment, scoring, feedback, data, research, or integrations
 
 ## Verify before commit or PR
 
