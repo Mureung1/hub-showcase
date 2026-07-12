@@ -8,6 +8,7 @@ import {
   join,
   normalize,
   relative,
+  sep,
 } from 'node:path'
 import { promisify } from 'node:util'
 
@@ -84,16 +85,16 @@ export async function prepareProductRuntimeLayout(
 
   const codexBinPath = await resolveProductCodexBinary(packageRoot)
 
-  const versionOutput = await readProductCodexVersion(
+  const codexVersion = await readProductCodexVersion(
     codexBinPath,
     packageRoot,
   )
-  const codexVersion = readPinnedCodexVersion()
+  const pinnedCodexVersion = readPinnedCodexVersion()
 
-  if (!versionOutput.split(/\s+/).includes(codexVersion)) {
+  if (codexVersion !== pinnedCodexVersion) {
     throw new ProductRuntimeLayoutError(
       'binary_pin_mismatch',
-      `Codex binary version does not match package pin ${codexVersion}`,
+      `Codex binary version ${codexVersion} does not match package pin ${pinnedCodexVersion}`,
     )
   }
 
@@ -242,7 +243,9 @@ function isSameOrDescendant(ancestor: string, candidate: string): boolean {
 
   return (
     relativePath === '' ||
-    (!relativePath.startsWith('..') && !isAbsolute(relativePath))
+    (relativePath !== '..' &&
+      !relativePath.startsWith(`..${sep}`) &&
+      !isAbsolute(relativePath))
   )
 }
 
@@ -314,13 +317,12 @@ async function prepareProductRuntimeHomePair(
       canonicalDirectoryTarget('appDataRoot', requestedCodexSqliteHome),
     ])
 
-    if (
-      !isStrictDescendant(appDataRoot, codexHomeTarget) ||
-      !isStrictDescendant(appDataRoot, codexSqliteHomeTarget) ||
-      pathsOverlap(codexHomeTarget, codexSqliteHomeTarget)
-    ) {
-      throw new Error('Runtime-home pair must stay distinct inside appDataRoot')
-    }
+    assertRuntimeHomePairInsideAppData(
+      appDataRoot,
+      codexHomeTarget,
+      codexSqliteHomeTarget,
+      'Runtime-home pair must stay distinct inside appDataRoot',
+    )
 
     await Promise.all([
       mkdir(requestedCodexHome, { recursive: true }),
@@ -332,13 +334,12 @@ async function prepareProductRuntimeHomePair(
       realpath(requestedCodexSqliteHome),
     ])
 
-    if (
-      !isStrictDescendant(appDataRoot, codexHome) ||
-      !isStrictDescendant(appDataRoot, codexSqliteHome) ||
-      pathsOverlap(codexHome, codexSqliteHome)
-    ) {
-      throw new Error('Prepared runtime-home pair escaped appDataRoot')
-    }
+    assertRuntimeHomePairInsideAppData(
+      appDataRoot,
+      codexHome,
+      codexSqliteHome,
+      'Prepared runtime-home pair escaped appDataRoot',
+    )
 
     return { codexHome, codexSqliteHome }
   } catch (cause) {
@@ -353,6 +354,21 @@ async function prepareProductRuntimeHomePair(
 
 function isStrictDescendant(ancestor: string, candidate: string): boolean {
   return ancestor !== candidate && isSameOrDescendant(ancestor, candidate)
+}
+
+function assertRuntimeHomePairInsideAppData(
+  appDataRoot: string,
+  codexHome: string,
+  codexSqliteHome: string,
+  message: string,
+): void {
+  if (
+    !isStrictDescendant(appDataRoot, codexHome) ||
+    !isStrictDescendant(appDataRoot, codexSqliteHome) ||
+    pathsOverlap(codexHome, codexSqliteHome)
+  ) {
+    throw new Error(message)
+  }
 }
 
 async function readProductCodexVersion(
@@ -375,7 +391,15 @@ async function readProductCodexVersion(
       throw new Error('Codex binary returned empty version output')
     }
 
-    return versionOutput
+    const version = versionOutput.match(
+      /^codex-cli\s+(\d+\.\d+\.\d+)\s*$/m,
+    )?.[1]
+
+    if (!version) {
+      throw new Error('Codex binary returned unrecognized version output')
+    }
+
+    return version
   } catch (cause) {
     throw new ProductRuntimeLayoutError(
       'binary_version_unreadable',

@@ -143,6 +143,24 @@ test('product runtime layout rejects equal and nested canonical roots', async ()
   })
 })
 
+test('product runtime layout treats a child named with two leading dots as contained', async () => {
+  await withProductLayoutFixture(async ({ packageRoot, workspaceRoot }) => {
+    await assert.rejects(
+      prepareProductRuntimeLayout({
+        packageRoot,
+        appDataRoot: join(packageRoot, '..data'),
+        workspaceRoot,
+      }),
+      (error: unknown) => {
+        assert.ok(error instanceof ProductRuntimeLayoutError)
+        assert.equal(error.code, 'root_overlap')
+
+        return true
+      },
+    )
+  })
+})
+
 test(
   'product runtime layout resolves symlinks before checking root overlap',
   { skip: process.platform === 'win32' },
@@ -287,6 +305,34 @@ test('product runtime layout rejects a binary version that differs from the pack
   })
 })
 
+test('product runtime layout compares the reported binary version instead of warning text', async () => {
+  await withProductLayoutFixture(async ({
+    appDataRoot,
+    codexBinPath,
+    packageRoot,
+    workspaceRoot,
+  }) => {
+    await writeFakeCodexBinaryOutput(
+      codexBinPath,
+      'codex-cli 0.145.0\nwarning: expected 0.144.0',
+    )
+
+    await assert.rejects(
+      prepareProductRuntimeLayout({
+        packageRoot,
+        appDataRoot,
+        workspaceRoot,
+      }),
+      (error: unknown) => {
+        assert.ok(error instanceof ProductRuntimeLayoutError)
+        assert.equal(error.code, 'binary_pin_mismatch')
+
+        return true
+      },
+    )
+  })
+})
+
 test('product runtime layout classifies runtime-home pair preparation failure as non-recoverable', async () => {
   await withProductLayoutFixture(async ({
     appDataRoot,
@@ -386,14 +432,25 @@ async function writeFakeCodexBinary(
   codexBinPath: string,
   version: string,
 ): Promise<void> {
+  await writeFakeCodexBinaryOutput(codexBinPath, `codex-cli ${version}`)
+}
+
+async function writeFakeCodexBinaryOutput(
+  codexBinPath: string,
+  output: string,
+): Promise<void> {
   if (process.platform === 'win32') {
-    await writeFile(codexBinPath, `@echo off\r\necho codex-cli ${version}\r\n`)
+    const lines = output
+      .split('\n')
+      .map((line) => `echo ${line}`)
+      .join('\r\n')
+    await writeFile(codexBinPath, `@echo off\r\n${lines}\r\n`)
     return
   }
 
   await writeFile(
     codexBinPath,
-    `#!/usr/bin/env node\nprocess.stdout.write('codex-cli ${version}\\n')\n`,
+    `#!/usr/bin/env node\nprocess.stdout.write(${JSON.stringify(`${output}\n`)})\n`,
   )
   await chmod(codexBinPath, 0o755)
 }
