@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: implementation agent
+- Next actor: none
 
 ## Parent Spec
 
@@ -52,6 +52,13 @@
 - Code review: fixed point `a4b77aea144d90d30a3581ca1fff01348649f79b` 기준 Standards 2건과 Spec 2건을 확인했고 `1b15599e`에서 모두 반영했다.
 - Manual or live smoke: 없음 — temporary roots와 fake package binary를 사용하는 결정적 contract test가 소유한다.
 
+2026-07-13 GPT Pro review 전체 재대조 검증:
+
+- `npm run test -w @ay-ple/runtime-codex` — 통과, 86개 test.
+- `npm test` — 통과. `runtime-core` 50개, `runtime-codex` 86개, server 53개와 Inspector Playwright 6개 test가 모두 통과했다.
+- `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector` — 모두 통과.
+- Fixed point `e177a1658ab24716a6ade3f1839619c26d1611a1` 기준 two-axis 재리뷰 — Standards finding 0건, Spec finding 0건.
+
 ## Result
 
 `prepareProductRuntimeLayout()`과 `ProductRuntimeLayoutError`를 `@ay-ple/runtime-codex` 공개 API로 추가했다. 이 seam은 명시적인 세 root를 canonical 대상으로 검증하고, package 안의 실행 가능한 Codex binary가 정확한 package pin과 일치하는지 확인하며, `appDataRoot` 아래에서 빠져나갈 수 없는 `codex/home`·`codex/sqlite` pair를 준비한다. 모든 구성 실패는 `recoverable: false`인 안정적인 code로 분류된다.
@@ -65,6 +72,7 @@ Follow-up hardening은 root·binary의 canonical target을 읽은 뒤 발생하�
 - `e13807b3` — `feat: validate product runtime layout`
 - `eb0230ff` — `docs: record product runtime layout preflight`
 - `1b15599e` — `fix: harden product layout preflight`
+- `e4d8f35a` — `fix: harden Codex host prerequisites`
 
 ## Blocked By
 

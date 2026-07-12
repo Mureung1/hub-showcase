@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: implementation agent
+- Next actor: none
 
 ## Parent Spec
 
@@ -77,6 +77,14 @@
 - `npm run lint -w @ay-ple/inspector` — 통과
 - `npm run generate:codex-methods -w @ay-ple/runtime-codex` — 통과, aggregate response schema 재생성 전후 SHA-256 동일, 예상 밖 generated inventory diff 없음
 
+2026-07-13 GPT Pro review 전체 재대조 검증:
+
+- `npm run test -w @ay-ple/runtime-codex` — 통과, 86개 test와 actual-child 회귀 포함.
+- `npm test` — 통과. `runtime-core` 50개, `runtime-codex` 86개, server 53개와 Inspector Playwright 6개 test가 모두 통과했다.
+- `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector` — 모두 통과.
+- `npm run generate:codex-methods -w @ay-ple/runtime-codex` — 통과, 예상 밖 generated diff 없음.
+- Fixed point `e177a1658ab24716a6ade3f1839619c26d1611a1` 기준 two-axis 재리뷰 — Standards finding 0건, Spec finding 0건.
+
 ## Result
 
 `CodexStdioTransport`가 네 protocol direction을 stdio JSONL에서 분리하고 direction·ID type·exact value로 Client response와 Server request를 독립적으로 연결한다. Pinned Codex가 생성한 Server request JSON Schema와 response type을 package 내부에서 검증·사용하며 one-shot success/error writer, sanitized protocol/transport observation과 request-scoped timeout을 제공한다. Actual-child fixture journal은 spawn과 outbound protocol을 독립 관측하고 success, assertion failure와 transport failure의 child reaping·temporary directory cleanup을 소유한다. 기존 `CodexRawClient`와 `CodexRuntimeAdapter` 경로는 그대로 유지했다.
@@ -94,6 +102,8 @@ Follow-up review의 첫 네 finding도 actual-child seam에서 보강했다. Raw
 - `6ef7f49f` — pinned generated JSON Schema로 nested Server request params validation을 일원화
 - `3329f5b9` — unsafe numeric ID를 parse 전 거부하고 Server request params를 untrusted 상태로 유지
 - `346af09e` — raw envelope, late response fencing과 generated Server success response 검증을 보강
+- `e4d8f35a` — successful spawn·terminal stream·request lifecycle과 bounded registry를 보강
+- `fea1ba5e` — zero-padded exponent numeric ID와 actual-child 회귀를 보강
 
 ## Blocked By
 
