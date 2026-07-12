@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -33,20 +33,34 @@
 
 ## Acceptance Criteria
 
-- [ ] Valid한 세 root가 canonical layout, package-owned binary, `codexHome`, `codexSqliteHome`과 exact `workspaceRoot`를 반환한다.
-- [ ] Relative path, missing/non-directory `packageRoot` 또는 `workspaceRoot`, missing/non-executable binary와 pin mismatch가 spawn 이전의 typed failure로 거부된다.
-- [ ] 같은 root, 직접 containment와 양방향 ancestor·descendant 관계가 모두 거부된다.
-- [ ] Symlink 또는 다른 lexical spelling으로 숨긴 overlap도 canonical comparison으로 거부된다.
-- [ ] Runtime-home pair 준비 실패는 configuration을 바꾸기 전 재시도할 수 없는 failure class로 분류할 수 있다.
-- [ ] Product layout API 어디에도 `process.cwd()`, 전역 `PATH`, 독립적인 home override fallback이 없다.
-- [ ] 기존 `CodexRawClient`와 Runtime Harness의 default/override 동작과 테스트가 회귀하지 않는다.
-- [ ] 구현된 현재 동작을 관련 package README 또는 구현 지도에 반영하되 미래 Host 동작을 구현된 것처럼 기록하지 않는다.
+- [x] Valid한 세 root가 canonical layout, package-owned binary, `codexHome`, `codexSqliteHome`과 exact `workspaceRoot`를 반환한다.
+- [x] Relative path, missing/non-directory `packageRoot` 또는 `workspaceRoot`, missing/non-executable binary와 pin mismatch가 spawn 이전의 typed failure로 거부된다.
+- [x] 같은 root, 직접 containment와 양방향 ancestor·descendant 관계가 모두 거부된다.
+- [x] Symlink 또는 다른 lexical spelling으로 숨긴 overlap도 canonical comparison으로 거부된다.
+- [x] Runtime-home pair 준비 실패는 configuration을 바꾸기 전 재시도할 수 없는 failure class로 분류할 수 있다.
+- [x] Product layout API 어디에도 `process.cwd()`, 전역 `PATH`, 독립적인 home override fallback이 없다.
+- [x] 기존 `CodexRawClient`와 Runtime Harness의 default/override 동작과 테스트가 회귀하지 않는다.
+- [x] 구현된 현재 동작을 관련 package README 또는 구현 지도에 반영하되 미래 Host 동작을 구현된 것처럼 기록하지 않는다.
 
 ## Verification
 
-- Targeted test or command: `npm run test -w @ay-ple/runtime-codex`
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector`
+- Targeted test: `npm run test -w @ay-ple/runtime-codex` — 통과, 46 tests.
+- Repository test: `npm test` — 통과. `runtime-core` 50 tests, `runtime-codex` 46 tests, server 53 tests와 Inspector Playwright 6 tests가 모두 통과했다.
+- Repository checks: `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector` — 모두 통과.
+- Code review: fixed point `a4b77aea144d90d30a3581ca1fff01348649f79b` 기준 Standards 2건과 Spec 2건을 확인했고 `1b15599e`에서 모두 반영했다.
 - Manual or live smoke: 없음 — temporary roots와 fake package binary를 사용하는 결정적 contract test가 소유한다.
+
+## Result
+
+`prepareProductRuntimeLayout()`과 `ProductRuntimeLayoutError`를 `@ay-ple/runtime-codex` 공개 API로 추가했다. 이 seam은 명시적인 세 root를 canonical 대상으로 검증하고, package 안의 실행 가능한 Codex binary가 정확한 package pin과 일치하는지 확인하며, `appDataRoot` 아래에서 빠져나갈 수 없는 `codex/home`·`codex/sqlite` pair를 준비한다. 모든 구성 실패는 `recoverable: false`인 안정적인 code로 분류된다.
+
+기존 `CodexRawClient`와 Runtime Harness의 repository-local default, 독립 override와 단일-run 동작은 변경하지 않았다. 현재 구현 범위와 아직 연결하지 않은 Host lifecycle은 package README와 Runtime Harness 구현 지도에 구분해 기록했다.
+
+구현 커밋:
+
+- `e13807b3` — `feat: validate product runtime layout`
+- `eb0230ff` — `docs: record product runtime layout preflight`
+- `1b15599e` — `fix: harden product layout preflight`
 
 ## Blocked By
 
