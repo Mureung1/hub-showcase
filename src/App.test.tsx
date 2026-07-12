@@ -534,6 +534,76 @@ describe('App', () => {
     expect((storedAfter as { candidates: unknown[] }).candidates).toHaveLength(0)
   })
 
+  it('내부 단계 이름 S0~S3을 사용자에게 노출하지 않는다', () => {
+    render(<App />)
+    expect(screen.queryByText(/^S[0-3]$/)).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    expect(screen.queryByText(/^S[0-3]$/)).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
+    expect(screen.queryByText(/^S[0-3]$/)).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: '감사·확인' }))
+    expect(screen.queryByText(/^S[0-3]$/)).toBeNull()
+  })
+
+  it('단계가 바뀌면 새 단계 제목으로 초점을 옮긴다', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: '관계 고르기' }))
+
+    fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: '어떤 상황이에요?' }))
+  })
+
+  it('목적 칩은 보이는 legend와 aria-pressed 상태를 제공한다', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+
+    expect(screen.getByText('메시지 목적')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '질문하기' })).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+
+    expect(screen.getByRole('button', { name: '질문하기' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: '부탁하기' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('생성 중에는 입력 영역에 aria-busy와 진행을 가장하지 않는 대기 문구를 보여준다', async () => {
+    const { container } = render(<MessageFlow mockGenerationCase="delay" />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    fireEvent.change(screen.getByLabelText('상황 설명'), {
+      target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '보낼 말 3가지 만들기' }))
+
+    expect(container.querySelector('[aria-busy="true"]')).not.toBeNull()
+    expect(await screen.findByText('보낼 말 3가지를 만들고 있어요.')).toBeInTheDocument()
+    expect(screen.queryByText('거의 다 됐어요.')).toBeNull()
+  })
+
+  it('답장 모드의 상황 카드 화면은 카드가 원문을 읽지 않는다고 안내한다', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /답장할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
+
+    expect(screen.getByText(/카드는 받은 내용을 읽지 않는 자주 쓰는 답장이에요/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /다른 관계 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /방식 다시 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
+
+    expect(screen.queryByText(/카드는 받은 내용을 읽지 않는/)).toBeNull()
+  })
+
   it('사용자가 이 탭에 임시 보관한 작성 내용을 즉시 지울 수 있다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))

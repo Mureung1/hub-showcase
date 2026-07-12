@@ -47,7 +47,7 @@ const storageKey = 'dabnyangi:flow'
 const flowStorageTtlMs = 30 * 60 * 1000
 const generationTimeoutMs = 20_000
 const developmentGenerationCase: MockGenerationCase = 'normal'
-const loadingMessages = ['상황을 읽고 있어요.', '톤 3가지로 쓰고 있어요.', '거의 다 됐어요.']
+const loadingMessages = ['보낼 말 3가지를 만들고 있어요.', '아직 만들고 있어요.']
 
 const generationErrorMessage: Record<GenerationErrorCode, string> = {
   invalid_request: '입력 내용을 다시 확인해주세요.',
@@ -315,8 +315,19 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
   const resultTextRefs = useRef(new Map<ToneLevel, HTMLParagraphElement>())
   const generationRequestId = useRef(0)
   const copyResetTimer = useRef<number | undefined>(undefined)
+  const stepHeadingRef = useRef<HTMLHeadingElement | null>(null)
+  const hasNavigatedSteps = useRef(false)
 
   useEffect(() => () => window.clearTimeout(copyResetTimer.current), [])
+
+  useEffect(() => {
+    if (!hasNavigatedSteps.current) {
+      hasNavigatedSteps.current = true
+      return
+    }
+    stepHeadingRef.current?.focus()
+    window.scrollTo(0, 0)
+  }, [step])
 
   const selectedScenario = scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null
 
@@ -574,9 +585,11 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
         {step === 'mode' && (
           <div className="demo-panel wizard-panel">
             <div className="section-heading">
-              <span>S0</span>
+              <span aria-hidden="true">1</span>
               <div>
-                <h2>어떤 상황인가요?</h2>
+                <h2 ref={stepHeadingRef} tabIndex={-1}>
+                  어떤 상황인가요?
+                </h2>
                 <p>방식을 먼저 고르면 그에 맞는 화면으로 안내해요.</p>
               </div>
             </div>
@@ -600,9 +613,11 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
               ← 방식 다시 고르기
             </button>
             <div className="section-heading">
-              <span>S1</span>
+              <span aria-hidden="true">2</span>
               <div>
-                <h2>관계 고르기</h2>
+                <h2 ref={stepHeadingRef} tabIndex={-1}>
+                  관계 고르기
+                </h2>
                 <p>{mode === 'reply' ? '답장할 상대는 누구인가요?' : '먼저 연락할 상대는 누구인가요?'}</p>
               </div>
             </div>
@@ -647,12 +662,20 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
               ← 다른 관계 고르기
             </button>
             <div className="section-heading">
-              <span>S2</span>
+              <span aria-hidden="true">3</span>
               <div>
-                <h2>어떤 상황이에요?</h2>
+                <h2 ref={stepHeadingRef} tabIndex={-1}>
+                  어떤 상황이에요?
+                </h2>
                 <p>{selectedScenario.helper}이 골라둔 상황 중 하나를 골라주세요. 바로 결과를 볼 수 있어요.</p>
               </div>
             </div>
+
+            {mode === 'reply' && (
+              <p className="situation-reply-note">
+                카드는 받은 내용을 읽지 않는 자주 쓰는 답장이에요. 내용에 딱 맞추려면 ‘다른 상황이냥?’을 골라주세요.
+              </p>
+            )}
 
             <div className="situation-list">
               {situationCardsFor(selectedScenario.id).map((card) => (
@@ -673,21 +696,26 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
         )}
 
         {step === 'manual' && selectedScenario && mode && (
-          <div className="demo-panel wizard-panel">
+          <div aria-busy={isGenerating} className="demo-panel wizard-panel">
             <button className="wizard-back" onClick={backToSituation} type="button">
               ← 상황 카드로 돌아가기
             </button>
             <div className="section-heading">
-              <span>S2</span>
+              <span aria-hidden="true">3</span>
               <div>
-                <h2>{mode === 'reply' ? '받은 메시지 붙여넣기' : '상황 설명'}</h2>
+                <h2 ref={stepHeadingRef} tabIndex={-1}>
+                  {mode === 'reply' ? '받은 메시지 붙여넣기' : '상황 설명'}
+                </h2>
                 <p>맞는 카드가 없을 때만 직접 알려주세요. AI 연결 전에는 검증용 예시 후보를 보여줘요.</p>
               </div>
             </div>
 
-            <div className="purpose-list" aria-label="메시지 목적">
+            <fieldset className="purpose-fieldset">
+              <legend>메시지 목적</legend>
+              <div className="purpose-list">
               {purposes.map((purpose) => (
                 <button
+                  aria-pressed={purpose.id === selectedPurposeId}
                   className="purpose-chip"
                   data-selected={purpose.id === selectedPurposeId}
                   key={purpose.id}
@@ -701,7 +729,8 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
                   {purpose.label}
                 </button>
               ))}
-            </div>
+              </div>
+            </fieldset>
 
             {mode === 'reply' ? (
               <>
@@ -803,7 +832,7 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
         )}
 
         {step === 'result' && selectedScenario && (
-          <div className="demo-panel wizard-panel">
+          <div aria-busy={isRerolling} className="demo-panel wizard-panel">
             <button
               className="wizard-back"
               onClick={source === 'template' ? backToSituation : goToManual}
@@ -812,9 +841,11 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
               상황 수정
             </button>
             <div className="section-heading">
-              <span>S3</span>
+              <span aria-hidden="true">4</span>
               <div>
-                <h2>보낼 말 후보</h2>
+                <h2 ref={stepHeadingRef} tabIndex={-1}>
+                  보낼 말 후보
+                </h2>
                 <p>{selectedScenario.name} 상황에 맞춘 톤 3단계예요.</p>
               </div>
             </div>

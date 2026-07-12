@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nunito:wght@500;600;700;800&display=swap');
 
 :root {
-  --color-primary: #6caed1;
-  --color-primary-hover: #5a9fc4;
-  --color-primary-pressed: #4b8fb4;
+  --color-primary: #357b9e;
+  --color-primary-hover: #2f7092;
+  --color-primary-pressed: #286481;
   --color-primary-soft: #d8edf8;
   --color-primary-muted: #a9cddd;
   --color-bg: #dcebf3;
@@ -13,7 +13,7 @@
   --color-surface-tint: #eef7fb;
   --color-text: #151515;
   --color-text-body: #34343a;
-  --color-text-muted: #7e8a93;
+  --color-text-muted: #5f6e77;
   --color-text-subtle: #aab5bc;
   --color-text-on-primary: #ffffff;
   --color-border: #e7eef2;
@@ -25,7 +25,7 @@
   --color-card-butter: #fbefd5;
   --color-card-mint: #e2f1ea;
   --color-card-lavender: #ece8f7;
-  --color-danger: #c96b63;
+  --color-danger: #9b453f;
   --color-danger-soft: #f6dfdc;
   --color-success: #6ea98c;
   --color-success-soft: #e4f2eb;
@@ -74,6 +74,12 @@ button {
 
 button:disabled {
   cursor: not-allowed;
+}
+
+button:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 h1,
