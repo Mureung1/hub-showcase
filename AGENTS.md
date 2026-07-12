@@ -26,6 +26,8 @@ Static throwaway presentation artifacts under `artifacts/` and `spikes/`, plus t
 
 Before creating, moving, or materially editing a formal project document, read `docs/README.md` in full. It is the source of truth for document placement, status classification, and the responsibility of each document type.
 
+Follow the normative ownership table in `docs/README.md`. Change a term, decision, mapping, implementation fact, or priority in its owning document first; consumer documents should state only the consequence needed for their audience and link to that owner instead of copying field lists, rationale, or backlog state. Keep current implementation, adopted target, and deferred work explicitly separate.
+
 When writing Markdown planning, technical, or product documents, prefer tables for structured information and bullet points for scannable lists. Use prose for context and decisions, but model comparable items, options, tradeoffs, risks, and open questions in tables when practical. Update the root `README.md` whenever adding or moving a formal project document under `docs/`. Local Matt Pocock artifacts under `docs/prds/` and `docs/issues/` are an exception and should not be indexed in the root `README.md`.
 
 프로젝트 문서의 문장 구조와 일반 설명어는 한국어로 작성한다. 프로젝트에서 이미 정한 도메인 용어와 프로토콜 메서드·타입, 패키지명, 파일 경로, 코드 식별자 같은 고유 식별자는 원문 표기를 유지한다.
