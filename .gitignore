@@ -25,7 +25,11 @@ __pycache__/
 .env.*
 !.env.example
 
-.design-sync/ds-bundle-tokens/
+# design-sync (자동 생성 파일, 용량 큼)
+.design-sync/
+docs/prototype/prototype2/_ds/
+docs/prototype/prototype2/support.js
+
 docs/design/
 
 # Editor directories and files
