@@ -8,13 +8,13 @@ disable-model-invocation: true
 
 Scaffold the per-repo configuration that the engineering skills assume:
 
-- **Issue tracker** — where issues live (GitHub by default; local markdown is also supported out of the box)
+- **Issue tracker** — where specs, tickets, and Wayfinder artifacts live (GitHub by default; local markdown is also supported out of the box)
 - **Triage labels** — the strings used for the five canonical triage roles
 - **Domain docs** — where `CONTEXT.md` and ADRs live, and the consumer rules for reading them
 
 This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
 
-If `AGENTS.md` and `docs/agents/**` already declare the repository configured, treat that configuration as authoritative. Report it and stop unless the user explicitly requests reconfiguration. Never replace custom artifact paths, marker conventions, branch rules, or PR workflows with seed-template defaults merely because they differ from `.scratch/` or GitHub defaults.
+If `AGENTS.md` and `docs/agents/**` already declare the repository configured, treat that configuration as authoritative. Report it and stop unless the user explicitly requests reconfiguration. Never replace custom artifact paths, marker conventions, branch rules, or PR workflows with seed-template defaults merely because they differ from the bundled local-markdown or GitHub defaults.
 
 ## Process
 
@@ -27,7 +27,7 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `CONTEXT.md` and `CONTEXT-MAP.md` at the repo root
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/` — does this skill's prior output already exist?
-- `.scratch/` — sign that a local-markdown issue tracker convention is already in use
+- Existing local tracker roots named by `AGENTS.md` or `docs/agents/issue-tracker.md`, such as `docs/prds/`, `docs/issues/`, and `docs/wayfinding/`
 - Is the `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in your available skills.) This decides whether Section B runs at all.
 - Monorepo signals — a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. Present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
 
@@ -39,16 +39,18 @@ Lead each section with the recommended answer so the user can accept it in a wor
 
 **Section A — Issue tracker.**
 
-> Explainer: The "issue tracker" is where issues live for this repo. Skills like `to-tickets`, `triage`, `to-spec`, and `qa` read from and write to it — they need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.
+> Explainer: The "issue tracker" is where specs, implementation tickets, and Wayfinder artifacts live for this repo. Skills such as `to-spec`, `to-tickets`, `wayfinder`, `triage`, and `implement` need one coherent mapping for publish, fetch, state markers, and blocking references. Pick the place you actually track work for this repo.
 
 Default posture: these skills were designed for GitHub. If a `git remote` points at GitHub, propose that. If a `git remote` points at GitLab (`gitlab.com` or a self-hosted host), propose GitLab. Otherwise (or if the user prefers), offer:
 
 - **GitHub** — issues live in the repo's GitHub Issues (uses the `gh` CLI)
 - **GitLab** — issues live in the repo's GitLab Issues (uses the [`glab`](https://gitlab.com/gitlab-org/cli) CLI)
-- **Local markdown** — issues live as files under `.scratch/<feature>/` in this repo (good for solo projects or repos without a remote)
+- **Local markdown** — specs, implementation tickets, Wayfinder maps/tickets, and evidence assets live in the repository using one path and state model (good for solo projects or repos without a remote)
 - **Other** (Jira, Linear, etc.) — ask the user to describe the workflow in one paragraph; the skill will record it as freeform prose
 
 Record the choice in `docs/agents/issue-tracker.md`. The GitHub and GitLab templates carry a "PRs as a request surface" flag, defaulted **off** — leave it off and don't raise it; a user who wants external PRs in the triage queue can flip the flag in the file later.
+
+For local markdown, start from `issue-tracker-local.md`, then adapt the physical roots only when the repository already has a different coherent layout. Keep the spec, implementation ticket, Wayfinder map/ticket, asset, state-marker, and blocking-reference model together; do not mix conventions from separate layouts.
 
 **Section B — Triage label vocabulary.** Skip this section entirely if the `triage` skill isn't installed (exploration told you) — an uninstalled skill needs no labels.
 
