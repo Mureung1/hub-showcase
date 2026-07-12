@@ -1,12 +1,43 @@
-# AY-PLE
+<h1 align="center">
+  <img src="assets/brand/ay-ple-logo.png" width="560" alt="AY-PLE">
+</h1>
 
-AI Agent Challenge 4주 동안의 활동을 진행할 메인 작업 저장소입니다.
+<p align="center">
+  <strong>흩어진 학업 자료를, 근거와 함께 확인 가능한 학기 정보로.</strong>
+</p>
 
-현재 프로젝트 아이템은 **AY-PLE(에이플)**입니다. 학생이 한 학기 작업공간에서 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾아 원본 근거와 함께 변경안을 제시하고, 학생이 확인한 내용만 학기 상태에 반영하는 local-first 학업 Agent 앱을 만들고 있습니다.
+<p align="center">
+  Local-first 학업 Agent · Codex App Server · TypeScript 기반 npm workspace
+</p>
 
-## 처음 보는 분은 여기부터
+<p align="center">
+  <a href="docs/product/ay-ple-overview.md">제품 소개</a> ·
+  <a href="spikes/ay-ple-ui-prototype/guided-demo.html">동적 prototype</a> ·
+  <a href="docs/architecture/runtime-harness-implementation-map.md">구현 지도</a> ·
+  <a href="docs/product/ay-ple-development-backlog.md">개발 백로그</a>
+</p>
 
-> **[AY-PLE는 어떤 앱인가](docs/product/ay-ple-overview.md)** — AI Agent가 앱 안에서 학생을 위해 어떻게 일하는지, 실제 사용 장면을 따라 이해하는 소개입니다.
+## AY-PLE는 무엇인가
+
+AY-PLE(에이플)는 학생이 한 학기 작업공간에서 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾고, 원본 근거가 연결된 변경안을 제시하는 local-first 학업 Agent 앱입니다. 학생이 확인한 내용만 학기 상태에 반영합니다.
+
+현재 코드베이스에는 Codex App Server를 앱 전용 환경에서 실행하고 관찰하는 Runtime Harness가 구현되어 있습니다. 학생용 화면은 Review Workspace prototype 단계이며, 선택한 자료부터 AY의 제안, 사용자의 결정까지 이어지는 실제 실행 경로는 아직 구현되지 않았습니다. 세부 우선순위와 완료 조건은 [개발 백로그](docs/product/ay-ple-development-backlog.md)를 따릅니다.
+
+| 둘러볼 곳 | 무엇을 볼 수 있나 |
+| --- | --- |
+| [AY-PLE는 어떤 앱인가](docs/product/ay-ple-overview.md) | AI Agent가 앱 안에서 학생을 위해 일하는 대표 사용 흐름 |
+| [Review Workspace Scenario](docs/product/ay-ple-review-workspace-scenario.md) | 자료 선택, 원본 근거, 변경 제안과 수락으로 이어지는 화면 경험 |
+| [Runtime Harness 구현 지도](docs/architecture/runtime-harness-implementation-map.md) | 현재 구현된 앱·패키지 topology와 남은 연결 지점 |
+| [Codex-native product composition](docs/architecture/codex-native-product-composition.md) | 제품 action과 Codex primitive 사이의 구조적 mapping |
+
+## 빠른 시작
+
+```bash
+npm install
+npm run dev
+```
+
+`npm run dev`는 Express server와 Vite 기반 Runtime Inspector를 함께 실행합니다. 현재 개발자용 실행 화면의 자세한 사용법은 [Inspector README](apps/inspector/README.md)와 [Server README](apps/server/README.md)에서 확인할 수 있습니다.
 
 ## 1주차 발표 기록
 
@@ -19,7 +50,7 @@ npm run demo:week1
 - [Week 1 발표 자료와 실행 안내](artifacts/week1-demo/README.md)
 - [동적 제품 prototype](spikes/ay-ple-ui-prototype/guided-demo.html)
 
-## 문서
+## 프로젝트 문서
 
 기획서를 포함한 formal project docs는 이 README에서 링크로 접근할 수 있게 관리합니다. 이 목록은 탐색을 위한 mirror이며, 문서의 분류·역할·배치 기준은 [docs/README.md](docs/README.md)가 소유합니다.
 
@@ -71,7 +102,7 @@ npm run demo:week1
 | [AGENTS.md](AGENTS.md) | Codex 작업 규칙과 브랜치/PR 컨벤션 |
 | [CONTEXT.md](CONTEXT.md) | AY-PLE의 현재 domain glossary |
 
-## 현재 스택
+## 코드베이스 구성
 
 | 영역 | 위치 | 설명 |
 | --- | --- | --- |
@@ -84,10 +115,9 @@ npm run demo:week1
 | Runtime API | `/api/runtime/*` | 브라우저에 안전한 runtime run, cancel, history, SSE, Codex status, capability metadata endpoint |
 | Health check | `/api/health` | 서버와 Inspector 연결 확인용 엔드포인트 |
 
-## 명령어
+## 개발 명령어
 
 ```bash
-npm install
 npm run dev
 npm run demo:week1
 npm test
