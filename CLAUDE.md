@@ -25,14 +25,15 @@
 
 ## 환경 변수
 - `client/.env.example`, `server/.env.example` 참고해서 각자 로컬 `.env` 생성 (커밋 금지)
-- Supabase 프로젝트는 아직 미생성 — 실제 URL/키는 프로젝트 생성 후 팀원 개별 로컬 `.env`에 채움
+- 실제 URL/키는 프로젝트 생성 후 팀원 개별 로컬 `.env`에 채움
 
 ## 하지 말 것
-- docs/study 폴더는 읽지 않는다.
+- docs 폴더는 별도의 요청이 없는 경우 읽지 않는다.
 
-
+## 작업 원칙
 
 **Tradeoff:** These guidelines below bias toward caution over speed. For trivial tasks, use judgment.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
@@ -92,3 +93,5 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## 5. 작업이 끝나면 항상 방금 한 작업을 구체적으로, 중간 과정도 전부, 12살한테 설명하듯 쉽게 설명해줘.
