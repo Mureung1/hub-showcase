@@ -13,6 +13,7 @@ export type FakeCodexStdioScenario =
   | 'unknown_response'
   | 'malformed_json'
   | 'ambiguous_message'
+  | 'invalid_server_request_params'
   | 'exit_after_request'
   | 'stdout_eof'
   | 'stdin_failure'
@@ -175,6 +176,15 @@ reader.on('line', (line) => {
 
   if (scenario === 'ambiguous_message') {
     write({ id: message.id, method: 'warning', result: {} })
+    return
+  }
+
+  if (scenario === 'invalid_server_request_params') {
+    write({
+      id: message.id,
+      method: 'item/commandExecution/requestApproval',
+      params: null,
+    })
     return
   }
 

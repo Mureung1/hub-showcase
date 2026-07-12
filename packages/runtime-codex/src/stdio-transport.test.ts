@@ -177,12 +177,18 @@ test('CodexStdioTransport fails closed on malformed and ambiguous messages', asy
   const cases: Array<{
     scenario: Extract<
       FakeCodexStdioScenario,
-      'malformed_json' | 'ambiguous_message'
+      | 'malformed_json'
+      | 'ambiguous_message'
+      | 'invalid_server_request_params'
     >
-    code: 'malformed_json' | 'ambiguous_message'
+    code: 'malformed_json' | 'ambiguous_message' | 'invalid_message'
   }> = [
     { scenario: 'malformed_json', code: 'malformed_json' },
     { scenario: 'ambiguous_message', code: 'ambiguous_message' },
+    {
+      scenario: 'invalid_server_request_params',
+      code: 'invalid_message',
+    },
   ]
 
   for (const fixtureCase of cases) {
@@ -226,10 +232,11 @@ test('CodexStdioTransport distinguishes child exit, stdout EOF, and stdin failur
   for (const lossCase of lossCases) {
     await t.test(lossCase.scenario, async () => {
       let cleanedTempDir = ''
+      let childPid = 0
 
       await withFakeCodexStdioTransport(
         { scenario: lossCase.scenario },
-        async ({ transport, tempDir }) => {
+        async ({ transport, tempDir, readJournal }) => {
           cleanedTempDir = tempDir
           const observations = transport.observations()[Symbol.asyncIterator]()
           const pending = transport.sendRequest(createInitializeRequest(1))
@@ -237,6 +244,10 @@ test('CodexStdioTransport distinguishes child exit, stdout EOF, and stdin failur
             pending,
             isTransportFailure(lossCase.code),
           )
+          const journal = await readJournal({ minimumEntries: 2 })
+          const spawnEntry = journal.find((entry) => entry.kind === 'spawn')
+          assert.ok(spawnEntry && spawnEntry.kind === 'spawn')
+          childPid = spawnEntry.pid
           const observation = await nextObservation(observations)
 
           assert.equal(observation.kind, 'transport_lost')
@@ -250,6 +261,7 @@ test('CodexStdioTransport distinguishes child exit, stdout EOF, and stdin failur
       )
 
       await assertPathMissing(cleanedTempDir)
+      assertProcessMissing(childPid)
     })
   }
 
@@ -326,6 +338,10 @@ test('CodexStdioTransport keeps an individual request timeout scoped to that req
         (error: unknown) =>
           error instanceof CodexStdioRequestError &&
           error.code === 'request_timeout',
+      )
+      await assert.rejects(
+        transport.sendRequest(createInitializeRequest(1)),
+        isProtocolFailure('duplicate_response'),
       )
 
       await transport.sendNotification({ method: 'initialized' })

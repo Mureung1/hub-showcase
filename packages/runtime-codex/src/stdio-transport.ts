@@ -79,28 +79,25 @@ export class CodexStdioRequestError extends Error {
 
 type ServerRequestMethod = ServerRequest['method']
 
-type ServerRequestFor<Method extends ServerRequestMethod> = Extract<
-  ServerRequest,
-  { method: Method }
->
+const serverRequestResponseTypes = {
+  'item/commandExecution/requestApproval': null as unknown as CommandExecutionRequestApprovalResponse,
+  'item/fileChange/requestApproval': null as unknown as FileChangeRequestApprovalResponse,
+  'item/tool/requestUserInput': null as unknown as ToolRequestUserInputResponse,
+  'mcpServer/elicitation/request': null as unknown as McpServerElicitationRequestResponse,
+  'item/permissions/requestApproval': null as unknown as PermissionsRequestApprovalResponse,
+  'item/tool/call': null as unknown as DynamicToolCallResponse,
+  'account/chatgptAuthTokens/refresh': null as unknown as ChatgptAuthTokensRefreshResponse,
+  'attestation/generate': null as unknown as AttestationGenerateResponse,
+  applyPatchApproval: null as unknown as ApplyPatchApprovalResponse,
+  execCommandApproval: null as unknown as ExecCommandApprovalResponse,
+} satisfies Record<ServerRequestMethod, unknown>
 
-type ServerRequestResponseByMethod = {
-  'item/commandExecution/requestApproval': CommandExecutionRequestApprovalResponse
-  'item/fileChange/requestApproval': FileChangeRequestApprovalResponse
-  'item/tool/requestUserInput': ToolRequestUserInputResponse
-  'mcpServer/elicitation/request': McpServerElicitationRequestResponse
-  'item/permissions/requestApproval': PermissionsRequestApprovalResponse
-  'item/tool/call': DynamicToolCallResponse
-  'account/chatgptAuthTokens/refresh': ChatgptAuthTokensRefreshResponse
-  'attestation/generate': AttestationGenerateResponse
-  applyPatchApproval: ApplyPatchApprovalResponse
-  execCommandApproval: ExecCommandApprovalResponse
-}
+type ServerRequestResponseByMethod = typeof serverRequestResponseTypes
 
 export type CodexStdioServerRequestFor<Method extends ServerRequestMethod> = {
-  id: ServerRequestFor<Method>['id']
+  id: RequestId
   method: Method
-  params: ServerRequestFor<Method>['params']
+  params: unknown
   respond: (
     result: ServerRequestResponseByMethod[Method],
   ) => Promise<void>
@@ -160,18 +157,6 @@ type ParsedMessage = Record<string, unknown>
 
 const defaultRequestTimeoutMs = 15000
 const defaultCloseTimeoutMs = 1000
-const serverRequestMethods = new Set<ServerRequestMethod>([
-  'item/commandExecution/requestApproval',
-  'item/fileChange/requestApproval',
-  'item/tool/requestUserInput',
-  'mcpServer/elicitation/request',
-  'item/permissions/requestApproval',
-  'item/tool/call',
-  'account/chatgptAuthTokens/refresh',
-  'attestation/generate',
-  'applyPatchApproval',
-  'execCommandApproval',
-])
 
 export class CodexStdioTransport {
   private readonly options: Required<
@@ -224,6 +209,7 @@ export class CodexStdioTransport {
     const response = new Promise<unknown>((resolvePromise, reject) => {
       const timeout = setTimeout(() => {
         this.pendingClientResponses.delete(requestKey)
+        this.completedClientResponseIds.add(requestKey)
         reject(
           new CodexStdioRequestError(
             `${request.method} timed out waiting for a response`,
@@ -326,17 +312,11 @@ export class CodexStdioTransport {
         env: this.options.env,
         stdio: ['pipe', 'pipe', 'pipe'],
       })
-    } catch (error) {
-      const transportError = new CodexStdioTransportError(
+    } catch {
+      throw this.reportTransportLoss(
         'spawn_error',
         'Codex app-server process could not be spawned',
       )
-      this.failTransport(transportError, {
-        kind: 'transport_lost',
-        code: 'spawn_error',
-        message: transportError.message,
-      })
-      throw transportError
     }
 
     this.child = child
@@ -346,28 +326,17 @@ export class CodexStdioTransport {
     this.stdoutReader.on('line', (line) => this.handleStdoutLine(line))
 
     child.once('error', () => {
-      const error = new CodexStdioTransportError(
+      this.reportTransportLoss(
         'spawn_error',
         'Codex app-server process emitted an error',
       )
-      this.failTransport(error, {
-        kind: 'transport_lost',
-        code: 'spawn_error',
-        message: error.message,
-      })
     })
     child.once('exit', (exitCode, signal) => {
-      const error = new CodexStdioTransportError(
+      this.reportTransportLoss(
         'child_exit',
         'Codex app-server process exited',
+        { exitCode, signal },
       )
-      this.failTransport(error, {
-        kind: 'transport_lost',
-        code: 'child_exit',
-        message: error.message,
-        exitCode,
-        signal,
-      })
     })
     child.stdout.once('end', () => {
       setTimeout(() => {
@@ -380,38 +349,23 @@ export class CodexStdioTransport {
           return
         }
 
-        const error = new CodexStdioTransportError(
+        this.reportTransportLoss(
           'stdout_eof',
           'Codex app-server stdout ended',
         )
-        this.failTransport(error, {
-          kind: 'transport_lost',
-          code: 'stdout_eof',
-          message: error.message,
-        })
       }, 10)
     })
     child.stdout.once('error', () => {
-      const error = new CodexStdioTransportError(
+      this.reportTransportLoss(
         'stdout_error',
         'Codex app-server stdout failed',
       )
-      this.failTransport(error, {
-        kind: 'transport_lost',
-        code: 'stdout_error',
-        message: error.message,
-      })
     })
     child.stdin.on('error', () => {
-      const error = new CodexStdioTransportError(
+      this.reportTransportLoss(
         'stdin_error',
         'Codex app-server stdin failed',
       )
-      this.failTransport(error, {
-        kind: 'transport_lost',
-        code: 'stdin_error',
-        message: error.message,
-      })
     })
   }
 
@@ -435,15 +389,10 @@ export class CodexStdioTransport {
           return
         }
 
-        const error = new CodexStdioTransportError(
+        const error = this.reportTransportLoss(
           'stdin_error',
           'Codex app-server stdin write failed',
         )
-        this.failTransport(error, {
-          kind: 'transport_lost',
-          code: 'stdin_error',
-          message: error.message,
-        })
         reject(error)
       })
     })
@@ -505,12 +454,12 @@ export class CodexStdioTransport {
 
     if (hasId && hasMethod) {
       if (
-        serverRequestMethods.has(value.method as ServerRequestMethod) &&
-        !Object.hasOwn(value, 'params')
+        isServerRequestMethod(value.method as string) &&
+        (!Object.hasOwn(value, 'params') || !isRecord(value.params))
       ) {
         this.failProtocol(
           'invalid_message',
-          'Codex app-server emitted a Server request without params',
+          'Codex app-server emitted invalid Server request params',
         )
         return
       }
@@ -621,7 +570,7 @@ export class CodexStdioTransport {
       await respondOnce({ id, error })
     }
 
-    if (!serverRequestMethods.has(method as ServerRequestMethod)) {
+    if (!isServerRequestMethod(method)) {
       this.pushObservation({
         kind: 'unknown_server_request',
         request: {
@@ -668,6 +617,25 @@ export class CodexStdioTransport {
     }
 
     this.failConnection(error, observation)
+  }
+
+  private reportTransportLoss(
+    code: Exclude<CodexStdioTransportFailureCode, 'transport_closed'>,
+    message: string,
+    details: Pick<
+      Extract<CodexStdioObservation, { kind: 'transport_lost' }>,
+      'exitCode' | 'signal'
+    > = {},
+  ): CodexStdioTransportError {
+    const error = new CodexStdioTransportError(code, message)
+    this.failTransport(error, {
+      kind: 'transport_lost',
+      code,
+      message,
+      ...details,
+    })
+
+    return error
   }
 
   private failConnection(
@@ -760,6 +728,10 @@ function isRequestId(value: unknown): value is RequestId {
     typeof value === 'string' ||
     (typeof value === 'number' && Number.isFinite(value))
   )
+}
+
+function isServerRequestMethod(method: string): method is ServerRequestMethod {
+  return Object.hasOwn(serverRequestResponseTypes, method)
 }
 
 function identityKey(id: RequestId): string {
