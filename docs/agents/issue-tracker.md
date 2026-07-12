@@ -1,128 +1,101 @@
 # Issue Tracker
 
-Matt Pocock specs, implementation tickets, and Wayfinder artifacts for this repo live in local Markdown by default. GitHub Issues are used only when the user explicitly requests GitHub publication and confirms the target repository or request surface. Pull requests are also a limited request and triage surface.
+이 저장소의 Matt Pocock spec, implementation ticket, Wayfinder 산출물은 기본적으로 local Markdown으로 관리한다. GitHub Issues는 사용자가 GitHub 게시를 명시적으로 요청하고 대상 저장소 또는 request surface를 확인한 경우에만 사용한다. Pull Request도 제한적인 request·triage surface로만 취급한다.
 
-This repo is PR-based, but normal work happens on a `codex/...` branch rather than `main` or either `N180_하성욱` branch. The default name is the current camp day, `codex/w<week>d<day>`, such as `codex/w1d4`. An explicitly chosen `codex/<work>` name is still just a working branch; it does not introduce another required merge level.
+정상 작업은 `main`이나 두 `N180_하성욱` 브랜치가 아니라 `codex/...` working branch에서 진행한다. 기본 이름은 현재 캠프 일차를 나타내는 `codex/w<week>d<day>`이며, 명시적으로 고른 `codex/<work>`도 동일한 working branch다. 별도의 merge 계층을 뜻하지 않는다.
 
-| Role | GitHub repository and branch | Local Git ref | Purpose |
+## 저장소와 브랜치 mapping
+
+| 역할 | GitHub 저장소와 브랜치 | Local Git ref | 용도 |
 | --- | --- | --- | --- |
 | Working branch | `swh3467/hub`의 `codex/w1d4` 또는 `codex/<work>` | `codex/...`, 게시 후 `fork/codex/...` | 구현, 문서, spike 작업 |
 | Prototype evidence | `swh3467/hub`의 `prototype/<slug>` | `prototype/...`, 필요시 `fork/prototype/...` | prototype primary source 보존; `/camp-pr` 통합 대상 아님 |
 | Fork integration | `swh3467/hub`의 `N180_하성욱` | `fork/N180_하성욱` | 완료한 working branch를 모으는 개인 통합 브랜치 |
 | Upstream target | `connect-AIAgentChallenge-26-1/hub`의 `N180_하성욱` | `origin/N180_하성욱` | 캠프 제출을 받는 최종 브랜치 |
 
-For PRs, `base` is the destination branch that receives changes, and `head` is the source branch that contains the changes.
+PR에서 `base`는 변경을 받는 destination branch이고, `head`는 변경을 담은 source branch다.
 
-## Permissions
+## 권한
 
-Do not assume the current contributor can create labels, apply labels, push to the upstream repo, or administer the repository. If a GitHub write operation fails because of permissions, leave a clear PR/issue comment or local summary instead.
+현재 contributor가 label 생성·적용, upstream push, repository 관리 권한을 가진다고 가정하지 않는다. GitHub write가 권한 때문에 실패하면 명확한 PR/issue comment 또는 local summary를 남긴다.
 
-## Pull Requests
+## Pull Request 운영
 
-PRs as a request surface: yes, limited to external PRs or PRs explicitly named for triage.
+PR을 request surface로 사용하는 범위는 외부 PR 또는 사용자가 triage 대상으로 명시한 PR로 제한한다.
 
-Collaborator in-flight PRs for this participant are review artifacts, not triage input. For those PRs, connect the work to the source spec, implementation ticket, Wayfinder ticket, agent brief, spike report, or handoff document rather than forcing the camp submission template into the PR body.
+이 participant의 collaborator in-flight PR은 triage input이 아니라 review artifact다. 해당 작업은 source spec, implementation ticket, Wayfinder ticket, agent brief, spike report, handoff document 중 실제 정본에 연결한다. camp submission template을 일반 work PR body에 강제로 적용하지 않는다.
 
-PR 흐름은 두 단계뿐이다. `/camp-pr`가 두 단계를 모두 소유한다.
+PR 흐름은 아래 두 단계뿐이며 `/camp-pr`가 모두 소유한다.
 
-| Purpose | PR repository | Base | Head |
+| 목적 | PR 저장소 | Base | Head |
 | --- | --- | --- | --- |
 | Working branch integration | `swh3467/hub` | `N180_하성욱` | 현재 `codex/...` working branch |
 | Upstream camp submission | `connect-AIAgentChallenge-26-1/hub` | `N180_하성욱` | `swh3467:N180_하성욱` |
 
-Daily branch names keep the camp week/day identity. Camp labels are upstream submission metadata and do not create another branch level or need to be copied to fork-local integration PRs.
+Daily branch 이름은 캠프 week/day 정체성을 유지한다. Camp label은 upstream submission metadata이며 fork-local integration PR에 복사하거나 새 branch 계층으로 해석하지 않는다.
 
-Use `fork/N180_하성욱` as the source of truth for the fork integration branch and `origin/N180_하성욱` as the fetched upstream target. Do not calculate readiness from a stale local `N180_하성욱` checkout.
+Fork integration 상태는 `fork/N180_하성욱`, upstream target 상태는 fetch한 `origin/N180_하성욱`를 기준으로 판단한다. 오래된 local `N180_하성욱` checkout으로 readiness를 계산하지 않는다.
 
-When triaging PRs, read the PR body, comments, and diff. Use `gh pr view <number> --comments` and `gh pr diff <number>` when the CLI is available.
+PR을 triage할 때는 body, comments, diff를 함께 읽는다. CLI를 사용할 수 있으면 `gh pr view <number> --comments`와 `gh pr diff <number>`를 사용한다.
 
-The workflow `.github/workflows/auto-merge.yml` is template-provided but active in the repo. It attempts scheduled PR merges, skips PRs targeting `main`, skips PRs with the GitHub `review` label, defers changes-requested PRs, and closes conflicting PRs. Treat the GitHub `review` label as an auto-merge control, not as an agent triage state.
+`.github/workflows/auto-merge.yml`은 template에서 제공됐지만 이 저장소에서 활성 상태다. 이 workflow는 `main` 대상 PR을 건너뛰고, GitHub `review` label이 붙은 PR을 건너뛰며, changes-requested PR을 보류하고 conflict PR을 닫을 수 있다. GitHub `review` label은 auto-merge control이며 agent triage state가 아니다.
 
-The PR template in `.github/pull_request_template.md` is only for the upstream camp submission PR. `/camp-pr` writes and merges the fork-local integration PR with a concise work brief, then reports upstream readiness. It creates or updates the upstream submission PR only when the user explicitly asks to submit to camp, and merges that PR only on a separate explicit merge request. Matt Pocock skill templates remain spec, ticket, Wayfinder, agent brief, and review artifact shapes rather than GitHub PR templates.
+`.github/pull_request_template.md`는 upstream camp submission PR에만 사용한다. `/camp-pr`는 fork-local integration PR을 간결한 work brief로 작성·병합하고 upstream readiness를 보고한다. Upstream submission PR 생성·갱신은 사용자가 camp 제출을 명시적으로 요청한 경우에만 수행하고, 병합은 별도의 명시적 요청이 있을 때만 수행한다.
 
-## Local Matt artifacts
+## Local Matt artifact mapping
 
-The `docs/prds/` directory name is retained for compatibility with existing links. New files in it are semantically specs produced by `/to-spec`.
+`docs/prds/`라는 directory 이름은 기존 link 호환을 위해 유지한다. 새 파일의 의미는 `/to-spec`이 만드는 spec이다.
 
-| Artifact | Default location | Initial state | Next actor |
+| 산출물 | 기본 경로 | 생성 시 상태 | 다음 actor |
 | --- | --- | --- | --- |
-| Spec from `/to-spec` | `docs/prds/YYYY-MM-DD-<slug>.md` | `draft` or `ready-for-ticketing` | `/grill-with-docs`, `/wayfinder`, or `/to-tickets` |
-| Implementation ticket from `/to-tickets` | `docs/issues/<spec-slug>/NNN-<slug>.md` | `ready-for-agent` | `/implement` |
+| Spec | `docs/prds/YYYY-MM-DD-<slug>.md` | `draft` 또는 `ready-for-ticketing` | `/grill-with-docs`, `/wayfinder`, `/to-tickets`, 또는 user |
+| Implementation ticket | `docs/issues/<spec-slug>/NNN-<slug>.md` | `ready-for-agent` | `/implement` |
 | Wayfinder map | `docs/wayfinding/<effort>/map.md` | `active` | `/wayfinder` |
 | Wayfinder decision ticket | `docs/wayfinding/<effort>/tickets/NNN-<slug>.md` | `open` | `/wayfinder` |
-| Wayfinder evidence asset | `docs/wayfinding/<effort>/assets/<name>` | not applicable | linked from the owning ticket |
+| Wayfinder evidence asset | `docs/wayfinding/<effort>/assets/<name>` | 해당 없음 | owning Wayfinder ticket에서 link |
 
-Local Matt artifacts do not create upstream camp-visible GitHub noise and do not use `.github/pull_request_template.md`.
+이 local 산출물은 upstream camp-visible GitHub noise를 만들지 않으며 `.github/pull_request_template.md`를 사용하지 않는다.
 
-## Reference resolution
+## Local reference 표현
 
-- A local Markdown path means that exact local artifact.
-- A URL means that exact remote artifact.
-- A bare number is never assumed to be a GitHub issue or PR unless the user explicitly names GitHub and the target repository or request surface.
-- Local blocking references use exact relative paths and readable titles, not bare numbers alone.
+- Local Markdown path는 그 정확한 local artifact를 뜻한다.
+- URL은 그 정확한 remote artifact를 뜻한다.
+- Bare number는 사용자가 GitHub와 대상 repository 또는 request surface를 명시하지 않는 한 GitHub issue나 PR로 해석하지 않는다.
+- Local blocking reference는 bare number만 쓰지 않고 정확한 relative path와 읽을 수 있는 title을 함께 쓴다.
+- Implementation spec·ticket의 state는 `## Agent triage` 아래 `State:`에 기록한다.
+- Wayfinder map·ticket의 metadata 위치와 형태는 `.agents/skills/wayfinder/SKILL.md`를 따른다.
 
-## Implementation frontier
+## Lifecycle 소유권
 
-An implementation ticket is on the frontier when:
+이 문서는 repository-specific path, local reference 표현, remote/branch mapping만 소유한다. Generic lifecycle을 중복 정의하지 않는다.
 
-1. its `State` is `ready-for-agent`,
-2. every ticket under `Blocked By` has `State: completed`,
-3. no other session has changed it to `claimed`.
+| 계약 | 정본 skill |
+| --- | --- |
+| Spec readiness와 Wayfinder map에서 spec으로 넘어가는 규칙 | `.agents/skills/to-spec/SKILL.md` |
+| Ticket graph, blocking edge, initial frontier와 실행 gate | `.agents/skills/to-tickets/SKILL.md` |
+| Wayfinder map·ticket state, claim, resolve, completion 조건 | `.agents/skills/wayfinder/SKILL.md` |
+| Implementation claim, verification, ticket closeout와 final commit | `.agents/skills/implement/SKILL.md` |
 
-`/implement` claims one ticket before code changes, completes that ticket, and stops. The next frontier ticket starts in a fresh context.
+이 문서와 skill의 generic lifecycle 설명이 충돌하면 위 정본 skill을 따른다. Tracker-specific path나 GitHub repository mapping이 충돌하면 이 문서를 따른다.
 
-## Wayfinding operations
+## Local Matt artifact closeout
 
-`/wayfinder` uses local files as a tracker-specific map and child-ticket model.
+별도의 completion document를 만들지 않고 기존 local artifact를 갱신한다.
 
-- **Map**: `docs/wayfinding/<effort>/map.md`.
-- **Child ticket**: `docs/wayfinding/<effort>/tickets/NNN-<slug>.md`.
-- **Asset**: `docs/wayfinding/<effort>/assets/<name>`.
-- **Type**: `research`, `prototype`, `grilling`, or `task`.
-- **Ticket states**: `open`, `claimed`, `resolved`, `out-of-scope`.
-- **Map states**: `active`, `ready-for-spec`, `complete`.
-- **Blocking**: an exact path list under `Blocked by`; a ticket is unblocked when every referenced ticket is `resolved`.
-- **Frontier**: `open`, unblocked tickets ordered by filename number.
-- **Claim**: set `State: claimed` and save before work.
-- **Resolve**: append the answer and evidence links under `## Answer`, set `State: resolved`, then add only a one-line gist and link to the map's `Decisions so far`.
-- **Out of scope**: set `State: out-of-scope` and add a linked explanation to the map's `Out of scope`, not `Decisions so far`.
+- Implementation ticket closeout은 `/implement`가 같은 ticket에 acceptance result, verification, commit 정보를 기록하고 final closeout commit까지 만든다.
+- Spec에 속한 모든 implementation ticket이 완료되면 별도 bookkeeping pass에서 parent spec을 `State: completed`, `Next actor: none`으로 바꾸고 완료된 ticket set을 link할 수 있다.
+- Wayfinder map의 상태 전이와 resulting spec link는 `/wayfinder`와 `/to-spec`의 정본 규칙을 따른다.
 
-Wayfinder artifacts are decision and investigation records, not implementation work. They never use `ready-for-agent`. Work at most one Wayfinder ticket per session. Local Markdown Wayfinder work is sequential by default to avoid duplicate claims and lost map updates.
+완료 기록은 무엇을 구현하거나 결정했는지 보존한다. 현재 동작의 source of truth는 primary architecture document와 current code/tests다.
 
-When no open tickets or in-scope fog remain, set the map to `ready-for-spec` and report the exact next command:
+## Skill이 “publish to the issue tracker”라고 할 때
 
-```text
-/to-spec docs/wayfinding/<effort>/map.md
-```
+`/to-spec`, `/to-tickets`, `/wayfinder`는 위 mapping에 따라 local Markdown을 작성한다. 사용자가 GitHub 게시를 명시적으로 요청하고 대상 repository 또는 request surface를 확인하지 않은 경우 GitHub Issues를 만들지 않는다.
 
-`/to-spec` reads the linked resolved answers, writes the implementation-ready spec, links it from the map, and sets the map to `complete`.
+다른 skill의 내부 planning artifact도 local Markdown을 우선한다. GitHub write가 명시적으로 요청됐지만 불가능하면 `docs/agents/triage-labels.md`의 marker 형식을 사용해 관련 PR body, PR comment 또는 local summary에 남긴다.
 
-## Closing local Matt artifacts
+## Skill이 “fetch the relevant ticket”이라고 할 때
 
-Close existing local artifacts instead of creating a separate completion document.
+Internal work PR에서는 PR body보다 연결된 local spec, implementation ticket, Wayfinder artifact, agent brief, spike report, handoff document 또는 다른 owning source를 먼저 읽는다.
 
-For an implementation ticket:
-
-1. Mark verified acceptance criteria as checked.
-2. Set `State: completed` and `Next actor: none`.
-3. Add a concise `Result` with relevant commits.
-4. Record commands and outcomes under `Verification`.
-5. Update the primary architecture note or package README when the live implementation map changed.
-
-After every ticket in a spec is complete, close the parent spec in a separate bookkeeping pass by setting `State: completed`, `Next actor: none`, and linking the completed ticket set. Keep the original problem statement and decisions as historical context.
-
-For Wayfinder, the resolved ticket answer remains the detailed decision source. The map becomes `complete` only after the resulting spec or destination artifact is linked.
-
-Completion evidence records what shipped or was decided, while primary architecture documents and current code/tests remain the source of truth for live behavior.
-
-## When a skill says "publish to the issue tracker"
-
-For `/to-spec`, `/to-tickets`, and `/wayfinder`, publish local Markdown as described above. Do not create GitHub Issues unless the user explicitly asks for GitHub publication and confirms the target repository or request surface.
-
-For other skills, prefer local Markdown when the artifact is an internal Matt planning artifact. If a GitHub write is explicitly requested but unavailable, publish the content in the relevant PR body or PR comment using the marker format in `docs/agents/triage-labels.md`.
-
-## When a skill says "fetch the relevant ticket"
-
-For internal work PRs, prefer the linked local spec, implementation ticket, Wayfinder artifact, agent brief, spike report, handoff document, or other owning source before treating the PR body as the source of truth.
-
-When the user explicitly names GitHub and passes a bare number, remember that GitHub shares one number space across issues and PRs. Try the named surface first and inspect comments and diff as appropriate.
+사용자가 GitHub를 명시하고 bare number를 전달한 경우 GitHub issue와 PR이 같은 number space를 공유함을 기억한다. 사용자가 지정한 surface를 먼저 조회하고 필요한 comments와 diff를 함께 확인한다.
