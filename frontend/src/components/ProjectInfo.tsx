@@ -1,7 +1,19 @@
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { BookOpen, ListTodo, PenLine, Notebook, HelpCircle, Scale, Link2, ArrowRight } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const MISSIONS = [
+type MissionKey = "question" | "rebut" | "connect" | "express";
+
+type Mission = {
+  key: MissionKey;
+  label: string;
+  color: string;
+  icon: LucideIcon;
+  prompt: string;
+};
+
+const MISSIONS: Mission[] = [
   {
     key: "question",
     label: "질문",
@@ -32,7 +44,12 @@ const MISSIONS = [
   },
 ];
 
-const ARTICLE_SEGMENTS = [
+type ArticleSegment = {
+  text: string;
+  mission?: MissionKey;
+};
+
+const ARTICLE_SEGMENTS: ArticleSegment[] = [
   { text: "틱톡과 릴스 같은 숏폼 콘텐츠는 " },
   { text: "15초 안에 결론부터 보여주도록 설계되어 있다.", mission: "question" },
   { text: " 덕분에 우리는 어떤 정보든 빠르게 훑을 수 있게 됐지만, " },
@@ -70,7 +87,14 @@ const LOOP_STEPS = [
   { icon: Notebook, title: "사고 log", desc: "쌓인 생각을 다시 보기" },
 ];
 
-const LOG_ENTRIES = [
+type LogEntry = {
+  date: string;
+  source: string;
+  mission: MissionKey;
+  note: string;
+};
+
+const LOG_ENTRIES: LogEntry[] = [
   {
     date: "07.04",
     source: "AI 요약이 놓치는 것들",
@@ -91,12 +115,16 @@ const LOG_ENTRIES = [
   },
 ];
 
-function missionOf(key) {
-  return MISSIONS.find((m) => m.key === key);
+function missionOf(key: MissionKey): Mission {
+  const mission = MISSIONS.find((m) => m.key === key);
+  if (!mission) {
+    throw new Error(`정의되지 않은 미션 key입니다: ${key}`);
+  }
+  return mission;
 }
 
 export default function ServiceIntro() {
-  const [activeMission, setActiveMission] = useState("question");
+  const [activeMission, setActiveMission] = useState<MissionKey>("question");
   const active = missionOf(activeMission);
 
   return (
@@ -470,27 +498,27 @@ export default function ServiceIntro() {
             <div className="tlx-card">
               <div className="tlx-card-label">서비스 미리보기 · 오늘의 글 — 하이라이트에 마우스를 올려보세요</div>
               <p className="tlx-article">
-                {ARTICLE_SEGMENTS.map((seg, i) =>
-                  seg.mission ? (
+                {ARTICLE_SEGMENTS.map(({ text, mission }, i) =>
+                  mission ? (
                     <span
                       key={i}
                       tabIndex={0}
                       role="button"
-                      className={`tlx-mark${activeMission === seg.mission ? " is-active" : ""}`}
-                      style={{ "--mark-color": missionOf(seg.mission).color }}
-                      onMouseEnter={() => setActiveMission(seg.mission)}
-                      onFocus={() => setActiveMission(seg.mission)}
-                      onClick={() => setActiveMission(seg.mission)}
+                      className={`tlx-mark${activeMission === mission ? " is-active" : ""}`}
+                      style={{ "--mark-color": missionOf(mission).color } as CSSProperties}
+                      onMouseEnter={() => setActiveMission(mission)}
+                      onFocus={() => setActiveMission(mission)}
+                      onClick={() => setActiveMission(mission)}
                     >
-                      {seg.text}
+                      {text}
                     </span>
                   ) : (
-                    <span key={i}>{seg.text}</span>
+                    <span key={i}>{text}</span>
                   )
                 )}
               </p>
               <div className="tlx-note">
-                <div className="tlx-note-icon" style={{ "--note-color": active.color }}>
+                <div className="tlx-note-icon" style={{ "--note-color": active.color } as CSSProperties}>
                   <active.icon />
                 </div>
                 <div className="tlx-note-body">
