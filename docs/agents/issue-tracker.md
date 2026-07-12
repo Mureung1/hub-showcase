@@ -71,10 +71,10 @@ PR을 triage할 때는 body, comments, diff를 함께 읽는다. CLI를 사용�
 
 | 계약 | 정본 skill |
 | --- | --- |
-| Spec readiness와 Wayfinder map에서 spec으로 넘어가는 규칙 | `.agents/skills/to-spec/SKILL.md` |
+| Spec readiness와 spec 작성 후 source Wayfinder map reconciliation | `.agents/skills/to-spec/SKILL.md` |
 | Ticket graph, blocking edge, initial frontier와 실행 gate | `.agents/skills/to-tickets/SKILL.md` |
-| Wayfinder map·ticket state, claim, resolve, completion 조건 | `.agents/skills/wayfinder/SKILL.md` |
-| Implementation claim, verification, ticket closeout와 final commit | `.agents/skills/implement/SKILL.md` |
+| Wayfinder state vocabulary, map의 `ready-for-spec` 판정, ticket claim·resolve | `.agents/skills/wayfinder/SKILL.md` |
+| Implementation claim, verification, ticket·parent spec closeout와 final commit | `.agents/skills/implement/SKILL.md` |
 
 이 문서와 skill의 generic lifecycle 설명이 충돌하면 위 정본 skill을 따른다. Tracker-specific path나 GitHub repository mapping이 충돌하면 이 문서를 따른다.
 
@@ -82,8 +82,7 @@ PR을 triage할 때는 body, comments, diff를 함께 읽는다. CLI를 사용�
 
 별도의 completion document를 만들지 않고 기존 local artifact를 갱신한다.
 
-- Implementation ticket closeout은 `/implement`가 같은 ticket에 acceptance result, verification, commit 정보를 기록하고 final closeout commit까지 만든다.
-- Spec에 속한 모든 implementation ticket이 완료되면 별도 bookkeeping pass에서 parent spec을 `State: completed`, `Next actor: none`으로 바꾸고 완료된 ticket set을 link할 수 있다.
+- Implementation ticket과 parent spec closeout은 `/implement`가 수행한다. 상세 gate와 기록 형식은 해당 skill을 따른다.
 - Wayfinder map의 상태 전이와 resulting spec link는 `/wayfinder`와 `/to-spec`의 정본 규칙을 따른다.
 
 완료 기록은 무엇을 구현하거나 결정했는지 보존한다. 현재 동작의 source of truth는 primary architecture document와 current code/tests다.

@@ -38,7 +38,7 @@ Use ticket titles in human-facing prose. A filename or number may identify a pat
 
 | Artifact | States | Meaning |
 | --- | --- | --- |
-| Map | `active` → `ready-for-spec` → `complete` | Investigation is in progress; the route is clear enough for `/to-spec`; the resulting spec is linked. |
+| Map | `active` → `ready-for-spec` → `complete`, or `ready-for-spec` → `active` | `/wayfinder` decides when the route is ready; `/to-spec` completes the map for a `ready-for-ticketing` spec or reopens it when a draft exposes blocking fog. |
 | Ticket | `open` → `claimed` → `resolved` | Available or blocked; owned by the current session; answered and closed. |
 | Ticket | `out-of-scope` | Closed because it lies beyond the destination. |
 
@@ -77,7 +77,7 @@ Wayfinder tickets are **decision and investigation artifacts**. Their state voca
 
 ## Resulting spec
 
-<Added by /to-spec when the map becomes complete.>
+<Added by /to-spec. A ready-for-ticketing spec is the final result; a draft remains linked as evidence while the map is active.>
 ```
 
 Open tickets are discovered from the `tickets/` directory rather than duplicated in the map.
@@ -169,4 +169,4 @@ When no `open` or `claimed` tickets remain and `Not yet specified` contains no i
    ```
 
 3. Do not write a parallel ad-hoc spec from the Wayfinder session.
-4. `/to-spec` reads the linked resolved answers, writes the spec, adds it under `Resulting spec`, and changes the map to `complete`.
+4. `/to-spec` reads the linked resolved answers, writes and links the spec under `Resulting spec`, then applies the readiness-based source-map reconciliation defined by that skill.

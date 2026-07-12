@@ -85,7 +85,7 @@ Matt Pocock skills use generic GitHub terms such as issue tracker, PR, label, pu
 | Generic skill instruction | Repo-specific rule |
 | --- | --- |
 | Publish a spec or implementation ticket to the issue tracker | `/to-spec` writes local Markdown under `docs/prds/`; `/to-tickets` writes one local Markdown file per ticket under `docs/issues/`. Do not create GitHub Issues unless the user explicitly asks and confirms the target repo/surface. |
-| Create or work a Wayfinder map | Use `docs/wayfinding/<effort>/`. Wayfinder tickets are decision/investigation artifacts with their own state model and never use implementation `ready-for-agent`. Work at most one Wayfinder ticket per session. |
+| Create or work a Wayfinder map | Store local artifacts under `docs/wayfinding/<effort>/` and follow `.agents/skills/wayfinder/SKILL.md` for lifecycle and ticket semantics. |
 | Apply or read a triage label | Use the body/comment marker state in `docs/agents/triage-labels.md`; do not assume GitHub label permissions. |
 | Treat PRs as request or triage surface | Only external PRs, or PRs explicitly named by the user, are triage input. Collaborator work PRs and fork integration PRs are not triage queues. |
 | Commit to the current branch | Use the current `codex/w<week>d<day>` branch or another explicitly chosen `codex/<work>` branch. Keep `prototype/<slug>` evidence branches outside the `/camp-pr` integration path. Do not commit normal work on `N180_하성욱` or `main`. |
