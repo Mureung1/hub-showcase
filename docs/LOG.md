@@ -613,3 +613,12 @@
 - R2 무참여자 벤치마크 실행 킷 작성(`harness/tasks/2026-07-12-competitive-value-validation/r2-execution-kit.md`): 실행 전 조건, 답냥이 고정 12문구, C1~C4 A/B 복붙용 완성 프롬프트 8개, run 기록표 골격 — R1 통과 즉시 준비 지연 없이 실행 가능
 ### 남은 작업 (외부 의존)
 - CI 설치 승인, Vercel 계정 연결(T17 2~7번), T16 제3자 1인, T25/R1 평가자 2인
+
+## 2026-07-12 (CI 설치 승인·활성화 확인)
+### 처리한 TODO
+- 사용자 승인 후 `.github/workflows/ci.yml` 설치(push/PR 트리거, concurrency 취소, `.nvmrc` 기반 Node, `npm ci → lint → build → test`)
+- 쌓인 변경을 6개 논리 단위로 분리 커밋(T14 / FSD 분리 / 시드 / Node·CI / R2 킷 / LOG) 후 푸시 — 각 커밋 시점 테스트·빌드 독립 통과
+- CI 첫 실행 성공 확인(run 29193570731, verify 37s) — CICD.md 상태 갱신
+### 남은 작업
+- T17 잔여: required status check 지정·auto-merge 상호작용 확인(GitHub 설정), Vercel 계정 연결·프리뷰 배포
+- 외부: T16 제3자 1인, T25/R1 평가자 2인 (R2 킷 준비 완료)

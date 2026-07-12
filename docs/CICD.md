@@ -1,6 +1,6 @@
 # CI/CD 파이프라인
 
-> **상태: 설계 확정·CI 미설치 (2026-07-11 확인).** `.github/workflows/ci.yml`은 2026-07-08 추가됐다가 PR 범위에서 제외되어 현재 저장소에는 없다. 아래 CI 구성은 도입 목표이며 원격 게이트는 아직 동작하지 않는다. CD(Vercel)는 설계만 확정했고 실행은 CHECKLIST T17에서 한다.
+> **상태: CI 설치·첫 실행 성공 확인 (2026-07-12).** 사용자 승인 후 `.github/workflows/ci.yml`을 추가했고 push 시 `npm ci → lint → build(tsc 포함) → test`가 GitHub Actions에서 성공했다(run 29193570731, verify 37s). required status check 지정과 auto-merge 상호작용 확인, CD(Vercel) 연결은 CHECKLIST T17 잔여 항목이다.
 
 ## 전체 흐름
 
