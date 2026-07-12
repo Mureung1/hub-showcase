@@ -14,6 +14,14 @@ export {
   type CodexRuntimeStatus,
 } from './status.js'
 export {
+  prepareProductRuntimeLayout,
+  ProductRuntimeLayoutError,
+  type ProductRuntimeLayout,
+  type ProductRuntimeLayoutFailureCode,
+  type ProductRuntimeLayoutInput,
+  type ProductRuntimeRootName,
+} from './product-runtime-layout.js'
+export {
   CodexRawClient,
   ensureCodexRuntimeHome,
   resolveDefaultCodexRuntimeHome,
