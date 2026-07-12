@@ -8,8 +8,9 @@
 | --- | --- | --- |
 | `docs/product/` | 제품 문제정의, 사용자, MVP 범위, UX 원칙과 제품 계획 | `ay-ple-product-brief.md` |
 | `docs/architecture/` | 오래 유지될 기술 구조와 시스템 경계 | `codex-runtime-isolation.md` |
-| `docs/prds/` | Matt Pocock `/to-prd`가 생성하는 local PRD artifact | `2026-07-09-runtime-harness.md` |
-| `docs/issues/` | Matt Pocock `/to-issues`가 생성하는 local issue brief 묶음 | `runtime-harness/001-runtime-core.md` |
+| `docs/prds/` | Matt Pocock `/to-spec`이 생성하는 local spec artifact. 기존 링크 호환을 위해 디렉터리 이름은 유지한다. | `2026-07-09-runtime-harness.md` |
+| `docs/issues/` | Matt Pocock `/to-tickets`가 생성하는 local implementation ticket 묶음 | `runtime-harness/001-runtime-core.md` |
+| `docs/wayfinding/<effort>/` | Matt Pocock `/wayfinder`의 map, decision ticket과 evidence asset | `runtime-client/map.md` |
 | `docs/spikes/<slug>/` | spike 계획, 질문, 성공 기준, handoff 가능한 조사 기록 | `codex-runtime-ownership/plan.md` |
 | `docs/adr/` | 되돌리기 어려운 기술/제품 결정 | `0001-use-file-auth-store-for-runtime-spike.md` |
 | `docs/agents/` | agent 작업 규칙, issue tracker, triage, branch/PR 운영 | `issue-tracker.md` |
@@ -33,6 +34,7 @@
 │   ├── architecture/
 │   ├── prds/
 │   ├── issues/
+│   ├── wayfinding/
 │   ├── spikes/
 │   ├── adr/
 │   ├── archive/
@@ -134,7 +136,7 @@ Root companion docs:
 | package README | 해당 package의 현재 책임, API·설정·명령과 제약 | 시스템 전체 topology, 미래 제품 계약과 우선순위 |
 | Development Backlog | 작업 순서, 상태와 완료 조건 | 도메인·아키텍처 정의의 독립적인 정본 |
 | Spike | 질문, 성공 기준, 관찰 결과와 저수준 근거 | 현재 제품 우선순위와 채택된 결정 |
-| PRD·issue brief | 특정 구현 slice의 범위와 acceptance criteria | 완료 이후의 현재 아키텍처와 제품 source of truth |
+| Spec·implementation ticket·Wayfinder artifact | 특정 구현 slice의 범위, 기술 contract, acceptance criteria, 또는 구현 전 결정 탐색 | 완료 이후의 현재 아키텍처와 제품 source of truth |
 
 ## 정본 위계
 

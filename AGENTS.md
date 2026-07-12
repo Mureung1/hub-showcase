@@ -28,7 +28,7 @@ Before creating, moving, or materially editing a formal project document, read `
 
 Follow the normative ownership table in `docs/README.md`. Change a term, decision, mapping, implementation fact, or priority in its owning document first; consumer documents should state only the consequence needed for their audience and link to that owner instead of copying field lists, rationale, or backlog state. Keep current implementation, adopted target, and deferred work explicitly separate.
 
-When writing Markdown planning, technical, or product documents, prefer tables for structured information and bullet points for scannable lists. Use prose for context and decisions, but model comparable items, options, tradeoffs, risks, and open questions in tables when practical. Update the root `README.md` whenever adding or moving a formal project document under `docs/`. Local Matt Pocock artifacts under `docs/prds/` and `docs/issues/` are an exception and should not be indexed in the root `README.md`.
+When writing Markdown planning, technical, or product documents, prefer tables for structured information and bullet points for scannable lists. Use prose for context and decisions, but model comparable items, options, tradeoffs, risks, and open questions in tables when practical. Update the root `README.md` whenever adding or moving a formal project document under `docs/`. Local Matt Pocock artifacts under `docs/prds/`, `docs/issues/`, and `docs/wayfinding/` are an exception and should not be indexed individually in the root `README.md`.
 
 프로젝트 문서의 문장 구조와 일반 설명어는 한국어로 작성한다. 프로젝트에서 이미 정한 도메인 용어와 프로토콜 메서드·타입, 패키지명, 파일 경로, 코드 식별자 같은 고유 식별자는 원문 표기를 유지한다.
 
@@ -76,7 +76,7 @@ Keep secrets in local `.env` files and out of git. The server reads `PORT` throu
 
 ### Issue tracker
 
-Matt Pocock PRDs and implementation issue briefs are tracked as local Markdown by default. GitHub Issues are used only when the user explicitly requests GitHub publication and confirms the target repo/surface. External PRs, or PRs explicitly named for triage, can be treated as a request surface; collaborator in-flight PRs are review artifacts, and fork integration PRs are created through `/camp-pr`. See `docs/agents/issue-tracker.md`.
+Matt Pocock specs, implementation tickets, and Wayfinder maps/tickets are tracked as local Markdown by default. The compatibility paths remain `docs/prds/` for specs and `docs/issues/` for implementation tickets; Wayfinder artifacts live under `docs/wayfinding/`. GitHub Issues are used only when the user explicitly requests GitHub publication and confirms the target repo/surface. External PRs, or PRs explicitly named for triage, can be treated as a request surface; collaborator in-flight PRs are review artifacts, and fork integration PRs are created through `/camp-pr`. See `docs/agents/issue-tracker.md`.
 
 ### Matt skill operation alerts
 
@@ -84,12 +84,13 @@ Matt Pocock skills use generic GitHub terms such as issue tracker, PR, label, pu
 
 | Generic skill instruction | Repo-specific rule |
 | --- | --- |
-| Publish a PRD or issue to the issue tracker | For `/to-prd` and `/to-issues`, write local Markdown under `docs/prds/` and `docs/issues/`. Do not create GitHub Issues unless the user explicitly asks and confirms the target repo/surface. |
+| Publish a spec or implementation ticket to the issue tracker | `/to-spec` writes local Markdown under `docs/prds/`; `/to-tickets` writes one local Markdown file per ticket under `docs/issues/`. Do not create GitHub Issues unless the user explicitly asks and confirms the target repo/surface. |
+| Create or work a Wayfinder map | Use `docs/wayfinding/<effort>/`. Wayfinder tickets are decision/investigation artifacts with their own state model and never use implementation `ready-for-agent`. Work at most one Wayfinder ticket per session. |
 | Apply or read a triage label | Use the body/comment marker state in `docs/agents/triage-labels.md`; do not assume GitHub label permissions. |
 | Treat PRs as request or triage surface | Only external PRs, or PRs explicitly named by the user, are triage input. Collaborator work PRs and fork integration PRs are not triage queues. |
-| Commit to the current branch | Use the current `codex/w<week>d<day>` branch or another explicitly chosen `codex/<work>` branch. Do not commit normal work on `N180_하성욱` or `main`. |
-| Use a GitHub PR template | Delegate PRs involving `N180_하성욱` to `/camp-pr`. Matt skill templates remain their own PRD, issue, agent brief, or review artifact shapes. |
-| Run `/setup-matt-pocock-skills` | This repo is already configured. Do not regenerate `docs/agents/**` unless the user explicitly asks; preserve the working-branch, `/camp-pr`, marker-based triage, and fork-based publication rules. |
+| Commit to the current branch | Use the current `codex/w<week>d<day>` branch or another explicitly chosen `codex/<work>` branch. Keep `prototype/<slug>` evidence branches outside the `/camp-pr` integration path. Do not commit normal work on `N180_하성욱` or `main`. |
+| Use a GitHub PR template | Delegate PRs involving `N180_하성욱` to `/camp-pr`. Matt skill templates remain spec, ticket, Wayfinder, agent brief, or review artifact shapes. |
+| Run `/setup-matt-pocock-skills` | This repo is already configured. Do not regenerate `docs/agents/**` unless the user explicitly asks; preserve the local artifact paths, working-branch rules, `/camp-pr`, marker-based triage, and fork-based publication rules. |
 
 ### Triage labels
 

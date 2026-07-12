@@ -5,7 +5,7 @@ description: Integrate a codex working branch into the participant fork's N180_�
 
 # Camp PR
 
-Move changes through one path:
+Move production changes through one path:
 
 ```text
 swh3467/hub의 codex/... working branch
@@ -21,7 +21,9 @@ Use `origin` and `fork` only as local Git remote names:
 | Fork integration | `swh3467/hub`의 `N180_하성욱` | `fork/N180_하성욱` |
 | Upstream target | `connect-AIAgentChallenge-26-1/hub`의 `N180_하성욱` | `origin/N180_하성욱` |
 
-Do not combine repository owners with remote names. For example, use `swh3467/hub` plus branch `N180_하성욱` when describing GitHub, or `fork/N180_하성욱` when describing a local remote-tracking ref. Do not write forms such as `swh3467/fork/N180_하성욱`.
+Do not combine repository owners with remote names. Use `swh3467/hub` plus branch `N180_하성욱` when describing GitHub, or `fork/N180_하성욱` when describing a local remote-tracking ref.
+
+Prototype evidence branches such as `prototype/<slug>` are primary-source archives, not production working branches. Never select or merge them through this flow unless the user explicitly reclassifies their contents as production work on a `codex/...` branch.
 
 ## Authorization
 
@@ -34,7 +36,7 @@ Do not combine repository owners with remote names. For example, use `swh3467/hu
 
 ### 1. Ground the refs
 
-Read `AGENTS.md`. Read `docs/agents/issue-tracker.md` only when linked Matt artifacts or PR triage rules matter. Read `.github/pull_request_template.md` only for an upstream submission.
+Read `AGENTS.md`. Read `docs/agents/issue-tracker.md` when linked Matt artifacts or PR triage rules matter. Read `.github/pull_request_template.md` only for an upstream submission.
 
 Fetch both remotes before comparisons or PR operations. Treat `fork/N180_하성욱` as the fork integration source of truth and `origin/N180_하성욱` as the upstream target.
 
@@ -42,7 +44,7 @@ Select the source branch as follows:
 
 1. Use the user-named `codex/...` branch when provided.
 2. Otherwise use the current branch when it matches `codex/w<week>d<day>` or another explicit `codex/<work>` name.
-3. Stop on ambiguity, a detached HEAD, `main`, or `N180_하성욱`; do not invent another branch layer.
+3. Stop on ambiguity, a detached HEAD, `main`, either `N180_하성욱`, or a `prototype/...` evidence branch; do not invent another branch layer.
 
 Stop before PR work when the tracked working tree is dirty, either remote is missing, the source branch is unavailable, or `fork/N180_하성욱` cannot be fetched.
 
@@ -52,7 +54,7 @@ Inspect the source branch against the fetched integration branch:
 
 - `git log --oneline fork/N180_하성욱..<source-branch>`
 - `git diff --name-status fork/N180_하성욱...<source-branch>`
-- Relevant PRDs, issue briefs, ADRs, spike reports, handoffs, and verification results referenced by the commits or changed files
+- Relevant specs, implementation tickets, Wayfinder decisions, ADRs, spike reports, handoffs, and verification results referenced by the commits or changed files
 
 If the source branch is already contained in `fork/N180_하성욱`, skip PR creation and continue to readiness reporting.
 
