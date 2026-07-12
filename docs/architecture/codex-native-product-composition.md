@@ -30,16 +30,9 @@ raw `threadId`, `turnId`, `itemId`, `requestId`와 protocol message는 Codex 통
 
 ## ModelingRecipe, ModelingInvocation과 ModelingRun
 
-하나의 ModelingRecipe는 다음 네 요소를 묶는다.
+ModelingRecipe의 정확한 정의는 [CONTEXT.md](../../CONTEXT.md)가 소유한다. 이 문서는 위 경계 표처럼 Recipe의 각 요소가 native Codex input으로 번역되는 방식만 설명한다.
 
-| 요소 | 역할 |
-| --- | --- |
-| Skill | Codex가 따라야 할 작업 지침과 도구 사용 방식 |
-| prompt template | 학생이 선택한 작업을 구체적인 요청으로 표현하는 틀 |
-| argument contract | 과목, 기간, 처리 옵션처럼 template에 넣을 값과 검증 규칙 |
-| output schema | StatePatch 후보로 변환할 구조화 결과 계약 |
-
-학생-facing action은 Recipe를 선택하고 입력을 모은다. 앱은 이 값들을 결합해 일회성 ModelingInvocation을 만든 뒤 Codex 통합에 전달한다.
+학생에게 보이는 action은 Recipe를 선택하고 입력을 모은다. 앱은 이 값들을 결합해 일회성 ModelingInvocation을 만든 뒤 Codex 통합에 전달한다.
 
 ```text
 ModelingRecipe version
@@ -54,7 +47,7 @@ ModelingRecipe version
 → StatePatch 후보
 ```
 
-ModelingInvocation은 영속 receipt가 아니다. 앱이 실행 시도를 등록할 때 ModelingRun을 먼저 만들고, native 호출에서 얻은 correlation과 terminal 결과를 여기에 연결한다. Retry는 같은 Invocation 입력을 다시 사용하더라도 새 Run을 만든다. Run은 Recipe version, 검증된 제품 입력 참조, 상태, opaque execution reference와 결과 참조를 연결한다. raw thread/turn identifier는 Codex 통합 내부에서만 해석하며 렌더링한 전체 prompt나 raw protocol stream을 제품 감사 기록으로 복사하지 않는다.
+ModelingInvocation은 영속 receipt가 아니다. 앱이 실행 시도를 등록할 때 ModelingRun을 먼저 만들고, native 호출에서 얻은 correlation과 terminal 결과를 여기에 연결한다. Retry는 같은 Invocation 입력을 다시 사용하더라도 새 Run을 만든다. Run의 기록 계약은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md)이 소유한다. raw thread/turn identifier는 Codex 통합 내부에서만 해석하며 렌더링한 전체 prompt나 raw protocol stream을 제품 감사 기록으로 복사하지 않는다.
 
 ## Thread 사용 경계
 

@@ -104,10 +104,10 @@ Runtime Inspector는 학생용 제품이 아니라, 위 흐름이 안정된 Code
 | 순서 | ID | Task | 유형 | 우선순위 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | W2-01 | Codex-native 제품 경계 문서 정렬 | 문서·설계 | P0 | 문서가 `ModelingRecipe → ModelingInvocation → ModelingRun`의 같은 의미를 사용하고, 결정·현재 구현·계획을 각 소유 문서로 분리하며 고정 thread topology를 요구하지 않는다. | 완료 |
-| 2 | W2-02 | SemesterWorkspace 실행 기준선 | 개발·설계 | P0 | 하나의 layout seam이 명시적으로 주입한 `packageRoot`, `appDataRoot`, `workspaceRoot`를 검증하고, `CODEX_HOME`·`CODEX_SQLITE_HOME` pair와 선택한 workspace `cwd`를 함께 계산한다. 제품 경로에서 `process.cwd()`를 workspace fallback으로 사용하지 않으며 native `AGENTS.md`·Skills discovery를 smoke로 확인한다. OS 기본 경로 resolver·배포 UX·Memory opt-in은 각 후속 후보 범위다. | 준비됨 |
-| 3 | W2-03 | ModelingRecipe와 PromptTemplate 최소 계약 | 개발 | P0 | Versioned Recipe가 Skill, template, argument schema와 output schema를 선언하고 실제 arguments로 결정적인 prompt를 렌더링한다. Recipe는 실행별 입력, Course나 thread를 소유하지 않는다. | 준비됨 |
+| 2 | W2-02 | SemesterWorkspace 실행 기준선 | 개발·설계 | P0 | 하나의 layout seam이 명시적으로 주입한 `packageRoot`, `appDataRoot`, `workspaceRoot`를 검증하고, `CODEX_HOME`·`CODEX_SQLITE_HOME` pair와 선택한 workspace `cwd`를 함께 계산한다. 제품 경로에서 `process.cwd()`를 workspace fallback으로 사용하지 않으며 native `AGENTS.md`·Skills discovery와 명시적으로 설정한 built-in Memories의 feature·생성·사용 설정, auth·eligibility를 smoke로 확인한다. OS 기본 경로 resolver와 배포 UX는 C-09, Memory lifecycle은 C-15 범위다. | 준비됨 |
+| 3 | W2-03 | ModelingRecipe와 PromptTemplate 최소 계약 | 개발 | P0 | [CONTEXT.md](../../CONTEXT.md)에 정의한 versioned Recipe의 정적 계약을 구현하고 실제 arguments로 결정적인 prompt를 렌더링한다. Recipe는 실행별 입력, Course나 thread를 소유하지 않는다. | 준비됨 |
 | 4 | W2-04 | ModelingInvocation 생성과 native input 번역 | 개발 | P0 | Recipe version, 검증된 arguments, SourceSelection과 활성 SemesterWorkspace 맥락으로 일회성 Invocation을 만든다. Codex 통합은 이를 Skill, rendered text, source mentions와 output schema로 번역해 하나의 turn을 시작하고 raw protocol type은 내부에 둔다. 기존 thread를 선택하면 workspace 일치를 검증한다. | W2-02~03 대기 |
-| 5 | W2-05 | ModelingRun receipt와 결과 검증 | 개발 | P0 | Invocation의 실행 시도마다 새 ModelingRun을 만들고 Recipe version, 검증된 입력의 제품 참조, opaque execution correlation, terminal result와 검증된 output reference를 기록한다. Retry는 새 Run이며 일회성 Invocation과 raw identifier는 영속 저장 계약으로 승격하지 않는다. | W2-04 대기 |
+| 5 | W2-05 | ModelingRun receipt와 결과 검증 | 개발 | P0 | [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md)의 ModelingRun 기록 계약을 구현하고, 테스트가 실행 시도·retry cardinality와 검증된 결과 연결을 확인한다. 일회성 Invocation과 raw identifier는 영속 저장 계약으로 승격하지 않는다. | W2-04 대기 |
 | 6 | W2-06 | 조합 계약 테스트와 실제 Codex smoke | 검증 | P0 | fake transport 계약 테스트가 input 조합과 output validation을 결정적으로 검증하고, 선택 실행 smoke가 pinned Codex App Server에서 같은 shape의 turn을 완료한다. | W2-04~05 대기 |
 | 7 | W2-07 | 3주차 수직 흐름 issue 분할 | 계획 | P1 | RawMaterial부터 UserConfirmation까지 각 작업이 0.5~2일 크기이고, Runtime Harness 확장과 제품 상태 구현이 분리되어 있다. | W2-06 대기 |
 
@@ -117,7 +117,7 @@ Runtime Harness 안정화 issues 001~005는 2026-07-11에 모두 완료했다. �
 
 - 하나의 action이 Recipe를 선택하고 입력을 모아 ModelingInvocation을 만들며, Codex 통합이 이를 native 입력으로 번역한다.
 - ModelingRun이 한 Invocation 실행 시도의 receipt일 뿐 Codex thread나 학기 workflow를 재정의하지 않는다.
-- native `AGENTS.md`와 Skills를 재구현하지 않고 앱이 관리하는 실행 환경에서 사용할 수 있다.
+- native `AGENTS.md`, Skills와 검증된 opt-in Memories를 재구현하지 않고 앱이 관리하는 실행 환경에서 사용할 수 있다.
 - `turn/steer`, Hook, request response 같은 capability가 기본값이 아니라 case별 후속 선택임을 코드와 문서가 함께 표현한다.
 - 3주차 첫날 바로 구현할 수 있는 작은 issue 목록이 준비되어 있다.
 
@@ -167,7 +167,7 @@ W3는 W2-02의 제품 layout seam을 그대로 사용한다. 운영체제 기본
 | C-12 | correlated App Server request UI | P1 | 실행 승인, 짧은 사용자 입력, MCP elicitation 중 대표 case가 선택되고 각 request identity를 보존할 수 있을 때 | case 후보 |
 | C-13 | process restart 뒤 thread resume | P2 | 사용자가 실제로 장기 작업을 다시 열어야 하고 제품 receipt와 Codex history의 복구 책임을 구분했을 때 | topology 비고정 후보 |
 | C-14 | experimental context delivery | P2 | native mention/text/Skill 조합으로 해결되지 않는 구체적인 case와 trust·retention 정책이 생길 때 | `additionalContext`, dynamic tools, realtime 등 roadmap 후보 |
-| C-15 | Built-in Memories opt-in과 lifecycle | P2 | 핵심 수직 흐름 이후 eligibility, contribution scope, consent와 학기 rollover·reset UX를 함께 검증할 때 | 후속 후보 |
+| C-15 | 학기 rollover와 Memories reset UX | P2 | W2 opt-in smoke 뒤 app-wide runtime-home pair의 여러 학기 수명, consent·reset UX가 필요할 때 | 후속 후보 |
 
 다음 항목은 이번 4주 범위에서 제외한다.
 
@@ -191,7 +191,6 @@ W3는 W2-02의 제품 layout seam을 그대로 사용한다. 운영체제 기본
 | 학기 상태 저장 schema와 repository 경계 | 2주차 | 제품 상태는 runtime history와 분리하고 raw Codex protocol을 저장 계약으로 사용하지 않는다. |
 | RawMaterial 원본 위치와 app-managed metadata 위치 | 2주차 | 원본은 자동 수정·삭제하지 않고 workspace-local metadata와 분리한다. |
 | StatePatch, EvidenceRef, UserConfirmation의 최소 필드 | 2주차 | Review 화면과 Assignment 수직 흐름에서 실제로 읽고 쓰는 필드만 먼저 둔다. |
-| ModelingRun receipt의 최소 correlation | 2주차 | 한 Invocation 시도에 필요한 Recipe version, 검증된 입력의 제품 참조, opaque execution reference, terminal result와 output reference만 기록하고 retry는 새 Run으로 남긴다. |
 | 첫 제품 수직 흐름의 입력 형식 | 2주차 | TXT 한 종류로 먼저 수직 흐름을 닫고 PDF는 후보로 둔다. |
 | 최소 explicit workspace path 선택·재열기 | 3주차 W3-01 | 사용자가 제공한 local path를 injected layout seam에 전달한다. |
 | 첫 case-specific App Server interaction | 3주차 말 | 핵심 흐름에 요구가 없다면 `turn/start` 조합만으로 데모를 완성한다. |

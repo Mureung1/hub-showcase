@@ -92,7 +92,7 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 
 | 화면 요소 | 제품 의미 | App 내부 대응 |
 | --- | --- | --- |
-| `선택한 자료 정리하기` | 학생-facing action | Recipe version 선택 |
+| `선택한 자료 정리하기` | 학생에게 보이는 action | Recipe version 선택 |
 | 과목·학기와 체크된 파일 | 이번 요청의 입력과 작업 범위 | `ModelingInvocation` 구성 |
 | action에 약속된 처리법과 결과 구조 | 재사용 작업 계약 | `ModelingRecipe` |
 | 실행 상태 | 한 실행 시도 추적 | 내부 `ModelingRun` receipt |
@@ -116,9 +116,9 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 
 ## Prototype Copy
 
-학생-facing UI는 개발자 용어를 그대로 번역하지 않고 비개발자 대학생에게 익숙한 말을 쓴다. 브랜드명, 파일명, 확장자 같은 고유 문자열은 유지한다.
+학생용 UI는 개발자 용어를 그대로 번역하지 않고 비개발자 대학생에게 익숙한 말을 쓴다. 브랜드명, 파일명, 확장자 같은 고유 문자열은 유지한다.
 
-| 내부 개념 | UI alias | 학생-facing 문구 |
+| 내부 개념 | UI alias | 학생용 문구 |
 | --- | --- | --- |
 | `Assignment` | 과제 | `개요 작성하기 과제` |
 | `StatePatch` | 변경 제안 | `변경 제안 1개 준비됨` |

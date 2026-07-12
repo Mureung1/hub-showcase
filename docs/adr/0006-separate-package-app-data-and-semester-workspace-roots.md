@@ -4,7 +4,7 @@
 
 성숙도: 채택
 
-현재 Runtime Harness가 저장소 작업공간의 `.ay-ple/runtime-*`를 사용하는 것은 개발 중 실행 상태를 프로젝트별로 격리하기 위한 의도적인 기본값이다. 제품 실행에서는 설치, 기기별 runtime 상태, 사용자 소유 학기 자료의 수명과 백업 정책이 다르므로 하나의 `.ay-ple/` 루트나 호출 당시의 `process.cwd()`에 묶지 않는다.
+Developer-only Runtime Harness 상태와 제품 실행 상태는 수명과 복구 책임이 다르다. 제품 실행에서는 설치, 기기별 runtime 상태, 사용자 소유 학기 자료의 수명과 백업 정책도 서로 다르므로 하나의 root나 호출 당시의 `process.cwd()`에 묶지 않는다.
 
 ## 결정
 
@@ -17,7 +17,7 @@
 - 하나의 제품 경로 배치 seam이 세 root와 그 불변 조건을 검증한다. `CODEX_HOME`과 `CODEX_SQLITE_HOME`은 분리할 수 없는 pair로 주입하고, `workspaceRoot`는 사용자가 명시적으로 선택한다.
 - 호출 당시의 `process.cwd()`를 암묵적인 제품 workspace로 사용하지 않는다. 환경 변수는 경로 모델을 대신하지 않고 명시적인 재정의 수단으로만 사용한다.
 - `appDataRoot`를 잃어도 사용자가 소유한 자료와 확인된 제품 상태는 `workspaceRoot`에서 다시 열 수 있어야 한다. Codex thread와 session은 학기·과목·ModelingRun의 정체성이 아니다.
-- 저장소 내부 `.ay-ple/runtime-*`는 Runtime Harness의 developer-only 기본값으로 유지한다. 이 결정은 현재 Harness 경로의 이전을 요구하지 않는다.
+- 이 결정은 developer-only Runtime Harness의 기존 저장 경로를 제품 layout으로 이전하거나 재배치하도록 요구하지 않는다.
 
 ## 결과
 
