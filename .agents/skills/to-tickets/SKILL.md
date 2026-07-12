@@ -14,17 +14,19 @@ Write generated ticket content in Korean. Preserve established domain terms, pro
 
 ## Process
 
-### 1. Gather context
+### 1. Gather context and enforce the execution gate
 
 Read `AGENTS.md`, `docs/README.md`, `docs/agents/issue-tracker.md`, and the source artifact in full.
 
-Reference resolution:
+Resolve the source reference exactly as `docs/agents/issue-tracker.md` defines; do not reinterpret a local path, URL, or bare number with a different tracker convention.
 
-- A local Markdown path means that exact local artifact.
-- A URL means that exact remote artifact.
-- A bare number is not a GitHub issue or PR unless the user explicitly names GitHub and the target surface.
+The source must be implementation-ready before ticket files can be created:
 
-When the source is a local spec, require `State: ready-for-ticketing` unless the user explicitly asks to decompose a draft. Read the relevant owning documents, ADRs, linked Wayfinder decisions, and prototype verdicts instead of copying their detail into every ticket.
+- A local spec must have `State: ready-for-ticketing`.
+- A plan or conversation must contain no unresolved implementation-blocking question. Its proposed graph still requires the explicit approval in step 4 before publication.
+- A `draft` spec or any source with a blocking open question must stop here. Route back to `/to-spec`, `/grill-with-docs`, `/wayfinder`, or the user; do not create executable or placeholder implementation tickets.
+
+Read the relevant owning documents, ADRs, linked Wayfinder decisions, and prototype verdicts instead of copying their detail into every ticket.
 
 ### 2. Explore the codebase
 
@@ -62,6 +64,8 @@ Present the proposed tickets as a numbered list. For each ticket show:
 - **Spec traceability**
 
 Ask whether the granularity and blocking edges are correct and whether any ticket should be split or merged. Iterate until approved.
+
+Approval in this step is required before publishing. It does not override the readiness gate from step 1.
 
 ### 5. Publish local ticket files
 
