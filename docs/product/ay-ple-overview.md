@@ -2,9 +2,9 @@
 
 작성일: 2026-07-10
 
-최종 업데이트: 2026-07-11
+최종 업데이트: 2026-07-12
 
-상태: 소개 문서
+분류: 활성
 
 > **AY-PLE(에이플)는 일반적인 Codex 사용 경험 위에 학기 자료 정리와 사용자 검토를 얇게 더한 local-first 학업 앱이다.**
 
@@ -35,7 +35,7 @@ AY-PLE는 이 과정을 학생이 이미 사용하는 한 학기 폴더에서 �
 
 `문제해결글쓰기` 과목에 새로운 과제 공지가 올라왔다고 가정해보자. 학생은 LMS 공지를 저장하고, 이미 가지고 있던 강의계획서와 함께 학기 폴더에 둔다. AY-PLE를 위해 파일을 별도 고정 구조로 옮길 필요는 없다.
 
-학생이 이번에 정리할 두 자료를 고르고 **선택한 자료 정리하기**를 누르면 AY가 일을 시작한다. AY-PLE는 이 action에 약속된 Skill과 prompt template을 선택하고, 과목 같은 arguments와 선택한 파일 mention을 넣어 Codex에 한 번의 작업을 요청한다. Codex는 학기 폴더를 `cwd`로 사용해 공지와 계획서를 읽고 필요한 도구를 쓴다.
+학생이 이번에 정리할 두 자료를 고르고 **선택한 자료 정리하기**를 누르면 AY가 일을 시작한다. AY-PLE는 action에 맞는 반복 작업 정의와 이번 입력을 결합해 일회성 요청을 만들고 Codex에 전달한다. Codex는 학기 폴더에서 공지와 계획서를 읽고 필요한 도구를 쓴다.
 
 AY는 한 문서에서 `개요 작성하기`라는 과제와 `7월 12일 23:59`라는 마감을 찾고, 다른 문서에서 LMS 제출 방식과 평가 기준을 찾을 수 있다. 찾은 내용을 바로 학기 정보로 저장하지 않고 다음과 같은 변경 제안으로 보여준다.
 
@@ -55,10 +55,10 @@ AY-PLE는 Codex 위에 별도의 Agent 운영체제를 만들지 않는다. 학�
 
 | 일반적인 Codex 개념 | AY-PLE에서의 사용 |
 | --- | --- |
-| 작업 디렉터리 | 학생이 고른 N학년 N학기 폴더를 `cwd`로 사용한다. |
+| 작업 범위 | 학생이 고른 N학년 N학기 폴더에서 작업한다. |
 | `AGENTS.md` | Codex의 native 로딩 규칙을 그대로 사용한다. |
 | Skills | 반복할 학업 작업의 처리 전략과 결과 형식을 안내한다. |
-| built-in Memories | app-managed `CODEX_HOME`·`CODEX_SQLITE_HOME` pair에서 opt-in 설정과 eligibility가 충족될 때 한 학기 보조 맥락으로 사용한다. |
+| built-in Memories | 제품 실행환경에서 명시적으로 켠 경우 비권위적 보조 맥락으로 사용한다. |
 | `Thread`, `Turn`, `Item` | Codex가 대화와 작업을 실행하는 native 단위로 사용한다. |
 | 파일과 도구 사용 | 학기 폴더의 자료를 읽고 필요한 local script를 실행한다. |
 
@@ -69,10 +69,10 @@ AY-PLE는 Codex 위에 별도의 Agent 운영체제를 만들지 않는다. 학�
 | 일반적인 AI 채팅 | AY-PLE |
 | --- | --- |
 | 질문에 대한 답변을 만든다. | 반복 가능한 학업 action을 실행한다. |
-| 사용자가 파일과 지시를 매번 준비한다. | 앱이 action에 맞는 recipe를 구성하고 선택 자료를 mention으로 전달한다. |
+| 사용자가 파일과 지시를 매번 준비한다. | 앱이 action에 맞는 Recipe와 이번 작업의 입력을 준비한다. |
 | 결과가 대화에 남는다. | 결과를 근거가 연결된 변경 제안으로 만든다. |
 | 답변을 쓸지 사용자가 알아서 판단한다. | 수락·수정·거절을 제품 경험으로 제공한다. |
-| 대화 기억이 사실의 기준이 되기 쉽다. | 확인된 학기 상태를 Codex thread와 memory에서 분리한다. |
+| 대화 맥락이 사실의 기준이 되기 쉽다. | 확인된 학기 상태를 Agent의 대화 맥락에서 분리한다. |
 
 여기서 **AY**는 학생이 작업을 맡기고 대화하는 AY-PLE의 제품 Agent 역할이다. 그 실행은 Codex가 담당하지만 AY를 Codex의 별칭으로 사용하지 않으며, 별도의 두 번째 runtime Agent를 뜻하지도 않는다. 학생은 터미널과 protocol을 직접 조작하는 대신 자료 목록, action, 검토 화면, 대화를 통해 AY와 함께 일한다.
 
@@ -83,14 +83,14 @@ AY-PLE가 Codex 위에 소유하는 부분은 명확하다.
 | AY-PLE가 소유하는 것 | 이유 |
 | --- | --- |
 | 학기 작업공간 선택 | 어떤 N학년 N학기 폴더가 현재 작업 범위인지 정한다. |
-| action과 `ModelingRecipe` | 반복 작업을 Skill, prompt template, arguments, output schema로 구성한다. |
-| 자료 선택 | GUI 선택을 해당 실행의 file mention으로 번역한다. |
-| `ModelingRun` receipt | 어떤 recipe와 자료가 어떤 native 실행 결과로 이어졌는지 연결한다. |
+| action과 `ModelingRecipe` | action은 실행할 versioned Recipe를 선택하고 이번 작업의 입력을 모은다. |
+| `ModelingInvocation` | Recipe와 이번 작업의 입력·학기 맥락을 결합한 일회성 요청이다. |
+| `ModelingRun` receipt | 한 Invocation의 한 실행 시도와 결과를 연결한다. |
 | `StatePatch`와 `EvidenceRef` | Agent 출력이 바꿀 학기 사실과 원본 근거를 구조화한다. |
 | Review와 `UserConfirmation` | 학생이 확인한 내용만 학기 상태에 반영한다. |
 | derived view | 확인된 학기 정보에서 일정과 읽기용 문서를 만든다. |
 
-`ModelingRun`은 학업 workflow를 직접 지휘하는 거대한 객체가 아니다. Skill과 prompt template, arguments, 선택한 자료, `cwd`, output schema를 조합해 시작한 한 번의 Codex `turn`을 결과와 연결하는 얇은 실행 receipt다.
+`ModelingRecipe`는 재사용 정의, `ModelingInvocation`은 일회성 요청, `ModelingRun`은 한 실행 시도의 receipt다. 정확한 경계와 Codex mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md)을 따른다.
 
 ## `Thread`, `Turn`, `Item`을 학기로 해석하지 않는 이유
 
@@ -101,7 +101,6 @@ AY-PLE는 이를 학생에게 그대로 노출하지 않지만, 학기나 과목
 - 한 학기 전체가 반드시 하나의 `Thread`인 것은 아니다.
 - 과목마다 반드시 별도 `Thread`를 만들지 않는다.
 - `ModelingRun`마다 새 `Thread`를 강제하지 않는다.
-- Codex compaction과 Memories는 native 기능으로 사용하되 학업 사실의 source of truth로 삼지 않는다.
 
 사용자는 필요할 때 새 작업을 시작하거나 이전 대화를 이어갈 수 있다. 정확한 thread UX는 첫 제품 vertical에서 검증한다. 과제명과 마감처럼 계속 보존해야 하는 사실은 사용자가 확인한 학기 상태가 소유한다.
 
@@ -111,13 +110,13 @@ AY-PLE는 이를 학생에게 그대로 노출하지 않지만, 학기나 과목
 
 | 예시 | 앱에서 일어나는 일 | AY/Codex에서 일어나는 일 |
 | --- | --- | --- |
-| 자료 선택 후 action 시작 | 선택과 arguments를 준비한다. | Skill과 mention을 포함해 `turn/start`한다. |
-| 진행 중 작업에 정정 전달 | 대상 작업과 사용자 의도를 기록한다. | 명시적인 정정은 `turn/steer`로 전달할 수 있다. |
-| 중단 | 중단 중·중단 완료 상태를 보여준다. | `turn/interrupt`를 사용한다. |
+| 자료 선택 후 action 시작 | Recipe와 입력을 ModelingInvocation으로 준비한다. | AY가 선택한 자료를 읽는 작업을 시작한다. |
+| 진행 중 작업에 정정 전달 | 대상 작업과 사용자 의도를 기록한다. | 해당 작업에 정정을 전달한다. |
+| 중단 | 중단 중·중단 완료 상태를 보여준다. | 진행 중 작업을 중단한다. |
 | 새 문서 drag-and-drop | 파일 metadata와 인덱스를 갱신한다. | 진행 중 작업에는 자동 주입하지 않는다. |
 | 변경 제안 수락 | 확인된 학기 상태를 갱신한다. | 필요하면 다음 요청의 맥락으로 사용한다. |
 
-hook, MCP, experimental API도 향후 선택 가능한 capability로 남긴다. 다만 먼저 실제 사용자 기능을 정하고, Codex App Server가 제공하는 전달 방식 중 가장 알맞은 것을 case by case로 선택한다.
+구체적인 전달 방식은 먼저 사용자 기능을 정한 뒤 [제품 작업 조합](../architecture/codex-native-product-composition.md)의 경계 안에서 case by case로 선택한다.
 
 ## 두 가지 확인 경계
 
@@ -137,6 +136,6 @@ Codex approval은 과제 정보가 사실인지 보증하지 않는다. 반대�
 
 그 아래의 Runtime Harness는 실제 코드로 구현되어 있다. 앱 전용 Codex 실행환경을 시작하고, 실행의 진행·완료·실패·취소를 관찰하며, 진단 기록을 다시 불러올 수 있다. 이 개발자용 실행 화면은 학생이 사용할 최종 AY-PLE 화면과 다르다.
 
-다음 개발 대상은 두 층을 잇는 첫 제품 vertical이다. 학생이 학기 폴더에서 자료와 action을 고르면 AY-PLE가 native Codex 입력을 구성하고, structured result를 변경 제안으로 보여주며, 학생의 결정만 확인된 학기 정보에 반영해야 한다.
+다음 개발 대상은 두 층을 잇는 첫 제품 vertical이다. 학생이 학기 폴더에서 자료와 action을 고르면 AY-PLE가 ModelingInvocation을 실행하고, structured result를 변경 제안으로 보여주며, 학생의 결정만 확인된 학기 정보에 반영해야 한다.
 
-작동 흐름을 먼저 보고 싶다면 [동적 제품 prototype](../../spikes/ay-ple-ui-prototype/guided-demo.html)을 열어볼 수 있다. 기존 화면 결정을 확인하려면 [Review Workspace prototype](../../spikes/ay-ple-ui-prototype/index.html), 더 자세한 제품 결정은 [Product Brief](ay-ple-product-brief.md), 구현된 실행 기반은 [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md)에서 확인할 수 있다.
+작동 흐름을 먼저 보고 싶다면 [동적 제품 prototype](../../spikes/ay-ple-ui-prototype/guided-demo.html)을 열어볼 수 있다. 기존 화면 결정은 [Review Workspace prototype](../../spikes/ay-ple-ui-prototype/index.html), 제품 범위는 [Product Brief](ay-ple-product-brief.md), 정확한 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 실행 mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), 구현된 실행 기반은 [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md)에서 확인할 수 있다.

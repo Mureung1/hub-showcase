@@ -48,13 +48,13 @@ ModelingRecipe version
 + active SemesterWorkspace context
 → ModelingInvocation
 → Codex integration이 thread 선택과 native input 번역
+→ ModelingRun 생성(실행 시도 등록)
 → turn/start(threadId)
-→ ModelingRun 생성
-→ validated structured result 연결
+→ terminal 상태와 validated structured result 연결
 → StatePatch 후보
 ```
 
-ModelingInvocation은 영속 receipt가 아니다. ModelingRun은 한 Invocation의 한 실행 시도를 나타내며, retry는 새 Run을 만든다. Run은 Recipe version, 검증된 제품 입력 참조, 상태, opaque execution reference와 결과 참조를 연결한다. raw thread/turn identifier는 Codex 통합 내부에서만 해석하며 렌더링한 전체 prompt나 raw protocol stream을 제품 감사 기록으로 복사하지 않는다.
+ModelingInvocation은 영속 receipt가 아니다. 앱이 실행 시도를 등록할 때 ModelingRun을 먼저 만들고, native 호출에서 얻은 correlation과 terminal 결과를 여기에 연결한다. Retry는 같은 Invocation 입력을 다시 사용하더라도 새 Run을 만든다. Run은 Recipe version, 검증된 제품 입력 참조, 상태, opaque execution reference와 결과 참조를 연결한다. raw thread/turn identifier는 Codex 통합 내부에서만 해석하며 렌더링한 전체 prompt나 raw protocol stream을 제품 감사 기록으로 복사하지 않는다.
 
 ## Thread 사용 경계
 

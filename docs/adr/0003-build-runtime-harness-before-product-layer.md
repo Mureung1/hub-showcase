@@ -1,6 +1,6 @@
 # AY-PLE 제품 계층보다 Runtime Harness를 먼저 구축한다
 
-상태: 완료 · 역사 기록
+분류: 완료·역사 기록
 
 AY-PLE는 제품별 SourceSelection, StatePatch, Review와 TrustedState를 구현하기 전에 Runtime Inspector, AgentRuntimeKernel, FakeRuntimeAdapter와 CodexRuntimeAdapter로 구성한 Runtime Harness를 먼저 만들기로 했다. Fake와 실제 Codex가 동일한 단일 실행 lifecycle을 만족하는지 확인해 raw Codex 제약을 너무 늦게 발견하는 위험을 줄이는 결정이었다.
 

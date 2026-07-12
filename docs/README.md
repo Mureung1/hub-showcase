@@ -76,15 +76,15 @@ Root companion docs:
 | AY-PLE Product Brief | [product/ay-ple-product-brief.md](product/ay-ple-product-brief.md) | 문제 정의, 제품 테제, MVP 경계 |
 | Review Workspace Scenario | [product/ay-ple-review-workspace-scenario.md](product/ay-ple-review-workspace-scenario.md) | 자료 선택부터 Review까지의 사용자 시나리오 |
 | AY-PLE Design System Direction | [product/ay-ple-design-system.md](product/ay-ple-design-system.md) | 브랜드와 데스크톱 UI 기준 |
-| AY-PLE 4주 개발 백로그 | [product/ay-ple-development-backlog.md](product/ay-ple-development-backlog.md) | 초안 v0.5 · composition과 Review 수직 흐름 중심 계획 |
-| Codex-native product composition | [architecture/codex-native-product-composition.md](architecture/codex-native-product-composition.md) | 제품 Action을 native Codex input으로 조합하는 현재 mapping |
+| AY-PLE 4주 개발 백로그 | [product/ay-ple-development-backlog.md](product/ay-ple-development-backlog.md) | composition과 Review 수직 흐름 중심 계획 |
+| Codex-native product composition | [architecture/codex-native-product-composition.md](architecture/codex-native-product-composition.md) | `ModelingRecipe → ModelingInvocation → ModelingRun`과 native Codex의 mapping |
 | Codex Runtime 격리 | [architecture/codex-runtime-isolation.md](architecture/codex-runtime-isolation.md) | runtime, app data, SemesterWorkspace 실행 경계 |
 | Runtime Harness 구현 지도 | [architecture/runtime-harness-implementation-map.md](architecture/runtime-harness-implementation-map.md) | developer-only Harness의 구현 현황과 gap |
 | Academic object model ADR | [adr/0002-use-first-class-academic-objects-with-derived-operational-views.md](adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam과 derived view 결정 |
 | Runtime history storage ADR | [adr/0004-split-runtime-history-semantics-from-workspace-storage.md](adr/0004-split-runtime-history-semantics-from-workspace-storage.md) | 진단 이력과 제품 저장 책임 분리 |
 | Codex 우선 사용 ADR | [adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md](adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) | 4주 MVP 실행 엔진과 protocol isolation 결정 |
 | 제품 실행 경로 분리 ADR | [adr/0006-separate-package-app-data-and-semester-workspace-roots.md](adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | package, app data, SemesterWorkspace 경계 |
-| Native Codex composition ADR | [adr/0007-use-native-codex-composition-for-product-actions.md](adr/0007-use-native-codex-composition-for-product-actions.md) | ModelingRecipe를 native turn input으로 실행하는 결정 |
+| Native Codex composition ADR | [adr/0007-use-native-codex-composition-for-product-actions.md](adr/0007-use-native-codex-composition-for-product-actions.md) | Recipe·Invocation·Run의 제품 실행 경계를 나누는 결정 |
 
 ### 기술 참고
 
@@ -107,7 +107,7 @@ Root companion docs:
 
 ### Agent 운영
 
-| 문서 | 위치 | 상태 |
+| 문서 | 위치 | 분류 |
 | --- | --- | --- |
 | Agent issue tracker rules | [agents/issue-tracker.md](agents/issue-tracker.md) | 활성 |
 | Agent triage marker rules | [agents/triage-labels.md](agents/triage-labels.md) | 활성 |
@@ -120,28 +120,34 @@ Root companion docs:
 | 문서 유형 | 소유하는 내용 | 소유하지 않는 내용 |
 | --- | --- | --- |
 | `CONTEXT.md` | AY-PLE 고유 도메인 용어의 짧은 정의와 피해야 할 해석 | protocol mapping, 저장 schema, 구현 계획 |
-| 제품 소개·Brief | 사용자 문제, 제품 가치, MVP 범위와 사용자에게 의미 있는 제품 경계 | protocol field, runtime path 상세, 실행 backlog |
-| 제품 Scenario·Design System | 사용자 흐름, 화면 의미, UI copy와 시각 원칙 | 도메인 정의 재작성, runtime 계약 |
+| 제품 Overview | 처음 보는 독자를 위한 제품 서사, 대표 경험과 현재 진행 요약 | 도메인·실행 계약의 신규 정의, 상세 MVP와 구현 현황 |
+| Product Brief | 사용자 문제, 제품 가치, MVP 범위와 제품이 소유하는 상태 | protocol field, runtime path 상세, 실행 backlog |
+| 제품 Scenario | 사용자 흐름, 화면 의미와 UI copy | 도메인 정의 재작성, runtime 계약과 시각 token |
+| Design System | 브랜드, 시각 원칙, token과 component 표현 기준 | 제품 범위, 사용자 흐름과 runtime 계약 |
 | ADR | 되돌리기 어렵고 대안 비교가 필요한 결정과 결과 | 현재 구현 현황, 우선순위, 상세 사용 안내 |
 | 아키텍처 문서 | 채택된 결정이 만드는 오래 유지될 시스템 경계와 기술 mapping | 결정의 재논증, 일정과 P0/P1/P2 상태 |
-| 구현 지도·package README | 현재 코드의 책임, 실제 경로·명령·검증 표면과 확인된 gap | 미래 제품 계약의 신규 정의, 제품 우선순위 |
+| 구현 지도 | 여러 package를 가로지르는 현재 topology, 구현 gap과 검증 표면 | package별 사용 안내, 미래 제품 계약과 우선순위 |
+| package README | 해당 package의 현재 책임, API·설정·명령과 제약 | 시스템 전체 topology, 미래 제품 계약과 우선순위 |
 | Development Backlog | 우선순위, 일정, 작업 상태와 완료 조건 | 도메인·아키텍처 정의의 독립적인 정본 |
 | Spike | 질문, 성공 기준, 관찰 결과와 저수준 근거 | 현재 제품 우선순위와 채택된 결정 |
 | PRD·issue brief | 특정 구현 slice의 범위와 acceptance criteria | 완료 이후의 현재 아키텍처와 제품 source of truth |
 
 ## 정본 위계
 
-같은 주제를 여러 문서가 언급할 수 있지만 normative definition은 아래 정본 하나가 소유한다.
+같은 주제를 여러 문서가 언급할 수 있지만 normative information은 아래 책임 주체가 나눠 소유한다.
 
 | 정보 | 정본 | 소비 문서의 허용 범위 |
 | --- | --- | --- |
 | 도메인 용어와 의미 | [CONTEXT.md](../CONTEXT.md) | 사용자 맥락에 필요한 한 줄 요약과 glossary 링크 |
 | 제품 문제, 가치와 MVP 범위 | [AY-PLE Product Brief](product/ay-ple-product-brief.md) | 소개·Scenario·Backlog에서 필요한 범위만 요약 |
-| 사용자 흐름과 화면 의미 | [Review Workspace Scenario](product/ay-ple-review-workspace-scenario.md), [Design System](product/ay-ple-design-system.md) | 구현 문서에서는 UI 결과만 참조 |
+| 사용자 흐름과 화면 의미 | [Review Workspace Scenario](product/ay-ple-review-workspace-scenario.md) | 구현 문서에서는 UI 결과만 참조 |
+| 브랜드와 시각 표현 기준 | [Design System](product/ay-ple-design-system.md) | Scenario·구현 문서에서는 필요한 표현 결과만 참조 |
 | 채택한 기술·제품 결정 | 해당 [ADR](adr/) | architecture·제품 문서는 결정의 결과만 설명하고 ADR을 연결 |
 | 제품 작업의 Codex mapping | [Codex-native product composition](architecture/codex-native-product-composition.md) | 제품 문서는 사용자 의미, 구현 문서는 현재 지원 여부만 설명 |
-| runtime root와 격리의 기술 구조 | [ADR 0006](adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [Codex Runtime 격리](architecture/codex-runtime-isolation.md) | ADR은 소유권 불변 조건, 기술 문서는 현재·목표·후속 배치를 각각 소유 |
-| Runtime Harness의 현재 동작 | [Runtime Harness 구현 지도](architecture/runtime-harness-implementation-map.md), 관련 package README, 코드와 테스트 | 다른 문서는 구현 여부를 짧게 요약하고 정본을 연결 |
+| runtime root의 소유권 불변 조건 | [ADR 0006](adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | 다른 문서는 결정 결과만 요약하고 ADR을 연결 |
+| runtime 격리의 현재·목표·후속 기술 배치 | [Codex Runtime 격리](architecture/codex-runtime-isolation.md) | 구현 문서는 현재 동작만, Backlog는 후속 일정만 설명 |
+| Runtime Harness의 횡단 topology와 gap | [Runtime Harness 구현 지도](architecture/runtime-harness-implementation-map.md) | 제품 문서는 구현 여부만 짧게 요약 |
+| package별 현재 동작과 명령 | 관련 package README, 코드와 테스트 | 구현 지도와 소비 문서는 필요한 사실만 요약하고 package 문서를 연결 |
 | 우선순위, 일정과 작업 상태 | [AY-PLE 4주 개발 백로그](product/ay-ple-development-backlog.md) | 다른 문서는 `구현됨` 또는 `미구현`만 표현하고 우선순위를 두지 않음 |
 | protocol·runtime 저수준 근거 | 관련 기술 참고 Spike | 활성 문서는 채택한 결론만 사용하고 조사 본문을 현재 계획으로 재해석하지 않음 |
 

@@ -1,12 +1,14 @@
 # Codex local Memories 아키텍처 조사
 
-> **현재 판정 (2026-07-11): 기술 참고 문서.** 4주 MVP는 app-managed `CODEX_HOME`·`CODEX_SQLITE_HOME` pair에 `[features] memories = true`와 `[memories]` 생성·사용 설정을 명시하고 eligibility·auth smoke를 통과한 뒤 Codex built-in Memories를 opt-in 보조 맥락으로 사용한다. 현재 launcher는 아직 이를 활성화하지 않으며 모든 작업의 memory 생성을 보장하지 않는다. SemesterWorkspace가 Codex `cwd`이며 native `AGENTS.md`와 Skills discovery도 그대로 사용한다. Memory는 생성형 recall layer이지 SemesterModel, UserConfirmation 또는 학업 사실의 source of truth가 아니다. 학기 rollover 때 두 root의 reset·분류·장기 보존 UX와 Course별 memory partition은 MVP 이후 후보로 둔다. 아래 본문은 pinned Codex 버전의 write/read·격리·privacy 근거를 보존한 조사 기록이다.
+분류: 기술 참고
+
+> **현재 판정 (2026-07-12):** 현재 Runtime Harness는 built-in Memories를 활성화하지 않는다. 제품에서도 Memory는 명시적인 opt-in과 실제 eligibility 검증 뒤에만 비권위적 보조 맥락으로 사용할 수 있으며, SemesterModel이나 학업 사실의 source of truth가 아니다. Runtime-home pair와 후속 수명 정책은 [Codex Runtime 격리](../../architecture/codex-runtime-isolation.md), 구현 순서는 [4주 개발 백로그](../../product/ay-ple-development-backlog.md)가 소유한다. 아래 본문은 pinned Codex 버전의 write/read·격리·privacy 근거를 보존한 조사 기록이다.
 
 조사일: 2026-07-11
 
 ## 조사 목적과 근거 범위
 
-이 문서는 AY-PLE이 독자 `CODEX_HOME`을 사용할 때 Codex local Memories와 `AGENTS.md`, skills, plugins 같은 personalization surface를 어떻게 이해해야 하는지 고정한다. 아직 semester/course/thread topology나 제품 UX를 결정하지 않는다. 특히 `ModelingRun`을 Codex `thread`/`turn`에 매핑하는 결정은 별도 session topology 설계의 몫이다.
+이 문서는 AY-PLE이 독자 `CODEX_HOME`을 사용할 때 Codex local Memories와 `AGENTS.md`, skills, plugins 같은 personalization surface를 어떻게 이해해야 하는지 고정한다. Memory가 제품 학업 상태나 실행 receipt를 대신하지 않는 근거를 다루며, 현재 제품 실행 경계는 [Codex-native 제품 작업 조합](../../architecture/codex-native-product-composition.md)을 따른다.
 
 AY-PLE은 `@openai/codex@0.144.0`을 고정하므로 실행 contract는 `rust-v0.144.0` tag와 commit `767822446c7a594caa19609ca435281a9ec67e0d`를 기준으로 판정한다. 현재 공식 문서는 최신 사용자 설정과 공개 surface를 확인하는 별도 근거로 사용한다. 두 층이 다르면 dependency를 올리기 전에는 pinned source가 우선한다. [AY-PLE pinned dependency](../../../packages/runtime-codex/package.json), [Codex `rust-v0.144.0` source](https://github.com/openai/codex/tree/rust-v0.144.0), [현재 Memories 공식 문서](https://learn.chatgpt.com/docs/customization/memories)
 
@@ -132,7 +134,7 @@ Phase 1은 filtered rollout을 model에 보내 `raw_memory`, `rollout_summary`, 
 
 또한 user message 안의 `AGENTS.md` fragment와 `<skill>` payload를 제외한다. 이는 project instruction이나 skill 본문을 user preference로 다시 외우는 오염을 줄이는 장치다. [eligible response items](https://github.com/openai/codex/blob/rust-v0.144.0/codex-rs/rollout/src/policy.rs#L60-L81), [Phase 1 filter](https://github.com/openai/codex/blob/rust-v0.144.0/codex-rs/memories/write/src/phase1.rs#L403-L485)
 
-그러나 “협업 선호만 추출하고 academic fact는 제외”하는 semantic allowlist나 typed category filter는 없다. 어떤 내용을 durable signal로 볼지는 extraction model의 judgment다. 따라서 학업 자료를 읽은 일반 ModelingRun을 contribution-enabled로 둔 채 제품이 “선호만 기억한다”고 보장할 수는 없다. 그런 promise가 필요하면 generation을 끄거나, 별도의 sanitized personalization-only thread/ad-hoc input처럼 source 자체를 제한하는 설계가 필요하다.
+그러나 “협업 선호만 추출하고 academic fact는 제외”하는 semantic allowlist나 typed category filter는 없다. 어떤 내용을 durable signal로 볼지는 extraction model의 judgment다. 따라서 학업 자료를 읽은 ModelingInvocation의 실행 thread를 contribution-enabled로 둔 채 제품이 “선호만 기억한다”고 보장할 수는 없다. 그런 promise가 필요하면 generation을 끄거나, 별도의 sanitized personalization-only thread/ad-hoc input처럼 source 자체를 제한하는 설계가 필요하다.
 
 ### Phase 2 consolidation
 
@@ -192,9 +194,9 @@ citation은 단순 표시가 아니라 cited thread의 `usage_count`와 `last_us
 
 이 knob가 `true`이면 web search, tool search, MCP, 또는 tool output이 external context로 표시된 thread를 memory selection에서 제외한다. 이미 Phase 2에 선택된 thread라면 forget queue로 보내 consolidated artifacts에서 제거하도록 한다. MCP server는 일반적으로 external-context source로 취급되고 unknown server도 conservative하게 `true`가 기본이다. [pollution/forget handling](https://github.com/openai/codex/blob/rust-v0.144.0/codex-rs/state/src/runtime/memories.rs#L541-L621), [web/tool-search marking](https://github.com/openai/codex/blob/rust-v0.144.0/codex-rs/core/src/stream_events_utils.rs#L162-L186), [MCP marking](https://github.com/openai/codex/blob/rust-v0.144.0/codex-rs/core/src/mcp_tool_call.rs#L780-L799)
 
-이 설정은 AY-PLE에 매력적인 안전 knob지만 그대로 켜면 polluting MCP, web/tool search, `contains_external_context()`로 표시된 tool output을 쓴 ModelingRun이 기억 대상에서 빠질 수 있다. 단순 `turn/start` user content나 file context가 자동으로 pollution marker를 만든다는 근거는 없다. App source injection도 선택한 low-level 전달 경로가 해당 marker를 만드는 경우에만 제외된다. 따라서 “안전한 default”가 아니라 실제 초기 vertical slice별 O/X matrix에서 판정할 정책이다.
+이 설정은 AY-PLE에 매력적인 안전 knob지만 그대로 켜면 polluting MCP, web/tool search, `contains_external_context()`로 표시된 tool output을 쓴 ModelingInvocation의 실행 thread가 기억 대상에서 빠질 수 있다. 단순 `turn/start` user content나 file context가 자동으로 pollution marker를 만든다는 근거는 없다. App source injection도 선택한 low-level 전달 경로가 해당 marker를 만드는 경우에만 제외된다. 따라서 “안전한 default”가 아니라 실제 초기 vertical slice별 O/X matrix에서 판정할 정책이다.
 
-판정 단위가 개별 item이 아니라 thread 전체라는 점도 중요하다. 예를 들어 향후 `app.request_user_decision` 같은 AY-owned MCP가 기본 external-context source로 표시된 thread에서 한 번 호출되면, 이 knob가 켜진 경우 source 문서뿐 아니라 그 ModelingRun 전체가 memory candidate에서 제외될 수 있다. 반대로 knob를 끄면 source/tool output에서 유래한 내용도 Phase 1 입력에 포함될 수 있다. 어느 쪽도 모든 interaction에 맞는 전역 정답은 아니다.
+판정 단위가 개별 item이나 ModelingRun이 아니라 thread 전체라는 점도 중요하다. 예를 들어 향후 `app.request_user_decision` 같은 AY-owned MCP가 기본 external-context source로 표시된 thread에서 한 번 호출되면, 이 knob가 켜진 경우 해당 thread의 전체 rollout이 memory candidate에서 제외될 수 있다. 반대로 knob를 끄면 source/tool output에서 유래한 내용도 Phase 1 입력에 포함될 수 있다. 어느 쪽도 모든 interaction에 맞는 전역 정답은 아니다.
 
 ### redaction의 한계
 
@@ -284,7 +286,7 @@ OpenAI 공식 customization 문서는 `AGENTS.md`, Memories, Skills, MCP, subage
 
 `developer_instructions`는 built-in instruction에 추가되는 surface이고, `model_instructions_file`은 built-in instruction replacement다. AY-PLE이 Codex 자체의 업데이트 수혜를 유지하려는 전제에서는 둘을 같은 personalization knob로 취급하면 안 된다. `personality`도 communication style일 뿐 product policy가 아니다. [Config reference](https://learn.chatgpt.com/docs/config-file/config-reference#configtoml)
 
-[Codex Goal](https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex#how-goals-are-designed-in-codex)은 global memory나 project instruction이 아니라 thread-scoped completion contract다. 따라서 Goal과 Memory를 함께 켜더라도 `ModelingRun`의 thread/turn mapping이 자동으로 정해지지는 않는다. Goal은 선택된 thread 안에서 목표를 지속시키고, Memory는 여러 과거 thread의 lossy recall을 제공할 뿐이다.
+[Codex Goal](https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex#how-goals-are-designed-in-codex)은 global memory나 project instruction이 아니라 thread-scoped completion contract다. Goal과 Memory를 함께 켜더라도 ModelingRun이 thread나 장기 목표를 소유하게 되지는 않는다. Goal은 선택된 thread 안에서 목표를 지속시키고, Memory는 여러 과거 thread의 lossy recall을 제공할 뿐이다.
 
 Hooks는 lifecycle event에 연결된 deterministic command이고, Memories는 model-generated context다. 예를 들어 “state mutation 전에 schema validator를 반드시 통과” 같은 규칙은 Hook/코드 검증 후보이고, “사용자는 표로 비교하는 설명을 선호” 같은 관찰은 Memory 후보다. [Hooks 공식 문서](https://learn.chatgpt.com/docs/hooks)
 
@@ -311,7 +313,7 @@ Codex는 CLI override, trusted project config, selected profile, user config, sy
 
 기존 제품 불변식처럼 app data나 memory가 사라져도 semester workspace를 다시 열고 authoritative state를 복구할 수 있어야 한다. Runtime Diagnostic History 역시 developer-only 실행 진단 기록이며, memory citation이나 rollout summary를 제품 감사 기록으로 곧바로 재사용하는 표면이 아니다.
 
-현재 Harness는 repository-local `.ay-ple/runtime-codex/*`를 쓰는 개발 도구이고 제품의 최종 app-data 배치가 아니다. 또한 현재 [`ensureCodexRuntimeHome`](../../../packages/runtime-codex/src/raw-client.ts)는 file-auth config만 보장하며 Memories를 명시적으로 켜지 않는다. 따라서 이 조사는 **현재 AY-PLE에 이미 memory가 제품 기능으로 활성화됐다는 보고가 아니다.** 새 runtime home에서는 pinned feature default 때문에 off 상태다.
+현재 Harness는 repository-local `.ay-ple/runtime-codex/*`를 쓰는 개발 도구이고 제품의 최종 app-data 배치가 아니다. 현재 [`ensureCodexRuntimeHome`](../../../packages/runtime-codex/src/raw-client.ts)는 runtime-home directory를 만들며, file-auth config는 기본 workspace-local pair 또는 `ensureFileAuthConfig: true`일 때만 보장한다. Memories는 명시적으로 켜지 않으므로 이 조사는 **현재 AY-PLE에 이미 memory가 제품 기능으로 활성화됐다는 보고가 아니다.** 새 runtime home에서는 pinned feature default 때문에 off 상태다.
 
 generated protocol에는 agent message의 `memoryCitation`이 있지만 현재 Adapter는 text delta를 중심으로 AY event를 정규화한다. 제품이 memory를 쓰기 시작한다면 citation의 local path와 과거 thread id를 developer-only integration evidence로 둘지, user-facing provenance로 정제할지 먼저 결정해야 한다. raw path를 그대로 제품 감사 기록에 복사해서는 안 된다. [generated `ThreadItem`](../../../packages/runtime-codex/src/internal/codex-app-server-protocol/generated/v2/ThreadItem.ts), [current Adapter](../../../packages/runtime-codex/src/adapter.ts)
 
@@ -324,7 +326,7 @@ generated protocol에는 agent message의 `memoryCitation`이 있지만 현재 A
 | AY identity와 금지 규칙 | app-global AGENTS/developer instructions + code enforcement | 매 task에서 deterministic해야 함 |
 | 학기/course/work의 현재 사실 | app-owned model과 versioned context snapshot | 정확성, 수정 권한, recovery가 필요 |
 | 반복 학업 workflow | built-in Skills | procedure와 reference를 progressive하게 로드 가능 |
-| 현재 ModelingRun의 목표와 진행 | selected thread/Goal + app run record | thread-local continuity와 product recovery를 함께 유지 |
+| 현재 ModelingInvocation의 목표와 진행 | selected thread/Goal + app ModelingRun receipt | thread-local continuity와 product recovery를 함께 유지 |
 | 학생의 soft collaboration preference | source-restricted opt-in Codex Memory 후보 | 여러 task에서 유용하지만 삭제 가능하고 non-authoritative여야 하며 일반 학업 rollout과 분리해야 함 |
 | 현재 source 추가·의사결정·중단 | case-specific App interaction routing | timing/correlation을 memory에 위임할 수 없음 |
 
@@ -338,8 +340,8 @@ generated protocol에는 agent message의 `memoryCitation`이 있지만 현재 A
 | --- | --- | --- |
 | memory 의미 | generated, lossy, stale할 수 있는 recall layer | 어떤 preference/workflow를 기억 대상으로 허용할지 |
 | academic facts | authoritative source로 두면 안 됨 | semester workspace/product DB/checked-in artifact 중 SSOT 배치 |
-| scope | 한 `CODEX_HOME`에서 global shared memory | AY 전체, 사용자, semester, course별 runtime-home cardinality |
-| thread contribution | thread 생성 시 persisted mode가 핵심 | ModelingRun/thread mapping 뒤 어떤 run을 opt-in/out할지 |
+| scope | 한 `CODEX_HOME`에서 global shared memory | 채택한 app-wide runtime-home pair 안에서 semester·course 간 혼입을 어떻게 설명하고 제한할지 |
+| thread contribution | thread 생성 시 persisted mode가 핵심 | 어떤 ModelingInvocation 실행 시도를 opt-in/out할지 |
 | retrieval timing | full-context snapshot + progressive file read | active session에서 memory refresh를 언제 노출할지 |
 | external context | exclusion knob가 있으나 broad하게 작동 | 초기 interaction matrix에서 source별 O/X 판정 |
 | privacy | regex redaction은 best-effort | consent, retention, reset, export, audit UX |
@@ -353,8 +355,8 @@ generated protocol에는 agent message의 `memoryCitation`이 있지만 현재 A
 ### 다음 설계에서 답해야 할 질문
 
 1. AY가 “기억한다”는 product promise는 협업 선호인가, 학업 사실인가?
-2. 하나의 app-wide runtime home을 유지할 때 memory scope를 OS user, AY account, semester, course 중 어디까지로 설명할 수 있는가?
-3. ModelingRun, Review, source import, ad-hoc query 각각은 existing memory를 **사용**해도 되는가, future memory 생성에 **기여**해도 되는가?
+2. 하나의 app-wide runtime home이 공유하는 memory scope와 semester·course 간 혼입 가능성을 사용자에게 어떻게 설명할 것인가?
+3. ModelingInvocation 실행과 ad-hoc query에 사용하는 각 thread는 existing memory를 **사용**해도 되는가, future memory 생성에 **기여**해도 되는가?
 4. explicit user instruction, current app snapshot, thread history, AGENTS/Skills, Memory가 충돌할 때 precedence와 stale verification은 무엇인가?
 5. 사용자가 use/generate/inspect/reset/export를 서로 다른 동작으로 이해하고 제어할 수 있는가?
 6. semester archive/delete와 account switch에서 관련 memory만 찾아 지우는 것이 가능한가? 불가능하다면 MVP promise를 어디까지 좁힐 것인가?
@@ -377,7 +379,7 @@ generated protocol에는 agent message의 `memoryCitation`이 있지만 현재 A
 | **후속 probe** | pinned app-server를 실제 AY ChatGPT auth로 memories on/off 조합 실행해 JWT prerequisite, 생성 시점, restart 뒤 summary injection을 확인한다. |
 | **후속 probe** | reset 뒤 source rollout/thread mode가 남아 재생성되는지, generation-off와 새 context까지 포함한 durable-forget sequence를 black-box로 확인한다. |
 | **후속 probe** | 임시 `HOME`과 AY `CODEX_HOME`을 분리한 fixture로 personal/repo/system skill 및 marketplace discovery matrix를 검증한다. |
-| **후속 결정** | session topology를 고정한 뒤 memory scope/cardinality와 product consent/reset/export UX를 ADR로 결정한다. |
+| **후속 결정** | Memory opt-in 검증 뒤 contribution scope와 product consent/reset/export·semester rollover UX를 별도 결정한다. |
 
 ## 공식 문서 바로가기
 

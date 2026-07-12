@@ -1,6 +1,8 @@
 # Codex session/context topology 조사
 
-> **현재 판정 (2026-07-11): 기술 참고 문서.** AY-PLE은 Semester-per-thread, Course-per-thread, ModelingRun-per-thread 같은 고정 topology를 채택하지 않는다. 사용자는 SemesterWorkspace를 `cwd`로 둔 일반적인 Codex 사용처럼 필요할 때 thread를 시작하고 이어가며, ModelingRun은 하나의 렌더링된 Recipe 실행과 결과를 연결하는 얇은 receipt다. `thread`/`turn`/`item`은 Codex integration 내부의 native 단위로 보존하고 제품 학업 모델의 cardinality로 승격하지 않는다. 현재 결정은 [Codex-native product composition](../../architecture/codex-native-product-composition.md)과 [ADR 0007](../../adr/0007-use-native-codex-composition-for-product-actions.md)을 따른다. 아래 topology matrix는 채택 후보가 아니라 당시 설계 위험을 확인한 기술 근거다.
+분류: 기술 참고
+
+> **현재 판정 (2026-07-12):** AY-PLE은 Semester-per-thread, Course-per-thread, ModelingRun-per-thread 같은 고정 topology를 채택하지 않는다. ModelingRun은 한 ModelingInvocation의 한 실행 시도를 기록하며 `thread`/`turn`/`item`은 Codex 통합 내부 단위로 남긴다. 현재 결정은 [Codex-native product composition](../../architecture/codex-native-product-composition.md)과 [ADR 0007](../../adr/0007-use-native-codex-composition-for-product-actions.md)을 따른다. 아래 topology matrix는 채택 후보가 아니라 당시 설계 위험을 확인한 기술 근거다.
 
 조사일: 2026-07-11
 
@@ -41,7 +43,7 @@
 | Task | 사용자가 이해하는 durable work/activity 단위 | product surface가 소유 | 아직 직접 mapping 없음 |
 | Thread | App Server의 technical conversation object | `threadId`, 저장·resume·fork·archive | Codex integration 내부 identifier로 보존 |
 | Session tree | fork/subagent 관계가 공유하는 protocol family | `sessionId`, `forkedFromId`, `parentThreadId` | 제품 개념으로 채택되지 않음 |
-| Turn | 한 thread 안의 한 model/tool exchange | `turnId`, `inProgress/completed/interrupted/failed` | ModelingRun과 cardinality 미정 |
+| Turn | 한 thread 안의 한 model/tool exchange | `turnId`, `inProgress/completed/interrupted/failed` | 한 ModelingInvocation 실행 시도에 사용하지만 raw cardinality는 제품 계약으로 노출하지 않음 |
 | Item | turn 안에서 관측되는 input/output/effect/activity | `itemId`와 started/delta/completed lifecycle | 선택적인 product activity promotion 대상 |
 | Server request | active work가 client 응답을 기다리는 correlated request | JSON-RPC request id와 thread/turn correlation | `PendingInteraction`으로 선택 승격 가능 |
 

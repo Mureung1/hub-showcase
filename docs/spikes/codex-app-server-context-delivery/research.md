@@ -1,6 +1,8 @@
 # Codex App Server context delivery capability 조사
 
-> **현재 판정 (2026-07-11): 기술 참고 문서.** AY-PLE의 기본 제품 작업은 [Codex-native product composition](../../architecture/codex-native-product-composition.md)과 [ADR 0007](../../adr/0007-use-native-codex-composition-for-product-actions.md)에 따라 새 thread를 만들거나 기존 thread를 선택한 뒤 `Skill + PromptTemplate + arguments + source mentions + outputSchema`를 조합해 `turn/start(threadId)`로 실행한다. 이 문서가 조사한 `turn/steer`, correlated server request, Hook, `additionalContext`, `thread/inject_items`, realtime 경로는 범용 event router의 구성 요소가 아니라 구체적인 사용자 case가 필요로 할 때 고르는 capability다. Experimental API도 폐기하지 않고 roadmap 후보로 유지한다. 아래 본문은 pinned Codex 버전의 저수준 근거를 보존한 조사 기록이며 현재 제품 우선순위를 뜻하지 않는다.
+분류: 기술 참고
+
+> **현재 판정 (2026-07-12):** AY-PLE의 제품 실행 경계는 [Codex-native product composition](../../architecture/codex-native-product-composition.md)과 [ADR 0007](../../adr/0007-use-native-codex-composition-for-product-actions.md)의 `ModelingRecipe → ModelingInvocation → ModelingRun`을 따른다. 이 문서가 조사한 `turn/steer`, correlated server request, Hook, `additionalContext`, `thread/inject_items`, realtime 경로는 범용 event router의 구성 요소가 아니라 구체적인 사용자 case가 필요로 할 때 고르는 capability다. 아래 본문은 pinned Codex 버전의 저수준 근거를 보존한 조사 기록이며 현재 제품 우선순위나 실행 계약을 뜻하지 않는다.
 
 ## 조사 범위
 

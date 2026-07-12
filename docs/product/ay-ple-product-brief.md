@@ -2,9 +2,13 @@
 
 작성일: 2026-07-07
 
-최종 업데이트: 2026-07-11
+최종 업데이트: 2026-07-12
 
-상태: 내부 아키텍처 재정렬
+분류: 활성
+
+성숙도: 초안
+
+관련 문서: [CONTEXT.md](../../CONTEXT.md), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md), [Native Codex composition ADR](../adr/0007-use-native-codex-composition-for-product-actions.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [4주 개발 백로그](ay-ple-development-backlog.md)
 
 ## 한 줄 요약
 
@@ -33,8 +37,8 @@ AY-PLE는 새로운 범용 Agent framework를 만드는 제품이 아니다. 일
 | 순서 | 학생이 하는 일 | AY-PLE가 하는 일 | 결과 |
 | --- | --- | --- | --- |
 | 1 | `문제해결글쓰기` 과목의 LMS 공지와 강의계획서를 학기 폴더에 둔다. | 기존 파일을 `RawMaterial`로 인식하고 원본을 그대로 보존한다. | 사용자의 학기 폴더가 작업 기준이 된다. |
-| 2 | 이번에 정리할 두 자료를 고른다. | 선택을 현재 실행에만 유효한 source mention으로 준비한다. | 이번 작업의 우선 입력이 명확해진다. |
-| 3 | `선택한 자료 정리하기`를 누른다. | 작업에 맞는 Skill, prompt template, arguments, output schema를 조합해 Codex `turn`을 시작한다. | AY가 과제 후보와 근거를 찾는다. |
+| 2 | 이번에 정리할 두 자료를 고른다. | 이번 요청에 사용할 `SourceSelection`을 준비한다. | 이번 작업의 우선 입력이 명확해진다. |
+| 3 | `선택한 자료 정리하기`를 누른다. | Recipe와 이번 입력을 `ModelingInvocation`으로 실행한다. | AY가 과제 후보와 근거를 찾는다. |
 | 4 | 원본과 변경 제안을 함께 본다. | `Assignment` 변경을 `StatePatch`로 보여주고 값마다 `EvidenceRef`를 연결한다. | 학생이 제안이 어디에서 왔는지 확인한다. |
 | 5 | 수락·수정·거절한다. | `UserConfirmation`을 기록하고 수락하거나 수정한 내용만 `SemesterModel`에 반영한다. | 확인된 학기 정보가 남는다. |
 | 6 | 이후 학기 정보를 조회한다. | 확인된 모델에서 일정, 요약 문서 같은 화면을 파생한다. | 원본을 다시 뒤지지 않고 학기를 운영한다. |
@@ -48,7 +52,7 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 | 사용자 | 학기 폴더를 사용하고, 작업을 요청하며, 자료와 변경 제안을 확인한다. | Codex protocol이나 프롬프트 조합을 직접 관리할 필요가 없다. |
 | AY-PLE App | 학기 작업공간 activation, RawMaterial 참조·metadata, action UI, 자료 선택, 실행 조합, `StatePatch`, 검토와 저장을 소유한다. | 사용자 원본 bytes나 모든 학업 작업을 별도 workflow engine으로 소유하지 않는다. |
 | AY | 학생과 소통하고 Codex의 작업을 학업 맥락에서 설명하며 변경을 제안한다. | 사용자 대신 학업 사실을 확정하지 않는다. |
-| Codex | `Thread`, `Turn`, `Item`, Skills, 파일·도구 사용, built-in Memories를 제공하는 실행 엔진이다. | `SemesterModel`이나 학업 검토 정책의 source of truth가 아니다. |
+| Codex | 대화·작업 실행, Skills, 파일·도구 사용과 선택적인 native context를 제공하는 실행 엔진이다. | `SemesterModel`이나 학업 검토 정책의 source of truth가 아니다. |
 
 다음 항목은 의도적으로 만들지 않는다.
 
@@ -60,115 +64,28 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 
 ## 학기 작업공간과 Codex 사용 모델
 
-### 작업공간
+학생이 선택한 **N학년 N학기 폴더**가 `SemesterWorkspace`다. 기존 폴더 구조와 원본을 존중하며 고정된 `sources/`·과목 tree를 요구하지 않는다. AY-PLE의 runtime 상태는 사용자 자료와 분리하고, 확인된 학기 상태는 runtime state가 없어져도 다시 열 수 있어야 한다. 구체적인 root 소유권과 현재·목표 경로는 [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)과 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유한다.
 
-- 학생이 선택한 **N학년 N학기 폴더**를 Codex의 `cwd`로 사용한다.
-- 전공·교양·과목 하위 폴더처럼 사용자가 이미 가진 구조를 존중한다.
-- MVP는 `sources/`, `courses/`, `.ay-ple/runs/` 같은 고정 디렉터리 구조를 사용자에게 요구하지 않는다.
-- 앱이 관리해야 하는 인덱스와 구조화 상태는 사용자 자료와 구분해 저장하되, 실제 경로와 DB schema는 구현 PRD에서 정한다.
+Codex의 실행과 보조 맥락은 Course, ModelingRun 또는 확인된 학업 사실의 source of truth가 아니다.
 
-### Codex 환경
+## 학업 작업의 실행 경계
 
-- app-managed `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 사용해 config, 인증, session과 memory 상태를 일반 Codex 환경과 분리한다. inherited host Skill·plugin discovery까지 자동으로 격리된다고 가정하지 않는다.
-- Codex의 `AGENTS.md` 로딩 규칙, Skills protocol, built-in Memories를 그대로 사용한다.
-- MVP에서는 `[features] memories = true`와 `[memories]`의 생성·사용 설정을 명시적으로 켜고 실제 eligibility·auth smoke를 통과한 뒤 Memories를 보조 맥락으로 사용한다. 모든 작업이 memory를 생성한다고 보장하지 않는다.
-- Memories, `Thread` history, compaction 결과는 편의를 위한 Agent context다. 확인된 학기 정보의 source of truth가 아니다.
-- 학기 전환 시 memory 초기화·보관·장기 기억 분류 UX는 후속 과제로 남긴다.
+학생-facing action은 versioned `ModelingRecipe`를 선택하고 이번 작업의 입력을 모아 일회성 `ModelingInvocation`으로 실행한다. 각 실행 시도와 결과는 `ModelingRun` receipt를 통해 학업 상태 변경과 연결된다. `SourceSelection`은 이번 요청의 명시적인 입력이며 진행 중 작업에 자동 전달되지 않는다.
 
-### `Thread`, `Turn`, `Item`
+정확한 용어는 [CONTEXT.md](../../CONTEXT.md), 채택한 결정은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), native Codex mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md)을 따른다.
 
-`Thread`, `Turn`, `Item`은 Codex의 실행 단위이며 학업 도메인 개체가 아니다. `Course = Thread`, `Semester = Thread`, `ModelingRun = Thread` 같은 고정 대응을 두지 않는다. 사용자는 일반적인 Codex 사용처럼 필요할 때 새 작업을 시작하거나 기존 대화를 이어갈 수 있고, 제품은 실행 결과를 `ModelingRun` receipt를 통해 학업 상태 변경과 연결한다.
+## 제품이 소유하는 상태
 
-## 학업 작업의 실행 조합
+정확한 용어 정의는 [CONTEXT.md](../../CONTEXT.md)가 소유한다. Product Brief에서는 제품 책임만 구분한다.
 
-### `ModelingRecipe`
+| 범주 | 개념 | 제품 책임 |
+| --- | --- | --- |
+| 사용자 작업 범위 | `SemesterWorkspace`, `Course`, `RawMaterial` | 기존 학기 자료와 과목 맥락을 보존한다. |
+| canonical 학업 상태 | `Assignment`, `Exam`, `SemesterModel` | 확인된 학업 사실의 owner를 하나로 유지한다. |
+| 제안과 신뢰 | `EvidenceRef`, `StatePatch`, `Review`, `UserConfirmation` | 원본 근거를 보여주고 학생의 결정 뒤에만 상태를 바꾼다. |
+| 실행 지원 | `ModelingRecipe`, `ModelingInvocation`, `ModelingRun`, `SourceSelection` | 반복 작업의 정의, 일회성 요청과 한 시도의 receipt를 학업 상태와 분리한다. |
 
-반복 가능한 학업 작업은 다음 조합으로 표현한다.
-
-```text
-ModelingRecipe
-  = Skill
-  + PromptTemplate
-  + ArgumentSchema
-  + OutputSchema
-```
-
-예를 들어 “선택한 공지에서 과제 정보를 찾아라”라는 작업은 자료 intake나 Agent lifecycle 자체를 Skill로 만드는 것이 아니다. 과제 공지 정리라는 학업 목적에 맞는 Skill과 `{{course}}`, `{{semester}}` 같은 placeholder를 가진 `PromptTemplate`, 필요한 arguments, 예상 `StatePatch` 구조를 하나의 recipe로 묶는다.
-
-실제 호출은 recipe에 실행 시점의 맥락을 더한다.
-
-```text
-native thread 선택 단계
-  = thread/start 또는 thread/resume
-  -> selected threadId
-
-invocation input
-  = ModelingRecipe
-  + arguments
-  + selected-source mentions
-  + verified semester cwd
-  + selected threadId
-  + optional confirmed-state reference
-
-invocation input
-  -> turn/start(threadId)
-  -> ModelingRun receipt
-  -> structured result
-```
-
-| 제품 개념 | Codex 입력으로의 번역 |
-| --- | --- |
-| 학생이 선택한 action | 해당 `ModelingRecipe` 선택 |
-| prompt arguments | `PromptTemplate`의 placeholder를 채운 text |
-| `SourceSelection` | 실행 시점의 `UserInput` mention 목록 |
-| 작업 Skill | `UserInput` skill reference |
-| 학기 범위 | 새 thread의 `thread/start.cwd`; 재사용 thread는 sticky `cwd`가 현재 SemesterWorkspace와 같을 때만 사용 |
-| 구조화 결과 계약 | `turn/start`의 `outputSchema` |
-
-`SourceSelection`은 장기 저장되는 학업 개체가 아니다. GUI에서 선택한 자료가 특정 invocation에 들어갈 때 만들어지는 일시적인 입력이다. 자료를 선택했다는 사실만으로 진행 중 Agent에게 자동 전달하지 않는다. `turn/start.cwd`는 이후 turn에도 유지되므로 기존 thread의 workspace가 다르면 override하지 않고 새 thread를 시작한다.
-
-### `ModelingRun`
-
-`ModelingRun`은 AY-PLE의 workflow orchestrator가 아니라 **한 invocation의 실행 receipt**다. 최소한 다음 사실을 연결한다.
-
-| 정보 | 목적 |
-| --- | --- |
-| recipe와 version | 어떤 작업 구성을 실행했는지 식별 |
-| arguments와 source references | 어떤 입력으로 실행했는지 식별 |
-| opaque execution reference | Codex 통합 내부의 native 실행과 연결하되 raw identifier를 제품 계약으로 노출하지 않음 |
-| 시작·완료 상태와 오류 | 실행 결과 추적 |
-| structured output reference | 생성된 `StatePatch` 후보와 연결 |
-
-raw protocol event나 전체 prompt를 제품 감사 기록에 복제하는 것은 `ModelingRun`의 목적이 아니다. 개발자용 Runtime Diagnostic History와 제품 실행 receipt는 분리한다.
-
-## 핵심 도메인 모델
-
-### 학업 도메인
-
-| 개체 | 의미 |
-| --- | --- |
-| `SemesterWorkspace` | 현재 학생과 AY가 마주하는 N학년 N학기 폴더와 앱의 학기 범위 |
-| `Course` | 현재 학기의 과목 |
-| `RawMaterial` | 원본 공지, 계획서, 문서, 이미지, 메모 등 AY가 읽을 수 있는 자료 |
-| `EvidenceRef` | 제안한 값이 나온 `RawMaterial`의 위치 또는 인용 범위 |
-| `Assignment` | 과목이 요구하는 과제, 제출물, 활동 |
-| `Exam` | 시험, 퀴즈, 중간고사, 기말고사 |
-| `SemesterModel` | 사용자가 확인한 학업 사실의 구조화된 기준 상태 |
-| `StatePatch` | `SemesterModel`에 반영하기 전에 검토하는 구조화 변경 제안 |
-| `UserConfirmation` | `StatePatch`를 수락·수정·거절한 사용자의 결정 기록 |
-
-`TrustedState`는 별도의 다섯 단계 state container가 아니다. `UserConfirmation`을 거쳐 `SemesterModel`에 반영된 정보가 갖는 권한 상태를 가리킨다.
-
-### 실행과 제품 지원 개념
-
-| 개념 | 의미 |
-| --- | --- |
-| `ModelingRecipe` | 학업 action을 Codex 입력으로 구성하는 재사용 가능한 정의 |
-| `SourceSelection` | 한 invocation에 source mention으로 넣을 자료의 일시적인 선택 |
-| `ModelingRun` | invocation과 native Codex 실행, 구조화 결과를 연결하는 얇은 receipt |
-| `Review` | pending `StatePatch`와 근거를 보고 결정하는 제품 경험 |
-
-이 실행 개념들은 `Assignment`나 `Course` 같은 학업 도메인 개체와 같은 층에 두지 않는다.
+`TrustedState`는 별도 저장 container가 아니라 UserConfirmation을 거쳐 SemesterModel에 반영된 정보의 권한 상태다.
 
 ## 상태와 검토 경계
 
@@ -207,14 +124,14 @@ flowchart LR
 
 | 사용자 행동 | App 효과 | AY/Codex 효과 |
 | --- | --- | --- |
-| 자료를 선택하고 action 시작 | 선택과 recipe arguments를 준비 | mention과 Skill을 포함해 새 `turn` 시작 |
-| 진행 중 작업에 명시적으로 정정 전달 | UI와 대상 실행의 상관관계를 기록 | 해당 `turn`에 `turn/steer` 전달 |
-| 진행 중 작업 중단 | 중단 요청과 완료 상태 표시 | `turn/interrupt` 사용 |
-| AY가 표시한 질문에 답변 | pending 질문을 해소 | 해당 protocol request에 응답하거나 대상 `turn`에 전달 |
-| drag-and-drop으로 새 자료 추가 | 파일 metadata와 앱 인덱스 갱신 | 진행 중 작업을 방해하지 않으며, 후속 invocation에서 mention 가능 |
-| 변경 제안 수락·수정·거절 | `UserConfirmation`과 `SemesterModel` 갱신 | 필요할 때 다음 `turn`의 맥락으로 사용하며 자동 steer하지 않음 |
+| 자료를 선택하고 action 시작 | ModelingInvocation을 준비한다. | 선택 자료를 읽는 작업을 시작한다. |
+| 진행 중 작업에 명시적으로 정정 전달 | UI와 대상 실행의 상관관계를 기록한다. | 해당 작업에 정정을 전달한다. |
+| 진행 중 작업 중단 | 중단 요청과 완료 상태를 표시한다. | 진행 중 작업을 중단한다. |
+| AY가 표시한 질문에 답변 | pending 질문을 해소한다. | 대상 작업에 답변을 전달한다. |
+| drag-and-drop으로 새 자료 추가 | 파일 metadata와 앱 인덱스를 갱신한다. | 진행 중 작업에는 자동 전달하지 않는다. |
+| 변경 제안 수락·수정·거절 | `UserConfirmation`과 `SemesterModel`을 갱신한다. | 필요하면 다음 요청의 맥락으로 사용한다. |
 
-이 표는 출발점이다. hook, MCP, experimental API를 포함한 추가 전달 방식은 제거하지 않고 capability roadmap에 남기되, 실제 사용자 기능이 필요할 때 native Codex 구현을 확인한 뒤 선택한다.
+각 행동의 native 전달 방식은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md)이 소유하며, 실제 기능이 요구할 때 case by case로 채택한다.
 
 ## Source of Truth
 
@@ -232,12 +149,13 @@ flowchart LR
 
 4주 캠프 범위는 전체 학기 관리 제품을 완성하는 것이 아니라 Assignment 하나로 첫 수직 흐름을 증명한다.
 
-> 학생이 학기 폴더에서 과제 자료를 선택하고 action을 시작하면, AY가 Codex-native 입력 조합으로 자료를 읽어 근거 있는 `Assignment` 변경 제안을 만들고, 학생이 확인한 결과만 `SemesterModel`에 반영한다.
+> 학생이 학기 폴더에서 과제 자료를 선택하고 action을 시작하면, AY가 자료를 읽어 근거 있는 `Assignment` 변경 제안을 만들고, 학생이 확인한 결과만 `SemesterModel`에 반영한다.
 
 | 분류 | 항목 |
 | --- | --- |
-| 핵심 | 학기 폴더 `cwd`, app-managed `CODEX_HOME`·`CODEX_SQLITE_HOME` pair, TXT `RawMaterial`, 과목과 `Assignment`, source mentions, `ModelingRecipe`, thread 선택과 Codex `turn/start(threadId)`, `ModelingRun` receipt, `EvidenceRef`, `StatePatch`, `Review`, `UserConfirmation`, 확인된 `SemesterModel` |
-| 지원 capability | 실행 진행 표시, 필요한 범위의 `turn/steer`·`turn/interrupt`, Codex approval과 제품 Review의 구분 |
+| 핵심 | SemesterWorkspace, TXT `RawMaterial`, Course와 `Assignment`, `ModelingRecipe → ModelingInvocation → ModelingRun`, `EvidenceRef`, `StatePatch`, `Review`, `UserConfirmation`, 확인된 `SemesterModel` |
+| runtime 전제 | 격리된 제품 layout과 native Codex mapping. 정확한 경계는 Runtime Isolation과 제품 작업 조합 문서를 따른다. |
+| 지원 capability | 실행 진행·중단 표시, 필요한 범위의 진행 중 정정, Codex approval과 제품 Review의 구분 |
 | 다음 vertical 후보 | PDF, `Exam`, 여러 과목 공지에서 시험·과제 표 만들기, derived timeline, 읽기용 정리 문서, 학기 상태 질의 |
 | 후속 아키텍처 | 학기 rollover와 memory 관리 UX, history·rollback, hook/MCP/experimental API 활용, 안정화된 source locator, 앱 저장 schema |
 | 제외 | 과제 정답 대행, 시험 답안 대행, 자동 제출, LMS 우회 자동화, 클라우드 동기화, 다중 실행 엔진 추상화 |
@@ -259,7 +177,7 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 ## 보안과 학업 윤리
 
 - `RawMaterial`과 `SemesterModel`은 사용자의 로컬 환경에 둔다.
-- app-managed `CODEX_HOME`과 앱 관리 상태는 Git에 포함하지 않는다.
+- app-managed runtime 상태와 secret은 Git에 포함하지 않는다.
 - 브라우저가 Codex App Server나 파일시스템에 직접 접근하지 않고 local companion server가 중재한다.
 - RawMaterial 원본은 자동 수정하거나 삭제하지 않는다.
 - Codex command/file approval과 학업 정보에 대한 `UserConfirmation`은 별개의 권한 경계다.
@@ -271,7 +189,7 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 | 기준 | 확인할 질문 |
 | --- | --- |
 | 작업 시작 가능성 | 학생이 학기 폴더와 자료를 선택하고 action을 시작할 수 있는가? |
-| 실행 조합의 명확성 | recipe, arguments, mentions, `cwd`, output contract가 한 실행으로 재현 가능한가? |
+| 실행 경계의 명확성 | Recipe, Invocation과 Run을 구분하고 한 실행 시도를 추적할 수 있는가? |
 | 근거 연결 | 제안한 과제 값이 원본 위치와 연결되는가? |
 | 검토 경계 | 확인하지 않은 값이 `SemesterModel`에 들어가지 않는가? |
 | 정정 가능성 | 학생이 제안을 쉽게 수정하거나 거절할 수 있는가? |
@@ -284,19 +202,12 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 | --- | --- |
 | 단순 AI 파일 분류기로 보임 | 반복 가능한 학업 action, 근거, 검토 후 지속되는 `SemesterModel`을 함께 보여준다. |
 | Codex wrapper로만 보임 | Codex가 소유하지 않는 학업 상태와 사용자 확인 경계를 분명히 한다. |
-| 제품 추상화가 Codex를 다시 구현함 | native AGENTS.md, Skills, Memories, `Thread`·`Turn`을 그대로 사용하고 필요한 부분만 번역한다. |
-| Agent context를 학업 사실로 오해함 | Memories와 thread history를 편의 맥락으로 한정하고 `SemesterModel`과 분리한다. |
+| 제품 추상화가 Codex를 다시 구현함 | Codex native 기능을 사용하고 AY-PLE 고유 상태와 검토 경계만 소유한다. |
+| Agent context를 학업 사실로 오해함 | Source of Truth 표와 Review 경계로 `SemesterModel`과 분리한다. |
 | 사실 중복 저장 | `Assignment`, `Exam` 같은 canonical owner에서 derived view를 만든다. |
-| 기능마다 전달 방식이 제각각이라 혼란 | 사용자 의도, 즉시성, 대상 `turn`, correlation 필요성을 capability matrix로 기록한다. |
+| 기능마다 전달 방식이 제각각이라 혼란 | 사용자 의도, 즉시성, 대상 작업과 correlation 필요성을 capability matrix로 기록한다. |
 | 초기에 미래 모델을 과도하게 확정함 | 다음 vertical에서 증명되기 전까지 deferred candidate로 유지한다. |
 
 ## 열린 질문
 
-| 질문 | 결정 시점 |
-| --- | --- |
-| `SemesterModel`, `StatePatch`, `ModelingRun`의 실제 저장 schema와 위치는 무엇인가? | 첫 제품 vertical 구현 PRD |
-| `EvidenceRef` locator는 quote부터 시작할지 page/range까지 포함할지? | TXT/PDF parser 범위 결정 |
-| 첫 `Thread` UX는 새 작업과 기존 작업 이어가기를 어떻게 보여줄지? | native Codex task UI 연결 시점 |
-| built-in Memories의 학기 rollover를 어떻게 안내할지? | 한 학기 MVP 이후 |
-| 첫 후속 derived view는 일정, 과제표, 읽기용 문서 중 무엇인지? | Assignment vertical 검증 이후 |
-| hook, MCP, experimental API는 어떤 실제 상호작용에서 필요한지? | capability별 구현 triage |
+저장 schema, EvidenceRef locator, thread UX, Memory rollover와 후속 derived view의 결정 시점·우선순위는 [4주 개발 백로그](ay-ple-development-backlog.md)에서 관리한다.

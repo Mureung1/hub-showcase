@@ -42,7 +42,7 @@ Runtime implementation details should live in primary docs, package README files
 
 Keep AGENTS.md limited to stable operating rules. If runtime topology, endpoints, adapter behavior, generated protocol details, or known gaps change, update the implementation map or package docs instead of expanding this section.
 
-Do not leak raw engine protocol shapes into AY-PLE product-facing contracts without a deliberate architecture update. Keep app-managed runtime state and secrets out of git, including workspace-local runtime homes such as `.ay-ple/`.
+Do not leak raw engine protocol shapes into AY-PLE product-facing contracts without a deliberate architecture update. Keep app-managed runtime state and secrets out of git.
 
 ## Testing Guidelines
 

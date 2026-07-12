@@ -1,7 +1,11 @@
 # AY-PLE Design System Direction
 
 작성일: 2026-07-08
-상태: 초안
+
+분류: 활성
+
+성숙도: 초안
+
 관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Review Workspace Scenario](ay-ple-review-workspace-scenario.md)
 
 ## 방향

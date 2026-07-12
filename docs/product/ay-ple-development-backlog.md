@@ -3,7 +3,10 @@
 | 항목 | 내용 |
 | --- | --- |
 | 작성일 | 2026-07-10 |
-| 상태 | 초안 v0.5 |
+| 최종 업데이트 | 2026-07-12 |
+| 분류 | 활성 |
+| 성숙도 | 초안 |
+| 버전 | v0.6 |
 | 계획 기간 | 2026-07-06 ~ 2026-07-31 |
 
 ## 문서 목적
@@ -30,7 +33,7 @@
 1. 학생이 자신의 `N학년 N학기` 폴더를 AY-PLE의 SemesterWorkspace로 연다.
 2. `문제해결글쓰기` Course의 원본 자료를 추가하거나 기존 파일을 고른다.
 3. 학생이 “선택한 자료에서 과제 정보를 정리해줘” 같은 제품 작업을 실행한다.
-4. 앱이 새 thread를 만들거나 기존 thread를 선택한 뒤 ModelingRecipe를 `Skill + PromptTemplate + arguments + source mentions + outputSchema`로 조합해 Codex `turn/start(threadId)`로 전달한다.
+4. 앱이 선택한 `ModelingRecipe` version, arguments, `SourceSelection`과 활성 `SemesterWorkspace` 맥락으로 `ModelingInvocation`을 만들고 Codex 통합이 native 입력으로 번역해 실행한다.
 5. AY의 구조화 결과를 검증해 `StatePatch`와 `EvidenceRef`로 표시한다.
 6. 학생이 원본, 근거, 변경 제안을 함께 보고 수락·수정·거절한다.
 7. `UserConfirmation`을 거친 값만 SemesterModel의 확인된 상태에 반영한다.
@@ -39,19 +42,9 @@
 
 Runtime Inspector는 학생용 제품이 아니라, 위 흐름이 안정된 Codex integration 위에서 실행되는지 확인하는 개발 도구로 유지한다. Runtime Diagnostic History와 Codex 원본 protocol 기록은 제품 감사 기록이나 SemesterModel의 source of truth가 아니다.
 
-## 확정한 제품·실행 경계
+## 계획 전제
 
-| 결정 | 현재 기준 |
-| --- | --- |
-| 실행 엔진 | 4주 MVP는 Codex App Server를 직접 사용한다. 다중 엔진 공통화는 하지 않는다. |
-| 작업공간 | 사용자가 선택한 `N학년 N학기` 폴더를 Codex `cwd`로 사용하고 Course는 관련 폴더와 RawMaterial을 참조하는 제품 객체로 둔다. |
-| Codex 상태 | 하나의 app-managed `CODEX_HOME`·`CODEX_SQLITE_HOME` pair를 사용하고 `AGENTS.md`·Skills의 native 로딩을 따른다. built-in Memories는 명시적인 opt-in과 eligibility smoke 뒤 보조 recall로 사용하며 학기 상태의 SSOT가 아니다. |
-| 제품 작업 | ModelingRecipe가 `Skill`, `PromptTemplate`, argument contract, output contract를 묶는다. 선택 자료는 Codex `mention` input으로 전달한다. |
-| 실행 기록 | ModelingRun은 렌더링된 Recipe 실행과 Codex turn 결과를 연결하는 얇은 receipt다. 학기·Course·thread topology를 소유하지 않는다. |
-| 대화 topology | Semester-per-thread, Course-per-thread, ModelingRun-per-thread 같은 고정 정책을 두지 않는다. 사용자가 일반 Codex처럼 필요할 때 thread를 시작하고 이어간다. |
-| 제품 계약 | AY-PLE는 사용자 소유 원본의 `RawMaterial` 참조·metadata, `EvidenceRef`, `SemesterModel`, `StatePatch`, `UserConfirmation`을 소유한다. |
-
-결정 근거는 [ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md)에 둔다.
+이 백로그는 결정 내용을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다. 제품 목표는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), Codex-first·root 소유권·제품 실행 경계는 [ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md)·[ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)·[ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md)를 따른다. Native mapping과 runtime 격리 목표는 각각 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md)과 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유한다.
 
 ## 계획 원칙
 
@@ -89,8 +82,8 @@ Runtime Inspector는 학생용 제품이 아니라, 위 흐름이 안정된 Code
 | 주차 | 기간 | 주간 목표 | 주요 결과 | 확정도 |
 | --- | --- | --- | --- | --- |
 | 1주차 | 07-06 ~ 07-10 | 제품 방향과 runtime 위험을 먼저 검증한다. | Product Brief, Review Workspace prototype, Runtime Harness, Fake/Codex parity, Runtime Diagnostic History hardening | 완료 |
-| 2주차 | 07-13 ~ 07-17 | Codex-native 제품 작업의 조합 경계와 최소 실행 계약을 고정한다. | SemesterWorkspace 기준선, ModelingRecipe, mention/Skill/outputSchema 조합, ModelingRun receipt, integration 검증 | 확정 |
-| 3주차 | 07-20 ~ 07-24 | 자료 선택→Recipe 실행→StatePatch→Review 제품 수직 흐름을 완성한다. | RawMaterial 반입, Assignment Recipe, EvidenceRef, Review, UserConfirmation, 확인된 SemesterModel | 예측 |
+| 2주차 | 07-13 ~ 07-17 | Codex-native 제품 작업의 조합 경계와 최소 실행 계약을 고정한다. | SemesterWorkspace 기준선, ModelingRecipe, ModelingInvocation 번역, ModelingRun receipt, integration 검증 | 확정 |
+| 3주차 | 07-20 ~ 07-24 | 자료 선택→Invocation 실행→StatePatch→Review 제품 수직 흐름을 완성한다. | RawMaterial 반입, Assignment Recipe·Invocation, EvidenceRef, Review, UserConfirmation, 확인된 SemesterModel | 예측 |
 | 4주차 | 07-27 ~ 07-31 | 대표 자료와 실패 상황에서 수직 흐름을 다듬고 반복 가능한 데모를 완성한다. | 수정·거절, 실패 UX, 필요성이 확인된 상호작용 case, 대표 테스트 자료, 회귀 검증 | 예측 |
 
 ## 1주차 완료 기준선
@@ -110,11 +103,11 @@ Runtime Inspector는 학생용 제품이 아니라, 위 흐름이 안정된 Code
 
 | 순서 | ID | Task | 유형 | 우선순위 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | W2-01 | Codex-native 제품 경계 문서 정렬 | 문서·설계 | P0 | CONTEXT, Product Brief, ADR, 구현 지도, 백로그가 SemesterWorkspace·ModelingRecipe·ModelingRun의 같은 의미를 사용하고 고정 thread topology를 요구하지 않는다. | 완료 |
-| 2 | W2-02 | SemesterWorkspace 실행 기준선 | 개발·설계 | P0 | 테스트가 주입한 명시적 package/app-data/workspace path를 사용해 선택한 학기 폴더를 Codex `cwd`로 전달한다. 이 fixture에서 app-managed `CODEX_HOME`·`CODEX_SQLITE_HOME` pair, native `AGENTS.md`·Skills discovery, Memories feature·생성·사용 설정과 eligibility를 smoke로 확인한다. OS 기본 경로 resolver와 배포 UX는 C-09 범위다. | 준비됨 |
-| 3 | W2-03 | ModelingRecipe와 PromptTemplate 최소 계약 | 개발 | P0 | Recipe가 `Skill`, template, argument schema, output schema를 선언하고, 실제 arguments로 결정적인 prompt를 렌더링한다. Recipe는 Course나 thread를 소유하지 않는다. | 준비됨 |
-| 4 | W2-04 | SourceSelection의 native input 조합 | 개발 | P0 | 새 thread를 시작하거나 기존 thread를 선택해 필수 `threadId`를 얻고, 선택한 RawMaterial 참조를 Codex `mention`, Recipe Skill을 `skill`, 렌더링된 요청을 text input으로 조합해 `outputSchema`와 함께 `turn/start`에 전달한다. 재사용 thread는 sticky `cwd`가 현재 SemesterWorkspace와 같은지 검증한다. raw protocol type은 integration 내부에 남는다. | W2-02~03 대기 |
-| 5 | W2-05 | ModelingRun receipt와 결과 검증 | 개발 | P0 | ModelingRun이 Recipe/version, arguments, invocation에서 복사한 RawMaterial source references, opaque execution correlation, terminal result, 검증된 output reference만 기록한다. transient SourceSelection 객체와 raw identifier는 저장 계약으로 승격하지 않고 자체 plan·thread·장기 context도 소유하지 않는다. | W2-04 대기 |
+| 1 | W2-01 | Codex-native 제품 경계 문서 정렬 | 문서·설계 | P0 | 문서가 `ModelingRecipe → ModelingInvocation → ModelingRun`의 같은 의미를 사용하고, 결정·현재 구현·계획을 각 소유 문서로 분리하며 고정 thread topology를 요구하지 않는다. | 완료 |
+| 2 | W2-02 | SemesterWorkspace 실행 기준선 | 개발·설계 | P0 | 하나의 layout seam이 명시적으로 주입한 `packageRoot`, `appDataRoot`, `workspaceRoot`를 검증하고, `CODEX_HOME`·`CODEX_SQLITE_HOME` pair와 선택한 workspace `cwd`를 함께 계산한다. 제품 경로에서 `process.cwd()`를 workspace fallback으로 사용하지 않으며 native `AGENTS.md`·Skills discovery를 smoke로 확인한다. OS 기본 경로 resolver·배포 UX·Memory opt-in은 각 후속 후보 범위다. | 준비됨 |
+| 3 | W2-03 | ModelingRecipe와 PromptTemplate 최소 계약 | 개발 | P0 | Versioned Recipe가 Skill, template, argument schema와 output schema를 선언하고 실제 arguments로 결정적인 prompt를 렌더링한다. Recipe는 실행별 입력, Course나 thread를 소유하지 않는다. | 준비됨 |
+| 4 | W2-04 | ModelingInvocation 생성과 native input 번역 | 개발 | P0 | Recipe version, 검증된 arguments, SourceSelection과 활성 SemesterWorkspace 맥락으로 일회성 Invocation을 만든다. Codex 통합은 이를 Skill, rendered text, source mentions와 output schema로 번역해 하나의 turn을 시작하고 raw protocol type은 내부에 둔다. 기존 thread를 선택하면 workspace 일치를 검증한다. | W2-02~03 대기 |
+| 5 | W2-05 | ModelingRun receipt와 결과 검증 | 개발 | P0 | Invocation의 실행 시도마다 새 ModelingRun을 만들고 Recipe version, 검증된 입력의 제품 참조, opaque execution correlation, terminal result와 검증된 output reference를 기록한다. Retry는 새 Run이며 일회성 Invocation과 raw identifier는 영속 저장 계약으로 승격하지 않는다. | W2-04 대기 |
 | 6 | W2-06 | 조합 계약 테스트와 실제 Codex smoke | 검증 | P0 | fake transport 계약 테스트가 input 조합과 output validation을 결정적으로 검증하고, 선택 실행 smoke가 pinned Codex App Server에서 같은 shape의 turn을 완료한다. | W2-04~05 대기 |
 | 7 | W2-07 | 3주차 수직 흐름 issue 분할 | 계획 | P1 | RawMaterial부터 UserConfirmation까지 각 작업이 0.5~2일 크기이고, Runtime Harness 확장과 제품 상태 구현이 분리되어 있다. | W2-06 대기 |
 
@@ -122,9 +115,9 @@ Runtime Harness 안정화 issues 001~005는 2026-07-11에 모두 완료했다. �
 
 ### 2주차 종료 시 확인할 결과
 
-- 하나의 Action을 Recipe, arguments, source mentions, `cwd`, `outputSchema`로 설명할 수 있다.
-- ModelingRun이 제품의 실행 receipt일 뿐 Codex thread나 학기 workflow를 재정의하지 않는다.
-- native `AGENTS.md`, Skills와 opt-in Memories를 재구현하지 않고 앱이 관리하는 실행 환경에서 사용할 수 있다.
+- 하나의 action이 Recipe를 선택하고 입력을 모아 ModelingInvocation을 만들며, Codex 통합이 이를 native 입력으로 번역한다.
+- ModelingRun이 한 Invocation 실행 시도의 receipt일 뿐 Codex thread나 학기 workflow를 재정의하지 않는다.
+- native `AGENTS.md`와 Skills를 재구현하지 않고 앱이 관리하는 실행 환경에서 사용할 수 있다.
 - `turn/steer`, Hook, request response 같은 capability가 기본값이 아니라 case별 후속 선택임을 코드와 문서가 함께 표현한다.
 - 3주차 첫날 바로 구현할 수 있는 작은 issue 목록이 준비되어 있다.
 
@@ -135,13 +128,13 @@ Runtime Harness 안정화 issues 001~005는 2026-07-11에 모두 완료했다. �
 | 순서 | ID | Task | 유형 | 우선순위 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | W3-01 | SemesterWorkspace와 Course 기준선 | 개발 | P0 | 사용자가 명시적인 local path로 학기 폴더를 선택해 열고 `문제해결글쓰기` Course를 식별한 뒤 같은 path를 다시 열 수 있다. 기존 사용자 파일은 원본 그대로 유지한다. | 예측 |
-| 2 | W3-02 | RawMaterial 반입과 SourceSelection | 개발 | P0 | 원본 또는 참조를 보존해 목록과 preview에 표시하고, 학생이 Recipe에 전달할 자료를 명시적으로 선택할 수 있다. | 예측 |
-| 3 | W3-03 | Assignment ModelingRecipe 실행 | 개발 | P0 | 선택 자료와 arguments를 native Codex input으로 조합해 한 turn을 시작하고, schema로 검증한 Assignment 변경 제안과 필드별 EvidenceRef를 얻는다. | 예측 |
+| 2 | W3-02 | RawMaterial 반입과 SourceSelection | 개발 | P0 | 원본 또는 참조를 보존해 목록과 preview에 표시하고, 학생이 다음 ModelingInvocation에 사용할 자료를 명시적으로 선택할 수 있다. | 예측 |
+| 3 | W3-03 | Assignment ModelingInvocation 생성·실행 | 개발 | P0 | Assignment Recipe, arguments, 선택 자료와 활성 workspace로 Invocation을 만들고 실행해 schema로 검증한 Assignment 변경 제안과 필드별 EvidenceRef를 얻는다. | 예측 |
 | 4 | W3-04 | StatePatch와 Review Workspace | 개발·UI | P0 | 원본, 근거, 변경 제안을 한 화면에서 확인하고 수락 전에는 SemesterModel의 확인된 값이 바뀌지 않는다. | 예측 |
 | 5 | W3-05 | UserConfirmation과 확인된 상태 반영 | 개발 | P0 | 학생의 수락·수정·거절을 기록하고 수락 또는 수정해 확인한 값만 SemesterModel에 반영한다. raw prompt나 protocol payload를 제품 감사 기록에 저장하지 않는다. | 예측 |
 | 6 | W3-06 | 핵심 흐름 E2E와 실제 Codex 검증 | 검증 | P0 | 자료 선택부터 Review와 새로고침 뒤 확인된 상태 조회까지 결정적 browser test가 통과하고, 같은 의미의 흐름을 선택 실행 Codex smoke로 확인한다. | 예측 |
 
-W3의 실제 학기 작업공간은 W2에서 검증한 injected layout seam에 사용자가 명시적으로 선택한 workspace path와 테스트·설정으로 공급한 app-data path를 넣어 연다. 운영체제 기본 경로 resolver와 migration은 C-09로 남긴다. 현재 `.ay-ple/runtime-*` 경로는 Runtime Harness의 개발 기본값이며 제품 workspace 구조가 아니다.
+W3는 W2-02의 제품 layout seam을 그대로 사용한다. 운영체제 기본 경로 resolver와 migration은 C-09로 남긴다.
 
 ## 4주차 예측 백로그
 
@@ -174,7 +167,7 @@ W3의 실제 학기 작업공간은 W2에서 검증한 injected layout seam에 �
 | C-12 | correlated App Server request UI | P1 | 실행 승인, 짧은 사용자 입력, MCP elicitation 중 대표 case가 선택되고 각 request identity를 보존할 수 있을 때 | case 후보 |
 | C-13 | process restart 뒤 thread resume | P2 | 사용자가 실제로 장기 작업을 다시 열어야 하고 제품 receipt와 Codex history의 복구 책임을 구분했을 때 | topology 비고정 후보 |
 | C-14 | experimental context delivery | P2 | native mention/text/Skill 조합으로 해결되지 않는 구체적인 case와 trust·retention 정책이 생길 때 | `additionalContext`, dynamic tools, realtime 등 roadmap 후보 |
-| C-15 | 학기 rollover와 Memories reset UX | P2 | MVP 이후 여러 학기의 app-managed `CODEX_HOME`·`CODEX_SQLITE_HOME` pair 수명 정책이 필요할 때 | 후속 후보 |
+| C-15 | Built-in Memories opt-in과 lifecycle | P2 | 핵심 수직 흐름 이후 eligibility, contribution scope, consent와 학기 rollover·reset UX를 함께 검증할 때 | 후속 후보 |
 
 다음 항목은 이번 4주 범위에서 제외한다.
 
@@ -194,14 +187,13 @@ W3의 실제 학기 작업공간은 W2에서 검증한 injected layout seam에 �
 
 | 결정 | 목표 시점 | 결정 전 기본 가정 |
 | --- | --- | --- |
-| 첫 Assignment ModelingRecipe의 arguments와 output schema | 2주차 | 과제명, 마감, 제출 방식, EvidenceRef에 필요한 최소 필드만 다룬다. |
+| 첫 Assignment ModelingRecipe의 argument contract와 output schema | 2주차 | 과제명, 마감, 제출 방식, EvidenceRef에 필요한 최소 필드만 다룬다. |
 | 학기 상태 저장 schema와 repository 경계 | 2주차 | 제품 상태는 runtime history와 분리하고 raw Codex protocol을 저장 계약으로 사용하지 않는다. |
 | RawMaterial 원본 위치와 app-managed metadata 위치 | 2주차 | 원본은 자동 수정·삭제하지 않고 workspace-local metadata와 분리한다. |
 | StatePatch, EvidenceRef, UserConfirmation의 최소 필드 | 2주차 | Review 화면과 Assignment 수직 흐름에서 실제로 읽고 쓰는 필드만 먼저 둔다. |
-| ModelingRun receipt의 최소 correlation | 2주차 | Recipe/version, arguments, invocation에서 복사한 RawMaterial source references, opaque execution reference, terminal result와 output reference만 기록한다. |
+| ModelingRun receipt의 최소 correlation | 2주차 | 한 Invocation 시도에 필요한 Recipe version, 검증된 입력의 제품 참조, opaque execution reference, terminal result와 output reference만 기록하고 retry는 새 Run으로 남긴다. |
 | 첫 제품 수직 흐름의 입력 형식 | 2주차 | TXT 한 종류로 먼저 수직 흐름을 닫고 PDF는 후보로 둔다. |
 | 최소 explicit workspace path 선택·재열기 | 3주차 W3-01 | 사용자가 제공한 local path를 injected layout seam에 전달한다. |
-| 운영체제별 `appDataRoot`, packaged chooser·registry와 migration | C-09 패키징 시점 | W2/W3에서는 테스트·설정으로 명시한 app-data path와 workspace path를 주입한다. |
 | 첫 case-specific App Server interaction | 3주차 말 | 핵심 흐름에 요구가 없다면 `turn/start` 조합만으로 데모를 완성한다. |
 
 ## 운영 방법
@@ -228,6 +220,7 @@ W3의 실제 학기 작업공간은 W2에서 검증한 injected layout seam에 �
 
 | 날짜 | 버전 | 변경 |
 | --- | --- | --- |
+| 2026-07-12 | v0.6 | 문서 위계에 따라 결정 설명을 소유 문서로 이동하고, 계획 항목을 `ModelingRecipe → ModelingInvocation → ModelingRun` 경계와 제품 layout seam에 맞췄다. |
 | 2026-07-11 | v0.5 | 제품 작업을 native Codex composition으로 재정의하고 ModelingRun을 얇은 실행 receipt로 축소했다. W2를 Recipe·mention·turn 조합 검증, W3를 Review 수직 흐름으로 재편하고 steer/request/resume/experimental API를 case별 후보로 이동했다. |
 | 2026-07-11 | v0.4 | Runtime Harness issues 001–005 완료를 기준선에 반영하고, developer-only 진단 기록을 제품에서 재사용하기 전 allowlist와 redaction을 P1 보안 gate로 추가했다. |
 | 2026-07-10 | v0.3 | 현재 저장소 내부 `.ay-ple/runtime-*`를 유효한 개발 기본값으로 유지하고, 제품 진입점에서 패키지·앱 데이터·학기 작업공간 루트를 분리하는 후속 과제를 C-09와 미결정 표에 연결했다. |

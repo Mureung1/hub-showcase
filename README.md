@@ -21,7 +21,7 @@ npm run demo:week1
 
 ## 문서
 
-기획서를 포함한 formal project docs는 이 README에서 링크로 접근할 수 있게 관리합니다. 문서 추가 위치와 분류 기준은 [docs/README.md](docs/README.md)를 따릅니다.
+기획서를 포함한 formal project docs는 이 README에서 링크로 접근할 수 있게 관리합니다. 이 목록은 탐색을 위한 mirror이며, 문서의 분류·역할·배치 기준은 [docs/README.md](docs/README.md)가 소유합니다.
 
 ### 활성 문서
 
@@ -32,14 +32,14 @@ npm run demo:week1
 | 제품 시나리오 | [Review Workspace Scenario](docs/product/ay-ple-review-workspace-scenario.md) | 자료 선택부터 Review까지의 사용자 시나리오 |
 | 제품 디자인 | [AY-PLE Design System Direction](docs/product/ay-ple-design-system.md) | 밝은 학업 워크스페이스 중심의 브랜드/UI 기준 |
 | 개발 계획 | [AY-PLE 4주 개발 백로그](docs/product/ay-ple-development-backlog.md) | Codex-native composition과 Review 수직 흐름 중심의 4주 계획 |
-| 제품↔Codex 구조 | [Codex-native product composition](docs/architecture/codex-native-product-composition.md) | SemesterWorkspace, ModelingRecipe, source mention, ModelingRun receipt의 현재 mapping |
+| 제품↔Codex 구조 | [Codex-native product composition](docs/architecture/codex-native-product-composition.md) | `ModelingRecipe → ModelingInvocation → ModelingRun`과 native Codex의 mapping |
 | Runtime 구조 | [Codex Runtime 격리](docs/architecture/codex-runtime-isolation.md) | Codex runtime, app data, 사용자 workspace의 실행 경계 |
 | 구현 현황 | [Runtime Harness 구현 지도](docs/architecture/runtime-harness-implementation-map.md) | 개발자용 Harness의 현재 모듈 지도와 구현 gap |
 | ADR | [0002. First-class academic objects](docs/adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam canonical model과 derived view 결정 |
 | ADR | [0004. Runtime history와 workspace storage 분리](docs/adr/0004-split-runtime-history-semantics-from-workspace-storage.md) | 개발자 진단 이력과 제품 저장 책임 분리 |
 | ADR | [0005. Codex App Server 우선 사용](docs/adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) | 4주 MVP의 실행 엔진과 protocol isolation 결정 |
 | ADR | [0006. 제품 실행 경로 소유권 분리](docs/adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | package, app data, SemesterWorkspace 경로와 수명 분리 |
-| ADR | [0007. Native Codex composition으로 제품 작업 실행](docs/adr/0007-use-native-codex-composition-for-product-actions.md) | 별도 orchestration framework 없이 Recipe를 native turn input으로 조합하는 결정 |
+| ADR | [0007. Native Codex composition으로 제품 작업 실행](docs/adr/0007-use-native-codex-composition-for-product-actions.md) | Recipe·Invocation·Run의 제품 실행 경계를 나누는 결정 |
 
 ### 기술 참고 문서
 
@@ -71,33 +71,6 @@ npm run demo:week1
 | [AGENTS.md](AGENTS.md) | Codex 작업 규칙과 브랜치/PR 컨벤션 |
 | [CONTEXT.md](CONTEXT.md) | AY-PLE의 현재 domain glossary |
 
-## 문서 구조
-
-```text
-.
-├── README.md
-├── AGENTS.md
-├── CONTEXT.md
-├── apps/
-│   ├── server/
-│   └── inspector/
-├── docs/
-│   ├── README.md
-│   ├── product/
-│   ├── architecture/
-│   ├── prds/
-│   ├── issues/
-│   ├── spikes/
-│   ├── adr/
-│   └── agents/
-├── packages/
-│   ├── runtime-core/
-│   ├── runtime-fake/
-│   └── runtime-codex/
-└── spikes/
-    └── codex-runtime-ownership/
-```
-
 ## 현재 스택
 
 | 영역 | 위치 | 설명 |
@@ -128,4 +101,4 @@ Codex app-server initialize smoke는 live runtime 상태를 건드릴 수 있으
 npm run smoke:codex -w @ay-ple/runtime-codex
 ```
 
-아직 DB, 제품 인증, 상태관리 선택지는 고정하지 않습니다. Runtime Harness의 여섯 가지 이벤트 생명주기는 개발자용 단일 실행 진단 기반이며 제품 전체 상호작용 계약이 아닙니다. 4주 제품 경로는 Codex App Server를 우선 사용하고, 새 thread를 만들거나 기존 thread를 선택한 뒤 ModelingRecipe를 `Skill + PromptTemplate + arguments + source mentions + outputSchema`로 조합해 native `turn/start(threadId)`로 실행합니다. AY-PLE는 `RawMaterial`, `EvidenceRef`, `StatePatch`, `UserConfirmation`, `SemesterModel` 같은 학업 상태와 Review 경험을 소유합니다.
+아직 DB, 제품 인증, 상태관리 선택지는 고정하지 않습니다. Runtime Harness의 여섯 가지 이벤트 생명주기는 개발자용 단일 실행 진단 기반이며 제품 전체 상호작용 계약이 아닙니다. 4주 제품 경로는 Codex App Server를 우선 사용하고 [`ModelingRecipe → ModelingInvocation → ModelingRun`](docs/architecture/codex-native-product-composition.md)으로 재사용 정의, 일회성 요청과 실행 receipt를 구분합니다. AY-PLE는 `RawMaterial`, `EvidenceRef`, `StatePatch`, `UserConfirmation`, `SemesterModel` 같은 학업 상태와 Review 경험을 소유합니다. 현재 구현 gap은 [Runtime Harness 구현 지도](docs/architecture/runtime-harness-implementation-map.md)를 따릅니다.

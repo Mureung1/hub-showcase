@@ -1,7 +1,9 @@
 # AY-PLE Runtime Ownership Spike Plan
 
 작성일: 2026-07-07
-상태: 완료 · 과거 계획
+
+분류: 완료·역사 기록
+
 브랜치: `codex/runtime-ownership-spike-plan`
 실행 산출물: [Runtime Ownership Spike Report](../../../spikes/codex-runtime-ownership/spike-report.md)
 
