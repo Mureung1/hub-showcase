@@ -7,6 +7,7 @@ afterEach(() => {
   cleanup()
   window.sessionStorage.clear()
   vi.useRealTimers()
+  Reflect.deleteProperty(navigator, 'clipboard')
 })
 
 beforeEach(() => {
@@ -420,5 +421,71 @@ describe('App', () => {
       expect(screen.getByRole('button', { name: '텍스트 선택됨' })).toBeInTheDocument()
     })
     expect(window.getSelection()?.toString()).toContain('결석하게 되어 과제 제출 방법을 여쭤봐도 될까요')
+  })
+
+  it('복사 성공 시 버튼이 1.5초간 복사됨 ✓로 바뀌고 접근 가능한 상태 안내를 남긴다', async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '감사·확인' }))
+    fireEvent.click(screen.getAllByRole('button', { name: '복사' })[0])
+
+    expect(await screen.findByRole('button', { name: '복사됨 ✓' })).toBeInTheDocument()
+    expect(writeText).toHaveBeenCalledWith('확인했어요 알려주셔서 고마워요')
+    expect(screen.getByRole('status')).toHaveTextContent('복사했어요.')
+
+    await waitFor(
+      () => expect(screen.queryByRole('button', { name: '복사됨 ✓' })).not.toBeInTheDocument(),
+      { timeout: 2500 },
+    )
+    expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3)
+  })
+
+  it('자리 표시자가 있는 후보를 복사하면 빈칸 채우기 안내를 지속 노출한다', async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '부탁' }))
+    fireEvent.click(screen.getAllByRole('button', { name: '복사' })[0])
+
+    const notice = await screen.findByText('복사했어요. 보내기 전에 빈칸을 채워 보내주세요.')
+    expect(notice).toHaveAttribute('role', 'status')
+
+    await waitFor(
+      () => expect(screen.queryByRole('button', { name: '복사됨 ✓' })).not.toBeInTheDocument(),
+      { timeout: 2500 },
+    )
+    expect(screen.getByText('복사했어요. 보내기 전에 빈칸을 채워 보내주세요.')).toBeInTheDocument()
+  })
+
+  it('다시 만들기로 후보가 새로 오면 복사 안내가 사라진다', async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    fireEvent.change(screen.getByLabelText('상황 설명'), {
+      target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '보낼 말 3가지 만들기' }))
+    await waitFor(() => expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3))
+
+    fireEvent.click(screen.getAllByRole('button', { name: '복사' })[0])
+    expect(await screen.findByRole('button', { name: '복사됨 ✓' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '다시 만들기' }))
+    await waitFor(() => expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3))
+
+    expect(screen.queryByRole('button', { name: '복사됨 ✓' })).not.toBeInTheDocument()
+    expect(screen.queryByText('복사했어요.')).not.toBeInTheDocument()
   })
 })

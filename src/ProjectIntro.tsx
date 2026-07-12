@@ -305,6 +305,7 @@ function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: Projec
   const [candidates, setCandidates] = useState<Candidate[]>(initialFlow.candidates)
   const [source, setSource] = useState<Source>(initialFlow.source)
   const [copiedTone, setCopiedTone] = useState<ToneLevel | null>(null)
+  const [copiedNoticeTone, setCopiedNoticeTone] = useState<ToneLevel | null>(null)
   const [fallbackTone, setFallbackTone] = useState<ToneLevel | null>(null)
   const [copyFailedTone, setCopyFailedTone] = useState<ToneLevel | null>(null)
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('idle')
@@ -313,6 +314,9 @@ function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: Projec
   const [isLongWait, setIsLongWait] = useState(false)
   const resultTextRefs = useRef(new Map<ToneLevel, HTMLParagraphElement>())
   const generationRequestId = useRef(0)
+  const copyResetTimer = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => window.clearTimeout(copyResetTimer.current), [])
 
   const selectedScenario = scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null
 
@@ -413,6 +417,7 @@ function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: Projec
     setSource('template')
     setCandidates(buildCandidates(toneTexts))
     setCopiedTone(null)
+    setCopiedNoticeTone(null)
     setFallbackTone(null)
     setCopyFailedTone(null)
     setStep('result')
@@ -452,6 +457,7 @@ function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: Projec
     setSource(result.response.source)
     setCandidates(result.response.candidates)
     setCopiedTone(null)
+    setCopiedNoticeTone(null)
     setFallbackTone(null)
     setCopyFailedTone(null)
     setGenerationStatus('idle')
@@ -479,11 +485,15 @@ function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: Projec
     try {
       if (!navigator.clipboard) throw new Error('Clipboard API를 사용할 수 없습니다.')
       await navigator.clipboard.writeText(candidate.text)
+      window.clearTimeout(copyResetTimer.current)
       setCopiedTone(candidate.toneLevel)
+      setCopiedNoticeTone(candidate.toneLevel)
       setFallbackTone(null)
       setCopyFailedTone(null)
+      copyResetTimer.current = window.setTimeout(() => setCopiedTone(null), 1500)
     } catch {
       setCopiedTone(null)
+      setCopiedNoticeTone(null)
       if (selectCandidateText(candidate.toneLevel)) {
         setFallbackTone(candidate.toneLevel)
         setCopyFailedTone(null)
@@ -823,13 +833,23 @@ function ProjectIntro({ mockGenerationCase = developmentGenerationCase }: Projec
                   </p>
                   <button disabled={isRerolling} onClick={() => void copyCandidate(candidate)} type="button">
                     {copiedTone === candidate.toneLevel
-                      ? '복사됨'
+                      ? '복사됨 ✓'
                       : fallbackTone === candidate.toneLevel
                         ? '텍스트 선택됨'
                         : copyFailedTone === candidate.toneLevel
                           ? '복사 실패'
                           : '복사'}
                   </button>
+                  {copiedNoticeTone === candidate.toneLevel &&
+                    (hasPlaceholder(candidate.text) ? (
+                      <p className="copy-feedback" role="status">
+                        복사했어요. 보내기 전에 빈칸을 채워 보내주세요.
+                      </p>
+                    ) : (
+                      <p className="copy-feedback sr-only" role="status">
+                        복사했어요.
+                      </p>
+                    ))}
                   {fallbackTone === candidate.toneLevel && (
                     <p className="copy-feedback" role="status">
                       텍스트를 선택했어요. 길게 눌러 복사해주세요.
