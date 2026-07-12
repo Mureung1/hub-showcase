@@ -42,7 +42,9 @@ A spec with `State: ready-for-ticketing` is not itself an implementation ticket.
 5. When working from a local ticket, update it in place:
    - check verified acceptance criteria,
    - set `State: completed` and `Next actor: none`,
-   - append `## Result` with the implementation outcome and commits,
+   - append `## Result` with the implementation outcome and the implementation commits already created,
    - append `## Verification` with commands and outcomes, including any checks explicitly deferred to a final integration ticket.
-6. Stop. Do not claim the next implementation ticket in the same context; report the next frontier for a fresh session. For direct work, report the completed scope and verification instead.
-
+6. Inspect `git status` and the remaining diff. Stage only intended changes, including review fixes, owning-document updates, and the local ticket closeout. Do not stage unrelated user changes.
+7. Create a final focused commit on the current `codex/...` branch. For ticket work, use a closeout-oriented Conventional Commit message such as `docs: close <ticket title>` when only artifact bookkeeping remains; otherwise describe the final behavior fix. The ticket does not need to cite this closeout commit's own SHA.
+8. Verify the tracked working tree is clean. If the final commit cannot be created or intended tracked changes remain, report the blocker and do not invoke `/camp-pr`.
+9. Stop. Do not claim the next implementation ticket in the same context; report the next frontier for a fresh session. For direct work, report the completed scope, verification, and final commit instead.
