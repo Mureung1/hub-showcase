@@ -14,6 +14,7 @@ export type FakeCodexStdioScenario =
   | 'malformed_json'
   | 'ambiguous_message'
   | 'invalid_server_request_params'
+  | 'unsafe_numeric_id'
   | 'exit_after_request'
   | 'stdout_eof'
   | 'stdin_failure'
@@ -200,6 +201,13 @@ reader.on('line', (line) => {
         autoResolutionMs: null,
       },
     })
+    return
+  }
+
+  if (scenario === 'unsafe_numeric_id') {
+    process.stdout.write(
+      '{"id":9007199254740993,"result":{"unsafe":true}}\n',
+    )
     return
   }
 

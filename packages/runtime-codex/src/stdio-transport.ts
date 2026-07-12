@@ -81,14 +81,6 @@ export class CodexStdioRequestError extends Error {
 
 type ServerRequestMethod = ServerRequest['method']
 
-type ServerRequestFor<Method extends ServerRequestMethod> = Extract<
-  ServerRequest,
-  { method: Method }
->
-
-type ServerRequestParams<Method extends ServerRequestMethod> =
-  ServerRequestFor<Method>['params']
-
 const serverRequestResponseTypes = {
   'item/commandExecution/requestApproval': null as unknown as CommandExecutionRequestApprovalResponse,
   'item/fileChange/requestApproval': null as unknown as FileChangeRequestApprovalResponse,
@@ -113,12 +105,12 @@ const validateGeneratedServerRequest = new Ajv({
     uint32: true,
     uint64: true,
   },
-}).compile<ServerRequest>(serverRequestSchema)
+}).compile(serverRequestSchema)
 
 export type CodexStdioServerRequestFor<Method extends ServerRequestMethod> = {
   id: RequestId
   method: Method
-  params: ServerRequestParams<Method>
+  params: unknown
   respond: (
     result: ServerRequestResponseByMethod[Method],
   ) => Promise<void>
@@ -420,6 +412,14 @@ export class CodexStdioTransport {
   }
 
   private handleStdoutLine(line: string): void {
+    if (hasUnsafeTopLevelNumericId(line)) {
+      this.failProtocol(
+        'invalid_message',
+        'Codex app-server emitted an unsafe numeric request identity',
+      )
+      return
+    }
+
     let value: unknown
 
     try {
@@ -748,8 +748,113 @@ function assertRequestId(id: unknown): asserts id is RequestId {
 function isRequestId(value: unknown): value is RequestId {
   return (
     typeof value === 'string' ||
-    (typeof value === 'number' && Number.isFinite(value))
+    (typeof value === 'number' &&
+      Number.isSafeInteger(value) &&
+      !Object.is(value, -0))
   )
+}
+
+function hasUnsafeTopLevelNumericId(source: string): boolean {
+  let depth = 0
+
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index]
+
+    if (character === '"') {
+      const stringEnd = findJsonStringEnd(source, index)
+
+      if (stringEnd === -1) {
+        return false
+      }
+
+      if (depth === 1) {
+        const key = readJsonString(source.slice(index, stringEnd + 1))
+        let valueStart = skipWhitespace(source, stringEnd + 1)
+
+        if (key === 'id' && source[valueStart] === ':') {
+          valueStart = skipWhitespace(source, valueStart + 1)
+          const firstValueCharacter = source[valueStart]
+
+          if (
+            firstValueCharacter === '-' ||
+            (firstValueCharacter !== undefined &&
+              firstValueCharacter >= '0' &&
+              firstValueCharacter <= '9')
+          ) {
+            let valueEnd = valueStart + 1
+
+            while (
+              valueEnd < source.length &&
+              /[0-9eE+.-]/.test(source[valueEnd] ?? '')
+            ) {
+              valueEnd += 1
+            }
+
+            const numericId = Number(source.slice(valueStart, valueEnd))
+
+            return (
+              !Number.isSafeInteger(numericId) || Object.is(numericId, -0)
+            )
+          }
+        }
+      }
+
+      index = stringEnd
+      continue
+    }
+
+    if (character === '{' || character === '[') {
+      depth += 1
+    } else if (character === '}' || character === ']') {
+      depth -= 1
+    }
+  }
+
+  return false
+}
+
+function findJsonStringEnd(source: string, start: number): number {
+  let escaped = false
+
+  for (let index = start + 1; index < source.length; index += 1) {
+    const character = source[index]
+
+    if (escaped) {
+      escaped = false
+      continue
+    }
+
+    if (character === '\\') {
+      escaped = true
+      continue
+    }
+
+    if (character === '"') {
+      return index
+    }
+  }
+
+  return -1
+}
+
+function readJsonString(source: string): string | undefined {
+  try {
+    const value = JSON.parse(source)
+
+    return typeof value === 'string' ? value : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function skipWhitespace(source: string, start: number): number {
+  let index = start
+
+  while (index < source.length && /\s/.test(source[index] ?? '')) {
+    index += 1
+  }
+
+  return index
 }
 
 function isServerRequestMethod(method: string): method is ServerRequestMethod {

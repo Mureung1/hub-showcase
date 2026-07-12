@@ -180,6 +180,7 @@ test('CodexStdioTransport fails closed on malformed and ambiguous messages', asy
       | 'malformed_json'
       | 'ambiguous_message'
       | 'invalid_server_request_params'
+      | 'unsafe_numeric_id'
     >
     code: 'malformed_json' | 'ambiguous_message' | 'invalid_message'
   }> = [
@@ -189,6 +190,7 @@ test('CodexStdioTransport fails closed on malformed and ambiguous messages', asy
       scenario: 'invalid_server_request_params',
       code: 'invalid_message',
     },
+    { scenario: 'unsafe_numeric_id', code: 'invalid_message' },
   ]
 
   for (const fixtureCase of cases) {
