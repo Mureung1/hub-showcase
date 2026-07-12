@@ -18,6 +18,9 @@ README.md, docs/plan.md, docs/checklist.md, docs/context.md를 먼저 읽으세�
 MBTI는 고정 판단이 아니라 학습 선호 탐색의 출발점입니다.
 추천은 MBTI 유형명만으로 만들지 말고 공부 설문과 스트레스 반응 설문을 함께 반영하세요.
 스트레스는 피로 신호, 회복 루틴, 주의 패턴으로 표현하세요.
+공식 MBTI 결과는 사용자가 외부에서 받은 결과를 직접 입력한 경우에만 사용하세요.
+공부습관 자체 점검의 4축 코드는 공식 판정이 아니며 현재 추천 입력에서 분리하세요.
+task/state-only baseline과 MBTI 힌트 추가 결과를 함께 산출하세요.
 ```
 
 ## Implementation Prompt
@@ -29,6 +32,8 @@ Next.js로 바꾸지 마세요.
 localStorage 기반 MVP를 유지하세요.
 결과와 추천 피드백에는 동일한 알고리즘 버전을 기록하고, 사용자가 로컬 데이터를 삭제할 수 있게 하세요.
 사용자 응답이나 자유의견을 Git repository 또는 GitHub issue에 저장하지 마세요.
+만족도·이해도·실행 가능성과 실행률·지연 학습성과를 분리하세요.
+learning-styles matching 가정을 검증 없이 구현하지 마세요.
 npm run build와 가능하면 npm run lint로 검증하세요.
 ```
 

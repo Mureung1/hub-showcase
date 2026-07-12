@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { MBTI_TYPES, SCORE_LABELS, STUDY_QUESTIONS, STRESS_QUESTIONS } from "./data/questions";
 import { ALGORITHM_VERSION, createRecommendations } from "./lib/recommendations";
-import { calculateScores, getSelectedOptionLabels } from "./lib/scoring";
+import {
+  calculateMethodAffinities,
+  calculatePreferenceProfile,
+  calculateScores,
+  getSelectedOptionLabels,
+} from "./lib/scoring";
 import { clearStoredData, loadFeedback, loadRecords, loadResult, saveFeedback, saveRecord, saveResult } from "./lib/storage";
 
 const STEPS = ["소개", "MBTI", "공부 설문", "스트레스 설문", "결과", "실천 카드"];
@@ -70,15 +75,23 @@ function isCompleteAnswers(questions, answers) {
   );
 }
 
+function createResultId() {
+  return globalThis.crypto?.randomUUID?.() ?? `result-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 export default function ProjectIntro() {
   const [storedSnapshot] = useState(() => loadResult());
   const [storedRecords] = useState(() => loadRecords());
   const [storedFeedback] = useState(() => loadFeedback());
   const [step, setStep] = useState(0);
+  const [resultId, setResultId] = useState(() => storedSnapshot?.resultId ?? createResultId());
   const [mbti, setMbti] = useState(() =>
     storedSnapshot?.profile?.mbti === "UNKNOWN" ? "" : (storedSnapshot?.profile?.mbti ?? ""),
   );
-  const [mbtiKnown, setMbtiKnown] = useState(() => storedSnapshot?.profile?.mbtiKnown ?? true);
+  const [mbtiSource, setMbtiSource] = useState(() =>
+    storedSnapshot?.profile?.mbtiSource ??
+    (storedSnapshot?.profile?.mbtiKnown ? "official-self-report" : "not-provided"),
+  );
   const [studyAnswers, setStudyAnswers] = useState(() => storedSnapshot?.studyAnswers ?? {});
   const [stressAnswers, setStressAnswers] = useState(() => storedSnapshot?.stressAnswers ?? {});
   const [completed, setCompleted] = useState(false);
@@ -86,14 +99,30 @@ export default function ProjectIntro() {
   const [fatigueLevel, setFatigueLevel] = useState(3);
   const [records, setRecords] = useState(storedRecords);
   const [fitScore, setFitScore] = useState(0);
+  const [understandingScore, setUnderstandingScore] = useState(3);
+  const [actionabilityScore, setActionabilityScore] = useState(3);
   const [feedbackNote, setFeedbackNote] = useState("");
   const [feedbackCount, setFeedbackCount] = useState(storedFeedback.length);
+  const mbtiKnown = mbtiSource === "official-self-report";
 
   const result = useMemo(() => {
+    const methodAffinities = calculateMethodAffinities(studyAnswers, stressAnswers);
+    const baselineScores = calculateScores({
+      mbti,
+      mbtiKnown,
+      studyAnswers,
+      stressAnswers,
+      useMbtiHints: false,
+    });
     const scores = calculateScores({ mbti, mbtiKnown, studyAnswers, stressAnswers });
-    const recommendationResult = createRecommendations(scores);
+    const baselineRecommendationResult = createRecommendations(baselineScores, methodAffinities);
+    const recommendationResult = createRecommendations(scores, methodAffinities);
+    const preferenceProfile = calculatePreferenceProfile(studyAnswers);
 
     return {
+      baselineScores,
+      baselineRecommendations: baselineRecommendationResult.recommendations,
+      preferenceProfile,
       scores,
       ...recommendationResult,
     };
@@ -101,14 +130,17 @@ export default function ProjectIntro() {
 
   const canContinueStudy = isCompleteAnswers(STUDY_QUESTIONS, studyAnswers);
   const canContinueStress = isCompleteAnswers(STRESS_QUESTIONS, stressAnswers);
-  const hasCompleteResult = (!mbtiKnown || Boolean(mbti)) && canContinueStudy && canContinueStress;
+  const hasCompleteResult =
+    (mbtiSource === "not-provided" || (mbtiKnown && Boolean(mbti))) && canContinueStudy && canContinueStress;
 
   useEffect(() => {
     if (hasCompleteResult) {
       saveResult({
+        resultId,
         profile: {
           mbti: mbtiKnown ? mbti : "UNKNOWN",
           mbtiKnown,
+          mbtiSource,
           createdAt: new Date().toISOString(),
         },
         studyAnswers,
@@ -116,20 +148,26 @@ export default function ProjectIntro() {
         result,
       });
     }
-  }, [hasCompleteResult, mbti, mbtiKnown, result, stressAnswers, studyAnswers]);
+  }, [hasCompleteResult, mbti, mbtiKnown, mbtiSource, result, resultId, stressAnswers, studyAnswers]);
 
   const topScores = Object.entries(result.scores)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5);
 
-  function chooseUnknownMbti() {
+  function continueWithoutOfficialMbti() {
     setMbti("");
-    setMbtiKnown(false);
+    setMbtiSource("not-provided");
     setStep(2);
   }
 
   function handleRecordSave() {
-    const next = saveRecord({ completed, focusLevel, fatigueLevel });
+    const next = saveRecord({
+      algorithmVersion: ALGORITHM_VERSION,
+      completed,
+      fatigueLevel,
+      focusLevel,
+      resultId,
+    });
     setRecords(next);
   }
 
@@ -140,9 +178,16 @@ export default function ProjectIntro() {
 
     const next = saveFeedback({
       algorithmVersion: ALGORITHM_VERSION,
+      assessmentSource: mbtiSource,
+      baselineTopRecommendations: result.baselineRecommendations.map((item) => item.id),
+      actionabilityScore,
       fitScore,
       note: feedbackNote.trim(),
-      topRecommendations: result.recommendations.map((item) => item.title),
+      officialMbti: mbtiKnown ? mbti : null,
+      preferenceSignalCode: result.preferenceProfile.code,
+      resultId,
+      topRecommendations: result.recommendations.map((item) => item.id),
+      understandingScore,
     });
     setFeedbackCount(next.length);
     setFeedbackNote("");
@@ -150,10 +195,13 @@ export default function ProjectIntro() {
 
   function resetFlow() {
     setMbti("");
-    setMbtiKnown(true);
+    setMbtiSource("");
+    setResultId(createResultId());
     setStudyAnswers({});
     setStressAnswers({});
     setFitScore(0);
+    setUnderstandingScore(3);
+    setActionabilityScore(3);
     setFeedbackNote("");
     setStep(1);
   }
@@ -165,7 +213,8 @@ export default function ProjectIntro() {
 
     clearStoredData();
     setMbti("");
-    setMbtiKnown(true);
+    setMbtiSource("");
+    setResultId(createResultId());
     setStudyAnswers({});
     setStressAnswers({});
     setCompleted(false);
@@ -173,6 +222,8 @@ export default function ProjectIntro() {
     setFatigueLevel(3);
     setRecords([]);
     setFitScore(0);
+    setUnderstandingScore(3);
+    setActionabilityScore(3);
     setFeedbackNote("");
     setFeedbackCount(0);
     setStep(0);
@@ -235,7 +286,7 @@ export default function ProjectIntro() {
         .hero-card{background:var(--tint-blue);color:var(--on-tint-blue);border-radius:var(--r-lg);padding:20px;display:grid;gap:14px;}
         .hero-card p{color:var(--on-tint-blue);}
         .hero-card .eyebrow{color:var(--on-tint-blue);opacity:.85;}
-        .mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+        .mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
         .mini{background:var(--surface);color:var(--text-strong);border-radius:var(--r-md);padding:12px 8px;font-weight:700;text-align:center;font-size:13px;box-shadow:var(--shadow-sm);}
         /* ── 버튼 ── */
         .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;}
@@ -250,6 +301,7 @@ export default function ProjectIntro() {
         /* ── 옵션/선택 ── */
         .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
         .option-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+        .source-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;}
         .option-card{border:1px solid var(--border);background:var(--surface);border-radius:var(--r-md);padding:13px 14px;text-align:left;color:var(--text-strong);cursor:pointer;font-weight:600;min-height:52px;transition:border-color .15s,background .15s;}
         .option-card:hover{border-color:var(--primary);}
         .option-card.selected{border-color:var(--primary);background:var(--tint-blue);color:var(--on-tint-blue);font-weight:700;}
@@ -276,6 +328,9 @@ export default function ProjectIntro() {
         input[type="range"]{accent-color:var(--primary);}
         .saved{margin-top:14px;color:var(--accent-strong);font-weight:700;font-size:14px;}
         .feedback-card{margin-top:16px;border:1px solid var(--border);background:var(--surface-muted);border-radius:var(--r-lg);padding:20px;}
+        .signal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px;}
+        .signal-item{border:1px solid var(--border);background:var(--surface);border-radius:var(--r-md);padding:12px;}
+        .signal-item strong{display:block;color:var(--text-strong);margin-bottom:4px;}
         .rating-grid{display:grid;grid-template-columns:repeat(5,minmax(44px,1fr));gap:8px;margin-top:14px;}
         .rating-grid .option-card{text-align:center;padding:10px;min-height:44px;}
         textarea{width:100%;min-height:84px;margin-top:12px;resize:vertical;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);color:var(--text-strong);font:inherit;padding:12px;box-sizing:border-box;}
@@ -283,7 +338,7 @@ export default function ProjectIntro() {
         /* ── 칩 ── */
         .answers{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
         .answer-chip{background:var(--tint-blue);color:var(--on-tint-blue);border-radius:var(--r-pill);padding:6px 11px;font-size:12px;font-weight:600;}
-        @media (max-width:860px){.hero,.result-layout,.routine,.two-col{grid-template-columns:1fr}.panel{padding:18px}.topbar{align-items:flex-start;flex-direction:column}.mini-grid{grid-template-columns:1fr 1fr} }
+        @media (max-width:860px){.hero,.result-layout,.routine,.two-col,.source-grid,.signal-grid{grid-template-columns:1fr}.panel{padding:18px}.topbar{align-items:flex-start;flex-direction:column}.mini-grid{grid-template-columns:1fr 1fr} }
       `}</style>
 
       <div className="shell">
@@ -323,11 +378,12 @@ export default function ProjectIntro() {
               </div>
             </div>
             <div className="hero-card">
-              <p className="eyebrow">핵심 기능 3개</p>
+              <p className="eyebrow">핵심 기능</p>
               <div className="mini-grid">
                 <div className="mini">성향·상태 점검</div>
                 <div className="mini">학습법 매칭</div>
                 <div className="mini">오늘의 루틴</div>
+                <div className="mini">baseline 비교</div>
               </div>
               <p>
                 추천은 MBTI 유형명만으로 정하지 않습니다. 공부 성향과 스트레스 반응을 함께 반영해 추천 이유를 표시합니다.
@@ -339,27 +395,38 @@ export default function ProjectIntro() {
         {step === 1 && (
           <section className="panel">
             <p className="eyebrow">Step 1</p>
-            <h2>MBTI를 선택하세요</h2>
-            <p>모르는 경우에도 진행할 수 있습니다. 이후 설문 응답이 추천의 중심이 됩니다.</p>
-            <div className="grid" style={{ marginTop: 20 }}>
-              {MBTI_TYPES.map((type) => (
-                <OptionCard
-                  active={mbtiKnown && mbti === type}
-                  key={type}
-                  onClick={() => {
-                    setMbti(type);
-                    setMbtiKnown(true);
-                  }}
-                >
-                  {type}
-                </OptionCard>
-              ))}
+            <h2>공식 MBTI 결과 사용 여부</h2>
+            <p>이 앱은 공식 문항을 제공하거나 재현하지 않습니다. 공식 MBTI 평가에서 이미 받은 결과가 있다면 직접 입력하고, 없다면 공부습관 자체 점검만으로 진행합니다.</p>
+            <div className="source-grid">
+              <OptionCard
+                active={mbtiSource === "official-self-report"}
+                onClick={() => setMbtiSource("official-self-report")}
+              >
+                공식 MBTI 결과를 입력할게요
+              </OptionCard>
+              <OptionCard active={mbtiSource === "not-provided"} onClick={continueWithoutOfficialMbti}>
+                공식 결과 없이 진행할게요
+              </OptionCard>
             </div>
+            {mbtiSource === "official-self-report" && (
+              <>
+                <p className="hint">아래 값은 사용자가 보유한 공식 결과를 기록하는 입력이며, 이 앱이 새로 판정한 결과가 아닙니다.</p>
+                <div className="grid" style={{ marginTop: 16 }}>
+                  {MBTI_TYPES.map((type) => (
+                    <OptionCard active={mbti === type} key={type} onClick={() => setMbti(type)}>
+                      {type}
+                    </OptionCard>
+                  ))}
+                </div>
+              </>
+            )}
             <div className="actions">
-              <button className="secondary" onClick={chooseUnknownMbti} type="button">
-                MBTI를 몰라요
-              </button>
-              <button className="primary" disabled={!mbtiKnown || !mbti} onClick={() => setStep(2)} type="button">
+              <button
+                className="primary"
+                disabled={mbtiSource !== "official-self-report" || !mbti}
+                onClick={() => setStep(2)}
+                type="button"
+              >
                 공부 설문으로 이동
               </button>
             </div>
@@ -370,7 +437,7 @@ export default function ProjectIntro() {
           <section className="panel">
             <p className="eyebrow">Step 2</p>
             <h2>공부 성향 설문</h2>
-            <p>집중 방식, 이해 방식, 복습 방식, 계획 방식을 선택하세요.</p>
+            <p>집중·이해·판단·복습·계획 방식을 묻는 짧은 자체 문항입니다. 일부 문항은 4축 선호의 탐색 신호를 만들지만 공식 MBTI 판정에는 사용하지 않습니다.</p>
             <QuestionGroup
               answers={studyAnswers}
               onAnswer={(questionId, optionId) => setStudyAnswers((prev) => ({ ...prev, [questionId]: optionId }))}
@@ -419,6 +486,55 @@ export default function ProjectIntro() {
                   {item.question}: {item.answer}
                 </span>
               ))}
+            </div>
+
+            <div className="two-col">
+              <div className="result-card">
+                <h3>MBTI 입력 출처</h3>
+                <p>
+                  {mbtiKnown
+                    ? `사용자가 입력한 공식 MBTI 결과: ${mbti}`
+                    : "공식 MBTI 결과를 입력하지 않았습니다. 추천에는 공부·스트레스 응답만 사용했습니다."}
+                </p>
+              </div>
+              <div className="result-card">
+                <h3>공부습관 기반 4축 탐색 신호</h3>
+                <p className="lead" style={{ marginBottom: 8 }}>{result.preferenceProfile.code}</p>
+                <p>{result.preferenceProfile.interpretation}</p>
+                <div className="signal-grid">
+                  {result.preferenceProfile.axes.map((axis) => (
+                    <div className="signal-item" key={axis.axis}>
+                      <strong>{axis.analogy}</strong>
+                      <span>{axis.label} · {axis.leaning}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="feedback-card">
+              <p className="eyebrow">Baseline comparison</p>
+              <h3>MBTI 신호의 추가 효과를 분리해 기록합니다</h3>
+              <p>
+                {mbtiKnown
+                  ? result.baselineRecommendations.map((item) => item.id).join("|") ===
+                    result.recommendations.map((item) => item.id).join("|")
+                    ? "이번 응답에서는 MBTI 힌트를 포함해도 TOP 3 추천 순서가 바뀌지 않았습니다."
+                    : "이번 응답에서는 MBTI 힌트를 포함했을 때 TOP 3 추천 순서가 달라졌습니다. 이것은 효과가 좋아졌다는 뜻이 아니며 후속 결과로 검증해야 합니다."
+                  : "공식 MBTI 결과가 없어 task/state-only baseline을 최종 추천으로 사용했습니다. 공부습관 기반 탐색 코드는 추천 가중치에 넣지 않았습니다."}
+              </p>
+              {mbtiKnown && (
+                <div className="signal-grid">
+                  <div className="signal-item">
+                    <strong>task/state-only</strong>
+                    <span>{result.baselineRecommendations.map((item) => item.title).join(" → ")}</span>
+                  </div>
+                  <div className="signal-item">
+                    <strong>MBTI 힌트 추가</strong>
+                    <span>{result.recommendations.map((item) => item.title).join(" → ")}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="result-layout">
@@ -474,8 +590,20 @@ export default function ProjectIntro() {
                 placeholder="선택 사항: 맞았던 점이나 조정이 필요한 점을 적어주세요. 개인정보는 입력하지 마세요."
                 value={feedbackNote}
               />
+              <div className="range-group">
+                <label className="range-row">
+                  이해도
+                  <input max="5" min="1" onChange={(event) => setUnderstandingScore(Number(event.target.value))} type="range" value={understandingScore} />
+                  <span>{understandingScore}</span>
+                </label>
+                <label className="range-row">
+                  실행 가능성
+                  <input max="5" min="1" onChange={(event) => setActionabilityScore(Number(event.target.value))} type="range" value={actionabilityScore} />
+                  <span>{actionabilityScore}</span>
+                </label>
+              </div>
               <button className="secondary" disabled={!fitScore} onClick={handleFeedbackSave} style={{ marginTop: 12 }} type="button">
-                추천 평가를 이 브라우저에 저장
+                추천 평가를 이 브라우저에 저장 또는 갱신
               </button>
               {feedbackCount > 0 && <div className="saved">추천 평가 {feedbackCount}개가 이 브라우저에 저장되어 있습니다.</div>}
             </div>
@@ -536,6 +664,9 @@ export default function ProjectIntro() {
             </div>
           </section>
         )}
+        <p className="hint" style={{ marginTop: 18 }}>
+          이 프로젝트는 공식 MBTI 평가를 제공·복제하지 않으며 The Myers-Briggs Company 또는 Myers &amp; Briggs Foundation과 제휴하지 않습니다. MBTI와 Myers-Briggs Type Indicator는 해당 권리자의 상표 또는 등록상표입니다.
+        </p>
       </div>
     </main>
   );

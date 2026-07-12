@@ -51,7 +51,7 @@ export function loadRecords() {
 }
 
 export function saveFeedback(feedback) {
-  const records = loadFeedback();
+  const records = loadFeedback().filter((item) => item.resultId !== feedback.resultId);
   const nextRecords = [
     {
       ...feedback,

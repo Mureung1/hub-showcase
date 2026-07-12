@@ -6,7 +6,7 @@ MBTI 기반 공부법 및 스트레스 관리 웹앱
 
 ## One-Line Definition
 
-사용자가 MBTI와 공부·스트레스 설문을 입력하면, MBTI를 약한 선호 가설로만 사용해 학습 행동과 피로 맥락을 정리하고, 설명 가능한 인지과학 학습 전략과 오늘 실행할 공부·회복 루틴을 제안한 뒤 추천 적합도 피드백으로 개선 가설을 축적하는 웹앱.
+사용자가 외부 공식 MBTI 평가에서 받은 결과를 직접 입력하거나 공식 결과 없이 진행한 뒤, 짧은 독자 공부습관·스트레스 점검을 통해 행동·상태 신호를 정리하고, task/state-only baseline과 MBTI 힌트 추가 추천을 비교하여 인지과학 학습 전략과 공부·회복 루틴을 제안·검증하는 웹앱.
 
 ## User Problem
 
@@ -28,11 +28,12 @@ Help users understand their current study preference and fatigue signals, then t
 1. 성향·상태 점검
 2. 인지과학 학습법 매칭
 3. 오늘의 공부·회복 루틴
-4. 추천 적합도 평가와 설명 가능한 개선 루프
+4. task/state-only baseline·MBTI 추가 모델 비교와 설명 가능한 피드백 루프
 
 ## MVP Includes
 
-- MBTI selection or unknown option
+- Official MBTI result self-entry or no-official-result path
+- Exploratory four-axis preference signal from original study-habit items
 - Study preference survey
 - Stress response survey
 - Behavior signal scoring
@@ -58,6 +59,8 @@ Help users understand their current study preference and fatigue signals, then t
 - Payment
 - User responses stored in Git repositories
 - Unverified big-data or AI accuracy claims
+- Reproduction or paraphrasing of official MBTI assessment items
+- Treating exploratory preference signals as official MBTI results
 
 ## Expression Principles
 
@@ -68,6 +71,9 @@ Help users understand their current study preference and fatigue signals, then t
 - Treat scores as recommendation signals, not ability, diagnosis, or standardized assessment results.
 - Separate literature evidence from product usage observations.
 - Do not describe the current rule weights as validated accuracy.
+- Separate user satisfaction from behavioral and delayed-learning outcomes.
+- Do not assume that matching a preferred style improves learning.
+- Treat self-check preference codes as exploratory signals, not official assessment results.
 
 ## Recommended Expressions
 
@@ -92,6 +98,9 @@ Help users understand their current study preference and fatigue signals, then t
 ## Recommendation Logic Principles
 
 - Use MBTI only as a weak preference hint.
+- Apply MBTI hints only when the user directly enters a previously obtained official result.
+- Keep the task/state-only baseline alongside the MBTI-adjusted result.
+- Do not feed the exploratory four-axis code into the current recommendation model.
 - Use study survey answers and stress response answers together.
 - Keep recommendations rule-based for the MVP.
 - Explain why each recommendation was selected.
@@ -122,6 +131,8 @@ Help users understand their current study preference and fatigue signals, then t
 - Free-text responses and survey records must not be committed to Git or stored in GitHub issues.
 - Server collection requires a separate consent and governance design.
 - “Big data” is a future validation strategy, not a current product capability.
+- Inductive accuracy means reliability, incremental validity, moderation, calibration, and product utility; it does not mean that more records make MBTI true.
+- Fit, understanding, and actionability are acceptance measures; completion and delayed learning are separate outcomes.
 
 ## Related Planning Documents
 

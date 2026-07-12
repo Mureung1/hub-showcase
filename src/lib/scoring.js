@@ -1,16 +1,16 @@
-import { SCORE_KEYS, STUDY_QUESTIONS, STRESS_QUESTIONS } from "../data/questions";
+import { PREFERENCE_AXIS_LABELS, SCORE_KEYS, STUDY_QUESTIONS, STRESS_QUESTIONS } from "../data/questions";
 
 const BASE_SCORE = 50;
 
 const MBTI_HINTS = {
-  I: { focusEnergy: 4, stimulationNeed: -2 },
-  E: { stimulationNeed: 4, selfUnderstanding: 2 },
-  S: { inputStyle: 3, planningStability: 2 },
-  N: { inputStyle: 2, stimulationNeed: 3 },
-  T: { failureRecovery: 3, emotionImpact: -2 },
-  F: { emotionImpact: 3, selfUnderstanding: 3 },
-  J: { planningStability: 4, flexibilityNeed: -2 },
-  P: { flexibilityNeed: 4, stimulationNeed: 2 },
+  I: { focusEnergy: 2, stimulationNeed: -1 },
+  E: { stimulationNeed: 2, selfUnderstanding: 1 },
+  S: { inputStyle: 2, planningStability: 1 },
+  N: { inputStyle: 1, stimulationNeed: 2 },
+  T: { failureRecovery: 2, emotionImpact: -1 },
+  F: { emotionImpact: 2, selfUnderstanding: 1 },
+  J: { planningStability: 2, flexibilityNeed: -1 },
+  P: { flexibilityNeed: 2, stimulationNeed: 1 },
 };
 
 function clampScore(value) {
@@ -28,10 +28,17 @@ function findOption(questions, questionId, optionId) {
   return question?.options.find((option) => option.id === optionId);
 }
 
-export function calculateScores({ mbti, mbtiKnown, studyAnswers, stressAnswers }) {
+const PREFERENCE_LETTERS = {
+  IE: ["I", "E"],
+  SN: ["S", "N"],
+  TF: ["T", "F"],
+  JP: ["J", "P"],
+};
+
+export function calculateScores({ mbti, mbtiKnown, studyAnswers, stressAnswers, useMbtiHints = true }) {
   const scores = SCORE_KEYS.reduce((acc, key) => ({ ...acc, [key]: BASE_SCORE }), {});
 
-  if (mbtiKnown && mbti) {
+  if (useMbtiHints && mbtiKnown && mbti) {
     mbti.split("").forEach((letter) => applyScores(scores, MBTI_HINTS[letter]));
   }
 
@@ -46,6 +53,57 @@ export function calculateScores({ mbti, mbtiKnown, studyAnswers, stressAnswers }
   });
 
   return scores;
+}
+
+export function calculateMethodAffinities(studyAnswers, stressAnswers) {
+  const affinities = {};
+
+  [
+    [STUDY_QUESTIONS, studyAnswers],
+    [STRESS_QUESTIONS, stressAnswers],
+  ].forEach(([questions, answers]) => {
+    Object.entries(answers).forEach(([questionId, optionId]) => {
+      const option = findOption(questions, questionId, optionId);
+      Object.entries(option?.methodHints ?? {}).forEach(([methodId, value]) => {
+        affinities[methodId] = (affinities[methodId] ?? 0) + value;
+      });
+    });
+  });
+
+  return affinities;
+}
+
+export function calculatePreferenceProfile(studyAnswers) {
+  const raw = Object.keys(PREFERENCE_AXIS_LABELS).reduce((acc, axis) => ({ ...acc, [axis]: 0 }), {});
+
+  Object.entries(studyAnswers).forEach(([questionId, optionId]) => {
+    const option = findOption(STUDY_QUESTIONS, questionId, optionId);
+    Object.entries(option?.preferenceSignals ?? {}).forEach(([axis, value]) => {
+      raw[axis] = (raw[axis] ?? 0) + value;
+    });
+  });
+
+  const axes = Object.entries(PREFERENCE_AXIS_LABELS).map(([axis, labels]) => {
+    const value = raw[axis] ?? 0;
+    const [leftLetter, rightLetter] = PREFERENCE_LETTERS[axis];
+    const leaning = value === 0 ? "X" : value < 0 ? leftLetter : rightLetter;
+
+    return {
+      axis,
+      value,
+      leaning,
+      confidence: Math.min(1, Math.abs(value) / 2),
+      label: value === 0 ? "균형 또는 정보 부족" : value < 0 ? labels.left : labels.right,
+      analogy: labels.analogy,
+    };
+  });
+
+  return {
+    code: axes.map((item) => item.leaning).join(""),
+    axes,
+    isOfficialMbti: false,
+    interpretation: "공부습관 문항에서 관찰된 탐색 신호이며 공식 MBTI 평가 결과가 아닙니다.",
+  };
 }
 
 export function getSelectedOptionLabels(questions, answers) {

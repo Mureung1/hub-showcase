@@ -1,59 +1,75 @@
-export const ALGORITHM_VERSION = "rules-v1";
+import { SCORE_LABELS } from "../data/questions";
+
+export const ALGORITHM_VERSION = "rules-v2";
 
 const METHODS = [
   {
     title: "인출 연습",
+    id: "retrieval",
     action: "교재를 덮고 핵심 개념 3개를 빈칸에 적은 뒤, 빠진 부분만 다시 확인합니다.",
-    score: ({ memoryStrategy, failureRecovery }) => memoryStrategy * 1.2 + failureRecovery * 0.5,
-    reason: "기억 전략과 다시 시작하는 힘이 추천 신호로 잡혀, 먼저 떠올려보는 방식이 더 편할 수 있습니다.",
+    criteria: { memoryStrategy: 0.65, failureRecovery: 0.35 },
   },
   {
     title: "분산 학습",
+    id: "spacing",
     action: "오늘 10분, 내일 10분, 이틀 뒤 10분처럼 같은 내용을 나눠서 봅니다.",
-    score: ({ planningStability, burnoutCaution }) => planningStability * 1.1 + (100 - burnoutCaution) * 0.4,
-    reason: "계획 안정감이 높거나 피로 누적을 줄일 필요가 있어, 짧게 나눠 반복하는 방식이 맞을 가능성이 있습니다.",
+    criteria: { planningStability: 0.6, memoryStrategy: 0.4 },
   },
   {
     title: "자기설명",
+    id: "selfExplanation",
     action: "개념을 읽은 뒤 친구에게 설명하듯 3문장으로 말하거나 적어봅니다.",
-    score: ({ memoryStrategy, selfUnderstanding, inputStyle }) =>
-      memoryStrategy + selfUnderstanding * 0.8 + inputStyle * 0.4,
-    reason: "내 말로 정리하는 응답과 자기이해 신호가 있어, 설명하며 정리하는 방법을 먼저 시도해볼 수 있습니다.",
+    criteria: { memoryStrategy: 0.45, selfUnderstanding: 0.35, inputStyle: 0.2 },
   },
   {
     title: "교차 학습",
+    id: "interleaving",
     action: "비슷한 문제만 이어 풀지 않고, 유형 2~3개를 섞어 차이를 비교합니다.",
-    score: ({ stimulationNeed, inputStyle }) => stimulationNeed * 1.1 + inputStyle * 0.5,
-    reason: "변화와 예시 기반 이해가 도움이 될 수 있어, 유형을 섞어 비교하는 방식이 더 편할 수 있습니다.",
+    criteria: { stimulationNeed: 0.55, inputStyle: 0.45 },
   },
   {
     title: "오답 분석",
+    id: "errorAnalysis",
     action: "틀린 문제를 다시 풀기 전에 왜 틀렸는지 한 줄로 적고, 다음 행동 1개를 정합니다.",
-    score: ({ failureRecovery, selfUnderstanding, emotionImpact }) =>
-      failureRecovery + selfUnderstanding * 0.8 + emotionImpact * 0.3,
-    reason: "실패 뒤 다시 시작하는 힘과 감정 영향 신호가 있어, 오답을 작게 재해석하는 방식이 도움이 될 가능성이 있습니다.",
+    criteria: { failureRecovery: 0.45, selfUnderstanding: 0.35, emotionImpact: 0.2 },
   },
   {
     title: "환경 설계",
+    id: "environment",
     action: "책상 위에는 지금 볼 자료 1개만 남기고, 첫 5분에 할 행동을 화면에 적어둡니다.",
-    score: ({ focusEnergy, planningStability, burnoutCaution }) =>
-      focusEnergy * 0.8 + planningStability * 0.7 + burnoutCaution * 0.4,
-    reason: "집중 환경과 피로 신호가 함께 보여, 시작 장벽을 낮추는 환경 정리가 먼저 필요할 수 있습니다.",
+    criteria: { focusEnergy: 0.4, planningStability: 0.35, burnoutCaution: 0.25 },
   },
   {
     title: "짧은 집중 블록",
+    id: "shortBlock",
     action: "20분 공부, 3분 회복, 5분 확인으로 끝나는 작은 블록 하나만 완료합니다.",
-    score: ({ flexibilityNeed, burnoutCaution, emotionImpact }) =>
-      flexibilityNeed + burnoutCaution * 0.9 + emotionImpact * 0.5,
-    reason: "유연성 필요도와 피로 신호가 있어, 긴 계획보다 짧은 블록이 더 편할 수 있습니다.",
+    criteria: { flexibilityNeed: 0.4, burnoutCaution: 0.35, emotionImpact: 0.25 },
   },
 ];
 
-function pickTopScores(scores) {
-  return Object.entries(scores)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 4)
+function scoreMethod(method, scores, affinity) {
+  const criterionScore = Object.entries(method.criteria).reduce(
+    (total, [key, weight]) => total + (scores[key] ?? 50) * weight,
+    0,
+  );
+
+  return criterionScore + Math.min(15, affinity * 0.75);
+}
+
+function buildMethodEvidence(method, scores, affinity) {
+  const basedOn = Object.entries(method.criteria)
+    .sort(([keyA, weightA], [keyB, weightB]) =>
+      (scores[keyB] ?? 50) * weightB - (scores[keyA] ?? 50) * weightA,
+    )
+    .slice(0, 2)
     .map(([key]) => key);
+  const labels = basedOn.map((key) => SCORE_LABELS[key]).join("·");
+  const directSignal = affinity > 0 ? "과 선택한 공부습관" : "";
+
+  return {
+    basedOn,
+    reason: `현재 응답의 ${labels} 신호${directSignal}를 함께 반영한 후보입니다. 실제 효과는 과업과 실행 후 결과로 다시 확인해야 합니다.`,
+  };
 }
 
 function buildAvoidList(scores) {
@@ -115,18 +131,24 @@ function buildRoutine(scores, recommendations) {
   };
 }
 
-export function createRecommendations(scores) {
-  const basedOn = pickTopScores(scores);
-  const recommendations = METHODS.map((method) => ({
-    title: method.title,
-    action: method.action,
-    reason: method.reason,
-    basedOn,
-    weight: method.score(scores),
-  }))
+export function createRecommendations(scores, methodAffinities = {}) {
+  const recommendations = METHODS.map((method) => {
+    const affinity = methodAffinities[method.id] ?? 0;
+    const evidence = buildMethodEvidence(method, scores, affinity);
+
+    return {
+      id: method.id,
+      title: method.title,
+      action: method.action,
+      reason: evidence.reason,
+      basedOn: evidence.basedOn,
+      weight: scoreMethod(method, scores, affinity),
+    };
+  })
     .sort((a, b) => b.weight - a.weight)
     .slice(0, 3)
     .map((item) => ({
+      id: item.id,
       title: item.title,
       action: item.action,
       reason: item.reason,

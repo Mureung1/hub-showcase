@@ -7,19 +7,20 @@ description: Build or update the Vite + React prototype for the MBTI study and s
 
 ## Read First
 
-Read `docs/context.md`, `docs/plan.md`, `docs/checklist.md`, and `AGENTS.md`.
+Read `docs/context.md`, `docs/plan.md`, `docs/checklist.md`, `docs/evidence-data-roadmap.md`, and `AGENTS.md`.
 
 ## Current Prototype Flow
 
 Keep the core flow simple:
 
 1. Intro
-2. MBTI selection or unknown option
+2. Official MBTI result self-entry or no-official-result path
 3. Study preference survey
 4. Stress response survey
 5. Result
 6. Today's routine card
 7. Completion and focus/fatigue record
+8. Recommendation fit, understanding, and actionability feedback
 
 ## Code Structure
 
@@ -40,6 +41,10 @@ Use existing files and patterns before adding new ones.
 - Recommendations must be rule-based.
 - Each recommendation should include a reason.
 - Store result and routine records in localStorage.
+- Keep task/state-only baseline and MBTI-added recommendations separately.
+- Do not feed the exploratory four-axis code into the recommendation model.
+- Generate recommendation-specific evidence instead of one shared `basedOn` list.
+- Keep method scores on a comparable scale and check recommendation exposure distribution.
 
 ## UI Rules
 
