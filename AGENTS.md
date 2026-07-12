@@ -44,6 +44,16 @@ Keep AGENTS.md limited to stable operating rules. If runtime topology, endpoints
 
 Do not leak raw engine protocol shapes into AY-PLE product-facing contracts without a deliberate architecture update. Keep app-managed runtime state and secrets out of git.
 
+## Codex Client Conventions
+
+Before changing Codex Client Host behavior, product UI adapters, or App Server method integration, read `docs/adr/0008-separate-headless-codex-client-host-from-product-ui.md`, `docs/architecture/codex-app-server-method-inventory.md`, `packages/runtime-codex/README.md`, and the current code/tests. Before changing product work order or completion state, read the operating rules in `docs/product/ay-ple-development-backlog.md`.
+
+Treat `docs/architecture/codex-app-server-method-inventory.md` as generated. Record reviewed method-level integration and adoption decisions in `packages/runtime-codex/codex-method-decisions.json`, then follow the package README to regenerate and verify the inventory. When the Codex pin or generated schema changes, review added and removed methods without automatically adopting new capabilities.
+
+Only explicit implementation along the product Codex Client path advances a method's integration status. Generic notification transport and developer-only Runtime Harness handling do not. Keep task order and completion status in the canonical development backlog; do not encode dates, milestones, or priority labels into its task structure, and manage external submission dates separately.
+
+Keep current package pins, method counts, exact generation commands, method tables, and implementation gaps in their owning README, generated inventory, backlog, or implementation map rather than copying them into this file.
+
 ## Testing Guidelines
 
 For PR-ready verification, run `npm test`, `npm run typecheck`, `npm run build`, and `npm run lint -w @ay-ple/inspector`. Run live smoke commands only when the relevant package docs say they are appropriate for the task.
