@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import {
   CodexStdioProtocolError,
+  CodexStdioRequestError,
   CodexStdioTransport,
   CodexStdioTransportError,
   type CodexStdioObservation,
@@ -311,6 +312,32 @@ test('CodexStdioTransport reports a child spawn error distinctly', async () => {
   } finally {
     await transport.close()
   }
+})
+
+test('CodexStdioTransport keeps an individual request timeout scoped to that request', async () => {
+  await withFakeCodexStdioTransport(
+    {
+      scenario: 'hang',
+      requestTimeoutMs: 20,
+    },
+    async ({ transport, readJournal }) => {
+      await assert.rejects(
+        transport.sendRequest(createInitializeRequest(1)),
+        (error: unknown) =>
+          error instanceof CodexStdioRequestError &&
+          error.code === 'request_timeout',
+      )
+
+      await transport.sendNotification({ method: 'initialized' })
+      const journal = await readJournal({ minimumEntries: 3 })
+      assert.deepEqual(
+        journal
+          .filter((entry) => entry.kind === 'client_message')
+          .map((entry) => entry.message),
+        [createInitializeRequest(1), { method: 'initialized' }],
+      )
+    },
+  )
 })
 
 test('fake stdio fixture force-kills and removes its journal after assertion failure', async () => {

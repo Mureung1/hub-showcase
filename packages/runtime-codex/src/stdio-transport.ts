@@ -68,6 +68,15 @@ export class CodexStdioTransportError extends Error {
   }
 }
 
+export class CodexStdioRequestError extends Error {
+  readonly code = 'request_timeout' as const
+
+  constructor(message: string) {
+    super(message)
+    this.name = 'CodexStdioRequestError'
+  }
+}
+
 type ServerRequestMethod = ServerRequest['method']
 
 type ServerRequestFor<Method extends ServerRequestMethod> = Extract<
@@ -216,8 +225,7 @@ export class CodexStdioTransport {
       const timeout = setTimeout(() => {
         this.pendingClientResponses.delete(requestKey)
         reject(
-          new CodexStdioTransportError(
-            'transport_closed',
+          new CodexStdioRequestError(
             `${request.method} timed out waiting for a response`,
           ),
         )

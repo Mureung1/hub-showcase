@@ -57,7 +57,9 @@ export async function withFakeCodexStdioTransport(
     command: process.execPath,
     args: [scriptPath, journalPath],
     cwd: tempDir,
-    env: process.env,
+    env: {
+      PATH: process.env.PATH,
+    },
     requestTimeoutMs: input.requestTimeoutMs ?? 1000,
     closeTimeoutMs: input.closeTimeoutMs ?? 100,
   }
@@ -112,8 +114,13 @@ async function readJournalFile(
     throw error
   }
 
-  return contents
-    .split('\n')
+  const lines = contents.split('\n')
+
+  if (!contents.endsWith('\n')) {
+    lines.pop()
+  }
+
+  return lines
     .filter((line) => line.length > 0)
     .map((line) => JSON.parse(line) as FakeCodexStdioJournalEntry)
 }
