@@ -12,8 +12,7 @@ npm run demo:week1
 
 명령을 실행하면 발표 자료가 브라우저에서 자동으로 열린다. 자동으로 열리지 않으면 다음 주소를 사용한다.
 
-- 발표 자료: <http://127.0.0.1:4174/>
-- 발표 자료 직접 경로: <http://127.0.0.1:4174/artifacts/week1-demo/>
+- 발표 자료: <http://127.0.0.1:4174/artifacts/week1-demo/>
 - 선택 심화 · Runtime 번역: <http://127.0.0.1:4174/artifacts/week1-demo/#slide-6>
 - 선택 심화 · 두 승인 경계: <http://127.0.0.1:4174/artifacts/week1-demo/#slide-7>
 - 발표용 동적 제품 데모: <http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html?variant=workspace&step=1&present=1>

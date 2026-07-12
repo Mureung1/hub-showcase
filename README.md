@@ -75,6 +75,7 @@ npm run demo:week1
 
 | 영역 | 위치 | 설명 |
 | --- | --- | --- |
+| Brand assets | `assets/brand/` | AY-PLE 로고, 마크, AY 프로필 이미지의 프로젝트 공용 원본 |
 | Server app | `apps/server/` | Express companion API, runtime kernel 소유자, SSE event stream host |
 | Inspector app | `apps/inspector/` | prompt run, events, logs, history, Codex status, capability slots를 보는 Vite React Runtime Inspector |
 | Runtime core | `packages/runtime-core/` | Runtime Harness용 `AgentRuntimeKernel`, 단일 실행 생명주기, 어댑터 계약, 실행 기록·이력 |

@@ -65,7 +65,7 @@ AY-PLE의 기본 화면은 기존 다크 IDE 테마가 아니라 **밝은 학업
 | 위치 | 상태 |
 | --- | --- |
 | `spikes/ay-ple-ui-prototype/styles.css` | light-first 토큰과 주요 컴포넌트 색상을 검증 prototype에 적용 |
-| `spikes/ay-ple-ui-prototype/assets/` | AY-PLE 로고, 헤더 마크, AY 프로필 이미지를 검증 prototype에 적용 |
+| `assets/brand/` | AY-PLE 로고, 헤더 마크, AY 프로필 이미지의 프로젝트 공용 원본 |
 | `spikes/ay-ple-ui-prototype/index.html` | 검토 대기 상태의 밝은 workspace 방향 검증 |
 | `spikes/ay-ple-ui-prototype/state-accepted.html` | 반영됨 상태의 밝은 workspace 방향 검증 |
 

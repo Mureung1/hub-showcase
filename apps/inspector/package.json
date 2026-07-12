@@ -11,7 +11,7 @@
     "typecheck": "tsc -b",
     "lint": "oxlint",
     "preview": "vite preview",
-    "serve:week1-demo": "vite ../.. --host 127.0.0.1 --port 4174 --strictPort --open /"
+    "serve:week1-demo": "vite ../.. --host 127.0.0.1 --port 4174 --strictPort --open /artifacts/week1-demo/"
   },
   "dependencies": {
     "@ay-ple/runtime-codex": "0.0.0",
