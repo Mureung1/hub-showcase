@@ -22,6 +22,8 @@ paths:
 
 # WI-0012 PP-010 추천 조건 Draft API
 
+> GitHub Issue: [PP-010 #12](https://github.com/gdh0730/hub/issues/12)
+
 ## 문제와 근거
 
 조건 추출 결과를 곧바로 추천 Job으로 보내면 잘못 해석된 위치, 예산과 제외 조건을

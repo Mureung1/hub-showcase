@@ -19,6 +19,8 @@ paths:
 
 # WI-0005 PP-003 도메인 상태 점수 보존 정책
 
+> GitHub Issue: [PP-003 #5](https://github.com/gdh0730/hub/issues/5)
+
 ## 문제와 근거
 
 참고 문서에는 bigint와 UUID, 작업 상태와 처리 단계, 부분 성공과 실패가 혼용되어

@@ -26,6 +26,8 @@ paths:
 
 # WI-0032 PP-030 보안과 개인정보 및 데이터 수명주기 강화
 
+> GitHub Issue: [PP-030 #32](https://github.com/gdh0730/hub/issues/32)
+
 ## 문제와 근거
 
 PP-030은 익명 세션, 공유 링크, 자연어 조건, 외부 provider와 실시간 연결이 만드는 공격

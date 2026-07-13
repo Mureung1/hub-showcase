@@ -22,6 +22,8 @@ paths:
 
 # WI-0013 PP-011 추천 Job 202 Outbox 멱등성
 
+> GitHub Issue: [PP-011 #13](https://github.com/gdh0730/hub/issues/13)
+
 ## 문제와 근거
 
 추천 생성은 외부 검색과 LLM 처리를 HTTP 요청 안에서 완료할 수 없으므로 수락과

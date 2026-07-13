@@ -20,6 +20,8 @@ paths:
 
 # WI-0021 PP-019 추천 진행 상태 SSE
 
+> GitHub Issue: [PP-019 #21](https://github.com/gdh0730/hub/issues/21)
+
 ## 문제와 근거
 
 비동기 추천은 수 초 이상 걸릴 수 있어 클라이언트가 진행과 terminal 상태를 알아야 한다.

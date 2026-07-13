@@ -25,6 +25,8 @@ paths:
 
 # WI-0031 PP-029 실제 Naver와 OpenAI 어댑터 활성화
 
+> GitHub Issue: [PP-029 #31](https://github.com/gdh0730/hub/issues/31)
+
 ## 문제와 근거
 
 PP-029는 mock으로 검증한 추천 pipeline을 실제 Naver API HUB와 OpenAI Responses API에

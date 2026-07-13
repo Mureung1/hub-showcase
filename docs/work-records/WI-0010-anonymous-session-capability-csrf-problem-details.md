@@ -23,6 +23,8 @@ paths:
 
 # WI-0010 PP-008 익명 세션 Capability CSRF Problem Details
 
+> GitHub Issue: [PP-008 #10](https://github.com/gdh0730/hub/issues/10)
+
 ## 문제와 근거
 
 로그인 없이 추천과 투표를 제공하려면 사용자를 식별하되 client가 임의 sessionId나

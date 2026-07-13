@@ -18,6 +18,8 @@ paths:
 
 # WI-0003 PP-001 서비스 경계와 사용자 여정 확정
 
+> GitHub Issue: [PP-001 #3](https://github.com/gdh0730/hub/issues/3)
+
 ## 문제와 근거
 
 현재 실행 가능한 저장소는 Java 17 백엔드 환경과 Actuator 계약까지만 제공한다.

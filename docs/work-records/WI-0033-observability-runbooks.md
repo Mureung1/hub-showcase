@@ -24,6 +24,8 @@ paths:
 
 # WI-0033 PP-031 도메인 관측성과 Grafana 및 복구 Runbook
 
+> GitHub Issue: [PP-031 #33](https://github.com/gdh0730/hub/issues/33)
+
 ## 문제와 근거
 
 PP-031은 애플리케이션이 실행 중이라는 infrastructure health를 넘어 추천 job, provider,

@@ -21,6 +21,8 @@ paths:
 
 # WI-0020 PP-018 추천 상태·결과 조회 API
 
+> GitHub Issue: [PP-018 #20](https://github.com/gdh0730/hub/issues/20)
+
 ## 문제와 근거
 
 202로 수락된 추천 job은 HTTP 연결 밖에서 처리되므로 클라이언트가 새로고침하거나 SSE를

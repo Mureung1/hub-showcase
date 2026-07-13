@@ -19,6 +19,8 @@ paths:
 
 # WI-0017 PP-015 결정론적 점수·Top 3·조건 완화
 
+> GitHub Issue: [PP-015 #17](https://github.com/gdh0730/hub/issues/17)
+
 ## 문제와 근거
 
 추천 순위를 LLM이나 검색 결과 순서에 맡기면 동일 조건이 실행 시점이나 공급자 응답

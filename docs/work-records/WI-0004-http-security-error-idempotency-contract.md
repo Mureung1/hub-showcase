@@ -19,6 +19,8 @@ paths:
 
 # WI-0004 PP-002 HTTP 보안 오류 멱등성 API 계약
 
+> GitHub Issue: [PP-002 #4](https://github.com/gdh0730/hub/issues/4)
+
 ## 문제와 근거
 
 현재 계약 정본에는 Actuator 두 경로와 추천 생성의 202 원칙만 있으며, 익명 세션,

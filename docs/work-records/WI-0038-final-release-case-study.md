@@ -29,6 +29,8 @@ paths:
 
 # WI-0038 PP-036 최종 릴리스 검증과 포트폴리오 Case Study
 
+> GitHub Issue: [PP-036 #38](https://github.com/gdh0730/hub/issues/38)
+
 ## 문제와 근거
 
 PP-036은 기능별 완료 선언을 실제 서비스 journey, 자동 검증, 운영 절차와 문서 증거에 대조해

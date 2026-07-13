@@ -24,6 +24,8 @@ paths:
 
 # WI-0029 PP-027 허용 목록 기반 최소 제품 이벤트 수집
 
+> GitHub Issue: [PP-027 #29](https://github.com/gdh0730/hub/issues/29)
+
 ## 문제와 근거
 
 PP-027은 추천 결과 조회와 공유방 사용 흐름이 실제로 이어지는지 측정할 최소 이벤트를

@@ -18,6 +18,8 @@ paths:
 
 # WI-0006 PP-004 API Worker Outbox Redis Streams 구조
 
+> GitHub Issue: [PP-004 #6](https://github.com/gdh0730/hub/issues/6)
+
 ## 문제와 근거
 
 추천은 HTTP 응답 시간 안에 Naver와 LLM 호출을 마치지 않고 Job을 수락한 뒤 처리해야

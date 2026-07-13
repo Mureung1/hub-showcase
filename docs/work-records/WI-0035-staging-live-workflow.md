@@ -22,6 +22,8 @@ paths:
 
 # WI-0035 PP-033 Staging Live 비밀 관리와 예약 실제 E2E
 
+> GitHub Issue: [PP-033 #35](https://github.com/gdh0730/hub/issues/35)
+
 ## 문제와 근거
 
 PP-033은 mock 계약이 실제 Naver·OpenAI의 endpoint, 인증, schema와 계속 맞는지 제한된

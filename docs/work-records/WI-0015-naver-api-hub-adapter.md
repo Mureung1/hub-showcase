@@ -18,6 +18,8 @@ paths:
 
 # WI-0015 PP-013 Naver API Hub 장소·블로그 검색 어댑터
 
+> GitHub Issue: [PP-013 #15](https://github.com/gdh0730/hub/issues/15)
+
 ## 문제와 근거
 
 현재 저장소에는 외부 endpoint가 mock인지 검사하는 환경 안전 장치와 단순 WireMock

@@ -22,6 +22,8 @@ paths:
 
 # WI-0027 PP-025 투표방 SSE와 주최자 최종 장소 확정
 
+> GitHub Issue: [PP-025 #27](https://github.com/gdh0730/hub/issues/27)
+
 ## 문제와 근거
 
 PP-025는 참여자의 투표 변경을 다른 참여자와 주최자에게 전달하고, 주최자가 하나의

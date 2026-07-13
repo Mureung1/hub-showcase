@@ -25,6 +25,8 @@ paths:
 
 # WI-0030 PP-028 요청 제한과 외부 할당량 및 캐시 보호
 
+> GitHub Issue: [PP-028 #30](https://github.com/gdh0730/hub/issues/30)
+
 ## 문제와 근거
 
 PP-028은 익명 서비스의 반복 요청, 외부 provider 할당량 고갈, 동시 cache miss와 장시간

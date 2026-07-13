@@ -109,12 +109,12 @@ Task를 시작할 때 Issue와 Work Record에서 문제, 성공 기준, 선행 �
 
 | ID | Task | 선행 | Work Record | 핵심 완료 증거 |
 | --- | --- | --- | --- | --- |
-| PP-001 | 서비스 경계와 사용자 여정 | 없음 | [WI-0003](work-records/WI-0003-service-boundary-and-user-journey.md) | 역할·상태·실패·비범위가 API와 화면에 매핑됨 |
-| PP-002 | HTTP·보안·오류·멱등성 OpenAPI | PP-001 | [WI-0004](work-records/WI-0004-http-security-error-idempotency-contract.md) | machine-readable 계약과 정상·오류 example 검증 |
-| PP-003 | 도메인·상태·점수·보존 정책 | PP-001 | [WI-0005](work-records/WI-0005-domain-status-scoring-retention-policy.md) | lifecycle/stage, 점수·동점·TTL·삭제 규칙 fixture |
-| PP-004 | API·Worker·Outbox·Streams 구조 | PP-001, PP-003 | [WI-0006](work-records/WI-0006-api-worker-outbox-streams-architecture.md) | 역할·event envelope·ACK·retry·DLQ 계약 |
-| PP-005 | Provider·실제 API 검증 정책 | PP-001 | [WI-0007](work-records/WI-0007-provider-and-live-validation-policy.md) | Mock/Live, quota·timeout·약관·kill switch gate |
-| PP-006 | Frontend UX·접근성 명세 | PP-001, PP-002 | [WI-0008](work-records/WI-0008-frontend-ux-accessibility-specification.md) | route와 모든 loading·error·expired·degraded 상태 |
+| [PP-001](https://github.com/gdh0730/hub/issues/3) | 서비스 경계와 사용자 여정 | 없음 | [WI-0003](work-records/WI-0003-service-boundary-and-user-journey.md) | 역할·상태·실패·비범위가 API와 화면에 매핑됨 |
+| [PP-002](https://github.com/gdh0730/hub/issues/4) | HTTP·보안·오류·멱등성 OpenAPI | PP-001 | [WI-0004](work-records/WI-0004-http-security-error-idempotency-contract.md) | machine-readable 계약과 정상·오류 example 검증 |
+| [PP-003](https://github.com/gdh0730/hub/issues/5) | 도메인·상태·점수·보존 정책 | PP-001 | [WI-0005](work-records/WI-0005-domain-status-scoring-retention-policy.md) | lifecycle/stage, 점수·동점·TTL·삭제 규칙 fixture |
+| [PP-004](https://github.com/gdh0730/hub/issues/6) | API·Worker·Outbox·Streams 구조 | PP-001, PP-003 | [WI-0006](work-records/WI-0006-api-worker-outbox-streams-architecture.md) | 역할·event envelope·ACK·retry·DLQ 계약 |
+| [PP-005](https://github.com/gdh0730/hub/issues/7) | Provider·실제 API 검증 정책 | PP-001 | [WI-0007](work-records/WI-0007-provider-and-live-validation-policy.md) | Mock/Live, quota·timeout·약관·kill switch gate |
+| [PP-006](https://github.com/gdh0730/hub/issues/8) | Frontend UX·접근성 명세 | PP-001, PP-002 | [WI-0008](work-records/WI-0008-frontend-ux-accessibility-specification.md) | route와 모든 loading·error·expired·degraded 상태 |
 
 M0가 완료되기 전에는 business Controller나 production frontend를 구현하지 않는다.
 PP-002는 이 문서에 고정된 계약을 OpenAPI와 자동 schema 검증으로 형식화하며 제품
@@ -124,8 +124,8 @@ PP-002는 이 문서에 고정된 계약을 OpenAPI와 자동 schema 검증으�
 
 | ID | Task | 선행 | Work Record | 핵심 완료 증거 |
 | --- | --- | --- | --- | --- |
-| PP-007 | Flyway schema·domain·JPA 경계 | PP-002~PP-004 | [WI-0009](work-records/WI-0009-flyway-domain-jpa-boundary.md) | 신규·upgrade migration, validate와 ArchUnit |
-| PP-008 | 익명 session·capability·CSRF·Problem Details | PP-002, PP-003 | [WI-0010](work-records/WI-0010-anonymous-session-capability-csrf-problem-details.md) | 변조·만료·권한·CSRF·secret 제거 계약 테스트 |
+| [PP-007](https://github.com/gdh0730/hub/issues/9) | Flyway schema·domain·JPA 경계 | PP-002~PP-004 | [WI-0009](work-records/WI-0009-flyway-domain-jpa-boundary.md) | 신규·upgrade migration, validate와 ArchUnit |
+| [PP-008](https://github.com/gdh0730/hub/issues/10) | 익명 session·capability·CSRF·Problem Details | PP-002, PP-003 | [WI-0010](work-records/WI-0010-anonymous-session-capability-csrf-problem-details.md) | 변조·만료·권한·CSRF·secret 제거 계약 테스트 |
 
 DB 정합성은 Flyway constraint와 transaction으로 보장한다. cookie나 capability 원문을
 DB·로그·metric label에 저장하지 않는다.
@@ -134,59 +134,59 @@ DB·로그·metric label에 저장하지 않는다.
 
 | ID | Task | 선행 | Work Record | 핵심 완료 증거 |
 | --- | --- | --- | --- | --- |
-| PP-009 | 조건 추출 port·schema·Eval | PP-002, PP-003, PP-005 | [WI-0011](work-records/WI-0011-condition-extraction-port-schema-eval.md) | 정상·경계·refusal·malformed·injection Eval |
-| PP-010 | Draft 생성·조회·수정·만료 API | PP-007~PP-009 | [WI-0012](work-records/WI-0012-recommendation-draft-api.md) | 30분 TTL, 소유권, 전체 교체와 상태 전이 |
-| PP-011 | 추천 Job 202·Outbox·멱등성 | PP-004, PP-007, PP-008, PP-010 | [WI-0013](work-records/WI-0013-recommendation-job-202-outbox-idempotency.md) | 202/Location, 중복 key와 원자적 job·outbox |
-| PP-012 | Streams relay·retry·DLQ | PP-004, PP-007, PP-011 | [WI-0014](work-records/WI-0014-streams-relay-retry-dlq.md) | publish 복구, pending claim, poison event와 DLQ |
+| [PP-009](https://github.com/gdh0730/hub/issues/11) | 조건 추출 port·schema·Eval | PP-002, PP-003, PP-005 | [WI-0011](work-records/WI-0011-condition-extraction-port-schema-eval.md) | 정상·경계·refusal·malformed·injection Eval |
+| [PP-010](https://github.com/gdh0730/hub/issues/12) | Draft 생성·조회·수정·만료 API | PP-007~PP-009 | [WI-0012](work-records/WI-0012-recommendation-draft-api.md) | 30분 TTL, 소유권, 전체 교체와 상태 전이 |
+| [PP-011](https://github.com/gdh0730/hub/issues/13) | 추천 Job 202·Outbox·멱등성 | PP-004, PP-007, PP-008, PP-010 | [WI-0013](work-records/WI-0013-recommendation-job-202-outbox-idempotency.md) | 202/Location, 중복 key와 원자적 job·outbox |
+| [PP-012](https://github.com/gdh0730/hub/issues/14) | Streams relay·retry·DLQ | PP-004, PP-007, PP-011 | [WI-0014](work-records/WI-0014-streams-relay-retry-dlq.md) | publish 복구, pending claim, poison event와 DLQ |
 
 ### M3 추천 Pipeline
 
 | ID | Task | 선행 | Work Record | 핵심 완료 증거 |
 | --- | --- | --- | --- | --- |
-| PP-013 | NAVER API HUB 장소·Blog adapter | PP-005 | [WI-0015](work-records/WI-0015-naver-api-hub-adapter.md) | 정상·0건·HTML·401·429·5xx·timeout WireMock |
-| PP-014 | 후보 정규화·중복 제거·근거 | PP-007, PP-013 | [WI-0016](work-records/WI-0016-candidate-normalization-deduplication-evidence.md) | 동일 장소 병합과 최소 provenance 보존 |
-| PP-015 | 결정론적 점수·Top 3·조건 완화 | PP-003, PP-014 | [WI-0017](work-records/WI-0017-deterministic-scoring-top3-relaxation.md) | 경계·동점·제외·한 번 확장·후보 부족 fixture |
-| PP-016 | 근거 기반 이유·주의점·fallback | PP-003, PP-005, PP-009, PP-015 | [WI-0018](work-records/WI-0018-grounded-reason-fallback.md) | strict schema·환각 차단·template fallback Eval |
-| PP-017 | Worker 전체 pipeline·복구 | PP-012~PP-016 | [WI-0019](work-records/WI-0019-worker-pipeline-recovery.md) | 상태 전이·degraded·중복·재시작·terminal 실패 |
-| PP-018 | 추천 상태·결과 조회 API | PP-002, PP-017 | [WI-0020](work-records/WI-0020-recommendation-status-result-api.md) | snapshot 소유권·만료·완료·실패 계약 |
-| PP-019 | 추천 진행 SSE | PP-004, PP-017, PP-018 | [WI-0021](work-records/WI-0021-recommendation-sse.md) | snapshot-first, heartbeat, reconnect와 자원 정리 |
+| [PP-013](https://github.com/gdh0730/hub/issues/15) | NAVER API HUB 장소·Blog adapter | PP-005 | [WI-0015](work-records/WI-0015-naver-api-hub-adapter.md) | 정상·0건·HTML·401·429·5xx·timeout WireMock |
+| [PP-014](https://github.com/gdh0730/hub/issues/16) | 후보 정규화·중복 제거·근거 | PP-007, PP-013 | [WI-0016](work-records/WI-0016-candidate-normalization-deduplication-evidence.md) | 동일 장소 병합과 최소 provenance 보존 |
+| [PP-015](https://github.com/gdh0730/hub/issues/17) | 결정론적 점수·Top 3·조건 완화 | PP-003, PP-014 | [WI-0017](work-records/WI-0017-deterministic-scoring-top3-relaxation.md) | 경계·동점·제외·한 번 확장·후보 부족 fixture |
+| [PP-016](https://github.com/gdh0730/hub/issues/18) | 근거 기반 이유·주의점·fallback | PP-003, PP-005, PP-009, PP-015 | [WI-0018](work-records/WI-0018-grounded-reason-fallback.md) | strict schema·환각 차단·template fallback Eval |
+| [PP-017](https://github.com/gdh0730/hub/issues/19) | Worker 전체 pipeline·복구 | PP-012~PP-016 | [WI-0019](work-records/WI-0019-worker-pipeline-recovery.md) | 상태 전이·degraded·중복·재시작·terminal 실패 |
+| [PP-018](https://github.com/gdh0730/hub/issues/20) | 추천 상태·결과 조회 API | PP-002, PP-017 | [WI-0020](work-records/WI-0020-recommendation-status-result-api.md) | snapshot 소유권·만료·완료·실패 계약 |
+| [PP-019](https://github.com/gdh0730/hub/issues/21) | 추천 진행 SSE | PP-004, PP-017, PP-018 | [WI-0021](work-records/WI-0021-recommendation-sse.md) | snapshot-first, heartbeat, reconnect와 자원 정리 |
 
 ### M4 추천 Frontend
 
 | ID | Task | 선행 | Work Record | 핵심 완료 증거 |
 | --- | --- | --- | --- | --- |
-| PP-020 | Next.js frontend 기반 | PP-006 | [WI-0022](work-records/WI-0022-next-frontend-foundation.md) | exact version·lockfile·test·same-origin proxy |
-| PP-021 | 홈·자연어 조건·Draft 확인 UI | PP-010, PP-020 | [WI-0023](work-records/WI-0023-home-draft-ui.md) | validation·수정·확정·새로고침 복구·접근성 |
-| PP-022 | 진행·결과·상세·공유 UI | PP-018~PP-020 | [WI-0024](work-records/WI-0024-progress-result-share-ui.md) | SSE, 후보 3개, degraded·error·retry 상태 |
+| [PP-020](https://github.com/gdh0730/hub/issues/22) | Next.js frontend 기반 | PP-006 | [WI-0022](work-records/WI-0022-next-frontend-foundation.md) | exact version·lockfile·test·same-origin proxy |
+| [PP-021](https://github.com/gdh0730/hub/issues/23) | 홈·자연어 조건·Draft 확인 UI | PP-010, PP-020 | [WI-0023](work-records/WI-0023-home-draft-ui.md) | validation·수정·확정·새로고침 복구·접근성 |
+| [PP-022](https://github.com/gdh0730/hub/issues/24) | 진행·결과·상세·공유 UI | PP-018~PP-020 | [WI-0024](work-records/WI-0024-progress-result-share-ui.md) | SSE, 후보 3개, degraded·error·retry 상태 |
 
 ### M5 공유방·투표·최종 확정
 
 | ID | Task | 선행 | Work Record | 핵심 완료 증거 |
 | --- | --- | --- | --- | --- |
-| PP-023 | 방 생성·조회·만료·공유 | PP-007, PP-008, PP-018 | [WI-0025](work-records/WI-0025-room-creation-read-expiry.md) | share/capability 분리, expiry와 404/410 |
-| PP-024 | 투표 변경·삭제·동시성 | PP-008, PP-023 | [WI-0026](work-records/WI-0026-vote-change-delete-concurrency.md) | 세션·후보당 한 표와 경합·집계 정합성 |
-| PP-025 | 방 SSE·주최자 최종 확정 | PP-004, PP-023, PP-024 | [WI-0027](work-records/WI-0027-room-sse-finalization.md) | 실시간 집계, capability, 원자적 확정과 409 |
-| PP-026 | 참여자 투표·주최자 확정 UI | PP-020, PP-022~PP-025 | [WI-0028](work-records/WI-0028-room-frontend.md) | 두 browser context의 변경·삭제·확정 E2E |
-| PP-027 | allowlist 제품 event 수집 | PP-002, PP-008, PP-023, PP-024 | [WI-0029](work-records/WI-0029-allowlisted-analytics.md) | 크기·schema·비식별화·PII 거부와 보존 정책 |
+| [PP-023](https://github.com/gdh0730/hub/issues/25) | 방 생성·조회·만료·공유 | PP-007, PP-008, PP-018 | [WI-0025](work-records/WI-0025-room-creation-read-expiry.md) | share/capability 분리, expiry와 404/410 |
+| [PP-024](https://github.com/gdh0730/hub/issues/26) | 투표 변경·삭제·동시성 | PP-008, PP-023 | [WI-0026](work-records/WI-0026-vote-change-delete-concurrency.md) | 세션·후보당 한 표와 경합·집계 정합성 |
+| [PP-025](https://github.com/gdh0730/hub/issues/27) | 방 SSE·주최자 최종 확정 | PP-004, PP-023, PP-024 | [WI-0027](work-records/WI-0027-room-sse-finalization.md) | 실시간 집계, capability, 원자적 확정과 409 |
+| [PP-026](https://github.com/gdh0730/hub/issues/28) | 참여자 투표·주최자 확정 UI | PP-020, PP-022~PP-025 | [WI-0028](work-records/WI-0028-room-frontend.md) | 두 browser context의 변경·삭제·확정 E2E |
+| [PP-027](https://github.com/gdh0730/hub/issues/29) | allowlist 제품 event 수집 | PP-002, PP-008, PP-023, PP-024 | [WI-0029](work-records/WI-0029-allowlisted-analytics.md) | 크기·schema·비식별화·PII 거부와 보존 정책 |
 
 ### M6 실제 Adapter·보안·운영성
 
 | ID | Task | 선행 | Work Record | 핵심 완료 증거 |
 | --- | --- | --- | --- | --- |
-| PP-028 | Cache·rate limit·quota 보호 | PP-005, PP-009, PP-013, PP-017, PP-024 | [WI-0030](work-records/WI-0030-rate-quota-cache.md) | Retry-After, stampede·timeout·quota metric |
-| PP-029 | 실제 Naver·OpenAI adapter 활성화 | PP-005, PP-009, PP-013, PP-028 | [WI-0031](work-records/WI-0031-live-provider-adapters.md) | profile 격리, host allowlist, key fail-fast·kill switch |
-| PP-030 | 보안·개인정보·수명 hardening | PP-007, PP-008, PP-020, PP-023, PP-027~PP-029 | [WI-0032](work-records/WI-0032-security-privacy-lifecycle.md) | 위협 모델, CSRF·XSS·SSRF·cleanup·약관 검증 |
-| PP-031 | 도메인 metric·Grafana·Runbook | PP-012, PP-017, PP-024, PP-028~PP-030 | [WI-0033](work-records/WI-0033-observability-runbooks.md) | 단계 지연·degraded·DLQ·quota·SSE·경합 관측 |
+| [PP-028](https://github.com/gdh0730/hub/issues/30) | Cache·rate limit·quota 보호 | PP-005, PP-009, PP-013, PP-017, PP-024 | [WI-0030](work-records/WI-0030-rate-quota-cache.md) | Retry-After, stampede·timeout·quota metric |
+| [PP-029](https://github.com/gdh0730/hub/issues/31) | 실제 Naver·OpenAI adapter 활성화 | PP-005, PP-009, PP-013, PP-028 | [WI-0031](work-records/WI-0031-live-provider-adapters.md) | profile 격리, host allowlist, key fail-fast·kill switch |
+| [PP-030](https://github.com/gdh0730/hub/issues/32) | 보안·개인정보·수명 hardening | PP-007, PP-008, PP-020, PP-023, PP-027~PP-029 | [WI-0032](work-records/WI-0032-security-privacy-lifecycle.md) | 위협 모델, CSRF·XSS·SSRF·cleanup·약관 검증 |
+| [PP-031](https://github.com/gdh0730/hub/issues/33) | 도메인 metric·Grafana·Runbook | PP-012, PP-017, PP-024, PP-028~PP-030 | [WI-0033](work-records/WI-0033-observability-runbooks.md) | 단계 지연·degraded·DLQ·quota·SSE·경합 관측 |
 
 ### M7 시스템 검증·Release
 
 | ID | Task | 선행 | Work Record | 핵심 완료 증거 |
 | --- | --- | --- | --- | --- |
-| PP-032 | 전체 자동 검증 matrix | PP-001~PP-031 | [WI-0034](work-records/WI-0034-full-test-matrix.md) | unit·integration·contract·Eval·E2E·a11y·security |
-| PP-033 | staging-live secret·예약 실제 E2E | PP-029~PP-032 | [WI-0035](work-records/WI-0035-staging-live-workflow.md) | Environment·한도·알림·rotation과 일 1회/수동 검증 |
-| PP-034 | k6 부하 실험과 기준선 | PP-017, PP-024, PP-031, PP-032 | [WI-0036](work-records/WI-0036-k6-load-experiments.md) | Job·Worker·SSE·투표 baseline과 병목 전후 EXP |
-| PP-035 | Java 17 운영 image·Demo Compose | PP-020, PP-029~PP-032 | [WI-0037](work-records/WI-0037-java17-production-packaging.md) | api·worker·frontend, readiness·종료·rollback |
-| PP-036 | 최종 release·portfolio Case Study | PP-033~PP-035 | [WI-0038](work-records/WI-0038-final-release-case-study.md) | 계약·증거 대조와 README·ADR·WI·전문 문서 gate |
+| [PP-032](https://github.com/gdh0730/hub/issues/34) | 전체 자동 검증 matrix | PP-001~PP-031 | [WI-0034](work-records/WI-0034-full-test-matrix.md) | unit·integration·contract·Eval·E2E·a11y·security |
+| [PP-033](https://github.com/gdh0730/hub/issues/35) | staging-live secret·예약 실제 E2E | PP-029~PP-032 | [WI-0035](work-records/WI-0035-staging-live-workflow.md) | Environment·한도·알림·rotation과 일 1회/수동 검증 |
+| [PP-034](https://github.com/gdh0730/hub/issues/36) | k6 부하 실험과 기준선 | PP-017, PP-024, PP-031, PP-032 | [WI-0036](work-records/WI-0036-k6-load-experiments.md) | Job·Worker·SSE·투표 baseline과 병목 전후 EXP |
+| [PP-035](https://github.com/gdh0730/hub/issues/37) | Java 17 운영 image·Demo Compose | PP-020, PP-029~PP-032 | [WI-0037](work-records/WI-0037-java17-production-packaging.md) | api·worker·frontend, readiness·종료·rollback |
+| [PP-036](https://github.com/gdh0730/hub/issues/38) | 최종 release·portfolio Case Study | PP-033~PP-035 | [WI-0038](work-records/WI-0038-final-release-case-study.md) | 계약·증거 대조와 README·ADR·WI·전문 문서 gate |
 
 ## 병렬 실행과 Critical Path
 

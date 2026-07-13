@@ -25,6 +25,8 @@ paths:
 
 # WI-0037 PP-035 Java 17 운영 이미지와 Demo Compose 패키징
 
+> GitHub Issue: [PP-035 #37](https://github.com/gdh0730/hub/issues/37)
+
 ## 문제와 근거
 
 PP-035는 개발용 Dev Container가 아닌 최소 운영 image에서 API, worker와 frontend를 동일한

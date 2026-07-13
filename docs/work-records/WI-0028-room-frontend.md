@@ -23,6 +23,8 @@ paths:
 
 # WI-0028 PP-026 참여자 투표와 주최자 최종 확정 프런트엔드
 
+> GitHub Issue: [PP-026 #28](https://github.com/gdh0730/hub/issues/28)
+
 ## 문제와 근거
 
 PP-026은 공유 링크를 받은 참여자가 회원 가입 없이 후보를 비교하고 LIKE/DISLIKE를

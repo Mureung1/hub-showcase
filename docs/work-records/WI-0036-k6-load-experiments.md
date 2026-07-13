@@ -23,6 +23,8 @@ paths:
 
 # WI-0036 PP-034 k6 부하 실험과 성능 기준선 확정
 
+> GitHub Issue: [PP-034 #36](https://github.com/gdh0730/hub/issues/36)
+
 ## 문제와 근거
 
 PP-034는 비동기 추천, worker, SSE와 동시 투표가 어떤 자원에서 포화되는지 측정하고 회귀

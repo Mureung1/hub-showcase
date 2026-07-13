@@ -21,6 +21,8 @@ paths:
 
 # WI-0011 PP-009 조건 추출 Port Schema Eval
 
+> GitHub Issue: [PP-009 #11](https://github.com/gdh0730/hub/issues/11)
+
 ## 문제와 근거
 
 자연어 조건은 위치, 장소 유형, 인원, 예산과 선호·제외 항목이 섞여 있으며 일부 값이

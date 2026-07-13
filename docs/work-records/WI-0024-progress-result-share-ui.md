@@ -21,6 +21,8 @@ paths:
 
 # WI-0024 PP-022 추천 진행·결과·상세·공유 UI
 
+> GitHub Issue: [PP-022 #24](https://github.com/gdh0730/hub/issues/24)
+
 ## 문제와 근거
 
 추천 job은 비동기로 실행되므로 202 이후 빈 화면을 보이거나 SSE 연결 하나에만 의존하면

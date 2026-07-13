@@ -18,6 +18,8 @@ paths:
 
 # WI-0016 PP-014 후보 정규화·중복 제거·근거 모델
 
+> GitHub Issue: [PP-014 #16](https://github.com/gdh0730/hub/issues/16)
+
 ## 문제와 근거
 
 장소 검색 결과는 같은 장소가 지점명, 공백, HTML 태그, 도로명·지번 주소 차이로 여러

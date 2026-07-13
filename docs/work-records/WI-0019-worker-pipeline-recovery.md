@@ -21,6 +21,8 @@ paths:
 
 # WI-0019 PP-017 추천 Worker 파이프라인·복구
 
+> GitHub Issue: [PP-017 #19](https://github.com/gdh0730/hub/issues/19)
+
 ## 문제와 근거
 
 추천은 장소·블로그 검색, 정규화, 점수화와 설명 생성처럼 실패 특성이 다른 여러 단계를

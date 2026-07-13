@@ -21,6 +21,8 @@ paths:
 
 # WI-0018 PP-016 근거 기반 추천 이유·fallback
 
+> GitHub Issue: [PP-016 #18](https://github.com/gdh0730/hub/issues/18)
+
 ## 문제와 근거
 
 추천 후보 이름과 검색 근거를 LLM에 그대로 주고 자유문을 받으면 실제 근거에 없는 가격,

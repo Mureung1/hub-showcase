@@ -20,6 +20,8 @@ paths:
 
 # WI-0022 PP-020 Next.js 프런트엔드 기반
 
+> GitHub Issue: [PP-020 #22](https://github.com/gdh0730/hub/issues/22)
+
 ## 문제와 근거
 
 현재 저장소의 `package.json`은 문서 검증 도구 전용이며 운영 프런트 application은 없다.

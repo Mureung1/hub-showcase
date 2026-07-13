@@ -21,6 +21,8 @@ paths:
 
 # WI-0023 PP-021 홈·자연어 입력·조건 검토 UI
 
+> GitHub Issue: [PP-021 #23](https://github.com/gdh0730/hub/issues/23)
+
 ## 문제와 근거
 
 자연어 입력을 곧바로 비동기 추천으로 보내면 AI가 잘못 해석한 위치, 예산이나 제외

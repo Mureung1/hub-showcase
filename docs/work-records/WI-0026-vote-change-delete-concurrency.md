@@ -21,6 +21,8 @@ paths:
 
 # WI-0026 PP-024 투표 변경·삭제·동시성 정합성
 
+> GitHub Issue: [PP-024 #26](https://github.com/gdh0730/hub/issues/26)
+
 ## 문제와 근거
 
 익명 참여자가 같은 후보에 요청을 재전송하거나 LIKE에서 DISLIKE로 바꾸고 삭제할 수

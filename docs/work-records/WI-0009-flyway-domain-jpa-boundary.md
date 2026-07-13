@@ -23,6 +23,8 @@ paths:
 
 # WI-0009 PP-007 Flyway 스키마 도메인 JPA 경계
 
+> GitHub Issue: [PP-007 #9](https://github.com/gdh0730/hub/issues/9)
+
 ## 문제와 근거
 
 현재 V1 migration은 환경 검증용 metadata 테이블만 만들며 서비스 aggregate와

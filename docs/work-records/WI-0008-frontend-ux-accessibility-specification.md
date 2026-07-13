@@ -20,6 +20,8 @@ paths:
 
 # WI-0008 PP-006 프런트 UX 접근성 프로토타입 정리
 
+> GitHub Issue: [PP-006 #8](https://github.com/gdh0730/hub/issues/8)
+
 ## 문제와 근거
 
 저장소의 HTML 프로토타입과 ProjectIntro 컴포넌트는 제품 방향을 시각화하지만 build,

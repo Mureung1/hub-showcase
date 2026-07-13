@@ -29,6 +29,8 @@ paths:
 
 # WI-0034 PP-032 서비스 전체 자동 검증 매트릭스
 
+> GitHub Issue: [PP-032 #34](https://github.com/gdh0730/hub/issues/34)
+
 ## 문제와 근거
 
 PP-032는 개별 Task에서 만든 테스트를 사용자 여정과 위험 기준으로 대조해, 계약·데이터·

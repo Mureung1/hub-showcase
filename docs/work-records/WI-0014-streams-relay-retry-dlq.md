@@ -23,6 +23,8 @@ paths:
 
 # WI-0014 PP-012 Redis Streams Relay 재시도 DLQ
 
+> GitHub Issue: [PP-012 #14](https://github.com/gdh0730/hub/issues/14)
+
 ## 문제와 근거
 
 PP-011이 outbox를 저장해도 relay와 consumer가 중복, crash, pending message와 poison

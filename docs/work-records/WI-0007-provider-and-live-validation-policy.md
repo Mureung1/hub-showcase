@@ -18,6 +18,8 @@ paths:
 
 # WI-0007 PP-005 Naver OpenAI 실제 API 검증 정책
 
+> GitHub Issue: [PP-005 #7](https://github.com/gdh0730/hub/issues/7)
+
 ## 문제와 근거
 
 현재 환경은 Mock Naver와 Mock LLM만 안전하게 제공하고 실제 provider 계약은 없다.
