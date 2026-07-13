@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "concurrently -n web,server -c blue,green \"npm:dev:web\" \"npm:dev:server\"",
     "dev:web": "npm run dev --workspace=apps/web",
-    "dev:server": "npm run dev --workspace=apps/server"
+    "dev:server": "npm run dev --workspace=apps/server",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
