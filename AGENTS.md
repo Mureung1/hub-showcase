@@ -115,23 +115,30 @@
 
 요청과 관련된 문서를 먼저 확인한다.
 
+계획, 구현, 수정, 리뷰 작업에는 `$preserve-product-intent` 스킬을 사용한다.
+단순 상태 확인, Git 전용 작업, 저장소 동작과 무관한 일반 질문에는 사용하지 않는다.
+
 ### 기획
 
-* `docs/prd_mvp.md`
-* `docs/feature_spec.md`
-* `docs/screen_flow.md`
-* `docs/user_flow.md`
+* `docs/product/prd_mvp.md`
+* `docs/product/feature_spec.md`
+* `docs/product/user_flow.md`
+* `docs/product/plan.md`
 
 ### 디자인
 
-* `docs/design_principles.md`
-* UI 명세 또는 디자인 시스템 문서
+* `docs/design/screen_flow.md`
+* `docs/design/design_system.md`
+* `docs/design/recipebook_design_guidelines.md`
 
-### 개발 백로그
+### API와 데이터 모델
 
-* `docs/common_backlog.md`
-* `docs/frontend_backlog.md`
-* `docs/backend_backlog.md`
+* `docs/api/api_spec.md`
+* `docs/architecture/data_model.md`
+
+### 진행 확인
+
+* `docs/product/checklist.md`
 
 문서와 코드가 충돌하면 임의로 정책을 변경하지 않는다.
 
@@ -477,7 +484,7 @@ type RecipeType = "OWNED" | "EXTERNAL" | "RECEIVED";
 | 개인 메모 수정 | 정책에 따름 |   정책에 따름 |       가능 |
 | 전달 공유    |     가능 |       불가 |       불가 |
 
-세부 정책은 `docs/feature_spec.md`의 최신 내용을 우선한다.
+세부 정책은 `docs/product/feature_spec.md`의 최신 내용을 우선한다.
 
 문서마다 정책이 다르면 임의로 선택하지 않는다.
 
