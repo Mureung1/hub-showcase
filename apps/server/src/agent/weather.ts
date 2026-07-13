@@ -199,3 +199,94 @@ export async function getKmaWeather(
 
   return parseKmaResponse(await res.json());
 }
+
+// ---- OpenWeatherMap (앙상블 2순위 · 기상청 폴백) ----------------------------
+
+const OWM_ENDPOINT = "https://api.openweathermap.org/data/2.5/weather";
+
+export interface OwmDeps {
+  apiKey?: string;
+  fetchFn?: typeof fetch;
+  timeoutMs?: number;
+  retries?: number;
+}
+
+/** OpenWeatherMap weather[0].id → 내부 상태 매핑. */
+function owmCondition(id: number): WeatherCondition {
+  if (id >= 200 && id < 300) return "shower"; // 뇌우
+  if (id >= 300 && id < 500) return "rain"; // 이슬비
+  if (id >= 500 && id < 600) return id >= 520 ? "shower" : "rain"; // 소나기/비
+  if (id >= 600 && id < 700) {
+    if (id >= 611 && id <= 616) return "sleet"; // 진눈깨비/비섞임
+    return "snow";
+  }
+  if (id >= 700 && id < 800) return "overcast"; // 안개·연무류는 흐림으로 근사
+  if (id === 800) return "clear";
+  return id >= 803 ? "overcast" : "cloudy"; // 80x 구름
+}
+
+/** OWM current weather 응답을 정규화한다. */
+export function parseOwmResponse(json: unknown): NormalizedWeather {
+  const root = json as {
+    weather?: { id: number }[];
+    main?: { temp?: number; humidity?: number };
+    rain?: Record<string, number>;
+    snow?: Record<string, number>;
+    dt?: number;
+    cod?: number | string;
+    message?: string;
+  };
+
+  if (root.cod !== undefined && Number(root.cod) !== 200) {
+    throw new Error(`OWM 응답 오류: ${root.cod} ${root.message ?? ""}`.trim());
+  }
+  const id = root.weather?.[0]?.id;
+  if (id === undefined) throw new Error("OWM 날씨 항목이 비어 있습니다");
+
+  const condition = owmCondition(id);
+  // current weather에는 시간당 강수량만 있고 강수확률(pop)은 없다 → 0.
+  const precipitationMm = root.rain?.["1h"] ?? root.snow?.["1h"] ?? 0;
+  const baseDateTime = root.dt
+    ? new Date(root.dt * 1000).toISOString().slice(0, 16)
+    : new Date().toISOString().slice(0, 16);
+
+  return {
+    source: "owm",
+    baseDateTime,
+    tempC: root.main?.temp ?? 0,
+    humidity: root.main?.humidity ?? 0,
+    precipitationMm,
+    precipitationProb: 0,
+    isPrecipitating: id < 700,
+    condition,
+  };
+}
+
+/**
+ * 위경도의 현재 날씨를 OpenWeatherMap에서 가져온다.
+ * @throws API 키 미설정, 네트워크(재시도 후) 실패, 응답 오류 시
+ */
+export async function getOwmWeather(
+  lat: number,
+  lng: number,
+  deps: OwmDeps = {},
+): Promise<NormalizedWeather> {
+  const apiKey = deps.apiKey ?? process.env.OWM_API_KEY;
+  if (!apiKey) throw new Error("OWM_API_KEY 가 설정되지 않았습니다");
+
+  const fetchFn = deps.fetchFn ?? fetch;
+  const params = new URLSearchParams({
+    lat: String(lat),
+    lon: String(lng),
+    appid: apiKey,
+    units: "metric",
+  });
+
+  const res = await fetchWithRetry(`${OWM_ENDPOINT}?${params.toString()}`, {
+    fetchFn,
+    timeoutMs: deps.timeoutMs ?? 3000,
+    retries: deps.retries ?? 1,
+  });
+
+  return parseOwmResponse(await res.json());
+}

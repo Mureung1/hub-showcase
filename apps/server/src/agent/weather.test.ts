@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { pickBaseDateTime, parseKmaResponse, getKmaWeather } from "./weather";
+import {
+  pickBaseDateTime,
+  parseKmaResponse,
+  getKmaWeather,
+  parseOwmResponse,
+  getOwmWeather,
+} from "./weather";
 
 // 기상청 응답 샘플 빌더 (한 슬롯 20260713 1400)
 function kmaJson(
@@ -143,5 +149,96 @@ describe("getKmaWeather (타임아웃·재시도)", () => {
     await expect(
       getKmaWeather(98, 75, { serviceKey: "", fetchFn, now: () => new Date(2026, 6, 13, 14, 30) }),
     ).rejects.toThrow(/KMA_SERVICE_KEY/);
+  });
+});
+
+// OWM current weather 응답 샘플 빌더
+function owmJson(
+  weatherId: number,
+  main: { temp: number; humidity: number },
+  extra: Record<string, unknown> = {},
+): unknown {
+  return {
+    cod: 200,
+    dt: 1_768_300_800, // 2026-01-13T10:40:00Z (결정적 UTC)
+    weather: [{ id: weatherId }],
+    main,
+    ...extra,
+  };
+}
+
+describe("parseOwmResponse", () => {
+  it("맑음(800)을 정규화한다", () => {
+    const w = parseOwmResponse(owmJson(800, { temp: 24.6, humidity: 40 }));
+    expect(w).toMatchObject({
+      source: "owm",
+      tempC: 24.6,
+      humidity: 40,
+      precipitationMm: 0,
+      precipitationProb: 0,
+      isPrecipitating: false,
+      condition: "clear",
+    });
+    expect(w.baseDateTime).toBe("2026-01-13T10:40");
+  });
+
+  it("비(500) + rain.1h 강수량을 정규화한다", () => {
+    const w = parseOwmResponse(
+      owmJson(500, { temp: 18, humidity: 88 }, { rain: { "1h": 2.5 } }),
+    );
+    expect(w).toMatchObject({
+      condition: "rain",
+      precipitationMm: 2.5,
+      isPrecipitating: true,
+    });
+  });
+
+  it("구름많음(801)/흐림(804)을 구분한다", () => {
+    expect(parseOwmResponse(owmJson(801, { temp: 20, humidity: 50 })).condition).toBe("cloudy");
+    expect(parseOwmResponse(owmJson(804, { temp: 20, humidity: 50 })).condition).toBe("overcast");
+  });
+
+  it("눈(600)/진눈깨비(611)를 구분한다", () => {
+    expect(parseOwmResponse(owmJson(600, { temp: -2, humidity: 70 })).condition).toBe("snow");
+    expect(parseOwmResponse(owmJson(611, { temp: 1, humidity: 80 })).condition).toBe("sleet");
+  });
+
+  it("cod가 200이 아니면 예외", () => {
+    expect(() => parseOwmResponse({ cod: 401, message: "Invalid API key" })).toThrow(/OWM 응답 오류/);
+  });
+});
+
+describe("getOwmWeather (타임아웃·재시도)", () => {
+  const sample = owmJson(800, { temp: 24, humidity: 40 });
+  const owmDeps = (fetchFn: typeof fetch, extra: Record<string, unknown> = {}) => ({
+    apiKey: "TEST_KEY",
+    fetchFn,
+    ...extra,
+  });
+
+  it("정상 응답이면 정규화 결과를 반환한다", async () => {
+    const fetchFn = vi.fn(async () => okResponse(sample)) as unknown as typeof fetch;
+    const w = await getOwmWeather(35.1578, 129.0594, owmDeps(fetchFn));
+    expect(w.condition).toBe("clear");
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("첫 호출 실패 시 1회 재시도 후 성공한다", async () => {
+    let calls = 0;
+    const fetchFn = vi.fn(async () => {
+      calls++;
+      if (calls === 1) throw new Error("network");
+      return okResponse(sample);
+    }) as unknown as typeof fetch;
+    const w = await getOwmWeather(35.1578, 129.0594, owmDeps(fetchFn));
+    expect(w.tempC).toBe(24);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it("apiKey가 없으면 예외", async () => {
+    const fetchFn = vi.fn(async () => okResponse(sample)) as unknown as typeof fetch;
+    await expect(
+      getOwmWeather(35.1578, 129.0594, { apiKey: "", fetchFn }),
+    ).rejects.toThrow(/OWM_API_KEY/);
   });
 });
