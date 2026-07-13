@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="병원 직원 통합 대기열 프로토타입">
+  <title>통합 대기열 | 바로진료 병원</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="staff-body state-demo">
+  <span class="target-marker" id="queue" aria-hidden="true"></span>
+  <span class="target-marker" id="visit-requested" aria-hidden="true"></span>
+  <span class="target-marker" id="arrived" aria-hidden="true"></span>
+  <span class="target-marker" id="checked-in" aria-hidden="true"></span>
+  <span class="target-marker" id="called" aria-hidden="true"></span>
+  <span class="target-marker" id="held" aria-hidden="true"></span>
+  <span class="target-marker" id="cancelled" aria-hidden="true"></span>
+  <span class="target-marker" id="onsite-added" aria-hidden="true"></span>
+
+  <header class="staff-header">
+    <a class="brand" href="staff.html" aria-label="바로진료 병원 화면">
+      <span class="brand-mark" aria-hidden="true">+</span><span>바로진료 <small>병원</small></span>
+    </a>
+    <nav class="staff-nav" aria-label="병원 직원 메뉴"><a class="is-active" href="staff.html">통합 대기열</a><a href="onsite.html">현장 환자 등록</a><a href="index.html">환자 화면</a></nav>
+  </header>
+
+  <main class="staff-main">
+    <section class="staff-titlebar">
+      <div><p class="eyebrow"><span class="status-dot" aria-hidden="true"></span>원격 웨이팅 운영 중</p><h1>서울이비인후과 통합 대기열</h1><p>2026년 7월 13일 · 평균 진료 5분</p></div>
+      <a class="button button-primary" href="onsite.html">+ 현장 환자 등록</a>
+    </section>
+
+    <section class="metric-strip" aria-label="대기열 요약">
+      <div><span>대기 환자</span><strong>12명</strong></div><div><span>원격 접수</span><strong>3팀</strong></div><div><span>현장 접수</span><strong>4팀</strong></div><div><span>예상 마지막 대기</span><strong>약 60분</strong></div>
+    </section>
+
+    <section class="queue-section" aria-labelledby="queue-title">
+      <div class="queue-toolbar"><div><h2 id="queue-title">현재 진료 대기 순서</h2><p>가족 팀이 아닌 실제 환자 수 기준입니다.</p></div><div class="queue-legend"><span><i class="type-mark remote"></i>원격</span><span><i class="type-mark onsite"></i>현장</span></div></div>
+
+      <div class="queue-list" role="table" aria-label="원격 및 현장 통합 대기열">
+        <div class="queue-list-head" role="row"><span>순서</span><span>접수</span><span>가족 인원</span><span>현재 상태</span><span>등록 시각</span><span>다음 동작</span></div>
+
+        <article class="queue-entry" role="row">
+          <strong class="queue-order">1</strong><div><span class="type-label onsite">현장</span><strong>A-012</strong></div><span>성인 1명</span><span class="status-badge status-checked">✓ 접수 완료</span><time>09:54</time><div class="row-actions"><a class="button button-small button-primary" href="#queue">진료실 호출</a><a class="button button-small button-quiet" href="#held">보류</a></div>
+        </article>
+
+        <article class="queue-entry scenario-entry scenario-default" role="row">
+          <strong class="queue-order">2</strong><div><span class="type-label remote">원격</span><strong>A-013</strong></div><span>소아 1 · 성인 1<br><small>총 2명</small></span><span class="status-badge status-waiting">● 원격 대기</span><time>10:02</time><div class="row-actions"><a class="button button-small button-primary" href="#visit-requested">방문 요청</a><a class="button button-small button-secondary" href="#held">보류</a><a class="button button-small button-quiet" href="#cancelled">취소</a></div>
+        </article>
+        <article class="queue-entry scenario-entry scenario-visit" role="row">
+          <strong class="queue-order">2</strong><div><span class="type-label remote">원격</span><strong>A-013</strong></div><span>소아 1 · 성인 1<br><small>총 2명</small></span><span class="status-badge status-action">! 방문 요청</span><time>10:02</time><div class="row-actions"><a class="button button-small button-primary" href="#arrived">도착 확인</a><a class="button button-small button-secondary" href="#held">미루기</a><a class="patient-check-link" href="waiting.html#visit">환자 화면 ↗</a></div>
+        </article>
+        <article class="queue-entry scenario-entry scenario-arrived" role="row">
+          <strong class="queue-order">2</strong><div><span class="type-label remote">원격</span><strong>A-013</strong></div><span>소아 1 · 성인 1<br><small>총 2명</small></span><span class="status-badge status-arrived">✓ 도착 확인</span><time>10:02</time><div class="row-actions"><a class="button button-small button-primary" href="#checked-in">접수 완료</a><a class="patient-check-link" href="waiting.html#arrived">환자 화면 ↗</a></div>
+        </article>
+        <article class="queue-entry scenario-entry scenario-checked" role="row">
+          <strong class="queue-order">2</strong><div><span class="type-label remote">원격</span><strong>A-013</strong></div><span>소아 1 · 성인 1<br><small>총 2명</small></span><span class="status-badge status-checked">✓ 접수 완료</span><time>10:02</time><div class="row-actions"><a class="button button-small button-primary" href="#called">진료실 호출</a><a class="button button-small button-quiet" href="#held">보류</a><a class="patient-check-link" href="waiting.html#checked">환자 화면 ↗</a></div>
+        </article>
+        <article class="queue-entry scenario-entry scenario-held" role="row">
+          <strong class="queue-order">5</strong><div><span class="type-label remote">원격</span><strong>A-013</strong></div><span>소아 1 · 성인 1<br><small>총 2명</small></span><span class="status-badge status-held">↘ 보류·미룸</span><time>10:02</time><div class="row-actions"><a class="button button-small button-primary" href="#queue">대기열 복귀</a><a class="button button-small button-quiet" href="#cancelled">취소</a></div>
+        </article>
+
+        <article class="queue-entry" role="row">
+          <strong class="queue-order">3</strong><div><span class="type-label remote">원격</span><strong>A-014</strong></div><span>노인 1명</span><span class="status-badge status-action">! 방문 요청</span><time>10:08</time><div class="row-actions"><span class="button button-small button-disabled">도착 대기</span></div>
+        </article>
+        <article class="queue-entry onsite-added-entry" role="row">
+          <strong class="queue-order">4</strong><div><span class="type-label onsite">현장</span><strong>A-018</strong></div><span>성인 1명</span><span class="status-badge status-arrived">✓ 도착 확인</span><time>10:34</time><div class="row-actions"><a class="button button-small button-primary" href="#checked-in">접수 완료</a></div>
+        </article>
+        <article class="queue-entry" role="row">
+          <strong class="queue-order">4</strong><div><span class="type-label onsite">현장</span><strong>A-015</strong></div><span>성인 1명</span><span class="status-badge status-arrived">✓ 도착 확인</span><time>10:12</time><div class="row-actions"><a class="button button-small button-primary" href="#queue">접수 완료</a></div>
+        </article>
+      </div>
+
+      <div class="queue-feedback feedback-visit"><strong>A-013에 방문을 요청했습니다.</strong><span>환자 화면에 방문 요청 상태가 표시됩니다.</span></div>
+      <div class="queue-feedback feedback-arrived"><strong>A-013의 도착을 확인했습니다.</strong><span>데스크 정식 접수를 진행해 주세요.</span></div>
+      <div class="queue-feedback feedback-checked"><strong>A-013의 접수가 완료되었습니다.</strong><span>실제 진료 대기 순서에 따라 호출해 주세요.</span></div>
+      <div class="queue-feedback feedback-called"><strong>A-013을 진료실로 호출했습니다.</strong><span>활성 대기열에서 제외되고 다음 순번이 갱신됩니다. <a href="waiting.html#called">환자 화면 확인 ↗</a></span></div>
+      <div class="queue-feedback feedback-held"><strong>A-013을 뒤 순서로 이동했습니다.</strong><span>앞에 남은 환자 수와 예상 시간이 다시 계산됩니다.</span></div>
+      <div class="queue-feedback feedback-cancelled"><strong>A-013 웨이팅을 취소했습니다.</strong><span>활성 대기열에서 제외됩니다.</span></div>
+      <div class="queue-feedback feedback-onsite"><strong>현장 환자 A-018을 등록했습니다.</strong><span>원격 환자와 같은 대기열에 추가되었습니다.</span></div>
+    </section>
+  </main>
+  <footer class="prototype-footer staff-footer">정적 프로토타입 · 조작 결과는 저장되지 않습니다.</footer>
+</body>
+</html>

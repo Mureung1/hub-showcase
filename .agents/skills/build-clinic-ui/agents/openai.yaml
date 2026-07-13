@@ -1,0 +1,7 @@
+interface:
+  display_name: "바로진료 UI·디자인 적용"
+  short_description: "디자인 시스템으로 환자·직원 웨이팅 화면을 제작합니다"
+  default_prompt: "Use $build-clinic-ui to build or review this screen with the Barojinryo design system and canonical tokens."
+
+policy:
+  allow_implicit_invocation: true
