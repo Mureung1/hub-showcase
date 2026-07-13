@@ -2,7 +2,7 @@ name: Sync plan.md to Wiki
 
 on:
   push:
-    branches: [main]
+    branches: [work]
     paths:
       - "docs/plan.md"
   workflow_dispatch: {}
