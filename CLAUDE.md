@@ -27,7 +27,7 @@
 - `src/App.jsx`는 실제 기능이 아니라 서비스 소개용 랜딩 화면 하나뿐이다. 위 4개 화면은 아직 React로 구현되지 않았다.
 - 새 화면을 만들 때는 반드시 [docs/design-skill.md](docs/design-skill.md)의 원칙과 [docs/variables.css](docs/variables.css)의 토큰을 따른다. 임의로 색상·폰트 크기·간격 값을 새로 만들지 않는다. 이 판단 기준은 Claude Code 스킬([.claude/skills/design-review](.claude/skills/design-review/SKILL.md))로도 등록되어 있어, 화면/스타일 작업 시 자동으로 참고된다.
 - 백엔드/AI 연동 스택 방향은 정해졌다(아래 `백엔드 방향` 참고). 실제 `backend/` 스캐폴딩과 구현은 2주차([docs/checklist.md](docs/checklist.md) T1~T2)에 진행.
-- 공고 데이터는 실제 크롤링이 아니라 샘플/목업 데이터로 시작할 계획.
+- 공고 데이터는 실제 크롤링이 아니라 샘플/목업 데이터로 시작할 계획 — 단, 저장소는 JSON 파일이 아니라 Supabase 테이블이다(2주차 미션 요구사항 "crud/supabase" 반영, 아래 `백엔드 방향` 참고).
 
 4주 작업분해와 체크 현황(T1~T16)은 [docs/checklist.md](docs/checklist.md)를 항상 최신 기준으로 참고할 것 — 이 파일에 진행률을 옮겨 적지 않는다(금방 stale해짐).
 
@@ -47,8 +47,8 @@ npm run preview   # 빌드 결과 미리보기
 - **구조**: 현재 루트는 그대로 Vite 프론트엔드로 두고, 신규 `backend/` 폴더에 별도 `package.json`(Express)을 둔다. 모노레포 툴 없이 프론트/백엔드 2-패키지로 단순하게 간다.
 - **백엔드**: Node.js + Express.
 - **AI 연동**: Anthropic Claude API(`@anthropic-ai/sdk`) — 공고 적합도 분석, 자소서 초안 생성에 사용.
-- **데이터**: 별도 DB 없이 JSON/파일 기반 목업 데이터로 시작([docs/checklist.md](docs/checklist.md) T3).
-- **예상 라이브러리**: `express`, `cors`, `dotenv`, 개발용 `nodemon`, `@anthropic-ai/sdk`.
+- **데이터**: Supabase 프로젝트의 테이블 하나에 공고 목업 데이터를 저장하고, 백엔드 API가 이를 저장·조회한다([docs/checklist.md](docs/checklist.md) T2-b, T3). 공고 내용 자체는 여전히 샘플/목업이지만, 저장소는 JSON 파일이 아니라 실제 Supabase DB다.
+- **예상 라이브러리**: `express`, `cors`, `dotenv`, `@supabase/supabase-js`, 개발용 `nodemon`, `@anthropic-ai/sdk`.
 
 ## 커밋 컨벤션
 
