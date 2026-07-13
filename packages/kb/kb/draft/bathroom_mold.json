@@ -1,0 +1,475 @@
+{
+  "domain": "bathroom_mold",
+  "version": "0.2.0",
+  "generated": "2026-07-13",
+  "n_cards": 24,
+  "hypotheses": {
+    "grout_mold": {
+      "label": "타일 줄눈 곰팡이",
+      "prior": 0.277,
+      "prior_source": "문서 10건 언급 (가중 8.8/28.4, Laplace α=1)",
+      "evidence": [
+        "https://www.a-ha.io/questions/bathroom-mold-water",
+        "https://miso.kr/blog/bathroom-cleaning",
+        "https://spacediary.store/article/blog/8/462/",
+        "https://ohou.se/advices/597",
+        "https://v.daum.net/v/20250805140530382"
+      ],
+      "solution": "베이킹소다와 세제를 혼합해서 청소, 식초를 같이 사용하면 효과적",
+      "verify": {
+        "action": "타일 줄눈이 검게 변색되었는지 확인",
+        "photo": true,
+        "cost": 3
+      }
+    },
+    "poor_vent": {
+      "label": "환기 불량 (습도 정체)",
+      "prior": 0.209,
+      "prior_source": "문서 10건 언급 (가중 6.4/28.4, Laplace α=1)",
+      "evidence": [
+        "https://zippoom.com/blog/bathroom-mold",
+        "https://www.homify.co.kr/ideabooks/359397/bathroom-mold",
+        "https://miso.kr/blog/bathroom-cleaning",
+        "https://lady.khan.co.kr/living/article/202510311700001",
+        "https://main.sofancynews.com/82"
+      ],
+      "solution": "샤워 후 최소 30분 이상 환풍기 가동, 문을 살짝 열어 공기 순환",
+      "verify": {
+        "action": "화장실 문 닫고 샤워 후 습기가 오래 남는지 확인",
+        "photo": true,
+        "cost": 3
+      }
+    },
+    "silicone_mold": {
+      "label": "실리콘 이음새 곰팡이",
+      "prior": 0.153,
+      "prior_source": "문서 5건 언급 (가중 4.4/28.4, Laplace α=1)",
+      "evidence": [
+        "https://zippoom.com/blog/bathroom-mold",
+        "https://www.homify.co.kr/ideabooks/359397/bathroom-mold",
+        "https://v.daum.net/v/9KOw1guSW1",
+        "https://spacediary.store/article/blog/8/462/",
+        "https://ohou.se/advices/597"
+      ],
+      "solution": "실리콘 위에 화장지를 말아 락스를 묻혀 덮어두고 마를 때까지 방치",
+      "verify": {
+        "action": "실리콘 이음새에 검은 점이나 줄이 보이는지 확인",
+        "photo": true,
+        "cost": 3
+      }
+    },
+    "ceiling_conden": {
+      "label": "천장 결로 곰팡이",
+      "prior": 0.113,
+      "prior_source": "문서 3건 언급 (가중 3.0/28.4, Laplace α=1)",
+      "evidence": [
+        "https://www.khan.co.kr/article/202605301040001",
+        "https://www.a-ha.io/questions/ceiling-mold",
+        "https://h-yeoun.com/bathroom-mold-removal"
+      ],
+      "solution": "입욕 중 환기팬 끄고, 샤워 직후 짧고 강한 환기가 효율적",
+      "verify": {
+        "action": "천장에 물방울이 맺히거나 곰팡이가 보이는지",
+        "photo": false,
+        "cost": 3
+      }
+    },
+    "trap_dry": {
+      "label": "배수 트랩 마름/부재",
+      "prior": 0.096,
+      "prior_source": "문서 3건 언급 (가중 2.4/28.4, Laplace α=1)",
+      "evidence": [
+        "https://xn--2e0bkb008dn2ccuj184a.com/tips/drain-smell-causes/",
+        "https://www.blanclucy.co.kr/2026/07/blog-post_140.html",
+        "https://blog.blanclucy.co.kr/bathroom-trap"
+      ],
+      "solution": "배수구에 물 1~2컵 부어서 봉수 채우기",
+      "verify": {
+        "action": "오래 안 쓴 화장실인지, 여행 후 돌아왔는지",
+        "photo": false,
+        "cost": 3
+      }
+    },
+    "towel_damp": {
+      "label": "젖은 수건·매트 방치",
+      "prior": 0.085,
+      "prior_source": "문서 2건 언급 (가중 2.0/28.4, Laplace α=1)",
+      "evidence": [
+        "https://lady.khan.co.kr/living/article/202510311700001",
+        "https://v.daum.net/v/FbYBfC3GEZ"
+      ],
+      "solution": "수건은 욕실 밖에서 말리기, 햇볕 드는 곳에서 건조하면 살균 효과",
+      "verify": {
+        "action": "젖은 수건이나 매트가 욕실 안에 걸려있는지",
+        "photo": false,
+        "cost": 3
+      }
+    },
+    "drain_sewer": {
+      "label": "배수구 하수 역류 냄새",
+      "prior": 0.068,
+      "prior_source": "문서 2건 언급 (가중 1.4/28.4, Laplace α=1)",
+      "evidence": [
+        "https://xn--2e0bkb008dn2ccuj184a.com/tips/drain-smell-causes/",
+        "https://blog.blanclucy.co.kr/bathroom-trap"
+      ],
+      "solution": "머리카락, 비누 찌꺼기 제거 후 베이킹소다+식초로 청소",
+      "verify": {
+        "action": "배수구에서 황화수소/암모니아 냄새가 나는지",
+        "photo": false,
+        "cost": 3
+      }
+    }
+  },
+  "observables": [
+    {
+      "id": "mold_where",
+      "question": "곰팡이가 주로 어디에 있나요?",
+      "cost": 1,
+      "options": {
+        "silicone_joint": {
+          "label": "실리콘 이음새",
+          "L": {
+            "grout_mold": 0.25,
+            "silicone_mold": 0.9,
+            "ceiling_conden": 0.25,
+            "trap_dry": 0.25,
+            "towel_damp": 0.25
+          }
+        },
+        "ceiling": {
+          "label": "천장",
+          "L": {
+            "grout_mold": 0.05,
+            "poor_vent": 0.7,
+            "silicone_mold": 0.25,
+            "ceiling_conden": 0.9,
+            "trap_dry": 0.25,
+            "towel_damp": 0.25
+          }
+        },
+        "grout": {
+          "label": "타일 줄눈",
+          "L": {
+            "grout_mold": 0.9,
+            "poor_vent": 0.25,
+            "ceiling_conden": 0.25,
+            "trap_dry": 0.25,
+            "towel_damp": 0.25,
+            "drain_sewer": 0.25
+          }
+        },
+        "drain": {
+          "label": "배수구 주변",
+          "L": {
+            "grout_mold": 0.05,
+            "poor_vent": 0.25,
+            "silicone_mold": 0.25,
+            "ceiling_conden": 0.25,
+            "trap_dry": 0.9,
+            "towel_damp": 0.25,
+            "drain_sewer": 0.7
+          }
+        },
+        "wall": {
+          "label": "벽면",
+          "L": {
+            "silicone_mold": 0.25,
+            "ceiling_conden": 0.25,
+            "trap_dry": 0.25,
+            "towel_damp": 0.9
+          }
+        },
+        "unspecified": {
+          "label": "여기저기",
+          "L": {}
+        }
+      },
+      "n_support": 28.4
+    },
+    {
+      "id": "smell_type",
+      "question": "냄새는 어떤가요?",
+      "cost": 1,
+      "options": {
+        "sewer": {
+          "label": "하수구 냄새",
+          "L": {
+            "grout_mold": 0.05,
+            "poor_vent": 0.05,
+            "silicone_mold": 0.25,
+            "ceiling_conden": 0.25,
+            "trap_dry": 0.9,
+            "towel_damp": 0.25,
+            "drain_sewer": 0.7
+          }
+        },
+        "musty": {
+          "label": "꿉꿉한 곰팡이 냄새",
+          "L": {
+            "poor_vent": 0.7,
+            "trap_dry": 0.05,
+            "drain_sewer": 0.25
+          }
+        },
+        "none": {
+          "label": "냄새는 없어요",
+          "L": {
+            "poor_vent": 0.25,
+            "silicone_mold": 0.7,
+            "ceiling_conden": 0.25
+          }
+        },
+        "unspecified": {
+          "label": "모르겠어요",
+          "L": {}
+        }
+      },
+      "n_support": 28.4
+    },
+    {
+      "id": "ventilation",
+      "question": "환기는 어떻게 하고 있나요?",
+      "cost": 1,
+      "options": {
+        "no_window_no_fan": {
+          "label": "창문·환풍기 없음",
+          "L": {
+            "grout_mold": 0.25,
+            "towel_damp": 0.25
+          }
+        },
+        "fan_only": {
+          "label": "환풍기만",
+          "L": {
+            "grout_mold": 0.7,
+            "silicone_mold": 0.25,
+            "towel_damp": 0.7
+          }
+        },
+        "window": {
+          "label": "창문 있음",
+          "L": {
+            "poor_vent": 0.25,
+            "trap_dry": 0.7,
+            "drain_sewer": 0.7
+          }
+        },
+        "unspecified": {
+          "label": "모르겠어요",
+          "L": {}
+        }
+      },
+      "n_support": 12.400000000000002
+    },
+    {
+      "id": "onset",
+      "question": "언제부터 그랬나요?",
+      "cost": 1,
+      "options": {
+        "sudden": {
+          "label": "갑자기",
+          "L": {
+            "grout_mold": 0.05,
+            "poor_vent": 0.25,
+            "silicone_mold": 0.25,
+            "ceiling_conden": 0.25,
+            "trap_dry": 0.9,
+            "drain_sewer": 0.7
+          }
+        },
+        "gradual": {
+          "label": "서서히",
+          "L": {
+            "trap_dry": 0.25
+          }
+        },
+        "unspecified": {
+          "label": "모르겠어요",
+          "L": {}
+        }
+      },
+      "n_support": 28.4
+    },
+    {
+      "id": "water_gap",
+      "question": "3일 이상 물을 안 쓴 적 있나요? (여행/출장 등)",
+      "cost": 1,
+      "rationale": "트랩 마름 판별 - 봉수 증발로 하수 냄새 역류",
+      "options": {
+        "yes": {
+          "label": "네, 오래 비웠어요",
+          "L": {
+            "grout_mold": 0.25,
+            "poor_vent": 0.25,
+            "silicone_mold": 0.25,
+            "ceiling_conden": 0.25,
+            "trap_dry": 0.90,
+            "towel_damp": 0.25,
+            "drain_sewer": 0.25
+          }
+        },
+        "no": {
+          "label": "아뇨, 매일 써요",
+          "L": {
+            "grout_mold": 0.70,
+            "poor_vent": 0.70,
+            "silicone_mold": 0.70,
+            "ceiling_conden": 0.70,
+            "trap_dry": 0.05,
+            "towel_damp": 0.70,
+            "drain_sewer": 0.70
+          }
+        },
+        "unspecified": {
+          "label": "기억 안 나요",
+          "L": {}
+        }
+      }
+    },
+    {
+      "id": "ceiling_check",
+      "question": "천장을 올려다보면 물방울이나 곰팡이가 보이나요?",
+      "cost": 1,
+      "rationale": "천장 결로 판별 - 수증기가 천장에 응결",
+      "options": {
+        "yes": {
+          "label": "네, 천장에 물방울/곰팡이 있어요",
+          "L": {
+            "grout_mold": 0.25,
+            "poor_vent": 0.25,
+            "silicone_mold": 0.05,
+            "ceiling_conden": 0.90,
+            "trap_dry": 0.05,
+            "towel_damp": 0.05,
+            "drain_sewer": 0.05
+          }
+        },
+        "no": {
+          "label": "아뇨, 천장은 깨끗해요",
+          "L": {
+            "grout_mold": 0.70,
+            "poor_vent": 0.70,
+            "silicone_mold": 0.70,
+            "ceiling_conden": 0.05,
+            "trap_dry": 0.70,
+            "towel_damp": 0.70,
+            "drain_sewer": 0.70
+          }
+        },
+        "unspecified": {
+          "label": "확인 안 해봤어요",
+          "L": {}
+        }
+      }
+    },
+    {
+      "id": "towel_smell",
+      "question": "수건이나 매트에 코를 대보면 퀴퀴한 냄새가 나나요?",
+      "cost": 1,
+      "rationale": "젖은 수건 문제 판별 - 욕실 내 수건 방치로 습도 상승",
+      "options": {
+        "yes": {
+          "label": "네, 수건에서 냄새나요",
+          "L": {
+            "grout_mold": 0.25,
+            "poor_vent": 0.25,
+            "silicone_mold": 0.05,
+            "ceiling_conden": 0.05,
+            "trap_dry": 0.05,
+            "towel_damp": 0.90,
+            "drain_sewer": 0.05
+          }
+        },
+        "no": {
+          "label": "아뇨, 수건은 괜찮아요",
+          "L": {
+            "grout_mold": 0.70,
+            "poor_vent": 0.70,
+            "silicone_mold": 0.70,
+            "ceiling_conden": 0.70,
+            "trap_dry": 0.70,
+            "towel_damp": 0.05,
+            "drain_sewer": 0.70
+          }
+        },
+        "unspecified": {
+          "label": "확인 안 해봤어요",
+          "L": {}
+        }
+      }
+    },
+    {
+      "id": "drain_smell",
+      "question": "배수구에 가까이 가면 하수 냄새가 올라오나요?",
+      "cost": 1,
+      "rationale": "배수구 문제 판별 - 트랩/하수 역류 구분",
+      "options": {
+        "yes": {
+          "label": "네, 배수구에서 냄새나요",
+          "L": {
+            "grout_mold": 0.05,
+            "poor_vent": 0.05,
+            "silicone_mold": 0.05,
+            "ceiling_conden": 0.05,
+            "trap_dry": 0.70,
+            "towel_damp": 0.05,
+            "drain_sewer": 0.90
+          }
+        },
+        "no": {
+          "label": "아뇨, 배수구는 괜찮아요",
+          "L": {
+            "grout_mold": 0.70,
+            "poor_vent": 0.70,
+            "silicone_mold": 0.70,
+            "ceiling_conden": 0.70,
+            "trap_dry": 0.25,
+            "towel_damp": 0.70,
+            "drain_sewer": 0.05
+          }
+        },
+        "unspecified": {
+          "label": "확인 안 해봤어요",
+          "L": {}
+        }
+      }
+    },
+    {
+      "id": "silicone_black",
+      "question": "실리콘 이음새(욕조/세면대 가장자리)가 검게 변했나요?",
+      "cost": 1,
+      "rationale": "실리콘 vs 줄눈 곰팡이 구분",
+      "options": {
+        "yes": {
+          "label": "네, 실리콘이 검어요",
+          "L": {
+            "grout_mold": 0.25,
+            "poor_vent": 0.25,
+            "silicone_mold": 0.90,
+            "ceiling_conden": 0.05,
+            "trap_dry": 0.05,
+            "towel_damp": 0.05,
+            "drain_sewer": 0.05
+          }
+        },
+        "no": {
+          "label": "아뇨, 실리콘은 깨끗해요",
+          "L": {
+            "grout_mold": 0.70,
+            "poor_vent": 0.70,
+            "silicone_mold": 0.05,
+            "ceiling_conden": 0.70,
+            "trap_dry": 0.70,
+            "towel_damp": 0.70,
+            "drain_sewer": 0.70
+          }
+        },
+        "unspecified": {
+          "label": "확인 안 해봤어요",
+          "L": {}
+        }
+      }
+    }
+  ]
+}

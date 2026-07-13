@@ -1,0 +1,559 @@
+[
+  {
+    "url": "https://zippoom.com/blog/bathroom-mold",
+    "title": "화장실 곰팡이 원인 및 제거 방법",
+    "mentions": [
+      {
+        "cause": "silicone_mold",
+        "rank": "primary",
+        "label": "실리콘 이음새 곰팡이",
+        "solution": "실리콘 위에 화장지를 말아 락스를 묻혀 덮어두고 마를 때까지 방치",
+        "verify": "실리콘 이음새에 검은 점이나 줄이 보이는지 확인"
+      },
+      {
+        "cause": "poor_vent",
+        "rank": "secondary",
+        "label": "환기 불량 (습도 정체)",
+        "solution": "샤워 후 최소 30분 이상 환풍기 가동, 문을 살짝 열어 공기 순환",
+        "verify": "화장실 문 닫고 샤워 후 습기가 오래 남는지 확인"
+      }
+    ],
+    "axes": {
+      "mold_where": "silicone_joint",
+      "smell_type": "musty",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.a-ha.io/questions/bathroom-mold-water",
+    "title": "화장실에 곰팡이, 물때 빼는 법",
+    "mentions": [
+      {
+        "cause": "grout_mold",
+        "rank": "primary",
+        "label": "타일 줄눈 곰팡이",
+        "solution": "베이킹소다와 세제를 혼합해서 청소, 식초를 같이 사용하면 효과적",
+        "verify": "타일 줄눈이 검게 변색되었는지 확인"
+      }
+    ],
+    "axes": {
+      "mold_where": "grout",
+      "smell_type": "musty",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.homify.co.kr/ideabooks/359397/bathroom-mold",
+    "title": "욕실에 생긴 곰팡이 제거방법",
+    "mentions": [
+      {
+        "cause": "poor_vent",
+        "rank": "primary",
+        "label": "환기 불량 (습도 정체)",
+        "solution": "습도 70% 이상, 온도 20~30℃ 환경 피하기, 환기 철저히",
+        "verify": "환풍기 없거나 창문 없는 욕실인지 확인"
+      },
+      {
+        "cause": "silicone_mold",
+        "rank": "secondary",
+        "label": "실리콘 이음새 곰팡이",
+        "solution": "곰팡이 제거젤을 도포 후 물로 씻어내기",
+        "verify": "실리콘 부위에 검은색 곰팡이 보이는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "silicone_joint",
+      "smell_type": "musty",
+      "ventilation": "no_window_no_fan",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://miso.kr/blog/bathroom-cleaning",
+    "title": "욕실 청소 : 물때와 곰팡이 제거 완벽 가이드",
+    "mentions": [
+      {
+        "cause": "grout_mold",
+        "rank": "primary",
+        "label": "타일 줄눈 곰팡이",
+        "solution": "과탄산소다를 뜨거운 물에 풀어 곰팡이에 뿌린 후 10분 방치 후 씻어냄",
+        "verify": "타일 줄눈 사이 검은색 변색 확인"
+      },
+      {
+        "cause": "poor_vent",
+        "rank": "secondary",
+        "label": "환기 불량 (습도 정체)",
+        "solution": "청소 후 최소 30분 이상 환기, 제습기로 습도 60% 이하 유지",
+        "verify": "습도계로 욕실 습도 측정"
+      }
+    ],
+    "axes": {
+      "mold_where": "grout",
+      "smell_type": "musty",
+      "ventilation": "fan_only",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://lady.khan.co.kr/living/article/202510311700001",
+    "title": "욕실 곰팡이 시작도 못 하게 막는 8가지 방법",
+    "mentions": [
+      {
+        "cause": "towel_damp",
+        "rank": "primary",
+        "label": "젖은 수건·매트 방치",
+        "solution": "수건은 욕실 밖에서 말리기, 햇볕 드는 곳에서 건조하면 살균 효과",
+        "verify": "젖은 수건이나 매트가 욕실 안에 걸려있는지"
+      },
+      {
+        "cause": "poor_vent",
+        "rank": "secondary",
+        "label": "환기 불량 (습도 정체)",
+        "solution": "샤워 후 스퀴지로 벽면 물기 제거, 환풍기 30분 이상 가동",
+        "verify": "샤워 후 벽면에 물방울이 오래 남는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "wall",
+      "smell_type": "musty",
+      "ventilation": "fan_only",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://v.daum.net/v/9KOw1guSW1",
+    "title": "욕실 실리콘 검은 곰팡이 제거하는 신박한 방법",
+    "mentions": [
+      {
+        "cause": "silicone_mold",
+        "rank": "primary",
+        "label": "실리콘 이음새 곰팡이",
+        "solution": "딱풀을 곰팡이 위에 바르고 휴지 덮은 후 희석 락스를 부어 2-3시간 방치",
+        "verify": "실리콘 이음새에 검은 곰팡이 보이는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "silicone_joint",
+      "smell_type": "none",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": ["호흡기 질환 유발 가능성"]
+  },
+  {
+    "url": "https://spacediary.store/article/blog/8/462/",
+    "title": "화장실 바닥 변기 타일 실리콘 검은 곰팡이 7분만에 제거",
+    "mentions": [
+      {
+        "cause": "silicone_mold",
+        "rank": "primary",
+        "label": "실리콘 이음새 곰팡이",
+        "solution": "곰팡이가 심하면 반나절~하루 락스 적신 휴지 방치",
+        "verify": "변기 주변 실리콘에 검은색 보이는지"
+      },
+      {
+        "cause": "grout_mold",
+        "rank": "secondary",
+        "label": "타일 줄눈 곰팡이",
+        "solution": "가벼운 곰팡이는 베이킹소다나 치약으로 칫솔 문지르기",
+        "verify": "타일 사이 검은 줄 보이는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "silicone_joint",
+      "smell_type": "none",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://ohou.se/advices/597",
+    "title": "실리콘 곰팡이, 타일 틈새 찌든 곰팡이 제거방법",
+    "mentions": [
+      {
+        "cause": "silicone_mold",
+        "rank": "primary",
+        "label": "실리콘 이음새 곰팡이",
+        "solution": "심한 경우 실리콘 재시공이 가장 깔끔",
+        "verify": "실리콘이 부분적으로 떨어지거나 닳았는지"
+      },
+      {
+        "cause": "grout_mold",
+        "rank": "secondary",
+        "label": "타일 줄눈 곰팡이",
+        "solution": "줄눈 전체에 곰팡이 심하면 줄눈 재시공",
+        "verify": "줄눈이 전체적으로 검게 변했는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "grout",
+      "smell_type": "musty",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://xn--2e0bkb008dn2ccuj184a.com/tips/drain-smell-causes/",
+    "title": "하수구 냄새 원인 5가지와 없애는 법",
+    "mentions": [
+      {
+        "cause": "trap_dry",
+        "rank": "primary",
+        "label": "배수 트랩 마름/부재",
+        "solution": "배수구에 물 1~2컵 부어서 봉수 채우기",
+        "verify": "오래 안 쓴 화장실인지, 여행 후 돌아왔는지"
+      },
+      {
+        "cause": "drain_sewer",
+        "rank": "secondary",
+        "label": "배수구 하수 역류 냄새",
+        "solution": "머리카락, 비누 찌꺼기 제거 후 베이킹소다+식초로 청소",
+        "verify": "배수구에서 황화수소/암모니아 냄새가 나는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "drain",
+      "smell_type": "sewer",
+      "ventilation": "unspecified",
+      "onset": "sudden"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.blanclucy.co.kr/2026/07/blog-post_140.html",
+    "title": "욕실 하수구 트랩 셀프 설치로 나방파리 악취 완벽 차단",
+    "mentions": [
+      {
+        "cause": "trap_dry",
+        "rank": "primary",
+        "label": "배수 트랩 마름/부재",
+        "solution": "악취 차단 트랩 설치 - 물이 빠질 때만 열리고 자동으로 닫히는 구조",
+        "verify": "배수구에 손 대고 바람이 올라오는지 확인"
+      }
+    ],
+    "axes": {
+      "mold_where": "drain",
+      "smell_type": "sewer",
+      "ventilation": "unspecified",
+      "onset": "sudden"
+    },
+    "unlisted": ["나방파리"]
+  },
+  {
+    "url": "https://blog.blanclucy.co.kr/bathroom-trap",
+    "title": "욕실 하수구 트랩 설치로 나방파리 및 악취 차단 셀프 시공 가이드",
+    "mentions": [
+      {
+        "cause": "drain_sewer",
+        "rank": "primary",
+        "label": "배수구 하수 역류 냄새",
+        "solution": "배수구 규격 측정 후 트랩 구매해 셀프 설치 (5분 소요)",
+        "verify": "배수구에서 하수 냄새가 올라오는지"
+      },
+      {
+        "cause": "trap_dry",
+        "rank": "secondary",
+        "label": "배수 트랩 마름/부재",
+        "solution": "P트랩 미설치 시 전문가 점검 권장",
+        "verify": "기존 트랩이 설치되어 있는지 확인"
+      }
+    ],
+    "axes": {
+      "mold_where": "drain",
+      "smell_type": "sewer",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://main.sofancynews.com/82",
+    "title": "욕실에 제습기? 환풍기로 부족할 때 제습기로 곰팡이 없애는 법",
+    "mentions": [
+      {
+        "cause": "poor_vent",
+        "rank": "primary",
+        "label": "환기 불량 (습도 정체)",
+        "solution": "환풍기로 부족하면 욕실 전용 제습기 사용",
+        "verify": "창문 없는 욕실이거나 환기가 잘 안되는 구조인지"
+      }
+    ],
+    "axes": {
+      "mold_where": "wall",
+      "smell_type": "musty",
+      "ventilation": "no_window_no_fan",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://v.daum.net/v/54fcejjJBd",
+    "title": "화장실 환풍기 청소 5분이면 됩니다",
+    "mentions": [
+      {
+        "cause": "poor_vent",
+        "rank": "primary",
+        "label": "환기 불량 (습도 정체)",
+        "solution": "환풍기 커버 먼지 막히면 환기 효율 저하 - 두 달에 한 번 분리 세척",
+        "verify": "환풍기 커버 구멍이 먼지로 막혀있는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "ceiling",
+      "smell_type": "musty",
+      "ventilation": "fan_only",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.khan.co.kr/article/202605301040001",
+    "title": "욕실 환기 팬, 계속 돌리면 역효과…이때만큼은 꺼야",
+    "mentions": [
+      {
+        "cause": "ceiling_conden",
+        "rank": "primary",
+        "label": "천장 결로 곰팡이",
+        "solution": "입욕 중 환기팬 끄고, 샤워 직후 짧고 강한 환기가 효율적",
+        "verify": "천장에 물방울이 맺히거나 곰팡이가 보이는지"
+      },
+      {
+        "cause": "poor_vent",
+        "rank": "secondary",
+        "label": "환기 불량 (습도 정체)",
+        "solution": "샤워 직후에 환기팬 집중 사용",
+        "verify": "샤워 중 수증기가 천장에 달라붙는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "ceiling",
+      "smell_type": "musty",
+      "ventilation": "fan_only",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://foodrecipe.co.kr/life/bathroom-exhaust-fan-cover-cleaning/",
+    "title": "욕실 환풍기 청소는 이렇게 하세요 곰팡이 잡는 방법",
+    "mentions": [
+      {
+        "cause": "poor_vent",
+        "rank": "primary",
+        "label": "환기 불량 (습도 정체)",
+        "solution": "환풍기 커버 물기 남은 채 장착하면 곰팡이 재발 - 거실에서 30분 이상 건조 후 장착",
+        "verify": "환풍기 커버 안쪽에 곰팡이 있는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "ceiling",
+      "smell_type": "musty",
+      "ventilation": "fan_only",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.a-ha.io/questions/ceiling-mold",
+    "title": "화장실 천장에 곰팡이가 생겼을 때 어떻게 제거해야 하나요",
+    "mentions": [
+      {
+        "cause": "ceiling_conden",
+        "rank": "primary",
+        "label": "천장 결로 곰팡이",
+        "solution": "락스 분무기로 천장에 5회 정도 반복 분무 후 물걸레로 닦기",
+        "verify": "천장에 검은 점이나 얼룩이 보이는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "ceiling",
+      "smell_type": "musty",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://h-yeoun.com/bathroom-mold-removal",
+    "title": "화장실 곰팡이 제거법 총정리 원인부터 재발 방지까지",
+    "mentions": [
+      {
+        "cause": "ceiling_conden",
+        "rank": "primary",
+        "label": "천장 결로 곰팡이",
+        "solution": "락스:물 = 1:5 희석액, 키친타월에 적셔 천장에 부착 30분~1시간 후 제거",
+        "verify": "천장과 환풍구 주변에 곰팡이가 집중되어 있는지"
+      },
+      {
+        "cause": "poor_vent",
+        "rank": "secondary",
+        "label": "환기 불량 (습도 정체)",
+        "solution": "천장 → 벽면 → 바닥 순으로 청소, 환기팬 없으면 서큘레이터와 제습기 조합",
+        "verify": "환기팬이나 창문이 없는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "ceiling",
+      "smell_type": "musty",
+      "ventilation": "no_window_no_fan",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://v.daum.net/v/FbYBfC3GEZ",
+    "title": "샤워 후 딱 3분이면 끝 화장실에 곰팡이 안 생기게 하는 방법",
+    "mentions": [
+      {
+        "cause": "towel_damp",
+        "rank": "primary",
+        "label": "젖은 수건·매트 방치",
+        "solution": "수건과 행주는 2~3회 사용 후 세탁, 완전히 말려서 사용",
+        "verify": "젖은 수건이 욕실 안에서 마르지 않고 있는지"
+      },
+      {
+        "cause": "poor_vent",
+        "rank": "secondary",
+        "label": "환기 불량 (습도 정체)",
+        "solution": "샤워 후 1분 물기 닦고 환기하면 곰팡이 절반 감소",
+        "verify": "샤워 후 환기를 안하고 문 닫아두는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "wall",
+      "smell_type": "musty",
+      "ventilation": "fan_only",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://v.daum.net/v/20250805140530382",
+    "title": "분홍 물때·검은 곰팡이 습도높은 여름철 화장실 청소 꿀팁",
+    "mentions": [
+      {
+        "cause": "grout_mold",
+        "rank": "primary",
+        "label": "타일 줄눈 곰팡이",
+        "solution": "스퀴지로 매일 벽면 물기 닦기, 환풍기 30분 가동",
+        "verify": "줄눈이 분홍색이나 검은색으로 변했는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "grout",
+      "smell_type": "musty",
+      "ventilation": "fan_only",
+      "onset": "gradual"
+    },
+    "unlisted": ["분홍 물때"]
+  },
+  {
+    "url": "https://v.daum.net/v/6MIuLFRfyc",
+    "title": "곰팡이핀 욕실에 락스 대신 이 물 뿌려보세요 10분 만에 재발 방지",
+    "mentions": [
+      {
+        "cause": "grout_mold",
+        "rank": "primary",
+        "label": "타일 줄눈 곰팡이",
+        "solution": "구연산 수용액 사용 - 곰팡이 제거 + 재번식 억제 효과",
+        "verify": "줄눈 틈새에 검은 곰팡이가 깊이 박혀있는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "grout",
+      "smell_type": "musty",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.wikitree.co.kr/articles/1144646",
+    "title": "곰팡이 생긴 욕실 벽에 휴지 붙여 보세요 고민이 싹 해결",
+    "mentions": [
+      {
+        "cause": "grout_mold",
+        "rank": "primary",
+        "label": "타일 줄눈 곰팡이",
+        "solution": "휴지를 덧대면 제거제가 일정 시간 머물러 깊은 곰팡이까지 작용",
+        "verify": "벽면 줄눈이 세로로 길게 검게 변했는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "wall",
+      "smell_type": "musty",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.clien.net/service/board/lecture/17909609",
+    "title": "목욕탕 타일 줄눈의 검정색 곰팡이를 락스로 없애는 법",
+    "mentions": [
+      {
+        "cause": "grout_mold",
+        "rank": "primary",
+        "label": "타일 줄눈 곰팡이",
+        "solution": "화장지에 물 묻혀 줄눈에 붙인 후 락스를 살살 부어 방치",
+        "verify": "타일 줄눈이 검정색으로 변색되었는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "grout",
+      "smell_type": "none",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://kenneth-yoon.com/22",
+    "title": "욕실 타일 곰팡이 제거 깨끗하게 관리하는 청소법",
+    "mentions": [
+      {
+        "cause": "grout_mold",
+        "rank": "primary",
+        "label": "타일 줄눈 곰팡이",
+        "solution": "줄눈은 다공성 구조라 곰팡이가 내부까지 침투 - 표면만 닦으면 안됨",
+        "verify": "줄눈 미세 구멍에 습기가 스며들었는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "grout",
+      "smell_type": "musty",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.pickdailynews.com/news/articleView.html?idxno=3871",
+    "title": "욕실 타일 줄눈 검게 변했다면 이것 발라보세요 10분이면 하얗게",
+    "mentions": [
+      {
+        "cause": "grout_mold",
+        "rank": "primary",
+        "label": "타일 줄눈 곰팡이",
+        "solution": "물과 락스 10:1 희석 후 면봉이나 칫솔로 줄눈에 도포, 15분 후 헹굼",
+        "verify": "줄눈이 검게 변색되었는지"
+      }
+    ],
+    "axes": {
+      "mold_where": "grout",
+      "smell_type": "none",
+      "ventilation": "unspecified",
+      "onset": "gradual"
+    },
+    "unlisted": []
+  }
+]

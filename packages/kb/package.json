@@ -1,0 +1,16 @@
+{
+  "name": "kb-agent",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "자취방 청결 진단 KB 수집 파이프라인",
+  "main": "run.js",
+  "scripts": {
+    "test": "node engine/test.js",
+    "collect": "node run.js collect",
+    "build": "node run.js build",
+    "audit": "node run.js audit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0"
+  }
+}
