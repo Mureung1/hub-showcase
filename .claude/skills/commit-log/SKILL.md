@@ -5,7 +5,7 @@ description: Compose git commit messages for this repo following its type-prefix
 
 # 커밋 로그 작성
 
-이 스킬은 이 저장소(hub)에서 커밋을 만들기 전에 호출한다. 규칙 원본은 `CLAUDE.md`(이 스킬 파일 기준 `../../../CLAUDE.md`)의 "커밋 규칙" 섹션.
+이 스킬은 이 저장소(hub)에서 커밋을 만들기 전에 호출한다. 규칙 원본은 `CLAUDE.md`(이 스킬 파일 기준 `../../../my-app/CLAUDE.md`)의 "커밋 규칙" 섹션.
 
 ## 절차
 
