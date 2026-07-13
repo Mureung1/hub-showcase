@@ -15,7 +15,7 @@
 
 ## 범위
 
-이 계획은 `docs/checklist.md`의 `P0. Supabase 인증` 항목을 다룬다.
+이 계획은 `docs/backlog.md`의 `P0. Supabase 인증` 항목을 다룬다.
 
 포함 범위:
 

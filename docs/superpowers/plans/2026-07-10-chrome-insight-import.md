@@ -106,8 +106,10 @@ Expected: 명령이 출력 없이 종료된다.
   - 새 DB 타입을 public API로 공개한다.
 - Modify: `src/pages/library/ui/LibraryPage.tsx`
   - 비어 있는 보관함과 보관함 메뉴에 가져오기 진입점을 연결한다.
+- Modify: `docs/backlog.md`
+  - Chrome 가져오기 기반과 후속 마이그레이션 세부 작업을 기록한다.
 - Modify: `docs/checklist.md`
-  - Chrome 가져오기 기반과 후속 마이그레이션 항목을 기록한다.
+  - 4주차 작업과 완료 기준에 기존 저장물 가져오기를 요약한다.
 - Modify: `README.md`
   - 설계와 구현 계획 문서 링크를 추가한다.
 
@@ -2615,12 +2617,13 @@ git commit -m "feat: 보관함에 가져오기 진입점 연결"
 
 **Files:**
 
+- Modify: `docs/backlog.md`
 - Modify: `docs/checklist.md`
 - Modify: `README.md`
 
-- [ ] **Step 1: 체크리스트에 마이그레이션 단계 추가**
+- [ ] **Step 1: 백로그에 마이그레이션 단계 추가**
 
-Add a `P1. 기존 저장물 가져오기` section to `docs/checklist.md`:
+Add a `P1. 기존 저장물 가져오기` section to `docs/backlog.md`:
 
 ```markdown
 ## P1. 기존 저장물 가져오기
@@ -2641,7 +2644,21 @@ Add a `P1. 기존 저장물 가져오기` section to `docs/checklist.md`:
 - [ ] 원격 썸네일 갤러리 보기
 ```
 
-- [ ] **Step 2: README에 설계와 계획 링크 추가**
+- [ ] **Step 2: 주간 체크리스트에 요약 추가**
+
+Add this item to the 4주차 작업 목록 in `docs/checklist.md`:
+
+```markdown
+- [ ] **[P1] 기존 저장물 가져오기** — Chrome 북마크 HTML을 브라우저에서 분석하고 신규·중복·오류를 확인한 뒤 원자적으로 반영하고 Undo를 제공한다. ([백로그](backlog.md#p1-기존-저장물-가져오기) · [구현 계획](superpowers/plans/2026-07-10-chrome-insight-import.md))
+```
+
+Add this item to the 4주차 완료 기준:
+
+```markdown
+- [ ] Chrome 북마크 파일을 선택해 가져오기 결과를 확인하고, 필요하면 사용자 수정 데이터를 보존한 채 작업 단위로 Undo할 수 있다.
+```
+
+- [ ] **Step 3: README에 설계와 계획 링크 추가**
 
 Add these rows to the documentation table in `README.md`:
 
@@ -2650,7 +2667,7 @@ Add these rows to the documentation table in `README.md`:
 | Chrome 북마크 가져오기 기반을 구현할 때 | [Chrome 가져오기 구현 계획](docs/superpowers/plans/2026-07-10-chrome-insight-import.md) |
 ```
 
-- [ ] **Step 3: 전체 자동 검증**
+- [ ] **Step 4: 전체 자동 검증**
 
 Run:
 
@@ -2676,7 +2693,7 @@ Vite build completes successfully
 git diff --check exits with code 0
 ```
 
-- [ ] **Step 4: 명시적 보안 회귀 확인**
+- [ ] **Step 5: 명시적 보안 회귀 확인**
 
 Run:
 
@@ -2691,10 +2708,10 @@ Expected:
 - 잘못된 후보가 DB 반영 전체를 실패시키고 부분 데이터가 남지 않는다.
 - 다른 사용자의 가져오기 기록이 RLS로 보이지 않는다.
 
-- [ ] **Step 5: 문서 커밋**
+- [ ] **Step 6: 문서 커밋**
 
 ```bash
-git add docs/checklist.md README.md
+git add docs/backlog.md docs/checklist.md README.md
 git commit -m "docs: Chrome 가져오기 진행 상태 반영"
 ```
 
