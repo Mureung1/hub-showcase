@@ -35,6 +35,11 @@ type SceneJob = {
   blocked_reason: string | null;
   next_action: string | null;
   asset_url: string | null;
+  camera_pose: {
+    position: [number, number, number];
+    target: [number, number, number];
+    up: [number, number, number];
+  } | null;
   files: Array<{ name: string; size_bytes: number; sha256: string }>;
   stages: Array<{ name: string; status: string; message: string | null }>;
 };
@@ -162,7 +167,11 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
         </header>
 
         {job?.status === "ready" && job.asset_url ? (
-          <SplatViewer assetUrl={assetUrl(job.asset_url)} />
+          <SplatViewer
+            assetUrl={assetUrl(job.asset_url)}
+            filterScaleOutliers
+            initialCamera={job.camera_pose}
+          />
         ) : (
           <div className="scene-pipeline-surface">
             <form className="scene-upload" onSubmit={submit}>
@@ -222,7 +231,9 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
               {toolchain && !toolchain.ready && (
                 <p>
                   최소 {toolchain.minimum_gpu_memory_mb}MB VRAM과 Nerfstudio toolchain이 필요합니다.
-                  {toolchain.mode === "docker" && toolchain.image ? ` Image: ${toolchain.image}` : ""}
+                  {toolchain.mode === "docker" && toolchain.image
+                    ? ` Image: ${toolchain.image}`
+                    : ""}
                 </p>
               )}
               {job && (
@@ -255,12 +266,14 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
 
         <div className="scene-modal-content">
           <div className="scene-progress scene-job-progress" aria-label="3D 장면 처리 단계">
-            {(job?.stages ?? [
-              { name: "validate", status: "pending", message: null },
-              { name: "preprocess", status: "pending", message: null },
-              { name: "train", status: "pending", message: null },
-              { name: "export", status: "pending", message: null },
-            ]).map((stage, index) => (
+            {(
+              job?.stages ?? [
+                { name: "validate", status: "pending", message: null },
+                { name: "preprocess", status: "pending", message: null },
+                { name: "train", status: "pending", message: null },
+                { name: "export", status: "pending", message: null },
+              ]
+            ).map((stage, index) => (
               <div key={stage.name} className={`stage-${stage.status}`}>
                 <i>{stage.status === "passed" ? <CheckCircle2 size={13} /> : index + 1}</i>
                 <b>{stageLabels[stage.name]}</b>

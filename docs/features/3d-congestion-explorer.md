@@ -264,6 +264,8 @@ Scene PLY endpoint
 
 renderer는 loading/error canvas mount를 React 상태와 분리하고, 준비된 asset의 splat count와 bounds를 진단 metadata로 남긴다. synthetic binary Gaussian PLY 330개를 사용한 QA에서는 desktop canvas의 26.43%가 배경과 다른 pixel이었고, 390px mobile에서도 nonblank와 가로 overflow 없음을 확인했다. 이 결과는 renderer 검증이며 실제 촬영 복원 품질 검증이 아니다.
 
+실제 GPU 검증에서는 Nerfstudio 공식 `storefront` 다중 시점 사진을 P100 16GB worker에서 학습했다. 최종 checkpoint step `12999`에서 537,977 splat, 133,419,827-byte PLY를 export했고 server/local SHA-256이 일치했다. viewer는 Nerfstudio camera pose를 복원하고 scale 상위 outlier 1,153개만 화면에서 숨겨 첫 촬영 사진과 같은 벽돌 상점 전면을 표시했다. 자세한 절차와 수치는 [GPU Scene Validation](../operations/gpu-scene-validation.md)에 기록한다.
+
 ### Worker mode
 
 ```text
