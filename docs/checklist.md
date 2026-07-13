@@ -58,10 +58,10 @@
 
 ## 2단계 — 다중 사용자
 
-> 2주차 실행 계획(프로토타입 ↔ MVP 비교 + 우선순위 태스크)은 [docs/week2-plan.md](week2-plan.md) 참조.
+> 2주차 실행 계획·**진행 현황**(디자인 피벗·대시보드·IA 재편 등)은 [docs/week2-plan.md](week2-plan.md) §1.5 참조.
 
-- [ ] Supabase Auth 가입/로그인
-- [ ] 전 테이블 Row Level Security 적용
-- [ ] Discord 계정 연결 (사용자 ↔ Discord ID 매핑, 알림 채널 등록)
+- [x] Supabase Auth 로그인 (`LoginPage` 이메일/비번, `ProtectedRoute`/`useSession`) — *가입 UI는 미구현*
+- [x] 전 테이블 Row Level Security 적용 (`0001_schema.sql`, `auth.uid()=user_id`)
+- [ ] Discord 계정 연결 (사용자 ↔ Discord ID 매핑, 알림 채널 등록) — week2-plan T4
 - [ ] 감시 Edge Function이 Supabase에서 사용자별 조건 조회
 - [ ] 알림을 사용자별 Discord 채널로 발송
