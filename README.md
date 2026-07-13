@@ -17,6 +17,10 @@
 - [개발 백로그](docs/backlog.md): 우선순위, 4주 개발 로드맵, MVP Task
 - [Wiki](https://github.com/joo-hyun/hub/wiki)
 
+## 프로젝트 관리
+
+- [작업 보드 (GitHub Projects)](https://github.com/users/joo-hyun/projects/2): 주차별 이슈 등록과 진행 상태를 관리합니다.
+
 ## 실행 및 확인
 
 ### 정적 프로토타입
