@@ -1,0 +1,92 @@
+nav.category-filter {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+}
+
+nav.category-filter > div.category-filter__list {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+button.category-filter__item[wds-component='category-list-item'] {
+  min-height: var(--spacing-12);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-button);
+  background: var(--color-canvas);
+  color: var(--color-graphite);
+  box-shadow: none;
+}
+
+button.category-filter__item[wds-component='category-list-item'] > span {
+  display: inline-flex;
+  padding: 0;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--typography-label-size);
+  font-weight: 600;
+  line-height: var(--typography-label-line-height);
+}
+
+button.category-filter__item[wds-component='category-list-item']:not(
+    :disabled
+  ):not([aria-disabled='true']):hover {
+  border-color: var(--color-fog);
+  background: var(--color-mist);
+  color: var(--color-ink);
+}
+
+button.category-filter__item[wds-component='category-list-item'][aria-selected='true'] {
+  border-color: var(--color-electric-blue);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+button.category-filter__item[wds-component='category-list-item'][aria-selected='true']
+  > span {
+  font-weight: 700;
+}
+
+button.category-filter__item[wds-component='category-list-item']:focus-visible {
+  border-color: var(--color-electric-blue);
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 var(--spacing-1) var(--color-pale-blue);
+}
+
+button.category-filter__item[wds-component='category-list-item']:disabled,
+button.category-filter__item[wds-component='category-list-item'][aria-disabled='true'] {
+  border-color: var(--color-ash);
+  background: var(--color-mist);
+  color: var(--color-smoke);
+  box-shadow: none;
+  cursor: default;
+}
+
+.category-filter__mark {
+  width: var(--spacing-2);
+  height: var(--spacing-2);
+  border-radius: var(--radius-button);
+  flex: 0 0 auto;
+}
+
+.category-filter__mark--amber {
+  background: var(--color-amber);
+}
+
+.category-filter__mark--blue {
+  background: var(--color-electric-blue);
+}
+
+.category-filter__mark--coral {
+  background: var(--color-coral);
+}
+
+.category-filter__mark--green {
+  background: var(--color-signal-green);
+}
+
+.category-filter__mark--slate {
+  background: var(--color-graphite);
+}

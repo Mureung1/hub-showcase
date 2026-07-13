@@ -1,0 +1,32 @@
+section.empty-state {
+  display: grid;
+  padding: var(--spacing-6);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-card);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  gap: var(--spacing-3);
+  justify-items: start;
+}
+
+.empty-state__mark {
+  width: var(--spacing-8);
+  height: var(--spacing-1);
+  border-radius: var(--radius-button);
+  background: var(--color-electric-blue);
+}
+
+.empty-state__title {
+  margin: 0;
+  font-size: var(--typography-card-title-size);
+  font-weight: 700;
+  line-height: var(--typography-card-title-line-height);
+}
+
+.empty-state__description {
+  max-width: var(--layout-content-width);
+  margin: 0;
+  color: var(--color-smoke);
+  font-size: var(--typography-body-size);
+  line-height: var(--typography-body-line-height);
+}

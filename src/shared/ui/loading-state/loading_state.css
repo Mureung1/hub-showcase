@@ -1,0 +1,43 @@
+section.loading-state {
+  padding: var(--spacing-6);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-card);
+  background: var(--color-canvas);
+}
+
+.loading-state__grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, calc(var(--spacing-20) * 2)), 1fr)
+  );
+  gap: var(--spacing-4);
+}
+
+.loading-state__card {
+  display: grid;
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-card);
+  background: var(--color-canvas);
+  gap: var(--spacing-3);
+}
+
+.loading-state__card > span,
+.loading-state__card > i {
+  display: block;
+  border-radius: var(--radius-button);
+  background: var(--color-mist);
+}
+
+.loading-state__card > span {
+  height: var(--spacing-20);
+}
+
+.loading-state__card > i {
+  height: var(--spacing-3);
+}
+
+.loading-state__card > i:last-child {
+  width: 60%;
+}
