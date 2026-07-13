@@ -1,0 +1,20 @@
+{
+    "name": "first-pr-server",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "main": "server.js",
+    "scripts": {
+        "dev": "node --watch server.js",
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "cors": "^2.8.6",
+        "dotenv": "^17.4.2",
+        "express": "^5.2.1",
+        "helmet": "^8.3.0",
+        "swagger-ui-express": "^5.0.1",
+        "winston": "^3.19.0",
+        "yaml": "^2.9.0"
+    }
+}
