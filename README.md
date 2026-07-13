@@ -49,3 +49,8 @@ Claude Design, Google Stitch 등 AI 디자인 도구로 먼저 시도했으나 �
 | 상 | 발표 자료(PT) 제작 | 최종 데모 시나리오 + 슬라이드 |
 | 중 | 스타일링 폴리싱 | 색감/트랜지션 다듬기 |
 | 하 | 배포 (선택) | Vercel/Netlify 간단 배포 |
+
+## 2주차 문서
+- [백로그 (우선순위·일정)](./docs/backlog.md)
+- [작업 체크리스트](./docs/checklist.md)
+- [계획 수립 Agent](./docs/agents/planning-agent.md)
