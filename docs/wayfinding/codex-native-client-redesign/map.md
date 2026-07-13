@@ -28,6 +28,7 @@ Pinned OpenAI Codex의 실제 App Server client·core·TUI/exec 구조와 AY-PLE
 - [Upstream source provenance를 장기 검증 가능하게 pin한다](tickets/003-pin-upstream-source-provenance.md) — npm root·platform SLSA attestation이 가리키는 exact commit을 dev-only `references/openai-codex` gitlink와 package-owned provenance manifest·generated digest에 연결하고, 일반 Node workflow와 explicit source/upgrade gate를 분리한다.
 - [Pinned method lifecycle 근거표를 만든다](tickets/004-build-method-lifecycle-fact-table.md) — 현재 공식 문서, stable generated shape, exact-pin implementation·test와 추론을 분리해 native-scope lifecycle 사실을 고정하고 concurrency·delivery·capability·recovery 정책은 후속 decision ticket에 남긴다.
 - [Connection·App Server ingress architecture pattern을 지도화한다](tickets/005-map-first-party-rust-architecture-patterns.md) — Exact pin의 production client에는 stdio child adapter가 없으므로 AY-PLE은 external process lifecycle을 소유하되 single ingress·exact demux·request/event 분리만 source-grounded pattern으로 채택하고 bounds·terminal·consumer seam은 후속 tracer·policy로 남긴다.
+- [Core·TUI·exec conversation ownership pattern을 지도화한다](tickets/006-map-first-party-conversation-ownership.md) — First-party shared kernel을 가정하지 않고 native thread/session scope·per-thread ownership·surface projection·조건부 history와 독립 lifetime을 설계 입력으로 채택하며 exact seam·identity·delivery·cleanup policy는 후속 decision ticket에 남긴다.
 
 ## Not yet specified
 

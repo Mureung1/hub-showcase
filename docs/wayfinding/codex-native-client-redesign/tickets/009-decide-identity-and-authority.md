@@ -8,7 +8,7 @@
 
 ## Question
 
-Native `ThreadId`·`TurnId`·item identity를 어느 module이 authoritative하게 소유하고, AY-PLE product/domain·browser에는 어떤 identity를 언제까지 노출하며, 별도 opaque ref remapping과 connection generation invalidation은 실제 용례가 필요로 할 때 어느 adapter에서 도입해야 하는가?
+Native `ThreadId`, root·descendant가 공유하는 `SessionId`와 lineage, live·replay 경로별 turn/item identity를 어느 module이 authoritative하게 소유하고, persistence 상태별 lifetime·restart recoverability를 어떻게 구분하며, AY-PLE product/domain·browser에는 어떤 identity를 언제까지 노출할 것인가? 별도 opaque ref remapping과 connection generation invalidation은 실제 용례가 필요로 할 때 어느 adapter에서 도입해야 하는가?
 
 ## Answer
 

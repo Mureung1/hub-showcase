@@ -12,6 +12,8 @@
 
 권고 출발점은 명시적 workspace에서 conversation 하나를 시작하고 text turn 하나의 agent message와 authoritative terminal을 browser-safe 결과로 관찰하는 vertical tracer다.
 
+선택한 tracer가 Server request를 요구하는지, 요구하지 않는다면 first supported request variant와 client-level owner를 어느 후속 tracer가 결정할지도 명시한다.
+
 ## Answer
 
 Ticket을 resolve할 때 작성한다.
