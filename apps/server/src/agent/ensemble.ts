@@ -4,6 +4,7 @@ import type {
   WeatherCondition,
   WeatherSource,
 } from "shared";
+import { getKmaWeather, getOwmWeather } from "./weather";
 
 /**
  * 날씨 앙상블 병합.
@@ -45,11 +46,12 @@ export function mergeWeather(sources: NormalizedWeather[]): EnsembleWeather {
   const wavg = (pick: (s: NormalizedWeather) => number): number =>
     sources.reduce((sum, s, i) => sum + pick(s) * weights[i], 0) / total;
 
-  // 강수확률: 소스가 제공하는(non-null) 값만 모아 보수적으로 max. 전부 결측이면 0.
+  // 강수확률: 소스가 제공하는(non-null) 값만 모아 보수적으로 max.
+  // 전부 결측이면 null("정보 없음") — 0으로 표기하지 않는다(강수 판단은 isPrecipitating/condition으로).
   const probs = sources
     .map((s) => s.precipitationProb)
     .filter((p): p is number => p !== null);
-  const precipitationProb = probs.length > 0 ? Math.max(...probs) : 0;
+  const precipitationProb = probs.length > 0 ? Math.max(...probs) : null;
 
   return {
     tempC: round1(wavg((s) => s.tempC)),
@@ -78,4 +80,50 @@ function mergeCondition(sources: NormalizedWeather[]): WeatherCondition {
   return sources.reduce((worst, s) =>
     (SKY_SEVERITY[s.condition] ?? 0) > (SKY_SEVERITY[worst.condition] ?? 0) ? s : worst,
   ).condition;
+}
+
+// ---- 수집 + 폴백 오케스트레이션 (1-5) ---------------------------------------
+
+export interface EnsembleDeps {
+  getKma?: (nx: number, ny: number) => Promise<NormalizedWeather>;
+  getOwm?: (lat: number, lng: number) => Promise<NormalizedWeather>;
+}
+
+export interface StoreLocation {
+  nx: number;
+  ny: number;
+  lat: number;
+  lng: number;
+}
+
+/**
+ * 매장 위치의 앙상블 날씨를 수집·병합한다.
+ * 두 소스를 병렬 호출하고, 한쪽이 실패해도 남은 소스로 진행한다(sourceCount로 표기).
+ * @throws 모든 소스가 실패한 경우
+ */
+export async function getEnsembleWeather(
+  loc: StoreLocation,
+  deps: EnsembleDeps = {},
+): Promise<EnsembleWeather> {
+  const getKma = deps.getKma ?? getKmaWeather;
+  const getOwm = deps.getOwm ?? getOwmWeather;
+
+  const results = await Promise.allSettled([
+    getKma(loc.nx, loc.ny),
+    getOwm(loc.lat, loc.lng),
+  ]);
+
+  const ok = results
+    .filter((r): r is PromiseFulfilledResult<NormalizedWeather> => r.status === "fulfilled")
+    .map((r) => r.value);
+
+  if (ok.length === 0) {
+    const reasons = results
+      .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+      .map((r) => (r.reason instanceof Error ? r.reason.message : String(r.reason)))
+      .join("; ");
+    throw new Error(`모든 날씨 소스 실패: ${reasons}`);
+  }
+
+  return mergeWeather(ok);
 }

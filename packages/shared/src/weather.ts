@@ -41,7 +41,8 @@ export interface EnsembleWeather {
   tempC: number;
   humidity: number;
   precipitationMm: number;
-  precipitationProb: number;
+  /** 강수확률 (%). 모든 소스가 미제공이면 null (예: 기상청 장애 → OWM만 남을 때). */
+  precipitationProb: number | null;
   isPrecipitating: boolean;
   condition: WeatherCondition;
   /** 병합에 실제로 사용된 소스 목록. */
