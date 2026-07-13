@@ -1,0 +1,26 @@
+{
+  "name": "shortsgen-backend",
+  "version": "1.0.0",
+  "description": "ShortsGen AI-powered short-form content generation backend",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": [
+    "shortsgen",
+    "ai",
+    "video",
+    "backend"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.2",
+    "better-sqlite3": "^9.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2"
+  }
+}
