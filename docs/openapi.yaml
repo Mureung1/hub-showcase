@@ -61,13 +61,7 @@ paths:
                   example: kimsunho2000
       responses:
         '200':
-          description: 분석 성공 (신선한 캐시 재사용)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Analysis'
-        '201':
-          description: 분석 성공 (새로 분석해 저장)
+          description: 분석 성공 (신선한 캐시가 있으면 재사용, 없으면 새로 분석해 저장)
           content:
             application/json:
               schema:
@@ -165,7 +159,7 @@ paths:
                 preferences:
                   $ref: '#/components/schemas/Preferences'
       responses:
-        '201':
+        '200':
           description: 추천 생성 성공
           content:
             application/json:

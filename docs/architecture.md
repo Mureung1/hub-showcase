@@ -20,9 +20,9 @@
 
 | 메서드 | 경로 | 설명 | 주요 응답 |
 | --- | --- | --- | --- |
-| POST | `/api/analysis` | 프로필 분석 실행(동기) + 캐시 저장. 신선한 캐시(24h)면 재사용 | `201`(신규) / `200`(캐시) Analysis |
+| POST | `/api/analysis` | 프로필 분석 실행(동기) + 캐시 저장. 신선한 캐시(24h)면 재사용 | `200` Analysis |
 | GET | `/api/analysis/:githubId` | 분석 캐시 조회 (프로필 화면 새로고침/재진입) | `200` Analysis / `404 ANALYSIS_NOT_FOUND` |
-| POST | `/api/recommendations` | 추천 생성+저장. 재조회/필터링은 조건 바꿔 재 POST | `201` Recommendation (빈 결과는 `items: []`) |
+| POST | `/api/recommendations` | 추천 생성+저장. 재조회/필터링은 조건 바꿔 재 POST | `200` Recommendation (빈 결과는 `items: []`) |
 | GET | `/api/recommendations/:id` | 저장된 추천 재조회 (목록·상세 새로고침 공용) | `200` Recommendation / `404` |
 | GET | `/health` | 서버 상태 확인 | `200 { status: "ok" }` |
 
