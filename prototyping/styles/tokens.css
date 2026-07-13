@@ -1,0 +1,48 @@
+:root {
+  /* Color */
+  --color-bg: #fbfaf6;
+  --color-surface: #fffefb;
+  --color-surface-warm: #f4f0e8;
+  --color-text-primary: #26241f;
+  --color-text-secondary: #68645b;
+  --color-text-tertiary: #918b7f;
+  --color-divider: #e4ded2;
+  --color-primary: #66734f;
+  --color-primary-pressed: #566143;
+  --color-danger: #b56a62;
+  --color-warning: #a3834c;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  --font-size-title: 30px;
+  --font-size-section: 18px;
+  --font-size-body: 16px;
+  --font-size-supporting: 14px;
+  --font-size-meta: 12px;
+  --line-height-title: 1.22;
+  --line-height-body: 1.68;
+  --line-height-supporting: 1.7;
+  --line-height-meta: 1.55;
+
+  /* Layout */
+  --mobile-width: 390px;
+  --page-padding: 20px;
+  --bottom-cta-height: 52px;
+}
