@@ -1,17 +1,22 @@
-import { useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
+import { generateMockCurriculum, type GeneratedCurriculumPlan } from '../../data/curriculumGenerator'
 import {
   learningTracks,
   recentMistakes,
   reviewSummaryItems,
   todayQueue,
   type LearningTrackStatus,
+  type TodayQueueItem,
   type TodayQueueStatus,
 } from '../../data/todayLearning'
 import { useLearningProfileStore } from '../../stores/useLearningProfileStore'
 import styles from './TodayLearningHub.module.css'
 
 type CurriculumMode = 'docs' | 'ai'
+type GenerationStatus = 'idle' | 'generating' | 'ready'
+
+const initialGoal = 'DEVOPS 엔지니어가 되고 싶어'
 
 const trackStatusLabels: Record<LearningTrackStatus, string> = {
   in_progress: '진행 중',
@@ -40,23 +45,29 @@ const docsCurriculum = [
   { title: 'Counter.jsx 실습', detail: 'state와 onClick 연결', progress: '진행' },
 ]
 
-const aiCurriculum = [
-  { title: 'Linux와 Shell 기본기', detail: '파일 시스템, 권한, 프로세스, Bash 자동화' },
-  { title: '네트워크와 운영 기초', detail: 'HTTP, DNS, TCP/IP, 로그 확인과 장애 추적' },
-  { title: '컨테이너와 배포', detail: 'Docker 이미지, Compose, 배포 파이프라인' },
-  { title: 'CI/CD와 IaC', detail: 'GitHub Actions, Terraform, 모니터링 입문' },
-]
-
 const weekLabels = ['월', '화', '수', '목', '금', '토', '일']
 
 export function TodayLearningHub() {
   const { profile } = useLearningProfileStore()
   const [curriculumMode, setCurriculumMode] = useState<CurriculumMode>('ai')
-  const [careerGoal, setCareerGoal] = useState('DEVOPS 엔지니어가 되고 싶어')
+  const [careerGoal, setCareerGoal] = useState(initialGoal)
+  const [goalError, setGoalError] = useState('')
+  const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('ready')
+  const [generatedPlan, setGeneratedPlan] = useState<GeneratedCurriculumPlan>(() =>
+    generateMockCurriculum(initialGoal),
+  )
+  const generationTimerRef = useRef<number | undefined>(undefined)
   const activeTrackName = profile?.preferredTracks[0] ?? 'React'
-  const todayGoal = profile?.learningGoal ?? 'React state와 이벤트 이해하기'
   const displayName = profile?.displayName ?? '학습자'
   const dailyMinutes = profile?.dailyStudyMinutes ?? 30
+
+  useEffect(() => {
+    return () => {
+      if (generationTimerRef.current) {
+        window.clearTimeout(generationTimerRef.current)
+      }
+    }
+  }, [])
 
   const now = useMemo(() => new Date(), [])
   const todayLabel = useMemo(
@@ -87,6 +98,42 @@ export function TodayLearningHub() {
       })),
     ]
   }, [now])
+  const generatedQueue = useMemo<TodayQueueItem[]>(
+    () => [
+      {
+        id: 'generated-first-mission',
+        title: generatedPlan.todayMission.title,
+        detail: generatedPlan.todayMission.detail,
+        durationMinutes: generatedPlan.todayMission.durationMinutes,
+        status: 'current',
+      },
+      ...todayQueue.filter((item) => item.id !== 'counter-mission'),
+    ],
+    [generatedPlan],
+  )
+
+  function handleGenerateCurriculum(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const trimmedGoal = careerGoal.trim()
+
+    if (!trimmedGoal) {
+      setGoalError('목표를 입력하면 AI가 학습 순서를 제안합니다.')
+      setGenerationStatus('idle')
+      return
+    }
+
+    setGoalError('')
+    setGenerationStatus('generating')
+
+    if (generationTimerRef.current) {
+      window.clearTimeout(generationTimerRef.current)
+    }
+
+    generationTimerRef.current = window.setTimeout(() => {
+      setGeneratedPlan(generateMockCurriculum(trimmedGoal))
+      setGenerationStatus('ready')
+    }, 420)
+  }
 
   return (
     <main className={styles.page} aria-labelledby="today-title">
@@ -128,9 +175,9 @@ export function TodayLearningHub() {
                 <Link to="/workspace">학습 시작</Link>
               </div>
               <div className={styles.welcomeVisual} aria-label="오늘의 미션 미리보기">
-                <strong>Counter.jsx</strong>
-                <code>setCount(count + 1)</code>
-                <span>{todayGoal}</span>
+                <strong>{generatedPlan.todayMission.fileName}</strong>
+                <code>{generatedPlan.todayMission.title}</code>
+                <span>{generatedPlan.todayMission.detail}</span>
               </div>
             </section>
 
@@ -185,32 +232,57 @@ export function TodayLearningHub() {
                   ))}
                 </div>
               ) : (
-                <div className={styles.aiCurriculum} role="tabpanel">
-                  <div className={styles.goalInputRow}>
+                <div
+                  className={styles.aiCurriculum}
+                  role="tabpanel"
+                  aria-busy={generationStatus === 'generating'}
+                >
+                  <form className={styles.goalInputRow} onSubmit={handleGenerateCurriculum}>
                     <label>
                       <span>되고 싶은 목표</span>
                       <input
                         value={careerGoal}
+                        aria-invalid={Boolean(goalError)}
+                        aria-describedby={goalError ? 'curriculum-goal-error' : undefined}
                         onChange={(event) => setCareerGoal(event.target.value)}
                       />
                     </label>
-                    <button type="button">AI로 작성</button>
-                  </div>
-                  <div className={styles.aiPlanHeader}>
-                    <strong>{careerGoal || '목표를 입력해주세요'}</strong>
-                    <span>필수 기반부터 실무 흐름까지 4단계로 제안</span>
+                    <button type="submit" disabled={generationStatus === 'generating'}>
+                      {generationStatus === 'generating' ? '작성 중' : 'AI로 작성'}
+                    </button>
+                  </form>
+                  {goalError ? (
+                    <p className={styles.validationMessage} id="curriculum-goal-error">
+                      {goalError}
+                    </p>
+                  ) : null}
+                  <div className={styles.aiPlanHeader} data-status={generationStatus}>
+                    <strong>{generatedPlan.title}</strong>
+                    <span>{generatedPlan.summary}</span>
+                    <small>
+                      {generatedPlan.estimatedDuration} / {generatedPlan.focusRole}
+                    </small>
                   </div>
                   <ol className={styles.aiPlanList}>
-                    {aiCurriculum.map((item, index) => (
-                      <li key={item.title}>
+                    {generatedPlan.steps.map((item, index) => (
+                      <li key={item.id}>
                         <span>{String(index + 1).padStart(2, '0')}</span>
                         <div>
                           <strong>{item.title}</strong>
                           <p>{item.detail}</p>
+                          <small>{item.durationLabel} · {item.outcome}</small>
                         </div>
                       </li>
                     ))}
                   </ol>
+                  <div className={styles.sourceList} aria-label="추천 문서">
+                    {generatedPlan.sources.map((source) => (
+                      <article key={source.title}>
+                        <strong>{source.title}</strong>
+                        <span>{source.urlLabel}</span>
+                      </article>
+                    ))}
+                  </div>
                 </div>
               )}
             </section>
@@ -239,6 +311,7 @@ export function TodayLearningHub() {
                 </div>
               </section>
             </div>
+
             <section className={styles.trackSection} aria-labelledby="tracks-title">
               <div className={styles.panelTitleRow}>
                 <h2 id="tracks-title">학습 목록</h2>
@@ -257,7 +330,6 @@ export function TodayLearningHub() {
                 ))}
               </div>
             </section>
-          
           </section>
 
           <aside className={styles.sideColumn} aria-label="오늘 일정과 학습 큐">
@@ -292,7 +364,7 @@ export function TodayLearningHub() {
                 <span>총 38분</span>
               </div>
               <ol className={styles.timelineList}>
-                {todayQueue.map((item) => (
+                {generatedQueue.map((item) => (
                   <li data-status={item.status} key={item.id}>
                     <time>{item.durationMinutes}분</time>
                     <div>

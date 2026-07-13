@@ -67,6 +67,7 @@
 .welcomeCopy a,
 .panelTitleRow a,
 .goalInputRow button {
+  min-width: 96px;
   min-height: 40px;
   display: inline-flex;
   align-items: center;
@@ -401,6 +402,23 @@
   box-shadow: 0 0 0 3px rgb(53 200 244 / 16%);
 }
 
+.goalInputRow input[aria-invalid='true'] {
+  border-color: #ff8a1c;
+  box-shadow: 0 0 0 3px rgb(255 138 28 / 15%);
+}
+
+.goalInputRow button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.validationMessage {
+  margin: 10px 0 0;
+  color: #c24c00;
+  font-size: 13px;
+  font-weight: 850;
+}
+
 .aiPlanHeader {
   margin-top: 16px;
   border-radius: 8px;
@@ -422,6 +440,21 @@
   margin-top: 4px;
   color: #526173;
   font-size: 13px;
+}
+
+.aiPlanHeader small {
+  display: inline-flex;
+  margin-top: 10px;
+  border-radius: 9999px;
+  padding: 5px 9px;
+  background: #ffffff;
+  color: #0b4bb3;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.aiPlanHeader[data-status='generating'] {
+  background: #fff5eb;
 }
 
 .aiPlanList {
@@ -459,6 +492,47 @@
   color: #667085;
   font-size: 13px;
   line-height: 1.45;
+}
+
+.aiPlanList small {
+  display: block;
+  margin-top: 5px;
+  color: #0b4bb3;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.sourceList {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.sourceList article {
+  border: 1px solid #e3e9f2;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfcfe;
+}
+
+.sourceList strong,
+.sourceList span {
+  display: block;
+}
+
+.sourceList strong {
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.sourceList span {
+  margin-top: 6px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 850;
 }
 
 .analyticsGrid {
@@ -751,5 +825,9 @@ input:focus-visible {
 
   .tabs {
     justify-content: flex-start;
+  }
+
+  .sourceList {
+    grid-template-columns: 1fr;
   }
 }
