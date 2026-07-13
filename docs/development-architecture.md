@@ -1,67 +1,128 @@
 # 개발 아키텍처
 
-이 프로젝트는 Feature-Sliced Design(FSD)을 점진적으로 도입한다. 현재 단계에서는 프론트엔드에 `app`, `pages`, `shared` 초기 레이어만 사용하고, 기능이 커질 때 `entities`, `features`, `widgets`를 추가한다.
+프론트엔드는 Feature-Sliced Design(FSD)을 현재 제품 범위까지 적용한다. slice 디렉터리는 기능 이름을 유지하고, TypeScript/TSX/CSS 파일명은 `snake_case`를 사용한다. 모든 public API는 named export다.
 
 ## 현재 구조
 
 ```text
 src/
   app/
-    App.tsx
-    App.test.tsx
-    index.ts
+    app.tsx
+    authenticated_workspace.tsx
+    model/
+      workspace_seed.ts
     styles/
+      authenticated_workspace.css
       global.css
   pages/
-    README.md
+    home/
+      index.ts
+      ui/
+        home_page.tsx
+        home_page.css
+    landing/
+      index.ts
+      ui/
+        landing_page.tsx
+        landing_page.css
+        onboarding_motion_preview.tsx
+    library/
+      index.ts
+      ui/
+        library_page.tsx
+        library_page.css
+    login/
+      index.ts
+      ui/
+        login_page.tsx
+        login_page.css
+    save/
+      index.ts
+      ui/
+        save_page.tsx
+        save_page.css
+  widgets/
+    app-navigation/
+      index.ts
+      ui/
+        app_navigation.tsx
+        app_navigation.css
+  entities/
+    insight/
+      index.ts
+      model/
+        insight.ts
+      ui/
+        insight_grid.tsx
+        insight_grid.css
   shared/
-    README.md
+    config/
+      design-system/
+        index.ts
+        tokens.ts
+        apply_design_tokens.ts
+    ui/
+      index.ts
+      button/
+      category-filter/
+      chip/
+      design-system-provider/
+      empty-state/
+      inline-label/
+      loading-state/
+      navigation-bar/
+      status-message/
+      text-field/
   main.tsx
-  vite-env.d.ts
-server/
-  app.ts
-  app.test.ts
-  index.ts
 ```
 
-## FSD 레이어 기준
+테스트는 대상 파일 가까이에 둔다. 위 트리는 제품 런타임 경계를 중심으로 표시하며 테스트 파일은 생략했다.
 
-- `src/app`: 앱 진입점, 전역 provider 연결, 전역 스타일, 앱 전체 조합을 둔다.
-- `src/pages`: 라우트나 주요 화면 단위 slice를 둔다. 현재 탭 화면은 다음 리팩터링에서 `home`, `library`, `save` page slice로 분리한다.
-- `src/shared`: 비즈니스 로직이 없는 공통 코드만 둔다. 예: 공통 UI, API 클라이언트, 환경 설정, 범용 라이브러리.
-- `src/entities`, `src/features`, `src/widgets`: 아직 만들지 않는다. 도메인 모델이나 재사용 기능이 실제로 생길 때 추가한다.
+## 레이어 책임
 
-구현 계획 문서에서는 실제 MVP 기능을 붙이는 시점의 목표 구조를 기준으로 `entities`, `features`, `widgets`를 사용한다.
+| 레이어     | 책임                                                               |
+| ---------- | ------------------------------------------------------------------ |
+| `app`      | 앱 진입 상태, provider/token 조합, authenticated shell, 전역 reset |
+| `pages`    | 라우트 또는 주요 화면 단위 조합                                    |
+| `widgets`  | 여러 화면에서 독립적으로 배치되는 큰 UI 블록                       |
+| `entities` | 도메인 타입, 도메인 연산, 도메인 표시 UI                           |
+| `shared`   | 비즈니스 규칙이 없는 config, UI adapter, 범용 도구                 |
 
-| 성격                         | 위치 예시                                                   |
-| ---------------------------- | ----------------------------------------------------------- |
-| 앱 셸, provider, 전역 조합    | `src/app`                                                   |
-| 화면 단위                     | `src/pages/home`, `src/pages/library`, `src/pages/save`     |
-| 하단 내비게이션 같은 화면 블록 | `src/widgets/bottom-navigation`                             |
-| 인증, 저장, 수정, 온보딩 기능 | `src/features/auth`, `src/features/insight-save`            |
-| 인사이트, 카테고리, 프로필 모델 | `src/entities/insight`, `src/entities/category`, `src/entities/profile` |
-| 공통 UI, API 클라이언트, 설정 | `src/shared/ui`, `src/shared/api`, `src/shared/config`      |
+현재 도메인 모델과 목록 UI는 `entities/insight`, 고정 앱 내비게이션은 `widgets/app-navigation`, 런타임 토큰은 `shared/config/design-system`, 공통 UI 경계는 `shared/ui`가 소유한다.
 
-## Import 규칙
+## import 경계
 
-- 외부 코드는 각 레이어나 slice의 public API인 `index.ts`를 통해 import한다.
-- 새 slice를 만들 때는 `index.ts`를 함께 만들고, 외부에 공개할 컴포넌트/함수/타입만 export한다.
-- `src/main.tsx`는 `@/app`만 import해서 앱을 부트스트랩한다.
-- TypeScript/Vite alias는 `@/*`만 사용한다.
-- 같은 레이어의 slice끼리 직접 import하지 않는다.
-- 상위 레이어는 하위 레이어를 import할 수 있지만, 하위 레이어가 상위 레이어를 import하면 안 된다.
-- 앱 루트는 `src/app/App.tsx`와 `@/app`을 기준으로 관리한다.
+- 외부 사용자는 slice의 `index.ts` public API만 import한다.
+- `app`은 `pages`, `widgets`, `entities`, `shared`를 조합할 수 있다.
+- `pages`와 `widgets`는 `entities`와 `shared`의 public API만 사용한다.
+- `entities`는 `shared`만 import할 수 있다. 같은 entity 내부 구현은 상대 경로를 사용한다.
+- `shared`는 상위 레이어를 import하지 않는다.
+- 같은 레이어의 다른 slice 내부 경로를 직접 import하지 않는다.
+- alias는 `@/*`만 사용한다.
+- 화면과 domain UI는 외부 UI 패키지를 직접 import하지 않고 `@/shared/ui` adapter를 사용한다.
+- `export default`를 사용하지 않는다.
 
-## 서버 구조
+`src/main.tsx`는 token injector를 실행하고 `DesignSystemProvider`로 `App`을 감싸는 bootstrap만 담당한다. `tokens.ts`가 값의 단일 원천이며 `apply_design_tokens.ts`만 DOM에 CSS custom property를 주입한다.
 
-Express 서버는 FSD 대상이 아니므로 `server/`에 별도로 둔다. 프론트엔드에서 서버 API를 호출하는 공통 클라이언트가 필요해지면 `src/shared/api`에 둔다.
+## 스타일 경계
 
-## 기술 스택
+- `global.css`에는 reset, 전역 typography 기반, focus, visually-hidden 같은 접근성 utility만 둔다.
+- 화면·widget·entity 스타일은 각 `ui` 디렉터리의 `snake_case.css`에 colocate한다.
+- 제품 CSS는 주입된 design token 변수만 사용하며 raw 색상과 화면 전역 selector를 추가하지 않는다.
+- 공통 UI의 vendor DOM 보정은 해당 `shared/ui` adapter CSS가 소유한다.
 
-현재 사용 중인 라이브러리와 도입 예정 라이브러리는 `docs/tech-stack.md`를 기준으로 관리한다.
+## 서버와 저장 경계
 
-## 제품 흐름 문서
+Express 서버는 FSD 대상이 아니므로 `server/`에 둔다. 현재 로컬 우선 MVP는 `/api/health`를 개발 환경 확인에만 사용한다.
 
-로그인 전 서비스 온보딩은 `docs/onboarding.md`를 기준으로 기획하고 구현한다. 로그인 후 개인화 온보딩과 구분해서 관리한다.
+- 인사이트 타입과 저장 인터페이스는 `entities/insight`가 소유한다.
+- page와 widget은 `localStorage`를 직접 호출하지 않는다.
+- 저장 payload는 `schemaVersion`을 포함하고 유효하지 않은 데이터는 읽을 때 격리한다.
+- 원격 저장을 도입할 때도 같은 domain interface 뒤에 adapter를 추가한다.
 
-`꺼내보기`는 `docs/retrieve.md`를 기준으로 기획하고 구현한다. 보관함 검색과 내부 검색 유틸 일부를 공유할 수 있지만, 화면 경험은 유사도 기반 작업팩으로 분리한다.
+## 활성 제품 문서
+
+- 로그인 전 흐름과 문구는 `docs/onboarding.md`를 따른다.
+- `꺼내보기` 경험은 `docs/retrieve.md`를 따른다.
+- 현재 범위와 우선순위는 `docs/backlog.md`와 `docs/checklist.md`를 따른다.
+- 디자인 런타임 계약은 루트 `DESIGN.md`를 따른다.

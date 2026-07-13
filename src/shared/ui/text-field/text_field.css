@@ -1,0 +1,48 @@
+div.ui-field[wds-component='text-field'],
+div.ui-field[wds-component='search-field'],
+div.ui-field[wds-component='text-area'] {
+  border-radius: var(--radius-input);
+  background: var(--color-canvas);
+  box-shadow: none;
+}
+
+div.ui-field[wds-component='text-field'] [data-role='text-field-wrapper'] {
+  border-radius: var(--radius-input);
+}
+
+div.ui-field[wds-component='text-field'] [data-role='text-field-wrapper'],
+div.ui-field[wds-component='search-field'],
+div.ui-field[wds-component='text-area'] {
+  box-shadow: inset 0 0 0 1px var(--color-ash);
+}
+
+div.ui-field[wds-component='text-field'] input,
+div.ui-field[wds-component='search-field'] input,
+div.ui-field[wds-component='text-area'] textarea:not([aria-hidden='true']) {
+  color: var(--color-ink);
+}
+
+div.ui-field[wds-component='text-field']:has(input[aria-invalid='true'])
+  [data-role='text-field-wrapper'],
+div.ui-field[wds-component='text-area']:has(textarea[aria-invalid='true']) {
+  box-shadow: inset 0 0 0 1px var(--color-error-ink);
+}
+
+div.ui-field[wds-component='text-field']:focus-within
+  [data-role='text-field-wrapper'],
+div.ui-field[wds-component='search-field']:focus-within,
+div.ui-field[wds-component='text-area']:focus-within {
+  box-shadow: 0 0 0 2px var(--color-electric-blue);
+}
+
+div.ui-field[wds-component='text-field']:has(
+    input[aria-invalid='true']
+  ):focus-within
+  [data-role='text-field-wrapper'],
+div.ui-field[wds-component='text-area']:has(
+    textarea[aria-invalid='true']
+  ):focus-within {
+  box-shadow:
+    inset 0 0 0 1px var(--color-error-ink),
+    0 0 0 2px var(--color-electric-blue);
+}

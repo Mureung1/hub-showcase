@@ -1,13 +1,18 @@
+import '@/app/styles/global.css';
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ThemeProvider } from '@wanteddev/wds';
-import App from '@/app';
-import '@wanteddev/wds/global.css';
+
+import { App } from '@/app';
+import { applyDesignTokens } from '@/shared/config/design-system';
+import { DesignSystemProvider } from '@/shared/ui';
+
+applyDesignTokens();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider>
+    <DesignSystemProvider>
       <App />
-    </ThemeProvider>
+    </DesignSystemProvider>
   </StrictMode>
 );
