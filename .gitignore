@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# CI workflows are kept local only (not uploaded to the shared repo)
+.github/workflows/
