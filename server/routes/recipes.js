@@ -4,6 +4,21 @@ import { getRecipesByOwnedIngredients } from '../../src/data/selectors.js'
 
 const router = Router()
 
+function mapRecipeRow(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    emoji: row.emoji,
+    youtubeId: row.youtube_id,
+    image: row.image,
+    categoryId: row.category_id,
+    subGroupId: row.sub_group_id,
+    servings: row.servings,
+    totalCost: row.total_cost,
+    ingredients: row.ingredients,
+  }
+}
+
 router.get('/', async (req, res) => {
   const { matchNames } = req.query
   const names = matchNames ? matchNames.split(',').filter(Boolean) : []
@@ -20,20 +35,23 @@ router.get('/', async (req, res) => {
     return
   }
 
-  const recipes = data.map((row) => ({
-    id: row.id,
-    name: row.name,
-    emoji: row.emoji,
-    youtubeId: row.youtube_id,
-    image: row.image,
-    categoryId: row.category_id,
-    subGroupId: row.sub_group_id,
-    servings: row.servings,
-    totalCost: row.total_cost,
-    ingredients: row.ingredients,
-  }))
+  res.status(200).json({ recipes: getRecipesByOwnedIngredients(data.map(mapRecipeRow), names) })
+})
 
-  res.status(200).json({ recipes: getRecipesByOwnedIngredients(recipes, names) })
+router.get('/:id', async (req, res) => {
+  const { data, error } = await supabase.from('recipes').select('*').eq('id', req.params.id).maybeSingle()
+
+  if (error) {
+    res.status(502).json({ error: 'Supabase에 연결할 수 없습니다.' })
+    return
+  }
+
+  if (!data) {
+    res.status(404).json({ error: '레시피를 찾을 수 없습니다.' })
+    return
+  }
+
+  res.status(200).json({ recipe: mapRecipeRow(data) })
 })
 
 export default router

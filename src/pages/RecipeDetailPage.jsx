@@ -1,16 +1,32 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { mockRecipes } from '../data/mockRecipes'
+import { fridgeIngredients } from '../data/fridgeIngredients'
+import { loadFridgeSelection } from '../data/fridgeStorage'
 import IngredientList from '../components/IngredientList'
 import PurchaseLinkPanel from '../components/PurchaseLinkPanel'
 import Thumbnail from '../components/Thumbnail'
 
 function RecipeDetailPage() {
   const { recipeId } = useParams()
-  const recipe = mockRecipes.find((item) => item.id === recipeId)
+  const [recipe, setRecipe] = useState(null)
+  const [notFound, setNotFound] = useState(false)
   const [selectedIngredient, setSelectedIngredient] = useState(null)
 
-  if (!recipe) {
+  useEffect(() => {
+    setRecipe(null)
+    setNotFound(false)
+    setSelectedIngredient(null)
+
+    fetch(`/api/recipes/${recipeId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('not found')
+        return res.json()
+      })
+      .then((data) => setRecipe(data.recipe))
+      .catch(() => setNotFound(true))
+  }, [recipeId])
+
+  if (notFound) {
     return (
       <main className="min-h-screen bg-bg-page px-4 py-10 text-center text-text-secondary">
         요리를 찾을 수 없어요.{' '}
@@ -20,6 +36,15 @@ function RecipeDetailPage() {
       </main>
     )
   }
+
+  if (!recipe) {
+    return <main className="min-h-screen bg-bg-page px-4 py-10 text-center text-text-secondary">불러오는 중...</main>
+  }
+
+  const selectedIds = loadFridgeSelection()
+  const ownedNames = fridgeIngredients
+    .filter((ingredient) => selectedIds.includes(ingredient.id))
+    .flatMap((ingredient) => ingredient.matchNames)
 
   return (
     <main className="min-h-screen bg-bg-page px-4 py-10">
@@ -58,6 +83,7 @@ function RecipeDetailPage() {
             <h2 className="mt-6 mb-2 text-sm font-semibold text-text-secondary">재료</h2>
             <IngredientList
               ingredients={recipe.ingredients}
+              ownedNames={ownedNames}
               selectedName={selectedIngredient?.name}
               onSelect={setSelectedIngredient}
             />

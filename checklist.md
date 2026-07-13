@@ -10,7 +10,7 @@
 - [x] 고른 재료가 들어가는 요리를 저렴한 순으로 추천하는 매칭 로직 (`getRecipesByOwnedIngredients` 셀렉터) — 완료 시 localStorage(`src/data/fridgeStorage.js`, 모듈 분리)에 저장하고 `/home` 상단 "냉장고 재료로 만들 수 있는 요리" 섹션에 표시
 - [ ] 폰트를 Pretendard 기본에서 좀 더 귀여운 느낌의 폰트로 교체 (마스코트 톤에 맞는 폰트 후보 조사 필요)
 - [x] 기존 컴포넌트(`MenuCard`, `IngredientList`, `PurchaseLinkPanel`, `Thumbnail` 등)의 오렌지 톤을 `DESIGN_SYSTEM.md` 공식 토큰(`primary` 등)으로 전체 교체 — `CategoryPage`/`TypePage`/`RecipeDetailPage`까지 포함해서 `orange-*`/`gray-*` 잔여 클래스 전수 제거 확인
-- [ ] 레시피 상세 화면에 재료별 "보유"/"구매 필요" 배지 추가, "구매 필요" 재료만 구매 링크 노출
+- [x] 레시피 상세 화면에 재료별 "보유"/"구매 필요" 배지 추가 — 구매 필요를 먼저 보여주고, 보유 재료도 체크하면 같이 구매 대상에 포함되도록(둘 다 링크는 계속 노출, 체크 여부로 구매 의사만 구분)
 - [x] 화면에 보이는 "식비구조대" 로고(이미지 로고 → 텍스트 로고 "끼니픽"으로 교체 후 전부 삭제) 제거 — `README.md`·`package.json` name은 아직 남음. `src/assets/logo-*.png`는 미사용이지만 파일은 그대로 있음(삭제 여부는 나중에 결정)
 - [x] `prototype/`을 냉장고 씬 + 재료 칩 선택 + 추천 흐름으로 재구성 — 옛 필터+랭킹 홈(`index-warm.html`, `filter.js`)은 제거하고 `index.html`(냉장고 화면, `fridge.js`) → `home.html`(추천+둘러보기, `home.js`)로 재구축, React `FridgePage`/`Home`과 동일한 흐름
 - [x] `prototype/recipe-*.html` 6개를 옛 `style.css`(식비구조대 브랜드·검색바 남아있던 버전)에서 `style-warm.css`로 이전하고, `recipe.js`로 localStorage 냉장고 선택 기반 보유/구매 필요 배지·체크박스·정렬 구현 — `style.css`는 이제 프로토타입 어디서도 안 쓰임(삭제는 아직 안 함)
@@ -26,6 +26,7 @@
 - [x] `npm run seed:recipes` 실행해 36개 레시피 시딩 확인
 - [x] `GET /api/recipes?matchNames=...` 실제 호출로 Supabase 조회·필터·정렬 동작 확인 (curl로 검증 — 계란/밥/대파 → 17개 매칭, 가격순 정렬 정상)
 - [ ] 브라우저에서 냉장고 선택→홈 화면까지 실제 UI로 최종 확인 (지금까진 curl로만 검증)
+- [x] `GET /api/recipes/:id` 추가 — 레시피 상세 화면도 `mockRecipes` 로컬 조회 대신 Supabase 단건 조회로 전환, curl로 정상/404 케이스 확인 완료
 - [ ] 공공데이터포털 레시피로 데이터 소스 교체 (나중에 — `recipes` 테이블 내용만 바꾸면 됨, 코드 변경 최소화)
 
 ## 프론트엔드 (화면)
