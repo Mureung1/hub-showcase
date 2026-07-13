@@ -4,8 +4,8 @@
 > "무엇을 했는가(진행/이력)"는 여기 적지 않는다 → git 커밋 · PR · `/docs`.
 > 여기에는 "이 프로젝트에서 **어떻게** 일하는가"만 담는다 (잘 안 변하는 것).
 >
-> ⚠️ **위치 주의:** 이 파일은 git 루트 `hub/`에 있지만, 실제 코드/명령은 워크스페이스 루트
-> **`hub/sherpa-app/`** 에서 돈다(§5·§9). 경로를 헷갈리지 말 것.
+> ⚠️ **위치 주의:** 이 파일이 있는 git 루트 `hub/`가 곧 pnpm 워크스페이스 루트다
+> (중간 `sherpa-app/` 층은 없다). 코드·명령 모두 `hub/`에서 돈다(§5·§9).
 
 ---
 
@@ -45,7 +45,7 @@
 ## 3. 도메인 모델 & 용어집
 
 **2계층 구조**: `Product`(상품 마스터) / `Lot`(입고 배치). 차감은 **FEFO**.
-(실제 정의는 `sherpa-app/packages/core/src/types.ts`.)
+(실제 정의는 `packages/core/src/types.ts`.)
 
 ```ts
 interface Product {          // 상품 마스터 (바코드로 식별)
@@ -124,21 +124,24 @@ seam(교체 지점)만 확보하고 구현은 뒤로. 상품 조회는 **reposit
 
 ## 5. 모노레포 구조
 
-pnpm workspaces. **워크스페이스 루트는 git 루트 `hub/`가 아니라 그 하위 `hub/sherpa-app/`** 이다
-(`pnpm-workspace.yaml`·`pnpm-lock.yaml`·루트 `package.json`이 모두 거기 있음). 명령도 거기서 실행(§9).
+pnpm workspaces. **워크스페이스 루트는 git 루트 `hub/`와 동일하다**
+(`pnpm-workspace.yaml`·`pnpm-lock.yaml`·루트 `package.json`이 모두 `hub/`에 있음). 명령도 거기서 실행(§9).
 
 ```
-hub/                            # git 루트 (GitHub: chainru1e/hub) — 이 CLAUDE.md 위치
+hub/                            # ★ git 루트(GitHub: chainru1e/hub) = pnpm 워크스페이스 루트 · 이 CLAUDE.md 위치
+├─ package.json                 # 워크스페이스 루트 (private, scripts는 §9)
+├─ pnpm-workspace.yaml          # packages: apps/* · packages/*
+├─ pnpm-lock.yaml
+├─ .nvmrc                       # Node 버전 고정 (22.22.0)
 ├─ .claude/skills/sherpa-pos-design/   # 디자인 헌법 스킬 (§8)
-└─ sherpa-app/                  # ★ pnpm 워크스페이스 루트
-   ├─ apps/
-   │  ├─ web/                   # @sherpa/web — React + TS + Vite + Dexie (메인, Slice 0 구현)
-   │  └─ landing/               # freshkeep-landing — 소개 페이지 (React + JS, Vite)
-   ├─ packages/
-   │  └─ core/                  # @sherpa/core — 공유 도메인 타입(Product/Lot) + id 유틸
-   │                            #   ※ 타입은 이미 존재. FEFO '로직'은 Slice 2에서 추가
-   └─ docs/
-      └─ slice-0-decisions.md   # Slice 0 설계 결정 기록
+├─ apps/
+│  ├─ web/                      # @sherpa/web — React + TS + Vite + Dexie (메인, Slice 0 구현)
+│  └─ landing/                  # freshkeep-landing — 소개 페이지 (React + JS, Vite)
+├─ packages/
+│  └─ core/                     # @sherpa/core — 공유 도메인 타입(Product/Lot) + id 유틸 (load-bearing)
+│                               #   ※ types.ts·id.ts 이미 존재하고 web이 소비. FEFO '로직'은 Slice 2에서 추가
+└─ docs/
+   └─ slice-0-decisions.md      # Slice 0 설계 결정 기록
 ```
 
 - `packages/core`: web과 향후 앱이 함께 쓸 도메인 타입·유틸을 한 곳에. **타입(`types.ts`)·id(`id.ts`)는 이미 들어 있고 web이 `workspace:*`로 소비한다.** 아직 없는 것은 **FEFO 로직**뿐 — 실제 차감 로직이 필요한 **Slice 2**에서 core에 추가한다(빈 껍데기 로직 미리 만들지 말 것).
@@ -219,14 +222,15 @@ hub/                            # git 루트 (GitHub: chainru1e/hub) — 이 CLA
 
 ## 9. 명령어
 
-**모든 명령은 워크스페이스 루트 `hub/sherpa-app/`에서 실행한다** (git 루트 `hub/`가 아님).
+**모든 명령은 워크스페이스 루트 `hub/`(= git 루트)에서 실행한다.**
 
 ```bash
-# --- hub/sherpa-app/ 에서 ---
+# --- hub/ 에서 ---
 pnpm install                          # 의존성 설치
 pnpm dev                              # 프론트(web) 개발 서버      = --filter @sherpa/web dev
 pnpm build                            # 프론트 빌드 (tsc --noEmit && vite build)
 pnpm typecheck                        # 타입 검사 (tsc --noEmit)   ← 현재 주 검증 수단
+pnpm test                             # 워크스페이스 재귀 패스스루 (pnpm -r --if-present test) — 구현된 테스트 없음
 pnpm dev:landing                      # 소개 페이지(landing) 개발 서버
 
 # 개별 패키지 직접 지정도 가능
@@ -235,10 +239,11 @@ pnpm --filter @sherpa/web build
 pnpm --filter @sherpa/web typecheck
 ```
 
-- **현재 검증 수단은 `typecheck`(tsc --noEmit) + `build`가 전부다.**
-- **`test`·`lint` 스크립트는 아직 없다(미설정).** ESLint·테스트 러너 설정 파일도 없음.
+- **현재 실효 검증 수단은 `typecheck`(tsc --noEmit) + `build` + dev 렌더가 전부다.**
+- **테스트는 실재하지 않는다.** 루트 `test`는 위 재귀 패스스루 placeholder일 뿐 — 테스트 파일 0개,
+  테스트 러너(Vitest 등)·설정 파일 미도입. `lint` 스크립트·ESLint 설정도 없다.
 - **테스트 인프라: Vitest + React Testing Library 도입 예정(계획, 아직 미설정).** 테스트가 실제로 필요해지는
-  Slice에서 세팅하고, 세팅되면 이 절에 `pnpm --filter @sherpa/web test` 등을 추가한다.
+  Slice에서 세팅하고, 세팅되면 각 패키지에 `test` 스크립트를 채운다.
 - `server` 관련 명령은 백엔드 착수 후 추가(현재 server 미생성).
 
 ---
@@ -249,7 +254,7 @@ pnpm --filter @sherpa/web typecheck
   예) `feat: 바코드 스캔 입력 및 상품 조회 분기 구현`
 - **네이밍:** 변수·함수·타입·식별자는 **영어**(`productName`, `ScanLine`, `inbound`).
   도메인 용어의 한글 매핑은 코드가 아니라 **문서/용어집(§3)** 에 둔다.
-- **문서:** 저장소 안 **`/docs` 마크다운**으로 관리(현재 `sherpa-app/docs/slice-0-decisions.md`).
+- **문서:** 저장소 안 **`/docs` 마크다운**으로 관리(현재 `docs/slice-0-decisions.md`).
   기획·설계 결정을 커밋/PR 이력으로 가시화(자기 자신에게 PR을 날려 결정 변경을 리뷰 형태로 남길 수 있음).
   Wiki는 지양(커밋 이력·가시성에서 불리).
 - **작업 방식:** **바로 코드부터 쏟지 말 것.** 먼저 (1)고려사항·결정 포인트를 나열하고,
