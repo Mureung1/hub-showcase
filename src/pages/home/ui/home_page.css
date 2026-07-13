@@ -1,0 +1,115 @@
+.home-page {
+  display: grid;
+  gap: var(--spacing-10);
+}
+
+.home-page__hero {
+  display: grid;
+  width: min(820px, 100%);
+  justify-items: start;
+  gap: var(--spacing-4);
+}
+
+.home-page__kicker {
+  color: var(--color-graphite);
+  font-size: var(--typography-label-size);
+  font-weight: 700;
+  line-height: var(--typography-label-line-height);
+}
+
+.home-page__hero h2 {
+  max-width: 760px;
+  color: var(--color-ink);
+  font-size: var(--typography-screen-title-size);
+  font-weight: 700;
+  line-height: var(--typography-screen-title-line-height);
+  overflow-wrap: break-word;
+}
+
+.home-page__summary {
+  max-width: 680px;
+  color: var(--color-graphite);
+  font-size: var(--typography-body-size);
+  line-height: var(--typography-body-line-height);
+}
+
+.home-page__search {
+  display: grid;
+  width: 100%;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+.home-page__search label {
+  color: var(--color-ink);
+  font-size: var(--typography-label-size);
+  font-weight: 700;
+  line-height: var(--typography-label-line-height);
+}
+
+.home-page__search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--spacing-2);
+}
+
+button.home-page__search-action {
+  min-width: 120px;
+}
+
+.home-page__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.home-page__results {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.home-page__results-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+}
+
+.home-page__results-heading > div {
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.home-page__results-heading h2 {
+  color: var(--color-ink);
+  font-size: var(--typography-section-title-size);
+  font-weight: 700;
+  line-height: var(--typography-section-title-line-height);
+}
+
+.home-page__results-heading > span {
+  color: var(--color-graphite);
+  font-size: var(--typography-label-size);
+  line-height: var(--typography-label-line-height);
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .home-page {
+    gap: var(--spacing-8);
+  }
+
+  .home-page__search-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  button.home-page__search-action {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .home-page__results-heading {
+    align-items: flex-start;
+  }
+}
