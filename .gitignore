@@ -1,34 +1,16 @@
-# Dependency directories
+# Dependencies
 node_modules/
-jspm_packages/
-web_modules/
 
-# Build outputs
-dist/
-tmp/
-out/
-build/
-.next/
-.nuxt/
-
-# Environment variables
+# Local env files
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.env
+.env.*.local
 
-# OS Files
+# Production build outputs
+dist/
+build/
+
+# IDE and OS files
 .DS_Store
-Thumbs.db
-desktop.ini
-
-# IDEs and editors
-.idea/
 .vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.idea/
