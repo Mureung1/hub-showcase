@@ -14,20 +14,22 @@
 
 ## 1주차 — 기반 + 사장님 축 (공급이 있어야 수요가 있다)
 
+주간 목표 이슈: [#6](https://github.com/HappyGogildong/hub/issues/6)
+
 - [x] **T-00 개발 환경 구성** — 모노레포(client/server/prototype), Vite 프록시, Prettier, 헬스체크
-- [ ] **T-01 DB 스키마 & 마이그레이션** `server`
+- [ ] **T-01 DB 스키마 & 마이그레이션** `server` — [#1](https://github.com/HappyGogildong/hub/issues/1)
   - users, stores, favorites, deals, reservations (snake_case, 기획서 §4 데이터 모델)
   - DoD: 마이그레이션 SQL로 로컬 PostgreSQL에 스키마 재현 가능. `deals.remaining_qty >= 0` CHECK 제약 포함
-- [ ] **T-02 시딩 스크립트** `server`
+- [ ] **T-02 시딩 스크립트** `server` — [#2](https://github.com/HappyGogildong/hub/issues/2)
   - 데모용 가게 3곳 + 사용자 2명 + 활성 딜 (기획서 §7 콜드 스타트: 데모는 시딩으로)
   - DoD: `npm run seed -w server` 한 번으로 초기화
-- [ ] **T-03 역할 선택 진입 화면 (C0)** `client`
+- [ ] **T-03 역할 선택 진입 화면 (C0)** `client` — [#3](https://github.com/HappyGogildong/hub/issues/3)
   - 사장님/소비자 두 버튼. 로그인(C1)은 자리만 두고 미구현(범위 외)
   - DoD: 역할 선택 시 각 축의 첫 화면으로 라우팅
-- [ ] **T-04 가게 등록 API + 화면 (W1)** `server` `client`
+- [ ] **T-04 가게 등록 API + 화면 (W1)** `server` `client` — [#4](https://github.com/HappyGogildong/hub/issues/4)
   - 상호·주소(좌표)·카테고리. 최초 1회, 등록돼 있으면 대시보드로
   - DoD: 등록한 좌표가 이후 거리 계산의 기준으로 조회됨
-- [ ] **T-05 딜 등록 API + 화면 (W2)** `server` `client`
+- [ ] **T-05 딜 등록 API + 화면 (W2)** `server` `client` — [#5](https://github.com/HappyGogildong/hub/issues/5)
   - 상품명·카테고리·수량·원가/할인가·픽업 마감시간. 등록 30초 내 완료 가능한 UI
   - DoD: 등록 즉시 딜 목록 API에 노출, 알림 트리거 포인트(T-11) 주석으로 표시
 
@@ -78,7 +80,7 @@
 기획서 §5 Out of Scope 및 진행 중 발견 항목. 착수하려면 주차 계획으로 승격한다.
 
 - Redis GeoSpatial 최적화 전후 비교 (구 T-17 — 3주 축소로 강등, 여유 시에만)
-- 로그인·인증 (C1 실제 구현 — 현재는 시딩 사용자로 시연)
+- 회원가입·로그인 구현 (C1 — 스키마는 [erd.md](./erd.md)에 반영 완료, API는 bcrypt + 세션/JWT 결정 필요. 시연은 시딩 사용자로도 가능)
 - 지도 뷰 (M2의 지도/리스트 전환 — MVP는 리스트만)
 - 앱 내 사전 결제 / PG 정산 / 환불
 - 리뷰·평점, 사장님 정산 리포트
