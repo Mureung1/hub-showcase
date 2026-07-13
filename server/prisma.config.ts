@@ -7,7 +7,7 @@ export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
-    seed: 'node prisma/seed.mjs',
+    seed: 'node prisma/seed.js',
   },
   datasource: {
     // 마이그레이션은 advisory lock이 필요해 세션모드 풀러(DIRECT_URL)를 쓴다.
