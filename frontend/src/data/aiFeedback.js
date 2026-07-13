@@ -33,9 +33,6 @@ function emptySectionFeedback(heading) {
   return `[구조 완결성] "${heading}" 섹션이 아직 비어 있어요. 이 섹션이 없으면 문서가 요약에 가까워집니다. 가이드의 질문에 한 문장씩만 답해도 뼈대가 잡힙니다.`
 }
 
-const CLOSING_COMMENT =
-  '[안내] AI 피드백은 구조·서술 관점의 참고용이며, 게임에 대한 사실관계는 틀릴 수 있습니다. 발행 후 커뮤니티의 섹션별 코멘트로 2차 피드백을 받아보세요.'
-
 /**
  * @param {Array<{key: string, heading: string, content: string}>} sections
  * @returns {Promise<Array<{sectionKey: string, content: string, isAi: true}>>}
@@ -49,11 +46,6 @@ export function makeAiFeedback(sections) {
         ? emptySectionFeedback(section.heading)
         : (FEEDBACK_BY_GUIDE_KEY[section.guideKey ?? section.key] ?? FALLBACK_FEEDBACK),
   }))
-
-  const last = sections[sections.length - 1]
-  if (last) {
-    comments.push({ sectionKey: last.key, isAi: true, content: CLOSING_COMMENT })
-  }
 
   // 실제 API 왕복을 흉내 내는 지연
   return new Promise((resolve) => {
