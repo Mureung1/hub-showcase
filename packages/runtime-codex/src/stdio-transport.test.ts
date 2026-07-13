@@ -981,6 +981,25 @@ test('fake stdio fixture force-kills and removes its journal after assertion fai
   assertProcessMissing(childPid)
 })
 
+test('fake stdio fixture removes its journal when transport cleanup rejects', async () => {
+  let cleanedTempDir = ''
+
+  await assert.rejects(
+    withFakeCodexStdioTransport(
+      { scenario: 'hang' },
+      async ({ transport, tempDir }) => {
+        cleanedTempDir = tempDir
+        transport.close = async () => {
+          throw new Error('intentional transport cleanup failure')
+        }
+      },
+    ),
+    /intentional transport cleanup failure/,
+  )
+
+  await assertPathMissing(cleanedTempDir)
+})
+
 function createInitializeRequest(id: string | number) {
   return {
     method: 'initialize' as const,

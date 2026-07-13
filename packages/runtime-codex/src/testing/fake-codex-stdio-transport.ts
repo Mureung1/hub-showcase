@@ -111,8 +111,11 @@ export async function withFakeCodexStdioTransport(
       readJournal,
     })
   } finally {
-    await transport.close()
-    await rm(tempDir, { recursive: true, force: true })
+    try {
+      await transport.close()
+    } finally {
+      await rm(tempDir, { recursive: true, force: true })
+    }
   }
 }
 

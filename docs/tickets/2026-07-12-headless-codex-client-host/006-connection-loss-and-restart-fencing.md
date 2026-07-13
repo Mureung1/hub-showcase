@@ -27,14 +27,14 @@ Caller가 `ready` 또는 recoverable `failed` state에서 명시적으로 `resta
 - Successful preflight 뒤 transient spawn failure, initialize timeout/error와 unexpected exit, stdout EOF, stdin/transport failure는 `recoverable: true`다.
 - Ticket 002의 Client request identity hard cap은 tombstone eviction 대신 generation을 닫는 recoverable transport failure다. Cap을 촉발한 request는 wire에 쓰지 않고 restart 뒤에도 replay하지 않는다.
 - Authoritative App Server command error, turn terminal failure와 later Skills discovery error는 transport가 살아 있으면 operation-scoped이고 Host는 `ready`를 유지한다. `skills/list` 같은 read-only request timeout도 같은 generation의 `ready`를 유지한다.
-- `thread/start` 또는 `turn/start` timeout은 mutation 적용 여부를 알 수 없는 recoverable connection failure다. Host는 outcome unknown을 기록하고 current generation과 transport를 닫으며 같은 generation의 후속 mutation을 거부한다. `thread/start`는 `threadRef`를 발급하지 않고, `turn/start`의 execution-slot reservation은 idle로 되돌리지 않은 채 generation loss의 reconciliation marker로 전환한다.
+- `thread/start` 또는 `turn/start` timeout은 mutation 적용 여부를 알 수 없는 recoverable connection failure다. Host는 outcome unknown을 기록하고 current generation과 transport를 닫으며 같은 generation의 후속 mutation을 거부한다. `thread/start`는 `threadRef`를 발급하지 않는다. `turn/start`의 execution-slot reservation은 idle로 되돌리지 않고 thread-scoped `{ status: 'unknown', reason: 'start_outcome_unknown' }` marker로 전환하며 response 전 validated native turn identity가 없으므로 `turnRef`도 발급하지 않는다.
 - Pending interaction response write 중 transport loss가 발생하면 answer 적용 여부를 추측하지 않는다. Current generation을 recoverable `failed`로 닫고 interaction을 expired로 전환하며 response를 자동 replay하지 않는다.
 - `recoverable: false`인 Host의 `restart`는 process를 만들지 않고 `operation_conflict`로 거부한다.
 - `ready`와 recoverable `failed`에서 시작한 restart는 `restarting`을 공개하며, current generation을 완전히 fence하고 정리한 뒤에만 새 child generation을 시작한다.
-- `restarting` 중 `stop`은 진행 중인 restart를 취소·정리하고 `stopped`로 수렴한다. `starting` 중 `stop`과 lifecycle epoch cancellation은 ticket 003이 소유한다.
-- Generation 종료 시 transport notification waiter, pending Client request와 operation Promise는 settle한다. Ticket 003의 atomic Host subscriber는 connection loss나 restart로 교체되지 않고 caller unsubscribe 또는 Host stop까지 유지되어 `failed → restarting → ready` 전이를 계속 관측한다.
+- `restarting` 중 `stop`은 진행 중인 restart를 취소·정리한다. 모든 child exit를 확인하면 `stopped`로 수렴하고 force-kill 뒤에도 종료를 확인하지 못하면 non-recoverable cleanup failure로 fail closed한다. `starting` 중 `stop`과 lifecycle epoch cancellation은 ticket 003이 소유한다.
+- Generation 종료 시 transport notification waiter, pending Client request와 operation Promise는 settle한다. Ticket 003의 atomic Host subscriber는 connection loss나 restart로 교체되지 않는다. Core buffer가 overflow되지 않은 subscriber는 caller unsubscribe 또는 Host stop까지 유지되어 `failed → restarting → ready` 전이를 계속 관측한다.
 - Explicit restart는 validated layout을 재사용하지만 previous native thread를 resume/remap하지 않는다. 모든 old-generation refs는 `stale_reference`다.
-- Active turn의 loss는 성공·실패·interrupted terminal로 꾸미지 않는다. 별도 `connection_lost` event 없이 authoritative `host_state_changed(status: failed)`를 발행하고 failed snapshot의 execution slot을 `outcome: unknown` reconciliation marker로 전환한다.
+- Active turn의 loss는 성공·실패·interrupted terminal로 꾸미지 않는다. 별도 `connection_lost` event 없이 authoritative `host_state_changed(status: failed)`를 발행하고 failed snapshot의 execution slot을 `{ status: 'unknown', reason: 'active_connection_lost', turnRef }` reconciliation marker로 전환한다.
 - Pending interactions는 generation 종료 시 `pending_interaction_expired`로 닫고 response를 쓰지 않는다.
 - Automatic restart, mutation replay, active execution continuation과 `thread/resume`은 범위 밖이다.
 
@@ -43,19 +43,19 @@ Caller가 `ready` 또는 recoverable `failed` state에서 명시적으로 `resta
 - [ ] Initialize 전, ready-idle, 두 active thread와 pending interaction 중 각각 process exit/EOF/write failure를 주입하는 deterministic matrix가 있다.
 - [ ] 모든 transport notification waiter, pending Client request와 operation Promise가 timeout residue 없이 settle하며 ticket 003의 atomic Host subscription은 connection loss만으로 닫히지 않는다.
 - [ ] Process loss가 `recoverable: true`인 `failed` snapshot과 authoritative `host_state_changed`를 만들고, 별도 connection-loss event나 active turn terminal을 합성하지 않는다.
-- [ ] Failed snapshot이 직전 active turn의 `turnRef`를 `outcome: unknown` reconciliation marker로 보존하되 active 또는 terminal로 표현하지 않는다.
+- [ ] Failed snapshot이 직전 active turn을 `{ status: 'unknown', reason: 'active_connection_lost', turnRef }` reconciliation marker로 전환해 `turnRef`를 보존하되 active 또는 terminal로 표현하지 않는다.
 - [ ] Unsafe protocol/schema/identity failure는 `recoverable: false`이며 같은 Host에서 restart loop를 만들지 않는다.
 - [ ] Pending interaction은 generation 종료 시 expired가 되고 old `interactionRef` answer가 App Server에 쓰이지 않는다.
 - [ ] Pending interaction response write 중 loss를 주입하면 answer 적용 여부를 추측하거나 replay하지 않고 interaction을 expired로 닫으며 Host가 recoverable `failed`로 수렴한다.
 - [ ] `ready → restarting → ready`와 recoverable `failed → restarting → ready`가 모두 public snapshot/event에서 관측되고 successful spawn마다 generation이 정확히 한 번 증가한다.
-- [ ] `restarting` 중 `stop`이 `stopped`로 수렴하며 restart waiter와 이전·새 child를 정리해 orphan을 남기지 않는다.
-- [ ] Ticket 003의 atomic Host subscription으로 만든 같은 subscriber가 `failed`, `restarting`과 새 `ready` generation의 ordered state event를 caller unsubscribe 전까지 연속 관측한다.
+- [ ] `restarting` 중 `stop`이 restart waiter와 이전·새 child를 정리한다. 모든 exit를 확인한 경우에만 `stopped`로 수렴하고 `close_timeout`이면 non-recoverable cleanup failure를 공개해 orphan 가능성을 성공으로 숨기지 않는다.
+- [ ] Ticket 003의 atomic Host subscription으로 만든 overflow되지 않은 같은 subscriber가 `failed`, `restarting`과 새 `ready` generation의 ordered state event를 caller unsubscribe 전까지 연속 관측한다.
 - [ ] Explicit restart가 handshake 뒤 새 generation을 `ready`로 만들며 이전 `threadRef`, `turnRef`, `itemRef`와 `interactionRef`를 `stale_reference`로 거부한다.
 - [ ] Previous generation의 late event/response가 새 generation의 sequence, snapshot, pending operation과 interaction state를 변경하지 않는다.
 - [ ] Fixture journal이 restart 뒤 이전 thread/turn/interaction mutation이 자동 replay되지 않았음을 증명한다.
 - [ ] Authoritative operation error와 read-only request timeout은 current generation과 connection을 닫지 않고 `ready`를 유지한다.
-- [ ] `thread/start`와 `turn/start` timeout은 initiating mutation의 outcome을 unknown으로 남기고 current generation을 recoverable `failed`로 fence한다. Late response·started notification과 같은 generation의 후속 mutation은 state나 wire를 변경하지 않으며 자동 replay가 없다.
-- [ ] Stop deadline 뒤 child를 강제 종료해 test/server shutdown에 orphan process를 남기지 않는다.
+- [ ] `thread/start`와 `turn/start` timeout은 initiating mutation의 outcome을 unknown으로 남기고 current generation을 recoverable `failed`로 fence한다. `turn/start` response 전 timeout은 `turnRef` 없는 `start_outcome_unknown` marker를 남긴다. Late response·started notification과 같은 generation의 후속 mutation은 state나 wire를 변경하지 않으며 자동 replay가 없다.
+- [ ] Stop deadline 뒤 child를 강제 종료하고 exit를 확인한 경우에만 `stopped`를 공개한다. Force-kill 뒤에도 종료를 확인하지 못하면 non-recoverable `close_timeout`으로 fail closed해 test/server shutdown이 orphan 가능성을 cleanup 성공으로 숨기지 않는다.
 
 ## Verification
 

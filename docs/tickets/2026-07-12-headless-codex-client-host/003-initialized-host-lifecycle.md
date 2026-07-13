@@ -14,7 +14,7 @@
 
 Immutable raw product layout input을 받은 one-workspace Headless Codex Client Host가 첫 `start()`에서 preflight를 수행·cache하고 App Server child 하나를 시작한다. `initialize` response와 `initialized` notification을 완료한 뒤에만 `ready` snapshot을 공개한다. Caller는 raw process나 protocol을 보지 않고 `start`, `stop`, current snapshot과 atomic normalized lifecycle subscription을 사용할 수 있다.
 
-동시 start는 하나의 handshake로 수렴하고 반복 stop은 안전하다. Preflight, spawn과 initialize failure는 sanitized failure와 계약에 맞는 `recoverable` 값으로 표현되며, stop deadline 뒤에도 orphan child를 남기지 않는다.
+동시 start는 하나의 handshake로 수렴하고 반복 stop은 안전하다. Preflight, spawn과 initialize failure는 sanitized failure와 계약에 맞는 `recoverable` 값으로 표현된다. Stop은 child exit를 확인한 경우에만 `stopped`를 공개하며, force-kill 뒤에도 종료를 확인하지 못하면 non-recoverable cleanup failure로 fail closed해 orphan 가능성을 성공으로 숨기지 않는다.
 
 ## Spec Traceability
 
@@ -35,7 +35,7 @@ Immutable raw product layout input을 받은 one-workspace Headless Codex Client
 - Host는 Ticket 002 transport의 single-consumer observation stream을 request 전에 한 번 claim하고 pump의 첫 `next()`가 대기 중임을 보장한 다음 `initialize`를 dispatch한다. Pump의 terminal observation은 현재 lifecycle token을 통해 Host failure로 연결하고 pump `finally`가 transport `close()`를 완료한다.
 - Ticket 002의 `observation_queue_limit`은 자유 형식 message가 아니라 stable code로 분류해 non-recoverable `protocol_error` Host failure로 mapping한다. 같은 Host에서 restart loop를 만들지 않는다.
 - `initialize` success result는 Ticket 002의 package-internal generated response schema validation을 통과해야 한다. Malformed result는 `ready`를 publish하지 않고 non-recoverable `protocol_error`로 현재 connection을 닫는다.
-- Public subscription은 subscriber 등록과 `{ snapshot, cursor }` capture를 원자적으로 수행하고, `cursor`는 snapshot에 반영된 마지막 sequence를 뜻한다. 같이 반환한 `events` AsyncIterable과 `unsubscribe()`를 제공하며 capture 중 발생한 `sequence > cursor` event는 subscriber-local buffer에 들어간다. Connection loss로 subscription을 닫지 않고 explicit unsubscribe 또는 Host stop에서만 종료하며, SSE framing·bounded backpressure는 ticket 008이 소유한다.
+- Public subscription은 subscriber 등록과 `{ snapshot, cursor }` capture를 원자적으로 수행하고, `cursor`는 snapshot에 반영된 마지막 sequence를 뜻한다. 같이 반환한 `events` AsyncIterable과 `unsubscribe()`를 제공하며 capture 중 발생한 `sequence > cursor` event는 subscriber-local buffer에 들어간다. 각 buffer는 fixed event-count cap으로 bounded한다. Pull이 멈춰 cap을 넘으면 해당 `events`만 stable typed `subscription_overflow`로 종료하고 buffer를 해제하며 Host lifecycle, child와 다른 subscriber는 유지한다. Connection loss로 subscription을 닫지 않고 explicit unsubscribe, Host stop 또는 자신의 overflow에서 종료한다. SSE framing과 별도 HTTP writer backpressure는 ticket 008이 소유한다.
 - Product Host는 raw stdio, child stderr, environment, root path와 Runtime Diagnostic History evidence를 공개하거나 축적하지 않는다.
 - Host와 generated-schema-backed transport는 같은 Node-side Codex integration boundary 안에 둔다. 별도 package를 선택하더라도 generated/raw type을 public export해 두 module 사이의 seam으로 만들지 않는다.
 - 기존 Runtime Harness의 `CodexRawClient`, `CodexRuntimeAdapter`와 Inspector contract를 Host contract로 바꾸지 않는다.
@@ -55,6 +55,7 @@ Immutable raw product layout input을 받은 one-workspace Headless Codex Client
 - [ ] Stop 중 신규 operation을 받지 않으며 graceful deadline이 끝나면 강제 종료한다. Exit를 확인한 경우에만 `stopped`를 공개하고 `close_timeout`이면 non-recoverable cleanup failure로 fail closed해 orphan 가능성을 성공으로 숨기지 않는다.
 - [ ] Lifecycle event는 generation, monotonic sequence, timestamp와 allowlisted state만 포함한다.
 - [ ] Subscription 등록과 `{ snapshot, cursor }` capture가 원자적이고 capture 중 event가 유실되지 않으며, connection failure 후에도 같은 subscriber가 lifecycle event를 계속 받는다.
+- [ ] Injected small core subscriber cap에서 pull을 멈춘 subscriber의 `events`만 stable `subscription_overflow`로 종료되고 buffer가 해제되며, Host·child·다른 subscriber는 ordered event를 계속 받는다. 새 subscription은 최신 atomic `{ snapshot, cursor }`로 수렴한다.
 - [ ] Host public snapshot/event를 재귀 검사했을 때 raw JSON-RPC, raw ID, token, environment, roots, stderr와 debug payload가 없다.
 - [ ] `initialize`와 `initialized`만 실제 Host path에 연결된 단계로 method decision과 generated inventory를 갱신한다.
 

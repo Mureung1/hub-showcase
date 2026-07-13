@@ -104,7 +104,7 @@
 
 2026-07-13 lifecycle hardening 후 targeted 검증:
 
-- `npm run test -w @ay-ple/runtime-codex` — 통과, 91개 test. Start/close race, single observation consumer, queue overflow와 malformed Client success response actual-child 회귀를 포함한다.
+- `npm run test -w @ay-ple/runtime-codex` — 통과, 93개 test. Start/close race, single observation consumer, queue overflow, malformed Client success response와 transport cleanup rejection 중 fixture directory 정리 회귀를 포함한다.
 
 ## Result
 
