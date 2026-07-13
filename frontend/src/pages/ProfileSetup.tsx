@@ -2,7 +2,6 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { profileApi } from '../utils/apiClient'
 
 // Form schema (프론트엔드 폼 검증)
@@ -75,20 +74,21 @@ const INTEREST_TAGS = [
   '공모전', '대외활동', '봉사', '장학금', '인턴', '창업', '교내행사'
 ]
 
-export default function ProfileSetup() {
-  const navigate = useNavigate()
+interface ProfileSetupProps {
+  onProfileDone?: () => void
+}
+
+export default function ProfileSetup({ onProfileDone }: ProfileSetupProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const { control, handleSubmit, formState: { errors }, watch } = useForm<ProfileFormData>({
+  const { control, handleSubmit, formState: { errors } } = useForm<ProfileFormData>({
     resolver: zodResolver(ProfileSchema),
     defaultValues: {
       interestTags: [],
       agreeToTerms: false,
     },
   })
-
-  const interestTags = watch('interestTags')
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true)
@@ -107,11 +107,10 @@ export default function ProfileSetup() {
 
       const response = await profileApi.create(submitData)
 
-      if (response.data || response.success) {
+      if (response) {
         // 프로필 생성 성공
         alert('프로필이 저장되었습니다!')
-        // 대시보드로 이동 (추후 구현)
-        // navigate('/dashboard')
+        onProfileDone?.()
       }
     } catch (error: any) {
       console.error('프로필 저장 실패:', error)
@@ -121,13 +120,6 @@ export default function ProfileSetup() {
     }
   }
 
-  const toggleTag = (tag: string) => {
-    const current = interestTags || []
-    if (current.includes(tag)) {
-      return current.filter(t => t !== tag)
-    }
-    return [...current, tag]
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -312,27 +304,35 @@ export default function ProfileSetup() {
             <label className="block text-md font-semibold text-text-primary mb-3">
               관심 분야 <span className="text-text-tertiary">(선택사항)</span>
             </label>
-            <div className="flex flex-wrap gap-2">
-              {INTEREST_TAGS.map(tag => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => {
-                    const updated = toggleTag(tag)
-                    // Manual update since we're controlling interestTags via watch
-                    const formControl = control._formValues
-                    formControl.interestTags = updated
-                  }}
-                  className={`px-4 py-2 rounded-9999 text-sm font-medium transition-colors ${
-                    (interestTags || []).includes(tag)
-                      ? 'bg-primary text-white'
-                      : 'bg-bg-tertiary text-text-primary border border-border'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
+            <Controller
+              name="interestTags"
+              control={control}
+              render={({ field }) => (
+                <div className="flex flex-wrap gap-2">
+                  {INTEREST_TAGS.map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const current = field.value || []
+                        const updated = current.includes(tag)
+                          ? current.filter(t => t !== tag)
+                          : [...current, tag]
+                        field.onChange(updated)
+                      }}
+                      className={`px-4 py-2 rounded-9999 text-sm font-medium transition-colors ${
+                        (field.value || []).includes(tag)
+                          ? 'bg-primary text-white'
+                          : 'bg-bg-tertiary text-text-primary border border-border'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
+            />
           </div>
 
           {/* 동의 체크박스 */}
@@ -343,8 +343,10 @@ export default function ProfileSetup() {
               render={({ field }) => (
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
-                    {...field}
                     type="checkbox"
+                    checked={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
                     className="mt-1 w-5 h-5 border border-border rounded-1 cursor-pointer"
                   />
                   <span className="text-sm text-text-secondary">
