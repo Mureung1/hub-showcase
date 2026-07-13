@@ -13,7 +13,7 @@ npm workspaces monorepo: `frontend/` (React) + `backend/` (Express), managed fro
 - `frontend/` — React 19 + TypeScript + Vite + Tailwind CSS v4 + TanStack Query + react-router-dom + axios + zod. PWA via `vite-plugin-pwa`.
 - `backend/` — Express 5 + TypeScript + Prisma (PostgreSQL). Currently scaffolded (routes/controllers/services/middlewares/config/types folders + tsconfig + deps) but **has no entry point yet** — `src/server.ts` / `src/app.ts` don't exist, so `npm run dev -w backend` will fail until they're created.
 - `prototype/` — static HTML/CSS mockups (`home.html`, `search.html`, `result.html`, `rules.html`, `bulky.html`, `confirm.html`, `points.html`) sharing `prototype/style.css`. These are the visual source of truth the React screens in `frontend/src/pages/` should match.
-- `skill.md` — the "ecobot-design-system" skill: color tokens, typography, radius, spacing, and component rules for the green EcoBot visual identity. Consult it (and reuse `prototype/style.css` classes / `frontend/src/styles/index.css` tokens) before styling any screen or prototype page — don't invent new colors/shadows/radii.
+- `docs/skill.md` — the "ecobot-design-system" skill: color tokens, typography, radius, spacing, and component rules for the green EcoBot visual identity. Consult it (and reuse `prototype/style.css` classes / `frontend/src/styles/index.css` tokens) before styling any screen or prototype page — don't invent new colors/shadows/radii.
 
 ## Commands
 
@@ -26,7 +26,7 @@ Run from repo root unless noted.
 - Frontend dev server proxies `/api/*` to `http://localhost:4000` (see `frontend/vite.config.ts`) — the backend must listen on port 4000.
 - Backend: `npm run dev -w backend` → `tsx watch src/server.ts`; `npm run build -w backend` → `tsc`; `npm run start -w backend` → `node dist/server.js`.
 
-## Backend architecture (per `CONTRIBUTING.md`)
+## Backend architecture (per `docs/CONTRIBUTING.md`)
 
 Strict layering — route handlers must not contain business logic:
 
@@ -40,7 +40,7 @@ middlewares/   → e.g. errorHandler
 - Validate request bodies/queries with `zod`; on failure, throw so the shared `middlewares/errorHandler` handles it — controllers must not build error responses with `res.status().json()` directly.
 - DB access only through Prisma Client; avoid raw SQL unless required.
 
-## Frontend architecture (per `CONTRIBUTING.md`)
+## Frontend architecture (per `docs/CONTRIBUTING.md`)
 
 - Screen-level components live in `pages/`; shared UI in `components/`; domain logic (recognition/region/bulky-waste/points) in `features/<도메인>/`.
 - Components are `export default function ComponentName() {}` — no anonymous arrow-function exports.
