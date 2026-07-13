@@ -1,15 +1,15 @@
-const js = require('@eslint/js')
-const globals = require('globals')
-const eslintConfigPrettier = require('eslint-config-prettier')
-const { defineConfig, globalIgnores } = require('eslint/config')
+import js from '@eslint/js'
+import globals from 'globals'
+import eslintConfigPrettier from 'eslint-config-prettier'
+import { defineConfig, globalIgnores } from 'eslint/config'
 
-module.exports = defineConfig([
+export default defineConfig([
   globalIgnores(['node_modules', 'generated']),
   {
     files: ['**/*.js'],
     extends: [js.configs.recommended, eslintConfigPrettier],
     languageOptions: {
-      sourceType: 'commonjs',
+      sourceType: 'module',
       globals: globals.node,
     },
   },
