@@ -1,0 +1,16 @@
+ALTER TABLE parking_lot
+    RENAME COLUMN kind TO parking_kind,
+    RENAME COLUMN basic_charge TO basic_fee,
+    RENAME COLUMN basic_min TO basic_minutes,
+    RENAME COLUMN add_charge TO extra_unit_fee,
+    RENAME COLUMN add_min TO extra_unit_min,
+    RENAME COLUMN day_max_charge TO day_max_fee,
+    RENAME COLUMN wd_start TO weekday_start,
+    RENAME COLUMN wd_end TO weekday_end,
+    RENAME COLUMN we_start TO weekend_start,
+    RENAME COLUMN we_end TO weekend_end,
+    RENAME COLUMN hd_start TO holiday_start,
+    RENAME COLUMN hd_end TO holiday_end,
+    RENAME COLUMN has_realtime TO realtime_available,
+    RENAME COLUMN lat TO latitude,
+    RENAME COLUMN lng TO longitude;
