@@ -13,7 +13,7 @@
 // 나중에 회원가입 승격 시에는 getIndex(guestId)로 날짜 목록을 얻어 각 스냅샷의 owner만 바꿔
 // 새 키로 옮기면 된다(같은 패턴을 쓰는 mealStore의 meals:<guestId>:<date> 키도 함께 옮겨야 함).
 import { get, keysWithPrefix, set } from './storage.js'
-import { addMealRecord, getMeals, sumMealRecordsNutrients } from './mealStore.js'
+import { addMealRecord, getMeals, setMeals, sumMealRecordsNutrients } from './mealStore.js'
 import { calcDayStatus, NUTRIENT_LABELS } from './nutrition.js'
 
 const KEY_PREFIX = 'dailyrecord:'
@@ -76,6 +76,19 @@ export function getAllRecords(userId) {
 export function upsertMeal(userId, date, meal, recommended) {
   if (!userId || !date) return null
 
+  addMealRecord(userId, date, meal)
+  set(storageKey(userId, date), { date, recommended, owner: userId, createdAt: new Date().toISOString() })
+
+  return getRecord(userId, date)
+}
+
+// CSV 가져오기(csv.js importCSV) 전용: 그 날짜의 기존 끼니를 모두 비우고 meal 하나로 새로 채운 뒤
+// recommended 스냅샷을 덮어쓴다. upsertMeal은 항상 "추가"만 하므로, 같은 날짜를 가져올 때마다 끼니가
+// 중복 누적되는 걸 막으려면 이 함수가 필요하다 — "같은 날짜 충돌 시 덮어쓰기" 명세를 그대로 구현.
+export function replaceDay(userId, date, meal, recommended) {
+  if (!userId || !date) return null
+
+  setMeals(userId, date, [])
   addMealRecord(userId, date, meal)
   set(storageKey(userId, date), { date, recommended, owner: userId, createdAt: new Date().toISOString() })
 

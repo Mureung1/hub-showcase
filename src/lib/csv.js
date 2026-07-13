@@ -1,0 +1,183 @@
+// DailyRecord 기기 이관용 CSV 내보내기/가져오기. 파싱은 직접 구현한다(papaparse 등 외부 라이브러리
+// 없이도 컬럼이 고정된 이 규모의 CSV는 따옴표/쉼표/줄바꿈 이스케이프까지 충분히 안전하게 다룰 수 있다).
+//
+// 한 행 = 하루 한 끼 항목(음식 하나). recommended_*/compliant는 그날 전체 값이라 그날의 모든 행에서
+// 반복된다. compliant는 내보낼 때만 참고용으로 싣고, 가져올 때는 무시한다 — dailyRecord.js의 설계상
+// compliant는 항상 recommended+그날 끼니로부터 다시 계산되지 저장되는 값이 아니기 때문이다.
+import { getAllRecords, replaceDay } from './dailyRecord.js'
+import { flattenMealItems } from './mealStore.js'
+import { NUTRIENT_LABELS, NUTRITION_SOURCE } from './nutrition.js'
+
+const NUTRIENT_KEYS = NUTRIENT_LABELS.map((n) => n.key)
+
+const COLUMNS = [
+  'date',
+  'source',
+  'item_name',
+  'brand',
+  ...NUTRIENT_KEYS,
+  ...NUTRIENT_KEYS.map((key) => `recommended_${key}`),
+  'compliant',
+]
+
+function escapeField(value) {
+  const str = value === null || value === undefined ? '' : String(value)
+  return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+}
+
+function rowsToCsv(rows) {
+  return [COLUMNS, ...rows].map((row) => row.map(escapeField).join(',')).join('\r\n')
+}
+
+// 따옴표로 감싼 필드 안의 쉼표/줄바꿈/이스케이프된 큰따옴표("")까지 처리하는 최소 CSV 파서.
+function parseCsv(text) {
+  const withoutBom = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
+  const rows = []
+  let row = []
+  let field = ''
+  let inQuotes = false
+
+  for (let i = 0; i < withoutBom.length; i++) {
+    const char = withoutBom[i]
+
+    if (inQuotes) {
+      if (char === '"' && withoutBom[i + 1] === '"') {
+        field += '"'
+        i += 1
+      } else if (char === '"') {
+        inQuotes = false
+      } else {
+        field += char
+      }
+      continue
+    }
+
+    if (char === '"') {
+      inQuotes = true
+    } else if (char === ',') {
+      row.push(field)
+      field = ''
+    } else if (char === '\n' || char === '\r') {
+      if (char === '\r' && withoutBom[i + 1] === '\n') i += 1
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+    } else {
+      field += char
+    }
+  }
+  if (field !== '' || row.length > 0) {
+    row.push(field)
+    rows.push(row)
+  }
+
+  return rows.filter((r) => r.length > 1 || r[0] !== '')
+}
+
+// range({ startDate, endDate }, 둘 다 'YYYY-MM-DD')를 주면 그 기간(포함)의 날짜만 걸러낸다.
+// 하나만 줘도 그쪽 경계만 적용된다. 안 주면(undefined) 전체 기간.
+function buildRows(userId, { startDate, endDate } = {}) {
+  const records = getAllRecords(userId)
+  const rows = []
+
+  for (const date of Object.keys(records).sort()) {
+    if (startDate && date < startDate) continue
+    if (endDate && date > endDate) continue
+
+    const record = records[date]
+    if (!record) continue
+
+    for (const item of flattenMealItems(record.meals)) {
+      rows.push([
+        date,
+        item.source ?? '',
+        item.name ?? '',
+        item.brand ?? '',
+        ...NUTRIENT_KEYS.map((key) => item.nutrients?.[key] ?? ''),
+        ...NUTRIENT_KEYS.map((key) => record.recommended?.[key] ?? ''),
+        record.compliant ? 'true' : 'false',
+      ])
+    }
+  }
+
+  return rows
+}
+
+// userId의 DailyRecord를 CSV로 만들어 파일 다운로드까지 트리거한다. range({startDate, endDate})를 주면
+// 그 기간만 내보낸다 — MY 탭의 전체 내보내기는 range 없이, 달력 탭의 기간별 내보내기는 range와 함께
+// 이 함수를 그대로 호출한다. 내보낸 날짜 수를 반환한다(기록이 없으면 0, 다운로드도 트리거하지 않는다).
+export function exportCSV(userId, range = {}) {
+  const { startDate, endDate } = range
+  const rows = buildRows(userId, range)
+  if (rows.length === 0) return 0
+
+  const dayCount = new Set(rows.map((row) => row[0])).size
+  const BOM = '﻿' // Excel에서 한글이 깨지지 않도록 UTF-8 BOM을 앞에 붙인다
+  const csv = BOM + rowsToCsv(rows)
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const filename =
+    startDate && endDate
+      ? `cjmt_records_${startDate}_to_${endDate}.csv`
+      : `cjmt_records_${new Date().toISOString().slice(0, 10)}.csv`
+
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+
+  return dayCount
+}
+
+// CSV 파일을 파싱해 날짜별로 묶은 뒤, 각 날짜를 dailyRecord.replaceDay로 통째로 덮어써 복원한다.
+// 같은 날짜의 기존 기록은 명세대로 덮어쓰기(병합하지 않음). 복원된 날짜 수를 반환한다.
+export async function importCSV(userId, file) {
+  const text = await file.text()
+  const table = parseCsv(text)
+  if (table.length === 0) return 0
+
+  const [header, ...dataRows] = table
+  const columnIndex = Object.fromEntries(COLUMNS.map((col) => [col, header.indexOf(col)]))
+  if (Object.values(columnIndex).some((i) => i === -1)) {
+    throw new Error('CSV 형식이 올바르지 않습니다. 내보내기한 파일인지 확인해주세요.')
+  }
+
+  const byDate = new Map()
+  for (const row of dataRows) {
+    const date = row[columnIndex.date]
+    const name = row[columnIndex.item_name]
+    if (!date || !name) continue
+
+    const nutrients = Object.fromEntries(
+      NUTRIENT_KEYS.map((key) => {
+        const raw = row[columnIndex[key]]
+        return [key, raw === '' || raw === undefined ? null : Number(raw)]
+      }),
+    )
+    const recommended = Object.fromEntries(
+      NUTRIENT_KEYS.map((key) => {
+        const raw = row[columnIndex[`recommended_${key}`]]
+        return [key, raw === '' || raw === undefined ? null : Number(raw)]
+      }),
+    )
+    const item = {
+      name,
+      brand: row[columnIndex.brand] || null,
+      nutrients,
+      source: row[columnIndex.source] || NUTRITION_SOURCE.ESTIMATED,
+    }
+
+    if (!byDate.has(date)) byDate.set(date, { items: [], recommended })
+    byDate.get(date).items.push(item)
+  }
+
+  for (const [date, { items, recommended }] of byDate) {
+    replaceDay(userId, date, { items, mealType: 'etc' }, recommended)
+  }
+
+  return byDate.size
+}

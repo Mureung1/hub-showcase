@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import Card from '../components/Card.jsx'
 import ChevronIcon from '../components/ChevronIcon.jsx'
+import DateRangeExport from '../components/DateRangeExport.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
@@ -359,6 +360,8 @@ export default function Calendar() {
           </div>
         </Card>
       )}
+
+      <DateRangeExport />
     </div>
   )
 }

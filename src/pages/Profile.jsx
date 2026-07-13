@@ -4,6 +4,7 @@ import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import ChevronIcon from '../components/ChevronIcon.jsx'
+import DataSyncPanel from '../components/DataSyncPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import StandardComparisonList from '../components/StandardComparisonList.jsx'
 import TextField from '../components/TextField.jsx'
@@ -107,8 +108,9 @@ export default function Profile() {
     navigate('/login', { replace: true })
   }
 
-  // MY 탭(이미 프로필이 있는 경우)에서는 "건강 정보" 섹션을 기본 접힘으로 시작한다.
+  // MY 탭(이미 프로필이 있는 경우)에서는 "건강 정보"/"하루 권장 섭취량" 섹션을 기본 접힘으로 시작한다.
   const [expanded, setExpanded] = useState(isOnboarding)
+  const [recommendedExpanded, setRecommendedExpanded] = useState(false)
 
   const [form, setForm] = useState(() => ({
     age: user?.profile?.age?.toString() ?? '',
@@ -291,12 +293,39 @@ export default function Profile() {
       )}
 
       {!isOnboarding && recommendedForDisplay && standardIntake && (
-        <Card>
-          <h2 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.xs}px`, color: colors.textStrong }}>하루 권장 섭취량</h2>
-          <p style={{ margin: `0 0 ${spacing.lg}px`, fontSize: font.size.xs, color: colors.textSub }}>
-            같은 나이·성별 표준 평균과 비교했어요
-          </p>
-          <StandardComparisonList mine={recommendedForDisplay} standard={standardIntake} />
+        <Card style={{ padding: 0, overflow: 'hidden' }}>
+          <button
+            type="button"
+            className="tds-press"
+            onClick={() => setRecommendedExpanded((v) => !v)}
+            aria-expanded={recommendedExpanded}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: spacing.md,
+              background: 'none',
+              border: 'none',
+              padding: spacing.xl,
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <h2 style={{ fontSize: font.size.lg, margin: 0, color: colors.textStrong }}>하루 권장 섭취량</h2>
+            <span style={{ color: colors.muted }}>
+              <ChevronIcon open={recommendedExpanded} />
+            </span>
+          </button>
+
+          {recommendedExpanded && (
+            <div style={{ padding: `0 ${spacing.xl}px ${spacing.xl}px` }}>
+              <p style={{ margin: `0 0 ${spacing.lg}px`, fontSize: font.size.xs, color: colors.textSub }}>
+                같은 나이·성별 표준 평균과 비교했어요
+              </p>
+              <StandardComparisonList mine={recommendedForDisplay} standard={standardIntake} />
+            </div>
+          )}
         </Card>
       )}
 
@@ -305,6 +334,8 @@ export default function Profile() {
           시작하기
         </AppButton>
       )}
+
+      {!isOnboarding && <DataSyncPanel />}
     </div>
   )
 }

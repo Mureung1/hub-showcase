@@ -65,6 +65,13 @@ export function addMealRecord(userId, dateKey, { items, mealType } = {}) {
   return entry
 }
 
+// 그 날짜의 끼니 목록을 통째로 교체한다(추가만 하는 addMealRecord와 달리 덮어쓰기).
+// CSV 가져오기(dailyRecord.replaceDay)처럼 "이 날짜는 이 데이터로 완전히 대체"하는 용도로만 쓴다.
+export function setMeals(userId, dateKey, mealRecords) {
+  if (!userId || !dateKey) return
+  set(storageKey(userId, dateKey), Array.isArray(mealRecords) ? mealRecords : [])
+}
+
 // 끼니 카드 삭제 = 그 끼니를 구성하는 음식 전체 제거(끼니 단위 삭제만 지원, 개별 음식 삭제는 없음).
 export function removeMealRecord(userId, dateKey, mealRecordId) {
   if (!userId || !dateKey) return
