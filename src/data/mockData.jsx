@@ -2,9 +2,8 @@ import { CloudRain, Clock, Hash } from "lucide-react";
 
 export const PLATFORMS = [
   { id: "instagram", label: "인스타그램", icon: "📸" },
-  { id: "kakao", label: "카카오스토리", icon: "💛" },
   { id: "blog", label: "블로그", icon: "✍️" },
-  { id: "thread", label: "스레드", icon: "🧵" },
+  { id: "thread", label: "스레드/X", icon: "🧵" },
 ];
 
 // 기획서상 콘텐츠 맥락 엔진의 3가지 소스: 날씨 API, 공휴일/기념일 API, 큐레이션 키워드 DB
@@ -44,7 +43,6 @@ export const QUICK_EXAMPLES = [
 ];
 
 export const HASHTAG_SUGGESTIONS = [
-  "#소상공인",
   "#사장님일기",
   "#맛집",
   "#비오는날",

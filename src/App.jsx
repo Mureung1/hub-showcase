@@ -7,7 +7,9 @@ import { ContextEngine } from "./components/ContextEngine";
 import { TemperatureSlider } from "./components/TemperatureSlider";
 import { GenerateButton } from "./components/GenerateButton";
 import { ResultPanel } from "./components/ResultPanel";
+import { BusinessProfileModal } from "./components/BusinessProfileModal";
 import { HISTORY, EXAMPLE_RESULTS } from "./data/mockData";
+import { loadBusinessProfile, saveBusinessProfile } from "./utils/businessProfile";
 
 export default function App() {
   // 입력 관련 상태
@@ -28,6 +30,23 @@ export default function App() {
   // 히스토리 관련 상태
   const [showHistory, setShowHistory] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState(null);
+
+  // 업장 프로필 관련 상태 (localStorage에 저장, 매 생성마다 재사용)
+  const [businessProfile, setBusinessProfile] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  useEffect(() => {
+    const saved = loadBusinessProfile();
+    setBusinessProfile(saved);
+    // 처음 방문이라 저장된 프로필이 없으면 등록을 유도
+    if (!saved) setShowProfileModal(true);
+  }, []);
+
+  const handleSaveProfile = (profile) => {
+    saveBusinessProfile(profile);
+    setBusinessProfile(profile);
+    setShowProfileModal(false);
+  };
 
   const textareaRef = useRef(null);
 
@@ -58,6 +77,7 @@ export default function App() {
   };
 
   // TODO: 실제 GPT-4o API 연동 지점. 지금은 setTimeout으로 흉내만 냄.
+  // 실제 연동 시 businessProfile(업종/이름/소개)도 함께 전송해서 프롬프트에 반영해야 함.
   const handleGenerate = () => {
     if (!complaint.trim() && selectedHistory === null) return;
     setIsGenerating(true);
@@ -111,7 +131,20 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground font-sans overflow-hidden">
-      <Header showHistory={showHistory} onToggleHistory={() => setShowHistory((v) => !v)} />
+      <Header
+        showHistory={showHistory}
+        onToggleHistory={() => setShowHistory((v) => !v)}
+        businessProfile={businessProfile}
+        onOpenProfile={() => setShowProfileModal(true)}
+      />
+
+      {showProfileModal && (
+        <BusinessProfileModal
+          initialProfile={businessProfile}
+          onSave={handleSaveProfile}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
 
       <div className="flex-1 flex overflow-hidden relative">
         {showHistory && (

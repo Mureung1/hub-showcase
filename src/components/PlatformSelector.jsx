@@ -4,7 +4,7 @@ export function PlatformSelector({ selected, onSelect }) {
   return (
     <div className="flex flex-col gap-2">
       <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider">발행 채널</label>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {PLATFORMS.map((p) => (
           <button
             key={p.id}
