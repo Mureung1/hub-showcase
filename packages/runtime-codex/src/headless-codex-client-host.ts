@@ -339,19 +339,23 @@ export class HeadlessCodexClientHost {
         throw new HeadlessCodexClientHostError()
       }
 
-      if (this.snapshot.status !== 'failed') {
-        this.publishFailure(mapStartupFailure(error))
-      }
+      const startupFailure = this.captureStartupFailure(error)
+      let rejection = failureError(startupFailure)
 
       if (transport) {
         try {
           await transport.close()
         } catch (closeError) {
-          this.publishFailure(mapCleanupFailure(closeError))
+          const cleanupFailure = mapCleanupFailure(closeError)
+
+          if (cleanupFailure.code === 'close_timeout') {
+            this.publishFailure(cleanupFailure)
+            rejection = failureError(cleanupFailure)
+          }
         }
       }
 
-      throw this.currentFailureError()
+      throw rejection
     }
   }
 
@@ -474,11 +478,26 @@ export class HeadlessCodexClientHost {
       return new HeadlessCodexClientHostError()
     }
 
-    return new HeadlessCodexClientHostError(
-      failure.code,
-      this.snapshot.recoverable,
-      failure.message,
-    )
+    return failureError({
+      code: failure.code,
+      message: failure.message,
+      recoverable: this.snapshot.recoverable,
+    })
+  }
+
+  private captureStartupFailure(error: unknown): LifecycleFailure {
+    if (this.snapshot.status === 'failed' && this.snapshot.failure) {
+      return {
+        code: this.snapshot.failure.code,
+        message: this.snapshot.failure.message,
+        recoverable: this.snapshot.recoverable,
+      }
+    }
+
+    const failure = mapStartupFailure(error)
+    this.publishFailure(failure)
+
+    return failure
   }
 
   private publishSnapshot(
@@ -639,6 +658,16 @@ function buildProductChildEnvironment(
   environment.CODEX_SQLITE_HOME = layout.codexSqliteHome
 
   return environment
+}
+
+function failureError(
+  failure: LifecycleFailure,
+): HeadlessCodexClientHostError {
+  return new HeadlessCodexClientHostError(
+    failure.code,
+    failure.recoverable,
+    failure.message,
+  )
 }
 
 function mapStartupFailure(error: unknown): LifecycleFailure {

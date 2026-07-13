@@ -312,6 +312,93 @@ test('HeadlessCodexClientHost classifies initialize and protocol failures withou
   }
 })
 
+test('HeadlessCodexClientHost preserves its startup failure when stop follows the failed event', async () => {
+  await withFakeHeadlessCodexClientHost(
+    {
+      scenario: 'initialize_error',
+      ignoreSigterm: true,
+      hostOptions: { closeTimeoutMs: 25 },
+    },
+    async ({ host }) => {
+      const subscription = host.subscribe()
+      const iterator = subscription.events[Symbol.asyncIterator]()
+      const start = host.start()
+      void start.catch(() => {})
+
+      assert.deepEqual(
+        (await readEvents(iterator, 2)).map((event) => ({
+          code: event.snapshot.failure?.code,
+          recoverable: event.snapshot.recoverable,
+          status: event.snapshot.status,
+        })),
+        [
+          { code: undefined, recoverable: false, status: 'starting' },
+          { code: 'initialize_error', recoverable: true, status: 'failed' },
+        ],
+      )
+
+      const terminalEvents = readEvents(iterator, 2)
+      const stop = host.stop()
+      await assert.rejects(start, (error: unknown) => {
+        assert.ok(error instanceof HeadlessCodexClientHostError)
+        assert.equal(error.code, 'initialize_error')
+        assert.equal(error.recoverable, true)
+
+        return true
+      })
+      await stop
+      assert.equal(host.getSnapshot().status, 'stopped')
+      assert.deepEqual(
+        (await terminalEvents).map((event) => event.snapshot.status),
+        ['stopping', 'stopped'],
+      )
+    },
+  )
+})
+
+test('HeadlessCodexClientHost lets cleanup timeout supersede its startup failure', async () => {
+  await withFakeHeadlessCodexClientHost(
+    {
+      scenario: 'initialize_error',
+      ignoreSigterm: true,
+      hostOptions: { closeTimeoutMs: 25 },
+      testOptions: { forceKill: () => {} },
+    },
+    async ({ host }) => {
+      const subscription = host.subscribe()
+      const iterator = subscription.events[Symbol.asyncIterator]()
+      const start = host.start()
+      void start.catch(() => {})
+      await readEvents(iterator, 2)
+      const stop = host.stop()
+
+      await assert.rejects(start, (error: unknown) => {
+        assert.ok(error instanceof HeadlessCodexClientHostError)
+        assert.equal(error.code, 'close_timeout')
+        assert.equal(error.recoverable, false)
+
+        return true
+      })
+      await assert.rejects(stop, (error: unknown) => {
+        assert.ok(error instanceof HeadlessCodexClientHostError)
+        assert.equal(error.code, 'close_timeout')
+        assert.equal(error.recoverable, false)
+
+        return true
+      })
+      assert.deepEqual(host.getSnapshot(), {
+        status: 'failed',
+        generation: 1,
+        failure: {
+          code: 'close_timeout',
+          message: 'Codex app-server cleanup could not confirm child termination',
+        },
+        recoverable: false,
+      })
+    },
+  )
+})
+
 test('HeadlessCodexClientHost does not spawn when stop wins during preflight', async () => {
   await withFakeHeadlessCodexClientHost(
     { gateVersionProbe: true },
@@ -739,13 +826,11 @@ test('fake Headless Codex fixture reaps a gated version probe after assertion fa
   await assert.rejects(access(tempRoot))
 })
 
-async function readEvents(
-  iterator: AsyncIterator<{
-    snapshot: { status: string }
-  }>,
+async function readEvents<Event>(
+  iterator: AsyncIterator<Event>,
   count: number,
-): Promise<Array<{ snapshot: { status: string } }>> {
-  const events = []
+): Promise<Event[]> {
+  const events: Event[] = []
 
   while (events.length < count) {
     const result = await iterator.next()
