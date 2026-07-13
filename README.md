@@ -1,49 +1,54 @@
-# Amadda
+# 아맞다! 프로젝트
 
-아맞다(Amadda)는 저장해둔 링크와 메모를 현재 상황에 맞춰 다시 찾게 해주는 개인 인사이트 저장소입니다. MVP는 링크 저장, 카테고리 기반 보관함, 상황 기반 꺼내보기를 중심으로 검증합니다.
+아맞다!(Amadda)는 저장한 인사이트를 현재 상황에 맞춰 다시 찾게 해주는 개인 인사이트 저장소입니다. 현재 MVP는 계정과 자동 수집 없이 로컬에서 URL을 빠르게 저장하고, 최소한의 개인 맥락으로 다시 찾아 원문을 여는 경험을 검증합니다.
 
 ## 문서 색인
 
-| 이런 상황이면                                               | 볼 문서                                                                                                        |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 제품 문제, 타겟 사용자, MVP 범위, 사용자 흐름을 확인할 때   | [MVP 기획서](docs/plan.md)                                                                                     |
-| 초기 논의 배경과 결정 이유를 아카이브로 확인할 때           | [기획 논의 아카이브](docs/discussion.md)                                                                       |
-| 전체 기능 범위와 우선순위를 확인할 때                       | [제품 백로그](docs/backlog.md)                                                                                 |
-| 2~4주차 개발 순서와 주간 완료 목표를 확인할 때              | [주간 개발 체크리스트](docs/checklist.md)                                                                      |
-| 로그인 전 서비스 온보딩의 목적, 문구, 화면 흐름을 확인할 때 | [온보딩 기획](docs/onboarding.md)                                                                              |
-| 로그인 전 온보딩의 GSAP 모션 서사를 확인할 때               | [온보딩 모션 설계](docs/superpowers/specs/2026-07-09-onboarding-motion-design.md)                              |
-| `꺼내보기`의 유사도 검색과 작업팩 UX 기준을 확인할 때       | [꺼내보기 기획](docs/retrieve.md)                                                                              |
-| 화면 톤, 색상, 타이포그래피, 컴포넌트 규칙을 확인할 때      | [디자인 시스템](DESIGN.md)                                                                                     |
-| WDS 컴포넌트 적용 기준과 도입 순서를 확인할 때              | [WDS 적용 메모](docs/wds-adoption.md)                                                                          |
-| FSD 레이어, import 규칙, 서버 구조를 확인할 때              | [개발 아키텍처](docs/development-architecture.md)                                                              |
-| 기술 스택, 라이브러리 선정 이유, 설치 상태를 확인할 때      | [기술 스택 및 라이브러리](docs/tech-stack.md)                                                                  |
-| 코드 스타일, 브랜치 전략, 커밋 메시지 규칙을 확인할 때      | [코딩/커밋 컨벤션](docs/coding-commit-conventions.md)                                                          |
-| 도메인 용어와 제품 맥락을 빠르게 파악할 때                  | [도메인 컨텍스트](CONTEXT.md)                                                                                  |
-| AI 에이전트에게 작업을 맡기기 전 프로젝트 규칙을 확인할 때  | [에이전트 작업 지침](AGENTS.md)                                                                                |
-| 외부에 정리한 기획서를 확인할 때                            | [외부 기획서 링크](https://semicolon-master.notion.site/plan-md-397f551ebf23800f8700f76301a15ca4)              |
-| 노션 기반 프로젝트 관리 페이지를 확인할 때                  | [프로젝트 관리 노션](https://semicolon-master.notion.site/AI-Agent-Challenge-396f551ebf238005a7fcfbe20555c4bd) |
+### 제품
 
-## 구현 계획 색인
+- [아맞다! 제품 문서](https://github.com/ppre1ude/hub/wiki) - 제품 지식 전체 안내
+- [제품 개요](https://github.com/ppre1ude/hub/wiki/%EC%A0%9C%ED%92%88-%EA%B0%9C%EC%9A%94) - 문제, 사용자와 제품 가치
+- [도메인 언어](https://github.com/ppre1ude/hub/wiki/%EB%8F%84%EB%A9%94%EC%9D%B8-%EC%96%B8%EC%96%B4) - 제품에서 함께 사용할 용어
+- [현재 MVP](https://github.com/ppre1ude/hub/wiki/%ED%98%84%EC%9E%AC-MVP) - 제품 가설, 핵심 흐름과 범위
+- [제품 원칙과 결정](https://github.com/ppre1ude/hub/wiki/%EC%A0%9C%ED%92%88-%EC%9B%90%EC%B9%99%EA%B3%BC-%EA%B2%B0%EC%A0%95) - 제품 판단 기준과 현재 결정
+- [제품 학습](https://github.com/ppre1ude/hub/wiki/%EC%A0%9C%ED%92%88-%ED%95%99%EC%8A%B5) - 사용자 근거에서 얻은 학습과 남은 질문
 
-| 구현할 작업이면                                           | 볼 문서                                                                  |
-| --------------------------------------------------------- | ------------------------------------------------------------------------ |
-| 앱 셸, 하단 탭, 기본 화면 골격을 구현할 때                | [앱 셸 구현 계획](docs/superpowers/plans/amadda-p0-app-shell.md)         |
-| Supabase Auth, Google 로그인, 인증 게이트를 구현할 때     | [인증 구현 계획](docs/superpowers/plans/amadda-auth.md)                  |
-| Supabase 테이블, RLS, 사용자별 데이터 구조를 설계할 때    | [데이터 모델 구현 계획](docs/superpowers/plans/amadda-data-model.md)     |
-| 로그인 후 관심 분야 선택과 초기 카테고리 생성을 구현할 때 | [개인화 온보딩 구현 계획](docs/superpowers/plans/amadda-onboarding.md)   |
-| 카테고리 생성, 수정, 삭제, 필터를 구현할 때               | [카테고리 구현 계획](docs/superpowers/plans/amadda-category.md)          |
-| URL 저장, 중복 검증, 저장 후 제안을 구현할 때             | [링크 저장 구현 계획](docs/superpowers/plans/amadda-insight-save.md)     |
-| 인사이트 제목, 메모, 카테고리 수정과 삭제를 구현할 때     | [인사이트 수정 구현 계획](docs/superpowers/plans/amadda-insight-edit.md) |
-| 보관함 목록, 검색, 카드 그리드를 구현할 때                | [보관함 구현 계획](docs/superpowers/plans/amadda-library.md)             |
-| URL 메타데이터 수집과 fallback 처리를 구현할 때           | [메타데이터 수집 구현 계획](docs/superpowers/plans/amadda-metadata.md)   |
-| 홈의 `꺼내보기` 유사도 검색과 작업팩을 구현할 때          | [꺼내보기 구현 계획](docs/superpowers/plans/amadda-retrieve.md)          |
+### 실행
+
+- [아맞다! 프로젝트](https://github.com/users/ppre1ude/projects/3) - 작업 상태, 우선순위, 순서와 의존성
+- [GitHub 이슈](https://github.com/ppre1ude/hub/issues) - 작업별 사용자 결과, 범위와 완료 기준
+
+### 구현
+
+- [작업 컨텍스트](CONTEXT.md) - 에이전트가 지켜야 할 제품 언어와 현재 제약
+- [검색 구현 계약](docs/retrieve.md) - 검색 점수, 정렬, 작업팩과 테스트 기준
+- [온보딩 기획](docs/onboarding.md) - 기존 로그인 전 화면의 문구와 동작
+- [디자인 시스템](DESIGN.md) - 화면 톤, 색상, 타이포그래피와 컴포넌트 규칙
+- [WDS 적용 메모](docs/wds-adoption.md) - WDS 컴포넌트 적용 기준과 도입 순서
+- [개발 아키텍처](docs/development-architecture.md) - FSD 레이어, import 규칙과 저장 경계
+- [기술 스택 및 라이브러리](docs/tech-stack.md) - 라이브러리 선정 이유와 연결 상태
+- [코딩/커밋 컨벤션](docs/coding-commit-conventions.md) - 코드 스타일, 브랜치와 커밋 규칙
+- [에이전트 작업 지침](AGENTS.md) - 저장소 작업 규칙
+
+### 참고
+
+- [기획 논의 아카이브](docs/discussion.md) - 초기 논의 배경과 과거 범위
+- [외부 기획서](https://semicolon-master.notion.site/plan-md-397f551ebf23800f8700f76301a15ca4)
+- [프로젝트 관리 노션](https://semicolon-master.notion.site/AI-Agent-Challenge-396f551ebf238005a7fcfbe20555c4bd)
+
+## 계획 관리
+
+- 위키는 문제, 언어, 핵심 경험, 제품 원칙과 축적된 학습을 설명합니다.
+- 이슈는 구현, 실험, 사용자 검증과 향후 기능 후보를 독립된 작업으로 관리합니다.
+- [아맞다! 프로젝트](https://github.com/users/ppre1ude/projects/3)는 이슈의 상태, 우선순위, 주차와 의존성을 보여줍니다.
+- 저장소 문서는 코드와 함께 바뀌는 데이터, 검색, 아키텍처와 디자인 계약을 관리합니다.
 
 ## 스크립트
 
 - `npm install`
-- `npm run dev` - runs Vite and Express together
-- `npm run dev:client` - runs only Vite
-- `npm run dev:server` - runs only Express
+- `npm run dev` - Vite와 Express를 함께 실행
+- `npm run dev:client` - Vite만 실행
+- `npm run dev:server` - Express만 실행
 - `npm run build`
 - `npm test`
 - `npm run lint`
