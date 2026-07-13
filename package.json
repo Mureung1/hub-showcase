@@ -1,20 +1,14 @@
 {
-  "name": "freshkeep-landing",
+  "name": "sherpa",
   "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "description": "신선지기(FreshKeep) — 마트 재고·유통기한 관리 아이디어 소개 랜딩 페이지",
+  "version": "0.0.0",
+  "packageManager": "pnpm@11.11.0",
+  "description": "셰르파(Sherpa) — 소형 마트용 재고·유통기한 관리 웹앱 워크스페이스",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.0"
+    "dev": "pnpm --filter @sherpa/web dev",
+    "build": "pnpm --filter @sherpa/web build",
+    "typecheck": "pnpm --filter @sherpa/web typecheck",
+    "test": "pnpm -r --if-present test",
+    "dev:landing": "pnpm --filter freshkeep-landing dev"
   }
 }

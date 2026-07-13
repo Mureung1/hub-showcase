@@ -1,0 +1,17 @@
+{
+  "name": "@sherpa/core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Sherpa 도메인 타입·공유 유틸 (web/mobile 공유)",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
