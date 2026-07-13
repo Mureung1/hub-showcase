@@ -1,5 +1,11 @@
 import { newId, type Product } from "@sherpa/core";
+import { addDaysISO, todayISO } from "../lib/date";
 import type { ScanLine, SessionMode } from "./types";
+
+// 입고 라인의 기본 유통기한 = 오늘+7일. 출고 라인은 FEFO라 유통기한을 두지 않는다("").
+function defaultExpiry(mode: SessionMode): string {
+  return mode === "inbound" ? addDaysISO(todayISO(), 7) : "";
+}
 
 // 세션 상태: lines[]가 진짜 상태. mode는 세션당 하나, lastLineId는 "가장 최근에
 // 건드린 line"(UI 강조용), editingLineId는 등록 모달이 편집 중인 pending 행(없으면 null).
@@ -14,11 +20,12 @@ export type ScanAction =
   | { type: "SET_MODE"; mode: SessionMode }
   | { type: "SCAN_KNOWN"; product: Product }
   | { type: "SCAN_UNKNOWN"; barcode: string }
-  | { type: "PROMOTE"; lineId: string; name: string; category: string }
+  | { type: "PROMOTE"; lineId: string; productId: string; name: string; category: string }
   | { type: "OPEN_EDIT"; lineId: string }
   | { type: "CLOSE_EDIT" }
   | { type: "REMOVE_LINE"; lineId: string }
   | { type: "RESET_SESSION" }
+  | { type: "SET_EXPIRY"; lineId: string; expiry: string }
   | { type: "INC"; lineId: string }
   | { type: "DEC"; lineId: string };
 
@@ -49,9 +56,11 @@ export function scanReducer(state: ScanState, action: ScanAction): ScanState {
       const line: ScanLine = {
         id: newId(),
         barcode: product.barcode,
+        productId: product.id,
         productName: product.name,
         category: product.category,
         quantity: 1,
+        expiryDate: defaultExpiry(state.mode),
         status: "ready",
       };
       return { ...state, lines: [line, ...state.lines], lastLineId: line.id };
@@ -78,9 +87,11 @@ export function scanReducer(state: ScanState, action: ScanAction): ScanState {
       const line: ScanLine = {
         id: newId(),
         barcode: action.barcode,
+        productId: "", // 등록 승격 시 채워짐
         productName: "",
         category: "",
         quantity: 1,
+        expiryDate: defaultExpiry(state.mode),
         status: "pending",
       };
       return {
@@ -99,7 +110,13 @@ export function scanReducer(state: ScanState, action: ScanAction): ScanState {
         lastLineId: action.lineId,
         lines: state.lines.map((l) =>
           l.id === action.lineId
-            ? { ...l, status: "ready", productName: action.name, category: action.category }
+            ? {
+                ...l,
+                status: "ready",
+                productId: action.productId,
+                productName: action.name,
+                category: action.category,
+              }
             : l
         ),
       };
@@ -126,6 +143,16 @@ export function scanReducer(state: ScanState, action: ScanAction): ScanState {
     // 커밋 완료 → 세션 리셋(모드는 유지, 새 세션 시작).
     case "RESET_SESSION":
       return { ...state, lines: [], lastLineId: null, editingLineId: null };
+
+    // 행 유통기한 변경(입고 라인의 date input). lastLineId는 건드리지 않는다
+    // (날짜 조정은 '방금 스캔' 강조를 옮길 만한 사건이 아님).
+    case "SET_EXPIRY":
+      return {
+        ...state,
+        lines: state.lines.map((l) =>
+          l.id === action.lineId ? { ...l, expiryDate: action.expiry } : l
+        ),
+      };
 
     case "INC":
       return {

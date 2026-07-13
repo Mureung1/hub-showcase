@@ -10,8 +10,15 @@ export interface ScanLine {
   /** line 식별자 (barcode와 별개 — 같은 상품이 여러 line일 일은 없지만 key/조작용) */
   id: string;
   barcode: string;
+  /** Product.id FK — 커밋 시 Lot.productId로 쓴다. pending은 등록 승격 시 채워짐(그전엔 ""). */
+  productId: string;
   productName: string;
   category: string;
   quantity: number;
+  /**
+   * 유통기한 'YYYY-MM-DD'. 입고 라인만 의미 있음(기본값 오늘+7). 출고는 FEFO라 미사용("").
+   * 커밋 시 이 값으로 새 Lot을 만든다.
+   */
+  expiryDate: string;
   status: LineStatus;
 }

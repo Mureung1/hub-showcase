@@ -11,6 +11,10 @@ class DexieProductRepository implements ProductRepository {
   async save(product: Product): Promise<void> {
     await db.products.put(product);
   }
+
+  getAll(): Promise<Product[]> {
+    return db.products.toArray();
+  }
 }
 
 export const productRepository: ProductRepository = new DexieProductRepository();

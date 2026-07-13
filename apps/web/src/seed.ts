@@ -1,5 +1,6 @@
-import { newId, now, type Product } from "@sherpa/core";
+import { newId, now, type Lot, type Product } from "@sherpa/core";
 import { db } from "./db";
+import { addDaysISO, todayISO } from "./lib/date";
 
 // 등록됨/미등록 두 분기를 눈으로 확인하기 위한 seed 상품.
 // 여기 없는 바코드를 스캔하면 '미등록' 분기로 갈라진다.
@@ -38,4 +39,46 @@ async function runSeed(): Promise<void> {
   );
 
   if (toAdd.length > 0) await db.products.bulkAdd(toAdd);
+}
+
+// 재고/유통기한 화면이 첫 로드에 비지 않도록 데모 Lot을 시드한다(지남/임박/여유가 섞이게).
+// 오늘(new Date()) 기준 상대 유통기한. 이미 Lot이 하나라도 있으면(실제 입고 포함) 건너뛴다.
+const SEED_LOTS: ReadonlyArray<{ barcode: string; offsetDays: number; quantity: number }> = [
+  { barcode: "8801234567890", offsetDays: -1, quantity: 4 }, // 서울우유: 지남 + 재고부족
+  { barcode: "8801234567890", offsetDays: 2, quantity: 6 }, //           임박
+  { barcode: "8809876543210", offsetDays: 20, quantity: 30 }, // 신라면: 여유
+  { barcode: "8801111222333", offsetDays: 5, quantity: 8 }, // 바나나우유: (기준따라)임박
+  { barcode: "8801111222333", offsetDays: 40, quantity: 12 }, //           여유
+];
+
+let seedingLots: Promise<void> | null = null;
+
+export function seedLots(): Promise<void> {
+  if (!seedingLots) seedingLots = runSeedLots();
+  return seedingLots;
+}
+
+async function runSeedLots(): Promise<void> {
+  if ((await db.lots.count()) > 0) return; // 이미 Lot 있음(실제 입고 포함) → 데모 시드 안 함
+
+  const today = todayISO();
+  const barcodes = [...new Set(SEED_LOTS.map((l) => l.barcode))];
+  const products = await db.products.where("barcode").anyOf(barcodes).toArray();
+  const idByBarcode = new Map(products.map((p) => [p.barcode, p.id]));
+
+  const t = now();
+  const lots: Lot[] = [];
+  for (const s of SEED_LOTS) {
+    const productId = idByBarcode.get(s.barcode);
+    if (!productId) continue; // 상품 시드 실패 시 방어
+    lots.push({
+      id: newId(),
+      productId,
+      expiryDate: addDaysISO(today, s.offsetDays),
+      quantity: s.quantity,
+      inboundAt: t,
+      updatedAt: t,
+    });
+  }
+  if (lots.length > 0) await db.lots.bulkAdd(lots);
 }

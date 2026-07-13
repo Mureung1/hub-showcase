@@ -6,4 +6,6 @@ export interface ProductRepository {
   findByBarcode(barcode: string): Promise<Product | undefined>;
   /** 상품 마스터 저장(신규/갱신). 등록 모달 저장 시 호출 → 이후 스캔부터 등록됨으로 인식. */
   save(product: Product): Promise<void>;
+  /** 전체 상품(재고/유통기한 뷰의 마스터 조인용). */
+  getAll(): Promise<Product[]>;
 }

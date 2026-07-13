@@ -13,6 +13,12 @@ export function SessionHeader({ mode, onChange }: SessionHeaderProps) {
         {mode === "inbound" ? "입고" : "출고"} 세션
       </span>
       <div className="segmented" role="group" aria-label="세션 모드">
+        {/* 슬라이딩 thumb — 활성 모드로 이동하며 색도 함께 전환(모션) */}
+        <span
+          className="segmented__thumb"
+          aria-hidden="true"
+          style={{ transform: mode === "inbound" ? "translateX(0)" : "translateX(100%)" }}
+        />
         <button
           type="button"
           className={`segmented__btn${mode === "inbound" ? " is-active" : ""}`}
