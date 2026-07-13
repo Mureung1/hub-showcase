@@ -26,3 +26,4 @@ npm run lint     # oxlint로 코드 검사
 - [task.md](./task.md) — 주차별 로드맵과 우선순위 백로그 (언제·뭐부터 할지)
 - [checklist.md](./checklist.md) — 영역별 작업 목록과 진행 상황 (무엇을·얼마나 됐는지)
 - [CLAUDE.md](./CLAUDE.md) — 서비스 목적, 커밋 규칙, 개발 원칙
+- [2주차 개발 대시보드](https://github.com/connect-AIAgentChallenge-26-1/hub/issues/690) — 이번 주 작업을 우선순위·요일 순으로 정리한 이슈
