@@ -24,9 +24,9 @@ hub/
 │  │  ├─ posts/
 │  │  ├─ help-requests/
 │  │  ├─ group-buys/
-│  │  └─ activity/
-│  ├─ repositories/             # API 계약과 mock/http 구현체
-│  ├─ mocks/                    # 프론트 데모 데이터
+│  │  └─ conversations/
+│  ├─ repositories/             # API 계약과 HTTP 구현체
+│  ├─ mocks/                    # 기존 빈 디렉터리, 3주 MVP에서 사용하지 않음
 │  ├─ lib/                      # Supabase client, 날짜 등 공통 인프라
 │  ├─ styles/                   # 전역 토큰과 전역 스타일
 │  └─ main.jsx
@@ -40,7 +40,8 @@ hub/
 │  │  │  ├─ posts/
 │  │  │  ├─ help-requests/
 │  │  │  ├─ group-buys/
-│  │  │  └─ activity/
+│  │  │  ├─ conversations/
+│  │  │  └─ addresses/
 │  │  ├─ middleware/            # 인증, rate limit, 404 등
 │  │  ├─ lib/                   # Supabase client와 범용 유틸
 │  │  ├─ config/                # 환경 변수 파싱과 런타임 설정
@@ -80,12 +81,13 @@ hub/
 - 화면, feature 전용 컴포넌트, 상태 조합과 유틸을 함께 둔다.
 - 예: `features/group-buys/GroupBuyList.jsx`, `GroupBuyDetail.jsx`, `groupBuyUtils.js`.
 - 다른 feature의 내부 파일을 직접 import하지 않는다. 함께 쓰는 코드는 `components/ui`, `repositories`, `lib` 중 책임에 맞는 곳으로 올린다.
+- 도움 1:1과 공동구매 그룹 채팅의 공통 화면·polling 로직은 `features/conversations/`에 둔다.
 
 ### `repositories/`, `mocks/`, `lib/`
 
-- UI는 `fetch`나 mock 배열을 직접 사용하지 않고 repository를 호출한다.
-- `MockSaisaiRepository`와 `HttpSaisaiRepository`는 같은 계약을 구현한다.
-- `mocks/`는 데이터만 보관하고 UI 컴포넌트를 두지 않는다.
+- UI는 `fetch`를 직접 사용하지 않고 `HttpSaisaiRepository`를 호출한다.
+- 3주 MVP는 실제 Supabase Auth와 Express API만 사용하고 `MockSaisaiRepository`를 만들지 않는다.
+- 기존 빈 `mocks/` 디렉터리는 참조하지 않으며 구현 완료 상태로 표현하지 않는다.
 - `lib/`에는 Supabase client, 날짜 포맷 등 도메인에 종속되지 않는 인프라만 둔다.
 
 프론트 단위 테스트를 도입하면 대상 파일 옆에 `*.test.jsx` 또는 `*.test.js`로 둔다.
@@ -118,6 +120,7 @@ server/src/modules/group-buys/
 - Auth Admin API와 service role이 필요한 데모 계정은 `scripts/seed-demo.mjs`에서 멱등 생성한다.
 - SQL 기반 RLS·RPC 테스트는 `supabase/tests/`에 둔다.
 - service role 환경 변수는 seed 스크립트 실행 환경에만 주입하고 프론트와 일반 Render API 환경에는 두지 않는다.
+- Kakao 주소 원문과 좌표는 API 요청 처리 중에만 사용하며 profile이나 별도 주소 테이블에 저장하지 않는다.
 
 ## 6. 문서와 참고 구현
 
