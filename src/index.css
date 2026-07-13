@@ -21,3 +21,13 @@ body {
 button {
   font-family: inherit;
 }
+
+/* PC(≥480px)에서 앱 프레임을 화면 중앙에 배치 */
+@media (min-width: 480px) {
+  #root {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
