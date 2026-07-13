@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS trend_keywords (
   category TEXT NOT NULL,
   hashtag TEXT NOT NULL,
   keyword TEXT,
-  platform TEXT NOT NULL CHECK (platform IN ('instagram', 'tiktok', 'mixed')),
+  platform TEXT NOT NULL CHECK (platform IN ('instagram', 'tiktok', 'mixed', 'naver')),
   search_volume INTEGER DEFAULT 0,
   post_count INTEGER DEFAULT 0,
   total_views INTEGER DEFAULT 0,

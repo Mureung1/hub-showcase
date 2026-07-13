@@ -46,3 +46,17 @@ export async function getLatestStore() {
     throw error;
   }
 }
+
+export async function getTrends(category) {
+  try {
+    const response = await fetch(`${API_BASE}/trends?category=${encodeURIComponent(category)}`);
+
+    if (!response.ok) {
+      throw new Error('트렌드 데이터 조회에 실패했습니다');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+}

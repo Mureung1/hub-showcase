@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './db/client.js';
 import storeRoutes from './routes/store.js';
+import trendsRoutes from './routes/trends.js';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/store', storeRoutes);
+app.use('/api/trends', trendsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
