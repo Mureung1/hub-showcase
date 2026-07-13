@@ -34,3 +34,15 @@ div.ui-field[wds-component='search-field']:focus-within,
 div.ui-field[wds-component='text-area']:focus-within {
   box-shadow: 0 0 0 2px var(--color-electric-blue);
 }
+
+div.ui-field[wds-component='text-field']:has(
+    input[aria-invalid='true']
+  ):focus-within
+  [data-role='text-field-wrapper'],
+div.ui-field[wds-component='text-area']:has(
+    textarea[aria-invalid='true']
+  ):focus-within {
+  box-shadow:
+    inset 0 0 0 1px var(--color-error-ink),
+    0 0 0 2px var(--color-electric-blue);
+}

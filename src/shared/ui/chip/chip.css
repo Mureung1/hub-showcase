@@ -23,6 +23,15 @@ button.choice-chip:focus-visible {
   outline-offset: 2px;
 }
 
+button.choice-chip:disabled,
+button.choice-chip[aria-disabled='true'] {
+  border-color: var(--color-ash);
+  background: var(--color-mist);
+  color: var(--color-smoke);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 span.category-tag {
   border-radius: var(--radius-button);
   cursor: default;

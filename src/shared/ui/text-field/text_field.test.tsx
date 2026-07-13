@@ -1,4 +1,5 @@
 /* @vitest-environment jsdom */
+import { createRef } from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -86,4 +87,122 @@ describe('field adapters', () => {
       expect(wrapper?.classList.contains(callerClass)).toBe(true);
     });
   });
+
+  it('forwards each root reference to its input control', () => {
+    const textFieldRef = createRef<HTMLInputElement>();
+    const searchFieldRef = createRef<HTMLInputElement>();
+    const textAreaRef = createRef<HTMLTextAreaElement>();
+
+    render(
+      <DesignSystemProvider>
+        <TextField aria-label="일반 입력" ref={textFieldRef} />
+        <SearchField aria-label="검색 입력" ref={searchFieldRef} />
+        <TextArea aria-label="메모 입력" ref={textAreaRef} />
+      </DesignSystemProvider>
+    );
+
+    expect(textFieldRef.current).toBe(
+      screen.getByRole('textbox', { name: '일반 입력' })
+    );
+    expect(searchFieldRef.current).toBe(
+      screen.getByRole('searchbox', { name: '검색 입력' })
+    );
+    expect(textAreaRef.current).toBe(
+      screen.getByRole('textbox', { name: '메모 입력' })
+    );
+  });
+
+  it('keeps controlled values while forwarding change events', async () => {
+    const user = userEvent.setup();
+    const onTextFieldChange = vi.fn();
+    const onSearchFieldChange = vi.fn();
+    const onTextAreaChange = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <TextField
+          aria-label="일반 입력"
+          onChange={onTextFieldChange}
+          value="고정"
+        />
+        <SearchField
+          aria-label="검색 입력"
+          onChange={onSearchFieldChange}
+          value="고정"
+        />
+        <TextArea
+          aria-label="메모 입력"
+          onChange={onTextAreaChange}
+          value="고정"
+        />
+      </DesignSystemProvider>
+    );
+
+    const fields = [
+      {
+        element: screen.getByRole('textbox', { name: '일반 입력' }),
+        onChange: onTextFieldChange,
+      },
+      {
+        element: screen.getByRole('searchbox', { name: '검색 입력' }),
+        onChange: onSearchFieldChange,
+      },
+      {
+        element: screen.getByRole('textbox', { name: '메모 입력' }),
+        onChange: onTextAreaChange,
+      },
+    ];
+
+    for (const { element, onChange } of fields) {
+      await user.type(element, '값');
+
+      expect(getFieldValue(element)).toBe('고정');
+      expect(onChange).toHaveBeenCalled();
+    }
+  });
+
+  it('preserves accessibility and status props on the input controls', () => {
+    render(
+      <DesignSystemProvider>
+        <p id="field-help">도움말</p>
+        <TextField
+          aria-describedby="field-help"
+          aria-label="일반 입력"
+          invalid
+        />
+        <SearchField
+          aria-describedby="field-help"
+          aria-invalid="true"
+          aria-label="검색 입력"
+        />
+        <TextArea
+          aria-describedby="field-help"
+          aria-label="메모 입력"
+          invalid
+        />
+      </DesignSystemProvider>
+    );
+
+    const fields = [
+      screen.getByRole('textbox', { name: '일반 입력' }),
+      screen.getByRole('searchbox', { name: '검색 입력' }),
+      screen.getByRole('textbox', { name: '메모 입력' }),
+    ];
+
+    fields.forEach((field) => {
+      expect(field.getAttribute('aria-describedby')).toBe('field-help');
+      expect(field.getAttribute('aria-invalid')).toBe('true');
+    });
+  });
 });
+
+function getFieldValue(field: HTMLElement) {
+  if (
+    field instanceof HTMLInputElement ||
+    field instanceof HTMLTextAreaElement
+  ) {
+    return field.value;
+  }
+
+  throw new Error('Expected an input control');
+}

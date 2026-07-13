@@ -3,7 +3,6 @@
   align-items: baseline;
   gap: 0.12em;
   border-radius: var(--radius-label);
-  color: var(--color-canvas);
   padding: 0.05em 0.22em 0.08em;
   font-weight: 700;
   line-height: 1;
@@ -11,16 +10,20 @@
 
 .inline-label--amber {
   background: var(--color-amber);
+  color: var(--color-ink);
 }
 
 .inline-label--blue {
   background: var(--color-electric-blue);
+  color: var(--color-canvas);
 }
 
 .inline-label--coral {
   background: var(--color-coral);
+  color: var(--color-ink);
 }
 
 .inline-label--green {
   background: var(--color-signal-green);
+  color: var(--color-ink);
 }

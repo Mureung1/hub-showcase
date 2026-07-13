@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react';
+import { forwardRef, type ComponentProps } from 'react';
 import {
   SearchField as WdsSearchField,
   TextArea as WdsTextArea,
@@ -8,18 +8,54 @@ import clsx from 'clsx';
 
 import './text_field.css';
 
-export type TextFieldProps = ComponentProps<typeof WdsTextField>;
-export type SearchFieldProps = ComponentProps<typeof WdsSearchField>;
-export type TextAreaProps = ComponentProps<typeof WdsTextArea>;
+type FieldImplementationProp =
+  'lg' | 'md' | 'ref' | 'sm' | 'sx' | 'wrapperRef' | 'xl' | 'xs';
 
-export function TextField({ className, ...props }: TextFieldProps) {
-  return <WdsTextField {...props} className={clsx('ui-field', className)} />;
-}
+export type TextFieldProps = Omit<
+  ComponentProps<typeof WdsTextField>,
+  FieldImplementationProp
+>;
+export type SearchFieldProps = Omit<
+  ComponentProps<typeof WdsSearchField>,
+  FieldImplementationProp
+>;
+export type TextAreaProps = Omit<
+  ComponentProps<typeof WdsTextArea>,
+  FieldImplementationProp
+>;
 
-export function SearchField({ className, ...props }: SearchFieldProps) {
-  return <WdsSearchField {...props} className={clsx('ui-field', className)} />;
-}
+export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
+  function TextField({ className, ...props }, ref) {
+    return (
+      <WdsTextField
+        {...props}
+        className={clsx('ui-field', className)}
+        ref={ref}
+      />
+    );
+  }
+);
 
-export function TextArea({ className, ...props }: TextAreaProps) {
-  return <WdsTextArea {...props} className={clsx('ui-field', className)} />;
-}
+export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
+  function SearchField({ className, ...props }, ref) {
+    return (
+      <WdsSearchField
+        {...props}
+        className={clsx('ui-field', className)}
+        ref={ref}
+      />
+    );
+  }
+);
+
+export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
+  function TextArea({ className, ...props }, ref) {
+    return (
+      <WdsTextArea
+        {...props}
+        className={clsx('ui-field', className)}
+        ref={ref}
+      />
+    );
+  }
+);

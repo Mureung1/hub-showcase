@@ -1,4 +1,8 @@
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import {
+  forwardRef,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+} from 'react';
 import { Chip as WdsChip } from '@wanteddev/wds';
 import clsx from 'clsx';
 
@@ -24,17 +28,27 @@ const STATIC_TAG_PROPS = {
   type: undefined,
 } as const;
 
-export function ChoiceChip({ className, selected, ...props }: ChoiceChipProps) {
-  return (
-    <WdsChip
-      {...props}
-      active={selected}
-      aria-pressed={selected}
-      className={clsx('choice-chip', className)}
-      variant={selected ? 'solid' : 'outlined'}
-    />
-  );
-}
+export const ChoiceChip = forwardRef<HTMLButtonElement, ChoiceChipProps>(
+  function ChoiceChip(
+    { 'aria-disabled': ariaDisabled, className, disabled, selected, ...props },
+    ref
+  ) {
+    const isDisabled =
+      disabled || ariaDisabled === true || ariaDisabled === 'true';
+
+    return (
+      <WdsChip
+        {...props}
+        active={selected}
+        aria-pressed={selected}
+        className={clsx('choice-chip', className)}
+        disabled={isDisabled}
+        ref={ref}
+        variant={selected ? 'solid' : 'outlined'}
+      />
+    );
+  }
+);
 
 export function CategoryTag({
   children,

@@ -1,5 +1,6 @@
 /* @vitest-environment jsdom */
-import { cleanup, render, screen } from '@testing-library/react';
+import { createRef } from 'react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   afterEach,
@@ -76,6 +77,90 @@ describe('ChoiceChip', () => {
     expectTypeOf<ChoiceChipProps>().not.toHaveProperty('disableInteraction');
     expectTypeOf<ChoiceChipProps>().not.toHaveProperty('sx');
     expectTypeOf<ChoiceChipProps>().not.toHaveProperty('variant');
+  });
+
+  it('forwards its root reference to the focusable button', () => {
+    const ref = createRef<HTMLButtonElement>();
+
+    render(
+      <DesignSystemProvider>
+        <ChoiceChip ref={ref} selected={false}>
+          디자인
+        </ChoiceChip>
+      </DesignSystemProvider>
+    );
+
+    const chip = screen.getByRole('button', { name: '디자인' });
+
+    expect(ref.current).toBe(chip);
+
+    ref.current?.focus();
+
+    expect(document.activeElement).toBe(chip);
+  });
+
+  it.each([
+    ['disabled', { disabled: true }],
+    ['aria-disabled', { 'aria-disabled': true }],
+  ] as const)('blocks click interactions when %s', (_label, disabledProps) => {
+    const onClick = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <ChoiceChip {...disabledProps} onClick={onClick} selected>
+          디자인
+        </ChoiceChip>
+      </DesignSystemProvider>
+    );
+
+    const chip = screen.getByRole('button', { name: '디자인' });
+
+    fireEvent.click(chip);
+
+    expect(chip.hasAttribute('disabled')).toBe(true);
+    expect(chip.getAttribute('aria-disabled')).toBe('true');
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('uses button semantics without submitting its parent form', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <form onSubmit={onSubmit}>
+          <ChoiceChip selected={false}>디자인</ChoiceChip>
+        </form>
+      </DesignSystemProvider>
+    );
+
+    const chip = screen.getByRole('button', { name: '디자인' });
+
+    expect(chip.getAttribute('type')).toBe('button');
+
+    await user.click(chip);
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('supports keyboard activation', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <ChoiceChip onClick={onClick} selected={false}>
+          디자인
+        </ChoiceChip>
+      </DesignSystemProvider>
+    );
+
+    const chip = screen.getByRole('button', { name: '디자인' });
+
+    chip.focus();
+    await user.keyboard('{Enter}');
+
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
 
