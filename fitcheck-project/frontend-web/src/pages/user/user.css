@@ -1,0 +1,81 @@
+.user-page {
+  min-height: 100dvh;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #f3f7f4 0%, #ffffff 45%);
+  color: #14201a;
+}
+
+.user-header {
+  margin-bottom: 28px;
+}
+
+.user-eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2f6b4f;
+}
+
+.user-page h1 {
+  margin: 0 0 12px;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.user-lead {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #4b5c53;
+}
+
+.user-nav {
+  display: grid;
+  gap: 12px;
+}
+
+.user-nav-card {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #d7e4db;
+  text-decoration: none;
+  color: inherit;
+}
+
+.user-nav-card span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2f6b4f;
+}
+
+.user-nav-card strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.user-back {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #2f6b4f;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.user-footer-link {
+  margin-top: 28px;
+  text-align: center;
+}
+
+.user-footer-link a {
+  color: #6b7c73;
+  font-size: 13px;
+}
