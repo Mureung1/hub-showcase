@@ -2,7 +2,7 @@
 
 > 기간: 2026-07-13(월) ~ 2026-07-17(금)
 >
-> GitHub Issues 대시보드: [2주차 계획 #7](https://github.com/dolphin1404/NaverConnect_wm/issues/7)
+> GitHub Project 보드: [CV2PF 2주차 계획](https://github.com/users/dolphin1404/projects/2) · [계획 이슈 #7](https://github.com/dolphin1404/NaverConnect_wm/issues/7)
 
 ## 주간 목표
 
