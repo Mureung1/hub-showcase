@@ -9,12 +9,24 @@ import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
+import { ALLERGY_OPTIONS, CONDITION_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
 import { calcAchievementPercent, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
-function buildRecommendationPrompt(deficientRows) {
+// allergyLabels/conditionLabels가 비어 있으면(프로필 미입력 등) 기존 프롬프트와 완전히 동일하게
+// 나간다 — 제약 문단 자체가 붙지 않는다.
+function buildRecommendationPrompt(deficientRows, allergyLabels = [], conditionLabels = []) {
   const nutrientText = deficientRows.map((row) => `${row.label}(${row.key}) 약 ${row.deficiency}${row.unit} 부족`).join(', ')
   const deficientKeys = deficientRows.map((row) => `"${row.key}"`).join(', ')
+
+  const constraints = []
+  if (allergyLabels.length > 0) {
+    constraints.push(`- 다음 알레르기 성분을 포함한 메뉴는 절대 추천하지 마라: ${allergyLabels.join(', ')}.`)
+  }
+  if (conditionLabels.length > 0) {
+    constraints.push(`- 다음 기저질환에 부적합하거나 악화시킬 수 있는 메뉴(자극적/고나트륨/고당 등)는 피하라: ${conditionLabels.join(', ')}.`)
+  }
+  const constraintBlock = constraints.length > 0 ? `\n\n반드시 지킬 제약:\n${constraints.join('\n')}` : ''
 
   return `대학생이 밖에서 사먹기 쉬운 저녁 메뉴 2~3개를 추천해줘.
 오늘 부족한 영양소: ${nutrientText}.
@@ -25,7 +37,7 @@ function buildRecommendationPrompt(deficientRows) {
    - 수치는 식품의약품안전처 한국식품영양성분 데이터베이스(국가표준식품성분표) 수준의 표준값 기준으로 계산해라. (URL 조회가 아니라 네가 아는 그 DB 수준의 기준값이라는 의미다.)
    - 과대추정 금지: 그 메뉴의 통상적인 1인분 현실 범위를 벗어나는 값이 나오면 스스로 재검토하고 보수적인 값으로 고쳐라.
    - expected에는 부족한 영양소 키(${deficientKeys})를 반드시 포함하고, 필요하면 calories도 포함해도 된다.
-   - 사용할 수 있는 키와 단위: calories(kcal), protein(g), carbs(g), fat(g), fiber(g), sodium(mg). 값은 숫자만.
+   - 사용할 수 있는 키와 단위: calories(kcal), protein(g), carbs(g), fat(g), fiber(g), sodium(mg). 값은 숫자만.${constraintBlock}
 
 설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
 {
@@ -82,9 +94,18 @@ function AchievementRing({ percent, size = 160, strokeWidth = 14 }) {
 }
 
 export default function Result() {
-  const { todayMeal, effectiveRecommended, isTempRecommended } = useUser()
+  const { user, todayMeal, effectiveRecommended, isTempRecommended } = useUser()
   const recommended = effectiveRecommended
   const todayTotal = todayMeal?.total
+
+  const allergyLabels = useMemo(
+    () => labelizeTags(user?.profile?.allergies, ALLERGY_OPTIONS),
+    [user?.profile?.allergies],
+  )
+  const conditionLabels = useMemo(
+    () => labelizeTags(user?.profile?.conditions, CONDITION_OPTIONS),
+    [user?.profile?.conditions],
+  )
 
   const rows = useMemo(() => {
     if (!recommended || !todayTotal) return []
@@ -122,7 +143,7 @@ export default function Result() {
     setRecLoading(true)
     setRecError('')
     try {
-      const prompt = buildRecommendationPrompt(top3Rows)
+      const prompt = buildRecommendationPrompt(top3Rows, allergyLabels, conditionLabels)
       const text = await geminiComplete({ prompt })
       const parsed = parseJsonLoose(text)
 

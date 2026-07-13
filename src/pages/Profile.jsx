@@ -7,16 +7,12 @@ import ChevronIcon from '../components/ChevronIcon.jsx'
 import DataSyncPanel from '../components/DataSyncPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import StandardComparisonList from '../components/StandardComparisonList.jsx'
+import TagMultiSelect from '../components/TagMultiSelect.jsx'
 import TextField from '../components/TextField.jsx'
+import { ALLERGY_OPTIONS, CONDITION_OPTIONS } from '../lib/healthProfile.js'
 import { calcRecommendedNutrients, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { getStandardIntake } from '../lib/standardIntake.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
-
-const CONDITION_OPTIONS = [
-  { key: 'diabetes', label: '당뇨' },
-  { key: 'hypertension', label: '고혈압' },
-  { key: 'kidney', label: '신장질환' },
-]
 
 const SEX_OPTIONS = [
   { key: 'male', label: '남성' },
@@ -65,39 +61,6 @@ function SegmentedControl({ label, options, value, onChange }) {
   )
 }
 
-function ConditionChips({ selected, onToggle }) {
-  return (
-    <div style={{ ...styles.field, marginBottom: 0 }}>
-      <span style={styles.label}>기저질환 (해당 시 선택)</span>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing.sm }}>
-        {CONDITION_OPTIONS.map((opt) => {
-          const active = selected.includes(opt.key)
-          return (
-            <button
-              key={opt.key}
-              type="button"
-              className="tds-press"
-              onClick={() => onToggle(opt.key)}
-              style={{
-                padding: `${spacing.sm}px ${spacing.lg}px`,
-                borderRadius: radius.pill,
-                border: 'none',
-                background: active ? colors.primary : colors.bg,
-                color: active ? '#fff' : colors.textSub,
-                fontWeight: 600,
-                fontSize: font.size.sm,
-                cursor: 'pointer',
-              }}
-            >
-              {opt.label}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 export default function Profile() {
   const { user, updateUser, logout } = useUser()
   const navigate = useNavigate()
@@ -119,17 +82,11 @@ export default function Profile() {
     sex: user?.profile?.sex ?? user?.tempSex ?? 'male',
     activity: user?.profile?.activity ?? 'moderate',
     conditions: user?.profile?.conditions ?? [],
+    allergies: user?.profile?.allergies ?? [],
   }))
 
   function updateField(key, value) {
     setForm((f) => ({ ...f, [key]: value }))
-  }
-
-  function toggleCondition(key) {
-    setForm((f) => ({
-      ...f,
-      conditions: f.conditions.includes(key) ? f.conditions.filter((c) => c !== key) : [...f.conditions, key],
-    }))
   }
 
   const isComplete = form.age && form.heightCm && form.weightKg
@@ -164,6 +121,7 @@ export default function Profile() {
       sex: form.sex,
       activity: form.activity,
       conditions: form.conditions,
+      allergies: form.allergies,
     }
 
     // tempSex는 프로필 없는 게스트의 임시 수단일 뿐이라, 실제 프로필을 저장하면 지워서
@@ -208,7 +166,22 @@ export default function Profile() {
         onChange={(e) => updateField('weightKg', e.target.value)}
       />
       <SegmentedControl label="활동량" options={ACTIVITY_OPTIONS} value={form.activity} onChange={(v) => updateField('activity', v)} />
-      <ConditionChips selected={form.conditions} onToggle={toggleCondition} />
+      <div style={{ marginBottom: spacing.md }}>
+        <TagMultiSelect
+          label="알레르기 (해당 시 선택)"
+          options={ALLERGY_OPTIONS}
+          value={form.allergies}
+          onChange={(next) => updateField('allergies', next)}
+          placeholder="기타 알레르기 직접 입력"
+        />
+      </div>
+      <TagMultiSelect
+        label="기저질환 (해당 시 선택)"
+        options={CONDITION_OPTIONS}
+        value={form.conditions}
+        onChange={(next) => updateField('conditions', next)}
+        placeholder="기타 질환 직접 입력"
+      />
     </>
   )
 
