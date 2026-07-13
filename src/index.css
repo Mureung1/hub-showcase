@@ -1,5 +1,59 @@
 @import "tailwindcss";
 
+:root {
+  /* 배경 */
+  --color-bg-page: #0b0d12;
+  --color-bg-canvas: #10131a;
+  --color-bg-sidebar: #0d0f15;
+  --color-bg-card: #181c26;
+  --color-bg-card-hover: #1f2430;
+  --color-border-card: rgba(255, 255, 255, 0.06);
+  --color-border-card-strong: rgba(255, 255, 255, 0.12);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.4);
+  --shadow-glow-accent: 0 0 0 1px rgba(34, 211, 238, 0.35), 0 0 26px rgba(34, 211, 238, 0.3);
+
+  /* 글자 */
+  --color-text-primary: #f5f6f8;
+  --color-text-secondary: #c7cad1;
+  --color-text-muted: #8b909c;
+
+  /* 주색 */
+  --color-accent: #22d3ee;
+  --color-accent-fill: rgba(34, 211, 238, 0.15);
+  --color-accent-text: #67e8f9;
+
+  /* 의미색 */
+  --color-compare: #f7931a;
+  --color-compare-fill: rgba(247, 147, 26, 0.15);
+  --color-compare-text: #fbc978;
+
+  --color-success: #5dcaa5;
+  --color-success-fill: rgba(93, 202, 165, 0.14);
+  --color-success-text: #9fe1cb;
+
+  --color-danger: #ef4444;
+  --color-danger-fill: rgba(239, 68, 68, 0.14);
+  --color-danger-text: #f5a3a3;
+
+  --color-secondary-accent: #6366f1;
+  --color-secondary-accent-fill: rgba(99, 102, 241, 0.14);
+
+  /* 학과 정체성 색 (홈페이지 노드-그래프 전용, 위 시맨틱 색과는 별개) */
+  --dept-cs: #22d3ee;
+  --dept-chem: #b985f4;
+  --dept-math: #d9a441;
+  --dept-physics: #5b9bf5;
+  --dept-ee: #4fd18b;
+  --dept-bio: #f072a8;
+
+  /* 모서리 */
+  --radius-badge: 6px;
+  --radius-control: 10px;
+  --radius-card: 16px;
+  --radius-pill: 9999px;
+  --radius-code: 10px;
+}
+
 body {
   margin: 0;
 }

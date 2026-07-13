@@ -12,14 +12,20 @@ const MODES: { id: TreeMode; label: string }[] = [
 
 export default function ModeTabs({ mode, onSelect }: ModeTabsProps) {
   return (
-    <div className="inline-flex gap-1 rounded-lg bg-zinc-800 p-1">
+    <div
+      className="inline-flex gap-1 rounded-[var(--radius-pill)] p-1"
+      style={{ background: 'var(--color-bg-page)' }}
+    >
       {MODES.map((m) => (
         <button
           key={m.id}
           onClick={() => onSelect(m.id)}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            mode === m.id ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'
-          }`}
+          className="rounded-[var(--radius-pill)] px-3 py-1.5 text-sm font-medium transition-colors"
+          style={
+            mode === m.id
+              ? { background: 'var(--color-bg-card-hover)', color: 'var(--color-text-primary)' }
+              : { color: 'var(--color-text-muted)' }
+          }
         >
           {m.label}
         </button>

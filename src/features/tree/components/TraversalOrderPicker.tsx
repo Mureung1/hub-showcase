@@ -19,11 +19,16 @@ export default function TraversalOrderPicker({ activeOrder, onSelect }: Traversa
         <button
           key={order.id}
           onClick={() => onSelect(order.id)}
-          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+          className="rounded-[var(--radius-pill)] border px-3 py-1.5 text-xs font-medium transition-colors"
+          style={
             activeOrder === order.id
-              ? 'border border-violet-400 bg-violet-400/15 text-violet-300'
-              : 'border border-zinc-700 text-zinc-400 hover:bg-zinc-800'
-          }`}
+              ? {
+                  borderColor: 'var(--color-secondary-accent)',
+                  background: 'var(--color-secondary-accent-fill)',
+                  color: '#b3b6fb',
+                }
+              : { borderColor: 'var(--color-border-card-strong)', color: 'var(--color-text-muted)' }
+          }
         >
           {order.label}
         </button>
