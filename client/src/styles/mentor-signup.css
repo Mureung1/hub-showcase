@@ -1,0 +1,262 @@
+.mentor-signup-page {
+  min-height: 100vh;
+}
+
+.mentor-signup-container {
+  max-width: 780px;
+  margin-block: 0;
+  padding-block: clamp(44px, 7vw, 72px) 80px;
+}
+
+.mentor-signup-heading {
+  margin-bottom: var(--space-2xl);
+}
+
+.mentor-signup-heading .body-text {
+  margin: var(--space-sm) 0 0;
+}
+
+.mentor-signup-form {
+  display: grid;
+  gap: var(--space-xl);
+}
+
+.mentor-signup-section {
+  padding: clamp(24px, 5vw, 40px);
+}
+
+.mentor-profile-section {
+  border-top: 4px solid var(--color-primary);
+}
+
+.mentor-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding-bottom: var(--space-xl);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.mentor-section-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.mentor-section-title-row .eyebrow {
+  margin-bottom: var(--space-2xs);
+}
+
+.mentor-section-number {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-black);
+  place-items: center;
+}
+
+.mentor-section-heading > .muted-text {
+  max-width: 260px;
+  margin: 0;
+  font-size: var(--font-size-small);
+  text-align: right;
+}
+
+.mentor-section-heading > .muted-text span,
+.mentor-field-label span {
+  color: var(--color-primary);
+}
+
+.mentor-field-list {
+  display: grid;
+  gap: var(--space-xl);
+  padding-top: var(--space-2xl);
+}
+
+.mentor-field-group {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.mentor-field-label {
+  color: var(--color-text-strong);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+}
+
+.mentor-email-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: var(--space-sm);
+}
+
+.mentor-email-button {
+  min-height: var(--field-height);
+}
+
+.mentor-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.mentor-keyword-fieldset {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-lg);
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+}
+
+.mentor-keyword-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.mentor-keyword-heading .muted-text {
+  margin: var(--space-2xs) 0 0;
+  font-size: var(--font-size-small);
+}
+
+.mentor-keyword-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.keyword-add-button {
+  width: var(--field-height);
+  min-width: var(--field-height);
+  min-height: var(--field-height);
+  padding: 0;
+  font-size: 24px;
+}
+
+.keyword-add-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mentor-keyword-list {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.mentor-keyword-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.keyword-prefix {
+  display: grid;
+  align-self: stretch;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-black);
+  place-items: center;
+}
+
+.keyword-field {
+  min-width: 0;
+}
+
+.keyword-remove-button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--color-text-muted);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 20px;
+  place-items: center;
+}
+
+.keyword-remove-button:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.counseling-keyword-row {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.mentor-intro-field {
+  min-height: 104px;
+}
+
+.mentor-detail-field {
+  min-height: 150px;
+}
+
+.mentor-signup-actions {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.35fr) 1fr;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+}
+
+.mentor-signup-actions .button {
+  min-height: 50px;
+}
+
+@media (max-width: 640px) {
+  .mentor-signup-container {
+    padding-block: 36px 48px;
+  }
+
+  .mentor-section-heading,
+  .mentor-keyword-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mentor-section-heading > .muted-text {
+    max-width: none;
+    text-align: left;
+  }
+
+  .mentor-keyword-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .mentor-profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mentor-signup-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .mentor-email-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mentor-keyword-fieldset {
+    padding: var(--space-md);
+  }
+}

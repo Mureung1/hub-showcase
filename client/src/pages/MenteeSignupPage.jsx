@@ -129,7 +129,7 @@ function MenteeSignupPage() {
             </div>
             <p className="eyebrow">WELCOME, MENTEE</p>
             <h2 className="card-title">멘티 가입이 완료되었습니다</h2>
-            <p className="muted-text">잠시 후 멘토 목록 화면으로 이동합니다.</p>
+            <p className="muted-text">잠시 후 첫 화면으로 이동합니다.</p>
             <span className="signup-complete-progress" aria-hidden="true" />
           </section>
         </div>
