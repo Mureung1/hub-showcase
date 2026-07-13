@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { initializeDatabase } from './db/client.js';
+import { initializeDatabase } from './db/supabaseClient.js';
 import storeRoutes from './routes/store.js';
 import trendsRoutes from './routes/trends.js';
 
