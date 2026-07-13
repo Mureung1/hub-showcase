@@ -99,11 +99,11 @@ src/
 - 함수: `camelCase`, 동사로 시작 (`requestAnswer`, `getAnswer`, `returnFeedback`).
 
 ### 에러 처리
-- **Controller**: `try/catch`로 감싸고, 실패 시 일관된 형태로 응답한다.
+- **Controller**: `try/catch`로 감싸고, 실패 시 [openapi.yaml](openapi.yaml)의 공통 에러 형식으로 응답한다.
   ```js
-  res.status(500).json({ success: false, error: '서버에서 ... 오류가 발생했습니다.' });
+  res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: '서버에서 오류가 발생했습니다.' } });
   ```
-  에러 메시지는 사용자용 한글 문구.
+  `code`는 명세의 에러 코드 enum, `message`는 사용자용 한글 문구. 공통 처리(404·500)는 `middlewares/errorHandler.js` 사용.
 - **Service**: `try/catch`로 감싸 로거로 컨텍스트와 함께 기록한 뒤 **re-throw**한다.
   ```js
   logger.error('피드백 처리 중 오류:', { error: error.message, stack: error.stack, email });
