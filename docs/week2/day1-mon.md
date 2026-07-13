@@ -37,17 +37,17 @@
 - [x] **2f.** Step4 직원수 + 연매출 (select)
 
 ### 묶음 3 — 화면 완성
-- [ ] `WelcomeScreen` — navy 배경 + 기능 3개 + 시작하기 CTA
-- [ ] `CompleteScreen` — popIn 체크 + 요약박스 + "맞춤 지원금 보러가기"
-- [ ] `HomeScreen` — 헤더 + 정렬칩 + 카드 리스트 + 하단 탭바
-- [ ] `FilterChip`, `SubsidyCard`(D-day 색상), `TabBar`
-- [ ] `mockSubsidies.ts` — 와이어프레임 지원금 8건
+- [x] `WelcomeScreen` — navy 배경 + 기능 3개 + 시작하기 CTA
+- [x] `CompleteScreen` — popIn 체크 + 요약박스 + "맞춤 지원금 보러가기"
+- [x] `HomeScreen` — 헤더 + 정렬칩 + 카드 리스트 + 하단 탭바
+- [x] `FilterChip`, `SubsidyCard`(D-day 색상), `TabBar`
+- [x] `mockSubsidies.ts` — 와이어프레임 지원금 8건
 
 ### 검증
-- [ ] `npm run dev`로 `Welcome → 온보딩 → 완료 → 홈` 흐름 동작
-- [ ] 각 온보딩 단계 선택 완료 전 "다음" 비활성
-- [ ] 모바일 톤/레이아웃 와이어프레임과 크게 어긋나지 않음
-- [ ] `npm run lint` 통과
+- [x] `npm run dev`로 `Welcome → 온보딩 → 완료 → 홈` 흐름 동작
+- [x] 각 온보딩 단계 선택 완료 전 "다음" 비활성
+- [x] 모바일 톤/레이아웃 와이어프레임과 크게 어긋나지 않음
+- [x] `npm run lint` 통과
 
 ## 커밋 이력 (오늘)
 
@@ -106,11 +106,11 @@ flowchart LR
 - [x] Step1~4 실제 입력 UI (2c~2f)
 
 ### 3) 화면 완성
-- [ ] `WelcomeScreen` — navy 배경 + 기능 3개 + 시작하기 CTA
-- [ ] `CompleteScreen` — popIn 체크 + 요약박스 + "맞춤 지원금 보러가기"
-- [ ] `HomeScreen` — 헤더(프로필/알림 placeholder) + 정렬칩 + 카드 리스트 + 하단 탭바
-- [ ] `FilterChip`, `SubsidyCard`(D-day 색상 규칙), `TabBar`
-- [ ] `mockSubsidies.ts` — 와이어프레임 지원금 8건
+- [x] `WelcomeScreen` — navy 배경 + 기능 3개 + 시작하기 CTA
+- [x] `CompleteScreen` — popIn 체크 + 요약박스 + "맞춤 지원금 보러가기"
+- [x] `HomeScreen` — 헤더(프로필/알림 placeholder) + 정렬칩 + 카드 리스트 + 하단 탭바
+- [x] `FilterChip`, `SubsidyCard`(D-day 색상 규칙), `TabBar`
+- [x] `mockSubsidies.ts` — 와이어프레임 지원금 8건
 
 ## 파일 맵 (신규/수정)
 
@@ -124,7 +124,9 @@ src/
 ├── data/
 │   ├── regions.ts                # 시·도 + 전국 districts ✅
 │   ├── onboardingSteps.ts        # 스텝 정의 ✅
-│   └── mockSubsidies.ts          # 지원금 8건 (미구현)
+│   └── mockSubsidies.ts          # 지원금 8건 ✅
+├── utils/
+│   └── dday.ts                   # D-day 뱃지 클래스 ✅
 ├── components/
 │   ├── AppShell.tsx / .css       ✅
 │   ├── ProgressBar.tsx / .css    ✅
@@ -134,23 +136,23 @@ src/
 │   │   ├── Step2Region.tsx       # step2 시·도 ✅
 │   │   ├── Step3District.tsx     # step3 구·군 ✅
 │   │   └── Step4Scale.tsx        # step4 직원수·연매출 ✅
-│   ├── FilterChip.tsx / .css     (미구현)
-│   ├── SubsidyCard.tsx / .css    (미구현)
-│   └── TabBar.tsx / .css         (미구현)
+│   ├── FilterChip.tsx / .css     ✅
+│   ├── SubsidyCard.tsx / .css    ✅
+│   └── TabBar.tsx / .css         ✅
 └── pages/
-    ├── WelcomeScreen.tsx / .css  (placeholder)
-    ├── OnboardingStep.tsx / .css # 공통 레이아웃 ✅, step UI 2c~2f
-    ├── CompleteScreen.tsx / .css (placeholder)
-    ├── HomeScreen.tsx / .css     (placeholder)
+    ├── WelcomeScreen.tsx / .css  ✅
+    ├── OnboardingStep.tsx / .css ✅
+    ├── CompleteScreen.tsx / .css ✅
+    ├── HomeScreen.tsx / .css     ✅
     └── SubsidyDetailScreen.tsx   # 스텁 ✅
 ```
 
 ## 완료 기준
 
-- [ ] `npm run dev`로 `Welcome → 온보딩 → 완료 → 홈` 흐름 동작
-- [ ] 각 온보딩 단계에서 선택 완료 전 "다음" 버튼 비활성
-- [ ] 모바일 톤/레이아웃이 와이어프레임과 크게 어긋나지 않음
-- [ ] `npm run lint` 통과
+- [x] `npm run dev`로 `Welcome → 온보딩 → 완료 → 홈` 흐름 동작
+- [x] 각 온보딩 단계에서 선택 완료 전 "다음" 버튼 비활성
+- [x] 모바일 톤/레이아웃이 와이어프레임과 크게 어긋나지 않음
+- [x] `npm run lint` 통과
 
 ## 범위 외 (다른 이슈)
 
@@ -160,4 +162,4 @@ src/
 
 ## 다음 작업
 
-**묶음 3 — 화면 완성** — `WelcomeScreen`, `CompleteScreen`, `HomeScreen` + mock 데이터
+**이슈 #11 데모 완료** — PR 생성 및 수동 E2E 확인. 상세화면은 수 [#5](https://github.com/syd348/hub/issues/5) 범위.

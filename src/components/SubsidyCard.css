@@ -1,0 +1,72 @@
+.home-card {
+  width: 100%;
+  text-align: left;
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: transform 0.1s;
+  border: none;
+  font-family: inherit;
+}
+
+.home-card:active {
+  transform: scale(0.98);
+}
+
+.home-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.home-card-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--navy);
+  line-height: 1.4;
+}
+
+.home-card-meta {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-top: 6px;
+}
+
+.home-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.home-card .match {
+  font-size: 12px;
+  color: var(--blue);
+  font-weight: 500;
+}
+
+.home-card .dday {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dday-urgent {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.dday-soon {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.dday-normal {
+  background: var(--success-bg);
+  color: var(--success);
+}
