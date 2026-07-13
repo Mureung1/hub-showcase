@@ -87,6 +87,19 @@ chore/8-ruff-setup
 - service_role key, DB 접속 정보, 외부 API 시크릿은 백엔드에서만 사용한다. 프론트엔드에 두지 않는다.
 - 백엔드 설정은 pydantic-settings로 한 곳에서 읽는다. 코드 곳곳에서 `os.environ`을 직접 읽지 않는다.
 
+## Supabase
+
+- **publishable/secret 키 체계를 사용한다.** legacy `anon`/`service_role` 키를 쓰지 않는다. 인터넷 자료 대부분이 legacy 기준이므로, 참고 코드를 그대로 가져오지 말고 키 이름을 확인한다.
+
+| 용도 | 키 | 환경변수 | RLS |
+| --- | --- | --- | --- |
+| 프론트엔드 | `sb_publishable_...` | `VITE_SUPABASE_PUBLISHABLE_KEY` | 적용됨 |
+| 백엔드 | `sb_secret_...` | `SUPABASE_SECRET_KEY` | **우회함** |
+
+- **publishable/secret 키는 JWT가 아니다.** `Authorization: Bearer`가 아니라 `apikey` 헤더로 보낸다. Bearer에 넣으면 플랫폼이 JWT로 파싱하려다 `Invalid JWT`로 거부한다.
+- **secret 키는 RLS를 우회한다.** 백엔드에서 secret 키로 접근할 때는 RLS가 지켜주지 않으므로, 사용자 데이터 접근 시 코드에서 직접 소유자를 확인한다.
+- 사용자 단위 데이터(`user_interests`, `mission_records`)는 RLS 정책 `user_id = auth.uid()`로 보호된다. 프론트엔드에서 publishable 키 + 사용자 세션으로 접근한다.
+
 ## 네이밍 경계
 
 - DB와 Python은 `snake_case`, TypeScript는 `camelCase`를 쓴다.
