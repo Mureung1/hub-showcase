@@ -6,6 +6,7 @@
 
 ## 문서
 
+- 🗓️ **[2주차 주간 계획](docs/WEEK2_PLAN.md)** · [GitHub Project 보드](https://github.com/users/dolphin1404/projects/2)
 - 📄 **[기획서 (Wiki)](https://github.com/dolphin1404/NaverConnect_wm/wiki/기획서)** — 문제 정의 · 사용자 시나리오 · 화면 구조 · 핵심 기능 (스크린샷 포함 최신본)
 - 📄 [기획서 (repo 사본)](docs/기획서.md)
 - 🗂️ **[개발 백로그 — 4주 계획](docs/BACKLOG.md)** — Task · 우선순위(P0~P2) · 주차별 목표 · 2주차 Must-Finish
