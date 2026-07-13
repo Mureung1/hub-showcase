@@ -10,7 +10,7 @@ description: 이 프로젝트에서 코드를 작성·수정·리뷰할 때 사�
 ## 실행 순서
 
 1. **`docs/conventions.md`를 먼저 읽는다.** 규칙이 갱신됐을 수 있으므로 항상 최신 문서를 기준으로 한다. 이 스킬 요약과 문서가 다르면 `docs/conventions.md`가 우선.
-2. 작업 대상이 프론트엔드(`src/`)인지 백엔드(예정)인지 판단하고 해당 영역 규칙을 적용한다.
+2. 작업 대상이 프론트엔드(`frontend/`)인지 백엔드(`backend/`)인지 판단하고 해당 영역 규칙을 적용한다.
 3. 규칙에 명시되지 않은 부분은 **주변 기존 코드 스타일**을 따른다 (임의로 새 스타일 도입 금지).
 4. 코드 작성/수정 후 필요하면 `npm run lint`로 확인한다.
 
@@ -21,7 +21,7 @@ description: 이 프로젝트에서 코드를 작성·수정·리뷰할 때 사�
 - 포맷: 프론트=세미콜론 없음·2-space, 백엔드=세미콜론 사용·4-space. **각 영역 기존 스타일을 따른다.**
 
 ### Frontend (React 19 + Vite)
-- 컴포넌트 파일 `PascalCase.jsx`, 컬렉션 모듈은 소문자(`icons.jsx`), 위치는 `src/components/`.
+- 컴포넌트 파일 `PascalCase.jsx`, 컬렉션 모듈은 소문자(`icons.jsx`), 위치는 `frontend/src/components/`.
 - **함수 선언형** 컴포넌트, `export default`는 하단.
 - 네이밍: 컴포넌트 PascalCase / 상수 데이터 `UPPER_SNAKE` / 변수·함수 camelCase / CSS 클래스 kebab-case.
 - import는 외부→내부 순, 내부 import에 `.jsx` 확장자 명시.
