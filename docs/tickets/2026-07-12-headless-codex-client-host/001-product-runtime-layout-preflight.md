@@ -62,8 +62,8 @@
 
 2026-07-13 external review remediation 재검증:
 
-- `npm run test -w @ay-ple/runtime-codex` — 통과, 91개 test.
-- `npm test` — 통과. `runtime-core` 50개, `runtime-codex` 91개, server 53개와 Inspector Playwright 6개 test가 모두 통과했다.
+- `npm run test -w @ay-ple/runtime-codex` — 통과, 92개 test.
+- `npm test` — 통과. `runtime-core` 50개, `runtime-codex` 92개, server 53개와 Inspector Playwright 6개 test가 모두 통과했다.
 - `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector` — 모두 통과.
 - Missing-but-creatable `appDataRoot`의 현재 코드·test·package README와 spec/ticket 문구를 다시 대조했다.
 - 위 결과는 2026-07-13 local checkout에서 직접 실행한 command evidence이며 GitHub Actions 실행으로 기록하지 않는다.

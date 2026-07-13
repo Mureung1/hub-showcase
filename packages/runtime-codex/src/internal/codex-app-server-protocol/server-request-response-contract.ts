@@ -11,14 +11,14 @@ import type { PermissionsRequestApprovalResponse } from './generated/v2/Permissi
 import type { ToolRequestUserInputResponse } from './generated/v2/ToolRequestUserInputResponse.js'
 
 type ServerRequestResponseContract<Response> = {
-  schemaName: string
+  schemaPath: string
   response?: Response
 }
 
 function defineServerRequestResponse<Response>(
   schemaName: string,
 ): ServerRequestResponseContract<Response> {
-  return { schemaName }
+  return { schemaPath: `${schemaName}.json` }
 }
 
 export const serverRequestResponseContracts = {

@@ -114,17 +114,14 @@ function listTypeScriptFiles(dir: string): string[] {
 
 function readResponseSchemas(
   schemaOutputDir: string,
-  contracts: Record<string, { schemaPath?: string; schemaName?: string }>,
+  contracts: Record<string, { schemaPath: string }>,
 ): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(contracts).map(([method, contract]) => {
-      const schemaPath =
-        contract.schemaPath ?? `${contract.schemaName as string}.json`
-
       return [
         method,
         JSON.parse(
-          readFileSync(join(schemaOutputDir, schemaPath), 'utf8'),
+          readFileSync(join(schemaOutputDir, contract.schemaPath), 'utf8'),
         ) as unknown,
       ]
     }),

@@ -11,6 +11,7 @@ import {
   type CodexStdioObservation,
 } from './stdio-transport.js'
 import {
+  fakeInitializeResponseBase,
   withFakeCodexStdioTransport,
   type FakeCodexStdioScenario,
 } from './testing/fake-codex-stdio-transport.js'
@@ -565,6 +566,51 @@ test('CodexStdioTransport coalesces concurrent close through child cleanup', asy
   )
 })
 
+test('CodexStdioTransport rejects close when force-kill termination is not observed', async () => {
+  let forceKillPid = 0
+  const transport = new CodexStdioTransport({
+    command: process.execPath,
+    args: [
+      '-e',
+      `
+        process.on('SIGTERM', () => {})
+        process.stdout.write('{"method":"fixture/ready"}\\n')
+        setInterval(() => {}, 1000)
+      `,
+    ],
+    cwd: tmpdir(),
+    env: process.env,
+    requestTimeoutMs: 100,
+    closeTimeoutMs: 20,
+    forceKill: (pid) => {
+      forceKillPid = pid
+    },
+  })
+
+  try {
+    const observations = transport.observations()[Symbol.asyncIterator]()
+    await transport.start()
+    assert.deepEqual(await nextObservation(observations), {
+      kind: 'server_notification',
+      method: 'fixture/ready',
+    })
+    await assert.rejects(
+      transport.close(),
+      isTransportFailure('close_timeout'),
+    )
+    assert.ok(forceKillPid > 0)
+  } finally {
+    if (forceKillPid === 0) {
+      await transport.close().catch(() => {})
+    }
+
+    if (forceKillPid > 0) {
+      process.kill(forceKillPid, 'SIGKILL')
+      await waitForProcessMissing(forceKillPid)
+    }
+  }
+})
+
 test('CodexStdioTransport allows only one observation consumer', async () => {
   await withFakeCodexStdioTransport(
     { scenario: 'hang' },
@@ -952,10 +998,7 @@ function createInitializeRequest(id: string | number) {
 
 function expectedInitializeResponse(extra: Record<string, unknown> = {}) {
   return {
-    userAgent: 'fake-codex',
-    codexHome: '/fake/codex/home',
-    platformFamily: 'unix',
-    platformOs: 'linux',
+    ...fakeInitializeResponseBase,
     ...extra,
   }
 }
@@ -999,6 +1042,23 @@ function assertProcessMissing(pid: number): void {
       'code' in error &&
       (error as NodeJS.ErrnoException).code === 'ESRCH',
   )
+}
+
+async function waitForProcessMissing(pid: number): Promise<void> {
+  const deadline = Date.now() + 1000
+
+  while (true) {
+    try {
+      assertProcessMissing(pid)
+      return
+    } catch (error) {
+      if (Date.now() >= deadline) {
+        throw error
+      }
+
+      await delay(5)
+    }
+  }
 }
 
 function delay(ms: number): Promise<void> {

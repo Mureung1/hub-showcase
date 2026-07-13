@@ -52,7 +52,7 @@ Immutable raw product layout input을 받은 one-workspace Headless Codex Client
 - [ ] Host가 immutable raw layout input을 보존하고 first-start preflight 성공만 Host-lifetime cache로 보존하며, 후속 explicit restart가 validated cache를 재사용할 seam을 남기고 non-recoverable preflight failure는 같은 Host에서 child를 시작하지 않는다.
 - [ ] Observation pump의 첫 `next()`가 `initialize` request 전에 single consumer로 대기하고 terminal에서 transport cleanup을 완료하며, malformed `initialize` success result는 `ready`를 공개하지 않은 채 non-recoverable `protocol_error`로 connection을 닫는다.
 - [ ] Injected tiny observation queue의 overflow가 bounded terminal `observation_queue_limit`을 만들고 Host는 이를 non-recoverable `protocol_error`로 한 번 publish한 뒤 child를 정리한다.
-- [ ] Stop 중 신규 operation을 받지 않으며 graceful deadline이 끝나면 강제 종료해 orphan process를 남기지 않는다.
+- [ ] Stop 중 신규 operation을 받지 않으며 graceful deadline이 끝나면 강제 종료한다. Exit를 확인한 경우에만 `stopped`를 공개하고 `close_timeout`이면 non-recoverable cleanup failure로 fail closed해 orphan 가능성을 성공으로 숨기지 않는다.
 - [ ] Lifecycle event는 generation, monotonic sequence, timestamp와 allowlisted state만 포함한다.
 - [ ] Subscription 등록과 `{ snapshot, cursor }` capture가 원자적이고 capture 중 event가 유실되지 않으며, connection failure 후에도 같은 subscriber가 lifecycle event를 계속 받는다.
 - [ ] Host public snapshot/event를 재귀 검사했을 때 raw JSON-RPC, raw ID, token, environment, roots, stderr와 debug payload가 없다.

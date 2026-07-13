@@ -22,6 +22,7 @@ export type CodexStdioTransportOptions = {
   maxClientRequestIdentities?: number
   maxQueuedObservations?: number
   startSettlementBarrier?: Promise<void>
+  forceKill?: (pid: number) => void
 }
 
 export type CodexProtocolErrorResponse = {
@@ -47,6 +48,7 @@ export type CodexStdioTransportFailureCode =
   | 'request_identity_limit'
   | 'observation_queue_limit'
   | 'observation_consumer_conflict'
+  | 'close_timeout'
   | 'transport_closed'
 
 export class CodexStdioProtocolError extends Error {
@@ -158,7 +160,9 @@ export type CodexStdioObservation =
       kind: 'transport_lost'
       code: Exclude<
         CodexStdioTransportFailureCode,
-        'observation_consumer_conflict' | 'transport_closed'
+        | 'close_timeout'
+        | 'observation_consumer_conflict'
+        | 'transport_closed'
       >
       message: string
       exitCode?: number | null
@@ -414,8 +418,19 @@ export class CodexStdioTransport {
       return
     }
 
-    child.kill('SIGKILL')
+    if (this.options.forceKill && child.pid !== undefined) {
+      this.options.forceKill(child.pid)
+    } else {
+      child.kill('SIGKILL')
+    }
     await Promise.race([exited, delay(this.options.closeTimeoutMs)])
+
+    if (child.exitCode === null && child.signalCode === null) {
+      throw new CodexStdioTransportError(
+        'close_timeout',
+        'Codex stdio transport could not confirm child termination',
+      )
+    }
   }
 
   private spawnChild(): Promise<void> {
@@ -862,7 +877,9 @@ export class CodexStdioTransport {
   private reportTransportLoss(
     code: Exclude<
       CodexStdioTransportFailureCode,
-      'observation_consumer_conflict' | 'transport_closed'
+      | 'close_timeout'
+      | 'observation_consumer_conflict'
+      | 'transport_closed'
     >,
     message: string,
     details: Pick<

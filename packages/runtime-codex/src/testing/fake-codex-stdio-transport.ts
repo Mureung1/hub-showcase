@@ -6,6 +6,13 @@ import {
   type CodexStdioTransportOptions,
 } from '../stdio-transport.js'
 
+export const fakeInitializeResponseBase = {
+  userAgent: 'fake-codex',
+  codexHome: '/fake/codex/home',
+  platformFamily: 'unix',
+  platformOs: 'linux',
+} as const
+
 export type FakeCodexStdioScenario =
   | 'bidirectional'
   | 'typed_client_responses'
@@ -169,6 +176,7 @@ import readline from 'node:readline'
 
 const scenario = ${JSON.stringify(input.scenario)}
 const ignoreSigterm = ${JSON.stringify(input.ignoreSigterm ?? false)}
+const initializeResponseBase = ${JSON.stringify(fakeInitializeResponseBase)}
 const journalPath = process.argv[2]
 const reader = readline.createInterface({ input: process.stdin })
 
@@ -588,10 +596,7 @@ function commandApprovalRequest({
 
 function initializeResponse(extra = {}) {
   return {
-    userAgent: 'fake-codex',
-    codexHome: '/fake/codex/home',
-    platformFamily: 'unix',
-    platformOs: 'linux',
+    ...initializeResponseBase,
     ...extra,
   }
 }

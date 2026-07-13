@@ -106,7 +106,7 @@ Host snapshot은 최소한 `status`, monotonic `generation`, 마지막 sanitized
 - 자동 restart와 mutating command replay는 하지 않는다. 사용자가 알지 못한 thread·turn·approval 중복을 피하기 위해 caller가 Host 상태를 확인한 뒤 `restart`를 명시적으로 요청한다.
 - `restart`는 같은 validated layout을 재사용해 새 generation을 initialize한다. 이전 generation의 event, response와 pending interaction은 새 generation에 적용하지 않는다.
 - Host는 child request를 보내기 전에 package-internal observation stream의 유일한 consumer pump를 시작하고 첫 `next()`가 대기 중임을 보장한다. Lower queue는 bounded하며 overflow를 안전 failure로 종료한다. Terminal observation 뒤 pump의 `finally`가 transport `close()`까지 수행한다.
-- graceful stop은 child 종료 deadline 뒤 강제 종료할 수 있어야 하며, Node server shutdown과 test cleanup이 orphan process를 남기지 않는다.
+- graceful stop은 child 종료 deadline 뒤 강제 종료하고 실제 exit를 관측해야 성공한다. Force-kill deadline 뒤에도 종료를 확인하지 못하면 `stopped`를 공개하지 않고 stable cleanup failure로 fail closed하며, Node server shutdown과 test cleanup이 orphan process를 성공으로 숨기지 않는다.
 
 Host lifecycle subscription은 subscriber 등록과 current snapshot 및 snapshot이 포함한 마지막 sequence `cursor` 취득을 하나의 atomic operation으로 제공한다. 반환값은 최소 `{ snapshot, cursor, events, unsubscribe }` 의미를 가지며 capture 중 발생한 `sequence > cursor` event는 subscriber-local buffer에 보관한다. Subscriber는 connection loss로 닫히지 않고 명시적 unsubscribe 또는 Host stop까지 `failed → restarting → ready`를 계속 관측한다. Browser adapter는 이 core subscription을 재정의하지 않고 serialize한다.
 
@@ -117,6 +117,7 @@ Host lifecycle subscription은 subscriber 등록과 current snapshot 및 snapsho
 | invalid layout, missing/non-executable binary, unreadable package pin metadata, pin mismatch, runtime-home preparation failure | `false` | 같은 Host configuration으로 restart하지 않는다. Caller가 configuration 또는 외부 filesystem 상태를 고쳐 새 Host를 구성해야 한다. |
 | unsafe protocol/schema/identity failure | `false` | 같은 pinned contract에서 자동·명시적 restart loop를 만들지 않는다. Binary/schema를 다시 검증한 뒤 새 Host를 구성한다. |
 | lower observation queue overflow | `false` | Host pump 불변 조건이나 protocol event volume의 안전 경계가 깨졌으므로 현재 generation을 닫고 같은 Host에서 restart loop를 만들지 않는다. |
+| force-kill 뒤 child termination 미확인 | `false` | `close_timeout`을 stable cleanup failure로 공개하고 같은 Host에서 새 child를 시작하거나 `stopped`로 가장하지 않는다. External process 상태를 확인해 새 Host를 구성해야 한다. |
 | transient spawn failure after successful preflight, initialize timeout/error | `true` | mutating product command가 시작되기 전이므로 같은 validated layout으로 명시적 restart할 수 있다. |
 | unexpected child exit, stdout EOF, stdin/transport failure | `true` | 이전 generation을 fence한 뒤 명시적 restart할 수 있으나 in-flight operation은 replay하지 않는다. |
 | bounded Client request identity registry exhaustion | `true` | Tombstone을 evict해 old response를 오연결하지 않고 generation을 닫는다. 새 generation에서만 명시적으로 다시 시작하며 mutation을 replay하지 않는다. |
@@ -248,7 +249,7 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 | unsupported well-formed Server request | 자동 승인·무시하지 않고 protocol-level unsupported error response | write 성공 시 scoped `host_warning`과 같은 generation `ready`; write 실패 시 generation failure, raw payload 비노출 |
 | Skills discovery error | Host 연결을 끊지 않고 workspace-scoped discovery failure로 반환 | 빈 결과와 구분되는 typed error |
 | browser/SSE disconnect | Host process와 pending interaction을 유지 | reconnect 후 current snapshot으로 수렴 |
-| stop deadline 초과 | 강제 종료하고 모든 connection-scoped state를 닫음 | `stopped`; orphan child 없음 |
+| stop deadline 초과 | 강제 종료 뒤 exit를 관측하면 모든 connection-scoped state를 닫음. Force-kill deadline 뒤에도 미관측이면 fail closed | exit 확인 시 `stopped`; 미확인 시 non-recoverable cleanup failure이며 성공으로 보고하지 않음 |
 
 ### Compatibility and Migration
 
@@ -282,7 +283,7 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 | Seam | 필수 시나리오 |
 | --- | --- |
 | Layout unit/contract | three-root normalization, app data/workspace overlap, package binary pin, runtime-home pair, `process.cwd()` fallback 부재 |
-| Transport lifecycle·pump | concurrent start coalescing, spawn settlement 전 close가 모든 start를 `transport_closed`로 reject, late spawn success 차단, child cleanup, single observation consumer, initialize dispatch 전 active pump, injected queue cap의 terminal safety failure와 terminal 뒤 close |
+| Transport lifecycle·pump | concurrent start coalescing, spawn settlement 전 close가 모든 start를 `transport_closed`로 reject, late spawn success 차단, child cleanup, force-kill 뒤 exit 미관측 시 `close_timeout`, single observation consumer, initialize dispatch 전 active pump, injected queue cap의 terminal safety failure와 terminal 뒤 close |
 | Host + child fake | concurrent start coalescing, initialize 1회, `starting → stopping → stopped` lifecycle epoch fencing, 같은 process에서 thread A/B와 A1→A2 sequential turn, A1/B1 event interleaving, idempotent stop |
 | Identity·response routing | Client request numeric ID와 동시 Server request의 같은 ID, numeric/string ID 구분, malformed `initialize`·`thread/start`·`turn/start` success result의 fail-closed, late/orphan event, duplicate response·terminal이 다른 scope를 바꾸지 않음 |
 | Pending interaction | command/file/permission/user-input answer union과 generated mapping, 같은 item의 여러 callback, 역순 response, one-shot answer, policy amendment 거부, `serverRequest/resolved` race, browser disconnect 동안 pending 유지 |

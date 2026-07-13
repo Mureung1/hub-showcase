@@ -33,6 +33,7 @@
 - Generic transport가 method를 읽었다는 사실만으로 `codex-method-decisions.json` integration을 승격하지 않는다.
 - Package-internal `start()`는 actual child `spawn` event에서 resolve하고 async spawn error에서 reject하는 coalesced Promise다. Concurrent `close()`도 첫 cleanup Promise를 함께 기다린다.
 - `close()`가 child `spawn` 완료 전에 시작하면 coalesced `start()` Promise를 `transport_closed`로 reject한다. 뒤늦은 `spawn` event를 start 성공으로 공개하지 않고, `start()`와 `close()`가 settle된 뒤 child를 남기지 않는다.
+- SIGTERM deadline 뒤 force-kill하고 두 번째 deadline까지 child exit를 관측해야 `close()`가 성공한다. 종료를 확인하지 못하면 `close_timeout`으로 reject해 orphan 가능성을 cleanup 성공으로 숨기지 않는다.
 - Server request identity는 active 동안만 예약하고 response write 또는 internal-only `dismiss()` 뒤 해제한다. Client request lifecycle은 tombstone을 evict하지 않는 bounded registry가 소유한다.
 - Known Client request의 success response는 package-internal method roster와 pinned generated JSON Schema로 runtime validation한 뒤만 resolve한다. 현재 roster는 `initialize`를 소유하며 malformed result는 request-scoped initialize error로 낮추지 않고 unsafe `protocol_error`로 connection을 닫는다. Host의 non-recoverable lifecycle mapping은 ticket 003이 소유한다.
 - Observation stream은 package-internal single-consumer contract다. 두 번째 consumer를 거부하고, consumer가 느리거나 아직 시작되지 않아 queue가 설정된 hard cap에 도달하면 `observation_queue_limit`로 connection을 fail closed한다. 기본 hard cap은 1,024개이며 Host가 first request 전 observation pump를 시작하는 불변 조건은 ticket 003이 소유한다.
@@ -52,6 +53,7 @@
 - [x] Terminal protocol/transport observation 뒤 같은 stdout buffer의 notification이나 Server request를 더 publish하지 않는다.
 - [x] Successful spawn Promise가 concurrent start를 한 child spawn으로 coalesce하고 async spawn failure와 initialize 전 단계를 구분할 수 있다.
 - [x] `close()`가 spawn race에서 먼저 시작하면 모든 coalesced `start()` caller가 `transport_closed`로 reject되고 late `spawn`이 성공으로 보이지 않으며 child가 정리된다.
+- [x] SIGTERM을 무시하는 actual child에서 force-kill 뒤 exit를 관측하고, force-kill seam이 종료를 만들지 않는 결정적 case는 `close_timeout`으로 reject한다.
 - [x] Server request response/error 또는 `dismiss()` 뒤 같은 ID의 순차 reuse는 허용하고 동시에 active인 reuse는 fatal duplicate로 거부한다.
 - [x] Client request lifecycle은 `pending | completed | timed_out` registry 하나가 소유하며 hard cap에서 tombstone eviction 없이 새 wire write 전에 connection을 안전하게 닫는다.
 - [x] Concurrent `close()` caller가 graceful deadline과 force-kill을 포함한 같은 cleanup 완료를 기다린다.
@@ -93,11 +95,12 @@
 
 2026-07-13 external review remediation 재검증:
 
-- `npm run test -w @ay-ple/runtime-codex` — 통과, 91개 test와 start/close race, malformed `initialize` result, single-consumer·queue overflow actual-child 회귀 포함.
-- `npm test` — 통과. `runtime-core` 50개, `runtime-codex` 91개, server 53개와 Inspector Playwright 6개 test가 모두 통과했다.
+- `npm run test -w @ay-ple/runtime-codex` — 통과, 92개 test와 start/close race, force-kill 미관측 `close_timeout`, malformed `initialize` result, single-consumer·queue overflow actual-child 회귀 포함.
+- `npm test` — 통과. `runtime-core` 50개, `runtime-codex` 92개, server 53개와 Inspector Playwright 6개 test가 모두 통과했다.
 - `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector` — 모두 통과.
 - `npm run generate:codex-methods -w @ay-ple/runtime-codex` — 통과, generated Client response schema와 method inventory가 재생성됐고 예상 밖 inventory diff가 없다.
 - 위 결과는 2026-07-13 local checkout에서 직접 실행한 command evidence이며 GitHub Actions 실행으로 기록하지 않는다.
+- Fixed point `125a9bebc2f253a2c7db3b6f78ca5668b0e7dd65` 기준 two-axis review의 Standards 2건과 Spec 1건을 모두 반영했다.
 
 2026-07-13 lifecycle hardening 후 targeted 검증:
 
@@ -111,7 +114,7 @@ Follow-up review의 첫 네 finding도 actual-child seam에서 보강했다. Raw
 
 전체 review 재대조 hardening은 수학적으로 같은 safe integer value인 decimal/exponent JSON 표기를 수용하고 terminal observation 뒤 publication을 차단했다. Actual child `spawn`과 concurrent close는 각각 하나의 Promise로 coalesce한다. Active Server request는 tokenized lifecycle과 `dismiss()`를 사용해 response 또는 native resolution 뒤 identity를 안전하게 해제하고, Client request lifecycle은 tombstone을 evict하지 않는 65,536-entry hard cap으로 memory를 제한한다.
 
-추가 lifecycle hardening은 `close()`가 spawn 완료 전에 시작한 경우 coalesced `start()`를 `transport_closed`로 취소하고 late `spawn`을 성공으로 공개하지 않으며 child cleanup을 마친다. Pinned generator가 package-internal Client response schema aggregate를 만들고 transport의 현재 `initialize` roster가 success result를 resolve 전에 runtime validation한다. Observation stream은 한 consumer만 허용하고 기본 1,024-entry queue hard cap 초과를 terminal transport failure로 처리해 Host pump 전·중의 무제한 memory growth를 막는다.
+추가 lifecycle hardening은 `close()`가 spawn 완료 전에 시작한 경우 coalesced `start()`를 `transport_closed`로 취소하고 late `spawn`을 성공으로 공개하지 않으며 child cleanup을 마친다. Force-kill 뒤에도 exit를 관측하지 못하면 `close_timeout`으로 reject해 cleanup 성공을 가장하지 않는다. Pinned generator가 package-internal Client response schema aggregate를 만들고 transport의 현재 `initialize` roster가 success result를 resolve 전에 runtime validation한다. Observation stream은 한 consumer만 허용하고 기본 1,024-entry queue hard cap 초과를 terminal transport failure로 처리해 Host pump 전·중의 무제한 memory growth를 막는다.
 
 구현 commits:
 
