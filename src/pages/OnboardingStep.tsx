@@ -1,11 +1,14 @@
 import { useNavigate, useParams } from 'react-router-dom'
+import Step1Industry, { isStep1Complete } from '../components/onboarding/Step1Industry'
 import ProgressBar from '../components/ProgressBar'
+import { useOnboarding } from '../context/OnboardingContext'
 import { STEP_META, TOTAL_STEPS } from '../data/onboardingSteps'
 import './OnboardingStep.css'
 
 export default function OnboardingStep() {
   const { step } = useParams()
   const navigate = useNavigate()
+  const { profile } = useOnboarding()
 
   const current = Number(step)
 
@@ -28,8 +31,8 @@ export default function OnboardingStep() {
     else navigate(`/onboarding/${current + 1}`)
   }
 
-  // 스텝별 입력 완료 여부 — 2c~2f에서 세분화
-  const canProceed = false
+  const canProceed =
+    current === 1 ? isStep1Complete(profile.industry) : false
 
   const nextLabel = current === TOTAL_STEPS ? '맞춤 지원금 찾기' : '다음으로'
 
@@ -57,9 +60,11 @@ export default function OnboardingStep() {
         </div>
         <div className="step-hint">{meta.hint}</div>
 
-        {/* 스텝별 입력 UI — 2c~2f에서 구현 */}
         <div className="step-content" data-step={current}>
-          <p className="step-placeholder">(step {current} 입력 UI 준비 중)</p>
+          {current === 1 && <Step1Industry />}
+          {current > 1 && (
+            <p className="step-placeholder">(step {current} 입력 UI 준비 중)</p>
+          )}
         </div>
       </div>
 
