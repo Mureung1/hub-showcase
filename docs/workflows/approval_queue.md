@@ -34,8 +34,8 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 5. 비교 결과가 일치하면 승인된 내용을 `workspace/design/`에 반영한다.
 6. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
    `needs_reconfirmation`으로 처리한다.
-7. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와 Decision에
-   기록한다.
+7. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
+   Decision History에 기록한다.
 8. `docs/workflows/decision_log.md`에 따라 결정 로그를 기록한다.
 9. `docs/workflows/version_history.md`에 따라 버전 기록을 남긴다.
 10. 승인 큐 상태를 `applied`로 갱신한다.
@@ -76,6 +76,42 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 - 사용자가 보류하거나 거부하면 각각 `on_hold`, `rejected`로 이동한다.
 - 어느 경우에도 `needs_reconfirmation`에서 `applied`로 직접 이동하지 않는다.
 - 후속 상태와 전환 이유를 Reconfirmation에 기록해 재확인 이력을 보존한다.
+
+## Non-Approval State Workflow
+
+모든 상태 변경은 기존 Decision History를 덮어쓰지 않고 새 Decision Entry로
+추가하며, 상태를 결정한 시점에 Decision Log도 작성한다.
+
+### On Hold
+
+- 사용자가 검토나 적용을 명시적으로 미룰 때 `on_hold`로 이동한다.
+- 초안, 기준 정보, 기존 결정과 보류 이유를 그대로 보존한다.
+- 사용자가 검토 재개를 요청하면 원본을 재확인한다. 기준이 같으면
+  `pending`, 다르면 `needs_reconfirmation`으로 이동한다.
+- 사용자가 수정 또는 거부를 결정하면 각각 `change_requested`, `rejected`로
+  이동한다.
+
+### Change Requested
+
+- 사용자가 초안, 영향 분석 또는 누락 정보의 수정을 명시할 때
+  `change_requested`로 이동하고 요청 내용을 Decision History에 기록한다.
+- 대상 문서, 변경 목적과 범위가 유지되는 수정은 기존 승인 항목에 개정
+  내용을 추가한다. 이전 Draft는 해당 Decision Entry의 Draft 요약으로
+  추적한다.
+- 대상 문서, 변경 목적 또는 핵심 범위가 달라지면 기존 항목을 종료하지 않고
+  `change_requested`로 보존한 채 새 승인 항목을 만든다. 두 항목은
+  `상위/대체 승인 항목`으로 서로 연결한다.
+- 개정이 끝나면 기준 정보와 원본 요약을 갱신하고 `pending`으로 이동한다.
+- 사용자가 수정 요청을 철회하고 검토를 종료하면 `rejected`로 이동한다.
+
+### Rejected
+
+- 사용자가 제안을 명시적으로 거부하거나 수정 없이 종료할 때 `rejected`로
+  이동한다.
+- 거부된 항목은 삭제하거나 Draft를 재사용하지 않고 결정 이유와 함께
+  보존한다.
+- 같은 목적을 다시 제안하려면 새 승인 항목을 만들고 기존 항목을 연결한다.
+- `rejected`는 종료 상태이며 기존 항목을 `pending`으로 되돌리지 않는다.
 
 ## Safety Rule
 
