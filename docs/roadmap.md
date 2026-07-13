@@ -11,6 +11,10 @@ Actuator, CI와 문서 검증까지다. 공개 HTTP 표면은 `/actuator/health`
 `/actuator/prometheus`뿐이며 아래 Task가 나열됐다는 사실은 비즈니스 기능이
 구현됐다는 뜻이 아니다.
 
+백로그 게시 변경은 [Draft PR #39](https://github.com/gdh0730/hub/pull/39)에서
+검토한다. PP-001~PP-036은 Issue #3~#38과 1:1로 연결됐으며 CI 통과 뒤 사람이
+squash merge한다.
+
 ## 목표와 완료 경계
 
 목표 사용자 여정은 다음과 같다.

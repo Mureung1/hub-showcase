@@ -2,12 +2,15 @@
 id: WI-0002
 title: 플레이스픽 AI 서비스 완성 Task 백로그 게시
 type: work-record
-status: in-progress
+status: done
 date: 2026-07-13
 owners:
   - placepick-team
 related:
   - ../roadmap.md
+  - https://github.com/gdh0730/hub/pull/39
+  - https://github.com/gdh0730/hub/issues/3
+  - https://github.com/gdh0730/hub/issues/38
   - ../adr/ADR-0004-service-boundary.md
   - ../adr/ADR-0005-anonymous-session-room-capability.md
   - ../adr/ADR-0006-api-worker-outbox-events.md
@@ -101,20 +104,33 @@ GitHub Flow의 수동 squash merge 원칙 때문에 PR 병합은 사람이 최�
    36개 Task로 분해하고 선행 관계를 고정했다.
 6. 미래 구현의 완료 증거와 이번 문서 게시의 검증 증거를 구분해 planned Work
    Record가 완료를 허위 주장하지 않도록 작성했다.
+7. 기준 문서를 commit `37c3edf`로 먼저 push한 뒤 fork에 PP-001~PP-036을 Issue
+   #3~#38로 생성하고 각 Issue와 Work Record·roadmap을 양방향 연결했다.
+8. Issue 링크를 commit `bb0a19e`로 push하고 `main` 대상 한국어 Draft PR #39를
+   생성했다.
 
 ## 구현 결과와 검증 증거
 
-현재 이 기록은 Task 문서와 Issue를 게시하는 중이므로 status를 `in-progress`로 둔다.
-완료 판단에는 다음 증거가 모두 필요하다.
+서비스 완성 Task 게시를 완료해 이 기록의 status를 `done`으로 변경했다. 확보한
+증거는 다음과 같다.
 
-- `npm run docs:check`와 `npm run docs:test` 성공 결과
-- Docker 기반 전체 `make check` 성공 결과
-- `PP-001`부터 `PP-036`까지 중복 없는 실제 Issue URL
-- `docs/service-completion-backlog` 원격 브랜치와 한국어 Draft PR URL
-- `git diff origin/main...HEAD`에 문서·지침 외 구현 코드가 없다는 확인
-- 사용자 소유 `plans/` 미추적 파일이 stage되지 않았다는 `git status` 확인
-
-이 증거를 확보한 뒤 이 문서의 status와 결과를 같은 브랜치에서 `done`으로 갱신한다.
+- roadmap, 5개 accepted ADR과 WI-0002~WI-0038을 작성했다. 미래 Task 36개는 모두
+  `planned`이며 구현 완료를 주장하지 않는다.
+- Dev Container의 Java 17.0.16, Node 24.18.0, Docker CLI 28.3.3에서 `make check`가
+  성공했다. Gradle unit·integration·Eval과 Compose·shell·문서 검사를 한 번의 표준
+  lifecycle로 통과했다.
+- 문서 검사에서 75개 Markdown 파일의 lint, frontmatter·링크·ID·placeholder·비밀·
+  추적성 정책과 8개 음성 회귀가 성공했다.
+- fork `gdh0730/hub`의 Issue를 조회해 [PP-001 #3](https://github.com/gdh0730/hub/issues/3)부터
+  [PP-036 #38](https://github.com/gdh0730/hub/issues/38)까지 36개, 누락 0개, 중복
+  0개를 확인했다. 각 Issue에는 `enhancement` label과 immutable commit의 WI·ADR
+  link가 있다.
+- 원격 `docs/service-completion-backlog` 브랜치와 한국어 Draft
+  [PR #39](https://github.com/gdh0730/hub/pull/39)을 만들었다.
+- `git diff origin/main...HEAD`는 문서·저장소 지침 49개 파일만 포함하고 backend
+  source, migration, frontend source와 환경 설정을 변경하지 않는다.
+- 사용자 소유 `plans/플레이스픽 AI 서비스 완성 Task 작성 및 실행 계획.md`는
+  미추적 상태로 보존했고 어느 commit에도 포함하지 않았다.
 
 ## AI 사용과 사람의 검증
 
