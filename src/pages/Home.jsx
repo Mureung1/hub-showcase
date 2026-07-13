@@ -64,7 +64,7 @@ function Home() {
               <section key={type}>
                 <Link
                   to={`/type/${type}`}
-                  className="mb-2 inline-block text-sm font-semibold text-gray-600 hover:text-orange-600"
+                  className="mb-2 inline-block text-sm font-semibold text-text-secondary hover:text-primary-text"
                 >
                   {TYPE_LABELS[type]} →
                 </Link>

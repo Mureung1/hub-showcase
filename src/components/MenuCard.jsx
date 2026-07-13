@@ -8,17 +8,17 @@ function MenuCard({ to, rank, image, emoji, name, price, priceSuffix = '원', wi
     <li className={width}>
       <Link
         to={to}
-        className="relative flex flex-col overflow-hidden rounded-xl border border-orange-100 bg-white shadow-sm transition hover:border-orange-300 hover:shadow-md"
+        className="relative flex flex-col overflow-hidden rounded-card border border-border bg-bg-surface shadow-sm transition hover:border-primary hover:shadow-md"
       >
         {rank && (
-          <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs font-semibold text-orange-600 shadow">
+          <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-bg-surface/90 text-xs font-semibold text-primary-text shadow">
             {rank}
           </span>
         )}
         <Thumbnail image={image} emoji={emoji} alt={name} className="aspect-square w-full text-4xl" />
         <div className="p-3">
-          <p className="truncate text-sm font-medium text-gray-700">{name}</p>
-          <p className="mt-1 text-lg font-extrabold text-orange-600">
+          <p className="truncate text-sm font-medium text-text-primary">{name}</p>
+          <p className="mt-1 text-lg font-extrabold text-primary-text">
             {price.toLocaleString()}
             {priceSuffix}
           </p>
