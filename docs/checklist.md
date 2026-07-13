@@ -128,7 +128,9 @@
 
 ---
 
-## 6단계 — 캘린더 연동 (FullCalendar)
+## 6단계 — 캘린더 연동
+
+### 6-A: FullCalendar.js 기본 (필수)
 
 - [ ] FullCalendar.js 설치 및 기본 캘린더 뷰 렌더링
 - [ ] 개인 일정 등록 폼 구현 (일정명, 시작일, 종료일, 유형: 시험/알바/기타)
@@ -138,6 +140,31 @@
 - [ ] 스크랩 시 공고 접수기간/마감일 자동 캘린더 등록 연동
 - [ ] 캘린더 월간/주간 뷰 전환 기능
 - [ ] 일정 클릭 시 상세 정보 표시
+
+### 6-B: Google Calendar 연동 (선택 - 권장)
+
+- [ ] Google Cloud Console 프로젝트 생성 & OAuth 2.0 설정
+- [ ] Google Calendar API 활성화
+- [ ] 프론트엔드: `@react-oauth/google` 라이브러리 설치
+- [ ] 로그인 시 Google 계정 연동 (OAuth 플로우)
+- [ ] `google-auth-library-nodejs` 설치 (백엔드)
+- [ ] 사용자 액세스 토큰 저장 (DB의 User 테이블 확장)
+- [ ] 공고 마감일 → Google Calendar 자동 생성 API 구현
+  - `POST /api/calendar/sync` (스크랩 시 트리거)
+  - 공고 제목 + 마감일 + 설명 (sourceUrl)
+- [ ] 캘린더 이벤트 삭제 API (`DELETE /api/calendar/events/:eventId`)
+- [ ] 사용자 Google Calendar와 실시간 동기화
+- [ ] 마감 전 알림 설정 (Google Calendar 자체 알림 활용)
+
+### 6-C: iCalendar (.ics) 내보내기 (선택 - 폴백)
+
+- [ ] 프론트엔드: 공고 목록 → .ics 파일 생성 함수
+- [ ] `ics` 라이브러리 설치
+- [ ] `GET /api/calendar/export.ics` 엔드포인트 구현
+  - 스크랩된 공고 또는 필터링된 공고 기준
+- [ ] 다운로드 버튼 UI (대시보드 우측 패널)
+- [ ] 구독 링크 생성 (`webcal://` 프로토콜)
+  - Google Calendar, Outlook, Apple Calendar 자동 구독 가능
 
 ---
 
