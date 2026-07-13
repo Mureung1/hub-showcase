@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# env / secrets (miricat/.env 등 — 절대 커밋 금지)
+.env
+.env.local
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

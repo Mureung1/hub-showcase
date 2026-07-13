@@ -1,0 +1,37 @@
+/* 미리캣 디자인 토큰 — 프로토타입(docs/prototype-flow.html)에서 확정 */
+:root {
+  --ink: #33261a;          /* 본문 짙은 흙색 */
+  --paper: #fbf6ee;        /* 모래빛 배경 */
+  --mist: #ece1cf;         /* 경계선 */
+  --slate: #8b7863;        /* 보조 텍스트 */
+
+  --signal: #e4572e;       /* 경보(빨강, Tier1) */
+  --signal-soft: #fce8df;
+  --warn: #c98a00;         /* 참고(앰버, Tier2) */
+  --warn-soft: #fbefd2;
+  --route: #3e7cb1;        /* 지도 경로/강조(파랑) */
+  --route-soft: #e9f1f8;
+  --good: #5b8a5a;         /* 정상(초록) */
+  --good-soft: #e9f1e6;
+
+  --fur: #dca96e;
+  --fur-light: #f2ddb6;
+  --fur-dark: #4a3423;
+  --chat: #2e2823;         /* 디스코드 채널 배경 */
+
+  --card: #fff;
+  --radius: 16px;
+
+  --font: "IBM Plex Sans KR", -apple-system, "Apple SD Gothic Neo", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font);
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.55;
+}
