@@ -1,0 +1,21 @@
+/* Ported from docs/gameforge-agent-prototype.html :root variables */
+:root {
+  --bg-page: #161618;
+  --panel: #1e1e21;
+  --panel-2: #242428;
+  --panel-3: #2b2b30;
+  --border: #38383e;
+  --border-strong: #4a4a52;
+  --text: #e9e9ec;
+  --text-dim: #9c9ca4;
+  --text-mute: #6c6c74;
+  --teal: #3ecf9a;
+  --teal-bg: rgba(62, 207, 154, 0.12);
+  --amber: #f0a942;
+  --amber-bg: rgba(240, 169, 66, 0.12);
+  --red: #e5615f;
+  --red-bg: rgba(229, 97, 95, 0.12);
+  --radius: 8px;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "Inter", -apple-system, sans-serif;
+}
