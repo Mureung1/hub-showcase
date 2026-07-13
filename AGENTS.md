@@ -2,8 +2,12 @@
 
 ## 목적과 정본
 
-이 저장소는 Java 17 기반 플레이스픽 AI 백엔드와 검증 하네스를 만든다.
-초기 단계에서는 비즈니스 API나 프런트엔드를 임의로 구현하지 않는다.
+이 저장소는 Java 17 기반 플레이스픽 AI 서비스와 검증 하네스를 만든다. 현재 실행
+코드는 개발 환경과 백엔드 skeleton 단계이며, 서비스 완성 순서와 계약은
+`docs/roadmap.md`와 `docs/contracts.md`를 따른다.
+
+비즈니스 API나 프런트엔드는 계약 상태가 `specified`이고 연결된 `PP-*` Issue와
+Work Record가 있을 때만 구현한다. 구현·테스트·계약 문서는 같은 PR에서 갱신한다.
 
 정보가 충돌하면 다음 우선순위를 적용한다.
 
@@ -43,11 +47,15 @@ Gradle을 직접 실행할 때도 루트의 `./gradlew`만 사용한다. `check`
 - Controller는 변환과 위임만 하고 비즈니스 규칙은 application 계층에 둔다.
 - 도메인은 외부 API DTO, HTTP, 영속성 세부 구현에 의존하지 않는다.
 - 외부 호출은 전용 client adapter 뒤에 두고 DB 트랜잭션 안에서 실행하지 않는다.
-- 추천 처리는 향후 Job 저장과 Redis Streams 발행을 거치는 비동기 흐름으로 만든다.
+- 추천 처리는 Job·transactional outbox 저장과 Redis Streams 전달을 거치는 승인된
+  비동기 흐름으로 만든다.
 - `local`, `test`, `load` 프로필은 `PLACEPICK_EXTERNAL_MODE=mock`이어야 한다.
 - 테스트와 부하 도구에서 실제 Naver·LLM endpoint나 API key를 사용하지 않는다.
 - 비밀값, `.env`, 토큰, 개인정보를 출력하거나 커밋하지 않는다.
 - 현재 공개 HTTP 표면은 `/actuator/health`와 `/actuator/prometheus`뿐이다.
+- 계약의 `specified`는 구현 완료나 공개를 뜻하지 않는다. 실제 코드와 자동 검증이
+  완료돼야 `implemented`로 바꾼다.
+- 실제 외부 API 검증은 승인된 `staging-live` GitHub Environment에서만 수행한다.
 
 ## 문제 해결과 문서 라우팅
 
