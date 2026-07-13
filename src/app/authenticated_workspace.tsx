@@ -16,6 +16,7 @@ import {
 import './styles/authenticated_workspace.css';
 
 const INITIAL_SITUATION_QUERY = SUGGESTED_SITUATIONS[0]?.query ?? '';
+const SAVE_URL_ERROR_MESSAGE = '올바른 URL을 입력해주세요.';
 
 export function AuthenticatedWorkspace() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('home');
@@ -28,6 +29,7 @@ export function AuthenticatedWorkspace() {
   );
   const [saveUrl, setSaveUrl] = useState('');
   const [saveComplete, setSaveComplete] = useState(false);
+  const [saveError, setSaveError] = useState<string>();
 
   const visibleInsights = useMemo(() => {
     return filterInsights(insights, activeCategory, globalQuery);
@@ -57,14 +59,29 @@ export function AuthenticatedWorkspace() {
   function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!saveUrl.trim()) {
+    const normalizedUrl = saveUrl.trim();
+
+    if (!normalizedUrl) {
+      setSaveComplete(false);
+      setSaveError(SAVE_URL_ERROR_MESSAGE);
       return;
     }
 
+    let parsedUrl: URL;
+
+    try {
+      parsedUrl = new URL(normalizedUrl);
+    } catch {
+      setSaveComplete(false);
+      setSaveError(SAVE_URL_ERROR_MESSAGE);
+      return;
+    }
+
+    setSaveError(undefined);
     setInsights((current) => [
       {
         categories: [],
-        domain: new URL(saveUrl).hostname.replace(/^www\./, ''),
+        domain: parsedUrl.hostname.replace(/^www\./, ''),
         id: Date.now(),
         memo: '카테고리와 메모는 나중에 정리할 수 있습니다.',
         thumbnail: 'NEW',
@@ -75,6 +92,11 @@ export function AuthenticatedWorkspace() {
     ]);
     setActiveCategory('All');
     setSaveComplete(true);
+  }
+
+  function handleSaveUrlChange(value: string) {
+    setSaveUrl(value);
+    setSaveError(undefined);
   }
 
   return (
@@ -117,9 +139,10 @@ export function AuthenticatedWorkspace() {
 
         {activeTab === 'save' ? (
           <SavePage
+            errorMessage={saveError}
             onSave={handleSave}
             onSaveCompleteChange={setSaveComplete}
-            onUrlChange={setSaveUrl}
+            onUrlChange={handleSaveUrlChange}
             saveComplete={saveComplete}
             saveUrl={saveUrl}
             suggestedCategories={SUGGESTED_CATEGORIES}

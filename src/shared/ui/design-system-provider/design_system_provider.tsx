@@ -1,3 +1,5 @@
+import '@wanteddev/wds/global.css';
+
 import type { PropsWithChildren } from 'react';
 import { ThemeProvider } from '@wanteddev/wds';
 

@@ -1,4 +1,3 @@
-import '@wanteddev/wds/global.css';
 import '@/app/styles/global.css';
 
 import { StrictMode } from 'react';

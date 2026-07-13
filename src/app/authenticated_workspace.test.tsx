@@ -8,6 +8,15 @@ import { DesignSystemProvider } from '@/shared/ui';
 import { AuthenticatedWorkspace } from './authenticated_workspace';
 
 beforeAll(() => {
+  vi.stubGlobal(
+    'ResizeObserver',
+    class ResizeObserverMock {
+      disconnect = vi.fn();
+      observe = vi.fn();
+      unobserve = vi.fn();
+    }
+  );
+
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({
@@ -57,5 +66,20 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.getByRole('heading', { name: 'URL만 넣고 바로 보관해요' })
     ).not.toBeNull();
+
+    const saveUrl = screen.getByLabelText('링크 URL');
+
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      '올바른 URL을 입력해주세요.'
+    );
+    expect(saveUrl.getAttribute('aria-invalid')).toBe('true');
+    expect(saveUrl.getAttribute('aria-describedby')).toBe('save-url-error');
+
+    await user.type(saveUrl, 'https://example.com/article');
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(screen.getByRole('status').textContent).toContain('저장 완료');
   });
 });
