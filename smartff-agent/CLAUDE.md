@@ -1,47 +1,46 @@
-# CLAUDE.md
+# SmartFF Project Context
 
-> SmartFF Agent Project Context
->
-> This document provides project context, development rules, and coding guidelines for Claude Code.
->
-> Last Updated: 2026-07-09
+This document defines the project philosophy, development rules, and coding guidelines for SmartFF.
+
+Last Updated: 2026-07-13
 
 ---
 
 # Project Overview
 
-SmartFF Agent is an AI Decision Support System (DSS) for GS25 convenience store owners.
+SmartFF is an AI Decision Support System (DSS) for GS25 convenience store owners.
 
-The goal is **NOT** to automate ordering.
+The goal is **not** to automate ordering.
 
-The goal is to help store owners make better ordering decisions by analyzing:
+The goal is to help store owners make better ordering decisions through data analysis.
+
+SmartFF analyzes:
 
 - Sales Data
 - Order Data
+- Inventory Data
 - Waste Data
 - Management Accounting Metrics
 
-Always preserve this philosophy.
+AI explains the data.
+
+The store owner makes the final decision.
 
 ---
 
 # Product Philosophy
 
-SmartFF is NOT
+SmartFF is NOT:
 
 - ERP
 - POS
 - Automatic Ordering System
 
-SmartFF IS
+SmartFF IS:
 
 - AI Decision Support System
 - Management Accounting Dashboard
 - Data-driven Recommendation Tool
-
-AI explains the data.
-
-The store owner makes the final decision.
 
 Never implement automatic ordering unless explicitly requested.
 
@@ -49,17 +48,16 @@ Never implement automatic ordering unless explicitly requested.
 
 # Source of Truth
 
-Always follow the project documents in the following order.
+Always follow project documents in this order.
 
 Priority
 
-1. PROJECT_PLAN.md
-2. DESIGN_SYSTEM.md
-3. CLAUDE.md
+1. project_plan.md
+2. design_system.md
+3. claude.md
+4. tasks.md
 
-If there is any conflict,
-
-PROJECT_PLAN.md has the highest priority.
+If documents conflict, follow the higher priority document.
 
 ---
 
@@ -72,12 +70,12 @@ Frontend
 - Vite
 - Tailwind CSS
 
-Backend (Future)
+Backend
 
 - Express.js
 - TypeScript
 
-Data Analysis
+Data Pipeline
 
 - Python
 - Pandas
@@ -93,43 +91,94 @@ Version Control
 
 ---
 
-# Backend Timeline
+# Development Flow
 
-Express backend development starts mid-next week.
+Development should follow this order.
 
-Until then, focus on Frontend only.
+1. Data Pipeline
+2. Backend API
+3. Frontend Integration
 
-Assume mock API responses for now.
+Until backend APIs are ready,
+
+use mock API responses.
+
+The Master Dataset is the single source of truth.
 
 ---
 
 # Project Structure
 
 ```
-web/
+smartff-agent/
 
-src/
+frontend/
+    src/
+        components/
+        pages/
+        layouts/
+        hooks/
+        services/
+        types/
+        utils/
+        constants/
 
-components/
+backend/
+    src/
 
-pages/
+data/
+    raw/
+    master/
+    processed/
+    scripts/
 
-layouts/
+docs/
+    design_system.md
+    project_plan.md
+    tasks.md
+    scrum.md
+    discussion.md
+    
 
-hooks/
-
-services/
-
-types/
-
-utils/
-
-constants/
+README.md
+CLAUDE.md
 ```
 
 Keep the project structure simple.
 
-Do not introduce unnecessary folders.
+Avoid unnecessary folders.
+
+---
+
+# Data Pipeline
+
+All business logic must follow this flow.
+
+Raw Excel Files
+
+↓
+
+Python ETL
+
+↓
+
+Product Master
+
+↓
+
+Master Dataset
+
+↓
+
+Backend API
+
+↓
+
+Frontend
+
+Never modify raw data directly.
+
+Always generate processed data through Python ETL.
 
 ---
 
@@ -137,41 +186,29 @@ Do not introduce unnecessary folders.
 
 Dashboard
 
-Answer:
-
 "What should I do today?"
 
-Purpose
-
 - AI Brief
-- KPI
+- KPI Summary
 - Recommendation
-- Category Summary
+- Financial Summary
 
 ---
 
 Analysis
 
-Answer
-
 "Why did this happen?"
-
-Purpose
 
 - Sales Trend
 - Hourly Analysis
-- Weekly Pattern
-- Waste Analysis
+- Weekday Analysis
+- Waste Trend
 
 ---
 
 Financial
 
-Answer
-
-"How does this affect profitability?"
-
-Purpose
+"How profitable is the business?"
 
 - Margin Analysis
 - Waste Cost
@@ -182,15 +219,12 @@ Purpose
 
 Upload
 
-Answer
-
 "How do I provide my data?"
 
-Purpose
-
-- CSV Upload
+- File Upload
 - Upload History
 - Dataset Status
+- Validation Result
 
 Never mix page responsibilities.
 
@@ -198,44 +232,21 @@ Never mix page responsibilities.
 
 # UI Guidelines
 
-Always follow DESIGN_SYSTEM.md.
+Always follow design_system.md.
 
-Important principles
+Principles
 
-- Enterprise SaaS
 - Korean-first UI
 - GS25 store owner perspective
+- Enterprise SaaS
 - Spacious layout
 - Minimal interface
 - Professional
 - Trustworthy
 
-Never invent a new design language.
-
-Reuse existing components whenever possible.
-
 Consistency is more important than creativity.
 
----
-
-# Coding Principles
-
-Always prefer
-
-- readable code
-- reusable components
-- simple architecture
-- small components
-- explicit naming
-
-Avoid
-
-- premature optimization
-- unnecessary abstraction
-- duplicated code
-- speculative features
-
-Implement only what is required.
+Reuse components whenever possible.
 
 ---
 
@@ -247,15 +258,43 @@ Use
 - TypeScript
 - Tailwind CSS
 
+Structure
+
+```
+components/
+pages/
+layouts/
+hooks/
+services/
+types/
+utils/
+constants/
+```
+
+Create reusable components only when actually reused.
+
 Prefer composition over duplication.
 
-If a component is reusable,
+---
 
-move it into
+# Coding Principles
 
-components/common
+Always prefer
 
-Do not create common components before they are actually reused.
+- Readable code
+- Reusable components
+- Simple architecture
+- Small components
+- Explicit naming
+
+Avoid
+
+- Premature optimization
+- Unnecessary abstraction
+- Duplicated code
+- Speculative features
+
+Implement only what is required.
 
 ---
 
@@ -265,11 +304,8 @@ Components
 
 PascalCase
 
-Example
-
 ```
 KPICard.tsx
-
 RecommendationCard.tsx
 ```
 
@@ -279,8 +315,7 @@ camelCase
 
 ```
 salesTrend
-
-wasteRate
+profitMargin
 ```
 
 Constants
@@ -289,6 +324,7 @@ UPPER_SNAKE_CASE
 
 ```
 API_BASE_URL
+MAX_UPLOAD_SIZE
 ```
 
 Folders
@@ -297,9 +333,8 @@ lowercase
 
 ```
 components
-
+pages
 services
-
 hooks
 ```
 
@@ -307,30 +342,25 @@ hooks
 
 # Git Convention
 
-Commit format
+Commit prefixes
 
 ```
 feat:
-
 fix:
-
 docs:
-
 style:
-
 refactor:
-
 chore:
 ```
 
 Examples
 
 ```
-feat(dashboard): add KPI cards
+feat(financial): add profit contribution chart
 
-docs: update DESIGN_SYSTEM
+fix(upload): validate excel file
 
-fix(upload): validate CSV file
+docs: update design system
 ```
 
 ---
@@ -343,7 +373,9 @@ Current MVP includes
 - Analysis
 - Financial
 - Upload
-- CSV Data Processing
+- CSV Upload
+- Product Master Generation
+- Master Dataset Generation
 - Management Accounting Analysis
 - AI Recommendation
 
@@ -352,8 +384,8 @@ Do NOT implement
 - Automatic Ordering
 - POS Integration
 - Weather Integration
-- Real-time Inventory
 - Machine Learning Prediction
+- Real-time Inventory
 
 unless explicitly requested.
 
@@ -361,23 +393,13 @@ unless explicitly requested.
 
 # Before Implementing
 
-Before writing code, always verify:
+Always verify:
 
-1.
-
-Is this feature defined in PROJECT_PLAN.md?
-
-2.
-
-Does DESIGN_SYSTEM.md already define the UI?
-
-3.
-
-Can an existing component be reused?
-
-4.
-
-Is there a simpler implementation?
+1. Is this feature defined in project_plan.md?
+2. Does design_system.md already define the UI?
+3. Can an existing component be reused?
+4. Does this require changes to the Master Dataset?
+5. Is there a simpler implementation?
 
 If uncertain,
 
@@ -387,21 +409,21 @@ ask before implementing.
 
 # Success Criteria
 
-Every implementation should satisfy:
+Every implementation should be
 
-✓ follows PROJECT_PLAN.md
+✓ Based on project_plan.md
 
-✓ follows DESIGN_SYSTEM.md
+✓ Consistent with design_system.md
 
-✓ supports GS25 store owners
+✓ Helpful for GS25 store owners
 
-✓ simple
+✓ Simple
 
-✓ reusable
+✓ Reusable
 
-✓ readable
+✓ Readable
 
-✓ production-quality
+✓ Production-ready
 
 Build software that helps people make better decisions,
 
