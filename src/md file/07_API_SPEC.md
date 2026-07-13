@@ -1,33 +1,58 @@
-<html>
-<body>
-<!--StartFragment--><html><head></head><body><h1>📄 07_API_SPEC.md</h1><h1>AI Portfolio Agent</h1><hr><h1>1. 문서 목적</h1><p>본 문서는 AI Portfolio Agent의 API 명세를 정의한다.</p><p>API는 Frontend, Backend, AI Agent 간의 통신 규격을 정의하며, 모든 요청과 응답은 본 문서를 따른다.</p><p>AI 분석 작업은 일반적인 CRUD 요청이 아닌 <strong>비동기 Job 기반 처리</strong>를 원칙으로 한다.</p><hr><h1>2. API 설계 원칙</h1><h2>2.1 RESTful API</h2><p>리소스 중심 URI를 사용한다.</p><p>예시</p><pre><code class="language-text">GET /repositories
+# 📄 07_API_SPEC.md
 
+# Portfolio Zero-to-One Builder
+
+---
+
+# 0. 변경 배경
+
+기존 API는 Repository/Resume/JobDescription/Matching/Portfolio를 각각 등록·분석·매칭하는 구조였다. 피봇 이후 Resume, JD, Matching API는 제거하고, 인터뷰 세션 중심의 API로 재정의했다. 상세 배경은 [[01_PRD]] 0장 참고.
+
+---
+
+# 1. 문서 목적
+
+본 문서는 Portfolio Zero-to-One Builder의 API 명세를 정의한다.
+
+AI 분석(코드 스캔)과 인터뷰 응답 생성은 비동기 Job 또는 즉시 응답 방식으로 처리한다.
+
+---
+
+# 2. API 설계 원칙
+
+## 2.1 RESTful API
+
+```text
 POST /repositories
+GET /repositories/{id}/candidates
+POST /interviews
+POST /interviews/{id}/messages
+```
 
-GET /portfolios/{id}
-</code></pre><hr><h2>2.2 JSON 기반 통신</h2><p>모든 요청과 응답은 JSON 형식을 사용한다.</p><hr><h2>2.3 비동기 AI 작업</h2><p>AI 분석 및 생성 작업은 Job을 생성하고 비동기로 처리한다.</p><pre><code class="language-text">Request
+## 2.2 JSON 기반 통신
 
-↓
+모든 요청과 응답은 JSON 형식을 사용한다.
 
-Job Created
+## 2.3 코드 스캔은 비동기 Job, 인터뷰 응답은 동기 처리
 
-↓
+레포지토리 스캔은 시간이 걸릴 수 있어 Job으로 처리하고, 인터뷰 메시지 응답은 스트리밍 없이 요청/응답(동기)으로 처리한다. (MVP에서는 스트리밍 제외)
 
-Processing
+## 2.4 공통 응답 형식
 
-↓
+성공
 
-Completed
-
-↓
-
-Result
-</code></pre><hr><h2>2.4 공통 응답 형식</h2><p>성공</p><pre><code class="language-json">{
+```json
+{
   "success": true,
   "data": {},
   "error": null
 }
-</code></pre><p>실패</p><pre><code class="language-json">{
+```
+
+실패
+
+```json
+{
   "success": false,
   "data": null,
   "error": {
@@ -35,112 +60,289 @@ Result
     "message": ""
   }
 }
-</code></pre><hr><h1>3. 인증(Authentication)</h1><p>MVP에서는 JWT 기반 인증을 사용한다.</p><p>Header</p><pre><code class="language-text">Authorization: Bearer &lt;token&gt;
-</code></pre><hr><h1>4. Repository API</h1><h2>Repository 등록</h2><h3>POST</h3><pre><code class="language-text">/api/v1/repositories
-</code></pre><h3>Request</h3><pre><code class="language-json">{
+```
+
+---
+
+# 3. 인증(Authentication)
+
+MVP에서는 회원가입/로그인 없이 **토큰 기반 익명 세션**으로 동작한다.
+
+```
+인터뷰 세션 생성 시 추측 불가능한 랜덤 UUID(interview_id)를 발급
+
+↓
+
+이후 모든 요청은 이 UUID를 알아야만 처리 (Google Docs 공유 링크와 동일한 방식)
+
+↓
+
+UUID는 순차 증가 값이 아니어야 하며, 응답 본문/로그에 불필요하게 노출하지 않는다
+```
+
+로그인 기반 계정 인증(JWT 등)은 Private 레포 지원이 필요해지는 시점에 함께 도입한다 (18장 향후 확장 참고). 서버가 GitHub API를 호출할 때 사용하는 Personal Access Token은 이것과 별개의 서버 전용 자격증명이며 유저 인증과 무관하다 ([[05_CODE_SCANNER_SCORER]] 10장 참고).
+
+---
+
+# 4. Repository API
+
+## Repository 등록 및 스캔 시작
+
+### POST
+
+```text
+/api/v1/repositories
+```
+
+### Request
+
+```json
+{
   "repository_url": "https://github.com/user/project"
 }
-</code></pre><h3>Response</h3><pre><code class="language-json">{
-  "repository_id": "repo_001"
-}
-</code></pre><hr><h2>Repository 목록 조회</h2><h3>GET</h3><pre><code class="language-text">/api/v1/repositories
-</code></pre><hr><h2>Repository 상세 조회</h2><h3>GET</h3><pre><code class="language-text">/api/v1/repositories/{repositoryId}
-</code></pre><hr><h2>Repository 삭제</h2><h3>DELETE</h3><pre><code class="language-text">/api/v1/repositories/{repositoryId}
-</code></pre><hr><h1>5. GitHub Analyzer API</h1><h2>분석 시작</h2><h3>POST</h3><pre><code class="language-text">/api/v1/repositories/{repositoryId}/analyze
-</code></pre><h3>Response</h3><pre><code class="language-json">{
+```
+
+### Response
+
+```json
+{
+  "repository_id": "repo_001",
   "job_id": "job_001",
   "status": "PENDING"
 }
-</code></pre><hr><h2>분석 결과 조회</h2><h3>GET</h3><pre><code class="language-text">/api/v1/repositories/{repositoryId}/metadata
-</code></pre><h3>Response</h3><p>ProjectMetadataSchema</p><hr><h1>6. Resume API</h1><h2>이력서 업로드</h2><h3>POST</h3><pre><code class="language-text">/api/v1/resumes
-</code></pre><p>multipart/form-data 사용</p><hr><h2>이력서 조회</h2><h3>GET</h3><pre><code class="language-text">/api/v1/resumes
-</code></pre><hr><h2>이력서 분석</h2><h3>POST</h3><pre><code class="language-text">/api/v1/resumes/{resumeId}/analyze
-</code></pre><p>Response</p><pre><code class="language-json">{
-  "job_id": "job_resume_001"
+```
+
+---
+
+## 후보 파일 조회
+
+### GET
+
+```text
+/api/v1/repositories/{repositoryId}/candidates
+```
+
+### Response
+
+CandidateFileSchema 목록 ([[09_DATA_SCHEMA]] 참고)
+
+---
+
+# 5. Interview API
+
+## 인터뷰 세션 시작
+
+### POST
+
+```text
+/api/v1/interviews
+```
+
+### Request
+
+```json
+{
+  "repository_id": "repo_001"
 }
-</code></pre><hr><h1>7. Job Description API</h1><h2>JD 등록</h2><h3>POST</h3><pre><code class="language-text">/api/v1/job-descriptions
-</code></pre><p>Request</p><pre><code class="language-json">{
-  "company": "Example",
-  "position": "Backend Developer",
-  "jd_text": "..."
+```
+
+### Response
+
+```json
+{
+  "interview_id": "interview_001",
+  "question": "",
+  "cited_code": ""
 }
-</code></pre><hr><h2>JD 조회</h2><h3>GET</h3><pre><code class="language-text">/api/v1/job-descriptions
-</code></pre><hr><h2>JD 분석</h2><h3>POST</h3><pre><code class="language-text">/api/v1/job-descriptions/{jdId}/analyze
-</code></pre><hr><h1>8. Matching API</h1><h2>프로젝트 매칭</h2><h3>POST</h3><pre><code class="language-text">/api/v1/matching
-</code></pre><p>Request</p><pre><code class="language-json">{
-  "repository_ids": [
-    "repo_001"
-  ],
-  "resume_id": "resume_001",
-  "jd_id": "jd_001"
+```
+
+---
+
+## 답변 제출 및 다음 질문 수신
+
+### POST
+
+```text
+/api/v1/interviews/{interviewId}/messages
+```
+
+### Request
+
+```json
+{
+  "answer": ""
 }
-</code></pre><p>Response</p><p>MatchingResultSchema</p><hr><h1>9. Portfolio API</h1><h2>생성 요청</h2><h3>POST</h3><pre><code class="language-text">/api/v1/portfolios/generate
-</code></pre><p>Request</p><pre><code class="language-json">{
-  "jd_id": "jd_001",
-  "project_ids": [
-    "project_001"
-  ]
+```
+
+### Response
+
+```json
+{
+  "judgement": "SUFFICIENT | AMBIGUOUS | LOW_UNDERSTANDING",
+  "content_type": "PROBLEM_SOLVING | IMPLEMENTATION_INTRO",
+  "next_question": "",
+  "portfolio_markdown": ""
 }
-</code></pre><p>Response</p><pre><code class="language-json">{
-  "job_id": "job_portfolio_001"
+```
+
+`next_question`이 follow-up(재질문)인지, 같은 파일의 다음 chunk에 대한 질문인지, 다음 후보 파일의 신규 질문인지는 `judgement`와 서버가 관리하는 `current_chunk_index`/`current_candidate_index`로 판단한다 ([[08_DATABASE]] 8장 참고).
+
+---
+
+## 인터뷰 현재 마크다운 조회
+
+### GET
+
+```text
+/api/v1/interviews/{interviewId}/markdown
+```
+
+### Response
+
+```json
+{
+  "portfolio_markdown": ""
 }
-</code></pre><hr><h2>목록 조회</h2><h3>GET</h3><pre><code class="language-text">/api/v1/portfolios
-</code></pre><hr><h2>상세 조회</h2><h3>GET</h3><pre><code class="language-text">/api/v1/portfolios/{portfolioId}
-</code></pre><hr><h2>수정</h2><h3>PUT</h3><pre><code class="language-text">/api/v1/portfolios/{portfolioId}
-</code></pre><hr><h2>삭제</h2><h3>DELETE</h3><pre><code class="language-text">/api/v1/portfolios/{portfolioId}
-</code></pre><hr><h1>10. Export API</h1><h2>Markdown 다운로드</h2><h3>GET</h3><pre><code class="language-text">/api/v1/portfolios/{portfolioId}/export/md
-</code></pre><hr><h2>PDF 다운로드</h2><h3>GET</h3><pre><code class="language-text">/api/v1/portfolios/{portfolioId}/export/pdf
-</code></pre><hr><h2>PPT 다운로드</h2><h3>GET</h3><pre><code class="language-text">/api/v1/portfolios/{portfolioId}/export/ppt
-</code></pre><hr><h1>11. Job API</h1><p>AI 작업 진행 상태를 조회한다.</p><hr><h2>Job 조회</h2><h3>GET</h3><pre><code class="language-text">/api/v1/jobs/{jobId}
-</code></pre><p>Response</p><pre><code class="language-json">{
+```
+
+---
+
+## 인터뷰 종료
+
+### POST
+
+```text
+/api/v1/interviews/{interviewId}/complete
+```
+
+---
+
+# 6. Export API
+
+## Markdown 다운로드
+
+### GET
+
+```text
+/api/v1/interviews/{interviewId}/export/md
+```
+
+---
+
+# 7. Job API
+
+코드 스캔 작업 진행 상태를 조회한다.
+
+## Job 조회
+
+### GET
+
+```text
+/api/v1/jobs/{jobId}
+```
+
+### Response
+
+```json
+{
   "job_id": "job_001",
   "status": "RUNNING",
   "progress": 65
 }
-</code></pre><p>status</p><ul><li><p>PENDING</p></li><li><p>RUNNING</p></li><li><p>COMPLETED</p></li><li><p>FAILED</p></li></ul><hr><h1>12. API ↔ Agent 매핑 표</h1><p>이 매핑 표는 Frontend, Backend, AI Agent 구현이 모두 같은 흐름을 기준으로 작업할 수 있도록 돕는다.</p>
+```
+
+status
+
+* PENDING
+* RUNNING
+* COMPLETED
+* FAILED
+
+---
+
+# 8. API ↔ Agent 매핑 표
+
 API | 호출되는 Agent
 -- | --
-POST /repositories/{repositoryId}/analyze | GitHub Analyzer
-POST /resumes/{resumeId}/analyze | Resume Analyzer
-POST /job-descriptions/{jdId}/analyze | JD Analyzer
-POST /matching | Matching Agent
-POST /portfolios/generate | Story Planner → Portfolio Writer → Reviewer
+POST /repositories | Code Scanner & Scorer
+GET /repositories/{id}/candidates | Code Scanner & Scorer (조회)
+POST /interviews | Question Generator
+POST /interviews/{id}/messages | Ambiguity Checker → Writer / Tone Agent
+GET /interviews/{id}/export/md | Export (Writer 결과 그대로 반환)
 
-<hr><h1>15. API Versioning</h1><p>모든 API는 버전을 포함한다.</p><p>예시</p><pre><code class="language-text">/api/v1/...
-</code></pre><p>Breaking Change 발생 시</p><pre><code class="language-text">/api/v2/...
-</code></pre><p>를 사용한다.</p><hr><h1>16. API 보안</h1><ul><li><p>HTTPS 사용</p></li><li><p>JWT 인증</p></li><li><p>CORS 설정</p></li><li><p>Rate Limit 적용</p></li><li><p>입력값 검증</p></li><li><p>파일 업로드 크기 제한</p></li></ul><hr><h1>17. API 실행 흐름</h1><pre><code class="language-text">Frontend
+---
 
-↓
+# 9. API Versioning
 
-Repository 등록
+```text
+/api/v1/...
+```
 
-↓
+Breaking Change 발생 시 `/api/v2/...`를 사용한다.
 
-GitHub Analyzer 실행
+---
 
-↓
+# 10. API 보안
 
-Project Metadata 저장
+* HTTPS 사용
+* CORS 설정
+* Rate Limit 적용
+* 입력값 검증 (repository_url 형식 검증 등)
+* **SSRF 방지**: `repository_url`은 호스트가 `github.com`인지 서버에서 반드시 검증한 뒤에만 접근한다. 내부망 주소를 GitHub URL처럼 위장해 서버가 대신 접근하게 만드는 공격을 차단한다.
+* **레포 규모 상한**: 파일 개수가 임계값을 넘는 레포는 스캔 자체를 거부한다.
 
-↓
+---
 
-Resume 업로드
+# 11. API 실행 흐름
 
-↓
-
-JD 등록
-
-↓
-
-Matching 실행
-
-↓
-
-Portfolio 생성
+```text
+Frontend
 
 ↓
 
-Export(PDF/PPT)
-</code></pre><hr><h1>18. 향후 확장</h1><p>향후 다음 API를 추가할 수 있다.</p><ul><li><p>Interview API</p></li><li><p>Career Report API</p></li><li><p>Skill Gap Analysis API</p></li><li><p>Portfolio Feedback API</p></li><li><p>AI Chat API</p></li></ul><p>기존 API 구조를 변경하지 않고 확장 가능하도록 설계한다.</p><hr><h1>19. 핵심 설계 요약</h1><p>AI Portfolio Agent의 API는 <strong>AI 작업 중심(Job-Oriented) API</strong>를 지향한다.</p><p>모든 장시간 작업은 비동기 Job으로 실행되며, Frontend는 Job 상태를 조회하여 진행 상황을 표시한다.</p><p>API는 <code inline="">09_DATA_SCHEMA.md</code>에서 정의한 공통 Schema를 기반으로 데이터를 주고받으며, Frontend·Backend·AI Agent 간의 일관된 데이터 계약을 유지한다.</p></body></html><!--EndFragment-->
-</body>
-</html>
+Repository 등록 (스캔 시작)
+
+↓
+
+후보 파일 조회
+
+↓
+
+인터뷰 세션 시작
+
+↓
+
+메시지 반복 제출
+
+↓
+
+인터뷰 종료
+
+↓
+
+Markdown Export
+```
+
+---
+
+# 12. 향후 확장
+
+* Resume/JD 선택 입력 API
+* Streaming Message API (SSE)
+* Interview Prep API
+* Career Report API
+* Private 레포 지원 (GitHub OAuth 로그인 도입, 계정 기반 인증으로 전환)
+* 세션 재개 API (브라우저를 닫았다가 돌아와도 기존 interview_id로 이어서 진행)
+* Markdown 편집 API (지금은 마크다운 프리뷰가 읽기 전용이지만, markdown_content를 단순 문자열로 저장해두어 나중에 편집 기능을 붙여도 데이터 모델 변경이 필요 없도록 설계함)
+
+기존 API 구조를 변경하지 않고 확장 가능하도록 설계한다.
+
+---
+
+# 13. 핵심 설계 요약
+
+Portfolio Zero-to-One Builder의 API는 **인터뷰 세션 중심 API**를 지향한다.
+
+코드 스캔은 비동기 Job으로, 인터뷰 메시지는 동기 요청/응답으로 처리하며, Frontend는 매 응답마다 갱신된 전체 마크다운을 받아 프리뷰를 다시 렌더링한다.
+
+API는 [[09_DATA_SCHEMA]]에서 정의한 공통 Schema를 기반으로 데이터를 주고받는다.

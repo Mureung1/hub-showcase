@@ -1,6 +1,31 @@
-<html>
-<body>
-<!--StartFragment--><html><head></head><body><h1>📄 08_DATABASE.md</h1><h1>AI Portfolio Agent</h1><hr><h1>1. 문서 목적</h1><p>본 문서는 AI Portfolio Agent의 데이터베이스 구조를 정의한다.</p><p>데이터베이스는 사용자 정보 저장소 이상의 사용자의 프로젝트를 AI가 이해하고 재사용할 수 있는 <strong>Knowledge Base</strong> 역할을 수행한다.</p><p>모든 AI Agent는 데이터베이스에 저장된 구조화된 데이터를 기반으로 동작한다.</p><hr><h1>2. 설계 원칙</h1><h2>2.1 Project Library 중심 설계</h2><p>시스템의 핵심은 Project Library이다.</p><p>GitHub Repository는 최초 1회 분석하며, 분석 결과(Project Metadata)를 저장하고 이후에는 이를 재사용한다.</p><pre><code class="language-text">GitHub
+# 📄 08_DATABASE.md
+
+# Portfolio Zero-to-One Builder
+
+---
+
+# 0. 변경 배경
+
+기존 스키마의 Resume, JobDescription, ProjectTag(직무 관련성 태그), PortfolioVersion 등 JD 매칭 관련 엔티티를 제거하고, 인터뷰 세션과 후보 파일 중심의 스키마로 재정의했다. 상세 배경은 [[01_PRD]] 0장 참고.
+
+---
+
+# 1. 문서 목적
+
+본 문서는 Portfolio Zero-to-One Builder의 데이터베이스 구조를 정의한다.
+
+데이터베이스는 인터뷰 세션의 진행 상태와 각 턴의 근거(코드, 답변)를 기록하는 역할을 수행한다.
+
+---
+
+# 2. 설계 원칙
+
+## 2.1 Session 중심 설계
+
+시스템의 핵심은 InterviewSession이다. 하나의 Repository 스캔은 하나의 인터뷰 세션으로 이어지며, JD 매칭처럼 여러 결과를 조합하지 않는다.
+
+```text
+GitHub
 
 ↓
 
@@ -8,282 +33,226 @@ Repository
 
 ↓
 
-Project Metadata
+CandidateFile (스코어링 결과)
 
 ↓
 
-Project Library
+InterviewSession
 
 ↓
 
-Portfolio Generation
-</code></pre><hr><h2>2.2 Evidence 기반 저장</h2><p>AI가 생성한 모든 정보는 반드시 근거(Evidence)와 연결되어야 한다.</p><p>예)</p><pre><code>Redis Cache 적용
+InterviewMessage (turn 단위)
 
 ↓
 
-README.md
+PortfolioDraft
+```
 
-↓
+---
 
-RedisConfig.java
+## 2.2 Evidence 기반 저장
 
-↓
+모든 포트폴리오 문장은 근거(코드 스니펫 + 유저 답변)와 연결되어야 한다.
 
-docs/performance.md
-</code></pre><hr><h2>2.3 분석 데이터 재사용</h2><p>동일 Repository를 매번 다시 분석하지 않는다.</p><p>프로젝트 변경 시에만 재분석을 수행한다.</p><hr><h1>3. ERD (Entity Relationship Diagram)</h1><pre><code class="language-text">User
+---
+
+## 2.3 세션 단위 저장, 재사용 없음
+
+동일 Repository라도 인터뷰를 다시 시작하면 새로운 InterviewSession을 생성한다. (JD 매칭이 없으므로 Project Library 재사용 구조는 사용하지 않는다.)
+
+---
+
+# 3. ERD (Entity Relationship Diagram)
+
+```text
+User (선택적, MVP는 익명 세션 허용)
+ │
+ ▼
+Repository
+ │
+ ▼
+CandidateFile
+ │
+ ▼
+InterviewSession
  │
  ├──────────────┐
- │              │
  ▼              ▼
-Resume      Repository
-                 │
-                 ▼
-         Project Metadata
-                 │
-         ┌───────┴────────┐
-         ▼                ▼
-     Evidence        Project Tag
-                 │
-                 ▼
-            Portfolio
-                 │
-                 ▼
-         Portfolio Version
-                 │
-                 ▼
-          Download History
-</code></pre><hr><h1>4. Entity 목록</h1><p>시스템은 다음 Entity로 구성한다.</p>
+InterviewMessage   PortfolioDraft
+```
+
+---
+
+# 4. Entity 목록
+
 Entity | 설명
 -- | --
-User | 사용자
-Resume | 이력서
+User | 사용자 (MVP에서는 선택 사항, 익명 세션 허용)
 Repository | GitHub 저장소
-ProjectMetadata | 프로젝트 분석 결과
-Evidence | 분석 근거
-ProjectTag | 프로젝트 태그
-JobDescription | 채용공고
-Portfolio | 생성된 포트폴리오
-PortfolioVersion | 포트폴리오 버전
-DownloadHistory | 다운로드 기록
+CandidateFile | 스코어링된 후보 파일
+InterviewSession | 인터뷰 세션
+InterviewMessage | 인터뷰 turn (질문/답변/판정)
+PortfolioDraft | 현재 시점의 전체 마크다운 초안
 
-<hr><h1>5. User</h1><p>사용자 기본 정보</p><h3>Fields</h3><pre><code>id
+---
 
-email
+# 5. User
 
-password
+## Fields
 
-github_username
-
-profile_image
-
+```
+id
+email (선택)
+github_username (선택)
 created_at
+```
 
-updated_at
-</code></pre><hr><h1>6. Resume</h1><p>사용자가 업로드한 이력서</p><h3>Fields</h3><pre><code>id
+MVP에서는 로그인 없이 세션 토큰만으로 동작할 수 있다.
 
-user_id
+---
 
-file_name
+# 6. Repository
 
-file_path
+GitHub Repository 정보
 
-parsed_text
+## Fields
 
-created_at
-</code></pre><hr><h1>7. Repository</h1><p>GitHub Repository 정보</p><h3>Fields</h3><pre><code>id
-
-user_id
-
-repository_name
-
+```
+id
+user_id (nullable)
 repository_url
-
 default_branch
-
-visibility
-
-last_commit_sha
-
-last_analyzed_at
-
+last_scanned_at
 created_at
-</code></pre><h3>관계</h3><p>User</p><p>↓</p><p>Repository (1:N)</p><hr><h1>8. Project Metadata</h1><p>GitHub Analyzer가 생성하는 핵심 데이터</p><h3>Fields</h3><pre><code>id
+```
 
+### 관계
+
+User → Repository (1:N, user_id nullable)
+
+---
+
+# 7. CandidateFile
+
+Code Scanner & Scorer가 생성하는 핵심 데이터
+
+## Fields
+
+```
+id
 repository_id
-
-project_name
-
-description
-
-purpose
-
-architecture
-
-analysis_confidence
-
-created_at
-
-updated_at
-</code></pre><hr><h3>JSON Columns</h3><pre><code>tech_stack
-
-features
-
-deployment
-
-architecture_detail
-
-summary
-
-</code></pre><hr><h3>관계</h3><p>Repository</p><p>↓</p><p>ProjectMetadata (1:1)</p><hr><h1>9. Evidence</h1><p>AI 생성의 근거</p><h3>Fields</h3><pre><code>id
-
-metadata_id
-
 file_path
-
-file_type
-
-claim
-
-start_line
-
-end_line
-
-confidence
-</code></pre><p>예)</p><pre><code>claim
-
-↓
-
-Redis Cache 적용
-
-↓
-
-README.md
-
-↓
-
-line 40~58
-</code></pre><hr><h1>10. Project Tag</h1><p>프로젝트 검색을 위한 태그</p><p>예)</p><pre><code>Backend
-
-Spring
-
-Redis
-
-Docker
-
-FastAPI
-
-AI
-
-LLM
-
-Agent
-</code></pre><h3>Fields</h3><pre><code>id
-
-metadata_id
-
-tag_name
-
 score
-</code></pre><hr><h1>11. Job Description</h1><p>사용자가 입력한 채용공고</p><h3>Fields</h3><pre><code>id
-
-user_id
-
-company
-
-position
-
-jd_text
-
-required_skills
-
-preferred_skills
-
-keywords
-
+score_reason
+chunks (JSON 배열, 파일당 최대 2개)
+  └ [{ "code_snippet": "", "pattern": "" }, ...]
 created_at
-</code></pre><hr><h1>12. Portfolio</h1><p>생성된 포트폴리오</p><h3>Fields</h3><pre><code>id
+```
 
-user_id
+`chunks`는 별도 테이블로 분리하지 않고 JSON 컬럼으로 저장한다(파일당 최대 2개로 개수가 작고, 항상 CandidateFile과 함께 조회되므로 JOIN이 필요 없음).
 
-metadata_id
+### 관계
 
-jd_id
+Repository → CandidateFile (1:N)
 
-title
+---
 
+# 8. InterviewSession
+
+## Fields
+
+```
+id
+repository_id
+status (IN_PROGRESS | COMPLETED)
+current_candidate_index    (몇 번째 후보 파일을 인터뷰 중인지)
+current_chunk_index        (그 파일의 몇 번째 chunk/질문 차례인지, 0 또는 1)
+created_at
+updated_at
+```
+
+`id`는 순차 증가 값이 아닌 랜덤 UUID로 발급한다. 로그인 없는 MVP에서는 이 UUID가 사실상 접근 토큰 역할을 하므로([[07_API_SPEC]] 3장 참고), 추측 가능한 값이면 안 된다.
+
+한 파일에서 chunk가 최대 2개까지 나올 수 있으므로(`[[05_CODE_SCANNER_SCORER]]` 7장 참고), 인터뷰 진행 위치는 "몇 번째 파일"과 "그 파일의 몇 번째 chunk" 두 값으로 함께 추적해야 한다. `current_chunk_index`가 그 파일의 마지막 chunk를 넘어서면 `current_candidate_index`를 다음 파일로 올리고 `current_chunk_index`를 0으로 리셋한다.
+
+### 관계
+
+Repository → InterviewSession (1:N)
+
+---
+
+# 9. InterviewMessage
+
+인터뷰 turn 단위 기록
+
+## Fields
+
+```
+id
+session_id
+candidate_file_id
+chunk_index          (candidate_file.chunks 배열 내 인덱스, 어떤 chunk에서 나온 질문인지)
+question
+cited_code
+user_answer
+judgement (SUFFICIENT | AMBIGUOUS | LOW_UNDERSTANDING)
+content_type (PROBLEM_SOLVING | IMPLEMENTATION_INTRO)
+is_follow_up (boolean)
+created_at
+```
+
+`candidate_file_id`만으로는 한 파일에서 나온 chunk 2개 중 어느 것인지 구분할 수 없으므로 `chunk_index`를 함께 저장한다. `content_type`은 [[06_INTERVIEW_WRITER]] 3장의 섹션 배치 규칙(Key Implementation vs Trouble Shooting)에 사용된다.
+
+### 관계
+
+InterviewSession → InterviewMessage (1:N)
+
+---
+
+# 10. PortfolioDraft
+
+턴마다 재생성되는 전체 마크다운 스냅샷
+
+## Fields
+
+```
+id
+session_id
 markdown_content
-
-status
-
+turn_number
 created_at
-</code></pre><p>status</p><pre><code>Draft
+```
 
-Published
+### 관계
 
-Archived
-</code></pre><hr><h1>13. Portfolio Version</h1><p>포트폴리오 버전 관리</p><h3>Fields</h3><pre><code>id
+InterviewSession → PortfolioDraft (1:N, 최신 turn_number가 현재 초안)
 
-portfolio_id
+---
 
-version
+# 11. 관계(Relationship)
 
-markdown
-
-created_at
-</code></pre><hr><h1>14. Download History</h1><p>다운로드 기록</p><h3>Fields</h3><pre><code>id
-
-portfolio_id
-
-download_type
-
-download_time
-</code></pre><p>download_type</p><pre><code>PDF
-
-PPT
-
-Markdown
-</code></pre><hr><h1>15. 관계(Relationship)</h1><pre><code>User
-
+```text
+User
 │
-
-├── Resume
-
-├── Repository
-
-├── JobDescription
-
-└── Portfolio
-
-
+└── Repository
 
 Repository
-
 │
+├── CandidateFile
+└── InterviewSession
 
-└── ProjectMetadata
-
-
-
-ProjectMetadata
-
+InterviewSession
 │
+├── InterviewMessage
+└── PortfolioDraft
+```
 
-├── Evidence
+---
 
-├── ProjectTag
+# 12. AI Agent 데이터 흐름
 
-└── Portfolio
-
-
-
-Portfolio
-
-│
-
-├── PortfolioVersion
-
-└── DownloadHistory
-</code></pre><hr><h1>16. AI Agent 데이터 흐름</h1><pre><code>GitHub Repository
+```text
+GitHub Repository
 
 ↓
 
@@ -291,87 +260,72 @@ Repository
 
 ↓
 
-Project Metadata
+CandidateFile
 
 ↓
 
-Evidence
+InterviewSession
 
 ↓
 
-Project Library
+InterviewMessage (반복)
 
 ↓
 
-Matching Agent
+PortfolioDraft (턴마다 갱신)
+```
 
-↓
+---
 
-Portfolio Generator
+# 13. 인덱스 전략
 
-↓
-
-Portfolio
-</code></pre><hr><h1>17. 인덱스 전략</h1><p>조회 성능 향상을 위해 다음 필드에 인덱스를 생성한다.</p><pre><code>repository_name
-
-github_username
-
-company
-
-position
-
+```
+repository_url
+session_id (InterviewMessage, PortfolioDraft)
 created_at
+```
 
-tag_name
+---
 
-last_analyzed_at
-</code></pre><p>향후 벡터 검색을 도입할 경우</p><pre><code>Project Metadata
+# 14. 향후 확장
 
-Job Description
-</code></pre><p>에 Embedding 컬럼을 추가할 수 있도록 설계한다.</p><hr><h1>18. 향후 확장</h1><p>향후 다음 테이블을 추가할 수 있다.</p><pre><code>InterviewQuestion
+향후 다음 테이블을 추가할 수 있다.
 
+```
+ResumeContext (선택 입력)
+JDContext (선택 입력)
+InterviewPrepQuestion
 CareerReport
-
-SkillGapAnalysis
-
-ProjectFeedback
-
 LLMLog
-
 PromptHistory
+```
 
-AgentExecution
+현재 구조는 이러한 기능을 추가해도 기존 스키마를 크게 변경하지 않고 확장할 수 있도록 설계한다.
 
-VectorEmbedding
-</code></pre><p>현재 구조는 이러한 기능을 추가해도 기존 스키마를 크게 변경하지 않고 확장할 수 있도록 설계한다.</p><hr><h1>19. 핵심 설계 요약</h1><p>AI Portfolio Agent의 데이터베이스는 일반적인 CRUD 시스템이 아니라, 사용자의 프로젝트를 AI가 이해하고 재사용하기 위한 Knowledge Base를 구축하는 것을 목표로 한다.</p><p>핵심 데이터 흐름은 다음과 같다.</p><pre><code class="language-text">GitHub Repository
+---
 
-↓
+# 15. 핵심 설계 요약
 
-Project Metadata
+Portfolio Zero-to-One Builder의 데이터베이스는 JD 매칭을 위한 재사용형 Project Library가 아니라, 하나의 인터뷰 세션이 진행되는 과정과 각 턴의 근거를 기록하는 것을 목표로 한다.
 
-↓
-
-Evidence
-
-↓
-
-Project Library
+```text
+GitHub Repository
 
 ↓
 
-Job Description
+CandidateFile
 
 ↓
 
-Matching Agent
+InterviewSession
 
 ↓
 
-Portfolio Generator
+InterviewMessage
 
 ↓
 
-Portfolio Output
-</code></pre><p>Project Metadata와 Evidence는 모든 AI Agent가 공통으로 참조하는 핵심 데이터이며, 시스템 전체의 기반이 된다.</p></body></html><!--EndFragment-->
-</body>
-</html>
+PortfolioDraft
+```
+
+InterviewMessage와 PortfolioDraft는 모든 AI Agent가 공통으로 참조하는 핵심 데이터이며, 시스템 전체의 기반이 된다.

@@ -1,92 +1,58 @@
 # 📄 03_SYSTEM_ARCHITECTURE.md
 
-# AI Portfolio Agent
+# Portfolio Zero-to-One Builder
+
+---
+
+# 0. 변경 배경
+
+기존 "Project Library 재사용 + JD 매칭" 중심 아키텍처를 폐기하고, 단일 레포에 대한 즉시 인터뷰 흐름으로 단순화했다. 상세 배경은 [[01_PRD]] 0장 참고.
 
 ---
 
 # 1. 문서 목적
 
-본 문서는 AI Portfolio Agent 시스템의 전체 구조와 데이터 흐름을 정의한다.
-
-시스템 내부의 주요 구성 요소와 AI Agent 간의 관계를 명확하게 정의하여 이후
-
-* Backend 설계
-* Database 설계
-* API 설계
-* AI Agent 설계
-* 개발 환경 구성
-
-의 기준 문서로 활용한다.
+본 문서는 Portfolio Zero-to-One Builder 시스템의 전체 구조와 데이터 흐름을 정의한다.
 
 ---
 
 # 2. 시스템 설계 방향
 
-AI Portfolio Agent는 AI 텍스트 생성 서비스가 아니라,
-
-사용자의 실제 개발 경험 데이터를 분석하고 저장한 뒤,
-
-채용공고에 맞는 프로젝트를 선택하여 포트폴리오를 생성하는
-
-**Evidence 기반 AI Agent 시스템**을 목표로 한다.
+본 시스템은 JD 맞춤형 텍스트 생성 서비스가 아니라, 유저의 GitHub 코드를 근거로 AI가 질문을 던지고 유저의 답변만으로 포트폴리오를 완성하는 **인터뷰 기반 가이드 시스템**을 목표로 한다.
 
 ---
 
 # 3. 핵심 아키텍처 원칙
 
-## 3.1 Project First Architecture
+## 3.1 Interview First, No Library Reuse
 
-기존 방식:
+기존 방식은 "Project Library"에 분석 결과를 저장해 여러 JD에 재사용하는 구조였다.
 
-```
-JD 입력
-
-↓
-
-GitHub 분석
-
-↓
-
-포트폴리오 생성
-```
-
-문제:
-
-* 매번 GitHub 분석 필요
-* 비용 증가
-* 응답 시간 증가
-
-개선 방식:
+본 서비스는 JD 매칭 자체가 없으므로, 레포 분석 결과를 여러 번 재사용할 필요가 없다. 한 번의 세션 안에서:
 
 ```
-GitHub 연결
+GitHub 레포 입력
 
 ↓
 
-Project Library 생성
+코드 스캔 / 후보 파일 선정
 
 ↓
 
-프로젝트 데이터 저장
+인터뷰 세션 진행
 
 ↓
 
-JD 입력
-
-↓
-
-Project Library 검색
-
-↓
-
-포트폴리오 생성
+마크다운 초안 완성
 ```
 
-장점:
+으로 끝나는 단발성 흐름을 기본으로 한다. 세션 결과(인터뷰 히스토리, 마크다운 초안)는 이어서 계속하거나 다시 불러올 수 있도록 저장만 한다.
 
-* 분석 결과 재사용
-* 빠른 생성
-* 비용 절감
+---
+
+## 3.2 단순 필터링 우선, 고도화는 확장 지점으로
+
+코드 분석 단계에서 AST 분석, Git Diff 시맨틱 분석 같은 정교한 알고리즘은 초기 단계에서 제외한다. 대신 확장자 필터링 + 파일 크기 + 이름 패턴 정도의 단순 스코어링으로 시작하고, 스코어링 로직을 독립된 모듈 경계로 분리하여 이후 AST 기반 분석으로 교체 가능하도록 설계한다. 상세는 [[05_CODE_SCANNER_SCORER]] 참고.
 
 ---
 
@@ -109,21 +75,15 @@ Project Library 검색
 
                      │
 
-        ┌────────────┼────────────┐
+                     ▼
 
-        ▼            ▼            ▼
-
- Project Library   Resume      JD Manager
-
-        │            │            │
-
-        └────────────┼────────────┘
+           Code Scanner & Scorer
 
                      │
 
                      ▼
 
-              AI Agent System
+              Interview Agent
 
                      │
 
@@ -131,19 +91,20 @@ Project Library 검색
 
         ▼            ▼            ▼
 
- GitHub Analyzer  Matching   Generator
+ Question         Ambiguity     Writer /
+ Generator        Checker       Tone Agent
 
                      │
 
                      ▼
 
-             Portfolio Output
+           Portfolio Draft (Markdown)
 
                      │
 
                      ▼
 
-              PDF / PPT / MD
+              Markdown Download
 ```
 
 ---
@@ -156,470 +117,202 @@ Project Library 검색
 
 ## 역할
 
-사용자가 서비스를 이용하는 인터페이스 제공
-
----
+좌측 채팅(인터뷰), 우측 실시간 마크다운 프리뷰로 구성된 듀얼 레이아웃 인터페이스 제공
 
 ## 주요 기능
 
-* 회원 관리
-* GitHub 연결
-* Project Library 관리
-* Resume 업로드
-* JD 입력
-* AI 생성 상태 확인
-* Portfolio Preview
+* GitHub URL 입력
+* 인터뷰 채팅
+* 실시간 마크다운 프리뷰
 * 다운로드
 
 ---
 
-# 5.2 Project Library
+# 5.2 Code Scanner & Scorer
 
 ## 역할
 
-사용자의 프로젝트 정보를 저장하고 관리하는 핵심 영역
-
----
-
-## 목적
-
-한 번 분석한 프로젝트 정보를 재사용한다.
-
-JD가 변경될 때마다 GitHub를 다시 분석하지 않는다.
-
----
+레포지토리에서 소스 파일을 필터링하고 단순 가중치로 점수를 매겨 인터뷰 후보 파일을 선정한다.
 
 ## 저장 정보
 
-### 기본 정보
+* 후보 파일 경로
+* 점수 및 점수 산정 근거
+* 대표 코드 스니펫
 
-* 프로젝트명
-* Repository 주소
-* 생성일
-* 마지막 분석일
-
-### 기술 정보
-
-* Programming Language
-* Framework
-* Database
-* Infrastructure
-* Library
-
-### 프로젝트 이해 정보
-
-* 프로젝트 목적
-* 핵심 기능
-* 해결하려던 문제
-* 구현 과정에서 발생한 문제와 해결법
-* 주요 구현 내용
-* 예상 성과
-
-### AI 분석 정보
-
-* 프로젝트 태그
-* 직무 관련성
-* 난이도
-* 추천 점수
-
-### Evidence 정보
-
-분석 근거 저장
-
-예:
-
-```
-README.md
-
-requirements.txt
-
-package.json
-
-docs/performance.md
-```
+상세는 [[05_CODE_SCANNER_SCORER]] 참고.
 
 ---
 
-# 5.3 GitHub Analyzer
+# 5.3 Question Generator
 
 ## 역할
 
-GitHub Repository를 분석하여 Project Metadata를 생성한다.
-
----
+점수가 높은 후보 파일의 원본 코드를 인용하여 핀포인트 질문을 생성한다.
 
 ## 입력
 
 ```
-GitHub Repository URL
-
-또는
-
-GitHub Account Connection
+Candidate File (raw code)
 ```
-
----
-
-## 분석 데이터
-
-### Documentation
-
-* README.md
-* docs/
-* GitHub Wiki (존재 시)
-
-### Configuration
-
-* package.json
-* requirements.txt
-* pom.xml
-* build.gradle
-* Dockerfile
-* docker-compose.yml
-
-### Structure
-
-* Directory Tree
-* 주요 폴더 구조
-
-### Code Sample
-
-필요한 경우 대표 코드 일부 분석
-
----
 
 ## 출력
 
-Project Metadata
-
-예:
-
-```json
-{
- "project_name": "",
- "purpose": "",
- "features": [],
- "tech_stack": [],
- "architecture": "",
- "evidence": []
-}
+```
+Pinpoint Question (코드 인용 포함)
 ```
 
 ---
 
-# 5.4 Resume Analyzer
+# 5.4 Ambiguity Checker
 
 ## 역할
 
-사용자의 이력서를 분석하여 경험 정보를 구조화한다.
+유저 답변의 이해도를 판단하여 재질문 여부를 결정한다.
 
----
-
-## 입력
-
-* PDF
-* DOCX
-* TXT
-
----
-
-## 출력
+## 판단 결과
 
 ```
-Project Experience
-
-Role
-
-Technology
-
-Achievement
-
-Period
+충분 / 애매(1회 재질문) / 낮음(명시적 모름)
 ```
 
-형태의 구조화 데이터 생성
+상세는 [[06_INTERVIEW_WRITER]] 참고.
 
 ---
 
-# 5.5 JD Analyzer
+# 5.5 Writer / Tone Agent
 
 ## 역할
 
-채용공고를 분석하여 기업 요구사항을 구조화한다.
-
----
-
-## 입력
-
-JD Text
-
----
+유저 답변을 개발자 문체로 교정하고, 이해도에 따라 서술 수위를 조정하며, 면접 방어용 코멘트를 삽입한다.
 
 ## 출력
 
 ```
-Required Skill
-
-Preferred Skill
-
-Job Keyword
-
-Role Requirement
-
-Company Preference
-```
-
----
-
-# 5.6 Project Library Retriever
-
-## 역할
-
-JD와 가장 관련성이 높은 프로젝트 후보를 찾는다.
-
----
-
-## 동작 방식
-
-```
-JD
-
-↓
-
-Requirement 분석
-
-↓
-
-Project Library 검색
-
-↓
-
-Similarity 비교
-
-↓
-
-Candidate Project 생성
-```
-
----
-
-## 출력
-
-```
-Project A
-
-Score: 92%
-
-Reason:
-
-Redis 경험이
-JD 요구사항과 일치
-```
-
----
-
-# 5.7 Matching Agent
-
-## 역할
-
-최종 포트폴리오 대상 프로젝트를 결정한다.
-
----
-
-## 판단 기준
-
-* 기술 스택 일치
-* 프로젝트 목적 일치
-* 직무 관련성
-* 경험 강도
-* 성과 존재 여부
-
----
-
-## 출력
-
-```
-Selected Project
-
-Matching Reason
-
-Highlight Point
-```
-
----
-
-# 5.8 Portfolio Generator
-
-## 역할
-
-선택된 프로젝트와 JD를 기반으로 포트폴리오를 생성한다.
-
----
-
-## 입력
-
-```
-Project Metadata
-
-+
-
-Resume Data
-
-+
-
-JD Analysis
-```
-
----
-
-## 출력
-
-```
-Portfolio Content
-
-Slide Structure
-
-Markdown
-
-PDF/PPT
+Portfolio Markdown (전체 재생성)
 ```
 
 ---
 
 # 6. AI Agent Workflow
 
-전체 AI 흐름은 다음과 같다.
-
 ```
-User Input
+User Input (GitHub URL)
 
 ↓
 
-GitHub Analyzer
+Code Scanner & Scorer
 
 ↓
 
-Project Library 생성
+후보 파일 선정
 
 ↓
 
-Resume Analyzer
+Question Generator
 
 ↓
 
-JD Analyzer
+유저 답변
 
 ↓
 
-Project Library Retrieval
+Ambiguity Checker (필요 시 재질문 1회)
 
 ↓
 
-Matching Agent
+Writer / Tone Agent
 
 ↓
 
-Portfolio Generator
+Portfolio Draft 갱신
 
 ↓
 
-Reviewer
+(반복)
 
 ↓
 
-Output
+Output (Markdown)
 ```
 
 ---
 
 # 7. 데이터 흐름
 
-## 7.1 최초 GitHub 연결
+## 7.1 인터뷰 시작
 
 ```
-GitHub
+GitHub URL
 
 ↓
 
-Repository Scanner
+Repository 접근 확인
 
 ↓
 
-Metadata Extraction
+소스 파일 스캔
 
 ↓
 
-AI Analysis
+후보 파일 스코어링
 
 ↓
 
-Project Library 저장
+Interview Session 생성
 ```
 
 ---
 
-## 7.2 포트폴리오 생성
+## 7.2 인터뷰 진행
 
 ```
-JD 입력
+Question Generator → 질문
 
 ↓
 
-JD Analysis
+유저 답변
 
 ↓
 
-Project Library 검색
+Ambiguity Checker
 
 ↓
 
-Project 선택
+Writer / Tone Agent
 
 ↓
 
-Portfolio 생성
+Portfolio Draft 갱신 (전체 재생성)
 
 ↓
 
-저장
-
-↓
-
-다운로드
+다음 후보 파일로 반복
 ```
 
 ---
 
 # 8. Evidence 기반 구조
 
-AI 생성 결과는 반드시 근거와 연결된다.
+AI 생성 결과는 반드시 유저 답변 및 코드 근거와 연결된다.
 
 예:
 
 생성 문장:
 
 ```
-Redis 캐싱 적용으로
-상품 조회 성능 개선
+결제 승인 실패 시 재시도 로직을 구현했다
 ```
 
 근거:
 
 ```
-README.md
+PaymentService.java (인용된 코드)
 
-docs/performance.md
-
-Cache 관련 코드
+유저 답변 (인터뷰 turn #3)
 ```
 
----
-
-목표:
-
-AI Hallucination 최소화
-
-사용자가 결과를 검증 가능하도록 지원
+목표: AI Hallucination 최소화, 유저가 결과를 검증 가능하도록 지원
 
 ---
 
@@ -628,61 +321,52 @@ AI Hallucination 최소화
 현재:
 
 ```
-Portfolio Agent
+Portfolio Zero-to-One Builder
+(단일 세션, 단순 스코어링, 요청/응답 채팅, 전체 재생성 프리뷰)
 ```
 
 향후:
 
 ```
-Career Platform
-
-├── Portfolio Agent
-
-├── Resume Agent
-
-├── Interview Agent
-
-├── Career Analysis Agent
-
-└── Skill Growth Agent
+확장 축 1: 스코어링 고도화 (AST / Git Diff 시맨틱)
+확장 축 2: 실시간 스트리밍 채팅
+확장 축 3: 섹션 단위 부분 업데이트 프리뷰
+확장 축 4: 이력서/JD 선택 입력으로 강조점 조정
+확장 축 5: 자기소개서 / 면접 준비 Agent로 확장
 ```
 
-형태로 확장 가능하도록 설계한다.
+각 확장 축은 기존 아키텍처의 모듈 경계(스코어링, 질문 생성, 답변 처리, 렌더링)를 유지한 채 내부 구현만 교체하는 방식으로 진행한다.
 
 ---
 
 # 10. 시스템 설계 핵심 요약
 
-AI Portfolio Agent의 핵심 구조는 다음과 같다.
-
 ```
-GitHub 분석
+GitHub 레포 입력
 
 ↓
 
-Project Library 구축
+단순 코드 스코어링
 
 ↓
 
-사용자 경험 데이터 축적
+핀포인트 질문 생성
 
 ↓
 
-JD 분석
+멀티턴 인터뷰 (애매성 판단 포함)
 
 ↓
 
-적합 프로젝트 검색
+톤 교정 + 서술 수위 조정 + 방어 코멘트
 
 ↓
 
-AI 기반 스토리 생성
+전체 마크다운 재생성
 
 ↓
 
-제출 가능한 Portfolio 생성
+Markdown 다운로드
 ```
 
-본 시스템은
-
-**개발자의 실제 경험 데이터를 이해하고 활용하는 개인 Career Agent 플랫폼을 목표로 한다.**
+본 시스템은 **AI가 질문의 주도권을 갖고, 서술의 사실 관계는 유저에게 있는 인터뷰 기반 포트폴리오 가이드 에이전트**를 목표로 한다.

@@ -1,194 +1,306 @@
-<html>
-<body>
-<!--StartFragment--><html><head></head><body><h1>📄 04_AI_AGENT_SPEC.md</h1><h1>AI Portfolio Agent</h1><hr><h1>1. 문서 목적</h1><p>본 문서는 AI Portfolio Agent 시스템에서 사용되는 AI Agent의 역할, 책임, 데이터 흐름, 입출력 구조를 정의한다.</p><p>본 시스템은 단일 LLM 호출 방식이 아닌 역할별 Agent 구조를 사용한다.</p><p>각 Agent는 명확한 목적을 가지고 동작하며, 이전 Agent의 결과를 입력으로 받아 다음 단계의 판단을 수행한다.</p><hr><h1>2. AI Agent 설계 원칙</h1><h2>2.1 Evidence First</h2><p>모든 AI 결과는 실제 데이터 근거를 기반으로 생성한다.</p><p>AI는 존재하지 않는 경험, 기술, 성과를 만들어서는 안 된다.</p><hr><p>예:</p><p>잘못된 결과</p><pre><code>대규모 트래픽 환경에서
-Kafka 기반 이벤트 처리를 구현했습니다.
-</code></pre><p>근거 없음</p><p>↓</p><p>생성 금지</p><hr><p>올바른 결과</p><pre><code>주문 처리 과정에서 Kafka 기반
-비동기 이벤트 처리를 적용했습니다.
-</code></pre><p>근거:</p><pre><code>docker-compose.yml
+# 📄 04_AI_AGENT_SPEC.md
 
-Kafka 설정
+# Portfolio Zero-to-One Builder
 
-Producer 코드
+---
 
-README
-</code></pre><hr><h1>2.2 Structured Output</h1><p>Agent 간 데이터 전달은 자연어가 아닌 구조화된 데이터(JSON)를 기본으로 한다.</p><p>예:</p><pre><code class="language-json">{
- "project_name": "",
- "technology": [],
- "features": [],
- "evidence": []
-}
-</code></pre><hr><h1>2.3 Single Responsibility</h1><p>각 Agent는 하나의 책임만 가진다.</p><p>예:</p><p>JD Analyzer</p><p>O</p><p>"채용공고 분석"</p><p>X</p><p>"포트폴리오 작성까지 수행"</p><hr><h1>2.4 Human Control</h1><p>AI 결과는 최종 제출 전 사용자가 검토하고 수정할 수 있어야 한다.</p><hr><h1>3. 전체 Agent Architecture</h1><pre><code>                    User
+# 0. 변경 배경
 
-                     |
+기존 8개 Agent(GitHub Analyzer, Resume Analyzer, JD Analyzer, Project Retriever, Matching Agent, Story Generator, Reviewer, Portfolio Generator) 구조를 폐기하고, JD/이력서/매칭이 빠진 인터뷰 중심의 5개 Agent 구조로 재정의했다. 상세 배경은 [[01_PRD]] 0장 참고.
 
-                     ▼
+---
 
-              Input Manager
+# 1. 문서 목적
 
-                     |
+본 문서는 Portfolio Zero-to-One Builder에서 사용되는 AI Agent의 역할, 책임, 데이터 흐름, 입출력 구조를 정의한다.
 
-        ┌────────────┼────────────┐
+각 Agent는 명확한 목적을 가지고 동작하며, 이전 Agent의 결과를 입력으로 받아 다음 단계의 판단을 수행한다.
 
-        ▼            ▼            ▼
+---
 
- GitHub Analyzer  Resume      JD Analyzer
+# 2. AI Agent 설계 원칙
 
-        |          Analyzer        |
+## 2.1 Evidence First
 
-        └────────────┼────────────┘
+모든 AI 결과는 코드 근거와 유저 답변에 기반해 생성한다. 답변에 없는 경험, 기술, 성과를 만들어서는 안 된다.
 
-                     |
+---
 
-                     ▼
+## 2.2 Structured Output
 
-            Project Metadata
+Agent 간 데이터 전달은 자연어가 아닌 구조화된 데이터(JSON)를 기본으로 한다.
 
-                     |
+---
 
-                     ▼
+## 2.3 Single Responsibility
 
-          Project Retriever Agent
+각 Agent는 하나의 책임만 가진다.
 
-                     |
+예: Question Generator는 "질문 생성"만 수행하며 톤 교정은 수행하지 않는다.
 
-                     ▼
+---
 
-            Matching Agent
+## 2.4 Human Control (Question Ownership은 AI, 사실 관계는 유저)
+
+질문의 주도권은 AI가 가지지만, 서술되는 사실은 항상 유저의 답변에서만 나온다. 최종 결과는 다운로드 전 유저가 검토할 수 있다.
+
+---
+
+# 3. 전체 Agent Architecture
+
+```
+                    User (GitHub URL)
 
                      |
 
                      ▼
 
-          Story Generation Agent
+              Code Scanner & Scorer Agent
 
                      |
 
                      ▼
 
-            Reviewer Agent
+            Question Generator Agent
 
                      |
 
                      ▼
 
-        Portfolio Generator Agent
-</code></pre><hr><h1>4. Agent 목록</h1><p>본 시스템은 총 8개의 핵심 Agent로 구성한다.</p>
+                User Answer
+
+                     |
+
+                     ▼
+
+             Ambiguity Checker Agent
+
+                     |
+
+                     ▼
+
+            Writer / Tone Agent
+
+                     |
+
+                     ▼
+
+          Portfolio Draft (Markdown)
+```
+
+---
+
+# 4. Agent 목록
+
+본 시스템은 총 4개의 핵심 Agent로 구성한다.
+
 Agent | 역할
 -- | --
-GitHub Analyzer | 프로젝트 분석
-Resume Analyzer | 이력서 분석
-JD Analyzer | 채용공고 분석
-Project Retriever | 후보 프로젝트 검색
-Matching Agent | 프로젝트 선정
-Story Generator | 포트폴리오 내용 생성
-Reviewer Agent | 검증
-Portfolio Generator | 최종 출력 생성
+Code Scanner & Scorer | 소스 파일 필터링 및 단순 가중치 스코어링
+Question Generator | 코드 인용 기반 핀포인트 질문 생성
+Ambiguity Checker | 유저 답변의 이해도 판단 및 재질문 결정
+Writer / Tone Agent | 답변 문체 교정, 서술 수위 조정, 방어 코멘트 삽입, 마크다운 재생성
 
-<hr><h1>5. GitHub Analyzer Agent</h1><h2>목적</h2><p>GitHub Repository를 분석하여 프로젝트 정보를 구조화한다.</p><hr><h2>Input</h2><pre><code class="language-json">{
- "repository_url": ""
+---
+
+# 5. Code Scanner & Scorer Agent
+
+## 목적
+
+GitHub Repository의 소스 파일을 필터링하고 단순 가중치로 점수를 매겨 인터뷰 후보 파일을 선정한다.
+
+## Input
+
+```json
+{
+  "repository_url": ""
 }
-</code></pre><hr><h2>분석 대상</h2><h3>Documentation</h3><ul><li><p>README.md</p></li><li><p>docs/</p></li><li><p>GitHub Wiki</p></li></ul><hr><h3>Configuration</h3><ul><li><p>package.json</p></li><li><p>requirements.txt</p></li><li><p>pom.xml</p></li><li><p>build.gradle</p></li><li><p>Dockerfile</p></li><li><p>docker-compose.yml</p></li></ul><hr><h3>Structure</h3><ul><li><p>Directory Tree</p></li><li><p>주요 폴더 구조</p></li></ul><hr><h3>Optional</h3><p>대표 코드 샘플</p><hr><h2>Output</h2><pre><code class="language-json">{
- "project_name": "",
- "purpose": "",
- "features": [],
- "tech_stack": [],
- "architecture": "",
- "evidence": []
+```
+
+## 처리 방식
+
+* 소스 코드 확장자만 추출 (config/문서 파일 제외)
+* 파일 크기 + 이름 패턴(예: service, controller 등) 기반 단순 스코어링
+* 커밋 횟수는 제외 (이유는 [[05_CODE_SCANNER_SCORER]] 참고)
+
+## Output
+
+```json
+{
+  "candidates": [
+    {
+      "file_path": "",
+      "score": 0.0,
+      "reason": "",
+      "chunks": [
+        { "code_snippet": "", "pattern": "" }
+      ]
+    }
+  ]
 }
-</code></pre><hr><h2>주의사항</h2><p>추측한 정보는 반드시 confidence를 표시한다.</p><p>예:</p><pre><code class="language-json">{
- "architecture": "Layered Architecture",
- "confidence": 0.72
+```
+
+상위 3~5개 파일을 점수 내림차순으로 선정하고, 인터뷰도 이 순서대로 진행한다. 파일당 chunk는 최대 2개까지만 추출한다. 스코어링 수치 기준, chunk 추출 방식은 [[05_CODE_SCANNER_SCORER]] 6~7장 참고.
+
+---
+
+# 6. Question Generator Agent
+
+## 목적
+
+점수가 높은 후보 파일의 원본 코드를 인용해 구체적인 질문을 생성한다. chunk 하나당 질문 하나를 생성하므로, 파일 하나에서 여러 패턴이 감지되면 질문도 여러 개 나온다.
+
+## Input
+
+```json
+{
+  "file_path": "",
+  "chunks": [
+    { "code_snippet": "", "pattern": "" }
+  ]
 }
-</code></pre><hr><h1>6. Resume Analyzer Agent</h1><h2>목적</h2><p>사용자의 이력서에서 경험 정보를 추출한다.</p><hr><h2>Input</h2><p>Resume File</p><hr><h2>Output</h2><pre><code class="language-json">{
- "projects": [
-  {
-   "name":"",
-   "role":"",
-   "technology":[],
-   "achievement":[]
-  }
- ]
+```
+
+## Thinking Rule
+
+각 chunk의 코드 내 특정 패턴(예외 처리, 비동기 처리, 상태 관리, 성능 최적화 등)을 감지하면 해당 부분을 인용해 질문한다.
+
+## Output
+
+```json
+{
+  "questions": [
+    { "question": "", "cited_code": "" }
+  ]
 }
-</code></pre><hr><h2>분석 항목</h2><ul><li><p>프로젝트명</p></li><li><p>역할</p></li><li><p>사용 기술</p></li><li><p>기간</p></li><li><p>성과</p></li><li><p>문제 해결 경험</p></li></ul><hr><h1>7. JD Analyzer Agent</h1><h2>목적</h2><p>채용공고에서 기업 요구사항을 분석한다.</p><hr><h2>Input</h2><p>JD Text</p><hr><h2>Output</h2><pre><code class="language-json">{
- "position":"",
- "required_skills":[],
- "preferred_skills":[],
- "keywords":[],
- "responsibility":[]
+```
+
+## Forbidden
+
+* 코드에 없는 내용에 대한 질문 생성
+* 지나치게 일반적인 질문 ("이 프로젝트에 대해 설명해주세요" 등)
+
+---
+
+# 7. Ambiguity Checker Agent
+
+## 목적
+
+유저 답변이 충분한 이해를 보여주는지(judgement), 그리고 문제→해결 서사인지 구현 소개인지(content_type)를 함께 판단한다. 전자는 서술 수위/방어 코멘트를, 후자는 어느 섹션에 들어갈지를 결정한다 (역할 분리 이유는 [[06_INTERVIEW_WRITER]] 3장 참고).
+
+## Input
+
+```json
+{
+  "question": "",
+  "user_answer": ""
 }
-</code></pre><hr><h2>분석 항목</h2><h3>Required Skill</h3><p>필수 기술</p><hr><h3>Preferred Skill</h3><p>우대 기술</p><hr><h3>Business Requirement</h3><p>업무 내용</p><hr><h1>8. Project Retriever Agent</h1><h2>목적</h2><p>Project Library에서 JD와 관련성이 높은 프로젝트를 찾는다.</p><hr><h2>Input</h2><pre><code>JD Metadata
+```
 
-+
+## Output
 
-Project Library
-</code></pre><hr><h2>Output</h2><pre><code class="language-json">{
- "candidates":[
-  {
-   "project":"",
-   "score":0.0,
-   "reason":""
-  }
- ]
+```json
+{
+  "judgement": "SUFFICIENT | AMBIGUOUS | LOW_UNDERSTANDING",
+  "content_type": "PROBLEM_SOLVING | IMPLEMENTATION_INTRO",
+  "follow_up_question": ""
 }
-</code></pre><hr><h2>판단 기준</h2><ul><li><p>기술 스택</p></li><li><p>프로젝트 목적</p></li><li><p>직무 관련성</p></li><li><p>경험 수준</p></li><li><p>성과 존재 여부</p></li></ul><hr><h1>9. Matching Agent</h1><h2>목적</h2><p>최종 포트폴리오 대상 프로젝트를 선정한다.</p><hr><h2>Input</h2><pre><code>JD Analysis
+```
 
-+
+## 판단 규칙 (judgement)
 
-Candidate Projects
+```
+SUFFICIENT → Writer / Tone Agent로 진행
 
-+
+AMBIGUOUS → follow_up_question 생성, 최대 1회만 재질문
 
-Resume
-</code></pre><hr><h2>Output</h2><pre><code class="language-json">{
- "selected_projects":[],
- "highlight_points":[],
- "reason":""
+LOW_UNDERSTANDING (유저가 "모른다"/"복붙했다" 등 명시) → 재질문 없이 진행, Writer Agent에 하향 조정 지시
+```
+
+재질문 1회 이후에도 AMBIGUOUS이면 LOW_UNDERSTANDING으로 간주하고 진행한다.
+
+---
+
+# 8. Writer / Tone Agent
+
+## 목적
+
+유저 답변을 개발자 문체로 교정하고, 이해도에 따라 서술 수위를 조정하며, 필요 시 면접 방어용 코멘트를 삽입해 전체 마크다운을 재생성한다.
+
+## Input
+
+```json
+{
+  "question": "",
+  "user_answer": "",
+  "judgement": "SUFFICIENT | AMBIGUOUS | LOW_UNDERSTANDING",
+  "content_type": "PROBLEM_SOLVING | IMPLEMENTATION_INTRO",
+  "portfolio_history": []
 }
-</code></pre><hr><h1>10. Story Generator Agent</h1><h2>목적</h2><p>선정된 프로젝트를 기업 맞춤형 스토리로 변환한다.</p><hr><h2>생성 원칙</h2><h2>결과 중심</h2><p>나쁜 예:</p><pre><code>Redis를 사용했습니다.
-</code></pre><p>좋은 예:</p><pre><code>상품 조회 API 응답 개선을 위해
-Redis 캐싱 구조를 적용했습니다.
-</code></pre><hr><h2>Trade-off 포함</h2><p>단순 기술 나열 금지</p><p>예:</p><pre><code>Redis 적용
+```
 
-↓
+## 섹션 배치 규칙
 
-왜 선택했는가?
+```
+content_type == IMPLEMENTATION_INTRO → Key Implementation 섹션에 배치
 
-↓
+content_type == PROBLEM_SOLVING → Trouble Shooting 섹션에 배치
+```
 
-어떤 문제가 있었는가?
+## 서술 수위 규칙 (배치된 섹션 내부에서 적용)
 
-↓
+```
+SUFFICIENT → 주도적 구현/설계 관점으로 서술
 
-어떻게 해결했는가?
-</code></pre><hr><h2>AI 문체 제거</h2><p>금지 표현:</p><ul><li><p>열정적인</p></li><li><p>도전적인</p></li><li><p>-가 아니라 - 이다 형태의 문체</p></li></ul><hr><h2>Output</h2><pre><code class="language-json">{
- "slides":[
-  {
-   "title":"",
-   "content":"",
-   "evidence":[]
-  }
- ]
+LOW_UNDERSTANDING → "오픈소스 레퍼런스를 참고한 기능 구현 및 커스텀 적용" 수준으로 하향 서술
+```
+
+## 방어 코멘트 규칙
+
+LOW_UNDERSTANDING 판정 항목에는 다음과 같은 코멘트를 마크다운 내 삽입한다.
+
+```
+<!-- 💡 면접 대비 가이드: 이 부분은 복붙/레퍼런스 기반이라고 답변하셨습니다.
+면접에서 질문받을 수 있으니 관련 개념을 숙지해두세요. -->
+```
+
+## Output
+
+```json
+{
+  "portfolio_markdown": ""
 }
-</code></pre><hr><h1>11. Reviewer Agent</h1><h2>목적</h2><p>최종 결과의 품질과 신뢰성을 검증한다.</p><hr><h2>검사 항목</h2><h3>Hallucination Check</h3><p>존재하지 않는 경험 여부</p><hr><h3>Evidence Check</h3><p>근거 존재 여부</p><hr><h3>JD Alignment</h3><p>채용공고와 관련성</p><hr><h3>Writing Quality</h3><p>AI 문체 여부</p><hr><h2>Output</h2><pre><code class="language-json">{
- "status":"PASS",
- "issues":[]
-}
-</code></pre><hr><h1>12. Portfolio Generator Agent</h1><h2>목적</h2><p>최종 제출물을 생성한다.</p><hr><h2>Input</h2><pre><code>Reviewed Portfolio Content
-</code></pre><hr><h2>Output</h2><pre><code>Markdown
+```
 
-PDF
+전체 마크다운을 매 턴 처음부터 다시 생성한다(부분 업데이트 아님). 이유는 [[06_INTERVIEW_WRITER]] 참고.
 
-PPT
-</code></pre><hr><h1>13. Agent State 관리</h1><p>Agent 간 공유 데이터는 하나의 상태 객체로 관리한다.</p><p>예:</p><pre><code class="language-json">{
- "user_id":"",
- "project_library":[],
- "resume":"",
- "jd":"",
- "selected_projects":[],
- "portfolio":"",
- "review_result":""
+Summary 섹션은 이 Agent가 생성하지 않는다. Summary는 LLM 호출 없이 지금까지 쌓인 섹션 제목을 기계적으로 나열하는 별도 로직이다 ([[06_INTERVIEW_WRITER]] 10.2장 참고).
+
+---
+
+# 9. Agent State 관리
+
+```json
+{
+  "session_id": "",
+  "candidate_files": [],
+  "current_candidate_index": 0,
+  "current_chunk_index": 0,
+  "interview_history": [],
+  "portfolio_markdown": ""
 }
-</code></pre><hr><h1>14. Error Handling</h1><h2>Agent 실패</h2><p>기본 동작:</p><pre><code>Retry
+```
+
+`current_chunk_index`는 파일당 chunk가 최대 2개일 수 있어 필요한 값이다. 그 파일의 마지막 chunk를 넘어서면 `current_candidate_index`를 다음 파일로 올리고 `current_chunk_index`를 0으로 리셋한다 ([[08_DATABASE]] 8장 참고).
+
+---
+
+# 10. Error Handling
+
+## Agent 실패
+
+```
+Retry
 
 ↓
 
@@ -197,70 +309,87 @@ Fallback
 ↓
 
 User Notification
-</code></pre><hr><h2>분석 실패</h2><p>예:</p><p>README 없음</p><p>↓</p><p>다른 Evidence 활용</p><hr><h2>생성 실패</h2><p>↓</p><p>이전 단계 결과 유지</p><p>↓</p><p>재생성 요청</p><hr><h1>15. MVP Agent 범위</h1><p>초기 구현에서는 아래 Agent부터 구현한다.</p><h2>Phase 1</h2><p>필수 Agent</p><pre><code>GitHub Analyzer
+```
 
-Resume Analyzer
+## 후보 파일 부족
 
-JD Analyzer
+분석 가능한 소스 파일이 부족하면 인터뷰를 진행하지 않고 사용자에게 안내한다.
 
-Matching Agent
+---
 
-Portfolio Generator
-</code></pre><hr><h2>Phase 2</h2><p>고도화 Agent</p><pre><code>Reviewer Agent
+# 11. MVP Agent 범위
 
-Story Generator 개선
+## Phase 1 (필수)
 
-Project Retriever
-</code></pre><hr><h1>16. 향후 확장 Agent</h1><p>추후 추가 가능</p><pre><code>Interview Agent
+```
+Code Scanner & Scorer
+Question Generator
+Ambiguity Checker
+Writer / Tone Agent
+```
 
-Resume Writer Agent
+## Phase 2 (고도화)
 
+```
+스코어링 알고리즘 고도화 (AST, Git Diff 시맨틱)
+스트리밍 응답 지원
+섹션 단위 부분 업데이트
+프로젝트 레벨 동기 오프닝 질문 (README에 없을 경우 보완, [[05_CODE_SCANNER_SCORER]] 12장 참고)
+```
+
+---
+
+# 12. 향후 확장 Agent
+
+```
+Resume Interview Agent
+JD Alignment Agent (선택 입력 기반)
+Interview Prep Agent
 Career Advisor Agent
+```
 
-Skill Gap Analyzer Agent
+---
 
-Project Improvement Agent
-</code></pre><hr><h1>17. 최종 AI Pipeline</h1><pre><code>GitHub
+# 13. 최종 AI Pipeline
 
-↓
-
-GitHub Analyzer
-
-↓
-
-Project Library
+```
+GitHub URL
 
 ↓
 
-Resume Analyzer
+Code Scanner & Scorer
 
 ↓
 
-JD Analyzer
+Question Generator
 
 ↓
 
-Retriever
+User Answer
 
 ↓
 
-Matching
+Ambiguity Checker
 
 ↓
 
-Story Generation
+Writer / Tone Agent
 
 ↓
 
-Reviewer
+Portfolio Draft
 
 ↓
 
-Portfolio Generator
+(반복)
 
 ↓
 
-Output
-</code></pre><hr><h1>18. 핵심 목표</h1><p>AI Portfolio Agent의 AI 시스템은</p><p>사용자의 실제 개발 경험을 이해하고,</p><p>채용 요구사항과 연결하며,</p><p>근거 기반으로 설득력 있는 포트폴리오를 생성하는</p><p>개인 Career Agent를 목표로 한다.</p></body></html><!--EndFragment-->
-</body>
-</html>
+Output (Markdown)
+```
+
+---
+
+# 14. 핵심 목표
+
+Portfolio Zero-to-One Builder의 AI 시스템은 유저의 코드를 근거로 질문의 주도권을 가져가고, 유저의 실제 답변만을 근거로 신뢰할 수 있는 포트폴리오 초안을 완성하는 인터뷰 기반 Agent를 목표로 한다.

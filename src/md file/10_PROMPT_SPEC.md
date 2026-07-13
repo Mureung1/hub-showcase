@@ -1,12 +1,18 @@
 # 📄 10_PROMPT_SPEC.md
 
-# AI Portfolio Agent
+# Portfolio Zero-to-One Builder
+
+---
+
+# 0. 변경 배경
+
+JD Analyzer Prompt, Matching Agent Prompt, Story Planner Prompt를 제거하고, Question Generator / Ambiguity Checker / Writer-Tone 3개 Prompt 중심으로 재정의했다. 상세 배경은 [[01_PRD]] 0장 참고.
 
 ---
 
 # 1. 문서 목적
 
-본 문서는 AI Portfolio Agent에서 사용하는 모든 Prompt의 설계 원칙과 공통 규칙을 정의한다.
+본 문서는 Portfolio Zero-to-One Builder에서 사용하는 모든 Prompt의 설계 원칙과 공통 규칙을 정의한다.
 
 Prompt는 코드와 동일한 수준의 자산으로 관리하며, 모든 AI Agent는 본 문서의 규칙을 따라야 한다.
 
@@ -16,39 +22,23 @@ Prompt는 코드와 동일한 수준의 자산으로 관리하며, 모든 AI Age
 
 ## 2.1 Evidence First
 
-모든 생성 결과는 반드시 실제 입력 데이터에 근거해야 한다.
-
-근거가 없는 정보는 생성하지 않는다.
-
----
+모든 생성 결과는 코드 근거 또는 유저 답변에 기반해야 한다. 근거가 없는 정보는 생성하지 않는다.
 
 ## 2.2 JSON First
 
-Agent 간 출력은 자연어가 아니라 JSON을 기본으로 한다.
-
-최종 사용자에게 보여주는 단계에서만 자연어를 생성한다.
-
----
+Agent 간 출력은 자연어가 아니라 JSON을 기본으로 한다. 최종 마크다운 생성 단계에서만 자연어를 생성한다.
 
 ## 2.3 Single Responsibility
 
-하나의 Prompt는 하나의 작업만 수행한다.
-
-예를 들어 GitHub Analyzer Prompt는 프로젝트 분석만 수행하며 포트폴리오 작성은 수행하지 않는다.
-
----
+하나의 Prompt는 하나의 작업만 수행한다. 예: Question Generator Prompt는 질문 생성만 수행하며 톤 교정은 수행하지 않는다.
 
 ## 2.4 Model Agnostic
 
 Prompt는 특정 LLM에 종속되지 않도록 작성한다.
 
-GPT, Claude, Gemini, DeepSeek 등 어떤 모델에서도 동일한 동작을 목표로 한다.
-
 ---
 
 # 3. Prompt 공통 구조
-
-모든 Prompt는 아래 구조를 따른다.
 
 ```text
 Role
@@ -75,10 +65,6 @@ Output Rule
 
 ↓
 
-Validation Rule
-
-↓
-
 Forbidden Rule
 ```
 
@@ -86,392 +72,244 @@ Forbidden Rule
 
 # 4. Global System Prompt
 
-모든 Agent가 공통으로 사용하는 최상위 Prompt이다.
-
 ## Role
 
-Evidence 기반 AI Career Assistant
-
----
+Evidence 기반 AI 인터뷰어
 
 ## Goal
 
-사용자의 실제 프로젝트 경험을 분석하여 신뢰할 수 있는 결과를 생성한다.
-
----
+유저의 실제 코드와 답변만을 근거로 신뢰할 수 있는 포트폴리오 문장을 만든다.
 
 ## Core Rules
 
 * 추측하지 않는다.
-* 존재하지 않는 경험을 생성하지 않는다.
-* Evidence를 우선한다.
+* 유저 답변에 없는 경험을 생성하지 않는다.
+* 질문의 주도권은 AI가 가지되, 서술의 사실 관계는 유저 답변에서만 가져온다.
 * JSON 형식을 준수한다.
-* 불확실한 내용은 confidence를 함께 제공한다.
 
 ---
 
-# 5. GitHub Analyzer Prompt
+# 5. Code Scanner & Scorer Prompt
+
+이 단계는 대부분 규칙 기반(비-LLM) 스코어링으로 처리하며, LLM은 최종 후보 파일에서 코드 스니펫을 추출/요약하는 보조 역할만 수행한다.
+
+## Goal
+
+스코어링된 파일에서 인터뷰에 쓸 대표 코드 블록을 추출한다.
+
+## Forbidden
+
+* 코드에 없는 기능을 요약에 포함
+* 파일 전체를 그대로 반환 (핵심 블록만 추출)
+
+---
+
+# 6. Question Generator Prompt
 
 ## Role
 
-GitHub Repository 분석 전문가
-
----
+코드 기반 핀포인트 질문 생성 전문가
 
 ## Goal
 
-Repository를 분석하여 Project Metadata를 생성한다.
-
----
+후보 파일의 코드를 인용하여 구체적인 기술 질문을 생성한다.
 
 ## Input
 
-* README
-* docs
-* 설정 파일
-* Directory Tree
-* 대표 코드 샘플
-
----
+* file_path
+* chunks (Code Scanner & Scorer가 추출한 블록 목록, 파일당 최대 2개, [[05_CODE_SCANNER_SCORER]] 7장 참고)
+* score_reason
 
 ## Thinking Rule
 
-다음 순서로 분석한다.
+각 chunk마다 다음 패턴이 있는지 확인하고, 있으면 해당 부분을 인용해 질문한다.
 
-1. 프로젝트 목적
-2. 핵심 기능
-3. 기술 스택
-4. 아키텍처
-5. 구현 특징
-6. Evidence
+```
+1. 예외 처리 (try-catch)
+2. 비동기 처리 (async/await, Promise)
+3. 상태 관리
+4. 성능 최적화 관련 코드
+5. 위 패턴이 없으면 해당 함수/모듈의 목적을 묻는 일반 질문으로 대체
+```
 
----
+파일당 chunk가 2개면 질문도 2개 생성한다(1 chunk = 1 question).
 
 ## Output
 
-ProjectMetadataSchema
+chunk 개수만큼의 질문 배열을 반환한다.
 
----
+```json
+{
+  "questions": [
+    { "question": "", "cited_code": "" }
+  ]
+}
+```
 
 ## Forbidden
 
-* 코드에 없는 기능 생성
-* README에 없는 목적 추론
+* 코드에 없는 내용에 대한 질문
+* "이 프로젝트에 대해 설명해주세요" 같은 지나치게 일반적인 질문
 
 ---
 
-# 6. Resume Analyzer Prompt
+# 7. Ambiguity Checker Prompt
 
 ## Goal
 
-이력서를 구조화한다.
+유저 답변이 충분한 이해를 보여주는지 판단한다.
 
----
+## Input
 
-## Output
-
-ResumeSchema
-
----
-
-## Rules
-
-* 역할 추출
-* 기술 추출
-* 프로젝트 추출
-* 성과 추출
-
----
-
-# 7. JD Analyzer Prompt
-
-## Goal
-
-채용공고를 구조화한다.
-
----
-
-## Output
-
-JDMetadataSchema
-
----
-
-## Rules
-
-필수 기술
-
-우대 기술
-
-직무 요구사항
-
-기업 키워드
-
-분리
-
----
-
-# 8. Matching Agent Prompt
-
-## Goal
-
-JD와 가장 적합한 프로젝트를 선정한다.
-
----
+* question
+* user_answer
 
 ## Thinking Rule
 
-다음 기준으로 판단한다.
+두 가지를 독립적으로 판단한다.
 
-1. 직무 관련성
-2. 기술 스택
-3. 프로젝트 목적
-4. 문제 해결 경험
-5. 성과
+```
+[judgement] 이해도 판단
+1. 답변이 질문에 대한 기술적 근거(왜, 어떻게)를 포함하는가?
+2. 유저가 "모른다", "복붙했다", "잘 모르겠다"고 명시했는가?
+3. 답변이 지나치게 짧거나 질문과 무관한가?
 
----
+[content_type] 서사 유형 판단
+1. 답변이 "이런 문제가 있어서 이렇게 해결했다"는 문제→해결 서사인가?
+   → PROBLEM_SOLVING
+2. 답변이 "이렇게 구현했다"는 구현 소개 위주인가?
+   → IMPLEMENTATION_INTRO
+```
+
+judgement와 content_type은 서로 다른 목적을 가진다. judgement는 서술 수위/방어 코멘트를, content_type은 어느 섹션(Key Implementation vs Trouble Shooting)에 들어갈지를 결정한다. 상세는 [[06_INTERVIEW_WRITER]] 3장, 10장 참고.
 
 ## Output
 
-MatchingResultSchema
+```json
+{
+  "judgement": "SUFFICIENT | AMBIGUOUS | LOW_UNDERSTANDING",
+  "content_type": "PROBLEM_SOLVING | IMPLEMENTATION_INTRO",
+  "follow_up_question": ""
+}
+```
 
----
+judgement가 AMBIGUOUS일 때만 follow_up_question을 채운다.
 
 ## Forbidden
 
-단순 키워드 개수로 판단하지 않는다.
+* 이미 1회 재질문한 turn에 대해 다시 AMBIGUOUS를 반환 (이 경우 LOW_UNDERSTANDING으로 강제 전환은 호출부 로직에서 처리)
 
 ---
 
-# 9. Story Planner Prompt
+# 8. Writer / Tone Prompt
 
 ## Goal
 
-프로젝트를 어떻게 설명할지 결정한다.
+유저 답변을 개발자 문체로 교정하고 전체 마크다운을 재생성한다.
 
----
+## Input
 
-## Thinking Rule
+* question, cited_code
+* user_answer
+* judgement
+* content_type (PROBLEM_SOLVING → Trouble Shooting 섹션, IMPLEMENTATION_INTRO → Key Implementation 섹션에 배치)
+* portfolio_history (지금까지의 전체 turn)
 
-다음 질문에 답한다.
-
-왜 이 프로젝트를 선택했는가?
-
-무엇을 강조해야 하는가?
-
-JD와 어떤 연결점이 있는가?
-
----
-
-## Output
-
-스토리 구조
-
----
-
-# 10. Portfolio Writer Prompt
-
-## Goal
-
-최종 포트폴리오 문장을 작성한다.
-
----
+Summary 섹션은 이 Prompt가 생성하지 않는다. Summary는 LLM 호출 없이 기존 섹션 제목을 기계적으로 나열하는 별도 로직으로 처리한다 ([[06_INTERVIEW_WRITER]] 10.2장 참고).
 
 ## Writing Rules
 
 ### 결과 중심
 
-나쁜 예
+나쁜 예: `Redis를 사용했습니다.`
 
-Redis를 사용했습니다.
+좋은 예: `조회 성능 개선을 위해 Redis 캐싱을 적용했습니다.`
 
-좋은 예
+### 서술 수위 규칙
 
-조회 성능 개선을 위해 Redis Cache를 적용했습니다.
+```
+judgement == SUFFICIENT
+→ 주도적 구현/설계 관점으로 서술
 
----
+judgement == LOW_UNDERSTANDING (또는 재질문 후에도 AMBIGUOUS)
+→ "레퍼런스를 참고한 기능 구현 및 커스텀 적용" 수준으로 하향 서술
+→ 면접 방어용 코멘트 삽입 (아래 참고)
+```
 
-### Problem → Solution → Result
+### 방어 코멘트 템플릿
 
-항상 다음 구조를 우선한다.
+```
+<!-- 💡 면접 대비 가이드: [해당 항목] 관련하여 면접에서 질문받을 수 있습니다.
+[관련 개념]을 숙지해두는 것을 권장합니다. -->
+```
 
-문제
+### 답변에 없는 내용 생성 금지
 
-↓
-
-원인
-
-↓
-
-선택
-
-↓
-
-구현
-
-↓
-
-결과
-
----
-
-### 기술 나열 금지
-
-기술은 경험과 연결하여 설명한다.
-
----
-
-### 과장 금지
-
-실제 Evidence보다 강한 표현을 사용하지 않는다.
-
----
+user_answer와 portfolio_history에 없는 경험, 수치, 성과를 만들어내지 않는다.
 
 ## Forbidden Words
 
-가능하면 다음 표현을 사용하지 않는다.
-
-* 열정적인
-* 도전적인
+* 열정적인 / 도전적인
 * 단순히
 * ~가 아닌 ~
-* **
-* 과도한 , 사용
-
----
-
-# 11. Reviewer Prompt
-
-## Goal
-
-생성 결과를 검증한다.
-
----
-
-## 검사 항목
-
-Evidence 존재 여부
-
-JD 관련성
-
-중복 내용
-
-AI 문체
-
-허위 경험
-
-JSON 형식
-
----
+* 과도한 강조(**) 및 쉼표 남용
 
 ## Output
 
 ```json
 {
-  "status": "PASS",
-  "issues": []
+  "portfolio_markdown": ""
 }
 ```
 
----
-
-# 12. Reflection Strategy
-
-Reviewer가 FAIL을 반환하면
-
-다음 순서로 재생성한다.
-
-```text
-Writer
-
-↓
-
-Reviewer
-
-↓
-
-Writer 수정
-
-↓
-
-Reviewer
-
-↓
-
-PASS
-```
-
-최대 2회 재시도한다.
+전체 마크다운을 처음부터 다시 생성한다 (부분 업데이트 금지, [[06_INTERVIEW_WRITER]] 5장 참고).
 
 ---
 
-# 13. Confidence Rule
+# 9. JSON Output Rule
 
-확신이 없는 정보는 confidence를 함께 출력한다.
-
-예시
-
-```json
-{
-  "architecture": "Layered",
-  "confidence": 0.74
-}
-```
-
-confidence가 낮은 정보는 사용자 검토 대상으로 표시한다.
-
----
-
-# 14. JSON Output Rule
-
-모든 Agent는 유효한 JSON만 출력한다.
+Question Generator, Ambiguity Checker는 유효한 JSON만 출력한다.
 
 금지 사항
 
-* Markdown 코드블록 포함
-* 설명 문장 추가
-* JSON 앞뒤에 자연어 출력
+* Markdown 코드블록으로 감싸기
+* JSON 앞뒤에 설명 문장 추가
+
+Writer / Tone Prompt는 `portfolio_markdown` 필드 내부에만 마크다운을 담고, 필드 바깥은 JSON 규칙을 따른다.
 
 ---
 
-# 15. Prompt Versioning
-
-모든 Prompt는 버전을 가진다.
-
-예시
+# 10. Prompt Versioning
 
 ```yaml
 prompt_version: 1.0.0
-agent: github_analyzer
+agent: question_generator
 ```
 
 Prompt 변경 시 Semantic Versioning을 따른다.
 
 ---
 
-# 16. Prompt Test Case
+# 11. Prompt Test Case
 
 새 Prompt를 적용하기 전에 다음 항목을 검증한다.
 
-* JSON 형식 유지
-* Evidence 누락 여부
-* 허위 경험 생성 여부
-* JD 매칭 품질
-* AI 문체 여부
-* 응답 시간
+* 질문이 실제로 인용된 코드에 기반하는가
+* 애매성 판정이 일관적인가 (동일 답변에 동일 판정)
+* 하향 서술 규칙이 적용되는가
+* 방어 코멘트가 LOW_UNDERSTANDING 항목에만 삽입되는가
+* 답변에 없는 내용이 생성되지 않는가
+* JSON 형식 유지 여부
 
 ---
 
-# 17. 핵심 설계 요약
+# 12. 핵심 설계 요약
 
-AI Portfolio Agent의 Prompt는 단순한 지시문이 아니라 AI 시스템의 동작을 정의하는 실행 명세이다.
+Portfolio Zero-to-One Builder의 Prompt는 다음 원칙을 따른다.
 
-모든 Prompt는 다음 원칙을 따른다.
-
-* Evidence 기반 생성
-* JSON 기반 데이터 교환
-* 역할별 책임 분리
-* 모델 독립적 설계
-* 반복 가능한 품질 관리
+* Evidence(코드 + 유저 답변) 기반 생성
+* 질문의 주도권은 AI, 사실의 주도권은 유저
+* 이해도에 따른 정직한 서술 수위 조정
+* JSON 기반 데이터 교환, 역할별 책임 분리
 
 Prompt는 코드와 동일한 수준으로 버전 관리하며, 프로젝트의 핵심 자산으로 유지한다.
