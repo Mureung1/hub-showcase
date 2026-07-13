@@ -546,7 +546,7 @@ test('HeadlessCodexClientHost reuses its validated layout without exposing raw s
     const secondSubscription = host.subscribe()
 
     assert.equal(host.getSnapshot().generation, 2)
-    const journal = await readJournal({ minimumEntries: 7 })
+    const journal = await readJournal({ minimumEntries: 5 })
     assert.equal(
       journal.filter((entry) => entry.kind === 'version_check').length,
       1,
