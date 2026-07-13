@@ -13,7 +13,10 @@ export function setApiHeaders(res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "no-referrer");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
+  );
   res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
 }
 
@@ -95,10 +98,16 @@ export function createCachedReadinessProbe(check, options = {}) {
     inFlight = (async () => {
       const probeStartedAt = now();
       let status = "ready";
+      let migrationVersion = null;
+      let code = null;
       try {
-        await check();
-      } catch {
+        const result = await check();
+        if (typeof result?.migrationVersion === "string") {
+          migrationVersion = result.migrationVersion;
+        }
+      } catch (error) {
         status = "unavailable";
+        code = error?.code === "SCHEMA_DRIFT" ? "SCHEMA_DRIFT" : "DATABASE_UNAVAILABLE";
       }
       const probeFinishedAt = now();
       const value = {
@@ -106,6 +115,8 @@ export function createCachedReadinessProbe(check, options = {}) {
         checkedAt: new Date(probeFinishedAt).toISOString(),
         latencyMs: Math.max(0, probeFinishedAt - probeStartedAt),
         cached: false,
+        ...(migrationVersion ? { migrationVersion } : {}),
+        ...(code ? { code } : {}),
       };
       cache = {
         value,

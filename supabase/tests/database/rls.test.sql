@@ -40,12 +40,12 @@ select function_privs_are(
 select function_privs_are(
   'public', 'import_source_context',
   array['uuid','text','text','text','text','text','timestamptz','jsonb','jsonb','jsonb'],
-  'authenticated', array['EXECUTE'], 'authenticated users can atomically import owned context'
+  'authenticated', array[]::text[], 'authenticated users cannot call the compatibility import RPC'
 );
 select function_privs_are(
-  'public', 'import_source_context',
-  array['uuid','text','text','text','text','text','timestamptz','jsonb','jsonb','jsonb'],
-  'anon', array[]::text[], 'anonymous users cannot import source context'
+  'public', 'app_import_source_context',
+  array['uuid','uuid','text','text','text','text','text','timestamptz','jsonb','jsonb','jsonb'],
+  'service_role', array['EXECUTE'], 'service role can atomically import actor-owned context'
 );
 select function_privs_are(
   'public', 'consume_rate_limit', array['text','text','integer','integer'],
@@ -54,17 +54,27 @@ select function_privs_are(
 select function_privs_are(
   'public', 'create_analysis_run_annotation',
   array['uuid','text','text','text','text','text'],
-  'authenticated', array['EXECUTE'], 'authenticated owners can create immutable feedback'
+  'authenticated', array[]::text[], 'authenticated users cannot call the compatibility annotation RPC'
 );
 select function_privs_are(
-  'public', 'create_analysis_run_annotation',
-  array['uuid','text','text','text','text','text'],
-  'anon', array[]::text[], 'anonymous users cannot create analysis feedback'
+  'public', 'app_create_analysis_run_annotation',
+  array['uuid','uuid','text','text','text','text','text'],
+  'service_role', array['EXECUTE'], 'service role can create actor-owned immutable feedback'
 );
 select function_privs_are(
   'public', 'prevent_analysis_artifact_update', array[]::text[],
   'authenticated', array[]::text[], 'analysis immutability trigger is not client executable'
 );
+
+-- The rest of this transaction retains the compatibility-function behavioral
+-- fixtures. Their deployment grants were asserted above and these temporary
+-- grants are rolled back with the test transaction.
+grant execute on function public.import_source_context(
+  uuid, text, text, text, text, text, timestamptz, jsonb, jsonb, jsonb
+) to authenticated;
+grant execute on function public.create_analysis_run_annotation(
+  uuid, text, text, text, text, text
+) to authenticated;
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,

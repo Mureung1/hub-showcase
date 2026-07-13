@@ -6,7 +6,7 @@ export const AUTH_SECURE_REFRESH_COOKIE = `__Host-${AUTH_REFRESH_COOKIE}`;
 export const AUTH_SECURE_EXPIRES_COOKIE = `__Host-${AUTH_EXPIRES_COOKIE}`;
 export const AUTH_REFRESH_LEAD_MS = 60_000;
 
-const REFRESH_COOKIE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
+export const REFRESH_COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
 export function readAuthSessionCookies(req) {
   const cookies = parseCookies(req?.headers?.cookie);

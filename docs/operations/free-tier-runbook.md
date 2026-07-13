@@ -4,9 +4,9 @@
 
 ## 운영 기준
 
-- 주 서비스 주소는 Sites 배포로 통일하고 Render는 무료 대기 경로로 둔다.
-- 두 배포 모두 `local-heuristic`만 기본 제공하며 `MODU_BRAIN_OPENAI_ENABLED=false`를 유지한다.
-- Render의 플랫폼 health check는 DB를 조회하지 않는 `/api/health/live`를 사용한다. `/api/health/ready`는 사람이 의존성 상태를 확인할 때 사용하며 짧은 캐시를 적용한다.
+- 주 서비스 주소는 Render의 `https://modu-brain-demo.onrender.com`으로 통일하고 Sites는 전환 기간 뒤 중지한다.
+- `local-heuristic`만 기본 제공하며 `MODU_BRAIN_OPENAI_ENABLED=false`를 유지한다.
+- Render의 플랫폼 health check는 DB와 migration version을 확인하는 `/api/health/ready`를 사용한다. 프로세스와 배포 commit 확인은 `/api/health/live`를 사용한다.
 - 원문·토큰·이메일·IP·분석 결과는 로그에 남기지 않는다. request ID, route template, status, duration, safe error code만 기록한다.
 - 운영 DB migration은 rollback SQL로 되돌리지 않는다. 새 forward-fix 또는 검증한 logical backup 복구만 사용한다.
 
@@ -28,15 +28,13 @@ Supabase Free에는 자동 일일 백업이 없으므로 [공식 권고](https:/
 
 ### 백업
 
-PostgreSQL direct connection string을 현재 셸의 `DATABASE_URL`에만 설정한 뒤 실행한다. URL은 파일과 콘솔에 기록되지 않는다.
+백업은 임시 폴더에서 logical dump를 만든 뒤 단일 age 암호문으로 전환한다. OneDrive 목적지에는 SQL·manifest·평문 tar를 기록하지 않으며, 기본 보존은 7일이다. 최초 age 키 생성, Windows Credential Manager 등록, 일일 작업 스케줄러 설정은 [암호화 백업 런북](../encrypted-backup-runbook.md)을 따른다.
 
 ```powershell
-$env:DATABASE_URL = "postgresql://..."
-npm run ops:backup
-Remove-Item Env:DATABASE_URL
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/run-daily-backup.ps1
 ```
 
-생성된 `.backups/supabase/<timestamp>/` 전체를 BitLocker 또는 암호화된 외장 저장소/개인 클라우드 폴더 한 곳에 추가 복사한다. 저장소에는 커밋하지 않는다. 권장 보존은 최근 일일 7개와 주간 4개다.
+생성물은 `modu-brain-supabase-<timestamp>.tar.age` 하나다. 개인키는 별도 Credential Manager target에 보관하고 저장소·OneDrive·환경변수에 넣지 않는다.
 
 목표 RPO는 24시간, 목표 RTO는 2시간이다. 데이터 변경이 큰 날과 모든 schema migration 직전에는 추가 백업을 만든다.
 
@@ -47,12 +45,12 @@ Remove-Item Env:DATABASE_URL
 ```powershell
 $env:RESTORE_DATABASE_URL = "postgresql://empty-verification-db"
 $env:CONFIRM_RESTORE_TARGET = "empty-target"
-npm run ops:restore -- ".backups/supabase/<timestamp>"
+npm run ops:restore -- "C:\path\modu-brain-supabase-<timestamp>.tar.age"
 Remove-Item Env:RESTORE_DATABASE_URL
 Remove-Item Env:CONFIRM_RESTORE_TARGET
 ```
 
-스크립트는 파일 checksum을 먼저 확인하고, 대상에 Modu Brain 핵심 테이블이 있으면 쓰기 전에 중단한다. 복구 뒤에는 다음을 추가 확인한다.
+스크립트는 production·source DB 대상을 복호화 전에 거부하고, age 인증·archive allowlist·파일 checksum을 확인한 뒤 대상에 Modu Brain 핵심 테이블이 있으면 쓰기 전에 중단한다. 복구 뒤에는 다음을 추가 확인한다.
 
 - migration 목록과 schema checksum
 - 사용자별 프로젝트·원문·분석 row count
@@ -117,7 +115,7 @@ npm run ops:load
 - 계정 export는 프로젝트, 원문, 분석, annotation, 공유 링크 metadata를 기계 판독 JSON으로 제공한다. 공유 원문 token은 export하지 않는다.
 - 계정 삭제는 현재 session을 먼저 폐기하고 모든 소유 데이터 cascade 완료를 확인한다.
 - 공유 화면은 전체 원문·이메일·provider 내부정보를 제외하지만, 근거 인용 자체에 개인정보가 있을 수 있음을 생성 전에 경고한다.
-- 백업에 남은 삭제 데이터는 위 보존 주기에 따라 최대 28일 안에 만료된다고 안내한다.
+- 백업에 남은 삭제 데이터는 7일 순환 보존에 따라 최대 7일 안에 만료된다고 안내한다.
 
 ## 정기 점검
 

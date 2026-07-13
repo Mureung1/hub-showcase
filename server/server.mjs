@@ -1,4 +1,4 @@
-import { createReadStream, existsSync } from "node:fs";
+import { createReadStream, existsSync, statSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, extname, join, resolve, sep } from "node:path";
@@ -9,7 +9,10 @@ import {
   runPublicRateLimitMaintenance,
 } from "./contextAnalysisApi.mjs";
 import { createCachedReadinessProbe, setApiHeaders } from "./httpJson.mjs";
-import { createModuBrainRepository } from "./moduBrainRepository.mjs";
+import {
+  EXPECTED_DATABASE_MIGRATION_VERSION,
+  createModuBrainRepository,
+} from "./moduBrainRepository.mjs";
 import {
   createRequestTrace,
   sanitizeAccountExportPayload,
@@ -29,6 +32,8 @@ const mimeTypes = {
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".jpg": "image/jpeg",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
   ".jpeg": "image/jpeg",
   ".json": "application/json; charset=utf-8",
 };
@@ -105,7 +110,7 @@ export function createModuBrainServer(options = {}) {
     options.apiV1Options?.readyCheck ||
     (async () => {
       const repository = createModuBrainRepository(gateway.asServiceRole());
-      await repository.ready();
+      return repository.ready();
     });
   const readinessProbe = createCachedReadinessProbe(readinessCheck, {
     successTtlMs:
@@ -142,6 +147,8 @@ export function createModuBrainServer(options = {}) {
     : (event, req) => writeProductEventLog(event, req.moduBrainTrace, { logger: options.logger });
   const handleApiV1 = createApiV1Handler({
     ...(options.apiV1Options || {}),
+    builtAt:
+      options.apiV1Options?.builtAt || resolveBuildArtifactTimestamp(distDir),
     accountDataOperations,
     recordProductEvent,
     rateLimitIdentifierOptions: {
@@ -412,12 +419,14 @@ async function handleReadinessRequest(req, res, readinessProbe) {
 
   const database = await readinessProbe();
   const ready = database.status === "ready";
-  if (!ready) res.moduBrainErrorCode = "DATABASE_UNAVAILABLE";
+  if (!ready) res.moduBrainErrorCode = database.code || "DATABASE_UNAVAILABLE";
   res.statusCode = ready ? 200 : 503;
   res.end(
     JSON.stringify({
       data: {
         status: ready ? "ready" : "not_ready",
+        migrationVersion:
+          database.migrationVersion || EXPECTED_DATABASE_MIGRATION_VERSION,
         dependencies: { database },
       },
     }),
@@ -452,6 +461,14 @@ function boundedNumber(value, minimum, maximum, fallback) {
   const number = Number(value);
   if (!Number.isFinite(number)) return fallback;
   return Math.min(maximum, Math.max(minimum, Math.round(number)));
+}
+
+function resolveBuildArtifactTimestamp(distDir) {
+  try {
+    return statSync(join(distDir, "index.html")).mtime.toISOString();
+  } catch {
+    return null;
+  }
 }
 
 export async function serveStatic(pathname, res, options = {}) {
@@ -566,7 +583,11 @@ function setSecurityHeaders(res, options = {}) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "no-referrer");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
+  );
+  res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
   let connectSource = "'self'";
   try {
     if (options.supabaseUrl) connectSource += ` ${new URL(options.supabaseUrl).origin}`;
@@ -575,7 +596,7 @@ function setSecurityHeaders(res, options = {}) {
   }
   res.setHeader(
     "Content-Security-Policy",
-    `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ${connectSource}; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`,
+    `default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src ${connectSource} https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; manifest-src 'self'`,
   );
 }
 

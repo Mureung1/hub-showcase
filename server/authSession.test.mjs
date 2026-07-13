@@ -6,6 +6,7 @@ import {
   AUTH_EXPIRES_COOKIE,
   AUTH_REFRESH_COOKIE,
   AUTH_SECURE_ACCESS_COOKIE,
+  REFRESH_COOKIE_MAX_AGE_SECONDS,
   clearAuthSessionCookies,
   deriveAccessExpiresAt,
   readAuthSessionCookies,
@@ -31,6 +32,8 @@ describe("HttpOnly auth session cookies", () => {
       expect(cookie).toContain("SameSite=Strict");
       expect(cookie).not.toContain("Secure");
     }
+    expect(cookies[1]).toContain(`Max-Age=${REFRESH_COOKIE_MAX_AGE_SECONDS}`);
+    expect(cookies[2]).toContain(`Max-Age=${REFRESH_COOKIE_MAX_AGE_SECONDS}`);
     expect(res.headers.get("cache-control")).toContain("no-store");
   });
 

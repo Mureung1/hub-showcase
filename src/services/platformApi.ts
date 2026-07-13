@@ -5,6 +5,7 @@ import type {
   AnalysisRunStepEventResource,
   AccountExportResource,
   CapabilitiesResource,
+  CreateShareLinkInput,
   CreateProjectInput,
   CreateSourceInput,
   ContextImportResource,
@@ -132,7 +133,7 @@ export interface PlatformApi {
   createShareLink(
     token: string,
     runId: string,
-    expiresInDays: number,
+    input: CreateShareLinkInput,
   ): Promise<ShareLinkResource>;
   revokeShareLink(token: string, shareLinkId: string): Promise<void>;
   resolveSharedAnalysis(token: string): Promise<SharedAnalysisResource>;
@@ -351,10 +352,10 @@ class HttpPlatformApi implements PlatformApi {
     );
   }
 
-  createShareLink(token: string, runId: string, expiresInDays: number) {
+  createShareLink(token: string, runId: string, input: CreateShareLinkInput) {
     return this.request<ShareLinkResource>(
       `/api/v1/analysis-runs/${encodeURIComponent(runId)}/share-links`,
-      { token, method: "POST", body: { expiresInDays } },
+      { token, method: "POST", body: input },
     );
   }
 

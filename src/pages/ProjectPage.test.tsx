@@ -10,6 +10,7 @@ const project: ProjectResource = {
   id: "11111111-1111-4111-8111-111111111111",
   title: "캠퍼스 공모전",
   description: "공개 시연 프로젝트",
+  retentionDays: 90,
   archivedAt: null,
   createdAt: "2026-07-10T00:00:00Z",
   updatedAt: "2026-07-11T00:00:00Z",
@@ -60,7 +61,7 @@ describe("ProjectPage", () => {
     expect(window.location.search).toBe("?tab=onboarding");
     await user.click(screen.getByRole("tab", { name: "개요" }));
     await user.click(screen.getByRole("tab", { name: "분석 이력" }));
-    expect(window.location.search).toBe("?view=history");
+    expect(window.location.search).toBe("");
   });
 
   it("supports the persistent source → analysis → evidence → share workflow", async () => {
@@ -98,6 +99,8 @@ describe("ProjectPage", () => {
       id: "77777777-7777-4777-8777-777777777777",
       analysisRunId: latestRun.id,
       token: "share-token-abcdefghijklmnopqrstuvwxyz123456",
+      disclosureMode: "summary",
+      includeProjectTitle: false,
       expiresAt: "2026-07-18T01:00:00Z",
       revokedAt: null,
       createdAt: "2026-07-11T01:01:00Z",
@@ -108,6 +111,8 @@ describe("ProjectPage", () => {
     expect(await screen.findByRole("heading", { name: project.title })).toBeInTheDocument();
     expect(within(screen.getByRole("tablist", { name: "프로젝트 보기" })).getAllByRole("tab")).toHaveLength(3);
     expect(screen.getByRole("heading", { name: "지금 팀이 먼저 볼 맥락" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: sampleAnalysis.projectTitle })).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "분석 실행" }));
     expect(screen.getByTestId("analysis-mode-openai")).toBeDisabled();
     expect(screen.getByText(/로컬 분석만 사용할 수 있습니다/)).toBeInTheDocument();
 
@@ -119,7 +124,7 @@ describe("ProjectPage", () => {
     expect(await screen.findByRole("heading", { name: "멘토 피드백" })).toBeInTheDocument();
     expect(api.createSource).toHaveBeenCalledWith("access", project.id, expect.objectContaining({ kind: "feedback", title: "멘토 피드백" }));
 
-    await user.click(screen.getByRole("tab", { name: "개요" }));
+    await user.click(screen.getByRole("tab", { name: "분석 실행" }));
     await user.click(screen.getByTestId("analysis-submit"));
     expect(await screen.findByRole("heading", { name: "분석 이력" })).toBeInTheDocument();
     expect(api.createAnalysisRun).toHaveBeenCalledWith(
@@ -130,10 +135,16 @@ describe("ProjectPage", () => {
       expect.any(AbortSignal),
     );
     expect(screen.getByText("변경", { selector: ".change-chip" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "MVP는 사용자가 직접 텍스트를 붙여 넣는 방식으로 시작한다." })).toBeInTheDocument();
+    const decisionRegion = screen.getByRole("region", { name: "결정사항" });
+    const perspectiveRegion = screen.getByRole("region", { name: "참여자별 관점 차이" });
+    expect(
+      decisionRegion.compareDocumentPosition(perspectiveRegion) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
 
-    await user.click(within(screen.getByRole("region", { name: "결정사항" })).getByRole("button", { name: "근거 1개" }));
+    await user.click(within(decisionRegion).getByRole("button", { name: "근거 1개" }));
     expect(screen.getByRole("dialog", { name: "분석 근거" })).toBeInTheDocument();
-    expect(screen.getByText(/팀은 MVP에서 메신저 자동 연동/)).toBeInTheDocument();
+    expect(screen.getByText(/메신저 자동 연동과 실시간 녹음은 초기 구현 범위를 크게 늘리기 때문에/)).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: "외부 원문 위치 열기" })).toHaveAttribute(
       "href",
       "https://teams.microsoft.com/l/message/message-1",
@@ -153,6 +164,11 @@ describe("ProjectPage", () => {
     await user.click(screen.getByRole("tab", { name: "온보딩 요약" }));
     expect(await screen.findByRole("heading", { name: "온보딩 링크 공유" })).toBeInTheDocument();
     await user.click(screen.getByTestId("share-create"));
+    expect(api.createShareLink).toHaveBeenCalledWith("access", latestRun.id, {
+      disclosureMode: "summary",
+      includeProjectTitle: false,
+      expiresInDays: 7,
+    });
     const shareInput = await screen.findByLabelText("새 공유 링크");
     expect((shareInput as HTMLInputElement).value).toContain("/share#token=");
     await user.click(screen.getByRole("button", { name: "링크 복사" }));
@@ -162,6 +178,81 @@ describe("ProjectPage", () => {
     expect(screen.getByRole("alertdialog", { name: "이 공유 링크를 폐기할까요?" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "폐기 확인" }));
     await waitFor(() => expect(api.revokeShareLink).toHaveBeenCalledWith("access", "77777777-7777-4777-8777-777777777777"));
+  });
+
+  it("previews evidence disclosure and requires explicit confirmation before sharing quotes", async () => {
+    const user = userEvent.setup();
+    const api = apiMock();
+    const evidence = latestRun.result!.decisions[0].evidence![0];
+    vi.mocked(api.getProject).mockResolvedValue(project);
+    vi.mocked(api.listSources).mockResolvedValue([source]);
+    vi.mocked(api.listAnalysisRuns).mockResolvedValue([latestRun]);
+    vi.mocked(api.listShareLinks).mockResolvedValue([]);
+    vi.mocked(api.createShareLink).mockResolvedValue({
+      id: "79797979-7979-4797-8797-797979797979",
+      analysisRunId: latestRun.id,
+      token: "evidence-token-abcdefghijklmnopqrstuvwxyz",
+      disclosureMode: "evidence",
+      includeProjectTitle: true,
+      expiresAt: "2026-07-12T01:00:00Z",
+      revokedAt: null,
+      createdAt: "2026-07-11T01:01:00Z",
+    });
+
+    render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
+    await screen.findByRole("heading", { name: project.title });
+    await user.click(screen.getByRole("tab", { name: "온보딩 요약" }));
+    await user.click(screen.getByRole("radio", { name: "근거 포함 공유" }));
+
+    const preview = screen.getByRole("region", { name: "공유된 분석 요약" });
+    expect(within(preview).getByText(evidence.sourceTitle)).toBeInTheDocument();
+    expect(within(preview).getByText(evidence.quote, { exact: false })).toBeInTheDocument();
+    expect(screen.getByLabelText("공유 링크 만료")).toHaveValue("1");
+    expect(screen.getByTestId("share-create")).toBeDisabled();
+
+    await user.click(screen.getByRole("checkbox", { name: "프로젝트 제목도 공개" }));
+    expect(within(preview).getByRole("heading", { name: project.title })).toBeInTheDocument();
+    await user.click(screen.getByRole("checkbox", { name: /민감정보 공개 가능성을 확인/ }));
+    await user.click(screen.getByTestId("share-create"));
+
+    expect(api.createShareLink).toHaveBeenCalledWith("access", latestRun.id, {
+      disclosureMode: "evidence",
+      includeProjectTitle: true,
+      expiresInDays: 1,
+      acknowledgeSensitiveEvidence: true,
+    });
+  });
+
+  it("shows retention deletion candidates and confirms a shorter policy before saving", async () => {
+    const user = userEvent.setup();
+    const api = apiMock();
+    const expiredSource = {
+      ...source,
+      id: "89898989-8989-4898-8898-898989898989",
+      occurredAt: "2025-01-01T00:00:00Z",
+      createdAt: "2025-01-01T00:00:00Z",
+    };
+    const affectedRun = { ...latestRun, sourceIds: [expiredSource.id] };
+    vi.mocked(api.getProject).mockResolvedValue(project);
+    vi.mocked(api.listSources).mockResolvedValue([expiredSource]);
+    vi.mocked(api.listAnalysisRuns).mockResolvedValue([affectedRun]);
+    vi.mocked(api.updateProject).mockResolvedValue({ ...project, retentionDays: 30 });
+
+    render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
+    await screen.findByRole("heading", { name: project.title });
+    await user.click(screen.getByRole("tab", { name: "분석 실행" }));
+    await user.selectOptions(screen.getByLabelText("기본 보관 기간"), "30");
+
+    const confirmation = screen.getByRole("note", { name: "보관 기간 단축 확인" });
+    expect(confirmation).toHaveTextContent("원문 1건 · 연관 분석 1건");
+    expect(screen.getByRole("button", { name: "정보 저장" })).toBeDisabled();
+    await user.click(screen.getByRole("checkbox", { name: /삭제 예정 범위와 연관 분석/ }));
+    await user.click(screen.getByRole("button", { name: "정보 저장" }));
+
+    expect(api.updateProject).toHaveBeenCalledWith("access", project.id, expect.objectContaining({
+      retentionDays: 30,
+      acknowledgeRetentionReduction: true,
+    }));
   });
 
   it("shows the verified agent trace and persists human review annotations", async () => {
@@ -218,7 +309,7 @@ describe("ProjectPage", () => {
     await screen.findByRole("heading", { name: project.title });
     await user.click(screen.getByRole("tab", { name: "분석 이력" }));
 
-    expect(await screen.findByRole("heading", { name: "에이전트가 확인한 단계" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "분석 실행 영수증" })).toBeInTheDocument();
     expect(await screen.findByText("7개", { selector: ".agent-execution-metrics dd" })).toBeInTheDocument();
     await user.type(screen.getByLabelText("메모"), "참여자 화자를 다시 확인해야 합니다.");
     await user.click(screen.getByRole("button", { name: "검토 이력 저장" }));
@@ -233,6 +324,31 @@ describe("ProjectPage", () => {
       "55555555-5555-4555-8555-555555555555",
     );
     expect(await screen.findByText("참여자 화자를 다시 확인해야 합니다.")).toBeInTheDocument();
+  }, 15_000);
+
+  it("deletes a selected analysis only after explicit confirmation", async () => {
+    const user = userEvent.setup();
+    const api = apiMock();
+    vi.mocked(api.getProject).mockResolvedValue(project);
+    vi.mocked(api.listSources).mockResolvedValue([source]);
+    vi.mocked(api.listAnalysisRuns).mockResolvedValue([latestRun, previousRun]);
+    vi.mocked(api.deleteAnalysisRun).mockResolvedValue(undefined);
+
+    render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
+    await screen.findByRole("heading", { name: project.title });
+    await user.click(screen.getByRole("tab", { name: "분석 이력" }));
+
+    const runList = screen.getByRole("complementary", { name: "분석 실행 이력" });
+    expect(within(runList).getAllByText("성공", { selector: ".run-status" })).toHaveLength(2);
+    await user.click(screen.getByRole("button", { name: "선택한 분석 삭제" }));
+    expect(screen.getByRole("alertdialog", { name: "이 분석 이력을 삭제할까요?" })).toBeInTheDocument();
+    expect(api.deleteAnalysisRun).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "분석 삭제 확인" }));
+
+    await waitFor(() => expect(api.deleteAnalysisRun).toHaveBeenCalledWith("access", latestRun.id));
+    expect(within(runList).getAllByText("성공", { selector: ".run-status" })).toHaveLength(1);
+    expect(screen.queryByRole("alertdialog", { name: "이 분석 이력을 삭제할까요?" })).not.toBeInTheDocument();
   });
 
   it("imports account-free external context and exposes its provenance", async () => {
@@ -267,6 +383,10 @@ describe("ProjectPage", () => {
     render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
     await screen.findByRole("heading", { name: project.title });
     await user.click(screen.getByRole("tab", { name: "기록" }));
+    const importDisclosure = screen.getByText("외부 회의 맥락 가져오기").closest("details");
+    expect(importDisclosure).not.toHaveAttribute("open");
+    await user.click(screen.getByText("외부 회의 맥락 가져오기"));
+    expect(importDisclosure).toHaveAttribute("open");
     expect(screen.getByText("계정 연결 없음")).toBeInTheDocument();
     await user.click(screen.getByRole("radio", { name: /Teams JSON/ }));
     await user.type(screen.getByLabelText(/기록 제목/), "Teams 제품 회의");
@@ -313,6 +433,7 @@ describe("ProjectPage", () => {
     await screen.findByRole("heading", { name: project.title });
     await user.click(screen.getByRole("tab", { name: "기록" }));
     await user.click(screen.getByRole("button", { name: "보관" }));
+    await user.click(screen.getByText("외부 회의 맥락 가져오기"));
     await user.click(screen.getByRole("radio", { name: /바로 붙여넣기/ }));
     await user.type(screen.getByLabelText(/기록 제목/), "동시 가져오기");
     await user.type(screen.getByLabelText("회의 맥락 붙여넣기"), "새 맥락");
@@ -330,7 +451,7 @@ describe("ProjectPage", () => {
     });
     expect(await screen.findByRole("heading", { name: "동시 가져오기" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("tab", { name: "개요" }));
+    await user.click(screen.getByRole("tab", { name: "분석 실행" }));
     expect(screen.getAllByTestId(/^analysis-source-/)).toHaveLength(1);
     expect(screen.getByTestId(`analysis-source-${importedSource.id}`)).toBeChecked();
   });
@@ -356,10 +477,82 @@ describe("ProjectPage", () => {
     await screen.findByRole("heading", { name: project.title });
 
     await user.click(screen.getByTestId("analysis-mode-openai"));
+    expect(screen.getByRole("heading", { name: "OpenAI 전송 미리보기" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "OpenAI 전송 대상 기록" })).toHaveTextContent(source.title);
     expect(screen.getByTestId("analysis-submit")).toBeDisabled();
     await user.click(screen.getByRole("checkbox", { name: /OpenAI API에 전송/ }));
     await user.click(screen.getByTestId("analysis-submit"));
     expect(await screen.findByRole("alert")).toHaveTextContent("외부 모델을 사용할 수 없습니다.");
+  });
+
+  it("scans selected source details and requires a second confirmation when personal data is detected", async () => {
+    const user = userEvent.setup();
+    const api = apiMock();
+    const sensitiveSource = {
+      ...source,
+      content: "문의 담당자 이메일은 student@example.com이고 전화번호는 010-1234-5678입니다.",
+      charCount: 65,
+    };
+    vi.mocked(api.getProject).mockResolvedValue(project);
+    vi.mocked(api.listSources).mockResolvedValue([sensitiveSource]);
+    vi.mocked(api.listAnalysisRuns).mockResolvedValue([]);
+    vi.mocked(api.getCapabilities).mockResolvedValue({ openaiEnabled: true });
+    vi.mocked(api.getSource!).mockResolvedValue(sensitiveSource);
+    vi.mocked(api.createAnalysisRun).mockResolvedValue(latestRun);
+
+    render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
+    await screen.findByRole("heading", { name: project.title });
+    await user.click(screen.getByTestId("analysis-mode-openai"));
+    await user.click(screen.getByRole("checkbox", { name: /OpenAI API에 전송/ }));
+    await user.click(screen.getByTestId("analysis-submit"));
+
+    expect(api.getSource).toHaveBeenCalledWith("access", sensitiveSource.id);
+    expect(screen.getByText(/개인정보 형식 2건/)).toBeInTheDocument();
+    expect(screen.getAllByText("1건", { selector: ".personal-data-preflight dd" })).toHaveLength(2);
+    expect(screen.queryByText("student@example.com")).not.toBeInTheDocument();
+    expect(api.createAnalysisRun).not.toHaveBeenCalled();
+    expect(screen.getByTestId("analysis-submit")).toBeDisabled();
+
+    await user.click(screen.getByRole("checkbox", { name: /현재 원문 그대로 OpenAI에 전송/ }));
+    await user.click(screen.getByTestId("analysis-submit"));
+    expect(api.createAnalysisRun).toHaveBeenCalledTimes(1);
+  });
+
+  it("masks detected personal data in stored sources before OpenAI analysis", async () => {
+    const user = userEvent.setup();
+    const api = apiMock();
+    const sensitiveSource = {
+      ...source,
+      content: "회신 주소 student@example.com",
+      charCount: 28,
+    };
+    const maskedSource = {
+      ...sensitiveSource,
+      content: "회신 주소 •••••••@•••••••.•••",
+      updatedAt: "2026-07-13T00:00:00Z",
+    };
+    vi.mocked(api.getProject).mockResolvedValue(project);
+    vi.mocked(api.listSources).mockResolvedValue([sensitiveSource]);
+    vi.mocked(api.listAnalysisRuns).mockResolvedValue([]);
+    vi.mocked(api.getCapabilities).mockResolvedValue({ openaiEnabled: true });
+    vi.mocked(api.getSource!).mockResolvedValue(sensitiveSource);
+    vi.mocked(api.updateSource).mockResolvedValue(maskedSource);
+    vi.mocked(api.createAnalysisRun).mockResolvedValue(latestRun);
+
+    render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
+    await screen.findByRole("heading", { name: project.title });
+    await user.click(screen.getByTestId("analysis-mode-openai"));
+    await user.click(screen.getByRole("checkbox", { name: /OpenAI API에 전송/ }));
+    await user.click(screen.getByTestId("analysis-submit"));
+    await user.click(screen.getByRole("button", { name: "탐지 항목 마스킹 후 저장" }));
+
+    expect(api.updateSource).toHaveBeenCalledWith("access", sensitiveSource.id, {
+      content: expect.not.stringContaining("student@example.com"),
+    });
+    expect(await screen.findByText("1개 원문의 탐지 항목을 마스킹해 저장했습니다.")).toBeInTheDocument();
+    expect(screen.getByText(/탐지되지 않았습니다/)).toBeInTheDocument();
+    await user.click(screen.getByTestId("analysis-submit"));
+    expect(api.createAnalysisRun).toHaveBeenCalledTimes(1);
   });
 
   it("reuses the same idempotency key when a network outcome is unknown", async () => {
@@ -498,6 +691,9 @@ function run(id: string, createdAt: string, result: typeof sampleAnalysis): Anal
     projectId: project.id,
     status: "succeeded",
     schemaVersion: "2.0",
+    pipelineVersion: "2.0",
+    stages: [],
+    evidenceCoverage: { eligible: 0, validated: 0 },
     sourceIds: [source.id],
     provider: { mode: "local" },
     result,
@@ -510,7 +706,7 @@ function apiMock(): PlatformApi {
   return {
     getCapabilities: vi.fn().mockResolvedValue({ openaiEnabled: false }),
     listProjects: vi.fn(), createProject: vi.fn(), getProject: vi.fn(), updateProject: vi.fn(), deleteProject: vi.fn(),
-    listSources: vi.fn(), createSource: vi.fn(), importContext: vi.fn(), updateSource: vi.fn(), deleteSource: vi.fn(), listSourceSegments: vi.fn().mockResolvedValue([]),
+    listSources: vi.fn(), getSource: vi.fn().mockResolvedValue(source), createSource: vi.fn(), importContext: vi.fn(), updateSource: vi.fn(), deleteSource: vi.fn(), listSourceSegments: vi.fn().mockResolvedValue([]),
     listAnalysisRuns: vi.fn(), createAnalysisRun: vi.fn(), getAnalysisRun: vi.fn(), deleteAnalysisRun: vi.fn(),
     listAnalysisRunStepEvents: vi.fn().mockResolvedValue([]), listAnalysisRunAnnotations: vi.fn().mockResolvedValue([]), createAnalysisRunAnnotation: vi.fn(),
     listShareLinks: vi.fn(), createShareLink: vi.fn(), revokeShareLink: vi.fn(), resolveSharedAnalysis: vi.fn(),

@@ -16,8 +16,8 @@ afterEach(() => {
 });
 
 describe("SupabaseRestAuthService", () => {
-  it("requests a passwordless link with the configured public key only", async () => {
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(authResponse({}));
+  it("requests a passwordless link through the same-origin BFF without exposing a Supabase key", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(bffResponse({ data: { accepted: true } }));
     vi.stubGlobal("fetch", fetchMock);
     const service = new SupabaseRestAuthService({
       url: "https://demo.supabase.co/",
@@ -25,15 +25,25 @@ describe("SupabaseRestAuthService", () => {
     });
 
     await expect(
-      service.sendMagicLink("team@example.com", "https://demo.example/login"),
+      service.sendMagicLink(
+        "team@example.com",
+        "https://demo.example/login",
+        "turnstile-token",
+      ),
     ).resolves.toEqual({ email: "team@example.com" });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(
-      "https://demo.supabase.co/auth/v1/otp?redirect_to=https%3A%2F%2Fdemo.example%2Flogin",
-    );
-    expect(init?.headers).toEqual(expect.objectContaining({ apikey: "publishable" }));
+    expect(url).toBe("/api/v1/auth/magic-link");
     expect(init?.headers).not.toHaveProperty("Authorization");
-    expect(init).toMatchObject({ credentials: "omit", referrerPolicy: "no-referrer" });
+    expect(init).toMatchObject({
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+      body: JSON.stringify({
+        email: "team@example.com",
+        redirectTo: "https://demo.example/login",
+        captchaToken: "turnstile-token",
+      }),
+    });
   });
 
   it("hands callback tokens to the BFF once and clears the fragment immediately", async () => {
@@ -201,8 +211,8 @@ describe("SupabaseRestAuthService", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn<typeof fetch>().mockResolvedValue(
-        authResponse(
-          { msg: "For security purposes, you can only request this after 60 seconds" },
+        bffResponse(
+          { error: { code: "RATE_LIMITED", message: "잠시 후 다시 시도해 주세요." } },
           429,
           { "Retry-After": "75" },
         ),
@@ -221,16 +231,7 @@ function sessionResponse(user: { id: string; email: string }, expiresAt: number)
   return bffResponse({ data: { user, expiresAt } });
 }
 
-function bffResponse(payload: unknown, status = 200) {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    headers: new Headers(),
-    json: vi.fn().mockResolvedValue(payload),
-  } as unknown as Response;
-}
-
-function authResponse(payload: unknown, status = 200, headers: Record<string, string> = {}) {
+function bffResponse(payload: unknown, status = 200, headers: Record<string, string> = {}) {
   return {
     ok: status >= 200 && status < 300,
     status,

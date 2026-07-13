@@ -17,6 +17,7 @@ beforeAll(async () => {
   rootDir = await mkdtemp(join(tmpdir(), "modu-brain-server-"));
   distDir = join(rootDir, "dist");
   await mkdir(join(distDir, "assets"), { recursive: true });
+  await mkdir(join(distDir, "fonts"), { recursive: true });
   await writeFile(join(distDir, "index.html"), "<!doctype html><title>모두의 뇌</title>", "utf8");
   await writeFile(join(distDir, "assets", "app.js"), "globalThis.__APP_READY__ = true;", "utf8");
   await writeFile(
@@ -24,6 +25,7 @@ beforeAll(async () => {
     "globalThis.__HASHED_APP_READY__ = true;",
     "utf8",
   );
+  await writeFile(join(distDir, "fonts", "product.woff"), "font-fixture", "utf8");
 
   logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), log: vi.fn() };
   server = createModuBrainServer({
@@ -49,15 +51,26 @@ describe("static preview server", () => {
     const indexResponse = await fetch(`${baseUrl}/`);
     const assetResponse = await fetch(`${baseUrl}/assets/app.js`);
 
+    const fontResponse = await fetch(`${baseUrl}/fonts/product.woff`);
     expect(indexResponse.status).toBe(200);
     expect(indexResponse.headers.get("content-type")).toContain("text/html");
     expect(await indexResponse.text()).toContain("모두의 뇌");
     expect(assetResponse.status).toBe(200);
     expect(assetResponse.headers.get("content-type")).toContain("text/javascript");
     expect(assetResponse.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(fontResponse.status).toBe(200);
+    expect(fontResponse.headers.get("content-type")).toBe("font/woff");
+    expect(fontResponse.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(assetResponse.headers.get("cross-origin-resource-policy")).toBe("same-origin");
     expect(indexResponse.headers.get("content-security-policy")).toContain("default-src 'self'");
+    expect(indexResponse.headers.get("content-security-policy")).toContain("style-src 'self'");
+    expect(indexResponse.headers.get("content-security-policy")).toContain(
+      "frame-src https://challenges.cloudflare.com",
+    );
+    expect(indexResponse.headers.get("content-security-policy")).not.toContain("unsafe-inline");
     expect(indexResponse.headers.get("x-frame-options")).toBe("DENY");
     expect(indexResponse.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(indexResponse.headers.get("permissions-policy")).toContain("browsing-topics=()");
     expect(indexResponse.headers.get("cache-control")).toBe(
       "public, max-age=0, must-revalidate",
     );
@@ -234,7 +247,10 @@ describe("static preview server", () => {
         id: "user-1",
         email: "verified@example.com",
         accessToken: "private-access-token",
+        sessionId: "recent-session",
+        authenticatedAt: Math.floor(Date.now() / 1000),
       }),
+      logout: vi.fn().mockResolvedValue({ loggedOut: true }),
       asServiceRole: () => ({ request: databaseRequest }),
       deleteAuthUser,
     };
@@ -357,6 +373,7 @@ describe("static preview server", () => {
       expect(await first.json()).toMatchObject({
         data: {
           status: "ready",
+          migrationVersion: "20260713093323",
           dependencies: { database: { status: "ready", cached: false } },
         },
       });
@@ -364,6 +381,40 @@ describe("static preview server", () => {
         data: { dependencies: { database: { status: "ready", cached: true } } },
       });
       expect(readyCheck).toHaveBeenCalledOnce();
+    } finally {
+      await new Promise((resolve, reject) => {
+        readinessServer.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  });
+
+  it("returns 503 with SCHEMA_DRIFT when the database contract is stale", async () => {
+    const drift = Object.assign(new Error("stale database contract"), {
+      code: "SCHEMA_DRIFT",
+    });
+    const readinessServer = createModuBrainServer({
+      rootDir,
+      distDir,
+      logger,
+      apiV1Options: { readyCheck: vi.fn().mockRejectedValue(drift) },
+    });
+    await new Promise((resolve) => readinessServer.listen(0, "127.0.0.1", resolve));
+    const address = readinessServer.address();
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:${address.port}/api/health/ready`,
+      );
+      expect(response.status).toBe(503);
+      await expect(response.json()).resolves.toMatchObject({
+        data: {
+          status: "not_ready",
+          migrationVersion: "20260713093323",
+          dependencies: {
+            database: { status: "unavailable", code: "SCHEMA_DRIFT" },
+          },
+        },
+      });
     } finally {
       await new Promise((resolve, reject) => {
         readinessServer.close((error) => (error ? reject(error) : resolve()));

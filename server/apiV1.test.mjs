@@ -60,7 +60,13 @@ beforeEach(() => {
   authNow = new Date("2026-07-11T00:00:00.000Z").getTime();
   authGatewayAuthenticate = vi.fn(async (accessToken) => {
     if (!accessToken) throw new ApiError(401, "AUTH_REQUIRED", "A login session is required.");
-    return { id: USER_ID, email: "team@example.com", accessToken };
+    return {
+      id: USER_ID,
+      email: "team@example.com",
+      accessToken,
+      sessionId: "session-1",
+      authenticatedAt: Math.floor(authNow / 1000),
+    };
   });
   authGatewayRefresh = vi.fn().mockResolvedValue({
     accessToken: "rotated-access",
@@ -122,12 +128,19 @@ describe("v1 API", () => {
   it("reports liveness/readiness and returns JSON 405/OPTIONS responses", async () => {
     const live = await fetch(`${baseUrl}/api/health/live`);
     expect(live.status).toBe(200);
-    await expect(live.json()).resolves.toEqual({ data: { status: "ok", commit: null } });
+    await expect(live.json()).resolves.toEqual({
+      data: { status: "ok", commit: null, buildId: null, builtAt: null },
+    });
 
     buildCommit = "ABCDEF1234567";
     const versionedLive = await fetch(`${baseUrl}/api/health/live`);
     await expect(versionedLive.json()).resolves.toEqual({
-      data: { status: "ok", commit: "abcdef1234567" },
+      data: {
+        status: "ok",
+        commit: "abcdef1234567",
+        buildId: "abcdef1234567",
+        builtAt: null,
+      },
     });
 
     const previousRenderCommit = process.env.RENDER_GIT_COMMIT;
@@ -136,7 +149,12 @@ describe("v1 API", () => {
       process.env.RENDER_GIT_COMMIT = "F".repeat(40);
       const renderLive = await fetch(`${baseUrl}/api/health/live`);
       await expect(renderLive.json()).resolves.toEqual({
-        data: { status: "ok", commit: "f".repeat(40) },
+        data: {
+          status: "ok",
+          commit: "f".repeat(40),
+          buildId: "f".repeat(40),
+          builtAt: null,
+        },
       });
     } finally {
       if (previousRenderCommit === undefined) delete process.env.RENDER_GIT_COMMIT;
@@ -156,6 +174,95 @@ describe("v1 API", () => {
     const response = await fetch(`${baseUrl}/api/v1/projects`);
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toMatchObject({ error: { code: "AUTH_REQUIRED" } });
+  });
+
+  it("requires CAPTCHA, rate-limits magic links, and always returns the same accepted response", async () => {
+    const consumeRateLimit = vi.fn().mockResolvedValue(true);
+    const sendMagicLink = vi.fn()
+      .mockResolvedValueOnce({ accountExists: true })
+      .mockResolvedValueOnce({ accountExists: false });
+    const isolated = await startHandlerServer(createApiV1Handler({
+      gateway: { sendMagicLink },
+      publicRepository: { consumeRateLimit },
+      captchaRequired: true,
+      magicLinkIdentifierSecret: "magic-link-test-secret",
+      rateLimitIdentifierOptions: { secret: "rate-limit-test-secret" },
+    }));
+    try {
+      const missingCaptcha = await fetch(`${isolated.baseUrl}/api/v1/auth/magic-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: isolated.baseUrl },
+        body: JSON.stringify({
+          email: "member@example.com",
+          redirectTo: `${isolated.baseUrl}/login`,
+        }),
+      });
+      expect(missingCaptcha.status).toBe(400);
+      await expect(missingCaptcha.json()).resolves.toMatchObject({
+        error: { code: "CAPTCHA_REQUIRED" },
+      });
+      expect(consumeRateLimit).not.toHaveBeenCalled();
+      expect(sendMagicLink).not.toHaveBeenCalled();
+
+      const acceptedPayloads = [];
+      for (const [email, captchaToken] of [
+        [" Member@Example.com ", "captcha-one"],
+        ["unknown@example.com", "captcha-two"],
+      ]) {
+        const response = await fetch(`${isolated.baseUrl}/api/v1/auth/magic-link`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Origin: isolated.baseUrl },
+          body: JSON.stringify({
+            email,
+            captchaToken,
+            redirectTo: `${isolated.baseUrl}/login`,
+          }),
+        });
+        expect(response.status).toBe(202);
+        acceptedPayloads.push(await response.json());
+      }
+      expect(acceptedPayloads).toEqual([
+        { data: { accepted: true } },
+        { data: { accepted: true } },
+      ]);
+      expect(sendMagicLink).toHaveBeenNthCalledWith(
+        1,
+        "member@example.com",
+        `${isolated.baseUrl}/login`,
+        "captcha-one",
+        { signal: expect.any(AbortSignal) },
+      );
+      expect(sendMagicLink).toHaveBeenNthCalledWith(
+        2,
+        "unknown@example.com",
+        `${isolated.baseUrl}/login`,
+        "captcha-two",
+        { signal: expect.any(AbortSignal) },
+      );
+      expect(consumeRateLimit.mock.calls.map(([scope]) => scope)).toEqual([
+        "auth:magic:ip:hour",
+        "auth:magic:email:hour",
+        "auth:magic:ip:hour",
+        "auth:magic:email:hour",
+      ]);
+
+      consumeRateLimit.mockResolvedValue(false);
+      const limited = await fetch(`${isolated.baseUrl}/api/v1/auth/magic-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: isolated.baseUrl },
+        body: JSON.stringify({
+          email: "limited@example.com",
+          captchaToken: "captcha-three",
+          redirectTo: `${isolated.baseUrl}/login`,
+        }),
+      });
+      expect(limited.status).toBe(429);
+      expect(limited.headers.get("retry-after")).toBe("3600");
+      await expect(limited.json()).resolves.toMatchObject({ error: { code: "RATE_LIMITED" } });
+      expect(sendMagicLink).toHaveBeenCalledTimes(2);
+    } finally {
+      await isolated.close();
+    }
   });
 
   it("exchanges callback tokens for strict HttpOnly cookies without returning secrets", async () => {
@@ -240,6 +347,8 @@ describe("v1 API", () => {
         id: USER_ID,
         email: "team@example.com",
         accessToken,
+        sessionId: "session-1",
+        authenticatedAt: Math.floor(authNow / 1000),
       })),
       refreshSession: vi.fn(),
       logout: vi.fn(),
@@ -465,6 +574,100 @@ describe("v1 API", () => {
     expect((await permanent.json()).data.permanent).toBe(true);
   });
 
+  it("updates only supported retention policies and exposes the mapped policy", async () => {
+    const unconfirmed = await api(`/api/v1/projects/${PROJECT_ID}`, {
+      method: "PATCH",
+      body: { retentionDays: 30 },
+    });
+    expect(unconfirmed.status).toBe(400);
+    await expect(unconfirmed.json()).resolves.toMatchObject({
+      error: { code: "RETENTION_REDUCTION_CONFIRMATION_REQUIRED" },
+    });
+    expect(repository.updateProject).not.toHaveBeenCalled();
+
+    const thirtyDays = await api(`/api/v1/projects/${PROJECT_ID}`, {
+      method: "PATCH",
+      body: { retentionDays: 30, acknowledgeRetentionReduction: true },
+    });
+    expect(thirtyDays.status).toBe(200);
+    expect((await thirtyDays.json()).data.retentionDays).toBe(30);
+    expect(repository.updateProject).toHaveBeenLastCalledWith(
+      USER_ID,
+      PROJECT_ID,
+      { retention_days: 30, retention_acknowledged: true },
+    );
+
+    const indefinite = await api(`/api/v1/projects/${PROJECT_ID}`, {
+      method: "PATCH",
+      body: { retentionDays: null },
+    });
+    expect(indefinite.status).toBe(200);
+    expect((await indefinite.json()).data.retentionDays).toBeNull();
+    expect(repository.updateProject).toHaveBeenLastCalledWith(
+      USER_ID,
+      PROJECT_ID,
+      { retention_days: null },
+    );
+
+    repository.updateProject.mockClear();
+    const invalid = await api(`/api/v1/projects/${PROJECT_ID}`, {
+      method: "PATCH",
+      body: { retentionDays: 7 },
+    });
+    expect(invalid.status).toBe(400);
+    await expect(invalid.json()).resolves.toMatchObject({
+      error: { code: "INVALID_RETENTION_POLICY" },
+    });
+    expect(repository.updateProject).not.toHaveBeenCalled();
+
+    const createOverride = await api("/api/v1/projects", {
+      method: "POST",
+      body: { title: "새 프로젝트", description: "", retentionDays: 30 },
+    });
+    expect(createOverride.status).toBe(400);
+    await expect(createOverride.json()).resolves.toMatchObject({
+      error: { code: "INVALID_PROJECT_PATCH" },
+    });
+  });
+
+  it("requires a remotely verified session from the last ten minutes for permanent deletion", async () => {
+    authGatewayAuthenticate.mockResolvedValueOnce({
+      id: USER_ID,
+      email: "team@example.com",
+      accessToken: "valid-token",
+      sessionId: "stale-session",
+      authenticatedAt: Math.floor(authNow / 1000) - 601,
+    });
+    const stale = await api(`/api/v1/projects/${PROJECT_ID}?permanent=true`, {
+      method: "DELETE",
+      headers: { "X-Confirm-Permanent-Delete": "delete" },
+    });
+    expect(stale.status).toBe(401);
+    await expect(stale.json()).resolves.toMatchObject({
+      error: { code: "RECENT_AUTH_REQUIRED" },
+    });
+    expect(repository.deleteProject).not.toHaveBeenCalled();
+    expect(authGatewayAuthenticate).toHaveBeenCalledWith(
+      "valid-token",
+      expect.objectContaining({ forceRemote: true, signal: expect.any(AbortSignal) }),
+    );
+
+    authGatewayAuthenticate.mockResolvedValueOnce({
+      id: USER_ID,
+      email: "team@example.com",
+      accessToken: "valid-token",
+      sessionId: "fresh-session",
+      authenticatedAt: Math.floor(authNow / 1000),
+    });
+    const fresh = await api(`/api/v1/projects/${PROJECT_ID}?permanent=true`, {
+      method: "DELETE",
+      headers: { "X-Confirm-Permanent-Delete": "delete" },
+    });
+    expect(fresh.status).toBe(200);
+    expect((await fresh.json()).data).toMatchObject({ deleted: true, permanent: true });
+    expect(repository.deleteProject).toHaveBeenCalledWith(USER_ID, PROJECT_ID, "delete");
+  });
+
   it("creates, reads, updates, lists and archives source records with a content hash", async () => {
     const created = await api(`/api/v1/projects/${PROJECT_ID}/sources`, {
       method: "POST",
@@ -532,6 +735,7 @@ describe("v1 API", () => {
       },
     });
     expect(repository.importSourceContext).toHaveBeenCalledWith(
+      USER_ID,
       PROJECT_ID,
       expect.objectContaining({
         provider: "teams",
@@ -646,9 +850,24 @@ describe("v1 API", () => {
       id: RUN_ID,
       status: "succeeded",
       schemaVersion: "2.0",
+      pipelineVersion: "2.0",
+      evidenceCoverage: { eligible: 4, validated: 2 },
       sourceIds: [SOURCE_ID],
       provider: { mode: "local" },
     });
+    expect(body.data.stages.map((stage) => `${stage.name}:${stage.status}`)).toEqual([
+      "source_snapshot:started",
+      "source_snapshot:succeeded",
+      "provider_analysis:started",
+      "provider_analysis:succeeded",
+      "evidence_validation:started",
+      "evidence_validation:succeeded",
+      "result_persistence:started",
+      "result_persistence:succeeded",
+    ]);
+    expect(body.data.stages.find(
+      (stage) => stage.name === "evidence_validation" && stage.status === "succeeded",
+    )).toMatchObject({ validationOutcome: "passed", code: "EVIDENCE_VERIFIED" });
     expect(body.data.result.decisions[0].id).toMatch(/^decision_/);
     expect(body.data.result.decisions[0].evidence[0]).toMatchObject({
       sourceRecordId: SOURCE_ID,
@@ -864,6 +1083,41 @@ describe("v1 API", () => {
     expect(JSON.stringify(failedEvent)).not.toContain("secret provider response");
   });
 
+  it("fails the run when provider evidence is absent from its snapshots", async () => {
+    const invalidResult = sampleAnalysis();
+    invalidResult.decisions[0].evidence = ["선택한 원문에 존재하지 않는 인용문"];
+    analyze.mockResolvedValue(invalidResult);
+
+    const response = await api(`/api/v1/projects/${PROJECT_ID}/analysis-runs`, {
+      method: "POST",
+      headers: { "Idempotency-Key": "invalid-evidence-key" },
+      body: { sourceIds: [SOURCE_ID], mode: "local" },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(502);
+    expect(body).toMatchObject({
+      error: { code: "EVIDENCE_VALIDATION_FAILED" },
+    });
+    expect(JSON.stringify(body)).not.toContain("직접 입력 방식으로 시작하기로 결정했다");
+
+    const failureUpdate = repository.completeRun.mock.calls.at(-1)[2];
+    expect(failureUpdate).toMatchObject({
+      status: "failed",
+      error_code: "EVIDENCE_VALIDATION_FAILED",
+      error_message: "분석을 완료하지 못했습니다.",
+    });
+    expect(failureUpdate).not.toHaveProperty("result_jsonb");
+
+    const failedEvent = repository.appendRunStepEvent.mock.calls
+      .map((call) => call[2])
+      .find((event) => event.step === "evidence_validation" && event.status === "failed");
+    expect(failedEvent).toMatchObject({
+      code: "EVIDENCE_VALIDATION_FAILED",
+      validationOutcome: "failed",
+    });
+  });
+
   it("terminalizes a new run when snapshot loading fails before provider execution", async () => {
     repository.getRunSnapshots.mockRejectedValue(
       new ApiError(503, "DATABASE_UNAVAILABLE", "database unavailable"),
@@ -885,8 +1139,47 @@ describe("v1 API", () => {
 
   it("lists/gets/deletes runs and creates/lists/revokes share links", async () => {
     const list = await api(`/api/v1/projects/${PROJECT_ID}/analysis-runs`);
-    expect((await list.json()).data[0].sourceIds).toEqual([SOURCE_ID]);
-    expect((await (await api(`/api/v1/analysis-runs/${RUN_ID}`)).json()).data.id).toBe(RUN_ID);
+    const listBody = await list.json();
+    expect(listBody.data[0]).toMatchObject({
+      sourceIds: [SOURCE_ID],
+      pipelineVersion: "2.0",
+      stages: [],
+      evidenceCoverage: { eligible: 0, validated: 0 },
+    });
+
+    repository.getRun.mockResolvedValueOnce(runRow({
+      result_jsonb: {
+        decisions: [{ evidence: [{ sourceRecordId: SOURCE_ID, quote: "근거" }] }],
+        participants: [],
+        questions: [],
+        keyTerms: [],
+      },
+      analysis_run_step_events: [
+        stepEventRow({
+          sequence: 2,
+          step_name: "evidence_validation",
+          status: "succeeded",
+          validation_outcome: "passed",
+          code: "EVIDENCE_VALIDATED",
+          duration_ms: 5,
+        }),
+      ],
+    }));
+    const detail = await api(`/api/v1/analysis-runs/${RUN_ID}`);
+    expect((await detail.json()).data).toMatchObject({
+      id: RUN_ID,
+      pipelineVersion: "2.0",
+      stages: [
+        {
+          name: "evidence_validation",
+          status: "succeeded",
+          validationOutcome: "passed",
+          code: "EVIDENCE_VALIDATED",
+          durationMs: 5,
+        },
+      ],
+      evidenceCoverage: { eligible: 1, validated: 1 },
+    });
 
     repository.getRun.mockResolvedValue(
       runRow({ status: "succeeded", result_jsonb: sampleAnalysis(), completed_at: now }),
@@ -898,11 +1191,121 @@ describe("v1 API", () => {
     const createdBody = await created.json();
     expect(createdBody.data.token).toBeTruthy();
     expect(createdBody.data.urlPath).toContain("/share#token=");
+    expect(createdBody.data).toMatchObject({
+      disclosureMode: "summary",
+      includeProjectTitle: false,
+    });
     expect(repository.createShareLink.mock.calls[0][2]).not.toBe(createdBody.data.token);
+    expect(repository.createShareLink.mock.calls[0][4]).toEqual({
+      disclosureMode: "summary",
+      includeProjectTitle: false,
+    });
 
     expect((await (await api(`/api/v1/analysis-runs/${RUN_ID}/share-links`)).json()).data).toHaveLength(1);
     expect((await (await api(`/api/v1/share-links/${SHARE_ID}`, { method: "DELETE" })).json()).data.revokedAt).toBeTruthy();
     expect((await (await api(`/api/v1/analysis-runs/${RUN_ID}`, { method: "DELETE" })).json()).data.deleted).toBe(true);
+  });
+
+  it("enforces summary/evidence disclosure confirmation, expiry, and recent authentication", async () => {
+    repository.getRun.mockResolvedValue(
+      runRow({ status: "succeeded", result_jsonb: sampleAnalysis(), completed_at: now }),
+    );
+
+    const summary = await api(`/api/v1/analysis-runs/${RUN_ID}/share-links`, {
+      method: "POST",
+      body: { disclosureMode: "summary", includeProjectTitle: true, expiresInDays: 30 },
+    });
+    expect(summary.status).toBe(201);
+    expect((await summary.json()).data).toMatchObject({
+      disclosureMode: "summary",
+      includeProjectTitle: true,
+    });
+    expect(repository.createShareLink).toHaveBeenLastCalledWith(
+      RUN_ID,
+      USER_ID,
+      expect.stringMatching(/^[a-f0-9]{64}$/),
+      expect.any(String),
+      { disclosureMode: "summary", includeProjectTitle: true },
+    );
+
+    repository.createShareLink.mockClear();
+    const summaryTooLong = await api(`/api/v1/analysis-runs/${RUN_ID}/share-links`, {
+      method: "POST",
+      body: { disclosureMode: "summary", expiresInDays: 31 },
+    });
+    expect(summaryTooLong.status).toBe(400);
+    await expect(summaryTooLong.json()).resolves.toMatchObject({
+      error: { code: "INVALID_EXPIRATION" },
+    });
+
+    const unconfirmedEvidence = await api(`/api/v1/analysis-runs/${RUN_ID}/share-links`, {
+      method: "POST",
+      body: { disclosureMode: "evidence", expiresInDays: 1 },
+    });
+    expect(unconfirmedEvidence.status).toBe(400);
+    await expect(unconfirmedEvidence.json()).resolves.toMatchObject({
+      error: { code: "SHARE_DISCLOSURE_CONFIRMATION_REQUIRED" },
+    });
+
+    const evidenceTooLong = await api(`/api/v1/analysis-runs/${RUN_ID}/share-links`, {
+      method: "POST",
+      body: {
+        disclosureMode: "evidence",
+        expiresInDays: 8,
+        acknowledgeSensitiveEvidence: true,
+      },
+    });
+    expect(evidenceTooLong.status).toBe(400);
+    await expect(evidenceTooLong.json()).resolves.toMatchObject({
+      error: { code: "INVALID_EXPIRATION" },
+    });
+    expect(repository.createShareLink).not.toHaveBeenCalled();
+
+    const evidence = await api(`/api/v1/analysis-runs/${RUN_ID}/share-links`, {
+      method: "POST",
+      body: {
+        disclosureMode: "evidence",
+        includeProjectTitle: true,
+        expiresInDays: 7,
+        acknowledgeSensitiveEvidence: true,
+      },
+    });
+    expect(evidence.status).toBe(201);
+    expect((await evidence.json()).data).toMatchObject({
+      disclosureMode: "evidence",
+      includeProjectTitle: true,
+    });
+    expect(authGatewayAuthenticate).toHaveBeenCalledWith(
+      "valid-token",
+      expect.objectContaining({ forceRemote: true, signal: expect.any(AbortSignal) }),
+    );
+    expect(repository.createShareLink).toHaveBeenLastCalledWith(
+      RUN_ID,
+      USER_ID,
+      expect.stringMatching(/^[a-f0-9]{64}$/),
+      expect.any(String),
+      { disclosureMode: "evidence", includeProjectTitle: true },
+    );
+
+    repository.createShareLink.mockClear();
+    authGatewayAuthenticate.mockResolvedValueOnce({
+      id: USER_ID,
+      accessToken: "valid-token",
+      sessionId: "stale-session",
+      authenticatedAt: Math.floor(authNow / 1000) - 601,
+    });
+    const staleEvidence = await api(`/api/v1/analysis-runs/${RUN_ID}/share-links`, {
+      method: "POST",
+      body: {
+        disclosureMode: "evidence",
+        acknowledgeSensitiveEvidence: true,
+      },
+    });
+    expect(staleEvidence.status).toBe(401);
+    await expect(staleEvidence.json()).resolves.toMatchObject({
+      error: { code: "RECENT_AUTH_REQUIRED" },
+    });
+    expect(repository.createShareLink).not.toHaveBeenCalled();
   });
 
   it("lists safe workflow events and creates immutable idempotent annotations", async () => {
@@ -967,6 +1370,11 @@ describe("v1 API", () => {
     };
     const created = await api(`/api/v1/analysis-runs/${RUN_ID}/annotations`, request);
     expect(created.status).toBe(201);
+    expect(repository.createRunAnnotation).toHaveBeenCalledWith(
+      RUN_ID,
+      USER_ID,
+      expect.objectContaining({ idempotencyKey: "annotation-key-1" }),
+    );
     await expect(created.json()).resolves.toMatchObject({
       data: {
         id: ANNOTATION_ID,
@@ -1001,21 +1409,23 @@ describe("v1 API", () => {
       body: JSON.stringify({ token }),
     });
     const body = await response.json();
-    expect(body.data.projectTitle).toBe("테스트 프로젝트");
     expect(body.data).toMatchObject({
-      projectTitle: "테스트 프로젝트",
+      projectTitle: null,
+      disclosureMode: "summary",
       completedAt: now,
       expiresAt: "2026-07-18T00:00:00.000Z",
     });
     expect(body.data).not.toHaveProperty("run");
     expect(body.data.result.decisions[0]).not.toHaveProperty("sourceRecordId");
-    expect(body.data.result.decisions[0].evidence[0]).not.toHaveProperty("sourceRecordId");
-    expect(JSON.stringify(body.data)).not.toMatch(/provider|private-model|latencyMs|inputTokens|outputTokens/);
+    expect(body.data.result.decisions[0]).not.toHaveProperty("evidence");
+    expect(JSON.stringify(body.data)).not.toMatch(
+      /provider|private-model|latencyMs|inputTokens|outputTokens|sourceTitle|quote/,
+    );
     expect(publicRepository.resolveShare).toHaveBeenCalledWith(sha256(token));
     expect(publicRepository.consumeRateLimit).toHaveBeenCalledWith(
       "share:ip:hour",
       expect.any(String),
-      600,
+      60,
       3600,
     );
     expect(publicRepository.consumeRateLimit).toHaveBeenCalledWith(
@@ -1025,6 +1435,54 @@ describe("v1 API", () => {
       3600,
     );
     expect(JSON.stringify(body)).not.toContain("owner_id");
+  });
+
+  it("reveals exact quotes only for confirmed evidence shares while removing internal identifiers", async () => {
+    publicRepository.resolveShare.mockResolvedValueOnce({
+      project_title: "공개 프로젝트",
+      disclosure_mode: "evidence",
+      include_project_title: true,
+      result_jsonb: {
+        provider: { mode: "openai", model: "private-model" },
+        participants: [{ name: "민지" }],
+        summary: { overview: ["민지가 결정을 설명했다."] },
+        decisions: [
+          {
+            id: "decision_public",
+            decision: "민지가 승인했다.",
+            evidence: [
+              {
+                sourceRecordId: SOURCE_ID,
+                sourceTitle: "회의록",
+                quote: "민지가 승인했다.",
+              },
+            ],
+          },
+        ],
+      },
+      completed_at: now,
+      expires_at: "2026-07-12T00:00:00.000Z",
+    });
+    const token = "b".repeat(43);
+    const response = await fetch(`${baseUrl}/api/v1/shared/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.data).toMatchObject({
+      projectTitle: "공개 프로젝트",
+      disclosureMode: "evidence",
+      completedAt: now,
+    });
+    expect(body.data.result.decisions[0].decision).toBe("참여자 1가 승인했다.");
+    expect(body.data.result.decisions[0].evidence[0]).toEqual({
+      sourceTitle: "회의록",
+      quote: "민지가 승인했다.",
+    });
+    expect(body.data.result.participants).toEqual([]);
+    expect(JSON.stringify(body.data)).not.toMatch(/private-model|sourceRecordId|33333333/);
   });
 
   it("changes the idempotency fingerprint when project or selected source semantics change", async () => {
@@ -1229,7 +1687,7 @@ function createFakeRepository() {
     deleteProject: vi.fn(async () => undefined),
     listSources: vi.fn(async () => [source]),
     createSource: vi.fn(async (_userId, _projectId, values) => (source = sourceRow(values))),
-    importSourceContext: vi.fn(async (_projectId, values) => {
+    importSourceContext: vi.fn(async (_userId, _projectId, values) => {
       source = sourceRow({
         kind: values.kind,
         title: values.title,
@@ -1275,7 +1733,7 @@ function createFakeRepository() {
       source_url: "https://teams.microsoft.com/l/message/message-1",
     })),
     listRuns: vi.fn(async () => [run]),
-    getRun: vi.fn(async () => run),
+    getRun: vi.fn(async () => ({ ...run, analysis_run_step_events: [...stepEvents] })),
     startRun: vi.fn(async () => ({ outcome: "created", reused: false, run })),
     getRunSnapshots: vi.fn(async () => snapshots),
     appendRunStepEvent: vi.fn(async (_runId, _userId, values) => {
@@ -1297,7 +1755,7 @@ function createFakeRepository() {
     }),
     listRunStepEvents: vi.fn(async () => stepEvents),
     listRunAnnotations: vi.fn(async () => annotations),
-    createRunAnnotation: vi.fn(async (_runId, values) => {
+    createRunAnnotation: vi.fn(async (_runId, _userId, values) => {
       const existing = annotations.find(
         (annotation) => annotation.idempotency_key === values.idempotencyKey,
       );
@@ -1325,7 +1783,13 @@ function createFakeRepository() {
     completeRun: vi.fn(async (_id, _userId, values) => (run = { ...run, ...values })),
     deleteRun: vi.fn(async () => undefined),
     listShareLinks: vi.fn(async () => [share]),
-    createShareLink: vi.fn(async (_runId, _userId, _hash, expiresAt) => (share = shareRow({ expires_at: expiresAt }))),
+    createShareLink: vi.fn(async (_runId, _userId, _hash, expiresAt, options = {}) => (
+      share = shareRow({
+        expires_at: expiresAt,
+        disclosure_mode: options.disclosureMode || "summary",
+        include_project_title: options.includeProjectTitle === true,
+      })
+    )),
     revokeShareLink: vi.fn(async () => (share = { ...share, revoked_at: now })),
     consumeOpenAIRateLimit: vi.fn(async () => true),
   };
@@ -1337,6 +1801,7 @@ function projectRow(values = {}) {
     owner_id: USER_ID,
     title: "테스트 프로젝트",
     description: "",
+    retention_days: 90,
     archived_at: null,
     created_at: now,
     updated_at: now,
@@ -1400,6 +1865,8 @@ function shareRow(values = {}) {
   return {
     id: SHARE_ID,
     analysis_run_id: RUN_ID,
+    disclosure_mode: "summary",
+    include_project_title: false,
     expires_at: "2026-07-18T00:00:00.000Z",
     revoked_at: null,
     created_at: now,

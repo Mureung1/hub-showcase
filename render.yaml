@@ -4,13 +4,12 @@ services:
     runtime: node
     plan: free
     region: singapore
-    branch: N031_김서준
+    branch: production
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
-    healthCheckPath: /api/health/live
-    # The upstream PR workflow requires maintainer approval for fork runs.
-    # Deploy this isolated demo branch after each pushed, locally validated commit.
-    autoDeployTrigger: commit
+    healthCheckPath: /api/health/ready
+    # Promote only commits whose GitHub required checks have succeeded.
+    autoDeployTrigger: checksPass
     envVars:
       - key: NODE_ENV
         value: production
@@ -26,6 +25,10 @@ services:
         value: low
       - key: MODU_BRAIN_TRUST_PROXY
         value: render
+      - key: MODU_BRAIN_CANONICAL_ORIGIN
+        value: https://modu-brain-demo.onrender.com
+      - key: MODU_BRAIN_CAPTCHA_REQUIRED
+        value: "true"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_PUBLISHABLE_KEY
@@ -35,6 +38,10 @@ services:
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      # Public Turnstile site key. Configure the matching secret only in the
+      # Supabase Auth CAPTCHA dashboard; it must never be exposed to Vite.
+      - key: VITE_TURNSTILE_SITE_KEY
         sync: false
       - key: SAFETY_IDENTIFIER_SECRET
         generateValue: true

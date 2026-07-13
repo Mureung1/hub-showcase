@@ -4,6 +4,8 @@ export type SourceKind = "meeting" | "research" | "feedback" | "note";
 export type ExternalContextProvider = "kakaotalk" | "teams" | "notion" | "paste";
 export type AnalysisMode = "local" | "openai";
 export type AnalysisRunStatus = "running" | "succeeded" | "failed" | "cancelled";
+export type ProjectRetentionDays = 30 | 90 | null;
+export type ShareDisclosureMode = "summary" | "evidence";
 export type AnalysisRunStep =
   | "source_snapshot"
   | "provider_analysis"
@@ -48,6 +50,7 @@ export type ProjectResource = {
   ownerId?: string;
   title: string;
   description: string;
+  retentionDays: ProjectRetentionDays;
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -120,6 +123,15 @@ export type AnalysisRunResource = {
   projectId: string;
   status: AnalysisRunStatus;
   schemaVersion: "2.0";
+  pipelineVersion: string;
+  stages: Array<{
+    name: AnalysisRunStep;
+    status: AnalysisRunStepStatus;
+    validationOutcome: "passed" | "failed" | null;
+    code: string | null;
+    durationMs: number | null;
+  }>;
+  evidenceCoverage: { eligible: number; validated: number };
   sourceIds: string[];
   provider: {
     mode: AnalysisMode;
@@ -175,15 +187,20 @@ export type ShareLinkResource = {
   id: string;
   analysisRunId: string;
   token?: string;
+  disclosureMode: ShareDisclosureMode;
+  includeProjectTitle: boolean;
   expiresAt: string;
   revokedAt: string | null;
   createdAt: string;
 };
 
-export type PublicContextAnalysisResult = Omit<ContextAnalysisResultV2, "provider">;
+export type PublicContextAnalysisResult = Omit<ContextAnalysisResultV2, "provider" | "participants"> & {
+  participants: [];
+};
 
 export type SharedAnalysisResource = {
-  projectTitle: string;
+  projectTitle: string | null;
+  disclosureMode: ShareDisclosureMode;
   result: PublicContextAnalysisResult;
   completedAt: string;
   expiresAt: string;
@@ -200,8 +217,16 @@ export type CreateProjectInput = {
   description?: string;
 };
 
-export type UpdateProjectInput = Partial<Pick<ProjectResource, "title" | "description">> & {
+export type UpdateProjectInput = Partial<Pick<ProjectResource, "title" | "description" | "retentionDays">> & {
   permanentlyDelete?: boolean;
+  acknowledgeRetentionReduction?: boolean;
+};
+
+export type CreateShareLinkInput = {
+  disclosureMode: ShareDisclosureMode;
+  includeProjectTitle: boolean;
+  expiresInDays: number;
+  acknowledgeSensitiveEvidence?: boolean;
 };
 
 export type CreateSourceInput = {

@@ -7,7 +7,7 @@
 - 제품 유형: 협업 맥락을 구조화하는 AI 지식관리 SaaS
 - 사용자: 회의·리서치·피드백의 근거와 결정 변화를 함께 이해해야 하는 팀
 - 스택: React 19, TypeScript, Vite
-- 정보 우선순위: 관점 차이 → 미결 질문 → 결정 배경 → 요약
+- 정보 우선순위: 결정 이유와 근거 → 관점 차이 → 미결 질문 → 변화 서사 → 요약
 - 스타일: `DESIGN-notion.md` 기반의 warm paper productivity, content-first, light mode 기본
 - 디자인 다이얼: variance 4/10, motion 3/10, density 5/10
 
@@ -61,7 +61,7 @@
 - 현재 위치는 `aria-current="page"`와 시각 상태로 함께 표시한다.
 - 경로 변경 후 포커스를 주 콘텐츠 영역으로 이동한다.
 - sticky header 아래에 콘텐츠가 가려지지 않아야 한다.
-- 결과 화면은 단순 요약보다 관점·질문·근거의 연결을 먼저 보여준다.
+- 결과 화면은 단순 요약보다 결정 이유와 원문 근거를 먼저 보여주고, 관점·질문·변화의 연결을 이어서 보여준다.
 - 768px 이하에서는 `aria-expanded` 모바일 메뉴로 접고 Escape와 경로 이동으로 닫는다.
 
 ## Signature surfaces

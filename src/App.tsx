@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import SiteHeader from "./components/SiteHeader";
+import LegacyDeploymentNotice from "./components/LegacyDeploymentNotice";
 import { useRoute } from "./hooks/useRoute";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import ProjectPage from "./pages/ProjectPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import SharePage from "./pages/SharePage";
@@ -123,6 +125,8 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
     page = session ? <AlreadySignedIn email={session.user.email} onContinue={() => navigate("/projects")} /> : <LoginPage auth={auth} onGuestContinue={() => navigate("/demo")} />;
   } else if (pathname === "/share") {
     page = <SharePage api={api} />;
+  } else if (pathname === "/privacy") {
+    page = <PrivacyPage />;
   } else if (pathname === "/projects") {
     page = authReady ? (session ? <ProjectsPage api={api} token={session.accessToken} navigate={navigate} onAccountDeleted={() => { setSession(null); navigate("/"); }} /> : <LoginRequired onLogin={() => navigate("/login")} onGuestContinue={() => navigate("/demo")} />) : <AuthLoader />;
   } else {
@@ -141,6 +145,7 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
       <a className="skip-link" href="#main-content">
         본문으로 건너뛰기
       </a>
+      <LegacyDeploymentNotice />
       <SiteHeader session={session} pathname={pathname} navigate={navigate} signingOut={signingOut} onSignOut={() => void signOut()} />
       {authError && <div className="global-notice notice error" role="alert">{authError}<button type="button" onClick={() => setAuthError(null)}>닫기</button></div>}
       <div id="main-content" tabIndex={-1}>
@@ -152,6 +157,7 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
           <nav aria-label="하단 메뉴">
             <a href="/demo">로그인 없이 체험</a>
             <a href="/login">프로젝트 저장 시작</a>
+            <a href="/privacy">개인정보 안내</a>
           </nav>
         </div>
       </footer>

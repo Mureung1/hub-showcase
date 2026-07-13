@@ -2,7 +2,7 @@
 
 ## 1. 목적과 범위
 
-이 문서는 Modu Brain 공개 데모의 구현 계약을 정의한다. 브라우저, 같은 출처의 Worker/Node API, Supabase Auth/PostgreSQL/RLS, 선택형 OpenAI Responses API 사이의 경계를 고정한다.
+이 문서는 Modu Brain 공개 데모의 구현 계약을 정의한다. 브라우저, Render의 같은 출처 Node API, Supabase Auth/PostgreSQL/RLS, 선택형 OpenAI Responses API 사이의 경계를 고정한다.
 
 이번 범위는 개인 소유 프로젝트, 원문 기록, 불변 분석 이력, 4단계 실행 추적, 불변 결과 annotation, 최근 두 성공 결과 비교, 근거 확인, 읽기 전용 공유까지다. 팀 초대·역할, 공동 편집, 파일 파싱, 외부 협업 도구 자동 연동, 결제, 백그라운드 작업 큐는 제외한다.
 
@@ -10,7 +10,7 @@
 
 ```mermaid
 flowchart LR
-    U["브라우저"] -->|"SPA + /api/v1"| C["Sites Worker 또는 Render Node"]
+    U["브라우저"] -->|"SPA + /api/v1"| C["Render Node Web Service"]
     C -->|"사용자 JWT"| A["Supabase Auth"]
     C -->|"JWT+RLS 읽기 / service-only RPC 쓰기"| D["Supabase PostgreSQL + RLS"]
     C -->|"명시적 OpenAI 모드"| O["OpenAI Responses API"]
@@ -21,13 +21,13 @@ flowchart LR
 | 영역 | 선택 |
 | --- | --- |
 | 프런트엔드 | React 19, TypeScript, Vite, 브라우저 History 라우팅 |
-| 서버 | Cloudflare Worker와 Node.js HTTP, 같은 출처 정적 SPA + JSON API |
+| 서버 | Node.js HTTP, 같은 출처 정적 SPA + JSON API |
 | 인증 | Supabase 이메일 Magic Link, access/refresh token |
 | 저장소 | Supabase PostgreSQL, SQL migration, PostgREST, RLS |
 | 분석 | 결정론적 `local-heuristic`, 선택형 OpenAI Responses API 구조화 출력 |
 | 검증 | Zod, 서버 입력 검증, 근거 부분 문자열 검증 |
 | 품질 | ESLint, TypeScript, Vitest/V8, pgTAP, Playwright, Gitleaks |
-| 배포 | Sites Worker + Render Node Web Service, Supabase Seoul 프로젝트 |
+| 배포 | Render Node Web Service 단일 정식 주소, Supabase Seoul 프로젝트 |
 
 브라우저가 서비스 역할 키로 DB를 직접 수정하지 않는다. API 런타임은 access token을 검증한 뒤 읽기를 같은 사용자 JWT의 PostgREST와 RLS로 수행한다. 쓰기는 서비스 역할만 호출할 수 있는 `app_*` RPC가 검증된 사용자 ID와 리소스 소유권을 다시 확인한 뒤 수행한다. 로그인 사용자의 테이블 직접 쓰기와 구형 분석 시작·일반 rate-limit RPC 실행 권한은 contract migration에서 제거한다. 원문 가져오기와 분석 annotation 호환 RPC만 내부 `auth.uid()`·소유권·크기·멱등성 검증을 전제로 한 릴리스 동안 유지한다.
 
@@ -37,11 +37,12 @@ flowchart LR
 | --- | --- | --- |
 | `/` | 공개 | 저장되지 않는 로컬 샘플과 호환 분석 API |
 | `/login` | 공개 | Magic Link 발송과 callback session 저장 |
+| `/privacy` | 공개 | 수집·AI 전송·90일 보관·삭제·보안 제보 안내 |
 | `/projects` | 필요 | 사용자 소유 프로젝트 목록·생성 |
 | `/projects/:id` | 필요 | 개요, 기록, 분석 이력, 지식맵, 온보딩 |
-| `/share#token=…` | 공개 | 원문·계정정보를 제외한 읽기 전용 결과 |
+| `/share#token=…` | 공개 | summary/evidence 공개 범위를 적용한 읽기 전용 결과 |
 
-인증 session은 브라우저 저장소에 access token, refresh token, 만료 시각, 최소 사용자 정보만 저장한다. URL fragment로 받은 session은 즉시 저장한 뒤 주소를 `/projects`로 교체한다. 로그아웃은 로컬 session을 먼저 제거하며 원격 logout 실패가 로컬 로그아웃을 막지 않는다.
+Magic Link 요청은 same-origin BFF가 origin, Turnstile, IP·이메일 HMAC 제한을 검증한 뒤 Supabase로 전달한다. URL fragment로 받은 session은 즉시 HttpOnly·Secure·SameSite 쿠키로 교환하고 fragment와 legacy Web Storage token을 제거한다. refresh cookie는 7일 sliding expiration이며 민감 작업은 10분 이내 재인증을 요구한다.
 
 ## 4. 데이터 모델
 
@@ -51,16 +52,16 @@ flowchart LR
 
 | 테이블 | 핵심 데이터와 불변식 |
 | --- | --- |
-| `projects` | UUID, `owner_id → auth.users`, 2~120자 제목, 설명, 보관·생성·수정 시각 |
+| `projects` | UUID, `owner_id → auth.users`, 2~120자 제목, 설명, `retention_days` 30/90/null, 보관·생성·수정 시각 |
 | `source_records` | 프로젝트, `meeting/research/feedback/note`, 제목, 원문, SHA-256, 글자 수, 발생·보관 시각 |
 | `analysis_runs` | 프로젝트, 생성자, idempotency/fingerprint, 상태, provider/model, `2.0` 결과 JSONB, 안전한 오류·지연·토큰 정보 |
 | `analysis_run_sources` | 실행과 연결된 source ID, 제목·종류·내용·해시·글자 수의 불변 스냅숏 |
 | `analysis_run_step_events` | 실행별 4단계의 append-only 시작·terminal 이벤트. 원문·prompt·모델 응답·사고과정 필드 없음 |
 | `analysis_run_annotations` | 성공 결과 target에 사용자가 추가하는 idempotent 검토 기록. 직접 수정·삭제 불가 |
-| `share_links` | 실행, 생성자, 32바이트 토큰의 SHA-256, 만료·폐기 시각 |
+| `share_links` | 실행, 생성자, 32바이트 토큰의 SHA-256, summary/evidence 범위, 제목 공개 여부, 만료·폐기 시각 |
 | `rate_limit_buckets` | scope, 비식별 subject, 시간 구간, 누적 횟수 |
 
-프로젝트 영구 삭제는 FK cascade로 원문, 실행, 스냅숏, 공유 링크를 제거한다. 일반 프로젝트·원문 삭제는 `archived_at`을 기록한다. 분석 실행은 이력 보존을 위해 별도 삭제 API를 사용하며 성공 결과를 수정하지 않는다.
+프로젝트 영구 삭제는 FK cascade로 원문, 실행, 스냅숏, 공유 링크를 제거한다. 일반 프로젝트·원문 삭제는 `archived_at`을 기록한다. 매일 실행되는 retention job도 만료 원문과 연결 실행·스냅숏·공유 링크를 함께 제거한다. 분석 실행은 이력 보존을 위해 별도 삭제 API를 사용하며 성공 결과를 수정하지 않는다.
 
 ### 4.2 인덱스와 RLS
 
@@ -226,7 +227,7 @@ annotation 생성은 8~128자의 `Idempotency-Key`를 요구한다. 같은 키·
 
 `render.yaml` 계약:
 
-- branch `N031_김서준`, Singapore, Node Web Service
+- branch `production`, Singapore, Node Web Service
 - build `npm ci --include=dev && npm run build`
 - start `npm start`
 - `HOST=0.0.0.0`, Render 제공 `PORT`
@@ -234,14 +235,9 @@ annotation 생성은 8~128자의 `Idempotency-Key`를 요구한다. 같은 키·
 - CI checks 통과 후 auto deploy
 - secret 값은 `sync: false`이며 Render Dashboard에만 입력
 
-Sites 계약:
+기존 Sites 계약은 Render 검증 후 7일 안내 기간에만 유지한다. 이후 Sites 비밀과 Auth redirect를 제거하고 배포를 중지한다.
 
-- `.openai/hosting.json`의 프로젝트 ID를 재사용하고 D1/R2는 사용하지 않음
-- `dist/server/index.js` Worker와 `dist/client` SPA를 같은 버전으로 배포
-- Supabase/OpenAI 비밀은 Sites 런타임 환경에만 설정
-- Node 요청·응답 어댑터로 기존 API 계약과 Render fallback을 공유
-
-배포 순서는 `Supabase migration → Sites/Render secret 설정 → build·테스트 → 소스 push → Sites/Render deploy → Auth /login redirect allowlist → readiness → 브라우저 E2E`다. Seoul Supabase 데모 프로젝트에는 core·외부 맥락 migration과 에이전트 워크플로 migration이 적용되어 있다. 워크플로 migration은 원격 스키마의 단일 트랜잭션 안에서 적용·92개 pgTAP·down rollback·재적용을 먼저 검증한 뒤 영구 적용했고, 적용 직후 security·performance advisor를 확인했다.
+배포 순서는 `빈 임시 DB migration·rollback·재적용 → Supabase migration → Render secret 설정 → build·전체 테스트 → production PR·필수 체크 → Render deploy → Auth /login redirect allowlist → commit/migration readiness → 브라우저 E2E`다. 원격 migration과 advisor는 배포 전에 다시 확인하며, health commit 또는 schema marker가 기대값과 다르면 새 배포를 받지 않는다.
 
 ## 10. 테스트와 승인 기준
 

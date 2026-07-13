@@ -41,7 +41,9 @@ export function createSupabaseGateway(options = {}) {
       throw new ApiError(401, "AUTH_REQUIRED", "로그인이 필요합니다.");
     }
 
-    const locallyVerified = await verifyAsymmetricJwt(accessToken, requestOptions.signal);
+    const locallyVerified = requestOptions.forceRemote
+      ? null
+      : await verifyAsymmetricJwt(accessToken, requestOptions.signal);
     if (locallyVerified) return locallyVerified;
 
     let response;
@@ -63,7 +65,52 @@ export function createSupabaseGateway(options = {}) {
 
     const user = await response.json();
     if (!user?.id) throw new ApiError(401, "INVALID_ACCESS_TOKEN", "로그인 세션이 유효하지 않습니다.");
-    return { id: user.id, email: user.email || null, accessToken };
+    return {
+      id: user.id,
+      email: user.email || null,
+      accessToken,
+      ...sessionClaimsFromToken(accessToken),
+    };
+  }
+
+  async function sendMagicLink(email, redirectTo, captchaToken, requestOptions = {}) {
+    assertConfigured();
+    let response;
+    try {
+      response = await fetchImpl(
+        `${url}/auth/v1/otp?redirect_to=${encodeURIComponent(redirectTo)}`,
+        {
+          method: "POST",
+          headers: {
+            apikey: publishableKey,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            create_user: true,
+            ...(captchaToken ? { gotrue_meta_security: { captcha_token: captchaToken } } : {}),
+          }),
+          signal: combineSignals(requestOptions.signal, DEFAULT_TIMEOUT_MS),
+        },
+      );
+    } catch {
+      throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "인증 서비스를 사용할 수 없습니다.");
+    }
+
+    if (response.status === 429) {
+      throw new ApiError(
+        429,
+        "RATE_LIMITED",
+        "로그인 링크 요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.",
+        undefined,
+        { "Retry-After": safeRetryAfter(response.headers?.get?.("retry-after")) },
+      );
+    }
+    if (!response.ok) {
+      throw new ApiError(503, "AUTH_SERVICE_UNAVAILABLE", "로그인 링크를 보낼 수 없습니다.");
+    }
+    return { accepted: true };
   }
 
   async function refreshSession(refreshToken, requestOptions = {}) {
@@ -115,9 +162,12 @@ export function createSupabaseGateway(options = {}) {
   async function logout(accessToken, requestOptions = {}) {
     assertConfigured();
     if (!accessToken) return { loggedOut: false };
+    const scope = new Set(["local", "global", "others"]).has(requestOptions.scope)
+      ? requestOptions.scope
+      : "local";
     let response;
     try {
-      response = await fetchImpl(`${url}/auth/v1/logout?scope=local`, {
+      response = await fetchImpl(`${url}/auth/v1/logout?scope=${scope}`, {
         method: "POST",
         headers: {
           apikey: publishableKey,
@@ -168,6 +218,7 @@ export function createSupabaseGateway(options = {}) {
         id: claims.sub,
         email: typeof claims.email === "string" ? claims.email : null,
         accessToken,
+        ...sessionClaims(claims),
       };
     } catch (error) {
       if (error instanceof ApiError) throw error;
@@ -246,6 +297,7 @@ export function createSupabaseGateway(options = {}) {
 
   return {
     authenticate,
+    sendMagicLink,
     refreshSession,
     logout,
     forUser,
@@ -256,6 +308,36 @@ export function createSupabaseGateway(options = {}) {
       jwksCache = null;
     },
   };
+}
+
+function sessionClaimsFromToken(accessToken) {
+  try {
+    const encoded = String(accessToken).split(".")[1];
+    if (!encoded) return {};
+    const claims = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+    return sessionClaims(claims);
+  } catch {
+    return {};
+  }
+}
+
+function sessionClaims(claims) {
+  const authenticatedAt = Array.isArray(claims?.amr)
+    ? claims.amr
+        .filter((entry) => entry?.method !== "token_refresh")
+        .map((entry) => Number(entry?.timestamp))
+        .filter(Number.isFinite)
+        .reduce((latest, timestamp) => Math.max(latest, timestamp), 0)
+    : 0;
+  return {
+    sessionId: typeof claims?.session_id === "string" ? claims.session_id : null,
+    authenticatedAt: authenticatedAt > 0 ? authenticatedAt : null,
+  };
+}
+
+function safeRetryAfter(value) {
+  const seconds = Number(value);
+  return String(Number.isInteger(seconds) && seconds > 0 && seconds <= 86_400 ? seconds : 60);
 }
 
 export function createPostgrestClient({

@@ -27,6 +27,22 @@ for (const file of migrations) {
   if (!rollbacks.has(rollback)) errors.push(`${file}: missing local-only rollback ${rollback}`);
 }
 
+const repositorySource = await readFile(
+  path.join(root, "server", "moduBrainRepository.mjs"),
+  "utf8",
+);
+const contractVersion = repositorySource.match(
+  /EXPECTED_DATABASE_MIGRATION_VERSION\s*=\s*"(\d{12}|\d{14})"/,
+)?.[1];
+const latestMigrationVersion = [...versions].sort().at(-1);
+if (!contractVersion) {
+  errors.push("server database contract must declare EXPECTED_DATABASE_MIGRATION_VERSION");
+} else if (contractVersion !== latestMigrationVersion) {
+  errors.push(
+    `server database contract ${contractVersion} does not match latest migration ${latestMigrationVersion}`,
+  );
+}
+
 const config = await readFile(path.join(root, "supabase", "config.toml"), "utf8");
 if (!/^major_version\s*=\s*17\s*$/m.test(config)) {
   errors.push("supabase/config.toml must use PostgreSQL 17 to match the hosted project");

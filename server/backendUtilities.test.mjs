@@ -28,11 +28,17 @@ describe("backend resource mappers", () => {
         owner_id: "u",
         title: "title",
         description: null,
+        retention_days: 90,
         archived_at: null,
         created_at: "created",
         updated_at: "updated",
       }),
-    ).toMatchObject({ ownerId: "u", description: "", archivedAt: null });
+    ).toMatchObject({
+      ownerId: "u",
+      description: "",
+      retentionDays: 90,
+      archivedAt: null,
+    });
 
     const source = {
       id: "s",
@@ -59,7 +65,13 @@ describe("backend resource mappers", () => {
       schema_version: "2.0",
       provider_mode: "openai",
       provider_model: "gpt-5.6-terra",
-      result_jsonb: { summary: "ok" },
+      result_jsonb: {
+        summary: "ok",
+        decisions: [{ evidence: [{ quote: "결정 근거" }] }],
+        participants: [{ evidence: [] }],
+        questions: [],
+        keyTerms: [{ evidence: [{ quote: "핵심어 근거" }] }],
+      },
       error_code: null,
       latency_ms: 1,
       input_tokens: 2,
@@ -68,11 +80,47 @@ describe("backend resource mappers", () => {
       started_at: "started",
       completed_at: "completed",
       source_ids: ["one"],
+      analysis_run_step_events: [
+        {
+          sequence: 2,
+          step_name: "source_snapshot",
+          status: "succeeded",
+          validation_outcome: "passed",
+          code: "SNAPSHOT_READY",
+          duration_ms: 8,
+        },
+        {
+          sequence: 1,
+          step_name: "source_snapshot",
+          status: "started",
+          validation_outcome: null,
+          code: null,
+          duration_ms: null,
+        },
+      ],
     };
     expect(analysisRunResource(base)).toMatchObject({
+      pipelineVersion: "2.0",
+      stages: [
+        {
+          name: "source_snapshot",
+          status: "started",
+          validationOutcome: null,
+          code: null,
+          durationMs: null,
+        },
+        {
+          name: "source_snapshot",
+          status: "succeeded",
+          validationOutcome: "passed",
+          code: "SNAPSHOT_READY",
+          durationMs: 8,
+        },
+      ],
+      evidenceCoverage: { eligible: 3, validated: 2 },
       sourceIds: ["one"],
       provider: { mode: "openai", model: "gpt-5.6-terra" },
-      result: { summary: "ok" },
+      result: expect.objectContaining({ summary: "ok" }),
     });
 
     const failed = analysisRunResource({
@@ -87,6 +135,9 @@ describe("backend resource mappers", () => {
     });
     expect(failed.sourceIds).toEqual([]);
     expect(failed.provider).toEqual({ mode: "openai" });
+    expect(failed.pipelineVersion).toBe("2.0");
+    expect(failed.stages.map((stage) => stage.status)).toEqual(["started", "succeeded"]);
+    expect(failed.evidenceCoverage).toEqual({ eligible: 0, validated: 0 });
     expect(failed).not.toHaveProperty("result");
     expect(failed.error.message).toBe("분석에 실패했습니다.");
   });
@@ -96,6 +147,8 @@ describe("backend resource mappers", () => {
       shareLinkResource({
         id: "share",
         analysis_run_id: "run",
+        disclosure_mode: "evidence",
+        include_project_title: true,
         expires_at: "expires",
         revoked_at: null,
         created_at: "created",
@@ -103,21 +156,28 @@ describe("backend resource mappers", () => {
     ).toEqual({
       id: "share",
       analysisRunId: "run",
+      disclosureMode: "evidence",
+      includeProjectTitle: true,
       expiresAt: "expires",
       revokedAt: null,
       createdAt: "created",
     });
   });
 
-  it("removes internal run, provider, token and source identifiers from shared analysis", () => {
+  it("removes names, evidence, provider data, and source identifiers from summary shares", () => {
     const shared = sharedAnalysisResource({
       project_title: "public project",
+      disclosure_mode: "summary",
+      include_project_title: false,
       result_jsonb: {
         provider: { model: "private" },
         sourceIds: ["source-id"],
+        participants: [{ name: "민지" }],
+        summary: { overview: ["민지가 결정 내용을 정리했다."] },
         decisions: [
           {
             id: "stable-item-id",
+            decision: "민지가 승인했다.",
             evidence: [{ sourceRecordId: "source-id", sourceTitle: "회의록", quote: "근거" }],
           },
         ],
@@ -126,12 +186,58 @@ describe("backend resource mappers", () => {
       expires_at: "expires",
     });
     expect(shared).toMatchObject({
-      projectTitle: "public project",
+      projectTitle: null,
+      disclosureMode: "summary",
       completedAt: "completed",
       expiresAt: "expires",
     });
     expect(shared.result.decisions[0].id).toBe("stable-item-id");
-    expect(shared.result.decisions[0].evidence[0]).toEqual({ sourceTitle: "회의록", quote: "근거" });
+    expect(shared.result.decisions[0].decision).toBe("참여자 1가 승인했다.");
+    expect(shared.result.decisions[0]).not.toHaveProperty("evidence");
+    expect(shared.result.summary.overview[0]).toBe("참여자 1가 결정 내용을 정리했다.");
+    expect(shared.result.participants).toEqual([]);
+    expect(JSON.stringify(shared)).not.toMatch(
+      /provider|private|source-id|sourceRecordId|sourceIds|sourceTitle|quote|회의록|근거/,
+    );
+  });
+
+  it("keeps exact evidence only in acknowledged evidence shares", () => {
+    const shared = sharedAnalysisResource({
+      project_title: "public project",
+      disclosure_mode: "evidence",
+      include_project_title: true,
+      result_jsonb: {
+        provider: { model: "private" },
+        participants: [{ name: "민지" }],
+        decisions: [
+          {
+            id: "stable-item-id",
+            decision: "민지가 승인했다.",
+            evidence: [
+              {
+                sourceRecordId: "source-id",
+                sourceTitle: "회의록",
+                quote: "민지가 승인했다.",
+              },
+            ],
+          },
+        ],
+      },
+      completed_at: "completed",
+      expires_at: "expires",
+    });
+    expect(shared).toMatchObject({
+      projectTitle: "public project",
+      disclosureMode: "evidence",
+      completedAt: "completed",
+      expiresAt: "expires",
+    });
+    expect(shared.result.decisions[0].decision).toBe("참여자 1가 승인했다.");
+    expect(shared.result.decisions[0].evidence[0]).toEqual({
+      sourceTitle: "회의록",
+      quote: "민지가 승인했다.",
+    });
+    expect(shared.result.participants).toEqual([]);
     expect(JSON.stringify(shared)).not.toMatch(/provider|private|source-id|sourceRecordId|sourceIds/);
   });
 });

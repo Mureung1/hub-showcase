@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { ArrowSquareOutIcon, XIcon } from "@phosphor-icons/react";
 import type { EvidenceRef } from "../types/context";
 import type { SourceSegmentResource } from "../types/platform";
 import EvidenceCoverageBadge from "./EvidenceCoverageBadge";
@@ -62,22 +63,22 @@ function EvidenceDrawer({ evidence, segments = [], segmentsLoading = false, onCl
         className="evidence-drawer"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="evidence-drawer-title"
+        aria-label="분석 근거"
         aria-describedby="evidence-drawer-guide"
       >
         <header>
           <div className="evidence-drawer-heading">
             <p className="section-kicker">Source evidence</p>
-            <h2 id="evidence-drawer-title">분석 근거</h2>
+            <h2 id="evidence-drawer-title">근거</h2>
             <EvidenceCoverageBadge
               evidenceCount={evidence.length}
-              coveredItems={evidence.length}
-              totalItems={evidence.length}
+              validated={evidence.length}
+              eligible={evidence.length}
               label="스냅숏 검증"
             />
           </div>
-          <button ref={closeRef} className="icon-button" type="button" onClick={onClose}>
-            닫기
+          <button ref={closeRef} className="icon-button" type="button" aria-label="닫기" onClick={onClose}>
+            <XIcon aria-hidden="true" size={20} weight="regular" />
           </button>
         </header>
         <p id="evidence-drawer-guide" className="drawer-guide">
@@ -112,7 +113,8 @@ function EvidenceDrawer({ evidence, segments = [], segmentsLoading = false, onCl
                       </span>
                       {segment.sourceUrl && (
                         <a href={segment.sourceUrl} target="_blank" rel="noreferrer">
-                          외부 원문 위치 열기
+                          <span>외부 원문 위치 열기</span>
+                          <ArrowSquareOutIcon aria-hidden="true" size={16} weight="regular" />
                         </a>
                       )}
                     </div>

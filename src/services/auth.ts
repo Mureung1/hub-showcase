@@ -32,16 +32,15 @@ export interface AuthService {
   restoreSession(): Promise<AuthSession | null>;
   refreshSession(session: AuthSession): Promise<AuthSession>;
   consumeCallback(hash: string): Promise<AuthSession | null>;
-  sendMagicLink(email: string, redirectTo: string): Promise<MagicLinkResult>;
+  sendMagicLink(
+    email: string,
+    redirectTo: string,
+    captchaToken?: string,
+  ): Promise<MagicLinkResult>;
   signOut(session: AuthSession | null): Promise<void>;
 }
 
 const LEGACY_STORAGE_KEY = "modu-brain.auth-session.v1";
-
-type SupabaseAuthResponse = {
-  msg?: string;
-  error_description?: string;
-};
 
 type SessionEnvelope = {
   data?: {
@@ -119,18 +118,34 @@ export class SupabaseRestAuthService implements AuthService {
     return session;
   }
 
-  async sendMagicLink(email: string, redirectTo: string): Promise<MagicLinkResult> {
+  async sendMagicLink(
+    email: string,
+    redirectTo: string,
+    captchaToken?: string,
+  ): Promise<MagicLinkResult> {
     if (!this.isConfigured()) {
       throw new Error("Supabase public URL and publishable key are not configured.");
     }
 
-    await this.requestSupabase<SupabaseAuthResponse>(
-      `/auth/v1/otp?redirect_to=${encodeURIComponent(redirectTo)}`,
-      {
-        method: "POST",
-        body: JSON.stringify({ email, create_user: true }),
-      },
-    );
+    const response = await fetch("/api/v1/auth/magic-link", {
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        redirectTo,
+        ...(captchaToken ? { captchaToken } : {}),
+      }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as SessionEnvelope;
+    if (!response.ok) {
+      throw new AuthRequestError(
+        payload.error?.message ?? "The login request failed.",
+        response.status,
+        retryAfter(response),
+      );
+    }
     return { email };
   }
 
@@ -191,31 +206,6 @@ export class SupabaseRestAuthService implements AuthService {
     };
   }
 
-  private async requestSupabase<T>(path: string, init: RequestInit): Promise<T> {
-    const response = await fetch(`${this.url}${path}`, {
-      ...init,
-      credentials: "omit",
-      referrerPolicy: "no-referrer",
-      headers: {
-        apikey: this.apiKey,
-        "Content-Type": "application/json",
-        ...init.headers,
-      },
-    });
-    const payload = (await response.json().catch(() => ({}))) as SupabaseAuthResponse;
-    if (!response.ok) {
-      const retryAfterMessage = retryAfterFromMessage(
-        payload.error_description ?? payload.msg ?? "",
-      );
-      throw new AuthRequestError(
-        payload.error_description ?? payload.msg ?? "The login request failed.",
-        response.status,
-        retryAfter(response) ?? retryAfterMessage,
-      );
-    }
-    return payload as T;
-  }
-
   private clearCallbackExchangeLater(exchange: Promise<AuthSession | null>) {
     setTimeout(() => {
       if (this.callbackExchange === exchange) this.callbackExchange = null;
@@ -245,11 +235,6 @@ function clearLegacyTokenStorage() {
 function retryAfter(response: Response) {
   const value = Number(response.headers?.get?.("Retry-After") ?? NaN);
   return Number.isFinite(value) ? value : null;
-}
-
-function retryAfterFromMessage(message: string) {
-  const match = message.match(/(?:after|in|wait)\s+(\d+)\s*(?:seconds?|secs?)/i);
-  return match ? Number(match[1]) : null;
 }
 
 function callbackErrorMessage(code: string) {

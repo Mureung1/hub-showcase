@@ -1,6 +1,16 @@
+import {
+  CheckCircleIcon,
+  LinkSimpleBreakIcon,
+  LinkSimpleIcon,
+} from "@phosphor-icons/react";
+
 type EvidenceCoverageBadgeProps = {
   evidenceCount: number;
+  validated?: number;
+  eligible?: number;
+  /** @deprecated Compatibility for one release. Use validated. */
   coveredItems?: number;
+  /** @deprecated Compatibility for one release. Use eligible. */
   totalItems?: number;
   label?: string;
   compact?: boolean;
@@ -8,28 +18,37 @@ type EvidenceCoverageBadgeProps = {
 
 function EvidenceCoverageBadge({
   evidenceCount,
+  validated,
+  eligible,
   coveredItems,
   totalItems,
   label = "근거 연결",
   compact = false,
 }: EvidenceCoverageBadgeProps) {
   const safeEvidenceCount = Math.max(0, evidenceCount);
-  const hasCoverageRatio = typeof totalItems === "number";
-  const safeTotal = Math.max(0, totalItems ?? 0);
-  const safeCovered = Math.min(safeTotal, Math.max(0, coveredItems ?? 0));
-  const state = !hasCoverageRatio || safeTotal === 0
+  const hasCoverageRatio = typeof eligible === "number" || typeof totalItems === "number";
+  const safeEligible = Math.max(0, eligible ?? totalItems ?? 0);
+  const safeValidated = Math.min(safeEligible, Math.max(0, validated ?? coveredItems ?? 0));
+  const state = !hasCoverageRatio || safeEligible === 0
     ? safeEvidenceCount > 0 ? "complete" : "empty"
-    : safeCovered === safeTotal
+    : safeValidated === safeEligible
       ? "complete"
-      : safeCovered > 0
+      : safeValidated > 0
         ? "partial"
         : "empty";
-  const stateLabel = state === "complete" ? "전체 연결" : state === "partial" ? "일부 연결" : "연결 없음";
   const text = hasCoverageRatio
-    ? safeTotal === 0
-      ? `${label} 항목 없음`
-      : `${label} ${stateLabel} · ${safeCovered}/${safeTotal} · 인용 ${safeEvidenceCount}개`
+    ? safeEligible === 0
+      ? `${label} · 근거 미제공`
+      : `${label} ${safeValidated}/${safeEligible} · 인용 ${safeEvidenceCount}개`
     : `${label} ${safeEvidenceCount}개`;
+  const compactText = hasCoverageRatio
+    ? safeEligible === 0 ? "근거 미제공" : `${label} ${safeValidated}/${safeEligible}`
+    : `${label} ${safeEvidenceCount}개`;
+  const StatusIcon = state === "complete"
+    ? CheckCircleIcon
+    : state === "partial"
+      ? LinkSimpleIcon
+      : LinkSimpleBreakIcon;
 
   return (
     <span
@@ -37,10 +56,8 @@ function EvidenceCoverageBadge({
       aria-label={text}
       title={text}
     >
-      <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-        <path d="M7.8 12.2 12.2 7.8M6.1 14.8H5a3.8 3.8 0 0 1 0-7.6h2.2M12.8 7.2H15a3.8 3.8 0 1 1 0 7.6h-2.2" />
-      </svg>
-      <span>{compact ? `${label} ${safeEvidenceCount}개` : text}</span>
+      <StatusIcon aria-hidden="true" size={16} weight="regular" />
+      <span>{compact ? compactText : text}</span>
     </span>
   );
 }

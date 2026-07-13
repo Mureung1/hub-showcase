@@ -84,6 +84,35 @@ describe("Supabase gateway", () => {
     expect(fetchMock.mock.calls[0][1].headers).not.toHaveProperty("Authorization");
   });
 
+  it("forwards a Turnstile token through the same server-side magic-link boundary", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response(200, {}));
+    const gateway = createSupabaseGateway({
+      url: "https://project.supabase.co",
+      publishableKey: "sb_publishable_browser",
+      fetch: fetchMock,
+    });
+
+    await expect(
+      gateway.sendMagicLink(
+        "team@example.com",
+        "https://modu-brain-demo.onrender.com/login",
+        "turnstile-token",
+      ),
+    ).resolves.toEqual({ accepted: true });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://project.supabase.co/auth/v1/otp?redirect_to=https%3A%2F%2Fmodu-brain-demo.onrender.com%2Flogin",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({ apikey: "sb_publishable_browser" }),
+        body: JSON.stringify({
+          email: "team@example.com",
+          create_user: true,
+          gotrue_meta_security: { captcha_token: "turnstile-token" },
+        }),
+      }),
+    );
+  });
+
   it("logs out only the current user session and never uses the opaque server secret as bearer", async () => {
     const fetchMock = vi.fn().mockResolvedValue(response(204));
     const gateway = createSupabaseGateway({
@@ -108,6 +137,20 @@ describe("Supabase gateway", () => {
       }),
     );
     expect(fetchMock.mock.calls[0][1].headers.Authorization).not.toContain("sb_secret_server_only");
+  });
+
+  it("can revoke every refresh session for a recent sensitive operation", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response(204));
+    const gateway = createSupabaseGateway({
+      url: "https://project.supabase.co",
+      publishableKey: "publishable",
+      fetch: fetchMock,
+    });
+
+    await gateway.logout("user-access-token", { scope: "global" });
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://project.supabase.co/auth/v1/logout?scope=global",
+    );
   });
 
   it("maps rejected refresh tokens without exposing the upstream response", async () => {
@@ -190,7 +233,15 @@ describe("Supabase gateway", () => {
   it("verifies asymmetric Supabase JWTs locally and caches JWKS for ten minutes", async () => {
     const { privateKey, publicKey } = await generateKeyPair("ES256");
     const publicJwk = { ...await exportJWK(publicKey), kid: "test-key", alg: "ES256" };
-    const token = await new SignJWT({ role: "authenticated", email: "local@example.com" })
+    const token = await new SignJWT({
+      role: "authenticated",
+      email: "local@example.com",
+      session_id: "session-1",
+      amr: [
+        { method: "magiclink", timestamp: 1_700_000_000 },
+        { method: "token_refresh", timestamp: 1_700_000_900 },
+      ],
+    })
       .setProtectedHeader({ alg: "ES256", kid: "test-key" })
       .setIssuer("https://project.supabase.co/auth/v1")
       .setAudience("authenticated")
@@ -208,6 +259,8 @@ describe("Supabase gateway", () => {
     await expect(gateway.authenticate(token)).resolves.toMatchObject({
       id: "user-local",
       email: "local@example.com",
+      sessionId: "session-1",
+      authenticatedAt: 1_700_000_000,
     });
     await gateway.authenticate(token);
     expect(fetchMock).toHaveBeenCalledTimes(1);

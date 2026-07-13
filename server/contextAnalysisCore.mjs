@@ -470,7 +470,7 @@ function inferRole(sentence) {
 function inferDecisionReason(sentence) {
   if (/때문/.test(sentence)) return summarizeSentence(sentence.split(/때문/)[0]) + " 때문입니다.";
   if (/위해/.test(sentence)) return summarizeSentence(sentence.split(/위해/)[0]) + " 위해서입니다.";
-  return "입력 기록에서 팀의 다음 행동과 연결되는 결정으로 감지되었습니다.";
+  return "원문에서 이 결정의 명시적 이유를 확인할 수 없습니다.";
 }
 
 function inferOwnerHint(sentence) {

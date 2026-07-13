@@ -7,35 +7,34 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
-import AnalysisComparison from "../components/AnalysisComparison";
-import AnalysisFeedbackPanel from "../components/AnalysisFeedbackPanel";
-import AgentExecutionRail from "../components/AgentExecutionRail";
+import AnalysisHistory from "../components/AnalysisHistory";
 import ContextBacklinks from "../components/ContextBacklinks";
 import ContextImportPanel, {
   type ContextImportInput as ContextImportPanelInput,
 } from "../components/ContextImportPanel";
-import DecisionList from "../components/DecisionList";
 import EvidenceDrawer from "../components/EvidenceDrawer";
-import KeyTerms from "../components/KeyTerms";
 import KnowledgeMap from "../components/KnowledgeMap";
 import OnboardingSummary from "../components/OnboardingSummary";
-import ParticipantAgentPanel from "../components/ParticipantAgentPanel";
-import PerspectiveTable from "../components/PerspectiveTable";
-import QuestionList from "../components/QuestionList";
-import SummaryPanel from "../components/SummaryPanel";
 import type { Navigate } from "../hooks/useRoute";
 import { PlatformApiError, type PlatformApi } from "../services/platformApi";
 import { trackProductEvent } from "../services/productTelemetry";
 import type { EvidenceRef } from "../types/context";
+import {
+  findPersonalData,
+  maskPersonalData,
+  summarizePersonalData,
+  type PersonalDataKind,
+} from "../utils/personalData";
 import type {
   AnalysisMode,
   AnalysisRunAnnotationResource,
   AnalysisRunResource,
   AnalysisRunStepEventResource,
-  CreateAnalysisRunAnnotationInput,
   CursorPageMetadata,
   ExternalContextProvider,
+  ProjectRetentionDays,
   ProjectResource,
+  ShareDisclosureMode,
   ShareLinkResource,
   SourceKind,
   SourceRecordListResource,
@@ -88,6 +87,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProjectTab>(() => readProjectViewState().tab);
   const [overviewView, setOverviewView] = useState<OverviewView>(() => readProjectViewState().view);
+  const explicitOverviewView = useRef(hasExplicitOverviewView());
   const [openaiEnabled, setOpenaiEnabled] = useState(false);
   const [evidence, setEvidence] = useState<EvidenceRef[] | null>(null);
   const [evidenceSegments, setEvidenceSegments] = useState<SourceSegmentResource[]>([]);
@@ -121,7 +121,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
     const url = new URL(window.location.href);
     if (activeTab === "overview") url.searchParams.delete("tab");
     else url.searchParams.set("tab", activeTab);
-    if (activeTab === "overview" && overviewView !== "analysis") {
+    if (activeTab === "overview" && overviewView !== "history") {
       url.searchParams.set("view", overviewView);
     } else {
       url.searchParams.delete("view");
@@ -174,6 +174,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
             ? current
             : orderedRuns.find((run) => run.status === "succeeded")?.id ?? orderedRuns[0]?.id ?? null,
         );
+        if (!explicitOverviewView.current && orderedRuns.length === 0) setOverviewView("analysis");
       } else {
         setRunsError(messageFrom(runsResult.reason));
       }
@@ -380,9 +381,9 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
     { id: "onboarding", label: "온보딩 요약" },
   ];
   const overviewViews: { id: OverviewView; label: string }[] = [
+    { id: "history", label: "분석 이력" },
     { id: "analysis", label: "분석 실행" },
     { id: "records", label: "기록" },
-    { id: "history", label: "분석 이력" },
   ];
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, tab: ProjectTab) => {
@@ -396,7 +397,6 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
     event.preventDefault();
     const nextTab = tabs[next].id;
     setActiveTab(nextTab);
-    if (nextTab === "overview") setOverviewView("analysis");
     document.getElementById(`project-tab-${nextTab}`)?.focus();
   };
 
@@ -477,7 +477,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
             aria-selected={activeTab === tab.id}
             aria-controls={`project-panel-${tab.id}`}
             tabIndex={activeTab === tab.id ? 0 : -1}
-            onClick={() => { setActiveTab(tab.id); if (tab.id === "overview") setOverviewView("analysis"); }}
+            onClick={() => setActiveTab(tab.id)}
             onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
           >
             {tab.label}
@@ -525,6 +525,15 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
                   loadingMoreSources={loadingMoreSources}
                   onLoadMoreSources={loadMoreSources}
                   onToggleSource={(id) => setSelectedSourceIds(toggleSet(selectedSourceIds, id))}
+                  onSourcesUpdated={(updatedSources) => {
+                    const byId = new Map(updatedSources.map((source) => [source.id, source]));
+                    setSources((current) => current.map((source) => {
+                      const updated = byId.get(source.id);
+                      return updated
+                        ? { ...source, ...updated, import: updated.import ?? source.import }
+                        : source;
+                    }));
+                  }}
                   onProjectChange={setProject}
                   onProjectDeleted={() => navigate("/projects")}
                   onRunCreated={(run) => {
@@ -553,7 +562,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
                 />
               )}
               {overviewView === "history" && (
-                <HistoryTab
+                <AnalysisHistory
                   runs={runs}
                   selectedRun={selectedRun}
                   latest={comparisonLatest}
@@ -576,6 +585,32 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
                     trackProductEvent("comparison_opened", {
                       hasPrevious: successfulRuns.some((run) => run.id !== id),
                     });
+                  }}
+                  onStartNewAnalysis={() => setOverviewView("analysis")}
+                  onDeleteRun={async (runId) => {
+                    setError(null);
+                    try {
+                      await api.deleteAnalysisRun(token, runId);
+                      const remaining = runs.filter((run) => run.id !== runId);
+                      setRuns(remaining);
+                      setRunPage((current) => ({
+                        ...current,
+                        count: Math.max(0, current.count - 1),
+                      }));
+                      setSelectedRunId((current) => current === runId
+                        ? remaining.find((run) => run.status === "succeeded")?.id ?? remaining[0]?.id ?? null
+                        : current);
+                      if (selectedRun?.id === runId) {
+                        setSelectedRunStepEvents([]);
+                        setSelectedRunAnnotations([]);
+                        setRunArtifactsError(null);
+                        setRunDetailError(null);
+                        setComparisonDetailError(null);
+                      }
+                    } catch (deleteError) {
+                      setError(messageFrom(deleteError));
+                      throw deleteError;
+                    }
                   }}
                   onOpenEvidence={openEvidence}
                   onCreateAnnotation={async (input, idempotencyKey) => {
@@ -612,7 +647,7 @@ function ProjectPage({ api, token, projectId, navigate }: ProjectPageProps) {
           selectedRun?.result ? (
             <div className="onboarding-grid">
               <OnboardingSummary summary={selectedRun.result.onboardingSummary} />
-              <SharePanel api={api} token={token} run={selectedRun} onError={setError} />
+              <SharePanel api={api} token={token} projectTitle={project.title} run={selectedRun} onError={setError} />
             </div>
           ) : <RunDetailFallback run={selectedRun} loading={runDetailLoading} error={runDetailError} onRetry={loadRunDetail} />
         )}
@@ -665,11 +700,24 @@ type OverviewTabProps = {
   loadingMoreSources: boolean;
   onLoadMoreSources: () => Promise<void>;
   onToggleSource: (id: string) => void;
+  onSourcesUpdated: (sources: SourceRecordResource[]) => void;
   onProjectChange: (project: ProjectResource) => void;
   onProjectDeleted: () => void;
   onRunCreated: (run: AnalysisRunResource) => void;
   onError: (message: string | null) => void;
   analysisAbortRef: React.MutableRefObject<AbortController | null>;
+};
+
+type PersonalDataScanSummary = {
+  fingerprint: string;
+  total: number;
+  byKind: Record<PersonalDataKind, number>;
+  affectedSourceCount: number;
+};
+
+type PersonalDataSourceScan = {
+  source: SourceRecordResource;
+  findings: ReturnType<typeof findPersonalData>;
 };
 
 function OverviewTab({
@@ -684,6 +732,7 @@ function OverviewTab({
   loadingMoreSources,
   onLoadMoreSources,
   onToggleSource,
+  onSourcesUpdated,
   onProjectChange,
   onProjectDeleted,
   onRunCreated,
@@ -692,20 +741,44 @@ function OverviewTab({
 }: OverviewTabProps) {
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description);
+  const [retentionDays, setRetentionDays] = useState<ProjectRetentionDays>(project.retentionDays);
+  const [retentionAcknowledged, setRetentionAcknowledged] = useState(false);
   const [mode, setMode] = useState<AnalysisMode>("local");
   const [consent, setConsent] = useState(false);
+  const [personalDataScan, setPersonalDataScan] = useState<PersonalDataScanSummary | null>(null);
+  const [personalDataAcknowledged, setPersonalDataAcknowledged] = useState(false);
+  const [preflightScanning, setPreflightScanning] = useState(false);
+  const [maskingPersonalData, setMaskingPersonalData] = useState(false);
+  const [maskingStatus, setMaskingStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
   const analysisAttemptRef = useRef<{ fingerprint: string; key: string } | null>(null);
+  const personalDataSourcesRef = useRef<PersonalDataSourceScan[]>([]);
+
+  const activeSources = sources.filter((item) => !item.archivedAt);
+  const selectedActiveSources = activeSources.filter((source) => selectedSourceIds.has(source.id));
+  const selectedSourcesFingerprint = personalDataFingerprint(selectedActiveSources);
+  const currentPersonalDataScan = personalDataScan?.fingerprint === selectedSourcesFingerprint
+    ? personalDataScan
+    : null;
+
+  const retentionIsShorter = isShorterRetention(project.retentionDays, retentionDays);
+  const retentionCandidates = retentionDeletionCandidates(sources, runs, retentionDays);
 
   const saveProject = async (event: FormEvent) => {
     event.preventDefault();
-    if (!title.trim() || saving) return;
+    if (!title.trim() || saving || (retentionIsShorter && !retentionAcknowledged)) return;
     setSaving(true);
     try {
-      onProjectChange(await api.updateProject(token, project.id, { title: title.trim(), description: description.trim() }));
+      onProjectChange(await api.updateProject(token, project.id, {
+        title: title.trim(),
+        description: description.trim(),
+        retentionDays,
+        ...(retentionIsShorter ? { acknowledgeRetentionReduction: retentionAcknowledged } : {}),
+      }));
+      setRetentionAcknowledged(false);
     } catch (saveError) {
       onError(messageFrom(saveError));
     } finally {
@@ -713,8 +786,98 @@ function OverviewTab({
     }
   };
 
+  const clearPersonalDataPreflight = () => {
+    setPersonalDataScan(null);
+    setPersonalDataAcknowledged(false);
+    setMaskingStatus(null);
+    personalDataSourcesRef.current = [];
+  };
+
+  const scanSelectedSources = async () => {
+    if (!api.getSource) {
+      onError("개인정보 사전 점검을 사용할 수 없어 OpenAI 분석을 시작하지 않았습니다.");
+      return null;
+    }
+    setPreflightScanning(true);
+    setMaskingStatus(null);
+    onError(null);
+    try {
+      const details = await Promise.all(
+        selectedActiveSources.map((source) => api.getSource!(token, source.id)),
+      );
+      const scanned = details.map((source) => ({
+        source,
+        findings: findPersonalData(source.content),
+      }));
+      const findings = scanned.flatMap((item) => item.findings);
+      const summary: PersonalDataScanSummary = {
+        fingerprint: selectedSourcesFingerprint,
+        total: findings.length,
+        byKind: summarizePersonalData(findings),
+        affectedSourceCount: scanned.filter((item) => item.findings.length > 0).length,
+      };
+      personalDataSourcesRef.current = scanned;
+      setPersonalDataScan(summary);
+      setPersonalDataAcknowledged(false);
+      return summary;
+    } catch (scanError) {
+      onError(messageFrom(scanError));
+      return null;
+    } finally {
+      setPreflightScanning(false);
+    }
+  };
+
+  const saveMaskedSources = async () => {
+    const scans = personalDataSourcesRef.current;
+    if (!currentPersonalDataScan || currentPersonalDataScan.total === 0 || maskingPersonalData) return;
+    setMaskingPersonalData(true);
+    setMaskingStatus(null);
+    onError(null);
+    try {
+      const updatedSources = await Promise.all(
+        scans
+          .filter((item) => item.findings.length > 0)
+          .map((item) => api.updateSource(token, item.source.id, {
+            content: maskPersonalData(item.source.content, item.findings),
+          })),
+      );
+      const updatedById = new Map(updatedSources.map((source) => [source.id, source]));
+      const nextScans = scans.map((item) => {
+        const updated = updatedById.get(item.source.id) ?? item.source;
+        return { source: updated, findings: findPersonalData(updated.content) };
+      });
+      const nextFindings = nextScans.flatMap((item) => item.findings);
+      const nextSelectedSources = selectedActiveSources.map((source) => updatedById.get(source.id) ?? source);
+      personalDataSourcesRef.current = nextScans;
+      onSourcesUpdated(updatedSources);
+      setPersonalDataScan({
+        fingerprint: personalDataFingerprint(nextSelectedSources),
+        total: nextFindings.length,
+        byKind: summarizePersonalData(nextFindings),
+        affectedSourceCount: nextScans.filter((item) => item.findings.length > 0).length,
+      });
+      setPersonalDataAcknowledged(false);
+      setMaskingStatus(`${updatedSources.length.toLocaleString("ko-KR")}개 원문의 탐지 항목을 마스킹해 저장했습니다.`);
+    } catch (maskError) {
+      onError(messageFrom(maskError));
+    } finally {
+      setMaskingPersonalData(false);
+    }
+  };
+
   const runAnalysis = async () => {
-    if (selectedSourceIds.size === 0 || analyzing || (mode === "openai" && !consent)) return;
+    if (
+      selectedSourceIds.size === 0 ||
+      analyzing ||
+      preflightScanning ||
+      maskingPersonalData ||
+      (mode === "openai" && !consent)
+    ) return;
+    if (mode === "openai") {
+      const scan = currentPersonalDataScan ?? await scanSelectedSources();
+      if (!scan || (scan.total > 0 && !personalDataAcknowledged)) return;
+    }
     const controller = new AbortController();
     analysisAbortRef.current?.abort();
     analysisAbortRef.current = controller;
@@ -760,7 +923,6 @@ function OverviewTab({
     }
   };
 
-  const activeSources = sources.filter((item) => !item.archivedAt);
   return (
     <div className="overview-layout">
       <section className="workspace-card">
@@ -768,7 +930,50 @@ function OverviewTab({
         <form onSubmit={saveProject}>
           <label className="field"><span>이름</span><input value={title} maxLength={120} onChange={(event) => setTitle(event.target.value)} required /></label>
           <label className="field"><span>설명</span><textarea className="short-textarea" value={description} maxLength={500} onChange={(event) => setDescription(event.target.value)} /></label>
-          <button className="button secondary" type="submit" disabled={saving || !title.trim()}>{saving ? "저장 중…" : "정보 저장"}</button>
+          <fieldset className="retention-settings">
+            <legend>원문·분석 보관</legend>
+            <label className="field">
+              <span>기본 보관 기간</span>
+              <select
+                aria-label="기본 보관 기간"
+                value={retentionDays === null ? "forever" : String(retentionDays)}
+                onChange={(event) => {
+                  const next = event.target.value === "forever"
+                    ? null
+                    : Number(event.target.value) as 30 | 90;
+                  setRetentionDays(next);
+                  setRetentionAcknowledged(false);
+                }}
+              >
+                <option value="30">30일</option>
+                <option value="90">90일 (기본)</option>
+                <option value="forever">삭제 전까지</option>
+              </select>
+            </label>
+            <p className="retention-note">
+              {retentionDays === null
+                ? "사용자가 직접 삭제할 때까지 원문과 연결된 분석을 보관합니다."
+                : `${retentionDays}일이 지난 원문은 매일 정리되며, 그 원문을 사용한 분석과 공유 링크도 함께 삭제됩니다.`}
+            </p>
+            {retentionIsShorter && (
+              <div className="retention-change-confirm" role="note" aria-label="보관 기간 단축 확인">
+                <strong>보관 기간을 줄이면 되돌릴 수 없는 삭제가 예약됩니다.</strong>
+                <p>
+                  현재 불러온 기록 기준 원문 {retentionCandidates.sources.toLocaleString("ko-KR")}건 · 연관 분석 {retentionCandidates.runs.toLocaleString("ko-KR")}건이 다음 정리 때 삭제 대상입니다.
+                  {hasMoreSources ? " 불러오지 않은 이전 기록이 더 있어 실제 수는 늘어날 수 있습니다." : ""}
+                </p>
+                <label className="consent-check">
+                  <input
+                    type="checkbox"
+                    checked={retentionAcknowledged}
+                    onChange={(event) => setRetentionAcknowledged(event.target.checked)}
+                  />
+                  <span>삭제 예정 범위와 연관 분석·공유 링크의 함께 삭제됨을 확인했습니다.</span>
+                </label>
+              </div>
+            )}
+          </fieldset>
+          <button className="button secondary" type="submit" disabled={saving || !title.trim() || (retentionIsShorter && !retentionAcknowledged)}>{saving ? "저장 중…" : "정보 저장"}</button>
         </form>
         <div className="danger-zone">
           <div><strong>프로젝트 정리</strong><p>보관하면 목록에서 숨겨지고, 영구 삭제하면 기록·분석·공유 링크를 복구할 수 없습니다.</p></div>
@@ -794,7 +999,10 @@ function OverviewTab({
                   data-testid={`analysis-source-${source.id}`}
                   type="checkbox"
                   checked={selectedSourceIds.has(source.id)}
-                  onChange={() => onToggleSource(source.id)}
+                  onChange={() => {
+                    onToggleSource(source.id);
+                    clearPersonalDataPreflight();
+                  }}
                 />
                 <span><strong>{source.title}</strong><small>{sourceKindLabels[source.kind]} · {source.charCount.toLocaleString("ko-KR")}자</small></span>
               </label>
@@ -813,8 +1021,8 @@ function OverviewTab({
         )}
         <fieldset className="mode-selector">
           <legend>분석 방식</legend>
-          <label aria-label="로컬 분석 선택"><input data-testid="analysis-mode-local" type="radio" name="mode" checked={mode === "local"} onChange={() => setMode("local")} /><span><strong>로컬 분석</strong><small>외부 모델 전송 없이 안정적으로 시연</small></span></label>
-          <label className={!openaiEnabled ? "disabled-option" : undefined} aria-label="OpenAI 분석 선택"><input data-testid="analysis-mode-openai" type="radio" name="mode" checked={mode === "openai"} disabled={!openaiEnabled} onChange={() => setMode("openai")} /><span><strong>OpenAI 분석</strong><small>선택한 기록을 서버에서 외부 모델로 전송</small></span></label>
+          <label aria-label="로컬 분석 선택"><input data-testid="analysis-mode-local" type="radio" name="mode" checked={mode === "local"} onChange={() => { setMode("local"); setConsent(false); clearPersonalDataPreflight(); }} /><span><strong>로컬 분석</strong><small>외부 모델 전송 없이 안정적으로 시연</small></span></label>
+          <label className={!openaiEnabled ? "disabled-option" : undefined} aria-label="OpenAI 분석 선택"><input data-testid="analysis-mode-openai" type="radio" name="mode" checked={mode === "openai"} disabled={!openaiEnabled} onChange={() => { setMode("openai"); setConsent(false); clearPersonalDataPreflight(); }} /><span><strong>OpenAI 분석</strong><small>선택한 기록을 서버에서 외부 모델로 전송</small></span></label>
         </fieldset>
         {!openaiEnabled && (
           <p className="capability-note" role="status">
@@ -822,20 +1030,128 @@ function OverviewTab({
           </p>
         )}
         {mode === "openai" && (
-          <label className="consent-check"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>선택한 원문이 분석 목적으로 OpenAI API에 전송되는 것에 동의합니다.</span></label>
+          <>
+            <OpenAiTransferPreview
+              sources={selectedActiveSources}
+              scan={currentPersonalDataScan}
+              scanning={preflightScanning}
+              acknowledged={personalDataAcknowledged}
+              masking={maskingPersonalData}
+              maskingStatus={maskingStatus}
+              onAcknowledgedChange={setPersonalDataAcknowledged}
+              onMask={() => void saveMaskedSources()}
+            />
+            <label className="consent-check"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>미리 본 선택 원문이 분석 목적으로 OpenAI API에 전송되는 것에 동의합니다.</span></label>
+          </>
         )}
         <button
           data-testid="analysis-submit"
           className="button primary full-button"
           type="button"
-          disabled={activeSources.length === 0 || selectedSourceIds.size === 0 || analyzing || (mode === "openai" && !consent)}
+          disabled={
+            activeSources.length === 0 ||
+            selectedSourceIds.size === 0 ||
+            analyzing ||
+            preflightScanning ||
+            maskingPersonalData ||
+            (mode === "openai" && (!consent || Boolean(currentPersonalDataScan?.total && !personalDataAcknowledged)))
+          }
           onClick={() => void runAnalysis()}
         >
-          {analyzing ? "분석 중…" : "선택한 기록 분석"}
+          {preflightScanning ? "개인정보 확인 중…" : analyzing ? "분석 중…" : "선택한 기록 분석"}
         </button>
         <p className="usage-guide">저장된 분석 {runs.length}건 · 사용자당 동시 1건, 시간당 10건 제한</p>
       </section>
     </div>
+  );
+}
+
+const personalDataLabels: Record<PersonalDataKind, string> = {
+  email: "이메일",
+  phone: "전화번호",
+  residentId: "주민등록번호 형식",
+  accountNumber: "계좌번호 형식",
+};
+
+function OpenAiTransferPreview({
+  sources,
+  scan,
+  scanning,
+  acknowledged,
+  masking,
+  maskingStatus,
+  onAcknowledgedChange,
+  onMask,
+}: {
+  sources: SourceRecordListResource[];
+  scan: PersonalDataScanSummary | null;
+  scanning: boolean;
+  acknowledged: boolean;
+  masking: boolean;
+  maskingStatus: string | null;
+  onAcknowledgedChange: (checked: boolean) => void;
+  onMask: () => void;
+}) {
+  const characterCount = sources.reduce((total, source) => total + source.charCount, 0);
+  const detectedKinds = scan
+    ? (Object.entries(scan.byKind) as [PersonalDataKind, number][]).filter(([, count]) => count > 0)
+    : [];
+
+  return (
+    <section className="openai-transfer-preview" aria-labelledby="openai-transfer-preview-title">
+      <div>
+        <p className="section-kicker">Before sending</p>
+        <h3 id="openai-transfer-preview-title">OpenAI 전송 미리보기</h3>
+        <p>선택한 원문 본문과 구조화 출력 지시만 서버에서 모델 요청에 사용합니다.</p>
+      </div>
+      <dl>
+        <div><dt>선택 원문</dt><dd>{sources.length.toLocaleString("ko-KR")}개</dd></div>
+        <div><dt>총 문자</dt><dd>{characterCount.toLocaleString("ko-KR")}자</dd></div>
+      </dl>
+      {sources.length > 0 ? (
+        <ul aria-label="OpenAI 전송 대상 기록">
+          {sources.map((source) => (
+            <li key={source.id}><strong>{source.title}</strong><span>{sourceKindLabels[source.kind]} · {source.charCount.toLocaleString("ko-KR")}자</span></li>
+          ))}
+        </ul>
+      ) : <p className="form-error">전송할 기록을 한 개 이상 선택해 주세요.</p>}
+      <div className={`personal-data-preflight ${scan?.total ? "warning" : scan ? "clear" : "pending"}`}>
+        <div>
+          <strong>개인정보 사전 점검</strong>
+          {scanning ? (
+            <p role="status">선택한 원문을 안전하게 확인하는 중입니다.</p>
+          ) : scan ? (
+            scan.total > 0 ? (
+              <p>원문 {scan.affectedSourceCount.toLocaleString("ko-KR")}개에서 탐지 가능한 개인정보 형식 {scan.total.toLocaleString("ko-KR")}건을 찾았습니다.</p>
+            ) : (
+              <p>이메일·전화번호·주민등록번호·계좌번호 형식이 탐지되지 않았습니다.</p>
+            )
+          ) : (
+            <p>분석 버튼을 누르면 원문을 서버에서 읽어 탐지 종류와 개수만 표시합니다.</p>
+          )}
+        </div>
+        {detectedKinds.length > 0 && (
+          <dl aria-label="탐지된 개인정보 종류별 개수">
+            {detectedKinds.map(([kind, count]) => (
+              <div key={kind}><dt>{personalDataLabels[kind]}</dt><dd>{count.toLocaleString("ko-KR")}건</dd></div>
+            ))}
+          </dl>
+        )}
+        {scan && scan.total > 0 && (
+          <div className="personal-data-actions">
+            <button className="button secondary" type="button" disabled={masking} onClick={onMask}>
+              {masking ? "마스킹 저장 중…" : "탐지 항목 마스킹 후 저장"}
+            </button>
+            <label className="consent-check">
+              <input type="checkbox" checked={acknowledged} onChange={(event) => onAcknowledgedChange(event.target.checked)} />
+              <span>탐지 결과를 확인했으며 현재 원문 그대로 OpenAI에 전송합니다.</span>
+            </label>
+          </div>
+        )}
+        <p className="personal-data-status" aria-live="polite">{maskingStatus ?? ""}</p>
+      </div>
+      <small>내부 추론 내용은 결과나 실행 이력에 표시하지 않습니다.</small>
+    </section>
   );
 }
 
@@ -938,7 +1254,13 @@ function RecordsTab({ api, token, projectId, sources, hasMore, loadingMore, onLo
 
   return (
     <div className="records-workspace">
-      <ContextImportPanel onImport={importContext} />
+      <details className="context-import-disclosure">
+        <summary>
+          <span><strong>외부 회의 맥락 가져오기</strong><small>카카오톡 · Teams · Notion 내보내기 또는 바로 붙여넣기</small></span>
+          <span className="context-import-disclosure-state" aria-hidden="true" />
+        </summary>
+        <ContextImportPanel onImport={importContext} />
+      </details>
       <div className="records-layout">
         <section className="workspace-card sticky-card">
         <div className="panel-heading compact"><p className="section-kicker">New source</p><h2>원문 기록 추가</h2><p>민감정보를 제거한 뒤 필요한 맥락만 저장해 주세요.</p></div>
@@ -1018,120 +1340,18 @@ function RecordsTab({ api, token, projectId, sources, hasMore, loadingMore, onLo
   );
 }
 
-function HistoryTab({
-  runs,
-  selectedRun,
-  latest,
-  previous,
-  stepEvents,
-  annotations,
-  artifactsLoading,
-  artifactsError,
-  detailLoading,
-  detailError,
-  comparisonLoading,
-  comparisonError,
-  hasMore,
-  loadingMore,
-  onLoadMore,
-  onRetryDetail,
-  onRetryComparison,
-  onSelectRun,
-  onOpenEvidence,
-  onCreateAnnotation,
-}: {
-  runs: AnalysisRunResource[];
-  selectedRun: AnalysisRunResource | null;
-  latest?: AnalysisRunResource;
-  previous?: AnalysisRunResource;
-  stepEvents: AnalysisRunStepEventResource[];
-  annotations: AnalysisRunAnnotationResource[];
-  artifactsLoading: boolean;
-  artifactsError: string | null;
-  detailLoading: boolean;
-  detailError: string | null;
-  comparisonLoading: boolean;
-  comparisonError: string | null;
-  hasMore: boolean;
-  loadingMore: boolean;
-  onLoadMore: () => Promise<void>;
-  onRetryDetail: (runId: string) => Promise<void>;
-  onRetryComparison: (runId: string) => Promise<void>;
-  onSelectRun: (id: string) => void;
-  onOpenEvidence: (evidence: EvidenceRef[]) => void;
-  onCreateAnnotation: (
-    input: CreateAnalysisRunAnnotationInput,
-    idempotencyKey: string,
-  ) => Promise<AnalysisRunAnnotationResource>;
+function SharePanel({ api, token, projectTitle, run, onError }: {
+  api: PlatformApi;
+  token: string;
+  projectTitle: string;
+  run: AnalysisRunResource;
+  onError: (message: string | null) => void;
 }) {
-  if (runs.length === 0) return <EmptyAnalysis />;
-  return (
-    <div className="history-layout">
-      <aside className="run-list" aria-label="분석 실행 이력">
-        <div className="section-row"><div><p className="section-kicker">Run history</p><h2>분석 이력</h2></div><span>{runs.length}건</span></div>
-        {runs.map((run) => (
-          <button key={run.id} className={selectedRun?.id === run.id ? "active" : ""} type="button" onClick={() => onSelectRun(run.id)}>
-            <span className={`run-status ${run.status}`}>{statusLabel(run.status)}</span>
-            <strong>{formatDateTime(run.createdAt)}</strong>
-            <small>{run.provider.mode === "openai" ? run.provider.model ?? "OpenAI" : "로컬 분석"} · 기록 {run.sourceIds.length}개</small>
-          </button>
-        ))}
-        {hasMore && (
-          <button className="button secondary" type="button" disabled={loadingMore} onClick={() => void onLoadMore()}>
-            {loadingMore ? "이력 더 불러오는 중…" : "분석 이력 50건 더 불러오기"}
-          </button>
-        )}
-      </aside>
-      <div className="run-detail">
-        {selectedRun && (
-          <AgentExecutionRail
-            events={stepEvents}
-            runStatus={selectedRun.status}
-            loading={artifactsLoading}
-          />
-        )}
-        {artifactsError && <div className="notice error" role="alert">{artifactsError}</div>}
-        {selectedRun?.status === "failed" ? <div className="notice error">{selectedRun.error?.message ?? "분석 실행이 실패했습니다."}</div> : selectedRun?.status === "running" ? <div className="loading-card">분석이 진행 중입니다.</div> : detailLoading ? <div className="loading-card" role="status">선택한 분석의 상세 결과를 불러오는 중…</div> : detailError && selectedRun ? <div className="notice error" role="alert">{detailError}<button type="button" onClick={() => void onRetryDetail(selectedRun.id)}>다시 시도</button></div> : selectedRun?.result ? (
-          <>
-            <header className="history-context-heading">
-              <p className="section-kicker">Context first</p>
-              <h2>관점과 미결 질문부터 확인하세요</h2>
-              <p>요약보다 먼저 누가 무엇을 중요하게 보는지, 다음 회의에서 무엇을 답해야 하는지 보여줍니다.</p>
-            </header>
-            <div className="history-priority-stack">
-              <PerspectiveTable participants={selectedRun.result.participants} onOpenEvidence={onOpenEvidence} />
-              <div className="priority-pair">
-              <QuestionList questions={selectedRun.result.questions} onOpenEvidence={onOpenEvidence} />
-              <DecisionList decisions={selectedRun.result.decisions} onOpenEvidence={onOpenEvidence} />
-              </div>
-              <ParticipantAgentPanel synthesis={selectedRun.result.participantAgents} />
-              {comparisonLoading && <div className="loading-card" role="status">비교할 이전 성공 분석을 불러오는 중…</div>}
-              {comparisonError && previous && (
-                <div className="notice warning" role="alert">
-                  이전 분석 비교를 불러오지 못했습니다. {comparisonError}
-                  <button type="button" onClick={() => void onRetryComparison(previous.id)}>다시 시도</button>
-                </div>
-              )}
-              <AnalysisComparison previous={previous?.result} latest={latest?.result} />
-              <SummaryPanel result={selectedRun.result} />
-              <KeyTerms terms={selectedRun.result.keyTerms} />
-            </div>
-            <AnalysisFeedbackPanel
-              result={selectedRun.result}
-              annotations={annotations}
-              loading={artifactsLoading}
-              onCreate={onCreateAnnotation}
-            />
-          </>
-        ) : <div className="empty-card">이 실행에는 표시할 결과가 없습니다.</div>}
-      </div>
-    </div>
-  );
-}
-
-function SharePanel({ api, token, run, onError }: { api: PlatformApi; token: string; run: AnalysisRunResource; onError: (message: string | null) => void }) {
   const [links, setLinks] = useState<ShareLinkResource[]>([]);
+  const [disclosureMode, setDisclosureMode] = useState<ShareDisclosureMode>("summary");
+  const [includeProjectTitle, setIncludeProjectTitle] = useState(false);
   const [days, setDays] = useState(7);
+  const [evidenceAcknowledged, setEvidenceAcknowledged] = useState(false);
   const [creating, setCreating] = useState(false);
   const [freshUrls, setFreshUrls] = useState<Record<string, string>>({});
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
@@ -1151,12 +1371,19 @@ function SharePanel({ api, token, run, onError }: { api: PlatformApi; token: str
   }, [confirmingRevokeId]);
 
   const create = async () => {
+    if (disclosureMode === "evidence" && !evidenceAcknowledged) return;
     setCreating(true);
     onError(null);
     try {
-      const link = await api.createShareLink(token, run.id, days);
+      const link = await api.createShareLink(token, run.id, {
+        disclosureMode,
+        includeProjectTitle,
+        expiresInDays: days,
+        ...(disclosureMode === "evidence" ? { acknowledgeSensitiveEvidence: true } : {}),
+      });
       setLinks((current) => [link, ...current]);
-      trackProductEvent("share_link_created", { expiresInDays: days });
+      trackProductEvent("share_link_created", { disclosureMode, expiresInDays: days, includeProjectTitle });
+      setEvidenceAcknowledged(false);
       if (link.token) setFreshUrls((current) => ({ ...current, [link.id]: `${window.location.origin}/share#token=${encodeURIComponent(link.token ?? "")}` }));
     } catch (createError) {
       onError(messageFrom(createError));
@@ -1197,15 +1424,83 @@ function SharePanel({ api, token, run, onError }: { api: PlatformApi; token: str
 
   return (
     <section className="share-panel workspace-card" aria-labelledby="share-title">
-      <div className="panel-heading compact"><p className="section-kicker">Read-only share</p><h2 id="share-title">온보딩 링크 공유</h2><p>토큰은 생성 직후 한 번만 확인할 수 있습니다.</p></div>
-      <div className="notice warning" role="note">
-        공유 분석에는 근거 인용문, 사람 이름 또는 입력 원문의 개인정보 일부가 포함될 수 있습니다.
-        링크를 만들기 전에 현재 분석 결과를 확인하고 필요한 경우 원문을 정리해 주세요.
+      <div className="panel-heading compact"><p className="section-kicker">Read-only share</p><h2 id="share-title">온보딩 링크 공유</h2><p>공개 범위를 먼저 고르고 비로그인 화면을 확인하세요. 토큰은 생성 직후 한 번만 표시됩니다.</p></div>
+      <fieldset className="share-mode-selector">
+        <legend>공개 범위</legend>
+        <label aria-label="요약 공유" className={disclosureMode === "summary" ? "selected" : ""}>
+          <input
+            type="radio"
+            name={`share-mode-${run.id}`}
+            value="summary"
+            checked={disclosureMode === "summary"}
+            onChange={() => {
+              setDisclosureMode("summary");
+              setDays(7);
+              setEvidenceAcknowledged(false);
+            }}
+          />
+          <span><strong>요약 공유</strong><small>이름·원문 제목·정확한 인용문 제외 · 기본 7일</small></span>
+        </label>
+        <label aria-label="근거 포함 공유" className={disclosureMode === "evidence" ? "selected" : ""}>
+          <input
+            type="radio"
+            name={`share-mode-${run.id}`}
+            value="evidence"
+            checked={disclosureMode === "evidence"}
+            onChange={() => {
+              setDisclosureMode("evidence");
+              setDays(1);
+              setEvidenceAcknowledged(false);
+            }}
+          />
+          <span><strong>근거 포함 공유</strong><small>원문 제목·정확한 인용문 포함 가능 · 기본 24시간</small></span>
+        </label>
+      </fieldset>
+      <div className="share-options">
+        <label className="field">
+          <span>만료</span>
+          <select aria-label="공유 링크 만료" value={days} onChange={(event) => setDays(Number(event.target.value))}>
+            {disclosureMode === "summary" ? (
+              <><option value={1}>1일</option><option value={7}>7일</option><option value={14}>14일</option><option value={30}>30일</option></>
+            ) : (
+              <><option value={1}>24시간</option><option value={3}>3일</option><option value={7}>7일</option></>
+            )}
+          </select>
+        </label>
+        <label className="consent-check share-title-option">
+          <input type="checkbox" checked={includeProjectTitle} onChange={(event) => setIncludeProjectTitle(event.target.checked)} />
+          <span>프로젝트 제목도 공개</span>
+        </label>
       </div>
-      <div className="share-create-row">
-        <label><span>만료</span><select value={days} onChange={(event) => setDays(Number(event.target.value))}><option value={1}>1일</option><option value={7}>7일</option><option value={14}>14일</option><option value={30}>30일</option></select></label>
-        <button data-testid="share-create" className="button primary" type="button" disabled={creating} onClick={() => void create()}>{creating ? "만드는 중…" : "읽기 전용 링크 만들기"}</button>
-      </div>
+      <ShareDisclosurePreview
+        disclosureMode={disclosureMode}
+        includeProjectTitle={includeProjectTitle}
+        projectTitle={projectTitle}
+        run={run}
+      />
+      {disclosureMode === "evidence" && (
+        <div className="share-evidence-confirm" role="note">
+          <strong>정확한 인용문에는 이름이나 민감정보가 남아 있을 수 있습니다.</strong>
+          <p>위 미리보기에 표시된 원문 제목과 인용 범위를 확인했습니다. 이 링크는 최근 인증된 세션에서만 만들 수 있습니다.</p>
+          <label className="consent-check">
+            <input
+              type="checkbox"
+              checked={evidenceAcknowledged}
+              onChange={(event) => setEvidenceAcknowledged(event.target.checked)}
+            />
+            <span>민감정보 공개 가능성을 확인했고 근거 공유에 동의합니다.</span>
+          </label>
+        </div>
+      )}
+      <button
+        data-testid="share-create"
+        className="button primary full-button"
+        type="button"
+        disabled={creating || (disclosureMode === "evidence" && !evidenceAcknowledged)}
+        onClick={() => void create()}
+      >
+        {creating ? "만드는 중…" : `${disclosureMode === "summary" ? "요약" : "근거 포함"} 링크 만들기`}
+      </button>
       {links.length === 0 ? <p className="empty-card">이 분석에 생성된 공유 링크가 없습니다.</p> : (
         <ul className="share-link-list">
           {links.map((link) => {
@@ -1215,7 +1510,11 @@ function SharePanel({ api, token, run, onError }: { api: PlatformApi; token: str
             return (
               <li key={link.id} className={revoked ? "revoked" : ""}>
                 <div>
-                  <strong>{revoked ? "폐기됨" : `${formatDateTime(link.expiresAt)} 만료`}</strong>
+                  <div className="share-link-heading">
+                    <strong>{revoked ? "폐기됨" : `${formatDateTime(link.expiresAt)} 만료`}</strong>
+                    <span>{link.disclosureMode === "evidence" ? "근거 포함" : "요약"}</span>
+                    {link.includeProjectTitle && <span>제목 공개</span>}
+                  </div>
                   {url ? (
                     <div>
                       <input aria-label="새 공유 링크" readOnly value={url} onFocus={(event) => event.currentTarget.select()} />
@@ -1269,6 +1568,69 @@ function SharePanel({ api, token, run, onError }: { api: PlatformApi; token: str
   );
 }
 
+function ShareDisclosurePreview({ disclosureMode, includeProjectTitle, projectTitle, run }: {
+  disclosureMode: ShareDisclosureMode;
+  includeProjectTitle: boolean;
+  projectTitle: string;
+  run: AnalysisRunResource;
+}) {
+  const result = run.result;
+  if (!result) return null;
+  const participantNames = [
+    ...result.participants.map((participant) => participant.actor),
+    ...result.participantAgents.views.map((view) => view.actor),
+  ].filter((name, index, all) => name.trim().length > 0 && all.indexOf(name) === index);
+  const redact = (value: string) => redactParticipantNames(value, participantNames);
+
+  return (
+    <section className="share-disclosure-preview" aria-labelledby="share-preview-title">
+      <header>
+        <div>
+          <p className="section-kicker">비로그인 화면 미리보기</p>
+          <h3 id="share-preview-title">{includeProjectTitle ? projectTitle : "공유된 분석 요약"}</h3>
+          <p>읽기 전용 분석 · {formatDateTime(run.completedAt ?? run.createdAt)}</p>
+        </div>
+        <span className="read-only-badge">수정 불가</span>
+      </header>
+      <div className={`share-preview-scope ${disclosureMode}`}>
+        {disclosureMode === "evidence"
+          ? "근거 포함: 계정 정보와 원문 전체는 숨기고, 확인된 원문 제목과 정확한 인용문을 표시합니다."
+          : "요약: 참여자 이름, 원문 제목, 정확한 인용문, 계정 정보와 공급자 정보를 제외합니다."}
+      </div>
+      <div className="share-preview-content">
+        <section>
+          <h4>핵심 맥락</h4>
+          <ol>{result.summary.overview.slice(0, 3).map((item) => <li key={item}>{redact(item)}</li>)}</ol>
+        </section>
+        <section>
+          <h4>현재 결정</h4>
+          {result.decisions.length > 0 ? (
+            <ul>{result.decisions.slice(0, 3).map((decision) => (
+              <li key={decision.id ?? decision.decision}>
+                <strong>{redact(decision.decision)}</strong>
+                <p>{redact(decision.reason)}</p>
+                {disclosureMode === "evidence" && decision.evidence?.map((evidence) => (
+                  <blockquote key={`${evidence.sourceRecordId}-${evidence.quote}`}>
+                    <cite>{redact(evidence.sourceTitle)}</cite>
+                    <p>“{evidence.quote}”</p>
+                  </blockquote>
+                ))}
+              </li>
+            ))}</ul>
+          ) : <p>공개할 결정이 없습니다.</p>}
+        </section>
+        <section>
+          <h4>남은 질문</h4>
+          {result.questions.length > 0
+            ? <ul>{result.questions.slice(0, 3).map((question) => <li key={question.id ?? question.question}>{redact(question.question)}</li>)}</ul>
+            : <p>공개할 미결 질문이 없습니다.</p>}
+        </section>
+      </div>
+      <footer>원문 전체 · 사용자 이메일 · 공급자 내부정보는 어떤 모드에서도 공개하지 않습니다.</footer>
+    </section>
+  );
+}
+
 function RunDetailFallback({
   run,
   loading,
@@ -1314,6 +1676,33 @@ function isSourceDetail(source: SourceRecordListResource): source is SourceRecor
   return "content" in source && typeof source.content === "string";
 }
 
+function isShorterRetention(current: ProjectRetentionDays, next: ProjectRetentionDays) {
+  if (next === null) return false;
+  if (current === null) return true;
+  return next < current;
+}
+
+function retentionDeletionCandidates(
+  sources: SourceRecordListResource[],
+  runs: AnalysisRunResource[],
+  retentionDays: ProjectRetentionDays,
+) {
+  if (retentionDays === null) return { sources: 0, runs: 0 };
+  const cutoff = Date.now() - retentionDays * 86_400_000;
+  const expiredSourceIds = new Set(
+    sources
+      .filter((source) => {
+        const timestamp = Date.parse(source.createdAt);
+        return Number.isFinite(timestamp) && timestamp < cutoff;
+      })
+      .map((source) => source.id),
+  );
+  return {
+    sources: expiredSourceIds.size,
+    runs: runs.filter((run) => run.sourceIds.some((sourceId) => expiredSourceIds.has(sourceId))).length,
+  };
+}
+
 function legacyCursorPage<T>(items: T[]) {
   return {
     items,
@@ -1321,13 +1710,25 @@ function legacyCursorPage<T>(items: T[]) {
   };
 }
 
-function statusLabel(status: AnalysisRunResource["status"]) {
-  return { running: "진행 중", succeeded: "성공", failed: "실패", cancelled: "취소" }[status];
-}
-
 function formatDateTime(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
+}
+
+function redactParticipantNames(value: string, names: string[]) {
+  return [...names]
+    .sort((left, right) => right.length - left.length)
+    .reduce((redacted, name, index) => (
+      name.trim().length < 2 ? redacted : redacted.split(name).join(`참여자 ${index + 1}`)
+  ), value);
+}
+
+function personalDataFingerprint(sources: SourceRecordListResource[]) {
+  return JSON.stringify(
+    [...sources]
+      .sort((left, right) => left.id.localeCompare(right.id))
+      .map((source) => [source.id, source.updatedAt, source.charCount]),
+  );
 }
 
 function createIdempotencyKey() {
@@ -1343,17 +1744,21 @@ function messageFrom(error: unknown) {
 }
 
 function readProjectViewState(): { tab: ProjectTab; view: OverviewView } {
-  if (typeof window === "undefined") return { tab: "overview", view: "analysis" };
+  if (typeof window === "undefined") return { tab: "overview", view: "history" };
   const params = new URLSearchParams(window.location.search);
   const tabValue = params.get("tab");
   const viewValue = params.get("view");
   const tab: ProjectTab = tabValue === "map" || tabValue === "onboarding"
     ? tabValue
     : "overview";
-  const view: OverviewView = viewValue === "records" || viewValue === "history"
+  const view: OverviewView = viewValue === "analysis" || viewValue === "records" || viewValue === "history"
     ? viewValue
-    : "analysis";
+    : "history";
   return { tab, view };
+}
+
+function hasExplicitOverviewView() {
+  return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("view");
 }
 
 export default ProjectPage;

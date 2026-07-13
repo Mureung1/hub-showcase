@@ -1,0 +1,5 @@
+Contact: https://github.com/tjwnsdhfz/hub/security/advisories/new
+Expires: 2027-07-13T00:00:00.000Z
+Preferred-Languages: ko, en
+Canonical: https://modu-brain-demo.onrender.com/.well-known/security.txt
+Policy: https://modu-brain-demo.onrender.com/privacy

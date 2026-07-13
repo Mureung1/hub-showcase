@@ -1,4 +1,4 @@
-import type { EvidenceRef } from "../types/context";
+import type { ContextAnalysisResult, EvidenceRef } from "../types/context";
 
 type EvidenceBearingItem = {
   evidence?: EvidenceRef[];
@@ -10,10 +10,22 @@ export function summarizeEvidenceCoverage(items: EvidenceBearingItem[]) {
       const count = item.evidence?.length ?? 0;
       return {
         evidenceCount: summary.evidenceCount + count,
-        coveredItems: summary.coveredItems + (count > 0 ? 1 : 0),
-        totalItems: summary.totalItems + 1,
+        validated: summary.validated + (count > 0 ? 1 : 0),
+        eligible: summary.eligible + 1,
       };
     },
-    { evidenceCount: 0, coveredItems: 0, totalItems: 0 },
+    { evidenceCount: 0, validated: 0, eligible: 0 },
   );
+}
+
+export function summarizeResultEvidenceCoverage(
+  result?: Pick<ContextAnalysisResult, "decisions" | "participants" | "questions" | "keyTerms">,
+) {
+  if (!result) return { evidenceCount: 0, validated: 0, eligible: 0 };
+  return summarizeEvidenceCoverage([
+    ...result.decisions,
+    ...result.participants,
+    ...result.questions,
+    ...result.keyTerms,
+  ]);
 }

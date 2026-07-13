@@ -31,7 +31,7 @@ export type ThoughtGraphResult = Omit<ContextAnalysisResult, "provider">;
 
 export type ThoughtPosition = { x: number; y: number };
 
-export const BRAIN_VIEWBOX = { width: 960, height: 600 } as const;
+export const BRAIN_VIEWBOX = { width: 960, height: 680 } as const;
 export const MAX_THOUGHT_NODES = 100;
 export const MAX_THOUGHT_EDGES = 180;
 export const MOBILE_THOUGHT_SUMMARY_LIMIT = 21;
@@ -50,10 +50,10 @@ const clusterBounds: Record<Exclude<ThoughtKind, "topic">, {
   top: number;
   bottom: number;
 }> = {
-  perspective: { left: 72, right: 374, top: 132, bottom: 528 },
-  decision: { left: 586, right: 888, top: 132, bottom: 528 },
-  term: { left: 226, right: 734, top: 52, bottom: 206 },
-  question: { left: 226, right: 734, top: 394, bottom: 548 },
+  perspective: { left: 104, right: 304, top: 164, bottom: 500 },
+  decision: { left: 656, right: 856, top: 164, bottom: 500 },
+  term: { left: 248, right: 712, top: 54, bottom: 170 },
+  question: { left: 248, right: 712, top: 510, bottom: 634 },
 };
 
 export function buildThoughtGraph(
@@ -165,14 +165,24 @@ export function layoutThoughtNodes(nodes: ThoughtNode[], clustered = true) {
     const bounds = clusterBounds[kind];
     const width = bounds.right - bounds.left;
     const height = bounds.bottom - bounds.top;
-    const columns = Math.max(1, Math.ceil(Math.sqrt(kindNodes.length * (width / height))));
+    const compactSideColumn = (kind === "perspective" || kind === "decision") && kindNodes.length <= 4;
+    const compactHorizontalRow = (kind === "term" || kind === "question") && kindNodes.length <= 4;
+    const columns = compactSideColumn
+      ? 1
+      : compactHorizontalRow
+        ? Math.max(1, kindNodes.length)
+        : Math.max(1, Math.ceil(Math.sqrt(kindNodes.length * (width / height))));
     const rows = Math.max(1, Math.ceil(kindNodes.length / columns));
 
     kindNodes.forEach((node, index) => {
       const column = index % columns;
       const row = Math.floor(index / columns);
+      const rowStart = row * columns;
+      const itemsInRow = Math.min(columns, kindNodes.length - rowStart);
+      const rowWidth = (itemsInRow * width) / columns;
+      const rowOffset = (width - rowWidth) / 2;
       positions.set(node.id, {
-        x: bounds.left + ((column + 0.5) * width) / columns,
+        x: bounds.left + rowOffset + ((column + 0.5) * width) / columns,
         y: bounds.top + ((row + 0.5) * height) / rows,
       });
     });

@@ -52,17 +52,18 @@ afterEach(() => {
 describe("KnowledgeMap", () => {
   it("defaults to the interactive graph and toggles to the semantic relationship list", async () => {
     const user = userEvent.setup();
-    render(<KnowledgeMap map={dynamicMap} />);
+    const { container } = render(<KnowledgeMap map={dynamicMap} />);
 
     const canvas = screen.getByTestId("brain-canvas");
     expect(screen.getByRole("button", { name: "그래프 보기" })).toHaveAttribute("aria-pressed", "true");
-    expect(within(canvas).getByRole("img", { name: /프로젝트 맥락 지도/ })).toBeInTheDocument();
+    expect(within(canvas).getByRole("group", { name: /프로젝트 맥락 지도/ })).toBeInTheDocument();
     expect(within(canvas).getByTestId("brain-node-brain-topic-topic-main")).toHaveAccessibleName(
       "중심 주제 생각: 동적 프로젝트",
     );
     expect(within(canvas).getByTestId("brain-node-brain-perspective-person-1")).toBeInTheDocument();
     expect(within(canvas).getByTestId("brain-node-brain-decision-decision-1")).toHaveClass("brain-kind-decision");
     expect(within(canvas).getByTestId("brain-node-brain-question-question-1")).toHaveClass("brain-kind-question");
+    expect(container.querySelectorAll(".brain-connections g.is-active")).toHaveLength(0);
 
     await user.click(screen.getByRole("button", { name: "의미 목록" }));
     expect(screen.getByRole("button", { name: "의미 목록" })).toHaveAttribute("aria-pressed", "true");
@@ -73,12 +74,13 @@ describe("KnowledgeMap", () => {
   it("selects a thought, exposes typed relationships, and opens its evidence", async () => {
     const user = userEvent.setup();
     const onOpenEvidence = vi.fn();
-    render(<KnowledgeMap map={dynamicMap} onOpenEvidence={onOpenEvidence} />);
+    const { container } = render(<KnowledgeMap map={dynamicMap} onOpenEvidence={onOpenEvidence} />);
 
     const decision = screen.getByTestId("brain-node-brain-decision-decision-1");
     await user.click(decision);
 
     expect(decision).toHaveAttribute("aria-pressed", "true");
+    expect(container.querySelectorAll(".brain-connections g.is-active").length).toBeGreaterThan(0);
     const inspector = screen.getByRole("complementary", { name: "선택한 생각 상세" });
     expect(within(inspector).getByRole("heading", { name: "직접 입력 MVP" })).toBeInTheDocument();
     expect(within(inspector).getByRole("button", {
@@ -127,9 +129,9 @@ describe("KnowledgeMap", () => {
     const user = userEvent.setup();
     render(<KnowledgeMap result={sampleAnalysis} />);
 
-    const questionFilter = screen.getByRole("button", { name: "질문 3" });
-    await user.click(questionFilter);
-    expect(questionFilter).toHaveAttribute("aria-pressed", "true");
+    const questionFilter = screen.getByRole("combobox", { name: "생각 유형 필터" });
+    await user.selectOptions(questionFilter, "question");
+    expect(questionFilter).toHaveValue("question");
     expect(screen.getAllByRole("button", { name: /질문 생각:/ })).toHaveLength(3);
 
     const search = screen.getByRole("searchbox", { name: "생각 검색" });

@@ -15,6 +15,7 @@ describe("SharePage", () => {
     const api = apiMock();
     vi.mocked(api.resolveSharedAnalysis).mockResolvedValue({
       projectTitle: "공유 프로젝트",
+      disclosureMode: "summary",
       result: withoutProvider(sampleAnalysis),
       completedAt: "2026-07-11T00:00:00Z",
       expiresAt: "2026-07-18T00:00:00Z",
@@ -23,10 +24,11 @@ describe("SharePage", () => {
 
     expect(await screen.findByRole("heading", { name: "공유 프로젝트" })).toBeInTheDocument();
     expect(screen.getByText("수정 불가")).toBeInTheDocument();
-    expect(screen.getByRole("note", { name: "공유 개인정보 주의" })).toHaveTextContent(
-      "근거 인용문에는 입력 원문의 일부",
+    expect(screen.getByRole("note", { name: "공유 공개 범위" })).toHaveTextContent(
+      "참여자 이름, 원문 제목, 정확한 인용문",
     );
-    expect(screen.getByRole("heading", { name: "참여자별 관점 차이" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "참여자별 관점 차이" })).not.toBeInTheDocument();
+    expect(screen.queryByText("민지")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "현재 확정된 결정" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "아직 열린 질문" })).toBeInTheDocument();
     const canvas = screen.getByTestId("brain-canvas");

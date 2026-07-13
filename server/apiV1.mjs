@@ -16,6 +16,7 @@ import { buildContextAnalysisResultV2 } from "./analysisResultV2.mjs";
 import { normalizeContextImport } from "./contextImport.mjs";
 import { allowOnly, readJson, setApiHeaders, writeApiError, writeData } from "./httpJson.mjs";
 import {
+  EXPECTED_DATABASE_MIGRATION_VERSION,
   createModuBrainRepository,
   createModuBrainServiceRepository,
   createPublicShareRepository,
@@ -57,6 +58,8 @@ const DEFAULT_PAGE_LIMIT = 50;
 const MAX_PAGE_LIMIT = 100;
 const TELEMETRY_BODY_LIMIT = 16 * 1024;
 const AUTH_SESSION_BODY_LIMIT = 16 * 1024;
+const MAGIC_LINK_BODY_LIMIT = 8 * 1024;
+const RECENT_AUTH_WINDOW_SECONDS = 10 * 60;
 // Leave headroom for the cookie name and security attributes below the common
 // 4 KiB per-cookie implementation limit. The limit applies after encoding,
 // because an otherwise short value may expand when serialized.
@@ -89,7 +92,7 @@ export function createApiV1Handler(options = {}) {
     if (pathname === "/api/health/live") {
       try {
         if (!allowOnly(req, res, ["GET"])) return true;
-        writeData(res, 200, { status: "ok", commit: resolveBuildCommit(options) });
+        writeData(res, 200, { status: "ok", ...resolveBuildMetadata(options) });
       } catch (error) {
         writeApiError(res, toApiError(error));
       }
@@ -99,17 +102,21 @@ export function createApiV1Handler(options = {}) {
     if (pathname === "/api/health/ready") {
       try {
         if (!allowOnly(req, res, ["GET"])) return true;
-        if (options.readyCheck) await options.readyCheck();
+        let readiness;
+        if (options.readyCheck) readiness = await options.readyCheck();
         else {
           const repository = createModuBrainRepository(gateway.asServiceRole());
-          await repository.ready();
+          readiness = await repository.ready();
         }
-        writeData(res, 200, { status: "ready" });
-      } catch {
-        writeApiError(
-          res,
-          new ApiError(503, "DATABASE_UNAVAILABLE", "데이터베이스를 사용할 수 없습니다."),
-        );
+        writeData(res, 200, {
+          status: "ready",
+          migrationVersion:
+            readiness?.migrationVersion || EXPECTED_DATABASE_MIGRATION_VERSION,
+        });
+      } catch (error) {
+        writeApiError(res, error?.code === "SCHEMA_DRIFT"
+          ? toApiError(error)
+          : new ApiError(503, "DATABASE_UNAVAILABLE", "데이터베이스를 사용할 수 없습니다."));
       }
       return true;
     }
@@ -125,6 +132,11 @@ export function createApiV1Handler(options = {}) {
 
       if (pathname === "/api/v1/telemetry") {
         await handleTelemetry(req, res, options);
+        return true;
+      }
+
+      if (pathname === "/api/v1/auth/magic-link") {
+        await handleMagicLink(req, res, options, gateway);
         return true;
       }
 
@@ -161,7 +173,7 @@ export function createApiV1Handler(options = {}) {
       }
 
       if (pathname === "/api/v1/account") {
-        await handleAccountDelete(req, res, options, user);
+        await handleAccountDelete(req, res, options, gateway, user);
         return true;
       }
 
@@ -193,6 +205,8 @@ export function createApiV1Handler(options = {}) {
             : null,
           user,
           requireUuid(match[1], "projectId"),
+          options,
+          gateway,
         );
         return true;
       }
@@ -229,7 +243,8 @@ export function createApiV1Handler(options = {}) {
         await handleContextImport(
           req,
           res,
-          repository,
+          await resolveServiceRepository(options, gateway, user, req),
+          user,
           requireUuid(match[1], "projectId"),
         );
         return true;
@@ -335,6 +350,10 @@ export function createApiV1Handler(options = {}) {
           req,
           res,
           repository,
+          req.method === "POST"
+            ? await resolveServiceRepository(options, gateway, user, req)
+            : null,
+          user,
           requireUuid(match[1], "runId"),
         );
         return true;
@@ -353,6 +372,8 @@ export function createApiV1Handler(options = {}) {
           serviceRepository,
           user,
           requireUuid(match[1], "runId"),
+          options,
+          gateway,
         );
         return true;
       }
@@ -406,14 +427,40 @@ async function handleProjectRestore(req, res, serviceRepository, user, projectId
   );
 }
 
-async function handleProject(req, res, repository, serviceRepository, user, projectId) {
+async function handleProject(
+  req,
+  res,
+  repository,
+  serviceRepository,
+  user,
+  projectId,
+  options,
+  gateway,
+) {
   if (!allowOnly(req, res, ["GET", "PATCH", "DELETE"])) return;
   if (req.method === "GET") {
     writeData(res, 200, projectResource(await repository.getProject(projectId)));
     return;
   }
   if (req.method === "PATCH") {
-    const values = validateProject(await readJson(req), true);
+    const body = await readJson(req);
+    const values = validateProject(body, true);
+    if (Object.hasOwn(values, "retention_days")) {
+      const current = await repository.getProject(projectId);
+      if (
+        isRetentionReduction(current.retention_days ?? null, values.retention_days) &&
+        body.acknowledgeRetentionReduction !== true
+      ) {
+        throw new ApiError(
+          400,
+          "RETENTION_REDUCTION_CONFIRMATION_REQUIRED",
+          "보관 기간을 단축하면 만료된 원문과 관련 분석·공유 링크가 삭제될 수 있습니다. 삭제 예정 범위를 확인해 주세요.",
+        );
+      }
+      if (body.acknowledgeRetentionReduction === true) {
+        values.retention_acknowledged = true;
+      }
+    }
     writeData(
       res,
       200,
@@ -431,6 +478,7 @@ async function handleProject(req, res, repository, serviceRepository, user, proj
         "영구 삭제에는 X-Confirm-Permanent-Delete: delete 헤더가 필요합니다.",
       );
     }
+    await requireRecentAuthentication(req, options, gateway, user);
     await serviceRepository.deleteProject(user.id, projectId, "delete");
   } else {
     await serviceRepository.archiveProject(user.id, projectId);
@@ -524,7 +572,7 @@ function hasSourceImport(source) {
     : Boolean(source?.source_imports);
 }
 
-async function handleContextImport(req, res, repository, projectId) {
+async function handleContextImport(req, res, serviceRepository, user, projectId) {
   if (!allowOnly(req, res, ["POST"])) return;
   const normalized = normalizeContextImport(await readJson(req));
   const title = boundedString(normalized.title, "title", 1, 120);
@@ -535,7 +583,7 @@ async function handleContextImport(req, res, repository, projectId) {
     INPUT_CHARACTER_LIMIT,
     false,
   );
-  const imported = await repository.importSourceContext(projectId, {
+  const imported = await serviceRepository.importSourceContext(user.id, projectId, {
     kind: normalized.kind,
     title,
     content,
@@ -734,7 +782,7 @@ async function handleAnalysisRuns(req, res, context) {
     }
     throwIfAborted(controller, req, res);
     if (started.reused) {
-      writeData(res, 200, analysisRunResource(started.run));
+      writeData(res, 200, analysisRunResource(await context.repository.getRun(started.run.id)));
       return;
     }
 
@@ -829,7 +877,8 @@ async function handleAnalysisRuns(req, res, context) {
       activeStepStartedAt = null;
     }
     if (!res.destroyed) {
-      writeData(res, 201, analysisRunResource(completed), {
+      const persisted = await context.repository.getRun(createdRunId).catch(() => completed);
+      writeData(res, 201, analysisRunResource(persisted), {
         Location: `/api/v1/analysis-runs/${createdRunId}`,
       });
     }
@@ -885,7 +934,14 @@ async function handleAnalysisRunStepEvents(req, res, repository, runId) {
   writeData(res, 200, rows.map(analysisRunStepEventResource));
 }
 
-async function handleAnalysisRunAnnotations(req, res, repository, runId) {
+async function handleAnalysisRunAnnotations(
+  req,
+  res,
+  repository,
+  serviceRepository,
+  user,
+  runId,
+) {
   if (!allowOnly(req, res, ["GET", "POST"])) return;
   if (req.method === "GET") {
     const rows = await repository.listRunAnnotations(runId);
@@ -895,7 +951,7 @@ async function handleAnalysisRunAnnotations(req, res, repository, runId) {
 
   const idempotencyKey = requireIdempotencyKey(req);
   const values = validateRunAnnotation(await readJson(req));
-  const created = await repository.createRunAnnotation(runId, {
+  const created = await serviceRepository.createRunAnnotation(runId, user.id, {
     idempotencyKey,
     ...values,
   });
@@ -907,7 +963,16 @@ async function handleAnalysisRunAnnotations(req, res, repository, runId) {
   );
 }
 
-async function handleShareLinks(req, res, repository, serviceRepository, user, runId) {
+async function handleShareLinks(
+  req,
+  res,
+  repository,
+  serviceRepository,
+  user,
+  runId,
+  options,
+  gateway,
+) {
   if (!allowOnly(req, res, ["GET", "POST"])) return;
   if (req.method === "GET") {
     const rows = await repository.listShareLinks(runId);
@@ -919,13 +984,43 @@ async function handleShareLinks(req, res, repository, serviceRepository, user, r
     throw new ApiError(409, "RUN_NOT_SHAREABLE", "성공한 분석만 공유할 수 있습니다.");
   }
   const body = await readJson(req);
-  const expiresInDays = body.expiresInDays === undefined ? 7 : Number(body.expiresInDays);
-  if (!Number.isInteger(expiresInDays) || expiresInDays < 1 || expiresInDays > 30) {
-    throw new ApiError(400, "INVALID_EXPIRATION", "공유 링크 만료일은 1~30일이어야 합니다.");
+  const disclosureMode = body.disclosureMode === undefined ? "summary" : body.disclosureMode;
+  if (!new Set(["summary", "evidence"]).has(disclosureMode)) {
+    throw new ApiError(400, "INVALID_SHARE_DISCLOSURE", "공유 공개 범위가 올바르지 않습니다.");
+  }
+  const includeProjectTitle = body.includeProjectTitle === true;
+  const defaultExpiration = disclosureMode === "evidence" ? 1 : 7;
+  const maximumExpiration = disclosureMode === "evidence" ? 7 : 30;
+  const expiresInDays = body.expiresInDays === undefined
+    ? defaultExpiration
+    : Number(body.expiresInDays);
+  if (
+    !Number.isInteger(expiresInDays) ||
+    expiresInDays < 1 ||
+    expiresInDays > maximumExpiration
+  ) {
+    throw new ApiError(
+      400,
+      "INVALID_EXPIRATION",
+      `이 공유 모드의 만료일은 1~${maximumExpiration}일이어야 합니다.`,
+    );
+  }
+  if (disclosureMode === "evidence") {
+    if (body.acknowledgeSensitiveEvidence !== true) {
+      throw new ApiError(
+        400,
+        "SHARE_DISCLOSURE_CONFIRMATION_REQUIRED",
+        "근거 인용 공유 전 민감정보 공개 가능성을 확인해 주세요.",
+      );
+    }
+    await requireRecentAuthentication(req, options, gateway, user);
   }
   const token = createShareToken();
   const expiresAt = new Date(Date.now() + expiresInDays * 86_400_000).toISOString();
-  const row = await serviceRepository.createShareLink(runId, user.id, sha256(token), expiresAt);
+  const row = await serviceRepository.createShareLink(runId, user.id, sha256(token), expiresAt, {
+    disclosureMode,
+    includeProjectTitle,
+  });
   writeData(res, 201, {
     ...shareLinkResource(row),
     token,
@@ -955,6 +1050,40 @@ async function handleTelemetry(req, res, options) {
     }
   }
   writeData(res, 202, { accepted: true });
+}
+
+async function handleMagicLink(req, res, options, gateway) {
+  if (!allowOnly(req, res, ["POST"])) return;
+  const body = await readJson(req, { maxBytes: MAGIC_LINK_BODY_LIMIT });
+  const values = validateMagicLinkRequest(req, body, options);
+  const repository = options.publicRepository ||
+    createPublicShareRepository(gateway.asServiceRole());
+  const ipHash = rateLimitIdentifier(req, options.rateLimitIdentifierOptions);
+  const emailHash = privacyIdentifier(
+    values.email,
+    options.magicLinkIdentifierSecret,
+    options.rateLimitIdentifierOptions,
+  );
+  const [ipAllowed, emailAllowed] = await Promise.all([
+    repository.consumeRateLimit("auth:magic:ip:hour", ipHash, 10, 3600),
+    repository.consumeRateLimit("auth:magic:email:hour", emailHash, 3, 3600),
+  ]);
+  if (!ipAllowed || !emailAllowed) {
+    throw new ApiError(
+      429,
+      "RATE_LIMITED",
+      "로그인 링크 요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.",
+      undefined,
+      { "Retry-After": "3600" },
+    );
+  }
+  await gateway.sendMagicLink(
+    values.email,
+    values.redirectTo,
+    values.captchaToken,
+    { signal: req.moduBrainSignal },
+  );
+  writeData(res, 202, { accepted: true }, authSessionCacheHeaders());
 }
 
 async function handleAuthSession(req, res, options, gateway) {
@@ -1082,7 +1211,7 @@ async function handleSharedResolve(req, res, options, gateway) {
   const tokenHash = sha256(token);
   const ipHash = rateLimitIdentifier(req, options.rateLimitIdentifierOptions);
   const [ipAllowed, tokenIpAllowed] = await Promise.all([
-    repository.consumeRateLimit("share:ip:hour", ipHash, 600, 3600),
+    repository.consumeRateLimit("share:ip:hour", ipHash, 60, 3600),
     repository.consumeRateLimit(
       "share:token-ip:hour",
       sha256(`${ipHash}:${tokenHash}`),
@@ -1113,7 +1242,7 @@ async function handleAccountExport(req, res, options, user) {
   writeData(res, 200, await exporter({ user, req }));
 }
 
-async function handleAccountDelete(req, res, options, user) {
+async function handleAccountDelete(req, res, options, gateway, user) {
   if (!allowOnly(req, res, ["DELETE"])) return;
   if (req.headers["x-confirm-account-delete"] !== "delete my account") {
     throw new ApiError(
@@ -1130,6 +1259,11 @@ async function handleAccountDelete(req, res, options, user) {
       "계정 삭제는 아직 준비 중입니다. 데이터베이스 기능이 활성화된 뒤 사용할 수 있습니다.",
     );
   }
+  await requireRecentAuthentication(req, options, gateway, user);
+  await gateway.logout(user.accessToken, {
+    signal: req.moduBrainSignal,
+    scope: "global",
+  });
   await deleter({ user, req });
   clearAuthSessionCookies(req, res);
   writeData(res, 200, { deleted: true }, authSessionCacheHeaders());
@@ -1292,6 +1426,12 @@ function consumeTelemetryRateLimit(subjectHash) {
 
 function validateProject(body, partial) {
   assertObject(body);
+  const allowedKeys = partial
+    ? new Set(["title", "description", "retentionDays", "acknowledgeRetentionReduction"])
+    : new Set(["title", "description"]);
+  if (Object.keys(body).some((key) => !allowedKeys.has(key))) {
+    throw new ApiError(400, "INVALID_PROJECT_PATCH", "지원하지 않는 프로젝트 필드가 있습니다.");
+  }
   const values = {};
   if (!partial || body.title !== undefined) {
     values.title = boundedString(body.title, "title", 2, 120);
@@ -1299,10 +1439,86 @@ function validateProject(body, partial) {
   if (!partial || body.description !== undefined) {
     values.description = boundedString(body.description || "", "description", 0, 2_000);
   }
+  if (partial && body.retentionDays !== undefined) {
+    if (body.retentionDays !== null && !new Set([30, 90]).has(Number(body.retentionDays))) {
+      throw new ApiError(
+        400,
+        "INVALID_RETENTION_POLICY",
+        "보관 기간은 30일, 90일 또는 삭제 전까지 중에서 선택해 주세요.",
+      );
+    }
+    values.retention_days = body.retentionDays === null ? null : Number(body.retentionDays);
+  }
+  if (partial && body.acknowledgeRetentionReduction !== undefined) {
+    if (typeof body.acknowledgeRetentionReduction !== "boolean" || body.retentionDays === undefined) {
+      throw new ApiError(
+        400,
+        "INVALID_RETENTION_POLICY",
+        "보관 기간 단축 확인 값이 올바르지 않습니다.",
+      );
+    }
+  }
   if (partial && Object.keys(values).length === 0) {
     throw new ApiError(400, "EMPTY_UPDATE", "변경할 값을 입력해 주세요.");
   }
   return values;
+}
+
+function isRetentionReduction(currentDays, nextDays) {
+  if (nextDays === null) return false;
+  if (currentDays === null) return true;
+  return nextDays < currentDays;
+}
+
+function validateMagicLinkRequest(req, body, options) {
+  assertObject(body);
+  const allowedKeys = new Set(["email", "redirectTo", "captchaToken"]);
+  if (Object.keys(body).some((key) => !allowedKeys.has(key))) {
+    throw new ApiError(400, "INVALID_MAGIC_LINK_REQUEST", "로그인 요청 형식이 올바르지 않습니다.");
+  }
+  const email = String(body.email || "").trim().toLowerCase();
+  if (
+    email.length < 3 ||
+    email.length > 254 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  ) {
+    throw new ApiError(400, "INVALID_EMAIL", "올바른 이메일 주소를 입력해 주세요.");
+  }
+  const captchaToken = typeof body.captchaToken === "string"
+    ? body.captchaToken.trim()
+    : "";
+  const captchaRequired = options.captchaRequired ??
+    String(process.env.MODU_BRAIN_CAPTCHA_REQUIRED || "").toLowerCase() === "true";
+  if (captchaRequired && !captchaToken) {
+    throw new ApiError(400, "CAPTCHA_REQUIRED", "사람인지 확인한 뒤 다시 요청해 주세요.");
+  }
+  if (captchaToken.length > 4_096) {
+    throw new ApiError(400, "INVALID_CAPTCHA", "보안 확인 값이 올바르지 않습니다.");
+  }
+
+  const requestOrigin = originForRequest(req);
+  let redirect;
+  try {
+    redirect = new URL(String(body.redirectTo || `${requestOrigin}/login`));
+  } catch {
+    throw new ApiError(400, "INVALID_AUTH_REDIRECT", "로그인 이동 주소가 올바르지 않습니다.");
+  }
+  const canonicalOrigin = normalizedOrigin(
+    options.canonicalOrigin || process.env.MODU_BRAIN_CANONICAL_ORIGIN,
+  );
+  const allowedOrigins = new Set([
+    ...(canonicalOrigin ? [canonicalOrigin] : []),
+    ...(process.env.NODE_ENV === "production" ? [] : [requestOrigin]),
+  ]);
+  if (
+    !allowedOrigins.has(redirect.origin) ||
+    redirect.pathname !== "/login" ||
+    redirect.search ||
+    redirect.hash
+  ) {
+    throw new ApiError(400, "INVALID_AUTH_REDIRECT", "허용되지 않은 로그인 이동 주소입니다.");
+  }
+  return { email, captchaToken, redirectTo: redirect.toString() };
 }
 
 function validateTelemetryEvent(body) {
@@ -1499,6 +1715,31 @@ async function authenticateApiRequest(req, res, options, gateway) {
   };
 }
 
+async function requireRecentAuthentication(req, options, gateway, user) {
+  if (typeof options.requireRecentAuthentication === "function") {
+    await options.requireRecentAuthentication({ req, user, maxAgeSeconds: RECENT_AUTH_WINDOW_SECONDS });
+    return;
+  }
+  const verified = await gateway.authenticate(user.accessToken, {
+    signal: req.moduBrainSignal,
+    forceRemote: true,
+  });
+  const nowSeconds = Math.floor((options.authNow || Date.now)() / 1000);
+  if (
+    verified.id !== user.id ||
+    !verified.sessionId ||
+    !Number.isFinite(verified.authenticatedAt) ||
+    verified.authenticatedAt > nowSeconds + 60 ||
+    nowSeconds - verified.authenticatedAt > RECENT_AUTH_WINDOW_SECONDS
+  ) {
+    throw new ApiError(
+      401,
+      "RECENT_AUTH_REQUIRED",
+      "민감한 작업을 계속하려면 이메일 링크로 다시 로그인해 주세요.",
+    );
+  }
+}
+
 function validateAuthSessionPayload(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new ApiError(400, "INVALID_AUTH_SESSION", "The login session is invalid.");
@@ -1588,6 +1829,27 @@ function assertSameOrigin(req) {
   }
 }
 
+function originForRequest(req) {
+  const host = String(req.headers.host || "").trim();
+  const protocol = String(
+    req.headers["x-forwarded-proto"] || (req.socket?.encrypted ? "https" : "http"),
+  ).split(",")[0].trim();
+  try {
+    return new URL(`${protocol}://${host}`).origin;
+  } catch {
+    throw new ApiError(403, "ORIGIN_NOT_ALLOWED", "요청 출처가 허용되지 않습니다.");
+  }
+}
+
+function normalizedOrigin(value) {
+  if (!value) return null;
+  try {
+    return new URL(String(value)).origin;
+  } catch {
+    return null;
+  }
+}
+
 function safeAnalysisCode(error) {
   const code = String(error?.code || "ANALYSIS_FAILED");
   return /^[A-Z0-9_]{3,80}$/.test(code) ? code : "ANALYSIS_FAILED";
@@ -1661,6 +1923,46 @@ function resolveBuildCommit(options) {
   for (const candidate of candidates) {
     const normalized = String(candidate || "").trim().toLowerCase();
     if (/^[0-9a-f]{7,40}$/.test(normalized)) return normalized;
+  }
+  return null;
+}
+
+function resolveBuildMetadata(options) {
+  const embedded = globalThis.__MODU_BRAIN_BUILD_METADATA__ || {};
+  const useEmbeddedMetadata = !Object.hasOwn(options, "buildCommit");
+  const commit = resolveBuildCommit({
+    ...options,
+    buildCommit: useEmbeddedMetadata ? embedded.commit : options.buildCommit,
+  });
+  const buildId = firstSafeBuildIdentifier([
+    options.buildId,
+    process.env.RENDER_DEPLOY_ID,
+    process.env.GITHUB_RUN_ID,
+    useEmbeddedMetadata ? embedded.buildId : null,
+    commit,
+  ]);
+  const builtAt = firstIsoTimestamp([
+    options.builtAt,
+    process.env.MODU_BRAIN_BUILT_AT,
+    useEmbeddedMetadata ? embedded.builtAt : null,
+  ]);
+  return { commit, buildId, builtAt };
+}
+
+function firstSafeBuildIdentifier(candidates) {
+  for (const candidate of candidates) {
+    const normalized = String(candidate || "").trim();
+    if (/^[A-Za-z0-9._:-]{1,128}$/.test(normalized)) return normalized;
+  }
+  return null;
+}
+
+function firstIsoTimestamp(candidates) {
+  for (const candidate of candidates) {
+    const value = String(candidate || "").trim();
+    if (!value) continue;
+    const timestamp = new Date(value);
+    if (!Number.isNaN(timestamp.valueOf())) return timestamp.toISOString();
   }
   return null;
 }

@@ -10,7 +10,7 @@ import {
 const ID = "22222222-2222-4222-8222-222222222222";
 
 describe("Modu Brain PostgREST repository", () => {
-  it("covers owner-scoped reads and the two authenticated compatibility RPCs", async () => {
+  it("covers owner-scoped reads and verifies the service RPC schema contract", async () => {
     const project = { id: ID, title: "project" };
     const source = { id: ID, project_id: ID, content: "text" };
     const run = { id: ID, project_id: ID, analysis_run_sources: [{ source_record_id: ID }] };
@@ -20,11 +20,14 @@ describe("Modu Brain PostgREST repository", () => {
     const annotation = { id: ID, analysis_run_id: ID, annotation_type: "note" };
     const share = { id: ID, analysis_run_id: ID };
     const request = vi.fn(async (path) => {
-      if (path === "rpc/create_analysis_run_annotation") {
-        return [{ outcome: "created", annotation }];
-      }
-      if (path === "rpc/import_source_context") {
-        return { source, import_id: ID, provider: "paste", segment_count: 1 };
+      if (path === "") {
+        return {
+          paths: {
+            "/rpc/app_import_source_context": {},
+            "/rpc/app_create_analysis_run_annotation": {},
+            "/rpc/app_purge_expired_project_data": {},
+          },
+        };
       }
       if (path.startsWith("projects")) return [project];
       if (path.startsWith("source_records")) return [source];
@@ -38,14 +41,76 @@ describe("Modu Brain PostgREST repository", () => {
     });
     const repository = createModuBrainRepository({ request });
 
-    await expect(repository.ready()).resolves.toBe(true);
+    await expect(repository.ready()).resolves.toEqual({
+      migrationVersion: "20260713093323",
+    });
     await expect(repository.listProjects()).resolves.toEqual([project]);
     await expect(repository.listProjects({ archived: true })).resolves.toEqual([project]);
     await expect(repository.getProject(ID)).resolves.toBe(project);
 
     await expect(repository.listSources(ID)).resolves.toEqual([source]);
+    await expect(repository.getSource(ID)).resolves.toBe(source);
+    await expect(repository.getSources(ID, [ID])).resolves.toEqual([source]);
+    await expect(repository.getSources(ID, [])).resolves.toEqual([]);
+    await expect(repository.listSourceSegments(ID)).resolves.toEqual([segment]);
+
+    await expect(repository.listRuns(ID)).resolves.toEqual([run]);
+    await expect(repository.getRun(ID)).resolves.toBe(run);
+    await expect(repository.getRunSnapshots(ID)).resolves.toEqual([snapshot]);
+    await expect(repository.listRunStepEvents(ID)).resolves.toEqual([stepEvent]);
+    await expect(repository.listRunAnnotations(ID)).resolves.toEqual([annotation]);
+    await expect(repository.listShareLinks(ID)).resolves.toEqual([share]);
+    const runReadPaths = [...new Set(
+      request.mock.calls
+        .map(([path]) => path)
+        .filter((path) => path.startsWith("analysis_runs?")),
+    )];
+    expect(runReadPaths).toHaveLength(2);
+    for (const path of runReadPaths) {
+      expect(path).toContain("analysis_run_step_events(");
+      expect(path).toContain("validation_outcome");
+      expect(path).toContain("evidence_reference_count");
+    }
+    expect(request).toHaveBeenCalledWith(
+      "",
+      { headers: { Accept: "application/openapi+json" } },
+    );
+  });
+
+  it("rejects readiness when a required service RPC is missing", async () => {
+    const request = vi.fn(async (path) => path === ""
+      ? { paths: { "/rpc/app_import_source_context": {} } }
+      : []);
+    const repository = createModuBrainRepository({ request });
+    await expect(repository.ready()).rejects.toMatchObject({
+      status: 503,
+      code: "SCHEMA_DRIFT",
+    });
+  });
+
+  it("uses owner-checking service-role RPCs for completion and share mutations", async () => {
+    const run = { id: ID, status: "succeeded" };
+    const stepEvent = { id: ID, analysis_run_id: ID, event_key: "source_snapshot:succeeded" };
+    const share = { id: ID, analysis_run_id: ID };
+    const request = vi.fn(async (path) => {
+      if (path === "rpc/app_import_source_context") {
+        return { source: { id: ID }, import_id: ID, provider: "paste", segment_count: 1 };
+      }
+      if (path === "rpc/app_create_analysis_run_annotation") {
+        return [{ outcome: "created", annotation: { id: ID } }];
+      }
+      if (path === "rpc/consume_openai_rate_limit") return true;
+      if (path === "rpc/app_append_analysis_run_step_event") return [stepEvent];
+      if (path === "rpc/app_complete_analysis_run") return run;
+      if (path === "rpc/app_create_share_link") return [share];
+      if (path === "rpc/app_revoke_share_link") return [share];
+      return [];
+    });
+    const repository = createModuBrainServiceRepository({ request });
+    const completedAt = new Date().toISOString();
+
     await expect(
-      repository.importSourceContext(ID, {
+      repository.importSourceContext("user-id", ID, {
         kind: "note",
         title: "import",
         content: "text",
@@ -57,57 +122,15 @@ describe("Modu Brain PostgREST repository", () => {
         segments: [{ externalId: "segment-1", text: "text" }],
       }),
     ).resolves.toMatchObject({ import_id: ID, provider: "paste" });
-    await expect(repository.getSource(ID)).resolves.toBe(source);
-    await expect(repository.getSources(ID, [ID])).resolves.toEqual([source]);
-    await expect(repository.getSources(ID, [])).resolves.toEqual([]);
-    await expect(repository.listSourceSegments(ID)).resolves.toEqual([segment]);
-
-    await expect(repository.listRuns(ID)).resolves.toEqual([run]);
-    await expect(repository.getRun(ID)).resolves.toBe(run);
-    await expect(repository.getRunSnapshots(ID)).resolves.toEqual([snapshot]);
-    await expect(repository.listRunStepEvents(ID)).resolves.toEqual([stepEvent]);
-    await expect(repository.listRunAnnotations(ID)).resolves.toEqual([annotation]);
     await expect(
-      repository.createRunAnnotation(ID, {
+      repository.createRunAnnotation(ID, "user-id", {
         idempotencyKey: "annotation-key",
         annotationType: "note",
         targetType: "run",
         targetId: null,
         body: "feedback",
       }),
-    ).resolves.toEqual({ reused: false, annotation });
-
-    await expect(repository.listShareLinks(ID)).resolves.toEqual([share]);
-    expect(request).toHaveBeenCalledWith(
-      "rpc/import_source_context",
-      expect.objectContaining({
-        method: "POST",
-        body: expect.objectContaining({ p_project_id: ID, p_provider: "paste" }),
-      }),
-    );
-    expect(request).toHaveBeenCalledWith(
-      "rpc/create_analysis_run_annotation",
-      expect.objectContaining({
-        method: "POST",
-        body: expect.objectContaining({ p_analysis_run_id: ID, p_target_type: "run" }),
-      }),
-    );
-  });
-
-  it("uses owner-checking service-role RPCs for completion and share mutations", async () => {
-    const run = { id: ID, status: "succeeded" };
-    const stepEvent = { id: ID, analysis_run_id: ID, event_key: "source_snapshot:succeeded" };
-    const share = { id: ID, analysis_run_id: ID };
-    const request = vi.fn(async (path) => {
-      if (path === "rpc/consume_openai_rate_limit") return true;
-      if (path === "rpc/app_append_analysis_run_step_event") return [stepEvent];
-      if (path === "rpc/app_complete_analysis_run") return run;
-      if (path === "rpc/app_create_share_link") return [share];
-      if (path === "rpc/app_revoke_share_link") return [share];
-      return [];
-    });
-    const repository = createModuBrainServiceRepository({ request });
-    const completedAt = new Date().toISOString();
+    ).resolves.toMatchObject({ reused: false, annotation: { id: ID } });
 
     await expect(
       repository.appendRunStepEvent(ID, "user-id", {
@@ -142,13 +165,38 @@ describe("Modu Brain PostgREST repository", () => {
       }),
     ).resolves.toBe(run);
     await expect(
-      repository.createShareLink(ID, "user-id", "a".repeat(64), completedAt),
+      repository.createShareLink(ID, "user-id", "a".repeat(64), completedAt, {
+        disclosureMode: "evidence",
+        includeProjectTitle: true,
+      }),
     ).resolves.toBe(share);
     await expect(repository.revokeShareLink(ID, "user-id")).resolves.toBe(share);
     await expect(
       repository.consumeOpenAIRateLimit("openai:global:day", "global"),
     ).resolves.toBe(true);
 
+    expect(request).toHaveBeenCalledWith(
+      "rpc/app_import_source_context",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.objectContaining({
+          p_user_id: "user-id",
+          p_project_id: ID,
+          p_provider: "paste",
+        }),
+      }),
+    );
+    expect(request).toHaveBeenCalledWith(
+      "rpc/app_create_analysis_run_annotation",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.objectContaining({
+          p_user_id: "user-id",
+          p_analysis_run_id: ID,
+          p_target_type: "run",
+        }),
+      }),
+    );
     expect(request).toHaveBeenCalledWith(
       "rpc/app_complete_analysis_run",
       expect.objectContaining({
@@ -174,7 +222,17 @@ describe("Modu Brain PostgREST repository", () => {
     );
     expect(request).toHaveBeenCalledWith(
       "rpc/app_create_share_link",
-      expect.objectContaining({ method: "POST" }),
+      expect.objectContaining({
+        method: "POST",
+        body: {
+          p_user_id: "user-id",
+          p_run_id: ID,
+          p_token_hash: "a".repeat(64),
+          p_expires_at: completedAt,
+          p_disclosure_mode: "evidence",
+          p_include_project_title: true,
+        },
+      }),
     );
     expect(request).toHaveBeenCalledWith(
       "rpc/app_revoke_share_link",
@@ -308,7 +366,7 @@ describe("Modu Brain PostgREST repository", () => {
     });
     const repository = createPublicShareRepository({ request });
     await expect(repository.resolveShare("hash")).resolves.toEqual({ project_title: "project" });
-    await expect(repository.consumeRateLimit("share:ip:hour", "iphash", 600, 3600)).resolves.toBe(true);
+    await expect(repository.consumeRateLimit("share:ip:hour", "iphash", 60, 3600)).resolves.toBe(true);
     expect(request).toHaveBeenCalledWith(
       "rpc/app_consume_public_rate_limit",
       expect.objectContaining({ body: expect.objectContaining({ p_subject_hash: "iphash" }) }),

@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-const publicRoutes = ["/", "/demo", "/login", "/share"] as const;
+const publicRoutes = ["/", "/demo", "/login", "/privacy", "/share"] as const;
 
 for (const route of publicRoutes) {
   test(`${route} has no automatically detectable accessibility violations`, async ({ page }) => {
@@ -30,7 +30,7 @@ for (const width of [375, 768, 1024, 1440]) {
     await page.getByRole("tab", { name: "지식맵", exact: true }).click();
     const brainCanvas = page.getByTestId("brain-canvas");
     await expect(brainCanvas).toBeVisible();
-    if (width <= 720) {
+    if (width <= 768) {
       await expect(page.getByRole("button", { name: "의미 목록" })).toHaveAttribute("aria-pressed", "true");
       await page.getByRole("button", { name: "그래프 보기" }).click();
     }

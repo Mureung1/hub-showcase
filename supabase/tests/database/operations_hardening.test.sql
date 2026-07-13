@@ -87,17 +87,17 @@ select ok(
   'authenticated clients cannot execute superseded mutation RPCs'
 );
 select ok(
-  has_function_privilege(
+  not has_function_privilege(
     'authenticated',
     'public.import_source_context(uuid,text,text,text,text,text,timestamptz,jsonb,jsonb,jsonb)',
     'EXECUTE'
   )
-  and has_function_privilege(
+  and not has_function_privilege(
     'authenticated',
     'public.create_analysis_run_annotation(uuid,text,text,text,text,text)',
     'EXECUTE'
   ),
-  'ownership-checking compatibility RPCs remain available for one release'
+  'authenticated compatibility RPCs are revoked after the app boundary cutover'
 );
 
 insert into auth.users(
@@ -359,9 +359,9 @@ select is(
 );
 select ok(
   public.app_consume_public_rate_limit(
-    'share:ip:hour', repeat('1', 64), 600, 3600
+    'share:ip:hour', repeat('1', 64), 60, 3600
   ),
-  'public limiter accepts the NAT-tolerant per-IP share tuple'
+  'public limiter accepts the strict per-IP share tuple'
 );
 select ok(
   public.app_consume_public_rate_limit(
@@ -371,7 +371,7 @@ select ok(
 );
 select throws_ok(
   $$ select public.app_consume_public_rate_limit(
-    'share:ip:hour', repeat('1', 64), 60, 3600
+    'share:ip:hour', repeat('1', 64), 600, 3600
   ) $$,
   'P0001', 'INVALID_RATE_LIMIT',
   'public limiter rejects a caller-weakened per-IP share tuple'

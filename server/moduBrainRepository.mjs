@@ -1,27 +1,49 @@
 import { ApiError } from "./apiErrors.mjs";
 
-const projectSelect = "id,owner_id,title,description,archived_at,created_at,updated_at";
+export const EXPECTED_DATABASE_MIGRATION_VERSION = "20260713093323";
+
+const REQUIRED_SERVICE_RPC_PATHS = [
+  "/rpc/app_import_source_context",
+  "/rpc/app_create_analysis_run_annotation",
+  "/rpc/app_purge_expired_project_data",
+];
+
+const projectSelect = "id,owner_id,title,description,retention_days,archived_at,created_at,updated_at";
 const sourceSelect =
   "id,project_id,kind,title,content,content_sha256,char_count,occurred_at,archived_at,created_at,updated_at,source_imports(id,provider,participants,segment_count,imported_at,metadata)";
 const sourceListSelect =
   "id,project_id,kind,title,char_count,occurred_at,archived_at,created_at,updated_at,source_imports(id,provider,segment_count,imported_at)";
+const runStepEventSelect =
+  "id,analysis_run_id,sequence,event_key,step_name,status,validation_outcome,code,duration_ms,source_count,input_characters,output_item_count,evidence_reference_count,created_at";
 const runSelect =
-  "id,project_id,created_by,idempotency_key,status,provider_mode,provider_model,schema_version,result_jsonb,error_code,error_message,latency_ms,input_tokens,output_tokens,created_at,started_at,completed_at,analysis_run_sources(source_record_id)";
+  `id,project_id,created_by,idempotency_key,status,provider_mode,provider_model,schema_version,result_jsonb,error_code,error_message,latency_ms,input_tokens,output_tokens,created_at,started_at,completed_at,analysis_run_sources(source_record_id),analysis_run_step_events(${runStepEventSelect})`;
 const runListSelect =
   "id,project_id,status,provider_mode,provider_model,schema_version,error_code,error_message,created_at,started_at,completed_at,analysis_run_sources(source_record_id)";
 const sourceSegmentSelect =
   "id,source_record_id,ordinal,speaker,text,occurred_at,external_id,source_url";
-const runStepEventSelect =
-  "id,analysis_run_id,sequence,event_key,step_name,status,validation_outcome,code,duration_ms,source_count,input_characters,output_item_count,evidence_reference_count,created_at";
 const runAnnotationSelect =
   "id,analysis_run_id,annotation_type,target_type,target_id,body,created_at";
-const shareSelect = "id,analysis_run_id,expires_at,revoked_at,created_at";
+const shareSelect = "id,analysis_run_id,disclosure_mode,include_project_title,expires_at,revoked_at,created_at";
 
 export function createModuBrainRepository(client) {
   return {
     async ready() {
       await client.request("projects?select=id&limit=1", { headers: { Range: "0-0" } });
-      return true;
+      const schema = await client.request("", {
+        headers: { Accept: "application/openapi+json" },
+      });
+      const paths = schema?.paths;
+      if (
+        !paths ||
+        REQUIRED_SERVICE_RPC_PATHS.some((path) => !Object.hasOwn(paths, path))
+      ) {
+        throw new ApiError(
+          503,
+          "SCHEMA_DRIFT",
+          "The database contract does not match the deployed application.",
+        );
+      }
+      return { migrationVersion: EXPECTED_DATABASE_MIGRATION_VERSION };
     },
 
     async listProjects({ archived = false } = {}) {
@@ -49,29 +71,6 @@ export function createModuBrainRepository(client) {
         page,
         sourceCursorFilter(page.cursor),
       );
-    },
-    async importSourceContext(projectId, values) {
-      const result = single(
-        await client.request("rpc/import_source_context", {
-          method: "POST",
-          body: {
-            p_project_id: projectId,
-            p_kind: values.kind,
-            p_title: values.title,
-            p_content: values.content,
-            p_provider: values.provider,
-            p_external_id: values.externalId || null,
-            p_occurred_at: values.occurredAt,
-            p_participants: values.participants || [],
-            p_metadata: values.metadata || {},
-            p_segments: values.segments || [],
-          },
-        }),
-      );
-      if (!result?.source) {
-        throw new ApiError(503, "DATABASE_UNAVAILABLE", "가져오기 결과를 저장하지 못했습니다.");
-      }
-      return result;
     },
     async getSource(sourceId) {
       return requireSingle(
@@ -146,33 +145,6 @@ export function createModuBrainRepository(client) {
         `analysis_run_annotations?analysis_run_id=eq.${encode(runId)}&select=${runAnnotationSelect}&order=created_at.desc`,
       );
     },
-    async createRunAnnotation(runId, values) {
-      const result = single(
-        await client.request("rpc/create_analysis_run_annotation", {
-          method: "POST",
-          body: {
-            p_analysis_run_id: runId,
-            p_idempotency_key: values.idempotencyKey,
-            p_annotation_type: values.annotationType,
-            p_target_type: values.targetType,
-            p_target_id: values.targetId,
-            p_body: values.body,
-          },
-        }),
-      );
-      if (!result?.annotation) {
-        throw new ApiError(
-          503,
-          "DATABASE_UNAVAILABLE",
-          "The annotation could not be persisted.",
-        );
-      }
-      return {
-        reused: result.outcome === "reused",
-        annotation: result.annotation,
-      };
-    },
-
     async listShareLinks(runId) {
       await this.getRun(runId);
       return client.request(
@@ -249,6 +221,34 @@ export function createModuBrainServiceRepository(client) {
         }),
       );
     },
+    async importSourceContext(userId, projectId, values) {
+      const result = single(
+        await client.request("rpc/app_import_source_context", {
+          method: "POST",
+          body: {
+            p_user_id: userId,
+            p_project_id: projectId,
+            p_kind: values.kind,
+            p_title: values.title,
+            p_content: values.content,
+            p_provider: values.provider,
+            p_external_id: values.externalId || null,
+            p_occurred_at: values.occurredAt,
+            p_participants: values.participants || [],
+            p_metadata: values.metadata || {},
+            p_segments: values.segments || [],
+          },
+        }),
+      );
+      if (!result?.source) {
+        throw new ApiError(
+          503,
+          "DATABASE_UNAVAILABLE",
+          "The imported source could not be persisted.",
+        );
+      }
+      return result;
+    },
     async updateSource(userId, sourceId, values) {
       return requireSingle(
         await client.request("rpc/app_update_source_record", {
@@ -317,6 +317,33 @@ export function createModuBrainServiceRepository(client) {
         }),
       );
     },
+    async createRunAnnotation(runId, userId, values) {
+      const result = single(
+        await client.request("rpc/app_create_analysis_run_annotation", {
+          method: "POST",
+          body: {
+            p_user_id: userId,
+            p_analysis_run_id: runId,
+            p_idempotency_key: values.idempotencyKey,
+            p_annotation_type: values.annotationType,
+            p_target_type: values.targetType,
+            p_target_id: values.targetId,
+            p_body: values.body,
+          },
+        }),
+      );
+      if (!result?.annotation) {
+        throw new ApiError(
+          503,
+          "DATABASE_UNAVAILABLE",
+          "The annotation could not be persisted.",
+        );
+      }
+      return {
+        reused: result.outcome === "reused",
+        annotation: result.annotation,
+      };
+    },
     async completeRun(runId, userId, values) {
       return requireSingle(
         await client.request("rpc/app_complete_analysis_run", {
@@ -346,7 +373,7 @@ export function createModuBrainServiceRepository(client) {
         }),
       );
     },
-    async createShareLink(runId, userId, tokenHash, expiresAt) {
+    async createShareLink(runId, userId, tokenHash, expiresAt, options = {}) {
       return requireSingle(
         await client.request("rpc/app_create_share_link", {
           method: "POST",
@@ -355,6 +382,8 @@ export function createModuBrainServiceRepository(client) {
             p_run_id: runId,
             p_token_hash: tokenHash,
             p_expires_at: expiresAt,
+            p_disclosure_mode: options.disclosureMode || "summary",
+            p_include_project_title: options.includeProjectTitle === true,
           },
         }),
       );

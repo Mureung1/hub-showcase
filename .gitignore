@@ -13,6 +13,10 @@ dev-server.log
 coverage/
 playwright-report/
 test-results/
+graphify-out/
+docs/HANDOFF.md
+.verify-font-build/
+__pycache__/
 supabase/.temp/
 .backups/
 .load-test/

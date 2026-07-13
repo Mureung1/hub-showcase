@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import AnalysisPlaceholder from "../components/AnalysisPlaceholder";
 import ContextImportPanel, { type ContextImportInput } from "../components/ContextImportPanel";
 import DecisionList from "../components/DecisionList";
+import EvidenceDrawer from "../components/EvidenceDrawer";
 import KeyTerms from "../components/KeyTerms";
 import KnowledgeMap from "../components/KnowledgeMap";
 import OnboardingSummary from "../components/OnboardingSummary";
@@ -16,7 +17,7 @@ import {
   analyzeImportedContext,
 } from "../services/analyzeContext";
 import { trackProductEvent } from "../services/productTelemetry";
-import type { ContextAnalysisResult } from "../types/context";
+import type { ContextAnalysisResult, EvidenceRef } from "../types/context";
 
 type ResultTab = "overview" | "map" | "onboarding";
 type AnalysisState =
@@ -36,6 +37,7 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
     initialDemo ? { status: "sample", result: sampleAnalysis } : { status: "idle" },
   );
   const [activeTab, setActiveTab] = useState<ResultTab>("overview");
+  const [evidence, setEvidence] = useState<EvidenceRef[] | null>(null);
   const requestVersion = useRef(0);
   const activeAbortController = useRef<AbortController | null>(null);
   const previousDemoRoute = useRef(initialDemo);
@@ -79,6 +81,7 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
     requestVersion.current += 1;
     setAnalysisState({ status: "idle" });
     setActiveTab("overview");
+    setEvidence(null);
   };
 
   const loadSample = (entryPoint: "hero" | "input" = "input") => {
@@ -120,6 +123,7 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
     const version = ++requestVersion.current;
     setAnalysisState({ status: "loading" });
     setActiveTab("overview");
+    setEvidence(null);
     trackProductEvent("analysis_started", {
       mode: "public-import",
       inputCharacters: input.text.length,
@@ -176,7 +180,7 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
       {initialDemo && (
         <section className="public-demo-banner" aria-labelledby="public-demo-title">
           <div>
-            <p className="section-kicker">Public demo</p>
+            <p className="section-kicker">공개 데모</p>
             <h1 id="public-demo-title">로그인 없이 확인하는 근거 기반 맥락 분석</h1>
             <p>사전 구성된 기록과 결과입니다. 이 화면에서 실행한 분석은 계정이나 데이터베이스에 저장되지 않습니다.</p>
           </div>
@@ -248,7 +252,7 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
       )}
 
       <section className="section-intro" id="prototype">
-        <p className="section-kicker">Open workspace</p>
+        <p className="section-kicker">빠른 분석</p>
         <h2>로그인 없이 붙여넣고, 파일을 열고, 바로 분석하세요</h2>
         <p>공개 체험의 입력과 결과는 저장되지 않습니다. 프로젝트 보관과 읽기 전용 공유가 필요할 때만 로그인하면 됩니다.</p>
       </section>
@@ -276,7 +280,7 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
       <section className="result-workspace" aria-labelledby="landing-results-heading">
         <div className="result-header">
           <div>
-            <p className="section-kicker">Result view</p>
+            <p className="section-kicker">분석 결과</p>
             <h2 id="landing-results-heading">분석 결과</h2>
             <span className={`demo-badge ${analysisState.status}`}>{badge}</span>
           </div>
@@ -308,13 +312,32 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
             surface="workspace"
           />
         ) : activeTab === "overview" ? (
-          <div className="results-grid overview-grid" id="landing-panel-overview" role="tabpanel" aria-labelledby="landing-tab-overview">
-            <PerspectiveTable participants={analysisResult.participants} />
-            <ParticipantAgentPanel synthesis={analysisResult.participantAgents} />
-            <QuestionList questions={analysisResult.questions} />
-            <DecisionList decisions={analysisResult.decisions} />
-            <SummaryPanel result={analysisResult} />
-            <KeyTerms terms={analysisResult.keyTerms} />
+          <div className="results-grid overview-grid decision-reading-layout" id="landing-panel-overview" role="tabpanel" aria-labelledby="landing-tab-overview">
+            <DecisionList
+              decisions={analysisResult.decisions}
+              onOpenEvidence={setEvidence}
+              presentation="featured"
+            />
+            <div className="decision-support-grid">
+              <QuestionList
+                questions={analysisResult.questions}
+                onOpenEvidence={setEvidence}
+                presentation="brief"
+              />
+              <PerspectiveTable
+                participants={analysisResult.participants}
+                onOpenEvidence={setEvidence}
+                presentation="summary"
+              />
+            </div>
+            <details className="analysis-secondary-details">
+              <summary><span><strong>확장 분석 보기</strong><small>관점 종합, 요약과 핵심어</small></span></summary>
+              <div className="analysis-secondary-content">
+                <ParticipantAgentPanel synthesis={analysisResult.participantAgents} />
+                <SummaryPanel result={analysisResult} />
+                <KeyTerms terms={analysisResult.keyTerms} />
+              </div>
+            </details>
           </div>
         ) : activeTab === "map" ? (
           <div className="results-grid single-grid" id="landing-panel-map" role="tabpanel" aria-labelledby="landing-tab-map">
@@ -326,6 +349,7 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
           </div>
         )}
       </section>
+      <EvidenceDrawer evidence={evidence} onClose={() => setEvidence(null)} />
     </main>
   );
 }
@@ -333,38 +357,28 @@ function LandingPage({ navigate, initialDemo = false }: { navigate: Navigate; in
 function ContextPriorityPreview({ result }: { result: ContextAnalysisResult }) {
   const signals = [
     {
-      label: "관점 차이",
-      count: result.participants.length,
-      detail: result.participants[0]?.concern ?? "구분된 참여자 관점이 없습니다.",
+      label: "확인된 결정",
+      count: result.decisions.length,
     },
     {
       label: "미결 질문",
       count: result.questions.length,
-      detail: result.questions[0]?.question ?? "명시적으로 남은 질문이 없습니다.",
     },
     {
-      label: "결정 배경",
-      count: result.decisions.length,
-      detail: result.decisions[0]?.reason ?? "확인된 결정 배경이 없습니다.",
+      label: "참여자 관점",
+      count: result.participants.length,
     },
   ];
 
   return (
-    <section className="context-priority-preview" aria-labelledby="context-priority-title">
-      <div className="panel-heading compact">
-        <p className="section-kicker">Context first</p>
-        <h2 id="context-priority-title">요약 전에 확인할 맥락</h2>
-        <p>팀의 판단이 갈리는 지점과 다음 대화를 먼저 보여줍니다.</p>
-      </div>
-      <ol className="priority-preview-list">
-        {signals.map((signal, index) => (
-          <li key={signal.label}>
-            <span>{String(index + 1).padStart(2, "0")}</span>
-            <div><strong>{signal.label}</strong><p>{signal.detail}</p></div>
-            <b>{signal.count}</b>
-          </li>
+    <section className="analysis-context-strip" aria-labelledby="context-priority-title">
+      <h2 id="context-priority-title" className="visually-hidden">요약 전에 확인할 맥락</h2>
+      <span><strong>분석</strong> {result.provider.name}</span>
+      <dl>
+        {signals.map((signal) => (
+          <div key={signal.label}><dt>{signal.label}</dt><dd>{signal.count}</dd></div>
         ))}
-      </ol>
+      </dl>
     </section>
   );
 }

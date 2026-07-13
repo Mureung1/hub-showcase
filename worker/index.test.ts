@@ -36,6 +36,15 @@ describe("Sites Worker asset routing", () => {
     expect(response.headers.get("content-security-policy")).toContain(
       "https://demo.supabase.co",
     );
+    expect(response.headers.get("content-security-policy")).toContain("style-src 'self'");
+    expect(response.headers.get("content-security-policy")).toContain(
+      "frame-src https://challenges.cloudflare.com",
+    );
+    expect(response.headers.get("content-security-policy")).not.toContain("unsafe-inline");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
+    expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(response.headers.get("permissions-policy")).toContain("browsing-topics=()");
     expect(response.headers.get("cache-control")).toBe(
       "public, max-age=0, must-revalidate",
     );
@@ -68,7 +77,13 @@ describe("Sites Worker asset routing", () => {
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     const response = await worker.fetch(
       new Request("https://modu-brain.example/api/health/live"),
-      { ASSETS: { fetch: vi.fn() }, IP_HASH_SECRET: "telemetry-secret" },
+      {
+        ASSETS: { fetch: vi.fn() },
+        IP_HASH_SECRET: "telemetry-secret",
+        MODU_BRAIN_BUILD_COMMIT: "abcdef1234567",
+        MODU_BRAIN_BUILD_ID: "worker-test-build",
+        MODU_BRAIN_BUILT_AT: "2026-07-13T00:00:00.000Z",
+      },
     );
 
     expect(response.status).toBe(200);
@@ -76,6 +91,15 @@ describe("Sites Worker asset routing", () => {
     expect(response.headers.get("content-security-policy")).toContain("default-src 'none'");
     expect(response.headers.get("cross-origin-resource-policy")).toBe("same-origin");
     expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/i);
+    const payload = await response.json();
+    expect(payload).toMatchObject({
+      data: {
+        status: "ok",
+        commit: "abcdef1234567",
+        buildId: "worker-test-build",
+        builtAt: "2026-07-13T00:00:00.000Z",
+      },
+    });
   });
 
   it("records validated product events without logging PII", async () => {
@@ -152,6 +176,14 @@ describe("Sites Worker asset routing", () => {
   });
 
   it("provides safe account export and auth deletion operations", async () => {
+    const recentAccessToken = [
+      Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url"),
+      Buffer.from(JSON.stringify({
+        session_id: "worker-session",
+        amr: [{ method: "otp", timestamp: Math.floor(Date.now() / 1000) }],
+      })).toString("base64url"),
+      "test-signature",
+    ].join(".");
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     const fetchRuntime = vi.fn(async (url: string) => {
       if (url.endsWith("/auth/v1/user")) {
@@ -169,6 +201,9 @@ describe("Sites Worker asset routing", () => {
       if (url.endsWith("/auth/v1/admin/users/worker-user")) {
         return new Response(null, { status: 200 });
       }
+      if (url.endsWith("/auth/v1/logout?scope=global")) {
+        return new Response(null, { status: 204 });
+      }
       return new Response(null, { status: 404 });
     });
     vi.stubGlobal("fetch", fetchRuntime);
@@ -182,7 +217,7 @@ describe("Sites Worker asset routing", () => {
 
     const exported = await worker.fetch(
       new Request("https://modu-brain.example/api/v1/account/export", {
-        headers: { Authorization: "Bearer opaque-access-token" },
+        headers: { Authorization: `Bearer ${recentAccessToken}` },
       }),
       env,
     );
@@ -197,7 +232,7 @@ describe("Sites Worker asset routing", () => {
       new Request("https://modu-brain.example/api/v1/account", {
         method: "DELETE",
         headers: {
-          Authorization: "Bearer opaque-access-token",
+          Authorization: `Bearer ${recentAccessToken}`,
           "X-Confirm-Account-Delete": "delete my account",
         },
       }),
@@ -211,9 +246,21 @@ describe("Sites Worker asset routing", () => {
 
   it("caches readiness probes and reports dependency state", async () => {
     vi.spyOn(console, "info").mockImplementation(() => undefined);
-    const fetchDatabase = vi.fn().mockResolvedValue(
-      new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } }),
-    );
+    const fetchDatabase = vi.fn(async (url: string) => {
+      const payload = url.endsWith("/rest/v1/")
+        ? {
+            paths: {
+              "/rpc/app_import_source_context": {},
+              "/rpc/app_create_analysis_run_annotation": {},
+              "/rpc/app_purge_expired_project_data": {},
+            },
+          }
+        : [];
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
     vi.stubGlobal("fetch", fetchDatabase);
     const env = {
       ASSETS: { fetch: vi.fn() },
@@ -238,12 +285,13 @@ describe("Sites Worker asset routing", () => {
       data: {
         status: "ready",
         dependencies: { database: { status: "ready", cached: false } },
+        migrationVersion: "20260713093323",
       },
     });
     await expect(second.json()).resolves.toMatchObject({
       data: { dependencies: { database: { cached: true } } },
     });
-    expect(fetchDatabase).toHaveBeenCalledOnce();
+    expect(fetchDatabase).toHaveBeenCalledTimes(2);
   });
 
   it("runs bounded maintenance through waitUntil only once per interval", async () => {

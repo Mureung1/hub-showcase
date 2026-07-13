@@ -8,11 +8,8 @@ Modu Brain은 회의록, 리서치, 피드백에 흩어진 결정 배경과 참�
 
 ```mermaid
 flowchart LR
-    B["브라우저"] --> C["Sites · React + Worker API"]
-    B --> R["Render · React + Node API"]
-    C --> S["Supabase Auth + PostgreSQL + RLS"]
+    B["브라우저"] --> R["Render · React + Node API"]
     R --> S
-    C --> O["OpenAI Responses API · 선택형"]
     R --> O
     B --> L["읽기 전용 공유 화면"]
 ```
@@ -20,9 +17,10 @@ flowchart LR
 - `/`: 로그인 없이 붙여넣기·카카오톡 TXT·Teams JSON·Notion JSON을 정규화하고 분석하는 비영속 워크스페이스
 - `/demo`: 사전 구성된 한국어 기록과 분석 결과를 바로 여는 공개 데모
 - `/login`: Supabase 이메일 Magic Link 로그인
+- `/privacy`: 수집 정보, AI 전송, 보관·삭제와 비공개 보안 제보 안내
 - `/projects`: 사용자 소유 프로젝트 목록과 생성
 - `/projects/:id`: 외부 맥락 가져오기, 기록, 분석 이력, 검색·필터·근거 탐색이 가능한 브레인 캔버스, 백링크, 온보딩, 공유
-- `/share#token=…`: 원문을 제외한 읽기 전용 분석 결과
+- `/share#token=…`: 기본 요약 또는 명시적으로 확인한 근거 공개 범위의 읽기 전용 분석 결과
 - `/api/v1/**`: HttpOnly 세션, 사용자 범위 RLS 읽기와 service-only 소유권 검증 쓰기가 적용된 영속 API
 - `/api/context-analysis`: 한 릴리스 동안 유지하는 비영속 호환 API
 - `/api/context-analysis/import`: 계정 없이 내보낸 기록을 정규화한 뒤 로컬 분석하는 same-origin 비영속 API
@@ -49,7 +47,13 @@ supabase db reset
 supabase test db
 ```
 
-`supabase status -o env`의 `API_URL`, `ANON_KEY`, `SERVICE_ROLE_KEY`는 로컬 CLI용 legacy 변수에 매핑할 수 있습니다. 호스팅 프로젝트에서는 새 `publishable`/`secret` 키를 우선 사용합니다. `npm run build`는 Sites용 Worker와 SPA를 `dist/server`, `dist/client`에 만들며, Node 서버는 같은 SPA와 API를 Render 및 로컬에서 제공합니다.
+Windows에서 local-only 정책과 인증 FE–BE–DB 새로고침 흐름을 한 번에 검증하려면 Docker Desktop 엔진을 실행한 뒤 다음 스크립트를 사용합니다. 이 스크립트는 원격 login·link·push를 수행하지 않고 Supabase CLI `2.109.1`과 프로세스 환경변수만 사용합니다.
+
+```powershell
+.\scripts\run-local-auth-e2e.ps1
+```
+
+`supabase status -o env`의 `API_URL`, `ANON_KEY`, `SERVICE_ROLE_KEY`는 로컬 CLI용 legacy 변수에 매핑할 수 있습니다. 호스팅 프로젝트에서는 새 `publishable`/`secret` 키를 우선 사용합니다. `npm run build`는 SPA와 호환 Worker 번들을 만들며, 정식 서비스는 Node 서버가 SPA와 API를 함께 제공하는 Render 단일 주소입니다.
 
 ```bash
 npm run build
@@ -75,6 +79,9 @@ npm run start
 | `OPENAI_API_KEY` | 서버 전용 | 로그인 사용자가 명시적으로 OpenAI 분석을 선택할 때만 필요 |
 | `SAFETY_IDENTIFIER_SECRET` | 서버 전용 | 사용자 UUID를 비식별 `safety_identifier`로 해시할 때 사용하는 salt |
 | `IP_HASH_SECRET` | 서버 전용 | rate limit용 IP를 복원하기 어려운 HMAC으로 변환하는 별도 비밀키 |
+| `MODU_BRAIN_CANONICAL_ORIGIN` | 서버 | Magic Link redirect와 same-origin 경계에 사용하는 정식 Render origin |
+| `MODU_BRAIN_CAPTCHA_REQUIRED` | 서버 | 운영에서 `true`; CAPTCHA 토큰 누락 요청 차단 |
+| `VITE_TURNSTILE_SITE_KEY` | 공개 번들 | Cloudflare Turnstile 공개 site key. secret은 Supabase Auth에만 저장 |
 | `HOST` | 서버 | 로컬 기본 `127.0.0.1`, Render는 `0.0.0.0` |
 | `PORT` | 서버 | 로컬 기본 `4173`, Render가 배포 시 제공 |
 
@@ -94,7 +101,7 @@ SQL migration은 `supabase/migrations/`가 유일한 스키마 원본입니다. 
 - `share_links`: SHA-256으로 해시된 만료·폐기 가능 토큰
 - `rate_limit_buckets`: 사용자·IP별 AI/공유 조회 제한
 
-모든 앱 테이블은 RLS를 사용합니다. Magic Link token은 same-origin BFF가 즉시 HttpOnly 쿠키로 교환하며 Web Storage에 보관하지 않습니다. 읽기는 검증된 사용자 JWT와 RLS, 쓰기는 service-only `app_*` RPC의 사용자 ID·소유권 재검증을 함께 사용합니다. legacy Bearer 인증은 한 릴리스 동안만 호환하며, 다른 사용자 리소스는 존재 여부가 노출되지 않도록 `404`로 응답합니다. 공개 공유 API만 토큰 해시와 만료·폐기 상태를 서버에서 검증한 뒤 원문을 제외한 결과를 반환합니다.
+모든 앱 테이블은 RLS를 사용합니다. Magic Link 요청도 same-origin BFF가 origin·Turnstile·IP/이메일 HMAC 제한을 확인한 뒤 Supabase로 전달하고, 로그인 token은 즉시 HttpOnly 쿠키로 교환해 Web Storage에 보관하지 않습니다. 읽기는 검증된 사용자 JWT와 RLS, 쓰기는 service-only `app_*` RPC의 사용자 ID·소유권 재검증을 함께 사용합니다. legacy Bearer 인증은 한 릴리스 동안만 호환하며, 다른 사용자 리소스는 존재 여부가 노출되지 않도록 `404`로 응답합니다. 공개 공유 API만 토큰 해시와 만료·폐기 상태를 서버에서 검증한 뒤 허용된 공개 범위만 반환합니다.
 
 ## 분석 계약
 
@@ -125,6 +132,7 @@ GET|POST       /api/v1/analysis-runs/:runId/annotations
 GET|POST       /api/v1/analysis-runs/:runId/share-links
 DELETE         /api/v1/share-links/:shareLinkId
 POST           /api/v1/shared/resolve
+POST           /api/v1/auth/magic-link
 POST           /api/context-analysis/import
 GET            /api/v1/capabilities
 GET            /api/health/live
@@ -151,23 +159,15 @@ npm run test:e2e
 - Playwright: 공개 가져오기·모바일 메뉴·리플로우와 `로그인 → 프로젝트 → 외부 맥락 가져오기 → 분석 → 근거·백링크 → 이력 → 공유 → 새로고침`
 - GitHub Actions: lint, typecheck, coverage, build, production audit, secret scan, 공개 스모크, 내부 PR의 로컬 Supabase/E2E
 
-## Sites 배포
+## Sites 전환 종료
 
-이 저장소는 `.openai/hosting.json`의 기존 Sites 프로젝트 ID를 재사용합니다. Supabase가 인증·PostgreSQL·RLS 영속 계층이므로 Sites의 D1/R2는 사용하지 않습니다.
-
-1. `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`로 `npm run build`를 실행합니다.
-2. `dist/server/index.js`, `dist/client/index.html`, `dist/.openai/hosting.json`이 생성됐는지 확인합니다.
-3. Sites 런타임에는 `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, 분석 provider 변수와 `SAFETY_IDENTIFIER_SECRET`을 설정합니다.
-4. 정확히 커밋·푸시한 소스와 그 커밋에서 만든 archive로 버전을 저장하고 배포합니다.
-5. 배포 origin의 `/login`을 Supabase Auth redirect allowlist에 추가한 뒤 readiness와 Magic Link 흐름을 확인합니다.
-
-`npm run preview`는 Sites와 동일한 workerd 경로를 로컬에서 실행합니다. 비밀키는 Worker 런타임 환경에만 두고 `VITE_*` 변수로 전달하지 않습니다.
+기존 `*.chatgpt.site` 배포는 Render 검증 뒤 7일 동안 공식 주소 안내만 표시하는 전환용입니다. 그 뒤 Sites 런타임 비밀과 Supabase redirect 허용 항목을 제거하고 배포를 중지합니다. 새 기능·인증·데이터 migration의 운영 기준은 Sites가 아니라 아래 Render 서비스입니다.
 
 ## Render 배포
 
 `render.yaml`은 단일 Node Web Service를 정의합니다. Render에서 Blueprint를 연결하기 전에 다음을 완료합니다.
 
-1. 별도 Supabase 데모 프로젝트를 만들고 migration을 적용합니다.
+1. Supabase 데모 프로젝트의 migration ledger가 저장소의 최신 10개와 일치하는지 확인합니다.
 2. Auth Site URL을 Render origin으로 두고 `https://<service>.onrender.com/login`을 redirect allowlist에 허용합니다. 로컬 검증에는 `http://127.0.0.1:4173/login`도 추가합니다.
 3. `render.yaml`에서 `sync: false`인 Supabase 값을 Dashboard에 입력합니다. OpenAI를 켤 때만 별도로 API key를 추가합니다.
 4. `VITE_SUPABASE_*`와 서버용 Supabase URL·anon key가 같은 프로젝트를 가리키는지 확인합니다.
@@ -177,15 +177,15 @@ Render는 `npm ci --include=dev && npm run build`, `npm start`, `HOST=0.0.0.0`�
 
 ## 보안·개인정보 운영 기준
 
-- 원문과 분석 스냅숏은 사용자가 명시적으로 저장하며 프로젝트 영구 삭제 시 함께 제거합니다.
+- 원문과 분석 스냅숏은 기본 90일, 선택적으로 30일 또는 삭제 전까지 보관하며 만료·영구 삭제 시 관련 실행과 공유 링크도 함께 제거합니다.
 - 공유 토큰은 URL query나 서버 로그가 아닌 `/share#token=…` fragment로 전달하고 DB에는 해시만 저장합니다.
-- 공유 링크 기본 만료는 7일, 최대 30일이며 즉시 폐기할 수 있습니다.
-- 공유 결과에는 원문 전체, 사용자 이메일, 내부 provider 오류를 포함하지 않습니다.
+- 요약 공유는 기본 7일·최대 30일이며 참여자 이름·원문 제목·정확한 인용문·이메일·provider를 제외합니다.
+- 근거 공유는 최근 인증과 민감정보 확인이 필요하고 기본 24시간·최대 7일이며 즉시 폐기할 수 있습니다.
 - AI 실행은 사용자당 동시 1건·시간당 10건·일당 30건, 공유 조회는 IP당 시간당 60건으로 제한합니다.
 - JSON 본문은 256KB, 영속 분석 입력 합계는 100,000자 이하로 제한합니다. 공개 가져오기는 IP당 시간당 20회, 정규화 후 20,000자까지 허용합니다.
 - 비밀정보·JWT·원문은 애플리케이션 로그에 기록하지 않습니다.
 - 단계 이벤트에는 원문·prompt·provider 응답·hidden reasoning을 저장하지 않으며 annotation도 모델 입력으로 자동 사용하지 않습니다.
-- 공개 전 Supabase RLS, Auth redirect allowlist, Sites·Render secrets, OpenAI 모델 권한을 다시 확인합니다.
+- 공개 전 Supabase RLS, Auth redirect allowlist, Render secrets, OpenAI 모델 권한을 다시 확인합니다.
 
 ## 현재 제외 범위
 
@@ -196,10 +196,13 @@ Render는 `npm ci --include=dev && npm run build`, `npm start`, `HOST=0.0.0.0`�
 - [PRD](docs/prd.md)
 - [TRD](docs/trd.md)
 - [에이전트 워크플로 계약](docs/agent-workflow-contract.md)
+- [개발 기획·검증 Agent](agents/README.md)
+- [2주차 결정 이유 핵심 시나리오](docs/week-2-core-scenario.md)
 - [프롬프트 설계](docs/prompt-design.md)
 - [Figma 개발 핸드오프](docs/figma-handoff.md)
 - [KoPubWorld 돋움 웹 임베딩 안내](docs/kopub-font-embedding.md)
 - [PR 벤치마크](docs/benchmark-prs.md)
 - [PR 설명 초안](docs/pr-description-draft.md)
 - [무료 운영·백업·장애 대응 런북](docs/operations/free-tier-runbook.md)
+- [age 암호화 백업·Credential Manager·복원 런북](docs/encrypted-backup-runbook.md)
 - [Supabase migration ledger 정합화 절차](docs/operations/migration-ledger-reconciliation.md)

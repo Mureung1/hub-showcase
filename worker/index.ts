@@ -36,6 +36,15 @@ type SitesEnvironment = {
   IP_HASH_SECRET?: string;
   RATE_LIMIT_IDENTIFIER_SECRET?: string;
   MODU_BRAIN_MAINTENANCE_ENABLED?: string;
+  MODU_BRAIN_BUILD_COMMIT?: string;
+  MODU_BRAIN_BUILD_ID?: string;
+  MODU_BRAIN_BUILT_AT?: string;
+};
+
+type BuildMetadata = {
+  commit?: string | null;
+  buildId?: string | null;
+  builtAt?: string | null;
 };
 
 type ExecutionContextLike = {
@@ -50,6 +59,10 @@ type AccountOperationContext = {
 type RuntimeResponse = Response & { moduBrainErrorCode?: string | null };
 
 const runtimeByEnvironment = new WeakMap<object, ReturnType<typeof createWorkerRuntime>>();
+const embeddedBuildMetadata =
+  (globalThis as typeof globalThis & {
+    __MODU_BRAIN_BUILD_METADATA__?: BuildMetadata;
+  }).__MODU_BRAIN_BUILD_METADATA__ || {};
 const WORKER_MAINTENANCE_INTERVAL_MS = 6 * 60 * 60 * 1_000;
 let workerMaintenanceLastStartedAt = 0;
 let workerMaintenancePromise: Promise<unknown> | null = null;
@@ -189,7 +202,7 @@ function createWorkerRuntime(env: SitesEnvironment) {
   const readinessProbe = createCachedReadinessProbe(
     async () => {
       const repository = createModuBrainRepository(gateway.asServiceRole());
-      await repository.ready();
+      return repository.ready();
     },
     { successTtlMs: 15_000, failureTtlMs: 3_000 },
   );
@@ -212,6 +225,9 @@ function createWorkerRuntime(env: SitesEnvironment) {
   };
   const handler = createApiV1Handler({
     gateway,
+    buildCommit: env.MODU_BRAIN_BUILD_COMMIT || embeddedBuildMetadata.commit,
+    buildId: env.MODU_BRAIN_BUILD_ID || embeddedBuildMetadata.buildId,
+    builtAt: env.MODU_BRAIN_BUILT_AT || embeddedBuildMetadata.builtAt,
     openAIEnabled:
       String(env.MODU_BRAIN_OPENAI_ENABLED || "").toLowerCase() === "true" &&
       Boolean(env.OPENAI_API_KEY) &&
@@ -310,6 +326,7 @@ async function handleWorkerReadiness(
     checkedAt: string;
     latencyMs: number;
     cached: boolean;
+    migrationVersion?: string;
   }>,
 ) {
   setApiHeaders(res);
@@ -337,6 +354,7 @@ async function handleWorkerReadiness(
       data: {
         status: ready ? "ready" : "not_ready",
         dependencies: { database },
+        migrationVersion: database.migrationVersion ?? null,
       },
     }),
   );
@@ -371,7 +389,8 @@ function createWorkerErrorResponse(
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
         "Referrer-Policy": "no-referrer",
-        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        "Permissions-Policy":
+          "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
         "Cross-Origin-Resource-Policy": "same-origin",
       },
     },
@@ -432,7 +451,10 @@ function secureAssetResponse(
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("X-Frame-Options", "DENY");
   headers.set("Referrer-Policy", "no-referrer");
-  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
+  );
   headers.set("Cross-Origin-Resource-Policy", "same-origin");
   const pathname = new URL(request.url).pathname;
   if (response.status >= 400) {
@@ -459,7 +481,7 @@ function secureAssetResponse(
   }
   headers.set(
     "Content-Security-Policy",
-    `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ${connectSource}; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`,
+    `default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src ${connectSource} https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; manifest-src 'self'`,
   );
 
   return new Response(response.body, {

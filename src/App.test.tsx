@@ -230,7 +230,11 @@ describe("application routes", () => {
     await user.type(screen.getByTestId("login-email"), "team@example.com");
     await user.click(screen.getByTestId("login-submit"));
 
-    expect(sendMagicLink).toHaveBeenCalledWith("team@example.com", `${window.location.origin}/login`);
+    expect(sendMagicLink).toHaveBeenCalledWith(
+      "team@example.com",
+      `${window.location.origin}/login`,
+      undefined,
+    );
     expect(await screen.findByText("로그인 링크를 보냈습니다")).toBeInTheDocument();
   });
 
@@ -249,7 +253,7 @@ describe("application routes", () => {
     window.history.replaceState(null, "", "/projects");
     const session = signedInSession();
     const api = emptyApi();
-    vi.mocked(api.listProjects).mockResolvedValue([{ id: "p1", title: "공모전", description: "시연 프로젝트", archivedAt: null, createdAt: "2026-07-10T00:00:00Z", updatedAt: "2026-07-11T00:00:00Z", sourceCount: 3, analysisCount: 1 }]);
+    vi.mocked(api.listProjects).mockResolvedValue([{ id: "p1", title: "공모전", description: "시연 프로젝트", retentionDays: 90, archivedAt: null, createdAt: "2026-07-10T00:00:00Z", updatedAt: "2026-07-11T00:00:00Z", sourceCount: 3, analysisCount: 1 }]);
 
     render(<App auth={anonymousAuth({ session })} api={api} />);
 

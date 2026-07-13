@@ -7,24 +7,36 @@ import { summarizeEvidenceCoverage } from "./evidenceCoverage";
 type QuestionListProps = {
   questions: QuestionItem[];
   onOpenEvidence?: (evidence: EvidenceRef[]) => void;
+  presentation?: "cards" | "brief";
 };
 
-function QuestionList({ questions, onOpenEvidence }: QuestionListProps) {
+function QuestionList({ questions, onOpenEvidence, presentation = "cards" }: QuestionListProps) {
   const coverage = summarizeEvidenceCoverage(questions);
 
   return (
-    <section className="result-panel context-sequence-panel question-panel" aria-labelledby="question-title">
-      <ContextSectionHeader
-        step="02"
-        kicker="Open questions"
-        title="미결 질문"
-        titleId="question-title"
-        intro="다음 대화에서 답을 얻어야 프로젝트가 앞으로 움직이는 질문입니다."
-        aside={<EvidenceCoverageBadge {...coverage} />}
-      />
+    <section
+      className={`result-panel context-sequence-panel question-panel${presentation === "brief" ? " ledger-section" : ""}`}
+      aria-label={presentation === "brief" ? "미결 질문" : undefined}
+      aria-labelledby={presentation === "brief" ? undefined : "question-title"}
+    >
+      {presentation === "brief" ? (
+        <header className="ledger-section-heading">
+          <div><p className="section-kicker">다음 대화</p><h2>미해결 질문</h2></div>
+          <EvidenceCoverageBadge {...coverage} />
+        </header>
+      ) : (
+        <ContextSectionHeader
+          step="03"
+          kicker="Open questions"
+          title="미결 질문"
+          titleId="question-title"
+          intro="다음 대화에서 답을 얻어야 프로젝트가 앞으로 움직이는 질문입니다."
+          aside={<EvidenceCoverageBadge {...coverage} />}
+        />
+      )}
 
       {questions.length > 0 ? (
-        <ol className="question-list">
+        <ol className={presentation === "brief" ? "question-brief-list" : "question-list"}>
           {questions.map((question, index) => (
             <li key={question.id ?? question.question}>
               <span className="context-item-index" aria-hidden="true">Q{index + 1}</span>

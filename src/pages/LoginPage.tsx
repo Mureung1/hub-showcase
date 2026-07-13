@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import TurnstileWidget from "../components/TurnstileWidget";
 import { AuthRequestError, type AuthService } from "../services/auth";
 
 type LoginPageProps = {
@@ -12,7 +13,12 @@ function LoginPage({ auth, onGuestContinue }: LoginPageProps) {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const configured = auth.isConfigured();
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() ?? "";
+  const captchaRequired = Boolean(turnstileSiteKey);
+  const handleCaptchaToken = useCallback((token: string | null) => setCaptchaToken(token), []);
 
   useEffect(() => {
     if (cooldownSeconds <= 0) return undefined;
@@ -28,7 +34,11 @@ function LoginPage({ auth, onGuestContinue }: LoginPageProps) {
     setPending(true);
     setError(null);
     try {
-      const result = await auth.sendMagicLink(targetEmail, `${window.location.origin}/login`);
+      const result = await auth.sendMagicLink(
+        targetEmail,
+        `${window.location.origin}/login`,
+        captchaToken ?? undefined,
+      );
       setSentTo(result.email);
       setCooldownSeconds(60);
     } catch (requestError) {
@@ -40,6 +50,8 @@ function LoginPage({ auth, onGuestContinue }: LoginPageProps) {
         setError(requestError instanceof Error ? requestError.message : "로그인 링크를 보내지 못했습니다.");
       }
     } finally {
+      setCaptchaToken(null);
+      setCaptchaResetKey((current) => current + 1);
       setPending(false);
     }
   };
@@ -104,11 +116,22 @@ function LoginPage({ auth, onGuestContinue }: LoginPageProps) {
               />
             </label>
             {error && <p id="login-email-error" className="form-error" role="alert">{error}</p>}
+            <TurnstileWidget
+              siteKey={turnstileSiteKey}
+              resetKey={captchaResetKey}
+              onTokenChange={handleCaptchaToken}
+            />
             <button
               data-testid="login-submit"
               className="button primary full-button"
               type="submit"
-              disabled={!configured || pending || cooldownSeconds > 0 || !email.trim()}
+              disabled={
+                !configured ||
+                pending ||
+                cooldownSeconds > 0 ||
+                !email.trim() ||
+                (captchaRequired && !captchaToken)
+              }
             >
               {pending
                 ? "링크 보내는 중…"

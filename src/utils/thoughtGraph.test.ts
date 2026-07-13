@@ -47,6 +47,27 @@ describe("thoughtGraph", () => {
     }
   });
 
+  it("uses calm single-axis clusters for small maps", () => {
+    const graph = buildThoughtGraph(sampleAnalysis);
+    const positions = layoutThoughtNodes(graph.nodes);
+    const coordinatesFor = (kind: "perspective" | "term" | "decision" | "question") => (
+      graph.nodes
+        .filter((node) => node.kind === kind)
+        .map((node) => positions.get(node.id))
+        .filter((position): position is { x: number; y: number } => Boolean(position))
+    );
+
+    for (const kind of ["perspective", "decision"] as const) {
+      const coordinates = coordinatesFor(kind);
+      expect(new Set(coordinates.map(({ x }) => x)).size).toBe(1);
+    }
+
+    for (const kind of ["term", "question"] as const) {
+      const coordinates = coordinatesFor(kind);
+      expect(new Set(coordinates.map(({ y }) => y)).size).toBe(1);
+    }
+  });
+
   it("keeps large maps inside the public graph node and edge budgets", () => {
     const nodes = [
       ...Array.from({ length: 119 }, (_, index) => ({
