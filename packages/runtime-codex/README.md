@@ -40,7 +40,7 @@ Package pin은 App Server binary와 생성 protocol 계약을 고정한다. `gpt
 
 ## Bidirectional stdio transport
 
-Package 내부 `CodexStdioTransport`는 이후 Headless Codex Client Host가 사용할 generated-schema-backed lower transport다. Client request·notification, Server request·notification을 stdio JSONL에서 방향별로 분류하고 `RequestId`의 `string | number` type과 exact value를 보존한다. Outbound Client request와 inbound Server request는 별도 namespace이므로 반대 방향의 같은 numeric ID가 동시에 존재해도 서로 resolve하지 않는다.
+Package 내부 `CodexStdioTransport`는 Headless Codex Client Host가 사용하는 generated-schema-backed lower transport다. Client request·notification, Server request·notification을 stdio JSONL에서 방향별로 분류하고 `RequestId`의 `string | number` type과 exact value를 보존한다. Outbound Client request와 inbound Server request는 별도 namespace이므로 반대 방향의 같은 numeric ID가 동시에 존재해도 서로 resolve하지 않는다.
 
 Known Server request는 pinned generated JSON Schema로 nested params를 검증하고 method별 generated response schema로 success result를 검증한 뒤에만 wire에 쓴다. Generated response type에 맞는 `respond`와 protocol-level `respondError`는 한 request에 한 번만 쓸 수 있고, invalid success result는 one-shot 상태를 소비하지 않는다. Response write 또는 internal-only `dismiss()`가 끝나면 active Server request identity를 해제하며, 같은 ID의 동시 request는 거부하고 순차 reuse는 허용한다.
 
@@ -48,7 +48,7 @@ Raw numeric ID는 parse 전에 수학적으로 exact safe integer value인지 �
 
 Client request lifecycle은 `pending | completed | timed_out` registry 하나가 소유한다. Routing tombstone을 evict해 old response를 새 request에 오연결하지 않으며 connection당 기본 65,536개 identity hard cap에 도달하면 새 request를 wire에 쓰기 전에 `request_identity_limit` transport failure로 안전하게 닫는다. Package-internal `start()`는 실제 child `spawn` event를 기다리는 coalesced Promise를 제공하고, concurrent `close()`도 같은 cleanup Promise를 기다린다. Spawn settlement 전에 close가 시작되면 모든 coalesced start caller는 `transport_closed`로 reject되고 늦은 spawn callback은 start 성공을 공개하지 않으며 cleanup Promise는 child 종료까지 기다린다. SIGTERM과 SIGKILL deadline 뒤에도 exit를 관측하지 못하면 성공으로 가장하지 않고 stable `close_timeout`으로 reject한다. Spawn error, child exit, stdout EOF, stdout failure와 stdin write failure는 구분된 `transport_lost` observation이다. 이 observation에는 raw stdio line, child environment, stderr와 debug payload를 넣지 않는다.
 
-Observation stream은 package-internal single-consumer contract다. 두 번째 consumer는 observation을 나눠 갖지 않고 deterministic conflict로 거부되며 기존 consumer와 connection은 유지된다. Consumer가 아직 기다리지 않는 동안의 queue는 기본 1,024개 observation으로 bounded되고, hard cap을 넘으면 queued message를 무한 축적하지 않고 `observation_queue_limit` terminal failure로 connection을 닫는다. 후속 Host는 첫 request 전에 유일한 observation pump를 시작하고 terminal observation 뒤 transport cleanup을 완료해야 한다.
+Observation stream은 package-internal single-consumer contract다. 두 번째 consumer는 observation을 나눠 갖지 않고 deterministic conflict로 거부되며 기존 consumer와 connection은 유지된다. Consumer가 아직 기다리지 않는 동안의 queue는 기본 1,024개 observation으로 bounded되고, hard cap을 넘으면 queued message를 무한 축적하지 않고 `observation_queue_limit` terminal failure로 connection을 닫는다. Host는 첫 request 전에 유일한 observation pump를 시작하고 terminal observation 뒤 transport cleanup을 완료한다.
 
 Actual-child contract fixture는 별도 JSONL journal로 spawn과 Client outbound protocol·Server response를 확인하며 success, assertion failure와 transport failure에서 child 종료 deadline, force-kill과 temporary directory cleanup을 소유한다. 이 lower transport를 읽는 것만으로 raw method가 제품 Host에 연결된 것은 아니므로 method inventory의 integration 단계는 바꾸지 않는다.
 
@@ -64,7 +64,23 @@ Actual-child contract fixture는 별도 JSONL journal로 spawn과 Client outboun
 
 모든 layout 실패는 `ProductRuntimeLayoutError`이며 안정적인 `code`와 `recoverable: false`를 제공한다. Root·binary filesystem inspection과 package metadata read/parse 또는 pin 누락도 각각 기존 root/binary code와 `package_pin_unreadable`로 wrapping한다. 같은 구성으로 재시도할 수 없는 root·binary·pin·runtime-home 준비 실패를 이후 Host lifecycle이 자유 형식 message 대신 이 type으로 분류할 수 있다.
 
-이 API는 layout과 runtime-home pair만 준비한다. App Server child process, initialize handshake, Host lifecycle과 thread·turn은 아직 만들지 않으며, 아래 Runtime Harness resolver와 default/override 동작도 바꾸지 않는다.
+이 API는 layout과 runtime-home pair 준비를 소유하고 `HeadlessCodexClientHost`의 첫 `start()`가 이를 호출해 성공 결과를 Host 수명 동안 cache한다. 아래 Runtime Harness resolver와 default/override 동작은 바꾸지 않는다.
+
+## Headless Codex Client Host lifecycle
+
+`HeadlessCodexClientHost`는 immutable `ProductRuntimeLayoutInput` 한 조합과 App Server child 하나를 소유한다. Caller는 raw process나 generated protocol 대신 `start()`, `stop()`, `getSnapshot()`과 atomic `subscribe()`를 사용한다.
+
+| 계약 | 현재 동작 |
+| --- | --- |
+| 시작 | `stopped → starting → ready`를 publish한다. Concurrent start는 actual child spawn과 `initialize`/`initialized` handshake 하나로 수렴하고, `ready`는 generated-schema-validated response와 notification write 뒤에만 공개한다. |
+| generation | Actual child `spawn` event가 성공하고 lifecycle epoch가 current일 때만 한 번 증가한다. Preflight·async spawn failure와 stop이 이긴 stale start는 generation을 소비하지 않는다. |
+| 종료 | `ready/starting/failed → stopping` 뒤 child exit를 확인한 경우에만 `stopped`를 공개한다. Graceful deadline 뒤 force-kill하며 exit를 확인하지 못한 `close_timeout`은 non-recoverable `failed`로 남는다. |
+| 실패 | Layout·protocol·observation overflow·cleanup failure는 non-recoverable, spawn·initialize와 일반 transport loss는 recoverable allowlist failure로 표현한다. Raw error, stderr, environment와 root는 snapshot/event에 포함하지 않는다. |
+| subscription | 등록과 `{ snapshot, cursor }` capture가 동기적으로 원자적이며 event마다 monotonic sequence와 ISO timestamp를 제공한다. Subscriber별 기본 1,024-event buffer를 넘으면 해당 stream만 `subscription_overflow`로 종료한다. Connection failure는 stream을 닫지 않고 successful Host stop이 마지막 `stopped` event 뒤 닫는다. |
+
+Child `cwd`는 validated `workspaceRoot`이고 `CODEX_HOME`·`CODEX_SQLITE_HOME`은 validated product pair다. Inherited child environment는 실행에 필요한 path, home, shell, temporary-directory와 locale key allowlist만 전달하며 caller override와 credential-like environment를 받지 않는다.
+
+현재 Host는 lifecycle과 `initialize`/`initialized` 연결만 구현한다. Explicit `restart`, thread·turn, normalized activity, pending interaction, native Skills discovery와 browser adapter는 후속 ticket 범위다. Non-terminal protocol observation은 제품 state나 Runtime Diagnostic History에 공개·저장하지 않는다.
 
 ## 현재 Harness 범위
 
@@ -77,7 +93,7 @@ Actual-child contract fixture는 별도 JSONL journal로 spawn과 Client outboun
 - 공개 raw wrapper의 `CodexRawTurnInput`은 현재 text만 지원한다. 생성 protocol에 존재하는 `skill`, `mention`, `outputSchema`는 아직 wrapper와 제품 composer에 연결되지 않았다.
 - 정규화한 Adapter 출력은 세부 작업 활동이 아니라 text와 실행 종료 lifecycle을 다룬다.
 - `turn/steer`는 raw 호출만 가능하며 제품의 target·conflict 정책은 아직 없다.
-- 기존 Harness의 `CodexRawClient`는 App Server가 시작한 `request`를 아직 전달하거나 typed `response`로 응답하지 않는다. 별도 `CodexStdioTransport`가 bidirectional lower seam을 제공하지만 Headless Codex Client Host와 pending interaction에는 아직 연결되지 않았다.
+- 기존 Harness의 `CodexRawClient`는 App Server가 시작한 `request`를 아직 전달하거나 typed `response`로 응답하지 않는다. 별도 `CodexStdioTransport`는 Headless Host lifecycle에 연결됐지만 product-safe pending interaction mapping은 아직 없다.
 - repository-root `.ay-ple/runtime-codex/*` 기본 경로는 developer-only Harness용이다. `CODEX_HOME`과 `CODEX_SQLITE_HOME`은 현재 각각 독립 override되며 product runtime-home pair validation은 없다.
 - Runtime-home 초기화는 `CODEX_HOME`과 `CODEX_SQLITE_HOME` directory를 만든다. File auth config는 기본 repository-local Harness pair 또는 `ensureFileAuthConfig: true`를 명시한 경우에만 보장하며, built-in Memories는 켜지 않는다.
 

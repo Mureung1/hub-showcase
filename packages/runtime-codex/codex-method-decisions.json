@@ -1,8 +1,8 @@
 {
   "initialize": {
-    "integration": "raw-wrapper",
+    "integration": "client-host",
     "adoption": "baseline",
-    "note": "App Server 연결 handshake"
+    "note": "Headless Codex Client Host 연결 handshake"
   },
   "thread/start": {
     "integration": "raw-wrapper",
@@ -222,8 +222,9 @@
     "adoption": "baseline"
   },
   "initialized": {
-    "integration": "raw-wrapper",
-    "adoption": "baseline"
+    "integration": "client-host",
+    "adoption": "baseline",
+    "note": "Headless Codex Client Host 초기화 완료 notification"
   },
   "thread/turns/list": {
     "adoption": "later",
