@@ -7,7 +7,7 @@ tokens:
 
 # 디자인 토큰
 
-> 기준: 답냥이 모바일 데모 UI. 레퍼런스의 수면·플레이리스트 앱처럼 부드럽고 가벼운 분위기를 유지하되, 메시지 작성 도우미에서는 읽기 쉬움과 빠른 선택을 우선한다. 아래 AA 대비 토큰(primary 3종·text-muted·danger)은 2026-07-12 T14에서 코드에 반영했고 실측 대비(CTA 4.69:1, muted/흰 표면 5.27:1)를 확인했다.
+> 기준: 답냥이 모바일 데모 UI. 레퍼런스의 수면·플레이리스트 앱처럼 부드럽고 가벼운 분위기를 유지하되, 메시지 작성 도우미에서는 읽기 쉬움과 빠른 선택을 우선한다. 2026-07-12 색 강화 개정: "전반적으로 너무 연하다"는 사용자 피드백에 따라 파스텔 무드는 유지하고 주요 토큰을 한 단계 진하게 조정했다(CTA 흰 글자 실측 5.2:1). 개정 경위는 docs/LOG.md 참고.
 
 ## 핵심 규칙
 
@@ -25,36 +25,36 @@ tokens:
 ```css
 :root {
   /* Color: core */
-  --color-primary: #357b9e;
-  --color-primary-hover: #2f7092;
-  --color-primary-pressed: #286481;
-  --color-primary-soft: #d8edf8;
-  --color-primary-muted: #a9cddd;
+  --color-primary: #2e7397;
+  --color-primary-hover: #29688a;
+  --color-primary-pressed: #245b7a;
+  --color-primary-soft: #c9e5f4;
+  --color-primary-muted: #8fc0d6;
 
-  --color-bg: #dcebf3;
-  --color-bg-deep: #c9dfe9;
+  --color-bg: #cfe3ef;
+  --color-bg-deep: #b7d6e6;
   --color-surface: #ffffff;
   --color-surface-soft: #f7fbfd;
   --color-surface-tint: #eef7fb;
 
   --color-text: #151515;
   --color-text-body: #34343a;
-  --color-text-muted: #5f6e77;
+  --color-text-muted: #54636c;
   --color-text-subtle: #aab5bc;
   --color-text-on-primary: #ffffff;
 
-  --color-border: #e7eef2;
-  --color-border-strong: #d5e2e9;
+  --color-border: #d5e2e9;
+  --color-border-strong: #bccfda;
   --color-disabled: #d9e3e8;
   --color-backdrop: rgba(122, 160, 180, 0.18);
 
   /* Color: pastel cards */
-  --color-card-blue: #d6edf8;
-  --color-card-blue-strong: #b8ddeb;
-  --color-card-peach: #f7dfda;
-  --color-card-butter: #fbefd5;
-  --color-card-mint: #e2f1ea;
-  --color-card-lavender: #ece8f7;
+  --color-card-blue: #c3e0f1;
+  --color-card-blue-strong: #9fcde5;
+  --color-card-peach: #f5cfc6;
+  --color-card-butter: #f8e3b9;
+  --color-card-mint: #cfe8da;
+  --color-card-lavender: #ded7f0;
 
   /* Color: feedback */
   --color-danger: #9b453f;
@@ -125,14 +125,14 @@ tokens:
   --button-radius: var(--radius-pill);
   --button-shadow: 0 12px 26px rgba(108, 174, 209, 0.3);
 
-  --chip-bg: #edf4f7;
+  --chip-bg: #e2edf3;
   --chip-active-bg: var(--color-primary);
   --chip-radius: var(--radius-pill);
 
   --input-bg: var(--color-surface-soft);
   --input-border: 1px solid var(--color-border);
   --input-radius: var(--radius-md);
-  --focus-ring: 0 0 0 3px rgba(53, 123, 158, 0.34);
+  --focus-ring: 0 0 0 3px rgba(46, 115, 151, 0.45);
 }
 ```
 
@@ -159,7 +159,8 @@ tokens:
 
 ## 접근성 기준
 
-- 흰 글자/`--color-primary` 대비는 약 4.69:1, `--color-text-muted`/흰 표면은 약 5.27:1, `--color-danger`/danger-soft는 약 4.98:1을 목표로 한다.
+- 흰 글자/`--color-primary` 대비는 약 5.2:1, `--color-text-muted`/흰 표면은 약 6.2:1(칩·파스텔 표면 위에서도 4.9:1 이상), `--color-danger`/danger-soft는 약 4.98:1을 목표로 한다.
+- 진행 표시 등 작은 보조 텍스트도 대기 상태에서 `--color-text-muted` 이상을 쓴다. `--color-text-subtle`은 4.5:1이 안 나오므로 실제 읽어야 하는 텍스트에 쓰지 않는다.
 - 모든 버튼·칩·뒤로가기의 실제 터치 영역은 최소 44×44px로 둔다.
 - 모든 동작 요소는 2px 이상으로 식별 가능한 `:focus-visible`을 제공한다.
 - 색만으로 선택·오류·톤을 전달하지 않고 텍스트·ARIA 상태를 함께 사용한다.
