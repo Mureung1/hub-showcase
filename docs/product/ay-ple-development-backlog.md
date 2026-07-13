@@ -9,7 +9,7 @@
 
 이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. 먼저 일반적인 Codex 사용 흐름에 준하는 웹 제품 기반을 닫고, 그 위에 AY-PLE의 학업 제품 기능을 올린다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
 
-제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Headless 실행 통합과 제품 UI의 경계는 [ADR 0008](../adr/0008-separate-headless-codex-client-host-from-product-ui.md)을 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
+제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Headless 실행 통합과 제품 UI의 경계는 [ADR 0008](../adr/0008-separate-headless-codex-client-host-from-product-ui.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)를 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
 
 ## 운영 규칙
 
@@ -39,6 +39,7 @@
   - [x] HTTP/SSE Runtime Inspector에서 실제 browser를 통과해 단일 run lifecycle을 진단할 수 있다.
   - [x] Runtime Diagnostic History가 checkpoint, interrupted-run recovery, retention과 persistence failure를 처리하며 제품 상태와 분리되어 있다.
   - [x] 제품 작업을 `ModelingRecipe → ModelingInvocation → ModelingRun`으로 조합하고, Headless Codex Client Host를 제품 UI와 분리하는 경계를 채택했다. 근거: [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), [ADR 0008](../adr/0008-separate-headless-codex-client-host-from-product-ui.md).
+  - [x] 첫 제품 경로를 macOS-first local web app으로 한정하고 active runtime source와 package fixture의 Windows compatibility branch를 제거했다. 근거: [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md).
 
 - [x] App Server raw method의 존재와 AY-PLE의 채택 판단을 빠짐없이 볼 수 있게 한다.
   - [x] Pinned stable schema와 별도 experimental schema에서 client request, client notification, server request와 server notification method를 전부 추출해 [method inventory](../architecture/codex-app-server-method-inventory.md)에 표시한다.
@@ -103,7 +104,7 @@
   - [ ] 확인된 `SemesterModel`이 안정되면 `MarkdownProjection`, derived timeline, 학생 할 일 표면과 학기 상태 질의를 source of truth와 분리해 추가한다.
   - [ ] 학생에게 checkpoint, diff와 rollback 의미가 필요해지면 Runtime Diagnostic History와 분리된 `WorkspaceHistory`를 설계한다.
   - [ ] 실제 자료에서 필요성이 확인되면 HWP/HWPX parsing과 OCR을 추가한다.
-  - [ ] 여러 workspace를 반복해서 여는 사용 흐름이 확인되면 최근 workspace 목록, chooser, app data 기본값과 migration을 포함한 packaged entrypoint를 추가한다.
+  - [ ] 여러 workspace를 반복해서 여는 사용 흐름이 확인되면 최근 workspace 목록, chooser, macOS app data 기본값과 migration을 포함한 제품 entrypoint를 추가하고 이후 Desktop App packaging으로 확장한다.
   - [ ] Runtime diagnostic evidence를 제품 기록에 재사용하기 전에 제품용 allowlist, redaction과 retention 경계를 설계한다.
   - [ ] Native text·mention·Skill 조합으로 해결되지 않는 구체적인 case가 생기면 experimental context delivery, background terminal, realtime과 기타 raw capability를 [method inventory](../architecture/codex-app-server-method-inventory.md)에서 선택해 별도로 검증한다.
   - [ ] 여러 학기에 걸친 사용에서 필요성이 확인되면 built-in Memories의 consent, eligibility, rollover와 reset UX를 설계한다.

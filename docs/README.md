@@ -90,6 +90,7 @@ Root companion docs:
 | 제품 실행 경로 분리 ADR | [adr/0006-separate-package-app-data-and-semester-workspace-roots.md](adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | package, app data, SemesterWorkspace 경계 |
 | Native Codex composition ADR | [adr/0007-use-native-codex-composition-for-product-actions.md](adr/0007-use-native-codex-composition-for-product-actions.md) | Recipe·Invocation·Run의 제품 실행 경계를 나누는 결정 |
 | Headless Codex Client Host ADR | [adr/0008-separate-headless-codex-client-host-from-product-ui.md](adr/0008-separate-headless-codex-client-host-from-product-ui.md) | headless module과 제품 UI adapter의 seam을 나누는 결정 |
+| macOS-first local web app ADR | [adr/0009-use-a-macos-first-local-web-app-product-path.md](adr/0009-use-a-macos-first-local-web-app-product-path.md) | 첫 제품 실행·지원 환경과 후속 Desktop App 경계 결정 |
 
 ### 기술 참고
 
