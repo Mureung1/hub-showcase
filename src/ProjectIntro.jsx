@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MBTI_TYPES, SCORE_LABELS, STUDY_QUESTIONS, STRESS_QUESTIONS } from "./data/questions";
 import { ALGORITHM_VERSION, createRecommendations } from "./lib/recommendations";
 import {
@@ -7,9 +7,29 @@ import {
   calculateScores,
   getSelectedOptionLabels,
 } from "./lib/scoring";
-import { clearStoredData, loadFeedback, loadRecords, loadResult, saveFeedback, saveRecord, saveResult } from "./lib/storage";
+import {
+  clearStoredData,
+  loadCalibration,
+  loadFeedback,
+  loadRecords,
+  loadResult,
+  saveCalibration,
+  saveFeedback,
+  saveRecord,
+  saveResult,
+} from "./lib/storage";
+
+const RECALL_TARGET = 3; // 실천 카드가 목표로 하는 "핵심 3개"
 
 const STEPS = ["소개", "MBTI", "공부 설문", "스트레스 설문", "결과", "실천 카드"];
+const SCHEMA_VERSION = 1;
+
+// 응답 처리 순서와 무관하게 같은 최종 입력이면 같은 지문을 만든다.
+function buildInputFingerprint({ mbti, mbtiKnown, mbtiSource, studyAnswers, stressAnswers }) {
+  const study = STUDY_QUESTIONS.map((question) => `${question.id}=${studyAnswers[question.id] ?? ""}`).join("&");
+  const stress = STRESS_QUESTIONS.map((question) => `${question.id}=${stressAnswers[question.id] ?? ""}`).join("&");
+  return [`mbti=${mbtiKnown ? mbti : "UNKNOWN"}`, `src=${mbtiSource}`, study, stress].join("|");
+}
 
 function Progress({ step }) {
   return (
@@ -83,6 +103,7 @@ export default function ProjectIntro() {
   const [storedSnapshot] = useState(() => loadResult());
   const [storedRecords] = useState(() => loadRecords());
   const [storedFeedback] = useState(() => loadFeedback());
+  const [storedCalibration] = useState(() => loadCalibration());
   const [step, setStep] = useState(0);
   const [resultId, setResultId] = useState(() => storedSnapshot?.resultId ?? createResultId());
   const [mbti, setMbti] = useState(() =>
@@ -103,6 +124,10 @@ export default function ProjectIntro() {
   const [actionabilityScore, setActionabilityScore] = useState(3);
   const [feedbackNote, setFeedbackNote] = useState("");
   const [feedbackCount, setFeedbackCount] = useState(storedFeedback.length);
+  const [recallPhase, setRecallPhase] = useState("predict"); // predict → recall → done
+  const [recallPredicted, setRecallPredicted] = useState(null);
+  const [recallActual, setRecallActual] = useState(null);
+  const [calibrationCount, setCalibrationCount] = useState(storedCalibration.length);
   const mbtiKnown = mbtiSource === "official-self-report";
 
   const result = useMemo(() => {
@@ -133,22 +158,53 @@ export default function ProjectIntro() {
   const hasCompleteResult =
     (mbtiSource === "not-provided" || (mbtiKnown && Boolean(mbti))) && canContinueStudy && canContinueStress;
 
+  const inputFingerprint = useMemo(
+    () => buildInputFingerprint({ mbti, mbtiKnown, mbtiSource, studyAnswers, stressAnswers }),
+    [mbti, mbtiKnown, mbtiSource, studyAnswers, stressAnswers],
+  );
+
+  // 완결된 입력 지문 하나당 immutable (resultId, createdAt) 하나를 유지한다.
+  // 입력이 바뀌면 새 결과로 보고 새 ID/생성시각을 발급해, 이전 피드백이 바뀐 결과에 섞이지 않게 한다.
+  const resultLifecycleRef = useRef({
+    fingerprint: storedSnapshot?.inputFingerprint ?? null,
+    resultId: storedSnapshot?.resultId ?? resultId,
+    createdAt: storedSnapshot?.profile?.createdAt ?? null,
+  });
+
   useEffect(() => {
-    if (hasCompleteResult) {
-      saveResult({
-        resultId,
-        profile: {
-          mbti: mbtiKnown ? mbti : "UNKNOWN",
-          mbtiKnown,
-          mbtiSource,
-          createdAt: new Date().toISOString(),
-        },
-        studyAnswers,
-        stressAnswers,
-        result,
-      });
+    if (!hasCompleteResult) {
+      return;
     }
-  }, [hasCompleteResult, mbti, mbtiKnown, mbtiSource, result, resultId, stressAnswers, studyAnswers]);
+    const committed = resultLifecycleRef.current;
+    if (committed.fingerprint === inputFingerprint) {
+      return; // 이미 저장된 동일 입력 — updatedAt만 흔들지 않는다.
+    }
+
+    let activeResultId;
+    if (committed.fingerprint === null && committed.createdAt === null) {
+      activeResultId = resultId; // 이 세션 첫 완성: 현재 resultId를 그대로 확정한다.
+    } else {
+      activeResultId = createResultId(); // 입력이 바뀐 새 결과: 새 immutable ID.
+      setResultId(activeResultId);
+    }
+    const createdAt = new Date().toISOString();
+    resultLifecycleRef.current = { fingerprint: inputFingerprint, resultId: activeResultId, createdAt };
+
+    saveResult({
+      resultId: activeResultId,
+      schemaVersion: SCHEMA_VERSION,
+      inputFingerprint,
+      profile: {
+        mbti: mbtiKnown ? mbti : "UNKNOWN",
+        mbtiKnown,
+        mbtiSource,
+        createdAt,
+      },
+      studyAnswers,
+      stressAnswers,
+      result,
+    });
+  }, [hasCompleteResult, inputFingerprint, mbti, mbtiKnown, mbtiSource, result, resultId, stressAnswers, studyAnswers]);
 
   const topScores = Object.entries(result.scores)
     .sort(([, a], [, b]) => b - a)
@@ -169,6 +225,28 @@ export default function ProjectIntro() {
       resultId,
     });
     setRecords(next);
+  }
+
+  function resetRecall() {
+    setRecallPhase("predict");
+    setRecallPredicted(null);
+    setRecallActual(null);
+  }
+
+  function handleCalibrationSave() {
+    if (recallPredicted === null || recallActual === null) {
+      return;
+    }
+    const next = saveCalibration({
+      algorithmVersion: ALGORITHM_VERSION,
+      resultId,
+      target: RECALL_TARGET,
+      predicted: recallPredicted,
+      actual: recallActual,
+      calibrationError: Math.abs(recallPredicted - recallActual),
+    });
+    setCalibrationCount(next.length);
+    setRecallPhase("done");
   }
 
   function handleFeedbackSave() {
@@ -194,15 +272,21 @@ export default function ProjectIntro() {
   }
 
   function resetFlow() {
+    const freshId = createResultId();
+    resultLifecycleRef.current = { fingerprint: null, resultId: freshId, createdAt: null };
     setMbti("");
     setMbtiSource("");
-    setResultId(createResultId());
+    setResultId(freshId);
     setStudyAnswers({});
     setStressAnswers({});
+    setCompleted(false);
+    setFocusLevel(3);
+    setFatigueLevel(3);
     setFitScore(0);
     setUnderstandingScore(3);
     setActionabilityScore(3);
     setFeedbackNote("");
+    resetRecall();
     setStep(1);
   }
 
@@ -212,9 +296,11 @@ export default function ProjectIntro() {
     }
 
     clearStoredData();
+    const freshId = createResultId();
+    resultLifecycleRef.current = { fingerprint: null, resultId: freshId, createdAt: null };
     setMbti("");
     setMbtiSource("");
-    setResultId(createResultId());
+    setResultId(freshId);
     setStudyAnswers({});
     setStressAnswers({});
     setCompleted(false);
@@ -226,6 +312,8 @@ export default function ProjectIntro() {
     setActionabilityScore(3);
     setFeedbackNote("");
     setFeedbackCount(0);
+    resetRecall();
+    setCalibrationCount(0);
     setStep(0);
   }
 
@@ -234,36 +322,43 @@ export default function ProjectIntro() {
       <style>{`
         /* ── 디자인 토큰: docs/design.md §2~§4 ── */
         #root{width:100%;max-width:100%;margin:0;border:0;text-align:left;display:block;min-height:100svh;}
+        /* ── 크림 배경 · 블루 세리프(Bookman) 제목 · 블루 스크립트 악센트 ── */
         :root{
-          --bg:#eef2f6;--surface:#fff;--surface-muted:#f4f7fb;
-          --tint-blue:#e7eefc;--on-tint-blue:#2c5fd0;
-          --tint-green:#e3f4ec;--on-tint-green:#1f7a54;
-          --tint-lav:#ecebfb;--on-tint-lav:#5b53c6;
-          --primary:#3b7dee;--primary-strong:#2f66c9;--on-primary:#fff;
-          --accent:#2fb37a;--accent-strong:#24936a;--on-accent:#fff;
-          --text-strong:#1a2230;--text:#4a5568;--text-muted:#8a93a3;
-          --border:#e2e8f1;--border-soft:#eef1f6;--focus:#3b7dee;
-          --shadow-sm:0 1px 3px rgba(27,45,76,.06),0 1px 2px rgba(27,45,76,.04);
-          --shadow-md:0 8px 24px rgba(27,45,76,.08);
+          --bg:#f8f2e3;--surface:#fdfbf3;--surface-muted:#f1e9d5;
+          --tint-blue:#e7ecf6;--on-tint-blue:#274f8c;
+          --tint-green:#e8efd9;--on-tint-green:#4c7a3f;
+          --tint-lav:#ece7f1;--on-tint-lav:#5a52a0;
+          --primary:#2f62b3;--primary-strong:#244e8f;--on-primary:#fdfbf3;
+          --accent:#5a8f4a;--accent-strong:#466f39;--on-accent:#fdfbf3;
+          --text-strong:#213a63;--text:#454a53;--text-muted:#8a8266;
+          --border:#e2d8c0;--border-soft:#ece4d1;--focus:#2f62b3;
+          --shadow-sm:0 1px 3px rgba(90,70,25,.07),0 1px 2px rgba(90,70,25,.05);
+          --shadow-md:0 8px 24px rgba(90,70,25,.10);
           --font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Malgun Gothic",system-ui,sans-serif;
+          --font-display:"Bookman Old Style",Bookman,"URW Bookman L","Georgia","Times New Roman",serif;
+          --font-script:"Snell Roundhand","Brush Script MT","Segoe Script","Apple Chancery",cursive;
           --r-sm:10px;--r-md:14px;--r-lg:20px;--r-pill:999px;
         }
         @media (prefers-color-scheme:dark){:root{
-          --bg:#10151c;--surface:#182029;--surface-muted:#1e2732;
-          --tint-blue:#1b2942;--on-tint-blue:#9dbcf6;
-          --tint-green:#16311f;--on-tint-green:#74d3a4;
-          --tint-lav:#24234a;--on-tint-lav:#b6b0f5;
-          --primary:#5a97f2;--primary-strong:#78abf6;--on-primary:#0c1119;
-          --accent:#43c491;--accent-strong:#63d3a6;--on-accent:#0c1119;
-          --text-strong:#eef2f7;--text:#b3bccb;--text-muted:#7d8798;
-          --border:#2a343f;--border-soft:#222b35;--focus:#5a97f2;
+          --bg:#141a24;--surface:#1b2430;--surface-muted:#212c3a;
+          --tint-blue:#1c2a44;--on-tint-blue:#a7c2ee;
+          --tint-green:#1e3320;--on-tint-green:#8ecb83;
+          --tint-lav:#262445;--on-tint-lav:#bcb4ee;
+          --primary:#5a92e6;--primary-strong:#7aa9ee;--on-primary:#0e141d;
+          --accent:#7ab86a;--accent-strong:#93c986;--on-accent:#0e141d;
+          --text-strong:#f2ecdb;--text:#c9cdd6;--text-muted:#98917f;
+          --border:#2c3745;--border-soft:#232d3a;--focus:#5a92e6;
           --shadow-sm:0 1px 3px rgba(0,0,0,.4);--shadow-md:0 10px 28px rgba(0,0,0,.45);
         }}
         /* ── 레이아웃 ── */
-        .study-app{min-height:100svh;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;}
-        .shell{width:min(720px,calc(100% - 32px));margin:0 auto;padding:24px 0 48px;}
+        .study-app{position:relative;min-height:100svh;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+        /* 포스터 느낌의 블루 프레임 */
+        .study-app::after{content:"";position:fixed;inset:12px;border:2px solid var(--primary);border-radius:6px;pointer-events:none;z-index:40;opacity:.5;}
+        .shell{position:relative;z-index:1;width:min(720px,calc(100% - 56px));margin:0 auto;padding:30px 0 54px;}
         .topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:20px;}
-        .brand{font-weight:800;font-size:15px;color:var(--text-strong);}
+        .brand{font-family:var(--font-display);font-weight:700;font-size:17px;letter-spacing:.01em;color:var(--primary);}
+        /* 블루 스크립트(Brush) 악센트 */
+        .script-accent{font-family:var(--font-script);color:var(--primary);font-size:clamp(26px,4.5vw,40px);line-height:.9;margin:0 0 -6px;font-weight:400;}
         .pill{border:1px solid var(--border);background:var(--surface);color:var(--text-muted);border-radius:var(--r-pill);padding:7px 12px;font-size:12px;font-weight:600;}
         /* ── 진행 표시 ── */
         .progress{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
@@ -273,11 +368,11 @@ export default function ProjectIntro() {
         .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:24px;}
         .hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);gap:24px;align-items:center;}
         /* ── 타이포 ── */
-        .eyebrow{margin:0 0 10px;color:var(--text-muted);font-size:13px;font-weight:700;letter-spacing:.04em;}
-        h1,h2,h3{letter-spacing:-.01em;color:var(--text-strong);}
-        h1{font-size:clamp(30px,6vw,52px);line-height:1.08;margin:0 0 16px;font-weight:800;}
-        h2{font-size:clamp(22px,3vw,32px);line-height:1.15;margin:0 0 12px;font-weight:800;}
-        h3{font-size:18px;line-height:1.3;margin:0 0 12px;font-weight:700;}
+        .eyebrow{margin:0 0 10px;color:var(--text-muted);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;}
+        h1,h2,h3{letter-spacing:0;color:var(--text-strong);}
+        h1{font-family:var(--font-display);font-size:clamp(32px,6.2vw,56px);line-height:1.05;margin:0 0 16px;font-weight:700;color:var(--primary);}
+        h2{font-family:var(--font-display);font-size:clamp(24px,3.2vw,34px);line-height:1.14;margin:0 0 12px;font-weight:700;color:var(--primary);}
+        h3{font-family:var(--font-display);font-size:19px;line-height:1.3;margin:0 0 12px;font-weight:700;}
         p{margin:0;line-height:1.6;color:var(--text);}
         .lead{font-size:18px;max-width:640px;margin:0 0 16px;}
         .notice{background:var(--tint-green);padding:14px 16px;border-radius:var(--r-md);color:var(--on-tint-green);margin-top:16px;font-size:14px;line-height:1.55;}
@@ -353,6 +448,7 @@ export default function ProjectIntro() {
           <section className="panel hero">
             <div>
               <p className="eyebrow">Study routine prototype</p>
+              <p className="script-accent">Study &amp; Recover</p>
               <h1>나에게 맞는 공부·회복 루틴을 오늘 바로 찾기</h1>
               <p className="lead">
                 MBTI와 공부·스트레스 설문을 함께 보고, 성향을 단정하지 않은 채 학습 선호와 피로 패턴을 행동지표로 정리합니다.
@@ -521,12 +617,12 @@ export default function ProjectIntro() {
                     result.recommendations.map((item) => item.id).join("|")
                     ? "이번 응답에서는 MBTI 힌트를 포함해도 TOP 3 추천 순서가 바뀌지 않았습니다."
                     : "이번 응답에서는 MBTI 힌트를 포함했을 때 TOP 3 추천 순서가 달라졌습니다. 이것은 효과가 좋아졌다는 뜻이 아니며 후속 결과로 검증해야 합니다."
-                  : "공식 MBTI 결과가 없어 task/state-only baseline을 최종 추천으로 사용했습니다. 공부습관 기반 탐색 코드는 추천 가중치에 넣지 않았습니다."}
+                  : "공식 MBTI 결과가 없어 행동·상태 기반 기준(baseline)을 최종 추천으로 사용했습니다. 공부습관 기반 탐색 코드는 추천 가중치에 넣지 않았습니다."}
               </p>
               {mbtiKnown && (
                 <div className="signal-grid">
                   <div className="signal-item">
-                    <strong>task/state-only</strong>
+                    <strong>행동·상태 기반 기준</strong>
                     <span>{result.baselineRecommendations.map((item) => item.title).join(" → ")}</span>
                   </div>
                   <div className="signal-item">
@@ -654,6 +750,97 @@ export default function ProjectIntro() {
                 {records.length > 0 && <div className="saved">최근 기록 {records.length}개가 저장되어 있습니다.</div>}
               </div>
             </div>
+            <div className="feedback-card">
+              <p className="eyebrow">Metacognition · self-check</p>
+              <h3>루틴 뒤 1분, 예측하고 떠올려보기</h3>
+              <p>
+                이것은 점수·능력 판정이 아니라 이 한 세션의 자기 점검입니다. 먼저 예측한 뒤 자료 없이 실제로 떠올려, 내가 안다고 느끼는 정도와 실제 회상의 차이를 스스로 확인합니다.
+              </p>
+              {recallPhase === "predict" && (
+                <>
+                  <p className="hint" style={{ marginTop: 12 }}>
+                    자료를 덮고: 오늘 핵심 {RECALL_TARGET}개 중 지금 몇 개를 떠올릴 수 있을 것 같나요?
+                  </p>
+                  <div className="rating-grid" aria-label="회상 예측 개수">
+                    {Array.from({ length: RECALL_TARGET + 1 }, (_, count) => (
+                      <OptionCard
+                        active={recallPredicted === count}
+                        key={count}
+                        onClick={() => setRecallPredicted(count)}
+                      >
+                        {count}
+                      </OptionCard>
+                    ))}
+                  </div>
+                  <button
+                    className="secondary"
+                    disabled={recallPredicted === null}
+                    onClick={() => setRecallPhase("recall")}
+                    style={{ marginTop: 12 }}
+                    type="button"
+                  >
+                    이제 자료 없이 떠올려보기
+                  </button>
+                </>
+              )}
+              {recallPhase === "recall" && (
+                <>
+                  <p className="hint" style={{ marginTop: 12 }}>
+                    자료를 보지 말고 실제로 떠올려보세요. 실제로 몇 개를 떠올렸나요? (예측: {recallPredicted}개)
+                  </p>
+                  <div className="rating-grid" aria-label="실제 회상 개수">
+                    {Array.from({ length: RECALL_TARGET + 1 }, (_, count) => (
+                      <OptionCard
+                        active={recallActual === count}
+                        key={count}
+                        onClick={() => setRecallActual(count)}
+                      >
+                        {count}
+                      </OptionCard>
+                    ))}
+                  </div>
+                  <button
+                    className="secondary"
+                    disabled={recallActual === null}
+                    onClick={handleCalibrationSave}
+                    style={{ marginTop: 12 }}
+                    type="button"
+                  >
+                    자기 점검 기록
+                  </button>
+                </>
+              )}
+              {recallPhase === "done" && (
+                <>
+                  <div className="signal-grid" style={{ marginTop: 12 }}>
+                    <div className="signal-item">
+                      <strong>예측</strong>
+                      <span>{recallPredicted}개</span>
+                    </div>
+                    <div className="signal-item">
+                      <strong>실제 회상</strong>
+                      <span>{recallActual}개</span>
+                    </div>
+                    <div className="signal-item">
+                      <strong>보정 오차</strong>
+                      <span>{Math.abs(recallPredicted - recallActual)}</span>
+                    </div>
+                  </div>
+                  <p className="hint" style={{ marginTop: 12 }}>
+                    {recallPredicted > recallActual
+                      ? "예측이 실제보다 높았습니다. ‘안다는 느낌’이 실제 회상보다 앞설 수 있으니, 다음엔 조금 더 인출연습을 해볼 수 있습니다."
+                      : recallPredicted < recallActual
+                        ? "실제 회상이 예측보다 높았습니다. 스스로를 과소평가했을 수 있습니다."
+                        : "예측과 실제가 같았습니다. 이번 세션에서는 자기 점검이 비교적 잘 맞았습니다."}
+                  </p>
+                  <button className="secondary" onClick={resetRecall} style={{ marginTop: 12 }} type="button">
+                    다시 점검하기
+                  </button>
+                </>
+              )}
+              {calibrationCount > 0 && <div className="saved">자기 점검 기록 {calibrationCount}개가 이 브라우저에 저장되어 있습니다.</div>}
+            </div>
+
             <div className="actions">
               <button className="secondary" onClick={() => setStep(4)} type="button">
                 결과로 돌아가기
