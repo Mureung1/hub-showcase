@@ -6,7 +6,7 @@
 
 - [Project Plan](smartff-agent/docs/PROJECT_PLAN.md)
 - [Discussion](smartff-agent/docs/DISCUSSION.md)
-- [Github Issues](https://github.com/YunTaeYong/hub/issues)
+- [GitHub Issues](https://github.com/YunTaeYong/hub/issues)
 ## Repository
 
 - Project Folder: `smartff-agent`
