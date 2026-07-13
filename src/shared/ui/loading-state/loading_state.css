@@ -5,6 +5,18 @@ section.loading-state {
   background: var(--color-canvas);
 }
 
+.loading-state__label {
+  position: absolute;
+  width: var(--spacing-1);
+  height: var(--spacing-1);
+  padding: 0;
+  margin: calc(var(--spacing-1) * -1);
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .loading-state__grid {
   display: grid;
   grid-template-columns: repeat(
@@ -23,21 +35,20 @@ section.loading-state {
   gap: var(--spacing-3);
 }
 
-.loading-state__card > span,
-.loading-state__card > i {
+.loading-state__placeholder {
   display: block;
   border-radius: var(--radius-button);
   background: var(--color-mist);
 }
 
-.loading-state__card > span {
+.loading-state__media {
   height: var(--spacing-20);
 }
 
-.loading-state__card > i {
+.loading-state__line {
   height: var(--spacing-3);
 }
 
-.loading-state__card > i:last-child {
+.loading-state__line:last-child {
   width: 60%;
 }

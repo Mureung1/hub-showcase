@@ -5,6 +5,7 @@ import type { CategoryTone } from '@/shared/ui/chip';
 import './category_filter.css';
 
 export type CategoryFilterOption = {
+  disabled?: boolean;
   label: string;
   tone: CategoryTone;
   value: string;
@@ -23,30 +24,32 @@ export function CategoryFilter({
 }: CategoryFilterProps) {
   return (
     <Category onValueChange={onValueChange} value={value}>
-      <nav aria-label="카테고리 필터" className="category-filter">
-        <CategoryList
-          className="category-filter__list"
-          horizontalPadding={false}
-          size="small"
-          verticalPadding={false}
-        >
-          {options.map((option) => (
-            <CategoryListItem
-              aria-label={`${option.label} 카테고리`}
-              aria-labelledby={undefined}
-              className="category-filter__item"
-              key={option.value}
-              value={option.value}
-            >
-              <span
-                aria-hidden="true"
-                className={`category-filter__mark category-filter__mark--${option.tone}`}
-              />
-              <span>{option.label}</span>
-            </CategoryListItem>
-          ))}
-        </CategoryList>
-      </nav>
+      <CategoryList
+        aria-label="카테고리 필터"
+        className="category-filter category-filter__list"
+        horizontalPadding={false}
+        role="group"
+        size="small"
+        verticalPadding={false}
+      >
+        {options.map((option) => (
+          <CategoryListItem
+            aria-pressed={option.value === value}
+            aria-selected={undefined}
+            className="category-filter__item"
+            disabled={option.disabled}
+            key={option.value}
+            role="button"
+            value={option.value}
+          >
+            <span
+              aria-hidden="true"
+              className={`category-filter__mark category-filter__mark--${option.tone}`}
+            />
+            <span>{option.label}</span>
+          </CategoryListItem>
+        ))}
+      </CategoryList>
     </Category>
   );
 }

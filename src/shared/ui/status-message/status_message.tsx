@@ -18,11 +18,14 @@ export function StatusMessage({
   title,
   variant,
 }: StatusMessageProps) {
-  const titleId = `${useId()}-title`;
+  const instanceId = useId();
+  const descriptionId = `${instanceId}-description`;
+  const titleId = `${instanceId}-title`;
   const Icon = variant === 'error' ? AlertCircle : CheckCircle2;
 
   return (
     <section
+      aria-describedby={descriptionId}
       aria-labelledby={titleId}
       className={`status-message status-message--${variant}`}
       id={id}
@@ -33,7 +36,9 @@ export function StatusMessage({
         <strong className="status-message__title" id={titleId}>
           {title}
         </strong>
-        <div className="status-message__description">{children}</div>
+        <div className="status-message__description" id={descriptionId}>
+          {children}
+        </div>
       </div>
     </section>
   );

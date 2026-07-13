@@ -13,23 +13,34 @@ describe('LoadingState', () => {
     const status = screen.getByRole('status', { name: '불러오는 중' });
     const grid = status.querySelector('.loading-state__grid');
     const cards = status.querySelectorAll('.loading-state__card');
+    const label = screen.getByText('불러오는 중');
 
     expect(grid?.getAttribute('aria-hidden')).toBe('true');
+    expect(label.classList.contains('loading-state__label')).toBe(true);
+    expect(grid?.contains(label)).toBe(false);
     expect(cards).toHaveLength(3);
     cards.forEach((card) => {
-      expect(Array.from(card.children).map((child) => child.tagName)).toEqual([
-        'SPAN',
-        'I',
-        'I',
-      ]);
+      expect(card.querySelectorAll('.loading-state__placeholder')).toHaveLength(
+        3
+      );
+      expect(card.querySelectorAll('.loading-state__line')).toHaveLength(2);
     });
   });
 
-  it('상황에 맞는 접근 가능한 라벨로 바꿀 수 있다', () => {
-    render(<LoadingState label="보관함 불러오는 중" />);
+  it('라벨이 바뀌면 live status의 실제 텍스트도 바뀐다', () => {
+    const { rerender } = render(<LoadingState />);
 
-    expect(
-      screen.getByRole('status', { name: '보관함 불러오는 중' })
-    ).not.toBeNull();
+    const initialStatus = screen.getByRole('status', { name: '불러오는 중' });
+
+    expect(initialStatus.textContent).toContain('불러오는 중');
+
+    rerender(<LoadingState label="보관함 불러오는 중" />);
+
+    const updatedStatus = screen.getByRole('status', {
+      name: '보관함 불러오는 중',
+    });
+
+    expect(updatedStatus.textContent).toContain('보관함 불러오는 중');
+    expect(updatedStatus.textContent).not.toBe('불러오는 중');
   });
 });

@@ -9,22 +9,27 @@ export type NavigationItem<TValue extends string> = {
   value: TValue;
 };
 
-export type NavigationBarProps<TValue extends string> = {
-  items: readonly NavigationItem<TValue>[];
-  onValueChange: (value: TValue) => void;
-  value: TValue;
+type NavigationValue<TItems extends readonly NavigationItem<string>[]> =
+  TItems[number]['value'];
+
+export type NavigationBarProps<
+  TItems extends readonly NavigationItem<string>[],
+> = {
+  items: TItems;
+  onValueChange: (value: NoInfer<NavigationValue<TItems>>) => void;
+  value: NoInfer<NavigationValue<TItems>>;
 };
 
-export function NavigationBar<TValue extends string>({
-  items,
-  onValueChange,
-  value,
-}: NavigationBarProps<TValue>) {
+export function NavigationBar<
+  const TItems extends readonly NavigationItem<string>[],
+>({ items, onValueChange, value }: NavigationBarProps<TItems>) {
   return (
     <BottomNavigation
       aria-label="주요 화면"
       className="navigation-bar"
-      onValueChange={(nextValue) => onValueChange(nextValue as TValue)}
+      onValueChange={(nextValue) =>
+        onValueChange(nextValue as NavigationValue<TItems>)
+      }
       role="navigation"
       value={value}
     >
