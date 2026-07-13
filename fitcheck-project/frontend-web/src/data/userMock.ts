@@ -11,6 +11,8 @@ export interface Course {
   trainer: string;
   description: string;
   thumbnailTone: 'red' | 'purple' | 'green' | 'yellow';
+  /** 실제 운동 가이드 영상 URL (webm/mp4) — 추후 자체 VOD로 교체 가능 */
+  videoUrl: string;
   cues: string[];
   warnings: string[];
   setsGuide: string[];
@@ -48,6 +50,8 @@ export const MOCK_COURSES: Course[] = [
     level: '초급',
     trainer: '박코치',
     thumbnailTone: 'red',
+    videoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/c/c0/Video_showing_how_to_perform_the_dumbbell_bench_press_and_the_dumbbell_incline_bench_press.webm',
     description:
       '덤벨 프레스 기본 셋업부터 자극 위치까지, 입문자가 혼자 따라가기 쉬운 가슴 가이드입니다.',
     cues: [
@@ -70,6 +74,8 @@ export const MOCK_COURSES: Course[] = [
     level: '중급',
     trainer: '이코치',
     thumbnailTone: 'yellow',
+    videoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/5/5c/Squat_-_exercise_demonstration_video.webm',
     description:
       '무릎·골반·코어 정렬을 중심으로 스쿼트 깊이와 힘을 안정적으로 만드는 교정 강좌입니다.',
     cues: [
@@ -92,6 +98,8 @@ export const MOCK_COURSES: Course[] = [
     level: '중급',
     trainer: '박코치',
     thumbnailTone: 'purple',
+    videoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/0/03/Common_Lat_Pulldown_Mistakes.webm',
     description:
       '광배와 중부 승모에 자극을 모으는 풀 동작 가이드로, 벌크업 루틴의 밀도를 높입니다.',
     cues: [
@@ -114,6 +122,8 @@ export const MOCK_COURSES: Course[] = [
     level: '초급',
     trainer: '김코치',
     thumbnailTone: 'green',
+    videoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/f/fa/Kettlebell_crush_grip_push-up.webm',
     description:
       '짧은 시간에 코어 안정성과 칼로리 소모를 동시에 잡는 입문용 서킷입니다.',
     cues: [
@@ -136,6 +146,8 @@ export const MOCK_COURSES: Course[] = [
     level: '초급',
     trainer: '이코치',
     thumbnailTone: 'yellow',
+    videoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/7/7f/Squat_and_Frontal_Raise.webm',
     description:
       '측면 삼각근을 안전하게 자극하는 레터럴 레이즈 폼과 중량 선택법을 배웁니다.',
     cues: [
@@ -158,6 +170,8 @@ export const MOCK_COURSES: Course[] = [
     level: '고급',
     trainer: '김코치',
     thumbnailTone: 'red',
+    videoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/8/80/Incline_press_-_exercise_demonstration_video.webm',
     description:
       '벤치프레스·인클라인·플라이를 묶은 푸시 데이 구성으로 가슴·어깨·삼두를 밀도 있게 공략합니다.',
     cues: [

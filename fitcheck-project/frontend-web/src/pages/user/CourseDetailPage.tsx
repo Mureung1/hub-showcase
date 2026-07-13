@@ -1,23 +1,35 @@
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Clock, User, Target, AlertTriangle, ListChecks } from 'lucide-react';
+import {
+  ArrowLeft,
+  Clock,
+  User,
+  Target,
+  AlertTriangle,
+  ListChecks,
+} from 'lucide-react';
 import {
   getCourseById,
   getRelatedCourses,
 } from '../../data/userMock';
-import VideoPlaceholder from '../../features/courses/VideoPlaceholder';
+import { useCourseLibrary } from '../../hooks/useCourseLibrary';
+import CoursePlayer from '../../features/courses/CoursePlayer';
 import CourseCard from '../../features/courses/CourseCard';
+import FavoriteButton from '../../features/courses/FavoriteButton';
 import '../../features/courses/courses.css';
 import './user.css';
 
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const course = id ? getCourseById(id) : undefined;
+  const { isFavorite, isWatched, toggleFavorite } = useCourseLibrary();
 
   if (!course) {
     return <Navigate to="/user/courses" replace />;
   }
 
   const related = getRelatedCourses(course);
+  const favorited = isFavorite(course.id);
+  const watched = isWatched(course.id);
 
   return (
     <div className="user-page course-detail">
@@ -27,13 +39,22 @@ export default function CourseDetailPage() {
       </Link>
 
       <section className="course-detail-hero">
-        <VideoPlaceholder course={course} size="detail" />
+        <CoursePlayer course={course} />
 
         <div className="course-detail-info panel">
-          <div className="course-card-top">
-            <span className="status-badge badge-red">{course.bodyPart}</span>
-            <span className="status-badge badge-purple">{course.goal}</span>
-            <span className="status-badge badge-green">{course.level}</span>
+          <div className="course-detail-info-top">
+            <div className="course-card-top">
+              <span className="status-badge badge-red">{course.bodyPart}</span>
+              <span className="status-badge badge-purple">{course.goal}</span>
+              <span className="status-badge badge-green">{course.level}</span>
+              {watched && (
+                <span className="status-badge badge-yellow">시청함</span>
+              )}
+            </div>
+            <FavoriteButton
+              active={favorited}
+              onToggle={() => toggleFavorite(course.id)}
+            />
           </div>
           <h1>{course.title}</h1>
           <p className="course-detail-desc">{course.description}</p>
@@ -47,9 +68,9 @@ export default function CourseDetailPage() {
               {course.trainer}
             </span>
           </div>
-          <button type="button" className="btn btn-primary" disabled>
-            영상 재생 (준비 중)
-          </button>
+          <p className="course-player-hint">
+            아래(또는 좌측) 플레이어에서 재생을 누르면 시청 기록에 남습니다.
+          </p>
         </div>
       </section>
 

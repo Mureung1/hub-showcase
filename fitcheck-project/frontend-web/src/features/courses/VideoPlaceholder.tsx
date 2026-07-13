@@ -22,7 +22,7 @@ export default function VideoPlaceholder({
         </span>
         <span className="video-duration">{course.durationMin}:00</span>
       </div>
-      <span className="video-placeholder-label">VOD 준비 중</span>
+      <span className="video-placeholder-label">운동 가이드</span>
     </div>
   );
 }
