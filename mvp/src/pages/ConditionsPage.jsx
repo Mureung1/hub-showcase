@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
+import ConditionForm from '../components/ConditionForm.jsx'
 import './ConditionsPage.css'
 
 const OPERATOR_LABEL = { '>=': '이상', '<=': '이하', '>': '초과', '<': '미만' }
@@ -92,12 +93,14 @@ function ConditionsPage() {
     <section className="conditions-page">
       <h1>조건 관리</h1>
 
+      <ConditionForm onCreated={(c) => setConditions((prev) => [c, ...prev])} />
+
       {loading && <p className="conditions-status">불러오는 중...</p>}
       {!loading && error && <p className="conditions-status conditions-status--error">{error}</p>}
 
       {!loading && !error && conditions.length === 0 && (
         <div className="conditions-empty">
-          <p>Discord에서 /알림 으로 조건을 만들어보세요.</p>
+          <p>위에서 종목을 검색해 조건을 추가하거나, Discord에서 /알림 으로 만들어보세요.</p>
         </div>
       )}
 

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { CandlestickSeries, ColorType, createChart, createSeriesMarkers } from 'lightweight-charts'
 import { supabase } from '../lib/supabase.js'
+import { resolveSymbol } from '../lib/symbols.js'
 import './JournalPage.css'
 
 // 캔들/마커 색은 CSS 토큰(--up/--down)에서 읽어 테마를 추종한다.
@@ -110,6 +111,7 @@ function TradeRecordCard({
 
 function JournalPage() {
   const navigate = useNavigate()
+  const { symbol: symbolParam } = useParams()
   const chartContainerRef = useRef(null)
   const chartRef = useRef(null)
   const seriesRef = useRef(null)
@@ -121,6 +123,8 @@ function JournalPage() {
   const [reviewedTradeIds, setReviewedTradeIds] = useState(() => new Set())
   const [exchangeBySymbol, setExchangeBySymbol] = useState({})
   const [selectedKey, setSelectedKey] = useState(null)
+  // 트레이드가 없는 종목(대시보드 검색으로 진입)도 탭에 표시하기 위한 항목
+  const [extraSymbol, setExtraSymbol] = useState(null)
 
   const [candles, setCandles] = useState([])
   const [chartLoading, setChartLoading] = useState(false)
@@ -193,8 +197,6 @@ function JournalPage() {
             setExchangeBySymbol(map)
           }
         }
-
-        setSelectedKey(symbolKey(tradeList[0].ticker, tradeList[0].market))
       }
 
       setLoading(false)
@@ -214,8 +216,54 @@ function JournalPage() {
         map.set(key, { key, ticker: trade.ticker, market: trade.market })
       }
     }
+    // 트레이드 없는 진입 종목(대시보드 검색)도 탭에 노출
+    if (extraSymbol && !map.has(extraSymbol.key)) {
+      map.set(extraSymbol.key, extraSymbol)
+    }
     return [...map.values()]
-  }, [trades])
+  }, [trades, extraSymbol])
+
+  // 선택 종목 결정: URL :symbol 우선(없으면 첫 기록). 트레이드 없는 종목은 symbols에서 해석.
+  useEffect(() => {
+    if (loading) return
+    let cancelled = false
+
+    async function pick() {
+      if (symbolParam) {
+        const paramTicker = symbolParam.toUpperCase()
+        const fromTrades = symbolOptions.find((o) => o.ticker.toUpperCase() === paramTicker)
+        if (fromTrades) {
+          setSelectedKey(fromTrades.key)
+          return
+        }
+        if (extraSymbol && extraSymbol.ticker.toUpperCase() === paramTicker) {
+          setSelectedKey(extraSymbol.key)
+          return
+        }
+        const resolved = await resolveSymbol(symbolParam)
+        if (cancelled) return
+        if (resolved) {
+          const key = symbolKey(resolved.ticker, resolved.market)
+          setExtraSymbol({ key, ticker: resolved.ticker, market: resolved.market, name: resolved.name })
+          if (resolved.market === 'US' && resolved.exchange) {
+            setExchangeBySymbol((prev) => ({ ...prev, [key]: resolved.exchange }))
+          }
+          setSelectedKey(key)
+        }
+        return
+      }
+      // 파라미터 없음 → 첫 기록 종목
+      if (!selectedKey && symbolOptions.length > 0) {
+        setSelectedKey(symbolOptions[0].key)
+      }
+    }
+
+    pick()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbolParam, loading, trades])
 
   const symbolTrades = useMemo(() => {
     if (!selectedKey) return []
@@ -368,13 +416,14 @@ function JournalPage() {
       {loading && <p className="journal-status">불러오는 중...</p>}
       {!loading && loadError && <p className="journal-status journal-status--error">{loadError}</p>}
 
-      {!loading && !loadError && trades.length === 0 && (
+      {!loading && !loadError && symbolOptions.length === 0 && (
         <div className="journal-empty">
           <p>Discord 알림에서 매수/매도 버튼을 누르면 여기 기록됩니다.</p>
+          <p className="journal-status">대시보드에서 종목을 검색하면 차트를 바로 볼 수 있어요.</p>
         </div>
       )}
 
-      {!loading && !loadError && trades.length > 0 && (
+      {!loading && !loadError && symbolOptions.length > 0 && (
         <>
           <div className="journal-tabs">
             {symbolOptions.map((option) => (
@@ -414,10 +463,16 @@ function JournalPage() {
             <div className="journal-card journal-record-card">
               <div className="journal-panel-title">
                 <span>매매 기록</span>
-                <span>{trades.length}건</span>
+                <span>{symbolTrades.length}건</span>
               </div>
 
-              {trades.map((trade) => (
+              {symbolTrades.length === 0 && (
+                <p className="journal-status">
+                  이 종목은 아직 기록이 없어요. Discord 알림 버튼으로 기록하거나, 조건을 추가해보세요.
+                </p>
+              )}
+
+              {symbolTrades.map((trade) => (
                 <TradeRecordCard
                   key={trade.id}
                   trade={trade}

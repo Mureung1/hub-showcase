@@ -73,8 +73,11 @@
 
 | 토큰 | 값 |
 |------|-----|
-| `--sans` / `--heading` | `system-ui, 'Segoe UI', Roboto, sans-serif` |
-| `--mono` | `ui-monospace, Consolas, monospace` — 가격·티커·날짜 (`tabular-nums`) |
+| `--sans` / `--heading` | `'Geist Variable', system-ui, 'Segoe UI', Roboto, sans-serif` |
+| `--mono` | `'Geist Mono Variable', ui-monospace, Consolas, monospace` — 가격·티커·날짜 (`tabular-nums`) |
+
+> **폰트: Geist**(investment_journal 차용). `@fontsource-variable/geist`·`@fontsource-variable/geist-mono`를
+> npm으로 번들해 `main.jsx`에서 import(오프라인·CSP 안전, CDN 아님). 미로드 시 system-ui로 폴백.
 
 ### 스케일
 
@@ -110,7 +113,11 @@
 
 ### 레이아웃
 
-- 콘텐츠 폭 표준: 앱 `.page` `max-width: 1000px`, 랜딩 `.landing` `max-width: 900px`. 둘 다 `margin: 0 auto`.
+- **콘텐츠 폭 표준 `max-width: 1152px`**(investment_journal `max-w-6xl`), `margin: 0 auto`, 좌우 패딩 20px.
+  앱 셸(`AppLayout`)의 네비바 내부(`.app-nav__inner`)와 콘텐츠(`.app-content__inner`) 모두 이 컨테이너를 쓴다.
+  랜딩 `.landing`은 좁게 `max-width: 900px`.
+- **상단 네비바**: 전폭 바(하단 `--border` + 반투명 배경 + backdrop blur, sticky). 내부는 1152px 중앙 컨테이너,
+  높이 64px, `justify-between`(좌: 로고 / 우: 링크 + 로그아웃). 로고 클릭 → `/`(로그인 시 홈 게이트가 `APP_HOME`으로 분기).
 - 반응형 분기: 860px(2→1컬럼), 720px(히어로 축소·루프 1열).
 
 ---

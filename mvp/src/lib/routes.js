@@ -3,4 +3,4 @@
  * Day 3에 대시보드 신설 시 여기 한 줄만 '/dashboard'로 바꾸면
  * 로그인 리다이렉트·홈 게이트·로고 동선이 함께 정렬된다.
  */
-export const APP_HOME = '/journal'
+export const APP_HOME = '/dashboard'

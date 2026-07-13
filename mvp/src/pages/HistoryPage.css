@@ -29,6 +29,35 @@
   color: var(--text);
 }
 
+.history-group {
+  margin-bottom: 28px;
+}
+.history-group__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.history-group__name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.history-group__count {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 14px;
+}
+.history-group__chart {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .history-summary__count strong {
   color: var(--accent);
   font-size: 16px;

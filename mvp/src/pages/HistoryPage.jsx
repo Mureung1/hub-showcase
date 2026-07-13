@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import './HistoryPage.css'
@@ -134,6 +134,19 @@ function HistoryPage() {
 
   const completeCount = loops.filter((loop) => loop.complete).length
 
+  // 종목별 그룹 (investment_journal 히스토리 구조)
+  const groups = useMemo(() => {
+    const map = new Map()
+    for (const loop of loops) {
+      const key = `${loop.trade.ticker}|${loop.trade.market}`
+      if (!map.has(key)) {
+        map.set(key, { key, ticker: loop.trade.ticker, market: loop.trade.market, items: [] })
+      }
+      map.get(key).items.push(loop)
+    }
+    return [...map.values()]
+  }, [loops])
+
   return (
     <section className="history-page">
       <h1>히스토리</h1>
@@ -155,12 +168,23 @@ function HistoryPage() {
             </span>
           </div>
 
-          <ul className="history-list">
-            {loops.map(({ trade, condition, review, complete }) => (
-              <li
-                key={trade.id}
-                className={complete ? 'history-card history-card--complete' : 'history-card'}
-              >
+          {groups.map((group) => (
+            <div key={group.key} className="history-group">
+              <div className="history-group__head">
+                <span className="history-group__name">
+                  {group.ticker} <span className="history-card__market">{group.market}</span>
+                  <span className="history-group__count"> · {group.items.length}건</span>
+                </span>
+                <Link to={`/journal/${group.ticker}`} className="history-group__chart">
+                  차트 보기 →
+                </Link>
+              </div>
+              <ul className="history-list">
+                {group.items.map(({ trade, condition, review, complete }) => (
+                  <li
+                    key={trade.id}
+                    className={complete ? 'history-card history-card--complete' : 'history-card'}
+                  >
                 <div className="history-card__head">
                   <span className="history-card__name">
                     {trade.ticker} <span className="history-card__market">{trade.market}</span>
@@ -208,9 +232,11 @@ function HistoryPage() {
                     </div>
                   </div>
                 </div>
-              </li>
-            ))}
-          </ul>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </>
       )}
     </section>

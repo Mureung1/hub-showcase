@@ -7,11 +7,29 @@
 }
 
 .app-nav {
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-nav__inner {
+  max-width: 1152px;
+  margin: 0 auto;
+  height: 64px;
+  padding: 0 20px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 24px;
-  padding: 16px 32px;
-  border-bottom: 1px solid var(--border);
+}
+
+.app-nav__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .app-nav__logo {
@@ -26,7 +44,6 @@
 .app-nav__links {
   display: flex;
   gap: 4px;
-  flex-grow: 1;
 }
 
 .app-nav__link {
@@ -71,7 +88,14 @@
 
 .app-content {
   flex-grow: 1;
-  padding: 32px;
+  box-sizing: border-box;
+}
+
+.app-content__inner {
+  max-width: 1152px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 32px 20px;
   box-sizing: border-box;
 }
 

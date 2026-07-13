@@ -37,10 +37,10 @@
   --shadow:
     0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px -6px rgba(16, 24, 40, 0.1);
 
-  /* 타이포 */
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* 타이포 (Geist — investment_journal 폰트, @fontsource-variable 번들) */
+  --sans: 'Geist Variable', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: 'Geist Variable', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'Geist Mono Variable', ui-monospace, Consolas, monospace;
 
   /* 라운드 (클린 SaaS: 사각-라운드) */
   --r-card: 12px; /* 카드 */
