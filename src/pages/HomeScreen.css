@@ -1,0 +1,92 @@
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.home {
+  flex-direction: column;
+}
+
+.home-header {
+  background: var(--navy);
+  color: var(--white);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.home-header .greet {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.home-header .profile {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 4px;
+}
+
+.home-header .bell {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  position: relative;
+  border: none;
+  color: inherit;
+}
+
+.bell-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: var(--danger);
+  border-radius: 50%;
+  border: 2px solid var(--navy);
+}
+
+.home-filters {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
+}
+
+.home-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.home-list-label {
+  padding: 12px 20px 8px;
+  font-size: 13px;
+  color: var(--text-sub);
+  flex-shrink: 0;
+}
+
+.home-list-label strong {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.home-cards {
+  padding: 0 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}

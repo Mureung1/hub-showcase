@@ -1,0 +1,20 @@
+.app-shell {
+  background: var(--white);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* PC(≥480px)에서는 가운데 프레임 — 뷰포트보다 커지지 않게 제한 */
+@media (min-width: 480px) {
+  .app-shell {
+    width: 390px;
+    height: min(844px, 100dvh);
+    min-height: auto;
+    margin: 0 auto;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(10, 37, 64, 0.12);
+    overflow-y: auto;
+  }
+}
