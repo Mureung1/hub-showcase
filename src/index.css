@@ -1,55 +1,236 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-serif: "Literata", Georgia, serif;
-  --font-sans: "Bricolage Grotesque", system-ui, sans-serif;
+  --color-surface-container-high: #32204e;
+  --color-inverse-primary: #9900cf;
+  --color-surface: #1b0736;
+  --color-surface-container: #281643;
+  --color-tertiary: #e2b5ff;
+  --color-on-error: #690005;
+  --color-on-error-container: #ffdad6;
+  --color-surface-dim: #1b0736;
+  --color-on-secondary-fixed: #002022;
+  --color-on-tertiary: #451d61;
+  --color-error-container: #93000a;
+  --color-secondary-fixed-dim: #00dbe9;
+  --color-background: #1b0736;
+  --color-on-secondary: #00363a;
+  --color-tertiary-fixed-dim: #e2b5ff;
+  --color-on-primary-fixed: #320047;
+  --color-secondary: #d3fbff;
+  --color-inverse-on-surface: #392755;
+  --color-inverse-surface: #ecdcff;
+  --color-surface-container-lowest: #160231;
+  --color-on-background: #ecdcff;
+  --color-surface-container-highest: #3e2c5a;
+  --color-on-tertiary-fixed: #2e014b;
+  --color-on-primary: #520071;
+  --color-primary: #ecb2ff;
+  --color-primary-fixed-dim: #ecb2ff;
+  --color-on-surface-variant: #d4c0d7;
+  --color-surface-container-low: #23113f;
+  --color-on-surface: #ecdcff;
+  --color-on-secondary-fixed-variant: #004f54;
+  --color-tertiary-fixed: #f3daff;
+  --color-on-primary-container: #ffffff;
+  --color-surface-tint: #ecb2ff;
+  --color-outline-variant: #514255;
+  --color-on-tertiary-container: #fffeff;
+  --color-primary-fixed: #f8d8ff;
+  --color-surface-bright: #42305f;
+  --color-error: #ffb4ab;
+  --color-secondary-container: #00eefc;
+  --color-tertiary-container: #8f64ad;
+  --color-outline: #9d8ba0;
+  --color-primary-container: #bd00ff;
+  --color-surface-variant: #3e2c5a;
+  --color-on-primary-fixed-variant: #74009f;
+  --color-secondary-fixed: #7df4ff;
+  --color-on-tertiary-fixed-variant: #5d357a;
+  --color-on-secondary-container: #00686f;
 
-  /* Custom Scrapbook Colors */
-  --color-secondary-container: #ffcce0;
-  --color-on-secondary-container: #c2185b;
-  --color-secondary: #e91e63;
-  --color-on-background: #2c160e;
-  --color-surface-container: #fff0f3;
-  --color-surface-dim: #fff5f7;
-  --color-background: #fff5f7;
+  --font-headline-md: "Space Grotesk", sans-serif;
+  --font-label-sm: "Space Mono", monospace;
+  --font-body-md: "Be Vietnam Pro", sans-serif;
+  --font-headline-lg: "Space Grotesk", sans-serif;
+  --font-body-lg: "Be Vietnam Pro", sans-serif;
 }
 
-/* Custom styles for the scrapbook/digital diary feel */
-html, body {
-  background-color: #fff5f7;
-  background-image: radial-gradient(#e91e63 0.5px, transparent 0.5px);
-  background-size: 24px 24px;
-  background-attachment: fixed;
-  color: #2c160e;
-  font-family: "Bricolage Grotesque", system-ui, sans-serif;
-}
+@layer utilities {
+  /* CRT Scanline Overlay */
+  .scanlines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 0) 50%,
+      rgba(0, 0, 0, 0.15) 50%,
+      rgba(0, 0, 0, 0.15)
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 50;
+  }
 
-.notebook-page {
-  background-color: #ffffff;
-  background-image: linear-gradient(to bottom, transparent 23px, #e8dfdf 23px, #e8dfdf 24px);
-  background-size: 100% 24px;
-  box-shadow: 12px 12px 0px rgba(233, 30, 99, 0.05);
-}
+  /* Notebook Lines background style */
+  .bg-notebook {
+    background-image: linear-gradient(#514255 1px, transparent 1px);
+    background-size: 100% 24px;
+  }
 
-.washi-tape {
-  background: rgba(255, 204, 224, 0.85);
-  backdrop-filter: blur(1px);
-}
+  /* Retro Dither Grid background */
+  .dither-bg {
+    background-image: 
+      linear-gradient(45deg, #281643 25%, transparent 25%, transparent 75%, #281643 75%, #281643),
+      linear-gradient(45deg, #281643 25%, transparent 25%, transparent 75%, #281643 75%, #281643);
+    background-size: 4px 4px;
+    background-position: 0 0, 2px 2px;
+    background-color: #1b0736;
+  }
 
-.polaroid {
-  box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.08);
-}
+  /* 8-bit Custom Scrollbars */
+  ::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #160231;
+    border-left: 2px solid #514255;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #ecb2ff;
+    border: 2px solid #160231;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #e2b5ff;
+  }
 
-.spiral-ring {
-  background: linear-gradient(to right, #7f7478, #d0c3c7, #7f7478);
-}
+  /* Pixel borders */
+  .pixel-border {
+    border: 3px solid #000000;
+  }
 
-.handwritten {
-  font-family: 'Literata', serif;
-  font-style: italic;
-}
+  /* Cursor Blinker */
+  @keyframes cursor-blink-anim {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  .cursor-blink {
+    display: inline-block;
+    width: 8px;
+    height: 1.2em;
+    background-color: #00eefc;
+    animation: cursor-blink-anim 1s step-end infinite;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
 
-/* Cute hand-written line height alignment */
-.notebook-line-aligned {
-  line-height: 24px;
+  /* Floating Pixel Art keyframes */
+  @keyframes float-pixel-slow {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-24px) rotate(8deg);
+    }
+  }
+
+  @keyframes float-pixel-medium {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-16px) rotate(-10deg);
+    }
+  }
+
+  @keyframes float-pixel-fast {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-12px) rotate(15deg);
+    }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      text-shadow: 0 0 4px rgba(236, 178, 255, 0.4), 0 0 12px rgba(236, 178, 255, 0.2);
+    }
+    50% {
+      text-shadow: 0 0 10px rgba(236, 178, 255, 0.8), 0 0 20px rgba(0, 238, 252, 0.6);
+    }
+  }
+
+  .animate-float-slow {
+    animation: float-pixel-slow 7s ease-in-out infinite;
+  }
+
+  .animate-float-medium {
+    animation: float-pixel-medium 5s ease-in-out infinite;
+  }
+
+  .animate-float-fast {
+    animation: float-pixel-fast 3.5s ease-in-out infinite;
+  }
+
+  .animate-glow-pulse {
+    animation: glow-pulse 3s ease-in-out infinite;
+  }
+
+  /* 8-bit Cyber Glitch Effects */
+  @keyframes glitch-skew {
+    0%, 100% { transform: skew(0deg); }
+    8% { transform: skew(1deg); }
+    15% { transform: skew(-1.5deg); }
+    22% { transform: skew(0deg); }
+    23% { transform: skew(4deg); }
+    24% { transform: skew(0deg); }
+    60% { transform: skew(-1deg); }
+    61% { transform: skew(5deg); }
+    62% { transform: skew(0deg); }
+  }
+
+  @keyframes glitch-color-cyan {
+    0%, 100% { text-shadow: 2px -1px 0 #00eefc, -1px 2px 0 #bd00ff; }
+    20% { text-shadow: -2px 1px 0 #00eefc, 2px -2px 0 #bd00ff; }
+    40% { text-shadow: 1px 2px 0 #00eefc, -2px -1px 0 #bd00ff; }
+    60% { text-shadow: -1px -2px 0 #00eefc, 1px 2px 0 #bd00ff; }
+    80% { text-shadow: 2px 2px 0 #00eefc, -1px -1px 0 #bd00ff; }
+  }
+
+  @keyframes scan-line-swipe {
+    0% {
+      transform: translateY(-100%);
+    }
+    100% {
+      transform: translateY(100vh);
+    }
+  }
+
+  @keyframes screen-shake {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    1% { transform: translate(2px, 1px) rotate(0.1deg); }
+    2% { transform: translate(-1px, -2px) rotate(-0.1deg); }
+    3% { transform: translate(0px, 2px) rotate(0deg); }
+    4% { transform: translate(1px, -1px) rotate(0.1deg); }
+    5% { transform: translate(0, 0) rotate(0deg); }
+  }
+
+  .glitch-text-active {
+    animation: glitch-skew 3s step-end infinite, glitch-color-cyan 1.5s infinite alternate-reverse;
+  }
+
+  .glitch-screen-active {
+    animation: screen-shake 8s infinite ease-in-out;
+  }
+
+  .glitch-swipe-line {
+    animation: scan-line-swipe 4.5s linear infinite;
+  }
 }

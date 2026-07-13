@@ -1,0 +1,589 @@
+import React, { useState, useRef } from "react";
+import { ClothingItem } from "../types";
+import { Sparkles, Trash2, Sliders, Info, RotateCcw, Layers, ArrowUp, ArrowDown, HelpCircle } from "lucide-react";
+
+interface StickerInstance {
+  id: string;
+  icon: string; // Emoji character OR custom wardrobe image URL
+  name: string;
+  x: number;
+  y: number;
+  scale: number;
+  rotation: number; // Rotation in degrees (0 to 360)
+  flip: boolean;    // Horizontal mirror flip
+  isImage?: boolean; // Whether the icon represents a custom wardrobe item image
+}
+
+interface StickersTabProps {
+  closet?: ClothingItem[];
+}
+
+// Custom defined sticker libraries for detailed doll dress-up
+const DOLL_STICKERS = [
+  { id: "doll-eunha", icon: "🧍‍♀️", name: "은하 돌 (Eunha Doll)" },
+  { id: "doll-wooju", icon: "🧍‍♂️", name: "우주 돌 (Wooju Doll)" },
+  { id: "doll-luna", icon: "🧑‍🎤", name: "루나 돌 (Luna Doll)" },
+  { id: "hair-pink", icon: "💇‍♀️", name: "핑크 양갈래 (Twintails)" },
+  { id: "hair-spiky", icon: "💇‍♂️", name: "네온 스파이키 (Spiky)" },
+  { id: "hair-wavy", icon: "💇", name: "웨이브 숏컷 (Wavy Bob)" }
+];
+
+const CLOTHES_STICKERS = [
+  { id: "c-dress", icon: "👗", name: "네온 멜빵 드레스" },
+  { id: "c-tee", icon: "👕", name: "도트 그래픽 크롭티" },
+  { id: "c-bomber", icon: "🧥", name: "사이버 핑크 봄버" },
+  { id: "c-denim", icon: "👖", name: "와이드 카고 진" },
+  { id: "c-shorts", icon: "🩳", name: "레트로 하이 숏" },
+  { id: "c-sneakers", icon: "👟", name: "통굽 스니커즈" },
+  { id: "c-boots", icon: "👢", name: "사이버 화이트 롱부츠" }
+];
+
+const ACC_STICKERS = [
+  { id: "a-crown", icon: "👑", name: "네온 프린세스 왕관" },
+  { id: "a-shades", icon: "🕶️", name: "해커 고글 안경" },
+  { id: "a-catears", icon: "🐱", name: "고양이 귀 헤어핀" },
+  { id: "a-ribbon", icon: "🎀", name: "왕 리본 머리띠" },
+  { id: "a-bag", icon: "🎒", name: "홀로그램 백팩" },
+  { id: "a-guitar", icon: "🎸", name: "일렉트로 신스 기타" },
+  { id: "a-balloon", icon: "🎈", name: "하트 풍선" },
+  { id: "a-headphones", icon: "🎧", name: "핑크 메카 헤드폰" }
+];
+
+const DECO_STICKERS = [
+  { id: "d-heart", icon: "💖", name: "8-Bit 러브 하트" },
+  { id: "d-star", icon: "⭐", name: "지지직 글리치 별" },
+  { id: "d-pill", icon: "💊", name: "사이버 네온 알약" },
+  { id: "d-pad", icon: "🎮", name: "레트로 게임 아케이드 패드" },
+  { id: "d-invader", icon: "👾", name: "도트 에일리언" },
+  { id: "d-ufo", icon: "🛸", name: "외계 우주선" },
+  { id: "d-bolt", icon: "⚡", name: "번개 이펙트" },
+  { id: "d-cat", icon: "🐈", name: "도트 픽셀 고양이" }
+];
+
+export default function StickersTab({ closet = [] }: StickersTabProps) {
+  // Tabs for the shelf drawers
+  const [drawerTab, setDrawerTab] = useState<"dolls" | "clothes" | "acc" | "deco" | "closet">("dolls");
+
+  const [placedStickers, setPlacedStickers] = useState<StickerInstance[]>([
+    { id: "init-doll-1", icon: "🧍‍♀️", name: "은하 돌 (Eunha Doll)", x: 50, y: 55, scale: 2.0, rotation: 0, flip: false },
+    { id: "init-hair-1", icon: "💇‍♀️", name: "핑크 양갈래 (Twintails)", x: 50, y: 26, scale: 1.8, rotation: 0, flip: false },
+    { id: "init-star-1", icon: "💖", name: "8-Bit 러브 하트", x: 22, y: 20, scale: 1.2, rotation: 15, flip: false },
+    { id: "init-ufo-1", icon: "🛸", name: "외계 우주선", x: 78, y: 18, scale: 1.1, rotation: -10, flip: true }
+  ]);
+
+  const [activeStickerId, setActiveStickerId] = useState<string | null>(null);
+  const [scaleInput, setScaleInput] = useState<number>(1.0);
+  const [rotationInput, setRotationInput] = useState<number>(0);
+
+  // Background guide model display in center of board
+  const [mannequinGuide, setMannequinGuide] = useState<"none" | "eunha" | "wooju">("none");
+
+  const boardRef = useRef<HTMLDivElement>(null);
+  const dragInfoRef = useRef<{ stickerId: string; startX: number; startY: number; initX: number; initY: number } | null>(null);
+
+  // Spawn new sticker onto board
+  const handleAddSticker = (icon: string, name: string, isImage = false) => {
+    const defaultScale = name.includes("Doll") || name.includes("돌") ? 2.0 : 1.2;
+    const newSticker: StickerInstance = {
+      id: "sticker-inst-" + Date.now() + Math.random().toString(36).substr(2, 4),
+      icon,
+      name,
+      x: 35 + Math.random() * 30, // Random spawn area near center
+      y: 30 + Math.random() * 30,
+      scale: defaultScale,
+      rotation: 0,
+      flip: false,
+      isImage
+    };
+    setPlacedStickers([...placedStickers, newSticker]);
+    setActiveStickerId(newSticker.id);
+    setScaleInput(defaultScale);
+    setRotationInput(0);
+  };
+
+  // Drag interaction handlers
+  const handleStickerMouseDown = (e: React.MouseEvent, sticker: StickerInstance) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveStickerId(sticker.id);
+    setScaleInput(sticker.scale);
+    setRotationInput(sticker.rotation || 0);
+
+    if (boardRef.current) {
+      dragInfoRef.current = {
+        stickerId: sticker.id,
+        startX: e.clientX,
+        startY: e.clientY,
+        initX: sticker.x,
+        initY: sticker.y
+      };
+    }
+  };
+
+  const handleBoardMouseMove = (e: React.MouseEvent) => {
+    if (!dragInfoRef.current || !boardRef.current) return;
+
+    const drag = dragInfoRef.current;
+    const rect = boardRef.current.getBoundingClientRect();
+
+    const deltaX = e.clientX - drag.startX;
+    const deltaY = e.clientY - drag.startY;
+
+    // Convert pixels to percentage coordinate relative to the board
+    const percentDeltaX = (deltaX / rect.width) * 100;
+    const percentDeltaY = (deltaY / rect.height) * 100;
+
+    const newX = Math.min(Math.max(drag.initX + percentDeltaX, 1), 99);
+    const newY = Math.min(Math.max(drag.initY + percentDeltaY, 1), 99);
+
+    setPlacedStickers(prev =>
+      prev.map(s => (s.id === drag.stickerId ? { ...s, x: newX, y: newY } : s))
+    );
+  };
+
+  const handleBoardMouseUp = () => {
+    dragInfoRef.current = null;
+  };
+
+  const handleDeleteSticker = (id: string) => {
+    setPlacedStickers(placedStickers.filter(s => s.id !== id));
+    if (activeStickerId === id) {
+      setActiveStickerId(null);
+    }
+  };
+
+  const handleClearBoard = () => {
+    setPlacedStickers([]);
+    setActiveStickerId(null);
+  };
+
+  // Adjust properties of selected sticker
+  const handleScaleChange = (val: number) => {
+    setScaleInput(val);
+    if (activeStickerId) {
+      setPlacedStickers(prev =>
+        prev.map(s => (s.id === activeStickerId ? { ...s, scale: val } : s))
+      );
+    }
+  };
+
+  const handleRotationChange = (val: number) => {
+    setRotationInput(val);
+    if (activeStickerId) {
+      setPlacedStickers(prev =>
+        prev.map(s => (s.id === activeStickerId ? { ...s, rotation: val } : s))
+      );
+    }
+  };
+
+  const handleToggleFlip = () => {
+    if (activeStickerId) {
+      setPlacedStickers(prev =>
+        prev.map(s => (s.id === activeStickerId ? { ...s, flip: !s.flip } : s))
+      );
+    }
+  };
+
+  // Layer Ordering Operations (Essential for stacking clothes on dolls)
+  const handleBringToFront = () => {
+    if (!activeStickerId) return;
+    const target = placedStickers.find(s => s.id === activeStickerId);
+    if (!target) return;
+    const filtered = placedStickers.filter(s => s.id !== activeStickerId);
+    // Push target to the end so it renders last (on top)
+    setPlacedStickers([...filtered, target]);
+  };
+
+  const handleSendToBack = () => {
+    if (!activeStickerId) return;
+    const target = placedStickers.find(s => s.id === activeStickerId);
+    if (!target) return;
+    const filtered = placedStickers.filter(s => s.id !== activeStickerId);
+    // Unshift target to the beginning so it renders first (underneath everything)
+    setPlacedStickers([target, ...filtered]);
+  };
+
+  const activeStickerObj = placedStickers.find(s => s.id === activeStickerId);
+
+  return (
+    <div className="space-y-6 pb-12">
+      {/* Title block with doll dress-up header */}
+      <div className="bg-surface border-4 border-primary p-4 shadow-[5px_5px_0_0_#000] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="font-headline-lg text-xl font-bold text-primary flex items-center gap-2 tracking-wide">
+            💅 DOLL_DRESSUP_STUDIO.EXE (인형 옷입히기 다이어리)
+          </h2>
+          <p className="font-body-md text-xs text-on-surface-variant mt-1">
+            원하는 인형 몸통을 소환하고 가발, 옷, 패션 소품 및 <b>내 진짜 옷장 아이템</b>을 가져와 레이어로 쌓아 나만의 8비트 코디 인형극을 해보세요!
+          </p>
+        </div>
+        {/* Toggle options for backdrop mannequin guide */}
+        <div className="flex items-center space-x-2 bg-surface-container-low p-1.5 border-2 border-outline-variant text-xs">
+          <span className="font-mono text-[10px] text-on-surface-variant font-bold uppercase shrink-0">마네킹 보조 가이드:</span>
+          <button
+            onClick={() => setMannequinGuide("none")}
+            className={`px-2 py-1 font-bold ${mannequinGuide === "none" ? "bg-primary text-on-primary" : "text-on-surface hover:bg-surface-container-high"}`}
+          >
+            없음
+          </button>
+          <button
+            onClick={() => setMannequinGuide("eunha")}
+            className={`px-2 py-1 font-bold ${mannequinGuide === "eunha" ? "bg-secondary text-on-secondary-fixed" : "text-on-surface hover:bg-surface-container-high"}`}
+          >
+            은하(🧍‍♀️)
+          </button>
+          <button
+            onClick={() => setMannequinGuide("wooju")}
+            className={`px-2 py-1 font-bold ${mannequinGuide === "wooju" ? "bg-secondary text-on-secondary-fixed" : "text-on-surface hover:bg-surface-container-high"}`}
+          >
+            우주(🧍‍♂️)
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Drawer Container: Sticker Drawers & Inspector Controls */}
+        <div className="lg:col-span-5 space-y-6">
+          {/* Main Sticker shelf box */}
+          <div className="bg-surface border-4 border-primary shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col">
+            {/* Drawer Header Tabs */}
+            <div className="bg-primary text-on-primary border-b-4 border-primary grid grid-cols-5 text-center font-bold text-[10px] uppercase font-mono">
+              <button
+                onClick={() => setDrawerTab("dolls")}
+                className={`py-2 border-r border-primary-container cursor-pointer transition-colors ${drawerTab === "dolls" ? "bg-surface text-primary" : "hover:bg-primary-container"}`}
+              >
+                🧍‍♀️ 인형/헤어
+              </button>
+              <button
+                onClick={() => setDrawerTab("clothes")}
+                className={`py-2 border-r border-primary-container cursor-pointer transition-colors ${drawerTab === "clothes" ? "bg-surface text-primary" : "hover:bg-primary-container"}`}
+              >
+                👗 의류
+              </button>
+              <button
+                onClick={() => setDrawerTab("acc")}
+                className={`py-2 border-r border-primary-container cursor-pointer transition-colors ${drawerTab === "acc" ? "bg-surface text-primary" : "hover:bg-primary-container"}`}
+              >
+                👑 소품
+              </button>
+              <button
+                onClick={() => setDrawerTab("deco")}
+                className={`py-2 border-r border-primary-container cursor-pointer transition-colors ${drawerTab === "deco" ? "bg-surface text-primary" : "hover:bg-primary-container"}`}
+              >
+                💖 데코
+              </button>
+              <button
+                onClick={() => setDrawerTab("closet")}
+                className={`py-2 cursor-pointer transition-colors flex flex-col justify-center items-center ${drawerTab === "closet" ? "bg-surface text-[#00ffcc]" : "hover:bg-primary-container text-secondary"}`}
+              >
+                <span>👚 내옷장</span>
+              </button>
+            </div>
+
+            {/* Shelf Items Area */}
+            <div className="p-4 bg-surface bg-notebook min-h-[260px] max-h-[360px] overflow-y-auto">
+              {drawerTab === "dolls" && (
+                <div className="grid grid-cols-3 gap-3">
+                  {DOLL_STICKERS.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleAddSticker(item.icon, item.name)}
+                      className="bg-surface-container border-2 border-outline hover:border-secondary p-2.5 flex flex-col items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all text-center shadow-[2px_2px_0_0_#000]"
+                    >
+                      <span className="text-4xl filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">{item.icon}</span>
+                      <span className="font-label-sm text-[8px] text-on-surface mt-1 font-bold truncate w-full">{item.name.split(" ")[0]}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {drawerTab === "clothes" && (
+                <div className="grid grid-cols-3 gap-3">
+                  {CLOTHES_STICKERS.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleAddSticker(item.icon, item.name)}
+                      className="bg-surface-container border-2 border-outline hover:border-secondary p-2.5 flex flex-col items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all text-center shadow-[2px_2px_0_0_#000]"
+                    >
+                      <span className="text-4xl filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">{item.icon}</span>
+                      <span className="font-label-sm text-[8px] text-on-surface mt-1 font-bold truncate w-full">{item.name.substring(0, 7)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {drawerTab === "acc" && (
+                <div className="grid grid-cols-3 gap-3">
+                  {ACC_STICKERS.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleAddSticker(item.icon, item.name)}
+                      className="bg-surface-container border-2 border-outline hover:border-secondary p-2.5 flex flex-col items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all text-center shadow-[2px_2px_0_0_#000]"
+                    >
+                      <span className="text-4xl filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">{item.icon}</span>
+                      <span className="font-label-sm text-[8px] text-on-surface mt-1 font-bold truncate w-full">{item.name.substring(0, 7)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {drawerTab === "deco" && (
+                <div className="grid grid-cols-3 gap-3">
+                  {DECO_STICKERS.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleAddSticker(item.icon, item.name)}
+                      className="bg-surface-container border-2 border-outline hover:border-secondary p-2.5 flex flex-col items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all text-center shadow-[2px_2px_0_0_#000]"
+                    >
+                      <span className="text-4xl filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">{item.icon}</span>
+                      <span className="font-label-sm text-[8px] text-on-surface mt-1 font-bold truncate w-full">{item.name.split(" ")[0]}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {drawerTab === "closet" && (
+                <div className="space-y-3">
+                  <div className="bg-surface-container-low border border-[#00ffcc]/30 p-2 text-center text-[10px] text-[#00ffcc] uppercase font-mono font-bold leading-normal">
+                    🛰️ 옷장에서 내 실제 옷 가져오기 // IMPORT FROM CLOSET
+                  </div>
+                  {closet.length === 0 ? (
+                    <div className="p-6 text-center text-on-surface-variant font-semibold text-xs bg-surface-container-low border-2 border-dashed border-outline-variant">
+                      옷장에 등록된 옷이 없습니다!<br/>
+                      [Closet] 탭에서 먼저 나만의 코디 옷을 등록해보세요.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {closet.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => handleAddSticker(item.imageUrl, item.name, true)}
+                          className="bg-surface-container-low border-2 border-outline-variant hover:border-[#00ffcc] p-1.5 flex flex-col items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all text-center shadow-[2px_2px_0_0_#000]"
+                          title={`${item.name} (${item.category})`}
+                        >
+                          <div className="w-12 h-12 bg-[#160231] border border-outline-variant p-0.5 rounded-none overflow-hidden mb-1 flex items-center justify-center">
+                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                          </div>
+                          <span className="font-label-sm text-[7px] text-on-surface truncate w-full font-bold">{item.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Expanded Layer & Layout Inspector Controls for selected item */}
+          {activeStickerObj && (
+            <div className="bg-surface border-4 border-secondary shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col">
+              <div className="bg-secondary text-on-secondary-fixed px-3 py-1.5 flex justify-between items-center border-b-4 border-secondary font-bold font-label-sm text-xs">
+                <span>ITEM_INSPECTOR.EXE: {activeStickerObj.name}</span>
+                <button
+                  onClick={() => setActiveStickerId(null)}
+                  className="w-5 h-5 border border-on-secondary-fixed bg-surface flex items-center justify-center text-[9px] font-bold"
+                >
+                  X
+                </button>
+              </div>
+
+              <div className="p-4 bg-surface-container space-y-4">
+                {/* 1. Scale slider */}
+                <div className="space-y-1">
+                  <label className="font-label-sm text-xs text-secondary uppercase flex justify-between">
+                    <span>Sticker scale [크기 조절]</span>
+                    <span className="font-bold">{scaleInput.toFixed(1)}x</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="0.3"
+                    max="3.0"
+                    step="0.1"
+                    value={scaleInput}
+                    onChange={(e) => handleScaleChange(parseFloat(e.target.value))}
+                    className="w-full h-2 bg-surface rounded-none border border-outline appearance-none cursor-pointer accent-secondary"
+                  />
+                </div>
+
+                {/* 2. Rotation slider */}
+                <div className="space-y-1">
+                  <label className="font-label-sm text-xs text-[#00ffcc] uppercase flex justify-between">
+                    <span>Rotate [회전 조절]</span>
+                    <span className="font-bold">{rotationInput}°</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="-180"
+                    max="180"
+                    step="5"
+                    value={rotationInput}
+                    onChange={(e) => handleRotationChange(parseInt(e.target.value))}
+                    className="w-full h-2 bg-surface rounded-none border border-outline appearance-none cursor-pointer accent-[#00ffcc]"
+                  />
+                </div>
+
+                {/* 3. Horizontal Flip Mirror Option */}
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleToggleFlip}
+                    className={`flex-1 py-1.5 border-2 border-black text-xs font-bold font-mono shadow-[2px_2px_0_0_#000] cursor-pointer transition-all ${activeStickerObj.flip ? "bg-[#00eefc] text-black" : "bg-surface text-on-surface"}`}
+                  >
+                    🔄 좌우 반전: {activeStickerObj.flip ? "켜짐" : "꺼짐"}
+                  </button>
+                </div>
+
+                {/* 4. Layer Ordering Buttons */}
+                <div className="space-y-1.5">
+                  <span className="font-label-sm text-[10px] text-on-surface-variant uppercase font-bold block">레이어 깊이 제어 (LAYER ORDER):</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={handleBringToFront}
+                      className="py-1.5 bg-surface border-2 border-outline-variant hover:border-secondary hover:text-secondary text-xs font-bold flex items-center justify-center gap-1 shadow-[2px_2px_0_0_#000] cursor-pointer"
+                      title="맨 위로 올리기"
+                    >
+                      <ArrowUp size={12} />
+                      <span>맨 위로 올리기</span>
+                    </button>
+                    <button
+                      onClick={handleSendToBack}
+                      className="py-1.5 bg-surface border-2 border-outline-variant hover:border-secondary hover:text-secondary text-xs font-bold flex items-center justify-center gap-1 shadow-[2px_2px_0_0_#000] cursor-pointer"
+                      title="맨 밑으로 보내기"
+                    >
+                      <ArrowDown size={12} />
+                      <span>맨 밑으로 보내기</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Action panel metrics */}
+                <div className="bg-surface-container-low border border-outline-variant p-2.5 font-label-sm text-[9px] text-on-surface-variant leading-relaxed">
+                  <p>COORDINATES: X={activeStickerObj.x.toFixed(0)}%, Y={activeStickerObj.y.toFixed(0)}%</p>
+                  <p>FLIP_STATE: {activeStickerObj.flip ? "MIRRORED" : "NORMAL"} | ROT: {activeStickerObj.rotation}°</p>
+                </div>
+
+                {/* Delete button */}
+                <button
+                  onClick={() => handleDeleteSticker(activeStickerObj.id)}
+                  className="w-full py-2 bg-error text-on-error border-2 border-black font-headline-md text-xs font-bold uppercase flex items-center justify-center gap-1 shadow-[2px_2px_0_0_#000] hover:translate-x-[1px] cursor-pointer"
+                >
+                  <Trash2 size={12} />
+                  <span>선택된 옷/스티커 삭제 (DELETE)</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Giant Interactive Board & Dressup Stage Canvas */}
+        <div className="lg:col-span-7 flex flex-col">
+          <div className="bg-surface border-4 border-primary shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col h-full">
+            {/* Window title bar */}
+            <div className="bg-primary text-on-primary px-3 py-2 flex justify-between items-center border-b-4 border-primary">
+              <span className="font-label-sm text-xs font-bold uppercase flex items-center gap-1.5">
+                <Sliders size={14} />
+                <span>INTERACTIVE_STICKER_BOARD.EXE [코디 모눈판]</span>
+              </span>
+              <button
+                onClick={handleClearBoard}
+                className="bg-surface text-primary border-2 border-primary px-2 py-0.5 font-label-sm text-[9px] hover:bg-surface-variant font-bold uppercase cursor-pointer"
+              >
+                모두 비우기 (CLEAR)
+              </button>
+            </div>
+
+            {/* Interactive Canvas Grid Frame */}
+            <div
+              ref={boardRef}
+              onMouseMove={handleBoardMouseMove}
+              onMouseUp={handleBoardMouseUp}
+              onMouseLeave={handleBoardMouseUp}
+              className="relative w-full aspect-[4/3] border-2 border-primary bg-surface-container-lowest overflow-hidden dither-bg cursor-crosshair select-none flex items-center justify-center"
+              style={{ backgroundImage: "radial-gradient(#514255 15%, transparent 15%)", backgroundSize: "20px 20px" }}
+            >
+              {/* Optional Fixed Mannequin Guide overlay in center */}
+              {mannequinGuide === "eunha" && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40 z-10">
+                  <span className="text-[140px] select-none filter drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">🧍‍♀️</span>
+                  <div className="absolute bottom-4 bg-[#160231] px-2 py-0.5 border border-outline-variant text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">
+                    가이드 가상 마네킹: 은하
+                  </div>
+                </div>
+              )}
+              {mannequinGuide === "wooju" && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40 z-10">
+                  <span className="text-[140px] select-none filter drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">🧍‍♂️</span>
+                  <div className="absolute bottom-4 bg-[#160231] px-2 py-0.5 border border-outline-variant text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">
+                    가이드 가상 마네킹: 우주
+                  </div>
+                </div>
+              )}
+
+              {placedStickers.length === 0 ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-outline-variant space-y-2 pointer-events-none z-10">
+                  <span className="text-5xl animate-bounce">💅</span>
+                  <p className="font-headline-md text-sm uppercase text-secondary font-bold tracking-widest">DRESS-UP ROOM CANVAS EMPTY</p>
+                  <p className="font-body-md text-xs text-on-surface-variant max-w-sm">
+                    왼쪽의 [인형/헤어] 탭에서 은하/우주 모델 몸통을 클릭해 불러오고, 가발이나 옷을 얹거나, [내 옷장] 탭의 고유 의상을 클릭해 소환해 보세요!
+                  </p>
+                </div>
+              ) : (
+                placedStickers.map((sticker) => {
+                  const isActive = activeStickerId === sticker.id;
+                  return (
+                    <div
+                      key={sticker.id}
+                      onMouseDown={(e) => handleStickerMouseDown(e, sticker)}
+                      className={`absolute select-none cursor-move transition-transform duration-75 filter drop-shadow-[2px_6px_8px_rgba(0,0,0,0.65)] ${
+                        isActive ? "ring-2 ring-secondary ring-offset-2 ring-offset-background z-40 scale-105" : "z-20 hover:scale-[1.03]"
+                      }`}
+                      style={{
+                        left: `${sticker.x}%`,
+                        top: `${sticker.y}%`,
+                        transform: `translate(-50%, -50%) scale(${sticker.scale}) rotate(${sticker.rotation || 0}deg) scaleX(${sticker.flip ? -1 : 1})`,
+                        transformOrigin: "center center"
+                      }}
+                    >
+                      {sticker.isImage ? (
+                        <div className="w-24 h-24 p-0.5 border-2 border-dashed border-primary/20 bg-black/30 pointer-events-none select-none flex items-center justify-center">
+                          <img
+                            src={sticker.icon}
+                            alt={sticker.name}
+                            className="w-full h-full object-contain pointer-events-none select-none"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-5xl md:text-6xl filter select-none pointer-events-none">
+                          {sticker.icon}
+                        </span>
+                      )}
+                      
+                      {/* Name tags of selected sticker items shown for quick feedback */}
+                      {isActive && (
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-surface-container border border-secondary px-1.5 py-0.5 rounded-none text-[8px] text-secondary font-mono uppercase font-bold whitespace-nowrap z-50">
+                          {sticker.name}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Instruction Footer tip with cool design */}
+            <div className="bg-surface-container-low p-3 border-t border-outline-variant flex items-start gap-2 font-label-sm text-[10px] text-on-surface-variant">
+              <Info size={14} className="text-primary shrink-0 mt-0.5" />
+              <div className="space-y-0.5 leading-normal">
+                <p className="font-bold text-secondary">💡 인형 옷입히기 조작 TIP:</p>
+                <p>1. 스티커 보관함에서 인형 몸통을 클릭해 배치한 뒤 원하는 크기로 키웁니다.</p>
+                <p>2. 원하는 가발이나 옷, 혹은 <b>[내 옷장]</b>의 사진 옷을 클릭해 모눈판에 소환합니다.</p>
+                <p>3. 소환된 옷을 드래그해 몸 위에 얹어 맞추고, <b>크기 조절(Scale) 슬라이더</b>나 <b>회전(Rotate)</b>을 정교하게 맞춥니다.</p>
+                <p>4. 순서가 꼬였다면 인스펙터의 <b>[맨 위로 올리기]</b> / <b>[맨 밑으로 보내기]</b> 버튼을 통해 레이어 순서를 조정하세요!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
