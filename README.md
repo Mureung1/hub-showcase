@@ -23,7 +23,7 @@ npm run lint     # oxlint로 코드 검사
 ## 더 알아보기
 
 - [plan.md](./plan.md) — 문제 정의, 기존 서비스 분석, 화면 흐름 등 기획 문서
-- [task.md](./task.md) — 주차별 로드맵과 우선순위 백로그 (언제·뭐부터 할지)
-- [checklist.md](./checklist.md) — 영역별 작업 목록과 진행 상황 (무엇을·얼마나 됐는지)
+- [task.md](./task.md) — 이번 주 목표
+- [checklist.md](./checklist.md) — 이번 주 목표의 세부 체크리스트
 - [CLAUDE.md](./CLAUDE.md) — 서비스 목적, 커밋 규칙, 개발 원칙
 - [2주차 개발 대시보드](https://github.com/connect-AIAgentChallenge-26-1/hub/issues/690) — 이번 주 작업을 우선순위·요일 순으로 정리한 이슈
