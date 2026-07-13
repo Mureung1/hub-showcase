@@ -35,6 +35,7 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 - [Protocol·Rust source evidence의 정렬 상태를 리뷰한다](tickets/007-review-source-evidence-alignment.md) — 세 evidence asset은 exact pin에 추적 가능하고 public·version-specific·live·product 권위를 분리하며 Source·Standards·Spec review를 통과해 첫 tracer와 module seam을 결정하기에 충분하다.
 - [첫 tracer와 module seam을 선택한다](tickets/008-choose-first-tracer-and-module-seams.md) — 최종 구조의 첫 conformance slice로 T0를 선택하고 Connection → ConversationRuntime → AYPLE adapter seam, source-guided method port, inventory-led coverage와 T0.1 command approval tracer를 채택한다.
 - [Native identity authority와 lifetime을 결정한다](tickets/009-decide-identity-and-authority.md) — Codex native identity를 authority로, persistent thread의 Codex-owned rollout/history가 제공되는 범위를 durable source로 유지하고 process-scoped `ThreadActor`만 live projection으로 두며, 별도 catalog·remap·generation invalidation 없이 ephemeral·history availability와 method별 identity 계약은 해당 tracer에서 확장한다.
+- [Thread·turn concurrency 정책을 결정한다](tickets/010-decide-concurrency-policy.md) — Connection ingress·RPC는 global semantic mutex 없이 진행하고 Runtime은 native `ThreadId`별 independent `ThreadActor`를 두며, same-thread active input은 explicit `turn/steer` tracer로 채택하고 cross-thread public independence는 별도 `T0-C` gate로 검증한다.
 
 ## Not yet specified
 
