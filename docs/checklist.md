@@ -10,7 +10,7 @@
 - [x] Spring Boot 프로젝트 초기 설정 (Java, Gradle)
 - [x] React 프로젝트 초기 설정
 - [x] PostgreSQL 로컬/개발 DB 세팅
-- [ ] Git 브랜치 전략 확정 (기능별 브랜치, PR 흐름)
+- [x] Git 브랜치 전략 확정 — 당분간 `work` 브랜치 하나로 계속 진행, 필요해지면 그때 feature 브랜치 도입
 
 ### PoC (사전 검증 — 가장 먼저)
 - [x] 네이버 클로바 OCR API 신청 및 테스트 호출
