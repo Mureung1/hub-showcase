@@ -6,28 +6,38 @@ import {
   validateAnalysisResult,
 } from '../utils/validateAnalysisResult.js'
 
-export const analyzeRouter = Router()
+async function defaultAnalyzeNotice({ mode, requestBody }) {
+  return mode === 'ai'
+    ? analyzeWithAi(requestBody)
+    : analyzeWithMock(requestBody)
+}
 
-analyzeRouter.post('/', async (request, response, next) => {
-  try {
-    const analysisMode = request.body?.mode || 'mock'
-    const supportedModes = new Set(['mock', 'ai'])
+export function createAnalyzeRouter({ analyzeNotice = defaultAnalyzeNotice } = {}) {
+  const analyzeRouter = Router()
 
-    if (!supportedModes.has(analysisMode)) {
-      const error = new Error(`Unsupported analysis mode: ${analysisMode}`)
-      error.statusCode = 400
-      error.type = 'unsupported_mode'
-      error.publicMessage = 'Unsupported analysis mode. Use "mock" or "ai".'
-      throw error
+  analyzeRouter.post('/', async (request, response, next) => {
+    try {
+      const analysisMode = request.body?.mode || 'mock'
+      const supportedModes = new Set(['mock', 'ai'])
+
+      if (!supportedModes.has(analysisMode)) {
+        const error = new Error(`Unsupported analysis mode: ${analysisMode}`)
+        error.statusCode = 400
+        error.type = 'unsupported_mode'
+        error.publicMessage = 'Unsupported analysis mode. Use "mock" or "ai".'
+        throw error
+      }
+
+      const rawResult = await analyzeNotice({
+        mode: analysisMode,
+        requestBody: request.body,
+      })
+
+      response.json(validateAnalysisResult(rawResult, serverValidationWarnings))
+    } catch (error) {
+      next(error)
     }
+  })
 
-    const rawResult =
-      analysisMode === 'ai'
-        ? await analyzeWithAi(request.body)
-        : await analyzeWithMock(request.body)
-
-    response.json(validateAnalysisResult(rawResult, serverValidationWarnings))
-  } catch (error) {
-    next(error)
-  }
-})
+  return analyzeRouter
+}

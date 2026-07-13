@@ -1,0 +1,42 @@
+{
+  "fixtureSet": "noticepilot.knu-rule-candidates-v0.4.sanitized",
+  "fixtureVersion": 1,
+  "sourcePackage": {
+    "name": "noticepilot-knu-crawler-v0.4.4.zip",
+    "version": "0.4.4",
+    "sha256": "811bb4d3ac6dd79cd9de58ba36ecdd44985c7f37a7c81b3e87e88cfc145337f0"
+  },
+  "referencedMembers": [
+    "noticepilot-knu-crawler-v0.4.4/samples/extracted/candidates/knu-720-2511.candidates.json",
+    "noticepilot-knu-crawler-v0.4.4/samples/extracted/candidates/knu-721-2433.candidates.json"
+  ],
+  "upstreamSanitizedFixtures": [
+    "../knu-crawler-v0.4.4/normalized-notice-720.sample.json",
+    "../knu-crawler-v0.4.4/normalized-notice-721.sample.json"
+  ],
+  "fixtures": [
+    "knu-720-900001.candidates.sample.json",
+    "knu-721-900002.candidates.sample.json"
+  ],
+  "excludedSourceMaterial": [
+    "raw HTML snapshots",
+    "credential-like authentication and browser API values",
+    "Python source code",
+    "actual notice prose and attachment metadata",
+    "candidate reports and expected-result files",
+    "feed profiles and ICS output"
+  ],
+  "sanitization": {
+    "policy": "Preserve the audited calendarCandidates.v0.4 key shape and timed/all-day actor cases while replacing notice-specific values with synthetic data linked to the sanitized normalized-notice fixtures.",
+    "replacedFields": [
+      "source and candidate notice IDs",
+      "candidate IDs and UID hints",
+      "titles and evidence text",
+      "source URLs and content hashes",
+      "normalized date values"
+    ],
+    "rawHtmlIncluded": false,
+    "sourceCodeIncluded": false,
+    "credentialLikeValuesIncluded": false
+  }
+}

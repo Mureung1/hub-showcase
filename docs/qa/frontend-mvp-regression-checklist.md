@@ -559,5 +559,6 @@ ICS: /Users/chan/Downloads/noticepilot-calendar-ko (1).ics
 - 대신 저장 지속성은 새로고침으로 확인했고, raw payload shape는 campusPreferences helper 직렬화 결과로 검증함
 - Blob 기반 다운로드는 플러그인의 waitForEvent('download')로 잡히지 않아 timeout이 발생함
 - 대신 Downloads 폴더의 최신 생성 파일과 파일 내용을 확인해 실제 다운로드를 검증함
-- valid selected event가 없는 경우의 .ics 차단 메시지와 외부 캘린더 앱 import smoke test는 별도 수동 확인 대상으로 남김
+- valid selected event가 없는 경우의 .ics 차단 메시지는 2026-07-09 브라우저 확인으로 닫힘
+- 외부 캘린더 앱 import smoke test는 2026-07-09 사용자 제공 캘린더 스크린샷으로 닫힘
 ```

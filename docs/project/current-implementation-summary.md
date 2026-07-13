@@ -121,6 +121,30 @@ Regression baseline:
 - missing/invalid section fields are normalized safely
 - warning objects preserve `{ type, message }` structure
 
+Automated HTTP contract coverage registered in `npm test`:
+
+- `GET /api/health` exact public response
+- `POST /api/analyze` default mock and explicit mock success responses
+- `mode="ai"` returns `501 ai_not_implemented`
+- unsupported explicit mode returns `400 unsupported_mode`
+- malformed JSON returns `400 invalid_json`
+- JSON bodies over `1mb` return `413 request_too_large`
+- an analyze dependency rejection injected at app construction returns
+  `500 server_error` through the actual `/api/analyze` boundary without exposing
+  the exception message or stack
+
+Local isolated Node 22 verification passed:
+
+- runtime: Node `v22.23.1`, npm `10.9.8`
+- `npm ci`: passed
+- `npm run test:http`: 8/8 passed
+- `npm test`: 121/121 passed
+- `npm run build`: passed
+- `npm run security:audit`: passed with 0 vulnerabilities
+
+GitHub Actions verification pending. This local isolated verification does not
+represent a passing GitHub Actions or CI run.
+
 ### Phase 3. Frontend ↔ Server Mock Analyze Wiring
 
 Status: Complete

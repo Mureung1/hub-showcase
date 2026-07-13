@@ -4,6 +4,16 @@
 
 This document describes the long-term roadmap for batch calendar export. It is a roadmap document, not current implemented behavior.
 
+Current implemented baseline relevant to this roadmap:
+
+- single-notice selected all-day `.ics` export exists
+- `공지 캘린더` / calendar workspace tab exists
+- campus preferences are stored separately in `noticepilot:campus-preferences:v1`
+- `metadata.userPreferencesSnapshot` is attached as inert metadata
+- subscription ICS is only represented by a 준비 중 status card
+
+The current campus preference feature does not implement notice filtering, crawling, batch export filtering, or subscription feed behavior.
+
 ## Long-term Product Scenario
 
 Target scenario:
@@ -106,9 +116,25 @@ corpus examples
 
 School-level parsing should be considered after around 30 corpus examples are collected.
 
+## Relationship with Campus Preferences
+
+Campus preferences are now available as local, browser-scoped product metadata. They may become useful later for school-level parsing, notice filtering, or subscription defaults, but they are not part of the current batch export behavior.
+
+Current rule:
+
+```text
+campus preferences
+→ metadata only
+→ no notice filtering
+→ no event filtering
+→ no export behavior change
+```
+
+Any future use of campus preferences for filtering or subscription behavior should be introduced as a separate scoped phase with dedicated QA.
+
 ## Subscription Feed Direction
 
-Subscription calendar feed is a future roadmap item.
+Subscription calendar feed is a future roadmap item. The current app only has a subscription ICS 준비 중 status card.
 
 Downloaded `.ics` export should come first because it is simpler, reviewable, and does not require account infrastructure.
 
@@ -118,7 +144,7 @@ Subscription feed would require additional decisions:
 - update cadence
 - stable UID persistence
 - institution/source tracking
-- user preferences
+- user preferences beyond local-only metadata
 - privacy policy
 - database or durable storage
 - authentication model if user-specific
@@ -130,7 +156,8 @@ Not implemented yet:
 - batch `.ics` export
 - notice collection crawler
 - school-specific parser
-- subscription feed
+- campus preference based notice filtering
+- subscription feed URL/backend generation
 - Google Calendar API integration
 - user accounts
 - database persistence

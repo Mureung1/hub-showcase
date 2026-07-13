@@ -1,7 +1,7 @@
 import express from 'express'
-import { analyzeRouter } from './routes/analyzeRoutes.js'
+import { createAnalyzeRouter } from './routes/analyzeRoutes.js'
 
-export function createApp() {
+export function createApp({ analyzeNotice } = {}) {
   const app = express()
 
   app.use(express.json({ limit: '1mb' }))
@@ -13,9 +13,29 @@ export function createApp() {
     })
   })
 
-  app.use('/api/analyze', analyzeRouter)
+  app.use('/api/analyze', createAnalyzeRouter({ analyzeNotice }))
 
   app.use((error, _request, response, _next) => {
+    if (error.status === 400 && error.type === 'entity.parse.failed') {
+      response.status(400).json({
+        error: {
+          type: 'invalid_json',
+          message: 'Request body contains invalid JSON.',
+        },
+      })
+      return
+    }
+
+    if (error.status === 413 && error.type === 'entity.too.large') {
+      response.status(413).json({
+        error: {
+          type: 'request_too_large',
+          message: 'Request body exceeds the allowed size limit.',
+        },
+      })
+      return
+    }
+
     const statusCode = error.statusCode || 500
 
     response.status(statusCode).json({

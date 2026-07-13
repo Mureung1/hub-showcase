@@ -18,6 +18,12 @@ The AI should convert a long notice into structured, actionable information:
 
 The AI should not behave as a generic summarizer. Summary is useful, but the primary output is structured action extraction.
 
+## Current Runtime Boundary
+
+The backend uses Zod schemas to validate AI raw output and app analysis results. The prompt contract still targets AI raw JSON, not the frontend app schema.
+
+Campus preferences may exist in the app as `userPreferencesSnapshot`, but they are inert metadata in the current MVP. They must not change AI extraction, filtering, Markdown export, or `.ics` export behavior unless a later phase explicitly changes this contract.
+
 ## JSON-only Output Rule
 
 The AI must return JSON only.
@@ -136,6 +142,23 @@ isOpen
 ```
 
 The server/frontend should generate those fields where necessary.
+
+## Preference Snapshot Rule
+
+The AI should not output `userPreferencesSnapshot` or use campus preferences to suppress, prioritize, filter, or rewrite extracted items in the current contract.
+
+Current prompt inputs should remain focused on the confirmed notice text and document-level metadata:
+
+```text
+language
+userSelectedNoticeType
+noticePublicationDate
+uploadedFileName
+noticeTitle
+noticeText
+```
+
+If future preference-aware analysis is introduced, it should use a separate prompt revision and explicit QA coverage.
 
 ## Example Prompt Skeleton
 

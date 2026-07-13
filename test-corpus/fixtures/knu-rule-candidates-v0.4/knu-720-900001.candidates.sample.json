@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "noticepilot.calendarCandidates.v0.4",
+  "sourceNoticeId": "knu-720-900001",
+  "sourceContentHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "sourceTitle": "Synthetic Samcheok academic notice fixture",
+  "sourceUrl": "https://www.kangwon.ac.kr/ko/bbs/720/detail.do?pstSn=900001&pageIndex=9&pageItm=10&searchOrderSort=0&fixture=true",
+  "timezone": "Asia/Seoul",
+  "sourceCampusScope": {
+    "sourceLabel": "삼척",
+    "campuses": [
+      "samcheok"
+    ],
+    "scopeType": "campus_specific",
+    "confidence": "medium",
+    "source": "listMetadata.campus",
+    "labels": {
+      "samcheok": "삼척"
+    }
+  },
+  "extractor": {
+    "version": "0.4.4",
+    "createdAt": "2026-07-09T03:24:57+00:00",
+    "mode": "rule_based_v1"
+  },
+  "candidates": [
+    {
+      "id": "cand-knu-720-900001-aaaaaaaaaaaa",
+      "uidHint": "noticepilot-knu-720-900001-aaaaaaaaaaaa@noticepilot.local",
+      "sourceNoticeId": "knu-720-900001",
+      "sourceTitle": "Synthetic Samcheok academic notice fixture",
+      "sourceUrl": "https://www.kangwon.ac.kr/ko/bbs/720/detail.do?pstSn=900001&pageIndex=9&pageItm=10&searchOrderSort=0&fixture=true",
+      "noticeType": "school_notice",
+      "campusScope": {
+        "sourceLabel": "삼척",
+        "campuses": [
+          "samcheok"
+        ],
+        "scopeType": "campus_specific",
+        "confidence": "medium",
+        "source": "listMetadata.campus",
+        "labels": {
+          "samcheok": "삼척"
+        }
+      },
+      "eventType": "submission_deadline",
+      "targetActor": "student",
+      "title": "Synthetic student submission deadline",
+      "dateText": "2026-08-03 18:00",
+      "normalizedStart": "2026-08-03T18:00:00+09:00",
+      "normalizedEnd": null,
+      "isAllDay": false,
+      "evidence": "Student: submit by 2026-08-03 18:00.",
+      "evidenceLineIndex": 1,
+      "confidence": "high",
+      "uncertaintyReasons": [],
+      "status": "auto_confirmed",
+      "includeInCalendarFeed": true,
+      "createdBy": "rule",
+      "reviewedByUser": false
+    },
+    {
+      "id": "cand-knu-720-900001-bbbbbbbbbbbb",
+      "uidHint": "noticepilot-knu-720-900001-bbbbbbbbbbbb@noticepilot.local",
+      "sourceNoticeId": "knu-720-900001",
+      "sourceTitle": "Synthetic Samcheok academic notice fixture",
+      "sourceUrl": "https://www.kangwon.ac.kr/ko/bbs/720/detail.do?pstSn=900001&pageIndex=9&pageItm=10&searchOrderSort=0&fixture=true",
+      "noticeType": "school_notice",
+      "campusScope": {
+        "sourceLabel": "삼척",
+        "campuses": [
+          "samcheok"
+        ],
+        "scopeType": "campus_specific",
+        "confidence": "medium",
+        "source": "listMetadata.campus",
+        "labels": {
+          "samcheok": "삼척"
+        }
+      },
+      "eventType": "submission_deadline",
+      "targetActor": "department",
+      "title": "Synthetic department submission deadline",
+      "dateText": "2026-08-04 18:00",
+      "normalizedStart": "2026-08-04T18:00:00+09:00",
+      "normalizedEnd": null,
+      "isAllDay": false,
+      "evidence": "Department: submit by 2026-08-04 18:00.",
+      "evidenceLineIndex": 2,
+      "confidence": "medium",
+      "uncertaintyReasons": [
+        "internal_actor"
+      ],
+      "status": "needs_review",
+      "includeInCalendarFeed": false,
+      "createdBy": "rule",
+      "reviewedByUser": false
+    }
+  ],
+  "summary": {
+    "candidateCount": 2,
+    "autoConfirmedCount": 1,
+    "needsReviewCount": 1,
+    "calendarFeedIncludedCount": 1
+  }
+}

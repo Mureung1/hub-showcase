@@ -8,7 +8,12 @@
     "dev:server": "node server/src/index.js",
     "build": "vite build",
     "preview": "vite preview",
-    "start:server": "node server/src/index.js"
+    "start:server": "node server/src/index.js",
+    "test": "node --test server/src/__tests__/*.test.js server/src/domain/schemas/__tests__/*.test.js server/src/domain/adapters/__tests__/*.test.js server/src/services/__tests__/*.test.js",
+    "test:http": "node --test server/src/__tests__/*.test.js",
+    "test:schemas": "node --test server/src/domain/schemas/__tests__/*.test.js",
+    "test:adapters": "node --test server/src/domain/adapters/__tests__/*.test.js",
+    "security:audit": "npm audit --audit-level=high"
   },
   "dependencies": {
     "express": "^5.2.1",
