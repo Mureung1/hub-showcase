@@ -7,11 +7,42 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Frontend
 node_modules
 dist
 dist-ssr
+build/
 *.local
-.design-sync/ds-bundle-tokens/
+.vite/
+
+# 빌드/산출물
+*.pdf
+
+# .github — upstream에서 받아온 파일만 추적한다.
+# 루트 저장소로 PR을 보내므로 직접 만든 워크플로/템플릿은 커밋하지 않는다.
+# (이미 추적 중인 pull_request_template.md, workflows/auto-merge.yml은 영향받지 않는다)
+/.github/**
+
+# Backend
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# 개인 진행 상태 (공유하지 않는다)
+progress.md
+
+# design-sync (자동 생성 파일, 용량 큼)
+.design-sync/
+docs/prototype/prototype2/_ds/
+docs/prototype/prototype2/support.js
+
 docs/design/
 
 # Editor directories and files
