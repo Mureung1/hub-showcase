@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import IngredientChipPicker from '../components/IngredientChipPicker'
 import IngredientSearchInput from '../components/IngredientSearchInput'
-import { fridgeIngredients } from '../data/fridgeIngredients'
+import { fridgeIngredients, INGREDIENT_CATEGORIES } from '../data/fridgeIngredients'
+import { getIngredientsByCategory } from '../data/selectors'
 import { loadFridgeSelection, saveFridgeSelection } from '../data/fridgeStorage'
 import fridgeEmpty from '../assets/fridge-empty.png'
+
+const ingredientGroups = getIngredientsByCategory(fridgeIngredients, INGREDIENT_CATEGORIES)
 
 // 진입 화면: 기니가 냉장고를 들여다보며 "어떤 재료가 있더랑?" 묻고,
 // 사용자가 아래 카드(말풍선에 대답하는 구도)에서 재료 칩을 골라 "완료"를 누르면 홈으로 넘어간다.
@@ -69,12 +72,19 @@ function FridgePage() {
             <IngredientSearchInput options={fridgeIngredients} onSelect={handleSelectFromSearch} />
           </div>
 
-          <div className="mt-3">
-            <IngredientChipPicker
-              options={fridgeIngredients}
-              selectedIds={selectedIds}
-              onToggle={handleToggle}
-            />
+          <div className="mt-3 rounded-card bg-bg-muted p-3">
+            {ingredientGroups.map((group, index) => (
+              <div key={group.id} className={index > 0 ? 'mt-3' : undefined}>
+                <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+                  {group.label}
+                </h2>
+                <IngredientChipPicker
+                  options={group.ingredients}
+                  selectedIds={selectedIds}
+                  onToggle={handleToggle}
+                />
+              </div>
+            ))}
           </div>
 
           <button

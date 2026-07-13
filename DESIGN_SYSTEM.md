@@ -56,6 +56,7 @@
 | `banner-dot` | 프로모 배너 하단 원형 dot, 라디오 hack으로 슬라이드 전환(JS 없이 순수 CSS) | `radius-pill`, `text-primary` |
 | `ingredient-chip-picker` (실제 앱 `IngredientChipPicker`) | 이모지+이름 pill 칩을 탭으로 토글하는 재료 선택 그리드. `filter-chip` 토글 패턴 재사용(미선택 `bg-surface`+`border`, 선택 `primary`). FridgePage에서는 `bg-surface` 카드(말풍선 꼬리 장식) 안에 카운트 배지(`primary-soft`+`primary-text`)·전체 해제·완료 버튼과 함께 사용 | `bg-surface`, `border`, `primary`, `primary-soft`, `primary-text`, `radius-card`, `radius-pill` |
 | `ingredient-search-input` (실제 앱 `IngredientSearchInput`) | `bg-muted` 배경의 둥근 검색 인풋(돋보기 아이콘) + 타이핑하면 아래에 매칭되는 재료를 `filter-chip` pill 버튼 목록으로 보여주는 자동완성. label/matchNames뿐 아니라 `group`(예: "두부"→두부·순두부, "고기"→목살·삼겹살 등 변형 재료 묶음)까지 부분일치 검색. 결과 없으면 안내 문구. FridgePage에서 `IngredientChipPicker` 위에 배치, 선택은 같은 `selectedIds` 상태에 추가만 함(토글 아님) | `bg-muted`, `radius-input`, `border`, `primary`, `bg-surface`, `text-secondary`, `radius-pill` |
+| `ingredient-section-heading` | 냉장고 재료를 카테고리(채소/고기·해산물/가공식품/면·곡물/기타)별로 묶어 보여줄 때, 각 그룹의 `IngredientChipPicker` 위에 오는 작은 블록 헤딩. `filter-group-label`과 타이포 톤(11px bold uppercase)은 같지만 칩 옆이 아니라 위에 오는 별도 줄이라 새 패턴으로 분리. 전체 그룹은 `bg-muted` 패널(`rounded-card`) 안에 세로로 쌓임 | `bg-muted`, `radius-card`, `text-secondary` |
 
 ## 구현 매핑
 

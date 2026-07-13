@@ -15,6 +15,14 @@ export function getRecipesBySubgroups(recipes, category) {
   }))
 }
 
+// 냉장고 재료 칩을 카테고리별로 묶어서 반환 (예: 채소/고기·해산물/가공식품/면·곡물/기타) — FridgePage의 섹션 렌더링에 사용
+export function getIngredientsByCategory(ingredients, categories) {
+  return categories.map((category) => ({
+    ...category,
+    ingredients: ingredients.filter((ingredient) => ingredient.category === category.id),
+  }))
+}
+
 // 냉장고에서 고른 재료(matchNames: 재료명 목록)가 1개 이상 들어가는 레시피만 골라 저렴한 순으로 반환
 export function getRecipesByOwnedIngredients(recipes, matchNames) {
   if (matchNames.length === 0) return []
