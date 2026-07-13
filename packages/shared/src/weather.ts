@@ -25,10 +25,27 @@ export interface NormalizedWeather {
   humidity: number;
   /** 시간당 강수량 (mm). */
   precipitationMm: number;
-  /** 강수확률 (%). 소스에 없으면 0. */
-  precipitationProb: number;
+  /** 강수확률 (%). 소스가 제공하지 않으면 null (0과 구분 — 앙상블에서 결측 제외). */
+  precipitationProb: number | null;
   /** 강수 여부 (앙상블 보수적 채택 판단에 사용). */
   isPrecipitating: boolean;
   /** 정규화된 하늘/강수 상태. */
   condition: WeatherCondition;
+}
+
+/**
+ * 여러 소스를 병합한 앙상블 결과.
+ * 수치는 소스별 가중 평균, 강수 여부는 보수적 채택(하나라도 강수면 강수).
+ */
+export interface EnsembleWeather {
+  tempC: number;
+  humidity: number;
+  precipitationMm: number;
+  precipitationProb: number;
+  isPrecipitating: boolean;
+  condition: WeatherCondition;
+  /** 병합에 실제로 사용된 소스 목록. */
+  sources: WeatherSource[];
+  /** 사용된 소스 수 (한쪽 장애 시 폴백 표기용). */
+  sourceCount: number;
 }

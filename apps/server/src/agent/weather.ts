@@ -256,7 +256,7 @@ export function parseOwmResponse(json: unknown): NormalizedWeather {
     tempC: root.main?.temp ?? 0,
     humidity: root.main?.humidity ?? 0,
     precipitationMm,
-    precipitationProb: 0,
+    precipitationProb: null, // current weather API는 강수확률(POP)을 제공하지 않음
     isPrecipitating: id < 700,
     condition,
   };

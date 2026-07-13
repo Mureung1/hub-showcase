@@ -175,7 +175,7 @@ describe("parseOwmResponse", () => {
       tempC: 24.6,
       humidity: 40,
       precipitationMm: 0,
-      precipitationProb: 0,
+      precipitationProb: null, // OWM current weather는 POP 미제공
       isPrecipitating: false,
       condition: "clear",
     });
