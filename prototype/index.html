@@ -1,160 +1,97 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>매장 정보 대시보드 · PlaceSync</title>
-<link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="동네병원 원격 웨이팅 등록 프로토타입">
+  <title>원격 웨이팅 등록 | 바로진료</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<div class="app-shell">
-
-  <!-- 상단 헤더: 로고, 현재 매장, 사용자 역할 -->
-  <header class="app-header">
-    <div class="app-header__brand">PlaceSync</div>
-    <div class="app-header__store">카페 하루</div>
-    <div class="app-header__spacer"></div>
-    <div class="app-header__user"><span class="role-text">역할</span> <strong>사장님</strong></div>
+<body class="patient-body">
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="바로진료 원격 웨이팅 홈">
+      <span class="brand-mark" aria-hidden="true">+</span>
+      <span>바로진료</span>
+    </a>
+    <nav class="view-switch" aria-label="프로토타입 화면">
+      <a class="is-active" href="index.html" aria-current="page">환자 접수</a>
+      <a href="waiting.html">대기 현황</a>
+      <a href="staff.html">병원 직원</a>
+    </nav>
   </header>
 
-  <!-- 모바일 전용 상단 메뉴 -->
-  <nav class="mobile-nav" aria-label="모바일 메뉴">
-    <a href="index.html" class="is-active">대시보드</a>
-    <a href="edit.html">정보 수정</a>
-    <span aria-disabled="true">수정 이력(준비 중)</span>
-    <span aria-disabled="true">플랫폼 연결(준비 중)</span>
-  </nav>
-
-  <div class="app-body">
-
-    <!-- 좌측 사이드바 -->
-    <aside class="sidebar">
-      <div class="sidebar__group-title">메뉴</div>
-      <nav>
-        <a class="sidebar__link is-active" href="index.html">대시보드</a>
-        <a class="sidebar__link" href="edit.html">정보 수정</a>
-        <span class="sidebar__link is-disabled">수정 이력 <span class="sidebar__badge-soon">준비 중</span></span>
-        <span class="sidebar__link is-disabled">플랫폼 연결 <span class="sidebar__badge-soon">준비 중</span></span>
-      </nav>
-    </aside>
-
-    <!-- 본문 -->
-    <main class="main-content">
-      <div class="page-head">
-        <h1 class="page-head__title">매장 정보 대시보드</h1>
-        <p class="page-head__desc">여러 플랫폼에 등록된 매장 정보를 한눈에 확인하세요.</p>
-      </div>
-
-      <!-- 요약 카드 4개 -->
-      <section class="section">
-        <div class="summary-grid">
-          <div class="summary-card">
-            <div class="summary-card__label">연결 플랫폼</div>
-            <div class="summary-card__value">3개</div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-card__label">반영 완료</div>
-            <div class="summary-card__value">2개</div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-card__label">확인 필요</div>
-            <div class="summary-card__value">1개</div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-card__label">최근 수정</div>
-            <div class="summary-card__value">오늘 14:20</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 불일치 알림 배너 -->
-      <div class="banner banner--warning" role="status">
-        <span class="banner__icon" aria-hidden="true">⚠</span>
+  <main class="patient-shell">
+    <section class="clinic-summary" aria-labelledby="clinic-name">
+      <div class="clinic-heading">
         <div>
-          <div class="banner__title">가격 정보 2건을 확인해 주세요.</div>
-          <div class="banner__desc">카카오맵과 배달앱의 일부 가격이 PlaceSync 기준과 다릅니다.</div>
+          <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span>원격 웨이팅 운영 중</p>
+          <h1 id="clinic-name">서울이비인후과</h1>
+          <p class="clinic-meta">이비인후과 · 오늘 09:00–18:00</p>
         </div>
+        <span class="clinic-symbol" aria-hidden="true">+</span>
+      </div>
+      <div class="wait-snapshot" aria-label="현재 대기 현황">
+        <div><span>현재 대기</span><strong>8명</strong></div>
+        <div><span>예상 대기</span><strong>약 40분</strong></div>
+      </div>
+      <p class="notice-inline">예상 시간은 참고용이며 진료 상황에 따라 달라질 수 있습니다.</p>
+    </section>
+
+    <section class="form-section" aria-labelledby="registration-title">
+      <div class="section-heading">
+        <p class="step-label">원격 웨이팅</p>
+        <h2 id="registration-title">가족 인원을 등록해 주세요</h2>
+        <p>가족 전체를 하나의 접수번호로 관리합니다.</p>
       </div>
 
-      <!-- 플랫폼 상태 카드 -->
-      <section class="section">
-        <h2 class="section__title">플랫폼 연결 상태</h2>
-        <p class="section__desc">플랫폼명은 문자 아이콘으로 표시하며, 실제 로고 이미지는 사용하지 않습니다.</p>
-        <div class="platform-grid">
-
-          <div class="platform-card">
-            <div class="platform-card__head">
-              <span class="platform-glyph platform-glyph--naver" aria-hidden="true">N</span>
-              <span class="platform-card__name">네이버 플레이스</span>
-            </div>
-            <div class="platform-card__row">
-              <span>연결 상태</span>
-              <span class="badge badge--success">✓ 연결됨</span>
-            </div>
-            <div class="platform-card__row">
-              <span>최근 동기화</span>
-              <span>오늘 14:20</span>
-            </div>
+      <form class="waiting-form" action="waiting.html" method="get">
+        <fieldset>
+          <legend>대표자 정보</legend>
+          <div class="field-grid">
+            <label class="field">
+              <span>대표자 이름</span>
+              <input type="text" name="name" autocomplete="name" placeholder="이름 입력" required>
+            </label>
+            <label class="field">
+              <span>휴대전화 번호</span>
+              <input type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="010-0000-0000" pattern="[0-9-]{10,13}" required>
+            </label>
           </div>
+        </fieldset>
 
-          <div class="platform-card">
-            <div class="platform-card__head">
-              <span class="platform-glyph platform-glyph--kakao" aria-hidden="true">K</span>
-              <span class="platform-card__name">카카오맵</span>
-            </div>
-            <div class="platform-card__row">
-              <span>연결 상태</span>
-              <span class="badge badge--success">✓ 연결됨</span>
-            </div>
-            <div class="platform-card__row">
-              <span>최근 동기화</span>
-              <span>오늘 14:18</span>
-            </div>
+        <fieldset>
+          <legend>진료받을 가족 인원</legend>
+          <p class="field-help">대기 인원과 예상 시간은 실제 진료 대상 인원수로 계산합니다.</p>
+          <div class="count-list">
+            <label class="count-row">
+              <span><strong>소아</strong><small>만 0–18세</small></span>
+              <input type="number" name="child" value="0" min="0" max="9" aria-label="소아 인원">
+            </label>
+            <label class="count-row">
+              <span><strong>성인</strong><small>만 19–64세</small></span>
+              <input type="number" name="adult" value="1" min="0" max="9" aria-label="성인 인원">
+            </label>
+            <label class="count-row">
+              <span><strong>노인</strong><small>만 65세 이상</small></span>
+              <input type="number" name="senior" value="0" min="0" max="9" aria-label="노인 인원">
+            </label>
           </div>
+        </fieldset>
 
-          <div class="platform-card">
-            <div class="platform-card__head">
-              <span class="platform-glyph platform-glyph--delivery" aria-hidden="true">배</span>
-              <span class="platform-card__name">배달앱</span>
-            </div>
-            <div class="platform-card__row">
-              <span>연결 상태</span>
-              <span class="badge badge--success">✓ 연결됨</span>
-            </div>
-            <div class="platform-card__row">
-              <span>최근 동기화</span>
-              <span>오늘 09:40</span>
-            </div>
-          </div>
-
+        <div class="important-notice">
+          <strong>도착 후 데스크 접수가 필요합니다.</strong>
+          <p>원격 순번은 실제 진료 대기 순서에 포함되지만, 의료 상황과 현장 접수 후 확인에 따라 순서가 달라질 수 있습니다.</p>
         </div>
-      </section>
 
-      <!-- 현재 매장 정보 요약 -->
-      <section class="section">
-        <div class="card">
-          <div class="card__header">
-            <h2 class="card__title">현재 매장 정보 요약</h2>
-            <span class="card__meta">PlaceSync 기준 정보</span>
-          </div>
-          <ul class="list-plain">
-            <li><strong>영업시간</strong> · 매일 10:00~21:00</li>
-            <li><strong>정기휴무</strong> · 매주 월요일</li>
-            <li><strong>등록 메뉴</strong> · 12개</li>
-            <li><strong>공지</strong> · 7월 15일부터 일부 음료 가격이 변경됩니다.</li>
-          </ul>
-        </div>
-      </section>
+        <label class="agreement">
+          <input type="checkbox" required>
+          <span>원격 웨이팅 운영 안내를 확인했습니다.</span>
+        </label>
+        <button class="button button-primary button-block" type="submit">원격 웨이팅 등록</button>
+      </form>
+    </section>
+  </main>
 
-      <!-- 주요 동작 -->
-      <div class="footer-actions">
-        <button type="button" class="btn btn--secondary" disabled aria-disabled="true">수동 검사</button>
-        <a href="edit.html" class="btn btn--primary">매장 정보 수정</a>
-      </div>
-      <p class="static-note">수동 검사 버튼은 정적 프로토타입 안내용이며 실제로 동작하지 않습니다.</p>
-
-    </main>
-  </div>
-</div>
+  <footer class="prototype-footer">정적 프로토타입 · 입력 정보는 저장되거나 전송되지 않습니다.</footer>
 </body>
 </html>
