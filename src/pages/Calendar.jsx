@@ -6,6 +6,7 @@ import DateRangeExport from '../components/DateRangeExport.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
+import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { getManualDayStatus, setManualDayStatus } from '../lib/dayStatus.js'
 import { flattenMealItems, getMeals, sumMealRecordsNutrients } from '../lib/mealStore.js'
 import { calcDayStatus, formatNutrientOrDash, NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -44,9 +45,11 @@ function StatusBadge({ status, label }) {
   )
 }
 
-// 화면 가로를 꽉 채우는 1열 카드. 이름 + 시간대 배지 + 6개 영양소(정수)를 모두 보여준다.
+// 화면 가로를 꽉 채우는 1열 카드. 이름 + 시간대 배지 + 카드 표시 설정에서 켠 영양소를 보여준다.
 function MiniMealCard({ item }) {
+  const visible = useVisibleNutrients()
   const n = item.nutrients || {}
+  const labels = NUTRIENT_LABELS.filter(({ key }) => visible[key])
   return (
     <div
       style={{
@@ -73,7 +76,7 @@ function MiniMealCard({ item }) {
         <MealTypeBadge mealType={item.mealType} />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', rowGap: spacing.sm, columnGap: spacing.xs }}>
-        {NUTRIENT_LABELS.map(({ key, label, unit }) => (
+        {labels.map(({ key, label, unit }) => (
           <div key={key}>
             <span style={{ display: 'block', fontSize: font.size.xs, color: colors.muted }}>{label}</span>
             <span style={{ fontSize: font.size.sm, fontWeight: 700, color: colors.textStrong }}>

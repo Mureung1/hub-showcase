@@ -7,6 +7,7 @@ import { NutrientBars } from '../components/NutritionCard.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import SourceBadge from '../components/SourceBadge.jsx'
+import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { isSetMeal, sumNutrients } from '../lib/mealStore.js'
 import { formatNutrient, formatNutrientOrDash, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
@@ -99,12 +100,18 @@ function DeleteButton({ onClick, label }) {
 }
 
 function NutrientSummaryLine({ nutrients }) {
+  const visible = useVisibleNutrients()
   const n = nutrients || {}
+  const labels = NUTRIENT_LABELS.filter(({ key }) => visible[key])
+
   return (
     <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.xs }}>
-      {formatNutrientOrDash(n.calories, 'kcal')} · 단백질 {formatNutrientOrDash(n.protein, 'g')} · 탄수{' '}
-      {formatNutrientOrDash(n.carbs, 'g')} · 지방 {formatNutrientOrDash(n.fat, 'g')} · 나트륨{' '}
-      {formatNutrientOrDash(n.sodium, 'mg')} · 식이섬유 {formatNutrientOrDash(n.fiber, 'g')}
+      {labels.map(({ key, label, unit }, i) => (
+        <span key={key}>
+          {i > 0 && ' · '}
+          {label} {formatNutrientOrDash(n[key], unit)}
+        </span>
+      ))}
     </p>
   )
 }
@@ -216,6 +223,7 @@ function MealRecordCard({ record, expanded, onToggleDetail, onRemove }) {
 export default function MealsPage() {
   const { todayMeals, todayMealsTotal, removeTodayMeal, effectiveRecommended } = useUser()
   const recommended = effectiveRecommended
+  const visible = useVisibleNutrients()
   const [expandedIds, setExpandedIds] = useState(() => new Set())
 
   function toggleDetail(mealRecordId) {
@@ -237,7 +245,7 @@ export default function MealsPage() {
       {recommended ? (
         <Card>
           <h2 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.lg}px` }}>오늘의 영양 섭취량</h2>
-          {NUTRIENT_LABELS.map(({ key, label, unit }) => (
+          {NUTRIENT_LABELS.filter(({ key }) => visible[key]).map(({ key, label, unit }) => (
             <IntakeBar
               key={key}
               label={label}

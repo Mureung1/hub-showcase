@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
+import CardSettingsPanel from '../components/CardSettingsPanel.jsx'
 import ChevronIcon from '../components/ChevronIcon.jsx'
 import DataSyncPanel from '../components/DataSyncPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
@@ -308,6 +309,7 @@ export default function Profile() {
         </AppButton>
       )}
 
+      {!isOnboarding && <CardSettingsPanel />}
       {!isOnboarding && <DataSyncPanel />}
     </div>
   )

@@ -8,6 +8,7 @@ import MenuRecommendation from '../components/MenuRecommendation.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import Skeleton from '../components/Skeleton.jsx'
+import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
 import { calcAchievementPercent, NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -97,6 +98,7 @@ export default function Result() {
   const { user, todayMeal, effectiveRecommended, isTempRecommended } = useUser()
   const recommended = effectiveRecommended
   const todayTotal = todayMeal?.total
+  const visible = useVisibleNutrients()
 
   const allergyLabels = useMemo(
     () => labelizeTags(user?.profile?.allergies, ALLERGY_OPTIONS),
@@ -128,6 +130,10 @@ export default function Result() {
     [rows],
   )
   const top3DeficientKeys = useMemo(() => top3Rows.map((row) => row.key), [top3Rows])
+
+  // "부족한 영양소" 렌더링에만 쓴다 — top3Rows(AI 보충 메뉴 추천 프롬프트 입력값)는 표시 설정과
+  // 무관하게 항상 rows(전체 6개) 기준으로 계산돼야 하므로 여기서 걸러낸 값을 쓰지 않는다.
+  const visibleRows = useMemo(() => rows.filter((row) => visible[row.key]), [rows, visible])
 
   const achievementPercent = useMemo(
     () => calcAchievementPercent(recommended, todayTotal),
@@ -229,7 +235,7 @@ export default function Result() {
       </Card>
 
       <SectionTitle>부족한 영양소</SectionTitle>
-      {rows.map(({ key, ...row }) => (
+      {visibleRows.map(({ key, ...row }) => (
         <DeficiencyBar key={key} {...row} highlighted={top3DeficientKeys.includes(key)} />
       ))}
 

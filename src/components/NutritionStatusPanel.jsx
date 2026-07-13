@@ -1,3 +1,4 @@
+import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { buildNutrientStatusRows, calcAchievementPercent, NUTRIENT_STATUS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
 
@@ -65,16 +66,22 @@ function NutrientBarRow({ row }) {
 
 // recommended/total: 둘 다 NutrientSet(6개 영양소).
 export default function NutritionStatusPanel({ recommended, total }) {
+  const visible = useVisibleNutrients()
   const rows = buildNutrientStatusRows(recommended, total)
   const achievementPercent = Math.max(0, Math.min(100, calcAchievementPercent(recommended, total)))
 
+  // 달성률/충족·부족·초과 개수는 카드 표시 설정과 무관하게 항상 실제 6개 전부 기준으로 정확하게
+  // 유지한다 — 화면에 안 보이는 영양소가 있다고 해서 "충족 3개"가 "충족 2개"로 잘못 줄어들면 안 된다.
   const counts = STATUS_ORDER.reduce((acc, status) => {
     acc[status] = rows.filter((r) => r.status === status).length
     return acc
   }, {})
 
-  // 충족 → 부족 → 초과 순으로 묶어 보여줘서 상태가 한눈에 들어오게 정렬한다.
-  const sortedRows = STATUS_ORDER.flatMap((status) => rows.filter((r) => r.status === status))
+  // 충족 → 부족 → 초과 순으로 묶어 보여줘서 상태가 한눈에 들어오게 정렬한다. 실제로 막대로 그리는
+  // 목록만 표시 설정으로 걸러낸다.
+  const sortedRows = STATUS_ORDER.flatMap((status) => rows.filter((r) => r.status === status)).filter(
+    (row) => visible[row.key],
+  )
 
   const circumference = 2 * Math.PI * DONUT_RADIUS
   const offset = circumference * (1 - achievementPercent / 100)

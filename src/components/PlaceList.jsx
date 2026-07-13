@@ -1,3 +1,4 @@
+import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
@@ -43,8 +44,11 @@ function buildOverageKeys(expected, todayTotal, recommended) {
 }
 
 // "이 메뉴를 먹으면 어떤 영양소가 넘치는지"를 색으로 보여주는 예상 섭취량 줄. 초과하는 영양소만 빨간색.
+// overageKeys 판정(buildOverageKeys) 자체는 표시 설정과 무관하게 항상 전체 영양소 기준으로 유지된다 —
+// 여기서는 그중 실제로 화면에 그릴 줄만 표시 설정으로 한 번 더 거른다.
 function ExpectedNutrients({ expected, overageKeys }) {
-  const rows = NUTRIENT_LABELS.filter(({ key }) => typeof expected[key] === 'number')
+  const visible = useVisibleNutrients()
+  const rows = NUTRIENT_LABELS.filter(({ key }) => typeof expected[key] === 'number' && visible[key])
   if (rows.length === 0) return null
 
   return (

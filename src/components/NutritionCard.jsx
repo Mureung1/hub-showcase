@@ -1,6 +1,7 @@
 import Card from './Card.jsx'
 import MealTypeBadge from './MealTypeBadge.jsx'
 import SourceBadge from './SourceBadge.jsx'
+import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
 
@@ -16,9 +17,12 @@ const BAR_MAX = {
 
 // 식단 탭의 "자세한 영양" 아코디언에서도 재사용하는 상세 막대 그래프
 export function NutrientBars({ nutrients }) {
+  const visible = useVisibleNutrients()
+  const labels = NUTRIENT_LABELS.filter(({ key }) => visible[key])
+
   return (
     <div>
-      {NUTRIENT_LABELS.map(({ key, label, unit }) => {
+      {labels.map(({ key, label, unit }) => {
         const value = nutrients[key]
         // 라벨 스캔 결과는 표에 없는 항목이 null일 수 있다(추정 금지) — 그 경우 0으로 보이지 않게 '-'로 표시.
         const isUnknown = value == null
