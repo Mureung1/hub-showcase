@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppStoreProvider } from './hooks/useAppStore';
 import Layout from './components/layout/Layout';
+import UserLayout from './components/user/UserLayout';
 import UserHomePage from './pages/user/HomePage';
 import UserCoursesPage from './pages/user/CoursesPage';
 import UserMealsPage from './pages/user/MealsPage';
@@ -17,14 +18,15 @@ function App() {
     <BrowserRouter>
       <AppStoreProvider>
         <Routes>
-          {/* 회원 모드 — 모바일 비율 화면 */}
           <Route path="/" element={<Navigate to="/user" replace />} />
-          <Route path="/user" element={<UserHomePage />} />
-          <Route path="/user/courses" element={<UserCoursesPage />} />
-          <Route path="/user/meals" element={<UserMealsPage />} />
-          <Route path="/user/map" element={<UserMapPage />} />
 
-          {/* 트레이너 모드 — 데스크톱 대시보드 */}
+          <Route path="/user" element={<UserLayout />}>
+            <Route index element={<UserHomePage />} />
+            <Route path="courses" element={<UserCoursesPage />} />
+            <Route path="meals" element={<UserMealsPage />} />
+            <Route path="map" element={<UserMapPage />} />
+          </Route>
+
           <Route path="/trainer" element={<Layout />}>
             <Route index element={<DashboardPage />} />
             <Route path="members" element={<MembersPage />} />

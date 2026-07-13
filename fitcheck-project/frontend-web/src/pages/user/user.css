@@ -1,81 +1,95 @@
+@import '../../components/dashboard/StatsBar.css';
+
 .user-page {
-  min-height: 100dvh;
-  max-width: 430px;
-  margin: 0 auto;
-  padding: 28px 20px 40px;
-  box-sizing: border-box;
-  background: linear-gradient(180deg, #f3f7f4 0%, #ffffff 45%);
-  color: #14201a;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
-.user-header {
-  margin-bottom: 28px;
+.user-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
 }
 
-.user-eyebrow {
-  margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #2f6b4f;
+.user-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
 }
 
-.user-page h1 {
-  margin: 0 0 12px;
-  font-size: 28px;
-  line-height: 1.25;
-  font-weight: 800;
+.user-stats-compact {
+  grid-template-columns: repeat(2, 1fr);
 }
 
-.user-lead {
+.user-stats .stat-card {
   margin: 0;
-  font-size: 15px;
-  line-height: 1.6;
-  color: #4b5c53;
 }
 
-.user-nav {
+.quick-grid {
   display: grid;
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
 }
 
-.user-nav-card {
-  display: grid;
-  gap: 4px;
-  padding: 16px;
-  border-radius: 16px;
-  background: #fff;
-  border: 1px solid #d7e4db;
+.quick-card {
   text-decoration: none;
   color: inherit;
+  gap: 0.5rem;
 }
 
-.user-nav-card span {
-  font-size: 12px;
+.quick-card strong {
+  font-size: 0.9375rem;
+}
+
+.quick-card > span:last-child {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.home-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.home-recommend-title,
+.home-meal-title {
+  margin: 0;
+  font-size: 0.9375rem;
   font-weight: 700;
-  color: #2f6b4f;
+  letter-spacing: -0.02em;
 }
 
-.user-nav-card strong {
-  font-size: 16px;
-  font-weight: 700;
+.home-recommend-meta,
+.home-meal-feedback {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
-.user-back {
-  display: inline-block;
-  margin-bottom: 16px;
-  color: #2f6b4f;
-  text-decoration: none;
-  font-weight: 600;
+.home-split .btn {
+  align-self: flex-start;
 }
 
-.user-footer-link {
-  margin-top: 28px;
-  text-align: center;
+@media (min-width: 768px) {
+  .user-stats {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+
+  .quick-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .home-split {
+    grid-template-columns: 1.2fr 1fr;
+  }
 }
 
-.user-footer-link a {
-  color: #6b7c73;
-  font-size: 13px;
+@media (min-width: 1100px) {
+  .user-page {
+    gap: 1.5rem;
+  }
 }

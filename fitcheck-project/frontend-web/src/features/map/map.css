@@ -1,0 +1,99 @@
+.map-placeholder {
+  margin-bottom: 1.25rem;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  background:
+    linear-gradient(160deg, rgba(229, 9, 20, 0.16), transparent 55%),
+    var(--bg-elevated);
+  border: 1px dashed var(--border-hover);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.map-placeholder strong {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.map-placeholder p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.gym-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.gym-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.gym-distance {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.gym-card h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.gym-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.gym-card-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.gym-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.gym-tag {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0.25rem 0.55rem;
+}
+
+@media (min-width: 768px) {
+  .map-placeholder {
+    min-height: 220px;
+  }
+
+  .gym-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .gym-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
