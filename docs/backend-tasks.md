@@ -34,12 +34,12 @@ PORT=3001
 NODE_ENV=development
 CORS_ORIGINS=http://localhost:5173
 SUPABASE_URL=
-SUPABASE_ANON_KEY=
+SUPABASE_PUBLISHABLE_KEY=
 KAKAO_REST_API_KEY=
 LOG_LEVEL=info
 ```
 
-- URL, anon key와 Kakao REST key가 없으면 서버 부팅을 실패시킨다.
+- URL, publishable key와 Kakao REST key가 없으면 서버 부팅을 실패시킨다.
 - `SUPABASE_SERVICE_ROLE_KEY`는 seed/test 환경에만 사용하고 Render API 환경에는 설정하지 않는다.
 - access token, 비밀번호, Kakao key, service role, 주소 검색어, 주소 결과와 좌표를 로그에 남기지 않는다.
 - 프론트 access token을 `Authorization: Bearer <token>`으로 받는다.
