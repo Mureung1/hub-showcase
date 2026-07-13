@@ -53,6 +53,30 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
   확인한다.
 - 불일치 시 기존 승인을 사용해 자동 적용하지 않는다.
 
+## Needs Reconfirmation Workflow
+
+### Enter
+
+1. 적용 직전 비교에서 원본, 영향 범위 또는 신규 문서 존재 여부가 달라지면
+   적용을 중단한다.
+2. 항목 상태를 `needs_reconfirmation`으로 바꾸고 실제 승인 큐의
+   `Needs Reconfirmation` 영역으로 이동한다.
+3. Reconfirmation에 진입 사유, 감지일, 현재 원본 요약과 비교 결과를
+   기록한다.
+4. 이전 승인 결정은 이력으로 보존하되 적용 권한으로 재사용하지 않는다.
+5. `workspace/design/`, Decision Log, Version History는 수정하지 않는다.
+
+### Resolve
+
+- 현재 원본을 기준으로 변경안을 다시 작성한 뒤 검토를 기다리면 `pending`으로
+  이동한다. 기준 Git 커밋, 비교 대상과 원본 요약도 함께 갱신한다.
+- 사용자가 현재 원본과 갱신된 초안을 특정해 명시적으로 재승인하면
+  `approved`로 이동한다. 재확인 결정자, 결정일과 이유를 기록한다.
+- 사용자가 내용 수정을 요구하면 `change_requested`로 이동한다.
+- 사용자가 보류하거나 거부하면 각각 `on_hold`, `rejected`로 이동한다.
+- 어느 경우에도 `needs_reconfirmation`에서 `applied`로 직접 이동하지 않는다.
+- 후속 상태와 전환 이유를 Reconfirmation에 기록해 재확인 이력을 보존한다.
+
 ## Safety Rule
 
 승인 문구가 애매하면 적용하지 않는다. 예: "괜찮네", "좋아 보임"은 명시 승인으로 보지 않는다.

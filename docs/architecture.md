@@ -80,6 +80,10 @@ Codex는 다음 작업을 사용자 승인 없이 수행하지 않는다.
 - 신규 문서 생성은 동일 제목뿐 아니라 같은 주제나 역할의 문서가 이미
   생겼는지 먼저 확인한다.
 - 재확인에서 불일치가 확인되면 기존 승인을 재사용하지 않는다.
+- 불일치 항목은 승인 큐의 `Needs Reconfirmation` 영역으로 이동하며,
+  갱신된 기준 정보와 초안에 대한 명시적 재승인 전에는 적용할 수 없다.
+- `needs_reconfirmation` 항목은 `pending`, `approved`, `change_requested`,
+  `on_hold`, `rejected` 중 하나로 전환한 뒤 후속 절차를 따른다.
 
 ## 5. Document Change Routing
 
