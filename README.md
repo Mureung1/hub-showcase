@@ -1,7 +1,7 @@
 # hub
 
 
-[기획](https://github.com/Ladea1224/hub/wiki/plan_0708)
+[기획](https://github.com/Ladea1224/hub/wiki/%EA%B8%B0%ED%9A%8D_%EC%B5%9C%EC%A2%85)
 
 [개발 테스크](https://fish-quark-a38.notion.site/81045f08993647048109a5d222ae4e25?v=8c8e2fea06f04edb8508e3d632f3b8c3&source=copy_link)
 
