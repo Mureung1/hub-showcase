@@ -256,3 +256,5 @@
 - [기획서 바로가기](https://app.notion.com/p/v-02-397dee17209c802d9495f20edf723b95?source=copy_link)
 
 - 개발 Task 백로그: [hankki-bakkum/docs/tasks.md](./hankki-bakkum/docs/tasks.md)
+
+- [2주차 주간 계획](https://app.notion.com/p/2-7-13-17-39cdee17209c80039749e0925cf77e54?source=copy_link)
