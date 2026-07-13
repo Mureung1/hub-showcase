@@ -38,3 +38,12 @@ gapAnalysisRouter.post('/gap-analysis', (req, res) => {
   const row = selectAnalysisById.get(info.lastInsertRowid)
   res.status(201).json(deserializeAnalysis(row))
 })
+
+gapAnalysisRouter.get('/gap-analysis/:id', (req, res) => {
+  const row = selectAnalysisById.get(req.params.id)
+  if (!row) {
+    res.status(404).json({ error: '분석 결과를 찾을 수 없습니다.' })
+    return
+  }
+  res.status(200).json(deserializeAnalysis(row))
+})

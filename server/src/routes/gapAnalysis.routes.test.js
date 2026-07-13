@@ -53,3 +53,20 @@ describe('POST /api/gap-analysis', () => {
     expect(res.body.stats.total).toBeLessThan(862)
   })
 })
+
+describe('GET /api/gap-analysis/:id', () => {
+  it('방금 POST한 id로 조회하면 저장 당시와 동일한 결과가 응답된다', async () => {
+    const postRes = await request(createApp()).post('/api/gap-analysis').send({ spec })
+    insertedIds.push(postRes.body.id)
+
+    const getRes = await request(createApp()).get(`/api/gap-analysis/${postRes.body.id}`)
+
+    expect(getRes.status).toBe(200)
+    expect(getRes.body).toEqual(postRes.body)
+  })
+
+  it('존재하지 않는 id로 조회하면 404를 응답한다', async () => {
+    const res = await request(createApp()).get('/api/gap-analysis/999999')
+    expect(res.status).toBe(404)
+  })
+})
