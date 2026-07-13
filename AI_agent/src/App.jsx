@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 import Home from "./pages/Home";
 import Signup from "./pages/Signup";
@@ -13,43 +14,102 @@ import UploadResult from "./pages/UploadResult";
 import Feedback from "./pages/Feedback";
 import Portfolio from "./pages/Portfolio";
 import Footer from "./components/layout/Footer";
-import { getCurrentPath, routes, subscribeToRouteChange } from "./router";
+import { isAuthenticated } from "./features/auth/authService";
+import { routes, setRouterNavigate } from "./router";
 
-const pageMap = {
-  [routes.home]: Home,
-  [routes.signup]: Signup,
-  [routes.verifyEmail]: VerifyEmail,
-  [routes.login]: Login,
-  [routes.myPage]: MyPage,
-  [routes.specs]: SpecRegister,
-  [routes.analysis]: Analysis,
-  [routes.mission]: Mission,
-  [routes.missionDetail]: MissionDetail,
-  [routes.upload]: UploadResult,
-  [routes.feedback]: Feedback,
-  [routes.portfolio]: Portfolio,
-};
-
-const resolvePage = (path) => {
-  if (path.startsWith("/mission/")) {
-    return MissionDetail;
-  }
-
-  return pageMap[path] || Home;
-};
-
-function App() {
-  const [currentPath, setCurrentPath] = useState(getCurrentPath);
+function NavigationBridge() {
+  const routerNavigate = useNavigate();
 
   useEffect(() => {
-    return subscribeToRouteChange(() => setCurrentPath(getCurrentPath()));
-  }, []);
+    return setRouterNavigate(routerNavigate);
+  }, [routerNavigate]);
 
-  const Page = useMemo(() => resolvePage(currentPath), [currentPath]);
+  return null;
+}
 
+function ProtectedRoute({ children }) {
+  if (!isAuthenticated()) {
+    return <Navigate to={routes.login} replace />;
+  }
+
+  return children;
+}
+
+function App() {
   return (
     <>
-      <Page />
+      <NavigationBridge />
+      <Routes>
+        <Route path={routes.home} element={<Home />} />
+        <Route path={routes.signup} element={<Signup />} />
+        <Route path={routes.verifyEmail} element={<VerifyEmail />} />
+        <Route path={routes.login} element={<Login />} />
+        <Route
+          path={routes.myPage}
+          element={
+            <ProtectedRoute>
+              <MyPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={routes.specs}
+          element={
+            <ProtectedRoute>
+              <SpecRegister />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={routes.analysis}
+          element={
+            <ProtectedRoute>
+              <Analysis />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={routes.mission}
+          element={
+            <ProtectedRoute>
+              <Mission />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mission/:missionId"
+          element={
+            <ProtectedRoute>
+              <MissionDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={routes.upload}
+          element={
+            <ProtectedRoute>
+              <UploadResult />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={routes.feedback}
+          element={
+            <ProtectedRoute>
+              <Feedback />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={routes.portfolio}
+          element={
+            <ProtectedRoute>
+              <Portfolio />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to={routes.home} replace />} />
+      </Routes>
       <Footer />
     </>
   );

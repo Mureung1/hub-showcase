@@ -4,8 +4,8 @@ import Header from "../components/layout/Header";
 import {
   getPendingUser,
   getUser,
-  savePendingUser,
 } from "../features/auth/authStorage";
+import { registerUser } from "../features/auth/authService";
 import {
   searchMajorsBySchool,
   searchUniversities,
@@ -246,7 +246,12 @@ function Signup() {
       verificationToken,
     };
 
-    savePendingUser(user);
+    const result = registerUser(user);
+
+    if (!result.ok) {
+      setErrorMessage(result.message);
+      return;
+    }
     alert(
       `확인 메일을 발송했습니다. ${form.email.trim()} 메일함에서 확인 버튼을 눌러 회원가입을 완료해 주세요.\n\n개발용 확인 링크: ${verificationUrl}`
     );

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 
 import Header from "../components/layout/Header";
 import { getSession } from "../features/auth/authStorage";
@@ -25,8 +26,8 @@ const saveProgress = (userId, missionId, progress) => {
 };
 
 function MissionDetail() {
+  const { missionId = "" } = useParams();
   const session = getSession();
-  const missionId = window.location.pathname.split("/").filter(Boolean)[1];
   const userId = session?.id || "";
   const mission = getMissionById(missionId);
   const [checkedItems, setCheckedItems] = useState(() => readProgress(userId, missionId));
