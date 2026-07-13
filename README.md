@@ -16,7 +16,7 @@ npm.cmd run dev
 상세 환경과 협업 규칙은 `docs/DEVELOPMENT_GUIDE.md`, Agent 규칙은 `Agent.md`, UI 기준은 `design.md` 참고.
 
 ## 기획서 WIKI
-[기획서WIKI링크https://github.com/pkchanghyun-pixel/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%B0%ED%9A%8D%EC%84%9C-%5B%EC%9E%90%EC%B7%A8%EC%83%9D-%EC%9A%94%EB%A6%AC-%EC%B6%94%EC%B2%9C-%EC%9B%B9%ED%8E%98%EC%9D%B4%EC%A7%80-%EC%84%9C%EB%B9%84%EC%8A%A4%5D]
+[[기획서WIKI링크](https://github.com/pkchanghyun-pixel/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%B0%ED%9A%8D%EC%84%9C-%5B%EC%9E%90%EC%B7%A8%EC%83%9D-%EC%9A%94%EB%A6%AC-%EC%B6%94%EC%B2%9C-%EC%9B%B9%ED%8E%98%EC%9D%B4%EC%A7%80-%EC%84%9C%EB%B9%84%EC%8A%A4%5D)]
 
 ## 주간계획 수립(2주차)
-[노션주간계획링크(2주차)https://www.notion.so/2-39c147145ccd81c6b0d4e159f29dbe84?source=copy_link]
+[[노션주간계획링크(2주차)](https://www.notion.so/2-39c147145ccd81c6b0d4e159f29dbe84?source=copy_link)]
