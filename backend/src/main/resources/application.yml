@@ -2,7 +2,7 @@ spring:
   application:
     name: devpulse
   datasource:
-    url: ${DEVPULSE_DB_URL:jdbc:postgresql://localhost:5432/devpulse}
+    url: ${DEVPULSE_DB_URL:jdbc:postgresql://localhost:5433/devpulse}
     username: ${DEVPULSE_DB_USERNAME:devpulse}
     password: ${DEVPULSE_DB_PASSWORD:devpulse}
   jpa:
