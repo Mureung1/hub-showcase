@@ -1,34 +1,41 @@
-export type Category = 'top' | 'bottom' | 'outer' | 'acc';
+export type CategoryType = 'top' | 'bottom' | 'shoes' | 'accessories';
 
-export interface ClothesItem {
+export interface ClothingItem {
   id: string;
   name: string;
-  image: string;
-  category: Category;
-  dateAdded: string;
-  tag?: string;
-  isFavorite?: boolean;
+  category: CategoryType;
+  colors: string[];
+  imageUrl: string;
+  isCustom?: boolean;
 }
 
-export interface DiaryEntry {
+export type WeatherType = 'sun' | 'cloud' | 'rain' | 'snow';
+export type DestinationType = 'cafe' | 'school' | 'office' | 'party' | 'home';
+export type SituationType = 'date' | 'workout' | 'casual' | 'formal';
+
+export interface SavedOutfit {
   id: string;
-  date: string;
-  title: string;
-  recommendationText: string;
-  outfitIds: string[]; // references to ClothesItem.id
-  mood?: string;
+  weather: WeatherType;
+  destination: DestinationType;
+  situation: SituationType;
+  items: {
+    top?: ClothingItem;
+    bottom?: ClothingItem;
+    shoes?: ClothingItem;
+    accessories?: ClothingItem;
+  };
+  stylistNote: string;
+  savedAt: string; // ISO date string
 }
 
 export interface UserProfile {
-  name: string;
-  subtitle: string;
-  avatar: string;
+  username: string;
+  avatarUrl: string;
+  vaporMode: boolean;
+  scanlineIntensity: number;
 }
 
-export type TabType = 'today' | 'wardrobe' | 'inspiration' | 'diary' | 'settings';
-
-export interface SelectionCriteria {
-  weather: string;
-  place: string;
-  situation: string;
+export interface CalendarEvent {
+  date: string; // YYYY-MM-DD
+  outfitId: string;
 }
