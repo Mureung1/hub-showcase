@@ -8,7 +8,7 @@
 
 ## Question
 
-정상 browser detach·graceful connection close·`thread/unsubscribe`·idle unload·process reap과 Initialize·read-only·non-idempotent mutation·active turn 도중 connection loss·timeout을 어떻게 구분할 것인가? Child·ingress·pending RPC·Server request responder·projection task의 cleanup owner와 completion authority, transport terminal·unknown outcome·product restart UX·persistence 상태별 native thread resume 책임을 어느 module이 소유하며, 어떤 경우에만 자동 행동을 금지할 것인가?
+정상 browser detach·graceful connection close·`thread/unsubscribe`·idle unload·process reap과 Initialize·read-only·non-idempotent mutation·active turn 도중 connection loss·timeout을 어떻게 구분할 것인가? Child·ingress·pending RPC·projection task의 cleanup owner와 completion authority, transport terminal·unknown outcome·product restart UX·persistence 상태별 native thread resume 책임을 어느 module이 소유하며, 어떤 경우에만 자동 행동을 금지할 것인가?
 
 ## Answer
 

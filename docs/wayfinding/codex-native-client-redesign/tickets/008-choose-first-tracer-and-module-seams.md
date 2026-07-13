@@ -12,7 +12,7 @@
 
 권고 출발점은 명시적 workspace에서 conversation 하나를 시작하고 text turn 하나의 agent message와 authoritative terminal을 browser-safe 결과로 관찰하는 vertical tracer다.
 
-선택한 tracer가 Server request를 요구하는지, 요구하지 않는다면 first supported request variant와 client-level owner를 어느 후속 tracer가 결정할지도 명시한다.
+선택한 tracer가 Server request를 요구하는지, 요구하지 않는다면 first supported request variant를 어떤 실제 후속 tracer에서 선택할지도 명시한다. 구체 variant가 정해지기 전에는 generic responder admission·bound·expiry·once-only policy를 선결정하지 않고, variant를 선택한 시점에 필요한 decision ticket과 client-level owner를 만든다.
 
 ## Answer
 
