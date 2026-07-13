@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+jspm_packages/
+web_modules/
+
+# Environment variables (CRITICAL SECURITY)
+.env
+.env*.local
+*.env
+
+# Certificates and private keys
+*.pem
+*.key
+*.pub
+
+# Build and distribution outputs (Match anywhere, e.g. backend/dist, frontend/dist)
+dist/
+build/
+.next/
+out/
+bin/
+obj/
+*.tsbuildinfo
+
+# Cache and coverage reports
+.cache/
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and Editor configurations
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Hosting/Deployment platforms
+.vercel/
+.netlify/
