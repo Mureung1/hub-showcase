@@ -44,3 +44,6 @@ Examples:
 
 ## Current Priority
 Set up the development environment and prepare the project structure before full implementation in week 2.
+
+## Backlog
+See docs/backlog.md for current sprint priorites and task list.

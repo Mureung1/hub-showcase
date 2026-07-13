@@ -1,20 +1,6 @@
-## 이번 주 개발 계획 (Week 2)
+# AI 기반 졸업 플래너
 
-수직 슬라이스(이수내역 입력 → 저장 → 조회 → 화면 반영) 완성을 목표로 진행합니다.
-
-👉 [작업 목록 확인(GitHub Issues)](https://github.com/zlnzzaro/hub/issues)
-
-### 주요 작업
-1. Express 서버 기본 세팅
-2. Supabase user_records 테이블 설계 및 생성
-3. React 이수내역 입력 폼 (mock)
-4. POST /api/records 구현
-5. GET /api/records/:userId 구현
-6. React-Express 연결 (수직 슬라이스 완성)
-
-# ConGraduation
-
-ConGraduation은 복잡한 졸업요건을 가진 대학생이 자신의 졸업 가능 여부를 쉽게 확인하고, 남은 학기 동안의 수강 계획을 세울 수 있도록 돕는 AI 기반 졸업 플래닝 서비스입니다.
+AI 기반 졸업 플래너는 복잡한 졸업요건을 가진 대학생이 자신의 졸업 가능 여부를 쉽게 확인하고, 남은 학기 동안의 수강 계획을 세울 수 있도록 돕는 서비스입니다.
 
 ## 문제 정의
 
