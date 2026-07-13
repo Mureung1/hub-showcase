@@ -5,6 +5,7 @@ const DEPTH = 0.15; // 최대로 파이는 정도. 근거 없는 근사치
 const WIDTH = 1; // 딥의 폭(시간). 근거 없는 근사치
 
 export function lunchDip(t: number): number {
-  const hoursFromCenter = t - CENTER;
+  const hourOfDay = t % 24; // t가 24를 넘어가는(다음날 이후) 시각이어도 "하루 중 몇 시"로 환산
+  const hoursFromCenter = hourOfDay - CENTER;
   return -DEPTH * Math.exp(-(hoursFromCenter ** 2) / (2 * WIDTH ** 2));
 }
