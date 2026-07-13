@@ -2,7 +2,6 @@
 - [기획서](https://github.com/rldbs5353/hub/wiki/기획서-작성)
 - [개발 환경 / 컨벤션 (CLAUDE.md)](CLAUDE.md)
 - [개발 Task / 4주 로드맵 (TASKS.md)](TASKS.md)
-- [진행 상황 대시보드 (GitHub Issues)](https://github.com/connect-AIAgentChallenge-26-1/hub/issues/659)
 
 ## 프로젝트 구성
 
