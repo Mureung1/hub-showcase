@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2주차 계획 수립 에이전트</title>
+    <style>
+        body { margin: 0; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Segoe UI', sans-serif; background: linear-gradient(180deg, #fcfbff 0%, #f9f3ff 55%, #fff7f0 100%); color: #203047; }
+        .hero { background: radial-gradient(circle at top center, rgba(255,255,255,0.95), rgba(226,232,255,0.8)), linear-gradient(135deg, #fce7f3 0%, #dbeafe 100%); padding: 46px 24px; text-align: center; }
+        .hero h1 { margin: 0; font-size: 2.4rem; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; color: #1e293b; letter-spacing: 0.04em; }
+        .hero p { margin: 16px auto 0; max-width: 760px; color: #334155; font-size: 1rem; line-height: 1.7; }
+        .schedule { max-width: 1080px; margin: 20px auto 40px; padding: 0 24px; }
+        .meta { display: inline-block; background: #fde68a; color: #92400e; padding: 12px 18px; border-radius: 999px; font-weight: 700; margin-bottom: 24px; box-shadow: 0 8px 18px rgba(148, 163, 184, 0.18); }
+        .nav { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 24px; }
+        .day-button { border: none; border-radius: 999px; padding: 14px 22px; font-size: 0.98rem; cursor: pointer; background: #dbeafe; color: #1e3a8a; transition: transform 0.2s, background 0.2s, box-shadow 0.2s; font-family: 'Segoe UI', sans-serif; }
+        .day-button:hover { transform: translateY(-3px); background: #93c5fd; color: #0f172a; }
+        .day-button.active { background: #7dd3fc; color: #062a4c; box-shadow: 0 16px 28px rgba(56, 189, 248, 0.24); }
+        .agent-panel { background: #ffffff; border-radius: 24px; padding: 22px; border: 1px solid rgba(148, 163, 184, 0.18); margin-bottom: 22px; }
+        .agent-panel h3 { margin: 0 0 12px; font-size: 1.1rem; color: #1e293b; }
+        .agent-panel textarea { width: 100%; min-height: 100px; border-radius: 14px; border: 1px solid #cbd5e1; padding: 14px; font-size: 0.95rem; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; resize: vertical; }
+        .agent-panel button { margin-top: 12px; border: none; border-radius: 16px; padding: 12px 18px; background: linear-gradient(90deg, #7c3aed, #ec4899); color: #ffffff; cursor: pointer; font-weight: 700; }
+        .agent-panel button:hover { opacity: 0.94; }
+        .agent-task-list { margin-top: 18px; }
+        .agent-task-item { background: #eef2ff; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .agent-task-item strong { display: inline-block; margin-bottom: 8px; color: #334155; }
+        .priority-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 0.88rem; font-weight: 700; }
+        .priority-high { background: #fed7aa; color: #9a3412; }
+        .priority-medium { background: #bfdbfe; color: #1e3a8a; }
+        .priority-low { background: #d1fae5; color: #166534; }
+        .layout { display: grid; grid-template-columns: 1.75fr 1fr; gap: 24px; align-items: start; }
+        .panel { background: rgba(255,255,255,0.92); border: 1px solid rgba(15,23,42,0.08); border-radius: 28px; box-shadow: 0 30px 60px rgba(15, 23, 42, 0.08); padding: 32px; min-height: 420px; }
+        .panel h2 { margin-top: 0; color: #152238; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; font-size: 1.65rem; letter-spacing: 0.03em; }
+        .panel p { color: #334155; line-height: 1.7; font-size: 0.98rem; margin-bottom: 18px; }
+        .task-list { list-style: none; padding: 0; margin: 20px 0 0; }
+        .task-item { background: #fff7fe; border-left: 6px solid #f9a8d4; border-radius: 18px; margin-bottom: 14px; padding: 18px 20px; color: #1f2937; transition: transform 0.2s; }
+        .task-item:hover { transform: translateX(2px); }
+        .task-item label { display: grid; gap: 10px; align-items: center; grid-template-columns: auto 1fr; }
+        .task-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #ec4899; }
+        .task-item strong { font-family: 'Segoe Script', cursive; display: block; margin-bottom: 6px; color: #be185d; font-size: 1rem; }
+        .summary-aside { display: grid; gap: 20px; }
+        .aside-card { background: #ffffff; border-radius: 24px; padding: 24px; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06); border: 1px solid rgba(15, 23, 42, 0.06); }
+        .aside-card h3 { margin: 0 0 10px; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; font-size: 1.15rem; color: #334155; }
+        .percentage-badge { width: 120px; height: 120px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(#f472b6 calc(var(--value)*1%), #e2e8f0 0); box-shadow: inset 0 4px 15px rgba(15,23,42,0.08); margin: 0 auto 14px; }
+        .percentage-badge span { font-size: 1.25rem; font-weight: 700; color: #0f172a; }
+        .aside-text { text-align: center; color: #475569; line-height: 1.6; }
+        .bar-graph { display: grid; gap: 14px; }
+        .bar-row { display: grid; gap: 10px; }
+        .bar-title { font-size: 0.95rem; color: #334155; margin-bottom: 6px; }
+        .bar-track { height: 12px; border-radius: 999px; background: #ede9fe; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #a78bfa, #f472b6); width: 0%; }
+        .bar-label { display: flex; justify-content: space-between; font-size: 0.85rem; color: #475569; }
+        .progress-row { display: grid; gap: 16px; margin-bottom: 28px; }
+        .progress-card { background: #f8fafc; border-radius: 18px; padding: 18px; border: 1px solid rgba(148, 163, 184, 0.18); }
+        .progress-label { font-size: 0.95rem; font-weight: 700; color: #334155; margin-bottom: 12px; }
+        .progress-bar { width: 100%; height: 14px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #fb7185, #8b5cf6); width: 0%; transition: width 0.3s ease; }
+        .progress-text { margin-top: 10px; font-size: 0.95rem; color: #475569; }
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 720px) {
+            .nav { justify-content: stretch; }
+            .day-button { flex: 1; }
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <h1>2주차 계획 수립 에이전트</h1>
+        <p>이번 주 핵심 일정과 요일별 실행 TODO 안내. 각 요일 버튼 클릭 시 해당 일자 세부 작업 표시.</p>
+    </section>
+    <main class="schedule">
+        <div class="meta">Mon, Jul 13 - Fri, Jul 17</div>
+        <div class="nav">
+            <button class="day-button active" data-day="mon">[월] 주간 계획 수립</button>
+            <button class="day-button" data-day="tue">[화] API 연동</button>
+            <button class="day-button" data-day="wed">[수] 매칭 로직 고도화</button>
+            <button class="day-button" data-day="thu">[목] AI 에이전트 예외 처리 및 데이터 케이스 검증</button>
+            <button class="day-button" data-day="fri">[금] 데모 준비</button>
+        </div>
+        <div class="agent-panel">
+            <h3>작업 분해 Agent</h3>
+            <textarea id="agent-request" placeholder="예: AI 에이전트 예외 처리 및 데이터 케이스 검증 작업을 세부 항목으로 나누고 우선순위를 정해줘."></textarea>
+            <button id="generate-agent">작업 분해 및 우선순위 생성</button>
+            <div class="agent-task-list" id="agent-task-list"></div>
+        </div>
+        <div class="layout">
+            <div class="panel" id="plan-panel">
+                <h2>[월] 2주차 주간 계획 수립 및 에이전트 지침 작성</h2>
+                <p>이번 주 목표를 확정하고, 에이전트가 따라야 할 지침과 역할을 정리합니다.</p>
+                <ul class="task-list" id="task-list"></ul>
+            </div>
+            <aside class="summary-aside" id="summary-aside"></aside>
+        </div>
+    </main>
+    <script>
+        const days = {
+            mon: {
+                title: '[월] 2주차 주간 계획 수립 및 에이전트 지침 작성',
+                description: '이번 주 목표 확정, 에이전트 지침과 작업 분류 정리.',
+                tasks: [
+                    '목표 설정: 최종 데모와 주요 기능 명확히 정의',
+                    '작업 분류: 프론트엔드, 백엔드, AI 에이전트 작업 구분',
+                    '에이전트 지침 작성: 입력/출력 포맷, 예외 대응, 검증 기준 문서화',
+                    '일정 세부화: 요일별 마일스톤과 검토 포인트 정리'
+                ]
+            },
+            tue: {
+                title: '[화] 프론트엔드-백엔드 API 연동',
+                description: 'UI와 서버 사이 데이터 흐름 구현 및 테스트.',
+                tasks: [
+                    'API 계약서 작성: 엔드포인트, 요청/응답 스펙, 인증 방식 정의',
+                    '백엔드 라우트 구현: 데이터 저장/조회 API 작성',
+                    '프론트엔드 호출 구현: fetch/axios로 요청 연결',
+                    '통합 테스트: 프론트엔드 입력 → 서버 전달 확인'
+                ]
+            },
+            wed: {
+                title: '[수] 백엔드 매칭 로직 및 코드 점검',
+                description: '백엔드 매칭 로직과 코드 구조 점검.',
+                tasks: [
+                    '매칭 요건 정리: 데이터 연결 기준 세부화',
+                    '알고리즘 개선: 현재 로직 약점 보완',
+                    '코드 점검: 매칭 처리 흐름 리뷰 및 리팩토링',
+                    '결과 검증: 실제 데이터 기준 정확도 체크'
+                ]
+            },
+            thu: {
+                title: '[목] AI 에이전트 예외 처리 및 데이터 케이스 검증',
+                description: '에이전트가 예기치 않은 상황에도 안정적으로 작동.',
+                tasks: [
+                    '예외 처리 목록 작성: 입력 누락, 형식 오류, 외부 서비스 실패 정리',
+                    '데이터 케이스 검증: 대표 케이스와 엣지 케이스 테스트',
+                    '회복 전략 설계: 실패 시 대체 경로와 사용자 안내 메시지 정의',
+                    '추적 로깅 확인: 문제 원인 파악 가능한 로그 체계 점검'
+                ]
+            },
+            fri: {
+                title: '[금] 2주차 데모 발표 준비 및 최종 코드 동결',
+                description: '최종 데모 준비와 코드 안정화.',
+                tasks: [
+                    '데모 시나리오 작성: 발표 흐름과 순서 마련',
+                    '최종 코드 리뷰: 핵심 기능, 버그 점검',
+                    '배포/실행 점검: 데모 환경 정상 동작 확인',
+                    '결과 정리: 발표 자료 및 릴리스 노트 정리'
+                ]
+            }
+        };
+
+        const buttons = document.querySelectorAll('.day-button');
+        const panel = document.getElementById('plan-panel');
+        let currentDay = 'mon';
+        const state = {
+            mon: [false, false, false, false],
+            tue: [false, false, false, false],
+            wed: [false, false, false, false],
+            thu: [false, false, false, false],
+            fri: [false, false, false, false]
+        };
+
+        function renderDay(dayKey) {
+            currentDay = dayKey;
+            const day = days[dayKey];
+            panel.innerHTML = `
+                <h2>${day.title}</h2>
+                <p>${day.description}</p>
+                <ul class="task-list">
+                    ${day.tasks.map((task, index) => `
+                        <li class="task-item">
+                            <label>
+                                <input type="checkbox" data-index="${index}" ${state[dayKey][index] ? 'checked' : ''}>
+                                <span>${task}</span>
+                            </label>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+            document.querySelectorAll('#plan-panel input[type="checkbox"]').forEach(input => {
+                input.addEventListener('change', (event) => {
+                    const index = Number(event.target.dataset.index);
+                    state[dayKey][index] = event.target.checked;
+                    renderSummary();
+                });
+            });
+            renderSummary();
+        }
+
+        function renderSummary() {
+            const dayChecks = state[currentDay];
+            const dayComplete = dayChecks.filter(Boolean).length;
+            const dayPercent = Math.round((dayComplete / dayChecks.length) * 100);
+            const totalTasks = Object.values(state).flat();
+            const totalComplete = totalTasks.filter(Boolean).length;
+            const totalPercent = Math.round((totalComplete / totalTasks.length) * 100);
+            const summary = document.getElementById('summary-aside');
+            summary.innerHTML = `
+                <section class="aside-card">
+                    <h3>오늘의 성취도</h3>
+                    <div class="percentage-badge" style="--value: ${dayPercent};"><span>${dayPercent}%</span></div>
+                    <p class="aside-text">오늘 완료한 체크리스트가 전체 일정에 미치는 영향 한눈에 확인.</p>
+                </section>
+                <section class="aside-card">
+                    <h3>이번 주 진행률</h3>
+                    <div class="bar-graph">
+                        <div class="bar-row">
+                            <div class="bar-title">요일별 완료 비율</div>
+                            <div class="bar-track"><div class="bar-fill" style="width: ${dayPercent}%"></div></div>
+                            <div class="bar-label"><span>${days[currentDay].title}</span><strong>${dayPercent}%</strong></div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-title">전체 계획 완료</div>
+                            <div class="bar-track"><div class="bar-fill" style="width: ${totalPercent}%"></div></div>
+                            <div class="bar-label"><span>전체 작업</span><strong>${totalPercent}%</strong></div>
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+
+        function splitClauses(text) {
+            return text
+                .split(/[.!?；;]+|\band\b|\b그리고\b|\b및\b|,|;/)
+                .map(part => part.trim())
+                .filter(Boolean);
+        }
+
+        const AGENT_PRIORITY_KEYWORDS = {
+            High: ['긴급', '마감', '우선', '중요', '필수', '즉시', '예외', '검증'],
+            Medium: ['구현', '설계', '테스트', '검토', '배포', '문서', '점검', '검증', '작성'],
+            Low: ['리팩토링', '개선', '추후', '권장', '확인', '검토']
+        };
+
+        function scorePriority(text) {
+            const lower = text.toLowerCase();
+            let score = 0;
+            let level = 'Low';
+            for (const key of AGENT_PRIORITY_KEYWORDS.High) {
+                if (lower.includes(key)) score += 3;
+            }
+            for (const key of AGENT_PRIORITY_KEYWORDS.Medium) {
+                if (lower.includes(key)) score += 1.5;
+            }
+            for (const key of AGENT_PRIORITY_KEYWORDS.Low) {
+                if (lower.includes(key)) score += 0.5;
+            }
+            if (text.length > 40) score += 0.5;
+            if (score >= 3) level = 'High';
+            else if (score >= 1.5) level = 'Medium';
+            return level;
+        }
+
+        function priorityClass(level) {
+            return level === 'High' ? 'priority-high' : (level === 'Medium' ? 'priority-medium' : 'priority-low');
+        }
+
+        function renderAgentTasks(tasks) {
+            const target = document.getElementById('agent-task-list');
+            if (!tasks.length) {
+                target.innerHTML = '<p style="color:#475569; margin:0;">작업 요청을 입력하고 버튼을 누르세요.</p>';
+                return;
+            }
+            target.innerHTML = tasks.map(task => `
+                <div class="agent-task-item">
+                    <div><strong>${task.task}</strong></div>
+                    <div class="priority-badge ${priorityClass(task.priority)}">${task.priority}</div>
+                </div>
+            `).join('');
+        }
+
+        function generateAgentTasks(request) {
+            const clauses = splitClauses(request);
+            const tasks = clauses.map(clause => ({
+                task: clause,
+                priority: scorePriority(clause)
+            }));
+            return tasks.sort((a, b) => {
+                const rank = { High: 0, Medium: 1, Low: 2 };
+                return rank[a.priority] - rank[b.priority];
+            });
+        }
+
+        document.getElementById('generate-agent').addEventListener('click', () => {
+            const request = document.getElementById('agent-request').value.trim();
+            if (!request) {
+                renderAgentTasks([]);
+                return;
+            }
+            const tasks = generateAgentTasks(request);
+            renderAgentTasks(tasks);
+        });
+
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                buttons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                renderDay(button.dataset.day);
+            });
+        });
+
+        renderDay('mon');
+    </script>
+</body>
+</html>

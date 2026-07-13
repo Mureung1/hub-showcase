@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -325,80 +325,6 @@
     display:flex; gap:10px; flex-wrap:wrap;
   }
 
-  .plan-section{
-    display:none;
-    margin-top: 32px;
-    padding: 28px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: #F8FAFC;
-  }
-  .plan-header h2{
-    margin: 0 0 10px;
-    font-size: 24px;
-    color: var(--color-ink-900);
-  }
-  .plan-header p{
-    margin: 0;
-    color: var(--color-ink-500);
-    line-height: var(--lh-body);
-  }
-  .timeline-list{
-    display:grid;
-    gap: 18px;
-    margin-top: 26px;
-  }
-  .timeline-step{
-    padding: 20px;
-    border-radius: var(--radius-md);
-    background: white;
-    border: 1px solid var(--color-border);
-  }
-  .timeline-step-number{
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--color-primary);
-    text-transform: uppercase;
-    margin-bottom: 10px;
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-  }
-  .timeline-step-number::before{
-    content: "•";
-    color: var(--color-primary);
-  }
-  .timeline-step h3{
-    margin: 0 0 10px;
-    font-size: var(--fs-h2);
-  }
-  .timeline-step p{
-    margin: 0 0 12px;
-    color: var(--color-ink-500);
-    line-height: var(--lh-body);
-  }
-  .checklist{
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display:grid;
-    gap: 10px;
-  }
-  .checklist-item{
-    display:flex;
-    gap: 10px;
-    align-items:flex-start;
-    font-size: var(--fs-body);
-    color: var(--color-ink-700);
-  }
-  .checklist-item::before{
-    content: "✔";
-    color: var(--color-secondary);
-    font-size: 12px;
-    line-height: 1;
-    margin-top: 3px;
-  }
-
   /* ============================================================
      LOADING (분석 중 전환 상태)
      ============================================================ */
@@ -560,76 +486,14 @@
       <div class="action-row">
         <button class="btn btn-ghost" onclick="resetFlow()">다시 입력하기</button>
         <button class="btn btn-secondary" onclick="alert('알림이 설정되었습니다.')">알림 설정하기</button>
-        <button class="btn btn-primary" onclick="showPlanner()">이 지원금을 포함한 2026년 자금 플랜 짜기</button>
       </div>
-
-      <section class="plan-section" id="planner-section">
-        <div class="plan-header">
-          <span class="eyebrow success">자율적 자금 조달 로드맵</span>
-          <h2>2026년 맞춤형 자금 플랜</h2>
-          <p>추천 결과를 기반으로 분기별 우선순위와 주차별 행동 체크리스트를 자동 설계합니다.</p>
-        </div>
-        <div class="timeline-list" id="timeline-list"></div>
-      </section>
     </section>
 
   </div>
 </div>
 
 <script>
-  function getMatchScores(industry, size, period){
-    let score1 = 78;
-    let score2 = 72;
-    let score3 = 68;
-
-    if(industry.includes('카페') || industry.includes('음식점')){
-      score1 += 10;
-      score2 += 6;
-      score3 += 8;
-    } else if(industry.includes('소매')){
-      score1 += 6;
-      score2 += 10;
-      score3 += 7;
-    } else if(industry.includes('미용')){
-      score1 += 7;
-      score2 += 8;
-      score3 += 8;
-    } else {
-      score1 += 5;
-      score2 += 6;
-      score3 += 6;
-    }
-
-    if(size.includes('1인')){
-      score1 += 5;
-      score2 -= 2;
-      score3 += 4;
-    } else if(size.includes('6인')){
-      score1 += 3;
-      score2 += 2;
-      score3 += 3;
-    } else if(size.includes('11인')){
-      score1 += 1;
-      score2 += 4;
-      score3 += 2;
-    } else if(size.includes('21인')){
-      score1 -= 2;
-      score2 += 3;
-      score3 += 4;
-    }
-
-    if(period.includes('1년 미만')){
-      score1 += 4;
-      score2 += 1;
-      score3 += 2;
-    } else if(period.includes('5년 이상')){
-      score1 += 2;
-      score2 += 4;
-      score3 += 3;
-    }
-
-    return [score1, score2, score3].map(v => Math.min(98, Math.max(48, Math.round(v))));
-  }
+  const MATCH_SCORES = [92, 84, 76];
 
   function showView(id){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -638,21 +502,17 @@
 
   function startAnalysis(){
     showView('view-loading');
-    const industry = document.getElementById('f-industry').value;
-    const size = document.getElementById('f-size').value;
-    const period = document.getElementById('f-period').value;
-    const scores = getMatchScores(industry, size, period);
-
     setTimeout(() => {
       showView('view-result');
-      animateBars(scores);
+      animateBars();
     }, 900);
   }
 
-  function animateBars(scores){
-    scores.forEach((score, i) => {
+  function animateBars(){
+    MATCH_SCORES.forEach((score, i) => {
       const bar = document.getElementById('bar-' + (i+1));
       const val = document.getElementById('val-' + (i+1));
+      // 리플로우 이후 트랜지션이 걸리도록 다음 프레임에 적용
       requestAnimationFrame(() => {
         bar.style.width = score + '%';
       });
@@ -673,164 +533,9 @@
 
   function resetFlow(){
     showView('view-input');
-    document.getElementById('planner-section').style.display = 'none';
     // 바 초기화 (다음 분석 시 다시 애니메이션 되도록)
     document.querySelectorAll('.match-fill').forEach(b => b.style.width = '0%');
     document.querySelectorAll('.match-value').forEach(v => v.textContent = '0%');
-  }
-
-  function showPlanner(){
-    const industry = document.getElementById('f-industry').value;
-    const size = document.getElementById('f-size').value;
-    const period = document.getElementById('f-period').value;
-    const plan = buildRoadmap(industry, size, period);
-    renderPlanner(plan);
-    document.getElementById('planner-section').style.display = 'block';
-    document.getElementById('planner-section').scrollIntoView({ behavior:'smooth', block:'start' });
-  }
-
-  function buildRoadmap(industry, size, period){
-    const headline = `${industry} ${size} 사업자를 위한 자금 로드맵`;
-    const baseSteps = [
-      {
-        quarter: '1분기',
-        title: '안정적 자금 확보 우선',
-        description: '고정비와 초기 운영 비용 부담을 먼저 낮추기 위해 지원금 신청부터 시작합니다.',
-        tasks: [
-          '지원금 공고 및 신청 자격 확인',
-          '사업자등록증과 임대차 계약서 준비',
-          '필요 서류 목록 정리 및 보관'
-        ]
-      },
-      {
-        quarter: '2분기',
-        title: '매출 회복과 고객 유입 강화',
-        description: '업종 특성에 맞는 마케팅, 프로모션, 디지털 전환을 병행합니다.',
-        tasks: [
-          '지원금 신청 서류(견적서, 사업계획서) 준비',
-          '고객 타겟과 프로모션 전략 수립',
-          '추가 비용 관리 계획 작성'
-        ]
-      },
-      {
-        quarter: '3분기',
-        title: '운영 효율과 디지털 연계',
-        description: '디지털 전환과 내부 운영 체계를 정비하여 비용 대비 효과를 높입니다.',
-        tasks: [
-          '디지털 도구 또는 플랫폼 도입 계획 수립',
-          '고객 경험 개선 우선 작업 정의',
-          '운영 데이터 및 재고 관리 점검'
-        ]
-      },
-      {
-        quarter: '4분기',
-        title: '재무 구조 안정화 및 확장 준비',
-        description: '지원금 수령 후 자금 흐름을 안정화하고 연간 경영 계획을 정리합니다.',
-        tasks: [
-          '기존 대출 조건과 금리 비교',
-          '대환대출 또는 추가 자금 조달 전략 검토',
-          '연간 자금 흐름표 작성 및 검토'
-        ]
-      }
-    ];
-
-    if(industry.includes('카페') || industry.includes('음식점')){
-      baseSteps[1].title = '프로모션과 배달·예약 마케팅 강화';
-      baseSteps[1].description = '오프라인 매장 매출 회복을 위해 배달, 예약, 쿠폰 프로모션을 결합합니다.';
-      baseSteps[1].tasks = [
-        '배달·예약 플랫폼 할인/제휴 검토',
-        '초기 고객 확보 프로모션 실행 계획 수립',
-        'SNS 및 리뷰 기반 홍보 키워드 정리'
-      ];
-      baseSteps[2].title = '배달·예약 플랫폼 연계';
-      baseSteps[2].description = '배달 및 예약 서비스를 연계해 고객 접근성을 높이고 매출 채널을 다변화합니다.';
-      baseSteps[2].tasks = [
-        '배달/예약 플랫폼 목록 비교',
-        '도입 비용 및 운영 매뉴얼 작성',
-        '주문 처리와 재고 흐름 점검'
-      ];
-    }
-
-    if(industry.includes('소매')){
-      baseSteps[1].title = '온라인 쇼핑몰과 재고 관리 강화';
-      baseSteps[1].description = '오프라인 매장 매출에 웹 판매 채널을 더해 매출 안정화를 도모합니다.';
-      baseSteps[1].tasks = [
-        '웹/모바일 판매 채널 분석',
-        '재고 회전율 개선 방안 수립',
-        '상품 카테고리별 프로모션 기획'
-      ];
-      baseSteps[2].title = '디지털 재고·물류 체계 정비';
-      baseSteps[2].description = '재고·물류 관리를 자동화하고 주문 처리 속도를 높입니다.';
-      baseSteps[2].tasks = [
-        '재고 관리 솔루션 비교·선정',
-        '물류 비용 구조 점검',
-        '판매 데이터 기반 발주 계획 세우기'
-      ];
-    }
-
-    if(industry.includes('미용')){
-      baseSteps[1].title = '예약 기반 고객 확보 계획';
-      baseSteps[1].description = '미용·뷰티 업종 특성에 맞춘 예약, 패키지, 재방문 전략을 설계합니다.';
-      baseSteps[1].tasks = [
-        '예약 시스템 도입 또는 고도화 방안 검토',
-        '재방문율 개선 프로모션 기획',
-        '서비스별 가격/패키지 조정안 작성'
-      ];
-      baseSteps[2].title = '고객관리(CRM)·디지털 홍보 강화';
-      baseSteps[2].description = '고객 데이터와 SNS를 활용해 충성 고객을 늘립니다.';
-      baseSteps[2].tasks = [
-        'CRM 또는 예약 고객 관리 체계 점검',
-        'SNS/블로그 콘텐츠 계획 수립',
-        '고객 후기 및 추천 프로세스 마련'
-      ];
-    }
-
-    if(size.includes('1인')){
-      baseSteps[0].tasks.push('혼자 운영하는 경우 우선 지원금 신청과 행정 서류를 함께 준비');
-      baseSteps[2].tasks.push('비용 효율이 높은 자동화 도구 우선 도입');
-    } else if(size.includes('6인')){
-      baseSteps[0].tasks.push('근로자 수에 맞춘 인건비 증빙 체계 점검');
-      baseSteps[2].tasks.push('팀 운영 효율화 및 근로시간 관리 방안 마련');
-    } else if(size.includes('11인')){
-      baseSteps[0].tasks.push('중간관리자 역할 분담과 지원금 서류 분업 체계 구축');
-      baseSteps[2].tasks.push('재고·인력 관리 자동화 도구 검토');
-      baseSteps[3].tasks.push('사내 교육 및 운영 매뉴얼 업데이트 계획 수립');
-    } else if(size.includes('21인')){
-      baseSteps[0].tasks.push('대규모 인력 지원금 신청에 필요한 조직도와 급여 자료 정리');
-      baseSteps[2].tasks.push('조직 운영 체계와 비용 절감 프로세스를 함께 검토');
-      baseSteps[3].tasks.push('중장기 성장 전략과 추가 자금 조달 방안 검토');
-    }
-
-    if(period.includes('1년 미만')){
-      baseSteps[0].tasks.push('창업 초기 증빙 자료 정리');
-      baseSteps[1].tasks.push('첫 고객 확보를 위한 체험형 프로모션 기획');
-    }
-    if(period.includes('3년~5년') || period.includes('5년 이상')){
-      baseSteps[3].tasks.push('사업 안정화 후 추가 성장 투자 가능성 검토');
-    }
-
-    return {
-      headline,
-      steps: baseSteps
-    };
-  }
-
-  function renderPlanner(plan){
-    const list = document.getElementById('timeline-list');
-    list.innerHTML = '';
-    plan.steps.forEach(step => {
-      const item = document.createElement('div');
-      item.className = 'timeline-step';
-      item.innerHTML = `
-        <div class="timeline-step-number">${step.quarter}</div>
-        <h3>${step.title}</h3>
-        <p>${step.description}</p>
-        <ul class="checklist">
-          ${step.tasks.map(task => `<li class="checklist-item">${task}</li>`).join('')}
-        </ul>
-      `;
-      list.appendChild(item);
-    });
   }
 </script>
 
