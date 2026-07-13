@@ -7,8 +7,11 @@ export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
+    seed: 'node prisma/seed.mjs',
   },
   datasource: {
-    url: process.env['DATABASE_URL'],
+    // 마이그레이션은 advisory lock이 필요해 세션모드 풀러(DIRECT_URL)를 쓴다.
+    // 앱 런타임의 PrismaClient는 트랜잭션모드 풀러(DATABASE_URL)를 따로 지정해서 쓴다.
+    url: process.env['DIRECT_URL'],
   },
 })

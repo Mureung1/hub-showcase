@@ -1,7 +1,9 @@
-require('dotenv/config')
-const { PrismaClient } = require('../generated/prisma')
+import 'dotenv/config'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaClient } from '../generated/prisma/client.mts'
 
-const prisma = new PrismaClient()
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+const prisma = new PrismaClient({ adapter })
 
 // docs/EXERCISE_RESEARCH.md의 33개 운동을 그대로 옮긴 시드 데이터.
 // 새 운동을 추가할 땐 이 파일 말고 EXERCISE_RESEARCH.md에 근거부터 남긴 뒤 옮긴다.
@@ -15,7 +17,7 @@ const exercises = [
   { name: '체스트 서포티드 덤벨로우', targetArea: '등', involvedJoints: ['어깨', '팔꿈치'] },
   { name: '풀업/친업', targetArea: '등', involvedJoints: ['어깨', '팔꿈치'] },
   { name: '랫풀다운', targetArea: '등', involvedJoints: ['어깨', '팔꿈치'] },
-  { name: '스트레이트암 풀다운/풀오버', targetArea: '등', involvedJoints: ['어깨'] },
+  { name: '스트레이트암 풀다운/풀오버', targetArea: '등', involvedJoints: ['어깨', '손목'] },
 
   // 어깨
   { name: '오버헤드프레스', targetArea: '어깨', involvedJoints: ['어깨', '팔꿈치'] },
@@ -29,8 +31,8 @@ const exercises = [
 
   // 가슴
   { name: '벤치프레스', targetArea: '가슴', involvedJoints: ['어깨', '팔꿈치'] },
-  { name: '딥스/푸시업', targetArea: '가슴', involvedJoints: ['어깨', '팔꿈치'] },
-  { name: '체스트플라이/케이블크로스오버', targetArea: '가슴', involvedJoints: ['어깨'] },
+  { name: '딥스/푸시업', targetArea: '가슴', involvedJoints: ['어깨', '팔꿈치', '손목'] },
+  { name: '체스트플라이/케이블크로스오버', targetArea: '가슴', involvedJoints: ['어깨', '손목'] },
 
   // 하체
   { name: '스쿼트', targetArea: '하체', involvedJoints: ['무릎', '고관절', '발목'] },
