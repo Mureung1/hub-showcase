@@ -45,6 +45,10 @@ paths:
       description: |
         GitHub ID의 활동 이력(사용 언어, 커밋/PR 이력)을 분석해 기술 성향과 실력 수준을 반환한다.
         동일 ID의 신선한 캐시(24시간 이내)가 있으면 GitHub 호출 없이 캐시를 반환한다.
+
+        **활동이 없는 사용자**(레포/커밋 0)는 에러가 아니라 정상 응답(200)으로 처리한다:
+        `languages: []`, activitySummary 전부 0, `skillLevel: beginner` 고정.
+        (개발자 지망생이 핵심 타겟 페르소나이므로 활동 없음은 실패가 아님 — 추천은 선호 조건만으로 진행)
       operationId: createAnalysis
       requestBody:
         required: true
@@ -66,22 +70,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Analysis'
-              example:
-                githubId: kimsunho2000
-                languages:
-                  - name: JavaScript
-                    ratio: 0.52
-                  - name: Java
-                    ratio: 0.31
-                  - name: Python
-                    ratio: 0.17
-                skillLevel: intermediate
-                activitySummary:
-                  commits: 342
-                  pullRequests: 27
-                  issues: 11
-                  contributedRepos: 6
-                analyzedAt: '2026-07-15T09:30:00.000Z'
+              examples:
+                withActivity:
+                  summary: 활동이 있는 사용자
+                  value:
+                    githubId: kimsunho2000
+                    languages:
+                      - name: JavaScript
+                        ratio: 0.52
+                      - name: Java
+                        ratio: 0.31
+                      - name: Python
+                        ratio: 0.17
+                    skillLevel: intermediate
+                    activitySummary:
+                      commits: 342
+                      pullRequests: 27
+                      issues: 11
+                      contributedRepos: 6
+                    analyzedAt: '2026-07-15T09:30:00.000Z'
+                noActivity:
+                  summary: 활동이 없는 사용자 (빈 분석 — 에러 아님)
+                  value:
+                    githubId: newbie-dev
+                    languages: []
+                    skillLevel: beginner
+                    activitySummary:
+                      commits: 0
+                      pullRequests: 0
+                      issues: 0
+                      contributedRepos: 0
+                    analyzedAt: '2026-07-15T09:30:00.000Z'
         '400':
           $ref: '#/components/responses/ValidationError'
         '404':
@@ -251,12 +270,14 @@ components:
           example: kimsunho2000
         languages:
           type: array
-          description: 사용 언어 비율 (내림차순 정렬)
+          description: |
+            사용 언어 비율 (내림차순 정렬).
+            활동이 없는 사용자는 빈 배열 — FE는 `languages.length === 0`으로 빈 상태 UI(활동 없음 안내)를 표시한다.
           items:
             $ref: '#/components/schemas/LanguageStat'
         skillLevel:
           type: string
-          description: 활동량 기반 실력 수준 (판정 규칙은 decisions.md 기록)
+          description: 활동량 기반 실력 수준 (판정 규칙은 decisions.md 기록). 활동이 없으면 beginner 고정
           enum: [beginner, intermediate, advanced]
           example: intermediate
         activitySummary:
