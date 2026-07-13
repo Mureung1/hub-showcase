@@ -94,6 +94,7 @@ Codex는 먼저 관련 문서를 검색하고 다음 중 하나로 분기한다.
 
 - `create_new_document`: 독립 문서로 분리하는 것이 자연스러운 경우
 - `update_existing_document`: 기존 확정 문서 갱신이 자연스러운 경우
+- `delete_existing_document`: 기존 확정 문서 삭제를 안전하게 검토할 경우
 - `compile_from_sources`: 자료 정리, 요약, 출처 묶음이 목적일 경우
 - `draft_design_from_materials`: 기존 자료를 기획서 형식으로 구조화할 경우
 - `ask_for_clarification`: 분기나 대상 문서 판단 근거가 부족한 경우

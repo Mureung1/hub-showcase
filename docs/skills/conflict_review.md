@@ -11,6 +11,8 @@
 - Duplicate risk: 이미 존재하는 문서와 중복되는가.
 - Scope expansion: 요청하지 않은 NPC, 퀘스트, UI, 리소스, 밸런스 변경이 따라오는가.
 - Production impact: 구현, 아트, 사운드, QA 작업이 추가되는가.
+- Deletion impact: 삭제로 링크가 끊기거나 설정이 유실되는가. 대체 문서가
+  중복되거나 필요한 내용을 승계하지 못하는가.
 
 ## Severity
 
