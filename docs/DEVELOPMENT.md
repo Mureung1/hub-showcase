@@ -90,6 +90,38 @@ cmd /c npm run build
 cmd /c npm run verify
 ```
 
+## 새 컴퓨터에서 이어서 작업하기
+
+USB나 GitHub에서 프로젝트를 가져온 뒤 먼저 의존성을 설치하고 현재 브랜치와 검증 상태를 확인합니다.
+
+```powershell
+cd D:\cafe_stamp
+cmd /c npm install
+git status --short --branch
+cmd /c npm run verify
+```
+
+`.env` 파일은 Git에 올리지 않습니다. Supabase 연결값이 필요하면 `.env.example`을 참고해서 새 컴퓨터에서 직접 `.env`를 만듭니다.
+
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
+
+프런트엔드에는 Supabase `service_role` 키를 넣지 않습니다.
+
+## Supabase CLI로 DB 스키마 적용하기
+
+Supabase 프로젝트를 만든 뒤, CLI가 준비된 컴퓨터에서 마이그레이션을 적용합니다. 이 작업은 컴퓨터 환경과 Supabase 계정 로그인이 필요하므로, 노트북을 바꿀 예정이면 새 컴퓨터에서 진행합니다.
+
+```powershell
+supabase login
+supabase link --project-ref <project-ref>
+supabase db push
+```
+
+`project-ref`는 Supabase 프로젝트 URL의 `https://<project-ref>.supabase.co`에서 확인할 수 있습니다. 현재 저장소의 DB 스키마 파일은 `supabase/migrations/` 아래에 둡니다.
+
 ## 일반적인 작업 흐름
 
 1. `AGENTS.md`, `docs/PRODUCT.md`, `ARCHITECTURE.md`, `docs/DEVELOPMENT.md`를 확인합니다.

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import './App.css'
 
 const cafes = [
@@ -58,17 +59,139 @@ const notifications = [
 ]
 
 const tabs = [
-  { id: 'home', label: '홈', symbol: 'H' },
-  { id: 'coupons', label: '내 쿠폰', symbol: 'C' },
-  { id: 'notifications', label: '알림', symbol: 'N' },
-  { id: 'mypage', label: '마이페이지', symbol: 'M' },
+  { id: 'home', label: '홈', symbol: 'H', path: '/customer' },
+  { id: 'coupons', label: '내 쿠폰', symbol: 'C', path: '/customer/coupons' },
+  {
+    id: 'notifications',
+    label: '알림',
+    symbol: 'N',
+    path: '/customer/notifications',
+  },
+  { id: 'mypage', label: '마이페이지', symbol: 'M', path: '/customer/mypage' },
 ]
 
 function App() {
-  const [role, setRole] = useState(null)
-  const [activeTab, setActiveTab] = useState('home')
-  const [couponSort, setCouponSort] = useState('newest')
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/login" element={<RoleLogin />} />
+      <Route path="/customer" element={<CustomerLayout />} />
+      <Route path="/customer/coupons" element={<CustomerLayout />} />
+      <Route path="/customer/notifications" element={<CustomerLayout />} />
+      <Route path="/customer/mypage" element={<CustomerLayout />} />
+      <Route path="/owner" element={<OwnerDashboard />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  )
+}
+
+function CustomerLayout() {
   const [nickname, setNickname] = useState('테스트 손님')
+  const location = useLocation()
+  const navigate = useNavigate()
+  const activeTab = getCustomerTab(location.pathname)
+
+  const handleLogout = () => {
+    navigate('/login')
+  }
+
+  return (
+    <div className="app-shell customer-shell">
+      <header className="customer-header">
+        <div>
+          <p className="eyebrow">손님 모드</p>
+          <h1>{nickname}님</h1>
+        </div>
+        <button className="ghost-button" type="button" onClick={handleLogout}>
+          로그아웃
+        </button>
+      </header>
+
+      <main className="customer-main">
+        {activeTab === 'home' && <CustomerHome />}
+        {activeTab === 'coupons' && <CustomerCoupons />}
+        {activeTab === 'notifications' && <NotificationsView />}
+        {activeTab === 'mypage' && (
+          <MyPage
+            nickname={nickname}
+            onChangeNickname={setNickname}
+            onLogout={handleLogout}
+          />
+        )}
+      </main>
+
+      <nav className="bottom-nav" aria-label="손님 화면 하단 메뉴">
+        {tabs.map((tab) => (
+          <button
+            className={activeTab === tab.id ? 'nav-item active' : 'nav-item'}
+            key={tab.id}
+            type="button"
+            onClick={() => navigate(tab.path)}
+          >
+            <span className="nav-symbol" aria-hidden="true">
+              {tab.symbol}
+            </span>
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
+  )
+}
+
+function getCustomerTab(pathname) {
+  if (pathname === '/customer/coupons') {
+    return 'coupons'
+  }
+
+  if (pathname === '/customer/notifications') {
+    return 'notifications'
+  }
+
+  if (pathname === '/customer/mypage') {
+    return 'mypage'
+  }
+
+  return 'home'
+}
+
+function RoleLogin() {
+  const navigate = useNavigate()
+
+  return (
+    <main className="app-shell role-screen">
+      <section className="role-intro">
+        <p className="eyebrow">Cafe Stamp MVP</p>
+        <h1>카페 스탬프를 웹에서 가볍게 관리해요</h1>
+        <p>
+          손님은 QR을 보여주고, 사장님은 가게 화면에서 스탬프를 적립합니다.
+        </p>
+      </section>
+
+      <section className="role-actions" aria-label="로그인 역할 선택">
+        <button
+          className="role-card customer"
+          type="button"
+          onClick={() => navigate('/customer')}
+        >
+          <span>손님으로 로그인</span>
+          <small>QR과 내 카페 목록을 바로 확인합니다</small>
+        </button>
+        <button
+          className="role-card owner"
+          type="button"
+          onClick={() => navigate('/owner')}
+        >
+          <span>사장님으로 로그인</span>
+          <small>가게 관리 화면으로 이동합니다</small>
+        </button>
+      </section>
+    </main>
+  )
+}
+
+function CustomerCoupons() {
+  const [couponSort, setCouponSort] = useState('newest')
 
   const sortedCoupons = useMemo(() => {
     return [...coupons].sort((first, second) => {
@@ -85,94 +208,12 @@ function App() {
     })
   }, [couponSort])
 
-  if (!role) {
-    return <RoleLogin onSelectRole={setRole} />
-  }
-
-  if (role === 'owner') {
-    return <OwnerDashboard onLogout={() => setRole(null)} />
-  }
-
   return (
-    <div className="app-shell customer-shell">
-      <header className="customer-header">
-        <div>
-          <p className="eyebrow">손님 모드</p>
-          <h1>{nickname}님</h1>
-        </div>
-        <button className="ghost-button" type="button" onClick={() => setRole(null)}>
-          로그아웃
-        </button>
-      </header>
-
-      <main className="customer-main">
-        {activeTab === 'home' && <CustomerHome />}
-        {activeTab === 'coupons' && (
-          <CouponsView
-            coupons={sortedCoupons}
-            couponSort={couponSort}
-            onChangeSort={setCouponSort}
-          />
-        )}
-        {activeTab === 'notifications' && <NotificationsView />}
-        {activeTab === 'mypage' && (
-          <MyPage
-            nickname={nickname}
-            onChangeNickname={setNickname}
-            onLogout={() => setRole(null)}
-          />
-        )}
-      </main>
-
-      <nav className="bottom-nav" aria-label="손님 화면 하단 메뉴">
-        {tabs.map((tab) => (
-          <button
-            className={activeTab === tab.id ? 'nav-item active' : 'nav-item'}
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-          >
-            <span className="nav-symbol" aria-hidden="true">
-              {tab.symbol}
-            </span>
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </nav>
-    </div>
-  )
-}
-
-function RoleLogin({ onSelectRole }) {
-  return (
-    <main className="app-shell role-screen">
-      <section className="role-intro">
-        <p className="eyebrow">Cafe Stamp MVP</p>
-        <h1>카페 스탬프를 웹에서 가볍게 관리해요</h1>
-        <p>
-          손님은 QR을 보여주고, 사장님은 가게 화면에서 스탬프를 적립합니다.
-        </p>
-      </section>
-
-      <section className="role-actions" aria-label="로그인 역할 선택">
-        <button
-          className="role-card customer"
-          type="button"
-          onClick={() => onSelectRole('customer')}
-        >
-          <span>손님으로 로그인</span>
-          <small>QR과 내 카페 목록을 바로 확인합니다</small>
-        </button>
-        <button
-          className="role-card owner"
-          type="button"
-          onClick={() => onSelectRole('owner')}
-        >
-          <span>사장님으로 로그인</span>
-          <small>가게 관리 화면으로 이동합니다</small>
-        </button>
-      </section>
-    </main>
+    <CouponsView
+      coupons={sortedCoupons}
+      couponSort={couponSort}
+      onChangeSort={setCouponSort}
+    />
   )
 }
 
@@ -310,7 +351,9 @@ function MyPage({ nickname, onChangeNickname, onLogout }) {
   )
 }
 
-function OwnerDashboard({ onLogout }) {
+function OwnerDashboard() {
+  const navigate = useNavigate()
+
   return (
     <main className="app-shell owner-screen">
       <header className="customer-header">
@@ -318,7 +361,7 @@ function OwnerDashboard({ onLogout }) {
           <p className="eyebrow">사장님 모드</p>
           <h1>가게 관리</h1>
         </div>
-        <button className="ghost-button" type="button" onClick={onLogout}>
+        <button className="ghost-button" type="button" onClick={() => navigate('/login')}>
           로그아웃
         </button>
       </header>
