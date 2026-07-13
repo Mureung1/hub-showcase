@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ Enums ============
+
+enum PostingCategory {
+  COMPETITION    // 공모전
+  ACTIVITY       // 대외활동
+  POLICY         // 정책/지원금
+  CAMPUS_EVENT   // 교내행사
+}
+
+enum ParseStatus {
+  CURATED        // 수동 검증됨
+  NEEDS_REVIEW   // 자동 파싱 후 검증 필요
+  FAILED         // 파싱 실패
+}
+
+enum RawPostingStatus {
+  RAW            // 원본 (파싱 전)
+  PARSED         // 파싱 완료
+  FAILED         // 파싱 실패
+}
+
+enum CalendarEventType {
+  EXAM           // 시험
+  PART_TIME      // 아르바이트
+  OTHER          // 기타
+}
+
+// ============ Models ============
+
+// Supabase Auth와 연동되는 사용자
+model User {
+  id        String   @id
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  // Relations
+  profile        UserProfile?
+  calendarEvents CalendarEvent[]
+  scraps         Scrap[]
+
+  @@map("users")
+}
+
+// 사용자 프로필 (필터링 기준)
+model UserProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  major               String?  // canonical 전공값 (HUMANITIES, IT 등)
+  grade               Int?     // 1~4
+  enrollmentStatus    String?  // 재학, 휴학, 졸업예정
+  residenceRegion     String?  // canonical 지역값 (SEOUL, GYEONGGI 등)
+  incomeBracket       Int?     // 1~10, 파생 코드값만
+  age                 Int?     // 만 나이
+  interestTags        String[] // 관심분야 배열
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+// 원본 크롤링 데이터 (파싱 대상)
+model RawPosting {
+  id          String           @id @default(cuid())
+  sourceSite  String           // "wevity" 등
+  sourceUrl   String           @unique // 중복 방지 키
+  rawTitle    String
+  rawText     String           // 자유문장 (파싱 대상)
+  scrapedAt   DateTime
+  status      RawPostingStatus @default(RAW)
+  createdAt   DateTime         @default(now())
+
+  // Relations
+  posting Posting?
+
+  @@index([sourceSite])
+  @@index([status])
+  @@map("raw_postings")
+}
+
+// 정규화된 공고 (사용자 노출용)
+model Posting {
+  id                 String          @id @default(cuid())
+  rawPostingId       String?         @unique
+  category           PostingCategory
+  title              String          @db.VarChar(500)
+  hostOrg            String?         @db.VarChar(200)
+  receptionStartDate DateTime?
+  receptionEndDate   DateTime?
+  eventStartDate     DateTime?
+  eventEndDate       DateTime?
+  sourceUrl          String          @db.VarChar(1000)
+  parseStatus        ParseStatus     @default(CURATED)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  // Relations
+  rawPosting  RawPosting?  @relation(fields: [rawPostingId], references: [id], onDelete: SetNull)
+  eligibility Eligibility?
+  scraps      Scrap[]
+  calendarEvents CalendarEvent[]
+
+  @@index([category])
+  @@index([receptionEndDate])
+  @@index([parseStatus])
+  @@map("postings")
+}
+
+// 자격요건 (Posting과 1:1)
+model Eligibility {
+  id                   String   @id @default(cuid())
+  postingId            String   @unique
+  majors               String[] @default([]) // canonical 전공 배열
+  regions              String[] @default([]) // canonical 지역 배열
+  grades               Int[]    @default([]) // 1, 2, 3, 4
+  enrollmentStatuses   String[] @default([]) // 재학, 휴학, 졸업예정
+  ageMin               Int?
+  ageMax               Int?
+  incomeMax            Int?     // 소득분위 상한
+  gpaMin               Float?
+  rawEligibilityText   String   // 원문 보존 (검증/디버깅용)
+
+  // Relations
+  posting Posting @relation(fields: [postingId], references: [id], onDelete: Cascade)
+
+  @@map("eligibilities")
+}
+
+// 캘린더 이벤트 (iCalendar 표준)
+model CalendarEvent {
+  id                String            @id @default(cuid())
+  uid               String            @unique @default(cuid()) // iCalendar UID
+  userId            String
+  title             String            @db.VarChar(200)
+  type              CalendarEventType
+  dtstart           DateTime
+  dtend             DateTime
+  relatedPostingId  String?           // 스크랩 자동 동기화 시 연결
+  source            String            @default("manual") // manual | scrap-sync
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relations
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  relatedPosting    Posting?          @relation(fields: [relatedPostingId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([dtstart, dtend])
+  @@map("calendar_events")
+}
+
+// 스크랩 (사용자-공고 매핑)
+model Scrap {
+  id              String   @id @default(cuid())
+  userId          String
+  postingId       String
+  scrappedAt      DateTime @default(now())
+  notifyEnabled   Boolean  @default(true)
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posting         Posting  @relation(fields: [postingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postingId]) // 중복 스크랩 방지
+  @@index([userId])
+  @@index([postingId])
+  @@map("scraps")
+}
