@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 서비스 목적
-"식비구조대" — 자취생·1인 가구가 재료 최저가를 찾느라 시간을 쓰지 않도록, 공공데이터포털(KAMIS) 시세를 기반으로 가성비 좋은 요리를 추천하고 네이버/쿠팡 구매 링크를 바로 제공한다. 상세 기획은 `plan.md`, 작업 순서는 `checklist.md` 참고.
+"끼니픽" (구 "식비구조대") — 자취생·1인 가구가 냉장고에 있는 재료로 뭘 해먹을지 고민할 때, 가진 재료가 들어가는 가성비 좋은 요리를 추천하고 부족한 재료는 네이버/쿠팡 구매 링크로 바로 연결한다. 상세 기획은 `plan.md`, 작업 순서는 `checklist.md`, 우선순위·일정은 `task.md` 참고.
 
 ## 자주 쓰는 명령어
 - `npm install` — 의존성 설치
@@ -43,6 +43,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 하나의 커밋에 관련 없는 변경을 섞지 않는다.
 
 ## 개발 원칙
+- **UI·플로우를 새로 만들거나 크게 바꿀 땐 `prototype/`(정적 HTML)에 먼저 반영하고, 검증된 뒤에 실제 앱(`src/`)으로 옮긴다.** 프로토타입은 빌드·라우팅 없이 브라우저로 바로 열어볼 수 있어서 디자인·흐름을 빠르게 확인하고 고치기 좋다. 순서를 반대로(실제 앱 먼저) 하면 프로토타입이 계속 뒤처져서 실제 앱과 따로 노는 문서가 되어버린다.
 - API 키(KAMIS 등)는 절대 프론트엔드 코드나 커밋에 노출하지 않고 서버(`server/`, Express) 환경변수로만 관리한다.
 - 가계부 저장 로직은 나중에 로그인+DB로 교체할 수 있도록 별도 모듈로 분리해서 작성한다.
 - 코드 작성 전 `checklist.md`에서 해당 작업 항목을 확인하고, 완료되면 체크 표시한다.

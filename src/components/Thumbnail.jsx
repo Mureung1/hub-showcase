@@ -18,7 +18,7 @@ function Thumbnail({ image, emoji, alt, className = '' }) {
   }
 
   return (
-    <span className={`flex items-center justify-center bg-orange-50 ${className}`} aria-hidden="true">
+    <span className={`flex items-center justify-center bg-bg-muted ${className}`} aria-hidden="true">
       {emoji}
     </span>
   )

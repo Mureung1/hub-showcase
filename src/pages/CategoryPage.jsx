@@ -30,20 +30,20 @@ function CategoryPage() {
   const subgroups = hasSubgroups ? getRecipesBySubgroups(mockRecipes, category) : []
 
   return (
-    <main className="min-h-screen bg-white px-4 py-10">
+    <main className="min-h-screen bg-bg-page px-4 py-10">
       <div className="mx-auto max-w-xl">
-        <Link to="/" className="text-sm text-gray-500 hover:text-orange-600">
+        <Link to="/home" className="text-sm text-text-secondary hover:text-primary-text">
           ← 홈으로
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">
+        <h1 className="mt-2 text-2xl font-bold text-text-primary">
           {category ? category.name : '카테고리'}
         </h1>
-        <p className="mt-1 text-sm text-gray-500">가격이 저렴한 순으로 정렬했어요.</p>
+        <p className="mt-1 text-sm text-text-secondary">가격이 저렴한 순으로 정렬했어요.</p>
 
         {hasSubgroups ? (
           subgroups.map((subgroup) => (
             <section key={subgroup.id} className="mt-6">
-              <h2 className="text-sm font-semibold text-gray-600">{subgroup.name}</h2>
+              <h2 className="text-sm font-semibold text-text-secondary">{subgroup.name}</h2>
               <RecipeList recipes={subgroup.recipes} />
             </section>
           ))

@@ -9,11 +9,13 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "node --env-file=.env.local scripts/dev-server.js",
+    "seed:recipes": "node --env-file=.env.local scripts/seedRecipes.js",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.2",
     "@tailwindcss/vite": "^4.3.2",
     "express": "^5.2.1",
     "react": "^19.2.7",

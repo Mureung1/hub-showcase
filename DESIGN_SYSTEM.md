@@ -19,6 +19,7 @@
 | `text-primary` | `#17182B` | 제목·본문·가격 |
 | `text-secondary` | `#9A9DAE` | 부제·캡션 |
 | `accent-heart` | `#F0455C` | 찜/하트 아이콘 등 포인트 액센트 |
+| `bg-cream` | `#FCF0DC` | 냉장고 씬(홈 진입 화면) 배경 — 일러스트 배경색과 맞춤 |
 | `border` | `#EFEFF4` | 구분선, 카드 테두리 |
 
 ## 타이포그래피
@@ -53,6 +54,9 @@
 | `quick-tab` | 상단 가로 pill 탭 줄. **음식종류(필터 패널의 메인음식/반찬/간식)와는 별개 축**으로, 요리 국가(전체/한식/일식/중식/양식/기타)를 다중 선택(OR)함. 체크박스가 아니라 버튼 `is-active` 상태로 직접 관리되고, 필터 패널과는 동기화되지 않음(서로 다른 데이터: `data-cuisine` vs `data-type`) | `radius-pill`, `primary`, `border` |
 | `quick-tab` | 상단 가로 pill 탭 줄(전체/한식/일식/중식/양식/기타 — 음식종류는 요리 국가 기준 분류). 상세 필터 패널의 음식종류 체크박스와 항상 양방향 동기화됨. 필터 패널은 항상 열려있어서 별도 토글 버튼 없음 | `radius-pill`, `primary`, `border` |
 | `banner-dot` | 프로모 배너 하단 원형 dot, 라디오 hack으로 슬라이드 전환(JS 없이 순수 CSS) | `radius-pill`, `text-primary` |
+| `ingredient-chip-picker` (실제 앱 `IngredientChipPicker`) | 이모지+이름 pill 칩을 탭으로 토글하는 재료 선택 그리드. `filter-chip` 토글 패턴 재사용(미선택 `bg-surface`+`border`, 선택 `primary`). FridgePage에서는 `bg-surface` 카드(말풍선 꼬리 장식) 안에 카운트 배지(`primary-soft`+`primary-text`)·전체 해제·완료 버튼과 함께 사용 | `bg-surface`, `border`, `primary`, `primary-soft`, `primary-text`, `radius-card`, `radius-pill` |
+| `ingredient-search-input` (실제 앱 `IngredientSearchInput`) | `bg-muted` 배경의 둥근 검색 인풋(돋보기 아이콘) + 타이핑하면 아래에 매칭되는 재료를 `filter-chip` pill 버튼 목록으로 보여주는 자동완성. label/matchNames뿐 아니라 `group`(예: "두부"→두부·순두부, "고기"→목살·삼겹살 등 변형 재료 묶음)까지 부분일치 검색. 결과 없으면 안내 문구. FridgePage에서 `IngredientChipPicker` 위에 배치, 선택은 같은 `selectedIds` 상태에 추가만 함(토글 아님) | `bg-muted`, `radius-input`, `border`, `primary`, `bg-surface`, `text-secondary`, `radius-pill` |
+| `ingredient-section-heading` | 냉장고 재료를 카테고리(채소/고기·해산물/가공식품/면·곡물/기타)별로 묶어 보여줄 때, 각 그룹의 `IngredientChipPicker` 위에 오는 작은 블록 헤딩. `filter-group-label`과 타이포 톤(11px bold uppercase)은 같지만 칩 옆이 아니라 위에 오는 별도 줄이라 새 패턴으로 분리. 전체 그룹은 `bg-muted` 패널(`rounded-card`) 안에 세로로 쌓임 | `bg-muted`, `radius-card`, `text-secondary` |
 
 ## 구현 매핑
 
@@ -70,6 +74,7 @@
   --color-primary-soft: #FDE9B9;
   --color-primary-text: #8A5A08;
   --color-bg-page: #E9EBF2;
+  --color-bg-cream: #FCF0DC;
   --color-bg-surface: #FFFFFF;
   --color-bg-muted: #F4F5F9;
   --color-text-primary: #17182B;
