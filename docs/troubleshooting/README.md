@@ -11,3 +11,4 @@
 - [TS-0005 Gradle 플랫폼별 verification metadata](TS-0005-gradle-cross-platform-verification-metadata.md)
 - [TS-0006 Spring Boot 테스트 Prometheus observability](TS-0006-spring-boot-actuator-access.md)
 - [TS-0007 비대화형 k6 권한](TS-0007-k6-non-root-script-permission.md)
+- [TS-0008 GitHub Actions Gitleaks의 PR 커밋 조회 권한](TS-0008-gitleaks-pr-token-permission.md)

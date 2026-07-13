@@ -2,7 +2,7 @@
 id: WI-0001
 title: Java 17 기반 Agentic 개발 환경 구축
 type: work-record
-status: done
+status: in-progress
 date: 2026-07-13
 owners:
   - placepick-backend
@@ -18,6 +18,7 @@ related:
   - ../troubleshooting/TS-0005-gradle-cross-platform-verification-metadata.md
   - ../troubleshooting/TS-0006-spring-boot-actuator-access.md
   - ../troubleshooting/TS-0007-k6-non-root-script-permission.md
+  - ../troubleshooting/TS-0008-gitleaks-pr-token-permission.md
 paths:
   - README.md
   - AGENTS.md
@@ -154,6 +155,11 @@ fail closed한다.
     가려진 오류를 드러내고 최종 이미지에서 `/scripts`가 0444인 것을 확인했다.
     디렉터리 0555·fixture 0444·런타임 UID 12345를 분리한 해결 과정을
     [TS-0007](../troubleshooting/TS-0007-k6-non-root-script-permission.md)에 기록했다.
+18. 첫 Draft PR에서 backend와 Dev Container 검증은 성공했지만 Gitleaks Action이
+    PR 커밋 목록을 읽는 단계에서 HTTP 403을 반환했다. 응답이 요구한
+    `pull_requests=read`만 해당 job에 추가하고 쓰기·전역 권한을 제외한 근거와 원격
+    재검증 조건을
+    [TS-0008](../troubleshooting/TS-0008-gitleaks-pr-token-permission.md)에 기록했다.
 
 ## 구현 결과와 검증 증거
 
@@ -189,6 +195,9 @@ Compose/Dev Container, WireMock fixture, 관측성·k6 smoke, 문서 체계와 G
 - 외부 모드를 `real`로 바꾼 격리 실행은 종료 코드 1과
   `PLACEPICK_EXTERNAL_MODE=mock` 요구 메시지로 시작을 거부했다. 외부 Markdown 링크,
   JSON, 셸·ShellCheck, Gitleaks와 사용자 파일 SHA-256 보존 검사도 통과했다.
+- 첫 GitHub Actions 실행에서 Java 17 backend check와 Dev Container smoke는 통과했다.
+  Repository policy job도 문서·Compose 검증까지 통과했지만 Gitleaks Action의 PR read
+  권한이 없어 중단됐으며, 최소 권한 수정의 원격 재검증이 남아 있다.
 
 검증 완료 결과는 포트폴리오 관점으로
 [CASE-0001](../case-studies/CASE-0001-agentic-development-environment.md)에 요약했다.
@@ -202,11 +211,12 @@ Java 17 전체 적용, 백엔드 우선 범위, GitHub Flow와 하이브리드 �
 
 ## 남은 위험과 학습
 
-원격 branch protection과 GitHub Actions의 실제 실행은 관리자 설정과 첫 PR에서
-별도로 확인해야 하며 저장소 파일만으로 적용 완료를 주장하지 않는다. Docker Desktop
-엔진이 꺼져 있으면 컨테이너 통합·관측성·부하 검증을 재실행할 수 없고, 고정 image
-digest와 dependency checksum은 의도적인 업데이트 절차가 필요하다. 향후 실제 도메인
-API가 추가되면 계약, Eval과 부하 기준을 별도 Work Record에서 측정해 확장한다.
+원격 branch protection은 관리자 설정이 필요하며 저장소 파일만으로 적용 완료를
+주장하지 않는다. 첫 PR의 최소 권한 수정도 세 GitHub Actions check가 모두 통과해야
+완료할 수 있다. Docker Desktop 엔진이 꺼져 있으면 컨테이너 통합·관측성·부하 검증을
+재실행할 수 없고, 고정 image digest와 dependency checksum은 의도적인 업데이트
+절차가 필요하다. 향후 실제 도메인 API가 추가되면 계약, Eval과 부하 기준을 별도
+Work Record에서 측정해 확장한다.
 
 재현 가능한 환경은 도구 설치 목록보다 실행 계약, 생명주기 소유권, fail-closed 외부
 정책과 검증 증거를 함께 설계할 때 완성된다는 점을 확인했다.

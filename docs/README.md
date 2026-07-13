@@ -25,6 +25,7 @@
 - [TS-0005 Gradle 플랫폼별 verification metadata](troubleshooting/TS-0005-gradle-cross-platform-verification-metadata.md)
 - [TS-0006 Spring Boot 테스트 Prometheus observability](troubleshooting/TS-0006-spring-boot-actuator-access.md)
 - [TS-0007 비대화형 k6 권한](troubleshooting/TS-0007-k6-non-root-script-permission.md)
+- [TS-0008 GitHub Actions Gitleaks PR 권한](troubleshooting/TS-0008-gitleaks-pr-token-permission.md)
 
 ## 문제 해결·증거 문서
 
