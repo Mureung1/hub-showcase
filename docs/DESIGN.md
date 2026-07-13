@@ -4,6 +4,40 @@
 
 ---
 
+# Quick Reference
+
+- 랜딩 구현: Product Identity, Reference Images, Visual Principles, Color System, Typography, Layout System, Components, S1 Landing 참고 + `docs/image/design/landing.png`
+- 사이트 등록 화면: Visual Principles, Color System, Typography, Layout System, Components, S2 관리자 페이지 참고 + `docs/image/design/register-site.png`
+- 카테고리 설정 화면: Visual Principles, Color System, Typography, Layout System, Components, S3 관리자 페이지 참고 + `docs/image/design/select-category.png`
+- 설정 완료 화면: Visual Principles, Color System, Typography, Components, S4 설정 완료 참고 + `docs/image/design/select-complete.png`
+- Discord Preview: Visual Principles, Color System의 Discord Dark, Components, S5/S6/S7 Discord 참고
+- 반응형 작업: Layout System, Responsive 참고
+- 접근성 점검: Accessibility 참고
+
+---
+
+# Table of Contents
+
+1. Product Identity
+2. Reference Images
+3. Visual Principles
+4. Color System
+5. Typography
+6. Layout System
+7. Radius & Elevation
+8. Components
+9. Page Structure
+10. Navigation
+11. Motion
+12. Responsive
+13. Accessibility
+14. Do / Don't
+15. Example Prompt for AI Coding Agent
+16. Suggested Component Names
+17. Final Direction
+
+---
+
 # 1. Product Identity
 
 IRIS는 대학 공지를 자동으로 확인하고 Discord에서 필요한 공지만 빠르게 받아볼 수 있도록 돕는 서비스입니다.
@@ -23,7 +57,20 @@ IRIS는 대학 공지를 자동으로 확인하고 Discord에서 필요한 공�
 
 ---
 
-# 2. Visual Principles
+# 2. Reference Images
+
+구현 시 아래 레퍼런스 이미지를 함께 확인한다.
+
+- `docs/image/design/landing.png`
+- `docs/image/design/register-site.png`
+- `docs/image/design/select-category.png`
+- `docs/image/design/select-complete.png`
+
+DESIGN.md의 텍스트 규칙을 우선 기준으로 삼되, 실제 화면 구성과 시각적 밀도는 위 이미지를 참고한다.
+
+---
+
+# 3. Visual Principles
 
 디자인 원칙
 
@@ -73,7 +120,7 @@ Category 설정
 
 ---
 
-# 3. Color System
+# 4. Color System
 
 Primary
 
@@ -130,7 +177,7 @@ Discord Dark
 
 ---
 
-# 4. Typography
+# 5. Typography
 
 Font
 
@@ -161,7 +208,7 @@ Button
 
 ---
 
-# 5. Layout System
+# 6. Layout System
 
 Prototype Container
 
@@ -215,7 +262,7 @@ Responsive
 
 ---
 
-# 6. Radius & Elevation
+# 7. Radius & Elevation
 
 Page
 
@@ -251,7 +298,7 @@ Discord Window
 
 ---
 
-# 7. Components
+# 8. Components
 
 Header
 
@@ -309,7 +356,7 @@ Flow Summary
 
 ---
 
-# 8. Page Structure
+# 9. Page Structure
 
 ## S1 Landing
 
@@ -480,7 +527,7 @@ Role 이름 입력란은 실제 값이 채워진 상태가 아니라 placeholder
 
 활성화 ON인 카테고리만 알림 전송 대상이 된다.
 
-활성화 OFF인 카테고리는 크롤링은 하지만 알림은 전송하지 않는다.
+활성화 OFF인 카테고리는 Role을 생성하지 않고 구독 목록, 공지 저장, 알림 대상에서 제외한다.
 
 Button
 
@@ -641,7 +688,7 @@ DM 알림
 
 ---
 
-# 9. Navigation
+# 10. Navigation
 
 Landing
 
@@ -677,7 +724,7 @@ Discord 봇 초대하기
 
 ---
 
-# 10. Motion
+# 11. Motion
 
 Scroll
 
@@ -715,7 +762,7 @@ Transition
 
 ---
 
-# 11. Responsive
+# 12. Responsive
 
 Desktop First
 
@@ -743,7 +790,7 @@ Flow Summary
 
 ---
 
-# 12. Accessibility
+# 13. Accessibility
 
 Button
 
@@ -771,7 +818,7 @@ Readable Text
 
 ---
 
-# 13. Do / Don't
+# 14. Do / Don't
 
 DO
 
@@ -803,7 +850,7 @@ Guide 없이 Selector만 입력하게 하기
 
 ---
 
-# 14. Example Prompt for AI Coding Agent
+# 15. Example Prompt for AI Coding Agent
 
 DESIGN.md를 기준으로
 
@@ -825,7 +872,7 @@ IRIS Landing 및 관리자 설정 프로토타입을 HTML/CSS로 구현한다.
 
 ---
 
-# 15. Suggested Component Names
+# 16. Suggested Component Names
 
 PrototypeLayout
 
@@ -875,7 +922,7 @@ FlowSummary
 
 ---
 
-# 16. Final Direction
+# 17. Final Direction
 
 IRIS는 관리자가 대학 공지 사이트를 빠르게 연결하고, 사용자가 Discord 안에서 필요한 공지만 선택적으로 받아볼 수 있는 서비스를 목표로 한다.
 

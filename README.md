@@ -20,6 +20,40 @@
 - 키워드 알림 : 관심 키워드가 포함된 제목의 공지를 개인 DM으로 받습니다.
 - ('/') 슬래시 명령어 : Discord에서 간편하게 키워드와 카테고리 구독을 관리합니다.
 
+## 로컬 실행
+
+Node.js와 npm을 설치한 뒤, 처음 한 번은 각 프로젝트의 의존성과 환경 변수 파일을 준비합니다.
+
+```powershell
+cd frontend
+npm install
+Copy-Item .env.example .env
+
+cd ../backend
+npm install
+Copy-Item .env.example .env
+```
+
+Backend와 Frontend는 각각 별도의 터미널에서 실행합니다.
+
+### Backend
+
+```powershell
+cd backend
+npm run dev
+```
+
+Backend는 `http://localhost:3000`에서 실행됩니다.
+
+### Frontend
+
+```powershell
+cd frontend
+npm run dev
+```
+
+Frontend는 `http://localhost:5173`에서 실행됩니다.
+
 
 
 ## 문서
