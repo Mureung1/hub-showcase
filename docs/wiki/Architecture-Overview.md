@@ -1,656 +1,365 @@
 # Architecture Overview
 
-> Wiki version: 2026-07-09 Calendar tab / campus preferences baseline
-> Implementation baseline: React + Vite frontend MVP, Express mock analyze API, Zod server schemas, frontend-server mock analyze wiring, calendar tab, and campus preferences
-> Runtime scope: real AI API, PDF/HWP/HWPX/OCR extraction, batch calendar export, and subscription feed URL/backend generation are not implemented yet.
+> Wiki version: 2026-07-12 domain-foundation baseline  
+> Source of truth: repository runtime code, strict schemas, tests, and authoritative architecture contracts  
+> Scope: repository-visible implementation only
 
-## 1. Project Summary
+## 1. Purpose
 
-**NoticePilot**은 대학생이 긴 공지, 과제 지침, 장학금 안내, 공모전 공지, 채용 공고를 실행 가능한 체크리스트와 캘린더 일정 후보로 바꿀 수 있게 돕는 MVP 웹앱이다.
+NoticePilot transforms long university notices into actionable items and calendar-event candidates.
 
-핵심 흐름은 다음과 같다.
+The repository now contains two related but distinct surfaces:
+
+1. **Manual-analysis runtime** — user-facing review, editing, Markdown export, and one-off `.ics` download.
+2. **Subscription domain foundation** — strict source, canonical notice, extraction, candidate, event, and feed schemas.
+
+The manual-analysis UI is not the authoritative subscription-domain model.
+
+## 2. Status Vocabulary
+
+- **Runtime active** — reachable through the current application.
+- **Implemented, isolated** — code and tests exist, but default runtime callers do not use it automatically.
+- **Contract complete** — authoritative behavior is documented; downstream implementation may still be pending.
+- **Pending** — not implemented in this repository baseline.
+
+## 3. Product-Level Architecture
 
 ```text
-Long notice
-→ structured analysis result
-→ user review/edit
-→ checklist export
-→ selected all-day .ics calendar export
+Source inputs
+├─ Manual text / TXT / MD
+├─ Legacy AI raw analysis
+└─ KNU crawler normalized payload + rule candidates
+
+Normalization and canonical domain
+├─ ManualNoticeInput → CanonicalNotice
+├─ KNU payload → CrawledNotice → CanonicalNotice
+└─ Legacy AI raw + CanonicalNotice → ExtractionResult
+
+Extraction boundary
+├─ ExtractionItem[]
+└─ CalendarEventCandidate[]
+
+Consumer boundary — pending
+├─ candidate promotion
+├─ CalendarEvent identity issuance
+├─ previous/current reconciliation
+├─ sequence increment
+└─ cancellation generation
+
+Delivery boundary — pending
+├─ core ICS serializer
+├─ SubscriptionIcsFeed persistence
+├─ feed endpoint
+└─ calendar-client refresh behavior
 ```
 
-NoticePilot은 단순 요약 앱이 아니다. 사용자가 실제로 해야 할 일, 제출해야 할 자료, 확인해야 할 조건, 놓치면 안 되는 마감일을 구조화하는 데 초점을 둔다.
+Current implementation reaches `CalendarEventCandidate` through tested adapters. Persistent event promotion, reconciliation, feed state, and subscription delivery are not implemented.
 
----
-
-## 2. Current Implementation Status
-
-현재 프로젝트는 **React + Vite 기반 frontend MVP + Express mock analyze API + Zod server schema validation + calendar tab/campus preferences** 단계다.
-
-현재 구현된 기능은 다음과 같다.
+## 4. Current User-Facing Runtime
 
 ```text
+Manual text or TXT/MD
+→ client mock or Express server mock
+→ AppAnalysisSchema-compatible result
+→ user review/edit
+→ Markdown or selected one-off all-day ICS
+```
+
+Runtime-active capabilities:
+
 - React + Vite frontend MVP
-- Express analyze API skeleton
-- Zod-backed server schemas
-- GET /api/health
-- POST /api/analyze mock mode
-- mode: "ai" returns 501 ai_not_implemented
-- unknown explicit mode returns 400 unsupported_mode
-- Vite /api dev proxy to Express server
-- English / Korean UI toggle
-- Workspace hash tabs: #analyze and #calendar
-- Project introduction section
-- Notice title and body input UI
-- TXT / MD file upload
-- Extract preview before analysis
-- Notice type input
-- Notice publication date input
-- Client-side mock analysis flow
-- Server mock analysis flow
-- Mock analysis dashboard
-- Item edit/delete
-- Task completion toggle
-- Calendar event selection toggle
-- Source evidence panel
-- Full evidence review mode
-- Warning and error UI
-- Privacy-like pattern detection and confirmation
-- New notice overwrite confirmation
-- Frontend analysis result validation/normalization
-- Server analysis result validation/normalization
-- localStorage persistence with noticepilot:v1
-- Separate campus preference persistence with noticepilot:campus-preferences:v1
-- Campus preference card and subscription ICS 준비 중 status card
-- Inert metadata.userPreferencesSnapshot on client and server mock analysis results
-- Markdown checklist download
-- Optional Markdown evidence inclusion
-- Selected all-day .ics calendar export
-- Server unavailable / invalid response error handling
-```
+- Express `GET /api/health`
+- Express `POST /api/analyze` mock mode
+- explicit `501 ai_not_implemented` for `mode="ai"`
+- explicit `400 unsupported_mode` for unknown modes
+- bilingual UI
+- `#analyze` and `#calendar` workspace tabs
+- notice title/body, type, publication date, TXT/MD input
+- editable result sections and evidence review
+- warning, error, privacy-confirmation, and overwrite-confirmation flows
+- browser `localStorage` persistence
+- separate campus-preference storage
+- inert `metadata.userPreferencesSnapshot`
+- Markdown checklist export
+- selected one-off all-day `.ics` export
 
-아직 구현하지 않은 기능은 다음과 같다.
+Campus preferences currently do not filter notices, alter extraction, personalize exports, or create a feed.
+
+## 5. Strict Subscription Domain
+
+The repository implements strict `noticepilot.domain.v1` schemas for:
 
 ```text
-- Real AI API integration
-- Runtime AI prompt/schema hardening
-- PDF / HWP / HWPX / OCR extraction
-- Advanced relative date resolution
-- School-level notice parsing
-- Checkbox-based batch .ics export
-- Subscription calendar feed URL / backend feed generation
-- Multiple saved notice projects
-- Login / database / payment
-- Google Calendar API integration
+SourceBoard
+CrawledNotice
+CanonicalNotice
+ExtractionResult
+CalendarEventCandidate
+CalendarEvent
+SubscriptionIcsFeed
 ```
 
----
+Supporting contracts include:
 
-## 3. Current Architecture
+- source identity and canonical URL separation
+- campus target metadata
+- evidence and warning references
+- strict dates and times
+- review state
+- event status and sequence
+- inclusive core `endDate`
 
-현재 NoticePilot은 다음 구조를 따른다.
+Important distinction:
 
 ```text
-React Client
-  - workspace hash routing for #analyze and #calendar
-  - notice input
-  - TXT / MD file read with FileReader
-  - extract preview
-  - client-side mock analysis
-  - server mock analysis through /api/analyze
-  - analysis dashboard
-  - editable result cards
-  - source evidence panel
-  - full evidence review mode
-  - Markdown export
-  - selected all-day .ics export
-  - localStorage session persistence
-  - campus preference persistence
-  - inert userPreferencesSnapshot metadata attachment
-
-Express Server
-  - GET /api/health
-  - POST /api/analyze
-  - mock analysis service
-  - real AI service stub
-  - Zod app analysis schemas
-  - optional userPreferencesSnapshot normalization
-  - response validation
-  - response normalization
-  - section limits
-  - duplicate calendar event removal
-
-Future Express Endpoint
-  - /api/extract
-  - file upload
-  - server-side text extraction
-  - PDF / HWPX / HWP / OCR parsing
+AppAnalysisSchema
+= manual-analysis UI projection
+≠ authoritative core subscription schema
 ```
 
-Current analysis paths:
+The existence of `CalendarEvent` and `SubscriptionIcsFeed` schemas does not mean event reconciliation or feed delivery is implemented.
+
+## 6. Implemented Adapter Boundaries
+
+### Manual input
 
 ```text
-Manual paste or TXT/MD file
-→ user reviews extracted text
-→ client-side mock analysis OR server mock analysis
-→ validation / normalization
-→ analysis dashboard
-→ user edit/review
-→ Markdown export and selected all-day .ics export
+ManualNoticeInput
+→ normalizeManualNoticeToCanonical
+→ CanonicalNotice
 ```
 
-Future real AI path:
+### Legacy AI
 
 ```text
-Manual paste, extracted text, or future /api/extract output
-→ user review/edit
-→ POST /api/analyze mode="ai"
-→ AI raw schema
-→ server-side normalization/validation
-→ current NoticePilot app schema
-→ React dashboard
+Legacy AiRawAnalysis + CanonicalNotice
+→ normalizeAiRawToExtractionResult
+→ ExtractionResult
 ```
 
----
-
-## 4. Frontend / Backend Responsibility Split
-
-### React Client Responsibilities
+### UI projection
 
 ```text
-- Manage current working state with App.jsx + useState
-- Provide bilingual UI
-- Accept notice title and body
-- Support TXT / MD file upload in the current MVP
-- Show extracted text preview
-- Show privacy notice and lightweight privacy pattern warnings
-- Request client-side mock analysis
-- Request server mock analysis
-- Attach inert userPreferencesSnapshot metadata to mock analysis requests/results
-- Defensively validate/normalize received analysis results
-- Render analysis result dashboard
-- Allow user edits, deletion, task completion, and event selection
-- Show source evidence
-- Export Markdown checklist
-- Export selected all-day .ics calendar events
-- Persist current session in localStorage
-- Persist campus preferences separately in localStorage
+ExtractionResult
+→ projectExtractionResultToAppAnalysis
+→ AppAnalysisSchema-compatible projection
 ```
 
-### Express Server Responsibilities
+### KNU source integration
 
 ```text
-- Provide health check endpoint
-- Receive confirmed notice text through /api/analyze
-- Route between mock mode and future AI mode
-- Return server mock analysis results during MVP development
-- Keep real AI mode blocked with explicit 501 ai_not_implemented until implemented
-- Reject unsupported explicit modes with 400 unsupported_mode
-- Treat model/service output as untrusted
-- Treat optional userPreferencesSnapshot as inert request metadata
-- Normalize and echo metadata.userPreferencesSnapshot in mock responses
-- Validate and normalize analysis results
-- Generate missing IDs
-- Normalize missing fields
-- Filter invalid calendar events
-- Remove exact duplicate calendar events
-- Apply section limits
-- Return safe structured JSON to React
+KNU normalized notice v0.4.4
+→ normalizeKnuV044ToCrawledNotice
+→ CrawledNotice
+→ normalizeCrawledNoticeToCanonical
+→ CanonicalNotice
 ```
 
-The AI response must be treated as untrusted external input. The server should not forward raw AI output directly to the client without validation and normalization.
-
----
-
-## 5. State Management Strategy
-
-For the current MVP, NoticePilot keeps the main state in `App.jsx` using `useState`.
-
-The project does not use `useReducer`, Context, Zustand, Redux, or another state management library in the current phase.
-
-Repeated update logic is separated into utility functions.
-
-Current utility direction:
+### KNU rule-candidate integration
 
 ```text
-src/utils/analysisHandlers.js
+KNU rule candidates
+→ normalizeKnuRuleCandidatesToExtractionResult
+→ ExtractionResult + CalendarEventCandidate[]
 ```
 
-This utility includes or supports:
+Adapter constraints:
+
+- strict input and output validation
+- dependency-injected IDs, clocks, and hashes
+- no database access
+- no candidate promotion
+- no persistent event reconciliation
+- no ICS serialization
+
+## 7. Legacy Compatibility Path
+
+`normalizeAiRawToAppResult(aiRawInput, options)` preserves the legacy normalization path by default.
+
+A complete strict `options.domainAdapter` enables the opt-in path:
 
 ```text
-- updateSectionItem
-- deleteSectionItem
-- toggleTaskCompleted
-- toggleCalendarEventSelected
-- updateCalendarEventField
+Legacy AI raw
+→ ExtractionResult
+→ AppAnalysis projection
 ```
 
-This avoids premature abstraction while reducing duplicated item update logic.
+The wrapper rejects null, partial, or unknown-key domain-adapter options. It does not synthesize canonical notices, clocks, IDs, hashes, or extraction metadata.
 
-Future migration to `useReducer` or Context may be reconsidered if:
+## 8. Responsibility Boundaries
+
+### React client
+
+- owns current UI state and user edits
+- performs defensive response validation
+- stores current session and campus preferences locally
+- exports current Markdown and one-off `.ics`
+- must not treat browser preference metadata as durable subscription state
+
+### Express runtime
+
+- exposes health and mock analysis endpoints
+- keeps live AI mode explicitly unavailable until implemented
+- treats external/model output as untrusted
+- returns safe AppAnalysis-compatible responses
+- does not currently persist notices, events, or feeds
+
+### Source adapters
+
+- validate source-specific payloads
+- normalize source identity and metadata
+- produce strict domain objects
+- stop at `ExtractionResult` / `CalendarEventCandidate`
+
+### Calendar-event consumer — pending
+
+- decides candidate eligibility and promotion
+- issues persistent event IDs
+- reconciles previous and current events
+- increments sequence
+- generates cancellation state
+
+### Delivery layer — pending
+
+- serializes validated events to ICS
+- stores feed state
+- exposes feed URLs or tokens
+- defines refresh, caching, retention, and observability
+
+## 9. Candidate, Event, and ICS Semantics
+
+### CalendarEventCandidate
+
+- producer output
+- may be unresolved or review-required
+- may lack a normalized date
+- does not provide durable published identity
+
+### CalendarEvent
+
+- consumer-owned promoted event
+- uses persistent `eventId`
+- carries status and sequence
+- uses inclusive core `endDate`
+
+### ICS VEVENT
+
+- delivery representation
+- persistent UID derives from `CalendarEvent.eventId`
+- all-day `DTEND` is exclusive
+- serializer owns escaping, folding, ordering, and date conversion
+
+Persistent UID must not be derived from candidate index, title/date text, or content hash alone.
+
+## 10. Date and Time Policy
+
+Core rules:
+
+- normalized dates use `YYYY-MM-DD` or `null`
+- normalized times use strict time values or `null`
+- core `CalendarEvent.endDate` is inclusive
+- all-day ICS `DTEND` is exclusive
+- valid timed deadlines may have `endTime=null`
+- arbitrary duration must not be invented
+- unresolved dates remain reviewable and are not automatically exported
+
+The current browser exporter is a compatibility path for selected all-day events. A future core serializer should become the shared implementation for one-off and subscription delivery.
+
+## 11. State and Persistence
+
+### Current
 
 ```text
-- prop drilling becomes difficult to maintain
-- analysis result schema grows significantly
-- multiple saved notice projects are introduced
-- advanced filtering/search is added
-- batch calendar export introduces multi-notice state
+analysis session
+→ browser localStorage
+
+campus preferences
+→ separate browser localStorage
 ```
 
----
-
-## 6. Analysis Data Model Decision
-
-For the current app schema, NoticePilot keeps the analysis result as separated arrays.
-
-```js
-{
-  deadlines: [],
-  tasks: [],
-  submissions: [],
-  requirements: [],
-  cautions: [],
-  calendarEvents: []
-}
-```
-
-This decision is intentional.
-
-### Why separated arrays are used
+### Pending
 
 ```text
-- They match the current UI sections.
-- They keep domain meaning clear.
-- Each section can have its own normalization rules.
-- Validation and rendering remain easy to review.
-- Peer reviewers can understand the MVP domain model more easily.
+CanonicalNotice repository
+CalendarEvent repository
+Subscription profile repository
+feed snapshot and cancellation retention
 ```
 
-### Why not a unified `items[]` model yet
+Browser-only preference metadata must not silently become server-side subscription state. A migration and ownership contract is required.
 
-A common `items[]` model would make generic rendering easier, but it would blur domain-specific meanings. Deadlines, tasks, submissions, requirements, cautions, and calendar events have different fields and review rules.
+## 12. Security and Trust Boundaries
 
-For the current app:
+Treat the following as untrusted:
+
+- AI output
+- crawler/source payloads
+- uploaded or pasted text
+- restored browser state
+- future attachment extraction output
+
+Required controls:
+
+- strict schema validation
+- source-specific repair only at adapter boundaries
+- no provider secrets in the browser
+- no raw AI output forwarded directly to the UI
+- no automatic mock fallback that hides live-AI failure
+- no feed endpoint before token, caching, abuse, and observability policies exist
+
+## 13. Current Quality Baseline
+
+Repository commands:
 
 ```text
-Data model: separated arrays
-UI implementation: reusable components and generic handlers
-Optional metadata: metadata.userPreferencesSnapshot
+npm test
+npm run test:http
+npm run test:schemas
+npm run test:adapters
+npm run build
+npm run security:audit
 ```
 
-`metadata.userPreferencesSnapshot` is intentionally inert in the current MVP. It records campus preference context for future product direction, but it must not alter analysis sections, filtering, Markdown export, or `.ics` export behavior.
+The repository defines these validation commands, but it does not currently include `.github/workflows/quality-gate.yml`. Whether validation runs automatically on pull requests, and whether any check is required, is controlled by the repository's other active workflows and branch-protection or ruleset configuration.
 
-A unified model may be reconsidered later if the app needs:
+## 14. Current Pending Layers
 
 ```text
-- global search
-- cross-section filtering
-- unified timeline
-- item-level workflow
-- saved multi-notice projects
-- extraction graph model for batch notice parsing
+live AI provider integration
+corpus-based AI QA
+PDF / HWP / HWPX / OCR runtime extraction
+outbound crawler deployment
+candidate promotion
+persistent CalendarEvent repository
+cross-run reconciliation
+sequence and cancellation generation
+core server-side ICS serializer
+SubscriptionIcsFeed persistence
+feed endpoint and refresh behavior
+subscription-management UI
+calendar-client subscription QA
 ```
 
----
+## 15. Related Documents
 
-## 7. AI Raw Schema vs App Schema Strategy
+- [`../project/current-implementation-summary.md`](../project/current-implementation-summary.md)
+- [`../roadmap/current-product-roadmap.md`](../roadmap/current-product-roadmap.md)
+- [`../roadmap/phase-4-plan.md`](../roadmap/phase-4-plan.md)
+- [`../roadmap/batch-calendar-export.md`](../roadmap/batch-calendar-export.md)
+- [`../architecture/subscription-foundation-contract.md`](../architecture/subscription-foundation-contract.md)
+- [`../architecture/subscription-adapter-contract.md`](../architecture/subscription-adapter-contract.md)
 
-Phase 4 planning decision:
+## 16. Governance Rule
+
+When documents conflict, use this order:
 
 ```text
-AI should not directly return the current frontend app schema.
-AI should return an AI raw schema.
-The server should normalize and validate the AI raw schema into the current NoticePilot app schema.
+runtime code and tests
+→ strict schemas and authoritative contracts
+→ implementation summary
+→ master roadmap
+→ track-specific roadmap
+→ wiki and presentation material
 ```
 
-Reasoning:
-
-```text
-- AI output should not be coupled to UI-only fields such as edited, selected, or completed.
-- The current app schema can remain stable for rendering and export.
-- Server-side normalization can handle missing fields, date policy, evidence policy, and warnings.
-- Future school-level notice parsing and batch calendar export can evolve toward an extraction graph model without rewriting the frontend immediately.
-```
-
-Initial mapping direction:
-
-```text
-AI raw items[kind=deadline]      → deadlines[]
-AI raw items[kind=task]          → tasks[]
-AI raw items[kind=submission]    → submissions[]
-AI raw items[kind=requirement]   → requirements[]
-AI raw items[kind=caution]       → cautions[]
-AI calendarEventCandidates       → calendarEvents[]
-AI warnings                      → analysisResult.warnings[]
-```
-
-This is a Phase 4 design target. Runtime real AI integration is not implemented yet.
-
----
-
-## 8. Source Metadata and File Strategy
-
-For the MVP, source metadata is stored at the document level.
-
-```js
-{
-  source: {
-    sourceType: "manual" | "file",
-    sourceName: "",
-    sourceUrl: "",
-    uploadedFileName: "",
-    createdAt: "",
-    analyzedAt: ""
-  }
-}
-```
-
-Each extracted item should keep its `evidence` text. Full item-level source metadata is not required in the current MVP.
-
-Current file input:
-
-```text
-- TXT / MD only
-- client-side FileReader
-- file size limit
-- no server upload
-- extracted text preview before analysis
-- file object is not stored
-- uploaded file name is metadata only
-```
-
-Future automatic university notice parsing may extend source metadata to item level.
-
-```js
-{
-  sourceUrl: "",
-  sourceTitle: "",
-  sourcePublishedAt: "",
-  crawledAt: "",
-  institutionId: "",
-  noticeCategory: ""
-}
-```
-
-This would allow users to trace each extracted deadline or event back to the original university notice page.
-
----
-
-## 9. Notice Type Strategy
-
-For the MVP, NoticePilot uses both optional user-selected notice type and AI-detected notice type.
-
-Supported user-selected values:
-
-```text
-- school_notice
-- assignment
-- scholarship
-- competition
-- job_posting
-- other
-```
-
-The analysis result stores or prepares both values.
-
-```js
-{
-  userSelectedNoticeType: "scholarship",
-  detectedNoticeType: "scholarship"
-}
-```
-
-If the user does not select a notice type, `userSelectedNoticeType` may be empty in the input state and normalized to `"unknown"` in analysis metadata. Future AI may still infer `detectedNoticeType`.
-
-This supports future filtering, corpus evaluation, and automatic notice parsing.
-
----
-
-## 10. Date Resolution Strategy
-
-NoticePilot distinguishes between three date types.
-
-```text
-Absolute date:
-- 2026-07-20
-- 2026년 7월 20일
-
-Relative date:
-- 공고일로부터 7일 이내
-- 개강 후 2주 이내
-- 다음 주 금요일까지
-
-Vague date:
-- 7월 중
-- 추후 공지
-```
-
-### Reference Date Priority
-
-Reference dates should be resolved in the following order.
-
-```text
-1. User-entered notice publication date
-2. Notice date explicitly extracted from document text
-3. Uploaded file metadata date
-4. Analysis date
-```
-
-High-confidence reference dates:
-
-```text
-- user-entered notice publication date
-- document-extracted notice date
-```
-
-Low-confidence reference dates:
-
-```text
-- uploaded file lastModified
-- analysis date
-```
-
-### Current MVP Rule
-
-```text
-- Absolute dates can become calendar event candidates.
-- Relative dates can be calculated only when a reliable reference date exists.
-- Calculated relative dates must be marked as reviewRequired.
-- Calculated relative dates should not be selected for .ics export by default.
-- Vague dates should be placed in cautions, not calendarEvents.
-```
-
-### Phase 4 Direction
-
-```text
-- First real AI implementation should prioritize absolute dates.
-- Relative dates may be accepted only when a reliable reference date exists.
-- Long-term direction is server-side date resolution using originalDateExpression and referenceDate.
-```
-
----
-
-## 11. ICS Export Strategy
-
-For the current MVP, NoticePilot supports **all-day calendar events only**.
-
-### Current Rule
-
-```text
-- Export only selected calendar events.
-- Export only events with a clear startDate.
-- Use all-day VEVENT format.
-- Do not implement time-specific events yet.
-- Do not implement timezone handling yet.
-- Do not implement Google Calendar API integration.
-```
-
-For all-day events:
-
-```text
-DTSTART;VALUE=DATE:YYYYMMDD
-DTEND;VALUE=DATE:next-day-YYYYMMDD
-```
-
-Time-specific events and timezone handling are future enhancements.
-
-This decision keeps the first `.ics` implementation simple and improves compatibility testing across Apple Calendar, Samsung Calendar, Outlook, and Google Calendar.
-
----
-
-## 12. Local Storage Persistence Strategy
-
-For the MVP, NoticePilot uses localStorage to preserve the current working state.
-
-Stored data:
-
-```text
-- language
-- noticeTitle
-- sourceText
-- extractedText
-- uploadedFileName
-- userSelectedNoticeType
-- noticePublicationDate
-- analysisResult
-- calendar event selection state inside analysisResult
-```
-
-Use a versioned localStorage key.
-
-```text
-noticepilot:v1
-```
-
-Campus preferences are stored separately so clearing or replacing the current notice analysis does not remove user preference context.
-
-```text
-noticepilot:campus-preferences:v1
-```
-
-Campus preference data:
-
-```text
-- activeInstitution: kangwon
-- selectedCampuses: chuncheon / samcheok / dogye / gangneung_wonju
-- includeCommonNotices: true
-- updatedAt under institutionPreferences.kangwon after user-initiated changes
-```
-
-If the schema changes later, use a new key.
-
-```text
-noticepilot:v2
-```
-
-MVP rules:
-
-```text
-- Restore saved state on app load when schema version matches.
-- Reset safely if parsing fails or schema version is incompatible.
-- Do not store uploaded file objects.
-- Store uploaded file name only as metadata.
-- Do not write campus preference storage before the first user-initiated campus change.
-- Keep campus preferences separate from the single-notice analysis session.
-```
-
----
-
-## 13. Privacy and Sensitive Information Handling
-
-NoticePilot may process notices or application-related documents that contain personal information.
-
-For the MVP, full anonymization is out of scope. However, the app includes basic privacy safeguards.
-
-### Current MVP Policy
-
-```text
-- Display a warning before analysis.
-- Tell users not to paste or upload sensitive personal information.
-- Run simple client-side pattern checks.
-- Detect email addresses, phone numbers, and resident-registration-number-like strings.
-- If detected, show a warning banner and confirmation modal before analysis.
-- Do not automatically remove or rewrite user text in the MVP.
-- Let the user decide whether to continue.
-```
-
-Out of scope:
-
-```text
-- full anonymization
-- secure file storage
-- document encryption
-- account-level privacy controls
-- enterprise compliance
-- personal eligibility profile matching
-```
-
----
-
-## 14. Future Expansion: University Notice Parsing and Batch Calendar Export
-
-Future versions may reduce manual input by parsing university notice pages and letting users choose useful calendar events.
-
-Possible future flow:
-
-```text
-university notice pages
-→ parsed source notices
-→ normalized calendar event candidates
-→ user selects event-level checkboxes
-→ selected .ics export
-→ future subscription calendar feed
-```
-
-Early future filters should remain metadata-based.
-
-```text
-- institution
-- noticeType
-- noticeCategory
-- keyword
-- published date
-- deadline date
-```
-
-The current campus preference UI is a first preference-storage step only. It does not implement school notice filtering, crawler behavior, batch export filtering, or subscription feed personalization yet.
-
-Batch export design direction:
-
-```text
-- Initial selection unit: calendarEvent candidate
-- Later addition: notice-level select-all
-- Export unit: selected valid calendarEvents
-- Future stable UID strategy should support re-export and subscription feeds
-```
-
-Personal condition matching is intentionally excluded from early design due to privacy and scope concerns. The app should not store user grade level, major, completed credits, region, or personal eligibility profiles in the MVP.
-
----
-
-## 15. Roadmap Summary
-
-```text
-Completed:
-- Phase 1: Frontend MVP follow-up
-- Phase 1-QA: Frontend major QA fixes
-- Phase 2: Express analyze API skeleton
-- Phase 2-QA: Backend analyze API QA fixes
-- Phase 3: Frontend ↔ server mock analyze wiring
-- Phase 3-QA: Server mock wiring QA
-- Calendar tab + campus preferences
-- Calendar/export QA notes
-
-Next:
-- Phase 4-A: Planning / contract documentation
-- Phase 4-B: Test corpus scaffold
-- Phase 4-C: Real AI API integration
-- Phase 4-D: Corpus-based AI QA
-- Phase 4-E: Date resolution v1
-
-Future:
-- Phase 5: Advanced file extraction
-- Phase 6: School-level notice parsing
-- Phase 7: Batch calendar export
-- Phase 8: Subscription calendar feed
-```
+Isolated tested code must not be described as user-facing runtime behavior, and contract-only work must not be described as implemented delivery.
