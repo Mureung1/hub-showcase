@@ -16,7 +16,7 @@ import styles from './TodayLearningHub.module.css'
 type CurriculumMode = 'docs' | 'ai'
 type GenerationStatus = 'idle' | 'generating' | 'ready'
 
-const initialGoal = 'DEVOPS 엔지니어가 되고 싶어'
+const defaultCareerGoal = 'DEVOPS 엔지니어가 되고 싶어'
 
 const trackStatusLabels: Record<LearningTrackStatus, string> = {
   in_progress: '진행 중',
@@ -32,13 +32,6 @@ const queueStatusLabels: Record<TodayQueueStatus, string> = {
   optional: '선택',
 }
 
-const stats = [
-  { label: '오늘 학습', value: '38분', tone: 'blue' },
-  { label: '진행 트랙', value: '04', tone: 'cyan' },
-  { label: '복습 예정', value: '02', tone: 'peach' },
-  { label: '완료율', value: '62%', tone: 'green' },
-]
-
 const docsCurriculum = [
   { title: 'React 공식 문서', detail: 'State: A Component Memory', progress: '62%' },
   { title: '이벤트 처리', detail: 'Responding to Events', progress: '38%' },
@@ -49,14 +42,16 @@ const weekLabels = ['월', '화', '수', '목', '금', '토', '일']
 
 export function TodayLearningHub() {
   const { profile } = useLearningProfileStore()
+  const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const [curriculumMode, setCurriculumMode] = useState<CurriculumMode>('ai')
-  const [careerGoal, setCareerGoal] = useState(initialGoal)
+  const [careerGoal, setCareerGoal] = useState(profileGoal)
   const [goalError, setGoalError] = useState('')
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('ready')
   const [generatedPlan, setGeneratedPlan] = useState<GeneratedCurriculumPlan>(() =>
-    generateMockCurriculum(initialGoal),
+    generateMockCurriculum(profileGoal),
   )
   const generationTimerRef = useRef<number | undefined>(undefined)
+  const syncedProfileGoalRef = useRef(profileGoal)
   const activeTrackName = profile?.preferredTracks[0] ?? 'React'
   const displayName = profile?.displayName ?? '학습자'
   const dailyMinutes = profile?.dailyStudyMinutes ?? 30
@@ -68,6 +63,18 @@ export function TodayLearningHub() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (syncedProfileGoalRef.current === profileGoal) {
+      return
+    }
+
+    syncedProfileGoalRef.current = profileGoal
+    setCareerGoal(profileGoal)
+    setGoalError('')
+    setGenerationStatus('ready')
+    setGeneratedPlan(generateMockCurriculum(profileGoal))
+  }, [profileGoal])
 
   const now = useMemo(() => new Date(), [])
   const todayLabel = useMemo(
@@ -110,6 +117,23 @@ export function TodayLearningHub() {
       ...todayQueue.filter((item) => item.id !== 'counter-mission'),
     ],
     [generatedPlan],
+  )
+  const totalQueueMinutes = useMemo(
+    () => generatedQueue.reduce((total, item) => total + item.durationMinutes, 0),
+    [generatedQueue],
+  )
+  const stats = useMemo(
+    () => [
+      { label: '오늘 학습', value: dailyMinutes + '분', tone: 'blue' },
+      {
+        label: '진행 트랙',
+        value: String(profile?.preferredTracks.length ?? learningTracks.length).padStart(2, '0'),
+        tone: 'cyan',
+      },
+      { label: '큐 총합', value: totalQueueMinutes + '분', tone: 'peach' },
+      { label: '완료율', value: '62%', tone: 'green' },
+    ],
+    [dailyMinutes, profile?.preferredTracks.length, totalQueueMinutes],
   )
 
   function handleGenerateCurriculum(event: FormEvent<HTMLFormElement>) {
@@ -361,7 +385,7 @@ export function TodayLearningHub() {
             <section className={styles.upcomingCard} aria-labelledby="queue-title">
               <div className={styles.panelTitleRow}>
                 <h2 id="queue-title">오늘 학습 큐</h2>
-                <span>총 38분</span>
+                <span>총 {totalQueueMinutes}분</span>
               </div>
               <ol className={styles.timelineList}>
                 {generatedQueue.map((item) => (
