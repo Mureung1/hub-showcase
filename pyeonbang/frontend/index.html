@@ -104,3 +104,27 @@
 
 </body>
 </html>
+
+
+<!-- index.html 내 원하는 위치에 추가 -->
+<input type="file" accept="image/*" capture="environment" id="food-camera">
+
+<script>
+  // 사진이 찍히거나 파일이 선택되면 자동으로 백엔드에 전송하는 자바스크립트
+  document.getElementById('food-camera').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    // 백엔드의 이미지 업로드 API 주소로 전송
+    fetch('/upload', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => console.log('서버가 읽은 텍스트:', data))
+    .catch(err => console.error('전송 에러:', err));
+  });
+</script>
