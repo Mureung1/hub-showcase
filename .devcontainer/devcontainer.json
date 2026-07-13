@@ -1,0 +1,57 @@
+{
+  "name": "PlacePick AI - Java 17",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "../docker-compose.devcontainer.yml"
+  ],
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  "features": {
+    "ghcr.io/devcontainers/features/node:2.1.0": {
+      "version": "24",
+      "npmVersion": "none",
+      "pnpmVersion": "none",
+      "nvmVersion": "0.40.3"
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1.10.0": {
+      "version": "28.3.3",
+      "moby": false,
+      "dockerDashComposeVersion": "v2"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1.1.0": {}
+  },
+  "containerEnv": {
+    "TESTCONTAINERS_HOST_OVERRIDE": "host.docker.internal",
+    "PLACEPICK_EXTERNAL_MODE": "mock"
+  },
+  "postCreateCommand": "bash scripts/devcontainer-post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "openai.chatgpt",
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-spring-boot",
+        "vscjava.vscode-gradle",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-containers",
+        "humao.rest-client",
+        "yzhang.markdown-all-in-one",
+        "bierner.markdown-mermaid",
+        "github.vscode-github-actions",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "java.compile.nullAnalysis.mode": "automatic",
+        "gradle.nestedProjects": true,
+        "files.eol": "\n",
+        "files.trimTrailingWhitespace": true,
+        "editor.formatOnSave": false,
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}

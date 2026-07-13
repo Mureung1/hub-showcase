@@ -1,0 +1,85 @@
+plugins {
+    id 'base'
+    id 'org.springframework.boot' version '3.5.16' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+}
+
+if (JavaVersion.current() != JavaVersion.VERSION_17) {
+    throw new GradleException(
+        "The Gradle daemon must run on Java 17. Detected ${System.getProperty('java.version')} " +
+        "from ${System.getProperty('java.home')}."
+    )
+}
+
+allprojects {
+    group = 'com.placepick'
+    version = '0.1.0'
+}
+
+subprojects {
+    pluginManager.withPlugin('java') {
+        java {
+            toolchain {
+                languageVersion = JavaLanguageVersion.of(17)
+            }
+        }
+
+        tasks.withType(JavaCompile).configureEach {
+            options.release = 17
+            options.encoding = 'UTF-8'
+            options.compilerArgs += ['-parameters', '-Xlint:all', '-Werror']
+        }
+
+        tasks.withType(Test).configureEach {
+            javaLauncher = javaToolchains.launcherFor {
+                languageVersion = JavaLanguageVersion.of(17)
+            }
+            useJUnitPlatform()
+            testLogging {
+                events 'failed', 'skipped'
+                exceptionFormat = 'full'
+            }
+            doFirst {
+                def runtimeVersion = javaLauncher.get().metadata.languageVersion.asInt()
+                if (runtimeVersion != 17) {
+                    throw new GradleException("Tests must run on Java 17; detected Java ${runtimeVersion}.")
+                }
+            }
+        }
+    }
+
+    configurations.configureEach {
+        resolutionStrategy {
+            failOnVersionConflict()
+            eachDependency { details ->
+                def requestedVersion = details.requested.version
+                if (requestedVersion != null &&
+                    (requestedVersion.contains('+') ||
+                     requestedVersion.toLowerCase(Locale.ROOT).contains('latest') ||
+                     requestedVersion.toUpperCase(Locale.ROOT).contains('SNAPSHOT'))) {
+                    throw new GradleException(
+                        "Dynamic and snapshot dependencies are not allowed: ${details.requested}"
+                    )
+                }
+            }
+        }
+    }
+
+    dependencyLocking {
+        lockAllConfigurations()
+    }
+}
+
+tasks.register('verifyJava17') {
+    group = 'verification'
+    description = 'Verifies that Gradle is running on the canonical Java 17 runtime.'
+    doLast {
+        assert JavaVersion.current() == JavaVersion.VERSION_17
+        logger.lifecycle("Verified Gradle daemon Java ${System.getProperty('java.version')}.")
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyJava17')
+    dependsOn ':backend:check'
+}

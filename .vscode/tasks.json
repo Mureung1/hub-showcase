@@ -1,0 +1,64 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "PlacePick: setup",
+      "type": "shell",
+      "command": "make setup",
+      "problemMatcher": []
+    },
+    {
+      "label": "PlacePick: infrastructure up",
+      "type": "shell",
+      "command": "make up",
+      "problemMatcher": []
+    },
+    {
+      "label": "PlacePick: run backend",
+      "type": "shell",
+      "command": "make run",
+      "problemMatcher": "$gradle"
+    },
+    {
+      "label": "PlacePick: unit tests",
+      "type": "shell",
+      "command": "make test",
+      "group": "test",
+      "problemMatcher": "$gradle"
+    },
+    {
+      "label": "PlacePick: integration tests",
+      "type": "shell",
+      "command": "make integration",
+      "group": "test",
+      "problemMatcher": "$gradle"
+    },
+    {
+      "label": "PlacePick: eval",
+      "type": "shell",
+      "command": "make eval",
+      "group": "test",
+      "problemMatcher": "$gradle"
+    },
+    {
+      "label": "PlacePick: complete check",
+      "type": "shell",
+      "command": "make check",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": ["$gradle"]
+    },
+    {
+      "label": "PlacePick: observability up",
+      "type": "shell",
+      "command": "make observe",
+      "problemMatcher": []
+    },
+    {
+      "label": "PlacePick: load smoke",
+      "type": "shell",
+      "command": "make load-smoke",
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}

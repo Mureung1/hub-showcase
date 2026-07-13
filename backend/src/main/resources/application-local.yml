@@ -1,0 +1,22 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/placepick}
+    username: ${SPRING_DATASOURCE_USERNAME:placepick}
+    password: ${SPRING_DATASOURCE_PASSWORD:placepick-local-only}
+    hikari:
+      connection-timeout: 5000
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      connect-timeout: 2s
+      timeout: 2s
+
+placepick:
+  external:
+    mode: ${PLACEPICK_EXTERNAL_MODE:mock}
+    naver-base-url: ${PLACEPICK_NAVER_BASE_URL:http://localhost:8089}
+    llm-base-url: ${PLACEPICK_LLM_BASE_URL:http://localhost:8090}

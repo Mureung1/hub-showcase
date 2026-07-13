@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: placepick-backend
+  profiles:
+    default: local
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  web:
+    resources:
+      add-mappings: false
+
+management:
+  endpoints:
+    access:
+      default: none
+    web:
+      discovery:
+        enabled: false
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      access: read-only
+      probes:
+        enabled: true
+      show-details: never
+    prometheus:
+      access: read-only
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
