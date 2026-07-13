@@ -1,5 +1,5 @@
-// LLM 파싱. 위비티가 구조로 주는 값(분야, 응모대상)은 규칙으로 매핑하고,
-// 자유 문장 참가조건만 LLM 에 맡긴다. 프롬프트와 강제 JSON 은 docs/schema.md 부록3.
+// LLM 파싱. API·소스가 구조로 주는 값(지역, 연령, 분야)은 규칙으로 매핑하고,
+// 크롤링한 자유 문장 참가조건만 LLM 에 맡긴다. 프롬프트와 강제 JSON 은 docs/schema.md 부록3.
 import OpenAI from "openai";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -11,7 +11,7 @@ export const MAJOR_MAP = {
   상경계열: ["경영", "경제"],
   인문사회: ["인문", "경영", "경제", "교육"],
   예체능: ["예술"],
-  // TODO(3): 위비티 분야 태그도 여기에 (웹/모바일/IT -> IT, 과학/공학 -> 과학 등)
+  // TODO(#4): 소스가 주는 분야 태그도 여기에 (웹/모바일/IT -> IT, 과학/공학 -> 과학 등)
 };
 
 // 지역 권역 펼치기
