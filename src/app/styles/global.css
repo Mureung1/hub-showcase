@@ -1,52 +1,27 @@
 :root {
-  --color-paper: #f4eddc;
-  --color-paper-card: #fffdf6;
-  --color-ink: #1c1b17;
-  --color-ink-muted: #6b665a;
-  --color-cobalt: #315bd2;
-  --color-coral: #ff5d3a;
-  --color-yellow: #f6cf3f;
-  --color-leaf: #53a86a;
-  --font-display: 'Gowun Batang', Batang, serif;
-  --font-index: 'DM Mono', monospace;
-  --shadow-paper: 6px 7px 0 rgba(28, 27, 23, 0.14);
-  --color-bg: #ffffff;
-  --color-surface: #f6f8fa;
-  --color-card: #ffffff;
-  --color-border: #e6eaf0;
-  --color-border-strong: #b8c2cc;
-  --color-text: #1f2226;
-  --color-muted: #5f6773;
-  --color-disabled: #a6afba;
-  --color-primary: #1458dd;
-  --color-primary-hover: #4a79dd;
-  --color-primary-pressed: #0944c2;
-  --color-primary-soft: #eff6ff;
-  --color-accent: #339eee;
-  --shadow-soft: 0 4px 16px rgba(15, 23, 42, 0.08);
-  color: var(--color-text);
-  font-family:
-    Pretendard,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  color: var(--color-ink);
+  font-family: var(--typography-font-family);
   font-variant-numeric: tabular-nums;
-  background: var(--color-surface);
+  background: var(--color-canvas);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
+body {
+  background: var(--color-canvas);
+}
+
 body {
   min-width: 320px;
   margin: 0;
-  background: var(--color-surface);
 }
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -56,77 +31,29 @@ button {
 }
 
 a {
-  color: var(--color-primary);
+  color: inherit;
 }
 
-a:visited {
-  color: #102f6c;
+h1,
+h2,
+h3,
+p {
+  margin: 0;
 }
 
-.login-shell {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
-  padding: 24px;
+:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
 }
 
-.login-panel {
-  display: grid;
-  gap: 16px;
-  width: min(430px, 100%);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-card);
-  padding: 28px;
-  box-shadow: var(--shadow-soft);
-}
-
-.back-button {
-  width: fit-content;
-  min-height: 34px;
-  border: 0;
-  background: transparent;
-  color: var(--color-muted);
-  padding: 0;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.login-panel h1 {
-  color: var(--color-text);
-  font-size: 30px;
-  line-height: 38px;
-}
-
-.login-description,
-.terms-notice {
-  color: var(--color-muted);
-  font-size: 15px;
-  line-height: 23px;
-}
-
-.login-divider {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 12px;
-  align-items: center;
-  color: var(--color-disabled);
-  font-size: 13px;
-  line-height: 18px;
-}
-
-.login-divider::before,
-.login-divider::after {
+.visually-hidden {
+  position: absolute;
+  width: 1px;
   height: 1px;
-  background: var(--color-border);
-  content: '';
-}
-
-.terms-notice {
-  border-radius: 8px;
-  background: var(--color-surface);
-  padding: 14px;
-  text-align: center;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .workspace {
@@ -171,13 +98,6 @@ a:visited {
   font-size: 13px;
   font-weight: 700;
   line-height: 18px;
-}
-
-h1,
-h2,
-h3,
-p {
-  margin: 0;
 }
 
 .workspace-header h1 {
@@ -336,23 +256,6 @@ p {
 input::placeholder,
 textarea::placeholder {
   color: var(--color-disabled);
-}
-
-button:focus-visible,
-a:focus-visible {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 4px var(--color-primary-soft);
-  outline: none;
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  overflow: hidden;
-  white-space: nowrap;
 }
 
 .tip-banner {
@@ -771,15 +674,6 @@ label {
 }
 
 @media (max-width: 640px) {
-  .login-shell {
-    align-items: start;
-    padding: 28px 16px;
-  }
-
-  .login-panel {
-    padding: 22px;
-  }
-
   .workspace {
     width: 100%;
     padding: 12px 12px 106px;

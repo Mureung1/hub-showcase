@@ -1,5 +1,7 @@
 import { Button } from '@/shared/ui';
 
+import './login_page.css';
+
 export type LoginPageProps = {
   onBack: () => void;
   onLogin: () => void;
@@ -10,14 +12,14 @@ export function LoginPage({ onBack, onLogin }: LoginPageProps) {
     <main className="login-shell" aria-labelledby="login-title">
       <section className="login-panel">
         <Button
-          className="back-button"
+          className="login-back-action"
           hierarchy="ghost"
           onClick={onBack}
           type="button"
         >
           서비스 소개로
         </Button>
-        <p className="eyebrow">로그인</p>
+        <p className="login-eyebrow">로그인</p>
         <h1 id="login-title">환영합니다!</h1>
         <p className="login-description">
           로그인 후 나만의 보관함과 꺼내보기를 사용할 수 있어요.
