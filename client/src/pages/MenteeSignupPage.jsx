@@ -11,7 +11,7 @@ function MenteeSignupPage() {
     if (!isSignupComplete) return undefined;
 
     const redirectTimer = window.setTimeout(() => {
-      navigate(routePaths.menteeMentors, { replace: true });
+      navigate(routePaths.landing, { replace: true });
     }, 1800);
 
     return () => window.clearTimeout(redirectTimer);
