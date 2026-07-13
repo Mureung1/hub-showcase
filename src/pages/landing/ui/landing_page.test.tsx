@@ -1,5 +1,5 @@
 /* @vitest-environment jsdom */
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -61,13 +61,19 @@ describe('LandingPage', () => {
     expect(onStart).toHaveBeenCalledTimes(1);
   });
 
-  it('uses the archive index structure to explain the journey', () => {
+  it('shows the brand and a static three-card preview', () => {
     renderLandingPage();
 
-    expect(screen.getByText('ARCHIVE 001')).not.toBeNull();
-    expect(screen.getByText('01 문제')).not.toBeNull();
-    expect(screen.getByText('02 저장')).not.toBeNull();
-    expect(screen.getByText('03 꺼내보기')).not.toBeNull();
+    expect(
+      screen.getByRole('link', { name: '아맞다 처음으로' })
+    ).not.toBeNull();
+
+    const preview = screen.getByLabelText('상황에 맞게 다시 꺼낸 링크 예시');
+
+    expect(
+      within(preview).getByText('팀 프로젝트 앱 첫 화면 참고')
+    ).not.toBeNull();
+    expect(within(preview).getAllByRole('article')).toHaveLength(3);
     expect(
       screen.getByText('기억에는 온기를, 다시 찾는 과정에는 질서를.')
     ).not.toBeNull();
