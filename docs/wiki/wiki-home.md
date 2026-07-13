@@ -79,13 +79,13 @@ Repository owner의 주요 작업
 ## 프로토타입
 
 - 메인 페이지: Repository URL 입력 후 로딩 상태와 결과 화면을 같은 페이지에서 확인
-- [동작 프로토타입](../prototype/index.html): React 메인 페이지와 동일한 UI 흐름을 HTML/CSS/Vanilla JS로 구현
+- [동작 프로토타입](../../prototype/index.html): React 메인 페이지와 동일한 UI 흐름을 HTML/CSS/Vanilla JS로 구현
 - GitHub API 응답 실패 시 임의 결과를 만들지 않고 오류 안내
 
 ## 관련 문서
 
-- [PtoP 기획서](./plan.md)
-- [1주차 작업 체크리스트](./checklist.md)
-- [Git Repository 분석 학습 노트](./repo-analysis-study.md)
-- [PtoP 테스트 케이스](./test-cases.md)
-- [기획하기 with AI 가이드](./planning-tip.md)
+- [PtoP 기획서](../plans/plan.md)
+- [1주차 작업 체크리스트](../plans/checklist.md)
+- [Git Repository 분석 학습 노트](../research/repo-analysis-study.md)
+- [PtoP 테스트 케이스](../testing/test-cases.md)
+- [기획하기 with AI 가이드](../guides/planning-tip.md)

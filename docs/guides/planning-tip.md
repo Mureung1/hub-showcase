@@ -151,7 +151,7 @@ AI는 기획을 대신 결정하는 도구가 아니라, 기획을 함께 점검
 위치:
 
 ```text
-docs/plan.md
+docs/plans/plan.md
 ```
 
 기본 구조:
@@ -183,7 +183,7 @@ PPT, Figma 등 시각화 도구를 함께 사용해도 된다.
 위치:
 
 ```text
-docs/checklist.md
+docs/plans/checklist.md
 ```
 
 확정한 기능을 보고 내가 직접 작업 단위로 쪼갠다. 작업 단위가 작을수록 AI에게 맡기기 쉽고, 내가 검증하기도 쉽다.

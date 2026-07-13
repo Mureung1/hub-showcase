@@ -336,6 +336,6 @@ flowchart TD
 
 - [GitHub Wiki](https://github.com/SubJeeLee/hub/wiki)
 - [1주차 작업 체크리스트](./checklist.md)
-- [Git Repository 분석 학습 노트](./repo-analysis-study.md)
-- [PtoP 테스트 케이스](./test-cases.md)
-- [기획하기 with AI 가이드](./planning-tip.md)
+- [Git Repository 분석 학습 노트](../research/repo-analysis-study.md)
+- [PtoP 테스트 케이스](../testing/test-cases.md)
+- [기획하기 with AI 가이드](../guides/planning-tip.md)
