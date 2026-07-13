@@ -1,6 +1,8 @@
 node_modules
 dist
 .vscode
-.claude
+.claude/*
+!.claude/agents/
+!.claude/commands/
 
 pinterest_ref.jpg
