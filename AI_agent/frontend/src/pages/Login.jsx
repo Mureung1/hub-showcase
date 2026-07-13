@@ -1,7 +1,11 @@
 import { useState } from "react";
 
 import Header from "../components/layout/Header";
-import { findAccountByEmail, getPendingUser, getUser, saveSession } from "../features/auth/authStorage";
+import {
+  findLoginAccountByEmail,
+  loginUser,
+} from "../features/auth/authService";
+import { getPendingUser, getUser } from "../features/auth/authStorage";
 import { navigate, routes } from "../router";
 
 const initialLoginForm = {
@@ -104,8 +108,14 @@ function Login() {
       return;
     }
 
-    saveSession(user);
-    alert(`${user.name}님, 로그인되었습니다.`);
+    const loginResult = loginUser({ account, password });
+
+    if (!loginResult.ok) {
+      setErrorMessage(loginResult.message);
+      return;
+    }
+
+    alert(`${loginResult.user.name}님, 로그인되었습니다.`);
     navigate(routes.home);
   };
 
@@ -119,7 +129,7 @@ function Login() {
       return;
     }
 
-    const account = findAccountByEmail(email);
+    const account = findLoginAccountByEmail(email);
 
     if (!account) {
       setErrorMessage("해당 이메일로 등록된 계정을 찾을 수 없습니다.");

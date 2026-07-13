@@ -1,57 +1,61 @@
-# Career Mission AI 에이전트 가이드
+# Career Mission AI Agent Guide
 
-## 프로젝트
-Career Mission AI는 대학생의 취업 준비를 돕는 AI 커리어 매니저 MVP이다.
-사용자의 스펙을 분석하고, 목표 직무에 맞는 실무형 미션을 추천하며, 제출 결과물을 포트폴리오 경험으로 정리하는 흐름을 만든다.
+## Project Scope
 
-## 현재 구현 범위
-- 1차 MVP는 프론트엔드만 구현한다.
-- 실제 AI API, 백엔드, 데이터베이스, JWT 인증은 아직 구현하지 않는다.
-- 분석 결과와 추천 미션은 mock 데이터와 규칙 기반 로직으로 처리한다.
-- 사용자 정보, 로그인 상태, 스펙, 분석 결과는 `localStorage`에 저장한다.
-- 커리어넷 API 키 같은 실제 비밀값은 `.env`에만 둔다.
-- `.env.example`에는 예제값만 둔다.
+Career Mission AI is an MVP career preparation app for students and early job seekers.
+The current app uses a React + Vite frontend and prepares a separate backend workspace.
 
-## 기술 스택
-- React + Vite
-- JavaScript JSX
-- TypeScript는 사용하지 않는다.
-- 현재는 plain CSS와 inline style object를 함께 사용한다.
-- React Router는 설치되어 있지 않다.
-- 페이지 이동은 현재 프로젝트의 local router helper를 사용한다.
+## Directory Structure
 
-## 주요 참고 문서
-- 기획서: `docs/plan.md`
-- 구현 체크리스트: `docs/checklist.md`
-- 라우트 정의: `src/router.js`
-- 인증 저장소: `src/features/auth/authStorage.js`
-- 커리어 데이터 저장소: `src/features/career/careerStorage.js`
+```txt
+frontend/  React + Vite client
+backend/   Backend server workspace
+docs/      Planning, checklist, and review documents
+```
 
-## 디렉토리 규칙
-- 화면 단위 컴포넌트는 `src/pages`에 둔다.
-- 공통 레이아웃 컴포넌트는 `src/components/layout`에 둔다.
-- 재사용 데이터는 `src/data`에 둔다.
-- 인증, 저장소, API 헬퍼는 `src/features` 아래에 둔다.
-- 기존 helper와 프로젝트 패턴을 우선 사용한다.
+## Frontend
 
-## 코드 컨벤션
-- 컴포넌트와 페이지 파일은 PascalCase를 사용한다.
-- 요청과 무관한 대규모 리팩터링은 하지 않는다.
-- 새 라이브러리는 꼭 필요할 때만 추가하고, 먼저 사용자 동의를 받는다.
-- 반복되는 UI나 데이터만 필요한 경우에만 공통화한다.
-- 주석은 복잡한 로직을 설명할 때만 짧게 작성한다.
+- App source lives under `frontend/src`.
+- Pages live under `frontend/src/pages`.
+- Layout components live under `frontend/src/components/layout`.
+- Shared data lives under `frontend/src/data`.
+- Auth, storage, and API helpers live under `frontend/src/features`.
+- Route constants and navigation bridge live in `frontend/src/router.js`.
 
-## UI 방향
-- 모던하고 신뢰감 있는 AI 커리어 서비스 느낌을 유지한다.
-- 블루, 시안, 네이비, 라이트 블루 그레이 계열을 중심으로 사용한다.
-- 화면은 홍보용 랜딩보다 실제 사용 흐름을 우선한다.
-- 폼, 카드, 분석 결과, 다음 행동 버튼이 명확해야 한다.
-- 모바일에서 텍스트가 넘치거나 버튼이 깨지지 않도록 확인한다.
+Run frontend commands from the project root:
 
-## 하지 말 것
-- `.env` 값을 소스 코드나 `.env.example`에 노출하지 않는다.
-- 실제 AI API를 프론트엔드에서 직접 호출하지 않는다.
-- 외부 UI 라이브러리를 임의로 추가하지 않는다.
-- 백엔드, DB, JWT, 실제 파일 업로드를 요청 없이 구현하지 않는다.
-- 앱 구조를 다른 프레임워크나 라우팅 방식으로 갈아엎지 않는다.
-- 현재 작업과 관련 없는 파일을 임의로 정리하거나 되돌리지 않는다.
+```bash
+npm run dev
+npm run build
+npm run lint
+```
+
+The root scripts delegate to `frontend`.
+
+## Backend
+
+- Backend code should be added under `backend`.
+- Keep backend environment variables separate from frontend variables.
+- API keys that should not be exposed to browsers should eventually move to backend `.env`.
+
+## Environment
+
+- Frontend Vite variables live in `frontend/.env`.
+- Example values live in `frontend/.env.example`.
+- Do not commit real secrets.
+- Do not place real keys in `.env.example`.
+
+## Current Implementation Notes
+
+- Frontend routing uses React Router.
+- Authentication is currently localStorage-based for MVP flow validation.
+- `frontend/src/features/auth/authService.js` owns signup, login, logout, and auth-state helpers.
+- Protected routes are centralized in `frontend/src/App.jsx`.
+- CareerNet and Q-Net calls are currently frontend MVP integrations and should move behind backend APIs later.
+
+## Safety
+
+- Do not expose API keys in source code or docs.
+- Do not implement real AI API calls directly from the frontend.
+- Do not implement real payment, JWT, database, or file upload behavior without an explicit backend task.
+- Avoid unrelated refactors while feature work is in progress.

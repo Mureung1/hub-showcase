@@ -8,6 +8,7 @@ import {
   saveCareerSpec,
   specFields,
 } from "../features/career/careerStorage";
+import { searchJobs } from "../features/career/jobApi";
 import { searchQualifications } from "../features/career/qualificationApi";
 import { navigate, routes } from "../router";
 
@@ -20,6 +21,9 @@ function SpecRegister() {
   const [certificateResults, setCertificateResults] = useState([]);
   const [certificateSearchMessage, setCertificateSearchMessage] = useState("");
   const [isSearchingCertificates, setIsSearchingCertificates] = useState(false);
+  const [jobResults, setJobResults] = useState([]);
+  const [jobSearchMessage, setJobSearchMessage] = useState("");
+  const [isSearchingJobs, setIsSearchingJobs] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -53,6 +57,40 @@ function SpecRegister() {
     } finally {
       setIsSearchingCertificates(false);
     }
+  };
+
+  const handleJobSearch = async () => {
+    const keyword = form.targetRole.trim();
+
+    setIsSearchingJobs(true);
+    setJobSearchMessage("");
+
+    try {
+      const results = await searchJobs(keyword);
+      setJobResults(results);
+      setJobSearchMessage(
+        results.length === 0
+          ? "검색 결과가 없습니다. 직무명을 다시 확인해 주세요."
+          : keyword
+            ? "검색 결과에서 목표 직무를 선택해 주세요."
+            : "직업 목록에서 목표 직무를 선택해 주세요."
+      );
+    } catch (error) {
+      setJobResults([]);
+      setJobSearchMessage(error.message);
+    } finally {
+      setIsSearchingJobs(false);
+    }
+  };
+
+  const handleJobSelect = (job) => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      targetRole: job.name,
+    }));
+    setJobResults([]);
+    setJobSearchMessage(`${job.name}을 선택했습니다.`);
+    setMessage("");
   };
 
   const handleCertificateSelect = (certificate) => {
@@ -130,13 +168,70 @@ function SpecRegister() {
               <label
                 key={field.name}
                 style={
-                  field.name === "certificates"
+                  ["targetRole", "certificates"].includes(field.name)
                     ? { ...styles.field, ...styles.lookupField }
                     : styles.field
                 }
               >
                 <span style={styles.label}>{field.label}</span>
-                {field.name === "certificates" ? (
+                {field.name === "targetRole" ? (
+                  <>
+                    <div style={styles.lookupSearch}>
+                      <input
+                        name={field.name}
+                        value={form[field.name]}
+                        onChange={(event) => {
+                          handleChange(event);
+                          setJobResults([]);
+                          setJobSearchMessage("");
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            handleJobSearch();
+                          }
+                        }}
+                        style={styles.input}
+                        placeholder={placeholderByField[field.name]}
+                      />
+                      <button
+                        type="button"
+                        style={styles.lookupButton}
+                        onClick={handleJobSearch}
+                        disabled={isSearchingJobs}
+                      >
+                        {isSearchingJobs ? "불러오는 중" : "직업 목록"}
+                      </button>
+                    </div>
+                    {jobSearchMessage && (
+                      <span style={styles.lookupMessage}>
+                        {jobSearchMessage}
+                      </span>
+                    )}
+                    {jobResults.length > 0 && (
+                      <div style={styles.lookupResultList}>
+                        {jobResults.map((job) => (
+                          <button
+                            key={job.id}
+                            type="button"
+                            style={styles.lookupResultItem}
+                            onClick={() => handleJobSelect(job)}
+                          >
+                            <strong>{job.name}</strong>
+                            {job.matchedAlias && (
+                              <span style={styles.aliasText}>
+                                {job.matchedAlias}로도 검색 가능
+                              </span>
+                            )}
+                            <span>
+                              {job.category || "직업 분류 정보 없음"}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : field.name === "certificates" ? (
                   <>
                     <div style={styles.lookupSearch}>
                       <input
@@ -382,6 +477,11 @@ const styles = {
     color: "#0f172a",
     textAlign: "left",
     cursor: "pointer",
+  },
+  aliasText: {
+    color: "#1d4ed8",
+    fontSize: "12px",
+    fontWeight: 800,
   },
   success: {
     margin: "18px 0 0",

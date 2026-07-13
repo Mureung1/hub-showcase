@@ -13,11 +13,42 @@ export const routes = {
   portfolio: "/portfolio",
 };
 
+export const protectedRoutes = [
+  routes.myPage,
+  routes.specs,
+  routes.analysis,
+  routes.mission,
+  routes.upload,
+  routes.feedback,
+  routes.portfolio,
+];
+
 export const getMissionDetailPath = (missionId) => `/mission/${missionId}`;
+
+export const isProtectedPath = (path) => {
+  return protectedRoutes.includes(path) || path.startsWith("/mission/");
+};
 
 export const getCurrentPath = () => window.location.pathname || routes.home;
 
+let routerNavigate = null;
+
+export const setRouterNavigate = (navigateHandler) => {
+  routerNavigate = navigateHandler;
+
+  return () => {
+    if (routerNavigate === navigateHandler) {
+      routerNavigate = null;
+    }
+  };
+};
+
 export const navigate = (path) => {
+  if (routerNavigate) {
+    routerNavigate(path);
+    return;
+  }
+
   if (window.location.pathname !== path) {
     window.history.pushState({}, "", path);
   }

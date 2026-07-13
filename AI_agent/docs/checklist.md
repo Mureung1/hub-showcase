@@ -29,7 +29,7 @@
 
 ## 2주차 - 라우팅, 회원가입, 로그인, 내 정보
 
-- [ ] React Router 설치
+- [x] React Router 설치
 - [x] 기본 라우팅 구조 설정
 - [x] `/` 홈 화면 연결
 - [x] `/signup` 회원가입 화면 연결
@@ -41,11 +41,11 @@
 - [x] 로그인 상태 저장 함수 구현
 - [x] 로그인 상태 불러오기 함수 구현
 - [x] 로그아웃 상태 제거 함수 구현
-- [ ] `features/auth/authService.js` 생성
+- [x] `features/auth/authService.js` 생성
 - [x] 회원가입 기능 구현
 - [x] 로그인 기능 구현
 - [x] 로그아웃 기능 구현
-- [ ] 보호 페이지 접근 처리 공통화
+- [x] 보호 페이지 접근 처리 공통화
 - [x] `pages/Signup.jsx` 생성
 - [ ] `components/auth/SignupForm.jsx` 생성
 - [x] 이름 입력 필드 구현

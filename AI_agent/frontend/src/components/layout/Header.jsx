@@ -2,16 +2,18 @@
 
 import { menuItems } from "../../data/menuItems";
 import careerMissionLogo from "../../assets/career-mission-logo.png";
-import { clearSession, getSession } from "../../features/auth/authStorage";
+import {
+  isAuthenticated,
+  logoutUser,
+} from "../../features/auth/authService";
 import { navigate, routes } from "../../router";
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const session = getSession();
-  const isLoggedIn = Boolean(session);
+  const isLoggedIn = isAuthenticated();
 
   const handleLogout = () => {
-    clearSession();
+    logoutUser();
     alert("로그아웃되었습니다.");
     navigate(routes.home);
   };

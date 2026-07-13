@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import Header from "../components/layout/Header";
 import {
@@ -8,9 +9,7 @@ import {
 } from "../features/auth/authStorage";
 import { navigate, routes } from "../router";
 
-const getInitialVerificationState = () => {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token") || "";
+const getInitialVerificationState = (token) => {
   const verifiedUser = verifyPendingUser(token);
 
   return {
@@ -20,8 +19,10 @@ const getInitialVerificationState = () => {
 };
 
 function VerifyEmail() {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token") || "";
   const [verificationState, setVerificationState] = useState(
-    getInitialVerificationState
+    () => getInitialVerificationState(token)
   );
 
   const handleManualVerify = () => {
