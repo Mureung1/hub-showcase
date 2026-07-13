@@ -9,6 +9,7 @@
 - 대상 문서 경로:
 - 기준 Git 커밋:
 - 비교 대상: 전체 문서 | 섹션 | 신규 문서 제목/주제
+- 변경 타입: create | update | delete
 - 관련 workflow:
 
 ## Proposal
