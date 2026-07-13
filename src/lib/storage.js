@@ -1,6 +1,8 @@
 const STORAGE_KEY = "mbti-study-routine-result";
 const RECORD_KEY = "mbti-study-routine-records";
 const FEEDBACK_KEY = "mbti-study-routine-feedback";
+// 메타인지 보정(예측→회상→대조) 결과. 수용성·실행 기록과 다른 축(학습결과)으로 분리 저장한다.
+const CALIBRATION_KEY = "mbti-study-routine-recall";
 
 function safeParse(raw, fallback) {
   if (!raw) {
@@ -70,8 +72,29 @@ export function loadFeedback() {
   return Array.isArray(parsed) ? parsed : [];
 }
 
+export function saveCalibration(entry) {
+  const records = loadCalibration().filter((item) => item.resultId !== entry.resultId);
+  const nextRecords = [
+    {
+      ...entry,
+      createdAt: new Date().toISOString(),
+    },
+    ...records,
+  ].slice(0, 10);
+
+  localStorage.setItem(CALIBRATION_KEY, JSON.stringify(nextRecords));
+  return nextRecords;
+}
+
+export function loadCalibration() {
+  const raw = localStorage.getItem(CALIBRATION_KEY);
+  const parsed = safeParse(raw, []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
 export function clearStoredData() {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(RECORD_KEY);
   localStorage.removeItem(FEEDBACK_KEY);
+  localStorage.removeItem(CALIBRATION_KEY);
 }

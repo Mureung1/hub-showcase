@@ -17,9 +17,11 @@ function clampScore(value) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
-function applyScores(scores, patch = {}) {
+// 모든 패치를 지표별로 합산만 한다. clamp는 마지막에 한 번만 적용해
+// 응답 처리 순서와 무관하게 같은 최종 응답이 같은 점수를 내도록 한다.
+function addPatch(totals, patch = {}) {
   Object.entries(patch).forEach(([key, value]) => {
-    scores[key] = clampScore((scores[key] ?? BASE_SCORE) + value);
+    totals[key] = (totals[key] ?? BASE_SCORE) + value;
   });
 }
 
@@ -36,23 +38,23 @@ const PREFERENCE_LETTERS = {
 };
 
 export function calculateScores({ mbti, mbtiKnown, studyAnswers, stressAnswers, useMbtiHints = true }) {
-  const scores = SCORE_KEYS.reduce((acc, key) => ({ ...acc, [key]: BASE_SCORE }), {});
+  const totals = SCORE_KEYS.reduce((acc, key) => ({ ...acc, [key]: BASE_SCORE }), {});
 
   if (useMbtiHints && mbtiKnown && mbti) {
-    mbti.split("").forEach((letter) => applyScores(scores, MBTI_HINTS[letter]));
+    mbti.split("").forEach((letter) => addPatch(totals, MBTI_HINTS[letter]));
   }
 
   Object.entries(studyAnswers).forEach(([questionId, optionId]) => {
     const option = findOption(STUDY_QUESTIONS, questionId, optionId);
-    applyScores(scores, option?.scores);
+    addPatch(totals, option?.scores);
   });
 
   Object.entries(stressAnswers).forEach(([questionId, optionId]) => {
     const option = findOption(STRESS_QUESTIONS, questionId, optionId);
-    applyScores(scores, option?.scores);
+    addPatch(totals, option?.scores);
   });
 
-  return scores;
+  return SCORE_KEYS.reduce((acc, key) => ({ ...acc, [key]: clampScore(totals[key] ?? BASE_SCORE) }), {});
 }
 
 export function calculateMethodAffinities(studyAnswers, stressAnswers) {
@@ -92,7 +94,7 @@ export function calculatePreferenceProfile(studyAnswers) {
       axis,
       value,
       leaning,
-      confidence: Math.min(1, Math.abs(value) / 2),
+      signalStrength: Math.min(1, Math.abs(value) / 2),
       label: value === 0 ? "균형 또는 정보 부족" : value < 0 ? labels.left : labels.right,
       analogy: labels.analogy,
     };

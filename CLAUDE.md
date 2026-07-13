@@ -52,6 +52,7 @@ MBTI는 사람을 고정적으로 분류하는 도구가 아니라 학습 선호
 - task/state-only baseline과 MBTI 힌트 추가 모델을 별도로 산출한다.
 - 만족도와 학습·행동 성과를 동일한 정확도로 취급하지 않는다.
 - learning-styles matching 가정을 검증 없이 구현하지 않는다.
+- 학습법·MBTI 관련 설계·표현은 `docs/evidence-catalog.md`의 근거·경계조건과 불변 원칙(P-A 만족도≠효과, P-B 선호≠효과, P-C 빅데이터≠타당도)을 따르고, 출처는 `docs/reference.md`로 표기한다.
 
 ## Review rules
 
