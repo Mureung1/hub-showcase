@@ -13,8 +13,11 @@
 
 - [서비스 기획서 v0.1](./project-plan.md) — 문제 정의, IA, 기능 명세, 4주 일정
 - [개발 백로그](./docs/BACKLOG.md) — 주차별 Task와 우선순위 (진행 상태의 단일 출처)
+- [2주차 실행 계획](./docs/WEEK2-PLAN.md) — 이번 주 요일별 작업·완료 기준 (수직슬라이스)
 - [디자인 시스템](./design/DESIGN_SYSTEM.md)
 - [구 기획서 (Core Loop Builder, Wiki)](https://github.com/geulcho/hub/wiki/Core-Loop-Builder-기획서) — 피벗 이전 기록
+
+**대시보드:** [Issues](https://github.com/geulcho/hub/issues) · [Milestone: 2주차](https://github.com/geulcho/hub/milestone/1)
 
 ## 실행 방법
 
