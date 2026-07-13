@@ -1,0 +1,468 @@
+.page {
+  width: 100%;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 24px;
+  padding: 20px 24px 28px;
+  color: #102346;
+  background:
+    radial-gradient(circle at 7% 16%, rgb(255 138 28 / 62%), transparent 30%),
+    radial-gradient(circle at 39% 0%, rgb(243 184 216 / 42%), transparent 30%),
+    radial-gradient(circle at 58% 8%, rgb(53 200 244 / 54%), transparent 34%),
+    radial-gradient(circle at 91% 4%, rgb(11 75 179 / 72%), transparent 36%),
+    linear-gradient(115deg, #fff2d9 0%, #eef9ff 42%, #d8f4ff 66%, #c4dbff 100%);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.trackSummary,
+.actions,
+.editorActions,
+.resultHeader,
+.resultActions {
+  display: flex;
+  align-items: center;
+}
+
+.trackSummary {
+  min-width: 0;
+  gap: 22px;
+}
+
+.trackSummary h1 {
+  margin: 0;
+  color: #102346;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.progressBadge,
+.sourceBadge,
+.languageBadge,
+.warningBadge,
+.stepState {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.progressBadge,
+.sourceBadge,
+.languageBadge {
+  color: #0b4bb3;
+  background: rgb(235 248 255 / 90%);
+}
+
+.remainingTime {
+  color: #172033;
+  font-size: 14px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.actions {
+  gap: 12px;
+}
+
+.secondaryButton,
+.primaryButton,
+.runButton,
+.inlineAction {
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 0 18px;
+  cursor: pointer;
+  font-weight: 850;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.secondaryButton {
+  border: 1px solid #cfd9e8;
+  background: rgb(255 255 255 / 88%);
+  color: #172033;
+}
+
+.primaryButton,
+.runButton,
+.inlineAction {
+  border: 0;
+  color: #ffffff;
+  background: #0b4bb3;
+}
+
+.secondaryButton:hover,
+.primaryButton:hover,
+.runButton:hover,
+.inlineAction:hover {
+  transform: translateY(-1px);
+}
+
+.secondaryButton:focus-visible,
+.primaryButton:focus-visible,
+.runButton:focus-visible,
+.inlineAction:focus-visible {
+  outline: 3px solid rgb(53 200 244 / 42%);
+  outline-offset: 2px;
+}
+
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.82fr) minmax(320px, 1.5fr) minmax(420px, 2.1fr);
+  gap: 24px;
+  min-height: 0;
+}
+
+.curriculumPanel,
+.guidePanel,
+.editorPanel,
+.resultPanel {
+  border: 1px solid rgb(179 196 220 / 74%);
+  border-radius: 8px;
+  box-shadow: 0 18px 60px rgb(17 43 95 / 10%);
+}
+
+.curriculumPanel,
+.guidePanel,
+.resultPanel {
+  background: rgb(255 255 255 / 88%);
+  backdrop-filter: blur(12px);
+}
+
+.curriculumPanel,
+.guidePanel {
+  padding: 24px;
+}
+
+.curriculumPanel h2,
+.guidePanel h2,
+.resultPanel h2 {
+  margin: 0;
+  color: #102346;
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.stepList {
+  display: grid;
+  gap: 16px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepItem {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  color: #1b2740;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.stepState {
+  min-height: 28px;
+  padding: 0 10px;
+}
+
+.stepState[data-state='done'] {
+  color: #165f48;
+  background: #e8f8ef;
+}
+
+.stepState[data-state='current'] {
+  color: #0b4bb3;
+  background: #e4f3ff;
+}
+
+.stepState[data-state='waiting'] {
+  color: #55657f;
+  background: #f3f6fa;
+}
+
+.divider {
+  height: 1px;
+  margin: 40px 0 26px;
+  background: #d7e0eb;
+}
+
+.missionSummary h3 {
+  margin: 12px 0 10px;
+  color: #102346;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.missionSummary p,
+.criteria li,
+.explanationCard p,
+.practiceCard p,
+.hintCard p,
+.resultMessage,
+.resultDetail {
+  color: #26344d;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.missionSummary p,
+.criteria ul,
+.explanationCard p,
+.practiceCard p,
+.hintCard p,
+.sources ul,
+.resultMessage,
+.resultDetail {
+  margin: 0;
+}
+
+.criteria {
+  margin-top: 32px;
+}
+
+.criteria ul {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0 0;
+  list-style: none;
+}
+
+.sectionLabel {
+  color: #0b4bb3;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.explanationCard,
+.practiceCard,
+.hintCard {
+  border-radius: 8px;
+  padding: 20px 18px;
+}
+
+.explanationCard {
+  border: 1px solid #cad7e8;
+  background: rgb(255 255 255 / 72%);
+}
+
+.explanationCard h3 {
+  margin: 0 0 12px;
+  color: #1a2946;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.practiceCard {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  background: #e7f6fb;
+}
+
+.hintCard {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  background: #fff2e4;
+}
+
+.inlineAction {
+  justify-self: start;
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.sources {
+  margin-top: 34px;
+}
+
+.sources ul {
+  display: grid;
+  gap: 6px;
+  padding: 12px 0 0;
+  color: #62708a;
+  font-size: 13px;
+  line-height: 1.5;
+  list-style: none;
+}
+
+.editorPanel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  background: #151a24;
+}
+
+.editorToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 52px;
+  padding: 10px 18px;
+  background: #101824;
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.editorActions {
+  gap: 18px;
+}
+
+.languageBadge {
+  color: #112b5f;
+}
+
+.runButton {
+  min-height: 34px;
+  min-width: 92px;
+  padding: 0 18px;
+}
+
+.codeBlock {
+  margin: 0;
+  padding: 30px 28px;
+  overflow: auto;
+  color: #dbe4ef;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.codeBlock code {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 14px;
+  min-height: 26px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  white-space: pre-wrap;
+}
+
+.codeBlock code span {
+  color: #94a3b8;
+  text-align: right;
+}
+
+.resultPanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+}
+
+.resultHeader {
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.warningBadge {
+  color: #6b4100;
+  background: #fff1d9;
+}
+
+.resultMessage {
+  font-weight: 760;
+}
+
+.resultDetail {
+  margin-top: 4px;
+  color: #5d6b83;
+  font-size: 13px;
+}
+
+.resultActions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+@media (max-width: 1120px) {
+  .workspaceGrid {
+    grid-template-columns: minmax(220px, 0.85fr) minmax(360px, 1.35fr);
+  }
+
+  .editorPanel {
+    grid-column: 1 / -1;
+    min-height: 420px;
+  }
+
+  .resultPanel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 760px) {
+  .page {
+    gap: 18px;
+    padding: 16px;
+  }
+
+  .topbar,
+  .trackSummary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .trackSummary {
+    gap: 10px;
+  }
+
+  .actions,
+  .resultActions {
+    width: 100%;
+  }
+
+  .secondaryButton,
+  .primaryButton {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .curriculumPanel,
+  .guidePanel {
+    padding: 20px;
+  }
+
+  .editorPanel {
+    min-height: 360px;
+  }
+}

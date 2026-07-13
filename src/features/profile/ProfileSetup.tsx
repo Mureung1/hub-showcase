@@ -1,5 +1,5 @@
 import { type FormEvent, useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useLearningProfileStore } from '../../stores/useLearningProfileStore'
 import type { LearningLevel, LearningProfile } from '../../types/profile'
 import styles from './ProfileSetup.module.css'
@@ -14,6 +14,7 @@ const levelOptions: Array<{ label: string; value: LearningLevel }> = [
 ]
 
 export function ProfileSetup() {
+  const navigate = useNavigate()
   const { profile, saveProfile, resetProfile } = useLearningProfileStore()
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '예린')
   const [learningGoal, setLearningGoal] = useState(
@@ -61,6 +62,7 @@ export function ProfileSetup() {
 
     saveProfile(previewProfile)
     setIsSaved(true)
+    navigate('/today')
   }
 
   function handleReset() {
@@ -75,47 +77,6 @@ export function ProfileSetup() {
 
   return (
     <section className={styles.page} aria-labelledby="profile-title">
-      <aside className={styles.rail} aria-label="프로필 설정 단계">
-        <div>
-          <Link className={styles.brand} to="/" aria-label="ICU 홈으로 이동">
-            <span>ICU</span>
-            <small>I CODE U</small>
-          </Link>
-
-          <ol className={styles.steps}>
-            <li className={styles.activeStep}>
-              <span className={styles.stepNumber}>1</span>
-              <span>
-                <strong>프로필</strong>
-                <small>기본 정보를 설정합니다.</small>
-              </span>
-            </li>
-            <li>
-              <span className={styles.stepNumber}>2</span>
-              <span>
-                <strong>목표</strong>
-                <small>학습 목표를 설정합니다.</small>
-              </span>
-            </li>
-            <li>
-              <span className={styles.stepNumber}>3</span>
-              <span>
-                <strong>오늘 학습</strong>
-                <small>오늘 허브를 확인합니다.</small>
-              </span>
-            </li>
-          </ol>
-        </div>
-
-        <div className={styles.helpCard}>
-          <span aria-hidden="true">?</span>
-          <div>
-            <strong>도움이 필요하신가요?</strong>
-            <Link to="/">가이드 보기</Link>
-          </div>
-        </div>
-      </aside>
-
       <form className={styles.form} onSubmit={handleSubmit}>
         <header className={styles.formHeader}>
           <p className={styles.eyebrow}>Learning Profile</p>
@@ -201,10 +162,10 @@ export function ProfileSetup() {
         <div className={styles.actions}>
           <button className={styles.primary} disabled={!canSubmit} type="submit">
             <span aria-hidden="true">✦</span>
-            프로필 저장하고 시작
+            오늘 학습 허브로 이동
           </button>
-          <Link className={styles.secondary} to="/">
-            나중에 설정
+          <Link className={styles.secondary} to="/today">
+            나중에 둘러보기
           </Link>
         </div>
       </form>
