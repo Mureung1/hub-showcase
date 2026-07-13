@@ -6,8 +6,7 @@
 
 - [Project Plan](smartff-agent/docs/PROJECT_PLAN.md)
 - [Discussion](smartff-agent/docs/DISCUSSION.md)
-- [User Flow](smartff-agent/docs/USER_FLOW.md)
-
+- [Issues] https://github.com/YunTaeYong/hub/issues/8
 ## Repository
 
 - Project Folder: `smartff-agent`
