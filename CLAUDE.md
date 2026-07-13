@@ -25,7 +25,7 @@
 - 프런트엔드: Vite + React (구현됨)
 - 백엔드: Express — **아직 미착수**. 관련 코드를 이미 있는 것처럼 작성하지 말 것.
 - 라우팅: `react-router-dom`
-- DB: Turso(libSQL, SQLite 방언) + Prisma. 로컬 SQLite 파일은 쓰지 않는다 — 서버리스 배포 시 디스크가 인스턴스 간 공유/영속되지 않아 데이터가 유실되기 때문.
+- DB: Supabase(Postgres) 확정. Prisma로 연결하며, 서버리스 환경 대응을 위해 pooled(`DATABASE_URL`)/non-pooled(`DIRECT_URL`) 커넥션을 분리해 사용한다. 로컬 SQLite/Postgres 파일을 직접 쓰지 않는다 — 서버리스 배포 시 디스크가 인스턴스 간 공유/영속되지 않아 데이터가 유실되기 때문.
 - Web Push: `web-push`(VAPID)
 - PWA/서비스워커: 별도 라이브러리 없이 수기 `manifest.json` + 최소 `service-worker.js` (기본 캐싱만). `vite-plugin-pwa` 등은 지금 필요 이상의 기능이라 쓰지 않는다.
 - 타입 검사: tsconfig(`allowJs` + `checkJs` + `strict`)로 "any 금지"를 강제한다. 기존 `.jsx`는 그대로 두고 `// @ts-check`로 점진 적용하며, 새로 만지는 파일부터 `.ts`/`.tsx`로 전환한다. `@types/react`는 이미 devDependency로 있음. `npm run typecheck`(`tsc --noEmit`)로 확인.
@@ -46,7 +46,7 @@ npm run preview      # 로컬에서 프로덕션 빌드 미리보기
 
 Express 앱은 `server/`에 있다(`npm install`을 루트에서 실행하면 `workspaces`로 함께 설치됨). `api/index.js`는 Vercel 서버리스 진입점으로 `server/dist/app.js`를 그대로 감싸서 노출하며, `vercel.json`의 rewrite로 `/api/*` 요청이 전부 이 함수로 간다. 로컬 개발 중에는 `vite.config.js`의 `server.proxy`가 `/api`를 `http://localhost:3001`(Express dev 서버)로 넘겨주므로, 프론트 코드는 로컬/배포 구분 없이 항상 `/api`로만 호출하면 된다.
 
-DB 연결은 Prisma + Turso(libSQL)로 설정돼 있다(`server/prisma/schema.prisma`, `server/.env.example` 참고). 아직 `tasks`/`avoidance_reasons`/`task_events`/`feedbacks` 모델은 정의하지 않았다 — 다음 단계에서 추가.
+DB 연결은 Prisma + Supabase(Postgres)로 설정돼 있다(`server/prisma/schema.prisma`, `server/.env.example` 참고). 서버리스 커넥션 고갈을 막기 위해 `DATABASE_URL`은 pooled(pgbouncer, 포트 6543), `DIRECT_URL`은 마이그레이션 전용 non-pooled(포트 5432) 커넥션을 사용한다. 아직 `tasks`/`avoidance_reasons`/`task_events`/`feedbacks` 모델은 정의하지 않았다 — 다음 단계에서 추가.
 
 이 저장소에는 아직 구성된 테스트 스위트가 없다.
 
@@ -99,7 +99,7 @@ DB 연결은 Prisma + Turso(libSQL)로 설정돼 있다(`server/prisma/schema.pr
 - API 응답 포맷: 성공 응답은 리소스를 그대로 반환하고, 에러는 `{ error: { code, message } }` 형태 + 적절한 HTTP status로 통일한다.
 - 프론트 API 호출: `fetch`를 직접 흩어 쓰지 않고 `src/lib/api.js`의 `apiFetch(path, options)`를 통해서만 호출한다. 성공 시 응답 body를 그대로 반환하고, 실패 시 서버의 `{ error: { code, message } }`를 파싱해 `ApiError`를 throw한다 — 에러 처리를 호출부마다 반복하지 않기 위함.
 - "시작 예정 시각" 와이어 포맷: 등록 폼의 `<input type="time">`은 시:분만 담고 있으므로, 프론트에서 "오늘 날짜 + 입력한 시:분"을 합쳐 완전한 ISO 8601 datetime(UTC)으로 변환한 뒤 API로 보낸다. 서버/DB도 항상 완전한 datetime 문자열로 주고받는다 — 시:분만 있는 값으로는 "시작 예정 시각 도달" 여부를 판정할 기준(어느 날짜인지)이 없기 때문. 마감 D-day는 이 시작 시각과 무관한 별도 필드로 유지한다(plan.md 3의 "시작 예정 시각"과 "마감까지 D-day"는 서로 다른 입력값).
-- Prisma Client는 `server/src/db/client.ts`에서 싱글톤으로 export해서 쓴다. 서버리스 환경에서 요청마다 `new PrismaClient()`를 만들면 커넥션이 금방 고갈되기 때문.
+- Prisma Client는 `server/src/db/client.ts`에서 싱글톤으로 export해서 쓴다. 서버리스 환경에서 요청마다 `new PrismaClient()`를 만들면 커넥션이 금방 고갈되기 때문. 이 싱글톤 패턴은 Prisma Client를 쓰는 한 DB 종류와 무관하게 유지된다.
 - Node 버전은 `.nvmrc`(루트) + 각 `package.json`의 `engines.node`로 고정한다(`>=24.11.1`). 팀원 간 로컬 Node 버전이 어긋나면 `tsx`/ESM 관련 문제가 날 수 있어서.
 
 ## 커밋 규칙
@@ -108,7 +108,7 @@ DB 연결은 Prisma + Turso(libSQL)로 설정돼 있다(`server/prisma/schema.pr
 - 예시:
   - `feat: 할일 등록 폼과 회피 이유 선택 UI 추가`
   - `fix: 압력 게이지가 레벨 4에서 100%를 넘게 표시되는 버그 수정`
-  - `chore: server 워크스페이스 초기 세팅 및 Prisma+Turso 연결`
+  - `chore: server 워크스페이스 초기 세팅 및 Prisma+Supabase 연결`
 - 브랜치 전략은 별도로 두지 않는다 — `main` + 짧은 feature 브랜치를 PR로 병합하는 트렁크 기반이면 충분하다. 4주 단기 해커톤 규모이고, 이미 `.github/workflows/auto-merge.yml`로 PR 자동병합이 갖춰져 있어 develop/release 같은 장기 브랜치를 둘 이유가 없기 때문.
 
 ## 하지 말 것

@@ -14,6 +14,11 @@
 - [기획서 원본 (plan.md)](./docs/plan.md)
 - [화면 단위 와이어프레임 (wireframe.md)](./docs/wireframe.md)
 
+## 이번 주 계획
+
+- [GitHub 이슈](https://github.com/minsss42/hub/issues)
+- [GitHub Project 보드](https://github.com/users/minsss42/projects/1)
+
 ## 프로토타입
 
 - [프로토타입 코드 보기](./docs/prototype.html)
