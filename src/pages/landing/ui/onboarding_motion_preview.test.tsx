@@ -20,7 +20,7 @@ vi.mock('@gsap/react', () => ({
   useGSAP: (setup: () => void) => setup(),
 }));
 
-import { OnboardingMotionPreview } from './OnboardingMotionPreview';
+import { OnboardingMotionPreview } from './onboarding_motion_preview';
 
 beforeEach(() => {
   gsapMocks.matchMedia.mockReset();

@@ -166,8 +166,6 @@ export function App() {
   return <AuthenticatedWorkspace />;
 }
 
-export default App;
-
 function AuthenticatedWorkspace() {
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [insights, setInsights] = useState(initialInsights);

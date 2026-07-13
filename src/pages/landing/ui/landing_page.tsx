@@ -1,7 +1,7 @@
 import { Button } from '@wanteddev/wds';
 
-import { OnboardingMotionPreview } from './OnboardingMotionPreview';
-import './landing-page.css';
+import { OnboardingMotionPreview } from './onboarding_motion_preview';
+import './landing_page.css';
 
 type LandingPageProps = {
   onStart: () => void;
