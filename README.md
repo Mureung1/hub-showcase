@@ -53,6 +53,8 @@ npm run lint     # 린트 검사
 > 📌 **Notion 태스크 보드**: [개발 Task 관리](https://app.notion.com/p/a6b24df210c142798f852c67eaafae73)
 > (상위 페이지: [Naver AI Agent Challenge](https://app.notion.com/p/395d15ed99be8029a792d34ec343ee9c))
 
+> 🐛 **GitHub 이슈**: [이슈 트래커](https://github.com/kimsunho2000/hub/issues) — 버그 리포트 및 작업 이슈 관리
+
 ## 프로젝트 문서
 
 | 문서 | 설명 |
