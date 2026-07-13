@@ -1,9 +1,25 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
+import { routePaths } from "../routes/routePaths";
 
 function MenteeSignupPage() {
+  const navigate = useNavigate();
+  const [isSignupComplete, setIsSignupComplete] = useState(false);
+
+  useEffect(() => {
+    if (!isSignupComplete) return undefined;
+
+    const redirectTimer = window.setTimeout(() => {
+      navigate(routePaths.menteeMentors, { replace: true });
+    }, 1800);
+
+    return () => window.clearTimeout(redirectTimer);
+  }, [isSignupComplete, navigate]);
+
   const handleSubmit = (event) => {
     event.preventDefault();
+    setIsSignupComplete(true);
   };
 
   return (
@@ -101,6 +117,23 @@ function MenteeSignupPage() {
           </div>
         </form>
       </main>
+
+      {isSignupComplete && (
+        <div className="signup-complete-overlay">
+          <section className="card signup-complete-card" role="status" aria-live="assertive">
+            <div className="signup-complete-visual" aria-hidden="true">
+              <svg viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="25" />
+                <path d="m20 32 8 8 17-18" />
+              </svg>
+            </div>
+            <p className="eyebrow">WELCOME, MENTEE</p>
+            <h2 className="card-title">멘티 가입이 완료되었습니다</h2>
+            <p className="muted-text">잠시 후 멘토 목록 화면으로 이동합니다.</p>
+            <span className="signup-complete-progress" aria-hidden="true" />
+          </section>
+        </div>
+      )}
     </div>
   );
 }
