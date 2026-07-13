@@ -16,6 +16,8 @@ Local companion이 Runtime Harness와 분리된 product namespace에서 Host ins
 
 Reconnect는 최신 snapshot과 pending interaction에 수렴하지만 disconnect 동안의 agent text delta나 completed activity를 durable replay한다고 약속하지 않는다. Server/test shutdown은 소유한 Host와 child를 정리하며 기존 `/api/runtime/*`와 Inspector lifecycle은 그대로 유지된다.
 
+Core atomic subscription의 등록·snapshot capture·bounded buffer와 `subscription_overflow` 의미는 ticket 003이 소유한다. 이 ticket은 그 public Host contract를 소비해 SSE framing, browser DTO, 별도 writer backpressure와 subscriber cleanup만 구현한다.
+
 ## Spec Traceability
 
 - User stories: 4, 6, 7
@@ -25,10 +27,10 @@ Reconnect는 최신 snapshot과 pending interaction에 수렴하지만 disconnec
 
 - Product route는 dedicated namespace를 사용하고 `/api/runtime/*`의 lifecycle owner, state와 diagnostic history를 공유하지 않는다.
 - Server composition은 injected Host 또는 ticket 001의 validated `packageRoot`, `appDataRoot`, `workspaceRoot` product configuration을 명시적으로 받는다. Harness의 `CodexRawClientOptions`, `CODEX_RUNTIME_CWD`, 독립 `CODEX_HOME`/`CODEX_SQLITE_HOME` override와 repository-local default를 product Host 구성에 재사용하지 않는다.
-- Host subscription은 subscriber 등록, current snapshot과 snapshot에 포함된 마지막 sequence cursor 취득을 하나의 atomic operation으로 제공한다.
+- Local companion은 ticket 003의 atomic Host subscription `{ snapshot, cursor, events, unsubscribe }`를 그대로 소비한다. Subscriber 등록과 snapshot capture semantics를 HTTP layer에서 복제하거나 별도 event cursor를 만들지 않는다.
 - SSE는 initial `{ snapshot, cursor }`를 먼저 flush한 뒤 buffered `sequence > cursor` event와 live event를 순서대로 보낸다.
-- Subscriber-local pending queue는 fixed event-count 또는 byte budget으로 bounded한다. Slow writer의 backpressure가 해소되지 않거나 overflow되면 해당 subscriber만 unsubscribe하고 SSE를 닫으며, event를 건너뛰고 cursor가 연속인 것처럼 보이지 않는다. Reconnect는 최신 atomic snapshot으로 수렴한다.
-- Basic HTTP/SSE integration은 actual Host + fake child를 통과한다. Snapshot flush 직전 event를 삽입하는 race는 timing에 의존하지 않도록 gated Host subscription 또는 같은 public contract의 deterministic test double로 제어한다.
+- Core `events`가 typed `subscription_overflow`로 종료되면 해당 Host subscriber를 unsubscribe하고 SSE를 닫는다. SSE writer로 넘기는 별도 pending queue도 fixed event-count 또는 byte budget으로 bounded한다. Slow writer의 backpressure가 해소되지 않거나 writer queue가 overflow되면 같은 방식으로 해당 Host subscriber만 unsubscribe하고 SSE를 닫으며, 어느 경로에서도 event를 건너뛰고 cursor가 연속인 것처럼 보이지 않는다. Reconnect는 새 atomic Host subscription의 최신 snapshot으로 수렴한다.
+- Basic HTTP/SSE integration은 actual Host + fake child를 통과한다. Snapshot flush 직전 event를 삽입하는 race는 timing에 의존하지 않도록 ticket 003 public subscription contract를 구현한 deterministic test double로 제어하며, core atomicity를 이 ticket에서 다시 구현하지 않는다.
 - Snapshot과 event는 product-safe DTO만 사용한다. Raw JSON-RPC, generated type, raw IDs, token, environment, roots, stderr와 debug history를 포함하지 않는다.
 - Opaque Host refs는 허용하지만 browser가 그 값에서 native identity나 filesystem 정보를 유추할 수 없어야 한다.
 - Product Host diagnostic은 allowlisted bounded metadata만 사용하며 Runtime Diagnostic History를 재사용하지 않는다.
@@ -43,8 +45,8 @@ Reconnect는 최신 snapshot과 pending interaction에 수렴하지만 disconnec
 - [ ] Actual loopback listener와 deterministic Host/fake child를 통과하는 product SSE integration test가 있다.
 - [ ] Server test가 injected Host 또는 validated three-root product configuration만으로 Host를 구성하고 Harness env/default를 product child cwd/home/binary resolution에 사용하지 않음을 증명한다.
 - [ ] Initial SSE event가 항상 `{ snapshot, cursor }`이고 어떤 live event보다 먼저 전달된다.
-- [ ] Gated Host subscription 또는 deterministic contract test double이 snapshot flush 직전 event를 주입하고 cursor 이후 event가 빠짐없이 sequence 순서로 전달됨을 timing 의존 없이 증명한다.
-- [ ] Injected small queue budget과 deterministic slow writer가 overflow 시 해당 SSE subscriber만 끊고 Host·다른 subscriber는 유지하며, reconnect가 최신 snapshot/cursor로 수렴함을 증명한다.
+- [ ] Ticket 003 subscription contract의 deterministic test double이 snapshot flush 직전 event를 주입하고 adapter가 cursor 이후 event를 빠짐없이 sequence 순서로 frame하는지 timing 의존 없이 증명한다.
+- [ ] Deterministic Host double의 core `subscription_overflow`와 injected small writer queue budget의 slow-writer overflow를 각각 검증한다. 두 경로 모두 해당 SSE subscriber만 끊고 Host·다른 subscriber는 유지하며 reconnect가 최신 snapshot/cursor로 수렴한다.
 - [ ] Reconnect가 최신 connection/thread/active-turn/pending-interaction snapshot으로 수렴한다.
 - [ ] Disconnect 동안 text delta와 completed activity를 durable replay하지 않는 계약이 test와 adapter 문서에 명확하다.
 - [ ] Recursive DTO audit가 raw protocol, raw IDs, secret, environment, roots, stderr와 debug/history field 부재를 검증한다.
@@ -66,7 +68,7 @@ Reconnect는 최신 snapshot과 pending interaction에 수렴하지만 disconnec
 
 ## Starting Points
 
-- Ticket 006까지 완성된 Host snapshot/event/subscription contract
+- Ticket 003에서 정의되고 Ticket 006까지 restart 연속성이 검증된 Host atomic snapshot/event/subscription contract
 - `apps/server/src/server.ts`의 current Express composition과 Runtime SSE route
 - `apps/server/src/server.test.ts`의 actual HTTP/SSE test pattern
 - `apps/server/src/testing/test-server.ts`

@@ -31,7 +31,7 @@ Command approval tracer를 먼저 end-to-end로 green으로 만든 뒤 같은 in
 - Unknown, stale, already-resolved, duplicate response와 invalid variant는 raw response를 쓰기 전에 stable typed error로 거부한다.
 - `serverRequest/resolved`가 먼저 오면 pending interaction을 resolved로 닫고 이후 caller answer를 보내지 않는다.
 - `serverRequest/resolved`가 먼저 오면 Ticket 002의 package-internal `dismiss()`로 exact active request handle을 닫는다. 이전 handle token이 이후 같은 raw ID로 온 새 request registry entry를 제거하지 않아야 한다.
-- Unsupported Server request는 자동 승인하거나 conversation text로 바꾸지 않고 protocol-level unsupported response와 sanitized Host warning/failure로 끝낸다.
+- Unsupported but well-formed Server request는 자동 승인하거나 conversation text로 바꾸지 않고 protocol-level unsupported error response를 한 번 쓴다. Error write가 성공하면 sanitized `host_warning`만 publish하고 Host는 `ready`를 유지한다. Malformed request·schema violation은 non-recoverable protocol failure, error write failure는 recoverable transport failure로 현재 generation을 종료한다.
 - Generation 종료와 restart fencing은 ticket 006이 소유한다. Browser UI와 approval policy는 범위 밖이다.
 
 ## Acceptance Criteria
@@ -43,6 +43,8 @@ Command approval tracer를 먼저 end-to-end로 green으로 만든 뒤 같은 in
 - [ ] 같은 item의 서로 다른 request/approval callbacks를 만들고 역순으로 답해도 각각의 typed response가 정확하다.
 - [ ] Opposite direction의 같은 ID, numeric/string ID, duplicate answer와 unknown interaction이 다른 pending state나 Client response를 변경하지 않는다.
 - [ ] `serverRequest/resolved` race가 pending state를 한 번만 terminal로 만들고 late caller answer를 App Server에 보내지 않는다.
+- [ ] Unsupported but well-formed Server request의 protocol-level error write가 성공하면 scoped sanitized warning을 남기고 같은 generation의 `ready`를 유지한다.
+- [ ] Unsupported request의 error write가 실패하면 recoverable transport failure로 generation을 종료하고, malformed known request나 generated schema violation은 non-recoverable `protocol_error`로 종료한다.
 - [ ] Response/error write 또는 native resolved에 따른 `dismiss()` 뒤 raw Server request ID를 active registry에서 해제해 순차 reuse를 허용하고, 동시에 active인 reuse는 fatal duplicate로 유지한다.
 - [ ] Subscriber가 끊겨도 Host pending state는 유지되고 새 Host subscriber snapshot에 다시 나타난다.
 - [ ] 실제 Host mapping이 생긴 네 Server request와 `serverRequest/resolved`만 sparse method decision에서 `client-host`로 승격한다.

@@ -6,6 +6,13 @@ import {
   type CodexStdioTransportOptions,
 } from '../stdio-transport.js'
 
+export const fakeInitializeResponseBase = {
+  userAgent: 'fake-codex',
+  codexHome: '/fake/codex/home',
+  platformFamily: 'unix',
+  platformOs: 'linux',
+} as const
+
 export type FakeCodexStdioScenario =
   | 'bidirectional'
   | 'typed_client_responses'
@@ -18,6 +25,7 @@ export type FakeCodexStdioScenario =
   | 'ambiguous_message'
   | 'duplicate_protocol_key'
   | 'invalid_server_request_params'
+  | 'invalid_client_response'
   | 'unsafe_numeric_id'
   | 'unsafe_numeric_id_underflow'
   | 'unsafe_numeric_id_precision_loss'
@@ -28,6 +36,7 @@ export type FakeCodexStdioScenario =
   | 'dismissed_server_request_reuse'
   | 'duplicate_active_server_requests'
   | 'client_request_identity_limit'
+  | 'observation_flood'
   | 'exit_after_request'
   | 'stdout_eof'
   | 'stdin_failure'
@@ -39,6 +48,8 @@ export type FakeCodexStdioTransportInput = {
   requestTimeoutMs?: number
   closeTimeoutMs?: number
   maxClientRequestIdentities?: number
+  maxQueuedObservations?: number
+  gateStartSettlement?: boolean
 }
 
 export type FakeCodexStdioJournalEntry =
@@ -54,6 +65,7 @@ export type FakeCodexStdioJournalEntry =
 export type FakeCodexStdioTransportFixture = {
   transport: CodexStdioTransport
   tempDir: string
+  releaseStartSettlement: () => void
   readJournal: (input?: {
     minimumEntries?: number
     timeoutMs?: number
@@ -68,6 +80,12 @@ export async function withFakeCodexStdioTransport(
   const scriptPath = join(tempDir, 'fake-codex-stdio.mjs')
   const journalPath = join(tempDir, 'journal.jsonl')
   await writeFile(scriptPath, createFakeCodexStdioSource(input))
+  let releaseStartSettlement = (): void => {}
+  const startSettlementBarrier = input.gateStartSettlement
+    ? new Promise<void>((resolvePromise) => {
+        releaseStartSettlement = resolvePromise
+      })
+    : undefined
 
   const transportOptions: CodexStdioTransportOptions = {
     command: process.execPath,
@@ -79,15 +97,25 @@ export async function withFakeCodexStdioTransport(
     requestTimeoutMs: input.requestTimeoutMs ?? 1000,
     closeTimeoutMs: input.closeTimeoutMs ?? 100,
     maxClientRequestIdentities: input.maxClientRequestIdentities,
+    maxQueuedObservations: input.maxQueuedObservations,
+    startSettlementBarrier,
   }
   const transport = new CodexStdioTransport(transportOptions)
   const readJournal = createJournalReader(journalPath)
 
   try {
-    await testBody({ transport, tempDir, readJournal })
+    await testBody({
+      transport,
+      tempDir,
+      releaseStartSettlement,
+      readJournal,
+    })
   } finally {
-    await transport.close()
-    await rm(tempDir, { recursive: true, force: true })
+    try {
+      await transport.close()
+    } finally {
+      await rm(tempDir, { recursive: true, force: true })
+    }
   }
 }
 
@@ -151,6 +179,7 @@ import readline from 'node:readline'
 
 const scenario = ${JSON.stringify(input.scenario)}
 const ignoreSigterm = ${JSON.stringify(input.ignoreSigterm ?? false)}
+const initializeResponseBase = ${JSON.stringify(fakeInitializeResponseBase)}
 const journalPath = process.argv[2]
 const reader = readline.createInterface({ input: process.stdin })
 
@@ -235,6 +264,18 @@ reader.on('line', (line) => {
     return
   }
 
+  if (scenario === 'invalid_client_response') {
+    write({ id: message.id, result: { userAgent: 'incomplete' } })
+    return
+  }
+
+  if (scenario === 'observation_flood') {
+    write({ method: 'warning', params: { message: 'first' } })
+    write({ method: 'warning', params: { message: 'second' } })
+    write({ id: message.id, result: initializeResponse() })
+    return
+  }
+
   if (scenario === 'unsafe_numeric_id') {
     process.stdout.write(
       '{"id":9007199254740993,"result":{"unsafe":true}}\n',
@@ -261,19 +302,23 @@ reader.on('line', (line) => {
 
   if (scenario === 'safe_numeric_id_representations') {
     if (message.id === 1) {
-      process.stdout.write('{"id":1.0,"result":{"identity":"decimal"}}\n')
+      process.stdout.write(
+        '{"id":1.0,"result":{"userAgent":"fake-codex","codexHome":"/fake/codex/home","platformFamily":"unix","platformOs":"linux","identity":"decimal"}}\n',
+      )
       return
     }
 
     if (message.id === 2) {
       process.stdout.write(
-        '{"id":2e0000000,"result":{"identity":"zero-padded-exponent"}}\n',
+        '{"id":2e0000000,"result":{"userAgent":"fake-codex","codexHome":"/fake/codex/home","platformFamily":"unix","platformOs":"linux","identity":"zero-padded-exponent"}}\n',
       )
       return
     }
 
     if (message.id === 1000) {
-      process.stdout.write('{"id":1e3,"result":{"identity":"exponent"}}\n')
+      process.stdout.write(
+        '{"id":1e3,"result":{"userAgent":"fake-codex","codexHome":"/fake/codex/home","platformFamily":"unix","platformOs":"linux","identity":"exponent"}}\n',
+      )
       return
     }
   }
@@ -296,7 +341,9 @@ reader.on('line', (line) => {
   ) {
     write({
       id: globalThis.pendingClientResponseId,
-      result: { userAgent: 'fake-numeric-server-codex' },
+      result: initializeResponse({
+        userAgent: 'fake-numeric-server-codex',
+      }),
     })
     return
   }
@@ -315,13 +362,19 @@ reader.on('line', (line) => {
       id: globalThis.timedOutClientRequestId,
       result: { arrived: 'late' },
     })
-    write({ id: message.id, result: { request: message.id } })
+    write({
+      id: message.id,
+      result: initializeResponse({ request: message.id }),
+    })
     return
   }
 
   if (scenario === 'client_request_identity_limit') {
     if (message.id === 1 || message.id === 3) {
-      write({ id: message.id, result: { request: message.id } })
+      write({
+        id: message.id,
+        result: initializeResponse({ request: message.id }),
+      })
     }
     return
   }
@@ -413,7 +466,7 @@ reader.on('line', (line) => {
   ) {
     write({
       id: globalThis.pendingClientResponseId,
-      result: { userAgent: 'fake-server-dismiss-codex' },
+      result: initializeResponse({ userAgent: 'fake-server-dismiss-codex' }),
     })
     return
   }
@@ -438,7 +491,7 @@ reader.on('line', (line) => {
 
     write({
       id: globalThis.pendingClientResponseId,
-      result: { userAgent: 'fake-server-reuse-codex' },
+      result: initializeResponse({ userAgent: 'fake-server-reuse-codex' }),
     })
     return
   }
@@ -450,14 +503,16 @@ reader.on('line', (line) => {
   ) {
     write({
       id: globalThis.pendingClientResponseId,
-      result: { userAgent: 'fake-response-validation-codex' },
+      result: initializeResponse({
+        userAgent: 'fake-response-validation-codex',
+      }),
     })
     return
   }
 
   if (scenario === 'duplicate_responses') {
     if (message.id === 1) {
-      write({ id: 1, result: { request: 1 } })
+      write({ id: 1, result: initializeResponse({ request: 1 }) })
       write({ id: 1, result: { duplicate: true } })
     }
     return
@@ -475,10 +530,13 @@ reader.on('line', (line) => {
     }
 
     if (typeof message.id === 'string') {
-      write({ id: message.id, result: { identity: 'string' } })
+      write({
+        id: message.id,
+        result: initializeResponse({ identity: 'string' }),
+      })
       write({
         id: globalThis.numericClientRequestId,
-        result: { identity: 'number' },
+        result: initializeResponse({ identity: 'number' }),
       })
     }
     return
@@ -510,7 +568,10 @@ reader.on('line', (line) => {
     typeof message.id === 'number' &&
     message.result
   ) {
-    write({ id: message.id, result: { userAgent: 'fake-bidirectional-codex' } })
+    write({
+      id: message.id,
+      result: initializeResponse({ userAgent: 'fake-bidirectional-codex' }),
+    })
   }
 })
 
@@ -533,6 +594,13 @@ function commandApprovalRequest({
       environmentId: null,
       command,
     },
+  }
+}
+
+function initializeResponse(extra = {}) {
+  return {
+    ...initializeResponseBase,
+    ...extra,
   }
 }
 

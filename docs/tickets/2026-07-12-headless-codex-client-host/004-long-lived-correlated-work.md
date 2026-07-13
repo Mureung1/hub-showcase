@@ -30,7 +30,10 @@
 - `item/completed`는 item terminal이고 `turn/completed`만 turn terminal이다. `error` notification이나 transport 상태로 turn terminal을 합성하지 않는다.
 - Snapshot은 known thread의 ephemeral status와 active turn만 유지한다. Text delta, completed transcript와 activity log를 누적·영속화하지 않는다.
 - `thread/start`와 `turn/start`는 non-idempotent이며 timeout 또는 connection loss 뒤 자동 retry하지 않는다.
+- `thread/start` 또는 `turn/start`가 timeout되면 native mutation의 outcome을 unknown으로 간주하고 현재 generation을 recoverable `failed`로 fence한 뒤 transport를 닫는다. 같은 generation에서 후속 mutation을 허용하지 않고 timeout된 mutation이나 reservation을 replay하지 않는다.
 - 같은 thread의 `startTurn`은 raw dispatch 전에 execution-slot reservation을 획득한다. Concurrent caller를 같은 turn Promise로 coalesce하지 않는다.
+- Timed-out `turn/start`의 execution-slot reservation은 `ready`로 돌아가서 다음 mutation을 허용하는 신호로 해제하지 않는다. Generation failure cleanup이 해당 thread에 `{ status: 'unknown', reason: 'start_outcome_unknown' }` reconciliation marker를 남기고 slot을 종료한다. Response 전에는 validated native turn identity가 없으므로 이 marker에 `turnRef`를 발급하지 않으며, late response와 `turn/started`를 포함한 old-generation observation도 ref나 state를 만들지 않는다.
+- `thread/start`와 `turn/start` success result는 Ticket 002의 package-internal Client response roster를 확장해 generated schema로 resolve 전 validation한다. Malformed result는 thread/turn ref를 발급하지 않고 non-recoverable `protocol_error`로 connection을 닫는다.
 - Restart, pending interaction, transcript restoration, interrupt와 thread list/read/resume은 이번 slice에 포함하지 않는다.
 
 ## Acceptance Criteria
@@ -40,6 +43,10 @@
 - [ ] 같은 thread에 active turn이 있으면 새 turn을 raw request 전에 거부하고, idle 상태의 동시 `startTurn` 두 호출도 정확히 하나만 raw `turn/start`를 보내며 나머지는 `operation_conflict`가 된다.
 - [ ] A1/B1의 text, activity와 terminal event를 의도적으로 interleave해도 모든 event와 snapshot state가 정확한 refs에만 연결된다.
 - [ ] Start response와 matching started notification의 중복이 thread나 turn을 두 번 만들지 않는다.
+- [ ] Malformed `thread/start` 또는 `turn/start` success result를 generated schema로 거부하고 opaque ref를 발급하지 않으며 non-recoverable `protocol_error`로 connection을 닫는다.
+- [ ] Fake App Server가 `turn/start`를 적용하고 response만 timeout 뒤 보내는 경우 Host가 현재 generation을 recoverable `failed`로 fence하고, 직후 같은 thread의 두 번째 mutation이 wire에 기록되지 않으며 자동 replay가 없다.
+- [ ] Mutation timeout이 해당 thread에 `turnRef` 없는 `{ status: 'unknown', reason: 'start_outcome_unknown' }` marker를 남기고, 이후 late response와 late `turn/started` notification을 전송해도 opaque ref·snapshot·event가 추가로 바뀌지 않으며 explicit restart 전에 새 mutation을 받지 않는다.
+- [ ] `thread/start` timeout으로 public `threadRef`가 없는 경우에도 phantom thread를 만들거나 mutation을 재실행하지 않고 generation을 종료한다.
 - [ ] Agent delta는 matching active turn에만 publish되고 terminal 뒤 late delta/item event가 A2나 다른 thread로 이동하지 않는다.
 - [ ] Activity event는 allowlisted category와 state만 공개하며 raw item shape와 payload를 노출하지 않는다.
 - [ ] Duplicate terminal, missing identity와 orphan event가 다른 scope를 변경하지 않으며 unsafe anomaly는 non-recoverable `protocol_error`로 connection을 닫는다.

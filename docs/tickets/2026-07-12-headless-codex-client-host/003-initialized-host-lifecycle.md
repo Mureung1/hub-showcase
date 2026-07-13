@@ -12,9 +12,9 @@
 
 ## What It Delivers
 
-Validated product layout에 bound된 one-workspace Headless Codex Client Host가 App Server child 하나를 시작하고 `initialize` response와 `initialized` notification을 완료한 뒤에만 `ready` snapshot을 공개한다. Caller는 raw process나 protocol을 보지 않고 `start`, `stop`, current snapshot과 normalized lifecycle subscription을 사용할 수 있다.
+Immutable raw product layout input을 받은 one-workspace Headless Codex Client Host가 첫 `start()`에서 preflight를 수행·cache하고 App Server child 하나를 시작한다. `initialize` response와 `initialized` notification을 완료한 뒤에만 `ready` snapshot을 공개한다. Caller는 raw process나 protocol을 보지 않고 `start`, `stop`, current snapshot과 atomic normalized lifecycle subscription을 사용할 수 있다.
 
-동시 start는 하나의 handshake로 수렴하고 반복 stop은 안전하다. Preflight, spawn과 initialize failure는 sanitized failure와 계약에 맞는 `recoverable` 값으로 표현되며, stop deadline 뒤에도 orphan child를 남기지 않는다.
+동시 start는 하나의 handshake로 수렴하고 반복 stop은 안전하다. Preflight, spawn과 initialize failure는 sanitized failure와 계약에 맞는 `recoverable` 값으로 표현된다. Stop은 child exit를 확인한 경우에만 `stopped`를 공개하며, force-kill 뒤에도 종료를 확인하지 못하면 non-recoverable cleanup failure로 fail closed해 orphan 가능성을 성공으로 숨기지 않는다.
 
 ## Spec Traceability
 
@@ -24,12 +24,18 @@ Validated product layout에 bound된 one-workspace Headless Codex Client Host가
 ## Slice-Specific Constraints
 
 - Host는 `AgentRuntimeKernel`과 별도 deep module이며 Runtime Diagnostic History를 사용하지 않는다.
+- Host constructor는 immutable `ProductRuntimeLayoutInput`을 받고, 첫 `start()`가 `prepareProductRuntimeLayout()`을 수행한다. 성공한 validated layout만 Host 수명 동안 cache하며 후속 explicit restart는 이 cache를 재사용한다. Preflight failure는 `starting → failed` lifecycle로 publish하고, non-recoverable layout failure인 같은 Host에서 restart하지 않는다.
 - Host instance는 validated `packageRoot`, `appDataRoot`, `workspaceRoot` 한 조합과 child process 하나를 소유한다.
 - Child `cwd`는 exact `workspaceRoot`이고 runtime-home environment는 ticket 001의 pair만 사용한다.
 - Lifecycle snapshot은 최소 `status`, monotonic `generation`, sanitized failure와 `recoverable`을 제공한다.
 - `ready`는 matching `initialize` response 뒤 `initialized`를 전송한 다음에만 공개한다.
 - Successful child spawn마다 generation을 한 번 발급한다. Explicit restart와 thread·turn은 후속 ticket 범위다.
 - Generation은 Ticket 002 transport의 coalesced `start()` Promise가 actual child `spawn` event에서 resolve한 직후 발급한다. Request dispatch 시점이나 initialize response 시점으로 추측하지 않는다.
+- 각 start operation은 lifecycle epoch/token을 갖는다. `await transport.start()`와 각 handshake await 뒤 token이 아직 current인지 확인하고, `stop()`이 먼저 시작해 stale이 된 operation은 generation을 발급하거나 `initialize`를 보내거나 `ready`를 publish하지 않는다.
+- Host는 Ticket 002 transport의 single-consumer observation stream을 request 전에 한 번 claim하고 pump의 첫 `next()`가 대기 중임을 보장한 다음 `initialize`를 dispatch한다. Pump의 terminal observation은 현재 lifecycle token을 통해 Host failure로 연결하고 pump `finally`가 transport `close()`를 완료한다.
+- Ticket 002의 `observation_queue_limit`은 자유 형식 message가 아니라 stable code로 분류해 non-recoverable `protocol_error` Host failure로 mapping한다. 같은 Host에서 restart loop를 만들지 않는다.
+- `initialize` success result는 Ticket 002의 package-internal generated response schema validation을 통과해야 한다. Malformed result는 `ready`를 publish하지 않고 non-recoverable `protocol_error`로 현재 connection을 닫는다.
+- Public subscription은 subscriber 등록과 `{ snapshot, cursor }` capture를 원자적으로 수행하고, `cursor`는 snapshot에 반영된 마지막 sequence를 뜻한다. 같이 반환한 `events` AsyncIterable과 `unsubscribe()`를 제공하며 capture 중 발생한 `sequence > cursor` event는 subscriber-local buffer에 들어간다. 각 buffer는 fixed event-count cap으로 bounded한다. Pull이 멈춰 cap을 넘으면 해당 `events`만 stable typed `subscription_overflow`로 종료하고 buffer를 해제하며 Host lifecycle, child와 다른 subscriber는 유지한다. Connection loss로 subscription을 닫지 않고 explicit unsubscribe, Host stop 또는 자신의 overflow에서 종료한다. SSE framing과 별도 HTTP writer backpressure는 ticket 008이 소유한다.
 - Product Host는 raw stdio, child stderr, environment, root path와 Runtime Diagnostic History evidence를 공개하거나 축적하지 않는다.
 - Host와 generated-schema-backed transport는 같은 Node-side Codex integration boundary 안에 둔다. 별도 package를 선택하더라도 generated/raw type을 public export해 두 module 사이의 seam으로 만들지 않는다.
 - 기존 Runtime Harness의 `CodexRawClient`, `CodexRuntimeAdapter`와 Inspector contract를 Host contract로 바꾸지 않는다.
@@ -37,13 +43,19 @@ Validated product layout에 bound된 one-workspace Headless Codex Client Host가
 ## Acceptance Criteria
 
 - [ ] Public Host Interface로 `stopped → starting → ready`와 `ready → stopping → stopped` 전이를 관측할 수 있다.
+- [ ] `starting` 중 `stop()`이 시작하면 `starting → stopping → stopped`로 수렴하고 stale start completion이 generation, `initialize` 또는 `ready`를 추가하지 않는다.
 - [ ] Concurrent `start` 호출은 child spawn, `initialize` request와 `initialized` notification을 각각 한 번만 수행한다.
 - [ ] 이미 `ready`인 `start`와 반복 `stop`은 idempotent다.
 - [ ] Invalid layout은 child spawn 전에 non-recoverable `failed` snapshot으로 수렴한다.
 - [ ] Preflight 뒤 transient spawn failure와 initialize timeout/error는 recoverable `failed`로 수렴하고 child·pending operation을 정리한다.
 - [ ] Async spawn error는 generation을 소비하지 않고, successful spawn 뒤 initialize timeout/error는 generation을 정확히 한 번 소비한다.
-- [ ] Stop 중 신규 operation을 받지 않으며 graceful deadline이 끝나면 강제 종료해 orphan process를 남기지 않는다.
+- [ ] Host가 immutable raw layout input을 보존하고 first-start preflight 성공만 Host-lifetime cache로 보존하며, 후속 explicit restart가 validated cache를 재사용할 seam을 남기고 non-recoverable preflight failure는 같은 Host에서 child를 시작하지 않는다.
+- [ ] Observation pump의 첫 `next()`가 `initialize` request 전에 single consumer로 대기하고 terminal에서 transport cleanup을 완료하며, malformed `initialize` success result는 `ready`를 공개하지 않은 채 non-recoverable `protocol_error`로 connection을 닫는다.
+- [ ] Injected tiny observation queue의 overflow가 bounded terminal `observation_queue_limit`을 만들고 Host는 이를 non-recoverable `protocol_error`로 한 번 publish한 뒤 child를 정리한다.
+- [ ] Stop 중 신규 operation을 받지 않으며 graceful deadline이 끝나면 강제 종료한다. Exit를 확인한 경우에만 `stopped`를 공개하고 `close_timeout`이면 non-recoverable cleanup failure로 fail closed해 orphan 가능성을 성공으로 숨기지 않는다.
 - [ ] Lifecycle event는 generation, monotonic sequence, timestamp와 allowlisted state만 포함한다.
+- [ ] Subscription 등록과 `{ snapshot, cursor }` capture가 원자적이고 capture 중 event가 유실되지 않으며, connection failure 후에도 같은 subscriber가 lifecycle event를 계속 받는다.
+- [ ] Injected small core subscriber cap에서 pull을 멈춘 subscriber의 `events`만 stable `subscription_overflow`로 종료되고 buffer가 해제되며, Host·child·다른 subscriber는 ordered event를 계속 받는다. 새 subscription은 최신 atomic `{ snapshot, cursor }`로 수렴한다.
 - [ ] Host public snapshot/event를 재귀 검사했을 때 raw JSON-RPC, raw ID, token, environment, roots, stderr와 debug payload가 없다.
 - [ ] `initialize`와 `initialized`만 실제 Host path에 연결된 단계로 method decision과 generated inventory를 갱신한다.
 
