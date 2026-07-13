@@ -1,0 +1,38 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "prototype",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "hub/prototype", "-l", "4173"],
+      "port": 4173
+    },
+    {
+      "name": "prototype2",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "hub/prototype2"],
+      "port": 4174,
+      "autoPort": true
+    },
+    {
+      "name": "root",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", ".", "-l", "4175"],
+      "port": 4175
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "frontend",
+      "port": 5173
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "backend",
+      "port": 3000
+    }
+  ]
+}
