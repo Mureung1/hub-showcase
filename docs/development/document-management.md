@@ -18,6 +18,7 @@
 | 데이터의 출처와 의미는 무엇인가? | `docs/data/data-source-mapping.md` | source, field, canonical mapping |
 | 작업 품질을 무엇으로 확인하는가? | `docs/development/checklist.md` | Definition of Done 보조 체크 |
 | 실제 작업 범위와 결과는 무엇인가? | `.harness/tasks`, `.harness/runs` | 실행 단위와 검증 기록 |
+| 현재 보안 문제와 조치 상태는 무엇인가? | `docs/issues/security-hardening-review.md` | 보안 이슈 재현·조치·검증 체크리스트 |
 
 ## 2. 중복 문서 처리 결과
 
@@ -62,6 +63,7 @@
 | `docs/evaluation/evaluation-log.md` | log | 평가 기록 |
 | `docs/evaluation/failure-log.md` | log | 실패와 재발 방지 기록 |
 | `docs/evaluation/meta-evaluation.md` | current | 평가 방식 자체 검증 |
+| `docs/issues/security-hardening-review.md` | active | 현재 보안 이슈, 안전한 재현과 조치 추적 |
 | `docs/prototypes/*.html` | artifact | 정적 시연/비교 산출물 |
 
 ## 4. 갱신 규칙

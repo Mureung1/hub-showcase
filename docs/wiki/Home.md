@@ -58,6 +58,8 @@ docs/
     meta-evaluation.md
   module-notes/
     localtwin-v0.1-scope.md
+  operations/
+    gpu-scene-validation.md  # GPU 학습, PLY 회수와 local viewer 검증
 ```
 
 ### 프로젝트 구조
@@ -82,6 +84,7 @@ LocalTwin/
     data/
     evaluation/
     module-notes/
+    operations/
   scripts/
     check.ps1
     check_docs_index.py
@@ -125,6 +128,10 @@ LocalTwin/
 - [LocalTwin Dev Harness](../development/harness.md)
 - [검증 가이드](../development/validation.md)
 - [1주차 목요일 진행 보고서](../development/week1-thursday-progress-report.md)
+
+## Active Issues
+
+- [보안 점검 및 조치 체크리스트](../issues/security-hardening-review.md)
 
 ## Design System
 
