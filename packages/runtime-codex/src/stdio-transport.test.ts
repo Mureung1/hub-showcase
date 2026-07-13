@@ -74,9 +74,12 @@ test('CodexStdioTransport round-trips all four protocol directions with exact re
           message: 'fixture warning',
         },
       })
-      assert.deepEqual(await initialize, {
-        userAgent: 'fake-bidirectional-codex',
-      })
+      assert.deepEqual(
+        await initialize,
+        expectedInitializeResponse({
+          userAgent: 'fake-bidirectional-codex',
+        }),
+      )
 
       await transport.sendNotification({ method: 'initialized' })
 
@@ -120,8 +123,14 @@ test('CodexStdioTransport keeps numeric and string Client request IDs distinct',
       const numeric = transport.sendRequest(createInitializeRequest(1))
       const string = transport.sendRequest(createInitializeRequest('1'))
 
-      assert.deepEqual(await string, { identity: 'string' })
-      assert.deepEqual(await numeric, { identity: 'number' })
+      assert.deepEqual(
+        await string,
+        expectedInitializeResponse({ identity: 'string' }),
+      )
+      assert.deepEqual(
+        await numeric,
+        expectedInitializeResponse({ identity: 'number' }),
+      )
     },
   )
 })
@@ -142,7 +151,7 @@ test('CodexStdioTransport accepts exact safe integer values across JSON number r
             await transport.sendRequest(
               createInitializeRequest(fixtureCase.id),
             ),
-            fixtureCase.expected,
+            expectedInitializeResponse(fixtureCase.expected),
           )
         },
       )
@@ -170,9 +179,12 @@ test('CodexStdioTransport preserves an exponent-form Server request identity thr
 
       assert.equal(observation.request.id, 1000)
       await observation.request.respond({ decision: 'accept' })
-      assert.deepEqual(await initialize, {
-        userAgent: 'fake-numeric-server-codex',
-      })
+      assert.deepEqual(
+        await initialize,
+        expectedInitializeResponse({
+          userAgent: 'fake-numeric-server-codex',
+        }),
+      )
     },
   )
 })
@@ -190,7 +202,10 @@ test('CodexStdioTransport rejects duplicate and unknown responses without resolv
         )
         const firstRequest = transport.sendRequest(createInitializeRequest(1))
 
-        assert.deepEqual(await firstRequest, { request: 1 })
+        assert.deepEqual(
+          await firstRequest,
+          expectedInitializeResponse({ request: 1 }),
+        )
         assert.deepEqual(await nextObservation(observations), {
           kind: 'protocol_error',
           code: 'duplicate_response',
@@ -466,6 +481,65 @@ test('CodexStdioTransport exposes one coalesced successful-spawn promise before 
   )
 })
 
+test('CodexStdioTransport rejects coalesced start when close wins the spawn race', async () => {
+  await withFakeCodexStdioTransport(
+    { scenario: 'hang' },
+    async ({ transport, readJournal }) => {
+      const observations = transport.observations()[Symbol.asyncIterator]()
+      const firstStart = transport.start()
+      const secondStart = transport.start()
+      const firstRejection = assert.rejects(
+        firstStart,
+        isTransportFailure('transport_closed'),
+      )
+      const secondRejection = assert.rejects(
+        secondStart,
+        isTransportFailure('transport_closed'),
+      )
+      const firstClose = transport.close()
+      const secondClose = transport.close()
+
+      assert.strictEqual(firstStart, secondStart)
+      assert.strictEqual(firstClose, secondClose)
+      await Promise.all([
+        firstRejection,
+        secondRejection,
+        firstClose,
+        secondClose,
+      ])
+      assert.deepEqual(await observations.next(), {
+        done: true,
+        value: undefined,
+      })
+      await assert.rejects(
+        transport.start(),
+        isTransportFailure('transport_closed'),
+      )
+
+      const journal = await readJournal({ minimumEntries: 0 })
+      const spawnEntry = journal.find((entry) => entry.kind === 'spawn')
+
+      if (spawnEntry?.kind === 'spawn') {
+        assertProcessMissing(spawnEntry.pid)
+      }
+    },
+  )
+})
+
+test('CodexStdioTransport rejects start after close without spawning a child', async () => {
+  await withFakeCodexStdioTransport(
+    { scenario: 'hang' },
+    async ({ transport, readJournal }) => {
+      await transport.close()
+      await assert.rejects(
+        transport.start(),
+        isTransportFailure('transport_closed'),
+      )
+      assert.deepEqual(await readJournal({ minimumEntries: 0 }), [])
+    },
+  )
+})
+
 test('CodexStdioTransport coalesces concurrent close through child cleanup', async () => {
   await withFakeCodexStdioTransport(
     {
@@ -485,6 +559,57 @@ test('CodexStdioTransport coalesces concurrent close through child cleanup', asy
       assert.strictEqual(firstClose, secondClose)
       await Promise.all([firstClose, secondClose])
       assertProcessMissing(spawnEntry.pid)
+      await assert.rejects(
+        transport.start(),
+        isTransportFailure('transport_closed'),
+      )
+    },
+  )
+})
+
+test('CodexStdioTransport allows only one observation consumer', async () => {
+  await withFakeCodexStdioTransport(
+    { scenario: 'hang' },
+    async ({ transport }) => {
+      const observations = transport.observations()[Symbol.asyncIterator]()
+
+      assert.throws(
+        () => transport.observations(),
+        isTransportFailure('observation_consumer_conflict'),
+      )
+      await transport.close()
+      assert.deepEqual(await observations.next(), {
+        done: true,
+        value: undefined,
+      })
+    },
+  )
+})
+
+test('CodexStdioTransport fails closed when the observation queue reaches its bound', async () => {
+  await withFakeCodexStdioTransport(
+    {
+      scenario: 'observation_flood',
+      maxQueuedObservations: 1,
+    },
+    async ({ transport }) => {
+      const pending = transport.sendRequest(createInitializeRequest(1))
+
+      await assert.rejects(
+        pending,
+        isTransportFailure('observation_queue_limit'),
+      )
+      const observations = transport.observations()[Symbol.asyncIterator]()
+      assert.deepEqual(await nextObservation(observations), {
+        kind: 'transport_lost',
+        code: 'observation_queue_limit',
+        message:
+          'Codex stdio transport observation queue reached its limit',
+      })
+      assert.deepEqual(await observations.next(), {
+        done: true,
+        value: undefined,
+      })
     },
   )
 })
@@ -535,7 +660,7 @@ test('CodexStdioTransport discards a known late response without terminating ano
 
       assert.deepEqual(
         await transport.sendRequest(createInitializeRequest(2)),
-        { request: 2 },
+        expectedInitializeResponse({ request: 2 }),
       )
       await transport.sendNotification({ method: 'initialized' })
     },
@@ -554,7 +679,7 @@ test('CodexStdioTransport bounds settled Client identities without evicting rout
 
       assert.deepEqual(
         await transport.sendRequest(createInitializeRequest(1)),
-        { request: 1 },
+        expectedInitializeResponse({ request: 1 }),
       )
       await assert.rejects(
         transport.sendRequest(createInitializeRequest(2)),
@@ -580,6 +705,28 @@ test('CodexStdioTransport bounds settled Client identities without evicting rout
           .map((entry) => entry.message),
         [createInitializeRequest(1), createInitializeRequest(2)],
       )
+    },
+  )
+})
+
+test('CodexStdioTransport validates known Client success responses before resolving', async () => {
+  await withFakeCodexStdioTransport(
+    { scenario: 'invalid_client_response' },
+    async ({ transport }) => {
+      const observations = transport.observations()[Symbol.asyncIterator]()
+      const initialize = transport.sendRequest(createInitializeRequest(1))
+      const rejection = assert.rejects(
+        initialize,
+        isProtocolFailure('invalid_message'),
+      )
+
+      assert.deepEqual(await nextObservation(observations), {
+        kind: 'protocol_error',
+        code: 'invalid_message',
+        message:
+          'Codex app-server emitted a Client response that does not match the generated schema',
+      })
+      await rejection
     },
   )
 })
@@ -614,9 +761,12 @@ test('CodexStdioTransport validates Server success responses before writing to t
       )
 
       await observation.request.respond({ decision: 'accept' })
-      assert.deepEqual(await initialize, {
-        userAgent: 'fake-response-validation-codex',
-      })
+      assert.deepEqual(
+        await initialize,
+        expectedInitializeResponse({
+          userAgent: 'fake-response-validation-codex',
+        }),
+      )
       assert.deepEqual(
         (await readJournal({ minimumEntries: 3 }))
           .filter((entry) => entry.kind === 'client_message')
@@ -667,9 +817,12 @@ test('CodexStdioTransport releases a Server request identity after its response'
 
       assert.equal(second.request.id, first.request.id)
       await second.request.respond({ decision: 'accept' })
-      assert.deepEqual(await initialize, {
-        userAgent: 'fake-server-reuse-codex',
-      })
+      assert.deepEqual(
+        await initialize,
+        expectedInitializeResponse({
+          userAgent: 'fake-server-reuse-codex',
+        }),
+      )
     },
   )
 })
@@ -710,9 +863,12 @@ test('CodexStdioTransport dismisses a Server request without writing and safely 
       }
 
       await second.request.respond({ decision: 'decline' })
-      assert.deepEqual(await initialize, {
-        userAgent: 'fake-server-dismiss-codex',
-      })
+      assert.deepEqual(
+        await initialize,
+        expectedInitializeResponse({
+          userAgent: 'fake-server-dismiss-codex',
+        }),
+      )
 
       assert.deepEqual(
         (await readJournal({ minimumEntries: 3 }))
@@ -793,6 +949,16 @@ function createInitializeRequest(id: string | number) {
       },
       capabilities: null,
     },
+  }
+}
+
+function expectedInitializeResponse(extra: Record<string, unknown> = {}) {
+  return {
+    userAgent: 'fake-codex',
+    codexHome: '/fake/codex/home',
+    platformFamily: 'unix',
+    platformOs: 'linux',
+    ...extra,
   }
 }
 

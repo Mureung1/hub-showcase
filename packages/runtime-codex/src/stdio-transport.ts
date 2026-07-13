@@ -1,6 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import readline from 'node:readline'
 import { Ajv, type ValidateFunction } from 'ajv'
+import clientRequestResponseSchemas from './internal/codex-app-server-protocol/generated/ClientRequestResponses.schema.json' with { type: 'json' }
 import serverRequestSchema from './internal/codex-app-server-protocol/generated/ServerRequest.schema.json' with { type: 'json' }
 import serverRequestResponseSchemas from './internal/codex-app-server-protocol/generated/ServerRequestResponses.schema.json' with { type: 'json' }
 import type {
@@ -19,6 +20,7 @@ export type CodexStdioTransportOptions = {
   requestTimeoutMs?: number
   closeTimeoutMs?: number
   maxClientRequestIdentities?: number
+  maxQueuedObservations?: number
 }
 
 export type CodexProtocolErrorResponse = {
@@ -42,6 +44,8 @@ export type CodexStdioTransportFailureCode =
   | 'stdout_error'
   | 'stdin_error'
   | 'request_identity_limit'
+  | 'observation_queue_limit'
+  | 'observation_consumer_conflict'
   | 'transport_closed'
 
 export class CodexStdioProtocolError extends Error {
@@ -100,6 +104,13 @@ const serverRequestContracts = Object.fromEntries(
   ]),
 ) as Record<ServerRequestMethod, ServerRequestContract>
 
+const clientRequestResponseValidators = Object.fromEntries(
+  Object.entries(clientRequestResponseSchemas).map(([method, schema]) => [
+    method,
+    generatedProtocolValidator.compile(schema),
+  ]),
+) as Record<string, ValidateFunction | undefined>
+
 export type CodexStdioServerRequestFor<Method extends ServerRequestMethod> = {
   id: RequestId
   method: Method
@@ -144,7 +155,10 @@ export type CodexStdioObservation =
     }
   | {
       kind: 'transport_lost'
-      code: Exclude<CodexStdioTransportFailureCode, 'transport_closed'>
+      code: Exclude<
+        CodexStdioTransportFailureCode,
+        'observation_consumer_conflict' | 'transport_closed'
+      >
       message: string
       exitCode?: number | null
       signal?: NodeJS.Signals | null
@@ -170,6 +184,7 @@ type ParsedMessage = Record<string, unknown>
 const defaultRequestTimeoutMs = 15000
 const defaultCloseTimeoutMs = 1000
 const defaultMaxClientRequestIdentities = 65536
+const defaultMaxQueuedObservations = 1024
 
 export class CodexStdioTransport {
   private readonly options: Required<
@@ -179,6 +194,7 @@ export class CodexStdioTransport {
       | 'requestTimeoutMs'
       | 'closeTimeoutMs'
       | 'maxClientRequestIdentities'
+      | 'maxQueuedObservations'
     >
   > &
     Omit<
@@ -187,6 +203,7 @@ export class CodexStdioTransport {
       | 'requestTimeoutMs'
       | 'closeTimeoutMs'
       | 'maxClientRequestIdentities'
+      | 'maxQueuedObservations'
     >
   private readonly clientRequests = new Map<string, ClientRequestLifecycle>()
   private readonly activeServerRequests = new Map<string, symbol>()
@@ -196,13 +213,17 @@ export class CodexStdioTransport {
   private stdoutReader: readline.Interface | undefined
   private startPromise: Promise<void> | undefined
   private closePromise: Promise<void> | undefined
+  private pendingStartReject: ((error: Error) => void) | undefined
   private observationStreamClosed = false
+  private observationConsumerClaimed = false
   private connectionFailure: Error | undefined
   private closing = false
 
   constructor(options: CodexStdioTransportOptions) {
     const maxClientRequestIdentities =
       options.maxClientRequestIdentities ?? defaultMaxClientRequestIdentities
+    const maxQueuedObservations =
+      options.maxQueuedObservations ?? defaultMaxQueuedObservations
 
     if (
       !Number.isSafeInteger(maxClientRequestIdentities) ||
@@ -213,12 +234,22 @@ export class CodexStdioTransport {
       )
     }
 
+    if (
+      !Number.isSafeInteger(maxQueuedObservations) ||
+      maxQueuedObservations <= 0
+    ) {
+      throw new RangeError(
+        'maxQueuedObservations must be a positive safe integer',
+      )
+    }
+
     this.options = {
       ...options,
       args: options.args ?? [],
       requestTimeoutMs: options.requestTimeoutMs ?? defaultRequestTimeoutMs,
       closeTimeoutMs: options.closeTimeoutMs ?? defaultCloseTimeoutMs,
       maxClientRequestIdentities,
+      maxQueuedObservations,
     }
   }
 
@@ -292,16 +323,16 @@ export class CodexStdioTransport {
   }
 
   start(): Promise<void> {
-    if (this.startPromise) {
-      return this.startPromise
-    }
-
     if (this.closing || this.connectionFailure) {
       try {
         this.assertWritable()
       } catch (error) {
         return Promise.reject(error)
       }
+    }
+
+    if (this.startPromise) {
+      return this.startPromise
     }
 
     try {
@@ -313,7 +344,20 @@ export class CodexStdioTransport {
     return this.startPromise
   }
 
-  async *observations(): AsyncIterable<CodexStdioObservation> {
+  observations(): AsyncIterable<CodexStdioObservation> {
+    if (this.observationConsumerClaimed) {
+      throw new CodexStdioTransportError(
+        'observation_consumer_conflict',
+        'Codex stdio transport supports one observation consumer',
+      )
+    }
+
+    this.observationConsumerClaimed = true
+
+    return this.iterateObservations()
+  }
+
+  private async *iterateObservations(): AsyncIterable<CodexStdioObservation> {
     while (true) {
       const observation = await this.nextObservation()
 
@@ -335,6 +379,12 @@ export class CodexStdioTransport {
 
   private async closeConnection(): Promise<void> {
     this.closing = true
+    this.rejectPendingStart(
+      new CodexStdioTransportError(
+        'transport_closed',
+        'Codex stdio transport was closed before startup completed',
+      ),
+    )
     const child = this.child
     this.child = undefined
     this.stdoutReader?.close()
@@ -390,13 +440,46 @@ export class CodexStdioTransport {
     this.stdoutReader.on('line', (line) => this.handleStdoutLine(line))
 
     const started = new Promise<void>((resolvePromise, reject) => {
-      child.once('spawn', resolvePromise)
+      let settled = false
+
+      const resolveStart = (): void => {
+        if (settled) {
+          return
+        }
+
+        if (this.closing || this.child !== child) {
+          rejectStart(
+            new CodexStdioTransportError(
+              'transport_closed',
+              'Codex stdio transport was closed before startup completed',
+            ),
+          )
+          return
+        }
+
+        settled = true
+        this.pendingStartReject = undefined
+        resolvePromise()
+      }
+
+      const rejectStart = (error: Error): void => {
+        if (settled) {
+          return
+        }
+
+        settled = true
+        this.pendingStartReject = undefined
+        reject(error)
+      }
+
+      this.pendingStartReject = rejectStart
+      child.once('spawn', resolveStart)
       child.once('error', () => {
         const error = this.reportTransportLoss(
           'spawn_error',
           'Codex app-server process emitted an error',
         )
-        reject(error)
+        rejectStart(error)
       })
     })
     child.once('exit', (exitCode, signal) => {
@@ -614,6 +697,17 @@ export class CodexStdioTransport {
       return
     }
 
+    const validateResponse =
+      clientRequestResponseValidators[lifecycle.method]
+
+    if (!hasError && validateResponse && !validateResponse(message.result)) {
+      this.failProtocol(
+        'invalid_message',
+        'Codex app-server emitted a Client response that does not match the generated schema',
+      )
+      return
+    }
+
     clearTimeout(lifecycle.timeout)
     this.clientRequests.set(key, { state: 'completed' })
 
@@ -756,7 +850,10 @@ export class CodexStdioTransport {
   }
 
   private reportTransportLoss(
-    code: Exclude<CodexStdioTransportFailureCode, 'transport_closed'>,
+    code: Exclude<
+      CodexStdioTransportFailureCode,
+      'observation_consumer_conflict' | 'transport_closed'
+    >,
     message: string,
     details: Pick<
       Extract<CodexStdioObservation, { kind: 'transport_lost' }>,
@@ -831,7 +928,28 @@ export class CodexStdioTransport {
       return
     }
 
+    if (
+      !this.connectionFailure &&
+      this.observationQueue.length >= this.options.maxQueuedObservations
+    ) {
+      this.observationQueue.length = 0
+      const error = new CodexStdioTransportError(
+        'observation_queue_limit',
+        'Codex stdio transport observation queue reached its limit',
+      )
+      this.failConnection(error, {
+        kind: 'transport_lost',
+        code: 'observation_queue_limit',
+        message: error.message,
+      })
+      return
+    }
+
     this.observationQueue.push(observation)
+  }
+
+  private rejectPendingStart(error: Error): void {
+    this.pendingStartReject?.(error)
   }
 
   private closeObservationStream(): void {

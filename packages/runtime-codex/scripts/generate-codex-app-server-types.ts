@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolvePackageCodexBinPath } from '../src/raw-client.js'
+import { clientRequestResponseContracts } from '../src/internal/codex-app-server-protocol/client-request-response-contract.js'
 import { serverRequestResponseContracts } from '../src/internal/codex-app-server-protocol/server-request-response-contract.js'
 
 const scriptPath = fileURLToPath(import.meta.url)
@@ -45,8 +46,12 @@ try {
     join(outputDir, 'ServerRequest.schema.json'),
   )
   writeFileSync(
+    join(outputDir, 'ClientRequestResponses.schema.json'),
+    `${JSON.stringify(readResponseSchemas(schemaOutputDir, clientRequestResponseContracts), null, 2)}\n`,
+  )
+  writeFileSync(
     join(outputDir, 'ServerRequestResponses.schema.json'),
-    `${JSON.stringify(readServerRequestResponseSchemas(schemaOutputDir), null, 2)}\n`,
+    `${JSON.stringify(readResponseSchemas(schemaOutputDir, serverRequestResponseContracts), null, 2)}\n`,
   )
 } finally {
   rmSync(schemaOutputDir, { recursive: true, force: true })
@@ -107,18 +112,22 @@ function listTypeScriptFiles(dir: string): string[] {
   return files
 }
 
-function readServerRequestResponseSchemas(
+function readResponseSchemas(
   schemaOutputDir: string,
+  contracts: Record<string, { schemaPath?: string; schemaName?: string }>,
 ): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(serverRequestResponseContracts).map(
-      ([method, { schemaName }]) => [
+    Object.entries(contracts).map(([method, contract]) => {
+      const schemaPath =
+        contract.schemaPath ?? `${contract.schemaName as string}.json`
+
+      return [
         method,
         JSON.parse(
-          readFileSync(join(schemaOutputDir, `${schemaName}.json`), 'utf8'),
+          readFileSync(join(schemaOutputDir, schemaPath), 'utf8'),
         ) as unknown,
-      ],
-    ),
+      ]
+    }),
   )
 }
 
