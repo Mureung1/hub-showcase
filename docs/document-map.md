@@ -16,6 +16,7 @@ Agent가 항상 읽어야 하는 내용은 AGENTS.md에 최소한으로 남기�
 | 작업 관리용 | `docs/plans/day5-development-tasks.md` | 2주차 이후 개발 Task와 백로그 |
 | 주간 계획 | `docs/plans/week2-plan.md` | 2주차 요일별 계획과 GitHub Issue 등록 목록 |
 | 계획 Agent | `docs/agents/week-planning-agent.md` | 요구사항을 주간 작업과 Issue 후보로 쪼개는 Agent 문서 |
+| 기능 검증 Agent | `docs/agents/feature-verification-agent.md` | 수직 슬라이스가 요구사항대로 동작하는지 점검하는 Agent 문서 |
 | Agent 학습 | `docs/agents/agent-rules-study.md` | AGENTS.md 간소화와 Skill 문서화 기준 학습 기록 |
 | 디자인용 | `docs/design/design-system.md` | 색상, 레이아웃, 상태 화면, 마스코트 사용 기준 |
 | 디자인 Skill | `docs/design/ptop-design-skill.md` | 화면 제작 시 반복 적용할 디자인 판단 기준 |
