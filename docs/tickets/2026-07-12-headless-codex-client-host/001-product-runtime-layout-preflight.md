@@ -24,6 +24,7 @@
 ## Slice-Specific Constraints
 
 - 세 root는 absolute·normalized path여야 하며 canonical target을 기준으로 pairwise distinct이고 서로 ancestor·descendant 관계가 아니어야 한다.
+- `packageRoot`와 `workspaceRoot`는 existing directory여야 하지만 `appDataRoot`는 아직 없어도 생성 가능하면 허용한다. Missing `appDataRoot`는 가장 가까운 existing ancestor와 중간 symlink를 canonicalize한 target으로 overlap을 먼저 검사하고, runtime-home pair를 생성한 뒤 실제 target의 containment를 다시 검사한다.
 - Existing path와 symlink는 실제 target을 기준으로 비교한다. lexical path가 다르다는 이유로 overlap을 허용하지 않는다.
 - `workspaceRoot`는 caller가 명시한 existing directory여야 한다. `process.cwd()` fallback을 만들지 않는다.
 - `packageRoot`에서 package-owned Codex binary를 찾고 package pin과 version을 확인한다. 전역 `PATH` fallback은 없다.
@@ -34,7 +35,7 @@
 
 ## Acceptance Criteria
 
-- [x] Valid한 세 root가 canonical layout, package-owned binary, `codexHome`, `codexSqliteHome`과 exact `workspaceRoot`를 반환한다.
+- [x] Existing 이거나 missing-but-creatable인 valid `appDataRoot`를 포함한 세 root가 canonical layout, package-owned binary, `codexHome`, `codexSqliteHome`과 exact `workspaceRoot`를 반환한다.
 - [x] Relative path, missing/non-directory `packageRoot` 또는 `workspaceRoot`, missing/non-executable binary와 pin mismatch가 spawn 이전의 typed failure로 거부된다.
 - [x] 같은 root, 직접 containment와 양방향 ancestor·descendant 관계가 모두 거부된다.
 - [x] Symlink 또는 다른 lexical spelling으로 숨긴 overlap도 canonical comparison으로 거부된다.
@@ -59,9 +60,17 @@
 - `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector` — 모두 통과.
 - Fixed point `e177a1658ab24716a6ade3f1839619c26d1611a1` 기준 two-axis 재리뷰 — Standards finding 0건, Spec finding 0건.
 
+2026-07-13 external review remediation 재검증:
+
+- `npm run test -w @ay-ple/runtime-codex` — 통과, 91개 test.
+- `npm test` — 통과. `runtime-core` 50개, `runtime-codex` 91개, server 53개와 Inspector Playwright 6개 test가 모두 통과했다.
+- `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector` — 모두 통과.
+- Missing-but-creatable `appDataRoot`의 현재 코드·test·package README와 spec/ticket 문구를 다시 대조했다.
+- 위 결과는 2026-07-13 local checkout에서 직접 실행한 command evidence이며 GitHub Actions 실행으로 기록하지 않는다.
+
 ## Result
 
-`prepareProductRuntimeLayout()`과 `ProductRuntimeLayoutError`를 `@ay-ple/runtime-codex` 공개 API로 추가했다. 이 seam은 명시적인 세 root를 canonical 대상으로 검증하고, package 안의 실행 가능한 Codex binary가 정확한 package pin과 일치하는지 확인하며, `appDataRoot` 아래에서 빠져나갈 수 없는 `codex/home`·`codex/sqlite` pair를 준비한다. 모든 구성 실패는 `recoverable: false`인 안정적인 code로 분류된다.
+`prepareProductRuntimeLayout()`과 `ProductRuntimeLayoutError`를 `@ay-ple/runtime-codex` 공개 API로 추가했다. 이 seam은 명시적인 세 root를 canonical 대상으로 검증하고, package 안의 실행 가능한 Codex binary가 정확한 package pin과 일치하는지 확인하며, `appDataRoot` 아래에서 빠져나갈 수 없는 `codex/home`·`codex/sqlite` pair를 준비한다. `appDataRoot`는 최초 실행 시 아직 없어도 가장 가까운 existing ancestor와 symlink를 기준으로 canonical target을 계산해 overlap을 거부한 뒤 정확한 path와 runtime-home pair를 생성하며, 생성된 실제 target이 `appDataRoot` 밖으로 나가지 않는지 다시 확인한다. 모든 구성 실패는 `recoverable: false`인 안정적인 code로 분류된다.
 
 Follow-up hardening은 root·binary의 canonical target을 읽은 뒤 발생하는 filesystem inspection failure도 기존 stable code로 wrapping하고, package metadata read/parse와 `@openai/codex` dependency pin 누락을 `package_pin_unreadable`로 분류한다.
 

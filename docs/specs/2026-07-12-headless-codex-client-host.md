@@ -59,7 +59,7 @@ Host는 process lifecycle, connection generation, exact identity routing, normal
 
 | 모듈 역할 | 책임 | 책임이 아닌 것 |
 | --- | --- | --- |
-| Codex protocol transport | package-owned binary spawn, stdio JSONL framing, generated-schema-backed request/response, Server request·notification 분류와 process exit 관측 | product state, browser DTO, thread 선택 UX |
+| Codex protocol transport | package-owned binary spawn, stdio JSONL framing, package-internal generated schema로 known Client success response와 Server request·response 검증, Server request·notification 분류, single-consumer bounded observation stream과 process exit 관측 | operation의 read-only·mutation 의미, product state, browser DTO, thread 선택 UX |
 | Headless Codex Client Host | product layout, one-workspace lifecycle, connection generation, thread·turn·item·request correlation, normalized snapshot/event, pending interaction, native Skills discovery | HTTP, React state, Runtime Diagnostic History, 학업 상태 |
 | Local companion composition | Host instance 수명, browser-safe HTTP command와 SSE stream, request validation, same-origin local boundary, process shutdown cleanup | raw protocol passthrough, transcript source of truth |
 | 제품 React shell | browser DTO만 소비하고 Host connection 상태를 최소 제품 entrypoint에서 표현 | Node API, generated type, auth secret, raw/debug log와 Runtime Inspector state |
@@ -75,11 +75,11 @@ Host는 다음 세 root를 필수 입력으로 받고 start 전에 한 번 검�
 
 | 입력 | 불변 조건 |
 | --- | --- |
-| `packageRoot` | absolute·normalized directory이며 package-owned pinned Codex binary를 찾을 수 있다. 제품 상태를 쓰지 않고 전역 `PATH` fallback을 사용하지 않는다. 명시적 binary override가 있으면 package pin과 version 일치를 검증한다. |
-| `appDataRoot` | absolute·normalized directory이며 `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 이 root 아래에서 분리할 수 없는 pair로 계산한다. 한쪽만 override하는 product configuration은 거부한다. |
+| `packageRoot` | absolute·normalized existing directory이며 package-owned pinned Codex binary를 찾을 수 있다. 제품 상태를 쓰지 않고 전역 `PATH` fallback을 사용하지 않는다. 명시적 binary override가 있으면 package pin과 version 일치를 검증한다. |
+| `appDataRoot` | absolute·normalized directory path이며 아직 존재하지 않을 수 있다. `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 이 root 아래에서 분리할 수 없는 pair로 계산하고, 한쪽만 override하는 product configuration은 거부한다. |
 | `workspaceRoot` | 사용자가 선택한 것을 caller가 명시적으로 주입한 absolute·normalized existing directory다. `process.cwd()` fallback은 없다. Host instance는 수명 동안 이 workspace 하나에 bound된다. |
 
-Canonical containment 검사 뒤 세 root는 pairwise distinct여야 하며 어느 root도 다른 root의 ancestor·descendant일 수 없다. Existing root와 symlink가 있는 path는 실제 대상을 기준으로 비교해 lexical path만 다른 overlap을 허용하지 않는다. Invalid layout은 child spawn 전에 거부한다.
+Canonical containment 검사 뒤 세 root는 pairwise distinct여야 하며 어느 root도 다른 root의 ancestor·descendant일 수 없다. `packageRoot`와 `workspaceRoot`는 existing canonical target을 사용한다. 아직 없는 `appDataRoot`는 가장 가까운 existing ancestor와 경로 중 existing symlink를 canonicalize해 생성될 exact target을 계산하고 root overlap을 먼저 검사한다. 그 뒤 exact directory와 runtime-home pair를 만들고 실제 target containment를 다시 검증한다. Missing `packageRoot`·`workspaceRoot`, app-data ancestor inspection 실패, non-directory component와 생성 실패는 child spawn 전에 거부하지만 안전하게 만들 수 있는 missing `appDataRoot` 자체는 failure가 아니다.
 
 App Server child process의 `cwd`, 새 thread의 `thread/start.cwd`와 `skills/list.cwds`는 모두 bound `workspaceRoot`를 사용한다. Browser caller는 임의 `cwd`, `CODEX_HOME`, `CODEX_SQLITE_HOME`이나 binary path를 command별로 바꿀 수 없다.
 
@@ -92,18 +92,23 @@ Host snapshot은 최소한 `status`, monotonic `generation`, 마지막 sanitized
 | 상태 | 의미 | 허용 동작 |
 | --- | --- | --- |
 | `stopped` | 의도적으로 child process가 없다. | `start` |
-| `starting` | layout 검증 뒤 spawn과 `initialize`/`initialized` handshake가 진행 중이다. | snapshot·subscription·`stop` |
+| `starting` | immutable raw layout input의 preflight, spawn과 `initialize`/`initialized` handshake가 진행 중이다. | snapshot·subscription·`stop` |
 | `ready` | 현재 generation의 handshake가 끝나 command와 event routing이 가능하다. | in-scope Host command·`stop`·`restart` |
 | `restarting` | 명시적 restart가 이전 generation을 닫고 새 handshake를 수행 중이다. | snapshot·subscription·`stop` |
 | `stopping` | 신규 command를 거부하고 child와 pending operation을 닫는 중이다. | snapshot·subscription |
 | `failed` | start, transport, protocol safety 또는 unexpected exit 때문에 사용할 수 없다. | `recoverable`이면 명시적 `restart`, 항상 `stop` |
 
 - 동시 `start`는 하나의 start operation으로 coalesce하며 handshake를 한 번만 수행한다. 이미 `ready`인 start와 반복 `stop`은 idempotent다.
+- Host는 immutable `ProductRuntimeLayoutInput`을 받아 첫 `start()`의 `starting` 상태에서 preflight한다. 성공한 validated layout은 Host 수명 동안 cache하고 restart에서만 재사용한다. Non-recoverable preflight 실패는 generation을 소비하지 않고 `starting → failed`로 publish하며 같은 Host에서 restart하지 않는다.
 - `initialize` matching response 뒤 `initialized`를 전송하기 전에는 `ready`를 공개하지 않는다.
-- successful child spawn마다 새 generation을 발급한다. event, pending client request와 pending interaction은 generation에 속한다.
+- 각 start/restart operation은 lifecycle epoch를 가진다. `transport.start()`, `initialize` response와 `initialized` write의 각 await 뒤 epoch와 lifecycle state를 다시 확인하며 stale operation은 generation을 발급하거나 다음 handshake 단계로 진행하지 않는다.
+- successful child spawn마다 현재 epoch가 유효함을 확인한 뒤 새 generation을 발급한다. event, pending client request와 pending interaction은 generation에 속한다. Spawn settlement 전에 `close()`가 시작되면 shared transport start는 `transport_closed`로 reject되고 늦은 `spawn` callback은 성공을 공개하지 않는다.
 - 자동 restart와 mutating command replay는 하지 않는다. 사용자가 알지 못한 thread·turn·approval 중복을 피하기 위해 caller가 Host 상태를 확인한 뒤 `restart`를 명시적으로 요청한다.
 - `restart`는 같은 validated layout을 재사용해 새 generation을 initialize한다. 이전 generation의 event, response와 pending interaction은 새 generation에 적용하지 않는다.
+- Host는 child request를 보내기 전에 package-internal observation stream의 유일한 consumer pump를 시작하고 첫 `next()`가 대기 중임을 보장한다. Lower queue는 bounded하며 overflow를 안전 failure로 종료한다. Terminal observation 뒤 pump의 `finally`가 transport `close()`까지 수행한다.
 - graceful stop은 child 종료 deadline 뒤 강제 종료할 수 있어야 하며, Node server shutdown과 test cleanup이 orphan process를 남기지 않는다.
+
+Host lifecycle subscription은 subscriber 등록과 current snapshot 및 snapshot이 포함한 마지막 sequence `cursor` 취득을 하나의 atomic operation으로 제공한다. 반환값은 최소 `{ snapshot, cursor, events, unsubscribe }` 의미를 가지며 capture 중 발생한 `sequence > cursor` event는 subscriber-local buffer에 보관한다. Subscriber는 connection loss로 닫히지 않고 명시적 unsubscribe 또는 Host stop까지 `failed → restarting → ready`를 계속 관측한다. Browser adapter는 이 core subscription을 재정의하지 않고 serialize한다.
 
 `recoverable`은 다음 분류로 결정하며 자유 형식 error message에서 추론하지 않는다.
 
@@ -111,10 +116,12 @@ Host snapshot은 최소한 `status`, monotonic `generation`, 마지막 sanitized
 | --- | --- | --- |
 | invalid layout, missing/non-executable binary, unreadable package pin metadata, pin mismatch, runtime-home preparation failure | `false` | 같은 Host configuration으로 restart하지 않는다. Caller가 configuration 또는 외부 filesystem 상태를 고쳐 새 Host를 구성해야 한다. |
 | unsafe protocol/schema/identity failure | `false` | 같은 pinned contract에서 자동·명시적 restart loop를 만들지 않는다. Binary/schema를 다시 검증한 뒤 새 Host를 구성한다. |
+| lower observation queue overflow | `false` | Host pump 불변 조건이나 protocol event volume의 안전 경계가 깨졌으므로 현재 generation을 닫고 같은 Host에서 restart loop를 만들지 않는다. |
 | transient spawn failure after successful preflight, initialize timeout/error | `true` | mutating product command가 시작되기 전이므로 같은 validated layout으로 명시적 restart할 수 있다. |
 | unexpected child exit, stdout EOF, stdin/transport failure | `true` | 이전 generation을 fence한 뒤 명시적 restart할 수 있으나 in-flight operation은 replay하지 않는다. |
 | bounded Client request identity registry exhaustion | `true` | Tombstone을 evict해 old response를 오연결하지 않고 generation을 닫는다. 새 generation에서만 명시적으로 다시 시작하며 mutation을 replay하지 않는다. |
-| individual command error/timeout, turn failure, Skills discovery error | Host state 불변 | connection이 살아 있으면 `ready`를 유지하고 operation-scoped recovery만 제공한다. |
+| authoritative App Server command error, read-only request timeout, turn terminal failure, Skills discovery error | Host state 불변 | connection이 살아 있으면 `ready`를 유지하고 operation-scoped recovery만 제공한다. |
+| `thread/start` 또는 `turn/start` timeout | `true` | Mutation 적용 여부를 알 수 없으므로 현재 generation과 transport를 닫고 같은 generation의 후속 mutation을 금지한다. 자동 replay하지 않고 explicit restart만 허용한다. |
 
 `recoverable: false`인 `failed` state의 `restart` 요청은 raw process를 시작하지 않고 `operation_conflict`로 거부한다.
 
@@ -137,12 +144,15 @@ Host snapshot은 최소한 `status`, monotonic `generation`, 마지막 sanitized
 
 `thread start`와 `turn start`는 non-idempotent command다. Browser adapter는 timeout이나 connection loss 뒤 이를 자동 retry하지 않으며, 응답을 받지 못한 caller는 outcome을 unknown으로 취급한다. Lifecycle command와 pending interaction response의 idempotency는 위 lifecycle 및 one-shot state 규칙을 따른다.
 
+`thread/start` 또는 `turn/start` timeout은 ordinary operation timeout으로 끝내지 않는다. Host는 mutation outcome unknown을 기록하고 current generation을 recoverable `failed`로 fence하며 transport를 닫는다. `thread/start` timeout은 native identity를 추측하거나 public `threadRef`를 발급하지 않는다. `turn/start` timeout은 dispatch 전에 얻은 execution-slot reservation을 idle로 되돌리지 않고 generation loss의 `unknown` reconciliation marker로 전환한다. 늦은 response나 `thread/started`·`turn/started` notification은 폐기하고 같은 generation에서 후속 mutation을 wire에 쓰지 않는다.
+
 #### Identity and event contract
 
 - Raw `threadId`, `turnId`, `itemId`, `requestId`는 protocol integration 내부에서 exact value로 보존한다. 제품과 browser에는 의미를 추론할 수 없는 opaque refs와 normalized correlation만 제공한다.
 - JSON-RPC `RequestId`의 `string | number` type과 value를 보존한다. 숫자 `1`과 문자열 `"1"`을 합치지 않는다.
 - outbound Client request와 inbound Server request는 서로 다른 ID namespace다. correlation key는 최소 `(generation, direction, typeof id, id)`를 구분한다.
 - inbound message는 `id + method` Server request, `method only` Server notification, `id + result/error` Client request response로 분류한다. `id` 존재 여부만으로 response라고 판단하지 않는다.
+- `initialize`, `thread/start`, `turn/start`, `skills/list`처럼 Host가 사용하는 known Client request의 success result는 package-internal generated JSON Schema로 state 변경 전에 검증한다. Malformed result는 ordinary operation error로 낮추지 않고 ref·state를 만들기 전에 non-recoverable `protocol_error`로 connection을 닫는다. Generated Client response type과 schema는 public export하지 않는다.
 - normalized event는 Host instance 안에서 monotonic sequence, generation, kind, timestamp와 variant에 필요한 opaque thread·turn·item·interaction refs를 가진다. raw method명과 raw params를 browser event로 전달하지 않는다.
 - stdio에서 읽은 순서는 같은 generation의 publication 순서로 보존한다. 여러 thread의 event interleaving은 정상이며 subscriber는 correlation refs로 구분한다.
 - terminal 성공은 matching native terminal notification이 있을 때만 공개한다. Transport loss나 parse failure를 turn 성공·실패로 꾸미지 않는다. 별도 `connection_lost` event를 추가하지 않고 authoritative `host_state_changed`의 `status: failed` snapshot으로 표현하며, 직전 active turn은 `outcome: unknown`인 reconciliation-needed marker로 남긴다.
@@ -181,7 +191,7 @@ Host snapshot은 최소한 `status`, monotonic `generation`, 마지막 sanitized
 - interaction response는 current generation의 pending 상태에서 정확히 한 번만 전송한다. unknown, stale, already resolved와 duplicate response는 typed conflict로 거부한다.
 - `serverRequest/resolved`가 먼저 도착하면 interaction을 resolved로 닫고 이후 browser response를 전송하지 않는다.
 - SSE나 browser tab 연결이 끊겨도 Host의 pending interaction은 유지하며 새 subscriber의 snapshot에 다시 나타난다. App Server generation이 끝나면 pending interaction은 expired가 된다.
-- 지원하지 않는 Server request는 무시하거나 자동 승인하지 않는다. protocol-level unsupported response와 sanitized Host failure를 만들고, raw payload를 conversation text로 대신 전달하지 않는다.
+- 지원하지 않는 well-formed Server request는 무시하거나 자동 승인하지 않는다. Protocol-level unsupported error response write가 성공하면 scoped `host_warning`만 publish하고 Host는 `ready`를 유지한다. Malformed request/schema violation 또는 error write failure일 때만 connection failure로 전환하며 raw payload를 conversation text로 대신 전달하지 않는다.
 
 Public answer union과 generated response mapping은 다음 최소 범위로 제한한다.
 
@@ -197,11 +207,11 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 #### Browser-safe adapter and product shell
 
 - 첫 browser adapter는 기존 코드베이스의 외부 seam을 재사용해 dedicated HTTP JSON command와 SSE snapshot/event stream으로 구현한다. `/api/runtime/*`와 namespace, state와 lifecycle owner를 공유하지 않는다.
-- Host subscription은 subscriber 등록, current snapshot과 그 snapshot이 포함한 마지막 sequence `cursor` 취득을 하나의 atomic operation으로 제공한다. 등록 중 발생한 `sequence > cursor` event는 subscriber-local buffer에 보관한다.
+- Browser adapter는 Host lifecycle이 제공하는 atomic subscription의 `{ snapshot, cursor, events, unsubscribe }`를 소비한다. Core subscriber 등록과 snapshot capture semantics를 HTTP layer에서 다시 구현하지 않는다.
 - SSE 연결은 `{ snapshot, cursor }` initial event를 먼저 flush한 뒤 buffered event와 이후 live event를 sequence 순서로 전달한다. Snapshot 취득과 live subscription 사이에 event를 잃거나 snapshot보다 앞서 event를 보내지 않는다.
 - Subscriber-local pending queue는 고정 event-count 또는 byte budget으로 bounded한다. Writer backpressure가 해소되지 않거나 overflow되면 해당 subscriber만 unsubscribe하고 SSE를 닫으며, 중간 event를 버린 뒤 cursor가 연속인 것처럼 전달하지 않는다. Reconnect는 최신 atomic snapshot으로 수렴한다.
 - Reconnect는 같은 atomic subscription으로 최신 snapshot에 수렴하지만 disconnect 동안의 agent text delta나 completed activity를 durable replay한다고 약속하지 않는다. 후속 `thread/read` transcript restoration이 이 간극을 소유한다.
-- command validation failure, stale ref, lifecycle conflict와 Host unavailable을 stable error envelope로 구분한다. 최소 error code는 `invalid_request`, `host_not_ready`, `stale_reference`, `operation_conflict`, `request_timeout`, `operation_failed`, `transport_lost`, `protocol_error`를 표현할 수 있어야 한다. 앞의 두 operation-scoped failure는 connection이 살아 있으면 같은 generation의 `ready` snapshot을 유지한다.
+- command validation failure, stale ref, lifecycle conflict와 Host unavailable을 stable error envelope로 구분한다. 최소 error code는 `invalid_request`, `host_not_ready`, `stale_reference`, `operation_conflict`, `request_timeout`, `operation_failed`, `transport_lost`, `protocol_error`를 표현할 수 있어야 한다. Authoritative App Server error와 read-only `request_timeout`·`operation_failed`는 connection이 살아 있으면 같은 generation의 `ready` snapshot을 유지한다. `thread/start`·`turn/start` timeout의 initiating response는 `request_timeout`이어도 authoritative Host snapshot은 recoverable `failed`이며 이후 mutation은 `host_not_ready`다.
 - product route는 same-origin local shell만 mutation할 수 있게 제한한다. wildcard CORS로 product command나 interaction response를 임의 웹 origin에 노출하지 않는다.
 - Product HTTP/SSE listener는 explicit loopback 주소에만 bind하고 wildcard interface bind를 사용하지 않는다.
 - Browser DTO와 network response에는 raw JSON-RPC, generated type, raw IDs, auth token, environment, `packageRoot`·`appDataRoot`, child stderr와 Runtime Diagnostic History debug evidence가 없어야 한다.
@@ -209,8 +219,8 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 
 ### Data and State Flow
 
-1. Local companion이 세 root를 명시적으로 구성해 Host를 만든다.
-2. Host가 layout과 package-owned binary를 검증하고 app-managed runtime-home pair를 준비한다.
+1. Local companion이 세 root의 immutable raw input을 명시적으로 구성해 Host를 만든다.
+2. Host의 첫 `start()`가 layout과 package-owned binary를 검증하고 app-managed runtime-home pair를 준비해 cache한다.
 3. Host가 bound `workspaceRoot`에서 App Server child를 spawn하고 `initialize` response와 `initialized` notification을 완료한 뒤 `ready` snapshot을 공개한다.
 4. Host command가 새 persistent thread 또는 해당 thread의 다음 text turn을 시작한다. Raw identifier는 Host 내부 correlation table에 저장되고 caller에는 opaque ref가 반환된다.
 5. Transport가 response, Server request와 Server notification을 방향별로 분리한다. Host는 generation과 exact identity로 normalized state/event 또는 pending interaction을 갱신한다.
@@ -222,16 +232,20 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 
 | 실패 | Host 동작 | Caller/browser 관측 |
 | --- | --- | --- |
-| invalid/missing/overlapping root, missing binary, unreadable package pin metadata, pin mismatch | child spawn 전에 fail closed | `failed`, non-recoverable until configuration changes |
+| invalid/overlapping root, missing `packageRoot`·`workspaceRoot`, app-data ancestor inspection·생성 실패, missing binary, unreadable package pin metadata, pin mismatch | child spawn 전에 fail closed. 안전하게 만들 수 있는 missing `appDataRoot`는 허용 | `failed`, non-recoverable until configuration changes |
 | spawn 또는 initialize timeout/error | child를 정리하고 start를 실패 | sanitized failure와 명시적 restart 가능 여부 |
 | command validation 또는 wrong workspace/thread ref | raw request를 보내지 않음 | `invalid_request` 또는 `stale_reference` |
 | same-thread active turn 중 새 turn | queue나 steer로 바꾸지 않고 거부 | `operation_conflict` |
-| individual App Server request error/timeout | 해당 operation만 실패시키고 transport가 살아 있으면 Host는 `ready` 유지 | scoped typed error; mutating request 자동 retry 없음 |
+| authoritative App Server request error 또는 read-only request timeout | 해당 operation만 실패시키고 transport가 살아 있으면 Host는 `ready` 유지 | `operation_failed` 또는 `request_timeout`; 자동 retry 없음 |
+| `thread/start`·`turn/start` timeout | mutation outcome을 unknown으로 기록하고 current generation과 transport를 recoverable failure로 닫음 | initiating `request_timeout`, authoritative `failed`; 후속 mutation은 `host_not_ready`, replay 없음 |
+| known Client request의 malformed success result | ref나 Host state를 만들기 전에 generated schema validation으로 connection을 unsafe하게 닫음 | `protocol_error`, non-recoverable |
 | malformed JSON, ID type 손실, 안전하게 route할 수 없는 protocol message | pending operation을 종료하고 connection을 unsafe로 닫음 | `protocol_error`, non-recoverable; binary/schema 재검증 뒤 새 Host 필요 |
+| lower observation queue hard cap 도달 | queued raw observation을 무한 축적하지 않고 current generation을 안전하게 종료 | sanitized non-recoverable `protocol_error`; terminal 뒤 추가 publication 없음 |
+| lower observation stream의 두 번째 consumer 시도 | observation을 consumer 사이에 나누지 않고 deterministic internal conflict로 거부 | 기존 single consumer와 connection state는 변경하지 않음 |
 | unexpected exit, stdout EOF, stdin failure | generation을 종료하고 모든 pending Client request를 reject하며 pending interaction을 expire | `transport_lost` error와 authoritative `host_state_changed(status: failed)`; active turn은 snapshot의 unknown/reconciliation-needed marker로 남기고 terminal을 합성하지 않음 |
 | Client request identity hard cap 도달 | 새 request를 wire에 쓰기 전에 generation을 종료하고 tombstone registry를 정리 | recoverable `transport_lost`; explicit restart만 허용하고 거부된 mutation을 자동 replay하지 않음 |
 | stale/duplicate interaction response | App Server에 아무것도 보내지 않음 | `operation_conflict` 또는 `stale_reference` |
-| unsupported Server request | 자동 승인·무시하지 않고 protocol-level unsupported response | scoped sanitized failure; raw payload 비노출 |
+| unsupported well-formed Server request | 자동 승인·무시하지 않고 protocol-level unsupported error response | write 성공 시 scoped `host_warning`과 같은 generation `ready`; write 실패 시 generation failure, raw payload 비노출 |
 | Skills discovery error | Host 연결을 끊지 않고 workspace-scoped discovery failure로 반환 | 빈 결과와 구분되는 typed error |
 | browser/SSE disconnect | Host process와 pending interaction을 유지 | reconnect 후 current snapshot으로 수렴 |
 | stop deadline 초과 | 강제 종료하고 모든 connection-scoped state를 닫음 | `stopped`; orphan child 없음 |
@@ -252,6 +266,7 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 | Host instance는 one workspace, one App Server process를 소유한다. | workspace correlation과 native discovery가 명확하고 여러 thread는 같은 long-lived process를 공유한다. |
 | product layout은 세 root의 필수 주입으로 시작한다. | OS default와 packaging을 기다리지 않고 채택한 root 불변 조건을 먼저 실행 가능하게 만든다. |
 | restart는 명시적이고 mutation replay는 없다. | process loss 뒤 unknown side effect를 thread·turn·approval 중복으로 만들지 않는다. |
+| Request timeout은 operation 의미로 분류한다. | Read-only timeout은 same-generation operation failure로 남기고, non-idempotent `thread/start`·`turn/start` timeout은 unknown outcome이므로 generation을 fence한다. |
 | identity는 generation·direction·ID type까지 exact하게 보존한다. | interleaved thread와 양방향 JSON-RPC ID 충돌을 안전하게 처리한다. |
 | public event와 pending interaction은 allowlisted discriminated union이다. | generic raw event bus를 만들지 않고 browser가 protocol 세부사항에 의존하지 않는다. |
 | native `AGENTS.md`와 Skills를 재사용한다. | Host가 별도 instruction·Skill discovery engine을 만들지 않는다. |
@@ -267,12 +282,13 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 | Seam | 필수 시나리오 |
 | --- | --- |
 | Layout unit/contract | three-root normalization, app data/workspace overlap, package binary pin, runtime-home pair, `process.cwd()` fallback 부재 |
-| Host + child fake | concurrent start coalescing, initialize 1회, 같은 process에서 thread A/B와 A1→A2 sequential turn, A1/B1 event interleaving, idempotent stop |
-| Identity routing | Client request numeric ID와 동시 Server request의 같은 ID, numeric/string ID 구분, late/orphan event, duplicate response·terminal이 다른 scope를 바꾸지 않음 |
+| Transport lifecycle·pump | concurrent start coalescing, spawn settlement 전 close가 모든 start를 `transport_closed`로 reject, late spawn success 차단, child cleanup, single observation consumer, initialize dispatch 전 active pump, injected queue cap의 terminal safety failure와 terminal 뒤 close |
+| Host + child fake | concurrent start coalescing, initialize 1회, `starting → stopping → stopped` lifecycle epoch fencing, 같은 process에서 thread A/B와 A1→A2 sequential turn, A1/B1 event interleaving, idempotent stop |
+| Identity·response routing | Client request numeric ID와 동시 Server request의 같은 ID, numeric/string ID 구분, malformed `initialize`·`thread/start`·`turn/start` success result의 fail-closed, late/orphan event, duplicate response·terminal이 다른 scope를 바꾸지 않음 |
 | Pending interaction | command/file/permission/user-input answer union과 generated mapping, 같은 item의 여러 callback, 역순 response, one-shot answer, policy amendment 거부, `serverRequest/resolved` race, browser disconnect 동안 pending 유지 |
-| Failure/restart | failure class별 `recoverable` mapping, initialize 전·ready·active turns·pending interaction 중 process exit, pending Promise 종료, unknown active outcome, old generation ref fencing, explicit restart 후 새 command 가능, 자동 replay 부재 |
+| Failure/restart | failure class별 `recoverable` mapping, initialize 전·ready·active turns·pending interaction 중 process exit, mutation은 적용됐지만 response만 timeout된 `thread/start`·`turn/start`, timeout 직후 second mutation wire 차단, late response/started fencing, pending Promise 종료, unknown active outcome, old generation ref fencing, explicit restart 후 새 command 가능, 자동 replay 부재 |
 | Native context | exact workspace child/thread/skills cwd, `instructionSources`와 sentinel Skill의 native result, Host-owned parser 부재, discovery error |
-| Browser adapter | explicit loopback-only listener의 real command/SSE, subscribe-snapshot race 중 atomic `{ snapshot, cursor }`와 buffered sequence ordering, deterministic slow-subscriber overflow disconnect와 reconnect convergence, operation-scoped error 뒤 같은 generation `ready` 유지, stable error mapping, same-origin mutation, recursive DTO 검사로 raw IDs·protocol·secret·debug field 부재, product diagnostic sink의 raw payload 부재 |
+| Browser adapter | explicit loopback-only listener의 real command/SSE, subscribe-snapshot race 중 atomic `{ snapshot, cursor }`와 buffered sequence ordering, deterministic slow-subscriber overflow disconnect와 reconnect convergence, read-only operation error 뒤 같은 generation `ready` 유지와 mutation timeout 뒤 recoverable `failed`, stable error mapping, same-origin mutation, recursive DTO 검사로 raw IDs·protocol·secret·debug field 부재, product diagnostic sink의 raw payload 부재 |
 | Product shell | desktop browser에서 loading→ready와 forced failure→recoverable error 상태를 adapter를 통해 표시하며 Runtime Inspector state를 import하지 않음 |
 
 Host 전용 opt-in live parity는 package-owned pinned binary와 명시적 세 root를 사용한다. Login이나 OAuth를 시작하지 않고 기존 인증을 preflight한 뒤, 한 Host generation에서 thread 두 개와 같은 thread의 순차 turn 두 개, streaming/terminal correlation과 workspace sentinel Skill discovery를 확인한다. Model 응답 문구의 정확 일치, 실제 approval 유발과 process crash는 비결정적이므로 fake contract test가 소유한다. Live 명령과 안전한 실행 조건은 구현되는 package README가 소유한다.

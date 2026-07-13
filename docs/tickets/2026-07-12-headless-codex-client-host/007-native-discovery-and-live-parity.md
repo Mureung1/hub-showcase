@@ -24,11 +24,11 @@ Host caller가 bound `workspaceRoot`의 native `skills/list` 결과를 product-s
 ## Slice-Specific Constraints
 
 - `skills/list`는 bound `workspaceRoot` 하나만 `cwds`에 보내고 caller가 per-call cwd를 바꿀 수 없게 한다.
-- Public result는 Skill의 product-safe allowlisted summary와 typed discovery error만 제공한다. Raw generated shape, absolute internal roots와 debug payload를 노출하지 않는다.
+- Public Skill summary의 exact 최소 allowlist는 `name`, `description`, `enabled`다. `cwd`, `path`, `scope`, `shortDescription`, `interface`, `dependencies`, raw `errors`와 이후 generated field는 기본 제외하며 absolute internal roots와 debug payload를 노출하지 않는다.
 - `instructionSources`는 fixture/transport-level evidence와 live `thread/start` response에서 확인한다. Sentinel workspace `AGENTS.md`가 native instruction source에 포함되는지 verifier가 검사하되, spec에 없는 public Host field나 browser DTO로 추가하지 않는다.
 - Live verifier는 public Host path를 실행하는 package-internal composition에서만 `thread/start`의 `instructionSources`를 관측한다. 실행 중 memory에서 allowlisted assertion만 수행하며 package root export, server/browser composition, 파일과 Runtime Diagnostic History에 raw response를 노출하거나 저장하지 않는다. 정확한 probe type 이름은 고정하지 않는다.
 - Native `AGENTS.md`와 Skill discovery 의미를 fake에서 재구현하지 않는다. Fake는 request/response와 cwd 전달만 결정적으로 증명한다.
-- Discovery failure는 Host connection을 닫지 않고 operation-scoped error로 끝난다.
+- Valid `skills/list` App Server error와 read-only request timeout은 빈 success와 구분되는 operation-scoped error로 끝나며 Host connection을 닫지 않는다. Success response가 generated contract를 만족하지 않으면 discovery error로 낮추지 않고 ref나 summary를 만들기 전에 non-recoverable `protocol_error`로 connection을 닫는다.
 - Live command는 login/OAuth를 시작하지 않고 existing auth availability만 preflight한다. Token과 raw protocol 내용을 출력하지 않는다.
 - Live verifier의 argument/root validation, timeout, A/B/A2 correlation, Skill 판정과 cleanup은 deterministic fake child로 기본 test suite에서 실행한다. 실제 pinned Codex 실행만 명시적 opt-in이다.
 - Live gate는 model 응답 문구의 exact match, 실제 approval 유발과 process crash를 요구하지 않는다.
@@ -36,10 +36,12 @@ Host caller가 bound `workspaceRoot`의 native `skills/list` 결과를 product-s
 
 ## Acceptance Criteria
 
-- [ ] Public Host operation이 bound workspace에 대해 `skills/list`를 호출하고 sanitized Skill summary를 반환한다.
+- [ ] Public Host operation이 bound workspace에 대해 `skills/list`를 호출하고 `name`, `description`, `enabled`만 포함한 sanitized Skill summary를 반환한다.
 - [ ] Fixture journal이 child, `thread/start`와 `skills/list`의 모든 cwd가 exact `workspaceRoot`임을 증명한다.
 - [ ] Sentinel workspace의 scripted native result가 Host-owned filesystem scan이나 parser 없이 product-safe summary로 변환된다.
-- [ ] Discovery error가 빈 결과와 구분되는 typed error가 되고 Host snapshot은 `ready`를 유지한다.
+- [ ] Valid App Server discovery error와 read-only timeout이 빈 결과와 구분되는 typed error가 되고 Host snapshot은 같은 generation의 `ready`를 유지한다.
+- [ ] Malformed `skills/list` success response는 partial summary나 ordinary discovery error를 만들지 않고 non-recoverable `protocol_error`로 connection을 닫는다.
+- [ ] Recursive public result audit가 allowlist 밖의 generated Skill field, filesystem path와 raw discovery error payload가 없음을 검증한다.
 - [ ] Host source와 public exports에 `AGENTS.md`/`SKILL.md` parser 또는 별도 discovery registry가 없다.
 - [ ] Live verifier 자체가 deterministic fake child를 사용하는 기본 자동화에서 root/timeout parsing, A/B/A2 event correlation, sentinel Skill success/failure와 Host/child cleanup을 검증한다.
 - [ ] Opt-in live command가 package-owned pinned binary와 명시적인 세 root를 사용하고 auth가 없으면 login을 시작하지 않은 채 안전하게 중단한다.
