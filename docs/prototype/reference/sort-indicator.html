@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>정렬 표시 3안 비교</title>
+<!-- ⓑ안(방향 화살표) 확정 — a/c는 비교용 기록 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root {
+    --bg:#0e0e12; --surface:#17171d; --surface-2:#1f1f27; --line:#2a2a33;
+    --text-1:#f2f2f5; --text-2:#a9a9b4; --text-3:#6b6b77;
+    --accent:#a78bfa; --accent-dim:rgba(167,139,250,.14);
+    --warn:#f2b8b5; --warn-dim:rgba(242,184,181,.14);
+    --radius-card:16px; --radius-chip:999px; --radius-badge:6px;
+    --pad-badge:3px 9px; --pad-chip:7px 13px;
+    --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px;
+    --fs-caption:11px; --fs-body:13px; --fs-title:15px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;
+    background:#08080b; color:#e8e8ec;
+    padding:40px 24px 64px;
+  }
+  h1 { font-size:18px; font-weight:700; text-align:center; margin-bottom:6px; }
+  .sub { font-size:12px; color:#8a8a96; text-align:center; margin-bottom:36px; }
+  .compare { display:flex; gap:32px; justify-content:center; flex-wrap:wrap; }
+  .variant { display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .label { font-size:13px; font-weight:600; color:#b8b8c2; }
+  .label small { color:#6b6b77; font-weight:400; }
+
+  .frame { width:300px; background:var(--bg); border:1px solid #26262e; border-radius:20px; padding:var(--space-4); }
+
+  .chips { display:flex; gap:var(--space-2); margin-bottom:var(--space-2); }
+  .chip { font-size:var(--fs-caption); font-weight:600; padding:var(--pad-chip); border-radius:var(--radius-chip); background:var(--surface-2); color:var(--text-2); }
+  .chip.on { background:var(--accent-dim); color:var(--accent); border:1px solid var(--accent); }
+
+  /* ===== 정렬 표시 — 3안 ===== */
+  .sortbar { display:flex; justify-content:flex-end; padding:var(--space-1) var(--space-1) var(--space-2); }
+  .sort { font-size:var(--fs-caption); color:var(--text-3); font-weight:500; }
+
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-card); padding:var(--space-4); }
+  .card-top { display:flex; align-items:center; gap:var(--space-2); margin-bottom:var(--space-2); }
+  .dday { font-size:var(--fs-caption); font-weight:700; padding:var(--pad-badge); border-radius:var(--radius-badge); background:var(--warn-dim); color:var(--warn); }
+  .src { margin-left:auto; font-size:var(--fs-caption); color:var(--text-3); }
+  .card-title { font-size:var(--fs-title); font-weight:600; color:var(--text-1); line-height:1.45; }
+</style>
+</head>
+<body>
+
+<h1>정렬 표시 — 3안 비교</h1>
+<div class="sub">위치는 셋 다 동일: 필터 칩 줄과 카드 목록 사이, 오른쪽 정렬 · 차이는 텍스트 표현뿐</div>
+
+<div class="compare">
+
+  <div class="variant">
+    <div class="label">ⓐ 상태만 <small>— 가장 조용함</small></div>
+    <div class="frame">
+      <div class="chips"><span class="chip on">전체</span><span class="chip">장학금</span><span class="chip">취업</span></div>
+      <div class="sortbar"><span class="sort">마감 임박순</span></div>
+      <div class="card">
+        <div class="card-top"><span class="dday">D-2 · 중요</span><span class="src">포털</span></div>
+        <div class="card-title">2026-2학기 국가장학금 1차 신청 마감</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="variant">
+    <div class="label">ⓑ 방향 화살표 <small>— 정렬 UI 관례, 눌림 힌트</small></div>
+    <div class="frame">
+      <div class="chips"><span class="chip on">전체</span><span class="chip">장학금</span><span class="chip">취업</span></div>
+      <div class="sortbar"><span class="sort">마감 임박순 ↓</span></div>
+      <div class="card">
+        <div class="card-top"><span class="dday">D-2 · 중요</span><span class="src">포털</span></div>
+        <div class="card-title">2026-2학기 국가장학금 1차 신청 마감</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="variant">
+    <div class="label">ⓒ 라벨 명시 <small>— 가장 친절, 가장 김</small></div>
+    <div class="frame">
+      <div class="chips"><span class="chip on">전체</span><span class="chip">장학금</span><span class="chip">취업</span></div>
+      <div class="sortbar"><span class="sort">정렬: 마감 임박순</span></div>
+      <div class="card">
+        <div class="card-top"><span class="dday">D-2 · 중요</span><span class="src">포털</span></div>
+        <div class="card-title">2026-2학기 국가장학금 1차 신청 마감</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
