@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,4 +8,245 @@ generator client {
 
 datasource db {
   provider = "mysql"
+}
+
+// ==========================================
+// 1. users - 사용자 기본 정보
+// ==========================================
+model User {
+  userId       BigInt   @id @default(autoincrement()) @map("user_id")
+  schoolEmail  String   @unique @map("school_email") @db.VarChar(100)
+  isVerified   Boolean  @default(false) @map("is_verified")
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  nickname     String   @db.VarChar(50)
+  gender       String   @db.VarChar(10)
+  birthYear    Int      @map("birth_year")
+  schoolName   String   @map("school_name") @db.VarChar(100)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // 관계
+  hobbyTestResult   HobbyTestResult?
+  personalityTests  PersonalityTest[]
+  roommateProfile   RoommateProfile?
+  ledTeams          DatingTeam[]        @relation("TeamLeader")
+  teamMemberships   DatingTeamMember[]
+  chatMessages      ChatMessage[]
+  reportsMade       Report[]            @relation("Reporter")
+  reportsReceived   Report[]            @relation("ReportTarget")
+
+  @@map("users")
+}
+
+// ==========================================
+// 2. hobby_test_results - 취미 발견 테스트 결과
+// ==========================================
+model HobbyTestResult {
+  resultId    BigInt   @id @default(autoincrement()) @map("result_id")
+  userId      BigInt   @unique @map("user_id")
+  hobbyTags   Json     @map("hobby_tags")
+  rawAnswers  Json     @map("raw_answers")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [userId])
+
+  @@map("hobby_test_results")
+}
+
+// ==========================================
+// 3. personality_tests - 연애/생활 성향 테스트 결과
+// ==========================================
+enum TestType {
+  dating
+  lifestyle
+}
+
+model PersonalityTest {
+  testId        BigInt   @id @default(autoincrement()) @map("test_id")
+  userId        BigInt   @map("user_id")
+  testType      TestType @map("test_type")
+  answers       Json
+  scoreSummary  Json     @map("score_summary")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [userId])
+
+  @@map("personality_tests")
+}
+
+// ==========================================
+// 4. roommate_profiles - 룸메이트 매칭 조건
+// ==========================================
+enum RoommateType {
+  friend
+  business
+}
+
+enum HousingType {
+  dorm
+  lease
+}
+
+enum SmokingStatus {
+  non_smoker
+  smoker_no_indoor
+  smoker
+}
+
+enum FrequencyLevel {
+  low
+  medium
+  high
+}
+
+enum SleepHabitLevel {
+  none
+  mild
+  moderate
+  severe
+}
+
+enum GuestPolicy {
+  not_allowed
+  short_visit_with_notice
+  allowed_except_late
+  freely_allowed
+}
+
+enum TempPreference {
+  warm
+  cool
+  moderate
+  flexible
+}
+
+model RoommateProfile {
+  profileId              BigInt          @id @default(autoincrement()) @map("profile_id")
+  userId                  BigInt          @unique @map("user_id")
+  roommateType            RoommateType    @map("roommate_type")
+  region                  String          @db.VarChar(100)
+  budget                  Int
+  housingType             HousingType     @map("housing_type")
+  smokingStatus           SmokingStatus   @map("smoking_status")
+  lateNightFrequency      FrequencyLevel  @map("late_night_frequency")
+  sleepHabit              SleepHabitLevel @map("sleep_habit")
+  guestPolicy             GuestPolicy     @map("guest_policy")
+  temperaturePreference   TempPreference  @map("temperature_preference")
+  createdAt               DateTime        @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [userId])
+
+  @@map("roommate_profiles")
+}
+
+// ==========================================
+// 5. dating_teams / dating_team_members - 과팅 팀
+// ==========================================
+enum TeamStatus {
+  recruiting
+  matched
+  closed
+}
+
+model DatingTeam {
+  teamId    BigInt     @id @default(autoincrement()) @map("team_id")
+  leaderId  BigInt     @map("leader_id")
+  gender    String     @db.VarChar(10)
+  teamSize  Int        @map("team_size")
+  status    TeamStatus @default(recruiting)
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  leader  User               @relation("TeamLeader", fields: [leaderId], references: [userId])
+  members DatingTeamMember[]
+
+  @@map("dating_teams")
+}
+
+model DatingTeamMember {
+  teamId BigInt @map("team_id")
+  userId BigInt @map("user_id")
+
+  team DatingTeam @relation(fields: [teamId], references: [teamId])
+  user User       @relation(fields: [userId], references: [userId])
+
+  @@id([teamId, userId])
+  @@map("dating_team_members")
+}
+
+// ==========================================
+// 6. matches - 매칭 결과
+// ==========================================
+enum MatchType {
+  roommate
+  dating_same
+  dating_opposite
+}
+
+enum MatchStatus {
+  proposed
+  confirmed
+  rejected
+}
+
+model Match {
+  matchId          BigInt      @id @default(autoincrement()) @map("match_id")
+  matchType        MatchType   @map("match_type")
+  partyAId         BigInt      @map("party_a_id")
+  partyBId         BigInt      @map("party_b_id")
+  similarityScore  Float       @map("similarity_score")
+  status           MatchStatus @default(proposed)
+  matchedAt        DateTime    @default(now()) @map("matched_at")
+
+  chatRoom ChatRoom?
+
+  @@map("matches")
+}
+
+// ==========================================
+// 7. chat_rooms / chat_messages - 채팅
+// ==========================================
+model ChatRoom {
+  chatRoomId BigInt   @id @default(autoincrement()) @map("chat_room_id")
+  matchId    BigInt   @unique @map("match_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  match    Match         @relation(fields: [matchId], references: [matchId])
+  messages ChatMessage[]
+
+  @@map("chat_rooms")
+}
+
+model ChatMessage {
+  messageId  BigInt   @id @default(autoincrement()) @map("message_id")
+  chatRoomId BigInt   @map("chat_room_id")
+  senderId   BigInt   @map("sender_id")
+  content    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [chatRoomId])
+  sender   User     @relation(fields: [senderId], references: [userId])
+
+  @@map("chat_messages")
+}
+
+// ==========================================
+// 8. reports - 신고
+// ==========================================
+enum ReportStatus {
+  pending
+  reviewed
+  resolved
+}
+
+model Report {
+  reportId   BigInt       @id @default(autoincrement()) @map("report_id")
+  reporterId BigInt       @map("reporter_id")
+  targetId   BigInt       @map("target_id")
+  reason     String       @db.VarChar(255)
+  status     ReportStatus @default(pending)
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  reporter User @relation("Reporter", fields: [reporterId], references: [userId])
+  target   User @relation("ReportTarget", fields: [targetId], references: [userId])
+
+  @@map("reports")
 }
