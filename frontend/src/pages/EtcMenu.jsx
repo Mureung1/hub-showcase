@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { api } from '../api';
 
 export default function EtcMenu() {
-  const { go, fridge } = useApp();
+  const { go, fridge, servingMultiplier } = useApp();
   const [imminentCount, setImminentCount] = useState(0);
 
   useEffect(() => { api.getExpiryAlerts().then((r) => setImminentCount(r.items.length)); }, [fridge]);
@@ -30,6 +30,13 @@ export default function EtcMenu() {
           <div className="menu-row">
             <span className="m-ico">💰</span>
             <div className="m-info"><div className="t">식자재별 가격 정보</div><div className="d">오늘의 채소 평균가 · 매일 갱신</div></div>
+            <span className="arrow">›</span>
+          </div>
+        </div>
+        <div className="card tap" onClick={() => go('serving-size-setting')}>
+          <div className="menu-row">
+            <span className="m-ico">🍽️</span>
+            <div className="m-info"><div className="t">내 인분 설정</div><div className="d">설정된 내 인분: {Number(servingMultiplier).toFixed(1)}인분</div></div>
             <span className="arrow">›</span>
           </div>
         </div>

@@ -5,15 +5,15 @@ import Row from '../components/Row';
 export default function Fridge() {
   const { fridge, go, openSheet } = useApp();
   const ids = Object.keys(fridge);
-  const imminentIds = ids.filter((id) => fridge[id].levels && fridge[id].imminent && fridgeAvailable(fridge, id));
-  const freshIds = ids.filter((id) => fridge[id].levels && !fridge[id].imminent && fridgeAvailable(fridge, id));
-  const processedIds = ids.filter((id) => !fridge[id].levels);
+  const imminentIds = ids.filter((id) => fridge[id].isFresh && fridge[id].imminent && fridgeAvailable(fridge, id));
+  const freshIds = ids.filter((id) => fridge[id].isFresh && !fridge[id].imminent && fridgeAvailable(fridge, id));
+  const processedIds = ids.filter((id) => !fridge[id].isFresh && fridgeAvailable(fridge, id));
 
   const renderFresh = (id) => {
     const f = fridge[id];
     return (
       <Row key={id} emoji={f.emoji} name={f.name} nameColor={f.imminent ? 'var(--red)' : undefined}
-        meta={`${f.levels[f.level]} · ${f.purchased} 구매`}
+        meta={`${f.qtyLabel} · ${f.purchased} 구매`}
         right={<span className={`badge ${f.imminent ? 'red' : 'green'}`}>{f.expiry}</span>}
         onClick={() => openSheet(id)} />
     );
@@ -42,8 +42,8 @@ export default function Fridge() {
         <div>
           {processedIds.map((id) => {
             const f = fridge[id];
-            const badge = f.expiryLabel ? <span className="badge green">{f.expiryLabel}</span> : <span className="badge gray">—</span>;
-            const meta = f.expiryLabel ? f.qtyLabel : `${f.qtyLabel} · 유통기한 미입력`;
+            const badge = f.expiry ? <span className="badge green">{f.expiry}</span> : <span className="badge gray">—</span>;
+            const meta = f.expiry ? f.qtyLabel : `${f.qtyLabel} · 유통기한 미입력`;
             return <Row key={id} emoji={f.emoji} name={f.name} meta={meta} right={badge} onClick={() => openSheet(id)} />;
           })}
         </div>

@@ -1,18 +1,20 @@
 import * as store from '../store.js';
 
-export function getCandidates(req, res) {
-  res.json(store.getMealPlanCandidates());
+export async function getCandidates(req, res) {
+  res.json(await store.getMealPlanCandidates());
 }
 
-export function buildWeekly(req, res) {
+export async function buildWeekly(req, res) {
   const { pickedIds } = req.body;
-  const plan = store.buildWeeklyPlan(pickedIds);
-  if (!plan) return res.status(400).json({ error: 'pickedIds는 정확히 2개여야 해요.' });
+  if (!Array.isArray(pickedIds) || pickedIds.length !== 2) {
+    return res.status(400).json({ error: 'pickedIds는 정확히 2개여야 해요.' });
+  }
+  const plan = await store.buildWeeklyPlan(pickedIds);
   res.json(plan);
 }
 
-export function getMealShoppingList(req, res) {
-  const { weekPlanIds } = req.body;
+export async function getMealShoppingList(req, res) {
+  const { weekPlanIds, multiplier = 1.0 } = req.body;
   if (!Array.isArray(weekPlanIds)) return res.status(400).json({ error: 'weekPlanIds 배열이 필요해요.' });
-  res.json(store.getMealShoppingList(weekPlanIds));
+  res.json(await store.getMealShoppingList(weekPlanIds, parseFloat(multiplier)));
 }

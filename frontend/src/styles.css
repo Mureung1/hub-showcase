@@ -35,7 +35,11 @@ body{
 }
 .recipe-card .thumb,.detail-hero,.day-tag{filter:url(#roughen);}
 .phone{
-  width:100%;max-width:400px;height:820px;max-height:calc(100vh - 48px);
+  /* 항상 400:820 화면비를 유지하면서, 가로/세로 둘 중 더 좁게 제약하는 쪽에 맞춰 통째로 줄어든다.
+     단, 폭이 360px 밑으로 내려가면 칩·글자가 줄바꿈되며 레이아웃이 깨지므로 360px를 하한선으로 둔다 —
+     세로 공간이 그보다 더 부족하면 화면비 대신 세로 스크롤로 넘친 만큼 보게 둔다(레이아웃 깨짐보다 낫다). */
+  width:clamp(360px, min(400px, 100vw, calc((100vh - 48px) * 400 / 820)), 400px);
+  aspect-ratio:400 / 820;
   background:var(--bg);border-radius:40px;overflow:hidden;
   box-shadow:6px 6px 0 rgba(74,62,42,.18);
   display:flex;flex-direction:column;position:relative;

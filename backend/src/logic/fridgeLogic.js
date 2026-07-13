@@ -3,8 +3,8 @@
 
 export function fridgeAvailable(fridge, id) {
   const f = fridge[id];
-  if (!f) return false; // 삭제됐거나 애초에 없던 재료 — "보유 안 함"으로 취급 (레시피 매칭이 크래시하지 않도록)
-  return f.levels ? f.level < f.levels.length - 1 : true;
+  if (!f) return false;
+  return f.items && f.items.length > 0;
 }
 
 export function ingHave(fridge, ing) {
@@ -26,21 +26,35 @@ export function recipeHasImminentBadge(fridge, recipes, id) {
 }
 
 export function imminentIds(fridge) {
-  return Object.keys(fridge).filter((id) => fridge[id].levels && fridge[id].imminent && fridgeAvailable(fridge, id));
+  return Object.keys(fridge).filter((id) => fridge[id].imminent && fridgeAvailable(fridge, id));
 }
 
-// 조리 완료 시 실제로 차감될 재료 미리보기 목록 계산 (기본 사용량 = 1레벨)
+// 조리 완료 시 실제로 차감될 재료 미리보기 목록 계산
 export function buildDeductionState(fridge, recipe, checkedAddonIds) {
   const state = [];
-  function pushEntry(id, addon) {
+  function pushEntry(id, addon, amtStr) {
     const f = fridge[id];
-    if (!f?.levels) return; // 삭제됐거나 미추적(펜트리) 재료는 차감하지 않음
-    const remain = f.levels.length - 1 - f.level;
+    if (!f || !f.items) return; // 미추적(가공식품) 재료는 차감하지 않음
+    
+    // items 배열의 qtyAmount 합산
+    const remain = f.items.reduce((sum, it) => sum + (Number(it.qtyAmount) || 0), 0);
     if (remain <= 0) return; // 이미 소진된 재료는 차감할 게 없음
-    state.push({ id, use: 1, max: remain, fixed: f.levels.length <= 2, addon: !!addon });
+    
+    let use = 1;
+    if (amtStr) {
+      if (amtStr.includes('g')) use = parseInt(amtStr) || 150;
+      else if (amtStr.includes('반')) use = 0.5;
+      else if (amtStr.includes('1/2')) use = 0.5;
+      else if (amtStr.includes('1/3')) use = 0.33;
+      else if (amtStr.includes('1/4')) use = 0.25;
+      else if (amtStr.includes('1/8')) use = 0.125;
+      else use = parseFloat(amtStr) || 1;
+    }
+    
+    state.push({ id, use, max: remain, fixed: false, addon: !!addon, unit: f.items[0]?.qtyUnit });
   }
-  recipe.ingredients.forEach((ing) => { if (!ing.untracked && ing.id) pushEntry(ing.id, false); });
-  recipe.addons.forEach((a) => { if (checkedAddonIds.includes(a.id)) pushEntry(a.id, true); });
+  recipe.ingredients.forEach((ing) => { if (!ing.untracked && ing.id) pushEntry(ing.id, false, ing.amt); });
+  recipe.addons.forEach((a) => { if (checkedAddonIds.includes(a.id)) pushEntry(a.id, true, a.label); });
   return state;
 }
 

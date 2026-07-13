@@ -23,6 +23,7 @@ import MealPlanPicker from './pages/MealPlanPicker';
 import MealPlan from './pages/MealPlan';
 import MealShoppingList from './pages/MealShoppingList';
 import Prices from './pages/Prices';
+import ServingSizeSetting from './pages/ServingSizeSetting';
 
 const SCREENS = {
   home: Home,
@@ -43,6 +44,7 @@ const SCREENS = {
   'meal-plan': MealPlan,
   'meal-shopping-list': MealShoppingList,
   prices: Prices,
+  'serving-size-setting': ServingSizeSetting,
 };
 
 function Screen() {

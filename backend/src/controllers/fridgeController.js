@@ -1,30 +1,36 @@
 import * as store from '../store.js';
 
-export function getFridge(req, res) {
-  res.json(store.getFridge());
+export async function getFridge(req, res) {
+  res.json(await store.getFridge());
 }
 
-export function createFridgeItem(req, res) {
-  const { name, quantityLabel, purchasedAt, expiryDate } = req.body;
-  if (!name || !quantityLabel || !purchasedAt || !expiryDate) {
-    return res.status(400).json({ error: 'name, quantityLabel, purchasedAt, expiryDate는 필수예요.' });
+export async function createFridgeItem(req, res) {
+  const { ingredientId, name, quantityLabel, purchasedAt } = req.body;
+  if (!quantityLabel || !purchasedAt) {
+    return res.status(400).json({ error: 'quantityLabel, purchasedAt는 필수예요.' });
   }
-  const item = store.addFridgeItem({ name, quantityLabel, purchasedAt, expiryDate });
-  res.status(201).json(item);
+  if (!ingredientId && !name) {
+    return res.status(400).json({ error: 'ingredientId 또는 name 중 하나는 필요해요.' });
+  }
+  try {
+    res.status(201).json(await store.addFridgeItem(req.body));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
 }
 
-export function updateFridgeItem(req, res) {
-  const item = store.updateFridgeItem(req.params.id, req.body);
-  if (!item) return res.status(404).json({ error: `fridge item ${req.params.id} not found` });
-  res.json(item);
+export async function updateFridgeItem(req, res) {
+  const updated = await store.updateFridgeItem(req.params.id, req.body);
+  if (!updated) return res.status(404).json({ error: `item ${req.params.id} not found` });
+  res.json(updated);
 }
 
-export function deleteFridgeItem(req, res) {
-  const ok = store.deleteFridgeItem(req.params.id);
-  if (!ok) return res.status(404).json({ error: `fridge item ${req.params.id} not found` });
+export async function deleteFridgeItem(req, res) {
+  const success = await store.deleteFridgeItem(req.params.id);
+  if (!success) return res.status(404).json({ error: `item ${req.params.id} not found` });
   res.status(204).end();
 }
 
-export function getExpiryAlerts(req, res) {
-  res.json(store.getExpiryAlerts());
+export async function getExpiryAlerts(req, res) {
+  res.json(await store.getExpiryAlerts());
 }
