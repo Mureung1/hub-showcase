@@ -7,7 +7,7 @@
 ## 한 줄 구조
 
 ```text
-기획 원칙 -> 화면/기능 명세 -> 디자인 시스템 -> 에셋 프롬프트/실행 규칙 -> 프로토타입 적용
+기획 원칙 -> 화면/기능 명세 -> 디자인 시스템 -> 에셋 프롬프트/실행 규칙 -> 프로토타입 적용 -> 계획/검증/백로그 운영
 ```
 
 ## 전체 계층
@@ -33,13 +33,22 @@ docs/project-knowledge-map.md
 │  ├─ asset-prompts/
 │  └─ public/assets
 ├─ Agent 줄기
-│  └─ agent-design.md
+│  ├─ agent-design.md
+│  ├─ planning-agent.md
+│  ├─ verification-agent.md
+│  ├─ document-management-agent.md
+│  └─ agent-usage-guide.md
 ├─ 실행 규칙 줄기
 │  ├─ AGENTS.md
 │  ├─ xp-desktop-pet-ui skill
 │  └─ docs/codex-skills/xp-desktop-pet-ui/
 ├─ 운영·학습 줄기
+│  ├─ master-plan.md
 │  ├─ four-week-roadmap.md
+│  ├─ weekly-plan-2026-07-13.md
+│  ├─ today-plan-2026-07-13.md
+│  ├─ tasks.md
+│  ├─ github-project-guide.md
 │  ├─ status.md
 │  └─ learning/
 └─ 보관 줄기
@@ -61,8 +70,6 @@ product-plan.md
 | `user-flow-wireframes.md` | Profile Setup Wizard부터 QuestRunner.exe, 완료/실패/복구까지의 화면 흐름 |
 | `mvp-functional-spec.md` | 구현자가 따라야 할 MVP 동작 계약과 Acceptance Criteria |
 
-이 줄기는 “무엇을 만들 것인가”에서 “어떻게 동작해야 하는가”로 내려간다.
-
 ## 2. 디자인·에셋 줄기
 
 ```text
@@ -81,13 +88,12 @@ design-references/concept.png
 | `asset-prompts/` | 디자인 시스템을 바탕으로 새 에셋을 생성하기 위한 상세 프롬프트 |
 | `public/assets/` | 실제 브라우저가 불러오는 적용 에셋 위치 |
 
-`asset-prompts`는 `design-system.md`에서 파생된 생성용 문서다. 생성된 이미지가 자동으로 적용되는 것은 아니며, 선별된 파일을 `public/assets`에 넣고 코드에서 경로를 연결해야 화면에 보인다.
-
 ## 3. Agent 줄기
 
 ```text
 product-plan.md
   -> agent-design.md
+  -> planning-agent.md / verification-agent.md
   -> mvp-functional-spec.md
   -> 규칙 기반 퀘스트 생성/리밸런싱
   -> 추후 LLM Agent 확장
@@ -96,10 +102,9 @@ product-plan.md
 | 문서 | 역할 |
 |---|---|
 | `agent-design.md` | 목표 해석, 퀘스트 생성, 리밸런싱, 피드백 Agent의 역할 정의 |
-| `mvp-functional-spec.md` | MVP에서 실제 구현해야 하는 규칙 기반 동작 범위 |
+| `planning-agent.md` | 요구사항을 Task와 일정으로 쪼개는 문서형 Agent |
+| `verification-agent.md` | 구현 결과를 시나리오와 데이터 흐름으로 점검하는 문서형 Agent |
 | `future-expansion-plan.md` | 개인 LLM, 음성 입력, 웹캠, 소셜 탐색 등 MVP 이후 확장 |
-
-MVP에서는 실제 LLM API가 아니라 규칙 기반으로 Agent처럼 행동한다. LLM 연동은 확장 계획에 둔다.
 
 ## 4. 실행 규칙 줄기
 
@@ -114,26 +119,29 @@ design-system.md + mvp-functional-spec.md + user-flow-wireframes.md + asset-prom
 | `xp-desktop-pet-ui skill` | Codex 개인 환경에 있는 XP 전자펫 UI 전용 실행 규칙 |
 | `docs/codex-skills/xp-desktop-pet-ui/` | 다른 환경에서도 skill을 재사용할 수 있도록 보관한 repo 문서화 버전 |
 
-중요한 점은 `xp-desktop-pet-ui skill`이 `asset-prompts`에서만 유래한 것이 아니라는 것이다. 이 skill은 `design-system.md`, `mvp-functional-spec.md`, `user-flow-wireframes.md`의 핵심 규칙과 `asset-prompts` 구조를 짧게 압축한 외부 실행 규칙이다.
-
-로컬 skill은 Git PR에 자동 포함되지 않는다. 그래서 `docs/codex-skills/xp-desktop-pet-ui/`에 문서화 버전을 두어 다른 컴퓨터에서도 복사해 재사용할 수 있게 한다.
-
 ## 5. 운영·학습 줄기
 
 ```text
-four-week-roadmap.md
+master-plan.md
+  -> four-week-roadmap.md
+  -> weekly-plan-2026-07-13.md
+  -> today-plan-2026-07-13.md
+  -> tasks.md
+  -> github-project-guide.md
   -> status.md
   -> learning/
 ```
 
 | 문서 | 역할 |
 |---|---|
+| `master-plan.md` | 7월 30일까지의 최종 목표, 기술 구조, 확장 반영 방식 |
+| `four-week-roadmap.md` | 주차별 일정표 |
+| `weekly-plan-2026-07-13.md` | 2주차 요일별 계획 |
+| `today-plan-2026-07-13.md` | 오늘의 작업 순서와 완료 기준 |
 | `tasks.md` | 우선순위가 표시된 전체 개발 Task 백로그 |
-| `four-week-roadmap.md` | 7월 10일, 17일, 24일, 30일 기준 작업 분해 |
+| `github-project-guide.md` | GitHub Issues/Projects 보드, 필드, 우선순위 표시 방식 |
 | `status.md` | 완료, 검증, 다음 작업, 차단 요소만 기록 |
 | `learning/` | ChatGPT 프로젝트에 넣고 공부할 키워드와 참고 코드 위치 |
-
-이 줄기는 “작업을 어떻게 이어갈 것인가”와 “무엇을 공부해야 하는가”를 담당한다.
 
 ## 6. 보관 줄기
 
@@ -156,17 +164,3 @@ archive/
 - 보관 줄기
 
 어느 줄기에도 속하지 않으면 새 문서를 만들기보다 기존 문서에 합치는 것을 우선 검토한다.
-
-## 발표용 요약
-
-- `README.md`: 프로젝트 입구
-- `docs/README.md`: 문서 링크 허브
-- `project-knowledge-map.md`: 문서 관계 지도
-- `design-system.md`: 시각 규칙의 원천
-- `asset-prompts/`: 에셋 생성 지시서
-- `public/assets/`: 실제 적용 에셋
-- `AGENTS.md`: Codex 작업 규칙
-- `xp-desktop-pet-ui skill`: Codex 반복 작업을 위한 외부 실행 규칙
-
-
-
