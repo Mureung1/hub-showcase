@@ -228,7 +228,6 @@ test('product runtime layout treats a child named with two leading dots as conta
 
 test(
   'product runtime layout resolves symlinks before checking root overlap',
-  { skip: process.platform === 'win32' },
   async () => {
     await withProductLayoutFixture(async ({
       packageRoot,
@@ -283,7 +282,6 @@ test('product runtime layout does not fall back when its package binary is missi
 
 test(
   'product runtime layout rejects a non-executable package binary',
-  { skip: process.platform === 'win32' },
   async () => {
     await withProductLayoutFixture(async ({
       appDataRoot,
@@ -313,7 +311,6 @@ test(
 
 test(
   'product runtime layout rejects a binary symlink that escapes packageRoot',
-  { skip: process.platform === 'win32' },
   async () => {
     await withProductLayoutFixture(async ({
       appDataRoot,
@@ -426,7 +423,6 @@ test('product runtime layout classifies runtime-home pair preparation failure as
 
 test(
   'product runtime layout rejects a runtime-home symlink that escapes appDataRoot',
-  { skip: process.platform === 'win32' },
   async () => {
     await withProductLayoutFixture(async ({
       appDataRoot,
@@ -473,7 +469,7 @@ async function withProductLayoutFixture(
     packageRoot,
     'node_modules',
     '.bin',
-    process.platform === 'win32' ? 'codex.cmd' : 'codex',
+    'codex',
   )
 
   await mkdir(join(packageRoot, 'node_modules', '.bin'), { recursive: true })
@@ -504,15 +500,6 @@ async function writeFakeCodexBinaryOutput(
   codexBinPath: string,
   output: string,
 ): Promise<void> {
-  if (process.platform === 'win32') {
-    const lines = output
-      .split('\n')
-      .map((line) => `echo ${line}`)
-      .join('\r\n')
-    await writeFile(codexBinPath, `@echo off\r\n${lines}\r\n`)
-    return
-  }
-
   await writeFile(
     codexBinPath,
     `#!/usr/bin/env node\nprocess.stdout.write(${JSON.stringify(`${output}\n`)})\n`,

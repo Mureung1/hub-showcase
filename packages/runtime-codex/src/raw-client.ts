@@ -866,11 +866,10 @@ export async function runCodexInitializeSmoke(
 }
 
 export function resolvePackageCodexBinPath(startDir = packageRoot): string {
-  const binName = process.platform === 'win32' ? 'codex.cmd' : 'codex'
   let currentDir = startDir
 
   while (true) {
-    const candidate = join(currentDir, 'node_modules', '.bin', binName)
+    const candidate = join(currentDir, 'node_modules', '.bin', 'codex')
 
     if (existsSync(candidate)) {
       return candidate
