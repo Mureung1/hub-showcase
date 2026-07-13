@@ -1,5 +1,7 @@
 # Agent Discussion Summary
 
+> **레거시 아카이브:** 이 문서는 이전 `독서방·신뢰도·타이머` 콘셉트에서 만든 토론 기록이다. 현재 구현 기준으로 사용하지 않는다. 현재 제품 기준은 `client/docs/product-prd.md`와 `client/docs/user-flow.md`를 따른다.
+
 이 문서는 MVP UI 명세를 만들기 위한 AI 토론 기록이다. 구현 기준 문서는 아니며, 최종 반영된 기준은 `client/docs/product-prd.md`, `client/docs/user-flow.md`, `client/docs/click-unit-ui-spec.md`, `client/docs/component-implementation-notes.md`를 따른다.
 
 ## 참여 역할
