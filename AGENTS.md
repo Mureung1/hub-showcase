@@ -8,7 +8,7 @@
 - `backend/` — FastAPI + uv (Python 3.13). 개발 서버는 `cd backend && uv run fastapi dev app/main.py` (8000 포트).
 - `docs/plan/` — 기획·설계 문서.
 - `docs/prototype/` — HTML 프로토타입. 빌드 대상이 아니다.
-- `docs/notes/` — Claude Code와 논의한 내용을 정리해 저장하는 메모.
+- `docs/notes/` — AI Agent와 논의한 내용을 정리해 저장하는 메모.
 
 프론트엔드의 `/api` 요청은 Vite 프록시를 통해 백엔드로 전달된다. 프론트엔드 코드에서는 백엔드 주소를 직접 쓰지 않고 `/api/...` 경로만 사용한다.
 
