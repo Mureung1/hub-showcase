@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GNU 전공/교양 수강신청 AI 네비게이터</title>
+    <!-- Google Fonts: Outfit & Noto Sans KR -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Style CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dark-mode">
+    <div class="app-container">
+        
+        <!-- ================= LEFT PANEL: DASHBOARD ================= -->
+        <aside class="left-panel">
+            <header class="logo-area">
+                <div class="logo-icon">GNU</div>
+                <div class="logo-text">
+                    <h1>AI Navigator</h1>
+                    <span>Course Planner</span>
+                </div>
+            </header>
+
+            <!-- Profile Card -->
+            <section class="profile-card">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <div class="profile-info">
+                        <h3>김경상 <span class="badge">편입생</span></h3>
+                        <p>컴퓨터공학과 | 3학년</p>
+                    </div>
+                </div>
+                <!-- Profile Switcher for demonstration -->
+                <div class="profile-switcher">
+                    <label for="student-type-select">학적 모의 설정: </label>
+                    <select id="student-type-select">
+                        <option value="transfer" selected>편입생 (전적대 인정 반영)</option>
+                        <option value="general">일반 재학생 (다전공 미신청)</option>
+                        <option value="double-major">다전공자 (컴공 + 경영)</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- Total Credit Progress (Radial) -->
+            <section class="credit-summary-section">
+                <div class="section-title">
+                    <i data-lucide="award"></i>
+                    <h2>졸업 학점 달성도</h2>
+                </div>
+                <div class="radial-progress-wrapper">
+                    <div class="radial-progress" id="total-progress-circle">
+                        <div class="inner-circle">
+                            <span class="percentage" id="total-percent-text">64%</span>
+                            <span class="credits-text" id="total-credits-text">84 / 130학점</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Detailed Credit Bars -->
+            <section class="detailed-credits-section">
+                <div class="section-title">
+                    <i data-lucide="bar-chart-2"></i>
+                    <h2>영역별 세부 현황</h2>
+                </div>
+                
+                <div class="progress-item" data-field="major-req">
+                    <div class="progress-labels">
+                        <span class="label">전공 필수</span>
+                        <span class="values" id="major-req-val">12 / 24학점</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="major-req-fill" style="width: 50%;"></div>
+                    </div>
+                </div>
+
+                <div class="progress-item" data-field="major-opt">
+                    <div class="progress-labels">
+                        <span class="label">전공 선택</span>
+                        <span class="values" id="major-opt-val">30 / 36학점</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="major-opt-fill" style="width: 83%;"></div>
+                    </div>
+                </div>
+
+                <div class="progress-item" data-field="core-edu">
+                    <div class="progress-labels">
+                        <span class="label">기초교양</span>
+                        <span class="values" id="core-edu-val">9 / 9학점</span>
+                    </div>
+                    <div class="progress-bar-bg success">
+                        <div class="progress-bar-fill" id="core-edu-fill" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <div class="progress-item" data-field="balance-edu">
+                    <div class="progress-labels">
+                        <span class="label">균형교양</span>
+                        <span class="values" id="balance-edu-val">12 / 12학점</span>
+                    </div>
+                    <div class="progress-bar-bg success">
+                        <div class="progress-bar-fill" id="balance-edu-fill" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <div class="progress-item" data-field="converge-edu">
+                    <div class="progress-labels">
+                        <span class="label">융합교양</span>
+                        <span class="values" id="converge-edu-val">3 / 6학점</span>
+                    </div>
+                    <div class="progress-bar-bg warning" id="converge-edu-bar-bg">
+                        <div class="progress-bar-fill warning" id="converge-edu-fill" style="width: 50%;"></div>
+                    </div>
+                    <span class="warning-text" id="converge-edu-warning">⚠️ 융합교양 3영역 3학점 미이수</span>
+                </div>
+            </section>
+        </aside>
+
+        <!-- ================= CENTER PANEL: TIMETABLE ================= -->
+        <main class="center-panel">
+            <header class="timetable-header">
+                <div class="title-section">
+                    <h2>2026학년도 2학기 수강 계획 시간표</h2>
+                    <p>AI 네비게이터가 분석한 최적의 수강 추천 블록</p>
+                </div>
+                <div class="timetable-actions">
+                    <button class="btn btn-secondary" id="reset-timetable-btn">
+                        <i data-lucide="refresh-cw"></i> 초기화
+                    </button>
+                    <button class="btn btn-primary" id="confirm-plan-btn">
+                        <i data-lucide="check-circle-2"></i> 계획 확정
+                    </button>
+                </div>
+            </header>
+
+            <!-- Timetable Component -->
+            <div class="timetable-container">
+                <div class="timetable-grid">
+                    <!-- Day Headers -->
+                    <div class="grid-header time-col-header">시간</div>
+                    <div class="grid-header">월요일</div>
+                    <div class="grid-header">화요일</div>
+                    <div class="grid-header">수요일</div>
+                    <div class="grid-header">목요일</div>
+                    <div class="grid-header">금요일</div>
+
+                    <!-- Time Slots (9:00 - 18:00) -->
+                    <!-- 9:00 -->
+                    <div class="time-label">09:00 - 10:00</div>
+                    <div class="grid-cell" data-day="1" data-time="9"></div>
+                    <div class="grid-cell" data-day="2" data-time="9"></div>
+                    <div class="grid-cell" data-day="3" data-time="9"></div>
+                    <div class="grid-cell" data-day="4" data-time="9"></div>
+                    <div class="grid-cell" data-day="5" data-time="9"></div>
+                    
+                    <!-- 10:00 -->
+                    <div class="time-label">10:00 - 11:00</div>
+                    <div class="grid-cell" data-day="1" data-time="10"></div>
+                    <div class="grid-cell" data-day="2" data-time="10"></div>
+                    <div class="grid-cell" data-day="3" data-time="10"></div>
+                    <div class="grid-cell" data-day="4" data-time="10"></div>
+                    <div class="grid-cell" data-day="5" data-time="10"></div>
+
+                    <!-- 11:00 -->
+                    <div class="time-label">11:00 - 12:00</div>
+                    <div class="grid-cell" data-day="1" data-time="11"></div>
+                    <div class="grid-cell" data-day="2" data-time="11"></div>
+                    <div class="grid-cell" data-day="3" data-time="11"></div>
+                    <div class="grid-cell" data-day="4" data-time="11"></div>
+                    <div class="grid-cell" data-day="5" data-time="11"></div>
+
+                    <!-- 12:00 -->
+                    <div class="time-label">12:00 - 13:00</div>
+                    <div class="grid-cell" data-day="1" data-time="12"></div>
+                    <div class="grid-cell" data-day="2" data-time="12"></div>
+                    <div class="grid-cell" data-day="3" data-time="12"></div>
+                    <div class="grid-cell" data-day="4" data-time="12"></div>
+                    <div class="grid-cell" data-day="5" data-time="12"></div>
+
+                    <!-- 13:00 -->
+                    <div class="time-label">13:00 - 14:00</div>
+                    <div class="grid-cell" data-day="1" data-time="13"></div>
+                    <div class="grid-cell" data-day="2" data-time="13"></div>
+                    <div class="grid-cell" data-day="3" data-time="13"></div>
+                    <div class="grid-cell" data-day="4" data-time="13"></div>
+                    <div class="grid-cell" data-day="5" data-time="13"></div>
+
+                    <!-- 14:00 -->
+                    <div class="time-label">14:00 - 15:00</div>
+                    <div class="grid-cell" data-day="1" data-time="14"></div>
+                    <div class="grid-cell" data-day="2" data-time="14"></div>
+                    <div class="grid-cell" data-day="3" data-time="14"></div>
+                    <div class="grid-cell" data-day="4" data-time="14"></div>
+                    <div class="grid-cell" data-day="5" data-time="14"></div>
+
+                    <!-- 15:00 -->
+                    <div class="time-label">15:00 - 16:00</div>
+                    <div class="grid-cell" data-day="1" data-time="15"></div>
+                    <div class="grid-cell" data-day="2" data-time="15"></div>
+                    <div class="grid-cell" data-day="3" data-time="15"></div>
+                    <div class="grid-cell" data-day="4" data-time="15"></div>
+                    <div class="grid-cell" data-day="5" data-time="15"></div>
+
+                    <!-- 16:00 -->
+                    <div class="time-label">16:00 - 17:00</div>
+                    <div class="grid-cell" data-day="1" data-time="16"></div>
+                    <div class="grid-cell" data-day="2" data-time="16"></div>
+                    <div class="grid-cell" data-day="3" data-time="16"></div>
+                    <div class="grid-cell" data-day="4" data-time="16"></div>
+                    <div class="grid-cell" data-day="5" data-time="16"></div>
+
+                    <!-- 17:00 -->
+                    <div class="time-label">17:00 - 18:00</div>
+                    <div class="grid-cell" data-day="1" data-time="17"></div>
+                    <div class="grid-cell" data-day="2" data-time="17"></div>
+                    <div class="grid-cell" data-day="3" data-time="17"></div>
+                    <div class="grid-cell" data-day="4" data-time="17"></div>
+                    <div class="grid-cell" data-day="5" data-time="17"></div>
+                </div>
+
+                <!-- Course Cards will overlay the grid dynamically via JS -->
+                <div class="course-overlay-container" id="course-overlay"></div>
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: AI NAVIGATOR ================= -->
+        <section class="right-panel">
+            
+            <!-- Real-time Diagnostic Widget -->
+            <div class="diagnostic-card warning-state" id="diagnostic-widget">
+                <div class="card-header">
+                    <span class="pulse-icon warning"><i data-lucide="alert-triangle"></i></span>
+                    <h3>AI 학사 진단 브리핑</h3>
+                </div>
+                <div class="card-body">
+                    <p class="desc" id="diagnostic-desc">
+                        김경상님, 졸업 요건을 충족하기 위해 이번 학기에 <strong>융합교양 3영역(기술과 인류) 3학점</strong> 이수가 반드시 필요합니다.
+                    </p>
+                    <div class="bullet-alerts" id="diagnostic-bullets">
+                        <div class="bullet-item red-alert">
+                            <span class="indicator"></span>
+                            <span>융합교양 3영역 누락 (3학점)</span>
+                        </div>
+                        <div class="bullet-item yellow-alert">
+                            <span class="indicator"></span>
+                            <span>전공 필수 이수 요건 미달 (잔여 12학점 필요)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Chat Agent -->
+            <div class="chat-agent-card">
+                <div class="card-header">
+                    <div class="agent-avatar">
+                        <i data-lucide="bot"></i>
+                    </div>
+                    <div class="agent-title">
+                        <h3>GNU AI Assistant</h3>
+                        <span class="status-indicator">Online</span>
+                    </div>
+                </div>
+
+                <!-- Message Log -->
+                <div class="chat-messages" id="chat-messages-container">
+                    <!-- Dynamic Messages will load here -->
+                </div>
+
+                <!-- Chat Input and Chips -->
+                <div class="chat-footer">
+                    <div class="quick-chips" id="quick-action-chips">
+                        <!-- Predefined prompt chips -->
+                        <button class="chip" data-prompt="converge-list">융합교양 3영역 교과목 리스트 보여줘</button>
+                        <button class="chip" data-prompt="auto-schedule">금공강 + 융합교양 포함 15학점 시간표 짜줘</button>
+                        <button class="chip" data-prompt="major-req-list">남은 전공 필수 과목 추천해줘</button>
+                    </div>
+                    <div class="input-area">
+                        <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
+                        <button class="btn-upload" id="btn-image-upload" title="학점 성적표 캡처 이미지 올리기">
+                            <i data-lucide="paperclip"></i>
+                        </button>
+                        <input type="text" id="chat-input" placeholder="AI에게 시간표 요구사항을 입력하세요..." autocomplete="off">
+                        <button class="btn-send" id="btn-chat-send">
+                            <i data-lucide="send"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ================= COURSE DETAIL MODAL ================= -->
+    <div class="modal-backdrop" id="detail-modal">
+        <div class="modal-card">
+            <button class="close-btn" id="close-modal-btn">&times;</button>
+            <div class="modal-header">
+                <span class="category-tag" id="modal-category">전공필수</span>
+                <h3 id="modal-title">알고리즘 및 실습</h3>
+            </div>
+            <div class="modal-body">
+                <div class="info-row">
+                    <div class="info-item">
+                        <span class="label">교수명</span>
+                        <span class="value" id="modal-prof">홍길동 교수</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">학점</span>
+                        <span class="value" id="modal-credits">3학점</span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-item">
+                        <span class="label">강의 시간</span>
+                        <span class="value" id="modal-time">화요일 10:00 - 12:00</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">강의실</span>
+                        <span class="value" id="modal-room">공학4호관 402호</span>
+                    </div>
+                </div>
+                <div class="evaluation-card">
+                    <h4><i data-lucide="thumbs-up"></i> AI 요약 강의평</h4>
+                    <p id="modal-eval">코딩 실습 비중이 높으나 피드백이 꼼꼼함. 졸업을 위한 코어 알고리즘 습득에 매우 적합.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
