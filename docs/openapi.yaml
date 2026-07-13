@@ -1,0 +1,493 @@
+openapi: 3.0.3
+info:
+  title: FirstPR API
+  description: |
+    사용자의 GitHub 활동과 선호 조건을 분석해 첫 오픈소스 기여에 적합한 레포/이슈를 추천하는 API.
+
+    - GitHub API 호출은 백엔드 내부 구현으로 감춘다 (이 명세에 등장하지 않음).
+    - GitHub 에러 매핑 규칙: GitHub의 "없는 유저" → `404 USER_NOT_FOUND`, GitHub rate limit 초과 → `429 RATE_LIMITED`.
+    - 분석은 동기 처리: 클라이언트는 `POST /api/analysis` 응답 대기 중 "분석중" 화면을 표시한다.
+  version: 0.1.0
+servers:
+  - url: http://localhost:3000
+    description: 로컬 개발 서버
+
+tags:
+  - name: analysis
+    description: GitHub 프로필 분석
+  - name: recommendations
+    description: 레포/이슈 추천
+  - name: system
+    description: 서버 상태
+
+paths:
+  /health:
+    get:
+      tags: [system]
+      summary: 서버 상태 확인
+      operationId: getHealth
+      responses:
+        '200':
+          description: 서버 정상
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/analysis:
+    post:
+      tags: [analysis]
+      summary: GitHub 프로필 분석 실행
+      description: |
+        GitHub ID의 활동 이력(사용 언어, 커밋/PR 이력)을 분석해 기술 성향과 실력 수준을 반환한다.
+        동일 ID의 신선한 캐시(24시간 이내)가 있으면 GitHub 호출 없이 캐시를 반환한다.
+
+        **활동이 없는 사용자**(레포/커밋 0)는 에러가 아니라 정상 응답(200)으로 처리한다:
+        `languages: []`, activitySummary 전부 0, `skillLevel: beginner` 고정.
+        (개발자 지망생이 핵심 타겟 페르소나이므로 활동 없음은 실패가 아님 — 추천은 선호 조건만으로 진행)
+      operationId: createAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [githubId]
+              properties:
+                githubId:
+                  type: string
+                  description: 분석할 GitHub 사용자명
+                  pattern: '^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$'
+                  example: kimsunho2000
+      responses:
+        '200':
+          description: 분석 성공 (신선한 캐시가 있으면 재사용, 없으면 새로 분석해 저장)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Analysis'
+              examples:
+                withActivity:
+                  summary: 활동이 있는 사용자
+                  value:
+                    githubId: kimsunho2000
+                    languages:
+                      - name: JavaScript
+                        ratio: 0.52
+                      - name: Java
+                        ratio: 0.31
+                      - name: Python
+                        ratio: 0.17
+                    skillLevel: intermediate
+                    activitySummary:
+                      commits: 342
+                      pullRequests: 27
+                      issues: 11
+                      contributedRepos: 6
+                    analyzedAt: '2026-07-15T09:30:00.000Z'
+                noActivity:
+                  summary: 활동이 없는 사용자 (빈 분석 — 에러 아님)
+                  value:
+                    githubId: newbie-dev
+                    languages: []
+                    skillLevel: beginner
+                    activitySummary:
+                      commits: 0
+                      pullRequests: 0
+                      issues: 0
+                      contributedRepos: 0
+                    analyzedAt: '2026-07-15T09:30:00.000Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: 존재하지 않는 GitHub 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: USER_NOT_FOUND
+                  message: 존재하지 않는 GitHub 사용자입니다.
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/analysis/{githubId}:
+    get:
+      tags: [analysis]
+      summary: 분석 결과 조회 (캐시)
+      description: 저장된 분석 결과를 조회한다. 프로필 화면 새로고침/재진입용 — GitHub 호출 없음.
+      operationId: getAnalysis
+      parameters:
+        - name: githubId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$'
+          example: kimsunho2000
+      responses:
+        '200':
+          description: 저장된 분석 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Analysis'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: 해당 ID의 분석 이력이 없음 (POST /api/analysis 먼저 필요)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: ANALYSIS_NOT_FOUND
+                  message: 분석 이력이 없습니다. 먼저 분석을 실행해주세요.
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/recommendations:
+    post:
+      tags: [recommendations]
+      summary: 레포/이슈 추천 생성
+      description: |
+        분석 결과와 선호 조건을 조합해 추천 목록을 생성·저장하고 반환한다.
+        재조회/필터링은 조건을 바꿔 다시 POST한다 (매번 새 추천 리소스 생성).
+        조건에 맞는 결과가 없으면 에러가 아니라 `items: []`로 응답한다.
+      operationId: createRecommendation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [githubId, preferences]
+              properties:
+                githubId:
+                  type: string
+                  pattern: '^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$'
+                  example: kimsunho2000
+                preferences:
+                  $ref: '#/components/schemas/Preferences'
+      responses:
+        '200':
+          description: 추천 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recommendation'
+              example:
+                id: 7f9c3b2a-1d4e-4f6a-9b8c-2e5d7a1c3f90
+                githubId: kimsunho2000
+                preferences:
+                  languages: [JavaScript]
+                  difficulty: easy
+                  topics: [frontend, cli]
+                items:
+                  - repoFullName: facebook/react
+                    repoDescription: The library for web and native user interfaces.
+                    repoStars: 230000
+                    repoUrl: https://github.com/facebook/react
+                    primaryLanguage: JavaScript
+                    issueNumber: 31245
+                    issueTitle: '[DevTools] Fix tooltip position in profiler tab'
+                    issueUrl: https://github.com/facebook/react/issues/31245
+                    labels: [good first issue, react devtools]
+                    difficulty: easy
+                    matchScore: 87
+                    reason: 주 언어(JavaScript)와 일치하고 good first issue 라벨이 있어요.
+                createdAt: '2026-07-15T09:32:00.000Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: 분석 이력이 없어 추천 불가 (POST /api/analysis 먼저 필요)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: ANALYSIS_NOT_FOUND
+                  message: 분석 이력이 없습니다. 먼저 분석을 실행해주세요.
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/recommendations/{id}:
+    get:
+      tags: [recommendations]
+      summary: 저장된 추천 조회
+      description: 저장된 추천을 재조회한다. 추천 목록/상세 화면 새로고침용 — `items[]`에 상세 화면 필드까지 포함된다.
+      operationId: getRecommendation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 7f9c3b2a-1d4e-4f6a-9b8c-2e5d7a1c3f90
+      responses:
+        '200':
+          description: 저장된 추천
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recommendation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: 해당 ID의 추천이 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: RECOMMENDATION_NOT_FOUND
+                  message: 추천 결과를 찾을 수 없습니다.
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    Analysis:
+      type: object
+      description: GitHub 프로필 분석 결과
+      required: [githubId, languages, skillLevel, activitySummary, analyzedAt]
+      properties:
+        githubId:
+          type: string
+          example: kimsunho2000
+        languages:
+          type: array
+          description: |
+            사용 언어 비율 (내림차순 정렬).
+            활동이 없는 사용자는 빈 배열 — FE는 `languages.length === 0`으로 빈 상태 UI(활동 없음 안내)를 표시한다.
+          items:
+            $ref: '#/components/schemas/LanguageStat'
+        skillLevel:
+          type: string
+          description: 활동량 기반 실력 수준 (판정 규칙은 decisions.md 기록). 활동이 없으면 beginner 고정
+          enum: [beginner, intermediate, advanced]
+          example: intermediate
+        activitySummary:
+          $ref: '#/components/schemas/ActivitySummary'
+        analyzedAt:
+          type: string
+          format: date-time
+          description: 분석 시각 (캐시 신선도 판단 기준)
+          example: '2026-07-15T09:30:00.000Z'
+
+    LanguageStat:
+      type: object
+      required: [name, ratio]
+      properties:
+        name:
+          type: string
+          example: JavaScript
+        ratio:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: 전체 코드에서 차지하는 비율 (0~1)
+          example: 0.52
+
+    ActivitySummary:
+      type: object
+      description: 최근 활동 요약 (개수 집계)
+      required: [commits, pullRequests, issues, contributedRepos]
+      properties:
+        commits:
+          type: integer
+          example: 342
+        pullRequests:
+          type: integer
+          example: 27
+        issues:
+          type: integer
+          example: 11
+        contributedRepos:
+          type: integer
+          description: 기여한(커밋/PR을 남긴) 레포 수
+          example: 6
+
+    Preferences:
+      type: object
+      description: 사용자 선호 조건 (선택 화면 입력값)
+      required: [languages, difficulty]
+      properties:
+        languages:
+          type: array
+          minItems: 1
+          description: 기여하고 싶은 언어
+          items:
+            type: string
+          example: [JavaScript]
+        difficulty:
+          type: string
+          description: 희망 난이도
+          enum: [easy, medium, hard]
+          example: easy
+        topics:
+          type: array
+          description: 관심 주제 (선택)
+          items:
+            type: string
+          example: [frontend, cli]
+
+    RecommendationItem:
+      type: object
+      description: 추천 항목 1건 (목록·상세 화면 공용 — 상세 화면 필드까지 포함)
+      required:
+        - repoFullName
+        - repoUrl
+        - primaryLanguage
+        - issueNumber
+        - issueTitle
+        - issueUrl
+        - labels
+        - difficulty
+        - matchScore
+        - reason
+      properties:
+        repoFullName:
+          type: string
+          description: owner/repo 형식
+          example: facebook/react
+        repoDescription:
+          type: string
+          nullable: true
+          example: The library for web and native user interfaces.
+        repoStars:
+          type: integer
+          example: 230000
+        repoUrl:
+          type: string
+          format: uri
+          example: https://github.com/facebook/react
+        primaryLanguage:
+          type: string
+          example: JavaScript
+        issueNumber:
+          type: integer
+          example: 31245
+        issueTitle:
+          type: string
+          example: '[DevTools] Fix tooltip position in profiler tab'
+        issueUrl:
+          type: string
+          format: uri
+          description: GitHub 이슈로 이동하는 외부 링크
+          example: https://github.com/facebook/react/issues/31245
+        labels:
+          type: array
+          items:
+            type: string
+          example: [good first issue, react devtools]
+        difficulty:
+          type: string
+          description: 라벨 기반 추정 난이도
+          enum: [easy, medium, hard]
+          example: easy
+        matchScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: 규칙 기반 매칭 점수
+          example: 87
+        reason:
+          type: string
+          description: 추천 이유 (사용자에게 표시되는 한글 문구)
+          example: 주 언어(JavaScript)와 일치하고 good first issue 라벨이 있어요.
+
+    Recommendation:
+      type: object
+      description: 추천 결과 (선호 조건 스냅샷 포함)
+      required: [id, githubId, preferences, items, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 7f9c3b2a-1d4e-4f6a-9b8c-2e5d7a1c3f90
+        githubId:
+          type: string
+          example: kimsunho2000
+        preferences:
+          $ref: '#/components/schemas/Preferences'
+        items:
+          type: array
+          description: 추천 항목 (matchScore 내림차순). 조건에 맞는 결과가 없으면 빈 배열
+          items:
+            $ref: '#/components/schemas/RecommendationItem'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-07-15T09:32:00.000Z'
+
+    Error:
+      type: object
+      description: 공통 에러 응답 형식
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: 기계 판독용 에러 코드
+              enum:
+                - VALIDATION_ERROR
+                - USER_NOT_FOUND
+                - ANALYSIS_NOT_FOUND
+                - RECOMMENDATION_NOT_FOUND
+                - RATE_LIMITED
+                - INTERNAL_ERROR
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              description: 사용자에게 표시 가능한 한글 문구
+              example: githubId는 필수 입력값입니다.
+
+  responses:
+    ValidationError:
+      description: 잘못된 요청 (필수값 누락, 형식 오류)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: githubId는 필수 입력값입니다.
+    RateLimited:
+      description: GitHub API rate limit 초과 (잠시 후 재시도 필요)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: RATE_LIMITED
+              message: 요청이 많아 잠시 후 다시 시도해주세요.
+    InternalError:
+      description: 서버 내부 오류
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: INTERNAL_ERROR
+              message: 서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
