@@ -1,4 +1,4 @@
-import { Outlet, useMatches, useNavigate } from 'react-router-dom'
+import { Outlet, useMatches, useNavigate } from 'react-router'
 import logo from '../assets/logo.png'
 import './Layout.css'
 

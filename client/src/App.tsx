@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider } from 'react-router'
 import Layout from './components/Layout.tsx'
 import HomePage from './pages/HomePage.tsx'
 import NewAppointmentPage from './pages/NewAppointmentPage.tsx'
