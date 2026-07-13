@@ -108,6 +108,11 @@ rawText 분석을 우선 지원합니다. URL만 있고 rawText가 없으면 “
 
 응답의 `mode`는 `mock`, `openai`, `gemini` 중 하나입니다. 실제 provider 호출이 실패하면 서버는 앱을 중단하지 않고 mock 결과를 반환하며, 실패 이유를 요약에 포함합니다.
 
+
+### 분석 결과 표준 구조
+
+현재 mock 분석 결과는 [`DATA_SCHEMA.md`](./DATA_SCHEMA.md)에 정의한 표준 구조를 사용합니다. 향후 Gemini API 응답도 같은 구조로 정규화한 뒤 UI에 전달합니다.
+
 ## 테스트용 rawText
 
 ```text
@@ -137,3 +142,8 @@ https://github.com/clradtr/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%
 ## 개발 Task
 
 기획서와 현재 구현 상태를 기준으로 정리한 우선순위별 개발 백로그는 [TASKS.md](./TASKS.md)에서 확인할 수 있습니다.
+
+
+## 배포 기반 구조
+
+기본 실행은 계속 로컬 전용입니다. 향후 도메인과 호스팅을 연결할 수 있는 production 단일 서버, CORS, 보안 헤더, 요청 제한과 Docker 구조는 [DEPLOYMENT.md](./DEPLOYMENT.md)에 정리했습니다. 로그인과 사용자별 사용량 제한이 준비되기 전에는 외부에 공개하지 않습니다.

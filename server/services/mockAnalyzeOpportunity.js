@@ -1,5 +1,6 @@
 import { createTasks } from "./createTasks.js";
 import { analyzeResponseSchema } from "../schemas/analyzeSchemas.js";
+import { normalizeAnalysisResult } from "../../src/utils/normalizeAnalysisResult.js";
 
 function firstNonEmptyLine(text) {
   return text
@@ -263,5 +264,5 @@ export async function mockAnalyzeOpportunity({ profile, rawText, url }) {
     tasks: createTasks(opportunity, match),
   };
 
-  return analyzeResponseSchema.parse(result);
+  return analyzeResponseSchema.parse(normalizeAnalysisResult(result));
 }

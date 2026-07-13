@@ -3,6 +3,8 @@ import {
   getFriendlyGeminiError,
 } from "./geminiAnalyzeOpportunity.js";
 import { mockAnalyzeOpportunity } from "./mockAnalyzeOpportunity.js";
+import { analyzeResponseSchema } from "../schemas/analyzeSchemas.js";
+import { normalizeAnalysisResult } from "../../src/utils/normalizeAnalysisResult.js";
 import {
   getFriendlyOpenAIError,
   openaiAnalyzeOpportunity,
@@ -86,6 +88,10 @@ function getDisabledAIMessage() {
   return null;
 }
 
+function finalizeAnalysisResult(result) {
+  return analyzeResponseSchema.parse(normalizeAnalysisResult(result));
+}
+
 function attachMockNotice(result, message) {
   if (!message) {
     return result;
@@ -118,22 +124,22 @@ export async function analyzeOpportunity(payload) {
 
   if (config.liveGeminiEnabled) {
     try {
-      return await geminiAnalyzeOpportunity(payload);
+      return finalizeAnalysisResult(await geminiAnalyzeOpportunity(payload));
     } catch (error) {
       const fallbackResult = await mockAnalyzeOpportunity(payload);
-      return attachMockNotice(fallbackResult, getFriendlyGeminiError(error));
+      return finalizeAnalysisResult(attachMockNotice(fallbackResult, getFriendlyGeminiError(error)));
     }
   }
 
   if (config.liveOpenAIEnabled) {
     try {
-      return await openaiAnalyzeOpportunity(payload);
+      return finalizeAnalysisResult(await openaiAnalyzeOpportunity(payload));
     } catch (error) {
       const fallbackResult = await mockAnalyzeOpportunity(payload);
-      return attachMockNotice(fallbackResult, getFriendlyOpenAIError(error));
+      return finalizeAnalysisResult(attachMockNotice(fallbackResult, getFriendlyOpenAIError(error)));
     }
   }
 
   const fallbackResult = await mockAnalyzeOpportunity(payload);
-  return attachMockNotice(fallbackResult, getDisabledAIMessage());
+  return finalizeAnalysisResult(attachMockNotice(fallbackResult, getDisabledAIMessage()));
 }

@@ -1,9 +1,10 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import {
-  analyzeResponseJsonSchema,
+  providerAnalysisJsonSchema,
   analyzeResponseSchema,
 } from "../schemas/analyzeSchemas.js";
 import { createTasks } from "./createTasks.js";
+import { normalizeAnalysisResult } from "../../src/utils/normalizeAnalysisResult.js";
 
 const DEFAULT_GEMINI_MODEL = "gemini-3-flash-preview";
 const FALLBACK_GEMINI_MODEL = "gemini-2.5-flash";
@@ -92,7 +93,7 @@ function convertJsonSchemaToGeminiSchema(schema) {
   return converted;
 }
 
-const geminiAnalyzeResponseSchema = convertJsonSchemaToGeminiSchema(analyzeResponseJsonSchema);
+const geminiAnalyzeResponseSchema = convertJsonSchemaToGeminiSchema(providerAnalysisJsonSchema);
 
 function readGeminiText(response) {
   return response.text || "";
@@ -197,10 +198,10 @@ async function runGeminiAnalysisWithModel({ client, model, profile, rawText, url
     ...parsed,
     mode: "gemini",
   };
-  const normalized = {
+  const normalized = normalizeAnalysisResult({
     ...withoutTasks,
     tasks: createTasks(withoutTasks.opportunity, withoutTasks.match),
-  };
+  });
 
   return analyzeResponseSchema.parse(normalized);
 }

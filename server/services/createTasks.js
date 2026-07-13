@@ -18,12 +18,7 @@ function parseDeadline(value) {
 
   const [, year, month, day] = match;
   const date = new Date(`${year}-${padDatePart(month)}-${padDatePart(day)}T00:00:00+09:00`);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date;
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function formatDate(date) {
@@ -36,12 +31,8 @@ function addDays(date, days) {
   return nextDate;
 }
 
-function createTask(title, dueDate = null) {
-  return {
-    title,
-    dueDate,
-    status: "todo",
-  };
+function createTask(id, title, dueDate = null) {
+  return { id, title, dueDate, status: "todo" };
 }
 
 export function createTasks(opportunity, match) {
@@ -49,25 +40,28 @@ export function createTasks(opportunity, match) {
   const deadlineDate = parseDeadline(opportunity.deadline);
 
   if (deadlineDate) {
-    tasks.push(createTask("지원 가능 여부 최종 확인", formatDate(addDays(deadlineDate, -10))));
-    tasks.push(createTask("제출 서류 초안 준비", formatDate(addDays(deadlineDate, -7))));
-    tasks.push(createTask("신청서와 증빙 서류 검토", formatDate(addDays(deadlineDate, -3))));
-    tasks.push(createTask("최종 제출", formatDate(addDays(deadlineDate, -1))));
+    tasks.push(createTask("task-eligibility-check", "지원 가능 여부 최종 확인", formatDate(addDays(deadlineDate, -10))));
+    tasks.push(createTask("task-documents-draft", "제출 서류 초안 준비", formatDate(addDays(deadlineDate, -7))));
+    tasks.push(createTask("task-application-review", "신청서와 증빙 서류 검토", formatDate(addDays(deadlineDate, -3))));
+    tasks.push(createTask("task-final-submit", "최종 제출", formatDate(addDays(deadlineDate, -1))));
   } else {
-    tasks.push(createTask("마감일 확인", null));
+    tasks.push(createTask("task-deadline-check", "마감일 확인", null));
   }
 
-  opportunity.requiredDocuments.forEach((documentName) => {
-    tasks.push(
-      createTask(
-        `${documentName} 준비`,
-        deadlineDate ? formatDate(addDays(deadlineDate, -7)) : null,
-      ),
-    );
+  opportunity.requiredDocuments.forEach((documentName, index) => {
+    tasks.push(createTask(
+      `task-document-${index + 1}`,
+      `${documentName} 준비`,
+      deadlineDate ? formatDate(addDays(deadlineDate, -7)) : null,
+    ));
   });
 
-  match.missingInfo.forEach((missingInfo) => {
-    tasks.push(createTask(`${missingInfo} 확인`, deadlineDate ? formatDate(addDays(deadlineDate, -10)) : null));
+  match.missingInfo.forEach((missingInfo, index) => {
+    tasks.push(createTask(
+      `task-missing-info-${index + 1}`,
+      `${missingInfo} 확인`,
+      deadlineDate ? formatDate(addDays(deadlineDate, -10)) : null,
+    ));
   });
 
   return tasks;

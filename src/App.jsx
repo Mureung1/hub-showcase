@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { analyzeOpportunity as requestAnalyzeOpportunity, getHealth } from "./api.js";
+import { getHealth } from "./api.js";
+import {
+  ANALYSIS_MODE_LABELS,
+  CATEGORY_LABELS,
+  MATCH_STATUS_LABELS,
+} from "./constants/opportunity.js";
+import { analyzeOpportunity } from "./services/analyzeOpportunity.js";
+import { analyzeNoticeLinks } from "./services/analyzeNoticeLinks.js";
 import {
   findNewPostLinks,
   resolveTargetUrl,
@@ -52,28 +59,6 @@ const initialProfileDraft = {
   canJoinTeam: true,
 };
 
-const categoryLabels = {
-  activity: "대외활동",
-  contest: "공모전",
-  scholarship: "장학금",
-  support: "지원사업",
-  unknown: "미분류",
-  volunteer: "봉사",
-};
-
-const matchStatusLabels = {
-  conditionally_eligible: "조건부 가능",
-  eligible: "지원 가능",
-  insufficient_info: "정보 부족",
-  not_eligible: "지원 어려움",
-};
-
-const analysisModeLabels = {
-  gemini: "Gemini",
-  mock: "mock",
-  openai: "OpenAI",
-};
-
 const providerLabels = {
   gemini: "Gemini",
   mock: "mock",
@@ -83,6 +68,7 @@ const providerLabels = {
 const sidebarItems = ["대시보드", "프로필", "기회 추천", "저장한 공고", "마감 태스크", "설정"];
 
 const statusLabels = {
+  analyzing: "분석 중",
   complete: "완료",
   error: "확인 필요",
   idle: "준비",
@@ -150,6 +136,17 @@ function parseCommaList(value) {
     .map((item) => item.trim())
     .filter(Boolean);
 }
+
+function createAnalysisProfile(profileDraft) {
+  return {
+    school: profileDraft.school.trim(),
+    grade: Number(profileDraft.grade),
+    majors: parseCommaList(profileDraft.majors),
+    interests: parseCommaList(profileDraft.interests),
+    regions: parseCommaList(profileDraft.regions),
+    canJoinTeam: profileDraft.canJoinTeam,
+  };
+}
 function createInitialConfig() {
   return {
     htmlSource: "",
@@ -188,16 +185,46 @@ function createScanSummary(sourceResults, failedSources = []) {
   };
 }
 
+function AnalysisListSection({ items, title }) {
+  if (!items.length) {
+    return null;
+  }
+
+  return (
+    <section>
+      <h4>{title}</h4>
+      <ul>
+        {items.map((item, index) => (
+          <li key={`${title}-${index}`}>{item}</li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function AnalysisResultCard({ result }) {
   const opportunity = result.opportunity;
   const match = result.match;
   const fields = [
-    { label: "공고명", value: opportunity.title },
-    { label: "주최 기관", value: opportunity.organizer },
-    { label: "분류", value: categoryLabels[opportunity.category] ?? opportunity.category },
-    { label: "마감일", value: opportunity.deadline },
-    { label: "지원 대상", value: opportunity.target },
-    { label: "활동 기간", value: opportunity.activityPeriod },
+    { label: "주최 기관", value: opportunity.organizer || "확인 필요" },
+    { label: "카테고리", value: CATEGORY_LABELS[opportunity.category] },
+    { label: "마감일", value: opportunity.deadline || "마감일 확인 필요" },
+    { label: "지원 대상", value: opportunity.target || "확인 필요" },
+    ...(opportunity.activityPeriod ? [{ label: "활동 기간", value: opportunity.activityPeriod }] : []),
+  ];
+  const listSections = [
+    { title: "충족한 조건", items: match.matchedReasons },
+    { title: "부족한 정보", items: match.missingInfo },
+    { title: "지원 불가 이유", items: match.disqualifyingReasons },
+    { title: "지원 조건", items: opportunity.eligibility.map((item) => item.condition) },
+    { title: "우대 조건", items: opportunity.preferred.map((item) => item.condition) },
+    { title: "필요 서류", items: opportunity.requiredDocuments },
+    { title: "혜택", items: opportunity.benefits },
+    { title: "다음 행동", items: match.nextActions },
+    {
+      title: "준비 태스크",
+      items: result.tasks.map((task) => task.dueDate ? `${task.title} (${task.dueDate})` : task.title),
+    },
   ];
 
   return (
@@ -207,7 +234,16 @@ function AnalysisResultCard({ result }) {
           <p className="eyebrow">Analysis Result</p>
           <h3>{opportunity.title || "공고명 확인 필요"}</h3>
         </div>
-        <span className={`analysis-mode mode-${result.mode}`}>{analysisModeLabels[result.mode] ?? result.mode}</span>
+        <div className="analysis-result-actions">
+          <span className={`analysis-mode mode-${result.mode}`}>
+            {ANALYSIS_MODE_LABELS[result.mode]}
+          </span>
+          {opportunity.sourceUrl ? (
+            <a className="analysis-source-link" href={opportunity.sourceUrl} rel="noreferrer" target="_blank">
+              원문 보기
+            </a>
+          ) : null}
+        </div>
       </div>
 
       {result.mode === "mock" ? (
@@ -218,46 +254,32 @@ function AnalysisResultCard({ result }) {
         {fields.map((field) => (
           <div className="analysis-field" key={field.label}>
             <span>{field.label}</span>
-            <strong>{field.value || "확인 필요"}</strong>
+            <strong>{field.value}</strong>
           </div>
         ))}
       </div>
 
-      <div className="match-box">
+      <div className={`match-box match-status-${match.status}`}>
         <div>
-          <span>{matchStatusLabels[match.status] ?? match.status}</span>
-          <strong>{match.score}점</strong>
+          <span>{MATCH_STATUS_LABELS[match.status]}</span>
+          {match.score !== null ? <strong>{match.score}점</strong> : null}
         </div>
-        <p>{match.summary}</p>
+        <p>{match.summary || "분석 요약 확인 필요"}</p>
       </div>
 
+      {opportunity.uncertainFields.length ? (
+        <section className="analysis-confirmation">
+          <h4>추가 확인 필요</h4>
+          <ul>
+            {opportunity.uncertainFields.map((item) => <li key={item}>{item}</li>)}
+          </ul>
+        </section>
+      ) : null}
+
       <div className="analysis-lists">
-        <section>
-          <h4>맞는 이유</h4>
-          <ul>
-            {(match.matchedReasons.length ? match.matchedReasons : ["아직 확인된 일치 조건이 없습니다."]).map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h4>다음 행동</h4>
-          <ul>
-            {match.nextActions.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h4>준비 태스크</h4>
-          <ul>
-            {result.tasks.map((task) => (
-              <li key={`${task.title}-${task.dueDate || "none"}`}>
-                {task.title}{task.dueDate ? ` (${task.dueDate})` : ""}
-              </li>
-            ))}
-          </ul>
-        </section>
+        {listSections.map((section) => (
+          <AnalysisListSection key={section.title} items={section.items} title={section.title} />
+        ))}
       </div>
     </div>
   );
@@ -278,6 +300,20 @@ function AnalysisDemoPanel({
   profileDraft,
 }) {
   const canAnalyze = Boolean(analysisUrl.trim() || analysisRawText.trim());
+  const analysisState = isAnalyzing
+    ? "loading"
+    : analysisError
+      ? "error"
+      : analysisResult
+        ? "success"
+        : canAnalyze ? "idle" : "insufficient";
+  const analysisStateLabels = {
+    error: "분석 실패",
+    idle: "분석 준비",
+    insufficient: "입력 필요",
+    loading: "분석 중",
+    success: "분석 완료",
+  };
 
   return (
     <section className="analysis-panel" aria-labelledby="analysis-title">
@@ -286,9 +322,14 @@ function AnalysisDemoPanel({
           <p className="eyebrow">AI Analysis</p>
           <h2 id="analysis-title">공고 링크/본문 분석</h2>
         </div>
-        <span className="analysis-health">
-          {health ? `${health.aiProvider} / live ${String(health.liveAIEnabled ?? health.liveOpenAIEnabled)}` : "server 확인 중"}
-        </span>
+        <div className="analysis-panel-status">
+          <span className="analysis-health">
+            {health ? `${health.aiProvider} / live ${String(health.liveAIEnabled ?? health.liveOpenAIEnabled)}` : "server 확인 중"}
+          </span>
+          <span className={`analysis-state analysis-state-${analysisState}`}>
+            {analysisStateLabels[analysisState]}
+          </span>
+        </div>
       </header>
 
       <p className="analysis-helper">공고 링크만 입력하면 서버가 본문을 가져와 AI 분석을 실행합니다. 본문을 붙여넣으면 붙여넣은 내용이 우선 사용됩니다.</p>
@@ -368,13 +409,22 @@ function AnalysisDemoPanel({
       </form>
 
       {healthError ? <p className="notice-message is-error">{healthError}</p> : null}
-      {analysisError ? <p className="notice-message is-error">{analysisError}</p> : null}
-      {analysisResult ? <AnalysisResultCard result={analysisResult} /> : null}
+      {analysisState === "insufficient" ? (
+        <p className="analysis-state-message">공고 링크 또는 본문을 입력하면 분석할 수 있습니다.</p>
+      ) : null}
+      {analysisState === "loading" ? (
+        <p className="analysis-state-message" role="status">공고 내용을 분석하고 있습니다.</p>
+      ) : null}
+      {analysisState === "error" ? (
+        <p className="notice-message is-error" role="alert">{analysisError}</p>
+      ) : null}
+      {analysisState === "success" ? <AnalysisResultCard result={analysisResult} /> : null}
     </section>
   );
 }
 
 function ConfigPanel({
+  activeOperation,
   config,
   errorMessage,
   isRunning,
@@ -384,6 +434,7 @@ function ConfigPanel({
   onResetHistory,
   onRunBatchScan,
   onRunScan,
+  onRunScanAndAnalyze,
   onSaveLinks,
   onSaveSource,
   scan,
@@ -480,7 +531,15 @@ function ConfigPanel({
 
       <div className="action-row">
         <button className="primary-button" type="submit" disabled={isRunning}>
-          {isRunning ? "스캔 중" : "스캔 실행"}
+          {activeOperation === "scan" ? "스캔 중" : "스캔 실행"}
+        </button>
+        <button
+          className="secondary-button scan-analysis-button"
+          type="button"
+          onClick={onRunScanAndAnalyze}
+          disabled={isRunning}
+        >
+          {activeOperation === "scan-analysis" ? "스캔 및 분석 중" : "스캔 및 분석 실행"}
         </button>
         <button
           className="secondary-button"
@@ -604,9 +663,46 @@ function Metrics({ knownLinks, scan }) {
   );
 }
 
+async function copyTextToClipboard(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+
+  if (!copied) {
+    throw new Error("clipboard_unavailable");
+  }
+}
+
 function ResultTable({ displayMode, failedSources = [], links, onChangeMode }) {
+  const [copyFeedback, setCopyFeedback] = useState(null);
   const heading = displayMode === "all" ? "전체 공지 링크" : "최신 공지 링크";
   const eyebrow = displayMode === "all" ? "All Notices" : "Latest Since Last Scan";
+
+  async function handleCopyLink(link) {
+    try {
+      await copyTextToClipboard(link.url);
+      setCopyFeedback({ id: link.id, label: "복사됨" });
+    } catch {
+      setCopyFeedback({ id: link.id, label: "복사 실패" });
+    }
+
+    window.setTimeout(() => {
+      setCopyFeedback((currentFeedback) => (
+        currentFeedback?.id === link.id ? null : currentFeedback
+      ));
+    }, 1800);
+  }
 
   return (
     <div className="result-table">
@@ -640,16 +736,34 @@ function ResultTable({ displayMode, failedSources = [], links, onChangeMode }) {
 
       <div className="link-list">
         {links.length ? (
-          links.map((link, index) => (
-            <a className="link-row" href={link.url} key={link.id} rel="noreferrer" target="_blank">
-              <span className="row-index">{String(index + 1).padStart(2, "0")}</span>
-              <span className="link-copy">
-                <strong>{link.title}</strong>
-                <small>{link.url}</small>
-              </span>
-              <span className="link-host">{link.sourceName || link.hostname}</span>
-            </a>
-          ))
+          links.map((link, index) => {
+            const feedbackLabel = copyFeedback?.id === link.id ? copyFeedback.label : "링크 복사";
+
+            return (
+              <article className="link-row" key={`${link.sourceId || link.sourceName || "source"}:${link.id}`}>
+                <span className="row-index">{String(index + 1).padStart(2, "0")}</span>
+                <a className="link-copy" href={link.url} rel="noreferrer" target="_blank">
+                  <strong>{link.title}</strong>
+                  <small>{link.url}</small>
+                </a>
+                <span className="link-host">{link.sourceName || link.hostname}</span>
+                <span className="link-actions">
+                  <a className="link-action-button is-open" href={link.url} rel="noreferrer" target="_blank">
+                    공지 열기
+                  </a>
+                  <button
+                    className="link-action-button"
+                    type="button"
+                    onClick={() => handleCopyLink(link)}
+                    aria-label={`${link.title} 링크 복사`}
+                    aria-live="polite"
+                  >
+                    {feedbackLabel}
+                  </button>
+                </span>
+              </article>
+            );
+          })
         ) : (
           <div className="empty-state">표시할 공지 링크가 없습니다.</div>
         )}
@@ -658,7 +772,13 @@ function ResultTable({ displayMode, failedSources = [], links, onChangeMode }) {
   );
 }
 
-function NoticeBriefPanel({ briefs }) {
+function NoticeBriefPanel({ analysisProgress, briefs }) {
+  const progressLabel = analysisProgress?.total
+    ? analysisProgress.completed < analysisProgress.total
+      ? `${analysisProgress.completed}/${analysisProgress.total} 분석 중`
+      : `${analysisProgress.total - analysisProgress.failedCount}/${analysisProgress.total} 분석 완료`
+    : "";
+
   return (
     <section className="notice-brief-panel" aria-labelledby="notice-brief-title">
       <header className="result-header result-header-with-mode">
@@ -666,20 +786,35 @@ function NoticeBriefPanel({ briefs }) {
           <p className="eyebrow">Structured Notice</p>
           <h2 id="notice-brief-title">공고 정보</h2>
         </div>
-        <span>{briefs.length}개</span>
+        <div className="result-controls">
+          {progressLabel ? <span className="notice-analysis-progress" role="status">{progressLabel}</span> : null}
+          <span>{briefs.length}개</span>
+        </div>
       </header>
 
       <div className="notice-brief-list">
         {briefs.length ? (
           briefs.map((brief) => (
-            <article className="notice-brief" key={brief.id}>
+            <article className={`notice-brief status-${brief.status}`} key={brief.id}>
               <header className="notice-brief-title">
                 <div>
                   <strong>{brief.title}</strong>
-                  <small>{brief.sourceName}</small>
+                  <small>
+                    {brief.sourceName}
+                    {brief.mode ? ` · ${ANALYSIS_MODE_LABELS[brief.mode]}` : ""}
+                  </small>
                 </div>
-                <span>{brief.statusLabel}</span>
+                <span className={`notice-brief-status status-${brief.status}`}>{brief.statusLabel}</span>
               </header>
+              {brief.summary ? <p className="notice-brief-summary">{brief.summary}</p> : null}
+              {brief.errorMessage ? (
+                <p className="notice-brief-error" role="alert">{brief.errorMessage}</p>
+              ) : null}
+              {brief.uncertainFields.length ? (
+                <p className="notice-brief-uncertain">
+                  추가 확인 필요: {brief.uncertainFields.join(", ")}
+                </p>
+              ) : null}
               <dl className="brief-field-grid">
                 {noticeBriefFields.map((field) => (
                   <div className="brief-field" key={field.key}>
@@ -693,7 +828,7 @@ function NoticeBriefPanel({ briefs }) {
             </article>
           ))
         ) : (
-          <div className="empty-state">정리할 공고 정보가 없습니다.</div>
+          <div className="empty-state">최신 공지를 스캔하면 정리 결과가 여기에 표시됩니다.</div>
         )}
       </div>
     </section>
@@ -844,8 +979,11 @@ export default function OpportunityAgentWorkbench() {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analysisError, setAnalysisError] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [activeOperation, setActiveOperation] = useState(null);
+  const [noticeAnalysisByUrl, setNoticeAnalysisByUrl] = useState({});
+  const [noticeAnalysisProgress, setNoticeAnalysisProgress] = useState(null);
 
-  const isRunning = status === "running";
+  const isRunning = status === "running" || status === "analyzing";
   const resolvedTargetUrl = resolveTargetUrl(config.targetUrl);
   const sourceOptions = useMemo(() => [...defaultNoticeSources, ...customSources], [customSources]);
 
@@ -858,7 +996,10 @@ export default function OpportunityAgentWorkbench() {
     () => (displayMode === "all" ? (scan?.allLinks ?? []) : (scan?.latestLinks ?? [])),
     [displayMode, scan],
   );
-  const noticeBriefs = useMemo(() => createNoticeBriefsFromLinks(displayLinks), [displayLinks]);
+  const noticeBriefs = useMemo(
+    () => createNoticeBriefsFromLinks(displayLinks, noticeAnalysisByUrl),
+    [displayLinks, noticeAnalysisByUrl],
+  );
 
 
   useEffect(() => {
@@ -897,23 +1038,31 @@ export default function OpportunityAgentWorkbench() {
       ...currentProfile,
       ...partialProfile,
     }));
+    setAnalysisResult(null);
+    setAnalysisError("");
+  }
+
+  function updateAnalysisUrl(value) {
+    setAnalysisUrl(value);
+    setAnalysisResult(null);
+    setAnalysisError("");
+  }
+
+  function updateAnalysisRawText(value) {
+    setAnalysisRawText(value);
+    setAnalysisResult(null);
+    setAnalysisError("");
   }
 
   async function handleAnalyzeOpportunity(event) {
     event.preventDefault();
     setIsAnalyzing(true);
     setAnalysisError("");
+    setAnalysisResult(null);
 
     try {
-      const result = await requestAnalyzeOpportunity({
-        profile: {
-          school: profileDraft.school.trim(),
-          grade: Number(profileDraft.grade),
-          majors: parseCommaList(profileDraft.majors),
-          interests: parseCommaList(profileDraft.interests),
-          regions: parseCommaList(profileDraft.regions),
-          canJoinTeam: profileDraft.canJoinTeam,
-        },
+      const result = await analyzeOpportunity({
+        profile: createAnalysisProfile(profileDraft),
         url: analysisUrl.trim() || undefined,
         rawText: analysisRawText.trim(),
       });
@@ -949,6 +1098,7 @@ export default function OpportunityAgentWorkbench() {
         targetUrl: "",
       }));
       setScan(null);
+      setNoticeAnalysisProgress(null);
       setDisplayMode("latest");
       setStatus("idle");
       setErrorMessage("");
@@ -971,6 +1121,7 @@ export default function OpportunityAgentWorkbench() {
       targetUrl: source.targetUrl,
     });
     setScan(null);
+    setNoticeAnalysisProgress(null);
     setDisplayMode("latest");
     setStatus("idle");
     setErrorMessage("");
@@ -1085,23 +1236,33 @@ export default function OpportunityAgentWorkbench() {
     };
   }
 
+  async function runCurrentSourceScan() {
+    const { autoSaved, source } = maybeAutoSaveCurrentSource();
+    const result = await scanSource(source);
+    const scanWithModes = createScanSummary([result]);
+    const nextScan = {
+      ...scanWithModes,
+      isBatch: false,
+      targetUrl: result.targetUrl,
+    };
+
+    setKnownLinks(readNoticeHistory(source.targetUrl, source.knownUrls));
+    setScan(nextScan);
+    setDisplayMode("latest");
+
+    return { autoSaved, result, source };
+  }
+
   async function handleRunScan(event) {
     event.preventDefault();
+    setActiveOperation("scan");
+    setNoticeAnalysisProgress(null);
     setStatus("running");
     setErrorMessage("");
 
     try {
-      const { autoSaved, source } = maybeAutoSaveCurrentSource();
-      const result = await scanSource(source);
-      const scanWithModes = createScanSummary([result]);
+      const { autoSaved, result, source } = await runCurrentSourceScan();
 
-      setKnownLinks(readNoticeHistory(source.targetUrl, source.knownUrls));
-      setScan({
-        ...scanWithModes,
-        isBatch: false,
-        targetUrl: result.targetUrl,
-      });
-      setDisplayMode("latest");
       setNoticeMessage(
         `${autoSaved ? "출처를 저장하고 " : ""}${source.name}에서 최신 링크 ${result.latestLinks.length}개를 찾았습니다.`,
       );
@@ -1109,6 +1270,62 @@ export default function OpportunityAgentWorkbench() {
     } catch (error) {
       setStatus("error");
       setErrorMessage(getErrorMessage(error));
+    } finally {
+      setActiveOperation(null);
+    }
+  }
+
+  async function handleRunScanAndAnalyze() {
+    setActiveOperation("scan-analysis");
+    setNoticeAnalysisProgress(null);
+    setStatus("running");
+    setErrorMessage("");
+    setNoticeMessage("최신 공지를 스캔하고 있습니다.");
+
+    try {
+      const { autoSaved, result, source } = await runCurrentSourceScan();
+      const latestLinks = result.latestLinks;
+      const savedMessage = autoSaved ? "출처를 저장하고 " : "";
+
+      if (!latestLinks.length) {
+        setNoticeMessage(`${savedMessage}${source.name}에서 새 공지가 없어 분석을 실행하지 않았습니다.`);
+        setStatus("complete");
+        return;
+      }
+
+      setStatus("analyzing");
+      setNoticeAnalysisProgress({ completed: 0, failedCount: 0, total: latestLinks.length });
+      const summary = await analyzeNoticeLinks({
+        links: latestLinks,
+        profile: createAnalysisProfile(profileDraft),
+        onProgress: ({ completed, entry, failedCount, total }) => {
+          setNoticeAnalysisByUrl((currentEntries) => ({
+            ...currentEntries,
+            [entry.link.url]: entry,
+          }));
+          setNoticeAnalysisProgress({ completed, failedCount, total });
+          setNoticeMessage(`${source.name} 최신 공지 분석 중: ${completed}/${total}`);
+        },
+      });
+
+      if (!summary.successCount) {
+        setStatus("error");
+        setErrorMessage(
+          `최신 공지 ${summary.total}개를 찾았지만 분석하지 못했습니다. 공고 정보의 오류 메시지를 확인해주세요.`,
+        );
+        return;
+      }
+
+      setNoticeMessage(
+        `${savedMessage}${source.name}에서 최신 링크 ${summary.total}개를 찾고 ${summary.successCount}개를 분석했습니다.` +
+          (summary.failedCount ? ` ${summary.failedCount}개는 확인이 필요합니다.` : ""),
+      );
+      setStatus("complete");
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setActiveOperation(null);
     }
   }
 
@@ -1249,6 +1466,7 @@ export default function OpportunityAgentWorkbench() {
 
         <section className="tool-grid" aria-label="스캔 설정과 흐름">
           <ConfigPanel
+            activeOperation={activeOperation}
             config={config}
             errorMessage={errorMessage}
             isRunning={isRunning}
@@ -1258,6 +1476,7 @@ export default function OpportunityAgentWorkbench() {
             onResetHistory={handleResetHistory}
             onRunBatchScan={handleRunBatchScan}
             onRunScan={handleRunScan}
+            onRunScanAndAnalyze={handleRunScanAndAnalyze}
             onSaveLinks={handleSaveLinks}
             onSaveSource={handleSaveSource}
             scan={scan}
@@ -1280,8 +1499,8 @@ export default function OpportunityAgentWorkbench() {
           isAnalyzing={isAnalyzing}
           onAnalyze={handleAnalyzeOpportunity}
           onChangeProfile={updateProfileDraft}
-          onChangeRawText={setAnalysisRawText}
-          onChangeUrl={setAnalysisUrl}
+          onChangeRawText={updateAnalysisRawText}
+          onChangeUrl={updateAnalysisUrl}
           profileDraft={profileDraft}
         />
 
@@ -1293,7 +1512,7 @@ export default function OpportunityAgentWorkbench() {
             links={displayLinks}
             onChangeMode={setDisplayMode}
           />
-          <NoticeBriefPanel briefs={noticeBriefs} />
+          <NoticeBriefPanel analysisProgress={noticeAnalysisProgress} briefs={noticeBriefs} />
         </section>
         </section>
       </div>

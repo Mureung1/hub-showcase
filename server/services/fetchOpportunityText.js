@@ -3,6 +3,7 @@ import { isIP } from "node:net";
 
 const FETCH_TIMEOUT_MS = 15000;
 const MAX_REDIRECTS = 5;
+const MAX_FRAME_DEPTH = 2;
 const MIN_EXTRACTED_TEXT_LENGTH = 80;
 const MAX_EXTRACTED_TEXT_LENGTH = 30000;
 const MAX_HTML_BYTES = 5 * 1024 * 1024;
@@ -44,6 +45,17 @@ export function validateHttpUrl(value) {
   return parsedUrl;
 }
 
+function normalizeKnownPublicUrl(parsedUrl) {
+  const hostname = normalizeHostname(parsedUrl.hostname);
+  const isThinkContest = hostname === "thinkcontest.com" || hostname.endsWith(".thinkcontest.com");
+
+  if (isThinkContest && /\/Contest\/CateField\.html$/i.test(parsedUrl.pathname)) {
+    return new URL("/thinkgood/index.do", parsedUrl.origin);
+  }
+
+  return parsedUrl;
+}
+
 function createAbortSignal() {
   const abortController = new AbortController();
   const timeoutId = setTimeout(() => abortController.abort(), FETCH_TIMEOUT_MS);
@@ -51,7 +63,7 @@ function createAbortSignal() {
   return { abortController, timeoutId };
 }
 
-function getRequestHeaders(parsedTargetUrl) {
+function getRequestHeaders(parsedTargetUrl, cookieHeader) {
   return {
     Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -59,6 +71,7 @@ function getRequestHeaders(parsedTargetUrl) {
     Referer: parsedTargetUrl.origin,
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36 UniRadar/0.1",
+    ...(cookieHeader ? { Cookie: cookieHeader } : {}),
   };
 }
 
@@ -318,14 +331,59 @@ export function extractOpportunityTextFromHtml(html) {
   return combinedText.slice(0, MAX_EXTRACTED_TEXT_LENGTH);
 }
 
-async function fetchUrlHtmlWithoutRedirects(parsedTargetUrl) {
+function getSetCookieHeaders(response) {
+  if (typeof response.headers.getSetCookie === "function") {
+    return response.headers.getSetCookie();
+  }
+
+  const combinedHeader = response.headers.get("set-cookie");
+  return combinedHeader ? [combinedHeader] : [];
+}
+
+function storeResponseCookies(cookieJar, origin, response) {
+  const originCookies = cookieJar.get(origin) || new Map();
+
+  getSetCookieHeaders(response).forEach((headerValue) => {
+    const cookiePair = String(headerValue).split(";", 1)[0];
+    const separatorIndex = cookiePair.indexOf("=");
+
+    if (separatorIndex <= 0) {
+      return;
+    }
+
+    const name = cookiePair.slice(0, separatorIndex).trim();
+    const value = cookiePair.slice(separatorIndex + 1).trim();
+
+    if (name) {
+      originCookies.set(name, value);
+    }
+  });
+
+  if (originCookies.size) {
+    cookieJar.set(origin, originCookies);
+  }
+}
+
+function getCookieHeader(cookieJar, origin) {
+  const originCookies = cookieJar.get(origin);
+
+  if (!originCookies?.size) {
+    return "";
+  }
+
+  return Array.from(originCookies.entries())
+    .map(([name, value]) => `${name}=${value}`)
+    .join("; ");
+}
+
+async function fetchUrlHtmlWithoutRedirects(parsedTargetUrl, cookieHeader) {
   const { abortController, timeoutId } = createAbortSignal();
 
   try {
     return await fetch(parsedTargetUrl, {
       redirect: "manual",
       signal: abortController.signal,
-      headers: getRequestHeaders(parsedTargetUrl),
+      headers: getRequestHeaders(parsedTargetUrl, cookieHeader),
     });
   } finally {
     clearTimeout(timeoutId);
@@ -342,14 +400,46 @@ function getRedirectTargetUrl(response, currentUrl) {
   return validateHttpUrl(new URL(location, currentUrl).toString());
 }
 
+function getTagAttribute(tag, attributeName) {
+  const pattern = new RegExp(
+    `\\b${attributeName}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`,
+    "i",
+  );
+  const match = String(tag ?? "").match(pattern);
+  return match?.[1] ?? match?.[2] ?? match?.[3] ?? "";
+}
+
+function getPrimaryFrameTargetUrl(html, currentUrl) {
+  if (!/<frameset\b/i.test(html)) {
+    return null;
+  }
+
+  const frameTags = String(html).match(/<frame\b[^>]*>/gi) || [];
+  const frameSource = frameTags
+    .map((tag) => getTagAttribute(tag, "src").trim())
+    .find((value) => value && !/^(?:about:blank|javascript:|#)/i.test(value));
+
+  if (!frameSource) {
+    return null;
+  }
+
+  return validateHttpUrl(new URL(frameSource, currentUrl).toString());
+}
+
 export async function fetchUrlHtml(url) {
-  let currentUrl = validateHttpUrl(url);
+  let currentUrl = normalizeKnownPublicUrl(validateHttpUrl(url));
+  const cookieJar = new Map();
+  let frameDepth = 0;
 
   for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
     await assertPublicFetchTarget(currentUrl);
 
     try {
-      const upstreamResponse = await fetchUrlHtmlWithoutRedirects(currentUrl);
+      const upstreamResponse = await fetchUrlHtmlWithoutRedirects(
+        currentUrl,
+        getCookieHeader(cookieJar, currentUrl.origin),
+      );
+      storeResponseCookies(cookieJar, currentUrl.origin, upstreamResponse);
 
       if (upstreamResponse.status >= 300 && upstreamResponse.status < 400) {
         currentUrl = getRedirectTargetUrl(upstreamResponse, currentUrl);
@@ -363,6 +453,21 @@ export async function fetchUrlHtml(url) {
           `대상 웹사이트 요청이 실패했습니다. 상태 코드: ${upstreamResponse.status}`,
           { statusCode: 502 },
         );
+      }
+
+      const frameTargetUrl = getPrimaryFrameTargetUrl(html, currentUrl);
+
+      if (frameTargetUrl) {
+        if (frameDepth >= MAX_FRAME_DEPTH) {
+          throw new OpportunityTextFetchError(
+            "대상 웹사이트의 내부 프레임 단계가 너무 많아 중단했습니다.",
+            { statusCode: 502 },
+          );
+        }
+
+        currentUrl = frameTargetUrl;
+        frameDepth += 1;
+        continue;
       }
 
       return {
@@ -384,7 +489,10 @@ export async function fetchUrlHtml(url) {
     }
   }
 
-  throw new OpportunityTextFetchError("대상 웹사이트 리다이렉트가 너무 많아 중단했습니다.", { statusCode: 502 });
+  throw new OpportunityTextFetchError(
+    "대상 웹사이트의 리다이렉트 또는 프레임 이동이 너무 많아 중단했습니다.",
+    { statusCode: 502 },
+  );
 }
 
 export async function fetchOpportunityTextFromUrl(url) {
