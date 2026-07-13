@@ -15,7 +15,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
 export default function Dashboard() {
   const [selectedCategory, setSelectedCategory] = useState<Category>('all')
   const [postings, setPostings] = useState<Posting[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
@@ -28,13 +28,17 @@ export default function Dashboard() {
 
     try {
       const response = await postingsApi.list(limit, page * limit, category)
-      if (response) {
-        setPostings(response.postings)
-        setTotal(response.pagination.total)
+      console.log('응답 데이터:', response)
+      if (response?.data) {
+        setPostings(response.data.postings || [])
+        setTotal(response.data.pagination?.total || 0)
+      } else {
+        setError('응답 데이터 형식이 올바르지 않습니다')
       }
     } catch (err: any) {
       console.error('공고 조회 실패:', err)
       setError(err.message || '공고를 불러올 수 없습니다')
+      setPostings([])
     } finally {
       setIsLoading(false)
     }
@@ -48,39 +52,47 @@ export default function Dashboard() {
 
   // 초기 로드 및 카테고리 변경 시
   useEffect(() => {
-    fetchPostings(selectedCategory, offset)
+    fetchPostings(selectedCategory, offset / limit)
   }, [selectedCategory, offset])
 
-  const currentPage = offset / limit
+  const currentPage = Math.floor(offset / limit)
   const totalPages = Math.ceil(total / limit)
 
   return (
-    <div className="min-h-screen bg-bg-secondary">
+    <div style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
       {/* 헤더 */}
-      <div className="bg-bg-primary border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-text-primary mb-2">
+      <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 16px' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>
             맞춤형 공고
           </h1>
-          <p className="text-md text-text-secondary">
+          <p style={{ fontSize: '13px', color: '#6b7280' }}>
             당신의 프로필에 맞는 공고를 찾아보세요
           </p>
         </div>
       </div>
 
       {/* 카테고리 탭 */}
-      <div className="bg-bg-primary border-b border-border sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex gap-2 overflow-x-auto py-4">
+      <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 16px' }}>
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingY: '16px' }}>
             {CATEGORIES.map(cat => (
               <button
                 key={cat.value}
                 onClick={() => handleCategoryChange(cat.value)}
-                className={`px-4 py-2 rounded-2 text-sm font-medium transition-colors whitespace-nowrap ${
-                  selectedCategory === cat.value
-                    ? 'bg-primary text-white'
-                    : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
-                }`}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: '9999px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  border: 'none',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 120ms',
+                  backgroundColor: selectedCategory === cat.value ? '#6366f1' : 'transparent',
+                  color: selectedCategory === cat.value ? '#fff' : '#6b7280',
+                  borderBottom: selectedCategory === cat.value ? 'none' : '1px solid #e5e7eb',
+                }}
               >
                 {cat.label}
               </button>
@@ -90,32 +102,57 @@ export default function Dashboard() {
       </div>
 
       {/* 메인 컨텐츠 */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 16px' }}>
         {/* 에러 표시 */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2 text-danger text-sm">
+          <div style={{
+            marginBottom: '24px',
+            padding: '12px',
+            backgroundColor: '#fee2e2',
+            border: '1px solid #fca5a5',
+            borderRadius: '8px',
+            fontSize: '13px',
+            color: '#ef4444',
+          }}>
             {error}
           </div>
         )}
 
         {/* 로딩 상태 */}
-        {isLoading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <p className="mt-4 text-text-secondary">공고를 불러오는 중...</p>
+        {isLoading ? (
+          <div style={{ textAlign: 'center', paddingY: '48px' }}>
+            <div style={{
+              display: 'inline-block',
+              animation: 'spin 1s linear infinite',
+              width: '48px',
+              height: '48px',
+              border: '2px solid #6366f1',
+              borderTop: '2px solid transparent',
+              borderRadius: '50%',
+            }}></div>
+            <p style={{ marginTop: '16px', color: '#6b7280', fontSize: '13px' }}>
+              공고를 불러오는 중...
+            </p>
+            <style>{`
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+            `}</style>
           </div>
-        )}
-
-        {/* 공고 목록 */}
-        {!isLoading && postings.length > 0 && (
+        ) : postings.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {/* 공고 그리드 */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+              gap: '14px',
+              marginBottom: '32px',
+            }}>
               {postings.map(posting => (
                 <PostingCard
                   key={posting.id}
                   posting={posting}
                   onScrapChange={() => {
-                    // 스크랩 상태 업데이트
                     setPostings(prev =>
                       prev.map(p =>
                         p.id === posting.id
@@ -129,11 +166,21 @@ export default function Dashboard() {
             </div>
 
             {/* 페이지네이션 */}
-            <div className="flex justify-center gap-2 mb-8">
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '32px' }}>
               <button
                 onClick={() => setOffset(Math.max(0, offset - limit))}
                 disabled={offset === 0}
-                className="px-4 py-2 rounded-2 border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-bg-secondary"
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb',
+                  backgroundColor: '#fff',
+                  cursor: offset === 0 ? 'not-allowed' : 'pointer',
+                  opacity: offset === 0 ? 0.5 : 1,
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  transition: 'all 120ms',
+                }}
               >
                 이전
               </button>
@@ -146,11 +193,17 @@ export default function Dashboard() {
                   <button
                     key={pageNum}
                     onClick={() => setOffset(pageNum * limit)}
-                    className={`px-3 py-2 rounded-2 text-sm font-medium ${
-                      currentPage === pageNum
-                        ? 'bg-primary text-white'
-                        : 'border border-border hover:bg-bg-secondary'
-                    }`}
+                    style={{
+                      padding: '5px 14px',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      border: currentPage === pageNum ? 'none' : '1px solid #e5e7eb',
+                      backgroundColor: currentPage === pageNum ? '#6366f1' : '#fff',
+                      color: currentPage === pageNum ? '#fff' : '#111',
+                      cursor: 'pointer',
+                      transition: 'all 120ms',
+                    }}
                   >
                     {pageNum + 1}
                   </button>
@@ -160,28 +213,45 @@ export default function Dashboard() {
               <button
                 onClick={() => setOffset(offset + limit)}
                 disabled={offset + limit >= total}
-                className="px-4 py-2 rounded-2 border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-bg-secondary"
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb',
+                  backgroundColor: '#fff',
+                  cursor: offset + limit >= total ? 'not-allowed' : 'pointer',
+                  opacity: offset + limit >= total ? 0.5 : 1,
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  transition: 'all 120ms',
+                }}
               >
                 다음
               </button>
             </div>
 
             {/* 통계 */}
-            <div className="text-center text-sm text-text-secondary">
+            <div style={{ textAlign: 'center', fontSize: '13px', color: '#6b7280' }}>
               총 {total}개의 공고 중 {offset + postings.length}개 표시
             </div>
           </>
-        )}
-
-        {/* 결과 없음 */}
-        {!isLoading && postings.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-text-secondary mb-4">
+        ) : (
+          <div style={{ textAlign: 'center', paddingY: '48px' }}>
+            <p style={{ color: '#6b7280', marginBottom: '16px', fontSize: '13px' }}>
               해당하는 공고가 없습니다
             </p>
             <button
               onClick={() => handleCategoryChange('all')}
-              className="px-4 py-2 rounded-2 bg-primary text-white hover:opacity-90"
+              style={{
+                padding: '7px 16px',
+                borderRadius: '8px',
+                backgroundColor: '#6366f1',
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 500,
+                transition: 'all 120ms',
+              }}
             >
               전체 보기
             </button>

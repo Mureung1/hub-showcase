@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Auth from './pages/Auth'
 import ProfileSetup from './pages/ProfileSetup'
-import Dashboard from './pages/Dashboard'
+import DashboardLayout from './pages/DashboardLayout'
 import { tokenManager } from './utils/apiClient'
 
 type AppPage = 'auth' | 'profile' | 'dashboard'
@@ -48,7 +48,7 @@ function App() {
   }
 
   // 3. 프로필 완료 후 → Dashboard 페이지
-  return <Dashboard />
+  return <DashboardLayout />
 }
 
 export default App
