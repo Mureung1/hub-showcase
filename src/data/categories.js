@@ -23,6 +23,7 @@ export const categories = [
     ],
   },
   { id: 'rice', name: '밥·즉석식품', type: 'main', emoji: '🍙' },
+  { id: 'noodle', name: '면요리', type: 'main', emoji: '🍜' },
   { id: 'muchim', name: '무침·나물', type: 'side', emoji: '🥬' },
   { id: 'bokkeum-side', name: '볶음반찬', type: 'side', emoji: '🍢' },
   { id: 'jorim', name: '조림·계란요리', type: 'side', emoji: '🥔' },
