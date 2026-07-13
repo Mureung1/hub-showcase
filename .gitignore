@@ -35,6 +35,9 @@ __pycache__/
 .env.*
 !.env.example
 
+# 개인 진행 상태 (공유하지 않는다)
+progress.md
+
 # design-sync (자동 생성 파일, 용량 큼)
 .design-sync/
 docs/prototype/prototype2/_ds/
