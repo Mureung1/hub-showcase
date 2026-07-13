@@ -1,12 +1,12 @@
 ---
 name: code-review
-description: Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes — Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/PRD asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to "review since X".
+description: Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes — Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating implementation ticket and parent spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to "review since X".
 ---
 
 Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 - **Standards** — does the code conform to this repo's documented coding standards?
-- **Spec** — does the code faithfully implement the originating issue / PRD / spec?
+- **Spec** — does the code faithfully implement the originating implementation ticket and parent spec?
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
@@ -24,12 +24,15 @@ Before going further, confirm the fixed point resolves (`git rev-parse <fixed-po
 
 ### 2. Identify the spec source
 
-Look for the originating spec, in this order:
+Look for the originating implementation contract in this order:
 
-1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.) — fetch via the workflow in `docs/agents/issue-tracker.md`.
-2. A path the user passed as an argument.
-3. A PRD/spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
-4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
+1. A local implementation ticket or spec path the user passed as an argument.
+2. A local ticket referenced by the branch, commits, or changed files. In this repo, follow `docs/agents/issue-tracker.md` and look under `docs/tickets/`; then read the ticket's parent spec under `docs/specs/`.
+3. A local spec under `docs/specs/` matching the branch name or feature when there is no ticket.
+4. An explicit GitHub issue or PR reference in commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), but only when the tracker rules treat that remote surface as authoritative. Fetch it through `docs/agents/issue-tracker.md`.
+5. If nothing is found, ask the user where the contract is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
+
+Read linked resolved Wayfinder decisions, prototype verdicts, and handoffs as supporting evidence when relevant. They inform the review but do not replace the selected implementation ticket or spec as the contract.
 
 ### 3. Identify the standards sources
 

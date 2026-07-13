@@ -2,17 +2,19 @@
 
 작성일: 2026-07-08
 
-최종 업데이트: 2026-07-11
+최종 업데이트: 2026-07-12
 
-상태: 아키텍처 정렬 초안
+분류: 활성
 
-관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Design System Direction](ay-ple-design-system.md), [ADR 0002](../adr/0002-use-first-class-academic-objects-with-derived-operational-views.md), [ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md)
+성숙도: 초안
+
+관련 문서: [CONTEXT.md](../../CONTEXT.md), [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Design System Direction](ay-ple-design-system.md), [ADR 0002](../adr/0002-use-first-class-academic-objects-with-derived-operational-views.md), [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md)
 
 ## 목적
 
 이 문서는 AY-PLE MVP의 첫 사용자 시나리오와 검토 화면 구조를 정리한다. 핵심 방향은 **원본 자료와 변경 제안을 함께 보고, 학생이 확인한 내용만 학기 정보에 반영하는 작업공간**이다.
 
-이 시나리오는 학생용 화면을 검증한다. Codex의 `Thread`, `Turn`, `Item`을 새로운 학업 lifecycle로 재정의하거나, 모든 앱 상호작용의 전달 규칙을 고정하지 않는다. 화면의 action과 자료 선택은 실행 시점에 native Codex 입력으로 번역되고, 결과는 `StatePatch`로 검토된다.
+이 시나리오는 학생용 화면을 검증한다. Runtime과 native Codex mapping을 다시 정의하지 않으며, 화면의 action과 자료 선택은 ModelingInvocation의 제품 입력으로 사용되고 결과는 `StatePatch`로 검토된다.
 
 학생이 이해해야 할 한 문장은 다음과 같다.
 
@@ -38,13 +40,13 @@
 | 단계 | 학생이 보는 경험 | App이 맡는 일 | AY/Codex가 맡는 일 |
 | --- | --- | --- | --- |
 | 1. 자료 선택 | 이번 action에 사용할 자료를 고른다. | 일시적인 `SourceSelection`을 준비한다. | 아직 진행 중 작업에는 전달하지 않는다. |
-| 2. action 시작 | `선택한 자료 정리하기`를 누른다. | `ModelingRecipe`에 arguments, source mentions, 학기 `cwd`를 결합한다. | Skill과 rendered prompt, mentions, output schema를 받아 `turn`을 시작한다. |
+| 2. action 시작 | `선택한 자료 정리하기`를 누른다. | Recipe version, arguments, `SourceSelection`과 활성 SemesterWorkspace 맥락으로 `ModelingInvocation`을 만든다. | 선택 자료를 읽는 작업을 시작한다. |
 | 3. 변경 제안 준비 | AY의 진행과 완료를 보고 기다린다. | structured result를 검증하고 pending `StatePatch`로 만든다. | 과제 후보와 field-level `EvidenceRef`를 찾는다. |
 | 4. Review | 원본과 변경 제안을 비교한다. | 제안과 근거를 같은 검토 맥락에 보여준다. | 제안의 이유를 학생 언어로 설명한다. |
 | 5. UserConfirmation | 수락·수정·거절한다. | 결정을 기록하고 수락하거나 수정한 내용만 `SemesterModel`에 반영한다. | 후속 요청에서 확인된 정보를 맥락으로 사용할 수 있다. |
 | 6. 결과 확인 | 저장된 과제명과 마감을 확인한다. | `반영됨` UI와 확인된 값을 보여준다. | 반영된 결과를 짧게 브리핑한다. |
 
-`ModelingRun`은 이 화면의 독립적인 학업 단계가 아니다. 2단계에서 시작한 invocation과 opaque execution reference, 결과를 연결하는 내부 실행 receipt다. raw `threadId`·`turnId`는 Codex 통합 밖으로 노출하지 않는다.
+`ModelingInvocation`과 `ModelingRun`은 이 화면의 독립적인 학업 단계가 아니다. Run은 2단계 요청의 한 실행 시도와 결과를 연결하는 내부 receipt다.
 
 ## 화면 구조
 
@@ -59,7 +61,7 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 
 | 탭 | 목적 | 표시 |
 | --- | --- | --- |
-| 선택 자료 탭 | 현재 invocation에 mention으로 전달한 원본 자료를 확인 | `lms-outline-notice.txt`, `problem-solving-syllabus.txt` |
+| 선택 자료 탭 | 현재 ModelingInvocation의 입력으로 선택한 원본 자료를 확인 | `lms-outline-notice.txt`, `problem-solving-syllabus.txt` |
 
 ### Layout
 
@@ -86,20 +88,16 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 | 하단 근거 패널 | AY가 제안한 값과 원본 위치를 preview와 분리해 보여준다. | `마감`, `제출 방식`, `line 3`, `TXT 원문` |
 | 대화 패널 | 같은 검토 맥락에서 변경 제안과 수락 후 안내를 보여준다. | `개요 작성하기 과제를 만들까요?`, `마감은 7월 12일 23:59로 저장했어요.` |
 
-## 실행 조합과 화면의 대응
+## 실행 경계와 화면의 대응
 
-화면은 Codex protocol을 노출하지 않지만 각 기능의 native 대응을 잃지 않는다.
-
-| 화면 요소 | 제품 의미 | 실행 시 대응 |
+| 화면 요소 | 제품 의미 | App 내부 대응 |
 | --- | --- | --- |
-| `선택한 자료 정리하기` | 특정 학업 action | `ModelingRecipe` 선택 |
-| 과목·학기 선택 | action arguments와 작업 범위 | prompt placeholder와 `cwd` |
-| 체크된 파일 | 이번 action의 일시적인 `SourceSelection` | `UserInput` mention |
-| action에 약속된 처리법 | 자료를 읽고 결과를 만드는 전략 | `UserInput` skill reference |
-| 예상 변경 구조 | App이 검증할 결과 계약 | `turn/start.outputSchema` |
-| 실행 상태 | invocation 추적 | 내부 `ModelingRun` receipt |
+| `선택한 자료 정리하기` | 학생에게 보이는 action | Recipe version 선택 |
+| 과목·학기와 체크된 파일 | 이번 요청의 입력과 작업 범위 | `ModelingInvocation` 구성 |
+| action에 약속된 처리법과 결과 구조 | 재사용 작업 계약 | `ModelingRecipe` |
+| 실행 상태 | 한 실행 시도 추적 | 내부 `ModelingRun` receipt |
 
-자료를 체크하거나 drag-and-drop으로 추가했다는 이유만으로 진행 중 `turn`에 자동 주입하지 않는다. 새 action을 시작할 때 mention으로 넣고, 사용자가 진행 중 작업에 명시적으로 정정을 보낼 때만 해당 작업에 전달할지를 판단한다.
+자료를 체크하거나 drag-and-drop으로 추가했다는 이유만으로 진행 중 작업에 자동 전달하지 않는다. 새 action의 입력으로 사용하거나, 사용자가 현재 작업에 명시적으로 정정을 보낼 때만 전달 여부를 판단한다. Native mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md)을 따른다.
 
 ## Canonical과 Derived
 
@@ -118,27 +116,27 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 
 ## Prototype Copy
 
-학생-facing UI는 개발자 용어를 그대로 번역하지 않고 비개발자 대학생에게 익숙한 말을 쓴다. 브랜드명, 파일명, 확장자 같은 고유 문자열은 유지한다.
+학생용 UI는 개발자 용어를 그대로 번역하지 않고 비개발자 대학생에게 익숙한 말을 쓴다. 브랜드명, 파일명, 확장자 같은 고유 문자열은 유지한다.
 
-| 내부 개념 | UI alias | 학생-facing 문구 |
+| 내부 개념 | UI alias | 학생용 문구 |
 | --- | --- | --- |
 | `Assignment` | 과제 | `개요 작성하기 과제` |
 | `StatePatch` | 변경 제안 | `변경 제안 1개 준비됨` |
 | `EvidenceRef` | 근거 | `"7월 12일 23:59까지" → 마감` |
 | `SourceSelection` | 선택한 자료 | `2개 선택됨` |
-| `ModelingRecipe` invocation | 자료 정리 action | `선택한 자료 정리하기` |
+| `ModelingInvocation` | 자료 정리 action | `선택한 자료 정리하기` |
 | pending patch | 검토 대기 | `검토 대기` |
 | confirmed `SemesterModel` 반영 | 반영됨 | `반영됨` |
 | `Assignment.dueAt` | 과제 마감 | `마감은 과제 정보에서 관리돼요` |
 
-`ModelingRun`, `Thread`, `Turn`, `Item`, `outputSchema`는 일반 학생에게 보여줄 제품 copy가 아니다.
+`ModelingRecipe`, `ModelingInvocation`, `ModelingRun`과 raw Codex 용어는 일반 학생에게 보여줄 제품 copy가 아니다.
 
 ## Prototype Scope
 
 | 포함 | 이유 |
 | --- | --- |
 | 선택 자료 검토 화면 | 자료, 원본, 변경 제안을 한 맥락에서 보여준다. |
-| 자료 목록과 체크 상태 | 이번 action에 넣을 source mention을 학생이 명시적으로 고른다. |
+| 자료 목록과 체크 상태 | 이번 action의 입력 자료를 학생이 명시적으로 고른다. |
 | 선택 자료 탭 | AY가 어떤 원본을 읽었는지 바로 확인한다. |
 | 원본 미리보기와 보기 모드 | AY의 해석과 원본을 분리해 비교한다. |
 | 하단 근거 패널 | field-level evidence를 원본 위치와 연결한다. |
@@ -217,4 +215,4 @@ spikes/ay-ple-ui-prototype/styles.css
 | 수정 Review가 `StatePatch` 전체 편집인지 field 단위 편집인지? | interactive prototype으로 검증 |
 | 첫 후속 derived view를 타임라인, 과제표, 읽기용 문서 중 무엇으로 둘지? | Assignment vertical 사용자 검증 이후 결정 |
 | 새 action과 기존 Codex 대화를 이어가는 선택을 UI에 어떻게 표현할지? | native thread UX 연결 시 검증 |
-| 진행 중 명시적 정정을 side panel에서 어떻게 target할지? | `turn/steer` 제품 vertical에서 검증 |
+| 진행 중 명시적 정정을 side panel에서 어떤 작업에 연결할지? | 해당 상호작용을 구현하는 제품 vertical에서 검증 |

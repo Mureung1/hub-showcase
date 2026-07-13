@@ -24,7 +24,11 @@ Static throwaway presentation artifacts under `artifacts/` and `spikes/`, plus t
 
 ## Documentation Style
 
-When writing Markdown planning, technical, or product documents, prefer tables for structured information and bullet points for scannable lists. Use prose for context and decisions, but model comparable items, options, tradeoffs, risks, and open questions in tables when practical. Follow `docs/README.md` for formal project document placement, and update the root `README.md` whenever adding or moving a formal project document under `docs/`. Local Matt Pocock artifacts under `docs/prds/` and `docs/issues/` are an exception and should not be indexed in the root `README.md`.
+Before creating, moving, or materially editing a formal project document, read `docs/README.md` in full. It is the source of truth for document placement, status classification, and the responsibility of each document type.
+
+Follow the normative ownership table in `docs/README.md`. Change a term, decision, mapping, implementation fact, or priority in its owning document first; consumer documents should state only the consequence needed for their audience and link to that owner instead of copying field lists, rationale, or backlog state. Keep current implementation, adopted target, and deferred work explicitly separate.
+
+When writing Markdown planning, technical, or product documents, prefer tables for structured information and bullet points for scannable lists. Use prose for context and decisions, but model comparable items, options, tradeoffs, risks, and open questions in tables when practical. Update the root `README.md` whenever adding or moving a formal project document under `docs/`. Local Matt Pocock artifacts under `docs/specs/`, `docs/tickets/`, and `docs/wayfinding/` are an exception and should not be indexed individually in the root `README.md`.
 
 프로젝트 문서의 문장 구조와 일반 설명어는 한국어로 작성한다. 프로젝트에서 이미 정한 도메인 용어와 프로토콜 메서드·타입, 패키지명, 파일 경로, 코드 식별자 같은 고유 식별자는 원문 표기를 유지한다.
 
@@ -38,7 +42,17 @@ Runtime implementation details should live in primary docs, package README files
 
 Keep AGENTS.md limited to stable operating rules. If runtime topology, endpoints, adapter behavior, generated protocol details, or known gaps change, update the implementation map or package docs instead of expanding this section.
 
-Do not leak raw engine protocol shapes into AY-PLE product-facing contracts without a deliberate architecture update. Keep app-managed runtime state and secrets out of git, including workspace-local runtime homes such as `.ay-ple/`.
+Do not leak raw engine protocol shapes into AY-PLE product-facing contracts without a deliberate architecture update. Keep app-managed runtime state and secrets out of git.
+
+## Codex Client Conventions
+
+Before changing Codex Client Host behavior, product UI adapters, or App Server method integration, read `docs/adr/0008-separate-headless-codex-client-host-from-product-ui.md`, `docs/architecture/codex-app-server-method-inventory.md`, `packages/runtime-codex/README.md`, and the current code/tests. Before changing product work order or completion state, read the operating rules in `docs/product/ay-ple-development-backlog.md`.
+
+Treat `docs/architecture/codex-app-server-method-inventory.md` as generated. Record reviewed method-level integration and adoption decisions in `packages/runtime-codex/codex-method-decisions.json`, then follow the package README to regenerate and verify the inventory. When the Codex pin or generated schema changes, review added and removed methods without automatically adopting new capabilities.
+
+Only explicit implementation along the product Codex Client path advances a method's integration status. Generic notification transport and developer-only Runtime Harness handling do not. Keep task order and completion status in the canonical development backlog; do not encode dates, milestones, or priority labels into its task structure, and manage external submission dates separately.
+
+Keep current package pins, method counts, exact generation commands, method tables, and implementation gaps in their owning README, generated inventory, backlog, or implementation map rather than copying them into this file.
 
 ## Testing Guidelines
 
@@ -48,34 +62,11 @@ When adding tests, place them near the code they cover, using names like `apps/s
 
 ## Commit & Pull Request Guidelines
 
-Create commits frequently at natural checkpoints so work is easy to review and recover. Use focused Conventional Commit-style prefixes such as `docs:`, `chore:`, `feat:`, `fix:`, `test:`, `refactor:`, and `build:`. Keep the subject short, imperative, and behavior-focused, for example `docs: organize project documentation`. Upstream camp submission PRs should follow `.github/pull_request_template.md`: summarize the work, include screenshots for UI changes, explain one implementation choice, note anything still unclear, and list what you learned. Use the requested PR title pattern, for example `[N100_Name] Add health status UI`, and link related issues when applicable.
+Create commits frequently at natural checkpoints so work is easy to review and recover. Use focused Conventional Commit-style prefixes such as `docs:`, `chore:`, `feat:`, `fix:`, `test:`, `refactor:`, and `build:`. Keep the subject short, imperative, and behavior-focused, for example `docs: organize project documentation`.
 
-For this participant, do not use `main` as a working branch or PR target. The default working branch is the current daily branch, named by camp week/day as `codex/w<week>d<day>`, such as `codex/w1d4`. `N180_하성욱` is the fork personal integration branch, not a normal working branch.
+Use `codex/w<week>d<day>` as the default daily working branch, such as `codex/w1d4`. An explicitly chosen `codex/<work>` branch is also a working branch, not a separate integration level. Do not use `main` or `N180_하성욱` for normal implementation, documentation, or spike work.
 
-In PRs, `base` is the destination branch that will receive changes, and `head` is the source branch that contains the changes. Use this branch model:
-
-| Branch level | Example | Role |
-| --- | --- | --- |
-| Daily work branch | `codex/w1d4` | Default branch for the camp day's implementation, docs, spikes, and internal merges. |
-| Individual work branch | `codex/runtime-ownership-spike-poc` | Optional branch for one feature, spike, fix, or document change before merging back to the current daily branch. |
-| Fork personal integration branch | `N180_하성욱` | The participant's fork-owned integration branch; this is the head branch for upstream camp submission. |
-| Upstream target branch | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | The final upstream branch that receives submitted work. |
-
-Use this PR flow:
-
-| Purpose | Base | Head |
-| --- | --- | --- |
-| Work-scoped review | `swh3467:<daily-branch>` | `swh3467:codex/<work>` |
-| Fork daily integration PR | `swh3467:N180_하성욱` | `swh3467:<daily-branch>` |
-| Upstream camp submission PR | `connect-AIAgentChallenge-26-1/hub:N180_하성욱` | `swh3467:N180_하성욱` |
-
-Daily branches use the same week/day identity as the camp mission while staying ASCII and CLI-friendly. For example, week 1 day 4 uses branch `codex/w1d4`, and PR labels use the matching upstream labels such as `[1-4] design-system` or `[1-4] 개발환경구성`.
-
-The upstream `origin` repository is read-only for this contributor, so publish branches by pushing to the personal fork remote (`fork`). Open upstream PRs only for camp-facing submission, not for every work-in-progress feature branch. Do not target `main`; the auto-merge workflow explicitly skips PRs whose base branch is `main`.
-
-Treat `fork/N180_하성욱` as the source of truth for the fork personal integration branch when comparing daily work, checking readiness, or deciding whether the latest daily branch has been absorbed. A local `N180_하성욱` branch is only a convenience checkout unless it has just been refreshed from `fork/N180_하성욱`.
-
-The PR template in `.github/pull_request_template.md` is the upstream camp submission template. Use its sections (`주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, `새로 알게 된 것`) only for the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱`. The PR from the daily branch to `swh3467:N180_하성욱` is only a fork-local integration and review artifact; the agent should write it directly with a local/Matt-style body such as `Summary`, `Key Changes`, `Verification`, `Risks / Follow-ups`, and links to the source PRD, issue, agent brief, spike report, or handoff document. When the user invokes `/camp-pr`, that skill should create or update the fork daily integration PR without approval or section-by-section interview, apply the matching camp labels, merge it into `swh3467:N180_하성욱` automatically unless blocked, and then report upstream submission readiness. The fork daily integration PR is not the camp submission surface. Do not create, update, or merge the upstream camp submission PR unless the user explicitly asks to submit to camp or continue to the upstream camp submission PR. When a Matt Pocock skill refers to a template, treat it as the skill's own PRD, issue, agent brief, or review artifact shape, not as `.github/pull_request_template.md`. When a Matt Pocock skill refers to PRs as an issue-tracker or triage surface, follow the agent workflow in `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md` instead; do not treat the camp reflection sections as the skill's triage state or PRD format.
+`origin` is the read-only upstream repository and `fork` is the participant's writable fork. Publish working branches to `fork`. Use `/camp-pr` for every integration or submission PR involving `N180_하성욱`; that skill owns repository/branch mapping, PR bodies, labels, merge policy, readiness checks, and the upstream submission approval gate.
 
 ## Security & Configuration Tips
 
@@ -85,7 +76,7 @@ Keep secrets in local `.env` files and out of git. The server reads `PORT` throu
 
 ### Issue tracker
 
-Matt Pocock PRDs and implementation issue briefs are tracked as local Markdown by default. GitHub Issues are used only when the user explicitly requests GitHub publication and confirms the target repo/surface. External PRs, or PRs explicitly named for triage, can be treated as a request surface; collaborator in-flight PRs are review artifacts, and fork daily integration PRs are created through `/camp-pr`. See `docs/agents/issue-tracker.md`.
+Matt Pocock specs, implementation tickets, and Wayfinder maps/tickets are tracked as local Markdown by default. Specs live under `docs/specs/`, implementation tickets under `docs/tickets/`, and Wayfinder artifacts under `docs/wayfinding/`. GitHub Issues are used only when the user explicitly requests GitHub publication and confirms the target repo/surface. External PRs, or PRs explicitly named for triage, can be treated as a request surface; collaborator in-flight PRs are review artifacts, and fork integration PRs are created through `/camp-pr`. See `docs/agents/issue-tracker.md`.
 
 ### Matt skill operation alerts
 
@@ -93,13 +84,13 @@ Matt Pocock skills use generic GitHub terms such as issue tracker, PR, label, pu
 
 | Generic skill instruction | Repo-specific rule |
 | --- | --- |
-| Publish a PRD or issue to the issue tracker | For `/to-prd` and `/to-issues`, write local Markdown under `docs/prds/` and `docs/issues/`. Do not create GitHub Issues unless the user explicitly asks and confirms the target repo/surface. |
+| Publish a spec or implementation ticket to the issue tracker | `/to-spec` writes local Markdown under `docs/specs/`; `/to-tickets` writes one local Markdown file per ticket under `docs/tickets/`. Do not create GitHub Issues unless the user explicitly asks and confirms the target repo/surface. |
+| Create or work a Wayfinder map | Store local artifacts under `docs/wayfinding/<effort>/` and follow `.agents/skills/wayfinder/SKILL.md` for lifecycle and ticket semantics. |
 | Apply or read a triage label | Use the body/comment marker state in `docs/agents/triage-labels.md`; do not assume GitHub label permissions. |
-| Treat PRs as request or triage surface | Only external PRs, or PRs explicitly named by the user, are triage input. Collaborator work PRs and fork daily integration PRs are not triage queues. |
-| Commit to the current branch | The default current branch should be `codex/w<week>d<day>`; optional `codex/<work>` branches must merge back to the current daily branch. Do not commit normal work on `N180_하성욱` or `main`. |
-| Use a GitHub PR template | `.github/pull_request_template.md` is only for upstream camp submission PRs. Fork daily integration PRs use a local/Matt-style work brief, and Matt skill templates remain their own PRD, issue, agent brief, or review artifact shapes. |
-| Merge a PR | `/camp-pr` may merge fork-local daily PRs from `codex/w<week>d<day>` into `swh3467:N180_하성욱` automatically. Do not merge upstream camp submission PRs unless the user gives a separate explicit merge instruction. |
-| Run `/setup-matt-pocock-skills` | This repo is already configured. Do not regenerate `docs/agents/**` unless the user explicitly asks; preserve the `codex/w<week>d<day>`, `/camp-pr`, marker-based triage, and fork-based PR rules. |
+| Treat PRs as request or triage surface | Only external PRs, or PRs explicitly named by the user, are triage input. Collaborator work PRs and fork integration PRs are not triage queues. |
+| Commit to the current branch | Use the current `codex/w<week>d<day>` branch or another explicitly chosen `codex/<work>` branch. Keep `prototype/<slug>` evidence branches outside the `/camp-pr` integration path. Do not commit normal work on `N180_하성욱` or `main`. |
+| Use a GitHub PR template | Delegate PRs involving `N180_하성욱` to `/camp-pr`. Matt skill templates remain spec, ticket, Wayfinder, agent brief, or review artifact shapes. |
+| Run `/setup-matt-pocock-skills` | This repo is already configured. Do not regenerate `docs/agents/**` unless the user explicitly asks; preserve the local artifact paths, working-branch rules, `/camp-pr`, marker-based triage, and fork-based publication rules. |
 
 ### Triage labels
 

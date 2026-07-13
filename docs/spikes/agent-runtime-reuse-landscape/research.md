@@ -1,6 +1,8 @@
 # 에이전트 실행 엔진 재사용 후보 조사
 
-> **현재 판정 (2026-07-11): 기술 참고 문서.** Codex App Server 직접 사용과 Runtime Harness의 developer-only 범위는 유지하지만, 후속 제품 작업을 “모든 CoControl capability를 먼저 구현하는 일”로 해석하지 않는다. AY-PLE는 [Codex-native product composition](../../architecture/codex-native-product-composition.md)에 따라 native thread를 선택하고 `turn/start(threadId)` 입력을 얇게 조합하며 학업 상태와 Review만 소유한다. ACP와 다른 실행 엔진은 실제 두 번째 엔진 요구가 생길 때 다시 비교한다. 아래 후보 조사와 기능 손실 근거는 유효하지만, 상세 capability의 우선순위와 과거 제품 용어는 현재 문서를 따르지 않는다.
+분류: 기술 참고
+
+> **현재 판정 (2026-07-12):** Codex App Server 직접 사용과 Runtime Harness의 developer-only 범위는 유지한다. 제품 실행은 [Codex-native product composition](../../architecture/codex-native-product-composition.md)의 `ModelingRecipe → ModelingInvocation → ModelingRun` 경계를 따르며 학업 상태와 Review는 AY-PLE가 소유한다. ACP와 다른 실행 엔진은 실제 두 번째 엔진 요구가 생길 때 다시 비교한다. 아래 후보 조사와 기능 손실 근거는 유효하지만, 상세 capability의 우선순위와 과거 제품 용어는 현재 문서를 따르지 않는다.
 
 | 항목 | 내용 |
 | --- | --- |
@@ -31,7 +33,7 @@
 
 1. **Codex App Server를 4주 제품의 주 실행 기반으로 직접 사용한다.** 이어지는 AY 작업 맥락, AY의 작업 진행, 진행 중 정정, 중단 완료 확인, 실행 권한 확인, 작업 중 사용자 질문을 먼저 제품에서 검증한다.
 2. **`AgentRuntimeKernel`은 단일 실행 Runtime Harness 모듈로 한정한다.** 여섯 가지 이벤트 생명주기를 전체 제품 프로토콜로 확대하지 않는다.
-3. **AY-PLE가 CoControl과 제품 상태를 소유한다.** `thread`/`turn`/`item`/`request` 식별자를 보존하고, 필요한 내용만 `SourceSelection → ModelingRun → StatePatch/Review → UserConfirmation → TrustedState`의 제품 의미로 바꾼다.
+3. **AY-PLE가 제품 상태와 Review를 소유한다.** `thread`/`turn`/`item`/`request` 식별자는 통합 내부에서 보존하고, 제품 경계는 `ModelingRecipe → ModelingInvocation → ModelingRun`과 `StatePatch → UserConfirmation → SemesterModel`로 분리한다.
 4. **ACP는 캠프 이후 다른 실행 엔진을 붙일 때 비교할 후보로 남긴다.** 실제 두 번째 제품 실행 엔진이 필요해지면 같은 제품 시나리오를 비교한 뒤 공통 변환 계층 또는 Codex 확장을 검토한다.
 
 Open WebUI 같은 채팅 UI는 빠른 데모 외곽 화면으로는 쓸 수 있지만 실행 기반을 없애지 않는다. 외부 에이전트를 Open WebUI Pipe 뒤에 연결해도 `thread`, 승인, 중단, 저장을 처리하는 에이전트 백엔드는 여전히 필요하다. 현재 라이선스의 대규모 배포 브랜딩 제한도 제품 포크에는 별도 검토 사항이다.

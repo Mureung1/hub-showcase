@@ -9,7 +9,7 @@
 | Main artifact | [index.html](index.html) |
 | Applied state | [state-accepted.html](state-accepted.html) |
 | Shared CSS | [styles.css](styles.css) |
-| Brand assets | [assets/ay-ple-logo.png](assets/ay-ple-logo.png), [assets/ay-ple-mark.png](assets/ay-ple-mark.png), [assets/ay-profile.png](assets/ay-profile.png) |
+| Brand assets | [ay-ple-logo.png](../../assets/brand/ay-ple-logo.png), [ay-ple-mark.png](../../assets/brand/ay-ple-mark.png), [ay-profile.png](../../assets/brand/ay-profile.png) |
 | Source previews | [previews/](previews/) |
 | Run command | `open spikes/ay-ple-ui-prototype/index.html` |
 | Target viewport | Designed for 1920x1080, fitted to the current browser viewport to avoid page scroll |

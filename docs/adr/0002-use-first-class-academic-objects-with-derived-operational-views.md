@@ -1,6 +1,8 @@
 # 학업 사실은 first-class 객체에 두고 운영 view는 파생한다
 
-상태: 채택
+분류: 활성
+
+성숙도: 채택
 
 AY-PLE는 `Assignment`와 `Exam`을 first-class 학업 객체로 다룬다. 마감 일시, 시험 시간, 요구사항, 범위, 장소, 주의사항과 근거 같은 학업 사실은 이 객체와 `SemesterModel`이 소유한다.
 

@@ -74,11 +74,15 @@ _UI alias_: 선택한 자료
 _Avoid_: 자동 수집 범위, sandbox 경계, 영구 source 묶음
 
 **ModelingRecipe**:
-반복 가능한 학업 작업을 위해 사용할 Skill, prompt template, 입력 인자와 구조화 출력 계약을 묶은 작업 정의다.
-_Avoid_: hard-coded workflow, Codex thread, runtime plugin
+반복 가능한 학업 작업의 Skill, prompt template, argument contract와 구조화 출력 계약을 묶은 versioned 작업 정의다.
+_Avoid_: 구체적인 실행 입력, UI action, Codex thread, runtime plugin
+
+**ModelingInvocation**:
+한 ModelingRecipe를 구체적인 인자, SourceSelection과 현재 SemesterWorkspace 맥락에 적용한 일회성 실행 요청이다. 실행 뒤 장기 기록으로 남는 객체가 아니다.
+_Avoid_: ModelingRecipe 정의, ModelingRun receipt, 대화 세션, 학업 객체
 
 **ModelingRun**:
-한 ModelingRecipe를 구체적인 인자와 SourceSelection에 적용한 실행 시도를 추적하는 얇은 기록이다. 대화 세션, 학업 workflow 또는 여러 thread를 조정하는 오케스트레이터가 아니다.
+한 ModelingInvocation의 실행 시도와 결과를 연결하는 얇은 기록이다. 대화 세션, 학업 workflow 또는 여러 실행을 조정하는 오케스트레이터가 아니다.
 _UI alias_: 독립적으로 노출하지 않음
 _Avoid_: AgentModeling 단계, persistent session, background pipeline
 
