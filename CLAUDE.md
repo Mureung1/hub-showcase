@@ -15,7 +15,8 @@
 
 ## 참고
 - 기획서: @docs/plan.md
-- 작업 체크리스트: @docs/checklist.md
+- 작업 체크리스트(백로그, 우선순위 P0/P1/P2): @docs/checklist.md
+- 이번 주 계획(요일별 작업 순서): @docs/weekly-plan.md — 코드 작업을 요청받으면 이 순서·우선순위를 기본으로 따를 것
 - 디자인 시스템(확정안): @design_handoff_ridesplit/README.md — 레드/코랄(`#C8102E`) 기반, Pretendard 폰트. 실제 개발 시 색상·타이포그래피·간격 값은 이 문서 기준으로 맞출 것
 - 프로토타입: `docs/prototype/` (순수 HTML/CSS, 위 디자인 시스템 적용됨, 배포: https://gyu-young-04.github.io/hub/prototype/)
 
