@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { evaluateJob } from './gapAnalysisService.js'
+import { evaluateJob, runGapAnalysis } from './gapAnalysisService.js'
 
 const baseJob = {
   job_id: 1,
@@ -142,5 +142,92 @@ describe('evaluateJob', () => {
   it('한 항목이라도 미충족이면 overallMatch는 false', () => {
     const spec = { ...baseSpec, major: '전혀다른전공' }
     expect(evaluateJob(baseJob, spec).overallMatch).toBe(false)
+  })
+})
+
+describe('runGapAnalysis', () => {
+  const makeJob = (id, job_category, is_intern, overrides = {}) => ({
+    ...baseJob,
+    job_id: id,
+    job_category,
+    is_intern,
+    ...overrides,
+  })
+
+  // job1만 5항목 전부 통과. job2~6은 정확히 1개 항목만 미충족(보완 우선순위 대상).
+  // job7은 2개 항목 미충족(랭킹 제외 대상), job8은 5개 전부 미충족.
+  const jobs = [
+    makeJob(1, 'IT전산', 0), // 전부 통과
+    makeJob(2, 'IT전산', 0, { education: '석사' }), // 학력만 미충족
+    makeJob(3, 'IT전산', 1, { career_min_months: 24 }), // 경력만 미충족
+    makeJob(4, '사무행정', 0, { career_min_months: 36 }), // 경력만 미충족
+    makeJob(5, '사무행정', 0, { certificates: '간호사' }), // 자격증만 미충족
+    makeJob(6, '기타', 1, { foreign_lang_test: 'OPIc' }), // 외국어만 미충족
+    makeJob(7, '기타', 0, { major: '전혀다른전공', career_min_months: 24 }), // 2개 미충족 → 랭킹 제외
+    makeJob(8, 'IT전산', 0, {
+      education: '박사',
+      career_min_months: 24,
+      certificates: '간호사',
+      major: '전혀다른전공',
+      foreign_lang_test: 'OPIc',
+    }), // 전부 미충족
+  ]
+
+  it('필터 없이 실행하면 전체 공고를 대상으로 통계를 계산한다', () => {
+    const { stats } = runGapAnalysis(jobs, undefined, baseSpec)
+    expect(stats.total).toBe(8)
+    expect(stats.matched).toBe(1)
+    expect(stats.ratio).toBe(1 / 8)
+  })
+
+  it('job_category 필터를 적용하면 대상 건수가 줄어든다', () => {
+    const { stats, jobList } = runGapAnalysis(jobs, { job_category: 'IT전산' }, baseSpec)
+    expect(stats.total).toBe(4) // job1,2,3,8
+    expect(jobList.map((entry) => entry.job.job_id)).toEqual([1, 2, 3, 8])
+  })
+
+  it('is_intern 필터를 적용하면 대상 건수가 줄어든다', () => {
+    const { stats, jobList } = runGapAnalysis(jobs, { is_intern: true }, baseSpec)
+    expect(stats.total).toBe(2) // job3,6
+    expect(jobList.map((entry) => entry.job.job_id)).toEqual([3, 6])
+  })
+
+  it('job_category와 is_intern 필터를 동시에 적용할 수 있다', () => {
+    const { stats } = runGapAnalysis(jobs, { job_category: 'IT전산', is_intern: true }, baseSpec)
+    expect(stats.total).toBe(1) // job3
+  })
+
+  it('필터 결과가 0건이어도 에러 없이 0으로 계산된다', () => {
+    const { stats } = runGapAnalysis(jobs, { job_category: '존재하지않음' }, baseSpec)
+    expect(stats).toEqual({
+      total: 0,
+      matched: 0,
+      ratio: 0,
+      improvementRanking: [
+        { category: 'education', count: 0 },
+        { category: 'career', count: 0 },
+        { category: 'certificates', count: 0 },
+        { category: 'major', count: 0 },
+        { category: 'foreignLanguage', count: 0 },
+      ],
+    })
+  })
+
+  it('항목 1개만 미충족인 공고만 보완 우선순위에 카운트하고, 개수 내림차순으로 정렬한다', () => {
+    const { stats } = runGapAnalysis(jobs, undefined, baseSpec)
+    // career는 job3,job4 두 건(count 2)이라 1위. 나머지 1건짜리는 CATEGORIES 원래 순서를 유지(안정 정렬).
+    expect(stats.improvementRanking).toEqual([
+      { category: 'career', count: 2 },
+      { category: 'education', count: 1 },
+      { category: 'certificates', count: 1 },
+      { category: 'foreignLanguage', count: 1 },
+      { category: 'major', count: 0 },
+    ])
+  })
+
+  it('2개 이상 미충족이거나 전부 미충족인 공고는 보완 우선순위 어느 항목에도 카운트되지 않는다', () => {
+    const onlyGapJobs = [jobs[6], jobs[7]] // job7(2개 미충족), job8(전부 미충족)
+    const { stats } = runGapAnalysis(onlyGapJobs, undefined, baseSpec)
+    expect(stats.improvementRanking.every((entry) => entry.count === 0)).toBe(true)
   })
 })

@@ -52,3 +52,49 @@ export function evaluateJob(job, spec) {
   const overallMatch = Object.values(checks).every(Boolean)
   return { job, checks, overallMatch }
 }
+
+const CATEGORIES = ['education', 'career', 'certificates', 'major', 'foreignLanguage']
+
+// 직종/고용형태 필터. 값이 없으면(undefined/null) 해당 조건은 적용하지 않는다 — 이번 주는 FE에서 항상 필터 없이 호출.
+function applyFilters(jobs, filters = {}) {
+  return jobs.filter((job) => {
+    if (filters.job_category && job.job_category !== filters.job_category) return false
+    if (filters.is_intern !== undefined && filters.is_intern !== null && Boolean(job.is_intern) !== Boolean(filters.is_intern)) {
+      return false
+    }
+    return true
+  })
+}
+
+// checklist_2.md 확정 사항: 항목 1개만 보완하면 통과하는 시나리오만 카운트. 2개 이상 동시 미충족인 공고는 어느 항목에도 카운트하지 않는다.
+function countSingleGapImprovements(evaluated) {
+  const counts = Object.fromEntries(CATEGORIES.map((category) => [category, 0]))
+  for (const { checks } of evaluated) {
+    const failed = CATEGORIES.filter((category) => !checks[category])
+    if (failed.length === 1) {
+      counts[failed[0]] += 1
+    }
+  }
+  return counts
+}
+
+function buildImprovementRanking(counts) {
+  return CATEGORIES.map((category) => ({ category, count: counts[category] })).sort((a, b) => b.count - a.count)
+}
+
+// 필터 적용 → 대상 공고 전체에 evaluateJob 반복 → 통계 + 보완 우선순위 계산.
+// 가중치 없는 단순 개수 기반 점수화(checklist_2.md 확정 사항).
+export function runGapAnalysis(jobs, filters, spec) {
+  const targetJobs = applyFilters(jobs, filters)
+  const jobList = targetJobs.map((job) => evaluateJob(job, spec))
+
+  const total = jobList.length
+  const matched = jobList.filter((entry) => entry.overallMatch).length
+  const ratio = total === 0 ? 0 : matched / total
+  const improvementRanking = buildImprovementRanking(countSingleGapImprovements(jobList))
+
+  return {
+    stats: { total, matched, ratio, improvementRanking },
+    jobList,
+  }
+}
