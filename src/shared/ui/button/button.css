@@ -1,33 +1,49 @@
-.ui-button {
-  min-height: 44px !important;
-  border: 1px solid transparent !important;
-  border-radius: var(--radius-button) !important;
-  box-shadow: none !important;
+button.ui-button {
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-button);
+  box-shadow: none;
   transition:
     background var(--motion-duration-standard) var(--motion-easing-standard),
     border-color var(--motion-duration-standard) var(--motion-easing-standard),
-    color var(--motion-duration-standard) var(--motion-easing-standard) !important;
+    color var(--motion-duration-standard) var(--motion-easing-standard);
 }
 
-.ui-button--primary {
-  border-color: var(--color-charcoal) !important;
-  background: var(--color-charcoal) !important;
-  color: var(--color-canvas) !important;
+button.ui-button--primary {
+  border-color: var(--color-charcoal);
+  background: var(--color-charcoal);
+  color: var(--color-canvas);
 }
 
-.ui-button--primary:hover {
-  border-color: var(--color-graphite) !important;
-  background: var(--color-graphite) !important;
+button.ui-button--primary:not(:disabled):not([aria-disabled='true']):hover {
+  border-color: var(--color-graphite);
+  background: var(--color-graphite);
 }
 
-.ui-button--secondary {
-  border-color: var(--color-ash) !important;
-  background: var(--color-canvas) !important;
-  color: var(--color-ink) !important;
+button.ui-button--secondary {
+  border-color: var(--color-ash);
+  background: var(--color-canvas);
+  color: var(--color-ink);
 }
 
-.ui-button--ghost {
-  border-color: transparent !important;
-  background: transparent !important;
-  color: var(--color-smoke) !important;
+button.ui-button--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-graphite);
+}
+
+button.ui-button:focus-visible {
+  border-color: var(--color-electric-blue);
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--color-pale-blue);
+}
+
+button.ui-button:disabled,
+button.ui-button[aria-disabled='true'] {
+  border-color: var(--color-ash);
+  background: var(--color-mist);
+  color: var(--color-smoke);
+  cursor: default;
+  box-shadow: none;
 }
