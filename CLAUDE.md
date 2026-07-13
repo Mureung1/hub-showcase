@@ -24,6 +24,11 @@
 - 브랜치명에 한글이 포함돼서, GitHub PR base 수정 UI에서 인코딩 에러가 날 수 있음
   → 문제 생기면 "compare across forks"로 새로 만드는 방식 사용.
 
+## 디자인 규칙 (★ UI 작업 시 항상)
+- 모든 UI 작업 전에 docs/design-system.md를 읽을 것
+- 색·간격·글자크기·반경은 docs/prototype/tokens.css의 var()만 사용, 하드코딩 금지
+- 새 토큰이 필요해 보이면 추가 전에 기존 토큰으로 해결 가능한지 먼저 검토
+
 ## 진행 상황
 - [x] 문제정의 / 사용자 시나리오 / 핵심기능 초안 → README.md 작성, 커밋, PR #191 생성
 - [x] 사용자 시나리오를 화면 단위로 구체화 (S1~S6)
@@ -36,17 +41,20 @@
 - [x] 기획서를 docs/plan.md로 정리 (wiki 대신 — wiki는 별도 git 저장소라 커밋 이력과 분리되는 문제), README는 한 줄 소개 + 링크로 정리
 - [x] 와이어프레임 (S1~S4) → docs/wireframe.html, PR #516으로 머지 완료
 - [x] 기획서에 취업진로포털 세션 방식을 "서비스 확장의 핵심 지점"으로 보강
+- [x] 디자인 시스템 정의 → docs/design-system.md + docs/prototype/tokens.css
+  (다크 테마, 포인트색 보라 A안 확정, S5 캘린더로 토큰 스트레스 테스트 완료)
 - [ ] 프로토타입 (순수 HTML/CSS) ← 다음 작업, 직렬 진행: S2 → S3 → S1 → S4
-- [ ] docs/checklist.md 작업 분해 작성
+- [x] docs/checklist.md 작업 분해 작성
 - [ ] 포털 "신뢰 기기등록" 후 세션 만료 주기 실측 (이번 주 병행)
 - [ ] eclass Open API 존재 여부 확인
 
 ## 다음 세션 시작 시 참고
 - 프로토타입은 한 번에 전체가 아니라 직렬로 작은 단위씩 진행 (강사 지침)
-- S2 분해: 헤더 → 알림 카드 1개 → 카드 목록 → 필터 칩 → 정렬 표시
+- S2 분해: 헤더(tokens.css 링크 연결 확인 겸) → 알림 카드 1개 → 카드 목록 → 필터 칩 → 정렬 표시
 - 각 단위 완성 후 사용자 확인 받고 다음 단위 진행
 - 매일 작업 끝나면 새 PR (전날 PR은 봇이 자동 머지하므로)
 
 ## 참고
 @README.md
 @docs/plan.md
+@docs/design-system.md
