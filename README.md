@@ -7,7 +7,7 @@
 ## 프로젝트 문서
 
 - [기획서](docs/product-plan.md)
-- [4주 MVP 계획 및 Backlog](docs/4-week-plan.md)
+- [남은 3주 MVP 계획 및 Backlog](docs/4-week-plan.md)
 - [디렉터리 구조](docs/directory-structure.md)
 - [디자인 가이드](docs/design.md)
 - [프론트 작업](docs/frontend-tasks.md) · [백엔드 작업](docs/backend-tasks.md) · [DB 작업](docs/database-tasks.md)
@@ -20,15 +20,14 @@
 
 ## 주요 기능
 
-- 같은 건물 자동 매칭 
-  - 아파트/오피스텔: 같은 건물 매칭
-  - 단독, 다가구 주택 등: 근처 건물 매칭
-- 자유게시판
-- 도와주세요 게시판
-- 상품 카드형 공동구매 모집
-- 공동구매 참여 인원 확인
-- 공동구매 1인 부담 금액 확인
-- 내 게시글 및 참여 내역 확인
+- 이메일/비밀번호 회원가입과 로그인
+- Kakao 주소 검색 기반 커뮤니티 자동 배정
+  - 아파트/오피스텔: 같은 단지·동 번호
+  - 주택/빌라: H3 해상도 9 생활권
+- 자유게시판 글·댓글
+- 도와주세요 글·댓글·작성자 완료·1:1 채팅
+- 공동구매 생성·참여·모집자 확정
+- 확정 참여자 그룹 채팅과 예상 1인 부담 금액
 
 ## 기술 스택
 
@@ -49,15 +48,15 @@ hub/
 │  │  ├─ posts/
 │  │  ├─ help-requests/
 │  │  ├─ group-buys/
-│  │  └─ activity/
-│  ├─ repositories/            # Mock/HTTP 데이터 접근 계약
-│  ├─ mocks/                   # 프론트 데모 데이터
+│  │  └─ conversations/
+│  ├─ repositories/            # API 계약과 HTTP 데이터 접근
+│  ├─ mocks/                   # 기존 빈 디렉터리, 이번 MVP에서 미사용
 │  ├─ lib/                     # 공통 인프라와 유틸
 │  ├─ styles/                  # 전역 스타일과 디자인 토큰
 │  └─ main.jsx
 ├─ server/                      # Express 백엔드 골격
 │  ├─ src/
-│  │  ├─ modules/              # users, posts, 공동구매 등 기능 모듈
+│  │  ├─ modules/              # users, addresses, posts, conversations 등
 │  │  ├─ middleware/           # 인증과 공통 요청 처리
 │  │  ├─ lib/                  # Supabase client와 공통 유틸
 │  │  ├─ config/               # 환경 변수와 런타임 설정
@@ -85,4 +84,4 @@ npm run dev
 
 ## 개발 상태
 
-현재는 기획 및 MVP 설계 단계입니다.
+1주차 기획·설계는 완료됐고 실제 기능은 아직 구현되지 않았습니다. 2026년 7월 13일부터 7월 31일까지의 구현 순서와 완료 조건은 [남은 3주 MVP 계획](docs/4-week-plan.md)을 기준으로 합니다.
