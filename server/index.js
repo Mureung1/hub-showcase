@@ -1,6 +1,8 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import analyzeRouter from './routes/analyze.js';
+import repositoriesRouter from './routes/repositories.js';
+import interviewsRouter from './routes/interviews.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -8,8 +10,9 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
-app.use('/api', analyzeRouter);
+app.use('/api/v1', repositoriesRouter);
+app.use('/api/v1', interviewsRouter);
 
 app.listen(PORT, () => {
-  console.log(`AI Portfolio Agent server listening on http://localhost:${PORT}`);
+  console.log(`Portfolio Zero-to-One Builder server (Day 1 stub) listening on http://localhost:${PORT}`);
 });
