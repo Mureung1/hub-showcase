@@ -1,19 +1,35 @@
 import { createBrowserRouter } from 'react-router'
+import { AppShell } from './AppShell'
 import { GitLabPage } from '../features/git-lab'
+import { LearningWorkspace } from '../features/learning-workspace'
 import { ProfileSetup } from '../features/profile'
+import { TodayLearningHub } from '../features/today-learning'
 import IntroPage from '../pages/IntroPage'
 
 export const router = createBrowserRouter([
   {
-    path: '/',
-    element: <IntroPage />,
-  },
-  {
-    path: '/profile',
-    element: <ProfileSetup />,
-  },
-  {
-    path: '/git-lab',
-    element: <GitLabPage />,
+    element: <AppShell />,
+    children: [
+      {
+        path: '/',
+        element: <IntroPage />,
+      },
+      {
+        path: '/profile',
+        element: <ProfileSetup />,
+      },
+      {
+        path: '/today',
+        element: <TodayLearningHub />,
+      },
+      {
+        path: '/workspace',
+        element: <LearningWorkspace />,
+      },
+      {
+        path: '/git-lab',
+        element: <GitLabPage />,
+      },
+    ],
   },
 ])
