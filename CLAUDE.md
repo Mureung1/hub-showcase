@@ -7,7 +7,7 @@
 - Supabase(Postgres) (DB)
 
 ## 디렉토리 구조
-- npm workspaces 모노레포: `client/`(FE), `server/`(BE)
+- npm workspaces 모노레포: `client/`(FE), `server/`(BE)   
 - 루트 스크립트: `npm run dev`(client+server 동시 실행, concurrently) / `build` / `lint` / `format` / `test`
 - 포트: client 5173(Vite 기본), server 4000 (둘 다 `.env`에서 override 가능)
 - 개발 중 FE→BE 호출은 `client/vite.config.ts`의 `/api` 프록시(→ `localhost:4000`)를 통해 same-origin으로 처리
@@ -21,18 +21,11 @@
 ## 컨벤션
 - 컴포넌트: PascalCase (파일명=컴포넌트명)
 - 훅/유틸: camelCase, 폴더: kebab-case
-- 커밋: `type: subject` 형식, type은 feat / fix / refactor / docs
-- 브랜치: `type/short-description` (예: `feat/schedule-form`)
 - 린트/포맷: 루트 `eslint.config.js`(flat config, client/server 공용) + `.prettierrc`
 
 ## 환경 변수
 - `client/.env.example`, `server/.env.example` 참고해서 각자 로컬 `.env` 생성 (커밋 금지)
-- Supabase 프로젝트는 아직 미생성 — 실제 URL/키는 프로젝트 생성 후 팀원 개별 로컬 `.env`에 채움
+- 실제 URL/키는 프로젝트 생성 후 팀원 개별 로컬 `.env`에 채움
 
 ## 하지 말 것
-- docs 폴더는 기본적으로 읽지 않는다. 명시적으로 읽으라는 요청이 있을 때만 읽는다.
-- 커밋 메시지에 `Co-Authored-By: Claude` 트레일러를 추가하지 않는다. (GitHub에 공동 작성자로 표시되는 것을 원하지 않음)
-
-## 참고
-- 기획서: @docs/skills/plan.md
-- 디자인: @docs/skills/design.md
+- docs 폴더는 별도의 요청이 없는 경우 읽지 않는다.
