@@ -46,6 +46,8 @@
   .title{font-weight:800;font-size:1.05rem;margin:2px 0 4px}
   .org{color:var(--ink-muted);font-size:.84rem;font-weight:700}
   .evi{margin-top:9px;font-size:.82rem;color:var(--ink-soft);background:#faf8ff;border-radius:12px;padding:8px 12px}
+  .apply{display:inline-block;margin-top:10px;color:var(--purple);font-weight:800;font-size:.85rem;text-decoration:none}
+  .apply:hover{text-decoration:underline}
   .card.near{border:2px solid var(--no-bg)}
   .badge-near{font-size:.74rem;font-weight:800;color:var(--no);background:var(--no-bg);padding:4px 12px;border-radius:var(--r-pill)}
   .cmp{display:flex;gap:10px;align-items:baseline;margin-top:9px;font-size:.88rem;font-weight:700}
@@ -151,20 +153,23 @@ function classify(a){
   return {status:"no"};
 }
 const dday = n => n<=7 ? `<span class="dday soon">D-${n}</span>` : `<span class="dday">D-${n}</span>`;
+// 원문(신청·상세) 링크. 실제로는 각 공고의 원문 URL을 그대로 씀. 데모라 소스 사이트로 연결.
+const SOURCE = {"링커리어":"https://linkareer.com","캠퍼스픽":"https://www.campuspick.com","장학재단":"https://www.kosaf.go.kr","1365":"https://www.1365.go.kr","지자체":"https://www.youthcenter.go.kr","대학공지":"#"};
+const applyLink = a => `<a class="apply" href="${SOURCE[a.s]||'#'}" target="_blank" rel="noopener">원문으로 가서 신청하기 →</a>`;
 
 function cardOK(a){
   return `<li class="card"><div class="card-top"><span class="cat">${a.c}</span>${dday(a.d)}</div>
-    <div class="title">${a.t}</div><div class="org">${a.o} · ${a.s}</div><div class="evi">근거: ${a.e}</div></li>`;
+    <div class="title">${a.t}</div><div class="org">${a.o} · ${a.s}</div><div class="evi">근거: ${a.e}</div>${applyLink(a)}</li>`;
 }
 function cardReview(a){
   return `<li class="card"><div class="card-top"><span class="cat">${a.c}</span>${dday(a.d)}</div>
-    <div class="title">${a.t}</div><div class="org">${a.o} · ${a.s}</div><div class="evi">확인 필요: ${a.e}</div></li>`;
+    <div class="title">${a.t}</div><div class="org">${a.o} · ${a.s}</div><div class="evi">확인 필요: ${a.e}</div>${applyLink(a)}</li>`;
 }
 function cardNear(a,f){
   const c=f[0];
   return `<li class="card near"><div class="card-top"><span class="title" style="margin:0">${a.t}</span><span class="badge-near">이것만 바꾸면 가능</span></div>
     <div class="cmp"><span>${c.label}</span><span class="req">요구 ${c.req}</span><span class="mine">내 조건 ${c.mine}</span></div>
-    <div class="evi">근거: ${a.e}</div></li>`;
+    <div class="evi">근거: ${a.e}</div>${applyLink(a)}</li>`;
 }
 function section(title, cls, items, emptyMsg){
   const body = items.length ? `<ul class="list">${items.join("")}</ul>` : `<div class="empty">${emptyMsg}</div>`;
