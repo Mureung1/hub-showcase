@@ -1,0 +1,72 @@
+/*
+ * Core Loop Builder — Design Tokens
+ * Source of truth: pastel-glass "Design · Build · Play" mockup
+ * https://claude.ai/code/artifact/f8526978-9370-4a0d-a4b7-15c7b061a9bf
+ *
+ * Import this file (or copy the custom properties) into frontend/src before
+ * building any new screen so colors, blur, radius, and type stay consistent.
+ */
+
+:root {
+  /* ---- Background gradient (the "world" behind every screen) ---- */
+  --clb-sky: #3a5be3;
+  --clb-violet: #8b3ff2;
+  --clb-cyan: #1fe0cf;
+  --clb-bg-gradient: linear-gradient(160deg, var(--clb-sky) 0%, var(--clb-violet) 52%, var(--clb-cyan) 100%);
+
+  /* ---- Glass surface ---- */
+  --clb-glass: rgba(255, 255, 255, 0.20);
+  --clb-glass-strong: rgba(255, 255, 255, 0.32);
+  --clb-glass-faint: rgba(255, 255, 255, 0.14);
+  --clb-edge: rgba(255, 255, 255, 0.38);
+  --clb-edge-soft: rgba(255, 255, 255, 0.22);
+  --clb-blur-panel: 28px;
+  --clb-blur-nav: 24px;
+  --clb-blur-node: 16px;
+
+  /* ---- Text ---- */
+  --clb-ink: #ffffff;
+  --clb-muted: rgba(255, 255, 255, 0.76);
+  --clb-muted-dim: rgba(255, 255, 255, 0.56);
+
+  /* ---- Accent (reward / selected / game-feel) ---- */
+  --clb-gold: #ffcf7a;
+  --clb-gold-ink: #4a2e00;
+  --clb-success: #baffd9;
+
+  /* ---- Radius ---- */
+  --clb-radius-panel: 26px;
+  --clb-radius-control: 18px;
+  --clb-radius-pill: 999px;
+
+  /* ---- Shadow / glow ---- */
+  --clb-shadow-panel: 0 30px 70px rgba(30, 20, 70, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  --clb-shadow-nav: 0 18px 50px rgba(30, 20, 70, 0.18);
+  --clb-shadow-node: 0 14px 28px rgba(30, 20, 70, 0.22);
+  --clb-shadow-selected: 0 18px 40px rgba(255, 159, 118, 0.18);
+
+  /* ---- Type ---- */
+  --clb-font-display: system-ui, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --clb-font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --clb-text-hero: 2.9rem;
+  --clb-text-panel-title: 1.7rem;
+  --clb-text-card-title: 1.12rem;
+  --clb-text-body: 1rem;
+  --clb-text-label: 0.78rem;
+
+  /* ---- Spacing scale ---- */
+  --clb-space-xs: 6px;
+  --clb-space-sm: 10px;
+  --clb-space-md: 16px;
+  --clb-space-lg: 24px;
+  --clb-space-xl: 38px;
+}
+
+/*
+ * Intentional single-theme commit: Core Loop Builder's UI is one bright
+ * pastel-glass "world" (sky -> violet -> cyan), like a photograph — it does
+ * not reskin with OS/site light-dark toggles. Do not branch these tokens
+ * under prefers-color-scheme or [data-theme] unless the product direction
+ * changes; that decision belongs in design/DESIGN_SYSTEM.md, not in a
+ * one-off override.
+ */

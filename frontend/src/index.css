@@ -1,0 +1,28 @@
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--clb-font-display);
+  line-height: 1.6;
+  color: var(--clb-ink);
+  background: var(--clb-bg-gradient);
+  background-attachment: fixed;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
