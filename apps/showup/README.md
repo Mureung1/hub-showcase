@@ -6,8 +6,8 @@
 > 노쇼·폭언·분쟁 같은 문제 고객 피해를 줄일 수 있도록 고객 이력과
 > 위험도를 관리하고 예약 전에 경고하는 데 초점을 둔다.
 
-- 기간: 2026-07-09 ~ 2026-07-30 (주 5일, 16영업일)
-- 진행: Hermes Agent 4세션 (프론트엔드 / 백엔드 / 보안 / 리드)
+- 기간: 2026-07-07 ~ 2026-07-30 (사전 세팅 7/7~7/8, 개발 7/9~7/30, 주 5일 16영업일)
+- 진행: Hermes Agent 프레임워크 + Ollama Pro 모델 4세션 (프론트엔드 / 백엔드 / 보안 / 리드)
 - 모델: 리드·GLM 5.2 / 프론트엔드·Qwen 3.5 / 백엔드·Kimi K2.7 Code / 보안·GPT-OSS 120B (Ollama)
 
 ## 문제 정의
@@ -34,8 +34,10 @@
 
 - [기획서 전문](docs/plan.md)
 - [작업 체크리스트](docs/checklist.md)
+- [GitHub Issues — 작업 이슈 트래커](https://github.com/connect-AIAgentChallenge-26-1/hub/issues?q=is%3Aissue+author%3AMin0504)
 - [유저 플로우](docs/user-flow.md)
-- [프로토타입 (HTML/CSS)](prototype/index.html) — 핵심 기능 2개 시연 (고객 검색·경고 배너·예약 상태·사건 기록)
+- [발표 자료](docs/presentations/0710.md) — 1주차 발표 (7/10 금)
+- [프로토타입 (HTML/CSS)](prototype/index.html) — 4개 화면 시연 (대시보드·고객 검색·고객 상세·예약 관리)
 
 ## 원칙
 
