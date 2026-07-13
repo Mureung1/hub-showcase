@@ -1,33 +1,143 @@
-# DevPulse 개발 백로그
+# 자격증·스펙 취득 경로 플래너 — 개발 백로그
 
-> 상태 갱신 방식: 작업 완료 시 상태를 Done으로 바꾸고, 새 작업 발견 시 하단에 추가
+## 완료 (기획 단계)
 
-## 완료 (1주차)
+| Task | 설명 | 상태 |
+|---|---|---|
+| 주제 전환 결정 | DevPulse 폐기, 자격증 경로 플래너로 전환 | Done |
+| 기존 도메인 코드 초기화 | domain/collector/repository/DB 스키마 삭제, 인프라(Gradle/Flyway/Feign 등)는 유지 | Done |
+| 기획서 작성 | 문제정의, 사용자 시나리오, 핵심기능 3개 | Done |
+| 위키 작성 | 기능/비기능요구사항/기술스택/제약조건/구현매핑 | Done |
+| 경로 최적화 방식 결정 | SQL 재귀 대신 Java 그래프 알고리즘(위상정렬)으로 확정 | Done |
+| README/CLAUDE.md 갱신 | 새 도메인 기준으로 재작성 | Done |
+| 프로토타입 (HTML/CSS) | 목표입력/수요분석·상세 2화면 | Done |
+| 디자인 Skill 저장 | `.claude/skills/design-tone/SKILL.md` | Done |
 
-|Task|설명|상태|
-|-|-|-|
-|기획서 확정|핵심 기능 3개, 사용자 시나리오, 화면구조|Done|
-|프로토타입|순수 HTML/CSS, 3화면 (대시보드/상세/문서제안)|Done|
-|DB 스키마|7테이블 + 복합FK + CHECK제약, Flyway 검증 완료|Done|
-|JPA 엔티티/Repository|엔티티 7개, enum 4개, Repository 7개|Done|
-|GitHub GraphQL Collector (기본)|Feign 클라이언트, DTO, 단일 페이지 조회|Done|
-|React 환경 + 소개 컴포넌트|Vite, ProjectIntro.jsx|Done|
-|CLAUDE.md|컨텍스트 파일 작성|Done|
+---
 
-## 백로그 (2\~4주차, 우선순위순)
+## 이번 슬라이스 (진행 중) — 목표 직무 입력 → 자격증 랭킹 조회 → 화면 표시
 
-|Task|설명|우선순위|예상 주차|상태|
-|-|-|-|-|-|
-|docker-compose.yml 영구화|PostgreSQL(+추후 Kafka) 로컬 실행 고정|P0|2주차|Todo|
-|Collector 페이지네이션 + 저장|hasNextPage 반복 조회, 엔티티 매핑 후 JPA 저장 (Service 계층)|P0|2주차|Todo|
-|AST 분류 에이전트|JavaParser로 커밋 diff 분석 → FEATURE/FIX/REFACTOR 등 분류|P0|2주차|Todo|
-|MyBatis 우선순위 스코어링|commit\_log+issue\_log+doc\_status join 집계 → priority\_score 저장|P1|2주차 말\~3주차 초|Todo|
-|QueryDsl 대시보드 조회 API|우선순위 정렬 + 조건 필터 REST API|P1|3주차|Todo|
-|React 대시보드 실제 연동|프로토타입 화면 3개를 실 데이터로 재구현, CORS 설정|P1|3주차|Todo|
-|Kafka 파이프라인 분리|수집→분석 비동기화 (동기 흐름 검증 후 진행)|P2|3주차 말\~4주차 초|Todo|
-|문서 갱신 제안 (LLM 연동)|무료 LLM API 배치 호출, diff 제안 생성|P2|4주차|Todo|
-|통합 테스트 · 예외처리|전체 파이프라인 e2e 확인|P2|4주차|Todo|
-|최종 문서화 · 데모 준비|README/위키 최신화, 발표 자료|P2|4주차|Todo|
+### 프로젝트 개요
+사용자가 목표 직무별로 자주 언급되는 자격증을 확인하고 시험 등록 사이트로 연결하는 기능을 개발.
 
+### 목표
+수직 슬라이스 완성: 목표 직무 입력 → 자격증 랭킹 조회 → 화면 표시
 
+### 이번 슬라이스 범위
+- 포함: 시드 데이터 기반 조회, FE-BE 실제 연동
+- 제외: 워크넷/사람인 실제 API 연동, 정규화 에이전트, 경로 최적화 — 다음 슬라이스로 이동
 
+### 진행할 작업 (Issue 1~4)
+- [x] Issue 1. [DB] 스키마 설계 및 초기 세팅
+- [x] Issue 2. [백엔드] GET API 구현
+- [ ] Issue 3. [프론트엔드] 화면 구현 및 컴포넌트 구현
+- [ ] Issue 4. FE-BE 연결 및 검증 테스트
+
+### 슬라이스 전체 완료 기준
+- [ ] 웹 서비스에서 탐색에 필요한 정보 입력 후 그에 맞는 랭킹 화면 표시까지 수동 테스트 통과
+- [ ] mock 데이터 흔적 없이 실제 데이터베이스만 출력
+- [ ] `./gradlew compileJava`, `npm run build` 둘 다 빌드 성공
+
+---
+
+### Issue 1. [DB] 스키마 설계 및 초기 세팅
+
+**요구사항**
+목표 직무별 자격증 언급 데이터를 저장할 스키마 설계 후, 슬라이스에서 조회할 시드 데이터까지 삽입.
+
+**작업 단계**
+- [x] 테이블 목록 확정 — 자격증 목록, 직무별 언급 통계
+- [x] 컬럼 초안 정리
+  - `certification`: id, 자격증 이름, 주관처
+  - `certification_mention`: id, FK(certification_id), 직무 이름, 전체 채용공고 수, 해당 자격증이 언급된 공고 수
+- [x] 컬럼 확정 (강조도는 DB 컬럼으로 두지 않고 Issue 2 Service에서 언급률 임계치로 계산하는 것으로 확정, `(certification_id, job_title)` UNIQUE 제약 추가)
+- [x] Flyway 마이그레이션 파일 작성 (`V1__init.sql` 스키마, `V2__seed.sql` 시드 데이터)
+- [x] PostgreSQL 기동 확인 및 `./gradlew bootRun` 실행 (레포 루트 `docker-compose.yml` 신규 작성, 호스트 포트 5433 — 로컬에 기존 네이티브 Postgres 17이 5432를 이미 점유 중이라 충돌 회피)
+- [x] 테이블 생성·외래키 생성 확인
+- [x] 시드 데이터 예시 SQL 작성 (자격증 7종 × 직무 2개 — 반도체 품질관리/전산직, 언급률 2.5~78.3% 분포로 랭킹이 의미있게 갈리도록 구성)
+
+**완료 기준**
+- [x] 마이그레이션 오류 없이 잘 작동 — `Successfully applied 2 migrations to schema "public", now at version v2`
+- [x] 각 테이블 간 릴레이션(FK)이 잘 이루어졌는지 확인 — `certification_mention_certification_id_fkey` (ON DELETE CASCADE) 확인
+- [x] SELECT로 잘 조회되는지 확인 — job_title별 언급률 랭킹 쿼리로 10개 행 정상 조회
+
+---
+
+### Issue 2. [백엔드] GET API 구현
+
+**요구사항**
+목표 직무명을 받고 관련 자격증을 언급률 순으로 반환하는 API 구현.
+
+**작업 단계**
+- [x] QueryDsl 의존성 + APT 플러그인 build.gradle 추가 (Wiki 확정 스택, Q타입 생성 확인 완료)
+- [x] JPA 엔티티 작성 (certification, certification_mention)
+- [x] 각 엔티티에 대응하는 JpaRepository 인터페이스 작성
+- [x] 조회 쿼리 메서드 정의 (QueryDsl로 동적 조회 — jobTitle 기준, fetch join으로 N+1 방지)
+- [x] 언급률 계산 로직을 Service 계층에 작성 (내림차순 정렬)
+- [x] 강조도 태그 매핑 로직 작성 (필수/우대/낮음 — 언급률 50%/20% 임계치 기준, DB 컬럼 아닌 Service 계산)
+- [x] 응답 DTO 정의
+- [x] `GET /api/certification?jobTitle=` 컨트롤러 구현
+- [x] 예외 처리 (jobTitle 누락/공백 400, 결과 0건 404)
+
+**완료 기준**
+- [x] 직무 이름 파라미터로 검색 요청 시 200 OK 반환 — 반도체 품질관리/전산직 둘 다 curl로 실제 확인
+- [x] 응답 JSON에 필요한 필드 포함 — certificationName/issuer/mentionCount/totalPostingCount/mentionRatePercent/emphasis
+- [x] 예외 처리 정상 동작 — 미존재 직무 404, 파라미터 누락/공백 400 확인
+
+---
+
+### Issue 3. [프론트엔드] 화면 구현 및 컴포넌트 구현
+
+**요구 조건**
+목표 직무 입력 화면과 자격증 랭킹 리스트 화면을 프로토타입(docs/prototype.html)과 유사하게 제작, mock 데이터로 먼저 완성.
+
+**작업 단계**
+- [ ] 백엔드 응답과 동일 구조로 mock 데이터 작성
+- [ ] 직무 입력창과 분석 시작 버튼
+- [ ] 카드 리스트 컴포넌트
+- [ ] 이름/언급률/강조도 태그 표시
+- [ ] 입력·결과 리스트·로딩 상태를 위한 state 설계
+- [ ] `.claude/skills/design-tone/SKILL.md` 색상·폰트 적용
+- [ ] mock 데이터로 결과 표시까지 테스트
+
+**완료 기준**
+- [ ] 입력창과 버튼이 화면에 정상 표시
+- [ ] 버튼 클릭 시 mock 데이터가 제대로 렌더링
+- [ ] 각 카드에 이름·언급률·강조도가 명확히 표시됨
+
+---
+
+### Issue 4. FE-BE 연결 및 검증 테스트
+
+**요구 조건**
+프론트엔드에서 mock 데이터가 잘 표시되는지 확인 후, mock 데이터를 제거하고 실제 API와 연결하여 전체 사이클이 끊기지 않고 작동하는지 검증.
+
+**작업 단계**
+- [ ] mock 데이터 제거 후 fetch로 `GET /api/~~` 실제 호출 연결
+- [ ] 프론트 개발 서버 포트 허용하는 CORS 설정 추가
+- [ ] 로딩·에러 등 소강 상태 UI 추가
+- [ ] 실제 DB 데이터 표시되는지 수동 테스트
+- [ ] 개발자도구에서 경고/에러 없는지 확인 및 요청·응답 구조 확인
+- [ ] 전체 사이클 검증 (verifier 서브에이전트 실행)
+
+**완료 기준**
+- [ ] 탐색에 필요한 정보 입력 → 그에 맞는 랭킹 화면 표시까지 테스트 성공
+- [ ] mock 데이터 흔적이 완전히 없고 실제 가져온 데이터만 표시됨
+- [ ] 빌드 성공 (프론트/백엔드)
+- [ ] F12(개발자도구) 에러 없이 잘 작동
+- [ ] 서브에이전트 실행 시 Blocker 없음
+
+---
+
+## 백로그 (다음 슬라이스 이후, 우선순위순)
+
+| Task | 설명 | 우선순위 | 예상 시점 | 상태 |
+|---|---|---|---|---|
+| 워크넷/사람인 Collector | Feign 클라이언트, 채용공고 실제 수집 | P0 | 다음 슬라이스 | Todo |
+| 자격증 정규화 에이전트 | 룰 기반 1차 매칭 + 애매 항목 LLM 배치 정규화 | P0 | 다음 슬라이스 | Todo |
+| 강조도 분류 (필수/우대/낮음) | 문맥 기반 분류 로직으로 고도화 (현재는 단순 규칙) | P1 | 다음 슬라이스 | Todo |
+| MyBatis 집계 쿼리 | 언급 빈도·강조도 join 집계 → 랭킹 (현재는 QueryDsl 단순 조회) | P1 | 다음 슬라이스 | Todo |
+| Java 그래프 알고리즘 (경로 최적화) | 선수조건 그래프 구성, 위상정렬, 순환탐지 | P1 | 다음 슬라이스 | Todo |
+| Kafka 파이프라인 분리 | 수집→정규화→집계 비동기화 (동기 흐름 검증 후) | P2 | 추후 | Todo |
+| 통합 테스트 · 예외처리 고도화 | 전체 파이프라인 e2e 확인 | P2 | 추후 | Todo |
+| 최종 문서화 · 데모 준비 | README/위키 최신화, 발표 자료 | P2 | 추후 | Todo |

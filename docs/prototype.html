@@ -1,332 +1,387 @@
-<!doctype html>
-<html lang="ko">
+<!DOCTYPE html>
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>DevPulse — 프로토타입</title>
-<style>
-  :root{
-    --bg:#12161f;
-    --surface:#1a2030;
-    --surface-2:#212939;
-    --border:rgba(255,255,255,0.08);
-    --text:#e7ebf2;
-    --text-muted:#8891a3;
-    --accent:#4fd1c5;
-    --accent-warn:#f0a868;
-    --accent-danger:#e5707a;
-    --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-    --font-body: system-ui, -apple-system, 'Apple SD Gothic Neo', sans-serif;
-    --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace;
-  }
-  *{ box-sizing:border-box; }
-  body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:var(--font-body);
-    padding:32px 16px 64px;
-  }
-  .proto{ max-width:880px; margin:0 auto; }
-
-  /* ---------- header / pulse signature ---------- */
-  .proto-header{ margin-bottom:28px; }
-  .pulse-svg{ width:100%; height:44px; overflow:visible; margin-bottom:14px; }
-  .pulse-line{
-    stroke:var(--accent); stroke-width:2; stroke-linejoin:round; stroke-linecap:round;
-    fill:none; stroke-dasharray:900; stroke-dashoffset:900;
-    animation:draw 3.2s ease-in-out infinite;
-  }
-  @keyframes draw{ 0%{stroke-dashoffset:900;} 60%{stroke-dashoffset:0;} 100%{stroke-dashoffset:-900;} }
-  .proto-eyebrow{
-    font-family:var(--font-mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--accent); margin:0 0 8px;
-  }
-  .proto-title{ font-family:var(--font-display); font-size:32px; font-weight:700; margin:0 0 6px; letter-spacing:-0.01em; }
-  .proto-sub{ color:var(--text-muted); font-size:14px; margin:0; }
-
-  /* ---------- tabs (no JS, radio-driven) ---------- */
-  input[type="radio"].screen-toggle{ position:absolute; opacity:0; pointer-events:none; }
-  .tabs{
-    display:flex; gap:4px; margin:28px 0 20px; border-bottom:1px solid var(--border);
-  }
-  .tabs label{
-    font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted);
-    padding:10px 14px; cursor:pointer; border-bottom:2px solid transparent; user-select:none;
-  }
-  .tabs label:hover{ color:var(--text); }
-
-  #tab-dashboard:checked ~ .tabs label[for="tab-dashboard"],
-  #tab-detail:checked ~ .tabs label[for="tab-detail"],
-  #tab-suggestion:checked ~ .tabs label[for="tab-suggestion"]{
-    color:var(--accent); border-bottom-color:var(--accent);
-  }
-
-  .panel{ display:none; animation:fade .25s ease; }
-  #tab-dashboard:checked ~ #panel-dashboard{ display:block; }
-  #tab-detail:checked ~ #panel-detail{ display:block; }
-  #tab-suggestion:checked ~ #panel-suggestion{ display:block; }
-  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
-
-  /* ---------- screen 1: dashboard ---------- */
-  .project-card{
-    display:flex; gap:16px; align-items:flex-start;
-    background:var(--surface); border:1px solid var(--border); border-radius:10px;
-    padding:18px 20px; margin-bottom:12px;
-  }
-  .rank{
-    font-family:var(--font-mono); font-size:13px; color:var(--text-muted);
-    flex-shrink:0; padding-top:2px; width:22px;
-  }
-  .card-body{ flex:1; min-width:0; }
-  .card-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px; }
-  .card-name{ font-size:16px; font-weight:600; }
-  .status-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; display:inline-block; margin-right:6px; }
-  .status-urgent .status-dot{ background:var(--accent-danger); }
-  .status-warn .status-dot{ background:var(--accent-warn); }
-  .status-ok .status-dot{ background:var(--accent); }
-  .score{
-    font-family:var(--font-mono); font-size:13px; color:var(--text-muted);
-    background:var(--surface-2); padding:3px 9px; border-radius:6px; flex-shrink:0;
-  }
-  .card-meta{ font-size:13px; color:var(--text-muted); line-height:1.6; }
-  .card-meta b{ color:var(--text); font-weight:500; }
-
-  /* ---------- screen 2: detail ---------- */
-  .detail-head{ margin-bottom:22px; }
-  .detail-head h2{ font-family:var(--font-display); font-size:24px; margin:0 0 4px; }
-  .detail-head p{ color:var(--text-muted); font-size:13px; margin:0; }
-
-  .score-breakdown{ margin:20px 0 28px; }
-  .score-row{ display:flex; align-items:center; gap:12px; margin-bottom:10px; }
-  .score-label{ width:130px; font-size:13px; color:var(--text-muted); flex-shrink:0; }
-  .score-bar-track{ flex:1; height:8px; background:var(--surface-2); border-radius:4px; overflow:hidden; }
-  .score-bar-fill{ height:100%; background:var(--accent); border-radius:4px; }
-  .score-value{ width:36px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-muted); }
-
-  .section-label{
-    font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
-    color:var(--text-muted); margin:26px 0 10px;
-  }
-  .commit-row{
-    display:flex; gap:10px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--border); font-size:13.5px;
-  }
-  .commit-row:last-child{ border-bottom:none; }
-  .badge{
-    font-family:var(--font-mono); font-size:10.5px; padding:2px 7px; border-radius:4px; flex-shrink:0;
-    text-transform:uppercase;
-  }
-  .badge-feature{ background:rgba(79,209,197,0.15); color:var(--accent); }
-  .badge-fix{ background:rgba(240,168,104,0.15); color:var(--accent-warn); }
-  .badge-docs{ background:rgba(229,112,122,0.15); color:var(--accent-danger); }
-  .badge-refactor{ background:var(--surface-2); color:var(--text-muted); }
-  .commit-msg{ flex:1; color:var(--text); }
-  .commit-date{ color:var(--text-muted); font-size:12px; flex-shrink:0; }
-
-  .issue-row{ display:flex; gap:8px; align-items:center; padding:7px 0; font-size:13.5px; color:var(--text-muted); }
-  .issue-row b{ color:var(--text); font-weight:500; }
-
-  .cta-row{ margin-top:26px; }
-  .btn{
-    display:inline-block; font-family:var(--font-mono); font-size:12.5px;
-    padding:9px 16px; border-radius:7px; border:1px solid var(--border);
-    color:var(--text); text-decoration:none; cursor:pointer;
-  }
-  .btn-accent{ background:var(--accent); color:#0b1017; border-color:var(--accent); font-weight:600; }
-
-  /* ---------- screen 3: doc suggestion ---------- */
-  .diff-wrap{
-    display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:18px 0 20px;
-  }
-  .diff-col{ background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-  .diff-col-head{
-    font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.05em;
-    color:var(--text-muted); padding:10px 14px; border-bottom:1px solid var(--border);
-  }
-  .diff-body{ padding:14px; font-family:var(--font-mono); font-size:12.5px; line-height:1.7; color:var(--text-muted); }
-  .diff-added{ background:rgba(79,209,197,0.12); color:var(--text); display:block; padding:2px 6px; border-radius:4px; margin:2px 0; }
-  .diff-removed{ background:rgba(229,112,122,0.12); color:var(--text-muted); display:block; padding:2px 6px; border-radius:4px; margin:2px 0; text-decoration:line-through; opacity:.7; }
-
-  .safety-note{
-    font-size:12.5px; color:var(--text-muted); background:var(--surface-2);
-    border-left:2px solid var(--accent); padding:10px 14px; border-radius:0 6px 6px 0; margin-bottom:20px;
-  }
-  .action-row{ display:flex; gap:10px; }
-  .btn-danger-outline{ color:var(--accent-danger); border-color:rgba(229,112,122,0.4); }
-
-  @media (max-width:600px){
-    .diff-wrap{ grid-template-columns:1fr; }
-    .tabs{ flex-wrap:wrap; }
-  }
-  @media (prefers-reduced-motion: reduce){
-    .pulse-line{ animation:none; stroke-dashoffset:0; }
-  }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
 </head>
 <body>
-<div class="proto">
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#12161f;color:#e7e9ee;font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;}
+  *{box-sizing:border-box;}
+  input,select,button{font-family:inherit;}
+  input::placeholder{color:#5b6478;}
+  a{color:#4fd1c5;text-decoration:none;}
+  a:hover{color:#7fe0d6;}
+  ::selection{background:rgba(79,209,197,0.3);}
+  input:focus,select:focus{outline:none;border-color:#4fd1c5 !important;box-shadow:0 0 0 3px rgba(79,209,197,0.15);}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:#12161f;}
+  ::-webkit-scrollbar-thumb{background:#2a3348;border-radius:5px;}
+</style>
+</helmet>
 
-  <div class="proto-header">
-    <svg class="pulse-svg" viewBox="0 0 400 44"><polyline class="pulse-line" points="0,22 60,22 80,22 95,5 110,38 125,22 160,22 180,22 195,8 210,36 225,22 400,22" /></svg>
-    <p class="proto-eyebrow">DevPulse · 프로토타입</p>
-    <h1 class="proto-title">지금 뭘 먼저 봐야 하는지</h1>
-    <p class="proto-sub">3개 화면 흐름: 대시보드 → 프로젝트 상세 → 문서 갱신 제안 검토</p>
-  </div>
+<div style="min-height:100vh;background:#12161f;">
 
-  <input class="screen-toggle" type="radio" name="screen" id="tab-dashboard" checked>
-  <input class="screen-toggle" type="radio" name="screen" id="tab-detail">
-  <input class="screen-toggle" type="radio" name="screen" id="tab-suggestion">
+  <sc-if value="{{ isInputScreen }}" hint-placeholder-val="{{ true }}">
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;">
+      <div style="width:460px;max-width:100%;background:#1a2030;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:40px;">
 
-  <nav class="tabs">
-    <label for="tab-dashboard">1. 대시보드</label>
-    <label for="tab-detail">2. 프로젝트 상세 (JNU Hub)</label>
-    <label for="tab-suggestion">3. 문서 제안 검토</label>
-  </nav>
-
-  <!-- ===================== SCREEN 1: 대시보드 ===================== -->
-  <section id="panel-dashboard" class="panel">
-    <div class="project-card status-urgent">
-      <span class="rank">01</span>
-      <div class="card-body">
-        <div class="card-top">
-          <span class="card-name"><span class="status-dot"></span>JNU Hub</span>
-          <span class="score">우선순위 87</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px;">
+          <span style="width:8px;height:8px;border-radius:2px;background:#4fd1c5;display:inline-block;"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;color:#7f8ba3;text-transform:uppercase;">CERT_PLANNER / INPUT</span>
         </div>
-        <div class="card-meta">
-          마지막 커밋 <b>12일 전</b> · 미해결 이슈 <b>3개</b> · 문서 갱신 필요 <b>2건</b>
-        </div>
-      </div>
-    </div>
 
-    <div class="project-card status-warn">
-      <span class="rank">02</span>
-      <div class="card-body">
-        <div class="card-top">
-          <span class="card-name"><span class="status-dot"></span>rag-pipeline</span>
-          <span class="score">우선순위 54</span>
-        </div>
-        <div class="card-meta">
-          마지막 커밋 <b>3일 전</b> · 미해결 이슈 <b>1개</b> · 문서 갱신 필요 <b>0건</b>
-        </div>
-      </div>
-    </div>
+        <h1 style="font-size:26px;font-weight:700;margin:0 0 6px;letter-spacing:-0.01em;">목표 직무를 알려주세요</h1>
+        <p style="font-size:13.5px;color:#8b93a7;margin:0 0 30px;line-height:1.5;">실제 채용공고 데이터를 분석해 진짜 필요한 자격증을 근거와 함께 보여드립니다.</p>
 
-    <div class="project-card status-warn">
-      <span class="rank">03</span>
-      <div class="card-body">
-        <div class="card-top">
-          <span class="card-name"><span class="status-dot"></span>VR 협동 프로젝트</span>
-          <span class="score">우선순위 30</span>
-        </div>
-        <div class="card-meta">
-          마지막 커밋 <b>8일 전</b> · 미해결 이슈 <b>2개</b> · 문서 갱신 필요 <b>1건</b>
-        </div>
-      </div>
-    </div>
+        <form onSubmit="{{ onSubmit }}">
+          <div style="margin-bottom:18px;">
+            <label style="display:flex;align-items:baseline;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:{{ jobLabelColor }};margin-bottom:7px;">목표 직무<span style="color:#e5707a;">*</span></label>
+            <input type="text" value="{{ jobTitle }}" onChange="{{ onJobTitleChange }}" placeholder="예: 산업안전관리자, 안전보건담당자" style="width:100%;padding:12px 14px;background:#12161f;border:1px solid {{ jobBorderColor }};border-radius:8px;color:#e7e9ee;font-size:14.5px;transition:border-color .15s;" />
+            <sc-if value="{{ showJobError }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#e5707a;margin-top:6px;">목표 직무는 필수 입력 항목입니다</div>
+            </sc-if>
+          </div>
 
-    <div class="project-card status-ok">
-      <span class="rank">04</span>
-      <div class="card-body">
-        <div class="card-top">
-          <span class="card-name"><span class="status-dot"></span>RoomMarket</span>
-          <span class="score">우선순위 12</span>
-        </div>
-        <div class="card-meta">
-          마지막 커밋 <b>어제</b> · 미해결 이슈 <b>0개</b> · 문서 갱신 필요 <b>0건</b>
-        </div>
-      </div>
-    </div>
-  </section>
+          <div style="margin-bottom:18px;">
+            <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:#7f8ba3;margin-bottom:7px;">목표 기업 (선택)</label>
+            <input type="text" value="{{ company }}" onChange="{{ onCompanyChange }}" placeholder="예: 삼성전자, 무관" style="width:100%;padding:12px 14px;background:#12161f;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#e7e9ee;font-size:14.5px;" />
+          </div>
 
-  <!-- ===================== SCREEN 2: 프로젝트 상세 ===================== -->
-  <section id="panel-detail" class="panel">
-    <div class="detail-head">
-      <h2>JNU Hub</h2>
-      <p>우선순위 87점 · 마지막 분석 2시간 전</p>
-    </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:26px;">
+            <div>
+              <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:#7f8ba3;margin-bottom:7px;">전공</label>
+              <input type="text" value="{{ major }}" onChange="{{ onMajorChange }}" placeholder="예: 산업공학" style="width:100%;padding:12px 14px;background:#12161f;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#e7e9ee;font-size:14.5px;" />
+            </div>
+            <div>
+              <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:#7f8ba3;margin-bottom:7px;">졸업까지 남은 학기</label>
+              <select value="{{ semesters }}" onChange="{{ onSemestersChange }}" style="width:100%;padding:12px 14px;background:#12161f;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#e7e9ee;font-size:14.5px;appearance:none;">
+                <option value="해당없음">해당없음</option>
+                <option value="1학기">1학기</option>
+                <option value="2학기">2학기</option>
+                <option value="3학기">3학기</option>
+                <option value="4학기">4학기</option>
+                <option value="5학기">5학기</option>
+                <option value="6학기 이상">6학기 이상</option>
+              </select>
+            </div>
+          </div>
 
-    <div class="score-breakdown">
-      <div class="score-row">
-        <span class="score-label">커밋 빈도</span>
-        <div class="score-bar-track"><div class="score-bar-fill" style="width:78%"></div></div>
-        <span class="score-value">78</span>
-      </div>
-      <div class="score-row">
-        <span class="score-label">미해결 이슈</span>
-        <div class="score-bar-track"><div class="score-bar-fill" style="width:65%"></div></div>
-        <span class="score-value">65</span>
-      </div>
-      <div class="score-row">
-        <span class="score-label">문서 노후도</span>
-        <div class="score-bar-track"><div class="score-bar-fill" style="width:91%"></div></div>
-        <span class="score-value">91</span>
-      </div>
-    </div>
+          <button type="submit" style="width:100%;padding:14px;background:#4fd1c5;border:none;border-radius:8px;color:#0d1420;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:-0.01em;">수요 분석 시작하기 →</button>
+        </form>
 
-    <p class="section-label">최근 커밋</p>
-    <div class="commit-row">
-      <span class="badge badge-feature">feature</span>
-      <span class="commit-msg">RAG 기반 학식 Q&A 엔드포인트 추가</span>
-      <span class="commit-date">12일 전</span>
-    </div>
-    <div class="commit-row">
-      <span class="badge badge-fix">fix</span>
-      <span class="commit-msg">Kakao Maps 좌표 변환 오류 수정</span>
-      <span class="commit-date">15일 전</span>
-    </div>
-    <div class="commit-row">
-      <span class="badge badge-refactor">refactor</span>
-      <span class="commit-msg">Qdrant 클라이언트 초기화 로직 정리</span>
-      <span class="commit-date">17일 전</span>
-    </div>
-
-    <p class="section-label">미해결 이슈 (3)</p>
-    <div class="issue-row">#42 <b>혼잡도 API 응답 지연 이슈</b></div>
-    <div class="issue-row">#39 <b>Cloudflare Tunnel 재시작 시 세션 끊김</b></div>
-    <div class="issue-row">#35 <b>Arduino MQTT 재연결 로직 필요</b></div>
-
-    <div class="cta-row">
-      <label for="tab-suggestion" class="btn btn-accent">문서 갱신 제안 확인하기 →</label>
-    </div>
-  </section>
-
-  <!-- ===================== SCREEN 3: 문서 갱신 제안 검토 ===================== -->
-  <section id="panel-suggestion" class="panel">
-    <div class="detail-head">
-      <h2>문서 갱신 제안 — README.md</h2>
-      <p>JNU Hub · FEATURE 커밋 1건에서 문서 미반영 감지</p>
-    </div>
-
-    <div class="safety-note">
-      이 제안은 자동으로 반영되지 않습니다. 승인해야만 실제 문서에 적용됩니다.
-    </div>
-
-    <div class="diff-wrap">
-      <div class="diff-col">
-        <div class="diff-col-head">현재 README.md</div>
-        <div class="diff-body">
-          ## API 엔드포인트<br>
-          <span class="diff-removed">- GET /meals : 학식 메뉴 조회</span><br>
-          - GET /congestion : 혼잡도 조회
-        </div>
-      </div>
-      <div class="diff-col">
-        <div class="diff-col-head">제안된 갱신본</div>
-        <div class="diff-body">
-          ## API 엔드포인트<br>
-          - GET /meals : 학식 메뉴 조회<br>
-          - GET /congestion : 혼잡도 조회<br>
-          <span class="diff-added">+ POST /qa/ask : RAG 기반 학식 Q&A 질의</span>
+        <div style="display:flex;gap:9px;margin-top:22px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4fd1c5;flex:none;">[i]</span>
+          <p style="margin:0;font-size:12px;line-height:1.55;color:#8b93a7;">개인 식별 정보는 수집하지 않습니다. 이름, 이메일, 연락처 등을 입력할 필요가 없으며 입력한 정보는 저장되지 않습니다.</p>
         </div>
       </div>
     </div>
+  </sc-if>
 
-    <div class="action-row">
-      <span class="btn btn-accent">승인 (반영)</span>
-      <span class="btn btn-danger-outline">거절</span>
+  <sc-if value="{{ isResultScreen }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 36px;border-bottom:1px solid rgba(255,255,255,0.08);background:#161c29;">
+        <div style="display:flex;align-items:center;gap:18px;">
+          <button onClick="{{ onBack }}" style="background:none;border:1px solid rgba(255,255,255,0.12);border-radius:7px;color:#8b93a7;padding:7px 12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;cursor:pointer;">← 다시 분석하기</button>
+          <div style="min-width:0;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#4fd1c5;margin-bottom:2px;">CERT_PLANNER / RESULT</div>
+            <div style="font-size:15.5px;font-weight:700;white-space:nowrap;">{{ resultHeading }}</div>
+          </div>
+        </div>
+        <div style="text-align:right;flex:none;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#7f8ba3;">분석 기준: 채용공고 <span style="color:#e7e9ee;">132건</span> · 최근 6개월</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#5b6478;margin-top:2px;">Q-net · 워크넷 · 사람인 공식 API 기반</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:24px;padding:28px 36px;align-items:flex-start;">
+
+        <div style="width:380px;flex:none;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7f8ba3;margin-bottom:12px;">자격증 랭킹 · 언급률 기준</div>
+
+          <sc-for list="{{ certs }}" as="cert" hint-placeholder-count="5">
+            <div onClick="{{ cert.onClick }}" style="cursor:pointer;background:{{ cert.cardBg }};border:1px solid {{ cert.cardBorder }};border-radius:10px;padding:16px 16px;margin-bottom:10px;box-shadow:{{ cert.cardShadow }};transition:border-color .12s;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;">
+                <div style="font-size:15px;font-weight:700;line-height:1.3;">{{ cert.name }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:{{ cert.tagColor }};flex:none;">{{ cert.rateLabel }}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;white-space:nowrap;padding:3px 8px;border-radius:5px;background:{{ cert.tagBg }};color:{{ cert.tagColor }};border:1px solid {{ cert.tagBorder }};">{{ cert.tagLabel }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7f8ba3;white-space:nowrap;">공고 {{ cert.total }}건 중 {{ cert.mentioned }}건</span>
+              </div>
+              <div style="height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:{{ cert.rateLabel }};background:{{ cert.tagColor }};border-radius:3px;"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="flex:1;min-width:0;background:#1a2030;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:30px 34px;">
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7f8ba3;margin-bottom:6px;">선택된 자격증</div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h2 style="font-size:23px;font-weight:700;margin:0;letter-spacing:-0.01em;">{{ selectedCert.name }}</h2>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;white-space:nowrap;padding:4px 9px;border-radius:5px;background:{{ selectedCert.tagBg }};color:{{ selectedCert.tagColor }};border:1px solid {{ selectedCert.tagBorder }};">{{ selectedCert.tagLabel }}</span>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:{{ selectedCert.tagColor }};">{{ selectedCert.rateLabel }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7f8ba3;">언급률</div>
+            </div>
+          </div>
+
+          <div style="background:#12161f;border:1px solid rgba(255,255,255,0.08);border-radius:9px;padding:16px 18px;margin-bottom:26px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4fd1c5;margin-bottom:8px;">근거 · EVIDENCE</div>
+            <p style="margin:0;font-size:14.5px;line-height:1.7;color:#c9cddb;">
+              <sc-for list="{{ selectedCert.evidenceParts }}" as="part" hint-placeholder-count="5">
+                <span style="{{ part.style }}">{{ part.t }}</span>
+              </sc-for>
+            </p>
+          </div>
+
+          <div style="margin-bottom:26px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7f8ba3;margin-bottom:12px;">취득 경로</div>
+            <div style="display:flex;align-items:center;">
+              <div style="flex:1;text-align:center;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4fd1c5;margin-bottom:6px;">01</div>
+                <div style="background:#12161f;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 6px;font-size:12.5px;font-weight:600;">필기접수</div>
+              </div>
+              <div style="width:20px;height:1px;background:rgba(255,255,255,0.15);flex:none;"></div>
+              <div style="flex:1;text-align:center;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4fd1c5;margin-bottom:6px;">02</div>
+                <div style="background:#12161f;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 6px;font-size:12.5px;font-weight:600;">필기합격</div>
+              </div>
+              <div style="width:20px;height:1px;background:rgba(255,255,255,0.15);flex:none;"></div>
+              <div style="flex:1;text-align:center;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4fd1c5;margin-bottom:6px;">03</div>
+                <div style="background:#12161f;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 6px;font-size:12.5px;font-weight:600;">실기접수</div>
+              </div>
+              <div style="width:20px;height:1px;background:rgba(255,255,255,0.15);flex:none;"></div>
+              <div style="flex:1;text-align:center;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4fd1c5;margin-bottom:6px;">04</div>
+                <div style="background:#12161f;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 6px;font-size:12.5px;font-weight:600;">실기합격</div>
+              </div>
+              <div style="width:20px;height:1px;background:rgba(255,255,255,0.15);flex:none;"></div>
+              <div style="flex:1;text-align:center;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4fd1c5;margin-bottom:6px;">05</div>
+                <div style="background:rgba(79,209,197,0.12);border:1px solid rgba(79,209,197,0.4);border-radius:8px;padding:10px 6px;font-size:12.5px;font-weight:700;color:#4fd1c5;">발급</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:26px;">
+            <div style="background:#12161f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:14px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#7f8ba3;margin-bottom:7px;">선수조건</div>
+              <div style="font-size:12.5px;font-weight:600;line-height:1.5;">{{ selectedCert.prereq }}</div>
+            </div>
+            <div style="background:#12161f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:14px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#7f8ba3;margin-bottom:7px;">다음 시험일정</div>
+              <div style="font-size:12.5px;font-weight:600;line-height:1.5;">{{ selectedCert.nextExam }}</div>
+            </div>
+            <div style="background:#12161f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:14px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#7f8ba3;margin-bottom:7px;">응시료</div>
+              <div style="font-size:12.5px;font-weight:600;line-height:1.5;">{{ selectedCert.fee }}</div>
+            </div>
+            <div style="background:#12161f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:14px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#7f8ba3;margin-bottom:7px;">평균 준비기간</div>
+              <div style="font-size:12.5px;font-weight:600;line-height:1.5;">{{ selectedCert.avgPrep }}</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;">
+            <button style="flex:1;padding:13px;background:#4fd1c5;border:none;border-radius:8px;color:#0d1420;font-size:13.5px;font-weight:700;cursor:pointer;">원서접수 바로가기 (주관처: {{ selectedCert.applyOrg }})</button>
+            <button onClick="{{ selectedCert.onToggleAdd }}" style="flex:none;padding:13px 18px;background:{{ selectedCert.addBg }};border:1px solid {{ selectedCert.addBorder }};border-radius:8px;color:{{ selectedCert.addColor }};font-size:13.5px;font-weight:700;cursor:pointer;">{{ selectedCert.addLabel }}</button>
+          </div>
+
+        </div>
+      </div>
     </div>
-  </section>
+  </sc-if>
 
 </div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const TEAL = '#4fd1c5';
+const AMBER = '#f0a868';
+const CORAL = '#e5707a';
+const MUTED = '#8b93a7';
+
+const CERT_DATA = [
+  {
+    id: 'safety', name: '산업안전기사', total: 132, mentioned: 103, required: 67, rate: 78,
+    prereq: '관련학과 전공 시 응시 제한 없음 (비전공자는 경력 1년 이상)',
+    nextExam: '필기 2026.09.05 · 실기 2026.11.14',
+    fee: '필기 19,400원 · 실기 25,900원',
+    avgPrep: '약 3~4개월',
+    applyOrg: 'Q-net (한국산업인력공단)',
+  },
+  {
+    id: 'infoproc', name: '정보처리기사', total: 132, mentioned: 61, required: 18, rate: 46,
+    prereq: '관련학과 전공 시 응시 제한 없음',
+    nextExam: '필기 2026.08.22 · 실기 2026.10.17',
+    fee: '필기 19,400원 · 실기 22,600원',
+    avgPrep: '약 2개월',
+    applyOrg: 'Q-net (한국산업인력공단)',
+  },
+  {
+    id: 'hazmat', name: '위험물산업기사', total: 132, mentioned: 45, required: 12, rate: 34,
+    prereq: '응시 제한 없음',
+    nextExam: '필기 2026.08.22 · 실기 2026.10.17',
+    fee: '필기 19,400원 · 실기 30,600원',
+    avgPrep: '약 2~3개월',
+    applyOrg: 'Q-net (한국산업인력공단)',
+  },
+  {
+    id: 'itq1', name: '컴퓨터활용능력1급', total: 132, mentioned: 16, required: 2, rate: 12,
+    prereq: '응시 제한 없음',
+    nextExam: '필기 2026.08.08 · 실기 2026.09.05',
+    fee: '필기 20,500원 · 실기 25,000원',
+    avgPrep: '약 1~1.5개월',
+    applyOrg: '대한상공회의소',
+  },
+  {
+    id: 'electric', name: '전기기사', total: 132, mentioned: 12, required: 1, rate: 9,
+    prereq: '관련학과 전공 시 응시 제한 없음 (비전공자는 경력 4년 이상)',
+    nextExam: '필기 2026.09.05 · 실기 2026.11.14',
+    fee: '필기 19,400원 · 실기 22,300원',
+    avgPrep: '약 5~6개월',
+    applyOrg: 'Q-net (한국산업인력공단)',
+  },
+];
+
+function tagFor(cert) {
+  const ratio = cert.required / cert.mentioned;
+  if (ratio >= 0.5) return { label: '필수多', color: CORAL, bg: 'rgba(229,112,122,0.14)', border: 'rgba(229,112,122,0.4)' };
+  if (ratio >= 0.15) return { label: '우대', color: AMBER, bg: 'rgba(240,168,104,0.14)', border: 'rgba(240,168,104,0.4)' };
+  return { label: '언급 적음', color: MUTED, bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.15)' };
+}
+
+class Component extends DCLogic {
+  state = {
+    screen: 'input',
+    jobTitle: '',
+    company: '',
+    major: '',
+    semesters: '해당없음',
+    showJobError: false,
+    selectedCertId: 'safety',
+    addedIds: {},
+  };
+
+  onJobTitleChange = (e) => this.setState({ jobTitle: e.target.value, showJobError: false });
+  onCompanyChange = (e) => this.setState({ company: e.target.value });
+  onMajorChange = (e) => this.setState({ major: e.target.value });
+  onSemestersChange = (e) => this.setState({ semesters: e.target.value });
+
+  onSubmit = (e) => {
+    e.preventDefault();
+    if (!this.state.jobTitle.trim()) {
+      this.setState({ showJobError: true });
+      return;
+    }
+    this.setState({ screen: 'result' });
+  };
+
+  onBack = () => this.setState({ screen: 'input' });
+
+  selectCert = (id) => this.setState({ selectedCertId: id });
+
+  toggleAdd = (id) => {
+    this.setState((s) => ({ addedIds: { ...s.addedIds, [id]: !s.addedIds[id] } }));
+  };
+
+  buildCert(raw, isActive) {
+    const tag = tagFor(raw);
+    return {
+      id: raw.id,
+      name: raw.name,
+      total: raw.total,
+      mentioned: raw.mentioned,
+      rateLabel: raw.rate + '%',
+      tagLabel: tag.label,
+      tagColor: tag.color,
+      tagBg: tag.bg,
+      tagBorder: tag.border,
+      cardBg: isActive ? '#1f2942' : '#1a2030',
+      cardBorder: isActive ? 'rgba(79,209,197,0.5)' : 'rgba(255,255,255,0.08)',
+      cardShadow: isActive ? '0 0 0 1px rgba(79,209,197,0.15)' : 'none',
+      onClick: () => this.selectCert(raw.id),
+    };
+  }
+
+  buildEvidenceParts(raw) {
+    const plain = { color: '#c9cddb' };
+    const em = { color: TEAL, fontWeight: 700 };
+    return [
+      { t: raw.total + '건 중 ', style: plain },
+      { t: raw.mentioned + '건', style: em },
+      { t: '에서 언급, 이 중 ', style: plain },
+      { t: raw.required + '건', style: em },
+      { t: '은 필수 표현으로 명시되어 있습니다.', style: plain },
+    ];
+  }
+
+  renderVals() {
+    const s = this.state;
+    const isInputScreen = s.screen === 'input';
+    const isResultScreen = s.screen === 'result';
+
+    const certs = CERT_DATA.map((raw) => this.buildCert(raw, raw.id === s.selectedCertId));
+
+    const selRaw = CERT_DATA.find((c) => c.id === s.selectedCertId) || CERT_DATA[0];
+    const selTag = tagFor(selRaw);
+    const added = !!s.addedIds[selRaw.id];
+
+    const selectedCert = {
+      name: selRaw.name,
+      rateLabel: selRaw.rate + '%',
+      tagLabel: selTag.label,
+      tagColor: selTag.color,
+      tagBg: selTag.bg,
+      tagBorder: selTag.border,
+      evidenceParts: this.buildEvidenceParts(selRaw),
+      prereq: selRaw.prereq,
+      nextExam: selRaw.nextExam,
+      fee: selRaw.fee,
+      avgPrep: selRaw.avgPrep,
+      applyOrg: selRaw.applyOrg,
+      onToggleAdd: () => this.toggleAdd(selRaw.id),
+      addLabel: added ? '✓ 경로에 추가됨' : '취득 경로에 추가',
+      addBg: added ? 'rgba(79,209,197,0.14)' : 'transparent',
+      addBorder: added ? 'rgba(79,209,197,0.5)' : 'rgba(255,255,255,0.15)',
+      addColor: added ? TEAL : '#c9cddb',
+    };
+
+    return {
+      isInputScreen,
+      isResultScreen,
+      jobTitle: s.jobTitle,
+      company: s.company,
+      major: s.major,
+      semesters: s.semesters,
+      showJobError: s.showJobError,
+      jobBorderColor: s.showJobError ? CORAL : 'rgba(255,255,255,0.1)',
+      jobLabelColor: s.showJobError ? CORAL : MUTED,
+      onJobTitleChange: this.onJobTitleChange,
+      onCompanyChange: this.onCompanyChange,
+      onMajorChange: this.onMajorChange,
+      onSemestersChange: this.onSemestersChange,
+      onSubmit: this.onSubmit,
+      onBack: this.onBack,
+      resultHeading: '목표: ' + (s.jobTitle || '(미입력)'),
+      certs,
+      selectedCert,
+    };
+  }
+}
+</script>
 </body>
 </html>
