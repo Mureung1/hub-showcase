@@ -314,6 +314,19 @@ flowchart LR
 
 반경 selector가 아직 서울시 상권 집계를 원형 반경으로 다시 계산하지는 않는다. 개별 점포 목록은 OSM POI이며 점포별 성공 점수 대신 `POI`로 구분한다.
 
+### Phase 2 저장소와 검색 경계
+
+현재 API와 배포 snapshot은 canonical SQLite에서 생성된다. Phase 2 제품 runtime은 Supabase PostgreSQL로 전환하되 canonical SQLite는 같은 데이터를 반복 이관하고 결과를 비교하는 기준으로 유지한다.
+
+첫 검색 vertical slice는 서울 전체 검색이 아니다. 시연 대상으로 고정한 상권·점포 dataset에서 이름·주소·업종 query를 받아 결과를 선택하고 기존 핵심 분석 화면을 여는 범위다. 구현 순서는 `FE 구조 분리 → DB migration/seed → 검색 API contract → React 연결 → 반경 query·filter 동기화`다.
+
+완료 조건:
+
+- 빈 query와 결과 없음 상태가 구분된다.
+- 검색 결과에 안정적인 identifier, 이름, 주소, 업종과 좌표가 포함된다.
+- 선택 결과가 기존 상권·업종 state와 충돌하지 않고 분석 화면을 갱신한다.
+- API 실패 시 검증 snapshot fallback 여부와 stale 상태를 명시한다.
+
 ## 11. 구현 우선순위
 
 ### 필수 지표
@@ -378,3 +391,4 @@ flowchart LR
 | 날짜 | 변경 | 이유 |
 | --- | --- | --- |
 | 2026-07-11 | canonical market API와 deploy snapshot 구현 상태 추가 | 실제 지표와 아직 구현하지 않은 반경 분석을 구분하기 위해 |
+| 2026-07-13 | Supabase runtime과 제한 검색 vertical slice 경계 추가 | 서울 전체 검색 없이 이번 주 구현 범위를 고정하기 위해 |

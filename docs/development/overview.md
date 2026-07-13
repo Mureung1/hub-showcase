@@ -1,8 +1,8 @@
-﻿# LocalTwin v0.1 전체 개발문서
+# LocalTwin v0.1 전체 개발문서
 
 ## 1. 제품 정의
 
-LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하고, 보조/추가기능으로 한 가게 앞 또는 한 거리 10~20m 구간의 혼잡도 3D 기반 탐색을 제공하는 웹 기반 상권 디지털 트윈 프로토타입이다.
+LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하고, 보조/추가기능으로 한 가게 앞 또는 한 거리 10~20m 구간의 혼잡도 3D 기반 탐색을 제공하는 실제 웹 기반 상권 디지털 트윈 제품이다. 현재 실행 코드는 `apps/web`과 `apps/api`에 있지만, Phase 2에서 실제 서비스 source와 배포 artifact를 `product/`로 분리한다. `docs/`와 legacy prototype은 제품 배포와 별도로 관리한다.
 
 서비스의 중심은 3D 복원이 아니라 상권 분석이다. 3D 기반 탐색은 사용자가 선택한 상권의 일부 현장을 더 직관적으로 이해하도록 돕는 보조 기능으로 둔다.
 
@@ -67,17 +67,18 @@ v0.1에서는 지역을 서울로 고정하지 않는다. 실제 구현 시 데�
 React + MapLibre
 -> FastAPI /api/v1
 -> 분석 Service
--> SQLite canonical data
+-> canonical SQLite (import·verification source)
+-> Supabase PostgreSQL (product runtime)
 ```
 
-공식 API는 별도 수집기가 raw snapshot과 manifest로 저장하고, 정규화·품질 검사를 거쳐 SQLite에 적재한다. 브라우저는 provider 인증키를 직접 사용하지 않는다. 현재 구현과 4주 목표의 차이는 [시스템 아키텍처](./architecture.md)에서 확인한다.
+공식 API는 별도 수집기가 raw snapshot과 manifest로 저장하고, 정규화·품질 검사를 거쳐 canonical SQLite에 적재한다. Phase 2에서는 이 기준 데이터를 Alembic schema가 적용된 Supabase PostgreSQL로 이관한다. 브라우저는 provider 인증키나 Supabase service role key를 직접 사용하지 않는다. 현재 구현과 목표의 차이는 [시스템 아키텍처](./architecture.md)에서 확인한다.
 
 ## 7. 4주 개발 순서
 
 | 주차 | 중심 작업 |
 | --- | --- |
 | 1주차 | 공식 데이터, canonical schema, 아키텍처와 Task 정리 |
-| 2주차 | 상권 metric, 입지 점수, SQLite와 FastAPI |
+| 2주차 | 배포 경계·FE 구조 정리, Supabase PostgreSQL 이관, 최소 검색 API와 React 연결 |
 | 3주차 | 실제 API를 사용하는 지도 Workspace와 리포트 |
 | 4주차 | P1 3D 보조 장면, 통합 평가, 발표와 배포 |
 

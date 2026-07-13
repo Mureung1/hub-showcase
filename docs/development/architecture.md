@@ -1,7 +1,7 @@
 # LocalTwin 시스템 아키텍처
 
 문서 상태: current
-최종 갱신: 2026-07-11
+최종 갱신: 2026-07-13
 
 이 문서는 LocalTwin의 Front, Back, Data와 외부 서비스가 어떻게 연결되는지 설명하는 아키텍처 원본이다. 구현된 현재 구조와 4주 개발 후 목표 구조를 구분한다.
 
@@ -10,7 +10,8 @@
 - 브라우저는 공공데이터 인증키를 직접 사용하지 않는다.
 - 원본 데이터, 정규화 데이터와 화면용 응답을 분리한다.
 - 상권 분석은 P0, 3D 현장 탐색은 P1로 둔다.
-- 4주 프로토타입은 Microservice보다 단일 FastAPI와 SQLite를 우선한다.
+- API는 단일 FastAPI를 유지하고, Phase 2 제품 runtime DB는 Supabase PostgreSQL을 사용한다.
+- Phase 1 canonical SQLite는 폐기하지 않고 반복 가능한 import 원본과 결과 검증 기준으로 유지한다.
 - 분석 결과에는 source, period, unit과 method 근거를 함께 제공한다.
 
 ## 2. 현재 구현 구조
@@ -63,9 +64,9 @@ flowchart LR
 | Front | 자체 지도, API adapter와 canonical fallback으로 상권·업종·Layer를 조작하는 React 웹 | 반경은 아직 지도 탐색 범위이며 공간 재집계 전 |
 | Back  | FastAPI market/score/scene API와 canonical SQLite repository            | 반경별 공간 query와 주기적 운영 배포 미구현   |
 | Data  | 서울·공공데이터 수집기, canonical SQLite와 OSM 지도 생성기               | 주기적 자동 갱신과 좌표 변환 미구현              |
-| 3D    | 촬영물 job, host/Docker worker, Nerfstudio pipeline과 Spark viewer | synthetic PLY canvas는 검증, MX450 2GB에서 실제 학습 불가 |
+| 3D    | 촬영물 job, host/Docker worker, Nerfstudio pipeline과 Spark viewer | 공식 sample만 검증됨. 제품 환경 Scene API는 보안 gate 전까지 기본 비활성화 대상 |
 
-## 3. 4주 목표 구조
+## 3. Phase 2 목표 구조
 
 ```mermaid
 flowchart LR
@@ -87,7 +88,9 @@ flowchart LR
   end
 
   subgraph storage["Storage"]
-    db[("SQLite v0.1\nCanonical Data")]
+    db[("Supabase PostgreSQL\nProduct Runtime")]
+    canonical[("Canonical SQLite\nImport · Verification Source")]
+    migrations["SQLAlchemy + Alembic"]
     raw["Raw Snapshot\nJSON + manifest"]
     assets["Scene Assets"]
   end
@@ -111,7 +114,8 @@ flowchart LR
   evidence --> api
   seoul --> raw
   public --> raw
-  raw -->|"normalize / validate"| db
+  raw -->|"normalize / validate"| canonical
+  canonical -->|"migrate / seed"| migrations --> db
   scene --> assets
   panels -. "선택 위치" .-> scene
 ```
@@ -125,7 +129,8 @@ flowchart LR
 -> provider별 raw snapshot과 manifest 저장
 -> 주소·좌표·업종·기간 정규화
 -> canonical schema 품질 검사
--> SQLite 적재
+-> canonical SQLite 적재와 기준 row count 검증
+-> Alembic schema가 적용된 Supabase PostgreSQL에 migrate/seed
 ```
 
 ### 4.2 사용자 분석 요청
@@ -152,13 +157,13 @@ flowchart LR
 
 원본과 job은 브라우저 정적 bundle이 아니라 API의 scene storage에 둔다. 익명화 검증 전 asset은 외부 공개 대상으로 취급하지 않는다.
 
-## 5. 기술 스택과 도입 시점
+## 5. 기술 스택과 도입 상태
 
-| 계층     | 현재 사용                                       | 4주 안에 추가                               | 4주 이후 후보                                   |
+| 계층     | 현재 사용                                       | Phase 2 목표                               | 후속 후보                                   |
 | -------- | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------- |
-| Front    | React, Vite, TypeScript, MapLibre, API/snapshot adapter | 반경 query와 source-aware empty state | 대규모 Layer가 필요할 때 deck.gl 검토           |
-| Back     | FastAPI market/score/scene endpoint, Uvicorn    | 반경 공간 query와 service 배포            | 부하가 확인된 뒤 worker/cache 검토              |
-| Data     | raw manifest, canonical SQLite, deploy snapshot | 좌표 통일과 품질 report                    | 다지역 공간 질의가 필요할 때 PostgreSQL/PostGIS |
+| Front    | React, Vite, TypeScript, MapLibre, API/snapshot adapter | 기능별 파일 분리, 검색·반경 query와 source-aware 상태 | 대규모 Layer가 필요할 때 deck.gl 검토           |
+| Back     | FastAPI market/score/scene endpoint, Uvicorn    | SQLAlchemy repository, 검색·반경 API와 service 배포 | 부하가 확인된 뒤 worker/cache 검토              |
+| Data     | raw manifest, canonical SQLite, deploy snapshot | Supabase PostgreSQL, Alembic migration과 seed 검증 | 다지역 공간 질의가 필요할 때 PostGIS 검토 |
 | Analysis | score 1.0.0과 실제 DB peer percentile          | 추가 지표로 confidence coverage 개선       | 충분한 데이터 이후 예측 모델 검토               |
 | 3D       | upload/job API, Nerfstudio pipeline, Spark/Three.js viewer | CUDA worker에서 실제 scene 1개 학습·익명화 검증 | 혼잡도 mesh overlay와 pipeline 고도화           |
 | Quality  | pytest, Vitest, TypeScript, lint, 문서 검사     | 평가 script와 시연 smoke test               | 필요 시 E2E 자동화                              |
@@ -166,16 +171,22 @@ flowchart LR
 ## 6. 배포 구조
 
 ```text
-Vercel
-  /             React 제품 웹
-  /docs/        문서 허브
-  /prototype    /로 이동하는 legacy 호환 주소
+현재
+  한 Vercel artifact가 React 제품 웹과 /docs 정적 문서를 함께 포함
 
-Local demo runtime
-  React -> FastAPI -> SQLite
+Phase 2 목표
+  product/      실제 서비스 source와 제품 배포 artifact
+  docs/         개발·결정·검증 문서 source와 별도 문서 배포 artifact
+  두 artifact는 서로의 내부 파일을 복사하거나 함께 배포하지 않음
+
+Product runtime
+  React -> FastAPI -> Supabase PostgreSQL
+
+Import/verification
+  official snapshots -> canonical SQLite -> migration/seed -> PostgreSQL
 ```
 
-공공데이터 인증키와 수집기는 Vercel 브라우저 bundle에 넣지 않는다. 발표용 배포는 검증된 snapshot을 사용하고, 데이터 갱신은 별도 수집 명령에서 수행한다.
+`/`, `/docs`, `/prototype` route 분리는 Phase 1에 완료했지만 물리 폴더와 배포 artifact 분리는 아직 완료하지 않았다. 공공데이터 인증키와 수집기는 브라우저 bundle에 넣지 않으며 Scene route는 SEC-001의 제품 기본 차단이 검증되기 전에는 공개 배포에서 활성화하지 않는다.
 
 ## 7. 이번 구조에서 하지 않는 것
 
@@ -183,7 +194,7 @@ Local demo runtime
 - Redis와 Elasticsearch 선도입
 - 실시간 영상 스트리밍
 - 브라우저에서 provider API 직접 호출
-- 4주 안에 PostgreSQL/PostGIS 운영 배포
+- 서울 전체 검색과 도시 전체 3D reconstruction
 
 첨부 예시처럼 Front와 Back의 책임은 분리하되, 프로토타입 규모에 필요하지 않은 분산 시스템 구성은 넣지 않는다.
 
@@ -204,3 +215,5 @@ Local demo runtime
 | 2026-07-11 | scene job API, Nerfstudio worker와 Spark viewer 반영 | 구현 코드와 실제 GPU 제약을 구조에 함께 표시하기 위해 |
 | 2026-07-11 | canonical market API와 Front fallback 반영 | 로컬 API와 정적 배포의 실제 데이터 경로를 구분하기 위해 |
 | 2026-07-11 | Docker scene worker와 renderer QA 반영 | worker 재현성과 실제 capture 미검증을 구분하기 위해 |
+
+| 2026-07-13 | Phase 2 runtime DB와 제품·문서 배포 경계 확정 | SQLite를 이관 원본으로 유지하면서 실제 서비스 구조로 전환하기 위해 |

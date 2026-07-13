@@ -1,4 +1,4 @@
-﻿# LocalTwin v0.1 데이터 소스 매핑
+# LocalTwin v0.1 데이터 소스 매핑
 
 이 문서는 LocalTwin v0.1에 필요한 공공데이터가 충분한지 판단하고, 원천 데이터와 내부 canonical schema를 연결하기 위한 기준 문서다.
 
@@ -377,6 +377,21 @@ erDiagram
 | `permit_businesses` | dataset × 관리번호 | 인허가 상태와 EPSG:5174 원본 좌표 |
 
 SQLite row는 `source_snapshot_id` foreign key를 통해 원본 snapshot으로 돌아간다. 인허가 API의 `CRD_INFO_X/Y`는 EPSG:5174로 저장하며 좌표 변환 전에는 지도 위 WGS84 point로 사용하지 않는다.
+
+### Phase 2 PostgreSQL 이관 원칙
+
+`v0.1 SQLite 물리 schema`는 Phase 1의 canonical snapshot이며 폐기하지 않는다. 제품 runtime은 Supabase PostgreSQL 한 프로젝트로 이관하고 SQLAlchemy model과 Alembic migration을 schema의 실행 원본으로 사용한다.
+
+```text
+raw snapshot + manifest
+-> canonical SQLite import와 품질 검증
+-> Alembic upgrade
+-> idempotent migrate/seed
+-> table별 row count와 대표 검색 query 비교
+-> product API read
+```
+
+Docker PostgreSQL은 migration을 로컬에서 격리 검증할 필요가 있을 때만 사용하는 선택 환경이며 세 번째 운영 DB가 아니다. 실제 key, connection string과 service role은 repository나 브라우저 bundle에 넣지 않는다.
 
 ## 7. 지역 적용 방식
 
