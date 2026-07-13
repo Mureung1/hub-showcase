@@ -1,4 +1,4 @@
-// Turso(libSQL)를 driver adapter로 연결하는 Prisma 스키마.
+// Supabase(Postgres) 연결 설정.
 // 모델(tasks/avoidance_reasons/task_events/feedbacks)은 다음 단계에서 추가한다 — 여기서는 연결 설정만.
 
 generator client {
@@ -6,6 +6,49 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  type        String   // 리포트/글쓰기, 문제풀이/암기, 발표/PT 준비, 코딩 실습,
+                        // 시험공부, 프로젝트, 조별과제, 개인공부, 기타 (문자열, enum 아님)
+  startTime   DateTime // 시작 예정 시각 (UTC ISO)
+  deadline    DateTime // 마감 D-day
+  status      String   // waiting | active | done
+  skipCount   Int      @default(0)
+  level       Int      @default(0) // Lv0~4
+  createdAt   DateTime @default(now())
+
+  events           TaskEvent[]
+  avoidanceReasons AvoidanceReason[]
+
+  @@map("tasks")
+}
+
+model AvoidanceReason {
+  id         String   @id @default(cuid())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id])
+  reason     String   // overwhelm | dislike | temptation | custom
+  customText String?  // reason = custom 일 때만
+  level      Int?     // null = 최초 등록, 1 or 3 = 재확인 시점
+  createdAt  DateTime @default(now())
+
+  @@index([taskId, createdAt])
+  @@map("avoidance_reasons")
+}
+
+model TaskEvent {
+  id         String   @id @default(cuid())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id])
+  eventType  String   // notification_sent | level_up | done | stopped
+  occurredAt DateTime @default(now())
+
+  @@index([taskId, occurredAt])
+  @@map("task_events")
 }
