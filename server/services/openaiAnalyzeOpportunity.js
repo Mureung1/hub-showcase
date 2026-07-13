@@ -1,9 +1,10 @@
 import OpenAI from "openai";
 import {
-  analyzeResponseJsonSchema,
+  providerAnalysisJsonSchema,
   analyzeResponseSchema,
 } from "../schemas/analyzeSchemas.js";
 import { createTasks } from "./createTasks.js";
+import { normalizeAnalysisResult } from "../../src/utils/normalizeAnalysisResult.js";
 
 function readResponseText(response) {
   if (response.output_text) {
@@ -71,7 +72,7 @@ export async function openaiAnalyzeOpportunity({ profile, rawText, url }) {
       format: {
         type: "json_schema",
         name: "opportunity_analysis",
-        schema: analyzeResponseJsonSchema,
+        schema: providerAnalysisJsonSchema,
         strict: true,
       },
     },
@@ -83,10 +84,10 @@ export async function openaiAnalyzeOpportunity({ profile, rawText, url }) {
     ...parsed,
     mode: "openai",
   };
-  const normalized = {
+  const normalized = normalizeAnalysisResult({
     ...withoutTasks,
     tasks: createTasks(withoutTasks.opportunity, withoutTasks.match),
-  };
+  });
 
   return analyzeResponseSchema.parse(normalized);
 }

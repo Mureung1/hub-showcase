@@ -1,32 +1,15 @@
 import { z } from "zod";
+import {
+  ANALYSIS_MODES,
+  ELIGIBILITY_TYPES,
+  MATCH_STATUSES,
+  OPPORTUNITY_CATEGORIES,
+  TASK_STATUSES,
+} from "../../src/constants/opportunity.js";
 
-export const opportunityCategorySchema = z.enum([
-  "scholarship",
-  "contest",
-  "activity",
-  "volunteer",
-  "support",
-  "unknown",
-]);
-
-export const eligibilityTypeSchema = z.enum([
-  "grade",
-  "major",
-  "region",
-  "school",
-  "gpa",
-  "income",
-  "period",
-  "team",
-  "other",
-]);
-
-export const matchStatusSchema = z.enum([
-  "eligible",
-  "conditionally_eligible",
-  "not_eligible",
-  "insufficient_info",
-]);
+export const opportunityCategorySchema = z.enum(OPPORTUNITY_CATEGORIES);
+export const eligibilityTypeSchema = z.enum(ELIGIBILITY_TYPES);
+export const matchStatusSchema = z.enum(MATCH_STATUSES);
 
 export const profileSchema = z.object({
   school: z.string().trim().min(1, "학교를 입력해주세요."),
@@ -35,6 +18,7 @@ export const profileSchema = z.object({
   interests: z.array(z.string().trim().min(1)).default([]),
   regions: z.array(z.string().trim().min(1)).default([]),
   canJoinTeam: z.boolean().default(false),
+  availableHoursPerWeek: z.coerce.number().min(0).max(168).optional(),
 });
 
 export const analyzeRequestSchema = z.object({
@@ -42,10 +26,7 @@ export const analyzeRequestSchema = z.object({
   url: z.string().url("URL 형식이 올바르지 않습니다.").optional().or(z.literal("")),
   rawText: z.string().optional().default(""),
 }).superRefine((value, context) => {
-  const hasUrl = Boolean(value.url?.trim());
-  const hasRawText = Boolean(value.rawText?.trim());
-
-  if (!hasUrl && !hasRawText) {
+  if (!value.url?.trim() && !value.rawText?.trim()) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       message: "공고 URL을 입력하거나 본문을 직접 붙여넣어 주세요.",
@@ -83,7 +64,7 @@ export const opportunitySchema = z.object({
 
 export const matchSchema = z.object({
   status: matchStatusSchema,
-  score: z.number().min(0).max(100),
+  score: z.number().min(0).max(100).nullable(),
   summary: z.string(),
   matchedReasons: z.array(z.string()),
   missingInfo: z.array(z.string()),
@@ -92,121 +73,142 @@ export const matchSchema = z.object({
 });
 
 export const taskSchema = z.object({
+  id: z.string().min(1),
   title: z.string(),
   dueDate: z.string().nullable(),
-  status: z.enum(["todo", "done"]),
+  status: z.enum(TASK_STATUSES),
 });
 
 export const analyzeResponseSchema = z.object({
-  mode: z.enum(["mock", "openai", "gemini"]),
+  id: z.string().min(1),
+  analyzedAt: z.string().datetime(),
+  mode: z.enum(ANALYSIS_MODES),
   opportunity: opportunitySchema,
   match: matchSchema,
   tasks: z.array(taskSchema),
 });
 
-export const analyzeResponseJsonSchema = {
+const opportunityJsonSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["mode", "opportunity", "match", "tasks"],
+  required: [
+    "title",
+    "organizer",
+    "category",
+    "deadline",
+    "target",
+    "eligibility",
+    "preferred",
+    "requiredDocuments",
+    "benefits",
+    "activityPeriod",
+    "sourceUrl",
+    "uncertainFields",
+  ],
   properties: {
-    mode: { type: "string", enum: ["mock", "openai", "gemini"] },
-    opportunity: {
-      type: "object",
-      additionalProperties: false,
-      required: [
-        "title",
-        "organizer",
-        "category",
-        "deadline",
-        "target",
-        "eligibility",
-        "preferred",
-        "requiredDocuments",
-        "benefits",
-        "activityPeriod",
-        "sourceUrl",
-        "uncertainFields",
-      ],
-      properties: {
-        title: { type: ["string", "null"] },
-        organizer: { type: ["string", "null"] },
-        category: {
-          type: "string",
-          enum: ["scholarship", "contest", "activity", "volunteer", "support", "unknown"],
-        },
-        deadline: { type: ["string", "null"] },
-        target: { type: ["string", "null"] },
-        eligibility: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["type", "condition", "evidence", "required"],
-            properties: {
-              type: {
-                type: "string",
-                enum: ["grade", "major", "region", "school", "gpa", "income", "period", "team", "other"],
-              },
-              condition: { type: "string" },
-              evidence: { type: "string" },
-              required: { type: "boolean" },
-            },
-          },
-        },
-        preferred: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["condition", "evidence"],
-            properties: {
-              condition: { type: "string" },
-              evidence: { type: "string" },
-            },
-          },
-        },
-        requiredDocuments: { type: "array", items: { type: "string" } },
-        benefits: { type: "array", items: { type: "string" } },
-        activityPeriod: { type: ["string", "null"] },
-        sourceUrl: { type: ["string", "null"] },
-        uncertainFields: { type: "array", items: { type: "string" } },
-      },
-    },
-    match: {
-      type: "object",
-      additionalProperties: false,
-      required: [
-        "status",
-        "score",
-        "summary",
-        "matchedReasons",
-        "missingInfo",
-        "disqualifyingReasons",
-        "nextActions",
-      ],
-      properties: {
-        status: {
-          type: "string",
-          enum: ["eligible", "conditionally_eligible", "not_eligible", "insufficient_info"],
-        },
-        score: { type: "number", minimum: 0, maximum: 100 },
-        summary: { type: "string" },
-        matchedReasons: { type: "array", items: { type: "string" } },
-        missingInfo: { type: "array", items: { type: "string" } },
-        disqualifyingReasons: { type: "array", items: { type: "string" } },
-        nextActions: { type: "array", items: { type: "string" } },
-      },
-    },
-    tasks: {
+    title: { type: ["string", "null"] },
+    organizer: { type: ["string", "null"] },
+    category: { type: "string", enum: OPPORTUNITY_CATEGORIES },
+    deadline: { type: ["string", "null"] },
+    target: { type: ["string", "null"] },
+    eligibility: {
       type: "array",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["title", "dueDate", "status"],
+        required: ["type", "condition", "evidence", "required"],
         properties: {
-          title: { type: "string" },
-          dueDate: { type: ["string", "null"] },
-          status: { type: "string", enum: ["todo", "done"] },
+          type: { type: "string", enum: ELIGIBILITY_TYPES },
+          condition: { type: "string" },
+          evidence: { type: "string" },
+          required: { type: "boolean" },
+        },
+      },
+    },
+    preferred: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["condition", "evidence"],
+        properties: {
+          condition: { type: "string" },
+          evidence: { type: "string" },
+        },
+      },
+    },
+    requiredDocuments: { type: "array", items: { type: "string" } },
+    benefits: { type: "array", items: { type: "string" } },
+    activityPeriod: { type: ["string", "null"] },
+    sourceUrl: { type: ["string", "null"] },
+    uncertainFields: { type: "array", items: { type: "string" } },
+  },
+};
+
+const matchJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "status",
+    "score",
+    "summary",
+    "matchedReasons",
+    "missingInfo",
+    "disqualifyingReasons",
+    "nextActions",
+  ],
+  properties: {
+    status: { type: "string", enum: MATCH_STATUSES },
+    score: { type: ["number", "null"], minimum: 0, maximum: 100 },
+    summary: { type: "string" },
+    matchedReasons: { type: "array", items: { type: "string" } },
+    missingInfo: { type: "array", items: { type: "string" } },
+    disqualifyingReasons: { type: "array", items: { type: "string" } },
+    nextActions: { type: "array", items: { type: "string" } },
+  },
+};
+
+const providerTaskJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "title", "dueDate", "status"],
+  properties: {
+    id: { type: ["string", "null"] },
+    title: { type: "string" },
+    dueDate: { type: ["string", "null"] },
+    status: { type: "string", enum: TASK_STATUSES },
+  },
+};
+
+export const providerAnalysisJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["mode", "opportunity", "match", "tasks"],
+  properties: {
+    mode: { type: "string", enum: ANALYSIS_MODES },
+    opportunity: opportunityJsonSchema,
+    match: matchJsonSchema,
+    tasks: { type: "array", items: providerTaskJsonSchema },
+  },
+};
+
+export const analyzeResponseJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "analyzedAt", "mode", "opportunity", "match", "tasks"],
+  properties: {
+    id: { type: "string" },
+    analyzedAt: { type: "string", format: "date-time" },
+    mode: { type: "string", enum: ANALYSIS_MODES },
+    opportunity: opportunityJsonSchema,
+    match: matchJsonSchema,
+    tasks: {
+      type: "array",
+      items: {
+        ...providerTaskJsonSchema,
+        properties: {
+          ...providerTaskJsonSchema.properties,
+          id: { type: "string" },
         },
       },
     },

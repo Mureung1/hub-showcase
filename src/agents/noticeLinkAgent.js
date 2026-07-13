@@ -1,22 +1,5 @@
 const fallbackSelector = "a[href]";
-
-const detailFallbackSelectors = [
-  'a[href*="wr_id="]',
-  'a[href*="doc_no="]',
-  'a[href*="viewBtin.action"]',
-  'a[onclick*="doRead"]',
-  'a[href*="nttId="]',
-  'a[href*="ntt_id="]',
-  'a[href*="articleId="]',
-  'a[href*="article_id="]',
-  'a[href*="boardSeq="]',
-  'a[href*="board_seq="]',
-  'a[href*="seq="]',
-  'a[href*="view"]',
-  'a[href*="View"]',
-  'a[href*="read"]',
-  'a[href*="detail"]',
-];
+const broadFallbackSelector = "a[href], a[onclick], a[data-href], a[data-url], a[data-link], a[data-contest_pk], a[data-inner_link]";
 
 const detailUrlPatterns = [
   /(?:^|[?&])wr_id=/i,
@@ -34,6 +17,18 @@ const listUrlPatterns = [
   /\/(?:list|stdlist)(?:\.action|\.do|\.php|\.jsp|\/|$|\?)/i,
   /\/board\.php(?:$|\?)/i,
 ];
+
+const genericDetailPathPatterns = [
+  /\/(?:article|board|bbs|notice|post|recruit|volunteer)\b[^?]*(?:view|detail|read|show|content)/i,
+  /\/(?:view|detail|read|show|content)[^/]*(?:\.action|\.do|\.php|\.jsp|\/|$|\?)/i,
+  /\/\d{3,}(?:\/|$)/,
+];
+
+const genericDetailParamPattern = /^(?:progrmRegistNo|programRegistNo|activityNo|volunteerNo)$|(?:^|[._-])(?:article|board|bbs|data|doc|notice|ntt|post|program|progrm|recruit)?(?:id|idx|key|no|num|seq|sn)$/i;
+const ignoredContainerSelector =
+  "header, footer, nav, [role='navigation'], .breadcrumb, .gnb, .lnb, .menu, .pagination";
+const likelyPostContainerSelector =
+  "main, article, tbody tr, .board-list, .bbs-list, .notice-list, .post-list, .recruit-list, [class*='board'], [class*='bbs'], [class*='notice'], [class*='recruit']";
 
 const ignoredTitlePatterns = [
   /^로그인$/,
@@ -134,6 +129,61 @@ function getFirstValue(...values) {
   return values.find((value) => normalizeWhitespace(value));
 }
 
+function isKnuBtinListUrl(value) {
+  try {
+    const parsedUrl = new URL(value);
+    return parsedUrl.hostname.endsWith("knu.ac.kr") && /\/btin\/list\.action$/i.test(parsedUrl.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function isKnuVolunteerPageUrl(value) {
+  try {
+    const parsedUrl = new URL(value);
+    return parsedUrl.hostname === "home.knu.ac.kr" &&
+      /^\/HOME\/volunteer\/(?:index|sub)\.htm$/i.test(parsedUrl.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function isThinkContestUrl(value) {
+  try {
+    const hostname = new URL(value).hostname;
+    return hostname === "thinkcontest.com" || hostname.endsWith(".thinkcontest.com");
+  } catch {
+    return false;
+  }
+}
+
+function buildThinkContestUrl(anchor, baseUrl) {
+  if (!isThinkContestUrl(baseUrl)) {
+    return null;
+  }
+
+  const innerLink = normalizeWhitespace(anchor.getAttribute("data-inner_link"));
+
+  if (innerLink && !innerLink.includes("[[")) {
+    return normalizeUrl(innerLink, baseUrl);
+  }
+
+  const contestId = normalizeWhitespace(anchor.getAttribute("data-contest_pk"));
+  const registerType = normalizeWhitespace(anchor.getAttribute("data-reg_type"));
+
+  if (!/^\d+$/.test(contestId) || (registerType && registerType !== "contest")) {
+    return null;
+  }
+
+  try {
+    const targetUrl = new URL("/thinkgood/user/contest/view.do", new URL(baseUrl).origin);
+    targetUrl.searchParams.set("contest_pk", contestId);
+    return targetUrl.toString();
+  } catch {
+    return null;
+  }
+}
+
 function buildKnuBtinUrl(anchor, baseUrl) {
   const rawHref = anchor.getAttribute("href") || "";
   const onclick = anchor.getAttribute("onclick") || "";
@@ -193,82 +243,107 @@ function buildKnuBtinUrl(anchor, baseUrl) {
   }
 }
 
+function is1365VolunteerListUrl(value) {
+  try {
+    const parsedUrl = new URL(value);
+    const is1365Host = parsedUrl.hostname === "1365.go.kr" || parsedUrl.hostname.endsWith(".1365.go.kr");
+    return is1365Host && /\/timeCptn\.do$/i.test(parsedUrl.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function build1365VolunteerUrl(anchor, baseUrl) {
+  try {
+    const parsedBaseUrl = new URL(baseUrl);
+
+    if (!is1365VolunteerListUrl(parsedBaseUrl)) {
+      return null;
+    }
+
+    const rawAction = `${anchor.getAttribute("href") || ""} ${anchor.getAttribute("onclick") || ""}`;
+    const programNumber = rawAction.match(/(?:javascript:)?show\(\s*['"]?(\d+)['"]?\s*\)/i)?.[1];
+
+    if (!programNumber) {
+      return null;
+    }
+
+    const targetUrl = new URL(parsedBaseUrl.pathname, parsedBaseUrl.origin);
+    targetUrl.searchParams.set("type", "show");
+    targetUrl.searchParams.set("progrmRegistNo", programNumber);
+    return targetUrl.toString();
+  } catch {
+    return null;
+  }
+}
+
+function isYouthVolunteerPageUrl(value) {
+  try {
+    const parsedUrl = new URL(value);
+    const isYouthHost = parsedUrl.hostname === "youth.go.kr" || parsedUrl.hostname.endsWith(".youth.go.kr");
+    return isYouthHost && (
+      /\/dvl\/ey\/vlntwkAct\//i.test(parsedUrl.pathname) ||
+      /\/youth\/?$/i.test(parsedUrl.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function buildYouthVolunteerUrl(anchor, baseUrl) {
+  try {
+    if (!isYouthVolunteerPageUrl(baseUrl)) {
+      return null;
+    }
+
+    const rawAction = `${anchor.getAttribute("href") || ""} ${anchor.getAttribute("onclick") || ""}`;
+    const programNumber = rawAction.match(/(?:fnDtl|fnVlntwKActDtl)\(\s*['"]?(\d+)['"]?\s*\)/i)?.[1];
+
+    if (!programNumber) {
+      return null;
+    }
+
+    const parsedBaseUrl = new URL(baseUrl);
+    const targetUrl = new URL("/youth/dvl/ey/vlntwkAct/vlntwkActRcritDtl.yt", parsedBaseUrl.origin);
+    targetUrl.searchParams.set("kProgrmSn", programNumber);
+    return targetUrl.toString();
+  } catch {
+    return null;
+  }
+}
+
 function cleanLinkTitle(value) {
   return normalizeWhitespace(value)
     .replace(/^&?btin\.[^가-힣A-Za-z0-9]+/i, "")
     .replace(/^첨부파일\s*/i, "")
     .trim();
 }
+
+function getPreferredLinkTitle(anchor) {
+  try {
+    const titleElement = anchor.querySelector(
+      ".tit_board_list, .title-wrap .title, .board-title, .notice-title, .post-title, .subject, [data-title]",
+    );
+    const dataTitle = titleElement?.getAttribute?.("data-title");
+    const badgeText = normalizeWhitespace(titleElement?.querySelector?.(".badge-b")?.textContent);
+    let title = cleanLinkTitle(dataTitle || titleElement?.textContent || anchor.textContent);
+
+    if (badgeText && title.endsWith(` ${badgeText}`)) {
+      title = title.slice(0, -(badgeText.length + 1)).trim();
+    }
+
+    return anchor.hasAttribute?.("data-contest_pk") ? title.replace(/^\d+\.\s*/, "") : title;
+  } catch {
+    return cleanLinkTitle(anchor.textContent);
+  }
+}
+
 function getDocumentFromHtml(html) {
   if (typeof DOMParser === "undefined") {
     throw new Error("현재 실행 환경에서 HTML 파서를 사용할 수 없습니다.");
   }
 
   return new DOMParser().parseFromString(sanitizeNoticeHtml(html), "text/html");
-}
-
-function escapeAttributeSelectorValue(value) {
-  return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-}
-
-function addSelectorCandidate(candidates, seenSelectors, selector, kind) {
-  const normalizedSelector = normalizeWhitespace(selector);
-
-  if (!normalizedSelector || seenSelectors.has(normalizedSelector)) {
-    return;
-  }
-
-  seenSelectors.add(normalizedSelector);
-  candidates.push({ kind, selector: normalizedSelector });
-}
-
-function getContextFallbackSelectors(baseUrl) {
-  try {
-    const parsedUrl = new URL(baseUrl);
-    const selectors = [];
-    const boardTable = parsedUrl.searchParams.get("bo_table");
-    const boardCode = parsedUrl.searchParams.get("bbs_cde");
-    const pathSignals = parsedUrl.pathname
-      .split("/")
-      .filter((segment) => /bbs|board|notice|btin/i.test(segment));
-
-    if (boardTable) {
-      selectors.push(`a[href*="bo_table=${escapeAttributeSelectorValue(boardTable)}"]`);
-    }
-
-    if (boardCode) {
-      selectors.push(`a[href*="bbs_cde=${escapeAttributeSelectorValue(boardCode)}"]`);
-    }
-
-    pathSignals.forEach((segment) => {
-      selectors.push(`a[href*="${escapeAttributeSelectorValue(segment)}"]`);
-    });
-
-    return selectors;
-  } catch {
-    return [];
-  }
-}
-
-function getSelectorCandidates(selector, baseUrl) {
-  const normalizedSelector = normalizeWhitespace(selector);
-  const candidates = [];
-  const seenSelectors = new Set();
-  const isBroadRequestedSelector = !normalizedSelector || normalizedSelector === fallbackSelector;
-
-  if (!isBroadRequestedSelector) {
-    addSelectorCandidate(candidates, seenSelectors, normalizedSelector, "requested");
-  }
-
-  detailFallbackSelectors.forEach((fallback) => {
-    addSelectorCandidate(candidates, seenSelectors, fallback, "detail");
-  });
-  getContextFallbackSelectors(baseUrl).forEach((fallback) => {
-    addSelectorCandidate(candidates, seenSelectors, fallback, "context");
-  });
-  addSelectorCandidate(candidates, seenSelectors, fallbackSelector, "broad");
-
-  return candidates;
 }
 
 function queryAnchors(document, selector) {
@@ -279,25 +354,26 @@ function queryAnchors(document, selector) {
   }
 }
 
-function getAnchors(document, selector, baseUrl) {
-  const candidates = getSelectorCandidates(selector, baseUrl);
+function getAnchors(document, selector) {
+  const normalizedSelector = normalizeWhitespace(selector);
+  const isCustomSelector = normalizedSelector && normalizedSelector !== fallbackSelector;
 
-  for (const candidate of candidates) {
-    const anchors = queryAnchors(document, candidate.selector);
+  if (isCustomSelector) {
+    const requestedAnchors = queryAnchors(document, normalizedSelector);
 
-    if (anchors.length) {
+    if (requestedAnchors.length) {
       return {
-        anchors,
-        selectorKind: candidate.kind,
-        usedSelector: candidate.selector,
+        anchors: requestedAnchors,
+        selectorKind: "requested",
+        usedSelector: normalizedSelector,
       };
     }
   }
 
   return {
-    anchors: [],
+    anchors: queryAnchors(document, broadFallbackSelector),
     selectorKind: "broad",
-    usedSelector: fallbackSelector,
+    usedSelector: broadFallbackSelector,
   };
 }
 
@@ -306,9 +382,63 @@ function isIgnoredHref(href) {
   return ignoredHrefPrefixes.some((prefix) => lowerHref.startsWith(prefix));
 }
 
+function findInlineUrl(value) {
+  const quotedValues = Array.from(String(value ?? "").matchAll(/['"]([^'"]+)['"]/g))
+    .map((match) => normalizeWhitespace(match[1]));
+
+  return quotedValues.find((candidate) => (
+    /^https?:\/\//i.test(candidate) ||
+    /^(?:\/|\.\.?\/)/.test(candidate) ||
+    /\.(?:action|do|php|jsp)(?:$|\?)/i.test(candidate)
+  )) || null;
+}
+
+function getAnchorUrlValue(anchor) {
+  const href = anchor.getAttribute("href") || "";
+
+  if (href && !isIgnoredHref(href)) {
+    return href;
+  }
+
+  const dataUrl = ["data-href", "data-url", "data-link"]
+    .map((attributeName) => anchor.getAttribute(attributeName))
+    .find((value) => normalizeWhitespace(value));
+
+  return dataUrl || findInlineUrl(anchor.getAttribute("onclick"));
+}
+
 function hasDetailSignal(link) {
   const urlParts = `${link.pathname}${link.search}`;
   return detailUrlPatterns.some((pattern) => pattern.test(urlParts));
+}
+
+function hasGenericDetailSignal(link) {
+  try {
+    const parsedUrl = new URL(link.url);
+    const hasDetailParameter = Array.from(parsedUrl.searchParams.entries()).some(
+      ([key, value]) => genericDetailParamPattern.test(key) && normalizeWhitespace(value),
+    );
+
+    return hasDetailParameter || genericDetailPathPatterns.some((pattern) => pattern.test(parsedUrl.pathname));
+  } catch {
+    return false;
+  }
+}
+
+function isSameOrigin(url, baseUrl) {
+  try {
+    return new URL(url).origin === new URL(baseUrl).origin;
+  } catch {
+    return false;
+  }
+}
+
+function isInsideContainer(anchor, selector) {
+  try {
+    return Boolean(anchor.closest(selector));
+  } catch {
+    return false;
+  }
 }
 
 function isListPageLink(link) {
@@ -328,7 +458,7 @@ function isSameDocumentUrl(url, baseUrl) {
   }
 }
 
-function isLikelyPostLink(link, baseUrl, selectorKind) {
+function isLikelyPostLink(link, baseUrl, selectorKind, anchor) {
   if (!link.title || link.title.length < 2) {
     return false;
   }
@@ -346,6 +476,44 @@ function isLikelyPostLink(link, baseUrl, selectorKind) {
     return false;
   }
 
+  if (isKnuVolunteerPageUrl(baseUrl)) {
+    const parsedLinkUrl = new URL(link.url);
+    return parsedLinkUrl.hostname === "home.knu.ac.kr" &&
+      /\/HOME\/volunteer\/sub\.htm$/i.test(parsedLinkUrl.pathname) &&
+      parsedLinkUrl.searchParams.get("mode") === "view" &&
+      parsedLinkUrl.searchParams.has("mv_data");
+  }
+
+  if (is1365VolunteerListUrl(baseUrl)) {
+    return new URL(link.url).searchParams.has("progrmRegistNo");
+  }
+
+  if (isYouthVolunteerPageUrl(baseUrl)) {
+    const parsedLinkUrl = new URL(link.url);
+    return /\/vlntwkActRcritDtl\.yt$/i.test(parsedLinkUrl.pathname) &&
+      parsedLinkUrl.searchParams.has("kProgrmSn");
+  }
+
+  if (isThinkContestUrl(baseUrl)) {
+    const parsedLinkUrl = new URL(link.url);
+    return /\/thinkgood\/user\/contest\/view\.do$/i.test(parsedLinkUrl.pathname) &&
+      parsedLinkUrl.searchParams.has("contest_pk");
+  }
+
+  if (isKnuBtinListUrl(baseUrl)) {
+    const parsedLinkUrl = new URL(link.url);
+    return /\/btin\/viewBtin\.action$/i.test(parsedLinkUrl.pathname) &&
+      parsedLinkUrl.searchParams.has("btin.doc_no");
+  }
+
+  if (isInsideContainer(anchor, ignoredContainerSelector)) {
+    return false;
+  }
+
+  if (selectorKind === "broad" && !isSameOrigin(link.url, baseUrl)) {
+    return false;
+  }
+
   const hasDetail = hasDetailSignal(link);
 
   if (hasDetail) {
@@ -356,7 +524,17 @@ function isLikelyPostLink(link, baseUrl, selectorKind) {
     return true;
   }
 
-  return selectorKind !== "broad" && !isListPageLink(link);
+  if (selectorKind !== "broad") {
+    return !isListPageLink(link);
+  }
+
+  const isInPostContainer = isInsideContainer(anchor, likelyPostContainerSelector);
+
+  if (hasGenericDetailSignal(link)) {
+    return isInPostContainer || !isListPageLink(link);
+  }
+
+  return isInPostContainer && !isListPageLink(link);
 }
 
 export function extractPostLinksFromHtml(html, options = {}) {
@@ -372,15 +550,19 @@ export function extractPostLinksFromHtml(html, options = {}) {
   }
 
   const document = getDocumentFromHtml(sourceHtml);
-  const { anchors, selectorKind } = getAnchors(document, options.linkSelector, baseUrl);
+  const { anchors, selectorKind } = getAnchors(document, options.linkSelector);
   const seenUrls = new Set();
   const links = [];
 
   anchors.forEach((anchor, index) => {
-    const href = anchor.getAttribute("href") || "";
-    const stableUrl = buildKnuBtinUrl(anchor, baseUrl);
+    const href = getAnchorUrlValue(anchor);
+    const stableUrl =
+      buildKnuBtinUrl(anchor, baseUrl) ||
+      build1365VolunteerUrl(anchor, baseUrl) ||
+      buildYouthVolunteerUrl(anchor, baseUrl) ||
+      buildThinkContestUrl(anchor, baseUrl);
 
-    if (!stableUrl && (!href || isIgnoredHref(href))) {
+    if (!stableUrl && !href) {
       return;
     }
 
@@ -391,17 +573,18 @@ export function extractPostLinksFromHtml(html, options = {}) {
     }
 
     const parsedUrl = new URL(url);
+    const extractedTitle = getPreferredLinkTitle(anchor);
     const link = {
       id: url,
       index,
-      title: cleanLinkTitle(anchor.textContent) || parsedUrl.pathname,
+      title: extractedTitle || (selectorKind === "requested" ? parsedUrl.pathname : ""),
       url,
       hostname: parsedUrl.hostname,
       pathname: parsedUrl.pathname,
       search: parsedUrl.search,
     };
 
-    if (!isLikelyPostLink(link, baseUrl, selectorKind)) {
+    if (!isLikelyPostLink(link, baseUrl, selectorKind, anchor)) {
       return;
     }
 
@@ -439,7 +622,10 @@ async function readHtmlResponse(response) {
     throw new Error(message);
   }
 
-  return response.text();
+  return {
+    finalUrl: resolveTargetUrl(response.headers.get("X-Opportunity-Agent-Final-Url")),
+    html: await response.text(),
+  };
 }
 
 function createProxyRequestUrls(targetUrl) {
@@ -508,18 +694,19 @@ export async function runNoticeLinkScan({
     throw new Error("대상 웹사이트 URL을 입력해주세요.");
   }
 
-  const sourceHtml =
-    sourceMode === "live"
-      ? await loadWebsiteHtml(resolvedTargetUrl, fetchImpl)
-      : String(html ?? "");
-  const allLinks = extractPostLinksFromHtml(sourceHtml, {
-    baseUrl: resolvedTargetUrl,
+  const websiteDocument = sourceMode === "live"
+    ? await loadWebsiteHtml(resolvedTargetUrl, fetchImpl)
+    : { finalUrl: resolvedTargetUrl, html: String(html ?? "") };
+  const contentBaseUrl = websiteDocument.finalUrl || resolvedTargetUrl;
+  const allLinks = extractPostLinksFromHtml(websiteDocument.html, {
+    baseUrl: contentBaseUrl,
     linkSelector,
   });
-  const newLinks = findNewPostLinks(allLinks, knownUrls, resolvedTargetUrl);
+  const newLinks = findNewPostLinks(allLinks, knownUrls, contentBaseUrl);
 
   return {
     allLinks,
+    contentBaseUrl,
     fetchedAt: new Date().toISOString(),
     knownCount: knownUrls.length,
     linkSelector,
