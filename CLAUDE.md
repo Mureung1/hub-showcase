@@ -23,18 +23,19 @@
 - Node.js + Express
 - DB: Supabase (PostgreSQL) + Prisma ORM ([decisions.md](docs/decisions.md) 2026-07-13 전환 기록 참조)
 
-## 명령어
+## 명령어 (루트에서 실행, frontend/backend로 프록시됨)
 - `npm run dev` — 프론트 개발 서버 실행
 - `npm run build` — 빌드
 - `npm run preview` — 빌드 결과 미리보기
-- `npm run lint` — 린트 검사 (server/ 포함)
-- `cd server && npm run dev` — 백엔드 개발 서버 실행 (`/health`, `/api-docs`)
+- `npm run lint` — 린트 검사 (frontend/backend 전체)
+- `npm run dev:backend` — 백엔드 개발 서버 실행 (`/health`, `/api-docs`)
 
 ## 디렉토리 구조
-- `src/App.jsx` — 앱 엔트리 컴포넌트
-- `src/components/` — UI 컴포넌트 (`ProjectIntro`, `HeroIllustration`, `icons` 등)
-- `server/` — 백엔드 (Express, 독립 패키지). `app.js`(앱 조립)/`server.js`(부팅) + `src/`의 `routes → controllers → services` 레이어
-- `public/prototype/` — 화면 프로토타입 (정적 산출물)
+- `frontend/` — 프론트엔드 (React 19 + Vite, 독립 패키지)
+  - `src/App.jsx` — 앱 엔트리 컴포넌트
+  - `src/components/` — UI 컴포넌트 (`ProjectIntro`, `HeroIllustration`, `icons` 등)
+  - `public/prototype/` — 화면 프로토타입 (정적 산출물)
+- `backend/` — 백엔드 (Express, 독립 패키지). `app.js`(앱 조립)/`server.js`(부팅) + `src/`의 `routes → controllers → services` 레이어
 - `docs/` — 기획서, 체크리스트 등 프로젝트 문서 (`openapi.yaml`은 `/api-docs`로 서빙됨)
 
 ## 디자인 / UI
@@ -53,5 +54,5 @@
 
 ## 작업 시 참고사항
 - 백엔드가 추가되면 이 파일에 백엔드 스택/명령어/디렉토리 구조를 함께 갱신할 것
-- 새 컴포넌트는 `src/components/`에 추가하고 필요한 경우에만 분리
+- 새 컴포넌트는 `frontend/src/components/`에 추가하고 필요한 경우에만 분리
 - 색상/여백 등 디자인 값은 하드코딩하지 말고 `docs/design.md`의 CSS 변수를 사용할 것

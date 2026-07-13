@@ -3,7 +3,7 @@
 이 프로젝트의 코드 작성 규칙입니다. **기존 코드에서 실제로 쓰고 있는 패턴**을 명문화한 것으로,
 새 코드는 이 규칙을 따르고, 규칙에 없는 부분은 **주변 기존 코드 스타일**을 따릅니다.
 
-- 프론트엔드 규칙: 현재 `src/`(React 19 + Vite) 코드 기준
+- 프론트엔드 규칙: 현재 `frontend/src/`(React 19 + Vite) 코드 기준
 - 백엔드 규칙: 직접 작업한 Node.js 프로젝트(`KNU_Capstone_Backend`, Express + Mongoose) 구조를 참고해 정의. 단 DB 레이어는 Mongoose 대신 **Prisma(PostgreSQL)** 사용 ([decisions.md](decisions.md) 2026-07-13)
 - 포맷 검사: `npm run lint` (oxlint). 별도 포맷터(Prettier)는 도입하지 않으므로 아래 스타일 규칙은 사람이 지킨다.
 
@@ -21,7 +21,7 @@
 
 프론트엔드와 백엔드의 기계적 스타일이 다르다. 각 영역의 기존 코드를 따른다.
 
-| 항목 | Frontend (`src/`) | Backend (예정) |
+| 항목 | Frontend (`frontend/`) | Backend (`backend/`) |
 | --- | --- | --- |
 | 세미콜론 | 사용 안 함 | 사용 |
 | 들여쓰기 | 2 space | 4 space |
@@ -32,12 +32,12 @@
 
 ---
 
-## 3. Frontend 규칙 (React 19 + Vite)
+## 3. Frontend 규칙 (React 19 + Vite, `frontend/`)
 
 ### 파일 / 폴더
 - 컴포넌트 파일은 `PascalCase.jsx` (예: `ProjectIntro.jsx`, `HeroIllustration.jsx`).
 - 아이콘 등 **여러 개를 모아 export하는 컬렉션 모듈**은 소문자 (예: `icons.jsx`).
-- 컴포넌트는 `src/components/`에 둔다. 필요할 때만 분리.
+- 컴포넌트는 `frontend/src/components/`에 둔다. 필요할 때만 분리.
 
 ### 컴포넌트
 - **함수 선언형**으로 작성한다. 화살표 함수 컴포넌트 X.
@@ -67,7 +67,7 @@
 
 ---
 
-## 4. Backend 규칙 (Node.js + Express + Prisma)
+## 4. Backend 규칙 (Node.js + Express + Prisma, `backend/`)
 
 > 아직 미착수. 백엔드 착수 시 이 규칙으로 시작하고, `KNU_Capstone_Backend`의 구조를 레퍼런스로 삼는다.
 

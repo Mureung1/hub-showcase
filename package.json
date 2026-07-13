@@ -1,0 +1,16 @@
+{
+  "name": "first-pr",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview",
+    "deploy": "npm --prefix frontend run deploy",
+    "dev:backend": "npm --prefix backend run dev",
+    "lint": "oxlint"
+  },
+  "devDependencies": {
+    "oxlint": "^1.71.0"
+  }
+}
