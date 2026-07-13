@@ -1,28 +1,38 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TideNote — 프로토타입</title>
+<title>TideNote — Prototype</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600&family=Pretendard:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap');
 
   :root{
-    --deep-night:#1b1f3b;
-    --dusk-purple:#4a4472;
-    --dawn-coral:#e79a86;
-    --morning-cream:#fbf3e7;
-    --tide-foam:#9fc4c9;
-    --ink:#2a2438;
-    --ink-soft:#6b6478;
-    --paper:#fffaf3;
+    --tn-bg:#ffffff;
+    --tn-surface:#f4f5f8;
+    --tn-surface-muted:#ececf1;
+    --tn-divider:#e7e8ec;
+
+    --tn-ink:#1a1b1e;
+    --tn-ink-soft:#8a8d96;
+    --tn-ink-faint:#b5b8c0;
+
+    --tn-blue:#4c6ef5;
+    --tn-blue-soft:#e4e9fd;
+    --tn-blue-glow:rgba(76,110,245,0.55);
+    --tn-pill-muted:#9aa0ac;
+
+    --tn-radius-pill:999px;
+    --tn-radius-card:24px;
+    --tn-radius-frame:36px;
+    --tn-radius-bubble:18px;
   }
 
   *{box-sizing:border-box; margin:0; padding:0;}
 
   body{
-    font-family:'Pretendard', -apple-system, sans-serif;
-    background:#0e0f1a;
+    font-family:'Pretendard', -apple-system, 'SF Pro Text', sans-serif;
+    background:#eceef3;
     min-height:100vh;
     display:flex;
     align-items:center;
@@ -31,13 +41,13 @@
   }
 
   .phone{
-    width:380px;
-    height:760px;
-    background:var(--morning-cream);
-    border-radius:36px;
+    width:390px;
+    height:790px;
+    background:var(--tn-bg);
+    border-radius:var(--tn-radius-frame);
     overflow:hidden;
     position:relative;
-    box-shadow:0 30px 60px rgba(0,0,0,0.5), 0 0 0 8px #0a0a12;
+    box-shadow:0 30px 60px rgba(20,20,30,0.18), 0 0 0 8px #101114;
   }
 
   .screen{
@@ -45,318 +55,395 @@
     inset:0;
     display:none;
     flex-direction:column;
-    transition:opacity 0.4s ease;
+    background:var(--tn-bg);
   }
   .screen.active{ display:flex; }
 
-  /* ---------- Screen 1: Timeline ---------- */
-  #screen-timeline{
-    background:linear-gradient(180deg, var(--morning-cream) 0%, #f5ebd9 100%);
-  }
   .status-bar{
-    height:44px;
+    height:40px;
+    flex-shrink:0;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:0 24px;
+    padding:0 22px;
     font-size:13px;
-    color:var(--ink-soft);
-  }
-  .timeline-header{
-    padding:8px 24px 20px;
-  }
-  .timeline-header .eyebrow{
-    font-size:12px;
-    letter-spacing:0.08em;
-    color:var(--ink-soft);
-    text-transform:uppercase;
-    margin-bottom:6px;
-  }
-  .timeline-header h1{
-    font-family:'Noto Serif KR', serif;
-    font-size:26px;
     font-weight:600;
-    color:var(--ink);
+    color:var(--tn-ink);
   }
 
-  .card-list{
-    flex:1;
-    overflow-y:auto;
-    padding:4px 20px 24px;
-    display:flex;
-    flex-direction:column;
-    gap:14px;
-  }
-
-  .tide-card{
-    border-radius:20px;
-    padding:18px 20px;
-    position:relative;
-    cursor:pointer;
-    border:1px solid rgba(0,0,0,0.04);
-    transition:transform 0.2s ease;
-  }
-  .tide-card:active{ transform:scale(0.98); }
-
-  .tide-card.hidden-card{
-    background:linear-gradient(135deg, var(--deep-night) 0%, var(--dusk-purple) 100%);
-    color:#f1eefc;
-  }
-  .tide-card.open-card{
-    background:var(--paper);
-    color:var(--ink);
-    box-shadow:0 2px 8px rgba(0,0,0,0.05);
-  }
-
-  .card-time{
-    font-size:12px;
-    opacity:0.72;
-    margin-bottom:8px;
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .card-time .dot{
-    width:6px; height:6px; border-radius:50%;
-    background:currentColor;
-  }
-
-  .card-body{
-    font-size:15px;
-    line-height:1.55;
-  }
-  .hidden-card .card-body{
-    font-family:'Noto Serif KR', serif;
-    font-style:italic;
-    font-size:14.5px;
-    opacity:0.92;
-  }
-
-  .card-cta{
-    margin-top:12px;
-    font-size:12.5px;
-    font-weight:600;
-    display:inline-flex;
-    align-items:center;
-    gap:4px;
-  }
-  .hidden-card .card-cta{ color:var(--tide-foam); }
-  .open-card .card-cta{ color:#b8825f; }
-
-  /* ---------- Screen 2: Buffer / Nostalgia ---------- */
-  #screen-buffer{
-    background:linear-gradient(180deg, var(--dusk-purple) 0%, var(--dawn-coral) 100%);
-    color:#fff;
-    justify-content:center;
-    align-items:center;
-    text-align:center;
-    padding:0 36px;
-    position:relative;
-  }
   .back-btn{
-    position:absolute;
-    top:20px; left:20px;
-    width:34px; height:34px;
+    width:32px; height:32px;
     border-radius:50%;
-    background:rgba(255,255,255,0.18);
+    background:var(--tn-surface);
     border:none;
-    color:#fff;
-    font-size:18px;
+    color:var(--tn-ink);
+    font-size:16px;
     cursor:pointer;
     display:flex; align-items:center; justify-content:center;
   }
 
-  .buffer-time{
-    font-size:13px;
-    letter-spacing:0.05em;
-    opacity:0.85;
-    margin-bottom:18px;
-  }
-  .buffer-line{
-    font-family:'Noto Serif KR', serif;
-    font-size:22px;
-    line-height:1.6;
-    font-weight:500;
-    margin-bottom:14px;
-  }
-  .buffer-sub{
-    font-size:14px;
-    line-height:1.7;
-    opacity:0.88;
-    margin-bottom:40px;
-  }
-
-  .gauge{
-    width:112px; height:112px;
-    border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    margin:0 auto 32px;
-    background:conic-gradient(#fff 0% 34%, rgba(255,255,255,0.25) 34% 100%);
-  }
-  .gauge-inner{
-    width:88px; height:88px;
-    border-radius:50%;
-    background:rgba(0,0,0,0.15);
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-  }
-  .gauge-inner .pct{ font-size:20px; font-weight:700; }
-  .gauge-inner .lbl{ font-size:10px; opacity:0.8; margin-top:2px; }
-
-  .primary-btn{
-    background:#fff;
-    color:var(--dusk-purple);
+  .pill-btn{
     border:none;
-    padding:14px 28px;
-    border-radius:100px;
-    font-size:15px;
+    border-radius:var(--tn-radius-pill);
+    font-size:13px;
     font-weight:600;
     cursor:pointer;
+    padding:8px 16px;
+  }
+  .pill-btn.blue{ background:var(--tn-blue); color:#fff; }
+  .pill-btn.muted{ background:var(--tn-pill-muted); color:#fff; }
+  .pill-btn.ghost{ background:var(--tn-surface); color:var(--tn-ink); }
+
+  /* ---------- Screen: Tide Check ---------- */
+  #screen-tidecheck{ padding:0 24px 28px; justify-content:center; }
+  .tc-title{ font-size:24px; font-weight:700; color:var(--tn-ink); text-align:center; margin-bottom:6px; }
+  .tc-sub{ font-size:12.5px; color:var(--tn-ink-soft); text-align:center; margin-bottom:36px; }
+
+  .tc-question{ margin-bottom:34px; }
+  .tc-question label{ display:block; font-size:15px; font-weight:600; color:var(--tn-ink); margin-bottom:16px; }
+
+  .slider-row{ display:flex; flex-direction:column; gap:8px; }
+  .slider-row input[type="range"]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:8px; border-radius:var(--tn-radius-pill);
+    background:var(--tn-blue-soft);
+    outline:none;
+  }
+  .slider-row input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:30px; height:30px; border-radius:50%;
+    background:var(--tn-blue);
+    filter:blur(3px);
+    box-shadow:0 0 18px 6px var(--tn-blue-glow);
+    cursor:pointer;
+    border:none;
+  }
+  .slider-row input[type="range"]::-moz-range-thumb{
+    width:30px; height:30px; border-radius:50%;
+    background:var(--tn-blue);
+    filter:blur(3px);
+    box-shadow:0 0 18px 6px var(--tn-blue-glow);
+    cursor:pointer;
+    border:none;
+  }
+  .slider-endlabels{ display:flex; justify-content:space-between; font-size:12px; color:var(--tn-ink-faint); }
+
+  #screen-tidecheck .primary-btn{
+    margin-top:8px;
     width:100%;
-    max-width:260px;
-  }
-  .ghost-note{
-    margin-top:16px;
-    font-size:12.5px;
-    opacity:0.75;
-  }
-
-  /* ---------- Screen 3: Original text revealed ---------- */
-  #screen-reveal{
-    background:linear-gradient(180deg, #241f3d 0%, #3a2f52 40%, var(--dawn-coral) 100%);
-    color:#f7f1ea;
-  }
-  .reveal-header{
-    padding:20px 24px 0;
-    display:flex;
-    align-items:center;
-    gap:12px;
-  }
-  .reveal-meta{
-    padding:6px 24px 18px;
-  }
-  .reveal-meta .time{ font-size:12px; opacity:0.7; }
-  .reveal-meta .caption{
-    font-family:'Noto Serif KR', serif;
-    font-size:17px;
-    margin-top:6px;
-    line-height:1.5;
-  }
-  .reveal-divider{
-    margin:6px 24px 18px;
-    border-top:1px solid rgba(255,255,255,0.18);
-  }
-  .reveal-body{
-    flex:1;
-    margin:0 20px 20px;
-    background:rgba(255,255,255,0.08);
-    border-radius:18px;
-    padding:22px;
+    background:var(--tn-blue);
+    color:#fff;
+    border:none;
+    padding:15px;
+    border-radius:var(--tn-radius-pill);
     font-size:15px;
-    line-height:1.75;
-    overflow-y:auto;
-  }
-  .reveal-body p{ margin-bottom:14px; }
-  .reveal-body p:last-child{ margin-bottom:0; }
-
-  .reveal-footer{
-    padding:16px 24px 28px;
-    text-align:center;
-    font-size:12.5px;
-    opacity:0.75;
-    font-style:italic;
-  }
-
-  /* Nav dots for prototype only */
-  .proto-nav{
-    display:flex;
-    gap:8px;
-    justify-content:center;
-    margin-top:20px;
-  }
-  .proto-nav button{
-    width:8px; height:8px; border-radius:50%;
-    border:none; background:rgba(255,255,255,0.3);
+    font-weight:700;
     cursor:pointer;
   }
-  .proto-nav button.on{ background:#fff; }
+
+  /* ---------- Screen: Episodes (History / Recent) ---------- */
+  .episodes-header{ padding:6px 22px 14px; display:flex; align-items:center; justify-content:space-between; }
+  .episodes-header h1{ font-size:22px; font-weight:700; color:var(--tn-ink); }
+
+  .segmented{
+    margin:0 22px 16px;
+    background:var(--tn-surface);
+    border-radius:var(--tn-radius-pill);
+    display:flex;
+    padding:3px;
+  }
+  .seg-btn{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:9px 0;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--tn-ink-soft);
+    border-radius:var(--tn-radius-pill);
+    cursor:pointer;
+  }
+  .seg-btn.active{ background:var(--tn-bg); color:var(--tn-ink); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+
+  .tab-panel{ display:none; flex:1; overflow-y:auto; padding:0 22px 20px; flex-direction:column; gap:12px; }
+  .tab-panel.active{ display:flex; }
+
+  .date-label{ font-size:11.5px; font-weight:700; color:var(--tn-ink-faint); text-transform:uppercase; letter-spacing:0.04em; margin:6px 0 -2px; }
+
+  .ep-card{
+    background:var(--tn-surface);
+    border-radius:var(--tn-radius-card);
+    padding:16px 18px;
+    position:relative;
+    cursor:pointer;
+  }
+  .ep-chip-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .ep-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--tn-bg);
+    border-radius:var(--tn-radius-pill);
+    padding:5px 12px;
+    font-size:11.5px; font-weight:600; color:var(--tn-ink);
+  }
+  .ep-attach{
+    width:26px; height:26px; border-radius:50%;
+    border:none; background:var(--tn-bg); color:var(--tn-blue);
+    font-size:14px; cursor:pointer;
+  }
+  .ep-preview{ font-size:14px; line-height:1.5; color:var(--tn-ink); }
+  .ep-card.submerged .ep-preview{ filter:blur(4px); user-select:none; }
+  .ep-summary{ font-size:12px; color:var(--tn-blue); font-weight:600; margin-top:8px; }
+
+  /* ---------- Screen: Chat stream ---------- */
+  .chat-header{ padding:2px 22px 10px; display:flex; align-items:center; justify-content:space-between; }
+  .chat-header .title{ font-size:16px; font-weight:700; color:var(--tn-ink); }
+
+  .chat-stream{ flex:1; overflow-y:auto; padding:6px 20px 14px; display:flex; flex-direction:column; gap:12px; }
+
+  .stream-chip{
+    align-self:center;
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--tn-surface-muted);
+    border-radius:var(--tn-radius-pill);
+    padding:6px 14px;
+    font-size:11.5px; font-weight:600; color:var(--tn-ink-soft);
+    margin:6px 0;
+  }
+
+  .bubble-user{
+    align-self:flex-end;
+    background:var(--tn-surface);
+    color:var(--tn-ink);
+    border-radius:var(--tn-radius-bubble);
+    padding:11px 16px;
+    font-size:14.5px; line-height:1.5;
+    max-width:78%;
+  }
+  .bubble-ai{
+    align-self:flex-start;
+    color:var(--tn-ink);
+    font-size:14.5px; line-height:1.55;
+    max-width:82%;
+  }
+
+  .submerged-block{ display:flex; flex-direction:column; gap:10px; margin:4px 0; }
+  .submerged-block .ep-summary{ align-self:center; }
+  .submerged-text{
+    position:relative;
+    background:var(--tn-blue-soft);
+    border-radius:var(--tn-radius-card);
+    padding:16px;
+  }
+  .submerged-text p{ font-size:14px; line-height:1.6; color:var(--tn-ink); margin-bottom:8px; filter:blur(4px); user-select:none; }
+  .submerged-text p:last-child{ margin-bottom:0; }
+  .submerged-text::after{
+    content:"";
+    position:absolute; inset:0;
+    border-radius:var(--tn-radius-card);
+    background:linear-gradient(180deg, rgba(255,255,255,0.55), rgba(228,233,253,0.35));
+    pointer-events:none;
+  }
+  .submerged-block.revealed .submerged-text p{ filter:none; }
+  .submerged-block.revealed .submerged-text::after{ display:none; }
+  .view-original{ align-self:center; }
+  .submerged-block.revealed .view-original{ display:none; }
+
+  /* ---------- Attachment reference card ---------- */
+  #attach-card{
+    display:none;
+    margin:0 20px 10px;
+    position:relative;
+  }
+  #attach-card.visible{ display:block; }
+  .attach-flag{
+    display:inline-block;
+    background:var(--tn-blue);
+    color:#fff;
+    font-size:11.5px; font-weight:700;
+    padding:6px 14px;
+    border-radius:12px 12px 0 0;
+  }
+  .attach-body{
+    background:var(--tn-surface);
+    border-radius:0 var(--tn-radius-card) var(--tn-radius-card) var(--tn-radius-card);
+    padding:14px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px;
+  }
+  .attach-body .info .chip-time{ font-size:11.5px; color:var(--tn-ink-soft); font-weight:600; }
+  .attach-body .info .chip-topic{ font-size:13.5px; color:var(--tn-ink); font-weight:600; margin-top:2px; }
+  .attach-dismiss{ border:none; background:transparent; color:var(--tn-ink-soft); font-size:16px; cursor:pointer; }
+
+  .input-bar{
+    display:flex; align-items:center; gap:10px;
+    margin:0 20px 18px;
+    background:var(--tn-surface);
+    border-radius:var(--tn-radius-pill);
+    padding:10px 10px 10px 18px;
+  }
+  .input-bar input{
+    flex:1; border:none; background:transparent; outline:none;
+    font-size:14px; color:var(--tn-ink); font-family:inherit;
+  }
+  .input-bar input::placeholder{ color:var(--tn-ink-faint); }
+  .send-btn{
+    width:36px; height:36px; border-radius:50%;
+    background:var(--tn-blue); color:#fff; border:none;
+    font-size:15px; cursor:pointer; flex-shrink:0;
+  }
 </style>
 </head>
 <body>
 
 <div class="phone">
 
-  <!-- SCREEN 1: 타임라인 -->
-  <div class="screen active" id="screen-timeline">
-    <div class="status-bar"><span>9:14</span><span>TideNote</span></div>
-    <div class="timeline-header">
-      <div class="eyebrow">오늘, 7월 8일</div>
-      <h1>다시 만난 대화들</h1>
+  <!-- SCREEN 0: Tide Check (mandatory once-daily state check-in) -->
+  <div class="screen active" id="screen-tidecheck">
+    <div class="status-bar"><span>9:14</span><span>TideNote</span><span></span></div>
+    <div class="tc-title">Tide Check</div>
+    <div class="tc-sub">Once a day, minimum — plus anytime via "Update your tide."<br>No numbers, just a feeling.</div>
+
+    <div class="tc-question">
+      <label>How are you feeling right now?</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" value="62">
+        <div class="slider-endlabels"><span>Cloudy</span><span>Clear</span></div>
+      </div>
     </div>
-    <div class="card-list">
 
-      <div class="tide-card hidden-card" onclick="goTo('buffer')">
-        <div class="card-time"><span class="dot"></span> 오전 2:14 · 평소보다 늦은 시간</div>
-        <div class="card-body">"요즘 계속 이런 생각이 드는데, 나만 그런 건가 싶어서…"</div>
-        <div class="card-cta">밀물에 잠겨 있어요 →</div>
+    <div class="tc-question">
+      <label>How awake do you feel right now?</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" value="40">
+        <div class="slider-endlabels"><span>Calm</span><span>Rippling</span></div>
+      </div>
+    </div>
+
+    <button class="primary-btn" onclick="goTo('episodes')">Submit</button>
+  </div>
+
+  <!-- SCREEN 1: Episodes — History / Recent tabs -->
+  <div class="screen" id="screen-episodes">
+    <div class="status-bar"><span>9:14</span><span>TideNote</span>
+      <button class="pill-btn ghost" onclick="goTo('tidecheck')">Update your tide</button>
+    </div>
+    <div class="episodes-header"><h1>Episodes</h1></div>
+
+    <div class="segmented">
+      <button class="seg-btn" data-tab="history" onclick="setTab('history')">History</button>
+      <button class="seg-btn active" data-tab="recent" onclick="setTab('recent')">Recent</button>
+    </div>
+
+    <!-- Recent: last 24h, some still within reach of submersion -->
+    <div class="tab-panel active" data-panel="recent">
+
+      <div class="ep-card" onclick="openChat('anchor-relationships')">
+        <div class="ep-chip-row">
+          <span class="ep-chip">1:20 AM – 1:34 AM · Topic: relationships</span>
+          <button class="ep-attach" onclick="event.stopPropagation(); attachEpisode()">＋</button>
+        </div>
+        <div class="ep-preview">Let's pick this back up whenever you're ready.</div>
       </div>
 
-      <div class="tide-card open-card">
-        <div class="card-time"><span class="dot"></span> 오후 3:40</div>
-        <div class="card-body">프로젝트 마감 일정 정리하는 것 도와줄 수 있어?</div>
-        <div class="card-cta">전체 보기</div>
+      <div class="ep-card submerged" onclick="openChat('anchor-selfdoubt')">
+        <div class="ep-chip-row">
+          <span class="ep-chip">2:14 AM – 3:27 AM · Topic: Self-doubt</span>
+        </div>
+        <div class="ep-preview">I keep having this thought lately, and I wonder if it's just me…</div>
+        <div class="ep-summary">2:14 AM, later than usual — submerged</div>
       </div>
 
-      <div class="tide-card hidden-card" onclick="goTo('buffer')">
-        <div class="card-time"><span class="dot"></span> 오전 3:02 · 평소보다 늦은 시간</div>
-        <div class="card-body">"솔직히 요즘 자신 없어. 근데 아무한테도 말 못 했어."</div>
-        <div class="card-cta">밀물에 잠겨 있어요 →</div>
+      <div class="ep-card submerged" onclick="openChat('anchor-identity')">
+        <div class="ep-chip-row">
+          <span class="ep-chip">3:40 AM – 4:05 AM · Topic: Identity</span>
+        </div>
+        <div class="ep-preview">I acted fine all day, but right now, at this hour, I just fall apart.</div>
+        <div class="ep-summary">3:40 AM, later than usual — submerged</div>
       </div>
 
-      <div class="tide-card open-card">
-        <div class="card-time"><span class="dot"></span> 오전 11:20</div>
-        <div class="card-body">React useEffect 클린업 함수 언제 써야 해?</div>
-        <div class="card-cta">전체 보기</div>
+      <div class="ep-card" onclick="openChat('anchor-meeting')">
+        <div class="ep-chip-row">
+          <span class="ep-chip">9:12 AM – 9:24 AM · Topic: Meeting notes</span>
+        </div>
+        <div class="ep-preview">Can you help me organize the project deadline schedule?</div>
       </div>
 
+    </div>
+
+    <!-- History: past episodes, always shown in full — no state comparison happens here -->
+    <div class="tab-panel" data-panel="history">
+      <div class="date-label">Yesterday</div>
+
+      <div class="ep-card" onclick="openChat()">
+        <div class="ep-chip-row"><span class="ep-chip">10:40 AM – 10:47 AM · Topic: Schedule planning</span></div>
+        <div class="ep-preview">Can you make this email sound more polite?</div>
+      </div>
+
+      <div class="date-label">Aug 1</div>
+
+      <div class="ep-card" onclick="openChat()">
+        <div class="ep-chip-row"><span class="ep-chip">1:20 AM – 1:34 AM · Topic: Old memories</span></div>
+        <div class="ep-preview">Sure — share the project name and estimated time for each task, and I'll put together a timeline.</div>
+      </div>
     </div>
   </div>
 
-  <!-- SCREEN 2: 완충 (향수 메타포) -->
-  <div class="screen" id="screen-buffer">
-    <button class="back-btn" onclick="goTo('timeline')">←</button>
+  <!-- SCREEN 2: Chat — continuous stream, no chat-room boundaries -->
+  <div class="screen" id="screen-chat">
+    <div class="status-bar">
+      <button class="back-btn" onclick="goTo('episodes')">←</button>
+      <span>TideNote</span><span></span>
+    </div>
 
-    <div class="buffer-time">오전 2:14, 평소보다 늦은 시간이었어요</div>
-    <div class="buffer-line">그때의 당신도,<br>지금의 당신입니다.</div>
-    <div class="buffer-sub">밀물이 잠시 가려두었던 이야기예요.<br>준비가 되면, 그때의 나를 만나보세요.</div>
+    <div class="chat-stream">
 
-    <div class="gauge">
-      <div class="gauge-inner">
-        <div class="pct">34%</div>
-        <div class="lbl">지금과 가까움</div>
+      <div class="stream-chip" id="anchor-relationships">1:20 AM – 1:34 AM · Topic: relationships</div>
+      <div class="bubble-ai">Let's pick this back up.</div>
+
+      <div class="stream-chip" id="anchor-selfdoubt">2:14 AM – 3:27 AM · Topic: Self-doubt</div>
+      <div class="submerged-block">
+        <div class="ep-summary">2:14 AM, later than usual</div>
+        <div class="submerged-text">
+          <p>"I keep having this thought lately, and I wonder if it's just me…"</p>
+          <p>"Honestly, I've been feeling really unsure of myself. But I couldn't tell anyone."</p>
+        </div>
+        <button class="pill-btn muted view-original" onclick="revealOriginal(this)">View original</button>
+      </div>
+
+      <div class="stream-chip" id="anchor-identity">3:40 AM – 4:05 AM · Topic: Identity</div>
+      <div class="submerged-block">
+        <div class="ep-summary">3:40 AM, later than usual</div>
+        <div class="submerged-text">
+          <p>"I acted fine all day, but right now, at this hour, I just fall apart."</p>
+          <p>"It sounds like you've been holding it together all day. You can let it go for now."</p>
+        </div>
+        <button class="pill-btn muted view-original" onclick="revealOriginal(this)">View original</button>
+      </div>
+
+      <div class="stream-chip" id="anchor-meeting">9:12 AM – 9:24 AM · Topic: Meeting notes</div>
+      <div class="bubble-user">Can you help me organize the project deadline schedule?</div>
+      <div class="bubble-ai">Sure — share the project name and estimated time for each task, and I'll put together a timeline.</div>
+      <div class="bubble-user">When should I use a cleanup function in React's useEffect?</div>
+      <div class="bubble-ai">Use it when there's a side effect that needs to be cleaned up on unmount — like event listeners, subscriptions, or timers.</div>
+
+    </div>
+
+    <!-- Attachment: dropping a Recent episode in as a reference card, not a new room -->
+    <div id="attach-card">
+      <div class="attach-flag">History</div>
+      <div class="attach-body">
+        <div class="info">
+          <div class="chip-time">1:20 AM – 1:34 AM</div>
+          <div class="chip-topic">Topic: relationships</div>
+        </div>
+        <button class="attach-dismiss" onclick="dismissAttach()">✕</button>
       </div>
     </div>
 
-    <button class="primary-btn" onclick="goTo('reveal')">원문 보기</button>
-    <div class="ghost-note">기록은 지워지지 않아요. 언제든 다시 닫아둘 수 있어요.</div>
-  </div>
-
-  <!-- SCREEN 3: 원문 열람 -->
-  <div class="screen" id="screen-reveal">
-    <div class="reveal-header">
-      <button class="back-btn" style="position:static;" onclick="goTo('buffer')">←</button>
+    <div class="input-bar">
+      <input type="text" value="Let's pick this back up." placeholder="Message">
+      <button class="send-btn">↑</button>
     </div>
-    <div class="reveal-meta">
-      <div class="time">오전 2:14 · 밀물이 걷힌 지금, 다시 만나는 대화</div>
-      <div class="caption">그날의 공기를 함께 불러왔어요</div>
-    </div>
-    <div class="reveal-divider"></div>
-    <div class="reveal-body">
-      <p>"요즘 계속 이런 생각이 드는데, 나만 그런 건가 싶어서…"</p>
-      <p>"낮에는 괜찮은 척하는데, 이 시간만 되면 자꾸 생각이 많아져."</p>
-      <p>"근데 이렇게 말하고 나니까 조금은 후련하다."</p>
-    </div>
-    <div class="reveal-footer">이 대화는 삭제되지 않고, 항상 여기에 남아 있어요.</div>
   </div>
 
 </div>
@@ -365,6 +452,29 @@
   function goTo(id){
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-' + id).classList.add('active');
+  }
+  function setTab(tab){
+    document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
+  }
+  function openChat(anchorId){
+    goTo('chat');
+    if (anchorId) {
+      setTimeout(() => {
+        const el = document.getElementById(anchorId);
+        if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+      }, 50);
+    }
+  }
+  function revealOriginal(btn){
+    btn.closest('.submerged-block').classList.add('revealed');
+  }
+  function attachEpisode(){
+    document.getElementById('attach-card').classList.add('visible');
+    goTo('chat');
+  }
+  function dismissAttach(){
+    document.getElementById('attach-card').classList.remove('visible');
   }
 </script>
 
