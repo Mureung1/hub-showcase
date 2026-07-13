@@ -32,9 +32,8 @@ https://github.com/lsiwooo/hub/wiki/CampusCart-기획서
 | P1 | #4 | AI 공동구매 추천(Mock) |
 | P1 | #5 | 공동구매 참여 기능 |
 | P2 | #6 | 공동구매 생성 기능 |
-| P2 | #7 | 인기 공동구매 |
-| P2 | #8 | AI 수령 장소 추천(Mock) |
-| P3 | #9 | UI 개선 및 발표 준비 |
+| P2 | #7 | AI 수령 장소 추천(Mock) |
+| P3 | #8 | UI 개선 및 발표 준비 |
 
 ---
 
