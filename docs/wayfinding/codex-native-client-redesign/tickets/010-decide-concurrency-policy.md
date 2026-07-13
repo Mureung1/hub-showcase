@@ -58,25 +58,29 @@ T0의 runtime-wide composite-operation slot은 현재 public surface에서 start
 
 이 첫 결정은 reusable same-thread surface의 method routing과 adoption boundary를 정한다. A는 protocol semantics를 부정하는 idle-only policy가 아니라 first-party external-client routing을 후속 tracer의 baseline으로 채택하는 선택이고, B는 그 baseline 자체를 owning tracer까지 미룬다. C는 intentional raw overload를 별도 named tracer로 채택하되 미채택 variant를 묶지 않는다. Source에 없는 runtime queue는 선택지가 아니며 product UX로 남긴다. T0는 새 thread에 첫 turn만 시작하므로 어느 선택지도 현재 T0 wire path를 바꾸지 않는다.
 
+#### 결정 1 — First-party routed operations
+
+상위 승인 원칙인 “채택한 method의 pinned implementation·first-party handling을 기본값으로 두고 실제 AY-PLE use case가 부족함을 증명할 때만 deviation을 추가한다”를 적용해 선택지 A를 채택한다. Pinned TUI처럼 idle new-turn과 active input을 method별로 분리하고, active input은 후속 `turn/steer(expectedTurnId)` tracer가 채택할 때만 semantic surface로 올린다. Response와 matching `turn/started`가 수렴하기 전의 actor-local reservation은 두 번째 semantic mutation을 RequestId 할당·wire write·queue 없는 safe conflict로 막는다. Raw active `turn/start` overload는 protocol error로 재정의하지 않고 실제 use case와 named tracer가 생기기 전까지 미채택으로 남긴다.
+
 ### Public concurrency tracer 선택지
 
 | 선택지 | 동작 | 판단 |
 | --- | --- | --- |
-| A. T0 유지 뒤 `T0-C` | T0의 runtime-wide `runNewConversation()` max-one/no-queue pre-admission은 유지한다. 내부 ingress·RPC·per-thread owner는 global lock 없이 구현하고, 다음 runtime conformance tracer `T0-C`가 public slot만 제거해 두 T0 operation의 `A pending → B completes → A completes`를 증명한다. | 권고. [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md)의 T0 범위를 보존하면서 T0.1 approval 전에 cross-thread independence를 검증한다. |
-| B. T0 자체를 확장 | 첫 T0 implementation부터 concurrent `runNewConversation()`을 허용한다. | 최종 source shape에는 가깝지만 이미 승인한 T0의 half-created-thread 방지 pre-admission과 첫 slice 범위를 다시 연다. |
-| C. Product 필요까지 global max-one 유지 | T0 뒤에도 runtime-wide slot을 유지하다 첫 adapter가 요구할 때 제거한다. | 제외 권고. First-party의 per-thread locality를 제품 우선순위에 종속시키고 global actor·journal·pending-request 가정을 굳힐 위험이 있다. |
+| A. `T0-C` 뒤 T0.1 | T0의 runtime-wide `runNewConversation()` max-one/no-queue pre-admission은 유지한다. 내부 ingress·RPC·per-thread owner는 global lock 없이 구현하고, 바로 다음 runtime conformance tracer `T0-C`가 public slot만 제거해 두 T0 operation의 `A pending → B completes → A completes`를 증명한 뒤 T0.1 approval로 간다. | 권고. [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md)의 T0 범위를 보존하면서 cross-thread locality를 먼저 검증해, approval pending lifecycle이 우연히 global operation assumption에 결합되는 것을 조기에 막는다. Source가 이 순서를 강제하는 것은 아니다. |
+| B. T0.1 뒤 `T0-C` | T0의 max-one surface 위에서 original `RequestId` once-only command approval을 먼저 증명한다. 그 뒤 첫 AYPLE adapter를 runnable하게 하기 전에 `T0-C`로 public slot을 제거하고 cross-thread independence를 검증한다. | 정상적인 대안. T0.1 responder lifecycle은 public cross-thread operation에 의존하지 않으므로 이 순서도 tracer scope와 source-guided locality를 보존한다. 단, `T0-C`를 product 필요까지 미루지 않는다. |
 
 - T0의 composite operation slot은 첫 wire mutation 전에 획득해 `thread/start → turn/start` bootstrap 전체를 보호하며 ingress, response demux와 Server request 처리를 막지 않는다.
 - Same-thread 선택지 A를 고르면 reusable thread surface는 idle 새-turn과 active input을 서로 다른 operation으로 두고, 후자는 exact `expectedTurnId`를 쓰는 `turn/steer` tracer에서 채택한다. B는 active-input routing 결정 전체를 해당 tracer로 넘기고, C는 active overload를 채택하는 named tracer가 명시한 variant만 required로 올린다.
 - Normal `turn/interrupt`는 known active `(ThreadId, TurnId)` control tracer에서만 채택한다. Empty-`turnId` startup interrupt는 normal interrupt와 합치지 않고 실제 startup-cancellation use case까지 defer한다. [`normal/startup interrupt branch`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/src/request_processors/turn_processor.rs#L1346-L1408), [`first-party startup routing`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/tui/src/app/thread_routing.rs#L517-L560)
 - 서로 다른 `ThreadActor`는 독립적으로 진행하며 한 actor의 pending turn·RPC·Server request가 다른 actor의 ingress routing이나 semantic progression을 막지 않는다. Count·byte bound와 saturation, timeout·unknown outcome은 각각 [Event delivery와 transcript recovery model을 결정한다](011-decide-delivery-and-recovery-model.md) ticket과 [Connection loss와 unknown outcome 정책을 결정한다](012-decide-connection-and-unknown-outcome-policy.md) ticket이 소유한다.
+- T0 자체에 concurrent public operation을 합치거나 첫 product adapter가 필요할 때까지 global max-one을 유지하는 경로는 정상 선택지가 아니다. 전자는 이미 승인된 T0 slice scope를 다시 열고, 후자는 first-party per-thread locality를 product 우선순위에 종속시킨다.
 
 ### Coverage ledger 초안
 
 | Inventory row | 현재 integration / adoption | Target tracer | Target coverage / adoption | Semantic owner와 evidence |
 | --- | --- | --- | --- | --- |
 | `thread/start` | `raw-wrapper` / `baseline` | T0, `T0-C` | required bootstrap; `T0-C`에서 cross-thread concurrent bootstrap | `CodexConversationRuntime`; [`serialization: None`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-protocol/src/protocol/common.rs#L482-L486)과 request-correlated response identity |
-| `turn/start` | `raw-wrapper` / `baseline` | T0, `T0-C` | idle branch required; active overload는 HITL에 따라 deferred 또는 named tracer | `ThreadActor`; active routing source·protocol classification·TUI explicit steer precedent |
+| `turn/start` | `raw-wrapper` / `baseline` | T0, `T0-C` | idle branch required; active overload는 named use-case tracer 전까지 deferred | `ThreadActor`; active routing source·protocol classification·TUI explicit steer precedent |
 | `turn/steer` | `raw-wrapper` / `later` | 후속 active-input tracer | deferred; 채택 시 exact expected-ID behavior required | `ThreadActor`; exact `expectedTurnId` validation과 active turn response |
 | `turn/interrupt` | `raw-wrapper` / `baseline` | 후속 normal-control tracer, 별도 startup-cancel tracer | T0·`T0-C` deferred | `ThreadActor`; [`normal pending과 startup branch`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/src/request_processors/turn_processor.rs#L1346-L1408), [`pending response drain`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/src/bespoke_event_handling.rs#L1498-L1511) |
 | `thread/started` | `schema-only` / `baseline` | T0, `T0-C` | response-first validation required; completion wait condition은 아님 | `ThreadActor`; request-correlated `thread/start` response authority |
@@ -91,9 +95,9 @@ T0의 runtime-wide composite-operation slot은 현재 public surface에서 start
 
 이 표는 design target이며 integration을 승격하지 않는다. Coverage schema와 executable A/B/active-second-start oracle은 [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md) ticket이 소유하므로 이번 decision 전에는 `codex-method-decisions.json`과 generated inventory를 수정하지 않는다.
 
-### HITL decision
+### 남은 HITL decision
 
-첫 결정은 Same-thread 선택지 A처럼 first-party client의 idle `turn/start` / active `turn/steer(expectedTurnId)` routing을 후속 tracer baseline으로 지금 채택할지, B처럼 active-input routing 전체를 owning tracer까지 미룰지, C처럼 별도 active-overload tracer를 예약할지다. 추천은 A다. Response 전에는 actor-local reservation으로 두 번째 semantic mutation을 no-queue·no-write conflict로 막고, active input을 실제로 채택할 때만 native expected-ID operation을 구현한다. Raw active `turn/start`는 오류로 재정의하지 않고 미채택 branch로 남긴다. 이 결정을 받은 뒤 public cross-thread 선택지 A의 `T0-C` 시점을 다음 한 질문으로 확인한다. Product queue·steer UX는 [첫 AY-PLE adapter tracer와 runtime readiness gate를 결정한다](018-decide-first-ayple-adapter-tracer.md) ticket에 남긴다.
+남은 결정은 public cross-thread independence를 T0.1 전에 처음 증명할지, T0.1 후이지만 첫 AYPLE adapter 전에 증명할지다. 권고는 Public concurrency 선택지 A인 `T0 → T0-C → T0.1`이다. 이 순서는 approval pending lifecycle을 global operation assumption에 결합하지 않도록 cross-thread locality를 먼저 증명하지만 source mandate는 아니다. 선택지 B인 `T0 → T0.1 → T0-C → 첫 AYPLE adapter`도 original RequestId once-only responder를 먼저 검증한 뒤 product runtime을 열기 전에 per-thread locality를 고정하는 정상 경로다. Product queue·steer UX는 [첫 AY-PLE adapter tracer와 runtime readiness gate를 결정한다](018-decide-first-ayple-adapter-tracer.md) ticket에 남긴다.
 
 ## Answer
 
