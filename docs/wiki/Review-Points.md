@@ -1,840 +1,601 @@
 # Review Points
 
-> Wiki version: 2026-07-09 Calendar tab / campus preferences baseline
-> Review baseline: React + Vite frontend MVP, Express mock analyze API, Zod server schemas, frontend-server mock analyze wiring, calendar tab, and campus preferences
-> Review scope: implementation quality, architecture direction, and Phase 4 planning rather than production readiness.
+> Wiki version: 2026-07-13 Subscription Foundation + HTTP-contract baseline
+> Review baseline: current runtime, strict domain schemas, tested adapters, authoritative architecture contracts, and the hardened analyze HTTP boundary
+> Review scope: next decisions for candidate promotion, reconciliation, persistence, ICS, and subscription delivery—not reopening completed behavior
+> Caution: this document does not automatically approve policy or authorize implementation.
 
-## 1. Purpose of Peer Review
+## 1. Purpose and Use
 
-This project is not being reviewed as a finished production service. It is an MVP built to explore how AI can help convert long university-related notices into actionable outputs.
+NoticePilot is not a finished production service. The repository contains both a manual notice-analysis runtime and an isolated domain foundation for subscription ICS delivery.
 
-The main review focus is:
+This document separates three categories:
 
-```text
-- technical design
-- component structure
-- data model
-- API design
-- AI schema boundary
-- file input strategy
-- validation and failure handling
-- evidence and date policy
-- export strategy
-- roadmap feasibility
-```
+1. **Closed decisions** — do not reopen these as unresolved architecture questions.
+2. **Current review items** — require product-owner judgment or an explicit contract before the next implementation step.
+3. **Later review items** — do not block the current critical path and belong to a separate stage.
 
-Product idea feedback is welcome, but the current priority is implementation quality, architectural direction, and Phase 4 planning.
+Reviewers must not treat isolated code or schema existence as delivered user-facing behavior.
 
----
+## 2. Current Baseline
 
-## 2. Current Review Context
+### 2.1 Runtime active
 
-NoticePilot currently includes a React + Vite frontend MVP, an Express mock analyze API, Zod-backed server schemas, workspace tabs, and campus preferences.
+Currently reachable through the application:
 
-Implemented:
-
-```text
 - React + Vite frontend MVP
-- Express analyze API skeleton
-- Zod-backed server schemas
-- GET /api/health
-- POST /api/analyze mock mode
-- mode="ai" returns 501 ai_not_implemented
-- unknown explicit mode returns 400 unsupported_mode
-- Vite /api dev proxy
-- workspace hash tabs: #analyze and #calendar
-- bilingual UI
-- manual text paste flow
-- TXT / MD upload
-- extract preview
-- notice type input
-- publication date input
-- client-side mock analysis
-- server mock analysis
-- editable extracted items
-- task completion toggle
-- calendar event selection toggle
-- source evidence panel
-- full evidence review mode
-- warning/error UI
-- privacy-like pattern detection and confirmation
-- overwrite confirmation
-- frontend/backend validation and normalization
-- localStorage persistence
-- separate campus preference persistence
-- inert metadata.userPreferencesSnapshot
-- calendar tab with campus preferences
-- subscription ICS 준비 중 status card
+- Express `GET /api/health`
+- Express `POST /api/analyze` mock mode
+- explicit `501 ai_not_implemented` for `mode="ai"`
+- explicit `400 unsupported_mode` for an unknown explicit mode
+- client-mock and server-mock analysis
+- manual text and TXT/MD input
+- editable analysis results
+- evidence review
+- warning, privacy confirmation, overwrite confirmation, and error flows
+- browser `localStorage` session persistence
+- separate campus-preference persistence
+- inert `metadata.userPreferencesSnapshot`
 - Markdown export
-- optional evidence in Markdown export
-- selected all-day .ics export
-```
-
-Not yet implemented:
-
-```text
-- real AI API integration
-- runtime AI prompt/schema hardening
-- PDF / HWP / HWPX / OCR extraction
-- advanced relative date resolution
-- school-level notice parsing
-- checkbox-based batch .ics export
-- subscription calendar feed URL / backend feed generation
-- login / database / payment
-- Google Calendar API integration
-```
-
-Reviewers should evaluate the project with this staged implementation status in mind.
-
----
-
-## 3. Frontend Design Review Points
-
-### 3.1 State Management
-
-Current decision:
-
-```text
-- Keep App.jsx + useState for the current MVP.
-- Do not migrate to useReducer or Context yet.
-- Extract repeated logic into pure utility functions.
-```
-
-Review questions:
-
-```text
-- Is keeping App.jsx + useState still reasonable after server mock wiring?
-- At what point would useReducer or Context become justified?
-- Should Phase 4 real AI integration happen before or after a state-management refactor?
-- Are current utility functions enough to keep update/delete/toggle logic maintainable?
-- Does keeping campus preferences in App.jsx remain reasonable while they are inert metadata?
-```
-
----
-
-### 3.2 Separated Arrays vs Unified items[]
-
-Current decision:
-
-```text
-- Keep separated arrays:
-  - deadlines
-  - tasks
-  - submissions
-  - requirements
-  - cautions
-  - calendarEvents
-
-- Reuse UI components and handlers where possible.
-```
-
-Reasoning:
-
-```text
-- The UI is section-based.
-- Domain meaning stays clear.
-- Validation is easier by section.
-- Calendar events have different export semantics from ordinary items.
-```
-
-Review questions:
-
-```text
-- Is the separated-array model still appropriate after adding real AI?
-- Would a unified items[] model help or hurt future batch calendar export?
-- Is “data separated, UI generic” still a good compromise?
-- Should the future AI raw schema use a different structure from the app schema?
-```
-
----
-
-### 3.3 Editable Item Handling
-
-Current decision:
-
-```text
-- User edits overwrite current field values.
-- Set edited: true on edited items.
-- Preserve evidence when editing.
-- Do not store full original values or edit history in the MVP.
-```
-
-Review questions:
-
-```text
-- Is edited: true enough for MVP traceability?
-- Should original AI-generated values be preserved before real AI integration?
-- Should edit tracking differ between tasks, deadlines, and calendar events?
-- Should edited calendar events affect stable UID behavior later?
-```
-
----
-
-### 3.4 Evidence Display
+- selected one-off all-day `.ics` export
 
-Current decision:
+#### HTTP contract baseline
 
-```text
-- Hide evidence by default in normal cards.
-- Keep card-level Evidence button/panel.
-- Provide full Evidence Review mode.
-```
-
-Review questions:
-
-```text
-- Is hidden-by-default evidence the right UI tradeoff?
-- Should evidence be more visible because AI output may be unreliable?
-- Is full Evidence Review mode enough for reviewer trust?
-- Should missing evidence create a warning, reviewRequired state, or both?
-```
-
----
-
-### 3.5 Calendar Tab and Campus Preferences
-
-Current decision:
-
-```text
-- Calendar tab is a workspace tab, not a separate route.
-- Campus preferences use a separate localStorage key.
-- Campus preferences are attached as inert metadata.userPreferencesSnapshot.
-- Campus preferences do not filter notices or change exports in the current MVP.
-- Subscription ICS is represented only as a 준비 중 status card.
-```
-
-Review questions:
-
-```text
-- Is a hash-tab workspace enough before real routing is introduced?
-- Is the campus preference storage shape suitable for future school-level parsing?
-- Should campus preferences remain inert until filtering/subscription behavior is explicitly scoped?
-- Does the subscription ICS 준비 중 card communicate future scope without implying an active feed?
-```
+The public HTTP boundary preserves these responses:
 
----
-
-## 4. API and AI Integration Review Points
-
-### 4.1 Express /api/analyze Design
-
-Current endpoint:
-
-```text
-POST /api/analyze
-```
+- `GET /api/health` returns the exact public health response.
+- Missing `mode` or `mode="mock"` returns a `200` mock analysis result.
+- `mode="ai"` returns `501 ai_not_implemented`.
+- An unknown explicit mode returns `400 unsupported_mode`.
+- Malformed JSON returns `400 invalid_json`.
+- A JSON body over `1mb` returns `413 request_too_large`.
+- An analyze dependency rejection returns `500 server_error` without exposing the exception message or stack.
 
-Current behavior:
+These paths are covered by the HTTP contract tests registered in `npm run test:http` and `npm test`.
 
-```text
-- missing mode or mode="mock" returns server mock analysis
-- mode="ai" returns 501 ai_not_implemented
-- unsupported explicit mode returns 400 unsupported_mode
-```
+Decision: the detailed HTTP delta belongs in the implementation summary and Review Points. Architecture remains a high-level responsibility document and does not duplicate every response code.
 
-Expected future responsibilities:
+### 2.2 Implemented, isolated
 
-```text
-- receive confirmed notice text
-- call mock or real AI service
-- parse AI response
-- validate and normalize response
-- return safe JSON to client
-```
+Code and tests exist, but normal runtime callers do not use these paths automatically:
 
-Review questions:
+- strict `noticepilot.domain.v1` schemas
+- `ManualNoticeInput → CanonicalNotice`
+- `Legacy AiRawAnalysis + CanonicalNotice → ExtractionResult`
+- `ExtractionResult → AppAnalysis projection`
+- `KNU normalized payload → CrawledNotice`
+- `CrawledNotice → CanonicalNotice`
+- `KNU rule candidates → ExtractionResult + CalendarEventCandidate[]`
+- opt-in domain-adapter path in `normalizeAiRawToAppResult`
 
-```text
-- Is /api/analyze enough for the real AI milestone?
-- Should /api/extract remain separate from /api/analyze?
-- Should mode selection be user-facing, developer-facing, or environment-controlled?
-- Is explicit 501 ai_not_implemented the right behavior until real AI is ready?
-- Should userPreferencesSnapshot remain optional metadata on /api/analyze?
-```
+### 2.3 Contract complete, runtime pending
 
----
+The contract is authoritative, but consumer or delivery implementation is absent:
 
-### 4.2 Client Mock / Server Mock / Real AI Mode
+- persistent `CalendarEvent.eventId`
+- ICS UID derived from `CalendarEvent.eventId`
+- stable UID across revisions
+- `sequence` increments
+- cancellation publication
+- inclusive core `endDate`
+- exclusive all-day ICS `DTEND`
+- campus and feed-actor defaults
 
-Current decision:
+### 2.4 Pending
 
-```text
-Development paths:
-- client-side mock analysis
-- server mock analysis
-- future real AI analysis
-```
+- live AI provider
+- runtime PDF/HWP/HWPX/OCR extraction
+- outbound crawler deployment
+- candidate promotion
+- previous/current event reconciliation
+- persistent repositories
+- core server-side ICS serializer
+- subscription-feed persistence and endpoint
+- subscription-management UI
+- calendar-client subscription QA
 
-Confirmed direction:
+## 3. Closed Decisions — Do Not Reopen
 
-```text
-- Keep all three paths available during development and regression.
-- Do not automatically fall back from real AI to mock.
-- Offer user-controlled fallback to server mock after AI failure if needed.
-```
+### 3.1 Domain and projection boundary
 
-Review questions:
+The following boundary is fixed:
 
 ```text
-- Is it useful to keep both client mock and server mock after real AI is implemented?
-- Should the final demo hide mock buttons or keep them visible for transparency?
-- Should AI failure provide a visible fallback button to server mock?
-- Should automatic fallback be avoided to prevent misleading users?
+Legacy AiRawAnalysis
++ CanonicalNotice
+→ ExtractionResult
+→ AppAnalysis projection
 ```
-
----
 
-### 4.3 AI Raw Schema vs App Schema
+- `AppAnalysisSchema` is a manual-analysis UI projection.
+- `AppAnalysisSchema` is not the core Subscription Foundation domain schema.
+- AI raw output must not reach AppAnalysis without domain validation.
+- A projected `calendarEvents[]` UI row is not a persistent `CalendarEvent`.
+- Projection is not candidate promotion.
 
-Confirmed Phase 4 decision:
+### 3.2 Producer and consumer responsibilities
 
 ```text
-- AI should not directly return the current frontend app schema.
-- AI should return an AI raw schema.
-- Server-side normalization should convert AI raw schema into the current app schema.
-```
-
-Reasoning:
-
-```text
-- AI should not generate UI-only fields such as edited, completed, or selected.
-- App rendering and export can keep the current separated-array schema.
-- Server can centralize evidence, date, warning, and reviewRequired policy.
-- Future batch parsing can evolve toward an extraction graph model.
-```
+source / AI producer
+→ ExtractionResult
+→ CalendarEventCandidate
 
-Review questions:
-
-```text
-- Is separating AI raw schema from app schema the right boundary?
-- What fields should be required in the AI raw schema?
-- Should server normalization be deterministic and testable before real AI is connected?
-- Should the AI raw schema include calendarEventCandidates separately from extracted items?
+calendar-event consumer
+→ candidate promotion
+→ CalendarEvent
+→ reconciliation
 ```
-
----
 
-### 4.4 AI Response Validation
+- Source adapters stop at `ExtractionResult` / `CalendarEventCandidate`.
+- Source adapters do not issue persistent event IDs.
+- Source adapters do not reconcile published events.
+- Extraction adapters do not serialize ICS.
+- Candidate promotion and default-feed selection are separate decisions.
 
-Current decision:
-
-```text
-- Backend app and AI raw schemas use Zod.
-- Frontend keeps defensive validation utilities for browser-side safety.
-- Shared schema strategy is still an open architecture question.
-```
+### 3.3 Event identity, revision, and cancellation
 
-Validation should:
+- Persistent UID derives from `CalendarEvent.eventId`.
+- Do not create persistent UID from title/date/content hash alone.
+- A revision of the same event preserves `eventId` and UID.
+- A published event change increments `sequence`.
+- Removal of a previously published event publishes cancellation rather than silently losing identity.
 
-```text
-- parse JSON
-- normalize missing fields
-- generate IDs
-- filter invalid calendar events
-- remove exact duplicate events
-- apply section limits
-- add warnings
-- mark uncertain results as reviewRequired when appropriate
-```
+### 3.4 Date and ICS semantics
 
-Review questions:
+- Normalized dates use `YYYY-MM-DD` or `null`.
+- Core `CalendarEvent.endDate` is inclusive.
+- All-day ICS `DTEND` is exclusive.
+- A timed deadline may have `endTime=null`.
+- Do not invent arbitrary duration.
+- An event without a valid `normalizedDate` is not eligible for automatic ICS output.
+- The current browser exporter is a one-off compatibility path, not the future core serializer layer.
 
-```text
-- Should frontend validation stay manual, or should schemas be shared later?
-- Should Zod schemas become the authoritative contract for real AI integration?
-- Which fields should be required vs optional?
-- Should both server and client keep validation, or should server be authoritative?
-```
+### 3.5 Campus preference and server state
 
----
+- Current campus preferences are stored in separate browser `localStorage`.
+- Current campus preferences do not filter notices, alter extraction, personalize export, or generate feeds.
+- `metadata.userPreferencesSnapshot` is inert metadata.
+- Browser preference must not become authoritative server-side subscription state without migration and ownership contracts.
+- Listed-campus classification and target-campus classification are separate concepts.
 
-### 4.5 Partial Success Handling
+### 3.6 Corpus policy
 
-Current decision:
+- The repository currently has zero verified real-corpus entries.
+- Templates and synthetic fixtures do not count as real corpus data.
+- Canonical extracted text and core expected truth are separate.
+- Primary expected truth describes `ExtractionResult` / `CalendarEventCandidate` meaning.
+- AppAnalysis expected truth is an optional compatibility projection.
+- Do not add promotion, reconciliation, feed, or server-side ICS expected truth before those layers exist.
+- Roughly 30 examples are a coverage-expansion milestone, not a prerequisite for source-adapter or domain work.
 
-```text
-- Allow partial success.
-- Render valid sections.
-- Show EmptyState for empty sections.
-- Show warnings above the dashboard.
-- Keep mock paths available for regression and fallback.
-```
+### 3.7 Failure and trust boundary
 
-Review questions:
+- Treat AI output, source payloads, pasted/uploaded text, and restored browser state as untrusted.
+- Do not automatically fall back to mock in a way that hides live-AI failure.
+- Distinguish provider failure, malformed JSON, schema mismatch, unsupported mode, request-size failure, and internal dependency failure where the public contract defines them.
+- Do not place provider secrets in the browser.
+- Current privacy-like patterns use warning and user-confirmation flows.
+- Login, payment, and Google Calendar API are not on the current critical path.
 
-```text
-- Should incomplete AI output still be displayed?
-- Which validation failures should block the entire result?
-- How should normalized or filtered data be communicated to users?
-- Should invalid calendar events be shown as invalid candidates or filtered with warnings?
-```
+## 4. Highest-Priority Review — Candidate Promotion
 
----
+### 4.1 Fixed premises
 
-## 5. Test Corpus Review Points
+- `CalendarEventCandidate` is producer output.
+- A candidate may be unresolved or review-required.
+- Candidate ID is not a durable ICS UID.
+- `CalendarEvent` is a consumer-owned promoted event.
+- Promotion must not contain source-specific regex knowledge.
+- Promotion must not persist feeds.
+- Promotion and default-feed inclusion must remain separate.
 
-### 5.1 Corpus Strategy
+### 4.2 Product-owner decisions required
 
-Confirmed direction:
+#### P4-C1. Candidate eligibility
 
-```text
-- Start with public URLs and manually extracted text.
-- Include raw PDF/HWPX/HWP files in the repo only when public, safe, and necessary.
-- Expected results should vary by notice type.
-- School-level parsing should be considered seriously after around 30 corpus examples.
-```
+Decide:
 
-Review questions:
+- Which `candidateStatus` values may enter promotion.
+- Which minimum fields are required in addition to a valid `normalizedDate`.
+- Whether a `meeting` without structured time is blocked or preserved as unresolved.
+- How to restrict `announcement`, `other`, and internal deadlines.
+- Whether suppressed candidates are permanently excluded or remain reviewable.
 
-```text
-- Is public URL + manually extracted text enough for initial AI evaluation?
-- Should raw files be stored outside the repo unless necessary?
-- What minimum metadata should notice_index.tsv include?
-- How many examples are enough before tuning the prompt/schema?
-```
+#### P4-C2. Review-required behavior
 
----
+Fixed principles:
 
-### 5.2 Expected Result Depth
+- Do not silently discard review-required candidates.
+- Preserve review state and evidence traceability.
+- A promoted event with a valid `normalizedDate` is not excluded from the default feed solely because `reviewRequired` is true.
+- Separate eligibility and feed policies—event type, target actor, time completeness—still apply.
 
-Confirmed direction:
+Additional decisions:
 
-```text
-Expected result depth may vary by notice type.
-```
+- Which `reviewReasons` block candidate eligibility.
+- Which reasons survive only as promoted-event review state.
+- How to record priority when eligibility and feed policies both fail.
+- Which review state represents explicit user approval.
+- Whether provenance must distinguish manual approval from automatic promotion.
 
-Examples:
+#### P4-C3. Actor and feed applicability
 
-```text
-- scholarship: deadlines, submissions, requirements, calendarEvents should be detailed
-- assignment: tasks, submissions, deadlines should be detailed
-- competition: deadlines, requirements, submissions, event stages should be detailed
-- job_posting: deadlines, requirements, submissions, cautions should be detailed
-- general school_notice: key dates and cautions may be enough
-```
+Fixed principles:
 
-Review questions:
+- `department` and `staff` are valid actors but excluded from the default student feed.
+- Schemas do not insert an actor default automatically.
 
-```text
-- Should all corpus examples use the full app schema as expected result?
-- Should expected results be written against AI raw schema or app schema?
-- Should evidence be mandatory in expected results?
-- How should ambiguous dates be represented in expected results?
-```
+Additional decisions:
 
----
+- Whether `unknown` actors may be promoted.
+- Feed inclusion rules for `student`, `applicant`, `public`, and `unknown`.
+- Handling candidate actor versus subscription-profile actor conflicts.
+- Whether actor conflict produces review-required state or suppression.
 
-## 6. File Input and Extraction Review Points
+#### P4-C4. Reason codes and evidence
 
-### 6.1 Current MVP File Input
+Decide:
 
-Current implementation:
+- Promotion-result reason-code taxonomy.
+- Minimum evidence for eligibility decisions.
+- Trace link from source candidate to promoted event.
+- Representative evidence selection when multiple evidence items exist.
+- Audit fields that distinguish automatic decisions from product-owner approval.
 
-```text
-- TXT / MD only
-- client-side FileReader
-- file size limit
-- no server upload
-- file object not stored
-- extracted text preview before analysis
-```
+### 4.3 Entry criteria for C2
 
-Review questions:
+Before promotion implementation begins, document and approve:
 
 ```text
-- Is client-side TXT/MD extraction enough for the current MVP?
-- Is the 1MB file limit reasonable?
-- Should MIME type be checked in addition to extension?
-- Should the ExtractPreview show more of the file body than it currently does?
+candidate eligibility
+review-required behavior
+actor applicability
+separation of promotion and default-feed inclusion
+reason codes
+evidence traceability
+non-goals
+acceptance tests
 ```
-
----
 
-### 6.2 Future Extraction Strategy
+## 5. Event Reconciliation Review
 
-Future file types:
+### 5.1 Fixed premises
 
-```text
-- PDF
-- HWPX
-- HWP
-- JPG / PNG OCR
-- scanned PDF
-```
+- Persistent identity is not content-hash identity.
+- Revisions of the same event preserve `eventId` and UID.
+- Published changes increment `sequence`.
+- Deletion is expressed as cancellation.
+- Source identity and event identity are different concepts.
 
-Current direction:
+### 5.2 Product-owner decisions required
 
-```text
-- Route complex formats through Express /api/extract later.
-- Always extract text first.
-- Always show ExtractPreview.
-- User confirms text before /api/analyze.
-```
+#### P4-R1. Previous/current matching
 
-Review questions:
+- Match the same event after a date change.
+- Match the same event after a title change.
+- Handle legacy candidates without `sourceCandidateKey`.
+- Handle candidate split and merge.
+- Decide whether evidence-only changes create an event revision.
 
-```text
-- Should PDF/HWPX extraction live inside Express or a separate worker/service?
-- Should unsupported file types remain blocked until /api/extract exists?
-- How should extraction confidence be represented?
-- Should raw file upload and AI analysis be strictly separated?
-```
+#### P4-R2. Cross-notice events
 
----
+- Choose a representative event when the same event is posted in multiple notices.
+- Define canonical-board and alias-board priority.
+- Define consolidation criteria for multiple source notices.
+- Handle date or title conflicts across sources.
+- Preserve source traceability after consolidation.
 
-### 6.3 Title Resolution Policy
+#### P4-R3. Sequence and cancellation
 
-Current decision:
+- Define fields that require a `sequence` increment.
+- Decide whether unpublished changes use sequence.
+- Define cancellation retention.
+- Handle reappearance after deletion as restoration or new identity.
+- Distinguish cancellation from supersession.
 
-```text
-1. User-entered title
-2. AI-detected title
-3. First non-empty line of confirmed text
-4. Uploaded file name as metadata only
-```
+### 5.3 Entry criteria for reconciliation
 
-Review questions:
+Before implementation, approve:
 
 ```text
-- Is this priority order appropriate?
-- Should uploaded file name ever become the default title?
-- Should title resolution happen before or after AI analysis?
-- Should server normalization preserve both user title and AI-detected title?
+matching-key hierarchy
+split/merge behavior
+cross-notice representative policy
+sequence-triggering fields
+cancellation retention
+reappearance policy
 ```
 
----
+## 6. Persistence and Repository Review
 
-## 7. Date and Calendar Review Points
+### 6.1 Required repositories
 
-### 7.1 Date Resolution
+- `CanonicalNotice` repository
+- `CalendarEvent` repository
+- subscription-profile repository
+- feed-snapshot and cancellation-retention store
 
-Current decision:
-
-```text
-- Absolute dates can become calendar events.
-- Relative dates require reliable referenceDate.
-- Calculated relative dates are reviewRequired.
-- Vague dates go to cautions.
-```
+### 6.2 Product-owner decisions required
 
-Reference date priority:
+#### P4-D1. Storage unit and transaction boundary
 
-```text
-1. User-entered notice publication date
-2. Document-extracted notice date
-3. Uploaded file metadata date
-4. Analysis date
-```
+- Scope of a transaction across crawl run, canonical revision, candidate set, and event reconciliation.
+- Commit/rollback policy for partial failure.
+- Idempotent replay criteria.
+- Separation of source run and event publication.
 
-Phase 4 direction:
+#### P4-D2. Persistent-ID issuance
 
-```text
-- first real AI implementation should prioritize absolute dates
-- relative dates may be accepted only with reliable referenceDate
-- long-term calculation should move to a server-side date resolver
-```
+- ID-issuing layer.
+- Repository-generated versus application-generated IDs.
+- Dependency-injected deterministic IDs in tests.
+- Relationship to existing one-off row IDs during migration.
 
-Review questions:
+#### P4-D3. Retention and audit
 
-```text
-- Is this reference date priority appropriate?
-- Should file metadata ever be used for date calculation?
-- Should relative-date-derived events be created at all in the first real AI phase?
-- Should AI return originalDateExpression and let the server calculate normalized dates later?
-```
+- Canonical-revision retention period.
+- Whether candidate history is retained.
+- Published-event revision history.
+- Cancellation retention.
+- Storage of product-owner decisions and manual approvals.
 
----
+## 7. Core ICS Serialization Review
 
-### 7.2 ICS Export
+### 7.1 Fixed premises
 
-Current decision:
+- Input is a validated `CalendarEvent`.
+- UID derives from persistent `eventId`.
+- Serialization supports `sequence` and cancellation.
+- Inclusive core end date becomes exclusive all-day `DTEND`.
+- Escaping, line folding, and ordering belong to the serializer.
+- Serializer tests are independent of HTTP endpoints.
 
-```text
-- MVP supports all-day events only.
-- Time-specific events are future scope.
-- Timezone handling is future scope.
-- Google Calendar API is out of scope.
-```
+### 7.2 Product-owner decisions required
 
-Review focus:
+- UID namespace and format.
+- Timed-event timezone representation.
+- Update rules for `DTSTAMP`, `LAST-MODIFIED`, and `SEQUENCE`.
+- Minimum fields in a cancellation VEVENT.
+- Evidence/source-link scope in description.
+- Deterministic ordering key.
+- Point at which one-off export and subscription feed share the serializer.
 
-```text
-- selected events only
-- all-day event format
-- duplicate removal
-- reviewRequired selection behavior
-- Samsung Calendar and Apple Calendar compatibility
-```
+### 7.3 Calendar-client QA
 
-Review questions:
+Minimum targets:
 
-```text
-- Is all-day-only .ics export enough for MVP?
-- Should time-specific events be supported earlier?
-- Should reviewRequired events be blocked from export until explicitly selected?
-- Is client-side .ics generation sufficient for now?
-```
+- Samsung Calendar
+- Apple Calendar
+- Outlook
 
----
+Review:
 
-### 7.3 Duplicate Calendar Events
+- initial subscription and refresh
+- event update propagation
+- cancellation propagation
+- all-day date boundaries
+- timed events and timezone
+- long-line folding
+- Korean text, comma, semicolon, and newline escaping
+- duplicate UID handling
 
-Current decision:
+Do not report calendar-client compatibility as complete without real-client QA evidence.
 
-```text
-MVP:
-- Remove exact duplicates only.
-- Duplicate condition: same title + same startDate.
-- Keep first, remove later duplicates.
-- Add warning.
-
-Future:
-- Fuzzy duplicate candidates for user review.
-```
+## 8. Subscription Feed Review
 
-Review questions:
+### 8.1 Product-owner decisions required
 
-```text
-- Is exact duplicate removal enough?
-- Should fuzzy duplicate detection be avoided for now?
-- Should duplicate removal happen during validation or export?
-- Should duplicates across multiple notices be handled differently in batch export?
-```
+#### P4-F1. Feed identity and access
 
----
+- Feed URL/token issuance.
+- Token rotation and revocation.
+- Public, unlisted, or authenticated feed.
+- URL-leak response.
+- Per-user feed versus shared profile feed.
 
-## 8. Batch Calendar Export Review Points
+#### P4-F2. Refresh, cache, and publication
 
-Long-term product direction:
+- Refresh cadence.
+- HTTP caching and ETag/Last-Modified.
+- Acceptable stale-feed duration.
+- Retaining existing events during source-fetch failure.
+- Publication atomicity.
+- Cancellation-retention relationship to feed snapshots.
 
-```text
-school notices
-→ parsed notices
-→ calendar event candidates
-→ user checkbox selection
-→ selected .ics export
-```
+#### P4-F3. Filtering
 
-Confirmed roadmap decision:
+- Application point for institution/source/category/campus filters.
+- Default inclusion of unknown-campus notices.
+- Combining target actor and subscription-profile actor.
+- Presentation of review-required events.
+- UID preservation after preference changes.
 
-```text
-- Initial batch selection unit should be calendarEvent candidate.
-- Notice-level select-all can be added later.
-- Subscription feed is future roadmap only.
-```
+#### P4-F4. Observability and abuse control
 
-Review questions:
+- Feed-generation failure metrics.
+- Source-stale visibility.
+- Token abuse and excessive-refresh limits.
+- Personal-data and log minimization.
+- Operator audit events.
 
-```text
-- Is calendarEvent-level selection the right first unit?
-- When should notice-level select-all be added?
-- How should stable UID be generated for events from school notices?
-- Should batch export reuse the current .ics generation utility or use a separate export path?
-```
+## 9. Source and Crawler Review
 
----
+### 9.1 Current state
 
-## 9. Export Review Points
+KNU fixture-driven adapters and mapping contracts are implemented and isolated. The repository does not contain a scheduled outbound crawler runtime.
 
-### 9.1 Markdown Export
+### 9.2 Later review items
 
-Current decision:
+- Scheduling and cadence.
+- Robots/rate-limit policy.
+- Retry and backoff.
+- Fetch-failure and deletion/supersession state.
+- Crawl-run persistence.
+- Source health and observability.
+- Attachment download and extraction ownership.
+- Source aliases and canonical boards.
+- Cross-post representative selection.
 
-```text
-- Keep default Markdown export concise.
-- Add Include evidence option.
-- Future: full review-report export mode.
-```
+A future source runtime must not give source adapters event-promotion or ICS-delivery responsibility.
 
-Review questions:
+## 10. AI, Corpus, and File Extraction — Later Review
 
-```text
-- Should evidence be included by default?
-- Should Markdown export include calendarEvents in the current MVP?
-- Should edited: true markers appear in Markdown?
-- Should a separate review report export be added later?
-```
+### 10.1 Live AI provider
 
----
+Later decisions:
 
-### 9.2 ICS Export
+- Provider choice and server-only configuration.
+- Timeout, quota, malformed JSON, and schema-mismatch handling.
+- Legacy AI raw v1 support period.
+- AI raw vNext with richer actor/time/subtype/provenance.
+- Corpus-based quality threshold.
+- Scope of user-controlled mock fallback.
 
-Review focus:
+### 10.2 Corpus
 
-```text
-- selected events only
-- all-day event format
-- exact duplicate handling
-- reviewRequired selection behavior
-- calendar import compatibility
-```
+Later decisions:
 
-Review questions:
+- Approval process for the first verified real entry.
+- Minimum coverage by notice type.
+- Evidence-exactness and ambiguity evaluation.
+- Metrics comparing AI output with human expected truth.
+- Time to add delivery expected layers after promotion/reconciliation implementation.
 
-```text
-- Should reviewRequired events require a second confirmation before export?
-- How should invalid event rows be displayed to the user?
-- Is all-day-only export acceptable until date/time handling is stronger?
-```
+### 10.3 File extraction
 
----
+Later decisions:
 
-## 10. Warning and Error Review Points
+- Express process versus separate worker/service.
+- PDF/HWP/HWPX/OCR extraction adapters.
+- Raw-file retention.
+- Attachment provenance.
+- Extraction confidence and review state.
+- Failure isolation between extraction and AI analysis.
 
-### 10.1 Warning Structure
+These items do not block CalendarEvent-consumer C1–C3 contract work.
 
-Current decision:
+## 11. Frontend — Later Review
 
-```js
-warnings: [
-  {
-    type: "date_ambiguous",
-    message: "Relative date expression could not be resolved without a reliable notice publication date."
-  }
-]
-```
+Do not perform a large rewrite of `App.jsx + useState`, hash tabs, or local preferences before backend and subscription contracts stabilize.
 
-Future expansion may add:
-
-```js
-{
-  id: "warning-1",
-  type: "date_ambiguous",
-  severity: "warning",
-  message: "Relative date expression could not be resolved.",
-  source: "date_resolution",
-  relatedItemId: "event-1"
-}
-```
+Later review:
 
-Review questions:
+- institution/source selection
+- category and campus preferences
+- subscription creation
+- feed URL copy/share
+- active/inactive state
+- refresh/error visibility
+- preference-update behavior
+- separation of manual review and subscription management
+- browser-preference migration UX
 
-```text
-- Is { type, message } enough for the current MVP?
-- Should severity be included before real AI integration?
-- Should warnings link to related items?
-- Should missing evidence use warning, reviewRequired, or both?
-```
+The UI must not present an unimplemented feed as an active feature.
 
----
+## 12. Questions That Are No Longer Open
 
-### 10.2 Error vs Warning Policy
+Do not reopen these questions:
 
-Current principle:
+- Whether AI raw and AppAnalysis must be separate.
+- Whether server normalization must be tested before live AI.
+- Whether AI should generate `selected`, `completed`, or `edited`.
+- Whether a source adapter should issue persistent event IDs.
+- Whether stable UID should derive from title/date/content hash.
+- Whether `CalendarEventCandidate` projection is promotion.
+- Whether existence of `CalendarEvent` schema means reconciliation is implemented.
+- Whether existence of `SubscriptionIcsFeed` schema means feed runtime is implemented.
+- Whether campus preference currently filters notices.
+- Whether subscription ICS is currently active.
+- Whether 30 corpus examples are a source-adapter prerequisite.
+- Whether Google Calendar API belongs in the current scope.
 
-```text
-Error:
-- user cannot continue the current flow
-
-Warning:
-- user can continue after review
-```
+These are settled by authoritative contracts or current implementation state.
 
-Review questions:
+## 13. Product-Owner Decision Gates
 
-```text
-- Are the blocking error cases defined clearly enough?
-- Should privacy-like pattern detection be a warning or blocking error?
-- Should invalid AI JSON block the entire result?
-- Should schema mismatch be recoverable if partial sections are valid?
-```
+### Gate 1 — C1 promotion contract
 
----
+Approval required:
 
-### 10.3 AI Failure Policy
+- candidate eligibility
+- blocking/non-blocking review reasons
+- actor applicability
+- separation of promotion and feed inclusion
+- promotion reason codes
+- evidence traceability
 
-Confirmed direction:
+### Gate 2 — C3 reconciliation contract
 
-```text
-- Distinguish timeout, invalid JSON, provider/quota error, unsupported mode, and schema mismatch where possible.
-- Do not automatically fall back to mock.
-- Provide a user-controlled fallback to server mock if needed.
-```
+Approval required:
 
-Review questions:
+- previous/current matching hierarchy
+- split/merge and cross-notice handling
+- persistent identity preservation
+- sequence triggers
+- cancellation retention
+- event reappearance
 
-```text
-- Is user-controlled fallback enough for demo stability?
-- Should fallback be shown only in development mode?
-- What failure types should be visible to non-technical users?
-```
+### Gate 3 — D1/D2/D3 delivery foundation
 
----
+Approval required:
 
-## 11. Privacy and Scope Review Points
+- repository boundary
+- persistent-ID issuance
+- transaction and retention
+- ICS UID format
+- timezone/cancellation serialization
+- feed token, caching, refresh, and filtering
 
-Current decision:
+### Gate 4 — E1 subscription UI
 
-```text
-- Show privacy warning.
-- Add lightweight client-side pattern detection.
-- Do not implement full anonymization.
-- Do not store personal academic profiles.
-- Exclude personal condition matching from MVP and early future design.
-```
+Approval required:
 
-Review questions:
+- subscription-profile UX
+- campus/source/category selection
+- browser-preference migration
+- feed status and error presentation
+- relationship between one-off export and subscription UI
 
-```text
-- Is lightweight privacy detection enough for this MVP?
-- Should AI analysis be blocked when sensitive-like patterns are detected?
-- Is excluding personal condition matching the right scope decision?
-- Should corpus rules explicitly reject documents containing names, student IDs, or contact lists?
-```
+Do not start C2 without Gate 1 approval. Do not freeze persistent-event repository and publication behavior without Gate 2 approval. Do not expose a subscription-feed endpoint as a user-facing feature without Gate 3 approval.
 
----
+## 14. Review Priority
 
-## 12. Future Expansion Review Points
+Current product-owner or reviewer questions:
 
-Planned future direction:
+1. Which candidates may become `CalendarEvent`?
+2. Which review reasons block promotion, and which remain display-only?
+3. How will promotion and default-feed inclusion be separated in data structures and function boundaries?
+4. How will previous/current events match when legacy candidates lack stable source keys?
+5. How will cross-notice duplicates and aliases choose a representative event?
+6. Which changes increment `sequence`?
+7. How long will cancellation be retained, and how will reappearing events be handled?
+8. Which layer issues persistent IDs, and which repository owns them?
+9. What is the input/output contract of the core ICS serializer shared by one-off and subscription delivery?
+10. Which security and operational policies govern feed token, refresh, caching, and filtering?
+11. What minimum Samsung Calendar evidence validates update and cancellation?
+12. How will audit trail distinguish product-owner decisions from automatic decisions?
 
-```text
-- test corpus scaffold
-- real AI integration
-- corpus-based AI QA
-- date resolution v1
-- advanced PDF/HWPX/OCR extraction
-- school-level notice parsing
-- metadata-based filtering
-- batch selected-event .ics export
-- subscription calendar feed
-```
+## 15. Related Documents
 
-Excluded from early design:
+- [`docs/project/current-implementation-summary.md`](../project/current-implementation-summary.md)
+- [`docs/wiki/Architecture-Overview.md`](Architecture-Overview.md)
+- [`docs/wiki/Implementation-Plan.md`](Implementation-Plan.md)
+- [`docs/architecture/subscription-foundation-contract.md`](../architecture/subscription-foundation-contract.md)
+- [`docs/architecture/subscription-adapter-contract.md`](../architecture/subscription-adapter-contract.md)
+- [`docs/ai/ai-output-schema.md`](../ai/ai-output-schema.md)
+- [`docs/qa/test-corpus-plan.md`](../qa/test-corpus-plan.md)
 
-```text
-- personal profile matching
-- storing user academic conditions
-- sensitive eligibility profiling
-- account-based personalization
-```
+## 16. Governance Rule
 
-Review questions:
+When implementation and documentation conflict, use this order:
 
 ```text
-- Is automatic university notice parsing a reasonable future direction?
-- What metadata should be preserved now to support that future?
-- Should the current MVP avoid decisions that make future parsing harder?
-- Is the 30-corpus-example threshold reasonable before school-level parsing?
+runtime code and tests
+→ strict schemas and authoritative contracts
+→ implementation summary
+→ master roadmap
+→ track-specific roadmap
+→ wiki and presentation material
 ```
-
----
-
-## 13. Most Important Questions for Reviewers
 
-The project owner especially wants feedback on:
-
-```text
-1. Is the current App.jsx + useState design still appropriate after server mock wiring?
-2. Is separated analysis data with generic UI handlers still the right compromise?
-3. Is the AI raw schema → server normalize → app schema boundary sound?
-4. Should server normalization be implemented and tested before real AI calls are added?
-5. Is the client mock / server mock / future real AI three-path strategy appropriate?
-6. Is the public URL + manually extracted text corpus strategy enough for the first AI QA phase?
-7. Is evidence-required-for-core-items plus warning/reviewRequired a good policy?
-8. Is absolute-date-first handling a suitable first real AI scope?
-9. Is all-day-only .ics export still a suitable MVP boundary?
-10. Is event-level checkbox selection the right starting point for batch calendar export?
-11. Are the warning/error/fallback policies clear enough for real AI integration?
-12. Are the current roadmap boundaries clear enough to avoid overbuilding?
-```
+Do not reopen settled decisions. Conversely, do not settle unresolved policy merely for implementation convenience. Product-owner decisions must pass through explicit decision gates.
