@@ -140,6 +140,133 @@ describe('CategoryFilter', () => {
     expect(onValueChange).toHaveBeenCalledWith('개발');
   });
 
+  it('좌우 화살표로 enabled 항목의 끝을 순환한다', async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <CategoryFilter
+          onValueChange={onValueChange}
+          options={options}
+          value="전체"
+        />
+      </DesignSystemProvider>
+    );
+
+    const allOption = screen.getByRole('button', { name: '전체' });
+    const developmentOption = screen.getByRole('button', { name: '개발' });
+
+    allOption.focus();
+    await user.keyboard('{ArrowLeft}');
+
+    expect(document.activeElement).toBe(developmentOption);
+
+    await user.keyboard('{ArrowRight}');
+
+    expect(document.activeElement).toBe(allOption);
+    expect(onValueChange).not.toHaveBeenCalled();
+  });
+
+  it('Home과 End로 첫 번째와 마지막 enabled 항목으로 이동한다', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <DesignSystemProvider>
+        <CategoryFilter
+          onValueChange={vi.fn()}
+          options={options}
+          value="개발"
+        />
+      </DesignSystemProvider>
+    );
+
+    const allOption = screen.getByRole('button', { name: '전체' });
+    const developmentOption = screen.getByRole('button', { name: '개발' });
+
+    developmentOption.focus();
+    await user.keyboard('{Home}');
+
+    expect(document.activeElement).toBe(allOption);
+
+    await user.keyboard('{End}');
+
+    expect(document.activeElement).toBe(developmentOption);
+  });
+
+  it('선택값이 없거나 disabled면 첫 enabled 항목을 tab stop으로 삼는다', () => {
+    const { rerender } = render(
+      <DesignSystemProvider>
+        <CategoryFilter
+          onValueChange={vi.fn()}
+          options={options}
+          value="없는 값"
+        />
+      </DesignSystemProvider>
+    );
+
+    const expectFirstEnabledTabStop = () => {
+      expect(screen.getByRole('button', { name: '전체' }).tabIndex).toBe(0);
+      expect(screen.getByRole('button', { name: '디자인' }).tabIndex).toBe(-1);
+      expect(screen.getByRole('button', { name: '개발' }).tabIndex).toBe(-1);
+    };
+
+    expectFirstEnabledTabStop();
+
+    rerender(
+      <DesignSystemProvider>
+        <CategoryFilter
+          onValueChange={vi.fn()}
+          options={options}
+          value="디자인"
+        />
+      </DesignSystemProvider>
+    );
+
+    expectFirstEnabledTabStop();
+  });
+
+  it('빈 options와 전체 disabled options에 포커스 진입점을 만들지 않는다', () => {
+    const onValueChange = vi.fn();
+    const { rerender } = render(
+      <DesignSystemProvider>
+        <CategoryFilter onValueChange={onValueChange} options={[]} value="" />
+      </DesignSystemProvider>
+    );
+
+    const emptyGroup = screen.getByRole('group', { name: '카테고리 필터' });
+
+    expect(emptyGroup.tabIndex).toBe(-1);
+    expect(screen.queryByRole('button')).toBeNull();
+
+    rerender(
+      <DesignSystemProvider>
+        <CategoryFilter
+          onValueChange={onValueChange}
+          options={[
+            {
+              disabled: true,
+              label: '비활성',
+              tone: 'slate',
+              value: 'disabled',
+            },
+          ]}
+          value="disabled"
+        />
+      </DesignSystemProvider>
+    );
+
+    const allDisabledGroup = screen.getByRole('group', {
+      name: '카테고리 필터',
+    });
+    const disabledOption = screen.getByRole('button', { name: '비활성' });
+
+    expect(allDisabledGroup.tabIndex).toBe(-1);
+    expect(disabledOption.tabIndex).toBe(-1);
+    expect(disabledOption.hasAttribute('disabled')).toBe(true);
+    expect(onValueChange).not.toHaveBeenCalled();
+  });
+
   it('제품 경계에 구현 전용 props를 노출하지 않는다', () => {
     expectTypeOf<CategoryFilterProps>().not.toHaveProperty('defaultValue');
     expectTypeOf<CategoryFilterProps>().not.toHaveProperty('horizontalPadding');

@@ -1,4 +1,4 @@
-import { Category, CategoryList, CategoryListItem } from '@wanteddev/wds';
+import { useRef, type KeyboardEvent } from 'react';
 
 import type { CategoryTone } from '@/shared/ui/chip';
 
@@ -22,34 +22,80 @@ export function CategoryFilter({
   options,
   value,
 }: CategoryFilterProps) {
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const enabledIndices = options.flatMap((option, index) =>
+    option.disabled ? [] : [index]
+  );
+  const selectedIndex = options.findIndex(
+    (option) => option.value === value && !option.disabled
+  );
+  const tabStopIndex =
+    selectedIndex >= 0 ? selectedIndex : (enabledIndices[0] ?? -1);
+
+  const handleKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    optionIndex: number
+  ) => {
+    const enabledPosition = enabledIndices.indexOf(optionIndex);
+    let targetIndex: number | undefined;
+
+    if (enabledPosition < 0) {
+      return;
+    }
+
+    switch (event.key) {
+      case 'ArrowLeft':
+        targetIndex =
+          enabledIndices[
+            (enabledPosition - 1 + enabledIndices.length) %
+              enabledIndices.length
+          ];
+        break;
+      case 'ArrowRight':
+        targetIndex =
+          enabledIndices[(enabledPosition + 1) % enabledIndices.length];
+        break;
+      case 'End':
+        targetIndex = enabledIndices.at(-1);
+        break;
+      case 'Home':
+        targetIndex = enabledIndices[0];
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    optionRefs.current[targetIndex ?? -1]?.focus();
+  };
+
   return (
-    <Category onValueChange={onValueChange} value={value}>
-      <CategoryList
-        aria-label="카테고리 필터"
-        className="category-filter category-filter__list"
-        horizontalPadding={false}
-        role="group"
-        size="small"
-        verticalPadding={false}
-      >
-        {options.map((option) => (
-          <CategoryListItem
-            aria-pressed={option.value === value}
-            aria-selected={undefined}
-            className="category-filter__item"
-            disabled={option.disabled}
-            key={option.value}
-            role="button"
-            value={option.value}
-          >
-            <span
-              aria-hidden="true"
-              className={`category-filter__mark category-filter__mark--${option.tone}`}
-            />
-            <span>{option.label}</span>
-          </CategoryListItem>
-        ))}
-      </CategoryList>
-    </Category>
+    <div
+      aria-label="카테고리 필터"
+      className="category-filter category-filter__list"
+      role="group"
+    >
+      {options.map((option, index) => (
+        <button
+          aria-pressed={option.value === value}
+          className="category-filter__item"
+          disabled={option.disabled}
+          key={option.value}
+          onClick={() => onValueChange(option.value)}
+          onKeyDown={(event) => handleKeyDown(event, index)}
+          ref={(node) => {
+            optionRefs.current[index] = node;
+          }}
+          tabIndex={index === tabStopIndex ? 0 : -1}
+          type="button"
+        >
+          <span
+            aria-hidden="true"
+            className={`category-filter__mark category-filter__mark--${option.tone}`}
+          />
+          <span>{option.label}</span>
+        </button>
+      ))}
+    </div>
   );
 }

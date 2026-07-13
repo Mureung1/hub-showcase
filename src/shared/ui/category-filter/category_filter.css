@@ -1,57 +1,50 @@
-div.category-filter[wds-component='category-list'] {
+div.category-filter {
   display: flex;
   width: 100%;
   min-width: 0;
   align-items: center;
+  gap: var(--spacing-1);
+  overflow-x: auto;
 }
 
-button.category-filter__item[wds-component='category-list-item'] {
+button.category-filter__item {
+  display: inline-flex;
   min-height: var(--spacing-12);
+  padding: var(--spacing-1) var(--spacing-2);
   border: 1px solid var(--color-ash);
   border-radius: var(--radius-button);
+  align-items: center;
   background: var(--color-canvas);
   color: var(--color-graphite);
-  box-shadow: none;
-}
-
-button.category-filter__item[wds-component='category-list-item'] > span {
-  display: inline-flex;
-  padding: 0;
-  align-items: center;
+  flex: 0 0 auto;
   gap: var(--spacing-1);
   font-size: var(--typography-label-size);
   font-weight: 600;
   line-height: var(--typography-label-line-height);
+  box-shadow: none;
 }
 
-button.category-filter__item[wds-component='category-list-item']:not(
-    :disabled
-  ):not([aria-disabled='true']):hover {
+button.category-filter__item:not(:disabled):hover {
   border-color: var(--color-fog);
   background: var(--color-mist);
   color: var(--color-ink);
 }
 
-button.category-filter__item[wds-component='category-list-item'][aria-pressed='true'] {
+button.category-filter__item[aria-pressed='true'] {
   border-color: var(--color-electric-blue);
   background: var(--color-canvas);
   color: var(--color-ink);
-}
-
-button.category-filter__item[wds-component='category-list-item'][aria-pressed='true']
-  > span {
   font-weight: 700;
 }
 
-button.category-filter__item[wds-component='category-list-item']:focus-visible {
+button.category-filter__item:focus-visible {
   border-color: var(--color-electric-blue);
   outline: 2px solid var(--color-electric-blue);
   outline-offset: 2px;
   box-shadow: 0 0 0 var(--spacing-1) var(--color-pale-blue);
 }
 
-button.category-filter__item[wds-component='category-list-item']:disabled,
-button.category-filter__item[wds-component='category-list-item'][aria-disabled='true'] {
+button.category-filter__item:disabled {
   border-color: var(--color-ash);
   background: var(--color-mist);
   color: var(--color-smoke);
