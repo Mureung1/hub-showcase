@@ -7,6 +7,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Virtual Environments (가상환경 추가)
+venv/
+.venv/
+env/
+
 node_modules
 dist
 dist-ssr
@@ -22,3 +27,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables (이미 포함되어 있음)
+.env
