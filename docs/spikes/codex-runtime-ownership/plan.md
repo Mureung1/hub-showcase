@@ -1,9 +1,13 @@
 # AY-PLE Runtime Ownership Spike Plan
 
 작성일: 2026-07-07
-상태: Draft
+
+분류: 완료·역사 기록
+
 브랜치: `codex/runtime-ownership-spike-plan`
 실행 산출물: [Runtime Ownership Spike Report](../../../spikes/codex-runtime-ownership/spike-report.md)
+
+> **현재 판정 (2026-07-11): 완료된 Spike의 역사 기록.** local pinned Codex binary, app-managed `CODEX_HOME`/`CODEX_SQLITE_HOME`, subscription auth, App Server initialize를 격리할 수 있음을 [실행 보고서](../../../spikes/codex-runtime-ownership/spike-report.md)에서 확인했다. 현재 경로 결정은 [ADR 0006](../../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)과 [Codex Runtime 격리 문서](../../architecture/codex-runtime-isolation.md)를 따른다. 아래 내용은 새 작업 계획이 아니라 실행 당시의 범위와 성공 기준이다.
 
 ## 목적
 
@@ -134,7 +138,9 @@ spikes/
 | API key auth는 이번 범위가 아니다. | 제품 방향은 사용자의 ChatGPT subscription 기반 Codex 사용이다. |
 | 실제 agent turn은 다음 단계다. | 이번 목표는 runtime ownership이지 agent task success가 아니다. |
 
-## 다음 단계
+## 당시 다음 단계
+
+아래 순서는 모두 실행되어 Spike Report와 후속 Runtime Harness 기준선으로 이어졌다. 현재 작업 순서가 아니라 완료된 계획을 보존한 것이다.
 
 | 순서 | 작업 |
 | --- | --- |

@@ -1,0 +1,246 @@
+{
+  "initialize": {
+    "integration": "client-host",
+    "adoption": "baseline",
+    "note": "Headless Codex Client Host 연결 handshake"
+  },
+  "thread/start": {
+    "integration": "raw-wrapper",
+    "adoption": "baseline",
+    "note": "활성 workspace에서 새 대화 시작"
+  },
+  "thread/resume": {
+    "adoption": "baseline",
+    "note": "기존 대화 복원과 multi-turn 재개"
+  },
+  "thread/fork": {
+    "adoption": "later"
+  },
+  "thread/archive": {
+    "adoption": "baseline"
+  },
+  "thread/delete": {
+    "adoption": "later"
+  },
+  "thread/unsubscribe": {
+    "adoption": "baseline",
+    "note": "Client Host subscription 수명"
+  },
+  "thread/name/set": {
+    "adoption": "baseline"
+  },
+  "thread/goal/set": {
+    "adoption": "case-driven"
+  },
+  "thread/goal/get": {
+    "adoption": "case-driven"
+  },
+  "thread/goal/clear": {
+    "adoption": "case-driven"
+  },
+  "thread/compact/start": {
+    "adoption": "case-driven",
+    "note": "제품 수준 context UX 평가 뒤 검토"
+  },
+  "thread/rollback": {
+    "adoption": "excluded",
+    "note": "App Server에서 deprecated된 method"
+  },
+  "thread/list": {
+    "integration": "raw-wrapper",
+    "adoption": "baseline",
+    "note": "활성 workspace cwd로 대화 목록 필터링"
+  },
+  "thread/loaded/list": {
+    "integration": "raw-wrapper",
+    "adoption": "later"
+  },
+  "thread/read": {
+    "integration": "raw-wrapper",
+    "adoption": "baseline",
+    "note": "Turn을 포함한 transcript 복원"
+  },
+  "thread/inject_items": {
+    "adoption": "case-driven"
+  },
+  "turn/start": {
+    "integration": "raw-wrapper",
+    "adoption": "baseline",
+    "note": "같은 thread의 multi-turn 요청"
+  },
+  "turn/steer": {
+    "integration": "raw-wrapper",
+    "adoption": "later",
+    "note": "Active-turn 정정 UX 검증 뒤 연결"
+  },
+  "turn/interrupt": {
+    "integration": "raw-wrapper",
+    "adoption": "baseline"
+  },
+  "review/start": {
+    "adoption": "case-driven"
+  },
+  "skills/list": {
+    "adoption": "baseline",
+    "note": "활성 workspace의 native Skills discovery"
+  },
+  "model/list": {
+    "adoption": "baseline",
+    "note": "Baseline에서는 현재 model 표시"
+  },
+  "config/read": {
+    "adoption": "later",
+    "note": "Model 설정 소유 범위를 정한 뒤 연결"
+  },
+  "config/value/write": {
+    "adoption": "later",
+    "note": "Model 설정 소유 범위를 정한 뒤 연결"
+  },
+  "account/login/start": {
+    "adoption": "baseline",
+    "note": "ChatGPT managed browser login"
+  },
+  "account/login/cancel": {
+    "adoption": "baseline"
+  },
+  "account/logout": {
+    "adoption": "baseline"
+  },
+  "account/rateLimits/read": {
+    "adoption": "baseline"
+  },
+  "account/usage/read": {
+    "adoption": "later"
+  },
+  "account/read": {
+    "adoption": "baseline"
+  },
+  "getAuthStatus": {
+    "integration": "raw-wrapper",
+    "adoption": "later",
+    "note": "현재 Harness 호환 wrapper"
+  },
+  "item/commandExecution/requestApproval": {
+    "adoption": "baseline"
+  },
+  "item/fileChange/requestApproval": {
+    "adoption": "baseline"
+  },
+  "item/tool/requestUserInput": {
+    "adoption": "baseline"
+  },
+  "mcpServer/elicitation/request": {
+    "adoption": "case-driven"
+  },
+  "item/permissions/requestApproval": {
+    "adoption": "baseline"
+  },
+  "item/tool/call": {
+    "adoption": "case-driven"
+  },
+  "error": {
+    "adoption": "baseline"
+  },
+  "thread/started": {
+    "adoption": "baseline"
+  },
+  "thread/status/changed": {
+    "adoption": "baseline"
+  },
+  "thread/archived": {
+    "adoption": "baseline"
+  },
+  "thread/closed": {
+    "adoption": "baseline"
+  },
+  "thread/name/updated": {
+    "adoption": "baseline"
+  },
+  "thread/settings/updated": {
+    "adoption": "baseline",
+    "note": "현재 model과 thread 설정 표시"
+  },
+  "thread/tokenUsage/updated": {
+    "adoption": "baseline",
+    "note": "Context window와 token usage 표시"
+  },
+  "turn/started": {
+    "adoption": "baseline"
+  },
+  "turn/completed": {
+    "adoption": "baseline"
+  },
+  "turn/plan/updated": {
+    "adoption": "baseline",
+    "note": "주요 activity card"
+  },
+  "item/started": {
+    "adoption": "baseline"
+  },
+  "item/completed": {
+    "adoption": "baseline"
+  },
+  "item/agentMessage/delta": {
+    "adoption": "baseline"
+  },
+  "item/commandExecution/outputDelta": {
+    "adoption": "baseline",
+    "note": "Command activity 요약"
+  },
+  "item/fileChange/outputDelta": {
+    "adoption": "baseline",
+    "note": "File change activity 요약"
+  },
+  "item/fileChange/patchUpdated": {
+    "adoption": "baseline",
+    "note": "File change activity 요약"
+  },
+  "item/mcpToolCall/progress": {
+    "adoption": "baseline",
+    "note": "Tool activity 요약"
+  },
+  "item/plan/delta": {
+    "adoption": "baseline",
+    "note": "주요 activity card"
+  },
+  "serverRequest/resolved": {
+    "adoption": "baseline"
+  },
+  "account/updated": {
+    "adoption": "baseline"
+  },
+  "account/rateLimits/updated": {
+    "adoption": "baseline"
+  },
+  "warning": {
+    "adoption": "baseline"
+  },
+  "configWarning": {
+    "adoption": "baseline"
+  },
+  "account/login/completed": {
+    "adoption": "baseline"
+  },
+  "initialized": {
+    "integration": "client-host",
+    "adoption": "baseline",
+    "note": "Headless Codex Client Host 초기화 완료 notification"
+  },
+  "thread/turns/list": {
+    "adoption": "later",
+    "note": "Experimental pagination 관찰 대상"
+  },
+  "thread/items/list": {
+    "adoption": "later",
+    "note": "Experimental pagination 관찰 대상"
+  },
+  "thread/backgroundTerminals/list": {
+    "adoption": "case-driven"
+  },
+  "thread/realtime/start": {
+    "adoption": "case-driven"
+  },
+  "collaborationMode/list": {
+    "adoption": "later"
+  }
+}

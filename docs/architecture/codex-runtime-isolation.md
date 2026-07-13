@@ -1,162 +1,112 @@
-# Codex Runtime Isolation Technical Note
+# Codex Runtime 격리 기술 메모
 
 작성일: 2026-07-07  
-상태: Draft  
-관련 문서: [AY-PLE Product Brief](../product/ay-ple-product-brief.md)
+분류: 활성
+
+성숙도: 채택
+
+관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Runtime Harness 구현 지도](runtime-harness-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
 
 ## 목적
 
-AY-PLE가 Codex app-server를 MVP의 built-in local agent engine으로 사용할 때, 사용자의 전역 Codex 설치와 설정을 오염시키지 않는 실행 구조를 정리한다.
+AY-PLE가 Codex App Server를 built-in local agent engine으로 사용할 때 적용할 실행 격리 구조를 설명한다. [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)이 root 소유권을 결정하고, 이 문서는 현재 Harness, 채택한 제품 목표와 아직 결정·구현하지 않은 후속 항목을 구분한다.
 
-이 문서는 제품 기획 문서가 아니라 기술 조사/결정 메모다. 제품 기획서에는 "Codex app-server를 MVP runtime으로 사용한다" 정도만 남기고, 설치 방식, 상태 격리, sandbox, 인증 저장소, 패키징 리스크는 이 문서에서 관리한다.
+이 문서는 transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저수준 기술 경계를 소유한다. 제품 문제와 작업 조합, 현재 package 동작, 우선순위는 각각 Product Brief, 구현 지도·package README, Development Backlog를 따른다.
 
-## 결론
+## 현재, 제품 목표와 후속
 
-| 질문 | 현재 판단 |
-| --- | --- |
-| Codex를 전역 설치 없이 앱 내부에서 실행할 수 있는가? | 가능성이 높다. 현재 `@openai/codex` npm 패키지는 `codex` bin entry를 제공하며, 앱 dependency로 고정한 뒤 명시적 경로로 실행할 수 있다. |
-| 로컬 설치만으로 전역 환경과 완전히 분리되는가? | 아니다. 로컬 설치는 binary/version 격리만 해결한다. 설정, 인증, 세션, 로그, skills는 별도 `CODEX_HOME`으로 분리해야 한다. |
-| `CODEX_HOME`을 학기 workspace 안에 두면 되는가? | 기본값으로는 피한다. `auth.json` 같은 민감 상태가 섞일 수 있으므로 앱 전용 데이터 디렉터리에 둔다. |
-| Codex sandbox가 OS 수준 격리까지 보장하는가? | 아니다. sandbox/approval은 Codex가 수행하는 작업의 경계를 줄이는 장치지만, 다중 사용자 cloud runtime 격리는 container, VM, 별도 OS user 같은 별도 경계가 필요하다. |
-| MVP에서 app-server transport는 무엇이 적절한가? | `stdio`를 기본으로 둔다. WebSocket transport는 공식 문서상 experimental/unsupported이므로 MVP에서 외부 포트로 노출하지 않는다. |
+| 영역 | 현재 Runtime Harness | 채택한 제품 목표 | 후속 |
+| --- | --- | --- | --- |
+| Codex binary | `@openai/codex@0.144.0` exact dependency의 조상 `node_modules/.bin/codex`를 찾는다. | `packageRoot`가 pinned Codex binary를 소유하고 전역 `PATH`를 사용하지 않는다. | macOS 제품 배포용 binary resolver와 native dependency 포함 검증 |
+| Codex state | repository `.ay-ple/runtime-codex/{codex-home,sqlite}`를 사용한다. 두 root는 독립 override가 가능하다. | `appDataRoot` 아래 하나의 `CODEX_HOME`·`CODEX_SQLITE_HOME` pair를 배치하고 함께 검증한다. | macOS 기본 app data 경로, override·migration과 학기 rollover 정책 |
+| 작업 `cwd` | `CODEX_RUNTIME_CWD`가 없으면 server process의 `process.cwd()`를 사용한다. npm workspace 실행에서는 보통 `apps/server`다. | 사용자가 명시적으로 선택한 `workspaceRoot`를 새 thread의 `cwd`로 사용한다. | workspace chooser·registry와 재열기 UX |
+| 학기 제품 상태 | 아직 구현하지 않았다. | RawMaterial과 확인된 학기 상태를 사용자 소유 `workspaceRoot`에서 다시 열 수 있게 한다. | 저장 schema와 workspace-local app state 경로 |
+| Runtime history | repository `.ay-ple/runtime-harness/runs`에 developer-only 진단 기록을 저장한다. | 제품 상태나 WorkspaceHistory와 분리한다. | 제품 기록으로 재사용하기 전 allowlist·redaction 정책 |
+| Native context | 기본 developer home에 file auth config를 보장한다. built-in Memories는 활성화하지 않았다. | native `AGENTS.md`·Skills discovery를 따르고, Memory는 명시적 설정과 실제 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | 실제 discovery 범위, auth UX, Memory 활성화와 rollover UX |
+| Transport·sandbox | app-server `stdio`를 사용한다. 현재 Harness는 제품 sandbox·approval 정책을 고정하지 않는다. | local companion이 외부 port 없이 app-server를 소유한다. | 제품 기능에 맞춘 sandbox·approval과 cloud threat model |
 
-## 확인한 근거
-
-| 항목 | 확인 내용 |
-| --- | --- |
-| 현재 로컬 Codex | 조사 시점의 전역 Codex는 `codex-cli 0.142.5`였고, 사용자 홈 아래의 전역 shim을 통해 실행되고 있었다. |
-| 현재 npm package metadata | `@openai/codex@0.142.5`, `bin.codex = bin/codex.js` |
-| native package 구조 | optional dependency로 OS/architecture별 `@openai/codex-*-*` package를 사용한다. |
-| 공식 manual 상태 | `openai-docs` helper 기준 local manual이 current 상태였다. |
+현재 repository `.ay-ple/runtime-*`는 제품 경로의 미완성 구현이 아니라 developer-only Harness 기본값이다. 제품 layout을 도입해도 기존 Harness data를 미리 이전하지 않는다.
 
 ## 격리 레이어 모델
 
-| 레이어 | 수단 | 해결하는 문제 | 해결하지 못하는 문제 | MVP 방침 |
-| --- | --- | --- | --- | --- |
-| Binary/version | 앱 dependency의 `@openai/codex` exact pin, 명시적 bin path spawn | 사용자의 전역 `codex` 버전 변화와 분리 | Codex 상태, 인증, 세션 분리 | 필수 |
-| Codex state root | `CODEX_HOME` | `config.toml`, `auth.json`, logs, sessions, skills, package metadata 분리 | OS process/file 권한 격리 | 필수 |
-| SQLite state | `CODEX_SQLITE_HOME` 또는 `sqlite_home` config | SQLite-backed state 위치 분리 | 일반 파일 로그/인증 분리 | 필요 시 `CODEX_HOME` 하위로 고정 |
-| Workspace | app-server turn의 `cwd`, AY-PLE workspace path | 에이전트가 읽고 바꿀 학기 작업환경 지정 | 인증/앱 설정 저장소 격리 | 학기 폴더와 runtime home을 분리 |
-| Project config | workspace의 `.codex/config.toml` | 과목/workspace별 sandbox, MCP, skill 설정 일부 조정 | provider/auth/profile 같은 민감 설정 override | 고급 옵션으로 제한 |
-| Skills | `.ay-ple/skills/`, `.agents/skills/ay-ple-*` projection | AY-PLE 업무 매뉴얼을 Codex가 읽게 함 | 인증/권한 격리 | 앱이 생성하고 관리 |
-| Sandbox/approval | `workspace-write`, `read-only`, `on-request` 등 | Codex가 실행하는 명령과 파일 변경 경계 설정 | 악성 workspace에 대한 OS 수준 격리 | 기본은 `workspace-write + on-request` 검토 |
-| Transport | `stdio://` app-server | 외부 포트 없이 local companion과 통신 | protocol 변경 리스크 | MVP 기본값 |
-| OS/process 격리 | container, VM, 별도 OS user, 제한된 `HOME`/`PATH` | multi-user 또는 untrusted workspace의 강한 격리 | 제품 UX와 배포 복잡도 | MVP 범위 밖, cloud 전환 시 재검토 |
+| 레이어 | 채택한 경계 | 보장하지 않는 것 |
+| --- | --- | --- |
+| Binary/version | 앱 dependency의 exact pin과 명시적 bin path로 전역 Codex 변화와 분리 | Codex state, 인증과 session 분리 |
+| Runtime-home pair | app-managed `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 함께 배치 | OS 권한 격리, 학기별 memory 격리, inherited host discovery 차단 |
+| Workspace | 사용자가 선택한 SemesterWorkspace를 명시적 `cwd`로 전달 | 인증·runtime state 저장소 격리 |
+| Native context | Codex의 `AGENTS.md`, Skills와 built-in Memories를 native 방식으로 사용 | 학업 사실의 정확성, 모든 작업의 memory 생성, descendant instruction 자동 로딩 |
+| Sandbox·approval | Codex 동작 범위를 제품 기능에 맞게 제한 | container, VM 또는 별도 OS user 수준 보안 경계 |
+| Transport | local companion이 `stdio://` app-server process를 소유 | protocol 변경과 packaging risk 제거 |
 
-## 제안 디렉터리 구조
+## 제품용 디렉터리 구조
 
-MVP npm 기반 로컬 웹앱에서는 사용자가 선택한 학기 폴더와 앱 runtime 상태를 분리한다.
+아래 구조는 제품 실행의 소유권 경계를 나타낸다. macOS의 실제 app data 경로와 작업공간 등록 정보의 저장 형식은 제품 진입점을 구현할 때 확정한다.
 
 ```text
+package-root/
+  dist/
+  node_modules/
+    @openai/codex/
+
 user-app-data/
   ay-ple/
-    codex-home/
-      config.toml
-      auth.json
-      logs/
-      sessions/
-      skills/
-    sqlite/
+    workspace-registry/
+    codex/
+      home/
+        config.toml
+        auth.json
+        logs/
+        sessions/
+        skills/
+        <Codex-managed memory state>/
+      sqlite/
     runtime-logs/
 
 semester-workspace/
-  semester-overview.md
-  notes.md
-  courses/
-  .ay-ple/
-    semester.json
-    course-index.json
-    tasks.json
-    events.jsonl
-    runs/
+  AGENTS.md                    # 선택 사항, Codex native instruction
+  전공/                        # 사용자의 기존 분류 예시
+    과목-A/
+  교양/
+    과목-B/
   .agents/
-    skills/
-      ay-ple-*/
+    skills/                    # 선택 사항, workspace-local native Skills
+  .ay-ple/
+    <app-managed product state> # 저장 형식과 경로는 구현 PRD에서 결정
 ```
 
-중요한 원칙:
+이 구조는 채택한 소유권을 보여주는 예시이며 실제 macOS 경로와 workspace-local app state 이름은 아직 정하지 않았다. AY-PLE는 기존 학기 폴더를 위 구조로 재배치하도록 요구하지 않고 Codex-managed state의 내부 파일 배치에도 제품 계약을 두지 않는다.
 
-| 원칙 | 이유 |
+## 제품 layout seam
+
+제품 진입점은 아래 불변 조건을 한곳에서 검증해야 한다. 구체적인 함수명과 packaging API는 구현 시 정한다.
+
+| 입력·결과 | 불변 조건 |
 | --- | --- |
-| `CODEX_HOME`은 학기 workspace 밖에 둔다. | `auth.json`과 세션 로그가 사용자가 백업/공유하는 학기 자료에 섞이지 않게 한다. |
-| 학기 workspace는 사용자가 이해할 수 있는 자료와 상태만 담는다. | AY-PLE를 삭제해도 학기 자료가 의미 있게 남아야 한다. |
-| 앱이 Codex bin path를 직접 계산한다. | 전역 `PATH`의 `codex`가 우연히 호출되는 일을 막는다. |
-| Codex config는 app-managed 영역과 user-editable 영역을 나눈다. | 사용자가 고급 설정을 바꾸더라도 인증/provider 설정이 섞이지 않게 한다. |
+| `packageRoot` | 제품 상태를 쓰지 않으며 pinned Codex binary를 명시적으로 찾을 수 있다. |
+| `appDataRoot` | `workspaceRoot` 밖에 있고 `CODEX_HOME`·`CODEX_SQLITE_HOME` pair를 함께 계산한다. |
+| `workspaceRoot` | 사용자가 명시적으로 선택하며 새 thread의 `cwd`와 일치한다. |
+| override | 계산된 layout을 명시적으로 바꾸는 수단이며 root 모델 자체를 대신하지 않는다. |
+| data loss | `appDataRoot`가 사라져도 RawMaterial과 확인된 학기 상태를 `workspaceRoot`에서 다시 열 수 있다. |
 
-## app-server 실행 초안
-
-```ts
-import { spawn } from 'node:child_process'
-import { mkdirSync } from 'node:fs'
-import path from 'node:path'
-
-const appRoot = process.cwd()
-const codexBin = process.platform === 'win32'
-  ? path.join(appRoot, 'node_modules', '.bin', 'codex.cmd')
-  : path.join(appRoot, 'node_modules', '.bin', 'codex')
-
-const codexHome = path.join(process.env.HOME ?? appRoot, '.ay-ple', 'codex-home')
-const codexSqliteHome = path.join(process.env.HOME ?? appRoot, '.ay-ple', 'codex-sqlite')
-
-mkdirSync(codexHome, { recursive: true })
-mkdirSync(codexSqliteHome, { recursive: true })
-
-const child = spawn(codexBin, ['app-server', '--listen', 'stdio://'], {
-  cwd: appRoot,
-  stdio: ['pipe', 'pipe', 'inherit'],
-  env: {
-    ...process.env,
-    CODEX_HOME: codexHome,
-    CODEX_SQLITE_HOME: codexSqliteHome,
-  },
-})
-```
-
-실제 구현에서는 `process.cwd()` 대신 패키지 내부의 Codex binary 위치를 안정적으로 찾는 resolver가 필요하다. `npx ay-ple` 환경에서는 실행 위치와 패키지 설치 위치가 다를 수 있기 때문이다.
-
-## Runtime policy 초안
-
-| 항목 | MVP 기본값 | 이유 |
-| --- | --- | --- |
-| Codex package version | exact pin | app-server protocol과 native package 포함 여부를 고정한다. |
-| app-server transport | `stdio://` | localhost port 노출 없이 local companion이 직접 통신한다. |
-| WebSocket transport | 사용하지 않음 | 공식 문서상 experimental/unsupported이며 인증 설정 실수가 위험하다. |
-| Schema generation | pinned version마다 `generate-ts` 또는 `generate-json-schema` 실행 | app-server protocol 변경을 빌드 타임에 드러낸다. |
-| Sandbox | `workspace-write` 후보 | 학기 workspace 안의 파일 반영은 허용하되 경계를 유지한다. |
-| Approval policy | `on-request` 후보 | 파일 대량 변경, 외부 연동, sandbox 초과 행동을 사용자 승인으로 묶는다. |
-| Auth storage | app-managed `CODEX_HOME` | 전역 `~/.codex`와 섞이지 않게 한다. |
-| Semester workspace | 사용자 선택 폴더 | 자료 소유권과 장기 보존성을 유지한다. |
-
-## 제품 문서와의 경계
-
-| 제품 기획서에 남길 것 | 이 기술 메모가 소유할 것 |
-| --- | --- |
-| Codex app-server를 MVP agent runtime으로 사용한다. | app-server spawn 방식, transport, protocol schema 관리 |
-| 사용자의 학기 자료는 로컬 workspace에 남는다. | `CODEX_HOME`과 학기 workspace 분리 |
-| 사용자는 GUI에서 자료 업로드와 AI 상호작용을 한다. | local companion이 파일 변경과 app-server 이벤트를 중재하는 방식 |
-| Codex 이후 Claude Code와 OSS runtime을 고려한다. | runtime adapter interface와 runtime별 상태 격리 정책 |
+[ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)에 따라 shared layout, transport와 Host는 platform support guard를 소유하지 않는다. Platform validation이 필요해지면 실제 제품 local companion entrypoint 한곳에서 macOS 실행 경계를 검증하며, 현재 package에 다른 운영체제용 launcher 분기를 두지 않는다.
 
 ## 리스크와 대응
 
 | 리스크 | 설명 | 대응 |
 | --- | --- | --- |
-| app-server maturity | CLI reference에서 `codex app-server`는 experimental로 표시된다. | exact pin, schema generation, smoke test, release note 확인을 필수화한다. |
-| global Codex 호출 | `spawn('codex')`를 쓰면 전역 shim이 호출될 수 있다. | 앱 dependency의 bin path를 직접 resolve한다. |
-| 민감 정보가 workspace에 섞임 | `CODEX_HOME`을 학기 폴더 안에 두면 auth/session이 자료 폴더에 들어갈 수 있다. | app data directory에 `CODEX_HOME`을 둔다. |
-| optional native binary 누락 | Electron/Tauri/pkg 패키징에서 OS별 optional dependency가 빠질 수 있다. | 패키징 smoke test와 플랫폼별 bundle 검사를 추가한다. |
-| sandbox 과신 | `CODEX_HOME`과 Codex sandbox는 container 수준 격리가 아니다. | local-first MVP는 개인 디바이스 전제로 두고, cloud/multi-user는 별도 threat model을 작성한다. |
-| project config 오해 | `.codex/config.toml`은 일부 민감 설정을 override하지 못한다. | provider/auth/profile 설정은 app-managed `CODEX_HOME`에서 관리한다. |
+| global Codex 호출 | 전역 shim을 호출하면 앱이 검증한 version과 달라질 수 있다. | package-owned bin path를 명시적으로 resolve하고 version을 관측한다. |
+| runtime-home pair 분리 | 현재 override는 두 root를 독립적으로 받아 custom/default hybrid가 가능하다. | 제품 layout seam에서 두 root를 함께 계산하고 검증한다. |
+| 암묵적 `cwd` | 현재 기본값은 실행 위치에 따라 `apps/server`처럼 달라질 수 있다. | 제품에서는 명시적으로 선택한 `workspaceRoot`만 사용한다. |
+| 민감 상태 혼입 | `CODEX_HOME`을 학기 폴더에 두면 auth/session/log가 사용자 자료와 섞인다. | OS app data directory에 runtime-home pair를 둔다. |
+| optional native binary 누락 | local companion 배포 또는 후속 Desktop App packaging에서 macOS dependency가 빠질 수 있다. | macOS packaging smoke와 bundle 검사를 추가한다. |
+| host Skill·plugin 혼입 | custom `CODEX_HOME`만으로 inherited host `HOME` discovery가 모두 차단되지는 않는다. | 실제 child environment와 discovery 결과를 검증한 뒤 정책을 정한다. |
+| 학기 사이 memory 혼입 | 하나의 runtime-home pair는 학기별 memory 격리를 자동 보장하지 않는다. | Memory를 학업 source of truth로 쓰지 않고 rollover UX를 별도로 결정한다. |
+| sandbox 과신 | Codex sandbox와 approval은 OS process 격리가 아니다. | local personal-device 경계로 한정하고 cloud 전환 시 별도 threat model을 작성한다. |
+| Harness 경로 오해 | repository `.ay-ple/runtime-*`는 제품 app data 배치가 아니다. | 구현 문서에서 developer-only임을 유지하고 제품 layout과 migration을 분리한다. |
 
-## 다음 조사/구현 과제
+## 구현과 계획 연결
 
-| 우선순위 | 과제 | 산출물 |
-| --- | --- | --- |
-| P0 | package-owned Codex binary resolver 검증 | `npx ay-ple` 환경에서 전역 `codex`를 호출하지 않는 proof |
-| P0 | app-managed `CODEX_HOME` 로그인/세션 UX 확인 | 전역 `~/.codex`와 분리된 로그인 플로우 |
-| P0 | app-server stdio smoke test | `initialize`, `thread/start`, `turn/start` 최소 왕복 테스트 |
-| P1 | pinned version schema generation | generated schema와 runtime adapter type |
-| P1 | packaging 조사 | macOS desktop packaging 시 native Codex package 포함 확인 |
-| P1 | security note | local-first MVP와 cloud/multi-user 전환 시 필요한 격리 경계 비교 |
+현재 package 동작과 검증 명령은 [Runtime Harness 구현 지도](runtime-harness-implementation-map.md)와 [runtime-codex README](../../packages/runtime-codex/README.md)가 소유한다. 위 표의 후속 항목에 대한 작업 순서, 상태와 완료 조건은 [개발 백로그](../product/ay-ple-development-backlog.md)에서만 관리한다.
 
 ## 근거 링크
 

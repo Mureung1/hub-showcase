@@ -3,7 +3,7 @@ import {
   type AgentRuntimeKernelOptions,
   type RuntimeRunLog,
   type RuntimeRunLogPersistence,
-  type RuntimeRunLogPersistenceSaveResult,
+  type RuntimeRunLogPersistenceMutationResult,
 } from '../index.js'
 
 export class InMemoryRuntimeRunLogPersistence
@@ -21,9 +21,13 @@ export class InMemoryRuntimeRunLogPersistence
     return [...this.logs.values()].map(cloneRuntimeRunLog)
   }
 
+  async applyRetention(): Promise<RuntimeRunLogPersistenceMutationResult> {
+    return { removedRunIds: [] }
+  }
+
   async save(
     log: RuntimeRunLog,
-  ): Promise<RuntimeRunLogPersistenceSaveResult> {
+  ): Promise<RuntimeRunLogPersistenceMutationResult> {
     this.logs.set(log.runId, cloneRuntimeRunLog(log))
 
     return { removedRunIds: [] }

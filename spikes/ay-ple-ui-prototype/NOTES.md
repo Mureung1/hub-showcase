@@ -9,7 +9,7 @@
 | Main artifact | [index.html](index.html) |
 | Applied state | [state-accepted.html](state-accepted.html) |
 | Shared CSS | [styles.css](styles.css) |
-| Brand assets | [assets/ay-ple-logo.png](assets/ay-ple-logo.png), [assets/ay-ple-mark.png](assets/ay-ple-mark.png), [assets/ay-profile.png](assets/ay-profile.png) |
+| Brand assets | [ay-ple-logo.png](../../assets/brand/ay-ple-logo.png), [ay-ple-mark.png](../../assets/brand/ay-ple-mark.png), [ay-profile.png](../../assets/brand/ay-profile.png) |
 | Source previews | [previews/](previews/) |
 | Run command | `open spikes/ay-ple-ui-prototype/index.html` |
 | Target viewport | Designed for 1920x1080, fitted to the current browser viewport to avoid page scroll |
@@ -64,7 +64,23 @@ User feedback on 2026-07-08: mobile layout feedback was pulling effort away from
 
 | Decision | Notes |
 | --- | --- |
-| Workspace shape | TBD after peer feedback |
+| Workspace shape | 지속적으로 보이는 자료 목록 / 원본 미리보기 / AY 채팅, 대화 안의 검토 결정 |
 | Keep | TBD |
 | Change | TBD |
 | Delete | This throwaway prototype after the design answer is captured |
+
+## 발표용 guided demo
+
+| 항목 | 내용 |
+| --- | --- |
+| 검증 질문 | AI Agent를 처음 접하는 사람이 90초 안에 AY-PLE가 Agent 제품인 이유를 이해할 수 있는가? |
+| 기본 artifact | [guided-demo.html](guided-demo.html) |
+| 보조 파일 | [guided-demo.css](guided-demo.css), [guided-demo.js](guided-demo.js) |
+| 실행 명령 | `npm run demo:week1` 실행 후 `http://127.0.0.1:4174/spikes/ay-ple-ui-prototype/guided-demo.html`을 연다. |
+| 상태 | Backend, model 호출, persistence가 없는 결정적 in-memory 발표 흐름 |
+| 발표 deep link | `?variant=workspace&step=1&present=1`부터 `?step=7`까지 |
+| 조작 | 자료 선택, 정리 시작, activity/제안 action, 명시적 수락·수정·거절, 이전·다음·초기화, 키보드 화살표와 URL 상태를 제공한다. 7단계는 제안의 수락 action으로만 진입한다. |
+
+일곱 장면은 흩어진 자료, 자료 선택, 작업 위임, 사용자에게 보이는 Agent activity, 원본 근거, 사용자 검토, 확인된 학기 상태 순서로 진행한다. `workspace`는 자료 목록, 원본 미리보기와 AY 대화를 하나의 제품 경험으로 함께 보여주므로 발표 기본 view로 사용한다. `focus`는 현재 장면을 강조하고 `agent`는 action log에 더 많은 공간을 준다. Floating switcher는 throwaway prototype의 일부이며 제안하는 제품 UI가 아니다.
+
+발표 verdict는 아직 열려 있다. Peer feedback 뒤 처음 보는 사람이 AY가 하는 일과 사용자 수락이 AI 제안을 확인된 학기 상태와 구분하는 이유를 모두 설명할 수 있는지 기록한다.

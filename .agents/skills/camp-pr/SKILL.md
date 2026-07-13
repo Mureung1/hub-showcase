@@ -1,136 +1,92 @@
 ---
 name: camp-pr
-description: "Manage this repo's camp PR flow: create, update, and merge fork-local integration PRs from codex/wXdY daily branches to N180_하성욱, and create, update, or merge upstream camp submission PRs to connect-AIAgentChallenge-26-1/hub only when explicitly requested."
+description: Integrate a codex working branch into the participant fork's N180_하성욱 branch, report upstream readiness, and create, update, or merge the camp submission PR only when explicitly requested. Use when the user invokes /camp-pr, asks to collect completed work in the fork, prepare or submit camp work, or manage the N180_하성욱 submission PR.
 ---
 
 # Camp PR
 
-Manage the camp PR flow for this repo. Create, update, and merge the fork-local daily integration PR from the current `codex/w<week>d<day>` branch to `N180_하성욱`. This daily PR is an internal integration/review artifact and can be created, updated, labelled, and merged without further approval.
+Move production changes through one path:
 
-Everything from `codex/w<week>d<day>` through `swh3467:N180_하성욱` stays inside the participant's fork. Only the PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` is the camp submission surface.
+```text
+swh3467/hub의 codex/... working branch
+→ 같은 repository의 N180_하성욱 fork integration branch
+→ connect-AIAgentChallenge-26-1/hub의 N180_하성욱 upstream target
+```
 
-Do not create, update, or merge the upstream camp submission PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` unless the user explicitly asks to submit to camp or continue to the upstream camp submission PR. The final camp submission surface is the upstream PR, but it is not part of the default daily PR action.
+Use `origin` and `fork` only as local Git remote names:
 
-Treat `fork/N180_하성욱` as the source of truth for the fork integration branch. A local `N180_하성욱` branch is only a convenience checkout and must not be used for range calculations or readiness checks unless it has just been refreshed from `fork/N180_하성욱`.
+| Role | GitHub repository and branch | Local Git ref |
+| --- | --- | --- |
+| Working branch | `swh3467/hub`의 `codex/w<week>d<day>` 또는 명시적으로 선택한 `codex/<work>` | `codex/...`, 게시 후 `fork/codex/...` |
+| Fork integration | `swh3467/hub`의 `N180_하성욱` | `fork/N180_하성욱` |
+| Upstream target | `connect-AIAgentChallenge-26-1/hub`의 `N180_하성욱` | `origin/N180_하성욱` |
 
-Use different body conventions for the two PRs:
+Do not combine repository owners with remote names. Use `swh3467/hub` plus branch `N180_하성욱` when describing GitHub, or `fork/N180_하성욱` when describing a local remote-tracking ref.
 
-| PR | Body convention |
-| --- | --- |
-| Daily integration PR | Local/Matt-style work brief: `Summary`, `Key Changes`, `Verification`, `Risks / Follow-ups`, and links to PRDs, issues, spike reports, or handoffs. Merge automatically after creation/update unless blocked. |
-| Upstream camp submission PR | Only when explicitly requested: `.github/pull_request_template.md` exactly, including `주요 작업 리스트`, `내가 설명할 수 있는 부분`, `아직 이해 못 한 부분`, and `새로 알게 된 것`. |
+Prototype evidence branches such as `prototype/<slug>` are primary-source archives, not production working branches. Never select or merge them through this flow unless the user explicitly reclassifies their contents as production work on a `codex/...` branch.
 
-Use the camp week/day as the daily branch identity:
+## Authorization
 
-| Concern | Convention |
-| --- | --- |
-| Daily work branch | Use `codex/w<week>d<day>`, for example `codex/w1d4`. This mirrors the camp mission day while keeping the branch ASCII and CLI-friendly. |
-| Fork integration branch | Use `swh3467:N180_하성욱`, checked locally as `fork/N180_하성욱`. This is still inside the participant's fork. |
-| Upstream camp submission branch | Use `connect-AIAgentChallenge-26-1/hub:N180_하성욱` as the base and `swh3467:N180_하성욱` as the head. |
-| Camp mission labels | Use the camp-provided labels with the same week/day prefix, for example `[1-3] 기획완성`, `[1-3] 프로토타이핑`, or `[1-4] design-system`. Labels describe the submitted mission category on PRs. |
-
-When creating or updating PRs, discover available labels before writing the PR and apply the relevant camp labels. Prefer labels whose bracket prefix matches the current daily branch, such as `[1-4]` for `codex/w1d4`. If multiple labels for that day are relevant, apply all of them. If the correct label is unclear and the user is not available, choose the smallest set that matches the changed work and state the assumption in the final report.
+- On a normal `/camp-pr` invocation, integrate the selected working branch into `fork/N180_하성욱` and report upstream readiness.
+- Create or update the upstream camp submission PR only when the user explicitly asks to submit to camp or continue the upstream submission.
+- Merge the upstream camp submission PR only when the user explicitly asks to merge it. A request to submit authorizes PR creation or update, not merge.
+- Create, update, and merge the fork-local integration PR without another approval. It is an internal review artifact in the participant's fork.
 
 ## Process
 
-### 1. Ground the branch and repo
+### 1. Ground the refs
 
-Read `AGENTS.md` and `docs/agents/issue-tracker.md`. Read `.github/pull_request_template.md` only before preparing or updating the upstream camp submission PR.
+Read `AGENTS.md`. Read `docs/agents/issue-tracker.md` when linked Matt artifacts or PR triage rules matter. Read `.github/pull_request_template.md` only for an upstream submission.
 
-Fetch `fork` and `origin` before comparing branches, checking labels, or checking existing PRs.
+Fetch both remotes before comparisons or PR operations. Treat `fork/N180_하성욱` as the fork integration source of truth and `origin/N180_하성욱` as the upstream target.
 
-Determine the daily branch without asking for confirmation:
+Select the source branch as follows:
 
-- Prefer the current branch when it matches `codex/w<week>d<day>`, such as `codex/w1d4`.
-- Otherwise use the branch the user named.
-- If neither is available, infer the most likely local `codex/w<week>d<day>` branch.
-- If multiple branches are equally likely, stop and report the ambiguity instead of guessing.
+1. Use the user-named `codex/...` branch when provided.
+2. Otherwise use the current branch when it matches `codex/w<week>d<day>` or another explicit `codex/<work>` name.
+3. Stop on ambiguity, a detached HEAD, `main`, either `N180_하성욱`, or a `prototype/...` evidence branch; do not invent another branch layer.
 
-Stop before PR work if:
+Stop before PR work when the tracked working tree is dirty, either remote is missing, the source branch is unavailable, or `fork/N180_하성욱` cannot be fetched.
 
-- The daily branch is not found.
-- The tracked working tree is dirty.
-- `fork` remote is missing.
-- `origin` remote is missing.
-- `fork/N180_하성욱` is not available after fetching `fork`.
+### 2. Integrate the working branch into the fork
 
-Check the current camp labels:
+Inspect the source branch against the fetched integration branch:
 
-- List labels on `origin`, because the upstream repo owns the official camp labels.
-- List labels on `fork`, because the daily PR also needs matching labels if they exist there.
-- Determine the relevant mission labels from the upstream label list before creating PRs.
-- For the fork daily PR, create missing matching labels on `fork` only when the upstream label exists and local permissions allow it. If label creation or application fails, continue the PR flow and report the label failure.
+- `git log --oneline fork/N180_하성욱..<source-branch>`
+- `git diff --name-status fork/N180_하성욱...<source-branch>`
+- Relevant specs, implementation tickets, Wayfinder decisions, ADRs, spike reports, handoffs, and verification results referenced by the commits or changed files
 
-### 2. Gather source material
+If the source branch is already contained in `fork/N180_하성욱`, skip PR creation and continue to readiness reporting.
 
-Inspect the daily branch against the fetched fork integration branch:
+Otherwise:
 
-- `git log --oneline fork/N180_하성욱..<daily-branch>`
-- `git diff --name-status fork/N180_하성욱...<daily-branch>`
-- Relevant existing work PR bodies, spike reports, PRDs, issues, handoff docs, and ADRs referenced by the commits or changed files
+1. Draft an integration PR with `Summary`, `Key Changes`, `Verification`, and `Risks / Follow-ups`.
+2. Push the source branch to `fork`.
+3. Create or update the PR in `swh3467/hub` with base `N180_하성욱` and head `<source-branch>`.
+4. Do not copy camp mission labels to this fork-local PR.
+5. Merge the PR with a normal merge commit unless conflicts, branch protection, permissions, or another hard blocker prevent it. Preserve the source branch.
+6. Fetch `fork` again and verify `git merge-base --is-ancestor <source-branch> fork/N180_하성욱`.
 
-Use this material to draft candidate PR content, but do not create the PR yet.
+### 3. Report upstream readiness
 
-### 3. Draft the daily PR body
+Compare fetched `fork/N180_하성욱` with `origin/N180_하성욱` and check for an existing upstream PR. Report:
 
-Use the local daily integration convention. The agent writes this PR body directly from the gathered material; do not interview section by section for the daily PR.
-
-Use this structure:
-
-1. PR title
-2. `Summary`
-3. `Key Changes`
-4. `Verification`
-5. `Risks / Follow-ups`
-
-Link source material rather than forcing camp reflection content into the daily PR. If important context is genuinely missing, make a conservative assumption and note it under `Risks / Follow-ups`.
-
-### 4. Create, update, and merge the daily PR
-
-Do not ask the user to approve the daily PR body or merge. The daily PR is an agent-written internal integration artifact inside the user's fork.
-
-Push the daily branch to `fork`.
-
-Check for an existing open PR from `swh3467:<daily-branch>` to `swh3467:N180_하성욱`.
-
-- If one exists, update its title and body with the agent-written daily PR content.
-- If none exists, create a PR with base `N180_하성욱` and head `<daily-branch>`.
-
-Apply the relevant camp labels to the daily PR after it exists. These labels are review metadata only; do not force camp reflection content into the daily PR body.
-
-Merge the daily PR into `swh3467:N180_하성욱` after it exists and labels have been applied. Prefer a normal merge commit when available, preserve the daily branch unless the user explicitly asks to delete it, and continue without merging only when GitHub reports conflicts, branch protection, missing permissions, or another hard blocker. After merging, fetch `fork/N180_하성욱` again and keep the PR URL for the final report. Do not treat this fork PR as the final camp submission.
-
-### 5. Report upstream submission readiness
-
-Fetch `fork` and `origin`, then check whether the daily branch is already contained in `fork/N180_하성욱`.
-
-- `git merge-base --is-ancestor <daily-branch> fork/N180_하성욱` succeeds.
-
-Always report the upstream submission readiness status, but do not create, update, or merge the upstream camp submission PR unless the user explicitly asked for camp submission in this turn.
-
-If the daily branch is not contained in `fork/N180_하성욱` after the daily PR merge step, do not claim that the latest daily work has been submitted. Report:
-
-- The daily PR URL
+- The fork integration PR URL, or that the source branch was already integrated
+- Whether `fork/N180_하성욱` contains the selected source branch
+- Whether the fork integration branch has changes not yet in the upstream target
 - Whether an upstream submission PR already exists
-- That the upstream submission PR cannot include the latest daily work until `fork/N180_하성욱` contains `<daily-branch>`
 
-If the daily branch is contained in `fork/N180_하성욱`, check for an open upstream PR from `swh3467:N180_하성욱` to `connect-AIAgentChallenge-26-1/hub:N180_하성욱` and report whether it exists.
+Do not equate the fork integration PR with camp submission.
 
-### 6. Ensure the upstream submission PR, only when explicitly requested
+### 4. Submit upstream only when requested
 
-Run this section only when the user explicitly asks to submit to camp or continue to the upstream camp submission PR.
+When the user explicitly asks to submit to camp:
 
-Before creating or updating the upstream PR, read `.github/pull_request_template.md` and prepare a separate camp submission body. This is the only interview-based PR flow in this skill. Ask one question at a time for any missing or uncertain template section:
+1. Read `.github/pull_request_template.md`.
+2. Summarize the accumulated diff from `origin/N180_하성욱` to `fork/N180_하성욱`, not only the latest working branch.
+3. Ask one question at a time for any missing template content.
+4. Create or update the PR in `connect-AIAgentChallenge-26-1/hub` with base `N180_하성욱` and head `swh3467:N180_하성욱`.
+5. Apply only upstream camp labels that the user named or that are unambiguous from the submission. Ask when multiple plausible labels remain.
+6. Leave the upstream PR open unless the user separately asks to merge it.
 
-1. Upstream PR title
-2. `주요 작업 리스트`
-3. `내가 설명할 수 있는 부분`
-4. `아직 이해 못 한 부분`
-5. `새로 알게 된 것`
-
-- If an upstream PR exists, update its title and body with the interview-confirmed camp submission content.
-- If none exists, create it with base `N180_하성욱`, head `swh3467:N180_하성욱`, and the interview-confirmed camp submission content.
-
-Apply the same relevant camp labels to the upstream submission PR. Use only labels that exist on the upstream repository. If label application fails because of permissions, report it explicitly.
-
-Report both PR URLs when finished. The daily PR URL alone is not enough for camp submission.
+After an explicitly requested upstream merge, fetch both remotes and report the upstream PR URL and final branch containment state.

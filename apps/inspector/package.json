@@ -10,11 +10,13 @@
     "test:e2e": "NODE_OPTIONS=--conditions=development playwright test --config playwright.config.ts",
     "typecheck": "tsc -b",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "serve:week1-demo": "vite ../.. --host 127.0.0.1 --port 4174 --strictPort --open /artifacts/week1-demo/"
   },
   "dependencies": {
     "@ay-ple/runtime-codex": "0.0.0",
     "@ay-ple/runtime-core": "0.0.0",
+    "lucide-react": "^1.24.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

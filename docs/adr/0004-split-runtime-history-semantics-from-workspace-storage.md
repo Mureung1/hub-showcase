@@ -1,6 +1,10 @@
 # Runtime history 의미와 workspace storage 구현을 분리한다
 
-Status: accepted
+분류: 활성
+
+성숙도: 채택
+
+범위: Runtime Harness 한정
 
 Runtime Diagnostic History는 server 재시작을 견디는 bounded developer diagnostic data다. Lifecycle 의미와 저장 구현이 여러 module로 흩어지지 않도록 `runtime-core`가 persistence seam과 recovery semantics를 소유하고, `apps/server`가 workspace 환경에 맞는 concrete storage adapter를 조립한다.
 
@@ -10,9 +14,8 @@ Runtime Diagnostic History는 server 재시작을 견디는 bounded developer di
 - `AgentRuntimeKernel`은 lifecycle snapshot을 언제 저장할지와 재시작 후 non-terminal run을 어떻게 복구할지 결정한다.
 - 영속 record는 normalized lifecycle과 `debugLog`를 포함한 self-contained RuntimeRunLog다.
 - 재시작 시 남아 있는 `running` 또는 `cancelling` run은 partial output과 debug evidence를 보존한 채 normalized `failed` 상태로 닫는다.
-- `apps/server`는 workspace-local path, retention 설정, per-run JSON snapshot adapter를 소유하고 kernel에 주입한다.
-- Snapshot은 `.ay-ple/runtime-harness/runs/<uuid>.json`에 `{ schemaVersion, savedAt, log }` envelope로 저장한다.
-- 같은 directory의 임시 파일을 flush한 뒤 canonical file로 rename해 run 하나의 snapshot을 atomic하게 교체한다.
+- `apps/server`는 repository-local developer diagnostic store, retention 설정과 per-run JSON snapshot adapter를 소유하고 kernel에 주입한다.
+- Snapshot은 versioned envelope로 저장하고 같은 directory의 임시 파일을 flush한 뒤 canonical file로 rename해 run 하나의 snapshot을 atomic하게 교체한다.
 - Kernel은 UUID 기반 run ID를 사용하고, 저장된 history의 hydration과 non-terminal recovery를 마친 뒤 ready가 된다.
 - Run 시작 snapshot은 runtime adapter를 실행하기 전에 저장한다. `started`, `cancelling`, terminal 상태는 저장된 뒤 caller와 subscriber에 공개한다.
 - Streaming output과 debug evidence는 per-run 순서를 유지하며 coalesce하고, terminal 전에는 반드시 flush한다.
@@ -41,4 +44,4 @@ Runtime Diagnostic History는 server 재시작을 견디는 bounded developer di
 - Mid-run persistence failure는 memory-only 실행으로 조용히 전환하지 않는다. 해당 run을 중단하고 persistence 상태를 degraded로 드러낸 뒤 새 run을 거부한다.
 - Whole-snapshot rewrite와 최근 coalesced evidence의 crash loss window는 이 선택의 비용이다. 실제 측정에서 문제가 되면 같은 persistence seam 뒤의 JSONL 또는 SQLite adapter를 다시 검토한다.
 
-이 ADR은 JSON envelope의 세부 schema, streaming write의 batching 수치, persistence error의 HTTP payload는 결정하지 않는다. 해당 선택은 Runtime Harness Hardening PRD와 issue acceptance criteria에서 정한다.
+이 ADR은 실제 directory, JSON envelope의 세부 schema, streaming write의 batching 수치와 persistence error의 HTTP payload를 결정하지 않는다. 현재 구현은 [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md)와 [server README](../../apps/server/README.md)가 소유한다.

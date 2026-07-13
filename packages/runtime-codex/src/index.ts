@@ -14,6 +14,26 @@ export {
   type CodexRuntimeStatus,
 } from './status.js'
 export {
+  prepareProductRuntimeLayout,
+  ProductRuntimeLayoutError,
+  type ProductRuntimeLayout,
+  type ProductRuntimeLayoutFailureCode,
+  type ProductRuntimeLayoutInput,
+  type ProductRuntimeRootName,
+} from './product-runtime-layout.js'
+export {
+  HeadlessCodexClientHost,
+  HeadlessCodexClientHostError,
+  HeadlessCodexClientHostSubscriptionError,
+  type HeadlessCodexClientHostEvent,
+  type HeadlessCodexClientHostFailure,
+  type HeadlessCodexClientHostFailureCode,
+  type HeadlessCodexClientHostOptions,
+  type HeadlessCodexClientHostSnapshot,
+  type HeadlessCodexClientHostStatus,
+  type HeadlessCodexClientHostSubscription,
+} from './headless-codex-client-host.js'
+export {
   CodexRawClient,
   ensureCodexRuntimeHome,
   resolveDefaultCodexRuntimeHome,

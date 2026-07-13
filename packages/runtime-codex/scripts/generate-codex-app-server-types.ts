@@ -1,15 +1,20 @@
 import { spawnSync } from 'node:child_process'
 import {
+  copyFileSync,
   existsSync,
+  mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolvePackageCodexBinPath } from '../src/raw-client.js'
+import { clientRequestResponseContracts } from '../src/internal/codex-app-server-protocol/client-request-response-contract.js'
+import { serverRequestResponseContracts } from '../src/internal/codex-app-server-protocol/server-request-response-contract.js'
 
 const scriptPath = fileURLToPath(import.meta.url)
 const packageRoot = resolve(dirname(scriptPath), '..')
@@ -21,30 +26,35 @@ const outputDir = join(
   'generated',
 )
 const codexBinPath = resolvePackageCodexBinPath(packageRoot)
-
 rmSync(outputDir, { recursive: true, force: true })
 
-const result = spawnSync(
-  codexBinPath,
-  ['app-server', 'generate-ts', '--out', outputDir],
-  {
-    cwd: packageRoot,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  },
+runCodexGenerator(['app-server', 'generate-ts', '--out', outputDir])
+
+const schemaOutputDir = mkdtempSync(
+  join(tmpdir(), 'ay-ple-codex-app-server-schema-'),
 )
 
-if (result.error) {
-  throw result.error
-}
-
-if (result.status !== 0) {
-  const detail = [toOutput(result.stdout), toOutput(result.stderr)]
-    .filter((part) => part.trim().length > 0)
-    .join('\n')
-  throw new Error(
-    `codex app-server generate-ts exited with code ${result.status}${detail ? `\n${detail}` : ''}`,
+try {
+  runCodexGenerator([
+    'app-server',
+    'generate-json-schema',
+    '--out',
+    schemaOutputDir,
+  ])
+  copyFileSync(
+    join(schemaOutputDir, 'ServerRequest.json'),
+    join(outputDir, 'ServerRequest.schema.json'),
   )
+  writeFileSync(
+    join(outputDir, 'ClientRequestResponses.schema.json'),
+    `${JSON.stringify(readResponseSchemas(schemaOutputDir, clientRequestResponseContracts), null, 2)}\n`,
+  )
+  writeFileSync(
+    join(outputDir, 'ServerRequestResponses.schema.json'),
+    `${JSON.stringify(readResponseSchemas(schemaOutputDir, serverRequestResponseContracts), null, 2)}\n`,
+  )
+} finally {
+  rmSync(schemaOutputDir, { recursive: true, force: true })
 }
 
 for (const filePath of listTypeScriptFiles(outputDir)) {
@@ -61,6 +71,27 @@ for (const filePath of listTypeScriptFiles(outputDir)) {
 }
 
 console.log(`Generated Codex app-server protocol types in ${outputDir}`)
+
+function runCodexGenerator(args: string[]): void {
+  const result = spawnSync(codexBinPath, args, {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+
+  if (result.error) {
+    throw result.error
+  }
+
+  if (result.status !== 0) {
+    const detail = [toOutput(result.stdout), toOutput(result.stderr)]
+      .filter((part) => part.trim().length > 0)
+      .join('\n')
+    throw new Error(
+      `codex ${args.join(' ')} exited with code ${result.status}${detail ? `\n${detail}` : ''}`,
+    )
+  }
+}
 
 function listTypeScriptFiles(dir: string): string[] {
   const files: string[] = []
@@ -79,6 +110,22 @@ function listTypeScriptFiles(dir: string): string[] {
   }
 
   return files
+}
+
+function readResponseSchemas(
+  schemaOutputDir: string,
+  contracts: Record<string, { schemaPath: string }>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(contracts).map(([method, contract]) => {
+      return [
+        method,
+        JSON.parse(
+          readFileSync(join(schemaOutputDir, contract.schemaPath), 'utf8'),
+        ) as unknown,
+      ]
+    }),
+  )
 }
 
 function toNodeNextImportPath(filePath: string, importPath: string): string {
