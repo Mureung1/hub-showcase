@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보쇼 — 디자인 시안 (S2 알림 리스트)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  /* ========== 공통 토큰 (두 버전이 공유) ========== */
+  :root {
+    --bg: #0e0e12;            /* 앱 배경 */
+    --surface: #17171d;       /* 카드 */
+    --surface-2: #1f1f27;     /* 칩, 뱃지 바탕 */
+    --line: #2a2a33;          /* 구분선 */
+    --text-1: #f2f2f5;        /* 제목 */
+    --text-2: #a9a9b4;        /* 본문 */
+    --text-3: #6b6b77;        /* 보조(출처, 날짜) */
+    --warn: #f2b8b5;          /* 임박(D-2 이하) 전용 */
+    --radius-card: 16px;
+    --radius-chip: 999px;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px;
+    --space-4: 16px; --space-5: 24px;
+    --fs-caption: 11px; --fs-body: 13px; --fs-title: 15px; --fs-display: 22px;
+  }
+  /* ========== 포인트색 토큰 — 이 4줄만 다름 ========== */
+  .theme-violet {
+    --accent: #a78bfa;
+    --accent-dim: rgba(167,139,250,.14);
+    --hero-a: #2b1f4d; --hero-b: #6d3a8f; --hero-c: #c96f8e;
+  }
+  .theme-cyan {
+    --accent: #4dd6e8;
+    --accent-dim: rgba(77,214,232,.13);
+    --hero-a: #0f2440; --hero-b: #14536b; --hero-c: #2fa7a0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+    background: #08080b;
+    color: #e8e8ec;
+    min-height: 100vh;
+    padding: 48px 24px 64px;
+  }
+  .page-head { text-align: center; margin-bottom: 40px; }
+  .page-head h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .page-head p { font-size: 13px; color: #8a8a96; margin-top: 8px; line-height: 1.6; }
+
+  .compare { display: flex; gap: 48px; justify-content: center; flex-wrap: wrap; }
+  .variant { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .variant-label { font-size: 13px; font-weight: 600; color: #b8b8c2; }
+  .variant-label span { color: #6b6b77; font-weight: 400; }
+
+  /* ========== 폰 프레임 ========== */
+  .phone {
+    width: 340px; height: 660px;
+    background: var(--bg);
+    border-radius: 28px;
+    border: 1px solid #26262e;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+  .scroll { flex: 1; overflow-y: auto; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* ========== 히어로 (감성 영역) ========== */
+  .hero {
+    position: relative;
+    height: 150px;
+    padding: var(--space-4) var(--space-4) var(--space-3);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    background:
+      radial-gradient(120% 90% at 85% 0%, var(--hero-c) 0%, transparent 55%),
+      radial-gradient(140% 110% at 15% 10%, var(--hero-b) 0%, transparent 60%),
+      linear-gradient(180deg, var(--hero-a) 0%, var(--bg) 100%);
+  }
+  /* 도시 실루엣 — 레퍼런스의 "창밖 풍경" 느낌을 CSS만으로 */
+  .hero::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: 0; height: 56px;
+    background:
+      linear-gradient(transparent 0, transparent 100%),
+      conic-gradient(from 90deg at 50% 100%, transparent 0deg, transparent 360deg);
+    background-color: transparent;
+    -webkit-mask: none;
+    background-image:
+      linear-gradient(#0e0e12ee, #0e0e12ee);
+    clip-path: polygon(0 100%, 0 62%, 6% 62%, 6% 40%, 13% 40%, 13% 70%, 20% 70%, 20% 30%, 24% 30%, 24% 22%, 29% 22%, 29% 58%, 37% 58%, 37% 44%, 44% 44%, 44% 66%, 52% 66%, 52% 36%, 57% 36%, 57% 50%, 64% 50%, 64% 26%, 70% 26%, 70% 60%, 78% 60%, 78% 46%, 85% 46%, 85% 68%, 92% 68%, 92% 52%, 100% 52%, 100% 100%);
+    opacity: .85;
+  }
+  .hero-date { font-size: var(--fs-caption); color: rgba(255,255,255,.75); font-weight: 500; letter-spacing: .04em; position: relative; z-index: 1; }
+  .hero-greet { font-size: var(--fs-display); font-weight: 700; color: #fff; letter-spacing: -0.02em; margin-top: var(--space-1); position: relative; z-index: 1; }
+  .hero-sub { font-size: var(--fs-body); color: rgba(255,255,255,.72); margin-top: var(--space-1); position: relative; z-index: 1; }
+  .hero-sub b { color: #fff; font-weight: 600; }
+
+  /* ========== 필터 칩 ========== */
+  .chips {
+    display: flex; gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    overflow-x: auto; scrollbar-width: none;
+    position: sticky; top: 0;
+    background: linear-gradient(var(--bg) 82%, transparent);
+    z-index: 2;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto;
+    font-size: var(--fs-caption); font-weight: 600;
+    padding: 7px 13px;
+    border-radius: var(--radius-chip);
+    background: var(--surface-2); color: var(--text-2);
+    border: 1px solid transparent;
+  }
+  .chip.on { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+
+  /* ========== 알림 카드 ========== */
+  .cards { padding: var(--space-1) var(--space-4) var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
+  }
+  .card-top { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+  .dday {
+    font-size: var(--fs-caption); font-weight: 700;
+    padding: 3px 9px; border-radius: 6px;
+    background: var(--accent-dim); color: var(--accent);
+  }
+  .dday.urgent { background: rgba(242,184,181,.14); color: var(--warn); }
+  .src { margin-left: auto; font-size: var(--fs-caption); color: var(--text-3); font-weight: 500; }
+  .card-title { font-size: var(--fs-title); font-weight: 600; color: var(--text-1); letter-spacing: -0.01em; line-height: 1.45; }
+  .card-sum { font-size: var(--fs-body); color: var(--text-2); line-height: 1.6; margin-top: var(--space-2); }
+  .card-kw { display: inline-block; margin-top: var(--space-3); font-size: var(--fs-caption); color: var(--accent); font-weight: 600; }
+  .card.done { opacity: .45; }
+  .card.done .card-title { text-decoration: line-through; text-decoration-color: var(--text-3); }
+
+  /* ========== 하단 탭 ========== */
+  .tabbar {
+    display: flex; border-top: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .tab {
+    flex: 1; text-align: center;
+    padding: var(--space-3) 0 14px;
+    font-size: var(--fs-caption); font-weight: 600; color: var(--text-3);
+  }
+  .tab.on { color: var(--accent); }
+  .tab .ico { display: block; font-size: 16px; margin-bottom: 3px; }
+
+  /* ========== 토큰 범례 ========== */
+  .legend { display: flex; gap: 10px; align-items: center; }
+  .sw { width: 22px; height: 22px; border-radius: 6px; border: 1px solid #2c2c34; }
+  .legend-note { font-size: 11px; color: #6b6b77; }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>보쇼 — S2 디자인 시안</h1>
+  <p>구조·코드 100% 동일, 포인트색 토큰 4줄만 교체한 두 버전<br>히어로(감성) / 리스트(절제) 분리 원칙 적용</p>
+</div>
+
+<div class="compare">
+
+  <!-- ===== A안: 보라 (Notion 레퍼런스 계열) ===== -->
+  <div class="variant theme-violet">
+    <div class="variant-label">A. 보라 <span>— Life Planner 레퍼런스 톤</span></div>
+    <div class="phone">
+      <div class="scroll">
+        <div class="hero">
+          <div class="hero-date">7월 10일 금요일</div>
+          <div class="hero-greet">두희님, 안녕하세요</div>
+          <div class="hero-sub">마감 임박 알림이 <b>2건</b> 있어요</div>
+        </div>
+        <div class="chips">
+          <div class="chip on">전체</div>
+          <div class="chip">장학금</div>
+          <div class="chip">취업</div>
+          <div class="chip">학사</div>
+        </div>
+        <div class="cards">
+          <div class="card">
+            <div class="card-top"><span class="dday urgent">D-2 · 중요</span><span class="src">포털</span></div>
+            <div class="card-title">2026-2학기 국가장학금 1차 신청 마감</div>
+            <div class="card-sum">7월 12일(일) 18:00 마감. 신입생도 1차 신청 대상 — 놓치면 2차는 성적 기준이 붙어요.</div>
+            <span class="card-kw"># 장학금</span>
+          </div>
+          <div class="card">
+            <div class="card-top"><span class="dday">D-5</span><span class="src">이메일</span></div>
+            <div class="card-title">SW중심대학 여름 부트캠프 참가자 모집</div>
+            <div class="card-sum">AI·로봇 트랙 포함. 학과 사무실 발신 — 선착순 마감이라 조기 종료될 수 있어요.</div>
+            <span class="card-kw"># 취업</span>
+          </div>
+          <div class="card">
+            <div class="card-top"><span class="dday">D-9</span><span class="src">포털</span></div>
+            <div class="card-title">2학기 수강신청 장바구니 오픈 안내</div>
+            <div class="card-sum">7월 19일(일) 10:00 오픈. 시간표 초안을 미리 짜두면 오픈 당일이 편해요.</div>
+            <span class="card-kw"># 학사</span>
+          </div>
+          <div class="card done">
+            <div class="card-top"><span class="dday">완료 ✓</span><span class="src">이메일</span></div>
+            <div class="card-title">등록금 납부 확인서 발급 안내</div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on"><span class="ico">☰</span>홈</div>
+        <div class="tab"><span class="ico">⚙</span>설정</div>
+      </div>
+    </div>
+    <div class="legend">
+      <div class="sw" style="background:#0e0e12"></div>
+      <div class="sw" style="background:#17171d"></div>
+      <div class="sw" style="background:#a78bfa"></div>
+      <div class="sw" style="background:#f2b8b5"></div>
+      <span class="legend-note">배경 · 카드 · 포인트 · 임박</span>
+    </div>
+  </div>
+
+  <!-- ===== B안: 시안 (포트폴리오 계열) ===== -->
+  <div class="variant theme-cyan">
+    <div class="variant-label">B. 시안 <span>— 포트폴리오 톤 연장</span></div>
+    <div class="phone">
+      <div class="scroll">
+        <div class="hero">
+          <div class="hero-date">7월 10일 금요일</div>
+          <div class="hero-greet">두희님, 안녕하세요</div>
+          <div class="hero-sub">마감 임박 알림이 <b>2건</b> 있어요</div>
+        </div>
+        <div class="chips">
+          <div class="chip on">전체</div>
+          <div class="chip">장학금</div>
+          <div class="chip">취업</div>
+          <div class="chip">학사</div>
+        </div>
+        <div class="cards">
+          <div class="card">
+            <div class="card-top"><span class="dday urgent">D-2 · 중요</span><span class="src">포털</span></div>
+            <div class="card-title">2026-2학기 국가장학금 1차 신청 마감</div>
+            <div class="card-sum">7월 12일(일) 18:00 마감. 신입생도 1차 신청 대상 — 놓치면 2차는 성적 기준이 붙어요.</div>
+            <span class="card-kw"># 장학금</span>
+          </div>
+          <div class="card">
+            <div class="card-top"><span class="dday">D-5</span><span class="src">이메일</span></div>
+            <div class="card-title">SW중심대학 여름 부트캠프 참가자 모집</div>
+            <div class="card-sum">AI·로봇 트랙 포함. 학과 사무실 발신 — 선착순 마감이라 조기 종료될 수 있어요.</div>
+            <span class="card-kw"># 취업</span>
+          </div>
+          <div class="card">
+            <div class="card-top"><span class="dday">D-9</span><span class="src">포털</span></div>
+            <div class="card-title">2학기 수강신청 장바구니 오픈 안내</div>
+            <div class="card-sum">7월 19일(일) 10:00 오픈. 시간표 초안을 미리 짜두면 오픈 당일이 편해요.</div>
+            <span class="card-kw"># 학사</span>
+          </div>
+          <div class="card done">
+            <div class="card-top"><span class="dday">완료 ✓</span><span class="src">이메일</span></div>
+            <div class="card-title">등록금 납부 확인서 발급 안내</div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on"><span class="ico">☰</span>홈</div>
+        <div class="tab"><span class="ico">⚙</span>설정</div>
+      </div>
+    </div>
+    <div class="legend">
+      <div class="sw" style="background:#0e0e12"></div>
+      <div class="sw" style="background:#17171d"></div>
+      <div class="sw" style="background:#4dd6e8"></div>
+      <div class="sw" style="background:#f2b8b5"></div>
+      <span class="legend-note">배경 · 카드 · 포인트 · 임박</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
