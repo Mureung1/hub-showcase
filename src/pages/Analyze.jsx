@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import PhotoUpload from '../components/PhotoUpload.jsx'
+import LabelScan from '../components/LabelScan.jsx'
 import MealTypePicker from '../components/MealTypePicker.jsx'
 import NutritionCard from '../components/NutritionCard.jsx'
 import Spinner from '../components/Spinner.jsx'
@@ -21,6 +22,7 @@ import {
   fillMissingNutrients,
   isMealAnalysis,
   isNutrientSet,
+  isNutrientSetOrNull,
   NUTRITION_SOURCE,
   resolveConsumedGrams,
   scaleNutrients,
@@ -245,6 +247,97 @@ async function resolveTextAnalysis(menuName, brand) {
   return parsed
 }
 
+// 영양성분표(포장지 뒷면) 사진에서 표기된 수치를 "그대로 추출"한다 — 추정이 아니다. 표에 없는 값은
+// null로 남겨야 하므로, 이 경로의 아이템은 isNutrientSet이 아니라 isNutrientSetOrNull로 검증한다.
+//
+// 라벨의 영양성분 수치는 보통 "1회 제공량"(예: 30g) 기준으로 인쇄돼 있는데, 실제로는 포장 전체
+// (총 내용량, 예: 137g)를 먹는 경우가 많다. 그래서 1회 제공량 수치는 그대로 추출하되, 사진에
+// "총 내용량"도 함께 보이면 별도로 읽어서(servingSize/totalWeight) 아래 resolveLabelScan에서
+// 식약처 DB 스케일링과 동일한 scaleNutrients로 총량 기준으로 환산한다. 총 내용량을 못 찾으면
+// 라벨에 인쇄된 값(1회 제공량 기준) 그대로 쓴다 — 없는 값을 만들어내지 않는다는 원칙은 유지한다.
+const LABEL_SCAN_SYSTEM_PROMPT = `당신은 포장식품 영양성분표를 정확히 읽어내는 전문가다. 사진 속 영양성분표(포장지 뒷면 등)에 인쇄된 수치를 표기된 그대로 옮겨 적는다. 절대 추정하지 않는다 — 표에 명시된 숫자만 쓰고, 표에 없거나 흐릿해서 읽을 수 없는 항목은 반드시 null로 남긴다. 영양성분 수치는 "1회 제공량" 기준 값을 우선 쓰고, 100g당 수치와 1회 제공량 수치가 함께 있으면 1회 제공량 쪽을 쓴다. 이와 별개로, 사진에 "1회 제공량"(예: 30g)과 "총 내용량"(예: 137g)이 함께 보이면 그 두 값도 각각 servingSize/totalWeight에 그램(g) 단위로 담아라 — 안 보이면 null로 남긴다. 설명이나 마크다운, 계산 근거 없이 JSON만 반환한다.`
+
+function buildLabelScanPrompt() {
+  return `이 영양성분표 사진을 읽어서 표기된 수치를 그대로 추출해줘.
+
+설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
+{
+  "source": "label",
+  "servingSize": { "value": 0, "unit": "g" },
+  "totalWeight": { "value": 0, "unit": "g" },
+  "items": [
+    { "name": "제품명(표에 있으면, 없으면 \\"영양성분표\\")", "brand": "브랜드명(표에 없으면 null)", "nutrients": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0 } }
+  ],
+  "total": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0 }
+}
+표에서 찾을 수 없는 값은 반드시 null로 남겨라(추정해서 채우지 마라). servingSize/totalWeight를 사진에서 못 찾으면 각각 null로 남겨라.`
+}
+
+function isLabelScanResult(value) {
+  return (
+    Boolean(value) &&
+    Array.isArray(value.items) &&
+    value.items.length > 0 &&
+    value.items.every((item) => item && typeof item.name === 'string' && isNutrientSetOrNull(item.nutrients))
+  )
+}
+
+// 사진 경로·텍스트 경로와 달리 식별/추정이 아니라 "읽기"라서 결과의 source는 항상 LABEL로 고정한다.
+async function resolveLabelScan(photo) {
+  let text
+  try {
+    text = await geminiCompleteWithRetry({
+      prompt: buildLabelScanPrompt(),
+      system: LABEL_SCAN_SYSTEM_PROMPT,
+      imageBase64: photo.base64,
+      mimeType: photo.mimeType,
+    })
+  } catch (err) {
+    console.error('label scan (gemini) failed:', err)
+    if (err.status === 429) {
+      throw new Error('요청이 많아 지연되고 있어요. 잠시 후 다시 시도해주세요.')
+    }
+    throw new Error('스캔 요청에 실패했습니다. 잠시 후 다시 시도해주세요.')
+  }
+
+  const raw = parseJsonLoose(text)
+  if (!isLabelScanResult(raw)) {
+    throw new Error('영양성분표를 읽지 못했습니다. 표가 잘 보이게 다시 찍어주세요.')
+  }
+
+  // 사진에 1회 제공량과 총 내용량이 함께 보였다면 총량 기준으로 환산한다(식약처 DB 스케일링과
+  // 동일하게 scaleNutrients 재사용 — null은 그대로 null로 보존됨). 단위가 다르면(예: g vs ml)
+  // 안전하게 스케일을 건너뛰고, 총 내용량을 못 찾았거나 1회 제공량과 값이 같으면 라벨 그대로 쓴다.
+  const servingSize = raw.servingSize?.value
+  const totalWeight = raw.totalWeight?.value
+  const sameUnit = !raw.servingSize?.unit || !raw.totalWeight?.unit || raw.servingSize.unit === raw.totalWeight.unit
+  const canScale =
+    typeof servingSize === 'number' && servingSize > 0 &&
+    typeof totalWeight === 'number' && totalWeight > 0 &&
+    sameUnit && totalWeight !== servingSize
+
+  const items = raw.items.map((item) => {
+    const nutrients = canScale ? scaleNutrients(item.nutrients, servingSize, totalWeight) : item.nutrients
+    const name = canScale ? `${item.name} (${totalWeight}${raw.totalWeight.unit || 'g'} 전체 기준)` : item.name
+    return {
+      name,
+      brand: item.brand || null,
+      nutrients,
+      source: NUTRITION_SOURCE.LABEL,
+    }
+  })
+  // null은 여기서도 0으로 뭉개지 않고 그대로 둔다(sumNutrients가 null을 0으로 취급해 합산하는 건
+  // 기존 관례 그대로이고, 화면 표시 단계(NutritionCard)에서만 '-'로 보여준다).
+  const total = sumNutrients(items)
+  const parsed = { source: 'label', items, total }
+
+  if (!isMealAnalysis(parsed)) {
+    throw new Error('영양 계산 결과 형식이 올바르지 않습니다.')
+  }
+
+  return parsed
+}
+
 const SEX_PROMPT_OPTIONS = [
   { key: 'male', label: '남성' },
   { key: 'female', label: '여성' },
@@ -288,6 +381,44 @@ function SexPromptCard({ onPick }) {
   )
 }
 
+const ANALYZE_MODES = [
+  { key: 'food', label: '음식 분석' },
+  { key: 'label', label: '영양성분표 스캔' },
+]
+
+// 사진/텍스트(둘은 이미 하나로 합쳐진 "음식 분석")와 라벨 스캔을 탭으로 명확히 구분한다.
+// Profile.jsx의 SegmentedControl과 같은 톤(선택된 탭만 채운 배경)을 재사용한다.
+function ModeTabs({ mode, onChange }) {
+  return (
+    <div style={{ display: 'flex', gap: spacing.sm, marginBottom: spacing.md }}>
+      {ANALYZE_MODES.map((m) => {
+        const active = mode === m.key
+        return (
+          <button
+            key={m.key}
+            type="button"
+            className="tds-press"
+            onClick={() => onChange(m.key)}
+            style={{
+              flex: 1,
+              padding: `${spacing.md}px 0`,
+              borderRadius: radius.sm,
+              border: 'none',
+              background: active ? colors.primary : colors.bg,
+              color: active ? '#fff' : colors.textStrong,
+              fontWeight: 700,
+              fontSize: font.size.md,
+              cursor: 'pointer',
+            }}
+          >
+            {m.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function AnalyzingSkeleton() {
   return (
     <div style={styles.card}>
@@ -304,6 +435,7 @@ export default function Analyze() {
   const { user, setTodayMeal, addTodayMeal, updateUser, effectiveRecommended } = useUser()
   const greetingName = user?.isGuest ? '게스트' : (user?.id ?? '')
   const showSexPrompt = !user?.profile && !user?.tempSex
+  const [mode, setMode] = useState('food') // 'food'(사진+텍스트, 이미 하나로 합쳐진 경로) | 'label'(영양성분표 스캔)
   const [photo, setPhoto] = useState(null) // { base64, mimeType, dataUrl, width, height }
   const [menuName, setMenuName] = useState('')
   const [brand, setBrand] = useState('')
@@ -364,6 +496,14 @@ export default function Analyze() {
     }
   }
 
+  // 사진/텍스트 경로와 별개로 pendingAnalysis를 공유한다 — 어느 탭에서 만든 결과든 이후 mealType
+  // 선택→저장(handleConfirmSave)까지 동일한 흐름을 그대로 탄다.
+  async function handleLabelScan(photo) {
+    setPendingAnalysis(null)
+    const parsed = await resolveLabelScan(photo)
+    setPendingAnalysis(parsed)
+  }
+
   function handleConfirmSave() {
     if (!pendingAnalysis) return
 
@@ -396,41 +536,57 @@ export default function Analyze() {
     <div style={styles.page}>
       <ScreenHeader title={`안녕하세요, ${greetingName}님 👋`} subtitle="오늘 점심을 찍어볼까요?" />
 
-      <Card style={pendingAnalysis ? { background: colors.infoSurface, boxShadow: 'none' } : undefined}>
-        <PhotoUpload onChange={setPhoto} />
+      <ModeTabs mode={mode} onChange={setMode} />
 
-        <div style={{ marginTop: spacing.lg }}>
-          <TextField
-            label="메뉴 이름(사진 없이 분석 가능)"
-            id="menuName"
-            value={menuName}
-            onChange={(e) => setMenuName(e.target.value)}
-          />
-          <TextField label="브랜드 (선택)" id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
-        </div>
+      {mode === 'food' ? (
+        <Card style={pendingAnalysis ? { background: colors.infoSurface, boxShadow: 'none' } : undefined}>
+          <PhotoUpload onChange={setPhoto} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}>
-          <AppButton
-            variant={pendingAnalysis ? 'secondary' : 'primary'}
-            onClick={handleAnalyze}
-            disabled={loading}
-          >
-            {loading && <Spinner size={16} />}
-            {loading
-              ? '분석 중...'
-              : pendingAnalysis
-                ? '다시 분석하기'
-                : error
-                  ? '다시 시도'
-                  : '분석하기'}
-          </AppButton>
-          {!loading && pendingAnalysis && (
-            <span style={{ color: colors.info, fontSize: font.size.sm, fontWeight: 700 }}>분석 완료</span>
-          )}
-        </div>
+          <div style={{ marginTop: spacing.lg }}>
+            <TextField
+              label="메뉴 이름(사진 없이 분석 가능)"
+              id="menuName"
+              value={menuName}
+              onChange={(e) => setMenuName(e.target.value)}
+            />
+            <TextField label="브랜드 (선택)" id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
+          </div>
 
-        {error && <p style={styles.errorText}>{error}</p>}
-      </Card>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}>
+            <AppButton
+              variant={pendingAnalysis ? 'secondary' : 'primary'}
+              onClick={handleAnalyze}
+              disabled={loading}
+            >
+              {loading && <Spinner size={16} />}
+              {loading
+                ? '분석 중...'
+                : pendingAnalysis
+                  ? '다시 분석하기'
+                  : error
+                    ? '다시 시도'
+                    : '분석하기'}
+            </AppButton>
+            {!loading && pendingAnalysis && (
+              <span style={{ color: colors.info, fontSize: font.size.sm, fontWeight: 700 }}>분석 완료</span>
+            )}
+          </div>
+
+          {error && <p style={styles.errorText}>{error}</p>}
+        </Card>
+      ) : (
+        <Card style={pendingAnalysis ? { background: colors.infoSurface, boxShadow: 'none' } : undefined}>
+          <h3 style={{ fontSize: font.size.md, fontWeight: 600, margin: `0 0 ${spacing.xs}px`, color: colors.textStrong }}>
+            영양성분표 스캔
+          </h3>
+          <p style={{ margin: `0 0 ${spacing.md}px`, color: colors.textSub, fontSize: font.size.sm }}>
+            포장지 뒷면 영양성분표를 촬영하면 표기된 수치를 그대로 읽어드려요. 추정이 아니라 추출이라
+            표에 없는 값은 '-'로 남아요. "1회 제공량"과 "총 내용량"이 함께 보이면 포장 전체를 먹는
+            기준으로 자동 환산해요.
+          </p>
+          <LabelScan onScan={handleLabelScan} />
+        </Card>
+      )}
 
       {showSexPrompt && <SexPromptCard onPick={(sex) => updateUser({ tempSex: sex })} />}
 

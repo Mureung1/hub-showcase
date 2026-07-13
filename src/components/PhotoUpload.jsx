@@ -34,7 +34,12 @@ export function resizeImageToBase64(file, { maxSize = 1024, quality = 0.85 } = {
   })
 }
 
-export default function PhotoUpload({ onChange, maxSize = 1024 }) {
+export default function PhotoUpload({
+  onChange,
+  maxSize = 1024,
+  placeholderText = '메뉴를 화면에 담고 촬영하세요',
+  hintText = '사진 없이 분석 가능',
+}) {
   const inputRef = useRef(null)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [error, setError] = useState('')
@@ -92,8 +97,8 @@ export default function PhotoUpload({ onChange, maxSize = 1024 }) {
         ) : (
           <>
             <span style={{ fontSize: 48 }}>📷</span>
-            <span style={{ color: colors.textSub, fontSize: font.size.md, fontWeight: 600 }}>메뉴를 화면에 담고 촬영하세요</span>
-            <span style={{ color: colors.muted, fontSize: font.size.xs }}>사진 없이 분석 가능</span>
+            <span style={{ color: colors.textSub, fontSize: font.size.md, fontWeight: 600 }}>{placeholderText}</span>
+            {hintText && <span style={{ color: colors.muted, fontSize: font.size.xs }}>{hintText}</span>}
           </>
         )}
       </div>

@@ -20,16 +20,18 @@ export function NutrientBars({ nutrients }) {
     <div>
       {NUTRIENT_LABELS.map(({ key, label, unit }) => {
         const value = nutrients[key]
+        // 라벨 스캔 결과는 표에 없는 항목이 null일 수 있다(추정 금지) — 그 경우 0으로 보이지 않게 '-'로 표시.
+        const isUnknown = value == null
         const max = BAR_MAX[key]
-        const percent = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0
+        const percent = !isUnknown && max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0
 
         return (
           <div key={key} style={{ marginBottom: spacing.md }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: spacing.xs }}>
               <span style={{ color: colors.textSub, fontSize: font.size.sm }}>{label}</span>
               <span style={{ fontWeight: 700, color: colors.textStrong, fontSize: font.size.sm }}>
-                {formatNutrient(value)}
-                <span style={{ fontWeight: 400, color: colors.muted, marginLeft: 2 }}>{unit}</span>
+                {isUnknown ? '-' : formatNutrient(value)}
+                {!isUnknown && <span style={{ fontWeight: 400, color: colors.muted, marginLeft: 2 }}>{unit}</span>}
               </span>
             </div>
             <div style={{ height: 6, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>
@@ -37,7 +39,7 @@ export function NutrientBars({ nutrients }) {
                 style={{
                   width: `${percent}%`,
                   height: '100%',
-                  background: colors.primary,
+                  background: isUnknown ? colors.border : colors.primary,
                   borderRadius: radius.pill,
                   transition: 'width 0.3s ease-out',
                 }}

@@ -7,7 +7,7 @@ import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import { getManualDayStatus, setManualDayStatus } from '../lib/dayStatus.js'
 import { flattenMealItems, getMeals, sumMealRecordsNutrients } from '../lib/mealStore.js'
-import { calcDayStatus, formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
+import { calcDayStatus, formatNutrientOrDash, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { getAllRecords, toDateKey } from '../lib/records.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
@@ -76,8 +76,7 @@ function MiniMealCard({ item }) {
           <div key={key}>
             <span style={{ display: 'block', fontSize: font.size.xs, color: colors.muted }}>{label}</span>
             <span style={{ fontSize: font.size.sm, fontWeight: 700, color: colors.textStrong }}>
-              {formatNutrient(n[key])}
-              {unit}
+              {formatNutrientOrDash(n[key], unit)}
             </span>
           </div>
         ))}

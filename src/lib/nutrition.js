@@ -41,20 +41,31 @@ export function isNutrientSet(value) {
   return Boolean(value) && typeof value === 'object' && NUTRIENT_KEYS.every((key) => typeof value[key] === 'number')
 }
 
+// 라벨 스캔은 표에 없는 항목을 null로 남기는 게 정상(추정 금지)이라, 값마다 number 또는 null만 허용한다.
+export function isNutrientSetOrNull(value) {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    NUTRIENT_KEYS.every((key) => value[key] === null || typeof value[key] === 'number')
+  )
+}
+
 export function isMealAnalysis(value) {
   return (
     Boolean(value) &&
     Array.isArray(value.items) &&
-    value.items.every((item) => item && typeof item.name === 'string' && isNutrientSet(item.nutrients)) &&
+    value.items.every((item) => item && typeof item.name === 'string' && isNutrientSetOrNull(item.nutrients)) &&
     isNutrientSet(value.total)
   )
 }
 
 // 음식 항목의 영양수치 출처. DB(가공)은 식약처 가공식품DB(편의점/포장/프랜차이즈 제품) 매칭을 뜻한다.
+// LABEL은 영양성분표 사진에서 그대로 읽어낸 값(추정이 아니라 추출)이라 ESTIMATED와 구분한다.
 export const NUTRITION_SOURCE = {
   DB: '식약처DB',
   DB_PROCESS: '식약처DB(가공)',
   OFFICIAL: '공식',
+  LABEL: '라벨 추출',
   ESTIMATED: '추정',
 }
 
@@ -176,6 +187,11 @@ export function fillMissingNutrients(scaled, fallback) {
 // 숫자가 아니면(누락/NaN 등) 0으로 표시한다.
 export function formatNutrient(value) {
   return Math.round(Number(value) || 0)
+}
+
+// formatNutrient와 같지만, 라벨 스캔에서 표에 없어 null로 남은 값은 0으로 뭉개지 않고 '-'로 표시한다.
+export function formatNutrientOrDash(value, unit = '') {
+  return value == null ? '-' : `${formatNutrient(value)}${unit}`
 }
 
 // AI가 계산한 "1인분 예상 섭취량"(expected)을 "단백질 18g · 지방 4g 섭취 가능" 형태로 요약.

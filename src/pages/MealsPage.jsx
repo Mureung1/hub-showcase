@@ -8,7 +8,7 @@ import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import SourceBadge from '../components/SourceBadge.jsx'
 import { isSetMeal, sumNutrients } from '../lib/mealStore.js'
-import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
+import { formatNutrient, formatNutrientOrDash, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 나트륨은 "채워야 할 목표"가 아니라 "넘기면 안 되는 한도"라서 막대 색/문구를 반대로 다룬다.
@@ -102,8 +102,9 @@ function NutrientSummaryLine({ nutrients }) {
   const n = nutrients || {}
   return (
     <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.xs }}>
-      {formatNutrient(n.calories)}kcal · 단백질 {formatNutrient(n.protein)}g · 탄수 {formatNutrient(n.carbs)}g · 지방{' '}
-      {formatNutrient(n.fat)}g · 나트륨 {formatNutrient(n.sodium)}mg · 식이섬유 {formatNutrient(n.fiber)}g
+      {formatNutrientOrDash(n.calories, 'kcal')} · 단백질 {formatNutrientOrDash(n.protein, 'g')} · 탄수{' '}
+      {formatNutrientOrDash(n.carbs, 'g')} · 지방 {formatNutrientOrDash(n.fat, 'g')} · 나트륨{' '}
+      {formatNutrientOrDash(n.sodium, 'mg')} · 식이섬유 {formatNutrientOrDash(n.fiber, 'g')}
     </p>
   )
 }
