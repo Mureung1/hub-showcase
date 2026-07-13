@@ -22,6 +22,18 @@ export {
   type ProductRuntimeRootName,
 } from './product-runtime-layout.js'
 export {
+  HeadlessCodexClientHost,
+  HeadlessCodexClientHostError,
+  HeadlessCodexClientHostSubscriptionError,
+  type HeadlessCodexClientHostEvent,
+  type HeadlessCodexClientHostFailure,
+  type HeadlessCodexClientHostFailureCode,
+  type HeadlessCodexClientHostOptions,
+  type HeadlessCodexClientHostSnapshot,
+  type HeadlessCodexClientHostStatus,
+  type HeadlessCodexClientHostSubscription,
+} from './headless-codex-client-host.js'
+export {
   CodexRawClient,
   ensureCodexRuntimeHome,
   resolveDefaultCodexRuntimeHome,
