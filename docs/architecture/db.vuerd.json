@@ -1,0 +1,263 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dineug/erd-editor/main/json-schema/schema.json",
+  "version": "3.0.0",
+  "settings": {
+    "width": 3000,
+    "height": 2400,
+    "scrollTop": 0,
+    "scrollLeft": 0,
+    "zoomLevel": 0.7,
+    "show": 511,
+    "database": 16,
+    "databaseName": "recipebook",
+    "canvasType": "ERD",
+    "language": 1,
+    "tableNameCase": 8,
+    "columnNameCase": 8,
+    "bracketType": 1,
+    "relationshipDataTypeSync": true,
+    "relationshipOptimization": false,
+    "columnOrder": [1, 2, 4, 8, 16, 32, 64],
+    "maxWidthComment": -1,
+    "ignoreSaveSettings": 0
+  },
+  "doc": {
+    "tableIds": [
+      "table_users",
+      "table_sessions",
+      "table_recipes",
+      "table_ingredients",
+      "table_recipe_steps",
+      "table_recipe_sources",
+      "table_recipe_audit_events",
+      "table_recipe_view_shares",
+      "table_transfer_invitations",
+      "table_received_recipe_details"
+    ],
+    "relationshipIds": [
+      "rel_users_sessions",
+      "rel_users_recipes",
+      "rel_recipes_ingredients",
+      "rel_recipes_steps",
+      "rel_recipes_sources",
+      "rel_recipes_audits",
+      "rel_users_audits",
+      "rel_recipes_view_shares",
+      "rel_recipes_transfer_invitations",
+      "rel_recipes_received_details",
+      "rel_invitations_received_details",
+      "rel_users_original_owner_details"
+    ],
+    "indexIds": [
+      "index_sessions_user",
+      "index_sessions_expires",
+      "index_recipes_owner_list",
+      "index_audits_recipe_time",
+      "index_invitations_source",
+      "index_invitations_expires"
+    ],
+    "memoIds": []
+  },
+  "collections": {
+    "tableEntities": {
+      "table_users": {
+        "id": "table_users",
+        "name": "users",
+        "comment": "Google 로그인으로 생성되는 서비스 사용자",
+        "columnIds": ["users_id", "users_google_subject", "users_email", "users_name", "users_profile_image_url", "users_created_at", "users_updated_at"],
+        "seqColumnIds": ["users_id", "users_google_subject", "users_email", "users_name", "users_profile_image_url", "users_created_at", "users_updated_at"],
+        "ui": {"x": 100, "y": 100, "zIndex": 1, "widthName": 120, "widthComment": 220, "color": "#4CAF50"},
+        "meta": {"updateAt": 1783930000000, "createAt": 1783930000000}
+      },
+      "table_sessions": {
+        "id": "table_sessions",
+        "name": "sessions",
+        "comment": "해시된 식별자로 조회하는 서버 세션",
+        "columnIds": ["sessions_id_hash", "sessions_user_id", "sessions_csrf_token_hash", "sessions_created_at", "sessions_last_active_at", "sessions_expires_at", "sessions_absolute_expires_at"],
+        "seqColumnIds": ["sessions_id_hash", "sessions_user_id", "sessions_csrf_token_hash", "sessions_created_at", "sessions_last_active_at", "sessions_expires_at", "sessions_absolute_expires_at"],
+        "ui": {"x": 600, "y": 100, "zIndex": 2, "widthName": 120, "widthComment": 220, "color": "#4CAF50"},
+        "meta": {"updateAt": 1783930000000, "createAt": 1783930000000}
+      },
+      "table_recipes": {
+        "id": "table_recipes",
+        "name": "recipes",
+        "comment": "사용자 레시피북에 저장된 레시피. type은 OWNED, EXTERNAL, RECEIVED",
+        "columnIds": ["recipes_id", "recipes_owner_id", "recipes_type", "recipes_title", "recipes_description", "recipes_servings", "recipes_cooking_time_minutes", "recipes_memo", "recipes_created_at", "recipes_updated_at", "recipes_deleted_at"],
+        "seqColumnIds": ["recipes_id", "recipes_owner_id", "recipes_type", "recipes_title", "recipes_description", "recipes_servings", "recipes_cooking_time_minutes", "recipes_memo", "recipes_created_at", "recipes_updated_at", "recipes_deleted_at"],
+        "ui": {"x": 100, "y": 650, "zIndex": 3, "widthName": 120, "widthComment": 260, "color": "#2196F3"},
+        "meta": {"updateAt": 1783930000000, "createAt": 1783930000000}
+      },
+      "table_ingredients": {
+        "id": "table_ingredients",
+        "name": "ingredients",
+        "comment": "레시피별 재료. position은 1부터 시작하며 레시피 안에서 고유",
+        "columnIds": ["ingredients_recipe_id", "ingredients_position", "ingredients_name", "ingredients_amount", "ingredients_unit"],
+        "seqColumnIds": ["ingredients_recipe_id", "ingredients_position", "ingredients_name", "ingredients_amount", "ingredients_unit"],
+        "ui": {"x": 600, "y": 650, "zIndex": 4, "widthName": 120, "widthComment": 240, "color": "#2196F3"},
+        "meta": {"updateAt": 1783930000000, "createAt": 1783930000000}
+      },
+      "table_recipe_steps": {
+        "id": "table_recipe_steps",
+        "name": "recipe_steps",
+        "comment": "레시피별 조리 단계. position은 1부터 시작하며 레시피 안에서 고유",
+        "columnIds": ["steps_recipe_id", "steps_position", "steps_description"],
+        "seqColumnIds": ["steps_recipe_id", "steps_position", "steps_description"],
+        "ui": {"x": 1100, "y": 650, "zIndex": 5, "widthName": 120, "widthComment": 240, "color": "#2196F3"},
+        "meta": {"updateAt": 1783930000000, "createAt": 1783930000000}
+      },
+      "table_recipe_sources": {
+        "id": "table_recipe_sources",
+        "name": "recipe_sources",
+        "comment": "외부 출처가 있는 레시피의 선택적 1:1 정보",
+        "columnIds": ["sources_recipe_id", "sources_url", "sources_title", "sources_author"],
+        "seqColumnIds": ["sources_recipe_id", "sources_url", "sources_title", "sources_author"],
+        "ui": {"x": 1600, "y": 650, "zIndex": 6, "widthName": 130, "widthComment": 220, "color": "#2196F3"},
+        "meta": {"updateAt": 1783930000000, "createAt": 1783930000000}
+      },
+      "table_recipe_audit_events": {
+        "id": "table_recipe_audit_events",
+        "name": "recipe_audit_events",
+        "comment": "레시피 삭제 및 복원 감사 기록. action은 DELETED 또는 RESTORED",
+        "columnIds": ["audits_id", "audits_recipe_id", "audits_actor_user_id", "audits_action", "audits_occurred_at"],
+        "seqColumnIds": ["audits_id", "audits_recipe_id", "audits_actor_user_id", "audits_action", "audits_occurred_at"],
+        "ui": {"x": 2100, "y": 650, "zIndex": 7, "widthName": 150, "widthComment": 260, "color": "#9E9E9E"},
+        "meta": {"updateAt": 1783930000000, "createAt": 1783930000000}
+      },
+      "table_recipe_view_shares": {
+        "id": "table_recipe_view_shares",
+        "name": "recipe_view_shares",
+        "comment": "레시피당 하나의 열람 링크 상태. 재생성 시 token_hash를 교체",
+        "columnIds": ["view_shares_recipe_id", "view_shares_token_hash", "view_shares_created_at", "view_shares_revoked_at"],
+        "seqColumnIds": ["view_shares_recipe_id", "view_shares_token_hash", "view_shares_created_at", "view_shares_revoked_at"],
+        "ui": {"x": 100, "y": 1400, "zIndex": 8, "widthName": 150, "widthComment": 250, "color": "#FF9800"},
+        "meta": {"updateAt": 1783930000000, "createAt": 1783930000000}
+      },
+      "table_transfer_invitations": {
+        "id": "table_transfer_invitations",
+        "name": "transfer_invitations",
+        "comment": "7일간 유효하고 한 번만 수락할 수 있는 전달 초대",
+        "columnIds": ["invitations_id", "invitations_source_recipe_id", "invitations_link_token_hash", "invitations_code_hash", "invitations_snapshot_version", "invitations_snapshot", "invitations_created_at", "invitations_expires_at", "invitations_used_at"],
+        "seqColumnIds": ["invitations_id", "invitations_source_recipe_id", "invitations_link_token_hash", "invitations_code_hash", "invitations_snapshot_version", "invitations_snapshot", "invitations_created_at", "invitations_expires_at", "invitations_used_at"],
+        "ui": {"x": 700, "y": 1400, "zIndex": 9, "widthName": 160, "widthComment": 260, "color": "#FF9800"},
+        "meta": {"updateAt": 1783930000000, "createAt": 1783930000000}
+      },
+      "table_received_recipe_details": {
+        "id": "table_received_recipe_details",
+        "name": "received_recipe_details",
+        "comment": "RECEIVED 레시피의 전달 관계와 표시 정보",
+        "columnIds": ["received_recipe_id", "received_invitation_id", "received_original_owner_id", "received_original_owner_name", "received_original_owner_profile_image_url", "received_sender_display_name", "received_relationship_label", "received_received_at"],
+        "seqColumnIds": ["received_recipe_id", "received_invitation_id", "received_original_owner_id", "received_original_owner_name", "received_original_owner_profile_image_url", "received_sender_display_name", "received_relationship_label", "received_received_at"],
+        "ui": {"x": 1500, "y": 1400, "zIndex": 10, "widthName": 170, "widthComment": 250, "color": "#FF9800"},
+        "meta": {"updateAt": 1783930000000, "createAt": 1783930000000}
+      }
+    },
+    "tableColumnEntities": {
+      "users_id": {"id":"users_id","tableId":"table_users","name":"id","comment":"애플리케이션에서 crypto.randomUUID()로 생성","dataType":"UUID","default":"","options":10,"ui":{"keys":1,"widthName":80,"widthComment":220,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "users_google_subject": {"id":"users_google_subject","tableId":"table_users","name":"google_subject","comment":"Google ID token의 변경되지 않는 sub","dataType":"VARCHAR(255)","default":"","options":12,"ui":{"keys":0,"widthName":130,"widthComment":220,"widthDataType":110,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "users_email": {"id":"users_email","tableId":"table_users","name":"email","comment":"변경될 수 있으므로 UNIQUE가 아님","dataType":"VARCHAR(320)","default":"","options":8,"ui":{"keys":0,"widthName":100,"widthComment":220,"widthDataType":110,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "users_name": {"id":"users_name","tableId":"table_users","name":"name","comment":"","dataType":"VARCHAR(100)","default":"","options":8,"ui":{"keys":0,"widthName":100,"widthComment":160,"widthDataType":110,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "users_profile_image_url": {"id":"users_profile_image_url","tableId":"table_users","name":"profile_image_url","comment":"","dataType":"TEXT","default":"","options":0,"ui":{"keys":0,"widthName":150,"widthComment":160,"widthDataType":90,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "users_created_at": {"id":"users_created_at","tableId":"table_users","name":"created_at","comment":"","dataType":"TIMESTAMPTZ","default":"CURRENT_TIMESTAMP","options":8,"ui":{"keys":0,"widthName":110,"widthComment":160,"widthDataType":110,"widthDefault":150},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "users_updated_at": {"id":"users_updated_at","tableId":"table_users","name":"updated_at","comment":"애플리케이션에서 갱신","dataType":"TIMESTAMPTZ","default":"CURRENT_TIMESTAMP","options":8,"ui":{"keys":0,"widthName":110,"widthComment":180,"widthDataType":110,"widthDefault":150},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+
+      "sessions_id_hash": {"id":"sessions_id_hash","tableId":"table_sessions","name":"id_hash","comment":"원문 세션 ID의 SHA-256 해시","dataType":"CHAR(64)","default":"","options":10,"ui":{"keys":1,"widthName":100,"widthComment":220,"widthDataType":90,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "sessions_user_id": {"id":"sessions_user_id","tableId":"table_sessions","name":"user_id","comment":"","dataType":"UUID","default":"","options":8,"ui":{"keys":2,"widthName":100,"widthComment":160,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "sessions_csrf_token_hash": {"id":"sessions_csrf_token_hash","tableId":"table_sessions","name":"csrf_token_hash","comment":"원문 CSRF 토큰을 저장하지 않음","dataType":"CHAR(64)","default":"","options":8,"ui":{"keys":0,"widthName":140,"widthComment":220,"widthDataType":90,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "sessions_created_at": {"id":"sessions_created_at","tableId":"table_sessions","name":"created_at","comment":"","dataType":"TIMESTAMPTZ","default":"CURRENT_TIMESTAMP","options":8,"ui":{"keys":0,"widthName":110,"widthComment":160,"widthDataType":110,"widthDefault":150},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "sessions_last_active_at": {"id":"sessions_last_active_at","tableId":"table_sessions","name":"last_active_at","comment":"요청 활동 시 애플리케이션에서 갱신","dataType":"TIMESTAMPTZ","default":"CURRENT_TIMESTAMP","options":8,"ui":{"keys":0,"widthName":120,"widthComment":240,"widthDataType":110,"widthDefault":150},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "sessions_expires_at": {"id":"sessions_expires_at","tableId":"table_sessions","name":"expires_at","comment":"마지막 활동 후 24시간","dataType":"TIMESTAMPTZ","default":"","options":8,"ui":{"keys":0,"widthName":110,"widthComment":200,"widthDataType":110,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "sessions_absolute_expires_at": {"id":"sessions_absolute_expires_at","tableId":"table_sessions","name":"absolute_expires_at","comment":"로그인 후 7일","dataType":"TIMESTAMPTZ","default":"","options":8,"ui":{"keys":0,"widthName":150,"widthComment":180,"widthDataType":110,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+
+      "recipes_id": {"id":"recipes_id","tableId":"table_recipes","name":"id","comment":"애플리케이션 생성 UUID","dataType":"UUID","default":"","options":10,"ui":{"keys":1,"widthName":80,"widthComment":180,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "recipes_owner_id": {"id":"recipes_owner_id","tableId":"table_recipes","name":"owner_id","comment":"","dataType":"UUID","default":"","options":8,"ui":{"keys":2,"widthName":100,"widthComment":160,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "recipes_type": {"id":"recipes_type","tableId":"table_recipes","name":"type","comment":"OWNED, EXTERNAL, RECEIVED 중 하나","dataType":"VARCHAR(16)","default":"","options":8,"ui":{"keys":0,"widthName":90,"widthComment":230,"widthDataType":100,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "recipes_title": {"id":"recipes_title","tableId":"table_recipes","name":"title","comment":"trim 후 빈 문자열 불가","dataType":"TEXT","default":"","options":8,"ui":{"keys":0,"widthName":90,"widthComment":190,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "recipes_description": {"id":"recipes_description","tableId":"table_recipes","name":"description","comment":"","dataType":"TEXT","default":"","options":0,"ui":{"keys":0,"widthName":110,"widthComment":160,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "recipes_servings": {"id":"recipes_servings","tableId":"table_recipes","name":"servings","comment":"","dataType":"TEXT","default":"","options":0,"ui":{"keys":0,"widthName":100,"widthComment":160,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "recipes_cooking_time_minutes": {"id":"recipes_cooking_time_minutes","tableId":"table_recipes","name":"cooking_time_minutes","comment":"0 이상의 정수","dataType":"INTEGER","default":"","options":0,"ui":{"keys":0,"widthName":160,"widthComment":180,"widthDataType":90,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "recipes_memo": {"id":"recipes_memo","tableId":"table_recipes","name":"memo","comment":"소유자 전용 개인 메모","dataType":"TEXT","default":"","options":0,"ui":{"keys":0,"widthName":90,"widthComment":190,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "recipes_created_at": {"id":"recipes_created_at","tableId":"table_recipes","name":"created_at","comment":"","dataType":"TIMESTAMPTZ","default":"CURRENT_TIMESTAMP","options":8,"ui":{"keys":0,"widthName":110,"widthComment":160,"widthDataType":110,"widthDefault":150},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "recipes_updated_at": {"id":"recipes_updated_at","tableId":"table_recipes","name":"updated_at","comment":"애플리케이션에서 갱신","dataType":"TIMESTAMPTZ","default":"CURRENT_TIMESTAMP","options":8,"ui":{"keys":0,"widthName":110,"widthComment":180,"widthDataType":110,"widthDefault":150},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "recipes_deleted_at": {"id":"recipes_deleted_at","tableId":"table_recipes","name":"deleted_at","comment":"NULL이면 활성 레시피","dataType":"TIMESTAMPTZ","default":"","options":0,"ui":{"keys":0,"widthName":110,"widthComment":180,"widthDataType":110,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+
+      "ingredients_recipe_id": {"id":"ingredients_recipe_id","tableId":"table_ingredients","name":"recipe_id","comment":"복합 PK의 첫 번째 컬럼","dataType":"UUID","default":"","options":10,"ui":{"keys":3,"widthName":100,"widthComment":190,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "ingredients_position": {"id":"ingredients_position","tableId":"table_ingredients","name":"position","comment":"1 이상의 정수","dataType":"INTEGER","default":"","options":10,"ui":{"keys":1,"widthName":100,"widthComment":170,"widthDataType":90,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "ingredients_name": {"id":"ingredients_name","tableId":"table_ingredients","name":"name","comment":"trim 후 빈 문자열 불가","dataType":"TEXT","default":"","options":8,"ui":{"keys":0,"widthName":90,"widthComment":190,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "ingredients_amount": {"id":"ingredients_amount","tableId":"table_ingredients","name":"amount","comment":"","dataType":"TEXT","default":"","options":0,"ui":{"keys":0,"widthName":90,"widthComment":160,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "ingredients_unit": {"id":"ingredients_unit","tableId":"table_ingredients","name":"unit","comment":"","dataType":"TEXT","default":"","options":0,"ui":{"keys":0,"widthName":90,"widthComment":160,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+
+      "steps_recipe_id": {"id":"steps_recipe_id","tableId":"table_recipe_steps","name":"recipe_id","comment":"복합 PK의 첫 번째 컬럼","dataType":"UUID","default":"","options":10,"ui":{"keys":3,"widthName":100,"widthComment":190,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "steps_position": {"id":"steps_position","tableId":"table_recipe_steps","name":"position","comment":"1 이상의 정수","dataType":"INTEGER","default":"","options":10,"ui":{"keys":1,"widthName":100,"widthComment":170,"widthDataType":90,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "steps_description": {"id":"steps_description","tableId":"table_recipe_steps","name":"description","comment":"trim 후 빈 문자열 불가","dataType":"TEXT","default":"","options":8,"ui":{"keys":0,"widthName":110,"widthComment":190,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+
+      "sources_recipe_id": {"id":"sources_recipe_id","tableId":"table_recipe_sources","name":"recipe_id","comment":"PK이자 recipes FK","dataType":"UUID","default":"","options":10,"ui":{"keys":3,"widthName":100,"widthComment":180,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "sources_url": {"id":"sources_url","tableId":"table_recipe_sources","name":"url","comment":"검증된 http 또는 https URL","dataType":"TEXT","default":"","options":8,"ui":{"keys":0,"widthName":90,"widthComment":210,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "sources_title": {"id":"sources_title","tableId":"table_recipe_sources","name":"title","comment":"","dataType":"TEXT","default":"","options":0,"ui":{"keys":0,"widthName":90,"widthComment":160,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "sources_author": {"id":"sources_author","tableId":"table_recipe_sources","name":"author","comment":"","dataType":"TEXT","default":"","options":0,"ui":{"keys":0,"widthName":90,"widthComment":160,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+
+      "audits_id": {"id":"audits_id","tableId":"table_recipe_audit_events","name":"id","comment":"애플리케이션 생성 UUID","dataType":"UUID","default":"","options":10,"ui":{"keys":1,"widthName":80,"widthComment":180,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "audits_recipe_id": {"id":"audits_recipe_id","tableId":"table_recipe_audit_events","name":"recipe_id","comment":"","dataType":"UUID","default":"","options":8,"ui":{"keys":2,"widthName":100,"widthComment":160,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "audits_actor_user_id": {"id":"audits_actor_user_id","tableId":"table_recipe_audit_events","name":"actor_user_id","comment":"","dataType":"UUID","default":"","options":8,"ui":{"keys":2,"widthName":120,"widthComment":160,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "audits_action": {"id":"audits_action","tableId":"table_recipe_audit_events","name":"action","comment":"DELETED 또는 RESTORED","dataType":"VARCHAR(16)","default":"","options":8,"ui":{"keys":0,"widthName":90,"widthComment":190,"widthDataType":100,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "audits_occurred_at": {"id":"audits_occurred_at","tableId":"table_recipe_audit_events","name":"occurred_at","comment":"","dataType":"TIMESTAMPTZ","default":"CURRENT_TIMESTAMP","options":8,"ui":{"keys":0,"widthName":110,"widthComment":160,"widthDataType":110,"widthDefault":150},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+
+      "view_shares_recipe_id": {"id":"view_shares_recipe_id","tableId":"table_recipe_view_shares","name":"recipe_id","comment":"PK이자 recipes FK","dataType":"UUID","default":"","options":10,"ui":{"keys":3,"widthName":100,"widthComment":180,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "view_shares_token_hash": {"id":"view_shares_token_hash","tableId":"table_recipe_view_shares","name":"token_hash","comment":"원문 열람 토큰의 SHA-256 해시","dataType":"CHAR(64)","default":"","options":12,"ui":{"keys":0,"widthName":110,"widthComment":230,"widthDataType":90,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "view_shares_created_at": {"id":"view_shares_created_at","tableId":"table_recipe_view_shares","name":"created_at","comment":"토큰 교체 시 함께 갱신","dataType":"TIMESTAMPTZ","default":"CURRENT_TIMESTAMP","options":8,"ui":{"keys":0,"widthName":110,"widthComment":190,"widthDataType":110,"widthDefault":150},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "view_shares_revoked_at": {"id":"view_shares_revoked_at","tableId":"table_recipe_view_shares","name":"revoked_at","comment":"NULL이면 활성 링크","dataType":"TIMESTAMPTZ","default":"","options":0,"ui":{"keys":0,"widthName":110,"widthComment":180,"widthDataType":110,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+
+      "invitations_id": {"id":"invitations_id","tableId":"table_transfer_invitations","name":"id","comment":"애플리케이션 생성 UUID","dataType":"UUID","default":"","options":10,"ui":{"keys":1,"widthName":80,"widthComment":180,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "invitations_source_recipe_id": {"id":"invitations_source_recipe_id","tableId":"table_transfer_invitations","name":"source_recipe_id","comment":"OWNED 레시피만 허용","dataType":"UUID","default":"","options":8,"ui":{"keys":2,"widthName":140,"widthComment":190,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "invitations_link_token_hash": {"id":"invitations_link_token_hash","tableId":"table_transfer_invitations","name":"link_token_hash","comment":"원문 링크 토큰의 SHA-256 해시","dataType":"CHAR(64)","default":"","options":12,"ui":{"keys":0,"widthName":140,"widthComment":230,"widthDataType":90,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "invitations_code_hash": {"id":"invitations_code_hash","tableId":"table_transfer_invitations","name":"invitation_code_hash","comment":"초대 코드의 HMAC-SHA-256 해시","dataType":"CHAR(64)","default":"","options":12,"ui":{"keys":0,"widthName":160,"widthComment":230,"widthDataType":90,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "invitations_snapshot_version": {"id":"invitations_snapshot_version","tableId":"table_transfer_invitations","name":"snapshot_version","comment":"현재 버전은 1","dataType":"SMALLINT","default":"1","options":8,"ui":{"keys":0,"widthName":140,"widthComment":170,"widthDataType":90,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "invitations_snapshot": {"id":"invitations_snapshot","tableId":"table_transfer_invitations","name":"snapshot","comment":"검증된 불변 RecipeSnapshot 본문","dataType":"JSONB","default":"","options":8,"ui":{"keys":0,"widthName":100,"widthComment":220,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "invitations_created_at": {"id":"invitations_created_at","tableId":"table_transfer_invitations","name":"created_at","comment":"","dataType":"TIMESTAMPTZ","default":"CURRENT_TIMESTAMP","options":8,"ui":{"keys":0,"widthName":110,"widthComment":160,"widthDataType":110,"widthDefault":150},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "invitations_expires_at": {"id":"invitations_expires_at","tableId":"table_transfer_invitations","name":"expires_at","comment":"created_at으로부터 7일","dataType":"TIMESTAMPTZ","default":"","options":8,"ui":{"keys":0,"widthName":110,"widthComment":190,"widthDataType":110,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "invitations_used_at": {"id":"invitations_used_at","tableId":"table_transfer_invitations","name":"used_at","comment":"수락 저장 완료 시 기록","dataType":"TIMESTAMPTZ","default":"","options":0,"ui":{"keys":0,"widthName":100,"widthComment":190,"widthDataType":110,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+
+      "received_recipe_id": {"id":"received_recipe_id","tableId":"table_received_recipe_details","name":"recipe_id","comment":"PK이자 RECEIVED recipes FK","dataType":"UUID","default":"","options":10,"ui":{"keys":3,"widthName":100,"widthComment":210,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "received_invitation_id": {"id":"received_invitation_id","tableId":"table_received_recipe_details","name":"transfer_invitation_id","comment":"초대당 받은 레시피 하나만 허용","dataType":"UUID","default":"","options":12,"ui":{"keys":2,"widthName":170,"widthComment":220,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "received_original_owner_id": {"id":"received_original_owner_id","tableId":"table_received_recipe_details","name":"original_owner_id","comment":"","dataType":"UUID","default":"","options":8,"ui":{"keys":2,"widthName":150,"widthComment":160,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "received_original_owner_name": {"id":"received_original_owner_name","tableId":"table_received_recipe_details","name":"original_owner_name","comment":"수락 시점 표시 이름 스냅샷","dataType":"TEXT","default":"","options":8,"ui":{"keys":0,"widthName":160,"widthComment":210,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "received_original_owner_profile_image_url": {"id":"received_original_owner_profile_image_url","tableId":"table_received_recipe_details","name":"original_owner_profile_image_url","comment":"수락 시점 프로필 이미지 스냅샷","dataType":"TEXT","default":"","options":0,"ui":{"keys":0,"widthName":220,"widthComment":220,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "received_sender_display_name": {"id":"received_sender_display_name","tableId":"table_received_recipe_details","name":"sender_display_name","comment":"받는 사용자가 입력한 전해준 사람 이름","dataType":"TEXT","default":"","options":8,"ui":{"keys":0,"widthName":170,"widthComment":240,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "received_relationship_label": {"id":"received_relationship_label","tableId":"table_received_recipe_details","name":"relationship_label","comment":"받는 사용자가 입력한 관계 라벨","dataType":"TEXT","default":"","options":8,"ui":{"keys":0,"widthName":150,"widthComment":220,"widthDataType":80,"widthDefault":100},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "received_received_at": {"id":"received_received_at","tableId":"table_received_recipe_details","name":"received_at","comment":"","dataType":"TIMESTAMPTZ","default":"CURRENT_TIMESTAMP","options":8,"ui":{"keys":0,"widthName":110,"widthComment":160,"widthDataType":110,"widthDefault":150},"meta":{"updateAt":1783930000000,"createAt":1783930000000}}
+    },
+    "relationshipEntities": {
+      "rel_users_sessions": {"id":"rel_users_sessions","identification":false,"relationshipType":4,"startRelationshipType":2,"start":{"tableId":"table_users","columnIds":["users_id"],"x":430,"y":250,"direction":2},"end":{"tableId":"table_sessions","columnIds":["sessions_user_id"],"x":600,"y":250,"direction":1},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "rel_users_recipes": {"id":"rel_users_recipes","identification":false,"relationshipType":4,"startRelationshipType":2,"start":{"tableId":"table_users","columnIds":["users_id"],"x":250,"y":450,"direction":8},"end":{"tableId":"table_recipes","columnIds":["recipes_owner_id"],"x":250,"y":650,"direction":4},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "rel_recipes_ingredients": {"id":"rel_recipes_ingredients","identification":true,"relationshipType":4,"startRelationshipType":2,"start":{"tableId":"table_recipes","columnIds":["recipes_id"],"x":430,"y":800,"direction":2},"end":{"tableId":"table_ingredients","columnIds":["ingredients_recipe_id"],"x":600,"y":800,"direction":1},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "rel_recipes_steps": {"id":"rel_recipes_steps","identification":true,"relationshipType":4,"startRelationshipType":2,"start":{"tableId":"table_recipes","columnIds":["recipes_id"],"x":430,"y":850,"direction":2},"end":{"tableId":"table_recipe_steps","columnIds":["steps_recipe_id"],"x":1100,"y":780,"direction":1},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "rel_recipes_sources": {"id":"rel_recipes_sources","identification":true,"relationshipType":2,"startRelationshipType":2,"start":{"tableId":"table_recipes","columnIds":["recipes_id"],"x":430,"y":900,"direction":2},"end":{"tableId":"table_recipe_sources","columnIds":["sources_recipe_id"],"x":1600,"y":780,"direction":1},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "rel_recipes_audits": {"id":"rel_recipes_audits","identification":false,"relationshipType":4,"startRelationshipType":2,"start":{"tableId":"table_recipes","columnIds":["recipes_id"],"x":430,"y":950,"direction":2},"end":{"tableId":"table_recipe_audit_events","columnIds":["audits_recipe_id"],"x":2100,"y":800,"direction":1},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "rel_users_audits": {"id":"rel_users_audits","identification":false,"relationshipType":4,"startRelationshipType":2,"start":{"tableId":"table_users","columnIds":["users_id"],"x":430,"y":300,"direction":2},"end":{"tableId":"table_recipe_audit_events","columnIds":["audits_actor_user_id"],"x":2250,"y":650,"direction":4},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "rel_recipes_view_shares": {"id":"rel_recipes_view_shares","identification":true,"relationshipType":2,"startRelationshipType":2,"start":{"tableId":"table_recipes","columnIds":["recipes_id"],"x":250,"y":1100,"direction":8},"end":{"tableId":"table_recipe_view_shares","columnIds":["view_shares_recipe_id"],"x":250,"y":1400,"direction":4},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "rel_recipes_transfer_invitations": {"id":"rel_recipes_transfer_invitations","identification":false,"relationshipType":4,"startRelationshipType":2,"start":{"tableId":"table_recipes","columnIds":["recipes_id"],"x":430,"y":1050,"direction":2},"end":{"tableId":"table_transfer_invitations","columnIds":["invitations_source_recipe_id"],"x":700,"y":1520,"direction":1},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "rel_recipes_received_details": {"id":"rel_recipes_received_details","identification":true,"relationshipType":2,"startRelationshipType":2,"start":{"tableId":"table_recipes","columnIds":["recipes_id"],"x":430,"y":1000,"direction":2},"end":{"tableId":"table_received_recipe_details","columnIds":["received_recipe_id"],"x":1500,"y":1520,"direction":1},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "rel_invitations_received_details": {"id":"rel_invitations_received_details","identification":false,"relationshipType":2,"startRelationshipType":2,"start":{"tableId":"table_transfer_invitations","columnIds":["invitations_id"],"x":1230,"y":1600,"direction":2},"end":{"tableId":"table_received_recipe_details","columnIds":["received_invitation_id"],"x":1500,"y":1600,"direction":1},"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "rel_users_original_owner_details": {"id":"rel_users_original_owner_details","identification":false,"relationshipType":4,"startRelationshipType":2,"start":{"tableId":"table_users","columnIds":["users_id"],"x":430,"y":200,"direction":2},"end":{"tableId":"table_received_recipe_details","columnIds":["received_original_owner_id"],"x":1650,"y":1400,"direction":4},"meta":{"updateAt":1783930000000,"createAt":1783930000000}}
+    },
+    "indexEntities": {
+      "index_sessions_user": {"id":"index_sessions_user","name":"idx_sessions_user_id","tableId":"table_sessions","indexColumnIds":["index_col_sessions_user"],"seqIndexColumnIds":["index_col_sessions_user"],"unique":false,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_sessions_expires": {"id":"index_sessions_expires","name":"idx_sessions_expires_at","tableId":"table_sessions","indexColumnIds":["index_col_sessions_expires"],"seqIndexColumnIds":["index_col_sessions_expires"],"unique":false,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_recipes_owner_list": {"id":"index_recipes_owner_list","name":"idx_recipes_owner_list","tableId":"table_recipes","indexColumnIds":["index_col_recipes_owner","index_col_recipes_deleted","index_col_recipes_created"],"seqIndexColumnIds":["index_col_recipes_owner","index_col_recipes_deleted","index_col_recipes_created"],"unique":false,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_audits_recipe_time": {"id":"index_audits_recipe_time","name":"idx_recipe_audits_recipe_time","tableId":"table_recipe_audit_events","indexColumnIds":["index_col_audits_recipe","index_col_audits_time"],"seqIndexColumnIds":["index_col_audits_recipe","index_col_audits_time"],"unique":false,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_invitations_source": {"id":"index_invitations_source","name":"idx_transfer_invitations_source","tableId":"table_transfer_invitations","indexColumnIds":["index_col_invitations_source"],"seqIndexColumnIds":["index_col_invitations_source"],"unique":false,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_invitations_expires": {"id":"index_invitations_expires","name":"idx_transfer_invitations_expires","tableId":"table_transfer_invitations","indexColumnIds":["index_col_invitations_expires"],"seqIndexColumnIds":["index_col_invitations_expires"],"unique":false,"meta":{"updateAt":1783930000000,"createAt":1783930000000}}
+    },
+    "indexColumnEntities": {
+      "index_col_sessions_user": {"id":"index_col_sessions_user","indexId":"index_sessions_user","columnId":"sessions_user_id","orderType":1,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_col_sessions_expires": {"id":"index_col_sessions_expires","indexId":"index_sessions_expires","columnId":"sessions_expires_at","orderType":1,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_col_recipes_owner": {"id":"index_col_recipes_owner","indexId":"index_recipes_owner_list","columnId":"recipes_owner_id","orderType":1,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_col_recipes_deleted": {"id":"index_col_recipes_deleted","indexId":"index_recipes_owner_list","columnId":"recipes_deleted_at","orderType":1,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_col_recipes_created": {"id":"index_col_recipes_created","indexId":"index_recipes_owner_list","columnId":"recipes_created_at","orderType":2,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_col_audits_recipe": {"id":"index_col_audits_recipe","indexId":"index_audits_recipe_time","columnId":"audits_recipe_id","orderType":1,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_col_audits_time": {"id":"index_col_audits_time","indexId":"index_audits_recipe_time","columnId":"audits_occurred_at","orderType":2,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_col_invitations_source": {"id":"index_col_invitations_source","indexId":"index_invitations_source","columnId":"invitations_source_recipe_id","orderType":1,"meta":{"updateAt":1783930000000,"createAt":1783930000000}},
+      "index_col_invitations_expires": {"id":"index_col_invitations_expires","indexId":"index_invitations_expires","columnId":"invitations_expires_at","orderType":1,"meta":{"updateAt":1783930000000,"createAt":1783930000000}}
+    },
+    "memoEntities": {}
+  }
+}
