@@ -43,7 +43,6 @@ export const QUICK_EXAMPLES = [
 ];
 
 export const HASHTAG_SUGGESTIONS = [
-  "#소상공인",
   "#사장님일기",
   "#맛집",
   "#비오는날",
