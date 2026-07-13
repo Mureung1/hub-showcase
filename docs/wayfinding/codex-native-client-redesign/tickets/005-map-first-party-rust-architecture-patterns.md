@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: open
+- State: resolved
 - Blocked by: tickets/003-pin-upstream-source-provenance.md
 
 ## Question
@@ -14,28 +14,22 @@ Pinned `openai/codex`의 `app-server-client`와 App Server에서 process·connec
 
 ## Answer
 
-재검토 finding을 반영한 뒤 다시 작성한다.
-
-### 재검토 메모
-
-[Protocol·Rust source evidence의 정렬 상태를 리뷰한다](007-review-source-evidence-alignment.md)에서 다음 보정이 필요하다고 판정했다.
-
-- 현재 공식 문서의 “`jsonrpc` member를 생략한 JSON-RPC 2.0” 명칭과 exact-pin source의 “true JSON-RPC 2.0이 아님”이라는 표현을 서로 다른 evidence tier로 병기한다.
-- Generic library 사용 시 실제 wire shape 지원 여부를 확인해야 한다는 결론만 implementation constraint로 남긴다.
-- 후속 결정의 소유자를 readable title relative link로 바꾸고 일반 설명 heading·table label을 한국어화한다.
-
-### 재검토 전 결론
-
-[First-party connection·ingress architecture 근거 지도](../assets/005-first-party-connection-ingress-architecture.md)에 production `app-server-client`, production App Server stdio와 test-only subprocess helper의 module·task·queue ownership을 분리해 기록했다.
+[First-party connection·ingress architecture 근거 지도](../assets/005-first-party-connection-ingress-architecture.md)에 production `app-server-client`, App Server의 server-side stdio path, test-only subprocess helper와 TUI·exec consumer seam을 서로 다른 근거 등급으로 지도화했다.
 
 핵심 판정은 다음과 같다.
 
-- Pinned production client는 embedded `InProcessAppServerClient`와 WebSocket·Unix socket `RemoteAppServerClient`만 제공한다. AY-PLE이 쓰는 stdio child client는 없으며, child spawn 구현은 synchronous test helper뿐이다. 따라서 external process supervision, partial-spawn cleanup, stdout·piped stderr drain, exit watcher와 force-kill/reap은 AY-PLE connection boundary가 소유해야 한다.
-- First-party production pattern에서 채택할 것은 one connection authority, single ingress reader, exact direction-aware response demux, waiter와 event drain의 독립 진행, request capability와 event consumer의 분리, terminal fan-out, layered error와 explicit lifecycle이다. 한 stdout writer의 line order는 cross-thread causality나 product publication total order가 아니다.
-- Upstream 전체가 bounded·lossless·structured라는 일반화는 틀리다. Remote event와 initialize staging, server request serialization과 per-thread listener command에는 unbounded storage가 있고, InProcess lower/upper lossless classifier도 다르다. Server stdio는 malformed input을 계속 읽고 overload response를 drop할 수 있으며 stdout write failure를 coordinated connection close로 만들지 않는다.
-- Remote client의 caller-owned reusable ID, post-initialize request timeout·cancel·tombstone 부재, Server request reply once-only guard 부재, silent anomaly drop, partial initialize validation, command별 write-failure 비대칭과 shutdown failure를 success와 합치는 path는 protocol contract가 아니라 따라 하지 않을 implementation gap으로 분류했다.
-- `close stdin → bounded wait → force kill → reap`은 test precedent일 뿐이다. Graceful wait 중 stdout reader를 계속 살려 pipe backpressure를 해소해야 하며, exact saturation·terminal·shutdown result policy는 Tickets 011·012가 결정한다.
+- Pinned production `app-server-client`는 embedded `InProcessAppServerClient`와 WebSocket·Unix socket `RemoteAppServerClient`만 제공한다. AY-PLE이 쓸 production stdio child client는 없고 child spawn은 synchronous test helper에만 있다. 따라서 external process supervision, partial-spawn cleanup, serialized stdin writer, single stdout reader, child-exit watcher와 force-kill/reap은 AY-PLE connection boundary가 소유해야 한다.
+- 현재 공식 문서는 protocol을 “`jsonrpc` header를 생략한 JSON-RPC 2.0 message”로 부르고 exact-pin source는 “true JSON-RPC 2.0이 아니다”고 적는다. 이는 actual wire shape 충돌이 아닌 evidence-tier별 명명 차이다. Generic library는 headerless 네 envelope, `string | integer` ID와 optional `trace`를 실제로 보존할 수 있는지 증명하기 전에 채택하지 않는다.
+- First-party production source에서 가져올 pattern은 single connection authority, single ingress reader, exact direction-aware demux, response waiter와 event drain의 독립 진행, request capability와 single-consumer event surface의 분리, explicit lifecycle·layered error이다. 한 stdout writer의 line order는 sequential request execution, cross-thread causality나 product publication total order를 뜻하지 않는다.
+- Upstream은 end-to-end bounded·lossless·structured system이 아니다. Command queue capacity는 detached waiter·pending request 수를 bound하지 않고, Remote event·initialize staging, server method-scope queue와 listener command은 uncapped다. Stdio의 `128`도 message count뿐이며 inbound line·parsed/outbound payload byte cap이 아니다. InProcess lower/upper lossless classifier도 다르다. 따라서 byte·message·scope·in-flight bound와 saturation outcome은 AY-PLE이 별도로 정의해야 한다.
+- Stdin EOF는 stdio **connection** close trigger이지 항상 child process exit이 아니다. Persisted·explicit Remote Control connection이 공존하면 process가 남을 수 있고, stdout writer failure는 live-supervised connection terminal로 승격되지 않는다. Upstream server shutdown도 다단계 deadline 후 outer join이 globally bounded라는 proof가 없다. External client는 여러 failure·exit signal을 하나의 arbiter로 보내고, 후속 policy가 terminal로 분류한 signal에 대해 closing·waiter fan-out을 한 번만 시작하되 later child exit·force·reap evidence를 최종 cause/result에 합칠 수 있어야 한다.
+- `close stdin → bounded wait → force kill → reap`은 test helper의 bounded-attempt precedent일 뿐이다. Helper는 wait 중 stdout을 drain하지 않고 full-pipe·Remote Control·partial-spawn failure test도 없다. AY-PLE은 open pipe를 unread 상태로 방치하지 않되 graceful tail drain을 유지할지, tail loss를 감수하고 read end를 닫을지는 후속 shutdown policy에서 결정한다.
+- Remote의 caller-owned RequestId, live-only duplicate check, request timeout·cancel·tombstone 부재, Server request reply once-only guard 부재, silent anomaly drop, generic `request_typed<T>`·partial initialize validation은 protocol contract가 아니라 따라 하지 않을 구현 편의·누락이다. First-party consumer도 integer sequencer, UUID string, fixed initialize ID를 다르게 쓰므로 caller-owned allocator를 default로 간주하지 않는다.
 
-Connection client, conversation use-case와 local web adapter의 분리는 production precedent가 지지하지만, positive ownership table은 Ticket 008에서 검증할 candidate hypothesis로만 남겼다. Core·TUI·exec의 native thread/turn/item ownership은 Ticket 006, identity·delivery·unknown outcome·verification policy는 Tickets 009·011·012·013에서 결정한다.
+Source가 지지하는 seam 결론은 low-level client와 consumer-specific RPC/config composition을 분리할 수 있다는 점까지다. TUI는 `AppServerSession` wrapper를 두지만 exec는 `InProcessAppServerClient`를 직접 조합하고 upstream에 local-web adapter precedent는 없다. 따라서 connection client·shared conversation use-case·AY-PLE local-web adapter의 positive ownership은 production fact가 아닌 [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md)의 후보 가설로 남겼다.
 
-Client-side source conformance, server-side stdio/task ownership과 Wayfinder scope·deep-module boundary를 독립 재검토했고 최종 P1/P2 actionable finding은 세 축 모두 0건이다.
+Core·TUI·exec의 native thread/turn/item authority는 [First-party conversation ownership pattern을 지도화한다](006-map-first-party-conversation-ownership.md), client Interface·RequestId allocator·in-flight admission surface는 [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md), native/product identity는 [Native identity·authority와 product ref 정책을 결정한다](009-decide-identity-and-authority.md), concurrency는 [Thread·turn concurrency 정책을 결정한다](010-decide-concurrency-policy.md), delivery queue·max-in-flight·pre-admission saturation bounds는 [Event delivery와 transcript recovery model을 결정한다](011-decide-delivery-and-recovery-model.md), accepted RequestId late lifecycle·terminal trigger·shutdown은 [Connection loss와 unknown outcome 정책을 결정한다](012-decide-connection-and-unknown-outcome-policy.md), validation은 [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md)가 소유한다.
+
+Exact-pin production source·checked-in test와 test helper를 정적으로 대조했으며 upstream Rust test suite와 live subprocess probe는 재실행하지 않았다. Full stdout pipe, partial-spawn failure, stdout EOF·stdin write failure·child exit 경합은 upstream test가 고정하지 않으므로 [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md)의 fake-child oracle로 남겼다.
+
+최종 독립 재리뷰에서 source conformance, repository Standards, skeptical decision boundary 세 축의 P1·P2·P3 finding은 모두 0건이었다.
