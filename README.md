@@ -39,7 +39,8 @@ Manager AI가 답변을 문단과 핵심 내용 단위로 비교하여 공통 �
 |---|---|
 | 1. Main 기획서 | https://github.com/lymsla/N132_-/wiki/1.-Main-%EA%B8%B0%ED%9A%8D%EC%84%9C |
 | 2. 가치 구조 문서 | https://github.com/lymsla/N132_-/wiki/2.-%EA%B0%80%EC%B9%98-%EA%B5%AC%EC%A1%B0-%EB%AC%B8%EC%84%9C |
-| 3. Task List | https://github.com/lymsla/N132_-/wiki/3.-Task-List |
+| 3. Task List | https://github.com/lymsla/N132_-/wiki/3.-Task-List | 
+3.Task List 수정됨
 
 
 
