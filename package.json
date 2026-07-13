@@ -8,6 +8,7 @@
     "dev": "pnpm --filter @sherpa/web dev",
     "build": "pnpm --filter @sherpa/web build",
     "typecheck": "pnpm --filter @sherpa/web typecheck",
+    "test": "pnpm -r --if-present test",
     "dev:landing": "pnpm --filter freshkeep-landing dev"
   }
 }
