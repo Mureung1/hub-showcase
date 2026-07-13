@@ -5,11 +5,9 @@
 
 [📌 개발 Task 바로가기](https://github.com/hyunjinch/hub/wiki/%EA%B0%9C%EB%B0%9C-Task)
 
--> [2주차 계획](https://github.com/users/hyunjinch/projects/1/views/2)
+-> [2주차 계획](https://github.com/users/hyunjinch/projects/1)
 
 ## 구조
-- `frontend/` — React (Vite) 프론트엔드
-- `backend/` — Express 백엔드
+- `frontend/` — React (Vite)
+- `backend/` — Express
 - `docs/` — 기획/디자인 문서
-
-npm workspaces로 관리합니다. 루트에서 `npm install` 후 `npm run dev`를 실행하면 프론트/백엔드가 동시에 켜집니다.
