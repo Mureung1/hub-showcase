@@ -5,5 +5,7 @@ import { circadianRhythm } from "./processC.js";
 const KAPPA = 0.2; // 일주기 진폭 계수. 논문 원값 미확보 — 근사치(2026-07-14 결정)
 
 export function baselineAlertness(t: number, segment: SleepPressureSegment): number {
-  return sleepPressure(t, segment) + KAPPA * circadianRhythm(t);
+  // sleepPressure는 "피로도"(클수록 피곤함)라서, 각성도로 쓰려면 뒤집어야 함(1 - 피로도).
+  // 안 뒤집으면 "많이 깨어있을수록 각성도가 높다"는 반대 결과가 나오는 걸 검증 중 확인함(2026-07-14)
+  return (1 - sleepPressure(t, segment)) + KAPPA * circadianRhythm(t);
 }
