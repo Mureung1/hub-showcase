@@ -1,0 +1,94 @@
+@import '../../components/dashboard/StatsBar.css';
+
+.user-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--user-gap, clamp(1.125rem, 1.6vw, 1.5rem));
+}
+
+.user-page .page-header h1 {
+  font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+}
+
+.user-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.user-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.75rem, 1.4vw, 1rem);
+}
+
+.user-stats-compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.user-stats .stat-card {
+  margin: 0;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: clamp(0.75rem, 1.4vw, 1rem);
+}
+
+.quick-card {
+  text-decoration: none;
+  color: inherit;
+  gap: 0.5rem;
+}
+
+.quick-card strong {
+  font-size: 0.9375rem;
+}
+
+.quick-card > span:last-child {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.home-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(0.875rem, 1.5vw, 1.25rem);
+}
+
+.home-recommend-title,
+.home-meal-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.home-recommend-meta,
+.home-meal-feedback {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.home-split .btn {
+  align-self: flex-start;
+}
+
+.home-recommend-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .user-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .home-split {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+}
