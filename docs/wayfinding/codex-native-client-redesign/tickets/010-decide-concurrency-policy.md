@@ -23,6 +23,19 @@ Runtime admission과 AY-PLE의 reject·queue·steer UX를 분리하며 product p
 | First-party active input | TUI는 cached active turn이 있으면 `turn/steer(expectedTurnId)`, 없으면 `turn/start`를 사용한다. Missing·mismatch retry와 non-steerable queue는 TUI surface policy다. [`TUI method routing`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/tui/src/app/thread_routing.rs#L517-L677), [`turn/steer` validation](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/src/request_processors/turn_processor.rs#L849-L955) | Idle-only `startTurn`과 별도 explicit steer는 강한 first-party precedent지만 protocol이 강제하는 유일한 client policy는 아니다. TUI queue·retry는 복사하지 않는다. |
 | Cross-thread progression | App Server는 thread마다 event listener를 하나씩 두고, request serialization도 native thread key별로 분리한다. 서로 다른 listener가 공용 outgoing channel에 넣는 상대 순서에 causal 의미가 없다는 것은 이 task graph에서 얻은 inference다. Distinct long-running A/B turn의 first-party end-to-end concurrency test는 없다. [`per-thread listener`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/src/request_processors/thread_lifecycle.rs#L240-L343), [`different-key concurrency test`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/src/request_serialization.rs#L274-L306) | Connection ingress와 exact RPC demux는 처음부터 global operation slot과 독립적으로 진행하고 semantic state는 native `ThreadId`별 owner에 둔다. Public A/B concurrency는 별도 conformance tracer로 증명한다. |
 
+### Pinned test 실행 검증
+
+Exact pin `767822446c7a594caa19609ca435281a9ec67e0d`와 repo-declared Rust `1.95.0`을 disposable worktree·별도 Cargo target에서 실행했다. Cargo 실행은 main repo와 evidence checkout을 변경하지 않았다.
+
+| 검증 범위 | First-party test filter | 결과 |
+| --- | --- | --- |
+| Per-key request serialization | `codex-app-server --lib request_serialization::tests::` | 7 passed · 0 failed |
+| Active input routing과 validation | `codex-app-server --test all suite::v2::turn_steer::` | 4 passed · 0 failed |
+| Active·terminal·approval interrupt | `codex-app-server --test all suite::v2::turn_interrupt::` | 3 passed · 0 failed |
+| Same-turn queued input | `hooks::blocked_queued_prompt_does_not_strand_earlier_accepted_prompt`, `pending_input::steered_user_input_waits_for_model_continuation_after_mid_turn_compact` | 2 passed · 0 failed. Hooks test는 default test-thread stack에서 overflow한 뒤 `RUST_MIN_STACK=33554432`로 재실행해 통과했으며 assertion failure는 없었다. |
+
+이 실행은 same-key FIFO, different-key concurrency, idle steer rejection, matching active-ID steer와 interrupt lifecycle을 확인한다. Active `A` 중 두 번째 App Server `turn/start`의 `response B → lifecycle A`와 두 long-running thread의 end-to-end interleaving은 여전히 first-party external-boundary test가 없으며, 선택지 B를 채택하거나 `T0-C`를 구현할 때 [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md)가 executable oracle을 소유한다. 이 test 결과만으로 아래 A/B HITL을 선결정하지 않는다.
+
 이 사실에서 결정 없이 따라오는 owner 경계는 다음과 같다.
 
 | Owner | Concurrency 책임 | 소유하지 않는 것 |
