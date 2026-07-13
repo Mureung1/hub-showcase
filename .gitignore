@@ -1,5 +1,6 @@
 node_modules/
 dist/
-photo-navigation-prototype/node_modules/
-photo-navigation-prototype/dist/
 gh-pages-worktree/
+outputs/
+photo-navigation-public-m2/
+vite-*.log
