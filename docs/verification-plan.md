@@ -21,3 +21,10 @@
 
 ## 다음 단계
 방법이 정해지면 `.claude/skills/`에 정식 스킬로 만든다.
+
+## 하네스 구조 (3주차부터 발전시킬 예정)
+learn-harness-engineering에서 배운 "5개 방어 계층"(task specification, context provision, execution environment, verification feedback, state management) 구조를 참고해서, 실패가 생길 때마다 어느 계층 문제인지 분류하고 그 계층을 고쳐서 같은 실패가 반복 안 되게 만들고 싶음.
+
+계획 수립 전용 Agent, 기능 검증 전용 Agent도 나중에 만들고 싶어함. 지금 당장 만들지는 않고, 검증 방식/규칙이 안정된 뒤에 그때 Claude에게 스킬로 만들어달라고 요청하는 방식으로 진행한다.
+
+2주차(기반 설정/Brain Dump)는 아직 실패 사례 자체가 쌓이지 않아서 레이어 구조를 채울 근거가 없다고 판단, 3주차(Agent 루프 시작, 실패 사례가 실제로 나오기 시작하는 시점)부터 이 구조를 적용해보기로 함.
