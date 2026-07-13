@@ -53,6 +53,8 @@
 
 프로토타입: https://dodeho.github.io/hub/
 
+개발 현황 보드(이슈·2주차 계획): https://github.com/users/dodeho/projects/1
+
 아래 Wiki 링크입니다.
 https://github.com/dodeho/hub.wiki.git
 
