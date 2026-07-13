@@ -1,4 +1,4 @@
-﻿# LocalTwin v0.1 전체 개발 체크리스트
+# LocalTwin v0.1 전체 개발 체크리스트
 
 문서 상태: support
 
@@ -80,7 +80,11 @@
 
 ## 5. 데이터베이스 및 저장 구조
 
-- [ ] DB 기술 스택을 확정한다.
+- [x] 제품 runtime DB를 Supabase PostgreSQL로 확정한다.
+- [x] API data access와 migration을 SQLAlchemy/Alembic으로 확정한다.
+- [x] canonical SQLite를 import 원본·검증 기준으로 유지한다.
+- [ ] Alembic schema를 Supabase에 적용한다.
+- [ ] canonical SQLite 데이터를 seed하고 row count·대표 query를 비교한다.
 - [ ] 상권 테이블 또는 컬렉션 구조를 설계한다.
 - [ ] 점포 데이터 구조를 설계한다.
 - [ ] 인허가/개폐업 데이터 구조를 설계한다.
@@ -95,7 +99,9 @@
 
 - [x] 기술 스택을 FastAPI + Pydantic Settings로 확정한다.
 - [x] 실행 가능한 프로젝트 기본 구조와 `/health` endpoint를 생성한다.
-- [ ] 상권 목록/상권 상세 API를 설계한다.
+- [x] 기존 상권 상세 API와 응답 근거를 구현한다.
+- [ ] 제한된 시연 상권·점포 검색 API contract를 설계한다.
+- [ ] 검색 결과 선택에서 핵심 분석 화면까지 실제 API로 연결한다.
 - [ ] 점포 조회 API를 설계한다.
 - [ ] 반경 분석 API를 설계한다.
 - [ ] 입지 점수 API를 설계한다.
@@ -110,6 +116,7 @@
 - [ ] 대상 상권의 footprint와 높이 데이터로 MapLibre extrusion PoC를 만든다.
 - [ ] MapLibre 채택 또는 2D fallback 여부를 PoC 결과로 결정한다.
 - [x] 디자인 시스템 token을 `apps/web/src/styles/tokens.css`로 구현한다.
+- [ ] 거대 App 파일을 feature/component/hook으로 분리하고 기존 동작 test를 유지한다.
 - [ ] 공통 button, filter, panel, score, marker component를 구현한다.
 - [ ] desktop/mobile visual regression 기준 화면을 만든다.
 - [ ] 기본 레이아웃을 구성한다.
@@ -175,6 +182,13 @@
 - [ ] 배달/차량 흐름 메모 필드를 만든다.
 - [ ] 시간대별 관찰값을 대시보드에 표시한다.
 - [ ] 시간대별 관찰값을 3D 탐색 화면에 표시한다.
+
+## 10.1 제품·문서·보안 경계
+
+- [ ] 실제 서비스 source와 문서를 물리 폴더로 분리한다.
+- [ ] 제품과 문서를 서로 다른 배포 artifact로 build한다.
+- [ ] 제품 기본 설정에서 Scene API가 비활성화된다.
+- [ ] SEC-001~008을 현재 구조에 맞춰 재현·수정·회귀 검증한다.
 
 ## 11. 통합 검증
 

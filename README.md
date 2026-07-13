@@ -1,13 +1,16 @@
 # LocalTwin
 
-LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하고, 보조/추가기능으로 한 가게 앞 또는 한 거리 10~20m 구간의 혼잡도 3D 기반 탐색을 제공하는 웹 기반 상권 디지털 트윈 프로토타입이다.
+LocalTwin은 공공데이터와 공간 데이터를 근거로 후보 상권을 비교하고, 한 장소의 Gaussian Splatting 현장 탐색까지 연결하는 웹 기반 상권 의사결정 서비스다.
+
+제품 웹:
+[https://hub-localtwin-docs-vercel.vercel.app/](https://hub-localtwin-docs-vercel.vercel.app/)
 
 ## 문서 허브
 
 기획서, 개발문서, 기능 스펙, 운영 규칙은 아래 링크에서 접근한다.
 
 공개 문서사이트:
-[https://hub-localtwin-docs-vercel.vercel.app](https://hub-localtwin-docs-vercel.vercel.app)
+[https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md](https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md)
 
 ### Wiki용 기획 문서
 
@@ -31,9 +34,9 @@ LocalTwin은 공공데이터 기반 상권 분석을 주기능으로 제공하�
 - [Git 작업 규칙](docs/development/git-workflow.md)
 - [LocalTwin Dev Harness](docs/development/harness.md)
 - [검증 가이드](docs/development/validation.md)
+- [보안 점검 및 조치 체크리스트](docs/issues/security-hardening-review.md)
 
 - [1주차 목요일 진행 보고서](docs/development/week1-thursday-progress-report.md)
-
 
 ### 디자인 시스템
 

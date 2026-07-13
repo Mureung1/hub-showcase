@@ -1,0 +1,71 @@
+# Task Packet: SEC-003
+
+## 1. Summary
+
+```text
+Task: upload·GPU quota와 실행 제한
+Backlog ID: SEC-003
+Parent Epic: EPIC-07
+Type: security
+Owner: N187_정현우
+Status: ready
+```
+
+## 2. Goal
+
+한 사용자가 저장소와 GPU worker를 고갈시키지 못하도록 계층별 한도를 둔다.
+
+## 3. Scope
+
+- proxy/API upload limit
+- 사용자별 rate·job·storage quota
+- worker 동시 실행 상한
+- retry cooldown·idempotency·cleanup
+
+## 4. Related Documents
+
+- `docs/development/tasks.md`
+- `docs/issues/security-hardening-review.md`
+- `docs/development/validation.md`
+
+## 5. Expected Changes
+
+- API 또는 배포 경계의 최소 수정과 회귀 test
+- 합성 fixture만 사용하고 실제 secret·촬영 원본은 기록하지 않음
+
+## 6. Acceptance Criteria
+
+- [ ] 초과 upload가 413이다.
+- [ ] rate 또는 quota 초과가 429다.
+- [ ] 같은 job의 중복 실행이 차단된다.
+- [ ] worker concurrency와 cleanup test가 통과한다.
+
+## 7. Verification Plan
+
+```powershell
+uv run --directory apps/api pytest -q
+uv run --directory apps/api ruff check .
+pnpm --dir apps/web test
+python scripts/check_task_packet.py --require
+git diff --check
+```
+
+관련 없는 GPU 학습이나 공개 서버 공격으로 취약점을 재현하지 않는다.
+
+## 8. Documentation Updates
+
+- [ ] `docs/issues/security-hardening-review.md` 상태와 검증 기록을 갱신한다.
+- [ ] `docs/development/tasks.md` 상태를 실제 결과에 맞춘다.
+- [ ] 완료 시 `.harness/runs/` Run Report를 남긴다.
+
+## 9. Commit Plan
+
+```text
+fix(scene): enforce upload and worker limits
+```
+
+## 10. Self-check
+
+- [ ] 수정 전 안전한 로컬 재현과 수정 후 차단 결과를 기록했다.
+- [ ] 기존 market·score·web 흐름의 회귀 여부를 확인했다.
+- [ ] secret, 내부 경로와 사용자 원본을 노출하지 않았다.

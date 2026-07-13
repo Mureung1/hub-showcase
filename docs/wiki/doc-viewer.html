@@ -10,8 +10,14 @@
         color: #17211c;
         background: #f6f8f7;
         font-family:
-          Inter, Pretendard, "Apple SD Gothic Neo", system-ui, -apple-system, BlinkMacSystemFont,
-          "Segoe UI", sans-serif;
+          Inter,
+          Pretendard,
+          "Apple SD Gothic Neo",
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
         --green: #03c75a;
         --green-dark: #08703a;
         --ink: #17211c;
@@ -548,15 +554,17 @@
         if (nestedMatch && depth < 3) {
           return normalizeDoc(nestedMatch[1], depth + 1);
         }
-        if (value.includes("?") || value.includes("#") || value.includes("://") || value.includes("\0")) {
+        if (
+          value.includes("?") ||
+          value.includes("#") ||
+          value.includes("://") ||
+          value.includes("\0")
+        ) {
           return "Home.md";
         }
         value = value.replace(/^\.\//, "");
         if (!value.endsWith(".md")) return "Home.md";
-        const parts = value
-          .replace(/\\/g, "/")
-          .split("/")
-          .filter(Boolean);
+        const parts = value.replace(/\\/g, "/").split("/").filter(Boolean);
         const normalized = [];
         let leadingParents = 0;
         for (const part of parts) {
@@ -621,7 +629,7 @@
           <nav class="home-actions" aria-label="주요 문서 바로가기">
             <a class="home-action" href="./doc-viewer.html?doc=../development/tasks.md"><span>Tasks</span><strong>4주 개발 백로그</strong><small>Epic, 세부 Task, 주차별 목표</small></a>
             <a class="home-action" href="./doc-viewer.html?doc=localtwin-project-proposal.md"><span>Proposal</span><strong>프로젝트 기획서</strong><small>사용자 시나리오, 화면 구조, 핵심 기능</small></a>
-            <a class="home-action" href="/prototype/"><span>Prototype</span><strong>상권 분석 프로토타입</strong><small>실제 지도·POI·프리팹 시연 화면</small></a>
+            <a class="home-action" href="/"><span>Product</span><strong>LocalTwin 상권 분석</strong><small>지도·점포·분석 근거를 조작하는 제품 웹</small></a>
             <a class="home-action" href="./knowledge-graph.html"><span>Graph</span><strong>Knowledge Graph</strong><small>문서 간 연결 구조</small></a>
           </nav>
 
@@ -643,6 +651,7 @@
               <p>상권 분석을 먼저 탄탄히 만들고 3D는 보조 기능으로 연결합니다.</p>
               <ul>
                 <li><a href="./doc-viewer.html?doc=../features/market-analysis.md">공공데이터 기반 상권 분석</a><em>P0</em></li>
+                <li><a href="./doc-viewer.html?doc=../features/market-score-methodology.md">상권 점수 산정 방법론</a><em>P0 logic</em></li>
                 <li><a href="./doc-viewer.html?doc=../features/market-map-experience.md">2.5D 상권 지도</a><em>P0 UI</em></li>
                 <li><a href="./doc-viewer.html?doc=../features/3d-congestion-explorer.md">3DGS 현장 상세보기</a><em>P1</em></li>
                 <li><a href="./doc-viewer.html?doc=../features/person-anonymization-preprocessing.md">사람 영역 익명화</a><em>safety</em></li>
@@ -735,11 +744,19 @@
               </ul>
             </details>
 
+            <details class="doc-folder">
+              <summary>issues <small>1 file · 현재 문제와 해결 추적</small></summary>
+              <ul class="doc-files">
+                <li><a data-doc-path="issues/security-hardening-review.md" href="./doc-viewer.html?doc=../issues/security-hardening-review.md">security-hardening-review.md</a></li>
+              </ul>
+            </details>
+
             <details class="doc-folder" open>
-              <summary>features <small>4 files · 기능별 요구사항</small></summary>
+              <summary>features <small>5 files · 기능별 요구사항</small></summary>
               <ul class="doc-files">
                 <li><a data-doc-path="features/3d-congestion-explorer.md" href="./doc-viewer.html?doc=../features/3d-congestion-explorer.md">3d-congestion-explorer.md</a></li>
                 <li><a data-doc-path="features/market-analysis.md" href="./doc-viewer.html?doc=../features/market-analysis.md">market-analysis.md</a></li>
+                <li><a data-doc-path="features/market-score-methodology.md" href="./doc-viewer.html?doc=../features/market-score-methodology.md">market-score-methodology.md</a></li>
                 <li><a data-doc-path="features/market-map-experience.md" href="./doc-viewer.html?doc=../features/market-map-experience.md">market-map-experience.md</a></li>
                 <li><a data-doc-path="features/person-anonymization-preprocessing.md" href="./doc-viewer.html?doc=../features/person-anonymization-preprocessing.md">person-anonymization-preprocessing.md</a></li>
               </ul>
@@ -749,6 +766,13 @@
               <summary>module-notes <small>1 file · 범위와 결정 메모</small></summary>
               <ul class="doc-files">
                 <li><a data-doc-path="module-notes/localtwin-v0.1-scope.md" href="./doc-viewer.html?doc=../module-notes/localtwin-v0.1-scope.md">localtwin-v0.1-scope.md</a></li>
+              </ul>
+            </details>
+
+            <details class="doc-folder">
+              <summary>operations <small>1 file · GPU 실행과 local 검증</small></summary>
+              <ul class="doc-files">
+                <li><a data-doc-path="operations/gpu-scene-validation.md" href="./doc-viewer.html?doc=../operations/gpu-scene-validation.md">gpu-scene-validation.md</a></li>
               </ul>
             </details>
 
@@ -798,7 +822,10 @@
         return `<table><thead><tr>${header
           .map((cell) => `<th>${inline(cell, currentDoc)}</th>`)
           .join("")}</tr></thead><tbody>${body
-          .map((row) => `<tr>${row.map((cell) => `<td>${inline(cell, currentDoc)}</td>`).join("")}</tr>`)
+          .map(
+            (row) =>
+              `<tr>${row.map((cell) => `<td>${inline(cell, currentDoc)}</td>`).join("")}</tr>`,
+          )
           .join("")}</tbody></table>`;
       }
 
@@ -820,7 +847,9 @@
 
         function flushList() {
           if (!list.length) return;
-          blocks.push(`<ul>${list.map((item) => `<li>${inline(item, currentDoc)}</li>`).join("")}</ul>`);
+          blocks.push(
+            `<ul>${list.map((item) => `<li>${inline(item, currentDoc)}</li>`).join("")}</ul>`,
+          );
           list = [];
         }
 
@@ -907,7 +936,9 @@
           return { id, label };
         });
 
-        const items = labels.map(({ id, label }) => `<li><a href="#${id}">${escapeHtml(label)}</a></li>`);
+        const items = labels.map(
+          ({ id, label }) => `<li><a href="#${id}">${escapeHtml(label)}</a></li>`,
+        );
         const mermaidNode = ({ label }, index) => {
           const safeLabel = label.replace(/["\[\]{}]/g, "").trim();
           return `section${index + 1}["${safeLabel}"]`;
@@ -927,7 +958,9 @@
             const offset = rowIndex * rowSize;
             diagramLines.push(`  subgraph row${rowIndex + 1}[" "]`);
             diagramLines.push("    direction LR");
-            diagramLines.push(`    ${row.map((item, index) => mermaidNode(item, offset + index)).join(" --> ")}`);
+            diagramLines.push(
+              `    ${row.map((item, index) => mermaidNode(item, offset + index)).join(" --> ")}`,
+            );
             diagramLines.push("  end");
             diagramLines.push(`  style row${rowIndex + 1} fill:transparent,stroke:transparent`);
           });

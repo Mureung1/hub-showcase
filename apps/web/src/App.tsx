@@ -3,6 +3,7 @@ import {
   Building2,
   CalendarDays,
   ChevronDown,
+  ChevronRight,
   CircleHelp,
   Coffee,
   FileText,
@@ -11,19 +12,55 @@ import {
   MapPinned,
   Minus,
   Plus,
+  ScanLine,
   Search,
   Store,
   Users,
   X,
 } from "lucide-react";
+import type { StyleSpecification } from "maplibre-gl";
 import Map, { Layer, Marker, Source, type MapRef } from "react-map-gl/maplibre";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { SceneWorkspace } from "./components/SceneWorkspace";
+import {
+  loadMarketAnalysis,
+  loadMarketComparison,
+  type AnalysisSource,
+  type MarketAnalysis,
+} from "./marketAnalysis";
 import "./styles/global.css";
 
 type Category = "카페" | "음식점" | "베이커리" | "편의점";
-type MarketKey = "연남" | "홍대" | "신촌" | "성수";
+type MarketKey = "연남" | "홍대" | "합정";
+type MapMode = "localtwin" | "original";
+
+const localTwinMapStyle: StyleSpecification = {
+  version: 8,
+  name: "LocalTwin map",
+  glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+  sources: {},
+  layers: [
+    {
+      id: "localtwin-background",
+      type: "background",
+      paint: { "background-color": "#e9eee7" },
+    },
+  ],
+  light: {
+    anchor: "map",
+    color: "#fff8e7",
+    intensity: 0.58,
+    position: [1.15, 210, 36],
+  },
+};
+
+const marketMapSlug: Record<MarketKey, string> = {
+  연남: "yeonnam",
+  홍대: "hongdae",
+  합정: "hapjeong",
+};
 
 type Market = {
   name: string;
@@ -220,175 +257,89 @@ const markets: Record<MarketKey, Market> = {
       { name: "홍익대학교", longitude: 126.9252, latitude: 37.5515 },
     ],
   },
-  신촌: {
-    name: "신촌역 상권",
-    address: "서대문구 연세로 일대",
-    center: [126.9369, 37.5552],
-    score: 71,
-    grade: "상위 37%",
-    footfall: "45,210명",
-    workPopulation: "28,760명",
-    residentPopulation: "12,543명",
-    opening: 5,
-    closing: 3,
-    demand: [25, 18, 10, 7, 9, 29, 58, 80, 84, 79, 70, 61, 40, 27],
-    insight: "점심과 저녁 모두 수요가 있으며, 음식점 후보지의 회전율을 함께 확인해야 합니다.",
-    stores: [
-      {
-        name: "아티제 신촌역점",
-        category: "카페",
-        distance: "54m",
-        score: 71,
-        longitude: 126.9371941,
-        latitude: 37.5556231,
-      },
-      {
-        name: "빽다방",
-        category: "카페",
-        distance: "80m",
-        score: 70,
-        longitude: 126.937103,
-        latitude: 37.5559021,
-      },
-      {
-        name: "버거옥 신촌직영점",
-        category: "음식점",
-        distance: "79m",
-        score: 67,
-        longitude: 126.9361666,
-        latitude: 37.5556038,
-      },
-      {
-        name: "무교동낙지 신촌점",
-        category: "음식점",
-        distance: "81m",
-        score: 66,
-        longitude: 126.9361938,
-        latitude: 37.5556549,
-      },
-      {
-        name: "더베이크 본사",
-        category: "베이커리",
-        distance: "54m",
-        score: 64,
-        longitude: 126.9371306,
-        latitude: 37.555646,
-      },
-      {
-        name: "로이드브랑제리",
-        category: "베이커리",
-        distance: "70m",
-        score: 63,
-        longitude: 126.9362743,
-        latitude: 37.555585,
-      },
-      {
-        name: "CU",
-        category: "편의점",
-        distance: "102m",
-        score: 60,
-        longitude: 126.936838,
-        latitude: 37.5542886,
-      },
-      {
-        name: "GS25",
-        category: "편의점",
-        distance: "137m",
-        score: 59,
-        longitude: 126.9363592,
-        latitude: 37.556353,
-      },
-    ],
-    landmarks: [
-      { name: "신촌역", longitude: 126.9369, latitude: 37.5552 },
-      { name: "연세대학교", longitude: 126.9385, latitude: 37.562 },
-      { name: "연세로", longitude: 126.9361, latitude: 37.556 },
-    ],
-  },
-  성수: {
-    name: "성수동 카페거리",
-    address: "성동구 연무장길 일대",
-    center: [127.0554, 37.5447],
-    score: 77,
-    grade: "상위 24%",
-    footfall: "38,950명",
-    workPopulation: "31,420명",
-    residentPopulation: "8,970명",
-    opening: 10,
-    closing: 4,
-    demand: [16, 12, 10, 11, 20, 43, 72, 81, 79, 73, 76, 81, 63, 39],
-    insight: "평일 업무 수요와 주말 체류 수요가 함께 나타나는 성장형 상권입니다.",
+  합정: {
+    name: "합정역 상권",
+    address: "마포구 양화로 45 일대",
+    center: [126.914, 37.5505],
+    score: 72,
+    grade: "상위 34%",
+    footfall: "49,880명",
+    workPopulation: "22,310명",
+    residentPopulation: "11,740명",
+    opening: 8,
+    closing: 5,
+    demand: [21, 14, 9, 8, 13, 33, 60, 76, 82, 86, 88, 83, 61, 38],
+    insight: "홍대와 연남의 방문 수요가 이어지고, 저녁 음식점 경쟁이 강한 연결형 상권입니다.",
     stores: [
       {
         name: "스타벅스",
         category: "카페",
-        distance: "25m",
-        score: 77,
-        longitude: 127.0554497,
-        latitude: 37.5444766,
+        distance: "3m",
+        score: 72,
+        longitude: 126.9140273,
+        latitude: 37.5504836,
       },
       {
-        name: "이디야커피",
+        name: "카페 산티아고",
         category: "카페",
-        distance: "127m",
-        score: 76,
-        longitude: 127.0539654,
-        latitude: 37.5446897,
-      },
-      {
-        name: "스케줄 성수",
-        category: "음식점",
-        distance: "29m",
+        distance: "158m",
         score: 71,
-        longitude: 127.0554581,
-        latitude: 37.5444425,
+        longitude: 126.9152735,
+        latitude: 37.5514951,
       },
       {
-        name: "일일향",
+        name: "스파카 나폴리 합정",
         category: "음식점",
-        distance: "50m",
-        score: 70,
-        longitude: 127.0551317,
-        latitude: 37.5443045,
+        distance: "228m",
+        score: 69,
+        longitude: 126.9156154,
+        latitude: 37.5489059,
       },
       {
-        name: "뚜레쥬르",
-        category: "베이커리",
-        distance: "165m",
+        name: "스케줄합정",
+        category: "음식점",
+        distance: "247m",
         score: 68,
-        longitude: 127.057184,
-        latitude: 37.5451012,
+        longitude: 126.91617,
+        latitude: 37.5490965,
       },
       {
-        name: "오로라 베이커리 카페",
+        name: "롤링핀",
         category: "베이커리",
-        distance: "242m",
-        score: 67,
-        longitude: 127.0577327,
-        latitude: 37.5435847,
+        distance: "31m",
+        score: 66,
+        longitude: 126.913958,
+        latitude: 37.5507747,
       },
       {
-        name: "이마트24 트랜드랩 성수점",
-        category: "편의점",
-        distance: "29m",
-        score: 63,
-        longitude: 127.055458,
-        latitude: 37.544443,
+        name: "야미요밀 Vegan Bakery",
+        category: "베이커리",
+        distance: "161m",
+        score: 65,
+        longitude: 126.9153065,
+        latitude: 37.5515126,
       },
       {
-        name: "세븐일레븐",
+        name: "GS25 합정프리미엄점",
         category: "편의점",
-        distance: "109m",
+        distance: "198m",
         score: 62,
-        longitude: 127.0542191,
-        latitude: 37.544953,
+        longitude: 126.915214,
+        latitude: 37.549008,
+      },
+      {
+        name: "CU 마포한강푸르지오점",
+        category: "편의점",
+        distance: "178m",
+        score: 61,
+        longitude: 126.912061,
+        latitude: 37.55005,
       },
     ],
     landmarks: [
-      { name: "성수역", longitude: 127.0556, latitude: 37.5446 },
-      { name: "대림창고", longitude: 127.0546, latitude: 37.5442 },
-      { name: "어니언 성수", longitude: 127.0562, latitude: 37.5436 },
-      { name: "서울숲", longitude: 127.0372, latitude: 37.5445 },
+      { name: "합정역", longitude: 126.9139, latitude: 37.5495 },
+      { name: "메세나폴리스", longitude: 126.9138, latitude: 37.5509 },
+      { name: "양화진문화원", longitude: 126.9115, latitude: 37.5488 },
     ],
   },
 };
@@ -419,6 +370,20 @@ function formatMarketScore(score: number, category: Category, radius: number) {
   return Math.max(0, Math.min(100, score + categoryShift + radiusShift));
 }
 
+function demandFromFlow(flow: number[]) {
+  if (flow.length !== 6 || Math.max(...flow) <= 0) return Array(14).fill(0) as number[];
+  const maximum = Math.max(...flow);
+  const bucketByChartIndex = [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 0];
+  return bucketByChartIndex.map((bucket) => Math.round((flow[bucket] / maximum) * 100));
+}
+
+const clusterLabels: Record<string, string> = {
+  ordinary: "일반 상권",
+  productive_cluster: "생산적 집적상권",
+  specialized_watch: "특화상권 · 판단 보류",
+  saturated_cluster: "과포화 후보",
+};
+
 function circleFeature([longitude, latitude]: [number, number], radiusMeters: number) {
   const points = 64;
   const coordinates = Array.from({ length: points + 1 }, (_, index) => {
@@ -441,20 +406,43 @@ function isTestEnvironment() {
 }
 
 export function App() {
-  const [marketKey, setMarketKey] = useState<MarketKey>("성수");
+  const [marketKey, setMarketKey] = useState<MarketKey>("연남");
   const [category, setCategory] = useState<Category>("카페");
   const [radius, setRadius] = useState(300);
   const [activeHour, setActiveHour] = useState(6);
-  const [selectedStore, setSelectedStore] = useState<string>("스타벅스");
+  const [selectedStore, setSelectedStore] = useState<string>("아스테룸 433-10");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [sceneOpen, setSceneOpen] = useState(false);
   const [layer, setLayer] = useState<"density" | "demand">("density");
+  const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
   const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
+  const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
+  const [analysisSource, setAnalysisSource] = useState<AnalysisSource | null>(null);
+  const [analysisState, setAnalysisState] = useState<"loading" | "ready" | "error">("loading");
+  const [comparison, setComparison] = useState<Record<MarketKey, MarketAnalysis> | null>(null);
   const mapRef = useRef<MapRef>(null);
 
-  const market = markets[marketKey];
-  const score = formatMarketScore(market.score, category, radius);
+  const market = useMemo(() => {
+    const base = markets[marketKey];
+    if (!analysis) return base;
+    const flow = analysis.raw.total_flow;
+    const reason = analysis.score.reasons.slice(0, 2).map((item) => item.message).join(" ");
+    return {
+      ...base,
+      score: Math.round(analysis.score.score),
+      grade: `${analysis.score.band} · 신뢰도 ${analysis.score.confidence_label}`,
+      footfall: flow == null ? "미수집" : `${Math.round(flow).toLocaleString("ko-KR")}명/분기`,
+      workPopulation: "미수집",
+      residentPopulation: "미수집",
+      opening: analysis.raw.opening_count,
+      closing: analysis.raw.closure_count,
+      demand: demandFromFlow(analysis.raw.flow_by_time),
+      insight: reason || analysis.score.cluster.explanation,
+    };
+  }, [analysis, marketKey]);
+  const score = analysis ? Math.round(analysis.score.score) : formatMarketScore(market.score, category, radius);
   const selected = market.stores.find((store) => store.name === selectedStore) ?? market.stores[0];
   const visibleStores = useMemo(
     () => [
@@ -463,7 +451,7 @@ export function App() {
     ],
     [market, category],
   );
-  const sameCategoryCount = radius === 100 ? 6 : radius === 300 ? 19 : 34;
+  const sameCategoryCount = analysis?.raw.category_store_count ?? (radius === 100 ? 6 : radius === 300 ? 19 : 34);
   const densityLabel = layer === "density" ? "동일 업종 밀도" : "대표 시간대 수요";
   const circle = useMemo(() => circleFeature(market.center, radius), [market.center, radius]);
   const activeDemand = market.demand[activeHour];
@@ -481,15 +469,46 @@ export function App() {
   );
 
   useEffect(() => {
+    if (isTestEnvironment() || typeof fetch === "undefined") return;
+    const controller = new AbortController();
+    setAnalysis(null);
+    setAnalysisSource(null);
+    setAnalysisState("loading");
+    loadMarketAnalysis(marketKey, category, controller.signal)
+      .then((result) => {
+        setAnalysis(result.analysis);
+        setAnalysisSource(result.source);
+        setAnalysisState("ready");
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setAnalysisState("error");
+      });
+    return () => controller.abort();
+  }, [category, marketKey]);
+
+  useEffect(() => {
+    if (isTestEnvironment() || typeof fetch === "undefined") return;
+    const controller = new AbortController();
+    loadMarketComparison(category, controller.signal)
+      .then(setComparison)
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setComparison(null);
+      });
+    return () => controller.abort();
+  }, [category]);
+
+  useEffect(() => {
     mapRef.current?.flyTo({
       center: market.center,
       zoom: 15.4,
-      pitch: 38,
-      bearing: -18,
+      pitch: mapMode === "localtwin" ? 52 : 38,
+      bearing: mapMode === "localtwin" ? -24 : -18,
       duration: 900,
       essential: true,
     });
-  }, [market.center]);
+  }, [market.center, mapMode]);
 
   useEffect(() => {
     const categoryStore = market.stores.find((store) => store.category === category);
@@ -503,13 +522,25 @@ export function App() {
     setSelectedStore(markets[nextMarket].stores[0].name);
   }
 
-  function setBaseBuildingVisibility(visible: boolean) {
-    const map = mapRef.current?.getMap();
-    if (!map?.isStyleLoaded()) return;
+  function chooseMapMode(nextMode: MapMode) {
+    setMapMode(nextMode);
+  }
 
-    if (map.getLayer("building-3d")) {
-      map.setLayoutProperty("building-3d", "visibility", visible ? "visible" : "none");
-    }
+  function resetAnalysis() {
+    setCategory("카페");
+    setRadius(300);
+    setLayer("density");
+    setMapMode("localtwin");
+    setPrefabMode(true);
+    setBaseBuildingsVisible(true);
+    mapRef.current?.easeTo({
+      center: market.center,
+      zoom: 15.4,
+      pitch: 52,
+      bearing: -24,
+      duration: 650,
+      essential: true,
+    });
   }
 
   return (
@@ -560,8 +591,12 @@ export function App() {
       </header>
 
       <section className="demo-note" aria-label="데모 데이터 안내">
-        <span className="pulse-dot" /> 서울 상권분석 Open API 2025년 1분기 snapshot을 기준으로
-        구성한 시연 화면입니다.{" "}
+        <span className="pulse-dot" />
+        {analysisState === "loading"
+          ? "서울 상권분석 공식 데이터를 불러오는 중입니다."
+          : analysisState === "error"
+            ? "분석 데이터를 열지 못해 화면 예시 값을 표시합니다."
+            : `서울 상권분석 2025년 1분기 ${analysisSource === "api" ? "API" : "검증 snapshot"} 결과입니다.`}{" "}
         <button type="button" onClick={() => setEvidenceOpen(true)}>
           데이터 범위 보기
         </button>
@@ -571,18 +606,7 @@ export function App() {
         <aside className="filter-panel">
           <div className="panel-heading">
             <p>분석 범위</p>
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => {
-                setCategory("카페");
-                setRadius(300);
-                setLayer("density");
-                setPrefabMode(true);
-                setBaseBuildingsVisible(true);
-                setBaseBuildingVisibility(true);
-              }}
-            >
+            <button type="button" className="text-button" onClick={resetAnalysis}>
               초기화
             </button>
           </div>
@@ -669,7 +693,7 @@ export function App() {
                     {store.category} · {store.distance}
                   </small>
                 </span>
-                <strong>{store.score}</strong>
+                <strong>{analysis ? "POI" : store.score}</strong>
               </button>
             ))}
           </div>
@@ -681,14 +705,42 @@ export function App() {
               <Search size={17} />
               <span>{market.address}</span>
             </div>
-            <button
-              type="button"
-              className="glass-button"
-              onClick={() => setLayer(layer === "density" ? "demand" : "density")}
-            >
-              <Layers3 size={16} /> {densityLabel}
-            </button>
+            <div className="map-toolbar-actions">
+              <div className="map-mode-switch" role="group" aria-label="지도 표현 방식">
+                <button
+                  type="button"
+                  className={mapMode === "localtwin" ? "is-selected" : ""}
+                  aria-pressed={mapMode === "localtwin"}
+                  title="LocalTwin 2.5D 지도"
+                  onClick={() => chooseMapMode("localtwin")}
+                >
+                  <Layers3 size={15} /> <span>LocalTwin</span>
+                </button>
+                <button
+                  type="button"
+                  className={mapMode === "original" ? "is-selected" : ""}
+                  aria-pressed={mapMode === "original"}
+                  title="실제 지도 원본"
+                  onClick={() => chooseMapMode("original")}
+                >
+                  <MapPinned size={15} /> <span>실제 지도</span>
+                </button>
+              </div>
+              <button
+                type="button"
+                className="glass-button"
+                onClick={() => setLayer(layer === "density" ? "demand" : "density")}
+              >
+                <Layers3 size={16} /> {densityLabel}
+              </button>
+            </div>
           </div>
+          <button type="button" className="scene-entry-button" onClick={() => setSceneOpen(true)}>
+            <ScanLine size={16} />
+            <span>관평동 3D 장소</span>
+            <small>촬영 전</small>
+            <ChevronRight className="scene-entry-chevron" size={15} />
+          </button>
           {isTestEnvironment() ? (
             <div className="map-fallback">실제 지도는 브라우저 환경에서 표시됩니다.</div>
           ) : (
@@ -702,13 +754,197 @@ export function App() {
                   pitch: 38,
                   bearing: -18,
                 }}
-                mapStyle="https://tiles.openfreemap.org/styles/liberty"
+                mapStyle={
+                  mapMode === "localtwin"
+                    ? localTwinMapStyle
+                    : "https://tiles.openfreemap.org/styles/liberty"
+                }
                 attributionControl={false}
                 dragPan
                 scrollZoom
                 touchZoomRotate
-                onLoad={() => setBaseBuildingVisibility(baseBuildingsVisible)}
               >
+                {mapMode === "localtwin" ? (
+                  <Source
+                    id="localtwin-map"
+                    type="geojson"
+                    data={`/map/${marketMapSlug[marketKey]}.geojson`}
+                    attribution="© OpenStreetMap contributors"
+                  >
+                    <Layer
+                      id="localtwin-landcover"
+                      type="fill"
+                      filter={["==", ["get", "layer"], "landcover"]}
+                      paint={{
+                        "fill-color": [
+                          "match",
+                          ["get", "class"],
+                          "park",
+                          "#aad39f",
+                          "garden",
+                          "#bddcae",
+                          "forest",
+                          "#91c49b",
+                          "#c7dfb5",
+                        ],
+                        "fill-opacity": 0.94,
+                      }}
+                    />
+                    <Layer
+                      id="localtwin-water-fill"
+                      type="fill"
+                      filter={[
+                        "all",
+                        ["==", ["get", "layer"], "water"],
+                        ["==", ["geometry-type"], "Polygon"],
+                      ]}
+                      paint={{ "fill-color": "#9bd2e7", "fill-opacity": 0.9 }}
+                    />
+                    <Layer
+                      id="localtwin-water-line"
+                      type="line"
+                      filter={[
+                        "all",
+                        ["==", ["get", "layer"], "water"],
+                        ["==", ["geometry-type"], "LineString"],
+                      ]}
+                      paint={{ "line-color": "#77c4df", "line-width": 3 }}
+                    />
+                    <Layer
+                      id="localtwin-road-casing"
+                      type="line"
+                      filter={["==", ["get", "layer"], "road"]}
+                      layout={{ "line-cap": "round", "line-join": "round" }}
+                      paint={{
+                        "line-color": "#c9c7bb",
+                        "line-width": [
+                          "interpolate",
+                          ["linear"],
+                          ["zoom"],
+                          13,
+                          ["match", ["get", "class"], ["primary", "secondary"], 5, 2],
+                          17,
+                          ["match", ["get", "class"], ["primary", "secondary"], 22, 10],
+                        ],
+                      }}
+                    />
+                    <Layer
+                      id="localtwin-road"
+                      type="line"
+                      filter={["==", ["get", "layer"], "road"]}
+                      layout={{ "line-cap": "round", "line-join": "round" }}
+                      paint={{
+                        "line-color": [
+                          "match",
+                          ["get", "class"],
+                          ["primary", "secondary"],
+                          "#f5cf82",
+                          ["pedestrian", "footway", "path"],
+                          "#eadfc8",
+                          "#fffdf7",
+                        ],
+                        "line-width": [
+                          "interpolate",
+                          ["linear"],
+                          ["zoom"],
+                          13,
+                          ["match", ["get", "class"], ["primary", "secondary"], 4, 1],
+                          17,
+                          ["match", ["get", "class"], ["primary", "secondary"], 19, 8],
+                        ],
+                      }}
+                    />
+                    <Layer
+                      id="localtwin-building-3d"
+                      type="fill-extrusion"
+                      minzoom={13}
+                      filter={["==", ["get", "layer"], "building"]}
+                      layout={{ visibility: baseBuildingsVisible ? "visible" : "none" }}
+                      paint={{
+                        "fill-extrusion-base": ["get", "min_height"],
+                        "fill-extrusion-height": ["get", "height"],
+                        "fill-extrusion-color": [
+                          "match",
+                          ["get", "palette"],
+                          0,
+                          "#f1d6a5",
+                          1,
+                          "#b9d8c1",
+                          2,
+                          "#a9cfdf",
+                          3,
+                          "#e9b9ad",
+                          "#d5c3e2",
+                        ],
+                        "fill-extrusion-opacity": 0.96,
+                        "fill-extrusion-vertical-gradient": true,
+                      }}
+                    />
+                    <Layer
+                      id="localtwin-road-label"
+                      type="symbol"
+                      minzoom={14.7}
+                      filter={[
+                        "all",
+                        ["==", ["get", "layer"], "road"],
+                        ["!=", ["get", "name"], ""],
+                      ]}
+                      layout={{
+                        "symbol-placement": "line",
+                        "text-field": ["get", "name"],
+                        "text-font": ["Noto Sans Regular"],
+                        "text-size": 10,
+                        "text-max-angle": 35,
+                        "text-padding": 12,
+                      }}
+                      paint={{
+                        "text-color": "#657168",
+                        "text-halo-color": "#fffdf7",
+                        "text-halo-width": 1.4,
+                      }}
+                    />
+                    <Layer
+                      id="localtwin-poi-label"
+                      type="symbol"
+                      minzoom={16.1}
+                      filter={[
+                        "all",
+                        ["==", ["get", "layer"], "poi"],
+                        ["!=", ["get", "name"], ""],
+                      ]}
+                      layout={{
+                        "text-field": ["get", "name"],
+                        "text-font": ["Noto Sans Regular"],
+                        "text-size": 10,
+                        "text-offset": [0, 1.2],
+                        "text-anchor": "top",
+                        "text-allow-overlap": false,
+                      }}
+                      paint={{
+                        "text-color": "#34443a",
+                        "text-halo-color": "#f5f8f3",
+                        "text-halo-width": 1.2,
+                      }}
+                    />
+                  </Source>
+                ) : (
+                  <Layer
+                    id="market-building-3d"
+                    type="fill-extrusion"
+                    source="openmaptiles"
+                    source-layer="building"
+                    minzoom={14}
+                    beforeId="boundary_3"
+                    layout={{ visibility: baseBuildingsVisible ? "visible" : "none" }}
+                    paint={{
+                      "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+                      "fill-extrusion-color": "hsl(35, 8%, 85%)",
+                      "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
+                      "fill-extrusion-opacity": 0.8,
+                      "fill-extrusion-vertical-gradient": true,
+                    }}
+                  />
+                )}
                 <Source id="analysis-area" type="geojson" data={circle}>
                   <Layer
                     id="analysis-area-fill"
@@ -784,9 +1020,14 @@ export function App() {
                                   : store.category === "베이커리"
                                     ? "✦"
                                     : "+"}
-                            </i>
+                              </i>
                           </span>
+                          <span className="prefab-awning" />
+                          <span className="prefab-door" />
+                          <span className="prefab-sign" />
+                          <span className="prefab-planter" />
                           <span className="prefab-roof" />
+                          <span className="prefab-chimney" />
                         </>
                       ) : (
                         <span>
@@ -836,6 +1077,10 @@ export function App() {
               <i className="high" /> 높음
             </span>
           </div>
+          <div className="map-attribution">
+            {mapMode === "localtwin" ? "LocalTwin map data" : "OpenFreeMap"} · © OpenStreetMap
+            contributors
+          </div>
           {layer === "demand" && (
             <div className="flow-card">
               <span>시간대 유동 수요</span>
@@ -865,15 +1110,10 @@ export function App() {
             <button
               type="button"
               className={baseBuildingsVisible ? "is-active" : ""}
-              title="기본 지도 건물 표시"
+              title="건물 레이어 표시"
+              aria-label="건물 레이어 표시"
               aria-pressed={baseBuildingsVisible}
-              onClick={() =>
-                setBaseBuildingsVisible((current) => {
-                  const next = !current;
-                  setBaseBuildingVisibility(next);
-                  return next;
-                })
-              }
+              onClick={() => setBaseBuildingsVisible((current) => !current)}
             >
               <Building2 size={17} />
             </button>
@@ -938,7 +1178,7 @@ export function App() {
           <section className="metric-section">
             <div className="section-title">
               <span>경쟁 현황</span>
-              <small>반경 {radius}m</small>
+              <small>{analysis ? "서울시 상권 경계" : `반경 ${radius}m`}</small>
             </div>
             <div className="competition-chart">
               <div className="donut">
@@ -948,15 +1188,15 @@ export function App() {
               </div>
               <div className="legend-list">
                 <span>
-                  <i className="green" /> 카페 <b>{category === "카페" ? sameCategoryCount : 12}</b>
+                  <i className="green" /> 카페 <b>{category === "카페" ? sameCategoryCount : "-"}</b>
                 </span>
                 <span>
                   <i className="orange" /> 음식점{" "}
-                  <b>{category === "음식점" ? sameCategoryCount : 9}</b>
+                  <b>{category === "음식점" ? sameCategoryCount : "-"}</b>
                 </span>
                 <span>
                   <i className="blue" /> 베이커리{" "}
-                  <b>{category === "베이커리" ? sameCategoryCount : 4}</b>
+                  <b>{category === "베이커리" ? sameCategoryCount : "-"}</b>
                 </span>
               </div>
             </div>
@@ -1055,11 +1295,53 @@ export function App() {
             <p className="modal-eyebrow">EVIDENCE · 2025.1Q</p>
             <h2>이 화면의 숫자는 이렇게 읽습니다.</h2>
             <div className="evidence-grid">
+              {analysis && (
+                <>
+                  <div>
+                    <span>현재 판정</span>
+                    <b>
+                      {analysis.score.band} · 신뢰도 {analysis.score.confidence}%
+                    </b>
+                    <p>
+                      {analysis.score.decision_status === "supported"
+                        ? "현재 근거 범위에서 비교 판단을 지원합니다."
+                        : "근거가 충분하지 않아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."}
+                    </p>
+                  </div>
+                  <div>
+                    <span>특수상권 판정</span>
+                    <b>
+                      {clusterLabels[analysis.score.cluster.classification] ??
+                        analysis.score.cluster.classification}
+                    </b>
+                    <p>{analysis.score.cluster.explanation}</p>
+                  </div>
+                  {analysis.score.reasons.slice(0, 3).map((reason) => (
+                    <div key={`${reason.label}-${reason.tone}`}>
+                      <span>{reason.tone === "positive" ? "긍정 근거" : reason.tone === "caution" ? "주의 근거" : "참고 근거"}</span>
+                      <b>
+                        {reason.label} · {reason.value.toLocaleString("ko-KR")}
+                        {reason.unit}
+                      </b>
+                      <p>
+                        {reason.message} 출처: {reason.source_name}, {reason.period}.
+                      </p>
+                    </div>
+                  ))}
+                  {analysis.score.limitations.length > 0 && (
+                    <div>
+                      <span>데이터 한계</span>
+                      <b>누락 지표를 0점으로 처리하지 않음</b>
+                      <p>{analysis.score.limitations.join(" ")}</p>
+                    </div>
+                  )}
+                </>
+              )}
               <div>
                 <span>점포 위치</span>
                 <b>OpenStreetMap POI snapshot</b>
                 <p>
-                  2026.07.10에 조회한 카페·음식점·베이커리·편의점 이름과 좌표입니다. 전체 점포와
+                  2026.07.11에 조회한 카페·음식점·베이커리·편의점 이름과 좌표입니다. 전체 점포와
                   영업 상태를 완전하게 보장하지는 않습니다.
                 </p>
               </div>
@@ -1073,20 +1355,26 @@ export function App() {
               </div>
               <div>
                 <span>시간대 수요</span>
-                <b>생활인구 집계</b>
-                <p>대표 시간대 수요를 정규화한 시연 값입니다. 개인 이동 정보가 아닙니다.</p>
+                <b>서울시 길단위인구 집계</b>
+                <p>6개 시간대 공식 집계를 0~100으로 정규화해 표시합니다. 개인 이동 정보가 아닙니다.</p>
               </div>
               <div>
                 <span>입지 점수</span>
-                <b>규칙 기반 demo score</b>
-                <p>수요, 동일 업종 경쟁, 개폐업 흐름을 합산한 설명용 점수입니다.</p>
+                <b>LocalTwin score v{analysis?.score.formula_version ?? "1.0.0"}</b>
+                <p>
+                  서울 peer 백분위의 수요·점포당 매출·폐업·업종 밀도·순증률만 반영합니다.
+                  {analysis ? ` 현재 근거 신뢰도는 ${analysis.score.confidence}%입니다.` : ""}
+                </p>
               </div>
               <div>
                 <span>분석 범위</span>
                 <b>
                   {market.name} · {category}
                 </b>
-                <p>반경 {radius}m, 기준 기간 2025년 1분기를 화면 상태와 함께 기록합니다.</p>
+                <p>
+                  지도 탐색 반경은 {radius}m이며, 우측 집계는 서울시 상권 경계와 2025년 1분기를
+                  기준으로 합니다.
+                </p>
               </div>
             </div>
             <button type="button" className="primary-action" onClick={() => setEvidenceOpen(false)}>
@@ -1120,7 +1408,14 @@ export function App() {
             <div className="compare-table">
               {(Object.keys(markets) as MarketKey[]).map((key) => {
                 const item = markets[key];
-                const itemScore = formatMarketScore(item.score, category, radius);
+                const actual = comparison?.[key];
+                const itemScore = actual
+                  ? Math.round(actual.score.score)
+                  : formatMarketScore(item.score, category, radius);
+                const itemFlow = actual?.raw.total_flow;
+                const netOpening = actual
+                  ? actual.raw.opening_count - actual.raw.closure_count
+                  : item.opening - item.closing;
                 return (
                   <button
                     key={key}
@@ -1134,7 +1429,7 @@ export function App() {
                     <span>{item.name}</span>
                     <b>{itemScore}</b>
                     <small>
-                      유동 {item.footfall} · 순증 +{item.opening - item.closing}
+                      유동 {itemFlow == null ? item.footfall : `${Math.round(itemFlow).toLocaleString("ko-KR")}명/분기`} · 순증 {netOpening > 0 ? "+" : ""}{netOpening}
                     </small>
                   </button>
                 );
@@ -1146,6 +1441,8 @@ export function App() {
           </section>
         </div>
       )}
+
+      {sceneOpen && <SceneWorkspace onClose={() => setSceneOpen(false)} />}
     </main>
   );
 }

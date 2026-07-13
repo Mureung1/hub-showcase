@@ -6,7 +6,7 @@
 Task: 공식 상권 데이터 API 신청과 로컬 raw snapshot 수집 준비
 Type: data
 Owner: Codex + project owner
-Status: in_progress
+Status: done
 ```
 
 ## 2. Goal
@@ -62,7 +62,7 @@ tests: collector response and snapshot tests
 - [x] `SEOUL_OPEN_DATA_KEY`를 넣으면 raw JSON과 manifest를 저장하는 명령이 실행된다.
 - [x] project owner가 서울 Open API key를 `.env`에 넣고 실제 응답을 수집한다.
 - [x] `20251` 기준 101,110행의 서울 raw snapshot에 기준 기간, row 수와 잘림 여부가 남는다.
-- [ ] `PUBLIC_DATA_SERVICE_KEY`를 발급받아 개별 점포·인허가 importer task를 시작한다.
+- [x] `PUBLIC_DATA_SERVICE_KEY`로 개별 점포·인허가 실제 sample을 수집한다.
 
 ## 7. Verification Plan
 
@@ -106,4 +106,5 @@ verify:
 - [x] API key를 문서, source, output에 직접 넣지 않았는가?
 - [x] 실제 서울 Open API key로 data/raw snapshot을 수집했는가?
 - [x] source metadata와 data limitation을 UI/API 구현 전에 유지할 수 있는가?
-- [ ] 공공데이터포털 API key로 개별 점포·인허가 importer를 검증했는가?
+- [x] 공공데이터포털 API key로 개별 점포·인허가 importer를 검증했는가?
+- [ ] 후속: 운영 갱신 주기와 보존 기간을 결정한다.

@@ -192,20 +192,27 @@ pnpm build
 | `httpx2` | Starlette/FastAPI TestClient transport |
 | `ruff` | Python lint와 format check |
 
-## 8. Deferred Library
+## 8. Phase 2 도입 예정 Library
 
 다음 library는 관련 기능의 task packet과 검증 기준이 생길 때 추가한다.
 
 | 영역 | 후보 | 추가 시점 |
 | --- | --- | --- |
-| DB/migration | SQLAlchemy, Alembic | canonical schema와 migration 정책 확정 후 |
+| DB/migration | SQLAlchemy, Alembic, PostgreSQL driver | DB-001에서 Supabase schema·migration·seed와 함께 도입. 현재는 미설치 |
 | 공간 계산 | Shapely, pyproj | footprint/좌표계 PoC 시작 시 |
 | chart | Recharts 또는 Apache ECharts | chart 요구사항과 dataset 크기 확정 후 |
 | browser E2E | Playwright | 첫 사용자 workflow 구현 시 |
-| 3DGS | viewer 후보 미정 | scene format과 mesh occlusion PoC 전 |
+| 3DGS | Spark 2.1 + Three.js, Nerfstudio 1.1.5 | 실제 capture 품질·익명화 검증 전 |
 | LLM | provider SDK 미정 | Template report 검증 후 |
 
 한 번만 사용할 가능성이 있는 library는 미리 설치하지 않는다.
+
+### 8.1 DB 실행 원칙
+
+- 제품 runtime DB는 Supabase PostgreSQL 한 곳이다.
+- canonical SQLite는 Phase 1 데이터의 import 원본과 회귀 검증 기준이다.
+- Docker PostgreSQL은 필요한 경우에만 쓰는 선택적 migration 테스트 환경이며 별도 제품 DB가 아니다.
+- dependency와 설정은 DB-001 구현 commit에서 함께 추가하며 문서 결정만으로 설치 완료로 표시하지 않는다.
 
 ## 9. Environment Variable
 
@@ -225,6 +232,39 @@ SEOUL_OPEN_DATA_KEY를 log나 문서에 출력하지 않는다.
 VITE_ prefix 값은 browser에 노출된다고 간주한다.
 browser에서 사용할 수 없는 secret에 VITE_ prefix를 붙이지 않는다.
 ```
+
+Product DB:
+
+```text
+DATABASE_URL=postgresql+<driver>://<user>:<password>@<host>:5432/<database>
+```
+
+Scene API containment:
+
+```text
+SCENE_API_ENABLED=false
+```
+
+`DATABASE_URL`과 Supabase secret은 server 환경에만 두며 문서·브라우저 bundle·Git에 실제 값을 기록하지 않는다.
+
+Scene worker:
+
+| 변수 | 기본값 | 역할 |
+| --- | --- | --- |
+| `SCENE_WORKER_MODE` | `host` | `host`의 `ns-*` 도구 또는 `docker` runner 선택 |
+| `SCENE_DOCKER_IMAGE` | `ghcr.io/nerfstudio-project/nerfstudio:1.1.5` | 재현 가능한 Nerfstudio image pin |
+
+CUDA worker 준비:
+
+```powershell
+docker pull ghcr.io/nerfstudio-project/nerfstudio:1.1.5
+$env:SCENE_WORKER_MODE="docker"
+pnpm dev
+```
+
+`/api/v1/scenes/toolchain`에서 `ready=true`, image, GPU 이름과 VRAM을 확인한 뒤 upload를 시작한다.
+
+remote GPU server에서 local-only 검증할 때는 [GPU Scene Validation](../operations/gpu-scene-validation.md)을 따른다. P100처럼 compute capability가 낮은 장비는 VRAM이 충분해도 최신 gsplat kernel을 실행하지 못할 수 있으므로, 검증된 compatibility set과 실제 kernel import 결과를 함께 확인한다.
 
 ## 10. Dependency 변경
 

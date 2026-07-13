@@ -1,4 +1,4 @@
-﻿# LocalTwin v0.1 데이터 소스 매핑
+# LocalTwin v0.1 데이터 소스 매핑
 
 이 문서는 LocalTwin v0.1에 필요한 공공데이터가 충분한지 판단하고, 원천 데이터와 내부 canonical schema를 연결하기 위한 기준 문서다.
 
@@ -170,7 +170,23 @@ Market 경계와 지도 보강 데이터
 건물 높이 또는 층수
 ```
 
-v0.1의 2.5D 상권 지도는 MapLibre GL JS를 후보로 검토한다. 대상 상권의 건물 footprint와 높이 데이터로 PoC를 수행한 뒤 채택 여부를 결정한다. 데이터가 부족하면 2D 지도와 일부 건물 extrusion을 결합한 fallback을 사용한다.
+v0.1의 2.5D 상권 지도는 MapLibre GL JS와 프로젝트 소유 GeoJSON snapshot을 채택했다. `scripts/build_localtwin_map.py`가 Overpass API에서 상권별 720m 범위의 도로, 건물 footprint, 녹지, 물, POI를 수집한다. OSM에 높이가 있으면 사용하고, 층수가 있으면 `층수 × 3.2m`, 둘 다 없으면 재현 가능한 시각화용 기본 높이를 적용한다. 기본 높이는 실제 건물 높이라는 분석 근거로 사용하지 않는다.
+
+```mermaid
+flowchart LR
+  source["OSM 원본"] --> query["상권별 Overpass query"]
+  query --> transform["geometry · height · layer 변환"]
+  transform --> snapshot["GeoJSON + source metadata"]
+  snapshot --> map["LocalTwin MapLibre layer"]
+```
+
+표시 의무:
+
+```text
+© OpenStreetMap contributors
+snapshot 생성 시점
+ODbL 1.0
+```
 
 ### 3.6 인구와 성별 데이터 후보
 
@@ -273,6 +289,7 @@ N개월 생존율 = N개월 뒤 영업 중인 cohort 점포 수 / cohort 전체 
 일반음식점 인허가
 휴게음식점 인허가
 서울 생활인구
+서울 상권 추정매출
 ```
 
 ### 2순위
@@ -293,7 +310,7 @@ N개월 생존율 = N개월 뒤 영업 중인 cohort 점포 수 / cohort 전체 
 지하철/버스 승하차
 주차장
 사업체/주민등록 인구
-매출/소비 추정 데이터
+추가 민간 매출/소비 추정 데이터
 ```
 
 ## 6. Canonical Schema 매핑
@@ -333,6 +350,48 @@ N개월 생존율 = N개월 뒤 영업 중인 cohort 점포 수 / cohort 전체 
 | Building | 높이 출처 | `height_source` | 공식/층수 추정/default |
 | Boundary | 행정동 코드 | `admin_dong_code` | 코드 매핑 |
 | Boundary | geometry | `geometry` | 지도 경계 |
+
+### v0.1 SQLite 물리 schema
+
+```mermaid
+erDiagram
+  DATA_SOURCES ||--o{ MARKETS : supports
+  DATA_SOURCES ||--o{ STORE_METRICS : supports
+  DATA_SOURCES ||--o{ SALES_METRICS : supports
+  DATA_SOURCES ||--o{ FLOW_METRICS : supports
+  DATA_SOURCES ||--o{ STORE_POINTS : supports
+  DATA_SOURCES ||--o{ PERMIT_BUSINESSES : supports
+  MARKETS ||--o{ STORE_METRICS : has
+  MARKETS ||--o{ SALES_METRICS : has
+  MARKETS ||--o{ FLOW_METRICS : has
+```
+
+| Table | Grain | 핵심 provenance |
+| --- | --- | --- |
+| `data_sources` | provider snapshot 1개 | source URL, type, UTC, period, row count, SHA-256, raw path |
+| `markets` | 서울 상권 1개 | `source_snapshot_id`, 원본 좌표와 좌표계 |
+| `store_metrics` | 상권 × 분기 × 업종 | 점포·개업·폐업 집계 source |
+| `sales_metrics` | 상권 × 분기 × 업종 | `official_estimate` 매출 source |
+| `flow_metrics` | 상권 × 분기 | `official_estimate` 유동인구 source |
+| `store_points` | 개별 상가업소 | WGS84 좌표와 상가정보 snapshot |
+| `permit_businesses` | dataset × 관리번호 | 인허가 상태와 EPSG:5174 원본 좌표 |
+
+SQLite row는 `source_snapshot_id` foreign key를 통해 원본 snapshot으로 돌아간다. 인허가 API의 `CRD_INFO_X/Y`는 EPSG:5174로 저장하며 좌표 변환 전에는 지도 위 WGS84 point로 사용하지 않는다.
+
+### Phase 2 PostgreSQL 이관 원칙
+
+`v0.1 SQLite 물리 schema`는 Phase 1의 canonical snapshot이며 폐기하지 않는다. 제품 runtime은 Supabase PostgreSQL 한 프로젝트로 이관하고 SQLAlchemy model과 Alembic migration을 schema의 실행 원본으로 사용한다.
+
+```text
+raw snapshot + manifest
+-> canonical SQLite import와 품질 검증
+-> Alembic upgrade
+-> idempotent migrate/seed
+-> table별 row count와 대표 검색 query 비교
+-> product API read
+```
+
+Docker PostgreSQL은 migration을 로컬에서 격리 검증할 필요가 있을 때만 사용하는 선택 환경이며 세 번째 운영 DB가 아니다. 실제 key, connection string과 service role은 repository나 브라우저 bundle에 넣지 않는다.
 
 ## 7. 지역 적용 방식
 
@@ -573,9 +632,15 @@ v0.1에는 다음 조합이면 충분하다.
 | 일반음식점 인허가·영업 상태 | [행정안전부 식품 일반음식점 조회서비스](https://www.data.go.kr/data/15154916/openapi.do) | 개업/폐업 흐름, 영업 상태 |
 | 카페·휴게음식점 인허가·영업 상태 | [행정안전부 식품 휴게음식점 조회서비스](https://www.data.go.kr/data/15154921/openapi.do) | 카페 계열 개업/폐업 흐름 |
 
-2026-07-10 조사 기준으로 세 공공데이터포털 API는 개발계정 자동승인과 일 10,000
-트래픽을 안내한다. 실제 승인 조건과 응답 필드는 신청 뒤 Swagger와 첫 응답으로 다시
-검증한다.
+2026-07-11 공식 Swagger와 실제 응답으로 다음 operation을 검증했다.
+
+| Source | Operation | page 제한 | 갱신 |
+| --- | --- | ---: | --- |
+| 상가정보 | `B553077/api/open/sdsc2/storeListInRadius` | sample 20건, provider 전체 1,965건 | 실시간 안내 |
+| 일반음식점 | `1741000/general_restaurants/info` | 최대 100건 | 일간, 2일 전 기준 안내 |
+| 휴게음식점 | `1741000/rest_cafes/info` | 최대 100건 | 일간 |
+
+세 API는 개발계정 10,000회 트래픽과 이용허락범위 제한 없음을 안내한다. `public_data.py`는 이 세 endpoint만 allowlist로 고정하며 인증키를 URL log, raw JSON과 manifest에 쓰지 않는다.
 
 ### 12.3 신청과 로컬 설정 순서
 
@@ -633,9 +698,47 @@ provider row 수 일치가 확인된 snapshot만 전체 분석 입력으로 사�
 CLI로만 제공하고, `--allow-official-http`을 명시해야 실제 요청을 보낸다. 공용 또는
 신뢰할 수 없는 네트워크에서는 이 명령을 실행하지 않는다.
 
+공공데이터포털 sample은 다음 명령으로 수집한다.
+
+```powershell
+uv run --directory apps/api python -m localtwin_api.public_data `
+  --rows 20 --address "마포구" `
+  --longitude 126.9257 --latitude 37.5661 --radius 500
+```
+
+2026-07-11 실제 sample 결과:
+
+```text
+상가정보: 20 / 1,965 rows
+일반음식점: 20 / 19,895 rows
+휴게음식점: 20 / 5,664 rows
+secret/serviceKey snapshot 포함 여부: false
+```
+
+raw snapshot을 canonical SQLite에 적재한다.
+
+```powershell
+uv run --directory apps/api python -m localtwin_api.canonical_db
+uv run --directory apps/api python -m localtwin_api.canonical_db --stats
+```
+
+동일 명령을 두 번 실행한 실제 결과는 같다.
+
+```text
+data_sources: 7
+markets: 1,650
+store_metrics: 76,383
+sales_metrics: 21,427
+flow_metrics: 1,650
+store_points: 20
+permit_businesses: 40
+```
+
 ### 12.5 변경 기록
 
 | 날짜 | Task | 변경 | 상태 |
 | --- | --- | --- | --- |
 | 2026-07-10 | DATA-001 | 공식 API 서비스명, 신청 목록, local raw snapshot 절차를 추가 | 인증키 대기 |
 | 2026-07-10 | DATA-001 | 서울 상권영역·점포·추정매출·생활인구 `20251` 전체 101,110행 raw snapshot 저장 | 서울 수집 완료, 공공데이터포털 key 대기 |
+| 2026-07-11 | DATA-002 | 공공데이터포털 3개 API 실제 sample 60행과 secret 미포함 확인 | 수집 완료 |
+| 2026-07-11 | DATA-002 | 서울 전체 snapshot과 공공데이터 sample을 provenance SQLite에 2회 동일 적재 | canonical DB 완료 |

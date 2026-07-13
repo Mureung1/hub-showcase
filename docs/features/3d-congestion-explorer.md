@@ -5,6 +5,8 @@
 ```text
 구분: 보조/추가기능
 우선순위: P1
+상태: upload/job/viewer 구현, 실제 3DGS asset 생성 전
+대상: 대전 유성구 관평동 한 장소
 ```
 
 이 기능은 LocalTwin의 주기능이 아니다. 상권 지도에서 선택한 위치를 사람이 현장에 서 있는 눈높이로 확인하고, 시간대별 혼잡도를 공간 안에서 체감하도록 돕는 보조 기능이다.
@@ -17,6 +19,16 @@
 ```
 
 현장 상세보기는 상권 전체를 내려다보는 2.5D 지도와 별도 화면이다.
+
+```mermaid
+flowchart LR
+    A["연남·홍대·합정"] --> B["2.5D 상권 분석"]
+    C["대전 유성구 관평동"] --> D["360 영상·사진 upload"]
+    D --> E["검증·카메라 복원"]
+    E --> F["Splatfacto 학습"]
+    F --> G["PLY export"]
+    G --> H["Spark web viewer"]
+```
 
 ```text
 2.5D 상권 지도:
@@ -94,6 +106,38 @@
 → 정제 이미지로 Gaussian Splatting 생성
 → 웹 3DGS viewer에 장면 로드
 ```
+
+현재 자동화된 명령 경계는 다음과 같다.
+
+```text
+ns-process-data images|video
+-> ns-train splatfacto
+-> ns-export gaussian-splat
+```
+
+사용자가 입력한 값은 shell 문자열로 조합하지 않고 고정된 argument list에만 전달한다. 각 job은 `data/scenes/jobs/<uuid>`에 입력 hash, 크기, stage 상태와 실행 log를 분리해 저장한다.
+
+```mermaid
+stateDiagram-v2
+    [*] --> uploaded
+    uploaded --> queued
+    queued --> running: worker ready
+    queued --> blocked: tool 또는 GPU 부족
+    running --> failed: command 오류
+    running --> ready: PLY 확인
+    blocked --> queued: worker에서 재실행
+    failed --> queued: 원인 수정 후 재실행
+```
+
+API 계약:
+
+| Method | Path | 역할 |
+| --- | --- | --- |
+| `GET` | `/api/v1/scenes/toolchain` | FFmpeg, Nerfstudio와 CUDA worker 상태 확인 |
+| `POST` | `/api/v1/scenes/jobs` | 촬영물 저장, 검증과 자동 실행 예약 |
+| `GET` | `/api/v1/scenes/jobs/{id}` | job과 네 단계 상태 조회 |
+| `POST` | `/api/v1/scenes/jobs/{id}/run` | worker 준비 후 재실행 |
+| `GET` | `/api/v1/scenes/jobs/{id}/asset` | 준비된 `scene.ply` 제공 |
 
 ### 6.2 현장 좌표 설정
 
@@ -177,11 +221,11 @@ walkable zone 안에만 배치
 예시:
 
 | 시간대 | 원본 혼잡도 | 장면 표시 |
-| --- | --- | --- |
-| 10시 | 낮음 | 5개 |
-| 13시 | 높음 | 18개 |
-| 15시 | 보통 | 11개 |
-| 18시 | 매우 높음 | 24개 |
+| ------ | ----------- | --------- |
+| 10시   | 낮음        | 5개       |
+| 13시   | 높음        | 18개      |
+| 15시   | 보통        | 11개      |
+| 18시   | 매우 높음   | 24개      |
 
 표기 예시:
 
@@ -207,13 +251,31 @@ idle animation
 
 출발지·도착지 또는 이동 방향 데이터가 확보된 경우에만 연속적인 flow animation을 별도 검토한다.
 
-## 9. 렌더링 구조 후보
+## 9. 렌더링 구조
+
+웹은 Three.js와 Spark `SplatMesh`를 lazy-load한다. asset이 준비된 job에서만 renderer bundle을 내려받으며, OrbitControls로 회전·확대·축소한다.
 
 ```text
-Web Gaussian Splatting renderer
-+ 같은 camera를 공유하는 mesh layer
-+ 반복 사람 model의 instanced rendering
+Scene PLY endpoint
+-> SparkRenderer + SplatMesh
+-> Three.js PerspectiveCamera
+-> OrbitControls
 ```
+
+renderer는 loading/error canvas mount를 React 상태와 분리하고, 준비된 asset의 splat count와 bounds를 진단 metadata로 남긴다. synthetic binary Gaussian PLY 330개를 사용한 QA에서는 desktop canvas의 26.43%가 배경과 다른 pixel이었고, 390px mobile에서도 nonblank와 가로 overflow 없음을 확인했다. 이 결과는 renderer 검증이며 실제 촬영 복원 품질 검증이 아니다.
+
+실제 GPU 검증에서는 Nerfstudio 공식 `storefront` 다중 시점 사진을 P100 16GB worker에서 학습했다. 최종 checkpoint step `12999`에서 537,977 splat, 133,419,827-byte PLY를 export했고 server/local SHA-256이 일치했다. viewer는 Nerfstudio camera pose를 복원하고 scale 상위 outlier 1,153개만 화면에서 숨겨 첫 촬영 사진과 같은 벽돌 상점 전면을 표시했다. 자세한 절차와 수치는 [GPU Scene Validation](../operations/gpu-scene-validation.md)에 기록한다.
+
+### Worker mode
+
+```text
+SCENE_WORKER_MODE=host
+또는
+SCENE_WORKER_MODE=docker
+SCENE_DOCKER_IMAGE=ghcr.io/nerfstudio-project/nerfstudio:1.1.5
+```
+
+Docker mode는 job directory만 `/workspace`에 mount하고 `--gpus all --shm-size=12gb`로 고정된 Nerfstudio argument list를 실행한다. host에 `ns-*` 도구가 없어도 되지만 Docker, NVIDIA driver, image와 최소 6000MB VRAM은 필요하다.
 
 `deck.gl`은 현장 상세보기의 기본 기술이 아니다. 현장 사람 오브젝트는 지도 Layer가 아니라 3DGS 장면의 local coordinate 안에서 렌더링한다.
 
@@ -269,7 +331,23 @@ AR
 모든 시간대 영상을 3D 복원 입력으로 사용
 ```
 
-## 13. 관련 문서
+## 13. 현재 프로토타입 상태
+
+2026-07-11 기준 지도 화면에서 `관평동 3D 장소`를 열어 다음 기능을 조작할 수 있다.
+
+```text
+촬영 대상: 대전 유성구 관평동 한 장소
+촬영 범위: 점포 전면과 보도 약 10~20m
+대표 관찰 시간: 10:00 / 13:00 / 15:00 / 18:00
+입력: 360 영상·사진, 일반 영상·사진 묶음
+진행 상태: 입력 검증 → 카메라 복원 → Splatfacto 학습 → PLY export
+worker 상태: GPU 이름·VRAM·필수 tool과 blocked reason 표시
+privacy gate: 원본 비공개, 얼굴·차량번호 등 식별 영역 제외
+```
+
+현재 화면은 실제 Gaussian Splatting 장면을 흉내 낸 demo asset이 아니다. upload와 job 상태는 실제 API를 사용하며, PLY가 준비되면 Spark viewer를 연다. 이 개발 PC는 `NVIDIA GeForce MX450 2048MB`이고 Nerfstudio가 설치되지 않아 실제 sample job은 `blocked`로 확인됐다. 최소 기준은 6000MB VRAM이며, 실제 촬영물 학습·비식별화·nonblank canvas 검증은 CUDA worker에서 수행해야 한다. 관평동은 연남·홍대·합정 상권 비교 목록에도 포함하지 않는다.
+
+## 14. 관련 문서
 
 - [2.5D 상권 지도와 유동인구 Layer](./market-map-experience.md)
 - [사람 영역 익명화 전처리](./person-anonymization-preprocessing.md)
