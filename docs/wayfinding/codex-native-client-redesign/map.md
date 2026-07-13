@@ -30,11 +30,13 @@ Pinned OpenAI Codex의 실제 App Server client·core·TUI/exec 구조와 AY-PLE
 - [Connection·App Server ingress architecture pattern을 지도화한다](tickets/005-map-first-party-rust-architecture-patterns.md) — Exact pin의 production client에는 stdio child adapter가 없으므로 AY-PLE은 external process lifecycle을 소유하되 single ingress·exact demux·request/event 분리만 source-grounded pattern으로 채택하고 bounds·terminal·consumer seam은 후속 tracer·policy로 남긴다.
 - [Core·TUI·exec conversation ownership pattern을 지도화한다](tickets/006-map-first-party-conversation-ownership.md) — First-party shared kernel을 가정하지 않고 native thread/session scope·per-thread ownership·surface projection·조건부 history와 독립 lifetime을 설계 입력으로 채택하며 exact seam·identity·delivery·cleanup policy는 후속 decision ticket에 남긴다.
 - [Protocol·Rust source evidence의 정렬 상태를 리뷰한다](tickets/007-review-source-evidence-alignment.md) — 세 evidence asset은 exact pin에 추적 가능하고 public·version-specific·live·product 권위를 분리하며 Source·Standards·Spec review를 통과해 첫 tracer와 module seam을 결정하기에 충분하다.
-- [첫 tracer와 module seam을 선택한다](tickets/008-choose-first-tracer-and-module-seams.md) — T0 client-conformance tracer, process-scoped package-private App Server client와 per-thread projection 뒤의 explicit conversation surface, operation별 workspace, max-one pre-admission과 safe result를 채택하고 첫 supported Server request는 후속 command-approval T0.1 tracer가 variant-specific하게 결정한다.
 
 ## Not yet specified
 
 - 첫 conversation tracer 이후 browser transport의 정확한 형태
+- 첫 conversation tracer의 exact module seam·lifetime·admission과 package 배치
+- 두 번째 실제 product consumer가 생기기 전 shared semantic module을 추출할 조건
+- 첫 Server request 용례와 첫 AY-PLE `ModelingInvocation` tracer 사이의 정확한 티켓 경계
 
 ## Out of scope
 
