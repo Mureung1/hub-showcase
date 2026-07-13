@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "PlacePick backend (local)",
+      "request": "launch",
+      "mainClass": "com.placepick.PlacePickApplication",
+      "projectName": "backend",
+      "args": "--spring.profiles.active=local",
+      "env": {
+        "SPRING_PROFILES_ACTIVE": "local",
+        "PLACEPICK_EXTERNAL_MODE": "mock"
+      },
+      "preLaunchTask": "PlacePick: infrastructure up"
+    }
+  ]
+}

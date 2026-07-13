@@ -1,0 +1,75 @@
+name: ${COMPOSE_PROJECT_NAME:-placepick}
+
+services:
+  postgres:
+    image: postgres:16.14-bookworm@sha256:da788743d2060767375896de4d646f7576f5911461444b372616f19ea61db2ec
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-placepick}
+      POSTGRES_USER: ${POSTGRES_USER:-placepick}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-placepick-local-only}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  redis:
+    image: redis:7.4.9-bookworm@sha256:b2b95679e3b46fb51864949ed25ea976fc3a6bcc00a40a1bc00d568cb2822e50
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  mock-naver:
+    image: placepick/mock-naver:wiremock-3.13.2
+    build:
+      context: ./mock-api
+      dockerfile: Dockerfile
+      args:
+        MOCK_NAME: naver
+    restart: unless-stopped
+    command: ["--disable-gzip", "--verbose"]
+    ports:
+      - "127.0.0.1:${MOCK_NAVER_PORT:-8089}:8080"
+    healthcheck:
+      test: ["CMD", "/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  mock-llm:
+    image: placepick/mock-llm:wiremock-3.13.2
+    build:
+      context: ./mock-api
+      dockerfile: Dockerfile
+      args:
+        MOCK_NAME: llm
+    restart: unless-stopped
+    command: ["--disable-gzip", "--verbose"]
+    ports:
+      - "127.0.0.1:${MOCK_LLM_PORT:-8090}:8080"
+    healthcheck:
+      test: ["CMD", "/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  postgres-data:
+  redis-data:

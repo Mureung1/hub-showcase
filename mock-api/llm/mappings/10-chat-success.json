@@ -1,0 +1,39 @@
+{
+  "priority": 10,
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/chat/completions",
+    "headers": {
+      "Content-Type": {
+        "contains": "application/json"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "chatcmpl-placepick-fixture",
+      "object": "chat.completion",
+      "created": 1783900800,
+      "model": "placepick-mock",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "{\"summary\":\"조건에 맞는 고정 추천 결과\",\"reason\":\"계약 테스트 fixture\"}"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 10,
+        "completion_tokens": 12,
+        "total_tokens": 22
+      }
+    }
+  }
+}
