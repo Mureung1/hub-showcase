@@ -1,19 +1,41 @@
 :root {
-  --background: #0D0B14;
-  --foreground: #F2EEE8;
-  --card: #1A1825;
-  --card-foreground: #F2EEE8;
+  --background: #FAFAF8;
+  --foreground: #1A1825;
+  --card: #FFFFFF;
+  --card-foreground: #1A1825;
   --primary: #FF4D1F;
   --primary-foreground: #FFFFFF;
-  --secondary: #221F30;
-  --secondary-foreground: #F2EEE8;
-  --muted: #252235;
-  --muted-foreground: #7E7A90;
+  --secondary: #F2F0EC;
+  --secondary-foreground: #1A1825;
+  --muted: #F2F0EC;
+  --muted-foreground: #6B6875;
   --accent: #FFB020;
-  --accent-foreground: #0D0B14;
-  --border: rgba(255, 255, 255, 0.07);
+  --accent-foreground: #1A1825;
+  --border: rgba(0, 0, 0, 0.09);
   --input: transparent;
-  --input-background: #252235;
+  --input-background: #F7F6F3;
   --ring: #FF4D1F;
   --radius: 0.75rem;
+}
+
+/* Tailwind v4는 색상 유틸리티(bg-background, text-foreground 등)를 쓰려면
+   반드시 --color-* 이름으로 @theme 안에 등록해야 함.
+   위 :root 값은 그대로 재사용(값 두 번 안 적어도 되게 var()로 연결). */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-ring: var(--ring);
 }
