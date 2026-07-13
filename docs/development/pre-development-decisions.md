@@ -17,9 +17,13 @@ Deferred: v0.1 범위 밖이거나 지금 결정할 필요 없음
 | 영역 | 결정 | 근거 문서 |
 | --- | --- | --- |
 | 제품 범위 | 상권 분석 P0, 3D 현장 탐색 P1 | [v0.1 범위](../module-notes/localtwin-v0.1-scope.md) |
-| 저장소 | `apps/web` + `apps/api` monorepo | [개발환경](./environment.md) |
+| 현재 저장소 | `apps/web` + `apps/api` monorepo | [개발환경](./environment.md) |
+| Phase 2 제품 경계 | 실제 서비스 source와 배포 artifact를 `product/` 아래로 분리하고 문서 배포와 독립시킨다 | [아키텍처](./architecture.md) |
 | Web | React + Vite + TypeScript | [개발환경](./environment.md) |
 | API | FastAPI + Pydantic Settings | [개발환경](./environment.md) |
+| 제품 DB | Supabase PostgreSQL | [아키텍처](./architecture.md) |
+| ORM/migration | SQLAlchemy + Alembic | [아키텍처](./architecture.md) |
+| 이관 기준 | canonical SQLite는 import 원본·검증 기준으로 유지 | [데이터 소스 매핑](../data/data-source-mapping.md) |
 | package manager | Web은 pnpm, API는 uv | [개발환경](./environment.md) |
 | 지도 PoC | MapLibre GL JS + react-map-gl | [지도 스펙](../features/market-map-experience.md) |
 | 개발 통합 branch | `develop` | [Git 작업 규칙](./git-workflow.md) |
@@ -88,15 +92,18 @@ Report
 
 ### G4. Database와 migration
 
-기본 방향은 SQLite다. 첫 persistent schema 작업 전에 아래를 비교해 선택한다.
+상태: `Locked for Phase 2`
 
 ```text
-SQLAlchemy + Alembic을 도입할 만큼 migration과 query abstraction이 필요한가?
-표준 sqlite3로도 v0.1 query와 test를 단순하게 유지할 수 있는가?
-원본/정제 file과 DB가 각각 무엇을 소유하는가?
+제품 runtime DB = Supabase PostgreSQL
+API data access = SQLAlchemy
+schema migration = Alembic
+Phase 1 canonical SQLite = import 원본과 회귀 검증 기준
 ```
 
-결정 후 schema, migration, seed와 backup 정책을 문서화한다. 지금은 SQLAlchemy와 Alembic을 설치하지 않는다.
+이는 DB를 세 개 운영한다는 뜻이 아니다. Docker PostgreSQL은 Supabase 없이도 migration을 빠르게 검증해야 할 때만 쓰는 선택적 로컬 개발 인스턴스다. 이번 주 필수 경로는 canonical SQLite에서 Supabase 한 프로젝트의 PostgreSQL로 schema와 데이터를 이관하는 것이다.
+
+구현 전후에는 Alembic upgrade/downgrade, row count, 주요 조회 결과와 secret 미커밋을 검증한다. 현재 이 결정은 확정됐지만 dependency 설치와 이관 구현은 아직 시작하지 않았다.
 
 ### G5. 2.5D Map PoC
 
@@ -173,18 +180,16 @@ legend와 data source 표기
 
 ### G10. 배포 환경
 
-첫 공유 가능한 vertical slice 전에 결정한다.
+상태: `Partially Locked`
 
 ```text
-web hosting
-API hosting
-SQLite volume 또는 managed database
-development / preview / production environment
-CORS origin
-secret 관리
-logging과 최소 monitoring
-backup과 rollback
+제품 웹과 문서 사이트는 서로 다른 배포 artifact
+제품 runtime DB는 Supabase PostgreSQL
+브라우저에는 provider key와 service role key를 넣지 않음
+Scene API는 제품 환경에서 기본 비활성화
 ```
+
+API hosting, 허용 CORS origin, logging·monitoring, backup·rollback은 실제 배포 Task에서 확정한다. 물리 `product/` 경계와 두 배포 artifact는 ARCH-002에서 구현하고, route만 분리된 현재 상태를 완료로 오해하지 않는다.
 
 ### G11. GitHub 보호 규칙
 

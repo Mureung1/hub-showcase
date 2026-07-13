@@ -29,6 +29,7 @@ data/processed/*
 !data/processed/.gitkeep
 data/scenes/*
 !data/scenes/.gitkeep
+apps/web/public/smoke/
 
 # Editors and operating systems
 .idea/

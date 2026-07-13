@@ -5,13 +5,14 @@
   "framework": null,
   "redirects": [
     {
-      "source": "/",
-      "destination": "/docs/wiki/doc-viewer.html?doc=Home.md",
+      "source": "/prototype",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/prototype/(.*)",
+      "destination": "/",
       "permanent": false
     }
-  ],
-  "rewrites": [
-    { "source": "/prototype", "destination": "/index.html" },
-    { "source": "/prototype/(.*)", "destination": "/index.html" }
   ]
 }

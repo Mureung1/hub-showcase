@@ -2,6 +2,9 @@
 
 LocalTwin Wiki는 프로젝트 기획, 기능 정의, 개발 운영 문서를 연결하는 진입점이다.
 
+제품 웹:
+[LocalTwin 상권 분석](https://hub-localtwin-docs-vercel.vercel.app/)
+
 ## Knowledge Graph
 
 - [Interactive Knowledge Graph](./knowledge-graph.html)
@@ -23,7 +26,7 @@ docs/
     localtwin-project-proposal.md
     localtwin-product-plan.md
     localtwin-v0.1-execution-plan.md
-  prototypes/
+  prototypes/ (legacy: 이전 정적 시연 기록)
     core-market-analysis-prototype.html
   design/
     design-system.md
@@ -42,6 +45,7 @@ docs/
     week1-thursday-progress-report.md
   features/
     market-analysis.md
+    market-score-methodology.md
     market-map-experience.md
     3d-congestion-explorer.md
     person-anonymization-preprocessing.md
@@ -54,6 +58,8 @@ docs/
     meta-evaluation.md
   module-notes/
     localtwin-v0.1-scope.md
+  operations/
+    gpu-scene-validation.md  # GPU 학습, PLY 회수와 local viewer 검증
 ```
 
 ### 프로젝트 구조
@@ -78,6 +84,7 @@ LocalTwin/
     data/
     evaluation/
     module-notes/
+    operations/
   scripts/
     check.ps1
     check_docs_index.py
@@ -122,6 +129,10 @@ LocalTwin/
 - [검증 가이드](../development/validation.md)
 - [1주차 목요일 진행 보고서](../development/week1-thursday-progress-report.md)
 
+## Active Issues
+
+- [보안 점검 및 조치 체크리스트](../issues/security-hardening-review.md)
+
 ## Design System
 
 - [LocalTwin 디자인 시스템](../design/design-system.md)
@@ -133,6 +144,7 @@ LocalTwin/
 ## Feature Specs
 
 - [공공데이터 기반 상권 분석](../features/market-analysis.md)
+- [상권 점수 산정 방법론](../features/market-score-methodology.md)
 - [2.5D 상권 지도와 유동인구 Layer](../features/market-map-experience.md)
 - [Gaussian Splatting 현장 상세보기](../features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리](../features/person-anonymization-preprocessing.md)

@@ -5,7 +5,7 @@
 ```text
 구분: 주기능의 지도 표현 계층
 우선순위: P0
-상태: PoC 검증 전 제안
+상태: LocalTwin 2.5D 지도 프로토타입 구현
 ```
 
 이 기능은 공공데이터 기반 상권 분석 결과를 지도 위에서 탐색하는 핵심 화면이다. 지도는 상권 전체를 비교하는 분석 공간이고, 직접 촬영한 Gaussian Splatting 현장 상세보기와 역할을 분리한다.
@@ -53,27 +53,28 @@
 
 ## 5. 지도 Layer
 
-| Layer | 기본 상태 | 표현 | 역할 |
-| --- | --- | --- | --- |
-| 기본 지도 | 켜짐 | 도로, 보도, 경계 | 공간 맥락 |
-| 2.5D 건물 | 켜짐 | low-poly extrusion | 건물 단위 탐색 |
-| 점포 | 켜짐 | 업종별 marker | 점포 위치와 선택 |
-| 분석 반경 | 켜짐 | 반투명 원과 경계선 | 100m / 300m / 500m 범위 |
-| 유동인구 | 꺼짐 | 점, 단순 사람 symbol 또는 heatmap | 시간대별 상대 밀도 |
-| 주거인구 | 꺼짐 | choropleth 또는 density | 거주 수요 |
-| 매출 | 꺼짐 | 색상 구간 또는 집계 marker | 지역별 매출 수준 |
-| 개폐업 변화 | 꺼짐 | 증감 색상 또는 symbol | 상권 변화 |
+| Layer       | 기본 상태 | 표현                              | 역할                    |
+| ----------- | --------- | --------------------------------- | ----------------------- |
+| 기본 지도   | 켜짐      | 도로, 보도, 경계                  | 공간 맥락               |
+| 2.5D 건물   | 켜짐      | low-poly extrusion                | 건물 단위 탐색          |
+| 점포        | 켜짐      | 업종별 marker                     | 점포 위치와 선택        |
+| 분석 반경   | 켜짐      | 반투명 원과 경계선                | 100m / 300m / 500m 범위 |
+| 유동인구    | 꺼짐      | 점, 단순 사람 symbol 또는 heatmap | 시간대별 상대 밀도      |
+| 주거인구    | 꺼짐      | choropleth 또는 density           | 거주 수요               |
+| 매출        | 꺼짐      | 색상 구간 또는 집계 marker        | 지역별 매출 수준        |
+| 개폐업 변화 | 꺼짐      | 증감 색상 또는 symbol             | 상권 변화               |
 
 분석용 thematic Layer는 여러 개를 동시에 겹치면 의미가 흐려질 수 있다. v0.1에서는 `유동인구 / 주거인구 / 매출 / 개폐업 변화` 중 하나를 선택하는 방식을 우선 검토한다.
 
-## 6. 지도 렌더링 후보
+## 6. 지도 렌더링 구조
 
-### v0.1 후보
+### v0.1 채택 구조
 
 ```text
 React
 → react-map-gl
 → MapLibre GL JS
+→ LocalTwin GeoJSON snapshot
 ```
 
 MapLibre를 검토하는 이유:
@@ -87,7 +88,28 @@ feature-state 기반 선택 강조
 custom style
 ```
 
-`deck.gl`은 v0.1 기본 의존성에 포함하지 않는다. 상권 한 곳과 수백 개 수준의 건물·점포·인구 symbol은 MapLibre Layer로 먼저 구현한다.
+`deck.gl`은 v0.1 기본 의존성에 포함하지 않는다. 현재 상권별 약 5,000~7,000개 도로·건물·POI feature는 MapLibre GeoJSON Layer로 렌더링한다.
+
+`LocalTwin 지도`는 지도 엔진을 새로 만드는 기능이 아니다. MapLibre는 좌표·카메라·GPU 렌더링에만 사용하고, 화면에 보이는 도로·건물·녹지·물·POI는 `scripts/build_localtwin_map.py`가 OSM/Overpass 원본에서 생성한 프로젝트 소유 GeoJSON snapshot이다. 외부 basemap tile 없이 LocalTwin 전용 색상, 도로 폭, label과 `fill-extrusion`을 적용한다. 사용자는 같은 화면에서 외부 `실제 지도` mode로 즉시 복귀해 좌표를 비교할 수 있다.
+
+```mermaid
+flowchart LR
+  osm["OpenStreetMap / Overpass"] --> builder["build_localtwin_map.py"]
+  builder --> files["market별 GeoJSON snapshot"]
+  files --> source["MapLibre GeoJSON Source"]
+  source --> layers["도로 · 건물 · 녹지 · POI Layer"]
+  layers --> ui["LocalTwin 지도"]
+```
+
+현재 snapshot:
+
+| 상권 | 반경 | feature 수 | 파일 |
+| --- | ---: | ---: | --- |
+| 연남 | 720m | 5,331 | `apps/web/public/map/yeonnam.geojson` |
+| 홍대 | 720m | 7,033 | `apps/web/public/map/hongdae.geojson` |
+| 합정 | 720m | 6,026 | `apps/web/public/map/hapjeong.geojson` |
+
+모든 파일은 `retrieved_at`, source URL, ODbL 1.0과 `© OpenStreetMap contributors` attribution을 metadata로 가진다.
 
 다음 조건이 실제 검증에서 확인될 때만 deck.gl을 재검토한다.
 
@@ -151,6 +173,21 @@ Canonical GeoJSON 예시:
 건물에 여러 점포가 있으면 건물 선택 후 점포 목록을 표시한다. 점포가 건물 Polygon에 포함되지 않으면 별도 marker로 유지하고 자동으로 가까운 건물에 강제 연결하지 않는다.
 
 반경 검색은 분석 중심점과 점포 좌표 사이의 Haversine 거리를 사용한다.
+
+### 후보 점포 prefab
+
+분석 후보 점포는 실제 좌표 위에 작은 low-poly storefront prefab으로 표시한다. prefab의 facade는 실제 촬영 외관을 복제한 것이 아니라 지도에서 업종과 선택 상태를 빠르게 구분하기 위한 시각화다.
+
+```mermaid
+flowchart LR
+  point["실제 점포 좌표"] --> marker["MapLibre HTML marker"]
+  category["업종"] --> palette["지붕 · 차양 · 간판 palette"]
+  marker --> prefab["창문 · 문 · 간판 · 화분 prefab"]
+  palette --> prefab
+  prefab --> selection["선택 · hover · focus 상태"]
+```
+
+배경 건물은 수천 개를 동시에 렌더링하므로 단순 extrusion을 유지한다. 지붕·차양·창문·문·간판·화분 디테일은 후보 점포에만 적용해 지도 조작 성능과 정보 가독성을 지킨다.
 
 ## 9. 유동인구 Layer
 
@@ -260,20 +297,22 @@ Google Earth 수준의 photorealistic 도시 지도
 
 ## 14. 현재 프로토타입 상태
 
-2026-07-10 기준 React 프로토타입에서 다음을 조작할 수 있다.
+2026-07-11 기준 React 프로토타입에서 다음을 조작할 수 있다.
 
 ```text
-실제 MapLibre 지도 이동과 확대/축소
-연남·홍대·신촌·성수 상권 전환
+LocalTwin GeoJSON 지도의 이동과 확대/축소
+외부 basemap 없는 LocalTwin 2.5D / 실제 지도 mode 전환
+건물 Layer와 후보 점포 prefab의 독립적인 표시 전환
+서로 가까운 연남·홍대·합정 상권 전환
 카페·음식점·베이커리·편의점 업종 선택
 100m / 300m / 500m 반경 선택
 경쟁 밀도 / 시간대 수요 Layer 전환
-OSM POI marker와 prefab 건물 표시 전환
+OSM POI label과 후보 점포 prefab 표시 전환
 상권 비교, 점수 근거와 데이터 기준 dialog
 Docs Home 복귀
 ```
 
-현재 POI는 OpenStreetMap snapshot, 분석 수치와 점수는 시연용 fixture다. 실제 데이터 분석 API 연결은 [4주 개발 백로그](../development/tasks.md)의 `WEB-001` 이후 Task에서 진행한다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot이다. 분석 수치는 아직 화면용 fixture이고, 점수 공식 API는 구현됐지만 Front 연결 전이다. 실제 데이터 분석 API 연결은 [4주 개발 백로그](../development/tasks.md)의 후속 Task에서 진행한다.
 
 ## 15. 관련 문서
 

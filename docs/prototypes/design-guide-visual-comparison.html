@@ -573,6 +573,113 @@
         margin-top: 20px;
       }
 
+      .reference-section {
+        margin-top: 20px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        padding: 20px;
+      }
+
+      .reference-heading {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 20px;
+        align-items: end;
+      }
+
+      .reference-heading h2 {
+        margin: 0;
+        font-size: 1.35rem;
+      }
+
+      .reference-heading p {
+        max-width: 760px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.55;
+      }
+
+      .reference-link {
+        color: var(--brand-strong);
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .motion-flow {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 18px;
+      }
+
+      .flow-step {
+        position: relative;
+        display: grid;
+        min-height: 82px;
+        align-content: space-between;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--canvas);
+        padding: 10px;
+      }
+
+      .flow-step:not(:last-child)::after {
+        position: absolute;
+        top: 50%;
+        right: -8px;
+        z-index: 1;
+        width: 8px;
+        height: 1px;
+        background: var(--brand);
+        content: "";
+      }
+
+      .flow-step span {
+        color: var(--brand-strong);
+        font-size: 0.62rem;
+        font-weight: 850;
+      }
+
+      .flow-step strong {
+        font-size: 0.72rem;
+        line-height: 1.35;
+      }
+
+      .reference-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .reference-item {
+        border-top: 3px solid var(--brand);
+        background: #f8fbf9;
+        padding: 12px;
+      }
+
+      .reference-item[data-priority="medium"] {
+        border-top-color: var(--info);
+      }
+
+      .reference-item[data-priority="low"] {
+        border-top-color: var(--muted);
+      }
+
+      .reference-item strong {
+        display: block;
+        font-size: 0.8rem;
+      }
+
+      .reference-item p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.7rem;
+        line-height: 1.5;
+      }
+
       .summary article {
         border: 1px solid var(--border);
         border-radius: 8px;
@@ -621,6 +728,18 @@
           grid-row: 1 / span 2;
           grid-column: 2;
         }
+
+        .motion-flow {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .flow-step::after {
+          display: none;
+        }
+
+        .reference-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
       }
 
       @media (max-width: 720px) {
@@ -631,7 +750,10 @@
 
         .page-header,
         .comparison-card,
-        .summary {
+        .summary,
+        .reference-heading,
+        .motion-flow,
+        .reference-grid {
           grid-template-columns: 1fr;
         }
 
@@ -809,6 +931,49 @@
             <li>제품 화면보다 소개·문서 첫 화면에 적합</li>
           </ul>
         </article>
+      </section>
+
+      <section class="reference-section" aria-labelledby="motion-reference-title">
+        <div class="reference-heading">
+          <div>
+            <p class="eyebrow">Selected motion references</p>
+            <h2 id="motion-reference-title">효과보다 판단 흐름을 움직입니다</h2>
+            <p>
+              MotionSites의 시각 언어는 제품 전체에 복제하지 않습니다. 지도에서 후보 가게를 찾고,
+              현장 3D와 시간대별 혼잡도를 확인하는 핵심 흐름에만 선별 적용합니다.
+            </p>
+          </div>
+          <a class="reference-link" href="https://motionsites.ai/">MotionSites 원본 보기 ↗</a>
+        </div>
+
+        <div class="motion-flow" aria-label="LocalTwin 권장 motion 흐름">
+          <div class="flow-step"><span>01</span><strong>상권 윤곽</strong></div>
+          <div class="flow-step"><span>02</span><strong>Camera 이동</strong></div>
+          <div class="flow-step"><span>03</span><strong>반경·Marker</strong></div>
+          <div class="flow-step"><span>04</span><strong>가게 선택</strong></div>
+          <div class="flow-step"><span>05</span><strong>3D 현장</strong></div>
+          <div class="flow-step"><span>06</span><strong>시간대 비교</strong></div>
+          <div class="flow-step"><span>07</span><strong>지도 복귀</strong></div>
+        </div>
+
+        <div class="reference-grid" aria-label="MotionSites 사례별 적용 위치">
+          <article class="reference-item" data-priority="high">
+            <strong>Terra Geo Map · 높음</strong>
+            <p>넓은 공간에서 선택 상권과 후보 가게로 시선을 좁히는 지도 진입을 참고합니다.</p>
+          </article>
+          <article class="reference-item" data-priority="high">
+            <strong>Framelix 3D Studios · 높음</strong>
+            <p>Full-bleed 3D 장면과 최소 overlay로 Gaussian Splatting 현장에 집중시킵니다.</p>
+          </article>
+          <article class="reference-item" data-priority="medium">
+            <strong>Transform Data · 중간</strong>
+            <p>첫 실행의 주소·업종 입력이나 발표용 demo intro를 하나의 행동으로 단순화합니다.</p>
+          </article>
+          <article class="reference-item" data-priority="low">
+            <strong>Liquid Glass Agency · 낮음</strong>
+            <p>Glass는 지도 toolbar와 3D 시간대 panel처럼 실제로 떠 있는 control에만 사용합니다.</p>
+          </article>
+        </div>
       </section>
 
       <section class="summary" aria-label="적용 결론">

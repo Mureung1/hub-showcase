@@ -1,4 +1,4 @@
-﻿# LocalTwin Validation Guide
+# LocalTwin Validation Guide
 
 이 문서는 LocalTwin 개발 중 어떤 검증을 수행해야 하는지 정의한다.
 
@@ -38,6 +38,9 @@ api Ruff lint / format check / pytest
 | web | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, 화면 변경 시 screenshot |
 | api | `uv run --directory apps/api ruff check .`, `pytest`, endpoint smoke |
 | data | sample fixture 변환 확인, schema check |
+| DB migration | Alembic upgrade/downgrade, canonical SQLite 대비 row count·대표 query 비교, secret diff 점검 |
+| deploy boundary | 제품 artifact와 문서 artifact 파일 목록 검사, 각 build·route smoke |
+| security containment | 기본 설정의 Scene route 비노출, market·score API 회귀 test |
 | bug | 재현 케이스 확인, 수정 후 동일 케이스 재검증 |
 | harness | check script 자체 통과, 실패 케이스 수동 확인 |
 

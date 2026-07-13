@@ -1,0 +1,123 @@
+{
+  "evaluation": "market-analysis-v1",
+  "evaluated_at": "2026-07-11T07:36:21+00:00",
+  "status": "passed",
+  "gates": {
+    "expected_cases": 12,
+    "evaluated_cases": 12,
+    "failure_count": 0
+  },
+  "summary": {
+    "score_min": 28.3,
+    "score_max": 51.5,
+    "confidence_min": 49.6,
+    "confidence_max": 49.6,
+    "decisions": {
+      "insufficient_evidence": 12
+    },
+    "clusters": {
+      "specialized_watch": 4,
+      "ordinary": 7,
+      "saturated_cluster": 1
+    }
+  },
+  "failures": [],
+  "cases": [
+    {
+      "key": "연남:카페",
+      "score": 39.5,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "specialized_watch",
+      "stores": 64
+    },
+    {
+      "key": "연남:음식점",
+      "score": 41.1,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "ordinary",
+      "stores": 62
+    },
+    {
+      "key": "연남:베이커리",
+      "score": 28.3,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "saturated_cluster",
+      "stores": 18
+    },
+    {
+      "key": "연남:편의점",
+      "score": 51.4,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "ordinary",
+      "stores": 6
+    },
+    {
+      "key": "홍대:카페",
+      "score": 41.7,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "specialized_watch",
+      "stores": 274
+    },
+    {
+      "key": "홍대:음식점",
+      "score": 44.5,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "specialized_watch",
+      "stores": 1051
+    },
+    {
+      "key": "홍대:베이커리",
+      "score": 38.0,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "ordinary",
+      "stores": 38
+    },
+    {
+      "key": "홍대:편의점",
+      "score": 37.1,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "ordinary",
+      "stores": 47
+    },
+    {
+      "key": "합정:카페",
+      "score": 46.8,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "specialized_watch",
+      "stores": 81
+    },
+    {
+      "key": "합정:음식점",
+      "score": 51.5,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "ordinary",
+      "stores": 264
+    },
+    {
+      "key": "합정:베이커리",
+      "score": 35.3,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "ordinary",
+      "stores": 23
+    },
+    {
+      "key": "합정:편의점",
+      "score": 46.9,
+      "confidence": 49.6,
+      "decision": "insufficient_evidence",
+      "cluster": "ordinary",
+      "stores": 25
+    }
+  ]
+}

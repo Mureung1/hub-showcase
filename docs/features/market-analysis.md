@@ -191,7 +191,7 @@ cohort 개업 기간
 
 ## 8. 입지 점수 v0.1
 
-v0.1은 설명 가능한 규칙 기반 점수로 시작한다.
+v0.1은 설명 가능한 규칙 기반 점수로 시작한다. 공식 1.0.0의 계산식, peer group, 누락값 처리, 신뢰도와 특수상권 보정은 [LocalTwin 상권 점수 공식](./market-score-methodology.md)을 단일 기준으로 사용한다.
 
 ```text
 입지 점수
@@ -211,6 +211,8 @@ v0.1은 설명 가능한 규칙 기반 점수로 시작한다.
 | 시간대 점수 | 10시 / 13시 / 15시 / 18시 인구 또는 관찰값 |
 
 매출 데이터가 검증된 경우에만 별도 매출 점수 또는 종합분석 근거로 추가한다.
+
+동일 업종 밀집은 기본적으로 경쟁 압력으로 보되 무조건 감점하지 않는다. LQ가 높고 점포당 매출·유동 수요·생존 근거가 함께 좋은 경우에는 생산적 집적상권으로 제한된 가점을 주고, 매출 희석 또는 높은 폐업률이 동반되면 과포화 감점을 적용한다.
 
 ## 9. 종합분석
 
@@ -276,6 +278,55 @@ LLM 출력에도 사용한 데이터의 기간, 출처와 추정 여부를 함�
 성격: 통신데이터 기반 추정 생활인구
 ```
 
+### 현재 API와 화면 연결
+
+2026-07-11 기준 다음 흐름이 실제 구현됐다.
+
+```mermaid
+flowchart LR
+    DB[("canonical SQLite\n2025.1Q")]
+    API["GET /api/v1/markets/{id}"]
+    Score["score 1.0.0\npeer percentile"]
+    Snapshot["12개 검증 snapshot"]
+    Web["React 분석 Workspace"]
+
+    DB --> API --> Score --> Web
+    DB --> Snapshot --> Web
+```
+
+```text
+지원 상권: 연트럴파크(연남동주민센터), 홍대입구역(홍대), 합정역
+지원 업종: 카페, 음식점, 베이커리, 편의점
+실제 지표: 점포 수, 개폐업, 추정매출, 길단위인구 6개 시간대
+화면: API 우선, API가 없는 정적 배포에서는 같은 DB 생성 snapshot 사용
+```
+
+현재 score는 사용 가능한 5개 지표만 사용하므로 coverage와 confidence가 낮을 수 있다. 이 경우 화면에 `신뢰도 낮음`을 그대로 표시한다.
+
+`점수 산정 근거`에서는 총점만 반복하지 않고 현재 판정, confidence, 생산적 집적·특화 판단 보류·과포화 후보, 긍정·주의 근거, source와 누락 지표를 함께 표시한다.
+
+중요한 공간 단위:
+
+```text
+우측 분석 지표: 서울시 상권 경계
+지도 100m/300m/500m: 현재 탐색·표시 범위
+```
+
+반경 selector가 아직 서울시 상권 집계를 원형 반경으로 다시 계산하지는 않는다. 개별 점포 목록은 OSM POI이며 점포별 성공 점수 대신 `POI`로 구분한다.
+
+### Phase 2 저장소와 검색 경계
+
+현재 API와 배포 snapshot은 canonical SQLite에서 생성된다. Phase 2 제품 runtime은 Supabase PostgreSQL로 전환하되 canonical SQLite는 같은 데이터를 반복 이관하고 결과를 비교하는 기준으로 유지한다.
+
+첫 검색 vertical slice는 서울 전체 검색이 아니다. 시연 대상으로 고정한 상권·점포 dataset에서 이름·주소·업종 query를 받아 결과를 선택하고 기존 핵심 분석 화면을 여는 범위다. 구현 순서는 `FE 구조 분리 → DB migration/seed → 검색 API contract → React 연결 → 반경 query·filter 동기화`다.
+
+완료 조건:
+
+- 빈 query와 결과 없음 상태가 구분된다.
+- 검색 결과에 안정적인 identifier, 이름, 주소, 업종과 좌표가 포함된다.
+- 선택 결과가 기존 상권·업종 state와 충돌하지 않고 분석 화면을 갱신한다.
+- API 실패 시 검증 snapshot fallback 여부와 stale 상태를 명시한다.
+
 ## 11. 구현 우선순위
 
 ### 필수 지표
@@ -334,3 +385,10 @@ LLM 출력에도 사용한 데이터의 기간, 출처와 추정 여부를 함�
 - [Gaussian Splatting 현장 상세보기](./3d-congestion-explorer.md)
 - [데이터 소스 매핑](../data/data-source-mapping.md)
 - [LocalTwin 디자인 시스템](../design/design-system.md)
+
+## 15. 변경 기록
+
+| 날짜 | 변경 | 이유 |
+| --- | --- | --- |
+| 2026-07-11 | canonical market API와 deploy snapshot 구현 상태 추가 | 실제 지표와 아직 구현하지 않은 반경 분석을 구분하기 위해 |
+| 2026-07-13 | Supabase runtime과 제한 검색 vertical slice 경계 추가 | 서울 전체 검색 없이 이번 주 구현 범위를 고정하기 위해 |

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -11,6 +12,8 @@ class Settings(BaseSettings):
     cors_origins: str = "http://127.0.0.1:5173,http://localhost:5173"
     public_data_service_key: SecretStr | None = None
     seoul_open_data_key: SecretStr | None = None
+    scene_worker_mode: Literal["host", "docker"] = "host"
+    scene_docker_image: str = "ghcr.io/nerfstudio-project/nerfstudio:1.1.5"
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../../.env"),
