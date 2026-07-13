@@ -1,4 +1,6 @@
 import { ApiError } from '../middleware/errorHandler.js'
+import { analyzeReviews as analyzeReviewsText } from '../services/reviews.service.js'
+import { saveAnalyzedReviews, getRecurringIssues, resetHistory as clearHistory } from '../services/history.service.js'
 
 const MAX_REVIEWS = 15
 
@@ -16,15 +18,16 @@ function validateReviews(reviews) {
   return valid
 }
 
-// TODO(2주차): 실제 분석 엔진 연결. 기획서.md 5번 섹션(API 설계)의 응답 스펙을 따를 것.
-// 프론트엔드(review-assistant-react/src/App.jsx)의 규칙 기반 로직을 참고해 이식하거나,
-// Claude API 호출로 교체한다 (백엔드에서만 ANTHROPIC_API_KEY 사용, 프론트엔드에 노출 금지).
-export function analyzeReviews(req) {
+// TODO(3주차): 규칙 기반 분석 엔진을 Claude API 호출로 교체.
+export function analyzeReviews(req, res) {
   const reviews = validateReviews(req.body?.reviews)
-  throw new ApiError(501, 'NOT_IMPLEMENTED', `분석 엔진 미구현 (2주차 예정) — ${reviews.length}건 접수됨`)
+  const results = analyzeReviewsText(reviews)
+  saveAnalyzedReviews(req.sessionId, results)
+  const recurringIssues = getRecurringIssues(req.sessionId)
+  res.json({ results, recurringIssues })
 }
 
-// TODO(2주차): 세션별 누적 히스토리 저장소 연결 후 실제로 초기화.
 export function resetHistory(req, res) {
+  clearHistory(req.sessionId)
   res.status(204).end()
 }
