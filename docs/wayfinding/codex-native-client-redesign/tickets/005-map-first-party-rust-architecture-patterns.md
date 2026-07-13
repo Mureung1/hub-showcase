@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: resolved
+- State: open
 - Blocked by: tickets/003-pin-upstream-source-provenance.md
 
 ## Question
@@ -13,6 +13,18 @@ Pinned `openai/codex`의 `app-server-client`와 App Server에서 process·connec
 기존 research의 결론을 복사하지 말고 pinned checkout의 source와 tests에서 재검증해 architecture evidence asset으로 남긴다.
 
 ## Answer
+
+재검토 finding을 반영한 뒤 다시 작성한다.
+
+### 재검토 메모
+
+[Protocol·Rust source evidence의 정렬 상태를 리뷰한다](007-review-source-evidence-alignment.md)에서 다음 보정이 필요하다고 판정했다.
+
+- 현재 공식 문서의 “`jsonrpc` member를 생략한 JSON-RPC 2.0” 명칭과 exact-pin source의 “true JSON-RPC 2.0이 아님”이라는 표현을 서로 다른 evidence tier로 병기한다.
+- Generic library 사용 시 실제 wire shape 지원 여부를 확인해야 한다는 결론만 implementation constraint로 남긴다.
+- 후속 결정의 소유자를 readable title relative link로 바꾸고 일반 설명 heading·table label을 한국어화한다.
+
+### 재검토 전 결론
 
 [First-party connection·ingress architecture 근거 지도](../assets/005-first-party-connection-ingress-architecture.md)에 production `app-server-client`, production App Server stdio와 test-only subprocess helper의 module·task·queue ownership을 분리해 기록했다.
 

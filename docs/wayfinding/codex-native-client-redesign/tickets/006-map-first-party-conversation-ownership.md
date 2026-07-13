@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: resolved
+- State: open
 - Blocked by: tickets/003-pin-upstream-source-provenance.md
 
 ## Question
@@ -13,6 +13,18 @@ Pinned `openai/codex`의 core, TUI와 exec에서 native thread/task identity, pe
 기존 research의 결론을 복사하지 말고 pinned checkout의 source와 tests에서 재검증해 architecture evidence asset으로 남긴다.
 
 ## Answer
+
+재검토 finding을 반영한 뒤 다시 작성한다.
+
+### 재검토 메모
+
+[Protocol·Rust source evidence의 정렬 상태를 리뷰한다](007-review-source-evidence-alignment.md)에서 다음 보정이 필요하다고 판정했다.
+
+- Loaded live history를 일반화하지 않고 ephemeral thread의 `thread/read(includeTurns: true)` failure와 Exec의 no-backfill branch를 명시한다.
+- TUI가 cached active turn이 없을 때 사용하는 empty-`turnId` startup interrupt를 일반 interrupt와 분리하고 pending-start race의 실제 routing을 바로잡는다.
+- 후속 결정의 소유자를 readable title relative link로 바꾸고 일반 설명 heading·table label을 한국어화한다.
+
+### 재검토 전 결론
 
 [Pinned Codex production conversation ownership map](../assets/006-first-party-conversation-ownership.md)에 `codex-core`, App Server per-thread listener, production TUI와 exec의 native identity, collection·task ownership, input routing, history·terminal·background process lifetime을 exact pin source와 tests로 추적했다.
 

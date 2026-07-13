@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: resolved
+- State: open
 - Blocked by: tickets/003-pin-upstream-source-provenance.md
 
 ## Question
@@ -13,6 +13,21 @@
 조사 범위가 한 fresh context를 넘으면 thread lifecycle과 turn/item lifecycle을 후속 research ticket으로 분리한다.
 
 ## Answer
+
+재검토 finding을 반영한 뒤 다시 작성한다.
+
+### 재검토 메모
+
+[Protocol·Rust source evidence의 정렬 상태를 리뷰한다](007-review-source-evidence-alignment.md)에서 다음 보정이 필요하다고 판정했다.
+
+- `initialized` response-first를 공개 ordering contract가 아니라 exact pin의 first-party client precedent로 재분류한다.
+- Active second `turn/start`가 steer·error 판정보다 먼저 thread settings를 바꾸고 `thread/settings/updated`를 publish할 수 있는 branch를 추가한다.
+- Ephemeral thread의 `thread/read(includeTurns: true)`가 `InvalidRequest`가 되는 negative branch를 추가한다.
+- Empty `turnId`를 사용하는 startup interrupt와 일반 interrupt의 response authority 차이를 추가한다.
+- `thread/start` 실패 뒤 state DB 미등록을 직접 증명하는 exact-pin citation을 보강한다.
+- 후속 결정의 소유자를 readable title relative link로 바꾸고 일반 설명 heading·table label을 한국어화한다.
+
+### 재검토 전 결론
 
 [Pinned method lifecycle fact table](../assets/004-method-lifecycle-fact-table.md)에 generated public shape, exact-pin implementation·test, 단일 live observation, source inference와 AY-PLE product decision을 서로 다른 증거 등급으로 고정했다. 조사는 한 research ticket 범위에서 끝났으므로 thread와 turn/item ticket으로 분리하지 않았다.
 
