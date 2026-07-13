@@ -27,6 +27,10 @@
 6. 승인 전에는 `workspace/design/`을 수정하지 않는다.
 7. 생성, 수정, 기획서화 결과물은 승인 큐 항목 초안으로 작성한다.
 
+임시 아이디어에서 전환된 요청은
+`workspace/ideas/temporary_ideas.md`의 아이디어 ID를 근거로 연결한다. 전환
+자체를 승인으로 간주하지 않으며 다른 문서 요청과 같은 승인 절차를 따른다.
+
 ## Branch Rules
 
 ### create_new_document

@@ -68,6 +68,7 @@ workspace/
 
 - `AGENTS.md`: Codex가 이 저장소에서 반드시 지켜야 하는 전체 규칙
 - `docs/workflows/`: 작업별 실행 절차. 문서 관련 요청은 `document_change`를 먼저 따른다.
+- `docs/workflows/temporary_idea.md`: 임시 아이디어 등록·수정·승인 제안 전환 절차
 - `docs/templates/`: 승인 큐, 기획서, 결정 로그, 버전 기록 템플릿
 - `docs/skills/`: 반복 작업에 적용할 전문 규칙
 - `workspace/`: 실제 프로젝트 문서와 작업 상태
@@ -81,5 +82,6 @@ workspace/
 - 승인 전 확정 문서를 수정하지 않았는가
 - 변경안이 승인 큐 형식으로 작성되었는가
 - 승인된 변경에 Decision Log와 Version History 기록이 남았는가
+- 임시 아이디어 등록과 승인 제안 전환이 확정 문서와 분리되었는가
 - 문서 관련 요청이 검색 후 생성, 수정, 자료 취합, 기획서화, 질문으로 분기되었는가
 - 기획 문서와 변경안이 `docs/templates/`의 형식을 따르는가

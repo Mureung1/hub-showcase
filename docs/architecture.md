@@ -23,6 +23,8 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 작업 절차를 정의한다. Codex는 요청 유형에 맞는 workflow를 먼저 확인한 뒤 작업한다.
 문서 관련 요청은 먼저 `document_change` workflow에서 검색과 분기를 수행한 뒤,
 필요한 하위 workflow로 이동한다.
+확정 반영 요청이 없는 아이디어는 `temporary_idea` workflow에서 등록하거나
+승인 제안 전환 여부를 판단한다.
 
 ### `docs/skills/`
 
@@ -106,3 +108,5 @@ Codex는 먼저 관련 문서를 검색하고 다음 중 하나로 분기한다.
 - 산출물이 template 형식을 따르는가
 - 승인 전 확정 문서가 수정되지 않았는가
 - 승인 후 Decision Log와 Version History가 함께 갱신되었는가
+- 임시 아이디어가 승인 제안으로 전환되어도 명시적 승인 전 확정 문서를
+  수정하지 않았는가
