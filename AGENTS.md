@@ -56,6 +56,12 @@
 #### Backend
 
 * Express
+* PostgreSQL
+
+#### Authentication
+
+* Google Identity Services 기반 Google 로그인
+* 서버 세션
 
 확정된 기술은 사용자의 명시적인 요청 없이 다른 기술로 교체하지 않는다.
 
@@ -71,17 +77,13 @@
 * 서버 상태 관리
 * 전역 상태 관리
 * HTTP Client
-* 데이터베이스
 * ORM 또는 데이터 접근 방식
-* Google 로그인 구현 방식
-* 세션 또는 토큰 방식
 * 입력값 검증 라이브러리
 * 테스트 도구
 * AI API와 모델
 * URL 콘텐츠 추출 방식
 * 프론트엔드 배포 서비스
 * 백엔드 배포 서비스
-* 운영 데이터베이스
 * CI/CD
 
 미확정 기술을 이미 확정된 것처럼 가정하지 않는다.
