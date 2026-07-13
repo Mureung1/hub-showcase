@@ -45,6 +45,11 @@ model User {
   email     String   @unique
   createdAt DateTime @default(now())
 
+  // Google Calendar 연동
+  googleAccessToken   String?
+  googleRefreshToken  String?
+  googleConnectedAt   DateTime?
+
   // Relations
   profile        UserProfile?
   calendarEvents CalendarEvent[]
@@ -170,6 +175,9 @@ model Scrap {
   postingId       String
   scrappedAt      DateTime @default(now())
   notifyEnabled   Boolean  @default(true)
+
+  // Google Calendar 연동
+  googleEventId   String?  // Google Calendar 이벤트 ID
 
   // Relations
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)

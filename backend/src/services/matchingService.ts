@@ -66,11 +66,11 @@ export function matchUserToPosting(
   }
 
   // 5. 나이 체크
-  if (eligibility.ageMin !== null || eligibility.ageMax !== null) {
+  if (eligibility.ageMin !== null && eligibility.ageMin !== undefined || eligibility.ageMax !== null && eligibility.ageMax !== undefined) {
     totalCriteria++
     if (user.age) {
-      const minOk = eligibility.ageMin === null || user.age >= eligibility.ageMin
-      const maxOk = eligibility.ageMax === null || user.age <= eligibility.ageMax
+      const minOk = !eligibility.ageMin || user.age >= eligibility.ageMin
+      const maxOk = !eligibility.ageMax || user.age <= eligibility.ageMax
       if (minOk && maxOk) {
         matchedCount++
       }
@@ -78,7 +78,7 @@ export function matchUserToPosting(
   }
 
   // 6. 소득 체크
-  if (eligibility.incomeMax !== null) {
+  if (eligibility.incomeMax !== null && eligibility.incomeMax !== undefined) {
     totalCriteria++
     if (user.incomeBracket && user.incomeBracket <= eligibility.incomeMax) {
       matchedCount++

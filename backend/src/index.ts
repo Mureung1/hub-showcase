@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client'
 import authRoutes from './routes/auth.js'
 import profileRoutes from './routes/profile.js'
 import postingsRoutes from './routes/postings.js'
+import calendarRoutes from './routes/calendar.js'
 
 dotenv.config()
 
@@ -33,6 +34,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use('/api/auth', authRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/postings', postingsRoutes)
+app.use('/api/calendar', calendarRoutes)
 
 // 헬스 체크
 app.get('/health', (req, res) => {

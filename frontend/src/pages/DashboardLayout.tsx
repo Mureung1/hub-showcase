@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { postingsApi, Posting } from '../utils/apiClient'
 import PostingCard from '../components/PostingCard'
+import { GoogleCalendarButton } from '../components/GoogleCalendarButton'
 
 type Category = 'all' | 'COMPETITION' | 'ACTIVITY' | 'POLICY' | 'CAMPUS_EVENT'
 
@@ -16,7 +17,6 @@ export default function DashboardLayout() {
   const [selectedCategory, setSelectedCategory] = useState<Category>('all')
   const [postings, setPostings] = useState<Posting[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -25,7 +25,6 @@ export default function DashboardLayout() {
 
   const fetchPostings = async (category: Category, page: number) => {
     setIsLoading(true)
-    setError(null)
 
     try {
       const response = await postingsApi.list(limit, page * limit, category)
@@ -34,7 +33,7 @@ export default function DashboardLayout() {
         setTotal(response.data.pagination?.total || 0)
       }
     } catch (err: any) {
-      setError(err.message || '공고를 불러올 수 없습니다')
+      console.error('공고 조회 실패:', err)
       setPostings([])
     } finally {
       setIsLoading(false)
@@ -295,6 +294,16 @@ export default function DashboardLayout() {
                 })}
               </div>
             </div>
+
+            {/* Google Calendar 연동 */}
+            <GoogleCalendarButton
+              onSuccess={() => {
+                console.log('Google Calendar 연동 성공')
+              }}
+              onError={(error) => {
+                console.error('Google Calendar 연동 실패:', error)
+              }}
+            />
 
             {/* 구분선 */}
             <div style={{ height: '1px', backgroundColor: '#f3f4f6' }}></div>

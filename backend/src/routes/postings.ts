@@ -2,9 +2,13 @@ import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { matchUserToPosting } from '../services/matchingService.js'
 import { verifyAuth, AuthRequest } from '../middleware/auth.js'
+import { CalendarService } from '../services/calendarService.js'
+import { GoogleCalendarProvider } from '../services/providers/googleCalendarProvider.js'
 
 const router = Router()
 const prisma = new PrismaClient()
+const googleCalendarProvider = new GoogleCalendarProvider()
+const calendarService = new CalendarService(googleCalendarProvider)
 
 // GET /api/postings - 필터링된 공고 목록 조회
 router.get('/', verifyAuth, async (req: AuthRequest, res) => {
@@ -46,33 +50,36 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
     })
 
     // 매칭 스코어 계산
-    const result = postings.map(posting => {
-      const match = matchUserToPosting(userProfile, posting.eligibility)
+    const result = postings
+      .filter(posting => posting.eligibility) // eligibility가 있는 공고만
+      .map(posting => {
+        const eligibility = posting.eligibility!
+        const match = matchUserToPosting(userProfile, eligibility)
 
-      return {
-        id: posting.id,
-        title: posting.title,
-        category: posting.category,
-        receptionStartDate: posting.receptionStartDate,
-        receptionEndDate: posting.receptionEndDate,
-        eventStartDate: posting.eventStartDate,
-        eventEndDate: posting.eventEndDate,
-        sourceUrl: posting.sourceUrl,
-        parseStatus: posting.parseStatus,
-        isScraped: posting.scraps.length > 0,
-        isEligible: match.isEligible,
-        matchScore: Math.round(match.score),
-        eligibility: {
-          majors: posting.eligibility.majors,
-          regions: posting.eligibility.regions,
-          grades: posting.eligibility.grades,
-          enrollmentStatuses: posting.eligibility.enrollmentStatuses,
-          ageMin: posting.eligibility.ageMin,
-          ageMax: posting.eligibility.ageMax,
-          incomeMax: posting.eligibility.incomeMax,
-        },
-      }
-    })
+        return {
+          id: posting.id,
+          title: posting.title,
+          category: posting.category,
+          receptionStartDate: posting.receptionStartDate,
+          receptionEndDate: posting.receptionEndDate,
+          eventStartDate: posting.eventStartDate,
+          eventEndDate: posting.eventEndDate,
+          sourceUrl: posting.sourceUrl,
+          parseStatus: posting.parseStatus,
+          isScraped: posting.scraps.length > 0,
+          isEligible: match.isEligible,
+          matchScore: Math.round(match.score),
+          eligibility: {
+            majors: eligibility.majors,
+            regions: eligibility.regions,
+            grades: eligibility.grades,
+            enrollmentStatuses: eligibility.enrollmentStatuses,
+            ageMin: eligibility.ageMin,
+            ageMax: eligibility.ageMax,
+            incomeMax: eligibility.incomeMax,
+          },
+        }
+      })
 
     res.json({
       success: true,
@@ -117,16 +124,17 @@ router.get('/:id', verifyAuth, async (req: AuthRequest, res) => {
       where: { userId },
     })
 
-    const match = userProfile
-      ? matchUserToPosting(userProfile, posting.eligibility)
-      : { isEligible: false, matchScore: 0 }
+    let matchResult = { isEligible: false, score: 0 }
+    if (userProfile && posting.eligibility) {
+      matchResult = matchUserToPosting(userProfile, posting.eligibility)
+    }
 
     res.json({
       success: true,
       data: {
         ...posting,
-        isEligible: match.isEligible,
-        matchScore: Math.round(match.score),
+        isEligible: matchResult.isEligible,
+        matchScore: Math.round(matchResult.score),
         isScrapped: posting.scraps.length > 0,
         scrappedNotify: posting.scraps[0]?.notifyEnabled ?? false,
       },
@@ -157,6 +165,15 @@ router.post('/:id/scrap', verifyAuth, async (req: AuthRequest, res) => {
     })
 
     if (existing) {
+      // Google Calendar에서 이벤트 삭제
+      if (existing.googleEventId) {
+        try {
+          await calendarService.unsync(userId, existing.googleEventId)
+        } catch (error) {
+          console.error('Google Calendar 이벤트 삭제 실패:', error)
+        }
+      }
+
       await prisma.scrap.delete({
         where: {
           userId_postingId: { userId, postingId: id },
@@ -166,13 +183,31 @@ router.post('/:id/scrap', verifyAuth, async (req: AuthRequest, res) => {
     }
 
     // 새로 스크랩 추가
-    await prisma.scrap.create({
+    const scrap = await prisma.scrap.create({
       data: {
         userId,
         postingId: id,
         notifyEnabled: true,
       },
     })
+
+    // Google Calendar 동기화 (연동된 경우만)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { googleAccessToken: true }
+    })
+
+    if (user?.googleAccessToken) {
+      try {
+        const result = await calendarService.sync(userId, posting)
+        await prisma.scrap.update({
+          where: { id: scrap.id },
+          data: { googleEventId: result.eventId }
+        })
+      } catch (error) {
+        console.error('Google Calendar 동기화 실패:', error)
+      }
+    }
 
     res.json({ success: true, data: { isScrapped: true } })
   } catch (error) {

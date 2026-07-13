@@ -128,7 +128,7 @@
 
 ---
 
-## 6단계 — 캘린더 연동
+## 6단계 — 캘린더 연동 ✅ 백엔드 완료 (Google Calendar)
 
 ### 6-A: FullCalendar.js 기본 (필수)
 
@@ -141,20 +141,23 @@
 - [ ] 캘린더 월간/주간 뷰 전환 기능
 - [ ] 일정 클릭 시 상세 정보 표시
 
-### 6-B: Google Calendar 연동 (선택 - 권장)
+### 6-B: Google Calendar 연동 (선택 - 권장) ✅ 구현 완료
 
-- [ ] Google Cloud Console 프로젝트 생성 & OAuth 2.0 설정
-- [ ] Google Calendar API 활성화
-- [ ] 프론트엔드: `@react-oauth/google` 라이브러리 설치
-- [ ] 로그인 시 Google 계정 연동 (OAuth 플로우)
-- [ ] `google-auth-library-nodejs` 설치 (백엔드)
-- [ ] 사용자 액세스 토큰 저장 (DB의 User 테이블 확장)
-- [ ] 공고 마감일 → Google Calendar 자동 생성 API 구현
+- [x] Google Cloud Console 프로젝트 생성 & OAuth 2.0 설정 (사용자 수동)
+- [x] Google Calendar API 활성화 (사용자 수동)
+- [x] 프론트엔드: `@react-oauth/google` 라이브러리 설치
+- [x] 로그인 시 Google 계정 연동 (OAuth 플로우 구현)
+- [x] `googleapis` + `google-auth-library` 설치 (백엔드)
+- [x] 사용자 액세스 토큰 저장 (User 테이블 확장: googleAccessToken, googleRefreshToken, googleConnectedAt)
+- [x] Prisma 스키마 확장 (Scrap 모델에 googleEventId 추가)
+- [x] 공고 마감일 → Google Calendar 자동 생성 API 구현
   - `POST /api/calendar/sync` (스크랩 시 트리거)
   - 공고 제목 + 마감일 + 설명 (sourceUrl)
-- [ ] 캘린더 이벤트 삭제 API (`DELETE /api/calendar/events/:eventId`)
-- [ ] 사용자 Google Calendar와 실시간 동기화
-- [ ] 마감 전 알림 설정 (Google Calendar 자체 알림 활용)
+- [x] 캘린더 이벤트 삭제 API (`DELETE /api/calendar/events/:eventId`)
+- [x] 스크랩 시 자동 Google Calendar 동기화 구현
+- [x] OAuth 콜백 처리 API (`POST /api/calendar/oauth-callback`)
+- [x] 캘린더 연동 상태 확인 API (`GET /api/calendar/status`)
+- [x] 마감 전 알림 설정 (D-1, D-3 notification 자동 생성)
 
 ### 6-C: iCalendar (.ics) 내보내기 (선택 - 폴백)
 
