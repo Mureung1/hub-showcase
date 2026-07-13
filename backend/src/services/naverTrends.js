@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+// Node.js 18+ 내장 fetch 사용 (또는 npm install node-fetch 후 import fetch from 'node-fetch')
 
 const NAVER_CLIENT_ID = process.env.NAVER_CLIENT_ID;
 const NAVER_CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET;

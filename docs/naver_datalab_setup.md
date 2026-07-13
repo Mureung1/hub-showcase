@@ -20,6 +20,12 @@ ShortsGen에서 실제 트렌드 검색량 데이터를 받아오려면 네이�
    - **Description**: `소상공인 AI 숏폼 콘텐츠 대시보드 - 트렌드 분석용`
    - **Use API**: 체크박스에서 **"데이터랩(Data Lab) - 검색어 트렌드"** 또는 **"Search Datalab"** 선택
    - **Environment**: `Production` 또는 `Development` 선택 (테스트라면 Development)
+   - **Web Service URL**: 아래 항목 중 선택 (필수 필드):
+     * **로컬 개발 중**: `http://localhost:5000` (또는 `http://127.0.0.1:5000`)
+     * **실제 배포 도메인이 있을 경우**: `https://yourdomain.com` 형태로 입력
+     * **여러 환경 사용**: 쉼표로 구분하여 여러 URL 등록 가능 (예: `http://localhost:5000,https://yourdomain.com`)
+     
+     ⚠️ **주의**: 로컬 개발 단계에서는 `localhost` 주소로 등록해도 괜찮습니다. 나중에 실제 배포 도메인이 생기면 추가로 등록할 수 있습니다.
 
 3. **"Create"** 또는 **"등록"** 클릭합니다.
 
