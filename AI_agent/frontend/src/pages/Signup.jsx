@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 
 import Header from "../components/layout/Header";
 import {
@@ -6,6 +6,7 @@ import {
   getUser,
 } from "../features/auth/authStorage";
 import { registerUser } from "../features/auth/authService";
+import { sendVerificationEmail } from "../features/auth/emailApi";
 import {
   searchMajorsBySchool,
   searchUniversities,
@@ -55,6 +56,7 @@ function Signup() {
   const [selectedMajor, setSelectedMajor] = useState(null);
   const [isSearchingMajor, setIsSearchingMajor] = useState(false);
   const [majorSearchMessage, setMajorSearchMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -173,8 +175,9 @@ function Signup() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setErrorMessage("");
 
     const hasEmptyField = Object.values(form).some(
       (value) => value.trim() === ""
@@ -204,7 +207,7 @@ function Signup() {
     }
 
     if (existingUser?.email === email || pendingUser?.email === email) {
-      setErrorMessage("이미 가입 또는 인증 대기 중인 이메일입니다.");
+      setErrorMessage("이미 가입했거나 인증 대기 중인 이메일입니다.");
       return;
     }
 
@@ -246,14 +249,29 @@ function Signup() {
       verificationToken,
     };
 
+    setIsSubmitting(true);
+
+    try {
+      await sendVerificationEmail({
+        email,
+        name: user.name,
+        verificationUrl,
+      });
+    } catch (error) {
+      setErrorMessage(error.message);
+      setIsSubmitting(false);
+      return;
+    }
+
     const result = registerUser(user);
 
     if (!result.ok) {
       setErrorMessage(result.message);
+      setIsSubmitting(false);
       return;
     }
     alert(
-      `확인 메일을 발송했습니다. ${form.email.trim()} 메일함에서 확인 버튼을 눌러 회원가입을 완료해 주세요.\n\n개발용 확인 링크: ${verificationUrl}`
+      `확인 메일을 발송했습니다. ${email} 메일함에서 확인 버튼을 눌러 회원가입을 완료해 주세요.`
     );
     navigate(routes.login);
   };
@@ -273,7 +291,7 @@ function Signup() {
         <form style={styles.form} onSubmit={handleSubmit}>
           <div style={styles.formHeader}>
             <strong style={styles.formTitle}>계정 정보 입력</strong>
-            <span style={styles.formHint}>모든 항목은 MVP 분석에 활용됩니다.</span>
+            <span style={styles.formHint}>모든 항목은 MVP 분석에 사용됩니다.</span>
           </div>
 
           <div style={styles.fieldGrid}>
@@ -337,11 +355,7 @@ function Signup() {
                 </button>
               </div>
               {schoolSearchMessage && (
-                <span
-                  style={
-                    selectedSchool ? styles.schoolSuccess : styles.schoolMessage
-                  }
-                >
+                <span style={selectedSchool ? styles.schoolSuccess : styles.schoolMessage}>
                   {schoolSearchMessage}
                 </span>
               )}
@@ -355,11 +369,7 @@ function Signup() {
                       onClick={() => handleSchoolSelect(school)}
                     >
                       <strong>{school.name}</strong>
-                      <span>
-                        {[school.region, school.campus, school.type]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
+                      <span>{[school.region, school.campus, school.type].filter(Boolean).join(" · ")}</span>
                     </button>
                   ))}
                 </div>
@@ -380,11 +390,7 @@ function Signup() {
                     }
                   }}
                   style={styles.input}
-                  placeholder={
-                    selectedSchool
-                      ? "학과명을 검색하세요"
-                      : "학교를 먼저 선택하세요"
-                  }
+                  placeholder={selectedSchool ? "학과명을 검색하세요" : "학교를 먼저 선택하세요"}
                   disabled={!selectedSchool}
                 />
                 <button
@@ -397,11 +403,7 @@ function Signup() {
                 </button>
               </div>
               {majorSearchMessage && (
-                <span
-                  style={
-                    selectedMajor ? styles.schoolSuccess : styles.schoolMessage
-                  }
-                >
+                <span style={selectedMajor ? styles.schoolSuccess : styles.schoolMessage}>
                   {majorSearchMessage}
                 </span>
               )}
@@ -415,11 +417,7 @@ function Signup() {
                       onClick={() => handleMajorSelect(major)}
                     >
                       <strong>{major.name}</strong>
-                      <span>
-                        {[major.schoolName, major.campus, major.area]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
+                      <span>{[major.schoolName, major.campus, major.area].filter(Boolean).join(" · ")}</span>
                     </button>
                   ))}
                 </div>
@@ -443,9 +441,7 @@ function Signup() {
                   type="button"
                   style={styles.passwordToggle}
                   onClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
-                  aria-label={
-                    isPasswordVisible ? "비밀번호 숨기기" : "비밀번호 보기"
-                  }
+                  aria-label={isPasswordVisible ? "비밀번호 숨기기" : "비밀번호 보기"}
                 >
                   {isPasswordVisible ? (
                     <svg style={styles.eyeIcon} viewBox="0 0 24 24" aria-hidden="true">
@@ -474,14 +470,8 @@ function Signup() {
                 <button
                   type="button"
                   style={styles.passwordToggle}
-                  onClick={() =>
-                    setIsPasswordConfirmVisible((isVisible) => !isVisible)
-                  }
-                  aria-label={
-                    isPasswordConfirmVisible
-                      ? "비밀번호 확인 숨기기"
-                      : "비밀번호 확인 보기"
-                  }
+                  onClick={() => setIsPasswordConfirmVisible((isVisible) => !isVisible)}
+                  aria-label={isPasswordConfirmVisible ? "비밀번호 확인 숨기기" : "비밀번호 확인 보기"}
                 >
                   {isPasswordConfirmVisible ? (
                     <svg style={styles.eyeIcon} viewBox="0 0 24 24" aria-hidden="true">
@@ -507,8 +497,12 @@ function Signup() {
             >
               로그인으로 이동
             </button>
-            <button type="submit" style={styles.primaryButton}>
-              회원가입 완료
+            <button
+              type="submit"
+              style={styles.primaryButton}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "메일 발송 중" : "회원가입 완료"}
             </button>
           </div>
         </form>
@@ -746,3 +740,4 @@ const styles = {
 };
 
 export default Signup;
+

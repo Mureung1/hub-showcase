@@ -1,3 +1,6 @@
+import { env } from "../config/env.js";
+import { normalizeList, normalizeText } from "./text.js";
+
 const CAREER_NET_API_URL = "https://www.career.go.kr/cnet/openapi/getOpenApi";
 
 const fallbackJobs = [
@@ -5,7 +8,7 @@ const fallbackJobs = [
     id: "fallback-system-software",
     name: "시스템소프트웨어개발자",
     category: "IT관련전문직",
-    aliases: ["백엔드 개발자", "서버 개발자", "백엔드", "서버"],
+    aliases: ["백엔드 개발자", "서버 개발자", "백엔드", "서버 엔지니어"],
   },
   {
     id: "fallback-application-software",
@@ -17,7 +20,7 @@ const fallbackJobs = [
     id: "fallback-data-analyst",
     name: "데이터분석가",
     category: "IT관련전문직",
-    aliases: ["데이터 분석가", "BI 분석가", "데이터 애널리스트"],
+    aliases: ["데이터 분석가", "데이터 애널리스트", "BI 분석가"],
   },
   {
     id: "fallback-product-manager",
@@ -63,7 +66,7 @@ const practicalAliasRules = [
     targetNames: ["인공지능전문가", "시스템소프트웨어개발자"],
   },
   {
-    aliases: ["정보보안 전문가", "보안 엔지니어", "보안 관제"],
+    aliases: ["정보보안 전문가", "보안 엔지니어", "보안 관리자"],
     targetNames: ["정보보호전문가", "컴퓨터보안전문가"],
   },
   {
@@ -96,20 +99,18 @@ const practicalAliasRules = [
   },
 ];
 
-let careerNetJobCache = null;
+let jobCache = null;
 
-const getApiKey = () => import.meta.env.VITE_CAREER_NET_API_KEY || "";
-
-const normalizeContent = (content) => {
-  if (!content) {
-    return [];
-  }
-
-  return Array.isArray(content) ? content : [content];
-};
-
-const normalizeText = (value) =>
-  String(value || "").toLowerCase().replace(/\s+/g, "");
+const createBaseParams = () =>
+  new URLSearchParams({
+    apiKey: env.careerNetApiKey,
+    svcType: "api",
+    svcCode: "JOB",
+    contentType: "json",
+    gubun: "job_dic_list",
+    perPage: "500",
+    thisPage: "1",
+  });
 
 const getJobName = (job) =>
   job.job || job.job_nm || job.jobNm || job.jobName || job.name || "";
@@ -159,42 +160,29 @@ const applyPracticalAliases = (jobs) => {
   return jobs;
 };
 
-const createBaseParams = (apiKey) =>
-  new URLSearchParams({
-    apiKey,
-    svcType: "api",
-    svcCode: "JOB",
-    contentType: "json",
-    gubun: "job_dic_list",
-    perPage: "500",
-    thisPage: "1",
-  });
-
 const fetchCareerNetJobs = async () => {
-  if (careerNetJobCache) {
-    return careerNetJobCache;
+  if (jobCache) {
+    return jobCache;
   }
 
-  const apiKey = getApiKey();
-
-  if (!apiKey) {
-    careerNetJobCache = applyPracticalAliases(fallbackJobs);
-    return careerNetJobCache;
+  if (!env.careerNetApiKey) {
+    jobCache = applyPracticalAliases(fallbackJobs);
+    return jobCache;
   }
 
-  const response = await fetch(`${CAREER_NET_API_URL}?${createBaseParams(apiKey)}`);
+  const response = await fetch(`${CAREER_NET_API_URL}?${createBaseParams()}`);
 
   if (!response.ok) {
     throw new Error("커리어넷 직업 목록을 불러오지 못했습니다.");
   }
 
   const data = await response.json();
-  const jobs = normalizeContent(data?.dataSearch?.content)
+  const jobs = normalizeList(data?.dataSearch?.content)
     .map(normalizeJob)
     .filter((job) => job.name);
 
-  careerNetJobCache = applyPracticalAliases(jobs);
-  return careerNetJobCache;
+  jobCache = applyPracticalAliases(jobs);
+  return jobCache;
 };
 
 const getSearchText = (job) =>
@@ -214,20 +202,20 @@ const getMatchedAlias = (job, keyword) => {
   );
 };
 
-export const searchJobs = async (keyword) => {
-  const normalizedKeyword = keyword.trim();
+export const searchJobs = async (keyword = "") => {
+  const trimmedKeyword = keyword.trim();
   const jobs = await fetchCareerNetJobs();
 
-  if (!normalizedKeyword) {
+  if (!trimmedKeyword) {
     return jobs;
   }
 
-  const normalizedSearch = normalizeText(normalizedKeyword);
+  const normalizedSearch = normalizeText(trimmedKeyword);
 
   return jobs
     .filter((job) => getSearchText(job).includes(normalizedSearch))
     .map((job) => ({
       ...job,
-      matchedAlias: getMatchedAlias(job, normalizedKeyword),
+      matchedAlias: getMatchedAlias(job, trimmedKeyword),
     }));
 };
