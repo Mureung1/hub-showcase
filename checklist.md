@@ -12,7 +12,9 @@
 - [x] 기존 컴포넌트(`MenuCard`, `IngredientList`, `PurchaseLinkPanel`, `Thumbnail` 등)의 오렌지 톤을 `DESIGN_SYSTEM.md` 공식 토큰(`primary` 등)으로 전체 교체 — `CategoryPage`/`TypePage`/`RecipeDetailPage`까지 포함해서 `orange-*`/`gray-*` 잔여 클래스 전수 제거 확인
 - [ ] 레시피 상세 화면에 재료별 "보유"/"구매 필요" 배지 추가, "구매 필요" 재료만 구매 링크 노출
 - [x] 화면에 보이는 "식비구조대" 로고(이미지 로고 → 텍스트 로고 "끼니픽"으로 교체 후 전부 삭제) 제거 — `README.md`·`package.json` name은 아직 남음. `src/assets/logo-*.png`는 미사용이지만 파일은 그대로 있음(삭제 여부는 나중에 결정)
-- [x] `prototype/`을 냉장고 씬 + 재료 칩 선택 + 추천 흐름으로 재구성 — 옛 필터+랭킹 홈(`index-warm.html`, `filter.js`)은 제거하고 `index.html`(냉장고 화면, `fridge.js`) → `home.html`(추천+둘러보기, `home.js`)로 재구축, React `FridgePage`/`Home`과 동일한 흐름. 레시피 상세 페이지의 보유/구매 필요 구분은 아직 미반영(React 쪽도 미완성이라 함께 남은 작업)
+- [x] `prototype/`을 냉장고 씬 + 재료 칩 선택 + 추천 흐름으로 재구성 — 옛 필터+랭킹 홈(`index-warm.html`, `filter.js`)은 제거하고 `index.html`(냉장고 화면, `fridge.js`) → `home.html`(추천+둘러보기, `home.js`)로 재구축, React `FridgePage`/`Home`과 동일한 흐름
+- [x] `prototype/recipe-*.html` 6개를 옛 `style.css`(식비구조대 브랜드·검색바 남아있던 버전)에서 `style-warm.css`로 이전하고, `recipe.js`로 localStorage 냉장고 선택 기반 보유/구매 필요 배지·체크박스·정렬 구현 — `style.css`는 이제 프로토타입 어디서도 안 쓰임(삭제는 아직 안 함)
+- [x] `Home.jsx`를 프로토타입 `home.html` 구조(네비바+프로모 배너+전체 둘러보기 평면 리스트)로 재구축, 카테고리별 미리보기 섹션 제거 (`TypePage`/`CategoryPage` 파일은 유지하되 홈에서 링크 안 함)
 - [ ] `src/assets/fridge-empty.png` 용량 최적화 (현재 5MB대로 너무 큼 — 압축·WebP 변환 검토)
 
 ## 냉장고→추천 API 연동 (Supabase)
