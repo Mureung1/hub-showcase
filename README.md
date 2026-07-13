@@ -1,11 +1,15 @@
 
-### 이번 주차 프로젝트 계획표 보기 :  https://docs.google.com/spreadsheets/d/1T3lZpeGHYaarijGPqlmVXZ0wH_4mQuG0CyIvP8C2nMY/edit?usp=sharing
+
 
 # 팀플, 이지! (Team Project, Easy!)
 
 > 대학생 팀 프로젝트의 '킥오프 1시간'을 AI가 중립적 중재자로 대신해, 15분 만에 팀 전원이 납득하는 계획과 역할 분담을 만들어주는 웹 서비스
 
 ---
+
+## 📅 프로젝트 일정
+
+- 이번 주차 프로젝트 계획표 보기 :  https://docs.google.com/spreadsheets/d/1T3lZpeGHYaarijGPqlmVXZ0wH_4mQuG0CyIvP8C2nMY/edit?usp=sharing
 
 ## 📌 프로젝트 개요
 
