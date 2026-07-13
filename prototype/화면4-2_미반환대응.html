@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미반환 대응 - 보증금 타임키퍼</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Noto Sans KR", sans-serif;
+    background: #f5f5f4;
+    color: #2a2724;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1px solid #e5e2da;
+    border-radius: 12px;
+    padding: 32px;
+  }
+
+  /* 상단 뒤로가기 */
+  .back-row { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+  .back-btn {
+    width: 32px; height: 32px;
+    background: #fff; border: 1px solid #d5cdbb; border-radius: 8px;
+    cursor: pointer; font-size: 16px; color: #6b6558;
+  }
+  .back-row span { font-size: 13px; color: #999; }
+
+  /* 제목 */
+  .title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .title-row .t-icon { font-size: 22px; }
+  .title-row .t-text { font-size: 18px; font-weight: 700; }
+  .intro { font-size: 13px; color: #6b6558; line-height: 1.6; margin-bottom: 20px; }
+
+  /* 핵심 원칙 경고 박스 (빨간 테두리) */
+  .key-warn {
+    border: 1.5px solid #d99a9a; border-radius: 12px;
+    padding: 16px 18px; margin-bottom: 24px;
+  }
+  .key-warn .kw-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .key-warn .kw-title { font-size: 14px; font-weight: 700; color: #b83232; }
+  .key-warn p { font-size: 12px; color: #6b6558; line-height: 1.6; }
+  /* 용어 설명 박스 (살짝 다른 배경) */
+  .key-warn .term {
+    background: #f5f3ee; border-radius: 8px; padding: 10px 12px; margin-top: 10px;
+    font-size: 12px; color: #6b6558; line-height: 1.6;
+  }
+  .key-warn .term b { color: #2a2724; font-weight: 500; }
+
+  .section-label { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+
+  /* 단계별 대응 카드 */
+  .steps { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+  .step-card { border: 1px solid #eeece5; border-radius: 8px; padding: 14px; }
+  .step-card .sc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .step-card .sc-num {
+    flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+    background: #35586b; color: #fff; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-card .sc-title { font-size: 13px; font-weight: 500; }
+  .step-card .sc-desc {
+    font-size: 12px; color: #6b6558; line-height: 1.6;
+    padding-left: 32px; margin-bottom: 10px;
+  }
+  /* 각 단계의 공식 링크 버튼 */
+  .step-card .sc-link {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-left: 32px; padding: 10px 12px;
+    background: #eef3f6; border-radius: 8px; text-decoration: none;
+  }
+  .step-card .sc-link span { font-size: 12px; color: #35586b; }
+  .step-card .sc-link .arrow { font-size: 14px; color: #35586b; }
+
+  /* 하단 버튼 */
+  .save-btn {
+    width: 100%; height: 46px; background: #35586b; color: #fff;
+    border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .save-btn:hover { background: #294453; }
+
+  @media (max-width: 480px) {
+    .card { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="back-row">
+      <button class="back-btn" onclick="goBack()" aria-label="뒤로">&#8592;</button>
+      <span>이전으로</span>
+    </div>
+
+    <div class="title-row">
+      <span class="t-icon">&#128737;</span>
+      <span class="t-text">보증금을 아직 못 받으셨군요</span>
+    </div>
+    <p class="intro">
+      지금부터가 중요해요. 순서만 지키면 보증금을 지킬 수 있어요.
+      아래 단계를 하나씩 따라가 보세요.
+    </p>
+
+    <!-- 핵심 원칙: 이사보다 임차권등기명령이 먼저 -->
+    <div class="key-warn">
+      <div class="kw-head">
+        <span>&#9888;</span>
+        <span class="kw-title">이사보다 '임차권등기명령'이 먼저예요</span>
+      </div>
+      <p>등기가 끝나기 전에 이사하거나 전입신고를 옮기면, 보증금 돌려받을 권리(대항력)를 잃을 수 있어요. 꼭 등기 완료를 확인한 뒤 움직이세요.</p>
+      <div class="term">
+        <b>임차권등기명령이란?</b> 이사를 가더라도 "이 집 보증금은 내가 받을 권리가 있다"는 표시를 등기부에 남겨두는 법원 절차예요.
+      </div>
+    </div>
+
+    <!-- 단계별 대응 + 공식 링크 -->
+    <div class="section-label">단계별로 확인해요</div>
+    <div class="steps">
+
+      <div class="step-card">
+        <div class="sc-head">
+          <span class="sc-num">1</span>
+          <span class="sc-title">임차권등기명령 신청하기</span>
+        </div>
+        <p class="sc-desc">법원에 신청해서 "이 집에 보증금 받을 권리가 있다"는 걸 등기부에 남겨요.</p>
+        <a class="sc-link" href="https://ecfs.scourt.go.kr" target="_blank" rel="noopener">
+          <span>대법원 전자소송에서 신청하기</span>
+          <span class="arrow">&#8599;</span>
+        </a>
+      </div>
+
+      <div class="step-card">
+        <div class="sc-head">
+          <span class="sc-num">2</span>
+          <span class="sc-title">무료 법률상담 받기</span>
+        </div>
+        <p class="sc-desc">혼자 판단하기 어렵다면 전문가 상담을 무료로 받을 수 있어요.</p>
+        <a class="sc-link" href="https://www.klac.or.kr" target="_blank" rel="noopener">
+          <span>대한법률구조공단 상담</span>
+          <span class="arrow">&#8599;</span>
+        </a>
+      </div>
+
+      <div class="step-card">
+        <div class="sc-head">
+          <span class="sc-num">3</span>
+          <span class="sc-title">전세사기 피해자 지원 확인하기</span>
+        </div>
+        <p class="sc-desc">조건에 해당하면 정부의 전세사기 피해자 지원을 받을 수 있어요.</p>
+        <a class="sc-link" href="https://www.khug.or.kr/jeonse" target="_blank" rel="noopener">
+          <span>HUG 전세사기예방센터</span>
+          <span class="arrow">&#8599;</span>
+        </a>
+      </div>
+
+    </div>
+
+    <button class="save-btn" onclick="save()">확인했어요, 보관함에 기록하기</button>
+  </div>
+
+<script>
+  function goBack() { alert('이전 화면으로 돌아가기'); }
+  function save() {
+    const today = new Date().toLocaleDateString('ko-KR');
+    alert('대응 절차 확인 기록됨 (' + today + ') · 보관함으로 이동');
+  }
+</script>
+</body>
+</html>
