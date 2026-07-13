@@ -1,6 +1,6 @@
 import { SCORE_LABELS } from "../data/questions";
 
-export const ALGORITHM_VERSION = "rules-v2";
+export const ALGORITHM_VERSION = "rules-v3";
 
 const METHODS = [
   {
@@ -112,27 +112,34 @@ function buildStressSignals(scores) {
 
 function buildRoutine(scores, recommendations) {
   const first = recommendations[0]?.title ?? "짧은 집중 블록";
+  const recoveryMinutes = 3;
   const recovery =
     scores.emotionImpact >= 65
-      ? "3분 동안 지금 감정을 한 단어로 적고, 다음 행동 1개만 다시 고릅니다."
+      ? `${recoveryMinutes}분 동안 지금 감정을 한 단어로 적고, 다음 행동 1개만 다시 고릅니다.`
       : scores.burnoutCaution >= 65
-        ? "3분 동안 자리에서 일어나 어깨와 목을 풀고 물을 마십니다."
-        : "3분 동안 책상 위를 정리하고 다음 공부 재료 1개만 남깁니다.";
+        ? `${recoveryMinutes}분 동안 자리에서 일어나 어깨와 목을 풀고 물을 마십니다.`
+        : `${recoveryMinutes}분 동안 책상 위를 정리하고 다음 공부 재료 1개만 남깁니다.`;
+
+  // 피로 신호가 높으면 핵심 블록을 짧게 잡는다. 총 예상시간은 아래 단계 합계로만 산출한다.
+  const coreMinutes = scores.burnoutCaution >= 70 ? 10 : 15;
+  const studySteps = [
+    { minutes: 5, text: "오늘 볼 범위와 목표 1개를 적습니다." },
+    { minutes: coreMinutes, text: `${first} 방식으로 핵심 내용을 처리합니다.` },
+    { minutes: 5, text: "기억나는 내용과 막힌 부분을 나눠 적습니다." },
+  ];
+  const studyMinutes = studySteps.reduce((sum, step) => sum + step.minutes, 0);
 
   return {
     title: `오늘은 ${first} 중심으로 시작`,
-    estimatedMinutes: scores.burnoutCaution >= 70 ? 20 : 30,
-    studySteps: [
-      "5분: 오늘 볼 범위와 목표 1개를 적습니다.",
-      `15분: ${first} 방식으로 핵심 내용을 처리합니다.`,
-      "5분: 기억나는 내용과 막힌 부분을 나눠 적습니다.",
-    ],
+    estimatedMinutes: studyMinutes + recoveryMinutes,
+    studySteps: studySteps.map((step) => `${step.minutes}분: ${step.text}`),
     recoveryStep: recovery,
+    recoveryMinutes,
   };
 }
 
 export function createRecommendations(scores, methodAffinities = {}) {
-  const recommendations = METHODS.map((method) => {
+  const recommendations = METHODS.map((method, order) => {
     const affinity = methodAffinities[method.id] ?? 0;
     const evidence = buildMethodEvidence(method, scores, affinity);
 
@@ -142,10 +149,12 @@ export function createRecommendations(scores, methodAffinities = {}) {
       action: method.action,
       reason: evidence.reason,
       basedOn: evidence.basedOn,
+      order,
       weight: scoreMethod(method, scores, affinity),
     };
   })
-    .sort((a, b) => b.weight - a.weight)
+    // 동점일 때는 METHODS 정의 순서로 고정해 sort 안정성에 의존하지 않는다.
+    .sort((a, b) => b.weight - a.weight || a.order - b.order)
     .slice(0, 3)
     .map((item) => ({
       id: item.id,
