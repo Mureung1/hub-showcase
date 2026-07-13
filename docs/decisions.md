@@ -54,6 +54,28 @@
 
 공통: 캐시 컬렉션은 `fetchedAt` 기준 만료 처리(TTL 또는 조회 시 갱신), 스키마에 `timestamps: true`.
 
+### DB 전환: MongoDB → Supabase(PostgreSQL) + Prisma
+- 날짜: 2026-07-13
+- 배경/문제: 백엔드 착수 직전, MongoDB 결정(2026-07-09)을 재검토. 저장 데이터가 캐시·스냅샷 성격이라 문서 DB 우위로 판단했으나, 그 근거가 결정적인지 다시 확인 필요.
+- 선택한 방안: Supabase 무료 티어(PostgreSQL) + Prisma ORM. 기존 컬렉션 윤곽은 테이블로 매핑(`analyses`, `repo_cache`, `issue_cache`, `recommendations` + `recommendation_items` FK 분리, `api_usage`). 배열은 `text[]`, 요약·스냅샷은 `JSONB`.
+- 고려했던 대안: (a) MongoDB Atlas 유지(기존 결정) (b) 기존에 사용 중인 Atlas 클러스터에 DB만 분리해 공용 사용.
+- 이유:
+  - Mongo의 우위였던 "배열·중첩 데이터"는 Postgres의 네이티브 배열·JSONB로 충분히 커버 — 결정타가 아니었음.
+  - 향후 확장(북마크, 기여 이력, 활동 기반 스코어링)은 관계·집계 중심이라 SQL이 유리. "관계 복잡해지면 전환" 예정이었다면 코드 착수 전인 지금이 전환 비용 0인 시점.
+  - `Recommendation.items[]` 임베딩을 FK 분리로 바꾸면 추천-레포/이슈 관계가 스키마로 명시됨.
+  - 국내 백엔드 취업 시장이 RDB 중심이라 포트폴리오 통용 범위가 넓음.
+- 주의: Supabase 무료 티어는 1주 비활성 시 프로젝트 일시정지 → 데모 시연 전 상태 확인 또는 주기적 ping 필요. 캐시 만료는 TTL 인덱스 대신 조회 시 `fetched_at` 검사로 처리.
+
+### 백엔드 런타임: Spring Boot 검토 후 Node.js(Express) 유지
+- 날짜: 2026-07-13
+- 배경/문제: 국내 백엔드 채용이 Spring 중심이고 Spring Boot 프로젝트 경험(2개)이 있어, FirstPR 백엔드를 Spring으로 전환할지 검토.
+- 선택한 방안: Node.js + Express 유지.
+- 고려했던 대안: Spring Boot + Spring Data JPA (세 번째 Spring 프로젝트로 포트폴리오 강화).
+- 이유:
+  - 배포용 개인 인스턴스가 없어 무료 티어 호스팅이 전제인데, Spring Boot는 메모리 요구가 커서 무료 티어에서 데모를 상시 유지하기 어려움. Node는 가볍게 상시 데모 가능.
+  - Spring 역량은 기존 프로젝트 2개로 이미 증명됨 — FirstPR은 "살아있는 데모 + 의사결정 기록"으로 어필하는 역할.
+  - GitHub 생태계(octokit 공식 클라이언트) 이점을 그대로 유지.
+
 ### 프로젝트 라이브러리 스택 정리
 - 날짜: 2026-07-09
 - 배경/문제: MVP 구현에 쓸 라이브러리를 확정해 중복 검토를 줄일 필요.
