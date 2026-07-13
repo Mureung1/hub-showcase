@@ -13,11 +13,12 @@ export default function DatasetTabs({ datasets, activeId, onSelect }: DatasetTab
         <button
           key={dataset.id}
           onClick={() => onSelect(dataset.id)}
-          className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+          className="rounded-[var(--radius-pill)] border px-3 py-2 text-sm font-medium transition-colors"
+          style={
             activeId === dataset.id
-              ? 'bg-cyan-400 text-zinc-950'
-              : 'border border-zinc-700 text-zinc-300 hover:bg-zinc-800'
-          }`}
+              ? { background: 'var(--color-accent)', color: '#0b0d12', borderColor: 'var(--color-accent)' }
+              : { color: 'var(--color-text-secondary)', borderColor: 'var(--color-border-card-strong)' }
+          }
         >
           {dataset.name}
         </button>

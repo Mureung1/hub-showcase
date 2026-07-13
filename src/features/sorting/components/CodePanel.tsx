@@ -8,7 +8,7 @@ interface CodePanelProps {
 
 export default function CodePanel({ lines, activeLine }: CodePanelProps) {
   return (
-    <div className="rounded-lg bg-zinc-950 p-3 font-mono text-sm">
+    <div className="overflow-x-auto rounded-lg bg-zinc-950 p-3 font-mono text-sm">
       {lines.map((line, index) => (
         <div key={index} className="relative">
           {activeLine === index && (

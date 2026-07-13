@@ -39,8 +39,9 @@ export default function TreeVisualizer({ step, positions, width, height }: TreeV
             y1={p1.y}
             x2={p2.x}
             y2={p2.y}
-            stroke={active ? '#22d3ee' : '#3f3f46'}
+            stroke={active ? '#22d3ee' : '#2a2e38'}
             strokeWidth={active ? 3 : 2}
+            style={active ? { filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.85))' } : undefined}
           />
         )
       })}
@@ -50,19 +51,19 @@ export default function TreeVisualizer({ step, positions, width, height }: TreeV
         const isHighlight = step.highlightNode === value
         const isVisited = visitedSet.has(value)
 
-        let stroke = '#3f3f46'
-        let fill = '#27272a'
-        let text = '#f4f4f5'
+        let stroke = '#2a2e38'
+        let fill = '#171a22'
+        let text = '#f5f6f8'
         if (isVisited) {
-          stroke = '#34d399'
-          fill = 'rgba(52,211,153,0.12)'
-          text = '#6ee7b7'
+          stroke = '#5dcaa5'
+          fill = 'rgba(93,202,165,0.14)'
+          text = '#9fe1cb'
         }
         if (isHighlight) {
           if (step.phase === 'insert') {
-            stroke = '#fbbf24'
-            fill = 'rgba(251,191,36,0.15)'
-            text = '#fde68a'
+            stroke = '#f7931a'
+            fill = 'rgba(247,147,26,0.15)'
+            text = '#fbc978'
           } else {
             stroke = '#22d3ee'
             fill = 'rgba(34,211,238,0.18)'
@@ -70,8 +71,10 @@ export default function TreeVisualizer({ step, positions, width, height }: TreeV
           }
         }
 
+        const glowColor = isHighlight ? (step.phase === 'insert' ? '247,147,26' : '34,211,238') : null
+
         return (
-          <g key={value}>
+          <g key={value} style={glowColor ? { filter: `drop-shadow(0 0 10px rgba(${glowColor},0.75))` } : undefined}>
             <circle cx={p.x} cy={p.y} r={18} fill={fill} stroke={stroke} strokeWidth={2} />
             <text x={p.x} y={p.y + 4} textAnchor="middle" fontSize={12} fontWeight={600} fill={text}>
               {value}
@@ -80,14 +83,14 @@ export default function TreeVisualizer({ step, positions, width, height }: TreeV
         )
       })}
       {chipPos && anchorPos && step.pendingValue !== undefined && (
-        <>
+        <g style={{ filter: 'drop-shadow(0 0 9px rgba(247,147,26,0.8))' }}>
           <line
             x1={chipPos.x}
             y1={chipPos.y + 16}
             x2={anchorPos.x}
             y2={anchorPos.y - 18}
-            stroke="#fbbf24"
-            strokeWidth={1.5}
+            stroke="#f7931a"
+            strokeWidth={2}
             strokeDasharray="4 3"
           />
           <rect
@@ -95,8 +98,8 @@ export default function TreeVisualizer({ step, positions, width, height }: TreeV
             y={chipPos.y + 22}
             width={70}
             height={16}
-            rx={3}
-            fill="#18181b"
+            rx={8}
+            fill="#0b0d12"
             opacity={0.9}
           />
           <text
@@ -105,7 +108,7 @@ export default function TreeVisualizer({ step, positions, width, height }: TreeV
             textAnchor="middle"
             fontSize={11}
             fontWeight={500}
-            fill="#fbbf24"
+            fill="#f7931a"
           >
             {step.pendingValue} {step.pendingValue < (step.pendingAnchor as number) ? '<' : '≥'} {step.pendingAnchor}
           </text>
@@ -113,15 +116,15 @@ export default function TreeVisualizer({ step, positions, width, height }: TreeV
             cx={chipPos.x}
             cy={chipPos.y}
             r={16}
-            fill="rgba(251,191,36,0.12)"
-            stroke="#fbbf24"
+            fill="rgba(247,147,26,0.12)"
+            stroke="#f7931a"
             strokeWidth={1.5}
             strokeDasharray="3 2"
           />
-          <text x={chipPos.x} y={chipPos.y + 4} textAnchor="middle" fontSize={12} fontWeight={600} fill="#fde68a">
+          <text x={chipPos.x} y={chipPos.y + 4} textAnchor="middle" fontSize={12} fontWeight={600} fill="#fbc978">
             {step.pendingValue}
           </text>
-        </>
+        </g>
       )}
     </svg>
   )
