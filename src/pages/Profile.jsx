@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
@@ -98,9 +98,14 @@ function ConditionChips({ selected, onToggle }) {
 }
 
 export default function Profile() {
-  const { user, updateUser } = useUser()
+  const { user, updateUser, logout } = useUser()
   const navigate = useNavigate()
   const isOnboarding = !user?.profile
+
+  function handleLogout() {
+    logout()
+    navigate('/login', { replace: true })
+  }
 
   // MY 탭(이미 프로필이 있는 경우)에서는 "건강 정보" 섹션을 기본 접힘으로 시작한다.
   const [expanded, setExpanded] = useState(isOnboarding)
@@ -109,7 +114,7 @@ export default function Profile() {
     age: user?.profile?.age?.toString() ?? '',
     heightCm: user?.profile?.heightCm?.toString() ?? '',
     weightKg: user?.profile?.weightKg?.toString() ?? '',
-    sex: user?.profile?.sex ?? 'male',
+    sex: user?.profile?.sex ?? user?.tempSex ?? 'male',
     activity: user?.profile?.activity ?? 'moderate',
     conditions: user?.profile?.conditions ?? [],
   }))
@@ -159,7 +164,9 @@ export default function Profile() {
       conditions: form.conditions,
     }
 
-    updateUser({ profile, recommended: preview })
+    // tempSex는 프로필 없는 게스트의 임시 수단일 뿐이라, 실제 프로필을 저장하면 지워서
+    // "프로필이 있으면 프로필이 우선"이라는 우선순위를 데이터에도 명확히 남긴다.
+    updateUser({ profile, recommended: preview, tempSex: null })
     navigate('/analyze', { replace: true })
   }
 
@@ -209,6 +216,23 @@ export default function Profile() {
         title={isOnboarding ? '내 정보 입력' : 'MY'}
         subtitle={isOnboarding ? '정확한 영양 분석을 위해 알려주세요' : '건강 정보와 하루 권장 섭취량을 확인해보세요'}
       />
+
+      {/* 게스트는 계정이 아니라 로컬 임시 신분이라 로그인/회원가입 입구를 여기 하나만 둔다(Header는
+          게스트일 때 숨어 있어 이 버튼이 사실상 유일한 진입점). 정식 계정은 대신 로그아웃을 보여준다. */}
+      {user?.isGuest ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, marginBottom: spacing.md }}>
+          <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.sm }}>게스트로 이용 중이에요</p>
+          <Link to="/login" className="tds-press" style={{ ...styles.buttonSecondary, textDecoration: 'none' }}>
+            로그인 / 회원가입
+          </Link>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: spacing.md }}>
+          <button type="button" className="tds-press" onClick={handleLogout} style={styles.buttonSecondary}>
+            로그아웃
+          </button>
+        </div>
+      )}
 
       {isOnboarding ? (
         <Card>{formFields}</Card>

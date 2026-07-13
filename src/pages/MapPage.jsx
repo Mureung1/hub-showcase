@@ -153,8 +153,8 @@ async function attachExpectedIntake(places, deficientRows) {
 }
 
 export default function MapPage() {
-  const { user, todayMealsTotal } = useUser()
-  const recommended = user?.recommended
+  const { todayMealsTotal, effectiveRecommended } = useUser()
+  const recommended = effectiveRecommended
   const todayTotal = todayMealsTotal
 
   // 오늘 부족한 영양소 상위 3개. 프로필/오늘 분석 기록이 없으면 빈 배열 → 기본 키워드로 폴백.

@@ -213,8 +213,8 @@ function MealRecordCard({ record, expanded, onToggleDetail, onRemove }) {
 }
 
 export default function MealsPage() {
-  const { user, todayMeals, todayMealsTotal, removeTodayMeal } = useUser()
-  const recommended = user?.recommended
+  const { todayMeals, todayMealsTotal, removeTodayMeal, effectiveRecommended } = useUser()
+  const recommended = effectiveRecommended
   const [expandedIds, setExpandedIds] = useState(() => new Set())
 
   function toggleDetail(mealRecordId) {

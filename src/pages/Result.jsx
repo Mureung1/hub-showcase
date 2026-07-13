@@ -82,8 +82,8 @@ function AchievementRing({ percent, size = 160, strokeWidth = 14 }) {
 }
 
 export default function Result() {
-  const { user, todayMeal } = useUser()
-  const recommended = user?.recommended
+  const { todayMeal, effectiveRecommended, isTempRecommended } = useUser()
+  const recommended = effectiveRecommended
   const todayTotal = todayMeal?.total
 
   const rows = useMemo(() => {
@@ -147,17 +147,19 @@ export default function Result() {
   }, [top3Rows])
 
   if (!recommended) {
+    // user는 게스트 계정 자동 발급으로 항상 존재하므로, 여기 도달하는 건 "성별도 프로필도 아직
+    // 고르지 않음" 하나의 경우뿐이다 — 성별 선택 카드가 있는 홈(Analyze)으로 안내한다.
     return (
       <div style={styles.page}>
         <ScreenHeader title="오늘의 영양 진단" />
         <Card style={{ textAlign: 'center' }}>
-          <p>신체정보가 없습니다. 먼저 프로필을 입력해주세요.</p>
+          <p>성별을 선택하면 임시 기준으로 오늘의 진단을 볼 수 있어요.</p>
           <Link
-            to="/profile"
+            to="/analyze"
             className="tds-press"
             style={{ ...styles.buttonPrimary, display: 'block', marginTop: spacing.lg, textDecoration: 'none' }}
           >
-            프로필 입력하러 가기
+            홈에서 성별 선택하기
           </Link>
         </Card>
       </div>
@@ -185,6 +187,18 @@ export default function Result() {
   return (
     <div style={styles.page}>
       <ScreenHeader title="오늘의 영양 진단" subtitle="하루 목표 달성률을 확인해보세요" />
+
+      {isTempRecommended && (
+        <Card style={{ background: colors.deficientSurface, boxShadow: 'none' }}>
+          <p style={{ margin: 0, color: colors.textStrong, fontSize: font.size.sm }}>
+            임시 기준으로 계산된 결과예요.{' '}
+            <Link to="/profile" style={{ color: colors.primary, fontWeight: 700 }}>
+              프로필을 입력하면
+            </Link>{' '}
+            더 정확해져요.
+          </p>
+        </Card>
+      )}
 
       <Card style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ margin: `${spacing.sm}px 0` }}>

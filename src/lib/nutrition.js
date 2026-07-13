@@ -295,3 +295,15 @@ export function calcRecommendedNutrients({ age, heightCm, weightKg, sex, activit
 
   return recommended
 }
+
+// 프로필(나이·키·몸무게) 없이 성별만 고른 게스트용 표준 성인 가정값(30세, 활동량 보통).
+// 실제 프로필을 저장하면 UserContext.effectiveRecommended가 이 임시값을 곧바로 대체한다.
+const ASSUMED_ADULT_PROFILE = {
+  male: { age: 30, heightCm: 170, weightKg: 70 },
+  female: { age: 30, heightCm: 160, weightKg: 58 },
+}
+
+export function calcAssumedRecommendedNutrients(sex) {
+  const base = ASSUMED_ADULT_PROFILE[sex === 'female' ? 'female' : 'male']
+  return calcRecommendedNutrients({ ...base, sex, activity: 'moderate', conditions: [] })
+}

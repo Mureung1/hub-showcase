@@ -87,7 +87,7 @@ function MiniMealCard({ item }) {
 }
 
 export default function Calendar() {
-  const { user } = useUser()
+  const { user, effectiveRecommended } = useUser()
   const today = new Date()
   const todayKey = toDateKey(today)
   const currentMonthTotal = today.getFullYear() * 12 + today.getMonth()
@@ -115,7 +115,7 @@ export default function Calendar() {
 
       const meals = getMeals(user.id, dateKey)
       const total = meals.length > 0 ? sumMealRecordsNutrients(meals) : records[dateKey]?.total
-      const autoStatus = total ? calcDayStatus(user.recommended, total) : null
+      const autoStatus = total ? calcDayStatus(effectiveRecommended, total) : null
 
       if (autoStatus) {
         map[dateKey] = { status: autoStatus, source: 'auto', total }
@@ -128,7 +128,7 @@ export default function Calendar() {
     }
     return map
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cells, cursor, user, records, todayKey, statusVersion])
+  }, [cells, cursor, user, effectiveRecommended, records, todayKey, statusVersion])
 
   const selectedInfo = selectedDateKey ? dayInfoMap[selectedDateKey] : null
   const selectedRecord = selectedDateKey ? records[selectedDateKey] : null
@@ -276,7 +276,7 @@ export default function Calendar() {
             <StatusBadge status={selectedInfo.status} label={`자동 판정 · ${AUTO_STATUS_LABELS[selectedInfo.status]}`} />
           </div>
 
-          <NutritionStatusPanel recommended={user.recommended} total={selectedInfo.total} />
+          <NutritionStatusPanel recommended={effectiveRecommended} total={selectedInfo.total} />
 
           <button
             type="button"

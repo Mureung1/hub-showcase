@@ -154,6 +154,49 @@ async function resolveFoodItem(idItem) {
   return { name, nutrients, source }
 }
 
+const SEX_PROMPT_OPTIONS = [
+  { key: 'male', label: '남성' },
+  { key: 'female', label: '여성' },
+]
+
+// 프로필(나이·키·몸무게)이 없는 게스트에게 홈 진입 시 1회 성별만 물어, 표준 성인 가정값으로
+// 임시 recommended를 계산할 수 있게 한다(정확한 값은 /profile 입력 시 대체됨).
+function SexPromptCard({ onPick }) {
+  return (
+    <Card style={{ background: colors.primarySurface, boxShadow: 'none' }}>
+      <p style={{ margin: `0 0 ${spacing.md}px`, color: colors.textStrong, fontWeight: 600 }}>
+        성별을 알려주시면 맞춤 기준으로 부족한 영양소를 알려드려요
+      </p>
+      <div style={{ display: 'flex', gap: spacing.sm }}>
+        {SEX_PROMPT_OPTIONS.map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            className="tds-press"
+            onClick={() => onPick(opt.key)}
+            style={{
+              flex: 1,
+              padding: `${spacing.md}px 0`,
+              borderRadius: radius.sm,
+              border: 'none',
+              background: colors.surface,
+              color: colors.textStrong,
+              fontWeight: 700,
+              fontSize: font.size.md,
+              cursor: 'pointer',
+            }}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+      <p style={{ margin: `${spacing.sm}px 0 0`, color: colors.textSub, fontSize: font.size.xs }}>
+        나중에 프로필을 입력하면 더 정확한 기준으로 바뀌어요.
+      </p>
+    </Card>
+  )
+}
+
 function AnalyzingSkeleton() {
   return (
     <div style={styles.card}>
@@ -167,7 +210,9 @@ function AnalyzingSkeleton() {
 }
 
 export default function Analyze() {
-  const { user, setTodayMeal, addTodayMeal } = useUser()
+  const { user, setTodayMeal, addTodayMeal, updateUser, effectiveRecommended } = useUser()
+  const greetingName = user?.isGuest ? '게스트' : (user?.id ?? '')
+  const showSexPrompt = !user?.profile && !user?.tempSex
   const [photo, setPhoto] = useState(null) // { base64, mimeType, dataUrl, width, height }
   const [menuName, setMenuName] = useState('')
   const [brand, setBrand] = useState('')
@@ -233,15 +278,15 @@ export default function Analyze() {
     // (음식이 1개면 단일 메뉴, 2개 이상이면 한 끼 세트로 식단 탭에서 구분해 보여준다)
     addTodayMeal(parsed.items, mealType)
 
-    if (user) {
-      const achievementPercent = calcAchievementPercent(user.recommended, parsed.total)
-      saveRecord(user.id, toDateKey(new Date()), {
-        items: parsed.items,
-        total: parsed.total,
-        achievementPercent,
-        savedAt: new Date().toISOString(),
-      })
-    }
+    // user는 게스트 계정 자동 발급으로 항상 존재한다. effectiveRecommended는 실제 프로필이 없으면
+    // 0을 반환해(calcAchievementPercent 참고) 달성률만 0%로 남고 저장 자체는 그대로 진행된다.
+    const achievementPercent = calcAchievementPercent(effectiveRecommended, parsed.total)
+    saveRecord(user.id, toDateKey(new Date()), {
+      items: parsed.items,
+      total: parsed.total,
+      achievementPercent,
+      savedAt: new Date().toISOString(),
+    })
 
     setLastAnalysis(parsed)
     setPendingAnalysis(null)
@@ -249,7 +294,7 @@ export default function Analyze() {
 
   return (
     <div style={styles.page}>
-      <ScreenHeader title={`안녕하세요, ${user?.id ?? ''}님 👋`} subtitle="오늘 점심을 찍어볼까요?" />
+      <ScreenHeader title={`안녕하세요, ${greetingName}님 👋`} subtitle="오늘 점심을 찍어볼까요?" />
 
       <Card style={pendingAnalysis ? { background: colors.infoSurface, boxShadow: 'none' } : undefined}>
         <PhotoUpload onChange={setPhoto} />
@@ -281,6 +326,8 @@ export default function Analyze() {
 
         {error && <p style={styles.errorText}>{error}</p>}
       </Card>
+
+      {showSexPrompt && <SexPromptCard onPick={(sex) => updateUser({ tempSex: sex })} />}
 
       <Card>
         <h3 style={{ fontSize: font.size.md, fontWeight: 600, margin: `0 0 ${spacing.xs}px`, color: colors.textStrong }}>

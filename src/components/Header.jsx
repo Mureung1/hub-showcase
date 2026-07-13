@@ -6,7 +6,9 @@ export default function Header() {
   const { user, logout } = useUser()
   const navigate = useNavigate()
 
-  if (!user) return null
+  // 게스트(user.isGuest)는 계정이 아니라 로컬 전용 임시 신분이라 상단바 자체를 보여주지 않는다 —
+  // "guest_xxxx님"처럼 내부 id가 노출되는 것도 이걸로 함께 방지된다.
+  if (!user || user.isGuest) return null
 
   function handleLogout() {
     logout()
