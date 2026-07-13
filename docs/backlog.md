@@ -2,7 +2,7 @@
 
 `checklist.md`가 "기능을 작업 단위로 쪼갠 목록"이라면, 이 문서는 그 목록을
 **언제, 어떤 순서로, 얼마나 중요하게** 처리할지 관리하는 문서다.
-기획은 [plan.md](plan.md), 작업 분해는 [checklist.md](checklist.md) 참고.
+기획은 [TideNote 기획서](https://github.com/snael0510-coder/hub/wiki/TideNote-%EA%B8%B0%ED%9A%8D%EC%84%9C), 작업 분해는 [checklist.md](checklist.md) 참고.
 
 ## 1. 이번 주 목표 (2주차)
 
@@ -27,16 +27,16 @@
 
 ## 3. Task 백로그
 
-| # | Task | 설명 | 우선순위 | 요일 | 상태 |
-|---|---|---|:---:|:---:|:---:|
-| 1 | DB 테이블 설계 | Supabase `tide_checks` 테이블 (valence, arousal, created_at) | P0 | 화 | 대기 |
-| 2 | POST API | Express `/api/tide-checks` — 슬라이더 값 저장 | P0 | 화 | 대기 |
-| 3 | GET API | Express `/api/tide-checks/latest` — 최신값 조회 | P0 | 화 | 대기 |
-| 4 | FE mock 버전 | React Tide Check 화면, mock 데이터로 흐름 검증 | P1 | 수 | 대기 |
-| 5 | FE-BE 연동 | mock → 실제 fetch로 교체, 전체 사이클 연결 | P0 | 목 | 대기 |
-| 6 | 기능 검증 | 검증 Agent로 요구사항 대비 동작 점검 | P0 | 금 | 대기 |
-| 7 | 에러 처리 | 저장 실패 시 사용자 피드백 | P1 | 금 | 대기 |
-| 8 | 스타일링 | Tide Check 화면 최종 톤 다듬기 | P2 | 다음주 | 대기 |
+| # | Task | 설명 | 우선순위 | 요일 | 상태 | 이슈 |
+|---|---|---|:---:|:---:|:---:|:---:|
+| 1 | DB 테이블 설계 | Supabase `tide_checks` 테이블 (valence, arousal, created_at) | P0 | 화 | 대기 | [#1](https://github.com/snael0510-coder/hub/issues/1) |
+| 2 | POST API | Express `/api/tide-checks` — 슬라이더 값 저장 | P0 | 화 | 대기 | [#2](https://github.com/snael0510-coder/hub/issues/2) |
+| 3 | GET API | Express `/api/tide-checks/latest` — 최신값 조회 | P0 | 화 | 대기 | [#3](https://github.com/snael0510-coder/hub/issues/3) |
+| 4 | FE mock 버전 | React Tide Check 화면, mock 데이터로 흐름 검증 | P1 | 수 | 대기 | [#4](https://github.com/snael0510-coder/hub/issues/4) |
+| 5 | FE-BE 연동 | mock → 실제 fetch로 교체, 전체 사이클 연결 | P0 | 목 | 대기 | [#5](https://github.com/snael0510-coder/hub/issues/5) |
+| 6 | 기능 검증 | 검증 Agent로 요구사항 대비 동작 점검 | P0 | 금 | 대기 | — |
+| 7 | 에러 처리 | 저장 실패 시 사용자 피드백 | P1 | 금 | 대기 | — |
+| 8 | 스타일링 | Tide Check 화면 최종 톤 다듬기 | P2 | 다음주 | 대기 | — |
 
 > Task 4(FE mock 버전)를 P1로 뒀다 — 이유는, Task 1~3(DB/API)이 먼저 준비되면
 > mock을 건너뛰고 바로 Task 5(실제 연동)로 가도 되기 때문이다. 다만 API가
@@ -57,9 +57,9 @@
 | **금** | Task 6, 7 — 검증 Agent로 점검, 에러 처리, 회고 |
 
 ### 오늘(월) 안에 끝낼 것
-- [ ] 위 백로그 표 작성 완료
-- [ ] GitHub 이슈 5개(Task 1~5) 등록
-- [ ] 계획 수립 Agent 프롬프트 작성 및 1회 테스트
+- [x] 위 백로그 표 작성 완료
+- [x] GitHub 이슈 5개(Task 1~5) 등록
+- [x] 계획 수립 Agent 프롬프트 작성 및 1회 테스트
 
 ## 5. 구현 상태
 

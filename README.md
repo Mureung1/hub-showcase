@@ -54,3 +54,5 @@ Claude Design, Google Stitch 등 AI 디자인 도구로 먼저 시도했으나 �
 - [백로그 (우선순위·일정)](./docs/backlog.md)
 - [작업 체크리스트](./docs/checklist.md)
 - [계획 수립 Agent](./docs/agents/planning-agent.md)
+- [기능 검증 Agent](./docs/agents/verification-agent.md)
+- [GitHub 이슈 (Task 1~5)](https://github.com/snael0510-coder/hub/issues)
