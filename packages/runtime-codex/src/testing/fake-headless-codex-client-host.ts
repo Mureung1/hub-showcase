@@ -1,3 +1,4 @@
+import { appendFileSync } from 'node:fs'
 import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -39,6 +40,13 @@ export type FakeHeadlessCodexClientHostJournalEntry =
       kind: 'client_message'
       message: Record<string, unknown>
     }
+  | {
+      kind: 'observation_consumer_ready'
+    }
+  | {
+      kind: 'process_exit_observed'
+      pid: number
+    }
 
 export type FakeHeadlessCodexClientHostFixture = {
   appDataRoot: string
@@ -52,6 +60,7 @@ export type FakeHeadlessCodexClientHostFixture = {
     minimumEntries?: number
     timeoutMs?: number
   }) => Promise<FakeHeadlessCodexClientHostJournalEntry[]>
+  observeProcessExit: (pid: number) => Promise<void>
 }
 
 export async function withFakeHeadlessCodexClientHost(
@@ -61,6 +70,7 @@ export async function withFakeHeadlessCodexClientHost(
     gateStartSettlement?: boolean
     hostOptions?: HeadlessCodexClientHostOptions
     ignoreSigterm?: boolean
+    recordObservationConsumerReady?: boolean
     testOptions?: HeadlessCodexClientHostTestOptions
   },
   testBody: (fixture: FakeHeadlessCodexClientHostFixture) => Promise<void>,
@@ -95,11 +105,21 @@ export async function withFakeHeadlessCodexClientHost(
         releaseStartSettlement = resolvePromise
       })
     : input.testOptions?.startSettlementBarrier
+  const configuredTestOptions = input.testOptions
   const host = createHeadlessCodexClientHostForTesting(
     { packageRoot, appDataRoot, workspaceRoot },
     input.hostOptions,
     {
       ...input.testOptions,
+      onObservationConsumerReady: input.recordObservationConsumerReady
+        ? () => {
+            appendFileSync(
+              journalPath,
+              `${JSON.stringify({ kind: 'observation_consumer_ready' })}\n`,
+            )
+            configuredTestOptions?.onObservationConsumerReady?.()
+          }
+        : configuredTestOptions?.onObservationConsumerReady,
       startSettlementBarrier,
     },
   )
@@ -109,6 +129,13 @@ export async function withFakeHeadlessCodexClientHost(
     await testBody({
       appDataRoot,
       host,
+      observeProcessExit: async (pid) => {
+        await waitForProcessMissing(pid)
+        appendFileSync(
+          journalPath,
+          `${JSON.stringify({ kind: 'process_exit_observed', pid })}\n`,
+        )
+      },
       packageRoot,
       readJournal,
       releaseVersionProbe: () => writeFile(versionProbeReleasePath, ''),
@@ -339,6 +366,10 @@ async function forceKillProcess(pid: number): Promise<void> {
     return
   }
 
+  await waitForProcessMissing(pid)
+}
+
+async function waitForProcessMissing(pid: number): Promise<void> {
   const deadline = Date.now() + 1000
 
   while (Date.now() < deadline) {

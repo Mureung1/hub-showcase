@@ -71,6 +71,7 @@ export type HeadlessCodexClientHostOptions = {
 export type HeadlessCodexClientHostTestOptions = {
   forceKill?: (pid: number) => void
   now?: () => string
+  onObservationConsumerReady?: () => void
   startSettlementBarrier?: Promise<void>
 }
 
@@ -293,6 +294,7 @@ export class HeadlessCodexClientHost {
 
       const iterator = transport.observations()[Symbol.asyncIterator]()
       const firstObservation = iterator.next()
+      this.testOptions.onObservationConsumerReady?.()
       this.observationPump = this.pumpObservations(
         epoch,
         transport,

@@ -13,7 +13,9 @@ test('HeadlessCodexClientHost initializes one child and publishes an ordered lif
   await withFakeHeadlessCodexClientHost({}, async ({
     appDataRoot,
     host,
+    packageRoot,
     readJournal,
+    tempRoot,
     workspaceRoot,
   }) => {
     assert.ok(host instanceof HeadlessCodexClientHost)
@@ -94,6 +96,12 @@ test('HeadlessCodexClientHost initializes one child and publishes an ordered lif
     assert.ok(
       events.every((event) => !Number.isNaN(Date.parse(event.timestamp))),
     )
+    assertPublicValueIsSanitized(events, [
+      packageRoot,
+      appDataRoot,
+      workspaceRoot,
+      tempRoot,
+    ])
 
     const journal = await readJournal({ minimumEntries: 4 })
     assert.equal(
@@ -160,6 +168,7 @@ test('HeadlessCodexClientHost isolates a slow subscriber when its buffer overflo
         (error: unknown) => {
           assert.ok(error instanceof HeadlessCodexClientHostSubscriptionError)
           assert.equal(error.code, 'subscription_overflow')
+          assertPublicValueIsSanitized(error, [])
 
           return true
         },
@@ -268,11 +277,12 @@ test('HeadlessCodexClientHost classifies initialize and protocol failures withou
             maxQueuedObservations: fixtureCase.maxQueuedObservations,
           },
         },
-        async ({ host, readJournal }) => {
+        async ({ host, readJournal, tempRoot }) => {
           await assert.rejects(host.start(), (error: unknown) => {
             assert.ok(error instanceof HeadlessCodexClientHostError)
             assert.equal(error.code, fixtureCase.code)
             assert.equal(error.recoverable, fixtureCase.recoverable)
+            assertPublicValueIsSanitized(error, [tempRoot])
 
             return true
           })
@@ -460,6 +470,28 @@ test('HeadlessCodexClientHost captures snapshot and cursor atomically during sta
   })
 })
 
+test('HeadlessCodexClientHost waits for the observation consumer before initialize', async () => {
+  await withFakeHeadlessCodexClientHost(
+    { recordObservationConsumerReady: true },
+    async ({ host, readJournal }) => {
+      await host.start()
+      const journal = await readJournal({ minimumEntries: 5 })
+      const consumerIndex = journal.findIndex(
+        (entry) => entry.kind === 'observation_consumer_ready',
+      )
+      const initializeIndex = journal.findIndex(
+        (entry) =>
+          entry.kind === 'client_message' &&
+          entry.message.method === 'initialize',
+      )
+
+      assert.notEqual(consumerIndex, -1)
+      assert.notEqual(initializeIndex, -1)
+      assert.ok(consumerIndex < initializeIndex)
+    },
+  )
+})
+
 test('HeadlessCodexClientHost keeps a subscription open across connection failure', async () => {
   await withFakeHeadlessCodexClientHost(
     { scenario: 'exit_after_ready' },
@@ -567,11 +599,24 @@ test('HeadlessCodexClientHost force-kills an unresponsive child before publishin
       ignoreSigterm: true,
       hostOptions: { closeTimeoutMs: 25 },
     },
-    async ({ host }) => {
+    async ({ host, observeProcessExit, readJournal }) => {
       await host.start()
+      const spawn = (await readJournal({ minimumEntries: 4 })).find(
+        (entry) => entry.kind === 'spawn',
+      )
+      assert.ok(spawn && 'pid' in spawn)
       await host.stop()
+      await observeProcessExit(spawn.pid)
 
       assert.equal(host.getSnapshot().status, 'stopped')
+      assert.equal(
+        (await readJournal({ minimumEntries: 5 })).some(
+          (entry) =>
+            entry.kind === 'process_exit_observed' &&
+            entry.pid === spawn.pid,
+        ),
+        true,
+      )
     },
   )
 })
@@ -762,6 +807,12 @@ function assertPublicValueIsSanitized(
 
     if (!candidate || typeof candidate !== 'object') {
       return
+    }
+
+    if (candidate instanceof Error) {
+      assert.equal(Object.hasOwn(candidate, 'cause'), false)
+      visit(candidate.name)
+      visit(candidate.message)
     }
 
     for (const [key, nested] of Object.entries(candidate)) {
