@@ -31,10 +31,13 @@
 | `--accent-dim` | accent 요소의 배경 | 단독 사용 (반드시 accent 글자와 짝) |
 | `--warn` / `--warn-dim` | D-3 이내 임박 표시 **만** | 그 외 전부 |
 | `--hero-a/b/c` | 히어로 그라데이션 | 기능 영역 어디에도 |
+| `--frame-w` | 프로토타입 폰 프레임 폭 | 앱 내부 컴포넌트 |
+| `--radius-badge` | D-day 뱃지 전용 모서리 | 뱃지 외 컴포넌트 |
+| `--pad-badge` | D-day 뱃지 전용 padding | 뱃지 외 컴포넌트 |
 
 - 간격은 `--space-*`(4px 배수)만 사용. 홀수 px 금지.
 - 글자 크기는 4단계(`--fs-*`)만 사용. 5번째 크기가 필요해 보이면 크기가 아니라 굵기·색으로 해결을 먼저 시도.
-- 모서리: 카드 16 / 작은 면 10 / 칩·토글 999. 세 가지 외 값 금지.
+- 모서리: 카드 16 / 작은 면 10 / 뱃지 6 / 칩 999. 네 가지 외 값 금지.
 
 ## 3. 컴포넌트 규칙
 
@@ -62,6 +65,14 @@
 ### 토글
 - on: `--accent` 배경 + 흰 원 / off: `--surface-2` 배경 + `--text-3` 원
 
+### 히어로 배경 (확정 레시피 — 수정 시 시안 재확정 필요)
+```css
+background:
+  radial-gradient(120% 90% at 85% 0%, var(--hero-c) 0%, transparent 55%),
+  radial-gradient(140% 110% at 15% 10%, var(--hero-b) 0%, transparent 60%),
+  linear-gradient(180deg, var(--hero-a) 0%, var(--bg) 100%);
+```
+
 ## 4. 금지 조항 (하네스의 조임쇠)
 
 1. **헥스코드·rgba 직접 사용 금지.** 모든 색은 `var()` 참조. 필요한 색이 없으면 tokens.css에 먼저 추가하고 이 문서에 용도를 기록한 뒤 사용한다.
@@ -69,6 +80,7 @@
 3. **px 값 직접 사용 금지** (간격·글자 크기·반경). 예외: 1px 테두리, 컴포넌트 내부 고정 치수(토글 크기 등)뿐.
 4. **그라데이션·이미지 위에 본문 텍스트 금지** (원칙 4).
 5. 이 문서와 코드가 어긋나면 **문서를 먼저 고치고** 코드를 따라가게 한다.
+6. **reference에 코드가 있는 컴포넌트는 재해석하지 말고 해당 코드를 레시피로 복사·조립할 것.**
 
 ## 5. 결정 히스토리
 
@@ -86,3 +98,4 @@
 - Notion Life Planner 템플릿 (Pinterest) — 다크 팔레트·정보 밀도·시간 그룹핑 참고
 - "Play with shadow" 인스타 스토리 디자인 (Pinterest) — 히어로 타이포 연출 참고
 - 확정 시안: [images/bosho_design.png](images/bosho_design.png) — A안(보라) 확정 시점의 스타일 타일 캡처
+- 확정 시안의 코드 원본: [prototype/reference/style-tile-v1.html](prototype/reference/style-tile-v1.html), [prototype/reference/style-tile-v2.html](prototype/reference/style-tile-v2.html)

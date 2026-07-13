@@ -28,6 +28,7 @@
 - 모든 UI 작업 전에 docs/design-system.md를 읽을 것
 - 색·간격·글자크기·반경은 docs/prototype/tokens.css의 var()만 사용, 하드코딩 금지
 - 새 토큰이 필요해 보이면 추가 전에 기존 토큰으로 해결 가능한지 먼저 검토
+- 프로토타입 단위 완료 시마다 docs/prototype/check_tokens.py로 토큰 하드코딩 검증
 
 ## 진행 상황
 - [x] 문제정의 / 사용자 시나리오 / 핵심기능 초안 → README.md 작성, 커밋, PR #191 생성
