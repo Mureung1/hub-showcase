@@ -88,7 +88,7 @@
 
 ---
 
-## 4단계 — 유저 프로필 + 인증
+## 4단계 — 유저 프로필 + 인증 ✅ 완료
 
 - [x] JWT 기반 인증 미들웨어 구현 (Express)
 - [x] 프로필 등록 폼 UI 구현 (React Hook Form + Zod)
@@ -100,27 +100,31 @@
 - [x] 프론트-백 Zod 스키마 공유 설정
 - [x] 프로필 등록 API 구현 (POST /api/profile)
 - [x] 프로필 수정 API 구현 (PATCH /api/profile)
-- [x] 회원가입/로그인 API 구현 (프로토타입)
+- [x] 회원가입/로그인 API 구현
 - [x] API 클라이언트 구현 (frontend/src/utils/apiClient.ts)
-- [ ] Supabase Auth 실제 연동 (다음 PR)
-- [ ] 최초 로그인 시 프로필 미등록 유저 온보딩 플로우 분기 처리 (다음 PR)
+- [x] Auth 페이지 UI (회원가입/로그인)
+- [x] 토큰 저장 및 자동 전달
+- [x] 인증 상태에 따른 페이지 분기
 
 ---
 
-## 5단계 — 필터링 로직 + 대시보드 카드뷰
+## 5단계 — 필터링 로직 + 대시보드 카드뷰 ✅ 완료
 
-- [ ] 유저 프로필과 공고 자격요건 매칭 알고리즘 설계
-- [ ] 조건 매칭 함수 구현 (전공/학년/거주지/소득분위 조건 체크)
-- [ ] 필터링 API 구현 (GET /api/postings?filtered=true)
-- [ ] React Query로 필터링된 공고 목록 fetching 훅 구현
-- [ ] Zustand 전역 상태에 유저 프로필 저장
-- [ ] 대시보드 레이아웃 구현 (탭 구조: 대외활동/공모전/정책·지원금/교내행사)
-- [ ] 카드뷰 컴포넌트 구현 (제목, 마감일, D-Day, 자격요건 요약)
-- [ ] 카드 클릭 시 상세 페이지 또는 모달 구현
-- [ ] "지원 가능" 뱃지 표시 로직 구현
-- [ ] 카테고리별 탭 전환 UI 구현 (React Router 또는 상태 기반)
-- [ ] 로딩/에러 상태 UI 처리 (React Query isLoading/isError)
-- [ ] 빈 결과(조건에 맞는 공고 없음) 처리 UI
+- [x] 유저 프로필과 공고 자격요건 매칭 알고리즘 설계
+- [x] 조건 매칭 함수 구현 (matchingService.ts)
+- [x] 필터링 API 구현 (GET /api/postings)
+- [x] 공고 상세 조회 API (GET /api/postings/:id)
+- [x] 스크랩 API (POST /api/postings/:id/scrap)
+- [x] 프론트엔드 API 클라이언트 (postingsApi)
+- [x] 대시보드 레이아웃 구현 (카테고리 탭)
+- [x] 카드뷰 컴포넌트 구현 (PostingCard.tsx)
+- [x] "지원 가능" 뱃지 표시 로직
+- [x] 매칭도 (matchScore) 표시
+- [x] 카테고리별 탭 전환 UI
+- [x] 로딩/에러 상태 UI 처리
+- [x] 빈 결과 처리 UI
+- [x] 페이지네이션 UI
+- [x] 스크랩 토글 기능
 
 ---
 
