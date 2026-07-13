@@ -622,3 +622,12 @@
 ### 남은 작업
 - T17 잔여: required status check 지정·auto-merge 상호작용 확인(GitHub 설정), Vercel 계정 연결·프리뷰 배포
 - 외부: T16 제3자 1인, T25/R1 평가자 2인 (R2 킷 준비 완료)
+
+## 2026-07-12 (T17 원격 규칙 + 하네스 점검·개선)
+### 처리한 TODO
+- T17 단계 ①②⑤: origin main에 required status check `verify` 지정·재조회 확인(private 무료 저장소에서 403 없이 성공), auto-merge 상호작용 근거 기록(main 타겟 스킵 규칙과 비교차), Vercel custom events Hobby 미지원(Pro 전용) 확인 — T24는 "미지원 → 제약 기록 + T22 파일럿 대체" 경로. [계획서](../harness/tasks/T17-vercel-mock-deploy/plan.md)·[검증 보고서](../harness/tasks/T17-vercel-mock-deploy/verification.md)
+- 하네스 점검: 정본 참조 경로 20개 전부 유효, 미치환 템플릿 항목 0건, AGENTS.md=CLAUDE.md 동기화, LOG 링크 규칙 준수 확인
+- 하네스 개선 4건: ① T17 폴더에 검증 보고서 골격 생성(폴더 규칙 충족) ② T25 계획·검증 문서에 표준 상태 헤더 추가(상태 스캔 일관성 — 기존 본문 유지) ③ tasks/README 이름 규칙 표기 보정(`T` 접두사 대문자 예외) + 외부 평가자 응답 사본(`-R<번호>.md`) 저장 규칙 추가 ④ product-audit의 낡은 재개 조건 갱신(T14 실브라우저 증거로 AC-4 재검증 가능)
+### 남은 작업
+- T17 ③④: 사용자 Vercel 대시보드 연동 → 프로덕션·프리뷰 검증 → CICD/CHECKLIST/LOG 갱신
+- product-audit AC-4를 T14 증거로 대조 재검증(별도 소작업)
