@@ -1,9 +1,9 @@
 import "dotenv/config"
 import express from "express"
 import cors from "cors"
-import briefingRouter from "./routes/briefing.js"
-import sentencesRouter from "./routes/sentences.js"
-import termsRouter from "./routes/terms.js"
+import dashboardRouter from "./routes/dashboard.js"
+import articleRouter from "./routes/article.js"
+import decisionsRouter from "./routes/decisions.js"
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
@@ -11,9 +11,9 @@ const PORT = process.env.PORT ?? 4000
 app.use(cors())
 app.use(express.json())
 
-app.use("/api/briefing", briefingRouter)
-app.use("/api/sentences", sentencesRouter)
-app.use("/api/terms", termsRouter)
+app.use("/api/dashboard", dashboardRouter)
+app.use("/api/article", articleRouter)
+app.use("/api/decisions", decisionsRouter)
 
 // Every route responds with { success, data } or { success: false, error }.
 // Anything else (a thrown error that skips a route's own try/catch) lands here.

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>브리플리 — 마이페이지</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      as="style"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/variable/pretendardvariable-dynamic-subset.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="app-header">
+        <a class="back-link" href="01_dashboard.html">← 오늘의 핵심 외신으로</a>
+        <h1>투자 판단 히스토리</h1>
+        <p class="page-subtitle">
+          내가 읽고 판단한 기사들을 한눈에 복기해보세요
+        </p>
+      </header>
+
+      <main class="history-list">
+        <div class="history-item">
+          <p class="history-date">2026.07.12</p>
+          <div class="history-card">
+            <h2 class="history-title">
+              Tech Stocks Slide as Investors Brace for Bear Market
+            </h2>
+            <ul class="history-summary">
+              <li>기술주 전반이 급락하며 베어마켓 우려가 커지고 있습니다.</li>
+              <li>
+                GlobalTech Corp(GTC)의 약한 실적 가이던스가 하락을
+                가속시켰습니다.
+              </li>
+              <li>
+                전문가들은 단기 변동성은 있어도 장기 매수 기회로 보는 시각도
+                있다고 분석합니다.
+              </li>
+            </ul>
+            <span class="badge buy">📈 매수</span>
+          </div>
+        </div>
+
+        <div class="history-item">
+          <p class="history-date">2026.07.11</p>
+          <div class="history-card">
+            <h2 class="history-title">
+              Fed Signals Rate Path as Inflation Guidance Shifts
+            </h2>
+            <ul class="history-summary">
+              <li>
+                연준이 인플레이션 지표 변화에 따라 금리 방향을
+                시사했습니다.
+              </li>
+              <li>
+                시장은 연내 추가 인상 가능성보다 동결 기조에 무게를 두고
+                있습니다.
+              </li>
+              <li>
+                채권 금리는 발표 직후 소폭 하락하며 안정세를 보였습니다.
+              </li>
+            </ul>
+            <span class="badge hold">➖ 관망</span>
+          </div>
+        </div>
+
+        <div class="history-item">
+          <p class="history-date">2026.07.09</p>
+          <div class="alert-fallback">
+            원문 링크 만료됨 — 저장된 요약으로 복기 중
+          </div>
+          <div class="history-card">
+            <h2 class="history-title">
+              EV Maker's Ticker Jumps 8% on Strong Delivery Numbers
+            </h2>
+            <ul class="history-summary">
+              <li>
+                전기차 업체의 분기 인도량이 시장 예상치를 웃돌았습니다.
+              </li>
+              <li>
+                주가는 발표 당일 8% 급등하며 연중 최고가를 경신했습니다.
+              </li>
+              <li>
+                다만 애널리스트들은 밸류에이션 부담을 우려하는 목소리도
+                냈습니다.
+              </li>
+            </ul>
+            <span class="badge sell">📉 매도</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

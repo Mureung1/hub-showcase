@@ -17,5 +17,10 @@ If you are developing a production application, we recommend using TypeScript wi
 
 ## 프로젝트 문서
 
-- **기획서**: [Wiki - Plan](https://github.com/JeongHun-s/hub/wiki/plan.md)
-- **작업 체크리스트** - [Wiki - Checklist] (https://github.com/JeongHun-s/hub/wiki/checklist.md)
+- **기획서**: [docs/plan.md](./docs/plan.md)
+- **작업 체크리스트**: [docs/checklist.md](./docs/checklist.md)
+- **개발 Task & 백로그**: [docs/backlog.md](./docs/backlog.md)
+
+## 이번 주 작업 현황
+
+- [2주차 이슈 보드](https://github.com/JeongHun-s/hub/milestone/1)
