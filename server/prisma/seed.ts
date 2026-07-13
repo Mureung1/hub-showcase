@@ -1,7 +1,9 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 import { DEMO_CATEGORIES, DEMO_USER_ID } from '../src/constants.js'
 
 const prisma = new PrismaClient()
+const DEMO_PASSWORD = 'demo1234!'
 
 const DEMO_SCHEDULES = [
   { date: '2026-07-07', title: '저녁 운동', time: '19:00', categoryId: 'exercise' },
@@ -15,13 +17,14 @@ const DEMO_SCHEDULES = [
 ]
 
 async function main() {
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10)
   const user = await prisma.user.upsert({
     where: { id: DEMO_USER_ID },
-    update: {},
+    update: { passwordHash },
     create: {
       id: DEMO_USER_ID,
       email: 'demo@weshoulddo.dev',
-      passwordHash: 'demo-no-auth-yet',
+      passwordHash,
       name: '데모 사용자',
     },
   })

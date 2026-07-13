@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { logout as logoutRequest, type AuthUser } from '../auth/authClient'
 import { BottomNavigation } from './scheduler/BottomNavigation'
 import { CalendarView } from './scheduler/CalendarView'
 import { FriendsView, MyHomeView, ProfileView } from './scheduler/StaticViews'
@@ -6,7 +7,12 @@ import type { AppTab, FriendPost } from './scheduler/types'
 import { useScheduleManager } from './scheduler/useScheduleManager'
 import './scheduler.css'
 
-export function Scheduler() {
+type SchedulerProps = {
+  user: AuthUser
+  onLogout: () => void
+}
+
+export function Scheduler({ user, onLogout }: SchedulerProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<AppTab>('calendar')
   const [dodoMessage, setDodoMessage] = useState('오늘 일정 하나만 더 하면 같이 놀 수 있어!')
@@ -68,6 +74,7 @@ export function Scheduler() {
               <button type="button" onClick={goToMyCalendar}>내 일정만 보기</button>
               <button type="button">알림 설정</button>
               <button type="button" onClick={() => changeTab('home')}>두두의 마이홈</button>
+              <button type="button" onClick={() => { logoutRequest(); onLogout() }}>{user.name}님 로그아웃</button>
             </div>
           )}
         </header>

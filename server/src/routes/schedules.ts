@@ -1,9 +1,11 @@
 import { Router } from 'express'
 import type { Schedule } from '@prisma/client'
 import { prisma } from '../db.js'
-import { DEMO_USER_ID } from '../constants.js'
+import { requireAuth } from '../auth/requireAuth.js'
+import { asyncHandler } from '../utils/asyncHandler.js'
 
 export const schedulesRouter = Router()
+schedulesRouter.use(requireAuth)
 
 type ScheduleWithCategory = Schedule & { category: { tone: string } }
 
@@ -27,17 +29,17 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-schedulesRouter.get('/', async (_req, res) => {
+schedulesRouter.get('/', asyncHandler(async (req, res) => {
   const schedules = await prisma.schedule.findMany({
-    where: { userId: DEMO_USER_ID },
+    where: { userId: req.userId },
     include: { category: true },
     orderBy: { date: 'asc' },
   })
 
   res.json(schedules.map(toResponse))
-})
+}))
 
-schedulesRouter.post('/', async (req, res) => {
+schedulesRouter.post('/', asyncHandler(async (req, res) => {
   const body: unknown = req.body
   if (typeof body !== 'object' || body === null) {
     res.status(400).json({ error: '요청 본문이 필요합니다.' })
@@ -52,14 +54,14 @@ schedulesRouter.post('/', async (req, res) => {
   }
 
   const category = await prisma.category.findUnique({ where: { id: categoryId } })
-  if (!category) {
+  if (!category || category.userId !== req.userId) {
     res.status(404).json({ error: '존재하지 않는 카테고리입니다.' })
     return
   }
 
   const schedule = await prisma.schedule.create({
     data: {
-      userId: DEMO_USER_ID,
+      userId: req.userId!,
       categoryId,
       date: toDateOnly(date),
       title,
@@ -69,9 +71,9 @@ schedulesRouter.post('/', async (req, res) => {
   })
 
   res.status(201).json(toResponse(schedule))
-})
+}))
 
-schedulesRouter.patch('/:id', async (req, res) => {
+schedulesRouter.patch('/:id', asyncHandler(async (req, res) => {
   const body: unknown = req.body
   if (typeof body !== 'object' || body === null) {
     res.status(400).json({ error: '요청 본문이 필요합니다.' })
@@ -104,7 +106,7 @@ schedulesRouter.patch('/:id', async (req, res) => {
   }
 
   const existing = await prisma.schedule.findUnique({ where: { id: req.params.id } })
-  if (!existing || existing.userId !== DEMO_USER_ID) {
+  if (!existing || existing.userId !== req.userId) {
     res.status(404).json({ error: '존재하지 않는 일정입니다.' })
     return
   }
@@ -115,15 +117,15 @@ schedulesRouter.patch('/:id', async (req, res) => {
     include: { category: true },
   })
   res.json(toResponse(schedule))
-})
+}))
 
-schedulesRouter.delete('/:id', async (req, res) => {
+schedulesRouter.delete('/:id', asyncHandler(async (req, res) => {
   const existing = await prisma.schedule.findUnique({ where: { id: req.params.id } })
-  if (!existing || existing.userId !== DEMO_USER_ID) {
+  if (!existing || existing.userId !== req.userId) {
     res.status(404).json({ error: '존재하지 않는 일정입니다.' })
     return
   }
 
   await prisma.schedule.delete({ where: { id: req.params.id } })
   res.status(204).end()
-})
+}))
