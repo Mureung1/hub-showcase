@@ -8,18 +8,21 @@
 
 ## Destination
 
-Pinned OpenAI Codex의 실제 App Server client·core·TUI/exec 구조와 AY-PLE 제품 용례에 근거한 module seam을 채택하고, ADR 0008을 대체할 결정과 기존 Host 제거·선별 재사용 계획이 포함된 implementation-ready `Codex-native Client Baseline` spec을 작성할 수 있는 상태를 만든다.
+Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 TypeScript external App Server client로 source-guided port하고, 검증된 runtime capability 위에만 AY-PLE 기능을 올리는 implementation-ready `Codex-native Client Baseline` spec을 작성할 수 있는 상태를 만든다. Spec은 ADR 0008의 replacement decision과 기존 Host 제거·선별 재사용 계획을 포함한다.
 
 ## Notes
 
 - 기존 `HeadlessCodexClientHost` Interface와 state machine은 현재까지 확인한 바로는 prototype·evidence이며, durable consumer audit에서 반대 근거가 발견되지 않는 한 compatibility target으로 삼지 않는다. 새 설계가 확정된 뒤 필요한 lower primitive만 선별 재사용한다.
 - `openai/codex` source는 [Upstream source provenance를 장기 검증 가능하게 pin한다](tickets/003-pin-upstream-source-provenance.md)의 결정에 따라 `references/openai-codex`의 attested exact commit에 pin하되 runtime과 일반 `npm test`/`build`의 dependency로 만들지 않는다.
-- Protocol semantics의 authority는 pinned binary generated schema·공식 문서이며, 같은 버전의 pinned Rust source·tests는 version-specific implementation fact, live probe는 scheduler·stdio interleaving의 관찰 근거를 소유한다.
+- Pinned generated schema는 exact wire shape, 같은 version의 Rust source·tests는 method별 ordering·identity authority·state transition과 first-party handling, live probe는 scheduler·external stdio interleaving의 관찰 근거를 소유한다. Inventory만으로 protocol semantics를 추론하지 않는다.
+- Baseline은 Rust의 줄 단위 복제가 아니라 현재 tracer가 채택한 method의 observable semantics를 source-guided port한다. `CodexAppServerConnection`은 child·JSONL·schema·envelope·exact demux·process loss, `CodexConversationRuntime`은 native identity·per-thread owner·method lifecycle, `AYPLE adapter`는 three-root product policy·safe projection·`ModelingInvocation`·browser UX를 소유한다.
+- Generated [Codex App Server method inventory](../../architecture/codex-app-server-method-inventory.md)는 method 존재와 coverage를 보여 주는 ledger다. Method별 tracer·adoption·owner·source evidence·verification 상태는 [`codex-method-decisions.json`](../../../packages/runtime-codex/codex-method-decisions.json)에 기록한 뒤 package workflow로 inventory를 재생성하며 generated Markdown을 직접 수정하지 않는다. 현재 overlay와 `client-host` taxonomy의 gap은 후속 conformance·migration decision이 해결한다.
 - Product intent와 policy의 authority는 AY-PLE Product Brief·`CONTEXT.md`·ADR 0005–0007이다. Product 문서가 protocol fact를 재정의하거나 protocol 구현 편의가 product policy를 결정하지 않으며, 더 강한 AY-PLE 동작은 owning adapter의 명시적 deviation ADR/spec으로 기록한다.
-- `CodexAppServerClient`, `ConversationWorkspace`, `ThreadId` 등은 implementation·protocol 용어이며 `CONTEXT.md`의 AY-PLE 제품 도메인 용어로 추가하지 않는다.
+- `CodexAppServerConnection`, `CodexConversationRuntime`, `ThreadId` 등은 implementation·protocol 용어이며 `CONTEXT.md`의 AY-PLE 제품 도메인 용어로 추가하지 않는다.
+- Product adapter implementation은 소비하는 runtime method roster가 schema·pinned source/test·fake child와 필요한 live binary gate를 통과하고 ledger에 기록된 뒤에만 시작한다.
 - Wayfinder는 결정과 조사만 소유한다. 코드 제거·구현은 resulting spec과 `/to-tickets` 이후에 `/implement`로 수행한다.
-- Method fact table과 first-party architecture pattern 조사 완료 후에는 source evidence alignment review를 통과해야 module seam을 결정할 수 있다. Superseding ADR 뒤에는 architecture readiness review를 통과해야 `/to-spec`으로 넘어간다.
-- `/to-spec` 결과는 source conformance와 repository Spec/Standards를 병렬 리뷰하고 blocking finding을 owning Wayfinder ticket으로 환류한 뒤에만 `/to-tickets`로 넘긴다. 구현 slice는 각 ticket 완료 전 two-axis Standards/Spec review를 거친다.
+- 승인된 Connection → ConversationRuntime → AYPLE adapter seam을 후속 ticket이 다시 generic Host 설계로 대체하지 않는다. Superseding ADR 뒤에는 architecture readiness review를 통과해야 `/to-spec`으로 넘어간다.
+- `/to-spec` 결과는 Source·Standards·Spec을 독립 리뷰하고 blocking finding을 owning Wayfinder ticket으로 환류한 뒤에만 `/to-tickets`로 넘긴다. 각 구현 slice도 완료 전 같은 세 축과 decisions JSON/generated inventory 정렬을 검증한다.
 
 ## Decisions so far
 
@@ -30,11 +33,11 @@ Pinned OpenAI Codex의 실제 App Server client·core·TUI/exec 구조와 AY-PLE
 - [Connection·App Server ingress architecture pattern을 지도화한다](tickets/005-map-first-party-rust-architecture-patterns.md) — Exact pin의 production client에는 stdio child adapter가 없으므로 AY-PLE은 external process lifecycle을 소유하되 single ingress·exact demux·request/event 분리만 source-grounded pattern으로 채택하고 bounds·terminal·consumer seam은 후속 tracer·policy로 남긴다.
 - [Core·TUI·exec conversation ownership pattern을 지도화한다](tickets/006-map-first-party-conversation-ownership.md) — First-party shared kernel을 가정하지 않고 native thread/session scope·per-thread ownership·surface projection·조건부 history와 독립 lifetime을 설계 입력으로 채택하며 exact seam·identity·delivery·cleanup policy는 후속 decision ticket에 남긴다.
 - [Protocol·Rust source evidence의 정렬 상태를 리뷰한다](tickets/007-review-source-evidence-alignment.md) — 세 evidence asset은 exact pin에 추적 가능하고 public·version-specific·live·product 권위를 분리하며 Source·Standards·Spec review를 통과해 첫 tracer와 module seam을 결정하기에 충분하다.
+- [첫 tracer와 module seam을 선택한다](tickets/008-choose-first-tracer-and-module-seams.md) — 최종 구조의 첫 conformance slice로 T0를 선택하고 Connection → ConversationRuntime → AYPLE adapter seam, source-guided method port, inventory-led coverage와 T0.1 command approval tracer를 채택한다.
 
 ## Not yet specified
 
 - 첫 conversation tracer 이후 browser transport의 정확한 형태
-- 첫 Server request 용례와 첫 AY-PLE `ModelingInvocation` tracer 사이의 정확한 티켓 경계
 
 ## Out of scope
 

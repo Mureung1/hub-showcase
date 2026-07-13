@@ -4,11 +4,13 @@
 
 - Type: grilling
 - State: open
-- Blocked by: tickets/008-choose-first-tracer-and-module-seams.md, tickets/009-decide-identity-and-authority.md, tickets/010-decide-concurrency-policy.md, tickets/011-decide-delivery-and-recovery-model.md
+- Blocked by: [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md), [Native identity authority와 lifetime을 결정한다](009-decide-identity-and-authority.md), [Thread·turn concurrency 정책을 결정한다](010-decide-concurrency-policy.md), [Event delivery와 transcript recovery model을 결정한다](011-decide-delivery-and-recovery-model.md)
 
 ## Question
 
-정상 browser detach·graceful connection close·`thread/unsubscribe`·idle unload·process reap과 Initialize·read-only·non-idempotent mutation·active turn 도중 connection loss·timeout을 어떻게 구분할 것인가? Child·ingress·pending RPC·projection task의 cleanup owner와 completion authority, transport terminal·unknown outcome·product restart UX·persistence 상태별 native thread resume 책임을 어느 module이 소유하며, 어떤 경우에만 자동 행동을 금지할 것인가?
+`CodexAppServerConnection`의 child·stdio·single ingress·pending RPC·process terminal과 `CodexConversationRuntime`의 method별 in-flight semantic outcome·completion authority를 어떤 owner matrix와 precedence로 끝낼 것인가? Initialize·read-only request·non-idempotent mutation·active turn 도중 timeout/loss를 구분하고, unknown mutation outcome을 성공으로 합성하거나 자동 replay하지 않는다. `thread/unsubscribe`·resume·idle unload는 해당 inventory row의 tracer가 채택될 때만 확장한다.
+
+Browser detach·restart UX는 `AYPLE adapter` 책임으로 남기고 connection cleanup과 섞지 않는다. Answer는 영향받는 row·tracer·owner·source/test evidence와 구현 전 integration 상태를 함께 기록한다.
 
 ## Answer
 

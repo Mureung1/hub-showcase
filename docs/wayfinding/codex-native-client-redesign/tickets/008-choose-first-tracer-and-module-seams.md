@@ -3,14 +3,14 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: claimed
-- Blocked by: tickets/002-audit-host-consumers-and-compatibility.md, tickets/007-review-source-evidence-alignment.md
+- State: resolved
+- Blocked by: [기존 Host consumer와 compatibility constraint를 감사한다](002-audit-host-consumers-and-compatibility.md), [Protocol·Rust source evidence의 정렬 상태를 리뷰한다](007-review-source-evidence-alignment.md)
 
 ## Question
 
-“Codex 사용 용례 위에 AY-PLE 기능을 올린다”는 원칙을 가장 작은 end-to-end 행동으로 증명하는 첫 tracer는 무엇이며, 그 tracer를 위해 `ProductRuntimeLayout`, `CodexAppServerClient`, conversation use-case module과 local web adapter 사이의 Interface·seam을 어디에 두어야 하는가?
+“Codex 사용 용례 위에 AY-PLE 기능을 올린다”는 원칙을 가장 작은 end-to-end 행동으로 증명하는 첫 tracer는 무엇이며, 그 tracer를 위해 `ProductRuntimeLayout`, `CodexAppServerConnection`, `CodexConversationRuntime`과 `AYPLE adapter` 사이의 Interface·seam을 어디에 두어야 하는가?
 
-권고 출발점은 명시적 workspace에서 conversation 하나를 시작하고 text turn 하나의 agent message와 authoritative terminal을 browser-safe 결과로 관찰하는 vertical tracer다.
+권고 출발점은 명시적 workspace에서 conversation 하나를 시작하고 text turn 하나의 agent message와 authoritative terminal을 transport-neutral safe result로 관찰하는 vertical tracer다.
 
 선택한 tracer가 Server request를 요구하는지, 요구하지 않는다면 first supported request variant를 어떤 실제 후속 tracer에서 선택할지도 명시한다. 구체 variant가 정해지기 전에는 generic responder admission·bound·expiry·once-only policy를 선결정하지 않고, variant를 선택한 시점에 필요한 decision ticket과 client-level owner를 만든다.
 
@@ -26,7 +26,7 @@
 | Public `Client → Thread → Turn` object | 잘못된 cross-thread ID 조합을 막고 per-thread ownership을 드러낸다. | `messages()`·`terminal` 두 async surface와 concurrency·delivery policy를 후속 decision보다 먼저 공개한다. |
 | One-shot `runTextTurn()` command | T0 caller에게 가장 깊고 작은 Interface다. | Workspace를 process lifetime에 묶으면 기존 Host coupling을 재현하고, text-only 영구 API로 고정하면 다음 native input 확장이 막힌다. |
 
-권고하는 합성은 package-private concrete `CodexAppServerClient`와 native `ThreadId` keyed actor를 process-scoped `CodexConversationRuntime` 뒤에 두는 구조다.
+채택한 합성은 package-private concrete `CodexAppServerConnection`과 native `ThreadId` keyed actor를 process-scoped `CodexConversationRuntime` 뒤에 두는 구조다.
 
 ```ts
 type CodexConversationRuntime = {
@@ -58,10 +58,10 @@ declare function prepareProductRuntimeLayout(input: {
 ```text
 packages/runtime-codex
   conversation surface        # explicit ./conversation subpath
-  internal App Server client  # child, initialize, RPC, single ingress
+  internal connection         # child, JSONL, schema, RPC, single ingress
   internal thread projection  # native scope correlation과 T0 result
 apps/server
-  local adapter               # trusted workspace input, safe result mapping
+  AYPLE adapter               # trusted workspace input, safe product mapping
 ```
 
 - Existing Runtime Harness와 old Host root barrel은 새 surface의 consumer가 아니다. 새 conversation surface는 별도 package subpath로 두고 local adapter는 developer-only `/api/runtime/*` 경로 옆에 둔다.
@@ -76,8 +76,26 @@ apps/server
 - 실제 child와 deterministic fake child가 유용한 external seam이다. Internal client·actor의 test-only Interface나 두 번째 fake implementation은 만들지 않는다.
 - 별도 shared conversation/product package는 만들지 않는다. Test·route·fake가 아닌 두 번째 independent production consumer가 같은 semantic contract를 product-specific branching 없이 요구할 때만 추출한다.
 
-T0에는 supported Server request가 없다. Inbound request는 같은 ID의 deterministic unsupported protocol error로 끝내 ingress를 매달지 않되, generic responder Interface와 admission·expiry·once-only policy를 만들지 않는다. [첫 Server request variant 비교](../assets/008-server-request-variant-comparison.md)는 첫 concrete variant로 좁은 `T0.1` `item/commandExecution/requestApproval` tracer를 권고하고, 이를 수용하면 identity·delivery·connection decision 뒤 [commandExecution approval의 첫 round-trip을 결정한다](017-decide-command-execution-approval-round-trip.md)에서 variant-specific responder를 설계한다.
+T0에는 supported Server request가 없다. Inbound request는 같은 ID의 deterministic unsupported protocol error로 끝내 ingress를 매달지 않되, generic public responder Interface와 제품 approval policy를 만들지 않는다. [첫 Server request variant 비교](../assets/008-server-request-variant-comparison.md)에 따라 첫 concrete responder tracer는 좁은 `T0.1` `item/commandExecution/requestApproval`로 채택했고, identity·delivery·connection decision 뒤 [commandExecution approval의 첫 round-trip을 결정한다](017-decide-command-execution-approval-round-trip.md)에서 source-guided pending·once-only lifecycle을 설계한다.
 
 ## Answer
 
-사용자에게 위 진행 메모의 권고안을 확인한 뒤 작성한다.
+첫 tracer는 최종 Codex-native client 구조의 임시 축소판이 아니라 첫 executable conformance slice인 `T0`다. Three-root preparation 뒤 package-owned binary를 initialize하고, 명시적인 workspace에서 새 native thread와 text turn 하나를 시작해 matching completed AgentMessage와 authoritative `turn/completed`를 transport-neutral safe result로 반환한다. T0의 max-one/no-queue admission은 이 composite operation의 pre-admission 제약이며 이후 concurrency contract를 선결정하지 않는다.
+
+새 범용 Host state machine을 발명하거나 Rust를 줄 단위로 복제하지 않는다. 현재 tracer가 채택한 method에 한해 pinned Rust source/tests에서 관찰되는 request ID exact demux, native identity, per-thread ownership, response/notification convergence와 terminal transition을 TypeScript external App Server client로 source-guided port한다. Production Rust에는 AY-PLE이 import할 stdio child client가 없으므로 external boundary는 다음 세 owner로 나눈다.
+
+| Owner | 책임 |
+| --- | --- |
+| `CodexAppServerConnection` | Child lifecycle, single JSONL ingress, generated-schema validation, envelope direction과 exact `RequestId` demux, process terminal과 pending RPC settlement |
+| `CodexConversationRuntime` | 채택된 native thread/turn/item lifecycle, `ThreadId`별 correlation과 projection, method별 response/notification convergence와 semantic terminal |
+| `AYPLE adapter` | Three-root 제품 policy, safe product projection, 이후 `ModelingInvocation` mapping, browser transport와 제품 UX |
+
+Three-root validation, process launch `cwd=appDataRoot`와 `thread/start.cwd=workspaceRoot`는 upstream Rust의 의미가 아니라 ADR 0006이 정한 AY-PLE policy다. Connection과 ConversationRuntime은 prepared capability만 소비하며 product ref, `ModelingRun`과 browser DTO를 runtime contract로 만들지 않는다.
+
+T0의 최소 method roster는 `initialize`/`initialized`, `thread/start`, `turn/start`, response-first `thread/started`의 검증·무대기 처리, notification-first가 가능한 `turn/started`, completed AgentMessage를 담는 `item/completed`, authoritative `turn/completed`다. Streaming delta, resume, interrupt, recovery와 사용하지 않는 stable·experimental method를 선제 구현하지 않는다. 모든 inbound Server request는 같은 ID의 deterministic unsupported error로 종결하며, 이 transport handling만으로 개별 Server request method를 semantic integration으로 승격하지 않는다.
+
+첫 supported Server request는 제품 우선순위가 아니라 responder engineering tracer인 `T0.1 item/commandExecution/requestApproval`이다. [commandExecution approval의 첫 round-trip을 결정한다](017-decide-command-execution-approval-round-trip.md)가 original `RequestId` once-only response와 native thread/turn/item correlation을 결정하고, 실제 approval UI·session grant·policy amendment는 product use case까지 미룬다.
+
+Method 존재와 현재 integration/adoption은 generated [Codex App Server method inventory](../../../architecture/codex-app-server-method-inventory.md)에서 확인하되 직접 수정하지 않는다. Tracer별 adoption·owner·source evidence와 verification 상태는 package-owned [`codex-method-decisions.json`](../../../../packages/runtime-codex/codex-method-decisions.json)을 확장해 기록하고 inventory를 재생성한다. Inventory는 coverage ledger이며 ordering·identity authority·state transition의 근거가 아니다. 그것은 [method lifecycle fact table](../assets/004-method-lifecycle-fact-table.md)과 pinned source/tests가 소유한다. 현재 overlay가 `integration/adoption/note`만 허용하는 gap과 안전한 generation gate는 [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md)가 schema로 정하고 [기존 Host 제거와 선별 재사용 계획을 확정한다](014-plan-host-removal-and-selective-salvage.md)가 migration plan에 반영한다. 이 설계 승인만으로 현재 integration row를 승격하지 않는다.
+
+별도 shared conversation/product package는 만들지 않는다. Test·route·fake가 아닌 두 번째 independent production consumer가 같은 semantic contract를 product-specific branching 없이 요구할 때만 추출한다.

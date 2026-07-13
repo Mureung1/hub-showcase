@@ -4,11 +4,13 @@
 
 - Type: task
 - State: open
-- Blocked by: tickets/014-plan-host-removal-and-selective-salvage.md
+- Blocked by: [기존 Host 제거와 선별 재사용 계획을 확정한다](014-plan-host-removal-and-selective-salvage.md)
 
 ## Question
 
-First-party-shaped `CodexAppServerClient`, 구체적 conversation/AY-PLE use-case module과 browser adapter의 seam·dependency direction·deviation 소유권을 어떻게 채택하고, 왜 기존 all-capability `Headless Codex Client Host` Interface를 supersede하는지를 어떤 ADR로 기록할 것인가?
+Pinned generated schema의 wire shape와 Rust source/tests의 method별 observable semantics를 TypeScript external client로 source-guided port하는 원칙, `CodexAppServerConnection → CodexConversationRuntime → AYPLE adapter`의 dependency direction과 runtime-before-product gate를 어떤 ADR로 기록할 것인가? 기존 all-capability `HeadlessCodexClientHost`를 compatibility target 없이 supersede하고, upstream보다 강한 제품 behavior는 adapter-owned deviation으로 남긴다.
+
+ADR은 decisions JSON/generated inventory coverage ledger, lifecycle fact/source-test authority와 fake/live external conformance의 역할을 분리하고, TUI·Exec surface policy와 사용하지 않는 method를 포팅하지 않는 경계를 포함한다.
 
 ## Answer
 

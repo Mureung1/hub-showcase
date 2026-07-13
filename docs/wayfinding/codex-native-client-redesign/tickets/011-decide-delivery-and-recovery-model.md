@@ -4,11 +4,13 @@
 
 - Type: grilling
 - State: open
-- Blocked by: tickets/008-choose-first-tracer-and-module-seams.md, tickets/009-decide-identity-and-authority.md
+- Blocked by: [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md), [Native identity authority와 lifetime을 결정한다](009-decide-identity-and-authority.md)
 
 ## Question
 
-첫 tracer가 관찰하는 agent text·item·turn terminal과 progress notification을 어떤 delivery class와 bounded retention으로 다루고, saturation을 어떤 explicit outcome으로 드러낼 것인가? Persistence/history 상태별 `thread/read` availability와 synthesized replay identity를 구분하면서 native history를 어떤 authoritative backfill·refresh source로 사용해 custom global journal 없이 live view와 복원을 조합할 것인가?
+`CodexAppServerConnection`은 raw JSONL·envelope work를 bounded하게 처리하고 transport terminal을 보고하며, `CodexConversationRuntime`은 채택한 row의 pinned source/test 근거에 따라 same-thread late·duplicate·terminal observation을 처리한다. 이 경계에서 T0/T0.1 observation의 delivery class·bound·saturation outcome과 terminal 반환 뒤 ingress drain·per-thread owner retention을 어떻게 정할 것인가? Upstream이 정의하지 않은 duplicate 의미는 AY-PLE deviation으로 명시하고 runtime에 product/global ordered journal을 만들지 않는다.
+
+Native history와 `thread/read` recovery는 그 row의 tracer를 채택할 때만 설계하고, browser retention·replay는 `AYPLE adapter`에 남긴다. Answer는 영향받는 row·tracer·owner·source/test evidence와 구현 전 integration 상태를 함께 기록한다.
 
 ## Answer
 

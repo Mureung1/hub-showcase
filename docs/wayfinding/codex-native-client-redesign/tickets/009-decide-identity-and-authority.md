@@ -1,14 +1,16 @@
-# 009 — Identity authority와 product reference 정책을 결정한다
+# 009 — Native identity authority와 lifetime을 결정한다
 
 ## Wayfinder ticket
 
 - Type: grilling
 - State: open
-- Blocked by: tickets/008-choose-first-tracer-and-module-seams.md
+- Blocked by: [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md)
 
 ## Question
 
-Native `ThreadId`, root·descendant가 공유하는 `SessionId`와 lineage, live·replay 경로별 turn/item identity를 어느 module이 authoritative하게 소유하고, persistence 상태별 lifetime·restart recoverability를 어떻게 구분하며, AY-PLE product/domain·browser에는 어떤 identity를 언제까지 노출할 것인가? 별도 opaque ref remapping과 connection generation invalidation은 실제 용례가 필요로 할 때 어느 adapter에서 도입해야 하는가?
+`CodexAppServerConnection`이 exact opaque wire identity를 보존하고 `CodexConversationRuntime`의 per-thread owner가 T0에 채택된 response·notification의 native `ThreadId`·`TurnId`·item identity를 상관한다는 baseline에서, type branding·authority convergence·lifetime과 terminal 뒤 identity 보존 범위를 어떻게 정할 것인가? `thread/resume`·`thread/read`·replay identity는 해당 method tracer가 채택될 때만 확장하고, upstream이 정의하지 않은 duplicate·lineage 의미를 일반화하지 않는다.
+
+Product/browser ref remapping과 connection generation은 runtime identity를 재정의하지 않으며 [첫 AY-PLE adapter tracer와 runtime readiness gate를 결정한다](018-decide-first-ayple-adapter-tracer.md)가 실제 use case 증거로 결정한다. Answer는 영향받는 inventory row, tracer, semantic owner, lifecycle fact/source-test evidence와 아직 구현 integration 승격이 아닌지를 함께 기록한다.
 
 ## Answer
 
