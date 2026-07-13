@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feature Slice Planner"
+  short_description: "요구사항을 하루 크기 이슈와 우선순위로 체계적으로 분해"
+  default_prompt: "Use $feature-slice to break this requirement into prioritized, day-sized GitHub issues."
