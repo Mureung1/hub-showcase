@@ -33,7 +33,7 @@
   - `ProgressBar`, `OptionButton`, 진행바/이전/`N/4`/하단 "다음" disabled 골격
 - [x] **2c.** Step1 업종 (기타 직접입력)
 - [x] **2d.** Step2 시·도 (2열 grid)
-- [ ] **2e.** Step3 구·군 (시·도 연동 동적, 제목 blue 강조)
+- [x] **2e.** Step3 구·군 (시·도 연동 동적, 제목 blue 강조)
 - [ ] **2f.** Step4 직원수 + 연매출 (select)
 
 ### 묶음 3 — 화면 완성
@@ -103,7 +103,8 @@ flowchart LR
 - [x] `OnboardingStep` 공통 레이아웃 (진행바/이전/다음 disabled 골격)
 - [x] Step1 업종 입력 UI (2c)
 - [x] Step2 시·도 입력 UI (2d)
-- [ ] Step3~4 실제 입력 UI (2e~2f)
+- [x] Step3 구·군 입력 UI (2e)
+- [ ] Step4 실제 입력 UI (2f)
 
 ### 3) 화면 완성
 - [ ] `WelcomeScreen` — navy 배경 + 기능 3개 + 시작하기 CTA
@@ -131,7 +132,8 @@ src/
 │   ├── OptionButton.tsx / .css   ✅
 │   ├── onboarding/
 │   │   ├── Step1Industry.tsx     # step1 업종 ✅
-│   │   └── Step2Region.tsx       # step2 시·도 ✅
+│   │   ├── Step2Region.tsx       # step2 시·도 ✅
+│   │   └── Step3District.tsx     # step3 구·군 ✅
 │   ├── FilterChip.tsx / .css     (미구현)
 │   ├── SubsidyCard.tsx / .css    (미구현)
 │   └── TabBar.tsx / .css         (미구현)
@@ -158,4 +160,4 @@ src/
 
 ## 다음 작업
 
-**2e. Step3 구·군 (시·도 연동 동적, 제목 blue 강조)** — `getDistricts(region)` + `setField('district')`
+**2f. Step4 직원수 + 연매출 (select)** — `EMPLOYEE_OPTIONS` + `REVENUE_OPTIONS` + 둘 다 선택 전 disabled
