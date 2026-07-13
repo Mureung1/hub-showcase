@@ -20,4 +20,101 @@ model Exercise {
   targetArea     String
   involvedJoints String[]
   createdAt      DateTime @default(now())
+
+  routineDayExercises    RoutineDayExercise[]
+  exerciseLogs           ExerciseLog[]
+  painReportsOriginal    PainReport[]         @relation("PainReportOriginal")
+  painReportsSubstituted PainReport[]         @relation("PainReportSubstituted")
+}
+
+enum DayOfWeek {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+enum RoutineDayStatus {
+  PLANNED
+  COMPLETED
+  SKIPPED
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  routine      Routine?
+  exerciseLogs ExerciseLog[]
+  painReports  PainReport[]
+}
+
+model Routine {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id])
+  splitType   String
+  daysPerWeek Int
+  createdAt   DateTime @default(now())
+
+  days RoutineDay[]
+}
+
+model RoutineDay {
+  id         Int              @id @default(autoincrement())
+  routineId  Int
+  routine    Routine          @relation(fields: [routineId], references: [id])
+  dayOfWeek  DayOfWeek
+  targetArea String?
+  status     RoutineDayStatus @default(PLANNED)
+
+  exercises    RoutineDayExercise[]
+  exerciseLogs ExerciseLog[]
+  painReports  PainReport[]
+
+  @@unique([routineId, dayOfWeek])
+}
+
+model RoutineDayExercise {
+  id           Int        @id @default(autoincrement())
+  routineDayId Int
+  routineDay   RoutineDay @relation(fields: [routineDayId], references: [id])
+  exerciseId   Int
+  exercise     Exercise   @relation(fields: [exerciseId], references: [id])
+  order        Int
+  targetSets   Int
+  targetReps   Int
+}
+
+model ExerciseLog {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  user         User       @relation(fields: [userId], references: [id])
+  routineDayId Int
+  routineDay   RoutineDay @relation(fields: [routineDayId], references: [id])
+  exerciseId   Int
+  exercise     Exercise   @relation(fields: [exerciseId], references: [id])
+  setNumber    Int
+  weight       Float
+  reps         Int
+  completed    Boolean
+  loggedAt     DateTime   @default(now())
+}
+
+model PainReport {
+  id                    Int        @id @default(autoincrement())
+  userId                Int
+  user                  User       @relation(fields: [userId], references: [id])
+  routineDayId          Int
+  routineDay            RoutineDay @relation(fields: [routineDayId], references: [id])
+  bodyPart              String
+  originalExerciseId    Int
+  originalExercise      Exercise   @relation("PainReportOriginal", fields: [originalExerciseId], references: [id])
+  substitutedExerciseId Int?
+  substitutedExercise   Exercise?  @relation("PainReportSubstituted", fields: [substitutedExerciseId], references: [id])
+  isManualOverride      Boolean    @default(false)
+  reportedAt            DateTime   @default(now())
 }
