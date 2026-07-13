@@ -22,10 +22,8 @@ description: 차세워(ChaSeWar) 백엔드(Spring Boot) 코드를 작성하거�
 - 응답은 항상 DTO. 엔티티 직접 반환 금지.
 - HTTP 상태코드 정확히 (200/400/404/500).
 
-## 영속성
-- 엔티티: `parking_lot`(정적, OA-13122), `parking_realtime`(실시간, OA-21709)
-- 엔티티는 `domain` 패키지, setter 지양(생성자/정적 팩터리)
-- 조회 전용은 `@Transactional(readOnly = true)`
+## 엔티티/도메인
+- 엔티티/도메인 모델 작성 규칙은 `backend/docs/conventions/domain.md`를 따른다
 
 ## 외부 연동 · 실시간
 - 지오코딩: 네이버 지역검색 (목적지→좌표), 첫 결과 사용
