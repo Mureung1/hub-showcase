@@ -9,9 +9,9 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", service: "core-loop-builder-server" });
+  res.json({ status: "ok", service: "core-loop-builder-backend" });
 });
 
 app.listen(port, () => {
-  console.log(`core-loop-builder-server listening on http://localhost:${port}`);
+  console.log(`core-loop-builder-backend listening on http://localhost:${port}`);
 });

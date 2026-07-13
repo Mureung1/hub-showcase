@@ -8,11 +8,11 @@
 
 ```
 core-loop-builder/
-  client/     Vite + React 19 프론트엔드
-  server/     Express 백엔드 (LLM 호출은 여기서만)
-  design/     디자인 토큰 + 디자인 시스템 문서
-  docs/       API 설계, 회고 등 장문 문서
-  prototype/  초기 흐름 검증용 정적 HTML/CSS 프로토타입 (참고용, 유지보수 대상 아님)
+  frontend/     Vite + React 19 프론트엔드 (frontend/src)
+  backend/      Express 백엔드 (LLM 호출은 여기서만, backend/src)
+  design/       디자인 토큰 + 디자인 시스템 문서
+  docs/         API 설계, 회고 등 장문 문서
+  prototype/    초기 흐름 검증용 정적 HTML/CSS 프로토타입 (참고용, 유지보수 대상 아님)
   .claude/skills/design-guide/   새 화면 디자인 시 자체 점검용 skill
 ```
 
@@ -24,8 +24,8 @@ core-loop-builder/
 
 ## 아키텍처 규칙
 
-- **LLM 키는 server에서만 다룬다.** `ANTHROPIC_API_KEY`는 `server/.env`에만 두고, client 번들에는 절대 노출하지 않는다. client는 항상 `server`의 REST 엔드포인트를 통해서만 AI 결과를 받는다.
-- 기획서의 7-Agent 파이프라인(Input → Genre Loop → Reference Analysis → Brainstorming → Loop Visualizer → Portfolio Writer → Critic)은 하나의 거대 프롬프트가 아니라 server 쪽에서 단계별 함수/엔드포인트로 나눠 구현한다.
+- **LLM 키는 backend에서만 다룬다.** `ANTHROPIC_API_KEY`는 `backend/.env`에만 두고, frontend 번들에는 절대 노출하지 않는다. frontend는 항상 `backend`의 REST 엔드포인트를 통해서만 AI 결과를 받는다.
+- 기획서의 7-Agent 파이프라인(Input → Genre Loop → Reference Analysis → Brainstorming → Loop Visualizer → Portfolio Writer → Critic)은 하나의 거대 프롬프트가 아니라 backend 쪽에서 단계별 함수/엔드포인트로 나눠 구현한다.
 
 ## 디자인 시스템
 
@@ -39,16 +39,16 @@ core-loop-builder/
 
 ## 컨벤션
 
-- **커밋**: Conventional Commits — `type(scope): description`. type = `feat|fix|docs|refactor|chore|test`, scope = `client|server|design|docs`. (예: `feat(client): 입력 폼 UI 구현`)
+- **커밋**: Conventional Commits — `type(scope): description`. type = `feat|fix|docs|refactor|chore|test`, scope = `frontend|backend|design|docs`. (예: `feat(frontend): 입력 폼 UI 구현`)
 - **브랜치**: `feature/*`
-- **CSS**: client 쪽 컴포넌트 클래스는 기존 `clb-` 프리픽스를 계속 사용한다.
-- **코드 스타일**: `.prettierrc.json`(세미콜론 없음, 싱글쿼트) 기준. client는 `npm run format`, server도 동일.
+- **CSS**: frontend 쪽 컴포넌트 클래스는 기존 `clb-` 프리픽스를 계속 사용한다.
+- **코드 스타일**: `.prettierrc.json`(세미콜론 없음, 싱글쿼트) 기준. frontend는 `npm run format`, backend도 동일.
 
 ## 실행
 
 ```bash
-cd client && npm install && npm run dev      # http://localhost:5173
-cd server && npm install && npm run dev      # http://localhost:4000
+cd frontend && npm install && npm run dev    # http://localhost:5173
+cd backend && npm install && npm run dev     # http://localhost:4000
 ```
 
 ## 진행 상태와 다음 할 일

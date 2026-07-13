@@ -32,15 +32,15 @@ Task는 보통 "함수 하나 짜기"처럼 잘게 쪼개지 않고, "화면 하
 
 기준 문서: [`docs/api-design-core-loop-candidates.md`](./api-design-core-loop-candidates.md), `project-plan.md` 8번(핵심 기능), 9번(AI Agent 작동 구조)
 
-- [ ] **P0** 입력 폼을 실제 React 컴포넌트로 구현 — 장르/참고 게임/원하는 플레이 경험/관심 기획 분야 (`client/src`, 어제 만든 목업 스타일 적용)
-- [ ] **P0** server: Genre Loop Agent 함수 — 장르별 기본 코어 루프 생성 프롬프트
-- [ ] **P0** server: Reference Analysis Agent 함수 — 참고 게임 반복 구조 분석 프롬프트
-- [ ] **P0** server: `POST /api/loops/candidates` 구현 — API 설계 문서의 스키마대로, 위 두 함수 결과를 받아 후보 3개 생성
+- [ ] **P0** 입력 폼을 실제 React 컴포넌트로 구현 — 장르/참고 게임/원하는 플레이 경험/관심 기획 분야 (`frontend/src`, 어제 만든 목업 스타일 적용)
+- [ ] **P0** backend: Genre Loop Agent 함수 — 장르별 기본 코어 루프 생성 프롬프트
+- [ ] **P0** backend: Reference Analysis Agent 함수 — 참고 게임 반복 구조 분석 프롬프트
+- [ ] **P0** backend: `POST /api/loops/candidates` 구현 — API 설계 문서의 스키마대로, 위 두 함수 결과를 받아 후보 3개 생성
 - [ ] **P0** 프롬프트 품질 확보 — 단순 챗봇 질문과 구분되는 구체성을 담보하기 위해 아래 세 가지를 모든 Agent 프롬프트에 적용한다
   - few-shot 예시 포함: "좋은 코어 루프 후보"의 구체적 예시 2~3개를 시스템 프롬프트에 박아넣어, 뭉뚱그린 조언 대신 구체적 동사구 흐름을 유도
   - 구조화된 출력 강제: 자유 텍스트가 아니라 `@anthropic-ai/sdk`의 tool use로 `title`/`loopSteps`/`score`/`tags` 스키마를 강제하고, 파싱 실패 시 422로 재시도 유도
   - 사용자 조건 반영 강제: 각 후보가 `desiredExperience`를 어떻게 만족하는지 한 문장씩 명시하도록 프롬프트에 지시해, 일반 장르 조언이 아니라 이 사용자 조건에 묶인 답을 받음
-- [ ] **P0** client: 후보 선택 화면을 실제 API 응답으로 렌더링 (지금은 목업 데이터로만 존재)
+- [ ] **P0** frontend: 후보 선택 화면을 실제 API 응답으로 렌더링 (지금은 목업 데이터로만 존재)
 - [ ] **P1** 기본 에러 처리 반영 — 400/422/502/429 각각에 대해 프론트에서 다른 안내 문구 표시
 
 ### 이번 주(2주차) 목표

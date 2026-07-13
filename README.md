@@ -12,7 +12,7 @@
 ## 실행 방법
 
 ```bash
-cd client
+cd frontend
 npm install
 npm run dev
 ```
@@ -20,7 +20,7 @@ npm run dev
 서버(Express) 실행:
 
 ```bash
-cd server
+cd backend
 npm install
 npm run dev
 ```
