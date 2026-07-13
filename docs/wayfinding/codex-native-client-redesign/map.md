@@ -34,8 +34,6 @@ Pinned OpenAI Codex의 실제 App Server client·core·TUI/exec 구조와 AY-PLE
 ## Not yet specified
 
 - 첫 conversation tracer 이후 browser transport의 정확한 형태
-- 첫 conversation tracer의 exact module seam·lifetime·admission과 package 배치
-- 두 번째 실제 product consumer가 생기기 전 shared semantic module을 추출할 조건
 - 첫 Server request 용례와 첫 AY-PLE `ModelingInvocation` tracer 사이의 정확한 티켓 경계
 
 ## Out of scope
