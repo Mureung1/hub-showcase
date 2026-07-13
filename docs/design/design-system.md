@@ -4,7 +4,7 @@
 | --- | --- |
 | 상태 | Active |
 | 버전 | v0.1 |
-| 최종 갱신 | 2026-07-09 |
+| 최종 갱신 | 2026-07-11 |
 | 적용 대상 | 제품 UI, 기능 프로토타입, 개발문서 사이트 |
 
 ## 1. 목적
@@ -43,6 +43,10 @@ LocalTwin은 마케팅 사이트가 아니라 반복적으로 사용하는 상�
 ### 2.5 3D는 보조 탐색이다
 
 3D 장면은 상권 분석을 대체하지 않는다. 분석 결과에서 현장 맥락을 확인하는 보조 화면으로 연결한다.
+
+### 2.6 Motion은 이해를 돕는다
+
+Motion은 사용자의 시선을 다음 판단 대상으로 옮기거나 공간·시간의 변화를 설명할 때만 사용한다. 장식적인 반복 motion보다 `지도 → 후보 가게 → 3D 현장 → 시간대별 혼잡도`의 관계를 전달하는 전환을 우선한다.
 
 ## 3. 디자인 Token
 
@@ -178,6 +182,48 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 - 모바일에서는 지도, 목록, 상세를 한 화면에 모두 압축하지 않는다.
 - 모바일 상세 정보는 sheet 또는 별도 view로 열고 명확한 닫기 action을 제공한다.
 - `320px` 너비에서도 text와 control이 겹치거나 화면 밖으로 밀리지 않아야 한다.
+
+### 4.4 MotionSites 레퍼런스 적용 가이드
+
+[MotionSites](https://motionsites.ai/)는 제품 화면을 복제하기 위한 template가 아니라, 핵심 대상을 강조하고 장면을 전환하는 motion reference로 사용한다. LocalTwin에는 다음 사례의 구성 원리를 선별 적용한다.
+
+| 레퍼런스 | 참고할 원리 | LocalTwin 적용 위치 | 우선순위 |
+| --- | --- | --- | --- |
+| `Terra Geo Map` | 큰 공간에서 선택 지점으로 시선을 좁히는 지도 중심 진입 | 도시 또는 상권 윤곽 → 분석 반경 → 후보 가게 순차 진입 | 높음 |
+| `Framelix 3D Studios` | full-bleed 장면과 최소한의 overlay로 3D 대상에 집중 | Gaussian Splatting 현장 상세보기 | 높음 |
+| `Transform Data` | 하나의 입력과 하나의 결과를 중심으로 한 명확한 시작점 | 첫 실행 안내, 주소·업종 입력 또는 발표용 demo intro | 중간 |
+| `Liquid Glass Agency` | 배경 맥락을 유지하는 제한적 반투명 surface | 지도 toolbar, 선택 점포 card, 3D 시간대 panel | 낮음 |
+| MotionSites preview gallery | 짧은 preview와 상태 피드백으로 여러 후보를 빠르게 비교 | 상권 비교, demo 장면 선택, portfolio preview | 낮음 |
+
+권장 전환 흐름:
+
+```text
+도시 또는 상권 윤곽
+→ 선택 상권으로 camera 이동
+→ 분석 반경과 후보 marker 표시
+→ 후보 가게 선택
+→ 3D 현장 상세보기 전환
+→ 10시 / 13시 / 15시 / 18시 혼잡도 crossfade
+→ 지도 분석으로 돌아가기
+```
+
+적용 규칙:
+
+- 상권 분석 업무 화면의 3-column 구조와 정보 밀도는 유지한다.
+- 지도 진입 motion은 demo 또는 첫 진입에서만 짧게 사용하고 반복 탐색을 지연시키지 않는다.
+- 3D 전환은 장면 자체를 주 작업 영역으로 제공하고, overlay 수를 최소화한다.
+- 시간대 변경은 camera를 매번 초기화하지 않고 사람 silhouette, 혼잡도와 관찰값만 전환한다.
+- glass treatment는 지도와 3D 위의 떠 있는 control에만 허용한다.
+- 모든 자동 motion은 `prefers-reduced-motion`에서 즉시 전환 또는 짧은 fade로 대체한다.
+
+적용하지 않는 패턴:
+
+- 제품 화면 전체를 검정 배경, neon glow 또는 glass surface로 변경
+- 반복 재생되는 WebGL 배경과 cursor-follow 효과
+- 분석 정보보다 큰 marketing headline
+- 모든 chart, marker와 panel에 동시에 animation 적용
+- scroll 길이에 의존하는 cinematic storytelling
+- 3D 효과가 상권 분석보다 먼저 보이거나 더 중요한 기능처럼 보이는 구성
 
 ## 5. Component 규칙
 
