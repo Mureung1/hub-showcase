@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useSession } from '../lib/useSession.js'
+import { APP_HOME } from '../lib/routes.js'
 import './LoginPage.css'
 
 /**
  * 이메일/비밀번호 로그인 화면.
- * 이미 로그인되어 있으면 /journal로 보낸다.
+ * 이미 로그인되어 있으면 앱 진입점(APP_HOME)으로 보낸다.
  */
 function LoginPage() {
   const { session, loading } = useSession()
@@ -19,7 +20,7 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (!loading && session) {
-    const redirectTo = location.state?.from?.pathname ?? '/journal'
+    const redirectTo = location.state?.from?.pathname ?? APP_HOME
     return <Navigate to={redirectTo} replace />
   }
 
@@ -44,7 +45,7 @@ function LoginPage() {
       return
     }
 
-    navigate('/journal', { replace: true })
+    navigate(APP_HOME, { replace: true })
   }
 
   return (

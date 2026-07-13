@@ -52,8 +52,9 @@
 ## 컨벤션 / 주의
 
 - 문서·UI 카피는 **한국어**.
-- **디자인은 [docs/design.md](docs/design.md)가 단일 원천**. 색/라운드/그림자는 항상 CSS 토큰 변수로(하드코딩 금지). 토큰 원본: [prototype/src/index.css](prototype/src/index.css), [mvp/src/index.css](mvp/src/index.css). **Robinhood 기반**: 다크 우선(블랙 `#000`) + 브랜드 그린 accent `#00c805`(라이트 `#00a306`) + pill 버튼. 그린은 브랜드/CTA 전용이고 국내 관례색은 상승=빨강/하락=파랑 유지.
+- **디자인은 [docs/design.md](docs/design.md)가 단일 원천**. 색/라운드/그림자는 항상 CSS 토큰 변수로(하드코딩 금지). 토큰 원본: [prototype/src/index.css](prototype/src/index.css), [mvp/src/index.css](mvp/src/index.css). **Stripe/Linear풍 클린 SaaS · 라이트 온리**: 밝은 캔버스(page `#f6f8fb`/card `#fff`) + 인디고 accent `#635bff` + 소프트 섀도우 + 사각-라운드. accent(인디고)는 브랜드/CTA/에이전트 전용이고, 국내 시장 관례색은 상승/매수=빨강·하락/매도=파랑·관망=앰버로 유지.
 - UI 작업 시 **`beacon-design` 스킬**([.claude/skills/beacon-design/SKILL.md](.claude/skills/beacon-design/SKILL.md))을 따른다.
+- 매일 작업 PR 초안은 **`daily-pr` 스킬**([.claude/skills/daily-pr/SKILL.md](.claude/skills/daily-pr/SKILL.md))로 작성한다(그날 커밋+대화 맥락 → 템플릿 4개 섹션, 붙여넣기용 텍스트).
 - DB는 처음부터 **RLS 전제**로 설계(2단계 다중사용자 전환 비용 최소화).
 - 복기 결과에는 인용한 `cited_trade_ids`를 함께 저장해 에이전트 판단을 검증 가능하게 한다.
-- 알려진 정리 대상: 인트로 페이지 [mvp/src/components/ProjectIntro.jsx](mvp/src/components/ProjectIntro.jsx)의 `.stack` 칩에 아직 `Next.js` 잔재가 있음(실제 스택은 Vite+React).
+- `/`(홈)은 **인증 인지형**: 로그아웃 시 랜딩(`LandingPage`), 로그인 시 앱 진입점(`mvp/src/lib/routes.js`의 `APP_HOME`)으로 리다이렉트. Day 3 대시보드 신설 시 `APP_HOME` 한 줄만 변경.

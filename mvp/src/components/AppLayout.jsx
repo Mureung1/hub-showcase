@@ -3,9 +3,10 @@ import { supabase } from '../lib/supabase.js'
 import './AppLayout.css'
 
 const navItems = [
-  { to: '/conditions', label: '조건 관리' },
+  // 루프 동선(기록→열람) 우선, 보조 관리(조건)는 맨 뒤. 대시보드는 Day 3에 맨 앞 추가.
   { to: '/journal', label: '저널' },
   { to: '/history', label: '히스토리' },
+  { to: '/conditions', label: '조건 관리' },
 ]
 
 /**
@@ -25,7 +26,7 @@ function AppLayout({ children }) {
   return (
     <div className="app-layout">
       <header className="app-nav">
-        <NavLink to="/journal" className="app-nav__logo">
+        <NavLink to="/" className="app-nav__logo">
           Beacon
         </NavLink>
         <nav className="app-nav__links">

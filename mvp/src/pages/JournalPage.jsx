@@ -4,9 +4,12 @@ import { CandlestickSeries, ColorType, createChart, createSeriesMarkers } from '
 import { supabase } from '../lib/supabase.js'
 import './JournalPage.css'
 
-// 캔들 색 (국내 관례, docs/research.md §10): 상승/매수=빨강, 하락/매도=파랑
-const UP_COLOR = '#e0453f'
-const DOWN_COLOR = '#2f6bd6'
+// 캔들/마커 색은 CSS 토큰(--up/--down)에서 읽어 테마를 추종한다.
+// 국내 관례(docs/research.md §10): 상승/매수=빨강, 하락/매도=파랑. 값이 비면 다크 폴백.
+function readToken(name, fallback) {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return value || fallback
+}
 
 function symbolKey(ticker, market) {
   return `${ticker}|${market}`
@@ -122,6 +125,8 @@ function JournalPage() {
   const [candles, setCandles] = useState([])
   const [chartLoading, setChartLoading] = useState(false)
   const [chartError, setChartError] = useState('')
+
+  const [tradeColors, setTradeColors] = useState({ up: '#e0453f', down: '#2f6bd6' })
 
   const [memoDrafts, setMemoDrafts] = useState({})
   const [savingMemoId, setSavingMemoId] = useState(null)
@@ -253,33 +258,38 @@ function JournalPage() {
     }
   }, [selectedKey, exchangeBySymbol])
 
-  // 차트 생성 (1회) — 라이트 테마 고정
+  // 차트 생성 (1회) — 색은 CSS 토큰에서 읽어 테마(다크/라이트)를 추종
   useEffect(() => {
     const container = chartContainerRef.current
     if (!container) return
 
+    const up = readToken('--up', '#e0453f')
+    const down = readToken('--down', '#2f6bd6')
+    const border = readToken('--border', '#e4e8ee')
+    setTradeColors({ up, down })
+
     const chart = createChart(container, {
       autoSize: true,
       layout: {
-        background: { type: ColorType.Solid, color: '#ffffff' },
-        textColor: '#6b6375',
+        background: { type: ColorType.Solid, color: readToken('--bg', '#ffffff') },
+        textColor: readToken('--text', '#3c4257'),
       },
       grid: {
-        vertLines: { color: '#ececef' },
-        horzLines: { color: '#ececef' },
+        vertLines: { color: border },
+        horzLines: { color: border },
       },
-      rightPriceScale: { borderColor: '#e5e4e7' },
-      timeScale: { borderColor: '#e5e4e7', timeVisible: true },
+      rightPriceScale: { borderColor: border },
+      timeScale: { borderColor: border, timeVisible: true },
       crosshair: { mode: 1 },
     })
 
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: UP_COLOR,
-      downColor: DOWN_COLOR,
-      borderUpColor: UP_COLOR,
-      borderDownColor: DOWN_COLOR,
-      wickUpColor: UP_COLOR,
-      wickDownColor: DOWN_COLOR,
+      upColor: up,
+      downColor: down,
+      borderUpColor: up,
+      borderDownColor: down,
+      wickUpColor: up,
+      wickDownColor: down,
     })
 
     chartRef.current = chart
@@ -306,13 +316,13 @@ function JournalPage() {
       .map((trade) => ({
         time: tradedDateOnly(trade.traded_at),
         position: trade.side === 'buy' ? 'belowBar' : 'aboveBar',
-        color: trade.side === 'buy' ? UP_COLOR : DOWN_COLOR,
+        color: trade.side === 'buy' ? tradeColors.up : tradeColors.down,
         shape: trade.side === 'buy' ? 'arrowUp' : 'arrowDown',
         text: trade.side === 'buy' ? '매수' : '매도',
       }))
       .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0))
     markersRef.current.setMarkers(markers)
-  }, [symbolTrades])
+  }, [symbolTrades, tradeColors])
 
   async function handleMemoSave(tradeId) {
     if (!supabase) return
@@ -391,11 +401,11 @@ function JournalPage() {
               <div ref={chartContainerRef} className="journal-chart" />
               <div className="journal-legend">
                 <span>
-                  <i className="journal-dot" style={{ background: UP_COLOR }} />
+                  <i className="journal-dot" style={{ background: tradeColors.up }} />
                   상승 / 매수
                 </span>
                 <span>
-                  <i className="journal-dot" style={{ background: DOWN_COLOR }} />
+                  <i className="journal-dot" style={{ background: tradeColors.down }} />
                   하락 / 매도
                 </span>
               </div>

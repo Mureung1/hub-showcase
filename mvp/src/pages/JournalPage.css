@@ -1,6 +1,4 @@
 .journal-page {
-  --up: #e0453f;
-  --down: #2f6bd6;
   text-align: left;
 }
 
@@ -172,12 +170,12 @@
 
 .journal-tag--buy {
   color: var(--up);
-  background: rgba(224, 69, 63, 0.1);
+  background: color-mix(in srgb, var(--up) 12%, transparent);
 }
 
 .journal-tag--sell {
   color: var(--down);
-  background: rgba(47, 107, 214, 0.1);
+  background: color-mix(in srgb, var(--down) 12%, transparent);
 }
 
 .journal-rec__sub {
