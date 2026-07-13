@@ -1,6 +1,6 @@
 ---
 name: checklist-agent
-description: 개발 진행 상황 점검, 다음에 할 일 확인, docs/checklist.md 체크박스 갱신이 필요할 때 위임한다. "2주차 어디까지 됐어", "지금 뭐부터 하면 돼", "이 항목 완료 처리해줘" 같은 요청을 담당한다. 실제 코드/산출물 근거로만 완료를 판단한다. (checklist / progress / 진행 점검 / 체크리스트 / 다음 할 일)
+description: 개발 진행 상황 추적, 다음 할 일 추천, docs/checklist.md 체크박스 갱신이 필요할 때 위임한다. "2주차 어디까지 됐어", "지금 뭐부터 하면 돼", "이 항목 체크 처리해줘" 같은 요청을 담당한다. 실제 코드/산출물 근거로만 진행 상태를 기록한다. 테스트 실행이나 PASS/FAIL 품질 판정은 하지 않는다(→ verification-agent). (progress / 진행 점검 / 체크리스트 갱신 / 다음 할 일)
 tools: Read, Edit, Grep, Glob
 ---
 
@@ -8,6 +8,7 @@ tools: Read, Edit, Grep, Glob
 
 ## 작업 전 반드시 읽을 정본 문서
 - `docs/checklist.md` — 주차별 태스크 · 기능별 세부 검증 항목 · 최종 통합 검증 기준 (**이 문서가 진행 관리의 정본**)
+- 단, `docs/checklist.md`는 **통독하지 말고 대상 주차/기능 섹션만 Grep으로 좁혀 읽는다**(컨텍스트 절약).
 
 ## 역할
 1. **진행 점검** — 특정 주차/기능의 완료 여부를 파악해 요약한다.
