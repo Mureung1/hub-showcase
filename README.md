@@ -24,6 +24,7 @@
 - **기획서** ([plan.md](./docs/plan.md)) — 문제 정의, 경쟁 서비스 분석, 핵심 사용자 시나리오, AI Agent 작동 구조, MVP 범위
 - **개발 체크리스트** ([checklist.md](./docs/checklist.md)) — 4주 개발 작업을 주차별로 나눈 단위 체크리스트
 - **개발 Task 백로그** ([Notion](https://www.notion.so/d51ee876a0778399965e8125be81487d?source=copy_link)) — 우선순위(P0/P1/P2)별 Task 목록과 주차별 진행 상태
+- **2주차 계획** ([Notion](https://www.notion.so/2-39cee876a07780158747e107b24433ab?source=copy_link)) — 이번 주 목표, 하루 단위 작업 분해, 요일 배치
 - **디자인 가이드** ([design.md](./docs/design.md)) — 프론트 프로토타입(React)에서 확정된 디자인 토큰·레이아웃·톤앤매너
 
 화면 구성과 프로토타입은 작업 PR에서 확인할 수 있다.
