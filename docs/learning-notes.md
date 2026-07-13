@@ -5,6 +5,25 @@
 
 ---
 
+## Day 6 (7/13) — FE·BE·Supabase 수직 슬라이스
+
+### 새로 알게 된 점
+- `service_role` 키는 권한이 강해서 React 환경변수에 넣으면 안 된다. 이번 구조는 `React → Express → Supabase`로 두고 서버의 `.env`에서만 읽는다.
+- Supabase의 DB 컬럼은 `snake_case`, 화면에서 쓰는 값은 `camelCase`라서 서버 서비스에서 한 번 변환하면 프론트 코드가 단순해진다.
+- “AI 결과를 수정한 뒤 저장”하려면 정리 결과 미리보기와 DB 저장을 같은 요청으로 묶으면 안 된다. `POST /api/checkins/preview`와 `POST /api/checkins`로 단계를 나누었다.
+- Vite 빌드가 Windows 샌드박스에서 `spawn EPERM`으로 실패할 때 `--configLoader runner`를 사용하면 보조 프로세스 의존을 줄여 검증할 수 있다.
+
+### 이번 시행착오
+- npm 기본 캐시가 프로젝트 밖에 있어서 권한 오류가 났다. `npm install --cache .npm-cache`로 프로젝트 내부 캐시를 사용해 해결했다.
+- UI부터 한 번에 만들기보다 `DB 스키마 → 서버 연결 → API 미리보기 → React 연결 → 통합 검증` 순서로 나누니 실패 지점이 명확해졌다.
+- Gemini 2.5는 내부 사고 토큰도 출력 한도에 포함한다. `max_tokens`가 너무 작으면 JSON 응답이 시작 부분에서 잘릴 수 있어, 실제 `finish_reason`과 응답 길이를 확인해야 한다.
+- LiteLLM의 `response_format: { type: "json_object" }`로 JSON 출력을 강제하고, 서버에서 다시 세 필드를 검증했다. 그래도 형식이 틀리면 1회 재시도한 뒤 mock으로 전환했다.
+
+### Slack 공유 초안
+Supabase를 처음 Express와 연결하면서 `service_role` 키는 절대 프론트에 두면 안 된다는 걸 배웠습니다. React가 Supabase를 직접 호출하지 않고 Express를 거치게 했고, DB의 `snake_case`를 서버에서 `camelCase`로 변환했습니다. 또 AI 결과를 사용자가 수정한 뒤 저장하려면 “미리보기 API”와 “저장 API”를 나누는 게 중요했습니다. Windows 샌드박스의 npm 캐시/빌드 권한 문제도 프로젝트 내부 캐시와 Vite config runner로 우회했습니다.
+
+---
+
 ## Day 2 (7/7) — 서비스 개발 흐름 6단계
 
 ### 01. 기획 (Discovery & Plan)
