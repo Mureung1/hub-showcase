@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Step1Industry, { isStep1Complete } from '../components/onboarding/Step1Industry'
 import Step2Region, { isStep2Complete } from '../components/onboarding/Step2Region'
 import Step3District, { isStep3Complete } from '../components/onboarding/Step3District'
+import Step4Scale, { isStep4Complete } from '../components/onboarding/Step4Scale'
 import ProgressBar from '../components/ProgressBar'
 import { useOnboarding } from '../context/OnboardingContext'
 import { STEP_META, TOTAL_STEPS } from '../data/onboardingSteps'
@@ -26,6 +27,12 @@ export default function OnboardingStep() {
     return null
   }
 
+  // step4는 구·군 선택 선행 필요
+  if (current === 4 && !isStep3Complete(profile.region, profile.district)) {
+    navigate('/onboarding/3', { replace: true })
+    return null
+  }
+
   const meta = STEP_META[current]
   const questionLines = meta.question.split('\n')
 
@@ -43,6 +50,7 @@ export default function OnboardingStep() {
     if (current === 1) return isStep1Complete(profile.industry)
     if (current === 2) return isStep2Complete(profile.region)
     if (current === 3) return isStep3Complete(profile.region, profile.district)
+    if (current === 4) return isStep4Complete(profile.employees, profile.revenue)
     return false
   })()
 
@@ -84,9 +92,7 @@ export default function OnboardingStep() {
           {current === 1 && <Step1Industry />}
           {current === 2 && <Step2Region />}
           {current === 3 && <Step3District />}
-          {current > 3 && (
-            <p className="step-placeholder">(step {current} 입력 UI 준비 중)</p>
-          )}
+          {current === 4 && <Step4Scale />}
         </div>
       </div>
 

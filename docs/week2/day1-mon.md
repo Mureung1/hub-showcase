@@ -34,7 +34,7 @@
 - [x] **2c.** Step1 업종 (기타 직접입력)
 - [x] **2d.** Step2 시·도 (2열 grid)
 - [x] **2e.** Step3 구·군 (시·도 연동 동적, 제목 blue 강조)
-- [ ] **2f.** Step4 직원수 + 연매출 (select)
+- [x] **2f.** Step4 직원수 + 연매출 (select)
 
 ### 묶음 3 — 화면 완성
 - [ ] `WelcomeScreen` — navy 배경 + 기능 3개 + 시작하기 CTA
@@ -59,6 +59,8 @@
 | `d7309d9` | `feat(client): React Router 라우팅 골격 및 온보딩 컨텍스트 추가` |
 | `eac4a74` | `feat(client): 온보딩 데이터 및 공통 입력 레이아웃 추가` |
 | `d8b1fde` | `feat(client): 온보딩 step1 업종 선택 UI 구현` |
+| `1f48179` | `feat(client): 온보딩 step2 시·도 선택 UI 구현` |
+| `3e9a021` | `feat(client): 온보딩 step3 구·군 선택 UI 구현` |
 
 ## 데모 흐름 (확정)
 
@@ -101,10 +103,7 @@ flowchart LR
 - [x] `regions.ts`, `onboardingSteps.ts`
 - [x] `ProgressBar`, `OptionButton` 공용 컴포넌트
 - [x] `OnboardingStep` 공통 레이아웃 (진행바/이전/다음 disabled 골격)
-- [x] Step1 업종 입력 UI (2c)
-- [x] Step2 시·도 입력 UI (2d)
-- [x] Step3 구·군 입력 UI (2e)
-- [ ] Step4 실제 입력 UI (2f)
+- [x] Step1~4 실제 입력 UI (2c~2f)
 
 ### 3) 화면 완성
 - [ ] `WelcomeScreen` — navy 배경 + 기능 3개 + 시작하기 CTA
@@ -133,7 +132,8 @@ src/
 │   ├── onboarding/
 │   │   ├── Step1Industry.tsx     # step1 업종 ✅
 │   │   ├── Step2Region.tsx       # step2 시·도 ✅
-│   │   └── Step3District.tsx     # step3 구·군 ✅
+│   │   ├── Step3District.tsx     # step3 구·군 ✅
+│   │   └── Step4Scale.tsx        # step4 직원수·연매출 ✅
 │   ├── FilterChip.tsx / .css     (미구현)
 │   ├── SubsidyCard.tsx / .css    (미구현)
 │   └── TabBar.tsx / .css         (미구현)
@@ -160,4 +160,4 @@ src/
 
 ## 다음 작업
 
-**2f. Step4 직원수 + 연매출 (select)** — `EMPLOYEE_OPTIONS` + `REVENUE_OPTIONS` + 둘 다 선택 전 disabled
+**묶음 3 — 화면 완성** — `WelcomeScreen`, `CompleteScreen`, `HomeScreen` + mock 데이터
