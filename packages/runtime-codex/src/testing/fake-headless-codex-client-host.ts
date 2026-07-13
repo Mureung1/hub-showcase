@@ -85,7 +85,7 @@ export async function withFakeHeadlessCodexClientHost(
     packageRoot,
     'node_modules',
     '.bin',
-    process.platform === 'win32' ? 'codex.cmd' : 'codex',
+    'codex',
   )
 
   await mkdir(join(packageRoot, 'node_modules', '.bin'), { recursive: true })
@@ -168,10 +168,6 @@ async function writeFakeCodexBinary(
   versionProbeReleasePath: string,
   ignoreSigterm: boolean,
 ): Promise<void> {
-  if (process.platform === 'win32') {
-    throw new Error('Headless Codex Client Host fixture does not support Windows')
-  }
-
   await writeFile(
     codexBinPath,
     createFakeCodexBinarySource(

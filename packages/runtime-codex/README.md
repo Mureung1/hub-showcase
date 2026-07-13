@@ -66,6 +66,8 @@ Actual-child contract fixture는 별도 JSONL journal로 spawn과 Client outboun
 
 이 API는 layout과 runtime-home pair 준비를 소유하고 `HeadlessCodexClientHost`의 첫 `start()`가 이를 호출해 성공 결과를 Host 수명 동안 cache한다. 아래 Runtime Harness resolver와 default/override 동작은 바꾸지 않는다.
 
+제품 경로는 [macOS-first local web app 결정](../../docs/adr/0009-use-a-macos-first-local-web-app-product-path.md)에 따라 package-owned `node_modules/.bin/codex`만 사용하고 Windows launcher branch를 제공하지 않는다. Shared package 자체에는 platform guard를 두지 않으며, platform validation이 필요해지면 실제 제품 local companion entrypoint가 소유한다.
+
 ## Headless Codex Client Host lifecycle
 
 `HeadlessCodexClientHost`는 immutable `ProductRuntimeLayoutInput` 한 조합과 App Server child 하나를 소유한다. Caller는 raw process나 generated protocol 대신 `start()`, `stop()`, `getSnapshot()`과 atomic `subscribe()`를 사용한다.

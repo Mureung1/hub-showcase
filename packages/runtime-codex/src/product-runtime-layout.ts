@@ -268,8 +268,7 @@ function isNodeErrorWithCode(error: unknown, code: string): boolean {
 async function resolveProductCodexBinary(
   packageRoot: string,
 ): Promise<string> {
-  const binName = process.platform === 'win32' ? 'codex.cmd' : 'codex'
-  const candidatePath = join(packageRoot, 'node_modules', '.bin', binName)
+  const candidatePath = join(packageRoot, 'node_modules', '.bin', 'codex')
   let canonicalPath: string
 
   try {
@@ -406,7 +405,6 @@ async function readProductCodexVersion(
       ['--version'],
       {
         cwd: packageRoot,
-        shell: process.platform === 'win32',
         timeout: 5000,
       },
     )

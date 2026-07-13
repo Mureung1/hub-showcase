@@ -2,13 +2,13 @@
 
 작성일: 2026-07-07
 
-최종 업데이트: 2026-07-12
+최종 업데이트: 2026-07-13
 
 분류: 활성
 
 성숙도: 초안
 
-관련 문서: [CONTEXT.md](../../CONTEXT.md), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md), [Native Codex composition ADR](../adr/0007-use-native-codex-composition-for-product-actions.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [개발 백로그](ay-ple-development-backlog.md)
+관련 문서: [CONTEXT.md](../../CONTEXT.md), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md), [Native Codex composition ADR](../adr/0007-use-native-codex-composition-for-product-actions.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [개발 백로그](ay-ple-development-backlog.md)
 
 ## 한 줄 요약
 
@@ -61,6 +61,10 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 - 모든 GUI 이벤트를 한 규칙으로 Agent에게 보내는 generic event bus
 - built-in Memories를 대체하는 외부 장기 기억 시스템
 - 두 번째 실행 엔진 요구가 생기기 전의 다중 엔진 공통 추상화
+
+## 제품 제공 형태
+
+첫 MVP는 macOS에서 local companion server와 Headless Codex Client Host를 실행하고 browser UI로 사용하는 **macOS-first local web app**이다. Windows와 Linux 지원은 현재 제품·개발·QA 범위가 아니며, packaged Desktop App은 local web app 경로를 검증한 뒤의 후속 로드맵이다. 정확한 지원 경계와 runtime code에 미치는 결과는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)가 소유한다.
 
 ## 학기 작업공간과 Codex 사용 모델
 
@@ -154,6 +158,7 @@ flowchart LR
 | 분류 | 항목 |
 | --- | --- |
 | 핵심 | SemesterWorkspace, TXT `RawMaterial`, Course와 `Assignment`, `ModelingRecipe → ModelingInvocation → ModelingRun`, `EvidenceRef`, `StatePatch`, `Review`, `UserConfirmation`, 확인된 `SemesterModel` |
+| 제공 형태 | macOS에서 local companion과 browser UI를 함께 사용하는 local web app. Packaged Desktop App은 후속 |
 | runtime 전제 | 격리된 제품 layout과 native Codex mapping. 정확한 경계는 Runtime Isolation과 제품 작업 조합 문서를 따른다. |
 | 지원 capability | 실행 진행·중단 표시, 필요한 범위의 진행 중 정정, Codex approval과 제품 Review의 구분 |
 | 다음 vertical 후보 | PDF, `Exam`, 여러 과목 공지에서 시험·과제 표 만들기, derived timeline, 읽기용 정리 문서, 학기 상태 질의 |

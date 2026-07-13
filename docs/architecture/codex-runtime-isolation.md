@@ -5,7 +5,7 @@
 
 성숙도: 채택
 
-관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [Runtime Harness 구현 지도](runtime-harness-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
+관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Runtime Harness 구현 지도](runtime-harness-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
 
 ## 목적
 
@@ -17,8 +17,8 @@ AY-PLE가 Codex App Server를 built-in local agent engine으로 사용할 때 �
 
 | 영역 | 현재 Runtime Harness | 채택한 제품 목표 | 후속 |
 | --- | --- | --- | --- |
-| Codex binary | `@openai/codex@0.144.0` exact dependency의 조상 `node_modules/.bin/codex`를 찾는다. | `packageRoot`가 pinned Codex binary를 소유하고 전역 `PATH`를 사용하지 않는다. | packaged binary resolver와 플랫폼별 native dependency 포함 검증 |
-| Codex state | repository `.ay-ple/runtime-codex/{codex-home,sqlite}`를 사용한다. 두 root는 독립 override가 가능하다. | OS `appDataRoot` 아래 하나의 `CODEX_HOME`·`CODEX_SQLITE_HOME` pair를 배치하고 함께 검증한다. | OS 기본 경로, override·migration과 학기 rollover 정책 |
+| Codex binary | `@openai/codex@0.144.0` exact dependency의 조상 `node_modules/.bin/codex`를 찾는다. | `packageRoot`가 pinned Codex binary를 소유하고 전역 `PATH`를 사용하지 않는다. | macOS 제품 배포용 binary resolver와 native dependency 포함 검증 |
+| Codex state | repository `.ay-ple/runtime-codex/{codex-home,sqlite}`를 사용한다. 두 root는 독립 override가 가능하다. | `appDataRoot` 아래 하나의 `CODEX_HOME`·`CODEX_SQLITE_HOME` pair를 배치하고 함께 검증한다. | macOS 기본 app data 경로, override·migration과 학기 rollover 정책 |
 | 작업 `cwd` | `CODEX_RUNTIME_CWD`가 없으면 server process의 `process.cwd()`를 사용한다. npm workspace 실행에서는 보통 `apps/server`다. | 사용자가 명시적으로 선택한 `workspaceRoot`를 새 thread의 `cwd`로 사용한다. | workspace chooser·registry와 재열기 UX |
 | 학기 제품 상태 | 아직 구현하지 않았다. | RawMaterial과 확인된 학기 상태를 사용자 소유 `workspaceRoot`에서 다시 열 수 있게 한다. | 저장 schema와 workspace-local app state 경로 |
 | Runtime history | repository `.ay-ple/runtime-harness/runs`에 developer-only 진단 기록을 저장한다. | 제품 상태나 WorkspaceHistory와 분리한다. | 제품 기록으로 재사용하기 전 allowlist·redaction 정책 |
@@ -40,7 +40,7 @@ AY-PLE가 Codex App Server를 built-in local agent engine으로 사용할 때 �
 
 ## 제품용 디렉터리 구조
 
-아래 구조는 제품 실행의 소유권 경계를 나타낸다. 운영체제별 실제 앱 데이터 경로와 작업공간 등록 정보의 저장 형식은 제품 진입점을 구현할 때 확정한다.
+아래 구조는 제품 실행의 소유권 경계를 나타낸다. macOS의 실제 app data 경로와 작업공간 등록 정보의 저장 형식은 제품 진입점을 구현할 때 확정한다.
 
 ```text
 package-root/
@@ -74,7 +74,7 @@ semester-workspace/
     <app-managed product state> # 저장 형식과 경로는 구현 PRD에서 결정
 ```
 
-이 구조는 채택한 소유권을 보여주는 예시이며 실제 OS 경로와 workspace-local app state 이름은 아직 정하지 않았다. AY-PLE는 기존 학기 폴더를 위 구조로 재배치하도록 요구하지 않고 Codex-managed state의 내부 파일 배치에도 제품 계약을 두지 않는다.
+이 구조는 채택한 소유권을 보여주는 예시이며 실제 macOS 경로와 workspace-local app state 이름은 아직 정하지 않았다. AY-PLE는 기존 학기 폴더를 위 구조로 재배치하도록 요구하지 않고 Codex-managed state의 내부 파일 배치에도 제품 계약을 두지 않는다.
 
 ## 제품 layout seam
 
@@ -88,6 +88,8 @@ semester-workspace/
 | override | 계산된 layout을 명시적으로 바꾸는 수단이며 root 모델 자체를 대신하지 않는다. |
 | data loss | `appDataRoot`가 사라져도 RawMaterial과 확인된 학기 상태를 `workspaceRoot`에서 다시 열 수 있다. |
 
+[ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)에 따라 shared layout, transport와 Host는 platform support guard를 소유하지 않는다. Platform validation이 필요해지면 실제 제품 local companion entrypoint 한곳에서 macOS 실행 경계를 검증하며, 현재 package에 다른 운영체제용 launcher 분기를 두지 않는다.
+
 ## 리스크와 대응
 
 | 리스크 | 설명 | 대응 |
@@ -96,7 +98,7 @@ semester-workspace/
 | runtime-home pair 분리 | 현재 override는 두 root를 독립적으로 받아 custom/default hybrid가 가능하다. | 제품 layout seam에서 두 root를 함께 계산하고 검증한다. |
 | 암묵적 `cwd` | 현재 기본값은 실행 위치에 따라 `apps/server`처럼 달라질 수 있다. | 제품에서는 명시적으로 선택한 `workspaceRoot`만 사용한다. |
 | 민감 상태 혼입 | `CODEX_HOME`을 학기 폴더에 두면 auth/session/log가 사용자 자료와 섞인다. | OS app data directory에 runtime-home pair를 둔다. |
-| optional native binary 누락 | desktop 또는 `npx` packaging에서 플랫폼별 dependency가 빠질 수 있다. | packaging smoke와 플랫폼별 bundle 검사를 추가한다. |
+| optional native binary 누락 | local companion 배포 또는 후속 Desktop App packaging에서 macOS dependency가 빠질 수 있다. | macOS packaging smoke와 bundle 검사를 추가한다. |
 | host Skill·plugin 혼입 | custom `CODEX_HOME`만으로 inherited host `HOME` discovery가 모두 차단되지는 않는다. | 실제 child environment와 discovery 결과를 검증한 뒤 정책을 정한다. |
 | 학기 사이 memory 혼입 | 하나의 runtime-home pair는 학기별 memory 격리를 자동 보장하지 않는다. | Memory를 학업 source of truth로 쓰지 않고 rollover UX를 별도로 결정한다. |
 | sandbox 과신 | Codex sandbox와 approval은 OS process 격리가 아니다. | local personal-device 경계로 한정하고 cloud 전환 시 별도 threat model을 작성한다. |

@@ -19,7 +19,7 @@ AY-PLE의 현재 Codex 통합은 개발자가 단일 run을 진단하는 Runtime
 - raw JSON-RPC, generated type, 인증 정보와 debug evidence가 browser 계약으로 새기 쉽다.
 - developer-only Runtime Inspector가 제품 transcript나 session state를 소유하는 잘못된 방향으로 확장될 수 있다.
 
-[개발 백로그](../product/ay-ple-development-backlog.md)는 Runtime Harness와 raw method inventory 다음 작업으로 Headless Codex Client Host를 지정한다. [ADR 0008](../adr/0008-separate-headless-codex-client-host-from-product-ui.md)은 이 Host와 browser-safe adapter를 제품 실행 통합의 seam으로 채택하고, `AgentRuntimeKernel`과 Runtime Inspector를 multi-thread 제품 client로 확장하지 않도록 결정한다.
+[개발 백로그](../product/ay-ple-development-backlog.md)는 Runtime Harness와 raw method inventory 다음 작업으로 Headless Codex Client Host를 지정한다. [ADR 0008](../adr/0008-separate-headless-codex-client-host-from-product-ui.md)은 이 Host와 browser-safe adapter를 제품 실행 통합의 seam으로 채택하고, `AgentRuntimeKernel`과 Runtime Inspector를 multi-thread 제품 client로 확장하지 않도록 결정한다. 제품 실행과 검증 환경은 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)의 macOS-first local web app 경계를 따른다.
 
 ## Solution
 
@@ -43,8 +43,8 @@ Host는 process lifecycle, connection generation, exact identity routing, normal
 
 | 영역 | 현재 구현 | 이번 spec의 채택 목표 | 후속 범위 |
 | --- | --- | --- | --- |
-| App Server 수명 | `CodexRuntimeAdapter`가 run마다 `CodexRawClient`를 만들고 terminal에서 닫는다. | Host instance당 child process 하나를 initialize하고 명시적으로 stop/restart할 때까지 재사용한다. | packaged entrypoint와 자동 restart 정책 |
-| Runtime layout | repository-local Harness home과 `process.cwd()` fallback을 사용하며 `CODEX_HOME`·`CODEX_SQLITE_HOME`을 독립 override할 수 있다. | 세 root를 필수 입력으로 받아 product runtime-home pair와 workspace `cwd`를 한 seam에서 검증한다. | OS 기본 app data, workspace chooser·registry와 migration |
+| App Server 수명 | `CodexRuntimeAdapter`가 run마다 `CodexRawClient`를 만들고 terminal에서 닫는다. | Host instance당 child process 하나를 initialize하고 명시적으로 stop/restart할 때까지 재사용한다. | macOS 제품 entrypoint, 후속 Desktop App packaging과 자동 restart 정책 |
+| Runtime layout | repository-local Harness home과 `process.cwd()` fallback을 사용하며 `CODEX_HOME`·`CODEX_SQLITE_HOME`을 독립 override할 수 있다. | 세 root를 필수 입력으로 받아 product runtime-home pair와 workspace `cwd`를 한 seam에서 검증한다. | macOS 기본 app data, workspace chooser·registry와 migration |
 | Protocol transport | client request response와 Server notification을 처리하지만 `id`가 있는 Server request를 분리하거나 응답하지 못한다. | 네 message direction을 분리하고 generation·direction·ID type을 포함한 exact identity를 보존한다. | baseline 밖의 Server request와 experimental method |
 | Thread/turn | raw wrapper 일부와 단일-run Adapter가 있다. | 새 persistent thread 여러 개와 thread별 순차 turn을 한 Host process에서 실행한다. | thread list/read/resume, rename/archive와 완성된 conversation lifecycle |
 | Browser surface | `apps/inspector`가 `/api/runtime/*`를 사용하는 developer-only UI다. | 별도 제품 React shell이 dedicated browser-safe adapter로 Host snapshot과 event를 사용한다. | transcript, activity card, approval UX, account·toolbar UI |
@@ -265,7 +265,8 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 | --- | --- |
 | Host는 `AgentRuntimeKernel`과 별도 deep module이다. | developer-only run lifecycle과 multi-thread 제품 client의 상태·실패 semantics를 섞지 않는다. |
 | Host instance는 one workspace, one App Server process를 소유한다. | workspace correlation과 native discovery가 명확하고 여러 thread는 같은 long-lived process를 공유한다. |
-| product layout은 세 root의 필수 주입으로 시작한다. | OS default와 packaging을 기다리지 않고 채택한 root 불변 조건을 먼저 실행 가능하게 만든다. |
+| product layout은 세 root의 필수 주입으로 시작한다. | macOS 기본 app data와 제품 entrypoint를 기다리지 않고 채택한 root 불변 조건을 먼저 실행 가능하게 만든다. |
+| Shared runtime module은 platform policy를 소유하지 않는다. | Windows launcher branch는 제거하되 필요한 platform validation은 실제 제품 local companion entrypoint 한곳에서 소유한다. |
 | restart는 명시적이고 mutation replay는 없다. | process loss 뒤 unknown side effect를 thread·turn·approval 중복으로 만들지 않는다. |
 | Request timeout은 operation 의미로 분류한다. | Read-only timeout은 same-generation operation failure로 남기고, non-idempotent `thread/start`·`turn/start` timeout은 unknown outcome이므로 generation을 fence한다. |
 | identity는 generation·direction·ID type까지 exact하게 보존한다. | interleaved thread와 양방향 JSON-RPC ID 충돌을 안전하게 처리한다. |
@@ -290,9 +291,11 @@ Public answer union과 generated response mapping은 다음 최소 범위로 제
 | Failure/restart | failure class별 `recoverable` mapping, initialize 전·ready·active turns·pending interaction 중 process exit, mutation은 적용됐지만 response만 timeout된 `thread/start`·`turn/start`, timeout 직후 second mutation wire 차단, late response/started fencing, pending Promise 종료, active-loss의 `turnRef` 보존 marker와 response 전 start-timeout의 `turnRef` 없는 marker, old generation ref fencing, explicit restart 후 새 command 가능, 자동 replay 부재 |
 | Native context | exact workspace child/thread/skills cwd, `instructionSources`와 sentinel Skill의 native result, Host-owned parser 부재, discovery error |
 | Browser adapter | explicit loopback-only listener의 real command/SSE, subscribe-snapshot race 중 atomic `{ snapshot, cursor }`와 buffered sequence ordering, deterministic slow-subscriber overflow disconnect와 reconnect convergence, read-only operation error 뒤 같은 generation `ready` 유지와 mutation timeout 뒤 recoverable `failed`, stable error mapping, same-origin mutation, recursive DTO 검사로 raw IDs·protocol·secret·debug field 부재, product diagnostic sink의 raw payload 부재 |
-| Product shell | desktop browser에서 loading→ready와 forced failure→recoverable error 상태를 adapter를 통해 표시하며 Runtime Inspector state를 import하지 않음 |
+| Product shell | macOS desktop browser에서 loading→ready와 forced failure→recoverable error 상태를 adapter를 통해 표시하며 Runtime Inspector state를 import하지 않음 |
 
 Host 전용 opt-in live parity는 package-owned pinned binary와 명시적 세 root를 사용한다. Login이나 OAuth를 시작하지 않고 기존 인증을 preflight한 뒤, 한 Host generation에서 thread 두 개와 같은 thread의 순차 turn 두 개, streaming/terminal correlation과 workspace sentinel Skill discovery를 확인한다. Model 응답 문구의 정확 일치, 실제 approval 유발과 process crash는 비결정적이므로 fake contract test가 소유한다. Live 명령과 안전한 실행 조건은 구현되는 package README가 소유한다.
+
+지원·QA 환경은 macOS이며 다른 운영체제 호환성은 이 spec의 구현 또는 검증 목표가 아니다. Generated protocol에 존재하는 platform-specific method와 type은 upstream schema 사실로 유지한다.
 
 PR-ready regression은 변경 범위에 맞는 targeted test와 함께 다음을 모두 통과해야 한다.
 
@@ -308,7 +311,8 @@ PR-ready regression은 변경 범위에 맞는 targeted test와 함께 다음을
 ## Out of Scope
 
 - Account status, ChatGPT managed login/cancel/logout와 auth UX
-- workspace chooser·registry, 최근 workspace, OS별 app data default와 packaged entrypoint
+- workspace chooser·registry, 최근 workspace, macOS app data default, 제품 entrypoint의 platform validation과 Desktop App packaging
+- Windows 또는 Linux 제품·개발 지원 확대
 - thread list/read/resume, rename/archive와 browser refresh 뒤 conversation 선택 복원
 - 완성된 transcript, activity card, approval/user-input controls와 `turn/interrupt` UX
 - model, reasoning effort, token usage, context window와 rate-limit toolbar
@@ -329,5 +333,5 @@ None.
 ## Further Notes
 
 - 이 spec은 대화에서 확인한 다음 canonical 작업을 [개발 백로그](../product/ay-ple-development-backlog.md)의 순서대로 구체화한다. 완료 상태와 후속 우선순위는 계속 backlog만 소유한다.
-- Root ownership은 [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)과 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), protocol isolation은 [ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), 후속 제품 작업 조합은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md)을 따른다.
+- Root ownership은 [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)과 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), protocol isolation은 [ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), 후속 제품 작업 조합은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), 제품 실행 환경은 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)를 따른다.
 - Package, endpoint와 React app의 정확한 이름 및 파일 배치는 ticket-level non-blocking 결정이다. ADR 0008이 의도적으로 package명을 고정하지 않으므로 spec readiness에 영향을 주지 않는다.
