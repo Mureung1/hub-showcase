@@ -1,0 +1,43 @@
+name: Sync plan.md to Wiki
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/plan.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Clone wiki
+        run: |
+          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" wiki
+
+      - name: Copy plan.md into wiki page
+        run: |
+          {
+            echo "> 이 문서는 \`docs/plan.md\`에서 GitHub Actions로 자동 동기화됩니다. 직접 수정한 내용은 다음 동기화 시 덮어써지니, 원본인 \`docs/plan.md\`를 수정해 주세요."
+            echo
+            cat docs/plan.md
+          } > "wiki/Bridge‐서비스‐기획안.md"
+
+      - name: Commit and push if changed
+        working-directory: wiki
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "Bridge‐서비스‐기획안.md"
+          if git diff --cached --quiet; then
+            echo "No changes to sync."
+            exit 0
+          fi
+          git commit -m "docs: sync plan.md from ${{ github.sha }}"
+          git push
