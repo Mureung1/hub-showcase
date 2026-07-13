@@ -664,11 +664,7 @@ function mapStartupFailure(error: unknown): LifecycleFailure {
 
   if (error instanceof CodexStdioTransportError) {
     if (error.code === 'spawn_error') {
-      return {
-        code: 'spawn_error',
-        message: 'Codex app-server process could not start',
-        recoverable: true,
-      }
+      return spawnFailure()
     }
 
     if (error.code === 'observation_queue_limit') {
@@ -707,11 +703,7 @@ function mapObservationFailure(
   }
 
   if (observation.code === 'spawn_error') {
-    return {
-      code: 'spawn_error',
-      message: 'Codex app-server process could not start',
-      recoverable: true,
-    }
+    return spawnFailure()
   }
 
   return transportFailure()
@@ -733,6 +725,14 @@ function protocolFailure(): LifecycleFailure {
     code: 'protocol_error',
     message: 'Codex app-server protocol validation failed',
     recoverable: false,
+  }
+}
+
+function spawnFailure(): LifecycleFailure {
+  return {
+    code: 'spawn_error',
+    message: 'Codex app-server process could not start',
+    recoverable: true,
   }
 }
 
