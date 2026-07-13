@@ -15,6 +15,18 @@
         .day-button { border: none; border-radius: 999px; padding: 14px 22px; font-size: 0.98rem; cursor: pointer; background: #dbeafe; color: #1e3a8a; transition: transform 0.2s, background 0.2s, box-shadow 0.2s; font-family: 'Segoe UI', sans-serif; }
         .day-button:hover { transform: translateY(-3px); background: #93c5fd; color: #0f172a; }
         .day-button.active { background: #7dd3fc; color: #062a4c; box-shadow: 0 16px 28px rgba(56, 189, 248, 0.24); }
+        .agent-panel { background: #ffffff; border-radius: 24px; padding: 22px; border: 1px solid rgba(148, 163, 184, 0.18); margin-bottom: 22px; }
+        .agent-panel h3 { margin: 0 0 12px; font-size: 1.1rem; color: #1e293b; }
+        .agent-panel textarea { width: 100%; min-height: 100px; border-radius: 14px; border: 1px solid #cbd5e1; padding: 14px; font-size: 0.95rem; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; resize: vertical; }
+        .agent-panel button { margin-top: 12px; border: none; border-radius: 16px; padding: 12px 18px; background: linear-gradient(90deg, #7c3aed, #ec4899); color: #ffffff; cursor: pointer; font-weight: 700; }
+        .agent-panel button:hover { opacity: 0.94; }
+        .agent-task-list { margin-top: 18px; }
+        .agent-task-item { background: #eef2ff; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .agent-task-item strong { display: inline-block; margin-bottom: 8px; color: #334155; }
+        .priority-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 0.88rem; font-weight: 700; }
+        .priority-high { background: #fed7aa; color: #9a3412; }
+        .priority-medium { background: #bfdbfe; color: #1e3a8a; }
+        .priority-low { background: #d1fae5; color: #166534; }
         .layout { display: grid; grid-template-columns: 1.75fr 1fr; gap: 24px; align-items: start; }
         .panel { background: rgba(255,255,255,0.92); border: 1px solid rgba(15,23,42,0.08); border-radius: 28px; box-shadow: 0 30px 60px rgba(15, 23, 42, 0.08); padding: 32px; min-height: 420px; }
         .panel h2 { margin-top: 0; color: #152238; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; font-size: 1.65rem; letter-spacing: 0.03em; }
@@ -65,6 +77,12 @@
             <button class="day-button" data-day="wed">[수] 매칭 로직 고도화</button>
             <button class="day-button" data-day="thu">[목] AI 에이전트 예외 처리 및 데이터 케이스 검증</button>
             <button class="day-button" data-day="fri">[금] 데모 준비</button>
+        </div>
+        <div class="agent-panel">
+            <h3>작업 분해 Agent</h3>
+            <textarea id="agent-request" placeholder="예: AI 에이전트 예외 처리 및 데이터 케이스 검증 작업을 세부 항목으로 나누고 우선순위를 정해줘."></textarea>
+            <button id="generate-agent">작업 분해 및 우선순위 생성</button>
+            <div class="agent-task-list" id="agent-task-list"></div>
         </div>
         <div class="layout">
             <div class="panel" id="plan-panel">
@@ -198,6 +216,78 @@
                 </section>
             `;
         }
+
+        function splitClauses(text) {
+            return text
+                .split(/[.!?；;]+|\band\b|\b그리고\b|\b및\b|,|;/)
+                .map(part => part.trim())
+                .filter(Boolean);
+        }
+
+        const AGENT_PRIORITY_KEYWORDS = {
+            High: ['긴급', '마감', '우선', '중요', '필수', '즉시', '예외', '검증'],
+            Medium: ['구현', '설계', '테스트', '검토', '배포', '문서', '점검', '검증', '작성'],
+            Low: ['리팩토링', '개선', '추후', '권장', '확인', '검토']
+        };
+
+        function scorePriority(text) {
+            const lower = text.toLowerCase();
+            let score = 0;
+            let level = 'Low';
+            for (const key of AGENT_PRIORITY_KEYWORDS.High) {
+                if (lower.includes(key)) score += 3;
+            }
+            for (const key of AGENT_PRIORITY_KEYWORDS.Medium) {
+                if (lower.includes(key)) score += 1.5;
+            }
+            for (const key of AGENT_PRIORITY_KEYWORDS.Low) {
+                if (lower.includes(key)) score += 0.5;
+            }
+            if (text.length > 40) score += 0.5;
+            if (score >= 3) level = 'High';
+            else if (score >= 1.5) level = 'Medium';
+            return level;
+        }
+
+        function priorityClass(level) {
+            return level === 'High' ? 'priority-high' : (level === 'Medium' ? 'priority-medium' : 'priority-low');
+        }
+
+        function renderAgentTasks(tasks) {
+            const target = document.getElementById('agent-task-list');
+            if (!tasks.length) {
+                target.innerHTML = '<p style="color:#475569; margin:0;">작업 요청을 입력하고 버튼을 누르세요.</p>';
+                return;
+            }
+            target.innerHTML = tasks.map(task => `
+                <div class="agent-task-item">
+                    <div><strong>${task.task}</strong></div>
+                    <div class="priority-badge ${priorityClass(task.priority)}">${task.priority}</div>
+                </div>
+            `).join('');
+        }
+
+        function generateAgentTasks(request) {
+            const clauses = splitClauses(request);
+            const tasks = clauses.map(clause => ({
+                task: clause,
+                priority: scorePriority(clause)
+            }));
+            return tasks.sort((a, b) => {
+                const rank = { High: 0, Medium: 1, Low: 2 };
+                return rank[a.priority] - rank[b.priority];
+            });
+        }
+
+        document.getElementById('generate-agent').addEventListener('click', () => {
+            const request = document.getElementById('agent-request').value.trim();
+            if (!request) {
+                renderAgentTasks([]);
+                return;
+            }
+            const tasks = generateAgentTasks(request);
+            renderAgentTasks(tasks);
+        });
 
         buttons.forEach(button => {
             button.addEventListener('click', () => {
