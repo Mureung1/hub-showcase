@@ -76,6 +76,29 @@ router.post('/', (req, res) => {
   }
 });
 
+// GET /api/store/latest - 가장 최근 저장된 가게 정보 조회
+router.get('/latest', (req, res) => {
+  try {
+    const db = getDatabase();
+    const store = db.prepare('SELECT * FROM store_info ORDER BY created_at DESC LIMIT 1').get();
+
+    if (!store) {
+      return res.status(404).json({ error: 'No store information found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: store
+    });
+  } catch (error) {
+    console.error('[/api/store/latest] Error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch latest store information',
+      message: error.message
+    });
+  }
+});
+
 // GET /api/store/:storeId - 가게 정보 조회
 router.get('/:storeId', (req, res) => {
   try {

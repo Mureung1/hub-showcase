@@ -4,10 +4,11 @@ import { saveStoreInfo } from '../api/client';
 
 export default function Setup() {
   const [formData, setFormData] = useState({
-    name: '',
+    store_name: '',
+    owner_name: '',
     category: '',
     location: '',
-    signature_menu: ''
+    signature_item: ''
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -28,7 +29,7 @@ export default function Setup() {
       const response = await saveStoreInfo(formData);
       if (response.success) {
         setSuccess(true);
-        setFormData({ name: '', category: '', location: '', signature_menu: '' });
+        setFormData({ store_name: '', owner_name: '', category: '', location: '', signature_item: '' });
         setTimeout(() => setSuccess(false), 3000);
       }
     } catch (err) {
@@ -52,11 +53,24 @@ export default function Setup() {
           <label className="block text-sm font-semibold text-[#151D48] mb-3">가게명 *</label>
           <input
             type="text"
-            name="name"
-            value={formData.name}
+            name="store_name"
+            value={formData.store_name}
             onChange={handleChange}
             placeholder="예: 망고빙수카페"
             required
+            className="w-full rounded-xl px-5 py-4 border border-[#F1F3F9] bg-white text-[#151D48] placeholder-[#737791] focus:outline-none focus:ring-2 focus:ring-[#5D5FEF] transition-all"
+          />
+        </div>
+
+        {/* 대표자명 */}
+        <div className="bg-white p-6 rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+          <label className="block text-sm font-semibold text-[#151D48] mb-3">대표자명</label>
+          <input
+            type="text"
+            name="owner_name"
+            value={formData.owner_name}
+            onChange={handleChange}
+            placeholder="예: 김사장"
             className="w-full rounded-xl px-5 py-4 border border-[#F1F3F9] bg-white text-[#151D48] placeholder-[#737791] focus:outline-none focus:ring-2 focus:ring-[#5D5FEF] transition-all"
           />
         </div>
@@ -96,13 +110,13 @@ export default function Setup() {
           />
         </div>
 
-        {/* 시그니처 메뉴 */}
+        {/* 시그니처 상품 */}
         <div className="bg-white p-6 rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-          <label className="block text-sm font-semibold text-[#151D48] mb-3">시그니처 메뉴 *</label>
+          <label className="block text-sm font-semibold text-[#151D48] mb-3">시그니처 상품 *</label>
           <input
             type="text"
-            name="signature_menu"
-            value={formData.signature_menu}
+            name="signature_item"
+            value={formData.signature_item}
             onChange={handleChange}
             placeholder="예: 망고빙수, 떡라테"
             required
