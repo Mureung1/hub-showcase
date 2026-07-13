@@ -1,84 +1,213 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>가게 상세 — 디자인 검토</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TasteFit 리뷰 화면 디자인</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="container">
-    <section class="hero">
-      <div class="hero-image">대표 이미지 영역</div>
-      <div class="hero-meta">
-        <h1 class="store-name">몽글수플레 성수</h1>
-        <div class="store-sub">전체 별점 <strong>4.6</strong> · 리뷰 <strong>238개</strong></div>
-      </div>
-    </section>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="주요 메뉴">
+      <a class="brand" href="#" aria-label="TasteFit 홈">
+        <span class="brand-mark">T</span>
+        <span>TasteFit</span>
+      </a>
 
-    <div class="layout">
-      <section class="reviews-col">
-        <div class="tabs">
-          <button class="tab">전체 리뷰</button>
-          <button class="tab active">나와 비슷한 사람 리뷰</button>
+      <nav class="nav-list">
+        <a class="nav-item" href="#" aria-label="홈">
+          <span class="nav-icon">⌂</span><span>홈</span>
+        </a>
+        <a class="nav-item active" href="#reviews" aria-current="page">
+          <span class="nav-icon">★</span><span>리뷰</span>
+        </a>
+        <a class="nav-item" href="#" aria-label="맛집 탐색">
+          <span class="nav-icon">⌕</span><span>탐색</span>
+        </a>
+        <a class="nav-item" href="#" aria-label="설정">
+          <span class="nav-icon">⚙</span><span>설정</span>
+        </a>
+      </nav>
+
+      <button class="profile" type="button">
+        <span class="avatar avatar-me">세</span>
+        <span class="profile-copy"><strong>세원</strong><small>내 프로필</small></span>
+      </button>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">RESTAURANT REVIEW</p>
+          <h1>나와 꼭 맞는 맛집 리뷰</h1>
         </div>
+        <button class="icon-button" type="button" aria-label="알림">♧<span class="notification-dot"></span></button>
+      </header>
 
-        <div class="review-list">
-          <article class="review-card">
-            <div class="review-head">
-              <h3 class="review-title">분위기/좋시러</h3>
-              <div class="badge green">나와 취향 93% 비슷함</div>
-            </div>
-            <div class="rating">별점 <strong>4.8</strong></div>
-            <p class="review-text">조명이 차분하고 좌석 간격이 넓어서 오래 머무르기 좋았습니다. 수플레도 과하게 달지 않아 만족스러웠어요.</p>
-            <div class="review-actions">
-              <button class="pill">공감</button>
-              <button class="pill muted">비추천</button>
-            </div>
-          </article>
-
-          <article class="review-card">
-            <div class="review-head">
-              <h3 class="review-title">조용한테이블</h3>
-              <div class="badge green">나와 취향 89% 비슷함</div>
-            </div>
-            <div class="rating">별점 <strong>4.6</strong></div>
-            <p class="review-text">평일 오후에는 대화하기 편할 정도로 조용했습니다. 웨이팅은 짧았고 직원 응대도 안정적이었습니다.</p>
-            <div class="review-actions">
-              <button class="pill">공감</button>
-              <button class="pill muted">비추천</button>
-            </div>
-          </article>
-
-          <article class="review-card">
-            <div class="review-head">
-              <h3 class="review-title">가성비메모</h3>
-              <div class="badge green">나와 취향 84% 비슷함</div>
-            </div>
-            <div class="rating">별점 <strong>4.4</strong></div>
-            <p class="review-text">가격은 아주 저렴하진 않지만 디저트 완성도와 공간 만족도를 고려하면 다시 방문할 만합니다.</p>
-            <div class="review-actions">
-              <button class="pill">공감</button>
-              <button class="pill muted">비추천</button>
-            </div>
-          </article>
+      <section class="restaurant-card" aria-labelledby="restaurant-name">
+        <div class="restaurant-visual" role="img" aria-label="노란 테이블 위 커피와 크루아상 일러스트">
+          <span class="sun"></span>
+          <span class="plate"></span>
+          <span class="croissant">☾</span>
+          <span class="cup"><i></i></span>
+          <span class="coffee-shadow"></span>
+        </div>
+        <div class="restaurant-info">
+          <span class="category">카페 · 디저트</span>
+          <h2 id="restaurant-name">오후의 커피</h2>
+          <p class="location">서울 성동구 연무장길 21 · 성수역 도보 6분</p>
+          <div class="summary-row">
+            <span class="score"><span class="star">★</span> 4.8</span>
+            <span>리뷰 128개</span>
+            <span>내 취향과 <strong>94% 일치</strong></span>
+          </div>
+          <p class="description">따뜻한 채광과 고소한 커피 향이 머무는 공간이에요. 조용한 대화와 여유로운 오후를 좋아한다면 잘 맞을 거예요.</p>
+          <div class="tag-row" aria-label="가게 특징">
+            <span>#조용한</span><span>#감성적인</span><span>#디저트맛집</span>
+          </div>
         </div>
       </section>
 
-      <aside class="side-col">
-        <div class="detail-card">
-          <div class="thumb">식당 썸네일</div>
-          <div class="detail-body">
-            <h4>몽글수플레 성수</h4>
-            <div class="small-meta">별점 <strong>4.6</strong> · 리뷰 238개</div>
-            <div class="cta-row">
-              <button class="btn primary">예약하기</button>
-              <button class="btn outline">메뉴보기</button>
+      <section class="review-section" id="reviews" aria-labelledby="review-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">COMMUNITY</p>
+            <h2 id="review-heading">방문자 리뷰 <span>128</span></h2>
+          </div>
+          <button class="primary-button" id="open-review" type="button">
+            <span aria-hidden="true">＋</span> 리뷰 작성
+          </button>
+        </div>
+
+        <div id="review-list-panel">
+          <div class="review-toolbar">
+            <div class="filter-tabs" role="tablist" aria-label="리뷰 필터">
+              <button class="filter active" type="button" role="tab" aria-selected="true">전체 리뷰</button>
+              <button class="filter" type="button" role="tab" aria-selected="false">나와 비슷한 취향</button>
+              <button class="filter" type="button" role="tab" aria-selected="false">사진 리뷰</button>
             </div>
+            <label class="sort-select">정렬
+              <select aria-label="리뷰 정렬">
+                <option>추천순</option>
+                <option>최신순</option>
+                <option>별점순</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="review-list">
+            <article class="review-card featured">
+              <div class="reviewer">
+                <span class="avatar avatar-one">남</span>
+                <div><strong>남남</strong><span>카페 탐험가 · 리뷰 42</span></div>
+              </div>
+              <div class="match-badge">취향 96% 일치</div>
+              <div class="rating-line"><span aria-label="별점 5점">★★★★★</span><strong>5.0</strong><time datetime="2026-07-10">3일 전</time></div>
+              <p>창가 자리의 오후 빛이 정말 예뻐요. 플랫화이트는 고소하고, 레몬 케이크는 많이 달지 않아 함께 먹기 좋았습니다. 혼자 책 읽으러 다시 방문하고 싶어요.</p>
+              <div class="review-footer"><span>방문 메뉴 · 플랫화이트, 레몬 케이크</span><button type="button">♡ 도움돼요 18</button></div>
+            </article>
+
+            <article class="review-card">
+              <div class="reviewer">
+                <span class="avatar avatar-two">윤</span>
+                <div><strong>윤슬</strong><span>디저트 러버 · 리뷰 19</span></div>
+              </div>
+              <div class="match-badge soft">취향 91% 일치</div>
+              <div class="rating-line"><span aria-label="별점 4점">★★★★<i>★</i></span><strong>4.0</strong><time datetime="2026-07-06">1주 전</time></div>
+              <p>크루아상이 바삭하고 버터 향이 진해요. 주말 오후에는 조금 붐비지만 직원분들이 친절하고 주문도 빠른 편이었습니다.</p>
+              <div class="review-footer"><span>방문 메뉴 · 아메리카노, 크루아상</span><button type="button">♡ 도움돼요 9</button></div>
+            </article>
+
+            <article class="review-card">
+              <div class="reviewer">
+                <span class="avatar avatar-three">김</span>
+                <div><strong>김모카</strong><span>커피 애호가 · 리뷰 31</span></div>
+              </div>
+              <div class="match-badge soft">취향 87% 일치</div>
+              <div class="rating-line"><span aria-label="별점 4.5점">★★★★<i>★</i></span><strong>4.5</strong><time datetime="2026-07-01">2주 전</time></div>
+              <p>원두 선택지가 다양하고 산미 설명을 자세히 해주셔서 좋았어요. 테이블 간격도 여유 있어 대화하기 편안했습니다.</p>
+              <div class="review-footer"><span>방문 메뉴 · 드립 커피</span><button type="button">♡ 도움돼요 12</button></div>
+            </article>
           </div>
         </div>
-      </aside>
-    </div>
-  </main>
+
+        <form class="review-form" id="review-form-panel" hidden>
+          <div class="form-title-row">
+            <div>
+              <button class="back-button" id="close-review" type="button">← 리뷰 목록</button>
+              <h3>오후의 커피는 어떠셨나요?</h3>
+              <p>솔직한 경험을 남기면 비슷한 취향의 사용자에게 도움이 돼요.</p>
+            </div>
+            <span class="step">리뷰 작성</span>
+          </div>
+
+          <fieldset class="rating-field">
+            <legend>별점을 선택해 주세요</legend>
+            <div class="star-input" aria-label="별점 선택">
+              <input type="radio" name="rating" id="star5" value="5"><label for="star5">★</label>
+              <input type="radio" name="rating" id="star4" value="4"><label for="star4">★</label>
+              <input type="radio" name="rating" id="star3" value="3"><label for="star3">★</label>
+              <input type="radio" name="rating" id="star2" value="2"><label for="star2">★</label>
+              <input type="radio" name="rating" id="star1" value="1"><label for="star1">★</label>
+            </div>
+          </fieldset>
+
+          <label class="form-label" for="review-content">리뷰 내용</label>
+          <div class="textarea-wrap">
+            <textarea id="review-content" rows="7" maxlength="500" placeholder="맛, 분위기, 서비스 등 방문 경험을 자세히 들려주세요."></textarea>
+            <span><b id="char-count">0</b> / 500</span>
+          </div>
+
+          <fieldset class="keyword-field">
+            <legend>어떤 점이 좋았나요? <small>복수 선택 가능</small></legend>
+            <div class="keyword-list">
+              <label><input type="checkbox"><span>☕ 커피가 맛있어요</span></label>
+              <label><input type="checkbox"><span>🥐 디저트가 맛있어요</span></label>
+              <label><input type="checkbox"><span>☀ 분위기가 좋아요</span></label>
+              <label><input type="checkbox"><span>☺ 친절해요</span></label>
+              <label><input type="checkbox"><span>♬ 조용해요</span></label>
+            </div>
+          </fieldset>
+
+          <div class="photo-upload"><span>＋</span><div><strong>사진 추가</strong><small>최대 5장까지 첨부할 수 있어요</small></div></div>
+
+          <div class="form-actions">
+            <button class="secondary-button" id="cancel-review" type="button">취소</button>
+            <button class="primary-button submit-button" type="submit">리뷰 등록하기</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const listPanel = document.querySelector('#review-list-panel');
+    const formPanel = document.querySelector('#review-form-panel');
+    const openButton = document.querySelector('#open-review');
+    const closeButtons = [document.querySelector('#close-review'), document.querySelector('#cancel-review')];
+    const textarea = document.querySelector('#review-content');
+    const charCount = document.querySelector('#char-count');
+
+    function showForm() {
+      listPanel.hidden = true;
+      formPanel.hidden = false;
+      openButton.hidden = true;
+      formPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function showList() {
+      formPanel.hidden = true;
+      listPanel.hidden = false;
+      openButton.hidden = false;
+    }
+
+    openButton.addEventListener('click', showForm);
+    closeButtons.forEach((button) => button.addEventListener('click', showList));
+    textarea.addEventListener('input', () => { charCount.textContent = textarea.value.length; });
+    formPanel.addEventListener('submit', (event) => {
+      event.preventDefault();
+      showList();
+    });
+  </script>
 </body>
 </html>

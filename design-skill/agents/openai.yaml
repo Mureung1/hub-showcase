@@ -1,0 +1,8 @@
+interface:
+  display_name: "TasteFit Design"
+  short_description: "노란색 포인트의 TasteFit UI 디자인 시스템"
+  brand_color: "#FFD84D"
+  default_prompt: "Use $design-skill to create a responsive TasteFit interface with the shared yellow-accent design system."
+
+policy:
+  allow_implicit_invocation: true
