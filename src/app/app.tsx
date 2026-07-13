@@ -27,35 +27,24 @@ import {
   IconListCategory,
   IconPlus,
 } from '@wanteddev/wds-icon';
+import {
+  filterInsights,
+  type Insight,
+  type InsightCategory,
+} from '@/entities/insight';
 import { LandingPage } from '@/pages/landing';
 import './styles/global.css';
 
 type Tab = 'library' | 'home' | 'save';
 type AuthEntryView = 'onboarding' | 'login' | 'workspace';
-type CategoryTone = 'blue' | 'green' | 'amber' | 'rose' | 'slate';
 
-type Category = {
-  name: string;
-  tone: CategoryTone;
-};
-
-type Insight = {
-  id: number;
-  title: string;
-  domain: string;
-  memo?: string;
-  categories: Category[];
-  thumbnail: string;
-  url: string;
-};
-
-const categoryFilters: Category[] = [
+const categoryFilters: InsightCategory[] = [
   { name: 'All', tone: 'slate' },
   { name: '개발', tone: 'green' },
   { name: '디자인', tone: 'blue' },
   { name: '팀프로젝트', tone: 'amber' },
   { name: '공부', tone: 'slate' },
-  { name: '취업', tone: 'rose' },
+  { name: '취업', tone: 'coral' },
   { name: '미분류', tone: 'slate' },
 ];
 
@@ -118,7 +107,7 @@ const initialInsights: Insight[] = [
     title: '포트폴리오 프로젝트 회고 작성 가이드',
     domain: 'medium.com',
     memo: '취업 준비 자료로 분리해두기',
-    categories: [{ name: '취업', tone: 'rose' }],
+    categories: [{ name: '취업', tone: 'coral' }],
     thumbnail: 'CV',
     url: '#',
   },
@@ -139,7 +128,7 @@ const suggestedSituations = [
   { label: '온보딩 화면', query: '온보딩 화면 만들기' },
 ];
 
-const suggestedCategories: Category[] = [
+const suggestedCategories: InsightCategory[] = [
   { name: '개발', tone: 'green' },
   { name: '디자인', tone: 'blue' },
   { name: '공부', tone: 'amber' },
@@ -806,48 +795,6 @@ function BottomNav({
       })}
     </BottomNavigation>
   );
-}
-
-function filterInsights(insights: Insight[], category: string, query: string) {
-  const normalized = query.trim().toLowerCase();
-  const queryTokens = Array.from(
-    new Set(normalized.split(/\s+/).filter(Boolean))
-  );
-
-  return insights
-    .map((insight, index) => {
-      const matchesCategory =
-        category === 'All' ||
-        (category === '미분류' && insight.categories.length === 0) ||
-        insight.categories.some((item) => item.name === category);
-
-      const haystack = [
-        insight.title,
-        insight.domain,
-        insight.memo ?? '',
-        ...insight.categories.map((item) => item.name),
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      const score = queryTokens.reduce(
-        (total, token) => total + (haystack.includes(token) ? 1 : 0),
-        0
-      );
-
-      return { index, insight, matchesCategory, score };
-    })
-    .filter(({ matchesCategory, score }) => {
-      return matchesCategory && (queryTokens.length === 0 || score > 0);
-    })
-    .sort((current, next) => {
-      if (queryTokens.length === 0) {
-        return current.index - next.index;
-      }
-
-      return next.score - current.score || current.index - next.index;
-    })
-    .map(({ insight }) => insight);
 }
 
 function getScreenTitle(tab: Tab) {
