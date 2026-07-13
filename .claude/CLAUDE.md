@@ -36,8 +36,8 @@ hub/
 # 데이터 파이프라인 실행 (arXiv 수집 → LLM 요약 → data/*.json 생성)
 python scripts/main.py
 
-# 프론트 로컬 미리보기 (web/ 에서 실행 후 브라우저로 열기)
-cd web && python -m http.server 8000
+# 프론트 로컬 미리보기 (저장소 루트에서 실행 → /web/ 로 접속)
+python -m http.server 8000   # → http://localhost:8000/web/
 
 # 테스트
 pytest

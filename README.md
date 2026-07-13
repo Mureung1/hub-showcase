@@ -66,6 +66,11 @@ S1 **‘오늘의 브리핑’ 피드**를 실제 구현한 모습(MVP).
 | [docs/agent-workflow/planning-methodology.md](./docs/agent-workflow/planning-methodology.md) | 기획 구체화 방법론 (agent 활용 프로세스) |
 | [와이어프레임 (실물)](https://leekwanhak.github.io/hub/docs/spec/wireframes/s1-wireframe.html) | 인터랙티브 시안 (피드·상세·저장) · [소스](./docs/spec/wireframes/s1-wireframe.html) |
 
+## 진행 관리
+
+- [주간 계획](./docs/tracking/weekly-plan.md) — 이번 주 요일별 작업·완료 기준(DoD)
+- [이슈 초안](./docs/tracking/issues-draft.md) — GitHub 이슈 등록용 작업 목록
+
 ## 로드맵 (MVP)
 
 1. **수집 스크립트** — arXiv API에서 최신 논문 fetch, LLM 관련 논문 선별
