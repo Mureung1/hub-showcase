@@ -13,6 +13,7 @@ import {
   SUGGESTED_CATEGORIES,
   SUGGESTED_SITUATIONS,
 } from './model/workspace_seed';
+import './styles/authenticated_workspace.css';
 
 const INITIAL_SITUATION_QUERY = SUGGESTED_SITUATIONS[0]?.query ?? '';
 
@@ -77,57 +78,54 @@ export function AuthenticatedWorkspace() {
   }
 
   return (
-    <div className="workspace">
+    <div className="workspace-shell">
       <header className="workspace-header">
-        <div className="identity">
-          <div className="avatar" aria-hidden="true">
-            아
-          </div>
-          <div>
-            <p className="eyebrow">Amadda Space</p>
-            <h1>{getScreenTitle(activeTab)}</h1>
-          </div>
+        <div className="workspace-brand">
+          <span aria-hidden="true" className="workspace-brand__mark" />
+          <span className="workspace-brand__name">아맞다</span>
+          <span aria-hidden="true" className="workspace-brand__divider" />
+          <h1>{getScreenTitle(activeTab)}</h1>
         </div>
-        <button className="pro-button" type="button">
-          Google 연결됨
-        </button>
+        <p className="workspace-connection-status">Google 연결됨</p>
       </header>
 
-      {activeTab === 'library' ? (
-        <LibraryPage
-          activeCategory={activeCategory}
-          categoryOptions={CATEGORY_FILTERS}
-          insights={visibleInsights}
-          onCategoryChange={setActiveCategory}
-          onOpenSave={() => setActiveTab('save')}
-          onQueryChange={setGlobalQuery}
-          query={globalQuery}
-        />
-      ) : null}
+      <main className="workspace-main">
+        {activeTab === 'library' ? (
+          <LibraryPage
+            activeCategory={activeCategory}
+            categoryOptions={CATEGORY_FILTERS}
+            insights={visibleInsights}
+            onCategoryChange={setActiveCategory}
+            onOpenSave={() => setActiveTab('save')}
+            onQueryChange={setGlobalQuery}
+            query={globalQuery}
+          />
+        ) : null}
 
-      {activeTab === 'home' ? (
-        <HomePage
-          onOpenLibrary={() => setActiveTab('library')}
-          onQueryChange={handleRetrieveQueryChange}
-          onRetrieve={handleRetrieve}
-          onSituationClick={handleSituationClick}
-          query={retrieveQuery}
-          results={retrieveResults}
-          selectedSituation={selectedSituation}
-          situations={SUGGESTED_SITUATIONS}
-        />
-      ) : null}
+        {activeTab === 'home' ? (
+          <HomePage
+            onOpenLibrary={() => setActiveTab('library')}
+            onQueryChange={handleRetrieveQueryChange}
+            onRetrieve={handleRetrieve}
+            onSituationClick={handleSituationClick}
+            query={retrieveQuery}
+            results={retrieveResults}
+            selectedSituation={selectedSituation}
+            situations={SUGGESTED_SITUATIONS}
+          />
+        ) : null}
 
-      {activeTab === 'save' ? (
-        <SavePage
-          onSave={handleSave}
-          onSaveCompleteChange={setSaveComplete}
-          onUrlChange={setSaveUrl}
-          saveComplete={saveComplete}
-          saveUrl={saveUrl}
-          suggestedCategories={SUGGESTED_CATEGORIES}
-        />
-      ) : null}
+        {activeTab === 'save' ? (
+          <SavePage
+            onSave={handleSave}
+            onSaveCompleteChange={setSaveComplete}
+            onUrlChange={setSaveUrl}
+            saveComplete={saveComplete}
+            saveUrl={saveUrl}
+            suggestedCategories={SUGGESTED_CATEGORIES}
+          />
+        ) : null}
+      </main>
 
       <AppNavigation onTabChange={setActiveTab} tab={activeTab} />
     </div>

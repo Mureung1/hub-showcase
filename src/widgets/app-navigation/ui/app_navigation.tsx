@@ -3,6 +3,8 @@ import { Bookmark, Home, PlusCircle } from 'lucide-react';
 
 import { NavigationBar } from '@/shared/ui';
 
+import './app_navigation.css';
+
 export type WorkspaceTab = 'home' | 'library' | 'save';
 
 const NAVIGATION_ITEMS = [
@@ -32,7 +34,7 @@ export function AppNavigation({
 }) {
   return (
     <NavigationBar
-      className="bottom-nav"
+      className="app-navigation"
       items={NAVIGATION_ITEMS}
       onValueChange={onTabChange}
       value={tab}

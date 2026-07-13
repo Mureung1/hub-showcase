@@ -35,12 +35,23 @@ describe('AuthenticatedWorkspace', () => {
       </DesignSystemProvider>
     );
 
+    expect(
+      screen.getByRole('navigation', { name: '주요 화면' })
+    ).not.toBeNull();
     expect(screen.getByRole('heading', { name: '홈' })).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '홈' }).getAttribute('aria-current')
+    ).toBe('page');
 
     await user.click(screen.getByRole('button', { name: '보관함' }));
     expect(
       screen.getByRole('heading', { name: '전체 인사이트' })
     ).not.toBeNull();
+    expect(
+      screen
+        .getByRole('button', { name: '보관함' })
+        .getAttribute('aria-current')
+    ).toBe('page');
 
     await user.click(screen.getByRole('button', { name: '저장' }));
     expect(

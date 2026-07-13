@@ -1,0 +1,73 @@
+.workspace-shell {
+  width: min(var(--layout-content-width), calc(100% - 32px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: var(--spacing-4) 0 calc(88px + var(--spacing-6));
+}
+
+.workspace-header {
+  display: flex;
+  min-height: var(--spacing-12);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  padding-bottom: var(--spacing-4);
+}
+
+.workspace-brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.workspace-brand__mark {
+  width: var(--spacing-3);
+  height: var(--spacing-3);
+  background: var(--color-signal-green);
+  flex: 0 0 auto;
+}
+
+.workspace-brand__name {
+  color: var(--color-ink);
+  font-size: var(--typography-body-size);
+  font-weight: 700;
+  line-height: var(--typography-body-line-height);
+}
+
+.workspace-brand__divider {
+  width: 1px;
+  height: var(--spacing-5);
+  background: var(--color-ash);
+}
+
+.workspace-header h1 {
+  overflow: hidden;
+  color: var(--color-charcoal);
+  font-size: var(--typography-body-size);
+  font-weight: 600;
+  line-height: var(--typography-body-line-height);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-connection-status {
+  color: var(--color-graphite);
+  font-size: var(--typography-label-size);
+  line-height: var(--typography-label-line-height);
+  white-space: nowrap;
+}
+
+.workspace-main {
+  min-height: 680px;
+  border-top: 1px solid var(--color-ash);
+  padding: var(--spacing-8) 0 var(--spacing-20);
+}
+
+.workspace-note {
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-card);
+  background: var(--color-mist);
+  color: var(--color-graphite);
+}
