@@ -20,9 +20,10 @@
 - [x] `scripts/seedRecipes.js` — `mockRecipes.js`를 `recipes` 테이블 스키마로 변환해 1회 시딩하는 스크립트 작성
 - [x] `server/routes/recipes.js` — `GET /api/recipes?matchNames=...`, 기존 `selectors.js`의 `getRecipesByOwnedIngredients` 재사용해 Supabase 조회 결과를 필터·정렬
 - [x] `Home.jsx`를 로컬 계산 대신 `/api/recipes` fetch로 교체 (`useEffect` + `useState`)
-- [ ] **사용자 확인 필요**: Supabase 프로젝트 생성, `recipes` 테이블 SQL 실행, `.env.local`에 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` 채우기 (진행 방법은 대화 내 안내 참고)
-- [ ] `node --env-file=.env.local scripts/seedRecipes.js` 실행해 실제 시딩 확인
-- [ ] 브라우저에서 냉장고 선택→홈 화면까지 실제 네트워크 요청으로 동작하는지 최종 확인
+- [x] Supabase 프로젝트 생성, `recipes` 테이블 SQL 실행, `.env.local`에 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` 채우기
+- [x] `npm run seed:recipes` 실행해 36개 레시피 시딩 확인
+- [x] `GET /api/recipes?matchNames=...` 실제 호출로 Supabase 조회·필터·정렬 동작 확인 (curl로 검증 — 계란/밥/대파 → 17개 매칭, 가격순 정렬 정상)
+- [ ] 브라우저에서 냉장고 선택→홈 화면까지 실제 UI로 최종 확인 (지금까진 curl로만 검증)
 - [ ] 공공데이터포털 레시피로 데이터 소스 교체 (나중에 — `recipes` 테이블 내용만 바꾸면 됨, 코드 변경 최소화)
 
 ## 프론트엔드 (화면)
