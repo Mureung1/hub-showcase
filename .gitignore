@@ -1,0 +1,38 @@
+# ── 절대 올리면 안 되는 것 ────────────────────────────
+# DB 접속 정보. 신입 포트폴리오 사고의 90%가 여기서 난다.
+application-local.yml
+application-prod.yml
+application-secret.yml
+.env
+.env.*
+!.env.example
+
+# 크롤링한 실제 공고 데이터.
+# 스키마는 내 창작물이지만 수집한 공고 본문은 아니다.
+/data/
+*.dump
+*.sql.gz
+crawled-*.csv
+
+# ── 빌드 산출물 ──────────────────────────────────────
+build/
+out/
+target/
+!gradle/wrapper/gradle-wrapper.jar
+.gradle/
+
+# ── IDE ─────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+.vscode/
+.DS_Store
+
+# ── 로그 ────────────────────────────────────────────
+*.log
+logs/
+
+# ── 프론트엔드 ───────────────────────────────────────
+node_modules/
+dist/
+.vite/
