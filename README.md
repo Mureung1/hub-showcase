@@ -22,10 +22,10 @@
 
 | 기능/영역 | 라이브러리 | 용도 |
 |---|---|---|
-| DB 연결/쿼리 | Prisma | PostgreSQL과 통신하는 ORM. 편지/모음소/저장소 테이블 스키마 관리 |
-| DB 종류 | PostgreSQL | 실제 데이터 저장소 |
+| DB 연결/쿼리 | Prisma | Supabase(PostgreSQL)와 통신하는 ORM. 편지/모음소/저장소 테이블 스키마 관리 |
+| DB 종류 | Supabase (PostgreSQL) | 실제 데이터 저장소, 로컬/배포 동일 인스턴스 |
 | 요청 검증 | zod | 편지 작성 API 요청 바디 검증 (글자 수, 필수 필드 등) |
-| 로그인/인증 | jsonwebtoken + bcrypt | JWT 기반 로그인, 비밀번호 해싱 |
+| 로그인/인증 | @supabase/supabase-js (Supabase Auth) | 이메일/비밀번호 로그인, 세션(JWT) 관리 — 직접 해싱/토큰 발급 불필요 |
 | AI 추천 연결 | @anthropic-ai/sdk | 편지 분류 + 추천 이유 생성 (24시간 후 매칭 로직) |
 | 타이머/스케줄링 | node-cron (선택) | 24시간 후 추천 도착, 8시간 후 답장 전달 체크 |
 | 프론트-백엔드 통신 | fetch 또는 axios | HTTP 요청 |
