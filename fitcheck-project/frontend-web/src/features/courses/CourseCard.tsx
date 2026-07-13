@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom';
 import type { Course } from '../../data/userMock';
 import { Clock, User } from 'lucide-react';
+import VideoPlaceholder from './VideoPlaceholder';
 import './courses.css';
 
 interface CourseCardProps {
@@ -8,7 +10,8 @@ interface CourseCardProps {
 
 export default function CourseCard({ course }: CourseCardProps) {
   return (
-    <article className="course-card panel">
+    <Link to={`/user/courses/${course.id}`} className="course-card panel">
+      <VideoPlaceholder course={course} size="card" />
       <div className="course-card-top">
         <span className="status-badge badge-red">{course.bodyPart}</span>
         <span className="status-badge badge-purple">{course.goal}</span>
@@ -25,9 +28,7 @@ export default function CourseCard({ course }: CourseCardProps) {
         </span>
         <span className="course-level">{course.level}</span>
       </div>
-      <button type="button" className="btn btn-primary course-card-cta">
-        강좌 보기
-      </button>
-    </article>
+      <span className="btn btn-primary course-card-cta">강좌 보기</span>
+    </Link>
   );
 }

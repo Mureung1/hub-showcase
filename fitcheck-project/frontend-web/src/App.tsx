@@ -4,6 +4,7 @@ import Layout from './components/layout/Layout';
 import UserLayout from './components/user/UserLayout';
 import UserHomePage from './pages/user/HomePage';
 import UserCoursesPage from './pages/user/CoursesPage';
+import UserCourseDetailPage from './pages/user/CourseDetailPage';
 import UserMealsPage from './pages/user/MealsPage';
 import UserMapPage from './pages/user/MapPage';
 import DashboardPage from './pages/trainer/DashboardPage';
@@ -23,6 +24,7 @@ function App() {
           <Route path="/user" element={<UserLayout />}>
             <Route index element={<UserHomePage />} />
             <Route path="courses" element={<UserCoursesPage />} />
+            <Route path="courses/:id" element={<UserCourseDetailPage />} />
             <Route path="meals" element={<UserMealsPage />} />
             <Route path="map" element={<UserMapPage />} />
           </Route>

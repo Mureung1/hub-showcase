@@ -1,4 +1,8 @@
 .user-layout {
+  --user-pad-x: clamp(1rem, 2.5vw, 2rem);
+  --user-pad-y: clamp(1rem, 1.8vw, 1.75rem);
+  --user-gap: clamp(1.125rem, 1.6vw, 1.5rem);
+
   min-height: 100svh;
   display: flex;
   flex-direction: column;
@@ -8,22 +12,15 @@
 .user-main {
   flex: 1;
   width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 1rem 1rem calc(var(--bottom-nav-height) + 1.25rem);
+  max-width: none;
+  margin: 0;
+  padding: var(--user-pad-y) var(--user-pad-x)
+    calc(var(--bottom-nav-height) + var(--user-pad-y));
   box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
   .user-main {
-    max-width: 720px;
-    padding: 1.25rem 1.5rem 2rem;
-  }
-}
-
-@media (min-width: 1100px) {
-  .user-main {
-    max-width: 1080px;
-    padding: 1.5rem 1.75rem 2.5rem;
+    padding-bottom: calc(var(--user-pad-y) + 0.5rem);
   }
 }

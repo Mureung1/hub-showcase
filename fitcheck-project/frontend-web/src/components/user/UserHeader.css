@@ -12,12 +12,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: clamp(0.75rem, 2vw, 1.25rem);
   width: 100%;
-  max-width: 1080px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   min-height: var(--header-height);
-  padding: 0.75rem 1rem;
+  padding: 0.75rem clamp(1rem, 2.5vw, 2rem);
   box-sizing: border-box;
 }
 
@@ -107,10 +107,6 @@
 }
 
 @media (min-width: 768px) {
-  .user-header-inner {
-    padding: 0.75rem 1.5rem;
-  }
-
   .user-top-nav {
     display: flex;
   }

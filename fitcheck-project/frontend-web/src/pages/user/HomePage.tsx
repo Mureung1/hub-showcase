@@ -107,9 +107,17 @@ export default function HomePage() {
                 {recommended.bodyPart} · {recommended.goal} ·{' '}
                 {recommended.durationMin}분
               </p>
-              <Link to="/user/courses" className="btn btn-primary">
-                강좌 목록 보기
-              </Link>
+              <div className="home-recommend-actions">
+                <Link
+                  to={`/user/courses/${recommended.id}`}
+                  className="btn btn-primary"
+                >
+                  강좌 보기
+                </Link>
+                <Link to="/user/courses" className="btn btn-ghost">
+                  목록 보기
+                </Link>
+              </div>
             </>
           )}
         </article>
