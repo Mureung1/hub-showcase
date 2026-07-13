@@ -1,6 +1,8 @@
 # hub
 #위키링크
 https://github.com/dabinnida/hub/wiki
+# 2주차 주간 계획 노션
+https://app.notion.com/p/2-39cd247dcc5480258a2ac59d134c8a29
 
 # about-me
 # AI Life Review - 기획 및 기술 설계
