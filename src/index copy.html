@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenSeed Interactive Prototype</title>
+    <link rel="stylesheet" href="./styles.css?v=16" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <button class="brand" data-view="ranking" aria-label="OpenSeed home">
+          <span class="brand-mark">OS</span>
+          <span>
+            <strong>OpenSeed</strong>
+            <small>아이디어 시장성 검증</small>
+          </span>
+        </button>
+
+        <nav class="nav" aria-label="Prototype navigation">
+          <button class="active" data-view="ranking">실시간 랭킹</button>
+          <button data-view="create">AI 아이디어 등록</button>
+          <button data-view="portfolio">Seed Point 지갑</button>
+          <button data-view="contributors">기여자 보드</button>
+          <button data-view="company">기업 관심</button>
+        </nav>
+
+        <section class="side-note">
+          <b>랭킹 기준</b>
+          <p>가상 투자, 기업 관심, 사용자 반응, 기여 피드백, 최근 상승률을 합산합니다.</p>
+        </section>
+      </aside>
+
+      <main class="page">
+        <header class="topbar">
+          <label class="search">
+            <span>검색</span>
+            <input id="searchInput" type="search" placeholder="아이디어, 카테고리, 기업명 검색" />
+          </label>
+          <div class="wallet-strip" id="walletStrip"></div>
+          <button class="ghost-button" id="resetButton">Mock 초기화</button>
+        </header>
+
+        <section id="viewRoot" class="view-root" aria-live="polite"></section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+    <script src="./app.js?v=14"></script>
+  </body>
+</html>
