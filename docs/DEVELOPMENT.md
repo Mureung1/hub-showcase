@@ -25,8 +25,27 @@ uv run fastapi dev app/main.py
 
 ## 브랜치 전략
 
-- `dev`에서 개발한다.
-- 루트 저장소(upstream)로 PR을 보낸다.
+- `dev`가 개발 기준 브랜치다. 기능 작업은 `dev`에서 브랜치를 따고, 완료되면 `dev`로 병합한다.
+- `dev`는 항상 동작하는 상태를 유지한다. 병합 전에 타입 검사와 실행 확인을 마친다.
+
+### 브랜치 이름
+
+`<접두사>/<이슈번호>-<짧은-설명>` 형식으로 짓는다.
+
+```
+feat/12-onboarding-interests
+fix/23-rss-duplicate-entry
+docs/31-db-schema
+chore/8-ruff-setup
+```
+
+- 접두사는 커밋 접두사와 같은 것을 쓴다: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+- 이슈 번호는 GitHub issue 번호를 그대로 쓴다. 대응하는 이슈가 없으면 번호를 생략한다.
+- 설명은 영문 소문자 kebab-case로 짧게 쓴다. 한글을 쓰지 않는다.
+
+### PR
+
+- **upstream(루트 저장소)으로 보내는 PR은 사람이 직접 만든다. AI 에이전트는 `git push`와 PR 생성을 하지 않는다.** 커밋까지만 하고 사용자에게 알린다.
 - 직접 만든 `.github/` 파일은 커밋하지 않는다. upstream에서 받아온 것만 추적한다.
 
 ## 커밋 규칙
