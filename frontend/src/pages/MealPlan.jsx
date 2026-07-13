@@ -24,11 +24,6 @@ export default function MealPlan() {
             </div>
           ))}
         </div>
-        <div className="row">
-          <div className="day-tag">일</div>
-          <div className="info"><div className="name">냉장고 털이 요리</div><div className="meta">남은 재료 전부 소진!</div></div>
-          <div className="right">🧹</div>
-        </div>
       </div>
       <div className="bottom-fixed">
         <button className="btn primary" onClick={openMealShoppingList}>이 식단 장보기 리스트 만들기</button>

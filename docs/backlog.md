@@ -33,6 +33,57 @@
 
 ---
 
+## FE 안정성 (Day 1 진단, 2026-07-10)
+
+1주차 "FE 완전 구축" Day 1에서 `frontend/src` 전체를 다시 훑어 확인한 내용. 오늘은 진단만 하고
+코드는 건드리지 않았음 — Day 2부터 아래 내용을 기준으로 수정 시작.
+
+### 1. 네비게이션 레이스 컨디션 — 6개 함수
+
+`context/AppContext.jsx`에서 `await` 이후 `go()`/`tab()`을 호출하면서, 그 사이 사용자가 다른
+화면으로 이동했는지 확인하지 않는 함수들. 응답이 늦게 오면 사용자가 이미 떠난 화면으로 강제로
+되돌려진다.
+
+| 함수 | 위치 | 비고 |
+|---|---|---|
+| `shootReceipt` | L84, `go('receipt-result')` | `screen` 클로저를 baking하는 `go` 사용 — 가장 심각(스택도 오염) |
+| `openRecipeDetail` | L107, `go('recipe-detail')` | 동일. 진입점 3곳(`Home.jsx`:59, `ExpiryAlerts.jsx`:32, `RecipeList.jsx`:59)에서 가드 없이 호출됨 |
+| `buildMealPlan` | L168, `go('meal-plan')` | 동일 |
+| `openMealShoppingList` | L173, `go('meal-shopping-list')` | 동일 |
+| `confirmReceipt` | L92, `tab('fridge')` | `tab`은 stable이라 스택 오염은 없지만 화면 강제 이동은 동일하게 발생 |
+| `finishCooking` | L152, `tab('fridge')` | 동일 |
+
+### 2. 에러 처리 — async 컨텍스트 함수 9개 전부 없음
+
+`refreshFridge`/`addFridgeItem`/`updateFridgeItem`/`deleteFridgeItem`/`shootReceipt`/
+`confirmReceipt`/`openRecipeDetail`/`finishCooking`/`buildMealPlan`/`openMealShoppingList` —
+try/catch 있는 함수 0개. 페이지 레벨에서 제대로 된 건 `ReceiptCamera.jsx`(try/catch/finally +
+alert + 로딩가드) 하나뿐. `CookDone.jsx`/`ExpiryCheck.jsx`는 `try{}finally{}`만 있고 `catch`가
+없어 에러가 사용자에게 안 보임(로딩 상태는 정상적으로 풀림).
+
+**최악 사례 4곳** (에러 처리 없음 + 로딩 가드 없음/깨짐 + 사용자가 쉽게 유발 가능) — Day 2 처리 순서:
+1. `frontend/src/pages/AddItem.jsx`의 `handleSave` — try/catch/finally 자체가 없어서, 실패하면
+   "추가하는 중…" 버튼이 **영구히 비활성화된 채 멈춤**(리로드 전까진 복구 불가). 가장 심각.
+2. `frontend/src/components/IngredientSheet.jsx`의 `handleDelete` — 삭제 액션인데 try/catch도
+   로딩 가드도 없음, 연타 가능.
+3. `Home.jsx`/`ExpiryAlerts.jsx`/`RecipeList.jsx`의 `RecipeCard onClick={() => openRecipeDetail(id)}`
+   — 레이스 컨디션 진입점 3곳, 가드 전무.
+4. `MealPlanPicker.jsx`의 `buildMealPlan`, `MealPlan.jsx`의 `openMealShoppingList` — `onClick={asyncFn}`
+   직결, 가드 전무.
+
+### 3. 로딩 가드 불일치 — 2그룹 + 애매한 예외
+
+- **A그룹** (데이터 없으면 `return null`로 빈 화면): `ShoppingList`, `Prices`, `RecipeDetail`,
+  `ReceiptResult`, `ExpiryCheck`, `MealPlan`, `MealShoppingList`, `Cooking`
+- **B그룹** (빈 기본값으로 프레임 즉시 렌더): `Home`, `RecipeList`, `ExpiryAlerts`, `ShoppingSets`,
+  `MealPlanPicker`, `Fridge`, `CookDone`
+- **구조적 예외**: `Fridge`/`RecipeDetail`/`ReceiptResult`/`MealPlan`/`MealShoppingList`/`Cooking`/
+  `CookDone` 7개는 페이지 자체에 `useEffect` fetch가 없고 `AppContext`의 액션 핸들러가 미리 채워둔
+  상태만 읽음 — 나머지 8개(페이지 자체 `useEffect`+API 호출)와 아키텍처가 다름. `CookDone`은 이
+  그룹에 속하면서도 가드가 아예 없어(`deductionState` 기본값 `[]`) B그룹처럼 동작하는 애매한 위치.
+
+---
+
 ## P2 — 있으면 좋은 것 / 인프라
 
 | 항목 | 비고 |

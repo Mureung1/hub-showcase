@@ -1,6 +1,6 @@
 // 실제 Express 백엔드(backend/)를 호출하는 API 클라이언트.
 // mockServer.js와 함수 시그니처를 동일하게 맞춰서, src/api/index.js의 한 줄만 바꾸면 서로 교체된다.
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 async function request(method, path, body) {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -23,17 +23,17 @@ export const getExpiryAlerts = () => request('GET', '/api/fridge/alerts');
 export const uploadReceipt = () => request('POST', '/api/receipts');
 export const confirmReceipt = (receiptId, body) => request('POST', `/api/receipts/${receiptId}/confirm`, body);
 
-export const getRecipes = ({ filter = 'all', level = 'all' } = {}) =>
-  request('GET', `/api/recipes?filter=${encodeURIComponent(filter)}&level=${encodeURIComponent(level)}`);
-export const getRecipeDetail = (id) => request('GET', `/api/recipes/${id}`);
+export const getRecipes = ({ filter = 'all', level = 'all', category = 'all' } = {}) =>
+  request('GET', `/api/recipes?filter=${encodeURIComponent(filter)}&level=${encodeURIComponent(level)}&category=${encodeURIComponent(category)}`);
+export const getRecipeDetail = (id, multiplier = 1.0) => request('GET', `/api/recipes/${id}?multiplier=${multiplier}`);
 export const cookDone = (recipeId, body) => request('POST', `/api/recipes/${recipeId}/cook-done`, body);
 
-export const getShoppingSets = ({ match = 'all', level = 'all' } = {}) =>
-  request('GET', `/api/shopping/sets?match=${encodeURIComponent(match)}&level=${encodeURIComponent(level)}`);
-export const getShoppingList = (setId) => request('GET', `/api/shopping/list?setId=${encodeURIComponent(setId ?? '')}`);
+export const getShoppingSets = ({ match = 'all', level = 'all', pickedIds = [], multiplier = 1.0 } = {}) =>
+  request('GET', `/api/shopping/sets?match=${encodeURIComponent(match)}&level=${encodeURIComponent(level)}&pickedIds=${encodeURIComponent(pickedIds.join(','))}&multiplier=${multiplier}`);
+export const getShoppingList = (setId, pickedIds = [], multiplier = 1.0) => request('GET', `/api/shopping/list?setId=${encodeURIComponent(setId ?? '')}&pickedIds=${encodeURIComponent(pickedIds.join(','))}&multiplier=${multiplier}`);
 
 export const getPrices = () => request('GET', '/api/prices');
 
 export const getMealPlanCandidates = () => request('GET', '/api/meal-plan/candidates');
 export const buildWeeklyPlan = (pickedIds) => request('POST', '/api/meal-plan/weekly', { pickedIds });
-export const getMealShoppingList = (weekPlanIds) => request('POST', '/api/meal-plan/shopping-list', { weekPlanIds });
+export const getMealShoppingList = (weekPlanIds, multiplier = 1.0) => request('POST', '/api/meal-plan/shopping-list', { weekPlanIds, multiplier });

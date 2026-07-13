@@ -1,21 +1,22 @@
 import * as store from '../store.js';
 
-export function listRecipes(req, res) {
-  const { filter = 'all', level = 'all' } = req.query;
-  res.json(store.listRecipes({ filter, level }));
+export async function listRecipes(req, res) {
+  const { filter = 'all', level = 'all', category = 'all' } = req.query;
+  res.json(await store.listRecipes({ filter, level, category }));
 }
 
-export function getRecipeDetail(req, res) {
-  const detail = store.getRecipeDetail(req.params.id);
+export async function getRecipeDetail(req, res) {
+  const multiplier = parseFloat(req.query.multiplier) || 1.0;
+  const detail = await store.getRecipeDetail(req.params.id, multiplier);
   if (!detail) return res.status(404).json({ error: `recipe ${req.params.id} not found` });
   res.json(detail);
 }
 
-export function cookDone(req, res) {
+export async function cookDone(req, res) {
   const { deductions } = req.body;
   if (!Array.isArray(deductions)) return res.status(400).json({ error: 'deductions 배열이 필요해요.' });
   try {
-    res.json(store.cookDone(req.params.id, deductions));
+    res.json(await store.cookDone(req.params.id, deductions));
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }

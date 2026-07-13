@@ -24,15 +24,25 @@ const LEVEL_CHIPS = [
   { v: 'high',     label: '🔴 상급자' },
 ];
 
+const CATEGORY_CHIPS = [
+  { v: 'all', label: '전체메뉴' },
+  { v: '반찬', label: '반찬' },
+  { v: '국&찌개', label: '국&찌개' },
+  { v: '일품', label: '일품' },
+  { v: '밥/죽/스프', label: '밥/죽/스프' },
+  { v: '후식', label: '디저트' },
+];
+
 export default function RecipeList() {
   const { fridge, openRecipeDetail, tab, go } = useApp();
   const [match, setMatch] = useState('all');
   const [level, setLevel] = useState('all');
+  const [category, setCategory] = useState('all');
   const [recipes, setRecipes] = useState({ items: [], total: 0 });
 
   useEffect(() => {
-    if (Object.keys(fridge).length) api.getRecipes({ filter: match, level }).then(setRecipes);
-  }, [fridge, match, level]);
+    if (Object.keys(fridge).length) api.getRecipes({ filter: match, level, category }).then(setRecipes);
+  }, [fridge, match, level, category]);
 
   return (
     <section className="screen active">
@@ -41,6 +51,11 @@ export default function RecipeList() {
         <div className="chips" style={{ marginBottom: 6 }}>
           {MATCH_CHIPS.map((c) => (
             <span key={c.v} className={`chip${match === c.v ? ' on' : ''}`} onClick={() => setMatch(c.v)}>{c.label}</span>
+          ))}
+        </div>
+        <div className="chips" style={{ marginBottom: 6, overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 4 }}>
+          {CATEGORY_CHIPS.map((c) => (
+            <span key={c.v} className={`chip${category === c.v ? ' on' : ''}`} onClick={() => setCategory(c.v)}>{c.label}</span>
           ))}
         </div>
         <div className="chips">

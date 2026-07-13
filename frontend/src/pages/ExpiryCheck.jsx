@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { calcExpiryDate, ingredientMap } from '../data/ingredients';
 
-const DEFAULT_EXPIRY = { onion: '2026-07-17', pork: '2026-07-10', tofu: '2026-07-13' };
-const SHELF_LIFE_NOTE = { onion: '자동 설정 · 여름 기준 9일', pork: '자동 설정 · 냉장 2일', tofu: '자동 설정 · 개봉 전 5일' };
 const EMOJI = { onion: '🧅', pork: '🥩', tofu: '🧊' };
 
 function ddayLabel(isoDate) {
+  if (!isoDate) return '';
   const d = new Date(isoDate);
   return `~ ${d.getMonth() + 1}/${d.getDate()}`;
 }
@@ -26,8 +26,10 @@ export default function ExpiryCheck() {
 
   useEffect(() => {
     if (!receipt) return;
-    receipt.items.filter((it) => it.matched && it.category === 'fresh' && DEFAULT_EXPIRY[it.matchedIngredientId]).forEach((it) => {
-      if (!expiryOverrides[it.matchedIngredientId]) setExpiryOverride(it.matchedIngredientId, DEFAULT_EXPIRY[it.matchedIngredientId]);
+    receipt.items.filter((it) => it.matched && it.category === 'fresh').forEach((it) => {
+      const id = it.matchedIngredientId;
+      const defaultExp = calcExpiryDate(id, receipt.date.replace(/\./g, '-')) || '2026-07-15';
+      if (!expiryOverrides[id]) setExpiryOverride(id, defaultExp);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [receipt]);
@@ -46,13 +48,17 @@ export default function ExpiryCheck() {
         <div className="section-title">신선식품 — 자동 설정됨</div>
         {freshItems.map((it) => {
           const id = it.matchedIngredientId;
-          const isoDate = expiryOverrides[id] || DEFAULT_EXPIRY[id] || '2026-07-15';
+          const master = ingredientMap[id];
+          const isoDate = expiryOverrides[id] || calcExpiryDate(id, receipt.date.replace(/\./g, '-')) || '2026-07-15';
+          const season = '여름'; // getSeason 로직을 써도 되지만 간략히
+          const days = master?.avgShelfLifeDays?.summer;
+          const note = days ? `자동 설정 · ${season} 기준 ${days}일` : '자동 설정';
           return (
             <div className="row" key={id}>
-              <div className="emoji">{EMOJI[id] || '🥬'}</div>
+              <div className="emoji">{EMOJI[id] || master?.emoji || '🥬'}</div>
               <div className="info">
                 <div className="name">{it.quantityLabel}</div>
-                <div className="meta">{SHELF_LIFE_NOTE[id] || '자동 설정'}</div>
+                <div className="meta">{note}</div>
               </div>
               <div className="right" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span className="badge green">{ddayLabel(isoDate)}</span>
@@ -66,13 +72,21 @@ export default function ExpiryCheck() {
         {!!processedItems.length && (
           <>
             <div className="section-title">가공식품 — 직접 입력 (선택)</div>
-            {processedItems.map((it) => (
-              <div className="row" key={it.matchedIngredientId}>
-                <div className="emoji">🥫</div>
-                <div className="info"><div className="name">{it.quantityLabel}</div><div className="meta">가공식품은 입력하지 않아도 돼요</div></div>
-                <div className="right"><span className="badge gray">＋ 입력</span></div>
-              </div>
-            ))}
+            {processedItems.map((it) => {
+              const id = it.matchedIngredientId;
+              const isoDate = expiryOverrides[id] || '';
+              return (
+                <div className="row" key={id}>
+                  <div className="emoji">{ingredientMap[id]?.emoji || '🥫'}</div>
+                  <div className="info"><div className="name">{it.quantityLabel}</div><div className="meta">가공식품은 입력하지 않아도 돼요</div></div>
+                  <div className="right" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {isoDate ? <span className="badge green">{ddayLabel(isoDate)}</span> : <span className="badge gray">＋ 입력</span>}
+                    <input type="date" value={isoDate} onChange={(e) => setExpiryOverride(id, e.target.value)}
+                      style={{ fontSize: 11, border: '1px solid var(--line)', borderRadius: 8, padding: '2px 4px', width: 112 }} />
+                  </div>
+                </div>
+              );
+            })}
           </>
         )}
       </div>

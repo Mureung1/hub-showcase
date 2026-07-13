@@ -17,6 +17,11 @@ const TAB_ROOTS = {
   'shopping-sets': 'tab-shop', 'etc-menu': 'tab-etc',
 };
 
+function getInitialMultiplier() {
+  const saved = localStorage.getItem('servingMultiplier');
+  return saved ? parseFloat(saved) : 1.0;
+}
+
 export function AppProvider({ children }) {
   // ── 네비게이션 스택 (go/back/tab) ──
   const [screen, setScreen] = useState(TAB_HOME.screen);
@@ -38,6 +43,13 @@ export function AppProvider({ children }) {
     setScreen(id);
   }, []);
   const activeTab = TAB_ROOTS[screen] || TAB_ROOTS[stack[0]] || 'tab-home';
+
+  // ── 인분 설정 ──
+  const [servingMultiplier, setServingMultiplierState] = useState(getInitialMultiplier());
+  const setServingMultiplier = useCallback((val) => {
+    setServingMultiplierState(val);
+    localStorage.setItem('servingMultiplier', val.toString());
+  }, []);
 
   // ── 냉장고 상태 ──
   const [fridge, setFridge] = useState({});
@@ -103,9 +115,9 @@ export function AppProvider({ children }) {
   const openRecipeDetail = useCallback(async (id) => {
     setCurrentRecipeId(id);
     setCheckedAddonIds([]);
-    setRecipeDetail(await api.getRecipeDetail(id));
+    setRecipeDetail(await api.getRecipeDetail(id, servingMultiplier));
     go('recipe-detail');
-  }, [go]);
+  }, [go, servingMultiplier]);
   const toggleAddon = useCallback((id) => {
     setCheckedAddonIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }, []);
@@ -159,7 +171,7 @@ export function AppProvider({ children }) {
   const togglePick = useCallback((id) => {
     setPickedDishes((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= 2) return [...prev.slice(1), id]; // 가장 먼저 고른 메뉴를 대체
+      if (prev.length >= 2) return prev; // 더 이상 못 고르게 함
       return [...prev, id];
     });
   }, []);
@@ -169,9 +181,9 @@ export function AppProvider({ children }) {
   }, [pickedDishes, go]);
   const openMealShoppingList = useCallback(async () => {
     const ids = weekPlan.days.map((d) => d.recipe.id);
-    setMealShoppingList(await api.getMealShoppingList(ids));
+    setMealShoppingList(await api.getMealShoppingList(ids, servingMultiplier));
     go('meal-shopping-list');
-  }, [weekPlan, go]);
+  }, [weekPlan, go, servingMultiplier]);
 
   // ── 추천 재료 세트 → 장보기 리스트 ──
   const [selectedSetId, setSelectedSetId] = useState(null);
@@ -192,6 +204,7 @@ export function AppProvider({ children }) {
     deductionState, editingDeduction, setEditingDeduction, adjustDeduction, openCookDone, finishCooking,
     pickedDishes, togglePick, weekPlan, buildMealPlan, mealShoppingList, openMealShoppingList,
     selectedSetId, openShoppingList,
+    servingMultiplier, setServingMultiplier,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

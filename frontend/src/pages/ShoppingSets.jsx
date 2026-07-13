@@ -4,8 +4,10 @@ import { api } from '../api';
 
 const MATCH_CHIPS = [
   { v: 'all', label: '전체' },
-  { v: 'maxVariety', label: '재료 최대활용' },
-  { v: 'complete100', label: '100% 완성' },
+  { v: 'imminentRescue', label: '임박 재료 구출' },
+  { v: 'minCost', label: '최소 지출 완성' },
+  { v: 'ingredientShare', label: '식자재 쉐어링' },
+  { v: 'fullWeek', label: '일주일 식단' },
 ];
 const LEVEL_CHIPS = [
   { v: 'all', label: '난이도 전체' },
@@ -14,12 +16,12 @@ const LEVEL_CHIPS = [
 ];
 
 export default function ShoppingSets() {
-  const { openShoppingList } = useApp();
+  const { openShoppingList, pickedDishes, go, servingMultiplier } = useApp();
   const [match, setMatch] = useState('all');
   const [level, setLevel] = useState('all');
   const [sets, setSets] = useState([]);
 
-  useEffect(() => { api.getShoppingSets({ match, level }).then((r) => setSets(r.sets)); }, [match, level]);
+  useEffect(() => { api.getShoppingSets({ match, level, pickedIds: pickedDishes, multiplier: servingMultiplier }).then((r) => setSets(r.sets)); }, [match, level, pickedDishes, servingMultiplier]);
 
   return (
     <section className="screen active">
@@ -38,7 +40,13 @@ export default function ShoppingSets() {
         <div className="notice">🧊 냉장고에 남은 재료를 최대한 활용하는 조합으로 골랐어요. 이미 있는 재료는 구매 목록에서 빠져요.</div>
 
         {sets.map((s) => (
-          <div key={s.id} className="card tap" onClick={() => openShoppingList(s.id)}>
+          <div key={s.id} className="card tap" onClick={() => {
+            if (s.id === 'fullWeek') {
+              go('meal-plan-picker');
+            } else {
+              openShoppingList(s.id);
+            }
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <b style={{ fontSize: 16 }}>{s.name}</b>
               {s.badge && <span className="badge green">{s.badge}</span>}

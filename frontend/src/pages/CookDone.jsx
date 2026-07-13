@@ -34,10 +34,10 @@ export default function CookDone() {
               {rows.length === 0 && <div className="ing-row" style={{ borderBottom: 'none' }}><span className="nm" style={{ color: 'var(--sub)' }}>차감할 재료가 없어요</span></div>}
               {rows.map((d, i) => {
                 if (!d.f) return null;
-                const before = d.f.levels[d.f.level];
-                const afterIdx = Math.min(d.f.level + d.use, d.f.levels.length - 1);
-                const after = d.f.levels[afterIdx];
-                const sojin = d.use > 0 && afterIdx === d.f.levels.length - 1;
+                const before = d.f.qtyLabel;
+                const sojin = d.use > 0 && d.use >= d.max;
+                const afterAmt = Math.max(0, d.max - d.use);
+                const after = sojin ? '소진' : `${afterAmt}${d.unit || ''}`;
                 return (
                   <div key={d.id} className="ing-row" style={i === rows.length - 1 ? { borderBottom: 'none' } : undefined}>
                     <span className="ck">{d.f.emoji}</span>
@@ -55,16 +55,17 @@ export default function CookDone() {
               {rows.length === 0 && <div className="ing-row" style={{ borderBottom: 'none' }}><span className="nm" style={{ color: 'var(--sub)' }}>차감할 재료가 없어요</span></div>}
               {rows.map((d, i) => {
                 if (!d.f) return null;
-                const previewIdx = Math.min(d.f.level + d.use, d.f.levels.length - 1);
+                const afterAmt = Math.max(0, d.max - d.use);
+                const step = d.unit === 'g' ? 50 : (d.unit === '쪽' || d.unit === '단' ? 0.25 : (d.unit === '모' || d.unit === '개' ? 0.5 : 1));
                 return (
                   <div key={d.id} className="ing-row" style={i === rows.length - 1 ? { borderBottom: 'none' } : undefined}>
                     <span className="ck">{d.f.emoji}</span>
                     <span className="nm">{d.f.name}{d.addon && <> <span className="badge green">추가 재료</span></>}</span>
                     {d.fixed ? <span className="amt">전량 사용</span> : (
                       <span className="stepper">
-                        <button onClick={() => adjustDeduction(d.i, -1)} disabled={d.use <= 0}>−</button>
-                        <span>{d.f.levels[previewIdx]} 남음</span>
-                        <button onClick={() => adjustDeduction(d.i, 1)} disabled={d.use >= d.max}>＋</button>
+                        <button onClick={() => adjustDeduction(d.i, -step)} disabled={d.use <= 0}>−</button>
+                        <span>{afterAmt === 0 ? '소진' : `${afterAmt}${d.unit || ''}`} 남음</span>
+                        <button onClick={() => adjustDeduction(d.i, step)} disabled={d.use >= d.max}>＋</button>
                       </span>
                     )}
                   </div>

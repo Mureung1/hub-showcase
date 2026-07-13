@@ -19,7 +19,7 @@ export default function ExpiryAlerts() {
         <div className="notice">🔔 임박 재료는 냉장고에서 <b style={{ color: 'var(--red)' }}>빨간 글자</b>로 표시되고, D-2부터 푸시 알림을 보내드려요.</div>
         <div>
           {data.items.length ? data.items.map((f) => (
-            <Row key={f.id} emoji={f.emoji} name={`${f.name} ${f.levels[f.level]}`} nameColor="var(--red)"
+            <Row key={f.id} emoji={f.emoji} name={`${f.name} ${f.qtyLabel}`} nameColor="var(--red)"
               meta={MSG_MAP[f.expiry] || `${f.expiry} 안에 드세요`} right={<span className="badge red">{f.expiry}</span>} />
           )) : <p style={{ fontSize: 13, color: 'var(--sub)' }}>임박한 재료가 없어요 👍</p>}
         </div>

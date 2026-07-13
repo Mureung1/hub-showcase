@@ -1,10 +1,15 @@
 import * as store from '../store.js';
 
-export function getShoppingSets(req, res) {
-  const { match = 'all', level = 'all' } = req.query;
-  res.json(store.getShoppingSets({ match, level }));
+export async function getShoppingSets(req, res) {
+  const { match = 'all', level = 'all', pickedIds, multiplier } = req.query;
+  const ids = pickedIds ? pickedIds.split(',').filter(Boolean) : [];
+  const mult = parseFloat(multiplier) || 1.0;
+  res.json(await store.getShoppingSets({ match, level, pickedIds: ids, multiplier: mult }));
 }
 
-export function getShoppingList(req, res) {
-  res.json(store.getShoppingList(req.query.setId));
+export async function getShoppingList(req, res) {
+  const { setId, pickedIds, multiplier } = req.query;
+  const ids = pickedIds ? pickedIds.split(',').filter(Boolean) : [];
+  const mult = parseFloat(multiplier) || 1.0;
+  res.json(await store.getShoppingList(setId, ids, mult));
 }

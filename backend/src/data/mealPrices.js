@@ -4,4 +4,4 @@ export const mealPriceTable = {
   고춧가루: 2500, 양배추: 1500, 참기름: 4600, 부침가루: 2200, 해물: 3800, 치즈: 2900,
 };
 
-export const dayLabels = ['월', '화', '수', '목', '금', '토'];
+export const dayLabels = ['월', '화', '수', '목', '금', '토', '일'];

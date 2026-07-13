@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [docs/기획서.md](docs/기획서.md) — 페르소나·문제정의·MVP 범위 등 제품 요구사항 원본
 - [docs/api-design.md](docs/api-design.md) — 엔드포인트별 요청/응답 계약, DB 스키마 설계
 - [docs/backlog.md](docs/backlog.md) — 남은 작업 목록(우선순위별), 완료된 작업 요약
+- [docs/2주차 계획수립.md](docs/2주차%20계획수립.md) — Day 1~10 진행 계획(FE 안정화 → BE 수정 → DB/API 연동 → 데이터 수집 → 통합)
 
 > 발표자료·Windows 런처·구버전 정적 프로토타입처럼 웹 서비스 코드도 개발 문서도 아닌 것들은
 > 저장소 밖(`C:\Users\user\Desktop\에이전트 실습 관련 자료 파일\`)에 따로 있습니다.

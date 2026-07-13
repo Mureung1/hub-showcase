@@ -13,7 +13,7 @@ export default function Home() {
     if (Object.keys(fridge).length) api.getRecipes({ filter: 'all', level: 'all' }).then(setRecipeStats);
   }, [fridge]);
 
-  const total = Object.keys(fridge).filter((id) => (fridge[id].levels ? fridgeAvailable(fridge, id) : true)).length;
+  const total = Object.keys(fridge).filter((id) => fridgeAvailable(fridge, id)).length;
   const imminent = imminentIds(fridge);
   const ready = recipeStats.items.filter((r) => r.full).length;
   const topRecipes = [...recipeStats.items].sort((a, b) => b.have / b.total - a.have / a.total).slice(0, 2);
@@ -43,7 +43,7 @@ export default function Home() {
           {imminent.length ? imminent.map((id) => {
             const f = fridge[id];
             return (
-              <Row key={id} emoji={f.emoji} name={f.name} meta={`${f.levels[f.level]} · 냉장`}
+              <Row key={id} emoji={f.emoji} name={f.name} meta={`${f.qtyLabel} · 냉장`}
                 right={<span className="badge red">{f.expiry}</span>} onClick={() => tab('fridge')} />
             );
           }) : <p style={{ fontSize: 13, color: 'var(--sub)' }}>임박한 재료가 없어요 👍</p>}
