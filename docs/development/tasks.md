@@ -148,7 +148,7 @@ Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작�
 | WEB-005 | loading·empty·error·stale state 구현      | P0       | Backlog | 3    | WEB-001               | 실패 시 빈 흰 화면 없이 다음 행동을 안내한다               |
 | WEB-006 | keyboard·mobile·contrast 접근성 검증      | P1       | Backlog | 3    | WEB-002~005           | 핵심 조작이 keyboard와 mobile viewport에서 가능하다        |
 | WEB-007 | 근거 보기와 데이터 기준 시각화            | P0       | Done    | 3    | WEB-003               | source, period, unit, method를 화면에서 확인한다           |
-| WEB-008 | FE 파일 구조 분리와 기능별 state 경계 정리 | P0       | Backlog | Phase 2 | ARCH-002 | 거대 App을 feature/component/hook으로 나누고 기존 동작 test를 유지한다 |
+| WEB-008 | FE 파일 구조 분리와 기능별 state 경계 정리 | P0       | Done | Phase 2 | - | 거대 App을 feature/component/hook/service로 나누고 기존 동작 test를 유지한다 |
 | MAP-001 | 연남·홍대·합정 상권 비교군 고정           | P0       | Done    | 3    | -                     | selector와 비교표에 가까운 3개 상권만 표시된다             |
 | MAP-002 | LocalTwin 2.5D 지도와 원본 fallback       | P0       | Done    | 3    | MAP-001               | 실제 footprint 기반 전용 지도와 원본 지도를 전환한다       |
 | MAP-003 | 상권별 LocalTwin 지도 data와 style 자체 구성 | P0       | Done    | 3    | MAP-002               | 외부 basemap 없이 로컬 도로·건물·POI GeoJSON을 렌더링한다  |
@@ -206,7 +206,7 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 1. `PLAN-002` Phase 1 기준선과 인계 문서·Issue 정합성 확인
 2. `SEC-001 A단계` 공개 위험을 먼저 줄이기 위한 Scene API 제품 환경 기본 차단 (Done)
 3. `ARCH-002` 실제 서비스 source와 문서의 물리 폴더·배포 artifact 분리
-4. `WEB-008` FE 파일 구조를 기능별로 분리하고 state 경계를 정리
+4. `WEB-008` FE 파일 구조를 기능별로 분리하고 state 경계를 정리 (Done early)
 5. `DB-001` Supabase PostgreSQL schema, SQLAlchemy/Alembic과 canonical data 이관
 6. `SEARCH-001` 제한된 시연 상권·점포 검색 API와 React의 최소 vertical slice 연결
 7. `ANALYSIS-002` 100m/300m/500m 반경별 공간 query
@@ -280,3 +280,4 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | 2026-07-13 | Phase 1 종료와 Phase 2 인계 상태 반영 | 공식 sample 검증과 사용자 촬영·privacy·통합·보안 미완료를 구분하기 위해 |
 | 2026-07-13 | EPIC-07과 SEC-001~008 추가 | 보안 점검을 실행 가능한 Task와 Task Packet 단위로 관리하기 위해 |
 | 2026-07-13 | ARCH-002·WEB-008·DB-001·SEARCH-001과 의존 순서 추가 | 서비스 경계부터 최소 검색 연결까지 이번 주에 가능한 vertical slice로 복원하기 위해 |
+| 2026-07-13 | SEC-001 A단계와 WEB-008 조기 완료 | 공개 Scene route를 기본 차단하고 FE server/UI state 경계를 후속 DB·검색 연결 전에 고정하기 위해 |

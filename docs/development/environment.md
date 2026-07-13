@@ -42,6 +42,15 @@ LocalTwin/
     web/
       src/
         App.tsx
+        features/
+          market/
+            MarketFilters.tsx
+            MarketInspector.tsx
+            model.ts
+            types.ts
+            useMarketAnalysis.ts
+        services/
+          marketAnalysis.ts
         styles/
           tokens.css
           global.css
@@ -77,7 +86,7 @@ LocalTwin/
   pnpm-workspace.yaml
 ```
 
-새 기능 디렉터리는 실제 기능을 시작할 때 만든다. 빈 architecture layer를 미리 늘리지 않는다.
+`features/market`은 상권 domain type·계산 helper·server state hook과 화면 component를 소유한다. `services/marketAnalysis.ts`는 API와 검증 snapshot의 조회·fallback만 담당하고, `App.tsx`는 화면 조합과 지도 interaction을 유지한다. 새 기능 디렉터리는 실제 기능을 시작할 때만 만들고 빈 architecture layer를 미리 늘리지 않는다.
 
 권장 확장:
 
