@@ -41,7 +41,7 @@
 
 - [ ] API 명세 작성
 - [ ] DB 설계
-- [ ] PostgreSQL + Prisma 셋업
+- [ ] PostgreSQL/Prisma 환경 셋업
 - [ ] 공통 에러 핸들링 + 유효성 검증 미들웨어 구현
 - [ ] 회원가입/로그인 API 구현
 - [ ] JWT 발급/검증 미들웨어 구현
