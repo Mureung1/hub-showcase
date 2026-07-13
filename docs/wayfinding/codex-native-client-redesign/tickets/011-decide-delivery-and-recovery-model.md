@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: open
+- State: claimed
 - Blocked by: [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md), [Native identity authority와 lifetime을 결정한다](009-decide-identity-and-authority.md)
 
 ## Question
