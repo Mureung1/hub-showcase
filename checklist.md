@@ -15,6 +15,16 @@
 - [x] `prototype/`을 냉장고 씬 + 재료 칩 선택 + 추천 흐름으로 재구성 — 옛 필터+랭킹 홈(`index-warm.html`, `filter.js`)은 제거하고 `index.html`(냉장고 화면, `fridge.js`) → `home.html`(추천+둘러보기, `home.js`)로 재구축, React `FridgePage`/`Home`과 동일한 흐름. 레시피 상세 페이지의 보유/구매 필요 구분은 아직 미반영(React 쪽도 미완성이라 함께 남은 작업)
 - [ ] `src/assets/fridge-empty.png` 용량 최적화 (현재 5MB대로 너무 큼 — 압축·WebP 변환 검토)
 
+## 냉장고→추천 API 연동 (Supabase)
+- [x] `@supabase/supabase-js` 설치, `server/lib/supabaseClient.js`(service_role 키는 서버에만) 작성
+- [x] `scripts/seedRecipes.js` — `mockRecipes.js`를 `recipes` 테이블 스키마로 변환해 1회 시딩하는 스크립트 작성
+- [x] `server/routes/recipes.js` — `GET /api/recipes?matchNames=...`, 기존 `selectors.js`의 `getRecipesByOwnedIngredients` 재사용해 Supabase 조회 결과를 필터·정렬
+- [x] `Home.jsx`를 로컬 계산 대신 `/api/recipes` fetch로 교체 (`useEffect` + `useState`)
+- [ ] **사용자 확인 필요**: Supabase 프로젝트 생성, `recipes` 테이블 SQL 실행, `.env.local`에 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` 채우기 (진행 방법은 대화 내 안내 참고)
+- [ ] `node --env-file=.env.local scripts/seedRecipes.js` 실행해 실제 시딩 확인
+- [ ] 브라우저에서 냉장고 선택→홈 화면까지 실제 네트워크 요청으로 동작하는지 최종 확인
+- [ ] 공공데이터포털 레시피로 데이터 소스 교체 (나중에 — `recipes` 테이블 내용만 바꾸면 됨, 코드 변경 최소화)
+
 ## 프론트엔드 (화면)
 - [x] 홈 화면: 카테고리 카드 목록 UI (메인음식/반찬/간식 3단 구성) — 끼니픽 냉장고 씬으로 교체 예정, 위 리브랜딩 항목 참고
 - [x] 카테고리 상세 화면: 레시피 목록 (가격순, 라면처럼 하위그룹 있는 경우 구분 표시)

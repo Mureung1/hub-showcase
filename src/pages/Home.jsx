@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { categories, TYPE_LABELS } from '../data/categories'
 import { mockRecipes } from '../data/mockRecipes'
-import { getCategoriesWithCheapest, getRecipesByOwnedIngredients } from '../data/selectors'
+import { getCategoriesWithCheapest } from '../data/selectors'
 import { fridgeIngredients } from '../data/fridgeIngredients'
 import { loadFridgeSelection } from '../data/fridgeStorage'
 import MenuCard from '../components/MenuCard'
@@ -10,11 +11,24 @@ const TYPES = ['main', 'side', 'snack']
 const PREVIEW_COUNT = 4
 
 function Home() {
-  const selectedIds = loadFridgeSelection()
-  const ownedMatchNames = fridgeIngredients
-    .filter((ingredient) => selectedIds.includes(ingredient.id))
-    .flatMap((ingredient) => ingredient.matchNames)
-  const matchedRecipes = getRecipesByOwnedIngredients(mockRecipes, ownedMatchNames)
+  const [matchedRecipes, setMatchedRecipes] = useState([])
+
+  useEffect(() => {
+    const selectedIds = loadFridgeSelection()
+    const ownedMatchNames = fridgeIngredients
+      .filter((ingredient) => selectedIds.includes(ingredient.id))
+      .flatMap((ingredient) => ingredient.matchNames)
+
+    if (ownedMatchNames.length === 0) {
+      setMatchedRecipes([])
+      return
+    }
+
+    fetch(`/api/recipes?matchNames=${ownedMatchNames.join(',')}`)
+      .then((res) => res.json())
+      .then((data) => setMatchedRecipes(data.recipes ?? []))
+      .catch(() => setMatchedRecipes([]))
+  }, [])
 
   return (
     <main className="min-h-screen bg-bg-page px-4 py-10">
