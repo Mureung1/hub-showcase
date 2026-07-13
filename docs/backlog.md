@@ -26,10 +26,11 @@ Priority: `P0` foundational/blocking (prerequisite for other work) · `P1` MVP c
 - [ ] **Bulky waste reporting guide (BulkyPage)** — item → region → fee lookup → link to official reporting site flow
 - [ ] **Commonly confused items list** — curated list surfaced on home/search
 - [ ] **Multilingual expansion (Chinese/Japanese/Vietnamese)** — add sequentially after Korean/English (P1)
+- [ ] **Nearby collection point guide — data & list view** — data model + list-style UI for battery/fluorescent lamp/small electronics/paper carton collection points (address/name/hours, no map); README's MVP scope names this feature, so it's in-scope for the 2-week MVP push, map rendering excluded (see below)
 - [ ] **Points screen (PointsPage)** — not in the README's MVP scope; needs a requirements check before work starts (blocked until scope is confirmed)
 
 ## P3 — Lower priority
 
-- [ ] **Nearby collection point guide** — map API integration, show locations for batteries/fluorescent lamps/small electronics/paper cartons
+- [ ] **Nearby collection point guide — map visualization** — map API integration to plot the P2 list data as markers; deferred to the post-MVP Week 3 sprint (not required for the 7/25 test start)
 - [ ] **PWA offline support hardening** — refine `vite-plugin-pwa` caching strategy
 - [ ] **Auth / user accounts** — not specified in the README; needs discussion before starting
