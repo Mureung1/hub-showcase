@@ -76,7 +76,7 @@ Pinned generated schema가 전체 raw method 목록을 소유하고, [codex-meth
 | `getConversationSummary` | stable | schema-only | unreviewed |  |
 | `gitDiffToRemote` | stable | schema-only | unreviewed |  |
 | `hooks/list` | stable | schema-only | unreviewed |  |
-| `initialize` | stable | raw-wrapper | baseline | App Server 연결 handshake |
+| `initialize` | stable | client-host | baseline | Headless Codex Client Host 연결 handshake |
 | `marketplace/add` | stable | schema-only | unreviewed |  |
 | `marketplace/remove` | stable | schema-only | unreviewed |  |
 | `marketplace/upgrade` | stable | schema-only | unreviewed |  |
@@ -257,4 +257,4 @@ Pinned generated schema가 전체 raw method 목록을 소유하고, [codex-meth
 
 | Method 식별자 | 성숙도 | 연결 단계 | 채택 | 비고 |
 | --- | --- | --- | --- | --- |
-| `initialized` | stable | raw-wrapper | baseline |  |
+| `initialized` | stable | client-host | baseline | Headless Codex Client Host 초기화 완료 notification |
