@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
+import { useAuthState } from '@/hooks/useAuth'
 import AppLayout from './components/AppLayout'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -12,16 +13,10 @@ import NewReservation from './pages/NewReservation'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 
-// Mock auth state - BE 연동 전까지 항상 로그인 상태로 가정
-const useMockAuth = () => {
-  // TODO: BE 세션이 Firebase Auth 연동 후 실제 구현
-  return { isAuthenticated: true, isLoading: false }
-}
-
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useMockAuth()
+  const { user, loading } = useAuthState()
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-gray-500">로딩 중...</div>
@@ -29,7 +24,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     )
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return <Navigate to="/login" replace />
   }
 

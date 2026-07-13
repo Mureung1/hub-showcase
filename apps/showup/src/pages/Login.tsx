@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { signIn } from '@/services/auth'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { toast } from 'sonner'
@@ -26,13 +27,17 @@ const Login = () => {
     resolver: zodResolver(loginSchema),
   })
 
-  const onSubmit = async (_data: LoginForm) => {
+  const onSubmit = async (data: LoginForm) => {
     setIsLoading(true)
-    // TODO: BE 세션이 Firebase Auth 연동
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // mock delay
-    toast.success('로그인되었습니다')
-    navigate('/dashboard')
-    setIsLoading(false)
+    try {
+      await signIn({ email: data.email, password: data.password })
+      toast.success('로그인되었습니다')
+      navigate('/dashboard')
+    } catch (error) {
+      toast.error('로그인 실패: ' + (error as Error).message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

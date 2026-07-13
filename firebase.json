@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "demo-showup"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8086,
+      "host": "localhost"
+    }
+  },
+  "firestore": {
+    "rules": "apps/showup/firestore.rules",
+    "indexes": "apps/showup/firestore.indexes.json"
+  }
+}

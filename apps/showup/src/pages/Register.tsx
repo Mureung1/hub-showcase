@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { signUp } from '@/services/auth'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { toast } from 'sonner'
@@ -12,6 +13,7 @@ const registerSchema = z.object({
   password: z.string().min(6, '비밀번호는 6 자 이상입니다'),
   confirmPassword: z.string(),
   storeName: z.string().min(2, '가게 이름을 입력해주세요'),
+  storeCategory: z.string().min(2, '업종을 선택해주세요'),
   agreePrivacy: z.boolean().refine((val) => val === true, '동의해야 합니다'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: '비밀번호가 일치하지 않습니다',
@@ -32,13 +34,23 @@ const Register = () => {
     resolver: zodResolver(registerSchema),
   })
 
-  const onSubmit = async (_data: RegisterForm) => {
+  const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true)
-    // TODO: BE 세션이 Firebase Auth + 가게 등록 연동
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // mock delay
-    toast.success('회원가입이 완료되었습니다')
-    navigate('/login')
-    setIsLoading(false)
+    try {
+      await signUp({
+        email: data.email,
+        password: data.password,
+        storeName: data.storeName,
+        storeCategory: data.storeCategory,
+        agreedToPrivacy: data.agreePrivacy,
+      })
+      toast.success('회원가입이 완료되었습니다')
+      navigate('/login')
+    } catch (error) {
+      toast.error('회원가입 실패: ' + (error as Error).message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -81,6 +93,28 @@ const Register = () => {
             error={errors.storeName?.message}
             {...register('storeName')}
           />
+
+          <div>
+            <label htmlFor="storeCategory" className="block text-sm font-medium text-gray-700 mb-1">
+              업종
+            </label>
+            <select
+              id="storeCategory"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              {...register('storeCategory')}
+            >
+              <option value="">업종을 선택해주세요</option>
+              <option value="cafe">카페</option>
+              <option value="restaurant">식당</option>
+              <option value="beauty">미용실</option>
+              <option value="studio">공방</option>
+              <option value="academy">학원</option>
+              <option value="etc">기타</option>
+            </select>
+            {errors.storeCategory && (
+              <p className="mt-1 text-sm text-red-600">{errors.storeCategory.message}</p>
+            )}
+          </div>
 
           <div className="flex items-start gap-2">
             <input

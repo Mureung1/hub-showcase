@@ -6,12 +6,26 @@
     "apps/*"
   ],
   "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:security": "node --experimental-vm-modules node_modules/jest/bin/jest.js apps/showup/security/penetration-test.test.cjs",
     "dev": "npm run dev -w intro",
     "build": "npm run build -w intro",
     "lint": "npm run lint -w intro"
   },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {}
+  },
   "overrides": {
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
+    "@types/jest": "^30.0.0",
+    "firebase-admin": "^14.1.0",
+    "jest": "^30.4.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
   }
 }
