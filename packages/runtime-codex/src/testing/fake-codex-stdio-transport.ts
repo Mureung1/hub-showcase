@@ -42,6 +42,7 @@ export type FakeCodexStdioTransportInput = {
   closeTimeoutMs?: number
   maxClientRequestIdentities?: number
   maxQueuedObservations?: number
+  gateStartSettlement?: boolean
 }
 
 export type FakeCodexStdioJournalEntry =
@@ -57,6 +58,7 @@ export type FakeCodexStdioJournalEntry =
 export type FakeCodexStdioTransportFixture = {
   transport: CodexStdioTransport
   tempDir: string
+  releaseStartSettlement: () => void
   readJournal: (input?: {
     minimumEntries?: number
     timeoutMs?: number
@@ -71,6 +73,12 @@ export async function withFakeCodexStdioTransport(
   const scriptPath = join(tempDir, 'fake-codex-stdio.mjs')
   const journalPath = join(tempDir, 'journal.jsonl')
   await writeFile(scriptPath, createFakeCodexStdioSource(input))
+  let releaseStartSettlement = (): void => {}
+  const startSettlementBarrier = input.gateStartSettlement
+    ? new Promise<void>((resolvePromise) => {
+        releaseStartSettlement = resolvePromise
+      })
+    : undefined
 
   const transportOptions: CodexStdioTransportOptions = {
     command: process.execPath,
@@ -83,12 +91,18 @@ export async function withFakeCodexStdioTransport(
     closeTimeoutMs: input.closeTimeoutMs ?? 100,
     maxClientRequestIdentities: input.maxClientRequestIdentities,
     maxQueuedObservations: input.maxQueuedObservations,
+    startSettlementBarrier,
   }
   const transport = new CodexStdioTransport(transportOptions)
   const readJournal = createJournalReader(journalPath)
 
   try {
-    await testBody({ transport, tempDir, readJournal })
+    await testBody({
+      transport,
+      tempDir,
+      releaseStartSettlement,
+      readJournal,
+    })
   } finally {
     await transport.close()
     await rm(tempDir, { recursive: true, force: true })

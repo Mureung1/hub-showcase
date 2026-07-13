@@ -483,11 +483,14 @@ test('CodexStdioTransport exposes one coalesced successful-spawn promise before 
 
 test('CodexStdioTransport rejects coalesced start when close wins the spawn race', async () => {
   await withFakeCodexStdioTransport(
-    { scenario: 'hang' },
-    async ({ transport, readJournal }) => {
+    { scenario: 'hang', gateStartSettlement: true },
+    async ({ transport, readJournal, releaseStartSettlement }) => {
       const observations = transport.observations()[Symbol.asyncIterator]()
       const firstStart = transport.start()
       const secondStart = transport.start()
+      const journal = await readJournal({ minimumEntries: 1 })
+      const spawnEntry = journal.find((entry) => entry.kind === 'spawn')
+      assert.ok(spawnEntry && spawnEntry.kind === 'spawn')
       const firstRejection = assert.rejects(
         firstStart,
         isTransportFailure('transport_closed'),
@@ -498,6 +501,7 @@ test('CodexStdioTransport rejects coalesced start when close wins the spawn race
       )
       const firstClose = transport.close()
       const secondClose = transport.close()
+      releaseStartSettlement()
 
       assert.strictEqual(firstStart, secondStart)
       assert.strictEqual(firstClose, secondClose)
@@ -515,13 +519,7 @@ test('CodexStdioTransport rejects coalesced start when close wins the spawn race
         transport.start(),
         isTransportFailure('transport_closed'),
       )
-
-      const journal = await readJournal({ minimumEntries: 0 })
-      const spawnEntry = journal.find((entry) => entry.kind === 'spawn')
-
-      if (spawnEntry?.kind === 'spawn') {
-        assertProcessMissing(spawnEntry.pid)
-      }
+      assertProcessMissing(spawnEntry.pid)
     },
   )
 })

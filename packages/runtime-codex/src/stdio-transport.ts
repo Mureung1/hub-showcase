@@ -21,6 +21,7 @@ export type CodexStdioTransportOptions = {
   closeTimeoutMs?: number
   maxClientRequestIdentities?: number
   maxQueuedObservations?: number
+  startSettlementBarrier?: Promise<void>
 }
 
 export type CodexProtocolErrorResponse = {
@@ -473,7 +474,16 @@ export class CodexStdioTransport {
       }
 
       this.pendingStartReject = rejectStart
-      child.once('spawn', resolveStart)
+      child.once('spawn', () => {
+        const barrier = this.options.startSettlementBarrier
+
+        if (!barrier) {
+          resolveStart()
+          return
+        }
+
+        void barrier.then(resolveStart, rejectStart)
+      })
       child.once('error', () => {
         const error = this.reportTransportLoss(
           'spawn_error',
