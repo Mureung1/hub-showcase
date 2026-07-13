@@ -154,6 +154,97 @@ async function resolveFoodItem(idItem) {
   return { name, nutrients, source }
 }
 
+// 사진 없이 메뉴명(+브랜드)만으로 "표준 1인분" 기준 영양을 바로 추정한다. 사진 경로
+// (IDENTIFICATION_SYSTEM_PROMPT)와 달리 그램 추정이나 식약처 DB 매칭이 필요 없어, AI가 한 번에
+// items+nutrients를 내도록 구조를 단순하게 유지한다.
+const TEXT_ANALYSIS_SYSTEM_PROMPT = `당신은 한국 음식 영양 분석 전문가다. 사용자가 입력한 메뉴명(과 선택적 브랜드)만 보고 그 음식의 "한국 표준 1인분"을 기준으로 영양성분을 추정한다. 수치는 식품의약품안전처 한국식품영양성분 데이터베이스(국가표준식품성분표) 수준의 표준값 기준으로 계산하고(실시간 조회가 아니라 그 DB 수준의 기준값이라는 의미), 통상적인 1인분 현실 범위를 벗어나면 스스로 재검토해 보수적인 값으로 고친다. 브랜드가 주어지면 그 브랜드/프랜차이즈의 실제 메뉴 특성을 반영하고, 없으면 일반적인 표준 메뉴로 추정한다. 메뉴명에 여러 음식이 언급되면(예: "김밥, 라면") 각각 분리해서 items에 담는다. 설명이나 마크다운, 계산 근거 없이 JSON만 반환한다.`
+
+function buildTextAnalysisPrompt(menuName, brand) {
+  const brandLine = brand ? `\n브랜드: ${brand}` : ''
+  return `다음 메뉴의 영양성분을 분석해줘.\n메뉴명: ${menuName}${brandLine}
+
+설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
+{
+  "source": "text",
+  "items": [
+    { "name": "화면에 보여줄 음식 이름", "brand": "브랜드명(없으면 null)", "nutrients": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0 } }
+  ],
+  "total": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0 }
+}`
+}
+
+function isTextAnalysisResult(value) {
+  return (
+    Boolean(value) &&
+    Array.isArray(value.items) &&
+    value.items.length > 0 &&
+    value.items.every((item) => item && typeof item.name === 'string' && isNutrientSet(item.nutrients))
+  )
+}
+
+// OpenRouter가 429(레이트리밋)를 반환하면 지수 백오프로 최대 2회까지 조용히 자동 재시도한다.
+// 그래도 실패하면 err.status(gemini.js가 실어줌)를 보고 호출부가 안내 문구로 전환한다.
+const RATE_LIMIT_RETRY_DELAYS_MS = [1500, 3000]
+
+async function geminiCompleteWithRetry(args) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await geminiComplete(args)
+    } catch (err) {
+      if (err.status === 429 && attempt < RATE_LIMIT_RETRY_DELAYS_MS.length) {
+        await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_RETRY_DELAYS_MS[attempt]))
+        continue
+      }
+      throw err
+    }
+  }
+}
+
+// 사진 경로와 달리 식별→DB조회 2단계가 없다: AI가 한 번에 표준 1인분 기준 items+nutrients를 낸다.
+// 순수 계산 함수라 상태를 직접 건드리지 않고 MealAnalysis를 반환하거나(실패 시) 던진다 —
+// handleAnalyze가 사진 유무로 이 함수와 사진 경로 중 하나를 골라 호출한다.
+async function resolveTextAnalysis(menuName, brand) {
+  let text
+  try {
+    text = await geminiCompleteWithRetry({
+      prompt: buildTextAnalysisPrompt(menuName, brand),
+      system: TEXT_ANALYSIS_SYSTEM_PROMPT,
+    })
+  } catch (err) {
+    console.error('text meal analysis (gemini) failed:', err)
+    if (err.status === 429) {
+      throw new Error('요청이 많아 지연되고 있어요. 잠시 후 다시 시도해주세요.')
+    }
+    throw new Error('분석 요청에 실패했습니다. 잠시 후 다시 시도해주세요.')
+  }
+
+  const raw = parseJsonLoose(text)
+  if (!isTextAnalysisResult(raw)) {
+    throw new Error('분석 결과 형식이 올바르지 않습니다. 다시 시도해주세요.')
+  }
+
+  // AI가 브랜드를 개별 항목에 못 채웠으면 사용자가 입력한 브랜드 힌트로 보완한다.
+  // 브랜드가 있으면 '공식'(사진 경로의 no-DB-match 폴백과 동일한 관례), 없으면 '추정'으로 배지 처리.
+  const items = raw.items.map((item) => {
+    const resolvedBrand = item.brand || brand || null
+    return {
+      name: item.name,
+      brand: resolvedBrand,
+      nutrients: item.nutrients,
+      source: resolvedBrand ? NUTRITION_SOURCE.OFFICIAL : NUTRITION_SOURCE.ESTIMATED,
+    }
+  })
+  // AI가 함께 낸 total은 신뢰하지 않고 사진 경로와 동일하게 클라이언트에서 직접 합산한다.
+  const total = sumNutrients(items)
+  const parsed = { source: 'text', items, total }
+
+  if (!isMealAnalysis(parsed)) {
+    throw new Error('영양 계산 결과 형식이 올바르지 않습니다.')
+  }
+
+  return parsed
+}
+
 const SEX_PROMPT_OPTIONS = [
   { key: 'male', label: '남성' },
   { key: 'female', label: '여성' },
@@ -224,42 +315,50 @@ export default function Analyze() {
   // 방금 이 화면에서 저장까지 마친 결과(로컬 상태). 홈을 떠나면 사라져서, 다시 돌아와도 카드가 재표시되지 않는다.
   const [lastAnalysis, setLastAnalysis] = useState(null)
 
+  // 사진이 있으면 기존 식별→식약처DB조회 경로, 없으면 메뉴 이름만으로 바로 추정하는 텍스트 경로를 탄다.
+  // 최소한 사진 또는 메뉴 이름 중 하나는 있어야 한다.
   async function handleAnalyze() {
     setError('')
     setPendingAnalysis(null)
 
-    if (!photo) {
-      setError('사진을 먼저 업로드해주세요.')
+    const trimmedMenuName = menuName.trim()
+    if (!photo && !trimmedMenuName) {
+      setError('사진을 업로드하거나 메뉴 이름을 입력해주세요.')
       return
     }
 
     setLoading(true)
     try {
-      const prompt = buildIdentificationPrompt(menuName, brand)
-      const text = await geminiComplete({
-        prompt,
-        system: IDENTIFICATION_SYSTEM_PROMPT,
-        imageBase64: photo.base64,
-        mimeType: photo.mimeType,
-      })
-      const identified = parseJsonLoose(text)
+      if (photo) {
+        const prompt = buildIdentificationPrompt(menuName, brand)
+        const text = await geminiComplete({
+          prompt,
+          system: IDENTIFICATION_SYSTEM_PROMPT,
+          imageBase64: photo.base64,
+          mimeType: photo.mimeType,
+        })
+        const identified = parseJsonLoose(text)
 
-      if (!isIdentificationResult(identified)) {
-        throw new Error('분석 결과 형식이 올바르지 않습니다.')
+        if (!isIdentificationResult(identified)) {
+          throw new Error('분석 결과 형식이 올바르지 않습니다.')
+        }
+
+        const items = await Promise.all(identified.items.map(resolveFoodItem))
+        const total = sumNutrients(items)
+        const parsed = { items, total }
+
+        if (!isMealAnalysis(parsed)) {
+          throw new Error('영양 계산 결과 형식이 올바르지 않습니다.')
+        }
+
+        setPendingAnalysis(parsed)
+      } else {
+        const parsed = await resolveTextAnalysis(trimmedMenuName, brand.trim())
+        setPendingAnalysis(parsed)
       }
-
-      const items = await Promise.all(identified.items.map(resolveFoodItem))
-      const total = sumNutrients(items)
-      const parsed = { items, total }
-
-      if (!isMealAnalysis(parsed)) {
-        throw new Error('영양 계산 결과 형식이 올바르지 않습니다.')
-      }
-
-      setPendingAnalysis(parsed)
     } catch (err) {
       console.error('meal analysis failed:', err)
-      setError('분석에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      setError(err.message || '분석에 실패했습니다. 잠시 후 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }
@@ -300,7 +399,12 @@ export default function Analyze() {
         <PhotoUpload onChange={setPhoto} />
 
         <div style={{ marginTop: spacing.lg }}>
-          <TextField label="메뉴 이름 (선택)" id="menuName" value={menuName} onChange={(e) => setMenuName(e.target.value)} />
+          <TextField
+            label="메뉴 이름(사진 없이 분석 가능)"
+            id="menuName"
+            value={menuName}
+            onChange={(e) => setMenuName(e.target.value)}
+          />
           <TextField label="브랜드 (선택)" id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
         </div>
 
@@ -314,10 +418,10 @@ export default function Analyze() {
             {loading
               ? '분석 중...'
               : pendingAnalysis
-                ? '다른 사진으로 다시 분석'
-                : error && photo
+                ? '다시 분석하기'
+                : error
                   ? '다시 시도'
-                  : '촬영 후 분석하기'}
+                  : '분석하기'}
           </AppButton>
           {!loading && pendingAnalysis && (
             <span style={{ color: colors.info, fontSize: font.size.sm, fontWeight: 700 }}>분석 완료</span>

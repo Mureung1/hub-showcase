@@ -93,6 +93,7 @@ export default function PhotoUpload({ onChange, maxSize = 1024 }) {
           <>
             <span style={{ fontSize: 48 }}>📷</span>
             <span style={{ color: colors.textSub, fontSize: font.size.md, fontWeight: 600 }}>메뉴를 화면에 담고 촬영하세요</span>
+            <span style={{ color: colors.muted, fontSize: font.size.xs }}>사진 없이 분석 가능</span>
           </>
         )}
       </div>

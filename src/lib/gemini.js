@@ -15,7 +15,9 @@ export async function geminiComplete({ prompt, system, imageBase64, mimeType } =
   const data = await res.json().catch(() => null)
 
   if (!res.ok) {
-    throw new Error(data?.error || `Gemini request failed (${res.status})`)
+    const err = new Error(data?.error || `Gemini request failed (${res.status})`)
+    err.status = res.status
+    throw err
   }
 
   return data?.text ?? ''
