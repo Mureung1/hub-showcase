@@ -33,7 +33,7 @@ const futureFeatures = [
 ];
 
 const resourceLinks = [
-  ["기획서", "./docs/plan.md", "문제 정의, 사용자 시나리오, 화면 구조"],
+  ["기획서", "./docs/plans/plan.md", "문제 정의, 사용자 시나리오, 화면 구조"],
   ["프로토타입", "./prototype/index.html", "Repository 입력 기반 동작 흐름"],
   ["GitHub Wiki", "https://github.com/SubJeeLee/hub/wiki", "제출용 기획 문서"],
 ];

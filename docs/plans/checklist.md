@@ -14,7 +14,7 @@ PtoP의 핵심 흐름인 "Git Repository 분석 방법 학습 → 프로젝트 �
 - [x] commit log에서 사용자의 작업 흐름을 파악하는 방법 정리하기
 - [x] PR, Issue, commit message를 분석하면 얻을 수 있는 정보 정리하기
 - [x] 분석 결과를 프로젝트 목적, 기술 스택, 핵심 기능, 역할 후보로 나누는 기준 정리하기
-- [x] 학습 내용을 docs/repo-analysis-study.md에 정리하기
+- [x] 학습 내용을 docs/research/repo-analysis-study.md에 정리하기
 
 ## 사전 학습: AI 기반 Repository 분석 전략
 
@@ -30,7 +30,7 @@ PtoP의 핵심 흐름인 "Git Repository 분석 방법 학습 → 프로젝트 �
 - [ ] 분석 결과의 신뢰도를 높이기 위한 근거 표시 방식 정리하기
 - [ ] API 비용을 줄이기 위한 캐싱 또는 단계별 분석 전략 조사하기
 - [ ] 대용량 Repository 분석 실패 시 fallback 흐름 정리하기
-- [ ] 조사 내용을 docs/repo-analysis-study.md에 추가하기
+- [ ] 조사 내용을 docs/research/repo-analysis-study.md에 추가하기
 
 ## 핵심 기능 1: 프로젝트 분석 기능
 
@@ -85,7 +85,7 @@ PtoP의 핵심 흐름인 "Git Repository 분석 방법 학습 → 프로젝트 �
 - [x] commit log가 부족한 프로젝트 분석 케이스 작성하기
 - [x] 분석 결과에서 회고 초안을 생성하는 케이스 작성하기
 - [x] Markdown 복사 케이스 작성하기
-- [x] 테스트 케이스를 docs/test-cases.md에 정리하기
+- [x] 테스트 케이스를 docs/testing/test-cases.md에 정리하기
 - [ ] 토큰 한계를 넘는 큰 Repository 입력 케이스 작성하기
 - [ ] 분석 제외 파일이 포함된 Repository 케이스 작성하기
 - [ ] AI가 역할을 부정확하게 추론할 수 있는 케이스 작성하기
