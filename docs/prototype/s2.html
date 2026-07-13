@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>S2 알림 리스트 (홈) — 프로토타입</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body {
+    margin: 0;
+    padding: var(--space-5) 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  .frame {
+    width: var(--frame-w);
+  }
+
+  .hero {
+    background:
+      radial-gradient(120% 90% at 85% 0%, var(--hero-c) 0%, transparent 55%),
+      radial-gradient(140% 110% at 15% 10%, var(--hero-b) 0%, transparent 60%),
+      linear-gradient(180deg, var(--hero-a) 0%, var(--bg) 100%);
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .hero-date {
+    font-size: var(--fs-caption);
+    color: var(--text-1);
+    opacity: .8;
+    margin-bottom: var(--space-2);
+  }
+
+  .hero-greeting {
+    font-size: var(--fs-display);
+    color: var(--text-1);
+    margin-bottom: var(--space-3);
+  }
+
+  .hero-urgent {
+    font-size: var(--fs-body);
+    color: var(--text-1);
+    opacity: .9;
+  }
+
+  .hero-urgent .count {
+    font-weight: 700;
+  }
+
+  /* ========== 알림 카드 ========== */
+  .cards { padding: var(--space-1) var(--space-4) var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
+  }
+  .card-top { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+  .dday {
+    font-size: var(--fs-caption); font-weight: 700;
+    padding: var(--pad-badge); border-radius: var(--radius-badge);
+    background: var(--accent-dim); color: var(--accent);
+  }
+  .dday.urgent { background: var(--warn-dim); color: var(--warn); }
+  .src { margin-left: auto; font-size: var(--fs-caption); color: var(--text-3); font-weight: 500; }
+  .card-title { font-size: var(--fs-title); font-weight: 600; color: var(--text-1); letter-spacing: -0.01em; line-height: 1.45; }
+  .card-sum { font-size: var(--fs-body); color: var(--text-2); line-height: 1.6; margin-top: var(--space-2); }
+  .card-kw { display: inline-block; margin-top: var(--space-3); font-size: var(--fs-caption); color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <section class="hero">
+      <div class="hero-date">7월 13일 (월)</div>
+      <div class="hero-greeting">두희님, 안녕하세요</div>
+      <div class="hero-urgent">마감 임박 <strong class="count">3</strong>건, 놓치지 마세요</div>
+    </section>
+    <div class="cards">
+      <div class="card">
+        <div class="card-top"><span class="dday urgent">D-2 · 중요</span><span class="src">포털</span></div>
+        <div class="card-title">2026-2학기 국가장학금 1차 신청 마감</div>
+        <div class="card-sum">7월 12일(일) 18:00 마감. 신입생도 1차 신청 대상 — 놓치면 2차는 성적 기준이 붙어요.</div>
+        <span class="card-kw"># 장학금</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
