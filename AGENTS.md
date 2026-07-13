@@ -42,6 +42,6 @@ PtoP(Project to Portfolio)는 GitHub Repository를 분석해 대학생 개발자
 - Agent RULES 학습: `docs/agents/agent-rules-study.md`
 - 디자인 시스템: `docs/design/design-system.md`
 - 디자인 Skill: `docs/design/ptop-design-skill.md`
-- 개발 Task: `docs/plans/day5-development-tasks.md`
+- 개발 Task: `docs/plans/development-tasks.md`
 - Repository 분석 학습 노트: `docs/research/repo-analysis-study.md`
 - 테스트 케이스: `docs/testing/test-cases.md`

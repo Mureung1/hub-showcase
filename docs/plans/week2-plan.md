@@ -16,7 +16,7 @@
 ## 관리 대시보드
 
 - GitHub Issues: https://github.com/SubJeeLee/hub/issues
-- 기존 개발 Task 문서: `docs/plans/day5-development-tasks.md`
+- 기존 개발 Task 문서: `docs/plans/development-tasks.md`
 - 계획 수립 Agent: `docs/agents/week-planning-agent.md`
 - 기능 검증 Agent: `docs/agents/feature-verification-agent.md`
 

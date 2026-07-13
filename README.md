@@ -87,7 +87,7 @@ http://127.0.0.1:4177/prototype/index.html
 - [프로젝트 기록](./docs/records/agent-record.md)
 - [개발 가이드](./docs/development/development-guide.md)
 - [Day4 작업 계획](./docs/plans/day4-plan.md)
-- [Day5 개발 Task 및 백로그 계획](./docs/plans/day5-development-tasks.md)
+- [전체 개발 일정 및 백로그 계획](./docs/plans/development-tasks.md)
 - [Week2 주간 계획](./docs/plans/week2-plan.md)
 - [Week Planning Agent](./docs/agents/week-planning-agent.md)
 - [Feature Verification Agent](./docs/agents/feature-verification-agent.md)
