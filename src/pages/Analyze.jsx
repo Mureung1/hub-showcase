@@ -375,7 +375,8 @@ export default function Analyze() {
 
     // 이번 분석에서 나온 음식 전체를 하나의 끼니 기록으로 오늘 식단 목록(mealStore)에 추가
     // (음식이 1개면 단일 메뉴, 2개 이상이면 한 끼 세트로 식단 탭에서 구분해 보여준다)
-    addTodayMeal(parsed.items, mealType)
+    // effectiveRecommended를 함께 넘겨 오늘 날짜 DailyRecord의 recommended 스냅샷도 같이 남긴다.
+    addTodayMeal(parsed.items, mealType, effectiveRecommended)
 
     // user는 게스트 계정 자동 발급으로 항상 존재한다. effectiveRecommended는 실제 프로필이 없으면
     // 0을 반환해(calcAchievementPercent 참고) 달성률만 0%로 남고 저장 자체는 그대로 진행된다.

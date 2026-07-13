@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { get, set, remove } from '../lib/storage.js'
-import { addMealRecord, getMeals, removeMealRecord, sumMealRecordsNutrients } from '../lib/mealStore.js'
+import { getMeals, removeMealRecord, sumMealRecordsNutrients } from '../lib/mealStore.js'
+import { upsertMeal as upsertDailyMeal } from '../lib/dailyRecord.js'
 import { calcAssumedRecommendedNutrients } from '../lib/nutrition.js'
 import { toDateKey } from '../lib/records.js'
 
@@ -117,13 +118,17 @@ export function UserProvider({ children }) {
   )
 
   // items: 한 번의 분석에서 나온 음식 전체(1개면 단일 메뉴, 2개 이상이면 한 끼 세트) — 하나의 끼니 기록으로 저장한다.
+  // recommended: 저장 시점의 권장 섭취량(그날 DailyRecord 스냅샷용, 없으면 null로 넘겨도 됨).
+  // 실제 추가는 dailyRecord.upsertMeal에 위임한다(mealStore 추가 + recommended 스냅샷을 한 번에 처리) —
+  // 여기서 mealStore를 따로 또 건드리면 같은 끼니가 두 번 추가되므로 반드시 이 한 곳만 거쳐야 한다.
   const addTodayMeal = useCallback(
-    (items, mealType) => {
+    (items, mealType, recommended) => {
       if (!currentUserId) return null
       const dateKey = toDateKey(new Date())
-      const entry = addMealRecord(currentUserId, dateKey, { items, mealType })
-      setTodayMeals(getMeals(currentUserId, dateKey))
-      return entry
+      const record = upsertDailyMeal(currentUserId, dateKey, { items, mealType }, recommended)
+      if (!record) return null
+      setTodayMeals(record.meals)
+      return record.meals[record.meals.length - 1] ?? null
     },
     [currentUserId],
   )
