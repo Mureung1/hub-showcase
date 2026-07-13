@@ -1,1 +1,3 @@
-https://app.notion.com/p/3962c262321b80fc8976e0a3143df9a9?pvs=12
+* 기획서 링크: https://app.notion.com/p/3962c262321b80fc8976e0a3143df9a9
+* 개발 Task 링크: https://app.notion.com/p/Task-3992c262321b80b69fabefcf8c7b2009
+* 2주 개발 일정표 링크 : https://app.notion.com/p/Task-39c2c262321b8001b7e9c6a7d65f4847
