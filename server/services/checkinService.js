@@ -1,32 +1,62 @@
-import { readFile, writeFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
-import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { getSupabaseClient } from '../lib/supabase.js'
+import { createSummary } from './summaryService.js'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const DATA_FILE = path.join(__dirname, '..', 'data', 'checkins.json')
-
-async function readAll() {
-  const raw = await readFile(DATA_FILE, 'utf-8')
-  return JSON.parse(raw)
-}
-
-async function writeAll(checkins) {
-  await writeFile(DATA_FILE, JSON.stringify(checkins, null, 2))
+function toCheckin(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    rawText: row.raw_text,
+    emotion: row.emotion,
+    cause: row.cause,
+    action: row.action,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
 }
 
 export async function getCheckins() {
-  return readAll()
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('checkins')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    const serviceError = new Error('저장된 기록을 불러오지 못했습니다.')
+    serviceError.status = 503
+    serviceError.cause = error
+    throw serviceError
+  }
+
+  return data.map(toCheckin)
 }
 
 export async function createCheckin(entry) {
-  const checkins = await readAll()
-  const newCheckin = {
-    id: randomUUID(),
-    createdAt: new Date().toISOString(),
-    ...entry,
+  const rawText = entry.rawText || entry.raw_text || entry.text
+  const needsSummary = !entry.emotion || !entry.cause || !entry.action
+  const generatedSummary = needsSummary ? await createSummary(rawText) : {}
+  const summary = {
+    emotion: entry.emotion || generatedSummary.emotion,
+    cause: entry.cause || generatedSummary.cause,
+    action: entry.action || generatedSummary.action,
   }
-  checkins.push(newCheckin)
-  await writeAll(checkins)
-  return newCheckin
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('checkins')
+    .insert({
+      user_id: entry.userId || entry.user_id || null,
+      raw_text: rawText,
+      ...summary,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    const serviceError = new Error('기록을 저장하지 못했습니다.')
+    serviceError.status = 503
+    serviceError.cause = error
+    throw serviceError
+  }
+
+  return toCheckin(data)
 }

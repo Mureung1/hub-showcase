@@ -11,7 +11,7 @@
 
 - **Client**: React (Vite) — `client/`
 - **Server**: Express — `server/`
-- **DB**: 일단 JSON 파일(`server/data/*.json`)로 저장. 데이터 늘어나면 SQLite 전환 검토.
+- **DB**: Supabase `checkins` 테이블. React는 DB에 직접 접근하지 않고 Express를 거친다.
 
 ## 디자인 시스템
 
@@ -67,4 +67,4 @@ npm run dev            # client(5173) + server(3001) 동시 실행 (concurrently
 - `client/src/components` — 재사용 가능한 UI 컴포넌트
 - `client/src/pages` — 화면 단위 컴포넌트 (라우팅 대상)
 - `server/routes` — Express 라우터 (엔드포인트 정의)
-- `server/services` — 비즈니스 로직 / 데이터 접근 (JSON 파일 읽기·쓰기 등)
+- `server/services` — 비즈니스 로직 / Supabase 데이터 접근
