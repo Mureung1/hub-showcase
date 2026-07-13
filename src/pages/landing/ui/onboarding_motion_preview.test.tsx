@@ -16,9 +16,16 @@ vi.mock('gsap', () => ({
   },
 }));
 vi.mock('gsap/ScrollTrigger', () => ({ ScrollTrigger: {} }));
-vi.mock('@gsap/react', () => ({
-  useGSAP: (setup: () => void) => setup(),
-}));
+vi.mock('@gsap/react', async () => {
+  const { useLayoutEffect } =
+    await vi.importActual<typeof import('react')>('react');
+
+  function useGSAP(setup: () => void | (() => void)) {
+    useLayoutEffect(() => setup(), [setup]);
+  }
+
+  return { useGSAP };
+});
 
 import { OnboardingMotionPreview } from './onboarding_motion_preview';
 
@@ -44,5 +51,32 @@ describe('OnboardingMotionPreview', () => {
     expect(screen.getByText('팀 프로젝트 앱 첫 화면 참고')).not.toBeNull();
     expect(screen.getByText('연결된 저장물 3개')).not.toBeNull();
     expect(gsapMocks.matchMedia).not.toHaveBeenCalled();
+  });
+
+  it('creates one desktop media timeline without a mobile pin timeline', () => {
+    const add = vi.fn();
+    const revert = vi.fn();
+    gsapMocks.matchMedia.mockReturnValue({ add, revert });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockReturnValue({
+        addEventListener: vi.fn(),
+        addListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+        matches: false,
+        media: '(prefers-reduced-motion: reduce)',
+        onchange: null,
+        removeEventListener: vi.fn(),
+        removeListener: vi.fn(),
+      }),
+    });
+
+    render(<OnboardingMotionPreview />);
+
+    expect(add).toHaveBeenCalledTimes(1);
+    expect(add).toHaveBeenCalledWith(
+      '(min-width: 768px)',
+      expect.any(Function)
+    );
   });
 });

@@ -335,6 +335,15 @@
   background: var(--color-canvas);
 }
 
+.motion-query,
+.motion-source-card,
+.motion-connector,
+.motion-pack {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
 .motion-stage__topline {
   display: flex;
   justify-content: space-between;
@@ -444,7 +453,13 @@
   }
 
   .motion-chapter {
+    height: auto;
     min-height: auto;
+    align-content: start;
+  }
+
+  .motion-stage {
+    position: static;
   }
 
   .motion-source-card {
@@ -522,5 +537,22 @@
   .landing-section,
   .motion-chapter {
     padding: var(--layout-section-gap-desktop) 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page {
+    --motion-duration-fast: 0.01ms;
+    --motion-duration-standard: 0.01ms;
+
+    scroll-behavior: auto;
+  }
+
+  .landing-page *,
+  .landing-page *::before,
+  .landing-page *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
   }
 }

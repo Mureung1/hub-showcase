@@ -28,7 +28,7 @@ export function OnboardingMotionPreview() {
         const timeline = gsap.timeline({
           scrollTrigger: {
             anticipatePin: 1,
-            end: '+=140%',
+            end: '+=100%',
             invalidateOnRefresh: true,
             pin: true,
             scrub: 0.65,
@@ -41,69 +41,28 @@ export function OnboardingMotionPreview() {
           .from('.motion-query', {
             autoAlpha: 0,
             duration: 0.2,
-            y: 24,
+            y: 12,
           })
           .from(
             '.motion-source-card',
             {
               autoAlpha: 0,
-              rotation: (index) => [-6, 3, 7][index] ?? 0,
-              stagger: 0.08,
-              x: (index) => [-120, 0, 120][index] ?? 0,
-              y: 70,
+              duration: 0.2,
+              stagger: 0.06,
+              y: 12,
             },
-            0.1
+            0.08
           )
-          .to('.motion-source-card', {
-            duration: 0.35,
-            rotation: 0,
-            stagger: 0.06,
-            x: 0,
-            y: 0,
-          })
           .from('.motion-connector', {
+            autoAlpha: 0,
+            duration: 0.18,
+            stagger: 0.05,
+            y: 8,
+          })
+          .from('.motion-pack', {
             autoAlpha: 0,
             duration: 0.2,
-            stagger: 0.06,
             y: 12,
-          })
-          .from('.motion-pack', {
-            autoAlpha: 0,
-            duration: 0.25,
-            scale: 0.96,
-          });
-      });
-
-      media.add('(max-width: 767px)', () => {
-        gsap
-          .timeline({
-            defaults: { ease: 'power2.out' },
-            scrollTrigger: {
-              once: true,
-              start: 'top 78%',
-              trigger: root,
-            },
-          })
-          .from('.motion-query', {
-            autoAlpha: 0,
-            duration: 0.35,
-            y: 16,
-          })
-          .from('.motion-source-card', {
-            autoAlpha: 0,
-            duration: 0.35,
-            stagger: 0.12,
-            y: 20,
-          })
-          .from('.motion-connector', {
-            autoAlpha: 0,
-            duration: 0.25,
-            stagger: 0.08,
-          })
-          .from('.motion-pack', {
-            autoAlpha: 0,
-            duration: 0.35,
-            y: 16,
           });
       });
 
