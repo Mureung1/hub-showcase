@@ -7,10 +7,10 @@
 | TSK-003 | Week 2 (July 13-17) | FE | VS-2: Query Pipeline | Build natural language query input component and manage state/props | React | P0 | Human | Todo |
 | TSK-004 | Week 2 (July 13-17) | FE | VS-2: Query Pipeline | Render structured responses fetched from mockup BE in bento grid | React, Fetch API | P0 | Human | Todo |
 | TSK-005 | Week 2 (July 13-17) | DB | VS-2: Query Pipeline | Design mock JSON schema for structured response data payload | JSON | P1 | Agent | Todo |
+| TSK-008 | Week 2 (July 13-17) | DB | VS-3: Type Safety & DB | Initialize Supabase PostgreSQL database for user library CRUD operations | Supabase, PostgreSQL | P0 | Human | Todo |
+| TSK-009 | Week 2 (July 13-17) | BE | VS-3: Type Safety & DB | Implement Express controllers for Supabase CRUD operations | Express, Supabase | P0 | Agent | Todo |
 | TSK-006 | Week 3 (July 20-24) | FE | VS-3: Type Safety & DB | Migrate FE components to TypeScript with strict 'no-any' constraints | TypeScript, React | P1 | Human | Todo |
 | TSK-007 | Week 3 (July 20-24) | BE | VS-3: Type Safety & DB | Migrate BE endpoints to TypeScript and define strict request/response types | TypeScript, Express | P1 | Agent | Todo |
-| TSK-008 | Week 3 (July 20-24) | DB | VS-3: Type Safety & DB | Initialize Supabase PostgreSQL database for user library CRUD operations | Supabase, PostgreSQL | P1 | Human | Todo |
-| TSK-009 | Week 3 (July 20-24) | BE | VS-3: Type Safety & DB | Implement Express controllers for Supabase CRUD operations | Express, Supabase | P1 | Agent | Todo |
 | TSK-010 | Week 3 (July 20-24) | FE | VS-4: TDD & Tests | Setup Jest/React Testing Library and write unit tests for query component | Jest, RTL | P1 | Human | Todo |
 | TSK-011 | Week 3 (July 20-24) | BE | VS-4: TDD & Tests | Implement unit tests for Express endpoints using Supertest and Jest | Jest, Supertest | P1 | Agent | Todo |
 | TSK-012 | Week 4 (July 27-30) | BE | VS-5: Gemini Integration | Replace mock endpoint with live Google Gemini API connection | Gemini API, Node.js | P0 | Agent | Todo |
