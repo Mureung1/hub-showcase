@@ -1,4 +1,4 @@
-# 환경 단계 아키텍처
+# 현재와 목표 아키텍처
 
 ## 현재 경계
 
@@ -47,3 +47,45 @@ Spring Boot
 k6는 현재 health smoke만 수행하고 API 계약·부하 특성 검증은 비즈니스 API 구현 후
 추가한다. 도메인 메트릭은 기능이 생긴 뒤 낮은 cardinality로 추가하며 측정 전
 수치를 문서 성과로 주장하지 않는다.
+
+## 승인된 목표 흐름
+
+아래 구조는 [서비스 완성 roadmap](roadmap.md)의 구현 목표이며 현재 구현 완료를
+뜻하지 않는다.
+
+```text
+Browser
+  -> Next.js same-origin proxy
+    -> API role
+      -> PostgreSQL: session, draft, job, outbox, result, room, vote
+      -> Outbox relay -> Redis Streams
+        -> Worker role
+          -> Naver search port -> Mock or NAVER API HUB adapter
+          -> LLM port -> Mock or OpenAI Responses adapter
+          -> PostgreSQL result and processing state
+      -> DB snapshot + Redis Pub/Sub -> SSE
+```
+
+하나의 Java 17 Spring Boot artifact가 `api`, `worker`, `all` 역할을 제공한다. 로컬은
+`all`을 사용하고 운영용 Compose는 같은 image를 API와 Worker로 분리한다. 프런트는
+별도 Next.js runtime이지만 브라우저 관점에서는 same-origin을 유지한다. 세부 결정은
+[ADR-0006](adr/ADR-0006-api-worker-outbox-events.md)과
+[ADR-0008](adr/ADR-0008-frontend-same-origin-boundary.md)을 따른다.
+
+## 데이터와 전달 정합성 목표
+
+- Job과 outbox event는 한 PostgreSQL transaction에 저장한다.
+- relay와 Worker는 at-least-once 전달을 전제로 모든 처리 단계를 멱등하게 만든다.
+- Worker는 DB commit 뒤에만 Streams message를 ACK한다.
+- 제한 재시도 뒤 처리할 수 없는 event는 DLQ에 격리하고 Runbook과 metric으로
+  연결한다.
+- DB snapshot이 사용자 상태의 정본이며 Redis Pub/Sub은 SSE의 일시적 fan-out이다.
+- 투표의 최종 정합성은 DB unique constraint와 transaction으로 보장하며 Redis
+  집계는 DB에서 재계산할 수 있어야 한다.
+
+## Provider와 실행 환경 목표
+
+application은 Naver·OpenAI DTO가 아니라 검색·조건 추출·설명 생성 port에 의존한다.
+`local`, `test`, `load`와 필수 CI는 Mock adapter만 허용한다. 실제 adapter는
+`staging-live` GitHub Environment의 제한된 예약·수동 검증에서만 사용한다. 약관,
+비밀과 비용 경계는 [ADR-0007](adr/ADR-0007-provider-and-live-boundary.md)을 따른다.

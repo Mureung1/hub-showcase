@@ -8,6 +8,7 @@
 - [개발 환경](development-environment.md): Java 17, 실행 명령, 프로필, 포트
 - [아키텍처](architecture.md): 현재 모듈과 인프라 책임 경계
 - [계약](contracts.md): 공개 API·이벤트·프롬프트 계약의 구현 상태
+- [서비스 완성 Roadmap](roadmap.md): PP-001~PP-036 Task DAG와 release gate
 - [문서화 표준](standards/documentation.md): 기록 조건, 필드, 검증과 보안
 - [GitHub Flow](standards/github-flow.md): 브랜치·PR·병합·보호 규칙
 
@@ -18,6 +19,11 @@
 - [ADR-0001 Java 17 기술 기준](adr/ADR-0001-java17-baseline.md)
 - [ADR-0002 Compose와 Testcontainers의 책임 경계](adr/ADR-0002-compose-testcontainers-boundary.md)
 - [ADR-0003 GitHub Flow와 문서 추적성](adr/ADR-0003-github-flow-documentation-traceability.md)
+- [ADR-0004 완성형 MVP 경계와 조건 확인 후 추천 시작](adr/ADR-0004-service-boundary.md)
+- [ADR-0005 익명 세션과 공유·주최자 capability](adr/ADR-0005-anonymous-session-room-capability.md)
+- [ADR-0006 API·Worker와 transactional outbox](adr/ADR-0006-api-worker-outbox-events.md)
+- [ADR-0007 Provider 중립 core와 staging-live 경계](adr/ADR-0007-provider-and-live-boundary.md)
+- [ADR-0008 Next.js와 same-origin 경계](adr/ADR-0008-frontend-same-origin-boundary.md)
 - [TS-0001 WireMock 의존성 충돌](troubleshooting/TS-0001-wiremock-dependency-conflict.md)
 - [TS-0002 Testcontainers PostgreSQL tag와 digest 호환성](troubleshooting/TS-0002-testcontainers-digest-compatibility.md)
 - [TS-0003 Dev Container Yarn APT 공개키](troubleshooting/TS-0003-devcontainer-yarn-apt-key.md)
@@ -26,6 +32,70 @@
 - [TS-0006 Spring Boot 테스트 Prometheus observability](troubleshooting/TS-0006-spring-boot-actuator-access.md)
 - [TS-0007 비대화형 k6 권한](troubleshooting/TS-0007-k6-non-root-script-permission.md)
 - [TS-0008 GitHub Actions Gitleaks PR 권한](troubleshooting/TS-0008-gitleaks-pr-token-permission.md)
+
+## 서비스 완성 Task Work Record
+
+- [WI-0002 서비스 완성 Task 백로그 게시](work-records/WI-0002-service-completion-backlog.md)
+
+### M0 제품·계약·아키텍처
+
+- [WI-0003 PP-001 서비스 경계와 사용자 여정](work-records/WI-0003-service-boundary-and-user-journey.md)
+- [WI-0004 PP-002 HTTP·보안·오류·멱등성 계약](work-records/WI-0004-http-security-error-idempotency-contract.md)
+- [WI-0005 PP-003 도메인·상태·점수·보존 정책](work-records/WI-0005-domain-status-scoring-retention-policy.md)
+- [WI-0006 PP-004 API·Worker·Outbox·Streams 구조](work-records/WI-0006-api-worker-outbox-streams-architecture.md)
+- [WI-0007 PP-005 Provider·실제 API 검증 정책](work-records/WI-0007-provider-and-live-validation-policy.md)
+- [WI-0008 PP-006 프런트 UX·접근성 명세](work-records/WI-0008-frontend-ux-accessibility-specification.md)
+
+### M1 Backend 도메인 기반과 익명 보안
+
+- [WI-0009 PP-007 Flyway·Domain·JPA 경계](work-records/WI-0009-flyway-domain-jpa-boundary.md)
+- [WI-0010 PP-008 익명 session·capability·CSRF](work-records/WI-0010-anonymous-session-capability-csrf-problem-details.md)
+
+### M2 조건 Draft와 비동기 Job 기반
+
+- [WI-0011 PP-009 조건 추출 port·schema·Eval](work-records/WI-0011-condition-extraction-port-schema-eval.md)
+- [WI-0012 PP-010 추천 Draft API](work-records/WI-0012-recommendation-draft-api.md)
+- [WI-0013 PP-011 추천 Job 202·Outbox·멱등성](work-records/WI-0013-recommendation-job-202-outbox-idempotency.md)
+- [WI-0014 PP-012 Streams relay·retry·DLQ](work-records/WI-0014-streams-relay-retry-dlq.md)
+
+### M3 추천 Pipeline
+
+- [WI-0015 PP-013 NAVER API HUB adapter](work-records/WI-0015-naver-api-hub-adapter.md)
+- [WI-0016 PP-014 후보 정규화·중복 제거·근거](work-records/WI-0016-candidate-normalization-deduplication-evidence.md)
+- [WI-0017 PP-015 결정론적 점수·Top 3·완화](work-records/WI-0017-deterministic-scoring-top3-relaxation.md)
+- [WI-0018 PP-016 근거 기반 이유와 fallback](work-records/WI-0018-grounded-reason-fallback.md)
+- [WI-0019 PP-017 Worker pipeline·복구](work-records/WI-0019-worker-pipeline-recovery.md)
+- [WI-0020 PP-018 추천 상태·결과 API](work-records/WI-0020-recommendation-status-result-api.md)
+- [WI-0021 PP-019 추천 SSE](work-records/WI-0021-recommendation-sse.md)
+
+### M4 추천 Frontend
+
+- [WI-0022 PP-020 Next.js frontend 기반](work-records/WI-0022-next-frontend-foundation.md)
+- [WI-0023 PP-021 홈·조건 Draft UI](work-records/WI-0023-home-draft-ui.md)
+- [WI-0024 PP-022 진행·결과·공유 UI](work-records/WI-0024-progress-result-share-ui.md)
+
+### M5 공유방·투표·최종 확정
+
+- [WI-0025 PP-023 방 생성·조회·만료](work-records/WI-0025-room-creation-read-expiry.md)
+- [WI-0026 PP-024 투표 변경·삭제·동시성](work-records/WI-0026-vote-change-delete-concurrency.md)
+- [WI-0027 PP-025 방 SSE·최종 확정](work-records/WI-0027-room-sse-finalization.md)
+- [WI-0028 PP-026 참여자·주최자 방 UI](work-records/WI-0028-room-frontend.md)
+- [WI-0029 PP-027 allowlist 제품 event](work-records/WI-0029-allowlisted-analytics.md)
+
+### M6 실제 Adapter·보안·운영성
+
+- [WI-0030 PP-028 Cache·rate limit·quota](work-records/WI-0030-rate-quota-cache.md)
+- [WI-0031 PP-029 실제 provider adapter](work-records/WI-0031-live-provider-adapters.md)
+- [WI-0032 PP-030 보안·개인정보·수명](work-records/WI-0032-security-privacy-lifecycle.md)
+- [WI-0033 PP-031 관측성·Runbook](work-records/WI-0033-observability-runbooks.md)
+
+### M7 시스템 검증·Release
+
+- [WI-0034 PP-032 전체 테스트 matrix](work-records/WI-0034-full-test-matrix.md)
+- [WI-0035 PP-033 staging-live workflow](work-records/WI-0035-staging-live-workflow.md)
+- [WI-0036 PP-034 k6 부하 실험](work-records/WI-0036-k6-load-experiments.md)
+- [WI-0037 PP-035 Java 17 운영 packaging](work-records/WI-0037-java17-production-packaging.md)
+- [WI-0038 PP-036 최종 release Case Study](work-records/WI-0038-final-release-case-study.md)
 
 ## 문제 해결·증거 문서
 
