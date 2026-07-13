@@ -18,6 +18,7 @@ describe("App", () => {
     expect(screen.getByText("입지 점수")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "다른 상권과 비교" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /관평동 3D 장소/ })).toBeInTheDocument();
+    expect(screen.getByText("서울 상권분석 공식 데이터를 불러오는 중입니다.")).toBeInTheDocument();
   });
 
   it("updates the selected candidate and opens the major analysis dialogs", () => {

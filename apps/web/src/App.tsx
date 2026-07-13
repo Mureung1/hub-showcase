@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronRight,
   CircleHelp,
-  Coffee,
   FileText,
   Layers3,
   LocateFixed,
@@ -14,8 +13,6 @@ import {
   Plus,
   ScanLine,
   Search,
-  Store,
-  Users,
   X,
 } from "lucide-react";
 import type { StyleSpecification } from "maplibre-gl";
@@ -25,16 +22,25 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import { SceneWorkspace } from "./components/SceneWorkspace";
 import {
-  loadMarketAnalysis,
-  loadMarketComparison,
-  type AnalysisSource,
-  type MarketAnalysis,
-} from "./marketAnalysis";
+  CLUSTER_LABELS,
+  HOURS,
+  categoryClass,
+  circleFeature,
+  demandFromFlow,
+  formatMarketScore,
+  isTestEnvironment,
+} from "./features/market/model";
+import { MarketFilters } from "./features/market/MarketFilters";
+import { MarketInspector } from "./features/market/MarketInspector";
+import type {
+  Category,
+  LayerMode,
+  MapMode,
+  Market,
+  MarketKey,
+} from "./features/market/types";
+import { useMarketAnalysis } from "./features/market/useMarketAnalysis";
 import "./styles/global.css";
-
-type Category = "카페" | "음식점" | "베이커리" | "편의점";
-type MarketKey = "연남" | "홍대" | "합정";
-type MapMode = "localtwin" | "original";
 
 const localTwinMapStyle: StyleSpecification = {
   version: 8,
@@ -60,30 +66,6 @@ const marketMapSlug: Record<MarketKey, string> = {
   연남: "yeonnam",
   홍대: "hongdae",
   합정: "hapjeong",
-};
-
-type Market = {
-  name: string;
-  address: string;
-  center: [number, number];
-  score: number;
-  grade: string;
-  footfall: string;
-  workPopulation: string;
-  residentPopulation: string;
-  opening: number;
-  closing: number;
-  demand: number[];
-  insight: string;
-  stores: Array<{
-    name: string;
-    category: Category;
-    distance: string;
-    score: number;
-    longitude: number;
-    latitude: number;
-  }>;
-  landmarks: Array<{ name: string; longitude: number; latitude: number }>;
 };
 
 const markets: Record<MarketKey, Market> = {
@@ -344,67 +326,6 @@ const markets: Record<MarketKey, Market> = {
   },
 };
 
-const categories: Array<{ label: Category; icon: typeof Coffee; tone: string }> = [
-  { label: "카페", icon: Coffee, tone: "green" },
-  { label: "음식점", icon: Store, tone: "orange" },
-  { label: "베이커리", icon: Building2, tone: "blue" },
-  { label: "편의점", icon: MapPinned, tone: "gray" },
-];
-
-const hours = ["00", "03", "06", "09", "12", "15", "18", "21"];
-
-function categoryClass(category: Category) {
-  return category === "카페"
-    ? "green"
-    : category === "음식점"
-      ? "orange"
-      : category === "베이커리"
-        ? "blue"
-        : "gray";
-}
-
-function formatMarketScore(score: number, category: Category, radius: number) {
-  const categoryShift =
-    category === "음식점" ? -3 : category === "베이커리" ? 1 : category === "편의점" ? -2 : 0;
-  const radiusShift = radius === 100 ? 2 : radius === 500 ? -2 : 0;
-  return Math.max(0, Math.min(100, score + categoryShift + radiusShift));
-}
-
-function demandFromFlow(flow: number[]) {
-  if (flow.length !== 6 || Math.max(...flow) <= 0) return Array(14).fill(0) as number[];
-  const maximum = Math.max(...flow);
-  const bucketByChartIndex = [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 0];
-  return bucketByChartIndex.map((bucket) => Math.round((flow[bucket] / maximum) * 100));
-}
-
-const clusterLabels: Record<string, string> = {
-  ordinary: "일반 상권",
-  productive_cluster: "생산적 집적상권",
-  specialized_watch: "특화상권 · 판단 보류",
-  saturated_cluster: "과포화 후보",
-};
-
-function circleFeature([longitude, latitude]: [number, number], radiusMeters: number) {
-  const points = 64;
-  const coordinates = Array.from({ length: points + 1 }, (_, index) => {
-    const angle = (index / points) * Math.PI * 2;
-    const latitudeOffset = (radiusMeters / 111_320) * Math.sin(angle);
-    const longitudeOffset =
-      (radiusMeters / (111_320 * Math.cos((latitude * Math.PI) / 180))) * Math.cos(angle);
-    return [longitude + longitudeOffset, latitude + latitudeOffset];
-  });
-
-  return {
-    type: "Feature" as const,
-    properties: {},
-    geometry: { type: "Polygon" as const, coordinates: [coordinates] },
-  };
-}
-
-function isTestEnvironment() {
-  return typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
-}
-
 export function App() {
   const [marketKey, setMarketKey] = useState<MarketKey>("연남");
   const [category, setCategory] = useState<Category>("카페");
@@ -414,15 +335,15 @@ export function App() {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [sceneOpen, setSceneOpen] = useState(false);
-  const [layer, setLayer] = useState<"density" | "demand">("density");
+  const [layer, setLayer] = useState<LayerMode>("density");
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
   const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
-  const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
-  const [analysisSource, setAnalysisSource] = useState<AnalysisSource | null>(null);
-  const [analysisState, setAnalysisState] = useState<"loading" | "ready" | "error">("loading");
-  const [comparison, setComparison] = useState<Record<MarketKey, MarketAnalysis> | null>(null);
   const mapRef = useRef<MapRef>(null);
+  const { analysis, analysisSource, analysisState, comparison } = useMarketAnalysis(
+    marketKey,
+    category,
+  );
 
   const market = useMemo(() => {
     const base = markets[marketKey];
@@ -467,37 +388,6 @@ export function App() {
       ),
     [activeDemand, market.center],
   );
-
-  useEffect(() => {
-    if (isTestEnvironment() || typeof fetch === "undefined") return;
-    const controller = new AbortController();
-    setAnalysis(null);
-    setAnalysisSource(null);
-    setAnalysisState("loading");
-    loadMarketAnalysis(marketKey, category, controller.signal)
-      .then((result) => {
-        setAnalysis(result.analysis);
-        setAnalysisSource(result.source);
-        setAnalysisState("ready");
-      })
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setAnalysisState("error");
-      });
-    return () => controller.abort();
-  }, [category, marketKey]);
-
-  useEffect(() => {
-    if (isTestEnvironment() || typeof fetch === "undefined") return;
-    const controller = new AbortController();
-    loadMarketComparison(category, controller.signal)
-      .then(setComparison)
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setComparison(null);
-      });
-    return () => controller.abort();
-  }, [category]);
 
   useEffect(() => {
     mapRef.current?.flyTo({
@@ -603,101 +493,23 @@ export function App() {
       </section>
 
       <section id="analysis" className="analysis-layout" aria-label="상권 분석 작업 공간">
-        <aside className="filter-panel">
-          <div className="panel-heading">
-            <p>분석 범위</p>
-            <button type="button" className="text-button" onClick={resetAnalysis}>
-              초기화
-            </button>
-          </div>
-          <label className="select-label">
-            상권 선택
-            <select
-              value={marketKey}
-              onChange={(event) => chooseMarket(event.target.value as MarketKey)}
-            >
-              {Object.keys(markets).map((name) => (
-                <option key={name} value={name}>
-                  {markets[name as MarketKey].name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="filter-group">
-            <p className="filter-label">분석 반경</p>
-            <div className="segmented" role="group" aria-label="분석 반경">
-              {[100, 300, 500].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={radius === value ? "is-selected" : ""}
-                  onClick={() => setRadius(value)}
-                >
-                  {value}m
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="filter-group">
-            <p className="filter-label">업종</p>
-            <div className="category-list">
-              {categories.map(({ label, icon: Icon, tone }) => (
-                <button
-                  key={label}
-                  type="button"
-                  className={`category-option ${category === label ? "is-selected" : ""}`}
-                  onClick={() => setCategory(label)}
-                >
-                  <span className={`category-icon ${tone}`}>
-                    <Icon size={15} />
-                  </span>
-                  <span>{label}</span>
-                  <span className="check">{category === label ? "✓" : ""}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="filter-group layer-filter">
-            <p className="filter-label">지도 레이어</p>
-            <button
-              type="button"
-              className={layer === "density" ? "layer-option active" : "layer-option"}
-              onClick={() => setLayer("density")}
-            >
-              <Layers3 size={15} /> 경쟁 밀도
-            </button>
-            <button
-              type="button"
-              className={layer === "demand" ? "layer-option active" : "layer-option"}
-              onClick={() => setLayer("demand")}
-            >
-              <Users size={15} /> 시간대 수요
-            </button>
-          </div>
-          <div className="store-list-heading">
-            <span>주변 점포</span>
-            <strong>{sameCategoryCount}개</strong>
-          </div>
-          <div className="store-list">
-            {visibleStores.map((store) => (
-              <button
-                key={store.name}
-                type="button"
-                className={`store-row ${selected.name === store.name ? "is-selected" : ""}`}
-                onClick={() => setSelectedStore(store.name)}
-              >
-                <span className={`store-dot ${categoryClass(store.category)}`} />
-                <span className="store-row-main">
-                  <b>{store.name}</b>
-                  <small>
-                    {store.category} · {store.distance}
-                  </small>
-                </span>
-                <strong>{analysis ? "POI" : store.score}</strong>
-              </button>
-            ))}
-          </div>
-        </aside>
+        <MarketFilters
+          marketKey={marketKey}
+          markets={markets}
+          category={category}
+          radius={radius}
+          layer={layer}
+          sameCategoryCount={sameCategoryCount}
+          usesAnalysis={analysis !== null}
+          visibleStores={visibleStores}
+          selectedStoreName={selected.name}
+          onReset={resetAnalysis}
+          onMarketChange={chooseMarket}
+          onRadiusChange={setRadius}
+          onCategoryChange={setCategory}
+          onLayerChange={setLayer}
+          onStoreChange={setSelectedStore}
+        />
 
         <section className="map-panel" aria-label="지도와 상권 분포">
           <div className="map-toolbar">
@@ -986,7 +798,7 @@ export function App() {
                       <span
                         className="flow-person"
                         style={{ animationDelay: `${person.delay}s` }}
-                        aria-label={`${hours[Math.min(hours.length - 1, Math.floor(activeHour / 2))]}시대 유동 수요`}
+                        aria-label={`${HOURS[Math.min(HOURS.length - 1, Math.floor(activeHour / 2))]}시대 유동 수요`}
                       />
                     </Marker>
                   ))}
@@ -1085,7 +897,7 @@ export function App() {
             <div className="flow-card">
               <span>시간대 유동 수요</span>
               <b>
-                {hours[Math.min(hours.length - 1, Math.floor(activeHour / 2))]}시대 · {activeDemand}
+                {HOURS[Math.min(HOURS.length - 1, Math.floor(activeHour / 2))]}시대 · {activeDemand}
                 /100
               </b>
               <small>아이콘 수는 상대 수요 비율을 표시합니다.</small>
@@ -1148,132 +960,19 @@ export function App() {
           </button>
         </section>
 
-        <aside className="inspector-panel">
-          <div className="inspector-title">
-            <div>
-              <p>{selected.name}</p>
-              <span>
-                {selected.category} · {market.address}
-              </span>
-            </div>
-            <button
-              type="button"
-              className="icon-button"
-              onClick={() => setSelectedStore(market.stores[0].name)}
-            >
-              <X size={18} />
-            </button>
-          </div>
-          <section className="score-section">
-            <div>
-              <span>입지 점수</span>
-              <strong>{score}</strong>
-              <small>/ 100</small>
-            </div>
-            <b>{market.grade}</b>
-            <button type="button" className="evidence-button" onClick={() => setEvidenceOpen(true)}>
-              점수 산정 근거 <CircleHelp size={15} />
-            </button>
-          </section>
-          <section className="metric-section">
-            <div className="section-title">
-              <span>경쟁 현황</span>
-              <small>{analysis ? "서울시 상권 경계" : `반경 ${radius}m`}</small>
-            </div>
-            <div className="competition-chart">
-              <div className="donut">
-                <i />
-                <b>{sameCategoryCount}</b>
-                <small>동일 업종</small>
-              </div>
-              <div className="legend-list">
-                <span>
-                  <i className="green" /> 카페 <b>{category === "카페" ? sameCategoryCount : "-"}</b>
-                </span>
-                <span>
-                  <i className="orange" /> 음식점{" "}
-                  <b>{category === "음식점" ? sameCategoryCount : "-"}</b>
-                </span>
-                <span>
-                  <i className="blue" /> 베이커리{" "}
-                  <b>{category === "베이커리" ? sameCategoryCount : "-"}</b>
-                </span>
-              </div>
-            </div>
-          </section>
-          <section className="metric-section">
-            <div className="section-title">
-              <span>개·폐업 추이</span>
-              <small>2025.1Q 기준</small>
-            </div>
-            <div className="trend-bars">
-              {[5, 9, 4, 12, 7, 16, 10, 14, 20, 12, 8, 17].map((value, index) => (
-                <span
-                  key={index}
-                  style={{ height: `${value * 2.2}px` }}
-                  className={index === 4 || index === 8 ? "negative" : "positive"}
-                />
-              ))}
-            </div>
-            <div className="trend-summary">
-              <span>
-                <i className="positive" /> 개업 {market.opening}
-              </span>
-              <span>
-                <i className="negative" /> 폐업 {market.closing}
-              </span>
-              <b>순증 {market.opening - market.closing}</b>
-            </div>
-          </section>
-          <section className="metric-section">
-            <div className="section-title">
-              <span>시간대별 활동성</span>
-              <small>{hours[Math.min(hours.length - 1, Math.floor(activeHour / 2))]}시대</small>
-            </div>
-            <div className="hour-chart">
-              {market.demand.map((value, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  title={`${index * 2}시 수요 ${value}`}
-                  className={activeHour === index ? "active" : ""}
-                  style={{ height: `${Math.max(10, value)}%` }}
-                  onClick={() => setActiveHour(index)}
-                >
-                  <span />
-                </button>
-              ))}
-            </div>
-            <div className="hour-labels">
-              <span>00시</span>
-              <span>06시</span>
-              <span>12시</span>
-              <span>18시</span>
-              <span>24시</span>
-            </div>
-          </section>
-          <section className="population-section">
-            <div>
-              <span>주거 인구</span>
-              <b>{market.residentPopulation}</b>
-            </div>
-            <div>
-              <span>직장 인구</span>
-              <b>{market.workPopulation}</b>
-            </div>
-            <div>
-              <span>유동 인구</span>
-              <b>{market.footfall}</b>
-            </div>
-          </section>
-          <section className="insight-section">
-            <span>분석 요약</span>
-            <p>{market.insight}</p>
-            <button type="button" onClick={() => window.print()}>
-              <FileText size={15} /> 보고서로 보기
-            </button>
-          </section>
-        </aside>
+        <MarketInspector
+          market={market}
+          selected={selected}
+          score={score}
+          category={category}
+          radius={radius}
+          activeHour={activeHour}
+          sameCategoryCount={sameCategoryCount}
+          analysis={analysis}
+          onCloseSelection={() => setSelectedStore(market.stores[0].name)}
+          onEvidenceOpen={() => setEvidenceOpen(true)}
+          onActiveHourChange={setActiveHour}
+        />
       </section>
 
       {evidenceOpen && (
@@ -1311,7 +1010,7 @@ export function App() {
                   <div>
                     <span>특수상권 판정</span>
                     <b>
-                      {clusterLabels[analysis.score.cluster.classification] ??
+                      {CLUSTER_LABELS[analysis.score.cluster.classification] ??
                         analysis.score.cluster.classification}
                     </b>
                     <p>{analysis.score.cluster.explanation}</p>
