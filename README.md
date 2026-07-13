@@ -3,6 +3,8 @@
 이 프로젝트는 리스크 없이 가상 포인트로 한정판 스니커즈, 스트릿 의류, TCG 카드, 레고 등 대안 자산(Alternative Assets) 리셀 시장의 미래 가격을 예측하고, 집단지성 데이터로 구축된 대중 예상가를 시각적으로 확인할 수 있는 웹 애플리케이션입니다.
 
 * **상세 기획서**: 세부 비즈니스 모델 및 개발 사양은 **[wiki](https://github.com/Qkdgodchl/hub/wiki/%EA%B8%B0%ED%9A%8D%EC%84%9C-%EC%9E%91%EC%84%B1)**에서 확인하실 수 있습니다.
+* **개발 백로그**: 개발 Task 백로그는 **[Link](https://app.notion.com/p/3993418fe9db807486ccff21696eabb8?source=copy_link)**에서 확인하실 수 있습니다.
+* **2주차 주간 계획 및 GitHub Issues**: 이번 주 요일별 계획 및 상세 이슈 리스트는 **[git_issues_list.md](file:///Users/tatata/Desktop/Ai_agent/hub/git_issues_list.md)**에서 확인하실 수 있습니다.
 
 ---
 
