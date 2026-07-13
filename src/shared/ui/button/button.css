@@ -1,0 +1,33 @@
+.ui-button {
+  min-height: 44px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-button) !important;
+  box-shadow: none !important;
+  transition:
+    background var(--motion-duration-standard) var(--motion-easing-standard),
+    border-color var(--motion-duration-standard) var(--motion-easing-standard),
+    color var(--motion-duration-standard) var(--motion-easing-standard) !important;
+}
+
+.ui-button--primary {
+  border-color: var(--color-charcoal) !important;
+  background: var(--color-charcoal) !important;
+  color: var(--color-canvas) !important;
+}
+
+.ui-button--primary:hover {
+  border-color: var(--color-graphite) !important;
+  background: var(--color-graphite) !important;
+}
+
+.ui-button--secondary {
+  border-color: var(--color-ash) !important;
+  background: var(--color-canvas) !important;
+  color: var(--color-ink) !important;
+}
+
+.ui-button--ghost {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--color-smoke) !important;
+}
