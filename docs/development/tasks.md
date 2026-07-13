@@ -178,7 +178,7 @@ Outcome: 공개 또는 제품 환경에서 Scene·데이터 경로가 기본 차
 
 | ID      | 세부 Task                                  | Priority | Status  | Week    | Depends on | Acceptance |
 | ------- | ------------------------------------------ | -------- | ------- | ------- | ---------- | ---------- |
-| SEC-001 | Scene API 제품 기본 차단 후 인증·객체 단위 인가 | P0 | Ready | Phase 2 | - | A단계에서 제품 route가 기본 비활성화되고, B단계에서 무인증·다른 사용자 job 접근이 차단된다 |
+| SEC-001 | Scene API 제품 기본 차단 후 인증·객체 단위 인가 | P0 | A Verified / B Backlog | Phase 2 | - | A단계에서 제품 route가 기본 비활성화되고, B단계에서 무인증·다른 사용자 job 접근이 차단된다 |
 | SEC-002 | 서버 privacy 상태와 asset gate             | P0       | Backlog | Phase 2 | SEC-001    | 승인된 anonymized asset만 다운로드할 수 있다 |
 | SEC-003 | upload·GPU quota와 실행 제한               | P0       | Backlog | Phase 2 | SEC-001    | 크기·빈도·동시 실행·retry 제한이 API와 worker에서 검증된다 |
 | SEC-004 | media·PLY 내용 기반 검증                   | P0       | Backlog | Phase 2 | -          | 위장 파일과 처리 한도 초과 입력이 GPU 실행 전에 거부된다 |
@@ -204,7 +204,7 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 기능 의존성과 이번 주 구현 가능성을 기준으로 위에서 아래 순서로 진행한다.
 
 1. `PLAN-002` Phase 1 기준선과 인계 문서·Issue 정합성 확인
-2. `SEC-001 A단계` 공개 위험을 먼저 줄이기 위한 Scene API 제품 환경 기본 차단
+2. `SEC-001 A단계` 공개 위험을 먼저 줄이기 위한 Scene API 제품 환경 기본 차단 (Done)
 3. `ARCH-002` 실제 서비스 source와 문서의 물리 폴더·배포 artifact 분리
 4. `WEB-008` FE 파일 구조를 기능별로 분리하고 state 경계를 정리
 5. `DB-001` Supabase PostgreSQL schema, SQLAlchemy/Alembic과 canonical data 이관

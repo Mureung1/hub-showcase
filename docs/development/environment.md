@@ -245,6 +245,8 @@ Scene API containment:
 SCENE_API_ENABLED=false
 ```
 
+기본값 `false`에서는 모든 `/api/v1/scenes/*` 요청이 `404`이고 OpenAPI schema에도 Scene route가 나타나지 않는다. 로컬 GPU 검증처럼 승인된 개발 환경에서만 `SCENE_API_ENABLED=true`를 명시한다. 이 설정은 공개 환경의 즉시 차단 장치이며 사용자 인증과 객체 단위 인가를 대신하지 않는다.
+
 `DATABASE_URL`과 Supabase secret은 server 환경에만 두며 문서·브라우저 bundle·Git에 실제 값을 기록하지 않는다.
 
 Scene worker:
@@ -262,7 +264,7 @@ $env:SCENE_WORKER_MODE="docker"
 pnpm dev
 ```
 
-`/api/v1/scenes/toolchain`에서 `ready=true`, image, GPU 이름과 VRAM을 확인한 뒤 upload를 시작한다.
+`SCENE_API_ENABLED=true`인 개발 환경의 `/api/v1/scenes/toolchain`에서 `ready=true`, image, GPU 이름과 VRAM을 확인한 뒤 upload를 시작한다.
 
 remote GPU server에서 local-only 검증할 때는 [GPU Scene Validation](../operations/gpu-scene-validation.md)을 따른다. P100처럼 compute capability가 낮은 장비는 VRAM이 충분해도 최신 gsplat kernel을 실행하지 못할 수 있으므로, 검증된 compatibility set과 실제 kernel import 결과를 함께 확인한다.
 
