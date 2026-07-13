@@ -1,12 +1,12 @@
 from pathlib import Path
 from typing import Annotated, Literal
 
-from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from localtwin_api.config import get_settings
+from localtwin_api.config import Settings, get_settings
 from localtwin_api.market_analysis import (
     Category,
     MarketAnalysisResponse,
@@ -32,8 +32,8 @@ class HealthResponse(BaseModel):
     status: Literal["ok"]
 
 
-def create_app() -> FastAPI:
-    settings = get_settings()
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
     app = FastAPI(title=settings.app_name)
     app.add_middleware(
         CORSMiddleware,
@@ -74,11 +74,27 @@ def create_app() -> FastAPI:
                 status_code=404, detail="Market analysis is not available for this input."
             ) from None
 
-    @app.get("/api/v1/scenes/toolchain", response_model=ToolchainStatus, tags=["scenes"])
+    async def require_scene_api() -> None:
+        if not settings.scene_api_enabled:
+            raise HTTPException(status_code=404, detail="Not Found")
+
+    @app.get(
+        "/api/v1/scenes/toolchain",
+        response_model=ToolchainStatus,
+        tags=["scenes"],
+        dependencies=[Depends(require_scene_api)],
+        include_in_schema=settings.scene_api_enabled,
+    )
     async def scene_toolchain() -> ToolchainStatus:
         return toolchain_status()
 
-    @app.post("/api/v1/scenes/jobs", response_model=SceneJob, tags=["scenes"])
+    @app.post(
+        "/api/v1/scenes/jobs",
+        response_model=SceneJob,
+        tags=["scenes"],
+        dependencies=[Depends(require_scene_api)],
+        include_in_schema=settings.scene_api_enabled,
+    )
     async def create_scene_job(
         background_tasks: BackgroundTasks,
         scene_name: Annotated[str, Form()],
@@ -98,14 +114,26 @@ def create_app() -> FastAPI:
             background_tasks.add_task(run_scene_job, job.id)
         return job
 
-    @app.get("/api/v1/scenes/jobs/{job_id}", response_model=SceneJob, tags=["scenes"])
+    @app.get(
+        "/api/v1/scenes/jobs/{job_id}",
+        response_model=SceneJob,
+        tags=["scenes"],
+        dependencies=[Depends(require_scene_api)],
+        include_in_schema=settings.scene_api_enabled,
+    )
     async def get_scene_job(job_id: str) -> SceneJob:
         try:
             return SceneJobStore().load(job_id)
         except (FileNotFoundError, ValueError):
             raise HTTPException(status_code=404, detail="Scene job not found.") from None
 
-    @app.post("/api/v1/scenes/jobs/{job_id}/run", response_model=SceneJob, tags=["scenes"])
+    @app.post(
+        "/api/v1/scenes/jobs/{job_id}/run",
+        response_model=SceneJob,
+        tags=["scenes"],
+        dependencies=[Depends(require_scene_api)],
+        include_in_schema=settings.scene_api_enabled,
+    )
     async def retry_scene_job(job_id: str, background_tasks: BackgroundTasks) -> SceneJob:
         store = SceneJobStore()
         try:
@@ -119,7 +147,12 @@ def create_app() -> FastAPI:
         background_tasks.add_task(run_scene_job, job.id)
         return job
 
-    @app.get("/api/v1/scenes/jobs/{job_id}/asset", tags=["scenes"])
+    @app.get(
+        "/api/v1/scenes/jobs/{job_id}/asset",
+        tags=["scenes"],
+        dependencies=[Depends(require_scene_api)],
+        include_in_schema=settings.scene_api_enabled,
+    )
     async def get_scene_asset(job_id: str) -> FileResponse:
         try:
             directory = SceneJobStore().job_dir(job_id)
