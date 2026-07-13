@@ -80,3 +80,7 @@ briefy/
 - [기획서 (plan.md)](./docs/plan.md)
 - [디자인 (design.md)](./docs/design.md)
 - [AI 협업 규칙 (CLAUDE.md)](./CLAUDE.md)
+
+## 일정 및 프로젝트 관리
+
+- **칸반 보드:** [Briefy MVP 개발 보드](https://github.com/uncledrew-sr/hub/issues)
