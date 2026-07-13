@@ -1,10 +1,10 @@
 /* @vitest-environment jsdom */
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider } from '@wanteddev/wds';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { LandingPage } from '@/pages/landing';
+import { DesignSystemProvider } from '@/shared/ui';
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -26,9 +26,9 @@ afterEach(cleanup);
 
 function renderLandingPage(onStart = vi.fn()) {
   render(
-    <ThemeProvider>
+    <DesignSystemProvider>
       <LandingPage onStart={onStart} />
-    </ThemeProvider>
+    </DesignSystemProvider>
   );
 
   return onStart;

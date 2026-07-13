@@ -1,8 +1,9 @@
 /* @vitest-environment jsdom */
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider } from '@wanteddev/wds';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+
+import { DesignSystemProvider } from '@/shared/ui';
 
 import { App } from './index';
 
@@ -28,9 +29,9 @@ afterEach(() => {
 
 function renderApp() {
   return render(
-    <ThemeProvider>
+    <DesignSystemProvider>
       <App />
-    </ThemeProvider>
+    </DesignSystemProvider>
   );
 }
 

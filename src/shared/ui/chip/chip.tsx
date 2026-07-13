@@ -52,16 +52,18 @@ export const ChoiceChip = forwardRef<HTMLButtonElement, ChoiceChipProps>(
 
 export function CategoryTag({
   children,
+  className,
   tone,
 }: {
   children: ReactNode;
+  className?: string;
   tone: CategoryTone;
 }) {
   return (
     <WdsChip
       {...STATIC_TAG_PROPS}
       as="span"
-      className={`category-tag category-tag--${tone}`}
+      className={clsx('category-tag', `category-tag--${tone}`, className)}
       disableInteraction
       size="xsmall"
       variant="solid"

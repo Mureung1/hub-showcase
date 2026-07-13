@@ -8,6 +8,8 @@ export type EmptyStateProps = {
   actionLabel: string;
   description: string;
   onAction: () => void;
+  onSecondaryAction?: () => void;
+  secondaryActionLabel?: string;
   title: string;
 };
 
@@ -15,6 +17,8 @@ export function EmptyState({
   actionLabel,
   description,
   onAction,
+  onSecondaryAction,
+  secondaryActionLabel,
   title,
 }: EmptyStateProps) {
   const instanceId = useId();
@@ -34,9 +38,20 @@ export function EmptyState({
       <p className="empty-state__description" id={descriptionId}>
         {description}
       </p>
-      <Button hierarchy="secondary" onClick={onAction} type="button">
-        {actionLabel}
-      </Button>
+      <div className="empty-actions">
+        <Button hierarchy="primary" onClick={onAction} type="button">
+          {actionLabel}
+        </Button>
+        {secondaryActionLabel ? (
+          <Button
+            hierarchy="secondary"
+            onClick={onSecondaryAction}
+            type="button"
+          >
+            {secondaryActionLabel}
+          </Button>
+        ) : null}
+      </div>
     </section>
   );
 }

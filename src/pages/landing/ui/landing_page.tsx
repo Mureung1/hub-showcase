@@ -1,4 +1,4 @@
-import { Button } from '@wanteddev/wds';
+import { Button } from '@/shared/ui';
 
 import { OnboardingMotionPreview } from './onboarding_motion_preview';
 import './landing_page.css';
@@ -96,7 +96,7 @@ function HeroSection({ onStart }: LandingPageProps) {
           <div className="landing-hero__actions">
             <Button
               className="landing-primary-action"
-              color="primary"
+              hierarchy="primary"
               onClick={onStart}
               size="large"
               type="button"
@@ -263,7 +263,7 @@ function FinalCallToAction({ onStart }: LandingPageProps) {
       </p>
       <Button
         className="landing-primary-action landing-primary-action--final"
-        color="primary"
+        hierarchy="primary"
         onClick={onStart}
         size="large"
         type="button"

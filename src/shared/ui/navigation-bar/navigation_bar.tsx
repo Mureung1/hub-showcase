@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { BottomNavigation, BottomNavigationItem } from '@wanteddev/wds';
+import clsx from 'clsx';
 
 import './navigation_bar.css';
 
@@ -15,6 +16,7 @@ type NavigationValue<TItems extends readonly NavigationItem<string>[]> =
 export type NavigationBarProps<
   TItems extends readonly NavigationItem<string>[],
 > = {
+  className?: string;
   items: TItems;
   onValueChange: (value: NoInfer<NavigationValue<TItems>>) => void;
   value: NoInfer<NavigationValue<TItems>>;
@@ -22,11 +24,11 @@ export type NavigationBarProps<
 
 export function NavigationBar<
   const TItems extends readonly NavigationItem<string>[],
->({ items, onValueChange, value }: NavigationBarProps<TItems>) {
+>({ className, items, onValueChange, value }: NavigationBarProps<TItems>) {
   return (
     <BottomNavigation
       aria-label="주요 화면"
-      className="navigation-bar"
+      className={clsx('navigation-bar', className)}
       onValueChange={(nextValue) =>
         onValueChange(nextValue as NavigationValue<TItems>)
       }
