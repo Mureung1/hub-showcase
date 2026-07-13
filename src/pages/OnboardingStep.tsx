@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import Step1Industry, { isStep1Complete } from '../components/onboarding/Step1Industry'
+import Step2Region, { isStep2Complete } from '../components/onboarding/Step2Region'
 import ProgressBar from '../components/ProgressBar'
 import { useOnboarding } from '../context/OnboardingContext'
 import { STEP_META, TOTAL_STEPS } from '../data/onboardingSteps'
@@ -31,8 +32,11 @@ export default function OnboardingStep() {
     else navigate(`/onboarding/${current + 1}`)
   }
 
-  const canProceed =
-    current === 1 ? isStep1Complete(profile.industry) : false
+  const canProceed = (() => {
+    if (current === 1) return isStep1Complete(profile.industry)
+    if (current === 2) return isStep2Complete(profile.region)
+    return false
+  })()
 
   const nextLabel = current === TOTAL_STEPS ? '맞춤 지원금 찾기' : '다음으로'
 
@@ -62,7 +66,8 @@ export default function OnboardingStep() {
 
         <div className="step-content" data-step={current}>
           {current === 1 && <Step1Industry />}
-          {current > 1 && (
+          {current === 2 && <Step2Region />}
+          {current > 2 && (
             <p className="step-placeholder">(step {current} 입력 UI 준비 중)</p>
           )}
         </div>

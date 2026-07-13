@@ -32,7 +32,7 @@
 - [x] **2b.** 공용 컴포넌트 + `OnboardingStep` 공통 레이아웃
   - `ProgressBar`, `OptionButton`, 진행바/이전/`N/4`/하단 "다음" disabled 골격
 - [x] **2c.** Step1 업종 (기타 직접입력)
-- [ ] **2d.** Step2 시·도 (2열 grid)
+- [x] **2d.** Step2 시·도 (2열 grid)
 - [ ] **2e.** Step3 구·군 (시·도 연동 동적, 제목 blue 강조)
 - [ ] **2f.** Step4 직원수 + 연매출 (select)
 
@@ -58,6 +58,7 @@
 | `c13277b` | `feat(client): 전역 스타일 토대 및 AppShell 프레임 추가` |
 | `d7309d9` | `feat(client): React Router 라우팅 골격 및 온보딩 컨텍스트 추가` |
 | `eac4a74` | `feat(client): 온보딩 데이터 및 공통 입력 레이아웃 추가` |
+| `d8b1fde` | `feat(client): 온보딩 step1 업종 선택 UI 구현` |
 
 ## 데모 흐름 (확정)
 
@@ -101,7 +102,8 @@ flowchart LR
 - [x] `ProgressBar`, `OptionButton` 공용 컴포넌트
 - [x] `OnboardingStep` 공통 레이아웃 (진행바/이전/다음 disabled 골격)
 - [x] Step1 업종 입력 UI (2c)
-- [ ] Step2~4 실제 입력 UI (2d~2f)
+- [x] Step2 시·도 입력 UI (2d)
+- [ ] Step3~4 실제 입력 UI (2e~2f)
 
 ### 3) 화면 완성
 - [ ] `WelcomeScreen` — navy 배경 + 기능 3개 + 시작하기 CTA
@@ -128,7 +130,8 @@ src/
 │   ├── ProgressBar.tsx / .css    ✅
 │   ├── OptionButton.tsx / .css   ✅
 │   ├── onboarding/
-│   │   └── Step1Industry.tsx     # step1 업종 ✅
+│   │   ├── Step1Industry.tsx     # step1 업종 ✅
+│   │   └── Step2Region.tsx       # step2 시·도 ✅
 │   ├── FilterChip.tsx / .css     (미구현)
 │   ├── SubsidyCard.tsx / .css    (미구현)
 │   └── TabBar.tsx / .css         (미구현)
@@ -155,4 +158,4 @@ src/
 
 ## 다음 작업
 
-**2d. Step2 시·도 (2열 grid)** — `regions.ts` 시·도 목록 + `OptionButton` 2열 grid + `setField('region')`
+**2e. Step3 구·군 (시·도 연동 동적, 제목 blue 강조)** — `getDistricts(region)` + `setField('district')`
