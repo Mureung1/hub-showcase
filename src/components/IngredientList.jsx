@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { buildNaverSearchUrl, buildCoupangSearchUrl } from '../utils/purchaseLinks'
 
 // 냉장고에서 고른 재료(ownedNames)는 "보유"로, 나머지는 "구매 필요"로 배지를 붙이고 구매 필요를 먼저 보여준다.
 // 체크박스는 구매 필요 기본 체크 / 보유 기본 해제 — 보유 재료도 다시 살 거면 직접 체크할 수 있다(해제된 행은 흐리게 표시).
@@ -63,7 +64,27 @@ function IngredientList({ ingredients, ownedNames = [], selectedName, onSelect }
                   {isOwned ? '보유' : '구매 필요'}
                 </span>
               </span>
-              <span className="text-sm text-text-secondary">{ingredient.amount}</span>
+              <span className="flex shrink-0 items-center gap-2">
+                <a
+                  href={buildNaverSearchUrl(ingredient.name)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(event) => event.stopPropagation()}
+                  className="text-xs text-text-secondary underline hover:text-text-primary"
+                >
+                  네이버
+                </a>
+                <a
+                  href={buildCoupangSearchUrl(ingredient.name)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(event) => event.stopPropagation()}
+                  className="text-xs text-text-secondary underline hover:text-text-primary"
+                >
+                  쿠팡
+                </a>
+                <span className="text-sm text-text-secondary">{ingredient.amount}</span>
+              </span>
             </button>
           </li>
         )
