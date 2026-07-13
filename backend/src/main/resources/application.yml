@@ -11,5 +11,7 @@ spring:
       ddl-auto: none
 
 devpulse:
-  github:
-    token: ${DEVPULSE_GITHUB_TOKEN:}
+  worknet:
+    api-key: ${DEVPULSE_WORKNET_API_KEY:}
+  saramin:
+    api-key: ${DEVPULSE_SARAMIN_API_KEY:}
