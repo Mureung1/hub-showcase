@@ -17,7 +17,7 @@
 주간 목표 이슈: [#6](https://github.com/HappyGogildong/hub/issues/6)
 
 - [x] **T-00 개발 환경 구성** — 모노레포(client/server/prototype), Vite 프록시, Prettier, 헬스체크
-- [ ] **T-01 DB 스키마 & 마이그레이션** `server` — [#1](https://github.com/HappyGogildong/hub/issues/1)
+- [x] **T-01 DB 스키마 & 마이그레이션** `server` — [#1](https://github.com/HappyGogildong/hub/issues/1)
   - users, stores, favorites, deals, reservations (snake_case, 기획서 §4 데이터 모델)
   - DoD: 마이그레이션 SQL로 로컬 PostgreSQL에 스키마 재현 가능. `deals.remaining_qty >= 0` CHECK 제약 포함
 - [ ] **T-02 시딩 스크립트** `server` — [#2](https://github.com/HappyGogildong/hub/issues/2)
