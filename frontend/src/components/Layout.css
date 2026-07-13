@@ -26,7 +26,7 @@
   height: 420px;
   left: -120px;
   top: 8%;
-  background: rgba(255, 255, 255, 0.30);
+  background: rgba(255, 255, 255, 0.3);
   animation: rs-drift-a 34s ease-in-out infinite alternate;
 }
 
@@ -89,7 +89,9 @@
   -webkit-backdrop-filter: blur(var(--clb-blur-nav));
   border: 1px solid var(--clb-edge);
   border-radius: var(--clb-radius-pill);
-  box-shadow: var(--clb-shadow-nav), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow:
+    var(--clb-shadow-nav),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .rs-brand {

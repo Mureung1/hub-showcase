@@ -20,8 +20,8 @@ function MyPage() {
       <header className="rs-page-head">
         <h1>마이페이지</h1>
         <p>
-          내 초안과 발행한 문서를 관리합니다. (프로토타입: 이 브라우저의 localStorage에만
-          저장돼요 — 로그인·계정은 MVP에서 지원 예정)
+          내 초안과 발행한 문서를 관리합니다. (프로토타입: 이 브라우저의 localStorage에만 저장돼요 —
+          로그인·계정은 MVP에서 지원 예정)
         </p>
       </header>
 

@@ -14,12 +14,10 @@ function HomePage() {
   return (
     <div>
       <section className="rs-panel rs-hero">
-        <h1>
-          역기획서, 백지에서 시작하지 마세요
-        </h1>
+        <h1>역기획서, 백지에서 시작하지 마세요</h1>
         <p>
-          직군별 템플릿과 섹션별 가이드로 틀부터 배우고, 제출 즉시 AI 피드백을, 발행 후엔
-          커뮤니티의 섹션별 코멘트를 받는 게임 기획 지망생의 작업실.
+          직군별 템플릿과 섹션별 가이드로 틀부터 배우고, 제출 즉시 AI 피드백을, 발행 후엔 커뮤니티의
+          섹션별 코멘트를 받는 게임 기획 지망생의 작업실.
         </p>
         <div className="rs-hero-actions">
           <Link to="/write" className="rs-btn rs-btn-primary">

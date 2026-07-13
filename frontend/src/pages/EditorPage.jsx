@@ -211,12 +211,7 @@ function EditorPage() {
           </label>
         </div>
         <div className="rs-editor-actions">
-          <button
-            type="button"
-            className="rs-btn"
-            onClick={handleAiFeedback}
-            disabled={aiLoading}
-          >
+          <button type="button" className="rs-btn" onClick={handleAiFeedback} disabled={aiLoading}>
             {aiLoading ? 'AI가 읽는 중…' : 'AI 피드백 받기'}
           </button>
           <button type="button" className="rs-btn" onClick={handleSaveDraft}>
@@ -242,11 +237,7 @@ function EditorPage() {
                   onChange={(e) => updateSection(section.id, { heading: e.target.value })}
                   aria-label="섹션 제목"
                 />
-                <button
-                  type="button"
-                  className="rs-chip"
-                  onClick={() => removeSection(section.id)}
-                >
+                <button type="button" className="rs-chip" onClick={() => removeSection(section.id)}>
                   섹션 삭제
                 </button>
               </div>
