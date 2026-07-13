@@ -18,6 +18,7 @@ related:
   - ../troubleshooting/TS-0005-gradle-cross-platform-verification-metadata.md
   - ../troubleshooting/TS-0006-spring-boot-actuator-access.md
   - ../troubleshooting/TS-0007-k6-non-root-script-permission.md
+  - ../troubleshooting/TS-0008-gitleaks-pr-token-permission.md
 ---
 
 # CASE-0001 Java 17 기반 재현 가능한 Agentic 개발 환경 구축
@@ -79,6 +80,7 @@ TTY·디렉터리 권한 문제가 차례로 드러났다. 각 문제는 관찰 
 | Grafana | database `ok`, datasource와 `PlacePick Runtime Starter` dashboard 확인 | provisioning 성공 |
 | k6 smoke | VU 1, iteration 1, checks 2/2, HTTP 실패율 0%, 종료 코드 0 | health smoke 성공 |
 | 격리 정리 | k6·Testcontainers 임시 컨테이너 잔존 없음 | 생명주기 일치 |
+| GitHub Actions | repository policy, Java 17 backend, Dev Container smoke | 세 check 성공 |
 
 k6의 단일 요청 시간은 하네스 실행 증거일 뿐 처리량이나 추천 API 성능 성과가 아니다.
 도메인 계약이 아직 없으므로 추천 API 부하 시나리오와 목표 수치를 만들지 않았다.

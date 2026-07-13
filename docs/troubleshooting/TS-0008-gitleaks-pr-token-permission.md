@@ -2,7 +2,7 @@
 id: TS-0008
 title: GitHub Actions Gitleaks의 PR 커밋 조회 권한
 type: troubleshooting
-status: draft
+status: verified
 date: 2026-07-13
 owners:
   - placepick-platform
@@ -45,12 +45,17 @@ Gitleaks가 포함된 `repository-policy` job에만 `contents: read`와
 checkout에 필요한 `contents: read`도 함께 반복한다. 다른 job과 저장소 기본 권한,
 쓰기 권한은 변경하지 않는다.
 
-## 검증 계획과 재발 방지
+## 검증 결과와 재발 방지
 
-로컬에서 YAML 파싱, job 권한 값, 문서 정책, Compose 조합과 전체 `make check`를
-검증한다. 수정 branch를 push한 뒤 같은 PR에서 `Repository policy and Compose`,
-`Java 17 backend check`, `Dev Container smoke`가 모두 성공하는지 확인해야 이 기록을
-`verified`로 전환한다.
+로컬에서 YAML을 파싱해 해당 job 권한이 `contents: read`와
+`pull-requests: read` 두 개뿐임을 확인했다. 이어서 문서 32개 lint·정책, 음성 fixture
+8개, Compose 조합과 Gradle 전체 lifecycle을 포함한 `make check`가 통과했고 Gitleaks
+로컬 검사에서도 탐지 결과가 없었다.
+
+commit `0b4a5aa`를 push해 생성된 CI run `29250283518`에서 이전에 실패했던
+`Repository policy and Compose`가 성공했다. 같은 SHA의 `Java 17 backend check`와
+Dev Container smoke run `29250283422`도 성공했다. 따라서 PR 쓰기 권한 없이 read
+권한만으로 검사 목적과 CI 계약을 충족함을 확인했다.
 
 향후 GitHub Action이 API를 호출할 때는 실패 응답의
 `x-accepted-github-permissions`와 실제 HTTP method를 기준으로 read와 write를

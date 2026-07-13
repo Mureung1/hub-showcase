@@ -2,7 +2,7 @@
 id: WI-0001
 title: Java 17 기반 Agentic 개발 환경 구축
 type: work-record
-status: in-progress
+status: done
 date: 2026-07-13
 owners:
   - placepick-backend
@@ -158,7 +158,7 @@ fail closed한다.
 18. 첫 Draft PR에서 backend와 Dev Container 검증은 성공했지만 Gitleaks Action이
     PR 커밋 목록을 읽는 단계에서 HTTP 403을 반환했다. 응답이 요구한
     `pull_requests=read`만 해당 job에 추가하고 쓰기·전역 권한을 제외한 근거와 원격
-    재검증 조건을
+    재검증 결과를
     [TS-0008](../troubleshooting/TS-0008-gitleaks-pr-token-permission.md)에 기록했다.
 
 ## 구현 결과와 검증 증거
@@ -195,9 +195,10 @@ Compose/Dev Container, WireMock fixture, 관측성·k6 smoke, 문서 체계와 G
 - 외부 모드를 `real`로 바꾼 격리 실행은 종료 코드 1과
   `PLACEPICK_EXTERNAL_MODE=mock` 요구 메시지로 시작을 거부했다. 외부 Markdown 링크,
   JSON, 셸·ShellCheck, Gitleaks와 사용자 파일 SHA-256 보존 검사도 통과했다.
-- 첫 GitHub Actions 실행에서 Java 17 backend check와 Dev Container smoke는 통과했다.
-  Repository policy job도 문서·Compose 검증까지 통과했지만 Gitleaks Action의 PR read
-  권한이 없어 중단됐으며, 최소 권한 수정의 원격 재검증이 남아 있다.
+- 첫 GitHub Actions 실행에서 발견한 Gitleaks Action의 PR read 권한 누락을 job 범위의
+  최소 권한으로 수정했다. commit `0b4a5aa`의 CI run `29250283518`에서 repository
+  policy와 Java 17 backend check가 성공했고, Dev Container smoke run `29250283422`도
+  성공해 세 원격 check가 모두 통과했다.
 
 검증 완료 결과는 포트폴리오 관점으로
 [CASE-0001](../case-studies/CASE-0001-agentic-development-environment.md)에 요약했다.
@@ -212,8 +213,7 @@ Java 17 전체 적용, 백엔드 우선 범위, GitHub Flow와 하이브리드 �
 ## 남은 위험과 학습
 
 원격 branch protection은 관리자 설정이 필요하며 저장소 파일만으로 적용 완료를
-주장하지 않는다. 첫 PR의 최소 권한 수정도 세 GitHub Actions check가 모두 통과해야
-완료할 수 있다. Docker Desktop 엔진이 꺼져 있으면 컨테이너 통합·관측성·부하 검증을
+주장하지 않는다. Docker Desktop 엔진이 꺼져 있으면 컨테이너 통합·관측성·부하 검증을
 재실행할 수 없고, 고정 image digest와 dependency checksum은 의도적인 업데이트
 절차가 필요하다. 향후 실제 도메인 API가 추가되면 계약, Eval과 부하 기준을 별도
 Work Record에서 측정해 확장한다.
