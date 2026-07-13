@@ -12,7 +12,7 @@ export type Category = {
 }
 
 export type Schedule = {
-  id: number
+  id: string
   date: string
   title: string
   time: string

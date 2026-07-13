@@ -31,13 +31,17 @@
 
 - [서비스 기획서](./서비스%20기획서.md)
 - [개발 백로그](./docs/개발백로그.md)
+- [DB 스키마](./docs/DB스키마.md)
 
 ## 실행 방법
 
-Node.js와 pnpm이 설치된 환경에서 실행합니다.
+Node.js와 pnpm이 설치된 환경에서 실행합니다. 프론트엔드와 백엔드를 각각 별도 터미널에서 띄워야 합니다.
+
+### 프론트엔드
 
 ```bash
 pnpm install
+cp .env.example .env   # VITE_API_BASE_URL 확인
 pnpm dev
 ```
 
@@ -46,3 +50,16 @@ pnpm dev
 ```bash
 pnpm build
 ```
+
+### 백엔드 (server/)
+
+```bash
+cd server
+pnpm install
+cp .env.example .env   # DATABASE_URL에 Postgres 연결 문자열 입력
+pnpm prisma:migrate
+pnpm prisma:seed
+pnpm dev
+```
+
+기본적으로 백엔드는 4000번 포트, 프론트엔드는 5173번 포트에서 동작합니다.

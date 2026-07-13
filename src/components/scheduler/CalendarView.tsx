@@ -18,6 +18,7 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
   const {
     categories,
     schedules,
+    schedulesLoading,
     selectedSchedules,
     year,
     monthIndex,
@@ -181,6 +182,8 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
             ) : (
               <p className="empty-agenda">{selectedFriend?.name ?? '친구'}님이 공개한 일정이 없어요.</p>
             )
+          ) : schedulesLoading ? (
+            <p className="empty-agenda">일정을 불러오는 중이에요...</p>
           ) : selectedSchedules.length > 0 ? (
             <div className="agenda-list">
               {selectedSchedules.map((schedule) => {

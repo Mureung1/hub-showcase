@@ -29,7 +29,8 @@ body { background: #f1f0eb; }
 .category-settings > p,
 .empty-agenda,
 .profile-card p,
-.scheduler-notice {
+.scheduler-notice,
+.auth-subtitle {
   font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
 }
 
@@ -433,3 +434,18 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) {
   .scheduler-page *, .scheduler-page *::before, .scheduler-page *::after { transition: none !important; }
 }
+
+.auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: #f1f0eb; color: var(--scheduler-ink); font-family: 'Galmuri11', 'Pretendard', 'Malgun Gothic', sans-serif; }
+.auth-card { width: min(100%, 360px); padding: 32px 28px; border: 2px solid var(--scheduler-ink); border-radius: 22px; background: #fff; box-shadow: 8px 8px 0 rgba(52,75,70,.11); text-align: center; }
+.auth-card .scheduler-logo { margin: 0 auto; }
+.auth-card h1 { margin: 14px 0 4px; font-size: 20px; }
+.auth-card h1 em { color: var(--scheduler-coral); font-style: normal; }
+.auth-subtitle { margin: 0 0 22px; font-size: 11px; }
+.auth-card form { display: grid; gap: 14px; text-align: left; }
+.auth-card label { display: grid; gap: 6px; }
+.auth-card label > span { color: var(--scheduler-muted); font-size: 9px; font-weight: 800; }
+.auth-card input { height: 40px; padding: 0 12px; border: 1px solid var(--scheduler-line); border-radius: 10px; background: #fff; color: var(--scheduler-ink); font: inherit; font-size: 12px; outline: none; }
+.auth-card input:focus { border-color: var(--scheduler-green); box-shadow: 0 0 0 3px rgba(143,189,171,.18); }
+.auth-submit { height: 44px; margin-top: 4px; border: 1px solid var(--scheduler-ink); border-radius: 12px; background: var(--scheduler-ink); color: #fff; cursor: pointer; font: inherit; font-size: 12px; font-weight: 800; }
+.auth-submit:disabled { opacity: .6; cursor: default; }
+.auth-toggle { margin-top: 16px; border: 0; background: transparent; color: var(--scheduler-green); cursor: pointer; font-size: 10px; font-weight: 800; }

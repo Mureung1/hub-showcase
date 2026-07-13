@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
-import { initialCategories, initialSchedules } from './data'
+import { useEffect, useMemo, useState } from 'react'
+import * as api from './api'
+import { initialCategories } from './data'
 import type { Category, Schedule, ScheduleCategoryId, ShareGroup } from './types'
 
 export function dateKey(year: number, monthIndex: number, day: number) {
@@ -10,14 +11,34 @@ export function useScheduleManager() {
   const [categories, setCategories] = useState(initialCategories)
   const [viewDate, setViewDate] = useState(() => new Date(2026, 6, 1))
   const [selectedDay, setSelectedDay] = useState(7)
-  const [schedules, setSchedules] = useState(initialSchedules)
+  const [schedules, setSchedules] = useState<Schedule[]>([])
+  const [schedulesLoading, setSchedulesLoading] = useState(true)
   const [notice, setNotice] = useState('')
   const [categorySettingsOpen, setCategorySettingsOpen] = useState(false)
-  const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null)
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null)
   const [draftTitle, setDraftTitle] = useState('')
   const [draftTime, setDraftTime] = useState('')
-  const [renamingId, setRenamingId] = useState<number | null>(null)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+
+    api.fetchSchedules()
+      .then((loaded) => {
+        if (!cancelled) setSchedules(loaded)
+      })
+      .catch(() => {
+        if (!cancelled) setNotice('일정을 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
+      })
+      .finally(() => {
+        if (!cancelled) setSchedulesLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const year = viewDate.getFullYear()
   const monthIndex = viewDate.getMonth()
@@ -45,19 +66,19 @@ export function useScheduleManager() {
     setNotice('')
   }
 
-  const addSchedule = (selectedCategory: Category) => {
-    const nextSchedule: Schedule = {
-      id: Date.now(),
-      date: selectedKey,
-      title: `${selectedCategory.name} 일정`,
-      time: '',
-      category: selectedCategory.id,
-      tone: selectedCategory.tone,
-      completed: false,
+  const addSchedule = async (selectedCategory: Category) => {
+    try {
+      const created = await api.createSchedule({
+        categoryId: selectedCategory.id,
+        date: selectedKey,
+        title: `${selectedCategory.name} 일정`,
+        time: '',
+      })
+      setSchedules((current) => [...current, created])
+      setNotice(`${monthIndex + 1}월 ${selectedDay}일에 ${selectedCategory.name} 일정을 추가했어요.`)
+    } catch {
+      setNotice('일정을 추가하지 못했어요. 잠시 후 다시 시도해주세요.')
     }
-
-    setSchedules((current) => [...current, nextSchedule])
-    setNotice(`${monthIndex + 1}월 ${selectedDay}일에 ${selectedCategory.name} 일정을 추가했어요.`)
   }
 
   const openScheduleEditor = (schedule: Schedule) => {
@@ -80,51 +101,60 @@ export function useScheduleManager() {
     setRenameDraft(schedule.title)
   }
 
-  const commitRename = (scheduleId: number) => {
+  const commitRename = async (scheduleId: string) => {
     const title = renameDraft.trim()
-
-    setSchedules((current) => current.map((schedule) => (
-      schedule.id === scheduleId && title
-        ? { ...schedule, title }
-        : schedule
-    )))
     setRenamingId(null)
+    if (!title) return
+
+    try {
+      const updated = await api.updateSchedule(scheduleId, { title })
+      setSchedules((current) => current.map((schedule) => (schedule.id === scheduleId ? updated : schedule)))
+    } catch {
+      setNotice('일정 이름을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')
+    }
   }
 
   const cancelRename = () => setRenamingId(null)
 
-  const saveScheduleChanges = (scheduleId: number) => {
+  const saveScheduleChanges = async (scheduleId: string) => {
     const title = draftTitle.trim()
     if (!title) {
       setNotice('일정 이름을 입력해주세요.')
       return
     }
 
-    setSchedules((current) => current.map((schedule) => (
-      schedule.id === scheduleId
-        ? { ...schedule, title, time: draftTime }
-        : schedule
-    )))
-    setEditingScheduleId(null)
-    setNotice('일정 이름과 시간을 저장했어요.')
+    try {
+      const updated = await api.updateSchedule(scheduleId, { title, time: draftTime })
+      setSchedules((current) => current.map((schedule) => (schedule.id === scheduleId ? updated : schedule)))
+      setEditingScheduleId(null)
+      setNotice('일정 이름과 시간을 저장했어요.')
+    } catch {
+      setNotice('일정을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')
+    }
   }
 
-  const deleteSchedule = (schedule: Schedule) => {
-    setSchedules((current) => current.filter((item) => item.id !== schedule.id))
-    setEditingScheduleId(null)
-    setNotice(`‘${schedule.title}’ 일정을 삭제했어요.`)
+  const deleteSchedule = async (schedule: Schedule) => {
+    try {
+      await api.deleteSchedule(schedule.id)
+      setSchedules((current) => current.filter((item) => item.id !== schedule.id))
+      setEditingScheduleId(null)
+      setNotice(`'${schedule.title}' 일정을 삭제했어요.`)
+    } catch {
+      setNotice('일정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.')
+    }
   }
 
-  const toggleScheduleCompletion = (scheduleId: number) => {
+  const toggleScheduleCompletion = async (scheduleId: string) => {
     const target = schedules.find((schedule) => schedule.id === scheduleId)
     if (!target) return
 
-    setSchedules((current) => current.map((schedule) => (
-      schedule.id === scheduleId
-        ? { ...schedule, completed: !schedule.completed }
-        : schedule
-    )))
-    setNotice(target.completed ? '일정을 미완료 상태로 되돌렸어요.' : '일정을 완료했어요!')
+    try {
+      const updated = await api.updateSchedule(scheduleId, { completed: !target.completed })
+      setSchedules((current) => current.map((schedule) => (schedule.id === scheduleId ? updated : schedule)))
+      setNotice(target.completed ? '일정을 미완료 상태로 되돌렸어요.' : '일정을 완료했어요!')
+    } catch {
+      setNotice('일정 상태를 변경하지 못했어요. 잠시 후 다시 시도해주세요.')
+    }
   }
 
   const toggleVisibleGroup = (categoryId: ScheduleCategoryId, group: ShareGroup) => {
@@ -140,6 +170,7 @@ export function useScheduleManager() {
   return {
     categories,
     schedules,
+    schedulesLoading,
     selectedSchedules,
     year,
     monthIndex,
