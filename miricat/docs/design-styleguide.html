@@ -1,0 +1,389 @@
+<title>Meerkat — 디자인 시스템</title>
+<style>
+  /* ============================================================
+     TOKENS  — 라이트 테마 기본값
+     ============================================================ */
+  :root {
+    /* Brand / Accent */
+    --color-primary:        #8B5E3C;
+    --color-primary-hover:  #6F4A2E;
+    --color-accent:         #3E6FA3;
+    --color-accent-soft:    #A7C4DE;
+
+    /* Backgrounds */
+    --color-bg:             #EBDCC4;
+    --color-surface:        #F7EEDF;
+    --color-surface-alt:    #E2CFB2;
+
+    /* Text */
+    --color-text:           #3B2E21;
+    --color-text-muted:     #8A7A64;
+    --color-text-on-primary:#FBF6EE;
+
+    /* Border */
+    --color-border:         #D3BE9E;
+
+    /* Fonts */
+    --font-sans: "Pretendard", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+
+    --fs-xs: 0.75rem; --fs-sm: 0.875rem; --fs-base: 1rem;
+    --fs-lg: 1.25rem; --fs-xl: 1.75rem; --fs-2xl: 2.5rem; --fs-3xl: 3.5rem;
+
+    --fw-normal: 400; --fw-medium: 500; --fw-bold: 700;
+    --lh-tight: 1.2; --lh-base: 1.6;
+
+    /* Radius */
+    --radius-sm: 6px; --radius-md: 12px; --radius-lg: 20px; --radius-full: 9999px;
+
+    /* Spacing (4px scale) */
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+    --space-5: 24px; --space-6: 32px; --space-8: 48px; --space-10: 64px;
+
+    /* Shadows (웜톤) */
+    --shadow-sm: 0 1px 3px rgba(90,62,38,.12);
+    --shadow-md: 0 4px 12px rgba(90,62,38,.15);
+    --shadow-lg: 0 12px 28px rgba(90,62,38,.18);
+  }
+
+  /* 다크 테마 — 해질녘 모래톤. 토큰만 재정의한다. */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-primary:        #C79A6E;
+      --color-primary-hover:  #D8AF86;
+      --color-accent:         #7FB0DC;
+      --color-accent-soft:    #2E4C68;
+      --color-bg:             #241C14;
+      --color-surface:        #322619;
+      --color-surface-alt:    #3E2F1F;
+      --color-text:           #F1E6D4;
+      --color-text-muted:     #B39E82;
+      --color-text-on-primary:#241C14;
+      --color-border:         #4A3A28;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.35);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.45);
+      --shadow-lg: 0 12px 28px rgba(0,0,0,.55);
+    }
+  }
+  /* 뷰어 토글이 미디어쿼리를 반드시 이긴다 (양방향) */
+  :root[data-theme="dark"] {
+    --color-primary:#C79A6E; --color-primary-hover:#D8AF86;
+    --color-accent:#7FB0DC; --color-accent-soft:#2E4C68;
+    --color-bg:#241C14; --color-surface:#322619; --color-surface-alt:#3E2F1F;
+    --color-text:#F1E6D4; --color-text-muted:#B39E82; --color-text-on-primary:#241C14;
+    --color-border:#4A3A28;
+    --shadow-sm:0 1px 3px rgba(0,0,0,.35);
+    --shadow-md:0 4px 12px rgba(0,0,0,.45);
+    --shadow-lg:0 12px 28px rgba(0,0,0,.55);
+  }
+  :root[data-theme="light"] {
+    --color-primary:#8B5E3C; --color-primary-hover:#6F4A2E;
+    --color-accent:#3E6FA3; --color-accent-soft:#A7C4DE;
+    --color-bg:#EBDCC4; --color-surface:#F7EEDF; --color-surface-alt:#E2CFB2;
+    --color-text:#3B2E21; --color-text-muted:#8A7A64; --color-text-on-primary:#FBF6EE;
+    --color-border:#D3BE9E;
+    --shadow-sm:0 1px 3px rgba(90,62,38,.12);
+    --shadow-md:0 4px 12px rgba(90,62,38,.15);
+    --shadow-lg:0 12px 28px rgba(90,62,38,.18);
+  }
+
+  /* ============================================================
+     BASE
+     ============================================================ */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--fs-base);
+    line-height: var(--lh-base);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: var(--space-8) var(--space-5) var(--space-10); }
+
+  /* 시그니처: 블루 스트라이프 (의자 천 모티프) */
+  .stripe {
+    height: 10px;
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--color-accent) 0 12px,
+      var(--color-surface) 12px 24px
+    );
+    border-radius: var(--radius-full);
+  }
+
+  h1, h2, h3 { text-wrap: balance; line-height: var(--lh-tight); margin: 0; }
+  .eyebrow {
+    font-size: var(--fs-xs);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    font-weight: var(--fw-medium);
+  }
+
+  header.hero { display: grid; gap: var(--space-4); margin-bottom: var(--space-10); }
+  header.hero h1 { font-size: var(--fs-3xl); font-weight: var(--fw-bold); letter-spacing: -.02em; }
+  header.hero p { margin: 0; max-width: 60ch; color: var(--color-text-muted); font-size: var(--fs-lg); }
+
+  section { margin-bottom: var(--space-10); }
+  section > h2 {
+    font-size: var(--fs-xl); font-weight: var(--fw-bold);
+    margin-bottom: var(--space-2);
+  }
+  section > .desc { color: var(--color-text-muted); font-size: var(--fs-sm); margin-bottom: var(--space-5); }
+
+  /* ---------- Color swatches ---------- */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3); }
+  .swatch {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--color-surface);
+  }
+  .swatch .chip { height: 76px; }
+  .swatch .meta { padding: var(--space-3); display: grid; gap: 2px; }
+  .swatch .name { font-size: var(--fs-sm); font-weight: var(--fw-medium); }
+  .swatch .hex { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--color-text-muted); text-transform: uppercase; }
+
+  /* ---------- Type scale ---------- */
+  .type-row {
+    display: flex; align-items: baseline; gap: var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .type-row:last-child { border-bottom: 0; }
+  .type-row .tag {
+    font-family: var(--font-mono); font-size: var(--fs-xs);
+    color: var(--color-text-muted); min-width: 96px; flex-shrink: 0;
+  }
+  .type-row .sample { color: var(--color-text); }
+
+  /* ---------- Radius / Spacing / Shadow ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-4); }
+  .tile { display: grid; gap: var(--space-2); justify-items: center; text-align: center; }
+  .tile .box {
+    width: 100%; height: 72px;
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+  }
+  .tile .lbl { font-size: var(--fs-xs); color: var(--color-text-muted); font-family: var(--font-mono); }
+
+  .spacing-list { display: grid; gap: var(--space-2); }
+  .spacing-row { display: flex; align-items: center; gap: var(--space-4); }
+  .spacing-row .bar { height: 14px; background: var(--color-accent-soft); border-radius: var(--radius-sm); }
+  .spacing-row .lbl { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--color-text-muted); min-width: 130px; }
+
+  .shadows { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); }
+  .shadow-card {
+    height: 96px; background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    display: grid; place-items: center;
+    font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--color-text-muted);
+  }
+
+  /* ---------- Component previews ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); }
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  .card .card-body { padding: var(--space-5); display: grid; gap: var(--space-3); }
+  .card .badge {
+    justify-self: start;
+    font-size: var(--fs-xs); font-weight: var(--fw-medium);
+    color: var(--color-accent);
+    background: var(--color-accent-soft);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+  }
+  :root[data-theme="dark"] .card .badge,
+  .card .badge { color: var(--color-accent); }
+  .card h3 { font-size: var(--fs-lg); font-weight: var(--fw-bold); }
+  .card p { margin: 0; color: var(--color-text-muted); font-size: var(--fs-sm); }
+
+  .btns { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+  .btn {
+    font: inherit; font-weight: var(--fw-medium); cursor: pointer;
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    transition: background .15s ease, color .15s ease;
+  }
+  .btn-primary { background: var(--color-primary); color: var(--color-text-on-primary); }
+  .btn-primary:hover { background: var(--color-primary-hover); }
+  .btn-accent { background: var(--color-accent); color: #fff; }
+  .btn-ghost { background: transparent; color: var(--color-text); border-color: var(--color-border); }
+  .btn-ghost:hover { background: var(--color-surface-alt); }
+  .btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+  /* Theme toggle */
+  .toggle {
+    position: fixed; top: var(--space-4); right: var(--space-4);
+    z-index: 10;
+    font: inherit; font-size: var(--fs-sm); cursor: pointer;
+    background: var(--color-surface); color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    padding: var(--space-2) var(--space-4);
+    box-shadow: var(--shadow-sm);
+  }
+  .toggle:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+  footer { color: var(--color-text-muted); font-size: var(--fs-xs); border-top: 1px solid var(--color-border); padding-top: var(--space-5); }
+
+  @media (max-width: 560px) {
+    .shadows { grid-template-columns: 1fr; }
+    header.hero h1 { font-size: var(--fs-2xl); }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<button class="toggle" id="themeToggle" aria-label="테마 전환">◐ 테마</button>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="stripe" style="max-width:220px"></div>
+    <span class="eyebrow">Design System · 사막의 오후</span>
+    <h1>미어캣 스타일 가이드</h1>
+    <p>따뜻한 모래톤 위에 접이식 의자 천의 블루 스트라이프 하나를 포인트로 얹은 규칙 모음. 아래 모든 요소는 CSS 변수로만 제어됩니다.</p>
+  </header>
+
+  <section>
+    <h2>색상 (Color)</h2>
+    <p class="desc">주색은 미어캣 브라운, 유일한 쿨톤 포인트는 스트라이프 블루입니다.</p>
+    <div class="swatches" id="swatches"></div>
+  </section>
+
+  <section>
+    <h2>타이포그래피 (Type Scale)</h2>
+    <p class="desc">Sans 계열 · 4px 기반 사이즈 스케일. 제목은 balance 처리.</p>
+    <div id="typeScale"></div>
+  </section>
+
+  <section>
+    <h2>모서리 (Radius)</h2>
+    <p class="desc">카드는 20px로 크게 잡아 편안한 톤을 유지합니다.</p>
+    <div class="tiles" id="radiusTiles"></div>
+  </section>
+
+  <section>
+    <h2>여백 (Spacing · 4px grid)</h2>
+    <div class="spacing-list" id="spacingList"></div>
+  </section>
+
+  <section>
+    <h2>그림자 (Shadow)</h2>
+    <p class="desc">햇빛 아래 그림자처럼 웜톤 섀도우를 사용합니다.</p>
+    <div class="shadows">
+      <div class="shadow-card" style="box-shadow:var(--shadow-sm)">shadow-sm</div>
+      <div class="shadow-card" style="box-shadow:var(--shadow-md)">shadow-md</div>
+      <div class="shadow-card" style="box-shadow:var(--shadow-lg)">shadow-lg</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>컴포넌트 (Components)</h2>
+    <p class="desc">토큰을 조합한 카드와 버튼 예시.</p>
+    <div class="cards" style="margin-bottom:var(--space-6)">
+      <article class="card">
+        <div class="stripe" style="border-radius:0"></div>
+        <div class="card-body">
+          <span class="badge">일광욕 중</span>
+          <h3>느긋한 오후</h3>
+          <p>크림 표면 · 얇은 베이지 테두리 · 웜톤 그림자로 구성한 기본 카드입니다.</p>
+          <div class="btns"><button class="btn btn-primary">자세히</button></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="stripe" style="border-radius:0"></div>
+        <div class="card-body">
+          <span class="badge">포인트</span>
+          <h3>스트라이프 강조</h3>
+          <p>블루는 배지·링크·강조 버튼에만 아껴 씁니다. 남용하지 않는 게 규칙.</p>
+          <div class="btns"><button class="btn btn-accent">강조 액션</button></div>
+        </div>
+      </article>
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary">Primary</button>
+      <button class="btn btn-accent">Accent</button>
+      <button class="btn btn-ghost">Ghost</button>
+    </div>
+  </section>
+
+  <footer>
+    토큰 원본 이미지: 접이식 의자 위의 미어캣 · 라이트/다크 두 테마 지원 · 모든 값은 <code>:root</code> CSS 변수
+  </footer>
+</div>
+
+<script>
+  // ---- Theme toggle (media query를 양방향으로 override) ----
+  const root = document.documentElement;
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const current = root.getAttribute('data-theme') || (isDark ? 'dark' : 'light');
+    root.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+  });
+
+  // ---- Data-driven token rendering ----
+  const colors = [
+    ['--color-primary','Primary','주색·버튼'],
+    ['--color-primary-hover','Primary Hover','눌림 상태'],
+    ['--color-accent','Accent','스트라이프 블루'],
+    ['--color-accent-soft','Accent Soft','연한 강조'],
+    ['--color-bg','Background','페이지 배경'],
+    ['--color-surface','Surface','카드 표면'],
+    ['--color-surface-alt','Surface Alt','보조 면'],
+    ['--color-text','Text','본문'],
+    ['--color-text-muted','Text Muted','보조 텍스트'],
+    ['--color-border','Border','테두리·구분선'],
+  ];
+  document.getElementById('swatches').innerHTML = colors.map(([v,n,d]) => `
+    <div class="swatch">
+      <div class="chip" style="background:var(${v})"></div>
+      <div class="meta">
+        <span class="name">${n}</span>
+        <span class="hex" id="hex-${v}">${v}</span>
+        <span class="hex" style="text-transform:none">${d}</span>
+      </div>
+    </div>`).join('');
+  // 실제 계산된 hex 표시
+  colors.forEach(([v]) => {
+    const val = getComputedStyle(root).getPropertyValue(v).trim();
+    const el = document.getElementById('hex-'+v);
+    if (val) el.textContent = val;
+  });
+
+  const types = [
+    ['3xl / 56px','var(--fs-3xl)','700','Aa 미어캣'],
+    ['2xl / 40px','var(--fs-2xl)','700','제목 Heading'],
+    ['xl / 28px','var(--fs-xl)','700','섹션 제목'],
+    ['lg / 20px','var(--fs-lg)','500','부제목 Subtitle'],
+    ['base / 16px','var(--fs-base)','400','본문 텍스트입니다. 읽기 편한 크기.'],
+    ['sm / 14px','var(--fs-sm)','400','보조 설명 텍스트'],
+    ['xs / 12px','var(--fs-xs)','500','캡션 · 라벨'],
+  ];
+  document.getElementById('typeScale').innerHTML = types.map(([t,s,w,sample]) => `
+    <div class="type-row">
+      <span class="tag">${t}</span>
+      <span class="sample" style="font-size:${s};font-weight:${w}">${sample}</span>
+    </div>`).join('');
+
+  const radii = [['sm','6px'],['md','12px'],['lg','20px'],['full','9999px']];
+  document.getElementById('radiusTiles').innerHTML = radii.map(([n,px]) => `
+    <div class="tile">
+      <div class="box" style="border-radius:var(--radius-${n})"></div>
+      <span class="lbl">radius-${n}<br>${px}</span>
+    </div>`).join('');
+
+  const spaces = [['1','4px'],['2','8px'],['3','12px'],['4','16px'],['5','24px'],['6','32px'],['8','48px'],['10','64px']];
+  document.getElementById('spacingList').innerHTML = spaces.map(([n,px]) => `
+    <div class="spacing-row">
+      <span class="lbl">space-${n} · ${px}</span>
+      <span class="bar" style="width:${px}"></span>
+    </div>`).join('');
+</script>
