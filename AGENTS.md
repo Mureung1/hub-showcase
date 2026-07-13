@@ -44,4 +44,6 @@ PtoP(Project to Portfolio)는 GitHub Repository를 분석해 대학생 개발자
 - 디자인 Skill: `docs/design/ptop-design-skill.md`
 - 개발 Task: `docs/plans/development-tasks.md`
 - Repository 분석 학습 노트: `docs/research/repo-analysis-study.md`
+- PtoP 설문 생성 스크립트: `docs/research/ptop-survey-google-form.gs`
 - 테스트 케이스: `docs/testing/test-cases.md`
+- PR 템플릿: `docs/templates/pr-template.md`

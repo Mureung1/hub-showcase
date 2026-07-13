@@ -21,7 +21,9 @@ Agent가 항상 읽어야 하는 내용은 AGENTS.md에 최소한으로 남기�
 | 디자인용 | `docs/design/design-system.md` | 색상, 레이아웃, 상태 화면, 마스코트 사용 기준 |
 | 디자인 Skill | `docs/design/ptop-design-skill.md` | 화면 제작 시 반복 적용할 디자인 판단 기준 |
 | 학습용 | `docs/research/repo-analysis-study.md` | Git Repository 분석 방법 학습 기록 |
+| 사용자 조사 | `docs/research/ptop-survey-google-form.gs` | PtoP 사용자 설문 Google Form 생성 스크립트 |
 | 테스트용 | `docs/testing/test-cases.md` | 입력, 분석, 결과, 오류 케이스 |
+| 템플릿 | `docs/templates/pr-template.md` | AI Agent Challenge PR 작성 템플릿 |
 | 제출/Wiki용 | `docs/wiki/wiki-home.md` | GitHub Wiki에 반영할 요약 문서 |
 | 기획 가이드 | `docs/guides/planning-tip.md` | 루카스 기획 수업 요구사항 정리 |
 

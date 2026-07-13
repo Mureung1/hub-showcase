@@ -96,8 +96,10 @@ http://127.0.0.1:4177/prototype/index.html
 - [PtoP 디자인 Skill](./docs/design/ptop-design-skill.md)
 - [1주차 작업 체크리스트](./docs/plans/checklist.md)
 - [Git Repository 분석 학습 노트](./docs/research/repo-analysis-study.md)
+- [PtoP 설문 생성 스크립트](./docs/research/ptop-survey-google-form.gs)
 - [PtoP 테스트 케이스](./docs/testing/test-cases.md)
 - [기획하기 with AI 가이드](./docs/guides/planning-tip.md)
+- [PR 작성 템플릿](./docs/templates/pr-template.md)
 
 ## 기술 스택
 
