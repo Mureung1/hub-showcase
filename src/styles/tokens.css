@@ -1,0 +1,22 @@
+:root {
+  --navy: #0a2540;
+  --navy-soft: #1e4976;
+  --blue: #2563eb;
+  --blue-soft: #eef4fc;
+  --bg: #f5f7fa;
+  --white: #ffffff;
+  --border: #e1e5eb;
+  --text: #1a1a1a;
+  --text-sub: #666;
+  --text-muted: #999;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+
+  /* PC(≥480px) 프레임 바깥 배경 */
+  --pc-bg: #e8ecf1;
+  /* D-day soon 뱃지 (와이어프레임 JS 기준) */
+  --warning: #d97706;
+  --warning-bg: #fef3c7;
+}

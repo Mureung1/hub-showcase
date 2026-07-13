@@ -1,0 +1,47 @@
+/** prototype/gov_subsidy_home_wireframe.html subsidies 배열 기반 (MVP 샘플) */
+export const sampleSubsidies = [
+  {
+    id: '1',
+    name: '청년 창업 임대료 지원',
+    org: '서울시',
+    amount: '최대 300만원',
+    dday: 3,
+    match: 92,
+    deadline: '2026. 7. 11',
+    method: '온라인',
+    qualifications: [
+      '만 39세 이하 대표자',
+      '사업자등록 후 3년 이내',
+      '서울시 소재 매장 운영 중',
+      '연매출 3억원 이하',
+    ],
+    documents: [
+      '사업자등록증 사본',
+      '임대차계약서 사본',
+      '신분증 사본',
+      '매출 증빙 서류 (부가세 신고서 등)',
+    ],
+    how: '온라인 접수',
+    where: '서울시 자영업지원센터',
+    contact: '02-1234-5678',
+  },
+  {
+    id: '2',
+    name: '소상공인 방역물품 지원',
+    org: '마포구청',
+    amount: '최대 50만원',
+    dday: 7,
+    match: 88,
+    deadline: '2026. 7. 15',
+    method: '온라인',
+    qualifications: [
+      '마포구 소재 소상공인',
+      '종업원 5인 미만',
+      '직전년도 매출 2억원 이하',
+    ],
+    documents: ['사업자등록증 사본', '방역물품 구매 영수증', '신분증 사본'],
+    how: '온라인 접수',
+    where: '마포구 소상공인지원센터',
+    contact: '02-3153-0000',
+  },
+]

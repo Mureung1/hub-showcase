@@ -1,0 +1,22 @@
+.progress-bar {
+  display: flex;
+  gap: 6px;
+  padding: 16px 20px 0;
+}
+
+.progress-bar .bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+
+.progress-bar .bar.done {
+  background: var(--blue);
+}
+
+.progress-bar .bar.current {
+  background: var(--blue);
+  opacity: 0.4;
+}

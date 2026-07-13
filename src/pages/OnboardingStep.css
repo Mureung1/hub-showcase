@@ -1,0 +1,204 @@
+/* 스텝 화면 공통 — 와이어프레임 .screen + 스텝 섹션 */
+.onboarding {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.step-nav {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px 0;
+}
+
+.btn-back {
+  font-size: 14px;
+  color: var(--text-sub);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.btn-back:hover {
+  color: var(--text);
+}
+
+.step-num {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.step-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0 20px;
+}
+
+.step-question {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--navy);
+  padding: 20px 0 4px;
+  line-height: 1.4;
+}
+
+.step-question-region {
+  color: var(--blue);
+}
+
+.step-hint {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-bottom: 24px;
+}
+
+.step-placeholder {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* 기타 직접 입력 — 와이어프레임 .custom-input-wrap */
+.custom-input-wrap {
+  margin-top: 8px;
+  display: none;
+  animation: fadeIn 0.2s ease;
+}
+
+.custom-input-wrap.show {
+  display: block;
+}
+
+.custom-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--white);
+}
+
+.custom-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-soft);
+}
+
+.custom-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* 선택지 목록 */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 지역 등 2열 그리드 */
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.options-grid .opt {
+  justify-content: center;
+  text-align: center;
+  padding: 12px;
+  font-size: 13px;
+}
+
+/* step4 — 직원 수 / 연매출 */
+.field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+
+.field-label--employees {
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+
+.field-group {
+  margin-bottom: 20px;
+}
+
+.field-group--revenue {
+  margin-top: 24px;
+}
+
+.select-wrap select {
+  width: 100%;
+  padding: 12px 40px 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--white);
+  color: var(--text);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  cursor: pointer;
+}
+
+.select-wrap select:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-soft);
+}
+
+/* 하단 버튼 */
+.step-bottom {
+  padding: 20px;
+  flex-shrink: 0;
+}
+
+.btn-next {
+  width: 100%;
+  padding: 14px;
+  background: var(--blue);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-next:active {
+  transform: scale(0.97);
+}
+
+.btn-next:disabled {
+  background: var(--border);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
