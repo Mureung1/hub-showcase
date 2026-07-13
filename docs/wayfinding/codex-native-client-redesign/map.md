@@ -22,7 +22,7 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 - Product adapter implementation은 소비하는 runtime method roster가 schema·pinned source/test·fake child와 필요한 live binary gate를 통과하고 ledger에 기록된 뒤에만 시작한다.
 - Wayfinder는 결정과 조사만 소유한다. 코드 제거·구현은 resulting spec과 `/to-tickets` 이후에 `/implement`로 수행한다.
 - 승인된 Connection → ConversationRuntime → AYPLE adapter seam을 후속 ticket이 다시 generic Host 설계로 대체하지 않는다. Superseding ADR 뒤에는 architecture readiness review를 통과해야 `/to-spec`으로 넘어간다.
-- 각 resolved Wayfinder decision, `/to-spec` 결과와 각 implementation slice는 Source·Standards·Spec을 독립 리뷰하고 blocking finding을 owning artifact로 환류한다. Method에 영향을 주는 design checkpoint는 current inventory row와 target tracer·owner·evidence를 대조하되 integration을 승격하지 않고, implementation checkpoint만 decisions JSON을 먼저 갱신한 뒤 generated inventory 정렬을 검증한다. `/to-spec`은 이 review를 통과한 뒤에만 `/to-tickets`로 넘긴다.
+- 각 resolved Wayfinder decision, `/to-spec` 결과와 각 implementation slice는 Source·Standards·Spec을 독립 리뷰하고 blocking finding을 owning artifact로 환류한다. Coverage schema가 구현되기 전 method design checkpoint는 current inventory row와 target tracer·adoption·owner·evidence를 owning ticket에 기록한다. Schema가 준비된 뒤의 design checkpoint는 이 판단을 decisions JSON에 먼저 반영하고 inventory를 재생성하되 integration을 유지하며, implementation checkpoint만 통과한 gate에 맞춰 integration과 implemented verification을 승격한다. `/to-spec`은 이 review를 통과한 뒤에만 `/to-tickets`로 넘긴다.
 
 ## Decisions so far
 
