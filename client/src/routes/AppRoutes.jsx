@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import LandingPage from "../pages/LandingPage";
+import MenteeSignupPage from "../pages/MenteeSignupPage";
 import PlannedPage from "../pages/PlannedPage";
 import SignupFormPlaceholderPage from "../pages/SignupFormPlaceholderPage";
 import SignupPage from "../pages/SignupPage";
@@ -13,7 +14,7 @@ function AppRoutes() {
       <Route path={routePaths.landing} element={<LandingPage />} />
       <Route path={routePaths.login} element={<Navigate to={routePaths.landingLogin} replace />} />
       <Route path={routePaths.signup} element={<SignupPage />} />
-      <Route path={routePaths.menteeSignup} element={<SignupFormPlaceholderPage role="mentee" />} />
+      <Route path={routePaths.menteeSignup} element={<MenteeSignupPage />} />
       <Route path={routePaths.mentorSignup} element={<SignupFormPlaceholderPage role="mentor" />} />
 
       {/* 멘티 전용 화면 */}

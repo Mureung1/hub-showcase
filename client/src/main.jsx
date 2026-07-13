@@ -5,6 +5,7 @@ import App from "./App";
 import "./styles/mentor-design-skill.css";
 import "./styles/landing-page.css";
 import "./styles/signup-role.css";
+import "./styles/mentee-signup.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
