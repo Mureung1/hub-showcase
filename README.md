@@ -100,8 +100,14 @@ AI가 카테고리·색상·스타일을 자동 태깅하고, **지금 바로 �
 
 
 ---
+## 📋 Project Management
 
-## 📄 Project Documents
+### Dashboard
+
+- [Pick My Clothes Dashboard](https://github.com/users/kyungminnn999/projects/1/views/1)
+
+
+### 📄 Documents
 
 - [Development Task](./project-docs/task.md)
 - [Backlog](./project-docs/BACKLOG.md)
