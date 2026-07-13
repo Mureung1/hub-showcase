@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: claimed
+- State: resolved
 - Blocked by: [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md)
 
 ## Question
@@ -56,4 +56,18 @@ Product/browser ref remapping과 connection generation은 runtime identity를 �
 
 ## Answer
 
-Ticket을 resolve할 때 작성한다.
+Pinned Codex의 persistence와 lifetime ownership을 그대로 baseline으로 채택한다. Codex native `ThreadId`가 conversation identity authority이고, persistent thread의 rollout/history persistence가 durable source of truth다. `CodexConversationRuntime`은 별도 durable native-identity catalog, alias 또는 generation-scoped ref를 만들지 않는다.
+
+Runtime 내부에서는 generated-schema validation을 통과한 exact string을 서로 다른 package-private opaque `CodexThreadId`·`CodexTurnId`·`CodexItemId`로 brand한다. `ThreadActor`가 한 `CodexThreadId`의 live projection을 canonical하게 소유하고 turn은 `(CodexThreadId, CodexTurnId)`, item은 `(CodexThreadId, CodexTurnId, CodexItemId)` full scope에서만 상관한다. ID 형식, cross-scope global uniqueness, lineage 또는 duplicate 의미를 public string shape보다 강하게 추론하지 않는다. T0의 transport-neutral public result에는 이 native ID와 product/browser ref를 노출하지 않는다.
+
+Method별 authority와 convergence는 다음과 같다.
+
+- `thread/start` exact response의 `thread.id`가 request-correlated identity authority다. Pinned response-first path를 어긴 pre-response `thread/started`는 T0에서 protocol contradiction이고 public identity를 만들지 않는다. Response 뒤 matching notification은 exact identity를 검증해 같은 actor로 수렴시키되 T0 completion condition으로 기다리지 않는다.
+- Idle `turn/start` response는 request acceptance와 turn identity authority이고 `turn/started`는 execution-start observation이다. Notification-first turn과 dependent item·terminal observation은 `ThreadActor`의 provisional turn 아래에 두며 exact matching response가 같은 record를 confirmed로 만든다. Mismatch를 alias·rebind 또는 두 turn의 병합으로 감추지 않는다. Contradiction과 unknown-outcome settlement는 [Connection loss와 unknown outcome 정책](012-decide-connection-and-unknown-outcome-policy.md)이 정한다.
+- `item/started`, `item/agentMessage/delta`와 `item/completed`는 명시된 full scope로 상관한다. T0 final AgentMessage content는 matching completed item에서 얻고 `turn/completed`는 matching turn의 authoritative terminal status만 제공한다. Terminal은 transcript authority, observation drain 또는 actor deletion barrier가 아니다.
+
+`ThreadActor`는 현재 Codex process에 붙은 in-memory live projection이다. Process terminal이면 attachment를 폐기하고 재사용하지 않지만 native `ThreadId`를 remap하거나 connection generation 때문에 stale 처리하지 않는다. Terminal turn과 item identity는 late observation을 full scope로 분류할 수 있도록 actor 안에 남긴다. Exact retention bound, duplicate/conflict outcome과 live delivery는 [Event delivery와 transcript recovery model](011-decide-delivery-and-recovery-model.md)이 정한다.
+
+`thread/resume`, `thread/read`, ephemeral·unmaterialized·history availability와 replay provenance는 이번 결정으로 확장하지 않는다. 해당 method tracer가 채택될 때 pinned response authority와 source/tests를 다시 적용한다. Product/browser ref가 실제로 필요하면 [첫 AY-PLE adapter tracer와 runtime readiness gate](018-decide-first-ayple-adapter-tracer.md)가 native authority를 바꾸지 않는 adapter policy로 결정한다.
+
+[Coverage ledger 영향](#coverage-ledger-영향)의 current row·target tracer·adoption·semantic owner·source/test evidence를 이 결정의 coverage record로 채택한다. 이 design checkpoint는 implementation이 아니므로 `codex-method-decisions.json`과 generated inventory를 변경하거나 어떤 integration row도 승격하지 않는다.

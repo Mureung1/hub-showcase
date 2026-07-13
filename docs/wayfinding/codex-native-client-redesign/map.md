@@ -17,7 +17,7 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 - Pinned generated schema는 exact wire shape, 같은 version의 Rust source·tests는 method별 ordering·identity authority·state transition과 first-party handling, live probe는 scheduler·external stdio interleaving의 관찰 근거를 소유한다. Inventory만으로 protocol semantics를 추론하지 않는다.
 - Baseline은 Rust의 줄 단위 복제가 아니라 현재 tracer가 채택한 method의 observable semantics를 source-guided port한다. `CodexAppServerConnection`은 child·JSONL·schema·envelope·exact demux·process loss, `CodexConversationRuntime`은 native identity·per-thread owner·method lifecycle, `AYPLE adapter`는 three-root product policy·safe projection·`ModelingInvocation`·browser UX를 소유한다.
 - 현재 generated [Codex App Server method inventory](../../architecture/codex-app-server-method-inventory.md)는 method 존재와 global integration/adoption만 보여 주고, [`codex-method-decisions.json`](../../../packages/runtime-codex/codex-method-decisions.json)은 `integration/adoption/note`만 허용한다. 후속 conformance·migration decision은 이 source를 method별 tracer·owner·source evidence·verification 상태까지 검증하는 coverage ledger로 확장하고 `client-host` taxonomy를 교체한 뒤 package workflow로 inventory를 재생성한다. Generated Markdown은 직접 수정하지 않는다.
-- Product intent와 policy의 authority는 AY-PLE Product Brief·`CONTEXT.md`·ADR 0005–0007이다. Product 문서가 protocol fact를 재정의하거나 protocol 구현 편의가 product policy를 결정하지 않으며, 더 강한 AY-PLE 동작은 owning adapter의 명시적 deviation ADR/spec으로 기록한다.
+- Product intent와 policy의 authority는 AY-PLE Product Brief·`CONTEXT.md`·ADR 0005–0007이다. Product 문서가 protocol fact를 재정의하거나 protocol 구현 편의가 product policy를 결정하지 않는다. Pinned source/test baseline으로 실제 제품 use case를 충족할 수 없을 때만 owning adapter가 더 강한 AY-PLE 동작을 추가하고 deviation·근거·pin upgrade cost를 ADR/spec에 명시한다.
 - `CodexAppServerConnection`, `CodexConversationRuntime`, `ThreadId` 등은 implementation·protocol 용어이며 `CONTEXT.md`의 AY-PLE 제품 도메인 용어로 추가하지 않는다.
 - Product adapter implementation은 소비하는 runtime method roster가 schema·pinned source/test·fake child와 필요한 live binary gate를 통과하고 ledger에 기록된 뒤에만 시작한다.
 - Wayfinder는 결정과 조사만 소유한다. 코드 제거·구현은 resulting spec과 `/to-tickets` 이후에 `/implement`로 수행한다.
@@ -34,6 +34,7 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 - [Core·TUI·exec conversation ownership pattern을 지도화한다](tickets/006-map-first-party-conversation-ownership.md) — First-party shared kernel을 가정하지 않고 native thread/session scope·per-thread ownership·surface projection·조건부 history와 독립 lifetime을 설계 입력으로 채택하며 exact seam·identity·delivery·cleanup policy는 후속 decision ticket에 남긴다.
 - [Protocol·Rust source evidence의 정렬 상태를 리뷰한다](tickets/007-review-source-evidence-alignment.md) — 세 evidence asset은 exact pin에 추적 가능하고 public·version-specific·live·product 권위를 분리하며 Source·Standards·Spec review를 통과해 첫 tracer와 module seam을 결정하기에 충분하다.
 - [첫 tracer와 module seam을 선택한다](tickets/008-choose-first-tracer-and-module-seams.md) — 최종 구조의 첫 conformance slice로 T0를 선택하고 Connection → ConversationRuntime → AYPLE adapter seam, source-guided method port, inventory-led coverage와 T0.1 command approval tracer를 채택한다.
+- [Native identity authority와 lifetime을 결정한다](tickets/009-decide-identity-and-authority.md) — Codex native identity와 persistence를 durable authority로 유지하고 process-scoped `ThreadActor`만 live projection으로 두며, 별도 catalog·remap·generation invalidation 없이 method별 identity 계약은 해당 tracer에서 확장한다.
 
 ## Not yet specified
 
