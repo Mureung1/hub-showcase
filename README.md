@@ -85,22 +85,47 @@ _생산성 및 빠른 배포를 위해 모바일 반응형 웹을 기반으로 �
 - Node.js v18+
 - Expo Go App (iOS/Android) 또는 시뮬레이터 (모바일 앱 확인용)
 
+### Project Structure
+
+```
+fitcheck-project/
+├── backend/         # Express API (TypeScript)
+├── frontend-web/    # Vite + React (회원 / 트레이너)
+└── mobile-app/      # Expo WebView wrapper
+```
+
 ### Installation & Run
 
 #### 🖥️ 1. Backend Server (Express) & Database (Supabase)
 
 ```bash
-# 백엔드 디렉토리 이동
-cd server
-
-# 패키지 설치
+cd fitcheck-project/backend
 npm install
-
-# 환경 변수 설정 (.env 파일 생성 후 Supabase Key 및 포트 설정)
-# PORT=5000
-# SUPABASE_URL=your_supabase_url
-# SUPABASE_KEY=your_supabase_anon_key
-
-# 서버 실행
+cp .env.example .env   # PORT, Supabase Key 설정
 npm run dev
 ```
+
+서버: http://localhost:5000
+
+#### 🌐 2. Frontend Web (Vite + React)
+
+```bash
+cd fitcheck-project/frontend-web
+npm install
+npm run dev
+```
+
+개발 서버: http://localhost:5173
+
+- 회원 모드: `/user`
+- 트레이너 모드: `/trainer`
+
+#### 📱 3. Mobile App (Expo WebView)
+
+```bash
+cd fitcheck-project/mobile-app
+npm install
+npm start
+```
+
+`App.js`의 `WEB_APP_URL`을 frontend-web 주소로 맞춘 뒤 Expo Go / 시뮬레이터에서 확인합니다.
