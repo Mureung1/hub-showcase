@@ -45,6 +45,13 @@ description: Development and product-planning ground rules for "We should do..".
 - 일정 시간이 없으면 빈 값. `시간 미정` 같은 대체 문구 쓰지 않기.
 - 새 화면/컴포넌트는 `src/components/scheduler/` 아래에 추가.
 
+## 인프라 · 배포
+- 로컬호스트 전용으로 개발하지 않기. 항상 외부 서버(PaaS)에 배포하는 것을 전제로 설계·구현.
+- 프론트엔드: Vercel 배포. 백엔드(Express): Render/Railway 같은 PaaS 배포.
+- DB: Postgres (Neon/Supabase 무료 티어). ORM은 Prisma.
+- 영상 파일: Cloudflare R2에 저장. 클라이언트가 presigned URL로 R2에 직접 업로드하고, Express 서버는 파일 바이너리를 중계하지 않음. DB에는 storage key/URL만 저장.
+- 인증: 커스텀 JWT (access 15분 + refresh 30일). refresh token은 해시로 DB에 저장해 즉시 무효화 가능하게 하고, 클라이언트에는 httpOnly 쿠키로 전달. Supabase Auth 등 외부 인증 서비스로 대체하지 않기.
+
 ## 하지 말 것
 - 앱 이름 · 두두 이름 변경.
 - 랭킹 · 순위 중심 경쟁 설계 (응원 · 성장 비교로 대체).
