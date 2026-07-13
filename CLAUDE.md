@@ -21,7 +21,7 @@
 
 ### Backend (예정, 미착수)
 - Node.js + Express
-- DB: 미정 (MVP는 MongoDB 검토 중, 관계가 복잡해지면 PostgreSQL 전환 고려)
+- DB: Supabase (PostgreSQL) + Prisma ORM ([decisions.md](docs/decisions.md) 2026-07-13 전환 기록 참조)
 
 ## 명령어
 - `npm run dev` — 개발 서버 실행
@@ -42,7 +42,7 @@
 ## 코드 작성 규칙
 - 코드 작성·수정·리뷰는 [docs/conventions.md](docs/conventions.md)의 규칙(파일 구조·네이밍·레이어 패턴·에러 처리·스타일)을 따를 것
 - `code-convention` 스킬(`.claude/skills/code-convention/`)이 이 규칙을 적용하도록 구성되어 있음
-- 백엔드(Node.js + Express + Mongoose)는 `routes → controllers → services → models` 레이어드 구조로 시작할 것
+- 백엔드(Node.js + Express + Prisma)는 `routes → controllers → services` 레이어드 구조로 시작하고, DB 스키마는 `prisma/schema.prisma`에 정의할 것
 
 ## 작업 규칙
 - 작은 단위로 주기적으로 커밋을 해야한다.

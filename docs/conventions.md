@@ -4,7 +4,7 @@
 새 코드는 이 규칙을 따르고, 규칙에 없는 부분은 **주변 기존 코드 스타일**을 따릅니다.
 
 - 프론트엔드 규칙: 현재 `src/`(React 19 + Vite) 코드 기준
-- 백엔드 규칙: 직접 작업한 Node.js 프로젝트(`KNU_Capstone_Backend`, Express + Mongoose) 구조를 참고해 정의
+- 백엔드 규칙: 직접 작업한 Node.js 프로젝트(`KNU_Capstone_Backend`, Express + Mongoose) 구조를 참고해 정의. 단 DB 레이어는 Mongoose 대신 **Prisma(PostgreSQL)** 사용 ([decisions.md](decisions.md) 2026-07-13)
 - 포맷 검사: `npm run lint` (oxlint). 별도 포맷터(Prettier)는 도입하지 않으므로 아래 스타일 규칙은 사람이 지킨다.
 
 ---
@@ -67,19 +67,20 @@
 
 ---
 
-## 4. Backend 규칙 (Node.js + Express + Mongoose)
+## 4. Backend 규칙 (Node.js + Express + Prisma)
 
 > 아직 미착수. 백엔드 착수 시 이 규칙으로 시작하고, `KNU_Capstone_Backend`의 구조를 레퍼런스로 삼는다.
 
 ### 폴더 구조 (레이어드 아키텍처)
 ```
-app.js                 # 엔트리: DB 연결, 미들웨어/라우터 등록, 서버 실행
+app.js                 # 엔트리: 미들웨어/라우터 등록, 서버 실행
+prisma/
+  schema.prisma        # Prisma 스키마 (테이블·인덱스·관계 정의, 마이그레이션 원본)
 src/
-  config/              # DB 연결, 환경 상수 등 설정
+  config/              # Prisma Client 인스턴스, 환경 상수 등 설정
   routes/              # 경로 정의 + 미들웨어 연결 (xxxRoutes.js)
   controllers/         # req/res 처리, 입력 검증, HTTP 응답 (xxxController.js)
   services/            # 비즈니스 로직, DB 접근 (xxxService.js)
-  models/              # Mongoose 스키마 (xxx.js)
   middlewares/         # 인증, 검증, rate-limit 등
   utils/               # 로거, 날짜, 파서 등 공통 유틸
   cron/                # 스케줄 작업
@@ -88,12 +89,12 @@ src/
 ### 레이어별 책임 (엄격히 분리)
 - **Route**: `express.Router()`로 경로 + 미들웨어(인증·검증) + 컨트롤러 핸들러만 연결. 로직 없음.
 - **Controller**: `req`에서 값 추출(`params`/`body`/`req.email`), 입력 검증, 서비스 호출, **HTTP 응답 포맷팅**(status + json). `req`/`res`는 여기서만 다룬다.
-- **Service**: 순수 비즈니스 로직 + DB 접근. `req`/`res`를 모른다. 에러는 로깅 후 **throw**한다.
-- **Model**: Mongoose 스키마·인덱스·가상필드 정의.
+- **Service**: 순수 비즈니스 로직 + DB 접근(Prisma Client). `req`/`res`를 모른다. 에러는 로깅 후 **throw**한다.
+- **Schema**: 테이블·인덱스·관계는 `prisma/schema.prisma`에 정의. Prisma Client는 `config/`에서 싱글턴으로 생성해 서비스에서 import.
 
 ### 네이밍
 - 파일: `xxxRoutes.js`, `xxxController.js`, `xxxService.js` (camelCase + 역할 접미사).
-- Mongoose 모델 변수·등록명: `PascalCase` (`const Answer = mongoose.model('Answer', answerSchema)`), 스키마 변수는 `xxxSchema`.
+- Prisma 모델명: `PascalCase` (`model Analysis { ... }`), 테이블 매핑은 `@@map("snake_case")` 복수형 (예: `@@map("analyses")`), 필드는 `camelCase` + `@map("snake_case")`.
 - 라우트 마운트 경로: `/api/<resource>` 복수형 (예: `/api/answers`, `/api/questions`).
 - 함수: `camelCase`, 동사로 시작 (`requestAnswer`, `getAnswer`, `returnFeedback`).
 
@@ -114,10 +115,12 @@ src/
 - winston 기반 `createLogger('moduleName')`(utils)로 모듈별 로거 생성.
 - **구조적 로깅**: 메시지 + 컨텍스트 객체(`{ error, stack, userId, email, ... }`)를 함께 남긴다. `console.log`는 부트스트랩/개발용으로 제한.
 
-### DB (Mongoose)
-- 읽기 전용 조회는 `.lean()`, 필요한 필드만 `.select()`.
-- 여러 문서를 원자적으로 쓸 때는 `session`(트랜잭션)으로 묶는다.
-- 자주 조회하는 필드에 인덱스를 건다. 스키마에는 `timestamps: true`로 `createdAt`/`updatedAt` 자동 생성.
+### DB (Prisma + PostgreSQL)
+- 필요한 필드만 조회할 때는 `select` 옵션 사용.
+- 여러 테이블을 원자적으로 쓸 때는 `prisma.$transaction()`으로 묶는다.
+- 자주 조회하는 필드에 `@@index`를 건다. 모든 모델에 `createdAt DateTime @default(now())` / `updatedAt DateTime @updatedAt` 필드를 둔다.
+- 스키마 변경은 반드시 `prisma migrate dev`로 마이그레이션 파일을 남긴다(마이그레이션 파일 커밋).
+- 캐시 테이블(`analyses`/`repo_cache`/`issue_cache`)의 만료는 조회 시 `fetchedAt` 검사로 처리.
 
 ### 설정 / 보안
 - 설정값은 `.env` + `dotenv`로 주입, 기본값 fallback (`process.env.PORT || 3000`).
