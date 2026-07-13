@@ -1,0 +1,544 @@
+[
+  {
+    "url": "https://ohou.se/advices/9206",
+    "title": "싱크대 배수구 냄새 뿌리 뽑는 법",
+    "mentions": [
+      {
+        "cause": "drain_organic",
+        "rank": "primary",
+        "label": "배수구 유기물 부패",
+        "solution": "베이킹소다 반 컵 + 식초 반 컵을 붓고 30분~1시간 방치 후 뜨거운 물로 헹굼",
+        "verify": "배수구에 코를 대고 냄새를 맡아봄"
+      }
+    ],
+    "axes": {
+      "smell_type": "rotten_egg",
+      "location_hot": "sink_drain",
+      "onset": "gradual",
+      "water_gap": "unspecified"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://vennygo.com/life/sink-drain-smell-removal-tips",
+    "title": "싱크대 배수구 냄새 제거 해결 방법",
+    "mentions": [
+      {
+        "cause": "drain_organic",
+        "rank": "primary",
+        "label": "배수구 유기물 부패",
+        "solution": "과탄산소다 1컵을 배수구에 뿌리고 80도 뜨거운 물 500ml를 천천히 부음",
+        "verify": "배관 내벽에 찌꺼기가 층층이 쌓여있는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "rotten_egg",
+      "location_hot": "sink_drain",
+      "onset": "gradual",
+      "water_gap": "unspecified"
+    },
+    "unlisted": ["황화수소 가스"]
+  },
+  {
+    "url": "https://www.mt.co.kr/society/2020/01/29/2020012815371764288",
+    "title": "고약한 싱크대 배수구 악취 쉽게 없애는법",
+    "mentions": [
+      {
+        "cause": "drain_organic",
+        "rank": "primary",
+        "label": "배수구 유기물 부패",
+        "solution": "소금과 뜨거운 물을 하루 1번 이상 2~3일 반복",
+        "verify": "배수구 망을 들어서 내부 상태 확인"
+      },
+      {
+        "cause": "trap_dry",
+        "rank": "secondary",
+        "label": "배수 트랩 마름/부재",
+        "solution": "S자 트랩 호스 상태 점검, 2~3년마다 교체",
+        "verify": "싱크대 하부장 문 열고 S자 트랩에 물이 차 있는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "rotten_egg",
+      "location_hot": "sink_drain",
+      "onset": "unspecified",
+      "water_gap": "unspecified"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://zippoom.com/blog/drain-smell",
+    "title": "하수구 냄새 원인부터 제거·청소까지 완벽 가이드",
+    "mentions": [
+      {
+        "cause": "trap_dry",
+        "rank": "primary",
+        "label": "배수 트랩 마름/부재",
+        "solution": "냄새가 올라오는 배수구에 물을 천천히 한 컵 부어서 봉수를 채움",
+        "verify": "물 부은 후 냄새가 즉시 차단되는지 확인"
+      },
+      {
+        "cause": "drain_organic",
+        "rank": "secondary",
+        "label": "배수구 유기물 부패",
+        "solution": "베이킹소다와 식초 2:1 비율로 배수구에 붓고 10~15분 반응 후 헹굼",
+        "verify": "배수구 필터에 음식물 찌꺼기가 쌓여있는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "rotten_egg",
+      "location_hot": "sink_drain",
+      "onset": "sudden",
+      "water_gap": "yes"
+    },
+    "unlisted": ["배수구 실링 불량"]
+  },
+  {
+    "url": "https://www.1hour.kr/blog/baesugu-odor-removal",
+    "title": "하수구 악취가 갑자기 올라올 때 원인별로 잡는 집안 루틴",
+    "mentions": [
+      {
+        "cause": "trap_dry",
+        "rank": "primary",
+        "label": "배수 트랩 마름/부재",
+        "solution": "물 1~2컵을 부어 봉수 채우기, 식용유 몇 방울 떨어뜨려 증발 속도 늦춤",
+        "verify": "여행이나 장기 외출 후 돌아왔는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "rotten_egg",
+      "location_hot": "sink_drain",
+      "onset": "sudden",
+      "water_gap": "yes"
+    },
+    "unlisted": ["공용 배관 압력 변화"]
+  },
+  {
+    "url": "https://m.dcinside.com/board/1room/7295",
+    "title": "원인불명 하수구 냄새 잡은 후기 (원룸)",
+    "mentions": [
+      {
+        "cause": "trap_dry",
+        "rank": "primary",
+        "label": "배수 트랩 마름/부재",
+        "solution": "S자 트랩 설치 및 연결부위 실리콘 마감",
+        "verify": "싱크대 하부장 열어서 S자 트랩 물 고임 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "rotten_egg",
+      "location_hot": "sink_drain",
+      "onset": "sudden",
+      "water_gap": "yes"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://m.dcinside.com/board/1room/26393",
+    "title": "하수구 냄새 드디어 잡았다 (원룸 경험담)",
+    "mentions": [
+      {
+        "cause": "trap_dry",
+        "rank": "primary",
+        "label": "배수 트랩 마름/부재",
+        "solution": "악취 차단 트랩 설치 - 물이 빠질 때는 열리고 없으면 자동으로 닫히는 구조",
+        "verify": "환풍기 돌릴 때 냄새가 더 심해지는지 확인 (음압 문제)"
+      }
+    ],
+    "axes": {
+      "smell_type": "rotten_egg",
+      "location_hot": "sink_drain",
+      "onset": "gradual",
+      "water_gap": "unspecified"
+    },
+    "unlisted": ["환풍기 음압 문제"]
+  },
+  {
+    "url": "https://www.a-ha.io/questions/sink-smell",
+    "title": "싱크대에서 곰팡이 냄새가 납니다",
+    "mentions": [
+      {
+        "cause": "mold_under_sink",
+        "rank": "primary",
+        "label": "싱크대 하부 곰팡이",
+        "solution": "락스와 세제를 뿌리고 솔로 문질러 곰팡이 제거",
+        "verify": "싱크대 하부장 문 열어서 곰팡이 유무 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sour_musty",
+      "location_hot": "under_sink",
+      "onset": "gradual",
+      "water_gap": "unspecified"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.phiko.kr/bbs/board.php?bo_table=z4_03&wr_id=25065",
+    "title": "싱크대 하부장 곰팡이 꿉꿉한냄새",
+    "mentions": [
+      {
+        "cause": "mold_under_sink",
+        "rank": "primary",
+        "label": "싱크대 하부 곰팡이",
+        "solution": "누수 여부 확인 후 습도계나 종이 타월로 테스트",
+        "verify": "하부장 문 열었을 때 꿉꿉한 냄새가 나는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sour_musty",
+      "location_hot": "under_sink",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": ["벽체 결로", "누수"]
+  },
+  {
+    "url": "https://www.phiko.kr/bbs/board.php?bo_table=z4_03&wr_id=8098",
+    "title": "싱크대 하부장 내부 곰팡이 냄새 (벽체 내부 결로 의심)",
+    "mentions": [
+      {
+        "cause": "mold_under_sink",
+        "rank": "primary",
+        "label": "싱크대 하부 곰팡이",
+        "solution": "콘센트 주위 결로 확인, 실리콘으로 틈새 막기",
+        "verify": "후면 콘센트, 난방배관 들어오는 개방면 점검"
+      }
+    ],
+    "axes": {
+      "smell_type": "sour_musty",
+      "location_hot": "under_sink",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": ["결로"]
+  },
+  {
+    "url": "https://newsfrida.com/60",
+    "title": "싱크대 하수구 곰팡이 뿌리 뽑는 방법",
+    "mentions": [
+      {
+        "cause": "drain_organic",
+        "rank": "primary",
+        "label": "배수구 유기물 부패",
+        "solution": "베이킹소다 뿌리고 구연산 뿌린 뒤 뜨거운 물을 부어 거품 반응으로 곰팡이 제거",
+        "verify": "일주일 방치 시 배관 안에 검은 때가 끼어있음"
+      },
+      {
+        "cause": "mold_under_sink",
+        "rank": "secondary",
+        "label": "싱크대 하부 곰팡이",
+        "solution": "한 달에 한 번 소금을 뿌리고 뜨거운 물을 흘려보냄",
+        "verify": "하수구 내부가 어둡고 습한 환경인지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sour_musty",
+      "location_hot": "sink_drain",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://ohou.se/advices/9093",
+    "title": "자취생 필독 0원으로 음쓰 냄새 완벽 차단하는 꿀팁",
+    "mentions": [
+      {
+        "cause": "food_waste",
+        "rank": "primary",
+        "label": "음식물 쓰레기통",
+        "solution": "페트병 입구를 음쓰봉투에 끼우고 뚜껑 닫기, 또는 물티슈 캡 활용",
+        "verify": "음식물 쓰레기통 뚜껑 열었을 때 악취가 나는지"
+      }
+    ],
+    "axes": {
+      "smell_type": "sweet_rotten",
+      "location_hot": "trash",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.a-ha.io/questions/food-waste-smell",
+    "title": "음식물쓰레기통 어떻게 닦아야 냄새가 안날까요",
+    "mentions": [
+      {
+        "cause": "food_waste",
+        "rank": "primary",
+        "label": "음식물 쓰레기통",
+        "solution": "베이킹소다와 미지근한 물을 섞어 쓰레기통에 1시간 담궈 청소, 또는 락스 희석액에 담금",
+        "verify": "쓰레기통 바닥에 물기가 남아있는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sweet_rotten",
+      "location_hot": "trash",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://main.sofancynews.com/74",
+    "title": "자취방 냄새 제거 루틴 대공개",
+    "mentions": [
+      {
+        "cause": "food_waste",
+        "rank": "primary",
+        "label": "음식물 쓰레기통",
+        "solution": "음식물 버린 직후 베이킹소다 2~3스푼 뿌리기 - 산성 악취를 알칼리성이 중화",
+        "verify": "쓰레기통 주변에서 냄새가 나는지 확인"
+      },
+      {
+        "cause": "sponge_dishcloth",
+        "rank": "secondary",
+        "label": "수세미/행주 세균",
+        "solution": "수세미와 행주 주기적 소독",
+        "verify": "행주에서 퀴퀴한 냄새가 나는지 코로 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sweet_rotten",
+      "location_hot": "trash",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.homify.co.kr/ideabooks/593452",
+    "title": "쓰레기통 악취 효과적으로 잡기 7",
+    "mentions": [
+      {
+        "cause": "food_waste",
+        "rank": "primary",
+        "label": "음식물 쓰레기통",
+        "solution": "쓰레기통 바닥에 신문지 깔기 (수분 흡수 + 냄새 차단), 커피 찌꺼기나 녹차 티백으로 탈취",
+        "verify": "쓰레기통 뚜껑 열 때 악취 여부 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sweet_rotten",
+      "location_hot": "trash",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://foodrecipe.co.kr/life/microwave-kitchen-cloth-sterilization",
+    "title": "매일 쓰는 행주 빨지 말고 이렇게 해보세요",
+    "mentions": [
+      {
+        "cause": "sponge_dishcloth",
+        "rank": "primary",
+        "label": "수세미/행주 세균",
+        "solution": "전자레인지에 넣고 2분 가열하면 세균 99% 제거",
+        "verify": "행주에서 퀴퀴한 쉰내가 나는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sour_musty",
+      "location_hot": "whole_room",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://blog.skogring.com/hygiene-tips-for-kitchen-cloths",
+    "title": "알고보니 세균덩어리? 행주 관리법",
+    "mentions": [
+      {
+        "cause": "sponge_dishcloth",
+        "rank": "primary",
+        "label": "수세미/행주 세균",
+        "solution": "실온 6시간 방치 시 세균 급증, 12시간이면 백만 배 증가 - 사용 후 물기 완전히 제거하고 건조",
+        "verify": "행주 냄새를 직접 맡아봄"
+      }
+    ],
+    "axes": {
+      "smell_type": "sour_musty",
+      "location_hot": "whole_room",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": ["대장균", "황색포도상구균"]
+  },
+  {
+    "url": "https://korean.mercola.com/sites/articles/archive/2019/11/17/kitchen-sponge",
+    "title": "냄새나는 수세미를 당장 갖다 버리세요",
+    "mentions": [
+      {
+        "cause": "sponge_dishcloth",
+        "rank": "primary",
+        "label": "수세미/행주 세균",
+        "solution": "수세미는 1주일에 한 번씩 새것으로 교체",
+        "verify": "수세미에 코를 대고 냄새 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sour_musty",
+      "location_hot": "sink_drain",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.eland.co.kr/ekiHow/viewEkiHow?ekiHowIdx=881",
+    "title": "세균 덩어리 수세미 소독하는 방법",
+    "mentions": [
+      {
+        "cause": "sponge_dishcloth",
+        "rank": "primary",
+        "label": "수세미/행주 세균",
+        "solution": "식초물에 30분 담가두면 세균 억제 및 악취 감소",
+        "verify": "수세미 구조상 구멍이 많아 음식 찌꺼기 잔류 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sour_musty",
+      "location_hot": "sink_drain",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": ["살모넬라균"]
+  },
+  {
+    "url": "https://www.pickdailynews.com/news/articleView.html?idxno=2270",
+    "title": "냉장고 악취 예상치 못한 원인 4가지",
+    "mentions": [
+      {
+        "cause": "fridge_spoiled",
+        "rank": "primary",
+        "label": "냉장고 내부 부패",
+        "solution": "일주일에 한 번 냉장고 내부 확인하고 부패한 음식 즉시 제거, 밀폐용기 사용",
+        "verify": "냉장고 문 열 때 악취가 나는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sweet_rotten",
+      "location_hot": "fridge",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": ["고무패킹 곰팡이", "물받이"]
+  },
+  {
+    "url": "https://semie.cooking/recipe-lab/archive/refrigerator-smell",
+    "title": "냉장고 냄새, 왜 나는 걸까?",
+    "mentions": [
+      {
+        "cause": "fridge_spoiled",
+        "rank": "primary",
+        "label": "냉장고 내부 부패",
+        "solution": "온도를 한두 단계 낮춰서 냄새 입자 확산 방지",
+        "verify": "야채칸의 오래된 채소, 반찬통 뚜껑 미세하게 열린 것 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sweet_rotten",
+      "location_hot": "fridge",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.1conomynews.co.kr/news/articleView.html?idxno=31757",
+    "title": "1인 가구 냉장고 악취 제거하는 다섯 가지 방법",
+    "mentions": [
+      {
+        "cause": "fridge_spoiled",
+        "rank": "primary",
+        "label": "냉장고 내부 부패",
+        "solution": "베이킹소다를 물에 희석해 스펀지로 꼼꼼히 닦기, 고무패킹도 식초나 베이킹소다로 닦기",
+        "verify": "냉장고 열었을 때 냄새가 심해지는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "sweet_rotten",
+      "location_hot": "fridge",
+      "onset": "gradual",
+      "water_gap": "no"
+    },
+    "unlisted": []
+  },
+  {
+    "url": "https://www.mrrooter.com/about/blog/why-theres-a-sulfur-smell-coming-from-your-drain/",
+    "title": "Why a Drain Smells Like Rotten Eggs or Sulfur",
+    "mentions": [
+      {
+        "cause": "trap_dry",
+        "rank": "primary",
+        "label": "배수 트랩 마름/부재",
+        "solution": "자주 안 쓰는 배수구에 물 1~2컵 부어서 P-trap 봉수 채우기",
+        "verify": "P-trap이 마른 상태인지 확인 (오래 안 쓴 싱크대)"
+      },
+      {
+        "cause": "drain_organic",
+        "rank": "secondary",
+        "label": "배수구 유기물 부패",
+        "solution": "베이킹소다 + 식초 + 끓는 물로 배관 청소",
+        "verify": "황화수소(썩은 계란) 냄새가 나는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "rotten_egg",
+      "location_hot": "sink_drain",
+      "onset": "sudden",
+      "water_gap": "yes"
+    },
+    "unlisted": ["hydrogen sulfide", "sulfate-reducing bacteria"]
+  },
+  {
+    "url": "https://drano.com/en-us/explore-clog-basics/how-to-help-get-rid-of-the-bad-smell-in-your-kitchen-sink",
+    "title": "How to Get Rid of the Bad Smell in Your Kitchen Sink",
+    "mentions": [
+      {
+        "cause": "drain_organic",
+        "rank": "primary",
+        "label": "배수구 유기물 부패",
+        "solution": "P-trap을 분리해서 청소, U-bend에 숨어있는 막힘 제거",
+        "verify": "배수가 느려지면서 냄새가 나기 시작했는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "rotten_egg",
+      "location_hot": "sink_drain",
+      "onset": "gradual",
+      "water_gap": "unspecified"
+    },
+    "unlisted": ["grease buildup"]
+  },
+  {
+    "url": "https://drainprosventura.com/sink-smells-rotten-eggs-causes-fixes/",
+    "title": "Why Does My Sink Smell Like Rotten Eggs? Causes and Fixes",
+    "mentions": [
+      {
+        "cause": "drain_organic",
+        "rank": "primary",
+        "label": "배수구 유기물 부패",
+        "solution": "기름기가 배관 벽면에 응고되어 부패 - 뜨거운 물과 세제로 정기적 청소",
+        "verify": "기름진 음식을 자주 흘려보내는지 확인"
+      },
+      {
+        "cause": "trap_dry",
+        "rank": "secondary",
+        "label": "배수 트랩 마름/부재",
+        "solution": "새 싱크대 설치 시 proper trap 설치 여부 확인",
+        "verify": "최근 싱크대나 배관 공사를 했는지 확인"
+      }
+    ],
+    "axes": {
+      "smell_type": "rotten_egg",
+      "location_hot": "sink_drain",
+      "onset": "gradual",
+      "water_gap": "unspecified"
+    },
+    "unlisted": []
+  }
+]

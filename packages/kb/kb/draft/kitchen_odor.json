@@ -1,0 +1,395 @@
+{
+  "domain": "kitchen_odor",
+  "version": "0.2.0",
+  "generated": "2026-07-13",
+  "n_cards": 25,
+  "hypotheses": {
+    "drain_organic": {
+      "label": "배수구 유기물 부패",
+      "prior": 0.234,
+      "prior_source": "문서 8건 언급 (가중 6.8/27.4, Laplace α=1)",
+      "evidence": [
+        "https://ohou.se/advices/9206",
+        "https://vennygo.com/life/sink-drain-smell-removal-tips",
+        "https://www.mt.co.kr/society/2020/01/29/2020012815371764288",
+        "https://zippoom.com/blog/drain-smell",
+        "https://newsfrida.com/60"
+      ],
+      "solution": "베이킹소다 반 컵 + 식초 반 컵을 붓고 30분~1시간 방치 후 뜨거운 물로 헹굼",
+      "verify": {
+        "action": "배수구에 코를 대고 냄새를 맡아봄",
+        "photo": false,
+        "cost": 3
+      }
+    },
+    "trap_dry": {
+      "label": "배수 트랩 마름/부재",
+      "prior": 0.204,
+      "prior_source": "문서 7건 언급 (가중 5.8/27.4, Laplace α=1)",
+      "evidence": [
+        "https://www.mt.co.kr/society/2020/01/29/2020012815371764288",
+        "https://zippoom.com/blog/drain-smell",
+        "https://www.1hour.kr/blog/baesugu-odor-removal",
+        "https://m.dcinside.com/board/1room/7295",
+        "https://m.dcinside.com/board/1room/26393"
+      ],
+      "solution": "S자 트랩 호스 상태 점검, 2~3년마다 교체",
+      "verify": {
+        "action": "싱크대 하부장 문 열고 S자 트랩에 물이 차 있는지 확인",
+        "photo": true,
+        "cost": 3
+      }
+    },
+    "sponge_dishcloth": {
+      "label": "수세미/행주 세균",
+      "prior": 0.162,
+      "prior_source": "문서 5건 언급 (가중 4.4/27.4, Laplace α=1)",
+      "evidence": [
+        "https://main.sofancynews.com/74",
+        "https://foodrecipe.co.kr/life/microwave-kitchen-cloth-sterilization",
+        "https://blog.skogring.com/hygiene-tips-for-kitchen-cloths",
+        "https://korean.mercola.com/sites/articles/archive/2019/11/17/kitchen-sponge",
+        "https://www.eland.co.kr/ekiHow/viewEkiHow?ekiHowIdx=881"
+      ],
+      "solution": "수세미와 행주 주기적 소독",
+      "verify": {
+        "action": "행주에서 퀴퀴한 냄새가 나는지 코로 확인",
+        "photo": true,
+        "cost": 3
+      }
+    },
+    "food_waste": {
+      "label": "음식물 쓰레기통",
+      "prior": 0.15,
+      "prior_source": "문서 4건 언급 (가중 4.0/27.4, Laplace α=1)",
+      "evidence": [
+        "https://ohou.se/advices/9093",
+        "https://www.a-ha.io/questions/food-waste-smell",
+        "https://main.sofancynews.com/74",
+        "https://www.homify.co.kr/ideabooks/593452"
+      ],
+      "solution": "페트병 입구를 음쓰봉투에 끼우고 뚜껑 닫기, 또는 물티슈 캡 활용",
+      "verify": {
+        "action": "음식물 쓰레기통 뚜껑 열었을 때 악취가 나는지",
+        "photo": false,
+        "cost": 3
+      }
+    },
+    "mold_under_sink": {
+      "label": "싱크대 하부 곰팡이",
+      "prior": 0.132,
+      "prior_source": "문서 4건 언급 (가중 3.4/27.4, Laplace α=1)",
+      "evidence": [
+        "https://www.a-ha.io/questions/sink-smell",
+        "https://www.phiko.kr/bbs/board.php?bo_table=z4_03&wr_id=25065",
+        "https://www.phiko.kr/bbs/board.php?bo_table=z4_03&wr_id=8098",
+        "https://newsfrida.com/60"
+      ],
+      "solution": "락스와 세제를 뿌리고 솔로 문질러 곰팡이 제거",
+      "verify": {
+        "action": "싱크대 하부장 문 열어서 곰팡이 유무 확인",
+        "photo": true,
+        "cost": 3
+      }
+    },
+    "fridge_spoiled": {
+      "label": "냉장고 내부 부패",
+      "prior": 0.12,
+      "prior_source": "문서 3건 언급 (가중 3.0/27.4, Laplace α=1)",
+      "evidence": [
+        "https://www.pickdailynews.com/news/articleView.html?idxno=2270",
+        "https://semie.cooking/recipe-lab/archive/refrigerator-smell",
+        "https://www.1conomynews.co.kr/news/articleView.html?idxno=31757"
+      ],
+      "solution": "일주일에 한 번 냉장고 내부 확인하고 부패한 음식 즉시 제거, 밀폐용기 사용",
+      "verify": {
+        "action": "냉장고 문 열 때 악취가 나는지 확인",
+        "photo": true,
+        "cost": 3
+      }
+    }
+  },
+  "observables": [
+    {
+      "id": "smell_type",
+      "question": "어떤 냄새에 가까운가요?",
+      "cost": 1,
+      "options": {
+        "rotten_egg": {
+          "label": "썩은 계란/하수구",
+          "L": {
+            "drain_organic": 0.7,
+            "trap_dry": 0.9,
+            "sponge_dishcloth": 0.05,
+            "food_waste": 0.25,
+            "mold_under_sink": 0.25,
+            "fridge_spoiled": 0.25
+          }
+        },
+        "sour_musty": {
+          "label": "시큼하고 꿉꿉한",
+          "L": {
+            "drain_organic": 0.25,
+            "trap_dry": 0.05,
+            "sponge_dishcloth": 0.7,
+            "food_waste": 0.25,
+            "mold_under_sink": 0.7,
+            "fridge_spoiled": 0.25
+          }
+        },
+        "sweet_rotten": {
+          "label": "달착지근하게 상한",
+          "L": {
+            "drain_organic": 0.05,
+            "trap_dry": 0.05,
+            "sponge_dishcloth": 0.25,
+            "food_waste": 0.9,
+            "mold_under_sink": 0.25,
+            "fridge_spoiled": 0.7
+          }
+        },
+        "chemical": {
+          "label": "화학약품 같은",
+          "L": {}
+        },
+        "unspecified": {
+          "label": "잘 모르겠어요",
+          "L": {}
+        }
+      },
+      "n_support": 27.4
+    },
+    {
+      "id": "location_hot",
+      "question": "어디에 가까이 가면 심해지나요?",
+      "cost": 1,
+      "options": {
+        "sink_drain": {
+          "label": "싱크대 배수구",
+          "L": {
+            "drain_organic": 0.7,
+            "trap_dry": 0.7,
+            "food_waste": 0.05,
+            "mold_under_sink": 0.25,
+            "fridge_spoiled": 0.05
+          }
+        },
+        "under_sink": {
+          "label": "싱크대 아래 문 열면",
+          "L": {
+            "drain_organic": 0.25,
+            "trap_dry": 0.25,
+            "sponge_dishcloth": 0.25,
+            "food_waste": 0.25,
+            "mold_under_sink": 0.9
+          }
+        },
+        "trash": {
+          "label": "쓰레기통 쪽",
+          "L": {
+            "drain_organic": 0.25,
+            "trap_dry": 0.25,
+            "food_waste": 0.9,
+            "mold_under_sink": 0.25,
+            "fridge_spoiled": 0.25
+          }
+        },
+        "fridge": {
+          "label": "냉장고 열면",
+          "L": {
+            "drain_organic": 0.25,
+            "trap_dry": 0.25,
+            "sponge_dishcloth": 0.25,
+            "food_waste": 0.25,
+            "mold_under_sink": 0.25,
+            "fridge_spoiled": 0.9
+          }
+        },
+        "whole_room": {
+          "label": "집 전체",
+          "L": {
+            "drain_organic": 0.25,
+            "trap_dry": 0.25,
+            "sponge_dishcloth": 0.9
+          }
+        },
+        "unspecified": {
+          "label": "잘 모르겠어요",
+          "L": {}
+        }
+      },
+      "n_support": 27.4
+    },
+    {
+      "id": "onset",
+      "question": "언제부터 그랬나요?",
+      "cost": 1,
+      "options": {
+        "sudden": {
+          "label": "갑자기 (며칠 새)",
+          "L": {
+            "trap_dry": 0.9,
+            "sponge_dishcloth": 0.25,
+            "food_waste": 0.25,
+            "mold_under_sink": 0.25,
+            "fridge_spoiled": 0.25
+          }
+        },
+        "gradual": {
+          "label": "서서히 (몇 주)",
+          "L": {
+            "trap_dry": 0.25
+          }
+        },
+        "unspecified": {
+          "label": "모르겠어요",
+          "L": {}
+        }
+      },
+      "n_support": 26
+    },
+    {
+      "id": "water_gap",
+      "question": "3일 이상 물을 안 쓴 적 있나요?",
+      "cost": 1,
+      "note": "★ 한국 원룸 트랩 판별 — LLM이 스스로 물을 리 없는 질문",
+      "options": {
+        "yes": {
+          "label": "네 (여행/출장 등)",
+          "L": {
+            "drain_organic": 0.7,
+            "trap_dry": 0.9,
+            "sponge_dishcloth": 0.25,
+            "food_waste": 0.25,
+            "mold_under_sink": 0.25,
+            "fridge_spoiled": 0.25
+          }
+        },
+        "no": {
+          "label": "아뇨, 매일 써요",
+          "L": {
+            "trap_dry": 0.05
+          }
+        },
+        "unspecified": {
+          "label": "기억 안 나요",
+          "L": {}
+        }
+      },
+      "n_support": 19.6
+    },
+    {
+      "id": "sponge_smell",
+      "question": "수세미나 행주를 코에 대보면 냄새가 나나요?",
+      "cost": 1,
+      "rationale": "배수구↔수세미 판별. 물리적 차이: 수세미는 '젖어 마르는 물건', 배수구는 '물이 흐르는 구멍'",
+      "options": {
+        "yes": {
+          "label": "네, 수세미에서 나요",
+          "L": {
+            "sponge_dishcloth": 0.9,
+            "drain_organic": 0.05,
+            "mold_under_sink": 0.05,
+            "trap_dry": 0.05,
+            "food_waste": 0.25,
+            "fridge_spoiled": 0.05
+          }
+        },
+        "no": {
+          "label": "아뇨, 수세미는 괜찮아요",
+          "L": {
+            "sponge_dishcloth": 0.05,
+            "drain_organic": 0.7,
+            "mold_under_sink": 0.7,
+            "trap_dry": 0.7,
+            "food_waste": 0.7,
+            "fridge_spoiled": 0.7
+          }
+        },
+        "unspecified": {
+          "label": "확인 안 해봤어요",
+          "L": {}
+        }
+      }
+    },
+    {
+      "id": "fridge_open_test",
+      "question": "냉장고 문을 열면 냄새가 더 심해지나요?",
+      "cost": 1,
+      "rationale": "음식물↔냉장고 판별. 냉장고는 '닫힌 저온 부패' — 열 때만 확 남",
+      "options": {
+        "worse": {
+          "label": "네, 열면 확 나요",
+          "L": {
+            "fridge_spoiled": 0.9,
+            "food_waste": 0.05,
+            "drain_organic": 0.05,
+            "trap_dry": 0.05,
+            "mold_under_sink": 0.05,
+            "sponge_dishcloth": 0.05
+          }
+        },
+        "same": {
+          "label": "아뇨, 별 차이 없어요",
+          "L": {
+            "fridge_spoiled": 0.05,
+            "food_waste": 0.7,
+            "drain_organic": 0.7,
+            "trap_dry": 0.7,
+            "mold_under_sink": 0.7,
+            "sponge_dishcloth": 0.7
+          }
+        },
+        "unspecified": {
+          "label": "확인 안 해봤어요",
+          "L": {}
+        }
+      }
+    },
+    {
+      "id": "water_run_test",
+      "question": "물을 세게 틀면 냄새가 잠깐 더 심해지나요?",
+      "cost": 1,
+      "rationale": "배수구↔수세미 대안. 배수구는 물 흐를 때 가스가 밀려 올라옴",
+      "options": {
+        "worse": {
+          "label": "네, 물 틀면 더 나요",
+          "L": {
+            "drain_organic": 0.9,
+            "trap_dry": 0.25,
+            "sponge_dishcloth": 0.05,
+            "mold_under_sink": 0.25,
+            "food_waste": 0.05,
+            "fridge_spoiled": 0.05
+          }
+        },
+        "better": {
+          "label": "아뇨, 오히려 줄어요",
+          "L": {
+            "trap_dry": 0.9,
+            "drain_organic": 0.25,
+            "sponge_dishcloth": 0.25,
+            "mold_under_sink": 0.05,
+            "food_waste": 0.05,
+            "fridge_spoiled": 0.05
+          }
+        },
+        "same": {
+          "label": "차이 없어요",
+          "L": {
+            "drain_organic": 0.25,
+            "trap_dry": 0.05,
+            "sponge_dishcloth": 0.7,
+            "mold_under_sink": 0.7,
+            "food_waste": 0.7,
+            "fridge_spoiled": 0.7
+          }
+        },
+        "unspecified": {
+          "label": "확인 안 해봤어요",
+          "L": {}
+        }
+      }
+    }
+  ]
+}

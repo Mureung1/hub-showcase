@@ -1,0 +1,149 @@
+[
+  {
+    "id": "sponge_smell",
+    "question": "수세미나 행주를 코에 대보면 냄새가 나나요?",
+    "cost": 1,
+    "rationale": "배수구↔수세미 판별. 물리적 차이: 수세미는 '젖어 마르는 물건', 배수구는 '물이 흐르는 구멍'",
+    "options": {
+      "yes": {
+        "label": "네, 수세미에서 나요",
+        "L": {
+          "sponge_dishcloth": 0.9,
+          "drain_organic": 0.05,
+          "mold_under_sink": 0.05,
+          "trap_dry": 0.05,
+          "food_waste": 0.25,
+          "fridge_spoiled": 0.05
+        }
+      },
+      "no": {
+        "label": "아뇨, 수세미는 괜찮아요",
+        "L": {
+          "sponge_dishcloth": 0.05,
+          "drain_organic": 0.7,
+          "mold_under_sink": 0.7,
+          "trap_dry": 0.7,
+          "food_waste": 0.7,
+          "fridge_spoiled": 0.7
+        }
+      },
+      "unspecified": {
+        "label": "확인 안 해봤어요",
+        "L": {}
+      }
+    }
+  },
+  {
+    "id": "fridge_open_test",
+    "question": "냉장고 문을 열면 냄새가 더 심해지나요?",
+    "cost": 1,
+    "rationale": "음식물↔냉장고 판별. 냉장고는 '닫힌 저온 부패' — 열 때만 확 남",
+    "options": {
+      "worse": {
+        "label": "네, 열면 확 나요",
+        "L": {
+          "fridge_spoiled": 0.9,
+          "food_waste": 0.05,
+          "drain_organic": 0.05,
+          "trap_dry": 0.05,
+          "mold_under_sink": 0.05,
+          "sponge_dishcloth": 0.05
+        }
+      },
+      "same": {
+        "label": "아뇨, 별 차이 없어요",
+        "L": {
+          "fridge_spoiled": 0.05,
+          "food_waste": 0.7,
+          "drain_organic": 0.7,
+          "trap_dry": 0.7,
+          "mold_under_sink": 0.7,
+          "sponge_dishcloth": 0.7
+        }
+      },
+      "unspecified": {
+        "label": "확인 안 해봤어요",
+        "L": {}
+      }
+    }
+  },
+  {
+    "id": "trash_lid_test",
+    "question": "쓰레기통 뚜껑을 열면 냄새가 더 심해지나요?",
+    "cost": 1,
+    "rationale": "음식물↔냉장고 판별 (반대 방향). fridge_open_test와 중복 가능성 — 검증 필요",
+    "options": {
+      "worse": {
+        "label": "네, 열면 확 나요",
+        "L": {
+          "food_waste": 0.9,
+          "fridge_spoiled": 0.05,
+          "drain_organic": 0.25,
+          "trap_dry": 0.05,
+          "mold_under_sink": 0.05,
+          "sponge_dishcloth": 0.25
+        }
+      },
+      "same": {
+        "label": "아뇨, 별 차이 없어요",
+        "L": {
+          "food_waste": 0.05,
+          "fridge_spoiled": 0.7,
+          "drain_organic": 0.7,
+          "trap_dry": 0.7,
+          "mold_under_sink": 0.7,
+          "sponge_dishcloth": 0.7
+        }
+      },
+      "unspecified": {
+        "label": "확인 안 해봤어요",
+        "L": {}
+      }
+    }
+  },
+  {
+    "id": "water_run_test",
+    "question": "물을 세게 틀면 냄새가 잠깐 더 심해지나요?",
+    "cost": 1,
+    "rationale": "배수구↔수세미 대안. 배수구는 물 흐를 때 가스가 밀려 올라옴",
+    "options": {
+      "worse": {
+        "label": "네, 물 틀면 더 나요",
+        "L": {
+          "drain_organic": 0.9,
+          "trap_dry": 0.25,
+          "sponge_dishcloth": 0.05,
+          "mold_under_sink": 0.25,
+          "food_waste": 0.05,
+          "fridge_spoiled": 0.05
+        }
+      },
+      "better": {
+        "label": "아뇨, 오히려 줄어요",
+        "L": {
+          "trap_dry": 0.9,
+          "drain_organic": 0.25,
+          "sponge_dishcloth": 0.25,
+          "mold_under_sink": 0.05,
+          "food_waste": 0.05,
+          "fridge_spoiled": 0.05
+        }
+      },
+      "same": {
+        "label": "차이 없어요",
+        "L": {
+          "drain_organic": 0.25,
+          "trap_dry": 0.05,
+          "sponge_dishcloth": 0.7,
+          "mold_under_sink": 0.7,
+          "food_waste": 0.7,
+          "fridge_spoiled": 0.7
+        }
+      },
+      "unspecified": {
+        "label": "확인 안 해봤어요",
+        "L": {}
+      }
+    }
+  }
+]
