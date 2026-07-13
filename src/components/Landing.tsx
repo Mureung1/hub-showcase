@@ -107,14 +107,14 @@ function Landing({ onStart }: LandingProps) {
                 <span>체크 상태 초기화</span>
               </div>
             </div>
-            <p className="landing__mockup-progress-label">전체 진행률 6/14 완료</p>
+            <p className="landing__mockup-progress-label">전체 진행률 4/9 완료</p>
             <div className="landing__mockup-progress-bar">
-              <div className="landing__mockup-progress-fill" style={{ width: '43%' }} />
+              <div className="landing__mockup-progress-fill" style={{ width: '44%' }} />
             </div>
             <div className="landing__mockup-buttons">
               <div className="landing__mockup-btn landing__mockup-btn--active">
                 <span className="landing__mockup-btn-title">전체 보기</span>
-                <span className="landing__mockup-btn-count">14개 항목</span>
+                <span className="landing__mockup-btn-count">9개 항목</span>
               </div>
               <div className="landing__mockup-btn">
                 <span className="landing__mockup-btn-title">폐업 신고</span>
@@ -122,17 +122,17 @@ function Landing({ onStart }: LandingProps) {
               </div>
               <div className="landing__mockup-btn">
                 <span className="landing__mockup-btn-title">세무 신고</span>
-                <span className="landing__mockup-btn-count">4개 항목</span>
+                <span className="landing__mockup-btn-count">2개 항목</span>
               </div>
               <div className="landing__mockup-btn">
                 <span className="landing__mockup-btn-title">지원금</span>
-                <span className="landing__mockup-btn-count">5개 항목</span>
+                <span className="landing__mockup-btn-count">2개 항목</span>
               </div>
             </div>
             <div className="landing__mockup-tasks">
               <div className="landing__mockup-task">
                 <span className="landing__mockup-checkbox landing__mockup-checkbox--checked" />
-                <span className="landing__mockup-task-title">부가가치세 폐업확정신고</span>
+                <span className="landing__mockup-task-title">부가세 확정신고 일정 안내</span>
                 <span className="landing__mockup-dday landing__mockup-dday--urgent">D-6</span>
               </div>
               <div className="landing__mockup-task">
@@ -142,7 +142,7 @@ function Landing({ onStart }: LandingProps) {
               </div>
               <div className="landing__mockup-task">
                 <span className="landing__mockup-checkbox" />
-                <span className="landing__mockup-task-title">희망리턴패키지 지원 신청</span>
+                <span className="landing__mockup-task-title">점포철거비 지원 (희망리턴패키지)</span>
                 <span className="landing__mockup-dday">D-21</span>
               </div>
             </div>

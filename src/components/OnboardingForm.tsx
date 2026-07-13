@@ -9,12 +9,25 @@ interface OnboardingFormProps {
 
 const industries = ['요식업', '소매업', '서비스업', '기타']
 
+const stepLabels = ['업종', '사업자 유형', '직원 유무', '임대 여부', '폐업 예정일']
+
 function OnboardingForm({ onComplete, initialProfile }: OnboardingFormProps) {
+  const [step, setStep] = useState(0)
   const [industry, setIndustry] = useState(initialProfile?.industry ?? industries[0])
   const [isCorporation, setIsCorporation] = useState(initialProfile?.isCorporation ?? false)
   const [hasEmployee, setHasEmployee] = useState(initialProfile?.hasEmployee ?? false)
   const [isRented, setIsRented] = useState(initialProfile?.isRented ?? false)
   const [closureDate, setClosureDate] = useState(initialProfile?.closureDate ?? '')
+
+  const isLastStep = step === stepLabels.length - 1
+
+  function goNext() {
+    setStep((prev) => Math.min(prev + 1, stepLabels.length - 1))
+  }
+
+  function goBack() {
+    setStep((prev) => Math.max(prev - 1, 0))
+  }
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -24,104 +37,171 @@ function OnboardingForm({ onComplete, initialProfile }: OnboardingFormProps) {
 
   return (
     <main className="onboarding">
-      <header className="onboarding__topbar">
+      <aside className="onboarding__aside">
+        <div className="onboarding__blob onboarding__blob--green" />
+        <div className="onboarding__blob onboarding__blob--pink" />
+
         <span className="onboarding__brand">소상공인 폐업 도우미</span>
+        <h2 className="onboarding__aside-title">
+          몇 가지만 알려주시면
+          <br />
+          맞춤 절차를 정리해드려요
+        </h2>
+
+        <ol className="onboarding__aside-steps">
+          {stepLabels.map((label, i) => (
+            <li
+              key={label}
+              className={`onboarding__aside-step${
+                i === step ? ' onboarding__aside-step--current' : ''
+              }${i < step ? ' onboarding__aside-step--done' : ''}`}
+            >
+              <span className="onboarding__aside-step-index">
+                {i < step ? '✓' : i + 1}
+              </span>
+              <span>{label}</span>
+            </li>
+          ))}
+        </ol>
+
         <span className="onboarding__duration">약 1분 소요</span>
-      </header>
+      </aside>
 
-      <div className="onboarding__content">
-        <span className="onboarding__badge">1분 진단</span>
-        <h1>내 상황을 알려주세요</h1>
-        <p className="onboarding__lead">
-          답변에 맞는 폐업 절차·세무 일정·지원금만 추려서 보여드려요.
-        </p>
+      <div className="onboarding__stage">
+        <form className="onboarding__card" onSubmit={handleSubmit}>
+          <span className="onboarding__badge">1분 진단 · {stepLabels[step]}</span>
 
-        <form className="onboarding__form" onSubmit={handleSubmit}>
-          <div className="onboarding__field">
-            <span className="onboarding__label">업종</span>
-            <div className="pill-group pill-group--grid" role="radiogroup" aria-label="업종">
-              {industries.map((option) => (
+          {step === 0 && (
+            <div className="onboarding__step">
+              <h1>업종이 어떻게 되세요?</h1>
+              <p className="onboarding__lead">가장 가까운 업종을 골라주세요.</p>
+              <div className="pill-group pill-group--grid" role="radiogroup" aria-label="업종">
+                {industries.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={industry === option}
+                    className={`pill${industry === option ? ' pill--selected' : ''}`}
+                    onClick={() => setIndustry(option)}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="onboarding__step">
+              <h1>개인사업자세요, 법인이세요?</h1>
+              <p className="onboarding__lead">해당하는 사업자 유형을 골라주세요.</p>
+              <div className="pill-group" role="radiogroup" aria-label="사업자 유형">
                 <button
-                  key={option}
                   type="button"
                   role="radio"
-                  aria-checked={industry === option}
-                  className={`pill${industry === option ? ' pill--selected' : ''}`}
-                  onClick={() => setIndustry(option)}
+                  aria-checked={!isCorporation}
+                  className={`pill pill--flex${!isCorporation ? ' pill--selected' : ''}`}
+                  onClick={() => setIsCorporation(false)}
                 >
-                  {option}
+                  개인사업자
                 </button>
-              ))}
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={isCorporation}
+                  className={`pill pill--flex${isCorporation ? ' pill--selected' : ''}`}
+                  onClick={() => setIsCorporation(true)}
+                >
+                  법인
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="onboarding__field">
-            <span className="onboarding__label">사업자 유형</span>
-            <div className="pill-group" role="radiogroup" aria-label="사업자 유형">
+          {step === 2 && (
+            <div className="onboarding__step">
+              <h1>직원이 있으세요?</h1>
+              <p className="onboarding__lead">4대보험 상실신고 대상인지 확인하는 데 써요.</p>
               <button
                 type="button"
-                role="radio"
-                aria-checked={!isCorporation}
-                className={`pill pill--flex${!isCorporation ? ' pill--selected' : ''}`}
-                onClick={() => setIsCorporation(false)}
+                className={`toggle-row${hasEmployee ? ' toggle-row--active' : ''}`}
+                aria-pressed={hasEmployee}
+                onClick={() => setHasEmployee((prev) => !prev)}
               >
-                개인사업자
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={isCorporation}
-                className={`pill pill--flex${isCorporation ? ' pill--selected' : ''}`}
-                onClick={() => setIsCorporation(true)}
-              >
-                법인
+                <span>직원이 있어요</span>
+                <span className={`switch${hasEmployee ? ' switch--on' : ''}`}>
+                  <span className="switch__knob" />
+                </span>
               </button>
             </div>
+          )}
+
+          {step === 3 && (
+            <div className="onboarding__step">
+              <h1>임대 사업장이세요?</h1>
+              <p className="onboarding__lead">임대차 해지·점포철거비 지원 대상인지 확인해요.</p>
+              <button
+                type="button"
+                className={`toggle-row${isRented ? ' toggle-row--active' : ''}`}
+                aria-pressed={isRented}
+                onClick={() => setIsRented((prev) => !prev)}
+              >
+                <span>임대 사업장이에요</span>
+                <span className={`switch${isRented ? ' switch--on' : ''}`}>
+                  <span className="switch__knob" />
+                </span>
+              </button>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="onboarding__step">
+              <h1>폐업 예정일이 언제예요?</h1>
+              <p className="onboarding__lead">각 절차의 마감일을 계산하는 기준일이에요.</p>
+              <input
+                type="date"
+                className="onboarding__date"
+                value={closureDate}
+                onChange={(e) => setClosureDate(e.target.value)}
+                required
+              />
+            </div>
+          )}
+
+          <div className="onboarding__dots">
+            {stepLabels.map((label, i) => (
+              <span
+                key={label}
+                className={`onboarding__dot${i === step ? ' onboarding__dot--active' : ''}`}
+              />
+            ))}
           </div>
 
-          <button
-            type="button"
-            className={`toggle-row${hasEmployee ? ' toggle-row--active' : ''}`}
-            aria-pressed={hasEmployee}
-            onClick={() => setHasEmployee((prev) => !prev)}
-          >
-            <span>직원이 있어요</span>
-            <span className={`switch${hasEmployee ? ' switch--on' : ''}`}>
-              <span className="switch__knob" />
-            </span>
-          </button>
+          <div className="onboarding__nav">
+            {step > 0 ? (
+              <button type="button" className="onboarding__back" onClick={goBack}>
+                이전
+              </button>
+            ) : (
+              <span />
+            )}
 
-          <button
-            type="button"
-            className={`toggle-row${isRented ? ' toggle-row--active' : ''}`}
-            aria-pressed={isRented}
-            onClick={() => setIsRented((prev) => !prev)}
-          >
-            <span>임대 사업장이에요</span>
-            <span className={`switch${isRented ? ' switch--on' : ''}`}>
-              <span className="switch__knob" />
-            </span>
-          </button>
-
-          <label className="onboarding__field">
-            <span className="onboarding__label">폐업 예정일</span>
-            <input
-              type="date"
-              className="onboarding__date"
-              value={closureDate}
-              onChange={(e) => setClosureDate(e.target.value)}
-              required
-            />
-          </label>
-
-          <button type="submit" className="onboarding__submit" disabled={!closureDate}>
-            {initialProfile ? '조건 저장하고 돌아가기' : '맞춤 체크리스트 보기'}
-          </button>
-
-          <p className="onboarding__note">
-            입력한 정보는 이 기기에만 저장되며, 별도 회원가입 없이 이용할 수 있어요.
-          </p>
+            {isLastStep ? (
+              <button type="submit" className="onboarding__submit" disabled={!closureDate}>
+                {initialProfile ? '조건 저장하고 돌아가기' : '맞춤 체크리스트 보기'}
+              </button>
+            ) : (
+              <button type="button" className="onboarding__submit" onClick={goNext}>
+                다음
+              </button>
+            )}
+          </div>
         </form>
+
+        <p className="onboarding__note">
+          입력한 정보는 이 기기에만 저장되며, 별도 회원가입 없이 이용할 수 있어요.
+        </p>
       </div>
     </main>
   )

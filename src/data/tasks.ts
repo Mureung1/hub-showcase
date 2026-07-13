@@ -42,6 +42,30 @@ export const tasks: Task[] = [
     dueDate: (profile) => addDays(new Date(profile.closureDate), 14),
   },
   {
+    id: 'food-service-business-report-closure',
+    group: 'closure',
+    title: '영업신고(일반음식점) 폐업신고',
+    description:
+      '식품위생법에 따라 영업신고를 한 음식점은 세무서 폐업신고와 별개로 관할 구청(위생과)에도 영업신고 폐업신고를 해야 합니다.',
+    sourceUrl: 'https://www.gov.kr',
+    sourceLabel: '정부24',
+    lastCheckedDate: '2026-07-01',
+    condition: (profile) => profile.industry === '요식업',
+    reason: () => '요식업이라고 답하셔서 이 항목이 포함됐어요',
+  },
+  {
+    id: 'online-retail-report-closure',
+    group: 'closure',
+    title: '통신판매업 신고 폐지신고',
+    description:
+      '온라인 판매로 통신판매업 신고를 한 경우, 폐업 시 관할 시·군·구에 신고 폐지 절차를 진행해야 합니다. 해당 여부는 신고 당시 서류로 확인하세요.',
+    sourceUrl: 'https://www.gov.kr',
+    sourceLabel: '정부24',
+    lastCheckedDate: '2026-07-01',
+    condition: (profile) => profile.industry === '소매업',
+    reason: () => '소매업이라고 답하셔서 이 항목이 포함됐어요',
+  },
+  {
     id: 'lease-termination',
     group: 'closure',
     title: '임대차 계약 해지·원상복구 안내',

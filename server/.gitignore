@@ -1,5 +1,14 @@
 node_modules
 dist
+
+# Secrets — never commit real env files or keys
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*credentials*.json
+
 prisma/dev.db
 prisma/dev.db-journal

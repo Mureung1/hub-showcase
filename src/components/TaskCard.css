@@ -1,22 +1,22 @@
 .task-card {
   display: flex;
-  gap: 0.9rem;
+  gap: 1rem;
   background: #ffffff;
-  border: 2px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 1.4rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 1.6rem;
 }
 
 .task-card--checked {
-  background: #f9fafb;
-  border-color: #d1d5db;
+  background: var(--bg-muted);
+  border-color: var(--border-soft);
 }
 
 .task-card__checkbox input {
   width: 1.4rem;
   height: 1.4rem;
   margin-top: 0.2rem;
-  accent-color: var(--accent);
+  accent-color: var(--text-h);
 }
 
 .task-card__body {
@@ -35,48 +35,50 @@
 
 .task-card__header h3 {
   margin: 0;
-  font-size: 1.2rem;
-  color: #111827;
+  font-size: 1.15rem;
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--text-h);
 }
 
 .task-card__dday {
   flex-shrink: 0;
-  background: #f3f4f6;
-  color: #6b7280;
-  font-size: 0.9rem;
-  font-weight: 700;
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-pill);
 }
 
 .task-card__dday--urgent {
-  background: #fee2e2;
+  background: var(--danger-soft-bg);
   color: var(--danger);
 }
 
 .task-card__reason {
   margin: 0;
-  color: var(--accent-text);
-  font-size: 0.95rem;
+  color: var(--text-h);
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
 .task-card__description {
   margin: 0;
-  color: #374151;
+  color: var(--text);
   font-size: 1.05rem;
   line-height: 1.6;
 }
 
 .task-card__source {
-  font-size: 1rem;
-  color: var(--accent);
+  font-size: 0.95rem;
+  color: var(--text-h);
   font-weight: 600;
   text-decoration: underline;
 }
 
 .task-card__updated {
   margin: 0;
-  color: #9ca3af;
-  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
