@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -61,10 +61,11 @@ Immutable raw product layout input을 받은 one-workspace Headless Codex Client
 
 ## Verification
 
-- Targeted test or command: `npm run test -w @ay-ple/runtime-codex` — 통과, 114개 test.
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector` — 모두 통과. Runtime Core 50개, Runtime Codex 114개, Server 53개와 Inspector Playwright 6개 test를 포함한다.
+- Targeted test or command: `npm run test -w @ay-ple/runtime-codex` — 통과, 116개 test.
+- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector` — 모두 통과. Runtime Core 50개, Runtime Codex 116개, Server 53개와 Inspector Playwright 6개 test를 포함한다.
 - Generated artifacts: `npm run generate:codex-methods -w @ay-ple/runtime-codex` — 통과. `initialize`와 `initialized`의 `client-host` 승격 외 예상하지 않은 inventory diff가 없다.
 - Code review: fixed point `b9d4a8199f6d63b25a4ab0a1a453c6f785f3af81` 기준 Standards finding 1건과 Spec finding 0건을 확인했고 Standards finding은 `af4362eb`에서 반영했다.
+- PR #14 review remediation: fixed point `9014f559328c46383aa9a812d574904474e7fe49` 기준 Standards finding 0건과 Spec finding 0건. Startup failure 뒤 subscriber가 `stop()`을 시작해도 initiating `start()`의 failure와 recoverability가 보존되고, 실제 `close_timeout`만 이를 대체하는 actual-child 회귀를 검증했다.
 - Manual or live smoke: 없음 — public Host Interface + actual fake child + fixture journal로 spawn/handshake/cleanup을 검증한다.
 
 ## Result
@@ -75,6 +76,8 @@ Lifecycle epoch가 preflight·spawn·handshake 중 stop race의 stale completion
 
 Actual fake package binary와 fixture journal은 exact cwd/runtime-home, single handshake, observation consumer ordering, process cleanup과 race를 검증한다. `initialize`와 `initialized`만 method decision의 `client-host` 단계로 승격했으며 package README, generated method inventory와 Runtime Harness 구현 지도를 현재 lifecycle에 맞게 갱신했다.
 
+PR #14 review remediation에서는 startup failure를 cleanup await 전에 고정했다. Subscriber가 `failed` event를 보고 `stop()`을 호출해도 initiating `start()`은 원래 failure code와 `recoverable`을 유지하며, child 종료를 확인하지 못한 `close_timeout`은 non-recoverable cleanup failure로 명시적으로 우선한다.
+
 구현 커밋:
 
 - `24386279` — `feat: add initialized Codex client host`
@@ -82,8 +85,9 @@ Actual fake package binary와 fixture journal은 exact cwd/runtime-home, single 
 - `a29ead53` — `docs: record Codex client host integration`
 - `8b8f5eac` — `test: stabilize Codex host fixture journal`
 - `af4362eb` — `refactor: centralize Codex host spawn failure`
+- `68127cfb` — `fix: preserve Codex host startup failure`
 
-다음 frontier는 fresh session의 Ticket 004다.
+다음 frontier는 지원 플랫폼 범위 정본화와 unsupported Windows compatibility surface 정리이며, 그 뒤 fresh session에서 Ticket 004를 시작한다.
 
 ## Blocked By
 
