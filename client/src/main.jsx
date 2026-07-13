@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./styles/mentor-design-skill.css";
 import "./styles/landing-page.css";
+import "./styles/signup-role.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
