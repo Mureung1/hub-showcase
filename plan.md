@@ -46,6 +46,22 @@ Task 0 (프로젝트 셋업)
 
 매주 시작 시 `checklist.md`에서 지난 주 목표 달성 여부를 확인합니다.
 
+### Week 1 상세 계획 (07/13 월 ~ 07/17 금)
+
+> **코스 주간목표**: Agent와 함께 핵심 기능(수직슬라이스) 하나를 FE·BE·DB까지 완전히 연결해 완성한다.
+> 이번 주 수직슬라이스 대상 = **회원가입 → 로그인 → 로그인 상태 확인(`/auth/me`)** (`plan.md` Task 2).
+> 화면 전체(홈/기록/캘린더/방/설정) UI 이식은 이 슬라이스 완성 후 다음 주로 미룬다 — 관련 이슈([#4](https://github.com/parkjihyoun/hub/issues/4)~[#10](https://github.com/parkjihyoun/hub/issues/10))는 백로그로 유지.
+
+| 날짜 | 작업 | 관련 이슈 |
+|---|---|---|
+| 07/13 (월) | Task 0 마무리(디렉터리·라우터), Prisma User 모델 + Supabase 연결·마이그레이션 | [#2](https://github.com/parkjihyoun/hub/issues/2), [#3](https://github.com/parkjihyoun/hub/issues/3), [#13](https://github.com/parkjihyoun/hub/issues/13) |
+| 07/14 (화) | JWT·bcrypt 유틸, `POST /auth/signup`, `POST /auth/login` API | [#14](https://github.com/parkjihyoun/hub/issues/14), [#15](https://github.com/parkjihyoun/hub/issues/15), [#16](https://github.com/parkjihyoun/hub/issues/16) |
+| 07/15 (수) | `GET /auth/me` + 인증 미들웨어, FE `src/api/client.ts` | [#17](https://github.com/parkjihyoun/hub/issues/17), [#18](https://github.com/parkjihyoun/hub/issues/18) |
+| 07/16 (목) | 로그인·회원가입 화면 React 구현(API 연동), 인증 가드 + 홈 로그인 상태 반영 | [#19](https://github.com/parkjihyoun/hub/issues/19), [#20](https://github.com/parkjihyoun/hub/issues/20), [#21](https://github.com/parkjihyoun/hub/issues/21) |
+| 07/17 (금) | 수직슬라이스 통합 검증(회원가입→로그인→me), `feature-verify` Agent로 점검, checklist.md 갱신 | [#22](https://github.com/parkjihyoun/hub/issues/22) |
+
+**금요일 완료 기준**: 5개 화면 라우팅 동작, 모바일 레이아웃 깨짐 없음 (`plan.md` Task 1 완료 기준과 동일)
+
 ---
 
 ## Task 0 — 프로젝트 셋업 (P0)
