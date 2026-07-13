@@ -8,7 +8,7 @@ description: Practical guide for sustaining heavy LLM Wiki workloads on token-co
 author:
   - Claude
 date created: 2026-04-29
-date modified: 2026-04-29
+date modified: 2026-07-12
 tags:
   - guide
   - token-optimization
@@ -24,6 +24,8 @@ related:
 confidence: high
 layer: guides
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # LLM Wiki Token Optimization Strategies

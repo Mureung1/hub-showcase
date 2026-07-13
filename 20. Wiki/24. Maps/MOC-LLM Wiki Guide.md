@@ -7,7 +7,7 @@ description: Onboarding guide for the CMDS LLM Wiki vault. Explains the 3-layer 
 author:
   - Claude
 date created: 2026-04-10T21:30
-date modified: 2026-07-07
+date modified: 2026-07-12
 tags:
   - moc
   - guide
@@ -24,6 +24,8 @@ related:
   - "[[LLM Wiki as Learning Base]]"
   - "[[Web Clipper to Inbox Workflow]]"
 status: active
+explored: false
+verificationStatus: unverified
 operationMode: standalone
 source-vault: null
 ---

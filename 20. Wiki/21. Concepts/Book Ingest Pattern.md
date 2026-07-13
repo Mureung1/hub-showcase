@@ -9,7 +9,7 @@ description: Variant of the /ingest operation designed for multi-page books and 
 author:
   - Claude
 date created: 2026-04-20
-date modified: 2026-04-20
+date modified: 2026-07-12
 tags:
   - concept
   - ingest
@@ -25,6 +25,8 @@ related:
 confidence: high
 layer: concepts
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # Book Ingest Pattern

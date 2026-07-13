@@ -7,7 +7,7 @@ description: Andrej Karpathy — AI researcher, former Tesla AI Director, OpenAI
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-07-10
+date modified: 2026-07-12
 tags:
   - person
   - ai-researcher
@@ -26,6 +26,8 @@ related:
 confidence: high
 layer: entities
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # Andrej Karpathy

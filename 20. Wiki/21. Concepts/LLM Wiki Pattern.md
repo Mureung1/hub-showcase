@@ -8,7 +8,7 @@ description: The LLM Wiki pattern proposed by Andrej Karpathy — LLMs increment
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-07-10
+date modified: 2026-07-12
 tags:
   - llm-wiki
   - knowledge-management
@@ -41,6 +41,8 @@ related:
 confidence: high
 layer: concepts
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # LLM Wiki Pattern

@@ -8,7 +8,7 @@ description: The three core operations of an LLM Wiki — Ingest (absorb new sou
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-07-07
+date modified: 2026-07-12
 tags:
   - llm-wiki
   - operations
@@ -30,6 +30,8 @@ related:
 confidence: high
 layer: concepts
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # Ingest-Query-Lint Cycle

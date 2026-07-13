@@ -7,7 +7,7 @@ description: Practical guide to Obsidian plugins, extensions, and CLI tools reco
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-07-10
+date modified: 2026-07-12
 tags:
   - guide
   - obsidian
@@ -27,6 +27,8 @@ related:
 confidence: high
 layer: guides
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # Obsidian Tooling for LLM Wiki

@@ -8,7 +8,7 @@ description: Map of Content for knowledge management concepts — LLM Wiki patte
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-07-10
+date modified: 2026-07-12
 tags:
   - moc
   - knowledge-management
@@ -19,6 +19,8 @@ related:
   - "[[MOC-LLM Wiki Guide]]"
   - "[[index]]"
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # MOC-Knowledge Management

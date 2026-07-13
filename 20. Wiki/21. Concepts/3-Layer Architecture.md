@@ -8,7 +8,7 @@ description: The 3-layer architecture of the LLM Wiki — Raw Sources (immutable
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-07-10
+date modified: 2026-07-12
 tags:
   - llm-wiki
   - architecture
@@ -26,6 +26,8 @@ related:
 confidence: high
 layer: concepts
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # 3-Layer Architecture

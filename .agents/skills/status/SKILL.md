@@ -24,7 +24,7 @@ Show the current state of the wiki at a glance.
    - `20. Wiki/23. Guides/*.md` → guide count
    - `20. Wiki/24. Maps/*.md` → MOC count
    - `30. Queries/*.md` → query count
-   - `00. Inbox/**/*` → pending inbox items (scan all subfolders)
+   - `00. Inbox/**/*` → pending inbox items (scan all subfolders, excluding `.gitkeep`)
 4. Check for discrepancies between index.md counts and actual counts
 5. **Coverage check**: grep `^collectionPurpose:` across `10. Raw Sources/**/*.md` → coverage % (미래의 나에게 보내는 편지)
 6. **Cross-vault check**: grep `^mainVaultRelated:` across `20. Wiki/**/*.md` → coverage %

@@ -32,6 +32,8 @@ related:
   - "[[김규태 Career Narrative]]"
   - "[[김규태 Leadership and Teaching Evidence]]"
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # MOC-Portfolio

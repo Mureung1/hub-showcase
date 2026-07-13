@@ -7,7 +7,7 @@ description: Memex — Vannevar Bush's 1945 conceptual device for storing and li
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-04-12T00:00
+date modified: 2026-07-12
 tags:
   - concept
   - knowledge-management
@@ -21,6 +21,8 @@ related:
 confidence: high
 layer: entities
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # Memex

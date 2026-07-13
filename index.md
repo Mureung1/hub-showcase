@@ -7,7 +7,7 @@ description: Master index of the LLM Wiki. Central navigation hub listing all Wi
 author:
   - "[[김규태]]"
 date created: 2026-07-07
-date modified: 2026-07-12
+date modified: 2026-07-14
 tags:
   - index
   - moc
@@ -29,13 +29,13 @@ status: active
 
 | Metric | Count |
 |--------|-------|
-| Raw Sources | 6 |
-| Wiki Pages | 31 |
-| Concepts | 14 |
+| Raw Sources | 21 |
+| Wiki Pages | 37 |
+| Concepts | 18 |
 | Entities | 8 |
-| Guides | 6 |
-| MOCs | 3 |
-| Queries | 1 |
+| Guides | 7 |
+| MOCs | 4 |
+| Queries | 4 |
 
 > *Stats 는 `/ingest` 실행 시 자동 갱신됩니다. 본인 컨텐츠를 채워나가면서 업데이트.*
 
@@ -58,6 +58,10 @@ status: active
 - [[Agent-Readable Metadata]] — 에이전트가 먼저 읽는 YAML metadata 설계
 - [[Human-AI Knowledge Boundary]] — AI가 생성한 지식과 사용자가 실제로 아는 지식의 경계
 - [[AI-Augmented Developer Positioning]] — AI 의존이 아니라 AI를 개발 역량의 증폭기로 설명하는 포트폴리오 프레임
+- [[레버리지를 당하지 않고 사용하는 삶]] — 자본·AI·콘텐츠·제품·사람 레버리지를 직접 사용하는 개인 전략
+- [[자본 레버리지는 자유의 핵심 엔진이다]] — 1억 임계점, 현금 20%, 2배 ETF, DCA, 암호화폐 비중을 정리한 투자 운영 가설
+- [[AI 자동화는 개인 생산성 레버리지다]] — Codex, harness, Threads, 멀티 에이전트 workflow를 개인 생산성 레버리지로 보는 관점
+- [[독서는 판단력과 자산관리의 기반이다]] — 지식 복리, 자산관리 판단력, 논픽션/픽션 균형 독서 프레임
 
 ### Entities
 
@@ -79,6 +83,7 @@ status: active
 - [[Obsidian Tooling for LLM Wiki]] — Web Clipper, Dataview, qmd 등 실용 도구 가이드
 - [[Web Clipper to Inbox Workflow]] — Web Clipper capture에서 purpose-gated ingest까지의 실전 절차
 - [[Citation Manager Integration for LLM Wiki]] — Zotero/Bookends 서지정보와 Raw Source/Wiki를 연결하기 위한 가이드 stub
+- [[개발자 커리어로 경제적 자유에 가까워지기]] — 개발자 취업과 고소득 커리어를 경제적 자유의 1순위 수단으로 정리한 가이드
 - [[김규태 Career Narrative]] — 자기소개, 목표 도메인, 성장 과제, 면접용 내러티브 정리
 - [[김규태 Leadership and Teaching Evidence]] — 실리콘밸리 대표, 멋쟁이사자처럼 부대표, 백엔드 세션, 해커톤 템플릿 증거
 
@@ -89,6 +94,7 @@ status: active
 - [[MOC-Knowledge Management]] — 지식 관리 개념, 패턴, 역사 종합
 - [[MOC-LLM Wiki Guide]] — 이 볼트 사용 온보딩 가이드
 - [[MOC-Portfolio]] — 취업 포트폴리오 Evidence Wiki 운영 허브
+- [[경제적 자유는 나의 북극성이다]] — 개발자 커리어, 자본 레버리지, AI 자동화, 독서, 제품화를 경제적 자유로 연결하는 개인 MOC
 
 ---
 
@@ -97,6 +103,9 @@ status: active
 > 질의 결과가 wiki 에 역피드백된 합성 페이지. [[Ingest-Query-Lint Cycle|Karpathy 원문 권장]]: "good answers can be filed back into the wiki as new pages."
 
 - [[2026-07-07-Q-LLM-Wiki-vault-academic-value]] — LLM Wiki 볼트의 학술적 가치와 Zotero/Bookends 인용 연동 방향
+- [[2026-07-14-Q-sales-psychology-book-recommendations]] — 세일즈와 심리학을 상위 25% 보조 능력으로 쌓기 위한 책 추천 경로
+- [[2026-07-14-Q-how-to-read-sales-psychology-books]] — 세일즈와 심리학 책을 행동 실험으로 바꾸는 독서 방법
+- [[2026-07-14-Q-yohan-koo-llm-wiki-usage-insights]] — 구요한 대표의 Obsidian LLM Wiki 사용법, 팁, 강의 인사이트 정리
 
 ---
 
@@ -104,6 +113,8 @@ status: active
 
 | Date | Source | Pages Touched |
 |------|--------|---------------|
+| 2026-07-13 | [[2026-07-13-YouTube-Shorts-몸값-높이는-독서법]] | 3 pages |
+| 2026-07-12 | [[2026-07-12-YouTube-Inspiration-Bundle-User-Reflections]] + 13 YouTube transcripts | 8 pages |
 | 2026-07-12 | [[2026-07-12-Velog-Leadership-Product-Hackathon-Bundle]] | 4 pages |
 | 2026-07-12 | [[2026-07-12-Kim-Gyutae-Leadership-Product-Context-v2]] | 6 pages |
 | 2026-07-11 | [[2026-07-11-Kim-Gyutae-Personal-Raw-Context-v1]] | 7 pages |

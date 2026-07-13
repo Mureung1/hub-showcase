@@ -7,7 +7,7 @@ description: Custom command pattern for systematic-review-style LLM Wiki workflo
 author:
   - Claude
 date created: 2026-04-29
-date modified: 2026-04-29
+date modified: 2026-07-12
 tags:
   - concept
   - command-pattern
@@ -21,6 +21,8 @@ related:
 confidence: medium
 layer: concepts
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # Track Classification and Research Gap Detection

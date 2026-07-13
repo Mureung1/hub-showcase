@@ -7,7 +7,7 @@ description: Workflow pattern that turns each new raw source ingest into an auto
 author:
   - Claude
 date created: 2026-04-29
-date modified: 2026-04-29
+date modified: 2026-07-12
 tags:
   - concept
   - workflow
@@ -23,6 +23,8 @@ related:
 confidence: medium
 layer: concepts
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # Idea Generation Pipeline

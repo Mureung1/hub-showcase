@@ -8,7 +8,7 @@ description: Cost-optimization pattern for LLM Wiki workflows — heavy raw mate
 author:
   - Claude
 date created: 2026-04-29
-date modified: 2026-04-29
+date modified: 2026-07-12
 tags:
   - concept
   - workflow
@@ -24,6 +24,8 @@ related:
 confidence: high
 layer: concepts
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # External Pre-processing Pattern

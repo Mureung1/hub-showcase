@@ -7,7 +7,7 @@ description: Vannevar Bush — American engineer and science administrator who p
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-04-12T00:00
+date modified: 2026-07-12
 tags:
   - person
   - knowledge-management
@@ -21,6 +21,8 @@ related:
 confidence: high
 layer: entities
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # Vannevar Bush

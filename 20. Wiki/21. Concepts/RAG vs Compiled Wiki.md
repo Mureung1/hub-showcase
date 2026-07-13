@@ -8,7 +8,7 @@ description: Comparison between RAG (retrieval-augmented generation) and the com
 author:
   - Claude
 date created: 2026-04-12T00:00
-date modified: 2026-04-12T00:00
+date modified: 2026-07-12
 tags:
   - rag
   - llm-wiki
@@ -22,6 +22,8 @@ related:
 confidence: high
 layer: concepts
 status: active
+explored: false
+verificationStatus: unverified
 ---
 
 # RAG vs Compiled Wiki

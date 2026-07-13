@@ -18,11 +18,14 @@ source:
   - https://raw.githubusercontent.com/gyutaetae/cuee/main/README.md
   - "[[2026-07-12-Kim-Gyutae-Leadership-Product-Context-v2]]"
   - "[[2026-07-12-Velog-Leadership-Product-Hackathon-Bundle]]"
+  - "[[2026-07-12-YouTube-Inspiration-Bundle-User-Reflections]]"
   - https://velog.io/@gyutaetae/%EB%B0%B0%EC%9A%B0%EB%8B%B4-%EA%B0%9C%EB%B0%9C%EC%9D%BC%EC%A7%801
 related:
   - "[[김규태]]"
   - "[[MOC-Portfolio]]"
   - "[[김규태 Leadership and Teaching Evidence]]"
+  - "[[harness]]"
+  - "[[경제적 자유는 나의 북극성이다]]"
 confidence: medium
 layer: entities
 explored: false
@@ -52,12 +55,14 @@ status: active
 - README의 검증 목표는 완료시간 50% 감소, 도움 요청 횟수 70% 감소, 실패율 30%p 감소다.
 - 장기 비전은 보호자 대상 B2C 검증 후 코레일 같은 기업 대상 B2B 접근성 솔루션으로 확장하는 것이다.
 - 향후 목표는 Play Store 출시다.
+- 사용자는 `cuee`를 아직 0에서 1로 만든 경험이라고 보지 않는다. 현재는 0 to 1 후보 또는 초기 제품화 경험으로 기록한다.
+- 사용자는 [[harness]]를 사용해서 만든 것이 `cuee`라고 정리했다.
 
 ---
 
 ## Portfolio Use
 
-백엔드 중심 포트폴리오에서는 보조 프로젝트로 둔다. 기술적으로는 Android/Kotlin 앱 경험을, 서사적으로는 사용자 문제 정의와 창업동아리 대상작, 팀 리딩 경험을 보여준다.
+백엔드 중심 포트폴리오에서는 보조 프로젝트로 둔다. 기술적으로는 Android/Kotlin 앱 경험을, 서사적으로는 사용자 문제 정의와 창업동아리 대상작, 팀 리딩, 초기 제품화 경험을 보여준다.
 
 면접 핵심 문장:
 
@@ -76,6 +81,7 @@ status: active
 - 실제 사용자 테스트 결과
 - 발표자료와 심사 피드백
 - Play Store 출시 계획과 출시 전 검증 항목
+- Android accessibility 권한 심사 통과 가능성과 정책 검토
 
 ---
 
@@ -85,4 +91,5 @@ status: active
 - https://raw.githubusercontent.com/gyutaetae/cuee/main/README.md
 - [[2026-07-12-Kim-Gyutae-Leadership-Product-Context-v2]]
 - [[2026-07-12-Velog-Leadership-Product-Hackathon-Bundle]]
+- [[2026-07-12-YouTube-Inspiration-Bundle-User-Reflections]]
 - https://velog.io/@gyutaetae/%EB%B0%B0%EC%9A%B0%EB%8B%B4-%EA%B0%9C%EB%B0%9C%EC%9D%BC%EC%A7%801
