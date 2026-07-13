@@ -25,13 +25,25 @@
         <button type="button" class="fridge-clear" style="display:none">전체 해제</button>
       </div>
 
+      <label class="nav-search fridge-search" for="ingredient-search">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M11.5 11.5L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <input type="text" id="ingredient-search" placeholder="재료 검색 (예: 순두부, 삼겹살)" autocomplete="off">
+      </label>
+      <p class="fridge-search-empty" hidden>검색 결과가 없어요. 다른 이름으로 찾아보세요.</p>
+
       <div class="filters">
         <div class="chip-row">
           <input type="checkbox" id="ing-egg" value="egg"><label for="ing-egg">🥚 계란</label>
           <input type="checkbox" id="ing-kimchi" value="kimchi"><label for="ing-kimchi">🥬 김치</label>
-          <input type="checkbox" id="ing-tofu" value="tofu"><label for="ing-tofu">🧈 두부</label>
-          <input type="checkbox" id="ing-pork" value="pork"><label for="ing-pork">🐷 돼지고기</label>
-          <input type="checkbox" id="ing-beef" value="beef"><label for="ing-beef">🥩 소고기</label>
+          <input type="checkbox" id="ing-tofu-regular" value="tofu-regular" data-group="두부"><label for="ing-tofu-regular">🧈 두부</label>
+          <input type="checkbox" id="ing-tofu-soft" value="tofu-soft" data-group="두부"><label for="ing-tofu-soft">🥣 순두부</label>
+          <input type="checkbox" id="ing-pork-neck" value="pork-neck" data-group="돼지고기"><label for="ing-pork-neck">🐷 목살</label>
+          <input type="checkbox" id="ing-pork-belly" value="pork-belly" data-group="돼지고기"><label for="ing-pork-belly">🥓 삼겹살</label>
+          <input type="checkbox" id="ing-beef-bulgogi" value="beef-bulgogi" data-group="소고기"><label for="ing-beef-bulgogi">🥩 불고기용소고기</label>
+          <input type="checkbox" id="ing-beef-ground" value="beef-ground" data-group="소고기"><label for="ing-beef-ground">🍖 다짐소고기</label>
           <input type="checkbox" id="ing-green-onion" value="green-onion"><label for="ing-green-onion">🌿 대파</label>
           <input type="checkbox" id="ing-onion" value="onion"><label for="ing-onion">🧅 양파</label>
           <input type="checkbox" id="ing-garlic" value="garlic"><label for="ing-garlic">🧄 마늘</label>
@@ -56,6 +68,8 @@
           <input type="checkbox" id="ing-bacon" value="bacon"><label for="ing-bacon">🥓 베이컨</label>
           <input type="checkbox" id="ing-cheese" value="cheese"><label for="ing-cheese">🧀 치즈</label>
           <input type="checkbox" id="ing-lettuce" value="lettuce"><label for="ing-lettuce">🥗 양상추</label>
+          <input type="checkbox" id="ing-udon" value="udon"><label for="ing-udon">🍜 우동면</label>
+          <input type="checkbox" id="ing-glass-noodle" value="glass-noodle"><label for="ing-glass-noodle">🥢 당면</label>
         </div>
       </div>
 

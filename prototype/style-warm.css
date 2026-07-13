@@ -205,6 +205,15 @@ a { color: inherit; text-decoration: none; }
   margin: 0;
 }
 
+/* ---- 냉장고 재료 검색창 (nav-search 패턴 재사용) ---- */
+
+.fridge-search { width: auto; margin: 0 0 var(--space-3); }
+.fridge-search-empty {
+  margin: calc(-1 * var(--space-2)) 0 var(--space-3);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
 /* ---- filter panel (checkbox-hack, 원본 로직 그대로) ---- */
 
 .filters {

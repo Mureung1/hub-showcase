@@ -51,5 +51,25 @@
     });
   }
 
+  // 재료 검색: label 텍스트 또는 data-group(예: 두부/순두부 → "두부")에 부분일치하면 남기고 나머지는 숨김
+  var searchInput = document.getElementById("ingredient-search");
+  var emptyMessage = document.querySelector(".fridge-search-empty");
+  if (searchInput) {
+    searchInput.addEventListener("input", function () {
+      var query = searchInput.value.trim().toLowerCase();
+      var visibleCount = 0;
+      document.querySelectorAll(".chip-row input[type=\"checkbox\"]").forEach(function (box) {
+        var label = document.querySelector('label[for="' + box.id + '"]');
+        var group = box.getAttribute("data-group") || "";
+        var haystack = ((label ? label.textContent : "") + " " + group).toLowerCase();
+        var visible = query === "" || haystack.indexOf(query) !== -1;
+        box.style.display = visible ? "" : "none";
+        if (label) label.style.display = visible ? "" : "none";
+        if (visible) visibleCount++;
+      });
+      if (emptyMessage) emptyMessage.hidden = visibleCount > 0;
+    });
+  }
+
   restore();
 })();

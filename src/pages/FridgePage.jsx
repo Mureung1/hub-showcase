@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import IngredientChipPicker from '../components/IngredientChipPicker'
+import IngredientSearchInput from '../components/IngredientSearchInput'
 import { fridgeIngredients } from '../data/fridgeIngredients'
 import { loadFridgeSelection, saveFridgeSelection } from '../data/fridgeStorage'
 import fridgeEmpty from '../assets/fridge-empty.png'
@@ -19,6 +20,10 @@ function FridgePage() {
 
   function handleClear() {
     setSelectedIds([])
+  }
+
+  function handleSelectFromSearch(id) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]))
   }
 
   function handleComplete() {
@@ -58,6 +63,10 @@ function FridgePage() {
                 전체 해제
               </button>
             )}
+          </div>
+
+          <div className="mt-3">
+            <IngredientSearchInput options={fridgeIngredients} onSelect={handleSelectFromSearch} />
           </div>
 
           <div className="mt-3">
