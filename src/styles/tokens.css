@@ -1,0 +1,32 @@
+/* Soft Mint 디자인 토큰 — demo-test-design 스킬 스펙. 값 임의 변경 금지 */
+:root {
+  /* Colors */
+  --color-bg: #E7EEEB;            /* 페이지 배경 (연한 세이지 그린) */
+  --color-surface: #FFFFFF;       /* 카드, 헤더 */
+  --color-primary: #3EC28F;       /* 주요 버튼, 활성 상태, 강조 */
+  --color-primary-dark: #17332B;  /* 다크 버튼, CTA, 강조 블록 */
+  --color-primary-light: #E4F6EC; /* 칩 배경, 하이라이트 영역 */
+  --color-text: #1C2321;
+  --color-text-muted: #7C8783;
+  --color-border: #EDF1EF;
+  --color-danger: #E5484D;
+  --color-danger-light: #FDECEC;
+  --color-accent: #F6D563;        /* 별점 등 극히 제한적으로만 */
+
+  /* Radius */
+  --radius-card: 16px;
+  --radius-input: 12px;
+  --radius-pill: 9999px;
+
+  /* Spacing: 4/8/12/16/24/32/48 스케일만 사용 */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px;
+
+  /* Layout */
+  --header-h: 68px;
+  --sidebar-w: 240px;
+  --content-max-w: 1280px;
+
+  --shadow-soft: 0 4px 16px rgba(23, 51, 43, 0.08);
+  --font-sans: "Pretendard", "Inter", -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+}

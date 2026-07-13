@@ -1,0 +1,38 @@
+/* 3탭 공통 골격 스타일 — 상세 카드는 3단계(목업 데이터)에서 구현 */
+.tab-page h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.tab-page .tab-sub {
+  margin-top: var(--space-1);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.tab-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+  padding: var(--space-7) var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  text-align: center;
+}
+
+.tab-empty h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.tab-empty p {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.tab-empty .btn {
+  margin-top: var(--space-3);
+}

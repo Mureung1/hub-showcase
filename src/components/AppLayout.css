@@ -1,0 +1,203 @@
+/* 사이드바 앱 레이아웃 — images/대시보드.png 등 3탭 시안의 공통 프레임 */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* 사이드바 */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  padding: var(--space-5) var(--space-4);
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sidebar-brand img {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-input);
+}
+
+.sidebar-brand strong {
+  display: block;
+  font-size: 16px;
+  color: var(--color-primary-dark);
+}
+
+.sidebar-brand span {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-6);
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.sidebar-link:hover {
+  background: var(--color-primary-light);
+}
+
+.sidebar-link.active {
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.sidebar-icon {
+  display: inline-flex;
+  width: 20px;
+  justify-content: center;
+}
+
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: auto;
+}
+
+.sidebar-new {
+  width: 100%;
+  font-size: 13px;
+}
+
+.sidebar-utils {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.sidebar-profile .avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-light);
+}
+
+.sidebar-profile strong {
+  display: block;
+  font-size: 13px;
+}
+
+.sidebar-profile span {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* 메인 영역 */
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-h);
+  padding: 0 var(--space-6);
+}
+
+.hamburger {
+  display: none;
+  font-size: 20px;
+}
+
+.app-header-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.app-content {
+  flex: 1;
+  padding: 0 var(--space-6) var(--space-6);
+  max-width: var(--content-max-w);
+  width: 100%;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+/* 반응형: 사이드바 오프캔버스 */
+@media (max-width: 960px) {
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgba(23, 51, 43, 0.35);
+  }
+
+  .hamburger {
+    display: inline-flex;
+  }
+
+  .app-content {
+    padding: 0 var(--space-4) var(--space-5);
+  }
+}
