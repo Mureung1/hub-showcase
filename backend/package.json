@@ -1,11 +1,11 @@
 {
-  "name": "core-loop-builder-server",
+  "name": "respec-backend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "nodemon index.js",
-    "start": "node index.js",
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
     "format": "prettier --write ."
   },
   "dependencies": {

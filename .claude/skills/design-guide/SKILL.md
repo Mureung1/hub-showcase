@@ -1,17 +1,17 @@
 ---
 name: design-guide
-description: Core Loop Builder의 화면을 새로 디자인하거나 기존 디자인을 검토할 때 사용한다. pastel-glassmorphism + game-feel 톤을 design/DESIGN_SYSTEM.md, design/design-tokens.css와 일치시키고, 완성된 화면을 아래 체크리스트로 자체 점검한다.
+description: 역기획소(respec)의 화면을 새로 디자인하거나 기존 디자인을 검토할 때 사용한다. pastel-glassmorphism + game-feel 톤을 design/DESIGN_SYSTEM.md, design/design-tokens.css와 일치시키고, 완성된 화면을 아래 체크리스트로 자체 점검한다.
 ---
 
-# Core Loop Builder 디자인 가이드
+# 역기획소 디자인 가이드
 
-이 skill은 "이 화면이 Core Loop Builder답게 생겼는가?"를 판단하기 위한 것이다. 새 화면을 만들 때뿐 아니라, 이미 만든 화면을 검토할 때도 호출한다.
+이 skill은 "이 화면이 역기획소답게 생겼는가?"를 판단하기 위한 것이다. 새 화면을 만들 때뿐 아니라, 이미 만든 화면을 검토할 때도 호출한다. (Core Loop Builder에서 피벗했지만 디자인 시스템은 그대로 계승한다.)
 
 ## 먼저 참조할 것
 
 1. [`design/design-tokens.css`](../../../design/design-tokens.css) — 색상, blur, radius, shadow, spacing 값. 새 색상이나 radius를 즉흥적으로 정하지 말고 이 파일에서 골라 쓴다. 없는 값이 필요하면 토큰을 먼저 추가한다.
 2. [`design/DESIGN_SYSTEM.md`](../../../design/DESIGN_SYSTEM.md) — 색상 역할, 글래스 패널 레시피, 컴포넌트 패턴, game-feel 모티프 규칙의 전체 설명.
-3. [레퍼런스 목업](https://claude.ai/code/artifact/f8526978-9370-4a0d-a4b7-15c7b061a9bf) — 입력 / 후보 선택 / 루프 시각화 3개 화면의 실제 구현.
+3. [레퍼런스 목업](https://claude.ai/code/artifact/f8526978-9370-4a0d-a4b7-15c7b061a9bf) — 구 프로젝트(Core Loop Builder) 화면 3종이지만 글래스 패널·배경·배지 등 톤 레퍼런스로는 여전히 유효.
 
 ## 한 줄 요약
 
@@ -28,7 +28,7 @@ description: Core Loop Builder의 화면을 새로 디자인하거나 기존 디
 - [ ] **game-feel은 성취 언어로만**: 진행바 · 순번/선택 배지 · 순환 다이어그램 같은 "진행·성취" 모티프만 쓰고, 무기/캐릭터 같은 장식적 게임 클리셰를 넣지 않았는가?
 - [ ] **모션은 느리고 어긋나게**: 배경 오브가 있다면 2개 이상, 서로 다른 주기(24~45초)로 움직이는가? `prefers-reduced-motion: reduce`에서 정지하는가? hover는 `translateY` 소폭 이동 정도로 절제했는가?
 - [ ] **접근성**: 본문 텍스트 투명도가 `--clb-muted`(76%) 이상인가? 포커스 상태가 보이는가? 다이어그램에 `role="img"` + 전체 흐름을 설명하는 `aria-label`이 있는가?
-- [ ] **반응형**: 640px 이하에서 원형/그리드 레이아웃이 세로 스택으로 무너지는가? (특히 루프 다이어그램은 기획서상 모바일에서 세로 흐름이어야 한다)
+- [ ] **반응형**: 640px 이하에서 그리드/다단 레이아웃이 세로 스택으로 무너지는가? (기획서상 데스크톱 우선이지만 레이아웃이 깨져 보이면 안 된다)
 
 ## 피드백을 받으면
 
