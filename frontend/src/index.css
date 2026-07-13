@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 * {
@@ -8,10 +8,21 @@
 
 body {
   margin: 0;
-  font-family: system-ui, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-family: var(--clb-font-display);
   line-height: 1.6;
+  color: var(--clb-ink);
+  background: var(--clb-bg-gradient);
+  background-attachment: fixed;
 }
 
 #root {
   min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
 }
