@@ -1,0 +1,164 @@
+.signup-role-page {
+  min-height: 100vh;
+}
+
+.signup-header {
+  min-height: 76px;
+  padding-block: 16px;
+}
+
+.signup-role-container {
+  margin-block: 0;
+  padding-block: clamp(54px, 8vw, 92px) 64px;
+}
+
+.signup-role-heading {
+  max-width: 620px;
+  margin-bottom: 34px;
+}
+
+.signup-role-heading .eyebrow {
+  margin-bottom: 10px;
+}
+
+.signup-role-heading .body-text {
+  margin: 16px 0 0;
+  font-size: 17px;
+}
+
+.role-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.role-card {
+  position: relative;
+  display: flex;
+  min-height: 390px;
+  flex-direction: column;
+  padding: 28px;
+  overflow: hidden;
+}
+
+.role-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--color-primary);
+}
+
+.role-card-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 34px;
+}
+
+.role-number {
+  color: var(--color-primary);
+  font-size: 15px;
+  font-weight: var(--font-weight-black);
+}
+
+.role-card-copy .card-title {
+  font-size: 26px;
+}
+
+.role-card-copy .body-text {
+  min-height: 78px;
+  margin: 12px 0 0;
+}
+
+.role-point-list {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0 30px;
+  padding: 18px;
+  color: var(--color-text-sub);
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  list-style: none;
+}
+
+.role-point-list li::before {
+  content: "✓";
+  margin-right: 9px;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-black);
+}
+
+.role-button {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 50px;
+  margin-top: auto;
+}
+
+.signup-login-link {
+  margin: 28px 0 0;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.signup-login-link a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.placeholder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 760px) {
+  .signup-header {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .signup-header .button {
+    width: auto;
+  }
+
+  .role-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .role-card {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .signup-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .signup-header .button {
+    width: 100%;
+  }
+
+  .signup-role-container {
+    padding-top: 40px;
+  }
+
+  .role-card {
+    padding: 22px;
+  }
+
+  .role-card-copy .body-text {
+    min-height: auto;
+  }
+
+  .placeholder-actions {
+    display: grid;
+    width: 100%;
+  }
+}
