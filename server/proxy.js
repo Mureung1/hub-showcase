@@ -13,6 +13,7 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const APP_TITLE = 'CJMT'
 const APP_REFERER = process.env.APP_URL || 'http://localhost:5173'
 const KAKAO_KEYWORD_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
+const KAKAO_ADDRESS_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/address.json'
 
 // 식약처 식품영양성분DB: "음식"(조리식) API가 기본, "가공식품" API는 편의점/포장/프랜차이즈 제품 보완용 폴백. 파라미터·응답 구조는 동일하다.
 const FOODSAFETY_SOURCES = {
@@ -192,6 +193,60 @@ app.post('/api/places', async (req, res) => {
     res.json(places)
   } catch (err) {
     respondToProxyError(res, err, 'Kakao proxy request')
+  }
+})
+
+// POST /api/geocode - 지역명/주소 -> 좌표 변환. 카카오 주소 검색 API를 먼저 쓰고(정식 주소에 정확),
+// 결과가 없으면 카카오 키워드 검색 API로 재시도한다(역/랜드마크/상호명처럼 주소 형식이 아닌 지역명 대응).
+app.post('/api/geocode', async (req, res) => {
+  const apiKey = process.env.KAKAO_REST_API_KEY
+  if (!apiKey) {
+    return res.status(500).json({ error: 'KAKAO_REST_API_KEY is not configured on the server' })
+  }
+
+  const { query } = req.body || {}
+  if (!query || typeof query !== 'string' || !query.trim()) {
+    return res.status(400).json({ error: 'query is required' })
+  }
+
+  try {
+    const addressUrl = new URL(KAKAO_ADDRESS_SEARCH_URL)
+    addressUrl.searchParams.set('query', query)
+
+    const addressRes = await fetchWithRetry(addressUrl, { headers: { Authorization: `KakaoAK ${apiKey}` } })
+    const addressData = await addressRes.json()
+
+    if (!addressRes.ok) {
+      console.error('Kakao address search error:', addressData)
+      return res.status(addressRes.status).json({ error: addressData?.message || 'Kakao API error' })
+    }
+
+    const addressDoc = addressData?.documents?.[0]
+    if (addressDoc) {
+      return res.json({ x: addressDoc.x, y: addressDoc.y, label: addressDoc.address_name })
+    }
+
+    // 주소 검색 결과가 없으면(역/랜드마크/상호명 등 정식 주소가 아닌 지역명) 키워드 검색으로 재시도
+    const keywordUrl = new URL(KAKAO_KEYWORD_SEARCH_URL)
+    keywordUrl.searchParams.set('query', query)
+    keywordUrl.searchParams.set('size', '1')
+
+    const keywordRes = await fetchWithRetry(keywordUrl, { headers: { Authorization: `KakaoAK ${apiKey}` } })
+    const keywordData = await keywordRes.json()
+
+    if (!keywordRes.ok) {
+      console.error('Kakao keyword geocode fallback error:', keywordData)
+      return res.status(keywordRes.status).json({ error: keywordData?.message || 'Kakao API error' })
+    }
+
+    const keywordDoc = keywordData?.documents?.[0]
+    if (!keywordDoc) {
+      return res.status(404).json({ error: '해당 위치를 찾을 수 없습니다' })
+    }
+
+    res.json({ x: keywordDoc.x, y: keywordDoc.y, label: keywordDoc.place_name })
+  } catch (err) {
+    respondToProxyError(res, err, 'Kakao geocode proxy request')
   }
 })
 

@@ -3,7 +3,7 @@
 // meal record 형태: { id, mealType('breakfast'|'lunch'|'dinner'|'etc'), createdAt, items: [{ id, name, brand, nutrients(NutrientSet), source }] }
 // 구버전 데이터(음식 하나가 곧 저장 단위였던 시절, items 없이 name/nutrients가 최상위에 있던 형태)는
 // getMeals()에서 items 1개짜리 끼니로 정규화해 그대로 호환한다.
-import { get, set } from './storage.js'
+import { get, keysWithPrefix, set } from './storage.js'
 import { normalizeMealType } from './mealType.js'
 import { NUTRIENT_LABELS } from './nutrition.js'
 
@@ -36,6 +36,14 @@ export function getMeals(userId, dateKey) {
   if (!userId || !dateKey) return []
   const raw = get(storageKey(userId, dateKey), [])
   return Array.isArray(raw) ? raw.map(normalizeMealRecord) : []
+}
+
+// userId 소유의 끼니 저장 키(meals:<userId>:<date>)가 존재하는 날짜(YYYY-MM-DD) 목록. dailyRecord의
+// recommended 스냅샷 유무와 무관하게 "실제로 끼니를 저장한 적 있는 날"을 알아야 할 때 쓴다(CSV
+// 내보내기가 대표적 — dailyRecord.getIndex는 스냅샷 없는 옛 날짜를 놓치므로 이 함수로 대신한다).
+export function getDatesWithMeals(userId) {
+  if (!userId) return []
+  return keysWithPrefix(storageKey(userId, '')).sort()
 }
 
 // 판정: 끼니를 구성하는 음식이 2개 이상이면 "다중 메뉴(한 끼 세트)"다.

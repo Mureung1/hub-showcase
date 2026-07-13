@@ -4,8 +4,14 @@
 // 한 행 = 하루 한 끼 항목(음식 하나). recommended_*/compliant는 그날 전체 값이라 그날의 모든 행에서
 // 반복된다. compliant는 내보낼 때만 참고용으로 싣고, 가져올 때는 무시한다 — dailyRecord.js의 설계상
 // compliant는 항상 recommended+그날 끼니로부터 다시 계산되지 저장되는 값이 아니기 때문이다.
-import { getAllRecords, replaceDay } from './dailyRecord.js'
-import { flattenMealItems } from './mealStore.js'
+//
+// 날짜 목록은 dailyRecord가 아니라 mealStore(getDatesWithMeals)를 기준으로 잡는다. dailyRecord는
+// recommended 스냅샷이 있는 날짜만 알기 때문에(dailyRecord.upsertMeal이 한 번도 안 불린 날, 예를
+// 들어 #3 구현 이전에 저장된 옛 끼니는 스냅샷이 없다), 그 기준을 그대로 쓰면 실제로 끼니가 남아있는
+// 날짜인데도 CSV에서 통째로 빠지는 문제가 생긴다. recommended 스냅샷은 있으면 참고로만 곁들이고,
+// "그 날짜를 내보낼지"는 순수하게 mealStore에 끼니가 있는지로만 정한다.
+import { getRecord, replaceDay } from './dailyRecord.js'
+import { flattenMealItems, getDatesWithMeals, getMeals } from './mealStore.js'
 import { NUTRIENT_LABELS, NUTRITION_SOURCE } from './nutrition.js'
 
 const NUTRIENT_KEYS = NUTRIENT_LABELS.map((n) => n.key)
@@ -78,25 +84,34 @@ function parseCsv(text) {
 // range({ startDate, endDate }, 둘 다 'YYYY-MM-DD')를 주면 그 기간(포함)의 날짜만 걸러낸다.
 // 하나만 줘도 그쪽 경계만 적용된다. 안 주면(undefined) 전체 기간.
 function buildRows(userId, { startDate, endDate } = {}) {
-  const records = getAllRecords(userId)
+  const dates = getDatesWithMeals(userId).filter((date) => {
+    if (startDate && date < startDate) return false
+    if (endDate && date > endDate) return false
+    return true
+  })
+
   const rows = []
 
-  for (const date of Object.keys(records).sort()) {
-    if (startDate && date < startDate) continue
-    if (endDate && date > endDate) continue
+  for (const date of dates) {
+    // recommended 스냅샷이 있으면(dailyRecord.upsertMeal이 호출된 날) 곁들이고, 없으면(옛 데이터 등)
+    // recommended/compliant는 모른다는 뜻으로 비워둔다 — 지금 기준으로 채워 넣으면 그 시점엔 다른
+    // 프로필/권장량이었을 수도 있는데 마치 정확한 과거 값인 것처럼 CSV에 남아 오해를 부를 수 있다.
+    const record = getRecord(userId, date)
+    const items = flattenMealItems(record ? record.meals : getMeals(userId, date))
+    if (items.length === 0) continue // 끼니가 전부 삭제돼 빈 배열만 남은 날짜는 제외
 
-    const record = records[date]
-    if (!record) continue
+    const recommended = record?.recommended ?? null
+    const compliant = record ? record.compliant : null
 
-    for (const item of flattenMealItems(record.meals)) {
+    for (const item of items) {
       rows.push([
         date,
         item.source ?? '',
         item.name ?? '',
         item.brand ?? '',
         ...NUTRIENT_KEYS.map((key) => item.nutrients?.[key] ?? ''),
-        ...NUTRIENT_KEYS.map((key) => record.recommended?.[key] ?? ''),
-        record.compliant ? 'true' : 'false',
+        ...NUTRIENT_KEYS.map((key) => recommended?.[key] ?? ''),
+        compliant === null ? '' : compliant ? 'true' : 'false',
       ])
     }
   }
@@ -158,12 +173,16 @@ export async function importCSV(userId, file) {
         return [key, raw === '' || raw === undefined ? null : Number(raw)]
       }),
     )
-    const recommended = Object.fromEntries(
+    const recommendedRaw = Object.fromEntries(
       NUTRIENT_KEYS.map((key) => {
         const raw = row[columnIndex[`recommended_${key}`]]
         return [key, raw === '' || raw === undefined ? null : Number(raw)]
       }),
     )
+    // 내보낼 때 recommended 스냅샷이 없어 전부 빈 칸이었던 날짜는, 값이 있는 것처럼 보이는 "전부
+    // null인 객체"가 아니라 진짜 null로 되돌린다 — dailyRecord.js가 원래 "모름"을 표현하는 방식과
+    // 맞춰야, 나중에 Calendar 등에서 "recommended 있음"으로 잘못 취급되지 않는다.
+    const recommended = Object.values(recommendedRaw).every((v) => v === null) ? null : recommendedRaw
     const item = {
       name,
       brand: row[columnIndex.brand] || null,
