@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 type Upload = {
   id: string;
@@ -8,6 +8,8 @@ type Upload = {
   lastUploadDate: string | null;
   monthCategory: string; // "06월 김밥" 형식
   usedIn: string[];
+  selectedFileName: string | null;
+  isUploading: boolean;
 };
 
 const MOCK_UPLOADS: Upload[] = [
@@ -19,6 +21,8 @@ const MOCK_UPLOADS: Upload[] = [
     lastUploadDate: '2026.07.08',
     monthCategory: '김밥 (6월)',
     usedIn: ['Dashboard', 'Financial'],
+    selectedFileName: null,
+    isUploading: false,
   },
   {
     id: 'orders',
@@ -28,6 +32,8 @@ const MOCK_UPLOADS: Upload[] = [
     lastUploadDate: '2026.07.05',
     monthCategory: '도시락 (6월)',
     usedIn: ['Dashboard'],
+    selectedFileName: null,
+    isUploading: false,
   },
   {
     id: 'waste',
@@ -37,6 +43,8 @@ const MOCK_UPLOADS: Upload[] = [
     lastUploadDate: '2026.07.08',
     monthCategory: '주먹밥 (5월)',
     usedIn: ['Dashboard', 'Financial'],
+    selectedFileName: null,
+    isUploading: false,
   },
   {
     id: 'inventory',
@@ -46,6 +54,8 @@ const MOCK_UPLOADS: Upload[] = [
     lastUploadDate: null,
     monthCategory: '햄버거샌드위치 (6월)',
     usedIn: ['Analysis'],
+    selectedFileName: null,
+    isUploading: false,
   },
   {
     id: 'hourly',
@@ -55,6 +65,8 @@ const MOCK_UPLOADS: Upload[] = [
     lastUploadDate: null,
     monthCategory: '김밥 (6월)',
     usedIn: ['Analysis'],
+    selectedFileName: null,
+    isUploading: false,
   },
   {
     id: 'weekday',
@@ -64,6 +76,8 @@ const MOCK_UPLOADS: Upload[] = [
     lastUploadDate: null,
     monthCategory: '도시락 (6월)',
     usedIn: ['Analysis'],
+    selectedFileName: null,
+    isUploading: false,
   },
 ];
 
@@ -96,6 +110,23 @@ const categoryColors: Record<string, { bg: string; icon: string; iconBg: string 
 
 export default function UploadPage() {
   const [uploads, setUploads] = useState<Upload[]>(MOCK_UPLOADS);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const handleFileSelect = (id: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploads((prevUploads) =>
+      prevUploads.map((upload) =>
+        upload.id === id
+          ? {
+              ...upload,
+              selectedFileName: file.name,
+            }
+          : upload
+      )
+    );
+  };
 
   const handleUploadClick = (id: string) => {
     setUploads((prevUploads) =>
@@ -103,12 +134,27 @@ export default function UploadPage() {
         upload.id === id
           ? {
               ...upload,
-              status: upload.status === '미업로드' ? '정상' : '미업로드',
-              lastUploadDate: upload.status === '미업로드' ? '2026.07.14' : null,
+              isUploading: true,
             }
           : upload
       )
     );
+
+    // Mock upload: 500ms delay
+    setTimeout(() => {
+      setUploads((prevUploads) =>
+        prevUploads.map((upload) =>
+          upload.id === id
+            ? {
+                ...upload,
+                isUploading: false,
+                status: '정상',
+                lastUploadDate: '2026.07.14',
+              }
+            : upload
+        )
+      );
+    }, 500);
   };
 
   // 파생 데이터
@@ -150,9 +196,10 @@ export default function UploadPage() {
       <div style={{
         background: colors.primaryTint,
         border: `1px solid #DBEAFE`,
-        borderRadius: '8px',
+        borderRadius: '12px',
         padding: '20px',
         marginBottom: '24px',
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h2 style={{ fontSize: '14px', fontWeight: '600', color: colors.textPrimary, margin: '0' }}>AI 분석 가능 여부</h2>
@@ -207,9 +254,10 @@ export default function UploadPage() {
               key={upload.id}
               style={{
                 background: categoryStyle.bg,
-                border: `1px solid ${colors.borderColor}`,
-                borderRadius: '8px',
-                padding: '16px',
+                border: `1px solid ${upload.category === 'inventory' ? '#FDE68A' : colors.borderColor}`,
+                borderRadius: '12px',
+                padding: '20px',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -229,9 +277,18 @@ export default function UploadPage() {
                 {upload.usedIn.join(' · ')}
               </p>
 
+              <input
+                type="file"
+                ref={(el) => {
+                  if (el) fileInputRefs.current[upload.id] = el;
+                }}
+                onChange={(e) => handleFileSelect(upload.id, e)}
+                style={{ display: 'none' }}
+              />
+
               <button
                 type="button"
-                onClick={() => handleUploadClick(upload.id)}
+                onClick={() => fileInputRefs.current[upload.id]?.click()}
                 style={{
                   width: '100%',
                   padding: '8px 12px',
@@ -259,6 +316,33 @@ export default function UploadPage() {
                 파일 선택
               </button>
 
+              {upload.selectedFileName && (
+                <div style={{ marginBottom: '8px' }}>
+                  <p style={{ fontSize: '11px', color: colors.primary, fontWeight: '500', margin: '0 0 8px 0' }}>
+                    ✓ 선택된 파일: {upload.selectedFileName}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleUploadClick(upload.id)}
+                    disabled={upload.isUploading}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: 'none',
+                      background: upload.isUploading ? colors.textTertiary : colors.primary,
+                      color: colors.bgCard,
+                      fontWeight: '600',
+                      borderRadius: '6px',
+                      cursor: upload.isUploading ? 'not-allowed' : 'pointer',
+                      fontSize: '12px',
+                      transition: 'background 0.2s',
+                    }}
+                  >
+                    {upload.isUploading ? '업로드 중...' : '업로드'}
+                  </button>
+                </div>
+              )}
+
               <p style={{ fontSize: '11px', color: colors.textTertiary, margin: '0' }}>
                 {upload.lastUploadDate ? `최근 업로드 · ${upload.lastUploadDate}` : '최근 업로드 없음'}
               </p>
@@ -277,8 +361,9 @@ export default function UploadPage() {
               style={{
                 background: colors.bgCard,
                 border: `1px solid ${colors.borderColor}`,
-                borderRadius: '8px',
-                padding: '16px',
+                borderRadius: '12px',
+                padding: '20px',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -303,7 +388,7 @@ export default function UploadPage() {
       {/* 최근 업로드 이력 */}
       <div style={{ marginBottom: '32px' }}>
         <h2 style={{ fontSize: '14px', fontWeight: '600', color: colors.textPrimary, margin: '0 0 16px 0' }}>최근 업로드 이력</h2>
-        <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderColor}`, borderRadius: '8px', overflow: 'hidden' }}>
+        <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderColor}`, borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)' }}>
           <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#F8FAFC', borderBottom: `1px solid ${colors.borderColor}` }}>
