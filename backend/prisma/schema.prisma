@@ -1,0 +1,112 @@
+// FirstPR DB 스키마 (Supabase PostgreSQL)
+// - 테이블 6개: analyses / repo_cache / issue_cache / recommendations / recommendation_items / api_usage
+// - 캐시 테이블(analyses, repo_cache, issue_cache)의 만료는 TTL 대신 조회 시 fetchedAt/analyzedAt 검사로 처리
+// - 설계 근거: docs/decisions.md "DB 전환(2026-07-13)", 응답 형태: docs/openapi.yaml
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 프로필 분석 결과 캐시 (POST /api/analysis — 24시간 이내 재사용)
+model Analysis {
+  id              String   @id @default(uuid()) @db.Uuid
+  githubId        String   @unique @map("github_id")
+  languages       Json // [{ name, ratio }] 내림차순 — 활동 없는 사용자는 []
+  skillLevel      String   @map("skill_level") // beginner | intermediate | advanced
+  activitySummary Json     @map("activity_summary") // { commits, pullRequests, issues, contributedRepos }
+  analyzedAt      DateTime @map("analyzed_at") // 캐시 신선도 판단 기준
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("analyses")
+}
+
+// 레포 메타 캐시 (GitHub API rate limit 대응)
+model RepoCache {
+  id                  String   @id @default(uuid()) @db.Uuid
+  fullName            String   @unique @map("full_name") // owner/repo
+  description         String?
+  primaryLanguage     String?  @map("primary_language")
+  languages           String[]
+  stars               Int      @default(0)
+  topics              String[]
+  goodFirstIssueCount Int      @default(0) @map("good_first_issue_count")
+  fetchedAt           DateTime @map("fetched_at") // 캐시 신선도 판단 기준
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("repo_cache")
+}
+
+// 이슈 메타 캐시
+model IssueCache {
+  id           String   @id @default(uuid()) @db.Uuid
+  repoFullName String   @map("repo_full_name")
+  issueNumber  Int      @map("issue_number")
+  title        String
+  labels       String[]
+  difficulty   String // easy | medium | hard (라벨 기반 추정)
+  url          String
+  state        String // open | closed
+  fetchedAt    DateTime @map("fetched_at") // 캐시 신선도 판단 기준
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([repoFullName, issueNumber])
+  @@map("issue_cache")
+}
+
+// 추천 결과 (재조회/필터링용 — 선호 조건 스냅샷 포함)
+model Recommendation {
+  id          String               @id @default(uuid()) @db.Uuid
+  githubId    String               @map("github_id")
+  preferences Json // { languages[], difficulty, topics[] } 요청 시점 스냅샷
+  items       RecommendationItem[]
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@index([githubId])
+  @@map("recommendations")
+}
+
+// 추천 항목 (목록·상세 화면 응답 필드 스냅샷 — 캐시 만료와 무관하게 재조회 가능해야 함)
+model RecommendationItem {
+  id               String         @id @default(uuid()) @db.Uuid
+  recommendationId String         @map("recommendation_id") @db.Uuid
+  recommendation   Recommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  repoFullName     String         @map("repo_full_name")
+  repoDescription  String?        @map("repo_description")
+  repoStars        Int            @default(0) @map("repo_stars")
+  repoUrl          String         @map("repo_url")
+  primaryLanguage  String         @map("primary_language")
+  issueNumber      Int            @map("issue_number")
+  issueTitle       String         @map("issue_title")
+  issueUrl         String         @map("issue_url")
+  labels           String[]
+  difficulty       String // easy | medium | hard
+  matchScore       Int            @map("match_score") // 0~100, 목록은 내림차순 정렬
+  reason           String // 추천 이유 (한글)
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  @@index([recommendationId])
+  @@map("recommendation_items")
+}
+
+// GitHub 토큰 rate limit 추적 (KNU 패턴 재사용)
+model ApiUsage {
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenKey  String   @map("token_key") // 토큰 식별자 (토큰 원문 저장 금지)
+  date      DateTime @db.Date
+  count     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tokenKey, date])
+  @@map("api_usage")
+}
