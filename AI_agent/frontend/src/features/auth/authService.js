@@ -1,120 +1,101 @@
-import {
-  clearSession,
-  findAccountByEmail,
-  getPendingUser,
-  getSession,
-  getUser,
-  savePendingUser,
-  saveSession,
-} from "./authStorage";
+import { clearSession, getAuthToken, getSession, saveSession } from "./authStorage";
 
-const normalizeValue = (value) => String(value || "").trim();
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+
+const requestJson = async (path, options = {}) => {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const missingLabels = data.details?.missingLabels;
+    const detailMessage = Array.isArray(missingLabels)
+      ? ` (${missingLabels.join(", ")})`
+      : "";
+    throw new Error(`${data.message || "요청을 처리하지 못했습니다."}${detailMessage}`);
+  }
+
+  return data;
+};
+
+export const requestAuthJson = async (path, options = {}) => {
+  const token = getAuthToken();
+
+  return requestJson(path, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+};
 
 export const isAuthenticated = () => {
-  return Boolean(getSession());
+  const session = getSession();
+
+  return Boolean(session?.token);
 };
 
 export const getCurrentSession = () => {
   return getSession();
 };
 
-export const registerUser = (user) => {
-  const username = normalizeValue(user.username);
-  const email = normalizeValue(user.email);
-  const existingUser = getUser();
-  const pendingUser = getPendingUser();
-
-  if (
-    existingUser?.username === username ||
-    pendingUser?.username === username
-  ) {
-    return {
-      ok: false,
-      message: "이미 존재하는 아이디입니다.",
-    };
-  }
-
-  if (existingUser?.email === email || pendingUser?.email === email) {
-    return {
-      ok: false,
-      message: "이미 가입했거나 인증 대기 중인 이메일입니다.",
-    };
-  }
-
-  const pendingAccount = {
-    ...user,
-    username,
-    email,
-  };
-
-  savePendingUser(pendingAccount);
+export const registerUser = async (user) => {
+  const data = await requestJson("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      password: user.password,
+      school: user.school,
+      major: user.major,
+      verificationOrigin: window.location.origin,
+    }),
+  });
 
   return {
     ok: true,
-    user: pendingAccount,
+    user: data.user,
   };
 };
 
-export const loginUser = ({ account, password }) => {
-  const normalizedAccount = normalizeValue(account);
+export const loginUser = async ({ account, password }) => {
+  const data = await requestJson("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ account, password }),
+  });
 
-  if (!normalizedAccount || !password) {
-    return {
-      ok: false,
-      message: "아이디 또는 이메일과 비밀번호를 입력해 주세요.",
-    };
-  }
-
-  const user = getUser();
-  const pendingUser = getPendingUser();
-
-  if (
-    pendingUser &&
-    (pendingUser.username === normalizedAccount ||
-      pendingUser.email === normalizedAccount)
-  ) {
-    return {
-      ok: false,
-      message: "이메일 인증이 완료되어야 로그인할 수 있습니다.",
-    };
-  }
-
-  if (
-    !user ||
-    (user.username !== normalizedAccount && user.email !== normalizedAccount)
-  ) {
-    return {
-      ok: false,
-      message: "가입된 계정을 찾을 수 없습니다.",
-    };
-  }
-
-  if (!user.emailVerified) {
-    return {
-      ok: false,
-      message: "이메일 인증이 완료되어야 로그인할 수 있습니다.",
-    };
-  }
-
-  if (user.password !== password) {
-    return {
-      ok: false,
-      message: "비밀번호가 일치하지 않습니다.",
-    };
-  }
-
-  saveSession(user);
+  saveSession({ ...data.user, token: data.token });
 
   return {
     ok: true,
-    user,
+    user: data.user,
   };
+};
+
+export const verifyEmail = async (token) => {
+  const data = await requestJson("/api/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+
+  return data.user;
+};
+
+export const fetchCurrentUser = async () => {
+  const data = await requestAuthJson("/api/auth/me");
+  saveSession({ ...data.user, token: getAuthToken() });
+
+  return data.user;
 };
 
 export const logoutUser = () => {
   clearSession();
-};
-
-export const findLoginAccountByEmail = (email) => {
-  return findAccountByEmail(email);
 };

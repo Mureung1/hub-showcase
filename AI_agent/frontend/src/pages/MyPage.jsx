@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Header from "../components/layout/Header";
 import {
@@ -9,7 +9,12 @@ import {
 import {
   getCareerAnalysis,
   getCareerSpec,
+  isCareerSpecComplete,
+  saveCareerAnalysis,
+  saveCareerSpec,
 } from "../features/career/careerStorage";
+import { getMyAnalysis } from "../features/career/analysisApi";
+import { getMySpec } from "../features/career/specApi";
 import {
   searchMajorsBySchool,
   searchUniversities,
@@ -52,6 +57,7 @@ const getValue = (value) => {
 
 function MyPage() {
   const session = getSession();
+  const sessionId = session?.id;
   const storedUser = getUser();
   const initialUser = session && storedUser?.id === session.id ? storedUser : null;
   const [currentUser, setCurrentUser] = useState(initialUser);
@@ -71,10 +77,56 @@ function MyPage() {
   const [isSearchingMajor, setIsSearchingMajor] = useState(false);
   const [schoolSearchMessage, setSchoolSearchMessage] = useState("");
   const [majorSearchMessage, setMajorSearchMessage] = useState("");
-  const spec = getCareerSpec(session?.id);
-  const analysis = getCareerAnalysis(session?.id);
-  const hasSpec = Boolean(spec);
+  const [spec, setSpec] = useState(getCareerSpec(session?.id));
+  const [analysis, setAnalysis] = useState(getCareerAnalysis(session?.id));
+  const [pageMessage, setPageMessage] = useState("");
+  const hasSpec = isCareerSpecComplete(spec);
   const hasAnalysis = Boolean(analysis);
+
+  useEffect(() => {
+    if (!sessionId) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadMyPageData = async () => {
+      try {
+        const [savedSpec, savedAnalysis] = await Promise.all([
+          getMySpec(),
+          getMyAnalysis(),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (savedSpec) {
+          setSpec(savedSpec);
+          saveCareerSpec(sessionId, savedSpec);
+        } else {
+          setSpec(null);
+        }
+
+        if (savedAnalysis) {
+          setAnalysis(savedAnalysis);
+          saveCareerAnalysis(sessionId, savedAnalysis);
+        } else {
+          setAnalysis(null);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setPageMessage(error.message);
+        }
+      }
+    };
+
+    loadMyPageData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionId]);
 
   const handleProfileChange = (event) => {
     const { name, value } = event.target;
@@ -175,8 +227,8 @@ function MyPage() {
       setMajorResults(results);
       setMajorSearchMessage(
         results.length === 0
-          ? "선택한 학교에서 해당 학과를 찾지 못했습니다."
-          : "검색 결과에서 학과를 선택해 주세요."
+          ? "커리어넷 전공 목록에서 해당 학과를 찾지 못했습니다."
+          : "커리어넷 전공 목록에서 학과를 선택해 주세요."
       );
     } catch (error) {
       setMajorResults([]);
@@ -353,6 +405,8 @@ function MyPage() {
             </section>
           ))}
         </div>
+
+        {pageMessage && <p style={styles.pageMessage}>{pageMessage}</p>}
 
         <div style={styles.mainGrid}>
           <section style={styles.card}>
@@ -742,6 +796,15 @@ const styles = {
   summaryValue: {
     color: "#0f172a",
     fontSize: "20px",
+  },
+  pageMessage: {
+    margin: 0,
+    padding: "12px 14px",
+    borderRadius: "12px",
+    background: "#fee2e2",
+    color: "#b91c1c",
+    fontSize: "14px",
+    fontWeight: 700,
   },
   mainGrid: {
     display: "grid",

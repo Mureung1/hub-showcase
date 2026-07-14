@@ -1,26 +1,76 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Header from "../components/layout/Header";
 import { getSession, getUser } from "../features/auth/authStorage";
 import {
-  createCareerAnalysis,
   getCareerAnalysis,
   getCareerSpec,
   getMissingSpecFields,
   isCareerSpecComplete,
   saveCareerAnalysis,
 } from "../features/career/careerStorage";
+import { getMyAnalysis, runMyAnalysis } from "../features/career/analysisApi";
+import { getMySpec } from "../features/career/specApi";
 import { navigate, routes } from "../router";
 
 function Analysis() {
   const session = getSession();
+  const sessionId = session?.id;
   const user = getUser();
-  const spec = getCareerSpec(session?.id);
+  const [spec, setSpec] = useState(getCareerSpec(session?.id));
   const [analysis, setAnalysis] = useState(getCareerAnalysis(session?.id));
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(Boolean(session));
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const missingFields = getMissingSpecFields(spec);
   const isComplete = isCareerSpecComplete(spec);
 
-  const handleAnalyze = () => {
+  useEffect(() => {
+    if (!sessionId) {
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadAnalysisData = async () => {
+      try {
+        const [savedSpec, savedAnalysis] = await Promise.all([
+          getMySpec(),
+          getMyAnalysis(),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (savedSpec) {
+          setSpec(savedSpec);
+        }
+
+        if (savedAnalysis) {
+          setAnalysis(savedAnalysis);
+          saveCareerAnalysis(sessionId, savedAnalysis);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setMessage(error.message);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadAnalysisData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionId]);
+
+  const handleAnalyze = async () => {
     if (!session || !user) {
       alert("분석하려면 로그인해 주세요.");
       navigate(routes.login);
@@ -33,8 +83,17 @@ function Analysis() {
       return;
     }
 
-    const nextAnalysis = createCareerAnalysis({ user, spec });
-    setAnalysis(saveCareerAnalysis(session.id, nextAnalysis));
+    setIsAnalyzing(true);
+    setMessage("");
+
+    try {
+      const nextAnalysis = await runMyAnalysis();
+      setAnalysis(saveCareerAnalysis(session.id, nextAnalysis));
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   if (!session) {
@@ -70,7 +129,10 @@ function Analysis() {
           확정합니다.
         </p>
 
-        {!isComplete && (
+        {isLoading && <p style={styles.info}>저장된 스펙과 분석 결과를 불러오는 중입니다.</p>}
+        {message && <p style={styles.error}>{message}</p>}
+
+        {!isLoading && !isComplete && (
           <div style={styles.notice}>
             <strong>분석 전 등록이 필요한 항목</strong>
             <div style={styles.chipList}>
@@ -90,20 +152,25 @@ function Analysis() {
           </div>
         )}
 
-        {isComplete && !analysis && (
+        {!isLoading && isComplete && !analysis && (
           <div style={styles.notice}>
             <strong>등록한 스펙을 분석할 준비가 끝났습니다.</strong>
             <span style={styles.noticeText}>
               분석하기를 누르면 현재 등록값 기준으로 준비도 퍼센트가 확정됩니다.
               이후 스펙을 추가 저장하면 다시 분석할 수 있습니다.
             </span>
-            <button type="button" style={styles.primaryButton} onClick={handleAnalyze}>
-              분석하기
+            <button
+              type="button"
+              style={styles.primaryButton}
+              onClick={handleAnalyze}
+              disabled={isAnalyzing}
+            >
+              {isAnalyzing ? "분석 중" : "분석하기"}
             </button>
           </div>
         )}
 
-        {analysis && (
+        {!isLoading && analysis && (
           <div style={styles.resultGrid}>
             <section style={styles.scoreCard}>
               <span style={styles.scoreLabel}>확정 준비도</span>
@@ -120,8 +187,9 @@ function Analysis() {
                 type="button"
                 style={styles.secondaryButton}
                 onClick={handleAnalyze}
+                disabled={isAnalyzing}
               >
-                다시 분석하기
+                {isAnalyzing ? "분석 중" : "다시 분석하기"}
               </button>
               <button
                 type="button"
@@ -132,45 +200,61 @@ function Analysis() {
               </button>
             </section>
 
-            <section style={styles.card}>
-              <strong style={styles.cardTitle}>요약</strong>
-              <div style={styles.metricList}>
-                <div style={styles.metricItem}>
-                  <span>목표 직무</span>
-                  <strong>{analysis.targetRole}</strong>
+            <div style={styles.resultColumn}>
+              <section style={styles.card}>
+                <strong style={styles.cardTitle}>요약</strong>
+                <div style={styles.metricList}>
+                  <div style={styles.metricItem}>
+                    <span>목표 직무</span>
+                    <strong>{analysis.targetRole}</strong>
+                  </div>
+                  <div style={styles.metricItem}>
+                    <span>직무 적합도</span>
+                    <strong>{analysis.fitLevel}</strong>
+                  </div>
+                  <div style={styles.metricItem}>
+                    <span>포트폴리오 준비도</span>
+                    <strong>{analysis.portfolioLevel}</strong>
+                  </div>
+                  <div style={styles.metricItem}>
+                    <span>번아웃 위험도</span>
+                    <strong>{analysis.burnoutLevel}</strong>
+                  </div>
                 </div>
-                <div style={styles.metricItem}>
-                  <span>직무 적합도</span>
-                  <strong>{analysis.fitLevel}</strong>
-                </div>
-                <div style={styles.metricItem}>
-                  <span>포트폴리오 준비도</span>
-                  <strong>{analysis.portfolioLevel}</strong>
-                </div>
-                <div style={styles.metricItem}>
-                  <span>번아웃 위험도</span>
-                  <strong>{analysis.burnoutLevel}</strong>
-                </div>
+              </section>
+
+              <div style={styles.insightGrid}>
+                <section style={{ ...styles.card, ...styles.compactCard }}>
+                  <strong style={styles.cardTitle}>강점</strong>
+                  {analysis.strengths.map((item) => (
+                    <p key={item} style={styles.listText}>
+                      {item}
+                    </p>
+                  ))}
+                </section>
+
+                <section style={{ ...styles.card, ...styles.compactCard }}>
+                  <strong style={styles.cardTitle}>보완 우선순위</strong>
+                  {analysis.gaps.map((item) => (
+                    <p key={item} style={styles.listText}>
+                      {item}
+                    </p>
+                  ))}
+                </section>
               </div>
-            </section>
 
-            <section style={styles.card}>
-              <strong style={styles.cardTitle}>강점</strong>
-              {analysis.strengths.map((item) => (
-                <p key={item} style={styles.listText}>
-                  {item}
-                </p>
-              ))}
-            </section>
-
-            <section style={styles.card}>
-              <strong style={styles.cardTitle}>보완 우선순위</strong>
-              {analysis.gaps.map((item) => (
-                <p key={item} style={styles.listText}>
-                  {item}
-                </p>
-              ))}
-            </section>
+              <section style={{ ...styles.card, ...styles.recommendationCard }}>
+                <strong style={styles.cardTitle}>추천 준비 방향</strong>
+                <div style={styles.recommendationList}>
+                  {(analysis.recommendations || []).map((item, index) => (
+                    <div key={item} style={styles.recommendationItem}>
+                      <span style={styles.recommendationNumber}>{index + 1}</span>
+                      <p style={styles.recommendationText}>{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
           </div>
         )}
       </section>
@@ -227,6 +311,26 @@ const styles = {
     color: "#475569",
     lineHeight: 1.6,
   },
+  info: {
+    maxWidth: "720px",
+    margin: "0 0 18px",
+    padding: "12px 14px",
+    borderRadius: "12px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    fontSize: "14px",
+    fontWeight: 700,
+  },
+  error: {
+    maxWidth: "720px",
+    margin: "0 0 18px",
+    padding: "12px 14px",
+    borderRadius: "12px",
+    background: "#fee2e2",
+    color: "#b91c1c",
+    fontSize: "14px",
+    fontWeight: 700,
+  },
   chipList: {
     display: "flex",
     flexWrap: "wrap",
@@ -244,6 +348,17 @@ const styles = {
     display: "grid",
     gridTemplateColumns: "minmax(240px, 320px) 1fr",
     gap: "16px",
+    alignItems: "start",
+  },
+  resultColumn: {
+    minWidth: 0,
+    display: "grid",
+    gap: "14px",
+  },
+  insightGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: "12px",
   },
   scoreCard: {
     display: "grid",
@@ -278,16 +393,23 @@ const styles = {
     background: "linear-gradient(90deg, #60a5fa, #22d3ee)",
   },
   card: {
-    padding: "22px",
+    minWidth: 0,
+    padding: "20px",
     borderRadius: "18px",
     background: "rgba(255, 255, 255, 0.78)",
     border: "1px solid rgba(226, 232, 240, 0.9)",
     boxShadow: "0 18px 38px rgba(15, 23, 42, 0.08)",
   },
+  compactCard: {
+    padding: "18px",
+  },
+  recommendationCard: {
+    padding: "18px 20px",
+  },
   cardTitle: {
     display: "block",
-    marginBottom: "14px",
-    fontSize: "17px",
+    marginBottom: "12px",
+    fontSize: "16px",
   },
   metricList: {
     display: "grid",
@@ -302,7 +424,40 @@ const styles = {
   listText: {
     margin: "0 0 10px",
     color: "#475569",
-    lineHeight: 1.6,
+    fontSize: "15px",
+    lineHeight: 1.65,
+  },
+  recommendationList: {
+    display: "grid",
+    gap: "10px",
+  },
+  recommendationItem: {
+    display: "grid",
+    gridTemplateColumns: "28px minmax(0, 1fr)",
+    gap: "10px",
+    alignItems: "start",
+    padding: "10px 12px",
+    borderRadius: "12px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+  },
+  recommendationNumber: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "28px",
+    height: "28px",
+    borderRadius: "999px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    fontSize: "13px",
+    fontWeight: 900,
+  },
+  recommendationText: {
+    margin: 0,
+    color: "#334155",
+    fontSize: "15px",
+    lineHeight: 1.65,
   },
   primaryButton: {
     justifySelf: "start",

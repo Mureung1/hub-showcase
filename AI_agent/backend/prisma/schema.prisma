@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                         String        @id @default(cuid())
+  email                      String        @unique
+  username                   String        @unique
+  name                       String
+  passwordHash               String
+  school                     String?
+  major                      String?
+  emailVerified              Boolean       @default(false)
+  verificationToken          String?       @unique
+  verificationTokenExpiresAt DateTime?
+  verifiedAt                 DateTime?
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
+  specs                      UserSpec?
+  analysisResults            AnalysisResult[]
+  missions                   UserMission[]
+}
+
+model UserSpec {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  targetRole    String   @default("")
+  grade         String   @default("")
+  gpa           String   @default("")
+  certificates  String   @default("")
+  languageScore String   @default("")
+  projects      String   @default("")
+  activities    String   @default("")
+  skills        String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AnalysisResult {
+  id             String   @id @default(cuid())
+  userId         String
+  readiness      Int
+  targetRole     String
+  fitLevel       String
+  portfolioLevel String
+  burnoutLevel   String
+  strengths      String[]
+  gaps           String[]
+  recommendations String[]
+  rawResponse    Json?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Mission {
+  id          String        @id @default(cuid())
+  title       String
+  description String
+  category    String?
+  difficulty  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  users       UserMission[]
+}
+
+model UserMission {
+  id           String   @id @default(cuid())
+  userId       String
+  missionId    String
+  status       String   @default("pending")
+  submittedUrl String?
+  feedback     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission      Mission  @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, missionId])
+}

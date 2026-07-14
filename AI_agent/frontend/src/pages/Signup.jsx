@@ -1,12 +1,8 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 
+import SignupForm from "../components/auth/SignupForm";
 import Header from "../components/layout/Header";
-import {
-  getPendingUser,
-  getUser,
-} from "../features/auth/authStorage";
 import { registerUser } from "../features/auth/authService";
-import { sendVerificationEmail } from "../features/auth/emailApi";
 import {
   searchMajorsBySchool,
   searchUniversities,
@@ -33,14 +29,6 @@ const isValidPassword = (password) =>
   /[A-Za-z]/.test(password) &&
   /\d/.test(password) &&
   /[^A-Za-z0-9]/.test(password);
-
-const createVerificationToken = () => {
-  if (window.crypto?.randomUUID) {
-    return window.crypto.randomUUID();
-  }
-
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-};
 
 function Signup() {
   const [form, setForm] = useState(initialForm);
@@ -154,8 +142,8 @@ function Signup() {
       setMajorResults(results);
       setMajorSearchMessage(
         results.length === 0
-          ? "선택한 학교에서 해당 학과를 찾지 못했습니다."
-          : "검색 결과에서 학과를 선택해 주세요."
+          ? "커리어넷 전공 목록에서 해당 학과를 찾지 못했습니다."
+          : "커리어넷 전공 목록에서 학과를 선택해 주세요."
       );
     } catch (error) {
       setMajorResults([]);
@@ -193,24 +181,6 @@ function Signup() {
       return;
     }
 
-    const existingUser = getUser();
-    const pendingUser = getPendingUser();
-    const username = form.username.trim();
-    const email = form.email.trim();
-
-    if (
-      existingUser?.username === username ||
-      pendingUser?.username === username
-    ) {
-      setErrorMessage("이미 존재하는 아이디입니다.");
-      return;
-    }
-
-    if (existingUser?.email === email || pendingUser?.email === email) {
-      setErrorMessage("이미 가입했거나 인증 대기 중인 이메일입니다.");
-      return;
-    }
-
     if (!selectedSchool || selectedSchool.name !== form.school.trim()) {
       setErrorMessage("학교 찾기 결과에서 학교를 선택해 주세요.");
       return;
@@ -233,47 +203,30 @@ function Signup() {
       return;
     }
 
-    const verificationToken = createVerificationToken();
-    const verificationUrl = `${window.location.origin}${routes.verifyEmail}?token=${verificationToken}`;
+    const email = form.email.trim();
     const user = {
-      id: form.username.trim(),
       name: form.name.trim(),
-      username,
+      username: form.username.trim(),
       email,
       school: selectedSchool.name,
       schoolMeta: selectedSchool,
       major: selectedMajor.name,
       majorMeta: selectedMajor,
       password: form.password,
-      emailVerified: false,
-      verificationToken,
     };
 
     setIsSubmitting(true);
 
     try {
-      await sendVerificationEmail({
-        email,
-        name: user.name,
-        verificationUrl,
-      });
+      await registerUser(user);
+      alert(
+        `확인 메일을 발송했습니다. ${email} 메일함에서 인증 링크를 눌러 회원가입을 완료해 주세요.`
+      );
+      navigate(routes.login);
     } catch (error) {
       setErrorMessage(error.message);
       setIsSubmitting(false);
-      return;
     }
-
-    const result = registerUser(user);
-
-    if (!result.ok) {
-      setErrorMessage(result.message);
-      setIsSubmitting(false);
-      return;
-    }
-    alert(
-      `확인 메일을 발송했습니다. ${email} 메일함에서 확인 버튼을 눌러 회원가입을 완료해 주세요.`
-    );
-    navigate(routes.login);
   };
 
   return (
@@ -288,224 +241,32 @@ function Signup() {
           </p>
         </div>
 
-        <form style={styles.form} onSubmit={handleSubmit}>
-          <div style={styles.formHeader}>
-            <strong style={styles.formTitle}>계정 정보 입력</strong>
-            <span style={styles.formHint}>모든 항목은 MVP 분석에 사용됩니다.</span>
-          </div>
-
-          <div style={styles.fieldGrid}>
-            <label style={styles.field}>
-              <span style={styles.label}>이름</span>
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                style={styles.input}
-                placeholder="홍길동"
-              />
-            </label>
-
-            <label style={styles.field}>
-              <span style={styles.label}>아이디</span>
-              <input
-                name="username"
-                value={form.username}
-                onChange={handleChange}
-                style={styles.input}
-                placeholder="career01"
-              />
-            </label>
-
-            <label style={styles.field}>
-              <span style={styles.label}>이메일</span>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                style={styles.input}
-                placeholder="user@example.com"
-              />
-            </label>
-
-            <label style={{ ...styles.field, ...styles.lookupField }}>
-              <span style={styles.label}>학교</span>
-              <div style={styles.schoolSearch}>
-                <input
-                  name="school"
-                  value={form.school}
-                  onChange={handleChange}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      handleSchoolSearch();
-                    }
-                  }}
-                  style={styles.input}
-                  placeholder="학교명을 검색하세요"
-                />
-                <button
-                  type="button"
-                  style={styles.searchButton}
-                  onClick={handleSchoolSearch}
-                  disabled={isSearchingSchool}
-                >
-                  {isSearchingSchool ? "검색 중" : "학교 찾기"}
-                </button>
-              </div>
-              {schoolSearchMessage && (
-                <span style={selectedSchool ? styles.schoolSuccess : styles.schoolMessage}>
-                  {schoolSearchMessage}
-                </span>
-              )}
-              {schoolResults.length > 0 && (
-                <div style={styles.schoolResultList}>
-                  {schoolResults.map((school) => (
-                    <button
-                      key={school.id}
-                      type="button"
-                      style={styles.schoolResultItem}
-                      onClick={() => handleSchoolSelect(school)}
-                    >
-                      <strong>{school.name}</strong>
-                      <span>{[school.region, school.campus, school.type].filter(Boolean).join(" · ")}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </label>
-
-            <label style={{ ...styles.field, ...styles.lookupField }}>
-              <span style={styles.label}>전공</span>
-              <div style={styles.schoolSearch}>
-                <input
-                  name="major"
-                  value={form.major}
-                  onChange={handleChange}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      handleMajorSearch();
-                    }
-                  }}
-                  style={styles.input}
-                  placeholder={selectedSchool ? "학과명을 검색하세요" : "학교를 먼저 선택하세요"}
-                  disabled={!selectedSchool}
-                />
-                <button
-                  type="button"
-                  style={styles.searchButton}
-                  onClick={handleMajorSearch}
-                  disabled={!selectedSchool || isSearchingMajor}
-                >
-                  {isSearchingMajor ? "검색 중" : "학과 찾기"}
-                </button>
-              </div>
-              {majorSearchMessage && (
-                <span style={selectedMajor ? styles.schoolSuccess : styles.schoolMessage}>
-                  {majorSearchMessage}
-                </span>
-              )}
-              {majorResults.length > 0 && (
-                <div style={styles.schoolResultList}>
-                  {majorResults.map((major) => (
-                    <button
-                      key={major.id}
-                      type="button"
-                      style={styles.schoolResultItem}
-                      onClick={() => handleMajorSelect(major)}
-                    >
-                      <strong>{major.name}</strong>
-                      <span>{[major.schoolName, major.campus, major.area].filter(Boolean).join(" · ")}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </label>
-
-            <div style={styles.emptyCell}></div>
-
-            <label style={styles.field}>
-              <span style={styles.label}>비밀번호</span>
-              <div style={styles.passwordField}>
-                <input
-                  type={isPasswordVisible ? "text" : "password"}
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  style={{ ...styles.input, ...styles.passwordInput }}
-                  placeholder="영문, 숫자, 특수문자 포함"
-                />
-                <button
-                  type="button"
-                  style={styles.passwordToggle}
-                  onClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
-                  aria-label={isPasswordVisible ? "비밀번호 숨기기" : "비밀번호 보기"}
-                >
-                  {isPasswordVisible ? (
-                    <svg style={styles.eyeIcon} viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M3.3 2 22 20.7 20.7 22l-3.3-3.3A12.7 12.7 0 0 1 12 20C5 20 1.4 13.7 1.2 13.4a2.8 2.8 0 0 1 0-2.8 16 16 0 0 1 4.3-4.8L2 3.3 3.3 2Zm5 6.7a5 5 0 0 0 7 7l-1.5-1.5a3 3 0 0 1-4-4L8.3 8.7Zm3-3.6c.2 0 .5-.1.7-.1 7 0 10.6 6.3 10.8 6.6.5.9.5 1.9 0 2.8a14.7 14.7 0 0 1-2.4 3L17 14a5 5 0 0 0-6.4-6.4L8.9 5.9a12.4 12.4 0 0 1 2.4-.8Z" />
-                    </svg>
-                  ) : (
-                    <svg style={styles.eyeIcon} viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M12 5c7 0 10.6 6.3 10.8 6.6.5.9.5 1.9 0 2.8C22.6 14.7 19 21 12 21S1.4 14.7 1.2 14.4a2.8 2.8 0 0 1 0-2.8C1.4 11.3 5 5 12 5Zm0 2C6.3 7 3.3 12.2 3 12.6c-.1.2-.1.6 0 .8.3.4 3.3 5.6 9 5.6s8.7-5.2 9-5.6c.1-.2.1-.6 0-.8-.3-.4-3.3-5.6-9-5.6Zm0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </label>
-
-            <label style={styles.field}>
-              <span style={styles.label}>비밀번호 확인</span>
-              <div style={styles.passwordField}>
-                <input
-                  type={isPasswordConfirmVisible ? "text" : "password"}
-                  name="passwordConfirm"
-                  value={form.passwordConfirm}
-                  onChange={handleChange}
-                  style={{ ...styles.input, ...styles.passwordInput }}
-                  placeholder="비밀번호 재입력"
-                />
-                <button
-                  type="button"
-                  style={styles.passwordToggle}
-                  onClick={() => setIsPasswordConfirmVisible((isVisible) => !isVisible)}
-                  aria-label={isPasswordConfirmVisible ? "비밀번호 확인 숨기기" : "비밀번호 확인 보기"}
-                >
-                  {isPasswordConfirmVisible ? (
-                    <svg style={styles.eyeIcon} viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M3.3 2 22 20.7 20.7 22l-3.3-3.3A12.7 12.7 0 0 1 12 20C5 20 1.4 13.7 1.2 13.4a2.8 2.8 0 0 1 0-2.8 16 16 0 0 1 4.3-4.8L2 3.3 3.3 2Zm5 6.7a5 5 0 0 0 7 7l-1.5-1.5a3 3 0 0 1-4-4L8.3 8.7Zm3-3.6c.2 0 .5-.1.7-.1 7 0 10.6 6.3 10.8 6.6.5.9.5 1.9 0 2.8a14.7 14.7 0 0 1-2.4 3L17 14a5 5 0 0 0-6.4-6.4L8.9 5.9a12.4 12.4 0 0 1 2.4-.8Z" />
-                    </svg>
-                  ) : (
-                    <svg style={styles.eyeIcon} viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M12 5c7 0 10.6 6.3 10.8 6.6.5.9.5 1.9 0 2.8C22.6 14.7 19 21 12 21S1.4 14.7 1.2 14.4a2.8 2.8 0 0 1 0-2.8C1.4 11.3 5 5 12 5Zm0 2C6.3 7 3.3 12.2 3 12.6c-.1.2-.1.6 0 .8.3.4 3.3 5.6 9 5.6s8.7-5.2 9-5.6c.1-.2.1-.6 0-.8-.3-.4-3.3-5.6-9-5.6Zm0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </label>
-          </div>
-
-          {errorMessage && <p style={styles.error}>{errorMessage}</p>}
-
-          <div style={styles.actions}>
-            <button
-              type="button"
-              style={styles.secondaryButton}
-              onClick={() => navigate(routes.login)}
-            >
-              로그인으로 이동
-            </button>
-            <button
-              type="submit"
-              style={styles.primaryButton}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "메일 발송 중" : "회원가입 완료"}
-            </button>
-          </div>
-        </form>
+        <SignupForm
+          form={form}
+          errorMessage={errorMessage}
+          isPasswordVisible={isPasswordVisible}
+          isPasswordConfirmVisible={isPasswordConfirmVisible}
+          schoolResults={schoolResults}
+          selectedSchool={selectedSchool}
+          isSearchingSchool={isSearchingSchool}
+          schoolSearchMessage={schoolSearchMessage}
+          majorResults={majorResults}
+          selectedMajor={selectedMajor}
+          isSearchingMajor={isSearchingMajor}
+          majorSearchMessage={majorSearchMessage}
+          isSubmitting={isSubmitting}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          onSchoolSearch={handleSchoolSearch}
+          onSchoolSelect={handleSchoolSelect}
+          onMajorSearch={handleMajorSearch}
+          onMajorSelect={handleMajorSelect}
+          onTogglePassword={() => setIsPasswordVisible((isVisible) => !isVisible)}
+          onTogglePasswordConfirm={() =>
+            setIsPasswordConfirmVisible((isVisible) => !isVisible)
+          }
+          onMoveToLogin={() => navigate(routes.login)}
+        />
       </section>
     </main>
   );
@@ -556,6 +317,7 @@ const styles = {
     fontSize: "clamp(28px, 4vw, 38px)",
     fontWeight: 800,
     lineHeight: 1.12,
+    wordBreak: "keep-all",
   },
   description: {
     margin: 0,
@@ -564,180 +326,6 @@ const styles = {
     lineHeight: 1.55,
     whiteSpace: "nowrap",
   },
-  form: {
-    width: "100%",
-    padding: "20px",
-    borderRadius: "20px",
-    background: "rgba(255, 255, 255, 0.76)",
-    border: "1px solid rgba(226, 232, 240, 0.88)",
-    boxShadow: "0 24px 54px rgba(15, 23, 42, 0.12)",
-    backdropFilter: "blur(18px) saturate(140%)",
-  },
-  formHeader: {
-    display: "grid",
-    gap: "4px",
-    marginBottom: "14px",
-    textAlign: "center",
-  },
-  formTitle: {
-    color: "#0f172a",
-    fontSize: "18px",
-  },
-  formHint: {
-    color: "#64748b",
-    fontSize: "14px",
-  },
-  fieldGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: "14px",
-  },
-  field: {
-    position: "relative",
-    display: "grid",
-    gap: "8px",
-    alignContent: "start",
-  },
-  lookupField: {
-    minHeight: "224px",
-  },
-  schoolSearch: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    gap: "8px",
-  },
-  label: {
-    color: "#334155",
-    fontSize: "14px",
-    fontWeight: 700,
-  },
-  input: {
-    width: "100%",
-    minHeight: "42px",
-    padding: "0 12px",
-    borderRadius: "12px",
-    border: "1px solid #dbe3ef",
-    background: "#ffffff",
-    color: "#0f172a",
-    fontSize: "14px",
-    boxSizing: "border-box",
-  },
-  passwordField: {
-    position: "relative",
-  },
-  passwordInput: {
-    paddingRight: "62px",
-  },
-  passwordToggle: {
-    position: "absolute",
-    top: "50%",
-    right: "8px",
-    width: "34px",
-    height: "34px",
-    padding: 0,
-    border: "1px solid #dbe3ef",
-    borderRadius: "50%",
-    background: "#f8fafc",
-    color: "#334155",
-    cursor: "pointer",
-    transform: "translateY(-50%)",
-    display: "grid",
-    placeItems: "center",
-  },
-  eyeIcon: {
-    width: "18px",
-    height: "18px",
-    display: "block",
-    fill: "currentColor",
-  },
-  searchButton: {
-    minHeight: "42px",
-    padding: "0 10px",
-    border: "1px solid #bfdbfe",
-    borderRadius: "12px",
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    fontSize: "13px",
-    fontWeight: 800,
-    whiteSpace: "nowrap",
-    cursor: "pointer",
-  },
-  schoolMessage: {
-    color: "#64748b",
-    fontSize: "13px",
-    lineHeight: 1.4,
-  },
-  schoolSuccess: {
-    color: "#15803d",
-    fontSize: "13px",
-    fontWeight: 700,
-    lineHeight: 1.4,
-  },
-  schoolResultList: {
-    display: "grid",
-    gap: "8px",
-    maxHeight: "142px",
-    overflowY: "auto",
-    padding: "8px",
-    borderRadius: "14px",
-    background: "#f8fafc",
-    border: "1px solid #e2e8f0",
-    boxShadow: "0 18px 34px rgba(15, 23, 42, 0.14)",
-  },
-  schoolResultItem: {
-    display: "grid",
-    gap: "3px",
-    width: "100%",
-    minHeight: "40px",
-    padding: "7px 10px",
-    border: 0,
-    borderRadius: "10px",
-    background: "#ffffff",
-    color: "#0f172a",
-    textAlign: "left",
-    cursor: "pointer",
-  },
-  emptyCell: {
-    display: "block",
-  },
-  error: {
-    margin: "16px 0 0",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    background: "#fee2e2",
-    color: "#b91c1c",
-    fontSize: "14px",
-    fontWeight: 700,
-  },
-  actions: {
-    display: "flex",
-    justifyContent: "center",
-    flexWrap: "wrap",
-    gap: "10px",
-    marginTop: "16px",
-  },
-  primaryButton: {
-    minHeight: "44px",
-    padding: "0 18px",
-    border: 0,
-    borderRadius: "999px",
-    background: "linear-gradient(135deg, #2563eb, #06b6d4)",
-    color: "#ffffff",
-    fontWeight: 800,
-    cursor: "pointer",
-    boxShadow: "0 14px 26px rgba(37, 99, 235, 0.28)",
-  },
-  secondaryButton: {
-    minHeight: "44px",
-    padding: "0 18px",
-    border: "1px solid #dbe3ef",
-    borderRadius: "999px",
-    background: "#ffffff",
-    color: "#334155",
-    fontWeight: 800,
-    cursor: "pointer",
-  },
 };
 
 export default Signup;
-

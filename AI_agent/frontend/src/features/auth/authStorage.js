@@ -49,16 +49,24 @@ const readStoredJson = (key) => {
 };
 
 export const getUser = () => {
-  return readStoredJson(USER_STORAGE_KEY);
+  return readStoredJson(USER_STORAGE_KEY) || getSession();
 };
 
 export const saveSession = (user) => {
+  const currentSession = getSession();
+
   localStorage.setItem(
     SESSION_STORAGE_KEY,
     JSON.stringify({
       id: user.id,
       email: user.email,
+      username: user.username,
       name: user.name,
+      school: user.school,
+      major: user.major,
+      emailVerified: user.emailVerified,
+      verifiedAt: user.verifiedAt,
+      token: user.token || currentSession?.token || "",
       loggedInAt: new Date().toISOString(),
     })
   );
@@ -70,6 +78,10 @@ export const getSession = () => {
 
 export const clearSession = () => {
   localStorage.removeItem(SESSION_STORAGE_KEY);
+};
+
+export const getAuthToken = () => {
+  return getSession()?.token || "";
 };
 
 export const clearPendingUser = () => {

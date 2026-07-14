@@ -1,49 +1,44 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import Header from "../components/layout/Header";
-import {
-  getPendingUser,
-  verifyCurrentPendingUser,
-  verifyPendingUser,
-} from "../features/auth/authStorage";
+import { verifyEmail } from "../features/auth/authService";
 import { navigate, routes } from "../router";
-
-const getInitialVerificationState = (token) => {
-  const verifiedUser = verifyPendingUser(token);
-
-  return {
-    verifiedUser,
-    hasPendingUser: !verifiedUser && Boolean(getPendingUser()),
-  };
-};
 
 function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") || "";
-  const [verificationState, setVerificationState] = useState(
-    () => getInitialVerificationState(token)
-  );
+  const [status, setStatus] = useState("verifying");
+  const [message, setMessage] = useState("이메일 인증을 확인하고 있습니다.");
 
-  const handleManualVerify = () => {
-    const verifiedUser = verifyCurrentPendingUser();
+  useEffect(() => {
+    const verify = async () => {
+      if (!token) {
+        setStatus("error");
+        setMessage("인증 토큰이 없습니다. 메일의 인증 링크를 다시 열어 주세요.");
+        return;
+      }
 
-    setVerificationState({
-      verifiedUser,
-      hasPendingUser: false,
-    });
-  };
+      try {
+        const user = await verifyEmail(token);
+        setStatus("success");
+        setMessage(`${user.email} 인증이 완료되어 회원가입이 최종 완료되었습니다.`);
+      } catch (error) {
+        setStatus("error");
+        setMessage(error.message);
+      }
+    };
 
-  const { verifiedUser, hasPendingUser } = verificationState;
-  const isVerified = Boolean(verifiedUser);
-  const title = isVerified
-    ? "이메일 확인이 완료되었습니다."
-    : "확인 링크가 유효하지 않습니다.";
-  const description = isVerified
-    ? `${verifiedUser.email} 인증이 완료되어 회원가입이 최종 완료되었습니다.`
-    : hasPendingUser
-      ? "확인 링크의 토큰이 일치하지 않습니다. 현재 브라우저의 인증 대기 계정을 직접 확인할 수 있습니다."
-      : "이미 사용된 링크이거나 인증 대기 중인 계정 정보가 없습니다.";
+    verify();
+  }, [token]);
+
+  const isSuccess = status === "success";
+  const title =
+    status === "verifying"
+      ? "이메일 인증 확인 중"
+      : isSuccess
+        ? "이메일 인증이 완료되었습니다"
+        : "인증 링크가 유효하지 않습니다";
 
   return (
     <main style={styles.container}>
@@ -52,17 +47,9 @@ function VerifyEmail() {
         <div style={styles.card}>
           <p style={styles.badge}>Email Verification</p>
           <h1 style={styles.title}>{title}</h1>
-          <p style={styles.description}>{description}</p>
-
-          {!isVerified && hasPendingUser && (
-            <button
-              type="button"
-              style={styles.secondaryButton}
-              onClick={handleManualVerify}
-            >
-              현재 대기 계정 인증하기
-            </button>
-          )}
+          <p style={isSuccess ? styles.successDescription : styles.description}>
+            {message}
+          </p>
 
           <button
             type="button"
@@ -97,7 +84,7 @@ const styles = {
   card: {
     width: "min(620px, calc(100% - 32px))",
     padding: "34px",
-    borderRadius: "24px",
+    borderRadius: "18px",
     background: "rgba(255, 255, 255, 0.78)",
     border: "1px solid rgba(226, 232, 240, 0.9)",
     boxShadow: "0 24px 54px rgba(15, 23, 42, 0.12)",
@@ -120,11 +107,19 @@ const styles = {
     fontSize: "clamp(28px, 4vw, 42px)",
     fontWeight: 800,
     lineHeight: 1.18,
+    wordBreak: "keep-all",
   },
   description: {
     margin: "0 0 24px",
     color: "#475569",
     fontSize: "16px",
+    lineHeight: 1.7,
+  },
+  successDescription: {
+    margin: "0 0 24px",
+    color: "#166534",
+    fontSize: "16px",
+    fontWeight: 700,
     lineHeight: 1.7,
   },
   primaryButton: {
@@ -138,17 +133,6 @@ const styles = {
     fontWeight: 800,
     cursor: "pointer",
     boxShadow: "0 14px 26px rgba(37, 99, 235, 0.28)",
-  },
-  secondaryButton: {
-    minHeight: "44px",
-    padding: "0 18px",
-    margin: "0 5px 10px",
-    border: "1px solid #dbe3ef",
-    borderRadius: "999px",
-    background: "#ffffff",
-    color: "#334155",
-    fontWeight: 800,
-    cursor: "pointer",
   },
 };
 
