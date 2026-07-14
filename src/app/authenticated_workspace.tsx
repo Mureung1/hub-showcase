@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 
 import {
   filterInsights,
+  retrieveInsights,
   searchInsights,
   type InsightRepository,
   type InsightRepositoryWarning,
@@ -21,7 +22,6 @@ import {
 } from './model/use_insight_workspace';
 import './styles/authenticated_workspace.css';
 
-const INITIAL_SITUATION_QUERY = SUGGESTED_SITUATIONS[0]?.query ?? '';
 const EMPTY_CONTEXT_DRAFT: SaveContextDraft = {
   category: '',
   memo: '',
@@ -75,10 +75,9 @@ export function AuthenticatedWorkspace({
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('home');
   const [activeCategory, setActiveCategory] = useState('All');
   const [globalQuery, setGlobalQuery] = useState('');
-  const [retrieveQuery, setRetrieveQuery] = useState(INITIAL_SITUATION_QUERY);
-  const [selectedSituation, setSelectedSituation] = useState(
-    INITIAL_SITUATION_QUERY
-  );
+  const [retrieveQuery, setRetrieveQuery] = useState('');
+  const [submittedRetrieveQuery, setSubmittedRetrieveQuery] = useState('');
+  const [selectedSituation, setSelectedSituation] = useState('');
   const [saveUrl, setSaveUrl] = useState('');
   const [saveComplete, setSaveComplete] = useState(false);
   const [saveErrorReason, setSaveErrorReason] =
@@ -101,12 +100,13 @@ export function AuthenticatedWorkspace({
   }, [activeCategory, globalQuery, insights]);
 
   const retrieveResults = useMemo(() => {
-    return filterInsights(insights, 'All', retrieveQuery).slice(0, 6);
-  }, [insights, retrieveQuery]);
+    return retrieveInsights(insights, submittedRetrieveQuery);
+  }, [insights, submittedRetrieveQuery]);
 
   function handleSituationClick(situation: SuggestedSituation) {
     setSelectedSituation(situation.query);
     setRetrieveQuery(situation.query);
+    setSubmittedRetrieveQuery(situation.query);
   }
 
   function handleRetrieveQueryChange(value: string) {
@@ -115,10 +115,18 @@ export function AuthenticatedWorkspace({
     if (value !== selectedSituation) {
       setSelectedSituation('');
     }
+
+    if (value.trim().length === 0) {
+      setSubmittedRetrieveQuery('');
+    }
   }
 
   function handleRetrieve(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    setSubmittedRetrieveQuery(
+      retrieveQuery.trim().length > 0 ? retrieveQuery : ''
+    );
   }
 
   function handleSave(event: FormEvent<HTMLFormElement>) {
@@ -248,6 +256,7 @@ export function AuthenticatedWorkspace({
             results={retrieveResults}
             selectedSituation={selectedSituation}
             situations={SUGGESTED_SITUATIONS}
+            submittedQuery={submittedRetrieveQuery}
           />
         ) : null}
 

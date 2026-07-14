@@ -11,6 +11,7 @@ import { normalizeInsightUrl } from '../model/normalize_insight_url';
 import './insight_grid.css';
 
 export type InsightGridProps = {
+  connectionClues?: Readonly<Record<string, string>>;
   insights: Insight[];
   onDeleteInsight?: (insightId: string) => InsightMutationResult;
   onDeletionFocusFallback?: () => void;
@@ -22,6 +23,7 @@ export type InsightGridProps = {
 };
 
 export function InsightGrid({
+  connectionClues,
   insights,
   onDeleteInsight,
   onDeletionFocusFallback,
@@ -34,6 +36,7 @@ export function InsightGrid({
         <InsightCard
           insight={insight}
           key={insight.id}
+          connectionClue={connectionClues?.[insight.id]}
           onDeleteInsight={onDeleteInsight}
           onDeletionFocusFallback={onDeletionFocusFallback}
           onEditFocusFallback={onEditFocusFallback}
@@ -45,6 +48,7 @@ export function InsightGrid({
 }
 
 type InsightCardProps = {
+  connectionClue?: string;
   insight: Insight;
   onDeleteInsight?: InsightGridProps['onDeleteInsight'];
   onDeletionFocusFallback?: InsightGridProps['onDeletionFocusFallback'];
@@ -53,6 +57,7 @@ type InsightCardProps = {
 };
 
 function InsightCard({
+  connectionClue,
   insight,
   onDeleteInsight,
   onDeletionFocusFallback,
@@ -245,6 +250,9 @@ function InsightCard({
           <div className="insight-card__body">
             <p className="insight-card__domain">{insight.domain}</p>
             <h3 className="insight-card__title">{insight.title}</h3>
+            {connectionClue ? (
+              <p className="insight-card__connection-clue">{connectionClue}</p>
+            ) : null}
             {insight.memo ? (
               <p className="insight-card__memo">{insight.memo}</p>
             ) : null}

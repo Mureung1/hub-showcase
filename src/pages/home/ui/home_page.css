@@ -88,7 +88,7 @@ button.home-page__search-action {
   line-height: var(--typography-section-title-line-height);
 }
 
-.home-page__results-heading > span {
+.home-page__results-heading > [role='status'] {
   color: var(--color-graphite);
   font-size: var(--typography-label-size);
   line-height: var(--typography-label-line-height);

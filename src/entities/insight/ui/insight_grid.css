@@ -56,6 +56,14 @@
   overflow-wrap: anywhere;
 }
 
+.insight-card__connection-clue {
+  padding-left: var(--spacing-2);
+  border-left: 2px solid var(--color-electric-blue);
+  color: var(--color-graphite);
+  font-size: var(--typography-meta-size);
+  line-height: var(--typography-meta-line-height);
+}
+
 .insight-card__memo {
   overflow: hidden;
   color: var(--color-graphite);

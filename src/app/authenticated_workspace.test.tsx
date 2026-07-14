@@ -5,6 +5,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -45,6 +46,217 @@ afterEach(() => {
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it('starts with examples and immediately retrieves when a suggested situation is selected', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [
+          createInsight({
+            id: 'project-design',
+            title: '앱 화면 설계',
+            memo: '팀 프로젝트 앱 디자인 참고',
+          }),
+          createInsight({ id: 'unrelated', title: '여행 준비' }),
+        ],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
+    ).not.toBeNull();
+    expect(screen.queryByRole('article')).toBeNull();
+
+    const suggestion = screen.getByRole('button', { name: '팀 프로젝트' });
+    await user.click(suggestion);
+
+    expect(suggestion.getAttribute('aria-pressed')).toBe('true');
+    expect(
+      (
+        screen.getByRole('textbox', {
+          name: '지금 꺼내보고 싶은 상황',
+        }) as HTMLInputElement
+      ).value
+    ).toBe('팀 프로젝트 앱 디자인 참고');
+    expect(screen.getByRole('status').textContent).toContain(
+      '“팀 프로젝트 앱 디자인 참고” 작업팩 1개'
+    );
+    expect(
+      screen.getByRole('heading', { name: '앱 화면 설계' })
+    ).not.toBeNull();
+    expect(screen.getByText(/메모의 “팀” 단서/)).not.toBeNull();
+  });
+
+  it('keeps draft input separate from the submitted workpack and returns to examples when cleared', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [
+          createInsight({
+            title: '팀 프로젝트 자료',
+            memo: '팀 프로젝트 앱 디자인 참고 수정',
+          }),
+        ],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    const suggestion = screen.getByRole('button', { name: '팀 프로젝트' });
+    await user.click(suggestion);
+    const input = screen.getByRole('textbox', {
+      name: '지금 꺼내보고 싶은 상황',
+    });
+
+    await user.type(input, ' 수정');
+
+    expect(suggestion.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('status').textContent).toContain(
+      '“팀 프로젝트 앱 디자인 참고” 작업팩'
+    );
+    expect(screen.getByRole('status').textContent).not.toContain('참고 수정”');
+
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('status').textContent).toContain(
+      '“팀 프로젝트 앱 디자인 참고 수정” 작업팩'
+    );
+
+    await user.clear(input);
+
+    expect(
+      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
+    ).not.toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByRole('article')).toBeNull();
+
+    await user.keyboard('{Enter}');
+
+    expect(
+      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
+    ).not.toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('waits for free-input submission before presenting a workpack', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [createInsight({ title: 'React 폼 검증' })],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    await user.type(
+      screen.getByRole('textbox', {
+        name: '지금 꺼내보고 싶은 상황',
+      }),
+      'React'
+    );
+
+    expect(
+      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
+    ).not.toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByRole('article')).toBeNull();
+
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('status').textContent).toContain(
+      '“React” 작업팩 1개'
+    );
+    expect(
+      screen.getByRole('heading', { name: 'React 폼 검증' })
+    ).not.toBeNull();
+  });
+
+  it('recomputes the same submitted workpack after edits, saves, and deletions', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [createInsight({ title: 'signal 자료' })],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    const retrieveInput = screen.getByRole('textbox', {
+      name: '지금 꺼내보고 싶은 상황',
+    });
+    await user.type(retrieveInput, 'signal');
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('status').textContent).toContain(
+      '“signal” 작업팩 1개'
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    await user.click(screen.getByRole('button', { name: '수정' }));
+    const titleInput = screen.getByRole('textbox', { name: '제목' });
+    await user.clear(titleInput);
+    await user.type(titleInput, '다른 자료');
+    await user.click(screen.getByRole('button', { name: '변경 저장' }));
+    await user.click(screen.getByRole('button', { name: '홈' }));
+
+    expect(screen.getByRole('status').textContent).toContain(
+      '“signal” 작업팩 0개'
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    await user.type(
+      screen.getByRole('textbox', { name: '링크 URL' }),
+      'https://signal.example/article'
+    );
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+    await user.click(screen.getByRole('button', { name: '건너뛰기' }));
+    await user.click(screen.getByRole('button', { name: '홈' }));
+
+    expect(screen.getByRole('status').textContent).toContain(
+      '“signal” 작업팩 1개'
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    const savedCard = screen
+      .getByRole('heading', { name: 'signal.example' })
+      .closest('article');
+
+    expect(savedCard).not.toBeNull();
+    await user.click(within(savedCard!).getByRole('button', { name: '삭제' }));
+    await user.click(
+      within(savedCard!).getByRole('button', { name: '삭제 확정' })
+    );
+    await user.click(screen.getByRole('button', { name: '홈' }));
+
+    expect(screen.getByRole('status').textContent).toContain(
+      '“signal” 작업팩 0개'
+    );
+  });
+
   it('combines category filtering with deterministic all-result ranking', async () => {
     const user = userEvent.setup();
     const titleMatch = createInsight({

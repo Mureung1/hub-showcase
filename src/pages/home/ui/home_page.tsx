@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 
-import { InsightGrid, type Insight } from '@/entities/insight';
+import { InsightGrid, type RetrievedInsight } from '@/entities/insight';
 import { Button, ChoiceChip, EmptyState, TextField } from '@/shared/ui';
 
 import './home_page.css';
@@ -16,9 +16,10 @@ export type HomePageProps = {
   onRetrieve: (event: FormEvent<HTMLFormElement>) => void;
   onSituationClick: (situation: SuggestedSituation) => void;
   query: string;
-  results: Insight[];
+  results: RetrievedInsight[];
   selectedSituation: string;
   situations: SuggestedSituation[];
+  submittedQuery: string;
 };
 
 export function HomePage({
@@ -30,6 +31,7 @@ export function HomePage({
   results,
   selectedSituation,
   situations,
+  submittedQuery,
 }: HomePageProps) {
   return (
     <section className="home-page" aria-labelledby="retrieve-title">
@@ -79,29 +81,57 @@ export function HomePage({
         </div>
       </header>
 
-      <section
-        className="home-page__results"
-        aria-labelledby="home-results-title"
-      >
-        <div className="home-page__results-heading">
-          <div>
-            <p className="home-page__kicker">추천 결과</p>
-            <h2 id="home-results-title">지금 다시 볼 만한 인사이트</h2>
+      {submittedQuery.trim().length === 0 ? (
+        <section
+          aria-labelledby="home-start-title"
+          className="home-page__results"
+        >
+          <div className="home-page__results-heading">
+            <div>
+              <p className="home-page__kicker">상황 예시</p>
+              <h2 id="home-start-title">이런 상황에서 시작해보세요</h2>
+            </div>
           </div>
-          <span>{results.length}개</span>
-        </div>
+          <p className="home-page__summary">
+            위 상황을 고르거나 지금 하는 일을 직접 입력하면 저장한 자료에서
+            연결되는 단서를 찾습니다.
+          </p>
+        </section>
+      ) : (
+        <section
+          className="home-page__results"
+          aria-labelledby="home-results-title"
+        >
+          <div className="home-page__results-heading">
+            <div>
+              <p className="home-page__kicker">작업팩</p>
+              <h2 id="home-results-title">현재 상황과 연결된 인사이트</h2>
+            </div>
+            <p aria-live="polite" role="status">
+              “{submittedQuery}” 작업팩 {results.length}개
+            </p>
+          </div>
 
-        {results.length > 0 ? (
-          <InsightGrid insights={results} />
-        ) : (
-          <EmptyState
-            actionLabel="보관함 보기"
-            description="먼저 인사이트를 저장하면 현재 상황에 맞춰 다시 꺼내볼 수 있습니다."
-            onAction={onOpenLibrary}
-            title="꺼내볼 인사이트가 아직 없어요"
-          />
-        )}
-      </section>
+          {results.length > 0 ? (
+            <InsightGrid
+              connectionClues={Object.fromEntries(
+                results.map(({ connectionClue, insight }) => [
+                  insight.id,
+                  connectionClue,
+                ])
+              )}
+              insights={results.map(({ insight }) => insight)}
+            />
+          ) : (
+            <EmptyState
+              actionLabel="보관함 보기"
+              description={`“${submittedQuery}” 입력은 그대로 두었어요. 단어를 줄이거나 다른 상황 예시를 선택해보세요.`}
+              onAction={onOpenLibrary}
+              title={`“${submittedQuery}”과 연결된 인사이트가 없어요`}
+            />
+          )}
+        </section>
+      )}
     </section>
   );
 }

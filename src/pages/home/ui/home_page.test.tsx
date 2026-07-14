@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import type { Insight, RetrievedInsight } from '@/entities/insight';
 import { DesignSystemProvider } from '@/shared/ui';
 
 import { HomePage, type SuggestedSituation } from './home_page';
@@ -30,6 +31,31 @@ const situations: SuggestedSituation[] = [
 ];
 
 describe('HomePage', () => {
+  it('shows situation examples without pretending a workpack exists before submission', () => {
+    render(
+      <DesignSystemProvider>
+        <HomePage
+          onOpenLibrary={vi.fn()}
+          onQueryChange={vi.fn()}
+          onRetrieve={vi.fn()}
+          onSituationClick={vi.fn()}
+          query=""
+          results={[]}
+          selectedSituation=""
+          situations={situations}
+          submittedQuery=""
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
+    ).not.toBeNull();
+    expect(screen.getByRole('button', { name: '개발 공부' })).not.toBeNull();
+    expect(screen.queryByText('추천 결과')).toBeNull();
+    expect(screen.queryByRole('article')).toBeNull();
+  });
+
   it('reports situation selection and retrieve submission', async () => {
     const user = userEvent.setup();
     const onRetrieve = vi.fn();
@@ -46,6 +72,7 @@ describe('HomePage', () => {
           results={[]}
           selectedSituation=""
           situations={situations}
+          submittedQuery="리액트"
         />
       </DesignSystemProvider>
     );
@@ -59,7 +86,47 @@ describe('HomePage', () => {
     expect(onRetrieve).toHaveBeenCalledOnce();
   });
 
-  it('opens the library from the empty result state', async () => {
+  it('renders a submitted workpack with its exact query, truthful clue, and safe source link', () => {
+    const result: RetrievedInsight = {
+      insight: createInsight({
+        memo: '온보딩 흐름 참고',
+        originalUrl: 'https://example.com/onboarding',
+        normalizedUrl: 'https://example.com/onboarding',
+      }),
+      score: 12,
+      matchedFields: ['memo'],
+      matchedTokens: ['온보딩'],
+      connectionClue: '메모의 “온보딩” 단서가 겹쳐요.',
+    };
+
+    render(
+      <DesignSystemProvider>
+        <HomePage
+          onOpenLibrary={vi.fn()}
+          onQueryChange={vi.fn()}
+          onRetrieve={vi.fn()}
+          onSituationClick={vi.fn()}
+          query="수정 중인 다른 초안"
+          results={[result]}
+          selectedSituation=""
+          situations={situations}
+          submittedQuery="온보딩 작업"
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(screen.getByRole('status').textContent).toContain('온보딩 작업');
+    expect(screen.getByRole('status').textContent).toContain('1개');
+    expect(screen.getByText(result.connectionClue)).not.toBeNull();
+    const sourceLink = screen.getByRole('link', { name: '원문 열기' });
+    expect(sourceLink.getAttribute('href')).toBe(
+      'https://example.com/onboarding'
+    );
+    expect(sourceLink.getAttribute('target')).toBe('_blank');
+    expect(sourceLink.getAttribute('rel')).toContain('noreferrer');
+  });
+
+  it('retains the no-result query and offers other situations plus the library', async () => {
     const user = userEvent.setup();
     const onOpenLibrary = vi.fn();
 
@@ -70,22 +137,47 @@ describe('HomePage', () => {
           onQueryChange={vi.fn()}
           onRetrieve={vi.fn()}
           onSituationClick={vi.fn()}
-          query=""
+          query="없는 상황"
           results={[]}
           selectedSituation=""
           situations={situations}
+          submittedQuery="없는 상황"
         />
       </DesignSystemProvider>
     );
 
     expect(
       screen.getByRole('heading', {
-        name: '꺼내볼 인사이트가 아직 없어요',
+        name: '“없는 상황”과 연결된 인사이트가 없어요',
       })
     ).not.toBeNull();
+    expect(screen.getByText(/다른 상황 예시/)).not.toBeNull();
+    expect(screen.getByRole('button', { name: '개발 공부' })).not.toBeNull();
+    expect(
+      (
+        screen.getByRole('textbox', {
+          name: '지금 꺼내보고 싶은 상황',
+        }) as HTMLInputElement
+      ).value
+    ).toBe('없는 상황');
 
     await user.click(screen.getByRole('button', { name: '보관함 보기' }));
 
     expect(onOpenLibrary).toHaveBeenCalledOnce();
   });
 });
+
+function createInsight(overrides: Partial<Insight> = {}): Insight {
+  return {
+    id: 'insight-1',
+    originalUrl: 'https://example.com/article',
+    normalizedUrl: 'https://example.com/article',
+    domain: 'example.com',
+    title: '자료',
+    memo: null,
+    category: null,
+    createdAt: '2026-07-14T00:00:00.000Z',
+    updatedAt: '2026-07-14T00:00:00.000Z',
+    ...overrides,
+  };
+}
