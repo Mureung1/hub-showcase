@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: hub
+  profiles:
+    active: local
+  jpa:
+    hibernate:
+      ddl-auto: validate      # 스키마는 Flyway가 관리한다
+    open-in-view: false
+    properties:
+      hibernate.format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+
+# JWT / LLM 키는 application-local.yml 에 둔다 (커밋 금지)
+app:
+  jwt:
+    issuer: hub
+    access-token-ttl: PT1H
+    refresh-token-ttl: P14D
+  matching:
+    # 적합도 임계값 — 프론트 lib/fit.ts 와 동일하게 유지할 것
+    thresholds: { high: 85, mid: 60, low: 40 }
+  cors:
+    allowed-origins: http://localhost:3000

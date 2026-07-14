@@ -1,0 +1,13 @@
+# 복사해서 application-local.yml 로 쓰고, 실제 값을 채운다. (git 제외됨)
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hub
+    username: hub
+    password: CHANGE_ME
+
+app:
+  jwt:
+    secret: CHANGE_ME_32_BYTES_MINIMUM_SECRET_KEY
+  llm:
+    api-key: sk-CHANGE_ME
+    model: claude-sonnet-4-6
