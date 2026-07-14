@@ -236,8 +236,9 @@ GET    /api/stores/:storeId/payroll/summary
 Supabase Auth 사용자와 연결되는 서비스 사용자 프로필이다.
 
 - `id`: Supabase Auth user id
+- `email`
 - `name`
-- `phone`
+- `phone`: 선택 정보
 - `created_at`
 - `updated_at`
 
@@ -274,7 +275,7 @@ Supabase Auth 사용자와 연결되는 서비스 사용자 프로필이다.
 - `id`
 - `store_id`
 - `invited_by`
-- `invitee_phone`
+- `invitee_email`
 - `status`: `PENDING`, `ACCEPTED`, `EXPIRED`, `CANCELED`
 - `created_at`
 - `accepted_at`

@@ -126,6 +126,10 @@ a {
   font-weight: 600;
 }
 
+button {
+  font: inherit;
+}
+
 .topnav a {
   display: inline-flex;
   align-items: center;
@@ -157,7 +161,12 @@ a {
 .profile-chip {
   gap: 8px;
   padding: 0 12px 0 7px;
+  border: 0;
   background: var(--color-olive-soft);
+}
+
+.profile-button {
+  cursor: pointer;
 }
 
 .profile-chip span:first-child {
@@ -480,4 +489,163 @@ p {
   background: var(--color-lime-request);
   color: var(--color-primary-text);
   font-weight: 700;
+}
+
+.auth-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: var(--color-page-bg);
+}
+
+.auth-card {
+  width: min(440px, calc(100vw - 40px));
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--card-shadow);
+}
+
+.auth-brand {
+  margin-bottom: 26px;
+}
+
+.auth-heading {
+  margin-bottom: 22px;
+}
+
+.auth-heading h1 {
+  margin-bottom: 0;
+  font-size: 34px;
+  line-height: 1.12;
+}
+
+.auth-form {
+  display: grid;
+  gap: 15px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.auth-form label span {
+  color: var(--color-text-sub);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-form input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-main);
+  font-size: 14px;
+  outline: none;
+}
+
+.auth-form input:focus {
+  border-color: var(--color-primary-deep);
+  box-shadow: 0 0 0 3px rgba(217, 255, 95, 0.28);
+}
+
+.auth-form label strong,
+.form-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.primary-button,
+.secondary-button,
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.primary-button {
+  border: 0;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.primary-button:hover {
+  background: var(--color-primary-hover);
+}
+
+.secondary-button {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-main);
+}
+
+.text-button {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-sub);
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.auth-link {
+  margin: 18px 0 0;
+  color: var(--color-text-sub);
+  font-size: 14px;
+  text-align: center;
+}
+
+.auth-link a {
+  color: var(--color-text-main);
+  font-weight: 700;
+}
+
+.store-select-card {
+  width: min(520px, calc(100vw - 40px));
+}
+
+.empty-state {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--color-green-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-green-surface);
+}
+
+.empty-state strong {
+  font-size: 15px;
+}
+
+.empty-state span {
+  color: var(--color-text-sub);
+  font-size: 13px;
+}
+
+.auth-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.auth-actions-row .secondary-button,
+.auth-actions-row .text-button {
+  flex: 1;
 }
