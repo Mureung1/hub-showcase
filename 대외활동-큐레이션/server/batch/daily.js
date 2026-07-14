@@ -12,8 +12,8 @@ async function run() {
   console.log("batch run: TODO");
 }
 
-// 매일 새벽 4시. 배포 환경 타임존 확인.
-cron.schedule("0 4 * * *", run);
+// 매일 0시. 배포 환경 타임존 확인.
+cron.schedule("0 0 * * *", run);
 
 // RUN_NOW=1 로 즉시 한 번 돌려보기
 if (process.env.RUN_NOW) run();
