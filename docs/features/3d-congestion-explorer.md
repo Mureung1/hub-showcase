@@ -115,7 +115,7 @@ ns-process-data images|video
 -> ns-export gaussian-splat
 ```
 
-사용자가 입력한 값은 shell 문자열로 조합하지 않고 고정된 argument list에만 전달한다. 각 job은 `data/scenes/jobs/<uuid>`에 입력 hash, 크기, stage 상태와 실행 log를 분리해 저장한다.
+사용자가 입력한 값은 shell 문자열로 조합하지 않고 고정된 argument list에만 전달한다. 각 job은 `product/data/scenes/jobs/<uuid>`에 입력 hash, 크기, stage 상태와 실행 log를 분리해 저장한다.
 
 ```mermaid
 stateDiagram-v2

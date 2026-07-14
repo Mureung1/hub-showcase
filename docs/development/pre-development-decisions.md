@@ -17,7 +17,7 @@ Deferred: v0.1 범위 밖이거나 지금 결정할 필요 없음
 | 영역 | 결정 | 근거 문서 |
 | --- | --- | --- |
 | 제품 범위 | 상권 분석 P0, 3D 현장 탐색 P1 | [v0.1 범위](../module-notes/localtwin-v0.1-scope.md) |
-| 현재 저장소 | `apps/web` + `apps/api` monorepo | [개발환경](./environment.md) |
+| 현재 저장소 | `product/apps/web` + `product/apps/api` monorepo | [개발환경](./environment.md) |
 | Phase 2 제품 경계 | 실제 서비스 source와 배포 artifact를 `product/` 아래로 분리하고 문서 배포와 독립시킨다 | [아키텍처](./architecture.md) |
 | Web | React + Vite + TypeScript | [개발환경](./environment.md) |
 | API | FastAPI + Pydantic Settings | [개발환경](./environment.md) |
@@ -189,7 +189,7 @@ legend와 data source 표기
 Scene API는 제품 환경에서 기본 비활성화
 ```
 
-API hosting, 허용 CORS origin, logging·monitoring, backup·rollback은 실제 배포 Task에서 확정한다. 물리 `product/` 경계와 두 배포 artifact는 ARCH-002에서 구현하고, route만 분리된 현재 상태를 완료로 오해하지 않는다.
+API hosting, 허용 CORS origin, logging·monitoring, backup·rollback은 실제 배포 Task에서 확정한다. 물리 `product/` 경계와 두 배포 artifact는 ARCH-002에서 구현을 완료했으며, 공개 제품 URL 생성은 별도 배포 Task로 남아 있다.
 
 ### G11. GitHub 보호 규칙
 

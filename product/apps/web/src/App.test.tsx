@@ -12,7 +12,7 @@ describe("App", () => {
     expect(screen.getByRole("link", { name: "LocalTwin 상권 분석 홈" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Docs" })).toHaveAttribute(
       "href",
-      "/docs/wiki/doc-viewer.html?doc=Home.md",
+      "https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md",
     );
     expect(screen.getByRole("region", { name: "상권 분석 작업 공간" })).toBeInTheDocument();
     expect(screen.getByText("입지 점수")).toBeInTheDocument();

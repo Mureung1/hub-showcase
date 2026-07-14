@@ -26,10 +26,10 @@ Gaussian Splatting viewer
 | --- | --- | --- |
 | JavaScript runtime | Node.js | `24.11.x` |
 | JavaScript package manager | pnpm | `11.7.x` |
-| Web | React, Vite, TypeScript | `apps/web/package.json`과 `pnpm-lock.yaml` 기준 |
+| Web | React, Vite, TypeScript | `product/apps/web/package.json`과 `product/pnpm-lock.yaml` 기준 |
 | Python | CPython | `3.13.9` |
-| Python package manager | uv | `apps/api/uv.lock` 기준 |
-| API | FastAPI, Uvicorn, Pydantic Settings | `apps/api/pyproject.toml` 기준 |
+| Python package manager | uv | `product/apps/api/uv.lock` 기준 |
+| API | FastAPI, Uvicorn, Pydantic Settings | `product/apps/api/pyproject.toml` 기준 |
 | Git | Git for Windows | repository hook path 사용 |
 
 개발자는 manifest의 범위가 아니라 lockfile에 기록된 정확한 버전으로 환경을 재현한다.
@@ -38,37 +38,31 @@ Gaussian Splatting viewer
 
 ```text
 LocalTwin/
-  apps/
-    web/
-      src/
-        App.tsx
-        features/
-          market/
-            MarketFilters.tsx
-            MarketInspector.tsx
-            model.ts
-            types.ts
-            useMarketAnalysis.ts
-        services/
-          marketAnalysis.ts
-        styles/
-          tokens.css
-          global.css
-        test/
-      package.json
-      vite.config.ts
-    api/
-      src/localtwin_api/
-        config.py
-        main.py
-      tests/
-      pyproject.toml
-      uv.lock
-  data/
-    raw/
-    processed/
-    fixtures/
-    scenes/
+  product/
+    apps/
+      web/
+        src/
+          App.tsx
+          features/market/
+          services/
+          styles/
+        package.json
+        vite.config.ts
+      api/
+        src/localtwin_api/
+        tests/
+        pyproject.toml
+        uv.lock
+    data/
+      raw/
+      processed/
+      fixtures/
+      scenes/
+    scripts/
+    package.json
+    pnpm-lock.yaml
+    pnpm-workspace.yaml
+    vercel.json
   docs/
     development/
     design/
@@ -82,8 +76,7 @@ LocalTwin/
   .githooks/
   .github/workflows/
   package.json
-  pnpm-lock.yaml
-  pnpm-workspace.yaml
+  vercel.json
 ```
 
 `features/market`은 상권 domain type·계산 helper·server state hook과 화면 component를 소유한다. `services/marketAnalysis.ts`는 API와 검증 snapshot의 조회·fallback만 담당하고, `App.tsx`는 화면 조합과 지도 interaction을 유지한다. 새 기능 디렉터리는 실제 기능을 시작할 때만 만들고 빈 architecture layer를 미리 늘리지 않는다.
@@ -91,20 +84,20 @@ LocalTwin/
 권장 확장:
 
 ```text
-apps/web/src/features/<feature>/
-apps/web/src/shared/
+product/apps/web/src/features/<feature>/
+product/apps/web/src/shared/
 
-apps/api/src/localtwin_api/api/
-apps/api/src/localtwin_api/domain/
-apps/api/src/localtwin_api/services/
-apps/api/src/localtwin_api/repositories/
+product/apps/api/src/localtwin_api/api/
+product/apps/api/src/localtwin_api/domain/
+product/apps/api/src/localtwin_api/services/
+product/apps/api/src/localtwin_api/repositories/
 ```
 
 ## 4. 설치
 
 ```powershell
-pnpm install --frozen-lockfile
-uv sync --directory apps/api --frozen
+pnpm --dir product install --frozen-lockfile
+uv sync --directory product/apps/api --frozen
 git config core.hooksPath .githooks
 ```
 
@@ -113,7 +106,7 @@ git config core.hooksPath .githooks
 ```powershell
 node --version
 pnpm --version
-uv run --directory apps/api python --version
+uv run --directory product/apps/api python --version
 git config --get core.hooksPath
 ```
 
@@ -228,7 +221,8 @@ pnpm build
 기준 파일:
 
 ```text
-.env.example
+product/.env.example
+product/apps/web/.env.example
 ```
 
 규칙:
@@ -280,11 +274,11 @@ remote GPU server에서 local-only 검증할 때는 [GPU Scene Validation](../op
 ## 10. Dependency 변경
 
 ```powershell
-pnpm --filter @localtwin/web add <package>
-pnpm --filter @localtwin/web add -D <package>
+pnpm --dir product --filter @localtwin/web add <package>
+pnpm --dir product --filter @localtwin/web add -D <package>
 
-uv add --directory apps/api <package>
-uv add --directory apps/api --dev <package>
+uv add --directory product/apps/api <package>
+uv add --directory product/apps/api --dev <package>
 ```
 
 dependency 변경 커밋에는 manifest와 lockfile을 함께 포함하고 해당 영역의 최소 검증을 실행한다.

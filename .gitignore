@@ -23,13 +23,13 @@ htmlcov/
 *.local
 
 # Local data and generated 3D assets
-data/raw/*
-!data/raw/.gitkeep
-data/processed/*
-!data/processed/.gitkeep
-data/scenes/*
-!data/scenes/.gitkeep
-apps/web/public/smoke/
+product/data/raw/*
+!product/data/raw/.gitkeep
+product/data/processed/*
+!product/data/processed/.gitkeep
+product/data/scenes/*
+!product/data/scenes/.gitkeep
+product/apps/web/public/smoke/
 
 # Editors and operating systems
 .idea/
@@ -39,3 +39,4 @@ Thumbs.db
 .vercel/
 output/
 outputs/
+dist/docs-site/

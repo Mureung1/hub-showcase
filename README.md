@@ -2,8 +2,8 @@
 
 LocalTwin은 공공데이터와 공간 데이터를 근거로 후보 상권을 비교하고, 한 장소의 Gaussian Splatting 현장 탐색까지 연결하는 웹 기반 상권 의사결정 서비스다.
 
-제품 웹:
-[https://hub-localtwin-docs-vercel.vercel.app/](https://hub-localtwin-docs-vercel.vercel.app/)
+제품 source는 [`product/`](product/)에서 문서와 독립적으로 관리한다. 공개 제품 URL은
+별도 Vercel 프로젝트의 Root Directory를 `product`로 지정한 뒤 확정한다.
 
 ## 문서 허브
 

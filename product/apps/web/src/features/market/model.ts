@@ -33,10 +33,7 @@ export function demandFromFlow(flow: number[]) {
   return bucketByChartIndex.map((bucket) => Math.round((flow[bucket] / maximum) * 100));
 }
 
-export function circleFeature(
-  [longitude, latitude]: [number, number],
-  radiusMeters: number,
-) {
+export function circleFeature([longitude, latitude]: [number, number], radiusMeters: number) {
   const points = 64;
   const coordinates = Array.from({ length: points + 1 }, (_, index) => {
     const angle = (index / points) * Math.PI * 2;

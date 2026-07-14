@@ -36,7 +36,7 @@ api Ruff lint / format check / pytest
 | --- | --- |
 | docs | 링크 확인, 문서 경로 확인 |
 | web | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, 화면 변경 시 screenshot |
-| api | `uv run --directory apps/api ruff check .`, `pytest`, endpoint smoke |
+| api | `uv run --directory product/apps/api ruff check .`, `pytest`, endpoint smoke |
 | data | sample fixture 변환 확인, schema check |
 | DB migration | Alembic upgrade/downgrade, canonical SQLite 대비 row count·대표 query 비교, secret diff 점검 |
 | deploy boundary | 제품 artifact와 문서 artifact 파일 목록 검사, 각 build·route smoke |

@@ -19,10 +19,7 @@ def test_scene_routes_are_hidden_by_default() -> None:
     assert client.get("/api/v1/scenes/jobs/example").status_code == 404
     assert client.post("/api/v1/scenes/jobs/example/run").status_code == 404
     assert client.get("/api/v1/scenes/jobs/example/asset").status_code == 404
-    assert all(
-        "/api/v1/scenes" not in path
-        for path in client.get("/openapi.json").json()["paths"]
-    )
+    assert all("/api/v1/scenes" not in path for path in client.get("/openapi.json").json()["paths"])
     assert client.get("/health").status_code == 200
 
     paths = client.get("/openapi.json").json()["paths"]

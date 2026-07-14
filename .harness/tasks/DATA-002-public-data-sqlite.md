@@ -68,10 +68,10 @@ docs: 실제 row count와 schema 흐름
 ## 7. Verification Plan
 
 ```powershell
-uv run --directory apps/api pytest
-uv run --directory apps/api ruff check .
-uv run --directory apps/api python -m localtwin_api.public_data --help
-uv run --directory apps/api python -m localtwin_api.canonical_db --help
+uv run --directory product/apps/api pytest
+uv run --directory product/apps/api ruff check .
+uv run --directory product/apps/api python -m localtwin_api.public_data --help
+uv run --directory product/apps/api python -m localtwin_api.canonical_db --help
 ```
 
 실제 data check:

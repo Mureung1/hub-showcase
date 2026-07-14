@@ -32,13 +32,7 @@ import {
 } from "./features/market/model";
 import { MarketFilters } from "./features/market/MarketFilters";
 import { MarketInspector } from "./features/market/MarketInspector";
-import type {
-  Category,
-  LayerMode,
-  MapMode,
-  Market,
-  MarketKey,
-} from "./features/market/types";
+import type { Category, LayerMode, MapMode, Market, MarketKey } from "./features/market/types";
 import { useMarketAnalysis } from "./features/market/useMarketAnalysis";
 import "./styles/global.css";
 
@@ -349,7 +343,10 @@ export function App() {
     const base = markets[marketKey];
     if (!analysis) return base;
     const flow = analysis.raw.total_flow;
-    const reason = analysis.score.reasons.slice(0, 2).map((item) => item.message).join(" ");
+    const reason = analysis.score.reasons
+      .slice(0, 2)
+      .map((item) => item.message)
+      .join(" ");
     return {
       ...base,
       score: Math.round(analysis.score.score),
@@ -363,7 +360,9 @@ export function App() {
       insight: reason || analysis.score.cluster.explanation,
     };
   }, [analysis, marketKey]);
-  const score = analysis ? Math.round(analysis.score.score) : formatMarketScore(market.score, category, radius);
+  const score = analysis
+    ? Math.round(analysis.score.score)
+    : formatMarketScore(market.score, category, radius);
   const selected = market.stores.find((store) => store.name === selectedStore) ?? market.stores[0];
   const visibleStores = useMemo(
     () => [
@@ -372,7 +371,8 @@ export function App() {
     ],
     [market, category],
   );
-  const sameCategoryCount = analysis?.raw.category_store_count ?? (radius === 100 ? 6 : radius === 300 ? 19 : 34);
+  const sameCategoryCount =
+    analysis?.raw.category_store_count ?? (radius === 100 ? 6 : radius === 300 ? 19 : 34);
   const densityLabel = layer === "density" ? "동일 업종 밀도" : "대표 시간대 수요";
   const circle = useMemo(() => circleFeature(market.center, radius), [market.center, radius]);
   const activeDemand = market.demand[activeHour];
@@ -460,7 +460,13 @@ export function App() {
           </button>
         </nav>
         <div className="header-actions">
-          <a className="header-control header-docs" href="/docs/wiki/doc-viewer.html?doc=Home.md">
+          <a
+            className="header-control header-docs"
+            href={
+              import.meta.env.VITE_DOCS_URL ??
+              "https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md"
+            }
+          >
             <FileText size={16} /> Docs
           </a>
           <button className="header-control" type="button" onClick={() => setCompareOpen(true)}>
@@ -719,11 +725,7 @@ export function App() {
                       id="localtwin-poi-label"
                       type="symbol"
                       minzoom={16.1}
-                      filter={[
-                        "all",
-                        ["==", ["get", "layer"], "poi"],
-                        ["!=", ["get", "name"], ""],
-                      ]}
+                      filter={["all", ["==", ["get", "layer"], "poi"], ["!=", ["get", "name"], ""]]}
                       layout={{
                         "text-field": ["get", "name"],
                         "text-font": ["Noto Sans Regular"],
@@ -832,7 +834,7 @@ export function App() {
                                   : store.category === "베이커리"
                                     ? "✦"
                                     : "+"}
-                              </i>
+                            </i>
                           </span>
                           <span className="prefab-awning" />
                           <span className="prefab-door" />
@@ -1017,7 +1019,13 @@ export function App() {
                   </div>
                   {analysis.score.reasons.slice(0, 3).map((reason) => (
                     <div key={`${reason.label}-${reason.tone}`}>
-                      <span>{reason.tone === "positive" ? "긍정 근거" : reason.tone === "caution" ? "주의 근거" : "참고 근거"}</span>
+                      <span>
+                        {reason.tone === "positive"
+                          ? "긍정 근거"
+                          : reason.tone === "caution"
+                            ? "주의 근거"
+                            : "참고 근거"}
+                      </span>
                       <b>
                         {reason.label} · {reason.value.toLocaleString("ko-KR")}
                         {reason.unit}
@@ -1055,7 +1063,9 @@ export function App() {
               <div>
                 <span>시간대 수요</span>
                 <b>서울시 길단위인구 집계</b>
-                <p>6개 시간대 공식 집계를 0~100으로 정규화해 표시합니다. 개인 이동 정보가 아닙니다.</p>
+                <p>
+                  6개 시간대 공식 집계를 0~100으로 정규화해 표시합니다. 개인 이동 정보가 아닙니다.
+                </p>
               </div>
               <div>
                 <span>입지 점수</span>
@@ -1128,7 +1138,12 @@ export function App() {
                     <span>{item.name}</span>
                     <b>{itemScore}</b>
                     <small>
-                      유동 {itemFlow == null ? item.footfall : `${Math.round(itemFlow).toLocaleString("ko-KR")}명/분기`} · 순증 {netOpening > 0 ? "+" : ""}{netOpening}
+                      유동{" "}
+                      {itemFlow == null
+                        ? item.footfall
+                        : `${Math.round(itemFlow).toLocaleString("ko-KR")}명/분기`}{" "}
+                      · 순증 {netOpening > 0 ? "+" : ""}
+                      {netOpening}
                     </small>
                   </button>
                 );

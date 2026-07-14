@@ -67,12 +67,12 @@ docs: 구현 경계와 반경 query 후속 기록
 ## 7. Verification Plan
 
 ```powershell
-uv run --directory apps/api pytest
-uv run --directory apps/api ruff check .
-pnpm --dir apps/web test
-pnpm --dir apps/web lint
-pnpm --dir apps/web build
-python scripts/build_market_analysis_snapshot.py
+uv run --directory product/apps/api pytest
+uv run --directory product/apps/api ruff check .
+pnpm --dir product/apps/web test
+pnpm --dir product/apps/web lint
+pnpm --dir product/apps/web build
+python product/scripts/build_market_analysis_snapshot.py
 ```
 
 ## 8. Documentation Updates

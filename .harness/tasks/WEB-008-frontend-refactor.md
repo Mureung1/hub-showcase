@@ -44,10 +44,10 @@ Status: done
 ## 7. Verification Plan
 
 ```powershell
-pnpm --dir apps/web typecheck
-pnpm --dir apps/web lint
-pnpm --dir apps/web test
-pnpm --dir apps/web build
+pnpm --dir product/apps/web typecheck
+pnpm --dir product/apps/web lint
+pnpm --dir product/apps/web test
+pnpm --dir product/apps/web build
 ```
 
 명령 성공과 완료 조건 충족을 구분해 Run Report에 기록한다.
