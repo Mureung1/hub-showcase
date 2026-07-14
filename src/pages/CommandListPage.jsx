@@ -17,6 +17,7 @@ function CommandListPage() {
 
     const filteredCommands = useMemo(() => {
         if (!normalizedQuery) return [];
+        if (!/[a-z가-힣]/i.test(normalizedQuery)) return [];
 
         return categoryCommands
             .filter(
@@ -36,7 +37,7 @@ function CommandListPage() {
                     ← 카테고리 선택으로
                 </Link>
                 <div className="detail-container not-found">
-                    <p className="detail-desc">"{category}"는 존재하지 않는 카테고리입니다.</p>
+                    <p className="terminal-error">-bash: cd: {category}: 에러: 존재하지 않는 카테고리입니다</p>
                 </div>
             </div>
         );
@@ -52,7 +53,7 @@ function CommandListPage() {
                 <span className="app-badge">📘 CS 실습 사전</span>
                 <h1 className="app-title">
                     {categoryLabel}
-                    <span className="cursor-blink">▌</span>
+                    <span className="cursor-blink" aria-hidden="true">▌</span>
                 </h1>
             </header>
 
@@ -67,7 +68,7 @@ function CommandListPage() {
                     <input
                         type="text"
                         className="search-input"
-                        placeholder="검색할 명령어 이름이나 설명을 입력하세요"
+                        placeholder="검색할 명령어 이름을 입력해 보세요"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
                         aria-label="명령어 검색"
@@ -77,11 +78,11 @@ function CommandListPage() {
             </div>
 
             {normalizedQuery === '' && (
-                <p className="terminal-hint">명령어 이름이나 설명을 입력해 검색하세요.</p>
+                <p className="terminal-hint">검색할 명령어 이름을 입력해 보세요.</p>
             )}
 
             {normalizedQuery !== '' && filteredCommands.length === 0 && (
-                <p className="terminal-error">-bash: {query}: command not found</p>
+                <p className="terminal-error">-bash: {query}: 에러: 찾을 수 없는 명령어입니다</p>
             )}
 
             {normalizedQuery !== '' && filteredCommands.length > 0 && (
