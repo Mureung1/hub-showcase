@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>커리어 코파일럿 — 발표 (상세)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root {
+    --paper:  #f1efe9;
+    --ink:    #22201d;
+    --accent: #1f8a6b;
+    --muted:  #6f6a63;
+    --faint:  #a49e95;
+    --line:   #dcd8d0;
+    --accent-soft: #e6f0eb;
+    --sans: 'Pretendard', system-ui, -apple-system, 'Malgun Gothic', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+
+  .deck { height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+  .deck::-webkit-scrollbar { width: 0; }
+  .slide { min-height: 100vh; scroll-snap-align: start; display: flex; flex-direction: column; justify-content: center; padding: 7vh 9vw; position: relative; }
+  .slide.center { align-items: center; text-align: center; }
+
+  .kicker { font-size: 14px; font-weight: 700; letter-spacing: 0.16em; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; }
+  h1 { font-size: clamp(38px, 6vw, 72px); font-weight: 800; line-height: 1.08; letter-spacing: -0.03em; }
+  h2 { font-size: clamp(28px, 3.8vw, 46px); font-weight: 800; line-height: 1.14; letter-spacing: -0.03em; }
+  .accent { color: var(--accent); }
+  .em { color: var(--accent); font-weight: 800; }
+
+  /* 설명 리드 */
+  .explain { margin-top: 16px; font-size: clamp(16px, 1.75vw, 20px); color: var(--ink); font-weight: 500; line-height: 1.58; max-width: 840px; }
+  .explain.muted { color: var(--muted); }
+  .explain b { font-weight: 700; }
+
+  /* 설명 포인트 (제목 + 해설) */
+  .points { margin-top: 28px; display: flex; flex-direction: column; gap: 20px; max-width: 880px; }
+  .point { display: grid; grid-template-columns: 32px 1fr; gap: 16px; align-items: start; }
+  .point .mk { width: 32px; height: 32px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .point .pt { font-size: clamp(17px, 1.95vw, 22px); font-weight: 700; letter-spacing: -0.02em; }
+  .point .pd { font-size: clamp(14px, 1.55vw, 17px); color: var(--muted); font-weight: 500; line-height: 1.5; margin-top: 5px; }
+  .point .pd b { color: var(--ink); font-weight: 600; }
+
+  .punch { margin-top: 34px; font-size: clamp(18px, 2.1vw, 26px); font-weight: 800; color: var(--accent); letter-spacing: -0.02em; line-height: 1.3; }
+  .name { margin-top: 26px; font-size: clamp(15px, 1.7vw, 19px); color: var(--muted); font-weight: 600; }
+  .hookline { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); font-size: clamp(14px, 1.6vw, 19px); color: var(--ink); font-weight: 600; max-width: 660px; line-height: 1.5; }
+
+  /* 파이프라인 */
+  .pipe { margin-top: 30px; display: flex; align-items: stretch; gap: 12px; flex-wrap: wrap; max-width: 940px; }
+  .pipe .box { flex: 1; min-width: 150px; background: #fbfaf7; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .pipe .box.hi { background: var(--accent-soft); border-color: transparent; }
+  .pipe .box .bt { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+  .pipe .box.hi .bt { color: var(--accent); }
+  .pipe .box .bd { font-size: 13px; color: var(--muted); margin-top: 5px; line-height: 1.45; }
+  .pipe .arr { align-self: center; color: var(--faint); font-size: 20px; font-weight: 700; }
+
+  /* 유사서비스 비교 */
+  .vs { margin-top: 28px; display: grid; grid-template-columns: 1fr 1px 1fr; align-items: stretch; max-width: 940px; }
+  .vs-col { padding: 2px 30px; } .vs-col:first-child { padding-left: 0; }
+  .vs-mid { background: var(--line); }
+  .vs-head { font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin-bottom: 12px; }
+  .vs-col.mine .vs-head { color: var(--accent); }
+  .vs-name { font-size: clamp(17px,2vw,23px); font-weight: 800; letter-spacing: -.02em; margin-bottom: 12px; }
+  .vs-col.mine .vs-name { color: var(--accent); }
+  .vs-li { font-size: clamp(14px,1.55vw,17px); color: var(--muted); font-weight: 500; line-height: 1.35; margin-bottom: 8px; }
+  .vs-col.mine .vs-li { color: var(--ink); font-weight: 600; }
+
+  /* 등급 배지 나열 */
+  .grades { margin-top: 26px; display: flex; flex-direction: column; gap: 14px; max-width: 860px; }
+  .grow { display: grid; grid-template-columns: 128px 1fr; gap: 18px; align-items: baseline; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .grow:last-child { border-bottom: none; }
+  .gbadge { display: inline-flex; align-items: center; gap: 8px; font-size: clamp(16px,1.8vw,19px); font-weight: 800; letter-spacing: -0.02em; }
+  .gbadge .d { width: 9px; height: 9px; border-radius: 50%; }
+  .g1 { color: var(--accent); } .g1 .d { background: var(--accent); }
+  .g2 { color: var(--ink); } .g2 .d { background: var(--muted); }
+  .g3 { color: var(--faint); } .g3 .d { background: transparent; box-shadow: inset 0 0 0 1.5px var(--faint); }
+  .g4 { color: var(--faint); } .g4 .d { background: transparent; box-shadow: inset 0 0 0 1.5px var(--faint); opacity: .6; }
+  .gdesc { font-size: clamp(14px,1.55vw,17px); color: var(--muted); font-weight: 500; line-height: 1.45; }
+  .gdesc b { color: var(--ink); font-weight: 600; }
+
+  /* 예시 카드 */
+  .demo-card { margin-top: 24px; max-width: 700px; background: #fbfaf7; border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; }
+  .dc-top { display: flex; align-items: center; gap: 10px; padding-bottom: 13px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .dc-req { font-size: clamp(16px,1.85vw,20px); font-weight: 700; letter-spacing: -.02em; }
+  .dc-badge { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; color: var(--accent); }
+  .dc-badge .d { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .dc-line { font-size: clamp(13px,1.45vw,16px); color: var(--muted); margin-bottom: 13px; } .dc-line b { color: var(--ink); font-weight: 700; }
+  .dc-cap { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .dc-aibar { display: flex; height: 30px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); font-size: 12px; font-weight: 700; margin-bottom: 13px; }
+  .dc-ai { background: #e8e4db; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+  .dc-self { background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; }
+  .dc-act { font-size: clamp(13px,1.5vw,16px); font-weight: 700; color: var(--accent); letter-spacing: -.02em; }
+
+  /* 데모 흐름 */
+  .demo-badge { display: inline-flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; }
+  .demo-badge .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); }
+  .flow { margin-top: 28px; display: flex; flex-direction: column; gap: 15px; max-width: 840px; }
+  .step { display: grid; grid-template-columns: 30px 1fr; gap: 16px; align-items: baseline; font-size: clamp(16px, 1.95vw, 23px); font-weight: 700; letter-spacing: -0.02em; }
+  .step .c { color: var(--accent); font-weight: 800; } .step b { color: var(--accent); }
+
+  /* 워크플로우 루프 */
+  .loop { margin-top: 26px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+  .loop .node { font-size: clamp(16px,1.9vw,22px); font-weight: 800; letter-spacing: -0.02em; background: var(--accent-soft); color: var(--accent); padding: 7px 17px; border-radius: 999px; }
+  .loop .arr { color: var(--faint); font-size: 19px; font-weight: 700; }
+  .note { margin-top: 26px; font-size: clamp(15px,1.7vw,20px); font-weight: 600; line-height: 1.5; max-width: 820px; }
+  .next { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); font-size: clamp(14px,1.55vw,17px); color: var(--muted); font-weight: 500; line-height: 1.7; }
+  .next b { color: var(--ink); font-weight: 700; }
+
+  .pnum { position: fixed; right: 26px; bottom: 22px; z-index: 10; font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 0.05em; }
+  .hint { position: fixed; left: 26px; bottom: 22px; z-index: 10; font-size: 12px; color: var(--faint); font-weight: 500; transition: opacity .6s ease; }
+  .progress { position: fixed; left: 0; top: 0; height: 3px; background: var(--accent); z-index: 10; transition: width .3s ease; }
+
+  @media (max-width: 720px) {
+    .slide { padding: 7vh 8vw; }
+    .vs { grid-template-columns: 1fr; } .vs-mid { display: none; }
+    .vs-col { padding: 14px 0; border-top: 1px solid var(--line); } .vs-col:first-child { border-top: none; }
+    .pipe { flex-direction: column; } .pipe .arr { transform: rotate(90deg); }
+    .grow { grid-template-columns: 1fr; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="prog"></div>
+<div class="deck" id="deck">
+
+  <!-- 1 · 타이틀 -->
+  <section class="slide center">
+    <div class="kicker">Career Copilot</div>
+    <h1>나에게 정직한<br>취업 코파일럿</h1>
+    <div class="name">이승현 · 제주대 컴퓨터공학</div>
+    <div class="hookline">공고 적합도를 <span class="em">내 실제 근거</span>로 채점하고, <span class="em">AI에 기댄 부분</span>까지 드러내는 개인 커리어 대시보드</div>
+  </section>
+
+  <!-- 2 · 문제 -->
+  <section class="slide">
+    <div class="kicker">문제 · 왜 만들었나</div>
+    <h2>신입 취업엔 정직한 자가진단이 없다</h2>
+    <div class="points">
+      <div class="point"><div class="mk">1</div><div><div class="pt">공고마다 요구는 제각각, 내 위치는 안 보인다</div><div class="pd">회사·직군마다 원하는 게 다 다른데, <b>내가 어디에 얼마나 부족한지</b>를 정량으로 보여주는 게 없다. 그래서 뭘 먼저 공부할지 막막하다.</div></div></div>
+      <div class="point"><div class="mk">2</div><div><div class="pt">바이브코딩 시대의 불안</div><div class="pd">이제 대부분 AI로 만든다. 그럼 <b>"이 포트폴리오가 진짜 내 실력인가?"</b>가 흐려진다. 면접에서 "이거 왜 이렇게 짰어요?"에 막히면 그때 드러난다.</div></div></div>
+      <div class="point"><div class="mk">3</div><div><div class="pt">기존 도구는 ‘합격’이 목적</div><div class="pd">Jobscan·원티드류는 ATS 통과·합격률을 높이게 이력서를 <b>최적화(키워드 코칭)</b>해준다. ‘정직한 자기진단’과는 목적 자체가 다르다.</div></div></div>
+    </div>
+    <div class="punch">→ 필요한 건 '잘 보이게'가 아니라 '정직하게' 진단하는 도구</div>
+  </section>
+
+  <!-- 3 · 유사 서비스 차이 -->
+  <section class="slide">
+    <div class="kicker">유사 서비스와의 차이</div>
+    <h2>비슷한 건 많다. 목적이 다르다.</h2>
+    <div class="vs">
+      <div class="vs-col">
+        <div class="vs-head">기존</div>
+        <div class="vs-name">Jobscan · Teal · 원티드 · 잡다</div>
+        <div class="vs-li">이력서 ‘글자’를 키워드 매칭</div>
+        <div class="vs-li">점수를 높게 — ATS 통과·합격확률↑</div>
+        <div class="vs-li">= 잘 보이게 만든다</div>
+      </div>
+      <div class="vs-mid"></div>
+      <div class="vs-col mine">
+        <div class="vs-head">커리어 코파일럿</div>
+        <div class="vs-name">내 ‘커밋’을 본다</div>
+        <div class="vs-li">역량을 실제 프로젝트·커밋에 연결</div>
+        <div class="vs-li">그 커밋이 AI가 짠 건지까지 실측</div>
+        <div class="vs-li">= 진짜를 알게 한다</div>
+      </div>
+    </div>
+    <div class="explain muted">매칭·스킬갭 시장은 이미 레드오션이지만 <b>전부 '통과'에 최적화</b>돼 있다. AI 코드 탐지는 보안·코드리뷰용으로 따로 존재할 뿐, <b>커리어 진단에 붙인 사례가 없다.</b> 이 세 개(증거 그라운딩 · 뻥튀기 거부 · AI 자기감사)를 합친 지점이 비어 있다.</div>
+  </section>
+
+  <!-- 4 · 솔루션 동작 원리 -->
+  <section class="slide">
+    <div class="kicker">솔루션 · 어떻게 동작하나</div>
+    <h2>내 근거로, 공고를 채점한다</h2>
+    <div class="pipe">
+      <div class="box"><div class="bt">입력</div><div class="bd">내 위키(지식) · GitHub(산출물) · 채용 공고(요건)</div></div>
+      <div class="arr">→</div>
+      <div class="box hi"><div class="bt">처리</div><div class="bd">공고 요건 분해 → 내 근거와 매칭 → 4등급 채점 + AI 관여 실측 → 갭을 학습으로</div></div>
+      <div class="arr">→</div>
+      <div class="box"><div class="bt">출력</div><div class="bd">매일 갱신되는 정적 대시보드</div></div>
+    </div>
+    <div class="explain">공고 데이터는 <b>크롤링이 아니라 '받아온다'</b> — 회사·ATS가 내주는 API·sitemap을 쓴다(합법·안정). 사람인·잡코리아 무단 크롤은 <b>판례로 배상 확정</b>이라 원천(회사/ATS)에서 정식으로 가져오는 게 핵심 기술 판단이었다.</div>
+  </section>
+
+  <!-- 5 · 핵심① 정직한 채점 -->
+  <section class="slide">
+    <div class="kicker">핵심 ① 정직한 채점</div>
+    <h2>‘충족’을 함부로 찍지 않는다</h2>
+    <div class="explain muted">대부분의 도구는 요건을 ✓ / ✗ 둘로 끝낸다. 우리는 <b>4단계</b>로 나누고, 무엇보다 <b>"근거가 없으면 충족이라 쓰지 않는다"</b>를 원칙으로 삼는다.</div>
+    <div class="grades">
+      <div class="grow"><div class="gbadge g1"><span class="d"></span>강점</div><div class="gdesc">입증된 강한 근거 — 실측·차별적</div></div>
+      <div class="grow"><div class="gbadge g2"><span class="d"></span>기본</div><div class="gdesc">요건은 충족하나 흔하거나 얕음</div></div>
+      <div class="grow"><div class="gbadge g3"><span class="d"></span>근거부족</div><div class="gdesc"><b>주장은 있으나 객관 근거가 없음</b> → 그래서 '충족'이라 안 씀</div></div>
+      <div class="grow"><div class="gbadge g4"><span class="d"></span>미보유</div><div class="gdesc">아예 없음 — 명확한 갭</div></div>
+    </div>
+    <div class="punch">실제로 내 k6(부하테스트)는 repo에 흔적이 없어 '근거부족'으로 강등됐다</div>
+  </section>
+
+  <!-- 6 · 핵심② 근거 그라운딩 -->
+  <section class="slide">
+    <div class="kicker">핵심 ② 근거 그라운딩</div>
+    <h2>이력서 ‘글자’가 아니라 내 ‘커밋’</h2>
+    <div class="explain muted">각 등급엔 <b>실제 프로젝트·커밋·위키</b>가 근거로 붙는다. 아래는 실제 결과물 — 요건 하나가 어떻게 채점·근거화되는지.</div>
+    <div class="demo-card">
+      <div class="dc-top"><span class="dc-req">Java/Spring 기반 API 개발</span><span class="dc-badge"><span class="d"></span>기본</span></div>
+      <div class="dc-line"><b>근거</b> — besession0402 (Java·Spring·JPA) · 제주대 팀 스터디 62커밋</div>
+      <div class="dc-cap">직접 vs AI 관여 · 커밋 서명 실측</div>
+      <div class="dc-aibar"><div class="dc-ai" style="width:72%">AI 작성 72%</div><div class="dc-self" style="width:28%">직접 28%</div></div>
+      <div class="dc-act">→ 강점으로: 증분 커밋 + 테스트</div>
+    </div>
+    <div class="explain">"언제 어떤 커밋으로 익혔는지"(provenance)까지 남아서, <b>면접에서 바로 꺼낼 재료</b>가 된다.</div>
+  </section>
+
+  <!-- 7 · 핵심③ AI 관여 실측 -->
+  <section class="slide">
+    <div class="kicker">핵심 ③ AI 자기감사</div>
+    <h2>이 코드, 얼마나 내가 짰나</h2>
+    <div class="explain muted">바이브코딩 시대의 진짜 질문. 근데 탐지가 어렵다 — <b>Claude Code가 나 대신, 좋은 커밋 메시지까지 써주기</b> 때문이다.</div>
+    <div class="points">
+      <div class="point"><div class="mk">A</div><div><div class="pt">Co-Authored-By 트레일러 스캔</div><div class="pd">Claude로 커밋하면 <b>"Co-Authored-By: Claude"</b> 서명이 남는다 — 가장 확실한 신호.</div></div></div>
+      <div class="point"><div class="mk">B</div><div><div class="pt">커밋 구조 분석</div><div class="pd">단일 대량 커밋(과정 비공개) vs 소형 증분 커밋(손작업 흔적)을 구분.</div></div></div>
+      <div class="point"><div class="mk">C</div><div><div class="pt">실측 — 내 GitHub 15개 repo</div><div class="pd">school-meetingRoom은 <b>Claude 서명 확인</b>, 팀 과제는 손작업 신호. 나조차 몰랐던 내 AI 의존도가 드러났다.</div></div></div>
+    </div>
+    <div class="punch">결론 — 탐지보다 "면접에서 설명·재현 가능한가"가 진짜 시험대</div>
+  </section>
+
+  <!-- 8 · 라이브 데모 -->
+  <section class="slide">
+    <div class="demo-badge"><span class="dot"></span>Live Demo</div>
+    <h2>라이브 데모</h2>
+    <div class="flow">
+      <div class="step"><span class="c">1</span><span>공고 리스트 — 적합도순으로 정렬</span></div>
+      <div class="step"><span class="c">2</span><span>공고 클릭 → 요건이 <b>4등급</b>으로 (충족 남발 없음)</span></div>
+      <div class="step"><span class="c">3</span><span>근거 펼치기 → 프로젝트·스코프·<b>AI 관여 72%</b> 실측</span></div>
+      <div class="step"><span class="c">4</span><span>학습 루프 — 복습(까먹기 방지) + 새로 학습</span></div>
+    </div>
+    <div class="punch">충족만 찍는 게 아니라, 내가 뭘 모르는지·AI가 얼마나 했는지까지</div>
+  </section>
+
+  <!-- 9 · 워크플로우 + 다음 -->
+  <section class="slide">
+    <div class="kicker">나만의 워크플로우</div>
+    <h2>AI가 만들고,<br>내가 검증·정직화하는 루프</h2>
+    <div class="loop">
+      <span class="node">학습</span><span class="arr">→</span>
+      <span class="node">제작</span><span class="arr">→</span>
+      <span class="node">반증</span><span class="arr">→</span>
+      <span class="node">기능화</span><span class="arr">↻</span>
+    </div>
+    <div class="points" style="margin-top:22px;">
+      <div class="point"><div class="mk">·</div><div><div class="pd" style="margin-top:0"><b>학습</b> — 데이터 수집을 밑바닥부터 이해(그냥 '해줘' 아님) · <b>제작</b> — 빠르게 만들고 v1 폐기 → v2</div></div></div>
+      <div class="point"><div class="mk">·</div><div><div class="pd" style="margin-top:0"><b>반증</b> — 만든 걸 안 믿고 되물음("AI가 한 거 찾아줘"), <b>AI가 틀린 것도 내가 잡음</b> · <b>기능화</b> — 내 AI 의존을 자각 → 그걸 기능으로</div></div></div>
+    </div>
+    <div class="note"><span class="accent">일한 방식이 곧 제품이 됐다</span> — AI에 정직해지려던 과정이 그대로 도구의 핵심(AI 자기감사)이 됐다.</div>
+    <div class="next"><b>다음</b> — 실데이터 연동 · 학습 루프 인터랙티브 &nbsp;|&nbsp; <b>지향</b> — AI 안전·검증(에임인텔리전스: Anthropic·OpenAI 보안 파트너)</div>
+  </section>
+
+</div>
+
+<div class="pnum" id="pnum">1 / 9</div>
+<div class="hint" id="hint">← → 또는 Space 로 이동</div>
+
+<script>
+  (function () {
+    var deck = document.getElementById('deck');
+    var slides = [].slice.call(document.querySelectorAll('.slide'));
+    var pnum = document.getElementById('pnum'), prog = document.getElementById('prog'), hint = document.getElementById('hint');
+    var i = 0;
+    function render() { pnum.textContent = (i + 1) + ' / ' + slides.length; prog.style.width = (i / (slides.length - 1) * 100) + '%'; }
+    function go(n) { i = Math.max(0, Math.min(slides.length - 1, n)); slides[i].scrollIntoView({ behavior: 'smooth' }); render(); if (i > 0 && hint) hint.style.opacity = '0'; }
+    document.addEventListener('keydown', function (e) {
+      if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].indexOf(e.key) > -1) { e.preventDefault(); go(i + 1); }
+      else if (['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) > -1) { e.preventDefault(); go(i - 1); }
+      else if (e.key === 'Home') { e.preventDefault(); go(0); }
+      else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+    });
+    var t; deck.addEventListener('scroll', function () { clearTimeout(t); t = setTimeout(function () { i = Math.round(deck.scrollTop / window.innerHeight); render(); }, 80); }, { passive: true });
+    render();
+  })();
+</script>
+
+</body>
+</html>
