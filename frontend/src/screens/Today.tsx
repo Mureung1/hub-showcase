@@ -2,7 +2,7 @@ import ArticleCard, { type Article } from '../components/ArticleCard'
 import './Today.css'
 
 // API 연결 전까지 쓰는 임시 데이터.
-const FEATURED_ARTICLE: Article = {
+export const FEATURED_ARTICLE: Article = {
   id: '1',
   title: '숏폼 시대, 우리는 정말 더 많이 이해하고 있을까',
   sourceName: '요즘IT',
@@ -41,7 +41,11 @@ function formatToday(date: Date): string {
   return `${year}.${month}.${day}`
 }
 
-export default function Today() {
+type TodayProps = {
+  onSelectArticle: () => void
+}
+
+export default function Today({ onSelectArticle }: TodayProps) {
   const today = formatToday(new Date())
 
   return (
@@ -59,7 +63,11 @@ export default function Today() {
           {today} · 오늘의 글
         </p>
 
-        <ArticleCard article={FEATURED_ARTICLE} variant="feature" />
+        <ArticleCard
+          article={FEATURED_ARTICLE}
+          variant="feature"
+          onClick={onSelectArticle}
+        />
 
         <p className="today-section-label">이런 글도 있어요</p>
         <div className="today-more-list">
