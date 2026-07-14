@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
 import { Button, CategoryTag, TextArea, TextField } from '@/shared/ui';
 
@@ -13,6 +13,7 @@ import './insight_grid.css';
 export type InsightGridProps = {
   insights: Insight[];
   onDeleteInsight?: (insightId: string) => InsightMutationResult;
+  onDeletionFocusFallback?: () => void;
   onUpdateInsight?: (
     insightId: string,
     context: InsightContextInput
@@ -22,6 +23,7 @@ export type InsightGridProps = {
 export function InsightGrid({
   insights,
   onDeleteInsight,
+  onDeletionFocusFallback,
   onUpdateInsight,
 }: InsightGridProps) {
   return (
@@ -31,6 +33,7 @@ export function InsightGrid({
           insight={insight}
           key={insight.id}
           onDeleteInsight={onDeleteInsight}
+          onDeletionFocusFallback={onDeletionFocusFallback}
           onUpdateInsight={onUpdateInsight}
         />
       ))}
@@ -41,23 +44,44 @@ export function InsightGrid({
 type InsightCardProps = {
   insight: Insight;
   onDeleteInsight?: InsightGridProps['onDeleteInsight'];
+  onDeletionFocusFallback?: InsightGridProps['onDeletionFocusFallback'];
   onUpdateInsight?: InsightGridProps['onUpdateInsight'];
 };
 
 function InsightCard({
   insight,
   onDeleteInsight,
+  onDeletionFocusFallback,
   onUpdateInsight,
 }: InsightCardProps) {
   const fieldId = useId();
+  const articleRef = useRef<HTMLElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const [cardMode, setCardMode] = useState<'idle' | 'editing' | 'deleting'>(
     'idle'
   );
+  const previousCardMode = useRef(cardMode);
   const [draft, setDraft] = useState<InsightContextInput>(() =>
     createEditDraft(insight)
   );
   const [editFailed, setEditFailed] = useState(false);
   const [deleteFailed, setDeleteFailed] = useState(false);
+
+  useEffect(() => {
+    const previousMode = previousCardMode.current;
+
+    if (cardMode === 'editing') {
+      titleInputRef.current?.focus();
+    } else if (cardMode === 'deleting') {
+      getCardButton(articleRef.current, 'delete-confirm')?.focus();
+    } else if (previousMode === 'editing') {
+      getCardButton(articleRef.current, 'edit')?.focus();
+    } else if (previousMode === 'deleting') {
+      getCardButton(articleRef.current, 'delete')?.focus();
+    }
+
+    previousCardMode.current = cardMode;
+  }, [cardMode]);
 
   function beginEditing() {
     setDraft(createEditDraft(insight));
@@ -103,6 +127,10 @@ function InsightCard({
   }
 
   function confirmDeletion() {
+    const nextManageTrigger =
+      articleRef.current?.nextElementSibling?.querySelector<HTMLButtonElement>(
+        '[data-insight-manage-trigger]'
+      );
     const deleteResult = onDeleteInsight?.(insight.id);
 
     if (!deleteResult?.ok) {
@@ -111,11 +139,18 @@ function InsightCard({
     }
 
     setDeleteFailed(false);
-    setCardMode('idle');
+    queueMicrotask(() => {
+      if (nextManageTrigger?.isConnected) {
+        nextManageTrigger.focus();
+        return;
+      }
+
+      onDeletionFocusFallback?.();
+    });
   }
 
   return (
-    <article className="insight-card">
+    <article className="insight-card" ref={articleRef}>
       <div className="insight-card__thumbnail" aria-hidden="true">
         {getThumbnailLabel(insight.domain)}
       </div>
@@ -139,6 +174,7 @@ function InsightCard({
             onChange={(event) =>
               handleDraftChange({ ...draft, title: event.currentTarget.value })
             }
+            ref={titleInputRef}
             value={draft.title}
             width="100%"
           />
@@ -226,6 +262,7 @@ function InsightCard({
               ) : null}
               <div className="insight-card__actions">
                 <Button
+                  data-insight-card-action="delete-confirm"
                   hierarchy="primary"
                   onClick={confirmDeletion}
                   size="small"
@@ -250,6 +287,8 @@ function InsightCard({
                 <div className="insight-card__manage-actions">
                   {onUpdateInsight ? (
                     <Button
+                      data-insight-card-action="edit"
+                      data-insight-manage-trigger
                       hierarchy="ghost"
                       onClick={beginEditing}
                       size="small"
@@ -260,6 +299,7 @@ function InsightCard({
                   ) : null}
                   {onDeleteInsight ? (
                     <Button
+                      data-insight-card-action="delete"
                       hierarchy="ghost"
                       onClick={beginDeleting}
                       size="small"
@@ -307,6 +347,12 @@ function createEditDraft(insight: Insight): InsightContextInput {
     memo: insight.memo ?? '',
     title: insight.title,
   };
+}
+
+function getCardButton(article: HTMLElement | null, action: string) {
+  return article?.querySelector<HTMLButtonElement>(
+    `[data-insight-card-action="${action}"]`
+  );
 }
 
 const CATEGORY_TONES = {

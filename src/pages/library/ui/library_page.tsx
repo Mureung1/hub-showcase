@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+
 import {
   InsightGrid,
   type Insight,
@@ -42,6 +44,8 @@ export function LibraryPage({
   onUpdateInsight,
   query,
 }: LibraryPageProps) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <section className="library-page" aria-labelledby="library-title">
       <header className="library-page__header">
@@ -73,6 +77,7 @@ export function LibraryPage({
             onChange={(event) => onQueryChange(event.currentTarget.value)}
             onReset={() => onQueryChange('')}
             placeholder="제목, 메모, 카테고리 검색"
+            ref={searchInputRef}
             size="medium"
             value={query}
             width="100%"
@@ -87,6 +92,7 @@ export function LibraryPage({
           <InsightGrid
             insights={insights}
             onDeleteInsight={onDeleteInsight}
+            onDeletionFocusFallback={() => searchInputRef.current?.focus()}
             onUpdateInsight={onUpdateInsight}
           />
         ) : (

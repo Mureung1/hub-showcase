@@ -1,10 +1,16 @@
 /* @vitest-environment jsdom */
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { Insight, InsightRepository } from '@/entities/insight';
+import {
+  createLocalStorageInsightRepository,
+  type Insight,
+  type InsightRepository,
+} from '@/entities/insight';
 
 import { useInsightWorkspace } from './use_insight_workspace';
+
+afterEach(() => localStorage.clear());
 
 describe('useInsightWorkspace', () => {
   it('loads saved insights and persists a new URL before exposing it', () => {
@@ -155,6 +161,48 @@ describe('useInsightWorkspace', () => {
     expect(save).toHaveBeenCalledWith([updatedInsight]);
     expect(result.current.insights).toEqual([updatedInsight]);
   });
+
+  it.each([
+    ['the clock moves backward', '2026-07-14T09:00:00.000Z'],
+    ['the clock stays in the same millisecond', '2026-07-14T10:00:00.000Z'],
+    ['the clock returns an invalid value', 'not-a-timestamp'],
+  ])(
+    'keeps updatedAt monotonic and reloadable when %s',
+    (_scenario, currentTime) => {
+      const savedInsight = createInsight({
+        createdAt: '2026-07-14T00:00:00.000Z',
+        updatedAt: '2026-07-14T10:00:00.000Z',
+      });
+      const repository = createLocalStorageInsightRepository(localStorage);
+      expect(repository.save([savedInsight])).toEqual({ ok: true });
+      const { result, unmount } = renderHook(() =>
+        useInsightWorkspace({ now: () => currentTime, repository })
+      );
+
+      act(() => {
+        expect(
+          result.current.updateInsightContext(savedInsight.id, {
+            category: '',
+            memo: '단조 증가 확인',
+            title: savedInsight.title,
+          })
+        ).toEqual({ ok: true });
+      });
+      unmount();
+
+      const reloadResult =
+        createLocalStorageInsightRepository(localStorage).load();
+
+      expect(reloadResult.warnings).toEqual([]);
+      expect(reloadResult.insights).toEqual([
+        {
+          ...savedInsight,
+          memo: '단조 증가 확인',
+          updatedAt: '2026-07-14T10:00:00.001Z',
+        },
+      ]);
+    }
+  );
 
   it('keeps the previous context and updatedAt when an edit cannot persist', () => {
     const savedInsight = createInsight({

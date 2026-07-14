@@ -6,6 +6,7 @@
 
 .insight-card {
   display: grid;
+  min-width: 0;
   min-height: 280px;
   overflow: hidden;
   border: 1px solid var(--color-ash);
@@ -34,6 +35,7 @@
 
 .insight-card__body {
   display: grid;
+  min-width: 0;
   align-content: start;
   gap: var(--spacing-2);
   padding: var(--spacing-4);
@@ -43,6 +45,7 @@
   color: var(--color-smoke);
   font-size: var(--typography-meta-size);
   line-height: var(--typography-meta-line-height);
+  overflow-wrap: anywhere;
 }
 
 .insight-card__title {
@@ -50,6 +53,7 @@
   font-size: var(--typography-card-title-size);
   font-weight: 700;
   line-height: var(--typography-card-title-line-height);
+  overflow-wrap: anywhere;
 }
 
 .insight-card__memo {
@@ -71,7 +75,9 @@
 }
 
 .insight-card__category {
+  max-width: 100%;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .insight-card__source {
@@ -92,6 +98,7 @@
 
 .insight-card__footer {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-2);
@@ -108,6 +115,7 @@
 .insight-card__edit-form,
 .insight-card__delete-confirmation {
   display: grid;
+  min-width: 0;
   align-content: start;
   gap: var(--spacing-3);
   padding: var(--spacing-4);

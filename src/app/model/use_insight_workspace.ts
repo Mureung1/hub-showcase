@@ -111,7 +111,7 @@ export function useInsightWorkspace({
       category: normalizeOptionalCategory(context.category),
       memo: normalizeOptionalText(context.memo),
       title: normalizeOptionalText(context.title) ?? getFallbackTitle(insight),
-      updatedAt: now(),
+      updatedAt: getNextUpdatedAt(insight, now()),
     };
     const nextInsights = [...currentWorkspaceState.insights];
     nextInsights[insightIndex] = updatedInsight;
@@ -193,4 +193,21 @@ function normalizeOptionalCategory(value: string) {
 
 function getFallbackTitle(insight: Insight) {
   return insight.domain || insight.originalUrl;
+}
+
+function getNextUpdatedAt(insight: Insight, currentTime: string) {
+  const createdAt = Date.parse(insight.createdAt);
+  const previousUpdatedAt = Date.parse(insight.updatedAt);
+  const currentTimestamp = Date.parse(currentTime);
+  const nextTimestamp = Math.max(
+    Number.isFinite(createdAt) ? createdAt : Number.NEGATIVE_INFINITY,
+    Number.isFinite(previousUpdatedAt)
+      ? previousUpdatedAt + 1
+      : Number.NEGATIVE_INFINITY,
+    Number.isFinite(currentTimestamp)
+      ? currentTimestamp
+      : Number.NEGATIVE_INFINITY
+  );
+
+  return new Date(nextTimestamp).toISOString();
 }

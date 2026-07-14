@@ -1,5 +1,12 @@
 /* @vitest-environment jsdom */
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { useRef, useState } from 'react';
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -114,6 +121,7 @@ describe('InsightGrid', () => {
       </DesignSystemProvider>
     );
 
+    expect(document.activeElement).toBe(document.body);
     const editButton = screen.getByRole('button', { name: '수정' });
     editButton.focus();
     await user.keyboard('{Enter}');
@@ -122,6 +130,7 @@ describe('InsightGrid', () => {
     const memoInput = screen.getByRole('textbox', { name: '한 줄 메모' });
     const categoryInput = screen.getByRole('textbox', { name: '카테고리' });
 
+    expect(document.activeElement).toBe(titleInput);
     expect(screen.queryByRole('textbox', { name: /URL/ })).toBeNull();
     expect(screen.getByText('https://example.com/article')).not.toBeNull();
     expect(screen.getByRole('link', { name: '원문 열기' })).not.toBeNull();
@@ -140,6 +149,33 @@ describe('InsightGrid', () => {
       category: '  Design   Systems  ',
     });
     expect(screen.queryByRole('button', { name: '변경 저장' })).toBeNull();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: '수정' })
+    );
+  });
+
+  it('returns focus to the edit trigger when editing is canceled', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <DesignSystemProvider>
+        <InsightGrid
+          insights={[createInsight({ title: '취소할 편집' })]}
+          onUpdateInsight={() => ({ ok: true })}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '수정' }));
+    expect(document.activeElement).toBe(
+      screen.getByRole('textbox', { name: '제목' })
+    );
+
+    await user.click(screen.getByRole('button', { name: '취소' }));
+
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: '수정' })
+    );
   });
 
   it('keeps edit inputs after a write failure and retries without stale feedback', async () => {
@@ -199,6 +235,9 @@ describe('InsightGrid', () => {
     expect(
       within(cards[0]!).getByRole('textbox', { name: '제목' })
     ).not.toBeNull();
+    expect(document.activeElement).toBe(
+      within(cards[0]!).getByRole('textbox', { name: '제목' })
+    );
     expect(
       within(cards[1]!).queryByRole('textbox', { name: '제목' })
     ).toBeNull();
@@ -225,10 +264,16 @@ describe('InsightGrid', () => {
 
     await user.click(screen.getByRole('button', { name: '삭제' }));
     expect(screen.getByText(/삭제할까요/)).not.toBeNull();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: '삭제 확정' })
+    );
     await user.click(screen.getByRole('button', { name: '취소' }));
 
     expect(onDeleteInsight).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: '삭제 후보' })).not.toBeNull();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: '삭제' })
+    );
 
     await user.click(screen.getByRole('button', { name: '삭제' }));
     await user.click(screen.getByRole('button', { name: '삭제 확정' }));
@@ -242,6 +287,39 @@ describe('InsightGrid', () => {
 
     expect(onDeleteInsight).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('moves focus to the next card, then the library search after deletion', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <DesignSystemProvider>
+        <DeletionFocusHarness />
+      </DesignSystemProvider>
+    );
+
+    const firstCard = screen.getAllByRole('article')[0]!;
+    await user.click(within(firstCard).getByRole('button', { name: '삭제' }));
+    await user.click(
+      within(firstCard).getByRole('button', { name: '삭제 확정' })
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('article')).toHaveLength(1);
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: '수정' })
+      );
+    });
+
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+    await user.click(screen.getByRole('button', { name: '삭제 확정' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('article')).toBeNull();
+      expect(document.activeElement).toBe(
+        screen.getByRole('searchbox', { name: '보관함 검색' })
+      );
+    });
   });
 
   it('renders guidance instead of a link for an unsafe original URL', () => {
@@ -264,6 +342,31 @@ describe('InsightGrid', () => {
     );
   });
 });
+
+function DeletionFocusHarness() {
+  const [insights, setInsights] = useState([
+    createInsight({ id: 'first', title: '첫 카드' }),
+    createInsight({ id: 'second', title: '둘째 카드' }),
+  ]);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <>
+      <input aria-label="보관함 검색" ref={searchRef} type="search" />
+      <InsightGrid
+        insights={insights}
+        onDeleteInsight={(insightId) => {
+          setInsights((currentInsights) =>
+            currentInsights.filter((insight) => insight.id !== insightId)
+          );
+          return { ok: true };
+        }}
+        onDeletionFocusFallback={() => searchRef.current?.focus()}
+        onUpdateInsight={() => ({ ok: true })}
+      />
+    </>
+  );
+}
 
 function createInsight(overrides: Partial<Insight> = {}): Insight {
   return {

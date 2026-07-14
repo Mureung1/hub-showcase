@@ -111,6 +111,9 @@ describe('AuthenticatedWorkspace', () => {
       screen.queryByRole('heading', { name: '검색에 바로 잡힐 제목' })
     ).toBeNull();
     expect(persistedInsights).toEqual([]);
+    expect(document.activeElement).toBe(
+      screen.getByRole('searchbox', { name: '보관함 검색' })
+    );
 
     editReload.unmount();
     render(
