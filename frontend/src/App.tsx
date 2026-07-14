@@ -1,8 +1,7 @@
-import ServiceIntro from './components/ProjectInfo'
-import './App.css'
+import InterestSelect from './screens/InterestSelect'
 
 function App() {
-  return <ServiceIntro />
+  return <InterestSelect />
 }
 
 export default App
