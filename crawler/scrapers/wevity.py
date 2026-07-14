@@ -128,13 +128,39 @@ def fetch_posting(posting_id: int, section: str = "find") -> Optional[Dict]:
 
 
 def extract_date(text: str) -> Optional[str]:
-    """텍스트에서 마감일 추출 (YYYY-MM-DD 형식 반환)"""
-    # 패턴 1: YYYY-MM-DD
+    """텍스트에서 마감일 추출 (YYYY-MM-DD 형식 반환)
+
+    "마감", "접수 마감", "신청 마감" 키워드 근처 날짜를 우선 추출.
+    범위 형식 (A ~ B)에서는 마지막 날짜 추출.
+    """
+    # 패턴 1: "마감" 키워드 근처 날짜 찾기
+    deadline_pattern = r"[^.\n]*?마감[^.\n]*?(\d{4})-(\d{2})-(\d{2})|(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일"
+    for match in re.finditer(deadline_pattern, text, re.IGNORECASE):
+        if match.group(1):  # YYYY-MM-DD 형식
+            return f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
+        elif match.group(4):  # YYYY년 MM월 DD일 형식
+            year, month, day = match.group(4), match.group(5), match.group(6)
+            return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+
+    # 패턴 2: 범위 형식 (A ~ B에서 B 추출)
+    range_matches = re.findall(r"(\d{4})-(\d{2})-(\d{2})\s*~\s*(\d{4})-(\d{2})-(\d{2})", text)
+    if range_matches:
+        last_match = range_matches[-1]  # 마지막 범위
+        return f"{last_match[3]}-{last_match[4]}-{last_match[5]}"
+
+    # 패턴 3: 범위 형식 한글 (A년 B월 C일 ~ D년 E월 F일)
+    range_matches = re.findall(r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*~\s*(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일", text)
+    if range_matches:
+        last_match = range_matches[-1]
+        year, month, day = last_match[3], last_match[4], last_match[5]
+        return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+
+    # 패턴 4: 키워드 없으면 모든 날짜 중 첫 번째
     match = re.search(r"(\d{4})-(\d{2})-(\d{2})", text)
     if match:
         return f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
 
-    # 패턴 2: YYYY년 MM월 DD일
+    # 패턴 5: 한글 날짜 형식
     match = re.search(r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일", text)
     if match:
         year, month, day = match.groups()

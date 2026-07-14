@@ -7,12 +7,11 @@ const router = Router()
 const prisma = new PrismaClient()
 
 // GET /api/profile - 현재 유저의 프로필 조회
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', verifyAuth, async (req: AuthRequest, res) => {
   try {
-    // 테스트용: 토큰 없으면 404 반환
     const userId = req.userId
     if (!userId) {
-      return res.status(404).json({ error: '프로필을 찾을 수 없습니다' })
+      return res.status(401).json({ error: '인증이 필요합니다' })
     }
     const profile = await prisma.userProfile.findUnique({
       where: { userId },

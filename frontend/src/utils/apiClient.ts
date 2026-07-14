@@ -181,7 +181,7 @@ export const postingsApi = {
       offset: String(offset),
       category,
     })
-    return apiCall<{
+    return apiCall<ApiResponse<{
       postings: Posting[]
       pagination: {
         total: number
@@ -189,20 +189,103 @@ export const postingsApi = {
         offset: number
         hasMore: boolean
       }
-    }>(`/postings?${params}`, {
+    }>>(`/postings?${params}`, {
       method: 'GET',
     })
   },
 
   detail: async (id: string) => {
-    return apiCall<Posting>(`/postings/${id}`, {
+    return apiCall<ApiResponse<Posting>>(`/postings/${id}`, {
       method: 'GET',
     })
   },
 
   scrap: async (id: string) => {
-    return apiCall<{ isScrapped: boolean }>(`/postings/${id}/scrap`, {
+    return apiCall<ApiResponse<{ isScrapped: boolean }>>(`/postings/${id}/scrap`, {
       method: 'POST',
+    })
+  },
+}
+
+// 캘린더 API
+export interface CalendarStatus {
+  connected: boolean
+  email?: string
+  connectedAt?: string
+}
+
+export const calendarApi = {
+  getStatus: async () => {
+    return apiCall<ApiResponse<CalendarStatus>>('/calendar/status', {
+      method: 'GET',
+    })
+  },
+
+  oauthCallback: async (code: string) => {
+    return apiCall<ApiResponse<{ success: boolean }>>('/calendar/oauth-callback', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    })
+  },
+
+  sync: async (postingId: string) => {
+    return apiCall<ApiResponse<{ success: boolean; eventId: string }>>('/calendar/sync', {
+      method: 'POST',
+      body: JSON.stringify({ postingId }),
+    })
+  },
+
+  unsync: async (eventId: string) => {
+    return apiCall<ApiResponse<{ success: boolean }>>(`/calendar/events/${eventId}`, {
+      method: 'DELETE',
+    })
+  },
+}
+
+// 캘린더 이벤트 API
+export interface CalendarEventData {
+  id: string
+  title: string
+  type: 'EXAM' | 'PART_TIME' | 'OTHER'
+  dtstart: string
+  dtend: string
+  source: 'manual' | 'scrap-sync'
+}
+
+export const calendarEventsApi = {
+  list: async () => {
+    return apiCall<ApiResponse<CalendarEventData[]>>('/calendar-events', {
+      method: 'GET',
+    })
+  },
+
+  create: async (event: {
+    title: string
+    type: 'EXAM' | 'PART_TIME' | 'OTHER'
+    dtstart: string
+    dtend: string
+  }) => {
+    return apiCall<ApiResponse<CalendarEventData>>('/calendar-events', {
+      method: 'POST',
+      body: JSON.stringify(event),
+    })
+  },
+
+  update: async (id: string, data: Partial<{
+    title: string
+    type: 'EXAM' | 'PART_TIME' | 'OTHER'
+    dtstart: string
+    dtend: string
+  }>) => {
+    return apiCall<ApiResponse<CalendarEventData>>(`/calendar-events/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete: async (id: string) => {
+    return apiCall<ApiResponse<{ id: string }>>(`/calendar-events/${id}`, {
+      method: 'DELETE',
     })
   },
 }

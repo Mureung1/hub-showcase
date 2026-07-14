@@ -45,6 +45,11 @@ model User {
   email     String   @unique
   createdAt DateTime @default(now())
 
+  // Google Calendar 연동
+  googleAccessToken   String?
+  googleRefreshToken  String?
+  googleConnectedAt   DateTime?
+
   // Relations
   profile        UserProfile?
   calendarEvents CalendarEvent[]
@@ -149,6 +154,16 @@ model CalendarEvent {
   type              CalendarEventType
   dtstart           DateTime
   dtend             DateTime
+
+  // 상세 정보 (UI 개선)
+  isAllDay          Boolean           @default(false) // 하루 종일 여부
+  startTime         String?           // HH:mm 형식 (하루종일 false일 때만)
+  endTime           String?           // HH:mm 형식 (하루종일 false일 때만)
+  memo              String?           // 메모
+
+  // 7단계 스마트 매칭 관련
+  hideFromRecommendation Boolean      @default(false) // true면 이 기간에 추천 공고 숨김
+
   relatedPostingId  String?           // 스크랩 자동 동기화 시 연결
   source            String            @default("manual") // manual | scrap-sync
   createdAt         DateTime          @default(now())
@@ -160,6 +175,7 @@ model CalendarEvent {
 
   @@index([userId])
   @@index([dtstart, dtend])
+  @@index([hideFromRecommendation])
   @@map("calendar_events")
 }
 
@@ -170,6 +186,9 @@ model Scrap {
   postingId       String
   scrappedAt      DateTime @default(now())
   notifyEnabled   Boolean  @default(true)
+
+  // Google Calendar 연동
+  googleEventId   String?  // Google Calendar 이벤트 ID
 
   // Relations
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)

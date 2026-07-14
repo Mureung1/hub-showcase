@@ -128,16 +128,54 @@
 
 ---
 
-## 6단계 — 캘린더 연동 (FullCalendar)
+## 6단계 — 캘린더 연동 ✅ 백엔드 완료 (Google Calendar)
 
-- [ ] FullCalendar.js 설치 및 기본 캘린더 뷰 렌더링
-- [ ] 개인 일정 등록 폼 구현 (일정명, 시작일, 종료일, 유형: 시험/알바/기타)
-- [ ] 개인 일정 CRUD API 구현 (POST/GET/PATCH/DELETE /api/calendar-events)
-- [ ] 캘린더에 개인 일정 표시 (색상 구분: 시험기간/알바/기타)
-- [ ] 공고 마감일 캘린더 표시 로직 구현
-- [ ] 스크랩 시 공고 접수기간/마감일 자동 캘린더 등록 연동
-- [ ] 캘린더 월간/주간 뷰 전환 기능
-- [ ] 일정 클릭 시 상세 정보 표시
+### 6-A: FullCalendar.js 기본 (필수) ✅ 대부분 완료
+
+- [x] FullCalendar.js 설치 및 기본 캘린더 뷰 렌더링
+- [x] 개인 일정 등록 폼 구현 (일정명, 시작일, 종료일, 유형: 시험/알바/기타)
+- [x] 개인 일정 폼 UI 개선
+  - [x] "하루 종일" 체크박스
+  - [x] "이 기간에는 캘린더 추천 공고 숨기기" 옵션 (7단계 스마트 매칭에서 활용)
+  - [x] 메모 필드 추가
+  - [x] 시간 선택 입력 (하루종일 false일 때만 표시)
+  - [ ] 상단 버튼 (추가 / 수정) 구현 (선택)
+  - [ ] Google Calendar 동기화 버튼 (선택)
+- [x] 개인 일정 CRUD API 구현 (POST/GET/PATCH/DELETE /api/calendar-events)
+- [x] Prisma 스키마 확장 (isAllDay, startTime, endTime, memo, hideFromRecommendation 필드 추가)
+- [x] 캘린더에 개인 일정 표시 (색상 구분: 시험기간/알바/기타)
+- [x] 공고 마감일 캘린더 표시 로직 구현
+- [ ] 스크랩 시 공고 접수기간/마감일 자동 캘린더 등록 연동 (7-A에서 진행)
+- [x] 캘린더 월간/주간 뷰 전환 기능
+- [ ] 일정 클릭 시 상세 정보 표시 (일정 수정/삭제 UI 추가 필요)
+
+### 6-B: Google Calendar 연동 (선택 - 권장) ✅ 구현 완료
+
+- [x] Google Cloud Console 프로젝트 생성 & OAuth 2.0 설정 (사용자 수동)
+- [x] Google Calendar API 활성화 (사용자 수동)
+- [x] 프론트엔드: `@react-oauth/google` 라이브러리 설치
+- [x] 로그인 시 Google 계정 연동 (OAuth 플로우 구현)
+- [x] `googleapis` + `google-auth-library` 설치 (백엔드)
+- [x] 사용자 액세스 토큰 저장 (User 테이블 확장: googleAccessToken, googleRefreshToken, googleConnectedAt)
+- [x] Prisma 스키마 확장 (Scrap 모델에 googleEventId 추가)
+- [x] 공고 마감일 → Google Calendar 자동 생성 API 구현
+  - `POST /api/calendar/sync` (스크랩 시 트리거)
+  - 공고 제목 + 마감일 + 설명 (sourceUrl)
+- [x] 캘린더 이벤트 삭제 API (`DELETE /api/calendar/events/:eventId`)
+- [x] 스크랩 시 자동 Google Calendar 동기화 구현
+- [x] OAuth 콜백 처리 API (`POST /api/calendar/oauth-callback`)
+- [x] 캘린더 연동 상태 확인 API (`GET /api/calendar/status`)
+- [x] 마감 전 알림 설정 (D-1, D-3 notification 자동 생성)
+
+### 6-C: iCalendar (.ics) 내보내기 (선택 - 폴백)
+
+- [ ] 프론트엔드: 공고 목록 → .ics 파일 생성 함수
+- [ ] `ics` 라이브러리 설치
+- [ ] `GET /api/calendar/export.ics` 엔드포인트 구현
+  - 스크랩된 공고 또는 필터링된 공고 기준
+- [ ] 다운로드 버튼 UI (대시보드 우측 패널)
+- [ ] 구독 링크 생성 (`webcal://` 프로토콜)
+  - Google Calendar, Outlook, Apple Calendar 자동 구독 가능
 
 ---
 
@@ -169,7 +207,21 @@
 
 ---
 
-## 9단계 — 정책/지원금 카테고리 확장 (시간 여유 시)
+## 9단계 — 환경설정 + 프로필 수정 (필수)
+
+- [ ] 환경설정 페이지 레이아웃 구현 (사이드바 네비게이션)
+- [ ] 프로필 수정 페이지 구현 (기존 ProfileSetup과 동일 폼)
+  - 학과/전공, 학년, 거주지, 소득분위, 관심 분야 수정 가능
+- [ ] PATCH /api/profile 연동 (기존 API 활용)
+- [ ] 프로필 수정 완료 알림 UI
+- [ ] 계정 설정 페이지 (이메일, 비밀번호 변경 등 - 선택)
+- [ ] 로그아웃 버튼 (환경설정 페이지)
+- [ ] 스크랩 관리 페이지 (스크랩 목록, 삭제 기능)
+- [ ] 공지사항 또는 FAQ 페이지 (선택)
+
+---
+
+## 10단계 — 정책/지원금 카테고리 확장 (시간 여유 시)
 
 - [ ] 정책/지원금 사이트 크롤링 대상 조사 (1단계와 동일 프로세스)
 - [ ] 정책/지원금 전용 자격요건 파싱 규칙 정의 (소득분위 조건 등 추가 고려)
@@ -187,5 +239,5 @@
 - [ ] Backend Railway/Render 배포 설정
 - [ ] 환경 변수 (.env) 프로덕션 세팅
 - [ ] DB 마이그레이션 프로덕션 반영
-- [ ] 배포 후 전체 플로우 QA (프로필 등록 → 캘린더 → 필터링 → 스크랩 → 알림)
+- [ ] 배포 후 전체 플로우 QA (회원가입 → 프로필 등록 → 캘린더 → 필터링 → 스크랩 → 환경설정)
 - [ ] 발표용 데모 시나리오 스크립트 작성
