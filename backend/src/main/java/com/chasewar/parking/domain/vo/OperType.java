@@ -1,5 +1,6 @@
 package com.chasewar.parking.domain.vo;
 
+import java.util.Arrays;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -14,4 +15,11 @@ public enum OperType {
 
     private final String code;
     private final String description;
+
+    public static OperType fromCode(String code) {
+        return Arrays.stream(values())
+                .filter(operType -> operType.code.equals(code))
+                .findFirst()
+                .orElse(UNKNOWN);
+    }
 }

@@ -1,5 +1,6 @@
 package com.chasewar.parking.domain.vo;
 
+import java.util.Arrays;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -13,4 +14,11 @@ public enum PayType {
 
     private final String code;
     private final String description;
+
+    public static PayType fromCode(String code) {
+        return Arrays.stream(values())
+                .filter(payType -> payType.code.equals(code))
+                .findFirst()
+                .orElse((UNKNOWN));
+    }
 }
