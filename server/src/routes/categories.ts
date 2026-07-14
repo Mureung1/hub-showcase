@@ -7,8 +7,22 @@ import { DEFAULT_CATEGORY_TEMPLATE, TONE_COLORS } from '../constants.js'
 export const categoriesRouter = Router()
 categoriesRouter.use(requireAuth)
 
-function toResponse(category: { id: string; name: string; color: string; tone: string }) {
-  return { id: category.id, name: category.name, color: category.color, tone: category.tone }
+type CategoryWithVisibility = {
+  id: string
+  name: string
+  color: string
+  tone: string
+  visibility?: { shareGroupId: string }[]
+}
+
+function toResponse(category: CategoryWithVisibility) {
+  return {
+    id: category.id,
+    name: category.name,
+    color: category.color,
+    tone: category.tone,
+    visibleTo: (category.visibility ?? []).map((entry) => entry.shareGroupId),
+  }
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -20,9 +34,10 @@ function isValidTone(value: unknown): value is keyof typeof TONE_COLORS {
 }
 
 categoriesRouter.get('/', asyncHandler(async (req, res) => {
-  let categories = await prisma.category.findMany({
+  let categories: CategoryWithVisibility[] = await prisma.category.findMany({
     where: { userId: req.userId },
     orderBy: { createdAt: 'asc' },
+    include: { visibility: true },
   })
 
   // 회원가입 시점엔 카테고리를 만들지 않으므로, 처음 조회할 때 기본 카테고리를 만들어준다.
@@ -92,4 +107,43 @@ categoriesRouter.delete('/:id', asyncHandler(async (req, res) => {
     prisma.category.delete({ where: { id: existing.id } }),
   ])
   res.status(204).end()
+}))
+
+categoriesRouter.patch('/:id/visibility', asyncHandler(async (req, res) => {
+  const existing = await prisma.category.findUnique({ where: { id: req.params.id } })
+  if (!existing || existing.userId !== req.userId) {
+    res.status(404).json({ error: '존재하지 않는 카테고리입니다.' })
+    return
+  }
+
+  const body: unknown = req.body
+  if (typeof body !== 'object' || body === null) {
+    res.status(400).json({ error: '요청 본문이 필요합니다.' })
+    return
+  }
+
+  const { groupIds: rawGroupIds } = body as Record<string, unknown>
+  if (!Array.isArray(rawGroupIds) || !rawGroupIds.every((id) => typeof id === 'string')) {
+    res.status(400).json({ error: 'groupIds는 문자열 배열이어야 합니다.' })
+    return
+  }
+
+  const groupIds = [...new Set(rawGroupIds)]
+  if (groupIds.length > 0) {
+    const ownedCount = await prisma.shareGroup.count({ where: { id: { in: groupIds }, ownerId: req.userId } })
+    if (ownedCount !== groupIds.length) {
+      res.status(400).json({ error: '본인 소유의 그룹만 지정할 수 있습니다.' })
+      return
+    }
+  }
+
+  const [, , updated] = await prisma.$transaction([
+    prisma.categoryVisibility.deleteMany({ where: { categoryId: existing.id } }),
+    prisma.categoryVisibility.createMany({
+      data: groupIds.map((shareGroupId) => ({ categoryId: existing.id, shareGroupId })),
+    }),
+    prisma.category.findUniqueOrThrow({ where: { id: existing.id }, include: { visibility: true } }),
+  ])
+
+  res.json(toResponse(updated))
 }))

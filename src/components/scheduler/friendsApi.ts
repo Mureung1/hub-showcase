@@ -1,8 +1,12 @@
 import { request } from './apiClient'
-import type { FriendGroup, FriendRequestSummary, FriendSummary } from './types'
+import type { FriendGroup, FriendRequestSummary, FriendScheduleEntry, FriendSummary } from './types'
 
 export function fetchFriends() {
   return request<FriendSummary[]>('/api/friends')
+}
+
+export function fetchFriendSchedules(friendId: string) {
+  return request<FriendScheduleEntry[]>(`/api/friends/${friendId}/schedules`)
 }
 
 export function removeFriend(friendId: string) {

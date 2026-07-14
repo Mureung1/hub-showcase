@@ -92,6 +92,8 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
         {activeTab === 'calendar' && (
           <CalendarView
             manager={scheduleManager}
+            friends={friendsManager.friends}
+            groups={friendsManager.groups}
             selectedOwner={selectedOwner}
             onSelectOwner={setSelectedOwner}
             onCertify={addMyPost}

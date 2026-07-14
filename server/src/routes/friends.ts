@@ -136,6 +136,53 @@ friendsRouter.delete('/requests/:id', asyncHandler(async (req, res) => {
   res.status(204).end()
 }))
 
+friendsRouter.get('/:friendId/schedules', asyncHandler(async (req, res) => {
+  const { friendId } = req.params
+
+  const friendship = await prisma.friendship.findUnique({
+    where: { userId_friendId: { userId: req.userId!, friendId } },
+  })
+  if (!friendship) {
+    res.status(404).json({ error: '친구가 아닙니다.' })
+    return
+  }
+
+  const memberships = await prisma.shareGroupMember.findMany({
+    where: { friendUserId: req.userId!, group: { ownerId: friendId } },
+    select: { groupId: true },
+  })
+  const groupIds = memberships.map((membership) => membership.groupId)
+  if (groupIds.length === 0) {
+    res.json([])
+    return
+  }
+
+  const visibilities = await prisma.categoryVisibility.findMany({
+    where: { shareGroupId: { in: groupIds }, category: { userId: friendId } },
+    select: { categoryId: true },
+  })
+  const categoryIds = [...new Set(visibilities.map((entry) => entry.categoryId))]
+  if (categoryIds.length === 0) {
+    res.json([])
+    return
+  }
+
+  const schedules = await prisma.schedule.findMany({
+    where: { userId: friendId, categoryId: { in: categoryIds } },
+    include: { category: true },
+    orderBy: { date: 'asc' },
+  })
+
+  res.json(schedules.map((schedule) => ({
+    id: schedule.id,
+    date: schedule.date.toISOString().slice(0, 10),
+    title: schedule.title,
+    time: schedule.time ?? '',
+    categoryName: schedule.category.name,
+    tone: schedule.category.tone,
+  })))
+}))
+
 friendsRouter.delete('/:friendId', asyncHandler(async (req, res) => {
   const { friendId } = req.params
   const existing = await prisma.friendship.findUnique({

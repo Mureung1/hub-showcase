@@ -1,4 +1,4 @@
-import type { Friend, FriendPost, FriendScheduleEntry, ReactionMeta, ShareGroup } from './types'
+import type { Friend, FriendPost, ReactionMeta } from './types'
 
 export const friends: Friend[] = [
   { id: 'min', name: '민수', color: '#a9c8ec', eyes: 1 },
@@ -6,23 +6,6 @@ export const friends: Friend[] = [
   { id: 'study', name: '스터디 멤버', color: '#a9cfbd', eyes: 2 },
 ]
 
-export const friendSchedules: Record<string, FriendScheduleEntry[]> = {
-  min: [
-    { id: 101, date: '2026-07-08', title: '헬스장', time: '19:30', categoryName: '운동', tone: 'coral' },
-    { id: 102, date: '2026-07-14', title: '팀 프로젝트 회의', time: '13:00', categoryName: '약속', tone: 'violet' },
-    { id: 103, date: '2026-07-22', title: '아침 러닝', time: '07:00', categoryName: '운동', tone: 'coral' },
-  ],
-  yu: [
-    { id: 201, date: '2026-07-07', title: '카페 알바', time: '10:00', categoryName: '기타', tone: 'green' },
-    { id: 202, date: '2026-07-17', title: '성수 팝업', time: '18:30', categoryName: '약속', tone: 'violet' },
-  ],
-  study: [
-    { id: 301, date: '2026-07-14', title: '스터디 모임', time: '19:30', categoryName: '공부', tone: 'blue' },
-    { id: 302, date: '2026-07-23', title: '모의고사 풀이', time: '14:00', categoryName: '공부', tone: 'blue' },
-  ],
-}
-
-export const shareGroups: ShareGroup[] = ['절친', '스터디', '가족', '커플']
 export const weekLabels = ['일', '월', '화', '수', '목', '금', '토']
 
 export const reactionMeta: ReactionMeta[] = [

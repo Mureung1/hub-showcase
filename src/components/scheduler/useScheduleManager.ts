@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import * as api from './api'
-import type { Category, GroupTone, Schedule, ScheduleCategoryId, ShareGroup } from './types'
+import type { Category, GroupTone, Schedule, ScheduleCategoryId } from './types'
 
 export function dateKey(year: number, monthIndex: number, day: number) {
   return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
@@ -36,7 +36,7 @@ export function useScheduleManager() {
 
     api.fetchCategories()
       .then((loaded) => {
-        if (!cancelled) setCategories(loaded.map((category) => ({ ...category, visibleTo: [] })))
+        if (!cancelled) setCategories(loaded)
       })
       .catch(() => {
         if (!cancelled) setNotice('카테고리를 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
@@ -167,7 +167,7 @@ export function useScheduleManager() {
   const createCategory = async (name: string, tone: GroupTone) => {
     try {
       const created = await api.createCategory({ name, tone })
-      setCategories((current) => [...current, { ...created, visibleTo: [] }])
+      setCategories((current) => [...current, created])
       setNotice(`'${created.name}' 카테고리를 추가했어요.`)
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '카테고리를 추가하지 못했어요. 잠시 후 다시 시도해주세요.')
@@ -184,14 +184,20 @@ export function useScheduleManager() {
     }
   }
 
-  const toggleVisibleGroup = (categoryId: ScheduleCategoryId, group: ShareGroup) => {
-    setCategories((current) => current.map((category) => {
-      if (category.id !== categoryId) return category
-      const visibleTo = category.visibleTo.includes(group)
-        ? category.visibleTo.filter((name) => name !== group)
-        : [...category.visibleTo, group]
-      return { ...category, visibleTo }
-    }))
+  const toggleVisibleGroup = async (categoryId: ScheduleCategoryId, groupId: string) => {
+    const target = categories.find((category) => category.id === categoryId)
+    if (!target) return
+
+    const nextVisibleTo = target.visibleTo.includes(groupId)
+      ? target.visibleTo.filter((id) => id !== groupId)
+      : [...target.visibleTo, groupId]
+
+    try {
+      const updated = await api.updateCategoryVisibility(categoryId, nextVisibleTo)
+      setCategories((current) => current.map((category) => (category.id === categoryId ? updated : category)))
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '공개 대상을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')
+    }
   }
 
   return {

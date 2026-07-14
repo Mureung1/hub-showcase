@@ -1,7 +1,7 @@
 import { request } from './apiClient'
 import type { Schedule, ScheduleCategoryId } from './types'
 
-type CategoryResponse = { id: string; name: string; color: string; tone: Schedule['tone'] }
+type CategoryResponse = { id: string; name: string; color: string; tone: Schedule['tone']; visibleTo: string[] }
 
 export function fetchSchedules() {
   return request<Schedule[]>('/api/schedules')
@@ -20,6 +20,13 @@ export function createCategory(input: { name: string; tone: Schedule['tone'] }) 
 
 export function deleteCategory(id: string) {
   return request<void>(`/api/categories/${id}`, { method: 'DELETE' })
+}
+
+export function updateCategoryVisibility(id: string, groupIds: string[]) {
+  return request<CategoryResponse>(`/api/categories/${id}/visibility`, {
+    method: 'PATCH',
+    body: JSON.stringify({ groupIds }),
+  })
 }
 
 export function createSchedule(input: { categoryId: ScheduleCategoryId; date: string; title: string; time: string }) {
