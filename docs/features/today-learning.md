@@ -8,18 +8,18 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 
 ## 주요 사용자 액션
 
-- 이어서 학습하기: 현재 진행 중인 학습 세션으로 이동합니다.
+- 이어서 학습하기: 현재 생성된 오늘 미션을 `generated-first-mission`으로 넘겨 Learning Workspace IDE로 이동합니다.
 - 새 목표 만들기: 배우고 싶은 기술이나 목표를 입력하는 흐름을 시작합니다.
 - 계획 조정: 오늘의 학습 순서나 난이도를 조정합니다.
 - 전체 학습 목록 보기: 모든 학습 트랙 목록으로 이동합니다.
-- 오늘 복습 시작: 복습 예정 항목만 모아 진행합니다.
+- 오늘 복습 시작: 복습 미션인 `ai-review`를 넘겨 Learning Workspace IDE로 이동합니다.
 
 ## 화면 구성
 
 - Left Navigation: Today, Learning List, Review, Settings
 - Header: 오늘 학습, 날짜, 오늘 예정 요약
 - Today's Focus: 진행 중인 트랙, 현재 단계, 오늘 미션, 진행률, 이어서 학습하기
-- Today Queue: 개념 설명, 퀴즈, 실습, 실행, 리뷰 순서
+- Today Queue: 개념 설명, 퀴즈, 실습, 실행, 리뷰 순서와 각 단계별 워크스페이스 진입 링크
 - Learning List Preview: 트랙별 상태와 진행률
 - Review And Mistakes: 오늘 복습할 항목과 최근 오답
 
@@ -27,7 +27,7 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 
 - todayGoal: 오늘 학습 목표 문장
 - activeTrack: 현재 진행 중인 트랙 id, 제목, 상태, 진행률, 마지막 학습일, 다음 액션
-- todayQueue: 오늘 진행할 단계 목록, 각 단계의 상태와 예상 시간
+- todayQueue: 오늘 진행할 단계 목록, 각 단계의 id, 상태, 예상 시간
 - learningTracks: React, Python, FastAPI, BFS 등 학습 트랙 목록
 - reviewItems: 오늘 복습할 개념 목록
 - recentMistakes: 최근 오답과 취약 개념 목록
@@ -59,6 +59,13 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 - completed: 완료한 학습입니다. 다음 복습 일정이나 다음 추천 주제를 표시합니다.
 - not_started: 아직 시작하지 않은 학습입니다. CTA는 시작하기입니다.
 
+## Workspace 연결 규칙
+
+- 기본 CTA인 `학습 시작`과 `워크스페이스로 이동`은 `/workspace?mission=generated-first-mission`으로 이동합니다.
+- Today Queue의 각 단계는 `/workspace?mission=<todayQueue item id>` 형식으로 이동합니다.
+- `ai-review`는 복습과 코드 리뷰 미션으로 사용합니다.
+- Workspace는 전달받은 `mission` 값으로 현재 미션, 파일명, 커리큘럼 단계, 테스트 케이스 mock 상태를 결정합니다.
+
 ## 빈 상태
 
 진행 중인 학습이 없을 때는 Today's Focus에 목표 입력을 보여줍니다.
@@ -83,8 +90,8 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 ## 구현 우선순위
 
 1. 정적 mock 데이터 기반 Today Hub 화면을 구현합니다.
-2. 이어서 학습하기 클릭 시 Learning Workspace IDE 상태로 전환합니다.
-3. 학습 목록과 복습 항목은 실제 라우팅 없이 같은 화면 안에서 mock 리스트로 표현합니다.
+2. 이어서 학습하기와 학습 큐 항목 클릭 시 `mission` 쿼리를 포함해 Learning Workspace IDE로 전환합니다.
+3. 학습 목록과 복습 항목은 mock 데이터를 기반으로 보여주되, 복습 시작은 `ai-review` 미션으로 연결합니다.
 4. 실제 저장소, DB, AI 호출은 후속 단계에서 연결합니다.
 ## 테마 기준
 

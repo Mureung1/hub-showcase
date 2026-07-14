@@ -13,6 +13,7 @@ Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입�
 - 코드 리뷰 요청: 현재 코드를 AI 튜터에게 리뷰 요청합니다.
 - 다음 단계: 현재 단계를 완료하고 다음 커리큘럼 단계로 이동합니다.
 - 학습 목록: Today Learning Hub 또는 전체 학습 목록으로 돌아갑니다.
+- 미션 진입: Today Learning Hub에서 전달한 `mission` 쿼리에 맞는 학습 미션을 표시합니다.
 
 ## 화면 구성
 
@@ -24,6 +25,7 @@ Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입�
 
 ## 표시 데이터
 
+- selectedMissionId: URL의 `mission` 쿼리 값입니다. 값이 없으면 `generated-first-mission`을 사용합니다.
 - currentTrack: 트랙 id, 제목, 진행률, 남은 예상 시간
 - curriculumSteps: 커리큘럼 단계 목록과 각 단계 상태
 - activeStep: 현재 단계 제목, 미션, 통과 조건
@@ -64,6 +66,14 @@ Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입�
 - failed: 일부 테스트가 실패했습니다. 실패 이유와 힌트 보기, 다시 실행을 표시합니다.
 - timeout: 실행 제한 시간을 초과했습니다. timeout 5초 기준을 안내하고 코드 구조를 확인하게 합니다.
 
+## 미션 선택 규칙
+
+- `/workspace`처럼 `mission` 쿼리가 없으면 `generated-first-mission`을 기본 미션으로 사용합니다.
+- `generated-first-mission`은 현재 프로필 목표로 생성된 커리큘럼의 오늘 미션을 표시합니다.
+- 그 외 `mission` 값은 `todayQueue`의 item id와 매칭해 큐 기반 미션으로 표시합니다.
+- 매칭되는 큐 항목이 없으면 첫 번째 `todayQueue` 항목을 fallback으로 사용합니다.
+- `ai-review`는 복습/코드 리뷰 성격의 선택 미션으로 표시합니다.
+
 ## AI 튜터 패널 규칙
 
 - 개념 설명은 현재 단계와 직접 관련된 내용만 먼저 보여줍니다.
@@ -80,7 +90,7 @@ Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입�
 ## 구현 우선순위
 
 1. 정적 mock 데이터 기반 워크스페이스 레이아웃을 구현합니다.
-2. Today Hub의 이어서 학습하기에서 이 화면으로 전환합니다.
+2. Today Hub의 이어서 학습하기, 학습 큐, 복습 시작에서 전달한 `mission` 쿼리로 현재 미션을 선택합니다.
 3. 실행 버튼은 우선 mock 상태 전환으로 idle, running, failed, passed를 보여줍니다.
 4. 실제 코드 실행, Judge Service, AI 코드 리뷰는 후속 Electron/Main Process 단계에서 연결합니다.
 ## 테마 기준

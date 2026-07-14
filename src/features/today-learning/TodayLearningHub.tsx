@@ -196,7 +196,7 @@ export function TodayLearningHub() {
                   {displayName}님, 오늘은 {activeTrackName} 중심으로 {dailyMinutes}분 학습을
                   이어갑니다.
                 </span>
-                <Link to="/workspace">학습 시작</Link>
+                <Link to="/workspace?mission=generated-first-mission">학습 시작</Link>
               </div>
               <div className={styles.welcomeVisual} aria-label="오늘의 미션 미리보기">
                 <strong>{generatedPlan.todayMission.fileName}</strong>
@@ -219,7 +219,7 @@ export function TodayLearningHub() {
               <div className={styles.panelTitleRow}>
                 <div>
                   <h2 id="curriculum-title">커리큘럼 작성</h2>
-                  <p>문서를 따라가거나, 목표를 입력해 AI가 학습 순서를 짜게 합니다.</p>
+                  <p>문서를 따라가거나, 목표를 입력해 코듀가 학습 순서를 짜게 합니다.</p>
                 </div>
                 <div className={styles.tabs} role="tablist" aria-label="커리큘럼 작성 방식">
                   <button
@@ -272,7 +272,7 @@ export function TodayLearningHub() {
                       />
                     </label>
                     <button type="submit" disabled={generationStatus === 'generating'}>
-                      {generationStatus === 'generating' ? '작성 중' : 'AI로 작성'}
+                      {generationStatus === 'generating' ? '작성 중' : '코듀로 작성'}
                     </button>
                   </form>
                   {goalError ? (
@@ -339,7 +339,7 @@ export function TodayLearningHub() {
             <section className={styles.trackSection} aria-labelledby="tracks-title">
               <div className={styles.panelTitleRow}>
                 <h2 id="tracks-title">학습 목록</h2>
-                <Link to="/workspace">워크스페이스로 이동</Link>
+                <Link to="/workspace?mission=generated-first-mission">워크스페이스로 이동</Link>
               </div>
               <div className={styles.trackList}>
                 {learningTracks.map((track) => (
@@ -391,11 +391,11 @@ export function TodayLearningHub() {
                 {generatedQueue.map((item) => (
                   <li data-status={item.status} key={item.id}>
                     <time>{item.durationMinutes}분</time>
-                    <div>
+                    <Link to={'/workspace?mission=' + item.id}>
                       <span>{queueStatusLabels[item.status]}</span>
                       <strong>{item.title}</strong>
                       <p>{item.detail}</p>
-                    </div>
+                    </Link>
                   </li>
                 ))}
               </ol>
@@ -404,7 +404,7 @@ export function TodayLearningHub() {
             <section className={styles.reviewCard} aria-labelledby="review-title">
               <div className={styles.panelTitleRow}>
                 <h2 id="review-title">복습과 오답</h2>
-                <Link to="/workspace">복습 시작</Link>
+                <Link to="/workspace?mission=ai-review">복습 시작</Link>
               </div>
               <ul>
                 {[...reviewSummaryItems, ...recentMistakes].map((item) => (

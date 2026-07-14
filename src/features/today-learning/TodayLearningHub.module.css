@@ -1,7 +1,7 @@
 .page {
   min-height: 100vh;
   display: block;
-  background: #ececef;
+  background: transparent;
   color: #151924;
 }
 
@@ -742,23 +742,34 @@
   font-weight: 900;
 }
 
-.timelineList li > div {
+.timelineList li > a {
+  display: block;
   border-left: 4px solid #8a86f7;
   border-radius: 8px;
   padding: 10px 12px;
   background: #ffffff;
   box-shadow: 0 10px 24px rgb(15 23 42 / 6%);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
-.timelineList li[data-status='current'] > div {
+.timelineList li > a:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgb(15 23 42 / 10%);
+}
+
+.timelineList li[data-status='current'] > a {
   border-left-color: #ff8a1c;
 }
 
-.timelineList li[data-status='locked'] > div {
+.timelineList li[data-status='locked'] > a {
   border-left-color: #9fd8e2;
 }
 
-.timelineList li[data-status='optional'] > div {
+.timelineList li[data-status='optional'] > a {
   border-left-color: #f3b8d8;
 }
 
