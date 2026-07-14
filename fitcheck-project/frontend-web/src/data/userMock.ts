@@ -38,7 +38,16 @@ export interface GymPlace {
   rating: number;
   tags: string[];
   address: string;
+  lat: number;
+  lng: number;
 }
+
+/** 가상 사용자 위치 (부산 부산진구 서면 인근) */
+export const MOCK_USER_LOCATION = {
+  lat: 35.1578,
+  lng: 129.0592,
+  label: '내 위치 (서면)',
+} as const;
 
 export const MOCK_COURSES: Course[] = [
   {
@@ -247,7 +256,9 @@ export const MOCK_GYMS: GymPlace[] = [
     distanceKm: 0.4,
     rating: 4.8,
     tags: ['여성전용존', 'PT가능'],
-    address: '서울 마포구 연남동',
+    address: '부산 부산진구 부전동',
+    lat: 35.1586,
+    lng: 129.0568,
   },
   {
     id: 'g2',
@@ -256,7 +267,9 @@ export const MOCK_GYMS: GymPlace[] = [
     distanceKm: 0.7,
     rating: 4.9,
     tags: ['자세교정', '입문특화'],
-    address: '서울 마포구 합정동',
+    address: '부산 부산진구 전포동',
+    lat: 35.1561,
+    lng: 129.0624,
   },
   {
     id: 'g3',
@@ -265,7 +278,9 @@ export const MOCK_GYMS: GymPlace[] = [
     distanceKm: 1.1,
     rating: 4.7,
     tags: ['다이어트', '온라인상담'],
-    address: '서울 서대문구 연희동',
+    address: '부산 부산진구 부암동',
+    lat: 35.1612,
+    lng: 129.0549,
   },
   {
     id: 'g4',
@@ -274,7 +289,9 @@ export const MOCK_GYMS: GymPlace[] = [
     distanceKm: 1.4,
     rating: 4.5,
     tags: ['24시', '주차가능'],
-    address: '서울 마포구 망원동',
+    address: '부산 부산진구 양정동',
+    lat: 35.1671,
+    lng: 129.0678,
   },
 ];
 
