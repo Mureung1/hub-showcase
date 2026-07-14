@@ -10,3 +10,7 @@ spring:
   test:
     database:
       replace: none
+
+seoul:
+  api:
+    key: test-key
