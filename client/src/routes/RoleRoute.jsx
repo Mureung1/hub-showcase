@@ -1,7 +1,19 @@
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { getCurrentUserRole } from "../utils/authStorage";
+import { routePaths } from "./routePaths";
 
 function RoleRoute({ role }) {
-  // 로그인 기능이 연결되면 이 경계에서 로그인 여부와 사용자 역할을 검사합니다.
+  const location = useLocation();
+  const currentUserRole = getCurrentUserRole();
+
+  if (!currentUserRole) {
+    return <Navigate to={routePaths.landingLogin} replace state={{ from: location.pathname }} />;
+  }
+
+  if (currentUserRole !== role) {
+    return <Navigate to={routePaths.forbidden} replace />;
+  }
+
   return <Outlet context={{ requiredRole: role }} />;
 }
 
