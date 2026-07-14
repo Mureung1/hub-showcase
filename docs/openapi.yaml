@@ -226,7 +226,10 @@ paths:
     get:
       tags: [recommendations]
       summary: 저장된 추천 조회
-      description: 저장된 추천을 재조회한다. 추천 목록/상세 화면 새로고침용 — `items[]`에 상세 화면 필드까지 포함된다.
+      description: |
+        저장된 추천을 재조회한다. 추천 목록/상세 화면 새로고침용 — `items[]`에 상세 화면 필드까지 포함된다.
+        상세 화면 진입 시 해당 이슈의 LLM 분석(`issueSummary`/`requiredSkills`/`guide`)이 지연 생성·캐시되어
+        이후 조회부터 채워진다 (생성 전에는 null).
       operationId: getRecommendation
       parameters:
         - name: id
@@ -410,6 +413,30 @@ components:
           type: string
           description: 추천 이유 (사용자에게 표시되는 한글 문구)
           example: 주 언어(JavaScript)와 일치하고 good first issue 라벨이 있어요.
+        issueSummary:
+          type: string
+          nullable: true
+          description: |
+            LLM이 생성한 이슈 요약 (한글). 상세 조회 시 지연 생성되어 캐시된다 —
+            아직 생성 전이거나 LLM 호출 실패 시 null. (decisions.md 2026-07-14 참조)
+          example: 화면 폭이 좁을 때 차트 툴팁이 잘리는 버그로, 위치 계산에 뷰포트 경계 보정이 필요해요.
+        requiredSkills:
+          type: array
+          nullable: true
+          description: LLM이 추정한 필요 기술 목록. issueSummary와 함께 지연 생성
+          items:
+            type: string
+          example: [JavaScript, DOM]
+        guide:
+          type: array
+          nullable: true
+          description: LLM이 생성한 기여 시작 가이드 (단계별 한글 문구). issueSummary와 함께 지연 생성
+          items:
+            type: string
+          example:
+            - 레포를 포크하고 로컬에 클론해요.
+            - 툴팁 위치 계산 부분에 뷰포트 경계 조건을 추가해요.
+            - 작은 화면에서 동작을 확인한 뒤 PR을 올려요.
 
     Recommendation:
       type: object
