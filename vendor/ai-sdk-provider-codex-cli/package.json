@@ -47,13 +47,14 @@
     "format:fix": "prettier --write .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "validate": "npm run build && npm run typecheck && npm run format && npm run lint && npm run test",
+    "validate": "npm run verify:codex-pin && npm run build && npm run typecheck && npm run format && npm run lint && npm run test",
     "validate:docs": "node scripts/validate-doc-snippets.mjs",
     "validate:examples:app-server": "node scripts/validate-app-server-examples.mjs",
     "validate:full": "npm run validate && npm run validate:docs && npm run validate:examples:app-server",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "verify:codex-pin": "node scripts/verify-codex-pin.mjs"
   },
   "dependencies": {
     "@ai-sdk/provider": "^4.0.0",
@@ -61,7 +62,7 @@
     "jsonc-parser": "^3.3.1"
   },
   "optionalDependencies": {
-    "@openai/codex": "^0.144.0"
+    "@openai/codex": "0.144.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",

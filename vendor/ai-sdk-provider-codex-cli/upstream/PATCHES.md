@@ -2,7 +2,8 @@
 
 이 문서는 upstream diff를 복사하지 않고, donor baseline 이후의 local semantic patch와 검증 근거를 찾기 위한 index다. Commit hash는 Git history가 소유하며 각 patch commit은 가능하면 `Fork-Patch: <ID>` trailer를 사용한다.
 
-| Patch ID | Category | Paths | Intent | Verification | Upstream disposition | Supersedes |
-| -------- | -------- | ----- | ------ | ------------ | -------------------- | ---------- |
+| Patch ID  | Category | Paths                                                                                                                     | Intent                                                                                                                                      | Verification                                                                                                              | Upstream disposition                                                            | Supersedes |
+| --------- | -------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------- |
+| `FP-0001` | repin    | `package.json`, `package-lock.json`, `scripts/verify-codex-pin.mjs`, `upstream/codex-pin.json`, `references/openai-codex` | 격리 fork와 official source oracle을 exact stable `@openai/codex@0.144.4`에 고정하고 generated contract drift를 deterministic하게 검출한다. | `npm ci`, `npm run verify:codex-pin`, `npm run validate`, `npm run validate:docs`, `0.144.0...0.144.4` pinned source diff | AY-PLE-only pin/provenance gate. Donor의 open range로 upstream할 변경은 아니다. | —          |
 
-현재 source·test·package file에 적용된 local semantic patch는 없다. `UPSTREAM.md`와 `upstream/*`는 provenance metadata이며 donor source 변경으로 세지 않는다.
+`UPSTREAM.md`와 `upstream/*`는 provenance metadata다. Patch ID는 donor baseline 이후의 package/source semantic delta만 추적하며 commit identity를 대신하지 않는다.
