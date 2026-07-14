@@ -36,6 +36,7 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 - [첫 tracer와 module seam을 선택한다](tickets/008-choose-first-tracer-and-module-seams.md) — 최종 구조의 첫 conformance slice로 T0를 선택하고 Connection → ConversationRuntime → AYPLE adapter seam, source-guided method port, inventory-led coverage와 T0.1 command approval tracer를 채택한다.
 - [Native identity authority와 lifetime을 결정한다](tickets/009-decide-identity-and-authority.md) — Codex native identity를 authority로, persistent thread의 Codex-owned rollout/history가 제공되는 범위를 durable source로 유지하고 process-scoped `ThreadActor`만 live projection으로 두며, 별도 catalog·remap·generation invalidation 없이 ephemeral·history availability와 method별 identity 계약은 해당 tracer에서 확장한다.
 - [Thread·turn concurrency 정책을 결정한다](tickets/010-decide-concurrency-policy.md) — Connection ingress·RPC는 global semantic mutex 없이 진행하고 Runtime은 native `ThreadId`별 independent `ThreadActor`를 두며, same-thread active input은 explicit `turn/steer` tracer로 채택하고 cross-thread public independence는 별도 `T0-C` gate로 검증한다.
+- [Event delivery와 transcript recovery model을 결정한다](tickets/011-decide-delivery-and-recovery-model.md) — T0/T0-C/T0.1 adopted observation은 lossless-to-owner-or-explicit-failure로 처리하고 finite pre-admission bounds·process-attachment compact actor·method-specific duplicate policy로 scope-local failure를 격리하며 native history recovery와 browser replay는 owning tracer로 미룬다.
 
 ## Not yet specified
 
