@@ -3,3 +3,12 @@
 docs/wiki.md
 .claude/skills/docs-convention/
 .claude/skills/design-system/whitenoise-themes-example.png
+
+# next.js
+/node_modules
+/.next/
+/out/
+/build
+.env*
+.vercel
+npm-debug.log*
