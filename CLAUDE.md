@@ -64,7 +64,7 @@ Conventional Commits(`type: 영어 요약`, 예: `feat: add job recommendation f
 
 - `docs/plan.md`, `docs/wireframe.md` — 원본 기획서와 화면 흐름/IA(Mermaid 다이어그램 포함). `docs/wireframe.html`을 브라우저로 열면 다이어그램을 그림으로 볼 수 있다.
 - `docs/checklist.md` — 4주 작업분해 체크리스트. 새 기능을 시작하기 전에 여기서 관련 태스크(T1~T16)와 선행 조건을 확인한다.
-- `docs/prototype/` — 위 기획을 반영해 실제로 클릭해볼 수 있는 순수 HTML/CSS 정적 프로토타입([index.html](docs/prototype/index.html) → list → detail-1~3 → draft-1~3). React 구현 전에 화면 동작을 확인하고 싶을 때 참고. 이 안의 `plan.md`/`wireframe.md`는 루트 문서와 거의 동일한 최종본이다.
+- `docs/prototype_v2/` — 위 기획을 반영해 실제로 클릭해볼 수 있는 순수 HTML/CSS 정적 프로토타입([index.html](docs/prototype_v2/index.html) → list → detail-1~3 → draft-1~3). `docs/variables.css`를 직접 import해서 실제 디자인 토큰으로 스타일링한다 — React 구현 전에 화면 동작·디자인을 확인하고 싶을 때 참고. 이 안의 `plan.md`/`wireframe.md`는 루트 문서와 거의 동일한 최종본이다. (구버전 `docs/prototype/`은 variables.css를 쓰지 않는 임의 색상 초안이라 삭제했다.)
 - `docs/design-system.md` — 색상·버튼·입력창·카드·타이포·여백 등 확정된 디자인 토큰과 스펙. 화면을 구현할 때 값의 출처로 삼는다.
 - `docs/variables.css` — 위 디자인 시스템을 CSS 변수(`:root`)로 옮긴 파일. 실제 스타일링 시 여기 정의된 변수를 사용한다.
 - `docs/design-skill.md` — 새 화면을 디자인/구현할 때 지켜야 할 원칙과 일관성 체크리스트. 화면을 만들고 나면 이 문서의 체크리스트로 검토한다.
