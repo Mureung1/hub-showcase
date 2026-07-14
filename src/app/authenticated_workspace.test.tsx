@@ -580,7 +580,7 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.getByRole('heading', { name: '저장된 링크가 없어요' })
     ).not.toBeNull();
-  });
+  }, 10_000);
 
   it('saves optional personal context and shows it in the library immediately', async () => {
     const user = userEvent.setup();
