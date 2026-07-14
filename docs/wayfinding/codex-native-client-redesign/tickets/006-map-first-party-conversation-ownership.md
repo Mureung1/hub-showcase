@@ -4,7 +4,7 @@
 
 - Type: research
 - State: resolved
-- Blocked by: tickets/003-pin-upstream-source-provenance.md
+- Blocked by: [Upstream source provenance를 장기 검증 가능하게 pin한다](003-pin-upstream-source-provenance.md)
 
 ## Question
 
@@ -31,4 +31,4 @@ Pinned `openai/codex`의 core, TUI와 exec에서 native thread/task identity, pe
 
 Upstream Rust tests는 실행하지 않고 attested exact commit의 source와 checked-in tests를 정적 검토했다. Empty startup interrupt, A/B pre-primary interleaving, overflow ordering, unload failure/reattach와 persistence gap의 executable oracle은 [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md)가 소유한다.
 
-Exact-pin source conformance, repository Standards와 architecture decision boundary를 독립적으로 재리뷰했고 최종 P1/P2/P3 finding은 모두 0건이었다. Source citation의 파일·line range와 Wayfinder local link도 pinned checkout과 현재 tree에서 검증했다.
+Exact-pin source conformance, repository Standards와 아키텍처 의사결정 범위를 독립적으로 재리뷰했고 최종 P1/P2/P3 finding은 모두 0건이었다. Source citation의 파일·line range와 Wayfinder local link도 pinned checkout과 현재 tree에서 검증했다.

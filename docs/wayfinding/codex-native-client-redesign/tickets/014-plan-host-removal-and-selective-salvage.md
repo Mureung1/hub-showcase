@@ -22,14 +22,14 @@ Current integration history와 native Codex app-data를 훼손하지 않으면�
 
 기존 `HeadlessCodexClientHost`, `ProductRuntimeLayout`, `CodexStdioTransport` Interface를 새 foundation의 계층으로 유지하거나 compatibility facade로 감싸지 않는다. 새 `CodexAppServerConnection`과 `CodexConversationRuntime`을 legacy 경로와 병행 구현하고 source conformance를 통과시킨 뒤 legacy surface를 한 방향으로 제거한다.
 
-| Disposition | 대상 |
+| 처리 방침 | 대상 |
 | --- | --- |
-| 반드시 보존 | External appData와 repository `.ay-ple/runtime-codex`의 native state·rollout/history·native identity, `CodexRawClient`·`CodexRuntimeAdapter`·Runtime Harness API/history/Inspector, `withFakeCodexAppServer`, generated schema와 pinned provenance |
+| 반드시 보존 | External appData와 repository `.ay-ple/runtime-codex`의 native state·rollout/history·native identity, `CodexRawClient`·`CodexRuntimeAdapter`·Runtime Harness Interface/history/Inspector, `withFakeCodexAppServer`, generated schema와 pinned provenance |
 | Primitive 단위로 재검증해 이식 | Root canonicalization·containment·overlap, package binary/pin·runtime-home preparation, exact typed ID parser, generated validator wiring, child/JSONL/kill·reap mechanics와 actual-child journal/temp cleanup pattern |
-| 새 contract로 교체 | External prepared process/workspace 분리, single ingress와 direction-aware exact demux, single serialized outbound JSONL writer/arbiter, unknown-outcome/tail-aware terminal, finite-capacity boundary와 bounded late sink, per-thread actor와 Server RequestId once-only lease |
+| 새 contract로 교체 | External prepared process/workspace 분리, single ingress와 direction-aware exact demux, single serialized outbound JSONL writer/arbiter, unknown-outcome/tail-aware terminal, 유한 용량 제한과 bounded late sink, per-thread actor와 Server RequestId once-only lease |
 | Compatibility 없이 제거 | Host generation/ref/global sequence/subscription/failure policy, Host root export·전용 fake/test, old observation queue/timeout/`dismiss()`/Server ID reuse semantics, ignored stale package `dist` output |
 
-### Migration 순서를 고정한다
+### 이전 순서를 고정한다
 
 1. Coverage ledger v2와 tracked output을 건드리기 전에 실패하는 safe `verify`/A-B staged generation/two-target promotion을 먼저 구현한다.
 2. Current 8개 `raw-wrapper`를 `runtime-harness`, 2개 `client-host`를 transitional `legacy-client-host`로 옮기고 T0·T0-C·T0.1 coverage를 `planned`로 기록한다. 모든 sparse row의 adoption·note는 row별 evidence로 유지/변경 사유를 남기며 product-driven/non-tracer row를 foundation readiness로 승격하지 않는다.

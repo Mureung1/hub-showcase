@@ -48,8 +48,8 @@ Process-lifetime `RequestId` tombstone, global causal ordering, contradiction la
 | --- | --- |
 | 그대로 보존 | Exact-pin generated protocol output. 기존 provenance 문서는 implementation 전 evidence로 별도 보존하며 validator·contract·generator implementation은 이 분류에 포함하지 않는다. |
 | 추출·개조 | Response/notification validator·contract와 safe generator, method ledger renderer의 pure extraction/pin check, `CodexStdioTransport`의 child·sole ingress·JSONL envelope·exact typed ID·pending settlement·cleanup primitive, `ProductRuntimeLayout`의 root/pin/runtime-home preparation, fake stdio의 process/journal/temp cleanup scaffolding과 test intent |
-| Runtime Harness 전용 보존 | `CodexRawClient`, `CodexRuntimeAdapter`, status/smoke와 각 package/server test, 기존 fake App Server와 이를 소비하는 server/Inspector diagnostic tests. Foundation conformance나 ledger integration 근거로 승격하지 않는다. |
-| Compatibility 없이 제거 | 새 gate 이후 `HeadlessCodexClientHost` Interface/state machine/root export/fake/tests, generation/ref/global subscriber policy, legacy transport의 settled identity retention·global observation queue·`dismiss()`/reuse semantics와 이를 고정한 oracle |
+| Runtime Harness 전용 보존 | `CodexRawClient`, `CodexRuntimeAdapter`, status/smoke, `capability-slots.ts`·test와 root `.`의 해당 export block, `./capabilities`, 기존 fake App Server와 `./testing` subpath, 이를 소비하는 server/Inspector diagnostic path. Foundation conformance나 ledger integration 근거로 승격하지 않는다. |
+| Compatibility 없이 제거 | 새 gate 이후 `HeadlessCodexClientHost` Interface/state machine/root export/fake/tests, generation/ref/global subscriber policy, product-named layout root export, legacy transport의 settled identity retention·global observation queue·`dismiss()`/reuse semantics, `./testing`의 old stdio re-export와 이를 고정한 oracle |
 
 새 Connection은 old transport나 RawClient를 감싸지 않는다. Verified primitive와 test intent만 새 owner로 옮기는 replace-don't-layer migration을 사용한다.
 
@@ -76,5 +76,7 @@ Fixed point `1ee4c3e3` 이후 draft `0e39117f`를 검토하고, findings를 `194
 | Spec | Generated output/provenance, validators/generator/renderer와 관련 tests가 한 분류에 섞인 1건을 code-unit별 네 범주로 분리했다. | 0 findings. Ticket 019 범위와 one-ticket-per-session을 지키며 runtime code·ledger·generated inventory는 변경하지 않았다. |
 
 `git diff --check`와 변경한 Markdown의 local link·zero-width 검사를 통과했다. Repository 전체 runtime gate는 코드 변경이 없는 이 Wayfinder correction에서 실행하지 않고 후속 implementation checkpoint에 남긴다.
+
+`src/index.ts`와 package export map은 파일 전체가 아니라 symbol/subpath별로 분류했다. Root `.`는 보호된 Runtime Harness symbol만 남기고, `./capabilities`와 fake App Server를 제공하는 `./testing`은 유지한다. Product-named layout과 Host root block, `./testing`의 old stdio re-export는 각 replacement gate 뒤 제거하며 새 `./conversation`은 Runtime Interface가 구현된 checkpoint에 별도로 추가한다. 실제 보호 consumer는 server capability/status/adapter path와 Inspector capability panel이고 새 foundation consumer가 아니다.
 
 이 ticket은 문서와 migration 처리 방침만 교정했으며 runtime code, decisions JSON과 generated inventory의 integration status를 변경하지 않았다. 다음 frontier는 Ticket 016 architecture readiness review다.

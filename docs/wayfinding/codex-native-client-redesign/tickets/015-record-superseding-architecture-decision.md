@@ -16,7 +16,7 @@ ADR은 decisions JSON/generated inventory coverage ledger, lifecycle fact/source
 
 ## Answer
 
-[ADR 0010 — Codex App Server 통합을 Connection과 ConversationRuntime으로 분리한다](../../../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)를 채택한다. 이 ADR은 모든 capability를 한곳에 둔 `HeadlessCodexClientHost` 경계를 호환성 목표 없이 대체하고, 다음 운영 의존 방향을 foundation 목표로 고정한다.
+[ADR 0010 — Codex App Server 통합을 Connection과 ConversationRuntime으로 분리한다](../../../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)를 채택한다. 이 ADR은 모든 capability를 한곳에 둔 `HeadlessCodexClientHost` Seam을 호환성 목표 없이 대체하고, 다음 운영 의존 방향을 foundation 목표로 고정한다.
 
 ```text
 CodexAppServerConnection → CodexConversationRuntime
@@ -24,9 +24,9 @@ CodexAppServerConnection → CodexConversationRuntime
 
 ### Source 기반 책임과 근거 권위를 분리한다
 
-| 경계 | 단일 책임 |
+| Seam | 단일 책임 |
 | --- | --- |
-| 외부 준비/harness 경계 | 준비된 process·workspace capability, three-root validation과 launcher 정책. 운영 runtime module이나 Codex identity authority가 아니다. |
+| 외부 준비/harness Seam | 준비된 process·workspace capability, three-root validation과 launcher 정책. 운영 runtime module이나 Codex identity authority가 아니다. |
 | `CodexAppServerConnection` | Child·stdio lifecycle, 단일 JSONL ingress, generated validation, 방향과 exact `RequestId`를 구분하는 demux, 직렬화된 outbound writer, transport/process terminal과 pending RPC settlement |
 | `CodexConversationRuntime` | Native thread·turn·item identity, `ThreadId`별 process 범위 owner, 채택한 method의 response/notification convergence·correlation·semantic terminal |
 
@@ -51,7 +51,7 @@ Generated schema는 wire shape를, 같은 정확한 pin의 Rust source/tests와 
 ### Review checkpoint
 
 - Source: 0 findings. Exact-pin 근거의 과장 없이 generated schema, Rust source/tests, ledger, unit/fake/live의 권위를 분리했고, Connection → Runtime owner와 AY-PLE 강화 계약, T0·T0-C·T0.1 이후 확장 경계가 완료된 source 결정과 일치한다.
-- Standards: 0 findings. 문서 정본을 먼저 갱신하고 현재 기존 구현과 채택한 목표를 분리했으며, 일반 설명어를 한국어로 정리했다. 공개 적합성 test는 ConversationRuntime Interface를 사용하되 package 내부 unit test가 reducer·actor·writer invariant를 직접 검증할 수 있는 경계도 유지한다.
+- Standards: 0 findings. 문서 정본을 먼저 갱신하고 현재 기존 구현과 채택한 목표를 분리했으며, 일반 설명어를 한국어로 정리했다. 공개 적합성 test는 ConversationRuntime Interface를 사용하되 package 내부 unit test가 reducer·actor·writer invariant를 직접 검증할 수 있는 Seam도 유지한다.
 - Spec: 0 findings. ADR 0008만 역사화하고 기존 ADR 0005–0007·0009를 보존했으며, 기존 spec/Tickets 004–010, 색인, 개발 백로그, Product Brief, package README와 구현 지도의 처리 방침이 Ticket 015 요구와 일치한다. 제품 adapter는 foundation 차단 조건으로 재유입되지 않았다.
 
 검토 기준점은 `0b29855d4856d1271b90366e91092d043c663c2c`이며 claim 커밋 `332745c0`과 현재 Ticket 015의 미커밋 변경분을 독립 검토했다. 검토 중 발견한 과도한 내부 test 결합 금지와 한국어 문서 규칙 위반은 ADR과 소비 문서에 환류한 뒤 재검토했다. 로컬 Markdown link와 `git diff --check`도 통과했다.

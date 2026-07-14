@@ -57,12 +57,38 @@ Generated validation 자체는 JavaScript external Seam의 hardening이지만 fa
 | `scripts/render-codex-app-server-methods.ts`와 tests | upstream behavior에 맞춰 추출·개조 | Method extraction, direction collision과 pin check의 pure test intent | Legacy `raw-wrapper | client-host | web-adapter | product-ui` taxonomy와 direct output write를 ledger v2·safe promotion으로 교체한다. |
 | `src/stdio-transport.ts` | upstream behavior에 맞춰 primitive를 추출·개조 | Child spawn, sole `readline` ingress, JSONL envelope classification, exact string/number identity key, generated validators, pending rejection과 kill/reap mechanics | 기존 class를 Connection 아래에 감싸지 않는다. Completed/timed-out identity retention, identity-limit terminal, unknown/duplicate global failure, count-only raw observation queue, silent `dismiss()`, Server ID reuse contract와 writer 비직렬화를 새 계약으로 승격하지 않는다. |
 | `src/stdio-transport.test.ts` | test intent를 선별 이식 | Exact typed ID·direction, schema, malformed envelope, actual child loss와 cleanup fixture | Tombstone, unknown/late global failure, sequential Server ID reuse와 `dismiss()` oracle은 삭제·재작성한다. 새 test는 `CodexAppServerConnection` Interface와 package-private router/writer Seam을 검증한다. |
-| `src/raw-client.ts`, `src/adapter.ts`, `src/status.ts`, `src/smoke.ts`와 각 package/server test | developer-only Runtime Harness에 보존 | 현재 server/Inspector의 single-run diagnostic path, parity regression과 live smoke | `String(id)` routing, raw/unbounded notification queue와 broad shallow wrappers를 production Connection/Runtime 적합성 근거로 승격하지 않는다. Foundation primitive를 이 class 위에 계층화하지 않는다. |
-| `src/testing/fake-codex-app-server.ts`와 이를 소비하는 adapter/server test | developer-only Runtime Harness에 보존 | 현재 adapter/server parity test와 journal/temp cleanup | Response-first one-shot scenario를 T0/T0-C/T0.1 conformance oracle로 사용하지 않는다. |
+| `src/raw-client.ts`, `src/adapter.ts`, `src/status.ts`, `src/smoke.ts`와 각 package/server test | developer-only Runtime Harness에 보존 | 현재 server/Inspector의 single-run diagnostic path, parity regression과 live smoke. `resolvePackageCodexBinPath`는 generation script도 사용하는 developer tooling이다. | `String(id)` routing, raw/unbounded notification queue와 broad shallow wrappers를 production Connection/Runtime 적합성 근거로 승격하지 않는다. Foundation primitive를 이 class 위에 계층화하지 않는다. |
+| `src/capability-slots.ts`와 `src/capability-slots.test.ts` | developer-only Runtime Harness에 보존 | Generated method type에 맞춘 engine-inspection metadata, `productized: false` 표시와 defensive-copy oracle | Capability slot의 method 존재·status를 foundation adoption, semantic owner나 ledger conformance 근거로 승격하지 않는다. |
+| `src/testing/fake-codex-app-server.ts` 자체 fixture·scenario·debug helper와 이를 소비하는 package/server test | developer-only Runtime Harness에 보존 | 현재 raw-client/adapter/status/server parity test와 journal/temp cleanup | Response-first one-shot scenario를 T0/T0-C/T0.1 conformance oracle로 사용하지 않는다. 파일 상단의 old fake stdio re-export는 아래 export 처리 방침에 따라 별도로 제거한다. |
 | `src/testing/fake-codex-stdio-transport.ts` | upstream behavior에 맞춰 scaffolding을 추출·개조 | Actual child spawn, journal, temp directory와 cleanup/fault injection pattern | Legacy transport scenario strings, tombstone/reuse/`dismiss()` 의미는 버린다. 새 fake는 TypeScript build/typecheck 범위 안의 typed T0/T0-C/T0.1 scenario table을 사용한다. |
 | `src/product-runtime-layout.ts`와 tests | external preparation/harness로 추출·개조 | Root canonicalization·containment·overlap, package binary/pin 검증, runtime-home preparation과 깊은 filesystem oracle | Product-named root Interface를 Connection/Runtime protocol contract로 두지 않는다. 새 prepared process/workspace capability가 선 뒤 기존 root export를 제거한다. |
 | `src/headless-codex-client-host.ts`, root Host exports, `src/testing/fake-headless-codex-client-host.ts`와 Host tests | compatibility 없이 제거 | Initialize→initialized handshake와 cleanup test intent만 새 owner test로 옮긴다. | Generation/ref/global sequence/subscriber/failure mapper, permanent Host failure, inbound request `dismiss()`와 Host self-oracle 전체를 제거한다. Durable consumer가 없으므로 compatibility facade를 만들지 않는다. |
 | 무시된 `dist`와 stale build artifact | generated build output로만 취급 | Guarded clean build 결과 | Source owner나 compatibility evidence로 사용하지 않고 교체 뒤 removed symbol이 없는지 검사한다. |
+
+### Root와 package export의 symbol별 처리
+
+`src/index.ts`와 `package.json#exports`는 파일 전체를 한 분류로 묶지 않고 실제 export block과 subpath별로 처리한다.
+
+| 현재 export | 분류 | 실제 처리 |
+| --- | --- | --- |
+| Root `.`의 `CodexRuntimeAdapter`와 options, `readCodexRuntimeStatus`·config/status types, `CodexRawClient`·runtime-home/smoke helper와 raw types | developer-only Runtime Harness에 보존 | `apps/server`와 package parity/status/raw tests가 계속 사용하는 Harness Interface다. 새 Connection/Runtime 구현 기반이나 제품 Interface로 확장하지 않는다. |
+| Root `.`의 `listCodexCapabilitySlots`, `CodexCapabilitySlot`, `CodexCapabilitySlotStatus`와 `./capabilities` subpath | developer-only Runtime Harness에 보존 | Server의 capability endpoint와 Inspector의 type/UI가 사용하는 engine-inspection Interface다. Root와 explicit subpath를 모두 유지하되 foundation coverage로 세지 않는다. |
+| Root `.`의 `prepareProductRuntimeLayout`, `ProductRuntimeLayoutError`와 layout types | external preparation/harness로 추출·개조한 뒤 기존 export 제거 | 검증된 root·pin·runtime-home primitive를 새 prepared capability 뒤로 옮긴 다음 product-named symbol을 root에서 제거한다. |
+| Root `.`의 `HeadlessCodexClientHost`, Host error와 snapshot/event/subscription/options/status types | compatibility 없이 제거 | T0·T0-C·T0.1과 full regression gate 뒤 source와 같은 checkpoint에서 root export block을 제거한다. |
+| `./testing`의 `withFakeCodexAppServer`와 current fake App Server types/helpers | developer-only Runtime Harness에 보존 | Adapter/server parity consumer가 계속 사용한다. |
+| `./testing`이 현재 fake App Server file을 통해 재export하는 `withFakeCodexStdioTransport`와 관련 types | upstream behavior에 맞춰 scaffolding을 추출·개조한 뒤 기존 export 제거 | 새 typed conformance fake에 journal/temp/actual-child pattern을 옮긴 뒤 old transport와 함께 re-export만 제거한다. `./testing` subpath 자체는 유지한다. |
+| 아직 없는 `./conversation` subpath | 후속 implementation에서 새로 추가 | Existing code-unit 재사용 분류가 아니다. 새 Runtime Interface가 gate를 통과한 checkpoint에 development/types/default export를 함께 추가한다. |
+
+보호할 실제 consumer는 다음과 같다.
+
+| Consumer | 보존하는 경로 | 제한 |
+| --- | --- | --- |
+| `apps/server/src/server.ts`와 `server.test.ts` | Root `.`의 adapter/status/raw option/capability exports와 `/api/runtime/codex/capabilities` regression | Developer Runtime Harness로 유지하며 ConversationRuntime consumer로 전환하지 않는다. |
+| `apps/server/src/codex-parity.ts`·tests | Root `.`의 status/adapter와 `./testing` fake App Server | 기존 Harness parity oracle로만 유지한다. |
+| `apps/inspector/src/App.tsx` | `./capabilities`의 `CodexCapabilitySlot`, capability fetch/state/panel | Engine inspection UI로 유지하며 productized runtime state나 foundation readiness 표시로 해석하지 않는다. |
+| `packages/runtime-codex`의 raw-client/adapter/status/capability tests | Root `.`와 `./testing`의 보호된 Harness symbol | Legacy Host/layout/transport 전용 oracle과 분리해 계속 실행한다. |
+
+Inspector capability consumer에는 별도 behavior test가 없으므로 현재 보호 gate는 Inspector build/typecheck다. Server endpoint의 behavior는 `server.test.ts`가 고정한다.
 
 현재 코드에 `CodexConversationRuntime`, `ThreadActor`, contradiction/poison 구현은 아직 없다. 따라서 해당 강화 정책은 code removal이 아니라 설계·spec으로 승격하지 않도록 문서를 교정하는 대상이다. 실제 code에서 제거할 과잉 정책은 주로 `CodexStdioTransport`의 settled Client identity retention과 이를 고정한 tests다.
 

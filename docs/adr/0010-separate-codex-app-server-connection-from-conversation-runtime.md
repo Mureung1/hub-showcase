@@ -48,9 +48,9 @@ CodexAppServerConnection → CodexConversationRuntime
 | Upstream client를 그대로 import하거나 Rust/Python을 줄 단위로 복사한다 | 거절 | Pinned npm package는 재사용 가능한 TypeScript stdio client를 export하지 않고, Python package를 production dependency로 채택한 것도 아니며 AY-PLE external stdio Seam도 다르다. Rust sidecar는 Connection을 줄일 수 있는 후속 대안이지 현재 blocker가 아니다. |
 | 향후 method와 제품/browser 계약을 한 번에 일반화한다 | 거절 | 사용하지 않는 method와 제품 case를 선제 고정하고 이후 Codex 발전 방향을 흡수하기 어렵게 만든다. |
 
-## 결과와 경계
+## 결과와 Seam
 
-- ADR 0008의 Host 경계는 호환성 facade 없이 대체한다. [제거·선별 재사용 계획](../wayfinding/codex-native-client-redesign/tickets/014-plan-host-removal-and-selective-salvage.md)에 따라 교체 적합성을 통과한 뒤 기존 Host와 자체 oracle을 한 방향으로 제거한다.
+- ADR 0008의 Host Seam은 호환성 facade 없이 대체한다. [제거·선별 재사용 계획](../wayfinding/codex-native-client-redesign/tickets/014-plan-host-removal-and-selective-salvage.md)에 따라 교체 적합성을 통과한 뒤 기존 Host와 자체 oracle을 한 방향으로 제거한다.
 - 기존 Runtime Harness와 native Codex app-data는 보존한다. 완료된 layout·transport 구현은 새 owner의 계약과 일치하는 primitive 근거만 선별 재사용한다.
 - TUI UI·키 입력·표현 정책, Exec 전용 정책, 사용하지 않는 App Server method, ACP·다중 엔진 abstraction은 foundation에 포팅하지 않는다.
 - `AYPLE adapter`, browser transport, `ModelingInvocation`/`ModelingRun`, 제품별 sandbox·approval 정책과 UX는 foundation의 하위이며 현재 semantic owner나 준비 gate가 아니다. 제품 조합 결정은 [ADR 0007](0007-use-native-codex-composition-for-product-actions.md)이 계속 소유한다.

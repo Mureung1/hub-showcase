@@ -4,7 +4,7 @@
 
 - Type: research
 - State: resolved
-- Blocked by: tickets/003-pin-upstream-source-provenance.md
+- Blocked by: [Upstream source provenance를 장기 검증 가능하게 pin한다](003-pin-upstream-source-provenance.md)
 
 ## Question
 
@@ -34,4 +34,4 @@ Core·TUI·exec의 native thread/turn/item authority는 [Core·TUI·exec convers
 
 Exact-pin production source·checked-in test와 test helper를 정적으로 대조했으며 upstream Rust test suite와 live subprocess probe는 재실행하지 않았다. Full stdout pipe, partial-spawn failure, stdout EOF·stdin write failure·child exit 경합은 upstream test가 고정하지 않으므로 [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md)의 fake-child oracle로 남겼다.
 
-최종 독립 재리뷰에서 source conformance, repository Standards, skeptical decision boundary 세 축의 P1·P2·P3 finding은 모두 0건이었다.
+최종 독립 재리뷰에서 source conformance, repository Standards, skeptical 의사결정 범위 세 축의 P1·P2·P3 finding은 모두 0건이었다.
