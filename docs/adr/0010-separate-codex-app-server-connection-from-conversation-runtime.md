@@ -8,7 +8,7 @@
 
 AY-PLE은 package가 소유한 정확한 Codex pin의 generated protocol과 같은 pin의 first-party external client·UI runtime·method source/tests를 함께 근거로 삼아 외부 TypeScript App Server client를 구현한다. 현재 근거가 된 package·source 연결은 [upstream source provenance](../wayfinding/codex-native-client-redesign/assets/003-upstream-source-provenance.md)가, first-party behavior와 현재 코드의 처리 방침은 [port·재사용 감사](../wayfinding/codex-native-client-redesign/assets/019-first-party-client-port-and-reuse-audit.md)가 소유한다. 이 ADR은 특정 version을 영구 설계 값으로 고정하지 않고 pin 변경 때 같은 근거 사슬을 다시 검증하도록 결정한다.
 
-Ticket 004에서 generation-wide holdback을 필연화한 직접 원인은 response-authoritative identity와 generation-wide raw-wire publication order를 동시에 요구한 계약이었다. 기존 ADR 0008의 `HeadlessCodexClientHost` 결합은 이 모순을 만든 원인이 아니라 process/RPC, conversation lifecycle, 전역 Host 상태와 향후 제품/browser 관심사를 같은 state machine에 두어 blast radius와 testability 비용을 증폭했다. 실제 지속 소비자가 없는 이 Interface를 호환성 목표로 유지하면 pinned Codex의 method별 lifecycle보다 기존 Host 정책이 새 설계를 지배하게 된다. 따라서 새 foundation은 기존 Host 위에 계층으로 두지 않고 아래 두 운영 module로 교체한다.
+[Ticket 004 — Long-lived correlated work](../tickets/2026-07-12-headless-codex-client-host/004-long-lived-correlated-work.md)에서 generation-wide holdback을 필연화한 직접 원인은 response-authoritative identity와 generation-wide raw-wire publication order를 동시에 요구한 계약이었다. 기존 ADR 0008의 `HeadlessCodexClientHost` 결합은 이 모순을 만든 원인이 아니라 process/RPC, conversation lifecycle, 전역 Host 상태와 향후 제품/browser 관심사를 같은 state machine에 두어 영향 범위와 검증 비용을 증폭했다. 실제 지속 소비자가 없는 이 Interface를 호환성 목표로 유지하면 pinned Codex의 method별 lifecycle보다 기존 Host 정책이 새 설계를 지배하게 된다. 따라서 새 foundation은 기존 Host 위에 계층으로 두지 않고 아래 두 운영 module로 교체한다.
 
 ```text
 CodexAppServerConnection → CodexConversationRuntime

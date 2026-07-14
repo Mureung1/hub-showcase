@@ -291,11 +291,11 @@ try {
 ##### Bootstrap과 task ownership
 
 1. `openCodexConversationRuntime()`은 supplied process capability로 dedicated `codex app-server` child를 한 번 spawn한다. stdin/stdout/stderr는 pipe로 소유하고 partial spawn failure도 kill/reap한다.
-2. Stdout raw-byte framing과 envelope dispatch를 소유하는 reader는 정확히 하나다. Individual request waiter는 stdout을 읽지 않는다. Reader는 LF 전 raw bytes에 frame cap을 적용하고 cap 이내 complete frame만 strict/fatal UTF-8로 decode한다. EOF에 nonempty unterminated bytes가 남으면 truncated-frame Connection terminal이며 해당 bytes를 JSON으로 dispatch하지 않는다.
-3. Client request와 `initialized`는 application class, unsupported/supported Server response는 control class의 logical bounded queue를 사용한다. 하나의 serialized writer가 두 class를 중재해 stdin에 frame 하나씩 handoff한다. 양쪽이 ready면 current handed frame 뒤 `control 1 → application 1`을 반복하고, 한쪽만 ready면 다른 쪽을 기다리지 않는다. Writer callback은 peer receipt나 semantic effect를 뜻하지 않는다.
+2. Stdout raw-byte framing과 envelope dispatch를 소유하는 reader는 정확히 하나다. Individual request waiter는 stdout을 읽지 않는다. Reader는 LF 전 raw bytes에 frame cap을 적용하고 cap 이내 complete frame만 strict/fatal UTF-8로 decode한다. EOF에 LF 없이 남은 byte가 하나 이상이면 truncated-frame Connection terminal이며 해당 bytes를 JSON으로 dispatch하지 않는다.
+3. Client request와 `initialized`는 `application`, unsupported/supported Server response는 `control` class의 logical bounded queue를 사용한다. 하나의 serialized writer가 두 class를 중재해 stdin에 frame 하나씩 handoff한다. 두 class에 대기 frame이 모두 있으면 현재 handoff 중인 frame 뒤 `control 1 → application 1`을 반복하고, 한쪽에만 frame이 있으면 다른 쪽을 기다리지 않는다. Writer callback은 상대가 frame을 수신했거나 의미상 효과가 발생했다는 증거가 아니다.
 4. `initialize`는 fixed client info `{ name: 'ay_ple_codex_conversation_runtime', title: 'AY-PLE Codex Conversation Runtime', version: '0.0.0' }`와 `capabilities: null`을 보낸다. Response를 generated schema로 확인한 뒤에만 `initialized`를 write하며, `initialized` writer settlement 전에는 Runtime을 caller에게 공개하지 않는다.
 5. Initialize response 전 notification은 bounded validated dispatch에 stage할 수 있지만 inbound Server request는 control-response capacity를 먼저 예약하고 same-ID fallback을 즉시 writer에 넣어 bootstrap deadlock을 만들지 않는다.
-6. Unexpected child exit, stdout EOF/read fault, stdin write fault와 explicit close는 같은 terminal arbiter로 들어간다. 첫 transport terminal signal은 new admission만 freeze하고 current pending을 즉시 settle하지 않는다. Reader가 EOF 또는 bounded terminal-drain cut까지 complete frame을 수집하고 validated dispatch를 drain한 뒤 남은 pending을 한 번만 settle하며, child/stream cleanup과 reap을 끝까지 수행한다.
+6. 예상하지 못한 child exit, stdout EOF/read fault, stdin write fault와 explicit close는 같은 terminal arbiter로 들어간다. 첫 전송 종료 신호는 새 요청 수용만 중단하고 현재 대기 작업을 즉시 확정하지 않는다. Reader가 EOF 또는 제한된 terminal-drain cut까지 완결 frame을 수집하고 검증된 dispatch를 비운 뒤 남은 대기 작업을 한 번만 확정하며, child와 stream 정리 및 reap을 끝까지 수행한다.
 7. Connection dispatch completion은 parse·validate 뒤 bounded owning-route enqueue가 성공했다는 뜻이다. Public approval handler, Runtime semantic terminal이나 operation Promise completion을 ingress/dispatch task에서 await하지 않는다.
 
 ##### Exact `RequestId`
@@ -310,10 +310,10 @@ try {
 ##### Serialized writer와 control-response reservation
 
 - Outbound JSONL은 immutable encoded frame으로 완성한 뒤 logical queue에 넣는다. 각 admitted frame은 `queued_cancelable → handed → callback_settled`로만 전이한다. `handoff`는 single writer가 해당 frame으로 `stdin.write()`를 호출하는 순간이며, queued deadline이나 lease revocation은 `queued_cancelable` frame만 원자적으로 제거할 수 있다. 제거된 frame은 이후 write할 수 없다.
-- Application frame의 queued deadline이 먼저 이기면 frame과 active admission을 함께 제거해 `known_not_sent`로 끝낸다. Handoff 뒤 response-authority deadline을 잃으면 owning operation만 stage에 맞는 unknown outcome으로 끝나며 이것만으로 Connection을 닫지 않는다. Writer callback error, synchronous write fault 또는 handed-to-callback deadline 상실은 writer progress/trust loss이므로 Connection terminal이다.
+- `runNewConversation()` mutation의 application frame에서 queued deadline이 먼저 이기면 frame과 active admission을 함께 제거해 `known_not_sent`로 끝낸다. Bootstrap의 `initialize`·`initialized` frame이면 같은 pre-wire 취소를 `runtime_open_failed`로 mapping한다. Handoff 뒤 response-authority deadline을 잃으면 owning operation만 stage에 맞는 unknown outcome으로 끝나며 이것만으로 Connection을 닫지 않는다. Writer callback error, synchronous write fault 또는 handed-to-callback deadline 상실은 writer progress/trust loss이므로 Connection terminal이다.
 - Matching generated-valid response가 writer callback보다 먼저 owning route에 admit되면 response가 operation outcome authority다. 뒤의 callback success/error는 이미 settle된 semantic outcome을 소급 변경하지 않으며, callback error는 Connection만 terminal 처리한다.
-- Connection은 inbound Server request를 semantic/public route에 admit하기 전에 control-response count와 byte capacity를 원자적으로 예약한다. Fallback은 exact typed ID를 포함한 한 deterministic error frame을 미리 encode한다. T0.1은 exact ID를 포함한 허용 result/error 후보를 모두 encode하고 그중 실제 최대 byte 길이와 one-frame count만 예약한다. Global frame cap을 lease마다 가상으로 예약하지 않는다.
-- First local claim은 reservation을 concrete control frame으로 바꾼다. Exact active replay는 기존 lease와 reservation을 재사용한다. Remote resolution, turn transition이나 Connection terminal이 handoff 전에 이기면 queued frame/reservation을 취소·반환한다. Reservation을 확보하지 못하거나 후보 frame 하나라도 outbound frame cap을 넘으면 public handler를 호출하지 않고 Connection terminal로 전이한다.
+- Connection은 inbound Server request를 semantic/public route에 admit하기 전에 control-response count와 byte capacity를 원자적으로 예약한다. Fallback은 exact typed ID를 포함한 한 deterministic error frame을 미리 encode한다. T0.1은 exact ID를 포함한 허용 result/error 후보를 하나씩 encode해 byte 길이만 측정하고 다음 후보 전에 임시 buffer를 폐기한 뒤, 실제 최대 byte 길이와 one-frame count만 예약한다. 공통 frame cap을 lease마다 가상으로 예약하지 않는다.
+- 먼저 성공한 local claim은 reservation을 concrete control frame으로 바꾼다. Exact active replay는 기존 lease와 reservation을 재사용한다. Remote resolution, turn transition이나 Connection terminal이 handoff 전에 이기면 queued frame/reservation을 취소·반환한다. Reservation을 확보하지 못하거나 후보 frame 하나라도 outbound frame cap을 넘으면 public handler를 호출하지 않고 Connection terminal로 전이한다.
 
 ##### Validation tier와 Server request fallback
 
@@ -340,7 +340,7 @@ Malformed JSONL, invalid UTF-8, top-level envelope direction을 분류할 수 �
 
 1. Active operation/projection capacity와 outbound request capacity를 pre-wire에 reserve한다.
 2. `thread/start` request는 prepared workspace의 canonical root를 explicit `cwd`로 보내고, valid success response의 native `ThreadId`를 authority로 받는다.
-3. Pinned `thread/start`는 response-first다. 어떤 authoritative response에도 아직 결합되지 않은 `thread/started`는 handed active `thread/start` waiter cohort의 `protocol_violation`이고 public `CodexConversation`을 만들지 않는다. Established thread와 unrelated route는 유지한다. Response 뒤 matching notification은 validate/correlate하지만 result barrier로 기다리지 않으며 생략도 허용한다.
+3. Pinned `thread/start`는 response-first다. 어떤 authoritative response에도 아직 결합되지 않은 `thread/started`는 위 Validation tier의 pre-response violation policy에 따라 처리하고 public `CodexConversation`을 만들지 않는다. Response 뒤 matching notification은 validate/correlate하지만 result barrier로 기다리지 않으며 생략도 허용한다.
 4. Confirmed native thread에 `turn/start` text input을 write한다. Workspace `cwd` authority는 앞선 `thread/start`에만 있다.
 5. `turn/start` response와 `turn/started` notification은 either-order다. Response 전 같은 pending thread에 온 turn/item/terminal/approval observation은 parse·generated validation·sanitization 뒤 turn-local FIFO에 stage한다.
 6. Response가 같은 native `TurnId`를 authority로 confirm하면 FIFO를 ingress order로 replay한다. 다른 identity, provisional lifecycle 뒤 error response 또는 malformed response는 operation-local `protocol_violation`이며 staged public mutation을 만들지 않는다.
@@ -372,7 +372,7 @@ T0.1은 `item/commandExecution/requestApproval`의 regular variant만 지원한�
 - `approve_once | decline | cancel`은 각각 generated `accept | decline | cancel` result로 mapping한다. `acceptForSession`, exec/network amendment와 임의 decision은 public type으로 구성할 수 없다.
 - `respond()`는 Connection lease를 atomic claim한다. 먼저 claim한 call 하나만 reserved control capacity를 concrete frame으로 바꾸고 duplicate는 `already_answered`, wire 0회다.
 - Handoff 전 matching `serverRequest/resolved`, turn terminal/successor transition 또는 Connection terminal이 이기면 queued control frame과 reservation을 취소하고 `respond()`는 `stale`, wire 0회다. Handoff 뒤 callback settlement 전에 terminal cut이 닫히면 `delivery_unknown`이며 replay하지 않는다. Exact duplicate/late resolved는 no-op다.
-- Writer callback success는 `submitted`일 뿐 peer receipt, decision 적용, command success나 turn success가 아니다. Matching Server-side observation이 callback보다 먼저 와도 callback은 이미 정해진 command/turn outcome을 소급 변경하지 않는다.
+- Writer callback success는 `submitted`일 뿐 상대 수신, decision 적용, command success나 turn success가 아니다. Matching Server-side observation이 callback보다 먼저 와도 callback은 이미 정해진 command/turn outcome을 소급 변경하지 않는다.
 - `serverRequest/resolved`는 server callback clear authority일 뿐 command/turn outcome이 아니다. Matching command `item/completed`와 `turn/completed`가 각각 command/turn authority다.
 - Wall-clock approval expiry와 auto approve/decline/cancel은 없다. Actionable approval이 있는 동안 semantic turn deadline은 정지한다. Approval은 caller answer, resolved, turn transition 또는 disconnect로만 release한다.
 
@@ -386,7 +386,7 @@ T0.1은 `item/commandExecution/requestApproval`의 regular variant만 지원한�
 | --- | ---: | ---: | --- |
 | One inbound or outbound JSONL payload, newline 제외 | 1 frame | 16 MiB | Oversize inbound는 Connection terminal; oversize outbound는 pre-wire local failure |
 | Validated dispatch queue | Pause 768 / hard 1,024 observations | Pause 24 MiB / hard 32 MiB | 어느 pause threshold든 도달하면 reader pause, 512 observations와 16 MiB 아래에서 resume; hard cap을 넘으면 Connection terminal |
-| Application writer queue | 256 frames | 16 MiB | `queued_cancelable` Client frame은 pre-wire local failure |
+| Application writer queue | 256 frames | 16 MiB | `queued_cancelable` mutation은 `known_not_sent`; bootstrap frame은 `runtime_open_failed` |
 | Control-response reservations/queue | 256 frames | 16 MiB | Required Server response를 semantic/public admit 전에 reserve하지 못하면 Connection terminal |
 | Active Client RPC waiters | 256 | 1 MiB charged metadata | Pre-wire `capacity_exhausted`/`known_not_sent` |
 | Active Server response leases | 256 | 1 MiB charged metadata, control reservation 별도 | Exact response authority를 보존할 수 없으므로 Connection terminal |
@@ -404,7 +404,7 @@ Validated dispatch는 count 또는 byte pause threshold 중 하나에 도달하�
 | --- | ---: | --- |
 | Spawn/pipes ready | 10 s | `runtime_open_failed`; partial child reap |
 | `initialize` response | 10 s | Open failure, same child에 resend 없음 |
-| Logical writer queue admission → handoff | 10 s | Application frame은 atomic cancel 뒤 `known_not_sent`; required control frame은 cancel/revoke 뒤 Connection terminal |
+| Logical writer queue admission → handoff | 10 s | Application frame은 atomic cancel 뒤 stage별 pre-wire failure; required control frame은 cancel/revoke 뒤 Connection terminal |
 | Writer handoff → callback settlement | 10 s | Writer progress/trust loss로 Connection terminal; handed mutation/approval은 stage별 unknown |
 | `thread/start` 또는 `turn/start` response authority | 60 s | Handoff 뒤 `acceptance_unknown`; active waiter 제거, late map miss |
 | Response-confirmed turn semantic terminal | 30 min | `accepted_execution_unknown`; no replay/reconciliation |
@@ -445,7 +445,7 @@ Response settlement의 public mapping은 다음과 같다.
 | Provisional turn lifecycle 뒤 `turn/start` error response | `protocol_violation` / `turn_start` / `acceptance_unknown` | 있음 |
 | Valid turn response identity와 staged native scope 불일치 | `protocol_violation` / `turn_execution` / `accepted_execution_unknown` | 있음 |
 
-위 invalid success payload는 owning active waiter를 remove하고 unrelated routing은 유지한다. Unbound pre-response `thread/started` 위반은 당시 handed active `thread/start` waiter만 `protocol_violation` / `thread_start` / `acceptance_unknown`으로 settle하고, 어느 notification identity도 public `conversation`으로 승격하지 않는다. 이후 해당 response는 active map miss no-op이며 established thread와 다른 method operation은 계속 진행한다.
+위 invalid success payload는 owning active waiter를 remove하고 unrelated routing은 유지한다. Unbound pre-response `thread/started` 위반은 Validation tier의 policy대로 처리하고 어느 notification identity도 public `conversation`으로 승격하지 않는다. 이후 해당 response는 active map miss no-op이며 established thread와 다른 method operation은 계속 진행한다.
 
 #### Failure scope
 
@@ -455,15 +455,15 @@ Response settlement의 public mapping은 다음과 같다.
 | Active success response payload generated validation failure | Owning waiter/operation only; route remove |
 | Adopted notification invalid with trusted native scope | Owning operation only, no state mutation |
 | Adopted notification invalid without trusted scope | Sanitized no-op; required owner may timeout |
-| Unbound pre-response `thread/started` | Write-attempted active `thread/start` waiter cohort만 `protocol_violation`; candidate 0이면 no-op, no public identity |
+| Unbound pre-response `thread/started` | Validation tier policy에 따라 handed active `thread/start` waiter cohort만 `protocol_violation`; candidate 0이면 no-op, no public identity |
 | Turn identity mismatch, provisional lifecycle + error response | Owning operation `protocol_violation`; no alias/poison |
 | Per-operation FIFO/result projection overflow | Owning operation only; unrelated thread continues |
-| Application frame queue deadline before handoff | Atomic frame/waiter cancel; `known_not_sent`, wire 0회 |
-| Required control reservation/queue exhaustion | Public handler 0회 또는 queued claim revoke 뒤 Connection terminal |
-| Writer callback error 또는 handed-to-callback deadline 상실 | Connection terminal; handed operation/approval은 stage별 unknown |
+| `application` frame이 handoff 전 queue deadline 도달 | Mutation은 atomic frame/waiter cancel 뒤 `known_not_sent`; bootstrap은 `runtime_open_failed`, wire 0회 |
+| 필수 `control` reservation/queue 고갈 | Public handler 0회 또는 queued claim revoke 뒤 Connection terminal |
+| Writer callback error 또는 handoff-to-callback deadline 상실 | Connection terminal; handed operation/approval은 stage별 unknown |
 | Global dispatch/Server lease trust capacity exhaustion | Connection terminal |
-| Unexpected child exit/stdout EOF/read fault/stdin fault | New admission과 active Server lease를 즉시 cut; stdout·admitted dispatch bounded drain 뒤 남은 waiter/operation만 stage별 settle |
-| Terminal drain deadline with direct child reaped | Streams cut; descendant-held pipe 자체는 `runtime_close_failed`가 아니며 남은 pending만 stage별 settle |
+| 예상하지 못한 child exit/stdout EOF/read fault/stdin fault | New admission과 active Server lease를 즉시 cut; stdout·admitted dispatch bounded drain 뒤 남은 waiter/operation만 stage별 settle |
+| Direct child reap 뒤 terminal-drain deadline 도달 | Stream cut; descendant-held pipe 자체는 `runtime_close_failed`가 아니며 남은 pending만 stage별 settle |
 | `close()` reap/join failure | Safe close error; already settled semantic outcome unchanged |
 
 Terminal arbiter는 semantic ingress cut과 transport drain을 구분한다. Malformed framing/envelope처럼 protocol trust를 잃으면 semantic ingress를 즉시 닫는다. Unexpected process/transport signal은 caller admission과 active Server lease를 먼저 닫되, stdout EOF 또는 5-second terminal-drain cut까지 complete frame을 수집하고 이미 validated된 dispatch를 public/semantic Promise를 기다리지 않는 범위에서 drain한다. Drain 중 먼저 admit된 valid response/terminal은 owning outcome을 정상 settle할 수 있고, barrier 뒤 남은 Client waiter와 Runtime operation만 stage별 transport outcome으로 한 번 settle한다.
@@ -558,14 +558,14 @@ Preflight는 exact semver, lock의 root/platform package/version/resolved/integr
 | Remove without compatibility | Product-named layout Interface/root export | `./preparation` consumer가 선 뒤 삭제 |
 | Remove without compatibility | `CodexStdioTransport` class, observation Interface, old timeout/dismiss/settled-ID semantics, testing re-export | New Connection oracle가 green인 뒤 삭제 |
 
-Implementation dependency는 다음 순서를 따른다.
+정확한 ticket 분할·작업 순서·차단 관계는 후속 local implementation ticket graph가 소유하고, 제품 작업 순서는 canonical Development Backlog가 소유한다. 이 spec은 다음 migration safety gate만 정한다.
 
-1. Exact provenance manifest와 ledger-v2 structural verifier를 먼저 세운다. Same-pin read-only verify/A·B safe generation과 opaque runtime preparation은 이 기준점 뒤 병렬로 진행할 수 있다.
-2. Authenticated pin-upgrade transaction은 future pin 변경과 final upgrade certification을 block하지만, 이미 attested된 same-pin preparation·Connection 구현과 early compatibility proof를 block하지 않는 병렬 branch다.
-3. Raw-byte reader, exact active router, cancelable writer handoff, control-response reservation과 unexpected-exit drain barrier를 unit·actual-child fake로 먼저 닫는다.
-4. 그 직후 installed `@openai/codex@0.144.0`으로 `spawn → initialize → initialized → thread/start → close/drain/reap` early vertical proof를 실행한다. 이는 protocol feedback checkpoint이며 ledger integration을 승격하지 않는다.
-5. T0 semantic completion 뒤 T0-C와 T0.1을 sibling slice로 구현하고, complete cap/security/no-raw/deadline permutation과 generator rollback hardening을 합류시킨다.
-6. Source/unit/fake/live conformance와 repository regression이 모두 green일 때만 ledger integration을 승격하고 Host/layout/legacy transport를 atomic forward-removal한다. Consumer가 없는 Host compatibility facade는 남기지 않으며 clean-package post-removal certification으로 닫는다.
+| Gate | Contract |
+| --- | --- |
+| Same-pin 독립성 | Authenticated pin-upgrade transaction은 향후 pin 변경과 최종 upgrade 검증의 관문이지만, 이미 attested된 same-pin preparation·Connection 구현과 이른 호환성 증명의 선행조건이 아니다. |
+| 이른 exact-package 확인 | Provenance/ledger structure, same-pin generation, preparation과 raw-byte reader·exact router·cancelable writer·control reservation·transport drain fake gate가 준비되면 전체 T0 전에 설치된 `@openai/codex@0.144.0`으로 `spawn → initialize → initialized → thread/start → close/drain/reap`을 실행한다. 이 검증 지점은 ledger integration을 승격하지 않는다. |
+| Tracer 승격 | T0·T0-C·T0.1과 complete cap/security/no-raw/deadline permutation, generator rollback, required source/unit/fake/live gate가 모두 green일 때만 ledger integration을 승격한다. |
+| Legacy 축소 | 위 promotion과 repository regression 뒤 Host/layout/legacy transport를 한 방향으로 제거하고, consumer가 없는 Host compatibility facade를 남기지 않으며 clean-package post-removal certification으로 닫는다. |
 
 Package `dist` cleanup은 caller-supplied path를 받지 않는 package-owned script만 수행한다. Resolved target이 exact `packages/runtime-codex/dist`인지 확인한 뒤 삭제하며 repository root `git clean -x/-X`, `.ay-ple`, external app data, Codex rollout/history와 다른 workspace output을 건드리지 않는다. Clean build 뒤 development/types/default condition으로 root, `./capabilities`, `./testing`, `./preparation`, `./conversation`을 import해 stale removed symbol이 없음을 확인한다.
 
@@ -618,10 +618,10 @@ New fake child implementation, typed scenario table, journal과 fixtures는 runt
 
 ### 필수 T0 fake case
 
-- Initialize response 전 notification과 Server request, matching response 뒤 `initialized`, initialized writer failure
+- Initialize response 전 notification과 Server request, matching response 뒤 `initialized`, initialized writer failure와 handoff 전 queue timeout의 `runtime_open_failed`
 - Application frame이 queued 상태에서 deadline으로 cancel된 뒤 backpressure가 풀려도 wire 0회인지, handoff 뒤 response와 writer callback의 두 순서에서 response outcome이 유지되는지
 - Application queue saturation 중 inbound Server request가 exact-byte control reservation으로 same-ID response를 쓰고 `control 1 : application 1` arbitration에서 양쪽 모두 progress하는지
-- `thread/start` response-first, matching `thread/started` present/absent, unbound pre-response notification이 active thread-start waiter cohort만 실패시키고 established Thread B를 유지하는지와 no public capability
+- `thread/start` response-first, matching `thread/started` present/absent, unbound pre-response notification이 handed thread-start waiter cohort만 실패시키고 `queued_cancelable` waiter와 established Thread B를 유지하는지와 no public capability
 - `turn/start` response-first/notification-first, dependent item/terminal-before-response, matching replay FIFO
 - Mismatched response identity, provisional lifecycle + error response, active response payload validation failure의 operation-local isolation
 - `item/started`, delta validate-and-discard, one/multiple completed AgentMessage, exact duplicate no-op, last-message projection
@@ -639,6 +639,7 @@ New fake child implementation, typed scenario table, journal과 fixtures는 runt
 - Deterministic `A pending → B completed → A completed`
 - A-local early FIFO saturation/validation failure while B completes
 - Host-scoped/unsupported Server response during A pending without B blocking
+- A의 approval handler가 resolve되지 않아도 B response/terminal과 unrelated Server fallback이 계속 진행되는지
 - A completion 뒤 A2 admission and no projection/capacity leak
 - Two concurrent command-free threads with distinct native scope and no cross-delivery
 
@@ -648,7 +649,7 @@ New fake child implementation, typed scenario table, journal과 fixtures는 runt
 - Pre-response sanitized staging and post-response handler activation
 - `approve_once | decline | cancel` exact generated result, one frame only
 - Concurrent duplicate respond: `submitted/already_answered`; resolved/turn-transition/disconnect late respond: `stale`
-- Claimed control frame이 handoff 전에 resolved/turn-transition/disconnect로 cancel되면 `stale`와 wire 0회, handoff 뒤 terminal cut이면 `delivery_unknown`; callback success 뒤 loss keeps `submitted`
+- Claimed control frame이 handoff 전에 resolved/turn-transition/disconnect로 cancel되면 `stale`와 wire 0회, handoff 뒤 terminal cut이면 `delivery_unknown`; callback success 뒤 Connection loss가 와도 `submitted`를 유지
 - `serverRequest/resolved` before/after response write and exact duplicate no-op
 - Handler absent `-32601`; handler failure, subcommand/network variant and scope mismatch constant `-32000`
 - Actor approval cap 1 and unrelated Thread B progress
@@ -660,7 +661,7 @@ New fake child implementation, typed scenario table, journal과 fixtures는 runt
 
 Live probe는 격리된 임시 package/app-data/workspace root, package-owned `0.144.0` binary와 local mock Responses provider를 사용한다. 따라서 일반 auth/account 상태를 요구하거나 변경하지 않는다.
 
-- Connection correctness fake gate 직후 full T0보다 먼저 actual installed package로 `initialize → initialized → thread/start → close/drain/reap` early compatibility proof를 실행한다. 이 checkpoint는 ledger integration을 승격하지 않는다.
+- Connection 정확성 fake gate 직후 전체 T0보다 먼저 설치된 실제 package로 `initialize → initialized → thread/start → close/drain/reap` 이른 호환성 증명을 실행한다. 이 검증 지점은 ledger integration을 승격하지 않는다.
 - T0는 deterministic text response 하나, completed AgentMessage와 completed terminal을 확인한다.
 - T0-C는 provider barrier로 A/B/A schedule을 강제해 대표 independence를 확인한다.
 - T0.1은 deterministic regular command request, caller의 `decline`, matching resolved, declined command item과 authoritative turn terminal을 확인한다.
