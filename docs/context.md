@@ -8,6 +8,17 @@ MBTI 기반 공부법 및 스트레스 관리 웹앱
 
 사용자가 외부 공식 MBTI 평가에서 받은 결과를 직접 입력하거나 공식 결과 없이 진행한 뒤, 짧은 독자 공부습관·스트레스 점검을 통해 행동·상태 신호를 정리하고, task/state-only baseline과 MBTI 힌트 추가 추천을 비교하여 인지과학 학습 전략과 공부·회복 루틴을 제안·검증하는 웹앱.
 
+## 메인 시스템 · 목적 (2026-07-14)
+
+**목적(순차):** ① MBTI 기반 개인화 매칭으로 실제 학습 능률↑·스트레스↓를 **먼저 돕고** → ② 만족도·효과를 측정해 → ③ DB·문서로 쌓고 분석 → **연구용 빅데이터**.
+
+**메인 시스템 = 3-에이전트 파이프라인**(규칙 기반 우선, 이후 LLM 고도화):
+- (a) **매칭 에이전트** — MBTI 성향×응답 → 인지과학 공부법 매칭. 기준: [`matching-criteria.md`](./matching-criteria.md), 구현: `frontend/src/data/mbtiMethodMatching.js`.
+- (b) **스케줄 에이전트** — 매칭 → 오늘의 시간블록/스케줄(시드). `frontend/src/lib/schedule.js`.
+- (c) **데이터 에이전트** — 결과를 서버(`backend/`)에 비식별 수집·분석(토대).
+
+매칭은 문헌에서 도출한 출발점이며(선호일 수 있음), 실제 효과는 위 ②의 측정으로 확인한다.
+
 ## User Problem
 
 Many learners know popular study methods but struggle to adapt them to their own focus style, planning preference, fatigue pattern, and recovery needs.

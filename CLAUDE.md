@@ -98,37 +98,34 @@ PR 전에는 다음을 확인한다.
 - 산출물은 `docs/design.md` §9 "의도 일치 자기점검 체크리스트"로 점검한 뒤 마무리한다.
 - 현재 프로토타입 스타일은 `src/ProjectIntro.jsx`의 인라인 `<style>` 블록에 토큰으로 정의되어 있다(`index.css`/`App.css`의 옛 포트폴리오 스타일은 이 화면에서 사용되지 않음).
 
-## Dev environment (결정 완료 · 설치는 2주차/승인까지 보류)
-
-개발은 2주차에 본격화한다. 아래는 미리 정한 개발환경 맥락이며, 실제 의존성 설치와 서버 스캐폴딩은 사용자 승인 전까지 하지 않는다.
+## Dev environment (frontend/backend 분리 적용됨 · 2026-07-14)
 
 ### 기본 스택
 
-- 프론트엔드: React + Vite + JavaScript (현재 구조 유지, Next.js 전환 금지).
-- 백엔드(2주차 이후, 필요 시): Node.js + Express.
-- ⚠️ MVP는 여전히 **localStorage 기반**이다. Express는 MVP 범위 밖이며, 저장·공유가 실제로 필요한 기능이 생길 때만 도입한다. 그전까지 서버 코드는 만들지 않는다.
+- 프론트엔드: React + Vite + JavaScript (Next.js 전환 금지).
+- 백엔드: Node.js + Express (비식별 연구 데이터 수집 API, in-memory 저장소 → 추후 Supabase 어댑터).
+- localStorage가 1차 저장소로 유지되고, 서버는 **동의 후 비식별 요약만** 저장하는 부가 계층이다.
 
-### 목표 디렉터리 구조 (2주차 적용 예정, 지금 이동 X)
+### 실제 디렉터리 구조
 
 ```text
 hub/
-├─ client/        # React + Vite 프론트 (현재 src/, index.html, vite.config.js 이전 대상)
-│  ├─ src/
-│  │  ├─ components/   # 화면 단위 컴포넌트
-│  │  ├─ data/         # questions.js 등 설문·추천 데이터
-│  │  ├─ lib/          # scoring / recommendations / storage
-│  │  └─ styles/       # design.md 토큰 CSS
-│  └─ ...
-├─ server/        # Express API (도입 시점에만 생성)
-│  ├─ src/
-│  │  ├─ routes/
-│  │  ├─ controllers/
-│  │  └─ index.js
-│  └─ ...
-└─ docs/          # plan, checklist, context, design 등
+├─ package.json    # 루트: dev:frontend / dev:backend / build / lint 위임 스크립트
+├─ frontend/       # React + Vite (index.html, vite.config.js, src/…)
+│  ├─ .env.example # VITE_API_BASE_URL
+│  └─ src/{data, lib, …}
+├─ backend/        # Express API
+│  ├─ .env.example # PORT, CORS_ORIGIN, (Supabase 예약)
+│  └─ src/{index.js, store.js}
+├─ .agents/skills/ # Codex 스킬(feature-planner, feature-verifier 등)
+└─ docs/           # plan, checklist, context, matching-criteria, reference …
 ```
 
-- 현재는 루트에 Vite 프론트가 있다. 위 구조로의 이동은 2주차에 별도 작업으로 진행하고, 이번에는 문서 결정만 남긴다.
+### 규칙
+
+- 루트에서 `npm run build`·`npm run lint`는 frontend로 위임된다. 백엔드는 `npm --prefix backend run dev`.
+- `.env`는 커밋하지 않는다(`.env.example`만). 서버 저장은 비식별 필드 화이트리스트만 허용하고 동의·삭제를 제공한다.
+- 로그인·회원가입·JWT·제품 내 외부 LLM은 게이트 이후로 유지한다(개발 보조 에이전트는 무관).
 
 ### 라이브러리 후보 (승인 후 설치)
 
