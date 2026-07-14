@@ -33,7 +33,9 @@ Gradle toolchain과 compiler release, 테스트 JVM은 모두 17이어야 한다
 | `make test` | Docker가 필요 없는 단위 테스트 |
 | `make integration` | Testcontainers·WireMock 통합/계약 테스트 |
 | `make eval` | Eval fixture와 정책 검증 |
+| `make edge-check` | 비밀 없는 Approval Gate·Provider Gateway 자동 검증 |
 | `make check` | 중복 실행 없이 저장소 전체 검증 |
+| `make naver-live-contract` | 승인된 로컬에서 Naver Local·Blog 실제 계약을 각 1회 검증 |
 | `make observe` | Prometheus·Grafana 오버레이 실행 |
 | `make load-smoke` | mock 모드에서 health 부하 smoke 실행 |
 | `make reset` | 사용자 확인 후 로컬 볼륨 초기화 |
@@ -59,6 +61,19 @@ Gradle toolchain과 compiler release, 테스트 JVM은 모두 17이어야 한다
 LLM base URL이 실제 인터넷 endpoint를 가리키면 시작과 부하 테스트를 중단한다.
 `.env.example`에는 비밀이 아닌 예시만 두고 `.env`, API key, token은 커밋하지
 않는다. 부하 테스트는 실제 외부 API를 호출하지 않는다.
+
+실제 Naver 계약 검증은 표준 앱 profile과 분리한다. Git에서 제외한
+`.env.live.local`은 `make naver-live-contract`만 읽으며 `make run`, `make test`,
+`make integration`, `make eval`, `make edge-check`와 `make check`는 읽지 않는다.
+전용 task는 CI, 잘못된 mode, 누락 credential, HTTP와 정확한 NAVER API HUB host가
+아닌 주소를 받을 구성 자체를 제공하지 않는다. 공식 HTTPS origin은 live test 코드에
+고정한다. Local·Blog 각 한 번의 safe summary만 허용하며 응답 body, 검색어와 인증
+header를 출력하지 않는다.
+
+배포 Live는 향후 외부 Approval Gate·Provider Gateway를 사용한다. 공유 Fork,
+GitHub Actions와 Vercel·Render에는 원본 provider key를 저장하지 않는다. Gate·Gateway
+Gate·Gateway 프로그램의 자동 검증 기반은 구현됐지만, cloud resource가 배포됐거나 실제 provider 호출이
+성공했다는 의미는 아니다.
 
 ## 포함하지 않는 선택 사항
 

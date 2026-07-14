@@ -103,6 +103,6 @@ AI는 schema 초안, 한국어 표현 변형, 경계·공격 fixture와 parser t
 ## 남은 위험과 학습
 
 결정론적 fixture는 실제 표현의 다양성을 모두 대표하지 않으며 Mock 통과는 live
-model 호환성을 보증하지 않는다. staging-live에서 schema 실패나 특정 표현의 체계적
+model 호환성을 보증하지 않는다. Approval Gate 기반 배포 Live에서 schema 실패나 특정 표현의 체계적
 누락이 관찰되면 개인정보가 제거된 최소 회귀 fixture를 추가하고, schema version
 호환성과 비용을 검토한 뒤 prompt·model 설정을 변경한다.

@@ -1,0 +1,22 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/search/v1/local",
+    "queryParameters": {
+      "query": {
+        "equalTo": "force-error"
+      }
+    }
+  },
+  "response": {
+    "status": 503,
+    "headers": {
+      "Content-Type": "application/json; charset=UTF-8"
+    },
+    "jsonBody": {
+      "errorCode": "SE99",
+      "errorMessage": "Synthetic Naver upstream failure."
+    }
+  }
+}

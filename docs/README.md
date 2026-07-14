@@ -8,7 +8,7 @@
 - [개발 환경](development-environment.md): Java 17, 실행 명령, 프로필, 포트
 - [아키텍처](architecture.md): 현재 모듈과 인프라 책임 경계
 - [계약](contracts.md): 공개 API·이벤트·프롬프트 계약의 구현 상태
-- [서비스 완성 Roadmap](roadmap.md): PP-001~PP-036 Task DAG와 release gate
+- [서비스 완성 Roadmap](roadmap.md): PP-001~PP-037 Task DAG와 release gate
 - [문서화 표준](standards/documentation.md): 기록 조건, 필드, 검증과 보안
 - [GitHub Flow](standards/github-flow.md): 브랜치·PR·병합·보호 규칙
 
@@ -22,8 +22,10 @@
 - [ADR-0004 완성형 MVP 경계와 조건 확인 후 추천 시작](adr/ADR-0004-service-boundary.md)
 - [ADR-0005 익명 세션과 공유·주최자 capability](adr/ADR-0005-anonymous-session-room-capability.md)
 - [ADR-0006 API·Worker와 transactional outbox](adr/ADR-0006-api-worker-outbox-events.md)
-- [ADR-0007 Provider 중립 core와 staging-live 경계](adr/ADR-0007-provider-and-live-boundary.md)
+- [ADR-0007 폐기된 GitHub staging-live 경계](adr/ADR-0007-provider-and-live-boundary.md)
 - [ADR-0008 Next.js와 same-origin 경계](adr/ADR-0008-frontend-same-origin-boundary.md)
+- [ADR-0009 Mock·Local Live·배포 Gateway 경계](adr/ADR-0009-mock-local-live-gateway-boundary.md)
+- [ADR-0010 무료 포트폴리오 데모 배포 경계](adr/ADR-0010-free-demo-deployment-boundary.md)
 - [TS-0001 WireMock 의존성 충돌](troubleshooting/TS-0001-wiremock-dependency-conflict.md)
 - [TS-0002 Testcontainers PostgreSQL tag와 digest 호환성](troubleshooting/TS-0002-testcontainers-digest-compatibility.md)
 - [TS-0003 Dev Container Yarn APT 공개키](troubleshooting/TS-0003-devcontainer-yarn-apt-key.md)
@@ -32,6 +34,7 @@
 - [TS-0006 Spring Boot 테스트 Prometheus observability](troubleshooting/TS-0006-spring-boot-actuator-access.md)
 - [TS-0007 비대화형 k6 권한](troubleshooting/TS-0007-k6-non-root-script-permission.md)
 - [TS-0008 GitHub Actions Gitleaks PR 권한](troubleshooting/TS-0008-gitleaks-pr-token-permission.md)
+- [TS-0009 Node 24 컨테이너 Edge 검증 재현성](troubleshooting/TS-0009-node24-edge-test-reproducibility.md)
 
 ## 서비스 완성 Task Work Record
 
@@ -92,10 +95,18 @@
 ### M7 시스템 검증·Release
 
 - [WI-0034 PP-032 전체 테스트 matrix](work-records/WI-0034-full-test-matrix.md)
-- [WI-0035 PP-033 staging-live workflow](work-records/WI-0035-staging-live-workflow.md)
+- [WI-0035 PP-033 Approval Gate 기반 배포 Live E2E](work-records/WI-0035-staging-live-workflow.md)
 - [WI-0036 PP-034 k6 부하 실험](work-records/WI-0036-k6-load-experiments.md)
 - [WI-0037 PP-035 Java 17 운영 packaging](work-records/WI-0037-java17-production-packaging.md)
 - [WI-0038 PP-036 최종 release Case Study](work-records/WI-0038-final-release-case-study.md)
+
+### 횡단 신뢰·배포 기반
+
+- [WI-0039 PP-037 공유 Fork Live 신뢰 경계 기반](work-records/WI-0039-shared-fork-live-security-foundation.md)
+
+## Runbook
+
+- [RUN-0001 Naver Local Live 검증과 자격증명 교체](runbooks/RUN-0001-naver-local-live-and-credential-rotation.md)
 
 ## 문제 해결·증거 문서
 

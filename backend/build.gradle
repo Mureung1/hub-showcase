@@ -15,6 +15,10 @@ sourceSets {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += output + compileClasspath
     }
+    liveContractTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
 }
 
 configurations {
@@ -22,6 +26,8 @@ configurations {
     integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
     evalTestImplementation.extendsFrom testImplementation
     evalTestRuntimeOnly.extendsFrom testRuntimeOnly
+    liveContractTestImplementation.extendsFrom testImplementation
+    liveContractTestRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 dependencies {
@@ -62,6 +68,15 @@ tasks.register('evalTest', Test) {
     testClassesDirs = sourceSets.evalTest.output.classesDirs
     classpath = sourceSets.evalTest.runtimeClasspath
     shouldRunAfter tasks.named('integrationTest')
+}
+
+tasks.register('liveContractTest', Test) {
+    group = 'verification'
+    description = 'Runs the explicitly enabled, budget-limited NAVER API HUB live contract canary.'
+    testClassesDirs = sourceSets.liveContractTest.output.classesDirs
+    classpath = sourceSets.liveContractTest.runtimeClasspath
+    shouldRunAfter tasks.named('evalTest')
+    maxParallelForks = 1
 }
 
 tasks.named('check') {

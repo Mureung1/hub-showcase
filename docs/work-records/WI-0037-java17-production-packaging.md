@@ -3,13 +3,14 @@ id: WI-0037
 title: PP-035 Java 17 운영 이미지와 Demo Compose 패키징
 type: work-record
 status: planned
-date: 2026-07-13
+date: 2026-07-14
 owners:
   - placepick-team
 related:
   - ../roadmap.md
   - ../adr/ADR-0006-api-worker-outbox-events.md
-  - ../adr/ADR-0007-provider-and-live-boundary.md
+  - ../adr/ADR-0009-mock-local-live-gateway-boundary.md
+  - ../adr/ADR-0010-free-demo-deployment-boundary.md
   - ../adr/ADR-0008-frontend-same-origin-boundary.md
 paths:
   - backend/Dockerfile
@@ -69,7 +70,8 @@ shutdown, migration 실행 순서, rollback Runbook과 CI smoke다.
 
 Kubernetes, cloud registry·hosting, TLS termination, autoscaling, 무중단 production migration,
 실제 도메인·DNS와 유료 인프라는 포함하지 않는다. Demo Compose는 production과 동일한
-경계를 검증하지만 production 가용성을 보장하는 배포 플랫폼은 아니다.
+경계를 검증하지만 production 가용성을 보장하는 배포 플랫폼은 아니다. ADR-0010의 무료
+cloud demo는 후속 검증 대상이며 실제 리소스가 생성됐다는 뜻이 아니다.
 
 ## 판단 기준과 대안
 
@@ -79,6 +81,7 @@ Kubernetes, cloud registry·hosting, TLS termination, autoscaling, 무중단 pro
 - API와 worker를 다른 source artifact로 만들면 drift 위험이 있어 같은 Boot JAR과 role
   configuration을 사용한다.
 - production에서 `all` 역할은 process 장애가 두 역할을 함께 중단하므로 사용하지 않는다.
+  Render Free에는 무료 Worker가 없어 포트폴리오 demo에서만 명시적 예외로 허용한다.
 - frontend가 브라우저에서 backend 다른 origin을 직접 호출하면 cookie·CORS가 복잡해져
   Next.js same-origin proxy를 선택한다.
 - container 시작 때마다 자동으로 임의 migration을 수행하는 대신 명시적 단일 migration
@@ -99,6 +102,8 @@ base image와 package는 exact tag·digest로 고정하고 변경은 의도적 d
 6. read-only filesystem, secret 미포함, image metadata와 dependency 결과를 정적 검사한다.
 7. clean build부터 full mock E2E, SIGTERM·restart·pending recovery와 이전 image rollback까지
    실행해 Runbook을 검증한다.
+8. 후속 무료 demo에서는 Render의 512MB·idle sleep, Neon·Upstash 연결과 Vercel 경유 SSE
+   재연결을 별도 검증하고 production packaging 결과와 구분한다.
 
 현재 운영 image, production Compose와 위 실행 증거는 존재하지 않는다.
 

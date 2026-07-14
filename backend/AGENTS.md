@@ -27,8 +27,13 @@
 - 외부 호출은 DB transaction 안에서 수행하지 않는다.
 - `local`, `test`, `load` profile은 `mock` mode와 loopback 또는 Compose mock host만
   사용한다. 테스트를 통과시키기 위해 시작 안전장치를 약화하지 않는다.
-- 실제 provider는 승인된 `staging-live` profile에서만 활성화하며 host allowlist와
-  kill switch를 적용한다.
+- Local Live는 일반 application profile이 아니라 전용 계약 task에서만 활성화한다.
+  CI, 잘못된 mode와 누락 credential은 요청 전에 거부하고, task의 provider origin은
+  정확한 API HUB HTTPS 주소로 코드에 고정한다.
+- 배포 provider 호출은 외부 Gateway를 통하고 backend에 원본 Naver key를 주입하지
+  않는다. Gateway 호출 자격은 짧은 수명·scope·audience로 제한한다.
+- Naver 약관·표시 의무 확인 전에는 Local·Blog 결과 결합·영구 저장·LLM 전달을
+  application 기능으로 활성화하지 않는다.
 - source, fixture, log와 문서에 credential, 실제 secret, 개인정보나 운영 데이터를
   넣지 않는다.
 
@@ -38,6 +43,7 @@
 - `./gradlew integrationTest`: PostgreSQL·Redis Testcontainers와 WireMock 계약 테스트
 - `./gradlew evalTest`: 결정적 JSONL fixture와 정책 검증
 - `./gradlew check`: 전체 백엔드 검증 gate
+- 실제 Naver 계약은 루트 `make naver-live-contract`만 사용하며 자동 검증과 분리
 
 결정적 규칙에는 단위 테스트, 인프라 wiring·HTTP 계약에는 통합 테스트를 추가한다.
 측정 가능한 LLM·추천 정책에는 정상, 경계, 거부와 adversarial Eval fixture를 함께

@@ -233,7 +233,11 @@ Worker가 DB에서 읽어 event의 개인정보와 크기를 줄인다. relay는
 | `implemented` | Mock Naver·LLM | 정상·오류·timeout fixture | WI-0001 |
 | `specified` | 조건 추출 | `RecommendationCondition` strict schema | PP-009 |
 | `specified` | 추천 이유 | place ID별 reason·cautions·shareText strict schema | PP-016 |
-| `specified` | 실제 provider | 통제된 `staging-live`에서만 활성화 | PP-029, PP-033 |
+| `implemented` | Naver Java adapter | 현행 API HUB Local·Blog port와 오류 정규화 | PP-013 |
+| `specified` | Naver Local Live | 격리 task에서 Local·Blog 각 1회 계약 확인 | PP-013 |
+| `implemented` | Approval Gate·Provider Gateway 프로그램 | OIDC·workflow hash·replay·JWT·Local/Blog allowlist 자동 검증 | PP-037 |
+| `planned` | Gate·Gateway 클라우드 배포 | Cloudflare secret과 승인 SHA canary E2E | PP-033, PP-035 |
+| `planned` | 전체 배포 Live | Gateway를 거친 Naver·OpenAI 전체 E2E | PP-029, PP-033 |
 
 조건 추출은 사용자 입력을 instruction이 아닌 data로 격리하고 schema 외 field를
 허용하지 않는다. refusal, incomplete, malformed와 안전하게 해석할 수 없는 입력은
@@ -244,19 +248,44 @@ draft를 저장하지 않고 422로 종료한다.
 영업 정보나 위치 특성을 추가하면 Eval에서 실패한다. LLM은 점수와 순위를 결정하지
 않는다. LLM 실패 시 검증된 장소 field만 조합한 template fallback을 사용한다.
 
-Naver adapter는 NAVER API HUB의 Local·Blog 검색과 현재 인증 header를 사용한다.
+Naver adapter는 `https://naverapihub.apigw.ntruss.com`의 `/search/v1/local`과
+`/search/v1/blog`, `X-NCP-APIGW-API-KEY-ID`와 `X-NCP-APIGW-API-KEY` 인증 header를
+사용한다. adapter는 자동 재시도하지 않고 400, 401·403, 429, schema 오류와
+5xx·timeout을 안정적인 application 오류로 정규화한다.
+현재 일반 Spring 애플리케이션에는 원본 Naver key를 받는 bean이나 자동 구성을 연결하지
+않는다. 직접 Naver adapter는 격리된 Local Live task와 자동 계약 테스트에서만 만들며,
+향후 배포 runtime은 PP-029에서 원본 key가 아닌 Provider Gateway 자격을 사용하는 별도
+adapter를 연결한다.
 Local 실패는 제한 재시도 뒤 Job 실패, Blog 실패는 `LOCAL_ONLY` degraded 완료다.
-원문 Naver response의 cache·영구 저장은 약관과 표시 의무를 사람이 확인하기 전까지
-금지한다.
+원문 Naver response의 cache·영구 저장뿐 아니라 Local·Blog 결과 결합, 추천 후보로
+저장하고 LLM에 전달하는 동작은 약관과 표시 의무를 사람이 확인하기 전까지 금지한다.
+Local Live 계약 검증은 응답을 메모리에서 schema 확인 후 폐기한다.
 
 OpenAI adapter는 Responses API의 strict JSON Schema Structured Outputs를 사용한다.
 기본 모델은 `gpt-5.6-luna`, reasoning effort는 low, 저장은 끄고 tool을 허용하지
 않는다. 최대 출력·timeout·retry·호출 횟수를 제한하고 익명 세션에서 파생한 비가역
 safety identifier를 사용한다.
 
-실제 endpoint와 secret은 source, fixture, 문서와 일반 CI에 넣지 않는다. 전체
-프롬프트나 내부 추론을 포트폴리오에 저장하지 않고 schema, 정책, fixture와 검증
-결과만 기록한다.
+실제 endpoint와 secret은 source, fixture, 문서와 일반 CI에 넣지 않는다. 공식 Naver
+API HUB host는 allowlist 계약으로 공개하지만 credential은 Git에서 제외한
+`.env.live.local` 또는 배포 Provider Gateway에만 둔다. 공유 Fork, GitHub Actions,
+Vercel과 Render에는 원본 Naver key를 저장하지 않는다. 전체 프롬프트나 내부 추론을
+포트폴리오에 저장하지 않고 schema, 정책, fixture와 검증 결과만 기록한다.
+
+### 외부 검증 상태 계약
+
+외부 연동 완료 여부는 다음 세 축으로 분리한다.
+
+| 상태 축 | 의미 | 현재 상태 |
+| --- | --- | --- |
+| 코드 자동 검증 | Mock·adapter·fail-closed·redaction과 Gate/Gateway 음성 테스트 | 구현·자동 검증 완료 |
+| 실제 Local Live | 교체된 key로 Local·Blog 각 1회 2xx와 schema 확인 | 검증되지 않음 |
+| 클라우드 배포 | Gate·Gateway와 demo stack에서 승인 SHA E2E 확인 | 배포되지 않음 |
+
+한 축의 성공을 다른 축의 완료로 표현하지 않는다. 특히 Mock 성공은 실제 credential
+호환성을, Local Live 2xx는 Naver 약관 승인이나 클라우드 가용성을, Gateway 코드
+테스트는 실제 edge 배포를 증명하지 않는다. 대화에 게시된 기존 key는 폐기·교체
+확인 전까지 어떤 live 검증에도 사용하지 않는다.
 
 ## 계약 검증 책임
 

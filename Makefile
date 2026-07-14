@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-.PHONY: help setup up down run test integration eval check observe load-smoke reset
+.PHONY: help setup up down run test integration eval edge-check naver-live-contract check observe load-smoke reset
 
 help: ## Show the canonical development commands.
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z0-9_-]+:.*## / {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -26,6 +26,12 @@ integration: ## Run Testcontainers and WireMock integration/contract tests.
 
 eval: ## Validate and run deterministic evaluation fixtures.
 	@bash scripts/test.sh eval
+
+edge-check: ## Run the secret-free Approval Gate and Provider Gateway checks.
+	@npm run edge:check
+
+naver-live-contract: ## Run exactly one Naver Local and one Blog live contract request.
+	@bash scripts/naver-live-contract.sh
 
 check: ## Run policy, docs, Compose, shell, unit, integration, and eval checks once.
 	@bash scripts/check.sh

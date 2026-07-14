@@ -1,0 +1,48 @@
+{
+  "priority": 10,
+  "request": {
+    "method": "GET",
+    "urlPath": "/search/v1/local",
+    "headers": {
+      "X-NCP-APIGW-API-KEY-ID": {
+        "matches": ".+"
+      },
+      "X-NCP-APIGW-API-KEY": {
+        "matches": ".+"
+      }
+    },
+    "queryParameters": {
+      "query": {
+        "matches": ".+"
+      },
+      "display": {
+        "matches": "[1-5]"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json; charset=UTF-8"
+    },
+    "jsonBody": {
+      "lastBuildDate": "Tue, 14 Jul 2026 09:00:00 +0900",
+      "total": 1,
+      "start": 1,
+      "display": 1,
+      "items": [
+        {
+          "title": "<b>플레이스픽 가상 식당</b>",
+          "link": "https://example.invalid/places/1",
+          "category": "음식점>한식",
+          "description": "현행 Local 계약용 합성 응답",
+          "telephone": "",
+          "address": "서울특별시 테스트구 가상로 1",
+          "roadAddress": "서울특별시 테스트구 가상로 1",
+          "mapx": "1260000000",
+          "mapy": "370000000"
+        }
+      ]
+    }
+  }
+}

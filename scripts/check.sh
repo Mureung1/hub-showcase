@@ -46,6 +46,9 @@ done < <(find \
   "${ROOT_DIR}/observability" \
   -type f -name '*.json' -print0)
 
+log 'running Naver local-live guard negative tests'
+bash "${ROOT_DIR}/scripts/naver-live-contract-guard-test.sh"
+
 if [[ -f "${ROOT_DIR}/package.json" ]] \
   && node -e "const p=require(process.argv[1]); process.exit(p.scripts?.['docs:check'] ? 0 : 1)" "${ROOT_DIR}/package.json"; then
   log 'running repository documentation policy checks'
@@ -53,6 +56,10 @@ if [[ -f "${ROOT_DIR}/package.json" ]] \
   if node -e "const p=require(process.argv[1]); process.exit(p.scripts?.['docs:test'] ? 0 : 1)" "${ROOT_DIR}/package.json"; then
     log 'running documentation validator negative-fixture regressions'
     (cd "${ROOT_DIR}" && npm run docs:test)
+  fi
+  if node -e "const p=require(process.argv[1]); process.exit(p.scripts?.['edge:check'] ? 0 : 1)" "${ROOT_DIR}/package.json"; then
+    log 'running secret-free edge security boundary checks'
+    (cd "${ROOT_DIR}" && npm run edge:check)
   fi
 else
   log 'docs:check is not defined; skipping Node documentation checks'

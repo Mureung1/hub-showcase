@@ -2,21 +2,24 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/v1/search/local.json",
+    "urlPath": "/search/v1/local",
     "queryParameters": {
       "query": {
-        "equalTo": "force-error"
+        "equalTo": "force-forbidden"
       }
     }
   },
   "response": {
-    "status": 503,
+    "status": 403,
     "headers": {
       "Content-Type": "application/json; charset=UTF-8"
     },
     "jsonBody": {
-      "errorCode": "SE99",
-      "errorMessage": "Synthetic Naver upstream failure"
+      "error": {
+        "errorCode": "403",
+        "message": "Forbidden",
+        "details": "Synthetic access denial."
+      }
     }
   }
 }

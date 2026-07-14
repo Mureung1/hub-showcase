@@ -86,6 +86,60 @@ Browser
 ## Provider와 실행 환경 목표
 
 application은 Naver·OpenAI DTO가 아니라 검색·조건 추출·설명 생성 port에 의존한다.
-`local`, `test`, `load`와 필수 CI는 Mock adapter만 허용한다. 실제 adapter는
-`staging-live` GitHub Environment의 제한된 예약·수동 검증에서만 사용한다. 약관,
-비밀과 비용 경계는 [ADR-0007](adr/ADR-0007-provider-and-live-boundary.md)을 따른다.
+외부 실행은 다음 세 경계를 사용한다.
+
+```text
+Mock
+  -> local / test / load / required CI
+  -> fake credential + WireMock
+
+Local Live
+  -> reviewed developer commit
+  -> gitignored .env.live.local
+  -> isolated Naver contract task
+  -> NAVER API HUB Local 1 call + Blog 1 call
+
+Deployment Live (planned)
+  -> GitHub OIDC -> Approval Gate
+  -> short-lived scoped credential -> Provider Gateway
+  -> NAVER API HUB
+```
+
+`local`, `test`, `load`와 필수 CI는 Mock adapter만 허용한다. 일반 앱과 표준 검증은
+`.env.live.local`을 읽지 않는다. Local Live는 현재 인증·schema만 확인하고 응답을
+메모리에서 폐기한다. 배포 Live의 원본 key는 외부 Provider Gateway만 소유하며 공유
+Fork, GitHub Actions, Vercel과 Render에는 전달하지 않는다.
+
+Provider Gateway는 Local·Blog GET과 제한된 query만 허용하고 client의 Naver 인증
+header를 제거한 뒤 자체 secret을 주입한다. Approval Gate는 사용자의 actor와 승인
+SHA·workflow, OIDC issuer·audience·만료와 replay를 검증한다. 이 Gateway 프로그램의
+자동 검증과 실제 edge 배포는 별도 상태이며 현재 cloud resource는 배포되지 않았다.
+
+Naver 약관과 표시 의무를 사람이 확인하기 전에는 Local·Blog 결과 결합, 후보의 영구
+저장과 LLM 전달을 차단한다. 약관, 비밀과 비용 경계는
+[ADR-0009](adr/ADR-0009-mock-local-live-gateway-boundary.md)을 따른다.
+
+## 무료 데모 배포 목표
+
+아래 topology는 PP-033·PP-035에서 검증할 포트폴리오 demo 목표이며 현재 배포된
+서비스가 아니다.
+
+```text
+Browser
+  -> Vercel Hobby Next.js
+    -> same-origin API/SSE proxy
+      -> Render Free Singapore: Java 17 role=all
+        -> Neon Free PostgreSQL
+        -> Upstash Free Redis Streams
+        -> Provider Gateway -> NAVER API HUB
+```
+
+Render Free에는 독립 무료 Worker가 없어 demo에서만 같은 artifact의 `all` 역할을
+사용한다. idle sleep·cold start, 단일 process와 무료 한도를 수용하므로 상시 운영이나
+SLA 환경으로 표현하지 않는다. Vercel proxy를 통과하는 SSE는 연결 종료 뒤
+`Last-Event-ID`와 DB snapshot으로 수렴해야 한다. Upstash REST는 blocking Streams
+consumer를 지원하지 않으므로 Worker는 TLS Redis protocol을 사용한다.
+
+플랫폼 선택과 재검토 조건은
+[ADR-0010](adr/ADR-0010-free-demo-deployment-boundary.md)을 따른다. 실제 canary,
+edge와 demo 배포 성공은 각각 실행 증거가 생긴 뒤에만 이 문서의 현재 경계로 옮긴다.
