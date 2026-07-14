@@ -482,7 +482,12 @@ LLM은
 이를 통해 사용자는 보다 쉽고 빠르게 올바른 분리배출 방법을 확인할 수 있으며, 한국의 복잡한 분리배출 규정을 누구나 이해할 수 있는 형태로 제공하는 것을 목표로 한다.
 
 # 2주차 개발 기획
+## 완료 작업 목록
 [Issue #1] [FE/P0] SearchPage Mock 구현 및 라우팅 스켈레톤 구축
-https://github.com/connect-AIAgentChallenge-26-1/hub/issues/899
+https://github.com/ymina25/hub/issues/1
 
 [Issue #2] [BE/P0] Supabase 연결 및 Item 단일 테이블 스키마 설계
+https://github.com/ymina25/hub/issues/2
+
+[Issue #3] [FE/BE/P0] [Vertical Slice 완결] 품목 검색 실데이터 서버-DB 연동
+https://github.com/ymina25/hub/issues/3
