@@ -1,0 +1,118 @@
+// 네이버지도 연동 전까지 화면 작업용 mock 데이터.
+// lat/lng는 대전 시내 대략적인 위치로 잡은 placeholder — 정확한 주소는 아직 실사 전.
+// TODO(2주차): "빵집 데이터 수집" 백로그 항목에서 실제 주소/좌표로 교체하고 서버 GET /api/bakeries로 대체.
+export const bakeries = [
+  {
+    id: 1,
+    name: '성심당 본점',
+    menu: '튀김소보로',
+    lat: 36.3282,
+    lng: 127.4288,
+    phone: '042-1234-5678',
+    busy: '토·일 오후 2~4시',
+    busyStart: 14,
+    busyEnd: 16,
+    openHour: 8,
+    closeHour: 22,
+    price: 2,
+    category: ['식빵', '단팥빵'],
+    rating: 4.6,
+    reviews: ['튀김소보로는 역시 최고예요 :)', '평일에도 줄이 길지만 그만한 가치가 있어요'],
+  },
+  {
+    id: 2,
+    name: '하레하레',
+    menu: '크루아상',
+    lat: 36.3504,
+    lng: 127.3845,
+    phone: '042-2345-6789',
+    busy: '평일 오전 10~11시',
+    busyStart: 10,
+    busyEnd: 11,
+    openHour: 7,
+    closeHour: 20,
+    price: 3,
+    category: ['크루아상'],
+    rating: 4.4,
+    reviews: ['버터향이 진한 크루아상이에요', '마감 전에 가야 원하는 종류를 구할 수 있어요'],
+  },
+  {
+    id: 3,
+    name: '앤드유',
+    menu: '스콘',
+    lat: 36.3617,
+    lng: 127.356,
+    phone: '042-3456-7890',
+    busy: '주말 오전 11시~1시',
+    busyStart: 11,
+    busyEnd: 13,
+    openHour: 9,
+    closeHour: 21,
+    price: 1,
+    category: ['스콘'],
+    rating: 4.2,
+    reviews: ['가성비 좋은 스콘 맛집', '내부가 아늑해서 앉아 먹기 좋아요'],
+  },
+  {
+    id: 4,
+    name: '브레드메종',
+    menu: '식빵',
+    lat: 36.3391,
+    lng: 127.3927,
+    phone: '042-4567-8901',
+    busy: '평일 오후 6~7시',
+    busyStart: 18,
+    busyEnd: 19,
+    openHour: 10,
+    closeHour: 20,
+    price: 2,
+    category: ['식빵'],
+    rating: 4.5,
+    reviews: ['식빵 결이 부드러워요', '저녁엔 금방 품절되니 서둘러야 해요'],
+  },
+  {
+    id: 5,
+    name: '밀도베이커리',
+    menu: '바게트',
+    lat: 36.3159,
+    lng: 127.4204,
+    phone: '042-5678-9012',
+    busy: '주말 오후 3~5시',
+    busyStart: 15,
+    busyEnd: 17,
+    openHour: 8,
+    closeHour: 22,
+    price: 1,
+    category: ['바게트'],
+    rating: 4.1,
+    reviews: ['겉바속촉 바게트예요', '가격도 착해서 자주 가요'],
+  },
+  {
+    id: 6,
+    name: '정든집빵집',
+    menu: '단팥빵',
+    lat: 36.3729,
+    lng: 127.3866,
+    phone: '042-6789-0123',
+    busy: '평일 오전 9~10시',
+    busyStart: 9,
+    busyEnd: 10,
+    openHour: 8,
+    closeHour: 22,
+    price: 2,
+    category: ['단팥빵'],
+    rating: 4.3,
+    reviews: ['옛날 감성 단팥빵이에요', '사장님이 친절하세요'],
+  },
+];
+
+export const findBakery = (id) => bakeries.find((b) => b.id === id);
+
+export const allCategories = [...new Set(bakeries.flatMap((b) => b.category))];
+
+// 데모용 현재 시각(24시간제, 소수=분 단위). 마감임박/한산해요 상태 재현용.
+export const DEMO_NOW = 19.5;
+
+// 대전 시청 인근 — 지도 초기 중심 좌표 겸 "내 주변 가까운 순" 정렬 기준점.
+export const daejeonCenter = { lat: 36.3504, lng: 127.3845 };
+export const myLocation = daejeonCenter;

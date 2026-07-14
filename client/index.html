@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>빵지도</title>
+  <!-- 네이버지도 SDK는 여기서 정적으로 로드하지 않고, src/utils/loadNaverMaps.js에서 동적으로 주입한다
+       (키 미설정/로드 실패 시 지도 화면에서 안내 메시지를 보여주기 위함). 키는 client/.env의 VITE_NAVER_MAP_CLIENT_ID. -->
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>
