@@ -1,6 +1,6 @@
 const categoryOptions = ["단백질", "채소", "주식", "소스/양념", "간편식"];
 
-export default function IngredientForm({ formValues, errors, isEditing, onChange, onSubmit, onCancel }) {
+export default function IngredientForm({ formValues, errors, isEditing, isSubmitting, onChange, onSubmit, onCancel }) {
   const expiryDays = Number(formValues.expiryDays);
   const ddayHint = formValues.expiryDays === "" || !Number.isInteger(expiryDays) || expiryDays < 0
     ? "남은 일수를 입력하면 D-day로 표시됩니다."
@@ -69,8 +69,8 @@ export default function IngredientForm({ formValues, errors, isEditing, onChange
         </label>
       </div>
 
-      <button type="submit">{isEditing ? "수정 완료" : "냉장고에 담기"}</button>
-      {isEditing && <button className="ghost-action" type="button" onClick={() => onCancel()}>수정 취소</button>}
+      <button type="submit" disabled={isSubmitting}>{isSubmitting ? "등록 중..." : isEditing ? "수정 완료" : "냉장고에 담기"}</button>
+      {isEditing && <button className="ghost-action" type="button" onClick={() => onCancel()} disabled={isSubmitting}>수정 취소</button>}
     </form>
   );
 }
