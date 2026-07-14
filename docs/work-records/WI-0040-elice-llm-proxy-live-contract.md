@@ -139,6 +139,12 @@ binary를 포함한 test report 71개도 비밀·본문 안전 scan을 통과했
 실행하지 않아 이 전체 검증에서 실제 provider 호출은 0회였다. 자동 검증과 Live 상태를
 다음처럼 분리한다.
 
+후속 CI 도구 수정 commit `cb6213acc044515a2ba484d8ed7be32cba8f03bd`에서는 공식
+ripgrep 14.1.1 artifact·SHA-256 검증을 추가했다. 원격 CI run `29337507462`의
+정책·Compose와 Java 17 backend job, Dev Container smoke run `29337507340`이 모두
+통과했다. 이 원격 성공은 무비밀 자동 하네스의 재현성 증거이며 실패한 Naver·Elice
+Local Live 상태를 성공으로 바꾸지 않는다.
+
 | 증거 | 현재 상태 | 완료 기준 |
 | --- | --- | --- |
 | Elice 자동 타깃 검증 | 통과 | 60 tests·20 mapping JSON·Live source compile, failures·errors 0 |

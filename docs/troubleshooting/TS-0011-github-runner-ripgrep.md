@@ -2,7 +2,7 @@
 id: TS-0011
 title: GitHub runner의 ripgrep 누락으로 인한 보고서 안전 검사 중단
 type: troubleshooting
-status: draft
+status: verified
 date: 2026-07-14
 owners:
   - placepick-platform
@@ -54,9 +54,16 @@ GitHub-hosted runner 이미지에 암묵적으로 의존한 것이다.
 ## 검증과 재발 방지
 
 ShellCheck, actionlint, scanner 정상·금지 payload·binary·`rg` 누락 fixture와 전체
-`make check`를 먼저 로컬 Dev Container에서 실행한다. 수정 SHA를 push한 뒤 PR #41의
-`Repository policy and Compose`와 `Java 17 backend check`가 모두 통과해야 이 문서를
-`verified`로 바꾼다.
+`make check`를 먼저 로컬 Dev Container에서 실행했다. 수정 SHA를 push한 뒤 PR #41의
+`Repository policy and Compose`, `Java 17 backend check`와 Dev Container smoke가
+모두 통과하는 것을 `verified` 완료 조건으로 두었다.
+
+수정 commit `cb6213acc044515a2ba484d8ed7be32cba8f03bd`의 CI run
+`29337507462`에서 이전에 실패한 `Repository policy and Compose`가 48초,
+`Java 17 backend check`가 2분 8초에 성공했다. 같은 commit의 Dev Container smoke run
+`29337507340`도 2분 2초에 성공했다. 세 job 모두 provider credential이나
+`id-token: write` 없이 실행됐으며 실제 Live task는 호출하지 않았다. 따라서 runner
+사전 설치 도구에 의존하지 않고 fail-closed scanner를 유지한다는 완료 기준을 충족했다.
 
 향후 runner image나 CPU architecture를 바꿀 때는 지원 artifact와 SHA-256을 별도로
 검토한다. 다운로드나 checksum 검증이 실패하면 CI가 중단되는 것이 의도된 동작이며,
