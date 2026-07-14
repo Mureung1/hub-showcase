@@ -52,7 +52,7 @@
 | 단어장 백엔드 신규 | routes/vocabulary.js, vocabularyStore.js, data 파일 | 최우선 | 수 | ⬜ |
 | analyzeArticle 단어장 자동 적재 연동 | terms 자동 저장 | 최우선 | 수 | ⬜ |
 | 투자 판단 API에 marketSentiment 배선 | decisions.js/decisionStore.js/api client | P0 | 수 | ⬜ |
-| Reader.jsx sentences/marketSentiment 연동 | 아코디언 렌더링 + handleDecide 수정 | 최우선 | 수 | ⬜ |
+| Reader.jsx sentences/marketSentiment 연동 | 아코디언 렌더링(점선 힌트, reason 미노출) + handleDecide 수정 + AI 인사이트 패널 marketSentiment 뱃지(buy/hold/sell 톤 재사용) | 최우선 | 수 | ✅ |
 | 단어장 화면 신규 | Vocabulary.jsx, api/vocabulary.js, App.jsx 라우트 | 최우선 | 목 | ⬜ |
 | 마이페이지 상세뷰 재작성 | MyPage.jsx + DecisionDetail.jsx | P0 | 목 | ⬜ |
 | 나의 판단 vs AI marketSentiment 비교 UI | 상세뷰 내 비교 컴포넌트 | P0 | 목 | ⬜ |
