@@ -8,9 +8,9 @@
 
 ## Question
 
-Pinned generated schema의 wire shape와 Rust source/tests의 method별 observable semantics를 TypeScript external client로 source-guided port하는 원칙, `CodexAppServerConnection → CodexConversationRuntime → AYPLE adapter`의 dependency direction과 runtime-before-product gate를 어떤 ADR로 기록할 것인가? 기존 all-capability `HeadlessCodexClientHost`를 compatibility target 없이 supersede하고, upstream보다 강한 제품 behavior는 adapter-owned deviation으로 남긴다.
+Pinned generated schema의 wire shape와 Rust source/tests의 method별 observable semantics를 TypeScript external client로 source-guided port하는 원칙과 `CodexAppServerConnection → CodexConversationRuntime` production dependency direction을 어떤 ADR로 기록할 것인가? 기존 all-capability `HeadlessCodexClientHost`를 compatibility target 없이 supersede하고, future chat tracer를 막는 generic Host state machine이나 one-shot product abstraction을 foundation에 넣지 않는다.
 
-ADR은 decisions JSON/generated inventory coverage ledger, lifecycle fact/source-test authority와 fake/live external conformance의 역할을 분리하고, TUI·Exec surface policy와 사용하지 않는 method를 포팅하지 않는 경계를 포함한다.
+ADR은 decisions JSON/generated inventory coverage ledger, lifecycle fact/source-test authority와 fake/live external conformance의 역할을 분리하고, T0·T0-C·T0.1 뒤 multi-turn·streaming·control·resume·activity tracer를 확장할 수 있는 경계를 포함한다. Three-root preparation은 external capability로만 다루고 TUI·Exec surface policy, 사용하지 않는 method와 `AYPLE adapter`를 foundation에 포팅하지 않는다. Product composition correction은 out-of-scope [첫 AY-PLE adapter tracer와 runtime readiness gate](018-decide-first-ayple-adapter-tracer.md)의 future evidence이며 이 ADR의 blocker나 책임이 아니다.
 
 ## Answer
 

@@ -127,7 +127,7 @@ Method row만으로 아래 acceptance를 표현할 수 없다. `contracts` regis
 | `runtime.semantic-result-gate` | `conversation-runtime` | T0, T0-C | unit completed AgentMessage + authoritative terminal, fake full success/failure |
 | `connection.mutation-outcome` | `app-server-connection` | T0, T0-C, T0.1 | unit pre-wire·write-attempted·response-confirmed table + fake timeout/response-loss/terminal cut |
 | `runtime.semantic-outcome` | `thread-actor` | T0, T0-C, T0.1 | unit accepted-execution·semantic-settled table + fake partial observation·actor-local sink |
-| `layout.explicit-three-root` | `product-runtime-layout` | T0 bootstrap | existing layout unit + public runtime fake/live launch; Rust source evidence 대상 아님 |
+| `layout.explicit-three-root` | `runtime-preparation` | T0 bootstrap | existing layout unit + public runtime fake/live launch; Rust source evidence 대상 아님 |
 
 `layout.explicit-three-root`는 T0 prerequisite지만 Codex-native protocol semantic은 아니다. Ledger owner를 별도로 두면 product policy를 Rust source에서 유도했다고 잘못 표시하지 않는다.
 
@@ -184,7 +184,7 @@ Flat map을 다음 versioned object로 바꾼다.
 | --- | --- | --- |
 | `integrations[]` | `runtime-harness | legacy-client-host | app-server-connection | conversation-runtime | ayple-adapter` | 현재 실제로 구현된 surface의 set. Omitted/empty면 generated inventory가 `schema-only`로 표시한다. |
 | `adoption` | 기존 `unreviewed | baseline | later | case-driven | excluded` 유지 | 이번 ticket은 adoption 의미를 불필요하게 재정의하지 않는다. Named tracer coverage가 broad baseline intent와 실제 채택 slice를 구분한다. |
-| `owner` | `app-server-connection | conversation-runtime | thread-actor | product-runtime-layout | ayple-adapter` | 해당 coverage의 semantic authority |
+| `owner` | `app-server-connection | conversation-runtime | thread-actor | runtime-preparation | ayple-adapter` | 해당 coverage의 semantic authority |
 | `coverage` | `required | tolerated | unsupported | deferred` | Tracer case별 wire/semantic 의무. `tolerated`도 parse·validate·route oracle이 필요하며 occurrence나 authority는 요구하지 않는다. |
 | `verification.*.requirement` | `required | not-required` | 해당 oracle이 이 coverage의 증명에 필요한지 나타낸다. 실행 시점은 `gates[]`가 구분하므로 별도 conditional 상태를 만들지 않는다. |
 | `verification.*.implementation` | `planned | implemented` | Test/probe가 존재하는지. `required`일 때 필수이고 `not-required`일 때는 생략한다. 최근 run이 pass했는지는 뜻하지 않는다. |

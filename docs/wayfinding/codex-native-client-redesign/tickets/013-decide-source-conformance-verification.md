@@ -60,7 +60,7 @@ Writer callback이 사라지는 경로는 pipe timing에 맡기지 않고 packag
 - `methods`는 named tracer/case별 `owner`, `coverage`, source evidence와 `unit | fakeChild | liveBinary` verification을 기록한다.
 - `contracts`는 single JSONL ingress, direction-aware `RequestId`, pending settlement, Server response lease, process terminal/reap, bounds·safe retention, Connection wire-stage outcome, Runtime semantic outcome과 explicit three-root처럼 method row가 아닌 acceptance를 기록한다. Wire outcome과 semantic outcome은 단일 composite owner로 합치지 않는다.
 - `integrations[]`는 `runtime-harness | legacy-client-host | app-server-connection | conversation-runtime | ayple-adapter`의 unique set이다. Empty/omitted만 generated inventory에서 `schema-only`로 보인다. Integration은 linear maturity scalar가 아니다.
-- `owner`는 `app-server-connection | conversation-runtime | thread-actor | product-runtime-layout | ayple-adapter`, verification requirement는 `required | not-required`, implementation은 `planned | implemented`, gate는 `general-pr | runtime-tracer-pr | pin-upgrade`를 사용한다. 실행 시점은 gate가 구분하므로 별도 conditional 상태를 만들지 않는다. `required` verification은 implementation field가 필수이고 `not-required`는 이를 생략하며 empty gates/evidence만 허용한다.
+- `owner`는 `app-server-connection | conversation-runtime | thread-actor | runtime-preparation | ayple-adapter`, verification requirement는 `required | not-required`, implementation은 `planned | implemented`, gate는 `general-pr | runtime-tracer-pr | pin-upgrade`를 사용한다. 실행 시점은 gate가 구분하므로 별도 conditional 상태를 만들지 않는다. `required` verification은 implementation field가 필수이고 `not-required`는 이를 생략하며 empty gates/evidence만 허용한다.
 - `implemented`는 stable local test/probe selector가 존재한다는 뜻일 뿐 최근 pass·timestamp·branch SHA가 아니다. Transient pass/fail은 CI와 implementation ticket Result가 소유한다.
 - Generated schema가 direction과 maturity를 소유하고 ledger는 이를 복사하지 않는다. Source evidence path·line은 provenance manifest가 가리키는 exact pin에 묶는다. Ordering·identity authority·terminal state는 계속 lifecycle fact table과 pinned source/tests에서만 도출한다.
 
@@ -97,6 +97,12 @@ Ticket 018이 첫 adapter tracer와 실제 prerequisite를 선택한다. Adapter
 새로운 product 결정은 없다. Source-guided baseline, Connection → ConversationRuntime → AYPLE adapter seam, runtime-first gate와 inventory의 비권위성은 이미 승인되었다. 이 ticket은 그 승인을 executable evidence와 machine-readable coverage 규칙으로 구체화한다. Parser 구현 방식, promotion backup naming·cleanup deadline, local evidence selector 형식, exact cap default는 후속 spec/ticket의 package-private implementation detail이며 product 선택으로 올리지 않는다.
 
 따라서 같은 seam이나 product dependency를 다시 묻지 않고 standing approval을 적용한다.
+
+### Runtime-foundation scope recovery
+
+후속 사용자 verdict에 따라 위 product-readiness 문단과 `ayple-adapter` integration·owner vocabulary는 future product ledger 확장을 위한 비활성 예약이며 현재 map의 completion, foundation promotion이나 implementation prerequisite가 아니다. Foundation checkpoint는 `app-server-connection`, `conversation-runtime`, `thread-actor`와 external `runtime-preparation` contract만 사용한다. 실제 product integration row가 없는 상태를 validator failure로 보지 않으며 Ticket 018은 [out-of-scope disposition](018-decide-first-ayple-adapter-tracer.md)으로 future product goal을 가리킨다.
+
+같은 scope correction으로 세 root의 canonicalization·overlap·launcher capability를 소유하는 non-method owner 이름을 `product-runtime-layout`에서 `runtime-preparation`으로 바로잡는다. 이는 T0 prerequisite와 기존 oracle을 바꾸지 않고, 해당 contract가 Codex-native protocol semantics나 `CodexConversationRuntime` identity authority가 아니라는 기존 결정을 더 정확히 표현한다. Source-guided lifecycle, T0·T0-C·T0.1 coverage, planned/implemented promotion과 fail-safe generation 결정은 다시 열지 않는다.
 
 ### Review checkpoint
 
