@@ -9,6 +9,7 @@ import { useAuth } from './use_auth';
 
 afterEach(() => {
   cleanup();
+  window.history.replaceState({}, '', '/');
 });
 
 function createServiceMock() {
@@ -33,11 +34,12 @@ function createServiceMock() {
 }
 
 function AuthProbe() {
-  const { authState, signInWithGoogle, signOut } = useAuth();
+  const { authErrorMessage, authState, signInWithGoogle, signOut } = useAuth();
 
   return (
     <div>
       <p>{authState.status}</p>
+      {authErrorMessage ? <p>{authErrorMessage}</p> : null}
       {authState.status === 'signed-in' ? (
         <p>{authState.user.displayName}</p>
       ) : null}
@@ -100,5 +102,53 @@ describe('AuthProvider', () => {
 
     view.unmount();
     expect(auth.unsubscribe).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { label: 'missing', userMetadata: undefined },
+    { label: 'null', userMetadata: null },
+  ])(
+    'falls back to the email when user metadata is $label',
+    ({ userMetadata }) => {
+      const auth = createServiceMock();
+      render(
+        <AuthProvider service={auth.service}>
+          <AuthProbe />
+        </AuthProvider>
+      );
+
+      act(() =>
+        auth.emit({
+          user: {
+            email: 'member@example.com',
+            id: 'user-without-metadata',
+            user_metadata: userMetadata,
+          },
+        })
+      );
+
+      expect(screen.getByText('member@example.com')).not.toBeNull();
+    }
+  );
+
+  it('shows an OAuth callback error once and removes it from the URL', () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/?error=access_denied&error_description=cancelled&keep=value#section'
+    );
+    const auth = createServiceMock();
+
+    render(
+      <AuthProvider service={auth.service}>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    expect(
+      screen.getByText('Google 로그인이 취소되었습니다. 다시 시도해 주세요.')
+    ).not.toBeNull();
+    expect(window.location.search).toBe('?keep=value');
+    expect(window.location.hash).toBe('#section');
   });
 });

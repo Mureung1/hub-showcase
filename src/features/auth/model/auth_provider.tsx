@@ -13,7 +13,10 @@ import {
   type AuthService,
   type AuthSession,
 } from '../api/auth_service';
-import { readAuthCallbackError } from './auth_callback_error';
+import {
+  getUrlWithoutAuthCallbackError,
+  readAuthCallbackError,
+} from './auth_callback_error';
 import { AuthContext } from './auth_context';
 import type { AuthAction, AuthState, AuthUser } from './auth_types';
 
@@ -23,9 +26,13 @@ export type AuthProviderProps = {
 };
 
 function readMetadataText(
-  metadata: Record<string, unknown>,
+  metadata: Record<string, unknown> | null | undefined,
   key: string
 ): string | undefined {
+  if (!metadata) {
+    return undefined;
+  }
+
   const value = metadata[key];
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
@@ -82,6 +89,18 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
   const [authErrorMessage, setAuthErrorMessage] = useState<string | undefined>(
     initialAuthError
   );
+
+  useEffect(() => {
+    if (!initialAuthError) {
+      return;
+    }
+
+    const cleanUrl = getUrlWithoutAuthCallbackError(window.location.href);
+
+    if (cleanUrl) {
+      window.history.replaceState(window.history.state, '', cleanUrl);
+    }
+  }, [initialAuthError]);
 
   useEffect(
     () =>

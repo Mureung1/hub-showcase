@@ -4,7 +4,7 @@ export type AuthSession = {
   user: {
     email?: string;
     id: string;
-    user_metadata: Record<string, unknown>;
+    user_metadata?: Record<string, unknown> | null;
   };
 };
 
