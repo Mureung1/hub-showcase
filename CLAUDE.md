@@ -41,7 +41,7 @@ briefy/
 │  └─ schemas.ts           # zod 스키마 (엔티티·파싱 결과 단일 정의)
 ├─ supabase/
 │  └─ migrations/          # 테이블 생성 SQL (반드시 커밋)
-├─ docs/                   # plan.md, design.md, wireframes/, hifi/
+├─ docs/                   # plan.md, design.md, wireframes/, prototype/
 ├─ .claude/                # skills/briefy-ui/ (디자인 토큰·컴포넌트 규칙)
 ├─ tsconfig.json           # FE + shared 용
 ├─ tsconfig.server.json    # BE + shared 용
