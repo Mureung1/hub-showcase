@@ -7,7 +7,9 @@ type AdminDashboardProps = {
 }
 
 function AdminDashboard({ appointmentId }: AdminDashboardProps) {
-  const [showCloseModal, setShowCloseModal] = useState(false)
+  const [showCloseModal, setShowCloseModal] = useState(false) 
+  // study: useState의 초기값이 false 인 이유 = 결과 확정 확인 modal 창은 버튼을 눌러야 나오기 때문. 아래 button 에서 click event 발생시 true로 변경. 투표 생성 시 바로 나온 것과 반대
+
 
   return (
     <div className="page-stack">
@@ -15,7 +17,7 @@ function AdminDashboard({ appointmentId }: AdminDashboardProps) {
       <Link to={`/a/${appointmentId}/schedule`} className="button">
         일정 투표하기
       </Link>
-      <button type="button" className="button--secondary" onClick={() => setShowCloseModal(true)}>
+      <button type="button" className="button--secondary" onClick={() => setShowCloseModal(true)}> 
         투표 마감하기
       </button>
 
