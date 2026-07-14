@@ -1,9 +1,9 @@
 import styled from '@emotion/styled'
-import { useQuery } from '@tanstack/react-query'
 import { ArrowDownRight, ArrowRight, ArrowUpRight, RefreshCw } from 'lucide-react'
 
-import { fetchMarketSignals, type MarketSignal } from '../api/market'
-import { useWatchlistStore } from '../stores/useWatchlistStore'
+import { useGetMarketSignalsQuery } from '@/entities/market'
+import type { MarketSignal } from '@/entities/market'
+import { useWatchlistStore } from '@/features/watchlist'
 
 const PageHeader = styled.div`
   display: grid;
@@ -194,13 +194,10 @@ function getTrendIcon(trend: MarketSignal['trend']) {
   return <ArrowRight size={20} aria-hidden="true" />
 }
 
-export function HomePage() {
+export default function HomePage() {
   const addSymbol = useWatchlistStore((state) => state.addSymbol)
   const symbols = useWatchlistStore((state) => state.symbols)
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ['market-signals'],
-    queryFn: fetchMarketSignals,
-  })
+  const { data, isLoading, isError, refetch, isFetching } = useGetMarketSignalsQuery()
 
   return (
     <>

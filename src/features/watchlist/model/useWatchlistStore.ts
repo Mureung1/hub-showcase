@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-type WatchlistState = {
+interface WatchlistState {
   symbols: string[]
   addSymbol: (symbol: string) => void
   removeSymbol: (symbol: string) => void

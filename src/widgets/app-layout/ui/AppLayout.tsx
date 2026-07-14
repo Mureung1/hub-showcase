@@ -80,7 +80,7 @@ const Main = styled.main`
   padding: 32px 0 48px;
 `
 
-export function AppLayout() {
+export const AppLayout = () => {
   return (
     <Shell>
       <Header>

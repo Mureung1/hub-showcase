@@ -1,7 +1,7 @@
 import styled from '@emotion/styled'
 import { Trash2 } from 'lucide-react'
 
-import { useWatchlistStore } from '../stores/useWatchlistStore'
+import { useWatchlistStore } from '@/features/watchlist'
 
 const Header = styled.div`
   display: grid;
@@ -72,7 +72,7 @@ const EmptyState = styled.p`
   color: #4b5563;
 `
 
-export function WatchlistPage() {
+export default function WatchlistPage() {
   const symbols = useWatchlistStore((state) => state.symbols)
   const removeSymbol = useWatchlistStore((state) => state.removeSymbol)
 

@@ -1,6 +1,9 @@
+import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 
-import { api } from './client'
+import { api } from '@/shared/api'
+
+import { MarketQueryKeys } from './_keys'
 
 export const marketSignalSchema = z.object({
   symbol: z.string().min(1),
@@ -14,7 +17,7 @@ export type MarketSignal = z.infer<typeof marketSignalSchema>
 
 const marketSignalListSchema = z.array(marketSignalSchema)
 
-const demoSignals: MarketSignal[] = [
+const DEMO_MARKET_SIGNALS: MarketSignal[] = [
   {
     symbol: 'NVDA',
     name: 'NVIDIA',
@@ -38,7 +41,7 @@ const demoSignals: MarketSignal[] = [
   },
 ]
 
-export async function fetchMarketSignals(): Promise<MarketSignal[]> {
+export async function getMarketSignals(): Promise<MarketSignal[]> {
   if (import.meta.env.VITE_USE_API === 'true') {
     const response = await api.get('/signals')
 
@@ -47,5 +50,12 @@ export async function fetchMarketSignals(): Promise<MarketSignal[]> {
 
   await new Promise((resolve) => window.setTimeout(resolve, 250))
 
-  return marketSignalListSchema.parse(demoSignals)
+  return marketSignalListSchema.parse(DEMO_MARKET_SIGNALS)
+}
+
+export const useGetMarketSignalsQuery = () => {
+  return useQuery({
+    queryKey: MarketQueryKeys.signals(),
+    queryFn: getMarketSignals,
+  })
 }

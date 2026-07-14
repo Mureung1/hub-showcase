@@ -1,10 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 
-import { AppLayout } from './components/AppLayout'
-import { HomePage } from './pages/HomePage'
-import { WatchlistPage } from './pages/WatchlistPage'
+import HomePage from '@/pages/home'
+import WatchlistPage from '@/pages/watchlist'
+import { AppLayout } from '@/widgets/app-layout'
 
-export default function App() {
+export const App = () => {
   return (
     <Routes>
       <Route element={<AppLayout />}>
