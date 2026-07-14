@@ -1,0 +1,326 @@
+.stock-page {
+  text-align: left;
+}
+
+.stock-status {
+  color: var(--text);
+  margin: 8px 0;
+}
+.stock-status--error {
+  color: var(--red);
+}
+
+.stock-back {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* 헤더 */
+.stock-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.stock-head__name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.stock-head__ticker {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+}
+.stock-head__price {
+  font-size: 20px;
+  color: var(--text-h);
+  margin-top: 4px;
+}
+.stock-star {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  white-space: nowrap;
+  transition:
+    border-color var(--transition),
+    color var(--transition),
+    background var(--transition);
+}
+.stock-star--active {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+.stock-star:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 레이아웃: 좌 차트 / 우 사이드 패널 */
+.stock-layout {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .stock-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stock-chart-card {
+  padding: 20px;
+}
+.stock-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.stock-chart-head__hint {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.stock-chart {
+  width: 100%;
+  height: 400px;
+}
+.stock-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text);
+}
+.stock-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.stock-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.stock-dot--square {
+  border-radius: 2px;
+}
+.stock-line {
+  width: 14px;
+  height: 0;
+  border-top: 2px dashed;
+  display: inline-block;
+}
+
+/* 우측 사이드 패널 */
+.stock-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.stock-panel {
+  padding: 18px 20px;
+}
+.stock-panel__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin-bottom: 12px;
+}
+
+/* 매매 기록 폼 */
+.stock-record {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.stock-record__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.stock-record__side {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+.stock-side-btn {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 0;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  transition:
+    border-color var(--transition),
+    background var(--transition),
+    color var(--transition);
+}
+.stock-side-btn--buy.is-active {
+  color: var(--up);
+  border-color: color-mix(in srgb, var(--up) 40%, transparent);
+  background: color-mix(in srgb, var(--up) 12%, transparent);
+}
+.stock-side-btn--sell.is-active {
+  color: var(--down);
+  border-color: color-mix(in srgb, var(--down) 40%, transparent);
+  background: color-mix(in srgb, var(--down) 12%, transparent);
+}
+.stock-side-btn--hold.is-active {
+  color: var(--hold);
+  border-color: color-mix(in srgb, var(--hold) 40%, transparent);
+  background: color-mix(in srgb, var(--hold) 16%, transparent);
+}
+.stock-record__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.stock-record__field input,
+.stock-record__field textarea {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-cell);
+  padding: 8px 10px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.stock-record__field input:focus,
+.stock-record__field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* 이 종목의 조건 */
+.stock-condition-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.stock-condition-row:first-of-type {
+  border-top: none;
+}
+.stock-condition-row__desc {
+  font-size: 13px;
+  color: var(--text-h);
+  margin-bottom: 4px;
+}
+.stock-condition-row__delete {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px;
+  border-radius: var(--r-pill);
+  transition:
+    color var(--transition),
+    background var(--transition);
+}
+.stock-condition-row__delete:hover {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 8%, transparent);
+}
+.stock-condition-row__delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 이 종목의 기록 (TradeRecordCard) */
+.stock-rec {
+  border-top: 1px solid var(--border);
+  padding: 12px 0;
+}
+.stock-rec:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+.stock-rec__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.stock-rec__sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+.stock-rec__memo {
+  width: 100%;
+  margin-top: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-cell);
+  padding: 8px 10px;
+  line-height: 145%;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.stock-rec__save {
+  margin-top: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+  border-radius: var(--r-pill);
+  padding: 6px 10px;
+}
+.stock-rec__save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.stock-rec__review {
+  margin-top: 8px;
+  width: 100%;
+  border: 1px solid var(--accent-border);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  font-size: 13px;
+  font-family: var(--sans);
+  border-radius: var(--r-cell);
+  padding: 9px;
+}
+.stock-rec__review:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.stock-rec__error {
+  color: var(--red);
+  font-size: 12px;
+  margin: 6px 0 0;
+}

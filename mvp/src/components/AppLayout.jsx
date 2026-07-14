@@ -1,11 +1,14 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import Icon from './Icon.jsx'
 import './AppLayout.css'
 
 const navItems = [
-  { to: '/conditions', label: '조건 관리' },
-  { to: '/journal', label: '저널' },
-  { to: '/history', label: '히스토리' },
+  // 허브(대시보드) → 관심종목 → 루프 히스토리(기록·복기 조회) → 보조 관리(조건 조회).
+  { to: '/dashboard', label: '대시보드', icon: 'layout-dashboard' },
+  { to: '/watchlist', label: '관심종목', icon: 'star' },
+  { to: '/history', label: '히스토리', icon: 'history' },
+  { to: '/conditions', label: '조건 관리', icon: 'list-checks' },
 ]
 
 /**
@@ -25,27 +28,37 @@ function AppLayout({ children }) {
   return (
     <div className="app-layout">
       <header className="app-nav">
-        <NavLink to="/journal" className="app-nav__logo">
-          Beacon
-        </NavLink>
-        <nav className="app-nav__links">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                isActive ? 'app-nav__link app-nav__link--active' : 'app-nav__link'
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-        <button type="button" className="app-nav__logout" onClick={handleLogout}>
-          로그아웃
-        </button>
+        <div className="app-nav__inner">
+          <NavLink to="/" className="app-nav__logo">
+            <span className="app-nav__logo-chip" aria-hidden="true">
+              <Icon name="notebook-pen" size={18} />
+            </span>
+            Beacon
+          </NavLink>
+          <div className="app-nav__right">
+            <nav className="app-nav__links">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    isActive ? 'app-nav__link app-nav__link--active' : 'app-nav__link'
+                  }
+                >
+                  <Icon name={item.icon} size={16} className="app-nav__link-icon" />
+                  <span className="app-nav__link-label">{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+            <button type="button" className="app-nav__logout" onClick={handleLogout}>
+              로그아웃
+            </button>
+          </div>
+        </div>
       </header>
-      <main className="app-content">{children}</main>
+      <main className="app-content">
+        <div className="app-content__inner">{children}</div>
+      </main>
     </div>
   )
 }

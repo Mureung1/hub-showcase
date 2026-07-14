@@ -92,13 +92,13 @@
 }
 
 .review-badge--buy {
-  color: #e0453f;
-  background: rgba(224, 69, 63, 0.1);
+  color: var(--up);
+  background: color-mix(in srgb, var(--up) 12%, transparent);
 }
 
 .review-badge--sell {
-  color: #2f6bd6;
-  background: rgba(47, 107, 214, 0.1);
+  color: var(--down);
+  background: color-mix(in srgb, var(--down) 12%, transparent);
 }
 
 /* 복기 요청 (review 없을 때) */

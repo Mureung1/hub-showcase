@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
 import { useSession } from '../lib/useSession.js'
 import AppLayout from './AppLayout.jsx'
 
@@ -8,7 +8,6 @@ import AppLayout from './AppLayout.jsx'
  */
 function ProtectedRoute() {
   const { session, loading } = useSession()
-  const location = useLocation()
 
   if (loading) {
     return (
@@ -19,7 +18,7 @@ function ProtectedRoute() {
   }
 
   if (!session) {
-    return <Navigate to="/login" replace state={{ from: location }} />
+    return <Navigate to="/login" replace />
   }
 
   return (
