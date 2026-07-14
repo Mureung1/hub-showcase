@@ -12,6 +12,7 @@ source "${ROOT_DIR}/scripts/lib/live-contract-env.sh"
 
 temp_dir=''
 gateway_pid=''
+# shellcheck disable=SC2329 # cleanup is invoked indirectly by the trap below.
 # shellcheck disable=SC2317 # trap에서 호출되는 정리 함수다.
 cleanup() {
   if [[ -n "${gateway_pid}" ]] && kill -0 "${gateway_pid}" 2>/dev/null; then
