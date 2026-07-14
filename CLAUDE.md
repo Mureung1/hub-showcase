@@ -65,7 +65,7 @@ hub_/
 - **포트**: 프론트엔드 5173(Vite 기본값), 백엔드 4000. `review-assistant-server/.env.example`에 `PORT=4000` 기본값 포함.
 - **CORS**: 백엔드가 `CORS_ORIGIN` 환경변수(기본 `http://localhost:5173`)만 허용.
 - **세션 ID**: 로그인 없는 익명 세션. 백엔드 `sessionId` 미들웨어가 `X-Session-Id` 요청 헤더를 읽고, 없으면 `crypto.randomUUID()`로 생성해 응답 헤더로 그대로 돌려준다. 프론트엔드는 이후 이 값을 저장(localStorage)해 재사용해야 한다 — **아직 프론트엔드 쪽 구현은 안 됨(2주차)**.
-- **에러 응답 형식**: `{ "error": { "code": "...", "message": "..." } }` — 기획서 5-4절과 동일. 코드: `EMPTY_INPUT` / `NO_VALID_REVIEW` / `TOO_MANY_REVIEWS` (400), `ANALYSIS_FAILED` (500). `review-assistant-server/src/middleware/errorHandler.js`에서 일괄 처리.
+- **에러 응답 형식**: `{ "error": { "code": "...", "message": "..." } }` — 기획서 5-4절과 동일. 코드: `EMPTY_INPUT` / `NO_VALID_REVIEW` / `TOO_MANY_REVIEWS` / `INVALID_JSON`(400), `ANALYSIS_FAILED` (500). `review-assistant-server/src/middleware/errorHandler.js`에서 일괄 처리.
 - **환경변수**: `.env`는 git에 올리지 않고 `.env.example`만 커밋. 향후 Claude API 연동 시 `ANTHROPIC_API_KEY`는 **백엔드 전용** — 프론트엔드에 절대 노출하지 않는다.
 
 ## 향후 Claude API 연동 (2주차 이후, 지금은 미구현)
