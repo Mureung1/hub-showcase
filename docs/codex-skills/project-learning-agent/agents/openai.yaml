@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Learning Agent"
+  short_description: "Keep hub learning notes short and code-referenced."
+  default_prompt: "Use project-learning-agent to update docs/learning with concise keywords, reasons, reference code paths, and ChatGPT study questions."

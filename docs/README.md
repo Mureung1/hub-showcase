@@ -13,6 +13,7 @@
 | [master-plan.md](master-plan.md) | 7월 30일까지의 최종 로드맵 |
 | [project-knowledge-map.md](project-knowledge-map.md) | 문서 간 관계, skill/asset 연결성, 계층 지도 |
 | [tasks.md](tasks.md) | GitHub Issue/Project 등록 단위의 개발 Task 백로그 |
+| [plans/completed/harness-recommended-implementation-2026-07-14.md](plans/completed/harness-recommended-implementation-2026-07-14.md) | 완료된 Recommended 하네스 구축 계획 |
 
 ## 계획·운영 문서
 
@@ -25,6 +26,7 @@
 | [tasks.md](tasks.md) | 우선순위가 표시된 전체 개발 Task 백로그 | 개발 Task 백로그 |
 | [github-project-guide.md](github-project-guide.md) | GitHub Issues/Projects 보드, 필드, 우선순위 표시 방식 | GitHub Project 운영 가이드 |
 | [status.md](status.md) | 완료, 검증, 다음 작업, 차단 요소 | 진행 상황 |
+| [plans/completed/harness-recommended-implementation-2026-07-14.md](plans/completed/harness-recommended-implementation-2026-07-14.md) | Codex 하네스 Recommended안 구축 결과 | Harness Plan |
 
 ## Agent 문서
 
@@ -38,7 +40,10 @@
 | [codex-skills/project-planning-agent/SKILL.md](codex-skills/project-planning-agent/SKILL.md) | 계획 수립 Agent를 Codex skill로 변환한 문서화 버전 | Planning Skill |
 | [codex-skills/project-verification-agent/SKILL.md](codex-skills/project-verification-agent/SKILL.md) | 기능 검증 Agent를 Codex skill로 변환한 문서화 버전 | Verification Skill |
 | [codex-skills/project-document-manager/SKILL.md](codex-skills/project-document-manager/SKILL.md) | 문서 관리 Agent를 Codex skill로 변환한 문서화 버전 | Document Skill |
+| [codex-skills/project-learning-agent/SKILL.md](codex-skills/project-learning-agent/SKILL.md) | 학습 키워드와 참고 코드 정리를 위한 Codex skill 문서화 버전 | Learning Skill |
 | [codex-skills/xp-desktop-pet-ui/SKILL.md](codex-skills/xp-desktop-pet-ui/SKILL.md) | XP 데스크톱 전자 매니저 UI 작업을 반복하기 위한 Codex skill 문서화 버전 | Codex Skill |
+| [../.codex/agents](../.codex/agents) | 프로젝트 전용 Codex 서브에이전트 역할 설정 | Harness Agents |
+| [../.agents/skills](../.agents/skills) | 요청 분석, 계획, 실행, 검증, Wiki 작업용 프로젝트 workflow skills | Harness Skills |
 
 ## 제품·화면·디자인 문서
 
@@ -50,6 +55,7 @@
 | [design-system.md](design-system.md) | concept.png 기반 XP 디자인 토큰과 컴포넌트 규칙 | Design System |
 | [future-expansion-plan.md](future-expansion-plan.md) | MVP 이후 기술·기능 확장 계획 | MVP 이후 확장 계획 |
 | [learning/README.md](learning/README.md) | 학습 키워드와 참고 코드 위치 | 학습 인덱스 |
+| [wiki/index.md](wiki/index.md) | 원본 자료와 생성 지식을 분리하는 프로젝트 Wiki 색인 | Project Wiki |
 | [archive/haetsalharu-plan.md](archive/haetsalharu-plan.md) | 이전 아이디어 백업 | 햇살하루 백업 |
 
 ## 에셋 관련 문서
@@ -101,4 +107,7 @@ public/prototype-static.html
 - 전체 백로그는 `tasks.md`에 둔다.
 - 오늘 계획과 이번 주 계획은 별도 날짜 문서에 둔다.
 - 완료/검증/다음 작업/차단 요소는 `status.md`에 둔다.
+- 승인된 실행 계획은 `plans/active/`에 두고, 완료 후 `plans/completed/`로 옮긴다.
+- 프로젝트 Wiki는 `wiki/`에 두고 원본 자료와 생성 요약을 구분한다.
 - 확장 기능은 `future-expansion-plan.md`와 P3 백로그에만 둔다.
+- `notion-dashboard-guide.md`는 오래된 문서로, 현재 공식 작업 흐름에는 사용하지 않는다.

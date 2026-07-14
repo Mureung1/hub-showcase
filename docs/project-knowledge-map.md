@@ -19,6 +19,12 @@ README.md
 AGENTS.md
 └─ Codex 작업 규칙 / 금지사항 / 필수 확인 문서
 
+.codex/
+└─ Codex 서브에이전트 역할 설정 / 보수적 병렬 실행 제한
+
+.agents/
+└─ 프로젝트 workflow skill / 요청 분석, 계획, 실행, 검증, Wiki 작업
+
 docs/README.md
 └─ 문서 목록 / 각 문서 한 줄 역할 / Wiki 연결
 
@@ -37,6 +43,7 @@ docs/project-knowledge-map.md
 │  ├─ planning-agent.md
 │  ├─ verification-agent.md
 │  ├─ document-management-agent.md
+│  ├─ project-learning-agent skill
 │  └─ agent-usage-guide.md
 ├─ 실행 규칙 줄기
 │  ├─ AGENTS.md
@@ -50,6 +57,8 @@ docs/project-knowledge-map.md
 │  ├─ tasks.md
 │  ├─ github-project-guide.md
 │  ├─ status.md
+│  ├─ plans/
+│  ├─ wiki/
 │  └─ learning/
 └─ 보관 줄기
    └─ archive/
@@ -104,6 +113,7 @@ product-plan.md
 | `agent-design.md` | 목표 해석, 퀘스트 생성, 리밸런싱, 피드백 Agent의 역할 정의 |
 | `planning-agent.md` | 요구사항을 Task와 일정으로 쪼개는 문서형 Agent |
 | `verification-agent.md` | 구현 결과를 시나리오와 데이터 흐름으로 점검하는 문서형 Agent |
+| `project-learning-agent skill` | 구현 중 생긴 학습 키워드, 참고 코드, ChatGPT 질문 예시를 짧게 정리 |
 | `future-expansion-plan.md` | 개인 LLM, 음성 입력, 웹캠, 소셜 탐색 등 MVP 이후 확장 |
 
 ## 4. 실행 규칙 줄기
@@ -141,6 +151,8 @@ master-plan.md
 | `tasks.md` | 우선순위가 표시된 전체 개발 Task 백로그 |
 | `github-project-guide.md` | GitHub Issues/Projects 보드, 필드, 우선순위 표시 방식 |
 | `status.md` | 완료, 검증, 다음 작업, 차단 요소만 기록 |
+| `plans/` | 승인된 활성 계획과 완료된 계획을 보관 |
+| `wiki/` | 원본 자료와 생성 지식을 구분하는 프로젝트 Wiki |
 | `learning/` | ChatGPT 프로젝트에 넣고 공부할 키워드와 참고 코드 위치 |
 
 ## 6. 보관 줄기
@@ -162,5 +174,7 @@ archive/
 - 실행 규칙 줄기
 - 운영·학습 줄기
 - 보관 줄기
+
+`docs/notion-dashboard-guide.md`는 오래된 문서이므로 현재 공식 작업 흐름에는 포함하지 않는다.
 
 어느 줄기에도 속하지 않으면 새 문서를 만들기보다 기존 문서에 합치는 것을 우선 검토한다.

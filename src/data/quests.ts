@@ -1,11 +1,11 @@
-import type { Quest, SocialQuestShard } from "../domain/types";
+﻿import type { Quest, SocialQuestShard } from "../domain/types";
 
 export const seedQuest: Quest = {
   id: "q-cert-db-15m",
   title: "DB 개념 15분 정리",
   type: "time",
-  detail: "정보처리기사 필기 · 데이터베이스",
-  target: "교재 10페이지를 훑고 헷갈린 용어 3개 표시",
+  detail: "정보처리기사 필기 중 데이터베이스 핵심 개념을 정리한다.",
+  target: "교재 10페이지를 읽고 헷갈리는 용어 3개를 표시한다.",
   rewardExp: 40,
   deadlineLabel: "오늘 23:59",
   visibility: "private",
@@ -23,13 +23,13 @@ export const socialQuestShards: SocialQuestShard[] = [
   {
     id: "shard-1",
     title: "오늘 10분만 걷기",
-    ownerLabel: "익명의 러너",
+    ownerLabel: "익명의 파트너",
     motif: "star",
     visibility: "anonymous_public",
   },
   {
     id: "shard-2",
-    title: "영단어 20개 복습",
+    title: "단어 20개 복습",
     ownerLabel: "밤공부 친구",
     motif: "flower",
     visibility: "anonymous_public",
