@@ -107,7 +107,11 @@ export function HomePage({
               <p className="home-page__kicker">작업팩</p>
               <h2 id="home-results-title">현재 상황과 연결된 인사이트</h2>
             </div>
-            <p aria-live="polite" role="status">
+            <p
+              aria-live="polite"
+              className="home-page__results-status"
+              role="status"
+            >
               “{submittedQuery}” 작업팩 {results.length}개
             </p>
           </div>
@@ -123,12 +127,14 @@ export function HomePage({
               insights={results.map(({ insight }) => insight)}
             />
           ) : (
-            <EmptyState
-              actionLabel="보관함 보기"
-              description={`“${submittedQuery}” 입력은 그대로 두었어요. 단어를 줄이거나 다른 상황 예시를 선택해보세요.`}
-              onAction={onOpenLibrary}
-              title={`“${submittedQuery}”과 연결된 인사이트가 없어요`}
-            />
+            <div className="home-page__no-results">
+              <EmptyState
+                actionLabel="보관함 보기"
+                description={`“${submittedQuery}” 입력은 그대로 두었어요. 단어를 줄이거나 다른 상황 예시를 선택해보세요.`}
+                onAction={onOpenLibrary}
+                title={`“${submittedQuery}”과 연결된 인사이트가 없어요`}
+              />
+            </div>
           )}
         </section>
       )}

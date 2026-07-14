@@ -191,6 +191,38 @@ describe('AuthenticatedWorkspace', () => {
     ).not.toBeNull();
   });
 
+  it('submits a trimmed query while preserving the exact controlled draft', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [createInsight({ title: 'React 폼 검증' })],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    const input = screen.getByRole('textbox', {
+      name: '지금 꺼내보고 싶은 상황',
+    });
+    await user.type(input, '  React  ');
+    await user.keyboard('{Enter}');
+
+    expect((input as HTMLInputElement).value).toBe('  React  ');
+    expect(screen.getByRole('status').textContent).toContain(
+      '“React” 작업팩 1개'
+    );
+    expect(screen.getByRole('status').textContent).not.toContain('“  React  ”');
+    expect(
+      screen.getByRole('heading', { name: 'React 폼 검증' })
+    ).not.toBeNull();
+  });
+
   it('recomputes the same submitted workpack after edits, saves, and deletions', async () => {
     const user = userEvent.setup();
     const repository: InsightRepository = {

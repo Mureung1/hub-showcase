@@ -120,9 +120,7 @@ export function AuthenticatedWorkspace({
   function handleRetrieve(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setSubmittedRetrieveQuery(
-      retrieveQuery.trim().length > 0 ? retrieveQuery : ''
-    );
+    setSubmittedRetrieveQuery(retrieveQuery.trim());
   }
 
   function handleSave(event: FormEvent<HTMLFormElement>) {

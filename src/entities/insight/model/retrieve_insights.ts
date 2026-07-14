@@ -61,7 +61,17 @@ function createConnectionClue(result: InsightSearchResult): string {
 }
 
 function findMatchedToken(value: string, result: InsightSearchResult) {
-  const normalizedValue = value.normalize('NFKC').toLowerCase();
+  const fieldTokens = value.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 
-  return result.matchedTokens.find((token) => normalizedValue.includes(token));
+  for (const matchedToken of result.matchedTokens) {
+    const originalFieldToken = fieldTokens.find((fieldToken) =>
+      fieldToken.normalize('NFKC').toLowerCase().includes(matchedToken)
+    );
+
+    if (originalFieldToken) {
+      return originalFieldToken;
+    }
+  }
+
+  return undefined;
 }

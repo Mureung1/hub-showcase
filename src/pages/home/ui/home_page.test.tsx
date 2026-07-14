@@ -1,4 +1,7 @@
 /* @vitest-environment jsdom */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -164,6 +167,52 @@ describe('HomePage', () => {
     await user.click(screen.getByRole('button', { name: '보관함 보기' }));
 
     expect(onOpenLibrary).toHaveBeenCalledOnce();
+  });
+
+  it('gives long unbroken result queries a wrapping mobile layout contract', () => {
+    const longQuery = 'React상태관리와온보딩디자인시스템'.repeat(8);
+
+    render(
+      <DesignSystemProvider>
+        <HomePage
+          onOpenLibrary={vi.fn()}
+          onQueryChange={vi.fn()}
+          onRetrieve={vi.fn()}
+          onSituationClick={vi.fn()}
+          query={longQuery}
+          results={[]}
+          selectedSituation=""
+          situations={situations}
+          submittedQuery={longQuery}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(screen.getByRole('status').classList).toContain(
+      'home-page__results-status'
+    );
+    expect(
+      screen
+        .getByRole('heading', {
+          name: `“${longQuery}”과 연결된 인사이트가 없어요`,
+        })
+        .closest('.home-page__no-results')
+    ).not.toBeNull();
+
+    const styles = readFileSync(
+      join(process.cwd(), 'src/pages/home/ui/home_page.css'),
+      'utf8'
+    );
+
+    expect(styles).toMatch(
+      /\.home-page__results-status\s*{[^}]*min-width:\s*0;[^}]*white-space:\s*normal;[^}]*overflow-wrap:\s*anywhere;/s
+    );
+    expect(styles).toMatch(
+      /\.home-page__no-results :is\([^)]*\.empty-state__title,[^)]*\.empty-state__description[^)]*\)\s*{[^}]*min-width:\s*0;[^}]*overflow-wrap:\s*anywhere;/s
+    );
+    expect(styles).toMatch(
+      /@media \(max-width: 767px\)\s*{[\s\S]*\.home-page__results-heading\s*{[^}]*flex-direction:\s*column;/
+    );
   });
 });
 
