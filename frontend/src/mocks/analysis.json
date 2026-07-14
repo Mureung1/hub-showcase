@@ -1,0 +1,16 @@
+{
+  "githubId": "kimsunho2000",
+  "languages": [
+    { "name": "JavaScript", "ratio": 0.52 },
+    { "name": "Java", "ratio": 0.31 },
+    { "name": "Python", "ratio": 0.17 }
+  ],
+  "skillLevel": "intermediate",
+  "activitySummary": {
+    "commits": 342,
+    "pullRequests": 27,
+    "issues": 11,
+    "contributedRepos": 6
+  },
+  "analyzedAt": "2026-07-15T09:30:00.000Z"
+}
