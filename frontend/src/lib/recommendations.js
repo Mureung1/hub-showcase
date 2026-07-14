@@ -47,13 +47,13 @@ const METHODS = [
   },
 ];
 
-function scoreMethod(method, scores, affinity) {
+function scoreMethod(method, scores, affinity, matchBonus = 0) {
   const criterionScore = Object.entries(method.criteria).reduce(
     (total, [key, weight]) => total + (scores[key] ?? 50) * weight,
     0,
   );
 
-  return criterionScore + Math.min(15, affinity * 0.75);
+  return criterionScore + Math.min(15, affinity * 0.75) + matchBonus;
 }
 
 function buildMethodEvidence(method, scores, affinity) {
@@ -138,9 +138,10 @@ function buildRoutine(scores, recommendations) {
   };
 }
 
-export function createRecommendations(scores, methodAffinities = {}) {
+export function createRecommendations(scores, methodAffinities = {}, matchAdjustments = {}) {
   const recommendations = METHODS.map((method, order) => {
     const affinity = methodAffinities[method.id] ?? 0;
+    const matchBonus = matchAdjustments[method.id] ?? 0;
     const evidence = buildMethodEvidence(method, scores, affinity);
 
     return {
@@ -150,7 +151,7 @@ export function createRecommendations(scores, methodAffinities = {}) {
       reason: evidence.reason,
       basedOn: evidence.basedOn,
       order,
-      weight: scoreMethod(method, scores, affinity),
+      weight: scoreMethod(method, scores, affinity, matchBonus),
     };
   })
     // 동점일 때는 METHODS 정의 순서로 고정해 sort 안정성에 의존하지 않는다.
