@@ -3,25 +3,23 @@ import { Link, useSearchParams } from "react-router-dom"
 import AiSummary from "../components/AiSummary.jsx"
 import AiInsight from "../components/AiInsight.jsx"
 import DecisionButtons from "../components/DecisionButtons.jsx"
-import TermTooltip from "../components/TermTooltip.jsx"
+import SentenceAccordion from "../components/SentenceAccordion.jsx"
 import { parseArticle, analyzeArticle } from "../api/article.js"
 import { saveDecision } from "../api/decisions.js"
 
-function renderParagraph(text, terms) {
-  if (terms.length === 0) return text
+// LLM이 구조상 어렵다고 선별한 문장(analysis.sentences)만 아코디언으로
+// 감싸고, 나머지는 원문 그대로 둔다(전체 문장을 다 감싸지 않음).
+function renderParagraph(text, sentences) {
+  const matches = sentences.filter((s) => text.includes(s.text))
+  if (matches.length === 0) return text
 
   const pattern = new RegExp(
-    `(${terms.map((t) => t.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`,
-    "gi",
+    `(${matches.map((s) => s.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`,
   )
 
   return text.split(pattern).map((part, i) => {
-    const match = terms.find((t) => t.term.toLowerCase() === part.toLowerCase())
-    return match ? (
-      <TermTooltip key={i} term={part} metaphor={match.metaphor} definition={match.definition} />
-    ) : (
-      part
-    )
+    const match = matches.find((s) => s.text === part)
+    return match ? <SentenceAccordion key={i} sentence={match} /> : part
   })
 }
 
@@ -40,7 +38,7 @@ export default function Reader() {
     parseArticle(url)
       .then((parsed) => {
         setArticle(parsed)
-        return analyzeArticle(parsed.paragraphs)
+        return analyzeArticle(parsed.paragraphs, parsed.title, url)
       })
       .then(setAnalysis)
       .catch((err) => setError(err.message))
@@ -52,6 +50,7 @@ export default function Reader() {
       title: article.title,
       summaryBullets: analysis?.summaryBullets ?? [],
       decision,
+      marketSentiment: analysis?.marketSentiment,
     }).catch((err) => setError(err.message))
   }
 
@@ -74,12 +73,14 @@ export default function Reader() {
       <main>
         <article className="article-content">
           {article.paragraphs.map((paragraph, i) => (
-            <p key={i}>{renderParagraph(paragraph, analysis.terms)}</p>
+            <div className="paragraph" key={i}>
+              {renderParagraph(paragraph, analysis.sentences)}
+            </div>
           ))}
         </article>
 
         <AiSummary bullets={analysis.summaryBullets} />
-        <AiInsight text={analysis.insight} />
+        <AiInsight text={analysis.insight} marketSentiment={analysis.marketSentiment} />
       </main>
 
       <DecisionButtons onDecide={handleDecide} />

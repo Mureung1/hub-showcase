@@ -13,7 +13,7 @@ export function readDecisions() {
   return JSON.parse(raw)
 }
 
-export function appendDecision({ url, title, summaryBullets, decision }) {
+export function appendDecision({ url, title, summaryBullets, decision, marketSentiment }) {
   const decisions = readDecisions()
   const saved = {
     id: `${Date.now()}`,
@@ -21,6 +21,7 @@ export function appendDecision({ url, title, summaryBullets, decision }) {
     title,
     summaryBullets,
     decision,
+    marketSentiment: marketSentiment ?? null,
     createdAt: new Date().toISOString(),
   }
 

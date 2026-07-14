@@ -22,11 +22,11 @@ router.post("/parse", async (req, res) => {
 // 텍스트를 받아 용어 해설·3줄 요약·주가 영향 해설을 반환한다.
 router.post("/analyze", async (req, res) => {
   try {
-    const { paragraphs } = req.body
+    const { paragraphs, title, url } = req.body
     if (!Array.isArray(paragraphs) || paragraphs.length === 0) {
       throw new Error("paragraphs is required")
     }
-    const analysis = await analyzeArticle(paragraphs)
+    const analysis = await analyzeArticle(paragraphs, { title, url })
     res.json({ success: true, data: analysis })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })

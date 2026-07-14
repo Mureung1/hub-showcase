@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk"
+import { appendVocabulary } from "./vocabularyStore.js"
 
 // Model choice: claude-haiku-4-5 — 요약/용어 해설/인사이트 생성은 짧고
 // 반복적이며 출력 형식이 정형화된 작업이라 경량 모델이 더 적합하다.
@@ -16,31 +17,47 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const TERM_GLOSSARY = [
   {
     term: "bear market",
-    metaphor: "곰이 앞발로 내려찍는 모습에서 유래했어요.",
     definition: "주가가 장기간에 걸쳐 계속 하락하는 약세장을 뜻합니다.",
   },
   {
     term: "ticker",
-    metaphor: "주식의 이름표 같은 거예요.",
     definition: "특정 종목을 표시하는 알파벳 코드(종목 코드)입니다.",
   },
   {
     term: "guidance",
-    metaphor: "회사가 미리 알려주는 일기예보 같은 거예요.",
     definition: "기업이 향후 실적에 대해 스스로 제시하는 전망치입니다.",
   },
   {
     term: "sell-off",
-    metaphor: "다들 급하게 짐을 챙겨 나가는 모습이에요.",
     definition: "투자자들이 한꺼번에 주식을 팔아치우는 현상입니다.",
+  },
+]
+
+// 구조상 어려운 문장만 선별해 번역+이유를 붙인다(전체 문장이 아님).
+const SENTENCE_GLOSSARY = [
+  {
+    id: "s1",
+    text: "The decline accelerated after GlobalTech Corp, whose ticker symbol is GTC, issued weaker-than-expected guidance for the upcoming quarter, citing softening demand and rising component costs.",
+    translation:
+      "GlobalTech Corp(티커: GTC)가 다가오는 분기에 대해 예상보다 약한 가이던스를 발표하면서, 수요 둔화와 부품 비용 상승을 이유로 들자 하락세가 가속화됐습니다.",
+    reason: "주어(GlobalTech Corp)에 동격구(whose ticker symbol is GTC)와 분사구(citing...)가 겹쳐 구조 파악이 어려운 문장",
+  },
+  {
+    id: "s2",
+    text: "Trading desks described the reaction as an emotional sell-off rather than a fundamental shift in the industry, noting that trading volume was roughly triple the 30-day average.",
+    translation:
+      "트레이딩 데스크는 이번 반응을 업계의 근본적인 변화라기보다 감정적인 매도세로 봤으며, 거래량이 30일 평균의 약 3배에 달했다고 언급했습니다.",
+    reason: "'A rather than B' 비교 구문과 분사구(noting that...)가 이어져 구조 파악이 어려운 문장",
   },
 ]
 
 // 성공 더미 응답 — analyzeArticle의 정상 반환값과 동일한 구조를 만든다.
 function mockAnalyzeSuccess(text) {
   const terms = TERM_GLOSSARY.filter(({ term }) => text.toLowerCase().includes(term))
+  const sentences = SENTENCE_GLOSSARY.filter(({ text: sentenceText }) => text.includes(sentenceText))
 
   return {
+    sentences,
     terms,
     summaryBullets: [
       "기술주 전반이 급락하며 베어마켓 우려가 커지고 있습니다.",
@@ -49,6 +66,20 @@ function mockAnalyzeSuccess(text) {
     ],
     insight:
       "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다.",
+    marketSentiment: "bearish",
+  }
+}
+
+// 단어장 적재는 analyzeArticle의 응답과 무관한 부수 효과다 — 여기서 실패해도
+// terms/sentences/summaryBullets/insight/marketSentiment 응답 자체는 그대로
+// 반환돼야 하므로 실패를 삼킨다.
+function saveTermsToVocabulary(terms, articleTitle, articleUrl) {
+  try {
+    for (const { term, definition } of terms) {
+      appendVocabulary(term, definition, articleTitle, articleUrl)
+    }
+  } catch (err) {
+    console.warn("[llmService] failed to save terms to vocabulary:", err.message)
   }
 }
 
@@ -56,17 +87,22 @@ function mockAnalyzeSuccess(text) {
 // 용어 탐지 + 3줄 한글 요약 + 주가 영향 한 줄 해설을 구조화된 JSON으로
 // 받아오도록 프롬프트/파싱을 구현한다(callClaude 사용). MOCK_LLM 분기는 그대로
 // 두고 이 TODO 자리만 실제 로직으로 교체하면 된다.
-export async function analyzeArticle(paragraphs) {
+export async function analyzeArticle(paragraphs, { title, url } = {}) {
   const text = paragraphs.join(" ")
 
+  let analysis
   if (MOCK_LLM) {
     if (text.includes("FAIL_TEST")) {
       throw new Error("[MOCK_LLM] Claude API 호출 실패를 흉내낸 테스트용 에러입니다.")
     }
-    return mockAnalyzeSuccess(text)
+    analysis = mockAnalyzeSuccess(text)
+  } else {
+    analysis = mockAnalyzeSuccess(text)
   }
 
-  return mockAnalyzeSuccess(text)
+  saveTermsToVocabulary(analysis.terms, title, url)
+
+  return analysis
 }
 
 /**

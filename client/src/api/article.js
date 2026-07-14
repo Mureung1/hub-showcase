@@ -7,9 +7,9 @@ export async function parseArticle(url) {
   })
 }
 
-export async function analyzeArticle(paragraphs) {
+export async function analyzeArticle(paragraphs, title, url) {
   return apiRequest("/api/article/analyze", {
     method: "POST",
-    body: JSON.stringify({ paragraphs }),
+    body: JSON.stringify({ paragraphs, title, url }),
   })
 }
