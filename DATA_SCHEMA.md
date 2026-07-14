@@ -1,6 +1,6 @@
 # UniRadar Analysis Result Schema
 
-UniRadar의 mock 분석과 향후 Gemini/OpenAI 분석은 모두 아래 표준 결과 구조를 사용한다. UI는 공급자별 원본 응답을 직접 사용하지 않고 `normalizeAnalysisResult`를 거친 결과만 표시한다.
+UniRadar의 mock 분석과 Gemini/OpenAI 분석은 모두 아래 표준 결과 구조를 사용한다. UI는 공급자별 원본 응답을 직접 사용하지 않고 `normalizeAnalysisResult`를 거친 결과만 표시한다.
 
 ## Standard Structure
 
@@ -9,6 +9,8 @@ UniRadar의 mock 분석과 향후 Gemini/OpenAI 분석은 모두 아래 표준 �
   id: string,
   analyzedAt: string,
   mode: "mock" | "gemini" | "openai",
+  fallbackUsed: boolean,
+  fallbackReason: string | null,
 
   opportunity: {
     title: string | null,
@@ -84,6 +86,8 @@ UniRadar의 mock 분석과 향후 Gemini/OpenAI 분석은 모두 아래 표준 �
 | `id` | 분석 결과를 구분하는 고유 식별자 |
 | `analyzedAt` | 분석이 완료된 시각의 ISO 8601 문자열 |
 | `mode` | 결과를 만든 분석 공급자 또는 mock 모드 |
+| `fallbackUsed` | 실제 공급자 대신 mock 결과를 사용했는지 여부 |
+| `fallbackReason` | fallback 사유. fallback이 아니면 `null` |
 | `opportunity` | 공고문에서 확인한 사실 정보 |
 | `eligibility` | 필수 또는 일반 지원 자격과 공고문 근거 |
 | `preferred` | 우대 조건과 공고문 근거 |
@@ -121,13 +125,15 @@ UniRadar의 mock 분석과 향후 Gemini/OpenAI 분석은 모두 아래 표준 �
 ```text
 UI
 -> analyzeOpportunity(input)
--> provider/mock implementation
+-> POST /api/analyze
+-> Gemini JSON parsing and Zod validation
 -> normalizeAnalysisResult(result)
+-> createTasks(opportunity, match)
 -> result state
 -> AnalysisResultCard
 ```
 
-향후 Gemini API도 의미상 동일한 필드를 반환해야 한다. 공급자 응답에 필드가 누락되거나 값이 잘못되어도 서버와 클라이언트의 정규화 단계가 최종 표준 구조를 보장해야 한다.
+Gemini API도 의미상 동일한 필드를 반환해야 한다. Gemini 원시 응답은 프론트엔드에 직접 전달하지 않으며, 서버의 검증·정규화·태스크 생성 단계를 거친다. 공급자 응답이 비어 있거나 형식 검증에 실패하면 명시적인 mock fallback을 반환한다.
 
 ## Result Card Omission Rules
 

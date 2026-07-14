@@ -135,6 +135,8 @@ export function normalizeAnalysisResult(value) {
     id,
     analyzedAt: normalizeAnalyzedAt(result.analyzedAt),
     mode: asEnum(result.mode, ANALYSIS_MODES, "mock"),
+    fallbackUsed: result.fallbackUsed === true,
+    fallbackReason: result.fallbackUsed === true ? asNullableString(result.fallbackReason) : null,
     opportunity: {
       title: asNullableString(opportunity.title),
       organizer: asNullableString(opportunity.organizer),

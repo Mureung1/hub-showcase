@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import {
   providerAnalysisJsonSchema,
+  providerAnalysisSchema,
   analyzeResponseSchema,
 } from "../schemas/analyzeSchemas.js";
 import { createTasks } from "./createTasks.js";
@@ -139,6 +140,7 @@ function isAuthOrPermissionError(error) {
     status === 403 ||
     code === "API_KEY_INVALID" ||
     message.includes("api key") ||
+    message.includes("api_key") ||
     message.includes("permission")
   );
 }
@@ -172,8 +174,23 @@ function createAnalyzeRequest({ model, profile, rawText, url }) {
     ),
     config: {
       abortSignal: createAbortSignal(),
-      systemInstruction:
-        "너는 대학생 맞춤형 장학금, 공모전, 대외활동, 봉사, 지원사업 추천 에이전트다. 공고 본문에 없는 내용은 절대 추측하지 말고 null, uncertainFields, missingInfo에 넣어라. 지원 가능성은 eligible, conditionally_eligible, not_eligible, insufficient_info 중 하나로만 분류하라. mode는 반드시 gemini로 둔다. tasks는 빈 배열로 둬도 된다. 모든 답변은 한국어로 작성하라.",
+      systemInstruction: `너는 대학생 대상 장학금, 공모전, 대외활동, 봉사, 지원사업 공고를 분석하는 시스템이다.
+사용자 프로필과 공고 본문을 비교해 구조화된 결과를 반환한다.
+
+규칙:
+1. 공고문에 없는 내용은 추측하지 않는다.
+2. 불확실한 내용은 uncertainFields 또는 missingInfo에 기록한다.
+3. 우대 조건과 필수 조건을 구분한다.
+4. 지원 가능 여부는 eligible, conditionally_eligible, not_eligible, insufficient_info 중 하나로만 분류한다.
+5. 사용자 정보가 없으면 해당 조건을 충족했다고 가정하지 않는다.
+6. 지원 불가 판정에는 명확한 불충족 조건을 disqualifyingReasons에 기록한다.
+7. 추천 근거에는 공고문에서 확인한 evidence를 반영한다.
+8. 마감일은 확실한 경우에만 YYYY-MM-DD로 변환한다.
+9. 연도가 없거나 날짜가 모호하면 임의의 연도를 생성하지 않는다.
+10. JSON Schema 이외의 형식이나 설명 문장을 출력하지 않는다.
+11. mode는 gemini로 설정하고 tasks는 빈 배열로 반환해도 된다.
+12. 모든 사용자-facing 문자열은 한국어로 작성한다.
+13. 공고에 사용자의 regions에 없는 오프라인 장소나 필수 방문 일정이 있으면 참여 가능 여부를 missingInfo와 nextActions에 기록한다.`,
       temperature: 0.2,
       responseMimeType: "application/json",
       responseSchema: geminiAnalyzeResponseSchema,
@@ -193,14 +210,15 @@ async function runGeminiAnalysisWithModel({ client, model, profile, rawText, url
     throw new Error("Gemini API가 빈 응답을 반환했습니다.");
   }
 
-  const parsed = parseJsonOutput(outputText);
-  const withoutTasks = {
-    ...parsed,
+  const parsed = providerAnalysisSchema.parse({
+    ...parseJsonOutput(outputText),
     mode: "gemini",
-  };
+  });
+  const normalizedProviderResult = normalizeAnalysisResult(parsed);
   const normalized = normalizeAnalysisResult({
-    ...withoutTasks,
-    tasks: createTasks(withoutTasks.opportunity, withoutTasks.match),
+    ...normalizedProviderResult,
+    mode: "gemini",
+    tasks: createTasks(normalizedProviderResult.opportunity, normalizedProviderResult.match),
   });
 
   return analyzeResponseSchema.parse(normalized);
@@ -222,12 +240,29 @@ export function getFriendlyGeminiError(error) {
     return "Gemini 모델 이름을 확인할 수 없어 현재 실제 AI 분석을 사용할 수 없습니다.";
   }
 
-  if (message.includes("schema")) {
+  if (error instanceof SyntaxError || message.includes("json")) {
+    return "Gemini 응답을 JSON으로 해석하지 못해 mock 결과를 표시합니다.";
+  }
+
+  if (error?.name === "ZodError" || message.includes("schema")) {
     return "Gemini 응답 형식 검증 중 문제가 발생해 mock 결과를 표시합니다.";
+  }
+
+  if (message.includes("빈 응답") || message.includes("empty response")) {
+    return "Gemini가 빈 응답을 반환해 mock 결과를 표시합니다.";
   }
 
   if (message.includes("abort") || message.includes("timeout")) {
     return "Gemini 응답 시간이 길어져 mock 결과를 표시합니다.";
+  }
+
+  if (
+    message.includes("fetch") ||
+    message.includes("network") ||
+    message.includes("econn") ||
+    message.includes("enotfound")
+  ) {
+    return "네트워크 문제로 Gemini에 연결하지 못해 mock 결과를 표시합니다.";
   }
 
   if (status) {
@@ -237,7 +272,7 @@ export function getFriendlyGeminiError(error) {
   return "현재 Gemini 실제 분석을 사용할 수 없어 mock 결과를 표시합니다.";
 }
 
-export async function geminiAnalyzeOpportunity({ profile, rawText, url }) {
+export async function geminiAnalyzeOpportunity({ profile, rawText, sourceUrl, url }) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -246,6 +281,7 @@ export async function geminiAnalyzeOpportunity({ profile, rawText, url }) {
 
   const client = new GoogleGenAI({ apiKey });
   const configuredModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+  const resolvedSourceUrl = sourceUrl || url;
 
   try {
     return await runGeminiAnalysisWithModel({
@@ -253,7 +289,7 @@ export async function geminiAnalyzeOpportunity({ profile, rawText, url }) {
       model: configuredModel,
       profile,
       rawText,
-      url,
+      url: resolvedSourceUrl,
     });
   } catch (error) {
     if (!shouldRetryWithFallback(error, configuredModel)) {
@@ -265,7 +301,7 @@ export async function geminiAnalyzeOpportunity({ profile, rawText, url }) {
       model: FALLBACK_GEMINI_MODEL,
       profile,
       rawText,
-      url,
+      url: resolvedSourceUrl,
     });
   }
 }
