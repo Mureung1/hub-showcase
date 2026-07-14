@@ -173,7 +173,7 @@ export const mockRecipes = [
     name: '크림파스타',
     emoji: '🥛',
     youtubeId: 'ugfKSERSSew',
-    image: '/recipes/cream-pasta.png',
+    image: youtubeThumbnail('ugfKSERSSew'),
     categoryId: 'pasta',
     servings: 1,
     totalCost: 4200,
