@@ -1,0 +1,167 @@
+.mentor-detail-page {
+  display: grid;
+  min-height: 100vh;
+  padding: var(--space-2xl) 16px;
+  place-items: start center;
+}
+
+.mentor-detail-card {
+  width: min(620px, 100%);
+  padding: clamp(24px, 5vw, 38px);
+}
+
+.mentor-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+
+.mentor-detail-header .page-title {
+  font-size: 28px;
+}
+
+.mentor-detail-close {
+  position: relative;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+}
+
+.mentor-detail-close:hover {
+  background: var(--color-bg-muted);
+}
+
+.mentor-detail-close::before,
+.mentor-detail-close::after {
+  position: absolute;
+  top: 18px;
+  left: 10px;
+  width: 18px;
+  height: 2px;
+  background: var(--color-text-strong);
+  content: "";
+}
+
+.mentor-detail-close::before {
+  transform: rotate(45deg);
+}
+
+.mentor-detail-close::after {
+  transform: rotate(-45deg);
+}
+
+.mentor-profile-identity {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-xl);
+  padding: var(--space-xl);
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-md);
+}
+
+.mentor-profile-avatar {
+  display: grid;
+  width: 112px;
+  height: 112px;
+  overflow: hidden;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-pill);
+  place-items: center;
+}
+
+.mentor-profile-avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.mentor-identity-list {
+  display: grid;
+  gap: var(--space-xs);
+  margin: var(--space-md) 0 0;
+}
+
+.mentor-identity-list div {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: var(--space-xs);
+}
+
+.mentor-identity-list dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+}
+
+.mentor-identity-list dd {
+  margin: 0;
+  color: var(--color-text-strong);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+}
+
+.mentor-detail-section {
+  margin-top: var(--space-2xl);
+}
+
+.mentor-detail-section h2 {
+  margin: 0 0 var(--space-sm);
+  color: var(--color-text-strong);
+  font-size: 18px;
+  font-weight: var(--font-weight-black);
+}
+
+.mentor-detail-section .body-text {
+  margin: 0;
+}
+
+.mentor-counseling-tags .tag {
+  color: var(--color-text-sub);
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border-light);
+}
+
+.mentor-detail-list {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
+  padding-left: var(--space-xl);
+  color: var(--color-text-sub);
+  line-height: var(--line-height-base);
+}
+
+.mentor-detail-not-found {
+  display: grid;
+  width: min(520px, 100%);
+  gap: var(--space-lg);
+  justify-items: start;
+  padding: var(--space-2xl);
+}
+
+.mentor-detail-not-found .body-text {
+  margin: 0;
+}
+
+@media (max-width: 520px) {
+  .mentor-detail-page {
+    padding: 12px;
+  }
+
+  .mentor-detail-card {
+    padding: var(--space-xl);
+  }
+
+  .mentor-profile-identity {
+    grid-template-columns: 1fr;
+  }
+
+  .mentor-profile-avatar {
+    width: 96px;
+    height: 96px;
+  }
+}
