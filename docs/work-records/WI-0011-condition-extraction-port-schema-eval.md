@@ -2,7 +2,7 @@
 id: WI-0011
 title: PP-009 조건 추출 Port Schema Eval
 type: work-record
-status: planned
+status: done
 date: 2026-07-13
 owners:
   - placepick-team
@@ -10,12 +10,16 @@ related:
   - ../roadmap.md
   - ../adr/ADR-0004-service-boundary.md
   - ../adr/ADR-0007-provider-and-live-boundary.md
+  - ../adr/ADR-0012-recommendation-core-and-split-live-boundary.md
+  - WI-0041-recommendation-core-split-live-workflow.md
 paths:
-  - backend/src/main/java/com/placepick/recommendation/extraction/**
-  - backend/src/test/java/com/placepick/recommendation/extraction/**
-  - backend/src/evalTest/java/com/placepick/recommendation/extraction/**
+  - backend/src/main/java/com/placepick/recommendation/condition/**
+  - backend/src/main/java/com/placepick/infrastructure/external/llm/EliceConditionExtractionClient.java
+  - backend/src/test/java/com/placepick/recommendation/condition/**
+  - backend/src/test/java/com/placepick/infrastructure/external/llm/EliceConditionExtractionClientSecurityTest.java
+  - backend/src/integrationTest/java/com/placepick/infrastructure/external/llm/EliceConditionExtractionClientIntegrationTest.java
+  - backend/src/evalTest/java/com/placepick/recommendation/condition/**
   - backend/src/evalTest/resources/evals/condition-extraction/**
-  - mock-api/llm/mappings/**
   - docs/contracts.md
 ---
 
@@ -38,11 +42,20 @@ prompt injection과 근거 없는 보완이 Draft와 검색 조건으로 들어�
 - 입력은 1자 이상 1000자 이하의 한국어 또는 영어 requestText와 session에서 파생한
   비식별 safety identifier를 가지며 instruction과 사용자 데이터가 분리된다.
 - 출력 schema ID는 placepick.condition-extraction.v1이고 추가 필드를 거부한다.
-- normalized condition은 location, placeType, partySize, budgetPerPersonMin,
-  budgetPerPersonMax, preferredKeywords, excludedKeywords와 warnings를 가진다.
-- location과 placeType은 추천 시작 전 필수이며, partySize는 1부터 50, 예산은
-  0 이상의 원 단위 정수이고 min이 max보다 클 수 없다.
-- 누락·모호한 값은 임의로 채우지 않고 null 또는 빈 배열과 warning으로 반환한다.
+- normalized condition은 `locationQuery`, `placeType`, `placeTypeDetail`, `partySize`,
+  `budgetPerPersonMin`, `budgetPerPersonMax`, `preferences`, `exclusions`, `warnings`를
+  가진다. 예전 `location`, `preferredKeywords`, `excludedKeywords` 이름을 사용하지
+  않는다.
+- `locationQuery`와 `placeType`은 추천 시작 전 필수다. `placeTypeDetail`은
+  `placeType=OTHER`일 때 1~30자로 필수이고 그 외에는 null이다.
+- Draft의 `partySize`와 두 예산 field는 nullable이다. 값이 있으면 `partySize`는
+  1~100, 예산은 0~10,000,000의 원 단위 정수이며 min이 max보다 클 수 없다.
+- `preferences`는 최대 10개의 `{value, priority}`다. Draft priority는 nullable이지만
+  사용자가 확정한 조건에서는 1~10 정수여야 한다. `exclusions`는 최대 10개다.
+- 인원·예산 누락은 임의로 채우지 않고 null과 안정적인 warning으로 반환한다.
+  preference priority의 null은 Draft에 보존해 사용자 확인을 요구한다. 위치 또는 장소
+  유형이 없으면 추천 가능한 초안으로 성공 처리하지 않고 `UNPROCESSABLE_CONDITION`으로
+  종료한다.
 - malformed JSON, schema 위반, refusal, incomplete, timeout과 provider 오류가
   구분된 application 결과로 변환된다.
 - 정상, 모호성, 경계값, 상충 조건, prompt injection과 금지 추론 fixture가
@@ -56,9 +69,10 @@ runtime adapter는 PP-029, Draft persistence와 HTTP는 PP-010, 추천 검색·�
 Task에 둔다. PP-038의 합성 canary는 이 기능 구현을 대신하지 않는다.
 
 키워드는 trim·Unicode normalization 후 각 1자 이상 50자 이하, 목록당 최대 10개로
-제한하고 중복을 제거한다. 모델 응답의 location을 외부 지리 사실로 확정하지 않고
-사용자에게 검토할 초안으로만 취급한다. 전체 prompt나 provider 응답 전문을 문서와
-로그에 저장하지 않는다.
+제한하고 중복을 제거한다. 모델 응답의 `locationQuery`를 외부 지리 사실로 확정하지
+않고 사용자에게 검토할 초안으로만 취급한다. 추출 결과를 자동 추천 입력으로 연결하지
+않고, 사용자가 확인·수정한 `ConfirmedRecommendationCondition`만 추천 core에 전달한다.
+전체 prompt나 provider 응답 전문을 문서와 로그에 저장하지 않는다.
 
 ## 판단 기준과 대안
 
@@ -80,7 +94,8 @@ Mock adapter는 fixture key가 아니라 의미 있는 request 조건으로 정�
 
 ## 문제 해결 기록
 
-1. PP-003 normalized condition과 PP-010 Draft 입력을 동일 value model로 맞춘다.
+1. PP-003 normalized condition과 PP-010 Draft 입력을 동일한 field 이름으로 맞추되,
+   Draft의 nullable 값과 확정 조건의 priority 필수 규칙을 명시적으로 구분한다.
 2. schema의 required, nullable, enum, 수치·길이 상한과 추가 필드 금지를 정의한다.
 3. provider response를 parse, schema validate, domain validate 순서로 처리한다.
 4. 정상·모호·상충·경계·injection·refusal·timeout fixture를 JSONL로 구성한다.
@@ -89,10 +104,18 @@ Mock adapter는 fixture key가 아니라 의미 있는 request 조건으로 정�
 
 ## 구현 결과와 검증 증거
 
-현재 status는 planned이며 extraction code, strict schema와 Eval 결과는 존재하지
-않는다. 완료 증거에는 schema validator 단위 테스트, Mock contract, 정상·오류
-fixture별 Eval report, 외부 호출 차단 결과와 ./gradlew check가 포함되어야 한다.
-fixture 수나 LLM 응답 예시만으로 추출 품질을 과장하지 않는다.
+provider-neutral Draft·확정 조건, strict schema, 결정론적 Mock adapter와 제품형
+`EliceConditionExtractionClient`를 구현했다. Elice client는 runtime bean으로 등록하지
+않아 PP-029 전에는 서비스가 실제 endpoint를 호출하지 않는다. 위치·유형 누락은
+`UNPROCESSABLE_CONDITION`, 인원·예산 누락은 null과 안정적인 warning, nullable
+preference priority는 사용자 확인 전 Draft에만 허용한다.
+
+2026-07-15 Java 17에서 조건·추천 전체 단위 86건, 추천 통합 21건과 Eval 7건이 모두
+실패 0건으로 통과했다. 조건 전용 보안·WireMock 검증은 추가 field, refusal,
+incomplete, malformed, 400·401·403·429·5xx·timeout·응답 상한과 승인 host/model을
+검사한다. 전체 Mock workflow 테스트는 Draft를 직접 `confirm()`한 뒤에만 core를 호출해
+자동 추천 연결이 없음을 증명한다. 최종 저장소 전체 결과는 WI-0041의 `make check`
+증거와 함께 관리하며, fixture 통과를 실제 자연어 정확도 수치로 표현하지 않는다.
 
 ## AI 사용과 사람의 검증
 
