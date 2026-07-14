@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: task
-- State: claimed
+- State: resolved
 - Blocked by: [기존 Host 제거와 선별 재사용 계획을 확정한다](014-plan-host-removal-and-selective-salvage.md)
 
 ## Question
@@ -36,4 +36,33 @@ Question의 finding 환류 규칙에 따라 owning [Source conformance verificat
 
 ## Answer
 
-Ticket을 resolve할 때 작성한다.
+아키텍처는 `/to-spec`으로 전환할 준비가 됐다. 이 판정은 runtime foundation이 이미 구현됐다는 뜻이 아니라, 구현 계약을 작성할 때 다시 사용자 결정을 요구하거나 서로 충돌하는 기준선으로 돌아갈 blocking fog가 없다는 뜻이다.
+
+### 준비 상태 판정
+
+- [ADR 0010](../../../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)과 [first-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)는 generated wire shape, Python external stdio lifecycle, Rust active routing, TUI per-thread projection·pending interaction과 method source/tests의 권위를 분리한다. Production 방향은 `CodexAppServerConnection → CodexConversationRuntime` 하나이고 external preparation은 protocol 의미 밖의 별도 capability다.
+- [Source conformance evidence](../assets/013-source-conformance-and-ledger-evidence.md)는 T0·T0-C·T0.1의 method roster, singular semantic owner, unit·typed fake child·pinned live oracle와 non-method contract를 모두 열거한다. Active-only exact routing, method-specific bounded early FIFO, native `ThreadId`별 projection, active Server request remove-on-resolution과 disconnect 시 current-pending settlement가 현재 기준선이다.
+- [Host 제거·선별 재사용 계획](../assets/014-host-removal-and-selective-salvage-plan.md)은 safe ledger/generation → external preparation·Connection → Runtime·T0 → sibling T0-C·T0.1 → compatibility 없는 legacy 제거 순서를 고정한다. Code unit과 root/subpath export는 보존, 추출·개조, developer Runtime Harness 전용 보존, compatibility 없이 제거의 네 범주에 빠짐없이 속한다.
+- Process-lifetime tombstone, permanent actor poison·sink, global causal/semantic arbiter, process 종료까지의 actor retention과 automatic reconciliation은 current contract와 oracle이 아니다. 이전 Ticket 011·012·017 본문의 강화안은 각 `Ticket 019 교정`과 현재 asset·ADR이 명시적으로 대체한다.
+- 현재 `HeadlessCodexClientHost`, `CodexStdioTransport`, `ProductRuntimeLayout`과 sparse decisions JSON은 아직 존재하는 구현 사실이고 새 foundation이나 ledger v2가 구현됐다는 증거가 아니다. Package README와 implementation map은 이 current/target 차이를 명시하며 generated inventory는 이번 Wayfinder에서 수정하지 않았다.
+- Multi-turn, streaming, interrupt/steer, `thread/read`·`thread/resume`, activity와 추가 Server request는 후속 source-guided tracer가 같은 Runtime Interface를 확장한다. `AYPLE adapter`, browser UX와 제품 policy는 foundation readiness와 구현 완료 조건이 아니다.
+
+### Resulting spec이 고정할 구현 의무
+
+1. External preparation capability, Connection과 `./conversation` Runtime의 exact public symbol·type·export 경계, native identity와 one-turn convenience operation을 future tracer의 상한으로 만들지 않는 확장 형태를 정한다.
+2. Fresh Client `RequestId` allocator, direction과 string/number를 보존하는 exact parser·active collision rule, serialized writer와 response/error remove-once·late map-miss를 구현 계약과 unit selector로 고정한다.
+3. Raw frame, validated dispatch, pending Client RPC, active Server request와 method-specific early observation의 count·UTF-8 byte cap을 수치화한다. Timeout·overflow·adopted-notification validation failure는 affected operation의 bounded disposition으로 정하고 unrelated thread·exact RPC drain을 global poison으로 확대하지 않는다.
+4. Malformed framing·direction·ID classification만 connection terminal로, schema-valid envelope의 active response payload failure는 waiter-local로, invalid adopted notification은 no-mutation 뒤 명시한 operation-local 결과로 끝내는 failure scope를 고정한다.
+5. Coverage ledger v2 validator, safe A/B deterministic generation, read-only verify, two-target promotion rollback과 legacy taxonomy migration을 먼저 구현하고, 통과한 selector만 `implemented`로 기록한 뒤 Result checkpoint에서만 integration membership을 승격한다.
+6. T0·T0-C·T0.1의 package-private unit, build/typecheck에 포함된 typed fake child와 required hermetic live selector를 구체화한다. Exact npm pin과 Python reference의 CLI pin 차이, package-owned binary compatibility, child stdout tail·close·kill·reap과 no-raw retention은 fake/live gate에서 검증한다.
+7. [Ticket 003](003-pin-upstream-source-provenance.md)의 dev-only `references/openai-codex` gitlink·attestation provenance와 source/upgrade gate를 구현하되 ordinary npm test/build dependency로 만들지 않는다. Guarded package-only clean과 native app-data sentinel로 Runtime Harness와 Codex history를 비파괴적으로 보호한다.
+
+### 최종 review checkpoint
+
+Review fixed point는 Ticket 019 resolution checkpoint `264b52fd50e3b95e0e9aa9ef9edd1e00cb483b08`이고, Ticket 013·014 교정과 이 ticket claim을 포함한 aggregate diff를 검토했다.
+
+- Source: 0 findings. Exact-pin first-party client/UI/method 근거와 TypeScript external-client hardening의 경계가 일치한다.
+- Standards: 0 findings. Wayfinder lifecycle, 문서 ownership·한국어 서술, current/target/deferred 분리, generated artifact 비수정과 branch·user artifact 보존이 일치한다.
+- Spec: 0 findings. Code-unit 네 분류, T0·T0-C·T0.1 roster·owner·oracle, ledger/generation·legacy 제거 gate와 future extensibility가 `/to-spec` 입력으로 완결됐다.
+
+Local package 선언, lock과 실행 binary는 모두 `@openai/codex@0.144.0` / `codex-cli 0.144.0`으로 일치한다. Exact exported API, cap 수치, operation-local timeout·overflow 결과, generator helper와 fake/live selector는 위 범위 안의 spec·implementation detail이며 새 architecture 또는 제품 결정을 요구하지 않는다.
