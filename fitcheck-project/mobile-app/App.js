@@ -2,8 +2,9 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-// frontend-web 개발 서버 URL (배포 URL로 교체 예정)
-const WEB_APP_URL = 'http://localhost:5173';
+// frontend-web URL (실기기에서는 localhost 대신 LAN IP 또는 배포 URL 사용)
+const WEB_APP_URL =
+  process.env.EXPO_PUBLIC_WEB_APP_URL?.trim() || 'http://localhost:5173';
 
 export default function App() {
   return (
@@ -13,6 +14,12 @@ export default function App() {
         source={{ uri: WEB_APP_URL }}
         style={styles.webview}
         allowsBackForwardNavigationGestures
+        geolocationEnabled
+        javaScriptEnabled
+        domStorageEnabled
+        mixedContentMode="always"
+        originWhitelist={['*']}
+        startInLoadingState
       />
     </View>
   );

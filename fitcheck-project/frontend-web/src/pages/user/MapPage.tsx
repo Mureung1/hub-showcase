@@ -1,29 +1,72 @@
+import { useMemo, useState } from 'react';
+import { LocateFixed, LoaderCircle } from 'lucide-react';
 import { MOCK_GYMS } from '../../data/userMock';
-import GymCard from '../../features/map/GymCard';
+import ConsultRequestSheet from '../../features/map/ConsultRequestSheet';
+import GymBottomSheet from '../../features/map/GymBottomSheet';
+import NaverMapView from '../../features/map/NaverMapView';
+import { useUserLocation } from '../../features/map/useUserLocation';
 import '../../features/map/map.css';
-import './user.css';
 
 export default function MapPage() {
+  const gyms = useMemo(
+    () => [...MOCK_GYMS].sort((a, b) => a.distanceKm - b.distanceKm),
+    [],
+  );
+  const [selectedGymId, setSelectedGymId] = useState<string | null>(
+    () => gyms[0]?.id ?? null,
+  );
+  const [consultOpen, setConsultOpen] = useState(false);
+  const { location, status, message, locateToken, requestLocation } = useUserLocation();
+
+  const selectedGym = gyms.find((gym) => gym.id === selectedGymId) ?? null;
+
   return (
-    <div className="user-page">
-      <header className="page-header">
-        <h1>동네 헬스장 매칭</h1>
-        <p>정체기가 왔을 때, 가까운 골목 헬스장·트레이너와 연결하세요.</p>
-      </header>
+    <div className="map-page">
+      <NaverMapView
+        gyms={gyms}
+        selectedGymId={selectedGymId}
+        onSelectGym={setSelectedGymId}
+        userLocation={location}
+        locateToken={locateToken}
+      />
 
-      <div className="map-placeholder panel">
-        <strong>지도 영역 (목업)</strong>
-        <p>
-          이후 지도 API가 여기에 연결됩니다. 지금은 반경 내 추천 리스트만
-          미리보기로 제공합니다.
-        </p>
+      <div className="map-locate-stack">
+        {message && (
+          <p
+            className={`map-locate-banner map-locate-banner-${status}`}
+            role="status"
+          >
+            {message}
+          </p>
+        )}
+        <button
+          type="button"
+          className="map-locate-btn"
+          onClick={requestLocation}
+          disabled={status === 'loading'}
+        >
+          {status === 'loading' ? (
+            <LoaderCircle size={18} className="map-locate-spin" />
+          ) : (
+            <LocateFixed size={18} />
+          )}
+          내 위치
+        </button>
       </div>
 
-      <div className="gym-grid">
-        {MOCK_GYMS.map((gym) => (
-          <GymCard key={gym.id} gym={gym} />
-        ))}
-      </div>
+      <GymBottomSheet
+        gyms={gyms}
+        selectedGym={selectedGym}
+        onSelectGym={setSelectedGymId}
+        onConsult={() => setConsultOpen(true)}
+      />
+      {selectedGym && (
+        <ConsultRequestSheet
+          open={consultOpen}
+          gym={selectedGym}
+          onClose={() => setConsultOpen(false)}
+        />
+      )}
     </div>
   );
 }
