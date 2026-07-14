@@ -3,13 +3,13 @@
 - 분류: 기술 참고
 - 성숙도: 채택
 - 대상 pin: `@openai/codex@0.144.0`, upstream commit `767822446c7a594caa19609ca435281a9ec67e0d`
-- 범위: production `app-server-client`, App Server ingress·stdio transport, test-only stdio helper, TUI·exec consumer seam
+- 범위: Python external stdio client, Rust production `app-server-client`, App Server ingress·stdio transport, test client, TUI·exec consumer seam
 
 이 문서는 [Connection·App Server ingress architecture pattern을 지도화한다](../tickets/005-map-first-party-rust-architecture-patterns.md)의 설계 근거다. Exact-pin source의 소유 구조와 검증된 동작, source graph에서 도출한 추론, AY-PLE이 후속 ticket에서 내려야 할 선택을 분리한다.
 
 ## 판정
 
-Pinned `openai/codex`의 production `app-server-client`에는 AY-PLE이 사용하는 **stdio child client가 없다**. Production surface는 embedded `InProcessAppServerClient`와 WebSocket·Unix domain socket용 `RemoteAppServerClient`이고, `codex app-server` child를 spawn하는 client-side stdio 구현은 동기식 `app-server-test-client`에만 있다. 따라서 AY-PLE은 upstream production client를 import하거나 client-side stdio task graph를 그대로 복사할 수 없다. 대신 production source에서 검증한 connection invariant를 가져오고, 외부 child supervision과 bounded stdio boundary는 AY-PLE이 소유해야 한다.
+Pinned Rust `codex-app-server-client`에는 external stdio child adapter가 없고 npm package에도 reusable TypeScript client가 없다. 그러나 exact pin의 Python `sdk/python/openai_codex`에는 실제 external stdio App Server client가 있다. 따라서 AY-PLE은 upstream client를 그대로 import할 수는 없지만 protocol shape에서 client semantics를 새로 발명하지 않고 Python client의 child lifecycle·sole reader·serialized writer·active response routing·early turn staging·disconnect settlement을 가장 가까운 port reference로 사용한다. Rust facade와 TUI projection은 typed routing과 consumer ownership을 보완한다.
 
 가져갈 핵심은 다음과 같다.
 
@@ -19,7 +19,15 @@ Pinned `openai/codex`의 production `app-server-client`에는 AY-PLE이 사용�
 - request 호출 surface와 single-consumer event surface를 분리하고, initialize와 shutdown을 명시적 lifecycle로 둔다.
 - generated protocol validation, queue bound, timeout·unknown outcome과 anomaly 정책은 pinned external boundary에 맞게 별도로 결정한다.
 
-가져오지 않을 것은 remote의 unbounded event queue, caller-owned reusable request ID, silent anomaly drop, post-initialize request waiter의 timeout·cancel·deregister 부재, transport마다 다른 lossless tier, test helper의 synchronous reader, embedded Rust ambient state를 노출하는 거대한 start arguments다. 이들은 protocol contract가 아니라 pinned implementation의 편의·gap이다.
+가져오지 않을 것은 Python의 unbounded early queue, remote의 unbounded event queue, transport마다 다른 lossless tier, test helper의 synchronous reader와 embedded Rust ambient state를 노출하는 거대한 start arguments다. Active map miss인 unknown·late response no-op와 remove-on-response는 first-party baseline이므로 process-lifetime tombstone·global contradiction terminal로 강화하지 않는다. Exact timeout·overflow·invalid notification과 JavaScript lossless ID parsing은 TypeScript deployment adaptation으로 후속 spec이 명시한다.
+
+### Ticket 019 first-party client 보완
+
+- Python [`MessageRouter`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/sdk/python/src/openai_codex/_message_router.py#L17-L240)는 active waiter를 response에서 `pop`하고 turn registration 전 notification을 native `turn_id`별 FIFO에 보관하며 reader loss 때 current pending을 모두 실패시킨다.
+- Python [`Client`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/sdk/python/src/openai_codex/client.py#L196-L477)는 child lifecycle을, [reader/writer loop](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/sdk/python/src/openai_codex/client.py#L795-L860)는 sole reader와 serialized writer를 소유한다.
+- Rust [`RemoteAppServerClient`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-client/src/remote.rs#L200-L477)는 active pending request만 검사·제거하고 disconnect에서 current pending만 settle한다.
+
+Current baseline과 현재 코드 disposition은 [Ticket 019 감사](019-first-party-client-port-and-reuse-audit.md)가 소유한다. 아래 Rust·server-side 조사는 유효한 보완 근거지만 “Python external stdio client가 없다”는 옛 전제에는 더 이상 권위가 없다.
 
 ## 조사 범위와 근거 권위
 
@@ -51,15 +59,20 @@ remote TUI
      <-> WebSocket or Unix socket App Server
      -> pending response oneshots + one event receiver
 
+Python SDK
+  -> external stdio child + MessageRouter
+     <-> codex app-server --listen stdio://
+     -> sole reader + serialized writer + active waiters + per-turn early FIFO
+
 AY-PLE target boundary
   -> AY-PLE-owned child/process connection
      <-> codex app-server --listen stdio://
      -> generated-schema-backed request/event interface
 ```
 
-위 세 번째 경로는 upstream production client에 존재하는 topology가 아니라 AY-PLE이 구현해야 할 external boundary다. Upstream의 stdio server 쪽과 test helper는 그 경계의 evidence일 뿐이다.
+AY-PLE target은 Python SDK와 같은 external stdio topology지만 reusable TypeScript implementation은 없다. Python client를 responsibility와 observable behavior의 primary reference로 사용하고, Rust facade·TUI·server method source와 test helper를 보완 evidence로 사용한다.
 
-이 external process owner는 package binary 선택과 argv뿐 아니라 partial-spawn cleanup, stderr 처리, child-exit watcher, serialized stdin writer, single stdout reader와 force-kill 뒤 reap까지 하나의 lifecycle로 묶어야 한다. 이는 upstream production stdio client에서 복사한 동작이 아니라, server-side terminal 비대칭과 test helper cleanup precedent를 함께 대조해 얻은 AY-PLE design constraint다. Exact task split은 [첫 tracer와 module seam을 선택한다](../tickets/008-choose-first-tracer-and-module-seams.md), deadline·terminal policy는 [Connection loss와 unknown outcome 정책을 결정한다](../tickets/012-decide-connection-and-unknown-outcome-policy.md)가 소유한다.
+이 external process owner는 package binary 선택과 argv뿐 아니라 partial-spawn cleanup, stderr 처리, child-exit watcher, serialized stdin writer, single stdout reader와 force-kill 뒤 reap까지 하나의 lifecycle로 묶어야 한다. Sole reader·serialized writer·active waiter settlement은 Python client에서 port하고 exact package pin, cleanup·reap와 finite capacity는 AY-PLE TypeScript deployment adaptation으로 명시한다. Exact task split은 [첫 tracer와 module seam을 선택한다](../tickets/008-choose-first-tracer-and-module-seams.md), deadline·terminal policy는 [Connection loss와 unknown outcome 정책을 결정한다](../tickets/012-decide-connection-and-unknown-outcome-policy.md)가 소유한다.
 
 ### `InProcessAppServerClient` 운영 경로
 
@@ -244,6 +257,7 @@ Upstream production TUI는 connection facade 위에 TUI-specific `AppServerSessi
 
 | 경로 | 확인한 책임·동작 |
 | --- | --- |
+| `sdk/python/src/openai_codex/{client.py,_message_router.py}`와 tests | External stdio child, sole reader, serialized writer, active response routing, early per-turn FIFO, interleaved turn isolation과 disconnect `fail_all` |
 | `codex-rs/app-server-client/{README.md,src/lib.rs,src/remote.rs}` | Public client facade, request/event split, in-process·remote worker, initialize, demux, buffering, terminal, shutdown |
 | `codex-rs/app-server-client/src/{lib.rs,remote.rs}` checked-in tests | Live duplicate ID, notification delivery, initialize 중 Server request staging, unknown request rejection, disconnect·backpressure·shutdown |
 | `codex-rs/app-server/src/in_process.rs` | Embedded lower queues, pending response demux, notification delivery와 teardown |

@@ -12,6 +12,10 @@
 
 Browser detach·restart UX는 `AYPLE adapter` 책임으로 남기고 connection cleanup과 섞지 않는다. Answer는 영향받는 row·tracer·owner·source/test evidence와 구현 전 integration 상태를 함께 기록한다.
 
+## Ticket 019 correction
+
+[First-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)가 이 ticket의 current disposition을 보완한다. Active pending RPC의 disconnect settlement, request/turn-local outcome 증거, close·kill·reap과 non-idempotent mutation의 blind retry 금지는 유지한다. 아래 진행 메모·Answer의 awaiting-late-response sink, process-lifetime response tombstone, never-issued·unknown·late response의 global terminal, contradiction category/lattice, permanent actor poison과 tail-aware global semantic arbiter는 supersede한다. Python과 Rust client처럼 first response에서 active waiter를 제거하고 이후 map miss는 public mutation 없는 no-op로 처리하는 것이 baseline이다. Malformed envelope/framing은 connection terminal이지만 matching response의 generated payload decode failure는 해당 request만 실패시키고 unrelated routing은 유지한다. Explicit `thread/read`·`thread/resume` reconciliation은 해당 future tracer가 source 근거와 함께 채택할 수 있으며 automatic reconciliation만 현재 범위 밖이다.
+
 ## 진행 메모
 
 ### Source-grounded terminal·outcome 제약

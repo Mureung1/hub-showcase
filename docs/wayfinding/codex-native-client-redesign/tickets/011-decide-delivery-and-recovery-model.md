@@ -12,6 +12,10 @@
 
 Native history와 `thread/read` recovery는 그 row의 tracer를 채택할 때만 설계하고, browser retention·replay는 `AYPLE adapter`에 남긴다. Answer는 영향받는 row·tracer·owner·source/test evidence와 구현 전 integration 상태를 함께 기록한다.
 
+## Ticket 019 correction
+
+[First-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)가 이 ticket의 current disposition을 보완한다. Unresolved request의 terminal을 포함한 method-specific early FIFO, authoritative terminal과 drain의 분리, native-scope per-thread independence, 유한 external-client resource와 settle된 public result의 local idempotence는 유지한다. T0의 completed AgentMessage 요구는 tracer acceptance이지 모든 Codex turn의 generic terminal invariant가 아니다. 아래 진행 메모·Answer의 process-lifetime compact actor/tombstone, terminal 이후 no-eviction retention, permanent actor poison·compact sink와 semantic contradiction lattice는 supersede한다. Python은 early route를 terminal/unregister에서 제거하고 TUI cache도 UI lifecycle에서 제거할 수 있으므로 actor/mailbox와 process 종료까지의 retention은 공개 invariant가 아니다. Overflow·fault의 exact local settlement와 numeric bound는 resulting spec이 explicit TypeScript deployment deviation으로 정하되 global ordering이나 permanent poison을 만들지 않는다.
+
 ## 진행 메모
 
 ### Source-grounded delivery·lifetime 사실

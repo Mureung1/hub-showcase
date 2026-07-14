@@ -50,8 +50,8 @@
 - [ ] Codex-native runtime foundation을 구현하고 source 적합성을 증명한다.
   - [ ] `codex-method-decisions.json`을 version이 있는 coverage ledger로 안전하게 확장하고 추적된 output을 먼저 지우지 않는 결정적 `verify`/generation workflow를 구현한다. 기존 Runtime Harness integration과 generated inventory는 안전한 migration 전까지 유지한다.
   - [ ] 외부 AY-PLE 준비/harness 경계가 준비된 process와 workspace capability를 공급하고, `CodexAppServerConnection`이 child·단일 JSONL ingress·generated validation·방향과 exact `RequestId`를 구분하는 demux·outbound writer·transport terminal을 소유한다.
-  - [ ] `CodexConversationRuntime`이 native identity와 per-thread owner를 사용해 T0의 initialize, 새 thread, text turn, completed AgentMessage와 authoritative terminal을 legal response/notification interleaving에서 수렴시킨다.
-  - [ ] T0-C가 public conversation surface에서 A pending → B complete → A complete independence를, T0.1이 original Server `RequestId`의 once-only regular command approval lease를 제품 UI 없이 증명한다.
+  - [ ] `CodexConversationRuntime`이 first-party client behavior를 따라 native identity와 per-thread projection을 사용해 T0의 initialize, 새 thread, text turn, completed AgentMessage와 authoritative terminal을 legal response/notification interleaving에서 수렴시킨다.
+  - [ ] T0-C가 public conversation surface에서 A pending → B complete → A complete independence를, T0.1이 original Server `RequestId`의 active remove-once regular command approval lease를 제품 UI 없이 증명한다.
   - [ ] Coverage ledger가 각 tracer에 `required`로 기록한 해당 unit·typed fake child·pinned live gate와 저장소 regression을 통과한 뒤 기존 `HeadlessCodexClientHost`, 기존 transport/layout Interface와 자체 oracle을 호환성 facade 없이 제거한다. 기존 Runtime Harness와 native Codex app-data는 보존한다.
 
 - [ ] 검증된 runtime foundation 위의 AY-PLE 제품 adapter를 별도 제품 goal로 결정한다.

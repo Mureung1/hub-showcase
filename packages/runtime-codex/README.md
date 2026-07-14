@@ -2,7 +2,7 @@
 
 Codex App Server 통합 실험을 담당하는 runtime package다. raw Codex protocol을 이 package 안에 가두어 `runtime-core`, server와 제품 코드가 Codex-specific message shape에 의존하지 않게 한다.
 
-> **설계 전환:** 아래 `CodexStdioTransport`, `ProductRuntimeLayout`과 `HeadlessCodexClientHost` 절은 아직 코드에 남아 있는 기존 구현을 설명한다. [ADR 0010](../../docs/adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)이 채택한 `CodexAppServerConnection → CodexConversationRuntime` 교체 목표는 아직 구현되지 않았으며, [이전 계획](../../docs/wayfinding/codex-native-client-redesign/tickets/014-plan-host-removal-and-selective-salvage.md)의 적합성 gate를 통과한 뒤에만 이 기존 surface를 제거한다.
+> **설계 전환:** 아래 `CodexStdioTransport`, `ProductRuntimeLayout`과 `HeadlessCodexClientHost` 절은 아직 코드에 남아 있는 기존 구현을 설명한다. [ADR 0010](../../docs/adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)이 채택한 `CodexAppServerConnection → CodexConversationRuntime` 교체 목표는 아직 구현되지 않았다. [First-party client port·재사용 감사](../../docs/wayfinding/codex-native-client-redesign/assets/019-first-party-client-port-and-reuse-audit.md)에 따라 primitive를 추출·개조하고 새 적합성 gate를 통과한 뒤에만 기존 surface를 제거한다.
 
 ## 고정 계약
 

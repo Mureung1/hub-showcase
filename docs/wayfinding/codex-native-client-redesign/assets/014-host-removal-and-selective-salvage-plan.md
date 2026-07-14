@@ -1,5 +1,7 @@
 # 기존 Host 제거와 선별 재사용 migration plan
 
+> **Ticket 019 correction:** 이 문서의 replace-don't-layer 순서, Runtime Harness·native app-data 보호와 generated/schema/layout/JSONL primitive 선별 이식은 유지한다. 아래 표·gate의 process-lifetime tombstone·late sink, permanent actor poison과 process 종료까지의 retention은 [first-party client port·재사용 감사](019-first-party-client-port-and-reuse-audit.md)가 supersede한다. Current plan은 active-only exact routing, method-specific early FIFO, per-thread projection, remove-on-resolution과 current-pending disconnect settlement이다. `CodexStdioTransport` class가 아니라 child/sole reader/exact ID/schema/cleanup primitive만 추출하고 Host·fake Host·root export는 새 T0·T0-C·T0.1 gate가 green일 때 compatibility 없이 제거한다.
+
 ## 결정 요약
 
 기존 `HeadlessCodexClientHost`를 새 runtime의 implementation base나 compatibility facade로 사용하지 않는다. 새 `CodexAppServerConnection`과 `CodexConversationRuntime`을 legacy 경로와 나란히 구현하고 T0·T0-C·T0.1 conformance를 통과시킨 뒤, consumer가 없는 Host Interface·root export·전용 fake/test와 그 policy를 forward-remove한다. 자세한 consumer 근거는 [기존 Host consumer 감사](002-host-consumer-audit.md)가 소유한다.

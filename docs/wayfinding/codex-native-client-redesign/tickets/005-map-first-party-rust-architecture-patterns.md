@@ -14,6 +14,8 @@ Pinned `openai/codex`의 `app-server-client`와 App Server에서 process·connec
 
 ## Answer
 
+> **Ticket 019 correction:** 이 ticket의 Rust-centered 조사는 보존하지만 “client-side stdio 구현은 test helper뿐”이라는 판정은 exact pin의 Python `sdk/python/openai_codex` external stdio client를 누락했다. Python sole reader·serialized writer·active response routing·early turn staging·`fail_all`, Rust active pending facade와 TUI projection을 함께 대조한 [current port·재사용 감사](../assets/019-first-party-client-port-and-reuse-audit.md)가 이 부분을 supersede한다. Rust/npm에 reusable TypeScript stdio client가 없다는 좁은 결론은 유지한다.
+
 [First-party connection·ingress architecture 근거 지도](../assets/005-first-party-connection-ingress-architecture.md)에 production `app-server-client`, App Server의 server-side stdio path, test-only subprocess helper와 TUI·exec consumer seam을 서로 다른 근거 등급으로 지도화했다.
 
 핵심 판정은 다음과 같다.

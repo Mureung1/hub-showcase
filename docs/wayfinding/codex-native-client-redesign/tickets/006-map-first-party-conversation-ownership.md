@@ -14,6 +14,8 @@ Pinned `openai/codex`의 core, TUI와 exec에서 native thread/task identity, pe
 
 ## Answer
 
+> **Ticket 019 correction:** 기존 Core·App Server ownership 판독은 유지하고, TUI가 `codex-app-server-client`를 사용하는 실제 client path, `ThreadEventStore`의 per-thread projection과 pending App Server request의 remove-on-response/resolved lifecycle을 보완했다. 이 근거는 per-thread locality와 active-entry idempotence를 지지하지만 actor/mailbox, process-lifetime retention·tombstone이나 permanent poison을 요구하지 않는다. [Current port·재사용 감사](../assets/019-first-party-client-port-and-reuse-audit.md)가 보완 판정을 소유한다.
+
 [Pinned Codex production conversation ownership map](../assets/006-first-party-conversation-ownership.md)에 `codex-core`, App Server per-thread listener, production TUI와 exec의 native identity, collection·task ownership, input routing, history·terminal·background process lifetime을 exact pin source와 tests로 추적했다.
 
 핵심 판정은 다음과 같다.
