@@ -1,10 +1,14 @@
 ﻿# 현재 진행 상황
 
-마지막 갱신: 2026-07-13
+마지막 갱신: 2026-07-14
 
 ## 완료
 
 - 문서형 Agent를 Codex skill로 변환: project-planning-agent, project-verification-agent, project-document-manager
+- 학습 정리용 repo-side Codex skill 추가: project-learning-agent
+- Codex 하네스 Recommended안 구축: `.codex/agents`, `.agents/skills`, `docs/wiki`, `scripts/verify-harness.ps1`, 완료 계획 문서 추가
+- Superpowers와 프로젝트 workflow skills를 `C:\Users\sun99\.codex\skills`에 설치하여 다음 턴/새 세션에서 자동 발견 가능하도록 구성
+- Codex 하네스 감사 후 최소 수정: TOML/config 정책 검사 강화, Wiki `source_paths` 검증 범위 수정, 운영 workflow와 5개 eval 시나리오를 Wiki synthesis로 정착
 
 - React + Vite + TypeScript 프로젝트 구성
 - XP 데스크톱형 정적 프로토타입 구현
@@ -30,6 +34,14 @@
 - 정적 미리보기 URL: http://localhost:5173/prototype-static.html
 - 파일 직접 열기 경로: file:///D:/2026.1/AIAgentChallenge/hub/public/prototype-static.html
 - 최신 작업은 문서 변경 중심이라 빌드 검증은 수행하지 않음
+- 하네스 구조 검증 통과: `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
+- TOML 파싱 검증 통과: `.codex/config.toml`, `.codex/agents/*.toml`
+- TypeScript 검증 통과: `npm.cmd run typecheck`
+- 프로덕션 빌드 통과: `npm.cmd run build`
+- 2026-07-14 하네스 감사 재검증 통과: `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
+- 2026-07-14 TypeScript 재검증 통과: `npm.cmd run typecheck`
+- 2026-07-14 프로덕션 빌드 재검증 통과: `npm.cmd run build`
+- 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML과 시각 차이가 있어 개선 필요
 
 ## 다음 작업
@@ -42,10 +54,12 @@
 - `src/layers/agent/ruleBasedAgent.ts`의 깨진 한글 정리
 - GitHub Project에 Issue 등록
 - GitHub Issue 등록
+- `docs/notion-dashboard-guide.md`는 오래된 문서이므로 공식 흐름에서 제외 상태 유지
+- 오래된 계획 문서에 남아 있는 Notion 기준 표현은 역사 문맥인지 현재 기준인지 정리 필요
 
 ## 차단 요소
 
-- GitHub Project URL을 README와 docs/README에 반영
 - GitHub Issue 실제 생성은 사용자가 직접 하거나 별도 승인 필요
 - Supabase Key와 API Key는 저장소에 넣지 않아야 함
 - GitHub Wiki는 코드 PR에 포함되지 않아 별도 동기화 필요
+- 현재 하네스 파일 다수가 아직 untracked/modified 상태이므로, 승인 후 의도한 파일만 stage/commit 필요

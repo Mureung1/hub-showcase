@@ -28,6 +28,8 @@
 | T-005 | P0 | Done | 7월 30일 최종 로드맵 작성 | 2주차 수직 슬라이스 완료 기준과 3~4주차 확장 후보가 있다 | master-plan.md |
 | T-006 | P0 | Done | 2주차 요일별 계획 작성 | 7월 17일까지 FE-BE-DB 완료 계획이 있다 | weekly-plan-2026-07-13.md |
 | T-007 | P0 | Done | GitHub Project 운영 가이드 작성 | 보드, 필드, 우선순위, Issue 연결 규칙이 있다 | github-project-guide.md |
+| T-007A | P0 | Done | 학습 정리 skill 작성 | 학습 문서를 키워드, 참고 코드, 질문 예시 중심으로 유지하는 규칙이 있다 | codex-skills/project-learning-agent/SKILL.md |
+| T-007B | P0 | Done | Codex 하네스 Recommended안 구축 | `.codex/agents`, `.agents/skills`, `docs/wiki`, `scripts/verify-harness.ps1`가 있고 검증을 통과했다 | plans/completed/harness-recommended-implementation-2026-07-14.md |
 | T-008 | P0 | Ready | GitHub Issue 등록 | P0/P1 Task가 Issue로 등록되고 완료 기준이 포함된다 | tasks.md |
 | T-009 | P0 | Ready | GitHub Project에 Issue 등록 | Project에 우선순위, 상태, 완료 기준이 연결된다 | github-project-guide.md |
 
@@ -81,7 +83,7 @@
 | T-501 | P2 | Backlog | Wiki 문서 최신화 | Wiki Home에서 최신 문서 구조로 이동 가능하다 | docs/README.md |
 | T-502 | P2 | Backlog | 발표용 스크린샷 정리 | 핵심 화면 3~5장이 준비된다 | status.md |
 | T-503 | P2 | Backlog | PR 본문 최신화 | 계획, 백로그, Agent 문서 변경이 반영된다 | status.md |
-| T-504 | P2 | Backlog | 학습 문서 보강 | React 상태, API, Supabase, XP CSS 학습 키워드가 정리된다 | learning/README.md |
+| T-504 | P2 | Backlog | 학습 문서 보강 | React 상태, API, Supabase, XP CSS 학습 키워드가 `project-learning-agent` 기준으로 정리된다 | learning/README.md |
 
 ## 여유 시 P3: MVP 이후 확장 후보
 
@@ -98,7 +100,6 @@
 
 - `[P0] Agent 사용 가이드 작성`
 - `[P0] GitHub Issue 등록`
-- `[P0] Notion 대시보드 Task 등록`
 - `[P0] 정적 HTML 화면을 React 컴포넌트 단위로 분해`
 - `[P0] 기록 노트 mock 데이터 렌더링`
 - `[P0] quest_logs 데이터 속성 확정`
@@ -114,3 +115,4 @@
 - 일정은 `four-week-roadmap.md`에서 관리한다.
 - 현재 완료/검증/다음 작업은 `status.md`에서 관리한다.
 - GitHub Issues/Projects 운영 방식은 `github-project-guide.md`에서 관리한다.
+- `docs/notion-dashboard-guide.md`는 오래된 문서이므로 현재 작업 관리 기준으로 사용하지 않는다.

@@ -1,0 +1,12 @@
+[agents]
+max_depth = 1
+max_threads = 4
+
+[harness]
+project = "AIAgentChallenge hub"
+default_plan_path = "docs/plans/active"
+wiki_path = "docs/wiki"
+skills_path = ".agents/skills"
+auto_commit = false
+auto_push = false
+auto_deploy = false
