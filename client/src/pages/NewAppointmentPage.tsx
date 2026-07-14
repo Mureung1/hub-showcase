@@ -22,14 +22,15 @@ function NewAppointmentPage() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) })   // study: 해당 규칙으로 검증 및 3가지 요소 return 받음
+  } = useForm<FormValues>({ resolver: zodResolver(schema) })   // study: 해당 규칙으로 검증 및 3가지 요소 구조분해 할당
 
   const onSubmit = () => {
     // Day1은 화면 전환 확인 단계라 실제 저장 없이 임시 ID(demo)로 이동한다.
-    setRole('demo', 'admin')
-    navigate('/a/demo', { state: { justCreated: true } })
+    setRole('demo', 'admin') 
+    navigate('/a/demo', { state: { justCreated: true } }) // study: /a/demo 로 이동 및 justCreated 되었다는 state 전달.
   }
-
+// study: submit 이벤트 발생, onSubmit 호출, 이후 handleSubmit은 true일시 onSubmit 실행
+// study: label 내부는 register(필드이름) 으로 만든 객체를 ...으로 뿌려서 input 태그안에 넣어줌, error 날시 <p>태그안 메세지 출력 
   return (
     <form className="page-stack" onSubmit={handleSubmit(onSubmit)}>
       <label>
