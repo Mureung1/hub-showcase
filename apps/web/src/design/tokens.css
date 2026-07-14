@@ -1,0 +1,76 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   디자인 토큰 — 모든 색상/간격/크기의 단일 진실 원천 (Single Source of Truth)
+   raw hex 값은 여기서만 정의하고, 컴포넌트에서는 var(--토큰)만 사용한다.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─────────────────────────────────────────────────────────────────────────
+     색상 토큰 — 시맨틱 네이밍 (용도 기반)
+     ───────────────────────────────────────────────────────────────────────── */
+
+  /* 배경색 */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f8f9fa;
+  --color-bg-tertiary: #e9ecef;
+  --color-bg-nav: #343a40;
+  --color-bg-rail: #f1f3f5;
+
+  /* 텍스트색 */
+  --color-text-primary: #212529;
+  --color-text-secondary: #495057;
+  --color-text-tertiary: #868e96;
+  --color-text-inverse: #ffffff;
+
+  /* 강조색 */
+  --color-accent-primary: #228be6;
+  --color-accent-primary-hover: #1c7ed6;
+  --color-accent-success: #40c057;
+  --color-accent-warning: #fab005;
+  --color-accent-danger: #fa5252;
+
+  /* 테두리색 */
+  --color-border-light: #dee2e6;
+  --color-border-medium: #ced4da;
+
+  /* 신뢰도 라벨 색상 */
+  --color-confidence-high: #40c057;
+  --color-confidence-medium: #fab005;
+  --color-confidence-low: #868e96;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     간격 토큰 — 8px 기반 스케일
+     ───────────────────────────────────────────────────────────────────────── */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     크기 토큰 — 레이아웃 고정값
+     ───────────────────────────────────────────────────────────────────────── */
+  --size-nav-height: 56px;
+  --size-rail-width: 200px;
+  --size-card-max-width: 400px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     타이포그래피 토큰
+     ───────────────────────────────────────────────────────────────────────── */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 24px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     기타 토큰
+     ───────────────────────────────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+}
