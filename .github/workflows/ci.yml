@@ -1,9 +1,10 @@
 name: CI
 
+# fork에서 push할 때만 실행한다. pull_request 트리거는 두지 않는다
+# (운영진 저장소로 낸 fork PR에서 워크플로 승인 대기가 떠 자동 머지를 막기 때문).
 on:
   push:
     branches: ["**"]
-  pull_request:
 
 jobs:
   check:
