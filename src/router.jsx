@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useUser } from './context/UserContext.jsx'
 import Header from './components/Header.jsx'
 import AppShell from './components/AppShell.jsx'
 import Login from './pages/Login.jsx'
@@ -10,12 +9,11 @@ import Calendar from './pages/Calendar.jsx'
 import MapPage from './pages/MapPage.jsx'
 import MealsPage from './pages/MealsPage.jsx'
 
-// /profile은 최초 입력(온보딩)과 MY 탭(이미 프로필이 있는 경우) 두 가지로 쓰인다.
-// 온보딩일 때만 탭바를 숨긴다.
+// /profile은 최초 입력(온보딩)과 MY 탭(이미 프로필이 있는 경우) 두 가지로 쓰이지만, 둘 다 MY 탭을 통해
+// 다른 화면으로 자유롭게 이동할 수 있어야 하므로 탭바는 항상 보여준다.
 function ProfileRoute() {
-  const { user } = useUser()
   return (
-    <AppShell hideTabBar={!user?.profile}>
+    <AppShell>
       <Profile />
     </AppShell>
   )
