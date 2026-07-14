@@ -49,7 +49,7 @@ Process-lifetime `RequestId` tombstone, global causal ordering, contradiction la
 | 그대로 보존 | Exact-pin generated protocol output. 기존 provenance 문서는 implementation 전 evidence로 별도 보존하며 validator·contract·generator implementation은 이 분류에 포함하지 않는다. |
 | 추출·개조 | Response/notification validator·contract와 safe generator, method ledger renderer의 pure extraction/pin check, `CodexStdioTransport`의 child·sole ingress·JSONL envelope·exact typed ID·pending settlement·cleanup primitive, `ProductRuntimeLayout`의 root/pin/runtime-home preparation, fake stdio의 process/journal/temp cleanup scaffolding과 test intent |
 | Runtime Harness 전용 보존 | `CodexRawClient`, `CodexRuntimeAdapter`, status/smoke, `capability-slots.ts`·test와 root `.`의 해당 export block, `./capabilities`, 기존 fake App Server와 `./testing` subpath, 이를 소비하는 server/Inspector diagnostic path. Foundation conformance나 ledger integration 근거로 승격하지 않는다. |
-| Compatibility 없이 제거 | 새 gate 이후 `HeadlessCodexClientHost` Interface/state machine/root export/fake/tests, generation/ref/global subscriber policy, product-named layout root export, legacy transport의 settled identity retention·global observation queue·`dismiss()`/reuse semantics, `./testing`의 old stdio re-export와 이를 고정한 oracle |
+| Compatibility 없이 제거 | 새 gate 이후 `HeadlessCodexClientHost` Interface/state machine/root export/fake/tests, generation/ref/global subscriber policy, product-named layout root export, legacy transport의 settled identity retention·global observation queue·`dismiss()`/reuse semantics, `./testing`의 기존 stdio re-export와 이를 고정한 oracle |
 
 새 Connection은 old transport나 RawClient를 감싸지 않는다. Verified primitive와 test intent만 새 owner로 옮기는 replace-don't-layer migration을 사용한다.
 
