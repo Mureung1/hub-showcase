@@ -1,18 +1,6 @@
 {
-  "buildCommand": "pnpm --dir apps/web build && node scripts/copy-docs.mjs",
-  "outputDirectory": "apps/web/dist",
-  "installCommand": "pnpm install",
-  "framework": null,
-  "redirects": [
-    {
-      "source": "/prototype",
-      "destination": "/",
-      "permanent": false
-    },
-    {
-      "source": "/prototype/(.*)",
-      "destination": "/",
-      "permanent": false
-    }
-  ]
+  "buildCommand": "node scripts/build_docs_site.mjs",
+  "outputDirectory": "dist/docs-site",
+  "installCommand": "node --version",
+  "framework": null
 }

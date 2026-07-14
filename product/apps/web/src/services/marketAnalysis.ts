@@ -1,5 +1,5 @@
-export type AnalysisCategory = "카페" | "음식점" | "베이커리" | "편의점";
-export type AnalysisMarketKey = "연남" | "홍대" | "합정";
+import type { Category, MarketKey } from "../features/market/types";
+
 export type AnalysisSource = "api" | "snapshot";
 
 export type MarketAnalysis = {
@@ -8,7 +8,7 @@ export type MarketAnalysis = {
   market_type: string | null;
   district_name: string | null;
   admin_dong_name: string | null;
-  category: AnalysisCategory;
+  category: Category;
   period: string;
   score: {
     formula_version: string;
@@ -49,7 +49,7 @@ export type MarketAnalysis = {
   }>;
 };
 
-const marketIds: Record<AnalysisMarketKey, string> = {
+const marketIds: Record<MarketKey, string> = {
   연남: "3110562",
   홍대: "3120103",
   합정: "3120101",
@@ -60,8 +60,8 @@ type Snapshot = {
 };
 
 export async function loadMarketAnalysis(
-  marketKey: AnalysisMarketKey,
-  category: AnalysisCategory,
+  marketKey: MarketKey,
+  category: Category,
   signal: AbortSignal,
 ): Promise<{ analysis: MarketAnalysis; source: AnalysisSource }> {
   const query = new URLSearchParams({ category, period: "20251" });
@@ -81,17 +81,17 @@ export async function loadMarketAnalysis(
 }
 
 export async function loadMarketComparison(
-  category: AnalysisCategory,
+  category: Category,
   signal: AbortSignal,
-): Promise<Record<AnalysisMarketKey, MarketAnalysis>> {
+): Promise<Record<MarketKey, MarketAnalysis>> {
   const response = await fetch("/data/market-analysis.json", { signal });
   if (!response.ok) throw new Error(`Snapshot ${response.status}`);
   const snapshot = (await response.json()) as Snapshot;
   return Object.fromEntries(
-    (Object.keys(marketIds) as AnalysisMarketKey[]).map((marketKey) => {
+    (Object.keys(marketIds) as MarketKey[]).map((marketKey) => {
       const analysis = snapshot.analyses[`${marketKey}:${category}`];
       if (!analysis) throw new Error(`Snapshot analysis is missing: ${marketKey}:${category}`);
       return [marketKey, analysis];
     }),
-  ) as Record<AnalysisMarketKey, MarketAnalysis>;
+  ) as Record<MarketKey, MarketAnalysis>;
 }

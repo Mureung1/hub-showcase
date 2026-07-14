@@ -170,7 +170,7 @@ Market 경계와 지도 보강 데이터
 건물 높이 또는 층수
 ```
 
-v0.1의 2.5D 상권 지도는 MapLibre GL JS와 프로젝트 소유 GeoJSON snapshot을 채택했다. `scripts/build_localtwin_map.py`가 Overpass API에서 상권별 720m 범위의 도로, 건물 footprint, 녹지, 물, POI를 수집한다. OSM에 높이가 있으면 사용하고, 층수가 있으면 `층수 × 3.2m`, 둘 다 없으면 재현 가능한 시각화용 기본 높이를 적용한다. 기본 높이는 실제 건물 높이라는 분석 근거로 사용하지 않는다.
+v0.1의 2.5D 상권 지도는 MapLibre GL JS와 프로젝트 소유 GeoJSON snapshot을 채택했다. `product/scripts/build_localtwin_map.py`가 Overpass API에서 상권별 720m 범위의 도로, 건물 footprint, 녹지, 물, POI를 수집한다. OSM에 높이가 있으면 사용하고, 층수가 있으면 `층수 × 3.2m`, 둘 다 없으면 재현 가능한 시각화용 기본 높이를 적용한다. 기본 높이는 실제 건물 높이라는 분석 근거로 사용하지 않는다.
 
 ```mermaid
 flowchart LR
@@ -431,13 +431,13 @@ Docker PostgreSQL은 migration을 로컬에서 격리 검증할 필요가 있을
 원본 저장 규칙:
 
 ```text
-data/raw/{source_family}/
+product/data/raw/{source_family}/
 ```
 
 정규화 저장 규칙:
 
 ```text
-data/processed/{model}/
+product/data/processed/{model}/
 ```
 
 스냅샷 메타데이터:
@@ -668,19 +668,19 @@ SEOUL_OPEN_DATA_KEY=<서울 열린데이터광장 인증키>
 아래의 `20251`은 기간 filter 형식 예시일 뿐 최신 데이터라고 가정하지 않는다.
 
 ```powershell
-uv run --directory apps/api python -m localtwin_api.seoul_open_data --allow-official-http
+uv run --directory product/apps/api python -m localtwin_api.seoul_open_data --allow-official-http
 
 # 특정 분기만 다시 수집할 때
-uv run --directory apps/api python -m localtwin_api.seoul_open_data --period 20251 --allow-official-http
+uv run --directory product/apps/api python -m localtwin_api.seoul_open_data --period 20251 --allow-official-http
 
 # pagination으로 선택 source의 전체 row를 저장할 때
-uv run --directory apps/api python -m localtwin_api.seoul_open_data --period 20251 --all --allow-official-http
+uv run --directory product/apps/api python -m localtwin_api.seoul_open_data --period 20251 --all --allow-official-http
 ```
 
 수집기는 다음 경로에 각 API의 원본 row와 manifest를 저장한다.
 
 ```text
-data/raw/seoul-market/<UTC timestamp>/
+product/data/raw/seoul-market/<UTC timestamp>/
   areas.json
   stores.json
   sales.json
@@ -701,7 +701,7 @@ CLI로만 제공하고, `--allow-official-http`을 명시해야 실제 요청을
 공공데이터포털 sample은 다음 명령으로 수집한다.
 
 ```powershell
-uv run --directory apps/api python -m localtwin_api.public_data `
+uv run --directory product/apps/api python -m localtwin_api.public_data `
   --rows 20 --address "마포구" `
   --longitude 126.9257 --latitude 37.5661 --radius 500
 ```
@@ -718,8 +718,8 @@ secret/serviceKey snapshot 포함 여부: false
 raw snapshot을 canonical SQLite에 적재한다.
 
 ```powershell
-uv run --directory apps/api python -m localtwin_api.canonical_db
-uv run --directory apps/api python -m localtwin_api.canonical_db --stats
+uv run --directory product/apps/api python -m localtwin_api.canonical_db
+uv run --directory product/apps/api python -m localtwin_api.canonical_db --stats
 ```
 
 동일 명령을 두 번 실행한 실제 결과는 같다.
@@ -734,7 +734,19 @@ store_points: 20
 permit_businesses: 40
 ```
 
-### 12.5 변경 기록
+### 12.5 Phase 2 전체 이관과 운영 갱신 분리
+
+`DB-001`은 현재 UI가 지원하는 카페·음식점·베이커리·편의점만 선별하지 않는다.
+검증된 canonical SQLite의 7개 table 전체를 Supabase PostgreSQL에 이관하고,
+`store_metrics` 100개와 `sales_metrics` 62개 원본 업종 코드를 그대로 보존한다.
+4개 Category는 현재 분석 UI/API의 지원 분류이지 제품 DB의 전체 업종 목록이 아니다.
+
+공공데이터포털에 다시 요청해 점포 상세 범위를 확대하는 작업과 운영 수집 시점은
+이 이관에 포함하지 않는다. 지원 지역, full/incremental 방식, provider quota, 요청 주기,
+raw snapshot 보존 기간과 rollback 기준은 `DATA-007`에서 나중에 승인한다. 그전에는
+자동 cron이나 scheduled workflow를 추가하지 않으며 서울 전체 검색도 범위에 넣지 않는다.
+
+### 12.6 변경 기록
 
 | 날짜 | Task | 변경 | 상태 |
 | --- | --- | --- | --- |
@@ -742,3 +754,4 @@ permit_businesses: 40
 | 2026-07-10 | DATA-001 | 서울 상권영역·점포·추정매출·생활인구 `20251` 전체 101,110행 raw snapshot 저장 | 서울 수집 완료, 공공데이터포털 key 대기 |
 | 2026-07-11 | DATA-002 | 공공데이터포털 3개 API 실제 sample 60행과 secret 미포함 확인 | 수집 완료 |
 | 2026-07-11 | DATA-002 | 서울 전체 snapshot과 공공데이터 sample을 provenance SQLite에 2회 동일 적재 | canonical DB 완료 |
+| 2026-07-14 | DB-001 / DATA-007 | 전체 canonical 업종·행은 Supabase에 이관하고 운영 요청 시점·갱신·보존 정책은 후속 결정 | Phase 2 계획 |

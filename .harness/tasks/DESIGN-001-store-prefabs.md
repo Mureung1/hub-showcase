@@ -62,9 +62,9 @@ docs: 배경 건물과 후보 점포 prefab의 역할 구분
 ## 7. Verification Plan
 
 ```powershell
-pnpm --dir apps/web test
-pnpm --dir apps/web lint
-pnpm --dir apps/web build
+pnpm --dir product/apps/web test
+pnpm --dir product/apps/web lint
+pnpm --dir product/apps/web build
 ```
 
 수동 확인:

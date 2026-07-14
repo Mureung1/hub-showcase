@@ -2,8 +2,8 @@
 
 LocalTwin Wiki는 프로젝트 기획, 기능 정의, 개발 운영 문서를 연결하는 진입점이다.
 
-제품 웹:
-[LocalTwin 상권 분석](https://hub-localtwin-docs-vercel.vercel.app/)
+제품 웹은 문서와 별도 배포한다. 공개 제품 URL은 별도 Vercel 프로젝트의 Root Directory를
+`product`로 지정한 뒤 이 문서에 기록한다.
 
 ## Knowledge Graph
 

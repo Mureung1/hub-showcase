@@ -64,10 +64,10 @@ docs: LocalTwin 지도 정의와 현재 구현 상태
 ## 7. Verification Plan
 
 ```powershell
-pnpm --dir apps/web test
-pnpm --dir apps/web typecheck
-pnpm --dir apps/web lint
-pnpm --dir apps/web build
+pnpm --dir product/apps/web test
+pnpm --dir product/apps/web typecheck
+pnpm --dir product/apps/web lint
+pnpm --dir product/apps/web build
 ```
 
 수동 확인:
@@ -94,8 +94,8 @@ why:
 - present actual map geometry with a distinct LocalTwin visual language
 
 verify:
-- pnpm --dir apps/web test
-- pnpm --dir apps/web build
+- pnpm --dir product/apps/web test
+- pnpm --dir product/apps/web build
 ```
 
 ## 10. Self-check

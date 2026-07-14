@@ -14,7 +14,7 @@ Status: done
 ```text
 브라우저가 secret을 직접 사용하지 않고,
 서버 측 수집 명령이 서울 상권분석 Open API와 공공데이터포털 API의
-실제 응답을 data/raw에 저장할 수 있는 상태를 만든다.
+실제 응답을 product/data/raw에 저장할 수 있는 상태를 만든다.
 ```
 
 ## 3. Scope
@@ -69,15 +69,15 @@ tests: collector response and snapshot tests
 실행할 검증 명령:
 
 ```powershell
-uv run --directory apps/api pytest
-uv run --directory apps/api python -m localtwin_api.seoul_open_data --help
-uv run --directory apps/api python -m localtwin_api.seoul_open_data --period 20251 --all --allow-official-http
+uv run --directory product/apps/api pytest
+uv run --directory product/apps/api python -m localtwin_api.seoul_open_data --help
+uv run --directory product/apps/api python -m localtwin_api.seoul_open_data --period 20251 --all --allow-official-http
 ```
 
 수동 확인:
 
 ```text
-data/raw/seoul-market/<timestamp>/manifest.json에 실제 provider row 수와 저장 row 수가 남는지 확인한다.
+product/data/raw/seoul-market/<timestamp>/manifest.json에 실제 provider row 수와 저장 row 수가 남는지 확인한다.
 수집 명령과 브라우저 응답에 API key가 노출되지 않는지 확인한다.
 ```
 
@@ -104,7 +104,7 @@ verify:
 
 - [x] 실제 provider가 공개한 API와 데이터셋만 기록했는가?
 - [x] API key를 문서, source, output에 직접 넣지 않았는가?
-- [x] 실제 서울 Open API key로 data/raw snapshot을 수집했는가?
+- [x] 실제 서울 Open API key로 product/data/raw snapshot을 수집했는가?
 - [x] source metadata와 data limitation을 UI/API 구현 전에 유지할 수 있는가?
 - [x] 공공데이터포털 API key로 개별 점포·인허가 importer를 검증했는가?
 - [ ] 후속: 운영 갱신 주기와 보존 기간을 결정한다.

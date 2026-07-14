@@ -62,8 +62,8 @@ docs: 제품/문서 링크와 legacy 표기
 ## 7. Verification Plan
 
 ```powershell
-pnpm --dir apps/web test
-pnpm --dir apps/web build
+pnpm --dir product/apps/web test
+pnpm --dir product/apps/web build
 python scripts/check_docs_html.py
 Get-Content vercel.json | ConvertFrom-Json
 ```
@@ -92,8 +92,8 @@ why:
 - separate the production application from its documentation and legacy prototype
 
 verify:
-- pnpm --dir apps/web test
-- pnpm --dir apps/web build
+- pnpm --dir product/apps/web test
+- pnpm --dir product/apps/web build
 - python scripts/check_docs_html.py
 ```
 

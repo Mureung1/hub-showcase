@@ -34,7 +34,7 @@ flowchart LR
 
 ```bash
 docker pull ghcr.io/nerfstudio-project/nerfstudio:1.1.5
-python scripts/run_gpu_scene_validation.py \
+python product/scripts/run_gpu_scene_validation.py \
   --mode docker \
   --workspace ~/localtwin-scene-validation
 ```
@@ -43,7 +43,7 @@ Docker가 없는 host worker는 Nerfstudio CLI를 활성화한 뒤 실행한다.
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0
-python scripts/run_gpu_scene_validation.py \
+python product/scripts/run_gpu_scene_validation.py \
   --mode host \
   --workspace ~/localtwin-scene-validation
 ```
@@ -65,19 +65,19 @@ server가 만든 두 파일만 local ignored directory로 가져온다.
 
 ```powershell
 scp etri-gpu:/root/localtwin-scene-validation/storefront-run/export/scene.ply `
-  data/scenes/server-validation/storefront/scene.ply
+  product/data/scenes/server-validation/storefront/scene.ply
 scp etri-gpu:/root/localtwin-scene-validation/storefront-run/validation-report.json `
-  data/scenes/server-validation/storefront/validation-report.json
+  product/data/scenes/server-validation/storefront/validation-report.json
 ```
 
 Nerfstudio dataset인 경우 camera metadata도 함께 등록한다.
 
 ```powershell
-uv run --directory apps/api python ../../scripts/import_scene_asset.py `
-  ../../data/scenes/server-validation/storefront/scene.ply `
+uv run --directory product/apps/api python ../../product/scripts/import_scene_asset.py `
+  ../../product/data/scenes/server-validation/storefront/scene.ply `
   --scene-name "Local GPU validation" `
-  --transforms ../../data/scenes/server-validation/storefront/transforms.json `
-  --dataparser-transforms ../../data/scenes/server-validation/storefront/dataparser_transforms.json
+  --transforms ../../product/data/scenes/server-validation/storefront/transforms.json `
+  --dataparser-transforms ../../product/data/scenes/server-validation/storefront/dataparser_transforms.json
 ```
 
 명령이 출력한 job id를 사용해 local QA page를 연다.

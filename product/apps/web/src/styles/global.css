@@ -2082,7 +2082,9 @@ select:focus-visible {
   background: transparent;
   transform: translateY(2px);
   filter: drop-shadow(0 7px 5px rgba(35, 54, 42, 0.22));
-  transition: transform 160ms ease, filter 160ms ease;
+  transition:
+    transform 160ms ease,
+    filter 160ms ease;
 }
 .prefab-building span {
   position: absolute;

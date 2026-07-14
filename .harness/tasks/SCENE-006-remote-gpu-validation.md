@@ -65,8 +65,8 @@ docs: sample 선택 근거, 서버/로컬 실행 흐름과 검증 한계
 ## 7. Verification Plan
 
 ```powershell
-python scripts/run_gpu_scene_validation.py --dry-run
-uv run --directory apps/api pytest
+python product/scripts/run_gpu_scene_validation.py --dry-run
+uv run --directory product/apps/api pytest
 python scripts/check_task_packet.py --require
 ```
 

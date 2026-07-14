@@ -66,10 +66,10 @@ docs: 지도 source, 구조, attribution과 제한
 ## 7. Verification Plan
 
 ```powershell
-python scripts/build_localtwin_map.py --check
-pnpm --dir apps/web test
-pnpm --dir apps/web lint
-pnpm --dir apps/web build
+python product/scripts/build_localtwin_map.py --check
+pnpm --dir product/apps/web test
+pnpm --dir product/apps/web lint
+pnpm --dir product/apps/web build
 python scripts/check_docs_html.py
 ```
 
@@ -96,9 +96,9 @@ why:
 - use real coordinates without depending on an external basemap presentation
 
 verify:
-- python scripts/build_localtwin_map.py --check
-- pnpm --dir apps/web test
-- pnpm --dir apps/web build
+- python product/scripts/build_localtwin_map.py --check
+- pnpm --dir product/apps/web test
+- pnpm --dir product/apps/web build
 ```
 
 ## 10. Self-check

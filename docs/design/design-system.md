@@ -4,7 +4,7 @@
 | --- | --- |
 | 상태 | Active |
 | 버전 | v0.1 |
-| 최종 갱신 | 2026-07-11 |
+| 최종 갱신 | 2026-07-14 |
 | 적용 대상 | 제품 UI, 기능 프로토타입, 개발문서 사이트 |
 
 ## 1. 목적
@@ -157,6 +157,16 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 - 유동인구 Layer는 사용자가 켜고 끌 수 있어야 한다.
 - 지도 위 사람 symbol은 실제 개인 위치가 아니라 집계값의 시각적 표본임을 표시한다.
 - 지도 화면과 사람 눈높이의 Gaussian Splatting 현장 상세보기를 혼동하지 않는다.
+
+핵심 점포 3D storefront 방향:
+
+- 배경 건물은 기존 footprint extrusion을 유지하고 검색·선택된 핵심 점포만 상세 3D로 표현한다.
+- `pastel low-poly miniature + pixel-style category decal`을 기본 시각 언어로 사용한다.
+- 건물 geometry는 부드러운 low-poly, 간판 표식은 직접 제작한 16×16 또는 32×32 pixel 문법으로 구분한다.
+- 업종마다 모델을 복제하지 않고 기본 prefab, material, UV decal과 대표 attachment를 조합한다.
+- 외부 레퍼런스는 형태 조사에만 사용하고 실제 asset은 저작권·상표를 복제하지 않게 새로 제작한다.
+- 미분류 업종과 3D load 실패는 기존 marker로 fallback한다.
+- 상세 규격과 구현 Gate는 [상권 지도와 핵심 3D Storefront](../features/market-map-experience.md#81-현재-prefab과-map-004-목표)를 따른다.
 
 ### 4.2 혼잡도 3D 탐색 화면
 
@@ -353,7 +363,7 @@ error
 
 ### 구현 필요
 
-- [x] `apps/web/src/styles/tokens.css` 생성
+- [x] `product/apps/web/src/styles/tokens.css` 생성
 - [ ] 공통 button, filter, panel, score, marker component 구현
 - [ ] 임의 색상과 spacing 사용을 확인하는 lint 또는 check 추가
 - [ ] desktop/mobile visual regression 기준 화면 추가

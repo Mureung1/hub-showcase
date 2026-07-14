@@ -12,12 +12,13 @@ describe("App", () => {
     expect(screen.getByRole("link", { name: "LocalTwin 상권 분석 홈" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Docs" })).toHaveAttribute(
       "href",
-      "/docs/wiki/doc-viewer.html?doc=Home.md",
+      "https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md",
     );
     expect(screen.getByRole("region", { name: "상권 분석 작업 공간" })).toBeInTheDocument();
     expect(screen.getByText("입지 점수")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "다른 상권과 비교" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /관평동 3D 장소/ })).toBeInTheDocument();
+    expect(screen.getByText("서울 상권분석 공식 데이터를 불러오는 중입니다.")).toBeInTheDocument();
   });
 
   it("updates the selected candidate and opens the major analysis dialogs", () => {

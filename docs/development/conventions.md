@@ -25,8 +25,8 @@
 ```text
 .editorconfig
 .prettierrc.json
-apps/web/tsconfig.app.json
-apps/api/pyproject.toml
+product/apps/web/tsconfig.app.json
+product/apps/api/pyproject.toml
 ```
 
 ## 3. Web 컨벤션
@@ -46,7 +46,7 @@ apps/api/pyproject.toml
 기능이 처음 구현될 때 다음 구조를 만든다.
 
 ```text
-apps/web/src/features/<feature>/
+product/apps/web/src/features/<feature>/
   components/
   hooks/
   api/
@@ -54,7 +54,7 @@ apps/web/src/features/<feature>/
   <Feature>.test.tsx
 ```
 
-여러 기능에서 실제로 재사용되는 코드만 `apps/web/src/shared/`로 이동한다. 한 번만 쓰는 코드를 공통 abstraction으로 미리 만들지 않는다.
+여러 기능에서 실제로 재사용되는 코드만 `product/apps/web/src/shared/`로 이동한다. 한 번만 쓰는 코드를 공통 abstraction으로 미리 만들지 않는다.
 
 ### TypeScript와 React
 
@@ -63,7 +63,7 @@ apps/web/src/features/<feature>/
 - component는 화면 표현과 interaction에 집중한다.
 - API 호출과 응답 변환을 component 내부에 직접 누적하지 않는다.
 - server state library는 실제 caching 요구가 생기기 전까지 추가하지 않는다.
-- 색상, spacing, typography와 elevation은 `apps/web/src/styles/tokens.css`를 기준으로 한다.
+- 색상, spacing, typography와 elevation은 `product/apps/web/src/styles/tokens.css`를 기준으로 한다.
 - icon이 있는 일반 동작은 `lucide-react`를 사용한다.
 - interactive element는 keyboard focus와 accessible name을 제공한다.
 
@@ -83,7 +83,7 @@ Formatting과 정적 검사는 Prettier, TypeScript와 Oxlint 결과를 기준�
 기능이 처음 구현될 때 역할에 따라 다음 디렉터리를 추가한다.
 
 ```text
-apps/api/src/localtwin_api/
+product/apps/api/src/localtwin_api/
   api/
   domain/
   services/
@@ -120,10 +120,10 @@ GeoJSON coordinate order: [longitude, latitude]
 
 | 경로 | 용도 | Git 정책 |
 | --- | --- | --- |
-| `data/raw/` | 원본 공공데이터 | 내용 추적 금지 |
-| `data/processed/` | 정규화/집계 결과 | 내용 추적 금지 |
-| `data/fixtures/` | 작고 비식별화된 test/sample | 추적 허용 |
-| `data/scenes/` | 촬영물과 3D asset | 내용 추적 금지 |
+| `product/data/raw/` | 원본 공공데이터 | 내용 추적 금지 |
+| `product/data/processed/` | 정규화/집계 결과 | 내용 추적 금지 |
+| `product/data/fixtures/` | 작고 비식별화된 test/sample | 추적 허용 |
+| `product/data/scenes/` | 촬영물과 3D asset | 내용 추적 금지 |
 
 - raw data를 직접 수정하지 않는다.
 - fixture는 canonical schema를 따라야 하며 화면 전용 임의 구조를 만들지 않는다.
@@ -151,10 +151,10 @@ GeoJSON coordinate order: [longitude, latitude]
 ## 8. Dependency 컨벤션
 
 ```powershell
-pnpm --filter @localtwin/web add <package>
-pnpm --filter @localtwin/web add -D <package>
-uv add --directory apps/api <package>
-uv add --directory apps/api --dev <package>
+pnpm --dir product --filter @localtwin/web add <package>
+pnpm --dir product --filter @localtwin/web add -D <package>
+uv add --directory product/apps/api <package>
+uv add --directory product/apps/api --dev <package>
 ```
 
 - npm과 pip를 lockfile 관리에 혼용하지 않는다.

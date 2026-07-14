@@ -43,9 +43,9 @@ Status: ready
 ## 7. Verification Plan
 
 ```powershell
-uv run --directory apps/api pytest -q
-uv run --directory apps/api ruff check .
-pnpm --dir apps/web test
+uv run --directory product/apps/api pytest -q
+uv run --directory product/apps/api ruff check .
+pnpm --dir product/apps/web test
 python scripts/check_task_packet.py --require
 git diff --check
 ```

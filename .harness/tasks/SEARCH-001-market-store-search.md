@@ -46,10 +46,10 @@ Status: ready
 ## 7. Verification Plan
 
 ```powershell
-uv run --directory apps/api pytest -q
-uv run --directory apps/api ruff check .
-pnpm --dir apps/web test
-pnpm --dir apps/web build
+uv run --directory product/apps/api pytest -q
+uv run --directory product/apps/api ruff check .
+pnpm --dir product/apps/web test
+pnpm --dir product/apps/web build
 ```
 
 명령 성공과 완료 조건 충족을 구분해 Run Report에 기록한다.
