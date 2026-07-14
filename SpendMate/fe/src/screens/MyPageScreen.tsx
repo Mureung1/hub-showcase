@@ -359,7 +359,12 @@ function SubscriptionManageModal({
 }
 
 
-export default function MyPageScreen() {
+interface MyPageScreenProps {
+  survivalModeOff: boolean
+  onToggleSurvivalMode: () => void
+}
+
+export default function MyPageScreen({ survivalModeOff, onToggleSurvivalMode }: MyPageScreenProps) {
   const [showSurvival, setShowSurvival] = useState(false)
   const [showProfileEdit, setShowProfileEdit] = useState(false)
   const [showBudgetEdit, setShowBudgetEdit] = useState(false)
@@ -405,7 +410,23 @@ const [showSubManage, setShowSubManage] = useState(false)
                   <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 800, color: 'white' }}>월말까지 절약 작전 🎯</p>
                 </div>
               </div>
-              <ChevronRight size={18} color="rgba(255,255,255,0.4)" style={{ transform: showSurvival ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleSurvivalMode() }}
+                  style={{
+                    width: 42, height: 24, borderRadius: 99, border: 'none', cursor: 'pointer',
+                    background: survivalModeOff ? 'rgba(255,255,255,0.15)' : 'var(--primary)',
+                    position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                  }}
+                >
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%', background: 'white',
+                    position: 'absolute', top: 3, left: survivalModeOff ? 3 : 21,
+                    transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  }} />
+                </button>
+                <ChevronRight size={18} color="rgba(255,255,255,0.4)" style={{ transform: showSurvival ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+              </div>
             </div>
 
             {showSurvival && (

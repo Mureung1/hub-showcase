@@ -5,12 +5,15 @@ import StatsScreen from './screens/StatsScreen'
 import AICoachScreen from './screens/AICoachScreen'
 import AddExpenseScreen from './screens/AddExpenseScreen'
 import MyPageScreen from './screens/MyPageScreen'
+import AuthScreen from './screens/AuthScreen'
 
 type Tab = 'home' | 'stats' | 'add' | 'coach' | 'mypage'
 
 export default function App() {
+  const [authed, setAuthed] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('home')
   const [showAdd, setShowAdd] = useState(false)
+  const [survivalModeOff, setSurvivalModeOff] = useState(false)
 
   const handleTabPress = (tab: Tab) => {
     if (tab === 'add') {
@@ -59,14 +62,30 @@ export default function App() {
 
         {/* Screen Content */}
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }} className="no-scrollbar">
-          {activeTab === 'home' && <HomeScreen />}
-          {activeTab === 'stats' && <StatsScreen />}
-          {activeTab === 'coach' && <AICoachScreen />}
-          {activeTab === 'mypage' && <MyPageScreen />}
+          {!authed ? (
+            <AuthScreen onAuth={() => setAuthed(true)} />
+          ) : (
+            <>
+              {activeTab === 'home' && (
+                <HomeScreen
+                  survivalModeOff={survivalModeOff}
+                  onGoToSettings={() => setActiveTab('mypage')}
+                />
+              )}
+              {activeTab === 'stats' && <StatsScreen />}
+              {activeTab === 'coach' && <AICoachScreen />}
+              {activeTab === 'mypage' && (
+                <MyPageScreen
+                  survivalModeOff={survivalModeOff}
+                  onToggleSurvivalMode={() => setSurvivalModeOff((v) => !v)}
+                />
+              )}
+            </>
+          )}
         </div>
 
-        {/* Bottom Navigation */}
-        <div
+        {/* Bottom Navigation — 인증 후에만 표시 */}
+        {authed && <div
           style={{
             height: 82,
             background: 'white',
@@ -101,7 +120,7 @@ export default function App() {
           </button>
           <NavItem icon={<MessageCircle size={22} />} label="AI 코치" active={activeTab === 'coach'} onPress={() => handleTabPress('coach')} />
           <NavItem icon={<User size={22} />} label="마이페이지" active={activeTab === 'mypage'} onPress={() => handleTabPress('mypage')} />
-        </div>
+        </div>}
       </div>
 
       {showAdd && <AddExpenseScreen onClose={() => setShowAdd(false)} />}
