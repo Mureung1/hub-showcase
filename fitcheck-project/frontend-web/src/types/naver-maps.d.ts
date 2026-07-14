@@ -24,6 +24,7 @@ declare global {
         },
       );
       setCenter(latlng: LatLng): void;
+      panTo(latlng: LatLng): void;
       destroy(): void;
     }
 
@@ -39,6 +40,8 @@ declare global {
         zIndex?: number;
       });
       setMap(map: Map | null): void;
+      setIcon(icon: { content?: string; anchor?: Point }): void;
+      setZIndex(zIndex: number): void;
     }
 
     class Point {
@@ -55,8 +58,9 @@ declare global {
       function addListener(
         target: Marker | Map,
         eventName: string,
-        listener: () => void,
+        listener: (...args: unknown[]) => void,
       ): object;
+      function removeListener(listener: object): void;
     }
   }
 }
