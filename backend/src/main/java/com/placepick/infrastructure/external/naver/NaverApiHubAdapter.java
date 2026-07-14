@@ -91,6 +91,7 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
         RestClient client = RestClient.builder()
             .baseUrl(baseUrl.toString())
             .requestFactory(NoRetryHttpRequestFactory.create(connectTimeout, readTimeout))
+            .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
             .defaultHeader(KEY_ID_HEADER, keyId)
             .defaultHeader(KEY_HEADER, key)
             .build();
@@ -187,14 +188,6 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
         int status = response.getStatusCode().value();
         if (!response.getStatusCode().is2xxSuccessful()) {
             raiseProviderError(response);
-        }
-        MediaType contentType = response.getHeaders().getContentType();
-        if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(contentType)) {
-            throw invalidResponse(
-                "NAVER API HUB response media type is invalid.",
-                status,
-                SearchProviderFailureStage.MEDIA_TYPE
-            );
         }
         try (InputStream input = response.getBody()) {
             byte[] body = input.readNBytes(MAX_RESPONSE_BYTES + 1);

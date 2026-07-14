@@ -192,6 +192,62 @@ class NaverApiHubAdapterIntegrationTest {
         WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(path)));
     }
 
+    @ParameterizedTest
+    @CsvSource({"local, text/plain", "blog, application/octet-stream"})
+    void acceptsStrictlyValidJsonWhenProviderUsesANonJsonMediaType(
+        String endpoint,
+        String contentType
+    ) {
+        String path = pathFor(endpoint);
+        WIRE_MOCK.stubFor(get(urlPathEqualTo(path))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", contentType)
+                .withBody("{\"total\":1,\"items\":[{\"title\":\"합성 결과\"}]}")));
+
+        invoke(endpoint, "비표준 media type 검증");
+
+        WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(path))
+            .withHeader("Accept", equalTo("application/json")));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"local", "blog"})
+    void acceptsStrictlyValidJsonWhenProviderOmitsTheMediaType(String endpoint) {
+        String path = pathFor(endpoint);
+        WIRE_MOCK.stubFor(get(urlPathEqualTo(path))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withBody("{\"total\":1,\"items\":[{\"title\":\"합성 결과\"}]}")));
+
+        invoke(endpoint, "media type 누락 검증");
+
+        WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(path))
+            .withHeader("Accept", equalTo("application/json")));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"local", "blog"})
+    void stillRejectsMalformedJsonWhenTheMediaTypeIsNonJson(String endpoint) {
+        String path = pathFor(endpoint);
+        WIRE_MOCK.stubFor(get(urlPathEqualTo(path))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "text/plain")
+                .withBody("{not-json")));
+
+        assertThatThrownBy(() -> invoke(endpoint, "비표준 media type 오류 검증"))
+            .isInstanceOfSatisfying(SearchProviderException.class, exception -> {
+                assertThat(exception.failure()).isEqualTo(SearchProviderFailure.INVALID_RESPONSE);
+                assertThat(exception.httpStatus()).isEqualTo(200);
+                assertThat(exception.stage()).isEqualTo(SearchProviderFailureStage.JSON);
+                assertThat(exception.getCause()).isNull();
+                assertThat(exception.getMessage()).doesNotContain(KEY_ID, KEY, "not-json");
+            });
+
+        WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(path)));
+    }
+
     @Test
     void acceptsProviderDocumentedOptionalItemFieldsWhenTheyAreOmitted() {
         WIRE_MOCK.stubFor(get(urlPathEqualTo(NaverApiHubAdapter.LOCAL_PATH))
@@ -305,6 +361,7 @@ class NaverApiHubAdapterIntegrationTest {
 
     private static void verifyCurrentRequest(String path, String query) {
         WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(path))
+            .withHeader("Accept", equalTo("application/json"))
             .withHeader(NaverApiHubAdapter.KEY_ID_HEADER, equalTo(KEY_ID))
             .withHeader(NaverApiHubAdapter.KEY_HEADER, equalTo(KEY))
             .withQueryParam("query", equalTo(query))
