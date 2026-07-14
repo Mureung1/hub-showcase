@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { commands, CATEGORY_LABELS } from '../data/commands';
 import CommandCard from '../components/CommandCard';
+import { compareByRelevance } from '../utils/commandSort';
 
 function CommandListPage() {
     const { category } = useParams();
@@ -17,12 +18,14 @@ function CommandListPage() {
     const filteredCommands = useMemo(() => {
         if (!normalizedQuery) return [];
 
-        return categoryCommands.filter(
-            (command) =>
-                command.name.toLowerCase().includes(normalizedQuery) ||
-                command.summary.toLowerCase().includes(normalizedQuery) ||
-                command.description.toLowerCase().includes(normalizedQuery)
-        );
+        return categoryCommands
+            .filter(
+                (command) =>
+                    command.name.toLowerCase().includes(normalizedQuery) ||
+                    command.summary.toLowerCase().includes(normalizedQuery) ||
+                    command.description.toLowerCase().includes(normalizedQuery)
+            )
+            .sort((a, b) => compareByRelevance(a, b, normalizedQuery));
     }, [categoryCommands, normalizedQuery]);
 
     const categoryLabel = CATEGORY_LABELS[category];
