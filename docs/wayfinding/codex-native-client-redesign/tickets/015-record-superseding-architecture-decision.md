@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: task
-- State: open
+- State: claimed
 - Blocked by: [기존 Host 제거와 선별 재사용 계획을 확정한다](014-plan-host-removal-and-selective-salvage.md)
 
 ## Question
