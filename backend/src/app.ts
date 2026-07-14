@@ -5,6 +5,8 @@ import express, {
 } from "express";
 
 import recipesRouter from "./routes/recipes.routes.js";
+import { requireFirebaseAuth } from "./middlewares/requireFirebaseAuth.js";
+import authRouter from "./routes/auth.routes.js";
 
 const app = express();
 
@@ -17,7 +19,8 @@ app.get("/api/health", (_req: Request, res: Response) => {
   });
 });
 
-app.use("/api/recipes", recipesRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/recipes", requireFirebaseAuth, recipesRouter);
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
