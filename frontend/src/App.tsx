@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthForm } from './components/AuthForm';
+import { Home } from './components/Home';
 import type { AuthUser, LoginResponse } from './api/auth';
 
 const STORAGE_KEY = 'gc_auth';
@@ -33,14 +34,11 @@ function App() {
   }
 
   return (
-    <div className="phone center-screen">
+    <div className={auth ? 'phone' : 'phone center-screen'}>
       {auth ? (
         <>
-          <h1 className="heading" style={{ fontSize: 22 }}>
-            환영합니다, {auth.user.name || auth.user.email}
-          </h1>
-          <p className="sub">{auth.user.email}</p>
-          <button className="btn" type="button" onClick={handleLogout}>
+          <Home />
+          <button className="btn-outline" type="button" onClick={handleLogout}>
             로그아웃
           </button>
         </>
