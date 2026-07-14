@@ -95,6 +95,31 @@ describe('normalizeInsightUrl', () => {
     });
   });
 
+  it('rejects an HTTP authority with a single slash', () => {
+    expect(insightApi.normalizeInsightUrl('https:/example.com/path')).toEqual({
+      ok: false,
+      reason: 'invalid-url',
+    });
+  });
+
+  it('rejects an HTTP authority with extra slashes', () => {
+    expect(insightApi.normalizeInsightUrl('https:///example.com/path')).toEqual(
+      {
+        ok: false,
+        reason: 'invalid-url',
+      }
+    );
+  });
+
+  it('rejects an HTTP scheme and authority written with backslashes', () => {
+    expect(
+      insightApi.normalizeInsightUrl('https:\\\\example.com\\path')
+    ).toEqual({
+      ok: false,
+      reason: 'invalid-url',
+    });
+  });
+
   it('rejects a malformed URL', () => {
     let result: unknown;
 

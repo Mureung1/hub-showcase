@@ -10,6 +10,18 @@ const TRACKING_PARAMETER_NAMES = new Set<string>([
 
 export function normalizeInsightUrl(rawUrl: string) {
   const originalUrl = rawUrl.trim();
+  const rawProtocol = /^([a-z][a-z\d+.-]*):/i
+    .exec(originalUrl)?.[1]
+    ?.toLowerCase();
+
+  if (
+    rawProtocol === undefined ||
+    ((rawProtocol === 'http' || rawProtocol === 'https') &&
+      !/^https?:\/\/[^/\\]/i.test(originalUrl))
+  ) {
+    return { ok: false as const, reason: 'invalid-url' as const };
+  }
+
   let url: URL;
 
   try {
