@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
+import { navigationTargets } from "../routes/routePaths";
+import { registerAccountRole } from "../utils/authStorage";
 
 const counselingOptions = [
   "대학원 진학 준비",
@@ -11,10 +13,22 @@ const counselingOptions = [
 ];
 
 function MentorSignupPage() {
+  const navigate = useNavigate();
+  const [isSignupComplete, setIsSignupComplete] = useState(false);
   const [researchKeywords, setResearchKeywords] = useState([0, 1, 2]);
   const [nextResearchKeywordId, setNextResearchKeywordId] = useState(3);
   const [counselingFields, setCounselingFields] = useState([{ id: 0, value: "" }]);
   const [nextCounselingFieldId, setNextCounselingFieldId] = useState(1);
+
+  useEffect(() => {
+    if (!isSignupComplete) return undefined;
+
+    const redirectTimer = window.setTimeout(() => {
+      navigate(navigationTargets.afterMentorSignup, { replace: true });
+    }, 1800);
+
+    return () => window.clearTimeout(redirectTimer);
+  }, [isSignupComplete, navigate]);
 
   const addResearchKeyword = () => {
     if (researchKeywords.length >= 8) return;
@@ -46,6 +60,9 @@ function MentorSignupPage() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    registerAccountRole(formData.get("email"), "mentor");
+    setIsSignupComplete(true);
   };
 
   return (
@@ -286,6 +303,23 @@ function MentorSignupPage() {
           </div>
         </form>
       </main>
+
+      {isSignupComplete && (
+        <div className="signup-complete-overlay">
+          <section className="card signup-complete-card" role="status" aria-live="assertive">
+            <div className="signup-complete-visual" aria-hidden="true">
+              <svg viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="25" />
+                <path d="m20 32 8 8 17-18" />
+              </svg>
+            </div>
+            <p className="eyebrow">WELCOME, MENTOR</p>
+            <h2 className="card-title">멘토 가입이 완료되었습니다</h2>
+            <p className="muted-text">잠시 후 첫 화면으로 이동합니다.</p>
+            <span className="signup-complete-progress" aria-hidden="true" />
+          </section>
+        </div>
+      )}
     </div>
   );
 }

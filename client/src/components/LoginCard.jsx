@@ -1,12 +1,29 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { navigationTargets } from "../routes/routePaths";
+import { getAccountRole, setCurrentUserRole } from "../utils/authStorage";
 
 function LoginCard() {
+  const navigate = useNavigate();
   const [message, setMessage] = useState("");
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    setMessage("로그인 기능은 다음 개발 단계에서 연결됩니다.");
+    const formData = new FormData(event.currentTarget);
+    const role = getAccountRole(formData.get("email"));
+
+    if (!role) {
+      setMessage("가입된 계정을 찾을 수 없습니다. 회원가입을 먼저 진행해 주세요.");
+      return;
+    }
+
+    setCurrentUserRole(role);
+    navigate(
+      role === "mentee"
+        ? navigationTargets.afterMenteeLogin
+        : navigationTargets.afterMentorLogin,
+      { replace: true },
+    );
   };
 
   return (

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
-import { routePaths } from "../routes/routePaths";
+import { navigationTargets } from "../routes/routePaths";
+import { registerAccountRole } from "../utils/authStorage";
 
 function MenteeSignupPage() {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ function MenteeSignupPage() {
     if (!isSignupComplete) return undefined;
 
     const redirectTimer = window.setTimeout(() => {
-      navigate(routePaths.landing, { replace: true });
+      navigate(navigationTargets.afterMenteeSignup, { replace: true });
     }, 1800);
 
     return () => window.clearTimeout(redirectTimer);
@@ -19,6 +20,8 @@ function MenteeSignupPage() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    registerAccountRole(formData.get("email"), "mentee");
     setIsSignupComplete(true);
   };
 
