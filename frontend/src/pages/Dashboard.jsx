@@ -31,6 +31,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-3xl font-bold text-[#151D48]">대시보드</h1>
         <p className="text-[#737791] mt-2">가게 정보와 실시간 트렌드 분석</p>
+        <p className="text-xs text-[#999CAA] mt-1">현재 카테고리: <strong>{storeCategory}</strong></p>
       </div>
 
       {/* 프로필 카드 */}

@@ -90,6 +90,20 @@ CREATE TABLE IF NOT EXISTS generated_reels (
   CONSTRAINT fk_generated_reels_template FOREIGN KEY (template_id) REFERENCES video_templates(template_id) ON DELETE SET NULL
 );
 
+-- UploadedImages: 사용자가 업로드한 상품 이미지
+CREATE TABLE IF NOT EXISTS uploaded_images (
+  image_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  store_id BIGINT NOT NULL,
+  filename TEXT NOT NULL,
+  original_filename TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  file_url TEXT NOT NULL,
+  file_size INTEGER NOT NULL,
+  mimetype TEXT NOT NULL,
+  uploaded_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT fk_uploaded_images_store FOREIGN KEY (store_id) REFERENCES store_info(store_id) ON DELETE CASCADE
+);
+
 -- 인덱스
 CREATE INDEX IF NOT EXISTS idx_store_info_category ON store_info(category);
 CREATE INDEX IF NOT EXISTS idx_store_info_created_at ON store_info(created_at);
@@ -109,3 +123,6 @@ CREATE INDEX IF NOT EXISTS idx_video_templates_store_id ON video_templates(store
 CREATE INDEX IF NOT EXISTS idx_generated_reels_store_id ON generated_reels(store_id);
 CREATE INDEX IF NOT EXISTS idx_generated_reels_created_at ON generated_reels(created_at);
 CREATE INDEX IF NOT EXISTS idx_generated_reels_publish_status ON generated_reels(publish_status);
+
+CREATE INDEX IF NOT EXISTS idx_uploaded_images_store_id ON uploaded_images(store_id);
+CREATE INDEX IF NOT EXISTS idx_uploaded_images_uploaded_at ON uploaded_images(uploaded_at);
