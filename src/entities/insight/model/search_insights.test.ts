@@ -206,6 +206,40 @@ describe('searchInsights', () => {
     ]);
   });
 
+  it('orders invalid created times deterministically after valid times without mutating input', () => {
+    const insights = [
+      createInsight({
+        id: 'valid-newest',
+        title: 'match',
+        createdAt: '2026-07-14T00:00:00Z',
+      }),
+      createInsight({
+        id: 'invalid-b',
+        title: 'match',
+        createdAt: 'not-a-date-b',
+      }),
+      createInsight({
+        id: 'valid-oldest',
+        title: 'match',
+        createdAt: '2026-07-13T00:00:00Z',
+      }),
+      createInsight({
+        id: 'invalid-a',
+        title: 'match',
+        createdAt: 'not-a-date-a',
+      }),
+    ];
+    const originalOrder = insights.map(({ id }) => id);
+
+    for (const permutation of getPermutations(insights)) {
+      expect(
+        searchInsights(permutation, 'match').map(({ insight }) => insight.id)
+      ).toEqual(['valid-newest', 'valid-oldest', 'invalid-a', 'invalid-b']);
+    }
+
+    expect(insights.map(({ id }) => id)).toEqual(originalOrder);
+  });
+
   it('returns every positive ranked result without a six-item core cap', () => {
     const insights = Array.from({ length: 8 }, (_, index) =>
       createInsight({ id: String(index), title: `match ${index}` })
@@ -232,4 +266,19 @@ function createInsight(overrides: Partial<Insight>): Insight {
     updatedAt: createdAt,
     ...overrides,
   };
+}
+
+function getPermutations<T>(values: readonly T[]): T[][] {
+  if (values.length === 0) {
+    return [[]];
+  }
+
+  return values.flatMap((value, index) => {
+    const remaining = values.filter((_, valueIndex) => valueIndex !== index);
+
+    return getPermutations(remaining).map((permutation) => [
+      value,
+      ...permutation,
+    ]);
+  });
 }

@@ -110,10 +110,26 @@ function compareSearchResults(
 ) {
   return (
     next.score - current.score ||
-    Date.parse(next.insight.createdAt) -
-      Date.parse(current.insight.createdAt) ||
+    compareCreatedAtDescending(current.insight, next.insight) ||
     compareText(current.insight.id, next.insight.id)
   );
+}
+
+function compareCreatedAtDescending(current: Insight, next: Insight) {
+  const currentEpoch = getSortableEpoch(current.createdAt);
+  const nextEpoch = getSortableEpoch(next.createdAt);
+
+  if (currentEpoch === nextEpoch) {
+    return 0;
+  }
+
+  return nextEpoch - currentEpoch;
+}
+
+function getSortableEpoch(value: string) {
+  const epoch = Date.parse(value);
+
+  return Number.isFinite(epoch) ? epoch : Number.NEGATIVE_INFINITY;
 }
 
 function compareText(current: string, next: string) {

@@ -101,6 +101,7 @@ describe('AuthenticatedWorkspace', () => {
     await user.type(search, 'signal');
 
     expect((search as HTMLInputElement).value).toBe('signal');
+    expect(screen.getByRole('status').textContent).toBe('검색 결과 8개');
     expect(
       screen
         .getAllByRole('article')
@@ -148,6 +149,7 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.getByRole('heading', { name: '검색 결과가 없어요' })
     ).not.toBeNull();
+    expect(screen.getByRole('status').textContent).toBe('검색 결과 없음');
 
     await user.click(screen.getByRole('button', { name: '검색어 지우기' }));
 
@@ -156,6 +158,7 @@ describe('AuthenticatedWorkspace', () => {
       screen.getByRole('button', { name: '전체' }).getAttribute('aria-pressed')
     ).toBe('true');
     expect(screen.getAllByRole('article')).toHaveLength(2);
+    expect(screen.queryByRole('status')).toBeNull();
     expect(document.activeElement).toBe(search);
   });
 

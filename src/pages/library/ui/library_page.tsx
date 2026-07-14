@@ -93,6 +93,13 @@ export function LibraryPage({
       </div>
 
       <div className="library-page__content">
+        {hasQuery && !loading ? (
+          <p className="visually-hidden" role="status">
+            {insights.length > 0
+              ? `검색 결과 ${insights.length}개`
+              : '검색 결과 없음'}
+          </p>
+        ) : null}
         {loading ? (
           <LoadingState label="보관함을 불러오는 중" />
         ) : insights.length > 0 ? (
