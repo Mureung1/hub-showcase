@@ -18,7 +18,7 @@ ADR 0007과 [Codex-native 제품 작업 조합](../../../architecture/codex-nati
 
 조사 중 확인한 protocol 사실 가운데 향후 product composition에 유용한 내용만 [deferred product source evidence](../assets/018-deferred-product-source-evidence.md)에 non-adopted evidence로 보존했다. 이 evidence는 filesystem path 전달, Skill provisioning, `outputSchema`, sandbox·approval 조합의 product policy를 결정하지 않는다.
 
-## Scope recovery review
+## 범위 복구 리뷰
 
 - Source: 0 findings. Exact pin의 T0 response/notification ordering, T0-C per-thread independence와 T0.1 original Server `RequestId` once-only lifecycle을 보존했고, `runtime-preparation`을 Codex protocol semantics와 분리했다. Deferred Skill path evidence도 normalized absolute exact match가 realpath canonicalization을 보장하지 않는 수준으로 바로잡았다.
 - Standards: 0 findings. Wayfinder `out-of-scope` lifecycle, linked map disposition, local evidence placement·한국어 prose, 문서 ownership과 generated inventory 무변경을 확인했다.
