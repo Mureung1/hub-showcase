@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { prisma } from '../db.js'
 
 const DAY_OF_WEEK_BY_JS_DAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+const WEEK_ORDER = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 
 export const routineRouter = Router()
 
@@ -11,20 +12,33 @@ routineRouter.get('/routine/today', async (req, res) => {
     return res.json({ hasRoutine: false })
   }
 
-  const today = DAY_OF_WEEK_BY_JS_DAY[new Date().getDay()]
-  const routineDay = await prisma.routineDay.findFirst({
-    where: { dayOfWeek: today, routine: { userId: user.id } },
+  const routine = await prisma.routine.findUnique({
+    where: { userId: user.id },
     include: {
-      exercises: {
-        orderBy: { order: 'asc' },
-        include: { exercise: true },
+      days: {
+        include: {
+          exercises: {
+            orderBy: { order: 'asc' },
+            include: { exercise: true },
+          },
+        },
       },
     },
   })
 
+  if (!routine) {
+    return res.json({ hasRoutine: false })
+  }
+
+  const today = DAY_OF_WEEK_BY_JS_DAY[new Date().getDay()]
+  const routineDay = routine.days.find((d) => d.dayOfWeek === today)
+
   if (!routineDay) {
     return res.json({ hasRoutine: false })
   }
+
+  const trainingDays = routine.days.filter((d) => d.targetArea !== null)
+  const completed = trainingDays.filter((d) => d.status === 'COMPLETED').length
 
   res.json({
     hasRoutine: true,
@@ -38,6 +52,12 @@ routineRouter.get('/routine/today', async (req, res) => {
       targetSets: e.targetSets,
       targetReps: e.targetReps,
     })),
+    routine: { splitType: routine.splitType, daysPerWeek: routine.daysPerWeek },
+    weekProgress: { completed, total: routine.daysPerWeek },
+    days: WEEK_ORDER.map((dow) => {
+      const d = routine.days.find((day) => day.dayOfWeek === dow)
+      return { dayOfWeek: d.dayOfWeek, targetArea: d.targetArea, status: d.status }
+    }),
   })
 })
 
