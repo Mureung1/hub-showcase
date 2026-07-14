@@ -1,9 +1,13 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+require('dotenv').config();
+const { createClient } = require('@supabase/supabase-js');
 
-const dbPath = path.join(__dirname, '../../data/app.db');
-const db = new Database(dbPath, { verbose: console.log }); // 개발 중엔 verbose로 로그 확인
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-db.pragma('journal_mode = WAL'); // 동시성/성능 위해 WAL 모드 권장
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('SUPABASE_URL 또는 SUPABASE_ANON_KEY가 .env에 설정되어 있지 않습니다.');
+}
 
-module.exports = db;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+module.exports = supabase;
