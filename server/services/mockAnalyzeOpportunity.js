@@ -98,7 +98,9 @@ function estimateEligibility({ profile, rawText, target, category }) {
       required: true,
     });
 
-    if (profile.grade >= minimumGrade) {
+    if (!Number.isInteger(profile.grade)) {
+      missingInfo.push("사용자 학년 정보");
+    } else if (profile.grade >= minimumGrade) {
       matchedReasons.push(`${profile.grade}학년으로 학년 조건을 충족합니다.`);
     } else {
       disqualifyingReasons.push(`${minimumGrade}학년 이상 조건에 미달합니다.`);

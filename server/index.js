@@ -57,25 +57,29 @@ function getFetchErrorStatus(error) {
 
 async function createAnalyzePayload(requestPayload) {
   const rawText = requestPayload.rawText?.trim() || "";
+  const sourceUrl = requestPayload.url || requestPayload.sourceUrl || undefined;
 
   if (rawText) {
     return {
       ...requestPayload,
       rawText,
-      url: requestPayload.url || undefined,
+      sourceUrl,
+      url: sourceUrl,
     };
   }
 
-  if (!requestPayload.url) {
+  if (!sourceUrl) {
     throw new OpportunityTextFetchError("URL 또는 공고 본문을 입력해주세요.", { statusCode: 400 });
   }
 
-  const fetched = await fetchOpportunityTextFromUrl(requestPayload.url);
+  const fetched = await fetchOpportunityTextFromUrl(sourceUrl);
+  const finalSourceUrl = fetched.finalUrl || sourceUrl;
 
   return {
     ...requestPayload,
     rawText: fetched.rawText,
-    url: fetched.finalUrl || requestPayload.url,
+    sourceUrl: finalSourceUrl,
+    url: finalSourceUrl,
   };
 }
 
@@ -84,7 +88,9 @@ app.get("/api/health", (request, response) => {
 
   sendJson(response, 200, {
     ok: true,
+    provider: config.provider,
     aiProvider: config.aiProvider,
+    geminiConfigured: config.geminiConfigured,
     liveAIEnabled: config.liveAIEnabled,
     liveGeminiEnabled: config.liveGeminiEnabled,
     liveOpenAIEnabled: config.liveOpenAIEnabled,

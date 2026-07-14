@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { getHealth } from "./api.js";
 import {
   ANALYSIS_MODE_LABELS,
+  ANALYSIS_RAW_TEXT_MAX_LENGTH,
+  ANALYSIS_RAW_TEXT_MIN_LENGTH,
   CATEGORY_LABELS,
   MATCH_STATUS_LABELS,
 } from "./constants/opportunity.js";
@@ -140,7 +142,9 @@ function parseCommaList(value) {
 function createAnalysisProfile(profileDraft) {
   return {
     school: profileDraft.school.trim(),
-    grade: Number(profileDraft.grade),
+    grade: profileDraft.grade === "" ? null : Number(profileDraft.grade),
+    gpa: null,
+    incomeBracket: null,
     majors: parseCommaList(profileDraft.majors),
     interests: parseCommaList(profileDraft.interests),
     regions: parseCommaList(profileDraft.regions),
@@ -205,6 +209,11 @@ function AnalysisListSection({ items, title }) {
 function AnalysisResultCard({ result }) {
   const opportunity = result.opportunity;
   const match = result.match;
+  const fallbackMessage = result.fallbackUsed
+    ? result.fallbackReason?.includes("요청 실패")
+      ? "실제 API 호출에 실패하여 mock 결과를 표시합니다."
+      : "실제 API가 비활성화되어 mock 결과를 표시합니다."
+    : "";
   const fields = [
     { label: "주최 기관", value: opportunity.organizer || "확인 필요" },
     { label: "카테고리", value: CATEGORY_LABELS[opportunity.category] },
@@ -236,7 +245,7 @@ function AnalysisResultCard({ result }) {
         </div>
         <div className="analysis-result-actions">
           <span className={`analysis-mode mode-${result.mode}`}>
-            {ANALYSIS_MODE_LABELS[result.mode]}
+            {result.mode === "gemini" ? "Gemini API 분석" : ANALYSIS_MODE_LABELS[result.mode]}
           </span>
           {opportunity.sourceUrl ? (
             <a className="analysis-source-link" href={opportunity.sourceUrl} rel="noreferrer" target="_blank">
@@ -246,7 +255,12 @@ function AnalysisResultCard({ result }) {
         </div>
       </div>
 
-      {result.mode === "mock" ? (
+      {fallbackMessage ? (
+        <p className="demo-mode-message">
+          {fallbackMessage}
+          {result.fallbackReason ? ` (${result.fallbackReason})` : ""}
+        </p>
+      ) : result.mode === "mock" ? (
         <p className="demo-mode-message">현재 데모 모드입니다. 실제 AI API는 호출되지 않았습니다.</p>
       ) : null}
 
@@ -324,7 +338,7 @@ function AnalysisDemoPanel({
         </div>
         <div className="analysis-panel-status">
           <span className="analysis-health">
-            {health ? `${health.aiProvider} / live ${String(health.liveAIEnabled ?? health.liveOpenAIEnabled)}` : "server 확인 중"}
+            {health ? `${health.provider ?? health.aiProvider} / live ${String(health.liveAIEnabled ?? health.liveOpenAIEnabled)}` : "server 확인 중"}
           </span>
           <span className={`analysis-state analysis-state-${analysisState}`}>
             {analysisStateLabels[analysisState]}
@@ -1056,6 +1070,29 @@ export default function OpportunityAgentWorkbench() {
 
   async function handleAnalyzeOpportunity(event) {
     event.preventDefault();
+
+    if (isAnalyzing) {
+      return;
+    }
+
+    const rawText = analysisRawText.trim();
+    const url = analysisUrl.trim();
+
+    if (!url && !rawText) {
+      setAnalysisError("공고 링크 또는 본문을 입력해 주세요.");
+      return;
+    }
+
+    if (rawText && rawText.length < ANALYSIS_RAW_TEXT_MIN_LENGTH) {
+      setAnalysisError(`공고 본문은 공백을 제외하고 ${ANALYSIS_RAW_TEXT_MIN_LENGTH}자 이상 입력해 주세요.`);
+      return;
+    }
+
+    if (rawText.length > ANALYSIS_RAW_TEXT_MAX_LENGTH) {
+      setAnalysisError(`공고 본문은 ${ANALYSIS_RAW_TEXT_MAX_LENGTH.toLocaleString("ko-KR")}자 이하로 입력해 주세요.`);
+      return;
+    }
+
     setIsAnalyzing(true);
     setAnalysisError("");
     setAnalysisResult(null);
@@ -1063,8 +1100,8 @@ export default function OpportunityAgentWorkbench() {
     try {
       const result = await analyzeOpportunity({
         profile: createAnalysisProfile(profileDraft),
-        url: analysisUrl.trim() || undefined,
-        rawText: analysisRawText.trim(),
+        sourceUrl: url || undefined,
+        rawText,
       });
 
       setAnalysisResult(result);

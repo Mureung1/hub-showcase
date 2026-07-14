@@ -1,5 +1,8 @@
 export const ANALYSIS_MODES = Object.freeze(["mock", "gemini", "openai"]);
 
+export const ANALYSIS_RAW_TEXT_MIN_LENGTH = 30;
+export const ANALYSIS_RAW_TEXT_MAX_LENGTH = 50000;
+
 export const OPPORTUNITY_CATEGORIES = Object.freeze([
   "scholarship",
   "contest",

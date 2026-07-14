@@ -10,6 +10,12 @@ import {
   openaiAnalyzeOpportunity,
 } from "./openaiAnalyzeOpportunity.js";
 
+const defaultServices = Object.freeze({
+  geminiAnalyzeOpportunity,
+  mockAnalyzeOpportunity,
+  openaiAnalyzeOpportunity,
+});
+
 function getAIProvider() {
   return (process.env.AI_PROVIDER || "mock").trim().toLowerCase();
 }
@@ -33,56 +39,71 @@ function isLiveOpenAIEnabled() {
 function isLiveGeminiEnabled() {
   return (
     isGeminiRequested() &&
-    process.env.ALLOW_LIVE_GEMINI !== "false" &&
+    process.env.ALLOW_LIVE_GEMINI === "true" &&
     Boolean(process.env.GEMINI_API_KEY)
   );
 }
 
-function getDisabledOpenAIMessage() {
+function getDisabledOpenAIState() {
   if (!isOpenAIRequested()) {
     return null;
   }
 
   if (process.env.ALLOW_LIVE_OPENAI !== "true") {
-    return "실제 OpenAI API 사용이 비활성화되어 mock 결과를 표시합니다.";
+    return {
+      message: "실제 OpenAI API 사용이 비활성화되어 mock 결과를 표시합니다.",
+      reason: "OpenAI API 호출 비활성화",
+    };
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    return "OPENAI_API_KEY가 없어 실제 AI 분석을 사용할 수 없습니다. mock 결과를 표시합니다.";
+    return {
+      message: "OpenAI API 키가 설정되지 않아 mock 결과를 표시합니다.",
+      reason: "OpenAI API 키 없음",
+    };
   }
 
   return null;
 }
 
-function getDisabledGeminiMessage() {
+function getDisabledGeminiState() {
   if (!isGeminiRequested()) {
     return null;
   }
 
-  if (process.env.ALLOW_LIVE_GEMINI === "false") {
-    return "실제 Gemini API 사용이 비활성화되어 mock 결과를 표시합니다.";
+  if (process.env.ALLOW_LIVE_GEMINI !== "true") {
+    return {
+      message: "실제 Gemini API 사용이 비활성화되어 mock 결과를 표시합니다.",
+      reason: "Gemini API 호출 비활성화",
+    };
   }
 
   if (!process.env.GEMINI_API_KEY) {
-    return "GEMINI_API_KEY가 없어 실제 Gemini 분석을 사용할 수 없습니다. mock 결과를 표시합니다.";
+    return {
+      message: "Gemini API 키가 설정되지 않아 mock 결과를 표시합니다.",
+      reason: "Gemini API 키 없음",
+    };
   }
 
   return null;
 }
 
-function getDisabledAIMessage() {
+function getDisabledAIState() {
   const provider = getAIProvider();
 
   if (provider === "openai") {
-    return getDisabledOpenAIMessage();
+    return getDisabledOpenAIState();
   }
 
   if (provider === "gemini") {
-    return getDisabledGeminiMessage();
+    return getDisabledGeminiState();
   }
 
   if (provider !== "mock") {
-    return `AI_PROVIDER=${provider}는 아직 지원하지 않아 mock 결과를 표시합니다.`;
+    return {
+      message: `AI_PROVIDER=${provider}는 아직 지원하지 않아 mock 결과를 표시합니다.`,
+      reason: "지원하지 않는 AI 공급자",
+    };
   }
 
   return null;
@@ -92,54 +113,74 @@ function finalizeAnalysisResult(result) {
   return analyzeResponseSchema.parse(normalizeAnalysisResult(result));
 }
 
-function attachMockNotice(result, message) {
-  if (!message) {
-    return result;
+function attachMockFallback(result, fallbackState) {
+  if (!fallbackState) {
+    return {
+      ...result,
+      fallbackUsed: false,
+      fallbackReason: null,
+    };
   }
 
   return {
     ...result,
+    fallbackUsed: true,
+    fallbackReason: fallbackState.reason,
     match: {
       ...result.match,
-      summary: `${message} ${result.match.summary}`,
-      missingInfo: Array.from(new Set([message, ...result.match.missingInfo])),
+      summary: `${fallbackState.message} ${result.match.summary}`,
+      missingInfo: Array.from(new Set([fallbackState.message, ...result.match.missingInfo])),
     },
   };
 }
 
 export function getAIConfig() {
+  const aiProvider = getAIProvider();
   const liveOpenAIEnabled = isLiveOpenAIEnabled();
   const liveGeminiEnabled = isLiveGeminiEnabled();
 
   return {
-    aiProvider: getAIProvider(),
+    aiProvider,
+    provider: aiProvider,
+    geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
+    openAIConfigured: Boolean(process.env.OPENAI_API_KEY),
     liveAIEnabled: liveOpenAIEnabled || liveGeminiEnabled,
     liveGeminiEnabled,
     liveOpenAIEnabled,
   };
 }
 
-export async function analyzeOpportunity(payload) {
+export async function analyzeOpportunity(payload, serviceOverrides = {}) {
+  const services = {
+    ...defaultServices,
+    ...serviceOverrides,
+  };
   const config = getAIConfig();
 
   if (config.liveGeminiEnabled) {
     try {
-      return finalizeAnalysisResult(await geminiAnalyzeOpportunity(payload));
+      return finalizeAnalysisResult(await services.geminiAnalyzeOpportunity(payload));
     } catch (error) {
-      const fallbackResult = await mockAnalyzeOpportunity(payload);
-      return finalizeAnalysisResult(attachMockNotice(fallbackResult, getFriendlyGeminiError(error)));
+      const fallbackResult = await services.mockAnalyzeOpportunity(payload);
+      return finalizeAnalysisResult(attachMockFallback(fallbackResult, {
+        message: getFriendlyGeminiError(error),
+        reason: "Gemini API 요청 실패",
+      }));
     }
   }
 
   if (config.liveOpenAIEnabled) {
     try {
-      return finalizeAnalysisResult(await openaiAnalyzeOpportunity(payload));
+      return finalizeAnalysisResult(await services.openaiAnalyzeOpportunity(payload));
     } catch (error) {
-      const fallbackResult = await mockAnalyzeOpportunity(payload);
-      return finalizeAnalysisResult(attachMockNotice(fallbackResult, getFriendlyOpenAIError(error)));
+      const fallbackResult = await services.mockAnalyzeOpportunity(payload);
+      return finalizeAnalysisResult(attachMockFallback(fallbackResult, {
+        message: getFriendlyOpenAIError(error),
+        reason: "OpenAI API 요청 실패",
+      }));
     }
   }
 
-  const fallbackResult = await mockAnalyzeOpportunity(payload);
-  return finalizeAnalysisResult(attachMockNotice(fallbackResult, getDisabledAIMessage()));
+  const fallbackResult = await services.mockAnalyzeOpportunity(payload);
+  return finalizeAnalysisResult(attachMockFallback(fallbackResult, getDisabledAIState()));
 }

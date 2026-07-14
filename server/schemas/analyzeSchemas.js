@@ -1,6 +1,8 @@
 import { z } from "zod";
 import {
   ANALYSIS_MODES,
+  ANALYSIS_RAW_TEXT_MAX_LENGTH,
+  ANALYSIS_RAW_TEXT_MIN_LENGTH,
   ELIGIBILITY_TYPES,
   MATCH_STATUSES,
   OPPORTUNITY_CATEGORIES,
@@ -13,24 +15,46 @@ export const matchStatusSchema = z.enum(MATCH_STATUSES);
 
 export const profileSchema = z.object({
   school: z.string().trim().min(1, "학교를 입력해주세요."),
-  grade: z.coerce.number().int().min(1).max(8),
+  grade: z.union([z.coerce.number().int().min(1).max(8), z.null()]),
   majors: z.array(z.string().trim().min(1)).default([]),
   interests: z.array(z.string().trim().min(1)).default([]),
   regions: z.array(z.string().trim().min(1)).default([]),
   canJoinTeam: z.boolean().default(false),
   availableHoursPerWeek: z.coerce.number().min(0).max(168).optional(),
+  gpa: z.union([z.coerce.number().min(0).max(4.5), z.null()]).optional(),
+  incomeBracket: z.union([z.string().trim(), z.number(), z.null()]).optional(),
 });
 
 export const analyzeRequestSchema = z.object({
   profile: profileSchema,
-  url: z.string().url("URL 형식이 올바르지 않습니다.").optional().or(z.literal("")),
+  url: z.string().url("URL 형식이 올바르지 않습니다.").nullish().or(z.literal("")),
+  sourceUrl: z.string().url("URL 형식이 올바르지 않습니다.").nullish().or(z.literal("")),
   rawText: z.string().optional().default(""),
 }).superRefine((value, context) => {
-  if (!value.url?.trim() && !value.rawText?.trim()) {
+  const rawTextLength = value.rawText.trim().length;
+  const sourceUrl = value.url?.trim() || value.sourceUrl?.trim();
+
+  if (!sourceUrl && !rawTextLength) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       message: "공고 URL을 입력하거나 본문을 직접 붙여넣어 주세요.",
       path: ["url"],
+    });
+  }
+
+  if (rawTextLength > 0 && rawTextLength < ANALYSIS_RAW_TEXT_MIN_LENGTH) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `공고 본문은 공백을 제외하고 ${ANALYSIS_RAW_TEXT_MIN_LENGTH}자 이상 입력해 주세요.`,
+      path: ["rawText"],
+    });
+  }
+
+  if (rawTextLength > ANALYSIS_RAW_TEXT_MAX_LENGTH) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `공고 본문은 ${ANALYSIS_RAW_TEXT_MAX_LENGTH.toLocaleString("ko-KR")}자 이하로 입력해 주세요.`,
+      path: ["rawText"],
     });
   }
 });
@@ -83,9 +107,25 @@ export const analyzeResponseSchema = z.object({
   id: z.string().min(1),
   analyzedAt: z.string().datetime(),
   mode: z.enum(ANALYSIS_MODES),
+  fallbackUsed: z.boolean().optional().default(false),
+  fallbackReason: z.string().nullable().optional().default(null),
   opportunity: opportunitySchema,
   match: matchSchema,
   tasks: z.array(taskSchema),
+});
+
+const providerTaskSchema = z.object({
+  id: z.string().nullable().optional(),
+  title: z.string(),
+  dueDate: z.string().nullable(),
+  status: z.enum(TASK_STATUSES),
+});
+
+export const providerAnalysisSchema = z.object({
+  mode: z.enum(ANALYSIS_MODES),
+  opportunity: opportunitySchema,
+  match: matchSchema,
+  tasks: z.array(providerTaskSchema),
 });
 
 const opportunityJsonSchema = {

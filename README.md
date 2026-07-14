@@ -41,13 +41,13 @@ OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.4-mini
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3-flash-preview
-AI_PROVIDER=mock
+AI_PROVIDER=gemini
 ALLOW_LIVE_OPENAI=false
-ALLOW_LIVE_GEMINI=true
+ALLOW_LIVE_GEMINI=false
 PORT=3001
 ```
 
-현재 기본값은 mock AI 모드입니다. mock 모드에서는 API 키가 있어도 실제 AI API를 호출하지 않습니다.
+공개 예시의 기본값은 Gemini 공급자를 선택하지만 실제 호출은 비활성화한 상태입니다. `ALLOW_LIVE_GEMINI=false`이거나 API 키가 없으면 실제 API를 호출하지 않고 mock 결과를 반환합니다.
 
 ### Gemini 실제 분석 사용
 
@@ -55,11 +55,12 @@ Gemini API를 사용하려면 로컬 `.env`에서 아래처럼 설정합니다.
 
 ```bash
 AI_PROVIDER=gemini
+ALLOW_LIVE_GEMINI=true
 GEMINI_API_KEY=발급받은_키
 GEMINI_MODEL=gemini-3-flash-preview
 ```
 
-`AI_PROVIDER=gemini`이고 `GEMINI_API_KEY`가 있으면 서버에서 Gemini API를 호출합니다. 기본 Gemini 모델은 `gemini-3-flash-preview`이며, 모델명이 지원되지 않는 경우 서버는 `gemini-2.5-flash`로 한 번 fallback합니다. 임시로 Gemini 호출을 막고 싶으면 `ALLOW_LIVE_GEMINI=false`를 추가합니다.
+`AI_PROVIDER=gemini`, `ALLOW_LIVE_GEMINI=true`, `GEMINI_API_KEY` 존재의 세 조건이 모두 맞을 때만 서버에서 Gemini API를 호출합니다. 기본 모델은 `gemini-3-flash-preview`이며, 모델명이 지원되지 않는 경우 서버는 `gemini-2.5-flash`로 한 번 재시도합니다.
 
 ### OpenAI 실제 분석 사용
 
@@ -80,7 +81,9 @@ OpenAI는 `ALLOW_LIVE_OPENAI=true`일 때만 실제 호출을 시도합니다.
 ```json
 {
   "ok": true,
+  "provider": "gemini",
   "aiProvider": "gemini",
+  "geminiConfigured": true,
   "liveAIEnabled": true,
   "liveGeminiEnabled": true,
   "liveOpenAIEnabled": false
@@ -89,7 +92,7 @@ OpenAI는 `ALLOW_LIVE_OPENAI=true`일 때만 실제 호출을 시도합니다.
 
 ### POST `/api/analyze`
 
-rawText 분석을 우선 지원합니다. URL만 있고 rawText가 없으면 “본문을 직접 붙여넣어 주세요.”라는 400 응답을 반환합니다.
+붙여넣은 `rawText`를 우선 분석합니다. 기존 URL 분석 흐름도 유지하며, URL만 입력한 경우 서버가 가져온 본문을 같은 분석 인터페이스로 전달합니다.
 
 ```json
 {
@@ -101,17 +104,17 @@ rawText 분석을 우선 지원합니다. URL만 있고 rawText가 없으면 “
     "regions": ["대구", "온라인"],
     "canJoinTeam": true
   },
-  "url": "https://example.com/notice/123",
+  "sourceUrl": "https://example.com/notice/123",
   "rawText": "공고 본문 텍스트"
 }
 ```
 
-응답의 `mode`는 `mock`, `openai`, `gemini` 중 하나입니다. 실제 provider 호출이 실패하면 서버는 앱을 중단하지 않고 mock 결과를 반환하며, 실패 이유를 요약에 포함합니다.
+응답의 `mode`는 `mock`, `openai`, `gemini` 중 하나입니다. 실제 provider 호출이 비활성화되었거나 실패하면 서버는 앱을 중단하지 않고 mock 결과를 반환하며, `fallbackUsed`와 `fallbackReason`으로 대체 여부를 공개합니다.
 
 
 ### 분석 결과 표준 구조
 
-현재 mock 분석 결과는 [`DATA_SCHEMA.md`](./DATA_SCHEMA.md)에 정의한 표준 구조를 사용합니다. 향후 Gemini API 응답도 같은 구조로 정규화한 뒤 UI에 전달합니다.
+mock과 Gemini 분석 결과는 모두 [`DATA_SCHEMA.md`](./DATA_SCHEMA.md)에 정의한 표준 구조로 정규화한 뒤 UI에 전달합니다.
 
 ## 테스트용 rawText
 
