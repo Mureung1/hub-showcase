@@ -5,8 +5,20 @@ const recommendationResults = [
   { id: "quick", label: "빠른 조리", description: "짧은 시간에 만들 수 있는 메뉴", menuId: "quick-egg-rice" },
 ];
 
-export function fetchRecommendationResults() {
-  return new Promise((resolve) => {
-    window.setTimeout(() => resolve(recommendationResults), 450);
+export function fetchRecommendationResults(ingredients) {
+  return new Promise((resolve, reject) => {
+    window.setTimeout(() => {
+      if (ingredients.some((ingredient) => ingredient.name === "오류 테스트")) {
+        reject(new Error("추천 메뉴를 불러오지 못했습니다. 잠시 후 다시 시도해주세요."));
+        return;
+      }
+
+      if (ingredients.length === 0) {
+        resolve([]);
+        return;
+      }
+
+      resolve(recommendationResults);
+    }, 450);
   });
 }

@@ -538,6 +538,43 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
   gap: 18px;
 }
 
+.recommendation-notice {
+  display: grid;
+  min-height: 240px;
+  place-content: center;
+  gap: 10px;
+  padding: 28px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+  background: #fff8f4;
+  text-align: center;
+}
+
+.recommendation-notice h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.recommendation-notice p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.recommendation-notice button {
+  min-height: 40px;
+  margin-top: 8px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--secondary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
 .menu-card,
 .shopping-card {
   padding: 22px;

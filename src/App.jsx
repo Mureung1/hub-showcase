@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import IngredientForm from "./components/IngredientForm";
 import { registerIngredient } from "./services/ingredients";
@@ -68,7 +68,8 @@ function App() {
   const [activeMainTab, setActiveMainTab] = useState("fridge");
   const [activeStorage, setActiveStorage] = useState("all");
   const [recommendationResults, setRecommendationResults] = useState([]);
-  const [isRecommendationsLoading, setIsRecommendationsLoading] = useState(true);
+  const [recommendationStatus, setRecommendationStatus] = useState("loading");
+  const [recommendationError, setRecommendationError] = useState("");
   const [selectedMenuId, setSelectedMenuId] = useState(null);
   const [editingIngredientId, setEditingIngredientId] = useState(null);
   const [message, setMessage] = useState({ text: "", type: "success" });
@@ -81,19 +82,23 @@ function App() {
   const urgentCount = ingredients.filter((item) => getDday(item.expiry) <= 2).length;
   const recommendedCount = recommendationResults.length;
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadRecommendations = useCallback(() => {
+    setRecommendationStatus("loading");
+    setRecommendationError("");
 
-    fetchRecommendationResults().then((results) => {
-      if (!isMounted) return;
+    fetchRecommendationResults(ingredients).then((results) => {
       setRecommendationResults(results);
-      setIsRecommendationsLoading(false);
+      setRecommendationStatus("success");
+    }).catch((error) => {
+      setRecommendationResults([]);
+      setRecommendationError(error.message ?? "추천 메뉴를 불러오지 못했습니다.");
+      setRecommendationStatus("error");
     });
+  }, [ingredients]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  useEffect(() => {
+    loadRecommendations();
+  }, [loadRecommendations]);
 
   const flash = (text, type = "success") => {
     setMessage({ text, type });
@@ -191,7 +196,7 @@ function App() {
 
       <main>
         {activeMainTab === "fridge" && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} urgentCount={urgentCount} recommendedCount={recommendedCount} editingIngredientId={editingIngredientId} formValues={formValues} errors={errors} handleFormChange={handleFormChange} handleSubmitIngredient={handleSubmitIngredient} resetForm={resetForm} editIngredient={editIngredient} deleteIngredient={deleteIngredient} message={message} isSubmitting={isSubmitting} />}
-        {activeMainTab === "recommend" && <RecommendWorkspace recommendationResults={recommendationResults} isLoading={isRecommendationsLoading} selectedMenuId={selectedMenuId} selectMenu={selectMenu} />}
+        {activeMainTab === "recommend" && <RecommendWorkspace recommendationResults={recommendationResults} status={recommendationStatus} error={recommendationError} onRetry={loadRecommendations} selectedMenuId={selectedMenuId} selectMenu={selectMenu} />}
         {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} />}
         {activeMainTab === "shopping" && <ShoppingWorkspace menu={selectedMenu} />}
       </main>
@@ -273,13 +278,20 @@ function WorkspaceShell({ eyebrow, title, description, children }) {
   return <section className="content-screen"><div className="screen-title"><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p>{description}</p></div>{children}</section>;
 }
 
-function RecommendWorkspace({ recommendationResults, isLoading, selectedMenuId, selectMenu }) {
+function RecommendWorkspace({ recommendationResults, status, error, onRetry, selectedMenuId, selectMenu }) {
   const menus = Object.values(menusByFilter).flat();
   const resultsWithMenu = recommendationResults.map((result) => ({ ...result, menu: menus.find((menu) => menu.id === result.menuId) })).filter((result) => result.menu);
 
   return <WorkspaceShell eyebrow="Meal Recommendation" title="식단 추천" description="추천 기준을 바꿔 지금 재료로 만들 수 있는 메뉴를 확인하세요.">
-    {isLoading ? <div className="empty-board">추천 메뉴를 불러오는 중입니다...</div> : <div className="recommendation-grid">{resultsWithMenu.map(({ id, label, description, menu }) => <article key={id} className={`menu-card ${selectedMenuId === menu.id ? "selected" : ""}`} onClick={() => selectMenu(menu)}><span>{label}</span><h3>{menu.name}</h3><p>{description}</p><div className="menu-stats"><div><small>조리 시간</small><strong>{menu.time}</strong></div><div><small>영양 균형</small><strong>{menu.balance}</strong></div></div><div className="chip-list">{menu.used.map((item) => <em key={item}>{item}</em>)}</div><div className="chip-list missing">{menu.missing.length ? menu.missing.map((item) => <em key={item}>{item}</em>) : <em>부족 재료 없음</em>}</div><button type="button" onClick={(event) => { event.stopPropagation(); selectMenu(menu); }}>이 메뉴 선택</button></article>)}</div>}
+    {status === "loading" && <div className="empty-board">추천 메뉴를 불러오는 중입니다...</div>}
+    {status === "error" && <RecommendationNotice title="추천을 불러오지 못했습니다" description={error} actionLabel="다시 시도" onAction={onRetry} />}
+    {status === "success" && resultsWithMenu.length === 0 && <RecommendationNotice title="추천 가능한 메뉴가 없습니다" description="재료를 더 등록한 뒤 다시 추천을 확인해주세요." actionLabel="다시 확인" onAction={onRetry} />}
+    {status === "success" && resultsWithMenu.length > 0 && <div className="recommendation-grid">{resultsWithMenu.map(({ id, label, description, menu }) => <article key={id} className={`menu-card ${selectedMenuId === menu.id ? "selected" : ""}`} onClick={() => selectMenu(menu)}><span>{label}</span><h3>{menu.name}</h3><p>{description}</p><div className="menu-stats"><div><small>조리 시간</small><strong>{menu.time}</strong></div><div><small>영양 균형</small><strong>{menu.balance}</strong></div></div><div className="chip-list">{menu.used.map((item) => <em key={item}>{item}</em>)}</div><div className="chip-list missing">{menu.missing.length ? menu.missing.map((item) => <em key={item}>{item}</em>) : <em>부족 재료 없음</em>}</div><button type="button" onClick={(event) => { event.stopPropagation(); selectMenu(menu); }}>이 메뉴 선택</button></article>)}</div>}
   </WorkspaceShell>;
+}
+
+function RecommendationNotice({ title, description, actionLabel, onAction }) {
+  return <div className="recommendation-notice"><h2>{title}</h2><p>{description}</p><button type="button" onClick={onAction}>{actionLabel}</button></div>;
 }
 
 function RecipeWorkspace({ menu }) {
