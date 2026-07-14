@@ -34,7 +34,7 @@ test("generates a transparent overlay with the same dimensions as the input", as
 test("rejects a person frame outside the image", () => {
   assert.throws(
     () => validateGuide({ ...validGuide, personFrame: { x: 0.8, y: 0.5, width: 0.3, height: 0.3 } }),
-    /personFrame must stay inside the image bounds/,
+    /personFrames\[0\] must stay inside the image bounds/,
   );
 });
 
@@ -43,4 +43,17 @@ test("rejects coordinates outside the unit range", () => {
   invalidGuide.buildingOutline[0] = [1.1, 0.3];
 
   assert.throws(() => validateGuide(invalidGuide), /values between 0 and 1/);
+});
+
+test("accepts two person frames for a couple composition", () => {
+  const coupleGuide = {
+    ...validGuide,
+    personFrames: [
+      { x: 0.2, y: 0.45, width: 0.22, height: 0.42, label: "Left person" },
+      { x: 0.58, y: 0.45, width: 0.22, height: 0.42, label: "Right person" },
+    ],
+  };
+  delete coupleGuide.personFrame;
+
+  assert.doesNotThrow(() => validateGuide(coupleGuide));
 });

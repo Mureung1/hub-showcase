@@ -24,6 +24,26 @@ function validatePoint(point, fieldName) {
   }
 }
 
+function validatePersonFrame(frame, fieldName) {
+  if (!frame || typeof frame !== "object" || Array.isArray(frame)) {
+    fail(`${fieldName} must be an object.`);
+  }
+
+  for (const field of ["x", "y", "width", "height"]) {
+    if (!isUnitNumber(frame[field])) {
+      fail(`${fieldName}.${field} must be a number between 0 and 1.`);
+    }
+  }
+
+  if (frame.width === 0 || frame.height === 0) {
+    fail(`${fieldName} width and height must be greater than 0.`);
+  }
+
+  if (frame.x + frame.width > 1 || frame.y + frame.height > 1) {
+    fail(`${fieldName} must stay inside the image bounds.`);
+  }
+}
+
 export function validateGuide(guide) {
   if (!guide || typeof guide !== "object" || Array.isArray(guide)) {
     fail("guide must be a JSON object.");
@@ -39,24 +59,12 @@ export function validateGuide(guide) {
     fail("horizonY must be a number between 0 and 1.");
   }
 
-  const frame = guide.personFrame;
-  if (!frame || typeof frame !== "object") {
-    fail("personFrame is required.");
+  const personFrames = guide.personFrames ?? (guide.personFrame ? [guide.personFrame] : []);
+  if (!Array.isArray(personFrames) || personFrames.length === 0) {
+    fail("personFrame or personFrames is required.");
   }
 
-  for (const field of ["x", "y", "width", "height"]) {
-    if (!isUnitNumber(frame[field])) {
-      fail(`personFrame.${field} must be a number between 0 and 1.`);
-    }
-  }
-
-  if (frame.width === 0 || frame.height === 0) {
-    fail("personFrame width and height must be greater than 0.");
-  }
-
-  if (frame.x + frame.width > 1 || frame.y + frame.height > 1) {
-    fail("personFrame must stay inside the image bounds.");
-  }
+  personFrames.forEach((frame, index) => validatePersonFrame(frame, `personFrames[${index}]`));
 
   return guide;
 }
@@ -82,23 +90,29 @@ export function createOverlaySvg({ width, height, guide }) {
     .map(([x, y]) => `${toPixels(x, width)},${toPixels(y, height)}`)
     .join(" ");
   const horizonY = toPixels(guide.horizonY, height);
-  const frame = guide.personFrame;
-  const frameX = toPixels(frame.x, width);
-  const frameY = toPixels(frame.y, height);
-  const frameWidth = toPixels(frame.width, width);
-  const frameHeight = toPixels(frame.height, height);
+  const personFrames = guide.personFrames ?? [guide.personFrame];
   const fontSize = Math.max(14, Math.round(Math.min(width, height) * 0.035));
   const strokeWidth = Math.max(2, Math.round(Math.min(width, height) * 0.006));
   const buildingLabel = escapeXml(guide.buildingLabel ?? "Background outline");
-  const personLabel = escapeXml(guide.personLabel ?? "Subject position");
+  const personElements = personFrames.map((frame, index) => {
+    const frameX = toPixels(frame.x, width);
+    const frameY = toPixels(frame.y, height);
+    const frameWidth = toPixels(frame.width, width);
+    const frameHeight = toPixels(frame.height, height);
+    const fallbackLabel = personFrames.length === 1 ? "Subject position" : `Person ${index + 1}`;
+    const personLabel = escapeXml(frame.label ?? guide.personLabel ?? fallbackLabel);
+
+    return `
+  <rect x="${frameX}" y="${frameY}" width="${frameWidth}" height="${frameHeight}" rx="${strokeWidth * 2}" fill="none" stroke="${COLORS.person}" stroke-width="${strokeWidth}" stroke-dasharray="${strokeWidth * 3} ${strokeWidth * 2}" />
+  <line x1="${frameX + frameWidth / 2}" y1="${frameY - strokeWidth * 4}" x2="${frameX + frameWidth / 2}" y2="${frameY + frameHeight + strokeWidth * 4}" stroke="${COLORS.person}" stroke-width="${Math.max(1, strokeWidth - 1)}" opacity="0.65" />
+  <text x="${frameX}" y="${Math.max(fontSize, frameY - fontSize / 2)}" fill="${COLORS.person}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="600">${personLabel}</text>`;
+  }).join("");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <polyline points="${outline}" fill="none" stroke="${COLORS.building}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
   <line x1="0" y1="${horizonY}" x2="${width}" y2="${horizonY}" stroke="${COLORS.horizon}" stroke-width="${Math.max(1, strokeWidth - 1)}" stroke-dasharray="${strokeWidth * 3} ${strokeWidth * 2}" opacity="0.78" />
-  <rect x="${frameX}" y="${frameY}" width="${frameWidth}" height="${frameHeight}" rx="${strokeWidth * 2}" fill="none" stroke="${COLORS.person}" stroke-width="${strokeWidth}" stroke-dasharray="${strokeWidth * 3} ${strokeWidth * 2}" />
-  <line x1="${frameX + frameWidth / 2}" y1="${frameY - strokeWidth * 4}" x2="${frameX + frameWidth / 2}" y2="${frameY + frameHeight + strokeWidth * 4}" stroke="${COLORS.person}" stroke-width="${Math.max(1, strokeWidth - 1)}" opacity="0.65" />
   <text x="${toPixels(guide.buildingOutline[0][0], width)}" y="${Math.max(fontSize, toPixels(guide.buildingOutline[0][1], height) - fontSize)}" fill="${COLORS.label}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="600">${buildingLabel}</text>
-  <text x="${frameX}" y="${Math.max(fontSize, frameY - fontSize / 2)}" fill="${COLORS.person}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="600">${personLabel}</text>
+  ${personElements}
 </svg>`;
 }
 

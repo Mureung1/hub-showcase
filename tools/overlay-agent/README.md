@@ -17,12 +17,15 @@ npm run generate -- \
   --output ../../assets/photo-guides/overlays/my-photo-overlay.png
 ```
 
-The output PNG has the same dimensions as the source image and contains a building outline, a horizon guide, and a subject-position frame.
+The output PNG has the same dimensions as the source image and contains a building outline, a horizon guide, and one or more subject-position frames.
 
 ## Guide Schema
 
 - `buildingOutline`: at least two `[x, y]` points, each from `0` to `1`
 - `horizonY`: horizontal guide position from `0` to `1`
-- `personFrame`: `{ x, y, width, height }`, all from `0` to `1`
+- `personFrames`: one or more `{ x, y, width, height, label? }` objects, all coordinates from `0` to `1`
+- `personFrame`: a legacy single-person form. New guides should use `personFrames`.
+
+For a couple composition, add two frames: one for each person. Each frame is drawn with its own center line and label.
 
 Run `npm test` to validate image dimensions, alpha output, and invalid-coordinate handling.
