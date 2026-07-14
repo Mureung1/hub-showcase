@@ -4,9 +4,15 @@ const express = require('express');
 const pool = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const sessionMiddleware = require('./config/session');
+const authRoutes = require('./routes/auth');
+const usersRoutes = require('./routes/users');
 
 const app = express();
 app.use(sessionMiddleware);
+app.use(express.json());
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 
 app.get('/health', async (req, res) => {
   try {

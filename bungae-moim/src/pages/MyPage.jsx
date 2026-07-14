@@ -10,7 +10,7 @@ import { formatMeetingSchedule } from '../utils/date.js'
 import { getPendingApplicants } from '../utils/meetings.js'
 
 export default function MyPage() {
-  const { meetings, currentUser, isLoggedIn } = useAppState()
+  const { meetings, currentUser, isLoggedIn, logout } = useAppState()
 
   if (!isLoggedIn) {
     return (
@@ -46,6 +46,9 @@ export default function MyPage() {
         <p style={{ fontSize: 12.5, color: 'var(--cream-mute)' }}>
           신뢰도는 모든 사용자에게 공개되며, 소모임 모임장의 승인 판단 등에 참고돼요.
         </p>
+        <PillButton variant="ghost" size="sm" onClick={logout}>
+          로그아웃
+        </PillButton>
       </Card>
 
       <h2 className="section-title" style={{ fontSize: 16 }}>
