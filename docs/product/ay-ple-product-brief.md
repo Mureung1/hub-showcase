@@ -2,13 +2,13 @@
 
 작성일: 2026-07-07
 
-최종 업데이트: 2026-07-13
+최종 업데이트: 2026-07-14
 
 분류: 활성
 
 성숙도: 초안
 
-관련 문서: [CONTEXT.md](../../CONTEXT.md), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md), [Native Codex composition ADR](../adr/0007-use-native-codex-composition-for-product-actions.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [개발 백로그](ay-ple-development-backlog.md)
+관련 문서: [CONTEXT.md](../../CONTEXT.md), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md), [Native Codex composition ADR](../adr/0007-use-native-codex-composition-for-product-actions.md), [Codex-native runtime foundation ADR](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [개발 백로그](ay-ple-development-backlog.md)
 
 ## 한 줄 요약
 
@@ -64,7 +64,7 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 
 ## 제품 제공 형태
 
-첫 MVP는 macOS에서 local companion server와 Headless Codex Client Host를 실행하고 browser UI로 사용하는 **macOS-first local web app**이다. Windows와 Linux 지원은 현재 제품·개발·QA 범위가 아니며, packaged Desktop App은 local web app 경로를 검증한 뒤의 후속 로드맵이다. 정확한 지원 경계와 runtime code에 미치는 결과는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)가 소유한다.
+첫 MVP는 macOS local companion server가 [Codex-native runtime foundation](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)을 소유하고, 그 하위 제품 adapter를 통해 browser UI가 사용하는 **macOS-first local web app**이다. Windows와 Linux 지원은 현재 제품·개발·QA 범위가 아니며, packaged Desktop App은 local web app 경로를 검증한 뒤의 후속 로드맵이다. 정확한 지원 경계와 runtime code에 미치는 결과는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)가 소유한다.
 
 ## 학기 작업공간과 Codex 사용 모델
 
