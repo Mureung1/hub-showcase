@@ -7,8 +7,13 @@ function App() {
   const [stockPrice, setStockPrice] = useState(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState("");
+
   const [keyword, setKeyword] = useState("");
   const [selectedStock, setSelectedStock] = useState(stocks[0]);
+
+  const [exchangeRate, setExchangeRate] = useState(null);
+  const [exchangeLoading, setExchangeLoading] = useState(true);
+  const [exchangeError, setExchangeError] = useState("");
 
   const filteredStocks = stocks.filter((stock) => {
     const normalizedKeyword = keyword.trim().toLowerCase();
@@ -77,6 +82,54 @@ useEffect(() => {
     clearInterval(intervalId);
   };
 }, [selectedStock.code]);
+
+useEffect(() => {
+  let isMounted = true;
+
+  async function fetchExchangeRate() {
+    try {
+      setExchangeLoading(true);
+      setExchangeError("");
+
+      const response = await fetch(
+        "http://localhost:3001/api/exchange-rate"
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "환율 조회에 실패했습니다."
+        );
+      }
+
+      if (isMounted) {
+        setExchangeRate(data);
+      }
+    } catch (error) {
+      if (isMounted) {
+        setExchangeError(error.message);
+      }
+    } finally {
+      if (isMounted) {
+        setExchangeLoading(false);
+      }
+    }
+  }
+
+  fetchExchangeRate();
+
+  // 1시간마다 환율 다시 조회
+  const intervalId = setInterval(
+    fetchExchangeRate,
+    60 * 60 * 1000
+  );
+
+  return () => {
+    isMounted = false;
+    clearInterval(intervalId);
+  };
+}, []);
   return (
     <div className="app-layout">
       <aside className="sidebar">
@@ -179,10 +232,42 @@ useEffect(() => {
           </article>
 
           <article className="card stat-card">
-            <span>환율</span>
-            <strong>1,510/USD</strong>
-            <em className="up">+0.15%</em>
-          </article>
+  <span>USD/KRW 환율</span>
+
+  {exchangeLoading && !exchangeRate ? (
+    <strong>불러오는 중...</strong>
+  ) : exchangeError ? (
+    <>
+      <strong className="price-error">조회 실패</strong>
+      <em className="down">{exchangeError}</em>
+    </>
+  ) : exchangeRate ? (
+    <>
+      <strong>
+        {exchangeRate.baseRate.toLocaleString("ko-KR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+        원
+      </strong>
+
+      <em
+        className={
+          exchangeRate.changeRate > 0
+            ? "up"
+            : exchangeRate.changeRate < 0
+              ? "down"
+              : ""
+        }
+      >
+        {exchangeRate.changeRate > 0 ? "+" : ""}
+        {exchangeRate.changeRate.toFixed(2)}%
+      </em>
+    </>
+  ) : (
+    <strong>-</strong>
+  )}
+</article>
 
           <article className="card stat-card">
             <span>투자의견</span>
