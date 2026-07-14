@@ -63,6 +63,23 @@ const menusByFilter = {
   ],
 };
 
+const nutritionByMenuId = {
+  "tofu-kimchi-bowl": { calories: "520 kcal", protein: "24 g", carbohydrates: "68 g" },
+  "egg-rice": { calories: "430 kcal", protein: "16 g", carbohydrates: "61 g" },
+  "quick-egg-rice": { calories: "430 kcal", protein: "16 g", carbohydrates: "61 g" },
+  "protein-bowl": { calories: "560 kcal", protein: "29 g", carbohydrates: "72 g" },
+};
+
+const substitutesByMenuId = {
+  "tofu-kimchi-bowl": [{ ingredient: "대파", alternatives: ["양파", "부추", "김가루"] }],
+  "egg-rice": [{ ingredient: "참기름", alternatives: ["버터", "들기름"] }],
+  "quick-egg-rice": [{ ingredient: "참기름", alternatives: ["버터"] }],
+  "protein-bowl": [
+    { ingredient: "상추", alternatives: ["깻잎", "양배추", "오이"] },
+    { ingredient: "고추장", alternatives: ["간장", "참기름"] },
+  ],
+};
+
 function App() {
   const [ingredients, setIngredients] = useState(initialIngredients);
   const [activeMainTab, setActiveMainTab] = useState("fridge");
@@ -71,6 +88,7 @@ function App() {
   const [recommendationStatus, setRecommendationStatus] = useState("loading");
   const [recommendationError, setRecommendationError] = useState("");
   const [selectedMenuId, setSelectedMenuId] = useState(null);
+  const [isRecipeLoading, setIsRecipeLoading] = useState(false);
   const [editingIngredientId, setEditingIngredientId] = useState(null);
   const [message, setMessage] = useState({ text: "", type: "success" });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -183,6 +201,10 @@ function App() {
 
     setSelectedMenuId(selectedMenu?.id ?? null);
     setActiveMainTab("recipe");
+    if (!selectedMenu) return;
+
+    setIsRecipeLoading(true);
+    window.setTimeout(() => setIsRecipeLoading(false), 350);
   };
 
   return (
@@ -199,7 +221,7 @@ function App() {
       <main>
         {activeMainTab === "fridge" && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} urgentCount={urgentCount} recommendedCount={recommendedCount} editingIngredientId={editingIngredientId} formValues={formValues} errors={errors} handleFormChange={handleFormChange} handleSubmitIngredient={handleSubmitIngredient} resetForm={resetForm} editIngredient={editIngredient} deleteIngredient={deleteIngredient} message={message} isSubmitting={isSubmitting} />}
         {activeMainTab === "recommend" && <RecommendWorkspace recommendationResults={recommendationResults} status={recommendationStatus} error={recommendationError} onRetry={loadRecommendations} selectedMenuId={selectedMenuId} selectMenu={selectMenu} />}
-        {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} onBack={() => setActiveMainTab("recommend")} />}
+        {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} ingredients={ingredients} isLoading={isRecipeLoading} onBack={() => setActiveMainTab("recommend")} />}
         {activeMainTab === "shopping" && <ShoppingWorkspace menu={selectedMenu} />}
       </main>
     </div>
@@ -296,13 +318,34 @@ function RecommendationNotice({ title, description, actionLabel, onAction }) {
   return <div className="recommendation-notice"><h2>{title}</h2><p>{description}</p><button type="button" onClick={onAction}>{actionLabel}</button></div>;
 }
 
-function RecipeWorkspace({ menu, onBack }) {
+function RecipeWorkspace({ menu, ingredients, isLoading, onBack }) {
+  if (isLoading) return <WorkspaceShell eyebrow="Recipe Detail" title="레시피 상세" description="선택한 메뉴 정보를 불러오고 있습니다."><div className="recipe-empty"><h2>레시피를 불러오는 중입니다...</h2><p>잠시만 기다려주세요.</p></div></WorkspaceShell>;
   if (!menu) return <WorkspaceShell eyebrow="Recipe Detail" title="레시피 상세" description="식단 추천에서 메뉴를 선택하면 조리 과정이 표시됩니다."><div className="recipe-empty"><h2>선택한 메뉴를 찾을 수 없습니다</h2><p>식단 추천 화면에서 메뉴를 선택해주세요.</p><button type="button" onClick={onBack}>추천 메뉴 보기</button></div></WorkspaceShell>;
-  return <WorkspaceShell eyebrow="Recipe Detail" title={menu.name} description={menu.summary}>
-    <div className="recipe-summary"><SummaryCard tone="green" label="조리 시간" value={menu.time} description="예상 소요 시간" /><SummaryCard tone="neutral" label="난이도" value={menu.level} description="초보자 기준" /><SummaryCard tone="orange" label="사용 재료" value={`${menu.used.length}개`} description={menu.used.join(", ")} /></div>
-    <ol className="recipe-steps">{menu.steps.map((step, index) => <li key={step}><span>{index + 1}</span><p>{step}</p></li>)}</ol>
-    {menu.missing.length > 0 && <div className="substitute-box"><strong>대체 재료 안내</strong><p>{menu.substitutes}</p></div>}
+
+  const ingredientNames = new Set(ingredients.map((ingredient) => ingredient.name.trim()));
+  const usedIngredients = Array.isArray(menu.used) ? menu.used : [];
+  const menuMissingIngredients = Array.isArray(menu.missing) ? menu.missing : [];
+  const ownedIngredients = usedIngredients.filter((ingredient) => ingredientNames.has(ingredient));
+  const missingIngredients = [...new Set([...menuMissingIngredients, ...usedIngredients.filter((ingredient) => !ingredientNames.has(ingredient))])];
+  const nutrition = nutritionByMenuId[menu.id];
+  const substitutes = substitutesByMenuId[menu.id] ?? [];
+  const recipeSteps = Array.isArray(menu.steps) ? menu.steps : [];
+
+  return <WorkspaceShell eyebrow="Recipe Detail" title={menu.name ?? "메뉴 상세"} description={menu.summary ?? "메뉴 설명을 준비 중입니다."}>
+    <div className="recipe-summary"><SummaryCard tone="green" label="조리 시간" value={menu.time ?? "정보 없음"} description="예상 소요 시간" /><SummaryCard tone="neutral" label="난이도" value={menu.level ?? "정보 없음"} description="초보자 기준" /><SummaryCard tone="orange" label="사용 재료" value={`${usedIngredients.length}개`} description={usedIngredients.length ? usedIngredients.join(", ") : "등록된 재료 정보 없음"} /></div>
+    <section className="recipe-section"><div className="section-heading"><p className="eyebrow">Ingredient Check</p><h2>보유·부족 재료</h2></div><div className="ingredient-status-grid"><IngredientStatus title="보유 재료" items={ownedIngredients} tone="owned" emptyMessage="현재 보유한 재료가 없습니다." /><IngredientStatus title="부족 재료" items={missingIngredients} tone="missing" emptyMessage="추가로 필요한 재료가 없습니다." /></div></section>
+    <section className="recipe-section"><div className="section-heading"><p className="eyebrow">Mock Nutrition</p><h2>영양 정보</h2></div>{nutrition ? <div className="nutrition-grid"><NutritionCard label="열량" value={nutrition.calories} /><NutritionCard label="단백질" value={nutrition.protein} /><NutritionCard label="탄수화물" value={nutrition.carbohydrates} /></div> : <div className="recipe-data-empty">이 메뉴의 mock 영양 정보는 아직 준비되지 않았습니다.</div>}</section>
+    <section className="recipe-section"><div className="section-heading"><p className="eyebrow">Cooking Steps</p><h2>조리 순서</h2></div>{recipeSteps.length ? <ol className="recipe-steps">{recipeSteps.map((step, index) => <li key={`${index}-${step}`}><span>{index + 1}</span><p>{step}</p></li>)}</ol> : <div className="recipe-data-empty">등록된 조리 순서가 없습니다.</div>}</section>
+    <section className="recipe-section"><div className="section-heading"><p className="eyebrow">Substitutes</p><h2>대체 재료 안내</h2></div>{substitutes.length ? <div className="substitute-list">{substitutes.map(({ ingredient, alternatives }) => <article key={ingredient}><strong>{ingredient}</strong><span>대신 사용할 수 있어요</span><div className="chip-list">{alternatives.map((alternative) => <em key={alternative}>{alternative}</em>)}</div></article>)}</div> : <div className="recipe-data-empty">안내할 대체 재료 정보가 없습니다.</div>}</section>
   </WorkspaceShell>;
+}
+
+function IngredientStatus({ title, items, tone, emptyMessage }) {
+  return <article className={`ingredient-status ${tone}`}><h3>{title}</h3>{items.length ? <div className="chip-list">{items.map((item) => <em key={item}>{item}</em>)}</div> : <p>{emptyMessage}</p>}</article>;
+}
+
+function NutritionCard({ label, value }) {
+  return <article className="nutrition-card"><span>{label}</span><strong>{value}</strong><small>mock 데이터</small></article>;
 }
 
 function ShoppingWorkspace({ menu }) {
