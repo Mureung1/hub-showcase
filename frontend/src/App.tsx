@@ -4,7 +4,7 @@ import Auth from './pages/Auth'
 import ProfileSetup from './pages/ProfileSetup'
 import DashboardLayout from './pages/DashboardLayout'
 import CalendarPage from './pages/CalendarPage'
-import { tokenManager } from './utils/apiClient'
+import { tokenManager, authApi } from './utils/apiClient'
 
 type AppPage = 'auth' | 'profile' | 'dashboard' | 'calendar'
 
@@ -12,12 +12,61 @@ function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>('auth')
   const [isLoading, setIsLoading] = useState(true)
 
+  // 개발 환경: localStorage 완전 초기화
   useEffect(() => {
-    // 저장된 토큰 확인
-    const token = tokenManager.getAccessToken()
-    if (token) {
-      setCurrentPage('dashboard') // 프로필 설정 완료 후 대시보드로 이동했다고 가정
+    if (import.meta.env.DEV) {
+      // URL 파라미터에 ?keep=true 있으면 토큰 유지, 아니면 초기화
+      const params = new URLSearchParams(window.location.search)
+      const shouldKeepToken = params.get('keep') === 'true'
+
+      if (!shouldKeepToken) {
+        // 기본: 개발 환경에서는 localStorage 초기화 (테스트 용이)
+        console.log('개발 환경: localStorage 초기화')
+        tokenManager.clearTokens()
+      } else {
+        // ?keep=true이면 기존 토큰 검증
+        const token = tokenManager.getAccessToken()
+        if (token) {
+          try {
+            const decoded = JSON.parse(atob(token.split('.')[1])) as { exp?: number }
+            const now = Date.now() / 1000
+            if (decoded.exp && decoded.exp < now) {
+              console.log('만료된 토큰 감지, 초기화합니다.')
+              tokenManager.clearTokens()
+            }
+          } catch (e) {
+            console.log('토큰 파싱 실패, 초기화합니다.')
+            tokenManager.clearTokens()
+          }
+        }
+      }
     }
+  }, [])
+
+  const checkProfileAndNavigate = async (hasToken: boolean) => {
+    if (!hasToken) {
+      setCurrentPage('auth')
+      return
+    }
+
+    try {
+      const response = await authApi.checkProfileStatus()
+      if (response?.hasProfile) {
+        setCurrentPage('dashboard')
+      } else {
+        setCurrentPage('profile')
+      }
+    } catch (error) {
+      // 토큰이 만료되었거나 유효하지 않음
+      console.log('토큰 검증 실패, 로그인 페이지로 이동')
+      tokenManager.clearTokens()
+      setCurrentPage('auth')
+    }
+  }
+
+  useEffect(() => {
+    const token = tokenManager.getAccessToken()
+    checkProfileAndNavigate(!!token)
     setIsLoading(false)
   }, [])
 
@@ -32,8 +81,9 @@ function App() {
       {/* 1. 로그인 전 → Auth 페이지 */}
       {currentPage === 'auth' && (
         <Auth
-          onAuthSuccess={() => {
-            setCurrentPage('profile')
+          onAuthSuccess={async () => {
+            // 로그인 성공 후 프로필 상태 확인
+            await checkProfileAndNavigate(true)
           }}
         />
       )}

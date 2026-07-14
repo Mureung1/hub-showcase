@@ -99,10 +99,30 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
   const allEvents = [...events, ...getPostingEvents()]
 
   const handleDateSelect = (info: any) => {
-    setModal({
-      isOpen: true,
-      date: new Date(info.dateStr),
-    })
+    try {
+      // FullCalendar select 이벤트의 info 구조
+      // startStr: "YYYY-MM-DD" 형식
+      const dateStr = info.startStr || info.dateStr
+
+      if (!dateStr) {
+        console.warn('선택된 날짜 정보 없음:', info)
+        return
+      }
+
+      const [year, month, day] = dateStr.split('-').map(Number)
+      const date = new Date(year, month - 1, day)
+
+      if (!isNaN(date.getTime())) {
+        setModal({
+          isOpen: true,
+          date,
+        })
+      } else {
+        console.error('유효하지 않은 날짜:', dateStr)
+      }
+    } catch (error) {
+      console.error('날짜 선택 오류:', error)
+    }
   }
 
   const handleEventClick = (info: any) => {

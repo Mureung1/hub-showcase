@@ -20,10 +20,19 @@ export default function EventModal({ isOpen, date, onClose, onSave }: EventModal
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    if (date) {
-      const dateStr = date.toISOString().split('T')[0]
-      setStartDate(dateStr)
-      setEndDate(dateStr)
+    if (date && !isNaN(date.getTime())) {
+      try {
+        const dateStr = date.toISOString().split('T')[0]
+        setStartDate(dateStr)
+        setEndDate(dateStr)
+      } catch (error) {
+        console.error('날짜 형식 오류:', error)
+        setStartDate('')
+        setEndDate('')
+      }
+    } else {
+      setStartDate('')
+      setEndDate('')
     }
   }, [date, isOpen])
 

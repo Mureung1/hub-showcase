@@ -30,12 +30,29 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
 
   const loadProfile = async () => {
     try {
+      console.log('📋 프로필 로드 시작...')
       const response = await profileApi.fetch()
-      if (response?.data) {
+      console.log('📋 프로필 API 응답:', response)
+
+      // 백엔드가 직접 profile 객체를 반환 (ApiResponse 래핑 안 함)
+      if (response?.id || response?.userId) {
+        console.log('✅ 프로필 데이터:', response)
+        setProfile(response)
+      } else if (response?.data) {
+        console.log('✅ 프로필 데이터 (ApiResponse):', response.data)
         setProfile(response.data)
+      } else {
+        console.warn('⚠️ 프로필 응답 형식 오류:', response)
       }
-    } catch (err) {
-      console.error('프로필 로드 실패:', err)
+    } catch (err: any) {
+      console.error('❌ 프로필 로드 실패:', err)
+      console.error('에러 메시지:', err.message)
+
+      // 인증 토큰이 없거나 만료됨
+      if (err.message?.includes('인증') || err.message?.includes('토큰')) {
+        console.log('인증 에러 감지, 로그인 페이지로 이동')
+        setCurrentPage?.('auth')
+      }
     }
   }
 
