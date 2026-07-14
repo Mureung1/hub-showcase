@@ -8,6 +8,12 @@ export const INSIGHT_SEARCH_FIELD_WEIGHTS = {
   originalUrl: 0.5,
 } as const;
 
+export const INSIGHT_SEARCH_MATCH_MULTIPLIERS = {
+  exact: 3,
+  prefix: 2,
+  substring: 1,
+} as const;
+
 export type InsightSearchField = keyof typeof INSIGHT_SEARCH_FIELD_WEIGHTS;
 
 export type InsightSearchResult = {
@@ -86,14 +92,16 @@ function getMatchMultiplier(
   queryToken: string
 ) {
   if (fieldTokens.includes(queryToken)) {
-    return 3;
+    return INSIGHT_SEARCH_MATCH_MULTIPLIERS.exact;
   }
 
   if (fieldTokens.some((fieldToken) => fieldToken.startsWith(queryToken))) {
-    return 2;
+    return INSIGHT_SEARCH_MATCH_MULTIPLIERS.prefix;
   }
 
-  return normalizedField.includes(queryToken) ? 1 : 0;
+  return normalizedField.includes(queryToken)
+    ? INSIGHT_SEARCH_MATCH_MULTIPLIERS.substring
+    : 0;
 }
 
 function compareSearchResults(
@@ -102,7 +110,8 @@ function compareSearchResults(
 ) {
   return (
     next.score - current.score ||
-    compareText(next.insight.createdAt, current.insight.createdAt) ||
+    Date.parse(next.insight.createdAt) -
+      Date.parse(current.insight.createdAt) ||
     compareText(current.insight.id, next.insight.id)
   );
 }

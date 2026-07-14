@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import type { Insight } from './insight';
 import {
   INSIGHT_SEARCH_FIELD_WEIGHTS,
+  INSIGHT_SEARCH_MATCH_MULTIPLIERS,
   searchInsights,
 } from './search_insights';
 
@@ -85,10 +86,36 @@ describe('searchInsights', () => {
     expect(
       results.map(({ insight, score }) => ({ id: insight.id, score }))
     ).toEqual([
-      { id: 'exact', score: 9 },
-      { id: 'prefix', score: 6 },
-      { id: 'substring', score: 3 },
+      {
+        id: 'exact',
+        score:
+          INSIGHT_SEARCH_FIELD_WEIGHTS.title *
+          INSIGHT_SEARCH_MATCH_MULTIPLIERS.exact,
+      },
+      {
+        id: 'prefix',
+        score:
+          INSIGHT_SEARCH_FIELD_WEIGHTS.title *
+          INSIGHT_SEARCH_MATCH_MULTIPLIERS.prefix,
+      },
+      {
+        id: 'substring',
+        score:
+          INSIGHT_SEARCH_FIELD_WEIGHTS.title *
+          INSIGHT_SEARCH_MATCH_MULTIPLIERS.substring,
+      },
     ]);
+  });
+
+  it('publishes readonly exact, prefix, and substring multiplier values', () => {
+    expect(INSIGHT_SEARCH_MATCH_MULTIPLIERS).toEqual({
+      exact: 3,
+      prefix: 2,
+      substring: 1,
+    });
+    expectTypeOf(INSIGHT_SEARCH_MATCH_MULTIPLIERS).toEqualTypeOf<
+      Readonly<{ exact: 3; prefix: 2; substring: 1 }>
+    >();
   });
 
   it('applies every public field weight and exposes duplicate-free matches', () => {
@@ -142,6 +169,41 @@ describe('searchInsights', () => {
     );
 
     expect(results.map(({ insight }) => insight.id)).toEqual(['A', 'B', 'old']);
+  });
+
+  it('sorts created times by their instant across offsets before using the id tie-breaker', () => {
+    const results = searchInsights(
+      [
+        createInsight({
+          id: 'lexically-later-but-older',
+          title: 'match',
+          createdAt: '2026-07-14T00:30:00+09:00',
+        }),
+        createInsight({
+          id: 'newer-instant',
+          title: 'match',
+          createdAt: '2026-07-13T23:45:00Z',
+        }),
+        createInsight({
+          id: 'B-same-instant',
+          title: 'match',
+          createdAt: '2026-07-14T09:00:00+09:00',
+        }),
+        createInsight({
+          id: 'A-same-instant',
+          title: 'match',
+          createdAt: '2026-07-14T00:00:00Z',
+        }),
+      ],
+      'match'
+    );
+
+    expect(results.map(({ insight }) => insight.id)).toEqual([
+      'A-same-instant',
+      'B-same-instant',
+      'newer-instant',
+      'lexically-later-but-older',
+    ]);
   });
 
   it('returns every positive ranked result without a six-item core cap', () => {

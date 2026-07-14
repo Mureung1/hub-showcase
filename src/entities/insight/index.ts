@@ -15,6 +15,7 @@ export { createLocalStorageInsightRepository } from './model/local_storage_insig
 export { normalizeInsightUrl } from './model/normalize_insight_url';
 export {
   INSIGHT_SEARCH_FIELD_WEIGHTS,
+  INSIGHT_SEARCH_MATCH_MULTIPLIERS,
   searchInsights,
 } from './model/search_insights';
 export type {

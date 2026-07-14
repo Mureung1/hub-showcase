@@ -113,6 +113,52 @@ describe('AuthenticatedWorkspace', () => {
     expect(screen.queryByText('signal 디자인 자료')).toBeNull();
   });
 
+  it('returns to the full library when recovering from no search results', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [
+          createInsight({
+            id: 'development',
+            title: '개발 자료',
+            category: '개발',
+          }),
+          createInsight({
+            id: 'design',
+            title: '디자인 자료',
+            category: '디자인',
+          }),
+        ],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    await user.click(screen.getByRole('button', { name: '개발' }));
+    const search = screen.getByRole('searchbox', { name: '보관함 검색' });
+    await user.type(search, '없는 검색어');
+
+    expect(
+      screen.getByRole('heading', { name: '검색 결과가 없어요' })
+    ).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '검색어 지우기' }));
+
+    expect((search as HTMLInputElement).value).toBe('');
+    expect(
+      screen.getByRole('button', { name: '전체' }).getAttribute('aria-pressed')
+    ).toBe('true');
+    expect(screen.getAllByRole('article')).toHaveLength(2);
+    expect(document.activeElement).toBe(search);
+  });
+
   it('moves focus to the next card when an edited category leaves the active filter', async () => {
     const user = userEvent.setup();
     const repository: InsightRepository = {

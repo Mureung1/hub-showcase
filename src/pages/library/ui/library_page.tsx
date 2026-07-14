@@ -48,6 +48,7 @@ export function LibraryPage({
   const hasQuery = query.trim().length > 0;
 
   function clearQuery() {
+    onCategoryChange('All');
     onQueryChange('');
     searchInputRef.current?.focus();
   }
