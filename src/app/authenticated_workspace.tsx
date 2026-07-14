@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { filterInsights } from '@/entities/insight';
+import { filterInsights, normalizeInsightUrl } from '@/entities/insight';
 import { HomePage, type SuggestedSituation } from '@/pages/home';
 import { LibraryPage } from '@/pages/library';
 import { SavePage } from '@/pages/save';
@@ -59,34 +59,28 @@ export function AuthenticatedWorkspace() {
   function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const normalizedUrl = saveUrl.trim();
+    const normalizedUrl = normalizeInsightUrl(saveUrl);
 
-    if (!normalizedUrl) {
+    if (!normalizedUrl.ok) {
       setSaveComplete(false);
       setSaveError(SAVE_URL_ERROR_MESSAGE);
       return;
     }
 
-    let parsedUrl: URL;
-
-    try {
-      parsedUrl = new URL(normalizedUrl);
-    } catch {
-      setSaveComplete(false);
-      setSaveError(SAVE_URL_ERROR_MESSAGE);
-      return;
-    }
+    const savedAt = new Date().toISOString();
 
     setSaveError(undefined);
     setInsights((current) => [
       {
-        categories: [],
-        domain: parsedUrl.hostname.replace(/^www\./, ''),
-        id: Date.now(),
-        memo: '카테고리와 메모는 나중에 정리할 수 있습니다.',
-        thumbnail: 'NEW',
+        id: String(Date.now()),
+        originalUrl: normalizedUrl.originalUrl,
+        normalizedUrl: normalizedUrl.normalizedUrl,
+        domain: normalizedUrl.domain,
         title: '저장한 링크의 제목을 불러오는 중',
-        url: '#',
+        memo: '카테고리와 메모는 나중에 정리할 수 있습니다.',
+        category: null,
+        createdAt: savedAt,
+        updatedAt: savedAt,
       },
       ...current,
     ]);

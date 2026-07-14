@@ -31,13 +31,15 @@ describe('InsightGrid', () => {
         <InsightGrid
           insights={[
             {
-              categories: [{ name: '디자인', tone: 'blue' }],
+              id: '1',
+              originalUrl: 'https://example.com/article',
+              normalizedUrl: 'https://example.com/article',
               domain: 'example.com',
-              id: 1,
-              memo: '모바일 화면을 만들 때 참고하기',
-              thumbnail: 'UX',
               title: '선택 부담을 줄이는 패턴',
-              url: 'https://example.com/article',
+              memo: '모바일 화면을 만들 때 참고하기',
+              category: '디자인',
+              createdAt: '2026-07-14T00:00:00.000Z',
+              updatedAt: '2026-07-14T00:00:00.000Z',
             },
           ]}
         />

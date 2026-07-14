@@ -6,13 +6,15 @@ export type InsightCategory = {
 };
 
 export type Insight = {
-  categories: InsightCategory[];
+  id: string;
+  originalUrl: string;
+  normalizedUrl: string;
   domain: string;
-  id: number;
-  memo?: string;
-  thumbnail: string;
   title: string;
-  url: string;
+  memo: string | null;
+  category: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export function filterInsights(
@@ -28,13 +30,13 @@ export function filterInsights(
     .map((insight, index) => {
       const matchesCategory =
         category === 'All' ||
-        (category === '미분류' && insight.categories.length === 0) ||
-        insight.categories.some((item) => item.name === category);
+        (category === '미분류' && insight.category === null) ||
+        insight.category === category;
       const haystack = [
         insight.title,
         insight.domain,
         insight.memo ?? '',
-        ...insight.categories.map((item) => item.name),
+        insight.category ?? '',
       ]
         .join(' ')
         .toLowerCase();
