@@ -62,7 +62,7 @@
 | --- | --- | --- | --- |
 | GET | `/api/auth/google` | 구글 로그인 시작(리디렉션) | ✕ |
 | GET | `/api/auth/google/callback` | 구글 콜백 처리, JWT 발급 | ✕ |
-| GET | `/api/users/me` | 내 정보 조회 | ✓ |
+| GET | `/api/users/me` | 프로필 조회 | ✓ |
 
 ### 구글 로그인 시작: `GET /api/auth/google`
 
@@ -78,11 +78,11 @@
 - 구글에서 받은 `code`로 프로필(이메일, 구글 계정 고유 ID, 이름)을 가져와 기존 사용자인지 확인하고, 없으면 새로 생성(=최초 로그인이 곧 회원가입).
 - JWT 발급.
 - `state`가 유효한 `subscriptionId`이고, 아직 해당 구독의 파티원이 아닌 경우 파티원으로 등록 후 진행.
-- `${FRONTEND_URL}/oauth/callback#token=<jwt>&joinedSubscriptionId=<id|null>` 형태로 302 리디렉션. FE는 URL 프래그먼트에서 토큰을 읽어 저장하고, `joinedSubscriptionId`가 있으면 해당 구독 화면으로 이동.
+- `${FRONTEND_URL}/oauth/callback#token=<jwt>&joinedSubId=<id|null>` 형태로 302 리디렉션. FE는 URL 프래그먼트에서 토큰을 읽어 저장하고, `joinedSubId`가 있으면 해당 구독 화면으로 이동.
 
 **Error `400`**: 유효하지 않은 `code`
 
-### 내 정보 조회: `GET /api/users/me`
+### 프로필 조회: `GET /api/users/me`
 
 **Response `200`**
 
@@ -112,7 +112,7 @@
 ```json
 {
   "serviceName": "넷플릭스",
-  "totalAmount": 17000,
+  "subAmount": 17000,
   "billingDay": 15,
   "memberCount": 4,
   "bankName": "국민은행",
@@ -127,7 +127,7 @@
 {
   "id": "sub_1",
   "serviceName": "넷플릭스",
-  "totalAmount": 17000,
+  "subAmount": 17000,
   "billingDay": 15,
   "memberCount": 4,
   "myAmount": 4250,
@@ -138,7 +138,7 @@
 }
 ```
 
-- `myAmount`는 `totalAmount / memberCount` (1/n) 자동 계산 값.
+- `myAmount`는 `subAmount / memberCount` (1/n) 자동 계산 값.
 - `joinUrl`은 `id`를 그대로 담은 URL, FE가 `id`만으로도 조립 가능.
 - `bankName`/`accountNumber`/`accountHolderName`은 파티장이 정산금을 받을 계좌 정보. 파티장 조회 시에만 응답에 포함, 파티원이 조회하는 응답에는 노출되지 않음.
 
@@ -155,9 +155,9 @@
 ```json
 {
   "items": [
-    { "id": "sub_1", "serviceName": "넷플릭스", "totalAmount": 17000, "myAmount": 4250, "billingDay": 15, "role": "owner" }, 
-    { "id": "sub_2", "serviceName": "왓챠", "totalAmount": 12900, "myAmount": 3225, "billingDay": 18, "role": "owner" },
-    { "id": "sub_3", "serviceName": "디즈니플러스", "totalAmount": 12900, "myAmount": 3225, "billingDay": 3, "role": "member" }
+    { "id": "sub_1", "serviceName": "넷플릭스", "subAmount": 17000, "myAmount": 4250, "billingDay": 15, "role": "owner" }, 
+    { "id": "sub_2", "serviceName": "왓챠", "subAmount": 12900, "myAmount": 3225, "billingDay": 18, "role": "owner" },
+    { "id": "sub_3", "serviceName": "디즈니플러스", "subAmount": 12900, "myAmount": 3225, "billingDay": 3, "role": "member" }
   ]
 }
 ```
@@ -172,7 +172,7 @@
 {
   "id": "sub_1",
   "serviceName": "넷플릭스",
-  "totalAmount": 17000,
+  "subAmount": 17000,
   "billingDay": 15,
   "memberCount": 4,
   "myAmount": 4250,
@@ -197,7 +197,7 @@
 **Request**
 
 ```json
-{ "totalAmount": 13900, "billingDay": 20, "accountNumber": "123456-78-909999" }
+{ "subAmount": 13900, "billingDay": 20, "accountNumber": "123456-78-909999" }
 ```
 
 - 구독 등록 Request와 동일한 필드 중 변경할 필드만 전송. (부분 수정)
@@ -209,7 +209,7 @@
 {
   "id": "sub_1",
   "serviceName": "넷플릭스",
-  "totalAmount": 13900,
+  "subAmount": 13900,
   "billingDay": 20,
   "memberCount": 4,
   "myAmount": 3475
@@ -242,7 +242,7 @@
 **Response `200`**
 
 ```json
-{ "month": "2026-07", "totalSubAmount": 46900, "totalMyShare": 10700 }
+{ "month": "2026-07", "totalSubAmount": 46900, "totalMyAmount": 10700 }
 ```
 
 ---
