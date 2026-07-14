@@ -38,6 +38,7 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 - [Thread·turn concurrency 정책을 결정한다](tickets/010-decide-concurrency-policy.md) — Connection ingress·RPC는 global semantic mutex 없이 진행하고 Runtime은 native `ThreadId`별 independent `ThreadActor`를 두며, same-thread active input은 explicit `turn/steer` tracer로 채택하고 cross-thread public independence는 별도 `T0-C` gate로 검증한다.
 - [Event delivery와 transcript recovery model을 결정한다](tickets/011-decide-delivery-and-recovery-model.md) — T0/T0-C/T0.1 adopted observation은 lossless-to-owner-or-explicit-failure로 처리하고 finite pre-admission bounds·process-attachment compact actor·method-specific duplicate policy로 scope-local failure를 격리하며 native history recovery와 browser replay는 owning tracer로 미룬다.
 - [Connection loss와 unknown outcome 정책을 결정한다](tickets/012-decide-connection-and-unknown-outcome-policy.md) — Pre-wire·write-attempted·response-confirmed·semantic-settled authority를 분리해 non-idempotent unknown outcome을 replay하지 않고, thread-local sink·tail-aware terminal cut·bounded response tombstone·child reap의 precedence를 확정한다.
+- [commandExecution approval의 첫 round-trip을 결정한다](tickets/017-decide-command-execution-approval-round-trip.md) — T0.1을 regular command approval 하나로 제한하고 original Server `RequestId`의 once-only lease, native-scope safe pending, resolved·turn-transition·connection race, no-raw retention과 bounded tombstone을 확정한다.
 
 ## Not yet specified
 
