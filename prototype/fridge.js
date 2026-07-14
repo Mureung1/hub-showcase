@@ -15,16 +15,25 @@
     if (clearBtn) clearBtn.style.display = count > 0 ? "" : "none";
   }
 
-  // 페이지를 새로 열었을 때 이전에 고른 재료를 그대로 복원
+  // 페이지를 새로 열었을 때 이전에 고른 재료를 그대로 복원.
+  // 저장된 게 아예 없으면(첫 방문) 조미료는 기본으로 체크해둔다 — 매번 새로 누르기 귀찮지 않게.
   function restore() {
+    var saved = [];
     try {
-      var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    } catch (e) {
+      /* 저장된 값이 깨졌으면 빈 상태로 시작 */
+    }
+
+    if (saved.length === 0) {
+      document.querySelectorAll('.chip-row input[data-seasoning="true"]').forEach(function (box) {
+        box.checked = true;
+      });
+    } else {
       saved.forEach(function (id) {
         var box = document.querySelector('.chip-row input[value="' + id + '"]');
         if (box) box.checked = true;
       });
-    } catch (e) {
-      /* 저장된 값이 없거나 깨졌으면 그냥 빈 상태로 시작 */
     }
     updateCount();
   }
