@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MBTI_TYPES, SCORE_LABELS, STUDY_QUESTIONS, STRESS_QUESTIONS } from "./data/questions";
+import { matchMethods } from "./data/mbtiMethodMatching";
+import { buildDailySchedule } from "./lib/schedule";
+import { deleteResults, getAnonId, listResults, saveResult as saveResultToServer } from "./lib/api";
 import { ALGORITHM_VERSION, createRecommendations } from "./lib/recommendations";
 import {
   calculateMethodAffinities,
@@ -128,6 +131,9 @@ export default function ProjectIntro() {
   const [recallPredicted, setRecallPredicted] = useState(null);
   const [recallActual, setRecallActual] = useState(null);
   const [calibrationCount, setCalibrationCount] = useState(storedCalibration.length);
+  const [serverConsent, setServerConsent] = useState(false);
+  const [serverMsg, setServerMsg] = useState("");
+  const [serverCount, setServerCount] = useState(null);
   const mbtiKnown = mbtiSource === "official-self-report";
 
   const result = useMemo(() => {
@@ -140,8 +146,10 @@ export default function ProjectIntro() {
       useMbtiHints: false,
     });
     const scores = calculateScores({ mbti, mbtiKnown, studyAnswers, stressAnswers });
+    // 매칭 에이전트(a): 공식 MBTI 입력 시에만 논문 기반 매칭을 실제 추천 신호로 반영한다.
+    const match = mbtiKnown && mbti ? matchMethods(mbti) : { temperament: null, adjustments: {}, reason: "", sources: [] };
     const baselineRecommendationResult = createRecommendations(baselineScores, methodAffinities);
-    const recommendationResult = createRecommendations(scores, methodAffinities);
+    const recommendationResult = createRecommendations(scores, methodAffinities, match.adjustments);
     const preferenceProfile = calculatePreferenceProfile(studyAnswers);
 
     return {
@@ -149,6 +157,8 @@ export default function ProjectIntro() {
       baselineRecommendations: baselineRecommendationResult.recommendations,
       preferenceProfile,
       scores,
+      match,
+      schedule: buildDailySchedule(recommendationResult.recommendations, recommendationResult.routine),
       ...recommendationResult,
     };
   }, [mbti, mbtiKnown, studyAnswers, stressAnswers]);
@@ -247,6 +257,55 @@ export default function ProjectIntro() {
     });
     setCalibrationCount(next.length);
     setRecallPhase("done");
+  }
+
+  async function handleServerSave() {
+    if (!serverConsent) {
+      return;
+    }
+    try {
+      await saveResultToServer({
+        consent: true,
+        anonId: getAnonId(),
+        mbti: mbtiKnown ? mbti : null,
+        temperament: result.match?.temperament ?? null,
+        matchedMethods: result.recommendations.map((item) => item.id),
+        baselineMethods: result.baselineRecommendations.map((item) => item.id),
+        fitScore,
+        understanding: understandingScore,
+        actionability: actionabilityScore,
+        focus: focusLevel,
+        fatigue: fatigueLevel,
+        calibrationError:
+          recallPredicted !== null && recallActual !== null ? Math.abs(recallPredicted - recallActual) : null,
+        algorithmVersion: ALGORITHM_VERSION,
+      });
+      const rows = await listResults(getAnonId());
+      setServerCount(rows.length);
+      setServerMsg("서버에 익명 요약을 저장했습니다.");
+    } catch {
+      setServerMsg("서버 연결 실패 — 앱은 계속 사용할 수 있습니다(로컬 저장은 유지).");
+    }
+  }
+
+  async function handleServerList() {
+    try {
+      const rows = await listResults(getAnonId());
+      setServerCount(rows.length);
+      setServerMsg(`서버에 내 익명 기록 ${rows.length}개가 있습니다.`);
+    } catch {
+      setServerMsg("서버 연결 실패 — 조회할 수 없습니다.");
+    }
+  }
+
+  async function handleServerDelete() {
+    try {
+      const res = await deleteResults(getAnonId());
+      setServerCount(0);
+      setServerMsg(`서버에서 내 익명 기록 ${res.removed}개를 삭제했습니다.`);
+    } catch {
+      setServerMsg("서버 연결 실패 — 삭제할 수 없습니다.");
+    }
   }
 
   function handleFeedbackSave() {
@@ -608,6 +667,22 @@ export default function ProjectIntro() {
               </div>
             </div>
 
+            {mbtiKnown && result.match?.temperament && (
+              <div className="feedback-card">
+                <p className="eyebrow">MBTI × 공부법 매칭</p>
+                <h3>{mbti} · {result.match.temperamentLabel} 맞춤 매칭</h3>
+                <p>{result.match.reason}</p>
+                <div className="answers">
+                  {result.recommendations.map((item) => (
+                    <span className="answer-chip" key={`match-${item.id}`}>{item.title}</span>
+                  ))}
+                </div>
+                <p className="hint" style={{ marginTop: 10 }}>
+                  이 매칭은 문헌에서 도출한 출발점입니다(선호일 수 있음). 실제 효과는 실행 후 결과로 확인합니다 — 아래 baseline과 비교해 기록합니다.
+                </p>
+              </div>
+            )}
+
             <div className="feedback-card">
               <p className="eyebrow">Baseline comparison</p>
               <h3>MBTI 신호의 추가 효과를 분리해 기록합니다</h3>
@@ -704,6 +779,31 @@ export default function ProjectIntro() {
               {feedbackCount > 0 && <div className="saved">추천 평가 {feedbackCount}개가 이 브라우저에 저장되어 있습니다.</div>}
             </div>
 
+            <div className="feedback-card">
+              <p className="eyebrow">Research data · 선택</p>
+              <h3>익명 요약을 연구 데이터로 저장(선택)</h3>
+              <p>
+                동의하면 이름·자유응답 없이 <strong>익명 요약(매칭 방법·적합도·집중/피로·보정오차 등)</strong>만 서버에 저장해 이후 효과 분석에 사용합니다. 언제든 삭제할 수 있고, 동의하지 않아도 앱은 그대로 사용됩니다.
+              </p>
+              <label className="checkline">
+                <input checked={serverConsent} onChange={(event) => setServerConsent(event.target.checked)} type="checkbox" />
+                익명 요약을 서버에 저장하는 데 동의합니다.
+              </label>
+              <div className="actions">
+                <button className="secondary" disabled={!serverConsent} onClick={handleServerSave} type="button">
+                  서버에 익명 저장
+                </button>
+                <button className="secondary" onClick={handleServerList} type="button">
+                  내 서버 기록 보기
+                </button>
+                <button className="secondary" onClick={handleServerDelete} type="button">
+                  내 서버 기록 삭제
+                </button>
+              </div>
+              {serverMsg && <div className="saved">{serverMsg}</div>}
+              {serverCount !== null && <p className="hint" style={{ marginTop: 6 }}>현재 서버에 내 익명 기록 {serverCount}개.</p>}
+            </div>
+
             <div className="actions">
               <button className="secondary" onClick={() => setStep(3)} type="button">
                 이전
@@ -720,6 +820,21 @@ export default function ProjectIntro() {
             <p className="eyebrow">Routine</p>
             <h2>{result.routine.title}</h2>
             <p>{result.routine.estimatedMinutes}분 안에 끝나는 작은 루틴으로 먼저 시도해볼 수 있습니다.</p>
+
+            <div className="result-card" style={{ marginTop: 16 }}>
+              <h3>오늘의 시간블록 (총 {result.schedule.totalMinutes}분)</h3>
+              <div className="answers">
+                {result.schedule.blocks.map((block) => (
+                  <span className="answer-chip" key={block.order}>
+                    {block.order}. {block.title} · {block.minutes}분
+                  </span>
+                ))}
+              </div>
+              <p className="hint" style={{ marginTop: 10 }}>
+                매칭된 학습법을 오늘 실행할 블록으로 배치했습니다. 상세 시간표는 이후 단계에서 확장합니다.
+              </p>
+            </div>
+
             <div className="routine">
               <div className="result-card">
                 <h3>20~30분 공부 루틴</h3>
