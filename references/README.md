@@ -2,6 +2,8 @@
 
 이 directory의 Git submodule은 Runtime이나 일반 `npm test`, `npm run typecheck`, `npm run build`의 dependency가 아니라 source review·fork provenance·pin upgrade diff를 위한 dev-only reference다.
 
+수정 가능한 pristine donor snapshot과 이후 local patch는 [`vendor/ai-sdk-provider-codex-cli`](../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md)에 둔다. `references/`는 exact upstream oracle로 유지하며 fork source를 이 checkout 안에서 수정하지 않는다.
+
 | Path | Exact commit | 역할 |
 | --- | --- | --- |
 | `openai-codex` | `767822446c7a594caa19609ca435281a9ec67e0d` | `@openai/codex@0.144.0`의 generated shape·Rust method/client/TUI behavior를 확인하는 official semantic oracle |

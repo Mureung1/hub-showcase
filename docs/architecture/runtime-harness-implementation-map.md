@@ -16,6 +16,8 @@ AGENTS.md는 안정적인 작업 규칙과 이 문서로 향하는 포인터만 
 
 현재 `HeadlessCodexClientHost`, `ProductRuntimeLayout`과 `CodexStdioTransport`는 코드에 남아 있는 기존 구현이다. ADR 0010이 채택한 Connection → ConversationRuntime 목표는 아직 구현되지 않았으므로 아래 지도는 기존 구현의 현재 사실을 보존한다. [First-party client port·재사용 감사](../wayfinding/codex-native-client-redesign/assets/019-first-party-client-port-and-reuse-audit.md)의 처리 방침에 따라 교체 slice가 실제 gate를 통과할 때만 구성을 갱신한다.
 
+MIT donor의 exact tracked tree는 [`vendor/ai-sdk-provider-codex-cli`](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md)에 pristine fork baseline으로 복제돼 있다. 이 directory는 root npm workspace, `packages/runtime-codex`, Server와 Inspector에 아직 연결되지 않았으며 현재 Harness topology나 method integration status를 바꾸지 않는다.
+
 ## 현재 결론
 
 | 질문 | 현재 답 |
@@ -34,6 +36,7 @@ AGENTS.md는 안정적인 작업 규칙과 이 문서로 향하는 포인터만 
 | `packages/runtime-core` | runtime 생명주기의 안정 계약과 kernel | `AgentRuntimeKernel`, `AgentRuntimeAdapter`, `RuntimeRunEvent`, `RuntimeRunLog`, `RuntimeRunLogPersistence`, persistence state, run summary/history | async hydration/recovery gate, run별 coalesced checkpoint, durability barrier, sticky degraded state, non-durable emergency failure, in-memory read view, subscriber 관리, cancellation mode 처리 |
 | `packages/runtime-fake` | 검사용 결정적 adapter | `FakeRuntimeAdapter` | run 시작 debug evidence, 지연된 output 조각, `failNextRun()` 실패 시나리오, abort 기반 즉시 취소 |
 | `packages/runtime-codex` | Codex app-server 통합 package | `CodexRuntimeAdapter`, `CodexRawClient` wrapper type, 기존 `HeadlessCodexClientHost` lifecycle·atomic subscription, 제품 runtime layout 사전 검증, status/smoke helper, capability slots | 생성된 app-server protocol type, direction·ID type과 adopted Client response schema를 검증하는 기존 bidirectional stdio JSONL transport, lifecycle epoch·generation, subscriber별 bounded queue, actual-child fixture journal, Harness-managed repository-local runtime home, 제품 root·binary·runtime-home pair 검증, raw/debug log |
+| `vendor/ai-sdk-provider-codex-cli` | 수정 가능한 upstream fork incubation | 없음 | Donor source·tests·fixtures·toolchain 전체와 MIT notice, exact upstream identity, local patch ledger. Root workspace와 production consumer에서 격리됨 |
 | `apps/server` | 브라우저에 안전한 로컬 companion host | `/api/runtime/*`, `/api/runtime/runs/:id/events` SSE, `/api/runtime/codex/*` | fake/codex adapters와 ready kernel 조립, repository-local developer diagnostic store |
 | `apps/inspector` | 개발자용 Runtime Inspector | adapter 선택, prompt, transcript, events, run log, history, Codex status, capability slots를 보는 React UI | server endpoint만 소비하며 app-server stdio와 직접 통신하지 않음 |
 
@@ -139,6 +142,7 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | `npm run typecheck` | packages/apps 전반의 TypeScript 계약 호환성 |
 | `npm run build` | package 빌드 순서와 app build |
 | `npm run lint -w @ay-ple/inspector` | Inspector lint |
+| `npm run validate --prefix vendor/ai-sdk-provider-codex-cli` | 격리 fork의 donor build, typecheck, format, lint와 non-live test baseline |
 | `npm run smoke:codex -w @ay-ple/runtime-codex` | 구성된 runtime home을 대상으로 명시적으로 선택해 실행하는 live Codex app-server initialize smoke |
 | `npm run verify:codex-parity -w @ay-ple/server` | package pin과 실제 binary 일치, server HTTP/SSE를 통과하는 live prompt 완료와 adapter-confirmed cancellation |
 
