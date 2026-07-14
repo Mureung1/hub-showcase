@@ -2,6 +2,7 @@ import type {
   InsightRepository,
   InsightRepositoryWarning,
 } from './insight_repository';
+import type { Insight } from './insight';
 import { parseInsight } from './parse_insight';
 
 const INSIGHT_STORAGE_KEY = 'amajda:insights';
@@ -44,13 +45,25 @@ export function createLocalStorageInsightRepository(
         return { insights: [], warnings: ['corrupted-store'] };
       }
 
-      const insights = parsedStore.insights
-        .map(parseInsight)
-        .filter((insight) => insight !== null);
-      const warnings: InsightRepositoryWarning[] =
-        insights.length === parsedStore.insights.length
-          ? []
-          : ['corrupted-entry'];
+      const insights: Insight[] = [];
+      const seenInsightIds = new Set<string>();
+      let hasCorruptedEntry = false;
+
+      for (const storedInsight of parsedStore.insights) {
+        const parsedInsight = parseInsight(storedInsight);
+
+        if (parsedInsight === null || seenInsightIds.has(parsedInsight.id)) {
+          hasCorruptedEntry = true;
+          continue;
+        }
+
+        seenInsightIds.add(parsedInsight.id);
+        insights.push(parsedInsight);
+      }
+
+      const warnings: InsightRepositoryWarning[] = hasCorruptedEntry
+        ? ['corrupted-entry']
+        : [];
 
       return { insights, warnings };
     },

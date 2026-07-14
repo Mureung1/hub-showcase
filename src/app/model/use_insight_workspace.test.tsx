@@ -141,6 +141,48 @@ describe('useInsightWorkspace', () => {
     });
   });
 
+  it('updates only the first matching insight when an injected repository violates ID uniqueness', () => {
+    const firstInsight = createInsight({ title: 'First insight' });
+    const duplicateInsight = createInsight({
+      originalUrl: 'https://duplicate.example/article',
+      normalizedUrl: 'https://duplicate.example/article',
+      domain: 'duplicate.example',
+      title: 'Duplicate insight',
+    });
+    const save = vi.fn<InsightRepository['save']>(() => ({ ok: true }));
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [firstInsight, duplicateInsight],
+        warnings: [],
+      }),
+      save,
+    };
+    const { result } = renderHook(() =>
+      useInsightWorkspace({
+        now: () => '2026-07-14T13:00:00.000Z',
+        repository,
+      })
+    );
+
+    act(() => {
+      result.current.updateInsightContext(firstInsight.id, {
+        category: '',
+        memo: '첫 항목만 변경',
+        title: 'First updated',
+      });
+    });
+
+    expect(result.current.insights).toEqual([
+      {
+        ...firstInsight,
+        memo: '첫 항목만 변경',
+        title: 'First updated',
+        updatedAt: '2026-07-14T13:00:00.000Z',
+      },
+      duplicateInsight,
+    ]);
+  });
+
   it('rejects a URL that normalizes to an already saved insight', () => {
     const savedInsight = createInsight({
       originalUrl: 'https://example.com/article?utm_source=newsletter',

@@ -156,10 +156,18 @@ export function AuthenticatedWorkspace({
 
   function handleContextDraftChange(draft: SaveContextDraft) {
     setContextDraft(draft);
+    setContextSaveComplete(false);
     setContextSaveFailed(false);
   }
 
   function handleContextSkip() {
+    setSavedInsightId(undefined);
+    setContextDraft(EMPTY_CONTEXT_DRAFT);
+    setContextSaveComplete(false);
+    setContextSaveFailed(false);
+    setSaveComplete(false);
+    setSaveUrl('');
+    setSaveErrorReason(undefined);
     setActiveCategory('All');
     setGlobalQuery('');
     setActiveTab('library');

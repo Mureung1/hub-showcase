@@ -90,10 +90,14 @@ describe('AuthenticatedWorkspace', () => {
     fireEvent.change(titleInput, {
       target: { value: '수정한 디자인 패턴' },
     });
-    await user.click(screen.getByRole('button', { name: '수정 저장하기' }));
+    expect(screen.queryByRole('status', { name: '맥락 저장 완료' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
 
     expect(save).toHaveBeenCalledTimes(3);
     expect(save.mock.calls[2]?.[0][0]?.title).toBe('수정한 디자인 패턴');
+    expect(
+      screen.getByRole('status', { name: '맥락 저장 완료' })
+    ).not.toBeNull();
 
     await user.click(screen.getByRole('button', { name: '보관함' }));
 
@@ -132,6 +136,43 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.getByRole('link', { name: '원문 열기' }).getAttribute('href')
     ).toBe('https://skip-context.example/article#source');
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    expect(
+      (screen.getByRole('textbox', { name: '링크 URL' }) as HTMLInputElement)
+        .value
+    ).toBe('');
+    expect(
+      screen.queryByRole('heading', {
+        name: '언제 다시 쓰고 싶은 자료인가요?',
+      })
+    ).toBeNull();
+
+    fireEvent.change(screen.getByRole('textbox', { name: '링크 URL' }), {
+      target: { value: 'https://next-save.example/article' },
+    });
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(
+      (screen.getByRole('textbox', { name: '제목 (선택)' }) as HTMLInputElement)
+        .value
+    ).toBe('');
+    expect(
+      (
+        screen.getByRole('textbox', {
+          name: '한 줄 메모 (선택)',
+        }) as HTMLTextAreaElement
+      ).value
+    ).toBe('');
+    expect(
+      (
+        screen.getByRole('textbox', {
+          name: '카테고리 (선택)',
+        }) as HTMLInputElement
+      ).value
+    ).toBe('');
+    expect(screen.queryByRole('status', { name: '맥락 저장 완료' })).toBeNull();
   });
 
   it('keeps personal context inputs after a write failure and retries them', async () => {

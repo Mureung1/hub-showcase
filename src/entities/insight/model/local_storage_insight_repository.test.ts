@@ -198,6 +198,39 @@ describe('createLocalStorageInsightRepository', () => {
     });
   });
 
+  it('keeps the first valid insight and isolates later duplicate IDs', () => {
+    const storage = new MemoryStorage();
+    const duplicateIdInsight: Insight = {
+      ...insight,
+      originalUrl: 'https://duplicate.example/articles/2',
+      normalizedUrl: 'https://duplicate.example/articles/2',
+      domain: 'duplicate.example',
+      title: 'Later duplicate ID',
+    };
+    const laterInsight: Insight = {
+      ...insight,
+      id: 'insight-2',
+      originalUrl: 'https://later.example/articles/3',
+      normalizedUrl: 'https://later.example/articles/3',
+      domain: 'later.example',
+      title: 'Later unique ID',
+    };
+    storage.setItem(
+      INSIGHT_STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 1,
+        insights: [insight, duplicateIdInsight, laterInsight],
+      })
+    );
+
+    expect(
+      insightApi.createLocalStorageInsightRepository(storage).load()
+    ).toEqual({
+      insights: [insight, laterInsight],
+      warnings: ['corrupted-entry'],
+    });
+  });
+
   it('returns a corrupted-store warning for invalid JSON without throwing', () => {
     expect(loadSerializedStore('{')).toEqual({
       insights: [],

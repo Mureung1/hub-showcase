@@ -100,9 +100,10 @@ export function useInsightWorkspace({
     insightId: string,
     context: InsightContextInput
   ): UpdateInsightContextResult {
-    const insight = currentWorkspaceState.insights.find(
+    const insightIndex = currentWorkspaceState.insights.findIndex(
       (candidate) => candidate.id === insightId
     );
+    const insight = currentWorkspaceState.insights[insightIndex];
 
     if (!insight) {
       return { ok: false, reason: 'not-found' };
@@ -115,9 +116,8 @@ export function useInsightWorkspace({
       title: normalizeOptionalText(context.title) ?? getFallbackTitle(insight),
       updatedAt: now(),
     };
-    const nextInsights = currentWorkspaceState.insights.map((candidate) =>
-      candidate.id === insightId ? updatedInsight : candidate
-    );
+    const nextInsights = [...currentWorkspaceState.insights];
+    nextInsights[insightIndex] = updatedInsight;
     const saveResult = repository.save(nextInsights);
 
     if (!saveResult.ok) {
