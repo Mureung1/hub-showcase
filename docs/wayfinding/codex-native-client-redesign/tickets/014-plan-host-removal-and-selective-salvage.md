@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: task
-- State: claimed
+- State: resolved
 - Blocked by: [기존 evidence와 재설계 기준점을 보존한다](001-preserve-evidence-and-establish-fixed-point.md), [기존 Host consumer와 compatibility constraint를 감사한다](002-audit-host-consumers-and-compatibility.md), [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md), [Native identity authority와 lifetime을 결정한다](009-decide-identity-and-authority.md), [Thread·turn concurrency 정책을 결정한다](010-decide-concurrency-policy.md), [Event delivery와 transcript recovery model을 결정한다](011-decide-delivery-and-recovery-model.md), [Connection loss와 unknown outcome 정책을 결정한다](012-decide-connection-and-unknown-outcome-policy.md), [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md), [commandExecution approval의 첫 round-trip을 결정한다](017-decide-command-execution-approval-round-trip.md)
 
 ## Question
@@ -37,7 +37,7 @@ Current integration history와 native Codex app-data를 훼손하지 않으면�
 | 처리 방침 | 대상 |
 | --- | --- |
 | 그대로 보존 | Exact-pin generated TypeScript·JSON Schema와 pinned provenance |
-| Upstream behavior에 맞춰 추출·개조 | Response/notification validator·contract, safe generator·method renderer, root canonicalization·containment·overlap과 runtime-home preparation, exact typed ID parser, child·sole JSONL reader·serialized writer·kill/reap, actual-child journal/temp cleanup scaffolding과 test intent |
+| Source와 새 owner에 맞춰 추출·개조 | First-party client behavior를 따르는 response/notification validator·contract, safe generator·method renderer, exact typed ID parser, child·sole JSONL reader·serialized writer·kill/reap과 actual-child scaffolding/test intent. External preparation owner를 따르는 root canonicalization·containment·overlap과 runtime-home preparation |
 | Developer Runtime Harness에만 보존 | `CodexRawClient`·`CodexRuntimeAdapter`·status/smoke·capability slots, Runtime Harness Interface/history/Inspector, `withFakeCodexAppServer`와 현재 fake App Server consumer |
 | Compatibility 없이 제거 | Host generation/ref/global sequence/subscription/failure policy, Host와 product-named layout root export·전용 fake/test, legacy transport class·observation queue·timeout/`dismiss()`/settled-ID semantics, old stdio testing re-export와 ignored stale package `dist` output |
 
@@ -64,6 +64,14 @@ External appData와 repository `.ay-ple/runtime-codex`의 native state·rollout/
 ### HITL audit
 
 추가 사용자 결정은 필요 없다. Durable Host consumer 0, source-guided Connection → Runtime seam, runtime-first T0·T0-C·T0.1, product scope defer와 ledger promotion rule은 이미 승인된 결정을 구체화한다. Exact file/type 이름, cap default와 implementation ticket split은 resulting spec이 이 plan 안에서 정할 package-private 세부사항이다.
+
+### Ticket 014 재교정 review checkpoint
+
+- Source: 0 findings. Exact-pin first-party 기준의 active Client waiter remove-once·late map-miss no-op·current-pending disconnect settlement, method-specific bounded early FIFO·cleanup, native `ThreadId`별 projection과 active Server request lifecycle이 표·Stage·gate 전체에 일치한다. Finite bound, pre-response terminal 보존과 turn-transition/disconnect approval cleanup은 direct upstream guarantee가 아니라 external-client hardening이며 resulting spec과 unit/fake gate가 증명하도록 분리했다.
+- Standards: 0 findings. [Ticket 019의 code-unit 네 분류](../assets/019-first-party-client-port-and-reuse-audit.md)를 current owner로 유지하면서 이 ticket은 이행 gate만 투영한다. Completed Ticket 015·old artifact 처리와 future `/to-spec` 작업, current·historical review, Runtime Harness/native state 보호와 product out-of-scope를 분리했고 local link·zero-width·`git diff --check`를 통과했다.
+- Spec: 0 findings. T0는 처음부터 최종 native `ThreadId`별 projection 구조의 one-turn slice이고 T0-C는 architecture를 교체하지 않고 A pending → B complete → A complete를 증명한다. Safe ledger/generation → preparation/Connection → Runtime/T0 → sibling T0-C/T0.1 → compatibility 없는 legacy 제거 순서와 Ticket 014 → Ticket 016 edge를 보존하며 code·decisions JSON·generated inventory를 변경하지 않았다.
+
+Review fixed point는 `7d8c39123b06037ccf35a1a8539943a0798aeff7`, 교정 초안 checkpoint는 `0f804403`이다. 남은 risk는 exact public symbol, numeric cap, observer timeout·overflow의 bounded operation-local disposition, safe generator/clean helper와 typed fake/live selector가 아직 executable spec/code로 검증되지 않았다는 점이다. 이는 Ticket 016이 implementation-ready spec obligation으로 확인할 범위이며 current 이행 계획을 lifetime sink나 global failure policy로 강화하는 근거가 아니다.
 
 ### Ticket 019 교정 이전 review checkpoint
 
