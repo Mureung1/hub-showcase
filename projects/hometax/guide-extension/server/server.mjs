@@ -29,28 +29,45 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// structured outputs용 응답 스키마 — 서버(Anthropic 쪽)가 이 모양의 JSON만 생성하도록 강제한다.
+// 프롬프트로 "JSON으로 답해줘"라고 부탁하는 것과 달리, 형식이 API 차원에서 보장된다.
+const RESPONSE_SCHEMA = {
+  type: 'object',
+  properties: {
+    index: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+    label: { type: 'string' },
+    done: { type: 'boolean' },
+    goalAchieved: { type: 'boolean' },
+    message: { type: 'string' },
+  },
+  required: ['index', 'label', 'done', 'goalAchieved', 'message'],
+  additionalProperties: false,
+};
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 app.post('/api/next-step', async (req, res) => {
-  const { goal, currentUrl, resultRowCount, elements, history } = req.body || {};
+  const { goal, currentUrl, resultRowCount, elements, history, screenChanged, newElementTexts } = req.body || {};
 
   if (!goal || !Array.isArray(elements)) {
     return res.status(400).json({ error: 'goal, elements가 필요합니다.' });
   }
 
   // TEMP DEBUG — 실제로 어떤 요소 목록이 오는지 확인하려고 잠깐 추가함 (PII 아님, 버튼 라벨/역할뿐).
-  console.log(`\n[DEBUG] goal="${goal}" url=${currentUrl} rowCount=${resultRowCount} elements(${elements.length}):`);
+  console.log(`\n[DEBUG] goal="${goal}" url=${currentUrl} rowCount=${resultRowCount} screenChanged=${screenChanged} elements(${elements.length}):`);
   console.log(JSON.stringify(elements, null, 1));
-  console.log(`[DEBUG] history:`, JSON.stringify(history));
+  console.log(`[DEBUG] history:`, JSON.stringify(history), 'newElementTexts:', JSON.stringify(newElementTexts));
 
-  const prompt = buildPrompt({ goal, currentUrl, resultRowCount, elements, history });
+  const prompt = buildPrompt({ goal, currentUrl, resultRowCount, elements, history, screenChanged, newElementTexts });
 
   try {
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-5',
-      max_tokens: 400,
+      // 상한일 뿐 실제 생성된 토큰만 과금됨 — 400은 한글 label+message가 잘리는 사고가 실측으로 확인돼 여유 있게 올림
+      max_tokens: 1000,
+      output_config: { format: { type: 'json_schema', schema: RESPONSE_SCHEMA } },
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -63,6 +80,16 @@ app.post('/api/next-step', async (req, res) => {
     console.log(`[explain-proxy] 토큰 사용량 — 입력 ${message.usage.input_tokens} / 출력 ${message.usage.output_tokens}`);
     logUsage(message.usage).catch((err) => console.error('[explain-proxy] 사용량 로그 기록 실패:', err.message));
 
+    // 길이 상한에 걸려 잘린 응답은 JSON이 깨져 있음 — "완료"로 위장하지 말고 정직한 안내로 응답한다.
+    if (message.stop_reason === 'max_tokens') {
+      console.warn('[explain-proxy] 응답이 max_tokens 상한에서 잘렸습니다 — 잘린 내용은 버리고 안내 메시지로 대체');
+      return res.json({
+        index: null,
+        done: false,
+        message: 'AI 답변이 길이 제한에 걸려 중간에 잘렸어요. 가이드를 다시 시작해주세요.',
+      });
+    }
+
     res.json(parseJsonResponse(raw));
   } catch (err) {
     console.error('[explain-proxy] Claude API 호출 실패:', err.message);
@@ -74,12 +101,30 @@ app.post('/api/next-step', async (req, res) => {
   }
 });
 
-export function buildPrompt({ goal, currentUrl, resultRowCount, elements, history }) {
+export function buildPrompt({ goal, currentUrl, resultRowCount, elements, history, screenChanged, newElementTexts }) {
   const elementLines = elements
     .map((e) => `${e.index}: "${e.text}" (${e.role}${e.offscreen ? ', 지금 화면 밖 — 스크롤해야 보임' : ''})`)
     .join('\n');
-  const historyLines = history && history.length ? history.join(' → ') : '(없음)';
-  const lastAction = history && history.length ? history[history.length - 1] : null;
+  // history 항목은 옛 형식(문자열)과 새 형식({label, screenChanged}) 둘 다 지원 — count-tokens.mjs 등 기존 호출부 호환.
+  const renderHistoryItem = (h) => {
+    if (typeof h === 'string') return h;
+    if (h.screenChanged === true) return `${h.label} (클릭 후 화면 바뀜)`;
+    if (h.screenChanged === false) return `${h.label} (클릭해도 화면 그대로 — 효과 없었음)`;
+    return h.label;
+  };
+  const historyLines = history && history.length ? history.map(renderHistoryItem).join(' → ') : '(없음)';
+  const last = history && history.length ? history[history.length - 1] : null;
+  const lastAction = last ? (typeof last === 'string' ? last : last.label) : null;
+  const screenChangeLine =
+    screenChanged === true
+      ? '직전 클릭 후 화면이 바뀌었습니다.'
+      : screenChanged === false
+        ? '직전 클릭 후 화면이 그대로입니다 (클릭 효과 없음).'
+        : '(첫 턴 — 화면 변화 비교 대상 없음)';
+  const newElementsLine =
+    newElementTexts && newElementTexts.length
+      ? `이번 화면에 새로 나타난 요소: ${newElementTexts.map((t) => `"${t}"`).join(', ')}`
+      : '';
 
   return `당신은 대한민국 국세청 홈택스(hometax.go.kr) 사용을 돕는 가이드입니다.
 사용자는 화면 위에서 강조 표시된 버튼을 직접 클릭합니다 — 당신은 어디를 강조할지만 고릅니다.
@@ -89,6 +134,12 @@ export function buildPrompt({ goal, currentUrl, resultRowCount, elements, histor
 현재 화면에 표 형태로 표시된 결과 행 수: ${resultRowCount}
 지금까지 사용자가 클릭한 단계: ${historyLines}
 가장 최근에 클릭한 단계: ${lastAction ? `"${lastAction}"` : '(없음)'}
+직전 클릭의 화면 변화: ${screenChangeLine}
+${newElementsLine}
+
+판단 규칙:
+- 직전 클릭 후 화면이 그대로라면(효과 없음), 직전과 같은 요소를 다시 고르지 마세요. 새로 나타난 요소가 있으면 그것부터 검토하세요.
+- 클릭 이력에서 화면이 두 번 연속 바뀌지 않았다면 진전이 없는 것입니다 — done을 true로 하고 message에 왜 더 진행할 수 없는지 설명하세요.
 
 현재 화면에서 클릭 가능한 요소 목록(인덱스: "텍스트" (역할)):
 ${elementLines}
@@ -106,7 +157,7 @@ done이 true면 message에 결과(예: "환급금 조회 결과 0건" 등, resul
 done이 false일 때만 index를 고르세요. 목표와 명백히 무관한 요소(로그아웃, 즐겨찾기, 새로고침, 언어 변경 등)는 절대 고르지 마세요.
 그런 무관한 요소밖에 없다면 index를 null로 하고 done을 true로 하세요.
 
-반드시 아래 JSON 형식으로만, 다른 설명 없이 응답하세요:
+반드시 아래 JSON 형식으로만, 다른 설명 없이 응답하세요. label은 한 문장, message는 최대 두 문장으로 짧게 쓰세요:
 {"index": <숫자 또는 null>, "label": "<사용자에게 보여줄 클릭 안내 한 문장, 예: '전체메뉴를 클릭하세요'>", "done": <true 또는 false>, "message": "<사용자에게 보여줄 한국어 메시지 - 다음 행동 안내 또는 완료/결과 설명>"}`;
 }
 

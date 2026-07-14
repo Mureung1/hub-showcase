@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>장부 자동화 — 전표 입력</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>전표 입력 → 결산보고서</h1>
+
+  <section>
+    <h2>새 전표</h2>
+    <form id="entry-form">
+      <div class="entry-head">
+        <label>일자 <input type="date" name="date" required></label>
+        <label class="grow">적요 <input type="text" name="description" required placeholder="예: 1월 용역매출" maxlength="100"></label>
+      </div>
+
+      <table id="lines-table">
+        <thead>
+          <tr><th>계정과목</th><th class="num">차변</th><th class="num">대변</th><th></th></tr>
+        </thead>
+        <tbody id="lines-body"></tbody>
+      </table>
+
+      <div class="line-actions">
+        <button type="button" id="add-line">＋ 라인 추가</button>
+        <button type="button" id="fill-diff" title="마지막 라인의 금액을 차액에 맞게 채웁니다">차액 자동 채움</button>
+      </div>
+
+      <p id="totals">
+        차변 합계 <strong id="debit-total">0</strong> ·
+        대변 합계 <strong id="credit-total">0</strong> ·
+        차액 <strong id="diff" class="balanced">0</strong>
+      </p>
+
+      <button type="submit" id="save" disabled>전표 저장</button>
+      <span id="form-msg" role="status"></span>
+    </form>
+  </section>
+
+  <section>
+    <h2>전표 목록 <small id="entry-count"></small></h2>
+    <p><a href="/api/export.xlsx" id="download">📥 결산보고서(Excel) 다운로드 — 시산표·재무상태표·손익계산서</a></p>
+    <table id="entries-table">
+      <thead>
+        <tr><th>일자</th><th>적요</th><th>분개 내용</th><th class="num">금액</th><th></th></tr>
+      </thead>
+      <tbody id="entries-body"></tbody>
+    </table>
+    <p id="empty-msg" hidden>아직 전표가 없습니다. 위에서 첫 전표를 입력해보세요.</p>
+  </section>
+
+  <template id="line-template">
+    <tr class="line">
+      <td><select class="account" required></select></td>
+      <td class="num"><input class="debit amount" type="text" inputmode="numeric" value="0" autocomplete="off"></td>
+      <td class="num"><input class="credit amount" type="text" inputmode="numeric" value="0" autocomplete="off"></td>
+      <td><button type="button" class="remove" title="이 라인 삭제">✕</button></td>
+    </tr>
+  </template>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

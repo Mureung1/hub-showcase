@@ -1,0 +1,22 @@
+{
+  "name": "ledger-automation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "전표 입력 → 합계잔액시산표·재무상태표·손익계산서 → Excel 자동 생성 MVP",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test",
+    "typecheck": "tsc -p jsconfig.json",
+    "seed": "node scripts/seed.mjs"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
+}

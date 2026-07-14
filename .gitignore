@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit real credentials (examples are OK)
+.env
+.env.*
+!.env.example
+
+# Separate git repository (GitHub wiki) — commit it independently, never embed here
+NAVER_AIchallenge_hub.wiki/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
