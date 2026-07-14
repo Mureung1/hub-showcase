@@ -1,6 +1,10 @@
 import express from "express";
 import cors from "cors";
 import database from "./config/database.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import authRoutes from "./routes/authRoutes.js";
+import { authMiddleware } from "./middlewares/authMiddleware.js";
 
 const app = express();
 
@@ -11,6 +15,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use("/api/auth", authRoutes);
 
 app.get("/api/test", (req, res) => {
   res.json({
@@ -19,7 +24,10 @@ app.get("/api/test", (req, res) => {
   });
 });
 
-app.post("/api/notices", (req, res) => {
+
+
+
+app.post("/api/notices", authMiddleware, (req, res) => {    // 공지 등록 요청 → authMiddleware가 JWT 검사 → 통과하면 공지 등록
   const { title, content } = req.body;
 
   if (!title || !content) {
