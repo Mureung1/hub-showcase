@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>대외활동 큐레이션 (미리보기)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f6f7f9; color: #1f2933; font-family: system-ui, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+  .head h1 { margin: 0 0 4px; font-size: 1.7rem; }
+  .head p { margin: 0; color: #6b7280; }
+  .form { display: flex; flex-wrap: wrap; gap: 14px; margin: 24px 0 8px; padding: 16px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; }
+  .form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; color: #6b7280; }
+  .form select { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; background: #fff; min-width: 92px; }
+  .scholar-toggle { display: flex; align-items: center; gap: 8px; margin: 10px 2px 0; font-size: 0.85rem; color: #4b5563; cursor: pointer; }
+  .section-title { font-size: 1rem; margin: 26px 0 10px; }
+  .section-title.ok { color: #16a34a; }
+  .section-title.no { color: #9ca3af; }
+  .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .card { padding: 14px 16px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; }
+  .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .cat { font-size: 0.72rem; color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 999px; }
+  .deadline { font-size: 0.78rem; color: #9ca3af; }
+  .deadline.imminent { color: #ef4444; font-weight: 700; }
+  .title { font-weight: 600; color: #111827; }
+  .cond { margin: 4px 0 0; font-size: 0.8rem; color: #6b7280; }
+  .cond .open { color: #16a34a; }
+  .card.muted { background: #fafafa; border-style: dashed; }
+  .title-muted { color: #9ca3af; text-decoration: line-through; }
+  .reasons { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .reasons li { display: flex; gap: 8px; align-items: baseline; font-size: 0.8rem; flex-wrap: wrap; }
+  .rlabel { min-width: 56px; color: #6b7280; }
+  .req { color: #6b7280; }
+  .mine { color: #ef4444; font-weight: 600; }
+  .near { font-size: 0.72rem; color: #16a34a; background: #f0fdf4; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .fix { margin-left: 4px; padding: 2px 6px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.78rem; background: #fff; }
+  .empty { color: #9ca3af; padding: 10px; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+  const GRADES = [1, 2, 3, 4, "졸업생"];
+  const MAJORS = ["인문", "경영", "경제", "교육", "과학", "IT", "의학", "예술"];
+  const REGIONS = ["서울", "경기", "인천", "부산", "대구", "광주", "대전", "울산", "강원", "충청", "전라", "경상", "제주"];
+  const ENROLLMENTS = ["재학", "휴학", "졸업예정"];
+  const TYPES = ["온라인", "오프라인", "온오프 병행"];
+  const INCOMES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  const GPAS = [4.5, 4.0, 3.5, 3.0, 2.5];
+  const b = { grades: [], majors: [], regions: [], enrollment: [], types: [], incomeMax: null, gpaMin: null };
+
+  // eligibility: 빈 배열 / null = 제한 없음(무관)
+  const ACTIVITIES = [
+    { id:"a1", title:"대학생 IT 서포터즈 12기", org:"OO소프트", category:"대외활동", deadline:"2026-07-20", eligibility:{...b, majors:["IT"], enrollment:["재학"], types:["온라인"]} },
+    { id:"a2", title:"청년 창업 아이디어 공모전", org:"△△진흥원", category:"공모전", deadline:"2026-08-05", eligibility:{...b} },
+    { id:"a3", title:"저소득층 대학생 장학금", org:"◇◇장학재단", category:"장학", deadline:"2026-07-05", eligibility:{...b, enrollment:["재학"], incomeMax:4} },
+    { id:"a4", title:"수도권 지역아동센터 교육봉사", org:"지역아동센터", category:"봉사", deadline:"2026-07-31", eligibility:{...b, regions:["서울","경기","인천"], types:["오프라인"]} },
+    { id:"a5", title:"고학년 전공심화 학회 지원사업", org:"□□대학교", category:"대외활동", deadline:"2026-07-25", eligibility:{...b, grades:[3,4], majors:["IT","과학"], enrollment:["재학"]} },
+    { id:"a6", title:"부산 청년 문화기획단", org:"부산광역시", category:"대외활동", deadline:"2026-08-10", eligibility:{...b, regions:["부산"], types:["오프라인"]} },
+    { id:"a7", title:"이공계 국가우수장학금", org:"한국장학재단", category:"장학", deadline:"2026-07-13", eligibility:{...b, grades:[1,2], majors:["IT","과학"], incomeMax:8, gpaMin:3.5} },
+    { id:"a8", title:"성적우수 재학생 장학금", org:"◎◎재단", category:"장학", deadline:"2026-08-01", eligibility:{...b, enrollment:["재학"], gpaMin:4.0} },
+    { id:"a9", title:"대학생 기자단 10기", org:"◆◆미디어", category:"대외활동", deadline:"2026-08-15", eligibility:{...b, enrollment:["재학"], types:["온오프 병행"]} },
+    { id:"a10", title:"전국 대학생 디자인 공모전", org:"디자인진흥원", category:"공모전", deadline:"2026-09-01", eligibility:{...b, majors:["예술"]} },
+    { id:"a11", title:"경영·경제 케이스 대회", org:"○○컨설팅", category:"공모전", deadline:"2026-07-14", eligibility:{...b, grades:[3,4], majors:["경영","경제"]} },
+    { id:"a12", title:"농촌 교육봉사단", org:"농어촌재단", category:"봉사", deadline:"2026-08-20", eligibility:{...b, regions:["전라","경상","충청"], types:["오프라인"]} },
+    { id:"a13", title:"해외문화 탐방단", org:"국제교류원", category:"대외활동", deadline:"2026-07-30", eligibility:{...b, grades:[2,3,4], enrollment:["재학"], gpaMin:3.0} },
+    { id:"a14", title:"대구 청년 서포터즈", org:"대구광역시", category:"대외활동", deadline:"2026-08-08", eligibility:{...b, regions:["대구"], types:["오프라인"]} },
+    { id:"a15", title:"여성 공학인 장학금", org:"공학재단", category:"장학", deadline:"2026-08-25", eligibility:{...b, majors:["IT","과학"], enrollment:["재학"], incomeMax:9} },
+    { id:"a16", title:"예비교사 멘토링", org:"교육기부센터", category:"대외활동", deadline:"2026-07-11", eligibility:{...b, majors:["교육"], enrollment:["재학"], types:["오프라인"]} },
+    { id:"a17", title:"스타트업 현장 인턴십", org:"벤처협회", category:"대외활동", deadline:"2026-09-10", eligibility:{...b, grades:[3,4,"졸업생"], regions:["서울","경기"], types:["오프라인"]} },
+    { id:"a18", title:"청년 문학 공모전", org:"문학관", category:"공모전", deadline:"2026-07-06", eligibility:{...b, majors:["인문"]} },
+    { id:"a19", title:"저학년 리더십 캠프", org:"리더십센터", category:"대외활동", deadline:"2026-08-03", eligibility:{...b, grades:[1,2], types:["오프라인"]} },
+    { id:"a20", title:"국가유공자 자녀 장학금", org:"보훈재단", category:"장학", deadline:"2026-09-05", eligibility:{...b, enrollment:["재학"], incomeMax:10} },
+    { id:"a21", title:"온라인 코딩 부트캠프", org:"코드스쿨", category:"대외활동", deadline:"2026-08-12", eligibility:{...b, majors:["IT"], types:["온라인"]} },
+    { id:"a22", title:"의학계열 학술 심포지엄", org:"의과학회", category:"공모전", deadline:"2026-09-15", eligibility:{...b, majors:["의학"], grades:[3,4]} },
+    { id:"a23", title:"제주 환경보전 봉사", org:"제주환경재단", category:"봉사", deadline:"2026-08-18", eligibility:{...b, regions:["제주"], types:["오프라인"]} },
+    { id:"a24", title:"예술대 전시 지원사업", org:"예술위원회", category:"대외활동", deadline:"2026-08-28", eligibility:{...b, majors:["예술"], enrollment:["재학"]} },
+    { id:"a25", title:"청년정책 아이디어 공모", org:"청년재단", category:"공모전", deadline:"2026-07-15", eligibility:{...b} },
+    { id:"a26", title:"인천 지역 산학 인턴", org:"인천테크노파크", category:"대외활동", deadline:"2026-09-02", eligibility:{...b, regions:["인천"], grades:[3,4], types:["오프라인"]} },
+    { id:"a27", title:"저소득 이공계 장학금", org:"과학장학재단", category:"장학", deadline:"2026-08-22", eligibility:{...b, majors:["IT","과학"], enrollment:["재학"], incomeMax:5, gpaMin:3.5} },
+    { id:"a28", title:"전국 대학생 토론대회", org:"토론협회", category:"공모전", deadline:"2026-09-20", eligibility:{...b, enrollment:["재학"], types:["온오프 병행"]} },
+  ];
+
+  // 불가 사유의 라벨 -> 그 자리서 바로 고칠 컨트롤
+  const FIX = {
+    "학년": { key:"grade", opts:GRADES, fmt:v=>v==="졸업생"?v:v+"학년" },
+    "전공": { key:"major", opts:MAJORS, fmt:v=>v },
+    "지역": { key:"region", opts:REGIONS, fmt:v=>v },
+    "재학상태": { key:"enrollment", opts:ENROLLMENTS, fmt:v=>v },
+    "활동형태": { key:"type", opts:TYPES, fmt:v=>v },
+    "소득분위": { key:"income", opts:INCOMES, fmt:v=>v+"분위" },
+    "학점": { key:"gpa", opts:GPAS, fmt:v=>v.toFixed(1) },
+  };
+  const NUM = ["grade","income","gpa"]; // 숫자 필드 (grade는 졸업생만 예외처리)
+
+  function daysLeft(d){ const end=new Date(d+"T23:59:59"); const n=new Date(); const s=new Date(n.getFullYear(),n.getMonth(),n.getDate()); return Math.ceil((end-s)/86400000); }
+  const isPast = d => daysLeft(d) < 0;
+  function dday(d){ const n=daysLeft(d); if(n<0)return"마감"; if(n===0)return"오늘 마감"; return "D-"+n; }
+
+  // 공고가 거는 조건 요약. 아무 제한 없으면 "제한 없음"
+  function condSummary(a){
+    const e=a.eligibility, parts=[];
+    if(e.grades.length) parts.push(e.grades.map(g=>g==="졸업생"?g:g+"학년").join("·"));
+    if(e.majors.length) parts.push(e.majors.join("·"));
+    if(e.regions.length) parts.push(e.regions.join("·"));
+    if(e.enrollment.length) parts.push(e.enrollment.join("·"));
+    if(e.types.length) parts.push(e.types.join("·"));
+    if(e.incomeMax!==null) parts.push("소득 "+e.incomeMax+"분위 이하");
+    if(e.gpaMin!==null) parts.push("학점 "+e.gpaMin.toFixed(1)+" 이상");
+    return parts;
+  }
+
+  // 매칭: '-'(null)인 조건은 계산에서 제외(안 봄). 고른 것만 판정. 결과는 가능/불가.
+  function matchActivity(a, p){
+    const e=a.eligibility, failed=[];
+    const chk=(mine, allowed, label, reqTxt)=>{ if(p[mine]==null) return; if(allowed.length && !allowed.includes(p[mine])) failed.push({label, req:reqTxt(allowed), mine:String(p[mine])}); };
+    chk("grade", e.grades, "학년", a=>a.map(g=>g==="졸업생"?g:g+"학년").join("·"));
+    chk("major", e.majors, "전공", a=>a.join("·"));
+    chk("region", e.regions, "지역", a=>a.join("·"));
+    chk("enrollment", e.enrollment, "재학상태", a=>a.join("·"));
+    chk("type", e.types, "활동형태", a=>a.join("·"));
+    if(p.income!=null && e.incomeMax!==null && p.income>e.incomeMax) failed.push({label:"소득분위", req:e.incomeMax+"분위 이하", mine:p.income+"분위"});
+    if(p.gpa!=null && e.gpaMin!==null && p.gpa<e.gpaMin) failed.push({label:"학점", req:e.gpaMin.toFixed(1)+" 이상", mine:p.gpa.toFixed(1)});
+    return { status: failed.length ? "no" : "ok", failed };
+  }
+
+  const p = { grade:null, major:null, region:null, enrollment:null, type:null, income:null, gpa:null };
+  let showScholarship = false;
+
+  const opt = (v, label, sel) => `<option value="${v}" ${String(v)===String(sel)?"selected":""}>${label}</option>`;
+  function pick(field, items, fmt){
+    const cur = p[field]==null ? "" : p[field];
+    let html = `<option value="" ${cur===""?"selected":""}>-</option>`;
+    html += items.map(v=>opt(v, fmt(v), cur)).join("");
+    return `<select data-field="${field}">${html}</select>`;
+  }
+
+  function render(){
+    const visible = ACTIVITIES.filter(a=>!isPast(a.deadline));
+    // 지원 가능 + "조건 1개만 안 맞는 것"만. 여러 개 어긋나는 건 아예 안 보여줌(실데이터에서 폭주 방지)
+    const ok=[], no=[];
+    for(const a of visible){ const r=matchActivity(a,p); if(r.status==="ok") ok.push({...a,...r}); else if(r.failed.length===1) no.push({...a,...r}); }
+
+    const scholar = showScholarship ? `
+      <label>소득분위 ${pick("income", INCOMES, v=>v+"분위")}</label>
+      <label>학점 ${pick("gpa", GPAS, v=>v.toFixed(1))}</label>` : "";
+
+    const condHtml = a => { const parts=condSummary(a); return parts.length ? `<p class="cond">조건: ${parts.join(" · ")}</p>` : `<p class="cond"><span class="open">제한 없음 · 누구나 지원 가능</span></p>`; };
+
+    const okCards = ok.map(a=>`
+      <li class="card">
+        <div class="card-top"><span class="cat">${a.category}</span><span class="deadline ${daysLeft(a.deadline)<=7?"imminent":""}">${dday(a.deadline)}</span></div>
+        <div class="title">${a.title}</div>
+        ${condHtml(a)}
+      </li>`).join("") || `<li class="empty">조건에 맞는 활동이 없습니다.</li>`;
+
+    const noCards = no.map(a=>`
+      <li class="card muted">
+        <div class="card-top"><span class="title-muted">${a.title}</span>${a.failed.length===1?'<span class="near">이것만 바꾸면 가능</span>':""}</div>
+        <ul class="reasons">
+          ${a.failed.map(f=>{
+            let fix=""; if(a.failed.length===1 && FIX[f.label]){ const c=FIX[f.label]; fix=`<select class="fix" data-field="${c.key}">${c.opts.map(o=>opt(o,c.fmt(o),p[c.key])).join("")}</select>`; }
+            return `<li><span class="rlabel">${f.label}</span><span class="req">요구 ${f.req}</span><span class="mine">내 조건 ${f.mine}</span>${fix}</li>`;
+          }).join("")}
+        </ul>
+      </li>`).join("") || `<li class="empty">막힌 활동이 없습니다.</li>`;
+
+    document.getElementById("app").innerHTML = `
+      <header class="head"><h1>대외활동 큐레이션</h1><p>조건은 고르는 것만 반영돼요. 안 고르면(-) 그 조건은 안 봅니다.</p></header>
+      <section class="form">
+        <label>학년 ${pick("grade", GRADES, v=>v==="졸업생"?v:v+"학년")}</label>
+        <label>전공 ${pick("major", MAJORS, v=>v)}</label>
+        <label>지역 ${pick("region", REGIONS, v=>v)}</label>
+        <label>재학상태 ${pick("enrollment", ENROLLMENTS, v=>v)}</label>
+        <label>활동형태 ${pick("type", TYPES, v=>v)}</label>
+        ${scholar}
+      </section>
+      <label class="scholar-toggle"><input type="checkbox" data-role="toggle" ${showScholarship?"checked":""}/> 장학·지원금도 볼래요 (소득분위·학점)</label>
+      <section><h2 class="section-title ok">지원 가능 (${ok.length})</h2><ul class="list">${okCards}</ul></section>
+      <section><h2 class="section-title no">거의 가능 · 조건 1개 차이 (${no.length})</h2><ul class="list">${noCards}</ul></section>`;
+  }
+
+  document.getElementById("app").addEventListener("change", (ev)=>{
+    const t=ev.target;
+    if(t.dataset.role==="toggle"){ showScholarship=t.checked; if(!showScholarship){ p.income=null; p.gpa=null; } render(); return; }
+    const f=t.dataset.field; if(!f) return;
+    let v=t.value;
+    if(v==="") v=null;
+    else if(f==="grade") v=(v==="졸업생"?"졸업생":Number(v));
+    else if(f==="income"||f==="gpa") v=Number(v);
+    p[f]=v;
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>

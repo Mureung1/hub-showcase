@@ -1,8 +1,8 @@
 // LLM 파싱. API·소스가 구조로 주는 값(지역, 연령, 분야)은 규칙으로 매핑하고,
 // 크롤링한 자유 문장 참가조건만 LLM 에 맡긴다. 프롬프트와 강제 JSON 은 docs/schema.md 부록3.
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // 넓은 표현을 canonical 전공으로 펼친다. (schema.md 정규화 규칙)
 export const MAJOR_MAP = {
@@ -25,6 +25,6 @@ export const REGION_MAP = {
 
 // 1단계 분류 -> 2단계 추출. found_in_text 와 confidence 포함. 실패는 needs_review.
 export async function parse(rawText) {
-  // TODO(3): client.chat.completions ... structured outputs 로 schema.md JSON 강제
+  // TODO(#9): client.messages.create + tool use(도구 입력 스키마)로 schema.md JSON 강제
   return { track: null, category: null, eligibility: null, confidence: 0 };
 }
