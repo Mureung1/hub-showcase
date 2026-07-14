@@ -6,6 +6,9 @@ node_modules/
 .env.*
 !.env.example
 
+# Holds the live GitHub access token after OAuth login — never commit this
+data/session.json
+
 # Build output
 dist/
 dist-ssr/
