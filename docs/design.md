@@ -136,6 +136,7 @@
 | `.verdict` (`.tag` + `.headline`) | 에이전트 판단 블록 (좌측 accent 보더 + `--accent-bg`) |
 | `.cell` | 3분할 정보 셀 |
 | `.brand` / `.caption` | 로고 / 보조 텍스트 |
+| `<Icon name size />` | 인라인 SVG 아이콘([`mvp/src/components/Icon.jsx`](../mvp/src/components/Icon.jsx)). `stroke: currentColor`로 토큰 색 상속, 무의존성(lucide 경로 차용). 이모지 대신 사용 |
 
 ### 상태 매트릭스
 
@@ -159,7 +160,7 @@
 - **로딩**: `.route-loading`(중앙 정렬 + `--text`). 인라인 로딩은 caption 문구.
 - **빈 상태**: 카드 안 중앙 안내 문구(`--muted`) + 다음 행동 힌트.
 - **에러**: `--red` 텍스트, 필요 시 `--red-bg` 배경 박스.
-- **모션**: `--transition: 0.15s ease` 표준. hover/색 전환에만 사용, 과한 모션 금지.
+- **모션**: `--transition: 0.15s ease` 표준. hover/색 전환에만 사용, 과한 모션 금지. **예외 — 대시보드 스크롤 리빌**: 히어로 흐림/그리드 등장은 0.7s(`investment_journal` 시그니처 인터랙션 차용). `prefers-reduced-motion: reduce` 시 전면 제거.
 - **접근성**: 전역 `:focus-visible`에 accent 아웃라인(2px, offset 2px). 텍스트 대비 WCAG AA 목표, 상태를 색에만 의존하지 말고 아이콘/라벨 병기.
 
 ---
@@ -170,7 +171,7 @@
 |------|------|-----------|------|
 | 홈(랜딩) | `/` | **인증 인지형**: 로그아웃=히어로+예시 chip+3스텝 루프+단일 CTA / 로그인=`APP_HOME` 리다이렉트 | 단일 CTA(`무료로 시작하기`→`/login`) |
 | 로그인 | `/login` | 중앙 카드 + 폼 | Discord 연결은 Day 5(T4) |
-| 대시보드 | `/dashboard` | 종목검색 + 관심종목 + 최근기록 허브 | Day 3 신설, 이후 `APP_HOME` |
+| 대시보드 | `/dashboard` | 센터 히어로 검색(스크롤 리빌) + 관심종목 2열 그리드 + 최근기록 피드 | `investment_journal` 레이아웃 차용, 이후 `APP_HOME` |
 | 저널 | `/journal` | 2컬럼(차트+마커 / 기록 사이드바) | `:symbol` 딥링크는 Day 3 |
 | 히스토리 | `/history` | 완주 루프 KPI + 감시→기록→복기 체인 | |
 | 조건 관리 | `/conditions` | 조건 카드 + 상태 뱃지 (목록·삭제) | 내비 맨 뒤(보조 관리) |

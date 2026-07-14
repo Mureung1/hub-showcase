@@ -33,6 +33,9 @@
 }
 
 .app-nav__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--heading);
   font-size: 20px;
   font-weight: 600;
@@ -41,12 +44,26 @@
   text-decoration: none;
 }
 
+.app-nav__logo-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-pill);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
 .app-nav__links {
   display: flex;
   gap: 4px;
 }
 
 .app-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   border-radius: 6px;
   color: var(--text);
@@ -57,9 +74,22 @@
     background 0.2s;
 }
 
+.app-nav__link-icon {
+  flex-shrink: 0;
+}
+
 .app-nav__link:hover {
   color: var(--text-h);
   background: var(--social-bg);
+}
+
+@media (max-width: 640px) {
+  .app-nav__link-label {
+    display: none;
+  }
+  .app-nav__link {
+    padding: 8px 10px;
+  }
 }
 
 .app-nav__link--active {

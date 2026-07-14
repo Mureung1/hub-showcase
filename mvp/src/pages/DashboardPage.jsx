@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { searchSymbols } from '../lib/symbols.js'
+import Icon from '../components/Icon.jsx'
 import './DashboardPage.css'
 
 const SIDE_LABEL = { buy: '매수', sell: '매도', hold: '관망' }
@@ -48,8 +49,18 @@ export default function DashboardPage() {
   const [quotes, setQuotes] = useState({}) // key -> {price, changePct, up}
   const [recent, setRecent] = useState([])
   const [reviewedIds, setReviewedIds] = useState(() => new Set())
+  const [refreshing, setRefreshing] = useState(false)
+
+  // 스크롤 리빌: 히어로를 지나면 아래 그리드가 드러난다.
+  const [scrolled, setScrolled] = useState(false)
 
   const goSymbol = (ticker) => navigate(`/journal/${ticker}`)
+
+  // 검색 제출: 첫 결과로 이동 (결과 없으면 무시)
+  const submitSearch = () => {
+    const first = results[0]
+    if (first) goSymbol(first.ticker)
+  }
 
   // 디바운스 종목 검색
   const debounceRef = useRef(null)
@@ -65,27 +76,31 @@ export default function DashboardPage() {
     return () => clearTimeout(debounceRef.current)
   }, [query])
 
-  // 관심종목 + 최근기록 로드
+  // 스크롤 위치 추적 (120px 넘으면 리빌)
   useEffect(() => {
-    if (!supabase) return
-    let cancelled = false
+    const onScroll = () => setScrolled(window.scrollY > 120)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
-    async function load() {
+  // 관심종목 + 최근기록 로드 (새로고침 버튼도 재사용)
+  const loadData = useCallback(async () => {
+    if (!supabase) return
+    setRefreshing(true)
+    try {
       const { data: wl } = await supabase
         .from('watchlists')
         .select('symbol, market, exchange, name')
         .order('created_at', { ascending: false })
-      if (!cancelled && wl) {
+      if (wl) {
         setWatchlist(wl)
-        // 시세는 병렬 조회 후 채움
-        Promise.all(wl.map((w) => fetchQuote(w))).then((qs) => {
-          if (cancelled) return
-          const map = {}
-          wl.forEach((w, i) => {
-            if (qs[i]) map[symbolKey(w.symbol, w.market)] = qs[i]
-          })
-          setQuotes(map)
+        const qs = await Promise.all(wl.map((w) => fetchQuote(w)))
+        const map = {}
+        wl.forEach((w, i) => {
+          if (qs[i]) map[symbolKey(w.symbol, w.market)] = qs[i]
         })
+        setQuotes(map)
       }
 
       const { data: trades } = await supabase
@@ -93,7 +108,7 @@ export default function DashboardPage() {
         .select('*')
         .order('traded_at', { ascending: false })
         .limit(6)
-      if (!cancelled && trades) {
+      if (trades) {
         setRecent(trades)
         const ids = trades.map((t) => t.id)
         if (ids.length) {
@@ -101,18 +116,17 @@ export default function DashboardPage() {
             .from('reviews')
             .select('trade_id')
             .in('trade_id', ids)
-          if (!cancelled && reviews) {
-            setReviewedIds(new Set(reviews.map((r) => r.trade_id)))
-          }
+          if (reviews) setReviewedIds(new Set(reviews.map((r) => r.trade_id)))
         }
       }
-    }
-
-    load()
-    return () => {
-      cancelled = true
+    } finally {
+      setRefreshing(false)
     }
   }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   async function removeWatch(symbol) {
     if (!supabase) return
@@ -123,56 +137,91 @@ export default function DashboardPage() {
   const hasSupabase = Boolean(supabase)
 
   return (
-    <div className="dashboard">
+    <div className={`dashboard${scrolled ? ' is-scrolled' : ''}`}>
       <section className="dash-hero">
         <div className="crumb">대시보드</div>
-        <h1>어떤 종목을 지켜볼까요?</h1>
+        <h1>어떤 종목을 복기할까요?</h1>
         <p className="dash-sub">
-          종목을 검색해 차트로 이동하고, 관심 종목과 최근 기록을 한 화면에서 확인하세요.
+          티커를 검색해 차트로 이동하고, 관심 종목과 최근 기록을 한 화면에서 확인하세요.
         </p>
 
         <div className="card dash-search">
-          <div className="dash-input-wrap">
-            <span className="dash-input-icon">🔍</span>
-            <input
-              type="text"
-              placeholder="삼성전자, NVDA, 005930…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => setShowDrop(true)}
-              autoComplete="off"
-            />
-            {showDrop && results.length > 0 && (
-              <ul className="dash-dropdown">
-                {results.map((s) => (
-                  <li key={symbolKey(s.ticker, s.market)}>
-                    <button
-                      type="button"
-                      className="dash-drop-item"
-                      onMouseDown={() => goSymbol(s.ticker)}
-                    >
-                      <span className="ddi-name">
-                        {s.name} <span className="mono ddi-ticker">{s.ticker}</span>
-                      </span>
-                      <span className="mono ddi-market">
-                        {s.market}
-                        {s.exchange ? ` · ${s.exchange}` : ''}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div className="dash-search-row">
+            <div className="dash-input-wrap">
+              <span className="dash-input-icon">
+                <Icon name="search" size={16} />
+              </span>
+              <input
+                type="text"
+                placeholder="삼성전자, NVDA, 005930…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setShowDrop(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    submitSearch()
+                  }
+                }}
+                autoComplete="off"
+              />
+              {showDrop && results.length > 0 && (
+                <ul className="dash-dropdown">
+                  {results.map((s) => (
+                    <li key={symbolKey(s.ticker, s.market)}>
+                      <button
+                        type="button"
+                        className="dash-drop-item"
+                        onMouseDown={() => goSymbol(s.ticker)}
+                      >
+                        <span className="ddi-name">
+                          {s.name} <span className="mono ddi-ticker">{s.ticker}</span>
+                        </span>
+                        <span className="mono ddi-market">
+                          {s.market}
+                          {s.exchange ? ` · ${s.exchange}` : ''}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button
+              type="button"
+              className="btn accent dash-go"
+              onClick={submitSearch}
+              disabled={results.length === 0}
+            >
+              이동 <Icon name="arrow-right" size={16} />
+            </button>
           </div>
+        </div>
+
+        <div className="dash-scroll-hint" aria-hidden="true">
+          아래로 스크롤 · 관심 종목과 최근 기록
         </div>
       </section>
 
       <section className="dash-grid">
-        <div className="dash-col">
+        <div className="card dash-col">
           <div className="dash-col-head">
-            <h2>⭐ 관심 종목</h2>
+            <h2>
+              <Icon name="star" size={18} className="dash-col-icon" /> 관심 종목
+            </h2>
+            {hasSupabase && (
+              <button
+                type="button"
+                className="dash-refresh"
+                onClick={loadData}
+                disabled={refreshing}
+              >
+                <Icon name="refresh" size={14} className={refreshing ? 'is-spinning' : ''} />
+                새로고침
+              </button>
+            )}
           </div>
-          <div className="watchlist">
+          <div className="watch-grid">
             {!hasSupabase && <p className="dash-empty">Supabase 미연결 상태입니다.</p>}
             {hasSupabase && watchlist.length === 0 && (
               <p className="dash-empty">
@@ -182,7 +231,7 @@ export default function DashboardPage() {
             {watchlist.map((w) => {
               const q = quotes[symbolKey(w.symbol, w.market)]
               return (
-                <div key={w.symbol} className="card watch-card">
+                <div key={w.symbol} className="watch-card">
                   <button className="watch-main" onClick={() => goSymbol(w.symbol)}>
                     <div className="watch-top">
                       <span className="watch-name">{w.name ?? w.symbol}</span>
@@ -193,7 +242,7 @@ export default function DashboardPage() {
                         {q ? formatPrice(q.price, w.market) : '—'}
                       </span>
                       {q && (
-                        <span className={`mono watch-chg ${q.up ? 'up' : 'down'}`}>
+                        <span className={`watch-chg ${q.up ? 'up' : 'down'}`}>
                           {q.up ? '▲' : '▼'} {Math.abs(q.changePct).toFixed(2)}%
                         </span>
                       )}
@@ -205,7 +254,7 @@ export default function DashboardPage() {
                     onClick={() => removeWatch(w.symbol)}
                     aria-label="관심 종목 삭제"
                   >
-                    ✕
+                    <Icon name="trash" size={14} />
                   </button>
                 </div>
               )
@@ -213,9 +262,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="dash-col">
+        <div className="card dash-col">
           <div className="dash-col-head">
-            <h2>🕑 최근 기록</h2>
+            <h2>
+              <Icon name="history" size={18} className="dash-col-icon" /> 최근 기록
+            </h2>
             <Link to="/history" className="dash-link">
               전체 보기
             </Link>
@@ -239,13 +290,13 @@ export default function DashboardPage() {
                 </>
               )
               return reviewed ? (
-                <Link key={t.id} to={`/review/${t.id}`} className="card recent-card">
+                <Link key={t.id} to={`/review/${t.id}`} className="recent-card">
                   {body}
                 </Link>
               ) : (
                 <button
                   key={t.id}
-                  className="card recent-card"
+                  className="recent-card"
                   onClick={() => goSymbol(t.ticker)}
                 >
                   {body}

@@ -20,7 +20,7 @@
 - **다중사용자 전제**: 전 테이블 RLS(`auth.uid()=user_id`), `profiles`/`discord_links` 존재. (`0001_schema.sql`)
 - **감시 파이프라인**: Cron 5분 주기 → `monitor` → KIS 시세 → price/sma_cross 평가 → edge-trigger 알림. 자연어 파싱(Gemini structured) + 확인 카드 + 원클릭 기록→`trades` insert.
 
-## 1.5 진행 현황 (2026-07-13 업데이트)
+## 1.5 진행 현황 (2026-07-14 업데이트)
 
 2주차 착수 후 상황. 원래 계획(T1~) 대비 **디자인 방향이 두 차례 피벗**됐고, 몇몇 항목은 계획을 넘어 추가 구현됐다.
 
@@ -28,6 +28,7 @@
 - **T1 디자인 정합 — 완료(방향 변경).** Robinhood 다크+그린 → (1차) Stripe/Linear풍 **라이트+인디고** → (2차) `investment_journal`의 **Geist 폰트 + 1152px 중앙 레이아웃** 차용. **라이트 온리**. [design.md](design.md)를 v2로 전면 재정비(색·타이포/간격 스케일·컴포넌트 상태/폼·피드백·모션·접근성). 양쪽 `index.css` 토큰 동기화.
 - **홈/IA 재편 (계획 외 추가).** `ProjectIntro` 폐기 → **인증 인지형 `/`**(로그아웃=`LandingPage`, 로그인=`APP_HOME` 리다이렉트). 내비 순서 대시보드→저널→히스토리→조건, 로고→`/`, 네비바 좌측 쏠림 해결(중앙 컨테이너).
 - **T2 대시보드 — 코드 완료.** `/dashboard`(디바운스 종목검색 드롭다운 + 관심종목 + 최근기록), `/journal/:symbol`(트레이드 없는 종목도 `symbols` 조회로 차트), `lib/symbols.js`, `watchlists` 마이그레이션(`0003_watchlists.sql`, **적용 대기**). 진입점 `APP_HOME='/dashboard'`(`lib/routes.js` 1줄).
+- **대시보드 레이아웃 재구성 — investment_journal 이식 (2026-07-14).** `/dashboard`를 참고 레포 `investment_journal` 대시보드처럼 재구성: 화면을 꽉 채우는 **센터 히어로 검색**(+"이동 →" 제출 버튼·Enter로 첫 결과 이동) → 아래로 스크롤하면 히어로가 흐려지며(scale·opacity·blur) **2단 카드 그리드(관심종목·최근기록)가 드러나는 스크롤 리빌**(700ms, `prefers-reduced-motion` 시 모션 제거). 관심종목은 세로 리스트 → **내부 2열 티커카드 그리드 + 새로고침 버튼**. 색은 investment_journal의 앰버/에메랄드/로즈를 이식하지 않고 **Beacon 토큰(인디고 accent + 국내 관례색 상승 빨강/하락 파랑)** 유지. 새 무의존성 인라인 SVG 아이콘 컴포넌트 `components/Icon.jsx`(lucide 경로 차용) 도입 → 네비바 로고 칩·링크에 아이콘 추가(라벨은 Beacon 것 유지). Supabase 쿼리 계약(`watchlists`/`trades`/`reviews`/`market-data`) 불변. 대상: `mvp/src/pages/DashboardPage.{jsx,css}`, `mvp/src/components/{AppLayout.jsx,AppLayout.css,Icon.jsx}`. 빌드·lint 통과(로그인 후 라이브 렌더는 사용자 확인 중).
 - **웹 조건 추가 (계획 외 추가).** `ConditionForm` 구조화 폼(종목검색 → 타입/연산자/목표값 → `conditions` insert, `status=active`). 자연어 파싱(Gemini)은 Discord 전용 유지.
 - **히스토리 종목별 그룹 (계획 외 추가).** 그룹 헤더 "차트 보기" → `/journal/:symbol`.
 

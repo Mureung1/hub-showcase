@@ -1,13 +1,14 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import Icon from './Icon.jsx'
 import './AppLayout.css'
 
 const navItems = [
   // 허브(대시보드) → 루프 동선(저널→히스토리) → 보조 관리(조건).
-  { to: '/dashboard', label: '대시보드' },
-  { to: '/journal', label: '저널' },
-  { to: '/history', label: '히스토리' },
-  { to: '/conditions', label: '조건 관리' },
+  { to: '/dashboard', label: '대시보드', icon: 'layout-dashboard' },
+  { to: '/journal', label: '저널', icon: 'notebook' },
+  { to: '/history', label: '히스토리', icon: 'history' },
+  { to: '/conditions', label: '조건 관리', icon: 'list-checks' },
 ]
 
 /**
@@ -29,7 +30,10 @@ function AppLayout({ children }) {
       <header className="app-nav">
         <div className="app-nav__inner">
           <NavLink to="/" className="app-nav__logo">
-            🔦 Beacon
+            <span className="app-nav__logo-chip" aria-hidden="true">
+              <Icon name="notebook-pen" size={18} />
+            </span>
+            Beacon
           </NavLink>
           <div className="app-nav__right">
             <nav className="app-nav__links">
@@ -41,7 +45,8 @@ function AppLayout({ children }) {
                     isActive ? 'app-nav__link app-nav__link--active' : 'app-nav__link'
                   }
                 >
-                  {item.label}
+                  <Icon name={item.icon} size={16} className="app-nav__link-icon" />
+                  <span className="app-nav__link-label">{item.label}</span>
                 </NavLink>
               ))}
             </nav>
