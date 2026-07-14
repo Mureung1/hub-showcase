@@ -54,9 +54,89 @@ const exercises = [
   { name: '파머스워크', targetArea: '복합', involvedJoints: ['허리', '고관절', '무릎', '발목', '어깨'] },
 ]
 
-async function main() {
+async function seedExercises() {
+  const count = await prisma.exercise.count()
+  if (count > 0) {
+    console.log('운동 데이터가 이미 있어 건너뜀')
+    return
+  }
   await prisma.exercise.createMany({ data: exercises })
   console.log(`시드 완료: ${exercises.length}개 운동 삽입`)
+}
+
+// 온보딩 화면(#12~#15)이 아직 없어 API를 눈으로 검증할 데이터가 필요해서 만든 데모 사용자/루틴.
+// 실제 온보딩 로직이 아니라 상하체 3분할 예시 데이터일 뿐이다.
+async function seedDemoRoutine() {
+  const userCount = await prisma.user.count()
+  if (userCount > 0) {
+    console.log('데모 루틴이 이미 있어 건너뜀')
+    return
+  }
+
+  const exerciseId = async (name) => (await prisma.exercise.findFirstOrThrow({ where: { name } })).id
+
+  const user = await prisma.user.create({ data: {} })
+  const routine = await prisma.routine.create({
+    data: { userId: user.id, splitType: '상하체', daysPerWeek: 3 },
+  })
+
+  const days = [
+    {
+      dayOfWeek: 'MON',
+      targetArea: '상체',
+      exercises: [
+        { name: '벤치프레스', targetSets: 3, targetReps: 10 },
+        { name: '바벨 벤트오버 로우', targetSets: 3, targetReps: 10 },
+        { name: '오버헤드프레스', targetSets: 3, targetReps: 10 },
+      ],
+    },
+    { dayOfWeek: 'TUE', targetArea: null, exercises: [] },
+    {
+      dayOfWeek: 'WED',
+      targetArea: '하체',
+      exercises: [
+        { name: '스쿼트', targetSets: 3, targetReps: 10 },
+        { name: '데드리프트', targetSets: 3, targetReps: 8 },
+        { name: '레그프레스', targetSets: 3, targetReps: 12 },
+      ],
+    },
+    { dayOfWeek: 'THU', targetArea: null, exercises: [] },
+    {
+      dayOfWeek: 'FRI',
+      targetArea: '상체',
+      exercises: [
+        { name: '랫풀다운', targetSets: 3, targetReps: 10 },
+        { name: '딥스/푸시업', targetSets: 3, targetReps: 10 },
+        { name: '바이셉컬', targetSets: 3, targetReps: 12 },
+      ],
+    },
+    { dayOfWeek: 'SAT', targetArea: null, exercises: [] },
+    { dayOfWeek: 'SUN', targetArea: null, exercises: [] },
+  ]
+
+  for (const day of days) {
+    const routineDay = await prisma.routineDay.create({
+      data: { routineId: routine.id, dayOfWeek: day.dayOfWeek, targetArea: day.targetArea },
+    })
+    for (const [index, ex] of day.exercises.entries()) {
+      await prisma.routineDayExercise.create({
+        data: {
+          routineDayId: routineDay.id,
+          exerciseId: await exerciseId(ex.name),
+          order: index + 1,
+          targetSets: ex.targetSets,
+          targetReps: ex.targetReps,
+        },
+      })
+    }
+  }
+
+  console.log('데모 루틴 시드 완료 (상하체 3분할)')
+}
+
+async function main() {
+  await seedExercises()
+  await seedDemoRoutine()
 }
 
 main()
