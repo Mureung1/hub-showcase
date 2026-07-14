@@ -13,15 +13,23 @@ Status: ready
 
 ## 2. Goal
 
-canonical SQLite의 검증된 데이터를 Supabase PostgreSQL 제품 runtime으로 반복 가능하게 이관한다.
+canonical SQLite의 검증된 전체 데이터를 Supabase PostgreSQL 제품 runtime으로 반복 가능하게 이관한다. 현재 UI가 지원하는 4개 분석 분류만 골라 seed하지 않는다.
 
 ## 3. Scope
 
 - SQLAlchemy model과 repository 경계
 - Alembic initial migration과 rollback
 - canonical SQLite migrate/seed 명령
+- `data_sources`, `markets`, `store_metrics`, `sales_metrics`, `flow_metrics`, `store_points`, `permit_businesses` 전체 이관
+- `store_metrics`의 100개 업종 코드와 `sales_metrics`의 62개 업종 코드를 원본 분류로 보존
 - row count·대표 query 비교
 - DATABASE_URL server-only 설정
+
+범위 밖:
+
+- 서울 전체 점포 상세를 새로 수집하는 작업
+- 운영 수집 요청 시점·갱신 주기·raw 보존 기간 결정 (`DATA-007`)
+- FE에서 전체 업종을 즉시 노출하는 작업
 
 ## 4. Related Documents
 
@@ -39,16 +47,18 @@ canonical SQLite의 검증된 데이터를 Supabase PostgreSQL 제품 runtime으
 
 - [ ] Alembic upgrade가 빈 DB에서 성공한다.
 - [ ] canonical data를 두 번 seed해도 중복되지 않는다.
-- [ ] 핵심 table row count와 대표 검색 결과가 기준과 일치한다.
+- [ ] 7개 canonical table의 전체 row count가 SQLite 기준과 일치한다.
+- [ ] `store_metrics` 100개, `sales_metrics` 62개 업종 코드가 누락 없이 보존된다.
+- [ ] 현재 4개 지원 분석 분류와 그 밖의 원본 업종을 대표 query로 각각 확인한다.
 - [ ] 실제 connection string과 service role key가 Git에 없다.
 - [ ] 선택적 Docker PostgreSQL을 제품 DB로 오해하지 않게 문서화한다.
 
 ## 7. Verification Plan
 
 ```powershell
-uv run --directory apps/api alembic upgrade head
-uv run --directory apps/api pytest -q
-uv run --directory apps/api ruff check .
+uv run --directory product/apps/api alembic upgrade head
+uv run --directory product/apps/api pytest -q
+uv run --directory product/apps/api ruff check .
 git diff --check
 ```
 
