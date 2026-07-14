@@ -3,7 +3,7 @@
 [기획서 (plan)](https://github.com/imHay0ung/hub/wiki/%EC%9E%90%EC%B7%A8%EB%B0%A9-%EC%B2%AD%EA%B2%B0%EA%B4%80%EB%A6%AC%EC%82%AC-(Cleanliness-Manager-Agent)) — 문제 정의, 리프레임 근거, 통계·경쟁 분석, 구현 아키텍처, 로드맵
 
 
-[개발 TASK](https://bony-roadrunner-8f3.notion.site/3995a1c1b4ef804083d2f8a7fe0b77a5)
+[개발 TASK]([https://bony-roadrunner-8f3.notion.site/3995a1c1b4ef804083d2f8a7fe0b77a5](https://bony-roadrunner-8f3.notion.site/39c5a1c1b4ef80c5a997cf909bba10c7?source=copy_link))
 
 # 자취방 청결관리사 (Cleanliness Manager Agent)
 
