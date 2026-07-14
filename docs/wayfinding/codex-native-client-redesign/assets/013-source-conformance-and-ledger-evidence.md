@@ -8,7 +8,7 @@
 
 ## 판정
 
-T0·T0-C·T0.1의 conformance는 한 oracle로 증명할 수 없다. Pinned generated schema는 wire shape, exact Rust source와 first-party tests는 legal lifecycle과 identity authority, deterministic unit test는 pure state transition, spawned fake child는 external stdio interleaving·fault·no-raw invariant, package-owned live binary는 실제 배포 artifact와 happy-path compatibility를 각각 맡아야 한다. 이 다섯 authority를 섞거나 live scheduler로 race completeness를 증명하면 검증 범위를 과장한다.
+T0·T0-C·T0.1의 conformance는 한 oracle로 증명할 수 없다. Pinned generated schema는 wire shape, exact-pin Python external client·Rust client facade·TUI projection과 method source/tests는 first-party client lifecycle·legal ordering·identity authority, deterministic unit test는 pure state transition, spawned fake child는 external stdio interleaving·fault·no-raw invariant, package-owned live binary는 실제 배포 artifact와 happy-path compatibility를 각각 맡아야 한다. 이 authority를 섞거나 live scheduler로 race completeness를 증명하면 검증 범위를 과장한다.
 
 권고하는 merge gate는 다음과 같다.
 
@@ -55,7 +55,7 @@ Upstream fixture도 raw JSON byte order를 semantic equality로 보지 않는다
 
 현재 spawned fake stdio fixture는 actual child process, JSONL journal, timeout·kill·temporary cleanup primitive를 제공하므로 선별 재사용 가치가 있다. 그러나 scenario table과 assertions는 기존 `CodexStdioTransport` 계약을 증명한다. 특히 response 또는 `dismiss()` 뒤 같은 Server `RequestId`를 새 request에 순차 재사용할 수 있다고 명시적으로 test한다. ([fake scenario roster](../../../../packages/runtime-codex/src/testing/fake-codex-stdio-transport.ts#L16-L53), [response 뒤 ID reuse test](../../../../packages/runtime-codex/src/stdio-transport.test.ts#L830-L872), [`dismiss()` 뒤 ID reuse test](../../../../packages/runtime-codex/src/stdio-transport.test.ts#L874-L932))
 
-이것은 Ticket 017이 채택한 Connection process-lifetime lease/tombstone과 conflicting reuse fail-closed 계약과 다르다. 따라서 child spawn·journal·cleanup primitive는 재사용할 수 있지만 old scenario semantics와 test result를 T0.1 implemented evidence로 승격할 수 없다.
+이 settled-ID 순차 재사용 관찰은 first-party active-map 기준선과 충돌하지 않지만, 기존 `dismiss()`가 T0.1의 answer·`serverRequest/resolved`·turn transition·disconnect cleanup을 증명하지는 않는다. 따라서 child spawn·journal·cleanup primitive와 test intent는 재사용하되 old scenario result를 새 Connection의 active collision, first settlement remove-once, 이후 map-miss no-op 또는 T0.1 implemented evidence로 승격하지 않는다.
 
 별도 [`fake-codex-app-server.ts`](../../../../packages/runtime-codex/src/testing/fake-codex-app-server.ts#L346-L580)는 `thread/start` response와 response-first `turn/start → turn/started → delta → turn/completed`를 만들지만 completed AgentMessage `item/completed`, notification-first turn, native multi-thread interleaving과 Server request lifecycle을 제공하지 않는다. Raw adapter debug-log fixture이므로 safe `CodexConversationRuntime` proof로도 충분하지 않다.
 
@@ -66,15 +66,22 @@ Upstream fixture도 raw JSON byte order를 semantic equality로 보지 않는다
 | Oracle | 반드시 증명할 것 | 이 oracle만으로 증명하지 못하는 것 |
 | --- | --- | --- |
 | Pinned generated TypeScript·JSON Schema | Message direction, method discriminant, required/optional field, exact `RequestId` union, request/response/notification payload shape와 enum | Ordering, authoritative identity, duplicate/late semantics, terminal transition, product policy |
-| Exact Rust source·first-party tests | Pinned implementation의 task ownership, legal response/notification order, identity authority, per-thread lifecycle, callback cleanup과 first-party handling | AY-PLE external stdio port가 같은 의미를 보존했다는 사실, child process fault behavior |
-| Deterministic unit test | Envelope classification, exact typed ID key, pure actor transition, duplicate/tombstone table, cap accounting, sanitization/no-raw recursive assertion | JSONL chunking, real child lifecycle, writer callback와 process cut interleaving |
+| Exact-pin Python external stdio client | Child·sole reader·serialized writer, active response waiter remove-once, per-turn early FIFO·unregister, reader loss의 current-pending `fail_all` | TypeScript의 finite bound·overflow policy, exact npm binary compatibility, Python의 terminal-before-registration loss edge를 복제해야 한다는 의미 |
+| Exact-pin Rust `codex-app-server-client` | Typed facade, active pending collision check·first response removal·late map-miss, same-ID Server response, disconnect의 current-pending settlement | External stdio child adapter, settled request history, Runtime conversation projection |
+| Exact-pin TUI `ThreadEventStore`·pending request | Native `ThreadId`별 projection·active-turn cache, active approval remove-on-answer/resolved와 repeat no-op | Actor/mailbox 구조, process 종료까지의 projection 보존, generic external-client overflow policy |
+| Pinned method source·first-party tests | Method별 task ownership, legal response/notification order, identity authority, terminal의 의미 | AY-PLE external stdio port가 같은 의미를 보존했다는 사실, child process fault behavior |
+| Deterministic unit test | Envelope classification, exact typed ID key, active waiter/lease transition, bounded early FIFO와 terminal 보존, per-thread projection, duplicate terminal local idempotence, cap accounting, sanitization/no-raw recursive assertion | JSONL chunking, real child lifecycle, writer callback와 process cut interleaving |
 | Spawned fake child | Single ingress, real pipe framing, response/notification/Server request interleaving, stdout tail·EOF·exit·stdin fault, serialized journal의 zero/one frame, A/B independence | Upstream binary가 실제로 같은 schema와 lifecycle을 구현한다는 artifact compatibility |
-| Package-owned live binary | Installed launcher/native artifact의 version, initialize와 selected happy path, actual external stdio compatibility, source에서 추론한 ordering이 현실적으로 가능한지 | Exhaustive race, deterministic cross-thread schedule, duplicate/conflict injection, timeout·partial-write completeness |
+| Package-owned live binary | Installed launcher/native artifact의 version, initialize와 selected happy path, actual external stdio compatibility, source에서 추론한 ordering이 현실적으로 가능한지 | Exhaustive race, deterministic cross-thread schedule, active-ID collision·late map-miss·duplicate terminal injection, timeout·partial-write completeness |
 
 Official App Server 문서는 CLI가 실행한 Codex version에 specific한 TypeScript와 JSON Schema를 생성한다고 규정한다. 따라서 public shape의 owner는 package-owned pinned binary output이고 Rust private type을 generated schema 대신 wire authority로 쓰지 않는다. ([official message schema](https://developers.openai.com/codex/app-server/#message-schema), [pinned CLI generation entrypoint](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/cli/src/main.rs#L659-L681), [generation dispatch](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/cli/src/main.rs#L1198-L1213))
 
 Source/test와 external-port oracle을 분리해야 하는 핵심 근거는 다음과 같다.
 
+- Python `MessageRouter`는 response waiter를 first response에서 `pop`하고 unknown·late response를 map miss no-op로 끝낸다. Turn registration 전 notification은 native `turn_id`별 FIFO에 넣어 replay하고 unregister에서 active route를 제거하며, reader loss는 현재 waiter·turn queue를 `fail_all`한다. T0의 unresolved turn terminal도 같은 bounded FIFO에 보존하는 것은 Python의 terminal-before-registration loss edge를 복제하지 않기 위한 명시적 external-client hardening이다. ([Python `MessageRouter`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/sdk/python/src/openai_codex/_message_router.py#L17-L240))
+- Rust `codex-app-server-client` remote worker는 오직 active `pending_requests`에서 duplicate request ID를 거절하고 first response/error에서 waiter를 제거한다. 이후 response는 map miss no-op이며, stream 종료 뒤에는 현재 pending waiter만 실패시킨다. ([active request·response routing](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-client/src/remote.rs#L213-L332), [disconnect settlement](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-client/src/remote.rs#L410-L475))
+- TUI `ThreadEventStore`는 native thread의 bounded event projection과 active-turn cache를 소유하고 repeated terminal에서 active cache를 추가로 변이시키지 않는다. `PendingAppServerRequests`는 answer caller가 active entry를 먼저 remove한 경우에만 response를 만들고, `serverRequest/resolved`도 remove-only이므로 unknown·duplicate resolution은 no-op이다. 이 근거는 Runtime의 per-thread projection과 active-entry idempotence를 지지하지만 actor/mailbox를 필수 구조로 만들지 않는다. ([TUI per-thread projection](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/tui/src/app/thread_events.rs#L41-L146), [TUI active pending removal](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/tui/src/app/app_server_requests.rs#L70-L330))
+- TUI source가 직접 증명하는 것은 answer·`serverRequest/resolved`의 active-entry removal이다. Turn transition·disconnect에서 남은 approval route와 response lease를 해제하는 것은 external-client의 bounded lifecycle hardening으로 분리하고 unit·fake oracle로 증명한다.
 - `thread/start`는 같은 task에서 response enqueue를 await한 뒤 `thread/started`를 enqueue한다. Pre-response `thread/started` fail-closed는 exact-pin source fact다. ([thread/start response-first path](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/src/request_processors/thread_processor.rs#L1328-L1360))
 - `turn/start`는 core submission ID를 response로 만들지만 common request handler가 response를 쓰는 task와 per-thread event listener가 `turn/started`를 forward하는 task가 분리된다. First-party test client도 response wait 중 먼저 받은 notification을 FIFO에 보존하고 Server request를 처리한다. 따라서 notification-first correlation은 정상 client primitive다. ([turn/start response construction](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/src/request_processors/turn_processor.rs#L521-L568), [common response dispatch](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/src/message_processor.rs#L1424-L1434), [first-party FIFO client](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-test-client/src/lib.rs#L1964-L2011))
 - App Server stdio는 bounded outgoing writer 하나를 통해 newline-delimited message를 쓴다. 이 wire order 자체가 cross-thread causal order는 아니다. External client는 한 reader로 exact direction과 ID를 demux해야 한다. ([pinned stdio reader/writer](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-transport/src/transport/stdio.rs#L24-L100), [pinned `RequestId`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-protocol/src/rpc.rs#L13-L42))
@@ -94,15 +101,15 @@ Source/test와 external-port oracle을 분리해야 하는 핵심 근거는 다�
 | `initialized` | required outbound | required outbound | inherited T0 bootstrap | generated schema, unit exact frame, fake journal, T0 live |
 | `thread/start` | required | required concurrent bootstrap | inherited T0 bootstrap | response-first source, unit authority, fake response/pre-response fault, T0 live |
 | `thread/started` | tolerated; pre-response는 fault | same | same | source ordering, unit fault transition, fake present/absent/pre-response cases |
-| `turn/start` | required idle branch | required per actor | required approval-bearing turn | source task graph, unit provisional state, fake either-order·timeout·loss, T0 live |
-| `turn/started` | required matching convergence | required per actor | required activation/convergence | source/listener, unit correlation, fake notification-first·response-first |
+| `turn/start` | required idle branch | required per-thread projection | required approval-bearing turn | source task graph, unit provisional state, fake either-order·timeout·loss·pre-response terminal staging/replay, T0 live |
+| `turn/started` | required matching convergence | required per-thread projection | required activation/convergence | source/listener, unit correlation, fake notification-first·response-first·bounded FIFO replay |
 | `item/started` | tolerated | tolerated | tolerated; approval activation barrier 아님 | schema, unit category/scope, fake omission/presence |
 | `item/agentMessage/delta` | tolerated | tolerated | tolerated validate-and-discard; streaming·approval semantics deferred | schema, unit no-result-authority, fake omission/presence |
-| `item/completed` AgentMessage | required, 하나 이상 | required per actor | inherited T0 result plus command category | schema/event mapping, unit category/tombstone, fake exact/duplicate/conflict, T0 live |
-| `turn/completed` | required authoritative terminal | required per actor | required authoritative terminal·pending release | schema/source, unit terminal table, fake duplicate/late/conflict, live |
+| `item/completed` AgentMessage | required, 하나 이상 | required per-thread projection | inherited T0 result plus command category | schema/event mapping, unit category·local idempotence, fake exact repeat·late-after-terminal no-op·unrelated progress, T0 live |
+| `turn/completed` | required authoritative terminal | required per-thread projection | required authoritative terminal·active pending release | schema/source, unit terminal local idempotence·route cleanup, fake duplicate·late local no-op·unrelated progress, live |
 | `error` | tolerated generated-envelope validation; terminal authority 아님 | same | same; approval·turn terminal 대체 아님 | schema, unit `error`-without-terminal non-authority, fake omission/presence; Runtime semantic coverage deferred |
-| `item/commandExecution/requestApproval` regular | unsupported by generic T0 fallback | unsupported by generic T0-C fallback | required supported variant | generated request/response, source mapping, unit lease/actor, fake full race matrix, live |
-| `serverRequest/resolved` | tolerated cleanup | tolerated per actor | normal round-trip required; transition cleanup에서는 tolerated | schema/source/test, unit original scope, fake both order families, live |
+| `item/commandExecution/requestApproval` regular | unsupported by generic T0 fallback | unsupported by generic T0-C fallback | required supported variant | generated request/response, source mapping, unit active lease·native-scope projection, fake full race matrix, live |
+| `serverRequest/resolved` | tolerated cleanup | tolerated per-thread projection | normal round-trip required; transition cleanup에서는 tolerated | schema/source/test, unit active remove-only·original scope·repeat no-op, fake both order families, live |
 | 그 밖의 stable-known `serverRequest` | generated params validation 뒤 unsupported same-ID error | same | same, named T0.1 variant만 override | Stable roster 10개, Connection unit, fake typed roster/journal; live 불필요 |
 | Experimental-only `currentTime/read`와 future unknown Server method | exact envelope validation 뒤 unsupported same-ID error, typed params로 해석하지 않음 | same | same | Experimental roster와 unknown-envelope unit/fake journal; semantic integration 없음 |
 | `turn/steer`, `turn/interrupt`, resume/read/replay | deferred | deferred | deferred | Ledger가 명시적으로 deferred를 보존하며 관련 후속 tracer가 채택할 때만 source/oracle 추가 |
@@ -117,19 +124,25 @@ Method row만으로 아래 acceptance를 표현할 수 없다. `contracts` regis
 | --- | --- | --- | --- |
 | `connection.single-jsonl-ingress` | `app-server-connection` | T0, T0-C, T0.1 | unit parser + spawned fake child chunk/tail/fault |
 | `connection.direction-aware-request-id` | `app-server-connection` | T0, T0.1 | unit string/number/opposite direction + fake journal |
-| `connection.pending-rpc-settlement` | `app-server-connection` | T0, T0-C | unit timeout/late/terminal + fake exit/stdout/stdin races |
-| `connection.server-response-lease` | `app-server-connection` | T0 unsupported, T0.1 supported | unit once-only/tombstone + fake zero/one frame and delivery unknown |
+| `connection.pending-rpc-settlement` | `app-server-connection` | T0, T0-C | unit first response remove-once·late map-miss·disconnect `fail_all` + fake exit/stdout/stdin races |
+| `connection.server-response-lease` | `app-server-connection` | T0 unsupported, T0.1 supported | unit active collision·atomic claim/remove-once·post-removal no-op + fake zero/one frame and delivery unknown |
 | `connection.process-terminal-and-reap` | `app-server-connection` | 전 runtime tracer | fake child exit/EOF/write fault/SIGTERM/SIGKILL; live normal close |
 | `connection.bounded-retention` | `app-server-connection` | T0, T0.1 | unit tiny count/byte cap + fake saturation/no-raw |
 | `runtime.native-identity-authority` | `conversation-runtime` | T0, T0-C, T0.1 | unit authority/mismatch + fake response/notification convergence |
-| `runtime.thread-actor-isolation` | `thread-actor` | T0-C, T0.1 | unit routing + fake A pending → B complete → A complete |
-| `runtime.safe-observation-retention` | `thread-actor` | 전 runtime tracer | recursive no-raw unit + fake sentinel payload |
+| `runtime.per-thread-projection` | `conversation-runtime` | T0-C, T0.1 | unit native `ThreadId` routing·duplicate terminal local idempotence + fake A pending → B complete → A complete |
+| `runtime.method-specific-early-fifo` | `conversation-runtime` | T0, T0-C, T0.1 | unit count+UTF-8 byte bound·ingress FIFO·pre-response terminal preservation·registration replay·replay 후 terminal/unregister cleanup + fake either-order·overflow·disconnect |
+| `runtime.safe-observation-retention` | `conversation-runtime` | 전 runtime tracer | recursive no-raw unit + fake sentinel payload |
 | `runtime.semantic-result-gate` | `conversation-runtime` | T0, T0-C | unit completed AgentMessage + authoritative terminal, fake full success/failure |
+| `runtime.active-server-request-projection` | `conversation-runtime` | T0.1 | unit original native scope·answer/resolved/turn-transition/disconnect remove-only·repeat no-op + fake ordering/loss matrix |
 | `connection.mutation-outcome` | `app-server-connection` | T0, T0-C, T0.1 | unit pre-wire·write-attempted·response-confirmed table + fake timeout/response-loss/terminal cut |
-| `runtime.semantic-outcome` | `thread-actor` | T0, T0-C, T0.1 | unit accepted-execution·semantic-settled table + fake partial observation·actor-local sink |
+| `runtime.semantic-outcome` | `conversation-runtime` | T0, T0-C, T0.1 | unit accepted-execution·semantic-settled·operation-local failure table + fake partial observation·unrelated thread progress |
 | `layout.explicit-three-root` | `runtime-preparation` | T0 bootstrap | existing layout unit + public runtime fake/live launch; Rust source evidence 대상 아님 |
 
 `layout.explicit-three-root`는 T0 prerequisite지만 Codex-native protocol semantic은 아니다. Ledger owner를 별도로 두면 product policy를 Rust source에서 유도했다고 잘못 표시하지 않는다.
+
+Actor/mailbox는 이 contract를 구현할 때 선택할 수 있는 package-private 구조일 뿐이다. Ledger의 semantic owner와 public invariant는 `conversation-runtime`과 native `ThreadId`별 projection으로 기록한다.
+
+T0.1의 cleanup은 owner를 합치지 않는다. Connection은 original Server `RequestId`의 active response lease, Runtime은 native thread·turn·item projection을 소유한다. Answer가 lease를 atomic claim하거나 `serverRequest/resolved`·turn transition·disconnect가 아직 active인 route와 lease를 해제한 뒤, 나중에 오는 반복은 추가 frame·public mutation 없이 no-op로 수렴한다.
 
 ### Live gate의 정확한 위치
 
@@ -138,7 +151,7 @@ Method row만으로 아래 acceptance를 표현할 수 없다. `contracts` regis
 | T0 initialize → new thread → text turn → AgentMessage → authoritative terminal | T0 implementation/semantic-change PR에서 required; 다른 PR은 실행하지 않음 | required | Package binary·generated schema·external stdio happy path의 최소 cross-check다. Isolated three-root, isolated `CODEX_HOME`과 loopback local mock Responses provider로 auth-free·외부-network-independent하게 만든다. Loopback preflight 실패는 skip이 아니라 gate failure다. |
 | T0-C A/B/A2 schedule | T0-C implementation/semantic-change PR에서 required representative path; 다른 PR은 실행하지 않음 | required representative path | Local mock provider barrier로 A pending → B complete → A complete 한 경로를 강제한다. 그 path의 actual binary compatibility는 증명하지만 alternative scheduler/race completeness는 fake child가 소유한다. |
 | T0.1 regular command approval decline | T0.1 implementation/semantic-change PR에서 required; 다른 PR은 실행하지 않음 | required | Pinned first-party test와 같은 local mock Responses sequence로 regular command를 deterministic하게 만들 수 있다. Original ID response, resolved, declined command item과 authoritative terminal을 확인한다. |
-| Duplicate/conflict/partial-write/cap/no-raw race | 실행하지 않음 | 실행하지 않음 | Live binary에 fault injection을 기대하지 않는다. Unit·fake child가 소유한다. |
+| Active-ID collision·late map-miss·duplicate terminal·partial-write·cap·no-raw race | 실행하지 않음 | 실행하지 않음 | Live binary에 fault injection을 기대하지 않는다. Unit·fake child가 소유한다. |
 
 ## 일반 PR과 pin upgrade gate
 
@@ -184,7 +197,7 @@ Flat map을 다음 versioned object로 바꾼다.
 | --- | --- | --- |
 | `integrations[]` | `runtime-harness | legacy-client-host | app-server-connection | conversation-runtime | ayple-adapter` | 현재 실제로 구현된 surface의 set. Omitted/empty면 generated inventory가 `schema-only`로 표시한다. |
 | `adoption` | 기존 `unreviewed | baseline | later | case-driven | excluded` 유지 | 이번 ticket은 adoption 의미를 불필요하게 재정의하지 않는다. Named tracer coverage가 broad baseline intent와 실제 채택 slice를 구분한다. |
-| `owner` | `app-server-connection | conversation-runtime | thread-actor | runtime-preparation | ayple-adapter` | 해당 coverage의 semantic authority |
+| `owner` | `app-server-connection | conversation-runtime | runtime-preparation | ayple-adapter` | 해당 coverage의 semantic authority. Package-private actor/mailbox같은 구현 구조는 owner enum에 넣지 않는다. |
 | `coverage` | `required | tolerated | unsupported | deferred` | Tracer case별 wire/semantic 의무. `tolerated`도 parse·validate·route oracle이 필요하며 occurrence나 authority는 요구하지 않는다. |
 | `verification.*.requirement` | `required | not-required` | 해당 oracle이 이 coverage의 증명에 필요한지 나타낸다. 실행 시점은 `gates[]`가 구분하므로 별도 conditional 상태를 만들지 않는다. |
 | `verification.*.implementation` | `planned | implemented` | Test/probe가 존재하는지. `required`일 때 필수이고 `not-required`일 때는 생략한다. 최근 run이 pass했는지는 뜻하지 않는다. |
@@ -354,7 +367,7 @@ Integration은 linear ladder가 아니다. 현재 Runtime Harness wrapper와 새
       "adoption": "baseline",
       "coverage": {
         "T0.1": {
-          "owner": "thread-actor",
+          "owner": "conversation-runtime",
           "cases": {
             "normal-round-trip": {
               "coverage": "required"
@@ -405,7 +418,7 @@ Integration은 linear ladder가 아니다. 현재 Runtime Harness wrapper와 새
 8. `unsupported` Server request coverage는 known stable request의 generated params validation과 experimental/unknown request의 exact envelope validation을 구분하고 둘 다 `disposition=same-id-error`를 요구한다. Generic fallback은 individual method의 semantic integration membership을 추가하지 않는다.
 9. `tolerated`는 occurrence나 authority를 요구하지 않지만 schema validation·scope correlation test를 요구한다. Silent drop을 implemented evidence로 인정하지 않는다.
 10. `deferred` row는 executable oracle을 요구하지 않으며 해당 coverage owner의 integration membership을 추가할 수 없다.
-11. `thread-actor` owner의 implemented coverage는 `conversation-runtime` membership으로 계산한다. Internal class를 public integration taxonomy로 만들지 않는다.
+11. Runtime method·contract coverage의 semantic owner는 `conversation-runtime`이다. Internal actor/mailbox·reducer class를 owner enum이나 public integration taxonomy로 만들지 않는다.
 12. Direction selector와 explicit method coverage가 겹치면 explicit supported variant가 generic unsupported fallback을 좁게 override한다. Variant/case 밖의 나머지는 fallback을 유지한다.
 13. Product tracer는 runtime prerequisite를 method/contract ID와 tracer case로 참조해야 하며 자유 형식 note로 readiness를 주장할 수 없다.
 
@@ -472,7 +485,7 @@ Generated directory와 `docs/architecture` inventory가 서로 다른 parent에 
 4. Generated/ledger/inventory drift check와 필요한 Source·Standards·Spec review가 pass한다.
 5. 해당 capability가 pin-upgrade live-required이면 initial implementation checkpoint와 pin upgrade에서 live probe Result를 남긴다.
 
-Product adapter test는 `CodexConversationRuntime`의 public surface를 통해 safe result를 `ModelingInvocation`·`ModelingRun`으로 mapping한다. Protocol actor를 직접 호출하거나 fake runtime implementation으로 success를 합성하면 안 된다. Spawned fake child를 runtime 아래에 두는 것은 허용되지만, adapter test는 protocol race matrix를 반복하지 않고 제품 mapping만 검증한다.
+Product adapter test는 `CodexConversationRuntime`의 public surface를 통해 safe result를 `ModelingInvocation`·`ModelingRun`으로 mapping한다. Runtime의 package-private reducer를 직접 호출하거나 fake runtime implementation으로 success를 합성하면 안 된다. Spawned fake child를 runtime 아래에 두는 것은 허용되지만, adapter test는 protocol race matrix를 반복하지 않고 제품 mapping만 검증한다.
 
 [첫 AYPLE adapter tracer Ticket 018](../tickets/018-decide-first-ayple-adapter-tracer.md)은 adapter를 선택하지 않고 out-of-scope로 끝났다. 별도 future product goal/map이 tracer와 소비 capability를 다시 결정하며, 그때 adapter contract가 concurrent/multi-thread independence를 요구하면 T0-C, command approval을 소비하면 T0.1을 product prerequisite로 선언할 수 있다. 이는 T0-C와 T0.1이 current foundation의 unconditional conformance slice라는 결정을 바꾸지 않는다. Ticket 013은 future machine-checkable predicate의 후보만 보존하며 product tracer나 dependency를 채택하지 않는다.
 
