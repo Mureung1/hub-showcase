@@ -2,7 +2,7 @@
 id: WI-0018
 title: PP-016 근거 기반 추천 이유·fallback
 type: work-record
-status: planned
+status: done
 date: 2026-07-13
 owners:
   - placepick-team
@@ -10,11 +10,14 @@ related:
   - ../roadmap.md
   - ../adr/ADR-0004-service-boundary.md
   - ../adr/ADR-0007-provider-and-live-boundary.md
+  - ../adr/ADR-0012-recommendation-core-and-split-live-boundary.md
+  - WI-0041-recommendation-core-split-live-workflow.md
 paths:
-  - backend/src/main/java/com/placepick/recommendation/application/reason/**
-  - backend/src/main/java/com/placepick/recommendation/adapter/out/llm/**
+  - backend/src/main/java/com/placepick/recommendation/reason/**
+  - backend/src/main/java/com/placepick/recommendation/workflow/**
   - backend/src/test/java/com/placepick/recommendation/reason/**
-  - backend/src/integrationTest/java/com/placepick/recommendation/adapter/out/llm/**
+  - backend/src/integrationTest/java/com/placepick/recommendation/reason/**
+  - backend/src/integrationTest/java/com/placepick/recommendation/workflow/**
   - backend/src/evalTest/resources/evals/recommendation-reason.jsonl
   - docs/contracts.md
 ---
@@ -33,17 +36,23 @@ timeout 또는 quota 오류가 추천 전체를 실패시키면 결정론적으�
 
 ## 목적과 성공 기준
 
-PP-015가 확정한 순위를 바꾸지 않으면서 각 후보에 검증 가능한 이유·주의점·공유 문구를
-붙인다. 성공 기준은 다음과 같다.
+PP-015가 확정한 순위를 바꾸지 않으면서 각 후보에 검증 가능한 근거 문장을 붙이고,
+주의점과 공유 문구는 서버가 검증된 결과로 조합한다. 성공 기준은 다음과 같다.
 
 - LLM 입력은 사용자 조건과 PP-014의 허용된 최소 근거만 포함하고 지시와 데이터를
   구조적으로 구분한다.
-- 출력은 versioned strict JSON Schema를 만족하며 각 주장에 허용된 evidence reference가
-  연결된다.
+- 출력 schema는 `placepick.reason-statements.v1`이고 후보별 1~3개의 `{text,
+  evidenceIds}` 문장만 허용한다. 각 문장은 1~120자이며 1~3개의 허용된 evidence
+  reference가 연결된다.
+- 입력 Top 3의 `placeId` 집합과 출력 집합이 정확히 같아야 한다. LLM 출력에는 점수,
+  순위, 장소 사실, 주의점과 공유 문구 field를 허용하지 않는다.
 - 근거에 없는 장소, 가격, 도보 시간, 출구, 영업 상태와 확정적 표현을 Eval이 거부한다.
 - refusal, malformed, incomplete, timeout, 429와 5xx는 분류되고 제한 처리 뒤 근거 기반
   템플릿 fallback으로 전환된다.
-- fallback도 같은 API schema를 반환하고 결과 순서와 점수를 변경하지 않는다.
+- 한 후보라도 schema·ID·evidence 검증에 실패하면 batch 전체를 폐기한다. 부분적으로
+  LLM 결과와 fallback을 섞지 않고 Top 3 전체에 서버 템플릿을 적용한다.
+- fallback과 서버가 조합한 주의점·공유 문구는 같은 공개 결과 schema를 반환하고
+  결과 순서와 점수를 변경하지 않는다.
 
 ## 범위, 비범위와 제약
 
@@ -69,8 +78,8 @@ job 전체를 실패시키는 방안은 검색·점수 결과의 가용성을 �
    최대 길이를 계약에 고정한다.
 2. port 입력을 immutable model로 정의하고 provider request DTO와 분리한다. 사용자 텍스트,
    검색 근거와 시스템 정책의 경계를 명시한다.
-3. 정상 strict 응답 parser와 schema·reference validator를 먼저 구현하고 잘못된 reference,
-   추가 필드, 과도한 길이를 단위 테스트한다.
+3. 정상 strict 응답 parser와 schema·reference validator를 먼저 구현하고 다른 후보의
+   evidence, 알 수 없는 ID, 추가 field, 과도한 길이와 place ID 집합 차이를 단위 테스트한다.
 4. refusal, incomplete, malformed, timeout, 429, 5xx를 WireMock으로 재현하고 템플릿
    fallback이 같은 response contract를 만드는지 검증한다.
 5. prompt injection, 허구 속성, 과장·단정 표현 fixture를 Eval에 추가하고 전체 prompt가
@@ -78,15 +87,18 @@ job 전체를 실패시키는 방안은 검색·점수 결과의 가용성을 �
 
 ## 구현 결과와 검증 증거
 
-현재 상태는 `planned`이며 schema, prompt 정책, fallback 코드와 Eval 결과는 아직
-확보되지 않았다. 완료 시 필요한 증거는 다음과 같다.
+provider-neutral reason port·domain, strict `EliceGroundedReasonClient`, exact
+place/evidence batch validator, unsupported-claim 정책과 전 후보 template fallback을
+구현했다. LLM은 evidence가 연결된 문장만 반환하며 주의점·공유 문구는 서버가 만든다.
+한 문장이라도 place/evidence 집합, 금지 속성 또는 근거 token 검증을 어기면 LLM batch를
+전부 폐기하고 세 후보 모두 fallback을 사용한다.
 
-- strict schema 정상·추가 필드·누락·잘못된 evidence reference 단위 테스트
-- refusal·incomplete·malformed·timeout·429·5xx WireMock 계약 결과
-- injection과 근거 없는 장소·속성·수치·확정 표현을 거부하는 Eval 결과
-- fallback 결과가 점수·순서를 바꾸지 않고 모든 문장을 허용 근거로 설명할 수 있다는
-  표본 검토 기록
-- token·응답 길이 상한과 비밀·prompt 비노출 확인, `make check` 성공 로그
+2026-07-15 Java 17에서 reason 단위 11건, WireMock 계약 19건, Mock linked workflow
+2건과 reason Eval이 각각 통과했다. 전체 재검증 결과는 단위 86건, 추천 통합 21건,
+Eval 7건 모두 실패 0건이다. 400·401·403·429·5xx, timeout, oversized, malformed,
+refusal·incomplete, 추가 field, 다른 후보 evidence와 가격·영업·도보·출구·순위·과장
+주장을 검사했다. fallback 뒤에도 기존 Top 3 순서·점수는 변하지 않으며 token,
+provider routing UUID, prompt·completion 전문을 보고서에 기록하지 않는다.
 
 ## AI 사용과 사람의 검증
 
@@ -100,4 +112,5 @@ AI에는 JSON Schema와 공격·경계 fixture 초안, fallback 문구의 표현
 strict schema를 만족해도 의미상 과장될 수 있고 검색 snippet 자체가 부정확할 수 있다.
 모델 변경, schema version 변경, staging에서 새로운 환각 유형이나 사용자 오해가
 발견되면 Eval과 fallback 정책을 재검토한다. 품질 수치와 비용 절감은 측정 전에는
-주장하지 않으며, 현재 문서는 구현 전의 검증 계약이다.
+주장하지 않는다. 실제 Elice runtime 활성화와 실제 Naver 근거 전달은 PP-029와 정책
+승인 뒤 별도로 검증한다.
