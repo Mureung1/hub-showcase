@@ -5,7 +5,7 @@ description: Build, modify, or review Barojinryo patient and clinic-staff UI wit
 
 # Build Clinic UI
 
-Apply this workflow to every UI change in `react/` or `prototype/`.
+Apply this workflow to every UI change in `apps/web/` or `prototype/`.
 
 ## Read First
 
@@ -14,7 +14,7 @@ Apply this workflow to every UI change in `react/` or `prototype/`.
 3. Read the relevant section of `docs/checklist.md` to confirm priority and scope.
 4. Read `docs/ux-structure.md` for the approved screen flow, IA, and wireframes.
 5. Read `docs/design-system.md` for visual and interaction rules.
-6. Use `react/src/styles/design-tokens.css` as the canonical implementation tokens.
+6. Use `apps/web/src/styles/design-tokens.css` as the canonical implementation tokens.
 
 Inspect the relevant image in `docs/assets/design/` when matching a patient registration, patient status, or staff queue layout. Treat the image as visual guidance; product rules and copy in `docs/feature-spec.md` remain authoritative.
 
@@ -66,4 +66,4 @@ Inspect the relevant image in `docs/assets/design/` when matching a patient regi
 - Use decorative gradients, large marketing heroes, nested cards, or color-only status indicators.
 - Add a second primary action to the same view without product approval.
 - Copy exact text or branding from Catchtable, Tabling, Waitwhile, or another waiting product.
-- Create component-local design tokens that conflict with `react/src/styles/design-tokens.css`.
+- Create component-local design tokens that conflict with `apps/web/src/styles/design-tokens.css`.

@@ -10,7 +10,8 @@
 
 ### 1.2 MVP 범위
 
-- 아이디·비밀번호 기반 환자와 병원 관리자 계정
+- Supabase Auth 기반 이메일·비밀번호 환자와 병원 관리자 계정
+- Brevo Custom SMTP를 통한 가입 이메일 확인
 - 병원별 날짜 단위 통합 대기열 1개
 - 가족 단위 원격 웨이팅과 직원의 현장 웨이팅 등록
 - 실제 환자 수 기반 순서와 예상 시간 계산
@@ -41,7 +42,7 @@
 | 시스템 | 순서·예상 시간 계산, 자동 알림 판정, 미도착 처리, 상태·알림 이력 저장 |
 
 - 환자용과 병원 관리자용 가입·로그인 화면은 분리합니다.
-- 로그인 정보는 공통 `accounts` 구조를 사용합니다.
+- 인증 정보와 비밀번호는 Supabase Auth가 관리하고 서비스 역할·전화번호·상태는 공통 `profiles` 구조를 사용합니다.
 - MVP에서는 병원당 활성 `owner` 한 명만 허용합니다.
 - 병원 관리자 API는 해당 병원의 활성 소속 계정만 접근할 수 있습니다.
 - 현장 상태 조회 토큰으로 병원 관리자 API나 다른 환자 데이터에 접근할 수 없습니다.
@@ -50,19 +51,33 @@
 
 ### 3.1 환자 회원가입
 
-- `loginId`, `password`, `phoneNumber`를 받습니다.
-- 로그인 아이디와 전화번호는 각각 중복될 수 없습니다.
+- `email`, `password`, `phoneNumber`를 받습니다.
+- 이메일과 비밀번호는 Supabase Auth에 전달하고 애플리케이션 DB에 비밀번호를 저장하지 않습니다.
+- 가입 이메일 확인을 완료해야 로그인할 수 있습니다.
+- 가입 확인과 비밀번호 재설정 메일은 Supabase Auth에 연결한 Brevo Custom SMTP로 발송합니다.
+- 이메일과 전화번호는 각각 중복될 수 없습니다.
 - 전화번호 하나당 계정 하나만 허용합니다.
-- 비밀번호 원문은 저장하거나 로그에 기록하지 않고 해시만 저장합니다.
+- 사용자는 자신의 Auth ID로 `patient` 또는 `hospital_admin` 프로필만 만들 수 있고 `platform_admin`을 직접 선택할 수 없습니다.
+- Auth 사용자 한 명에는 프로필을 정확히 하나만 허용합니다.
 - MVP 전화번호 인증은 mock 처리합니다.
 
 ### 3.2 로그인
 
-- 아이디와 비밀번호가 일치하고 계정 상태가 `active`일 때 인증 세션을 발급합니다.
+- 이메일 확인을 마친 사용자가 이메일과 비밀번호로 Supabase Auth 세션을 발급받습니다.
+- React는 Supabase access token을 `Authorization: Bearer <token>`으로 Express API에 전달합니다.
+- Express는 JWT를 검증한 뒤 `profiles.status = active`와 역할·병원 소속을 추가로 확인합니다.
 - 원격 웨이팅 등록, 미루기와 취소는 인증된 환자만 실행할 수 있습니다.
-- 카카오·구글 소셜 로그인은 P2에서 별도 인증 식별자를 연결합니다.
+- 카카오·구글 소셜 로그인은 P2에서 같은 Supabase Auth 사용자에 identity를 연결합니다.
 
-### 3.3 활성 원격 웨이팅 제한
+### 3.3 인증과 데이터 접근 경계
+
+- React는 Supabase Auth에만 직접 접근하고 병원·웨이팅 업무 데이터는 항상 Express API를 통합니다.
+- Express는 `pg`와 SQL Repository를 통해 Supabase PostgreSQL에 접근합니다.
+- 여러 상태·순서·이력을 함께 바꾸는 작업은 하나의 PostgreSQL 트랜잭션으로 처리합니다.
+- DB 스키마, 인덱스, 제약조건과 RLS 변경은 `supabase/migrations`의 SQL로 관리합니다.
+- 개발용 Supabase 클라우드 프로젝트를 사용하며 실제 개인정보 대신 테스트 데이터를 사용합니다.
+
+### 3.4 활성 원격 웨이팅 제한
 
 - 환자 계정 하나에는 병원과 관계없이 활성 원격 웨이팅을 1건만 허용합니다.
 - 활성 상태는 `remote_waiting`, `entry_requested`, `onsite_waiting`입니다.
@@ -314,13 +329,12 @@ patientCount = childCount + adultCount + seniorCount
 
 ### 14.1 인증
 
+회원가입, 이메일 확인, 로그인, 로그아웃과 비밀번호 재설정은 React의 Supabase Auth 클라이언트가 처리합니다. Express는 Supabase JWT를 검증한 뒤 다음 서비스 프로필 API만 제공합니다.
+
 | 메서드 | 경로 | 역할 |
 |---|---|---|
-| `POST` | `/api/auth/patients/register` | 환자 회원가입 |
-| `POST` | `/api/auth/hospitals/register` | 병원 관리자 계정 생성 |
-| `POST` | `/api/auth/login` | 아이디·비밀번호 로그인 |
-| `POST` | `/api/auth/logout` | 로그아웃 |
-| `GET` | `/api/auth/me` | 현재 계정과 권한 조회 |
+| `POST` | `/api/profiles` | 이메일 확인 후 환자·병원 관리자 프로필 1회 생성. 플랫폼 관리자 선택 금지 |
+| `GET` | `/api/auth/me` | 현재 프로필과 권한 조회 |
 
 ### 14.2 환자
 
@@ -362,7 +376,8 @@ patientCount = childCount + adultCount + seniorCount
 |---|---|
 | `AUTH_REQUIRED` | 로그인이 필요함 |
 | `FORBIDDEN` | 해당 역할·병원에 대한 권한이 없음 |
-| `LOGIN_ID_TAKEN` | 이미 사용 중인 아이디 |
+| `EMAIL_NOT_CONFIRMED` | 가입 이메일 확인이 완료되지 않음 |
+| `EMAIL_TAKEN` | 이미 사용 중인 이메일 |
 | `PHONE_NUMBER_TAKEN` | 이미 가입된 전화번호 |
 | `HOSPITAL_NOT_APPROVED` | 승인되지 않은 병원 |
 | `QUEUE_NOT_OPEN` | 오늘 대기열이 접수 가능하지 않음 |
@@ -376,7 +391,22 @@ patientCount = childCount + adultCount + seniorCount
 | `STATUS_LINK_INVALID` | 현장 상태 링크가 종료·무효화됨 |
 | `QUEUE_CONFLICT` | 다른 요청이 먼저 상태나 순서를 변경함 |
 
-## 15. 우선순위
+### 14.6 공통 응답과 시간 규칙
+
+- 성공 응답은 불필요한 envelope 없이 요청한 리소스 또는 결과 데이터를 직접 반환합니다.
+- 실패 응답은 `{ "error": { "code": "...", "message": "...", "details": {} } }` 형식을 사용합니다.
+- DB의 발생 시각은 `timestamptz`로 UTC 저장하고 API는 ISO 8601 문자열로 반환합니다.
+- `queueDate`와 병원 운영일 경계는 `Asia/Seoul` 기준으로 계산합니다.
+
+## 15. 동기화와 자동 작업
+
+- 환자·직원 화면은 활성 상태에서 10초마다 Express API를 Polling합니다.
+- Polling 실패 시 현재 데이터를 지우지 않고 연결 오류와 재시도 상태를 표시합니다.
+- Express 백그라운드 작업은 1분마다 도착 기한 만료 대상을 조회합니다.
+- 작업 시작 시 PostgreSQL advisory lock을 획득해 중복 실행을 막고, 상태 변경과 이벤트·mock 알림 기록을 한 트랜잭션으로 처리합니다.
+- Supabase Cron과 PostgreSQL 함수 기반 처리는 P2 확장으로 둡니다.
+
+## 16. 우선순위
 
 ### P0
 
@@ -404,10 +434,12 @@ patientCount = childCount + adultCount + seniorCount
 - 실제 GPS·지도 검색
 - 여러 진료과·의사 대기열과 증상 기반 배정
 - 병원 전산 연동과 통계
+- Supabase Cron과 PostgreSQL 함수 기반 자동 만료 처리
+- 외부 공개 배포와 운영용 Supabase 프로젝트 분리
 
-## 16. 완료 조건
+## 17. 완료 조건
 
-1. 환자가 회원가입·로그인 후 원격 웨이팅을 등록합니다.
+1. 환자가 이메일 확인과 로그인을 마친 후 원격 웨이팅을 등록합니다.
 2. 계정에 활성 웨이팅이 있으면 다른 병원에도 새 원격 접수를 만들 수 없습니다.
 3. 가족 3명 접수가 앞선 환자 계산에 3명으로 반영됩니다.
 4. 현장과 원격 접수가 날짜별 한 대기열에 순서대로 나타납니다.
@@ -422,8 +454,10 @@ patientCount = childCount + adultCount + seniorCount
 13. 직원의 보류·복귀·순서 변경 후 모든 순서와 예상 시간이 갱신됩니다.
 14. 승인되지 않은 병원은 검색 노출과 대기열 운영을 할 수 없습니다.
 15. 다른 환자의 전화번호와 웨이팅 정보가 노출되지 않습니다.
+16. 활성 환자·직원 화면이 10초 Polling으로 상태 변경을 반영합니다.
+17. Express 자동 작업이 advisory lock을 사용해 만료 건을 한 번만 처리합니다.
 
-## 17. 시스템 불변 조건
+## 18. 시스템 불변 조건
 
 - 하나의 활성 웨이팅은 정확히 하나의 날짜별 대기열에 속합니다.
 - `patientCount`는 항상 소아·성인·노인의 합입니다.
