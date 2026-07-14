@@ -2,6 +2,32 @@ import { describe, expect, it } from 'vitest';
 
 import { designTokens } from './tokens';
 
+function relativeLuminance(hex: string) {
+  const channels = hex
+    .slice(1)
+    .match(/.{2}/g)
+    ?.map((channel) => Number.parseInt(channel, 16) / 255);
+
+  if (!channels || channels.length !== 3) {
+    throw new Error(`Invalid hex color: ${hex}`);
+  }
+
+  const [red, green, blue] = channels.map((channel) =>
+    channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  );
+
+  return red * 0.2126 + green * 0.7152 + blue * 0.0722;
+}
+
+function contrastRatio(foreground: string, background: string) {
+  const foregroundLuminance = relativeLuminance(foreground);
+  const backgroundLuminance = relativeLuminance(background);
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 describe('designTokens', () => {
   it('defines the complete approved token contract', () => {
     expect(designTokens.color).toEqual({
@@ -19,8 +45,8 @@ describe('designTokens', () => {
       mist: '#F3F3F5',
       paleBlue: '#C3D9FF',
       pewter: '#B0B3BB',
-      signalGreen: '#059669',
-      smoke: '#7F8491',
+      signalGreen: '#047857',
+      smoke: '#667085',
     });
     expect(designTokens.gradient).toEqual({
       electricBlue:
@@ -74,5 +100,14 @@ describe('designTokens', () => {
       sectionTitleLineHeight: '32px',
       sectionTitleSize: '24px',
     });
+  });
+
+  it('keeps metadata and success text colors readable on canvas', () => {
+    expect(
+      contrastRatio(designTokens.color.smoke, designTokens.color.canvas)
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastRatio(designTokens.color.signalGreen, designTokens.color.canvas)
+    ).toBeGreaterThanOrEqual(4.5);
   });
 });

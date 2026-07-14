@@ -1,4 +1,11 @@
-import { InsightGrid, type Insight } from '@/entities/insight';
+import { useRef } from 'react';
+
+import {
+  InsightGrid,
+  type Insight,
+  type InsightContextInput,
+  type InsightMutationResult,
+} from '@/entities/insight';
 import {
   CategoryFilter,
   EmptyState,
@@ -15,8 +22,13 @@ export type LibraryPageProps = {
   insights: Insight[];
   loading?: boolean;
   onCategoryChange: (category: string) => void;
+  onDeleteInsight: (insightId: string) => InsightMutationResult;
   onOpenSave: () => void;
   onQueryChange: (value: string) => void;
+  onUpdateInsight: (
+    insightId: string,
+    context: InsightContextInput
+  ) => InsightMutationResult;
   query: string;
 };
 
@@ -26,10 +38,21 @@ export function LibraryPage({
   insights,
   loading = false,
   onCategoryChange,
+  onDeleteInsight,
   onOpenSave,
   onQueryChange,
+  onUpdateInsight,
   query,
 }: LibraryPageProps) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const hasQuery = query.trim().length > 0;
+
+  function clearQuery() {
+    onCategoryChange('All');
+    onQueryChange('');
+    searchInputRef.current?.focus();
+  }
+
   return (
     <section className="library-page" aria-labelledby="library-title">
       <header className="library-page__header">
@@ -60,7 +83,8 @@ export function LibraryPage({
             id="global-search"
             onChange={(event) => onQueryChange(event.currentTarget.value)}
             onReset={() => onQueryChange('')}
-            placeholder="제목, 메모, 카테고리 검색"
+            placeholder="제목, 메모, 카테고리, 도메인, URL 검색"
+            ref={searchInputRef}
             size="medium"
             value={query}
             width="100%"
@@ -69,10 +93,32 @@ export function LibraryPage({
       </div>
 
       <div className="library-page__content">
+        {hasQuery && !loading ? (
+          <p className="visually-hidden" role="status">
+            {insights.length > 0
+              ? `검색 결과 ${insights.length}개`
+              : '검색 결과 없음'}
+          </p>
+        ) : null}
         {loading ? (
           <LoadingState label="보관함을 불러오는 중" />
         ) : insights.length > 0 ? (
-          <InsightGrid insights={insights} />
+          <InsightGrid
+            insights={insights}
+            onDeleteInsight={onDeleteInsight}
+            onDeletionFocusFallback={() => searchInputRef.current?.focus()}
+            onEditFocusFallback={() => searchInputRef.current?.focus()}
+            onUpdateInsight={onUpdateInsight}
+          />
+        ) : hasQuery ? (
+          <EmptyState
+            actionLabel="검색어 지우기"
+            description="입력한 검색어와 맞는 링크가 없어요. 검색어를 줄이거나 다른 단서로 바꿔보세요."
+            onAction={clearQuery}
+            onSecondaryAction={onOpenSave}
+            secondaryActionLabel="링크 저장"
+            title="검색 결과가 없어요"
+          />
         ) : (
           <EmptyState
             actionLabel="링크 저장"

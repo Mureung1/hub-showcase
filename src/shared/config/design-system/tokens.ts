@@ -70,8 +70,8 @@ export const designTokens = {
     mist: '#F3F3F5',
     paleBlue: '#C3D9FF',
     pewter: '#B0B3BB',
-    signalGreen: '#059669',
-    smoke: '#7F8491',
+    signalGreen: '#047857',
+    smoke: '#667085',
   },
   gradient: {
     electricBlue:

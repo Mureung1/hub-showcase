@@ -1,35 +1,48 @@
 import type { FormEvent } from 'react';
 import { Link } from 'lucide-react';
 
-import type { InsightCategory } from '@/entities/insight';
-import {
-  Button,
-  CategoryTag,
-  StatusMessage,
-  TextArea,
-  TextField,
-} from '@/shared/ui';
+import { Button, StatusMessage, TextArea, TextField } from '@/shared/ui';
 
 import './save_page.css';
 
+export type SaveContextDraft = {
+  category: string;
+  memo: string;
+  title: string;
+};
+
 export type SavePageProps = {
+  contextDraft: SaveContextDraft;
+  contextErrorMessage?: string;
+  contextSaveComplete: boolean;
+  errorActionLabel?: string;
   errorMessage?: string;
+  onContextDraftChange: (draft: SaveContextDraft) => void;
+  onContextSave: (event: FormEvent<HTMLFormElement>) => void;
+  onContextSkip: () => void;
+  onErrorAction?: () => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
   onSaveCompleteChange: (value: boolean) => void;
   onUrlChange: (value: string) => void;
   saveComplete: boolean;
   saveUrl: string;
-  suggestedCategories: InsightCategory[];
 };
 
 export function SavePage({
+  contextDraft,
+  contextErrorMessage,
+  contextSaveComplete,
+  errorActionLabel,
   errorMessage,
+  onContextDraftChange,
+  onContextSave,
+  onContextSkip,
+  onErrorAction,
   onSave,
   onSaveCompleteChange,
   onUrlChange,
   saveComplete,
   saveUrl,
-  suggestedCategories,
 }: SavePageProps) {
   return (
     <section className="save-page" aria-labelledby="save-title">
@@ -42,7 +55,7 @@ export function SavePage({
         </p>
       </header>
 
-      <form className="save-page__form" onSubmit={onSave}>
+      <form className="save-page__form" noValidate onSubmit={onSave}>
         <label htmlFor="save-url">링크 URL</label>
         <TextField
           aria-describedby={errorMessage ? 'save-url-error' : undefined}
@@ -65,6 +78,17 @@ export function SavePage({
             variant="error"
           >
             <p>{errorMessage}</p>
+            {errorActionLabel && onErrorAction ? (
+              <Button
+                className="save-page__error-action"
+                hierarchy="secondary"
+                onClick={onErrorAction}
+                size="small"
+                type="button"
+              >
+                {errorActionLabel}
+              </Button>
+            ) : null}
           </StatusMessage>
         ) : null}
         <Button
@@ -83,34 +107,91 @@ export function SavePage({
           <StatusMessage title="저장 완료" variant="success">
             <p>링크를 보관함에 저장했습니다. 정리는 지금 하지 않아도 됩니다.</p>
           </StatusMessage>
-          <div className="save-page__optional-fields">
-            <span className="save-page__label">추천 카테고리</span>
-            <ul className="save-page__categories" aria-label="추천 카테고리">
-              {suggestedCategories.map((category) => (
-                <li key={category.name}>
-                  <CategoryTag tone={category.tone}>
-                    {category.name}
-                  </CategoryTag>
-                </li>
-              ))}
-            </ul>
-            <label htmlFor="save-memo">메모</label>
-            <TextArea
-              id="save-memo"
-              minRows={3}
-              placeholder="나중에 왜 다시 볼지 짧게 남겨두기"
-              rows={3}
+          <form
+            className="save-page__context-form"
+            noValidate
+            onSubmit={onContextSave}
+          >
+            <div className="save-page__context-header">
+              <h3>언제 다시 쓰고 싶은 자료인가요?</h3>
+              <p>필요할 때 떠올릴 단서를 선택해서 남겨보세요.</p>
+            </div>
+
+            <label htmlFor="save-context-title">제목 (선택)</label>
+            <TextField
+              id="save-context-title"
+              onChange={(event) =>
+                onContextDraftChange({
+                  ...contextDraft,
+                  title: event.currentTarget.value,
+                })
+              }
+              placeholder="비워두면 사이트 이름을 사용해요"
+              value={contextDraft.title}
               width="100%"
             />
-            <Button
-              className="save-page__secondary-action"
-              hierarchy="secondary"
-              size="medium"
-              type="button"
-            >
-              그냥 저장
-            </Button>
-          </div>
+
+            <label htmlFor="save-context-memo">한 줄 메모 (선택)</label>
+            <TextArea
+              id="save-context-memo"
+              onChange={(event) =>
+                onContextDraftChange({
+                  ...contextDraft,
+                  memo: event.currentTarget.value,
+                })
+              }
+              placeholder="어떤 순간에 다시 보고 싶은가요?"
+              value={contextDraft.memo}
+              width="100%"
+            />
+
+            <label htmlFor="save-context-category">카테고리 (선택)</label>
+            <TextField
+              id="save-context-category"
+              onChange={(event) =>
+                onContextDraftChange({
+                  ...contextDraft,
+                  category: event.currentTarget.value,
+                })
+              }
+              placeholder="예: 디자인 리서치"
+              value={contextDraft.category}
+              width="100%"
+            />
+
+            {contextErrorMessage ? (
+              <StatusMessage
+                title="개인 맥락을 저장하지 못했어요"
+                variant="error"
+              >
+                <p>{contextErrorMessage}</p>
+              </StatusMessage>
+            ) : null}
+
+            {contextSaveComplete ? (
+              <StatusMessage title="맥락 저장 완료" variant="success">
+                <p>보관함과 검색 결과에 바로 반영했어요.</p>
+              </StatusMessage>
+            ) : null}
+
+            <div className="save-page__context-actions">
+              <Button hierarchy="primary" size="medium" type="submit">
+                {contextErrorMessage
+                  ? '다시 시도'
+                  : contextSaveComplete
+                    ? '수정 저장하기'
+                    : '맥락 저장하기'}
+              </Button>
+              <Button
+                hierarchy="secondary"
+                onClick={onContextSkip}
+                size="medium"
+                type="button"
+              >
+                건너뛰기
+              </Button>
+            </div>
+          </form>
         </div>
       ) : null}
     </section>

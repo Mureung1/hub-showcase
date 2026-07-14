@@ -1,59 +1,49 @@
 import type { CategoryTone } from '@/shared/ui';
 
+import { searchInsights } from './search_insights';
+
 export type InsightCategory = {
   name: string;
   tone: CategoryTone;
 };
 
 export type Insight = {
-  categories: InsightCategory[];
+  id: string;
+  originalUrl: string;
+  normalizedUrl: string;
   domain: string;
-  id: number;
-  memo?: string;
-  thumbnail: string;
   title: string;
-  url: string;
+  memo: string | null;
+  category: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
+
+export type InsightContextInput = {
+  category: string;
+  memo: string;
+  title: string;
+};
+
+export type InsightMutationResult =
+  { ok: true } | { ok: false; reason: 'not-found' | 'write-failed' };
 
 export function filterInsights(
   insights: Insight[],
   category: string,
   query: string
 ) {
-  const queryTokens = Array.from(
-    new Set(query.trim().toLowerCase().split(/\s+/).filter(Boolean))
-  );
+  const categoryInsights = insights.filter((insight) => {
+    return (
+      category === 'All' ||
+      (category === '미분류' && insight.category === null) ||
+      insight.category === category
+    );
+  });
 
-  return insights
-    .map((insight, index) => {
-      const matchesCategory =
-        category === 'All' ||
-        (category === '미분류' && insight.categories.length === 0) ||
-        insight.categories.some((item) => item.name === category);
-      const haystack = [
-        insight.title,
-        insight.domain,
-        insight.memo ?? '',
-        ...insight.categories.map((item) => item.name),
-      ]
-        .join(' ')
-        .toLowerCase();
-      const score = queryTokens.reduce(
-        (total, token) => total + (haystack.includes(token) ? 1 : 0),
-        0
-      );
+  if (query.trim().length === 0) {
+    return categoryInsights;
+  }
 
-      return { index, insight, matchesCategory, score };
-    })
-    .filter(({ matchesCategory, score }) => {
-      return matchesCategory && (queryTokens.length === 0 || score > 0);
-    })
-    .sort((current, next) => {
-      if (queryTokens.length === 0) {
-        return current.index - next.index;
-      }
-
-      return next.score - current.score || current.index - next.index;
-    })
-    .map(({ insight }) => insight);
+  return searchInsights(categoryInsights, query).map(({ insight }) => insight);
 }

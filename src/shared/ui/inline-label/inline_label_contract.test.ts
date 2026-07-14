@@ -14,7 +14,7 @@ const expectedForegroundVariables = {
   amber: '--color-ink',
   blue: '--color-canvas',
   coral: '--color-ink',
-  green: '--color-ink',
+  green: '--color-canvas',
 } as const;
 const colorByCssVariable = new Map(
   Object.entries(designTokens.color).map(([name, value]) => [
@@ -40,7 +40,7 @@ describe('InlineLabel color contract', () => {
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('uses canvas text only for blue and ink text for the other tones', () => {
+  it('uses canvas text for blue and green and ink for the other tones', () => {
     tones.forEach((tone) => {
       const declarations = getClassDeclarations(`inline-label--${tone}`);
 
