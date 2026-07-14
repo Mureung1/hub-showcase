@@ -353,14 +353,18 @@ refactor:
 chore:
 ```
 
+Commit message
+
+**제목은 한글로 간단하게 내용을 요약하세요.**
+
 Examples
 
 ```
-feat(financial): add profit contribution chart
+feat(financial): 마진 기여도 차트 추가
 
-fix(upload): validate excel file
+fix(upload): Excel 파일 검증
 
-docs: update design system
+docs: 디자인 시스템 업데이트
 ```
 
 ---
