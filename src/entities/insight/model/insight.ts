@@ -17,6 +17,15 @@ export type Insight = {
   updatedAt: string;
 };
 
+export type InsightContextInput = {
+  category: string;
+  memo: string;
+  title: string;
+};
+
+export type InsightMutationResult =
+  { ok: true } | { ok: false; reason: 'not-found' | 'write-failed' };
+
 export function filterInsights(
   insights: Insight[],
   category: string,

@@ -39,6 +39,92 @@ afterEach(() => {
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it('updates search data immediately and persists edit and deletion across remounts', async () => {
+    const user = userEvent.setup();
+    let persistedInsights = [
+      createInsight({
+        title: '편집할 링크',
+        memo: '기존 메모',
+        category: '개발',
+      }),
+    ];
+    const repository: InsightRepository = {
+      load: () => ({ insights: persistedInsights, warnings: [] }),
+      save: (insights) => {
+        persistedInsights = insights;
+        return { ok: true };
+      },
+    };
+    const firstRender = render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    await user.click(screen.getByRole('button', { name: '수정' }));
+    fireEvent.change(screen.getByRole('textbox', { name: '제목' }), {
+      target: { value: '검색에 바로 잡힐 제목' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: '한 줄 메모' }), {
+      target: { value: '  새 검색 단서  ' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: '카테고리' }), {
+      target: { value: '  Design   Systems  ' },
+    });
+    await user.click(screen.getByRole('button', { name: '변경 저장' }));
+
+    expect(persistedInsights[0]).toEqual(
+      expect.objectContaining({
+        title: '검색에 바로 잡힐 제목',
+        memo: '새 검색 단서',
+        category: 'Design Systems',
+      })
+    );
+
+    const search = screen.getByRole('searchbox', { name: '보관함 검색' });
+    await user.type(search, '새 검색 단서');
+    expect(
+      screen.getByRole('heading', { name: '검색에 바로 잡힐 제목' })
+    ).not.toBeNull();
+
+    firstRender.unmount();
+    const editReload = render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    expect(
+      screen.getByRole('heading', { name: '검색에 바로 잡힐 제목' })
+    ).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+    await user.click(screen.getByRole('button', { name: '취소' }));
+    expect(
+      screen.getByRole('heading', { name: '검색에 바로 잡힐 제목' })
+    ).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+    await user.click(screen.getByRole('button', { name: '삭제 확정' }));
+    expect(
+      screen.queryByRole('heading', { name: '검색에 바로 잡힐 제목' })
+    ).toBeNull();
+    expect(persistedInsights).toEqual([]);
+
+    editReload.unmount();
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+
+    expect(
+      screen.getByRole('heading', { name: '저장된 링크가 없어요' })
+    ).not.toBeNull();
+  });
+
   it('saves optional personal context and shows it in the library immediately', async () => {
     const user = userEvent.setup();
     const save = vi.fn<InsightRepository['save']>(() => ({ ok: true }));

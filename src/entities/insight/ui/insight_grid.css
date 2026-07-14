@@ -53,9 +53,12 @@
 }
 
 .insight-card__memo {
+  overflow: hidden;
   color: var(--color-graphite);
   font-size: var(--typography-body-size);
   line-height: var(--typography-body-line-height);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .insight-card__categories {
@@ -75,12 +78,77 @@
   display: inline-flex;
   min-height: 44px;
   align-items: center;
-  padding: var(--spacing-2) var(--spacing-4) var(--spacing-3);
   color: var(--color-ink);
   font-size: var(--typography-label-size);
   font-weight: 700;
   line-height: var(--typography-label-line-height);
   text-underline-offset: var(--spacing-1);
+}
+
+.insight-card__footer,
+.insight-card__delete-confirmation {
+  border-top: 1px solid var(--color-ash);
+}
+
+.insight-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+}
+
+.insight-card__manage-actions,
+.insight-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.insight-card__edit-form,
+.insight-card__delete-confirmation {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+}
+
+.insight-card__edit-form label,
+.insight-card__locked-url > span {
+  color: var(--color-ink);
+  font-size: var(--typography-label-size);
+  font-weight: 700;
+  line-height: var(--typography-label-line-height);
+}
+
+.insight-card__locked-url {
+  display: grid;
+  min-width: 0;
+  gap: var(--spacing-1);
+}
+
+.insight-card__locked-url p,
+.insight-card__unsafe-source,
+.insight-card__delete-confirmation > p {
+  color: var(--color-graphite);
+  font-size: var(--typography-meta-size);
+  line-height: var(--typography-meta-line-height);
+}
+
+.insight-card__locked-url p {
+  overflow-wrap: anywhere;
+}
+
+.insight-card__unsafe-source {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+}
+
+.insight-card__error {
+  color: var(--color-error-ink);
+  font-size: var(--typography-meta-size);
+  line-height: var(--typography-meta-line-height);
 }
 
 @media (max-width: 1199px) {
@@ -92,5 +160,10 @@
 @media (max-width: 767px) {
   .insight-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .insight-card__footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

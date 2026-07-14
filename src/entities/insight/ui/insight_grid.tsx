@@ -1,16 +1,194 @@
-import { CategoryTag, type CategoryTone } from '@/shared/ui';
+import { useId, useState, type FormEvent } from 'react';
 
-import type { Insight } from '../model/insight';
+import { Button, CategoryTag, TextArea, TextField } from '@/shared/ui';
+
+import type {
+  Insight,
+  InsightContextInput,
+  InsightMutationResult,
+} from '../model/insight';
+import { normalizeInsightUrl } from '../model/normalize_insight_url';
 import './insight_grid.css';
 
-export function InsightGrid({ insights }: { insights: Insight[] }) {
+export type InsightGridProps = {
+  insights: Insight[];
+  onDeleteInsight?: (insightId: string) => InsightMutationResult;
+  onUpdateInsight?: (
+    insightId: string,
+    context: InsightContextInput
+  ) => InsightMutationResult;
+};
+
+export function InsightGrid({
+  insights,
+  onDeleteInsight,
+  onUpdateInsight,
+}: InsightGridProps) {
   return (
     <div className="insight-grid">
       {insights.map((insight) => (
-        <article className="insight-card" key={insight.id}>
-          <div className="insight-card__thumbnail" aria-hidden="true">
-            {getThumbnailLabel(insight.domain)}
+        <InsightCard
+          insight={insight}
+          key={insight.id}
+          onDeleteInsight={onDeleteInsight}
+          onUpdateInsight={onUpdateInsight}
+        />
+      ))}
+    </div>
+  );
+}
+
+type InsightCardProps = {
+  insight: Insight;
+  onDeleteInsight?: InsightGridProps['onDeleteInsight'];
+  onUpdateInsight?: InsightGridProps['onUpdateInsight'];
+};
+
+function InsightCard({
+  insight,
+  onDeleteInsight,
+  onUpdateInsight,
+}: InsightCardProps) {
+  const fieldId = useId();
+  const [cardMode, setCardMode] = useState<'idle' | 'editing' | 'deleting'>(
+    'idle'
+  );
+  const [draft, setDraft] = useState<InsightContextInput>(() =>
+    createEditDraft(insight)
+  );
+  const [editFailed, setEditFailed] = useState(false);
+  const [deleteFailed, setDeleteFailed] = useState(false);
+
+  function beginEditing() {
+    setDraft(createEditDraft(insight));
+    setEditFailed(false);
+    setDeleteFailed(false);
+    setCardMode('editing');
+  }
+
+  function cancelEditing() {
+    setDraft(createEditDraft(insight));
+    setEditFailed(false);
+    setCardMode('idle');
+  }
+
+  function handleDraftChange(nextDraft: InsightContextInput) {
+    setDraft(nextDraft);
+    setEditFailed(false);
+  }
+
+  function handleUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const updateResult = onUpdateInsight?.(insight.id, draft);
+
+    if (!updateResult?.ok) {
+      setEditFailed(true);
+      return;
+    }
+
+    setEditFailed(false);
+    setCardMode('idle');
+  }
+
+  function beginDeleting() {
+    setEditFailed(false);
+    setDeleteFailed(false);
+    setCardMode('deleting');
+  }
+
+  function cancelDeleting() {
+    setDeleteFailed(false);
+    setCardMode('idle');
+  }
+
+  function confirmDeletion() {
+    const deleteResult = onDeleteInsight?.(insight.id);
+
+    if (!deleteResult?.ok) {
+      setDeleteFailed(true);
+      return;
+    }
+
+    setDeleteFailed(false);
+    setCardMode('idle');
+  }
+
+  return (
+    <article className="insight-card">
+      <div className="insight-card__thumbnail" aria-hidden="true">
+        {getThumbnailLabel(insight.domain)}
+      </div>
+
+      {cardMode === 'editing' ? (
+        <form
+          aria-label={`${insight.title} 수정`}
+          className="insight-card__edit-form"
+          noValidate
+          onSubmit={handleUpdate}
+        >
+          <div className="insight-card__locked-url">
+            <span>URL (수정할 수 없음)</span>
+            <p>{insight.originalUrl}</p>
+            <SourceAction insight={insight} />
           </div>
+
+          <label htmlFor={`${fieldId}-title`}>제목</label>
+          <TextField
+            id={`${fieldId}-title`}
+            onChange={(event) =>
+              handleDraftChange({ ...draft, title: event.currentTarget.value })
+            }
+            value={draft.title}
+            width="100%"
+          />
+
+          <label htmlFor={`${fieldId}-memo`}>한 줄 메모</label>
+          <TextArea
+            id={`${fieldId}-memo`}
+            onChange={(event) =>
+              handleDraftChange({ ...draft, memo: event.currentTarget.value })
+            }
+            value={draft.memo}
+            width="100%"
+          />
+
+          <label htmlFor={`${fieldId}-category`}>카테고리</label>
+          <TextField
+            id={`${fieldId}-category`}
+            onChange={(event) =>
+              handleDraftChange({
+                ...draft,
+                category: event.currentTarget.value,
+              })
+            }
+            value={draft.category}
+            width="100%"
+          />
+
+          {editFailed ? (
+            <p className="insight-card__error" role="alert">
+              수정 내용을 저장하지 못했어요. 입력은 유지했어요. 다시 시도하거나
+              취소해주세요.
+            </p>
+          ) : null}
+
+          <div className="insight-card__actions">
+            <Button hierarchy="primary" size="small" type="submit">
+              {editFailed ? '다시 시도' : '변경 저장'}
+            </Button>
+            <Button
+              hierarchy="secondary"
+              onClick={cancelEditing}
+              size="small"
+              type="button"
+            >
+              취소
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <>
           <div className="insight-card__body">
             <p className="insight-card__domain">{insight.domain}</p>
             <h3 className="insight-card__title">{insight.title}</h3>
@@ -33,30 +211,114 @@ export function InsightGrid({ insights }: { insights: Insight[] }) {
               </ul>
             ) : null}
           </div>
-          <a
-            className="insight-card__source"
-            href={insight.originalUrl}
-            rel="noreferrer"
-            target="_blank"
-          >
-            원문 열기
-          </a>
-        </article>
-      ))}
-    </div>
+
+          {cardMode === 'deleting' ? (
+            <div className="insight-card__delete-confirmation">
+              <p>
+                <strong>{insight.title}</strong>을(를) 삭제할까요?
+              </p>
+              <p>삭제하면 이 브라우저의 보관함에서 사라집니다.</p>
+              {deleteFailed ? (
+                <p className="insight-card__error" role="alert">
+                  삭제하지 못했어요. 카드는 그대로 두었어요. 다시 시도하거나
+                  취소해주세요.
+                </p>
+              ) : null}
+              <div className="insight-card__actions">
+                <Button
+                  hierarchy="primary"
+                  onClick={confirmDeletion}
+                  size="small"
+                  type="button"
+                >
+                  {deleteFailed ? '삭제 다시 시도' : '삭제 확정'}
+                </Button>
+                <Button
+                  hierarchy="secondary"
+                  onClick={cancelDeleting}
+                  size="small"
+                  type="button"
+                >
+                  취소
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="insight-card__footer">
+              <SourceAction insight={insight} />
+              {onUpdateInsight || onDeleteInsight ? (
+                <div className="insight-card__manage-actions">
+                  {onUpdateInsight ? (
+                    <Button
+                      hierarchy="ghost"
+                      onClick={beginEditing}
+                      size="small"
+                      type="button"
+                    >
+                      수정
+                    </Button>
+                  ) : null}
+                  {onDeleteInsight ? (
+                    <Button
+                      hierarchy="ghost"
+                      onClick={beginDeleting}
+                      size="small"
+                      type="button"
+                    >
+                      삭제
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          )}
+        </>
+      )}
+    </article>
   );
 }
 
-const CATEGORY_TONES: Record<string, CategoryTone> = {
+function SourceAction({ insight }: { insight: Insight }) {
+  const normalizedUrl = normalizeInsightUrl(insight.originalUrl);
+
+  if (!normalizedUrl.ok) {
+    return (
+      <p className="insight-card__unsafe-source" role="status">
+        안전하지 않은 주소라 원문을 열 수 없어요.
+      </p>
+    );
+  }
+
+  return (
+    <a
+      className="insight-card__source"
+      href={normalizedUrl.originalUrl}
+      rel="noreferrer"
+      target="_blank"
+    >
+      원문 열기
+    </a>
+  );
+}
+
+function createEditDraft(insight: Insight): InsightContextInput {
+  return {
+    category: insight.category ?? '',
+    memo: insight.memo ?? '',
+    title: insight.title,
+  };
+}
+
+const CATEGORY_TONES = {
   개발: 'green',
   디자인: 'blue',
   팀프로젝트: 'amber',
   공부: 'slate',
   취업: 'coral',
-};
+} as const;
 
 function getCategoryTone(category: string) {
-  return CATEGORY_TONES[category] ?? 'slate';
+  return CATEGORY_TONES[category as keyof typeof CATEGORY_TONES] ?? 'slate';
 }
 
 function getThumbnailLabel(domain: string) {

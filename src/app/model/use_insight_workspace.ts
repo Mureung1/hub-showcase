@@ -3,6 +3,8 @@ import { useState } from 'react';
 import {
   normalizeInsightUrl,
   type Insight,
+  type InsightContextInput,
+  type InsightMutationResult,
   type InsightRepository,
 } from '@/entities/insight';
 
@@ -16,14 +18,9 @@ export type SaveInsightResult =
       reason: SaveInsightFailureReason;
     };
 
-export type InsightContextInput = {
-  category: string;
-  memo: string;
-  title: string;
-};
+export type UpdateInsightContextResult = InsightMutationResult;
 
-export type UpdateInsightContextResult =
-  { ok: true } | { ok: false; reason: 'not-found' | 'write-failed' };
+export type DeleteInsightResult = InsightMutationResult;
 
 export type UseInsightWorkspaceOptions = {
   createId?: () => string;
@@ -134,9 +131,37 @@ export function useInsightWorkspace({
     return { ok: true };
   }
 
+  function deleteInsight(insightId: string): DeleteInsightResult {
+    const insightIndex = currentWorkspaceState.insights.findIndex(
+      (candidate) => candidate.id === insightId
+    );
+
+    if (insightIndex === -1) {
+      return { ok: false, reason: 'not-found' };
+    }
+
+    const nextInsights = [...currentWorkspaceState.insights];
+    nextInsights.splice(insightIndex, 1);
+    const saveResult = repository.save(nextInsights);
+
+    if (!saveResult.ok) {
+      return saveResult;
+    }
+
+    setWorkspaceState({
+      ...currentWorkspaceState,
+      insights: nextInsights,
+      loadWarnings: currentWorkspaceState.loadWarnings.filter(
+        (warning) => warning === 'read-failed'
+      ),
+    });
+    return { ok: true };
+  }
+
   return {
     insights: currentWorkspaceState.insights,
     loadWarnings: currentWorkspaceState.loadWarnings,
+    deleteInsight,
     saveInsight,
     updateInsightContext,
   };

@@ -70,6 +70,56 @@ describe('useInsightWorkspace', () => {
     expect(result.current.insights).toEqual([savedInsight]);
   });
 
+  it('persists a deletion before removing the insight and keeps it deleted after reload', () => {
+    const keptInsight = createInsight({
+      id: 'kept-insight',
+      originalUrl: 'https://kept.example/article',
+      normalizedUrl: 'https://kept.example/article',
+      domain: 'kept.example',
+    });
+    const deletedInsight = createInsight({ id: 'deleted-insight' });
+    let persistedInsights = [deletedInsight, keptInsight];
+    const repository: InsightRepository = {
+      load: () => ({ insights: persistedInsights, warnings: [] }),
+      save: (insights) => {
+        persistedInsights = insights;
+        return { ok: true };
+      },
+    };
+    const firstRender = renderHook(() => useInsightWorkspace({ repository }));
+
+    act(() => {
+      expect(
+        firstRender.result.current.deleteInsight('deleted-insight')
+      ).toEqual({ ok: true });
+    });
+
+    expect(firstRender.result.current.insights).toEqual([keptInsight]);
+
+    firstRender.unmount();
+    const secondRender = renderHook(() => useInsightWorkspace({ repository }));
+
+    expect(secondRender.result.current.insights).toEqual([keptInsight]);
+  });
+
+  it('keeps the insight when deletion persistence fails', () => {
+    const savedInsight = createInsight({ id: 'saved-insight' });
+    const repository: InsightRepository = {
+      load: () => ({ insights: [savedInsight], warnings: [] }),
+      save: () => ({ ok: false, reason: 'write-failed' }),
+    };
+    const { result } = renderHook(() => useInsightWorkspace({ repository }));
+
+    act(() => {
+      expect(result.current.deleteInsight(savedInsight.id)).toEqual({
+        ok: false,
+        reason: 'write-failed',
+      });
+    });
+
+    expect(result.current.insights).toEqual([savedInsight]);
+  });
+
   it('persists personal context and exposes normalized values immediately', () => {
     const savedInsight = createInsight({ id: 'saved-insight' });
     const save = vi.fn<InsightRepository['save']>(() => ({ ok: true }));
@@ -104,6 +154,35 @@ describe('useInsightWorkspace', () => {
 
     expect(save).toHaveBeenCalledWith([updatedInsight]);
     expect(result.current.insights).toEqual([updatedInsight]);
+  });
+
+  it('keeps the previous context and updatedAt when an edit cannot persist', () => {
+    const savedInsight = createInsight({
+      title: '기존 제목',
+      updatedAt: '2026-07-14T01:00:00.000Z',
+    });
+    const repository: InsightRepository = {
+      load: () => ({ insights: [savedInsight], warnings: [] }),
+      save: () => ({ ok: false, reason: 'write-failed' }),
+    };
+    const { result } = renderHook(() =>
+      useInsightWorkspace({
+        now: () => '2026-07-14T14:00:00.000Z',
+        repository,
+      })
+    );
+
+    act(() => {
+      expect(
+        result.current.updateInsightContext(savedInsight.id, {
+          category: '  Design   Systems  ',
+          memo: '새 메모',
+          title: '새 제목',
+        })
+      ).toEqual({ ok: false, reason: 'write-failed' });
+    });
+
+    expect(result.current.insights).toEqual([savedInsight]);
   });
 
   it('uses the URL fallback title and nulls when optional context is blank', () => {

@@ -37,8 +37,10 @@ describe('LibraryPage', () => {
           categoryOptions={[{ label: '전체', tone: 'slate', value: 'All' }]}
           insights={[]}
           onCategoryChange={vi.fn()}
+          onDeleteInsight={vi.fn(() => ({ ok: true }) as const)}
           onOpenSave={onOpenSave}
           onQueryChange={vi.fn()}
+          onUpdateInsight={vi.fn(() => ({ ok: true }) as const)}
           query=""
         />
       </DesignSystemProvider>

@@ -62,10 +62,15 @@ export function AuthenticatedWorkspace({
     () => repository ?? createBrowserInsightRepository(),
     [repository]
   );
-  const { insights, loadWarnings, saveInsight, updateInsightContext } =
-    useInsightWorkspace({
-      repository: workspaceRepository,
-    });
+  const {
+    deleteInsight,
+    insights,
+    loadWarnings,
+    saveInsight,
+    updateInsightContext,
+  } = useInsightWorkspace({
+    repository: workspaceRepository,
+  });
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('home');
   const [activeCategory, setActiveCategory] = useState('All');
   const [globalQuery, setGlobalQuery] = useState('');
@@ -216,8 +221,10 @@ export function AuthenticatedWorkspace({
             categoryOptions={CATEGORY_FILTERS}
             insights={visibleInsights}
             onCategoryChange={setActiveCategory}
+            onDeleteInsight={deleteInsight}
             onOpenSave={() => setActiveTab('save')}
             onQueryChange={setGlobalQuery}
+            onUpdateInsight={updateInsightContext}
             query={globalQuery}
           />
         ) : null}

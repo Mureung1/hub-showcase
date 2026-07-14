@@ -1,4 +1,9 @@
-import { InsightGrid, type Insight } from '@/entities/insight';
+import {
+  InsightGrid,
+  type Insight,
+  type InsightContextInput,
+  type InsightMutationResult,
+} from '@/entities/insight';
 import {
   CategoryFilter,
   EmptyState,
@@ -15,8 +20,13 @@ export type LibraryPageProps = {
   insights: Insight[];
   loading?: boolean;
   onCategoryChange: (category: string) => void;
+  onDeleteInsight: (insightId: string) => InsightMutationResult;
   onOpenSave: () => void;
   onQueryChange: (value: string) => void;
+  onUpdateInsight: (
+    insightId: string,
+    context: InsightContextInput
+  ) => InsightMutationResult;
   query: string;
 };
 
@@ -26,8 +36,10 @@ export function LibraryPage({
   insights,
   loading = false,
   onCategoryChange,
+  onDeleteInsight,
   onOpenSave,
   onQueryChange,
+  onUpdateInsight,
   query,
 }: LibraryPageProps) {
   return (
@@ -72,7 +84,11 @@ export function LibraryPage({
         {loading ? (
           <LoadingState label="보관함을 불러오는 중" />
         ) : insights.length > 0 ? (
-          <InsightGrid insights={insights} />
+          <InsightGrid
+            insights={insights}
+            onDeleteInsight={onDeleteInsight}
+            onUpdateInsight={onUpdateInsight}
+          />
         ) : (
           <EmptyState
             actionLabel="링크 저장"

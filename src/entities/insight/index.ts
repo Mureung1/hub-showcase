@@ -1,5 +1,10 @@
 export { filterInsights } from './model/insight';
-export type { Insight, InsightCategory } from './model/insight';
+export type {
+  Insight,
+  InsightCategory,
+  InsightContextInput,
+  InsightMutationResult,
+} from './model/insight';
 export type {
   InsightRepository,
   InsightRepositoryLoadResult,
