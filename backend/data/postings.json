@@ -1,0 +1,172 @@
+[
+  {
+    "id": 1,
+    "category": "채용",
+    "org": "삼성전자",
+    "title": "2026 하반기 신입사원 공개채용 (소프트웨어 엔지니어)",
+    "deadline": "2026-09-10",
+    "field": "소프트웨어 엔지니어링",
+    "target": "4년제 대학 졸업 및 졸업예정자",
+    "applyMethod": "온라인 지원 후 서류/면접 전형",
+    "conditions": ["지원 형태: 개인 지원 (졸업예정자 가능)", "근무지: 수원/서울"],
+    "keywords": ["컴퓨터공학", "소프트웨어", "정보처리기사", "백엔드", "개발", "SW"],
+    "gpaMin": 3.0,
+    "essayQuestions": [
+      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 },
+      { "question": "관련 경험과 역량을 작성해주세요.", "maxLength": 500 }
+    ]
+  },
+  {
+    "id": 2,
+    "category": "채용",
+    "org": "LG전자",
+    "title": "2026 하반기 신입사원 채용 (SW 직군)",
+    "deadline": "2026-09-20",
+    "field": "임베디드 소프트웨어 개발",
+    "target": "4년제 대학 졸업 및 졸업예정자",
+    "applyMethod": "온라인 지원 후 서류/직무적성검사/면접 전형",
+    "conditions": ["지원 형태: 개인 지원 (졸업예정자 가능)", "근무지: 서울/평택"],
+    "keywords": ["전자공학", "컴퓨터공학", "임베디드", "C언어", "정보처리기사", "SW"],
+    "gpaMin": 3.0,
+    "essayQuestions": [
+      { "question": "지원 직무와 관련해 본인의 강점을 작성해주세요.", "maxLength": 500 },
+      { "question": "협업 경험 중 어려움을 극복한 사례를 작성해주세요.", "maxLength": 500 }
+    ]
+  },
+  {
+    "id": 3,
+    "category": "채용",
+    "org": "쿠팡",
+    "title": "2026 신입 백엔드 개발자 채용",
+    "deadline": "2026-08-25",
+    "field": "백엔드 개발",
+    "target": "전공 무관, 4년제 대학 졸업 및 졸업예정자",
+    "applyMethod": "온라인 지원 후 코딩 테스트/면접 전형",
+    "conditions": ["지원 형태: 개인 지원", "근무지: 서울(잠실)"],
+    "keywords": ["컴퓨터공학", "백엔드", "서버", "정보처리기사", "SQLD", "개발"],
+    "gpaMin": 2.8,
+    "essayQuestions": [
+      { "question": "지원 동기와 입사 후 포부를 작성해주세요.", "maxLength": 500 },
+      { "question": "개발 관련 프로젝트/현장실습 경험을 구체적으로 작성해주세요.", "maxLength": 500 }
+    ]
+  },
+  {
+    "id": 4,
+    "category": "채용",
+    "org": "SK하이닉스",
+    "title": "2026 하반기 신입 채용 (반도체 설계)",
+    "deadline": "2026-09-15",
+    "field": "반도체 설계",
+    "target": "전자/전기/신소재공학 등 관련 전공 4년제 대학 졸업 및 졸업예정자",
+    "applyMethod": "온라인 지원 후 서류/면접 전형",
+    "conditions": ["지원 형태: 개인 지원 (졸업예정자 가능)", "근무지: 이천/청주"],
+    "keywords": ["전자공학", "신소재공학", "반도체", "회로설계", "정보처리기사"],
+    "gpaMin": 3.2,
+    "essayQuestions": [
+      { "question": "지원 분야와 관련된 전공 지식 및 경험을 작성해주세요.", "maxLength": 500 },
+      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 }
+    ]
+  },
+  {
+    "id": 5,
+    "category": "인턴십",
+    "org": "카카오",
+    "title": "하계 인턴십 프로그램",
+    "deadline": "2026-08-05",
+    "field": "IT 서비스 기획 / 개발 보조",
+    "target": "전공 무관, 4년제 대학 재학생",
+    "applyMethod": "온라인 제출",
+    "conditions": ["근무 기간: 8주(전일 근무)", "참가 형태: 개인 지원"],
+    "keywords": ["컴퓨터공학", "정보처리기사", "IT서비스", "기획", "개발"],
+    "gpaMin": 3.0,
+    "essayQuestions": [
+      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 },
+      { "question": "관련 경험과 역량을 작성해주세요.", "maxLength": 500 }
+    ]
+  },
+  {
+    "id": 6,
+    "category": "인턴십",
+    "org": "토스(비바리퍼블리카)",
+    "title": "2026 하계 프로덕트 인턴십",
+    "deadline": "2026-08-10",
+    "field": "프로덕트 기획 / 개발",
+    "target": "전공 무관, 4년제 대학(원) 재학생 및 휴학생",
+    "applyMethod": "온라인 지원 후 과제 전형/면접",
+    "conditions": ["근무 기간: 10주(전일 근무)", "참가 형태: 개인 지원"],
+    "keywords": ["경영학", "산업공학", "컴퓨터공학", "기획", "데이터분석", "SQLD"],
+    "gpaMin": 3.0,
+    "essayQuestions": [
+      { "question": "이 인턴십에 지원한 이유를 작성해주세요.", "maxLength": 500 },
+      { "question": "문제를 정의하고 해결한 경험을 작성해주세요.", "maxLength": 500 }
+    ]
+  },
+  {
+    "id": 7,
+    "category": "공모전",
+    "org": "LG유플러스",
+    "title": "2026 대학생 서비스 아이디어 공모전",
+    "deadline": "2026-08-20",
+    "field": "서비스 기획 / 아이디어 제안",
+    "target": "전국 4년제 대학 재학생",
+    "applyMethod": "온라인 제출",
+    "conditions": ["참가 형태: 개인 또는 3인 이하 팀"],
+    "keywords": ["경영학", "산업공학", "미디어커뮤니케이션", "기획", "창업동아리"],
+    "gpaMin": 0,
+    "essayQuestions": [
+      { "question": "제안하는 서비스 아이디어와 기획 배경을 작성해주세요.", "maxLength": 500 },
+      { "question": "관련 경험과 역량을 작성해주세요.", "maxLength": 500 }
+    ]
+  },
+  {
+    "id": 8,
+    "category": "공모전",
+    "org": "우아한형제들",
+    "title": "2026 대학생 기획 공모전",
+    "deadline": "2026-08-30",
+    "field": "서비스/마케팅 기획",
+    "target": "전국 대학(원) 재학생 및 휴학생",
+    "applyMethod": "온라인 제출",
+    "conditions": ["참가 형태: 개인 또는 4인 이하 팀"],
+    "keywords": ["경영학", "미디어커뮤니케이션", "마케팅", "기획", "콘텐츠"],
+    "gpaMin": 0,
+    "essayQuestions": [
+      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 },
+      { "question": "기획안의 핵심 아이디어와 차별점을 작성해주세요.", "maxLength": 500 }
+    ]
+  },
+  {
+    "id": 9,
+    "category": "대외활동",
+    "org": "네이버",
+    "title": "대학생 서포터즈 8기 모집",
+    "deadline": "2026-07-30",
+    "field": "서비스 홍보 / 콘텐츠 제작",
+    "target": "전국 대학(원) 재학생 및 휴학생",
+    "applyMethod": "온라인 제출",
+    "conditions": ["활동 기간: 3개월(주 1회 정기 미팅)", "참가 형태: 개인 지원"],
+    "keywords": ["미디어커뮤니케이션", "콘텐츠", "홍보", "현장실습", "창업동아리"],
+    "gpaMin": 0,
+    "essayQuestions": [
+      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 },
+      { "question": "관련 경험과 역량을 작성해주세요.", "maxLength": 500 }
+    ]
+  },
+  {
+    "id": 10,
+    "category": "대외활동",
+    "org": "SK텔레콤",
+    "title": "대학생 서포터즈 T-Bright 모집",
+    "deadline": "2026-08-12",
+    "field": "IT/통신 서비스 홍보 및 콘텐츠 제작",
+    "target": "전국 대학(원) 재학생 및 휴학생",
+    "applyMethod": "온라인 제출",
+    "conditions": ["활동 기간: 4개월(월 2회 정기 미팅)", "참가 형태: 개인 지원"],
+    "keywords": ["미디어커뮤니케이션", "경영학", "콘텐츠", "홍보", "현장실습"],
+    "gpaMin": 0,
+    "essayQuestions": [
+      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 },
+      { "question": "SNS/콘텐츠 제작 관련 경험을 작성해주세요.", "maxLength": 500 }
+    ]
+  }
+]
