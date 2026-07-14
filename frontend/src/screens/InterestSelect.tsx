@@ -38,7 +38,12 @@ const INTERESTS: Interest[] = [
   { id: '21', name: '교육·학습법', displayOrder: 21 },
 ]
 
-export default function InterestSelect() {
+type InterestSelectProps = {
+  // 저장이 끝나면 부모(App)에게 알린다. 다음 화면으로 넘기는 것은 부모가 결정한다.
+  onComplete: () => void
+}
+
+export default function InterestSelect({ onComplete }: InterestSelectProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [showAll, setShowAll] = useState(false)
 
@@ -119,7 +124,12 @@ export default function InterestSelect() {
       </main>
 
       <footer className="screen-footer">
-        <button type="button" className="btn-primary" disabled={!canSubmit}>
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={!canSubmit}
+          onClick={onComplete}
+        >
           {canSubmit
             ? `${selectedCount}개 선택 · 깸 시작하기`
             : '관심사를 골라주세요'}

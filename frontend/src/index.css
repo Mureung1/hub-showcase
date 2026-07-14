@@ -60,6 +60,29 @@ button {
   gap: 8px;
 }
 
+.screen-header h1 {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--ink);
+}
+
+.icon-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
 .screen-main {
   flex: 1;
   padding: 0 20px 24px;
@@ -88,5 +111,125 @@ button {
 .btn-primary:disabled {
   background: rgba(22, 48, 31, 0.25);
   color: rgba(255, 255, 255, 0.7);
+  cursor: not-allowed;
+}
+
+/* 카드. 여러 화면이 공유한다. */
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--card-radius);
+  padding: 16px;
+  box-shadow: 0 4px 14px rgba(22, 48, 31, 0.05);
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.card-meta .dot {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+}
+
+.topic-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(134, 214, 190, 0.35);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+}
+
+.card-title--compact {
+  font-size: 16px;
+  margin-bottom: 0;
+}
+
+.card-body {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.card-footer {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.card-link {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-link svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 하단 탭바 */
+.bottom-tabbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 6px;
+  box-shadow: 0 8px 20px rgba(22, 48, 31, 0.08);
+}
+
+.bottom-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bottom-tab svg {
+  width: 20px;
+  height: 20px;
+}
+
+.bottom-tab--active {
+  background: var(--ink);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.bottom-tab:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
