@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as friendsApi from './friendsApi'
-import type { FriendRequestSummary, FriendSummary } from './types'
+import type { FriendGroup, FriendRequestSummary, FriendSummary } from './types'
 
 export function useFriendsManager() {
   const [friends, setFriends] = useState<FriendSummary[]>([])
@@ -8,6 +8,8 @@ export function useFriendsManager() {
   const [incomingRequests, setIncomingRequests] = useState<FriendRequestSummary[]>([])
   const [outgoingRequests, setOutgoingRequests] = useState<FriendRequestSummary[]>([])
   const [requestsLoading, setRequestsLoading] = useState(true)
+  const [groups, setGroups] = useState<FriendGroup[]>([])
+  const [groupsLoading, setGroupsLoading] = useState(true)
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
@@ -27,6 +29,11 @@ export function useFriendsManager() {
       })
       .catch(() => { if (!cancelled) setNotice('친구 요청을 불러오지 못했어요. 잠시 후 다시 시도해주세요.') })
       .finally(() => { if (!cancelled) setRequestsLoading(false) })
+
+    friendsApi.fetchGroups()
+      .then((loaded) => { if (!cancelled) setGroups(loaded) })
+      .catch(() => { if (!cancelled) setNotice('그룹 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.') })
+      .finally(() => { if (!cancelled) setGroupsLoading(false) })
 
     return () => {
       cancelled = true
@@ -82,9 +89,59 @@ export function useFriendsManager() {
     try {
       await friendsApi.removeFriend(friendId)
       setFriends((current) => current.filter((friend) => friend.id !== friendId))
+      setGroups((current) => current.map((group) => ({
+        ...group,
+        members: group.members.filter((member) => member.id !== friendId),
+      })))
       setNotice('친구를 삭제했어요.')
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '친구를 삭제하지 못했어요.')
+    }
+  }
+
+  const createGroup = async (name: string) => {
+    try {
+      const group = await friendsApi.createGroup(name)
+      setGroups((current) => [...current, group])
+      setNotice(`'${group.name}' 그룹을 만들었어요.`)
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '그룹을 만들지 못했어요.')
+    }
+  }
+
+  const renameGroup = async (groupId: string, name: string) => {
+    try {
+      const group = await friendsApi.renameGroup(groupId, name)
+      setGroups((current) => current.map((item) => (item.id === groupId ? group : item)))
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '그룹 이름을 저장하지 못했어요.')
+    }
+  }
+
+  const deleteGroup = async (groupId: string) => {
+    try {
+      await friendsApi.deleteGroup(groupId)
+      setGroups((current) => current.filter((group) => group.id !== groupId))
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '그룹을 삭제하지 못했어요.')
+    }
+  }
+
+  const addGroupMember = async (groupId: string, friendUserId: string) => {
+    try {
+      const group = await friendsApi.addGroupMember(groupId, friendUserId)
+      setGroups((current) => current.map((item) => (item.id === groupId ? group : item)))
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '그룹에 친구를 추가하지 못했어요.')
+    }
+  }
+
+  const removeGroupMember = async (groupId: string, friendUserId: string) => {
+    try {
+      const group = await friendsApi.removeGroupMember(groupId, friendUserId)
+      setGroups((current) => current.map((item) => (item.id === groupId ? group : item)))
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '그룹에서 친구를 빼지 못했어요.')
     }
   }
 
@@ -94,12 +151,19 @@ export function useFriendsManager() {
     incomingRequests,
     outgoingRequests,
     requestsLoading,
+    groups,
+    groupsLoading,
     notice,
     sendFriendRequest,
     acceptRequest,
     declineRequest,
     cancelRequest,
     removeFriend,
+    createGroup,
+    renameGroup,
+    deleteGroup,
+    addGroupMember,
+    removeGroupMember,
   }
 }
 

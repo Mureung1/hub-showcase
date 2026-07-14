@@ -58,6 +58,12 @@ export type FriendRequestSummary = {
   createdAt: string
 }
 
+export type FriendGroup = {
+  id: string
+  name: string
+  members: FriendSummary[]
+}
+
 export type FriendPost = {
   id: number
   friendId: string

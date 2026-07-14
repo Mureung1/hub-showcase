@@ -76,6 +76,17 @@ async function main() {
     create: { userId: friendUser.id, friendId: user.id },
   })
 
+  const demoGroup = await prisma.shareGroup.upsert({
+    where: { ownerId_name: { ownerId: user.id, name: '절친 테스트' } },
+    update: {},
+    create: { ownerId: user.id, name: '절친 테스트' },
+  })
+  await prisma.shareGroupMember.upsert({
+    where: { groupId_friendUserId: { groupId: demoGroup.id, friendUserId: friendUser.id } },
+    update: {},
+    create: { groupId: demoGroup.id, friendUserId: friendUser.id },
+  })
+
   console.log('시드 완료')
 }
 

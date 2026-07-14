@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { logout as logoutRequest, type AuthUser } from '../auth/authClient'
 import { BottomNavigation } from './scheduler/BottomNavigation'
 import { CalendarView } from './scheduler/CalendarView'
+import { GroupManagerView } from './scheduler/GroupManagerView'
 import { FriendsView, MyHomeView, ProfileView } from './scheduler/StaticViews'
 import type { AppTab, FriendPost } from './scheduler/types'
 import { useFriendsManager } from './scheduler/useFriendsManager'
@@ -19,6 +20,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const [dodoMessage, setDodoMessage] = useState('오늘 일정 하나만 더 하면 같이 놀 수 있어!')
   const [selectedOwner, setSelectedOwner] = useState('me')
   const [myPosts, setMyPosts] = useState<FriendPost[]>([])
+  const [showGroupManager, setShowGroupManager] = useState(false)
   const scheduleManager = useScheduleManager()
   const friendsManager = useFriendsManager()
 
@@ -33,6 +35,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const changeTab = (tab: AppTab) => {
     setActiveTab(tab)
     setMenuOpen(false)
+    setShowGroupManager(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -103,7 +106,13 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
             onViewFriendCalendar={goToFriendCalendar}
           />
         )}
-        {activeTab === 'profile' && <ProfileView />}
+        {activeTab === 'profile' && (
+          showGroupManager ? (
+            <GroupManagerView manager={friendsManager} onBack={() => setShowGroupManager(false)} />
+          ) : (
+            <ProfileView onOpenGroupManager={() => setShowGroupManager(true)} />
+          )
+        )}
       </div>
     </main>
   )
