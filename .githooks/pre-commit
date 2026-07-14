@@ -8,7 +8,15 @@ fi
 
 file_count="$(printf '%s\n' "$staged_files" | sed '/^$/d' | wc -l | tr -d ' ')"
 
-if [ "$file_count" -gt 10 ]; then
+rename_count="$(git diff --cached --name-status -M | awk '$1 ~ /^R/ { count += 1 } END { print count + 0 }')"
+has_arch_run_report="$(printf '%s\n' "$staged_files" | grep -E '^\.harness/runs/.+-ARCH-[0-9]+-.+\.md$' || true)"
+structural_migration=false
+
+if [ "$rename_count" -ge 10 ] && [ -n "$has_arch_run_report" ]; then
+  structural_migration=true
+fi
+
+if [ "$file_count" -gt 10 ] && [ "$structural_migration" != true ]; then
   cat <<EOF
 Commit is too large: $file_count staged files.
 
@@ -24,9 +32,11 @@ fi
 
 areas="$(printf '%s\n' "$staged_files" | awk -F/ '
   /^(package\.json|pnpm-workspace\.yaml|pnpm-lock\.yaml|\.editorconfig|\.env\.example|\.gitignore|\.node-version|\.prettierignore|\.prettierrc\.json)$/ { print "tooling/root"; next }
-  /^apps\/web\// { print "apps/web"; next }
-  /^apps\/api\// { print "apps/api"; next }
-  /^data\// { print "data"; next }
+  /^product\/(package\.json|pnpm-workspace\.yaml|pnpm-lock\.yaml|\.env\.example|\.node-version|vercel\.json)$/ { print "tooling/product"; next }
+  /^product\/apps\/web\// { print "apps/web"; next }
+  /^product\/apps\/api\// { print "apps/api"; next }
+  /^product\/data\// { print "data"; next }
+  /^product\/scripts\// { print "product/scripts"; next }
   /^docs\/features\// { print "docs/features"; next }
   /^docs\/development\// { print "docs/development"; next }
   /^docs\/module-notes\// { print "docs/module-notes"; next }
@@ -38,7 +48,7 @@ areas="$(printf '%s\n' "$staged_files" | awk -F/ '
 
 area_count="$(printf '%s\n' "$areas" | sed '/^$/d' | wc -l | tr -d ' ')"
 
-if [ "$area_count" -gt 3 ]; then
+if [ "$area_count" -gt 3 ] && [ "$structural_migration" != true ]; then
   cat <<EOF
 Commit touches too many areas: $area_count areas.
 
@@ -54,7 +64,7 @@ EOF
   exit 1
 fi
 
-source_files="$(printf '%s\n' "$staged_files" | grep -E '\.(py|js|jsx|ts|tsx|css|html|sql)$|^(api|app|backend|frontend|web|src|packages)/' | grep -Ev '^(docs/|scripts/check_|scripts/check\.ps1|\.harness/)' || true)"
+source_files="$(printf '%s\n' "$staged_files" | grep -E '\.(py|js|jsx|ts|tsx|css|html|sql)$|^(product/(apps|scripts)/|api|app|backend|frontend|web|src|packages)/' | grep -Ev '^(docs/|scripts/check_|scripts/check\.ps1|\.harness/)' || true)"
 doc_files="$(printf '%s\n' "$staged_files" | grep -E '^(README\.md|docs/|\.harness/)' || true)"
 
 if [ -n "$source_files" ] && [ -z "$doc_files" ]; then

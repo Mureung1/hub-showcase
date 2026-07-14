@@ -68,11 +68,11 @@ docs: hardware gate와 운영 절차
 ## 7. Verification Plan
 
 ```powershell
-uv run --directory apps/api pytest
-uv run --directory apps/api ruff check .
-pnpm --dir apps/web test
-pnpm --dir apps/web lint
-pnpm --dir apps/web build
+uv run --directory product/apps/api pytest
+uv run --directory product/apps/api ruff check .
+pnpm --dir product/apps/web test
+pnpm --dir product/apps/web lint
+pnpm --dir product/apps/web build
 ```
 
 수동 확인:

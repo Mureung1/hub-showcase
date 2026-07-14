@@ -66,9 +66,9 @@ docs: 공식 1.0.0과 조사 근거
 ## 7. Verification Plan
 
 ```powershell
-uv run --directory apps/api pytest
-uv run --directory apps/api ruff check .
-uv run --directory apps/api ruff format --check .
+uv run --directory product/apps/api pytest
+uv run --directory product/apps/api ruff check .
+uv run --directory product/apps/api ruff format --check .
 python scripts/check_docs_html.py
 ```
 
@@ -96,8 +96,8 @@ why:
 - explain why a market is strong or risky without treating every cluster as saturation
 
 verify:
-- uv run --directory apps/api pytest
-- uv run --directory apps/api ruff check .
+- uv run --directory product/apps/api pytest
+- uv run --directory product/apps/api ruff check .
 - python scripts/check_docs_html.py
 ```
 

@@ -38,6 +38,6 @@ if (Get-Command node -ErrorAction SilentlyContinue) {
 }
 
 Write-Host "== Application checks =="
-Invoke-Checked "Application checks" { pnpm check }
+Invoke-Checked "Application checks" { pnpm --dir product check }
 
 Write-Host "== Harness check passed =="

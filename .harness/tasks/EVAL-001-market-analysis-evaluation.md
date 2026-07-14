@@ -47,7 +47,7 @@ docs/development/tasks.md
 ## 5. Expected Changes
 
 ```text
-scripts/evaluate_market_analysis.py
+product/scripts/evaluate_market_analysis.py
 .harness/evaluations/2026-07-11-market-analysis-v1.json
 evaluation Run Report와 backlog status
 ```
@@ -64,8 +64,8 @@ evaluation Run Report와 backlog status
 ## 7. Verification Plan
 
 ```powershell
-uv run --directory apps/api python ../../scripts/evaluate_market_analysis.py
-uv run --directory apps/api pytest
+uv run --directory product/apps/api python ../../product/scripts/evaluate_market_analysis.py
+uv run --directory product/apps/api pytest
 ```
 
 ## 8. Documentation Updates

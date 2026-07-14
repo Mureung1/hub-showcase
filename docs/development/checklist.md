@@ -115,7 +115,7 @@
 - [x] 기술 스택을 React + Vite + TypeScript로 확정한다.
 - [ ] 대상 상권의 footprint와 높이 데이터로 MapLibre extrusion PoC를 만든다.
 - [ ] MapLibre 채택 또는 2D fallback 여부를 PoC 결과로 결정한다.
-- [x] 디자인 시스템 token을 `apps/web/src/styles/tokens.css`로 구현한다.
+- [x] 디자인 시스템 token을 `product/apps/web/src/styles/tokens.css`로 구현한다.
 - [ ] 거대 App 파일을 feature/component/hook으로 분리하고 기존 동작 test를 유지한다.
 - [ ] 공통 button, filter, panel, score, marker component를 구현한다.
 - [ ] desktop/mobile visual regression 기준 화면을 만든다.
@@ -185,8 +185,8 @@
 
 ## 10.1 제품·문서·보안 경계
 
-- [ ] 실제 서비스 source와 문서를 물리 폴더로 분리한다.
-- [ ] 제품과 문서를 서로 다른 배포 artifact로 build한다.
+- [x] 실제 서비스 source와 문서를 물리 폴더로 분리한다.
+- [x] 제품과 문서를 서로 다른 배포 artifact로 build한다.
 - [ ] 제품 기본 설정에서 Scene API가 비활성화된다.
 - [ ] SEC-001~008을 현재 구조에 맞춰 재현·수정·회귀 검증한다.
 

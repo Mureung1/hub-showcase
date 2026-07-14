@@ -1,11 +1,11 @@
-# 기능 스펙: 2.5D 상권 지도와 유동인구 Layer
+# 기능 스펙: 상권 지도, 2.5D 건물과 핵심 3D Storefront
 
 ## 1. 문서 상태
 
 ```text
 구분: 주기능의 지도 표현 계층
 우선순위: P0
-상태: LocalTwin 2.5D 지도 프로토타입 구현
+상태: LocalTwin 2.5D 지도 구현, 핵심 3D storefront는 MAP-004 계획
 ```
 
 이 기능은 공공데이터 기반 상권 분석 결과를 지도 위에서 탐색하는 핵심 화면이다. 지도는 상권 전체를 비교하는 분석 공간이고, 직접 촬영한 Gaussian Splatting 현장 상세보기와 역할을 분리한다.
@@ -90,7 +90,7 @@ custom style
 
 `deck.gl`은 v0.1 기본 의존성에 포함하지 않는다. 현재 상권별 약 5,000~7,000개 도로·건물·POI feature는 MapLibre GeoJSON Layer로 렌더링한다.
 
-`LocalTwin 지도`는 지도 엔진을 새로 만드는 기능이 아니다. MapLibre는 좌표·카메라·GPU 렌더링에만 사용하고, 화면에 보이는 도로·건물·녹지·물·POI는 `scripts/build_localtwin_map.py`가 OSM/Overpass 원본에서 생성한 프로젝트 소유 GeoJSON snapshot이다. 외부 basemap tile 없이 LocalTwin 전용 색상, 도로 폭, label과 `fill-extrusion`을 적용한다. 사용자는 같은 화면에서 외부 `실제 지도` mode로 즉시 복귀해 좌표를 비교할 수 있다.
+`LocalTwin 지도`는 지도 엔진을 새로 만드는 기능이 아니다. MapLibre는 좌표·카메라·GPU 렌더링에만 사용하고, 화면에 보이는 도로·건물·녹지·물·POI는 `product/scripts/build_localtwin_map.py`가 OSM/Overpass 원본에서 생성한 프로젝트 소유 GeoJSON snapshot이다. 외부 basemap tile 없이 LocalTwin 전용 색상, 도로 폭, label과 `fill-extrusion`을 적용한다. 사용자는 같은 화면에서 외부 `실제 지도` mode로 즉시 복귀해 좌표를 비교할 수 있다.
 
 ```mermaid
 flowchart LR
@@ -105,9 +105,9 @@ flowchart LR
 
 | 상권 | 반경 | feature 수 | 파일 |
 | --- | ---: | ---: | --- |
-| 연남 | 720m | 5,331 | `apps/web/public/map/yeonnam.geojson` |
-| 홍대 | 720m | 7,033 | `apps/web/public/map/hongdae.geojson` |
-| 합정 | 720m | 6,026 | `apps/web/public/map/hapjeong.geojson` |
+| 연남 | 720m | 5,331 | `product/apps/web/public/map/yeonnam.geojson` |
+| 홍대 | 720m | 7,033 | `product/apps/web/public/map/hongdae.geojson` |
+| 합정 | 720m | 6,026 | `product/apps/web/public/map/hapjeong.geojson` |
 
 모든 파일은 `retrieved_at`, source URL, ODbL 1.0과 `© OpenStreetMap contributors` attribution을 metadata로 가진다.
 
@@ -174,20 +174,321 @@ Canonical GeoJSON 예시:
 
 반경 검색은 분석 중심점과 점포 좌표 사이의 Haversine 거리를 사용한다.
 
-### 후보 점포 prefab
+### 8.1 현재 prefab과 MAP-004 목표
 
-분석 후보 점포는 실제 좌표 위에 작은 low-poly storefront prefab으로 표시한다. prefab의 facade는 실제 촬영 외관을 복제한 것이 아니라 지도에서 업종과 선택 상태를 빠르게 구분하기 위한 시각화다.
+현재 구현은 실제 점포 좌표 위에 `MapLibre HTML Marker`를 놓고 HTML/CSS로 창문·문·간판·화분을 그린다. 화면에서는 작은 건물처럼 보이지만 지도 좌표계 안의 3D mesh는 아니므로 회전·원근·가림 관계와 실제 크기를 완전히 공유하지 않는다.
+
+`MAP-004`에서는 핵심 점포만 지도 공간 안의 stylized low-poly 3D storefront로 전환한다. 여기서 storefront는 다음 조합을 뜻한다.
+
+```text
+기본 3D prefab geometry
++ 업종군 material/palette
++ UV-mapped category decal
++ 선택적인 대표 3D attachment
+```
+
+배경 건물은 수천 개를 동시에 렌더링하므로 기존 `fill-extrusion`을 유지한다. 모든 건물에 창문과 장식을 생성하지 않는다.
 
 ```mermaid
 flowchart LR
-  point["실제 점포 좌표"] --> marker["MapLibre HTML marker"]
-  category["업종"] --> palette["지붕 · 차양 · 간판 palette"]
-  marker --> prefab["창문 · 문 · 간판 · 화분 prefab"]
-  palette --> prefab
-  prefab --> selection["선택 · hover · focus 상태"]
+  source["실제 점포 검색 결과"] --> select["핵심 점포 선별"]
+  select --> link["건물 footprint·facade 연결"]
+  category["canonical 업종 코드"] --> registry["archetype·decal·attachment registry"]
+  link --> layer["MapLibre custom 3D layer"]
+  registry --> asset["Three.js storefront instance"]
+  asset --> layer
+  layer --> sync["지도 선택·상세 panel 동기화"]
 ```
 
-배경 건물은 수천 개를 동시에 렌더링하므로 단순 extrusion을 유지한다. 지붕·차양·창문·문·간판·화분 디테일은 후보 점포에만 적용해 지도 조작 성능과 정보 가독성을 지킨다.
+### 8.2 표현 범위와 핵심 점포 선정
+
+상세 3D를 적용하는 점포는 다음 우선순위로 결정한다.
+
+```text
+1. 현재 선택한 점포 1개
+2. 검색 결과 상위 후보 최대 3개
+3. 같은 업종의 가까운 비교 점포
+4. 나머지 점포는 기존 marker 또는 POI label
+```
+
+동시에 표시하는 상세 storefront 상한은 desktop 12개, mobile 6개로 둔다. 선택 점포는 항상 포함하고 상한을 넘으면 거리, 검색 순위, 선택 업종 일치 순으로 정렬한다. 이 숫자는 첫 구현의 렌더링 상한이며 실제 성능 측정 후 변경할 수 있다.
+
+점포별 표시 단계:
+
+| 조건 | 표현 |
+| --- | --- |
+| 배경 일반 건물 | 기존 footprint `fill-extrusion` |
+| 검색되지 않은 일반 점포 | POI label 또는 단순 marker |
+| 검색 결과 후보 | 간단한 category marker |
+| 핵심 점포 | 3D storefront |
+| 선택 핵심 점포 | outline·높이 offset·상세 panel 동기화 |
+
+### 8.3 시각 언어
+
+채택 방향은 `pastel low-poly miniature + pixel-style category decal`이다.
+
+- 건물 geometry는 둥글고 부드러운 low-poly miniature 비율을 사용한다.
+- 건물 전체를 pixel art로 만들지 않는다.
+- 간판·업종 표식만 16×16 또는 32×32 pixel-art 문법으로 직접 제작한다.
+- 실사 사진과 실제 점포 상표를 texture로 복제하지 않는다.
+- 현재 LocalTwin의 beige·green·soft blue·orange palette를 유지한다.
+- 실제 외관 재현이 아니라 업종과 선택 상태를 읽기 위한 시각화임을 상세 panel에 표시한다.
+- 외부 참고 이미지는 형태 조사에만 사용하고 asset은 프로젝트용으로 새로 그린다. 출처와 license를 조사 기록에 남긴다.
+
+초기 세로 slice는 꽃집 하나로 한다.
+
+```text
+small-shop prefab
++ pale green wall material
++ flower pixel decal
++ striped awning
++ planter·flower basket attachment
+```
+
+형태 조사 시작점:
+
+- [Low Poly Stylized Market Diorama](https://sketchfab.com/3d-models/low-poly-stylized-market-diorama-e886b09419e04e95a620061b5b939bd7): 작은 geometry와 색상으로 시장 분위기를 구분하는 방식
+- [Pixel Art Building Illustration](https://www.fiverr.com/piyanapriyanto/draw-pixel-art-building-illustration): 업종을 간판·차양·진열 소품으로 읽게 하는 방식
+
+위 페이지의 asset을 복사하거나 license가 확인되지 않은 model·texture를 제품에 포함하지 않는다. 구현 전 별도 reference sheet에 `URL, 확인 날짜, 참고 요소, 사용하지 않을 요소, license`를 기록하고 최종 icon과 model은 직접 제작한다.
+
+### 8.4 업종 확장 전략
+
+원본 업종마다 별도 GLB를 만들지 않는다. 업종 코드를 8~10개 시각 archetype으로 묶고 세부 업종은 decal과 attachment로 구분한다.
+
+초기 registry:
+
+| Archetype | 대표 업종 | 공통 geometry | 대표 attachment |
+| --- | --- | --- | --- |
+| `food_drink` | 카페·음식점·제과점 | 넓은 창·차양 | 컵·빵·메뉴판 |
+| `daily_retail` | 편의점·슈퍼·반찬가게 | 밝은 진열창 | 상자·냉장 진열 |
+| `fashion_beauty` | 의류·미용실·화장품 | 세로형 창·간판 | 옷걸이·거울 |
+| `health` | 의원·약국·동물병원 | 단정한 facade | 십자·동물 발자국 |
+| `education` | 학원·독서실 | 반복 창·상부 간판 | 책·연필 |
+| `culture_leisure` | 서점·사진관·노래방 | 포스터 창 | 책·카메라·음표 |
+| `travel_lodging` | 여행사·여관 | 입구 canopy | 가방·침대 표식 |
+| `mobility_repair` | 자동차·자전거 수리 | garage door | 공구·바퀴 |
+| `professional_service` | 중개업·법무·디자인 | 중립 office facade | 문서·펜 |
+| `generic` | 미분류·신규 업종 | 기본 facade | category code badge |
+
+`카페`, `음식점`, `베이커리`, `편의점`, `꽃집`을 첫 asset set으로 만들고 모든 미지원 업종은 `generic`으로 안전하게 표시한다. 업종 매핑 실패 때문에 점포가 사라지면 안 된다.
+
+### 8.5 Asset 계약
+
+ARCH-002 이후 확정된 제품 web root를 기준으로 다음 구조를 사용한다.
+
+```text
+public/assets/storefronts/
+  manifest.json
+  models/
+    small-shop.glb
+    corner-shop.glb
+    service-shop.glb
+  textures/
+    category-atlas.png
+    palette-atlas.png
+  attachments/
+    planter.glb
+    flower-basket.glb
+    menu-board.glb
+```
+
+`manifest.json` 최소 계약:
+
+```json
+{
+  "version": "1.0.0",
+  "archetypes": {
+    "food_drink": {
+      "model": "models/small-shop.glb",
+      "materialVariant": "warm_orange",
+      "decal": "cafe",
+      "attachments": ["menu-board", "planter"]
+    }
+  },
+  "categories": {
+    "CS100010": { "archetype": "food_drink", "decal": "cafe" },
+    "CS300028": { "archetype": "daily_retail", "decal": "flower", "attachments": ["flower-basket"] }
+  },
+  "fallback": { "archetype": "generic", "decal": "unknown" }
+}
+```
+
+Asset 규칙:
+
+- 모델은 web 전달용 binary glTF인 `.glb`를 사용한다.
+- 동일 prefab geometry와 material을 instance 간 재사용한다.
+- pixel decal은 texture atlas 한 장에 모으고 UV 영역만 바꾼다.
+- pixel 표식은 확대 시 흐려지지 않게 nearest magnification을 사용하되 축소 시 shimmer 여부를 실제 mobile에서 확인한다.
+- real-time shadow map은 사용하지 않고 baked shading 또는 단순 shadow plane을 사용한다.
+- texture와 geometry는 component unmount 또는 map 교체 시 `dispose()`한다.
+- 초기 asset 전체 전송량은 압축 전후를 Run Report에 기록하고 기존 build와 비교한다. 숫자만 통과 기준으로 삼지 않고 첫 지도 표시 지연 여부를 함께 확인한다.
+
+### 8.6 점포·건물 데이터 계약
+
+3D storefront는 화면용 hard-coded 점포 배열이 아니라 SEARCH-001 결과를 입력으로 받는다.
+
+필수 입력:
+
+```ts
+type StorefrontPlacement = {
+  storeId: string;
+  name: string;
+  categoryCode: string;
+  categoryName: string;
+  longitude: number;
+  latitude: number;
+  buildingId: string | null;
+  facadeBearing: number | null;
+  visualPriority: "selected" | "candidate" | "context";
+};
+```
+
+배치 규칙:
+
+1. 점포 Point가 building Polygon 안에 있으면 `buildingId`를 연결한다.
+2. 같은 건물에 여러 점포가 있으면 점포별 작은 offset을 facade 방향으로 배치한다.
+3. Point가 어떤 Polygon에도 포함되지 않으면 가까운 건물에 강제 연결하지 않고 marker fallback을 사용한다.
+4. `facadeBearing`은 건물의 도로 인접 edge 또는 수동 검증값을 사용한다.
+5. 방향을 결정할 근거가 없으면 camera-facing marker fallback을 사용하고 임의 방향을 실제 facade처럼 표현하지 않는다.
+6. 좌표계는 WGS84로 통일한 후 지도에 전달한다.
+
+### 8.7 Rendering 구조
+
+현재 stack의 MapLibre와 Three.js를 사용하고 새 3D framework는 추가하지 않는다.
+
+기술 기준은 [MapLibre GL JS](https://maplibre.org/projects/gl-js/)의 custom 3D layer 가능 범위와 [Three.js GLTFLoader](https://threejs.org/docs/pages/GLTFLoader.html)의 glTF 2.0 asset loading·resource cleanup 주의를 따른다.
+
+예상 module:
+
+```text
+features/map/storefronts/
+  StorefrontLayer.ts
+  StorefrontAssetRegistry.ts
+  StorefrontPlacement.ts
+  storefrontSelection.ts
+  storefronts.test.ts
+```
+
+책임:
+
+- `StorefrontLayer`: MapLibre custom layer lifecycle (`onAdd`, `render`, `onRemove`)
+- `StorefrontAssetRegistry`: GLB·texture를 한 번 load하고 archetype variant 제공
+- `StorefrontPlacement`: WGS84 좌표를 Mercator model matrix로 변환
+- `storefrontSelection`: desktop/mobile 상한과 핵심 점포 결정
+- React adapter: 선택 state와 map layer update를 연결
+
+구현 원칙:
+
+- MapLibre가 camera와 WebGL context를 소유한다.
+- 별도 무한 animation loop를 만들지 않고 map repaint lifecycle을 사용한다.
+- 모델 좌표는 `MercatorCoordinate.fromLngLat`와 meter scale로 계산한다.
+- 선택·hover 변화는 geometry reload 없이 instance transform/material state만 바꾼다.
+- GLB load 실패, WebGL context 문제 또는 reduced device capability에서는 기존 HTML marker로 즉시 fallback한다.
+- 초기 구현에는 deck.gl 또는 별도 renderer canvas를 추가하지 않는다.
+
+### 8.8 Interaction과 접근성
+
+custom 3D mesh는 DOM button이 아니므로 접근 가능한 조작 경로를 별도로 유지한다.
+
+- 지도 밖 점포 목록의 실제 button을 keyboard source of truth로 유지한다.
+- 목록 focus와 3D 선택 state를 양방향 동기화한다.
+- canvas pointer 선택은 raycast 또는 screen-space hit target으로 store ID를 찾는다.
+- 선택 state를 색상만으로 구분하지 않고 scale·outline·label을 함께 사용한다.
+- `prefers-reduced-motion`에서는 bounce·회전 animation 없이 즉시 상태를 전환한다.
+- WebGL fallback에서도 검색·선택·상세보기 기능은 유지한다.
+
+### 8.9 성능과 LOD
+
+LOD 기준:
+
+```text
+먼 zoom: 핵심 점포도 category symbol
+중간 zoom: 단순 storefront body + decal
+가까운 zoom: attachment 포함 상세 storefront
+mobile: desktop보다 낮은 상세 상한과 attachment 수
+```
+
+검증은 동일한 browser·viewport·상권·점포 수에서 변경 전후를 비교한다.
+
+- GLB와 texture를 점포마다 다시 load하지 않는다.
+- 동일 archetype은 가능하면 `InstancedMesh` 또는 공유 geometry/material을 사용한다.
+- 선택 변경 시 network request와 asset parse가 다시 발생하지 않아야 한다.
+- desktop 12개·mobile 6개 상세 storefront에서 지도 pan·zoom·rotate가 입력을 놓치지 않는지 확인한다.
+- median frame time, first map render와 asset load 시간을 기록하되 기준 측정 없이 `60fps 보장`이라고 표현하지 않는다.
+- mobile GPU에서 context loss, 과도한 device pixel ratio와 memory leak을 확인한다.
+
+### 8.10 구현 순서
+
+```text
+Gate 0: ARCH-002 후 최종 product asset 경로 확인
+Gate 1: SEARCH-001의 실제 점포 ID·업종·좌표 contract 확인
+Gate 2: 꽃집 1개 vertical slice와 generic fallback 제작
+Gate 3: MapLibre custom 3D layer에서 위치·회전·선택 검증
+Gate 4: 카페·음식점·베이커리·편의점 asset set 확대
+Gate 5: canonical 업종 → archetype registry 확대
+Gate 6: desktop/mobile 성능·접근성·fallback 회귀 검증
+```
+
+Gate 2가 실패하면 전체 asset 제작으로 확대하지 않는다. 먼저 좌표·camera·context 공유 문제를 해결한다.
+
+### 8.11 예상 변경 파일
+
+ARCH-002 결과에 따라 root는 달라질 수 있지만 역할 기준 예상 범위는 다음과 같다.
+
+```text
+web/src/features/map/storefronts/*        custom layer·asset·placement
+web/src/features/market/types.ts          점포 ID·업종 코드·building 연결 type
+web/src/App.tsx 또는 지도 feature shell   layer 조합만 연결
+web/public/assets/storefronts/*            GLB·texture atlas·manifest
+api search response schema                실제 점포 배치 필드
+tests                                     registry·selection·fallback·UI 회귀
+docs/design/design-system.md              시각 언어
+docs/features/market-map-experience.md     canonical 기능 스펙
+```
+
+### 8.12 검증 시나리오
+
+자동 검증:
+
+```text
+manifest의 모든 model·decal·attachment 경로가 존재한다.
+모든 canonical category는 명시 mapping 또는 generic fallback을 가진다.
+핵심 점포 상한과 정렬이 desktop/mobile에서 결정적이다.
+동일 storeId 선택이 목록·지도·inspector에서 일치한다.
+asset load 실패와 WebGL fallback에서 HTML marker가 표시된다.
+component unmount 후 geometry·material·texture dispose가 호출된다.
+기존 market/category/radius UI test가 유지된다.
+```
+
+수동 검증:
+
+```text
+연남·홍대·합정에서 점포가 실제 좌표에 붙어 있다.
+map rotate 시 facade 방향과 원근이 자연스럽다.
+꽃집·카페·음식점·베이커리·편의점이 간판과 장식으로 구분된다.
+선택 점포가 색상 외 outline·scale·label로 구분된다.
+390×844에서 pan·zoom·점포 선택과 inspector 이동이 가능하다.
+reduced motion과 WebGL fallback에서도 핵심 검색 흐름이 가능하다.
+```
+
+### 8.13 완료 조건과 제외 범위
+
+완료 조건:
+
+- 실제 검색 결과의 핵심 점포가 지도 좌표의 3D storefront로 표시된다.
+- 꽃집과 현재 지원 4개 업종이 직접 제작한 decal·대표 장식으로 구분된다.
+- 신규 업종은 새 GLB 없이 registry mapping과 decal 추가로 확장할 수 있다.
+- 미분류 업종, 건물 연결 실패, asset load 실패가 marker fallback으로 처리된다.
+- 기존 지도·필터·상세 panel 동작과 mobile 접근성이 회귀하지 않는다.
+
+제외:
+
+- 서울 모든 건물의 facade 자동 생성
+- 실제 점포 외관·상표의 복제
+- 실내 모델과 사람 눈높이 탐색
+- photorealistic texture와 real-time shadow
+- 점포 수백 개의 동시 상세 3D 표시
 
 ## 9. 유동인구 Layer
 
@@ -297,7 +598,7 @@ Google Earth 수준의 photorealistic 도시 지도
 
 ## 14. 현재 프로토타입 상태
 
-2026-07-11 기준 React 프로토타입에서 다음을 조작할 수 있다.
+2026-07-14 기준 React 프로토타입에서 다음을 조작할 수 있다.
 
 ```text
 LocalTwin GeoJSON 지도의 이동과 확대/축소
@@ -312,7 +613,7 @@ OSM POI label과 후보 점포 prefab 표시 전환
 Docs Home 복귀
 ```
 
-현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot이다. 분석 수치는 아직 화면용 fixture이고, 점수 공식 API는 구현됐지만 Front 연결 전이다. 실제 데이터 분석 API 연결은 [4주 개발 백로그](../development/tasks.md)의 후속 Task에서 진행한다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot이다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 반경 selector는 아직 실제 100m/300m/500m 공간 query와 연결되지 않았다. 현재 후보 점포 prefab은 HTML/CSS marker이며 MAP-004에서 실제 검색 결과의 핵심 점포만 Three.js 3D storefront로 전환한다.
 
 ## 15. 관련 문서
 

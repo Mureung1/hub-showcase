@@ -68,10 +68,10 @@ docs: 대상 장소와 실제 asset 경계 명시
 ## 7. Verification Plan
 
 ```powershell
-pnpm --dir apps/web test
-pnpm --dir apps/web typecheck
-pnpm --dir apps/web lint
-pnpm --dir apps/web build
+pnpm --dir product/apps/web test
+pnpm --dir product/apps/web typecheck
+pnpm --dir product/apps/web lint
+pnpm --dir product/apps/web build
 python scripts/check_docs_html.py
 ```
 
@@ -100,8 +100,8 @@ why:
 - keep the single 3D capture site separate from market comparison
 
 verify:
-- pnpm --dir apps/web test
-- pnpm --dir apps/web build
+- pnpm --dir product/apps/web test
+- pnpm --dir product/apps/web build
 ```
 
 ## 10. Self-check

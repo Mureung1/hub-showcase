@@ -4,7 +4,10 @@ coverage
 .venv
 uv.lock
 pnpm-lock.yaml
-data/raw
-data/processed
-data/scenes
+product/data/raw
+product/data/processed
+product/data/scenes
+product/apps/web/.vercel
+product/apps/web/public/data
+product/apps/web/public/map
 intro-page

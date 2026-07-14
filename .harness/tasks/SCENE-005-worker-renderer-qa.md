@@ -66,11 +66,11 @@ docs: 실행 명령, 검증 결과와 실제 capture 잔여 항목
 ## 7. Verification Plan
 
 ```powershell
-uv run --directory apps/api pytest
-pnpm --dir apps/web test
-pnpm --dir apps/web lint
-pnpm --dir apps/web build
-python scripts/build_splat_smoke_fixture.py
+uv run --directory product/apps/api pytest
+pnpm --dir product/apps/web test
+pnpm --dir product/apps/web lint
+pnpm --dir product/apps/web build
+python product/scripts/build_splat_smoke_fixture.py
 ```
 
 ## 8. Documentation Updates

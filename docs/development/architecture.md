@@ -34,12 +34,12 @@ flowchart LR
   end
 
   subgraph data["Data"]
-    raw["data/raw\nJSON + manifest"]
+    raw["product/data/raw\nJSON + manifest"]
     db[("canonical SQLite")]
     osm["OpenStreetMap / Overpass"]
     mapdata["상권별 LocalTwin GeoJSON"]
     seoul["서울 열린데이터광장"]
-    sceneJobs["data/scenes/jobs\ninput · job.json · PLY"]
+    sceneJobs["product/data/scenes/jobs\ninput · job.json · PLY"]
   end
 
   user --> web
@@ -171,10 +171,7 @@ flowchart LR
 ## 6. 배포 구조
 
 ```text
-현재
-  한 Vercel artifact가 React 제품 웹과 /docs 정적 문서를 함께 포함
-
-Phase 2 목표
+ARCH-002 적용 후
   product/      실제 서비스 source와 제품 배포 artifact
   docs/         개발·결정·검증 문서 source와 별도 문서 배포 artifact
   두 artifact는 서로의 내부 파일을 복사하거나 함께 배포하지 않음
@@ -186,7 +183,7 @@ Import/verification
   official snapshots -> canonical SQLite -> migration/seed -> PostgreSQL
 ```
 
-`/`, `/docs`, `/prototype` route 분리는 Phase 1에 완료했지만 물리 폴더와 배포 artifact 분리는 아직 완료하지 않았다. 공공데이터 인증키와 수집기는 브라우저 bundle에 넣지 않으며 Scene route는 SEC-001의 제품 기본 차단이 검증되기 전에는 공개 배포에서 활성화하지 않는다.
+제품은 `product/vercel.json`에서 `product/apps/web/dist`만 배포하고, 문서는 루트 `vercel.json`에서 `dist/docs-site`만 배포한다. 제품의 Docs 링크는 `VITE_DOCS_URL` 또는 현재 문서 URL을 사용하므로 같은 artifact의 `/docs`에 의존하지 않는다. 공공데이터 인증키와 수집기는 브라우저 bundle에 넣지 않으며 Scene route는 SEC-001의 제품 기본 차단을 유지한다. 실제 공개 제품 URL 생성은 별도 배포 Task에서 수행한다.
 
 ## 7. 이번 구조에서 하지 않는 것
 
@@ -215,5 +212,5 @@ Import/verification
 | 2026-07-11 | scene job API, Nerfstudio worker와 Spark viewer 반영 | 구현 코드와 실제 GPU 제약을 구조에 함께 표시하기 위해 |
 | 2026-07-11 | canonical market API와 Front fallback 반영 | 로컬 API와 정적 배포의 실제 데이터 경로를 구분하기 위해 |
 | 2026-07-11 | Docker scene worker와 renderer QA 반영 | worker 재현성과 실제 capture 미검증을 구분하기 위해 |
-
 | 2026-07-13 | Phase 2 runtime DB와 제품·문서 배포 경계 확정 | SQLite를 이관 원본으로 유지하면서 실제 서비스 구조로 전환하기 위해 |
+| 2026-07-14 | 제품·문서 물리 source와 배포 artifact 분리 | 제품 build에서 내부 문서를 제거하고 문서 build에서 제품 source를 제외하기 위해 |

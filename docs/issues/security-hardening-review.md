@@ -51,7 +51,7 @@ Parent Epic은 `EPIC-07 제품 보안과 Privacy Enforcement`다. `SEC-001`은 �
 
 ```powershell
 pnpm install --frozen-lockfile
-uv sync --directory apps/api --frozen
+uv sync --directory product/apps/api --frozen
 pnpm dev:api
 ```
 
@@ -70,7 +70,7 @@ Invoke-RestMethod "$Api/health"
 
 인증은 “너는 누구인가?”, 인가는 “그 사람이 이 작업을 볼 권리가 있는가?”를 확인한다. UUID가 길어 맞히기 어렵더라도 권한 검사를 대신하지 못한다.
 
-근거는 `apps/api/src/localtwin_api/main.py:77-133`의 worker 상태, upload, job 조회·재실행, asset endpoint다.
+근거는 `product/apps/api/src/localtwin_api/main.py`의 worker 상태, upload, job 조회·재실행, asset endpoint다.
 
 ### 안전한 재현
 
@@ -78,7 +78,7 @@ Invoke-RestMethod "$Api/health"
 (Invoke-WebRequest "$Api/api/v1/scenes/toolchain" -SkipHttpErrorCheck).StatusCode
 ```
 
-현재 예상은 token 없이 `200`이다. 로컬 job이 있다면 다음도 확인한다.
+수정 전 기본 설정에서는 token 없이 `200`이었다. A단계 적용 후 기본 설정에서는 `404`이고 OpenAPI schema에서도 Scene route가 보이지 않는다. 승인된 개발 환경에서 `SCENE_API_ENABLED=true`로 활성화하면 기존 route 계약은 유지되며, 이 활성 상태의 인증·인가는 B단계 범위다.
 
 ```powershell
 $JobId = "로컬 테스트 job UUID"
@@ -97,8 +97,8 @@ $JobId = "로컬 테스트 job UUID"
 
 로그인만 확인하면 사용자 A가 사용자 B의 UUID를 얻었을 때 접근할 수 있다. 따라서 인증과 객체 단위 인가를 같이 적용해야 한다.
 
-- [ ] A단계: 기본 설정에서 모든 Scene route가 404 또는 정책상 비노출 상태
-- [ ] A단계: market·score API 회귀 없음
+- [x] A단계: 기본 설정에서 모든 Scene route가 404 또는 정책상 비노출 상태
+- [x] A단계: market·score API 회귀 없음
 - [ ] B단계: 인증 방식과 token 저장 위치 승인
 - [ ] 무인증 요청 `401`
 - [ ] 자신의 job 정상 접근
@@ -118,7 +118,7 @@ $JobId = "로컬 테스트 job UUID"
 
 ```powershell
 $JobId = "로컬 합성 fixture job UUID"
-Get-Content "data/scenes/jobs/$JobId/job.json" |
+Get-Content "product/data/scenes/jobs/$JobId/job.json" |
   Select-String "privacy|approved|anonymized"
 (Invoke-WebRequest "$Api/api/v1/scenes/jobs/$JobId/asset" -SkipHttpErrorCheck).StatusCode
 ```
@@ -152,8 +152,8 @@ Get-Content "data/scenes/jobs/$JobId/job.json" |
 
 ```powershell
 rg -n "MAX_TOTAL_BYTES|rate|quota|semaphore|cooldown|idempot|queue" `
-  apps/api/src/localtwin_api/main.py `
-  apps/api/src/localtwin_api/scene_pipeline.py
+  product/apps/api/src/localtwin_api/main.py `
+  product/apps/api/src/localtwin_api/scene_pipeline.py
 ```
 
 현재 예상은 `MAX_TOTAL_BYTES`만 있고 rate, quota, queue 제한은 없는 것이다.
@@ -199,7 +199,7 @@ $result.status
 Remove-Item "$env:TEMP/fake.jpg"
 ```
 
-현재 예상은 실제 JPEG가 아니어도 `uploaded`다. 검증 후 `data/scenes/jobs/<result.id>` 테스트 폴더만 수동 삭제한다.
+현재 예상은 실제 JPEG가 아니어도 `uploaded`다. 검증 후 `product/data/scenes/jobs/<result.id>` 테스트 폴더만 수동 삭제한다.
 
 ### 조치와 선택 이유
 
@@ -241,7 +241,7 @@ Invoke-RestMethod "$Api/api/v1/scenes/toolchain" | ConvertTo-Json -Depth 6
 
 ```powershell
 rg -n "http://|SEOUL_OPEN_DATA_KEY|build_request_url" `
-  apps/api/src/localtwin_api/seoul_open_data.py
+  product/apps/api/src/localtwin_api/seoul_open_data.py
 ```
 
 endpoint가 HTTP이고 key가 URL path에 있으면 전송 구간과 proxy/access log에 노출될 수 있다.
@@ -263,7 +263,7 @@ endpoint가 HTTP이고 key가 URL path에 있으면 전송 구간과 proxy/acces
 Select-String -Path vercel.json -Pattern "frozen-lockfile"
 Select-String -Path .env.example -Pattern "SCENE_DOCKER_IMAGE"
 rg -n -- "--network|--read-only|--cap-drop|--user|@sha256" `
-  apps/api/src/localtwin_api/scene_pipeline.py vercel.json .env.example
+  product/apps/api/src/localtwin_api/scene_pipeline.py vercel.json .env.example
 ```
 
 현재 예상은 Vercel install에 frozen mode가 없고 image는 tag이며 container 제한도 없는 것이다.

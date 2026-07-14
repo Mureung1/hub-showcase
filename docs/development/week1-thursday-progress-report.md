@@ -58,7 +58,7 @@ docs/design/design-system.md (325줄, 13KB)
 CSS design token 구현:
 
 ```text
-apps/web/src/styles/tokens.css (37줄)
+product/apps/web/src/styles/tokens.css (37줄)
 ```
 
 ```css
@@ -114,7 +114,7 @@ docs/prototypes/core-market-analysis-prototype.html (798줄)
 
 `design-system.md` 10절 기준:
 
-- [x] `apps/web/src/styles/tokens.css` 생성
+- [x] `product/apps/web/src/styles/tokens.css` 생성
 - [ ] 공통 button, filter, panel, score, marker component 구현
 - [ ] 임의 색상과 spacing 사용을 확인하는 lint/check 추가
 - [ ] desktop/mobile visual regression 기준 화면 추가
@@ -200,10 +200,10 @@ c09aab8 docs: link development environment guidance
 | --- | --- | --- |
 | JS runtime | Node.js | `24.11.x` |
 | JS package manager | pnpm | `11.7.x` |
-| Web framework | React + Vite + TypeScript | `apps/web/package.json` |
+| Web framework | React + Vite + TypeScript | `product/apps/web/package.json` |
 | Python | CPython | `3.13.9` |
-| Python package manager | uv | `apps/api/uv.lock` |
-| API framework | FastAPI + Uvicorn + Pydantic Settings | `apps/api/pyproject.toml` |
+| Python package manager | uv | `product/apps/api/uv.lock` |
+| API framework | FastAPI + Uvicorn + Pydantic Settings | `product/apps/api/pyproject.toml` |
 | Map 후보 | MapLibre GL JS + react-map-gl | PoC 후 확정 |
 
 기획서의 `React와 Express` 기본 환경과 다르게 `React + Vite`(web)와 `FastAPI`(api)로 구성했다. Express 대신 FastAPI를 선택한 이유는 Python 기반 공간 계산, 데이터 파이프라인과의 일관성 때문이다.
