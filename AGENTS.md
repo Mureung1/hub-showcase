@@ -24,8 +24,20 @@ CareerSignal은 채용공고의 반복 요구사항을 분석해 대학생의 �
 
 - 커밋: 영어 Conventional Commit 메시지(`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`)를 사용한다.
 - 브랜치: `day/YYMMDD`. 그날 작업 전체를 담고 설명 접미사는 붙이지 않는다.
-- PR: upstream의 `N086_박주현` 브랜치로 보낸다. PR 타이틀은 `[N086_박주현] - 요약` 형식이다.
+- PR: upstream의 `N086_박주현` 브랜치로 보낸다. PR 타이틀은 `[N086_박주현] - 요약` 형식이다. 교육 과정 규칙상 **하루에 PR은 한 번만** 보낸다.
 - 업스트림 기준 브랜치: 이 교육 프로그램은 학생마다 upstream에 개인 브랜치를 두고 그 브랜치를 `main`처럼 사용한다. 나의 기준 브랜치는 `upstream/N086_박주현`이다. `day/YYMMDD` 브랜치를 새로 만들 때도, 최신화(`fetch`·`merge`)할 때도, PR을 보낼 때도 전부 `upstream/main`이 아니라 `upstream/N086_박주현`을 기준으로 한다.
+- 오리진 기준 브랜치: 오리진(개인 GitHub 포크)의 기준 브랜치도 동일하게 `N086_박주현`이다. `day/YYMMDD` 브랜치를 새로 만들기 전에 로컬 `N086_박주현`을 `upstream/N086_박주현`으로 최신화하고, `origin`에도 push해 두 원격을 같은 상태로 맞춘다.
+- 로컬 작업 브랜치: 하루 안에서도 성격이 다른 작업을 나눠 커밋하고 싶으면 `day/YYMMDD`에서 커밋 타입과 맞춘 이름(`feat/<설명>`, `fix/<설명>`, `docs/<설명>`, `chore/<설명>`, `refactor/<설명>`)으로 로컬 브랜치를 만들어 작업한다. 이 브랜치는 원격에 push하지 않는다. 작업이 끝나면 `git merge --no-ff`로 `day/YYMMDD`에 병합해 작업 단위 경계를 커밋 그래프에 남기고, 병합 후 로컬 브랜치는 삭제한다. 하루 PR이 한 번이므로 원격에는 병합이 끝난 `day/YYMMDD`만 push하고, 그 브랜치로 PR을 연다.
+- git 명령어: 브랜치 전환·생성은 `git switch`(`git switch -c`), 파일 복원은 `git restore`를 쓴다. `git checkout`은 다른 브랜치의 파일 하나만 가져오는 것처럼 switch/restore로 표현이 안 되는 경우에만 쓴다.
+
+### 하루 작업 흐름
+
+1. `git switch N086_박주현 && git pull upstream N086_박주현` — 로컬 기준 브랜치를 upstream 최신 상태로 맞춘다.
+2. `git push origin N086_박주현` — 오리진(포크)도 같은 상태로 동기화한다.
+3. `git switch -c day/YYMMDD` — 오늘 작업 브랜치를 로컬 `N086_박주현`에서 만든다.
+4. 성격이 다른 작업 단위마다 `git switch -c <type>/<설명>`으로 로컬 브랜치를 만들어 커밋한다.
+5. 작업이 끝난 로컬 브랜치는 `git switch day/YYMMDD && git merge --no-ff <type>/<설명>`으로 병합하고, `git branch -d <type>/<설명>`으로 삭제한다.
+6. 하루 작업이 끝나면 `git push origin day/YYMMDD` 후 upstream의 `N086_박주현`으로 PR을 연다.
 
 ## 작업 방식
 
