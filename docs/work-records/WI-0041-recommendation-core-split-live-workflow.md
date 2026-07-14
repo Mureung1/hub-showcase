@@ -124,6 +124,51 @@ Worker, SSE, frontend, 투표방, 실제 cloud 배포와 Embedding runtime은 �
 9회임을 통합 테스트로 확인했다. core는 `ConfirmedRecommendationCondition`만 받아
 Draft 자동 연결을 구조적으로 차단한다.
 
+### 2026-07-15 Mock 전체 연결 재검증
+
+Dev Container의 Java 17에서 다음 명령을 `--rerun-tasks`로 실행해 캐시된 성공 결과를
+재사용하지 않았다. 전체 연결 테스트는 in-memory Mock port를 사용하고 단위 테스트도
+실제 Provider 요청 없이 network-free로 실행돼 외부 HTTP 호출은 0건이다.
+
+```text
+./gradlew :backend:integrationTest --tests com.placepick.recommendation.workflow.application.RecommendationCoreLinkedMockIntegrationTest --rerun-tasks --console=plain
+./gradlew :backend:test --tests 'com.placepick.recommendation.*' --rerun-tasks --console=plain
+```
+
+| 검증 | 클래스 | 테스트 | 실패 | 오류 | 건너뜀 | JUnit 시간 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Mock 전체 연결 | 1 | 2 | 0 | 0 | 0 | 1.373초 |
+| 추천 domain·application 단위 | 12 | 51 | 0 | 0 | 0 | 8.365초 |
+
+Mock 전체 연결의 공통 합성 입력은 `서울 강남구에서 4명이 조용한 주차 카페를
+1만원~3만원으로 찾고 흡연 제외`다. 결정론적 추출 결과는 위치 `서울 강남구`, 유형
+`CAFE`, 인원 4, 예산 10,000~30,000원, 선호 `조용한`·`주차` 각 priority 5, 제외
+`흡연`이다. 테스트가 Draft를 명시적으로 확정 조건으로 변환한 뒤에만 core를 호출하며,
+reflection으로 Draft를 받는 공개 `recommend` overload가 없음을 확인한다.
+
+정상 시나리오는 Local 후보 5건, 후보별 Blog 근거 1건과 이유 batch 1회를 사용한다.
+직접 assertion한 결과는 Top 3의 개수 3, `degraded=false`, `reasonFallback=false`,
+Local 1회, Blog 5회, 이유 1회, 조건 추출을 포함한 총 8회다. 현재 fixture와 제품
+코드에서 파생한 관찰값은 짝수 후보가 위치 30 + 유형 25 + 선호 15 + Blog 3 = 73점,
+홀수 후보가
+30 + 25 + 선호 8 + Blog 3 = 66점이 된다. `CandidateKey` tie-break를 적용한 현재
+fixture의 결과 순서는 `카페 4`, `카페 2`, `카페 3`이다. 구조화된 가격 근거가 없으므로
+예산 점수는 0이고 결과에는 `BUDGET_EVIDENCE_UNAVAILABLE`가 포함된다.
+
+완화 시나리오는 최초 Local 결과를 2건으로 제한한다. priority가 같은 두 선호 중 원래
+배열의 마지막인 `주차` 하나만 제거해 `서울 강남구 카페 조용한`으로 Local을 한 번 더
+호출한다. 직접 assertion한 결과는 `relaxed=true`, Local 2회, Blog 5회, 이유 1회,
+조건 추출을 포함한 총 9회다.
+
+이 증거가 의미하는 범위를 과장하지 않는다. 두 전체 연결 테스트가 직접 고정한 것은
+정상·한 번의 완화 경로, 확정 조건 경계, Top 3 생성과 호출 상한이다. 정확한 검색어,
+후보 이름·순서·점수 breakdown, UUID, warning·caution·share 문구 전체를 하나의
+snapshot으로 assertion한 것은 아니며 해당 규칙은 51건의 계층별 단위 테스트가
+보완한다. 후보 부족, Blog 장애와 LLM 전체 fallback도 계층별로 검증했지만 현재 두
+시나리오처럼 `RecommendationCoreUseCase` 전체를 통과하는 실패 경로 테스트는 아니다.
+실제 Naver payload를 core에서 처리해 실제 Elice에 전달하는 Linked Live, DB·Worker·SSE,
+HTTP API와 UI도 이 Mock 결과로 검증됐다고 해석하지 않는다.
+
 2026-07-15 Java 17에서 단위 86건, 추천 통합 21건, Eval 7건이 모두 실패 0건으로
 통과했다. Edge는 TypeScript typecheck와 전체 11개 파일 97건이 통과했다. Loopback
 Gateway는 고정 fixture hash와 네 호출 budget, route·method·query·body·token 거부,
