@@ -32,10 +32,10 @@
       - 참고: 상단 API 명세 3개
 
 ### Backend
-- [ ] **API 명세 3개 확정** — 요청/응답 JSON 예시를 [architecture.md](architecture.md) API 섹션에 기록
+- [x] **API 명세 3개 확정** — 요청/응답 JSON 예시를 [architecture.md](architecture.md) API 섹션에 기록
       - DoD: 3개 엔드포인트의 필드·타입·에러형식 문서화 (FE mock의 원본이 됨)
       - 참고: [decisions](decisions.md) DB 컬렉션 설계
-- [ ] **Express 스캐폴딩** — `routes→controllers→services→models` 레이어, `cors`/`helmet`/`dotenv`
+- [x] **Express 스캐폴딩** — `routes→controllers→services→models` 레이어, `cors`/`helmet`/`dotenv`
       - DoD: 서버 부팅 + `/health` 200 응답
       - 참고: [CLAUDE.md](../CLAUDE.md) 백엔드 규칙, [conventions](conventions.md)
 - [x] **Supabase 연결 + Prisma 스키마 뼈대** — analyses/repo_cache/issue_cache/recommendations(+recommendation_items)/api_usage

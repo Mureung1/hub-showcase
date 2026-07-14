@@ -10,6 +10,19 @@
 
 ---
 
+### 2026-07-14
+- 진행한 작업:
+  - 이슈 #3 완료: FE mock 데이터 연결 — `src/mocks/` 4종(빈 분석 포함), `src/api/` 데이터 레이어(W3 교체 지점), 7화면 하드코딩 제거 + Outlet context 상태 공유, 분석중/이슈검색 자동 전환, 프로필 빈 상태 UI
+  - 이슈 #4 완료: Supabase 연결 + Prisma 스키마 — 테이블 6개 마이그레이션 적용, Client 싱글턴(`src/config/prisma.js`), 부팅 시 연결 성공 로그 (DB 없어도 서버는 부팅)
+  - LLM 이슈 분석 기능 결정: 경량 LLM API(제공자 W3 확정) + 지연 생성 + `issue_cache` 캐싱 ([decisions.md](decisions.md) 기록, openapi.yaml에 옵셔널 필드 추가, 이슈 #6 등록)
+- 이슈/막힌 점:
+  - Prisma 7이 스키마 내 `url = env(...)` 를 금지(driver adapter 필수)해서 표준 워크플로가 유지되는 Prisma 6으로 고정
+  - `.env`의 DATABASE_URL 구분자 실수(`:`) 확인 과정에서 DB 비밀번호가 터미널에 노출 → Supabase 비밀번호 리셋 필요
+- 다음 할 일:
+  - Supabase DB 비밀번호 리셋 + `backend/.env` 갱신
+  - (수~금) 이슈 #5: 프로필 분석 API (`POST /api/analysis`) — GitHub 토큰 발급부터
+  - (W3) 이슈 #6: LLM 이슈 분석 — 제공자 선정부터
+
 ### 2026-07-13
 - 진행한 작업:
   - 주간 계획 수립 → GitHub 이슈 #1~#5 등록 (날짜별, 토·일 제외)
