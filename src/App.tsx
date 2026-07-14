@@ -7,13 +7,16 @@ import OutfitsTab from "./components/OutfitsTab";
 import CalendarTab from "./components/CalendarTab";
 import StickersTab from "./components/StickersTab";
 import SystemTab from "./components/SystemTab";
+import LoginPanel from "./components/LoginPanel";
+import AvatarRenderer from "./components/AvatarRenderer";
 import { Shirt, Sparkles, Calendar, Heart, Settings, Star, Layers, Home } from "lucide-react";
+import { loadUserDataFromCloud, syncUserDataToCloud } from "./lib/firebase";
 
 const vibeAlbumCover = "/src/assets/images/vibe_album_cover_1783930828089.jpg";
 
 export default function App() {
   // Navigation / Active Screen state
-  const [activeTab, setActiveTab] = useState<"home" | "closet" | "outfits" | "calendar" | "stickers" | "system">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "closet" | "outfits" | "calendar" | "stickers" | "system" | "login">("home");
 
   // Database states with LocalStorage persistence
   const [closet, setCloset] = useState<ClothingItem[]>([]);
@@ -21,71 +24,127 @@ export default function App() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [profile, setProfile] = useState<UserProfile>({
     username: "Cyber Stylist",
-    avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuC_ZjodRFQ4in2ugvOwdg9HS3O9GqRKAcNZo6pWFUJj7Al2QQ_X0pyEJwyDxKXcNTlnqdPNGCeNtGKyYvAmL4V6DzL4FL0jTJCiDKf2ub1JccW-4TS4Jor4GFwmPS33MmzKiiRv3iVProMp1rKFV3WqXQB4ANRPrpGC8enkxa7DNCYrpKPF_-NiqhCbLB9y_nvhpAV7tX98P4KohN47RdwdKD-k_OWb5pgeGTipRRUb9TYSgUUmBRdrjnp9EI-hulYNoVQhHtS6pMlU"
+    avatarUrl: "cute-bunny"
   });
 
   // Aesthetic Modulator states
   const [vaporMode, setVaporMode] = useState<boolean>(true);
   const [scanlineOpacity, setScanlineOpacity] = useState<number>(0.15);
 
-  // Initialize data on mount
+  // Helper to check if a real user is logged in
+  const isUserLoggedIn = () => {
+    return localStorage.getItem("pmc_logged_in") === "true" && profile.username !== "Cyber Stylist";
+  };
+
+  // Sync with Firestore when logged-in user changes or mounts
   useEffect(() => {
-    // 1. Closet setup
-    const storedCloset = localStorage.getItem("pmc_closet");
-    if (storedCloset) {
-      setCloset(JSON.parse(storedCloset));
-    } else {
-      localStorage.setItem("pmc_closet", JSON.stringify(DEFAULT_CLOSET));
-      setCloset(DEFAULT_CLOSET);
-    }
+    const syncUserSession = async () => {
+      const storedLoggedIn = localStorage.getItem("pmc_logged_in") === "true";
+      const storedUsername = localStorage.getItem("pmc_username");
+      
+      if (storedLoggedIn && storedUsername) {
+        // Logged-in session
+        const username = storedUsername;
+        const cloudData = await loadUserDataFromCloud(username);
+        
+        if (cloudData) {
+          console.log(`[Firebase] Loaded cloud data for: ${username}`);
+          if (cloudData.closet) setCloset(cloudData.closet);
+          if (cloudData.savedStyles) setSavedStyles(cloudData.savedStyles);
+          if (cloudData.calendarEvents) setCalendarEvents(cloudData.calendarEvents);
+          if (cloudData.profile) {
+            setProfile({
+              username: cloudData.profile.username || username,
+              avatarUrl: cloudData.profile.avatarUrl || "cute-bunny"
+            });
+          }
+        } else {
+          // New cloud account seed
+          console.log(`[Firebase] Seeding cloud data for: ${username}`);
+          const seedData = {
+            closet: closet.length > 0 ? closet : DEFAULT_CLOSET,
+            savedStyles: savedStyles,
+            calendarEvents: calendarEvents,
+            profile: {
+              username: username,
+              avatarUrl: profile.avatarUrl || "cute-bunny"
+            }
+          };
+          await syncUserDataToCloud(username, seedData);
+          setCloset(seedData.closet);
+          setProfile({
+            username: seedData.profile.username,
+            avatarUrl: seedData.profile.avatarUrl
+          });
+        }
+      } else {
+        // Guest mode - fall back to localStorage
+        const storedCloset = localStorage.getItem("pmc_closet");
+        if (storedCloset) {
+          setCloset(JSON.parse(storedCloset));
+        } else {
+          setCloset(DEFAULT_CLOSET);
+        }
 
-    // 2. Saved outfits setup
-    const storedStyles = localStorage.getItem("pmc_saved_styles");
-    if (storedStyles) {
-      setSavedStyles(JSON.parse(storedStyles));
-    }
+        const storedStyles = localStorage.getItem("pmc_saved_styles");
+        if (storedStyles) setSavedStyles(JSON.parse(storedStyles));
+        else setSavedStyles([]);
 
-    // 3. Calendar events setup
-    const storedEvents = localStorage.getItem("pmc_calendar_events");
-    if (storedEvents) {
-      setCalendarEvents(JSON.parse(storedEvents));
-    }
+        const storedEvents = localStorage.getItem("pmc_calendar_events");
+        if (storedEvents) setCalendarEvents(JSON.parse(storedEvents));
+        else setCalendarEvents([]);
 
-    // 4. User profile setup
-    const storedProfile = localStorage.getItem("pmc_profile");
-    if (storedProfile) {
-      setProfile(JSON.parse(storedProfile));
-    }
+        const storedProfile = localStorage.getItem("pmc_profile");
+        if (storedProfile) {
+          setProfile(JSON.parse(storedProfile));
+        } else {
+          setProfile({
+            username: "Cyber Stylist",
+            avatarUrl: "cute-bunny"
+          });
+        }
+      }
 
-    // 5. Aesthetic setup
-    const storedVapor = localStorage.getItem("pmc_vapor_mode");
-    if (storedVapor !== null) {
-      setVaporMode(storedVapor === "true");
-    }
+      // Restore aesthetics settings
+      const storedVapor = localStorage.getItem("pmc_vapor_mode");
+      if (storedVapor !== null) {
+        setVaporMode(storedVapor === "true");
+      }
+      const storedScanlines = localStorage.getItem("pmc_scanline_opacity");
+      if (storedScanlines !== null) {
+        setScanlineOpacity(parseFloat(storedScanlines));
+      }
+    };
 
-    const storedScanlines = localStorage.getItem("pmc_scanline_opacity");
-    if (storedScanlines !== null) {
-      setScanlineOpacity(parseFloat(storedScanlines));
-    }
-  }, []);
+    syncUserSession();
+  }, [profile.username]);
 
-  // Sync state functions with auto-save to storage
+  // Sync state functions with auto-save to storage & Firestore proxy
   const handleAddItem = (item: ClothingItem) => {
     const updated = [item, ...closet];
     setCloset(updated);
     localStorage.setItem("pmc_closet", JSON.stringify(updated));
+    if (isUserLoggedIn()) {
+      syncUserDataToCloud(profile.username, { closet: updated });
+    }
   };
 
   const handleDeleteItem = (id: string) => {
     const updated = closet.filter(item => item.id !== id);
     setCloset(updated);
     localStorage.setItem("pmc_closet", JSON.stringify(updated));
+    if (isUserLoggedIn()) {
+      syncUserDataToCloud(profile.username, { closet: updated });
+    }
   };
 
   const handleSaveOutfit = (outfit: SavedOutfit) => {
     const updated = [outfit, ...savedStyles];
     setSavedStyles(updated);
     localStorage.setItem("pmc_saved_styles", JSON.stringify(updated));
+    if (isUserLoggedIn()) {
+      syncUserDataToCloud(profile.username, { savedStyles: updated });
+    }
   };
 
   const handleDeleteOutfit = (id: string) => {
@@ -97,6 +156,13 @@ export default function App() {
     const updatedEvents = calendarEvents.filter(e => e.outfitId !== id);
     setCalendarEvents(updatedEvents);
     localStorage.setItem("pmc_calendar_events", JSON.stringify(updatedEvents));
+
+    if (isUserLoggedIn()) {
+      syncUserDataToCloud(profile.username, {
+        savedStyles: updated,
+        calendarEvents: updatedEvents
+      });
+    }
   };
 
   const handleAddCalendarEvent = (date: string, outfitId: string) => {
@@ -105,17 +171,26 @@ export default function App() {
     const updated = [...base, { date, outfitId }];
     setCalendarEvents(updated);
     localStorage.setItem("pmc_calendar_events", JSON.stringify(updated));
+    if (isUserLoggedIn()) {
+      syncUserDataToCloud(profile.username, { calendarEvents: updated });
+    }
   };
 
   const handleRemoveCalendarEvent = (date: string) => {
     const updated = calendarEvents.filter(e => e.date !== date);
     setCalendarEvents(updated);
     localStorage.setItem("pmc_calendar_events", JSON.stringify(updated));
+    if (isUserLoggedIn()) {
+      syncUserDataToCloud(profile.username, { calendarEvents: updated });
+    }
   };
 
   const handleProfileChange = (updatedProfile: UserProfile) => {
     setProfile(updatedProfile);
     localStorage.setItem("pmc_profile", JSON.stringify(updatedProfile));
+    if (isUserLoggedIn()) {
+      syncUserDataToCloud(profile.username, { profile: updatedProfile });
+    }
   };
 
   const handleToggleVaporMode = () => {
@@ -136,7 +211,7 @@ export default function App() {
     setCalendarEvents([]);
     setProfile({
       username: "Cyber Stylist",
-      avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuC_ZjodRFQ4in2ugvOwdg9HS3O9GqRKAcNZo6pWFUJj7Al2QQ_X0pyEJwyDxKXcNTlnqdPNGCeNtGKyYvAmL4V6DzL4FL0jTJCiDKf2ub1JccW-4TS4Jor4GFwmPS33MmzKiiRv3iVProMp1rKFV3WqXQB4ANRPrpGC8enkxa7DNCYrpKPF_-NiqhCbLB9y_nvhpAV7tX98P4KohN47RdwdKD-k_OWb5pgeGTipRRUb9TYSgUUmBRdrjnp9EI-hulYNoVQhHtS6pMlU"
+      avatarUrl: "cute-bunny"
     });
     setVaporMode(true);
     setScanlineOpacity(0.15);
@@ -201,17 +276,24 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right status system pills */}
-        <div className="hidden sm:flex items-center space-x-3 font-label-sm text-xs font-bold uppercase">
-          <span className={`px-2.5 py-1 border flex items-center gap-1 bg-surface-container-low ${
-            vaporMode ? "text-secondary border-secondary" : "text-on-surface-variant border-outline-variant"
-          }`}>
-            <span className="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
-            <span>VAPOR_SYSTEM_LINKED</span>
-          </span>
-          <span className="px-2.5 py-1 border border-primary text-primary bg-surface-container-low flex items-center gap-1">
+        {/* Right status system pills & Auth gateway key button */}
+        <div className="flex items-center space-x-2.5 font-label-sm text-xs font-bold uppercase animate-fade-in">
+          {/* Dedicated Login Action Button */}
+          <button
+            onClick={() => setActiveTab("login")}
+            className={`px-3 py-1.5 border-2 flex items-center gap-1.5 cursor-pointer transition-all ${
+              activeTab === "login"
+                ? "bg-primary text-on-primary border-primary shadow-none"
+                : "bg-surface-container-low text-secondary border-secondary hover:bg-secondary/10 shadow-[2px_2px_0_0_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${localStorage.getItem("pmc_logged_in") === "true" ? "bg-emerald-400" : "bg-secondary animate-pulse"}`}></span>
+            <span>{localStorage.getItem("pmc_logged_in") === "true" ? `${profile.username.toUpperCase()}` : "🔑 LOGIN (로그인)"}</span>
+          </button>
+
+          <span className="hidden md:flex px-2.5 py-1.5 border flex items-center gap-1 bg-surface-container-low text-on-surface-variant border-outline-variant">
             <Star size={12} className="fill-current animate-spin" />
-            <span>AI_CORE_ONLINE</span>
+            <span>SYS_ONLINE</span>
           </span>
         </div>
       </header>
@@ -230,11 +312,11 @@ export default function App() {
 
             {/* Profile body content */}
             <div className="p-4 bg-surface bg-notebook flex items-center space-x-4">
-              <div className="w-16 h-16 rounded-none bg-surface-container-lowest border-2 border-secondary p-0.5 overflow-hidden shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                <img
-                  src={profile.avatarUrl}
-                  alt={profile.username}
-                  className="w-full h-full object-cover"
+              <div className="w-16 h-16 rounded-none bg-surface-container-lowest border-2 border-secondary p-0.5 overflow-hidden shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center bg-notebook">
+                <AvatarRenderer
+                  avatarUrl={profile.avatarUrl}
+                  size={56}
+                  className="w-full h-full object-contain"
                 />
               </div>
               <div className="min-w-0">
@@ -382,6 +464,7 @@ export default function App() {
               savedStyles={savedStyles}
               onSaveOutfit={handleSaveOutfit}
               onDeleteOutfit={handleDeleteOutfit}
+              onAddItem={handleAddItem}
             />
           )}
 
@@ -407,6 +490,15 @@ export default function App() {
               scanlineOpacity={scanlineOpacity}
               onChangeScanline={handleScanlineChange}
               onResetApp={handleResetApp}
+            />
+          )}
+
+          {activeTab === "login" && (
+            <LoginPanel
+              profile={profile}
+              onChangeProfile={handleProfileChange}
+              vaporMode={vaporMode}
+              onNavigateToHome={() => setActiveTab("home")}
             />
           )}
         </div>

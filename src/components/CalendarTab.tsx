@@ -10,12 +10,24 @@ interface CalendarTabProps {
 }
 
 export default function CalendarTab({ savedStyles, calendarEvents, onAddEvent, onRemoveEvent }: CalendarTabProps) {
-  const [selectedDate, setSelectedDate] = useState<string>("2026-07-13"); // Default to current local time date
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth(); // 0-indexed
+
+  const getTodayDateString = () => {
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, "0");
+    const d = String(today.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const todayDateStr = getTodayDateString();
+  const [selectedDate, setSelectedDate] = useState<string>(todayDateStr);
   const [selectedOutfitId, setSelectedOutfitId] = useState<string>("");
 
-  // Generating July 2026 Monthly Grid
-  const daysInMonth = 31;
-  const startDayOfWeek = 3; // July 1st, 2026 is a Wednesday (Sunday = 0, Wed = 3)
+  // Generating Dynamic Monthly Grid
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const startDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
   
   const calendarCells: (number | null)[] = [];
   for (let i = 0; i < startDayOfWeek; i++) {
@@ -27,7 +39,9 @@ export default function CalendarTab({ savedStyles, calendarEvents, onAddEvent, o
 
   // Helper to format date string
   const formatDateString = (day: number) => {
-    return `2026-07-${day < 10 ? "0" + day : day}`;
+    const m = String(currentMonth + 1).padStart(2, "0");
+    const d = String(day).padStart(2, "0");
+    return `${currentYear}-${m}-${d}`;
   };
 
   // Find outfit scheduled on date
@@ -63,7 +77,7 @@ export default function CalendarTab({ savedStyles, calendarEvents, onAddEvent, o
             <span>COORDINATION_DIARY_CALENDAR.SYS [코디 다이어리 달력]</span>
           </div>
           <span className="font-label-sm text-xs font-bold bg-surface px-2 py-0.5 text-primary border border-primary uppercase">
-            JULY 2026
+            {["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"][currentMonth]} {currentYear}
           </span>
         </div>
 
@@ -94,6 +108,7 @@ export default function CalendarTab({ savedStyles, calendarEvents, onAddEvent, o
               const dateStr = formatDateString(cell);
               const dayOutfit = getEventForDate(dateStr);
               const isSelected = selectedDate === dateStr;
+              const isToday = dateStr === todayDateStr;
 
               return (
                 <button
@@ -107,6 +122,16 @@ export default function CalendarTab({ savedStyles, calendarEvents, onAddEvent, o
                 >
                   <span className="font-label-sm text-xs font-bold leading-none">{cell}</span>
                   
+                  {/* Today's neon blinking indicator (불빛) */}
+                  {isToday && (
+                    <div className="absolute top-1 right-1 flex items-center justify-center">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500 shadow-[0_0_8px_#22c55e]"></span>
+                      </span>
+                    </div>
+                  )}
+
                   {/* Outfit indicator icon */}
                   {dayOutfit && (
                     <div className="absolute right-1 bottom-1 w-5 h-5 bg-primary border border-black flex items-center justify-center text-[10px] shadow-[1px_1px_0_0_#000] rounded-none animate-pulse">
@@ -116,7 +141,7 @@ export default function CalendarTab({ savedStyles, calendarEvents, onAddEvent, o
 
                   {/* Little dot under schedule */}
                   {dayOutfit && (
-                    <div className="w-1.5 h-1.5 bg-secondary-container absolute top-1 right-1"></div>
+                    <div className="w-1.5 h-1.5 bg-secondary-container absolute top-1 left-4"></div>
                   )}
                 </button>
               );
