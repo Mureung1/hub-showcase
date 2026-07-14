@@ -80,7 +80,7 @@ export default function Reader() {
         </article>
 
         <AiSummary bullets={analysis.summaryBullets} />
-        <AiInsight text={analysis.insight} />
+        <AiInsight text={analysis.insight} marketSentiment={analysis.marketSentiment} />
       </main>
 
       <DecisionButtons onDecide={handleDecide} />

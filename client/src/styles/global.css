@@ -258,13 +258,19 @@ h2 {
   margin: var(--space-xl) 0;
 }
 
+.ai-insight .insight-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
 .ai-insight .insight-label {
-  display: block;
   font-size: 13px;
   line-height: 20px;
   font-weight: 600;
   color: var(--brand-blue);
-  margin-bottom: var(--space-xs);
 }
 
 .ai-insight p {
