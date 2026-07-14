@@ -111,6 +111,9 @@ Naver 약관과 표시 의무를 사람이 확인하기 전에는 Local·Blog �
    선택 field는 빈 문자열로 정규화하고 제품이 사용할 최소 제목만 필수로 유지하는
    합성 회귀 테스트를 추가했다. 실제 재검증 전에는 이 차이를 실패의 확정 원인으로
    단정하지 않는다.
+8. Elice 첫 Live에서 선행 capability의 전송 실패가 같은 connection manager를 쓰는 다음
+   capability 증거를 오염시킬 수 있음을 확인했다. Naver 재검증도 Local과 Blog에 각각
+   독립 adapter를 사용해 한 endpoint 실패가 다음 결과에 전파되지 않도록 보강했다.
 
 ## 구현 결과와 검증 증거
 

@@ -28,6 +28,7 @@
 - [ADR-0010 무료 포트폴리오 데모 배포 경계](adr/ADR-0010-free-demo-deployment-boundary.md)
 - [ADR-0011 Elice Chat Completions MVP Provider와 데이터 경계](adr/ADR-0011-elice-chat-completions-provider-boundary.md)
 - [TS-0001 WireMock 의존성 충돌](troubleshooting/TS-0001-wiremock-dependency-conflict.md)
+- [TS-0010 Elice Local Live HTTP 응답 전 전송 실패](troubleshooting/TS-0010-elice-live-no-http-response.md)
 - [TS-0002 Testcontainers PostgreSQL tag와 digest 호환성](troubleshooting/TS-0002-testcontainers-digest-compatibility.md)
 - [TS-0003 Dev Container Yarn APT 공개키](troubleshooting/TS-0003-devcontainer-yarn-apt-key.md)
 - [TS-0004 Dev Container Gradle cache 권한](troubleshooting/TS-0004-devcontainer-gradle-cache-permission.md)

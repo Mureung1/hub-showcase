@@ -91,6 +91,13 @@ Embedding model과 합성 입력만 허용한다. Chat·Embedding 각 한 번의
 출력하고 token, 전체 URL, prompt·응답 body와 vector를 출력하지 않는다. Elice 정책
 검토 전 제품 데이터 전송과 Embedding runtime은 금지한다.
 
+2026-07-14 첫 Elice 실행은 Chat·Embedding 모두 HTTP 응답 전
+`PROVIDER_UNAVAILABLE`로 실패했다. host 수준 DNS·TLS는 정상이었지만 실제 endpoint
+원인은 미확정이다. capability별 transport를 분리한 뒤에도 자동 재호출하지 않으며
+[TS-0010](troubleshooting/TS-0010-elice-live-no-http-response.md)과
+[RUN-0002](runbooks/RUN-0002-elice-llm-local-live-and-token-rotation.md)의 재승인 절차를
+따른다.
+
 배포 Live는 향후 외부 Approval Gate·Provider Gateway를 사용한다. 공유 Fork,
 GitHub Actions와 Vercel·Render에는 원본 provider key를 저장하지 않는다. Gate·Gateway
 프로그램의 자동 검증 기반은 구현됐지만, cloud resource가 배포됐거나 실제 provider

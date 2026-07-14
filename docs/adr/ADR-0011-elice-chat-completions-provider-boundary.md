@@ -56,6 +56,12 @@ MVP LLM provider 방향은 Elice OpenAI-compatible Chat Completions로 정한다
 증거가 아니다. PP-038의 실제 Elice canary가 strict schema를 통과하기 전까지 호환성을
 완료로 표시하지 않는다.
 
+[Elice ML API key 문서](https://help.elice.io/help/docs/elicecloud/ml-api/api-key)는
+API key를 Bearer header로 전달하고 잘못되거나 만료된 key는 인증 오류가 된다고 설명한다.
+[Elice Model Library](https://elice.io/ax/model-library/1d1d8f2e-a255-4d6d-9177-c43362887502)는
+`mlapi.run` 배포 base 아래 Chat Completions와 구조화 출력을 제공하는 예시를 제시한다.
+다른 모델의 예시를 현재 배포의 성공 증거로 사용하지 않고 실제 canary로 확인한다.
+
 직접 OpenAI Responses API는 provider port 뒤의 재검토 가능한 대안으로 남긴다. Elice
 실패 시 Responses API로 자동 fallback하지 않는다. provider 또는 API surface 변경은
 별도 credential·비용·개인정보·Eval 검토와 ADR 변경을 거친다.
@@ -100,6 +106,11 @@ Chat과 Embedding의 성공 의미를 분리해 Embedding 가용성이 곧 제�
 redaction, 오류·timeout·oversized 응답을 검증한다. 실제 Elice 검증은
 [RUN-0002](../runbooks/RUN-0002-elice-llm-local-live-and-token-rotation.md)로 수동 실행하고
 Chat과 Embedding 결과를 별도 상태로 기록한다.
+
+2026-07-14 첫 실제 실행은 두 capability 모두 HTTP 응답 전
+`PROVIDER_UNAVAILABLE`로 실패했다. 이는 provider 채택 방향을 즉시 폐기할 근거도,
+호환성을 확인한 근거도 아니다. capability별 transport로 격리한 뒤 TS-0010의 원인
+확인과 재승인 검증이 필요하다.
 
 Elice가 strict schema나 `store=false`를 받지 않거나 정책 검토가 제품 데이터 처리를
 허용하지 않으면 runtime provider 선정을 재검토한다. Embedding을 제품에 사용할

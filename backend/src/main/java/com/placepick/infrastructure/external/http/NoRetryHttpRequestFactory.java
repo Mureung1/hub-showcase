@@ -6,7 +6,8 @@ import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.impl.io.BasicHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -26,12 +27,15 @@ public final class NoRetryHttpRequestFactory {
         requirePositive(connectTimeout, "connectTimeout");
         requirePositive(responseTimeout, "responseTimeout");
 
-        BasicHttpClientConnectionManager connectionManager =
-            new BasicHttpClientConnectionManager();
-        connectionManager.setConnectionConfig(ConnectionConfig.custom()
-            .setConnectTimeout(Timeout.of(connectTimeout))
-            .setSocketTimeout(Timeout.of(responseTimeout))
-            .build());
+        PoolingHttpClientConnectionManager connectionManager =
+            PoolingHttpClientConnectionManagerBuilder.create()
+                .setMaxConnTotal(1)
+                .setMaxConnPerRoute(1)
+                .setDefaultConnectionConfig(ConnectionConfig.custom()
+                    .setConnectTimeout(Timeout.of(connectTimeout))
+                    .setSocketTimeout(Timeout.of(responseTimeout))
+                    .build())
+                .build();
 
         RequestConfig requestConfig = RequestConfig.custom()
             .setConnectionRequestTimeout(Timeout.of(connectTimeout))

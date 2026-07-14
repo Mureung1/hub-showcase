@@ -23,8 +23,9 @@ Spring Boot
 
 Naver Java adapter와 Mock 계약은 자동 검증됐지만 2026-07-14 실제 Local·Blog canary는
 둘 다 `INVALID_RESPONSE`로 실패했다. Elice transport·schema의 자동 타깃 검증과 전체
-`make check`는 통과했지만 Elice Local Live는 실행되지 않았고 제품 LLM runtime도
-구현되지 않았다. 이 상태를 위 Mock 기반 현재 경계와 분리한다.
+`make check`는 통과했다. 첫 Elice Local Live는 Chat·Embedding 모두 HTTP 응답 전
+`PROVIDER_UNAVAILABLE`로 실패했고 제품 LLM runtime도 구현되지 않았다. 이 상태를 위
+Mock 기반 현재 경계와 분리한다.
 
 ## 책임 경계
 

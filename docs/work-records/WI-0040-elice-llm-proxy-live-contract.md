@@ -10,6 +10,7 @@ related:
   - ../roadmap.md
   - ../adr/ADR-0011-elice-chat-completions-provider-boundary.md
   - ../runbooks/RUN-0002-elice-llm-local-live-and-token-rotation.md
+  - ../troubleshooting/TS-0010-elice-live-no-http-response.md
   - https://github.com/gdh0730/hub/issues/42
 paths:
   - backend/src/main/java/com/placepick/infrastructure/external/llm/**
@@ -109,36 +110,43 @@ PP-009 조건 추출, PP-016 추천 이유, PP-029 runtime wiring, 실제 사용
    Naver·Elice를 통일하고 5xx·timeout의 WireMock 요청 수가 endpoint별 한 건인지 검증했다.
 7. 텍스트와 binary JUnit·Gradle report를 fail-closed 검사하고 provider별 Live 명령도
    종료 성공 여부와 무관하게 전용 report를 검사하도록 보강했다.
-8. Dev Container Java 17에서 전체 `make check`를 실행하고 실제 Elice 합성 canary는
-   별도의 수동 Live 증거로 남긴다.
+8. Dev Container Java 17에서 전체 `make check`를 실행한 뒤 감사 SHA에서 실제 Elice
+   합성 canary를 한 번 수행했다. 두 capability 모두 HTTP 응답 전
+   `PROVIDER_UNAVAILABLE`로 실패해 자동 재호출하지 않고 TS-0010으로 분리했다.
+9. 첫 실행이 connection manager 하나를 공유해 두 번째 실패의 독립성을 보장하지
+   못한 점을 수정했다. Chat·Embedding transport를 분리하고 TLS 기본 구성이 검증된
+   pooling manager를 사용하되 실제 endpoint는 재승인 전 다시 호출하지 않는다.
 
 ## 구현 결과와 검증 증거
 
 Elice 자동 타깃 검증은 2026-07-14에 `BUILD SUCCESSFUL`로 끝났다. unit security 18개,
-Elice transport 통합 37개, committed mapping 통합 4개로 총 59개 테스트가
+Elice transport 통합 38개, committed mapping 통합 4개로 총 60개 테스트가
 failures·errors 0이었고 mapping JSON 20개를 parsing했다.
 `compileLlmLiveContractTestJava`도 성공했다. Naver는 단위 3개·통합 21개로 총 24개가
 failures·errors 0이었다.
 
-같은 날 최종 트리에서 Dev Container Java 17 전체 `make check`가 275.6초, exit 0으로
-통과했다. actionlint 1.7.12의 고정 digest를 대조했고 Markdown은 83개 파일·오류 0,
+같은 날 capability별 transport 분리까지 반영한 최종 트리에서 Dev Container Java 17
+전체 `make check`가 283.0초, exit 0으로 통과했다. actionlint 1.7.12의 고정 digest를
+대조했고 Markdown은 84개 파일·오류 0,
 문서 음성 테스트는 8/8, Edge는 74/74였다. Gradle은 unit·integration·Eval을 실행하고
-Naver·LLM Live class를 compile한 뒤 100초에 `BUILD SUCCESSFUL`로 끝났다. 텍스트와
-binary를 포함한 test report 61개도 비밀·본문 안전 scan을 통과했다. Live task는
+Naver·LLM Live class를 compile한 뒤 89초에 `BUILD SUCCESSFUL`로 끝났다. 텍스트와
+binary를 포함한 test report 71개도 비밀·본문 안전 scan을 통과했다. Live task는
 실행하지 않아 이 전체 검증에서 실제 provider 호출은 0회였다. 자동 검증과 Live 상태를
 다음처럼 분리한다.
 
 | 증거 | 현재 상태 | 완료 기준 |
 | --- | --- | --- |
-| Elice 자동 타깃 검증 | 통과 | 59 tests·20 mapping JSON·Live source compile, failures·errors 0 |
-| 저장소 전체 검증 | 통과 | Dev Container Java 17, exit 0, 275.6초; report 61개 안전 scan, 실제 provider 호출 0회 |
-| Chat Local Live | 실행 안 됨 | 합성 입력 1회, 2xx, strict schema·usage 통과 |
-| Embedding capability | 실행 안 됨 | 합성 입력 1회, 2xx, data 1개·1,536 finite dimensions |
+| Elice 자동 타깃 검증 | 통과 | 60 tests·20 mapping JSON·Live source compile, failures·errors 0 |
+| 저장소 전체 검증 | 통과 | Dev Container Java 17, exit 0, 283.0초; report 71개 안전 scan, 실제 provider 호출 0회 |
+| Chat Local Live | 실패 | 2026-07-14 application 호출 1회, `http=none`, schema false, 4415ms |
+| Embedding capability | 실패 | 같은 실행의 application 호출 1회, `http=none`, schema false, 4ms; 초기 공유 transport로 독립성 미확정 |
 | 제품 runtime | 구현 안 됨 | PP-009·PP-016·PP-029와 Elice 정책 검토 |
 | 클라우드 배포 | 배포 안 됨 | PP-033·PP-035 승인 SHA E2E |
 
 Naver는 별도 PP-013에서 `INVALID_RESPONSE` 원인을 진단하며 WI-0015와 RUN-0001을 완료로
-바꾸지 않는다. Elice canary 결과도 실제 실행 전에는 성공으로 갱신하지 않는다.
+바꾸지 않는다. Elice 실행 SHA는 `7f5657b012ea8cdc2260f1ebbf0d32a50b3f9054`, 시각은
+2026-07-14T13:12:14.619Z다. test report 10개 안전 scan은 통과했지만 Chat·Embedding
+모두 `PROVIDER_UNAVAILABLE`였으므로 WI-0040과 Local Live 계약은 완료로 바꾸지 않는다.
 
 ## AI 사용과 사람의 검증
 

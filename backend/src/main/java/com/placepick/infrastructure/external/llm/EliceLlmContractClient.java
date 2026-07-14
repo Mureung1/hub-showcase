@@ -53,7 +53,8 @@ public final class EliceLlmContractClient {
     private static final String SYNTHETIC_EMBEDDING_INPUT =
         "Synthetic Placepick embedding contract probe.";
 
-    private final RestClient restClient;
+    private final RestClient chatRestClient;
+    private final RestClient embeddingRestClient;
     private final ObjectMapper objectMapper;
     private final URI chatEndpoint;
     private final URI embeddingEndpoint;
@@ -62,7 +63,8 @@ public final class EliceLlmContractClient {
     private final int maxResponseBytes;
 
     private EliceLlmContractClient(
-        RestClient restClient,
+        RestClient chatRestClient,
+        RestClient embeddingRestClient,
         ObjectMapper objectMapper,
         URI chatEndpoint,
         URI embeddingEndpoint,
@@ -70,7 +72,8 @@ public final class EliceLlmContractClient {
         String embeddingModel,
         int maxResponseBytes
     ) {
-        this.restClient = restClient;
+        this.chatRestClient = chatRestClient;
+        this.embeddingRestClient = embeddingRestClient;
         this.objectMapper = objectMapper;
         this.chatEndpoint = chatEndpoint;
         this.embeddingEndpoint = embeddingEndpoint;
@@ -144,14 +147,9 @@ public final class EliceLlmContractClient {
             throw new IllegalArgumentException("LLM response byte limit is invalid.");
         }
 
-        RestClient restClient = RestClient.builder()
-            .requestFactory(NoRetryHttpRequestFactory.create(connectTimeout, responseTimeout))
-            .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-            .build();
-
         return new EliceLlmContractClient(
-            restClient,
+            createRestClient(token, connectTimeout, responseTimeout),
+            createRestClient(token, connectTimeout, responseTimeout),
             strictObjectMapper(),
             appendPath(chatBaseUrl, CHAT_SUFFIX),
             appendPath(embeddingBaseUrl, EMBEDDING_SUFFIX),
@@ -163,7 +161,7 @@ public final class EliceLlmContractClient {
 
     public ChatContractResult verifyChatContract() {
         long startedAt = System.nanoTime();
-        byte[] body = execute("chat", chatEndpoint, chatRequest());
+        byte[] body = execute(chatRestClient, "chat", chatEndpoint, chatRequest());
         JsonNode root = parseJson("chat", body);
         TokenUsage usage = validateChatResponse(root);
         return new ChatContractResult(
@@ -175,7 +173,12 @@ public final class EliceLlmContractClient {
 
     public EmbeddingContractResult verifyEmbeddingContract() {
         long startedAt = System.nanoTime();
-        byte[] body = execute("embedding", embeddingEndpoint, embeddingRequest());
+        byte[] body = execute(
+            embeddingRestClient,
+            "embedding",
+            embeddingEndpoint,
+            embeddingRequest()
+        );
         JsonNode root = parseJson("embedding", body);
         int inputTokens = validateEmbeddingResponse(root);
         return new EmbeddingContractResult(
@@ -186,7 +189,12 @@ public final class EliceLlmContractClient {
         );
     }
 
-    private byte[] execute(String operation, URI endpoint, Object requestBody) {
+    private byte[] execute(
+        RestClient restClient,
+        String operation,
+        URI endpoint,
+        Object requestBody
+    ) {
         try {
             return restClient.post()
                 .uri(endpoint)
@@ -210,6 +218,18 @@ public final class EliceLlmContractClient {
                 "response could not be read"
             );
         }
+    }
+
+    private static RestClient createRestClient(
+        String token,
+        Duration connectTimeout,
+        Duration responseTimeout
+    ) {
+        return RestClient.builder()
+            .requestFactory(NoRetryHttpRequestFactory.create(connectTimeout, responseTimeout))
+            .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+            .build();
     }
 
     private byte[] readResponse(

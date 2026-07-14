@@ -7,5 +7,6 @@
 - [RUN-0002 Elice LLM Local Live 검증과 Token 교체](RUN-0002-elice-llm-local-live-and-token-rotation.md)
 
 RUN-0001은 실제 Naver canary가 두 `INVALID_RESPONSE`로 실패해 `draft`다. RUN-0002는
-Elice 자동 타깃 검증은 통과했지만 실제 canary와 교체 훈련을 완료하지 않아 `draft`다.
+Elice 자동 타깃 검증은 통과했지만 첫 실제 canary가 두 capability 모두
+`PROVIDER_UNAVAILABLE`로 실패했고 교체 훈련도 완료하지 않아 `draft`다.
 문서가 존재한다는 사실을 Live 검증 완료와 혼동하지 않는다.

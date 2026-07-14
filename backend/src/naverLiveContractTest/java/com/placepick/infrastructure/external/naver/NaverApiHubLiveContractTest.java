@@ -3,6 +3,7 @@ package com.placepick.infrastructure.external.naver;
 import com.placepick.recommendation.application.port.out.BlogSearchQuery;
 import com.placepick.recommendation.application.port.out.PlaceSearchQuery;
 import com.placepick.recommendation.application.port.out.SearchProviderException;
+import com.placepick.recommendation.application.port.out.SearchProviderFailure;
 import java.net.URI;
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -20,19 +21,28 @@ class NaverApiHubLiveContractTest {
     @Test
     void verifiesCurrentLocalAndBlogSchemaWithinTwoCalls() {
         requireExplicitEnablement();
-        NaverApiHubAdapter adapter = NaverApiHubAdapter.create(
+        String keyId = requiredEnvironment("NAVER_API_HUB_KEY_ID");
+        String key = requiredEnvironment("NAVER_API_HUB_KEY");
+        NaverApiHubAdapter localAdapter = NaverApiHubAdapter.create(
             OFFICIAL_BASE_URL,
-            requiredEnvironment("NAVER_API_HUB_KEY_ID"),
-            requiredEnvironment("NAVER_API_HUB_KEY"),
+            keyId,
+            key,
+            Duration.ofSeconds(2),
+            Duration.ofSeconds(5)
+        );
+        NaverApiHubAdapter blogAdapter = NaverApiHubAdapter.create(
+            OFFICIAL_BASE_URL,
+            keyId,
+            key,
             Duration.ofSeconds(2),
             Duration.ofSeconds(5)
         );
 
-        var local = attempt(() -> adapter.searchPlaces(
+        var local = attempt(() -> localAdapter.searchPlaces(
             new PlaceSearchQuery(FIXED_NON_PERSONAL_QUERY, 1)
         ));
         waitForBlogCallInterval();
-        var blog = attempt(() -> adapter.searchBlogs(
+        var blog = attempt(() -> blogAdapter.searchBlogs(
             new BlogSearchQuery(FIXED_NON_PERSONAL_QUERY, 1)
         ));
 
@@ -81,7 +91,7 @@ class NaverApiHubLiveContractTest {
         } catch (RuntimeException exception) {
             return new CallOutcome<>(
                 null,
-                "INTERNAL_CONTRACT_ERROR",
+                SearchProviderFailure.INVALID_RESPONSE.name(),
                 null,
                 elapsedMilliseconds(startedAt)
             );

@@ -146,6 +146,28 @@ class EliceLlmContractClientIntegrationTest {
         assertThat(requestsFor(path)).isEqualTo(1);
     }
 
+    @Test
+    void isolatesEmbeddingTransportAfterAChatTimeout() {
+        client = newClient(Duration.ofMillis(100));
+        WIRE_MOCK.stubFor(post(urlPathEqualTo(CHAT_PATH))
+            .willReturn(jsonResponse(200, validChatResponse()).withFixedDelay(500)));
+        WIRE_MOCK.stubFor(post(urlPathEqualTo(EMBEDDING_PATH))
+            .willReturn(jsonResponse(200, validEmbeddingResponse())));
+
+        assertThatThrownBy(client::verifyChatContract)
+            .isInstanceOfSatisfying(LlmProviderException.class, exception -> {
+                assertThat(exception.failure()).isEqualTo(LlmProviderFailure.PROVIDER_UNAVAILABLE);
+                assertRedacted(exception);
+            });
+
+        var embedding = client.verifyEmbeddingContract();
+
+        assertThat(embedding.itemCount()).isEqualTo(1);
+        assertThat(embedding.dimensions()).isEqualTo(1_536);
+        verifyOneAuthorizedRequest(CHAT_PATH);
+        verifyOneAuthorizedRequest(EMBEDDING_PATH);
+    }
+
     @ParameterizedTest
     @CsvSource({"chat", "embedding"})
     void rejectsMalformedJsonWithoutExposingTheResponse(String endpoint) {

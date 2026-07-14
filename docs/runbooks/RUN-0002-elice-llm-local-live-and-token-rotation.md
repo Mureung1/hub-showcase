@@ -9,6 +9,7 @@ owners:
 related:
   - ../adr/ADR-0011-elice-chat-completions-provider-boundary.md
   - ../work-records/WI-0040-elice-llm-proxy-live-contract.md
+  - ../troubleshooting/TS-0010-elice-live-no-http-response.md
   - https://github.com/gdh0730/hub/issues/42
 ---
 
@@ -21,10 +22,10 @@ capability를 합성 입력·최소 호출로 확인하고, token 노출·의심
 일반 앱과 CI는 Mock만 사용하며 이 Runbook은 검토된 commit에서 사람이 승인한 Local
 Live에만 적용한다.
 
-Elice unit security·통합 계약·Live source compile은 자동 타깃 검증을 통과했다. 실제
-Chat·Embedding canary와 token 교체 훈련은 아직 확인되지 않았으므로 이 Runbook은
-`draft`다. 명령 존재, Mock 통과, 실제 Elice 계약과 제품 runtime 활성화를 각각 다른
-상태로 기록한다.
+Elice unit security·통합 계약·Live source compile은 자동 타깃 검증을 통과했다. 첫
+Chat·Embedding canary는 둘 다 HTTP 응답 전 `PROVIDER_UNAVAILABLE`로 실패했고 token
+교체 훈련도 확인되지 않았으므로 이 Runbook은 `draft`다. 명령 존재, Mock 통과, 실제
+Elice 계약과 제품 runtime 활성화를 각각 다른 상태로 기록한다.
 
 ## 사전 조건과 안전장치
 
@@ -84,6 +85,22 @@ Chat·Embedding canary와 token 교체 훈련은 아직 확인되지 않았으�
    출력되면 성공 여부와 관계없이 노출 대응으로 이동한다.
 7. provider 사용량이 의도한 두 호출과 일치하는지 사람이 확인하고 실행 SHA, 시각,
    endpoint별 성공 여부·안전한 count·latency만 Work Record에 남긴다.
+
+## 2026-07-14 실행 증거
+
+- 실행 SHA는 `7f5657b012ea8cdc2260f1ebbf0d32a50b3f9054`, JUnit 시각은
+  2026-07-14T13:12:14.619Z다.
+- Chat과 Embedding application 호출을 각각 한 번 수행했고 transport automatic retry는
+  비활성화했다.
+- Chat은 `http=none`, schema false, 4415ms였고 Embedding은 `http=none`, schema false,
+  4ms였다. 총 논리 호출 수는 2다.
+- test report 10개는 token·전체 proxy URL·본문·vector 안전 scan을 통과했다.
+- 비인증 host 진단은 DNS·TLS·JDK·Apache·저장소 transport에서 HTTP 401을 받아 일반
+  host 접근은 확인했지만 실제 모델 endpoint와 key 계약은 확인하지 못했다.
+- 첫 구현은 connection manager를 공유해 두 번째 실패의 독립성이 불명확했다. 이후
+  capability별 transport로 분리했지만 승인 없이 실제 endpoint를 다시 호출하지 않았다.
+- 따라서 Chat strict schema와 Embedding 1,536차원 capability는 모두 미검증이며 자세한
+  조사와 재검증 gate는 TS-0010을 따른다.
 
 ## 실패 분기
 

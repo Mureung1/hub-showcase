@@ -235,8 +235,8 @@ Worker가 DB에서 읽어 event의 개인정보와 크기를 줄인다. relay는
 | `specified` | 추천 이유 | place ID별 reason·cautions·shareText strict schema | PP-016 |
 | `implemented` | Naver Java adapter | 현행 API HUB Local·Blog port와 오류 정규화 | PP-013 |
 | `specified` | Naver Local Live | 2026-07-14 두 논리 호출 모두 `INVALID_RESPONSE`; wire 수 미확인, 원인 진단·재검증 필요 | PP-013 |
-| `specified` | Elice Chat Local Live | 합성 입력·strict Chat Completions 계약 확인 | PP-038 |
-| `specified` | Elice Embedding capability | 합성 입력·1,536차원 계약만 확인, runtime 미사용 | PP-038 |
+| `specified` | Elice Chat Local Live | 첫 실행 `PROVIDER_UNAVAILABLE`; 2xx·strict schema 재검증 필요 | PP-038 |
+| `specified` | Elice Embedding capability | 첫 실행 `PROVIDER_UNAVAILABLE`; 1,536차원 재검증 필요, runtime 미사용 | PP-038 |
 | `implemented` | Approval Gate·Provider Gateway 프로그램 | OIDC·workflow hash·replay·JWT·Local/Blog allowlist 자동 검증 | PP-037 |
 | `planned` | Gate·Gateway 클라우드 배포 | Cloudflare secret과 승인 SHA canary E2E | PP-033, PP-035 |
 | `planned` | 전체 배포 Live | Gateway를 거친 Naver·Elice 전체 E2E | PP-029, PP-033 |
@@ -306,7 +306,7 @@ Vercel과 Render에는 원본 Naver key를 저장하지 않는다. Elice token�
 | --- | --- | --- |
 | 코드 자동 검증 | Mock·adapter·fail-closed·redaction과 Gate/Gateway 음성 테스트 | Naver·Gateway·Elice와 전체 `make check` 통과; Live 호출 0회 |
 | Naver Local Live | 교체된 key로 Local·Blog 논리 호출 각 1회 2xx·schema와 wire 2건 확인 | 2026-07-14 실패: 두 논리 호출 모두 `INVALID_RESPONSE`, wire 수 미확인 |
-| Elice Local Live | 합성 Chat·Embedding 각 1회 2xx와 schema 확인 | 실행되지 않음 |
+| Elice Local Live | 합성 Chat·Embedding 각 1회 2xx와 schema 확인 | 2026-07-14 두 application 호출 모두 HTTP 응답 전 `PROVIDER_UNAVAILABLE`; 재승인 필요 |
 | 제품 LLM runtime | PP-009·PP-016·PP-029 구현과 provider 정책 승인 | 구현되지 않음 |
 | 클라우드 배포 | Gate·Gateway와 demo stack에서 승인 SHA E2E 확인 | 배포되지 않음 |
 
