@@ -20,9 +20,29 @@
     <p class="label">STEP 1</p>
     <h1>내 정보를 입력해주세요</h1>
     <p class="subtitle">입력한 정보를 바탕으로 맞춤 공고를 추천해드려요.</p>
-    <p class="note">※ 전공·학점 아래 빨간 안내문은 실제 입력 여부와 무관하게, 필수값을 비워둔 채 제출했을 때 보이는 화면을 예시로 고정 표시한 것입니다.</p>
+    <p class="note">※ 필수 항목(대학교·학년·전공·취득학점·평균평점) 아래 빨간 안내문은 실제 입력 여부와 무관하게, 필수값을 비워둔 채 제출했을 때 보이는 화면을 예시로 고정 표시한 것입니다.</p>
 
     <form>
+      <div class="field field-error">
+        <label for="university">대학교</label>
+        <input type="text" id="university" name="university" placeholder="예: OO대학교">
+        <p class="error-text">필수 항목입니다</p>
+      </div>
+
+      <div class="field field-error">
+        <label for="grade">학년</label>
+        <select id="grade" name="grade">
+          <option value="" selected disabled>학년 선택</option>
+          <option>1학년</option>
+          <option>2학년</option>
+          <option>3학년</option>
+          <option>4학년</option>
+          <option>5학년 이상</option>
+          <option>졸업유예</option>
+        </select>
+        <p class="error-text">필수 항목입니다</p>
+      </div>
+
       <div class="field field-error">
         <label for="major">전공</label>
         <input type="text" id="major" name="major" placeholder="예: 컴퓨터공학과">
@@ -30,18 +50,29 @@
       </div>
 
       <div class="field">
+        <label for="doubleMajor">복수전공 <span class="hint">(선택)</span></label>
+        <input type="text" id="doubleMajor" name="doubleMajor" placeholder="예: 경영학과">
+      </div>
+
+      <div class="field">
         <label for="minor">부전공 <span class="hint">(선택)</span></label>
-        <input type="text" id="minor" name="minor" placeholder="예: 경영학과">
+        <input type="text" id="minor" name="minor" placeholder="예: 심리학과">
       </div>
 
       <div class="field field-error">
-        <label for="gpa">학점</label>
+        <label for="earnedCredits">취득학점</label>
+        <input type="text" id="earnedCredits" name="earnedCredits" placeholder="예: 98">
+        <p class="error-text">필수 항목입니다</p>
+      </div>
+
+      <div class="field field-error">
+        <label for="gpa">평균평점</label>
         <input type="text" id="gpa" name="gpa" placeholder="예: 3.8 / 4.5">
         <p class="error-text">필수 항목입니다</p>
       </div>
 
       <div class="field">
-        <label>자격증</label>
+        <label>자격증 <span class="hint">(선택)</span></label>
         <div class="field-row">
           <input type="text" placeholder="예: 정보처리기사">
         </div>

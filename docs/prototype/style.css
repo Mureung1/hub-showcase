@@ -142,6 +142,7 @@ h2 {
 
 .field input[type="text"],
 .field input[type="number"],
+.field select,
 .field textarea {
   width: 100%;
   padding: 10px 14px;
@@ -373,6 +374,7 @@ ul.condition-list li + li {
 
   .field input[type="text"],
   .field input[type="number"],
+  .field select,
   .field textarea {
     background: #14151a;
     border-color: #3a3c46;
