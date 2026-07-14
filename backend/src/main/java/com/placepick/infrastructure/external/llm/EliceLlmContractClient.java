@@ -161,9 +161,9 @@ public final class EliceLlmContractClient {
 
     public ChatContractResult verifyChatContract() {
         long startedAt = System.nanoTime();
-        byte[] body = execute(chatRestClient, "chat", chatEndpoint, chatRequest());
-        JsonNode root = parseJson("chat", body);
-        TokenUsage usage = validateChatResponse(root);
+        ProviderResponse response = execute(chatRestClient, "chat", chatEndpoint, chatRequest());
+        JsonNode root = parseJson("chat", response);
+        TokenUsage usage = validateChatResponse(root, response.httpStatus());
         return new ChatContractResult(
             usage.inputTokens(),
             usage.outputTokens(),
@@ -173,14 +173,14 @@ public final class EliceLlmContractClient {
 
     public EmbeddingContractResult verifyEmbeddingContract() {
         long startedAt = System.nanoTime();
-        byte[] body = execute(
+        ProviderResponse response = execute(
             embeddingRestClient,
             "embedding",
             embeddingEndpoint,
             embeddingRequest()
         );
-        JsonNode root = parseJson("embedding", body);
-        int inputTokens = validateEmbeddingResponse(root);
+        JsonNode root = parseJson("embedding", response);
+        int inputTokens = validateEmbeddingResponse(root, response.httpStatus());
         return new EmbeddingContractResult(
             1,
             EMBEDDING_DIMENSIONS,
@@ -189,7 +189,7 @@ public final class EliceLlmContractClient {
         );
     }
 
-    private byte[] execute(
+    private ProviderResponse execute(
         RestClient restClient,
         String operation,
         URI endpoint,
@@ -207,6 +207,7 @@ public final class EliceLlmContractClient {
             throw failure(
                 LlmProviderFailure.PROVIDER_UNAVAILABLE,
                 null,
+                LlmProviderFailureStage.TRANSPORT,
                 operation,
                 "request could not be completed"
             );
@@ -214,6 +215,7 @@ public final class EliceLlmContractClient {
             throw failure(
                 LlmProviderFailure.INVALID_RESPONSE,
                 null,
+                LlmProviderFailureStage.CLIENT,
                 operation,
                 "response could not be read"
             );
@@ -232,20 +234,27 @@ public final class EliceLlmContractClient {
             .build();
     }
 
-    private byte[] readResponse(
+    private ProviderResponse readResponse(
         String operation,
         ClientHttpResponse response
     ) throws IOException {
         HttpStatusCode statusCode = response.getStatusCode();
         int status = statusCode.value();
         if (!statusCode.is2xxSuccessful()) {
-            throw failure(classifyStatus(status), status, operation, "request was rejected");
+            throw failure(
+                classifyStatus(status),
+                status,
+                LlmProviderFailureStage.HTTP_STATUS,
+                operation,
+                "request was rejected"
+            );
         }
         MediaType contentType = response.getHeaders().getContentType();
         if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(contentType)) {
             throw failure(
                 LlmProviderFailure.INVALID_RESPONSE,
                 status,
+                LlmProviderFailureStage.MEDIA_TYPE,
                 operation,
                 "response media type is invalid"
             );
@@ -257,39 +266,58 @@ public final class EliceLlmContractClient {
                 throw failure(
                     LlmProviderFailure.INVALID_RESPONSE,
                     status,
+                    LlmProviderFailureStage.RESPONSE_SIZE,
                     operation,
                     "response exceeded the byte limit"
                 );
             }
-            return body;
+            return new ProviderResponse(status, body);
         }
     }
 
-    private JsonNode parseJson(String operation, byte[] body) {
+    private JsonNode parseJson(String operation, ProviderResponse response) {
         try {
-            JsonNode root = objectMapper.readTree(body);
+            JsonNode root = objectMapper.readTree(response.body());
             if (root == null || !root.isObject()) {
-                throw invalidResponse(operation);
+                throw invalidResponse(
+                    operation,
+                    response.httpStatus(),
+                    LlmProviderFailureStage.JSON
+                );
             }
             return root;
         } catch (JsonProcessingException exception) {
-            throw invalidResponse(operation);
+            throw invalidResponse(
+                operation,
+                response.httpStatus(),
+                LlmProviderFailureStage.JSON
+            );
         } catch (IOException exception) {
-            throw invalidResponse(operation);
+            throw invalidResponse(
+                operation,
+                response.httpStatus(),
+                LlmProviderFailureStage.JSON
+            );
         }
     }
 
-    private TokenUsage validateChatResponse(JsonNode root) {
+    private TokenUsage validateChatResponse(JsonNode root, int httpStatus) {
         if (!"chat.completion".equals(text(root, "object")) ||
             !nonBlankText(root, "id") ||
-            !chatModel.equals(text(root, "model")) ||
             !nonNegativeInteger(root.get("created"))) {
-            throw invalidResponse("chat");
+            throw invalidResponse(
+                "chat",
+                httpStatus,
+                LlmProviderFailureStage.CHAT_METADATA
+            );
+        }
+        if (!chatModel.equals(text(root, "model"))) {
+            throw invalidResponse("chat", httpStatus, LlmProviderFailureStage.CHAT_MODEL);
         }
 
         JsonNode choices = root.get("choices");
         if (choices == null || !choices.isArray() || choices.size() != 1) {
-            throw invalidResponse("chat");
+            throw invalidResponse("chat", httpStatus, LlmProviderFailureStage.CHAT_CHOICES);
         }
         JsonNode choice = choices.get(0);
         JsonNode message = choice == null ? null : choice.get("message");
@@ -298,73 +326,138 @@ public final class EliceLlmContractClient {
             message == null || !message.isObject() ||
             !"assistant".equals(text(message, "role")) ||
             (message.has("refusal") && !message.get("refusal").isNull())) {
-            throw invalidResponse("chat");
+            throw invalidResponse("chat", httpStatus, LlmProviderFailureStage.CHAT_MESSAGE);
         }
 
         JsonNode contentNode = message.get("content");
         if (contentNode == null || !contentNode.isTextual()) {
-            throw invalidResponse("chat");
+            throw invalidResponse("chat", httpStatus, LlmProviderFailureStage.CHAT_CONTENT);
         }
-        validateStrictStatusContent(contentNode.textValue());
-        return validateChatUsage(root.get("usage"));
+        validateStrictStatusContent(contentNode.textValue(), httpStatus);
+        return validateChatUsage(root.get("usage"), httpStatus);
     }
 
-    private void validateStrictStatusContent(String content) {
+    private void validateStrictStatusContent(String content, int httpStatus) {
         try {
             JsonNode structured = objectMapper.readTree(content);
             if (structured == null || !structured.isObject() || structured.size() != 1 ||
                 !"ok".equals(text(structured, "status"))) {
-                throw invalidResponse("chat");
+                throw invalidResponse(
+                    "chat",
+                    httpStatus,
+                    LlmProviderFailureStage.CHAT_CONTENT
+                );
             }
         } catch (JsonProcessingException exception) {
-            throw invalidResponse("chat");
+            throw invalidResponse("chat", httpStatus, LlmProviderFailureStage.CHAT_CONTENT);
         }
     }
 
-    private static TokenUsage validateChatUsage(JsonNode usage) {
+    private static TokenUsage validateChatUsage(JsonNode usage, int httpStatus) {
         if (usage == null || !usage.isObject()) {
-            throw invalidResponse("chat");
+            throw invalidResponse("chat", httpStatus, LlmProviderFailureStage.CHAT_USAGE);
         }
-        int inputTokens = requiredNonNegativeInteger(usage.get("prompt_tokens"), "chat");
-        int outputTokens = requiredNonNegativeInteger(usage.get("completion_tokens"), "chat");
-        int totalTokens = requiredNonNegativeInteger(usage.get("total_tokens"), "chat");
+        int inputTokens = requiredNonNegativeInteger(
+            usage.get("prompt_tokens"),
+            "chat",
+            httpStatus,
+            LlmProviderFailureStage.CHAT_USAGE
+        );
+        int outputTokens = requiredNonNegativeInteger(
+            usage.get("completion_tokens"),
+            "chat",
+            httpStatus,
+            LlmProviderFailureStage.CHAT_USAGE
+        );
+        int totalTokens = requiredNonNegativeInteger(
+            usage.get("total_tokens"),
+            "chat",
+            httpStatus,
+            LlmProviderFailureStage.CHAT_USAGE
+        );
         if ((long) inputTokens + outputTokens != totalTokens) {
-            throw invalidResponse("chat");
+            throw invalidResponse("chat", httpStatus, LlmProviderFailureStage.CHAT_USAGE);
         }
         return new TokenUsage(inputTokens, outputTokens);
     }
 
-    private int validateEmbeddingResponse(JsonNode root) {
-        if (!"list".equals(text(root, "object")) ||
-            !embeddingModel.equals(text(root, "model"))) {
-            throw invalidResponse("embedding");
+    private int validateEmbeddingResponse(JsonNode root, int httpStatus) {
+        if (!"list".equals(text(root, "object"))) {
+            throw invalidResponse(
+                "embedding",
+                httpStatus,
+                LlmProviderFailureStage.EMBEDDING_METADATA
+            );
+        }
+        if (!embeddingModel.equals(text(root, "model"))) {
+            throw invalidResponse(
+                "embedding",
+                httpStatus,
+                LlmProviderFailureStage.EMBEDDING_MODEL
+            );
         }
         JsonNode data = root.get("data");
         if (data == null || !data.isArray() || data.size() != 1) {
-            throw invalidResponse("embedding");
+            throw invalidResponse(
+                "embedding",
+                httpStatus,
+                LlmProviderFailureStage.EMBEDDING_DATA
+            );
         }
         JsonNode item = data.get(0);
         JsonNode vector = item == null ? null : item.get("embedding");
         if (item == null || !item.isObject() ||
             !"embedding".equals(text(item, "object")) ||
-            !integerEquals(item.get("index"), 0) ||
-            vector == null || !vector.isArray() || vector.size() != EMBEDDING_DIMENSIONS) {
-            throw invalidResponse("embedding");
+            !integerEquals(item.get("index"), 0)) {
+            throw invalidResponse(
+                "embedding",
+                httpStatus,
+                LlmProviderFailureStage.EMBEDDING_DATA
+            );
+        }
+        if (vector == null || !vector.isArray() || vector.size() != EMBEDDING_DIMENSIONS) {
+            throw invalidResponse(
+                "embedding",
+                httpStatus,
+                LlmProviderFailureStage.EMBEDDING_VECTOR
+            );
         }
         for (JsonNode value : vector) {
             if (value == null || !value.isNumber() || !Double.isFinite(value.doubleValue())) {
-                throw invalidResponse("embedding");
+                throw invalidResponse(
+                    "embedding",
+                    httpStatus,
+                    LlmProviderFailureStage.EMBEDDING_VECTOR
+                );
             }
         }
 
         JsonNode usage = root.get("usage");
         if (usage == null || !usage.isObject()) {
-            throw invalidResponse("embedding");
+            throw invalidResponse(
+                "embedding",
+                httpStatus,
+                LlmProviderFailureStage.EMBEDDING_USAGE
+            );
         }
-        int inputTokens = requiredNonNegativeInteger(usage.get("prompt_tokens"), "embedding");
-        int totalTokens = requiredNonNegativeInteger(usage.get("total_tokens"), "embedding");
+        int inputTokens = requiredNonNegativeInteger(
+            usage.get("prompt_tokens"),
+            "embedding",
+            httpStatus,
+            LlmProviderFailureStage.EMBEDDING_USAGE
+        );
+        int totalTokens = requiredNonNegativeInteger(
+            usage.get("total_tokens"),
+            "embedding",
+            httpStatus,
+            LlmProviderFailureStage.EMBEDDING_USAGE
+        );
         if (inputTokens != totalTokens) {
-            throw invalidResponse("embedding");
+            throw invalidResponse(
+                "embedding",
+                httpStatus,
+                LlmProviderFailureStage.EMBEDDING_USAGE
+            );
         }
         return inputTokens;
     }
@@ -420,10 +513,15 @@ public final class EliceLlmContractClient {
         };
     }
 
-    private static LlmProviderException invalidResponse(String operation) {
+    private static LlmProviderException invalidResponse(
+        String operation,
+        Integer httpStatus,
+        LlmProviderFailureStage stage
+    ) {
         return failure(
             LlmProviderFailure.INVALID_RESPONSE,
-            null,
+            httpStatus,
+            stage,
             operation,
             "response schema is invalid"
         );
@@ -432,19 +530,26 @@ public final class EliceLlmContractClient {
     private static LlmProviderException failure(
         LlmProviderFailure failure,
         Integer httpStatus,
+        LlmProviderFailureStage stage,
         String operation,
         String reason
     ) {
         return new LlmProviderException(
             failure,
             httpStatus,
+            stage,
             "LLM " + operation + " " + reason + "."
         );
     }
 
-    private static int requiredNonNegativeInteger(JsonNode node, String operation) {
+    private static int requiredNonNegativeInteger(
+        JsonNode node,
+        String operation,
+        int httpStatus,
+        LlmProviderFailureStage stage
+    ) {
         if (!nonNegativeInteger(node)) {
-            throw invalidResponse(operation);
+            throw invalidResponse(operation, httpStatus, stage);
         }
         return node.intValue();
     }
@@ -571,5 +676,8 @@ public final class EliceLlmContractClient {
     }
 
     private record TokenUsage(int inputTokens, int outputTokens) {
+    }
+
+    private record ProviderResponse(int httpStatus, byte[] body) {
     }
 }

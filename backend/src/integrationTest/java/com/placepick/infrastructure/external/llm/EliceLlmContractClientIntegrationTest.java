@@ -219,6 +219,44 @@ class EliceLlmContractClientIntegrationTest {
     }
 
     @Test
+    void reportsSafeChatModelMismatchStageWithoutEchoingTheObservedModel() {
+        WIRE_MOCK.stubFor(post(urlPathEqualTo(CHAT_PATH))
+            .willReturn(jsonResponse(200, validChatResponse().replace(
+                "\"model\":\"openai/gpt-4.1-mini\"",
+                "\"model\":\"synthetic-unapproved-chat-model\""
+            ))));
+
+        assertThatThrownBy(client::verifyChatContract)
+            .isInstanceOfSatisfying(LlmProviderException.class, exception -> {
+                assertThat(exception.failure()).isEqualTo(LlmProviderFailure.INVALID_RESPONSE);
+                assertThat(exception.httpStatus()).isEqualTo(200);
+                assertThat(exception.stage()).isEqualTo(LlmProviderFailureStage.CHAT_MODEL);
+                assertThat(exception.getMessage())
+                    .doesNotContain("synthetic-unapproved-chat-model", TOKEN);
+            });
+        verifyOneAuthorizedRequest(CHAT_PATH);
+    }
+
+    @Test
+    void reportsSafeEmbeddingModelMismatchStageWithoutEchoingTheObservedModel() {
+        WIRE_MOCK.stubFor(post(urlPathEqualTo(EMBEDDING_PATH))
+            .willReturn(jsonResponse(200, validEmbeddingResponse().replace(
+                "\"model\":\"openai/text-embedding-3-small\"",
+                "\"model\":\"synthetic-unapproved-embedding-model\""
+            ))));
+
+        assertThatThrownBy(client::verifyEmbeddingContract)
+            .isInstanceOfSatisfying(LlmProviderException.class, exception -> {
+                assertThat(exception.failure()).isEqualTo(LlmProviderFailure.INVALID_RESPONSE);
+                assertThat(exception.httpStatus()).isEqualTo(200);
+                assertThat(exception.stage()).isEqualTo(LlmProviderFailureStage.EMBEDDING_MODEL);
+                assertThat(exception.getMessage())
+                    .doesNotContain("synthetic-unapproved-embedding-model", TOKEN);
+            });
+        verifyOneAuthorizedRequest(EMBEDDING_PATH);
+    }
+
+    @Test
     void doesNotFollowRedirectsOrFallBackToResponses() {
         WIRE_MOCK.stubFor(post(urlPathEqualTo(CHAT_PATH)).willReturn(aResponse()
             .withStatus(302)
