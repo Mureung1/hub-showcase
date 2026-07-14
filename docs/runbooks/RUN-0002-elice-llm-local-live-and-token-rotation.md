@@ -2,7 +2,7 @@
 id: RUN-0002
 title: Elice LLM Local Live 검증과 Token 교체
 type: runbook
-status: draft
+status: verified
 date: 2026-07-14
 owners:
   - placepick-team
@@ -10,6 +10,7 @@ related:
   - ../adr/ADR-0011-elice-chat-completions-provider-boundary.md
   - ../work-records/WI-0040-elice-llm-proxy-live-contract.md
   - ../troubleshooting/TS-0010-elice-live-no-http-response.md
+  - ../troubleshooting/TS-0012-provider-response-metadata-compatibility.md
   - https://github.com/gdh0730/hub/issues/42
 ---
 
@@ -22,10 +23,11 @@ capability를 합성 입력·최소 호출로 확인하고, token 노출·의심
 일반 앱과 CI는 Mock만 사용하며 이 Runbook은 검토된 commit에서 사람이 승인한 Local
 Live에만 적용한다.
 
-Elice unit security·통합 계약·Live source compile은 자동 타깃 검증을 통과했다. 첫
-Chat·Embedding canary는 둘 다 HTTP 응답 전 `PROVIDER_UNAVAILABLE`로 실패했고 token
-교체 훈련도 확인되지 않았으므로 이 Runbook은 `draft`다. 명령 존재, Mock 통과, 실제
-Elice 계약과 제품 runtime 활성화를 각각 다른 상태로 기록한다.
+Elice unit security·통합 계약·Live source compile과 실제 Chat·Embedding canary가
+2026-07-14 모두 통과해 이 Runbook의 정상 경로를 검증했다. 명령 존재, Mock 통과,
+실제 capability와 제품 runtime 활성화는 각각 다른 상태로 기록한다. `verified`는 정상
+canary 경로만 뜻하며 token 노출 사고·교체 훈련이나 provider dashboard 대조 완료를
+뜻하지 않는다.
 
 ## 사전 조건과 안전장치
 
@@ -79,28 +81,29 @@ Elice 계약과 제품 runtime 활성화를 각각 다른 상태로 기록한다
    make llm-live-contract
    ```
 
-6. 성공 summary는 Chat 1회와 1초 간격 뒤 Embedding 1회, 총 호출 수 2만 보고해야 한다.
+6. 성공 summary는 Chat 1회와 1초 간격 뒤 Embedding 1회, 총 application 논리 호출 수
+   2만 보고해야 한다.
    Chat은 2xx·strict `{"status":"ok"}`·usage, Embedding은 2xx·data 한 건·index 0·
    1,536개의 finite number를 확인한다. token, 전체 URL, prompt, 응답 content와 vector가
    출력되면 성공 여부와 관계없이 노출 대응으로 이동한다.
-7. provider 사용량이 의도한 두 호출과 일치하는지 사람이 확인하고 실행 SHA, 시각,
-   endpoint별 성공 여부·안전한 count·latency만 Work Record에 남긴다.
+7. 가능하면 provider 사용량이 의도한 두 호출과 일치하는지 사람이 추가 확인하고 실행
+   SHA, 시각, endpoint별 성공 여부·안전한 count·latency만 Work Record에 남긴다.
 
 ## 2026-07-14 실행 증거
 
-- 실행 SHA는 `7f5657b012ea8cdc2260f1ebbf0d32a50b3f9054`, JUnit 시각은
-  2026-07-14T13:12:14.619Z다.
-- Chat과 Embedding application 호출을 각각 한 번 수행했고 transport automatic retry는
-  비활성화했다.
-- Chat은 `http=none`, schema false, 4415ms였고 Embedding은 `http=none`, schema false,
-  4ms였다. 총 논리 호출 수는 2다.
-- test report 10개는 token·전체 proxy URL·본문·vector 안전 scan을 통과했다.
-- 비인증 host 진단은 DNS·TLS·JDK·Apache·저장소 transport에서 HTTP 401을 받아 일반
-  host 접근은 확인했지만 실제 모델 endpoint와 key 계약은 확인하지 못했다.
-- 첫 구현은 connection manager를 공유해 두 번째 실패의 독립성이 불명확했다. 이후
-  capability별 transport로 분리했지만 승인 없이 실제 endpoint를 다시 호출하지 않았다.
-- 따라서 Chat strict schema와 Embedding 1,536차원 capability는 모두 미검증이며 자세한
-  조사와 재검증 gate는 TS-0010을 따른다.
+- 최초 전송 실패 뒤 capability별 transport와 no-retry·no-redirect 경계를 보강했다.
+- 다음 진단 실행은 두 요청 모두 2xx를 받았지만 Chat·Embedding response model metadata가
+  요청 alias와 다름을 안전한 stage로 확인했다. 실제 model 문자열과 body는 보존하지
+  않았고 같은 코드로 반복 호출하지 않았다.
+- 요청 model pin은 유지하고 공식 base alias와 승인된 Chat snapshot만 닫힌 목록으로
+  허용했다. 무관한 model, 자유 JSON, refusal, incomplete, usage 오류와 잘못된 embedding
+  차원은 계속 거부한다.
+- 최종 SHA `e6190662c2382304f21c39bdb29375d1b1324733`, 시각
+  2026-07-14T14:22:09.241Z에서 Chat은 2xx·strict schema·usage, input 69·output 5
+  tokens·3207ms를 통과했다. Embedding은 2xx·item 1개·1,536 finite dimensions·input 8
+  tokens·1067ms를 통과했다.
+- application 논리 호출은 각 한 번, 합계 2회이고 report 10개는 token·전체 URL·본문·
+  vector 안전 scan을 통과했다. provider dashboard의 wire 사용량은 독립 대조하지 않았다.
 
 ## 실패 분기
 
@@ -132,8 +135,9 @@ Elice 계약과 제품 runtime 활성화를 각각 다른 상태로 기록한다
 ## 검증과 rollback
 
 정상 완료는 자동 회귀 통과, Chat·Embedding application 호출 각 1회의 2xx·schema 통과,
-출력과 보고서의 token·전체 URL·본문·vector 부재, provider 사용량에서 upstream 요청
-2회가 확인되는 것이 모두 필요하다.
+출력과 보고서의 token·전체 URL·본문·vector 부재다. provider dashboard 대조는 가능한
+경우 추가하며, 수행하지 않았으면 논리 호출 수와 no-retry transport까지만 증거로
+주장하고 운영 사용량 확인이 남았음을 기록한다.
 Chat만 성공하고 Embedding이 실패한 경우 Chat capability와 Embedding capability를
 분리해 기록하며 PP-038 전체 완료로 처리하지 않는다.
 

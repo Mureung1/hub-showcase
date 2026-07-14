@@ -11,7 +11,7 @@ MVP의 기능·계약·선행 관계는 [서비스 완성 roadmap](docs/roadmap.
 | 런타임 | Java 17, Spring Boot 3.5.16, Gradle 8.14.4 | 동일 기준 유지 |
 | HTTP | Actuator health·Prometheus만 공개 | 조건 확인, 비동기 추천, SSE, 공유·투표·확정 |
 | 데이터 | PostgreSQL·Redis 로컬 하네스 | 도메인 스키마, outbox, Redis Streams와 DLQ |
-| 외부 연동 | Naver·Gateway·Elice 무자격증명 자동 검증 통과; Naver Live는 `INVALID_RESPONSE`, Elice Live는 `PROVIDER_UNAVAILABLE`, cloud 미배포 | 실제 provider 실패 진단·재승인 검증과 승인 배포 E2E |
+| 외부 연동 | Naver·Elice Local Live 계약과 무자격증명 자동 검증 통과; cloud 미배포 | 제품 runtime 연결·정책 승인과 승인 배포 E2E |
 | 프런트엔드 | 독립 프로토타입만 존재 | Next.js 기반 주최자·참여자 전체 사용자 여정 |
 | 품질 | 환경 단위·통합·Eval·문서와 health smoke 검증 완료 | 계약·Eval·브라우저 E2E·보안·부하·릴리스 gate |
 
@@ -83,13 +83,13 @@ Mock LLM 8090, Prometheus 9090, Grafana 3001이다.
 - `local`, `test`, `load`와 필수 CI에서는 실제 Naver·LLM API를 호출하지 않는다.
 - 실제 Naver 계약 확인은 Git에서 제외한 `.env.live.local`을 읽는 격리 task에서만
   Local·Blog 각 한 번으로 제한한다. 표준 실행과 `make check`는 이 파일을 읽지 않는다.
-- 2026-07-14 Naver Local·Blog canary는 둘 다 `INVALID_RESPONSE`로 실패했다. Mock
-  통과와 실제 Naver 활용 가능성을 혼동하지 않고 원인 진단 전 자동 재호출하지 않는다.
+- 2026-07-14 Naver Local·Blog는 응답 metadata 차이를 합성 회귀로 고친 뒤 각각 한 번의
+  실제 2xx·schema canary를 통과했다. 이는 결과 저장·LLM 전달 약관 승인이 아니다.
 - Elice 실제 확인은 별도 격리 task의 합성 Chat·Embedding으로만 수행한다. Elice 정책
   검토 전 실제 사용자 입력·Naver 결과를 보내지 않고 Embedding을 runtime에 사용하지 않는다.
-- 2026-07-14 첫 Elice canary는 두 capability 모두 HTTP 응답 전
-  `PROVIDER_UNAVAILABLE`로 실패했다. 실제 endpoint는 자동 재호출하지 않고 transport를
-  capability별로 격리한 뒤 재승인을 기다린다.
+- 2026-07-14 Elice Chat·Embedding은 transport와 model metadata 호환 경계를 보강한 뒤
+  각각 한 번의 실제 2xx 계약 검증을 통과했다. Chat은 MVP provider capability가
+  확인됐지만 제품 runtime 연결과 Elice 데이터 정책 승인은 별도 Task다.
 - 직접 OpenAI Responses API는 Elice 실패 시 자동 fallback하지 않는 재검토 대안이다.
 - 배포 Live의 원본 provider key는 외부 Provider Gateway만 보유한다. 공유 Fork,
   GitHub Actions, Vercel과 Render에는 원본 key를 두지 않는다.

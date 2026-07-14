@@ -30,6 +30,7 @@
 - [TS-0001 WireMock 의존성 충돌](troubleshooting/TS-0001-wiremock-dependency-conflict.md)
 - [TS-0010 Elice Local Live HTTP 응답 전 전송 실패](troubleshooting/TS-0010-elice-live-no-http-response.md)
 - [TS-0011 GitHub runner ripgrep 누락](troubleshooting/TS-0011-github-runner-ripgrep.md)
+- [TS-0012 실제 Provider 응답 메타데이터 호환성](troubleshooting/TS-0012-provider-response-metadata-compatibility.md)
 - [TS-0002 Testcontainers PostgreSQL tag와 digest 호환성](troubleshooting/TS-0002-testcontainers-digest-compatibility.md)
 - [TS-0003 Dev Container Yarn APT 공개키](troubleshooting/TS-0003-devcontainer-yarn-apt-key.md)
 - [TS-0004 Dev Container Gradle cache 권한](troubleshooting/TS-0004-devcontainer-gradle-cache-permission.md)

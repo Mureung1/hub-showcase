@@ -2,7 +2,7 @@
 id: WI-0015
 title: PP-013 Naver API Hub 장소·블로그 검색 어댑터
 type: work-record
-status: in-progress
+status: done
 date: 2026-07-14
 owners:
   - placepick-team
@@ -10,6 +10,7 @@ related:
   - ../roadmap.md
   - ../adr/ADR-0009-mock-local-live-gateway-boundary.md
   - ../runbooks/RUN-0001-naver-local-live-and-credential-rotation.md
+  - ../troubleshooting/TS-0012-provider-response-metadata-compatibility.md
 paths:
   - backend/src/main/java/com/placepick/recommendation/application/port/out/**
   - backend/src/main/java/com/placepick/infrastructure/external/naver/**
@@ -114,44 +115,42 @@ Naver 약관과 표시 의무를 사람이 확인하기 전에는 Local·Blog �
 8. Elice 첫 Live에서 선행 capability의 전송 실패가 같은 connection manager를 쓰는 다음
    capability 증거를 오염시킬 수 있음을 확인했다. Naver 재검증도 Local과 Blog에 각각
    독립 adapter를 사용해 한 endpoint 실패가 다음 결과에 전파되지 않도록 보강했다.
+9. 안전한 실패 stage를 추가한 SHA에서 실제 Local·Blog를 각각 한 번 호출해 두 응답이
+   모두 2xx 이후 `MEDIA_TYPE` 단계에서만 거부됨을 확인했다. header 원문과 body는
+   출력하지 않았고 같은 코드로 반복 호출하지 않았다.
+10. 공식 계약이 JSON 응답 형식을 정의하지만 성공 `Content-Type`을 필수 조건으로
+    명시하지 않는 점을 기준으로 `Accept: application/json`을 요청하고 header는 보조
+    신호로 전환했다. 1MiB 제한, 중복 key·trailing token 거부, 엄격 JSON·envelope·item
+    검증은 유지하고 비표준·누락 header의 합성 정상·malformed 응답을 회귀 테스트했다.
+11. 검토·push된 SHA `128692bdcaa8ef4e5e00a06362c02f25da223a4b`에서 Local·Blog를
+    각각 한 번 재검증해 모두 2xx·schema를 통과했다.
 
 ## 구현 결과와 검증 증거
 
-Java adapter와 Mock 자동 검증은 완료됐다. 실제 인증 canary는 실행했지만 성공 기준을
-통과하지 못했다. 상태를 다음처럼 분리한다.
-
-후속 transport 보강 뒤 2026-07-14 최종 `make check`에서 Naver 단위 3개와 adapter
-통합 19개·mapping 통합 2개가 failures·errors 0으로 통과했다. malformed JSON은
-`INVALID_RESPONSE`, timeout은 `PROVIDER_UNAVAILABLE`로 분리됐고 5xx·timeout의
-WireMock 요청 수는 endpoint별 한 건이었다. 이 자동 증거는 과거 Live 실패를 성공으로
-바꾸지 않는다.
+Java adapter, Mock 자동 검증과 실제 인증 canary가 모두 성공 기준을 통과했다. 최초
+실패를 지우지 않고, 진단 stage와 합성 회귀를 추가한 뒤 새 SHA에서만 재호출했다.
 
 | 증거 | 현재 상태 | 완료 기준 |
 | --- | --- | --- |
-| Java·Mock 자동 검증 | 완료 | Naver 단위 3개·통합 21개(어댑터 19개·mapping 2개), failures·errors 0; committed mapping JSON 20개 검증 |
-| Local Live canary | 실패 | 2026-07-14 논리 호출 2회, Local·Blog 모두 `INVALID_RESPONSE`; 당시 wire 요청 수는 미확인 |
+| Java·Mock 자동 검증 | 완료 | Naver 단위 5개·통합 28개, 비표준·누락 media type·malformed JSON·HTTP 오류·timeout·구 endpoint·호출 1회 회귀 통과 |
+| Local Live canary | 통과 | 2026-07-14 Local item 1개·5615ms, Blog item 1개·1071ms, 모두 2xx·schema, 논리 호출 2회 |
 | 배포 Gateway | 배포 안 됨 | PP-037 foundation 뒤 PP-033의 승인 SHA E2E |
 
-감사한 실행 SHA는 `25217e7e27a93ac252d781b71393df6caef2faaf`다. 2026-07-14
-12:16:58.252Z 실행 전 baseline `make check`는 통과했고 application-level 재시도 없이
-Local과 Blog 메서드를 각각 한 번 호출했다. 안전한 결과는 Local
-`http=none`, `schema=false`, `itemCount=none`, 916ms와 Blog `http=none`,
-`schema=false`, `itemCount=none`, 186ms였다. 두 논리 호출 모두
-`INVALID_RESPONSE`로 종료돼 Local Live 활용 가능성은 검증되지 않았다.
+최종 실행 시각은 2026-07-14T14:18:00.433Z이고 테스트 1개가 failures·errors 0으로
+통과했다. Local·Blog application 호출은 각각 한 번이며 Apache HttpClient의 automatic
+retry와 redirect는 비활성화됐다. provider console의 wire 사용량은 이 작업에서 독립
+대조하지 않았으므로 논리 호출 2회와 transport 정책까지만 증거로 주장한다.
 
-당시 JDK HTTP transport의 connect retry 기본값을 명시적으로 끄지 않았고 NCP 사용량을
-증거로 대조하지 않아 실제 wire 요청 수가 정확히 2회였다고 주장하지 않는다. 이후 live
-transport는 Apache HttpClient 5의 automatic retry와 redirect를 코드에서 비활성화하고,
-5xx·timeout 계약에서 실제 WireMock 요청 한 건을 검증하도록 보강했다. 다음 재검증은
-provider 사용량과 논리 호출 수를 함께 대조한다.
+최종 문서·코드 트리의 `make check`는 279.6초, exit 0이었다. Java 17 단위 27개·통합
+79개·Eval 5개, Edge 74개와 문서 음성 테스트 8개가 모두 failures·errors 0이었고 test
+report 81개 안전 scan을 통과했다. 이 명령은 Live class를 compile만 하고 실제 provider를
+호출하지 않았다.
 
 응답 body는 HTTP 처리 과정의 메모리에서 역직렬화됐지만 console에 출력하거나 DB·파일·
 JUnit artifact에 영구 보존하지 않았다. 장소명, 주소, link, query와 인증 header도
-기록하지 않았으며 실패 원인을 추측해 성공으로 바꾸지 않는다.
-
-후속 진단은 실제 응답 전문을 저장하지 않고 필수 field의 존재·type·JSON parsing 차이를
-안전한 합성 fixture로 재현한다. 원인 수정, 호출 상한과 diff 재검토 뒤에만 사람이 새
-2회 canary를 승인한다. RUN-0001은 이 실패로 인해 `draft` 상태를 유지한다.
+기록하지 않았다. 전용 report 10개도 비밀·원문 안전 scan을 통과했다. 반복 절차는
+검증된 [RUN-0001](../runbooks/RUN-0001-naver-local-live-and-credential-rotation.md)을
+따른다.
 
 ## AI 사용과 사람의 검증
 
@@ -169,6 +168,6 @@ API HUB schema, quota와 오류 body는 변경될 수 있고 Local의 작은 결
 허용한다는 뜻이 아니다. 공식 문서·약관 변경, schema drift나 401·403 증가가 감지되면
 live를 중지하고 fixture와 계약을 함께 갱신한다.
 
-현재 `in-progress`는 adapter 코드가 없어서가 아니라 실제 Local·Blog canary가 둘 다
-`INVALID_RESPONSE`로 실패해 계약 호환성이 확인되지 않았다는 뜻이다. 실제 Naver API
-활용 가능성이나 클라우드 배포 완료를 주장하지 않는다.
+현재 Naver Local·Blog 인증·전송·최소 schema 호환성은 확인됐다. 그러나 실제 2xx는
+검색 결과 결합·저장·Elice 전달 약관 승인, 추천 품질, quota 보호, 제품 runtime이나
+클라우드 배포 완료를 뜻하지 않는다. 이 후속 범위는 PP-014·PP-028·PP-029가 담당한다.

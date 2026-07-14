@@ -82,21 +82,20 @@ Naver와 Elice 명령은 자기 credential·URL·model만 하위 JVM에 전달�
 
 Naver task는 CI, 잘못된 mode와 누락 credential을 요청 전에 거부하고 공식 HTTPS
 origin을 코드에 고정한다. Local·Blog 각 한 번의 safe summary만 허용한다. 2026-07-14
-실제 두 논리 호출은 모두 `INVALID_RESPONSE`로 실패했고 wire 요청 수는 확인되지
-않았으므로 활용 가능성이 검증된 상태가
-아니다.
+응답 `Content-Type`을 보조 신호로 취급하되 엄격한 JSON·schema 검증을 유지하도록
+보강한 SHA `128692bdcaa8ef4e5e00a06362c02f25da223a4b`에서 Local·Blog가 각각 한 번의
+2xx·schema 검증을 통과했다. provider console의 wire 사용량은 별도 사람이 대조한다.
 
 Elice task는 서로 다른 exact HTTPS `mlapi.run/{canonical-uuid}/v1` base, exact Chat·
 Embedding model과 합성 입력만 허용한다. Chat·Embedding 각 한 번의 safe summary만
 출력하고 token, 전체 URL, prompt·응답 body와 vector를 출력하지 않는다. Elice 정책
 검토 전 제품 데이터 전송과 Embedding runtime은 금지한다.
 
-2026-07-14 첫 Elice 실행은 Chat·Embedding 모두 HTTP 응답 전
-`PROVIDER_UNAVAILABLE`로 실패했다. host 수준 DNS·TLS는 정상이었지만 실제 endpoint
-원인은 미확정이다. capability별 transport를 분리한 뒤에도 자동 재호출하지 않으며
-[TS-0010](troubleshooting/TS-0010-elice-live-no-http-response.md)과
-[RUN-0002](runbooks/RUN-0002-elice-llm-local-live-and-token-rotation.md)의 재승인 절차를
-따른다.
+2026-07-14 capability별 transport와 승인된 model response alias를 분리한 SHA
+`e6190662c2382304f21c39bdb29375d1b1324733`에서 Chat strict schema·usage와 Embedding
+1,536차원 finite vector 계약이 각각 한 번의 2xx 호출로 통과했다. 실제 사용자·Naver
+데이터 전송은 여전히 정책 검토 전 차단하며, 반복 검증은
+[RUN-0002](runbooks/RUN-0002-elice-llm-local-live-and-token-rotation.md)를 따른다.
 
 배포 Live는 향후 외부 Approval Gate·Provider Gateway를 사용한다. 공유 Fork,
 GitHub Actions와 Vercel·Render에는 원본 provider key를 저장하지 않는다. Gate·Gateway
