@@ -8,8 +8,8 @@ function IngredientSearchInput({ options, onSelect }) {
   const trimmed = query.trim()
   const results = trimmed ? searchIngredients(trimmed, options) : []
 
-  function handleSelect(option) {
-    onSelect(option.id)
+  function handleSelect(option, event) {
+    onSelect(option.id, event)
     setQuery('')
   }
 
@@ -37,7 +37,7 @@ function IngredientSearchInput({ options, onSelect }) {
               <li key={option.id}>
                 <button
                   type="button"
-                  onClick={() => handleSelect(option)}
+                  onClick={(event) => handleSelect(option, event)}
                   className="flex items-center gap-1.5 rounded-full border border-border bg-bg-surface px-3 py-1.5 text-sm text-text-primary transition hover:border-primary"
                 >
                   <span aria-hidden="true">{option.emoji}</span>
