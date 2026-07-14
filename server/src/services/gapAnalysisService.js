@@ -56,7 +56,8 @@ export function evaluateJob(job, spec) {
 const CATEGORIES = ['education', 'career', 'certificates', 'major', 'foreignLanguage']
 
 // 직종/고용형태 필터. 값이 없으면(undefined/null) 해당 조건은 적용하지 않는다 — 이번 주는 FE에서 항상 필터 없이 호출.
-function applyFilters(jobs, filters = {}) {
+function applyFilters(jobs, filters) {
+  filters = filters ?? {}
   return jobs.filter((job) => {
     if (filters.job_category && job.job_category !== filters.job_category) return false
     if (filters.is_intern !== undefined && filters.is_intern !== null && Boolean(job.is_intern) !== Boolean(filters.is_intern)) {
