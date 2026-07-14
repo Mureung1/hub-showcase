@@ -1,6 +1,8 @@
-import { friends } from './data'
+import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { FriendFeed } from './FriendFeed'
-import { PixelAvatar } from './shared'
+import { PixelAvatar, getAvatarProps } from './shared'
+import type { FriendsManager } from './useFriendsManager'
 import type { FriendPost } from './types'
 
 type MyHomeViewProps = {
@@ -53,11 +55,24 @@ export function MyHomeView({ message, onInteract }: MyHomeViewProps) {
 }
 
 type FriendsViewProps = {
+  manager: FriendsManager
   myPosts: FriendPost[]
   onDeletePost: (postId: number) => void
+  onViewFriendCalendar: (friendId: string) => void
 }
 
-export function FriendsView({ myPosts, onDeletePost }: FriendsViewProps) {
+export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalendar }: FriendsViewProps) {
+  const [requestPanelOpen, setRequestPanelOpen] = useState(false)
+  const [requestEmail, setRequestEmail] = useState('')
+
+  const submitRequest = (event: FormEvent) => {
+    event.preventDefault()
+    const email = requestEmail.trim()
+    if (!email) return
+    manager.sendFriendRequest(email)
+    setRequestEmail('')
+  }
+
   return (
     <section className="friends-view" aria-labelledby="friends-title">
       <div className="friends-layout">
@@ -71,16 +86,88 @@ export function FriendsView({ myPosts, onDeletePost }: FriendsViewProps) {
         <div className="friends-list-col">
           <div className="tab-page-heading">
             <div><span>TOGETHER</span><h1 id="friends-title">내 친구</h1></div>
-            <button type="button" className="page-add-button">+</button>
+            <button
+              type="button"
+              className="page-add-button"
+              aria-label="친구 추가"
+              aria-expanded={requestPanelOpen}
+              onClick={() => setRequestPanelOpen((open) => !open)}
+            >
+              +
+            </button>
           </div>
+
+          {requestPanelOpen && (
+            <form className="friend-request-panel" onSubmit={submitRequest}>
+              <label>
+                <span>친구 이메일</span>
+                <input
+                  type="email"
+                  value={requestEmail}
+                  onChange={(event) => setRequestEmail(event.target.value)}
+                  placeholder="friend@example.com"
+                  autoFocus
+                />
+              </label>
+              <div className="friend-request-panel-actions">
+                <button type="button" onClick={() => setRequestPanelOpen(false)}>취소</button>
+                <button type="submit" className="save">요청 보내기</button>
+              </div>
+            </form>
+          )}
+
+          {manager.notice && <p className="scheduler-notice" role="status">{manager.notice}</p>}
+
+          {manager.incomingRequests.length > 0 && (
+            <div className="friend-requests-section">
+              <span className="friend-requests-label">받은 요청</span>
+              <div className="friend-list">
+                {manager.incomingRequests.map((request) => (
+                  <article key={request.id}>
+                    <PixelAvatar {...getAvatarProps(request.user.id)} />
+                    <div><strong>{request.user.name}</strong><span>{request.user.email}</span></div>
+                    <div className="friend-request-row-actions">
+                      <button type="button" onClick={() => manager.acceptRequest(request.id)}>수락</button>
+                      <button type="button" onClick={() => manager.declineRequest(request.id)}>거절</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {manager.outgoingRequests.length > 0 && (
+            <div className="friend-requests-section">
+              <span className="friend-requests-label">보낸 요청</span>
+              <div className="friend-list">
+                {manager.outgoingRequests.map((request) => (
+                  <article key={request.id}>
+                    <PixelAvatar {...getAvatarProps(request.user.id)} />
+                    <div><strong>{request.user.name}</strong><span>요청 보냄</span></div>
+                    <button type="button" onClick={() => manager.cancelRequest(request.id)}>취소</button>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="friend-list">
-            {friends.map((friend, index) => (
-              <article key={friend.id}>
-                <PixelAvatar color={friend.color} eyes={friend.eyes} />
-                <div><strong>{friend.name}</strong><span>{index === 2 ? '스터디 멤버 4명' : `함께한 일정 ${8 - index}개`}</span></div>
-                <button type="button">일정 보기</button>
-              </article>
-            ))}
+            {manager.friendsLoading ? (
+              <p className="empty-agenda">친구 목록을 불러오는 중이에요...</p>
+            ) : manager.friends.length === 0 ? (
+              <p className="empty-agenda">아직 친구가 없어요. + 버튼으로 친구를 추가해보세요.</p>
+            ) : (
+              manager.friends.map((friend) => (
+                <article key={friend.id}>
+                  <PixelAvatar {...getAvatarProps(friend.id)} />
+                  <div><strong>{friend.name}</strong><span>{friend.email}</span></div>
+                  <div className="friend-request-row-actions">
+                    <button type="button" onClick={() => onViewFriendCalendar(friend.id)}>일정 보기</button>
+                    <button type="button" onClick={() => manager.removeFriend(friend.id)}>삭제</button>
+                  </div>
+                </article>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -88,7 +175,11 @@ export function FriendsView({ myPosts, onDeletePost }: FriendsViewProps) {
   )
 }
 
-export function ProfileView() {
+type ProfileViewProps = {
+  onOpenGroupManager: () => void
+}
+
+export function ProfileView({ onOpenGroupManager }: ProfileViewProps) {
   return (
     <section className="profile-view" aria-labelledby="profile-title">
       <div className="tab-page-heading">
@@ -109,6 +200,7 @@ export function ProfileView() {
         <button type="button"><i className="profile-record" /><span><strong>나의 기록</strong><small>완료한 일정과 두두의 일기</small></span><b>›</b></button>
         <button type="button"><i className="profile-lock" /><span><strong>공개 범위</strong><small>친구별 일정 공개 설정</small></span><b>›</b></button>
         <button type="button"><i className="profile-bell" /><span><strong>알림 설정</strong><small>일정과 친구 반응 알림</small></span><b>›</b></button>
+        <button type="button" onClick={onOpenGroupManager}><i className="profile-group" /><span><strong>친구 및 그룹 관리</strong><small>절친·스터디·가족 등 그룹 만들기</small></span><b>›</b></button>
       </div>
     </section>
   )

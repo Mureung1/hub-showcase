@@ -5,6 +5,9 @@ import express from 'express'
 import type { NextFunction, Request, Response } from 'express'
 import { authRouter } from './routes/auth.js'
 import { schedulesRouter } from './routes/schedules.js'
+import { categoriesRouter } from './routes/categories.js'
+import { friendsRouter } from './routes/friends.js'
+import { groupsRouter } from './routes/groups.js'
 
 const app = express()
 const port = Number(process.env.PORT ?? 4000)
@@ -20,6 +23,9 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRouter)
 app.use('/api/schedules', schedulesRouter)
+app.use('/api/categories', categoriesRouter)
+app.use('/api/friends', friendsRouter)
+app.use('/api/groups', groupsRouter)
 
 // 라우터에서 던진 에러가 여기로 모인다 — 이게 없으면 비동기 핸들러 에러가 프로세스 전체를 죽인다.
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

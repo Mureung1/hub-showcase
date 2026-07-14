@@ -1,19 +1,25 @@
-import { useState } from 'react'
-import { friendSchedules, friends, shareGroups, weekLabels } from './data'
-import { CategoryIcon, PixelAvatar } from './shared'
+import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import { weekLabels } from './data'
+import * as friendsApi from './friendsApi'
+import { CategoryIcon, PixelAvatar, getAvatarProps } from './shared'
 import { dateKey } from './useScheduleManager'
 import { VideoCapturePicker } from './VideoCapturePicker'
 import type { ScheduleManager } from './useScheduleManager'
-import type { FriendPost, Schedule } from './types'
+import type { FriendGroup, FriendPost, FriendScheduleEntry, FriendSummary, GroupTone, Schedule } from './types'
+
+const TONE_OPTIONS: GroupTone[] = ['blue', 'coral', 'violet', 'green']
 
 type CalendarViewProps = {
   manager: ScheduleManager
+  friends: FriendSummary[]
+  groups: FriendGroup[]
   selectedOwner: string
   onSelectOwner: (ownerId: string) => void
   onCertify: (post: FriendPost) => void
 }
 
-export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify }: CalendarViewProps) {
+export function CalendarView({ manager, friends, groups, selectedOwner, onSelectOwner, onCertify }: CalendarViewProps) {
   const [certifyingSchedule, setCertifyingSchedule] = useState<Schedule | null>(null)
   const {
     categories,
@@ -38,6 +44,8 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
     saveScheduleChanges,
     deleteSchedule,
     toggleScheduleCompletion,
+    createCategory,
+    deleteCategory,
     toggleVisibleGroup,
     toggleCategorySettings,
     closeCategorySettings,
@@ -49,6 +57,22 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
     setDraftTitle,
     setDraftTime,
   } = manager
+
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryTone, setNewCategoryTone] = useState<GroupTone>('blue')
+
+  const resolveGroupNames = (visibleTo: string[]) =>
+    visibleTo
+      .map((groupId) => groups.find((group) => group.id === groupId)?.name)
+      .filter((name): name is string => Boolean(name))
+
+  const submitNewCategory = (event: FormEvent) => {
+    event.preventDefault()
+    const name = newCategoryName.trim()
+    if (!name) return
+    createCategory(name, newCategoryTone)
+    setNewCategoryName('')
+  }
 
   const handleToggleCompletion = (schedule: Schedule) => {
     const wasCompleted = schedule.completed
@@ -73,10 +97,30 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
     setCertifyingSchedule(null)
   }
 
+  const [friendSchedules, setFriendSchedules] = useState<FriendScheduleEntry[]>([])
+  const [friendSchedulesLoading, setFriendSchedulesLoading] = useState(false)
+
   const isFriendView = selectedOwner !== 'me'
+
+  useEffect(() => {
+    if (!isFriendView) {
+      setFriendSchedules([])
+      return
+    }
+
+    let cancelled = false
+    setFriendSchedulesLoading(true)
+    friendsApi.fetchFriendSchedules(selectedOwner)
+      .then((loaded) => { if (!cancelled) setFriendSchedules(loaded) })
+      .catch(() => { if (!cancelled) setFriendSchedules([]) })
+      .finally(() => { if (!cancelled) setFriendSchedulesLoading(false) })
+
+    return () => { cancelled = true }
+  }, [isFriendView, selectedOwner])
+
   const selectedFriend = friends.find((friend) => friend.id === selectedOwner)
   const selectedKey = dateKey(year, monthIndex, selectedDay)
-  const activeFriendSchedules = isFriendView ? (friendSchedules[selectedOwner] ?? []) : []
+  const activeFriendSchedules = isFriendView ? friendSchedules : []
   const activeSelectedFriendSchedules = activeFriendSchedules.filter((item) => item.date === selectedKey)
 
   return (
@@ -101,8 +145,8 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
             className={selectedOwner === friend.id ? 'active' : ''}
             onClick={() => onSelectOwner(friend.id)}
           >
-            <PixelAvatar color={friend.color} eyes={friend.eyes} />
-            <span><strong>{friend.name}</strong><small>{(friendSchedules[friend.id] ?? []).length}개 일정</small></span>
+            <PixelAvatar {...getAvatarProps(friend.id)} />
+            <span><strong>{friend.name}</strong><small>친구 캘린더</small></span>
           </button>
         ))}
       </div>
@@ -166,7 +210,9 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
           </div>
 
           {isFriendView ? (
-            activeSelectedFriendSchedules.length > 0 ? (
+            friendSchedulesLoading ? (
+              <p className="empty-agenda">일정을 불러오는 중이에요...</p>
+            ) : activeSelectedFriendSchedules.length > 0 ? (
               <div className="agenda-list">
                 {activeSelectedFriendSchedules.map((item) => (
                   <article className="friend-schedule-item" key={item.id}>
@@ -188,7 +234,8 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
             <div className="agenda-list">
               {selectedSchedules.map((schedule) => {
                 const category = categories.find((item) => item.id === schedule.category)
-                const visibility = category?.visibleTo.join(', ') || '나만 보기'
+                const visibleNames = category ? resolveGroupNames(category.visibleTo) : []
+                const visibility = visibleNames.length ? visibleNames.join(', ') : '나만 보기'
 
                 return (
                   <article className={`${editingScheduleId === schedule.id ? 'editing' : ''} ${schedule.completed ? 'completed' : ''}`} key={schedule.id}>
@@ -276,13 +323,13 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
         <section className="quick-groups" aria-labelledby="quick-group-title">
           <div className="quick-group-heading">
             <div><span>QUICK ADD</span><h2 id="quick-group-title">내 카테고리</h2></div>
-            <button type="button" onClick={toggleCategorySettings} aria-expanded={categorySettingsOpen}>공개 설정</button>
+            <button type="button" onClick={toggleCategorySettings} aria-expanded={categorySettingsOpen}>설정</button>
           </div>
           <div className="quick-group-list">
             {categories.map((category) => (
               <article key={category.id}>
                 <span className={`group-pixel-icon ${category.tone}`} aria-hidden="true"><i /><i /></span>
-                <div><strong>{category.name}</strong><small>{category.visibleTo.length ? category.visibleTo.join(' · ') : '나만 보기'}</small></div>
+                <div><strong>{category.name}</strong><small>{category.visibleTo.length ? resolveGroupNames(category.visibleTo).join(' · ') : '나만 보기'}</small></div>
                 <button type="button" aria-label={`${category.name} 일정 추가`} onClick={() => addSchedule(category)}>+</button>
               </article>
             ))}
@@ -299,21 +346,55 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
                   <article key={category.id}>
                     <div className="category-settings-name"><CategoryIcon tone={category.tone} /><strong>{category.name}</strong></div>
                     <div className="visibility-options" aria-label={`${category.name} 공개 그룹`}>
-                      {shareGroups.map((group) => (
-                        <button
-                          type="button"
-                          key={group}
-                          className={category.visibleTo.includes(group) ? 'active' : ''}
-                          aria-pressed={category.visibleTo.includes(group)}
-                          onClick={() => toggleVisibleGroup(category.id, group)}
-                        >
-                          {group}
-                        </button>
-                      ))}
+                      {groups.length === 0 ? (
+                        <p className="empty-agenda">마이페이지에서 그룹을 먼저 만들어보세요.</p>
+                      ) : (
+                        groups.map((group) => (
+                          <button
+                            type="button"
+                            key={group.id}
+                            className={category.visibleTo.includes(group.id) ? 'active' : ''}
+                            aria-pressed={category.visibleTo.includes(group.id)}
+                            onClick={() => toggleVisibleGroup(category.id, group.id)}
+                          >
+                            {group.name}
+                          </button>
+                        ))
+                      )}
                     </div>
+                    <button
+                      type="button"
+                      className="category-delete-button"
+                      aria-label={`${category.name} 카테고리 삭제`}
+                      onClick={() => deleteCategory(category.id)}
+                    >
+                      삭제
+                    </button>
                   </article>
                 ))}
               </div>
+              <form className="category-create-form" onSubmit={submitNewCategory}>
+                <input
+                  value={newCategoryName}
+                  onChange={(event) => setNewCategoryName(event.target.value)}
+                  placeholder="새 카테고리 이름"
+                  aria-label="새 카테고리 이름"
+                />
+                <div className="category-tone-picker" role="radiogroup" aria-label="카테고리 색상">
+                  {TONE_OPTIONS.map((tone) => (
+                    <button
+                      type="button"
+                      key={tone}
+                      className={`category-tone-swatch ${tone} ${newCategoryTone === tone ? 'active' : ''}`}
+                      role="radio"
+                      aria-checked={newCategoryTone === tone}
+                      aria-label={tone}
+                      onClick={() => setNewCategoryTone(tone)}
+                    />
+                  ))}
+                </div>
+                <button type="submit">카테고리 추가</button>
+              </form>
             </div>
           )}
           {notice && <p className="scheduler-notice" role="status">{notice}</p>}

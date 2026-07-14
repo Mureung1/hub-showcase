@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { logout as logoutRequest, type AuthUser } from '../auth/authClient'
 import { BottomNavigation } from './scheduler/BottomNavigation'
 import { CalendarView } from './scheduler/CalendarView'
+import { GroupManagerView } from './scheduler/GroupManagerView'
 import { FriendsView, MyHomeView, ProfileView } from './scheduler/StaticViews'
 import type { AppTab, FriendPost } from './scheduler/types'
+import { useFriendsManager } from './scheduler/useFriendsManager'
 import { useScheduleManager } from './scheduler/useScheduleManager'
 import './scheduler.css'
 
@@ -18,7 +20,9 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const [dodoMessage, setDodoMessage] = useState('오늘 일정 하나만 더 하면 같이 놀 수 있어!')
   const [selectedOwner, setSelectedOwner] = useState('me')
   const [myPosts, setMyPosts] = useState<FriendPost[]>([])
+  const [showGroupManager, setShowGroupManager] = useState(false)
   const scheduleManager = useScheduleManager()
+  const friendsManager = useFriendsManager()
 
   const addMyPost = (post: FriendPost) => {
     setMyPosts((current) => [post, ...current])
@@ -31,6 +35,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const changeTab = (tab: AppTab) => {
     setActiveTab(tab)
     setMenuOpen(false)
+    setShowGroupManager(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -38,6 +43,11 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
     setActiveTab('calendar')
     setSelectedOwner('me')
     setMenuOpen(false)
+  }
+
+  const goToFriendCalendar = (friendId: string) => {
+    setActiveTab('calendar')
+    setSelectedOwner(friendId)
   }
 
   return (
@@ -82,14 +92,29 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
         {activeTab === 'calendar' && (
           <CalendarView
             manager={scheduleManager}
+            friends={friendsManager.friends}
+            groups={friendsManager.groups}
             selectedOwner={selectedOwner}
             onSelectOwner={setSelectedOwner}
             onCertify={addMyPost}
           />
         )}
         {activeTab === 'home' && <MyHomeView message={dodoMessage} onInteract={setDodoMessage} />}
-        {activeTab === 'friends' && <FriendsView myPosts={myPosts} onDeletePost={deleteMyPost} />}
-        {activeTab === 'profile' && <ProfileView />}
+        {activeTab === 'friends' && (
+          <FriendsView
+            manager={friendsManager}
+            myPosts={myPosts}
+            onDeletePost={deleteMyPost}
+            onViewFriendCalendar={goToFriendCalendar}
+          />
+        )}
+        {activeTab === 'profile' && (
+          showGroupManager ? (
+            <GroupManagerView manager={friendsManager} onBack={() => setShowGroupManager(false)} />
+          ) : (
+            <ProfileView onOpenGroupManager={() => setShowGroupManager(true)} />
+          )
+        )}
       </div>
     </main>
   )

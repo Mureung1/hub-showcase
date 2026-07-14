@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchMe, refreshSession, type AuthUser } from './auth/authClient'
+import { refreshSession, type AuthUser } from './auth/authClient'
 import { Scheduler } from './components/Scheduler'
 import { LoginView } from './components/scheduler/LoginView'
 
@@ -11,9 +11,8 @@ export default function App() {
     let cancelled = false
 
     refreshSession()
-      .then((ok) => (ok ? fetchMe() : null))
-      .then((me) => {
-        if (!cancelled) setUser(me)
+      .then((refreshedUser) => {
+        if (!cancelled) setUser(refreshedUser)
       })
       .finally(() => {
         if (!cancelled) setCheckingSession(false)

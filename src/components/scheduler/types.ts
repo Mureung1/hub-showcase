@@ -1,14 +1,13 @@
 export type GroupTone = 'blue' | 'violet' | 'green' | 'coral'
 export type AppTab = 'calendar' | 'home' | 'friends' | 'profile'
-export type ScheduleCategoryId = 'study' | 'exercise' | 'appointment' | 'personal'
-export type ShareGroup = '절친' | '스터디' | '가족' | '커플'
+export type ScheduleCategoryId = string
 
 export type Category = {
   id: ScheduleCategoryId
   name: string
   color: string
   tone: GroupTone
-  visibleTo: ShareGroup[]
+  visibleTo: string[]
 }
 
 export type Schedule = {
@@ -38,12 +37,30 @@ export type ReactionMeta = {
 }
 
 export type FriendScheduleEntry = {
-  id: number
+  id: string
   date: string
   title: string
   time: string
   categoryName: string
   tone: GroupTone
+}
+
+export type FriendSummary = {
+  id: string
+  name: string
+  email: string
+}
+
+export type FriendRequestSummary = {
+  id: string
+  user: FriendSummary
+  createdAt: string
+}
+
+export type FriendGroup = {
+  id: string
+  name: string
+  members: FriendSummary[]
 }
 
 export type FriendPost = {
