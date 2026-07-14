@@ -15,6 +15,7 @@
     "node-cron": "^3.0.2",
     "puppeteer": "^20.0.0",
     "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "socket.io": "^4.6.1"
   },
   "devDependencies": {
