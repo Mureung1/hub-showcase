@@ -59,6 +59,42 @@ describe('normalizeInsightUrl', () => {
     });
   });
 
+  it('preserves raw dot segments in the path', () => {
+    const rawUrl =
+      'HTTPS://Example.COM:443/a/../b?keep=1&utm_source=test#fragment';
+
+    expect(insightApi.normalizeInsightUrl(rawUrl)).toEqual({
+      ok: true,
+      originalUrl: rawUrl,
+      normalizedUrl: 'https://example.com/a/../b?keep=1',
+      domain: 'example.com',
+    });
+  });
+
+  it('preserves backslashes in the raw path representation', () => {
+    const rawUrl =
+      'https://Example.com/Folder\\Draft?before=1&fbclid=x&after=2#top';
+
+    expect(insightApi.normalizeInsightUrl(rawUrl)).toEqual({
+      ok: true,
+      originalUrl: rawUrl,
+      normalizedUrl: 'https://example.com/Folder\\Draft?before=1&after=2',
+      domain: 'example.com',
+    });
+  });
+
+  it('preserves existing percent-encoding in the raw path and query', () => {
+    const rawUrl =
+      'http://Example.com:80/%2E%2E/%7eUser?gclid=x&encoded=%2f%2F#frag';
+
+    expect(insightApi.normalizeInsightUrl(rawUrl)).toEqual({
+      ok: true,
+      originalUrl: rawUrl,
+      normalizedUrl: 'http://example.com/%2E%2E/%7eUser?encoded=%2f%2F',
+      domain: 'example.com',
+    });
+  });
+
   it('rejects a malformed URL', () => {
     let result: unknown;
 

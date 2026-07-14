@@ -32,7 +32,7 @@ describe('InsightGrid', () => {
           insights={[
             {
               id: '1',
-              originalUrl: 'https://example.com/article',
+              originalUrl: 'https://example.com/article#details',
               normalizedUrl: 'https://example.com/article',
               domain: 'example.com',
               title: '선택 부담을 줄이는 패턴',
@@ -52,6 +52,6 @@ describe('InsightGrid', () => {
     expect(screen.getByRole('list', { name: '카테고리 목록' })).not.toBeNull();
     expect(
       screen.getByRole('link', { name: '원문 열기' }).getAttribute('href')
-    ).toBe('https://example.com/article');
+    ).toBe('https://example.com/article#details');
   });
 });
