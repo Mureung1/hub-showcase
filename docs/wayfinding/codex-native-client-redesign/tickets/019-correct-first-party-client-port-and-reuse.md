@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: task
-- State: claimed
+- State: resolved
 - Blocked by: [ADR 0008을 대체할 architecture decision을 기록한다](015-record-superseding-architecture-decision.md)
 
 ## Question
@@ -78,5 +78,17 @@ Fixed point `1ee4c3e3` 이후 draft `0e39117f`를 검토하고, findings를 `194
 `git diff --check`와 변경한 Markdown의 local link·zero-width 검사를 통과했다. Repository 전체 runtime gate는 코드 변경이 없는 이 Wayfinder correction에서 실행하지 않고 후속 implementation checkpoint에 남긴다.
 
 `src/index.ts`와 package export map은 파일 전체가 아니라 symbol/subpath별로 분류했다. Root `.`는 보호된 Runtime Harness symbol만 남기고, `./capabilities`와 fake App Server를 제공하는 `./testing`은 유지한다. Product-named layout과 Host root block, `./testing`의 기존 stdio re-export는 각 교체 gate 뒤 제거하며 새 `./conversation`은 Runtime Interface가 구현된 checkpoint에 별도로 추가한다. 실제 보호 사용처는 server capability/status/adapter path와 Inspector capability panel이고 새 foundation 사용처가 아니다.
+
+### Ticket 016에서 재개한 review checkpoint
+
+Fixed point `8a6ce96c5ea11294cba0fb7de4cd3bbd374b86c0` 이후 draft `d2306371`, review finding 반영 `2f5a938d`와 표현 교정 `92089576`을 포함한 aggregate diff를 독립 재검토했다.
+
+| 축 | Finding과 반영 | 최종 판정 |
+| --- | --- | --- |
+| Source | Ticket 014에 남아 있던 `bounded late sink`·필수 actor replacement P2를 active/current-pending settlement, method-specific FIFO와 per-thread projection으로 교정했다. | 0 findings. Capability/export 처리 방침도 현재 code graph와 first-party client ownership에 일치한다. |
+| Standards | ADR 정본부터 소비 문서·index까지 `Seam`을 파급하고 readable blocking link, 한국어 일반 설명어와 새 감사 표의 `old`·`consumer` 표현을 교정했다. | 0 findings. 문서 ownership, Wayfinder lifecycle과 current/target 분리가 일치한다. |
+| Spec | Layout root와 기존 fake stdio re-export가 primitive 추출과 export 제거 두 범주에 걸쳐 보이던 P2를 현재 export edge의 compatibility 없는 제거로 분리했다. | 0 findings. Capability slots/test, symbol/subpath와 실제 사용처를 상호배타적 네 분류로 완결했다. |
+
+변경한 Markdown의 local link·zero-width 검사와 `git diff --check`를 통과했다. Runtime code, decisions JSON과 generated inventory는 변경하지 않았고 repository runtime gate는 후속 implementation checkpoint에 남겼다. 사용자 제공 `artifacts/pro-bridge/0714-chat/`은 untracked 상태로 보존했다.
 
 이 ticket은 문서와 migration 처리 방침만 교정했으며 runtime code, decisions JSON과 generated inventory의 integration status를 변경하지 않았다. 다음 frontier는 Ticket 016 architecture readiness review다.

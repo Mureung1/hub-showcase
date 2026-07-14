@@ -42,6 +42,7 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 - [commandExecution approval의 첫 round-trip을 결정한다](tickets/017-decide-command-execution-approval-round-trip.md) — T0.1 regular approval의 original Server `RequestId` active lease, native scope, remove-on-answer/resolved/turn-transition/disconnect와 no automatic decision을 유지한다. Lifetime seen-ID/tombstone과 conflicting reuse poison은 Ticket 019가 supersede했다.
 - [기존 Host 제거와 선별 재사용 계획을 확정한다](tickets/014-plan-host-removal-and-selective-salvage.md) — 새 Connection·Runtime을 legacy 옆에서 ledger-safe gate로 구현한 뒤 T0·T0-C·T0.1이 green일 때 Host/transport legacy surface와 self-oracle을 forward-remove한다. Generated/schema/layout/JSONL primitive는 추출·개조하고 RawClient/fake App Server는 developer Harness에 보존한다.
 - [ADR 0008을 대체할 architecture decision을 기록한다](tickets/015-record-superseding-architecture-decision.md) — ADR 0010으로 Connection → ConversationRuntime 운영 Seam과 first-party client behavior port 원칙을 채택하고, 기존 Host는 호환성 없이 역사화하며 제품 adapter는 foundation 준비 조건 밖에 둔다.
+- [First-party client 근거로 port와 재사용 계획을 교정한다](tickets/019-correct-first-party-client-port-and-reuse.md) — Python external stdio client, Rust facade와 TUI projection/pending lifecycle을 기준선으로 삼아 강화 정책을 축소하고, capability slots/test와 root/package export를 실제 Runtime Harness 사용처까지 symbol/subpath별 보존·추출/개조·Harness 전용·제거로 완결했다.
 
 ## Not yet specified
 
