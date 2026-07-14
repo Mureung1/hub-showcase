@@ -42,9 +42,9 @@ ABCDEF는 AI Agent 기술을 활용하여 교실의 학습 격차를 없애는 �
 
 | 분류 | 기술 |
 |------|------|
-| **Frontend** | React |
-| **Backend** | Express.js |
-| **Database** | Supabase |
+| **Frontend** | vanilla html,css,js |
+| **Backend** | flask |
+| **Database** | mongodb |
 | **AI/LLM** | 추후 결정 |
 
 ---
@@ -84,16 +84,6 @@ ABCDEF/
 │
 └── README.md
 ```
-
----
-
-## 🖥 시스템 요구사항
-
-- **Node.js**: v14.0.0 이상
-- **npm**: v6.0.0 이상 (또는 yarn v1.22.0 이상)
-- **브라우저**: Chrome, Firefox, Safari, Edge의 최신 버전
-- **기타**: Git 설치 필수
-
 ---
 
 ## 📝 참고 문서
