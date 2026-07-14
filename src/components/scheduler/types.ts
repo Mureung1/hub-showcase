@@ -46,6 +46,18 @@ export type FriendScheduleEntry = {
   tone: GroupTone
 }
 
+export type FriendSummary = {
+  id: string
+  name: string
+  email: string
+}
+
+export type FriendRequestSummary = {
+  id: string
+  user: FriendSummary
+  createdAt: string
+}
+
 export type FriendPost = {
   id: number
   friendId: string

@@ -4,6 +4,7 @@ import { DEMO_CATEGORIES, DEMO_USER_ID } from '../src/constants.js'
 
 const prisma = new PrismaClient()
 const DEMO_PASSWORD = 'demo1234!'
+const DEMO_FRIEND_USER_ID = 'demo-friend-user'
 
 const DEMO_SCHEDULES = [
   { date: '2026-07-07', title: '저녁 운동', time: '19:00', categoryId: 'exercise' },
@@ -51,6 +52,29 @@ async function main() {
       })
     }
   }
+
+  const friendPasswordHash = await bcrypt.hash(DEMO_PASSWORD, 10)
+  const friendUser = await prisma.user.upsert({
+    where: { id: DEMO_FRIEND_USER_ID },
+    update: { passwordHash: friendPasswordHash },
+    create: {
+      id: DEMO_FRIEND_USER_ID,
+      email: 'demo-friend@weshoulddo.dev',
+      passwordHash: friendPasswordHash,
+      name: '데모 친구',
+    },
+  })
+
+  await prisma.friendship.upsert({
+    where: { userId_friendId: { userId: user.id, friendId: friendUser.id } },
+    update: {},
+    create: { userId: user.id, friendId: friendUser.id },
+  })
+  await prisma.friendship.upsert({
+    where: { userId_friendId: { userId: friendUser.id, friendId: user.id } },
+    update: {},
+    create: { userId: friendUser.id, friendId: user.id },
+  })
 
   console.log('시드 완료')
 }

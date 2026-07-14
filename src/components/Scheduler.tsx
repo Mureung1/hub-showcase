@@ -4,6 +4,7 @@ import { BottomNavigation } from './scheduler/BottomNavigation'
 import { CalendarView } from './scheduler/CalendarView'
 import { FriendsView, MyHomeView, ProfileView } from './scheduler/StaticViews'
 import type { AppTab, FriendPost } from './scheduler/types'
+import { useFriendsManager } from './scheduler/useFriendsManager'
 import { useScheduleManager } from './scheduler/useScheduleManager'
 import './scheduler.css'
 
@@ -19,6 +20,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const [selectedOwner, setSelectedOwner] = useState('me')
   const [myPosts, setMyPosts] = useState<FriendPost[]>([])
   const scheduleManager = useScheduleManager()
+  const friendsManager = useFriendsManager()
 
   const addMyPost = (post: FriendPost) => {
     setMyPosts((current) => [post, ...current])
@@ -38,6 +40,11 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
     setActiveTab('calendar')
     setSelectedOwner('me')
     setMenuOpen(false)
+  }
+
+  const goToFriendCalendar = (friendId: string) => {
+    setActiveTab('calendar')
+    setSelectedOwner(friendId)
   }
 
   return (
@@ -88,7 +95,14 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
           />
         )}
         {activeTab === 'home' && <MyHomeView message={dodoMessage} onInteract={setDodoMessage} />}
-        {activeTab === 'friends' && <FriendsView myPosts={myPosts} onDeletePost={deleteMyPost} />}
+        {activeTab === 'friends' && (
+          <FriendsView
+            manager={friendsManager}
+            myPosts={myPosts}
+            onDeletePost={deleteMyPost}
+            onViewFriendCalendar={goToFriendCalendar}
+          />
+        )}
         {activeTab === 'profile' && <ProfileView />}
       </div>
     </main>

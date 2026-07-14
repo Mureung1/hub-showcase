@@ -69,6 +69,8 @@ model User {
   shareGroupOf         ShareGroupMember[]         @relation("ShareGroupFriend")
   friendshipsSent      Friendship[]               @relation("FriendshipOwner")
   friendshipsReceived  Friendship[]               @relation("FriendshipTarget")
+  friendRequestsSent     FriendRequest[]          @relation("FriendRequestFrom")
+  friendRequestsReceived FriendRequest[]          @relation("FriendRequestTo")
   videoPosts           VideoPost[]
   reactions            Reaction[]
   comments             Comment[]
@@ -115,6 +117,17 @@ model Friendship {
   createdAt DateTime @default(now())
 
   @@unique([userId, friendId])
+}
+
+model FriendRequest {
+  id         String   @id @default(cuid())
+  fromUserId String
+  fromUser   User     @relation("FriendRequestFrom", fields: [fromUserId], references: [id])
+  toUserId   String
+  toUser     User     @relation("FriendRequestTo", fields: [toUserId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([fromUserId, toUserId])
 }
 
 model Block {

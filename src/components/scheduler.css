@@ -259,6 +259,19 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .friend-list { display: grid; gap: 10px; }
 .friend-list article { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 13px; padding: 15px; border: 1px solid var(--scheduler-line); border-radius: 20px; }
 .friend-list article > div { display: grid; }.friend-list strong { font-size: 14px; }.friend-list span { margin-top: 3px; color: var(--scheduler-muted); font-size: 9px; }.friend-list button { padding: 8px 11px; border: 0; border-radius: 12px; background: var(--scheduler-mint); color: var(--scheduler-green); cursor: pointer; font-size: 9px; font-weight: 800; }
+.friend-request-row-actions { display: flex; gap: 6px; }
+
+.friend-request-panel { margin: 16px 0; padding: 20px; border: 2px solid var(--scheduler-ink); border-radius: 22px; background: #fff; box-shadow: 8px 8px 0 rgba(52,75,70,.11); }
+.friend-request-panel label { display: grid; gap: 6px; }
+.friend-request-panel label > span { color: var(--scheduler-muted); font-size: 8px; font-weight: 800; }
+.friend-request-panel input { height: 38px; padding: 0 11px; border: 1px solid var(--scheduler-line); border-radius: 10px; background: #fff; color: var(--scheduler-ink); font: inherit; font-size: 11px; outline: none; }
+.friend-request-panel input:focus { border-color: var(--scheduler-green); box-shadow: 0 0 0 3px rgba(143,189,171,.18); }
+.friend-request-panel-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 14px; }
+.friend-request-panel-actions button { min-width: 54px; height: 32px; padding: 0 12px; border: 1px solid var(--scheduler-line); border-radius: 9px; background: #fff; color: var(--scheduler-ink); cursor: pointer; font-size: 9px; font-weight: 800; }
+.friend-request-panel-actions button.save { border-color: var(--scheduler-ink); background: var(--scheduler-ink); color: #fff; }
+
+.friend-requests-section { margin: 16px 0; }
+.friend-requests-label { display: block; margin-bottom: 8px; color: var(--scheduler-green); font-size: 9px; font-weight: 800; letter-spacing: 1.2px; }
 
 .friend-feed { display: grid; gap: 15px; }
 .feed-post { display: flex; flex-direction: column; gap: 14px; padding: 15px; border: 1px solid var(--scheduler-line); border-radius: 27px; background: #fff; }
