@@ -35,8 +35,8 @@ LocalTwin은 공공데이터와 공간 데이터를 근거로 후보 상권을 �
 - [LocalTwin Dev Harness](docs/development/harness.md)
 - [검증 가이드](docs/development/validation.md)
 - [보안 점검 및 조치 체크리스트](docs/issues/security-hardening-review.md)
-
 - [1주차 목요일 진행 보고서](docs/development/week1-thursday-progress-report.md)
+- [2026-07-14 PR 작업 요약](docs/development/2026-07-14-pr-summary.md)
 
 ### 디자인 시스템
 
