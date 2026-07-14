@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: task
-- State: open
+- State: claimed
 - Blocked by: [First-party client 근거로 port와 재사용 계획을 교정한다](019-correct-first-party-client-port-and-reuse.md)
 
 ## Question
