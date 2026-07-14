@@ -20,6 +20,7 @@
 | Supabase 한 테이블 | migration 적용, 실제 insert/select 성공 | PASS |
 | mock 화면 흐름 | `VITE_USE_MOCK_PORTFOLIOS=true`, client API 테스트 4개 통과 | PASS |
 | 실제 FE·BE·DB 연결 경로 | 클라이언트 API 계약, Express 라우트, 실제 Supabase smoke test 통과 | PASS |
+| 브라우저 화면 흐름 | 샘플 CV 선택 → 디자인 선택 → 생성 → 저장 → 최근 목록 표시 및 불러오기 버튼 확인 | PASS |
 | 계획·검증 Agent | `feature-slice`, `feature-verifier`, 공식 validator 통과 | PASS |
 
 ## 실제 Supabase smoke test
@@ -56,5 +57,6 @@ npm run build
 ## 검증 환경 메모
 
 - 사용자가 설정한 공통 `cv-to-portfolio/.env`를 서버가 읽도록 환경변수 로더를 보완했다.
-- 브라우저 자동 클릭 검증은 실행 환경의 Windows `EPERM` 오류로 수행하지 못했다.
-- UI 상태 전환은 mock API 테스트와 프로덕션 빌드로, 실제 영속화는 Express 경유 Supabase smoke test로 각각 검증했다.
+- mock 모드 브라우저에서 생성 결과 저장 후 성공 메시지와 최근 목록의 `불러오기` 버튼을 확인했다.
+- 화면 증거는 [`docs/images/portfolio-save-history.png`](./images/portfolio-save-history.png)에 저장했다.
+- UI 상태 전환은 mock API 테스트·브라우저 클릭·프로덕션 빌드로, 실제 영속화는 Express 경유 Supabase smoke test로 각각 검증했다.
