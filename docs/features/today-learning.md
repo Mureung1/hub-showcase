@@ -99,3 +99,12 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 - 오늘 학습 허브는 Workday 이미지처럼 오렌지, 시안, 딥블루가 조화되는 브랜드 색감을 사용할 수 있습니다.
 - 단, 학습 목록과 복습 리스트는 반복 사용 화면이므로 중립 표면과 명확한 대비를 우선합니다.
 - 오렌지는 강조/완료/환영 상태에 제한적으로 사용하고, 주요 CTA와 선택 상태는 시안 또는 딥블루 계열을 우선합니다.
+## Mock 진행 상태 저장
+
+React mock 화면 단계에서는 실제 DB 대신 `icu.learningProgress` localStorage 값을 사용합니다.
+
+- Today Queue는 기본 mock data를 먼저 만들고, mission별 저장 상태가 있으면 화면 표시 상태를 덮어씁니다.
+- 저장된 mission이 `passed`이거나 `completedAt`이 있으면 해당 항목을 완료로 표시합니다.
+- 저장된 mission이 실패 또는 진행 중이면 해당 항목을 현재 학습으로 표시합니다.
+- 완료율 stat은 Today Queue의 완료 항목 비율로 계산합니다.
+- 이 저장 상태는 브라우저 새로고침과 `/today` ↔ `/workspace` 이동 사이에서만 유지되는 mock persistence입니다.

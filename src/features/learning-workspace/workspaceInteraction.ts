@@ -29,7 +29,7 @@ export function getInitialStepOffset(missionId: string) {
   return missionId === generatedMissionId ? 0 : 1
 }
 
-export function getNextRunState(runAttemptCount: number): RunState {
+export function getNextRunState(runAttemptCount: number): Exclude<RunState, 'idle' | 'running'> {
   return runAttemptCount === 0 ? 'failed' : 'passed'
 }
 

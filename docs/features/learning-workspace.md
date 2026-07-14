@@ -100,3 +100,12 @@ Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입�
 - 다크모드에서는 앱 배경을 순수 검정 대신 네이비/차콜 계열로 두고, 패널 구분은 border와 surface 차이로 처리합니다.
 - Workday 이미지의 밝은 시안과 딥블루는 포커스, 실행 버튼, 진행률, 현재 단계 표시에 사용합니다.
 - 오렌지 계열은 성공/완료 또는 친근한 안내에 제한적으로 사용합니다.
+## Mock 진행 상태 저장
+
+Workspace 상호작용은 `icu.learningProgress` localStorage 값을 통해 mission별로 유지합니다.
+
+- 화면 진입 시 저장된 `runState`, `runAttemptCount`, `activeStepOffset`, 최근 활동 로그를 초기값으로 사용합니다.
+- 실행 결과가 실패 또는 통과로 확정되면 mission progress를 저장합니다.
+- 힌트와 코드 리뷰 요청은 최근 활동 로그에 저장합니다.
+- 다음 단계 이동 시 현재 mission의 `activeStepOffset`을 증가시키고, `completedAt`을 기록한 뒤 실행 상태를 idle로 되돌립니다.
+- 실제 코드 실행, Judge Service, AI 리뷰 API는 아직 연결하지 않고 mock 상태 전환만 저장합니다.

@@ -3,6 +3,10 @@ import { Link, useSearchParams } from 'react-router'
 import { generateMockCurriculum, type GeneratedCurriculumPlan } from '../../data/curriculumGenerator'
 import { todayQueue, type TodayQueueItem } from '../../data/todayLearning'
 import { useLearningProfileStore } from '../../stores/useLearningProfileStore'
+import {
+  useLearningProgressStore,
+  type LearningActivityItem,
+} from '../../stores/useLearningProgressStore'
 import styles from './LearningWorkspace.module.css'
 import {
   createStepState,
@@ -42,12 +46,6 @@ type WorkspaceMission = {
 }
 
 
-type ActivityItem = {
-  id: string
-  time: string
-  title: string
-  detail: string
-}
 
 type LearningWorkspaceViewProps = {
   generatedPlan: GeneratedCurriculumPlan
@@ -95,7 +93,7 @@ const apiCodeLines = [
   '    return {"topic": topic, "status": "ready"}',
 ]
 
-const initialActivityItems: ActivityItem[] = [
+const initialActivityItems: LearningActivityItem[] = [
   { id: 'submit-ready', time: '10:15', title: '코드 제출', detail: '현재 미션 제출 준비' },
   { id: 'hint-opened', time: '10:12', title: '힌트 확인', detail: '상태 변경 흐름 확인' },
   { id: 'run-started', time: '10:08', title: '코드 실행', detail: '테스트 케이스 실행' },
@@ -244,14 +242,20 @@ export default function LearningWorkspace() {
 }
 
 function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceViewProps) {
-  const [runState, setRunState] = useState<RunState>('idle')
-  const [runAttemptCount, setRunAttemptCount] = useState(0)
+  const savedProgress = useLearningProgressStore((state) => state.missions[mission.id])
+  const recordRunResult = useLearningProgressStore((state) => state.recordRunResult)
+  const recordMissionActivity = useLearningProgressStore((state) => state.recordMissionActivity)
+  const advanceMissionStep = useLearningProgressStore((state) => state.advanceMissionStep)
+  const [runState, setRunState] = useState<RunState>(savedProgress?.runState ?? 'idle')
+  const [runAttemptCount, setRunAttemptCount] = useState(savedProgress?.runAttemptCount ?? 0)
   const [hintVisible, setHintVisible] = useState(false)
   const [reviewVisible, setReviewVisible] = useState(false)
   const [activeStepOffset, setActiveStepOffset] = useState(() =>
-    getInitialStepOffset(mission.id),
+    savedProgress?.activeStepOffset ?? getInitialStepOffset(mission.id),
   )
-  const [activityLog, setActivityLog] = useState<ActivityItem[]>(initialActivityItems)
+  const [activityLog, setActivityLog] = useState<LearningActivityItem[]>(
+    savedProgress?.activityLog.length ? savedProgress.activityLog : initialActivityItems,
+  )
   const runTimerRef = useRef<number | undefined>(undefined)
   const curriculumSteps = useMemo(
     () => createSteps(generatedPlan, mission.id, activeStepOffset),
@@ -277,15 +281,24 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
     }
   }, [])
 
-  function addActivity(title: string, detail: string) {
-    const item = {
+  function createActivity(title: string, detail: string) {
+    return {
       id: `${Date.now()}-${title}`,
       time: getLogTime(),
       title,
       detail,
     }
+  }
 
-    setActivityLog((items) => [item, ...items].slice(0, 5))
+  function prependActivity(items: LearningActivityItem[], item: LearningActivityItem) {
+    return [item, ...items].slice(0, 5)
+  }
+
+  function addActivity(title: string, detail: string) {
+    const nextLog = prependActivity(activityLog, createActivity(title, detail))
+    setActivityLog(nextLog)
+
+    return nextLog
   }
 
   function handleRun() {
@@ -295,32 +308,54 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
 
     setRunState('running')
     setReviewVisible(false)
-    addActivity('코드 실행', `${mission.fileName} 테스트를 실행했습니다.`)
+    const runLog = addActivity('코드 실행', `${mission.fileName} 테스트를 실행했습니다.`)
 
     runTimerRef.current = window.setTimeout(() => {
       const nextState = getNextRunState(runAttemptCount)
-      setRunState(nextState)
-      setRunAttemptCount((count) => count + 1)
-      addActivity(
-        nextState === 'passed' ? '테스트 통과' : '테스트 실패',
-        nextState === 'passed'
-          ? '모든 테스트가 통과했습니다. 다음 단계로 이동할 수 있습니다.'
-          : '실패 케이스를 확인하고 힌트를 열어보세요.',
+      const nextAttemptCount = runAttemptCount + 1
+      const resultLog = prependActivity(
+        runLog,
+        createActivity(
+          nextState === 'passed' ? '테스트 통과' : '테스트 실패',
+          nextState === 'passed'
+            ? '모든 테스트가 통과했습니다. 다음 단계로 이동할 수 있습니다.'
+            : '실패 케이스를 확인하고 힌트를 열어보세요.',
+        ),
       )
+
+      setRunState(nextState)
+      setRunAttemptCount(nextAttemptCount)
+      setActivityLog(resultLog)
+      recordRunResult({
+        missionId: mission.id,
+        runState: nextState,
+        runAttemptCount: nextAttemptCount,
+        activeStepOffset,
+        activityLog: resultLog,
+      })
     }, 520)
   }
-
   function handleShowHint() {
     setHintVisible(true)
-    addActivity('힌트 확인', '현재 미션의 접근 방향을 확인했습니다.')
+    const nextLog = addActivity('힌트 확인', '현재 미션의 접근 방향을 확인했습니다.')
+    recordMissionActivity({
+      missionId: mission.id,
+      activeStepOffset,
+      activityLog: nextLog,
+    })
   }
 
   function handleShowReview() {
     setReviewVisible(true)
-    addActivity(
+    const nextLog = addActivity(
       '코드 리뷰 요청',
       runState === 'passed' ? '통과한 코드의 개선점을 확인했습니다.' : '리뷰 전에 실패 케이스 확인이 필요합니다.',
     )
+    recordMissionActivity({
+      missionId: mission.id,
+      activeStepOffset,
+      activityLog: nextLog,
+    })
   }
 
   function handleAdvanceStep() {
@@ -328,11 +363,18 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
       return
     }
 
-    setActiveStepOffset((offset) => Math.min(offset + 1, curriculumSteps.length - 1))
+    const nextStepOffset = Math.min(activeStepOffset + 1, curriculumSteps.length - 1)
+    const nextLog = addActivity('다음 단계', '현재 미션을 완료하고 다음 학습 단계로 이동했습니다.')
+    setActiveStepOffset(nextStepOffset)
     setRunState('idle')
+    setRunAttemptCount(0)
     setReviewVisible(false)
     setHintVisible(false)
-    addActivity('다음 단계', '현재 미션을 완료하고 다음 학습 단계로 이동했습니다.')
+    advanceMissionStep({
+      missionId: mission.id,
+      activeStepOffset: nextStepOffset,
+      activityLog: nextLog,
+    })
   }
 
   return (

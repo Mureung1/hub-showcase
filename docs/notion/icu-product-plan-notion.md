@@ -353,3 +353,10 @@ Renderer와 Main은 IPC로 통신합니다. Renderer는 화면과 사용자 입�
 - Today Learning Hub: https://github.com/xxriny/hub/wiki/Today-Learning-Hub
 - Learning Workspace IDE: https://github.com/xxriny/hub/wiki/Learning-Workspace-IDE
 - Figma: https://www.figma.com/design/kFVO8cRQPTeJ4DQn8sLY8U
+### React Mock 진행 상태 저장
+
+React mock 화면에서는 `icu.learningProgress` localStorage를 사용해 Today Hub와 Learning Workspace 사이의 진행 상태를 유지합니다.
+
+- mission별 실행 결과, 시도 횟수, 현재 단계, 최근 활동 로그를 저장합니다.
+- Today Hub는 저장 상태를 반영해 Today Queue와 완료율을 갱신합니다.
+- 실제 DB, Electron Main Process, Notion sync는 이후 단계에서 연결합니다.

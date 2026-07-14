@@ -11,6 +11,10 @@ import {
   type TodayQueueStatus,
 } from '../../data/todayLearning'
 import { useLearningProfileStore } from '../../stores/useLearningProfileStore'
+import {
+  useLearningProgressStore,
+  type LearningMissionProgress,
+} from '../../stores/useLearningProgressStore'
 import styles from './TodayLearningHub.module.css'
 
 type CurriculumMode = 'docs' | 'ai'
@@ -40,8 +44,58 @@ const docsCurriculum = [
 
 const weekLabels = ['월', '화', '수', '목', '금', '토', '일']
 
+function isMissionComplete(progress: LearningMissionProgress | undefined) {
+  return Boolean(progress?.completedAt || progress?.runState === 'passed')
+}
+
+function applyQueueProgress(
+  queue: TodayQueueItem[],
+  missions: Record<string, LearningMissionProgress>,
+): TodayQueueItem[] {
+  const activeProgressId = queue.find((item) => {
+    const progress = missions[item.id]
+
+    return progress && !isMissionComplete(progress)
+  })?.id
+  let currentAssigned = Boolean(activeProgressId)
+
+  return queue.map((item) => {
+    const progress = missions[item.id]
+
+    if (item.status === 'done' || isMissionComplete(progress)) {
+      return { ...item, status: 'done' }
+    }
+
+    if (activeProgressId) {
+      return item.id === activeProgressId ? { ...item, status: 'current' } : { ...item, status: item.status === 'optional' ? 'optional' : 'locked' }
+    }
+
+    if (item.status === 'optional') {
+      return item
+    }
+
+    if (!currentAssigned) {
+      currentAssigned = true
+      return { ...item, status: 'current' }
+    }
+
+    return { ...item, status: 'locked' }
+  })
+}
+
+function getCompletionPercent(queue: TodayQueueItem[]) {
+  if (queue.length === 0) {
+    return 0
+  }
+
+  const completedCount = queue.filter((item) => item.status === 'done').length
+
+  return Math.round((completedCount / queue.length) * 100)
+}
+
 export function TodayLearningHub() {
   const { profile } = useLearningProfileStore()
+  const missionProgress = useLearningProgressStore((state) => state.missions)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const [curriculumMode, setCurriculumMode] = useState<CurriculumMode>('ai')
   const [careerGoal, setCareerGoal] = useState(profileGoal)
@@ -118,10 +172,15 @@ export function TodayLearningHub() {
     ],
     [generatedPlan],
   )
-  const totalQueueMinutes = useMemo(
-    () => generatedQueue.reduce((total, item) => total + item.durationMinutes, 0),
-    [generatedQueue],
+  const displayQueue = useMemo(
+    () => applyQueueProgress(generatedQueue, missionProgress),
+    [generatedQueue, missionProgress],
   )
+  const totalQueueMinutes = useMemo(
+    () => displayQueue.reduce((total, item) => total + item.durationMinutes, 0),
+    [displayQueue],
+  )
+  const completionPercent = useMemo(() => getCompletionPercent(displayQueue), [displayQueue])
   const stats = useMemo(
     () => [
       { label: '오늘 학습', value: dailyMinutes + '분', tone: 'blue' },
@@ -131,9 +190,9 @@ export function TodayLearningHub() {
         tone: 'cyan',
       },
       { label: '큐 총합', value: totalQueueMinutes + '분', tone: 'peach' },
-      { label: '완료율', value: '62%', tone: 'green' },
+      { label: '완료율', value: completionPercent + '%', tone: 'green' },
     ],
-    [dailyMinutes, profile?.preferredTracks.length, totalQueueMinutes],
+    [completionPercent, dailyMinutes, profile?.preferredTracks.length, totalQueueMinutes],
   )
 
   function handleGenerateCurriculum(event: FormEvent<HTMLFormElement>) {
@@ -326,9 +385,9 @@ export function TodayLearningHub() {
               <section className={styles.ringPanel} aria-labelledby="percent-title">
                 <h2 id="percent-title">목표 달성률</h2>
                 <div className={styles.ringWrap}>
-                  <div className={styles.ring} aria-label="오늘 학습 진행률 62퍼센트" />
+                  <div className={styles.ring} aria-label={`오늘 학습 진행률 ${completionPercent}퍼센트`} />
                   <ul>
-                    <li><span /> 완료 62%</li>
+                    <li><span /> 완료 {completionPercent}%</li>
                     <li><span /> 진행 30%</li>
                     <li><span /> 대기 8%</li>
                   </ul>
@@ -388,7 +447,7 @@ export function TodayLearningHub() {
                 <span>총 {totalQueueMinutes}분</span>
               </div>
               <ol className={styles.timelineList}>
-                {generatedQueue.map((item) => (
+                {displayQueue.map((item) => (
                   <li data-status={item.status} key={item.id}>
                     <time>{item.durationMinutes}분</time>
                     <Link to={'/workspace?mission=' + item.id}>
