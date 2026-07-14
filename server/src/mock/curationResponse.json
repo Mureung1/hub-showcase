@@ -1,0 +1,28 @@
+{
+  "status": "success",
+  "data": {
+    "papers": [
+      {
+        "id": "paper-001",
+        "title": "Lost in the Middle: How Language Models Use Long Contexts",
+        "authors": "Nelson F. Liu, Kevin Lin, John Hewitt, Percy Liang, Christopher D. Manning",
+        "channel": "arXiv",
+        "year": 2023,
+        "matchScore": 98
+      },
+      {
+        "id": "paper-002",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+        "authors": "Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman Goyal, Heinrich Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel, Sebastian Riedel, Douwe Kiela",
+        "channel": "NeurIPS",
+        "year": 2020,
+        "matchScore": 85
+      }
+    ],
+    "insights": {
+      "background": "긴 입력 컨텍스트에서 언어 모델이 중간에 위치한 중요 정보를 효과적으로 검색하거나 추출하지 못하고 망각하는 현상(Lost in the Middle)을 최초 규명함.",
+      "coreMethod": "멀티키 검색 및 키-값 탐색 테스트셋을 활용해 입력 데이터 내 타깃 정보 위치 변화에 따른 정확도 성능의 U자형 곡선 모델링을 제안함.",
+      "quantitativeResult": "정보가 중간에 있을 때 모델 정확도가 최대 40% 이상 하락했으며, 모델의 절대적 크기가 커지더라도 중간 정보 유실 문제는 해결되지 않음을 검증함."
+    }
+  }
+}
