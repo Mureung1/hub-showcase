@@ -24,10 +24,10 @@
 - [ ] **랜딩 화면** — 기존 `App.jsx`/`ProjectIntro`/`HeroIllustration` 정리해 라우트에 배치
       - DoD: "지금 시작하기" → ID 입력 화면 이동
       - 참고: plan 화면 1, prototype `screen--landing`
-- [ ] **GitHub ID 입력 화면** — `useState` 폼 + 유효성(빈값/공백)
+- [x] **GitHub ID 입력 화면** — `useState` 폼 + 유효성(빈값/공백)
       - DoD: ID 입력 후 "내 활동 분석하기" → 분석중 화면 이동
       - 참고: plan 화면 2, prototype `screen--input`
-- [ ] **mock 데이터 파일 구성** — 확정된 API 명세대로 `src/mocks/*.json`
+- [x] **mock 데이터 파일 구성** — 확정된 API 명세대로 `src/mocks/*.json`
       - DoD: analysis/recommendations/detail 응답 예시 JSON 존재
       - 참고: 상단 API 명세 3개
 
@@ -44,19 +44,19 @@
 
 ## Week 2 — 화면 완성(mock) + API 구현
 ### Frontend
-- [ ] **분석중(로딩) 화면** — 진행 상태 표시, mock 지연 후 자동 전환
+- [x] **분석중(로딩) 화면** — 진행 상태 표시, mock 지연 후 자동 전환
       - DoD: 로딩 애니메이션 표시 → 프로필 결과 화면 이동
       - 참고: plan 화면 4, prototype `screen--analyze`
-- [ ] **프로필 분석 결과 화면** — mock analysis로 언어/실력/활동요약 렌더
+- [x] **프로필 분석 결과 화면** — mock analysis로 언어/실력/활동요약 렌더
       - DoD: mock 데이터가 화면에 정확히 표시
       - 참고: prototype `screen--profile`
 - [ ] **선호 조건 선택 화면** — 언어/난이도/주제 선택(useState)
       - DoD: 조건 선택 후 "이 조건으로 이슈 찾기" → 추천목록 이동
       - 참고: plan 화면 3, prototype `screen--search`
-- [ ] **추천 결과 목록 화면** — mock recommendations 리스트 카드 렌더
+- [x] **추천 결과 목록 화면** — mock recommendations 리스트 카드 렌더
       - DoD: 카드 클릭 → 상세 화면 이동
       - 참고: plan 화면 5, prototype `screen--result`
-- [ ] **추천 상세 화면** — 상세 정보 + GitHub 외부 링크
+- [x] **추천 상세 화면** — 상세 정보 + GitHub 외부 링크
       - DoD: 상세 렌더 + "목록으로"/"다른 이슈 보기" 동작
       - 참고: plan 화면 6, prototype `screen--detail`
 - [ ] **프로토타입 스타일 → design.md 토큰 이식** — 색/여백/카드 하드코딩 제거
