@@ -14,4 +14,13 @@ function createTask({ teamId, title, assigneeId, dueDate }) {
   return db.prepare('SELECT * FROM tasks WHERE id = ?').get(result.lastInsertRowid);
 }
 
-module.exports = { getActiveTasks, createTask };
+function getTaskById(id) {
+  return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+}
+
+function updateStatus(id, status) {
+  db.prepare('UPDATE tasks SET status = ? WHERE id = ?').run(status, id);
+  return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+}
+
+module.exports = { getActiveTasks, createTask, getTaskById, updateStatus };
