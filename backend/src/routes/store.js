@@ -45,29 +45,73 @@ router.post('/', async (req, res) => {
 
     const supabase = getSupabaseClient();
 
-    const { data, error } = await supabase
+    // 같은 store_name이 이미 존재하는지 확인
+    const { data: existingStore, error: selectError } = await supabase
       .from('store_info')
-      .insert([{
-        store_name: storeData.store_name.trim(),
-        owner_name: storeData.owner_name?.trim() ?? null,
-        category: storeData.category.trim(),
-        location: storeData.location.trim(),
-        signature_item: storeData.signature_item.trim()
-      }])
-      .select();
+      .select('store_id')
+      .eq('store_name', storeData.store_name.trim())
+      .single();
 
-    if (error) {
-      console.error('[POST /api/store] Supabase 오류:', error);
+    if (selectError && selectError.code !== 'PGRST116') {
+      // PGRST116 = no rows found (정상)
+      console.error('[POST /api/store] 조회 오류:', selectError);
       return res.status(500).json({
-        error: 'Failed to save store information',
-        message: error.message
+        error: 'Failed to check existing store',
+        message: selectError.message
       });
     }
 
-    res.status(201).json({
+    const trimmedData = {
+      store_name: storeData.store_name.trim(),
+      owner_name: storeData.owner_name?.trim() ?? null,
+      category: storeData.category.trim(),
+      location: storeData.location.trim(),
+      signature_item: storeData.signature_item.trim()
+    };
+
+    let result;
+    if (existingStore) {
+      // 이미 존재하면 UPDATE
+      const { data, error } = await supabase
+        .from('store_info')
+        .update(trimmedData)
+        .eq('store_id', existingStore.store_id)
+        .select();
+
+      if (error) {
+        console.error('[POST /api/store] 업데이트 오류:', error);
+        return res.status(500).json({
+          error: 'Failed to update store information',
+          message: error.message
+        });
+      }
+
+      result = { data, action: 'updated' };
+    } else {
+      // 없으면 INSERT
+      const { data, error } = await supabase
+        .from('store_info')
+        .insert([trimmedData])
+        .select();
+
+      if (error) {
+        console.error('[POST /api/store] 삽입 오류:', error);
+        return res.status(500).json({
+          error: 'Failed to save store information',
+          message: error.message
+        });
+      }
+
+      result = { data, action: 'created' };
+    }
+
+    res.status(result.action === 'created' ? 201 : 200).json({
       success: true,
-      message: '가게 정보가 저장되었습니다',
-      data: data[0]
+      message: result.action === 'created'
+        ? '가게 정보가 저장되었습니다'
+        : '가게 정보가 업데이트되었습니다',
+      action: result.action,
+      data: result.data[0]
     });
   } catch (error) {
     console.error('[POST /api/store] 오류:', error);
