@@ -104,7 +104,9 @@ Ticket 018이 첫 adapter tracer와 실제 prerequisite를 선택한다. Adapter
 
 같은 scope correction으로 세 root의 canonicalization·overlap·launcher capability를 소유하는 non-method owner 이름을 `product-runtime-layout`에서 `runtime-preparation`으로 바로잡는다. 이는 T0 prerequisite와 기존 oracle을 바꾸지 않고, 해당 contract가 Codex-native protocol semantics나 `CodexConversationRuntime` identity authority가 아니라는 기존 결정을 더 정확히 표현한다. Source-guided lifecycle, T0·T0-C·T0.1 coverage, planned/implemented promotion과 fail-safe generation 결정은 다시 열지 않는다.
 
-### Review checkpoint
+### Scope correction 이전 review checkpoint
+
+아래 review는 product-inclusive goal을 전제로 이 ticket을 처음 resolve했을 때의 역사적 결과다. 현재 runtime-foundation scope correction의 review 결과는 out-of-scope [첫 AY-PLE adapter tracer와 runtime readiness gate](018-decide-first-ayple-adapter-tracer.md)에 별도로 기록하며, 아래 `product readiness`·Ticket 018 ownership 판정을 current scope evidence로 사용하지 않는다.
 
 - Source: 0 findings. Exact pin의 `thread/start` response-first, `turn/start` either-order, first-party FIFO buffering, command approval lifecycle와 schema canonicalization 근거가 authority matrix와 일치한다. Local mock live probe는 외부 network·hosted model이 아니라 loopback HTTP capability를 요구하며, required gate에서 unavailable이면 silent skip하지 않도록 정정했다.
 - Standards: 0 findings. Connection wire outcome과 Runtime semantic outcome을 singular owner contract로 분리했고, 모든 required unit·fake-child·live oracle의 implemented selector와 현재 pass 전에는 integration을 승격하지 않는다. `not-required` verification discriminant, 한국어 일반 설명어, design-only/generated ownership과 local link·JSON 예시도 검증했다.

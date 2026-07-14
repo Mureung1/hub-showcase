@@ -107,7 +107,7 @@ Source/test와 external-port oracle을 분리해야 하는 핵심 근거는 다�
 | Experimental-only `currentTime/read`와 future unknown Server method | exact envelope validation 뒤 unsupported same-ID error, typed params로 해석하지 않음 | same | same | Experimental roster와 unknown-envelope unit/fake journal; semantic integration 없음 |
 | `turn/steer`, `turn/interrupt`, resume/read/replay | deferred | deferred | deferred | Ledger가 명시적으로 deferred를 보존하며 관련 후속 tracer가 채택할 때만 source/oracle 추가 |
 
-T0의 basic upstream happy path는 `thread/start` response identity, matching `turn/started`, matching `turn/completed(completed)`를 first-party test로 확인할 수 있다. 다만 T0가 요구하는 completed AgentMessage selection과 safe result는 AY-PLE projection이므로 unit·fake-child에서 별도로 증명해야 한다. ([thread start test](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/tests/suite/v2/thread_start.rs#L380-L465), [turn start/terminal test](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/tests/suite/v2/turn_start.rs#L224-L296))
+T0의 basic upstream happy path는 `thread/start` response identity, matching `turn/started`, matching `turn/completed(completed)`를 first-party test로 확인할 수 있다. 다만 T0가 요구하는 completed AgentMessage selection과 transport-neutral safe result는 `CodexConversationRuntime` projection이므로 unit·fake-child에서 별도로 증명해야 한다. ([thread start test](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/tests/suite/v2/thread_start.rs#L380-L465), [turn start/terminal test](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server/tests/suite/v2/turn_start.rs#L224-L296))
 
 ### Non-method contract coverage
 
