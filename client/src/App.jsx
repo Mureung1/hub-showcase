@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react';
-import { ArrowRight, Bookmark, BookOpen, NotebookPen, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bookmark, BookOpen, NotebookPen, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +12,15 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ReadingBookshelf } from '@/components/bookshelf/ReadingBookshelf';
+import { ReadingRecordList } from '@/components/bookshelf/ReadingRecordList';
+import { SessionRecordDialog } from '@/components/bookshelf/SessionRecordDialog';
+import {
+  getLatestRecord,
+  getNextStartPage,
+  getRecords,
+} from '@/lib/reading';
+import { createBook, createReadingRecord, createUser, getBook, getBooks } from '@/lib/api';
 
 const USER_STORAGE_KEY = 'itjang:user';
 
@@ -31,7 +40,7 @@ function OnboardingPage({ onComplete }) {
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const trimmedNickname = nickname.trim();
 
@@ -43,12 +52,13 @@ function OnboardingPage({ onComplete }) {
     setError('');
     setIsSaving(true);
 
-    window.setTimeout(() => {
-      onComplete({
-        id: `mock-user-${Date.now()}`,
-        nickname: trimmedNickname,
-      });
-    }, 350);
+    try {
+      const user = await createUser({ nickname: trimmedNickname });
+      onComplete(user);
+    } catch (requestError) {
+      setError(requestError.message);
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -158,6 +168,8 @@ function AddBookDialog({ open, onOpenChange, onCreateBook }) {
   const initialPageId = useId();
   const [draft, setDraft] = useState({ title: '', author: '', initialPage: '1' });
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   function handleOpenChange(nextOpen) {
     onOpenChange(nextOpen);
@@ -165,10 +177,12 @@ function AddBookDialog({ open, onOpenChange, onCreateBook }) {
     if (!nextOpen) {
       setDraft({ title: '', author: '', initialPage: '1' });
       setErrors({});
+      setSubmitError('');
+      setIsSaving(false);
     }
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     const title = draft.title.trim();
@@ -188,13 +202,16 @@ function AddBookDialog({ open, onOpenChange, onCreateBook }) {
       return;
     }
 
-    onCreateBook({
-      id: `mock-book-${Date.now()}`,
-      title,
-      author: draft.author.trim(),
-      initialPage,
-    });
-    handleOpenChange(false);
+    setIsSaving(true);
+    setSubmitError('');
+
+    try {
+      await onCreateBook({ title, author: draft.author.trim(), initialPage });
+      handleOpenChange(false);
+    } catch (requestError) {
+      setSubmitError(requestError.message);
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -264,13 +281,14 @@ function AddBookDialog({ open, onOpenChange, onCreateBook }) {
               <p className="field-help">처음부터 읽는다면 1쪽 그대로 두면 돼요.</p>
             )}
           </div>
+          {submitError && <p className="field-error" role="alert">{submitError}</p>}
 
           <div className="add-book-dialog__actions">
             <DialogClose render={<Button type="button" variant="outline" />}>
               취소
             </DialogClose>
-            <Button type="submit">
-              책장에 꽂기
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? '책장에 꽂는 중이에요…' : '책장에 꽂기'}
             </Button>
           </div>
         </form>
@@ -310,45 +328,69 @@ function EmptyBookshelf({ user, onAddBook }) {
   );
 }
 
-function ReadingBookshelf({ user, books, onAddBook }) {
+function BookDetailScreen({ book, startInReadingContext, onBackToBookshelf, onSaveRecord }) {
+  const [isReadingContextActive, setIsReadingContextActive] = useState(startInReadingContext);
+  const [isRecordDialogOpen, setIsRecordDialogOpen] = useState(false);
+  const records = getRecords(book);
+  const latestRecord = getLatestRecord(book);
+  const nextStartPage = getNextStartPage(book);
+
   return (
-    <main className="bookshelf-preview">
-      <header className="bookshelf-preview__header">
+    <main className="book-detail">
+      <header className="book-detail__header">
         <a href="/bookshelf" aria-label="잇장 홈">
           <BookOpen aria-hidden="true" size={19} strokeWidth={1.8} />
           <span>잇장</span>
         </a>
-        <span>{user.nickname}의 잇장</span>
+        <Button type="button" variant="ghost" onClick={onBackToBookshelf}>
+          <ArrowLeft aria-hidden="true" size={17} strokeWidth={1.8} />
+          책장으로 돌아가기
+        </Button>
       </header>
 
-      <section className="reading-bookshelf" aria-labelledby="reading-shelf-title">
-        <div className="reading-bookshelf__heading">
-          <div>
-            <p className="section-kicker">NOW READING</p>
-            <h1 id="reading-shelf-title">읽고 있는 책</h1>
-            <p>{books.length}권의 책이 다음 장을 기다리고 있어요.</p>
-          </div>
-          <Button className="reading-bookshelf__add" type="button" onClick={onAddBook}>
-            <Plus aria-hidden="true" size={17} strokeWidth={1.8} />
-            책 추가
-          </Button>
+      <article className="reading-note" aria-labelledby="book-detail-title">
+        <div className="reading-note__book-mark" aria-hidden="true">
+          <BookOpen size={28} strokeWidth={1.35} />
         </div>
+        <p className="section-kicker">READING NOTE</p>
+        <h1 id="book-detail-title">{book.title}</h1>
+        {book.author && <p className="reading-note__author">{book.author}</p>}
 
-        <div className="reading-shelf" aria-label="읽는 중인 책 선반">
-          <ul className="reading-shelf__books">
-            {books.map((book) => (
-              <li key={book.id}>
-                <article className="book-spine">
-                  <p className="book-spine__title">{book.title}</p>
-                  {book.author && <p className="book-spine__author">{book.author}</p>}
-                  <span className="book-spine__bookmark">{book.initialPage}쪽부터</span>
-                </article>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <p className="reading-shelf__note">책을 누르면 다음에는 지난 갈피부터 이어 읽을 수 있어요.</p>
-      </section>
+        <section className="bookmark-summary" aria-labelledby="bookmark-summary-title">
+          <p className="bookmark-summary__label" id="bookmark-summary-title">다음 책갈피</p>
+          <p className="bookmark-summary__page">
+            {latestRecord ? `지난번 ${latestRecord.endPage}쪽까지 읽었어요.` : `${book.initialPage}쪽부터 시작해 볼까요?`}
+          </p>
+          <p>다음에는 {nextStartPage}쪽부터 이어 읽을 수 있어요.</p>
+        </section>
+
+        <section className="start-reading-panel" aria-labelledby="start-reading-title">
+          <p className="section-kicker">NEXT READING</p>
+          <h2 id="start-reading-title">{nextStartPage}쪽부터 이어 읽어볼까요?</h2>
+          {isReadingContextActive ? (
+            <>
+              <p>다 읽고 돌아오면 기록을 남겨 주세요. 타이머 없이도 기록할 수 있어요.</p>
+              <Button type="button" onClick={() => setIsRecordDialogOpen(true)}>이번 읽기 기록 남기기</Button>
+            </>
+          ) : (
+            <Button type="button" onClick={() => setIsReadingContextActive(true)}>
+              {nextStartPage}쪽부터 이어 읽기
+              <ArrowRight aria-hidden="true" size={17} strokeWidth={1.8} />
+            </Button>
+          )}
+        </section>
+
+        <ReadingRecordList records={records} />
+      </article>
+      <SessionRecordDialog
+        book={book}
+        open={isRecordDialogOpen}
+        onOpenChange={setIsRecordDialogOpen}
+        onSave={async (record) => {
+          await onSaveRecord(book.id, record);
+          setIsReadingContextActive(false);
+        }}
+      />
     </main>
   );
 }
@@ -357,11 +399,65 @@ export default function App() {
   const [user, setUser] = useState(() => readStoredUser());
   const [isAddBookOpen, setIsAddBookOpen] = useState(false);
   const [books, setBooks] = useState([]);
+  const [isBooksLoading, setIsBooksLoading] = useState(false);
+  const [booksError, setBooksError] = useState('');
+  const [selectedBookId, setSelectedBookId] = useState(null);
+  const [bookDetail, setBookDetail] = useState(null);
+  const [isBookDetailLoading, setIsBookDetailLoading] = useState(false);
+  const [bookDetailError, setBookDetailError] = useState('');
+  const [shouldStartReading, setShouldStartReading] = useState(false);
 
   useEffect(() => {
     if (user && window.location.pathname === '/') {
       window.history.replaceState({}, '', '/bookshelf');
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (!selectedBookId || !user) return undefined;
+
+    let isCancelled = false;
+    setIsBookDetailLoading(true);
+    setBookDetailError('');
+    setBookDetail(null);
+
+    getBook(selectedBookId, user.id)
+      .then((detail) => {
+        if (!isCancelled) setBookDetail(detail);
+      })
+      .catch((requestError) => {
+        if (!isCancelled) setBookDetailError(requestError.message);
+      })
+      .finally(() => {
+        if (!isCancelled) setIsBookDetailLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedBookId, user]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+
+    let isCancelled = false;
+    setIsBooksLoading(true);
+    setBooksError('');
+
+    getBooks(user.id)
+      .then(({ books: fetchedBooks }) => {
+        if (!isCancelled) setBooks(fetchedBooks);
+      })
+      .catch((requestError) => {
+        if (!isCancelled) setBooksError(requestError.message);
+      })
+      .finally(() => {
+        if (!isCancelled) setIsBooksLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [user]);
 
   function handleOnboardingComplete(newUser) {
@@ -370,18 +466,72 @@ export default function App() {
     setUser(newUser);
   }
 
-  function handleCreateBook(newBook) {
+  async function handleCreateBook(input) {
+    const newBook = await createBook({ userId: user.id, ...input });
     setBooks((currentBooks) => [newBook, ...currentBooks]);
+    setSelectedBookId(newBook.id);
+    setShouldStartReading(false);
   }
+
+  async function handleSaveRecord(bookId, recordInput) {
+    await createReadingRecord({ bookId, userId: user.id, ...recordInput });
+    const [{ books: refreshedBooks }, refreshedDetail] = await Promise.all([
+      getBooks(user.id),
+      getBook(bookId, user.id),
+    ]);
+    setBooks(refreshedBooks);
+    setBookDetail(refreshedDetail);
+  }
+
+  function handleSelectBook(bookId) {
+    setSelectedBookId(bookId);
+    setShouldStartReading(false);
+  }
+
+  function handleContinueReading(bookId) {
+    setSelectedBookId(bookId);
+    setShouldStartReading(true);
+  }
+
+  const selectedBook = books.find((book) => book.id === selectedBookId);
 
   if (!user) {
     return <OnboardingPage onComplete={handleOnboardingComplete} />;
   }
 
+  if (isBooksLoading) {
+    return <main className="bookshelf-preview"><p className="bookshelf-status">책장을 불러오고 있어요.</p></main>;
+  }
+
+  if (booksError) {
+    return <main className="bookshelf-preview"><p className="bookshelf-status field-error" role="alert">{booksError}</p></main>;
+  }
+
   return (
     <>
-      {books.length ? (
-        <ReadingBookshelf user={user} books={books} onAddBook={() => setIsAddBookOpen(true)} />
+      {selectedBookId && isBookDetailLoading ? (
+        <main className="book-detail"><p className="bookshelf-status">책의 기록을 불러오고 있어요.</p></main>
+      ) : selectedBookId && bookDetailError ? (
+        <main className="book-detail"><p className="bookshelf-status field-error" role="alert">{bookDetailError}</p></main>
+      ) : selectedBookId && bookDetail ? (
+        <BookDetailScreen
+          key={`${bookDetail.id}-${shouldStartReading}`}
+          book={bookDetail}
+          startInReadingContext={shouldStartReading}
+          onBackToBookshelf={() => {
+            setSelectedBookId(null);
+            setShouldStartReading(false);
+          }}
+          onSaveRecord={handleSaveRecord}
+        />
+      ) : books.length ? (
+        <ReadingBookshelf
+          user={user}
+          books={books}
+          onAddBook={() => setIsAddBookOpen(true)}
+          onSelectBook={handleSelectBook}
+          onContinueReading={handleContinueReading}
+        />
       ) : (
         <EmptyBookshelf user={user} onAddBook={() => setIsAddBookOpen(true)} />
       )}

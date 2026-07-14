@@ -63,6 +63,13 @@ input:focus-visible {
   overflow: hidden;
 }
 
+.bookshelf-status {
+  width: min(100%, 32rem);
+  margin: 24vh auto 0;
+  color: var(--muted);
+  text-align: center;
+}
+
 .onboarding-page {
   display: grid;
   grid-template-columns: minmax(1.5rem, 1fr) minmax(0, 37rem) minmax(19rem, 27rem) minmax(1.5rem, 1fr);
@@ -458,6 +465,65 @@ input:focus-visible {
   margin: min(13vh, 7.5rem) auto 0;
 }
 
+.continue-reading-card {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 3.6rem;
+  border: 1px solid var(--line);
+  border-left: 0.35rem solid var(--accent);
+  background: var(--paper);
+  padding: 1.65rem 1.8rem;
+}
+
+.continue-reading-card .section-kicker {
+  margin-bottom: 0.65rem;
+}
+
+.continue-reading-card h2 {
+  margin: 0;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: clamp(1.35rem, 2.3vw, 1.8rem);
+  font-weight: 600;
+  letter-spacing: -0.06em;
+  line-height: 1.25;
+}
+
+.continue-reading-card__author,
+.continue-reading-card__summary,
+.continue-reading-card__impression {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.continue-reading-card__author {
+  margin-top: 0.35rem;
+}
+
+.continue-reading-card__summary {
+  margin-top: 0.85rem;
+}
+
+.continue-reading-card__impression {
+  max-width: 32rem;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  font-family: Georgia, "Noto Serif KR", serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.continue-reading-card > button {
+  min-height: 2.8rem;
+  flex: 0 0 auto;
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--paper);
+}
+
 .reading-bookshelf__heading {
   display: flex;
   align-items: end;
@@ -518,10 +584,13 @@ input:focus-visible {
   justify-content: end;
   width: 4.5rem;
   height: 14.2rem;
+  border: 0;
   padding: 0.85rem 0.7rem;
   color: #fffaf1;
   background: #9c513d;
   box-shadow: inset -0.2rem 0 0 rgb(44 29 25 / 18%);
+  cursor: pointer;
+  text-align: left;
 }
 
 .reading-shelf__books li:nth-child(3n + 2) .book-spine {
@@ -575,6 +644,306 @@ input:focus-visible {
   margin: 1rem 0 0;
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.book-detail {
+  min-height: 100dvh;
+  padding: 2rem clamp(1.5rem, 7vw, 7rem) 4rem;
+}
+
+.book-detail__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 1.25rem;
+}
+
+.book-detail__header a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--ink);
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.book-detail__header button {
+  min-height: 2.4rem;
+  color: var(--muted);
+}
+
+.reading-note {
+  width: min(100%, 43rem);
+  margin: clamp(3rem, 9vh, 6.5rem) auto 0;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: clamp(1.8rem, 5vw, 3.4rem);
+  box-shadow: 0 1rem 2.5rem rgb(72 55 40 / 7%);
+}
+
+.reading-note__book-mark {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-bottom: 2.75rem;
+  place-items: center;
+  color: var(--accent-dark);
+  background: #eee1d1;
+}
+
+.reading-note h1 {
+  margin: 0;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 600;
+  letter-spacing: -0.07em;
+  line-height: 1.2;
+}
+
+.reading-note__author {
+  margin: 0.8rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.bookmark-summary {
+  margin-top: 2.9rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 1.5rem 0;
+}
+
+.bookmark-summary__label {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 0.76rem;
+  font-weight: 720;
+  letter-spacing: 0.12em;
+}
+
+.bookmark-summary__page {
+  margin: 0.65rem 0 0;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.05em;
+}
+
+.bookmark-summary > p:last-child,
+.reading-note__empty-records > p:last-child {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.reading-note__empty-records {
+  padding-top: 2.3rem;
+}
+
+.reading-note__empty-records .section-kicker {
+  margin-bottom: 0.75rem;
+}
+
+.reading-note__empty-records h2 {
+  margin: 0;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.05em;
+}
+
+.start-reading-panel {
+  margin-top: 2.3rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2.35rem;
+}
+
+.start-reading-panel .section-kicker,
+.record-list .section-kicker {
+  margin-bottom: 0.75rem;
+}
+
+.start-reading-panel h2,
+.record-list h2 {
+  margin: 0;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.05em;
+}
+
+.start-reading-panel > p:not(.section-kicker) {
+  margin: 0.75rem 0 1.2rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.start-reading-panel button:not([data-variant='link']) {
+  min-height: 2.8rem;
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.record-list {
+  padding-top: 2.3rem;
+}
+
+.record-list__empty {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.record-list ol {
+  display: grid;
+  gap: 0;
+  margin: 1.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.record-page {
+  display: grid;
+  gap: 0.5rem;
+  border-top: 1px solid var(--line);
+  padding: 1.25rem 0;
+}
+
+.record-page time {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.record-page strong {
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 1.04rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.record-page p {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.record-dialog {
+  width: min(calc(100% - 2rem), 33rem);
+  max-width: none;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--paper);
+  padding: 0;
+  box-shadow: 0 1.5rem 4rem rgb(58 45 35 / 18%);
+}
+
+.record-dialog__header {
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 2.1rem 2rem 1.55rem;
+}
+
+.record-dialog__header .section-kicker {
+  margin-bottom: 0.85rem;
+}
+
+.record-dialog__header [data-slot='dialog-title'] {
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 1.65rem;
+  font-weight: 600;
+  letter-spacing: -0.06em;
+  line-height: 1.25;
+}
+
+.record-dialog__header [data-slot='dialog-description'] {
+  margin-top: 0.8rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.record-dialog__form {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.7rem 2rem 2rem;
+}
+
+.record-dialog .field-group {
+  gap: 0.5rem;
+}
+
+.record-dialog .field-group label span {
+  margin-left: 0.25rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.record-dialog .field-group input,
+.record-dialog textarea {
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: #fffefa;
+  box-shadow: none;
+}
+
+.record-dialog .field-group input {
+  height: 2.9rem;
+}
+
+.record-dialog textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 0.7rem 0.75rem;
+  color: var(--ink);
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.record-dialog textarea::placeholder {
+  color: #9a9289;
+}
+
+.record-range-preview {
+  border-left: 2px solid var(--accent);
+  padding: 0.15rem 0 0.15rem 0.75rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.record-dialog__override {
+  justify-self: start;
+  height: auto;
+  padding: 0;
+  color: var(--accent-dark);
+  font-size: 0.82rem;
+}
+
+.record-dialog__override-input {
+  border-left: 2px solid var(--line);
+  padding-left: 0.75rem;
+}
+
+.record-dialog__actions {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.15rem;
+}
+
+.record-dialog__actions button {
+  height: 2.9rem;
+  border-radius: 0;
 }
 
 @media (max-width: 760px) {
@@ -664,7 +1033,9 @@ input:focus-visible {
   }
 
   .add-book-dialog__header,
-  .add-book-dialog__form {
+  .add-book-dialog__form,
+  .record-dialog__header,
+  .record-dialog__form {
     padding-right: 1.3rem;
     padding-left: 1.3rem;
   }
@@ -676,6 +1047,14 @@ input:focus-visible {
   .reading-bookshelf__heading {
     align-items: start;
     flex-direction: column;
+  }
+
+  .continue-reading-card {
+    align-items: start;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+    padding: 1.35rem;
   }
 
   .reading-shelf {
@@ -691,6 +1070,15 @@ input:focus-visible {
   .book-spine {
     width: 3.9rem;
     height: 11.8rem;
+  }
+
+  .book-detail {
+    padding: 1.4rem 1.5rem 2.5rem;
+  }
+
+  .book-detail__header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

@@ -53,6 +53,7 @@
 - [Frontend User Flow](client/docs/user-flow.md): MVP 화면 단계와 사용자 흐름을 정리합니다.
 - [Click Unit UI Specification](client/docs/click-unit-ui-spec.md): 화면별 클릭, 모달, 상태 변화를 클릭 단위로 정의합니다.
 - [Component Implementation Notes](client/docs/component-implementation-notes.md): 컴포넌트별 책임, props/state, handler, 표시 조건을 정리합니다.
+- [P0 API Contract](client/docs/p0-api-contract.md): React와 Spring Boot가 공유할 사용자·책·세션 기록 API 계약을 정리합니다.
 - [Reading Bookshelf Expert Brainstorm](client/docs/archive/reading-bookshelf-expert-brainstorm.md): 디자이너와 프론트엔드 관점의 새 콘셉트 브레인스토밍 기록입니다.
 - [Reading Bookshelf User Review](client/docs/archive/reading-bookshelf-user-review.md): 첫 방문·재방문 사용자 관점 검토와 범위 합의 기록입니다.
 - [Docs Archive](client/docs/archive): 토론 기록과 UX 검토처럼 구현 기준은 아니지만 의사결정 근거로 보관할 문서를 둡니다.
