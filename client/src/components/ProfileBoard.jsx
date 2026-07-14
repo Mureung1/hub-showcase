@@ -1,6 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 function ProfileBoard() {
+  // A. States
+  const [keywords, setKeywords] = useState([
+    'Natural Language Processing',
+    'Retrieval-Augmented Generation',
+    'AI Agents'
+  ]);
+  const [newKeyword, setNewKeyword] = useState('');
+  const [query, setQuery] = useState('');
+
+  // B. Handlers
+  const handleAddKeyword = () => {
+    const trimmed = newKeyword.trim();
+    if (!trimmed) return;
+    
+    // Prevent duplicate keywords
+    if (!keywords.includes(trimmed)) {
+      setKeywords([...keywords, trimmed]);
+    }
+    setNewKeyword('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleAddKeyword();
+    }
+  };
+
+  const handleRemoveKeyword = (indexToRemove) => {
+    setKeywords(keywords.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleStartCuration = () => {
+    console.log("🚀 큐레이션 요청 쿼리:", query);
+  };
+
   return (
     <>
       {/* Container A: 연구 프로필 (Top Row - Left, Width 75%) */}
@@ -30,9 +65,19 @@ function ProfileBoard() {
             <div className="keyword-section">
               <span className="section-label">관심 키워드 뱃지 풀:</span>
               <div className="keyword-badges">
-                <span className="badge">Natural Language Processing <span className="delete-x">×</span></span>
-                <span className="badge">Retrieval-Augmented Generation <span className="delete-x">×</span></span>
-                <span className="badge">AI Agents <span className="delete-x">×</span></span>
+                {keywords.map((kw, idx) => (
+                  <span key={kw} className="badge">
+                    {kw} 
+                    <span 
+                      className="delete-x" 
+                      onClick={() => handleRemoveKeyword(idx)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      ×
+                    </span>
+                  </span>
+                ))}
               </div>
               <div className="keyword-input-form">
                 <input 
@@ -40,8 +85,17 @@ function ProfileBoard() {
                   id="keyword-input-field"
                   placeholder="새로운 연구 키워드 입력..." 
                   className="keyword-input" 
+                  value={newKeyword}
+                  onChange={(e) => setNewKeyword(e.target.value)}
+                  onKeyDown={handleKeyDown}
                 />
-                <button id="add-keyword-btn" className="add-btn">+</button>
+                <button 
+                  id="add-keyword-btn" 
+                  className="add-btn"
+                  onClick={handleAddKeyword}
+                >
+                  +
+                </button>
               </div>
             </div>
           </div>
@@ -60,11 +114,16 @@ function ProfileBoard() {
             <textarea 
               id="query-input-area"
               className="query-textarea" 
-              placeholder="찾고자 하는 논문의 핵심 질문이나 키워드 조합을 입력하세요."
-              defaultValue="최신 LLM Agent의 멀티모달 추론 능력 향상 방안에 대한 논문을 찾아줘."
+              placeholder="최신 LLM Agent의 멀티모달 추론 능력 향상 방안에 대한 논문을 찾아줘."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
             />
             
-            <button id="start-curation-btn" className="master-action-btn">
+            <button 
+              id="start-curation-btn" 
+              className="master-action-btn"
+              onClick={handleStartCuration}
+            >
               큐레이션 시작
             </button>
             
