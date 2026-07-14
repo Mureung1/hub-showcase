@@ -3,27 +3,8 @@ import { Link, useSearchParams } from "react-router-dom"
 import AiSummary from "../components/AiSummary.jsx"
 import AiInsight from "../components/AiInsight.jsx"
 import DecisionButtons from "../components/DecisionButtons.jsx"
-import TermTooltip from "../components/TermTooltip.jsx"
 import { parseArticle, analyzeArticle } from "../api/article.js"
 import { saveDecision } from "../api/decisions.js"
-
-function renderParagraph(text, terms) {
-  if (terms.length === 0) return text
-
-  const pattern = new RegExp(
-    `(${terms.map((t) => t.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`,
-    "gi",
-  )
-
-  return text.split(pattern).map((part, i) => {
-    const match = terms.find((t) => t.term.toLowerCase() === part.toLowerCase())
-    return match ? (
-      <TermTooltip key={i} term={part} metaphor={match.metaphor} definition={match.definition} />
-    ) : (
-      part
-    )
-  })
-}
 
 export default function Reader() {
   const [searchParams] = useSearchParams()
@@ -40,7 +21,7 @@ export default function Reader() {
     parseArticle(url)
       .then((parsed) => {
         setArticle(parsed)
-        return analyzeArticle(parsed.paragraphs)
+        return analyzeArticle(parsed.paragraphs, parsed.title, url)
       })
       .then(setAnalysis)
       .catch((err) => setError(err.message))
@@ -74,7 +55,7 @@ export default function Reader() {
       <main>
         <article className="article-content">
           {article.paragraphs.map((paragraph, i) => (
-            <p key={i}>{renderParagraph(paragraph, analysis.terms)}</p>
+            <p key={i}>{paragraph}</p>
           ))}
         </article>
 

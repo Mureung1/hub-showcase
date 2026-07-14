@@ -166,53 +166,50 @@ h2 {
   font-weight: 600;
 }
 
-/* ---------- Term Tooltip ---------- */
-.term {
-  position: relative;
+/* ---------- Sentence Accordion ---------- */
+.sentence-accordion {
   display: inline;
+}
+
+.sentence-accordion summary {
+  display: inline;
+  cursor: pointer;
   background: var(--accent-yellow);
   color: var(--brand-navy);
-  border: none;
   border-radius: var(--radius-sm);
   padding: 0 4px;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
+  list-style: none;
 }
 
-.term:focus-visible {
-  outline: 2px solid var(--brand-blue);
-  outline-offset: 2px;
+.sentence-accordion summary::-webkit-details-marker {
+  display: none;
 }
 
-.term .tooltip {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 8px);
-  width: 260px;
-  max-width: 80vw;
-  background: var(--brand-navy);
-  color: var(--text-inverse);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-  text-align: left;
-  white-space: normal;
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 400;
-  box-shadow: 0 8px 24px rgba(0, 23, 75, 0.25);
-  z-index: 10;
+.sentence-accordion[open] summary {
+  background: var(--brand-blue-light);
 }
 
-.tooltip .metaphor {
+.sentence-accordion .sentence-translation {
   display: block;
-  color: var(--accent-yellow-text);
+  margin: var(--space-sm) 0;
+  padding: var(--space-md);
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--brand-blue);
+}
+
+.sentence-accordion .sentence-translation p {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
   margin-bottom: var(--space-xs);
 }
 
-.tooltip .definition {
+.sentence-accordion .sentence-reason {
   display: block;
-  color: var(--text-inverse);
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text-secondary);
 }
 
 /* ---------- AI Summary ---------- */
@@ -419,6 +416,48 @@ h2 {
 
 .history-summary li:last-child {
   margin-bottom: 0;
+}
+
+/* ---------- Vocabulary ---------- */
+.vocabulary-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.vocabulary-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+}
+
+.vocabulary-term {
+  margin-bottom: var(--space-xs);
+}
+
+.vocabulary-definition {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.vocabulary-source {
+  display: inline-block;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.vocabulary-source:hover,
+.vocabulary-source:focus-visible {
+  color: var(--brand-blue);
 }
 
 /* ---------- Badge ---------- */

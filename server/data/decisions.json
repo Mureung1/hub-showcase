@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "id": "1784010701654",
+    "url": "https://www.nytimes.com/2026/07/12/business/fed-rate-path-guidance.html",
+    "title": "Tech Stocks Slide as Investors Brace for Bear Market",
+    "summaryBullets": [
+      "기술주 전반이 급락하며 베어마켓 우려가 커지고 있습니다.",
+      "GlobalTech Corp(GTC)의 약한 실적 가이던스가 하락을 가속시켰습니다.",
+      "전문가들은 단기 변동성은 있어도 장기 매수 기회로 보는 시각도 있다고 분석합니다."
+    ],
+    "decision": "sell",
+    "createdAt": "2026-07-14T06:31:41.654Z"
+  },
+  {
+    "id": "1784010682512",
+    "url": "https://www.bloomberg.com/news/articles/2026-07-12/tech-stocks-bear-market",
+    "title": "Tech Stocks Slide as Investors Brace for Bear Market",
+    "summaryBullets": [
+      "기술주 전반이 급락하며 베어마켓 우려가 커지고 있습니다.",
+      "GlobalTech Corp(GTC)의 약한 실적 가이던스가 하락을 가속시켰습니다.",
+      "전문가들은 단기 변동성은 있어도 장기 매수 기회로 보는 시각도 있다고 분석합니다."
+    ],
+    "decision": "sell",
+    "createdAt": "2026-07-14T06:31:22.512Z"
+  },
+  {
+    "id": "1784010461966",
+    "url": "https://www.bloomberg.com/news/articles/2026-07-12/tech-stocks-bear-market",
+    "title": "Tech Stocks Slide as Investors Brace for Bear Market",
+    "summaryBullets": [
+      "기술주 전반이 급락하며 베어마켓 우려가 커지고 있습니다.",
+      "GlobalTech Corp(GTC)의 약한 실적 가이던스가 하락을 가속시켰습니다.",
+      "전문가들은 단기 변동성은 있어도 장기 매수 기회로 보는 시각도 있다고 분석합니다."
+    ],
+    "decision": "hold",
+    "createdAt": "2026-07-14T06:27:41.966Z"
+  },
+  {
+    "id": "1784008526718",
+    "url": "https://www.bloomberg.com/news/articles/2026-07-12/tech-stocks-bear-market",
+    "title": "Tech Stocks Slide as Investors Brace for Bear Market",
+    "summaryBullets": [
+      "기술주 전반이 급락하며 베어마켓 우려가 커지고 있습니다.",
+      "GlobalTech Corp(GTC)의 약한 실적 가이던스가 하락을 가속시켰습니다.",
+      "전문가들은 단기 변동성은 있어도 장기 매수 기회로 보는 시각도 있다고 분석합니다."
+    ],
+    "decision": "hold",
+    "createdAt": "2026-07-14T05:55:26.718Z"
+  }
+]

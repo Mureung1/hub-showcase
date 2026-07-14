@@ -69,7 +69,11 @@
 
 ```json
 // 요청
-{ "paragraphs": ["Shares of major technology companies fell sharply...", "..."] }
+{
+  "paragraphs": ["Shares of major technology companies fell sharply...", "..."],
+  "title": "Tech Stocks Slide as Investors Brace for Bear Market",
+  "url": "https://finance.yahoo.com/news/..."
+}
 
 // 응답
 {
@@ -108,6 +112,11 @@
   삭제**하고 `{ term, definition }`만 남김. 기사당 핵심 용어 3~5개를
   AI가 자동 선별하며, 사용자의 탭 여부와 무관하게 `4. GET /api/vocabulary`
   저장소에 자동 적재된다(리더뷰 화면에는 더 이상 노출되지 않음).
+- 요청의 `title`/`url`은 `terms`를 단어장에 적재할 때 출처(`articleTitle`/
+  `articleUrl`)로 함께 저장하기 위한 값이다. 응답 스키마에는 나타나지 않고,
+  `analyzeArticle` 내부의 부수 효과(`appendVocabulary` 호출)에만 쓰인다.
+  이 저장은 실패해도 무시되며 `terms`/`sentences` 등 원래 응답에는 영향을
+  주지 않는다.
 - `marketSentiment`: `"bullish" | "bearish" | "neutral"` 중 하나. 기사의
   객관적 톤을 AI가 판별한 값으로, 마이페이지에서 사용자의 판단과 비교하는 데 쓰인다.
 - `paragraphs`가 빈 배열이거나 배열이 아니면

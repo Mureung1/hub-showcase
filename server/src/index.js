@@ -4,6 +4,7 @@ import cors from "cors"
 import dashboardRouter from "./routes/dashboard.js"
 import articleRouter from "./routes/article.js"
 import decisionsRouter from "./routes/decisions.js"
+import vocabularyRouter from "./routes/vocabulary.js"
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
@@ -14,6 +15,7 @@ app.use(express.json())
 app.use("/api/dashboard", dashboardRouter)
 app.use("/api/article", articleRouter)
 app.use("/api/decisions", decisionsRouter)
+app.use("/api/vocabulary", vocabularyRouter)
 
 // Every route responds with { success, data } or { success: false, error }.
 // Anything else (a thrown error that skips a route's own try/catch) lands here.
