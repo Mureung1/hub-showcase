@@ -2,6 +2,12 @@ import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 import logoUrl from "../Logo-cropped.png";
+import {
+  ANALYSIS_STATUS,
+  createMockAnalysisResult,
+  getRepositoryUrlError,
+  parseGitHubRepositoryUrl,
+} from "./repositoryAnalysis.mjs";
 
 const overviewItems = [
   ["대상", "프로젝트 경험을 쌓는 대학생 개발자"],
@@ -38,77 +44,10 @@ const resourceLinks = [
   ["GitHub Wiki", "https://github.com/SubJeeLee/hub/wiki", "제출용 기획 문서"],
 ];
 
-function parseGitHubUrl(value) {
-  const match = value.trim().match(/^https:\/\/github\.com\/([^/]+)\/([^/#?]+?)(?:\.git)?\/?$/);
-  if (!match) {
-    return null;
-  }
-
-  return {
-    owner: match[1],
-    repo: match[2],
-  };
-}
-
-async function fetchGithubJson(url) {
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/vnd.github+json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`GitHub API 요청 실패: ${response.status}`);
-  }
-
-  return response.json();
-}
-
-function getCommitLogin(commit) {
-  return commit.author?.login || commit.commit.author?.name || "unknown";
-}
-
-function normalizeMessage(message) {
-  return message.trim().replace(/\s+/g, " ");
-}
-
-function calculateContributors(contributors) {
-  const total = contributors.reduce((sum, contributor) => sum + contributor.contributions, 0);
-
-  return contributors.slice(0, 5).map((contributor) => ({
-    login: contributor.login,
-    count: contributor.contributions,
-    percent: total === 0 ? 0 : Math.round((contributor.contributions / total) * 1000) / 10,
-  }));
-}
-
 function wait(ms) {
   return new Promise((resolve) => {
     window.setTimeout(resolve, ms);
   });
-}
-
-async function analyzeRepository(owner, repo) {
-  const baseUrl = `https://api.github.com/repos/${owner}/${repo}`;
-  const [repository, contributors, commits] = await Promise.all([
-    fetchGithubJson(baseUrl),
-    fetchGithubJson(`${baseUrl}/contributors?per_page=100`),
-    fetchGithubJson(`${baseUrl}/commits?per_page=100`),
-  ]);
-
-  const topContributors = calculateContributors(contributors);
-  const ownerCommits = commits.filter((commit) => getCommitLogin(commit).toLowerCase() === owner.toLowerCase());
-  const ownerMessages = [
-    ...new Set(ownerCommits.map((commit) => normalizeMessage(commit.commit.message.split("\n")[0])).filter(Boolean)),
-  ].slice(0, 4);
-
-  return {
-    name: repository.full_name,
-    url: repository.html_url,
-    owner,
-    contributors: topContributors,
-    ownerMessages,
-  };
 }
 
 function SectionHeading({ label, title }) {
@@ -178,10 +117,18 @@ function AnalysisResult({ result }) {
       <div className="result-heading">
         <span className="section-label">Analysis Result</span>
         <h2>{result.name}</h2>
+        <p>{result.summary}</p>
         <a href={result.url} target="_blank" rel="noreferrer">
           GitHub에서 보기
         </a>
       </div>
+
+      {result.isMock && (
+        <p className="mock-note">
+          현재 화면은 Nest API 연동 전 상태를 검증하기 위한 mock 결과입니다. 이후 실제 GitHub API 응답으로 교체할
+          예정입니다.
+        </p>
+      )}
 
       <div className="result-grid">
         <article>
@@ -216,37 +163,33 @@ function AnalysisResult({ result }) {
 
 function ProjectTopic() {
   const [repoUrl, setRepoUrl] = useState("");
-  const [analysisStatus, setAnalysisStatus] = useState("idle");
+  const [analysisStatus, setAnalysisStatus] = useState(ANALYSIS_STATUS.idle);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analysisError, setAnalysisError] = useState("");
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const parsed = parseGitHubUrl(repoUrl);
-    if (!parsed) {
-      setAnalysisStatus("error");
+    const error = getRepositoryUrlError(repoUrl);
+    if (error) {
+      setAnalysisStatus(ANALYSIS_STATUS.error);
       setAnalysisResult(null);
-      setAnalysisError("https://github.com/owner/repository 형식으로 입력해 주세요.");
+      setAnalysisError(error);
       return;
     }
 
-    setAnalysisStatus("loading");
+    const parsed = parseGitHubRepositoryUrl(repoUrl);
+    setAnalysisStatus(ANALYSIS_STATUS.loading);
     setAnalysisResult(null);
     setAnalysisError("");
 
-    try {
-      const [result] = await Promise.all([analyzeRepository(parsed.owner, parsed.repo), wait(900)]);
-      setAnalysisResult(result);
-      setAnalysisStatus("done");
-    } catch (error) {
-      setAnalysisStatus("error");
-      setAnalysisError("Repository 데이터를 가져오지 못했습니다. 공개 저장소인지 확인해 주세요.");
-    }
+    await wait(900);
+    setAnalysisResult(createMockAnalysisResult(parsed));
+    setAnalysisStatus(ANALYSIS_STATUS.success);
   };
 
   const handleRepoChange = (event) => {
     setRepoUrl(event.target.value);
-    setAnalysisStatus("idle");
+    setAnalysisStatus(ANALYSIS_STATUS.idle);
     setAnalysisResult(null);
     setAnalysisError("");
   };
@@ -266,18 +209,19 @@ function ProjectTopic() {
             </label>
             <input
               id="repo-url"
-              type="url"
+              type="text"
+              inputMode="url"
               value={repoUrl}
               onChange={handleRepoChange}
               placeholder="https://github.com/user/repository"
-              required
             />
-            <button type="submit" disabled={analysisStatus === "loading"}>
-              {analysisStatus === "loading" ? "분석 중" : "분석 시작"}
+            <button type="submit" disabled={analysisStatus === ANALYSIS_STATUS.loading}>
+              {analysisStatus === ANALYSIS_STATUS.loading ? "분석 중" : "분석 시작"}
             </button>
           </form>
+          <p className="input-guide">분석하고 싶은 프로젝트의 GitHub Repository 주소를 입력해보세요.</p>
 
-          {analysisStatus === "loading" && (
+          {analysisStatus === ANALYSIS_STATUS.loading && (
             <div className="analysis-status" role="status" aria-live="polite">
               <BrandSpinner />
               <div>
@@ -287,7 +231,7 @@ function ProjectTopic() {
             </div>
           )}
 
-          {analysisStatus === "error" && (
+          {analysisStatus === ANALYSIS_STATUS.error && (
             <div className="analysis-status error" role="status" aria-live="polite">
               <BrandSpinner />
               <div>
@@ -297,7 +241,7 @@ function ProjectTopic() {
             </div>
           )}
 
-          {analysisStatus === "done" && analysisResult && <AnalysisResult result={analysisResult} />}
+          {analysisStatus === ANALYSIS_STATUS.success && analysisResult && <AnalysisResult result={analysisResult} />}
         </div>
       </section>
 

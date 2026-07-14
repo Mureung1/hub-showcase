@@ -134,6 +134,13 @@ h2 {
   opacity: 0.68;
 }
 
+.input-guide {
+  max-width: 620px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
 .analysis-status {
   display: flex;
   align-items: center;
@@ -267,6 +274,21 @@ h2 {
   font-size: 0.92rem;
   font-weight: 800;
   text-decoration: none;
+}
+
+.result-heading p,
+.mock-note {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.mock-note {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--mint-line);
+  border-radius: 8px;
+  background: var(--mint-soft);
 }
 
 .result-grid {
