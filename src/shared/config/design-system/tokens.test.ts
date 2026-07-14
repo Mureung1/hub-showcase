@@ -13,9 +13,7 @@ function relativeLuminance(hex: string) {
   }
 
   const [red, green, blue] = channels.map((channel) =>
-    channel <= 0.04045
-      ? channel / 12.92
-      : ((channel + 0.055) / 1.055) ** 2.4
+    channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
   );
 
   return red * 0.2126 + green * 0.7152 + blue * 0.0722;
@@ -109,10 +107,7 @@ describe('designTokens', () => {
       contrastRatio(designTokens.color.smoke, designTokens.color.canvas)
     ).toBeGreaterThanOrEqual(4.5);
     expect(
-      contrastRatio(
-        designTokens.color.signalGreen,
-        designTokens.color.canvas
-      )
+      contrastRatio(designTokens.color.signalGreen, designTokens.color.canvas)
     ).toBeGreaterThanOrEqual(4.5);
   });
 });
