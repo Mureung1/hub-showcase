@@ -19,6 +19,16 @@ function TypeIcon({ type }: { type: GymPlace['type'] }) {
 }
 
 export default function GymThumbnail({ gym, size = 'md' }: GymThumbnailProps) {
+  const photo = gym.photos[0];
+
+  if (photo) {
+    return (
+      <div className={`gym-thumb gym-thumb-${size} gym-thumb-photo`} aria-hidden="true">
+        <img src={photo} alt="" loading="lazy" />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`gym-thumb gym-thumb-${size} ${TONE_BY_TYPE[gym.type]}`}

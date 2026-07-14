@@ -79,7 +79,7 @@
 }
 
 .gym-sheet.is-collapsed {
-  height: min(196px, 42%);
+  height: min(228px, 48%);
 }
 
 .gym-sheet.is-expanded {
@@ -152,9 +152,18 @@
   text-overflow: ellipsis;
 }
 
-.gym-summary-cta {
-  align-self: flex-start;
+.gym-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
   margin-top: 0.25rem;
+}
+
+.gym-summary-cta {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  text-decoration: none;
 }
 
 .gym-distance {
@@ -277,6 +286,18 @@
   height: 88px;
 }
 
+.gym-thumb-photo {
+  overflow: hidden;
+  padding: 0;
+}
+
+.gym-thumb-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .gym-thumb.tone-red {
   background:
     radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.22), transparent 45%),
@@ -372,7 +393,7 @@
   }
 
   .gym-sheet.is-collapsed {
-    height: 200px;
+    height: 232px;
   }
 
   .gym-sheet.is-expanded {

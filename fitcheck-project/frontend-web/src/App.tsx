@@ -7,6 +7,7 @@ import UserCoursesPage from './pages/user/CoursesPage';
 import UserCourseDetailPage from './pages/user/CourseDetailPage';
 import UserMealsPage from './pages/user/MealsPage';
 import UserMapPage from './pages/user/MapPage';
+import UserGymDetailPage from './pages/user/GymDetailPage';
 import DashboardPage from './pages/trainer/DashboardPage';
 import MembersPage from './pages/trainer/MembersPage';
 import RoutinePage from './pages/trainer/RoutinePage';
@@ -27,6 +28,7 @@ function App() {
             <Route path="courses/:id" element={<UserCourseDetailPage />} />
             <Route path="meals" element={<UserMealsPage />} />
             <Route path="map" element={<UserMapPage />} />
+            <Route path="gym/:id" element={<UserGymDetailPage />} />
           </Route>
 
           <Route path="/trainer" element={<Layout />}>

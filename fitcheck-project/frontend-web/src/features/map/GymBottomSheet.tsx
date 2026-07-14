@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { MapPin, Star } from 'lucide-react';
 import type { GymPlace } from '../../data/userMock';
 import GymThumbnail from './GymThumbnail';
@@ -95,9 +96,17 @@ export default function GymBottomSheet({
                   </span>
                 ))}
               </div>
-              <button type="button" className="btn btn-secondary gym-summary-cta">
-                상담 신청
-              </button>
+              <div className="gym-summary-actions">
+                <Link
+                  to={`/user/gym/${selectedGym.id}`}
+                  className="btn btn-primary gym-summary-cta"
+                >
+                  상세보기
+                </Link>
+                <button type="button" className="btn btn-secondary gym-summary-cta">
+                  상담 신청
+                </button>
+              </div>
             </div>
           </article>
         )}
