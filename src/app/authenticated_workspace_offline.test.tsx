@@ -35,7 +35,7 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   localStorage.clear();
-  delete (navigator as Navigator & { onLine?: boolean }).onLine;
+  Reflect.deleteProperty(navigator, 'onLine');
   vi.unstubAllGlobals();
 });
 
