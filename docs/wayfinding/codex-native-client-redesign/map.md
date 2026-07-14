@@ -45,7 +45,7 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 
 ## Not yet specified
 
-- 없음. 남은 범위 내 질문은 Ticket 016으로 구체화되어 있다.
+- 없음. 남은 범위 내 질문은 Ticket 019의 first-party client 교정과 그 뒤 Ticket 016의 architecture readiness 검토로 구체화되어 있다.
 
 ## Out of scope
 

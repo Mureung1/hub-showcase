@@ -4,7 +4,7 @@
 
 - Type: task
 - State: open
-- Blocked by: [ADR 0008을 대체할 architecture decision을 기록한다](015-record-superseding-architecture-decision.md)
+- Blocked by: [First-party client 근거로 port와 재사용 계획을 교정한다](019-correct-first-party-client-port-and-reuse.md)
 
 ## Question
 
