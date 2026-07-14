@@ -1,0 +1,12 @@
+spring:
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+
+  test:
+    database:
+      replace: none
