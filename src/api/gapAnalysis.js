@@ -12,3 +12,11 @@ export async function postGapAnalysis({ filters = {}, spec }) {
   }
   return res.json()
 }
+
+export async function getGapAnalysis(id) {
+  const res = await fetch(`/api/gap-analysis/${id}`)
+  if (!res.ok) {
+    throw new Error(`분석 결과를 불러오지 못했습니다 (${res.status})`)
+  }
+  return res.json()
+}

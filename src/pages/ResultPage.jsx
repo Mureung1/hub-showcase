@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { postGapAnalysis } from '../api/gapAnalysis'
+import { getGapAnalysis, postGapAnalysis } from '../api/gapAnalysis'
 import { buildJobDisplay, CATEGORY_LABELS } from '../lib/gapAnalysis'
 import DonutChart from '../components/charts/DonutChart'
 import PriorityBarChart from '../components/charts/PriorityBarChart'
@@ -9,10 +9,15 @@ import JobDetailModal from '../components/result/JobDetailModal'
 import InsightModal from '../components/result/InsightModal'
 import EmptyState from '../components/result/EmptyState'
 
+// 새로고침해도 결과가 유지되도록 마지막으로 본 분석 결과의 id만 저장한다.
+// AppStateContext(주 3차 예정)가 들어오기 전까지의 임시 방편 — filters/spec 전체를 저장하는 게 아니라
+// "id로 다시 조회"만 지원한다.
+const ANALYSIS_ID_STORAGE_KEY = 'specfit_analysis_id'
+
 function ResultPage() {
   const location = useLocation()
   const navigate = useNavigate()
-  const spec = location.state?.spec
+  const navigationSpec = location.state?.spec
 
   const [status, setStatus] = useState('loading')
   const [analysis, setAnalysis] = useState(null)
@@ -24,25 +29,52 @@ function ResultPage() {
   const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
-    if (!spec) return
     let cancelled = false
     setStatus('loading')
-    postGapAnalysis({ spec })
-      .then((result) => {
+
+    async function run() {
+      // /spec에서 방금 넘어온 경우: 새 분석을 실행한다.
+      if (navigationSpec) {
+        const result = await postGapAnalysis({ spec: navigationSpec })
         if (cancelled) return
+        localStorage.setItem(ANALYSIS_ID_STORAGE_KEY, String(result.id))
         setAnalysis(result)
         setStatus('done')
         setShowInsight(true)
-      })
-      .catch(() => {
+        return
+      }
+      // 새로고침 등으로 location.state가 사라진 경우: 저장된 id로 이전 결과를 복원한다.
+      const savedId = localStorage.getItem(ANALYSIS_ID_STORAGE_KEY)
+      if (!savedId) {
+        setStatus('no-spec')
+        return
+      }
+      try {
+        const result = await getGapAnalysis(savedId)
         if (cancelled) return
-        setStatus('error')
-      })
+        setAnalysis(result)
+        setStatus('done')
+        setShowInsight(false)
+      } catch {
+        // id가 더 이상 유효하지 않거나(오래된 분석 결과 등) 복원에 실패하면 처음부터 다시 시작한다.
+        localStorage.removeItem(ANALYSIS_ID_STORAGE_KEY)
+        if (!cancelled) setStatus('no-spec')
+      }
+    }
+
+    run().catch(() => {
+      if (cancelled) return
+      setStatus('error')
+    })
+
     return () => {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryCount])
+
+  // 방금 제출한 스펙(location.state)이 없으면 복원된 분석 결과의 spec을 쓴다.
+  const spec = navigationSpec ?? analysis?.spec
 
   const displayJobs = useMemo(() => {
     if (!analysis) return []
@@ -60,8 +92,6 @@ function ResultPage() {
     return list
   }, [displayJobs, statusFilter, sort])
 
-  if (!spec) return <Navigate to="/spec" replace />
-
   if (status === 'loading') {
     return (
       <div className="loading-screen">
@@ -69,6 +99,10 @@ function ResultPage() {
       </div>
     )
   }
+
+  // location.state의 spec도 없고 복원할 저장된 분석 결과도 없는 경우에만 돌려보낸다.
+  // status==='loading'일 때 곧바로 판단하면 복원 시도도 해보기 전에 리다이렉트되므로 반드시 이 뒤에 둔다.
+  if (status === 'no-spec') return <Navigate to="/spec" replace />
 
   if (status === 'error') {
     return (
