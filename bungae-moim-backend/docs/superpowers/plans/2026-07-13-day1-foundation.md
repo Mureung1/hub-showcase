@@ -1,10 +1,15 @@
-# Day 1: 기반 다지기 (DB 마이그레이션 + 공통 미들웨어 + FE 셸) Implementation Plan
+# Day 1: 기반 다지기 (DB 마이그레이션 + 공통 미들웨어 + ~~FE 셸~~) Implementation Plan
+
+> **⚠️ 사후 정정 (2026-07-14): Task 6(FE 정적 셸)은 폐기되었습니다.**
+> 이 계획을 세울 때는 백엔드가 `public/index.html`이라는 빈 정적 화면을 직접 서빙하는 구조를 가정했으나, 이후 `hub` 저장소에 이미 완성도 높은 React(Vite) 프론트엔드(`bungae-moim`)가 있다는 것이 확인되어 그쪽을 실제 화면으로 쓰기로 결정했습니다.
+> 따라서 **`public/` 폴더와 `src/app.js`의 `express.static` 서빙 코드는 2026-07-14에 삭제되었습니다.** 아래 Task 6은 실행 기록으로만 남겨둡니다 — 다시 실행하지 마세요.
+> 프론트엔드는 이제 Vite 개발 서버(`localhost:5173`)에서 돌고, `/api` 요청만 프록시로 백엔드(`localhost:3000`)에 전달합니다.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 이번 주 로그인 슬라이스(Day2)와 모임 등록/조회 슬라이스(Day4)가 올라설 기반을 완성한다 — `users`/`meetings`/`meeting_participants` 테이블, 공통 응답/에러 포맷, 세션 인증 미들웨어, FE를 서빙할 정적 셸.
+**Goal:** 이번 주 로그인 슬라이스(Day2)와 모임 등록/조회 슬라이스(Day4)가 올라설 기반을 완성한다 — `users`/`meetings`/`meeting_participants` 테이블, 공통 응답/에러 포맷, 세션 인증 미들웨어. (~~FE를 서빙할 정적 셸~~ — 폐기됨, 위 정정 참고)
 
-**Architecture:** Express 앱(`src/app.js`)에 `express.static`으로 `public/` 폴더를 서빙해 FE/BE를 동일 오리진(`http://localhost:3000`)으로 유지한다. DB는 `node-pg-migrate`로 3개 테이블을 순서대로 생성한다. 공통 에러는 `ApiError` 클래스 + 에러 핸들링 미들웨어로 일원화하고, 인증은 `express-session` 쿠키 + `requireAuth` 미들웨어로 처리한다.
+**Architecture:** ~~Express 앱(`src/app.js`)에 `express.static`으로 `public/` 폴더를 서빙해 FE/BE를 동일 오리진(`http://localhost:3000`)으로 유지한다.~~ (폐기됨) DB는 `node-pg-migrate`로 3개 테이블을 순서대로 생성한다. 공통 에러는 `ApiError` 클래스 + 에러 핸들링 미들웨어로 일원화하고, 인증은 `express-session` 쿠키 + `requireAuth` 미들웨어로 처리한다.
 
 **Tech Stack:** Node.js, Express, PostgreSQL(`pg`), `node-pg-migrate`, `express-session`, Jest + Supertest.
 
@@ -26,7 +31,7 @@
 
 - [ ] **Step 1: 구글 Cloud Console에서 OAuth 클라이언트 발급**
   - https://console.cloud.google.com/apis/credentials 에서 새 프로젝트(또는 기존 프로젝트) 선택 → "OAuth 클라이언트 ID 만들기" → 애플리케이션 유형 "웹 애플리케이션".
-  - **승인된 리디렉션 URI**에 정확히 `http://localhost:3000` 을 추가한다 (Task 6에서 FE를 이 오리진에서 서빙하기로 정했기 때문).
+  - **승인된 리디렉션 URI**에 정확히 `http://localhost:3000` 을 추가한다 (Task 6에서 FE를 이 오리진에서 서빙하기로 정했기 때문). — **2026-07-14 갱신: Task 6 폐기로 FE가 Vite 개발 서버에서 돌게 되어, `http://localhost:5173`을 리디렉션 URI로 추가 등록했다(구글·카카오 모두). 기존 3000은 삭제하지 않고 함께 두었다.**
   - 발급된 클라이언트 ID/Secret을 기록해둔다 (다음 Step에서 `.env`에 넣는다).
 
 - [ ] **Step 2: 카카오 디벨로퍼스에서 앱 등록**
@@ -586,11 +591,13 @@ git commit -m "Add session config and requireAuth middleware (Task C2)"
 
 ---
 
-### Task 6: FE 기본 셸 + 정적 서빙
+### ~~Task 6: FE 기본 셸 + 정적 서빙~~ (폐기됨 — 2026-07-14 삭제)
+
+> **이 태스크는 취소되었습니다.** 당시 커밋(`102e309`)으로 한 번 만들어졌으나, `hub`의 React 앱(`bungae-moim`)을 실제 화면으로 쓰기로 하면서 2026-07-14에 `public/index.html`과 `src/app.js`의 정적 서빙 코드를 모두 삭제했습니다. 아래 내용은 이력 보존용이며 **다시 실행하지 마세요.**
 
 **Files:**
-- Create: `public/index.html`
-- Modify: `src/app.js`
+- ~~Create: `public/index.html`~~ (삭제됨)
+- ~~Modify: `src/app.js`~~ (정적 서빙 코드 제거됨)
 
 **Interfaces:**
 - Produces: `http://localhost:3000/` 에서 열리는 정적 페이지 셸(상단 네비게이션 + 5개 빈 view 컨테이너: home/list/create/mypage/auth, clab-design-system 토큰 CSS 적용). Day2가 `#auth` view 안에, Day4가 `#create`/`#list` view 안에 실제 화면을 채워 넣는다.

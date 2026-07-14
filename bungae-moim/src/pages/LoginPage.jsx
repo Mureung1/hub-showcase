@@ -4,12 +4,15 @@ import Card from '../components/Card.jsx'
 import PillButton from '../components/PillButton.jsx'
 
 export default function LoginPage() {
-  const { isLoggedIn, login, logout, currentUser } = useAppState()
+  const { isLoggedIn, login, logout, currentUser, authLoading, authError } = useAppState()
   const navigate = useNavigate()
 
-  function handleSocialLogin() {
-    login()
-    navigate('/')
+  if (authLoading) {
+    return (
+      <Card variant="glass" style={{ marginTop: 40 }}>
+        <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>로그인 상태를 확인하는 중이에요…</p>
+      </Card>
+    )
   }
 
   if (isLoggedIn) {
@@ -26,7 +29,7 @@ export default function LoginPage() {
           홈으로 가기
         </PillButton>
         <PillButton variant="ghost" size="sm" onClick={logout}>
-          로그아웃 (프로토타입 데모용)
+          로그아웃
         </PillButton>
       </Card>
     )
@@ -47,11 +50,27 @@ export default function LoginPage() {
           구글이나 카카오 계정으로 1초 만에 시작하세요. 최초 로그인 시 생년월일을 추가로 입력받아요.
         </p>
 
+        {authError && (
+          <p
+            role="alert"
+            style={{
+              fontSize: 13,
+              color: 'var(--danger, #c0392b)',
+              background: 'rgba(192, 57, 43, 0.08)',
+              borderRadius: 12,
+              padding: '10px 12px',
+              marginTop: 6,
+            }}
+          >
+            {authError}
+          </p>
+        )}
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
-          <PillButton variant="primary" block onClick={handleSocialLogin}>
+          <PillButton variant="primary" block onClick={() => login('google')}>
             구글로 계속하기
           </PillButton>
-          <PillButton variant="accent" block onClick={handleSocialLogin}>
+          <PillButton variant="accent" block onClick={() => login('kakao')}>
             카카오로 계속하기
           </PillButton>
         </div>
