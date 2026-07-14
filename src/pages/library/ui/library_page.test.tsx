@@ -26,6 +26,44 @@ beforeAll(() => {
 afterEach(cleanup);
 
 describe('LibraryPage', () => {
+  it('keeps a no-result query and offers clear and save actions', async () => {
+    const user = userEvent.setup();
+    const onOpenSave = vi.fn();
+    const onQueryChange = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <LibraryPage
+          activeCategory="All"
+          categoryOptions={[{ label: '전체', tone: 'slate', value: 'All' }]}
+          insights={[]}
+          onCategoryChange={vi.fn()}
+          onDeleteInsight={vi.fn(() => ({ ok: true }) as const)}
+          onOpenSave={onOpenSave}
+          onQueryChange={onQueryChange}
+          onUpdateInsight={vi.fn(() => ({ ok: true }) as const)}
+          query="기억 단서"
+        />
+      </DesignSystemProvider>
+    );
+
+    const search = screen.getByRole('searchbox', { name: '보관함 검색' });
+
+    expect((search as HTMLInputElement).value).toBe('기억 단서');
+    expect(
+      screen.getByRole('heading', { name: '검색 결과가 없어요' })
+    ).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '검색어 지우기' }));
+
+    expect(onQueryChange).toHaveBeenCalledWith('');
+    expect(document.activeElement).toBe(search);
+
+    await user.click(screen.getByRole('button', { name: '링크 저장' }));
+
+    expect(onOpenSave).toHaveBeenCalledOnce();
+  });
+
   it('explains an empty result and opens the save screen', async () => {
     const user = userEvent.setup();
     const onOpenSave = vi.fn();

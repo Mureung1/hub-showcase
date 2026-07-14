@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 
 import {
   filterInsights,
+  searchInsights,
   type InsightRepository,
   type InsightRepositoryWarning,
 } from '@/entities/insight';
@@ -88,7 +89,15 @@ export function AuthenticatedWorkspace({
   const [contextSaveFailed, setContextSaveFailed] = useState(false);
 
   const visibleInsights = useMemo(() => {
-    return filterInsights(insights, activeCategory, globalQuery);
+    const categoryInsights = filterInsights(insights, activeCategory, '');
+
+    if (globalQuery.trim().length === 0) {
+      return categoryInsights;
+    }
+
+    return searchInsights(categoryInsights, globalQuery).map(
+      ({ insight }) => insight
+    );
   }, [activeCategory, globalQuery, insights]);
 
   const retrieveResults = useMemo(() => {

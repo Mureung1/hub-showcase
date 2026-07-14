@@ -13,4 +13,12 @@ export type {
 } from './model/insight_repository';
 export { createLocalStorageInsightRepository } from './model/local_storage_insight_repository';
 export { normalizeInsightUrl } from './model/normalize_insight_url';
+export {
+  INSIGHT_SEARCH_FIELD_WEIGHTS,
+  searchInsights,
+} from './model/search_insights';
+export type {
+  InsightSearchField,
+  InsightSearchResult,
+} from './model/search_insights';
 export { InsightGrid } from './ui/insight_grid';

@@ -45,6 +45,74 @@ afterEach(() => {
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it('combines category filtering with deterministic all-result ranking', async () => {
+    const user = userEvent.setup();
+    const titleMatch = createInsight({
+      id: 'title-match',
+      originalUrl: 'https://title.example/signal',
+      normalizedUrl: 'https://title.example/signal',
+      domain: 'title.example',
+      title: 'signal 제목',
+      category: '개발',
+      createdAt: '2026-07-14T00:00:00.000Z',
+    });
+    const memoMatch = createInsight({
+      id: 'memo-match',
+      originalUrl: 'https://memo.example/article',
+      normalizedUrl: 'https://memo.example/article',
+      domain: 'memo.example',
+      title: '메모로 찾은 자료',
+      memo: 'signal',
+      category: '개발',
+      createdAt: '2026-07-13T00:00:00.000Z',
+    });
+    const moreMatches = Array.from({ length: 6 }, (_, index) =>
+      createInsight({
+        id: `more-${index}`,
+        originalUrl: `https://more${index}.example/article`,
+        normalizedUrl: `https://more${index}.example/article`,
+        domain: `more${index}.example`,
+        title: `signal 추가 자료 ${index}`,
+        category: '개발',
+      })
+    );
+    const otherCategory = createInsight({
+      id: 'other-category',
+      title: 'signal 디자인 자료',
+      category: '디자인',
+    });
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [titleMatch, memoMatch, ...moreMatches, otherCategory],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    await user.click(screen.getByRole('button', { name: '개발' }));
+    const search = screen.getByRole('searchbox', { name: '보관함 검색' });
+    await user.type(search, 'signal');
+
+    expect((search as HTMLInputElement).value).toBe('signal');
+    expect(
+      screen
+        .getAllByRole('article')
+        .map((article) => article.querySelector('h3')?.textContent)
+    ).toEqual([
+      '메모로 찾은 자료',
+      'signal 제목',
+      ...moreMatches.map(({ title }) => title),
+    ]);
+    expect(screen.queryByText('signal 디자인 자료')).toBeNull();
+  });
+
   it('moves focus to the next card when an edited category leaves the active filter', async () => {
     const user = userEvent.setup();
     const repository: InsightRepository = {

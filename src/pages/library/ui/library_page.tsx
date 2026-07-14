@@ -45,6 +45,12 @@ export function LibraryPage({
   query,
 }: LibraryPageProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const hasQuery = query.trim().length > 0;
+
+  function clearQuery() {
+    onQueryChange('');
+    searchInputRef.current?.focus();
+  }
 
   return (
     <section className="library-page" aria-labelledby="library-title">
@@ -76,7 +82,7 @@ export function LibraryPage({
             id="global-search"
             onChange={(event) => onQueryChange(event.currentTarget.value)}
             onReset={() => onQueryChange('')}
-            placeholder="제목, 메모, 카테고리 검색"
+            placeholder="제목, 메모, 카테고리, 도메인, URL 검색"
             ref={searchInputRef}
             size="medium"
             value={query}
@@ -95,6 +101,15 @@ export function LibraryPage({
             onDeletionFocusFallback={() => searchInputRef.current?.focus()}
             onEditFocusFallback={() => searchInputRef.current?.focus()}
             onUpdateInsight={onUpdateInsight}
+          />
+        ) : hasQuery ? (
+          <EmptyState
+            actionLabel="검색어 지우기"
+            description="입력한 검색어와 맞는 링크가 없어요. 검색어를 줄이거나 다른 단서로 바꿔보세요."
+            onAction={clearQuery}
+            onSecondaryAction={onOpenSave}
+            secondaryActionLabel="링크 저장"
+            title="검색 결과가 없어요"
           />
         ) : (
           <EmptyState

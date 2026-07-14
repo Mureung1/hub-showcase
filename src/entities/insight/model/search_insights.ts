@@ -1,0 +1,126 @@
+import type { Insight } from './insight';
+
+export const INSIGHT_SEARCH_FIELD_WEIGHTS = {
+  memo: 4,
+  title: 3,
+  category: 2,
+  domain: 1,
+  originalUrl: 0.5,
+} as const;
+
+export type InsightSearchField = keyof typeof INSIGHT_SEARCH_FIELD_WEIGHTS;
+
+export type InsightSearchResult = {
+  insight: Insight;
+  matchedFields: InsightSearchField[];
+  matchedTokens: string[];
+  score: number;
+};
+
+const SEARCH_FIELDS = Object.keys(
+  INSIGHT_SEARCH_FIELD_WEIGHTS
+) as InsightSearchField[];
+
+export function searchInsights(
+  insights: readonly Insight[],
+  query: string
+): InsightSearchResult[] {
+  const queryTokens = Array.from(new Set(tokenize(query)));
+
+  if (queryTokens.length === 0) {
+    return [];
+  }
+
+  return insights
+    .map((insight) => scoreInsight(insight, queryTokens))
+    .filter((result) => result.score > 0)
+    .sort(compareSearchResults);
+}
+
+function scoreInsight(
+  insight: Insight,
+  queryTokens: string[]
+): InsightSearchResult {
+  const matchedFields: InsightSearchField[] = [];
+  const matchedTokenSet = new Set<string>();
+  let score = 0;
+
+  for (const field of SEARCH_FIELDS) {
+    const fieldValue = insight[field] ?? '';
+    const normalizedField = normalizeSearchText(fieldValue);
+    const fieldTokens = tokenize(fieldValue);
+    let fieldMatched = false;
+
+    for (const queryToken of queryTokens) {
+      const matchMultiplier = getMatchMultiplier(
+        fieldTokens,
+        normalizedField,
+        queryToken
+      );
+
+      if (matchMultiplier === 0) {
+        continue;
+      }
+
+      score += INSIGHT_SEARCH_FIELD_WEIGHTS[field] * matchMultiplier;
+      fieldMatched = true;
+
+      matchedTokenSet.add(queryToken);
+    }
+
+    if (fieldMatched) {
+      matchedFields.push(field);
+    }
+  }
+
+  const matchedTokens = queryTokens.filter((token) =>
+    matchedTokenSet.has(token)
+  );
+
+  return { insight, matchedFields, matchedTokens, score };
+}
+
+function getMatchMultiplier(
+  fieldTokens: string[],
+  normalizedField: string,
+  queryToken: string
+) {
+  if (fieldTokens.includes(queryToken)) {
+    return 3;
+  }
+
+  if (fieldTokens.some((fieldToken) => fieldToken.startsWith(queryToken))) {
+    return 2;
+  }
+
+  return normalizedField.includes(queryToken) ? 1 : 0;
+}
+
+function compareSearchResults(
+  current: InsightSearchResult,
+  next: InsightSearchResult
+) {
+  return (
+    next.score - current.score ||
+    compareText(next.insight.createdAt, current.insight.createdAt) ||
+    compareText(current.insight.id, next.insight.id)
+  );
+}
+
+function compareText(current: string, next: string) {
+  if (current === next) {
+    return 0;
+  }
+
+  return current < next ? -1 : 1;
+}
+
+function tokenize(value: string) {
+  return normalizeSearchText(value)
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean);
+}
+
+function normalizeSearchText(value: string) {
+  return value.normalize('NFKC').toLowerCase().trim();
+}
