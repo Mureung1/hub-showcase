@@ -2,7 +2,7 @@
 
 문서 상태: canonical
 개발 기간: 4주 (Phase 1 종료, Phase 2 진행 예정)
-최종 갱신: 2026-07-13
+최종 갱신: 2026-07-14
 
 이 문서는 LocalTwin에서 앞으로 수행할 제품 작업의 유일한 백로그다. 큰 Task인 Epic 아래에 세부 Task를 두고, 실제 작업을 시작할 때 `.harness/tasks/<task-id>.md` Task Packet으로 범위와 검증을 고정한다.
 
@@ -18,7 +18,7 @@ Phase 1은 기반 구현 단계로 종료한다. 이는 LocalTwin 전체 목표�
 
 Phase 1에서 완료된 기반:
 
-- 제품 웹과 문서·legacy prototype의 public route 분리(물리 폴더·배포 artifact 분리는 미완료)
+- 제품 웹과 문서·legacy prototype의 public route 및 물리 폴더·배포 artifact 분리
 - 공공데이터 수집, canonical SQLite와 반복 가능한 importer 구축
 - 상권 점수 공식, 근거 API/UI와 3개 상권·4개 업종 연결
 - LocalTwin 지도용 low-poly 점포 prefab 구현
@@ -102,7 +102,7 @@ Outcome: 팀원이 Home만 보고 현재 구조, 다음 작업과 문서의 원�
 | DOCS-003 | Home, Viewer와 Knowledge Graph 연결 | P0       | Done   | 1    | Task와 Architecture를 모든 문서 진입점에서 연다    |
 | PLAN-001 | 4주 Epic/Task 백로그 확정           | P0       | Done   | 1    | 모든 P0가 주차와 완료 기준을 가진다                |
 | PLAN-002 | Phase 1 기준선 확인과 Phase 2 인계       | P0       | Done   | Phase 2 | 완료·미완료·의존 순서가 문서와 Issue에서 일치한다 |
-| ARCH-002 | 제품 source·배포 artifact를 문서와 물리 분리 | P0 | Ready | Phase 2 | 제품 build에 내부 문서가 없고 문서 build에 제품 source가 없다 |
+| ARCH-002 | 제품 source·배포 artifact를 문서와 물리 분리 | P0 | Done | Phase 2 | 제품 build에 내부 문서가 없고 문서 build에 제품 source가 없다 |
 
 ### EPIC-02. 공식 데이터 수집과 Canonical Schema
 
@@ -116,7 +116,8 @@ Outcome: 화면용 임의 수치가 아니라 출처와 기준 기간이 있는 
 | DATA-004 | provider별 raw-to-canonical importer 구현           | P0       | Done        | 1    | DATA-003   | 같은 명령을 2회 실행해 동일 row count를 확인했다            |
 | DATA-005 | 중복·결측·좌표·기간 품질 검사 작성                  | P0       | Backlog     | 1    | DATA-004   | 오류 건수와 제외 이유를 표로 출력한다                       |
 | DATA-006 | 시연 상권과 비교 상권 sample 확정                   | P0       | Backlog     | 1    | DATA-005   | 최소 2개 상권과 카페·음식점·베이커리·편의점 분석이 가능하다 |
-| DB-001   | Supabase PostgreSQL schema·migration·seed          | P0       | Backlog     | Phase 2 | ARCH-002, DATA-004 | Alembic schema와 canonical SQLite 이관 row count·핵심 조회가 일치한다 |
+| DB-001   | Supabase PostgreSQL schema·migration·전체 canonical seed | P0 | Backlog | Phase 2 | ARCH-002, DATA-004 | 4개 UI 분류로 축소하지 않고 검증된 전체 table·업종 row count와 핵심 조회가 SQLite 기준과 일치한다 |
+| DATA-007 | 운영 수집 범위·요청 시점·갱신·보존 정책 결정       | P1       | Backlog     | Later | DB-001 | 지원 지역, source별 전체/증분 방식, 실행 주기, quota, raw 보존·rollback 기준을 승인하고 자동화 Task 범위를 확정한다 |
 
 ### EPIC-03. 상권 분석 엔진과 FastAPI
 
@@ -129,6 +130,8 @@ Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API�
 | ANALYSIS-003 | 개업·폐업·영업기간 변화 계산                  | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 기간별 집계와 표본 부족 상태를 구분한다               |
 | ANALYSIS-004 | 생활인구·매출 시간대 특성 계산                | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 시간대 값과 실제/추정/관찰 source type을 반환한다     |
 | ANALYSIS-005 | 설명 가능한 입지 점수와 템플릿 리포트         | P0       | Done    | 2    | ANALYSIS-002~004          | SCORE-001에서 총점, 신뢰도, 근거와 제한 API를 구현했다 |
+| SCORE-002    | 점수 공식 1.1 누락·fixture·근거 안전성 보완 | P0       | Backlog | Phase 2 | DB-001, API-002           | 중립 수축, fixture hard gate, freshness·sample·cluster confidence와 blocker 회귀 test가 통과한다 |
+| SCORE-003    | 업종별 profile과 과거 결과 calibration     | P1       | Backlog | Later | SCORE-002, ANALYSIS-002~004 | 최소 5개 분기의 out-of-time 평가로 승인된 profile만 versioning한다 |
 | API-001      | SQLite repository와 seed/import 연결          | P0       | Done    | 2    | DATA-004                  | canonical data를 저장하고 반복 조회한다               |
 | API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | In Progress | 2 | API-001, ANALYSIS-002~005 | 상권·업종은 연결, 반경별 query가 남았다               |
 | API-003      | validation·empty·provider error contract 구현 | P0       | Backlog | 2    | API-002                   | 오류 상태와 근거 부족 상태가 HTTP/test로 구분된다     |
@@ -152,6 +155,7 @@ Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작�
 | MAP-001 | 연남·홍대·합정 상권 비교군 고정           | P0       | Done    | 3    | -                     | selector와 비교표에 가까운 3개 상권만 표시된다             |
 | MAP-002 | LocalTwin 2.5D 지도와 원본 fallback       | P0       | Done    | 3    | MAP-001               | 실제 footprint 기반 전용 지도와 원본 지도를 전환한다       |
 | MAP-003 | 상권별 LocalTwin 지도 data와 style 자체 구성 | P0       | Done    | 3    | MAP-002               | 외부 basemap 없이 로컬 도로·건물·POI GeoJSON을 렌더링한다  |
+| MAP-004 | 핵심 점포 stylized 3D storefront와 업종 asset system | P1 | Backlog | Phase 2 | ARCH-002, SEARCH-001, WEB-003 | 핵심 점포만 GLB·material·UV decal·대표 장식으로 표시하고 미분류·실패는 marker로 fallback한다 |
 | DESIGN-001 | 업종별 low-poly 점포 prefab 고도화        | P1       | Done    | 3    | MAP-003               | 지붕·창문·간판·차양·화분으로 후보 점포를 구분한다          |
 
 ### EPIC-05. 보조 3D 장면 탐색
@@ -205,16 +209,22 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 
 1. `PLAN-002` Phase 1 기준선과 인계 문서·Issue 정합성 확인
 2. `SEC-001 A단계` 공개 위험을 먼저 줄이기 위한 Scene API 제품 환경 기본 차단 (Done)
-3. `ARCH-002` 실제 서비스 source와 문서의 물리 폴더·배포 artifact 분리
+3. `ARCH-002` 실제 서비스 source와 문서의 물리 폴더·배포 artifact 분리 (Done)
 4. `WEB-008` FE 파일 구조를 기능별로 분리하고 state 경계를 정리 (Done early)
-5. `DB-001` Supabase PostgreSQL schema, SQLAlchemy/Alembic과 canonical data 이관
+5. `DB-001` Supabase PostgreSQL schema, SQLAlchemy/Alembic과 검증된 전체 canonical data·업종 이관
 6. `SEARCH-001` 제한된 시연 상권·점포 검색 API와 React의 최소 vertical slice 연결
 7. `ANALYSIS-002` 100m/300m/500m 반경별 공간 query
-8. `WEB-002` filter·URL·요청·지도·패널 동기화
-9. `EVAL-002` Front-API 통합 smoke test
-10. `SEC-001 B단계`와 `SEC-002`~`SEC-008` 인증·privacy·resource·정보노출·배포 hardening
-11. `SCENE-002`, `SCENE-007` 승인된 사용자 촬영 입력의 익명화·end-to-end 검증
-12. `DEPLOY-001`, `DOCS-004` 배포 검증과 최종 문서 정합성 마감
+8. `SCORE-002` 점수 공식 1.1 누락·fixture·freshness·집적 보정 안전성 수정
+9. `WEB-002` filter·URL·요청·지도·패널 동기화
+10. `WEB-003` 실제 점포 marker와 경쟁·수요 Layer 연결
+11. `EVAL-002` Front-API 통합 smoke test
+12. `MAP-004` 실제 검색 결과 중 핵심 점포만 stylized 3D storefront로 표현
+13. `SEC-001 B단계`와 `SEC-002`~`SEC-008` 인증·privacy·resource·정보노출·배포 hardening
+14. `SCENE-002`, `SCENE-007` 승인된 사용자 촬영 입력의 익명화·end-to-end 검증
+15. `DEPLOY-001`, `DOCS-004` 배포 검증과 최종 문서 정합성 마감
+16. `DATA-007` 운영 수집 범위·요청 시점·갱신 주기·raw 보존 정책 결정 후 자동화 Task 확정
+17. `ANALYSIS-003`, `ANALYSIS-004` multi-period 성장·안정성 metric 준비
+18. `SCORE-003` multi-period 데이터로 업종별 profile·peer group·band calibration
 
 Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전체를 이번 주 핵심 서비스 연결보다 먼저 구현하지 않는다. 사용자 촬영 E2E는 privacy와 입력 검증이 완료된 뒤에만 수행한다. 동시에 진행하는 Task는 원칙적으로 1개다.
 
@@ -223,7 +233,7 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | 일자 | Task | 완료 기준 |
 | --- | --- | --- |
 | D1 | PLAN-002, SEC-001 A단계 | 현재 구현 기준선이 기록되고 제품 환경에서 Scene route가 기본 차단된다 |
-| D2 | ARCH-002 | 제품과 문서가 물리 폴더·배포 artifact 수준에서 분리된다 |
+| D2 | ARCH-002 | 제품과 문서가 물리 폴더·배포 artifact 수준에서 분리된다 (Done) |
 | D3 | WEB-008 | 기존 화면 동작을 유지한 채 FE 기능·component·state 파일이 분리된다 |
 | D4 | DB-001 | Supabase schema와 migration이 적용되고 canonical data의 핵심 row count가 일치한다 |
 | D5 | SEARCH-001 | 제한된 시연 데이터에서 검색 → 선택 → 핵심 분석 화면 진입이 실제 API로 동작한다 |
@@ -281,3 +291,7 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | 2026-07-13 | EPIC-07과 SEC-001~008 추가 | 보안 점검을 실행 가능한 Task와 Task Packet 단위로 관리하기 위해 |
 | 2026-07-13 | ARCH-002·WEB-008·DB-001·SEARCH-001과 의존 순서 추가 | 서비스 경계부터 최소 검색 연결까지 이번 주에 가능한 vertical slice로 복원하기 위해 |
 | 2026-07-13 | SEC-001 A단계와 WEB-008 조기 완료 | 공개 Scene route를 기본 차단하고 FE server/UI state 경계를 후속 DB·검색 연결 전에 고정하기 위해 |
+| 2026-07-14 | DB-001 전체 canonical seed와 DATA-007 추가 | DB에는 전체 검증 데이터를 보존하고 4개 업종은 현재 UI 지원 범위로만 두며 운영 요청 시점은 후속 결정하기 위해 |
+| 2026-07-14 | ARCH-002 완료 | 실행 source를 `product/`로 이동하고 제품·문서 artifact를 독립 build·검사하도록 분리하기 위해 |
+| 2026-07-14 | MAP-004 상세 3D storefront 계획 추가 | 일반 건물은 가볍게 유지하고 실제 검색의 핵심 점포만 확장 가능한 업종 asset system으로 표현하기 위해 |
+| 2026-07-14 | SCORE-002·003 공식 보완 계획 추가 | 명확한 논리 오류를 먼저 수정하고 업종별 weight는 과거 결과 검증 뒤에만 채택하기 위해 |
