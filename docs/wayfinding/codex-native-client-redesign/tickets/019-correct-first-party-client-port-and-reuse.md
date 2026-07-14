@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: task
-- State: open
+- State: claimed
 - Blocked by: [ADR 0008을 대체할 architecture decision을 기록한다](015-record-superseding-architecture-decision.md)
 
 ## Question
