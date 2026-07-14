@@ -76,13 +76,16 @@ curl -s $BASE/openapi.json | python3 -c "import json,sys; print(sorted(json.load
 | `userAnswer`가 빈 문자열 | `422`. DB 제약이 `char_length(user_answer) > 0`이다 |
 | `anchorType`이 목록 밖의 값 | `422`. `whole_content`, `highlight`, `timestamp`, `user_quote` |
 
-## 발견 사항 (미해결)
+## 도메인 값의 기준은 DB다
 
-**프론트엔드와 DB의 미션 타입 이름이 다르다.**
+서비스 화면과 API는 DB의 check 제약을 그대로 따른다.
 
-| | 값 |
+| 대상 | 허용값 |
 | --- | --- |
-| `frontend/src/components/ProjectInfo.tsx` | `question`, `rebut`, `connect`, `express` |
-| DB `mission_records.mission_type` check 제약 | `question`, `rebuttal`, `connection`, `expression` |
+| `mission_records.mission_type` | `question`, `rebuttal`, `connection`, `expression` |
+| `mission_records.anchor_type` | `whole_content`, `highlight`, `timestamp`, `user_quote` |
+| `interests.launch_status` | `active`, `curated_only`, `hidden`, `preparing` |
+| `articles.content_type` | `article`, `blog`, `video` |
+| `articles.source_type` | `news`, `official_blog`, `expert_article` |
 
-미션 저장을 구현하면 **`rebut`, `connect`, `express`가 전부 check 제약에 걸려 실패한다.** 어느 쪽에 맞출지 정해야 한다.
+`frontend/src/components/ProjectInfo.tsx`는 서비스 화면이 아니라 **프로젝트 소개 페이지**다. 자체적으로 쓰는 이름(`rebut`, `connect`, `express`)이 있지만 DB와 무관하며, 서비스 도메인의 기준이 아니다.
