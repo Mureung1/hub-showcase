@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { postingsApi, Posting } from '../utils/apiClient'
+import { postingsApi, profileApi, Posting } from '../utils/apiClient'
 import PostingCard from '../components/PostingCard'
 import { GoogleCalendarButton } from '../components/GoogleCalendarButton'
 
@@ -24,8 +24,20 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [profile, setProfile] = useState<any>(null)
 
   const limit = 12
+
+  const loadProfile = async () => {
+    try {
+      const response = await profileApi.fetch()
+      if (response?.data) {
+        setProfile(response.data)
+      }
+    } catch (err) {
+      console.error('프로필 로드 실패:', err)
+    }
+  }
 
   const fetchPostings = async (category: Category, page: number) => {
     setIsLoading(true)
@@ -45,6 +57,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
   }
 
   useEffect(() => {
+    loadProfile()
     fetchPostings(selectedCategory, offset / limit)
   }, [selectedCategory, offset])
 
@@ -85,19 +98,38 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
 
         {/* 프로필 박스 */}
         <div style={{ backgroundColor: '#f8f9fa', borderRadius: '10px', padding: '12px', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>김</span>
-            </div>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 600, lineHeight: 1.3 }}>김지수</div>
-              <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: 1.3 }}>경상국립대 3학년</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-            <span style={{ backgroundColor: '#ede9fe', color: '#6366f1', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '9999px' }}>컴퓨터공학과</span>
-            <span style={{ backgroundColor: '#f5f5f5', color: '#374151', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '9999px' }}>3학년</span>
-          </div>
+          {profile ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{profile.userId?.charAt(0).toUpperCase() || '?'}</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, lineHeight: 1.3 }}>{profile.userId || '사용자'}</div>
+                  <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: 1.3 }}>{profile.major || '전공미정'} {profile.grade || ''}학년</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                {profile.major && (
+                  <span style={{ backgroundColor: '#ede9fe', color: '#6366f1', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '9999px' }}>
+                    {profile.major}
+                  </span>
+                )}
+                {profile.grade && (
+                  <span style={{ backgroundColor: '#f5f5f5', color: '#374151', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '9999px' }}>
+                    {profile.grade}학년
+                  </span>
+                )}
+                {profile.residenceRegion && (
+                  <span style={{ backgroundColor: '#f0fdf4', color: '#16a34a', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '9999px' }}>
+                    {profile.residenceRegion}
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: '12px', color: '#6b7280', padding: '8px 0' }}>프로필을 불러오는 중...</div>
+          )}
         </div>
 
         {/* 네비게이션 */}
@@ -127,19 +159,18 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
           ))}
         </nav>
 
-        {/* 스마트 추천 카드 */}
+        {/* 스마트 추천 카드 - 7단계에서 활성화 */}
         <div style={{
           marginTop: '16px',
           backgroundColor: '#fff',
           border: '1px solid #e5e7eb',
-          borderLeft: '3px solid #6366f1',
+          borderLeft: '3px solid #d1d5db',
           borderRadius: '8px',
           padding: '12px',
+          opacity: 0.6,
         }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: '#6366f1', marginBottom: '4px' }}>✦ 스마트 추천</div>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: '#111', lineHeight: 1.4, marginBottom: '4px' }}>2025 SW 해커톤</div>
-          <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: 1.4, marginBottom: '8px' }}>기말고사 2주 전 마감</div>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: '#6366f1', cursor: 'pointer' }}>확인하기 →</div>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#9ca3af', marginBottom: '4px' }}>✦ 스마트 추천 (준비 중)</div>
+          <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: 1.4 }}>캘린더 일정을 등록하면 최적의 공고를 추천해드립니다.</div>
         </div>
       </aside>
 
@@ -166,7 +197,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: '#9ca3af' }}>🔍</span>
           </div>
           <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <span style={{ color: '#fff', fontSize: '12px', fontWeight: 600 }}>김</span>
+            <span style={{ color: '#fff', fontSize: '12px', fontWeight: 600 }}>{profile?.userId?.charAt(0).toUpperCase() || '?'}</span>
           </div>
         </div>
 
@@ -180,7 +211,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
                 {selectedCategory === 'all' ? '내 맞춤 공고' : CATEGORIES.find(c => c.value === selectedCategory)?.label}
               </h1>
               <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '3px' }}>
-                프로필 기준 {total}개 공고 매칭됨 · 경상남도 · 컴퓨터공학과
+                프로필 기준 {total}개 공고 매칭됨 {profile?.residenceRegion && `· ${profile.residenceRegion}`} {profile?.major && `· ${profile.major}`}
               </p>
             </div>
 

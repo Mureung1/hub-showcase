@@ -5,9 +5,6 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import { postingsApi, calendarEventsApi, Posting } from '../utils/apiClient'
 import EventModal from '../components/EventModal'
-import '@fullcalendar/core/index.global.css'
-import '@fullcalendar/daygrid/index.global.css'
-import '@fullcalendar/timegrid/index.global.css'
 
 interface CalendarEvent {
   id: string
