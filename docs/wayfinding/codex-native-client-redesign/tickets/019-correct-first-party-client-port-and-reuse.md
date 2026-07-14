@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: task
-- State: resolved
+- State: open
 - Blocked by: [ADR 0008을 대체할 architecture decision을 기록한다](015-record-superseding-architecture-decision.md)
 
 ## Question
@@ -20,6 +20,15 @@
 Completed Tickets 011·012·017과 ADR 0010의 process-lifetime tombstone, contradiction/poison, 장기 actor 보존 등 upstream 근거가 약한 강화 정책을 다시 열어 supersede 또는 축소한다. Tickets 005·006의 evidence에는 Python SDK, Rust client facade와 TUI projection 근거를 보완한다. ADR 0010은 protocol 기반 자체 설계가 아니라 first-party client behavior를 TypeScript external stdio Seam에 source-guided port한다는 결정을 기존 이력을 보존해 개정한다.
 
 기존 commit/history와 유효한 evidence는 reset/revert하지 않는다. 현재 하부 primitive를 이유 없이 폐기하거나 기존 자체 정책을 새 foundation contract로 자동 승격하지 않는다. 이 ticket에서 code replacement를 구현하지 않으며, Source·Standards·Spec 독립 review와 link/diff integrity를 통과한 뒤에만 Ticket 016을 다음 frontier로 둔다.
+
+## Ticket 016에서 재개한 범위
+
+아키텍처 준비 상태 검토에서 Source는 0 findings였지만 code-unit 네 분류가 완결되지 않았다는 Spec P2와 문서 Standards findings가 발견되어 이 ticket을 다시 열었다. 아래 기존 Answer와 review checkpoint는 당시 결과로 보존하고, 다음 session은 다음 항목을 교정한 뒤 전체 범위를 재리뷰한다.
+
+- `capability-slots.ts`·test와 관련 root/package export를 실제 Runtime Harness consumer까지 추적해 네 범주 중 하나로 명시한다. `capability-slots`는 Runtime Harness 전용 보존 대상이며 `src/index.ts`와 package export는 symbol별 보존·제거 결과를 기록한다.
+- ADR 0010을 먼저 고쳐 Host와 external preparation의 Interface 위치를 `Seam`으로 통일하고 Ticket 015, development backlog와 map 소비 문구에 파급한다.
+- Tickets 005·006의 `Blocked by`를 읽을 수 있는 title과 relative link 조합으로 고친다.
+- Ticket 014의 일반 설명어 `Disposition`·`Migration`을 한국어로 교정한다.
 
 ## Answer
 

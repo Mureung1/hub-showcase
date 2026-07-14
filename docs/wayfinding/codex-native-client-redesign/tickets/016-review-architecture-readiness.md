@@ -1,9 +1,9 @@
-# 016 — Source·runtime·repository 기준으로 architecture readiness를 리뷰한다
+# 016 — Source·runtime·repository 기준으로 아키텍처 준비 상태를 리뷰한다
 
 ## Wayfinder ticket
 
 - Type: task
-- State: claimed
+- State: open
 - Blocked by: [First-party client 근거로 port와 재사용 계획을 교정한다](019-correct-first-party-client-port-and-reuse.md)
 
 ## Question
@@ -15,6 +15,16 @@
 현재 구현 사실과 채택한 target을 구분하고, foundation Interface가 multi-turn, streaming, interrupt/steer, `thread/read`·`thread/resume`, activity projection과 추가 Server request의 후속 source-guided tracer를 불필요하게 막지 않으며 `AYPLE adapter`나 product policy를 현재 readiness 조건으로 삼지 않는지도 확인한다.
 
 Review는 Source·Standards·Spec을 독립적으로 수행하고, finding이 있으면 owning decision ticket을 다시 open한다.
+
+## 진행 메모
+
+Fixed point `6ed88e40`에서 첫 준비 상태 검토를 수행했다.
+
+- Source: 0 findings. Evidence authority와 T0·T0-C·T0.1 근거는 spec으로 전환하기에 충분하다. Fresh Client `RequestId` allocator, exact Server ID parser, count+UTF-8 byte cap, scope-local overflow·invalid-notification 처리와 Python CLI pin 차이의 fake/live 검증은 추가 Wayfinder 결정이 아니라 resulting spec의 explicit deployment obligations다.
+- Standards: 3 findings. ADR 0010과 소비 문서의 `Seam` 어휘, Tickets 005·006의 readable blocking link, Ticket 014의 한국어 일반 설명어를 교정해야 한다. 이 ticket title은 finding 환류와 함께 한국어로 고쳤다.
+- Spec: 1 finding. `capability-slots.ts`·test와 root/package export가 Ticket 019의 네 범주 감사에서 빠져 있다. 실제 Runtime Harness consumer를 보존하는 처리 방침은 추론할 수 있지만 “완결·상호배타적 분류”를 아직 증명하지 못한다.
+
+Question의 finding 환류 규칙에 따라 [First-party client 근거로 port와 재사용 계획을 교정한다](019-correct-first-party-client-port-and-reuse.md)를 다시 열고 이 ticket을 `open`으로 돌렸다. 다음 review는 Ticket 019가 다시 `resolved`된 뒤 수행한다.
 
 ## Answer
 
