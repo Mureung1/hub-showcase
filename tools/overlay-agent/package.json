@@ -1,0 +1,13 @@
+{
+  "name": "photo-navigation-overlay-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node src/generate-overlay.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "sharp": "^0.34.2"
+  }
+}
