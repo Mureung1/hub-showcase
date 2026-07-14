@@ -1,4 +1,12 @@
-import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
+
+const serverRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+
+// 공통 설정은 앱 루트 .env에서 읽고, 서버 전용 .env가 있으면 그 값으로 덮어쓴다.
+dotenv.config({ path: path.resolve(serverRoot, "../.env") });
+dotenv.config({ path: path.resolve(serverRoot, ".env"), override: true });
 
 // 환경변수를 한 곳에서 읽어 검증한다. (형식/기본값은 여기서만 관리)
 export const config = {
