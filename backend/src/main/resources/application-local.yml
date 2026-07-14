@@ -15,3 +15,7 @@ spring:
 logging:
   level:
     org.hibernate.SQL: debug
+
+seoul:
+  api:
+    key: ${SEOUL_API_KEY}

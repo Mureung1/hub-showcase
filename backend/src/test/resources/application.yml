@@ -1,0 +1,16 @@
+spring:
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+
+  test:
+    database:
+      replace: none
+
+seoul:
+  api:
+    key: test-key

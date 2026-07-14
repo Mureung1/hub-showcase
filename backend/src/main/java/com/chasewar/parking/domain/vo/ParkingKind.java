@@ -1,5 +1,6 @@
 package com.chasewar.parking.domain.vo;
 
+import java.util.Arrays;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -13,4 +14,11 @@ public enum ParkingKind {
 
     private final String code;
     private final String description;
+
+    public static ParkingKind fromCode(String code) {
+        return Arrays.stream(values())
+                .filter(parkingKind -> parkingKind.code.equals(code))
+                .findFirst()
+                .orElse(UNKNOWN);
+    }
 }
