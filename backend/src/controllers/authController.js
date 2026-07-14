@@ -6,6 +6,7 @@ import database from "../config/database.js";
 export async function register(req, res) {
   const { email, password, name } = req.body;
 
+  // 빈 값 검사
   if (!email || !password || !name) {
     return res.status(400).json({
       success: false,
@@ -13,6 +14,7 @@ export async function register(req, res) {
     });
   }
 
+  // 같은 이메일이 있는지 확인
   const existingUser = database
     .prepare("SELECT * FROM users WHERE email = ?")
     .get(email);
@@ -26,6 +28,7 @@ export async function register(req, res) {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  // 회원 저장
   const result = database
     .prepare(`
       INSERT INTO users (email, password, name)
@@ -63,6 +66,8 @@ export async function login(req, res) {
     });
   }
 
+  // 사용자가 입력한 암호랑 DB에 저장된 암호화된 값이랑 비교해서 맞으면 true 클리면 false
+  // 여기서 중요한 점은 절대 암호를 복호화하지 않는다는 것이야.
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) {
@@ -72,6 +77,7 @@ export async function login(req, res) {
     });
   }
 
+  // 로그인 성공 시 JWT 토큰을 만드는 코드
   const token = jwt.sign(
     {
       userId: user.id,
@@ -79,10 +85,11 @@ export async function login(req, res) {
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: "1d",
+      expiresIn: "1d",           // 토큰을 하루 동안 유효하게 만든다는 뜻
     },
   );
 
+  // 로그인의 마지막 단계!_로그인 성공 응답 보내기
   return res.json({
     success: true,
     message: "로그인 성공",
