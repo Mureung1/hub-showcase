@@ -17,9 +17,9 @@ Pinned Rust `codex-app-server-client`에는 external stdio child adapter가 없�
 - response waiter가 ingress reader를 소유하거나 막지 않게 하고, notification과 Server request를 계속 drain한다.
 - response는 direction과 exact `RequestId`로 demultiplex하고, connection terminal은 남은 waiter 전체에 한 번 전파한다.
 - request 호출 surface와 single-consumer event surface를 분리하고, initialize와 shutdown을 명시적 lifecycle로 둔다.
-- generated protocol validation, queue bound, timeout·unknown outcome과 anomaly 정책은 pinned external boundary에 맞게 별도로 결정한다.
+- generated protocol validation, queue bound, timeout·unknown outcome과 anomaly 정책은 pinned external Seam에 맞게 별도로 결정한다.
 
-가져오지 않을 것은 Python의 unbounded early queue, remote의 unbounded event queue, transport마다 다른 lossless tier, test helper의 synchronous reader와 embedded Rust ambient state를 노출하는 거대한 start arguments다. Active map miss인 unknown·late response no-op와 remove-on-response는 first-party baseline이므로 process-lifetime tombstone·global contradiction terminal로 강화하지 않는다. Exact timeout·overflow·invalid notification과 JavaScript lossless ID parsing은 TypeScript deployment adaptation으로 후속 spec이 명시한다.
+가져오지 않을 것은 Python의 unbounded early queue, remote의 unbounded event queue, transport마다 다른 lossless tier, test helper의 synchronous reader와 embedded Rust ambient state를 노출하는 거대한 start arguments다. Active map miss인 unknown·late response no-op와 remove-on-response는 first-party 기준선이므로 process-lifetime tombstone·global contradiction terminal로 강화하지 않는다. Exact timeout·overflow·invalid notification과 JavaScript lossless ID parsing은 TypeScript deployment adaptation으로 후속 spec이 명시한다.
 
 ### Ticket 019 first-party client 보완
 
@@ -27,7 +27,7 @@ Pinned Rust `codex-app-server-client`에는 external stdio child adapter가 없�
 - Python [`Client`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/sdk/python/src/openai_codex/client.py#L196-L477)는 child lifecycle을, [reader/writer loop](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/sdk/python/src/openai_codex/client.py#L795-L860)는 sole reader와 serialized writer를 소유한다.
 - Rust [`RemoteAppServerClient`](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-client/src/remote.rs#L200-L477)는 active pending request만 검사·제거하고 disconnect에서 current pending만 settle한다.
 
-Current baseline과 현재 코드 disposition은 [Ticket 019 감사](019-first-party-client-port-and-reuse-audit.md)가 소유한다. 아래 Rust·server-side 조사는 유효한 보완 근거지만 “Python external stdio client가 없다”는 옛 전제에는 더 이상 권위가 없다.
+현재 기준 동작과 코드 처리 방침은 [Ticket 019 감사](019-first-party-client-port-and-reuse-audit.md)가 소유한다. 아래 Rust·server-side 조사는 유효한 보완 근거지만 “Python external stdio client가 없다”는 옛 전제에는 더 이상 권위가 없다.
 
 ## 조사 범위와 근거 권위
 
@@ -64,7 +64,7 @@ Python SDK
      <-> codex app-server --listen stdio://
      -> sole reader + serialized writer + active waiters + per-turn early FIFO
 
-AY-PLE target boundary
+AY-PLE target Seam
   -> AY-PLE-owned child/process connection
      <-> codex app-server --listen stdio://
      -> generated-schema-backed request/event interface
@@ -178,7 +178,7 @@ Drop은 stdin을 닫고 최대 5초 child exit를 poll한 뒤 `kill()`하고 `wa
 
 | 관심사 | 운영 `InProcess` client | 운영 `Remote` client | 운영 App Server stdio | Test 전용 stdio helper | AY-PLE에 주는 제약 |
 | --- | --- | --- | --- | --- | --- |
-| Bootstrap | Facade가 embedded runtime start와 initialize 완료 | Connect loop가 socket과 initialize/initialized 소유 | Server process가 stdio connection task를 생성하고 Remote Control connection이 공존할 수 있음 | Helper가 child spawn 후 initialize call | External stdio child supervisor와 handshake, ambient Remote Control 격리를 AY-PLE connection boundary 내부에 둔다. |
+| Bootstrap | Facade가 embedded runtime start와 initialize 완료 | Connect loop가 socket과 initialize/initialized 소유 | Server process가 stdio connection task를 생성하고 Remote Control connection이 공존할 수 있음 | Helper가 child spawn 후 initialize call | External stdio child supervisor와 handshake, ambient Remote Control 격리를 AY-PLE Connection Seam 내부에 둔다. |
 | Transport 소유자 | Typed channel facade worker + lower runtime | Worker 하나가 WebSocket/UDS stream 소유 | Reader task와 writer task, central processor | Caller stack이 stdin/stdout 소유 | stdin writer와 stdout reader의 authority를 중복시키지 않는다. |
 | Response demux | Lower runtime pending map + oneshot | Worker pending map, exact live ID | Server가 direction별 envelope를 processor로 전달 | Matching response를 synchronous scan | Pending registry는 connection owner가 소유하고 caller에 ingress를 넘기지 않는다. |
 | Notification·Server request drain | Worker가 lower event를 계속 읽음 | 같은 worker read branch가 event로 변환 | Per-thread listener가 central outgoing path로 보냄 | Response wait loop가 일부 variant를 inline 처리 | Request wait와 event drain은 독립적으로 진행돼야 한다. |

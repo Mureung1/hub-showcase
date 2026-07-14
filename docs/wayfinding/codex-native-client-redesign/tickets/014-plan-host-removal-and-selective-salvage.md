@@ -16,7 +16,7 @@ Current integration history와 native Codex app-data를 훼손하지 않으면�
 
 [기존 Host 제거와 선별 재사용 migration plan](../assets/014-host-removal-and-selective-salvage-plan.md)을 이 ticket의 실행 순서와 gate로 채택한다.
 
-> **Ticket 019 correction:** Replace-don't-layer, durable Host consumer 0, Runtime Harness·native app-data 보호와 generated/schema/layout/JSONL primitive의 선별 이식은 유지한다. Process-lifetime late sink/tombstone, permanent actor poison과 long-lived actor retention은 migration gate에서 제거한다. `CodexStdioTransport`는 class로 재사용하지 않고 child·sole reader·exact typed ID·validator·cleanup primitive와 test intent만 새 Connection으로 추출한다. `CodexRawClient`·기존 fake App Server는 developer Runtime Harness에만 보존하고, Host·fake Host·root export는 새 conformance가 green일 때 compatibility 없이 제거한다. Current code-unit disposition은 [first-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)가 소유한다.
+> **Ticket 019 교정:** Replace-don't-layer, durable Host consumer 0, Runtime Harness·native app-data 보호와 generated/schema/layout/JSONL primitive의 선별 이식은 유지한다. Process-lifetime late sink/tombstone, permanent actor poison과 long-lived actor retention은 migration gate에서 제거한다. `CodexStdioTransport`는 class로 재사용하지 않고 child·sole reader·exact typed ID·validator·cleanup primitive와 test intent만 새 Connection으로 추출한다. `CodexRawClient`·기존 fake App Server는 developer Runtime Harness에만 보존하고, Host·fake Host·root export는 새 conformance가 green일 때 compatibility 없이 제거한다. 현재 code-unit 처리 방침은 [first-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)가 소유한다.
 
 ### Replace-not-layer로 진행한다
 

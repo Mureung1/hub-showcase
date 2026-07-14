@@ -12,7 +12,7 @@ Pinned generated schema의 wire shape와 Rust source/tests의 method별 observab
 
 ADR은 decisions JSON/generated inventory coverage ledger, lifecycle fact/source-test authority와 fake/live external conformance의 역할을 분리하고, T0·T0-C·T0.1 뒤 multi-turn·streaming·control·resume·activity tracer를 확장할 수 있는 경계를 포함한다. Three-root preparation은 external capability로만 다루고 TUI·Exec surface policy, 사용하지 않는 method와 `AYPLE adapter`를 foundation에 포팅하지 않는다. Product composition correction은 out-of-scope [첫 AY-PLE adapter tracer와 runtime readiness gate](018-decide-first-ayple-adapter-tracer.md)의 future evidence이며 이 ADR의 blocker나 책임이 아니다.
 
-> **Ticket 019 correction:** ADR 0010의 Connection → ConversationRuntime 경계와 Host supersede는 유지한다. 근거 권위는 generated schema·Rust method source/tests뿐 아니라 Python external stdio client, Rust client facade와 TUI projection/pending request까지 확장했고, protocol 기반 자체 정책 대신 first-party behavior의 source-guided TypeScript port로 명시했다. Lifetime tombstone·permanent poison·global semantic arbiter는 baseline에서 제거했다. Current amendment는 [first-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)가 소유한다.
+> **Ticket 019 교정:** ADR 0010의 Connection → ConversationRuntime Seam과 Host supersede는 유지한다. 근거 권위는 generated schema·Rust method source/tests뿐 아니라 Python external stdio client, Rust client facade와 TUI projection/pending request까지 확장했고, protocol 기반 자체 정책 대신 first-party behavior의 source-guided TypeScript port로 명시했다. Lifetime tombstone·permanent poison·global semantic arbiter는 기준선에서 제거했다. 현재 개정은 [first-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)가 소유한다.
 
 ## Answer
 

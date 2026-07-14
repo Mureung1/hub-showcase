@@ -14,9 +14,9 @@ Caller의 `approve_once | decline | cancel`을 generated `accept | decline | can
 
 [첫 Server request variant 비교](../assets/008-server-request-variant-comparison.md)의 근거를 사용하되 `acceptForSession`, exec·network policy amendment, additional permissions, remembered·automatic approval, 실제 browser UI·audit record와 다른 Server request variant는 포함하지 않는다. Package-private source-guided envelope lifecycle은 재사용하지만 public generic responder와 product approval policy는 만들지 않는다. Answer는 command approval inventory row, source/test evidence, deterministic fake-child oracle과 필요한 narrow live probe를 연결하되 구현 gate 전 integration status를 승격하지 않는다.
 
-## Ticket 019 correction
+## Ticket 019 교정
 
-[First-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)가 이 ticket의 current T0.1 disposition을 보완한다. Regular-only scope, original Server `RequestId`, native thread·turn·item correlation, active pending의 atomic claim/remove-once, `serverRequest/resolved`·turn transition·disconnect cleanup, no automatic decision과 raw wire shape 비공개는 유지한다. 아래 Answer의 process-lifetime seen-ID/actor tombstone, sequential reuse 금지, conflicting reuse global fail-close, cross-owner permanent actor poison·compact sink는 supersede한다. TUI처럼 active entry를 answer 또는 resolution에서 먼저 remove하고 이후 local answer/resolved repeat은 stale/no-op로 끝낸다. Connection write 성공은 command outcome이 아니며 command `item/completed`와 `turn/completed` authority 분리는 유지한다.
+[First-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)가 이 ticket의 현재 T0.1 처리 방침을 보완한다. Regular-only scope, original Server `RequestId`, native thread·turn·item correlation, active pending의 atomic claim/remove-once, `serverRequest/resolved`·turn transition·disconnect cleanup, no automatic decision과 raw wire shape 비공개는 유지한다. 아래 Answer의 process-lifetime seen-ID/actor tombstone, sequential reuse 금지, conflicting reuse global fail-close, cross-owner permanent actor poison·compact sink는 supersede한다. TUI처럼 active entry를 answer 또는 resolution에서 먼저 remove하고 이후 local answer/resolved repeat은 stale/no-op로 끝낸다. Connection write 성공은 command outcome이 아니며 command `item/completed`와 `turn/completed` authority 분리는 유지한다.
 
 ## Answer
 

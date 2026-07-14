@@ -8,7 +8,7 @@
 
 ## Question
 
-해결한 결정과 superseding ADR이 pinned generated schema, Python external stdio client, Rust `codex-app-server-client`, TUI `ThreadEventStore`·pending request, method source/tests, ADR 0005·0006과 문서 소유권에 일치하며 implementation-ready runtime foundation spec으로 넘어갈 때 남은 blocking fog가 없는가? `CodexAppServerConnection → CodexConversationRuntime` seam, external preparation capability와 기존 Runtime Harness 보호 경계뿐 아니라 [Ticket 019의 code-unit disposition](../assets/019-first-party-client-port-and-reuse-audit.md)이 보존·추출/개조·Harness-only·제거의 네 범주로 완결됐는지 확인한다.
+해결한 결정과 superseding ADR이 pinned generated schema, Python external stdio client, Rust `codex-app-server-client`, TUI `ThreadEventStore`·pending request, method source/tests, ADR 0005·0006과 문서 소유권에 일치하며 implementation-ready runtime foundation spec으로 넘어갈 때 남은 blocking fog가 없는가? `CodexAppServerConnection → CodexConversationRuntime` Seam, external preparation capability와 기존 Runtime Harness 보호 Seam뿐 아니라 [Ticket 019의 code-unit 처리 방침](../assets/019-first-party-client-port-and-reuse-audit.md)이 보존·추출/개조·Harness-only·제거의 네 범주로 완결됐는지 확인한다.
 
 각 adopted T0·T0-C·T0.1 row의 wire shape, source/test 의미, intended unit/fake/live oracle와 singular owner가 resulting spec에 있고, decisions JSON에서 generated inventory를 deterministic하게 재생성하며 legacy `client-host` claim을 migration할 implementation gate가 빠지지 않았는지 확인한다. Baseline이 active-only exact request routing, method-specific early FIFO, per-thread projection, remove-on-resolution과 current-pending disconnect settlement인지, lifetime tombstone·permanent poison·global causal/semantic arbiter와 automatic reconciliation을 stale oracle에서 다시 끌어오지 않는지도 검토한다. Actor/mailbox와 retention은 필요한 method lifecycle을 구현하는 package-private 선택이지 공개 invariant로 고정하지 않는다.
 

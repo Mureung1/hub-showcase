@@ -12,9 +12,9 @@ Generated schema, pinned Rust source/tests, deterministic unit test, fake child 
 
 Package-owned [`codex-method-decisions.json`](../../../../packages/runtime-codex/codex-method-decisions.json)을 tracer coverage ledger로 확장해 method별 tracer, semantic owner, required·tolerated·unsupported·deferred 상태, integration/adoption, source/test evidence, fake/live oracle와 verification 상태를 어떤 machine-readable schema로 기록할 것인가? 현재 `client-host` taxonomy와 destructive-before-version-check generation gap을 어떻게 교체하고, decisions source에서 generated [method inventory](../../../architecture/codex-app-server-method-inventory.md)를 안전하고 deterministic하게 재생성·drift-check할 것인가? Inventory는 ordering·identity authority의 근거로 사용하지 않는다.
 
-## Ticket 019 correction
+## Ticket 019 교정
 
-Evidence authority 분리, ledger v2·safe generation, unit/fake/live selector와 planned/implemented promotion rule은 유지한다. [First-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)에 따라 source selector에 Python external stdio client, Rust client facade와 TUI projection/pending request를 추가하고, 아래 matrix의 process-lifetime tombstone·poison oracle은 active waiter removal, per-turn early FIFO와 terminal/unregister cleanup, disconnect `fail_all`, per-thread projection, active approval remove-on-resolution과 duplicate terminal idempotence oracle로 대체한다. 이 correction만으로 decisions JSON이나 generated inventory를 변경하거나 integration을 승격하지 않는다.
+Evidence authority 분리, ledger v2·safe generation, unit/fake/live selector와 planned/implemented promotion rule은 유지한다. [First-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)에 따라 source selector에 Python external stdio client, Rust client facade와 TUI projection/pending request를 추가하고, 아래 matrix의 process-lifetime tombstone·poison oracle은 active waiter removal, per-turn early FIFO와 terminal/unregister cleanup, disconnect `fail_all`, per-thread projection, active approval remove-on-resolution과 duplicate terminal idempotence oracle로 대체한다. 이 교정만으로 decisions JSON이나 generated inventory를 변경하거나 integration을 승격하지 않는다.
 
 ## Answer
 
