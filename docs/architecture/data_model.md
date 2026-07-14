@@ -28,14 +28,14 @@
 
 ## 3. User
 
-Google 로그인을 통해 생성되는 서비스 사용자이다.
+Firebase Authentication으로 식별되는 서비스 사용자이다. 초기에는 Google 로그인만 제공하며, 후속 인증 방식을 연결해도 Firebase UID를 사용자 식별 기준으로 유지한다.
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---:|---|
 | `id` | string | O | 서비스 내부 사용자 ID |
-| `googleSubject` | string | O | Google ID token의 변경되지 않는 `sub` 값 |
-| `email` | string | O | Google이 제공한 이메일 |
-| `name` | string | O | 사용자 이름 |
+| `firebaseUid` | string | O | Firebase Authentication의 변경되지 않는 `uid` 값 |
+| `email` | string \| null | X | Firebase가 제공한 이메일 |
+| `name` | string \| null | X | Firebase가 제공한 사용자 이름 |
 | `profileImageUrl` | string \| null | X | 프로필 이미지 |
 | `createdAt` | string | O | 생성 시각 |
 | `updatedAt` | string | O | 수정 시각 |
@@ -43,39 +43,32 @@ Google 로그인을 통해 생성되는 서비스 사용자이다.
 ```ts
 interface User {
   id: string;
-  googleSubject: string;
-  email: string;
-  name: string;
+  firebaseUid: string;
+  email: string | null;
+  name: string | null;
   profileImageUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
 ```
 
-API에서는 Google 외부 식별자와 내부 날짜를 노출하지 않고 다음 형태를 사용한다.
+API에서는 Firebase 외부 식별자와 내부 날짜를 노출하지 않고 다음 형태를 사용한다.
 
 ```ts
 interface CurrentUser {
   id: string;
-  email: string;
-  name: string;
+  email: string | null;
+  name: string | null;
   profileImageUrl: string | null;
 }
 
-interface GoogleLoginRequest {
-  credential: string;
-}
-
-interface GoogleLoginResponse {
-  user: CurrentUser;
-}
 ```
 
 ### 제약
 
-- `googleSubject`는 사용자마다 고유하고 변경하지 않는다.
-- 이메일은 변경될 수 있으므로 Google 사용자의 외부 식별 키로 사용하지 않는다.
-- Google credential과 access token은 User에 저장하지 않는다.
+- `firebaseUid`는 사용자마다 고유하고 변경하지 않는다.
+- 이메일은 변경되거나 제공되지 않을 수 있으므로 외부 사용자 식별 키로 사용하지 않는다.
+- Firebase ID 토큰과 provider access token은 User에 저장하지 않는다.
 
 ### PostgreSQL 물리 모델
 
@@ -84,9 +77,9 @@ interface GoogleLoginResponse {
 | 컬럼 | PostgreSQL 타입 | NULL | 키·기본값 | 설명 |
 |---|---|---:|---|---|
 | `id` | `uuid` | 불가 | PK | 애플리케이션에서 `crypto.randomUUID()`로 생성 |
-| `google_subject` | `varchar(255)` | 불가 | UNIQUE | Google ID token의 `sub` 값 |
-| `email` | `varchar(320)` | 불가 |  | Google이 제공한 이메일 |
-| `name` | `varchar(100)` | 불가 |  | 사용자 이름 |
+| `firebase_uid` | `varchar(128)` | 불가 | UNIQUE | Firebase Authentication의 `uid` 값 |
+| `email` | `varchar(320)` | 가능 |  | Firebase가 제공한 이메일 |
+| `name` | `varchar(100)` | 가능 |  | Firebase가 제공한 사용자 이름 |
 | `profile_image_url` | `text` | 가능 |  | 프로필 이미지 URL |
 | `created_at` | `timestamptz` | 불가 | `CURRENT_TIMESTAMP` | 생성 시각 |
 | `updated_at` | `timestamptz` | 불가 | `CURRENT_TIMESTAMP` | 마지막 수정 시각 |
@@ -97,35 +90,7 @@ interface GoogleLoginResponse {
 
 ---
 
-## 4. Session
-
-Google 신원 확인 후 서비스의 로그인 상태를 유지하는 서버 세션이다.
-
-```ts
-interface Session {
-  id: string;
-  userId: string;
-  createdAt: string;
-  lastActiveAt: string;
-  expiresAt: string;
-  absoluteExpiresAt: string;
-}
-```
-
-### 제약
-
-- 한 User는 여러 Session을 가질 수 있다.
-- 세션은 마지막 활동 후 24시간 또는 생성 후 7일 중 먼저 도달한 시점에 만료한다.
-- 세션 ID는 암호학적으로 안전한 난수이며 사용자 정보나 권한을 포함하지 않는다.
-- 운영 쿠키는 `__Host-recipebook.sid` 이름을 사용하고 `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`로 제한한다.
-- 로그인 성공 시 기존 요청의 세션 ID를 이어 쓰지 않고 새 세션을 생성한다.
-- 로그아웃은 현재 Session을 제거하고, 전체 로그아웃은 해당 User의 모든 Session을 제거한다.
-- 세션 ID 원문과 CSRF 토큰을 애플리케이션 로그에 남기지 않는다.
-- 메모리 세션 저장소는 로컬 개발에서만 사용한다.
-
----
-
-## 5. Recipe
+## 4. Recipe
 
 사용자의 레시피북에 저장된 레시피이다.
 
@@ -196,7 +161,7 @@ type RecipeDetail = Omit<Recipe, "deletedAt">;
 
 ---
 
-## 6. Ingredient
+## 5. Ingredient
 
 ```ts
 interface Ingredient {
@@ -213,7 +178,7 @@ interface Ingredient {
 
 ---
 
-## 7. RecipeStep
+## 6. RecipeStep
 
 ```ts
 interface RecipeStep {
@@ -227,7 +192,7 @@ interface RecipeStep {
 
 ---
 
-## 8. RecipeSource
+## 7. RecipeSource
 
 ```ts
 interface RecipeSource {
@@ -244,7 +209,7 @@ interface RecipeSource {
 
 ---
 
-## 9. 목록용 레시피
+## 8. 목록용 레시피
 
 목록 API에서는 다음 필드만 반환한다.
 
@@ -266,7 +231,7 @@ interface RecipeSummary {
 
 ---
 
-## 10. AI 구조화 요청과 응답
+## 9. AI 구조화 요청과 응답
 
 ### 요청
 
@@ -326,7 +291,7 @@ interface StructureRecipeResponse {
 
 ---
 
-## 11. 레시피 생성과 메모 요청
+## 10. 레시피 생성과 메모 요청
 
 ```ts
 interface CreateRecipeRequest {
@@ -350,7 +315,7 @@ interface UpdateRecipeMemoRequest {
 
 ---
 
-## 12. 공유
+## 11. 공유
 
 ### 공통 표시 모델
 
@@ -448,7 +413,7 @@ interface ReceivedRecipeInfo {
 
 ---
 
-## 13. 삭제와 감사 기록
+## 12. 삭제와 감사 기록
 
 레시피 삭제는 30일 동안 복원할 수 있는 soft delete로 처리한다.
 
@@ -470,12 +435,12 @@ interface RecipeAuditEvent {
 - 복원 시 `deletedAt`을 `null`로 변경한다.
 - 삭제 후 30일 동안 복원할 수 있으며 MVP에는 즉시 영구 삭제 기능이 없다.
 - 삭제와 복원은 각각 감사 이벤트로 남긴다.
-- 감사 이벤트에는 세션 ID, Google credential, 레시피 본문을 저장하지 않는다.
+- 감사 이벤트에는 Firebase ID 토큰, provider access token, 레시피 본문을 저장하지 않는다.
 - 30일 경과 레시피의 실제 삭제 방식과 감사 이벤트 보존 기간은 데이터 접근 방식 및 운영 정책 확정 시 결정한다.
 
 ---
 
-## 14. 공통 API 응답
+## 13. 공통 API 응답
 
 ### 성공
 
@@ -504,10 +469,7 @@ interface ApiError {
 
 - `UNAUTHORIZED`
 - `FORBIDDEN`
-- `CSRF_TOKEN_INVALID`
-- `ORIGIN_NOT_ALLOWED`
 - `VALIDATION_ERROR`
-- `GOOGLE_CREDENTIAL_INVALID`
 - `RECIPE_NOT_FOUND`
 - `INVALID_URL`
 - `URL_NOT_ALLOWED`
@@ -525,10 +487,9 @@ interface ApiError {
 
 ---
 
-## 15. 개념 관계
+## 14. 개념 관계
 
 ```text
-User 1 ─── N Session
 User 1 ─── N Recipe
 Recipe 1 ─── N Ingredient
 Recipe 1 ─── N RecipeStep
@@ -545,14 +506,13 @@ Recipe 1 ─── 0..1 ReceivedRecipeInfo
 
 ---
 
-## 16. PostgreSQL 물리 모델
+## 15. PostgreSQL 물리 모델
 
 전체 물리 모델은 `docs/architecture/db.vuerd.json`을 기준으로 한다. ERD의 읽는 법과 테이블별 설명은 [ERD 안내서](db_erd_guide.md)를 참고한다.
 
 | 테이블 | PK | 주요 관계와 제약 |
 |---|---|---|
-| `users` | `id` | `google_subject` UNIQUE |
-| `sessions` | `id_hash` | `user_id` FK, 세션과 CSRF 원문 미저장 |
+| `users` | `id` | `firebase_uid` UNIQUE |
 | `recipes` | `id` | `owner_id` FK, 유형은 `OWNED`·`EXTERNAL`·`RECEIVED` |
 | `ingredients` | `recipe_id, position` | Recipe 1:N |
 | `recipe_steps` | `recipe_id, position` | Recipe 1:N |
@@ -569,7 +529,7 @@ Recipe 1 ─── 0..1 ReceivedRecipeInfo
 
 ---
 
-## 17. 후속 범위
+## 16. 후속 범위
 
 ### 조리 팁
 

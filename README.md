@@ -10,6 +10,10 @@
 1. 레시피 수집 및 정리
 2. 관계 중심 레시피 공유
 
+## 인증
+
+Firebase Authentication을 사용한다. 초기 MVP에서는 Google 로그인만 제공하고, 핵심 레시피 흐름이 완성된 뒤 이메일/비밀번호와 카카오 로그인을 추가한다. Firebase는 인증에만 사용하며, 사용자와 레시피 데이터는 Express와 PostgreSQL에서 관리한다.
+
 ## 핵심 서비스 흐름
 ```mermaid
 flowchart TD

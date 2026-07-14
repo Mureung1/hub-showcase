@@ -28,32 +28,14 @@ Google 로그인
 /api
 ```
 
-### 인증과 세션
+### 인증
 
-- MVP 인증은 Google Identity Services 기반 Google 로그인만 지원한다.
-- Google 로그인 성공 후 Express가 서버 세션을 생성하고 브라우저에는 의미 없는 세션 ID만 쿠키로 전달한다.
-- 세션 쿠키는 운영 환경에서 `__Host-recipebook.sid` 이름과 `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/` 속성을 사용하며 `Domain` 속성을 설정하지 않는다.
-- 인증 토큰과 세션 ID를 `localStorage`, `sessionStorage`, 애플리케이션 로그에 저장하지 않는다.
-- 세션은 마지막 활동 후 24시간이 지나면 만료되고, 계속 활동하더라도 로그인 후 7일이 지나면 만료된다.
-- 로그인 성공 시 세션 ID를 새로 발급해 세션 고정 공격을 방지한다.
-- 세션 ID는 암호학적으로 안전한 난수로 생성하며 사용자 정보나 권한을 포함하지 않는다.
-- 인증되지 않았거나 만료된 세션은 `401 UNAUTHORIZED`를 반환한다.
-- 메모리 세션 저장소는 로컬 개발에서만 사용하며 운영 환경에서는 PostgreSQL `sessions` 테이블을 사용한다.
-
-서버 세션을 선택한 이유는 다음과 같다.
-
-- 현재 서비스는 React 웹과 Express API로 구성된 단일 웹 서비스이므로 JWT 기반 분산 인증이 필요하지 않다.
-- 탈취가 의심되는 세션을 서버에서 즉시 폐기할 수 있다.
-- 사용자의 모든 세션을 한 번에 폐기하는 기능을 단순하게 구현할 수 있다.
-- JWT의 refresh token, 토큰 회전, 폐기 목록을 별도로 운영하지 않아도 되어 3주 MVP에 적합하다.
-
-### CSRF 방어
-
-- `POST /api/auth/google`을 제외한 인증된 상태 변경 요청은 세션에 연결된 CSRF 토큰이 필요하다.
-- 프론트엔드는 `GET /api/auth/csrf-token`으로 토큰을 받은 뒤 `X-CSRF-Token` 헤더에 담는다.
-- 서버는 토큰 누락 또는 불일치 요청을 `403 CSRF_TOKEN_INVALID`로 거부한다.
-- 상태를 변경하는 동작은 `GET` 요청으로 구현하지 않는다.
-- `POST /api/auth/google`은 아직 서비스 세션이 없으므로 CSRF 토큰 대신 Google credential 검증과 허용된 `Origin` 검사를 수행한다.
+- Firebase Authentication을 사용하며 초기 MVP에서는 Google 로그인만 제공한다.
+- 프론트엔드는 Firebase에서 받은 ID 토큰을 보호 API의 `Authorization: Bearer <Firebase ID token>` 헤더로 전달한다.
+- Express는 Firebase Admin SDK로 각 요청의 ID 토큰 서명, 발급자, 대상 프로젝트와 만료 시간을 검증하고 `uid`로 서비스 사용자를 조회하거나 생성한다.
+- 인증되지 않았거나 만료·위조된 ID 토큰은 `401 UNAUTHORIZED`를 반환한다.
+- Firebase ID 토큰과 인증 credential은 애플리케이션 로그에 남기지 않는다.
+- Bearer 토큰은 브라우저가 자동 전송하는 쿠키 인증이 아니므로 별도 CSRF 토큰을 사용하지 않는다. 상태 변경은 계속 `GET` 요청으로 구현하지 않는다.
 
 ### 성공 응답
 
@@ -117,59 +99,19 @@ Google 로그인
 
 ## 4. 인증
 
-### `POST /api/auth/google`
-
-Google Identity Services가 발급한 ID token credential을 검증하고 서비스 세션을 생성한다. 처음 로그인한 Google 사용자는 서비스 사용자로 함께 생성한다.
-
-#### 인증
-
-불필요
-
-#### 요청
-
-```json
-{
-  "credential": "google-id-token"
-}
-```
-
-#### 처리 규칙
-
-- 서버에서 Google ID token의 서명, issuer, audience, 만료 시간을 검증한다.
-- Google 사용자의 변경되지 않는 `sub` 값을 외부 사용자 식별자로 사용한다.
-- 이메일은 사용자 표시와 연락 정보로만 사용하고 외부 사용자 식별자로 사용하지 않는다.
-- 로그인 성공 시 기존 요청의 세션 ID를 재사용하지 않고 새 세션을 생성한다.
-
-#### 성공 응답
-
-```json
-{
-  "data": {
-    "user": {
-      "id": "user-id",
-      "email": "user@example.com",
-      "name": "사용자",
-      "profileImageUrl": null
-    }
-  }
-}
-```
-
-#### 오류
-
-- `VALIDATION_ERROR`
-- `GOOGLE_CREDENTIAL_INVALID`
-- `ORIGIN_NOT_ALLOWED`
-
----
-
 ### `GET /api/auth/me`
 
-현재 로그인한 사용자 정보를 조회한다.
+Firebase ID 토큰으로 식별된 현재 서비스 사용자 정보를 조회한다. 로그인과 로그아웃은 Firebase 클라이언트 SDK가 처리하며, 별도 로그인·로그아웃 API는 제공하지 않는다.
 
 #### 인증
 
 필요
+
+#### 헤더
+
+```text
+Authorization: Bearer firebase-id-token
+```
 
 #### 성공 응답
 
@@ -187,84 +129,6 @@ Google Identity Services가 발급한 ID token credential을 검증하고 서비
 #### 오류
 
 - `UNAUTHORIZED`
-
----
-
-### `GET /api/auth/csrf-token`
-
-현재 세션에 연결된 CSRF 토큰을 조회한다.
-
-#### 인증
-
-필요
-
-#### 성공 응답
-
-```json
-{
-  "data": {
-    "csrfToken": "csrf-token"
-  }
-}
-```
-
-#### 오류
-
-- `UNAUTHORIZED`
-
----
-
-### `POST /api/auth/logout`
-
-현재 세션을 폐기한다.
-
-#### 인증
-
-필요
-
-#### 헤더
-
-```text
-X-CSRF-Token: csrf-token
-```
-
-#### 성공 응답
-
-```json
-{
-  "data": {
-    "message": "로그아웃되었습니다."
-  }
-}
-```
-
----
-
-### `POST /api/auth/logout-all`
-
-현재 사용자의 모든 세션을 폐기한다. 세션 탈취가 의심될 때 계정 보안 화면에서 사용한다.
-
-#### 인증
-
-필요
-
-#### 헤더
-
-```text
-X-CSRF-Token: csrf-token
-```
-
-#### 성공 응답
-
-현재 요청의 세션을 포함한 모든 세션을 폐기하므로 응답 후 다시 로그인해야 한다.
-
-```json
-{
-  "data": {
-    "message": "모든 기기에서 로그아웃되었습니다."
-  }
-}
-```
 
 ---
 
@@ -383,7 +247,7 @@ URL 또는 직접 입력 내용을 AI가 레시피 초안으로 정리한다. �
 #### 헤더
 
 ```text
-X-CSRF-Token: csrf-token
+Authorization: Bearer firebase-id-token
 ```
 
 #### 요청
@@ -452,7 +316,6 @@ X-CSRF-Token: csrf-token
 #### 오류
 
 - `UNAUTHORIZED`
-- `CSRF_TOKEN_INVALID`
 - `VALIDATION_ERROR`
 - `INVALID_URL`
 - `URL_NOT_ALLOWED`
@@ -477,7 +340,7 @@ URL 수집에 실패하면 사용자가 직접 입력으로 계속 진행할 수
 #### 헤더
 
 ```text
-X-CSRF-Token: csrf-token
+Authorization: Bearer firebase-id-token
 ```
 
 #### 요청
@@ -532,7 +395,6 @@ X-CSRF-Token: csrf-token
 #### 오류
 
 - `UNAUTHORIZED`
-- `CSRF_TOKEN_INVALID`
 - `VALIDATION_ERROR`
 - `INVALID_URL`
 - `URL_NOT_ALLOWED`
@@ -552,7 +414,7 @@ X-CSRF-Token: csrf-token
 #### 헤더
 
 ```text
-X-CSRF-Token: csrf-token
+Authorization: Bearer firebase-id-token
 ```
 
 #### 요청
@@ -583,7 +445,6 @@ X-CSRF-Token: csrf-token
 #### 오류
 
 - `UNAUTHORIZED`
-- `CSRF_TOKEN_INVALID`
 - `VALIDATION_ERROR`
 - `RECIPE_NOT_FOUND`
 
@@ -612,7 +473,7 @@ X-CSRF-Token: csrf-token
 #### 헤더
 
 ```text
-X-CSRF-Token: csrf-token
+Authorization: Bearer firebase-id-token
 ```
 
 #### 성공 응답
@@ -631,7 +492,6 @@ X-CSRF-Token: csrf-token
 #### 오류
 
 - `UNAUTHORIZED`
-- `CSRF_TOKEN_INVALID`
 - `RECIPE_NOT_FOUND`
 - `RECIPE_NOT_SHAREABLE`
 
@@ -648,7 +508,7 @@ X-CSRF-Token: csrf-token
 #### 헤더
 
 ```text
-X-CSRF-Token: csrf-token
+Authorization: Bearer firebase-id-token
 ```
 
 #### 성공 응답
@@ -664,7 +524,6 @@ X-CSRF-Token: csrf-token
 #### 오류
 
 - `UNAUTHORIZED`
-- `CSRF_TOKEN_INVALID`
 - `RECIPE_NOT_FOUND`
 - `VIEW_SHARE_NOT_FOUND`
 
@@ -730,7 +589,7 @@ X-CSRF-Token: csrf-token
 #### 헤더
 
 ```text
-X-CSRF-Token: csrf-token
+Authorization: Bearer firebase-id-token
 ```
 
 #### 성공 응답
@@ -761,7 +620,6 @@ X-CSRF-Token: csrf-token
 #### 오류
 
 - `UNAUTHORIZED`
-- `CSRF_TOKEN_INVALID`
 - `RECIPE_NOT_FOUND`
 - `RECIPE_NOT_SHAREABLE`
 
@@ -858,7 +716,7 @@ X-CSRF-Token: csrf-token
 #### 헤더
 
 ```text
-X-CSRF-Token: csrf-token
+Authorization: Bearer firebase-id-token
 ```
 
 #### 요청
@@ -895,7 +753,6 @@ X-CSRF-Token: csrf-token
 #### 오류
 
 - `UNAUTHORIZED`
-- `CSRF_TOKEN_INVALID`
 - `VALIDATION_ERROR`
 - `TRANSFER_INVITATION_NOT_FOUND`
 - `TRANSFER_INVITATION_USED`
@@ -936,12 +793,9 @@ POST   /api/recipes/:recipeId/restore
 
 | 코드 | HTTP 상태 | 의미 |
 |---|---:|---|
-| `UNAUTHORIZED` | 401 | 로그인 필요 또는 세션 만료 |
+| `UNAUTHORIZED` | 401 | 로그인 필요 또는 Firebase ID 토큰이 유효하지 않음 |
 | `FORBIDDEN` | 403 | 접근 권한 없음 |
-| `CSRF_TOKEN_INVALID` | 403 | CSRF 토큰 누락 또는 불일치 |
-| `ORIGIN_NOT_ALLOWED` | 403 | 허용되지 않은 출처의 로그인 요청 |
 | `VALIDATION_ERROR` | 400 | 요청값 오류 |
-| `GOOGLE_CREDENTIAL_INVALID` | 401 | Google credential 검증 실패 |
 | `RECIPE_NOT_FOUND` | 404 | 레시피 없음 또는 조회할 수 없음 |
 | `INVALID_URL` | 400 | URL 형식 오류 |
 | `URL_NOT_ALLOWED` | 400 | 접근이 차단된 URL |
@@ -964,15 +818,12 @@ POST   /api/recipes/:recipeId/restore
 다음 API를 우선 구현한다.
 
 1. `GET /api/health`
-2. `POST /api/auth/google`
+2. Firebase Authentication Google 로그인
 3. `GET /api/auth/me`
-4. `GET /api/auth/csrf-token`
-5. `POST /api/auth/logout`
-6. `POST /api/auth/logout-all`
-7. `GET /api/recipes`
-8. `GET /api/recipes/:recipeId`
-9. `POST /api/ai/recipes/structure`
-10. `POST /api/recipes`
-11. `PATCH /api/recipes/:recipeId/memo`
+4. `GET /api/recipes`
+5. `GET /api/recipes/:recipeId`
+6. `POST /api/ai/recipes/structure`
+7. `POST /api/recipes`
+8. `PATCH /api/recipes/:recipeId/memo`
 
 삭제·복원과 공유 API는 계약을 확정했지만 핵심 흐름 완료 후 구현한다. 조리 팁은 후속 범위로 유지한다.
