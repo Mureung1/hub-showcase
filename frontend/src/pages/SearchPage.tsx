@@ -1,30 +1,12 @@
 import { useState } from 'react'
 import PageHeader from '../components/PageHeader'
-
-interface MockItem {
-  id: string
-  name: string
-}
-
-// TODO(Day 2): replace with GET /api/items/search?q= via TanStack Query
-const MOCK_ITEMS: MockItem[] = [
-  { id: '1', name: '건전지' },
-  { id: '2', name: '우산' },
-  { id: '3', name: '종이팩' },
-  { id: '4', name: '아이스팩' },
-  { id: '5', name: '커피컵' },
-  { id: '6', name: '영수증' },
-  { id: '7', name: '플라스틱 음료병' },
-  { id: '8', name: '형광등' },
-]
+import { useItemSearch } from '../features/search/useItemSearch'
 
 export default function SearchPage() {
   const [query, setQuery] = useState('')
-
   const trimmed = query.trim()
-  const results = trimmed
-    ? MOCK_ITEMS.filter((item) => item.name.includes(trimmed))
-    : MOCK_ITEMS
+
+  const { data: results = [], isLoading, isError } = useItemSearch(query)
 
   return (
     <div>
@@ -40,11 +22,19 @@ export default function SearchPage() {
           />
         </div>
 
-        <div className="mt-6 text-xs font-extrabold tracking-wider text-green-700 uppercase">
-          {trimmed ? '검색 결과' : '자주 검색한 항목'}
-        </div>
+        {trimmed && (
+          <div className="mt-6 text-xs font-extrabold tracking-wider text-green-700 uppercase">
+            검색 결과
+          </div>
+        )}
 
-        {results.length === 0 ? (
+        {!trimmed ? (
+          <p className="mt-3 text-sm text-sub">찾으시는 물건 이름을 입력해 주세요.</p>
+        ) : isLoading ? (
+          <p className="mt-3 text-sm text-sub">검색 중...</p>
+        ) : isError ? (
+          <p className="mt-3 text-sm text-sub">검색 중 오류가 발생했어요. 다시 시도해 주세요.</p>
+        ) : results.length === 0 ? (
           <p className="mt-3 text-sm text-sub">일치하는 품목이 없어요.</p>
         ) : (
           <ul className="mt-3">
