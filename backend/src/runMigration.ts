@@ -1,11 +1,5 @@
-import "dotenv/config";
 import { readFileSync } from "fs";
-import { Pool } from "pg";
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
+import { pool } from "./db";
 
 async function main() {
   const sql = readFileSync("migrations/001_create_tables.sql", "utf-8");
