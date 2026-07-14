@@ -4,9 +4,9 @@ import Icon from './Icon.jsx'
 import './AppLayout.css'
 
 const navItems = [
-  // 허브(대시보드) → 루프 동선(저널→히스토리) → 보조 관리(조건).
+  // 허브(대시보드) → 관심종목 → 루프 히스토리(기록·복기 조회) → 보조 관리(조건 조회).
   { to: '/dashboard', label: '대시보드', icon: 'layout-dashboard' },
-  { to: '/journal', label: '저널', icon: 'notebook' },
+  { to: '/watchlist', label: '관심종목', icon: 'star' },
   { to: '/history', label: '히스토리', icon: 'history' },
   { to: '/conditions', label: '조건 관리', icon: 'list-checks' },
 ]

@@ -119,10 +119,11 @@ function buildAlertPayload(c: ConditionRow, price: number, memory: string | null
   const buttons: Array<Record<string, unknown>> = [
     { type: 2, style: 3, label: "📥 매수 기록", custom_id: `bcn|trade|buy|${c.id}|${price}` },
     { type: 2, style: 4, label: "📤 매도 기록", custom_id: `bcn|trade|sell|${c.id}|${price}` },
+    { type: 2, style: 2, label: "⏸ 관망 기록", custom_id: `bcn|trade|hold|${c.id}|${price}` },
   ];
   const webUrl = Deno.env.get("WEB_APP_URL");
   if (webUrl) {
-    buttons.push({ type: 2, style: 5, label: "웹에서 열기", url: `${webUrl}/journal` });
+    buttons.push({ type: 2, style: 5, label: "웹에서 열기", url: `${webUrl}/stock/${c.ticker}` });
   }
 
   return {
@@ -233,6 +234,21 @@ Deno.serve(async (_req) => {
             await sendChannelMessage(notifyChannelId, payload);
             alerted = true;
             summary.alerted++;
+
+            // 조건 충족 이벤트 이력 (차트 "조건 충족 시점" 마커 원천, 0005_alerts_and_hold.sql).
+            // 0005 미적용 환경(테이블 없음)에서도 알림 발송 자체는 막지 않도록 실패를 삼킨다.
+            if (userId) {
+              const { error: alertInsertError } = await client.from("alerts").insert({
+                user_id: userId,
+                condition_id: c.id,
+                ticker: c.ticker,
+                market: c.market,
+                price,
+              });
+              if (alertInsertError) {
+                console.warn(`alerts insert 실패(0005 미적용 가능): ${alertInsertError.message}`);
+              }
+            }
           } catch (e) {
             summary.errors.push(`알림 발송 실패 ${c.ticker}: ${(e as Error).message}`);
           }

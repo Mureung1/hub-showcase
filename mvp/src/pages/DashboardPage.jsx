@@ -2,41 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { searchSymbols } from '../lib/symbols.js'
+import { fetchQuote, formatPrice, symbolKey } from '../lib/quotes.js'
 import Icon from '../components/Icon.jsx'
+// === MOCK (제거: 이 import + 아래 display* 블록 삭제, 또는 USE_MOCK_DASHBOARD=false) ===
+import {
+  USE_MOCK_DASHBOARD,
+  MOCK_WATCHLIST,
+  MOCK_QUOTES,
+  MOCK_RECENT,
+  MOCK_REVIEWED_IDS,
+} from '../lib/mockDashboard.js'
+// === /MOCK ===
 import './DashboardPage.css'
 
 const SIDE_LABEL = { buy: '매수', sell: '매도', hold: '관망' }
-
-function formatPrice(price, market) {
-  const value = Number(price)
-  if (!Number.isFinite(value)) return '-'
-  return market === 'US'
-    ? `$${value.toLocaleString('en-US')}`
-    : `${value.toLocaleString('ko-KR')}원`
-}
-
-function symbolKey(ticker, market) {
-  return `${ticker}|${market}`
-}
-
-/** market-data 캔들에서 최신가·등락률 계산 */
-async function fetchQuote(item) {
-  if (!supabase) return null
-  try {
-    const { data, error } = await supabase.functions.invoke('market-data', {
-      body: { ticker: item.symbol, market: item.market, exchange: item.exchange ?? null },
-    })
-    if (error || data?.error) return null
-    const candles = data?.candles ?? []
-    if (candles.length === 0) return null
-    const last = candles[candles.length - 1]
-    const prev = candles[candles.length - 2] ?? last
-    const changePct = prev.close ? ((last.close - prev.close) / prev.close) * 100 : 0
-    return { price: last.close, changePct, up: last.close >= prev.close }
-  } catch {
-    return null
-  }
-}
 
 export default function DashboardPage() {
   const navigate = useNavigate()
@@ -54,7 +33,7 @@ export default function DashboardPage() {
   // 스크롤 리빌: 히어로를 지나면 아래 그리드가 드러난다.
   const [scrolled, setScrolled] = useState(false)
 
-  const goSymbol = (ticker) => navigate(`/journal/${ticker}`)
+  const goSymbol = (ticker) => navigate(`/stock/${ticker}`)
 
   // 검색 제출: 첫 결과로 이동 (결과 없으면 무시)
   const submitSearch = () => {
@@ -136,11 +115,22 @@ export default function DashboardPage() {
 
   const hasSupabase = Boolean(supabase)
 
+  // === MOCK (제거: 이 블록 삭제 + mockDashboard import 삭제) ===
+  // 실데이터가 비어 있을 때만 데모용 mock으로 대체(실데이터가 있으면 그대로 우선).
+  const displayWatchlist =
+    USE_MOCK_DASHBOARD && watchlist.length === 0 ? MOCK_WATCHLIST : watchlist
+  const displayQuotes =
+    USE_MOCK_DASHBOARD && Object.keys(quotes).length === 0 ? MOCK_QUOTES : quotes
+  const displayRecent = USE_MOCK_DASHBOARD && recent.length === 0 ? MOCK_RECENT : recent
+  const displayReviewedIds =
+    USE_MOCK_DASHBOARD && recent.length === 0 ? new Set(MOCK_REVIEWED_IDS) : reviewedIds
+  // === /MOCK ===
+
   return (
     <div className={`dashboard${scrolled ? ' is-scrolled' : ''}`}>
       <section className="dash-hero">
         <div className="crumb">대시보드</div>
-        <h1>어떤 종목을 복기할까요?</h1>
+        <h1>어떤 종목을 살펴볼까요?</h1>
         <p className="dash-sub">
           티커를 검색해 차트로 이동하고, 관심 종목과 최근 기록을 한 화면에서 확인하세요.
         </p>
@@ -222,14 +212,16 @@ export default function DashboardPage() {
             )}
           </div>
           <div className="watch-grid">
-            {!hasSupabase && <p className="dash-empty">Supabase 미연결 상태입니다.</p>}
-            {hasSupabase && watchlist.length === 0 && (
+            {!hasSupabase && displayWatchlist.length === 0 && (
+              <p className="dash-empty">Supabase 미연결 상태입니다.</p>
+            )}
+            {hasSupabase && displayWatchlist.length === 0 && (
               <p className="dash-empty">
-                아직 관심 종목이 없어요. 종목을 검색해 저널에서 ⭐로 추가하세요.
+                아직 관심 종목이 없어요. 종목을 검색해 종목 페이지에서 ⭐로 추가하세요.
               </p>
             )}
-            {watchlist.map((w) => {
-              const q = quotes[symbolKey(w.symbol, w.market)]
+            {displayWatchlist.map((w) => {
+              const q = displayQuotes[symbolKey(w.symbol, w.market)]
               return (
                 <div key={w.symbol} className="watch-card">
                   <button className="watch-main" onClick={() => goSymbol(w.symbol)}>
@@ -272,11 +264,11 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="recent">
-            {hasSupabase && recent.length === 0 && (
+            {displayRecent.length === 0 && (
               <p className="dash-empty">아직 매매 기록이 없어요.</p>
             )}
-            {recent.map((t) => {
-              const reviewed = reviewedIds.has(t.id)
+            {displayRecent.map((t) => {
+              const reviewed = displayReviewedIds.has(t.id)
               const body = (
                 <>
                   <div className="recent-main">

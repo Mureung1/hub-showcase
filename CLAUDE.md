@@ -10,6 +10,7 @@
 - **[docs/prd.md](docs/prd.md)** — 상세 구현 스펙: DB 스키마·에이전트 도구 계약·화면 스펙·수용 기준 *(작성 예정)*
 - **[docs/design.md](docs/design.md)** — 디자인 시스템: 색·타이포·간격·컴포넌트 토큰의 단일 원천 (UI 작업 시 필독)
 - **[docs/week2-plan.md](docs/week2-plan.md)** — 2주차 실행 계획: 프로토타입 ↔ MVP 비교 평가 + 우선순위 태스크
+- **[docs/discord-linking.md](docs/discord-linking.md)** — Discord 계정 연동(연동 코드 방식) 설계: DB 마이그레이션·봇 커맨드·웹 UI (T4 착수 전 참조)
 - **[docs/checklist.md](docs/checklist.md)** — 작업 체크리스트 (1단계 MVP / 2단계 다중사용자)
 - **[mockups/](mockups/)** — 핵심 화면 UI 목업(HTML). 스크린샷은 `docs/images/`
 

@@ -35,15 +35,21 @@
   margin-bottom: 10px;
 }
 .dash-hero h1 {
-  font-size: clamp(32px, 4.5vw, 44px);
-  line-height: 116%;
-  letter-spacing: -1px;
+  font-size: clamp(36px, 5vw, 50px);
+  line-height: 114%;
+  letter-spacing: -1.1px;
   margin-bottom: 12px;
 }
 .dash-sub {
   color: var(--text);
-  max-width: 560px;
+  white-space: nowrap;
   margin-bottom: 24px;
+}
+@media (max-width: 760px) {
+  .dash-sub {
+    white-space: normal;
+    max-width: 560px;
+  }
 }
 
 /* 검색 카드 */

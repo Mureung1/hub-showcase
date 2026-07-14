@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import ConditionForm from '../components/ConditionForm.jsx'
 import './ConditionsPage.css'
 
 const OPERATOR_LABEL = { '>=': '이상', '<=': '이하', '>': '초과', '<': '미만' }
@@ -25,8 +25,8 @@ function describeCondition(condition) {
 }
 
 /**
- * 감시 조건 목록: 생성순(desc) 조회, 상태 뱃지, 삭제.
- * 근거: 작업 지시서 §4, docs/prd.md §2(conditions 스키마) §7(화면 스펙)
+ * 감시 조건 조회 전용 화면: 종목별 그룹 + 상태 뱃지 + 삭제.
+ * 조건 추가는 각 종목 페이지(/stock/:ticker)에서 한다 — 여기서는 만들지 않는다.
  */
 function ConditionsPage() {
   const [loading, setLoading] = useState(true)
@@ -89,45 +89,70 @@ function ConditionsPage() {
     setConditions((prev) => prev.filter((condition) => condition.id !== conditionId))
   }
 
+  const groups = useMemo(() => {
+    const map = new Map()
+    for (const condition of conditions) {
+      const key = `${condition.ticker}|${condition.market}`
+      if (!map.has(key)) {
+        map.set(key, { key, ticker: condition.ticker, market: condition.market, items: [] })
+      }
+      map.get(key).items.push(condition)
+    }
+    return [...map.values()]
+  }, [conditions])
+
   return (
     <section className="conditions-page">
       <h1>조건 관리</h1>
-
-      <ConditionForm onCreated={(c) => setConditions((prev) => [c, ...prev])} />
 
       {loading && <p className="conditions-status">불러오는 중...</p>}
       {!loading && error && <p className="conditions-status conditions-status--error">{error}</p>}
 
       {!loading && !error && conditions.length === 0 && (
         <div className="conditions-empty">
-          <p>위에서 종목을 검색해 조건을 추가하거나, Discord에서 /알림 으로 만들어보세요.</p>
+          <p>
+            아직 설정된 조건이 없어요. 대시보드에서 종목을 검색해 종목 페이지에서 조건을
+            추가하거나, Discord에서 <code>/알림</code>으로 만들어보세요.
+          </p>
         </div>
       )}
 
-      {!loading && !error && conditions.length > 0 && (
-        <ul className="conditions-list">
-          {conditions.map((condition) => (
-            <li key={condition.id} className="conditions-row">
-              <div className="conditions-row__main">
-                <div className="conditions-row__name">
-                  {condition.name} <span className="conditions-row__ticker">{condition.ticker}</span>
-                </div>
-                <div className="conditions-row__desc">{describeCondition(condition)}</div>
+      {!loading && !error && groups.length > 0 && (
+        <div className="conditions-groups">
+          {groups.map((group) => (
+            <div key={group.key} className="conditions-group">
+              <div className="conditions-group__head">
+                <span className="conditions-group__name">
+                  {group.ticker} <span className="conditions-row__ticker">{group.market}</span>
+                  <span className="conditions-group__count"> · {group.items.length}건</span>
+                </span>
+                <Link to={`/stock/${group.ticker}`} className="conditions-group__link">
+                  종목 보기 →
+                </Link>
               </div>
-              <span className={`conditions-badge conditions-badge--${condition.status}`}>
-                {STATUS_LABEL[condition.status] ?? condition.status}
-              </span>
-              <button
-                type="button"
-                className="conditions-delete"
-                onClick={() => handleDelete(condition.id)}
-                disabled={deletingId === condition.id}
-              >
-                {deletingId === condition.id ? '삭제 중...' : '삭제'}
-              </button>
-            </li>
+              <ul className="conditions-list">
+                {group.items.map((condition) => (
+                  <li key={condition.id} className="conditions-row">
+                    <div className="conditions-row__main">
+                      <div className="conditions-row__desc">{describeCondition(condition)}</div>
+                    </div>
+                    <span className={`conditions-badge conditions-badge--${condition.status}`}>
+                      {STATUS_LABEL[condition.status] ?? condition.status}
+                    </span>
+                    <button
+                      type="button"
+                      className="conditions-delete"
+                      onClick={() => handleDelete(condition.id)}
+                      disabled={deletingId === condition.id}
+                    >
+                      {deletingId === condition.id ? '삭제 중...' : '삭제'}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </section>
   )

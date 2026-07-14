@@ -28,7 +28,7 @@ export async function searchSymbols(query, limit = 8) {
 }
 
 /**
- * 단일 종목 조회(ticker 기준, market 선택). `/journal/:symbol` 진입 시 종목 메타 확정용.
+ * 단일 종목 조회(ticker 기준, market 선택). `/stock/:ticker` 진입 시 종목 메타 확정용.
  */
 export async function resolveSymbol(ticker, market) {
   if (!supabase || !ticker) return null

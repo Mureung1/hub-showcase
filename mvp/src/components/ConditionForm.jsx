@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { searchSymbols } from '../lib/symbols.js'
+import './ConditionForm.css'
 
 const PRICE_OPERATORS = [
   { value: '>=', label: '이상' },
@@ -27,11 +28,14 @@ function preview({ symbol, type, operator, target, smaWindow }) {
 /**
  * 웹 구조화 조건 추가 폼: 종목 검색 → 조건 타입/연산자/값 → conditions insert(status active).
  * 자연어 파싱(Gemini)은 Discord 전용이라 웹은 구조화 입력을 쓴다.
+ *
+ * @param {object} [fixedSymbol] 지정 시 종목검색 UI를 생략하고 이 종목으로 고정한다
+ *   (StockPage에서 이미 확정된 종목의 조건을 추가할 때 사용).
  */
-export default function ConditionForm({ onCreated }) {
+export default function ConditionForm({ onCreated, fixedSymbol }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
-  const [symbol, setSymbol] = useState(null) // {ticker, market, exchange, name}
+  const [symbol, setSymbol] = useState(fixedSymbol ?? null) // {ticker, market, exchange, name}
 
   const [type, setType] = useState('price')
   const [operator, setOperator] = useState('>=')
@@ -117,8 +121,8 @@ export default function ConditionForm({ onCreated }) {
     }
 
     onCreated?.(data)
-    // 폼 리셋
-    clearSymbol()
+    // 폼 리셋 (fixedSymbol이면 종목은 유지)
+    if (!fixedSymbol) clearSymbol()
     setType('price')
     setOperator('>=')
     setTarget('')
@@ -134,43 +138,52 @@ export default function ConditionForm({ onCreated }) {
     <form className="card cf" onSubmit={handleSubmit}>
       <div className="cf__title">조건 추가</div>
 
-      <div className="cf__field cf__symbol">
-        <label>종목</label>
-        <div className="cf__symbol-wrap">
-          <input
-            type="text"
-            placeholder="삼성전자, NVDA, 005930…"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value)
-              if (symbol) setSymbol(null)
-            }}
-            autoComplete="off"
-          />
-          {symbol && (
-            <button type="button" className="cf__clear" onClick={clearSymbol} aria-label="종목 지우기">
-              ✕
-            </button>
-          )}
-          {results.length > 0 && (
-            <ul className="cf__dropdown">
-              {results.map((s) => (
-                <li key={`${s.ticker}|${s.market}`}>
-                  <button type="button" className="cf__drop-item" onMouseDown={() => selectSymbol(s)}>
-                    <span>
-                      {s.name} <span className="mono cf__drop-ticker">{s.ticker}</span>
-                    </span>
-                    <span className="cf__drop-market">
-                      {s.market}
-                      {s.exchange ? ` · ${s.exchange}` : ''}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+      {fixedSymbol ? (
+        <div className="cf__field cf__symbol">
+          <label>종목</label>
+          <div className="cf__fixed-symbol mono">
+            {fixedSymbol.name} <span className="cf__drop-ticker">{fixedSymbol.ticker}</span>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="cf__field cf__symbol">
+          <label>종목</label>
+          <div className="cf__symbol-wrap">
+            <input
+              type="text"
+              placeholder="삼성전자, NVDA, 005930…"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                if (symbol) setSymbol(null)
+              }}
+              autoComplete="off"
+            />
+            {symbol && (
+              <button type="button" className="cf__clear" onClick={clearSymbol} aria-label="종목 지우기">
+                ✕
+              </button>
+            )}
+            {results.length > 0 && (
+              <ul className="cf__dropdown">
+                {results.map((s) => (
+                  <li key={`${s.ticker}|${s.market}`}>
+                    <button type="button" className="cf__drop-item" onMouseDown={() => selectSymbol(s)}>
+                      <span>
+                        {s.name} <span className="mono cf__drop-ticker">{s.ticker}</span>
+                      </span>
+                      <span className="cf__drop-market">
+                        {s.market}
+                        {s.exchange ? ` · ${s.exchange}` : ''}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="cf__row">
         <div className="cf__field">

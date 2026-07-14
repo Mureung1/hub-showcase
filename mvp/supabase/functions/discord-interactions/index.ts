@@ -617,7 +617,7 @@ async function handlePick(
 
 /**
  * 알림 원클릭 기록 버튼 처리 (research.md §5, monitor 발송 custom_id 계약).
- * custom_id: bcn|trade|{buy|sell}|{condition_id}|{price}
+ * custom_id: bcn|trade|{buy|sell|hold}|{condition_id}|{price}
  * conditions에서 ticker/market을 확보해 trades를 insert하고, 원본 알림 메시지는
  * 그대로 둔 채(type 7 아님) type 4 + ephemeral 새 메시지로 결과만 안내한다.
  */
@@ -629,7 +629,11 @@ async function handleTrade(
 ): Promise<Response> {
   const price = Number(priceRaw);
 
-  if ((side !== "buy" && side !== "sell") || !conditionId || !Number.isFinite(price)) {
+  if (
+    (side !== "buy" && side !== "sell" && side !== "hold") ||
+    !conditionId ||
+    !Number.isFinite(price)
+  ) {
     return messageResponse({
       flags: 1 << 6,
       content: "기록 정보를 처리하지 못했어요.",
@@ -671,12 +675,12 @@ async function handleTrade(
     });
   }
 
-  const sideLabel = side === "buy" ? "매수" : "매도";
+  const sideLabel = side === "buy" ? "매수" : side === "sell" ? "매도" : "관망";
   const lines = [`✅ ${sideLabel} 기록 완료 — ${condition.ticker} @ ${formatNumber(price)}`];
 
   const webAppUrl = Deno.env.get("WEB_APP_URL");
   if (webAppUrl) {
-    lines.push(`${webAppUrl}/journal 에서 메모를 보완하세요`);
+    lines.push(`${webAppUrl}/stock/${condition.ticker} 에서 메모를 보완하세요`);
   }
 
   return messageResponse({

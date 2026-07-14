@@ -165,7 +165,7 @@ function ReviewPage() {
     <section className="review-page">
       <div className="review-topbar">
         <span className="review-brand">🔦 Beacon</span>
-        <span className="review-crumb">· 저널 › AI 복기</span>
+        <span className="review-crumb">· 히스토리 › AI 복기</span>
       </div>
       <h1 className="review-title">AI 복기</h1>
 
@@ -245,7 +245,7 @@ function ReviewPage() {
       )}
 
       <p className="review-back">
-        <Link to="/journal">← 저널로 돌아가기</Link>
+        <Link to="/history">← 히스토리로 돌아가기</Link>
       </p>
     </section>
   )
