@@ -7,10 +7,11 @@
     "dev": "vite",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
+    "docs:priority": "node scripts/docs-update-priority.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier AGENTS.md README.md package.json tsconfig.json eslint.config.js index.html prototype.html prototype.css \"src/**/*.{ts,tsx,css}\" --write",
-    "format:check": "prettier AGENTS.md README.md package.json tsconfig.json eslint.config.js index.html prototype.html prototype.css \"src/**/*.{ts,tsx,css}\" --check",
+    "format": "prettier AGENTS.md README.md package.json tsconfig.json eslint.config.js index.html prototype.html prototype.css \"scripts/**/*.mjs\" \"src/**/*.{ts,tsx,css}\" --write",
+    "format:check": "prettier AGENTS.md README.md package.json tsconfig.json eslint.config.js index.html prototype.html prototype.css \"scripts/**/*.mjs\" \"src/**/*.{ts,tsx,css}\" --check",
     "test": "vitest run"
   },
   "dependencies": {

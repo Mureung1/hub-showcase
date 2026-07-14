@@ -47,6 +47,18 @@ Build the React mock product screens before adding desktop/backend complexity.
 - Tests: colocate near the unit under test as `*.test.ts` or `*.test.tsx`.
 - Keep feature-specific types inside the feature unless they are shared across multiple features.
 
+## Ponytail Working Principle
+
+Before writing code, choose the first rung that solves the task:
+
+1. If the change does not need to exist, skip it.
+2. If the codebase already has the pattern, reuse it.
+3. If the platform, standard library, or installed dependency already solves it, use that.
+4. If a one-line or configuration-only change is enough, prefer it.
+5. Only then write the minimum new code that works.
+
+This is laziness about implementation size, not laziness about reading or safety. Always inspect the touched flow first, and never remove validation, data-loss handling, security, accessibility, or required user feedback to make a change smaller.
+
 ## Commit Convention
 
 Use Korean Conventional Commit messages:

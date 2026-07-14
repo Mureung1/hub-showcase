@@ -26,6 +26,13 @@ Read `AGENTS.md` first for repository-wide engineering rules. Then read these pr
 
 Some older Korean docs may contain mojibake. Prefer readable docs and current feature docs when text conflicts.
 
+## Reference Guides
+
+Load these references only when the task specifically needs the extra interaction guidance:
+
+- `references/desktop.md`: desktop app, Electron-like shell, IDE panels, editor interactions, AI streaming, code execution feedback, and restrained app motion.
+- `references/landing-interactions.md`: onboarding, landing, hero, carousel, CTA, and marketing-style interaction patterns. Do not apply these patterns to dense Workspace IDE screens unless the user explicitly asks.
+
 ## Implementation Context
 
 - Current app: Vite + React + TypeScript + TSX.
@@ -62,6 +69,18 @@ Some older Korean docs may contain mojibake. Prefer readable docs and current fe
 - Trust through sources: official documentation references should be visible when AI explanations appear.
 - Beginner-safe density: keep the interface efficient, but avoid overwhelming panels and vague labels.
 - Theme-ready UI: design core surfaces so light and dark modes can share semantic tokens.
+
+## Learning UX Baseline
+
+When designing screens or generating code for ICU, the result must be beginner-friendly and comfortable for repeated study sessions.
+
+- Make the next learning action obvious without requiring the user to read long explanations.
+- Prefer clear hierarchy, calm density, readable text, and predictable controls over decorative complexity.
+- Keep learning context visible: current goal, current mission, progress, feedback, and next step.
+- Use supportive Korean copy that explains what to do next, not generic AI/product jargon.
+- Avoid UI that makes learners feel lost: hidden primary actions, ambiguous labels, crowded panels, unclear error states, or visual noise.
+- Preserve accessibility basics such as keyboard focus, sufficient contrast, semantic controls, and text that still works when it wraps.
+- When generating code from a design, implement the actual learning workflow controls first: start/resume, mission selection, run/check, hint/review, and return navigation.
 
 ## Required Screen Patterns
 

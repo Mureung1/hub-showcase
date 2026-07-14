@@ -13,6 +13,7 @@ Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입�
 - 코드 리뷰 요청: 현재 코드를 AI 튜터에게 리뷰 요청합니다.
 - 다음 단계: 현재 단계를 완료하고 다음 커리큘럼 단계로 이동합니다.
 - 학습 목록: Today Learning Hub 또는 전체 학습 목록으로 돌아갑니다.
+- 미션 진입: Today Learning Hub에서 전달한 `mission` 쿼리에 맞는 학습 미션을 표시합니다.
 
 ## 화면 구성
 
@@ -24,6 +25,7 @@ Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입�
 
 ## 표시 데이터
 
+- selectedMissionId: URL의 `mission` 쿼리 값입니다. 값이 없으면 `generated-first-mission`을 사용합니다.
 - currentTrack: 트랙 id, 제목, 진행률, 남은 예상 시간
 - curriculumSteps: 커리큘럼 단계 목록과 각 단계 상태
 - activeStep: 현재 단계 제목, 미션, 통과 조건
@@ -64,6 +66,14 @@ Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입�
 - failed: 일부 테스트가 실패했습니다. 실패 이유와 힌트 보기, 다시 실행을 표시합니다.
 - timeout: 실행 제한 시간을 초과했습니다. timeout 5초 기준을 안내하고 코드 구조를 확인하게 합니다.
 
+## 미션 선택 규칙
+
+- `/workspace`처럼 `mission` 쿼리가 없으면 `generated-first-mission`을 기본 미션으로 사용합니다.
+- `generated-first-mission`은 현재 프로필 목표로 생성된 커리큘럼의 오늘 미션을 표시합니다.
+- 그 외 `mission` 값은 `todayQueue`의 item id와 매칭해 큐 기반 미션으로 표시합니다.
+- 매칭되는 큐 항목이 없으면 첫 번째 `todayQueue` 항목을 fallback으로 사용합니다.
+- `ai-review`는 복습/코드 리뷰 성격의 선택 미션으로 표시합니다.
+
 ## AI 튜터 패널 규칙
 
 - 개념 설명은 현재 단계와 직접 관련된 내용만 먼저 보여줍니다.
@@ -80,7 +90,7 @@ Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입�
 ## 구현 우선순위
 
 1. 정적 mock 데이터 기반 워크스페이스 레이아웃을 구현합니다.
-2. Today Hub의 이어서 학습하기에서 이 화면으로 전환합니다.
+2. Today Hub의 이어서 학습하기, 학습 큐, 복습 시작에서 전달한 `mission` 쿼리로 현재 미션을 선택합니다.
 3. 실행 버튼은 우선 mock 상태 전환으로 idle, running, failed, passed를 보여줍니다.
 4. 실제 코드 실행, Judge Service, AI 코드 리뷰는 후속 Electron/Main Process 단계에서 연결합니다.
 ## 테마 기준
@@ -90,3 +100,12 @@ Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입�
 - 다크모드에서는 앱 배경을 순수 검정 대신 네이비/차콜 계열로 두고, 패널 구분은 border와 surface 차이로 처리합니다.
 - Workday 이미지의 밝은 시안과 딥블루는 포커스, 실행 버튼, 진행률, 현재 단계 표시에 사용합니다.
 - 오렌지 계열은 성공/완료 또는 친근한 안내에 제한적으로 사용합니다.
+## Mock 진행 상태 저장
+
+Workspace 상호작용은 `icu.learningProgress` localStorage 값을 통해 mission별로 유지합니다.
+
+- 화면 진입 시 저장된 `runState`, `runAttemptCount`, `activeStepOffset`, 최근 활동 로그를 초기값으로 사용합니다.
+- 실행 결과가 실패 또는 통과로 확정되면 mission progress를 저장합니다.
+- 힌트와 코드 리뷰 요청은 최근 활동 로그에 저장합니다.
+- 다음 단계 이동 시 현재 mission의 `activeStepOffset`을 증가시키고, `completedAt`을 기록한 뒤 실행 상태를 idle로 되돌립니다.
+- 실제 코드 실행, Judge Service, AI 리뷰 API는 아직 연결하지 않고 mock 상태 전환만 저장합니다.
