@@ -128,7 +128,6 @@ LocalTwin/
 - [LocalTwin Dev Harness](../development/harness.md)
 - [검증 가이드](../development/validation.md)
 - [1주차 목요일 진행 보고서](../development/week1-thursday-progress-report.md)
-- [2026-07-14 PR 작업 요약](../development/2026-07-14-pr-summary.md)
 
 ## Active Issues
 
