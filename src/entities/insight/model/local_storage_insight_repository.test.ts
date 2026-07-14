@@ -8,7 +8,7 @@ const INSIGHT_STORAGE_KEY = 'amajda:insights';
 const insight: Insight = {
   id: 'insight-1',
   originalUrl: 'https://www.example.com/articles/1?utm_source=test',
-  normalizedUrl: 'https://example.com/articles/1',
+  normalizedUrl: 'https://www.example.com/articles/1',
   domain: 'example.com',
   title: 'Local-first architecture',
   memo: 'Keep the storage boundary replaceable.',
@@ -146,6 +146,58 @@ describe('createLocalStorageInsightRepository', () => {
     });
   });
 
+  it('isolates semantically corrupted entries and preserves valid neighbors', () => {
+    const storage = new MemoryStorage();
+    const laterInsight: Insight = {
+      ...insight,
+      id: 'insight-2',
+      originalUrl: 'https://later.example/notes/2',
+      normalizedUrl: 'https://later.example/notes/2',
+      domain: 'later.example',
+      title: 'A later valid insight',
+      createdAt: '2026-07-15T00:00:00.000Z',
+      updatedAt: '2026-07-15T01:00:00.000Z',
+    };
+    const invalidEntries = [
+      {
+        ...insight,
+        id: 'invalid-original-url',
+        originalUrl: 'javascript:alert(1)',
+      },
+      {
+        ...insight,
+        id: 'invalid-normalized-url',
+        normalizedUrl: 'https://example.com/a-different-article',
+      },
+      { ...insight, id: 'invalid-domain', domain: 'different.example' },
+      { ...insight, id: '   ' },
+      { ...insight, id: 'invalid-title', title: '' },
+      { ...insight, id: 'empty-domain', domain: '   ' },
+      { ...insight, id: 'invalid-created-at', createdAt: 'not-a-timestamp' },
+      { ...insight, id: 'invalid-updated-at', updatedAt: '2026/07/14' },
+      {
+        ...insight,
+        id: 'updated-before-created',
+        createdAt: '2026-07-15T00:00:00.000Z',
+        updatedAt: '2026-07-14T00:00:00.000Z',
+      },
+    ];
+    storage.setItem(
+      INSIGHT_STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 1,
+        insights: [insight, ...invalidEntries, laterInsight],
+      })
+    );
+
+    expect(
+      insightApi.createLocalStorageInsightRepository(storage).load()
+    ).toEqual({
+      insights: [insight, laterInsight],
+      warnings: ['corrupted-entry'],
+    });
+  });
+
   it('returns a corrupted-store warning for invalid JSON without throwing', () => {
     expect(loadSerializedStore('{')).toEqual({
       insights: [],
@@ -201,7 +253,7 @@ describe('createLocalStorageInsightRepository', () => {
     );
   });
 
-  it('returns a corrupted-store warning when getItem throws', () => {
+  it('returns a read-failed warning when getItem throws', () => {
     let result: unknown;
 
     try {
@@ -214,7 +266,7 @@ describe('createLocalStorageInsightRepository', () => {
 
     expect(result).toEqual({
       insights: [],
-      warnings: ['corrupted-store'],
+      warnings: ['read-failed'],
     });
   });
 

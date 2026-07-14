@@ -1,6 +1,7 @@
 import type { Insight } from './insight';
 
-export type InsightRepositoryWarning = 'corrupted-entry' | 'corrupted-store';
+export type InsightRepositoryWarning =
+  'corrupted-entry' | 'corrupted-store' | 'read-failed';
 
 export type InsightRepositoryLoadResult = {
   insights: Insight[];

@@ -1,19 +1,11 @@
-import type { Insight } from './insight';
 import type {
   InsightRepository,
   InsightRepositoryWarning,
 } from './insight_repository';
+import { parseInsight } from './parse_insight';
 
 const INSIGHT_STORAGE_KEY = 'amajda:insights';
-const REQUIRED_STRING_FIELDS = [
-  'id',
-  'originalUrl',
-  'normalizedUrl',
-  'domain',
-  'title',
-  'createdAt',
-  'updatedAt',
-] as const;
+const INSIGHT_SCHEMA_VERSION = 1;
 
 export function createLocalStorageInsightRepository(
   storage: Storage
@@ -25,7 +17,7 @@ export function createLocalStorageInsightRepository(
       try {
         serializedStore = storage.getItem(INSIGHT_STORAGE_KEY);
       } catch {
-        return { insights: [], warnings: ['corrupted-store'] };
+        return { insights: [], warnings: ['read-failed'] };
       }
 
       if (serializedStore === null) {
@@ -44,7 +36,7 @@ export function createLocalStorageInsightRepository(
         return { insights: [], warnings: ['corrupted-store'] };
       }
 
-      if (parsedStore.schemaVersion !== 1) {
+      if (parsedStore.schemaVersion !== INSIGHT_SCHEMA_VERSION) {
         return { insights: [], warnings: ['corrupted-store'] };
       }
 
@@ -52,7 +44,9 @@ export function createLocalStorageInsightRepository(
         return { insights: [], warnings: ['corrupted-store'] };
       }
 
-      const insights = parsedStore.insights.filter(isInsight);
+      const insights = parsedStore.insights
+        .map(parseInsight)
+        .filter((insight) => insight !== null);
       const warnings: InsightRepositoryWarning[] =
         insights.length === parsedStore.insights.length
           ? []
@@ -64,7 +58,7 @@ export function createLocalStorageInsightRepository(
       try {
         storage.setItem(
           INSIGHT_STORAGE_KEY,
-          JSON.stringify({ schemaVersion: 1, insights })
+          JSON.stringify({ schemaVersion: INSIGHT_SCHEMA_VERSION, insights })
         );
       } catch {
         return { ok: false, reason: 'write-failed' };
@@ -73,26 +67,6 @@ export function createLocalStorageInsightRepository(
       return { ok: true };
     },
   };
-}
-
-function isInsight(value: unknown): value is Insight {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false;
-  }
-
-  const candidate = value as Partial<Record<keyof Insight, unknown>>;
-
-  return (
-    REQUIRED_STRING_FIELDS.every(
-      (field) => typeof candidate[field] === 'string'
-    ) &&
-    isNullableString(candidate.memo) &&
-    isNullableString(candidate.category)
-  );
-}
-
-function isNullableString(value: unknown) {
-  return value === null || typeof value === 'string';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
