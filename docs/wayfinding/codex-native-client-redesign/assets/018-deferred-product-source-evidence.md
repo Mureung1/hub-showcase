@@ -1,12 +1,12 @@
-# Ticket 018 deferred product source evidence
+# Ticket 018에서 보존한 후속 제품 근거
 
-## Status
+## 상태
 
 이 문서는 out-of-scope [첫 AY-PLE adapter tracer와 runtime readiness gate를 결정한다](../tickets/018-decide-first-ayple-adapter-tracer.md)를 조사하면서 확인한 exact-pin 사실만 보존하는 future product evidence다. 현재 runtime foundation의 adopted contract, tracer, ledger row, readiness prerequisite가 아니며 `A0`, Assignment Recipe, `T0-R`, sandbox·approval profile 또는 product Interface를 채택하지 않는다. Future product goal은 당시 pin과 구현된 `CodexConversationRuntime` surface를 기준으로 이 사실을 다시 검증하고 별도 결정을 내려야 한다.
 
-## Preserved observations
+## 보존한 관찰
 
-| Topic | Exact-pin observation | Provenance |
+| 주제 | Exact-pin 관찰 | 근거 |
 | --- | --- | --- |
 | Filesystem path와 structured mention | `UserInput::Mention`은 `app://`·`plugin://` tool target을 나타낸다. 일반 filesystem path는 recognized app/plugin mention이 아니며 non-app path는 explicit mention 수집에서 무시된다. | [protocol input](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/protocol/src/user_input.rs#L42-L51), [model conversion](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/protocol/src/models.rs#L1720-L1766), [non-app path test](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/core/src/plugins/mentions_tests.rs#L52-L75) |
 | First-party file selection | TUI file picker는 선택한 path를 composer text에 넣고 submission에서 `UserInput::Text`로 보낸다. Structured `Mention`은 plugin/app binding에 사용한다. | [file selection](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/tui/src/bottom_pane/chat_composer.rs#L2050-L2060), [path insertion](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/tui/src/bottom_pane/chat_composer.rs#L2512-L2531), [input construction](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/tui/src/chatwidget/input_submission.rs#L178-L292) |
