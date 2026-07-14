@@ -23,7 +23,7 @@ flowchart LR
 
 ## 3. 다음: 실제 제품 MVP
 
-실제 제품은 `src/product/`의 React UI와 `server/`의 Express API를 독립적으로 운영합니다. 초기 MVP에서는 샘플 공고 데이터를 사용하되, 입력 직무에 따라 분석 결과와 로드맵이 달라지도록 구현합니다.
+실제 제품은 `product/`의 React UI와 `server/`의 Express API를 독립적으로 운영합니다. 초기 MVP에서는 샘플 공고 데이터를 사용하되, 입력 직무에 따라 분석 결과와 로드맵이 달라지도록 구현합니다.
 
 ```mermaid
 flowchart TD

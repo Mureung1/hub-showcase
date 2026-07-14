@@ -1,5 +1,4 @@
-/* 디자인 토큰: docs/design-tokens.md, prototype/style.css와 값을 맞춘다.
-   프로젝트 소개 화면(index.css)의 전역 배경과 충돌하지 않도록 .product-page 안에서만 쓴다. */
+/* 디자인 토큰: docs/design-tokens.md, prototype/style.css와 값을 맞춘다. */
 .product-page {
   --color-bg: #F8FAFC;
   --color-surface: #FFFFFF;

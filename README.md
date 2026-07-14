@@ -27,11 +27,29 @@
 
 `prototype/index.html`을 브라우저에서 열면 됩니다. 세 페이지는 HTML/CSS만 사용하며 `prototype/style.css`를 공유합니다. 별도 설치, 개발 서버, JavaScript가 필요하지 않습니다.
 
-### React 개발 환경
+### 프로젝트 소개 React 화면 (`project-intro/`)
 
-루트 Vite 환경은 프로젝트 소개 페이지와 이후 실제 제품 React 구현을 위한 영역입니다.
+프로젝트 소개 페이지 전용 독립 Vite 환경입니다. 실제 서비스와 코드를 공유하지 않습니다.
 
 ```powershell
+cd project-intro
+npm install
+npm.cmd run dev
+```
+
+빌드와 린트는 아래처럼 확인합니다.
+
+```powershell
+npm.cmd run build
+npm.cmd run lint
+```
+
+### 실제 제품 React 화면 (`product/`)
+
+실제 서비스 React 코드를 위한 독립 Vite 환경입니다.
+
+```powershell
+cd product
 npm install
 npm.cmd run dev
 ```
@@ -63,13 +81,26 @@ hub/
     roadmap.html  (03 학습 로드맵)
     style.css
 
-  src/
-    internal/project-intro/  (프로젝트 소개 React 화면)
-    product/                 (향후 실제 서비스 React 코드)
-    shared/                  (실제 재사용 필요 시 생성)
+  project-intro/              (독립 Vite+React 앱: 프로젝트 소개 화면)
+    package.json
+    vite.config.js
+    index.html
+    src/
 
-  server/                    (향후 product 전용 Express 서버)
+  product/                    (독립 Vite+React 앱: 실제 서비스 화면)
+    package.json
+    vite.config.js
+    index.html
+    src/
+      pages/
+      data/
+      components/
+      services/
+
+  server/                     (product 전용 Express 서버, 독립 실행 환경)
 ```
+
+`prototype/`, `project-intro/`, `product/`, `server/`는 각자 독립 실행 환경입니다. 서로 코드나 `node_modules`를 공유하지 않으며, 한쪽을 수정해도 다른 쪽 실행에 영향을 주지 않습니다.
 
 ## 현재 구현 상태
 
@@ -89,5 +120,5 @@ hub/
 ## 다음 단계
 
 1. 와이어프레임을 작성해 실제 제품의 화면 전환과 상태를 설계합니다.
-2. `src/product/`에 React 기반 MVP를 구현합니다.
+2. `product/`에 React 기반 MVP를 구현합니다.
 3. `server/`에 Express API와 분석 데이터 흐름을 추가합니다.
