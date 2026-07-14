@@ -3,4 +3,5 @@ dist/
 .worktrees/
 .env
 .env.*
+!.env.example
 npm-debug.log*

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 
 import {
   filterInsights,
@@ -53,11 +53,15 @@ const LOAD_WARNING_MESSAGES: Record<
   },
 };
 
-export function AuthenticatedWorkspace({
-  repository,
-}: {
+export type AuthenticatedWorkspaceProps = {
+  accountControl?: ReactNode;
   repository?: InsightRepository;
-}) {
+};
+
+export function AuthenticatedWorkspace({
+  accountControl,
+  repository,
+}: AuthenticatedWorkspaceProps) {
   const workspaceRepository = useMemo(
     () => repository ?? createBrowserInsightRepository(),
     [repository]
@@ -195,7 +199,11 @@ export function AuthenticatedWorkspace({
           <span aria-hidden="true" className="workspace-brand__divider" />
           <h1>{getScreenTitle(activeTab)}</h1>
         </div>
-        <p className="workspace-connection-status">이 브라우저에 로컬 저장됨</p>
+        {accountControl ?? (
+          <p className="workspace-connection-status">
+            이 브라우저에 로컬 저장됨
+          </p>
+        )}
       </header>
 
       <main className="workspace-main">
