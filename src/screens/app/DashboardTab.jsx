@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import './tabs.css'
 
 export default function DashboardTab() {
@@ -9,8 +10,7 @@ export default function DashboardTab() {
       <div className="tab-empty">
         <h2>진행중인 프로젝트가 없습니다.</h2>
         <p>새 프로젝트를 시작해볼까요?</p>
-        {/* 프로젝트 생성 플로우는 다음 단계에서 연결 */}
-        <button type="button" className="btn btn-dark">새 프로젝트 시작하기</button>
+        <Link to="/projects/new" className="btn btn-dark">새 프로젝트 시작하기</Link>
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router'
+import { Link, NavLink, Outlet } from 'react-router'
 import logo from '../assets/logo.png'
 import './AppLayout.css'
 
@@ -40,8 +40,7 @@ export default function AppLayout() {
         </nav>
 
         <div className="sidebar-bottom">
-          {/* 프로젝트 생성 플로우는 다음 단계에서 연결 */}
-          <button type="button" className="btn btn-dark sidebar-new">＋ 새 프로젝트 만들기</button>
+          <Link to="/projects/new" className="btn btn-dark sidebar-new">＋ 새 프로젝트 만들기</Link>
 
           <div className="sidebar-utils">
             <button type="button" className="sidebar-link">
