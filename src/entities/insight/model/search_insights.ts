@@ -37,10 +37,19 @@ export function searchInsights(
     return [];
   }
 
-  return insights
+  const scoredResults = insights
     .map((insight) => scoreInsight(insight, queryTokens))
-    .filter((result) => result.score > 0)
-    .sort(compareSearchResults);
+    .filter((result) => result.score > 0);
+  const sortableEpochs = new Map(
+    scoredResults.map(({ insight }) => [
+      insight,
+      getSortableEpoch(insight.createdAt),
+    ])
+  );
+
+  return scoredResults.sort((current, next) => {
+    return compareSearchResults(current, next, sortableEpochs);
+  });
 }
 
 function scoreInsight(
@@ -106,18 +115,23 @@ function getMatchMultiplier(
 
 function compareSearchResults(
   current: InsightSearchResult,
-  next: InsightSearchResult
+  next: InsightSearchResult,
+  sortableEpochs: ReadonlyMap<Insight, number>
 ) {
   return (
     next.score - current.score ||
-    compareCreatedAtDescending(current.insight, next.insight) ||
+    compareCreatedAtDescending(current.insight, next.insight, sortableEpochs) ||
     compareText(current.insight.id, next.insight.id)
   );
 }
 
-function compareCreatedAtDescending(current: Insight, next: Insight) {
-  const currentEpoch = getSortableEpoch(current.createdAt);
-  const nextEpoch = getSortableEpoch(next.createdAt);
+function compareCreatedAtDescending(
+  current: Insight,
+  next: Insight,
+  sortableEpochs: ReadonlyMap<Insight, number>
+) {
+  const currentEpoch = sortableEpochs.get(current) ?? Number.NEGATIVE_INFINITY;
+  const nextEpoch = sortableEpochs.get(next) ?? Number.NEGATIVE_INFINITY;
 
   if (currentEpoch === nextEpoch) {
     return 0;

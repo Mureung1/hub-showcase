@@ -86,7 +86,7 @@ function findSuffixStartIndex(rawUrl: string, authorityStartIndex: number) {
 
 function normalizeQuery(rawQuery: string) {
   const preservedParameters = rawQuery.split('&').filter((parameter) => {
-    const name = new URLSearchParams(parameter).keys().next().value;
+    const name = decodeQueryParameterName(parameter);
 
     return name === undefined || !TRACKING_PARAMETER_NAMES.has(name);
   });
@@ -94,4 +94,20 @@ function normalizeQuery(rawQuery: string) {
   return preservedParameters.length > 0
     ? `?${preservedParameters.join('&')}`
     : '';
+}
+
+function decodeQueryParameterName(parameter: string) {
+  if (parameter.length === 0) {
+    return undefined;
+  }
+
+  const separatorIndex = parameter.indexOf('=');
+  const rawName =
+    separatorIndex === -1 ? parameter : parameter.slice(0, separatorIndex);
+
+  try {
+    return decodeURIComponent(rawName.replace(/\+/g, ' '));
+  } catch {
+    return rawName;
+  }
 }

@@ -102,11 +102,9 @@ function parseIsoTimestamp(value: string) {
 }
 
 function getDaysInMonth(year: number, month: number) {
-  if (month === 2) {
-    const isLeapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const date = new Date(0);
 
-    return isLeapYear ? 29 : 28;
-  }
+  date.setUTCFullYear(year, month, 0);
 
-  return [4, 6, 9, 11].includes(month) ? 30 : 31;
+  return date.getUTCDate();
 }

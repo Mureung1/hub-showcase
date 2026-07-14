@@ -198,6 +198,43 @@ describe('createLocalStorageInsightRepository', () => {
     });
   });
 
+  it('validates leap days across century and years below 100', () => {
+    const yearZeroLeapDay: Insight = {
+      ...insight,
+      id: 'year-zero-leap-day',
+      createdAt: '0000-02-29T00:00:00.000Z',
+      updatedAt: '0000-02-29T00:00:00.000Z',
+    };
+    const leapCentury: Insight = {
+      ...insight,
+      id: 'leap-century',
+      createdAt: '2000-02-29T00:00:00.000Z',
+      updatedAt: '2000-02-29T00:00:00.000Z',
+    };
+    const nonLeapCentury: Insight = {
+      ...insight,
+      id: 'non-leap-century',
+      createdAt: '1900-02-29T00:00:00.000Z',
+      updatedAt: '1900-02-29T00:00:00.000Z',
+    };
+    const storage = new MemoryStorage();
+
+    storage.setItem(
+      INSIGHT_STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 1,
+        insights: [yearZeroLeapDay, nonLeapCentury, leapCentury],
+      })
+    );
+
+    expect(
+      insightApi.createLocalStorageInsightRepository(storage).load()
+    ).toEqual({
+      insights: [yearZeroLeapDay, leapCentury],
+      warnings: ['corrupted-entry'],
+    });
+  });
+
   it('keeps the first valid insight and isolates later duplicate IDs', () => {
     const storage = new MemoryStorage();
     const duplicateIdInsight: Insight = {

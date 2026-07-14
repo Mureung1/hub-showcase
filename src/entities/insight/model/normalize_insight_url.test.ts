@@ -95,6 +95,21 @@ describe('normalizeInsightUrl', () => {
     });
   });
 
+  it('decodes query names for tracking checks without rejecting malformed encoding', () => {
+    const rawUrl =
+      'https://example.com/article?utm%5Fsource=encoded' +
+      '&bad%=preserved&utm+source=preserved&keep=1';
+
+    expect(insightApi.normalizeInsightUrl(rawUrl)).toEqual({
+      ok: true,
+      originalUrl: rawUrl,
+      normalizedUrl:
+        'https://example.com/article?bad%=preserved' +
+        '&utm+source=preserved&keep=1',
+      domain: 'example.com',
+    });
+  });
+
   it('rejects an HTTP authority with a single slash', () => {
     expect(insightApi.normalizeInsightUrl('https:/example.com/path')).toEqual({
       ok: false,
