@@ -9,7 +9,7 @@
 
 이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. 먼저 일반적인 Codex 사용 흐름에 준하는 웹 제품 기반을 닫고, 그 위에 AY-PLE의 학업 제품 기능을 올린다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
 
-제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Headless 실행 통합과 제품 UI의 경계는 [ADR 0008](../adr/0008-separate-headless-codex-client-host-from-product-ui.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)를 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
+제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Codex runtime foundation의 운영 경계는 [ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)를 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
 
 ## 운영 규칙
 
@@ -38,7 +38,7 @@
   - [x] Fake/Codex adapter가 같은 Runtime Kernel 계약으로 실행, streaming, 취소와 실패를 표현하고 결정적 contract test를 통과한다. 근거: [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md).
   - [x] HTTP/SSE Runtime Inspector에서 실제 browser를 통과해 단일 run lifecycle을 진단할 수 있다.
   - [x] Runtime Diagnostic History가 checkpoint, interrupted-run recovery, retention과 persistence failure를 처리하며 제품 상태와 분리되어 있다.
-  - [x] 제품 작업을 `ModelingRecipe → ModelingInvocation → ModelingRun`으로 조합하고, Headless Codex Client Host를 제품 UI와 분리하는 경계를 채택했다. 근거: [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), [ADR 0008](../adr/0008-separate-headless-codex-client-host-from-product-ui.md).
+  - [x] 제품 작업의 `ModelingRecipe → ModelingInvocation → ModelingRun` 조합과 source 기반 `CodexAppServerConnection → CodexConversationRuntime` foundation 경계를 서로 다른 결정으로 채택했다. 근거: [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), [ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md).
   - [x] 첫 제품 경로를 macOS-first local web app으로 한정하고 active runtime source와 package fixture의 Windows compatibility branch를 제거했다. 근거: [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md).
 
 - [x] App Server raw method의 존재와 AY-PLE의 채택 판단을 빠짐없이 볼 수 있게 한다.
@@ -47,13 +47,17 @@
   - [x] [Renderer](../../packages/runtime-codex/scripts/render-codex-app-server-methods.ts)가 raw schema와 decision JSON을 합쳐 결정적인 Markdown을 만들고, 존재하지 않는 method와 허용하지 않은 decision 값을 오류로 거부한다.
   - [x] Pinned Codex version을 바꿔 다시 생성하면 새 method와 사라진 method가 inventory에서 드러나며, runtime capability abstraction이나 수동 전체 method registry를 추가하지 않아도 된다.
 
-- [ ] Headless Codex Client Host를 제품 실행 기반으로 만든다.
-  - [ ] 명시적으로 주입한 `packageRoot`, `appDataRoot`, `workspaceRoot`로 App Server를 시작하고, 여러 thread와 turn이 같은 장기 실행 process를 사용할 수 있다. raw: `initialize`, `initialized`.
-  - [ ] Client request·notification과 Server request·notification의 identity를 보존해 응답, activity, approval과 terminal 상태를 정확한 thread·turn·item에 연결한다.
-  - [ ] App Server의 종료, transport 오류와 재시작을 감지해 연결 상태와 복구 가능 여부를 일관된 Host 상태로 제공한다.
-  - [ ] 활성 workspace의 native `AGENTS.md`와 Skills discovery가 그대로 작동하고, Host가 같은 기능을 별도 규칙 엔진으로 재구현하지 않는다. raw: `skills/list`.
-  - [ ] 제품 React shell은 browser-safe adapter를 통해 Host를 사용하고, raw JSON-RPC shape나 secret을 browser 계약으로 노출하지 않는다.
-  - [ ] Runtime Inspector는 단일-run 진단 도구로 유지되고, 제품 shell의 session state나 transcript를 소유하지 않는다.
+- [ ] Codex-native runtime foundation을 구현하고 source 적합성을 증명한다.
+  - [ ] `codex-method-decisions.json`을 version이 있는 coverage ledger로 안전하게 확장하고 추적된 output을 먼저 지우지 않는 결정적 `verify`/generation workflow를 구현한다. 기존 Runtime Harness integration과 generated inventory는 안전한 migration 전까지 유지한다.
+  - [ ] 외부 AY-PLE 준비/harness 경계가 준비된 process와 workspace capability를 공급하고, `CodexAppServerConnection`이 child·단일 JSONL ingress·generated validation·방향과 exact `RequestId`를 구분하는 demux·outbound writer·transport terminal을 소유한다.
+  - [ ] `CodexConversationRuntime`이 native identity와 per-thread owner를 사용해 T0의 initialize, 새 thread, text turn, completed AgentMessage와 authoritative terminal을 legal response/notification interleaving에서 수렴시킨다.
+  - [ ] T0-C가 public conversation surface에서 A pending → B complete → A complete independence를, T0.1이 original Server `RequestId`의 once-only regular command approval lease를 제품 UI 없이 증명한다.
+  - [ ] Coverage ledger가 각 tracer에 `required`로 기록한 해당 unit·typed fake child·pinned live gate와 저장소 regression을 통과한 뒤 기존 `HeadlessCodexClientHost`, 기존 transport/layout Interface와 자체 oracle을 호환성 facade 없이 제거한다. 기존 Runtime Harness와 native Codex app-data는 보존한다.
+
+- [ ] 검증된 runtime foundation 위의 AY-PLE 제품 adapter를 별도 제품 goal로 결정한다.
+  - [ ] Foundation이 실제로 구현·검증된 뒤 소비할 runtime capability, browser-safe command·streaming 경계와 제품별 recovery·approval 정책을 결정한다.
+  - [ ] 제품 caller는 raw JSON-RPC, generated protocol type, secret과 내부 Connection/actor 경계를 직접 사용하지 않는다.
+  - [ ] Runtime Inspector는 개발자용 단일 run 진단 도구로 유지되고 제품 session 상태나 transcript를 소유하지 않는다.
 
 - [ ] Account와 활성 workspace를 준비한다.
   - [ ] 비어 있는 app data에서 현재 인증 상태를 확인하고 ChatGPT managed browser login을 완료한 뒤 첫 대화를 시작할 수 있다. raw: `account/read`, `account/login/start`, `account/login/completed`, `account/updated`.
@@ -76,7 +80,7 @@
   - [ ] 인증, 연결, 실행과 validation 실패를 구분해 warning·error와 가능한 recovery action을 보여주며 확인된 제품 상태를 손상하지 않는다. raw: `warning`, `configWarning`, `error`.
 
 - [ ] 기본 운영 상태를 과하지 않은 toolbar로 제공한다.
-  - [ ] 현재 model, thread 실행 상태, 인증과 Host 연결 상태를 한눈에 확인할 수 있다. raw: `model/list`, `thread/status/changed`, `account/read`, `account/updated`.
+  - [ ] 현재 model, thread 실행 상태, 인증과 runtime 연결 상태를 한눈에 확인할 수 있다. raw: `model/list`, `thread/status/changed`, `account/read`, `account/updated`.
   - [ ] 현재 turn과 thread의 token usage 및 model context window 사용률을 표시하고 새 usage event가 오면 갱신한다. raw: `thread/tokenUsage/updated`, `model/list`.
   - [ ] Account plan, rate-limit 사용률과 reset 시점을 표시하고 notification의 부분 갱신을 기존 값에 안전하게 합친다. raw: `account/read`, `account/rateLimits/read`, `account/rateLimits/updated`.
   - [ ] Baseline toolbar는 상태를 읽기 전용으로 정확히 표시하며 model, reasoning effort, service tier, permission과 compact를 임의로 변경하지 않는다.

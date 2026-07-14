@@ -2,9 +2,15 @@
 
 ## Agent triage
 
-- State: ready-for-ticketing
+- State: wontfix
 - Surface: local-spec
-- Next actor: /to-tickets
+- Next actor: none
+
+## Superseded
+
+이 spec의 모든 capability를 한곳에 둔 `HeadlessCodexClientHost` 경계는 [ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)이 대체했다. 활성 [Codex-native Client Redesign map](../wayfinding/codex-native-client-redesign/map.md)이 Connection → ConversationRuntime foundation과 교체 계획을 소유하며, `/to-spec`이 새 runtime-foundation spec을 만든 뒤 이 절에 정확한 대체 문서 연결을 보강한다.
+
+Tickets 001–003의 완료 사실은 당시 layout·transport·Host lifecycle 구현 근거로 보존한다. 미구현 Tickets 004–010은 이 spec의 Host/product contract로 실행하지 않고 `wontfix`로 닫는다. 아래 본문은 역사적 맥락이며 현재 설계나 구현 지시로 사용하지 않는다.
 
 ## Problem Statement
 

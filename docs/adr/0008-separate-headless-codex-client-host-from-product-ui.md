@@ -1,8 +1,10 @@
 # Headless Codex Client Host와 제품 UI adapter를 분리한다
 
-분류: 활성
+분류: 완료·역사 기록
 
-성숙도: 채택
+대체 문서: [ADR 0010 — Codex App Server 통합을 Connection과 ConversationRuntime으로 분리한다](0010-separate-codex-app-server-connection-from-conversation-runtime.md)
+
+이 문서는 모든 capability를 한곳에 둔 `HeadlessCodexClientHost`를 제품 실행 경계로 채택했던 당시 결정을 보존한다. 지속 소비자 감사와 고정 source 기반 재설계 뒤 ADR 0010이 현재 목표 경계를 대체하며, 아래 공개 계약을 호환성 계약으로 사용하지 않는다.
 
 AY-PLE의 Codex client 기능은 headless module로 구현하고 제품 UI는 browser-safe adapter를 통해 사용한다.
 

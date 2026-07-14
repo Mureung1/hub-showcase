@@ -5,7 +5,7 @@
 
 성숙도: 채택
 
-관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Runtime Harness 구현 지도](runtime-harness-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
+관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [Codex-native runtime foundation ADR](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Runtime Harness 구현 지도](runtime-harness-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
 
 ## 목적
 
@@ -88,7 +88,7 @@ semester-workspace/
 | override | 계산된 layout을 명시적으로 바꾸는 수단이며 root 모델 자체를 대신하지 않는다. |
 | data loss | `appDataRoot`가 사라져도 RawMaterial과 확인된 학기 상태를 `workspaceRoot`에서 다시 열 수 있다. |
 
-[ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)에 따라 shared layout, transport와 Host는 platform support guard를 소유하지 않는다. Platform validation이 필요해지면 실제 제품 local companion entrypoint 한곳에서 macOS 실행 경계를 검증하며, 현재 package에 다른 운영체제용 launcher 분기를 두지 않는다.
+[ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)에 따라 외부 준비 경계와 [공용 runtime module](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)은 운영체제 지원 guard를 소유하지 않는다. 운영체제 검증이 필요해지면 실제 제품 local companion entrypoint 한곳에서 macOS 실행 경계를 검증하며, 현재 package에 다른 운영체제용 launcher 분기를 두지 않는다.
 
 ## 리스크와 대응
 

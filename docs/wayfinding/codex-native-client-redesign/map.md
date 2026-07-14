@@ -41,10 +41,11 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 - [Source conformance verification matrix를 결정한다](tickets/013-decide-source-conformance-verification.md) — Generated shape, exact-pin source/tests, unit, fake child와 live binary의 authority를 분리하고 versioned coverage ledger, fail-safe generation·drift check와 planned/implemented promotion gate를 확정한다.
 - [commandExecution approval의 첫 round-trip을 결정한다](tickets/017-decide-command-execution-approval-round-trip.md) — T0.1을 regular command approval 하나로 제한하고 original Server `RequestId`의 once-only lease, native-scope safe pending, resolved·turn-transition·connection race, no-raw retention과 bounded tombstone을 확정한다.
 - [기존 Host 제거와 선별 재사용 계획을 확정한다](tickets/014-plan-host-removal-and-selective-salvage.md) — 새 Connection·Runtime을 legacy 옆에서 ledger-safe gate로 구현한 뒤 T0·T0-C·T0.1이 green일 때 Host/layout/transport Interface와 self-oracle을 forward-remove하며 native app-data와 Runtime Harness는 보존한다.
+- [ADR 0008을 대체할 architecture decision을 기록한다](tickets/015-record-superseding-architecture-decision.md) — ADR 0010으로 Connection → ConversationRuntime 운영 경계와 source 근거 권위를 채택하고, 기존 Host는 호환성 없이 역사화하며 제품 adapter는 foundation 준비 조건 밖에 둔다.
 
 ## Not yet specified
 
-- 없음. 남은 in-scope 질문은 Tickets 015–016으로 구체화되어 있다.
+- 없음. 남은 범위 내 질문은 Ticket 016으로 구체화되어 있다.
 
 ## Out of scope
 
