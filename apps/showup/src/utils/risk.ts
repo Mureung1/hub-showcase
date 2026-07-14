@@ -7,6 +7,7 @@ import type {
   Incident,
   IncidentType,
   Reservation,
+  RiskAlertPayload,
   RiskLevel,
   RiskStats,
 } from '../types/schema';
@@ -176,18 +177,17 @@ export function buildAlertMessage(
   return `${head} — 예약금 요청 또는 사전 확인을 권장합니다`;
 }
 
-export function createRiskAlertPayload(riskStats: RiskStats): {
-  show: boolean;
-  noShowCount: number;
-  abuseCount: number;
-  message: string;
-} {
+export function createRiskAlertPayload(riskStats: RiskStats): RiskAlertPayload {
   const noShowCount = riskStats.noShowCount;
-  const abuseCount = riskStats.incidentCounts.abuse;
+  const incidentCounts = riskStats.incidentCounts;
+  const abuseCount = incidentCounts.abuse;
   return {
     show: shouldAlert(riskStats),
     noShowCount,
     abuseCount,
+    disputeCount: incidentCounts.dispute,
+    lateCount: incidentCounts.late,
+    unreasonableCount: incidentCounts.unreasonable,
     message: buildAlertMessage(noShowCount, abuseCount),
   };
 }

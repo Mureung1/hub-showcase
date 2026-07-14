@@ -19,27 +19,27 @@
 ## 1일차 (7/09 목) — 기반 세팅 ✅ 완료
 
 ### 🟦 프론트엔드
-- [x] Vite + React + TS + Tailwind 프로젝트 세팅 (`@` 경로 별칭 포함)
-- [ ] 라우터 골격: MVP 라우트 9개 (필수 7 + 문서 2) + ProtectedRoute
-- [x] 레이아웃: 하단 네비(모바일 4탭) / 사이드바(PC)
-- [x] 공통 컴포넌트: Button, Input, Modal, Toast 연결(sonner)
+- [✅] Vite + React + TS + Tailwind 프로젝트 세팅 (`@` 경로 별칭 포함)
+- [✅] 라우터 골격: MVP 라우트 9개 (필수 7 + 문서 2) + ProtectedRoute
+- [✅] 레이아웃: 하단 네비(모바일 4탭) / 사이드바(PC)
+- [✅] 공통 컴포넌트: Button, Input, Modal, Toast 연결(sonner)
 
 ### 🟩 백엔드
-- [x] `types/schema.ts` 확정 (Store, Customer, Reservation, Incident, RiskStats) → **전 세션 공유 인터페이스, 최우선**
-- [x] Firestore 컬렉션 구조 생성 + 복합 인덱스 (phoneLast4, date)
-- [x] 시드 데이터 스크립트 (고객 10명, 예약 30건, 사건 5건 — 프론트엔드 mock용)
-- [x] CRUD 서비스 함수 (customers, reservations, incidents, stores)
+- [✅] `types/schema.ts` 확정 (Store, Customer, Reservation, Incident, RiskStats) → **전 세션 공유 인터페이스, 최우선**
+- [✅] Firestore 컬렉션 구조 생성 + 복합 인덱스 (phoneLast4, date)
+- [✅] 시드 데이터 스크립트 (고객 10명, 예약 30건, 사건 5건 — 프론트엔드 mock용)
+- [✅] CRUD 서비스 함수 (customers, reservations, incidents, stores)
 
 ### 🟥 보안
-- [x] Firestore Security Rules 초안: 가게 격리 (ownerUid 검증)
-- [x] Firebase 에뮬레이터 셋업 + 규칙 테스트 환경
-- [x] /privacy, /terms 법적 문안 작성 (사건 기록 관련 조항 포함)
+- [✅] Firestore Security Rules 초안: 가게 격리 (ownerUid 검증)
+- [✅] Firebase 에뮬레이터 셋업 + 규칙 테스트 환경
+- [✅] /privacy, /terms 법적 문안 작성 (사건 기록 관련 조항 포함)
 
 ### 🟨 리드
-- [x] fork/브랜치 확인: `N167_채민석` 단일 작업 브랜치, PR 대상 확인
-- [x] plan.md/checklist.md repo docs/에 반영
-- [x] .gitignore 정리 (.env, 빌드 산출물 .js, *.tsbuildinfo 제외)
-- [x] @types/react 18 강제 override (zustand @types/react 19 충돌 해결)
+- [✅] fork/브랜치 확인: `N167_채민석` 단일 작업 브랜치, PR 대상 확인
+- [✅] plan.md/checklist.md repo docs/에 반영
+- [✅] .gitignore 정리 (.env, 빌드 산출물 .js, *.tsbuildinfo 제외)
+- [✅] @types/react 18 강제 override (zustand @types/react 19 충돌 해결)
 
 ---
 
@@ -48,9 +48,9 @@
 > 금요일은 발표/데모/피드백/피어 컴파일링 only. 개발 작업 없음.
 > 1일차 성과(기반 세팅 + MVP 화면 8개) 데모.
 
-- [ ] 1일차 성과 발표·데모
-- [ ] 피드백 수용 사항 정리 (LEAD)
-- [ ] 피어 컴파일링 피드백 정리
+- [✅] 1일차 성과 발표·데모
+- [✅] 피드백 수용 사항 정리 (LEAD)
+- [✅] 피어 컴파일링 피드백 정리
 
 ---
 
@@ -59,22 +59,22 @@
 > 화/목 오전 = 마스터 클래스. 월/수 = 전일 개발.
 
 ### 🟦 프론트엔드
-- [x] 로그인 폼 (RHF + Zod) — 이메일/비번 검증, 에러 메시지
-- [x] 회원가입 폼: 가게 이름 + 이메일/비번 + 개인정보 동의 체크박스 (RHF + Zod)
-- [x] 로그인/회원가입 폼 → Firebase Auth 연동 (BE 인증 함수 호출)
+- [✅] 로그인 폼 (RHF + Zod) — 이메일/비번 검증, 에러 메시지
+- [✅] 회원가입 폼: 가게 이름 + 이메일/비번 + 개인정보 동의 체크박스 (RHF + Zod)
+- [✅] 로그인/회원가입 폼 → Firebase Auth 연동 (BE 인증 함수 호출)
 
 ### 🟩 백엔드
-- [x] Firebase 프로젝트 생성, Auth(이메일) 활성화
-- [x] 회원가입 시 stores 문서 생성 플로우 (createUser → createStore Auth 연동)
-- [x] Auth 상태 변화 감지 → 로그인/로그아웃 처리 (onAuthStateChanged)
+- [✅] Firebase 프로젝트 생성, Auth(이메일) 활성화
+- [✅] 회원가입 시 stores 문서 생성 플로우 (createUser → createStore Auth 연동)
+- [✅] Auth 상태 변화 감지 → 로그인/로그아웃 처리 (onAuthStateChanged)
 
 ### 🟥 보안
-- [x] 침투 테스트 1차: 타 가게 storeId로 read/write 시도 → 전부 거부 확인
-- [x] 회원가입 동의 체크박스 미체크 시 가입 차단 확인
+- [✅] 침투 테스트 1차: 타 가게 storeId로 read/write 시도 → 전부 거부 확인
+- [✅] 회원가입 동의 체크박스 미체크 시 가입 차단 확인
 
 ### 🟨 리드
-- [x] 세션별 3일차 작업 할당 확인, 진행 체크
-- [x] FE ↔ BE 인증 인터페이스 일치 확인
+- [✅] 세션별 3일차 작업 할당 확인, 진행 체크
+- [✅] FE ↔ BE 인증 인터페이스 일치 확인
 
 ---
 
@@ -83,21 +83,21 @@
 > 화요일 오전 10:00-12:00 = 마스터 클래스. 개발은 12:00부터.
 
 ### 🟦 프론트엔드
-- [ ] 고객 등록 폼 (이름/전화 검증, 중복 시 기존 고객 안내 모달)
-- [ ] 고객 목록 (카드형, 전화 마스킹 `010-****-1234`)
-- [ ] 검색 바: phoneLast4/이름, debounce 300ms
+- [✅] 고객 등록 폼 (이름/전화 검증, 중복 시 기존 고객 안내 모달)
+- [✅] 고객 목록 (카드형, 전화 마스킹 `010-****-1234`)
+- [✅] 검색 바: phoneLast4/이름, debounce 300ms
 
 ### 🟩 백엔드
-- [ ] 고객 CRUD 서비스 함수 — phoneLast4 자동 생성 포함 (Firestore 연동)
-- [ ] 고객 목록 쿼리: storeId + phoneLast4 / name 검색
+- [✅] 고객 CRUD 서비스 함수 — phoneLast4 자동 생성 포함 (Firestore 연동)
+- [✅] 고객 목록 쿼리: storeId + phoneLast4 / name 검색
 
 ### 🟥 보안
-- [ ] 고객 컬렉션 규칙: 본인 가게만 read/write 확인
-- [ ] 전화번호 원본 노출 경로 전수 확인 (마스킹 누락 0건)
+- [✅] 고객 컬렉션 규칙: 본인 가게만 read/write 확인
+- [✅] 전화번호 원본 노출 경로 전수 확인 (마스킹 누락 0건)
 
 ### 🟨 리드
-- [ ] 고객 스키마 ↔ FE/BE 인터페이스 일치 확인
-- [ ] 4일차 진행 체크
+- [✅] 고객 스키마 ↔ FE/BE 인터페이스 일치 확인
+- [✅] 4일차 진행 체크
 
 ---
 

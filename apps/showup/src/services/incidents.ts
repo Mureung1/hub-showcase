@@ -18,7 +18,7 @@ const incidentsRef = (storeId: string, customerId: string) =>
 const incidentRef = (storeId: string, customerId: string, incidentId: string) =>
   doc(db, 'stores', storeId, 'customers', customerId, 'incidents', incidentId);
 
-interface IncidentCreateInput {
+export interface IncidentCreateInput {
   type: Incident['type'];
   memo: string;
   occurredAt: Date;

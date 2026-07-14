@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Customers from './pages/Customers'
+import NewCustomer from './pages/NewCustomer'
 import CustomerDetail from './pages/CustomerDetail'
 import Reservations from './pages/Reservations'
 import NewReservation from './pages/NewReservation'
@@ -63,6 +64,7 @@ function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="customers" element={<Customers />} />
+            <Route path="customers/new" element={<NewCustomer />} />
             <Route path="customers/:id" element={<CustomerDetail />} />
             <Route path="reservations" element={<Reservations />} />
             <Route path="reservations/new" element={<NewReservation />} />

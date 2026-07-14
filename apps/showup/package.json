@@ -11,7 +11,8 @@
     "typecheck": "tsc -b",
     "verify:risk": "tsx src/utils/risk.test.ts",
     "verify:phone": "tsx src/utils/phone.test.ts",
-    "verify:seed": "tsx src/seeds/seed.test.ts"
+    "verify:seed": "tsx src/seeds/seed.test.ts",
+    "seed:upload": "tsx src/seeds/upload.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -33,6 +34,7 @@
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
+    "firebase-admin": "^14.1.0",
     "globals": "^15.9.0",
     "postcss": "^8.4.41",
     "react": "^18.3.1",

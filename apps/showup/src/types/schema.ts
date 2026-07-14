@@ -91,5 +91,8 @@ export interface RiskAlertPayload {
   show: boolean;
   noShowCount: number;
   abuseCount: number;
+  disputeCount: number;
+  lateCount: number;
+  unreasonableCount: number;
   message: string;
 }

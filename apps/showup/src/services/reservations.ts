@@ -17,7 +17,7 @@ import type { Reservation } from '../types/schema';
 const reservationsRef = (storeId: string) => collection(db, 'stores', storeId, 'reservations');
 const reservationRef = (storeId: string, resId: string) => doc(db, 'stores', storeId, 'reservations', resId);
 
-interface ReservationCreateInput {
+export interface ReservationCreateInput {
   customerId: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
