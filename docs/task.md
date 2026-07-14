@@ -20,7 +20,7 @@
 - [x] **T-01 DB 스키마 & 마이그레이션** `server` — [#1](https://github.com/HappyGogildong/hub/issues/1)
   - users, stores, favorites, deals, reservations (snake_case, 기획서 §4 데이터 모델)
   - DoD: 마이그레이션 SQL로 로컬 PostgreSQL에 스키마 재현 가능. `deals.remaining_qty >= 0` CHECK 제약 포함
-- [ ] **T-02 시딩 스크립트** `server` — [#2](https://github.com/HappyGogildong/hub/issues/2)
+- [x] **T-02 시딩 스크립트** `server` — [#2](https://github.com/HappyGogildong/hub/issues/2)
   - 데모용 가게 3곳 + 사용자 2명 + 활성 딜 (기획서 §7 콜드 스타트: 데모는 시딩으로)
   - DoD: `npm run seed -w server` 한 번으로 초기화
 - [ ] **T-03 역할 선택 진입 화면 (C0)** `client` — [#3](https://github.com/HappyGogildong/hub/issues/3)
